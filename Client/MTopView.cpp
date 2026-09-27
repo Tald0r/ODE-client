@@ -15,6 +15,7 @@
 // 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
 #endif
@@ -19083,7 +19084,7 @@ MTopView::ExcuteAdvancementQuestEnding(void *pVoid)
 
 				if( g_oggfile != NULL)
 					fclose(g_oggfile );
-				g_oggfile = fopen( Basic::NormalizeDataPath( "Data\\Music\\Silence_of_Battlefield.ogg" ).c_str(), "rb");
+				g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( "Data\\Music\\Silence_of_Battlefield.ogg" ).c_str(), "rb");
 				g_pOGG->streamLoad(g_oggfile, NULL);
 				g_pOGG->streamPlay(0);
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;
@@ -19274,7 +19275,7 @@ MTopView::ExcuteOustersFinEvent()
 
 				if( g_oggfile != NULL)
 					fclose(g_oggfile );
-				g_oggfile = fopen( Basic::NormalizeDataPath( "Data\\Music\\chaos.ogg" ).c_str(), "rb");
+				g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( "Data\\Music\\chaos.ogg" ).c_str(), "rb");
 				g_pOGG->streamLoad(g_oggfile, NULL);
 				g_pOGG->streamPlay(0);
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;

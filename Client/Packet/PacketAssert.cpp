@@ -13,6 +13,7 @@
 #include "Types.h"
 #include "PacketAssert.h"
 #include "Exception.h"
+#include "CrtCompat.h"
 #include <time.h>
 
 //--------------------------------------------------------------------------------
@@ -34,7 +35,7 @@ void __assert__ ( const char * file , uint line , const char * func , const char
 
 	time_t currentTime = time(0);
 	
-	msg << expr << " at " << ctime(&currentTime);
+	msg << expr << " at " << Basic::TimeText(currentTime).c_str();
 	
 	ofstream ofile("assertion_failed.log",ios::app);
 	ofile << msg.toString().c_str() << endl;

@@ -6,6 +6,7 @@
 // Include files
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "DataPath.h"
 
 #ifdef PLATFORM_WINDOWS
@@ -14,6 +15,7 @@
 // the real header here conflicts with that macro (see basic/Platform.h).
 #include <process.h>
 #include <io.h>
+#include <share.h>
 #include <direct.h>
 #include <fcntl.h>	// _O_RDONLY (used with _open() below)
 
@@ -3315,7 +3317,8 @@ MakeScreenShot()
 		snprintf(str, sizeof(str), "%s%03d.jpg", g_pFileDef->getProperty("PATH_SCREENSHOT").c_str(), g_ScreenShotNumber);
 
 #ifdef PLATFORM_WINDOWS
-		int fd = _open( str, _O_RDONLY );
+		int fd = -1;
+		_sopen_s( &fd, str, _O_RDONLY, _SH_DENYNO, 0 );
 #else
 		int fd = open( str, O_RDONLY );
 #endif // PLATFORM_WINDOWS
@@ -3447,7 +3450,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 			// Sound.inf is data, not code: a filename longer than the buffer
 			// is truncated so the load fails and gets logged, not a smashed stack.
 			char strFilename[256];
-			strncpy(strFilename, pFilename, sizeof(strFilename)-1);
+			Basic::CopyBounded(strFilename, pFilename, sizeof(strFilename)-1);
 			strFilename[sizeof(strFilename)-1] = '\0';
 
 			LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
@@ -3633,7 +3636,7 @@ PlaySound(TYPE_SOUNDID soundID)
 		// Sound.inf is data, not code: a filename longer than the buffer
 		// is truncated so the load fails and gets logged, not a smashed stack.
 		char strFilename[256];
-		strncpy(strFilename, pFilename, sizeof(strFilename)-1);
+		Basic::CopyBounded(strFilename, pFilename, sizeof(strFilename)-1);
 		strFilename[sizeof(strFilename)-1] = '\0';
  		LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
 		//LPDIRECTSOUNDBUFFER	pBuffer = g_pWavePackFileManager->LoadFromFileData(soundID);
@@ -3756,7 +3759,7 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 		// Sound.inf is data, not code: a filename longer than the buffer
 		// is truncated so the load fails and gets logged, not a smashed stack.
 		char strFilename[256];
-		strncpy(strFilename, pFilename, sizeof(strFilename)-1);
+		Basic::CopyBounded(strFilename, pFilename, sizeof(strFilename)-1);
 		strFilename[sizeof(strFilename)-1] = '\0';
  		LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
 		//LPDIRECTSOUNDBUFFER	pBuffer = g_pWavePackFileManager->LoadFromFileData(soundID);
@@ -4035,7 +4038,7 @@ PlayMusicCurrentZone()
 					if( g_SDLAudio.IsInit() )
 					{
 						g_pOGG->streamClose();
-						g_oggfile = fopen( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
+						g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
 						if( g_oggfile != NULL )
 						{
 							// 2004, 11, 8, sobeit add start - 그냥 에러 체크

@@ -5,6 +5,7 @@
 // 지금 UI에서 타이밍 문제가 있어서 못 고치고 있음.
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "DisplaySettings.h"
 #include "DataPath.h"
 #ifdef PLATFORM_WINDOWS
@@ -420,7 +421,7 @@ ExecuteLogout()
 
 						if( g_SDLAudio.IsInit() )
 						{
-							g_oggfile = fopen( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
+							g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
 							if( g_oggfile != NULL )
 							{
 								g_pOGG->streamLoad( g_oggfile, NULL );
@@ -501,7 +502,7 @@ PlayTitleMusic()
 
 				if( g_SDLAudio.IsInit() )
 				{
-					g_oggfile = fopen( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
+					g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
 					if( g_oggfile != NULL )
 					{					
 						int volume = (g_pUserOption->VolumeMusic - 15) * 250;
@@ -2521,7 +2522,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 								char pLwrCommand[CHAT_MESSAGE_MAX_BYTES + 1];
 								SafeFormat::Copy(pLwrCommand, pCommand);
 #ifdef PLATFORM_WINDOWS
-								_strlwr(pLwrCommand);
+								_strlwr_s(pLwrCommand, sizeof(pLwrCommand));
 #else
 								// Simple lowercase conversion for macOS
 								for (int i = 0; pLwrCommand[i]; i++) {
@@ -10858,7 +10859,7 @@ UIMessageManager::Execute_UI_CHANGE_CUSTOM_NAMING(intptr_t left, intptr_t right,
 		if(pName == NULL)
 			return;
 
-		strncpy(szTemp, pName, sizeof(szTemp)-1);
+		Basic::CopyBounded(szTemp, pName, sizeof(szTemp)-1);
 		szTemp[sizeof(szTemp)-1] = '\0';
 
 		if(strlen(szTemp) == 0)

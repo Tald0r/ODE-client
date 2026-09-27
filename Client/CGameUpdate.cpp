@@ -4,6 +4,7 @@
 // 실제 게임을 진행하는 부분
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
@@ -5750,11 +5751,11 @@ int GetCurrentUserNumber()
             pstrExeName = ProcessInfo.szExeFile;
         else
             pstrExeName++; 
-		if(!stricmp(pstrExeName, "winlogon.exe"))
+		if(!_stricmp(pstrExeName, "winlogon.exe"))
 		{
 			dwwinlogon++;
 		}
-		if(!stricmp(pstrExeName, "explorer.exe"))
+		if(!_stricmp(pstrExeName, "explorer.exe"))
 		{
 			dwexplorer++;
 		}

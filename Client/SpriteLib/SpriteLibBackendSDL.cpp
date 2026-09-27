@@ -10,6 +10,7 @@
 -----------------------------------------------------------------------------*/
 
 #include "SpriteLibBackendSDL.h"
+#include "CrtCompat.h"
 #include "FrameUpscaler.h"
 #include "SpriteGpu.h"
 #include "SpriteScanline.h"
@@ -964,7 +965,7 @@ int spritectl_load_pack(const char* filename, spritectl_pack_t* pack) {
 
 	/* Open pack file: the game's spelling of the path, resolved to the
 	   disk's (basic/DataPath.h) */
-	file = fopen(Basic::NormalizeDataPath(filename).c_str(), "rb");
+	file = Basic::OpenFile(Basic::NormalizeDataPath(filename).c_str(), "rb");
 	if (!file) {
 		fprintf(stderr, "SpriteLib Backend: Failed to open pack file: %s\n", filename);
 		return -2;
@@ -984,7 +985,7 @@ int spritectl_load_pack(const char* filename, spritectl_pack_t* pack) {
 	}
 
 	/* Initialize pack structure */
-	pack_ptr->filename = strdup(filename);
+	pack_ptr->filename = Basic::DuplicateString(filename);
 	pack_ptr->file = file;
 	pack_ptr->sprite_count = count;
 	pack_ptr->lazy_loading = 0;  /* Full load */

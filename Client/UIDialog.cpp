@@ -2,6 +2,7 @@
 // UIDialog.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "SafeFormat.h"
 
 namespace {
@@ -652,7 +653,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 					++iString;
 					continue;
 				}
-				strncpy(strID, pString->GetString(), 3);
+				Basic::CopyBounded(strID, pString->GetString(), 3);
 				strID[3] = '\0';
 				SafeFormat::Copy(strName, pString->GetString()+3);
 
@@ -681,7 +682,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 					++iString;
 					continue;
 				}
-				strncpy(strID, pString->GetString(), 4);
+				Basic::CopyBounded(strID, pString->GetString(), 4);
 				strID[4] = '\0';
 				SafeFormat::Copy(strName, pString->GetString()+4);
 
@@ -849,7 +850,7 @@ UIDialog::PopupFreeMessageDlg(const char* msg, int x, int y, WORD fButton, bool 
 			str--;
 		}
 
-		strncpy(m_ppDlgMessage[msgID][0], msg, i);
+		Basic::CopyBounded(m_ppDlgMessage[msgID][0], msg, i);
 		m_ppDlgMessage[msgID][0][i] = '\0';
 		//------------------------------------------
 		//yckou

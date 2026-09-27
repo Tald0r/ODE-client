@@ -1,6 +1,7 @@
 ﻿// VS_UI_GameCommon.cpp
 
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "VS_UI_GameCommon.h"
 #include "TextSystem/TextService.h"
 #include "TextWrap.h"
@@ -6597,7 +6598,7 @@ bool C_VS_UI_CHATTING::AddWhisperID(const char *sz_ID)
 	
 	char szTemp[512];
 
-	strncpy(szTemp, sz_ID, 511);
+	Basic::CopyBounded(szTemp, sz_ID, 511);
 	szTemp[511] = '\0';
 
 	// Find first space or null terminator, but limit to 11 characters
@@ -7289,7 +7290,7 @@ void C_VS_UI_INVENTORY::Start(bool bl_set_load)
 void	C_VS_UI_INVENTORY::SetDebugStart()
 {
 	return;
-	FILE *fp=fopen("IsnventoryLog.txt","wt");
+	FILE *fp=Basic::OpenFile("IsnventoryLog.txt","wt");
 	fprintf(fp,"InventoryLogStart");
 	fclose(fp);
 }
@@ -7297,7 +7298,7 @@ void	C_VS_UI_INVENTORY::SetDebugStart()
 void	C_VS_UI_INVENTORY::WriteLogLine(int line)
 {
 	return;
-	FILE *fp = fopen("InventoryLog.txt","at");
+	FILE *fp = Basic::OpenFile("InventoryLog.txt","at");
 	fseek(fp,0,SEEK_END);
 	fwrite(&line,sizeof(int),1,fp);
 	fclose(fp);
@@ -7306,7 +7307,7 @@ void	C_VS_UI_INVENTORY::WriteLogLine(int line)
 void	C_VS_UI_INVENTORY::SetDebugEnd()
 {
 	return;
-	FILE *fp = fopen("InventoryLog.txt","at");
+	FILE *fp = Basic::OpenFile("InventoryLog.txt","at");
 	fseek(fp,0,SEEK_END);
 	fprintf(fp,"InventoryLogEnd");
 	fclose(fp);
@@ -24533,7 +24534,7 @@ class CTeamMember_By_Id
 public:
 	bool operator()(const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& p, const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& q) const
 	{
-		return stricmp(q.MEMBER_NAME.c_str(), p.MEMBER_NAME.c_str())>0;
+		return _stricmp(q.MEMBER_NAME.c_str(), p.MEMBER_NAME.c_str())>0;
 	}
 };
 class _CTeamMember_By_Id
@@ -24541,7 +24542,7 @@ class _CTeamMember_By_Id
 public:
 	bool operator()(const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& p, const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& q) const
 	{
-		return stricmp(q.MEMBER_NAME.c_str(), p.MEMBER_NAME.c_str())<0;
+		return _stricmp(q.MEMBER_NAME.c_str(), p.MEMBER_NAME.c_str())<0;
 	}
 };
 class CTeamMember_By_Server
@@ -24549,7 +24550,7 @@ class CTeamMember_By_Server
 public:
 	bool operator()(const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& p, const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& q) const
 	{
-		return stricmp(q.SERVER_NAME.c_str(), p.SERVER_NAME.c_str())>0;
+		return _stricmp(q.SERVER_NAME.c_str(), p.SERVER_NAME.c_str())>0;
 	}
 };
 class _CTeamMember_By_Server
@@ -24557,7 +24558,7 @@ class _CTeamMember_By_Server
 public:
 	bool operator()(const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& p, const C_VS_UI_TEAM_MEMBER_LIST::TEAM_MEMBER_LIST& q) const
 	{
-		return stricmp(q.SERVER_NAME.c_str(), p.SERVER_NAME.c_str())<0;
+		return _stricmp(q.SERVER_NAME.c_str(), p.SERVER_NAME.c_str())<0;
 	}
 };
 class CTeamMember_By_Grade

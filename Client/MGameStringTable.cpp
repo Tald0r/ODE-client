@@ -2,6 +2,7 @@
 // MGameStringTable.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "MGameStringTable.h"
 #include "Properties.h"
 #include "DebugLog.h"
@@ -61,7 +62,7 @@ UseEnglishTextFrom(const char* szLanguageInfoFile)
 	}
 	std::string fileName = szLanguageInfoFile;
 
-	FILE* pFile = fopen(fileName.c_str(), "r");
+	FILE* pFile = Basic::OpenFile(fileName.c_str(), "r");
 
 	if (pFile == NULL)
 	{
@@ -82,7 +83,7 @@ UseEnglishTextFrom(const char* szLanguageInfoFile)
 
 		if (svLine.starts_with("LANGUAGE"))
 		{
-			sscanf(szLine + 8, "%d", &language);
+			Basic::ScanString(szLine + 8, "%d", &language);
 			break;
 		}
 	}

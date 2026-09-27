@@ -1,25 +1,66 @@
 #include "Client_PCH.h"
 
+#ifdef PLATFORM_WINDOWS
+// True when the Windows version this process is told it runs on is at least
+// major.minor with a build of at least build. That is the version
+// GetVersionEx reported (shaped by the executable's manifest), and
+// VerifyVersionInfo reads the same one; it compares major and minor
+// together and the build on its own.
+static bool ReportedVersionAtLeast(DWORD major, DWORD minor, DWORD build)
+{
+   OSVERSIONINFOEXW info = {};
+   info.dwOSVersionInfoSize = sizeof(info);
+   info.dwMajorVersion = major;
+   info.dwMinorVersion = minor;
+   info.dwBuildNumber = build;
+   DWORDLONG mask = 0;
+   mask = VerSetConditionMask(mask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+   mask = VerSetConditionMask(mask, VER_MINORVERSION, VER_GREATER_EQUAL);
+   mask = VerSetConditionMask(mask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+   return VerifyVersionInfoW(&info, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, mask) != FALSE;
+}
+
+// The largest value in [0, limit] for which atLeast(value) holds; atLeast
+// must hold for 0 and be true up to some value and false after it.
+template <typename Test>
+static DWORD HighestSatisfying(DWORD limit, Test atLeast)
+{
+   DWORD low = 0, high = limit;
+   while (low < high)
+   {
+      const DWORD middle = low + (high - low + 1) / 2;
+      if (atLeast(middle))
+         low = middle;
+      else
+         high = middle - 1;
+   }
+   return low;
+}
+
+// The major, minor and build GetVersionEx (deprecated) reported. An x64
+// build runs only on the NT platform.
+static void QueryReportedVersion(OSVERSIONINFOEX& osvi)
+{
+   const DWORD major = HighestSatisfying(0xFF, [](DWORD m) { return ReportedVersionAtLeast(m, 0, 0); });
+   const DWORD minor = HighestSatisfying(0xFFFF, [major](DWORD m) { return ReportedVersionAtLeast(major, m, 0); });
+   const DWORD build = HighestSatisfying(0x7FFFFFFF, [major, minor](DWORD b) { return ReportedVersionAtLeast(major, minor, b); });
+   osvi.dwMajorVersion = major;
+   osvi.dwMinorVersion = minor;
+   osvi.dwBuildNumber = build;
+   osvi.dwPlatformId = VER_PLATFORM_WIN32_NT;
+}
+#endif
+
 BOOL GetWinVersion(char *szVersion, size_t nSize)
 {
    if (szVersion == NULL || nSize == 0)
       return FALSE;
 
 #ifdef PLATFORM_WINDOWS
-   // Windows implementation - simplified version
    OSVERSIONINFOEX osvi;
-   BOOL bOsVersionInfoEx;
-
-   // Try calling GetVersionEx using the OSVERSIONINFOEX structure.
    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-   if( !(bOsVersionInfoEx = GetVersionEx ((OSVERSIONINFO *) &osvi)) )
-   {
-      osvi.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
-      if (! GetVersionEx ( (OSVERSIONINFO *) &osvi) )
-         return FALSE;
-   }
+   QueryReportedVersion(osvi);
 
    switch (osvi.dwPlatformId)
    {

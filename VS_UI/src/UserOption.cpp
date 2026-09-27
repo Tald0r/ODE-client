@@ -2,6 +2,7 @@
 // UserOption.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "Client_PCH.h"
 #include "UserOption.h"
 #include "KeyAccelerator.h"
@@ -102,7 +103,7 @@ UserOption::SaveToFile(const char* filename)
 	if (filename == NULL) return;
 	// FileDef.inf names this file the Windows way, UserSet\UserOption.set;
 	// off Windows the name is resolved against the disk (basic/DataPath.h).
-	FILE* file = fopen(Basic::NormalizeDataPath(filename).c_str(), "w");
+	FILE* file = Basic::OpenFile(Basic::NormalizeDataPath(filename).c_str(), "w");
 	if (file == NULL) return;
 
 	DWORD flag = 0;
@@ -175,7 +176,7 @@ UserOption::LoadFromFile(const char* filename)
 {
 	UseXbrz = TRUE; // Older or missing settings files enable smoothing.
 	if (filename == NULL) return false;
-	FILE *file = fopen(Basic::NormalizeDataPath(filename).c_str(), "r");
+	FILE *file = Basic::OpenFile(Basic::NormalizeDataPath(filename).c_str(), "r");
 	if (file == NULL) {
 		return false;
 	}
@@ -191,29 +192,29 @@ UserOption::LoadFromFile(const char* filename)
 //	}
 
 	char ignore[256];
-	fscanf(file, "\n%s\n", ignore); // ignore =======
+	Basic::ScanFile(file, "\n%s\n", CRT_BUFFER(ignore)); // ignore =======
 
-	fscanf(file, "%d	%s\n", &UseSmoothCursor, ignore);
-	fscanf(file, "%d	%s\n", &DrawMinimap, ignore);
-	fscanf(file, "%d	%s\n", &DrawGameTime, ignore);
-	fscanf(file, "%d	%s\n", &DrawInterface, ignore);
-	fscanf(file, "%d	%s\n", &DrawFPS, ignore);
-	fscanf(file, "%d	%s\n", &BlendingShadow, ignore);
-	fscanf(file, "%d	%s\n", &FilteringCurse, ignore);
-	fscanf(file, "%d	%s\n", &PlayMusic, ignore);
-	fscanf(file, "%d	%s\n", &PlaySound, ignore);
-	fscanf(file, "%d	%s\n", &VolumeMusic, ignore);
-	fscanf(file, "%d	%s\n", &VolumeSound, ignore);
-	fscanf(file, "%d	%s\n", &UseHelpEvent, ignore);
-	fscanf(file, "%d	%s\n", &PlayWaveMusic, ignore);
-	fscanf(file, "%d	%s\n", &BloodDrop, ignore);
-	fscanf(file, "%d	%s\n", &OpenQuickSlot, ignore);
-	fscanf(file, "%d	%s\n", &UseHalfFrame, ignore);
-	fscanf(file, "%d	%s\n", &Use3DHAL, ignore);
-	fscanf(file, "%d	%s\n", &DrawTransHPBar, ignore);
-	fscanf(file, "%d	%s\n", &UseForceFeel, ignore);
-	fscanf(file, "%d	%s\n", &GammaValue, ignore);
-	fscanf(file, "%d	%s\n", &DrawChatBoxOutline, ignore);
+	Basic::ScanFile(file, "%d	%s\n", &UseSmoothCursor, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &DrawMinimap, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &DrawGameTime, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &DrawInterface, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &DrawFPS, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &BlendingShadow, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &FilteringCurse, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &PlayMusic, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &PlaySound, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &VolumeMusic, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &VolumeSound, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &UseHelpEvent, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &PlayWaveMusic, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &BloodDrop, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &OpenQuickSlot, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &UseHalfFrame, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &Use3DHAL, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &DrawTransHPBar, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &UseForceFeel, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &GammaValue, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d	%s\n", &DrawChatBoxOutline, CRT_BUFFER(ignore));
 
 	// new interface
 	char backupField[15] = {};
@@ -223,30 +224,30 @@ UserOption::LoadFromFile(const char* filename)
 	}
 	std::memcpy(BackupID, backupField, sizeof BackupID - 1);
 	BackupID[sizeof BackupID - 1] = '\0';
-	fscanf(file, "%d %s\n", &UseEnterChat, ignore);
-	fscanf(file, "%d %s\n", &MouseSpeedValue, ignore);
-	fscanf(file, "%d %s\n", &PlayYellSound, ignore);
-	fscanf(file, "%d %s\n", &ShowChoboHelp, ignore);
-	fscanf(file, "%d %s\n", &TribeChange, ignore);
-	fscanf(file, "%d %s\n", &DenyPartyInvite, ignore);
-	fscanf(file, "%d %s\n", &DenyPartyRequest, ignore);
-	fscanf(file, "%d %s\n", &AutoHideSmoothScroll, ignore);
-	fscanf(file, "%d %s\n", &ChattingColor, ignore);
-	fscanf(file, "%hhu %s\n", &ALPHA_DEPTH, ignore);
-	fscanf(file, "%d %s\n", &DefaultAlpha, ignore);
-	fscanf(file, "%d %s\n", &IsPreLoadMonster, ignore);
-	fscanf(file, "%d %s\n", &ChatWhite, ignore);
-	fscanf(file, "%d %s\n", &UseTeenVersion, ignore);
-	fscanf(file, "%d %s\n", &PopupChatByWhisper, ignore);
-	fscanf(file, "%d %s\n", &NotSendMyInfo, ignore);
-	fscanf(file, "%d %s\n", &DoNotShowWarMsg, ignore);
-	fscanf(file, "%d %s\n", &DoNotShowLairMsg, ignore);
-	fscanf(file, "%d %s\n", &DoNotShowHolyLandMsg, ignore);
-	fscanf(file, "%d %s\n", &ShowGameMoneyWithHANGUL, ignore);
-	fscanf(file, "%d %s\n", &DoNotShowPersnalShopMsg, ignore);
+	Basic::ScanFile(file, "%d %s\n", &UseEnterChat, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &MouseSpeedValue, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &PlayYellSound, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &ShowChoboHelp, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &TribeChange, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DenyPartyInvite, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DenyPartyRequest, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &AutoHideSmoothScroll, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &ChattingColor, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%hhu %s\n", &ALPHA_DEPTH, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DefaultAlpha, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &IsPreLoadMonster, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &ChatWhite, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &UseTeenVersion, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &PopupChatByWhisper, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &NotSendMyInfo, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DoNotShowWarMsg, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DoNotShowLairMsg, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DoNotShowHolyLandMsg, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &ShowGameMoneyWithHANGUL, CRT_BUFFER(ignore));
+	Basic::ScanFile(file, "%d %s\n", &DoNotShowPersnalShopMsg, CRT_BUFFER(ignore));
 
 	int xbrz = 1;
-	if (fscanf(file, "%d %255s", &xbrz, ignore) == 2 && strcmp(ignore, "UseXbrz") == 0
+	if (Basic::ScanFile(file, "%d %255s", &xbrz, CRT_BUFFER(ignore)) == 2 && strcmp(ignore, "UseXbrz") == 0
 		&& (xbrz == 0 || xbrz == 1))
 		UseXbrz = xbrz;
 

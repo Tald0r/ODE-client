@@ -2,6 +2,7 @@
 // UtilityFunction.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "DXLib/DXLib.h"
 
 #include "UtilityFunction.h"
@@ -654,7 +655,7 @@ bool LoadJPG(LPCTSTR lpszFileName, int &width, int &height, int &bpp, unsigned c
 	* requires it in order to read binary files.
 	*/
 
-  if ((infile = fopen(lpszFileName, "rb")) == NULL) {
+  if ((infile = Basic::OpenFile(lpszFileName, "rb")) == NULL) {
 	 //fprintf(stderr, "can't open %s\n", filename);
 	 return 0;
   }
@@ -836,7 +837,7 @@ bool SaveJPG(LPCTSTR lpszFileName, int &width, int &height, int &bpp, unsigned c
 	* VERY IMPORTANT: use "b" option to fopen() if you are on a machine that
 	* requires it in order to write binary files.
 	*/
-  if ((outfile = fopen(lpszFileName, "wb")) == NULL) {
+  if ((outfile = Basic::OpenFile(lpszFileName, "wb")) == NULL) {
 //	 fprintf(stderr, "can't open %s\n", filename);
 	 return FALSE;
   }

@@ -1,6 +1,7 @@
 ﻿  // VS_UI_GameCommon.cpp
 
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "VS_UI_GameCommon.h"
 #include "VS_UI_GameCommon2.h"
 #include "VS_UI_GlobalResource.h"
@@ -13452,7 +13453,7 @@ bool	C_VS_UI_QUEST_MANAGER::SetQuestManagerInfo(void* pVoid)
 					if(NULL != pChildElement2)
 					{
 						TempMission->szMissionTitle =  (char*)pChildElement2->GetText().c_str();
-						if(0 == stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
+						if(0 == _stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
 						{
 							TempMission->bTimeLimited = true;
 							TempMission->tpTimeLimitStart = MonotonicClock::Now();
@@ -13561,7 +13562,7 @@ bool	C_VS_UI_QUEST_MANAGER::UpdateQuestInfo(_GQuestInfo *QInfo, int nType)
 							if(NULL != pChildElement2)
 							{
 								TempMission->szMissionTitle =  (char*)pChildElement2->GetText().c_str();
-								if(0 == stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
+								if(0 == _stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
 								{
 									TempMission->bTimeLimited = true;
 									TempMission->tpTimeLimitStart = MonotonicClock::Now();

@@ -48,6 +48,7 @@
 //----------------------------------------------------------------------
 
 #include "test_framework.h"
+#include "CrtCompat.h"
 #include "packet_stream_access.h"
 
 #include "Socket.h"
@@ -176,8 +177,8 @@ std::string	ToHex(const std::vector<unsigned char>& bytes)
 
 bool	IsRecording()
 {
-	const char* value = std::getenv("UPDATE_GOLDENS");
-	return value != NULL && std::strcmp(value, "1") == 0;
+	const std::optional<std::string> value = Basic::GetEnvironment("UPDATE_GOLDENS");
+	return value.has_value() && *value == "1";
 }
 
 std::string	GoldenPath(const std::string& name, uchar code)

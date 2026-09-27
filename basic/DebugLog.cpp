@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 #include "DebugLog.h"
+#include "CrtCompat.h"
 #include <string.h>
 #include <time.h>
 #include "Platform.h"
@@ -86,8 +87,10 @@ static const char* get_level_string(LogLevel level) {
 static void get_timestamp(char *buffer, size_t size) {
 #ifdef PLATFORM_WINDOWS
 	struct _timeb timebuf;
-	_ftime(&timebuf);
-	struct tm *tm_info = localtime(&timebuf.time);
+	_ftime_s(&timebuf);
+	std::tm tm_value = {};
+	Basic::LocalTime(&timebuf.time, &tm_value);
+	const std::tm *tm_info = &tm_value;
 	snprintf(buffer, size, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
 			 tm_info->tm_year + 1900,
 			 tm_info->tm_mon + 1,
@@ -186,11 +189,11 @@ void log_set_file_output(const char *path) {
 
 	if (path != NULL && path[0] != '\0') {
 		// Store path
-		strncpy(g_config.log_file, path, sizeof(g_config.log_file) - 1);
+		Basic::CopyBounded(g_config.log_file, path, sizeof(g_config.log_file) - 1);
 		g_config.log_file[sizeof(g_config.log_file) - 1] = '\0';
 
 		// Open file
-		g_config.log_fp = fopen(g_config.log_file, "w");
+		g_config.log_fp = Basic::OpenFile(g_config.log_file, "w");
 		if (g_config.log_fp != NULL) {
 			g_config.output_to_file = true;
 		} else {

@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "RarFile.h"
+#include "CrtCompat.h"
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
 #endif
@@ -136,7 +137,7 @@ bool CRarFile::OpenLimited(const char* in_filename, bool text)
 
 	// Open the file
 	const auto closeFile = [](FILE* value) { fclose(value); };
-	std::unique_ptr<FILE, decltype(closeFile)> file(fopen(fullPath.c_str(), "rb"), closeFile);
+	std::unique_ptr<FILE, decltype(closeFile)> file(Basic::OpenFile(fullPath.c_str(), "rb"), closeFile);
 	if (!file)
 	{
 		std::string packed;

@@ -20,6 +20,7 @@
 #include "spritepack.h"
 #include <stdlib.h>
 #include <string.h>
+#include "sprite_file.h"
 
 /**
  * Initialize SpritePack structure to safe defaults
@@ -59,7 +60,7 @@ int spritepack_load(SpritePack* pack, const char* filename) {
     spritepack_init(pack);
     
     /* Open pack file */
-    FILE* file = fopen(filename, "rb");
+    FILE* file = sprite_open_file(filename, "rb");
     if (!file) {
         return -2;  /* File open failed */
     }
@@ -127,11 +128,11 @@ int spritepack_load_lazy(SpritePack* pack, const char* filename) {
     if (!index_filename) {
         return -3;
     }
-    strcpy(index_filename, filename);
-    strcat(index_filename, "i");
+    memcpy(index_filename, filename, filename_len);
+    memcpy(index_filename + filename_len, "i", 2);
     
     /* Open index file - Requirement 4.3 */
-    FILE* index_file = fopen(index_filename, "rb");
+    FILE* index_file = sprite_open_file(index_filename, "rb");
     if (!index_file) {
         free(index_filename);
         return -5;  /* Index file not found */
@@ -185,7 +186,7 @@ int spritepack_load_lazy(SpritePack* pack, const char* filename) {
     }
     
     /* Open pack file and keep it open for lazy loading */
-    pack->pack_file = fopen(filename, "rb");
+    pack->pack_file = sprite_open_file(filename, "rb");
     if (!pack->pack_file) {
         free(index_filename);
         free(pack->file_offsets);
@@ -199,7 +200,7 @@ int spritepack_load_lazy(SpritePack* pack, const char* filename) {
     /* Store filename for reference */
     pack->filename = (char*)malloc(filename_len + 1);
     if (pack->filename) {
-        strcpy(pack->filename, filename);
+        memcpy(pack->filename, filename, filename_len + 1);
     }
     
     pack->lazy_load = 1;

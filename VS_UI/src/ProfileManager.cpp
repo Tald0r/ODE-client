@@ -2,6 +2,7 @@
 // ProfileManager.cpp
 //----------------------------------------------------------------------
 #include "../../Client/Client_PCH.h"
+#include "CrtCompat.h"
 #ifdef PLATFORM_WINDOWS
 #include <direct.h>
 #include <io.h>
@@ -212,7 +213,7 @@ ProfileManager::InitProfiles()
 				continue;
 			}
 
-			strncpy( charName, sFilename.c_str(), lenFilename-4 );	// cut the .bmp off
+			Basic::CopyBounded( charName, sFilename.c_str(), lenFilename-4 );	// cut the .bmp off
 			charName[lenFilename-4] = '\0';
 
 			// CDirectDrawSurface-based loading used to run here on Windows,

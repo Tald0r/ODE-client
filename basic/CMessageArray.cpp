@@ -19,6 +19,7 @@
 // Platform-specific includes
 #ifdef PLATFORM_WINDOWS
 	#include <io.h>
+	#include <share.h>
 	#include <fcntl.h>
 #else
 	#include <unistd.h>
@@ -27,8 +28,9 @@
 
 // Platform-specific I/O functions
 #ifdef PLATFORM_WINDOWS
-	#define PLATFORM_WRITE(fd, buf, len)	_write(fd, buf, len)
-	#define PLATFORM_OPEN	_open
+	#define PLATFORM_WRITE(fd, buf, len)	_write(fd, buf, static_cast<unsigned int>(len))
+	// _open with its sharing mode, through the call that is not deprecated.
+	static int PLATFORM_OPEN(const char* pName, int flags, int mode) { int fd = -1; _sopen_s(&fd, pName, flags, _SH_DENYNO, mode); return fd; }
 	#define PLATFORM_CLOSE	_close
 	#define PLATFORM_LSEEK	_lseek
 	static constexpr int LogFileMode = _S_IREAD | _S_IWRITE;

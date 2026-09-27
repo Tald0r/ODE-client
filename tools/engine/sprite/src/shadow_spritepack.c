@@ -18,6 +18,7 @@
 #include "shadow_spritepack.h"
 #include <stdlib.h>
 #include <string.h>
+#include "sprite_file.h"
 
 /* ============================================================================
  * Initialization and Cleanup
@@ -152,7 +153,7 @@ int shadow_spritepack_load_from_file(ShadowSpritePack* pack, FILE* file) {
 int shadow_spritepack_load(ShadowSpritePack* pack, const char* filename) {
     if (!pack || !filename) return 0;
     
-    FILE* file = fopen(filename, "rb");
+    FILE* file = sprite_open_file(filename, "rb");
     if (!file) return 0;
     
     int result = shadow_spritepack_load_from_file(pack, file);
@@ -172,11 +173,11 @@ int shadow_spritepack_load_lazy(ShadowSpritePack* pack, const char* filename) {
     char* indexFilename = (char*)malloc(len + 2);
     if (!indexFilename) return 0;
     
-    strcpy(indexFilename, filename);
-    strcat(indexFilename, "i");
+    memcpy(indexFilename, filename, len);
+    memcpy(indexFilename + len, "i", 2);
     
     /* Open index file */
-    FILE* indexFile = fopen(indexFilename, "rb");
+    FILE* indexFile = sprite_open_file(indexFilename, "rb");
     if (!indexFile) {
         free(indexFilename);
         return 0;
@@ -236,7 +237,7 @@ int shadow_spritepack_load_lazy(ShadowSpritePack* pack, const char* filename) {
     fclose(indexFile);
     
     /* Open pack file for lazy loading */
-    pack->pack_file = fopen(filename, "rb");
+    pack->pack_file = sprite_open_file(filename, "rb");
     if (!pack->pack_file) {
         free(pack->file_index);
         pack->file_index = NULL;
@@ -264,7 +265,7 @@ int shadow_spritepack_load_lazy(ShadowSpritePack* pack, const char* filename) {
     /* Store filename for reference */
     pack->filename = (char*)malloc(len + 1);
     if (pack->filename) {
-        strcpy(pack->filename, filename);
+        memcpy(pack->filename, filename, len + 1);
     }
     
     pack->is_lazy_load = 1;

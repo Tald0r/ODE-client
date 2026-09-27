@@ -1,5 +1,6 @@
 //#define NETMARBLE_DEBUG
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #ifdef PLATFORM_WINDOWS
 #include <Windows.h>
 #else
@@ -77,7 +78,7 @@ char* _StrTok(const char* str, const char sep)
 	}
 
 	if(tlen > 0) {
-		strncpy(token, porg, tlen);
+		Basic::CopyBounded(token, porg, tlen);
 		token[tlen] = 0;
 	}
 	else {

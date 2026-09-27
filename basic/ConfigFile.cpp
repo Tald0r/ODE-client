@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #ifdef PLATFORM_WINDOWS
 #include <io.h>
+#include <share.h>
 #else
 #include <unistd.h>
 #endif
@@ -82,7 +83,8 @@ bool CommitFile(const char* filename, const std::string& contents)
 		auto temporary = target;
 		temporary += ".tmp." + std::to_string(process) + "." + std::to_string(++sequence);
 #ifdef PLATFORM_WINDOWS
-		const int descriptor = _wopen(temporary.c_str(), _O_WRONLY | _O_BINARY | _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+		int descriptor = -1;
+		_wsopen_s(&descriptor, temporary.c_str(), _O_WRONLY | _O_BINARY | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
 #else
 		const int descriptor = open(temporary.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
 #endif

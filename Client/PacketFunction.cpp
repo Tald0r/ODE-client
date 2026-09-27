@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #ifdef PLATFORM_WINDOWS
 #include <WINDOWS.H>
 #include <nb30.h>
@@ -5781,7 +5782,7 @@ CheckMacScreenMode()
 	{
 		std::string CheckIP = (itr->second);
 		std::string MyIPAddress = GetLocalIP();
-		if(0 == stricmp(MyIPAddress.c_str(), CheckIP.c_str()))
+		if(0 == _stricmp(MyIPAddress.c_str(), CheckIP.c_str()))
 		{
 			if(IDYES == MessageBox(g_hWnd, "Connect in window mode?", "QUESTION", MB_YESNO|MB_ICONQUESTION))
 				g_bFullScreen = false;

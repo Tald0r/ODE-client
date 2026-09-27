@@ -1,5 +1,6 @@
 ﻿#include "Client_PCH.h"
 #include "DisplaySettings.h"
+#include "CrtCompat.h"
 #define __NPROTECT__
 // EXECryptor include removed (SDL2) - Copy protection no longer needed
 // APICheck (legacy WPE anti-cheat probe) removed - see code health review C28
@@ -322,8 +323,8 @@ GetFutecAddress(const char* pStr)
 
 	char str[20];
 
-	strncpy( g_FutecIP, pLeftParen+1, pSeperator-(pLeftParen+1) );
-	strncpy( str, pSeperator+1, pRightParen-(pSeperator+1) );
+	Basic::CopyBounded( g_FutecIP, pLeftParen+1, pSeperator-(pLeftParen+1) );
+	Basic::CopyBounded( str, pSeperator+1, pRightParen-(pSeperator+1) );
 	g_FutecPort = atoi(str);
 
 	return true;
@@ -353,17 +354,18 @@ ParsingRealServer(const char* pCommandLine, int Dimention, REALSERVER_INFO &info
 	
 	int argcnt = 0;
 	char* token = NULL;
+	char* context = NULL;
 	char arg2[4][32];
 	argcnt = 0;
 
-	token = strtok(szTemp, "|");
+	token = Basic::Tokenize(szTemp, "|", &context);
 	if(NULL == token)
 		return false;
 	while(token && argcnt < 4)
 	{
 		snprintf(arg2[argcnt], sizeof(arg2[argcnt]), "%s", token);
 		argcnt++;
-		token = strtok(NULL, "|");
+		token = Basic::Tokenize(NULL, "|", &context);
 	//	if(NULL == token)
 	//		return false;
 	}
@@ -432,7 +434,7 @@ DARKEDEN_LANGUAGE CheckDarkEdenLanguage()
 	// FileDef.inf names the file bare, which getProperty() leaves as
 	// spelled, so it is resolved for the disk here (basic/DataPath.h).
 	const std::string fileName = Basic::NormalizeDataPath(g_pFileDef->getProperty("FILE_LANGUAGE_INFO"));
-	FILE *f = fopen(fileName.c_str(), "r");
+	FILE *f = Basic::OpenFile(fileName.c_str(), "r");
 	if (f == NULL) goto exit;
 
 	char szLine[512];
@@ -444,7 +446,7 @@ DARKEDEN_LANGUAGE CheckDarkEdenLanguage()
 
 		if( strncmp( szLine, "LANGUAGE",8 ) == 0 )
 		{
-			sscanf(szLine+8,"%d",&num);
+			Basic::ScanString(szLine+8,"%d",&num);
 			break;
 		}
 	}
@@ -523,7 +525,7 @@ GetPersnalShopUpdateTime()
 	{
 		if( strncmp( szLine, "UPDATETIME",10 ) == 0 )
 		{
-			sscanf(szLine+10,"%d",&num);
+			Basic::ScanString(szLine+10,"%d",&num);
 			break;
 		}
 	}
@@ -657,7 +659,7 @@ ReadPatchLogFromFile()
 		strBuffer[n] = '\r';
 		strBuffer[n+1] = '\n';
 		
-		strncpy(pBuffer, strBuffer, n+2);
+		Basic::CopyBounded(pBuffer, strBuffer, n+2);
 		pBuffer += n+2;
 	}
 	*pBuffer = '\0';
@@ -4609,39 +4611,9 @@ release_objects:
 }
 BOOL GetSystem()
 {
-	OSVERSIONINFO OsInfo;
-	OsInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if (GetVersionEx(&OsInfo))
-	{
-		// platform
-		switch (OsInfo.dwPlatformId)
-		{
-		case VER_PLATFORM_WIN32_WINDOWS:
-			if(OsInfo.dwMajorVersion == 3)
-				//MessageBox(0,"操作系统:WIN95","信息",MB_OK);
-				//strcpy(sys.chSystem,"操作系统:WIN95");
-				return FALSE;
-			else if(OsInfo.dwMajorVersion == 4)
-				//MessageBox(0,"操作系统:WIN98","信息",MB_OK);
-				return FALSE;
-				//strcpy(sys.chSystem,"操作系统:WIN98");
-			break;
-		case VER_PLATFORM_WIN32_NT:
-			if(OsInfo.dwMajorVersion == 5)
-				//MessageBox(0,"操作系统:WIN2000","信息",MB_OK);
-				return TRUE;
-				//strcpy(sys.chSystem,"操作系统:WIN2000");
-			else
-				return TRUE;
-				//MessageBox(0,"操作系统:WINNT","信息",MB_OK);
-				//strcpy(sys.chSystem,"操作系统:WINNT");
-			break;
-		default:
-			return FALSE;
-			//strcpy(sys.chSystem,"未知系统!!");
-			break;
-		}
-		// version and language
-	}
-	return FALSE;
+	// It rejected the Windows 9x family (VER_PLATFORM_WIN32_WINDOWS) and a
+	// failed version query, and accepted the NT family. An x64 build only
+	// runs on the NT family, where GetVersionEx - deprecated - always
+	// succeeded, so this is the answer it always gave.
+	return TRUE;
 }

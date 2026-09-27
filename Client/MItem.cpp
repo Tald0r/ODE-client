@@ -14,6 +14,7 @@
 // executable installs at start-up (GameInit.cpp).
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "MItem.h"
 #include "MItemTable.h"
 #include "MItemOptionTable.h"
@@ -229,7 +230,7 @@ MItem::GetEName() const
 			//---------------------------------------------------------------
 			if (pszEName!=NULL && pszSoulStone!=NULL)
 			{
-				strncpy(sz_temp, pszEName, sizeof(sz_temp)-1);
+				Basic::CopyBounded(sz_temp, pszEName, sizeof(sz_temp)-1);
 				sz_temp[sizeof(sz_temp)-1] = '\0';
 
 				char *psz_temp = strstr(sz_temp, "Head");
@@ -241,7 +242,7 @@ MItem::GetEName() const
 					// Bytes between the match and the end of sz_temp.
 					size_t	nRoom = sizeof(sz_temp) - (size_t)(psz_temp - sz_temp) - 1;
 
-					strncpy(psz_temp, pszSoulStone, nRoom);
+					Basic::CopyBounded(psz_temp, pszSoulStone, nRoom);
 					psz_temp[nRoom] = '\0';
 
 					return sz_temp;

@@ -1,4 +1,5 @@
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "SystemAvailabilities.h"
 #include <algorithm>
 #include <istream>
@@ -118,7 +119,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 		// newline; a CR left by a Windows file is dropped the same way.
 		if( line.ends_with( '\r' ) )
 			line.erase( line.size()-1 );
-		strncpy( szLine, line.c_str(), sizeof(szLine)-1 );
+		Basic::CopyBounded( szLine, line.c_str(), sizeof(szLine)-1 );
 		szLine[sizeof(szLine)-1] = '\0';
 
 		// One view over the truncated copy the rest of the loop reads.
@@ -133,7 +134,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 
 		if( svLine.starts_with( '*' ) )
 		{
-			sscanf(szLine+1,"%d %d",&key,&count);		// key 는 enum(SystemKind) 값.
+			Basic::ScanString(szLine+1,"%d %d",&key,&count);		// key 는 enum(SystemKind) 값.
 			ScriptList.clear();
 			count--;
 			Kind = SCRIPT_PARSE;
@@ -142,7 +143,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 
 		if( svLine.starts_with( 'Z' ) )
 		{
-			sscanf(szLine+1,"%d",&key);					// key 는 회차
+			Basic::ScanString(szLine+1,"%d",&key);					// key 는 회차
 			ZoneList.clear();
 			Kind = ZONE_PARSE;
 			continue;
@@ -150,7 +151,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 		
 		if( svLine.starts_with( 'S' ) )
 		{
-			sscanf(szLine+1,"%d %d",&key,&count);		// key 는 무효-_-
+			Basic::ScanString(szLine+1,"%d %d",&key,&count);		// key 는 무효-_-
 			ScriptListByDegree.clear();
 			count--;
 			Kind = DEGREE_SCRIPT_PARSE;
@@ -164,7 +165,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 			case SCRIPT_PARSE :
 				{
 					FilterScript SCR;
-					sscanf(szLine,"%d %d",&SCR.scriptID,&SCR.answerID);
+					Basic::ScanString(szLine,"%d %d",&SCR.scriptID,&SCR.answerID);
 					SCR.answerID--;
 					ScriptList.push_back( SCR );
 					count--;
@@ -182,7 +183,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 			case ZONE_PARSE :
 				{
 					int FilterZoneID;
-					sscanf(szLine,"%d",&FilterZoneID);
+					Basic::ScanString(szLine,"%d",&FilterZoneID);
 					if( FilterZoneID != 99999 )
 						ZoneList.push_back( FilterZoneID );
 
@@ -199,7 +200,7 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 			case DEGREE_SCRIPT_PARSE :
 				{
 					FilterScriptByDegree SCR;
-					sscanf(szLine,"%d %d %d",&SCR.scriptID,&SCR.answerID,&SCR.zoneID);
+					Basic::ScanString(szLine,"%d %d %d",&SCR.scriptID,&SCR.answerID,&SCR.zoneID);
 					SCR.answerID--;
 					ScriptListByDegree.push_back( SCR );
 					count--;
