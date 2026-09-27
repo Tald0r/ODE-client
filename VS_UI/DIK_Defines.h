@@ -65,10 +65,15 @@
 #define DIK_NUMPAD7		0x47
 #define DIK_NUMPAD8		0x48
 #define DIK_NUMPAD9		0x49
+#undef DIK_NUMPADSLASH
 #define DIK_NUMPADSLASH		0xB5
+#undef DIK_NUMPADSTAR
 #define DIK_NUMPADSTAR		0x37
+#undef DIK_NUMPADMINUS
 #define DIK_NUMPADMINUS		0x4A
+#undef DIK_NUMPADPLUS
 #define DIK_NUMPADPLUS		0x4E
+#undef DIK_NUMPADPERIOD
 #define DIK_NUMPADPERIOD	0x53
 #define DIK_NUMPADENTER		0x9C
 
@@ -141,6 +146,7 @@
 /* Print screen / scroll lock / pause */
 #define DIK_PRINT		0xD2	/* Print Screen */
 #define DIK_SCROLL		0x46	/* Scroll Lock */
+#undef DIK_PAUSE
 #define DIK_PAUSE		0x45	/* Pause */
 
 /* Other special keys */

@@ -38,15 +38,15 @@ void AddressUnit::write( SocketOutputStream& oStream ) const
 
 	oStream.write( ElementID );
 
-	szStr = CharacterName.size();
+	szStr = static_cast<BYTE>(CharacterName.size());
 	oStream.write(szStr);
 	oStream.write(CharacterName);
 
-	szStr = CustomName.size();
+	szStr = static_cast<BYTE>(CustomName.size());
 	oStream.write(szStr);
 	oStream.write(CustomName);
 
-	szStr = Number.size();
+	szStr = static_cast<BYTE>(Number.size());
 	oStream.write(szStr);
 	oStream.write(Number);
 
@@ -101,7 +101,7 @@ void GCSMSAddressList::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 
-	BYTE Num = m_Addresses.size();
+	BYTE Num = static_cast<BYTE>(m_Addresses.size());
 	oStream.write(Num);
 
 	std::vector<AddressUnit*>::const_iterator itr = m_Addresses.begin();

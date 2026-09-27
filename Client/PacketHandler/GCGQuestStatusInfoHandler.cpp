@@ -30,7 +30,7 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 	std::list<QuestStatusInfo*>	Infos = pGCGQuestStatusInfo->getInfos();
 	std::list<QuestStatusInfo*>::iterator itr = Infos.begin(); 
 
-	int MaxSize = Infos.size();
+	int MaxSize = static_cast<int>(Infos.size());
 //#ifdef __DEBUG_OUTPUT__
 	DEBUG_ADD_FORMAT("[Receive GQuestStatusInfo] MaxSize = %d", MaxSize); 
 //#endif

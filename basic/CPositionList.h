@@ -94,7 +94,7 @@ class CPositionList {
 		//--------------------------------------------------------------
 		// Get 
 		//--------------------------------------------------------------
-		int										GetSize() const		{ return m_listPosition.size(); }
+		int										GetSize() const		{ return static_cast<int>(m_listPosition.size()); }
 		typename POSITION_LIST::const_iterator	GetIterator() const	{ return m_listPosition.begin(); }
 		typename POSITION_LIST::const_iterator	GetEnd() const		{ return m_listPosition.end(); }
 

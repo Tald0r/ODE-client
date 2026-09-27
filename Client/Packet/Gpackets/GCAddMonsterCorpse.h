@@ -38,7 +38,7 @@ public :
 	// const static GCAddMonsterCorpsePacketSize 를 정의, 리턴하라.
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szObjectID + 
+		return static_cast<PacketSize_t>(szObjectID + 
 			szMonsterType + 
 			szBYTE +
 			m_MonsterName.size() +
@@ -46,7 +46,7 @@ public :
 			szCoord + 
 			szDir + 
 			szBYTE +
-			szObjectID; 
+			szObjectID); 
 	}
 
 	#ifdef __DEBUG_OUTPUT__

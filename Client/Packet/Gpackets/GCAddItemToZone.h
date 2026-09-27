@@ -33,7 +33,7 @@ public:
 		rValue += szCoord*2;                        // item coord in inventory
 		rValue += szBYTE;                           // item class
 		rValue += szItemType;                       // item type
-		rValue += szBYTE + m_OptionType.size();     // item option type
+		rValue = static_cast<PacketSize_t>(rValue + (szBYTE + m_OptionType.size()));     // item option type
 		rValue += szSilver;                         // silver
 		rValue += szGrade;                          // grade
 		rValue += szDurability;                     // item durability
@@ -75,7 +75,7 @@ public :
 		m_OptionType.pop_front();
 		return optionType;
 	}
-	int getOptionTypeSize() const { return m_OptionType.size(); }
+	int getOptionTypeSize() const { return static_cast<int>(m_OptionType.size()); }
 	void addOptionType(OptionType_t OptionType) { m_OptionType.push_back( OptionType ); }
 	void setOptionType(const std::list<OptionType_t>& OptionTypes) { m_OptionType = OptionTypes; }
 	const std::list<OptionType_t>& getOptionType() const { return m_OptionType; }

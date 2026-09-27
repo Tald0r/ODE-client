@@ -59,8 +59,8 @@ void
 MScreenEffect::SetScreenPosition(int x, int y)
 {
 	// 좌표 보정값을 저장한다.
-	m_PixelX = x - m_ScreenBasisX;
-	m_PixelY = y - m_ScreenBasisY;
+	m_PixelX = static_cast<float>(x - m_ScreenBasisX);
+	m_PixelY = static_cast<float>(y - m_ScreenBasisY);
 }
 
 //----------------------------------------------------------------------

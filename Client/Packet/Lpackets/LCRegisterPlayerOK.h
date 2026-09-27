@@ -38,7 +38,7 @@ public :
 	// get packet body size
 	// *OPTIMIZATION HINT*
 	// const static LCRegisterPlayerOKPacketSize 를 정의, 리턴하라.
-	PacketSize_t getPacketSize () const { return szBYTE + m_GroupName.size() + szBYTE; }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szBYTE + m_GroupName.size() + szBYTE); }
 	
 	
     // get / set Groupname

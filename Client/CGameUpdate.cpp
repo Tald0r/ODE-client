@@ -2889,8 +2889,8 @@ ProcessInputRButtonDown(MObject* pObject, bool bForceAttack = false)
 
 		CGUnburrow _CGUnburrow;
 
-		_CGUnburrow.setX( g_pPlayer->GetX() );
-		_CGUnburrow.setY( g_pPlayer->GetY() );
+		_CGUnburrow.setX( static_cast<Coord_t>(g_pPlayer->GetX()) );
+		_CGUnburrow.setY( static_cast<Coord_t>(g_pPlayer->GetY()) );
 		_CGUnburrow.setDir( g_pPlayer->GetDirection() );
 
 		g_pSocket->sendPacket(&_CGUnburrow);
@@ -2950,7 +2950,7 @@ ProcessInputRButtonDown(MObject* pObject, bool bForceAttack = false)
 				//--------------------------------------------------				
 				// Zone에 특수 기술을 사용한다.
 				//--------------------------------------------------				
-				if (g_pPlayer->TraceSectorToSpecialAction( g_SelectSector.x, g_SelectSector.y ))
+				if (g_pPlayer->TraceSectorToSpecialAction( static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x), static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y) ))
 				{
 					// 선택된 Sector로 표시한다.
 					g_pTopView->SetSelectedSector( g_SelectSector );
@@ -3905,7 +3905,7 @@ CGameUpdate::ProcessInput()
 						DEBUG_ADD_FORMAT("getSec(%d, %d)", g_MouseSector.x, g_MouseSector.y);
 #endif
 						
-						const MSector& sector = g_pZone->GetSector(g_MouseSector.x, g_MouseSector.y);
+						const MSector& sector = g_pZone->GetSector(static_cast<TYPE_SECTORPOSITION>(g_MouseSector.x), static_cast<TYPE_SECTORPOSITION>(g_MouseSector.y));
 						
 						//---------------------------------------------------
 						// 갈 수 없는 곳이면
@@ -4295,7 +4295,7 @@ CGameUpdate::ProcessInput()
 								// 2004, 9, 14, sobeit add end - 총슬 130 skill 관련
 								)
 							{
-								if (g_pPlayer->SetMovePosition(g_SelectSector.x, g_SelectSector.y))
+								if (g_pPlayer->SetMovePosition(static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x), static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y)))
 								{
 									//if (g_pPlayer->IsStop())
 									{
@@ -4447,7 +4447,7 @@ CGameUpdate::ProcessInput()
 							// 다음 목표위치로 설정한다
 							g_pPlayer->TraceNULL();
 							
-							if (g_pPlayer->SetMovePosition(g_SelectSector.x, g_SelectSector.y))
+							if (g_pPlayer->SetMovePosition(static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x), static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y)))
 							{
 								g_pPlayer->SetNextActionToMove();
 							}

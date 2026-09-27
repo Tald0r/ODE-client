@@ -60,14 +60,14 @@ void GCFriendChatting::write ( SocketOutputStream & oStream ) const
 		
 	oStream.write( m_Command );
 
-	BYTE szPlayerName = m_PlayerName.size();
+	BYTE szPlayerName = static_cast<BYTE>(m_PlayerName.size());
 	if(szPlayerName>32)
 		throw InvalidProtocolException("Too Large PlayerName Lenth");
 	oStream.write(szPlayerName);
 	if(szPlayerName>0)
 		oStream.write(m_PlayerName);
 
-	WORD szMessage = m_Message.size();
+	WORD szMessage = static_cast<WORD>(m_Message.size());
 	if(szMessage>512)
 		throw InvalidProtocolException("Too Large Message Lenth");
 	oStream.write(szMessage);

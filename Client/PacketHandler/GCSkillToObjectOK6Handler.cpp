@@ -120,7 +120,7 @@ void GCSkillToObjectOK6Handler::execute ( GCSkillToObjectOK6 * pPacket , Player 
 							g_pPlayer->GetX(), g_pPlayer->GetY());
 
 		ExecuteActionInfoFromMainNode(
-					pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo(),										// 사용 기술 번호
+					static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),										// 사용 기술 번호
 				
 					pPacket->getX(), pPacket->getY(), 0, // 기술 사용하는 사람(?) 
 					direction,														// 사용 방향

@@ -107,7 +107,7 @@ class DLLIFC CImmRamp : public CImmEffect
         DWORD dwDuration = IMM_EFFECT_DONT_CHANGE,
         LONG lMagStart = IMM_EFFECT_DONT_CHANGE,
         LONG lMagEnd = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR
         );
 
     BOOL
@@ -116,7 +116,7 @@ class DLLIFC CImmRamp : public CImmEffect
         DWORD dwDuration = IMM_EFFECT_DONT_CHANGE,
         LONG lMagStart = IMM_EFFECT_DONT_CHANGE,
         LONG lMagEnd = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR
         );
 
 	BOOL ChangeStartMagnitude( LONG lMagStart );

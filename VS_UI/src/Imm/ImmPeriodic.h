@@ -123,7 +123,7 @@ class DLLIFC CImmPeriodic : public CImmEffect
         LONG lDirectionY = IMM_EFFECT_DONT_CHANGE,
         LONG  lOffset = IMM_EFFECT_DONT_CHANGE,
         DWORD dwPhase = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR
         );
 
     BOOL
@@ -134,7 +134,7 @@ class DLLIFC CImmPeriodic : public CImmEffect
         LONG lAngle = IMM_EFFECT_DONT_CHANGE,
         LONG  lOffset = IMM_EFFECT_DONT_CHANGE,
         DWORD dwPhase = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR
         );
 
 	BOOL ChangeMagnitude( DWORD dwMagnitude );

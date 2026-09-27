@@ -34,7 +34,7 @@ PackFileInfo::SaveToFile(std::ofstream& file)
 {
 	file.write((const char*)&m_ID, 4);
 	
-	BYTE len = m_Filename.size();
+	BYTE len = static_cast<BYTE>(m_Filename.size());
 	file.write((const char*)&len, 1);
 	if (len>0)
 	{

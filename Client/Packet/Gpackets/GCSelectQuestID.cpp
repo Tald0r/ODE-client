@@ -39,7 +39,7 @@ void GCSelectQuestID::write ( SocketOutputStream & oStream ) const
 
 	Assert( m_QuestIDList.size() <= maxQuestNum );
 
-	BYTE num = m_QuestIDList.size();
+	BYTE num = static_cast<BYTE>(m_QuestIDList.size());
 
 	oStream.write(num);
 
@@ -60,7 +60,7 @@ PacketSize_t GCSelectQuestID::getPacketSize() const
 
 	PacketSize_t result = 0;
 
-	result += szBYTE + szQuestID * m_QuestIDList.size();
+	result = static_cast<PacketSize_t>(result + (szBYTE + szQuestID * m_QuestIDList.size()));
 
 	return result;
 

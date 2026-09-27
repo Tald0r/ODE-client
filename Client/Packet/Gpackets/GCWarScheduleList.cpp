@@ -91,7 +91,7 @@ void GCWarScheduleList::write (SocketOutputStream & oStream) const
 	__BEGIN_TRY
 
 
-	BYTE ListNum = m_WarScheduleList.size();
+	BYTE ListNum = static_cast<BYTE>(m_WarScheduleList.size());
 		
 	oStream.write( ListNum );
 
@@ -109,13 +109,13 @@ void GCWarScheduleList::write (SocketOutputStream & oStream) const
 			for ( int i=0; i<5; ++i )
 			{
 				oStream.write( (*itr)->challengerGuildID[i] );
-				BYTE szGuildName = (*itr)->challengerGuildName[i].size();
+				BYTE szGuildName = static_cast<BYTE>((*itr)->challengerGuildName[i].size());
 				oStream.write( szGuildName );
 				oStream.write( (*itr)->challengerGuildName[i] );
 			}
 
 			oStream.write( (*itr)->reinforceGuildID );
-			BYTE szGuildName = (*itr)->reinforceGuildName.size();
+			BYTE szGuildName = static_cast<BYTE>((*itr)->reinforceGuildName.size());
 			oStream.write( szGuildName );
 			oStream.write( (*itr)->reinforceGuildName );
 		}
@@ -142,12 +142,12 @@ PacketSize_t GCWarScheduleList::getPacketSize () const
 			{
 				size += szGuildID;
 				size += szBYTE;
-				size += (*itr)->challengerGuildName[i].size();
+				size = static_cast<PacketSize_t>(size + (*itr)->challengerGuildName[i].size());
 			}
 
 			size += szGuildID;
 			size += szBYTE;
-			size += (*itr)->reinforceGuildName.size();
+			size = static_cast<PacketSize_t>(size + (*itr)->reinforceGuildName.size());
 		}
 	}
 		

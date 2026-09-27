@@ -37,7 +37,7 @@ public:
 	BYTE	getCondition() const { return m_Condition; }
 	void	setCondition(BYTE cond) { m_Condition = cond; }
 
-	WORD	getQuestID() const { return m_dwQuestID; }
+	WORD	getQuestID() const { return static_cast<WORD>(m_dwQuestID); }
 
 	WORD	getIndex() const { return m_Index; }
 	void	setIndex(WORD idx) { m_Index = idx; }

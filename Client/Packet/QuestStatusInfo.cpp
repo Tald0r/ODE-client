@@ -19,7 +19,7 @@ void QuestStatusInfo::write(SocketOutputStream& oStream) const
 {
 	oStream.write(m_QuestID);
 	oStream.write(m_Status);
-	BYTE size = m_Missions.size();
+	BYTE size = static_cast<BYTE>(m_Missions.size());
 	oStream.write(size);
 
 	std::list<MissionInfo>::const_iterator itr = m_Missions.begin();

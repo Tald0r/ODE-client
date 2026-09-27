@@ -71,14 +71,14 @@ struct MissionInfo
 		oStream.write(m_Index);
 		oStream.write(m_Status);
 
-		BYTE szSTR = m_StrArg.size();
+		BYTE szSTR = static_cast<BYTE>(m_StrArg.size());
 		oStream.write( szSTR );
 		if ( szSTR != 0 ) oStream.write( m_StrArg );
 
 		oStream.write( m_NumArg );
 	}
 
-	PacketSize_t getSize() const { return szBYTE + szWORD + szBYTE + szBYTE + m_StrArg.size() + szDWORD; }
+	PacketSize_t getSize() const { return static_cast<PacketSize_t>(szBYTE + szWORD + szBYTE + szBYTE + m_StrArg.size() + szDWORD); }
 	static PacketSize_t getMaxSize() { return szBYTE + szWORD + szBYTE + szBYTE + 255 + szDWORD; }
 };
 

@@ -70,7 +70,7 @@ public:
 	// get size of object
 	uint getSize () const noexcept
 	{
-		return szBYTE + m_Name.size() 
+		return static_cast<uint>(szBYTE + m_Name.size() 
 			+ szSlot
 			+ szAlignment
 			+ szAttr* 3
@@ -84,7 +84,7 @@ public:
 			//+ szZoneID
 			+ szDWORD                       // 슬레이어 플래그
 			+ szColor* SLAYER_COLOR_MAX  // 색깔 정보
-			+ szLevel;
+			+ szLevel);
 	}
 
 	// get max size of object

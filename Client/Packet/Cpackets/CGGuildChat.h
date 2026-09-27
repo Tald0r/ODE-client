@@ -36,10 +36,10 @@ public:
 	// get packet's body size
 	PacketSize_t getPacketSize() const
 	{
-		return szBYTE + // type 1: union chat
+		return static_cast<PacketSize_t>(szBYTE + // type 1: union chat
 				szuint +				// text color
 			   szBYTE +				// message size
-			   m_Message.size();	// chatting message
+			   m_Message.size());	// chatting message
 	}
 
 #ifdef __DEBUG_OUTPUT__

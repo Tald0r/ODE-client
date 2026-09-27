@@ -34,7 +34,7 @@ void GCPetStashVerifyHandler::execute ( GCPetStashVerify * pPacket , Player * pP
 		case GCPetStashVerify::PET_STASH_OK:
 			if(g_pTempInformation->GetMode() == TempInformation::MODE_PETITEM_MOVETO_INVENTORY)
 			{// 보관함 -> 인벤
-				MItem* pItem = g_pStorage->RemoveItem(g_pTempInformation->Value1) ;
+				MItem* pItem = g_pStorage->RemoveItem(static_cast<unsigned int>(g_pTempInformation->Value1)) ;
 				if(pItem)
 				{
 					MPetItem* pPetItem = (MPetItem*)g_pTempInformation->pValue;
@@ -58,13 +58,13 @@ void GCPetStashVerifyHandler::execute ( GCPetStashVerify * pPacket , Player * pP
 			}
 			else if(g_pTempInformation->GetMode() == TempInformation::MODE_PETITEM_MOVETO_PETSTORAGE)
 			{// 인벤 -> 보관함
-				MItem* pItem = g_pInventory->RemoveItem(g_pTempInformation->Value2, g_pTempInformation->Value3) ;
+				MItem* pItem = g_pInventory->RemoveItem(static_cast<BYTE>(g_pTempInformation->Value2), static_cast<BYTE>(g_pTempInformation->Value3)) ;
 				if(pItem)
 				{
 					MPetItem* pPetItem = (MPetItem*)g_pTempInformation->pValue;
 					if(pPetItem)
 					{
-						if(g_pStorage->SetItem(g_pTempInformation->Value1, (MItem*)g_pTempInformation->pValue))
+						if(g_pStorage->SetItem(static_cast<unsigned int>(g_pTempInformation->Value1), (MItem*)g_pTempInformation->pValue))
 						{
 							DEBUG_ADD("@Stash - Keep PetItem Storage SetItem Success");
 						}

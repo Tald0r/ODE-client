@@ -45,7 +45,7 @@ void GCPhoneSay::write ( SocketOutputStream & oStream ) const
 		
 	oStream.write( m_SlotID );
 
-	BYTE szMessage = m_Message.size();
+	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");

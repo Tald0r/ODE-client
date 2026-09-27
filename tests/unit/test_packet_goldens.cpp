@@ -1477,7 +1477,7 @@ TEST(GCSkillInfo, OustersLoginFrameIncludesSkillLevelsAndPreservesNextPacket)
     joined.insert(joined.end(), expected.begin(), expected.end());
     InFixture input;
     input.m_Stream.setEncryptCode(0);
-    SocketInputStreamTestAccess::Preload(input.m_Stream, joined.data(), joined.size());
+    SocketInputStreamTestAccess::Preload(input.m_Stream, joined.data(), static_cast<unsigned int>(joined.size()));
     for (int pass = 0; pass < 2; ++pass) {
         GCSkillInfo decoded;
         input.m_Stream.read(&decoded);

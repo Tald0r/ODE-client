@@ -242,7 +242,7 @@ MStringMap::Get(const char* pKey) const
 void				
 MStringMap::SaveToFile(std::ofstream& file)
 {
-	int num = size();
+	int num = static_cast<int>(size());
 
 	//-----------------------------------------------------
 	// size저장

@@ -43,7 +43,7 @@ void GCOtherGuildName::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE szGuildName = m_GuildName.size();
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
 
 	//if ( szGuildName == 0 )
 	//	throw InvalidProtocolException("szGuildName == 0");

@@ -25,7 +25,7 @@ public:
 
 	uint getSize () const noexcept
 	{
-		return szObjectID				// ObjectID
+		return static_cast<uint>(szObjectID				// ObjectID
 			+ szBYTE + m_Name.size() 	// 뱀파이어 이름
 			+ szLevel					// 레벨
 			+ szSex						// 성별
@@ -47,7 +47,7 @@ public:
 			+ szGuildMemberRank			// guild member rank
 			+ szBYTE					// 권한
 			+ szuint
-			+ szLevel;
+			+ szLevel);
 	}
 
 	static uint getMaxSize () noexcept

@@ -21,7 +21,7 @@ public:
     void read ( SocketInputStream & iStream );
     void write ( SocketOutputStream & oStream ) const;
 	PacketID_t getPacketID () const noexcept { return PACKET_GC_NPC_SAY_DYNAMIC; }
-	PacketSize_t getPacketSize () const { return szObjectID + szBYTE + m_Message.size(); }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szObjectID + szBYTE + m_Message.size()); }
 
 	#ifdef __DEBUG_OUTPUT__
 		std::string getPacketName () const { return "GCNPCSayDynamic"; }

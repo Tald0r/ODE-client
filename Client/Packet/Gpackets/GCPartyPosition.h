@@ -40,7 +40,7 @@ public :
 	// get packet's body size
 	// *OPTIMIZATION HINT*
 	// const static GCPartyPositionPacketSize 를 정의, 리턴하라.
-	PacketSize_t getPacketSize() const { return szBYTE + m_Name.size() + szZoneID + szZoneCoord*2+ szHP*2; }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szBYTE + m_Name.size() + szZoneID + szZoneCoord*2+ szHP*2); }
 
 #ifdef __DEBUG_OUTPUT__
 	// get packet's name

@@ -50,7 +50,7 @@ void GCGQuestInventory::write(SocketOutputStream & oStream) const
 {
 	__BEGIN_TRY
 
-	BYTE size = m_ItemList.size();
+	BYTE size = static_cast<BYTE>(m_ItemList.size());
 	oStream.write(size);
 
 	for ( int i=0; i<size; ++i )

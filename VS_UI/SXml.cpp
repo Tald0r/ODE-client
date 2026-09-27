@@ -279,7 +279,7 @@ OUT const XMLTree*
 XMLTree::GetChildByAttr( IN size_t index , IN const string& name) const
 {
 	const XMLAttribute * TempAttr;
-	int MaxChildCount = GetChildCount();
+	int MaxChildCount = static_cast<int>(GetChildCount());
 	for(int i = 0; i<MaxChildCount; i++)
 	{
 		TempAttr = m_ChildrenVector[i]->GetAttribute(name);

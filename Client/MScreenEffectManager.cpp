@@ -22,7 +22,7 @@ MScreenEffectManager::Update()
 //	POINT point;
 
 	MEffect* pEffect;
-	int count = m_listEffect.size();
+	int count = static_cast<int>(m_listEffect.size());
 
 	for (int i=0; i<count; i++)	
 	{

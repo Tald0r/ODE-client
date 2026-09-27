@@ -110,7 +110,7 @@ SKILLINFO_NODE::SaveFromFileServerSkillInfo(ofstream &file)
 	{
 		file.write((char*)&SkillPoint,		sizeof(int));
 		file.write((char*)&LevelUpPoint,		sizeof(int));
-		int szSkill= SkillTypeList.size();
+		int szSkill= static_cast<int>(SkillTypeList.size());
 		file.write((char*)&szSkill,			sizeof(int));
 		SKILLTYPE_LIST::const_iterator iSkillID = SkillTypeList.begin();
 		while (iSkillID!=SkillTypeList.end())
@@ -261,7 +261,7 @@ SKILLINFO_NODE::SaveToFile(std::ofstream& file)
 	file.write((const char*)&skillStep, 1);
 
 	// id list 저장
-	int idNum = m_listNextSkill.size();
+	int idNum = static_cast<int>(m_listNextSkill.size());
 	file.write((const char*)&idNum, 4);
 	SKILLID_LIST::const_iterator iSkillID = m_listNextSkill.begin();
 
@@ -1527,7 +1527,7 @@ MSkillDomain::SaveToFile(std::ofstream& file)
 	SKILLID_MAP::iterator	iSkill = m_mapSkillID.begin();
 
 	// size저장
-	int size = m_mapSkillID.size();
+	int size = static_cast<int>(m_mapSkillID.size());
 	file.write((const char*)&size, 4);
 
 	// 각 id저장

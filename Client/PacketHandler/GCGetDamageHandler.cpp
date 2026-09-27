@@ -29,7 +29,7 @@ void GCGetDamageHandler::execute ( GCGetDamage * pGCGetDamage , Player * pPlayer
 	if (pGCGetDamage->getObjectID()==g_pPlayer->GetID())
 	{
 		g_pPlayer->PacketSpecialActionResult( 
-					SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo(),
+					static_cast<TYPE_ACTIONINFO>(SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo()),
 					g_pPlayer->GetID(),
 					g_pPlayer->GetX(),
 					g_pPlayer->GetY()
@@ -57,7 +57,7 @@ void GCGetDamageHandler::execute ( GCGetDamage * pGCGetDamage , Player * pPlayer
 			{
 				// SKILL_ATTACK_MELEE에 대한 결과를 표현해준다.
 				pCreature->PacketSpecialActionResult( 
-								SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo(),
+								static_cast<TYPE_ACTIONINFO>(SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo()),
 								pCreature->GetID(),
 								pCreature->GetX(),
 								pCreature->GetY()

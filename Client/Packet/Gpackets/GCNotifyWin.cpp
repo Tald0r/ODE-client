@@ -31,7 +31,7 @@ void GCNotifyWin::write ( SocketOutputStream & oStream ) const
 		
 	oStream.write( m_GiftID );
 
-	BYTE szMessage = m_Name.size();
+	BYTE szMessage = static_cast<BYTE>(m_Name.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");

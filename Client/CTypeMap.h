@@ -164,7 +164,7 @@ CTypeMap<DataType>::SaveToFile(std::ofstream& file)
 	//-----------------------------------------------------
 	// 개수 저장
 	//-----------------------------------------------------
-	int infoSize = this->size();
+	int infoSize = static_cast<int>(this->size());
 	file.write((const char*)&infoSize, 4);
 
 	//-----------------------------------------------------

@@ -89,7 +89,7 @@ EFFECTSPRITETYPETABLE_INFO::SaveToFile(std::ofstream& file)
 	//----------------------------------------------------------
 	// Pair FrameID List
 	//----------------------------------------------------------
-	BYTE numPair = PairFrameIDList.size();
+	BYTE numPair = static_cast<BYTE>(PairFrameIDList.size());
 	file.write((const char*)&numPair, 1);
 
 	FRAMEID_LIST::const_iterator iFrame = PairFrameIDList.begin();

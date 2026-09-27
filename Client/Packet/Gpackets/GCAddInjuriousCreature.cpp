@@ -31,7 +31,7 @@ void GCAddInjuriousCreature::write (SocketOutputStream & oStream) const
 	__BEGIN_TRY
 		
 	// 이름 쓰기
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if (szName == 0)
 		throw InvalidProtocolException("szName == 0");

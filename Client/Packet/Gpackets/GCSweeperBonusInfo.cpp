@@ -57,7 +57,7 @@ void GCSweeperBonusInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE ListNum = m_SweeperBonusInfoList.size();
+	BYTE ListNum = static_cast<BYTE>(m_SweeperBonusInfoList.size());
 	oStream.write( ListNum );
 
 	SweeperBonusInfoListConstItor itr = m_SweeperBonusInfoList.begin();

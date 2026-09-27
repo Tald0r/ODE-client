@@ -53,7 +53,7 @@ class COrderedList {
 		//--------------------------------------------------------------
 		// Get 
 		//--------------------------------------------------------------
-		int								GetSize() const		{ return m_List.size(); }
+		int								GetSize() const		{ return static_cast<int>(m_List.size()); }
 		typename DATA_LIST::const_iterator	GetIterator() const	{ return m_List.begin(); }
 		typename DATA_LIST::const_iterator	GetEnd() const		{ return m_List.end(); }
 

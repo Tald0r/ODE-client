@@ -2454,11 +2454,11 @@ C_VS_UI_CHAR_MANAGER::C_VS_UI_CHAR_MANAGER()
 	AttrKeyboardControl(true);
 
 	// Debug: print class sizes
-	printf("DEBUG: sizeof(C_VS_UI_NEWCHAR)=%lu, sizeof(Window)=%lu, sizeof(Exec)=%lu, sizeof(ButtonVisual)=%lu\n",
+	printf("DEBUG: sizeof(C_VS_UI_NEWCHAR)=%zu, sizeof(Window)=%zu, sizeof(Exec)=%zu, sizeof(ButtonVisual)=%zu\n",
 	       sizeof(C_VS_UI_NEWCHAR), sizeof(Window), sizeof(Exec), sizeof(ButtonVisual));
 
 	m_pC_newchar = new C_VS_UI_NEWCHAR;
-	printf("DEBUG: Allocated C_VS_UI_NEWCHAR at %p, expecting size %lu bytes\n",
+	printf("DEBUG: Allocated C_VS_UI_NEWCHAR at %p, expecting size %zu bytes\n",
 	       m_pC_newchar, sizeof(C_VS_UI_NEWCHAR));
 //	m_pC_char_info = NULL;
 	m_pC_char_delete = NULL;
@@ -3443,7 +3443,7 @@ bool C_VS_UI_SERVER_SELECT::MouseControl(UINT message, int _x, int _y)
 				if(m_server_name.size() > 12)
 				{
 					m_bl_scrolling = true;
-					m_scroll = (m_server_name.size()-12)*(min(SCROLL_HEIGHT, max(0, (_y - SCROLL_Y))) + SCROLL_HEIGHT/(m_server_name.size()-12)/2)/SCROLL_HEIGHT;
+					m_scroll = static_cast<unsigned int>((m_server_name.size()-12)*(min(SCROLL_HEIGHT, max(0, (_y - SCROLL_Y))) + SCROLL_HEIGHT/(m_server_name.size()-12)/2)/SCROLL_HEIGHT);
 				}
 			}
 			break;
@@ -3463,7 +3463,7 @@ bool C_VS_UI_SERVER_SELECT::MouseControl(UINT message, int _x, int _y)
 				if(m_server_name.size() > 12)
 				{
 					m_bl_scrolling = true;
-					m_scroll = (m_server_name.size()-12)*(_y - SCROLL_Y + SCROLL_HEIGHT/(m_server_name.size()-12)/2)/SCROLL_HEIGHT;
+					m_scroll = static_cast<unsigned int>((m_server_name.size()-12)*(_y - SCROLL_Y + SCROLL_HEIGHT/(m_server_name.size()-12)/2)/SCROLL_HEIGHT);
 				}
 			break;
 
@@ -3616,7 +3616,7 @@ void C_VS_UI_SERVER_SELECT::Show()
 			if(m_bl_scrolling)
 				m_image_spk.BltLocked(SCROLL_X, min(max(gpC_mouse_pointer->GetY(), SCROLL_Y+m_image_spk.GetHeight(SCROLL_TAG)/2), SCROLL_Y+SCROLL_HEIGHT+m_image_spk.GetHeight(SCROLL_TAG)/2)-m_image_spk.GetHeight(SCROLL_TAG)/2, SCROLL_TAG_HILIGHTED);
 			else
-				m_image_spk.BltLocked(SCROLL_X, SCROLL_Y+m_scroll*SCROLL_HEIGHT/(m_server_name.size()-12), SCROLL_TAG);
+				m_image_spk.BltLocked(SCROLL_X, static_cast<int>(SCROLL_Y+m_scroll*SCROLL_HEIGHT/(m_server_name.size()-12)), SCROLL_TAG);
 		}
 		
 		if(static_cast<unsigned int>(m_server_select) >= m_scroll && static_cast<unsigned int>(m_server_select) < m_scroll+12)

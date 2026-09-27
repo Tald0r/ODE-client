@@ -50,8 +50,8 @@ void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPla
 		if (pInfo!=NULL)
 		{
 			pInfo->zoneID = pPacket->getZoneID();
-			pInfo->zoneX = pPacket->getX();
-			pInfo->zoneY = pPacket->getY();
+			pInfo->zoneX = static_cast<BYTE>(pPacket->getX());
+			pInfo->zoneY = static_cast<BYTE>(pPacket->getY());
 			pInfo->HP	= pPacket->getHP();
 			pInfo->MaxHP= pPacket->getMaxHP();
 

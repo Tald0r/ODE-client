@@ -79,14 +79,14 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		cx = sx - tx;
 		cy = sy - ty;		
 
-		int currentPixel = sqrt(cx*cx + cy*cy);
+		int currentPixel = static_cast<int>(sqrt(cx*cx + cy*cy));
 
 		if (currentPixel==0)
 		{
 		}
 		else
 		{
-			movePixel = (float)movePixel * (1.0f - fabs((float)cy / (float)(2.0f*currentPixel)));
+			movePixel = static_cast<int>((float)movePixel * (1.0f - fabs((float)cy / (float)(2.0f*currentPixel))));
 		
 			/*
 			if (pTarget!=NULL && pTarget->GetCurrentPhase()==1)

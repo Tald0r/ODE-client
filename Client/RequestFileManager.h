@@ -101,7 +101,7 @@ class RequestSendInfo
 
 		const std::string&	GetRequestUser() const	{ return m_RequestUser; }
 
-		DWORD				GetSize() const		{ return m_FileInfos.size(); }
+		DWORD				GetSize() const		{ return static_cast<DWORD>(m_FileInfos.size()); }
 		SendFileInfo*		GetFront()			{ return (m_FileInfos.empty()? NULL : m_FileInfos.front()); }
 		void				DeleteFront()		{ if (!m_FileInfos.empty()) { delete m_FileInfos.front(); m_FileInfos.pop_front(); } }		
 		bool				IsEnd()	const		{ return m_FileInfos.empty(); }

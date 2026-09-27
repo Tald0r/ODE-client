@@ -220,7 +220,7 @@ KeyAccelerator::GetKey(BYTE accel) const
 void				
 KeyAccelerator::SaveToFile(FILE *file)
 {
-	int num = m_Accelerators.capacity();
+	int num = static_cast<int>(m_Accelerators.capacity());
 
 	fwrite((const void*)&num, 1, 4, file);
 
@@ -250,7 +250,7 @@ KeyAccelerator::LoadFromFile(FILE *file)
 	for (int accel=1; accel<num; accel++)
 	{
 		int sz;
-		sz = fread((void*)&key, 1, 2, file);
+		sz = static_cast<int>(fread((void*)&key, 1, 2, file));
 		if (sz == 2) {
 			SetAcceleratorKey(accel, key);
 		}

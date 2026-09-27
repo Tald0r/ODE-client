@@ -13,7 +13,7 @@ inline void _MinTraceA(LPCSTR p)
     if (hWnd)
     {
         cd.dwData = 0;
-        cd.cbData = (strlen(p)+1)*sizeof(char);
+        cd.cbData = static_cast<DWORD>((strlen(p)+1)*sizeof(char));
         cd.lpData = (void *)p;
         ::SendMessage (hWnd, WM_COPYDATA, 0, (LPARAM)&cd);
     }

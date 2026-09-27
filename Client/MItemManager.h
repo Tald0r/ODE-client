@@ -51,7 +51,7 @@ class MItemManager {
 		//------------------------------------------------------
 		// Iterator
 		//------------------------------------------------------
-		int				GetItemNum()		{ return m_mapItem.size(); }
+		int				GetItemNum()		{ return static_cast<int>(m_mapItem.size()); }
 		void			SetBegin()			{ m_iterator = m_mapItem.begin(); }
 		MItem*			Get()				{ return (*m_iterator).second; }
 		void			Next()				{ m_iterator++; }		

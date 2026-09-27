@@ -166,7 +166,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 			pEffect->SetFrameID( frameID, maxFrame );
 
-			pEffect->SetPosition(sX+ pt[i].x, sY+pt[i].y );
+			pEffect->SetPosition(static_cast<TYPE_SECTORPOSITION>(sX+ pt[i].x), static_cast<TYPE_SECTORPOSITION>(sY+pt[i].y) );
 			pEffect->SetZ( egInfo.z0 );
 
 			pEffect->SetStepPixel( egInfo.step );

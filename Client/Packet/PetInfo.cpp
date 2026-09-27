@@ -78,7 +78,7 @@ void PetInfo::write(SocketOutputStream& oStream) const
 
 	oStream.write( m_IsSummonInfo );
 
-	BYTE szSTR = m_Nickname.size();
+	BYTE szSTR = static_cast<BYTE>(m_Nickname.size());
 	oStream.write( szSTR );
 	if ( szSTR != 0 ) oStream.write( m_Nickname );
 

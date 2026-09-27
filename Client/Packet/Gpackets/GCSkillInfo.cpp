@@ -97,7 +97,7 @@ void GCSkillInfo::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	oStream.write( m_PCType );
 
-	BYTE szSkill = m_pPCSkillInfoList.size();
+	BYTE szSkill = static_cast<BYTE>(m_pPCSkillInfoList.size());
 	oStream.write( szSkill );
 
 	for (std::list<PCSkillInfo*>::const_iterator itr = m_pPCSkillInfoList.begin(); itr != m_pPCSkillInfoList.end(); itr++) {

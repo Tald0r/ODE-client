@@ -45,11 +45,11 @@ void GuildWarInfo::write ( SocketOutputStream & oStream ) const
 	WarInfo::write( oStream );
 	oStream.write( m_CastleID );
 
-	BYTE szName = m_AttackGuildName.size();
+	BYTE szName = static_cast<BYTE>(m_AttackGuildName.size());
 	oStream.write( szName );
 	if ( szName > 0 ) oStream.write( m_AttackGuildName );
 	
-	szName = m_DefenseGuildName.size();
+	szName = static_cast<BYTE>(m_DefenseGuildName.size());
 	oStream.write( szName );
 	if ( szName > 0 ) oStream.write( m_DefenseGuildName );
 

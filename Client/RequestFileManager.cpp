@@ -106,7 +106,7 @@ SendFileInfo::StartSend()
 	{
 		m_FileStream.seekg( 0, std::ios::end );
 
-		m_FileSizeLeft = m_FileStream.tellg();	// filesize를 알아오기 위해서
+		m_FileSizeLeft = static_cast<DWORD>(m_FileStream.tellg());	// to find out the file size
 
 		m_FileStream.seekg( 0, std::ios::beg );
 	}
@@ -124,7 +124,7 @@ SendFileInfo::Send(char* pBuffer)
 {
 	m_FileStream.read(pBuffer, MAX_BUFFER);
 
-	DWORD nRead = m_FileStream.gcount();
+	DWORD nRead = static_cast<DWORD>(m_FileStream.gcount());
 
 	m_FileSizeLeft -= nRead;
 

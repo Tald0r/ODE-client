@@ -230,20 +230,20 @@ ProfileManager::InitProfiles()
 			// The profile will load but without character portrait image
 			lpSurface = new WORD[smallSize.x * smallSize.y];
 			memset(lpSurface, 0, smallSize.x * smallSize.y * 2);
-			pitch = smallSize.x * 2;
-			SPK[0].SetPixelNoColorkey(lpSurface, pitch, smallSize.x, smallSize.y);
+			pitch = static_cast<unsigned short>(smallSize.x * 2);
+			SPK[0].SetPixelNoColorkey(lpSurface, pitch, static_cast<WORD>(smallSize.x), static_cast<WORD>(smallSize.y));
 			delete[] lpSurface;
 
 			lpSurface = new WORD[bigSize.x * bigSize.y];
 			memset(lpSurface, 0, bigSize.x * bigSize.y * 2);
-			pitch = bigSize.x * 2;
-			SPK[1].SetPixelNoColorkey(lpSurface, pitch, bigSize.x, bigSize.y);
+			pitch = static_cast<unsigned short>(bigSize.x * 2);
+			SPK[1].SetPixelNoColorkey(lpSurface, pitch, static_cast<WORD>(bigSize.x), static_cast<WORD>(bigSize.y));
 			delete[] lpSurface;
 
 			// filename.spk. The directory was joined with a backslash above;
 			// off Windows it is folded to '/' here, or the pack would be a file
 			// named "UserSet\<name>.spk" beside the directory instead of in it.
-			int lenBmpFilename = strlen(bmpFilename);
+			int lenBmpFilename = static_cast<int>(strlen(bmpFilename));
 			snprintf(spkFilename, sizeof(spkFilename), "%.*sspk", lenBmpFilename-3, bmpFilename);
 			const std::string sSpkFilename = Basic::NormalizeDataPath(spkFilename);
 

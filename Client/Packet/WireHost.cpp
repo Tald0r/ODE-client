@@ -237,7 +237,7 @@ SendBugReportV(const char* prefix, const char* bug, const SafeFormat::Arg* args,
 	DEBUG_ADD_FORMAT("[BUG_REPORT] %s",Buffer);
 #endif
 
-	int len = strlen(Buffer);
+	int len = static_cast<int>(strlen(Buffer));
 
 	// The rule is on the caller's text, prefix or none.
 	if( len - at <= 1 )

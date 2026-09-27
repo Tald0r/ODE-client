@@ -60,7 +60,7 @@ void WorldInfo::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( m_ID );
 	oStream.write( szName );
@@ -77,7 +77,7 @@ PacketSize_t WorldInfo::getSize()
 {
 	__BEGIN_TRY
 
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	PacketSize_t PacketSize = szWorldID + szBYTE + szName + szBYTE;
 

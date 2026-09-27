@@ -60,7 +60,7 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 
 			// 바로 결과 표현
 			pTargetCreature->PacketSpecialActionResult( 
-										skillID + (*g_pActionInfoTable).GetMinResultActionInfo(), 
+										static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()), 
 										pTargetCreature->GetID(),
 										pTargetCreature->GetX(),
 										pTargetCreature->GetY()

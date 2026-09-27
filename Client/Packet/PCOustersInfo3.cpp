@@ -86,7 +86,7 @@ void PCOustersInfo3::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_ObjectID );
 
 	// write vampire name
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");

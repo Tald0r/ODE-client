@@ -36,7 +36,7 @@ public :
 
 	// get size of object
 	uint getSize () noexcept
-	{ return szServerID + szBYTE + m_ServerName.size() + szBYTE; }
+	{ return static_cast<uint>(szServerID + szBYTE + m_ServerName.size() + szBYTE); }
 
 	// get max size of object
 	static uint getMaxSize () noexcept

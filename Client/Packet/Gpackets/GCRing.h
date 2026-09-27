@@ -49,7 +49,7 @@ public :
 	
 	// get packet's body size
 	// 최적화시, 미리 계산된 정수를 사용한다.
-	PacketSize_t getPacketSize () const { return szPhoneNumber + szSlotID + szBYTE + m_Name.size(); }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szPhoneNumber + szSlotID + szBYTE + m_Name.size()); }
 
 	#ifdef __DEBUG_OUTPUT__	
 		// get packet's name

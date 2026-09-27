@@ -1281,7 +1281,7 @@ CShadowSprite::BltDarknessClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE D
 						//memcpy(pDestTemp, pPixels, (pRect->right - index)<<1);
 						// 0번(검정색, 5:5:5나 5:6:5나 똑같다)색으로 출력
 						//memset((void*)pDestTemp, 0, (pRect->right - index)<<1);
-						memcpyShadowDarkness(pDestTemp, pRect->right - index);
+						memcpyShadowDarkness(pDestTemp, static_cast<WORD>(pRect->right - index));
 
 						break;
 					}
@@ -1388,7 +1388,7 @@ CShadowSprite::BltDarknessClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE D
 							else
 							{
 								//memset((void*)pDestTemp, 0, (pRect->right - index)<<1);
-								memcpyShadowDarkness(pDestTemp, pRect->right - index);
+								memcpyShadowDarkness(pDestTemp, static_cast<WORD>(pRect->right - index));
 							}
 
 							j = count;
@@ -1420,7 +1420,7 @@ CShadowSprite::BltDarknessClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE D
 						// 오른쪽 끝을 넘어가는 경우..
 						if (index+colorCount > pRect->right)
 						{
-							memcpyShadowDarkness(pDestTemp, pRect->right - pRect->left);
+							memcpyShadowDarkness(pDestTemp, static_cast<WORD>(pRect->right - pRect->left));
 
 							j = count;						
 							break;
@@ -1486,7 +1486,7 @@ CShadowSprite::BltDarknessClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE D
 							//memcpy(pDestTemp, pPixels, (pRect->right - index)<<1);
 							// 0번(검정색, 5:5:5나 5:6:5나 똑같다)색으로 출력
 							//memset((void*)pDestTemp, 0, (pRect->right - index)<<1);
-							memcpyShadowDarkness(pDestTemp, pRect->right-index);
+							memcpyShadowDarkness(pDestTemp, static_cast<WORD>(pRect->right-index));
 
 							break;
 						}
@@ -1900,7 +1900,7 @@ CShadowSprite::Blt4444ClipRight(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel
 					//memcpy(pDestTemp, pPixels, (pRect->right - index)<<1);
 					// 0번(검정색, 5:5:5나 5:6:5나 똑같다)색으로 출력
 					//memset((void*)pDestTemp, 0, (pRect->right - index)<<1);
-					memcpyShadow4444(pDestTemp, pRect->right - index);
+					memcpyShadow4444(pDestTemp, static_cast<WORD>(pRect->right - index));
 
 					break;
 				}
@@ -2003,7 +2003,7 @@ CShadowSprite::Blt4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel
 						else
 						{
 							//memset((void*)pDestTemp, 0, (pRect->right - index)<<1);
-							memcpyShadow4444(pDestTemp, pRect->right - index);
+							memcpyShadow4444(pDestTemp, static_cast<WORD>(pRect->right - index));
 						}
 
 						j = count;
@@ -2035,7 +2035,7 @@ CShadowSprite::Blt4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel
 					// 오른쪽 끝을 넘어가는 경우..
 					if (index+colorCount > pRect->right)
 					{
-						memcpyShadow4444(pDestTemp, pRect->right - pRect->left);
+						memcpyShadow4444(pDestTemp, static_cast<WORD>(pRect->right - pRect->left));
 
 						j = count;						
 						break;
@@ -2099,7 +2099,7 @@ CShadowSprite::Blt4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel
 					//memcpy(pDestTemp, pPixels, (pRect->right - index)<<1);
 					// 0번(검정색, 5:5:5나 5:6:5나 똑같다)색으로 출력
 					//memset((void*)pDestTemp, 0, (pRect->right - index)<<1);
-					memcpyShadow4444(pDestTemp, pRect->right-index);
+					memcpyShadow4444(pDestTemp, static_cast<WORD>(pRect->right-index));
 
 					break;
 				}
@@ -3210,7 +3210,7 @@ CShadowSprite::BltSmall4444ClipRight(WORD* pDest, WORD pitch, RECT* pRect, WORD 
 						// 투명이 아닌 색들을 Surface에 출력한다.
 						//memcpy(pDestTemp, pPixels, (pRect->right - index)<<1);
 						// 0번(검정색, 5:5:5나 5:6:5나 똑같다)색으로 출력
-						memcpyShadow4444(pDestTemp, (pRect->right - index));
+						memcpyShadow4444(pDestTemp, static_cast<WORD>(pRect->right - index));
 
 						break;
 					}
@@ -3319,7 +3319,7 @@ CShadowSprite::BltSmall4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD 
 							}
 							else
 							{
-								memcpyShadow4444(pDestTemp, (pRect->right - index)>>shift);
+								memcpyShadow4444(pDestTemp, static_cast<WORD>((pRect->right - index)>>shift));
 							}
 
 							j = count;
@@ -3350,7 +3350,7 @@ CShadowSprite::BltSmall4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD 
 						// 오른쪽 끝을 넘어가는 경우..
 						if (index+colorCount > pRect->right)
 						{						
-							memcpyShadow4444(pDestTemp, (pRect->right - pRect->left)>>shift);
+							memcpyShadow4444(pDestTemp, static_cast<WORD>((pRect->right - pRect->left)>>shift));
 
 							j = count;						
 							break;
@@ -3418,7 +3418,7 @@ CShadowSprite::BltSmall4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD 
 							// 투명이 아닌 색들을 Surface에 출력한다.
 							//memcpy(pDestTemp, pPixels, (pRect->right - index)<<1);
 							// 0번(검정색, 5:5:5나 5:6:5나 똑같다)색으로 출력
-							memcpyShadow4444(pDestTemp, (pRect->right - index)>>shift);
+							memcpyShadow4444(pDestTemp, static_cast<WORD>((pRect->right - index)>>shift));
 
 							break;
 						}

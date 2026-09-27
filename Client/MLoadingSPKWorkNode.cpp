@@ -322,7 +322,7 @@ MLoadingSPKWorkNode4::Execute(MWorkNode*& pRemainNode)
 			MLoadingSPKWorkNode4* pNode = new MLoadingSPKWorkNode4( 
 													i,					// first SpriteID
 													m_LastSpriteID,		// last SpriteID
-													spkFile.tellg()		// file position
+													static_cast<long>(spkFile.tellg())		// file position
 												);
 			pNode->SetSPK( m_pSPK, m_SPKFilename.c_str() );
 			pNode->SetType( m_Type );

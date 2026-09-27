@@ -36,7 +36,7 @@ NPC_INFO::SaveToFile(std::ofstream& file)
 	//--------------------------------------------------
 	Name.SaveToFile(file);
 
-	int size = ListShopTemplateID.size();
+	int size = static_cast<int>(ListShopTemplateID.size());
 	
 	file.write((const char*)&size, 4);
 
@@ -131,7 +131,7 @@ SERVERNPC_INFO::SaveToFile(std::ofstream& file)
 	//--------------------------------------------------
 	Name.SaveToFile(file);
 
-	int size = ListShopTemplateID.size();
+	int size = static_cast<int>(ListShopTemplateID.size());
 	
 	file.write((const char*)&size, 4);
 
@@ -305,7 +305,7 @@ MServerNPCTable::~MServerNPCTable()
 int	MServerNPCTable::AffectToNPCTable(MNPCTable * npc)
 {
 	// 크기가 같아야 한다.
-	int ServerSize = size();
+	int ServerSize = static_cast<int>(size());
 
 	TYPE_MAP::iterator iData = begin();
 	

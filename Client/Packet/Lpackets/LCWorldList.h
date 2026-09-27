@@ -59,7 +59,7 @@ public:
 	WorldID_t getCurrentWorldID() const noexcept { return m_CurrentWorldID; }
 	void setCurrentWorldID( WorldID_t WorldID ) noexcept { m_CurrentWorldID = WorldID; }
 
-    BYTE getListNum() const { return m_WorldInfoList.size(); }
+    BYTE getListNum() const { return static_cast<BYTE>(m_WorldInfoList.size()); }
 
 	// add / delete / clear S List
 	void addListElement(WorldInfo* pWorldInfo) { m_WorldInfoList.push_back(pWorldInfo); }

@@ -46,7 +46,7 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_CG_SAY; }
 	
 	// get packet's body size
-	PacketSize_t getPacketSize() const { return szuint + szBYTE + m_Message.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szuint + szBYTE + m_Message.size()); }
 
 #ifdef __DEBUG_OUTPUT__
 	// get packet name

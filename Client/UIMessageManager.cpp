@@ -1157,7 +1157,7 @@ UIMessageManager::Execute_UI_NEW_CHARACTER(intptr_t left, intptr_t right, void* 
 	//---------------------------------------------
 	// 이름 길이 체크
 	//---------------------------------------------
-	int len = strlen(pChar->sz_name);	
+	int len = static_cast<int>(strlen(pChar->sz_name));	
 	
 	if (static_cast<uint>(len)<PlayerInfo::minIDLength || static_cast<uint>(len)>PlayerInfo::maxIDLength)
 	{
@@ -1288,8 +1288,8 @@ RegisterNewUser(LOGIN* pLogin)
 	}
 	else
 	{
-		const int idLength = strlen(pLogin->sz_id);
-		const int passwordLength = strlen(pLogin->sz_password);
+		const int idLength = static_cast<int>(strlen(pLogin->sz_id));
+		const int passwordLength = static_cast<int>(strlen(pLogin->sz_password));
 		char strTemp[128];
 
 		DEBUG_ADD_FORMAT("[RegisterNewUser] id='%s' idLength=%d passwordLength=%d", pLogin->sz_id, idLength, passwordLength);
@@ -1562,7 +1562,7 @@ UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void*
 	//--------------------------------------------------
 	if (IsValidID(pName, NULL))
 	{
-		int len = strlen(pName);	
+		int len = static_cast<int>(strlen(pName));	
 		
 		if (static_cast<uint>(len)<PlayerInfo::minIDLength || static_cast<uint>(len)>PlayerInfo::maxIDLength)
 		{
@@ -2074,7 +2074,7 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 	// 바로 보낸다.
 	UpdateSocketOutput();
 
-	SaveLastSelectedCharacter( left );
+	SaveLastSelectedCharacter( static_cast<int>(left) );
 
 	DEBUG_ADD("set mode MODE_WAIT_RECONNECT");
 	SetMode(MODE_WAIT_RECONNECT);
@@ -2170,7 +2170,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 				TruncateUtf8ToBytes( strPartySay, CHAT_MESSAGE_MAX_BYTES );
 
 				CGPartySay _CGPartySay;
-				_CGPartySay.setColor(right);
+				_CGPartySay.setColor(static_cast<uint>(right));
 				_CGPartySay.setMessage(strPartySay);
 				g_pSocket->sendPacket( &_CGPartySay );
 
@@ -2195,7 +2195,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 			TruncateUtf8ToBytes( strGuildChat, CHAT_MESSAGE_MAX_BYTES );
 
 			_CGGuildChat.setMessage( strGuildChat );
-			_CGGuildChat.setColor( right );
+			_CGGuildChat.setColor( static_cast<uint>(right) );
 			
 			g_pSocket->sendPacket( &_CGGuildChat );
 		}
@@ -2280,7 +2280,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 							SafeFormat::Copy(temp, str );//+1);
 							//sprintf(temp, "[%s] %s", g_pUserInformation->CharacterID.GetString(), str+1);
 							//UI_AddChatToHistory( temp );
-							UI_AddChatToHistory( temp, g_pUserInformation->CharacterID.GetString(), CLD_ZONECHAT, right );
+							UI_AddChatToHistory( temp, g_pUserInformation->CharacterID.GetString(), CLD_ZONECHAT, static_cast<DWORD>(right) );
 							return;
 						}
 					}
@@ -2359,7 +2359,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 									//char temp[128];
 									//sprintf(temp, "[%s] .....", g_pUserInformation->CharacterID.GetString());
 									//UI_AddChatToHistory( temp );								
-									UI_AddChatToHistory( ".....", g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, right );
+									UI_AddChatToHistory( ".....", g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, static_cast<DWORD>(right) );
 								}
 								//---------------------------------------------------------
 								// global say
@@ -2373,19 +2373,19 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 									{
 										CGGlobalChat _CGGlobalChat;
 										_CGGlobalChat.setMessage( str );//+ 1 );	//pWansungString+1 );
-										_CGGlobalChat.setColor( right );
+										_CGGlobalChat.setColor( static_cast<uint>(right) );
 										g_pSocket->sendPacket( &_CGGlobalChat );
 
 										
 										// Player의 Chat pWansungStringing에 추가
-										g_pPlayer->SetChatString( str, right );//+1 );
+										g_pPlayer->SetChatString( str, static_cast<COLORREF>(right) );//+1 );
 
 										// history에 추가
 										char temp[CHAT_MESSAGE_MAX_BYTES + 1];
 										SafeFormat::Copy(temp, str );//+1);
 										//sprintf(temp, "[%s] %s", g_pUserInformation->CharacterID.GetString(), str+1);
 										//UI_AddChatToHistory( temp );
-										UI_AddChatToHistory( temp, g_pUserInformation->CharacterID.GetString(), CLD_ZONECHAT, right );
+										UI_AddChatToHistory( temp, g_pUserInformation->CharacterID.GetString(), CLD_ZONECHAT, static_cast<DWORD>(right) );
 
 										// [도움말] 외치기 할 때
 //										__BEGIN_HELP_EVENT
@@ -2436,7 +2436,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 								
 								if (pName!=NULL && pMessage!=NULL)
 								{									
-									int nameLen = strlen(pName);
+									int nameLen = static_cast<int>(strlen(pName));
 									
 									//------------------------------------------------------
 									// ID길이가 잘못된 경우										
@@ -2448,7 +2448,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 													PlayerInfo::minIDLength,
 													PlayerInfo::maxIDLength);
 
-										UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+										UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 									}
 									//------------------------------------------------------
 									// 정상적인 귓속말...일까?
@@ -2458,7 +2458,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 										if (g_pUserInformation->CharacterID==pName)
 										{
 											// 자신에게 귓속말하는 경우
-											UI_AddChatToHistory( (*g_pGameStringTable)[STRING_MESSAGE_WHISPER_SELF].GetString(), NULL, CLD_INFO, right );
+											UI_AddChatToHistory( (*g_pGameStringTable)[STRING_MESSAGE_WHISPER_SELF].GetString(), NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
 										else
 										{
@@ -2475,7 +2475,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											CGWhisper _CGWhisper;
 											_CGWhisper.setName( pName );
 											_CGWhisper.setMessage( pMessage );
-											_CGWhisper.setColor( right );
+											_CGWhisper.setColor( static_cast<uint>(right) );
 
 											g_pSocket->sendPacket( &_CGWhisper );
 
@@ -2487,7 +2487,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											SafeFormat::Copy(strMessage, pMessage);
 											// "[내가] 누구에게> 뭐라고"라는 식으로 표현된다.
 											SafeFormat::Format(strName, "[%s] %s", g_pUserInformation->CharacterID.GetString(), pName);
-											UI_AddChatToHistory( strMessage, strName, CLD_WHISPER, right );
+											UI_AddChatToHistory( strMessage, strName, CLD_WHISPER, static_cast<DWORD>(right) );
 
 											// [도움말] 귓속말 할 때
 //											__BEGIN_HELP_EVENT
@@ -2551,7 +2551,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 										char strTemp[128];
 										SafeFormat::Format(strTemp, GetGameString(STRING_MESSAGE_CHAT_IGNORE_ALL), pData);
-										UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+										UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 
 										// [도움말] 대화거부
 //										__BEGIN_HELP_EVENT
@@ -2563,7 +2563,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 									//-------------------------------------------------------
 									else
 									{
-										int nameLen = strlen( pData );
+										int nameLen = static_cast<int>(strlen( pData ));
 
 										//------------------------------------------------------
 										// ID길이가 잘못된 경우										
@@ -2575,7 +2575,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 													PlayerInfo::minIDLength,
 													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
 
-											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
 										//------------------------------------------------------
 										// 정상
@@ -2593,7 +2593,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 											char strTemp[128];
 											SafeFormat::Format(strTemp, GetGameString(STRING_MESSAGE_CHAT_IGNORE), pData);
-											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 
 											// [도움말] 대화거부 한 명
 //											__BEGIN_HELP_EVENT
@@ -2618,14 +2618,14 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 										char strTemp[128];
 										SafeFormat::Format(strTemp, GetGameString(STRING_MESSAGE_CHAT_ACCEPT_ALL), pData);
-										UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+										UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 									}
 									//-------------------------------------------------------
 									// 한 사람의 대화를 허용한다.
 									//-------------------------------------------------------
 									else
 									{
-										int nameLen = strlen( pData );
+										int nameLen = static_cast<int>(strlen( pData ));
 
 										//------------------------------------------------------
 										// ID길이가 잘못된 경우										
@@ -2637,7 +2637,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 													PlayerInfo::minIDLength,
 													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
 
-											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
 										//------------------------------------------------------
 										// 정상
@@ -2655,7 +2655,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 											char strTemp[128];
 											SafeFormat::Format(strTemp, GetGameString(STRING_MESSAGE_CHAT_ACCEPT), pData);
-											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
 									}
 								}
@@ -2669,7 +2669,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 									char strTemp[128];
 									SafeFormat::Format(strTemp, GetGameString(STRING_MESSAGE_CHAT_ACCEPT_CURSE), pData);
-									UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+									UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 								}
 								//-------------------------------------------------------
 								// 바른말만 보기
@@ -2681,7 +2681,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 									char strTemp[128];
 									SafeFormat::Format(strTemp, GetGameString(STRING_MESSAGE_CHAT_FILTER_CURSE), pData);
-									UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
+									UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 								}
 
 								#if defined(OUTPUT_DEBUG) //&& defined(_DEBUG)
@@ -2923,7 +2923,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 							{
 								CGSay _CGSay;
 								_CGSay.setMessage( pMessage );	//pWansungString );
-								_CGSay.setColor( right );
+								_CGSay.setColor( static_cast<uint>(right) );
 								g_pSocket->sendPacket( &_CGSay );
 								
 //								UI_AddChatToHistory( pMessage, g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, right );
@@ -2952,24 +2952,24 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 								//char temp[128];
 								//sprintf(temp, "[%s] .....", g_pUserInformation->CharacterID.GetString());
 								//UI_AddChatToHistory( temp );
-								UI_AddChatToHistory( ".....", g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, right );
+								UI_AddChatToHistory( ".....", g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, static_cast<DWORD>(right) );
 							}
 							else
 							{
 								CGSay _CGSay;
 								_CGSay.setMessage( str );	//pWansungString );
-								_CGSay.setColor( right );
+								_CGSay.setColor( static_cast<uint>(right) );
 								g_pSocket->sendPacket( &_CGSay );
 
 									
 								// Player의 Chat pWansungStringing에 추가
-								g_pPlayer->SetChatString( str, right );
+								g_pPlayer->SetChatString( str, static_cast<COLORREF>(right) );
 
 								// history에 추가
 								//char temp[256];
 								//sprintf(temp, "%s> %s", g_pUserInformation->CharacterID.GetString(), str);
 								//UI_AddChatToHistory( temp );
-								UI_AddChatToHistory( str, g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, right );
+								UI_AddChatToHistory( str, g_pUserInformation->CharacterID.GetString(), CLD_NORMAL, static_cast<DWORD>(right) );
 							}
 						}	
 						
@@ -3124,7 +3124,7 @@ UIMessageManager::Execute_UI_SELECT_SKILL(intptr_t left, intptr_t right, void* v
 	//
 	if (g_pPlayer!=NULL)
 	{
-		g_pPlayer->SetSpecialActionInfo( left );
+		g_pPlayer->SetSpecialActionInfo( static_cast<TYPE_ACTIONINFO>(left) );
 		
 		// 반복동작중에 actionCount가 이상해지는 경우가 있어서
 		// 이거 해야되는데.. 기술쓸때 답답하다는 이유로.. 일단.. - -;
@@ -3565,8 +3565,8 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_INVENTORY(intptr_t left, intptr_t righ
 				//---------------------------------------------------
 				CGAddMouseToInventory _CGAddMouseToInventory;
 				_CGAddMouseToInventory.setObjectID( toInventoryItemID );
-				_CGAddMouseToInventory.setInvenX( left );//pItem->GetGridX() );
-				_CGAddMouseToInventory.setInvenY( right );//pItem->GetGridY() );
+				_CGAddMouseToInventory.setInvenX( static_cast<CoordInven_t>(left) );//pItem->GetGridX() );
+				_CGAddMouseToInventory.setInvenY( static_cast<CoordInven_t>(right) );//pItem->GetGridY() );
 
 				g_pSocket->sendPacket( &_CGAddMouseToInventory );
 
@@ -3592,7 +3592,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_INVENTORY(intptr_t left, intptr_t righ
 		{
 			MItem* pOldItem = NULL;
 			if (g_pInventory->ReplaceItem(pMouseItem,		// 추가할 item
-												left, right,	// 추가할 위치 
+												static_cast<BYTE>(left), static_cast<BYTE>(right),	// 추가할 위치 
 												pOldItem))		// 원래있던 item
 			{
 				if (pOldItem != NULL) // replace 되었는가?
@@ -3701,7 +3701,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 	
 	MOustersArmsBand* pQuickSlot = NULL;
 
-	int slot = left;
+	int slot = static_cast<int>(left);
 	
 	if( g_pPlayer->IsOusters() )
 	{
@@ -3762,14 +3762,14 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 
 	MItem* pSlotItem = NULL ;// = (MItem*)g_pQuickSlot->GetItem( left );;//gpC_mouse_pointer->GetPickUpItem();
 	if( g_pPlayer->IsSlayer() )
-		pSlotItem = (MItem*)g_pQuickSlot->GetItem( left );
+		pSlotItem = (MItem*)g_pQuickSlot->GetItem( static_cast<BYTE>(left) );
 	else
 		pSlotItem = (MItem*)pQuickSlot->GetItem( slot );
 	
 	bool	Replace = FALSE;
 	
 	if( g_pPlayer->IsSlayer() )
-		Replace = g_pQuickSlot->ReplaceItem( pMouseItem, left, pSlotItem );
+		Replace = g_pQuickSlot->ReplaceItem( pMouseItem, static_cast<BYTE>(left), pSlotItem );
 	else
 		Replace = pQuickSlot->ReplaceItem( pMouseItem, slot, pSlotItem );
 
@@ -3805,7 +3805,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 				_CGAddMouseToQuickSlot.setObjectID( pMouseItem->GetID() );
 				
 				if( g_pPlayer->IsSlayer() )
-					_CGAddMouseToQuickSlot.setSlotID( left );//pItem->GetItemSlot() );
+					_CGAddMouseToQuickSlot.setSlotID( static_cast<SlotID_t>(left) );//pItem->GetItemSlot() );
 				else
 				{
 					if( pQuickSlot == g_pArmsBand2 )
@@ -4277,7 +4277,7 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_GEAR(intptr_t left, intptr_t right
 
 	if (!g_bWatchMode)
 	{
-		int itemSlot = left;
+		int itemSlot = static_cast<int>(left);
 		MItem* pItem = (MItem*)void_ptr;	// gear에 있는 item
 
 		if (pItem!=NULL)
@@ -4381,7 +4381,7 @@ UIMessageManager::Execute_UI_ITEM_USE(intptr_t left, intptr_t right, void* void_
 	//
 	// void_ptr = MItem *
 	//
-	MItem* pItem = g_pInventory->GetItemToModify( left );//(MItem*)void_ptr;
+	MItem* pItem = g_pInventory->GetItemToModify( static_cast<TYPE_OBJECTID>(left) );//(MItem*)void_ptr;
 
 	if (pItem!=NULL && g_pPlayer->IsItemCheckBufferNULL())
 	{
@@ -4438,7 +4438,7 @@ UIMessageManager::Execute_UI_ITEM_USE_QUICKSLOT(intptr_t left, intptr_t right, v
 	{
 		MSlotItemManager *pQuickSlot = g_pQuickSlot;
 
-		int slot = left;
+		int slot = static_cast<int>(left);
 //		const MItem* pSlotItem = g_pQuickSlot->GetItem( left );
 		MItem * pSlotItem = NULL;
 		
@@ -4809,7 +4809,7 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_QUICKSLOT(intptr_t left, intptr_t 
 				_CGAddMouseToQuickSlot.setObjectID( pMouseItem->GetID() );
 				if ( g_pPlayer->IsOusters() )
 				{
-					int slotID = left;
+					int slotID = static_cast<int>(left);
 					
 					if( g_pArmsBand1 != NULL &&g_pArmsBand1->GetPocketNumber() > slotID )
 						_CGAddMouseToQuickSlot.setSlotID( slotID );
@@ -4919,8 +4919,8 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 	// 검증할게 없는 경우
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
-		int index = left;					// 살려는 아이템의 위치
-		int number = right;					// 살려는 개수
+		int index = static_cast<int>(left);					// 살려는 아이템의 위치
+		int number = static_cast<int>(right);					// 살려는 개수
 		MShop* pShop = (MShop*)void_ptr;	// 상점
 		int npcID = (*g_pPCTalkBox).GetNPCID();					
 
@@ -5007,8 +5007,8 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 								_CGShopRequestBuy.setShopType( pShop->GetCurrent() );
 								_CGShopRequestBuy.setShopIndex( index );
 
-								_CGShopRequestBuy.setX(point.x);
-								_CGShopRequestBuy.setY(point.y);
+								_CGShopRequestBuy.setX(static_cast<Coord_t>(point.x));
+								_CGShopRequestBuy.setY(static_cast<Coord_t>(point.y));
 
 								_CGShopRequestBuy.setItemNum( number );
 
@@ -5127,7 +5127,7 @@ UIMessageManager::Execute_UI_SELL_ITEM(intptr_t left, intptr_t right, void* void
 	// 검증할게 없는 경우
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
-		const MItem* pItem = g_pInventory->GetItem( left, right );
+		const MItem* pItem = g_pInventory->GetItem( static_cast<BYTE>(left), static_cast<BYTE>(right) );
 
 		if (pItem!=NULL && g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 		{
@@ -5584,7 +5584,7 @@ UIMessageManager::Execute_UI_DROP_MONEY(intptr_t left, intptr_t right, void* voi
 		if (g_pMoneyManager!=NULL)
 		{
 				CGDropMoney _CGDropMoney;
-				_CGDropMoney.setAmount( left );
+				_CGDropMoney.setAmount( static_cast<Gold_t>(left) );
 
 				g_pSocket->sendPacket( &_CGDropMoney );
 
@@ -5593,7 +5593,7 @@ UIMessageManager::Execute_UI_DROP_MONEY(intptr_t left, intptr_t right, void* voi
 			//-----------------------------------------------
 			// 돈 줄여버린다.
 			//-----------------------------------------------
-			g_pMoneyManager->UseMoney( left );
+			g_pMoneyManager->UseMoney( static_cast<int>(left) );
 		}
 		else
 		{
@@ -5860,7 +5860,7 @@ UIMessageManager::Execute_UI_REPAIR_ITEM(intptr_t left, intptr_t right, void* vo
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
 		MItem* pItem = NULL;// = (MItem*)void_ptr;
-		int itemID = left;
+		int itemID = static_cast<int>(left);
 
 		//-------------------------------------------------------------
 		// itemID가 0인 경우는 전체 다 수리
@@ -6055,7 +6055,7 @@ UIMessageManager::Execute_UI_SILVERING_ITEM(intptr_t left, intptr_t right, void*
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
 		MItem* pItem = NULL;// = (MItem*)void_ptr;
-		int itemID = left;
+		int itemID = static_cast<int>(left);
 
 		BOOL bInInventory = FALSE;
 		BOOL bInGear = FALSE;
@@ -6394,9 +6394,9 @@ UIMessageManager::Execute_UI_SELECT_STORAGE_SLOT(intptr_t left, intptr_t right, 
 	if(g_pStorage == NULL)
 		return;
 
-	g_pStorage->SetCurrent( left );	// 확인용
+	g_pStorage->SetCurrent( static_cast<unsigned int>(left) );	// 확인용
 
-	int slot = right;
+	int slot = static_cast<int>(right);
 
 	MItem* pMouseItem = (MItem*)gpC_mouse_pointer->GetPickUpItem();
 	const MItem* pStorageItem = g_pStorage->GetItem( slot );
@@ -6575,15 +6575,15 @@ UIMessageManager::Execute_UI_DEPOSIT_MONEY(intptr_t left, intptr_t right, void* 
 		if (g_pMoneyManager!=NULL && g_pStorage!=NULL)
 		{
 				CGStashDeposit _CGStashDeposit;
-				_CGStashDeposit.setAmount( left );
+				_CGStashDeposit.setAmount( static_cast<Gold_t>(left) );
 
 				g_pSocket->sendPacket( &_CGStashDeposit );				
 
 			//-----------------------------------------------
 			// 돈을 보관함으로 옮긴다.
 			//-----------------------------------------------
-			g_pMoneyManager->UseMoney( left );
-			g_pStorage->GetMoneyManager()->AddMoney( left );
+			g_pMoneyManager->UseMoney( static_cast<int>(left) );
+			g_pStorage->GetMoneyManager()->AddMoney( static_cast<int>(left) );
 		}
 		else
 		{
@@ -6622,15 +6622,15 @@ UIMessageManager::Execute_UI_WITHDRAW_MONEY(intptr_t left, intptr_t right, void*
 		if (g_pMoneyManager!=NULL && g_pStorage!=NULL)
 		{
 				CGStashWithdraw _CGStashWithdraw;
-				_CGStashWithdraw.setAmount( left );
+				_CGStashWithdraw.setAmount( static_cast<Gold_t>(left) );
 
 				g_pSocket->sendPacket( &_CGStashWithdraw );				
 
 			//-----------------------------------------------
 			// 보관함의 돈을 player에게 옮긴다.
 			//-----------------------------------------------
-			g_pStorage->GetMoneyManager()->UseMoney( left );
-			g_pMoneyManager->AddMoney( left );						
+			g_pStorage->GetMoneyManager()->UseMoney( static_cast<int>(left) );
+			g_pMoneyManager->AddMoney( static_cast<int>(left) );						
 		}
 		else
 		{
@@ -6688,8 +6688,8 @@ UIMessageManager::Execute_UI_EXCHANGE_MONEY(intptr_t left, intptr_t right, void*
 	
 	if (g_pTradeManager!=NULL)
 	{
-		BOOL bGive = left;
-		int money = right;
+		BOOL bGive = static_cast<BOOL>(left);
+		int money = static_cast<int>(right);
 			
 		BOOL bAcceptMyTrade = g_pTradeManager->IsAcceptMyTrade();
 
@@ -6870,8 +6870,8 @@ UIMessageManager::Execute_UI_ITEM_SELECT_EXCHANGE(intptr_t left, intptr_t right,
 
 	if (g_pTradeManager!=NULL)
 	{
-		int		gridX = left;
-		int		gridY = right;
+		int		gridX = static_cast<int>(left);
+		int		gridY = static_cast<int>(right);
 		MItem*	pItem = (MItem *)void_ptr;
 
 		BOOL bAcceptMyTrade = g_pTradeManager->IsAcceptMyTrade();		
@@ -7288,7 +7288,7 @@ UIMessageManager::Execute_UI_EXCHANGE_ACCEPT(intptr_t left, intptr_t right, void
 			//---------------------------------------------------------
 			// 교환창을 띄운다.
 			//---------------------------------------------------------
-			UI_RunExchange( g_pTempInformation->Value1 );	// otherID 설정
+			UI_RunExchange( static_cast<TYPE_OBJECTID>(g_pTempInformation->Value1) );	// otherID 설정
 		}
 		//---------------------------------------------------------
 		// 거부
@@ -7304,7 +7304,7 @@ UIMessageManager::Execute_UI_EXCHANGE_ACCEPT(intptr_t left, intptr_t right, void
 		}
 
 			CGTradePrepare _CGTradePrepare;
-			_CGTradePrepare.setTargetObjectID( g_pTempInformation->Value1 );
+			_CGTradePrepare.setTargetObjectID( static_cast<ObjectID_t>(g_pTempInformation->Value1) );
 			_CGTradePrepare.setCode( code );				
 
 			g_pSocket->sendPacket( &_CGTradePrepare );			
@@ -7344,7 +7344,7 @@ UIMessageManager::Execute_UI_EXCHANGE_REQUEST_CANCEL(intptr_t left, intptr_t rig
 		}
 
 			CGTradePrepare _CGTradePrepare;
-			_CGTradePrepare.setTargetObjectID( g_pTempInformation->Value1 );
+			_CGTradePrepare.setTargetObjectID( static_cast<ObjectID_t>(g_pTempInformation->Value1) );
 			_CGTradePrepare.setCode( CG_TRADE_PREPARE_CODE_CANCEL );				
 
 			g_pSocket->sendPacket( &_CGTradePrepare );			
@@ -7566,7 +7566,7 @@ UIMessageManager::Execute_UI_CHANGE_OPTION(intptr_t left, intptr_t right, void* 
 //	}
 
 	
-	int value = right;
+	int value = static_cast<int>(right);
 
 	switch (left)
 	{
@@ -7886,7 +7886,7 @@ UIMessageManager::Execute_UI_CLOSE_TUTORIAL_EXIT(intptr_t left, intptr_t right, 
 	
 	UI_CloseTutorialExit();
 
-	int arms = left;	// 0: 도 1: 검 2: 메이스 3: 십자가 4: AR 5: TR 6: SMG 7:SG
+	int arms = static_cast<int>(left);	// 0: 도 1: 검 2: 메이스 3: 십자가 4: AR 5: TR 6: SMG 7:SG
 
 	if (arms >= 0 && arms <=7)
 	{
@@ -7986,7 +7986,7 @@ UIMessageManager::Execute_UI_SELECT_ELEVATOR(intptr_t left, intptr_t right, void
 	//		2 : 2
 	//		3 : 1
 	//		4 : 지하 1층
-	int selectPortal = 4-left;
+	int selectPortal = static_cast<int>(4-left);
 
 	if (selectPortal <= 4)
 	{
@@ -8327,7 +8327,7 @@ UIMessageManager::Execute_UI_SLAYER_PORTAL(intptr_t left, intptr_t right, void* 
 	}
 
 
-	int zoneID = left;
+	int zoneID = static_cast<int>(left);
 	int zoneX = HIWORD(right);
 	int zoneY = LOWORD(right);
 	
@@ -8377,7 +8377,7 @@ UIMessageManager::Execute_UI_FINISH_REQUEST_PARTY_BUTTON(intptr_t left, intptr_t
 	}
 
 
-	BOOL bTimeout = left;
+	BOOL bTimeout = static_cast<BOOL>(left);
 
 	UI_ClosePartyRequest();
 
@@ -8425,7 +8425,7 @@ UIMessageManager::Execute_UI_PARTY_REQUEST_CANCEL(intptr_t left, intptr_t right,
 		}
 
 			CGPartyInvite _CGPartyInvite;
-			_CGPartyInvite.setTargetObjectID( g_pTempInformation->Value1 );
+			_CGPartyInvite.setTargetObjectID( static_cast<ObjectID_t>(g_pTempInformation->Value1) );
 			_CGPartyInvite.setCode( CG_PARTY_INVITE_CANCEL );				
 
 			g_pSocket->sendPacket( &_CGPartyInvite );			
@@ -8569,7 +8569,7 @@ UIMessageManager::Execute_UI_AWAY_PARTY(intptr_t left, intptr_t right, void* voi
 		{
 			if (g_pParty->IsKickAvailableTime())
 			{
-				int kickIndex = left;
+				int kickIndex = static_cast<int>(left);
 
 				PARTY_INFO*	pInfo = g_pParty->GetMemberInfo( kickIndex );
 
@@ -8665,8 +8665,8 @@ UIMessageManager::Execute_UI_CONNECT_SERVER(intptr_t left, intptr_t right, void*
 	if(NULL == g_pSocket)
 		return;
 	
-	BOOL bSelectGroup = left;
-	int	selectID = right;
+	BOOL bSelectGroup = static_cast<BOOL>(left);
+	int	selectID = static_cast<int>(right);
 
 	//-------------------------------------------------------
 	// World를 선택한 경우
@@ -8735,7 +8735,7 @@ UIMessageManager::Execute_UI_CLOSE_SERVER_SELECT(intptr_t left, intptr_t right, 
 
 	// left == true : group 
 	//         false : server
-	BOOL bSelectGroup = left;
+	BOOL bSelectGroup = static_cast<BOOL>(left);
 
 	//------------------------------------------------------------
 	// group선택에서 back하면 초기화면으로
@@ -8778,7 +8778,7 @@ UIMessageManager::Execute_UI_NEWCHARACTER_CHECK(intptr_t left, intptr_t right, v
 			//---------------------------------------------
 			BOOL bAllOK = TRUE;
 
-			int len = strlen(pName);	
+			int len = static_cast<int>(strlen(pName));	
 			
 			if (static_cast<uint>(len)<PlayerInfo::minIDLength || static_cast<uint>(len)>PlayerInfo::maxIDLength)
 			{
@@ -9045,8 +9045,8 @@ UIMessageManager::Execute_UI_MODIFY_GUILD_MEMBER(intptr_t left, intptr_t right, 
 {
 		CGModifyGuildMember _CGModifyGuildMember;
 
-		_CGModifyGuildMember.setGuildID(left);
-		_CGModifyGuildMember.setGuildMemberRank(right);
+		_CGModifyGuildMember.setGuildID(static_cast<GuildID_t>(left));
+		_CGModifyGuildMember.setGuildMemberRank(static_cast<GuildMemberRank_t>(right));
 		_CGModifyGuildMember.setName(std::string((char *)void_ptr));
 
 		g_pSocket->sendPacket( &_CGModifyGuildMember );				
@@ -9081,7 +9081,7 @@ UIMessageManager::Execute_UI_SELECT_READY_TEAM_LIST(intptr_t left, intptr_t righ
 	{
 			CGSelectGuild  _CGSelectGuild ;
 			
-			_CGSelectGuild.setGuildID(left);
+			_CGSelectGuild.setGuildID(static_cast<GuildID_t>(left));
 			g_pSocket->sendPacket( &_CGSelectGuild  );				
 	}
 }
@@ -9214,7 +9214,7 @@ UIMessageManager::Execute_UI_SELECT_REGIST_TEAM_LIST(intptr_t left, intptr_t rig
 	{
 			CGSelectGuild  _CGSelectGuild ;
 			
-			_CGSelectGuild.setGuildID(left);
+			_CGSelectGuild.setGuildID(static_cast<GuildID_t>(left));
 			g_pSocket->sendPacket( &_CGSelectGuild  );				
 	}
 }
@@ -9226,7 +9226,7 @@ UIMessageManager::Execute_UI_JOIN_READY_TEAM(intptr_t left, intptr_t right, void
 	(void)right;
 	(void)void_ptr;
 	CGTryJoinGuild _CGTryJoinGuild;
-	_CGTryJoinGuild.setGuildID(left);
+	_CGTryJoinGuild.setGuildID(static_cast<GuildID_t>(left));
 	_CGTryJoinGuild.setGuildMemberRank(2);
 	g_pSocket->sendPacket( &_CGTryJoinGuild );
 }
@@ -9237,7 +9237,7 @@ UIMessageManager::Execute_UI_JOIN_REGIST_TEAM(intptr_t left, intptr_t right, voi
 	(void)right;
 	(void)void_ptr;
 	CGTryJoinGuild _CGTryJoinGuild;
-	_CGTryJoinGuild.setGuildID(left);
+	_CGTryJoinGuild.setGuildID(static_cast<GuildID_t>(left));
 	_CGTryJoinGuild.setGuildMemberRank(3);
 	g_pSocket->sendPacket( &_CGTryJoinGuild );
 }
@@ -9255,8 +9255,8 @@ UIMessageManager::Execute_UI_REGIST_GUILD_MEMBER(intptr_t left, intptr_t right, 
 	}
 
 	CGJoinGuild _CGJoinGuild;
-	_CGJoinGuild.setGuildID(left);
-	_CGJoinGuild.setGuildMemberRank(right);
+	_CGJoinGuild.setGuildID(static_cast<GuildID_t>(left));
+	_CGJoinGuild.setGuildMemberRank(static_cast<GuildMemberRank_t>(right));
 	_CGJoinGuild.setGuildMemberIntro(std::string((char *)void_ptr));
 	g_pSocket->sendPacket( &_CGJoinGuild );
 
@@ -9295,7 +9295,7 @@ UIMessageManager::Execute_UI_CLOSE_FILE_DIALOG(intptr_t left, intptr_t right, vo
 		if(void_ptr != NULL)
 		{
 			char *p_str = (char *)void_ptr;
-			const int str_size = strlen(p_str);
+			const int str_size = static_cast<int>(strlen(p_str));
 
 			if(str_size > 4)
 			{
@@ -9420,7 +9420,7 @@ UIMessageManager::Execute_UI_MESSAGE_BOX(intptr_t left, intptr_t right, void* vo
 	(void)right;
 	(void)void_ptr;
 	if(left < MAX_GAME_STRING)
-		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[left].GetString() );
+		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[static_cast<int>(left)].GetString() );
 }
 
 
@@ -9439,7 +9439,7 @@ void UIMessageManager::Execute_UI_MODIFY_TEAM_INFO(intptr_t left, intptr_t right
 	if(void_ptr != NULL)
 	{
 		CGModifyGuildIntro _CGModifyGuildIntro;
-		_CGModifyGuildIntro.setGuildID(left);
+		_CGModifyGuildIntro.setGuildID(static_cast<GuildID_t>(left));
 		_CGModifyGuildIntro.setGuildIntro(std::string((char *)void_ptr));
 		g_pSocket->sendPacket( &_CGModifyGuildIntro );
 	}
@@ -9451,7 +9451,7 @@ void UIMessageManager::Execute_UI_MODIFY_GUILD_MEMBER_INTRO(intptr_t left, intpt
 	if(void_ptr != NULL)
 	{
 		CGModifyGuildMemberIntro _CGModifyGuildMemberIntro;
-		_CGModifyGuildMemberIntro.setGuildID(left);
+		_CGModifyGuildMemberIntro.setGuildID(static_cast<GuildID_t>(left));
 		_CGModifyGuildMemberIntro.setGuildMemberIntro(std::string((char *)void_ptr));
 		g_pSocket->sendPacket( &_CGModifyGuildMemberIntro );
 	}
@@ -9520,12 +9520,12 @@ void UIMessageManager::Excute_UI_SELECT_GRADE_SKILL(intptr_t left, intptr_t righ
 {
 	(void)right;
 	(void)void_ptr;
-	if(left >= g_pRankBonusTable->GetSize() || (*g_pRankBonusTable)[left].GetStatus() == RankBonusInfo::STATUS_CANNOT_LEARN || (*g_pRankBonusTable)[left].GetStatus() == RankBonusInfo::STATUS_LEARNED
+	if(left >= g_pRankBonusTable->GetSize() || (*g_pRankBonusTable)[static_cast<int>(left)].GetStatus() == RankBonusInfo::STATUS_CANNOT_LEARN || (*g_pRankBonusTable)[static_cast<int>(left)].GetStatus() == RankBonusInfo::STATUS_LEARNED
 		|| !g_pPlayer->IsWaitVerifyNULL() || g_pTempInformation->GetMode() != TempInformation::MODE_NULL)
 		return;
 
 	CGSelectRankBonus _CGSelectRankBonus;
-	_CGSelectRankBonus.setRankBonusType(left);
+	_CGSelectRankBonus.setRankBonusType(static_cast<DWORD>(left));
 	g_pSocket->sendPacket( &_CGSelectRankBonus );
 	g_pTempInformation->SetMode(TempInformation::MODE_SKILL_LEARN);
 
@@ -9942,7 +9942,7 @@ UIMessageManager::Execute_UI_REQUEST_RESURRECT(intptr_t left, intptr_t right, vo
 	if( left == 0 || left == 1)
 	{
 		// Resurrect Scroll
-		MItem* pItem = g_pInventory->FindItem( ITEM_CLASS_RESURRECT_ITEM, left );
+		MItem* pItem = g_pInventory->FindItem( ITEM_CLASS_RESURRECT_ITEM, static_cast<TYPE_ITEMTYPE>(left) );
 		if( pItem == NULL )
 		{
 			return;
@@ -9985,7 +9985,7 @@ UIMessageManager::Execute_UI_CLOSE_MIXING_FORGE(intptr_t left, intptr_t right, v
 		g_pTempInformation->SetMode( TempInformation::MODE_NULL );
 	} else
 	{
-		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[left].GetString() );		
+		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[static_cast<int>(left)].GetString() );		
 	}
 }
 
@@ -9997,8 +9997,8 @@ UIMessageManager::Execute_UI_MIXING_FORGE(intptr_t left, intptr_t right, void* v
 		g_pTempInformation->GetMode() != TempInformation::MODE_NULL )
 		return;
 
-	MItem *pFirstItem = g_pInventory->GetItemToModify( left );
-	MItem *pSecondItem = g_pInventory->GetItemToModify( right );
+	MItem *pFirstItem = g_pInventory->GetItemToModify( static_cast<TYPE_OBJECTID>(left) );
+	MItem *pSecondItem = g_pInventory->GetItemToModify( static_cast<TYPE_OBJECTID>(right) );
 
 	if( pFirstItem == NULL || pSecondItem == NULL )
 	{
@@ -10049,7 +10049,7 @@ void
 UIMessageManager::Execute_UI_SEND_REMOVE_OPTION(intptr_t left, intptr_t right, void *void_ptr)
 {
 	MItem *pMouseItem = (MItem*) void_ptr;
-	MItem *pCurItem = g_pInventory->GetItemToModify( right );
+	MItem *pCurItem = g_pInventory->GetItemToModify( static_cast<TYPE_OBJECTID>(right) );
 
 
 	if( left < 0 || left > 1 || pMouseItem == NULL || pCurItem == NULL)
@@ -10063,7 +10063,7 @@ UIMessageManager::Execute_UI_SEND_REMOVE_OPTION(intptr_t left, intptr_t right, v
 	_CGMixItem.setX( pCurItem->GetGridX() );
 	_CGMixItem.setY( pCurItem->GetGridY() );
 	_CGMixItem.setTargetObjectID( 0, pCurItem->GetID() );
-	_CGMixItem.setTargetObjectID( 1, left );
+	_CGMixItem.setTargetObjectID( 1, static_cast<ObjectID_t>(left) );
 	g_pSocket->sendPacket( &_CGMixItem );
 	gC_vs_ui.CloseRemoveOptionFromRareItem();
 
@@ -10109,7 +10109,7 @@ UIMessageManager::Execute_UI_LEARN_OUSTERS_SKILL(intptr_t left, intptr_t right, 
 		CGLearnSkill _CGLearnSkill;
 		
 		//_CGLearnSkill.setObjectID( (*g_pPCTalkBox).GetNPCID() );
-		_CGLearnSkill.setSkillType( left );
+		_CGLearnSkill.setSkillType( static_cast<SkillType_t>(left) );
 		_CGLearnSkill.setSkillDomainType( SKILLDOMAIN_OUSTERS );
 		
 		g_pSocket->sendPacket( &_CGLearnSkill );
@@ -10144,10 +10144,10 @@ UIMessageManager::Execute_UI_OUSTERS_DOWN_SKILL(intptr_t left, intptr_t right, v
 	if( left < 0 || left >= MAX_ACTIONINFO)
 		return;
 
-	int curLevel = (*g_pSkillInfoTable)[left].GetExpLevel();
+	int curLevel = (*g_pSkillInfoTable)[static_cast<int>(left)].GetExpLevel();
 
 	// 2004, 11, 8, sobeit modify start - 아우스터즈 스킬에 따라 0레벨로도 만들수 있다.
-	if( curLevel > 30 || (curLevel == 1 && (*g_pSkillInfoTable)[left].CanDelete == 0) )
+	if( curLevel > 30 || (curLevel == 1 && (*g_pSkillInfoTable)[static_cast<int>(left)].CanDelete == 0) )
 		return;	
 	// 2004, 11, 8, sobeit modify end
 	
@@ -10250,7 +10250,7 @@ UIMessageManager::Execute_UI_CLEAR_STAGE(intptr_t left, intptr_t right, void *vo
 	CGSubmitScore _CGSubmitScore;
 
 	_CGSubmitScore.setGameType( GameType == 0 ? GAME_ARROW : GAME_MINE );
-	_CGSubmitScore.setLevel( Stage );
+	_CGSubmitScore.setLevel( static_cast<BYTE>(Stage) );
 	_CGSubmitScore.setScore( WORD(Time) );
 	g_pSocket->sendPacket( &_CGSubmitScore );
 }
@@ -10289,8 +10289,8 @@ UIMessageManager::Execute_UI_ADD_ITEM_TO_CODE_SHEET(intptr_t left, intptr_t righ
 
 	CGAddItemToCodeSheet _CGAddItemToCodeSheet;
 
-	_CGAddItemToCodeSheet.setX( HIWORD( left ) );
-	_CGAddItemToCodeSheet.setY( LOWORD( left ) );
+	_CGAddItemToCodeSheet.setX( static_cast<Coord_t>(HIWORD( left )) );
+	_CGAddItemToCodeSheet.setY( static_cast<Coord_t>(LOWORD( left )) );
 	_CGAddItemToCodeSheet.setObjectID( pItem->GetID() );
 	
 	g_pSocket->sendPacket( &_CGAddItemToCodeSheet );
@@ -10407,12 +10407,12 @@ UIMessageManager::Execute_UI_WARP_TO_REGEN_TOWER(intptr_t left, intptr_t right, 
 	(void)void_ptr;
 	if( g_pRegenTowerInfoManager == NULL || left < 0 || 
 		left >= g_pRegenTowerInfoManager->GetSize() || 
-		g_pRegenTowerInfoManager->Get(left).owner != g_pPlayer->GetRace() )
+		g_pRegenTowerInfoManager->Get(static_cast<int>(left)).owner != g_pPlayer->GetRace() )
 		return;
 
 	CGSelectRegenZone _CGSelectRegenZone;
 	
-	_CGSelectRegenZone.setRegenZoneID( left );
+	_CGSelectRegenZone.setRegenZoneID( static_cast<BYTE>(left) );
 
 	g_pSocket->sendPacket( &_CGSelectRegenZone );
 	gC_vs_ui.CloseRequestShrineMinimap();
@@ -10532,7 +10532,7 @@ UIMessageManager::Execute_UI_KEEP_PETITEM(intptr_t left, intptr_t right, void* v
 	CGDepositPet _CGDepositPet;
 	_CGDepositPet.setObjectID(pItem->GetID());
 	if(-1 != right)
-		_CGDepositPet.setIndex(right);
+		_CGDepositPet.setIndex(static_cast<BYTE>(right));
 	else
 		return;
 	g_pSocket->sendPacket( &_CGDepositPet );	
@@ -10565,7 +10565,7 @@ UIMessageManager::Execute_UI_GET_KEEP_PETITEM(intptr_t left, intptr_t right, voi
 	CGWithdrawPet _CGWithdrawPet;
 	_CGWithdrawPet.setObjectID(pItem->GetID());
 	if(right<20 &&right>-1)
-		_CGWithdrawPet.setIndex(right);
+		_CGWithdrawPet.setIndex(static_cast<BYTE>(right));
 	else
 		return;
 	g_pSocket->sendPacket( &_CGWithdrawPet );	
@@ -10890,7 +10890,7 @@ UIMessageManager::Execute_UI_CHANGE_CUSTOM_NAMING(intptr_t left, intptr_t right,
 		MItem* pItem = NULL;	
 		
 		if(right != 0)
-			pItem = g_pInventory->GetItemToModify( right );//(MItem*)void_ptr;
+			pItem = g_pInventory->GetItemToModify( static_cast<TYPE_OBJECTID>(right) );//(MItem*)void_ptr;
 		
 		if(pItem!= NULL || right == 0)
 		{
@@ -11079,7 +11079,7 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_ICON(intptr_t left, intptr_t right, voi
 
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
-		gC_vs_ui.CloseQuestIcon(left);
+		gC_vs_ui.CloseQuestIcon(static_cast<int>(left));
 	}
 }
 void	 
@@ -11139,7 +11139,7 @@ UIMessageManager::Execute_UI_ITEM_USE_GQUEST_ITEM(intptr_t left, intptr_t right,
 	if(NULL != pItem)
 	{
 		CGUseItemFromGQuestInventory _CGUseItemFromGQuestInventory;
-		_CGUseItemFromGQuestInventory.setIndex( left );
+		_CGUseItemFromGQuestInventory.setIndex( static_cast<BYTE>(left) );
 		
 		g_pSocket->sendPacket( &_CGUseItemFromGQuestInventory );
 		
@@ -11156,7 +11156,7 @@ UIMessageManager::Execute_UI_ITEM_USE_REQUEST_GUILD_LIST(intptr_t left, intptr_t
 
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_REQUEST_GUILD_LIST");
 	CGRequestGuildList _CGRequestGuildlist;	
-	_CGRequestGuildlist.setGuildType(left);
+	_CGRequestGuildlist.setGuildType(static_cast<GuildType_t>(left));
 	g_pSocket->sendPacket(&_CGRequestGuildlist); 
 
 }
@@ -11194,7 +11194,7 @@ UIMessageManager::Execute_UI_ITEM_USE_REQUEST_UNION(intptr_t left, intptr_t righ
 		return;
 	}
 	CGRequestUnion _CGRequestUnion;	
-	_CGRequestUnion.setGuildID(left);
+	_CGRequestUnion.setGuildID(static_cast<GuildID_t>(left));
 	g_pSocket->sendPacket(&_CGRequestUnion); 
 
 	gC_vs_ui.CloseTeamInfoDialogBox();
@@ -11212,8 +11212,8 @@ UIMessageManager::Execute_UI_ITEM_USE_QUIT(intptr_t left, intptr_t right, void* 
 	}
 
 	CGQuitUnion   _CGQuitUnion;
-	_CGQuitUnion.setGuildID(left);
-	_CGQuitUnion.setQuitMethod(right);
+	_CGQuitUnion.setGuildID(static_cast<GuildID_t>(left));
+	_CGQuitUnion.setQuitMethod(static_cast<BYTE>(right));
 	g_pSocket->sendPacket(&_CGQuitUnion); 
 
 	gC_vs_ui.ClosePopupMessage();
@@ -11236,7 +11236,7 @@ UIMessageManager::Execute_UI_ITEM_USE_EXPER(intptr_t left, intptr_t right, void*
 		return;
 	}
 	CGExpelGuild  _CGExpelGuild;
-	_CGExpelGuild.setGuildID(left);
+	_CGExpelGuild.setGuildID(static_cast<GuildID_t>(left));
 	g_pSocket->sendPacket(&_CGExpelGuild); 
 
 	gC_vs_ui.CloseTeamInfoDialogBox();
@@ -11251,7 +11251,7 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_ACCEPT(intptr_t left, intptr_t right
 	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_ACCEPT");
 	CGAcceptUnion  _CGAcceptUnion;
-	_CGAcceptUnion.setGuildID(left);
+	_CGAcceptUnion.setGuildID(static_cast<GuildID_t>(left));
 	g_pSocket->sendPacket(&_CGAcceptUnion); 
 
 	gC_vs_ui.CloseMailBoxDialogBox();
@@ -11264,7 +11264,7 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_DENY(intptr_t left, intptr_t right, 
 	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_DENY");
 	CGDenyUnion  _CGDenyUnion;
-	_CGDenyUnion.setGuildID(left);
+	_CGDenyUnion.setGuildID(static_cast<GuildID_t>(left));
 	g_pSocket->sendPacket(&_CGDenyUnion); 
 
 	gC_vs_ui.CloseMailBoxDialogBox();
@@ -11279,7 +11279,7 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_QUIT_ACCEPT(intptr_t left, intptr_t 
 	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_QUIT_ACCEPT");
 	CGQuitUnionAccept _CGQuitUnionAccept;
-	_CGQuitUnionAccept.setGuildID(left);
+	_CGQuitUnionAccept.setGuildID(static_cast<GuildID_t>(left));
 	g_pSocket->sendPacket(&_CGQuitUnionAccept); 
 
 	gC_vs_ui.CloseMailBoxDialogBox();
@@ -11292,7 +11292,7 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_QUIT_DENY(intptr_t left, intptr_t ri
 	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_QUIT_DENY");
 	CGQuitUnionDeny _CGQuitUnionDeny;
-	_CGQuitUnionDeny.setGuildID(left);
+	_CGQuitUnionDeny.setGuildID(static_cast<GuildID_t>(left));
 	g_pSocket->sendPacket(&_CGQuitUnionDeny); 
 
 	gC_vs_ui.CloseMailBoxDialogBox();
@@ -11330,7 +11330,7 @@ UIMessageManager::Execute_UI_UI_MODIFY_TAX(intptr_t left, intptr_t right, void* 
 	DEBUG_ADD("[UI] Execute_UI_UI_MODIFY_TAX");
 
 	CGModifyTaxRatio _CGModifyTaxRatio;
-	_CGModifyTaxRatio.setRatio(left);
+	_CGModifyTaxRatio.setRatio(static_cast<uint>(left));
 	g_pSocket->sendPacket( &_CGModifyTaxRatio );
 
 }
@@ -11343,7 +11343,7 @@ UIMessageManager::Execute_UI_APPOINT_SUBMASTER(intptr_t left, intptr_t right, vo
 	DEBUG_ADD("[UI] Execute_UI_APPOINT_SUBMASTER");
 
 	CGAppointSubmaster _CGAppointSubmaster;
-	_CGAppointSubmaster.setGuildID(left);
+	_CGAppointSubmaster.setGuildID(static_cast<GuildID_t>(left));
 	_CGAppointSubmaster.setName(std::string((char *)void_ptr));
 	g_pSocket->sendPacket( &_CGAppointSubmaster );
 
@@ -11431,12 +11431,12 @@ UIMessageManager::Execute_UI_UNDISPLAY_ITEM(intptr_t left, intptr_t right, void*
 	{
 //		if (pStorageItem!=NULL)
 //		{
-			MItem* pRemovedItem = g_pStorage2->RemoveItem( left );
+			MItem* pRemovedItem = g_pStorage2->RemoveItem( static_cast<unsigned int>(left) );
 
 			if (pRemovedItem!=NULL)
 			{
 				 CGUndisplayItem _CGUndisplayItem;
-				 _CGUndisplayItem.setIndex(left);
+				 _CGUndisplayItem.setIndex(static_cast<BYTE>(left));
 				 _CGUndisplayItem.setItemObjectID(pRemovedItem->GetID());
 				 //_CGUndisplayItem.setXY(left,right);
 				 _CGUndisplayItem.setXY(pMouseItem->GetGridX(),pMouseItem->GetGridY());
@@ -11533,7 +11533,7 @@ UIMessageManager::Execute_UI_REQUEST_STORE_INFO(intptr_t left, intptr_t right, v
 	 
 
 		 CGRequestStoreInfo _CGRequestStoreInfo;
-		 _CGRequestStoreInfo.setOwnerObjectID(left);
+		 _CGRequestStoreInfo.setOwnerObjectID(static_cast<ObjectID_t>(left));
 		 g_pSocket->sendPacket( &_CGRequestStoreInfo );
 	 }
 
@@ -11592,7 +11592,7 @@ UIMessageManager::Execute_UI_BUY_STORE_ITEM(intptr_t left, intptr_t right, void*
 	if(pItem != NULL)		
 	{
 		CGBuyStoreItem _CGBuyStoreItem;
-		_CGBuyStoreItem.setIndex(left);
+		_CGBuyStoreItem.setIndex(static_cast<BYTE>(left));
 		_CGBuyStoreItem.setItemObjectID(pItem->GetID());
 		_CGBuyStoreItem.setOwnerObjectID(gC_vs_ui.GetOtherObjectID());
 		
@@ -11707,7 +11707,7 @@ UIMessageManager::Execute_UI_SWAPADVANCEMENTITEM(intptr_t left, intptr_t right, 
 	
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
-		const MItem* pItem = g_pInventory->GetItem( left, right );
+		const MItem* pItem = g_pInventory->GetItem( static_cast<BYTE>(left), static_cast<BYTE>(right) );
 
 		if (pItem!=NULL && g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 		{
@@ -11757,8 +11757,8 @@ UIMessageManager::Execute_UI_LEARN_ADVANCE_SKILL(intptr_t left, intptr_t right, 
 	DEBUG_ADD("[UI] Execute_UI_LEARN_ADVANCE_SKILL");
 	CGLearnSkill _CGLearnSkill;
 	
-	_CGLearnSkill.setSkillType( left );
-	_CGLearnSkill.setSkillDomainType( right );
+	_CGLearnSkill.setSkillType( static_cast<SkillType_t>(left) );
+	_CGLearnSkill.setSkillDomainType( static_cast<SkillDomainType_t>(right) );
 	
 	g_pSocket->sendPacket( &_CGLearnSkill );
 }
@@ -11775,8 +11775,8 @@ UIMessageManager::Execute_UI_CAMPAIGN_HELP(intptr_t left, intptr_t right, void* 
 	if(left>0)
 	{
 		CGDonationMoney _CGDonationMoney;
-		_CGDonationMoney.setGold(left*10000);
-		_CGDonationMoney.setDonationType(right);
+		_CGDonationMoney.setGold(static_cast<Gold_t>(left*10000));
+		_CGDonationMoney.setDonationType(static_cast<BYTE>(right));
 		g_pSocket->sendPacket( &_CGDonationMoney );
 	}
 // 2005, 1, 11, sobeit add end - 불우이웃 돕기 성금 관련
@@ -11803,7 +11803,7 @@ UIMessageManager::Execute_UI_GQUEST_SET_ACTION(intptr_t left, intptr_t right, vo
 	if(left == 1) // dead
 	{
 		g_pPlayer->SetDead();
-		g_pPlayer->SetResurrectZoneID(right);
+		g_pPlayer->SetResurrectZoneID(static_cast<int>(right));
 	}
 }
 
@@ -11849,7 +11849,7 @@ UIMessageManager::Execute_UI_REQUEST_EVENT_ITEM(intptr_t left, intptr_t right, v
 	DEBUG_ADD("[UI] Execute_UI_REQUEST_EVENT_ITEM");
 	{
 		CGGetEventItem _CGGetEventItem;
-		_CGGetEventItem.setEventType(left);
+		_CGGetEventItem.setEventType(static_cast<BYTE>(left));
 		g_pSocket->sendPacket( &_CGGetEventItem );
 	}
 }

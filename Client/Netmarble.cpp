@@ -140,7 +140,7 @@ BOOL AnalyzeArgument(char *key)
 int HexStringToDec(char *str)
 {
 	int dec = 0;
-	const int strLen = strlen(str);
+	const int strLen = static_cast<int>(strlen(str));
 
 	for(int i = strLen-1, multi = 1; i >= 0; i--, multi *= 16)
 	{

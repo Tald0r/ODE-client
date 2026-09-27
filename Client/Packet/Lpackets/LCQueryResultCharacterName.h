@@ -44,8 +44,8 @@ public:
 	// get packet's body size
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szbool
-			+ szBYTE + m_CharacterName.size(); 
+		return static_cast<PacketSize_t>(szbool
+			+ szBYTE + m_CharacterName.size()); 
 	}
 
 	#ifdef __DEBUG_OUTPUT__

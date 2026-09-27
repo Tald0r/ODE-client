@@ -56,7 +56,7 @@ void GCWaitGuildList::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	WORD ListNum = m_GuildInfoList.size();
+	WORD ListNum = static_cast<WORD>(m_GuildInfoList.size());
 	oStream.write( ListNum );
 
 	GuildInfoListConstItor itr = m_GuildInfoList.begin();

@@ -123,7 +123,7 @@ class MEventManager
 		void			AddEvent(MEvent &event);
 
 		bool			IsEmptyEvent() const				{ return m_Events.empty(); }
-		int				GetEventCount() const				{ return m_Events.size(); }
+		int				GetEventCount() const				{ return static_cast<int>(m_Events.size()); }
 		const MEvent*	GetEvent(EVENT_ID id);
 
 		bool			IsEmptyEventByFlag(DWORD flag);

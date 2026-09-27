@@ -47,7 +47,7 @@ public:
 
 	void addOptionType(OptionType_t OptionType) { m_OptionType.push_back( OptionType ); }
 	void setOptionType(const std::list<OptionType_t>& OptionType) { m_OptionType = OptionType; }
-	int getOptionTypeSize() const noexcept { return m_OptionType.size(); }
+	int getOptionTypeSize() const noexcept { return static_cast<int>(m_OptionType.size()); }
 	const std::list<OptionType_t>& getOptionType() const noexcept { return m_OptionType; }
 	OptionType_t popOptionType() 
 	{ 
@@ -98,7 +98,7 @@ public:
 public:
 	uint getSize() const noexcept
 	{
-		return szObjectID +
+		return static_cast<uint>(szObjectID +
 			szBYTE +
 			szItemType + 
 			szBYTE + m_OptionType.size() +
@@ -109,7 +109,7 @@ public:
 			szItemNum +
 			szWORD +
 			szBYTE +
-			SubItemInfo::getMaxSize()*m_ListNum;
+			SubItemInfo::getMaxSize()*m_ListNum);
 	}
 
 	static uint getMaxSize() noexcept

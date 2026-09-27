@@ -176,7 +176,7 @@ PlayerConfigTable::GetPlayerConfig(const char* pPlayerID) const
 void		
 PlayerConfigTable::SaveToFile(std::ofstream& file)
 {
-	int num = size();
+	int num = static_cast<int>(size());
 
 	//---------------------------------------------------------------
 	// 개수 제한에 걸리는 경우
@@ -217,7 +217,7 @@ PlayerConfigTable::SaveToFile(std::ofstream& file)
 				const std::string& playerID = pConfig->GetPlayerID();
 
 				// PlayerID
-				len = playerID.length();
+				len = static_cast<BYTE>(playerID.length());
 				file.write((const char*)&len, 1);			
 				file.write((const char*)playerID.c_str(), len);
 
@@ -254,7 +254,7 @@ PlayerConfigTable::SaveToFile(std::ofstream& file)
 				const std::string& playerID = pConfig->GetPlayerID();
 
 				// PlayerID
-				len = playerID.length();
+				len = static_cast<BYTE>(playerID.length());
 				file.write((const char*)&len, 1);			
 				file.write((const char*)playerID.c_str(), len);
 
@@ -401,7 +401,7 @@ WorldPlayerConfigTable::SaveToFile(const char* pFilename)
 	{
 		file.write((const char*)&PLAYER_CONFIG_VERSION, 4);
 
-		int num = size();
+		int num = static_cast<int>(size());
 
 		// 개수
 		file.write((const char*)&num, 4);

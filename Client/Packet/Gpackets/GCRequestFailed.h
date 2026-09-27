@@ -32,7 +32,7 @@ public:
 	void write ( SocketOutputStream & oStream ) const;
 
 	PacketID_t getPacketID () const noexcept { return PACKET_GC_REQUEST_FAILED; }
-	PacketSize_t getPacketSize () const	{ return szBYTE + szBYTE + m_Name.size(); }
+	PacketSize_t getPacketSize () const	{ return static_cast<PacketSize_t>(szBYTE + szBYTE + m_Name.size()); }
 
 	#ifdef __DEBUG_OUTPUT__
 		std::string getPacketName () const { return "GCRequestFailed"; }
@@ -41,7 +41,7 @@ public:
 	
 public:
 	BYTE getCode(void) const noexcept { return m_Code;}
-	void setCode(WORD code) noexcept { m_Code = code;}
+	void setCode(WORD code) noexcept { m_Code = static_cast<BYTE>(code);}
 
 	const std::string& getName(void) const noexcept { return m_Name;}
 	void setName(const char* Name) { m_Name = Name;}

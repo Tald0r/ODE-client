@@ -84,7 +84,7 @@ public :
 		}
 		return "";
 	}
-	BYTE getMemberNum() const { return m_MemberList.size(); }
+	BYTE getMemberNum() const { return static_cast<BYTE>(m_MemberList.size()); }
 	
 
 private :

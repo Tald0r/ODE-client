@@ -147,8 +147,8 @@ MAttachEffect::SetAttachCreature(MCreature* pCreature)
 	point.y = pCreature->GetPixelY();
 
 	// 새로운 좌표 설정	
-	m_PixelX = point.x;
-	m_PixelY = point.y;
+	m_PixelX = static_cast<float>(point.x);
+	m_PixelY = static_cast<float>(point.y);
 	m_PixelZ = pCreature->GetZ();
 
 	//--------------------------------

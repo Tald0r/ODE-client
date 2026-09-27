@@ -131,7 +131,7 @@ public:
     /**
      * 获取 ImageObject 数量
      */
-    int GetImageObjectCount() const { return m_imageObjects.size(); }
+    int GetImageObjectCount() const { return static_cast<int>(m_imageObjects.size()); }
 
     /**
      * 获取 ImageObject 数据

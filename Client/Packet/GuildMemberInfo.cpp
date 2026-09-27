@@ -63,7 +63,7 @@ void GuildMemberInfo::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 	
 	if ( szName == 0 )
 
@@ -87,7 +87,7 @@ PacketSize_t GuildMemberInfo::getSize()
 {
 	__BEGIN_TRY
 
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	PacketSize_t PacketSize = szBYTE + szName + szGuildMemberRank + szbool + szServerID;
 

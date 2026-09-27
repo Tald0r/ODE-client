@@ -38,7 +38,7 @@ PacketSize_t StoreInfo::getSize(bool toOther) const
 	PacketSize_t ret = szBYTE;
 	if ( toOther && m_Open == 0 ) return ret;
 
-	ret += szBYTE + m_Sign.size() + szBYTE;
+	ret = static_cast<PacketSize_t>(ret + (szBYTE + m_Sign.size() + szBYTE));
 
 	std::vector<StoreItemInfo>::const_iterator itr = m_Items.begin();
 
@@ -83,12 +83,12 @@ void StoreInfo::write(SocketOutputStream& oStream, bool toOther) const
 	oStream.write(m_Open);
 	if ( toOther && m_Open == 0 ) return;
 
-	BYTE szSign = m_Sign.size();
+	BYTE szSign = static_cast<BYTE>(m_Sign.size());
 	oStream.write(szSign);
 
 	if ( szSign != 0 ) oStream.write(m_Sign);
 
-	BYTE ItemNum = m_Items.size();
+	BYTE ItemNum = static_cast<BYTE>(m_Items.size());
 	oStream.write(ItemNum);
 
 	std::vector<StoreItemInfo>::const_iterator itr = m_Items.begin();
@@ -123,7 +123,7 @@ void StoreOutlook::write(SocketOutputStream& oStream) const
 	oStream.write(m_Open);
 	if ( m_Open == 0 ) return;
 
-	BYTE szSign = m_Sign.size();
+	BYTE szSign = static_cast<BYTE>(m_Sign.size());
 	oStream.write(szSign);
 
 	if ( szSign != 0 ) oStream.write(m_Sign);

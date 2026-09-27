@@ -518,7 +518,7 @@ public:
 	bool	CancelPushStateOfCurrentPushedWindow();
 
 	int	ShowedWindowSize() const;
-	int	ShowedPinnedWindowSize() const { return m_show_list_pinned_window.size(); }
+	int	ShowedPinnedWindowSize() const { return static_cast<int>(m_show_list_pinned_window.size()); }
 	bool	GetShowState(Window * p_window) const;
 };
 

@@ -39,7 +39,7 @@ class MEffectManager {
 		//------------------------------------------------------
 		// list
 		//------------------------------------------------------
-		int					GetSize() const			{ return m_listEffect.size(); }
+		int					GetSize() const			{ return static_cast<int>(m_listEffect.size()); }
 		EFFECT_LIST::const_iterator GetEffects()	{ return m_listEffect.begin(); }
 
 	protected :

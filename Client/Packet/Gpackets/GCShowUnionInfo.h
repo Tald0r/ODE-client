@@ -27,7 +27,7 @@ struct SingleGuildInfo
 	// get packet's body size
 	PacketSize_t getSize() const
 	{ 
-		return szGuildID +				// Guild ID
+		return static_cast<PacketSize_t>(szGuildID +				// Guild ID
 			   szBYTE +					// Guild Name length
 			   m_GuildName.size() +		// Guild Name
 			   szGuildState +			// Guild State
@@ -36,7 +36,7 @@ struct SingleGuildInfo
 			   szBYTE +					// Guild Member Count
 			   szBYTE +					// Guild Intro length
 			   m_GuildIntro.size() +	// Guild Intro
-			   szGold;					// Guild Join Fee
+			   szGold);					// Guild Join Fee
 	}
 
 	static PacketSize_t getMaxSize()
@@ -94,9 +94,9 @@ struct SingleGuildInfo
 	{
 		__BEGIN_TRY
 			
-		BYTE szGuildName = m_GuildName.size();
-		BYTE szGuildMaster = m_GuildMaster.size();
-		BYTE szGuildIntro = m_GuildIntro.size();
+		BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+		BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
+		BYTE szGuildIntro = static_cast<BYTE>(m_GuildIntro.size());
 
 		if ( szGuildName == 0 )
 			throw InvalidProtocolException( "szGuildName == 0" );

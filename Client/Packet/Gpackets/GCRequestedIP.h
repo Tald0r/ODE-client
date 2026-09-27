@@ -26,7 +26,7 @@ public:
     void read ( SocketInputStream & iStream );
     void write ( SocketOutputStream & oStream ) const;
     PacketID_t getPacketID () const noexcept { return PACKET_GC_REQUESTED_IP; }
-	PacketSize_t getPacketSize () const { return szBYTE + szuint + m_Name.size() + 4; }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szBYTE + szuint + m_Name.size() + 4); }
 
 #ifdef __DEBUG_OUTPUT__
 	std::string getPacketName () const { return "GCRequestedIP"; }

@@ -72,7 +72,7 @@ void GCNPCAskDynamic::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_ObjectID );
 	oStream.write( m_ScriptID );
 	
-	size = m_Subject.size();
+	size = static_cast<WORD>(m_Subject.size());
 	if (size == 0) throw InvalidProtocolException("subject size == 0");
 	oStream.write( size );
 	oStream.write( m_Subject );
@@ -84,7 +84,7 @@ void GCNPCAskDynamic::write ( SocketOutputStream & oStream ) const
 	for (; itr != m_Contents.end(); itr++)
 	{
 		// 문자열의 길이를 전송한다.
-		size = (*itr).size();
+		size = static_cast<WORD>((*itr).size());
 		oStream.write(size);
 
 		// 내용이 있는 문자열이라면 문자열 자체를 전송한다.

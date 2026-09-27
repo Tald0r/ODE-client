@@ -75,7 +75,7 @@ IsValidSSN(const char* strSSN1, const char* strSSN2)
 	//----------------------------------------------------------
 	// SSN1 의 길이 체크. 6자여야 한다.
 	//----------------------------------------------------------
-	int lenSSN1 = strlen(strSSN1);
+	int lenSSN1 = static_cast<int>(strlen(strSSN1));
 
 	if (lenSSN1 != 6)
 	{
@@ -85,7 +85,7 @@ IsValidSSN(const char* strSSN1, const char* strSSN2)
 	//----------------------------------------------------------
 	// SSN2의 길이 체크. 7자여야 한다.
 	//----------------------------------------------------------
-	int lenSSN2 = strlen(strSSN2);
+	int lenSSN2 = static_cast<int>(strlen(strSSN2));
 
 	if (lenSSN2 != 7)
 	{
@@ -361,7 +361,7 @@ LoadImageToSurface(const char* pFilename, CDirectDrawSurface& surface)
 	const std::string sResolved = Basic::NormalizeDataPath(pFilename);
 	pFilename = sResolved.c_str();
 
-	int fileLen = strlen(pFilename);
+	int fileLen = static_cast<int>(strlen(pFilename));
 
 	// file이름이 넘 짧은 경우... strlen("이름.bmp")==8
 	if (fileLen < 8)
@@ -504,7 +504,7 @@ SaveSurfaceToImage(const char* pFilename, CDirectDrawSurface& surface)
 		return false;
 	}
 
-	int fileLen = strlen(pFilename);
+	int fileLen = static_cast<int>(strlen(pFilename));
 
 	// file이름이 넘 짧은 경우... strlen("이름.bmp")==8
 	if (fileLen < 8)
@@ -985,7 +985,7 @@ bool LoadImageToSurface(const char* pFilename, CSpriteSurface& surface)
 	const std::string sResolved = Basic::NormalizeDataPath(pFilename);
 	pFilename = sResolved.c_str();
 
-	int fileLen = strlen(pFilename);
+	int fileLen = static_cast<int>(strlen(pFilename));
 
 	if (fileLen < 8) {
 		return false;

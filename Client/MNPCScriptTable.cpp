@@ -145,7 +145,7 @@ MNPCScriptTable::SaveToFile(std::ofstream& file)
 	//-----------------------------------------------------
 	// 개수 저장
 	//-----------------------------------------------------
-	int infoSize = size();
+	int infoSize = static_cast<int>(size());
 	file.write((const char*)&infoSize, 4);
 
 	//-----------------------------------------------------
@@ -244,7 +244,7 @@ MNPCScriptTable::GetContentParameter(int scriptID, int contentID,HashMapScriptPa
 		key+= (*itr).first;
 		key+= ")";
 
-		while((i=str.find(key)) != -1)
+		while((i=static_cast<int>(str.find(key))) != -1)
 			str.replace(str.begin()+i,str.begin()+i+key.size(),(*itr).second->getValue());
 		itr++;
 	}
@@ -295,7 +295,7 @@ MNPCScriptTable::GetSubjectParameter(int scriptID, int subjectID,HashMapScriptPa
 		key+= (*itr).first;
 		key+= ")";
 
-		while((i=str.find(key)) != -1)
+		while((i=static_cast<int>(str.find(key))) != -1)
 			str.replace(str.begin()+i,str.begin()+i+key.size(),(*itr).second->getValue());
 		itr++;
 	}

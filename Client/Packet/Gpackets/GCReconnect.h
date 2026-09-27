@@ -40,10 +40,10 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szBYTE + m_Name.size() 		// 캐릭터 이름
+		return static_cast<PacketSize_t>(szBYTE + m_Name.size() 		// 캐릭터 이름
 			+ szPCType 						// 슬레이어 or 뱀파이어?
 			+ szBYTE + m_ServerIP.size() 	// 새로 접속할 게임 서버 IP
-			+ szDWORD; 						// 인증 키
+			+ szDWORD); 						// 인증 키
 	}
 
 	#ifdef __DEBUG_OUTPUT__

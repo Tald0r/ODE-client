@@ -60,7 +60,7 @@ void GCGuildMemberList::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_Type );		
 	
-	BYTE ListNum = m_GuildMemberInfoList.size();
+	BYTE ListNum = static_cast<BYTE>(m_GuildMemberInfoList.size());
 	oStream.write( ListNum );
 
 	GuildMemberInfoListConstItor itr = m_GuildMemberInfoList.begin();

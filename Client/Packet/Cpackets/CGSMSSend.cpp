@@ -94,11 +94,11 @@ PacketSize_t CGSMSSend::getPacketSize() const
 
 	for ( ; itr != endItr ; ++itr )
 	{
-		ret += szBYTE + itr->size();
+		ret = static_cast<PacketSize_t>(ret + (szBYTE + itr->size()));
 	}
 
-	ret += szBYTE + m_CallerNumber.size();
-	ret += szBYTE + m_Message.size();
+	ret = static_cast<PacketSize_t>(ret + (szBYTE + m_CallerNumber.size()));
+	ret = static_cast<PacketSize_t>(ret + (szBYTE + m_Message.size()));
 
 	return ret;
 

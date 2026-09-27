@@ -73,7 +73,7 @@ void GCGQuestStatusInfo::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 
-	BYTE size = m_Infos.size();
+	BYTE size = static_cast<BYTE>(m_Infos.size());
 	oStream.write(size);
 
 	std::list<QuestStatusInfo*>::const_iterator itr = m_Infos.begin();

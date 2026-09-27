@@ -57,7 +57,7 @@ public:
 
 	uint getSize () const noexcept
 	{
-		return szObjectID					// ObjectID
+		return static_cast<uint>(szObjectID					// ObjectID
 			+ szBYTE + m_Name.size() 		// 뱀파이어 이름
 			+ szCoord + szCoord + szDir 	// 좌표와 방향				
 			+ szSex							// 성별
@@ -71,7 +71,7 @@ public:
 			+ szRank						// 계급
 			+ szBYTE						// 권한
 			+ szuint
-			+ szLevel;
+			+ szLevel);
 	}
 
 	// get max size of object

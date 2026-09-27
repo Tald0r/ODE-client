@@ -730,7 +730,7 @@ class MActionResult {
 		// Get
 		//--------------------------------------------------------
 		bool		IsEmpty() const		{ return m_List.empty(); }
-		int			GetSize() const		{ return m_List.size(); }
+		int			GetSize() const		{ return static_cast<int>(m_List.size()); }
 		ACTIONRESULTNODE_LIST::const_iterator GetIterator() const	{ return m_List.begin(); }
 
 		//--------------------------------------------------------

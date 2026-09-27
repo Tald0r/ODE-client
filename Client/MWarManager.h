@@ -53,7 +53,7 @@ public :
 	//-------------------------------------------------------------------
 	WarInfo*						GetWarInfo(ZoneID_t id);
 	const WarInfoMap&				getWarInfoList() { return m_WarInfo; }
-	int								getSize() { return m_WarInfo.size(); }
+	int								getSize() { return static_cast<int>(m_WarInfo.size()); }
 	
 	//-------------------------------------------------------------------
 	// Check

@@ -9400,10 +9400,10 @@ CSprite::memcpyAlpha4444(WORD* pDest, WORD* pSource, WORD pixels)
 		sg = (sTemp >> ColorDraw::s_bSHIFT4_G) & 0x0F;
 		sb = (sTemp >> ColorDraw::s_bSHIFT4_B) & 0x0F;
 		
-		*pDest =	(s_Value1 << 12) |
+		*pDest =	static_cast<WORD>((s_Value1 << 12) |
 					(sr << 8) |
 					(sg << 4) |
-					(sb);
+					(sb));
 	
 		pDest++;
 		pSource++;
@@ -9523,10 +9523,10 @@ CSprite::memcpyAlpha4444Small(WORD* pDest, WORD* pSource, WORD pixels)
 		sg = (sTemp >> ColorDraw::s_bSHIFT4_G) & 0x0F;
 		sb = (sTemp >> ColorDraw::s_bSHIFT4_B) & 0x0F;
 		
-		*pDest =	(s_Value1 << 12) |
+		*pDest =	static_cast<WORD>((s_Value1 << 12) |
 					(sr << 8) |
 					(sg << 4) |
-					(sb);
+					(sb));
 	
 		pDest++;
 		pSource += s_Value3;

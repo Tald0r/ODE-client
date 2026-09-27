@@ -36,7 +36,7 @@ PacketSize_t GCPartyJoined::getPacketSize() const
 		PARTY_MEMBER_INFO* pInfo = (*itr);
 
 		value += szBYTE;               // 이름 길이
-		value += (pInfo->name).size(); // 실제 이름
+		value = static_cast<PacketSize_t>(value + (pInfo->name).size()); // 실제 이름
 		value += szBYTE;               // 헤어 스타일
 		value += szBYTE;               // 성별
 		value += szIP;					// IP
@@ -142,7 +142,7 @@ void GCPartyJoined::write (SocketOutputStream & oStream) const
 		PARTY_MEMBER_INFO* pInfo = (*itr);
 		Assert(pInfo != NULL);
 
-		BYTE name_length = (pInfo->name).size();
+		BYTE name_length = static_cast<BYTE>((pInfo->name).size());
 		oStream.write(name_length);
 
 		if (name_length > 0)

@@ -104,7 +104,7 @@ void PCItemInfo::write ( SocketOutputStream & oStream )
 	oStream.write( m_IClass );
 	oStream.write( m_ItemType );
 
-	BYTE optionSize = m_OptionType.size();
+	BYTE optionSize = static_cast<BYTE>(m_OptionType.size());
 	oStream.write( optionSize );
 
 	std::list<OptionType_t>::const_iterator iOption = m_OptionType.begin();

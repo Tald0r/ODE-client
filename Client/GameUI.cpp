@@ -453,7 +453,7 @@ UI_SetWorldList()
 
 //		gC_vs_ui.CharManagerEnable();
 
-		const int numGroup = g_pServerInformation->size();
+		const int numGroup = static_cast<int>(g_pServerInformation->size());
 
 		char** groupName = new char* [numGroup];
 		int* groupID = new int [numGroup];
@@ -523,7 +523,7 @@ UI_SetServerList()
 		int groupID = g_pServerInformation->GetServerGroupID();
 		ServerGroup* pServerGroup = g_pServerInformation->GetData( groupID );
 
-		const int numServer = pServerGroup->size();
+		const int numServer = static_cast<int>(pServerGroup->size());
 
 		char** serverName = new char* [numServer];
 		int* serverID = new int [numServer];
@@ -4383,7 +4383,7 @@ void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 	MItem* pModifyItem = g_pInventory->GetItem( pItem->GetID() );
 	if(pModifyItem != NULL)
 	{
-		pModifyItem->AddItemOption( SecondOption );
+		pModifyItem->AddItemOption( static_cast<TYPE_ITEM_OPTION>(SecondOption) );
 	}
 	else
 	{
@@ -4524,7 +4524,7 @@ void		UI_MiniGameScores(GCMiniGameScores* pPacket)
 {
 	BYTE Type = pPacket->getGameType();
 	BYTE Level = pPacket->getLevel();	
-	int Size = pPacket->getSize();
+	int Size = static_cast<int>(pPacket->getSize());
 
 	// Size 가 0이면 아무도 안한것.
 	// 1이면 top score 만 있는것	

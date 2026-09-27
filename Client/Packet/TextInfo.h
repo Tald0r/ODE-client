@@ -39,10 +39,10 @@ public :
 	// get size of object
 	uint getSize () const noexcept 
 	{ 
-		return szDWORD 					// text id
+		return static_cast<uint>(szDWORD 					// text id
 			+ szBYTE + m_Writer.size() 	// writer
 			+ szBYTE + m_Topic.size() 	// topic
-			+ szDWORD; 					// hits
+			+ szDWORD); 					// hits
 	}
 
 	// get debug std::string

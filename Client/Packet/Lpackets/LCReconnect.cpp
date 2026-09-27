@@ -95,7 +95,7 @@ void LCReconnect::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	// write game server's ip
 	//--------------------------------------------------
-	BYTE szGameServerIP = m_GameServerIP.size();
+	BYTE szGameServerIP = static_cast<BYTE>(m_GameServerIP.size());
 
 	if ( szGameServerIP == 0 )
 		throw InvalidProtocolException("szGameServerIP == 0");

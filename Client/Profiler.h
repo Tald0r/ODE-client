@@ -97,7 +97,7 @@ class Profiler {
 		//---------------------------------------------------------------
 		// Iterating
 		//---------------------------------------------------------------
-		int							GetNumber() const	{ return m_mapProfile.size(); }
+		int							GetNumber() const	{ return static_cast<int>(m_mapProfile.size()); }
 		PROFILE_MAP::const_iterator GetBegin() const	{ return m_mapProfile.begin(); }
 
 		//---------------------------------------------------------------

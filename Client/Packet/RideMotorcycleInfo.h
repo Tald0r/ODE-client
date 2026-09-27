@@ -55,7 +55,7 @@ public:
 
 	void addOptionType(OptionType_t OptionType) { m_OptionType.push_back( OptionType ); }
 	void setOptionType(const std::list<OptionType_t>& OptionType) { m_OptionType = OptionType; }
-	int getOptionTypeSize() const noexcept	{ return m_OptionType.size(); }
+	int getOptionTypeSize() const noexcept	{ return static_cast<int>(m_OptionType.size()); }
 	const std::list<OptionType_t>& getOptionType() const noexcept { return m_OptionType; }
 	OptionType_t popOptionType()
 	{

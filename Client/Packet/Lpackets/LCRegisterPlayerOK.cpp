@@ -33,7 +33,7 @@ void LCRegisterPlayerOK::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 
-    BYTE szGroupName = m_GroupName.size();
+    BYTE szGroupName = static_cast<BYTE>(m_GroupName.size());
 	oStream.write( szGroupName );
 	oStream.write( m_GroupName );
 	oStream.write( m_isAdult );

@@ -44,7 +44,7 @@ public:
 		std::list<std::string>::const_iterator itr = m_StringList.begin();
 		for( ; itr != m_StringList.end(); ++itr )
 		{
-			ret += szBYTE + (*itr).size();
+			ret = static_cast<PacketSize_t>(ret + (szBYTE + (*itr).size()));
 		}
 		ret += szDWORD;
 
@@ -61,7 +61,7 @@ public:
 
 	void	addString( std::string str ) { m_StringList.push_back( str ); }
 	void	clearString() { m_StringList.clear(); }
-	int		getSize() const { return m_StringList.size(); }
+	int		getSize() const { return static_cast<int>(m_StringList.size()); }
 	std::string	popString() { std::string ret = m_StringList.front(); m_StringList.pop_front(); return ret; }
 
 	void	setParam( DWORD param ) { m_Param = param; }

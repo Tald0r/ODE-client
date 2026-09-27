@@ -61,7 +61,7 @@ void GCNicknameList::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 
-	BYTE Num = m_Nicknames.size();
+	BYTE Num = static_cast<BYTE>(m_Nicknames.size());
 	oStream.write(Num);
 
 	std::vector<NicknameInfo*>::const_iterator itr = m_Nicknames.begin();

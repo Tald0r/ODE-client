@@ -61,7 +61,7 @@ public :
 	void setTargetName ( const std::string & Name ) { m_TargetName = Name ; }
 
 	// get / set ListNumber
-	BYTE getMessageSize() const { return m_Messages.size(); }
+	BYTE getMessageSize() const { return static_cast<BYTE>(m_Messages.size()); }
 	
 	// get/set chatting message
 	WHISPER_MESSAGE*	popMessage ()	{ WHISPER_MESSAGE* pStr = m_Messages.front(); m_Messages.pop_front(); return pStr; }	

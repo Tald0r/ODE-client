@@ -217,7 +217,7 @@ void GCSkillToTileOK6Handler::execute ( GCSkillToTileOK6 * pPacket , Player * pP
 		// 어느 시점에서 바로 시작되게 한다.
 		//------------------------------------------------------
 		ExecuteActionInfoFromMainNode(
-				skillID + (*g_pActionInfoTable).GetMinResultActionInfo(),
+				static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),
 
 				startX, startY, 0,
 		

@@ -28,7 +28,7 @@ public:
 		if ( m_PetType == PET_NONE ) return szPetType;
 
 //		if ( type == MY_INFO )
-			return szPetType + szMonsterType + szPetLevel + szPetExp + szPetHP + szPetAttr + szPetAttrLevel + szOptionType + szItemType + szBYTE + szBYTE + szBYTE + szBYTE + szObjectID + szBYTE + m_Nickname.size();
+			return static_cast<PacketSize_t>(szPetType + szMonsterType + szPetLevel + szPetExp + szPetHP + szPetAttr + szPetAttrLevel + szOptionType + szItemType + szBYTE + szBYTE + szBYTE + szBYTE + szObjectID + szBYTE + m_Nickname.size());
 //		else
 //			return szPetType + szMonsterType + szPetLevel + szPetExp + szPetAttr + szPetAttrLevel + szOptionType + szItemType + szObjectID;
 	}

@@ -303,7 +303,7 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 				
 				// Inventory의 Item에 기술을 사용해야 한다.
 				AddNewInventoryEffect( itemID,
-										skillID + (*g_pActionInfoTable).GetMinResultActionInfo(),
+										static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),
 										delayFrame
 									);
 

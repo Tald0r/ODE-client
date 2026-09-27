@@ -324,7 +324,7 @@ class MSector {
 		//------------------------------------------------
 		bool		IsExistEffect() const		{ return !m_listEffect.empty(); }
 		void		ClearEffect()				{ m_listEffect.clear(); }
-		int			GetEffectSize() const		{ return m_listEffect.size(); }
+		int			GetEffectSize() const		{ return static_cast<int>(m_listEffect.size()); }
 
 		// 외부에서 iterator로 작업을 할 수 있도록..
 		EFFECT_LIST::const_iterator GetEffectIterator() const { return m_listEffect.begin(); }
@@ -385,7 +385,7 @@ class MSector {
 		BYTE	IsPortal() const		{ return m_fProperty & FLAG_SECTOR_PORTAL; }
 		void	SetPortal()				{ m_fProperty |= FLAG_SECTOR_PORTAL; }
 		void	UnSetPortal()			{ m_fProperty &= ~FLAG_SECTOR_PORTAL; }
-		int							GetPortalSize() const	{ return m_listPortal.size(); }
+		int							GetPortalSize() const	{ return static_cast<int>(m_listPortal.size()); }
 		PORTAL_LIST::const_iterator	GetPortalBegin() const	{ return m_listPortal.begin(); }
 		bool						AddPortal(int type, int zoneID);
 		void						ClearPortal();
@@ -396,7 +396,7 @@ class MSector {
 		//
 		//------------------------------------------------
 		const SECTORSOUND_LIST&				GetSectorSoundList() const	{ return m_listSectorSound; }
-		int									GetSectorSoundSize() const	{ return m_listSectorSound.size(); }
+		int									GetSectorSoundSize() const	{ return static_cast<int>(m_listSectorSound.size()); }
 		SECTORSOUND_LIST::const_iterator	GetSectorSoundBegin() const	{ return m_listSectorSound.begin(); }
 		bool								AddSectorSound(int zoneSoundID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 		bool								AddSectorSound(const SECTORSOUND_INFO& info);

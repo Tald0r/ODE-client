@@ -130,7 +130,7 @@ void GCShopList::write (SocketOutputStream & oStream) const
 			oStream.write(item.itemClass);
 			oStream.write(item.itemType);
 
-			BYTE optionSize = item.optionType.size();
+			BYTE optionSize = static_cast<BYTE>(item.optionType.size());
 			oStream.write(optionSize);
 
 			std::list<OptionType_t>::const_iterator itr;
@@ -170,7 +170,7 @@ PacketSize_t GCShopList::getPacketSize () const
 			size += szObjectID;     // item OID
 			size += szBYTE;         // item class
 			size += szItemType;     // item type
-			size += szBYTE + m_pBuffer[i].optionType.size();   // item option type
+			size = static_cast<PacketSize_t>(size + (szBYTE + m_pBuffer[i].optionType.size()));   // item option type
 			size += szDurability;   // item durability
 			size += szSilver;       // silver coating amount
 			size += szGrade;        // grade

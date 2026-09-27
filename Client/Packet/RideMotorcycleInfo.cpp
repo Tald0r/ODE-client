@@ -83,7 +83,7 @@ void RideMotorcycleInfo::write ( SocketOutputStream & oStream )
 	oStream.write( m_ObjectID );
 	oStream.write( m_ItemType );
 
-	BYTE optionSize = m_OptionType.size();
+	BYTE optionSize = static_cast<BYTE>(m_OptionType.size());
 	oStream.write( optionSize );
 
 	std::list<OptionType_t>:: const_iterator iOption = m_OptionType.begin();
@@ -113,7 +113,7 @@ PacketSize_t RideMotorcycleInfo::getSize()
 
 	PacketSize += szObjectID;   // motorcycle object id
 	PacketSize += szItemType;   // motorcycle type
-	PacketSize += szBYTE + m_OptionType.size(); // motorcycle option type
+	PacketSize = static_cast<PacketSize_t>(PacketSize + (szBYTE + m_OptionType.size())); // motorcycle option type
 	PacketSize += szBYTE;       // number of item in motorcycle inventory
 
 	std::list<RideMotorcycleSlotInfo*>::const_iterator itr = m_RideMotorcycleSlotInfoList.begin();

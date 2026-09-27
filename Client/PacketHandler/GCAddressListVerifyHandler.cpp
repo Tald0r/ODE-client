@@ -39,7 +39,7 @@ void GCAddressListVerifyHandler::execute ( GCAddressListVerify * pPacket , Playe
 		break;
 	case GCAddressListVerify::ADDRESS_LIST_DELETE_OK:
 		if (g_pTempInformation->GetMode()==TempInformation::MODE_SMS_DELETE_ADDRESS)
-			UI_DeleteSMSList(g_pTempInformation->Value1); 
+			UI_DeleteSMSList(static_cast<DWORD>(g_pTempInformation->Value1)); 
 		break;
 	case GCAddressListVerify::ADDRESS_LIST_ADD_FAIL:
 		if(pPacket->getParameter())

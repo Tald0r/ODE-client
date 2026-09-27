@@ -414,7 +414,7 @@ bool CheckInvalidProcess()
 		{
 			if (GetWindowText(hCurrentWindow, szText, 255)>0)
 			{
-				int iLen = strlen(szText);
+				int iLen = static_cast<int>(strlen(szText));
 				for (int j=0;j<iLen;j++)
 				{
 					if(isupper((unsigned char)szText[j]) != 0)
@@ -2778,7 +2778,7 @@ LoadZoneInfo(int n)
 
 				const std::vector<WORD>& zoneID = portal.GetZoneID();
 
-				int numZoneID = zoneID.size();
+				int numZoneID = static_cast<int>(zoneID.size());
 
 				DEBUG_ADD_FORMAT("[%d] numZoneID = %d", i, numZoneID);
 
@@ -5540,7 +5540,7 @@ GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& 
 	{
 		bFindPos = true;
 
-		MItem* pOldItem = g_pInventory->GetItem(fitPoint.x, fitPoint.y);
+		MItem* pOldItem = g_pInventory->GetItem(static_cast<BYTE>(fitPoint.x), static_cast<BYTE>(fitPoint.y));
 
 		// 빈 곳에 추가할려고 하고..
 		// 하나만 남아있다면.. 

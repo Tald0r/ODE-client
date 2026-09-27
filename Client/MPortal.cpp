@@ -51,7 +51,7 @@ MPortal::SaveToFile(ofstream& file)
 {
 	file.write((const char*)&m_Type, 1);
 
-	BYTE size = m_ZoneID.size();
+	BYTE size = static_cast<BYTE>(m_ZoneID.size());
 
 	if(m_Type == TYPE_MULTI_PORTAL)
 	{

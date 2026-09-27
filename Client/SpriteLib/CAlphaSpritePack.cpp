@@ -132,7 +132,7 @@ CAlphaSpritePack::SaveToFile(ofstream& spkFile, ofstream& indexFile)
 	for (TYPE_SPRITEID i=0; i<m_nSprites; i++)
 	{
 		// SpritePack file에 쓰여지는 index를 저장
-		pIndex[i] = spkFile.tellp();
+		pIndex[i] = static_cast<long>(spkFile.tellp());
 
 		// The record header also represents an empty sprite.
 		// CAlphaSprite 내부적으로 길이만 저장하므로 
@@ -167,7 +167,7 @@ CAlphaSpritePack::SaveToFileSpriteOnly(ofstream& spkFile, int32_t &filePosition)
 		return false;
 
 	// SpritePack file에 쓰여지는 index를 저장
-	filePosition = spkFile.tellp();
+	filePosition = static_cast<int32_t>(spkFile.tellp());
 	
 	//--------------------------------------------------
 	//

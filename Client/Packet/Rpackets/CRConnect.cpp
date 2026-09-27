@@ -69,7 +69,7 @@ void CRConnect::write ( SocketOutputStream & oStream )
 	__BEGIN_TRY
 		
 	// servername
-	BYTE num = m_RequestServerName.size();
+	BYTE num = static_cast<BYTE>(m_RequestServerName.size());
 	
 	if (num == 0)
 		throw InvalidProtocolException("szRequestServerName==0");
@@ -79,7 +79,7 @@ void CRConnect::write ( SocketOutputStream & oStream )
 
 
 	// clientname
-	num = m_RequestClientName.size();
+	num = static_cast<BYTE>(m_RequestClientName.size());
 	
 	if (num == 0)
 		throw InvalidProtocolException("szRequestClientName==0");

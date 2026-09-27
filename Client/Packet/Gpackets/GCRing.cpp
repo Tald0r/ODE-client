@@ -65,7 +65,7 @@ void GCRing::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_PhoneNumber );
 	oStream.write( m_SlotID );
 
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 	throw InvalidProtocolException("szName == 0");

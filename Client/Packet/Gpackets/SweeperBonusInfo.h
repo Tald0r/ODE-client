@@ -63,7 +63,7 @@ public :
 	void clearOptionTypeList() { m_OptionTypeList.clear(); }
 	void addOptionType( OptionType_t optionType ) { m_OptionTypeList.push_back( optionType ); }
 	void setOptionType( const OptionTypeList& optionTypeList ) { m_OptionTypeList = optionTypeList; }
-	int getOptionTypeSize() const { return m_OptionTypeList.size(); }
+	int getOptionTypeSize() const { return static_cast<int>(m_OptionTypeList.size()); }
 	OptionType_t popOptionType()
 	{
 		if ( m_OptionTypeList.empty() ) return 0;

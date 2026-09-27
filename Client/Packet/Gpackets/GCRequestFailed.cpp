@@ -36,7 +36,7 @@ void GCRequestFailed::write ( SocketOutputStream & oStream ) const
 
 	oStream.write(m_Code);
 
-	BYTE num = m_Name.size();
+	BYTE num = static_cast<BYTE>(m_Name.size());
 	oStream.write( num );
 
 	if (num==0)

@@ -4489,7 +4489,7 @@ void C_VS_UI_CHATTING::KeyboardControl(UINT message, UINT key, long extra)
 					temp_history.m_string = sz_chat_str;
 					temp_history.m_timer.push_back(MonotonicClock::Now());
 					m_history.push_back(temp_history);
-					m_history_line = m_history.size();
+					m_history_line = static_cast<int>(m_history.size());
 				}
 				else
 				{
@@ -4516,7 +4516,7 @@ void C_VS_UI_CHATTING::KeyboardControl(UINT message, UINT key, long extra)
 					temp_history.m_string = sz_chat_str;
 					temp_history.m_timer.push_back(MonotonicClock::Now());
 					m_history.push_back(temp_history);
-					m_history_line = m_history.size();
+					m_history_line = static_cast<int>(m_history.size());
 				}
 				// 增加对使用高级对讲机物品无时间限制支持
 // 				if(0 == strncmp(sz_chat_str, (*g_pGameStringTable)[UI_STRING_MESSAGE_PLAYER_SAY].GetString(),(*g_pGameStringTable)[UI_STRING_MESSAGE_PLAYER_SAY].GetLength()))
@@ -6070,7 +6070,7 @@ void C_VS_UI_CHATTING::Process()
 		{
 			for(int i = 0; static_cast<size_t>(i) < m_v_help_check.size(); i++)
 				m_v_help_check[i] = false;
-			CheckNum = m_v_help_check.size();
+			CheckNum = static_cast<int>(m_v_help_check.size());
 		}
 		int num = 0;
 		if(CheckNum > 0) num = rand()%CheckNum;
@@ -9641,12 +9641,12 @@ void C_VS_UI_SKILL::ResetSize()
 		}
 		else
 		{
-			x = m_skill_start_x-m_skill_guard_x*g_pSkillAvailable->size();
-			w = m_skill_guard_x*(g_pSkillAvailable->size()+1);
+			x = static_cast<int>(m_skill_start_x-m_skill_guard_x*g_pSkillAvailable->size());
+			w = static_cast<int>(m_skill_guard_x*(g_pSkillAvailable->size()+1));
 		}
 		
-		y = m_skill_start_y-m_skill_guard_y*(g_pSkillAvailable->size()/SPREAD_X_MAX);
-		h = m_skill_guard_y+m_skill_guard_y*(g_pSkillAvailable->size()/SPREAD_X_MAX);
+		y = static_cast<int>(m_skill_start_y-m_skill_guard_y*(g_pSkillAvailable->size()/SPREAD_X_MAX));
+		h = static_cast<int>(m_skill_guard_y+m_skill_guard_y*(g_pSkillAvailable->size()/SPREAD_X_MAX));
 	}
 	else
 	{
@@ -12582,7 +12582,7 @@ void	C_VS_UI_INFO::CheckGradeSkillIDList()
 			break;
 		}
 	}
-	m_draw_grade_skill_mark = m_grade_skill_id.size();
+	m_draw_grade_skill_mark = static_cast<int>(m_grade_skill_id.size());
 }
 
 //-----------------------------------------------------------------------------
@@ -18722,7 +18722,7 @@ void	C_VS_UI_INFO::_Show5()
 					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
 					// edit by coffee 2007-2-25 end
 					
-					m_advance_skill_count = list.size();
+					m_advance_skill_count = static_cast<int>(list.size());
 					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
@@ -19020,7 +19020,7 @@ void	C_VS_UI_INFO::_Show5()
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
 					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
 					// edit by coffee 2007-2-25 end
-					m_advance_skill_count = list.size();
+					m_advance_skill_count = static_cast<int>(list.size());
 					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
 					{
 
@@ -19620,7 +19620,7 @@ void	C_VS_UI_INFO::_Show5()
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
 					MSkillDomain::SKILL_STEP_LIST::iterator ss;
-					m_advance_skill_count = list.size();
+					m_advance_skill_count = static_cast<int>(list.size());
 
 					if(m_advance_skill_count>2)
 						ss = list.begin()+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
@@ -21479,7 +21479,7 @@ bool C_VS_UI_EFFECT_STATUS::MouseControl(UINT message, int _x, int _y)
 			{
 				if(static_cast<size_t>(select) >= g_char_slot_ingame.STATUS.size() && static_cast<size_t>(select) <= g_char_slot_ingame.STATUS.size() + g_pUserInformation->WarInfo.size())		// 상태가 아니라 전쟁 관련이면
 				{
-					int count = select - g_char_slot_ingame.STATUS.size();
+					int count = static_cast<int>(select - g_char_slot_ingame.STATUS.size());
 					const WAR_INFO& ifo = g_pUserInformation->WarInfo[count];					
 					char temp2[512]="";
 					
@@ -21739,7 +21739,7 @@ void C_VS_UI_EFFECT_STATUS::KeyboardControl(UINT message, UINT key, long extra)
 //-----------------------------------------------------------------------------
 void C_VS_UI_EFFECT_STATUS::Show()
 {
-	int size = g_char_slot_ingame.STATUS.size() + g_pUserInformation->WarInfo.size();
+	int size = static_cast<int>(g_char_slot_ingame.STATUS.size() + g_pUserInformation->WarInfo.size());
 	if(size < m_scroll+10)
 		m_scroll = max(0, size-10);
 	bool bDrained = false;
@@ -23486,7 +23486,7 @@ void C_VS_UI_WINDOW_MANAGER::LoadFromFile(ifstream &file)
 // 2004, 6, 4, sobeit add start
 void C_VS_UI_WINDOW_MANAGER::SetSMSMynum(char* str)
 {
-	int len = strlen(str);
+	int len = static_cast<int>(strlen(str));
 	if(len>0 && len<12)
 	{
 		SafeFormat::Copy(m_SMS_MyNum, str);
@@ -23742,8 +23742,8 @@ void C_VS_UI_TEAM_LIST::Show()
 		if(m_iFocus != -1)
 			m_guild_spk.BltLocked(m_print_x[0]-71, m_print_y-5+m_print_gap*m_iFocus, BAR_HILIGHTED);
 		//스크롤TAG찍기
-		int list_size_search=m_bl_ready ? m_v_ready_team_search_list.size() : m_v_regist_team_search_list.size() ;
-		int list_size=m_bl_ready ? m_v_ready_team_list.size() : m_v_regist_team_list.size() ;
+		int list_size_search=static_cast<int>(m_bl_ready ? m_v_ready_team_search_list.size() : m_v_regist_team_search_list.size()) ;
+		int list_size=static_cast<int>(m_bl_ready ? m_v_ready_team_list.size() : m_v_regist_team_list.size()) ;
 		if(list_size_search)
 		{
 			if(list_size_search > 9)	// 스크롤이 생기는 경우에만
@@ -24039,16 +24039,16 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 			if(m_bl_ready)
 			{
 				if(m_v_ready_team_search_list.size())
-					m_scroll = min(m_v_ready_team_search_list.size()-9, (m_v_ready_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height);
+					m_scroll = static_cast<int>(min(m_v_ready_team_search_list.size()-9, (m_v_ready_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height));
 				else
-					m_scroll = min(m_v_ready_team_list.size()-9, (m_v_ready_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height);
+					m_scroll = static_cast<int>(min(m_v_ready_team_list.size()-9, (m_v_ready_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height));
 			}
 			else
 			{
 				if(m_v_regist_team_search_list.size())
-					m_scroll = min(m_v_regist_team_search_list.size()-9, (m_v_regist_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height);
+					m_scroll = static_cast<int>(min(m_v_regist_team_search_list.size()-9, (m_v_regist_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height));
 				else
-					m_scroll = min(m_v_regist_team_list.size()-9, (m_v_regist_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height);
+					m_scroll = static_cast<int>(min(m_v_regist_team_list.size()-9, (m_v_regist_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height));
 			}
 		}
 		else
@@ -24083,13 +24083,13 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 				if(m_v_ready_team_search_list.size() > 9)
 				{
 					m_bl_scrolling = true;
-					m_scroll = (m_v_ready_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height;
+					m_scroll = static_cast<int>((m_v_ready_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height);
 				}
 				else
 					if(m_v_ready_team_list.size() > 9)	// 스크롤이 생기는 경우에만
 					{
 						m_bl_scrolling = true;
-						m_scroll = (m_v_ready_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height;
+						m_scroll = static_cast<int>((m_v_ready_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height);
 					}
 			}
 			else
@@ -24097,13 +24097,13 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 				if(m_v_regist_team_search_list.size() > 9)	// 스크롤이 생기는 경우에만
 				{
 					m_bl_scrolling = true;
-					m_scroll = (m_v_regist_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height;
+					m_scroll = static_cast<int>((m_v_regist_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height);
 				}
 				else
 					if(m_v_regist_team_list.size() > 9)	// 스크롤이 생기는 경우에만
 					{
 						m_bl_scrolling = true;
-						m_scroll = (m_v_regist_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height;
+						m_scroll = static_cast<int>((m_v_regist_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height);
 					}
 			}
 		}
@@ -24578,7 +24578,7 @@ public:
 };
 void C_VS_UI_TEAM_MEMBER_LIST::_Sort(int nSort)
 {
-	int nSize = m_v_member_list.size();
+	int nSize = static_cast<int>(m_v_member_list.size());
 	if(nSize < 2) return;
 
 	if(nSort == SORT_ID)
@@ -25375,18 +25375,18 @@ void	C_VS_UI_FRIEND_INFO::Show()
 	if(m_ButtonID_Down == KIND_ID)
 	{
 		if(m_v_pFriendList.size()>8 && m_bl_scrolling)
-			m_scroll = (m_tag_y-(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON)))*(m_v_pFriendList.size()-8)/barHeight;
+			m_scroll = static_cast<int>((m_tag_y-(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON)))*(m_v_pFriendList.size()-8)/barHeight);
 
 		if(!m_bl_scrolling && m_v_pFriendList.size()>8)
-			m_tag_y = m_scroll*barHeight/(m_v_pFriendList.size()-8)+(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON));
+			m_tag_y = static_cast<int>(m_scroll*barHeight/(m_v_pFriendList.size()-8)+(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON)));
 	}
 	if(m_ButtonID_Down == BLACK_ID)
 	{
 		if(m_v_pBlackList.size()>8 && m_bl_scrolling)
-			m_scroll = (m_tag_y-(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON)))*(m_v_pBlackList.size()-8)/barHeight;
+			m_scroll = static_cast<int>((m_tag_y-(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON)))*(m_v_pBlackList.size()-8)/barHeight);
 
 		if(!m_bl_scrolling && m_v_pBlackList.size()>8)
-			m_tag_y = m_scroll*barHeight/(m_v_pBlackList.size()-8)+(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON));
+			m_tag_y = static_cast<int>(m_scroll*barHeight/(m_v_pBlackList.size()-8)+(scroll_up_y+m_friend_spk.GetHeight(SCROLL_UP_BUTTON)));
 	}
 /////////////////////////////////////////////
 	if(gpC_base->m_p_DDSurface_back->Lock())
@@ -25719,7 +25719,7 @@ void C_VS_UI_FRIEND_INFO::AddChattingMessageToHistory(FRIEND_LIST* pList, string
 		std::string str = pList->Name + " " + string(strtime) + ":" + strMessage;
 		char* str2 = (char*)str.c_str();
 		std::vector<std::string> v_strlist;
-		GetStrLine(v_strlist, str2, strlen(str2), true);
+		GetStrLine(v_strlist, str2, static_cast<int>(strlen(str2)), true);
 		for(int j=0; static_cast<size_t>(j)<v_strlist.size(); j++)
 		{
 			HISTORY_LIST* pHistory = new HISTORY_LIST;
@@ -26014,10 +26014,10 @@ void C_VS_UI_FRIEND_CHATTING_INFO::Show()
 		m_pList->blIsShow = 0;
 	}
 	else if(m_pList->m_v_pHistory_List.size()>9 && m_bl_scrolling)
-		m_scroll = (m_tag_y-(scroll_up_y+m_chatting_spk.GetHeight(SCROLL_UP_BUTTON)))*(m_pList->m_v_pHistory_List.size()-9)/barHeight;
+		m_scroll = static_cast<int>((m_tag_y-(scroll_up_y+m_chatting_spk.GetHeight(SCROLL_UP_BUTTON)))*(m_pList->m_v_pHistory_List.size()-9)/barHeight);
 
 	if(!m_bl_scrolling && m_pList->m_v_pHistory_List.size()>9)
-		m_tag_y = m_scroll*barHeight/(m_pList->m_v_pHistory_List.size()-9)+(scroll_up_y+m_chatting_spk.GetHeight(SCROLL_UP_BUTTON));
+		m_tag_y = static_cast<int>(m_scroll*barHeight/(m_pList->m_v_pHistory_List.size()-9)+(scroll_up_y+m_chatting_spk.GetHeight(SCROLL_UP_BUTTON)));
 	////////////////////////////////////////
 	for(int i=0; i<9; i++)
 	{
@@ -26145,7 +26145,7 @@ void C_VS_UI_FRIEND_CHATTING_INFO::AddLocalMessageToHistory(string strMessage)
 		std::string str = g_char_slot_ingame.sz_name + " " + string(strtime) + ":" + strMessage;
 		char* str2 = (char*)str.c_str();
 		std::vector<std::string> v_strlist;
-		GetStrLine(v_strlist, str2, strlen(str2), true);
+		GetStrLine(v_strlist, str2, static_cast<int>(strlen(str2)), true);
 		for(int j=0; static_cast<size_t>(j)<v_strlist.size(); j++)
 		{
 			C_VS_UI_FRIEND_INFO::HISTORY_LIST* pHistory = new C_VS_UI_FRIEND_INFO::HISTORY_LIST;
@@ -30936,7 +30936,7 @@ void C_VS_UI_WAR_LIST::Show()
 	
 	if(!m_v_war_list.empty())
 	{
-		int list = (m_v_war_list.size()-print_list) * m_scroll / scroll_tag_height;
+		int list = static_cast<int>((m_v_war_list.size()-print_list) * m_scroll / scroll_tag_height);
 		
 		gap = 0;
 		std::vector<_WarList>::const_iterator		itr;
@@ -31239,18 +31239,18 @@ void	C_VS_UI_WAR_LIST::Run(id_t id)
 	case SCROLL_UP_ID :
 		if(m_v_war_list.size()>9)
 		{
-			int list = (m_v_war_list.size() - 9) * m_scroll / scroll_tag_height;
+			int list = static_cast<int>((m_v_war_list.size() - 9) * m_scroll / scroll_tag_height);
 
 			if(list > 0)
-				m_scroll = scroll_tag_height * (list-1) / (m_v_war_list.size()-9) + 1;			
+				m_scroll = static_cast<int>(scroll_tag_height * (list-1) / (m_v_war_list.size()-9) + 1);			
 		}
 		break;
 	case SCROLL_DOWN_ID :
 		if(m_v_war_list.size()>9)
 		{
-			int list = (m_v_war_list.size() - 9) * m_scroll / scroll_tag_height;
+			int list = static_cast<int>((m_v_war_list.size() - 9) * m_scroll / scroll_tag_height);
 
-			m_scroll = (scroll_tag_height * min((list+1),m_v_war_list.size()-9)) / (m_v_war_list.size()-9) + 1;
+			m_scroll = static_cast<int>((scroll_tag_height * min((list+1),m_v_war_list.size()-9)) / (m_v_war_list.size()-9) + 1);
 		}
 		break;
 	case CLOSE_ID :
@@ -33719,7 +33719,7 @@ C_VS_UI_LOTTERY_CARD::C_VS_UI_LOTTERY_CARD( int step)
 	}
 
 	int window_w = m_pC_lottery_spk->GetWidth(BACK);
-	int window_h = 98+19*m_GiftList.size()+27;
+	int window_h = static_cast<int>(98+19*m_GiftList.size()+27);
 	
 	Set(g_GameRect.right/2-window_w/2, g_GameRect.bottom/2 - window_h/2, window_w, window_h);
 	

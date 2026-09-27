@@ -44,15 +44,15 @@ PacketSize_t CRWhisper::getPacketSize () const
 	{
 		WHISPER_MESSAGE* pString = *iString;
 
-		messageBytes += szBYTE + pString->msg.size();
+		messageBytes = static_cast<int>(messageBytes + (szBYTE + pString->msg.size()));
 		messageBytes += szDWORD;
 
 		iString++;
 	}
 
-	return szBYTE + m_Name.size() 
+	return static_cast<PacketSize_t>(szBYTE + m_Name.size() 
 			+ szBYTE + m_TargetName.size() 
-			+ szBYTE + messageBytes + szBYTE +szBYTE; 
+			+ szBYTE + messageBytes + szBYTE +szBYTE); 
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 		throw InvalidProtocolException("invalid race");
 
 	// Name
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
@@ -145,7 +145,7 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_Name );
 
 	// TargetName
-	szName = m_TargetName.size();
+	szName = static_cast<BYTE>(m_TargetName.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
@@ -158,7 +158,7 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_TargetName );
 		
 	// message
-	BYTE numMessage = m_Messages.size();
+	BYTE numMessage = static_cast<BYTE>(m_Messages.size());
 
 	oStream.write( numMessage );
 
@@ -168,7 +168,7 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 	{
 		WHISPER_MESSAGE* pString = *iString;
 
-		BYTE szMessage = pString->msg.size();
+		BYTE szMessage = static_cast<BYTE>(pString->msg.size());
 
 		if ( szMessage == 0 )
 			throw InvalidProtocolException("szMessage == 0");

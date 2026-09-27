@@ -105,7 +105,7 @@ class DLLIFC CImmConstant : public CImmEffect
         LONG lDirectionY,
         DWORD dwDuration = IMM_EFFECT_DONT_CHANGE,
         LONG lMagnitude = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR
         );
 
     BOOL
@@ -113,7 +113,7 @@ class DLLIFC CImmConstant : public CImmEffect
         LONG lAngle,
         DWORD dwDuration = IMM_EFFECT_DONT_CHANGE,
         LONG lMagnitude = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR
         );
 
 	BOOL ChangeMagnitude( LONG lMagnitude );

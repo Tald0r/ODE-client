@@ -77,7 +77,7 @@ void LGIncomingConnection::write ( Datagram & oDatagram ) const
 	//--------------------------------------------------
 	// write player id
 	//--------------------------------------------------
-	BYTE szPlayerID = m_PlayerID.size();
+	BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
 
 	if ( szPlayerID == 0 )
 		throw InvalidProtocolException("szPlayerID == 0");
@@ -92,7 +92,7 @@ void LGIncomingConnection::write ( Datagram & oDatagram ) const
 	//--------------------------------------------------
 	// write PC name
 	//--------------------------------------------------
-	BYTE szPCName = m_PCName.size();
+	BYTE szPCName = static_cast<BYTE>(m_PCName.size());
 
 	if ( szPCName == 0 )
 		throw InvalidProtocolException("szPCName == 0");
@@ -107,7 +107,7 @@ void LGIncomingConnection::write ( Datagram & oDatagram ) const
 	//--------------------------------------------------
 	// write client IP
 	//--------------------------------------------------
-	BYTE szClientIP = m_ClientIP.size();
+	BYTE szClientIP = static_cast<BYTE>(m_ClientIP.size());
 
 	if ( szClientIP == 0 )
 		throw InvalidProtocolException("szClientIP == 0");

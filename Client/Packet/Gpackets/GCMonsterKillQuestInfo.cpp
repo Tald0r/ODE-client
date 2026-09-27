@@ -65,7 +65,7 @@ void GCMonsterKillQuestInfo::write ( SocketOutputStream & oStream ) const
 
 	Assert( m_QuestInfoList.size() <= maxQuestNum );
 
-	BYTE num = m_QuestInfoList.size();
+	BYTE num = static_cast<BYTE>(m_QuestInfoList.size());
 
 	oStream.write(num);
 
@@ -91,7 +91,7 @@ PacketSize_t GCMonsterKillQuestInfo::getPacketSize() const
 
 	PacketSize_t result = 0;
 
-	result += szBYTE + szQuestInfo * m_QuestInfoList.size();
+	result = static_cast<PacketSize_t>(result + (szBYTE + szQuestInfo * m_QuestInfoList.size()));
 
 	return result;
 

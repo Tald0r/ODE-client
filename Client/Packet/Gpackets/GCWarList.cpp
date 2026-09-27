@@ -107,7 +107,7 @@ void GCWarList::write (SocketOutputStream & oStream) const
 {
 	__BEGIN_TRY
 
-	BYTE count = m_WarInfos.size();
+	BYTE count = static_cast<BYTE>(m_WarInfos.size());
 		
 	oStream.write( count );
 

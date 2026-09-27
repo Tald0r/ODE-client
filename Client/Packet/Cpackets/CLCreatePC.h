@@ -61,12 +61,12 @@ public:
 	// const static CLCreatePCPacketSize 를 정의, 리턴하라.
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szBYTE + m_Name.size() 	// 이름
+		return static_cast<PacketSize_t>(szBYTE + m_Name.size() 	// 이름
 			+ szSlot					// 슬랏
 			+ szBYTE					// 슬레이어 플래그(3 bit)
 			+ szAttr* 3
 			+ szColor* SLAYER_COLOR_MAX // 색깔 정보
-			+ szRace;					// 종족
+			+ szRace);					// 종족
 	}
 
 #ifdef __DEBUG_OUTPUT__

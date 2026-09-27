@@ -67,7 +67,7 @@ void RCRequestedFileInfo::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_Version );
 
 	// m_Filename
-	BYTE szFilename = m_Filename.size();
+	BYTE szFilename = static_cast<BYTE>(m_Filename.size());
 
 	if ( szFilename == 0 )
 		throw InvalidProtocolException("szFilename == 0");
@@ -172,7 +172,7 @@ RCRequestedFile::read ( SocketInputStream & iStream )
 void 
 RCRequestedFile::write ( SocketOutputStream & oStream ) const
 {
-	BYTE listNum = m_FileInfos.size();
+	BYTE listNum = static_cast<BYTE>(m_FileInfos.size());
 
 	oStream.write( listNum );
 

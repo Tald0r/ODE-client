@@ -24,7 +24,7 @@ public:
     void read(SocketInputStream & iStream);
     void write(SocketOutputStream & oStream) const;
 	PacketID_t getPacketID() const noexcept { return PACKET_CG_ADD_SMS_ADDRESS; }
-	PacketSize_t getPacketSize() const { return szBYTE + m_CharacterName.size() + szBYTE + m_CustomName.size() + szBYTE + m_Number.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szBYTE + m_CharacterName.size() + szBYTE + m_CustomName.size() + szBYTE + m_Number.size()); }
 	string getPacketName() const { return "CGAddSMSAddress"; }
 	string toString() const;
 	

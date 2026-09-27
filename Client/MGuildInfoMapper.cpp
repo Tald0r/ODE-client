@@ -182,7 +182,7 @@ MGuildInfoMapper::Set(WORD guildID, GUILD_INFO* pInfo)
 void	
 MGuildInfoMapper::SaveToFile(std::ofstream& file)
 {
-	int num = size();
+	int num = static_cast<int>(size());
 
 	file.write((const char*)&num, 4);
 

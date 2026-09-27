@@ -69,7 +69,7 @@ void GCUnionOfferList::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 
-	BYTE szNum = m_UnionOfferList.size();
+	BYTE szNum = static_cast<BYTE>(m_UnionOfferList.size());
 	oStream.write(szNum);
 
 	std::list<SingleGuildUnionOffer*>::const_iterator itr = m_UnionOfferList.begin();

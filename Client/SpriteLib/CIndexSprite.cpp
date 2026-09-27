@@ -661,7 +661,7 @@ CIndexSprite::GetIndexColor(WORD color)
 						+ ColorDraw::Green(color) 
 						+ ColorDraw::Blue(color);
 			
-	return GetColorToGradation( spriteGradation );
+	return GetColorToGradation( static_cast<BYTE>(spriteGradation) );
 }
 
 //-----------------------------------------------------------------------------

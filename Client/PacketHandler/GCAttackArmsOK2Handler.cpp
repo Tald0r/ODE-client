@@ -49,7 +49,7 @@ void GCAttackArmsOK2Handler::execute ( GCAttackArmsOK2 * pPacket , Player * pPla
 					pPacket->getSkillType() == SKILL_TRIDENT || pPacket->getSkillType() == SKILL_QUICK_FIRE ||
 					pPacket->getSkillType() == SKILL_ULTIMATE_BLOW || pPacket->getSkillType() == SKILL_HARPOON_BOMB)
 		{
-			TYPE_ACTIONINFO resultActionInfo = pPacket->getSkillType() + g_pActionInfoTable->GetMinResultActionInfo();
+			TYPE_ACTIONINFO resultActionInfo = static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + g_pActionInfoTable->GetMinResultActionInfo());
 			// 바로 맞는 모습을 보이게 한다.
 			g_pPlayer->PacketSpecialActionResult( 
 									resultActionInfo,	// 기본 공격 == 총!? 

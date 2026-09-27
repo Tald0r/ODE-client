@@ -43,7 +43,7 @@ void GCAddVampirePortal::write ( SocketOutputStream & oStream )
 
 	oStream.write(m_ObjectID);
 
-	BYTE length = m_OwnerID.size();
+	BYTE length = static_cast<BYTE>(m_OwnerID.size());
 	oStream.write(length);
 
 	if (length > 0)

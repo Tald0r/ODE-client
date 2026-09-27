@@ -227,7 +227,7 @@ CPartManager<IndexType, PartIndexType, DataType>::Init(IndexType maxIndex, PartI
 	//------------------------------------------------------
 	if (maxPart > maxIndex)
 	{
-		maxPart = maxIndex;
+		maxPart = static_cast<PartIndexType>(maxIndex);
 	}
 
 	//------------------------------------------------------

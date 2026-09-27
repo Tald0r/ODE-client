@@ -515,7 +515,7 @@ class MSkillDomain {
 		void			Next()				{ m_iterator++; }		
 		bool			IsEnd() const		{ return m_iterator==m_mapSkillID.end(); }
 		bool			IsNotEnd() const	{ return m_iterator!=m_mapSkillID.end(); }
-		int				GetSize() const		{ return m_mapSkillID.size(); }
+		int				GetSize() const		{ return static_cast<int>(m_mapSkillID.size()); }
 
 		//------------------------------------------------------
 		// Level / Exp

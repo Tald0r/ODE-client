@@ -84,7 +84,7 @@ MHomingEffect::CalculateAngle()
 	// 현재 방향에서 목표의 방향을 향한 
 	// 각도 변환값(m_RadStep)을 알아낸다.
 	//--------------------------------------------------
-	int targetAngle = MathTable::GetAngleToTarget(m_PixelX, m_PixelY, m_TargetX, m_TargetY);
+	int targetAngle = MathTable::GetAngleToTarget(static_cast<int>(m_PixelX), static_cast<int>(m_PixelY), m_TargetX, m_TargetY);
 
 	int dir = MathTable::GetAngleDir( m_RadCurrent, targetAngle );
 
@@ -196,7 +196,7 @@ MHomingEffect::Update()
 
 		if (fabs(m_PixelZ-m_TargetZ) < m_StepZ)
 		{
-			m_PixelZ = m_TargetZ;
+			m_PixelZ = static_cast<float>(m_TargetZ);
 			m_StepZ = 0;
 		}
 

@@ -28,8 +28,8 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_CG_USE_MESSAGE_ITEM_FROM_INVENTORY; }
 	PacketSize_t getPacketSize() const 
 	{ 
-		return CGUseItemFromInventory::getPacketSize() 
-				+ szBYTE + m_Message.size(); 
+		return static_cast<PacketSize_t>(CGUseItemFromInventory::getPacketSize() 
+				+ szBYTE + m_Message.size()); 
 	}
 
 #ifdef __DEBUG_OUTPUT__

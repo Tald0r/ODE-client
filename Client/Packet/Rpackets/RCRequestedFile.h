@@ -26,7 +26,7 @@ public :
     void write ( SocketOutputStream & oStream ) const;
 
 	// get packet's body size
-	PacketSize_t getPacketSize () const { return szBYTE + 4 + szBYTE + m_Filename.size() + 4; }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szBYTE + 4 + szBYTE + m_Filename.size() + 4); }
 
 	#ifdef __DEBUG_OUTPUT__
 		// get packet name
@@ -100,7 +100,7 @@ public :
 		std::string toString () const;
 	#endif
 
-	DWORD getListNum () const { return m_FileInfos.size(); }
+	DWORD getListNum () const { return static_cast<DWORD>(m_FileInfos.size()); }
 	
 	void	addInfo(RCRequestedFileInfo* pInfo)	{ m_FileInfos.push_back( pInfo ); }
 	RCRequestedFileInfo* popInfo()	{ if (m_FileInfos.empty()) return NULL; RCRequestedFileInfo* pInfo = m_FileInfos.front(); m_FileInfos.pop_front(); return pInfo; }

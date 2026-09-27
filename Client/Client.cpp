@@ -481,7 +481,7 @@ void		PrecalculateAdvancementClassCreatureFrames()
 
 //		try{
 		g_AdvanceSlayerActionMaxCount[ actionindex ] = 
-			g_pTopView->m_AdvancementSlayerManFPK[ part ][ actionindex ][2].GetSize();
+			static_cast<BYTE>(g_pTopView->m_AdvancementSlayerManFPK[ part ][ actionindex ][2].GetSize());
 //		}catch(...){} //add by viva
 	}
 	
@@ -491,7 +491,7 @@ void		PrecalculateAdvancementClassCreatureFrames()
 		int actionindex = i - ADVANCEMENT_ACTION_START;
 //		try{
 		g_AdvanceVampireActionMaxCount[ actionindex ] = 
-			g_pTopView->m_AdvancementVampireManFPK[0][ actionindex ][2].GetSize();
+			static_cast<BYTE>(g_pTopView->m_AdvancementVampireManFPK[0][ actionindex ][2].GetSize());
 //		}catch(...){} //add by viva
 	}
 
@@ -500,7 +500,7 @@ void		PrecalculateAdvancementClassCreatureFrames()
 		int actionindex = i - ADVANCEMENT_ACTION_START;
 //		try{
 		g_AdvanceOustersActionMaxCount[ actionindex ] = 
-			g_pTopView->m_AdvancementOustersFPK[1][ actionindex ][2].GetSize();
+			static_cast<BYTE>(g_pTopView->m_AdvancementOustersFPK[1][ actionindex ][2].GetSize());
 //		}catch(...){} //add by viva
 	}
 }
@@ -610,7 +610,7 @@ long FAR PASCAL PatchLogWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
             PostQuitMessage(0);
         return 0L;
 	}
-	return DefWindowProc(hWnd, message, wParam, lParam);
+	return static_cast<long>(DefWindowProc(hWnd, message, wParam, lParam));
 }
 
 bool
@@ -626,7 +626,7 @@ ReadPatchLogFromFile()
 	}
 
 	file.seekg( 0, ios::end );
-	long fpEnd = file.tellg();
+	long fpEnd = static_cast<long>(file.tellg());
 
 	if (g_pPatchLogBuffer!=NULL)
 	{
@@ -641,7 +641,7 @@ ReadPatchLogFromFile()
 	while (!file.eof())
 	{
 		file.getline(strBuffer, 254);
-		int n = file.gcount();		
+		int n = static_cast<int>(file.gcount());		
 		
 		if (n==0)
 		{
@@ -1110,7 +1110,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 				return 0L;
 			}
 
-			gC_vs_ui.KeyboardControl(message, wParam, lParam);
+			gC_vs_ui.KeyboardControl(message, static_cast<UINT>(wParam), static_cast<long>(lParam));
             // Handle any non-accelerated key commands
 
 			switch (wParam)
@@ -1409,7 +1409,7 @@ color
 				file.close();
 			}
 			*/
-			gC_vs_ui.KeyboardControl(message, wParam, lParam);
+			gC_vs_ui.KeyboardControl(message, static_cast<UINT>(wParam), static_cast<long>(lParam));
 
 			#ifdef __WM_OUTPUT_DEBUG__
 				DEBUG_ADD("UI KeyCtrl OK");
@@ -1647,7 +1647,7 @@ color
 				}	
 			#endif
 
-			gC_vs_ui.KeyboardControl(message, wParam, lParam);
+			gC_vs_ui.KeyboardControl(message, static_cast<UINT>(wParam), static_cast<long>(lParam));
 
 			#ifdef __WM_OUTPUT_DEBUG__
 				DEBUG_ADD("[WM_IME_....] OK");
@@ -1664,7 +1664,7 @@ color
 		DEBUG_ADD("[WM_....]");
 	#endif
 
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    return static_cast<long>(DefWindowProc(hWnd, message, wParam, lParam));
 }
 
 
@@ -3492,7 +3492,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 				GetWindowThreadProcessId(hwndUpdate, &pid);
 				hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 				TerminateProcess(hProcess, 0);
-				int a = SendMessage(hwndUpdate, WM_CLOSE, 0 , 0);
+				int a = static_cast<int>(SendMessage(hwndUpdate, WM_CLOSE, 0 , 0));
 		}
 		Sleep(1000);
 	// Existence test only; the error_code overload reports false rather
@@ -3760,7 +3760,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 
 	// g_hInstance is set by WinMain before this runs; it stays NULL off Windows.
 	// random
-	srand(time(NULL));
+	srand(static_cast<unsigned int>(time(NULL)));
 
 	
 	
@@ -3919,7 +3919,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		if (8 -strlen(checkStr) !=0)
 		{
 			memcpy(T_checkStr,checkStr,strlen(checkStr));
-			int n = 8-strlen(checkStr);
+			int n = static_cast<int>(8-strlen(checkStr));
 			char* p=checkStr;
 			for (int i =0;i<n;i++)
 			{
@@ -4216,7 +4216,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		// buffer.
 		char UpdateDir[_MAX_PATH + sizeof(DIRECTORY_UPDATE)] = { 0, };
 
-		int lenCWD = strlen(CWD);
+		int lenCWD = static_cast<int>(strlen(CWD));
 		if (lenCWD > 1)
 		{
 			if (CWD[lenCWD-1]=='\\')

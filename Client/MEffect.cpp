@@ -177,9 +177,9 @@ MEffect::SetEffectTargetNULL()
 void			
 MEffect::SetPixelPosition(int x, int y, int z)
 {
-	m_PixelX = x;
-	m_PixelY = y;
-	m_PixelZ = z;
+	m_PixelX = static_cast<float>(x);
+	m_PixelY = static_cast<float>(y);
+	m_PixelZ = static_cast<float>(z);
 
 	AffectPosition();
 }
@@ -194,8 +194,8 @@ void
 MEffect::AffectPosition()
 {
 	// Pixel좌표를 Sector좌표로 바꾼다.
-	m_X = MTopView::PixelToMapX( m_PixelX );
-	m_Y = MTopView::PixelToMapY( m_PixelY );
+	m_X = MTopView::PixelToMapX( static_cast<int>(m_PixelX) );
+	m_Y = MTopView::PixelToMapY( static_cast<int>(m_PixelY) );
 }
 
 
@@ -222,8 +222,8 @@ MEffect::SetPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	m_X = x; 
 	m_Y = y; 
 	
-	m_PixelX = MTopView::MapToPixelX(x); 
-	m_PixelY = MTopView::MapToPixelY(y);
+	m_PixelX = static_cast<float>(MTopView::MapToPixelX(x)); 
+	m_PixelY = static_cast<float>(MTopView::MapToPixelY(y));
 }
 
 //----------------------------------------------------------------------
@@ -233,7 +233,7 @@ void
 MEffect::SetX(TYPE_SECTORPOSITION x)
 { 
 	m_X = x; 
-	m_PixelX = MTopView::MapToPixelX(x); 
+	m_PixelX = static_cast<float>(MTopView::MapToPixelX(x)); 
 }
 
 //----------------------------------------------------------------------
@@ -243,7 +243,7 @@ void
 MEffect::SetY(TYPE_SECTORPOSITION y)
 { 
 	m_Y = y; 
-	m_PixelY = MTopView::MapToPixelY(y); 
+	m_PixelY = static_cast<float>(MTopView::MapToPixelY(y)); 
 }
 
 //----------------------------------------------------------------------

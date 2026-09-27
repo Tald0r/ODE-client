@@ -44,7 +44,7 @@ void NPCInfo::write(SocketOutputStream& oStream) const
 {
 	__BEGIN_TRY
 
-	BYTE m_NameLength = m_Name.size();
+	BYTE m_NameLength = static_cast<BYTE>(m_Name.size());
 	oStream.write(m_NameLength);
 
 	if (m_NameLength > 0)

@@ -50,10 +50,10 @@ void GCPartySay::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 	oStream.write(szName);
 	oStream.write(m_Name);
-	szName = m_Message.size();
+	szName = static_cast<BYTE>(m_Message.size());
 	oStream.write(m_Color);
 	oStream.write(szName);
 	oStream.write(m_Message);

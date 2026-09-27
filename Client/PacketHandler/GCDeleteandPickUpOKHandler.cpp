@@ -244,7 +244,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_PICKUP_TO_QUICKSLOT)
 			{
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
-				int slot = g_pTempInformation->Value1;
+				int slot = static_cast<int>(g_pTempInformation->Value1);
 
 				int itemID = pItem->GetID();
 

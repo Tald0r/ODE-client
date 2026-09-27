@@ -30,13 +30,13 @@ public:
     void write(SocketOutputStream & oStream) const;
 	PacketID_t getPacketID() const noexcept { return PACKET_CG_CRASH_REPORT; }
 	PacketSize_t getPacketSize() const {
-		return
+		return static_cast<PacketSize_t>(
 			m_ExecutableTime.size()
 			+ szWORD
 			+ m_Address.size()
 			+ szWORD + m_OS.size()
 			+ szWORD + m_CallStack.size()
-			+ szWORD + m_Message.size();
+			+ szWORD + m_Message.size());
 	}
 #ifdef __DEBUG_OUTPUT__
 	std::string getPacketName() const { return "CGCrashReport"; }

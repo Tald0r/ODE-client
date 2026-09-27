@@ -123,7 +123,7 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 		// 사용 위치만 있는 경우...
 		//------------------------------------------------------
 		ExecuteActionInfoFromMainNode(
-			skillID + (*g_pActionInfoTable).GetMinResultActionInfo(),
+			static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),
 		
 			pPacket->getX(), pPacket->getY(), 0, // 기술 사용하는 사람(?) 
 			0,														// 사용 방향

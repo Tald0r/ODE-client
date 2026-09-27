@@ -630,7 +630,7 @@ CAlphaSprite::BltClip(WORD* pDest, WORD pitch, RECT* pRect)
 					if (index+colorCount > pRect->right)
 					{							
 						// 투명이 아닌 색들을 Surface에 출력한다.
-						memcpyAlpha(pDestTemp, pPixels, pRect->right - index);
+						memcpyAlpha(pDestTemp, pPixels, static_cast<WORD>(pRect->right - index));
 						break;
 					}						
 

@@ -71,7 +71,7 @@ void GCMiniGameScores::write ( SocketOutputStream & oStream )
 	oStream.write(m_GameType);
 	oStream.write(m_Level);
 
-	BYTE count = m_Scores.size();
+	BYTE count = static_cast<BYTE>(m_Scores.size());
 	if ( count > 10 ) count = 10;
 	
 	oStream.write( count );
@@ -93,14 +93,14 @@ PacketSize_t GCMiniGameScores::getPacketSize() const
 {
 	PacketSize_t ret = szBYTE + szBYTE + szBYTE;
 
-	BYTE count = m_Scores.size();
+	BYTE count = static_cast<BYTE>(m_Scores.size());
 	if ( count > 10 ) count = 10;
 
 	std::list<std::pair<std::string,WORD> >::const_iterator itr = m_Scores.begin();
 
 	for ( uint i=0; i<count; ++i )
 	{
-		ret += szBYTE + (*itr).first.size() + szWORD;
+		ret = static_cast<PacketSize_t>(ret + (szBYTE + (*itr).first.size() + szWORD));
 	}
 	return ret;
 }

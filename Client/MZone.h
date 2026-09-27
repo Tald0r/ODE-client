@@ -160,7 +160,7 @@ class MZone {
 		void		RemovePlayer();
 		
 		// Creature Map : Zone에 존재하는 전체 creature 수
-		int			GetCreatureNumber() const		{ return m_mapCreature.size(); }
+		int			GetCreatureNumber() const		{ return static_cast<int>(m_mapCreature.size()); }
 		CREATURE_MAP::const_iterator GetCreatureBegin()		{ return m_mapCreature.begin(); }
 
 		// Move
@@ -228,7 +228,7 @@ class MZone {
 		bool		AddCorpseFromCreature(TYPE_OBJECTID id);
 
 		// Item Map : Zone에 존재하는 전체 Item 수
-		int			GetItemNumber() const		{ return m_mapItem.size(); }
+		int			GetItemNumber() const		{ return static_cast<int>(m_mapItem.size()); }
 		ITEM_MAP::const_iterator GetItemBegin()		{ return m_mapItem.begin(); }
 
 		// update item
@@ -271,7 +271,7 @@ class MZone {
 		void		UpdateWaitEffects();
 		// 2004, 8, 31, sobeit add end
 		MEffect*	GetEffect(TYPE_OBJECTID id) const;
-		int			GetEffectCount()				{ return m_mapEffect.size(); }
+		int			GetEffectCount()				{ return static_cast<int>(m_mapEffect.size()); }
 		EFFECT_MAP::const_iterator GetEffects()		{ return m_mapEffect.begin(); }
 		bool		RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effectStatus, int serverID=0);
 		bool		RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFFECTSPRITETYPE type, int serverID=0);
@@ -284,7 +284,7 @@ class MZone {
 		bool		RemoveGroundEffect(TYPE_OBJECTID id);
 		MEffect*	GetGroundEffect(TYPE_OBJECTID id) const;
 		void		UpdateGroundEffects();				// Frame변화 (임시함수!!!)
-		int			GetGroundEffectCount()				{ return m_mapGroundEffect.size(); }
+		int			GetGroundEffectCount()				{ return static_cast<int>(m_mapGroundEffect.size()); }
 		EFFECT_MAP::const_iterator GetGroundEffects()	{ return m_mapGroundEffect.begin(); }
 		EFFECT_MAP::const_iterator GetGroundEffectsEnd()	{ return m_mapGroundEffect.end(); }
 
@@ -362,7 +362,7 @@ class MZone {
 		//
 		//--------------------------------------------------------------
 		// Creature Map : Zone에 존재하는 전체 creature 수
-		int			GetFakeCreatureNumber() const		{ return m_mapFakeCreature.size(); }
+		int			GetFakeCreatureNumber() const		{ return static_cast<int>(m_mapFakeCreature.size()); }
 		CREATURE_MAP::const_iterator GetFakeCreatureBegin()		{ return m_mapFakeCreature.begin(); }
 
 		// Move

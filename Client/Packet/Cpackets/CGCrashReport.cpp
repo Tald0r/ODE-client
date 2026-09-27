@@ -53,17 +53,17 @@ void CGCrashReport::write (SocketOutputStream & oStream) const
 	oStream.write( m_Version );
 	oStream.write( m_Address );
 
-	WORD szSTR = m_OS.size();
+	WORD szSTR = static_cast<WORD>(m_OS.size());
 	oStream.write( szSTR );
 	Assert( szSTR <= 100 );
 	oStream.write( m_OS );
 
-	szSTR = m_CallStack.size();
+	szSTR = static_cast<WORD>(m_CallStack.size());
 	oStream.write( szSTR );
 	Assert( szSTR <= 1024 );
 	oStream.write( m_CallStack );
 
-	szSTR = m_Message.size();
+	szSTR = static_cast<WORD>(m_Message.size());
 	oStream.write( szSTR );
 	Assert( szSTR <= 1024 );
 	oStream.write( m_Message );

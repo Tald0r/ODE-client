@@ -34,13 +34,13 @@ public:
 
 	PacketSize_t getSize() const
 	{ 
-		return szGuildID +				// Guild ID
+		return static_cast<PacketSize_t>(szGuildID +				// Guild ID
 			   szBYTE +					// Guild Type
 			   szBYTE +					// Guild Name length
 			   m_GuildName.size() +		// Guild Name
 			   szBYTE +					// Guild Master length
 			   m_MasterName.size() + 	// Guild Master
-			   szDWORD;			// Date
+			   szDWORD);			// Date
 	}
 
 	static PacketSize_t getMaxSize()
@@ -88,8 +88,8 @@ public:
 	{
 		__BEGIN_TRY
 			
-		BYTE szGuildName = m_GuildName.size();
-		BYTE szGuildMaster = m_MasterName.size();
+		BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+		BYTE szGuildMaster = static_cast<BYTE>(m_MasterName.size());
 
 		if ( szGuildName == 0 )
 			throw InvalidProtocolException( "szGuildName == 0" );

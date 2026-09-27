@@ -31,11 +31,11 @@ public:
 
 		size += szObjectID; // npc object id
 		size += szScriptID; // script id size
-		size += szWORD + m_Subject.size(); // subject length & actual std::string
+		size = static_cast<PacketSize_t>(size + (szWORD + m_Subject.size())); // subject length & actual std::string
 
 		std::list<std::string>::const_iterator itr = m_Contents.begin();
 		for (; itr != m_Contents.end(); itr++)
-			size += (szWORD + (*itr).size()); // contents length & actual std::string
+			size = static_cast<PacketSize_t>(size + (szWORD + (*itr).size())); // contents length & actual std::string
 
 		return size;
 	}

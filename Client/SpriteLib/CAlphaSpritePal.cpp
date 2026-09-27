@@ -399,7 +399,7 @@ CAlphaSpritePal::BltClip(WORD* pDest, WORD pitch, RECT* pRect, MPalette &pal)
 					if (index+colorCount > pRect->right)
 					{							
 						// 투명이 아닌 색들을 Surface에 출력한다.
-						memcpyAlpha(pDestTemp, pPixels, pRect->right - index, pal);
+						memcpyAlpha(pDestTemp, pPixels, static_cast<WORD>(pRect->right - index), pal);
 						break;
 					}						
 

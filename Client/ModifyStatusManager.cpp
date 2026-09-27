@@ -539,7 +539,7 @@ ModifyStatusManager::Function_MODIFY_VISION(void* pVoid)
 	// (m_ServerX, m_ServerY)에서부터 
 	// Player의 시야에 포함되지 않는 Creature를 Zone에서 제거시킨다.
 	//--------------------------------------------------------
-	g_pPlayer->SetSight( value );
+	g_pPlayer->SetSight( static_cast<char>(value) );
 	g_pZone->KeepObjectInSight(g_pPlayer->GetServerX(), 
 								g_pPlayer->GetServerY(), 
 								g_pPlayer->GetSight());
@@ -895,7 +895,7 @@ ModifyStatusManager::Function_MODIFY_ALIGNMENT(void* pVoid)
 	//--------------------------------------------------
 	// UI에 설정
 	//--------------------------------------------------
-	short uiAlignment = value;
+	short uiAlignment = static_cast<short>(value);
 	if (uiAlignment > 10000)
 	{	
 		uiAlignment = - (short)(~uiAlignment + 1);
@@ -1175,7 +1175,7 @@ ModifyStatusManager::Function_MODIFY_GUILDID(void* pVoid)
 
 	g_pPlayer->SetGuildNumber(value);
 
-	g_char_slot_ingame.GUILD_ID = value;
+	g_char_slot_ingame.GUILD_ID = static_cast<WORD>(value);
 }
 
 //-----------------------------------------------------------------------------
@@ -1406,7 +1406,7 @@ ModifyStatusManager::Function_MODIFY_UNIONGRADE(void *pVoid)
 	if(g_pPlayer == NULL)
 		return;
 
-	g_pUserInformation->bUnionGrade = value;
+	g_pUserInformation->bUnionGrade = static_cast<BYTE>(value);
 
 }
 

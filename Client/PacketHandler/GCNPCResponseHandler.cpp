@@ -140,8 +140,8 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				
 				MItem* pModifyItem = (MItem*)g_pTempInformation->pValue;		//NULL;
 
-				BOOL	bInInventory	= g_pTempInformation->Value1;
-				BOOL	bInGear			= g_pTempInformation->Value2;
+				BOOL	bInInventory	= static_cast<BOOL>(g_pTempInformation->Value1);
+				BOOL	bInGear			= static_cast<BOOL>(g_pTempInformation->Value2);
 				
 				//--------------------------------------------------------------
 				// inventory의 item수리
@@ -332,7 +332,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				}
 
 				// 보관함 구입 비용을 빼준다.
-				g_pMoneyManager->UseMoney( g_pTempInformation->Value1 );
+				g_pMoneyManager->UseMoney( static_cast<int>(g_pTempInformation->Value1) );
 
 				g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_STORAGE_BUY].GetString());
 			}

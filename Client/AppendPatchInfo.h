@@ -52,7 +52,7 @@ class AppendPatch {
 
 		void		Release();
 
-		int			GetSize() const			{ return m_AppendPatch.size(); }
+		int			GetSize() const			{ return static_cast<int>(m_AppendPatch.size()); }
 		
 		const char* GetOriginalFilename() const	{ return m_orgFilename.GetString(); }
 

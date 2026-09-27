@@ -77,7 +77,7 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 
 		// 결과 바로 표현
 		g_pPlayer->PacketSpecialActionResult( 
-							pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo(),
+							static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
 							OBJECTID_NULL,
 							x,
 							y
@@ -135,7 +135,7 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 
 		// 결과 바로 표현
 		g_pPlayer->PacketSpecialActionResult( 
-							pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo(),
+							static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
 							pCreature->GetID(),
 							pCreature->GetX(),
 							pCreature->GetY()

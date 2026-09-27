@@ -38,7 +38,7 @@ public:
 	// get packet's body size
 	PacketSize_t getPacketSize() const
 	{ 
-		return szGuildID + szBYTE + m_GuildIntro.size();
+		return static_cast<PacketSize_t>(szGuildID + szBYTE + m_GuildIntro.size());
 	}
 
 #ifdef __DEBUG_OUTPUT__
