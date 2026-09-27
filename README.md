@@ -539,7 +539,8 @@ ctest --test-dir build/presets/linux --output-on-failure
 
 `tools/ci/verify-linux.sh <preset>` runs those three steps the way the
 Linux workflow (`.github/workflows/linux.yml`) does, with UBSan reports made
-fatal under `linux-asan`. On a Windows machine with Docker,
+fatal under `linux-asan`. On a Windows machine or a Mac with Docker
+(OrbStack, which this was verified with, or Docker Desktop),
 `tools/linux/Dockerfile` is the same environment as an image:
 
 ```bash
@@ -547,6 +548,11 @@ docker build -t darkeden-linux tools/linux
 docker run --rm -v "$PWD:/src" -v darkeden-build:/src/build darkeden-linux \
     tools/ci/verify-linux.sh linux
 ```
+
+On Apple Silicon the image is arm64. The configure, the build and every
+test pass there, but the script's last step fails with `missing warning
+baseline for linux-aarch64`: `tools/ci/warning-baselines.json` records the
+x86_64 runner's warnings only.
 
 ### Status of the Linux client
 
@@ -571,15 +577,22 @@ Windows; none of that has been watched on a Linux display yet.
 
 ## Build on macOS
 
-The same tree, the same tests, Apple Clang. Nobody maintaining this fork has
-a Mac: everything below was built and run on GitHub's arm64 runner
-(`.github/workflows/macos.yml`, macOS 15), and nothing has been watched on a
-Mac's display. Dependencies come from Homebrew, on Apple Silicon or Intel:
+The same tree, the same tests, Apple Clang. CI builds and tests it on
+GitHub's arm64 and Intel runners (`.github/workflows/macos.yml`, macOS 15),
+and it has been built and tested on an Apple Silicon Mac (macOS 27.0, Apple
+Clang 21, CMake 4.4: every target, all 12 ctest suites passing). Nothing has
+been watched on a Mac's display yet. Dependencies come from Homebrew, on
+Apple Silicon or Intel:
 
 ```bash
 xcode-select --install
 brew install cmake ninja sdl2 sdl2_image sdl2_ttf sdl2_mixer jpeg-turbo
 ```
+
+Homebrew's `sdl2` is now an alias of `sdl2-compat`, the SDL2 API over SDL3;
+that is what the build above linked. The linker warns that Homebrew's
+libraries were built for a newer macOS than the preset's 13.0 deployment
+target, which is harmless for a build run on the machine that made it.
 
 No font package: `Client/TextSystem/TextBackendSDL.cpp` uses the system's own
 (Apple SD Gothic Neo, Arial Unicode, Hiragino Sans GB, Helvetica). Two presets,
@@ -597,9 +610,27 @@ cmake --build --preset macos
 ctest --test-dir build/presets/macos --output-on-failure
 ```
 
-`tools/ci/verify-linux.sh macos` runs those steps the way the workflow does.
+`tools/ci/verify-linux.sh macos` runs those steps the way the workflow does,
+then checks the warning budget in `tools/ci/warning-baselines.json`. That
+budget is the runner's Apple Clang: under Apple Clang 21 the build and the
+tests pass, but the budget step fails on warning kinds the older compiler
+does not emit (`-Wdeprecated-enum-enum-conversion`,
+`-Wmisleading-indentation`, `-Wnontrivial-memcall`) and on the linker's
+deployment-target warnings above.
 The executable is `build/presets/macos/bin/DarkEden`, run with the `Data/`
-tree beside it as on Linux. Launched from Finder or as a bundle
+tree beside it as on Linux. The macOS equivalent of the junctions and the
+copy in *Point the build at the data* is a pair of symbolic links:
+
+```bash
+dest=build/presets/macos/bin
+src=/path/to/your/unpacked/darkeden
+ln -s "$src/Data"    "$dest/Data"
+ln -s "$src/UserSet" "$dest/UserSet"
+cp -R tools/i18n/ui-text/Data/. "$src/Data/"  # the English UI text, once
+./build/presets/macos/bin/DarkEden
+```
+
+The launcher arguments in *Launch* work the same way. Launched from Finder or as a bundle
 (`-DDARKEDEN_MACOS_BUNDLE=ON` builds `bin/DarkEden.app`), the client looks
 for `Data/Info/FileDef.inf` under its working directory, its executable's
 directory and the directory the bundle sits in, runs from the first that
