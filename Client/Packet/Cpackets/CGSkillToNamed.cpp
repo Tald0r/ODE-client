@@ -16,8 +16,6 @@ CGSkillToNamed::CGSkillToNamed ()
 
 CGSkillToNamed::~CGSkillToNamed ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGSkillToNamed::read (SocketInputStream & iStream)

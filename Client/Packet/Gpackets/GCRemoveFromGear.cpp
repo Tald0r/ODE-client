@@ -28,8 +28,6 @@ GCRemoveFromGear::GCRemoveFromGear ()
 //////////////////////////////////////////////////////////////////////
 GCRemoveFromGear::~GCRemoveFromGear ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

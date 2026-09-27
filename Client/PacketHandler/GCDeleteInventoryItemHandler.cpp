@@ -19,6 +19,7 @@ void GCDeleteInventoryItemHandler::execute ( GCDeleteInventoryItem * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	MItem* pItem = UI_GetMouseItem();
@@ -41,8 +42,6 @@ void GCDeleteInventoryItemHandler::execute ( GCDeleteInventoryItem * pPacket , P
 
 	if (pItem!=NULL)
 	{
-
-		TYPE_OBJECTID objectID = pPacket->getObjectID();
 
 		if (g_pPlayer->IsItemCheckBufferDropToRelicTable() || g_pPlayer->IsItemCheckBufferDropToCreature())
 		{

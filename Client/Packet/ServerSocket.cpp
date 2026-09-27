@@ -85,7 +85,7 @@ Socket * ServerSocket::accept ()
 
 		Client = new Socket(impl);
 
-	} catch ( NonBlockingIOException ) {
+	} catch ( NonBlockingIOException & ) {
 		// ignore - no connection pending
 		return NULL;
 	} catch ( Throwable & t ) {

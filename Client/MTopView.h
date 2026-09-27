@@ -55,7 +55,9 @@
 #ifndef	__MTOPVIEW_H__
 #define	__MTOPVIEW_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MViewDef.h"
 #include <fstream>

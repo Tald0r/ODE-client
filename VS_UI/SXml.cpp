@@ -77,6 +77,7 @@ string XMLUtil::trim(const string& str)
 //////////////////////////////////////////////////////////////////////////////
 void XMLUtil::filelog(char* fmt, ...)
 {
+	(void)fmt;
 //	std::ofstream file(XML_ERROR_FILENAME, ios::out | ios::app);
 //	if (file.is_open())
 //	{
@@ -160,7 +161,7 @@ XMLTree::XMLTree()
 }
 
 XMLTree::XMLTree( IN const string& name )
-: m_pParent( NULL ), m_Name( name )
+: m_Name( name ), m_pParent( NULL )
 {
 }
 
@@ -284,7 +285,7 @@ XMLTree::GetChildByAttr( IN size_t index , IN const string& name) const
 		TempAttr = m_ChildrenVector[i]->GetAttribute(name);
 		if(NULL != TempAttr)
 		{
-			if(TempAttr->ToInt() == index)
+			if(static_cast<size_t>(TempAttr->ToInt()) == index)
 				return m_ChildrenVector[i];
 		}
 	}

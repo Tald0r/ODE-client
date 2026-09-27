@@ -15,6 +15,7 @@ void GCGoodsListHandler::execute ( GCGoodsList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	UI_RunItemShop( pPacket );			
 

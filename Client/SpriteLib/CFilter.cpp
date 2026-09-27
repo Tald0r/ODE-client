@@ -91,7 +91,6 @@ CFilter::SetFilter(WORD* pSurface, WORD pitch, WORD width, WORD height)
 		Init(width, height);
 
 	
-	int i;
 	int j;
 			
 
@@ -156,7 +155,6 @@ CFilter::SetFilterDarkness(const CFilter& filter, BYTE DarkBits)
 	// memory 잡기
 	Init( filter.m_Width, filter.m_Height );
 
-	int i;
 	int j;
 
 	// 각 filter값마다 DarkBits만큼 어둡게 한다.
@@ -725,7 +723,6 @@ CFilter::BltFilterSub(int x, int y, const CFilter& filter)
 void
 CFilter::Blt4444(WORD* pSurface, WORD pitch)
 {
-	int i;
 	int j;
 
 	BYTE* pFilter;
@@ -766,7 +763,6 @@ CFilter::Blt4444Color(WORD* pSurface, WORD pitch, WORD color)
 	// R:G:B만 살린다.
 	color &= 0x0FFF;
 
-	int i;
 	int j;
 
 	BYTE* pFilter;

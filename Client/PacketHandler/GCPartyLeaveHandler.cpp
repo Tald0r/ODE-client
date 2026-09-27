@@ -21,6 +21,7 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	if (g_pZone==NULL
@@ -59,7 +60,7 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 	//-------------------------------------------------------------------
 	// 누가 스스로 나간 경우
 	//-------------------------------------------------------------------
-	if (pExpeller==NULL || pExpeller[0]==NULL)
+	if (pExpeller==NULL || pExpeller[0]=='\0')
 	{
 		//----------------------------------------------------------
 		// 내가 나간 경우

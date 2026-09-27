@@ -18,10 +18,10 @@ void GCRingHandler::execute ( GCRing * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	int slot = pPacket->getSlotID();
-	int pcsNumber = pPacket->getPhoneNumber();
 	char pName[128];
 
 	snprintf(pName, sizeof(pName), "%s", pPacket->getName().c_str());

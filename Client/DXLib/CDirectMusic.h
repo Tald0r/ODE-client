@@ -21,7 +21,7 @@ struct IDirectMusicSegmentState;
 typedef long MUSIC_TIME;
 typedef long long REFERENCE_TIME;
 
-typedef enum DIRECTMUSIC_TYPE
+enum DIRECTMUSIC_TYPE
 {
 	DIRECTMUSIC_TYPE_HW,	// hardware midi
 	DIRECTMUSIC_TYPE_SW		// microsoft software synthesizer

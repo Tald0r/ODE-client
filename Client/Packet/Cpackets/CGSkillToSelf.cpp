@@ -18,8 +18,6 @@ CGSkillToSelf::CGSkillToSelf ()
 
 CGSkillToSelf::~CGSkillToSelf ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGSkillToSelf::read (SocketInputStream & iStream)

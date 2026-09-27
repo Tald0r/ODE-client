@@ -20,6 +20,7 @@ void GCSkillToTileOK1Handler::execute ( GCSkillToTileOK1 * pPacket, Player * pPl
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 		
 	//------------------------------------------------------------------
@@ -96,7 +97,7 @@ void GCSkillToTileOK1Handler::execute ( GCSkillToTileOK1 * pPacket, Player * pPl
 		{
 			useSkillID = g_pPlayer->GetBasicActionInfo();
 
-			if (useSkillID >= g_pActionInfoTable->GetMinResultActionInfo())
+			if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 			{
 				SendBugReportAt(DiagnosticSite(), "%d", skillID);
 				return;

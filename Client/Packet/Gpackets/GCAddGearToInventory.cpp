@@ -27,8 +27,6 @@ GCAddGearToInventory::GCAddGearToInventory ()
 //////////////////////////////////////////////////////////////////////
 GCAddGearToInventory::~GCAddGearToInventory ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

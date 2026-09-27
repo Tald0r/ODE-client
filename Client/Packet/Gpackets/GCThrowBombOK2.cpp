@@ -33,8 +33,6 @@ GCThrowBombOK2::GCThrowBombOK2 ()
 //////////////////////////////////////////////////////////////////////
 GCThrowBombOK2::~GCThrowBombOK2 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

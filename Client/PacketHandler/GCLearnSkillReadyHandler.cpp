@@ -20,6 +20,7 @@ void GCLearnSkillReadyHandler::execute ( GCLearnSkillReady * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

@@ -117,41 +117,41 @@ extern RECT g_GameRect;
 ////----------------------------------------------------------------------
 //// DRAW_TEXTURE_SPRITE
 ////----------------------------------------------------------------------
-//#define DRAW_TEXTURE_SPRITEPAL(x, y, spriteID, pTextureManager, pal)				\
-//		{																			\
-//			CSpriteSurface* pSurface = pTextureManager->GetTexture(spriteID, pal);	\
-//																				\
-//			if (pSurface!=NULL)													\
-//			{																	\
-//				if (CDirect3D::GetDevice()->BeginScene()==D3D_OK)				\
-//				{																\
-//					CDirect3D::GetDevice()->SetTexture(0, pSurface->GetSurface());	\
-//																				\
-//					RECT rect =													\
-//					{															\
-//						x,														\
-//						y,														\
-//						x + pTextureManager->GetWidth(spriteID),				\
-//						y + pTextureManager->GetHeight(spriteID)				\
-//					};															\
-//																				\
-//					m_TextureEffect.DrawEffect2D( &rect );						\
-//																				\
-//					CDirect3D::GetDevice()->EndScene();							\
-//																				\
-//					CDirect3D::GetDevice()->SetTexture(0, NULL);				\
-//				}																\
-//			}																	\
+//#define DRAW_TEXTURE_SPRITEPAL(x, y, spriteID, pTextureManager, pal)
+//		{
+//			CSpriteSurface* pSurface = pTextureManager->GetTexture(spriteID, pal);
+//
+//			if (pSurface!=NULL)
+//			{
+//				if (CDirect3D::GetDevice()->BeginScene()==D3D_OK)
+//				{
+//					CDirect3D::GetDevice()->SetTexture(0, pSurface->GetSurface());
+//
+//					RECT rect =
+//					{
+//						x,
+//						y,
+//						x + pTextureManager->GetWidth(spriteID),
+//						y + pTextureManager->GetHeight(spriteID)
+//					};
+//
+//					m_TextureEffect.DrawEffect2D( &rect );
+//
+//					CDirect3D::GetDevice()->EndScene();
+//
+//					CDirect3D::GetDevice()->SetTexture(0, NULL);
+//				}
+//			}
 //		}
 //
 ////----------------------------------------------------------------------
 //// DRAW_TEXTURE_SPRITE_LOCKED
 ////----------------------------------------------------------------------
-//#define DRAW_TEXTURE_SPRITEPAL_LOCKED(x, y, spriteID, pTextureManager, pal)		\
-//			m_pSurface->Unlock();												\
-//																				\
-//			DRAW_TEXTURE_SPRITEPAL(x, y, spriteID, pTextureManager, pal)			\
-//																				\
+//#define DRAW_TEXTURE_SPRITEPAL_LOCKED(x, y, spriteID, pTextureManager, pal)
+//			m_pSurface->Unlock();
+//
+//			DRAW_TEXTURE_SPRITEPAL(x, y, spriteID, pTextureManager, pal)
+//
 //			m_pSurface->Lock();
 
 //----------------------------------------------------------------------
@@ -190,7 +190,7 @@ extern RECT g_GameRect;
 			CFrame& Frame = EffectFPK[frameID][direction][frame];								\
 			int sprite = Frame.GetSpriteID();													\
 																								\
-			if (sprite < EffectSPK.GetSize())													\
+			if (static_cast<DWORD>(sprite) < EffectSPK.GetSize())													\
 			{																					\
 				POINT pointTemp = *pPoint;														\
 				pointTemp.x += Frame.GetCX();													\

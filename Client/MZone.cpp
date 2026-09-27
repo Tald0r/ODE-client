@@ -2,7 +2,9 @@
 // MZone.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <math.h>
 #include <memory>
@@ -107,9 +109,9 @@ IsRelicTable( MItem* pItem )
 	{
 		MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 		
-		return pCreature->GetCreatureType()>=371 && pCreature->GetCreatureType()<=376 ||
-				pCreature->GetCreatureType()>=560 && pCreature->GetCreatureType()<=563 ||
-				pCreature->GetCreatureType()>=526 && pCreature->GetCreatureType()<=549;
+		return (pCreature->GetCreatureType()>=371 && pCreature->GetCreatureType()<=376) ||
+				(pCreature->GetCreatureType()>=560 && pCreature->GetCreatureType()<=563) ||
+				(pCreature->GetCreatureType()>=526 && pCreature->GetCreatureType()<=549);
 	}
 
 	return false;
@@ -181,7 +183,7 @@ IsRelicTable( MItem* pItem )
 						int x0 = sX + i;						\
 						int y0 = sY + j;						\
 																\
-						if (i==0 && j==0						\
+						if ((i==0 && j==0)						\
 							|| x0<0 || x0>=m_Width				\
 							|| y0<0 || y0>=m_Height)			\
 						{										\
@@ -1002,7 +1004,7 @@ bool
 MZone::CanMove(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	// Zone의 영역을 벗어날 경우
-	if (x<0 || x>=m_Width || y<0 || y>=m_Height)
+	if (x>=m_Width || y>=m_Height)
 		return false;
 
 	const MSector& sector = m_ppSector[y][x];
@@ -1058,7 +1060,7 @@ void
 MZone::SetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	// Zone의 영역을 벗어날 경우
-	if (x<0 || x>=m_Width || y<0 || y>=m_Height)
+	if (x>=m_Width || y>=m_Height)
 		return;
 
 	// 이미 다른 Object가 존재하는 경우
@@ -1091,8 +1093,9 @@ MZone::SetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSIT
 void		
 MZone::UnSetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
+	(void)creatureType;
 	// Zone의 영역을 벗어날 경우
-	if (x<0 || x>=m_Width || y<0 || y>=m_Height)
+	if (x>=m_Width || y>=m_Height)
 		return;
 
 	// 이미 다른 Object가 존재하는 경우
@@ -1140,7 +1143,7 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (xn<0 || yn<0 || xn>=m_Width || yn>=m_Height) return false;
+	if (xn>=m_Width || yn>=m_Height) return false;
 
 	// Player인 경우 --> 이동하지 않는다.
 	if (pCreature->GetClassType()==MCreature::CLASS_PLAYER
@@ -1304,7 +1307,7 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (xn<0 || yn<0 || xn>=m_Width || yn>=m_Height) return false;
+	if (xn>=m_Width || yn>=m_Height) return false;
 
 	// Player인 경우 --> 이동하지 않는다.
 	if (pCreature->GetClassType()==MCreature::CLASS_PLAYER
@@ -1457,7 +1460,7 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (xn<0 || yn<0 || xn>=m_Width || yn>=m_Height) return false;
+	if (xn>=m_Width || yn>=m_Height) return false;
 
 	// Player인 경우 --> 이동하지 않는다.
 	if (pCreature->GetClassType()==MCreature::CLASS_PLAYER
@@ -1623,7 +1626,7 @@ MZone::GetCreatureID(const char* pName, int flag) const
 		// player가 아닌 경우에..
 		if (pCreature->GetID()!=g_pPlayer->GetID()
 			&& strcmp(pCreature->GetName(), pName)==0
-			&& (flag == 0 || flag == 1 && !pCreature->IsNPC() )
+			&& (flag == 0 || (flag == 1 && !pCreature->IsNPC()) )
 			)
 		{
 			return pCreature->GetID();
@@ -1645,8 +1648,7 @@ MZone::GetCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (x<0 || y<0 
-		|| x>=m_Width || y>=m_Height) return OBJECTID_NULL;
+	if (x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
 	// 뭔가 있는 sector이면	
 	MCreature*	pCreature = m_ppSector[y][x].GetGroundCreature();
@@ -1670,8 +1672,7 @@ MZone::GetCreatureBySector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (x<0 || y<0 
-		|| x>=m_Width || y>=m_Height) return NULL;
+	if (x>=m_Width || y>=m_Height) return NULL;
 
 	// 뭔가 있는 sector이면	
 	MCreature*	pCreature = m_ppSector[y][x].GetGroundCreature();
@@ -1694,8 +1695,7 @@ MZone::GetFlyingCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (x<0 || y<0 
-		|| x>=m_Width || y>=m_Height) return OBJECTID_NULL;
+	if (x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
 	// 뭔가 있는 sector이면	
 	MCreature*	pCreature = (MCreature*)m_ppSector[y][x].GetFlyingCreature();
@@ -1720,8 +1720,7 @@ MZone::GetUndergroundCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (x<0 || y<0 
-		|| x>=m_Width || y>=m_Height) return OBJECTID_NULL;
+	if (x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
 	// 뭔가 있는 sector이면	
 	MCreature*	pCreature = (MCreature*)m_ppSector[y][x].GetUndergroundCreature();
@@ -2200,7 +2199,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	//----------------------------------------
 	// player가 아닌 경우..
 	//----------------------------------------
-	bool removed = false;
+	[[maybe_unused]] bool removed = false;
 	if (id != g_pPlayer->GetID()
 		&& !pCreature->IsFakeCreature())
 	{
@@ -2293,7 +2292,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 			}
 		#endif
 
-		bool bRemove = RemoveItem( pOldItem->GetID() );
+		[[maybe_unused]] bool bRemove = RemoveItem( pOldItem->GetID() );
 
 		#ifdef OUTPUT_DEBUG
 			if (!bRemove)
@@ -2344,7 +2343,7 @@ MZone::AddPortal(int type, int zoneID, const RECT& rect)
 	if (right >= m_Width) right = m_Width-1;
 
 	if (top > bottom) { int temp=top; top=bottom; bottom=temp; }
-	if (left > right) { int temp=left; left=right; right=left; }
+	if (left > right) { left=right; right=left; }
 
 	for (int i=top; i<=bottom; i++)
 	{
@@ -2366,6 +2365,7 @@ MZone::AddPortal(int type, int zoneID, const RECT& rect)
 void
 MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sight)
 {	
+	(void)sight;
 //	int sight15 = sight + (sight>>1);
 
 	//------------------------------------------------------
@@ -3546,10 +3546,8 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 	ITEM_MAP::iterator	theIterator;
 
 	ITEM_MAP::iterator tempItr = m_mapItem.begin();
-	TYPE_OBJECTID idd;
 	while( tempItr != m_mapItem.end() )
 	{
-		 idd = (*tempItr).first;
 		tempItr++;
 	}
 
@@ -3818,10 +3816,10 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 	    EFFECTSPRITETYPE_DARKNESS_3_5 < tableSize &&
 	    EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 < tableSize &&
 	    EFFECTSPRITETYPE_GRAY_DARKNESS_3_5 < tableSize) {
-		bDarkNess = frameID >= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_DARKNESS_1_1].FrameID &&
-			frameID <= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_DARKNESS_3_5].FrameID ||
-			frameID >= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_GRAY_DARKNESS_1_1].FrameID &&
-			frameID <= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_GRAY_DARKNESS_3_5].FrameID;
+		bDarkNess = (frameID >= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_DARKNESS_1_1].FrameID &&
+			frameID <= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_DARKNESS_3_5].FrameID) ||
+			(frameID >= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_GRAY_DARKNESS_1_1].FrameID &&
+			frameID <= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_GRAY_DARKNESS_3_5].FrameID);
 	}
 
 	if (EFFECTSPRITETYPE_ACID_SWAP_1 < tableSize &&
@@ -3834,10 +3832,10 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 	    EFFECTSPRITETYPE_PROMINENCE_START < tableSize &&
 	    EFFECTSPRITETYPE_PROMINENCE2_ING < tableSize &&
 	    EFFECTSPRITETYPE_PROMINENCE3_START < tableSize) {
-		bProminence = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE_ING].FrameID <= frameID &&
-			(*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE_START].FrameID >= frameID ||
-			(*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE2_ING].FrameID <= frameID &&
-			(*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE3_START].FrameID >= frameID;
+		bProminence = ((*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE_ING].FrameID <= frameID &&
+			(*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE_START].FrameID >= frameID) ||
+			((*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE2_ING].FrameID <= frameID &&
+			(*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_PROMINENCE3_START].FrameID >= frameID);
 	}
 
 
@@ -3884,11 +3882,9 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 		{
 			MEffect* pEffect = iGroundEffect->second;
 			
-			MEffectTarget* pEffectTarget = pEffect->GetEffectTarget();
 			TYPE_FRAMEID	frameID_s = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_MERCY_GROUND_1].FrameID;
 			TYPE_FRAMEID	frameID_e = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_MERCY_GROUND_9].FrameID;
 			TYPE_FRAMEID	regenTowerTile = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_REGEN_TOWER_GROUND].FrameID;
-			TYPE_FRAMEID	summonClay = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_SUMMON_CLAY_LOOP].FrameID;
 			
 			// Mercy Ground 가 깔려 있으면 다크니스 찍지 않는다.
 			if( pEffect->GetFrameID() >= frameID_s && pEffect->GetFrameID() <= frameID_e )
@@ -4022,18 +4018,18 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 							&& est2>=EFFECTSPRITETYPE_DARKNESS_1_1
 							&& est2<=EFFECTSPRITETYPE_DARKNESS_3_5
 
-							&& (est1>=EFFECTSPRITETYPE_DARKNESS_2_1
+							&& ((est1>=EFFECTSPRITETYPE_DARKNESS_2_1
 								&& est1<=EFFECTSPRITETYPE_DARKNESS_2_5
 								&& est2>=EFFECTSPRITETYPE_DARKNESS_2_1
-								&& est2<=EFFECTSPRITETYPE_DARKNESS_2_5
-								|| est1>=EFFECTSPRITETYPE_DARKNESS_1_1
+								&& est2<=EFFECTSPRITETYPE_DARKNESS_2_5)
+								|| (est1>=EFFECTSPRITETYPE_DARKNESS_1_1
 								&& est1<=EFFECTSPRITETYPE_DARKNESS_1_5
 								&& est2>=EFFECTSPRITETYPE_DARKNESS_1_1
-								&& est2<=EFFECTSPRITETYPE_DARKNESS_1_5
-								|| est1>=EFFECTSPRITETYPE_DARKNESS_3_1
+								&& est2<=EFFECTSPRITETYPE_DARKNESS_1_5)
+								|| (est1>=EFFECTSPRITETYPE_DARKNESS_3_1
 								&& est1<=EFFECTSPRITETYPE_DARKNESS_3_5
 								&& est2>=EFFECTSPRITETYPE_DARKNESS_3_1
-								&& est2<=EFFECTSPRITETYPE_DARKNESS_3_5) 
+								&& est2<=EFFECTSPRITETYPE_DARKNESS_3_5)) 
 								)||
 
 							(	est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1
@@ -4041,18 +4037,18 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 							&& est2>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1
 							&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_3_5
 
-							&& (est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_2_1
+							&& ((est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_2_1
 								&& est1<=EFFECTSPRITETYPE_GRAY_DARKNESS_2_5
 								&& est2>=EFFECTSPRITETYPE_GRAY_DARKNESS_2_1
-								&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_2_5
-								|| est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1
+								&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_2_5)
+								|| (est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1
 								&& est1<=EFFECTSPRITETYPE_GRAY_DARKNESS_1_5
 								&& est2>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1
-								&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_1_5
-								|| est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_3_1
+								&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_1_5)
+								|| (est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_3_1
 								&& est1<=EFFECTSPRITETYPE_GRAY_DARKNESS_3_5
 								&& est2>=EFFECTSPRITETYPE_GRAY_DARKNESS_3_1
-								&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_3_5)
+								&& est2<=EFFECTSPRITETYPE_GRAY_DARKNESS_3_5))
 								)								
 							)
 						{
@@ -4068,10 +4064,10 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 							AddOK = FALSE;
 
 							// 반복 darkness인 경우에만..
-							if (est1>=EFFECTSPRITETYPE_DARKNESS_2_1 &&
-								est1<=EFFECTSPRITETYPE_DARKNESS_2_5 ||
-								est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_2_1 &&
-								est1<=EFFECTSPRITETYPE_GRAY_DARKNESS_2_5)
+							if ((est1>=EFFECTSPRITETYPE_DARKNESS_2_1 &&
+								est1<=EFFECTSPRITETYPE_DARKNESS_2_5) ||
+								(est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_2_1 &&
+								est1<=EFFECTSPRITETYPE_GRAY_DARKNESS_2_5))
 							{
 								sector.SetDarkness();
 							}
@@ -4244,7 +4240,6 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 			{
 				MEffect* pEffect = iGroundEffect->second;
 				
-				MEffectTarget* pEffectTarget = pEffect->GetEffectTarget();
 				TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[type].FrameID;
 
 				if( pEffect->GetFrameID() == frameID &&
@@ -4363,6 +4358,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 bool		
 MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFFECTSPRITETYPE type, int serverID)
 {
+	(void)serverID;
 	if (type==EFFECTSPRITETYPE_NULL)
 	{
 		DEBUG_ADD("[Error]EffectSpriteType of EffectStatus is NULL");
@@ -4410,8 +4406,8 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 			{
 				bool isExistDarknessEffect = ((pEffect->GetFrameID()>=EFFECTSPRITETYPE_DARKNESS_1_1
 											&& pEffect->GetFrameID()<=EFFECTSPRITETYPE_DARKNESS_3_5) ||
-											pEffect->GetFrameID() >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
-											pEffect->GetFrameID() <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5 
+											(pEffect->GetFrameID() >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
+											pEffect->GetFrameID() <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5) 
 //											||	pEffect->GetFrameID() <= EFFECTSPRITETYPE_MAP_BLACK_LARGE_SMOKE &&
 //											pEffect->GetFrameID() >= EFFECTSPRITETYPE_MAP_BLACK_SMALL_SMOKE_3;
 											);
@@ -4421,8 +4417,8 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 				if (pEffect->GetFrameID() == frameID
 
 					// Darkness인 경우... 하드코딩.. - -;;
-					|| isRemoveDarknessEffect
-					&& isExistDarknessEffect					
+					|| (isRemoveDarknessEffect
+					&& isExistDarknessEffect)					
 					)
 				{
 					// sector에서 제거 [새기술9]
@@ -4457,7 +4453,6 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 					{
 						EFFECT_MAP::iterator iGroundEffect = m_mapGroundEffect.begin();
 
-						BOOL found = FALSE;
 						while (iGroundEffect != m_mapGroundEffect.end())
 						{
 							MEffect* pGroundEffect = iGroundEffect->second;
@@ -4466,8 +4461,6 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 							if (pGroundEffect->GetID()==pEffect->GetID())
 							{
 								m_mapGroundEffect.erase( iGroundEffect );
-
-								found = TRUE;
 
 								break;
 							}
@@ -4833,9 +4826,9 @@ MZone::AddGroundEffect(MEffect* pEffect)
 					pOldEffect->SetCount( 0 );
 				}
 
-				if( est1 == EFFECTSPRITETYPE_MAGIC_ELUSION_ING && est2 == EFFECTSPRITETYPE_MAGIC_ELUSION_ING ||
-					est1 >= EFFECTSPRITETYPE_MERCY_GROUND_1 && est1 <= EFFECTSPRITETYPE_MERCY_GROUND_9 &&
-					est1 == est2)
+				if( (est1 == EFFECTSPRITETYPE_MAGIC_ELUSION_ING && est2 == EFFECTSPRITETYPE_MAGIC_ELUSION_ING) ||
+					(est1 >= EFFECTSPRITETYPE_MERCY_GROUND_1 && est1 <= EFFECTSPRITETYPE_MERCY_GROUND_9 &&
+					est1 == est2))
 				{
 					if( pEffect->GetEndFrame() > pOldEffect->GetEndFrame() )
 					{
@@ -4977,16 +4970,10 @@ MZone::UpdateGroundEffects()
 	int count = m_mapGroundEffect.size();
 
 
-	int		light;
-	int		id;
 	
 	for (int i=0; i<count; i++)	
 	{
 		pEffect = iEffect->second;
-
-		// 이전 좌표 기억
-		id		= pEffect->GetID();
-		light	= pEffect->GetLight();
 
 		//---------------------------------------
 		//
@@ -5645,7 +5632,7 @@ MZone::SetSafeSector( const RECT& rect, BYTE fSafe )
 	if (right >= m_Width) right = m_Width-1;
 
 	if (top > bottom) { int temp=top; top=bottom; bottom=temp; }
-	if (left > right) { int temp=left; left=right; right=left; }
+	if (left > right) { left=right; right=left; }
 
 	for (int i=top; i<=bottom; i++)
 	{
@@ -5667,7 +5654,7 @@ MZone::GetCorpseKilledByMe(int limitItemCount)
 		MItem* pItem = itr->second;
 
 		if (pItem!=NULL
-			&& pItem->GetItemClass()==ITEM_CLASS_CORPSE && pItem->GetNumber() > limitItemCount)
+			&& pItem->GetItemClass()==ITEM_CLASS_CORPSE && pItem->GetNumber() > static_cast<TYPE_ITEM_NUMBER>(limitItemCount))
 		{
 			MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 
@@ -5707,6 +5694,8 @@ MZone::GetPKType()
 void		
 MZone::ChangeSwapViceType(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFFECTSPRITETYPE type, WORD wDelay)
 {
+	(void)sX;
+	(void)sY;
 	EFFECT_MAP::iterator iEffect = m_mapGroundEffect.begin();
 
 	MEffect *pEffect = NULL;

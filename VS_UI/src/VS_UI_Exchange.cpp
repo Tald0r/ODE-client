@@ -2,10 +2,13 @@
 
 #include "Client_PCH.h"
 #include "SafeFormat.h"
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_Exchange.h"
 #include "VS_UI_filepath.h"
@@ -25,6 +28,7 @@ static C_VS_UI_MONEY_DIALOG *	m_pC_dialog_exchange_money;
 
 void ExecF_WithdrawMoneyFromExchange(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -37,6 +41,7 @@ void ExecF_WithdrawMoneyFromExchange(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_ExchangeMoney(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -60,8 +65,8 @@ C_VS_UI_EXCHANGE::C_VS_UI_EXCHANGE()
 	g_RegisterWindow(this);
 
 	int w_x, w_y;
-	int button_x, ok_button_y, close_button_y;
-	int help_x, help_y;
+	int button_x = 0, ok_button_y = 0, close_button_y = 0;
+	int help_x = 0, help_y = 0;
 
 	m_CheckMoneyMove = false;
 	switch(g_eRaceInterface)
@@ -145,6 +150,9 @@ C_VS_UI_EXCHANGE::C_VS_UI_EXCHANGE()
 		help_y = 469;
 
 		Set(w_x, w_y, m_image_spk.GetWidth(EXCHANGE_WINDOW), m_image_spk.GetHeight(EXCHANGE_WINDOW));
+		break;
+
+	default:
 		break;
 	}
 
@@ -247,7 +255,7 @@ bool C_VS_UI_EXCHANGE::Click(int grid_start_x, int grid_start_y)
 		return false;
 	}
 
-	int item_x, item_y;
+	[[maybe_unused]] int item_x, item_y;
 
 	//-----------------------------------------------------------
 	// 내가 OK를 누른 상태인가??
@@ -396,6 +404,8 @@ bool C_VS_UI_EXCHANGE::Click(int grid_start_x, int grid_start_y)
 //-----------------------------------------------------------------------------
 bool C_VS_UI_EXCHANGE::Check(int grid_start_x, int grid_start_y)
 {
+	(void)grid_start_x;
+	(void)grid_start_y;
 	if (m_focus_grid_x == NOT_SELECTED || 
 		 m_focus_grid_y == NOT_SELECTED ||
 		 gbl_item_lock == true)
@@ -765,7 +775,7 @@ bool	C_VS_UI_EXCHANGE::MouseControl(UINT message, int _x, int _y)
 				if (distance_x >= 0 && distance_x < m_my_grid_rect.w && 
 					 distance_y >= 0 && distance_y < m_my_grid_rect.h)
 				{
-					if(gpC_Imm && m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)
+					if((gpC_Imm && m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X) || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)
 						gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 					m_focus_grid_x = distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X;
 					m_focus_grid_y = distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y;
@@ -869,7 +879,7 @@ bool	C_VS_UI_EXCHANGE::MouseControl(UINT message, int _x, int _y)
 					break; // escape 'for'
 				}
 			}
-			if(gpC_Imm && m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED)
+			if((gpC_Imm && m_focus_grid_x != NOT_SELECTED) || m_focus_grid_y != NOT_SELECTED)
 				gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 			m_focus_grid_x = NOT_SELECTED;
 			m_focus_grid_y = NOT_SELECTED;
@@ -993,6 +1003,9 @@ void	C_VS_UI_EXCHANGE::Show()
 		case RACE_OUSTERS:
 			m_image_spk.BltLocked(x, y, EXCHANGE_WINDOW);
 			break;
+
+		default:
+			break;
 		}
 		
 		// name
@@ -1067,6 +1080,9 @@ void	C_VS_UI_EXCHANGE::Show()
 						case RACE_OUSTERS:
 							m_image_spk.BltLocked(item_x+C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X*i, item_y+C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y*j, EXCHANGE_ITEMBACK);
 							break;						
+
+						default:
+							break;
 						}						
 					}
 					//------------------------------------------------------------
@@ -1103,7 +1119,7 @@ void	C_VS_UI_EXCHANGE::Show()
 					{
 						// 2004, 3, 9 sobeit - x,y 변경
 						//gpC_global_resource->m_pC_info_spk->BltLockedOutline(item_x-(p_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, item_y-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
-						gpC_global_resource->m_pC_info_spk->BltLockedOutline(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+						gpC_global_resource->m_pC_info_spk->BltLockedOutline(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 
 					}
 				}
@@ -1137,7 +1153,7 @@ void	C_VS_UI_EXCHANGE::Show()
 							{
 								// 2004, 3, 9 sobeit - x,y 변경
 								//gpC_global_resource->m_pC_info_spk->BltLocked(item_x-(p_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, item_y-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
-								gpC_global_resource->m_pC_info_spk->BltLocked(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+								gpC_global_resource->m_pC_info_spk->BltLocked(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 							}
 						}
 					}
@@ -1154,7 +1170,7 @@ void	C_VS_UI_EXCHANGE::Show()
 							{
 								// 2004, 3, 9 sobeit - x,y 변경
 								//gpC_global_resource->m_pC_info_spk->BltLockedColor(item_x-(p_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, item_y-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
-								gpC_global_resource->m_pC_info_spk->BltLockedColor(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
+								gpC_global_resource->m_pC_info_spk->BltLockedColor(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType), 0);
 							}
 						}
 					}
@@ -1175,7 +1191,7 @@ void	C_VS_UI_EXCHANGE::Show()
 						{
 							// 2004, 3, 9 sobeit - x,y 변경
 							//gpC_global_resource->m_pC_info_spk->BltLockedDarkness(item_x-(p_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, item_y-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, DARKBITS_NOT_TRADE);
-							gpC_global_resource->m_pC_info_spk->BltLockedDarkness(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, DARKBITS_NOT_TRADE);
+							gpC_global_resource->m_pC_info_spk->BltLockedDarkness(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType), DARKBITS_NOT_TRADE);
 						}
 					}
 				}
@@ -1273,6 +1289,9 @@ void	C_VS_UI_EXCHANGE::Show()
 					case RACE_OUSTERS:
 						m_image_spk.BltLocked(item_x+C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X*i, item_y+C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y*j, EXCHANGE_ITEMBACK);
 						break;
+
+					default:
+						break;
 					}						
 				}
 
@@ -1300,7 +1319,7 @@ void	C_VS_UI_EXCHANGE::Show()
 					{
 						// 2004, 3, 9 sobeit - x,y 변경
 						//gpC_global_resource->m_pC_info_spk->BltLocked(item_x-(p_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, item_y-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
-						gpC_global_resource->m_pC_info_spk->BltLocked(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+						gpC_global_resource->m_pC_info_spk->BltLocked(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 					}
 				}
 			}
@@ -1317,7 +1336,7 @@ void	C_VS_UI_EXCHANGE::Show()
 					{
 						// 2004, 3, 9 sobeit - x,y 변경
 						//gpC_global_resource->m_pC_info_spk->BltLockedColor(item_x-(p_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, item_y-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
-						gpC_global_resource->m_pC_info_spk->BltLockedColor(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
+						gpC_global_resource->m_pC_info_spk->BltLockedColor(GetFocusedItemGridX(p_item), GetFocusedItemGridY(p_item), C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType), 0);
 					}
 				}
 			}
@@ -1357,7 +1376,7 @@ void	C_VS_UI_EXCHANGE::Show()
 
 	char sz_num[10];
 	COLORREF markColor = RGB(220, 220, 220);//RGB(140, 140, 255);
-	for(int i = 0; i < vNum.size(); i++)
+	for(int i = 0; static_cast<size_t>(i) < vNum.size(); i++)
 	{
 		SafeFormat::Format(sz_num, "%d", vNum[i]);
 		g_PrintColorStr(vNumRect[i].left, vNumRect[i].top, sz_num, gpC_base->m_item_desc_pi, markColor);
@@ -1380,7 +1399,7 @@ void	C_VS_UI_EXCHANGE::Show()
 			SafeFormat::Format(money_buf, "%d", g_pMoneyManager->GetMoney());
 			std::string sstr = money_buf;
 			for(int i = 3; i <= 13; i += 4)
-				if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+				if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 			SafeFormat::Format(money_buf, "$%s", sstr.c_str());
 			g_Print(x+m_inventory_money_button_point.x+150, y+m_inventory_money_button_point.y+2, money_buf, &gpC_base->m_money2_pi);
 		}
@@ -1408,7 +1427,7 @@ void	C_VS_UI_EXCHANGE::Show()
 			SafeFormat::Format(money_buf, "%d", g_pTradeManager->GetMyMoneyManager()->GetMoney());
 			std::string sstr = money_buf;
 			for(int i = 3; i <= 13; i += 4)
-				if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+				if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 			SafeFormat::Format(money_buf, "$%s", sstr.c_str());
 			g_Print(x+m_money_button_point.x+150, y+m_money_button_point.y+2, money_buf, &gpC_base->m_money2_pi);
 		}
@@ -1436,7 +1455,7 @@ void	C_VS_UI_EXCHANGE::Show()
 			SafeFormat::Format(money_buf, "%d", g_pTradeManager->GetOtherMoneyManager()->GetMoney());
 			std::string sstr = money_buf;
 			for(int i = 3; i <= 13; i += 4)
-				if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+				if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 			SafeFormat::Format(money_buf, "$%s", sstr.c_str());
 			g_Print(x+m_your_money_button_point.x+150, y+m_your_money_button_point.y+2, money_buf, &gpC_base->m_money2_pi);
 		}

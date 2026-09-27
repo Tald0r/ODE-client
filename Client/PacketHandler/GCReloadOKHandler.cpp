@@ -23,6 +23,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	// message
 

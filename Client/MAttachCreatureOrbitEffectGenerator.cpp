@@ -24,7 +24,6 @@
 bool
 MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
 	int direction = egInfo.direction;
 
 
@@ -49,8 +48,8 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 		|| 
 			(
 			egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL
-			|| egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL
-			&& pCreature->GetAttachEffectSize() > 0 
+			|| (egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL
+			&& pCreature->GetAttachEffectSize() > 0)
 			)
 		)
 	{

@@ -75,7 +75,7 @@ private:
 
 	ButtonGroup *				m_pC_button_group;
 
-	int							m_tab_x_offset, m_tab_y_offset;
+	[[maybe_unused]] int							m_tab_x_offset, m_tab_y_offset;
 	int							m_shelf_start_x_offset;
 	int							m_shelf_start_y_offset[SLOT_Y_COUNT];
 

@@ -18,6 +18,7 @@ void GCThrowItemOK2Handler::execute ( GCThrowItemOK2 * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	int skillType = MAGIC_THROW_HOLY_WATER;

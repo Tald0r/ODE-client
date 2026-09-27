@@ -19,6 +19,7 @@ void GCBloodBibleStatusHandler::execute ( GCBloodBibleStatus * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	//cout << pPacket->toString() << endl;
 	UI_SetBloodBibleStatus(pPacket);

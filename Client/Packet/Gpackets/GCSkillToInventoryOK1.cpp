@@ -31,8 +31,6 @@ GCSkillToInventoryOK1::GCSkillToInventoryOK1 ()
 //////////////////////////////////////////////////////////////////////
 GCSkillToInventoryOK1::~GCSkillToInventoryOK1 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

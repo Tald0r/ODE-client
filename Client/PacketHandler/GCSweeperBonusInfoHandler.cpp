@@ -21,6 +21,7 @@ void GCSweeperBonusInfoHandler::execute ( GCSweeperBonusInfo * pPacket , Player 
 	 
 
 {
+	(void)pPlayer;
 	if( g_pPlayer == NULL || g_pSkillAvailable == NULL )
 		return;
 	

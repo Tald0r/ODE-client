@@ -123,7 +123,7 @@ MGameTime::SetCurrentTime(MonotonicClock::TimePoint time)
 	if (m_StartMonth==2)
 	{	
 		// 100의 배수가 아니면서 4의 배수인 해, 400의 배수인 해.. 맞나?? - -;
-		if ((m_StartYear&0x03)==0 && m_StartYear%100!=0 || m_StartYear%400==0)
+		if (((m_StartYear&0x03)==0 && m_StartYear%100!=0) || m_StartYear%400==0)
 		{
 			days ++;
 		}

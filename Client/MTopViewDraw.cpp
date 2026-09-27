@@ -6,7 +6,9 @@
 // 복잡한 Draw 함수 부분만 따로 빼놓는다.
 // 작업하기가 영 불편해서 
 //----------------------------------------------------------------------
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 #include "Client_PCH.h"
 // DX3D.h removed (SDL2) - Direct3D has been replaced with SDL2
 #include <math.h>
@@ -211,6 +213,7 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
 int GetAdvancementVampireActionFromVampireAction( int CurAction, const MCreature* pCreature )
 {
+	(void)pCreature;
 	if( CurAction >= ADVANCEMENT_ACTION_START )
 		return CurAction;
 
@@ -271,6 +274,9 @@ int GetAdvancementPartFromItemClass( ITEM_CLASS itemClass , TYPE_FRAMEID frameID
 
 	case ITEM_CLASS_SHOULDER_ARMOR :
 		return AC_SHOULDER;
+
+	default:
+		break;
 	}
 
 	return -1;
@@ -291,6 +297,9 @@ int	GetAdvancementSlayerStandActionFromItemClass( ITEM_CLASS itemclass )
 	case ITEM_CLASS_AR :
 	case ITEM_CLASS_SR :
 		return ACTION_ADVANCEMENT_SLAYER_STOP_GUN;		
+
+	default:
+		break;
 	}
 
 	return ACTION_ADVANCEMENT_SLAYER_STOP_MACE_AND_CROSS;
@@ -311,6 +320,9 @@ int GetAdvancementSlayerMoveActionFromItemClass( ITEM_CLASS itemclass )
 	case ITEM_CLASS_AR :
 	case ITEM_CLASS_SR :
 		return ACTION_ADVANCEMENT_SLAYER_MOVE_GUN;
+
+	default:
+		break;
 	}
 
 	return ACTION_ADVANCEMENT_SLAYER_MOVE_MACE_AND_CROSS;
@@ -331,6 +343,9 @@ int GetAdvancementSlayerDamagedActionFromItemClass( ITEM_CLASS itemclass )
 	case ITEM_CLASS_AR :
 	case ITEM_CLASS_SR :
 		return ACTION_ADVANCEMENT_SLAYER_DAMAGED_GUN;
+
+	default:
+		break;
 	}
 
 	return ACTION_ADVANCEMENT_SLAYER_DAMAGED_CROSS_MACE;
@@ -341,12 +356,15 @@ int GetAdvancementSlayerAttackActionFromItemClass( ITEM_CLASS itemClass, MCreatu
 	switch( itemClass )
 	{
 	case ITEM_CLASS_AR :
-		return ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_SLOW + pCreature->GetWeaponSpeed();
+		return static_cast<int>(ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_SLOW) + static_cast<int>(pCreature->GetWeaponSpeed());
 	
 	case ITEM_CLASS_SG :
 	case ITEM_CLASS_SMG :
 	case ITEM_CLASS_SR :
-		return ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_SLOW + pCreature->GetWeaponSpeed();
+		return static_cast<int>(ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_SLOW) + static_cast<int>(pCreature->GetWeaponSpeed());
+
+	default:
+		break;
 	}
 
 	return -1;
@@ -491,7 +509,7 @@ bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
 							&& pCreature->IsInGroundElemental();
 
 	bool bGhost = pCreature->HasEffectStatus(EFFECTSTATUS_GHOST) || g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_DRAW_CREATURE)
-		|| pCreature->IsGhost(1) && pCreature->IsGhost(2) && pCreature->IsGhost(4);
+		|| (pCreature->IsGhost(1) && pCreature->IsGhost(2) && pCreature->IsGhost(4));
 
 		
 	// 2004, 6, 7 sobeit add start - 펫일 경우 주인인 다크니스 안에 있으면 안보이게..
@@ -724,11 +742,11 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 		bool bTeenVersion = 
 				(
-					g_pUserInformation->GoreLevel == false
+					(g_pUserInformation->GoreLevel == false
 					&& !(
-					creature_type >= 526 && creature_type <= 549 || 
-					creature_type >= 371 && creature_type <= 376 || 
-					creature_type >= 560 && creature_type <= 563 || 
+					(creature_type >= 526 && creature_type <= 549) || 
+					(creature_type >= 371 && creature_type <= 376) || 
+					(creature_type >= 560 && creature_type <= 563) || 
 					creature_type == 482 || 
 					creature_type == 650 || 
 					creature_type == 670 || 
@@ -739,8 +757,8 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 					creature_type == 732 || // 웨이 포인트3
 					creature_type == 636 // 생선 가게 아저씨
 
-					)	// 성물 // 크리스 마스 트리
-					|| creature_type >= 377 && creature_type <= 386	// 다크 가디언은 먼지로 표시
+					))	// 성물 // 크리스 마스 트리
+					|| (creature_type >= 377 && creature_type <= 386)	// 다크 가디언은 먼지로 표시
 					|| creature_type == 480 
 				)
 				&&
@@ -790,8 +808,8 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 
 				// 선택된 것인 경우
-				if (m_SelectItemID == creatureID
-					|| m_SelectCreatureID == creatureID)
+				if (m_SelectItemID == static_cast<TYPE_OBJECTID>(creatureID)
+					|| m_SelectCreatureID == static_cast<TYPE_OBJECTID>(creatureID))
 				{
 					m_SOMOutlineColor = m_ColorOutlineItem;
 					
@@ -896,12 +914,12 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		// Slayer인 경우 Darkness 안을 볼 수 없다.
 		//------------------------------------------------
 		if (
-			!( creature_type >= 526 && creature_type <= 549 || 
+			!( (creature_type >= 526 && creature_type <= 549) || 
 			   creature_type == 670 || 
 			   creature_type == 672 ||
 			   creature_type == 673 ||
-			   creature_type >= 371 && creature_type <= 376 || 
-			   creature_type >= 560 && creature_type <= 563
+			   (creature_type >= 371 && creature_type <= 376) || 
+			   (creature_type >= 560 && creature_type <= 563)
 			 ) &&
 			pCreature->IsInDarkness() && !pCreature->IsNPC() && !g_pPlayer->IsVampire() && g_pPlayer!=pCreature
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
@@ -1034,25 +1052,25 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		// Mouse가 가리키고 있는 Creature
 		//------------------------------------------------
 		
-		if (m_SelectCreatureID == creatureID || OutLineOption)
+		if (m_SelectCreatureID == static_cast<TYPE_OBJECTID>(creatureID) || OutLineOption)
 		{
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD("Sel Creature");
 			#endif
 
 			// SpriteOutlineManager에 추가
-			if (pCreature->IsNPC()							// NPC인 경우
+			if ((pCreature->IsNPC()							// NPC인 경우
 				// 바토리인 경우는 안된다. 하드코딩 - -;;
-				&& !(creature_type==217)
-				|| IsRequestMode()								// trade mode인 경우
+				&& !(creature_type==217))
+				|| (IsRequestMode()								// trade mode인 경우
 					// player만 된다.
 					//pCreature->GetCreatureType()<=CREATURETYPE_VAMPIRE_FEMALE
 				//	&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[creature_type].SpriteType].IsPlayerOnlySprite()
-				&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[creature_type].SpriteTypes[0]].IsPlayerOnlySprite()
-				|| !IsRequestMode()							// trade할려고 추적중인 creature인 경우
+				&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[creature_type].SpriteTypes[0]].IsPlayerOnlySprite())
+				|| (!IsRequestMode()							// trade할려고 추적중인 creature인 경우
 					&& g_pPlayer->IsRequestMode()
 					&& g_pPlayer->IsTraceCreature()
-					&& g_pPlayer->GetTraceID()==creatureID)
+					&& g_pPlayer->GetTraceID()==static_cast<TYPE_OBJECTID>(creatureID)))
 			{
 				m_SOMOutlineColor = m_ColorOutlineNPC;
 			}
@@ -1302,7 +1320,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		// Chat String 출력
 		//------------------------------------------------
 		// Mouse로 선택된 캐릭터이면..
-		if (m_SelectCreatureID == creatureID)
+		if (m_SelectCreatureID == static_cast<TYPE_OBJECTID>(creatureID))
 		{
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD("SelectedCreature");
@@ -1756,13 +1774,11 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			// CutHeight
 			//-----------------------------------------------------------
 			bool bCutHeight = pCreature->IsCutHeight();
-			int previousClipBottom;
 			if (bCutHeight)
 			{
 				// SDL2: Clipping is automatic in SDL backend
 				// previousClipBottom = m_pSurface->GetClipBottom();
 				// m_pSurface->SetClipBottom( rect.bottom - 24 );
-				previousClipBottom = rect.bottom;
 				
 				pointTemp.y += pCreature->GetCutHeightCount() - 24;
 			}
@@ -2026,7 +2042,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 		// 그림자 때문에 *2해야한다.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
-		if (casketID < m_EtcSPK.GetSize())
+		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
 		{
 			CSprite* pSprite = &m_EtcSPK[casketID];
 			
@@ -2300,7 +2316,6 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 	if (addonInfo.bAddon && !pCreatureWear->IsGhost(1))
 	{
 		//				DEBUG_ADD("[DrawCreature] DrawCloth");
-		int clothes = addonInfo.FrameID;
 		
 		
 		//FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
@@ -2416,7 +2431,6 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 	if (bChakram && !pCreatureWear->IsGhost(2))
 	{
 		//				DEBUG_ADD("[DrawCreature] DrawChakram");
-		int clothes = addonInfoChakram.FrameID;
 		
 		//FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		FRAME_ARRAY &FA = m_AdvancementOustersFPK[ 0 ][ tempAction ][ direction ];
@@ -2525,7 +2539,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 		else if (
 			(pCreature->HasEffectStatus( EFFECTSTATUS_DANCING_SWORD )
 			|| pCreature->HasEffectStatus( EFFECTSTATUS_GHOST_BLADE )
-			|| pCreature->HasEffectStatus( EFFECTSTATUS_REDIANCE ) && pCreature->GetAction() == ACTION_STAND
+			|| (pCreature->HasEffectStatus( EFFECTSTATUS_REDIANCE ) && pCreature->GetAction() == ACTION_STAND)
 			)
 			)
 		{
@@ -2680,7 +2694,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 		else if (
 			(pCreature->HasEffectStatus( EFFECTSTATUS_DANCING_SWORD )
 			|| pCreature->HasEffectStatus( EFFECTSTATUS_GHOST_BLADE )
-			|| pCreature->HasEffectStatus( EFFECTSTATUS_REDIANCE ) && pCreature->GetAction() == ACTION_STAND
+			|| (pCreature->HasEffectStatus( EFFECTSTATUS_REDIANCE ) && pCreature->GetAction() == ACTION_STAND)
 			)
 			)
 		{
@@ -2707,15 +2721,15 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 				//if(addonInfo.ItemClass==ITEM_CLASS_MOTORCYCLE) break;
 				if( addonInfo.bAddon )
 				{	
-					if(addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28			//11
-						||	addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16		//14
-						||	addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16		//15
-						||	addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15	//16
-						||  addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14		//17
-						||	addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15		//19
-						||  addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16		//22
-						||  addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16		//23
-						||  addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14		//35
+					if((addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28)			//11
+						||	(addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16)		//14
+						||	(addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16)		//15
+						||	(addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15)	//16
+						||  (addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14)		//17
+						||	(addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15)		//19
+						||  (addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16)		//22
+						||  (addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16)		//23
+						||  (addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14)		//35
 //						||	addonInfo.ItemClass==ITEM_CLASS_MOTORCYCLE	//1
 						)
 					{
@@ -2876,6 +2890,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 
 void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame, int body, int frameindex )
 {
+	(void)body;
 	//------------------------------------------------
 	// 관 출력정보
 	//------------------------------------------------
@@ -2954,10 +2969,9 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 			// CutHeight
 			//-----------------------------------------------------------
 			bool bCutHeight = pCreature->IsCutHeight();
-			int previousClipBottom;
 			if (bCutHeight)
 			{
-				previousClipBottom = rect.bottom; // SDL2: Clipping is automatic
+				// SDL2: Clipping is automatic
 
 				pointTemp.y += pCreature->GetCutHeightCount() - 24;
 			}
@@ -3229,13 +3243,11 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 				// CutHeight
 				//-----------------------------------------------------------
 				bool bCutHeight = pCreature->IsCutHeight();
-int previousClipBottom;
 			if (bCutHeight)
 			{
 				// SDL2: Clipping is automatic in SDL backend
 				// previousClipBottom = m_pSurface->GetClipBottom();
 				// m_pSurface->SetClipBottom( rect.bottom - 24 );
-				previousClipBottom = rect.bottom;
 
 				pointTemp.y += pCreature->GetCutHeightCount() - 24;
 			}
@@ -3428,7 +3440,7 @@ int previousClipBottom;
 		// 그림자 때문에 *2해야한다.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
-		if (casketID < m_EtcSPK.GetSize())
+		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
 		{
 			CSprite* pSprite = &m_EtcSPK[casketID];
 			
@@ -3614,7 +3626,7 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 		// 그림자 때문에 *2한다.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
-		if (casketID < m_EtcSPK.GetSize())
+		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
 		{
 			CSprite* pSprite = &m_EtcSPK[casketID];
 			
@@ -3827,7 +3839,7 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 		// 그림자 때문에 *2한다.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
-		if (casketID < m_EtcSPK.GetSize())
+		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
 		{
 			CSprite* pSprite = &m_EtcSPK[casketID];
 			
@@ -3887,15 +3899,15 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 		
 		if( addonInfo.bAddon )
 		{	
-			if(addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28			//11
-				||	addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16		//14
-				||	addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16		//15
-				||	addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15	//16
-				||  addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14		//17
-				||	addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15		//19
-				||  addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16		//22
-				||  addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16		//23
-				||  addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14		//35
+			if((addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28)			//11
+				||	(addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16)		//14
+				||	(addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16)		//15
+				||	(addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15)	//16
+				||  (addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14)		//17
+				||	(addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15)		//19
+				||  (addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16)		//22
+				||  (addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16)		//23
+				||  (addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14)		//35
 				)
 			{
 				int k = 1;

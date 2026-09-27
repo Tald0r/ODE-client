@@ -17,6 +17,7 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

@@ -34,6 +34,7 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -392,7 +393,7 @@ PacketSkillToMakeItem(MItem* pItem,
 	// 같은 위치이면.. 완전히 없앤다.
 	//----------------------------------------------------
 	if (pItem->GetNumber()==1 
-		|| x==targetX && y==targetY )
+		|| (x==targetX && y==targetY) )
 	{
 		MItem* pRemovedItem = g_pInventory->RemoveItem( x, y );
 
@@ -453,7 +454,7 @@ PacketSkillToMakeItem(MItem* pItem,
 		// 확인.. 별로 필요없을거도 같지만..
 		if (pTargetItem->GetItemClass()==itemClass
 			&& pTargetItem->GetItemType()==itemType
-			&& pTargetItem->GetID()==itemID)
+			&& pTargetItem->GetID()==static_cast<TYPE_OBJECTID>(itemID))
 		{
 			// Max 체크는 무시..
 			pTargetItem->SetNumber( pTargetItem->GetNumber() + 1 );

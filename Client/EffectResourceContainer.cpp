@@ -289,19 +289,19 @@ void* EffectResourceContainer::GetSprite(BLT_TYPE bltType, int spriteID)
 {
 	switch (bltType) {
 		case BLT_NORMAL:
-			if (spriteID >= 0 && spriteID < m_EffectNormalSPK.GetSize()) {
+			if (spriteID >= 0 && static_cast<DWORD>(spriteID) < m_EffectNormalSPK.GetSize()) {
 				return (void*)&m_EffectNormalSPK[spriteID];
 			}
 			break;
 
 		case BLT_SHADOW:
-			if (spriteID >= 0 && spriteID < m_EffectShadowSPK.GetSize()) {
+			if (spriteID >= 0 && static_cast<DWORD>(spriteID) < m_EffectShadowSPK.GetSize()) {
 				return (void*)GetShadowSprite(spriteID);
 			}
 			break;
 
 		case BLT_SCREEN:
-			if (spriteID >= 0 && spriteID < m_EffectScreenSPK.GetSize()) {
+			if (spriteID >= 0 && static_cast<DWORD>(spriteID) < m_EffectScreenSPK.GetSize()) {
 				return (void*)&m_EffectScreenSPK[spriteID];
 			}
 			break;
@@ -323,7 +323,7 @@ void* EffectResourceContainer::GetSprite(BLT_TYPE bltType, int spriteID)
 //----------------------------------------------------------------------
 CAlphaSpritePal* EffectResourceContainer::GetAlphaSprite(int spriteID)
 {
-	if (spriteID >= 0 && spriteID < m_EffectAlphaSPK.GetSize()) {
+	if (spriteID >= 0 && static_cast<DWORD>(spriteID) < m_EffectAlphaSPK.GetSize()) {
 		return &m_EffectAlphaSPK[spriteID];
 	}
 	return nullptr;
@@ -334,7 +334,7 @@ CAlphaSpritePal* EffectResourceContainer::GetAlphaSprite(int spriteID)
 //----------------------------------------------------------------------
 CShadowSprite* EffectResourceContainer::GetShadowSprite(int spriteID)
 {
-	if (spriteID >= 0 && spriteID < m_EffectShadowSPK.GetSize()) {
+	if (spriteID >= 0 && static_cast<DWORD>(spriteID) < m_EffectShadowSPK.GetSize()) {
 		return &m_EffectShadowSPK[spriteID];
 	}
 	return nullptr;
@@ -348,13 +348,13 @@ MPalette* EffectResourceContainer::GetPalette(BLT_TYPE bltType, TYPE_FRAMEID typ
 {
 	switch (bltType) {
 		case BLT_EFFECT:
-			if (type >= 0 && type < m_EffectAlphaPPK.GetSize()) {
+			if (type < m_EffectAlphaPPK.GetSize()) {
 				return &m_EffectAlphaPPK[type];
 			}
 			break;
 
 		case BLT_SCREEN:
-			if (type >= 0 && type < m_EffectScreenPPK.GetSize()) {
+			if (type < m_EffectScreenPPK.GetSize()) {
 				return &m_EffectScreenPPK[type];
 			}
 			break;

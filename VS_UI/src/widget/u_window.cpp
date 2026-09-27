@@ -252,8 +252,8 @@ void Window::ProcessHide(int gap, bool alpha_window)
 	// 아니면 닫히든가-_-;
 	{
 		if(!(GetAttributes()->autohide == ATTRIBUTES_HIDE_HEIGHT
-			&& (y <= 0 && y+h > gap || y+h >= g_GameRect.bottom && y < g_GameRect.bottom-gap))
-			&& (x <= 0 && x+w > gap || x+w >= g_GameRect.right && x < g_GameRect.right-gap)
+			&& ((y <= 0 && y+h > gap) || (y+h >= g_GameRect.bottom && y < g_GameRect.bottom-gap)))
+			&& ((x <= 0 && x+w > gap) || (x+w >= g_GameRect.right && x < g_GameRect.right-gap))
 			&& y+h != gap && y != g_GameRect.bottom-gap)
 		{
 			if(x <= 0 && x+w > gap)
@@ -1123,6 +1123,8 @@ void WindowManager::SetMouseMoveFocusedWindow()
 //-----------------------------------------------------------------------------
 Window* WindowManager::GetFocusedWindow(int x, int y)
 {
+	(void)x;
+	(void)y;
 	List::iterator itr;
 
 	// topmost first
@@ -1283,7 +1285,7 @@ bool WindowManager::MouseControl(UINT message, int x, int y)
 						else if(k == 1)
 							itr = m_show_list.begin();
 						
-						while (k ==0 && itr != m_show_list_pinned_window.end() || k ==1 && itr != m_show_list.end())
+						while ((k ==0 && itr != m_show_list_pinned_window.end()) || (k ==1 && itr != m_show_list.end()))
 						{
 							//						m_pC_mouse_focused_window->UnStatch();
 							Window * p_searched_window = (*itr);
@@ -1309,21 +1311,21 @@ bool WindowManager::MouseControl(UINT message, int x, int y)
 										bl_statch = true;
 									}
 									
-									if(bl_statch)	//어딘가 붙었다면 그 끝과 끝을 붙일수 있나 본다
+								if(bl_statch)	//어딘가 붙었다면 그 끝과 끝을 붙일수 있나 본다
+								{
+									//위쪽의 좌표를 같게하자
+									if(m_pC_mouse_focused_window->y > p_searched_window->y-STATCH_VALUE &&
+										m_pC_mouse_focused_window->y < p_searched_window->y+STATCH_VALUE)
 									{
-										//위쪽의 좌표를 같게하자
-										if(m_pC_mouse_focused_window->y > p_searched_window->y-STATCH_VALUE &&
-											m_pC_mouse_focused_window->y < p_searched_window->y+STATCH_VALUE)
-										{
-											m_pC_mouse_focused_window->y = p_searched_window->y;
-										}
-										else	//아래쪽의 좌표를 같게하자
-											if(m_pC_mouse_focused_window->y+m_pC_mouse_focused_window->h > p_searched_window->y+p_searched_window->h-STATCH_VALUE &&
-												m_pC_mouse_focused_window->y+m_pC_mouse_focused_window->h < p_searched_window->y+p_searched_window->h+STATCH_VALUE)
-											{
-												m_pC_mouse_focused_window->y = p_searched_window->y+p_searched_window->h-m_pC_mouse_focused_window->h;
-											}
+										m_pC_mouse_focused_window->y = p_searched_window->y;
 									}
+									else	//아래쪽의 좌표를 같게하자
+										if(m_pC_mouse_focused_window->y+m_pC_mouse_focused_window->h > p_searched_window->y+p_searched_window->h-STATCH_VALUE &&
+											m_pC_mouse_focused_window->y+m_pC_mouse_focused_window->h < p_searched_window->y+p_searched_window->h+STATCH_VALUE)
+										{
+											m_pC_mouse_focused_window->y = p_searched_window->y+p_searched_window->h-m_pC_mouse_focused_window->h;
+										}
+								}
 									
 							}
 							
@@ -1445,7 +1447,7 @@ void WindowManager::KeyboardControl(UINT message, UINT key, long extra)
 		{
 
 		//if(key != VK_ESCAPE && gC_vs_ui.IsGameMode() || !gC_vs_ui.IsGameMode())
-		if(m_pC_topmost_window->GetAttributes()->keyboard_control == true || gC_vs_ui.IsEmptyChatting() && key == VK_RETURN || !gC_vs_ui.IsGameMode() && key == VK_ESCAPE)
+		if(m_pC_topmost_window->GetAttributes()->keyboard_control == true || (gC_vs_ui.IsEmptyChatting() && key == VK_RETURN) || (!gC_vs_ui.IsGameMode() && key == VK_ESCAPE))
 		{
 			m_pC_topmost_window->KeyboardControl(message, key, extra);
 			return;

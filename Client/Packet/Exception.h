@@ -13,7 +13,7 @@
 #include "Types.h"
 #include "StringStream.h"
 
-#if __WINDOWS__
+#if defined(__WINDOWS__) && __WINDOWS__
 #pragma warning ( disable : 4786 )
 #endif
 

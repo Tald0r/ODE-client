@@ -19,6 +19,7 @@ void GLIncomingConnectionErrorHandler::execute ( GLIncomingConnectionError * pPa
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
 
 	__END_CATCH
 }

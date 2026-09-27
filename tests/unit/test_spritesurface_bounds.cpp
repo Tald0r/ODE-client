@@ -33,7 +33,7 @@ TEST(SpriteSurfaceBounds, FillRespectsPitchAndPreservesPadding)
 	CSpriteSurface surface;
 	CHECK(surface.Init(3, 3));
 	SDL_Surface* raw = surface.GetBackendSurface()->surface;
-	CHECK(raw->pitch > 3 * sizeof(WORD));
+	CHECK(static_cast<size_t>(raw->pitch) > 3 * sizeof(WORD));
 	std::memset(raw->pixels, 0x5a, raw->pitch * raw->h);
 	surface.FillSurface(0x1234);
 	for (int y = 0; y < 3; ++y) {

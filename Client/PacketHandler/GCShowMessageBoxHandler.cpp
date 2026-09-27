@@ -16,6 +16,8 @@ void GCShowMessageBoxHandler::execute ( GCShowMessageBox * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 	
 	__END_CATCH
 }

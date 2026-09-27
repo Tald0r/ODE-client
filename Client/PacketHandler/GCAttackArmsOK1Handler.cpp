@@ -20,6 +20,7 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

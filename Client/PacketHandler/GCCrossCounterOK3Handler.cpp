@@ -18,6 +18,7 @@ void GCCrossCounterOK3Handler::execute ( GCCrossCounterOK3 * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

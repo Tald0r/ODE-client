@@ -33,11 +33,9 @@ SweeperBonusInfo::SweeperBonusInfo ()
 //////////////////////////////////////////////////////////////////////
 SweeperBonusInfo::~SweeperBonusInfo ()
 {
-	__BEGIN_TRY
 
 	clearOptionTypeList();
 
-	__END_CATCH
 }
 
 

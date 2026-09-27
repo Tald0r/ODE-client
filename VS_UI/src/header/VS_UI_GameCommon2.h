@@ -1289,7 +1289,7 @@ private :
 //	std::string			m_szCustomName;
 //	int					m_CustomIndex;
 	int					m_SelectPos;
-	bool				m_bl_focus;
+	[[maybe_unused]] bool				m_bl_focus;
 public :
 	C_VS_UI_NAMING(std::vector<C_VS_UI_NicknameInfo*> &_NamingList);
 	~C_VS_UI_NAMING();
@@ -1596,7 +1596,7 @@ private:
 	ButtonGroup *				m_pC_button_group;
 	C_SPRITE_PACK*				m_pImage_Spk;
 	C_VS_UI_SCROLL_BAR			*m_pC_scroll_bar;	
-	int							m_SelectPos;
+	[[maybe_unused]] int							m_SelectPos;
 	bool						m_bl_focus;
 	int							m_OustersOffset;// 아우스터즈 픽셀 보정
 
@@ -1738,9 +1738,9 @@ public:
 	C_VS_UI_QUEST_ICON(C_SPRITE_PACK* spr);
 	~C_VS_UI_QUEST_ICON();
 
-	void	ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button) {};
-	void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button){};
-	void	Run(id_t id) {};
+	void	ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button) { (void)p_button; };
+	void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button){ (void)p_button; };
+	void	Run(id_t id) { (void)id; };
 	void	Process(){};
 	void	Show();
 	bool	IsPixel(int _x, int _y);

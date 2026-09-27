@@ -17,6 +17,8 @@ void GCPhoneConnectionFailedHandler::execute ( GCPhoneConnectionFailed * pPacket
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 
 
 	// disconnect 출력?

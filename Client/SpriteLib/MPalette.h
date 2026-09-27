@@ -46,8 +46,8 @@ public:
 	//--------------------------------------------------------
 	// file I/O
 	//--------------------------------------------------------
-	virtual bool	SaveToFile(std::ofstream& file) { return false; };
-	virtual bool	LoadFromFile(std::ifstream& file) { return false; };		
+	virtual bool	SaveToFile(std::ofstream& file) { (void)file; return false; };
+	virtual bool	LoadFromFile(std::ifstream& file) { (void)file; return false; };		
 
 	bool IsInit() const { return (m_Size == 0)?false:true; }
 	

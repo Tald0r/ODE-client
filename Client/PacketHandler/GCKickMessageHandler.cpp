@@ -23,6 +23,7 @@ void GCKickMessageHandler::execute ( GCKickMessage * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	
 	switch( pPacket->getType() )
 	{

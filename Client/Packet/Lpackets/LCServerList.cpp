@@ -27,7 +27,6 @@ LCServerList::LCServerList ()
 //----------------------------------------------------------------------
 LCServerList::~LCServerList ()
 {
-	__BEGIN_TRY
 
 	// 소속된 모든 객체들을 삭제한다.
 	while ( !m_ServerGroupInfoList.empty() ) 
@@ -41,7 +40,6 @@ LCServerList::~LCServerList ()
 		m_ServerGroupInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

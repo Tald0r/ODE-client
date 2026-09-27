@@ -22,6 +22,8 @@ void GCAuthKeyHandler::execute ( GCAuthKey * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 //		__BEGIN_DEBUG_EX
 
 

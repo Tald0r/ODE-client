@@ -93,9 +93,9 @@ FUNCTION_MEMCPYPALEFFECT CSpriteSurface::s_pMemcpyPalEffectFunctionTable[MAX_EFF
 	NULL,									/* EFFECT_SCREEN_ALPHA (an empty body) */
 };
 
-WORD CSpriteSurface::s_EffectScreenTableR[32][32] = {0};
-WORD CSpriteSurface::s_EffectScreenTableG[64][64] = {0};
-WORD CSpriteSurface::s_EffectScreenTableB[32][32] = {0};
+WORD CSpriteSurface::s_EffectScreenTableR[32][32] = {{0}};
+WORD CSpriteSurface::s_EffectScreenTableG[64][64] = {{0}};
+WORD CSpriteSurface::s_EffectScreenTableB[32][32] = {{0}};
 
 /* ============================================================================
  * Constructor / Destructor
@@ -137,6 +137,7 @@ bool CSpriteSurface::Init(int width, int height)
 
 bool CSpriteSurface::InitFromFile(const char* filename)
 {
+	(void)filename;
 	/* TODO: Load from BMP file */
 	return false;
 }
@@ -329,6 +330,9 @@ void CSpriteSurface::Line(int x1, int y1, int x2, int y2, WORD color)
 
 void CSpriteSurface::BltHalf(POINT* pPoint, CSpriteSurface* SourceSurface, RECT* pRect)
 {
+	(void)pPoint;
+	(void)SourceSurface;
+	(void)pRect;
 	/* TODO: Implement */
 }
 
@@ -340,26 +344,43 @@ void CSpriteSurface::BltNoColorkey(POINT* pPoint, CSpriteSurface* SourceSurface,
 
 void CSpriteSurface::BltDarkness(POINT* pPoint, CSpriteSurface* SourceSurface, RECT* pRect, BYTE DarkBits)
 {
+	(void)pPoint;
+	(void)SourceSurface;
+	(void)pRect;
+	(void)DarkBits;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltBrightness(POINT* pPoint, CSpriteSurface* SourceSurface, RECT* pRect, BYTE BrightBits)
 {
+	(void)pPoint;
+	(void)SourceSurface;
+	(void)pRect;
+	(void)BrightBits;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltDarknessFilter(POINT* pPoint, CSpriteSurface* SourceSurface, RECT* pRect, WORD TransColor)
 {
+	(void)pPoint;
+	(void)SourceSurface;
+	(void)pRect;
+	(void)TransColor;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::ChangeBrightnessBit(RECT* pRect, BYTE DarkBits)
 {
+	(void)pRect;
+	(void)DarkBits;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltColorAlpha(RECT* pRect, WORD color, BYTE alpha2)
 {
+	(void)pRect;
+	(void)color;
+	(void)alpha2;
 	/* TODO: Implement */
 }
 
@@ -411,11 +432,17 @@ void CSpriteSurface::InitEffectTable()
 
 void CSpriteSurface::memcpyHalf(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::memcpyAlpha(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 	/* TODO: Implement */
 }
 
@@ -429,6 +456,10 @@ void CSpriteSurface::memcpyColor(WORD* pDest, WORD* pSource, WORD pixels)
 
 void CSpriteSurface::memcpyScale(WORD* pDest, WORD destPitch, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)destPitch;
+	(void)pSource;
+	(void)pixels;
 	/* TODO: Implement */
 }
 
@@ -444,6 +475,9 @@ void CSpriteSurface::memcpyDarkness(WORD* pDest, WORD* pSource, WORD pixels)
 
 void CSpriteSurface::memcpyBrightness(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 	/* TODO: Implement */
 }
 
@@ -453,6 +487,8 @@ void CSpriteSurface::memcpyBrightness(WORD* pDest, WORD* pSource, WORD pixels)
 
 bool CSpriteSurface::ClippingRectToPoint(RECT*& pRect, POINT*& pPoint)
 {
+	(void)pRect;
+	(void)pPoint;
 	/* TODO: Implement clipping */
 	return true;
 }

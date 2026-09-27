@@ -16,7 +16,9 @@
 #ifndef	__MITEMMANAGER_H__
 #define	__MITEMMANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MTypeDef.h"
 #include <map>

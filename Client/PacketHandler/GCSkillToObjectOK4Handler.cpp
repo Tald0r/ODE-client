@@ -18,6 +18,7 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -46,7 +47,7 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 		if( (*g_pActionInfoTable)[skillID].IsUseActionStep() && pPacket->getGrade() > 0)
 			skillID = (*g_pActionInfoTable)[skillID].GetActionStep( pPacket->getGrade() - 1);
 		
-			MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );		
+		MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );		
 
 		// TargetCreature에게 결과 표현
 		if (pTargetCreature != NULL)

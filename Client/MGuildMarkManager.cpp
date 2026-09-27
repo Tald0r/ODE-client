@@ -100,6 +100,8 @@ MGuildMarkManager::Release()
 bool
 MGuildMarkManager::CreateGuildMark(WORD guildID, const char* pFilename)
 {
+	(void)guildID;
+	(void)pFilename;
 #ifdef PLATFORM_WINDOWS
 	if (pFilename==NULL)
 	{
@@ -493,7 +495,6 @@ MGuildMarkManager::MergeGuildMark(const char* pSPKFilenameOrg,
 
 		TYPE_SPRITEID orgSize = 0;			// 원래 개수
 		TYPE_SPRITEID appSize = 0;			// 추가할 개수
-		TYPE_SPRITEID orgiSize = 0;			// 원래 개수
 		TYPE_SPRITEID appiSize = 0;			// 추가할 개수
 		long orgFP = 0;						// 원래 file의 크기
 		long appFP = 0;						// 원래 file의 크기
@@ -759,6 +760,9 @@ MGuildMarkManager::GetLevelMarkSmall(WORD level)
 bool
 MGuildMarkManager::CreateGuildMark(const char* pFilename, CSprite *&pSprite, CSprite *&pSpriteSmall)
 {
+	(void)pFilename;
+	(void)pSprite;
+	(void)pSpriteSmall;
 #ifdef PLATFORM_WINDOWS
 	if (pFilename==NULL)
 	{

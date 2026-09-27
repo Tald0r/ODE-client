@@ -13,7 +13,9 @@
 #ifndef	__MATTACHEFFECT_H__
 #define	__MATTACHEFFECT_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MMovingEffect.h"
 #include "MTypeDef.h"

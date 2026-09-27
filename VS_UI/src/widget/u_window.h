@@ -11,7 +11,9 @@
 #ifndef __U_WINDOW_H__
 #define __U_WINDOW_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "Basics.h"
 #include "PI.h"
@@ -203,7 +205,7 @@ public:
 	//
 
 	//
-	virtual void WindowEventReceiver(id_t event) {}
+	virtual void WindowEventReceiver(id_t event) { (void)event; }
 
 	enum // event list
 	{

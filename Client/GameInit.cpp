@@ -310,7 +310,6 @@ DrawTitleLoading()
 		// 2001.8.20
 		//--------------------------------------------------------
 		POINT pointZero = { 0, 0 };
-		POINT point = { 263, 93 };
 		// add by Sonic 2006.9.26
 //		if(g_MyFull)
 //		{
@@ -318,7 +317,6 @@ DrawTitleLoading()
 //		}
 //		else
 //		{
-			RECT rect = {0, 0, g_GameRect.right, g_GameRect.bottom};
 //		}
 		// end
 
@@ -497,9 +495,6 @@ PrepareLoadingAddonSPK()
 		// 개수를 잡아둔다.
 		g_pTopView->m_AddonSPK.Init( g_AddonSPKNum);		
 
-		bool				g_AddonSPKLoaded[g_AddonSPKLoadingTimes] = { false, };
-		bool				g_AddonSPKIndex[g_AddonSPKLoadingTimes] = { 0 };
-
 		// loading하는 회수에 맞게 file index를 구한다.
 		int first = 0;
 		for (int i=0; i<g_AddonSPKLoadingTimes; i++)
@@ -517,9 +512,6 @@ PrepareLoadingAddonSPK()
 			// 개수(2 bytes) + ID * (4 bytes)
 			AddonFileIndex2.seekg( 2 + first*4 , ios::beg );
 			AddonFileIndex2.read((char*)&fp, 4);
-
-			// loading해야된다고 표시
-			g_AddonSPKLoaded[i] = false;
 
 			// file index설정			
 			g_AddonSPKIndexFirst[i] = first;
@@ -583,7 +575,7 @@ LoadingAddonSPK(bool bLoadingAll)
 
 			TYPE_SPRITEID first = g_AddonSPKIndexFirst[i];
 			TYPE_SPRITEID last	= g_AddonSPKIndexLast[i];
-			long			fp	= g_AddonSPKIndexFP[i];
+			[[maybe_unused]] long	fp	= g_AddonSPKIndexFP[i];
 
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
@@ -1356,6 +1348,7 @@ InitDraw()
 LONG
 LoadingThreadProc(LPVOID lpParameter)
 {
+	(void)lpParameter;
 	if (g_pLoadingThread!=NULL)
 	{
 		g_pLoadingThread->Execute();
@@ -1952,7 +1945,7 @@ InitSocket()
 				maxAddress = atoi(g_pConfigKorean->getProperty("MaxLoginServerAddress").c_str());
 			else
 				maxAddress = atoi( g_pConfigForeign->getProperty( g_Dimension, "MaxLoginServerAddress").c_str() );
-		} catch (NoSuchElementException) {
+		} catch (NoSuchElementException&) {
 			//maxAddress = 1;
 		}
 
@@ -2121,7 +2114,7 @@ InitSocket()
 				// connect가 된 경우..
 				//break;
 
-			} catch ( ConnectException ) {
+			} catch ( ConnectException& ) {
 
 				if (pSocket!=NULL)
 				{
@@ -2308,7 +2301,6 @@ void ReleaseAllObjects()
 			fclose(g_oggfile);
 			g_oggfile = NULL;
 		}
-		delete g_pSoundBufferForOGG;
 		g_pSoundBufferForOGG = NULL;
 	}
 #endif
@@ -3065,7 +3057,7 @@ static const UiRuntime::Host s_UiRuntimeHost = {
 //-----------------------------------------------------------------------------
 static int	WireMaxProcessPacket()	{ return g_pClientConfig!=NULL ? g_pClientConfig->MAX_PROCESS_PACKET : WIRE_DEFAULT_MAX_PROCESS_PACKET; }
 static int	WireMaxRequestService()	{ return g_pClientConfig!=NULL ? g_pClientConfig->MAX_REQUEST_SERVICE : WIRE_DEFAULT_MAX_REQUEST_SERVICE; }
-static uint	WireUDPPort()			{ return g_pClientConfig!=NULL ? (uint)g_pClientConfig->CLIENT_COMMUNICATION_UDP_PORT : WIRE_DEFAULT_UDP_PORT; }
+static uint	WireUDPPort()			{ return g_pClientConfig!=NULL ? (uint)g_pClientConfig->CLIENT_COMMUNICATION_UDP_PORT : static_cast<uint>(WIRE_DEFAULT_UDP_PORT); }
 static Player*	WireBugReportTarget()	{ return g_pSocket; }
 
 // The encrypt-seed inputs, and they are asked for on every login:

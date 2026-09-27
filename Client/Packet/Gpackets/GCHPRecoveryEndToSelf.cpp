@@ -23,8 +23,6 @@ GCHPRecoveryEndToSelf::GCHPRecoveryEndToSelf()
 //--------------------------------------------------------------------
 GCHPRecoveryEndToSelf::~GCHPRecoveryEndToSelf()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -28,6 +28,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 		/*
@@ -349,7 +350,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 				break;
 			}
 			
-		} catch (NoSuchElementException) {			
+		} catch (NoSuchElementException&) {			
 		}
 	}
 

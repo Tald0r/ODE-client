@@ -7,7 +7,9 @@
 // 작업하기가 영 불편해서 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <math.h>
 #include <list>
@@ -216,15 +218,15 @@ void	MTopView::DrawFadeOutForACSlayer( POINT *pPoint, MCreature* pCreature, int 
 
 		if (addonInfo.bAddon )
 		{
-			if(addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28			//11
-						||	addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16		//14
-						||	addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16		//15
-						||	addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15	//16
-						||  addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14		//17
-						||	addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15		//19
-						||  addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16		//22
-						||  addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16		//23
-						||  addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14		//35
+			if((addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28)			//11
+						||	(addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16)		//14
+						||	(addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16)		//15
+						||	(addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15)	//16
+						||  (addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14)		//17
+						||	(addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15)		//19
+						||  (addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16)		//22
+						||  (addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16)		//23
+						||  (addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14)		//35
 						)
 			{
 
@@ -550,15 +552,15 @@ void	MTopView::DrawFastMoveForACSlayer(POINT* pPoint, MCreature* pCreature, int 
 				
 		if (addonInfo.bAddon)
 		{
-			if(addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28			//11
-				||	addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16		//14
-				||	addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16		//15
-				||	addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15	//16
-				||  addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14		//17
-				||	addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15		//19
-				||  addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16		//22
-				||  addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16		//23
-				||  addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14		//35
+			if((addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28)			//11
+				||	(addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16)		//14
+				||	(addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16)		//15
+				||	(addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15)	//16
+				||  (addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14)		//17
+				||	(addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15)		//19
+				||  (addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16)		//22
+				||  (addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16)		//23
+				||  (addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14)		//35
 				)
 			{
 				int k = 1;
@@ -938,15 +940,15 @@ void	MTopView::DrawInvisibleForACSlayer(POINT* pPoint, MCreature* pCreature, int
 		
 		if (addonInfo.bAddon)
 		{
-			if(addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28			//11
-				||	addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16		//14
-				||	addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16		//15
-				||	addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15	//16
-				||  addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14		//17
-				||	addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15		//19
-				||  addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16		//22
-				||  addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16		//23
-				||  addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14		//35
+			if((addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28)			//11
+				||	(addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16)		//14
+				||	(addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16)		//15
+				||	(addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15)	//16
+				||  (addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14)		//17
+				||	(addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15)		//19
+				||  (addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16)		//22
+				||  (addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16)		//23
+				||  (addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14)		//35
 				)
 			{
 				int k = 1;
@@ -1357,15 +1359,15 @@ void	MTopView::DrawWeaponFadeOutForACSlayer(POINT* pPoint, MCreature* pCreature,
 		
 		if (addonInfo.bAddon)
 		{
-			if(addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28			//11
-				||	addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16		//14
-				||	addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16		//15
-				||	addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15	//16
-				||  addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14		//17
-				||	addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15		//19
-				||  addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16		//22
-				||  addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16		//23
-				||  addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14		//35
+			if((addonInfo.ItemClass==ITEM_CLASS_COAT && addonInfo.ItemType>=28)			//11
+				||	(addonInfo.ItemClass==ITEM_CLASS_SWORD && addonInfo.ItemType>=16)		//14
+				||	(addonInfo.ItemClass==ITEM_CLASS_BLADE && addonInfo.ItemType>=16)		//15
+				||	(addonInfo.ItemClass==ITEM_CLASS_SHIELD && addonInfo.ItemType>=15)	//16
+				||  (addonInfo.ItemClass==ITEM_CLASS_CROSS && addonInfo.ItemType>=14)		//17
+				||	(addonInfo.ItemClass==ITEM_CLASS_HELM && addonInfo.ItemType>=15)		//19
+				||  (addonInfo.ItemClass==ITEM_CLASS_AR && addonInfo.ItemType>=16)		//22
+				||  (addonInfo.ItemClass==ITEM_CLASS_SR && addonInfo.ItemType>=16)		//23
+				||  (addonInfo.ItemClass==ITEM_CLASS_MACE && addonInfo.ItemType>=14)		//35
 				)
 			{
 				int k = 1;
@@ -1631,6 +1633,9 @@ void	MTopView::DrawWeaponFadeOutForACSlayer(POINT* pPoint, MCreature* pCreature,
 
 void	MTopView::DrawCentauroTurret( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame , int body)
 {
+	(void)action;
+	(void)direction;
+	(void)frame;
 	MFakeCreature *pFakeCreature = (MFakeCreature *)pCreature;
 	BYTE direct = pFakeCreature->GetTurretDirection();
 	

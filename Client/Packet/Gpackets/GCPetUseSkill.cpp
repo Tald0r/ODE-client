@@ -28,8 +28,6 @@ GCPetUseSkill::GCPetUseSkill ()
 //////////////////////////////////////////////////////////////////////
 GCPetUseSkill::~GCPetUseSkill ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

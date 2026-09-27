@@ -552,7 +552,6 @@ PacketFactoryManager::PacketFactoryManager ()
 //////////////////////////////////////////////////////////////////////
 PacketFactoryManager::~PacketFactoryManager () 
 {
-	__BEGIN_TRY
 		
 	Assert(m_Factories != NULL);
 
@@ -573,7 +572,6 @@ PacketFactoryManager::~PacketFactoryManager ()
 		m_Factories = NULL;
 	}
 			
-	__END_CATCH
 }
 
 
@@ -936,7 +934,7 @@ void PacketFactoryManager::init ()
 	// exchange-layout reconciliation.
 	addFactory( new GCExchangeListFactory() );
 
-#if __OUTPUT_INIT__
+#if defined(__OUTPUT_INIT__) && __OUTPUT_INIT__
 	cout << toString() << endl;
 #endif
 	

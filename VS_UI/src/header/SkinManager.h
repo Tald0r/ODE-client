@@ -8,7 +8,9 @@
 
 #pragma once
 
+#ifdef _MSC_VER
 #pragma warning (disable:4786)
+#endif
 
 #include "CTypeTable.h"
 #include <vector>

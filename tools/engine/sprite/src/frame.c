@@ -95,7 +95,7 @@ Frame* frame_array_get(const FrameArray* arr, int index)
     if (arr == NULL || index < 0 || index >= vecLen(arr)) {
         return NULL;
     }
-    return vecRef(arr, index);
+    return (Frame*)vecRef(arr, index);
 }
 
 int frame_array_save(const FrameArray* arr, FILE* file)

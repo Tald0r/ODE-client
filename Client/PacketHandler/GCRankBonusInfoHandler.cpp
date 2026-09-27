@@ -17,6 +17,7 @@ void GCRankBonusInfoHandler::execute ( GCRankBonusInfo * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	for(int i = 0; i < g_pRankBonusTable->GetSize(); i++)
 		if (auto* entry = g_pRankBonusTable->GetMutable(i)) {
 			entry->SetStatus(RankBonusInfo::STATUS_NULL);
@@ -26,7 +27,7 @@ void GCRankBonusInfoHandler::execute ( GCRankBonusInfo * pPacket , Player * pPla
 
 	while((type = pPacket->popFrontListElement()) != EndOfRankBonus)
 	{
-		if(type < g_pRankBonusTable->GetSize())
+		if(type < static_cast<DWORD>(g_pRankBonusTable->GetSize()))
 		{
 			if (auto* entry = g_pRankBonusTable->GetMutable(type)) {
 				entry->SetStatus(RankBonusInfo::STATUS_LEARNED);

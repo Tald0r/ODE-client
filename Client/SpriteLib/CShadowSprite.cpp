@@ -236,7 +236,6 @@ CShadowSprite::SetPixel(WORD *pSource, WORD pitch, WORD width, WORD height)
 	m_PixelLengths.assign(height, 0);
 	m_Pixels = new WORD* [height]{};
 
-	int i;
 	int j;
 
 	for (int i=0; i<height; i++)
@@ -335,7 +334,6 @@ CShadowSprite::SetPixel(CIndexSprite& ispr)
 	
 	WORD	*pPixels;
 
-	int i;
 	int j;	
 
 	// height줄 만큼 memory잡기
@@ -400,7 +398,6 @@ CShadowSprite::SetPixel(CSprite& spr)
 	
 	WORD	*pPixels;
 
-	int i;
 	int j;	
 
 	// height줄 만큼 memory잡기
@@ -517,7 +514,6 @@ CShadowSprite::Blt(WORD *pDest, WORD pitch)
 	WORD	*pDestTemp,
 			*pPixels;
 
-	int i;
 	int j;
 
 	for (int i=0; i<m_Height; i++)
@@ -569,7 +565,6 @@ CShadowSprite::BltClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -702,7 +697,6 @@ CShadowSprite::BltClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	for (int i=pRect->top; i<pRect->bottom; i++)
@@ -802,7 +796,6 @@ CShadowSprite::BltClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	short i;
 	short j;
 
 	//---------------------------------------------
@@ -993,7 +986,6 @@ CShadowSprite::BltClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	for (int i=pRect->top; i<pRect->bottom; i++)
@@ -1044,7 +1036,6 @@ CShadowSprite::BltDarkness(WORD *pDest, WORD pitch, BYTE DarkBits)
 	WORD	*pDestTemp,
 			*pPixels;
 
-	int i;
 	int j;
 
 	for (int i=0; i<m_Height; i++)
@@ -1099,7 +1090,6 @@ CShadowSprite::BltDarknessClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE Da
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -1237,7 +1227,6 @@ CShadowSprite::BltDarknessClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE D
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	for (int i=pRect->top; i<pRect->bottom; i++)
@@ -1341,7 +1330,6 @@ CShadowSprite::BltDarknessClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE D
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -1542,7 +1530,6 @@ CShadowSprite::BltDarknessClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE 
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	for (int i=pRect->top; i<pRect->bottom; i++)
@@ -1603,7 +1590,7 @@ CShadowSprite::memcpyShadowDarkness(WORD* pDest, WORD pixels)
 			{
 				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);				
 
-				*qpDest++;				
+				qpDest++;				
 			}
 		break;
 
@@ -1622,7 +1609,7 @@ CShadowSprite::memcpyShadowDarkness(WORD* pDest, WORD pixels)
 			{
 				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);
 
-				*qpDest++;				
+				qpDest++;				
 			}
 			
 		break;
@@ -1641,7 +1628,7 @@ CShadowSprite::memcpyShadowDarkness(WORD* pDest, WORD pixels)
 			{
 				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);
 
-				*qpDest++;				
+				qpDest++;				
 			}
 		break;
 
@@ -1662,7 +1649,7 @@ CShadowSprite::memcpyShadowDarkness(WORD* pDest, WORD pixels)
 			{
 				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);
 
-				*qpDest++;				
+				qpDest++;				
 			}
 		break;
 	}
@@ -1732,7 +1719,6 @@ CShadowSprite::Blt4444ClipLeft(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -1863,7 +1849,6 @@ CShadowSprite::Blt4444ClipRight(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	for (int i=pRect->top; i<pRect->bottom; i++)
@@ -1963,7 +1948,6 @@ CShadowSprite::Blt4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD pixel
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -2157,7 +2141,6 @@ CShadowSprite::Blt4444ClipHeight(WORD *pDest, WORD pitch, RECT* pRect, WORD pixe
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	for (int i=pRect->top; i<pRect->bottom; i++)
@@ -2337,7 +2320,6 @@ CShadowSprite::BltSmallClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE shift
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -2481,7 +2463,6 @@ CShadowSprite::BltSmallClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE shif
 			colorCount,			
 			index;
 
-	int	i;
 	int	j;
 
 	int stepY = 1 << shift;		// y줄 건너띄는 pixel수
@@ -2584,7 +2565,6 @@ CShadowSprite::BltSmallClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE shif
 			index,
 			dist;
 
-	short i;
 	short j;
 
 	//---------------------------------------------
@@ -2788,7 +2768,6 @@ CShadowSprite::BltSmallClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE shi
 			*pPixels;
 
 
-	int i;
 	int j;
 	
 	int stepY = 1 << shift;		// y줄 건너띄는 pixel수
@@ -2861,7 +2840,6 @@ CShadowSprite::BltSmall4444(WORD *pDest, WORD pitch, WORD pixel, BYTE shift)
 	WORD	*pDestTemp,
 			*pPixels;
 
-	int i;
 	int j;
 
 	/*
@@ -3031,7 +3009,6 @@ CShadowSprite::BltSmall4444ClipLeft(WORD* pDest, WORD pitch, RECT* pRect, WORD p
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -3178,7 +3155,6 @@ CShadowSprite::BltSmall4444ClipRight(WORD* pDest, WORD pitch, RECT* pRect, WORD 
 			colorCount,			
 			index;
 
-	int	i;
 	int	j;
 
 	int stepY = 1 << shift;		// y줄 건너띄는 pixel수
@@ -3284,7 +3260,6 @@ CShadowSprite::BltSmall4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD 
 			index,
 			dist;
 
-	short i;
 	short j;
 
 	//---------------------------------------------
@@ -3491,7 +3466,6 @@ CShadowSprite::BltSmall4444ClipHeight(WORD *pDest, WORD pitch, RECT* pRect, WORD
 			*pPixels;
 
 
-	int i;
 	int j;
 	
 	int stepY = 1 << shift;		// y줄 건너띄는 pixel수

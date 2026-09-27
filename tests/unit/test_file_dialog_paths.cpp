@@ -59,7 +59,7 @@ TEST(FileDialogPaths, EmptyPathsAndRepeatedNormalizationAreSafe)
 
 TEST(FileDialogPaths, NativeAndNetworkRootsCannotBeTraversedAbove)
 {
-	for (const std::string root : {std::string("/"), std::string("\\\\server\\share\\"),
+	for (const std::string& root : {std::string("/"), std::string("\\\\server\\share\\"),
 		std::string("\\\\?\\UNC\\server\\share\\"), std::string("\\\\?\\uNc\\server\\share\\"),
 		std::string("\\\\?\\C:\\")})
 	{

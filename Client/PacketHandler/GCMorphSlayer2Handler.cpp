@@ -17,6 +17,7 @@ void GCMorphSlayer2Handler::execute ( GCMorphSlayer2 * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

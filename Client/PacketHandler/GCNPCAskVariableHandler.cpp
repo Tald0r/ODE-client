@@ -26,6 +26,7 @@ void GCNPCAskVariableHandler::execute ( GCNPCAskVariable * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	
 	if (g_pPlayer==NULL

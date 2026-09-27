@@ -20,6 +20,7 @@ void LCSelectPCErrorHandler::execute ( LCSelectPCError * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	DEBUG_ADD("[Packet] LCSelectPCErrorHandler");
 
 

@@ -17,6 +17,7 @@ void GCAddMonsterFromTransformationHandler::execute ( GCAddMonsterFromTransforma
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	
 

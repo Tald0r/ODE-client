@@ -21,6 +21,7 @@ void GCQuestStatusHandler::execute ( GCQuestStatus * pGCMonsterKillQuestStatus ,
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 		
 
 	DEBUG_ADD("[GCQuestStatusHandler] execute");

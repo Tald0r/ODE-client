@@ -5,7 +5,9 @@
 #ifndef __MEFFECTMANAGER_H__
 #define __MEFFECTMANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <list>
 class MEffect;

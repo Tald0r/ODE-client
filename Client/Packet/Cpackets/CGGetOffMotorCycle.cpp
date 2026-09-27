@@ -27,8 +27,6 @@ CGGetOffMotorCycle::CGGetOffMotorCycle ()
 //////////////////////////////////////////////////////////////////////
 CGGetOffMotorCycle::~CGGetOffMotorCycle ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

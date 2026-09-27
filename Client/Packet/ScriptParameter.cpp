@@ -29,8 +29,6 @@ ScriptParameter::ScriptParameter ()
 //////////////////////////////////////////////////////////////////////
 ScriptParameter::~ScriptParameter () 
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

@@ -35,8 +35,6 @@ void TextInfo::read ( SocketInputStream & iStream )
 
  	if ( szTopic == 0 )
 		throw InvalidProtocolException("szTopic == 0" );
-	if ( szTopic > 255 )
-		throw InvalidProtocolException("too large Topic lenth");
 		
 	iStream.read( m_Topic , szTopic );
 
@@ -70,8 +68,6 @@ void TextInfo::write ( SocketOutputStream & oStream ) const
 	
 	if ( szTopic == 0 )
 		throw InvalidProtocolException ("empty BBS_Topic");
-	if ( szTopic > 255 )
-		throw InvalidProtocolException ("too lorge Topic lenth");
 
 	oStream.write( szTopic );
 	

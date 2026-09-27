@@ -35,8 +35,8 @@ ModifyStatusManager*		g_pModifyStatusManager = NULL;
 #define	EXTRACT_MODIFY_VALUE( pVoid )							\
 																\
 			MODIFY_VALUE* pValue	= (MODIFY_VALUE*)pVoid;		\
-			DWORD	oldValue		= pValue->oldValue;			\
-			DWORD	value			= pValue->newValue;			\
+			[[maybe_unused]] DWORD	oldValue	= pValue->oldValue;	\
+			[[maybe_unused]] DWORD	value		= pValue->newValue;	\
 
 
 //----------------------------------------------------------------------
@@ -431,6 +431,9 @@ ModifyStatusManager::Function_MODIFY_DURABILITY(void* pVoid)
 			}
 		}
 		break;
+
+	default:
+		break;
 	}
 
 	#ifdef	OUTPUT_DEBUG
@@ -678,6 +681,9 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 		case RACE_OUSTERS:
 			g_pInventory->CheckAffectStatusAll();
 			g_pOustersGear->CheckAffectStatusAll();
+			break;
+
+		default:
 			break;
 	}
 
@@ -1273,7 +1279,7 @@ ModifyStatusManager::Function_MODIFY_SKILL_LEVEL(void *pVoid)
 	SkillType_t		SkillID = HIWORD( value );
 	WORD			SkillLev = LOWORD( value );
 
-	if( SkillID >= 0 && SkillID < MAX_ACTIONINFO && g_pSkillInfoTable != NULL)
+	if( SkillID < MAX_ACTIONINFO && g_pSkillInfoTable != NULL)
 	{
 		if (auto* entry = g_pSkillInfoTable->GetMutable(SkillID)) {
 			entry->SetExpLevel( SkillLev );
@@ -1304,7 +1310,7 @@ ModifyStatusManager::Function_MODIFY_SKILL_EXP(void *pVoid)
 	SkillType_t		SkillID = HIWORD( value );
 	int				SkillExp = LOWORD( value ) * 10;
 
-	if( SkillID >= 0 && SkillID < MAX_ACTIONINFO && g_pSkillInfoTable != NULL)
+	if( SkillID < MAX_ACTIONINFO && g_pSkillInfoTable != NULL)
 		if (auto* entry = g_pSkillInfoTable->GetMutable(SkillID)) {
 			entry->SetSkillExp( SkillExp );
 		}

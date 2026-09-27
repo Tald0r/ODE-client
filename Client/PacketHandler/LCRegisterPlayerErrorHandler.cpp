@@ -26,6 +26,7 @@ void LCRegisterPlayerErrorHandler::execute ( LCRegisterPlayerError * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	DEBUG_ADD_FORMAT("[ RegisterPlayerError ] %d", (int)pPacket->getErrorID() );

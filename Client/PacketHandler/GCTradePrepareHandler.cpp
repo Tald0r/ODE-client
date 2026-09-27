@@ -41,7 +41,7 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 	//----------------------------------------------------------------------
 	// 이미 거래 중인 경우... 등등.. 뭔가 하고 있으면.. --> 거부
 	//----------------------------------------------------------------------
-	if (g_pPlayer->IsWaitVerify() && g_pPlayer->GetWaitVerify()!=MPlayer::WAIT_VERIFY_TRADE			// 검증 받아야 하는게 있는 경우
+	if ((g_pPlayer->IsWaitVerify() && g_pPlayer->GetWaitVerify()!=MPlayer::WAIT_VERIFY_TRADE)			// 검증 받아야 하는게 있는 경우
 		|| g_pPlayer->IsRepeatAction()		// 반복 행동 중인 경우
 		|| g_pUIDialog->IsLockInput()		// NPC랑 대화중..
 		|| g_pPlayer->GetCreatureType()==CREATURETYPE_BAT	// 박쥐인 경우

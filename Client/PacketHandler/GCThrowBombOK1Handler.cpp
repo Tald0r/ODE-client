@@ -18,6 +18,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 		
@@ -76,7 +77,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 		{
 			useSkillID = g_pPlayer->GetBasicActionInfo();
 
-			if (useSkillID >= g_pActionInfoTable->GetMinResultActionInfo())
+			if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 			{
 				DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", useSkillID);
 				return;

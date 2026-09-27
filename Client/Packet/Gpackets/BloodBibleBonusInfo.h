@@ -9,7 +9,9 @@
 #ifndef __BLOOD_BIBLE_BONUS_INFO_H__
 #define __BLOOD_BIBLE_BONUS_INFO_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 // include files
 #include "Types.h"

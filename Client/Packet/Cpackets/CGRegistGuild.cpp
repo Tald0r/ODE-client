@@ -24,9 +24,6 @@ void CGRegistGuild::read (SocketInputStream & iStream)
 
 	iStream.read( szGuildIntro );
 
-	if ( szGuildIntro > 256 )
-		throw InvalidProtocolException( "szGuildIntro > 256" );
-
 	if ( szGuildIntro != 0 )
 		iStream.read( m_GuildIntro, szGuildIntro );
 	else

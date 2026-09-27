@@ -27,6 +27,7 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	if (g_pPlayer==NULL
@@ -96,7 +97,7 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 				{
 					int creatureID = g_pZone->GetCreatureID( pInfo->name.c_str(), 1 );
 
-					if (creatureID==OBJECTID_NULL)
+					if (static_cast<unsigned int>(creatureID)==OBJECTID_NULL)
 					{
 						pNewInfo->bInSight = false;						
 						pNewInfo->zoneID = 60002;

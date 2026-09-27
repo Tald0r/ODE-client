@@ -31,8 +31,6 @@ GCSkillToTileOK6::GCSkillToTileOK6 ()
 //////////////////////////////////////////////////////////////////////
 GCSkillToTileOK6::~GCSkillToTileOK6 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

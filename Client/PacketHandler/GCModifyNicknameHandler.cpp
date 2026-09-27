@@ -18,6 +18,7 @@ void GCModifyNicknameHandler::execute ( GCModifyNickname * pPacket , Player * pP
 
 {
 	__BEGIN_TRY /*__BEGIN_DEBUG_EX*/
+	(void)pPlayer;
 	
 
 		int CreatureID = pPacket->getObjectID();
@@ -49,7 +50,7 @@ void GCModifyNicknameHandler::execute ( GCModifyNickname * pPacket , Player * pP
 			else // 닉네임 인덱스가 있을 때
 			{
 				DWORD TempIndex = TempNick.getNicknameIndex();
-				if(TempIndex >= g_pNickNameStringTable->GetSize())
+				if(TempIndex >= static_cast<DWORD>(g_pNickNameStringTable->GetSize()))
 					TempIndex = 0;
 				szNickName = (*g_pNickNameStringTable)[TempIndex].GetString();
 			}

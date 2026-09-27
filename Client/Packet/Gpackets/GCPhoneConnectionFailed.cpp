@@ -28,8 +28,6 @@ GCPhoneConnectionFailed::GCPhoneConnectionFailed ()
 //////////////////////////////////////////////////////////////////////
 GCPhoneConnectionFailed::~GCPhoneConnectionFailed ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 
@@ -39,6 +37,7 @@ GCPhoneConnectionFailed::~GCPhoneConnectionFailed ()
 void GCPhoneConnectionFailed::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 	__END_CATCH
 }
 
@@ -49,6 +48,7 @@ void GCPhoneConnectionFailed::read ( SocketInputStream & iStream )
 void GCPhoneConnectionFailed::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 	__END_CATCH
 }
 

@@ -26,8 +26,6 @@ void GCBloodBibleStatus::read ( SocketInputStream & iStream )
 
 	BYTE szOwnerName;
 	iStream.read( szOwnerName );
-	if ( szOwnerName > 256 )
-		throw InvalidProtocolException("too large message length");
 
 	if (szOwnerName>0)
 	{
@@ -55,8 +53,6 @@ void GCBloodBibleStatus::write ( SocketOutputStream & oStream ) const
 
 	BYTE szOwnerName = m_OwnerName.size();
 	oStream.write( szOwnerName );
-	if ( szOwnerName > 256 )
-		throw InvalidProtocolException("too large message length");
 
 	if (szOwnerName>0)
 	{

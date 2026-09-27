@@ -24,6 +24,8 @@ void LCVersionCheckErrorHandler::execute ( LCVersionCheckError * pPacket , Playe
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 
 
 	

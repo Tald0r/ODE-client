@@ -16,6 +16,7 @@ void GCAddInstalledMineToZoneHandler::execute ( GCAddInstalledMineToZone * pPack
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	/*

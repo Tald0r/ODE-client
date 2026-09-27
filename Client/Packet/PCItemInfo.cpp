@@ -38,7 +38,6 @@ PCItemInfo::PCItemInfo ()
 //////////////////////////////////////////////////////////////////////////////
 PCItemInfo::~PCItemInfo () 
 {
-	__BEGIN_TRY
 
 	while (!m_SubItemInfoList.empty()) 
 	{
@@ -47,7 +46,6 @@ PCItemInfo::~PCItemInfo ()
 		m_SubItemInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

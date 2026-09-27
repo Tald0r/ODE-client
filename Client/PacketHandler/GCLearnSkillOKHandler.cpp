@@ -20,6 +20,7 @@ void GCLearnSkillOKHandler::execute ( GCLearnSkillOK * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 		
 	// mode 제거

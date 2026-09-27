@@ -20,10 +20,6 @@ void CSpritePal::SetPixel(BYTE *pSource, WORD pitch, WORD width, WORD height)
 
 	int		index;				// data의 index로 사용
 	int		count;				// 반복수
-	int		trans,				// 투명색 개수
-			color;				// 투명이 아닌색 개수
-
-	BOOL	bCheckTrans;		// 최근에 검사한게 투명색인가?
 
 	BYTE	*pSourceTemp;
 
@@ -40,9 +36,6 @@ void CSpritePal::SetPixel(BYTE *pSource, WORD pitch, WORD width, WORD height)
 	{
 		index = 0;
 		count = 0;
-		trans = 0;
-		color = 0;
-		bCheckTrans = TRUE;
 		pSourceTemp = pSource;
 
 //		// 각 line에 대해서 압축~
@@ -274,7 +267,6 @@ CSpritePal::BltEffectClipLeft(WORD* pDest, WORD pitch, RECT* pRect, MPalette &pa
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -403,7 +395,6 @@ CSpritePal::BltEffectClipRight(WORD* pDest, WORD pitch, RECT* pRect, MPalette &p
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -499,7 +490,6 @@ CSpritePal::BltEffectClipWidth(WORD* pDest, WORD pitch, RECT* pRect, MPalette &p
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -683,7 +673,6 @@ CSpritePal::BltEffectClipHeight(WORD *pDest, WORD pitch, RECT* pRect, MPalette &
 	BYTE	*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;

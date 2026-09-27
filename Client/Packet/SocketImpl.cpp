@@ -152,7 +152,7 @@ void SocketImpl::close ()
 	m_SocketID = INVALID_SOCKET;
 	try {
 		SocketAPI::closesocket_ex( socket );
-	} catch ( FileNotOpenedException ) {
+	} catch ( FileNotOpenedException & ) {
 		// if already closed, ignore...
 	}
 

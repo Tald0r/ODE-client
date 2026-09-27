@@ -371,9 +371,6 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				
 				MItem* pModifyItem = (MItem*)g_pTempInformation->pValue;		//NULL;
 
-				BOOL	bInInventory	= g_pTempInformation->Value1;
-				BOOL	bInGear			= g_pTempInformation->Value2;	
-
 				if (//pCheckItem!=NULL && 
 					pModifyItem!=NULL)
 				{
@@ -983,7 +980,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 		case NPC_RESPONSE_LOTTERY :
 			{
 				int step = -1;
-				if( pPacket->getParameter() >= 0 && pPacket->getParameter() <= 4 )
+				if( pPacket->getParameter() <= 4 )
 					step = pPacket->getParameter() + 1;
 				
 				if(step != -1 )

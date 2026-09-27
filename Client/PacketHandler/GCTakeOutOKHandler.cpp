@@ -20,6 +20,7 @@ void GCTakeOutOKHandler::execute ( GCTakeOutOK * pGCTakeOutOK , Player * pPlayer
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_TAKE_OUT_OK].GetString() );
 

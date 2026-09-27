@@ -26,6 +26,7 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	__BEGIN_DEBUG
 		
 	MItem *pInventoryItem = NULL;

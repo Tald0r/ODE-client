@@ -28,8 +28,6 @@ CGCastingSkill::CGCastingSkill ()
 //////////////////////////////////////////////////////////////////////
 CGCastingSkill::~CGCastingSkill ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

@@ -28,8 +28,6 @@ CGAddMouseToInventory::CGAddMouseToInventory ()
 //////////////////////////////////////////////////////////////////////
 CGAddMouseToInventory::~CGAddMouseToInventory ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

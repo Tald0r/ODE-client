@@ -4,7 +4,9 @@
 // UI에서 메시지가 오기를 기다리는 loop
 //---------------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 //-----------------------------------------------------------------------------
 // Include files
@@ -166,6 +168,8 @@ CWaitUIUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 void		
 CWaitUIUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 {
+	(void)z;
+
 	static MonotonicClock::TimePoint	last_click_time;
 	static int		double_click_x, double_click_y;
 
@@ -205,6 +209,9 @@ CWaitUIUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 
 		case CSDLInput::WHEELUP:
 			gC_vs_ui.MouseControl(M_WHEEL_UP, x, y);
+			break;
+
+		default:
 			break;
 	}
 }

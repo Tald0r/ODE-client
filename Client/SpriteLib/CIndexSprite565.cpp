@@ -31,7 +31,6 @@ CIndexSprite565::SaveToFile(ofstream& file)
 
 	int colorCount, transPair, indexCount;
 
-	int i;
 	int j;
 
 	//--------------------------------

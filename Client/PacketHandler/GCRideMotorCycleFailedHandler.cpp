@@ -17,6 +17,8 @@ void GCRideMotorCycleFailedHandler::execute ( GCRideMotorCycleFailed * pPacket ,
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 	

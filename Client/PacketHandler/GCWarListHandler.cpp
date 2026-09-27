@@ -24,6 +24,7 @@ void GCWarListHandler::execute ( GCWarList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	
 	if(g_pWarManager == NULL || g_pZone == NULL)
 		return;

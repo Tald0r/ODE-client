@@ -19,6 +19,7 @@ void GCAddVampireFromTransformationHandler::execute ( GCAddVampireFromTransforma
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------

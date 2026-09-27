@@ -26,8 +26,6 @@ CGMakeItem::CGMakeItem ()
 //////////////////////////////////////////////////////////////////////
 CGMakeItem::~CGMakeItem ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

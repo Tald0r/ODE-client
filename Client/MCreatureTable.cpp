@@ -241,6 +241,9 @@ CREATURETABLE_INFO::GetActionMax() const
 			//return ACTION_MAX_NPC;
 			return ACTION_MAX_VAMPIRE;
 		break;		
+
+		default:
+			break;
 	}
 
 	return 0;
@@ -380,7 +383,6 @@ CREATURETABLE_INFO::LoadFromFile(std::ifstream& file)
 	bool isread=true;
 	if(m_CreatureTribe==4||m_CreatureTribe==5)
 	{
-		char temp[24];
 //		file.read(temp,24);
 		isread = false;
 	}

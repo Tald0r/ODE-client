@@ -32,8 +32,6 @@ CRRequest::CRRequest ()
 //////////////////////////////////////////////////////////////////////
 CRRequest::~CRRequest ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

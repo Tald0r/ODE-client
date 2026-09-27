@@ -21,6 +21,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	

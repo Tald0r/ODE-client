@@ -29,8 +29,6 @@ CRConnect::CRConnect ()
 //////////////////////////////////////////////////////////////////////
 CRConnect::~CRConnect ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

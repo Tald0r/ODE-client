@@ -108,7 +108,7 @@ static void get_timestamp(char *buffer, size_t size) {
 			 tm_info->tm_hour,
 			 tm_info->tm_min,
 			 tm_info->tm_sec,
-			 tv.tv_usec / 1000);
+			 static_cast<long>(tv.tv_usec / 1000));
 #endif
 }
 
@@ -248,7 +248,7 @@ void log_write_args(const LogSite& site, LogLevel level, const char* fmt,
 	SafeFormat::FormatV(message, sizeof(message), fmt, args, count);
 
 	// Build full log line
-	char log_line[2048];
+	char log_line[sizeof(message) + 256];
 	char timestamp[64];
 	get_timestamp(timestamp, sizeof(timestamp));
 

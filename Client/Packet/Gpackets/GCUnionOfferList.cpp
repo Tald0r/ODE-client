@@ -15,7 +15,6 @@
 //////////////////////////////////////////////////////////////////////
 GCUnionOfferList::~GCUnionOfferList()
 {
-    __BEGIN_TRY
     while (!m_UnionOfferList.empty())
     {
         SingleGuildUnionOffer* pUnionOffer = m_UnionOfferList.front();
@@ -27,7 +26,6 @@ GCUnionOfferList::~GCUnionOfferList()
 
     m_UnionOfferList.clear();
 
-    __END_CATCH
 }
 
 PacketSize_t GCUnionOfferList::getPacketSize() const

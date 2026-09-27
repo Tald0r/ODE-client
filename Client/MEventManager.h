@@ -5,7 +5,9 @@
 #ifndef __MEVENT_MANAGER_H__
 #define __MEVENT_MANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "CTypeTable.h"
 #include "MonotonicClock.h"

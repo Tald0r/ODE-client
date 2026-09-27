@@ -157,7 +157,7 @@ private:
 
                 case SDLK_RIGHT:
                     // Next sprite
-                    if (m_currentIndex < m_spritePack->GetSize() - 1) {
+                    if (static_cast<DWORD>(m_currentIndex) < m_spritePack->GetSize() - 1) {
                         m_currentIndex++;
                     }
                     break;
@@ -191,7 +191,7 @@ private:
         SDL_RenderClear(m_renderer);
 
         // Get current sprite
-        if (m_currentIndex >= 0 && m_currentIndex < m_spritePack->GetSize()) {
+        if (m_currentIndex >= 0 && static_cast<DWORD>(m_currentIndex) < m_spritePack->GetSize()) {
             CSprite* sprite = &m_spritePack->Get(m_currentIndex);
 
             if (sprite && sprite->IsInit()) {
@@ -243,7 +243,7 @@ private:
     }
 
     void DisplayInfo() {
-        if (m_currentIndex >= 0 && m_currentIndex < m_spritePack->GetSize()) {
+        if (m_currentIndex >= 0 && static_cast<DWORD>(m_currentIndex) < m_spritePack->GetSize()) {
             CSprite* sprite = &m_spritePack->Get(m_currentIndex);
 
             if (sprite && sprite->IsInit()) {

@@ -18,6 +18,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

@@ -27,8 +27,6 @@ GCAddGearToZone::GCAddGearToZone ()
 //////////////////////////////////////////////////////////////////////
 GCAddGearToZone::~GCAddGearToZone ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

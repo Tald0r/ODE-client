@@ -20,6 +20,7 @@ void GCUseOKHandler::execute ( GCUseOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	// message
@@ -52,6 +53,7 @@ void GCUseSkillCardOKHandler::execute ( GCUseSkillCardOK * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	// message

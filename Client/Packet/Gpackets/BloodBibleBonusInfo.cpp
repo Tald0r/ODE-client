@@ -32,11 +32,9 @@ BloodBibleBonusInfo::BloodBibleBonusInfo ()
 //////////////////////////////////////////////////////////////////////
 BloodBibleBonusInfo::~BloodBibleBonusInfo ()
 {
-	__BEGIN_TRY
 
 //	clearOptionTypeList();
 
-	__END_CATCH
 }
 
 

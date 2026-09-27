@@ -19,6 +19,7 @@ void GCDeleteObjectHandler::execute ( GCDeleteObject * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	//cout << "Object[" << pPacket->getObjectID() << "] deleted from zone." << endl;

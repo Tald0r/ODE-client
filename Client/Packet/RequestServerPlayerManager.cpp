@@ -119,7 +119,7 @@ RequestServerPlayerManager::AddRequestServerPlayer(RequestServerPlayer* pRequest
 		Lock();
 
 		// 넘 많을 경우는 더 이상 요청을 안 받도록 해야한다.
-		if (m_listRequestServerPlayer.size() < Wire::MaxRequestService())
+		if (m_listRequestServerPlayer.size() < static_cast<RequestServerPlayer_LIST::size_type>(Wire::MaxRequestService()))
 		{
 			// 일단 list에 넣어둔다.
 			m_listRequestServerPlayer.push_back( pRequestServerPlayer );
@@ -210,6 +210,7 @@ RequestServerPlayerManager::Broadcast(Packet* pPacket)
 void
 RequestServerPlayerManager::ProcessMode(RequestServerPlayer* pPlayer)
 {
+	(void)pPlayer;
 	// Upstream left this entire body commented out: a periodic
 	// position broadcast that was never finished. Deleted with the
 	// file's move into packetwire, because the dead lines named

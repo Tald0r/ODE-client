@@ -29,7 +29,6 @@ MAttackZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		// 첫번째면 8방향을 생성한다.
 		int sx = egInfo.x1;
 		int sy = egInfo.y1;
-		int sz = egInfo.z1;
 
 		for(int i=0;i<8;i++)
 		{

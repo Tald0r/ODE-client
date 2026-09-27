@@ -28,6 +28,7 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 {
 	
 		__BEGIN_TRY 
+		(void)pPlayer;
 
 		if(g_pPlayer->IsTraceCreature() == TRUE)
 			g_pPlayer->TraceNULL();
@@ -75,7 +76,7 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 		g_pStorage2->Init( 1 ); //STASH_RACK_MAX );	// 쩝.. 3개일까?? 
 		g_pStorage2->SetCurrent( 0 );
 
-		if(g_pPlayer->GetID() != NULL)
+		if(g_pPlayer->GetID() != 0)
 			g_pStorage2->SetCuropenid(g_pPlayer->GetID());
 
 
@@ -124,7 +125,6 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 					while (g_pInventory->IsNotEnd())
 					{
 						MItem * p_item = g_pInventory->Get();
-						MItem * p_newitem = g_pInventory->Get();
 						
 						if(p_item != NULL)
 						{

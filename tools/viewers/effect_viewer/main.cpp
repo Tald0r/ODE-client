@@ -254,7 +254,7 @@ public:
         }
 
         // Test 2: Boundary checking
-        CEffectFrame* frame = m_resources->GetEffectFrame(BLT_EFFECT, 99999, 0, 0);
+        CEffectFrame* frame = m_resources->GetEffectFrame(BLT_EFFECT, static_cast<TYPE_FRAMEID>(99999), 0, 0);
         if (frame == nullptr) {
             std::cout << "[PASS] Boundary check working" << std::endl;
             passCount++;
@@ -704,7 +704,7 @@ public:
         CSpritePack& spritePack = m_resources->m_EffectNormalSPK;
 
         // Boundary check
-        if (spriteID >= spritePack.GetSize()) {
+        if (static_cast<DWORD>(spriteID) >= spritePack.GetSize()) {
             if (m_frameCount <= 3) {
                 std::cout << "  ❌ Sprite ID " << spriteID << " out of range (size="
                           << spritePack.GetSize() << ")" << std::endl;
@@ -753,7 +753,7 @@ public:
         CSpritePalPack& spritePack = m_resources->m_EffectScreenSPK;
 
         // Boundary check
-        if (spriteID >= spritePack.GetSize()) {
+        if (static_cast<DWORD>(spriteID) >= spritePack.GetSize()) {
             if (m_frameCount <= 3) {
                 std::cout << "  ❌ ScreenSprite ID " << spriteID << " out of range (size="
                           << spritePack.GetSize() << ")" << std::endl;
@@ -808,7 +808,7 @@ public:
         CShadowSpritePack& spritePack = m_resources->m_EffectShadowSPK;
 
         // Boundary check
-        if (spriteID >= spritePack.GetSize()) {
+        if (static_cast<DWORD>(spriteID) >= spritePack.GetSize()) {
             if (m_frameCount <= 3) {
                 std::cout << "  ❌ ShadowSprite ID " << spriteID << " out of range (size="
                           << spritePack.GetSize() << ")" << std::endl;
@@ -832,7 +832,7 @@ public:
         }
 
         // Calculate destination pointer (offset by x,y)
-        WORD* pDest = (WORD*)m_surface->pixels;
+        [[maybe_unused]] WORD* pDest = (WORD*)m_surface->pixels;
         pDest += (y * m_surface->pitch / 2) + x;
 
         // Log successful render

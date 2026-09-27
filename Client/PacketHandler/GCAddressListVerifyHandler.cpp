@@ -21,6 +21,7 @@ void GCAddressListVerifyHandler::execute ( GCAddressListVerify * pPacket , Playe
 
 {
 	__BEGIN_TRY /*__BEGIN_DEBUG_EX*/
+	(void)pPlayer;
 	/*__BEGIN_DEBUG*/
 		
 	

@@ -15,7 +15,9 @@
 #ifndef	__MEFFECTTARGET_H__
 #define	__MEFFECTTARGET_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 
 #include "MTypeDef.h"

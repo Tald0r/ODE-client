@@ -132,7 +132,8 @@ TEST(AlphaSpriteBounds, CopyPreservesPaddingAndSelfAssignment)
 	padded.push_back(0x2222);
 	CHECK(Load(source, padded));
 	copy = source;
-	copy = copy;
+	CAlphaSprite565& self = copy;
+	copy = self;
 	source.Release();
 	const auto line = copy.GetPixelLineSpan(0);
 	CHECK_EQ(9, line.size());

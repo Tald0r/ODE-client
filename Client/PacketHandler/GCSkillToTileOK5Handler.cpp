@@ -19,6 +19,7 @@ void GCSkillToTileOK5Handler::execute ( GCSkillToTileOK5 * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------
@@ -68,7 +69,7 @@ void GCSkillToTileOK5Handler::execute ( GCSkillToTileOK5 * pPacket , Player * pP
 			{
 				useSkillID = pCreature->GetBasicActionInfo();
 
-				if (useSkillID >= g_pActionInfoTable->GetMinResultActionInfo())
+				if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
 					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", useSkillID);
 					return;

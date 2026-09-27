@@ -14,8 +14,6 @@ CGModifyNickname::CGModifyNickname ()
 
 CGModifyNickname::~CGModifyNickname ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGModifyNickname::read (SocketInputStream & iStream)

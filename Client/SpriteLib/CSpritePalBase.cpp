@@ -277,8 +277,6 @@ bool CSpritePalBase::SaveToFile(std::ofstream &file)
 	file.write((const char *)&m_Height, 2);
 	file.write((const char *)m_pData, m_Size);
 
-	int i;
-
 	WORD index;
 
 	for (int i=0; i<m_Height; i++)

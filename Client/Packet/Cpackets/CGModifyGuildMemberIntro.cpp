@@ -16,9 +16,6 @@ void CGModifyGuildMemberIntro::read (SocketInputStream & iStream)
 	iStream.read( m_GuildID );
 	iStream.read( szGuildMemberIntro );
 
-	if ( szGuildMemberIntro > 255 )
-		throw InvalidProtocolException( "too long szGuildMemberIntro length" );
-
 	if ( szGuildMemberIntro > 0 )
 		iStream.read( m_GuildMemberIntro, szGuildMemberIntro );
 	else

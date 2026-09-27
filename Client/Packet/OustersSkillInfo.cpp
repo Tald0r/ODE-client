@@ -32,7 +32,6 @@ OustersSkillInfo::OustersSkillInfo ()
 //////////////////////////////////////////////////////////////////////
 OustersSkillInfo::~OustersSkillInfo () 
 {
-	__BEGIN_TRY
 
 	// 소속된 모든 객체들을 삭제한다.
 	while ( !m_SubOustersSkillInfoList.empty() ) 
@@ -42,7 +41,6 @@ OustersSkillInfo::~OustersSkillInfo ()
 		m_SubOustersSkillInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

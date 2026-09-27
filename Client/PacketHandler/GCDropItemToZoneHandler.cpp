@@ -19,6 +19,7 @@ void GCDropItemToZoneHandler::execute ( GCDropItemToZone * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 		DEBUG_ADD_FORMAT("[Drop Item] class=%d, type=%d, optSize=%d, id=%d, xy=(%d,%d)",

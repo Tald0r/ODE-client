@@ -60,14 +60,12 @@ ClientCommunicationManager::ClientCommunicationManager ()
 //--------------------------------------------------------------------------------
 ClientCommunicationManager::~ClientCommunicationManager ()
 {
-    __BEGIN_TRY
 
     if ( m_pDatagramSocket != NULL ) {
         delete m_pDatagramSocket;
         m_pDatagramSocket = NULL;
     }
 
-    __END_CATCH
 }
 
 
@@ -92,7 +90,7 @@ void ClientCommunicationManager::sendDatagram ( Datagram * pDatagram )
     {
         m_pDatagramSocket->send( pDatagram );
     }
-    catch ( ConnectException )
+    catch ( ConnectException & )
     {
 		throw ConnectException( "ClientCommunicationManager::sendDatagram 상위로 던진다");
     }

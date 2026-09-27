@@ -15,6 +15,7 @@ void GCOtherModifyInfoHandler::execute ( GCOtherModifyInfo * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우

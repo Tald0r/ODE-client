@@ -2,7 +2,9 @@
 // MCompareManager.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MCompareManager.h"
 #include "MPlayer.h"

@@ -17,6 +17,7 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	
 

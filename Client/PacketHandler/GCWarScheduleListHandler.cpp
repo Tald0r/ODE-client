@@ -19,6 +19,7 @@ void GCWarScheduleListHandler::execute ( GCWarScheduleList * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	
 	UI_RunWarList(pPacket);

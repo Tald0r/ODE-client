@@ -19,8 +19,6 @@ CGSkillToInventory::CGSkillToInventory ()
 	
 CGSkillToInventory::~CGSkillToInventory ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGSkillToInventory::read (SocketInputStream & iStream)

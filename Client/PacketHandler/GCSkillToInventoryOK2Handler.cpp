@@ -17,6 +17,7 @@ void GCSkillToInventoryOK2Handler::execute ( GCSkillToInventoryOK2 * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

@@ -5,7 +5,9 @@
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -102,8 +104,8 @@ extern bool g_bZoneSafe;
 extern void	SetWatchMode( bool );
 extern bool g_bWatchMode;
 
-extern int g_MyCheckTime=0;
-extern int g_CheckErrorTime=0;
+int g_MyCheckTime=0;
+int g_CheckErrorTime=0;
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
 //add by sonic 2006.7.30
@@ -114,12 +116,12 @@ extern RECT g_GameRect;
 	// on modern Windows SDKs; "th32.lib" doesn't exist and this pragma would
 	// fail the link (LNK1104) on VS2019+.
 	extern int GetCurrentUserNumber();
-	extern int g_CheckTimeNum=0;
+	int g_CheckTimeNum=0;
 #else
 	// Non-Windows platforms don't have tlhelp32.h
 	// Forward declaration only - implementation is below
 	extern int GetCurrentUserNumber();
-	extern int g_CheckTimeNum=0;
+	int g_CheckTimeNum=0;
 #endif
 //end
 //extern bool CheckInvalidProcess();
@@ -246,7 +248,9 @@ CGameUpdate::Init()
 void		
 CGameUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 {
-	POINT point;
+	(void)x;
+	(void)y;
+	(void)z;
 
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_DENY_INPUT_MOUSE))
 	{
@@ -255,7 +259,6 @@ CGameUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 	}
 
 	static MonotonicClock::TimePoint	last_click_time;
-	static int		double_click_x, double_click_y;
 	
 	switch (event)
 	{
@@ -291,8 +294,6 @@ CGameUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 				// own receiver and are unaffected.
 				//gC_vs_ui.MouseControl(M_LEFTBUTTON_DOWN, g_x, g_y);
 				last_click_time = MonotonicClock::Now();
-				double_click_x = g_x;
-				double_click_y = g_y;
 				
 				#ifdef OUTPUT_DEBUG			
 				if (g_pSDLInput->KeyDown(DIK_LSHIFT) && g_bSlideScreenShot)
@@ -333,6 +334,9 @@ CGameUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 		case CSDLInput::WHEELUP:
 			gC_vs_ui.MouseControl(M_WHEEL_UP, g_x, g_y);
 //			gC_vs_ui.ChatMouseControlExtra( M_WHEEL_UP, g_x, g_y );
+			break;
+
+		default:
 			break;
 	}
 }
@@ -3512,10 +3516,10 @@ CGameUpdate::ProcessInput()
 	// UI에서 mouse커서 입력을 잡고 있는 경우
 	// elevator 작동중..
 	//---------------------------------------------------	
-	if ((g_pUIDialog->IsLockInput() || g_bUIInput)
+	if (((g_pUIDialog->IsLockInput() || g_bUIInput)
 		
 		// 파티 떠있을때는 파티창의 캐릭을 선택할 수도 있다.
-		&& !bRunningParty
+		&& !bRunningParty)
 
 		// 다른 동작 못하도록 ...
 		|| gC_vs_ui.IsRunningElevator()
@@ -3590,9 +3594,9 @@ CGameUpdate::ProcessInput()
 		//|| !g_bZonePlayerInLarge
 		|| g_bZoneSafe
 		|| g_pPlayer->IsInSafeSector()
-		|| g_pPlayer->IsSlayer() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_SLAYER
-		|| g_pPlayer->IsVampire() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_VAMPIRE
-		|| g_pPlayer->IsOusters() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_OUSTERS
+		|| (g_pPlayer->IsSlayer() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_SLAYER)
+		|| (g_pPlayer->IsVampire() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_VAMPIRE)
+		|| (g_pPlayer->IsOusters() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_OUSTERS)
 		// 2004, 11, 26, sobeit add start - 슬레 140 인챈 스킬 - 슬레에겐 축복, 나머진 저주..ㅋㅋ 
 		|| g_pPlayer->GetSpecialActionInfo() == SKILL_INTIMATE_GRAIL
 		// 2004, 11, 26, sobeit add end
@@ -3906,9 +3910,9 @@ CGameUpdate::ProcessInput()
 						//---------------------------------------------------
 						// 갈 수 없는 곳이면
 						//---------------------------------------------------
-						if (g_pPlayer->IsGroundCreature() && sector.IsBlockGround()
-							|| g_pPlayer->IsUndergroundCreature() && sector.IsBlockUnderground()
-							|| g_pPlayer->IsFlyingCreature() && sector.IsBlockFlying())
+						if ((g_pPlayer->IsGroundCreature() && sector.IsBlockGround())
+							|| (g_pPlayer->IsUndergroundCreature() && sector.IsBlockUnderground())
+							|| (g_pPlayer->IsFlyingCreature() && sector.IsBlockFlying()))
 							//g_pZone->CanMove(g_pPlayer->GetMoveType(), g_MouseSector.x, g_MouseSector.y))
 						{	
 							// 포탈이 아니고
@@ -4009,9 +4013,9 @@ CGameUpdate::ProcessInput()
 					// 뱀파이어면 creature 찾아서 성물인경우만
 
 					if(!g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() ||
-						g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && g_pPlayer->IsVampire() && g_pZone->GetID() != 3001||
-						g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && !g_pPlayer->IsVampire() &&
-						g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) && g_pZone->GetID() != 3001
+						(g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && g_pPlayer->IsVampire() && g_pZone->GetID() != 3001)||
+						(g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && !g_pPlayer->IsVampire() &&
+						g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) && g_pZone->GetID() != 3001)
 						|| g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 						|| g_bLight
@@ -4132,8 +4136,6 @@ CGameUpdate::ProcessInput()
 							MCreature *pCreature = dynamic_cast<MCreature*>(pObject);
 							g_bLButtonDown = TRUE;
 							
-							BOOL	ForceAttack = TRUE;
-
 							if (g_pPlayer->TraceCreatureToBasicAction( 
 										pCreature->GetID(), 
 										true))		// 강제 공격
@@ -5285,7 +5287,7 @@ CGameUpdate::UpdateDraw()
 	//-----------------------------------------------------------------
 	__BEGIN_PROFILE("DrawDebugInfo")
 
-	PrintInfo* pPrintInfo = &gpC_base->m_chatting_pi;
+	[[maybe_unused]] PrintInfo* pPrintInfo = &gpC_base->m_chatting_pi;
 
 	#ifdef	OUTPUT_DEBUG
 		static DWORD lastCount = 0;	
@@ -5678,7 +5680,7 @@ CGameUpdate::UpdateDrawHelp()
 
 	for (int c=g_pHelpMessage->GetSize()-1; c>=0; c--)
 	{
-		if ((*g_pHelpMessage)[c][0] != NULL)
+		if ((*g_pHelpMessage)[c][0] != '\0')
 		{
 			const COLORREF color = RGB(28<<3, 28<<3, 8<<3);
 
@@ -5736,7 +5738,6 @@ int GetCurrentUserNumber()
     DWORD			ret = 0;
 	DWORD			dwwinlogon = 0;
 	DWORD			dwexplorer = 0;
-	DWORD			dwcsrss = 0;
 
 	ProcessInfo.dwSize = sizeof(ProcessInfo);
     hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
@@ -5769,7 +5770,9 @@ int GetCurrentUserNumber()
 		}
 	}while(Process32Next(hSnapShot,&ProcessInfo));
 	if(hSnapShot)
+	{
 		CloseHandle(hSnapShot);	
+	}
 	
 	return ret;
 }

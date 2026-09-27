@@ -14,8 +14,6 @@ CGPartySay::CGPartySay ()
 
 CGPartySay::~CGPartySay ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGPartySay::read (SocketInputStream & iStream)

@@ -2,10 +2,13 @@
 
 #include "Client_PCH.h"
 #include <cstring>
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_ExtraDialog.h"
 #include "VS_UI_filepath.h"
@@ -237,6 +240,8 @@ void C_VS_UI_EDIT_DIALOG::Show()
 		case RACE_SLAYER:
 			vampire_plus = 0;
 			break;
+		default:
+			break;
 		}		
 		
 		if (m_bl_up_focused)
@@ -435,6 +440,8 @@ void	C_VS_UI_MONEY_DIALOG::KeyboardControl(UINT message, UINT key, long extra)
 		case MONEY_CAMPAIGN_HELP:
 			_MAX_MONEY = g_pMoneyManager->GetMoney()/10000;
 			break;
+		default:
+			break;
 	}
 
 	if (GetValue() > _MAX_MONEY)
@@ -455,8 +462,11 @@ void	C_VS_UI_MONEY_DIALOG::KeyboardControl(UINT message, UINT key, long extra)
 
 			case MONEY_WITHDRAW:
 				gC_vs_ui.RunWithdrawLimit();
+				[[fallthrough]];
 			case MONEY_BRING_FEE :
 				gC_vs_ui.RunBringFeeLimit();
+				break;
+			default:
 				break;
 			}
 			
@@ -493,6 +503,8 @@ void	C_VS_UI_MONEY_DIALOG::Show()
 			case RACE_OUSTERS:
 				g_PrintColorStr(x+185, y+64, (*g_pGameStringTable)[UI_STRING_MESSAGE_CAMPAIGN_HELP_UNITS_OUSTERS].GetString(), gpC_base->m_item_name_pi, RGB_WHITE);
 				break;		
+			default:
+				break;
 			}
 			g_FL2_ReleaseDC();
 		}
@@ -1093,7 +1105,7 @@ void C_VS_UI_NPC_DIALOG::InitNpcDlg(int sprite_num, const char* pname , bool IsS
 			427, 428, 429, 430,	// 유료화 존 그리피스, 로빈벡스터, 머피, 카르멘버만
 		};
 
-		const int g_npc_num[g_npc_size] = 
+		[[maybe_unused]] const int g_npc_num[g_npc_size] = 
 		{
 			1, 2, 3, 4, 5, 
 			6, 7, 8, 9, 10,
@@ -1290,7 +1302,6 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 	AttrTopmost(true);
 
 	int close_x_offset, close_y_offset;
-	int help_x_offset, help_y_offset;
 
 	PrintInfo pi, title_pi;
 	COLORREF color, title_color;
@@ -1300,22 +1311,19 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 	case RACE_SLAYER:
 		close_x_offset = 422;
 		close_y_offset = 345;
-		help_x_offset = 353;
-		help_y_offset = 345;
 		break;
 
 	case RACE_VAMPIRE:
 		close_x_offset = 431;
 		close_y_offset = 350;
-		help_x_offset = 363;
-		help_y_offset = 350;
 		break;
 
 	case RACE_OUSTERS:
 		close_x_offset = 431;
 		close_y_offset = 350;
-		help_x_offset = 363;
-		help_y_offset = 350;
+		break;
+
+	default:
 		break;
 	}
 	
@@ -1358,6 +1366,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 
 					case RACE_OUSTERS:
 						filename = "MainOusters.txt";
+						break;
+
+					default:
 						break;
 					}
 
@@ -1404,6 +1415,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 					case RACE_OUSTERS:
 						filename = "GearOusters.txt";
 						break;
+
+					default:
+						break;
 					}					
 				}
 				break;
@@ -1422,6 +1436,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 
 					case RACE_OUSTERS:
 						filename = "InfoOusters.txt";
+						break;
+
+					default:
 						break;
 					}					
 				}
@@ -1459,6 +1476,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 				case RACE_OUSTERS:
 					filename = "Guild.txt";
 					break;
+
+				default:
+					break;
 				}
 				break;
 
@@ -1475,6 +1495,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 
 				case RACE_OUSTERS:
 					filename = "OtherInfoOusters.txt";
+					break;
+
+				default:
 					break;
 				}
 				break;
@@ -1504,7 +1527,6 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 			m_pack_file.SetRAR(RPK_ITEM, RPK_PASSWORD);
 
 			MItem *p_item = (MItem *)void_ptr;
-			MItem *p_AddItem = (MItem *)void_ptr2;
 
 			if(p_item == NULL)
 				break;
@@ -1606,6 +1628,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 					
 				case ITEM_CLASS_SR:
 					snprintf(sz_temp, sizeof(sz_temp), "%s", GetGameString(UI_STRING_MESSAGE_DESC_DIALOG_ITEM_CLASS_SR));
+					break;
+
+				default:
 					break;
 				}
 				temp_string = sz_temp;
@@ -1852,7 +1877,7 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 					m_pack_file.Release();
 				}
 
-				if(p_AddItem->GetItemClass() == ITEM_CLASS_CORE_ZAP && p_AddItem->GetItemType()>=0 && p_AddItem->GetItemType()<=3)
+				if(p_AddItem->GetItemClass() == ITEM_CLASS_CORE_ZAP && p_AddItem->GetItemType()<=3)
 				{
 					const std::list<TYPE_ITEM_OPTION> &optionList=p_item->GetItemOptionList();
 					const std::list<TYPE_ITEM_OPTION> &DefaultOptionList = p_item->GetItemDefaultOptionList();
@@ -1873,9 +1898,6 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 						temp_string=sz_buf1;
 						m_rep_string.push_back(temp_string);
 					}					
-					DWORD TempColor = RGB_DARKGRAY;
-					if(gC_vs_ui.IsHasAllCoreZap())
-						TempColor = RGB_GREEN;
 					SafeFormat::Format(sz_temp, GetGameString(UI_STRING_CORE_ZAP_REWARD_ALL_STAT), 3);
 					SafeFormat::Format(sz_buf1, GetGameString(UI_STRING_MESSAGE_DESC_DIALOG_OPTION_EMPTY2), sz_temp);
 					temp_string=sz_buf1;
@@ -1978,9 +2000,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 				}
 			}
 
-			if(!p_item->IsSlayerItem() && g_eRaceInterface == RACE_SLAYER ||
-				!p_item->IsVampireItem() && g_eRaceInterface == RACE_VAMPIRE ||
-				!p_item->IsOustersItem() && g_eRaceInterface == RACE_OUSTERS
+			if((!p_item->IsSlayerItem() && g_eRaceInterface == RACE_SLAYER) ||
+				(!p_item->IsVampireItem() && g_eRaceInterface == RACE_VAMPIRE) ||
+				(!p_item->IsOustersItem() && g_eRaceInterface == RACE_OUSTERS)
 				)
 			{
 				if(bl_required)
@@ -2028,10 +2050,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 				SafeFormat::Format(sz_temp, "%d", g_pPriceManager->GetItemPrice(p_item, MPriceManager::NPC_TO_PC));
 				std::string sstr = sz_temp;
 				for(int i = 3; i <= 13; i += 4)
-					if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+					if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 					
 				MString kkkstr = (*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_DIALOG_PRICE];
-				const char *pkkkstr = kkkstr.GetString();
 				SafeFormat::Format(sz_temp, GetGameString(UI_STRING_MESSAGE_DESC_DIALOG_PRICE), sstr.c_str());
 				temp_string = sz_temp;
 				m_rep_string.push_back(temp_string);
@@ -2107,6 +2128,9 @@ C_VS_UI_DESC_DIALOG::C_VS_UI_DESC_DIALOG(id_t type, void* void_ptr, void* void_p
 	case RACE_OUSTERS:
 		SetDesc(50, 35, color, pi);
 		SetDescTitle(53, 8, title_color, title_pi);
+		break;
+
+	default:
 		break;
 	}
 
@@ -2208,6 +2232,7 @@ bool C_VS_UI_DESC_DIALOG::MouseControl(UINT message, int _x, int _y)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_DESC_DIALOG::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	if (message == WM_KEYDOWN)
 		switch (key)
 		{
@@ -2353,7 +2378,6 @@ C_VS_UI_FILE_DIALOG::C_VS_UI_FILE_DIALOG(MODE Mode)
 
 	int close_x_offset, close_y_offset;
 	int help_x_offset, help_y_offset;
-	int scroll_x_offset, scroll_up_y_offset, scroll_down_y_offset;
 	
 	m_string_x = 50; m_string_y = 70; m_string_gap = 20;
 	m_scroll_max = 13;
@@ -2382,10 +2406,6 @@ C_VS_UI_FILE_DIALOG::C_VS_UI_FILE_DIALOG(MODE Mode)
 	
 	close_x_offset = w-80;
 	close_y_offset = h-50;
-	
-	scroll_x_offset = 509;
-	scroll_up_y_offset = 75;
-	scroll_down_y_offset = 327;
 
 	m_mode=Mode;
 
@@ -2478,7 +2498,6 @@ void C_VS_UI_FILE_DIALOG::Start(const char *type)
 bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 {
 	if (m_directories.current >= m_directories.paths.size()) return true;
-	static bool LB_SCROLL_DOWN = false;
 	
 	Window::MouseControl(message, _x, _y);
 	_x-=x;
@@ -2506,7 +2525,7 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 	case M_LB_DOUBLECLICK :		
 		if(m_bl_open_drive)		// Select From Drive Box
 		{
-			if(_x>51&&_y>54&&_x<350&&_y<54+m_string_gap*m_directories.paths.size())
+			if(_x>51&&_y>54&&_x<350&&static_cast<size_t>(_y)<54+m_string_gap*m_directories.paths.size())
 			{
 				
 				const int nextDrive = (_y - (37+m_string_gap))/m_string_gap;
@@ -2539,7 +2558,7 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 				int m_old_select = m_select;
 				m_select = (_y - m_string_y) / m_string_gap+m_pC_scroll_bar->GetScrollPos();
 				
-				if(m_select >= m_vs_file_list.size()) m_select = -1;
+				if(static_cast<size_t>(m_select) >= m_vs_file_list.size()) m_select = -1;
 				
 				//if(message == M_LB_DOUBLECLICK && m_select != -1)
 				if( m_select == m_old_select && m_select != -1)			// Double Click Check
@@ -2597,10 +2616,9 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 					break;
 				}
 			}		
-			break;
+		break;
 
 	case M_LEFTBUTTON_UP:
-		LB_SCROLL_DOWN = false;
 		break;
 
 	case M_MOVING:		
@@ -2612,7 +2630,7 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 
 		if(m_bl_open_drive)
 		{
-			if( _x > 51 && _y > 54 && _x < 350 && _y < 54 +m_string_gap*m_directories.paths.size())
+			if( _x > 51 && _y > 54 && _x < 350 && static_cast<size_t>(_y) < 54 +m_string_gap*m_directories.paths.size())
 			{
 				int mi_open_drive = (_y - (37+m_string_gap))/m_string_gap;
 				mi_open_drive++;				
@@ -2627,7 +2645,7 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 		temp_m_select = m_tempselect;				
 		m_tempselect= (_y - m_string_y) / m_string_gap+m_pC_scroll_bar->GetScrollPos();
 		
-		if(m_tempselect >= m_vs_file_list.size() || m_tempselect < 0 || m_bl_open_drive)
+		if(static_cast<size_t>(m_tempselect) >= m_vs_file_list.size() || m_tempselect < 0 || m_bl_open_drive)
 			m_tempselect = -1;
 		else
 			STAY_FOLDER=-2;
@@ -2640,7 +2658,6 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 			if(temp_m_select != m_tempselect && !(m_vs_file_list_attr[m_tempselect] & FILE_ATTRIBUTE_DIRECTORY))
 			{
 					CSpriteSurface bmpSurface;
-				const POINT faceSize={55,70};
 				POINT destPoint={0,0};
 				std::string filename;
 				
@@ -2692,6 +2709,7 @@ bool	C_VS_UI_FILE_DIALOG::Timer(bool reset)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_FILE_DIALOG::KeyboardControl(UINT message, UINT key, long extra)
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -2741,7 +2759,7 @@ void	C_VS_UI_FILE_DIALOG::Show()
 
 	case MODE_SENDFILE_SELECT :
 		{
-			for(int i=0;i<m_select_file_num.size();i++)	
+			for(int i=0;static_cast<size_t>(i)<m_select_file_num.size();i++)	
 			{
 				if(m_select_file_num[i] >= m_pC_scroll_bar->GetScrollPos() && m_select_file_num[i] < m_pC_scroll_bar->GetScrollPos()+m_scroll_max)		{
 					SetRect(&rect, x+m_string_x, y + m_string_y + (m_select_file_num[i] - m_pC_scroll_bar->GetScrollPos()) * m_string_gap-3,x+m_string_x + 275,rect.bottom = y + m_string_y + (m_select_file_num[i] - m_pC_scroll_bar->GetScrollPos()) * m_string_gap-3 + m_string_gap);
@@ -2760,10 +2778,13 @@ void	C_VS_UI_FILE_DIALOG::Show()
 	// 아이콘 부분 출력		
 	if(gpC_base->m_p_DDSurface_back->Lock())
 	{
-		for(int i = 0; i < m_scroll_max && i+m_pC_scroll_bar->GetScrollPos() < m_vs_file_list.size(); i++){
+		for(int i = 0; i < m_scroll_max && static_cast<size_t>(i+m_pC_scroll_bar->GetScrollPos()) < m_vs_file_list.size(); i++){
 			const char *get=m_vs_file_list[i+m_pC_scroll_bar->GetScrollPos()].c_str();
-			if(get[0]=='\\') if(!strcmp(get,"\\.."))	m_p_icon_spk->BltLocked(x+m_string_x-19,y+m_string_y+i*m_string_gap,UPFOLDER_ID);
-			else m_p_icon_spk->BltLocked(x+m_string_x-19,y+m_string_y+i*m_string_gap,FOLDER_ID);					
+			if(get[0]=='\\')
+			{
+				if(!strcmp(get,"\\.."))	m_p_icon_spk->BltLocked(x+m_string_x-19,y+m_string_y+i*m_string_gap,UPFOLDER_ID);
+				else m_p_icon_spk->BltLocked(x+m_string_x-19,y+m_string_y+i*m_string_gap,FOLDER_ID);
+			}
 		}
 		m_pC_button_group->Show();
 		//----------------------------------------------------------------------------------------
@@ -2794,7 +2815,7 @@ void	C_VS_UI_FILE_DIALOG::Show()
 	}
 	g_PrintColorStr(titleX, titleY, dialogTitle,gpC_base->m_desc_menu_pi, RGB_WHITE);
 
-	for(int i = 0; i < m_scroll_max && i+m_pC_scroll_bar->GetScrollPos() < m_vs_file_list.size(); i++) {		
+	for(int i = 0; i < m_scroll_max && static_cast<size_t>(i+m_pC_scroll_bar->GetScrollPos()) < m_vs_file_list.size(); i++) {		
 		// 이름들 출력
 		// 파일이름이 너무 길면 적당히 자른다. 
 		const std::string filename = Basic::ShortenDialogLabel(m_vs_file_list[i+m_pC_scroll_bar->GetScrollPos()]);
@@ -2818,15 +2839,15 @@ void	C_VS_UI_FILE_DIALOG::Show()
 
 		if(gpC_base->m_p_DDSurface_back->Lock())
 		{
-			for(int i = 0; i < m_directories.paths.size(); i++)	{
+			for(int i = 0; static_cast<size_t>(i) < m_directories.paths.size(); i++)	{
 				char ch=m_directories.paths[i][0];
-				if(ch=='a'||ch=='A'||i==m_directories.paths.size()-1) 	m_p_icon_spk->BltLocked(x+m_string_x,y+37+(i+1)*m_string_gap,CDDRIVE_ID);
+				if(ch=='a'||ch=='A'||static_cast<size_t>(i)==m_directories.paths.size()-1) 	m_p_icon_spk->BltLocked(x+m_string_x,y+37+(i+1)*m_string_gap,CDDRIVE_ID);
 				else m_p_icon_spk->BltLocked(x+m_string_x,y+37+(i+1)*m_string_gap,HDDRIVE_ID);
 			}
 			gpC_base->m_p_DDSurface_back->Unlock();
 		}
 		g_FL2_GetDC();
-		for(int i = 0; i < m_directories.paths.size(); i++)	{
+		for(int i = 0; static_cast<size_t>(i) < m_directories.paths.size(); i++)	{
 			std::string filename = Basic::BuildDialogPathLabel(m_directories.paths[i], m_filter);
 			filename = Basic::ShortenDialogLabel(filename);
 			g_PrintColorStr(x+m_string_x+17, y+37+(i+1)*m_string_gap, filename.c_str(), gpC_base->m_desc_menu_pi, RGB_WHITE);
@@ -2994,7 +3015,7 @@ void	C_VS_UI_FILE_DIALOG::Run(id_t id)
 				// 파일이 여러개 선택된 경우에는 세미콜론으로 파일을 구분한다.
 				std::string multiple_filename;
 				
-				for( i = 0; i < m_select_file_num.size(); i++ )
+				for( i = 0; static_cast<size_t>(i) < m_select_file_num.size(); i++ )
 				{				
 					multiple_filename += m_vs_file_list[m_select_file_num[i]];
 					multiple_filename += ";";

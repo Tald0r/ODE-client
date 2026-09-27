@@ -25,8 +25,6 @@ CGSkillToObject::CGSkillToObject ()
 
 CGSkillToObject::~CGSkillToObject ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGSkillToObject::read (SocketInputStream & iStream)

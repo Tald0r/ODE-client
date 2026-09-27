@@ -8,7 +8,9 @@
 #ifndef	__MPLAYER_H__
 #define	__MPLAYER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <list>
 #include <queue>
@@ -262,6 +264,9 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 				
 			case RACE_OUSTERS:
 				return (MPlayerGear *)g_pOustersGear;
+
+			default:
+				break;
 			}
 
 			return NULL;

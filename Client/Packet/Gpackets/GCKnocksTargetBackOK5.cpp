@@ -31,8 +31,6 @@ GCKnocksTargetBackOK5::GCKnocksTargetBackOK5 ()
 //////////////////////////////////////////////////////////////////////
 GCKnocksTargetBackOK5::~GCKnocksTargetBackOK5 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

@@ -23,6 +23,7 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -94,7 +95,7 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 			{
 				skillID = pUserCreature->GetBasicActionInfo();
 
-				if (skillID >= g_pActionInfoTable->GetMinResultActionInfo())
+				if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
 					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
 					return;

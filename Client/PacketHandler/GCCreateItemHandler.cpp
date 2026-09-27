@@ -20,6 +20,7 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	MItem* pItem;

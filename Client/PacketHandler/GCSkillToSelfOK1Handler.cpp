@@ -25,6 +25,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------------------
@@ -90,7 +91,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	{
 		int FrameSize = (*g_pActionInfoTable)[resultActionInfo][1].Count;
 		int RemainFrame = delayFrame % FrameSize;
-		if(RemainFrame < FrameSize / 2 && delayFrame > FrameSize)
+		if(RemainFrame < FrameSize / 2 && delayFrame > static_cast<DWORD>(FrameSize))
 		{
 			delayFrame -= RemainFrame;
 		} else

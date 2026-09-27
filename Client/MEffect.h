@@ -49,7 +49,9 @@ MEffect: Effect anchored to a Tile
 #ifndef	__MEFFECT_H__
 #define	__MEFFECT_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "framelib/CAnimationFrame.h"
 #include "MTypeDef.h"

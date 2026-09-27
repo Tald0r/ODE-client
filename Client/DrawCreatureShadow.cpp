@@ -7,7 +7,9 @@
 // 작업하기가 영 불편해서 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <math.h>
 #include <list>
@@ -68,7 +70,6 @@ extern int defaultTrouserColor;
 
 namespace {
 	POINT pointTemp;
-	RECT rect;
 };
 
 
@@ -88,7 +89,7 @@ void
 MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 {
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_DRAW_CREATURE_SHADOW)
-		|| pCreature->IsGhost(1) && pCreature->IsGhost(2) && pCreature->IsGhost(4))
+		|| (pCreature->IsGhost(1) && pCreature->IsGhost(2) && pCreature->IsGhost(4)))
 		return;
 
 	if(pCreature->IsOusters() && pCreature->IsPlayer() && g_pPlayer->IsOusters() == false && pCreature->IsInGroundElemental())
@@ -292,6 +293,7 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 				frame = 0;
 				direction = 1;
 			}
+			[[fallthrough]];
 		case 734: // 길드 타워
 			{
 				direction = 1;
@@ -362,13 +364,13 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 
 		// 성물은 무조건 아래, 크리스마스트리
 		if(
-			creature_type >= 371 && creature_type <= 376 || 
-			creature_type >= 560 && creature_type <= 563 || 
+			(creature_type >= 371 && creature_type <= 376) || 
+			(creature_type >= 560 && creature_type <= 563) || 
 			creature_type == 482 || 
-			creature_type >= 526 && creature_type <= 549 || 
-			creature_type >= 550 && creature_type <= 557 || 
+			(creature_type >= 526 && creature_type <= 549) || 
+			(creature_type >= 550 && creature_type <= 557) || 
 			creature_type == 650 || 
-			creature_type >= 660 && creature_type <= 669 ||
+			(creature_type >= 660 && creature_type <= 669) ||
 			creature_type == 672 ||
 			creature_type == 673
 			)
@@ -434,12 +436,12 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 
 		bool bTeenVersion = 
 				(
-					g_pUserInformation->GoreLevel == false
+					(g_pUserInformation->GoreLevel == false
 					&& !(
 					(creature_type >= 526 && creature_type <= 549) || 
 					(
-					creature_type >= 371 && creature_type <= 376 || 
-					creature_type >= 560 && creature_type <= 563
+					(creature_type >= 371 && creature_type <= 376) || 
+					(creature_type >= 560 && creature_type <= 563)
 					) || 
 					creature_type == 482 || 
 					creature_type == 650 || 
@@ -450,7 +452,7 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 					creature_type == 731 || // 웨이 포인트2
 					creature_type == 732 || // 웨이 포인트3
 					creature_type == 636 // 생선 가게 아저씨
-					)	// 성물 // 크리스마스트리
+					))	// 성물 // 크리스마스트리
 					|| (creature_type >= 377 && creature_type <= 386)
 					|| creature_type == 480 // 다크 가디언은 먼지로 표시
 				)
@@ -533,7 +535,7 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 				int casketType = pCreature->GetCasketType();
 				int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2 + 1;
 
-				if (casketID < m_EtcSPK.GetSize())
+				if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
 				{
 					CSprite* pSpriteImage = &m_EtcSPK[casketID-1];
 					CSprite* pSprite = &m_EtcSPK[casketID];
@@ -1196,8 +1198,6 @@ void	MTopView::DrawShadowAdvancementClassOustersCharacter( POINT *pPoint, MCreat
 	
 	if (addonInfo.bAddon && !pCreatureWear->IsGhost(1))
 	{
-		int clothes = addonInfo.FrameID;
-		
 		FRAME_ARRAY &FA = m_AdvancementOustersShadowFPK[1][tempAction][direction];
 		
 		// 있는 동작인 경우
@@ -1226,8 +1226,6 @@ void	MTopView::DrawShadowAdvancementClassOustersCharacter( POINT *pPoint, MCreat
 	}
 	if (bChakram && !pCreatureWear->IsGhost(2))
 	{
-		int clothes = addonInfoChakram.FrameID;
-		
 		FRAME_ARRAY &FA = m_AdvancementOustersShadowFPK[0][tempAction][direction];
 		
 		// 있는 동작인 경우

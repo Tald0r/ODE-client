@@ -30,8 +30,6 @@ CRDisconnect::CRDisconnect ()
 //////////////////////////////////////////////////////////////////////
 CRDisconnect::~CRDisconnect ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 
@@ -41,6 +39,7 @@ CRDisconnect::~CRDisconnect ()
 void CRDisconnect::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 
 	__END_CATCH
 }
@@ -53,6 +52,7 @@ void CRDisconnect::write ( SocketOutputStream & oStream )
      const
 {
 	__BEGIN_TRY
+	(void)oStream;
 
 	__END_CATCH
 }

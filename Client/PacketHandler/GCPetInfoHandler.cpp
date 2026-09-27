@@ -20,6 +20,7 @@ void GCPetInfoHandler::execute ( GCPetInfo * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	SetPetInfo(pPacket->getPetInfo(), pPacket->getObjectID());
 

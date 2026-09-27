@@ -5,7 +5,7 @@
 #if !defined(AFX_DEBUGKIT_H__6554585F_E870_43CA_A7F9_D8233A8EFB90__INCLUDED_)
 #define AFX_DEBUGKIT_H__6554585F_E870_43CA_A7F9_D8233A8EFB90__INCLUDED_
 
-#if _MSC_VER > 1000
+#if defined(_MSC_VER) && _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
 #include "Properties.h"

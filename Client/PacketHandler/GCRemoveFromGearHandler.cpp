@@ -23,6 +23,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	
 
@@ -350,6 +351,8 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 		}
 	}
 	break;
+	default:
+		break;
 	}
 
 //	// [도움말] 아이템이 부서진 경우

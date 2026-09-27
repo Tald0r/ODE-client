@@ -16,6 +16,7 @@ void GCAddNicknameHandler::execute ( GCAddNickname * pGCAddNickname , Player * p
 
 {
 	__BEGIN_TRY/* __BEGIN_DEBUG_EX*/
+	(void)pPlayer;
 		
 
 		gC_vs_ui.AddNickNameList((void*)&pGCAddNickname->getNicknameInfo());

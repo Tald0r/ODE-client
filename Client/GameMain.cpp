@@ -1303,6 +1303,9 @@ g_pUpdate = g_pCGameUpdate;
 			g_bRunning = false;
 #endif // PLATFORM_WINDOWS
 		break;
+
+		default:
+			break;
 	}
 
 	// 입력을 초기화한다.
@@ -1362,7 +1365,7 @@ CheckActivate(BOOL bActiveGame)
 	//----------------------------------------------------
 	g_bActiveGame = FALSE;
 
-	extern bool	g_bTestMode;
+	[[maybe_unused]] extern bool	g_bTestMode;
 	if (g_bActiveApp
 #ifdef OUTPUT_DEBUG
 		|| g_bTestMode
@@ -2038,11 +2041,6 @@ LoadZone(int n)
 	}
 
 	//----------------------------------------------------------------------
-	// 바로 전에 있던 zone의 정보
-	//----------------------------------------------------------------------
-	ZONETABLE_INFO* pPreviousZoneInfo = (*g_pZoneTable).Get( (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall) );		
-
-	//----------------------------------------------------------------------
 	//
 	//					Small Zone
 	//
@@ -2209,8 +2207,6 @@ LoadZone(int n)
 
 		file.close();		
 		
-		BOOL NeedMusicLoad = TRUE;
-
 		DEBUG_ADD("[Load Zone] Before Music Check");
 		
 		DEBUG_ADD("[Load Zone] Before Music Play");
@@ -2432,8 +2428,6 @@ LoadZone(int n)
 		file.close();		
 
 		
-		BOOL NeedMusicLoad = TRUE;
-
 		
 		DEBUG_ADD("[Load Zone] Before Music Play");
 		
@@ -2877,9 +2871,9 @@ LoadZoneInfo(int n)
 
 					// 내가 안전한 위치인가?
 
-					if(MyRace == RACE_OUSTERS && ( rect2.flag & FLAG_MIP_SAFE_OUSTERS ) ||
-						MyRace == RACE_VAMPIRE && ( rect2.flag & FLAG_MIP_SAFE_VAMPIRE) ||
-						MyRace == RACE_SLAYER && (rect2.flag & FLAG_MIP_SAFE_SLAYER) ||
+					if((MyRace == RACE_OUSTERS && ( rect2.flag & FLAG_MIP_SAFE_OUSTERS )) ||
+						(MyRace == RACE_VAMPIRE && ( rect2.flag & FLAG_MIP_SAFE_VAMPIRE)) ||
+						(MyRace == RACE_SLAYER && (rect2.flag & FLAG_MIP_SAFE_SLAYER)) ||
 						(rect2.flag & FLAG_MIP_SAFE_COMMON) )
 					{
 						gC_vs_ui.SetSafetyZone( safeRect, true );						
@@ -2901,7 +2895,7 @@ LoadZoneInfo(int n)
 			// ousters horn을 맵에 심는다
 			UI_PORTAL_LIST portalList;
 
-			for(int i = 0; i < g_pZone->GetHorn().size(); i++)
+			for(int i = 0; static_cast<size_t>(i) < g_pZone->GetHorn().size(); i++)
 			{
 				portalList = g_pZone->GetHorn()[i];
 				
@@ -2920,11 +2914,6 @@ LoadZoneInfo(int n)
 						MNPC* pNPC = new MNPC;
 						
 						pNPC->SetZone( g_pZone );
-						
-						int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-						
-						int creatureType = npcID;
-						int spriteType = (*g_pCreatureTable)[creatureType].SpriteTypes[0];			
 						
 						pNPC->SetGuildNumber( GUILDID_OUSTERS );
 						
@@ -3920,22 +3909,6 @@ PlayMusicCurrentZone()
 	};
 
 
-	// 시간에 따라 play
-	const MUSIC_ID musicByTimeXmas[] = 
-	{
-		MUSIC_XMAS_SILENTNIGHT,
-		MUSIC_XMAS_SILENTNIGHT,
-		MUSIC_XMAS_SILVERBELL,
-		MUSIC_XMAS_SILVERBELL,
-		MUSIC_XMAS_JINGLEBELL,
-		MUSIC_XMAS_JINGLEBELL,
-		MUSIC_XMAS_JINGLEBELL,
-		MUSIC_XMAS_JINGLEBELL,
-		MUSIC_XMAS_SILVERBELL,
-		MUSIC_XMAS_SILVERBELL,
-		MUSIC_XMAS_SILENTNIGHT,
-		MUSIC_XMAS_SILENTNIGHT
-	};
 	
 	const MUSIC_ID musicByHolyLand[] =
 	{
@@ -3957,7 +3930,6 @@ PlayMusicCurrentZone()
 	// 안전지대인가?
 	int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
 	ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( zoneID );	
-	bool bSafetyZone = (pZoneInfo!=NULL && pZoneInfo->Safety);
 
 //	if (bSafetyZone 
 //		&& st.wMonth==12 && st.wDay>=17 && st.wDay<=25)
@@ -4650,7 +4622,7 @@ UpdateDisconnected()
 	//------------------------------------------------------
 	// ALT + TAB 상태가 아닐 때
 	//------------------------------------------------------
-	extern bool	g_bTestMode;
+	[[maybe_unused]] extern bool	g_bTestMode;
 	if (g_bActiveGame
 #ifdef OUTPUT_DEBUG
 		|| g_bTestMode
@@ -5026,11 +4998,8 @@ SaveLastSelectedCharacter(int slot)
 		
 		PlayerConfig* pConfig = pPCTable->GetPlayerConfig( playerID );
 
-		bool bNewPlayer = false;
 		if (pConfig==NULL)
 		{
-			bNewPlayer = true;
-
 			// playerID가 없으면 생성해서 추가
 			pConfig = new PlayerConfig;
 			if( playerID != NULL && strlen( playerID ) < 15 )
@@ -5040,8 +5009,6 @@ SaveLastSelectedCharacter(int slot)
 
 			pPCTable->AddPlayerConfig( pConfig );
 		}		
-
-		int oldSlot = pConfig->GetLastSlot();
 
 		// 항상 저장하게 하자..
 		//if (oldSlot != slot || bNewPlayer)
@@ -5163,19 +5130,6 @@ AddClientCreature()
 	static MShield shield; shield.SetItemType( 0 ); shield.ClearItemOption();
 
 
-	const int createPositionY[100] =
-	{
-		20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-		21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-		22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-		23, 23, 23, 23, 23, 23, 23, 23, 23, 24,
-		24, 24, 24, 24, 24, 24, 24, 24, 26, 26,
-		25, 25, 25, 25, 25, 25, 27, 27, 27, 27,
-		27, 26, 26, 26, 26, 26, 28, 28, 28, 28, 
-		28, 29, 29, 29, 30, 30, 30, 30, 31, 31,
-		31, 32, 31, 32, 32, 32, 35, 35, 34, 34,
-		34, 34, 37, 37, 35, 36, 39, 38, 38, 40			
-	};
 		
 
 	int creatureID;

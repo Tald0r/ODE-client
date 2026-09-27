@@ -24,6 +24,10 @@ int g_DrawCamGapY = 0;
 // In a real scenario, this would look up the light value from effect frame data
 // For effect_viewer, we return a default value
 int MTopView::GetEffectLight(BLT_TYPE bltType, TYPE_FRAMEID frameID, int direction, int frame) const {
+    (void)bltType;
+    (void)frameID;
+    (void)direction;
+    (void)frame;
     // Default light value for effects
     // TODO: Look up actual light value from EffectResourceContainer
     return 0;

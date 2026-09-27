@@ -22,8 +22,6 @@ CGUseItemFromInventory::CGUseItemFromInventory ()
 	
 CGUseItemFromInventory::~CGUseItemFromInventory ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGUseItemFromInventory::read (SocketInputStream & iStream)

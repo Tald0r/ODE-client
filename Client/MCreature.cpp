@@ -138,10 +138,10 @@ extern WORD					g_ZoneCreatureColorSet;
 // define
 //----------------------------------------------------------------------
 // 걍 함수로 만들어야 되는데.. 헤더바꾸고 컴파일하기 싫어서 임시로 - -;
-//DEBUG_ADD_FORMAT("[ Apply Buffering Move ] [ID=%d] Current(%d, %d) Dir(%d) --> Next(%d, %d) Dir(%d)",	\
-//															m_ID,												\
-//															m_X, m_Y, m_Direction,								\
-//															m_NextX,m_NextY, m_NextDirection);					\
+//DEBUG_ADD_FORMAT("[ Apply Buffering Move ] [ID=%d] Current(%d, %d) Dir(%d) --> Next(%d, %d) Dir(%d)",
+//															m_ID,
+//															m_X, m_Y, m_Direction,
+//															m_NextX,m_NextY, m_NextDirection);
 		
 #define MoveNextPosition()					\
 											\
@@ -161,8 +161,7 @@ extern WORD					g_ZoneCreatureColorSet;
 #define	ActionMoveNextPosition()					\
 		if (!m_bFastMove)							\
 		{											\
-			if (m_NextX != SECTORPOSITION_NULL		\
-				&& m_NextDirection != SECTORPOSITION_NULL)	\
+			if (m_NextX != SECTORPOSITION_NULL)		\
 			{										\
 				MoveNextPosition();					\
 			}										\
@@ -341,8 +340,8 @@ int MCreature::m_sYTable[MAX_DIRECTION] =
 	0, -TILE_Y, -TILE_Y, -TILE_Y, 0, TILE_Y, TILE_Y, TILE_Y
 };
 
-int *MCreature::m_cXTable[MAX_FRAME_MOVE][MAX_DIRECTION] = { NULL, };
-int *MCreature::m_cYTable[MAX_FRAME_MOVE][MAX_DIRECTION] = { NULL, };
+int *MCreature::m_cXTable[MAX_FRAME_MOVE][MAX_DIRECTION] = { { NULL, } };
+int *MCreature::m_cYTable[MAX_FRAME_MOVE][MAX_DIRECTION] = { { NULL, } };
 
 //----------------------------------------------------------------------
 // 방향에 따른 변화값
@@ -424,6 +423,9 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action )
 			action = ConvAdvancementOustersActionFromOusterAction( action, bChakram );
 			refActionMaxTable = g_AdvanceOustersActionMaxCount;
 		}
+		break;
+
+	default:
 		break;
 	}
 	
@@ -686,7 +688,7 @@ MCreature::MCreature()
 	m_ChatStringCurrent = 0;
 	for (i=0; i<g_pClientConfig->MAX_CHATSTRING; i++)
 	{
-		m_ChatString[i][0] = NULL;
+		m_ChatString[i][0] = '\0';
 	}
 	m_ChatColor = RGB_WHITE;//0xFFFF;
 	m_OriChatColor = RGB_WHITE;
@@ -1209,7 +1211,6 @@ MCreature::RemoveGlacierEffect()
 	StopCauseCriticalWounds();
 	ATTACHEFFECT_LIST::iterator iEffect = m_listEffect.begin();
 
-	bool re = false;
 	while (iEffect != m_listEffect.end())
 	{
 		MAttachEffect* pEffect = *iEffect;
@@ -1239,7 +1240,6 @@ MCreature::RemoveGlacierEffect()
 
 			m_bAttachEffect[Type] = false;
 
-			re = true;
 			continue;
 		}
 		
@@ -1455,6 +1455,8 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 				pTypes = GetMasterEffectType(status);
 			}
 			break;
+		default:
+			break;
 	}
 
 
@@ -1465,7 +1467,6 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 	//------------------------------------------------------------
 	if (bUseEffectSprite)
 	{
-		int numTypes = 1;
 //		int* pTypes = NULL;
 		
 //		if (status==EFFECTSTATUS_SPIRIT_GUARD_1 || 
@@ -1493,7 +1494,6 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 //		}
 //		else
 		{
-			numTypes = 1;
 //			pTypes = new int[numTypes];
 
 			//pTypes[0] = (*g_pEffectStatusTable)[status].EffectSpriteType;
@@ -1546,8 +1546,8 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 						// 같은 type을 찾는다.
 						//-------------------------------------------------------
 						if (pEffect->IsEffectSprite() 
-							&& (pEffect->GetEffectSpriteType() == type || type2 != EFFECTSPRITETYPE_NULL &&
-							type2 == pEffect->GetEffectSpriteType()) )
+							&& (pEffect->GetEffectSpriteType() == type || (type2 != EFFECTSPRITETYPE_NULL &&
+							type2 == pEffect->GetEffectSpriteType())) )
 						{
 							// free the memory
 							delete pEffect;
@@ -1584,8 +1584,8 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 						//-------------------------------------------------------
 						// 같은 type을 찾는다.
 						//-------------------------------------------------------
-						if (pEffect->IsEffectSprite() && pEffect->GetEffectSpriteType() == type
-							|| type2 != EFFECTSPRITETYPE_NULL && type2 == pEffect->GetEffectSpriteType() )
+						if ((pEffect->IsEffectSprite() && pEffect->GetEffectSpriteType() == type)
+							|| (type2 != EFFECTSPRITETYPE_NULL && type2 == pEffect->GetEffectSpriteType()) )
 						{
 							// 메모리 제거
 							delete pEffect;
@@ -1676,7 +1676,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 	//----------------------------------------------------------
 	if (IsDead() && status != EFFECTSTATUS_COMA && 
 		!(
-		GetCreatureType() >= 371 && GetCreatureType() <= 376 || GetCreatureType() >= 560 && GetCreatureType() <= 563) && 
+		(GetCreatureType() >= 371 && GetCreatureType() <= 376) || (GetCreatureType() >= 560 && GetCreatureType() <= 563)) && 
 		GetCreatureType() != 482 && GetCreatureType() != 650 && !(GetCreatureType() >= 526 && GetCreatureType() <= 549) &&
 		GetCreatureType() != 670 && GetCreatureType() != 672 && GetCreatureType() != 673
 		)	// 성물인 경우는 이펙트 붙임
@@ -2353,6 +2353,8 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			ExecuteActionInfoFromMainNode(SKILL_CLIENT_CANDLE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
 								GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;	
+		default:
+			break;
 			
 	}
 
@@ -2696,11 +2698,11 @@ MCreature::SetName(const char* pName)
 BOOL	
 MCreature::IsStop()
 { 
-	return m_MoveCount>=m_MoveCountMax 
-			&& m_ActionCount>=GetActionCountMax() 
-			|| m_Action==ACTION_STAND && m_MoveAction==ACTION_MOVE
-			|| m_Action==ACTION_SLAYER_MOTOR_STAND && m_MoveAction==ACTION_SLAYER_MOTOR_MOVE
-			|| m_Action==ACTION_OUSTERS_FAST_MOVE_STAND && m_MoveAction==ACTION_OUSTERS_FAST_MOVE_MOVE;
+	return (m_MoveCount>=m_MoveCountMax 
+			&& m_ActionCount>=GetActionCountMax()) 
+			|| (m_Action==ACTION_STAND && m_MoveAction==ACTION_MOVE)
+			|| (m_Action==ACTION_SLAYER_MOTOR_STAND && m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)
+			|| (m_Action==ACTION_OUSTERS_FAST_MOVE_STAND && m_MoveAction==ACTION_OUSTERS_FAST_MOVE_MOVE);
 }
 
 //----------------------------------------------------------------------
@@ -2771,6 +2773,9 @@ MCreature::SetMoveDevice(MOVE_DEVICE md)
 					SetAction( ACTION_SLAYER_MOTOR_STAND );
 				}
 			}
+			break;
+
+			default:
 			break;
 		}	
 	}
@@ -3026,6 +3031,7 @@ MCreature::GetDrawGapY() const
 void				
 MCreature::SetLevelName(int ln)
 {
+	(void)ln;
 	// slayer이면 기술 레벨에 따라서...
 
 	// vampire이면 레벨에 따라서?
@@ -4672,7 +4678,7 @@ MCreature::SetAction(BYTE action)
 			// 그냥 서있는 경우면... 끝동작으로 만든다.
 			// Action이 끝났다고 표시해주기 위해서..
 			if (m_Action==ACTION_STAND 
-				|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+				|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND))
 			{			
 				m_ActionCount = 0;
 				m_ActionCountMax = 0;			
@@ -4731,16 +4737,16 @@ MCreature::SetAction(BYTE action)
 //			}
 
 			if (// 오토바이 타고 있을때는 action 안 보여준다.
-				m_MoveDevice==MOVE_DEVICE_RIDE && action!=ACTION_SLAYER_MOTOR_STAND
+				(m_MoveDevice==MOVE_DEVICE_RIDE && action!=ACTION_SLAYER_MOTOR_STAND)
 				// damaged인 경우..
-				|| action==ACTION_DAMAGED 						
+				|| (action==ACTION_DAMAGED 						
 						&& (// 공격받는 중이 아니거나 정지 동작이 아니면 공격 받는 모습 표현 안 한다
 							m_Action!=ACTION_DAMAGED && m_Action!=ACTION_STAND && m_Action!=ACTION_MOVE
 						//&& (// 흡혈 당하는 동작 중이거나 
 						//	m_Action==ACTION_DRAINED
 							// 뱀파이어일때, 흡혈하는 동작 중에는 damaged를 안 보여준다.
 						//	|| IsVampire() && m_Action==ACTION_VAMPIRE_DRAIN
-							)
+							))
 				)
 			{
 				m_NextAction = (m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND;
@@ -4790,7 +4796,7 @@ MCreature::SetAction(BYTE action)
 
 				if (m_RepeatCount!=0	//m_Action == action			
 					&& action!=ACTION_STAND
-					&& (!IsSlayer() || IsSlayer() && action!=ACTION_SLAYER_MOTOR_STAND)
+					&& (!IsSlayer() || (IsSlayer() && action!=ACTION_SLAYER_MOTOR_STAND))
 					//&& (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame())
 					)
 				{
@@ -4882,7 +4888,7 @@ MCreature::ClearChatString()
 	m_ChatStringCurrent = 0;
 	for (int i=0; i<g_pClientConfig->MAX_CHATSTRING; i++)
 	{
-		m_ChatString[i][0] = NULL;
+		m_ChatString[i][0] = '\0';
 	}
 	m_HeadSkin = 0;
 
@@ -5276,8 +5282,8 @@ MCreature::CheckAffectStatus(MItem* pItem)
 				// 성별 검사
 				//-----------------------------------------------------
 				(pItem->IsGenderForAll() 
-				|| pItem->IsGenderForMale() && IsMale()
-				|| pItem->IsGenderForFemale() && IsFemale()
+				|| (pItem->IsGenderForMale() && IsMale())
+				|| (pItem->IsGenderForFemale() && IsFemale())
 				)
 				
 				//-----------------------------------------------------
@@ -5288,10 +5294,10 @@ MCreature::CheckAffectStatus(MItem* pItem)
 				//-----------------------------------------------------
 				// 있는경우.. 다 만족시켜야 한다.
 				//-----------------------------------------------------
-				(reqSTR==0 || reqSTR!=0 && str >= reqSTR)
-				&&	(reqDEX==0 || reqDEX!=0 && dex >= reqDEX)
-				&&	(reqINT==0 || reqINT!=0 && inte >= reqINT)
-				&&	(reqSUM==0 || reqSUM!=0 && sum >= reqSUM)
+				(reqSTR==0 || (reqSTR!=0 && str >= reqSTR))
+				&&	(reqDEX==0 || (reqDEX!=0 && dex >= reqDEX))
+				&&	(reqINT==0 || (reqINT!=0 && inte >= reqINT))
+				&&	(reqSUM==0 || (reqSUM!=0 && sum >= reqSUM))
 				)					
 				)
 			{
@@ -5303,8 +5309,8 @@ MCreature::CheckAffectStatus(MItem* pItem)
 			}
 			
 			if((pItem->IsGenderForAll() 
-				|| pItem->IsGenderForMale() && IsMale()
-				|| pItem->IsGenderForFemale() && IsFemale()) &&
+				|| (pItem->IsGenderForMale() && IsMale())
+				|| (pItem->IsGenderForFemale() && IsFemale())) &&
 				pItem->IsQuestItem() )
 			{
 				pItem->SetAffectStatus();
@@ -5332,11 +5338,11 @@ MCreature::CheckAffectStatus(MItem* pItem)
 					// 성별 검사
 					//-----------------------------------------------------
 					(pItem->IsGenderForAll() 
-						|| pItem->IsGenderForMale() && IsMale()
-						|| pItem->IsGenderForFemale() && IsFemale()
+						|| (pItem->IsGenderForMale() && IsMale())
+						|| (pItem->IsGenderForFemale() && IsFemale())
 					)
 					&&
-					(reqLevel==0 || reqLevel!=0 && GetLEVEL() >= reqLevel)
+					(reqLevel==0 || (reqLevel!=0 && GetLEVEL() >= static_cast<DWORD>(reqLevel)))
 				)
 			{
 				pItem->SetAffectStatus();
@@ -5346,8 +5352,8 @@ MCreature::CheckAffectStatus(MItem* pItem)
 				pItem->UnSetAffectStatus();
 			}
 			if((pItem->IsGenderForAll() 
-				|| pItem->IsGenderForMale() && IsMale()
-				|| pItem->IsGenderForFemale() && IsFemale()) &&
+				|| (pItem->IsGenderForMale() && IsMale())
+				|| (pItem->IsGenderForFemale() && IsFemale())) &&
 				pItem->IsQuestItem()  )
 			{
 				pItem->SetAffectStatus();
@@ -5452,11 +5458,11 @@ MCreature::CheckAffectStatus(MItem* pItem)
 			// 아우스터즈인 경우도-_- level로 체크한다.
 			//-----------------------------------------------------
 			if (
-				(reqLevel==0 || reqLevel!=0 && GetLEVEL() >= reqLevel)
-				&&	(reqSTR==0 || reqSTR!=0 && str >= reqSTR)
-				&&	(reqDEX==0 || reqDEX!=0 && dex >= reqDEX)
-				&&	(reqINT==0 || reqINT!=0 && inte >= reqINT)
-				&&	(reqSUM==0 || reqSUM!=0 && sum >= reqSUM)
+				(reqLevel==0 || (reqLevel!=0 && GetLEVEL() >= static_cast<DWORD>(reqLevel)))
+				&&	(reqSTR==0 || (reqSTR!=0 && str >= reqSTR))
+				&&	(reqDEX==0 || (reqDEX!=0 && dex >= reqDEX))
+				&&	(reqINT==0 || (reqINT!=0 && inte >= reqINT))
+				&&	(reqSUM==0 || (reqSUM!=0 && sum >= reqSUM))
 				)
 			{
 				pItem->SetAffectStatus();
@@ -5478,6 +5484,9 @@ MCreature::CheckAffectStatus(MItem* pItem)
 			//-----------------------------------------------------
 			pItem->UnSetAffectStatus();
 		}
+		break;
+
+	default:
 		break;
 	}
 }
@@ -6338,7 +6347,7 @@ MCreature::ActionEffect()
 	//-------------------------------------------------------------
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 	{
-		BOOL	bActionStand	= (m_Action==ACTION_STAND || IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND || IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND);
+		BOOL	bActionStand	= (m_Action==ACTION_STAND || (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND) || (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND));
 		int		actionCountMax_1 = GetActionCountMax()-1;
 		BOOL	bStartAction	= (m_ActionCount==0);
 		BOOL	bEndAction		= (m_ActionCount==actionCountMax_1) || bActionStand;
@@ -6348,7 +6357,7 @@ MCreature::ActionEffect()
 		// (1) StartFrame인 경우
 		// (2) 마지막 ActionFrame인 경우
 		BOOL bStartEffect = m_ActionCount==StartFrame || 
-							StartFrame >= GetActionCountMax() && bEndAction;
+							(StartFrame >= GetActionCountMax() && bEndAction);
 
 		bStartAction |= (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame()
 					&& m_RepeatCount!=0
@@ -7440,10 +7449,10 @@ MCreature::Action()
 		HasEffectStatus( EFFECTSTATUS_AMBER_OF_GUARD ) || HasEffectStatus( EFFECTSTATUS_AMBER_OF_AVENGER ) ||
 		HasEffectStatus( EFFECTSTATUS_AMBER_OF_IMMORTAL ) || HasEffectStatus( EFFECTSTATUS_AMBER_OF_CURSE ) ||
 		HasEffectStatus( EFFECTSTATUS_HAS_CASTLE_SYMBOL_5 ) || HasEffectStatus( EFFECTSTATUS_HAS_CASTLE_SYMBOL_6 ) ||
-		IsCreatureMove( this ) && HasEffectStatus( EFFECTSTATUS_ICE_FIELD_TO_CREATURE ) ||
-		IsCreatureMove( this ) && HasEffectStatus( EFFECTSTATUS_FROZEN_ARMOR_TO_ENEMY ) ||
-		IsCreatureActionAttack( this ) && (	HasEffectStatus( EFFECTSTATUS_ICE_OF_SOUL_STONE ) || (IsInFuryOfGnome() && !IsOusters()/*(IsSlayer() || IsVampire())*/)	) ||
-		IsCreatureMove( this ) && HasEffectStatus( EFFECTSTATUS_JABBING_VEIN ) ||
+		(IsCreatureMove( this ) && HasEffectStatus( EFFECTSTATUS_ICE_FIELD_TO_CREATURE )) ||
+		(IsCreatureMove( this ) && HasEffectStatus( EFFECTSTATUS_FROZEN_ARMOR_TO_ENEMY )) ||
+		(IsCreatureActionAttack( this ) && (	HasEffectStatus( EFFECTSTATUS_ICE_OF_SOUL_STONE ) || (IsInFuryOfGnome() && !IsOusters()/*(IsSlayer() || IsVampire())*/)	)) ||
+		(IsCreatureMove( this ) && HasEffectStatus( EFFECTSTATUS_JABBING_VEIN )) ||
 		HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_2 ) ||
 		HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_3 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_4 ) ||
 		HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_5 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_6 ) ||
@@ -7569,9 +7578,9 @@ MCreature::Action()
 		// 기억된 다음 행동... 
 		//--------------------------------------------------------
 		else if (m_bNextAction 
-				|| m_NextAction!=ACTION_STAND 
-				&& (!IsOusters() || IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND)
-				&& (!IsSlayer() || IsSlayer() && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+				|| (m_NextAction!=ACTION_STAND 
+				&& (!IsOusters() || (IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND))
+				&& (!IsSlayer() || (IsSlayer() && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))
 		{
 			SetAction( m_NextAction );
 		}	 
@@ -7618,9 +7627,9 @@ MCreature::Action()
 				BOOL bSlayer = IsSlayer();
 
 				if (m_bNextAction 
-					|| m_NextAction!=ACTION_STAND 
-					&& (!IsOusters() || IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND)
-					&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+					|| (m_NextAction!=ACTION_STAND 
+					&& (!IsOusters() || (IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND))
+					&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))
 				{
 					m_Action = ((m_MoveDevice==MOVE_DEVICE_RIDE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND);
 					if(IsOusters() && HasEffectStatusSummonSylph( this ))
@@ -7665,7 +7674,7 @@ MCreature::Action()
 				// 적절한 Action 수행
 				//switch (m_Action)
 				if (m_Action==ACTION_STAND 
-					|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+					|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND))
 				{
 					m_ActionCount++;
 				}
@@ -7713,9 +7722,9 @@ MCreature::Action()
 					BOOL bSlayer = IsSlayer();
 
 					if (m_bNextAction 
-						|| m_NextAction!=ACTION_STAND 
-						&& (!IsOusters() || IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND)
-						&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+						|| (m_NextAction!=ACTION_STAND 
+						&& (!IsOusters() || (IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND))
+						&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))
 					{
 						m_Action = ((m_MoveDevice==MOVE_DEVICE_RIDE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND);
 						if(IsOusters() && HasEffectStatusSummonSylph( this ))
@@ -7760,9 +7769,9 @@ MCreature::Action()
 							BOOL bSlayer = IsSlayer();
 
 							if (m_bNextAction 
-								|| m_NextAction!=ACTION_STAND 
-								&& (!IsOusters() || IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND )
-								&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+								|| (m_NextAction!=ACTION_STAND 
+								&& (!IsOusters() || (IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND) )
+								&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))
 							{
 								m_Action = ((m_MoveDevice==MOVE_DEVICE_RIDE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND);
 								if(IsOusters() && HasEffectStatusSummonSylph( this ))
@@ -7888,7 +7897,7 @@ MCreature::PacketMove(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE directi
 	// 정지된 상태이면 바로 적용한다.
 	//-----------------------------------------------------------
 	if (m_Action==ACTION_STAND 
-		|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+		|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND))
 	{
 		AffectMoveBuffer();
 	}
@@ -7897,7 +7906,7 @@ MCreature::PacketMove(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE directi
 		//---------------------------------------------------
 		// 한계를 넘는 MoveBuffer는 모두 적용시켜버린다.
 		//---------------------------------------------------
-		while (m_listMoveBuffer.size() > g_pClientConfig->MAX_CREATURE_MOVE_BUFFER)
+		while (m_listMoveBuffer.size() > static_cast<size_t>(g_pClientConfig->MAX_CREATURE_MOVE_BUFFER))
 		{
 			AffectMoveBuffer();
 		}		
@@ -9061,8 +9070,8 @@ MCreature::PacketSpecialActionToOther(TYPE_ACTIONINFO nActionInfo, TYPE_OBJECTID
 	// 죽었으면 return
 	//--------------------------------------------------
 	if (!m_bAlive || 
-		nActionInfo>=(*g_pActionInfoTable).GetMinResultActionInfo() &&
-		!( nActionInfo >= STEP_SKILL_FLOURISH_2 && nActionInfo < MAGIC_ENCHANT_OPTION_NULL )
+		(nActionInfo>=(*g_pActionInfoTable).GetMinResultActionInfo() &&
+		!( nActionInfo >= STEP_SKILL_FLOURISH_2 && nActionInfo < MAGIC_ENCHANT_OPTION_NULL ))
 		)
 	{
 		if (pActionResult!=NULL)
@@ -9679,6 +9688,7 @@ MCreature::ChangeToVampire()
 bool		
 MCreature::FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y,bool server)
 {
+	(void)server;
 	//if (m_X!=x || m_Y!=y)
 	{
 		//------------------------------------------------
@@ -9991,12 +10001,12 @@ MCreature::StopAbsorbSoul()
 void	
 MCreature::UpdateDarkness()
 {
-	if (!IsVampire() || IsVampire() && g_pZone->GetID() == 3001
+	if (!IsVampire() || (IsVampire() && g_pZone->GetID() == 3001
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 	{
 		if (m_DarknessCountInc==0)
 		{
@@ -10051,8 +10061,8 @@ MCreature::CheckInDarkness()
 			// Darkness에 들어왔는지 체크
 			//-------------------------------------------------------
 			// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
-			if (m_X >=0 && m_X < g_pZone->GetWidth()
-				&& m_Y >= 0 && m_Y < g_pZone->GetHeight())
+			if (m_X < g_pZone->GetWidth()
+				&& m_Y < g_pZone->GetHeight())
 			{
 				const MSector& sector = g_pZone->GetSector( m_X, m_Y );
 
@@ -10086,8 +10096,8 @@ MCreature::IsInGroundElemental() const
 			// Darkness에 들어왔는지 체크
 			//-------------------------------------------------------
 			// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
-			if (m_X >=0 && m_X < g_pZone->GetWidth()
-				&& m_Y >= 0 && m_Y < g_pZone->GetHeight())
+			if (m_X < g_pZone->GetWidth()
+				&& m_Y < g_pZone->GetHeight())
 			{
 				const MSector& sector = g_pZone->GetSector( m_X, m_Y );
 
@@ -10112,8 +10122,8 @@ MCreature::IsInFuryOfGnome() const
 			// Fury Of Gnome에 들어왔는지 체크
 			//-------------------------------------------------------
 			// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
-			if (m_X >=0 && m_X < g_pZone->GetWidth()
-				&& m_Y >= 0 && m_Y < g_pZone->GetHeight())
+			if (m_X < g_pZone->GetWidth()
+				&& m_Y < g_pZone->GetHeight())
 			{
 				const MSector& sector = g_pZone->GetSector( m_X, m_Y );
 
@@ -10137,7 +10147,7 @@ MCreature::PlaceInDarkness(bool IsBlindness)
 {
 	if (
 		  (
-				(IsBlindness || (!IsVampire() || IsVampire() && g_pZone->GetID() == 3001))
+				(IsBlindness || (!IsVampire() || (IsVampire() && g_pZone->GetID() == 3001)))
 				
 				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 			)
@@ -10172,12 +10182,12 @@ MCreature::PlaceInDarkness(bool IsBlindness)
 void
 MCreature::PlaceNotInDarkness()
 {
-	if (!IsVampire() || IsVampire() && g_pZone->GetID() == 3001
+	if (!IsVampire() || (IsVampire() && g_pZone->GetID() == 3001
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 	{
 		// darkness에 있던 경우
 		if (m_DarknessCount >= 0 && m_DarknessCount < MAX_DARKNESS_COUNT)
@@ -10662,7 +10672,6 @@ MCreature::RemoveCauseCriticalWoundsEffect()
 	StopCauseCriticalWounds();
 	ATTACHEFFECT_LIST::iterator iEffect = m_listEffect.begin();
 
-	bool re = false;
 	while (iEffect != m_listEffect.end())
 	{
 		MAttachEffect* pEffect = *iEffect;
@@ -10683,7 +10692,6 @@ MCreature::RemoveCauseCriticalWoundsEffect()
 
 			m_bAttachEffect[Type] = false;
 
-			re = true;
 			continue;
 		}
 		
@@ -10712,7 +10720,6 @@ MCreature::RemoveCauseCriticalWoundsEffect()
 
 			m_bAttachEffect[Type] = false;
 
-			re = true;
 			continue;
 		}
 		

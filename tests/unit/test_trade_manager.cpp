@@ -32,7 +32,8 @@ void	RefreshAffect(MItem*)			{}
 void	PlayItemSound(TYPE_SOUNDID)		{}
 
 // A host that carries the clock and nothing else of note.
-const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, &s_Now };
+const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, &s_Now,
+							NULL, NULL, NULL, NULL, NULL, NULL };
 
 struct TradeWorld : GameModelWorld
 {
@@ -148,7 +149,8 @@ TEST(TradeManager, RefusingStartsTheAcceptDelayOnTheClock)
 	trade.AcceptMyTrade();
 	trade.RefuseMyTrade();
 	CHECK(trade.IsAcceptTime());
-	const MItemHost clockless = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, NULL };
+	const MItemHost clockless = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, NULL,
+									NULL, NULL, NULL, NULL, NULL, NULL };
 	MItem::SetHost(&clockless);
 	CHECK(trade.IsAcceptTime());
 	// With the clock back, a refusal counts again.

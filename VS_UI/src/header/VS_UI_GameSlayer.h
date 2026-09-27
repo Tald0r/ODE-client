@@ -158,7 +158,7 @@ class C_VS_UI_SLAYER_PDS : public Rect, public Exec, public ButtonVisual
 {
 public:
 	// character value
-	/*
+	/ *
 	static long					m_str;
 	static long					m_dex;
 	static long					m_int;

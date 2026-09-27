@@ -18,6 +18,8 @@ void GCSearchMotorcycleFailHandler::execute ( GCSearchMotorcycleFail * pPacket ,
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 	
 
 

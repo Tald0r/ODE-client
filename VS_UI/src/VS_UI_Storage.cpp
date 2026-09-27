@@ -3,7 +3,9 @@
 #include "Client_PCH.h"
 #include "SafeFormat.h"
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_Storage.h"
 #include "VS_UI_filepath.h"
@@ -28,6 +30,7 @@ static C_VS_UI_MONEY_DIALOG *	m_pC_dialog_withdraw_money;		// by sigi
 // by sigi
 void ExecF_WithdrawMoney(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -82,6 +85,9 @@ C_VS_UI_STORAGE::C_VS_UI_STORAGE()
 	case RACE_OUSTERS:
 		m_image_spk.Open(SPK_OUSTERS_SHOP_STORAGE);
 		break;		
+
+	default:
+		break;
 	}
 
 	m_shelf_start_x_offset = 15;
@@ -514,7 +520,7 @@ void C_VS_UI_STORAGE::Show()
 							eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 							)
 						{
-							gpC_global_resource->m_pC_info_spk->BltLockedOutline(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+							gpC_global_resource->m_pC_info_spk->BltLockedOutline(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 						}
 					}
 				}
@@ -532,7 +538,7 @@ void C_VS_UI_STORAGE::Show()
 								eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 								)
 							{
-								gpC_global_resource->m_pC_info_spk->BltLocked(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+								gpC_global_resource->m_pC_info_spk->BltLocked(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 							}
 						}
 					}
@@ -547,7 +553,7 @@ void C_VS_UI_STORAGE::Show()
 								eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 								)
 							{
-								gpC_global_resource->m_pC_info_spk->BltLockedColor(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
+								gpC_global_resource->m_pC_info_spk->BltLockedColor(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType), 0);
 							}
 						}
 					}
@@ -628,7 +634,7 @@ void C_VS_UI_STORAGE::Show()
 			SafeFormat::Format(money_buf, "%d", m_pStorage->GetMoneyManager()->GetMoney());
 			std::string sstr = money_buf;
 			for(int j = 3; j <= 13; j += 4)
-				if(sstr.size() > j)sstr.insert(sstr.size()-j, ",");
+				if(sstr.size() > static_cast<size_t>(j))sstr.insert(sstr.size()-j, ",");
 			SafeFormat::Format(money_buf, "%s", sstr.c_str());
 			g_Print(x+m_money_button_offset_x+147, y+m_money_button_offset_y+4, money_buf, &gpC_base->m_money2_pi);
 		}
@@ -675,7 +681,7 @@ void C_VS_UI_STORAGE::Show()
 //-----------------------------------------------------------------------------
 void C_VS_UI_STORAGE::WindowEventReceiver(id_t event)
 {
-
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -787,7 +793,7 @@ void C_VS_UI_STORAGE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 	}
 	else if(p_button->GetID() < m_pStorage->GetSize())
 	{
-		if(p_button->GetFocusState() || m_pStorage != NULL && m_pStorage->GetCurrent() == p_button->GetID())
+		if(p_button->GetFocusState() || (m_pStorage != NULL && m_pStorage->GetCurrent() == p_button->GetID()))
 		{
 			if(p_button->GetPressState())
 				m_image_spk.BltLocked(x+p_button->x, y+p_button->y, p_button->m_image_index+6);

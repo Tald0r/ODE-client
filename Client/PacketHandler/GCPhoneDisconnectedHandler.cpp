@@ -18,6 +18,7 @@ void GCPhoneDisconnectedHandler::execute ( GCPhoneDisconnected * pPacket , Playe
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	//------------------------------------------------------------------

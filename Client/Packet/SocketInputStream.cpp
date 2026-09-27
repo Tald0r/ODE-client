@@ -428,7 +428,7 @@ void SocketInputStream::skip ( uint len )
 	
 	// m_Head 를 증가시킨다.
 
-	uint pos = m_Head;
+	[[maybe_unused]] uint pos = m_Head;
 	m_Head = ( m_Head + len ) % m_BufferLen;
 	if ( m_bFrameBounded )
 		m_FrameRemaining -= len;

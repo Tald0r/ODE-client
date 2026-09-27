@@ -80,7 +80,7 @@ TEST(MessageArray, EmptyAndReleasedRingsAcceptNoWritesOrInvalidReads)
 TEST(MessageArray, InvalidDimensionsLeaveAnEmptyUsableObject)
 {
 	CMessageArray messages;
-	for (const auto dimensions : {std::pair{0, 4}, std::pair{-1, 4}, std::pair{3, -1}}) {
+	for (const auto& dimensions : {std::pair{0, 4}, std::pair{-1, 4}, std::pair{3, -1}}) {
 		messages.Init(2, 8); messages.Add("previous");
 		messages.Init(dimensions.first, dimensions.second);
 		CHECK_EQ(0, messages.GetSize());

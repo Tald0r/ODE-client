@@ -19,6 +19,8 @@ void GCDisconnectHandler::execute ( GCDisconnect * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 	
 	
 	#if	defined(OUTPUT_DEBUG) && defined(__DEBUG_OUTPUT__)

@@ -9,7 +9,9 @@
 #ifndef __TIME_ITEM_MANAGER_HEADER__
 #define __TIME_ITEM_MANAGER_HEADER__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MonotonicClock.h"
 #include "MTypeDef.h"

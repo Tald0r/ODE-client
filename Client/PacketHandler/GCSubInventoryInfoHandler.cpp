@@ -22,6 +22,8 @@
 void GCSubInventoryInfoHandler::execute ( GCSubInventoryInfo * pPacket , Player * pPlayer )
 
 {
+	(void)pPacket;
+	(void)pPlayer;
 
 	
 	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관

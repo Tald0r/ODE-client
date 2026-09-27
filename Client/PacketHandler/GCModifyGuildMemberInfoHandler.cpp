@@ -21,6 +21,7 @@ void GCModifyGuildMemberInfoHandler::execute ( GCModifyGuildMemberInfo * pPacket
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	g_pUserInformation->GuildName = pPacket->getGuildName().c_str();
 	g_pUserInformation->GuildGrade = pPacket->getGuildMemberRank();

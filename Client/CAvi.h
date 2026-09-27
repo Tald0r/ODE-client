@@ -2,7 +2,7 @@
 #define _CAVI_
 
 /* void Cls_OnMcinotify(HWND hwnd) // MM_MCINOTIFY */
-//#define HANDLE_MM_MCINOTIFY(hwnd, wParam, lParam, fn) \
+//#define HANDLE_MM_MCINOTIFY(hwnd, wParam, lParam, fn)
     //((fn)(hwnd, (LONG)lParam), 0L)
 
 class CAVI{

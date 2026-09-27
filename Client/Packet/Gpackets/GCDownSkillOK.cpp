@@ -25,8 +25,6 @@ GCDownSkillOK::GCDownSkillOK ()
 //////////////////////////////////////////////////////////////////////
 GCDownSkillOK::~GCDownSkillOK ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

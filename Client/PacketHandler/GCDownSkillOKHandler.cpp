@@ -20,17 +20,12 @@ void GCDownSkillOKHandler::execute ( GCDownSkillOK * pGCDownSkillOK , Player * p
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 
 	SkillType_t skillID = pGCDownSkillOK->getSkillType();	
 	
 	int curLevel = (*g_pSkillInfoTable)[skillID].GetExpLevel();
 	curLevel --;
-
-	if( curLevel <= 0 && curLevel >= 29 )
-	{
-		UI_PopupMessage( STRING_ERROR_ETC_ERROR );
-		return;
-	}
 
 	if (auto* entry = g_pSkillInfoTable->GetMutable(skillID)) {
 		entry->SetExpLevel( curLevel );

@@ -597,6 +597,7 @@ void CMP3::SetVolume(DWORD dwVolume)
 
 CMP3::CMP3(LPCSTR lpcszFileName)
 {
+	(void)lpcszFileName;
 	muiDeviceID = 0;
 	m_bLoop = false;
 	m_oldVolume = 0xffffffff;

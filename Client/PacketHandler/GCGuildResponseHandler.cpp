@@ -20,6 +20,7 @@ void GCGuildResponseHandler::execute ( GCGuildResponse * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	__BEGIN_DEBUG
 		
 	switch(pPacket->getCode())

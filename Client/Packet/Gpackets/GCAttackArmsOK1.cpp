@@ -34,11 +34,7 @@ GCAttackArmsOK1::GCAttackArmsOK1 ()
 //////////////////////////////////////////////////////////////////////
 GCAttackArmsOK1::~GCAttackArmsOK1 ()
 {
-	__BEGIN_TRY
-	__BEGIN_DEBUG
 
-	__END_DEBUG
-	__END_CATCH
 }
 
 

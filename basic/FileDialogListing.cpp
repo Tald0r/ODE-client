@@ -116,7 +116,7 @@ Basic::DialogDirectories Basic::MakeDialogDirectories(DWORD driveMask, const std
 		std::string path(1, static_cast<char>('a' + i));
 		path += ":\\";
 		if (currentPath.size() >= 2 && currentPath[1] == ':' &&
-			(currentPath[0] == 'a' + i || currentPath[0] == 'A' + i))
+			(static_cast<unsigned int>(currentPath[0]) == 'a' + i || static_cast<unsigned int>(currentPath[0]) == 'A' + i))
 		{
 			path = currentPath;
 			result.current = result.paths.size();

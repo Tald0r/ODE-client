@@ -19,6 +19,7 @@ void GCMoveErrorHandler::execute ( GCMoveError * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 /*
 	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);

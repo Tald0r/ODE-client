@@ -29,8 +29,6 @@ GuildMemberInfo::GuildMemberInfo ()
 //////////////////////////////////////////////////////////////////////
 GuildMemberInfo::~GuildMemberInfo () 
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

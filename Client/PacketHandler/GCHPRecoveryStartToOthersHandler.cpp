@@ -17,6 +17,7 @@ void GCHPRecoveryStartToOthersHandler::execute ( GCHPRecoveryStartToOthers * pPa
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	if (g_pZone!=NULL)

@@ -446,7 +446,7 @@ void		MActionInfo::SetActionStep(BYTE step,  TYPE_ACTIONINFO action)
 	if(!IsUseActionStep() )
 		return;
 
-	if(step < 0 || step >= MAX_ACTION_STEP )
+	if(step >= MAX_ACTION_STEP )
 		return;
 
 	m_ActionStep[step] = action;
@@ -454,7 +454,7 @@ void		MActionInfo::SetActionStep(BYTE step,  TYPE_ACTIONINFO action)
 
 TYPE_ACTIONINFO	MActionInfo::GetActionStep(BYTE step) const
 {
-	if(!IsUseActionStep() || step < 0 || step >= MAX_ACTION_STEP )
+	if(!IsUseActionStep() || step >= MAX_ACTION_STEP )
 		return ACTIONINFO_NULL;
 
 	return m_ActionStep[step];

@@ -66,12 +66,10 @@ Properties::Properties ( const std::string & filename )
 //--------------------------------------------------------------------------------
 Properties::~Properties () 
 {	
-	__BEGIN_TRY
 		
 	// 모든 pair 를 삭제한다.
 	m_Properties.clear();
 
-	__END_CATCH
 }
 
 

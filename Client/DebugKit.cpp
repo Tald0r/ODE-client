@@ -38,10 +38,10 @@ BOOL CDebugKit::load()
 	try{
 		m_DebugInfo->load("DebugInfo.ini");
 	}
-	catch (Error) {
+	catch (Error&) {
 		return FALSE;
 	}
-	catch (IOException) {
+	catch (IOException&) {
 		return FALSE;
 	}
 	return TRUE;
@@ -52,7 +52,7 @@ std::string CDebugKit::GetMsgFileName()
 	try{
 		return m_DebugInfo->getProperty("MsgFileName");
 	}
-	catch (NoSuchElementException) {
+	catch (NoSuchElementException&) {
 		return NULL;
 	}
 }
@@ -62,7 +62,7 @@ BOOL CDebugKit::GetMsgOutPutFlag()
 	try{
 		return ((m_DebugInfo->getPropertyInt("MsgOutPutFlag")>0)?TRUE:FALSE);
 	}
-	catch (NoSuchElementException) {
+	catch (NoSuchElementException&) {
 		return FALSE;
 	}
 }
@@ -72,7 +72,7 @@ BOOL CDebugKit::GetMsgDetailFlag()
 	try{
 		return ((m_DebugInfo->getPropertyInt("MsgDetailFlag")>0)?TRUE:FALSE);
 	}
-	catch (NoSuchElementException) {
+	catch (NoSuchElementException&) {
 		return FALSE;
 	}
 }
@@ -82,7 +82,7 @@ BOOL CDebugKit::GetMsgContentFlag()
 	try{
 		return ((m_DebugInfo->getPropertyInt("MsgContentFlag")>0)?TRUE:FALSE);
 	}
-	catch (NoSuchElementException) {
+	catch (NoSuchElementException&) {
 		return FALSE;
 	}
 }
@@ -92,7 +92,7 @@ BYTE CDebugKit::GetAuthKeyMap()
 	try{
 		return m_DebugInfo->getPropertyInt("AuthKeyMap");
 	}
-	catch (NoSuchElementException) {
+	catch (NoSuchElementException&) {
 		return FALSE;
 	}
 }
@@ -101,7 +101,7 @@ int CDebugKit::GetGameVersion()
 	try{
 		return m_DebugInfo->getPropertyInt("GameVersion");
 	}
-	catch (NoSuchElementException) {
+	catch (NoSuchElementException&) {
 		return 0;
 	}
 }
@@ -145,6 +145,7 @@ void CMessageStringTable::LoadFromFile(std::string strFileName)
 }
 void CMessageStringTable::SaveToFile(std::string strFileName)
 {
+	(void)strFileName;
 
 }
 

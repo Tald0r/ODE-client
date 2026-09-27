@@ -33,8 +33,6 @@ GCMineExplosionOK2::GCMineExplosionOK2 ()
 //////////////////////////////////////////////////////////////////////
 GCMineExplosionOK2::~GCMineExplosionOK2 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

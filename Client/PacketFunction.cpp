@@ -332,12 +332,8 @@ InitPacketItemTable()
 	// shouler
 	//------------------------------------------------------------
 
-	MItem*		g_pPacketItemShoulder[SHOULDER_MAX] = { NULL, };
-	
 	MShoulderArmor* pShoulder1 = new MShoulderArmor;	pShoulder1->SetItemType( 0 ); pShoulder1->ClearItemOption();
 
-	g_pPacketItemShoulder[SHOULDER_NONE]	= NULL;
-	g_pPacketItemShoulder[SHOULDER1]		= pShoulder1;
 	
 }
 
@@ -724,6 +720,7 @@ GetVampireCreatureType(int shape, bool bMale, int coatType)
 int
 GetOustersCreatureType(int coatType)
 {
+	(void)coatType;
 	//--------------------------------------------------
 	// CreatureType 설정
 	//--------------------------------------------------
@@ -2055,6 +2052,9 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 	case RACE_OUSTERS:
 		g_pOustersGear->Init();
 		break;
+
+	default:
+		break;
 	}
 
 	if (pGearInfo!=NULL)
@@ -2290,6 +2290,9 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			case RACE_OUSTERS:
 				bAdd = g_pOustersGear->AddItem( pItem, (MOustersGear::GEAR_OUSTERS)pItem->GetItemSlot() );
 				break;
+
+			default:
+				break;
 			}
 
 			//---------------------------------------------
@@ -2358,7 +2361,7 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 
 			g_pSlayerGear->SetBloodBibleOpenSlot(pBloodBibleInfo->getOpenNum());
 
-			for(int i = 0; i<TempSignList.size() ; i++)
+			for(int i = 0; static_cast<size_t>(i)<TempSignList.size() ; i++)
 			{
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
@@ -2378,7 +2381,7 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 			}
 			g_pVampireGear->SetBloodBibleOpenSlot(pBloodBibleInfo->getOpenNum());
 
-			for(int i = 0; i<TempSignList.size() ; i++)
+			for(int i = 0; static_cast<size_t>(i)<TempSignList.size() ; i++)
 			{
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
@@ -2398,7 +2401,7 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 			}
 			g_pOustersGear->SetBloodBibleOpenSlot(pBloodBibleInfo->getOpenNum());
 
-			for(int i = 0; i<TempSignList.size() ; i++)
+			for(int i = 0; static_cast<size_t>(i)<TempSignList.size() ; i++)
 			{ 
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
@@ -2407,6 +2410,9 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				g_abHolyLandBonusSkills[TempSignList[i]] = true;
 			}
 		}
+		break;
+
+	default:
 		break;
 	}
 
@@ -2737,6 +2743,9 @@ SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
 							);
 					}
 				}
+				break;
+
+				default:
 				break;
 			}
 
@@ -3717,6 +3726,7 @@ PopupErrorMessage(ErrorID errorID)
 			break;
 		case CHECK_VERSION_ERROR:
 			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_CHECK_VERSION_ERROR].GetString(), -1,-1,UI_DIALOG_OK, true);
+			[[fallthrough]];
 		default : //case ETC_ERROR : 
 				g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_ERROR_ETC_ERROR].GetString());
 				
@@ -3748,6 +3758,7 @@ SetServerGroupStatus( int status )
 void
 SetServerName( const char* pName )
 {
+	(void)pName;
 //	g_pServerInformation->SetServerName( pName );
 }
 
@@ -3911,7 +3922,7 @@ UseItemOK()
 			{
 				TYPE_ITEMTYPE	ItemType = pItem->GetItemType();
 				// 헤어색은 슬레이어, 아우스터즈만
-				if(ItemType >= 0 && ItemType <= 23 )
+				if(ItemType <= 23 )
 				{
 					if(g_pPlayer->IsSlayer())
 					{
@@ -4031,8 +4042,8 @@ UseItemOK()
 			//-------------------------------------------------
 			// 없어지지 않는 경우
 			//-------------------------------------------------
-			if (pItem->IsPileItem() && pItem->GetNumber()>0
-				|| pItem->IsChargeItem() && pItem->GetNumber()>0
+			if ((pItem->IsPileItem() && pItem->GetNumber()>0)
+				|| (pItem->IsChargeItem() && pItem->GetNumber()>0)
 				|| pItem->GetItemClass()==ITEM_CLASS_SLAYER_PORTAL_ITEM
 				|| pItem->GetItemClass()==ITEM_CLASS_OUSTERS_SUMMON_ITEM
 				|| pItem->GetItemClass()==ITEM_CLASS_PET_ITEM)
@@ -4545,7 +4556,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 		skillID = pUserCreature->GetBasicActionInfo();
 	}
 
-	if (skillID >= g_pActionInfoTable->GetMinResultActionInfo())
+	if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 	{
 		DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
 		return;
@@ -4662,7 +4673,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 			skillID = pUserCreature->GetBasicActionInfo();
 		}
 
-		if (skillID >= g_pActionInfoTable->GetMinResultActionInfo())
+		if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
 			return;
@@ -4794,16 +4805,16 @@ CheckItemForSkillIcon(const MItem* pItem)
 	ITEM_CLASS itemClass = pItem->GetItemClass();
 
 	// 특정 item class인 경우는 skill icon이 바뀐다.
-	if (g_pPlayer->IsSlayer()
+	if ((g_pPlayer->IsSlayer()
 		&& (itemClass==ITEM_CLASS_HOLYWATER
 			|| itemClass==ITEM_CLASS_SLAYER_PORTAL_ITEM
 			|| itemClass==ITEM_CLASS_BOMB
 			|| itemClass==ITEM_CLASS_MINE
-			|| itemClass==ITEM_CLASS_BOMB_MATERIAL)
+			|| itemClass==ITEM_CLASS_BOMB_MATERIAL))
 
-		|| g_pPlayer->IsVampire()
+		|| (g_pPlayer->IsVampire()
 		&& (itemClass==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
-			|| itemClass==ITEM_CLASS_VAMPIRE_ETC)
+			|| itemClass==ITEM_CLASS_VAMPIRE_ETC))
 		)
 	{
 		g_pSkillAvailable->SetAvailableSkills();
@@ -4914,15 +4925,13 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 			skillID = pUserCreature->GetBasicActionInfo();
 		}
 
-		if (skillID >= g_pActionInfoTable->GetMinResultActionInfo())
+		if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
 			return;
 		}
 
 //		MActionResult* pResult = new MActionResult;
-		
-		DWORD delayFrame = 0;//ConvertDurationToFrame( pPacket->getDuration() );
 		
 		pFakeCreature->SetFakeCreatureFastMoveAction(
 			pTargetCreature->GetX() + Position[i].x, pTargetCreature->GetY() + Position[i].y,
@@ -4948,6 +4957,8 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 void		
 SetAddonToOusters(MCreatureWear* pCreature, const PCOustersInfo2* pInfo)
 {	
+	(void)pCreature;
+	(void)pInfo;
 }
 
 void
@@ -5054,7 +5065,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 			skillID = pUserCreature->GetBasicActionInfo();
 		}
 		
-		if (skillID >= g_pActionInfoTable->GetMinResultActionInfo())
+		if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
 			return;
@@ -5317,7 +5328,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pItem->SetPetAttack( pPetInfo->canAttack()?true:false );
 					
 					pItem->ClearItemOption();
-					if(pPetInfo->getPetOption() != NULL)
+					if(pPetInfo->getPetOption() != 0)
 					{
 						pItem->AddItemOption(pPetInfo->getPetOption());
 					}

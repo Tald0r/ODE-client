@@ -115,7 +115,7 @@ MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	{
 		for (x=sX1; x<=sX2; x++)
 		{
-			if (x==sX && y==sY || !(x == sX || y == sY))
+			if ((x==sX && y==sY) || !(x == sX || y == sY))
 				continue;
 
 

@@ -71,5 +71,6 @@ PackFileInfo::LoadFromFile(std::ifstream& file)
 bool		
 PackFileInfo::SaveToFileData(std::ofstream& file)
 {
+	(void)file;
 	return true;
 }

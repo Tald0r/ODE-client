@@ -23,6 +23,7 @@ void LCWorldListHandler::execute ( LCWorldList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	//-----------------------------------------------------------

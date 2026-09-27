@@ -20,6 +20,7 @@ extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 		
 	// 예외 처리
@@ -169,6 +170,9 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 					pTargetCreature->GetX(), pTargetCreature->GetY(), 0, 12, NULL, true);	
 			}
 		}
+		break;
+
+	default:
 		break;
 	}
 

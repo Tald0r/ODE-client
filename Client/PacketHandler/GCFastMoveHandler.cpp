@@ -18,6 +18,7 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -35,7 +36,7 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 	//------------------------------------------------------------------
 	// Player인 경우
 	//------------------------------------------------------------------
-	if (objectID==g_pPlayer->GetID())
+	if (static_cast<TYPE_OBJECTID>(objectID)==g_pPlayer->GetID())
 	{
 		//------------------------------------------------------------------
 		// Player가 기다리던 skill의 성공유무를 검증받았다.

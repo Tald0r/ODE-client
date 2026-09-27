@@ -13,6 +13,7 @@
 void GCAddHelicopterHandler::execute ( GCAddHelicopter * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

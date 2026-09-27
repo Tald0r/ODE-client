@@ -18,6 +18,8 @@ void GCCannotAddHandler::execute ( GCCannotAdd * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 

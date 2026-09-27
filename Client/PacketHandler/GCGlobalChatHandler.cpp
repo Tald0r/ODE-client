@@ -27,6 +27,7 @@ void GCGlobalChatHandler::execute ( GCGlobalChat * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	
 	// Debug Message
@@ -58,10 +59,10 @@ void GCGlobalChatHandler::execute ( GCGlobalChat * pPacket , Player * pPlayer )
 
 		if (pLB!=NULL)
 		{
-			if (*(pLB+1)!=NULL)
+			if (*(pLB+1)!='\0')
 			{
 				// ' '를 NULL로
-				*pLB = NULL;
+				*pLB = '\0';
 
 				snprintf(strName, sizeof(strName), "%s", str);
  

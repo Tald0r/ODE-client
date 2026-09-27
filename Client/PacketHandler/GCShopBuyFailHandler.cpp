@@ -20,6 +20,7 @@ void GCShopBuyFailHandler::execute ( GCShopBuyFail * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	// mode를 없앤다.

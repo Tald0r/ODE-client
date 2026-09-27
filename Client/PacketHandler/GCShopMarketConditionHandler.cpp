@@ -21,6 +21,7 @@ void GCShopMarketConditionHandler::execute ( GCShopMarketCondition * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------

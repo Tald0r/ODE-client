@@ -2,7 +2,9 @@
 
 #include "Client_PCH.h"
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_Shop.h"
 #include "VS_UI_filepath.h"
@@ -33,13 +35,14 @@ MShop::SHOP_TYPE		C_VS_UI_SHOP::m_shop_type;
 //-----------------------------------------------------------------------------
 void ExecF_BuyConfirm(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
 			//
 
 			//
-			assert(m_select_item_slot != NOT_SELECTED);
+			assert(m_select_item_slot != static_cast<UINT>(NOT_SELECTED));
 
 			int item_count = 1;
 			if (m_pC_dialog_multi_buy_confirm != NULL)
@@ -98,6 +101,9 @@ C_VS_UI_SHOP::C_VS_UI_SHOP()
 	case RACE_OUSTERS:
 		m_image_spk.Open(SPK_OUSTERS_SHOP_STORAGE);
 		break;		
+
+	default:
+		break;
 	}
 	
 	m_question_spk.Open(SPK_QUESTION);
@@ -555,7 +561,7 @@ void C_VS_UI_SHOP::StartBuyConfirmDialog(int _x, int _y, int num)
 	DeleteNew(m_pC_dialog_multi_buy_confirm);
 
 	MItem *selected_item = NULL;
-	if (m_select_item_slot != NOT_SELECTED)
+	if (m_select_item_slot != static_cast<UINT>(NOT_SELECTED))
 		selected_item = GetSlotItem(m_select_item_slot);
 
 	if (selected_item != NULL)
@@ -716,7 +722,7 @@ void C_VS_UI_SHOP::Show()
 									eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 									)
 								{
-									gpC_global_resource->m_pC_info_spk->BltLockedOutline(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+									gpC_global_resource->m_pC_info_spk->BltLockedOutline(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 								}
 							}
 						}
@@ -734,7 +740,7 @@ void C_VS_UI_SHOP::Show()
 										eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 										)
 									{
-										gpC_global_resource->m_pC_info_spk->BltLocked(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+										gpC_global_resource->m_pC_info_spk->BltLocked(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 									}
 								}
 							}
@@ -749,7 +755,7 @@ void C_VS_UI_SHOP::Show()
 										eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 										)
 									{
-										gpC_global_resource->m_pC_info_spk->BltLockedColor(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
+										gpC_global_resource->m_pC_info_spk->BltLockedColor(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType), 0);
 									}
 								}
 							}
@@ -801,7 +807,7 @@ void C_VS_UI_SHOP::Show()
 //-----------------------------------------------------------------------------
 void C_VS_UI_SHOP::WindowEventReceiver(id_t event)
 {
-
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -883,10 +889,10 @@ void C_VS_UI_SHOP::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_SHOW_HELP_SHOP_WINDOW].GetString(),
 	};
 
-	if (p_button->GetID() == MYSTERIOUS_TAB_ID && (!m_pShop->GetShelf(MYSTERIOUS_TAB_ID)->IsEnable()
-		|| !g_pSystemAvailableManager->IsAvailableGambleSystem() ) ||
-		p_button->GetID() == NORMAL_TAB_ID && !m_pShop->GetShelf(NORMAL_TAB_ID)->IsEnable() ||
-		p_button->GetID() == SPECIAL_TAB_ID && !m_pShop->GetShelf(SPECIAL_TAB_ID)->IsEnable())
+	if ((p_button->GetID() == MYSTERIOUS_TAB_ID && (!m_pShop->GetShelf(MYSTERIOUS_TAB_ID)->IsEnable()
+		|| !g_pSystemAvailableManager->IsAvailableGambleSystem() )) ||
+		(p_button->GetID() == NORMAL_TAB_ID && !m_pShop->GetShelf(NORMAL_TAB_ID)->IsEnable()) ||
+		(p_button->GetID() == SPECIAL_TAB_ID && !m_pShop->GetShelf(SPECIAL_TAB_ID)->IsEnable()))
 		return;
 
 	g_descriptor_manager.Set(DID_INFO, p_button->x, p_button->y, (void *)m_help_string[p_button->GetID()],0,0);
@@ -899,10 +905,10 @@ void C_VS_UI_SHOP::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void C_VS_UI_SHOP::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 {	
-	if (p_button->GetID() == MYSTERIOUS_TAB_ID && (!m_pShop->GetShelf(MYSTERIOUS_TAB_ID)->IsEnable()
-		|| !g_pSystemAvailableManager->IsAvailableGambleSystem() ) ||
-		p_button->GetID() == NORMAL_TAB_ID && !m_pShop->GetShelf(NORMAL_TAB_ID)->IsEnable() ||
-		p_button->GetID() == SPECIAL_TAB_ID && !m_pShop->GetShelf(SPECIAL_TAB_ID)->IsEnable())
+	if ((p_button->GetID() == MYSTERIOUS_TAB_ID && (!m_pShop->GetShelf(MYSTERIOUS_TAB_ID)->IsEnable()
+		|| !g_pSystemAvailableManager->IsAvailableGambleSystem() )) ||
+		(p_button->GetID() == NORMAL_TAB_ID && !m_pShop->GetShelf(NORMAL_TAB_ID)->IsEnable()) ||
+		(p_button->GetID() == SPECIAL_TAB_ID && !m_pShop->GetShelf(SPECIAL_TAB_ID)->IsEnable()))
 		return;
 	
 	if (p_button->GetID() == SHOP_CLOSE_ID || p_button->GetID() == SHOP_HELP_ID)
@@ -975,16 +981,16 @@ bool C_VS_UI_SHOP::MouseControl(UINT message, int _x, int _y)
 					m_focused_slot = i;
 
 
-					if (m_pC_dialog_multi_buy_confirm==NULL && m_pC_dialog_buy_confirm==NULL
-						|| m_pC_dialog_multi_buy_confirm!=NULL && !m_pC_dialog_multi_buy_confirm->Running()
-						|| m_pC_dialog_buy_confirm!=NULL && !m_pC_dialog_buy_confirm->Running()) 
+					if ((m_pC_dialog_multi_buy_confirm==NULL && m_pC_dialog_buy_confirm==NULL)
+						|| (m_pC_dialog_multi_buy_confirm!=NULL && !m_pC_dialog_multi_buy_confirm->Running())
+						|| (m_pC_dialog_buy_confirm!=NULL && !m_pC_dialog_buy_confirm->Running())) 
 					{						
 						MItem * p_item = GetSlotItem(m_focused_slot);
 
 						if (p_item != NULL)
 						{
-							if( p_item->GetItemClass() == ITEM_CLASS_EVENT_STAR &&
-								g_pSystemAvailableManager->IsAvailableEnchantSystem() ||
+							if( (p_item->GetItemClass() == ITEM_CLASS_EVENT_STAR &&
+								g_pSystemAvailableManager->IsAvailableEnchantSystem()) ||
 								p_item->GetItemClass() != ITEM_CLASS_EVENT_STAR )
 								g_descriptor_manager.Set(DID_ITEM, x+GetSlotX(m_focused_slot), y+GetSlotY(m_focused_slot)+SLOT_HEIGHT-p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y, (void *)p_item, true);
 						}

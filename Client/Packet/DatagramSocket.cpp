@@ -66,8 +66,7 @@ DatagramSocket::DatagramSocket ( uint port )
 	SocketAPI::bind_ex( m_SocketID , (SOCKADDR*)&m_SockAddr , szSOCKADDR_IN );
 
 	// set host
-	const char* pIP = inet_ntoa( m_SockAddr.sin_addr );
-	int port2 = m_SockAddr.sin_port;
+	inet_ntoa( m_SockAddr.sin_addr );
 
 	__END_CATCH
 }

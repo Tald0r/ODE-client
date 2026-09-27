@@ -25,6 +25,7 @@ void GCAddNPCHandler::execute ( GCAddNPC * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	// message
@@ -64,8 +65,8 @@ void GCAddNPCHandler::execute ( GCAddNPC * pPacket , Player * pPlayer )
 			
 			const CREATURESPRITETABLE_INFO& spriteInfo = (*g_pCreatureSpriteTable)[spriteType];
 
-			if (spriteInfo.IsNPCSprite()
-				&& spriteInfo.IsSlayerSprite()
+			if ((spriteInfo.IsNPCSprite()
+				&& spriteInfo.IsSlayerSprite())
 				|| spriteInfo.IsSlayerSprite())
 			{
 				// slayer NPC

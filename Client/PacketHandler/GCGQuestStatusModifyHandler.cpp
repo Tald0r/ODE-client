@@ -17,6 +17,7 @@ void GCGQuestStatusModifyHandler::execute ( GCGQuestStatusModify * pGCGQuestStat
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 //	__BEGIN_DEBUG_EX
 		
 	QuestStatusInfo* QuestInfo = pGCGQuestStatusModify->getInfo();

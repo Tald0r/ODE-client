@@ -167,7 +167,7 @@ MOustersGear::CanReplaceItem(MItem* pItem, BYTE n, MItem*& pOldItem)
 		
 	// bycsm 2004.12.31
 
-		if(n == GEAR_OUSTERS_FASCIA)
+	if(n == GEAR_OUSTERS_FASCIA)
 	{
 		if(pItem->IsGearSlotOustersFascia() == true)
 		{

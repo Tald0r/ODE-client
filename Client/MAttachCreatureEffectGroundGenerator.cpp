@@ -22,7 +22,6 @@ MAttachCreatureEffectGroundGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 {
 	int est = egInfo.effectSpriteType;
 
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
 	int direction = egInfo.direction;
 
 	//-----------------------------------------------------------

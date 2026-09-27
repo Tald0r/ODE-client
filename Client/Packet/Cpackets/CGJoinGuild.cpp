@@ -17,9 +17,6 @@ void CGJoinGuild::read (SocketInputStream & iStream)
 	iStream.read( m_GuildMemberRank );
 	iStream.read( szGuildMemberIntro );
 
-	if ( szGuildMemberIntro > 256 )
-		throw InvalidProtocolException( "szGuildMemberIntro > 256" );
-
 	if ( szGuildMemberIntro != 0 )
 		iStream.read( m_GuildMemberIntro, szGuildMemberIntro );
 	else

@@ -29,8 +29,6 @@ GCSkillToObjectOK5::GCSkillToObjectOK5 ()
 //////////////////////////////////////////////////////////////////////
 GCSkillToObjectOK5::~GCSkillToObjectOK5 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

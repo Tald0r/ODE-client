@@ -5,7 +5,9 @@
 // 
 //////////////////////////////////////////////////////////////////////
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifndef __GC_WAIT_GUILD_LIST_H__
 #define __GC_WAIT_GUILD_LIST_H__

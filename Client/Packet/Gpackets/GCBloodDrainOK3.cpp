@@ -31,8 +31,6 @@ GCBloodDrainOK3::GCBloodDrainOK3 ()
 //////////////////////////////////////////////////////////////////////
 GCBloodDrainOK3::~GCBloodDrainOK3 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

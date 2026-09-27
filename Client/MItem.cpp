@@ -366,10 +366,6 @@ MItem::GetGearFrameID() const
 TYPE_FRAMEID			
 MItem::GetDropFrameID() const
 {
-	if(GetItemClass() == ITEM_CLASS_EVENT_GIFT_BOX && GetItemType() == 2)
-	{
-		int frameID = (*g_pItemTable)[GetItemClass()][m_ItemType].DropFrameID;
-	}
 	// 틴버전인 경우 머리는 보석으로 표시한다.
 	if(g_pUserInformation->GoreLevel == false && GetItemClass() == ITEM_CLASS_SKULL)
 		return 271;
@@ -1491,7 +1487,7 @@ MBelt::FindSlotToAddItem(MItem* pItem, int &slot) const
 			//----------------------------------------------------
 			int addTotal = pQuickItem->GetNumber() + pItem->GetNumber();
 
-			if ( addTotal <= pQuickItem->GetMaxNumber() )
+			if ( static_cast<TYPE_ITEM_NUMBER>(addTotal) <= pQuickItem->GetMaxNumber() )
 			{
 				slot = i;
 				return true;
@@ -1674,7 +1670,7 @@ MOustersArmsBand::FindSlotToAddItem(MItem* pItem, int &slot) const
 			//----------------------------------------------------
 			int addTotal = pQuickItem->GetNumber() + pItem->GetNumber();
 
-			if ( addTotal <= pQuickItem->GetMaxNumber() )
+			if ( static_cast<TYPE_ITEM_NUMBER>(addTotal) <= pQuickItem->GetMaxNumber() )
 			{
 				slot = i;
 				return true;

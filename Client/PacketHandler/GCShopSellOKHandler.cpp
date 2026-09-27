@@ -24,6 +24,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//--------------------------------------------------------------

@@ -220,6 +220,10 @@ CSpriteSurface::memcpyPalEffectScreen(WORD* pDest, BYTE* pSource, WORD pixels, M
 void	
 CSpriteSurface::memcpyPalEffectScreenAlpha(WORD* pDest, BYTE* pSource, WORD pixels, MPalette &pal)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
+	(void)pal;
 }
 
 //----------------------------------------------------------------------
@@ -358,7 +362,7 @@ CSpriteSurface::memcpyPalEffectSimpleOutline(WORD* pDest, BYTE* pSource, WORD pi
 void		
 CSpriteSurface::memcpyPalEffectWipeOut(WORD* pDest, BYTE* pSource, WORD pixels, MPalette &pal)
 {
-	int i = pixels;
+	(void)pal;
 
 	int skipPixels = (pixels * s_Value1) >> 6;	// / 64
 	int drawPixels = (pixels - skipPixels)>>1;

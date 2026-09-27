@@ -8,7 +8,9 @@
 // 작업하기가 영 불편해서 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <math.h>
 #include <stdio.h>
@@ -38,6 +40,7 @@ void SweeperKeeperProc( MCreature* pCreature, int& action, int& frame, int& dire
 
 void GildreProc( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)direction;
 	if( pCreature->HasEffectStatus( EFFECTSTATUS_GDR_FLOATING )/* && action == ACTION_MOVE */)
 	{
 		action = ACTION_VAMPIRE_DRAIN;
@@ -58,6 +61,8 @@ void GildreProc( MCreature* pCreature, int& action, int& frame, int& direction )
 
 void FrozenGildreProc( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)action;
+	(void)frame;
 	if(g_CurrentFrame&0x01)
 	{
 		pCreature->SetDirection((direction+1)%8);
@@ -67,6 +72,8 @@ void FrozenGildreProc( MCreature* pCreature, int& action, int& frame, int& direc
 
 void FishShopLandLord( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)pCreature;
+	(void)direction;
 	// 생선가게 주인 - 퀘스트용, 일단 누워있게..나중에 분석점 하고 수정하자..
 	action = 6;
 	frame = 14;
@@ -74,6 +81,7 @@ void FishShopLandLord( MCreature* pCreature, int& action, int& frame, int& direc
 
 void HornProc( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)frame;
 	if(!pCreature->HasEffectStatus(EFFECTSTATUS_COMA) && !pCreature->IsDead())
 	{
 		action = ACTION_STAND;
@@ -86,6 +94,7 @@ void HornProc( MCreature* pCreature, int& action, int& frame, int& direction )
 
 void TepezProc( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)frame;
 	if(!pCreature->HasEffectStatus(EFFECTSTATUS_COMA) && !pCreature->IsDead())
 		action = ACTION_STAND;
 	else
@@ -95,6 +104,7 @@ void TepezProc( MCreature* pCreature, int& action, int& frame, int& direction )
 
 void OustersNPC_675( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)pCreature;
 	action = ACTION_MAGIC;
 	frame = 0;
 	direction = 3;
@@ -127,6 +137,7 @@ void ObstacleProc( MCreature* pCreature, int& action, int& frame, int& direction
 
 void MakeStandAndSouthDirectionProc( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)pCreature;
 	// 아래 방향에 stand 액션, 프레임을 0으로 만든다.
 	action = ACTION_STAND;
 	frame = 0;
@@ -135,6 +146,7 @@ void MakeStandAndSouthDirectionProc( MCreature* pCreature, int& action, int& fra
 
 void CraymoreProc( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)pCreature;
 	action = ACTION_STAND;
 	frame = 0;
 	direction = 1;
@@ -152,6 +164,7 @@ void GuildTowerProc( MCreature* pCreature, int& action, int& frame, int& directi
 
 void SummonGoreGrand( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)frame;
 	direction = 2;
 	if(pCreature->IsDead())
 	{
@@ -212,6 +225,8 @@ void GuildWarGateProc( MCreature* pCreature, int& action, int& frame, int& direc
 // 2005, 1, 17, sobeit add start - 이성의 봉인
 void Ctype_792( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)pCreature;
+	(void)frame;
 	if(action != ACTION_DIE)
 		action = ACTION_STAND;
 	direction = 3;
@@ -219,6 +234,9 @@ void Ctype_792( MCreature* pCreature, int& action, int& frame, int& direction )
 // 2005, 1, 17, sobeit add end
 void MakeDirectionToSouth( MCreature* pCreature, int& action, int& frame, int& direction )
 {
+	(void)pCreature;
+	(void)action;
+	(void)frame;
 	direction = 2;
 }
 

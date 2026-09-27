@@ -1,9 +1,12 @@
 ﻿#include "Client_PCH.h"
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 
 // VS_UI_Dialog.cpp
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_Dialog.h"
 #include "VS_UI_GlobalResource.h"
@@ -23,7 +26,8 @@ extern RECT g_GameRect;
 //-----------------------------------------------------------------------------
 void C_VS_UI_DIALOG::WindowEventReceiver(id_t event)
 {	
-	const static char* m_chatting_button_string[23] = 
+	(void)event;
+	[[maybe_unused]] const static char* m_chatting_button_string[23] = 
 	{
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_SHOW_ALPHA_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_ON].GetString(),
@@ -50,7 +54,7 @@ void C_VS_UI_DIALOG::WindowEventReceiver(id_t event)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_NOT_SHOW_TEAM_CHATTING].GetString(),
 	};
 	
-	const static char* m_vampire_chatting_button_string[23] = 
+	[[maybe_unused]] const static char* m_vampire_chatting_button_string[23] = 
 	{
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_SHOW_ALPHA_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_ON].GetString(),
@@ -477,6 +481,7 @@ bool C_VS_UI_DIALOG::MouseControl(UINT message, int _x, int _y)
 //-----------------------------------------------------------------------------
 void C_VS_UI_DIALOG::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 }
 
 
@@ -529,7 +534,6 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 			return;
 		if (m_menu_rect.w != 0 && m_menu_rect.h != 0)
 		{
-			PrintInfo * p_pi;
 			TextSystem::TextService& textService = TextSystem::TextService::Get();
 			TextSystem::SpriteSurfaceRenderTarget target(gpC_base->m_p_DDSurface_back);
 			TextSystem::TextStyle menuStyle = textService.GetDefaultStyle();
@@ -550,7 +554,6 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 			{
 				gpC_base->m_dialog_menu_pi.text_color = RGB(180, 180, 255);
 
-				p_pi = &gpC_base->m_dialog_menu_pi;
 				menuStyle.color = TextSystem::ColorFromCOLORREF(gpC_base->m_dialog_menu_pi.text_color);
 
 				// arrow^^
@@ -563,7 +566,6 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 			{
 				gpC_base->m_dialog_menu_pi.text_color = RGB_WHITE;
 
-				p_pi = &gpC_base->m_dialog_menu_pi;
 				menuStyle.color = TextSystem::ColorFromCOLORREF(gpC_base->m_dialog_menu_pi.text_color);
 			}
 			
@@ -574,7 +576,7 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 
 				if(!m_p_menu[p_button->m_image_index].sz_menu_str.empty())
 				{
-					for(i=0; i < m_p_menu[p_button->m_image_index].sz_menu_str.size(); i++)
+					for(i=0; static_cast<size_t>(i) < m_p_menu[p_button->m_image_index].sz_menu_str.size(); i++)
 					{
 						if(p_button->y-i*TEXT_EXTRA_HGAP-y_skip_line+m_menu_str_height*i<m_menu_rect.y+m_menu_rect.h)
 							textService.DrawLine(
@@ -602,13 +604,13 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 				}
 				if(!m_p_menu[p_button->m_image_index].sz_menu_str.empty())
 				{
-					for(i=0; i < m_p_menu[p_button->m_image_index].sz_menu_str.size(); i++)
+					for(i=0; static_cast<size_t>(i) < m_p_menu[p_button->m_image_index].sz_menu_str.size(); i++)
 					{
 						// 윗줄을 컷해준다.
 						if(p_button->y-i*TEXT_EXTRA_HGAP-y_skip_line+m_menu_str_height*i<m_menu_rect.y+m_menu_rect.h)
 						{
 							//m_p_menu[p_button->m_image_index].sz_menu_str[i].c_str()
-							if(m_p_menu != NULL && p_button->m_image_index < m_menu_count && i <= m_p_menu[p_button->m_image_index].sz_menu_str.size() && m_p_menu[p_button->m_image_index].sz_menu_str[i].size() > 0)
+							if(m_p_menu != NULL && static_cast<UINT>(p_button->m_image_index) < m_menu_count && static_cast<size_t>(i) <= m_p_menu[p_button->m_image_index].sz_menu_str.size() && m_p_menu[p_button->m_image_index].sz_menu_str[i].size() > 0)
 								textService.DrawLine(
 									target,
 									m_p_menu[p_button->m_image_index].sz_menu_str[i].c_str(),
@@ -634,7 +636,6 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 void C_VS_UI_DIALOG::Show()
 {
 	
-	int i;
 //	int i, j;
 //	int _x = x+81;//gpC_global_resource->m_pC_assemble_box_spk->GetWidth(C_GLOBAL_RESOURCE::AB_LEFTUP);
 //	int _y = y+h-81;//gpC_global_resource->m_pC_assemble_box_spk->GetHeight(C_GLOBAL_RESOURCE::AB_LEFTDOWN);
@@ -871,7 +872,7 @@ void C_VS_UI_DIALOG::SetMessage(const char * const * sz_msg, UINT line_count, SE
 	TextSystem::TextStyle msgStyle = textService.GetDefaultStyle();
 	msgStyle.color = TextSystem::ColorFromCOLORREF(gpC_base->m_dialog_msg_pi.text_color);
 
-	for(int i = 0; i < line_count; i++)
+	for(int i = 0; static_cast<UINT>(i) < line_count; i++)
 	{
 		if (sz_msg[i] == NULL)
 			continue;
@@ -908,7 +909,7 @@ void C_VS_UI_DIALOG::SetMessage(const char * const * sz_msg, UINT line_count, SE
 		int plus = 0;
 		int width, height;
 
-		for (int i=0; i < m_menu_count; i++, plus += (m_menu_str_height-TEXT_EXTRA_HGAP)*height+TEXT_EXTRA_HGAP)
+		for (int i=0; static_cast<UINT>(i) < m_menu_count; i++, plus += (m_menu_str_height-TEXT_EXTRA_HGAP)*height+TEXT_EXTRA_HGAP)
 		{
 			if(!m_p_menu[i].sz_menu_str.empty())
 			{
@@ -981,7 +982,7 @@ void C_VS_UI_DIALOG::SetMessage(const char * const * sz_msg, UINT line_count, SE
 	{
 		// 스크롤바때문에 다시 글씨를 자른다.
 		m_vs_msg.clear();
-		for(int i = 0; i < line_count; i++)
+		for(int i = 0; static_cast<UINT>(i) < line_count; i++)
 		{
 			if (sz_msg[i] == NULL)
 				continue;
@@ -1078,7 +1079,7 @@ void C_VS_UI_DIALOG::SetMenu(const DIALOG_MENU * p_dialog_menu, UINT menu_count,
 	const int menuWrapWidth = m_client_rect.w - 20;
 
 	// Menu 글자 넘어가는거 자르기.
-	for (i=0; i < m_menu_count; i++)
+	for (i=0; static_cast<UINT>(i) < m_menu_count; i++)
 	{
 		m_p_menu[i].exec_id = p_dialog_menu[i].exec_id;
 		std::vector<std::string> wrapped = textService.WrapText(p_dialog_menu[i].sz_menu_str, menuStyle, menuWrapWidth);
@@ -1101,7 +1102,7 @@ void C_VS_UI_DIALOG::SetMenu(const DIALOG_MENU * p_dialog_menu, UINT menu_count,
 	m_menu_rect.x = m_client_rect.x+20;
 	m_menu_rect.w = m_client_rect.w-20;
 	m_menu_rect.h = 0;
-	for(i = 0; i < m_menu_count; i++)
+	for(i = 0; static_cast<UINT>(i) < m_menu_count; i++)
 	{
 		m_menu_rect.h += (m_menu_str_height-TEXT_EXTRA_HGAP)*m_p_menu[i].sz_menu_str.size()+TEXT_EXTRA_HGAP;
 			//m_menu_str_height*m_p_menu[i].sz_menu_str.size();
@@ -1136,7 +1137,7 @@ void C_VS_UI_DIALOG::SetMenu(const DIALOG_MENU * p_dialog_menu, UINT menu_count,
 		if(m_button_y_list!=NULL) delete [] m_button_y_list;
 		m_button_y_list=new int[m_menu_count+1];
 		
-		for (i=0; i < m_menu_count; i++, plus += (m_menu_str_height-TEXT_EXTRA_HGAP)*height+TEXT_EXTRA_HGAP)
+		for (i=0; static_cast<UINT>(i) < m_menu_count; i++, plus += (m_menu_str_height-TEXT_EXTRA_HGAP)*height+TEXT_EXTRA_HGAP)
 		{
 			if(!m_p_menu[i].sz_menu_str.empty())
 			{
@@ -1182,7 +1183,7 @@ int C_VS_UI_DIALOG::GetScrollPos()
 	else 
 		return 0;
 
-	for(i=0;i<m_menu_count;i++)
+	for(i=0;static_cast<UINT>(i)<m_menu_count;i++)
 	{
 		now_len=m_button_y_list[i]-m_temp_menu_rect_y;
 		// |-----+-----|
@@ -1209,11 +1210,7 @@ int C_VS_UI_DIALOG::GetScrollPos()
 
 void C_VS_UI_DIALOG::ProcessMenuScrollBar()
 {
-	int NowPos,i, MaxPos = 0,half;
-	if(m_menu_count>0 && m_button_y_list!= NULL)
-	{
-		MaxPos=m_button_y_list[m_menu_count]-m_temp_menu_rect_y-m_menu_rect.h;
-	}
+	int NowPos,i,half;
 	
 //	BYTE Remain;
 	
@@ -1222,9 +1219,9 @@ void C_VS_UI_DIALOG::ProcessMenuScrollBar()
 	if(NowPos==0) return;
 	
 	
-	for(i=0;i<=m_menu_count;i++)
+	for(i=0;static_cast<UINT>(i)<=m_menu_count;i++)
 	{
-		if(i<m_menu_count)
+		if(static_cast<UINT>(i)<m_menu_count)
 		{
 			half=(m_button_y_list[i+1]-m_button_y_list[i])>>1;
 

@@ -153,7 +153,6 @@ MAttachZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	// MaxFrame의 값을 알아온다.
 	//---------------------------------------------
 	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	int currentPhase = egInfo.pEffectTarget != NULL ?egInfo.pEffectTarget->GetCurrentPhase() : -1;
 	
 	// 으흑흑..ㅡ.ㅜ
 	if( egInfo.temp1 == 0 )				// UseActionGrade
@@ -234,7 +233,7 @@ MAttachZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 			}
 		}		
-		for(int i=0;i<effectlist.size();i++)
+		for(int i=0;static_cast<size_t>(i)<effectlist.size();i++)
 		{
 			MEffect*	pEffect;
 			pEffect = new MEffect(bltType);

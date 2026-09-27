@@ -36,9 +36,9 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 	//-------------------------------------------------------------------
 	// 나한테 오는게 맞는지 확인한다.
 	//-------------------------------------------------------------------
-	if (g_Mode!=MODE_GAME						// 게임 중이 아니거나
+	if ((g_Mode!=MODE_GAME						// 게임 중이 아니거나
 		&& g_Mode!=MODE_WAIT_UPDATEINFO			// 로딩 중이 아니거나..
-		&& g_Mode!=MODE_WAIT_SETPOSITION		// 좌표 기다리는 경우
+		&& g_Mode!=MODE_WAIT_SETPOSITION)		// 좌표 기다리는 경우
 		|| g_pPlayer==NULL
 		|| g_pChatManager==NULL
 		|| g_pUserInformation==NULL 

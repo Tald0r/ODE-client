@@ -16,6 +16,7 @@ void GCMPRecoveryEndHandler::execute ( GCMPRecoveryEnd * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

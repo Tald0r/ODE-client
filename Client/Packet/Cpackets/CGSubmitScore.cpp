@@ -14,8 +14,6 @@ CGSubmitScore::CGSubmitScore ()
 
 CGSubmitScore::~CGSubmitScore ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGSubmitScore::read (SocketInputStream & iStream)

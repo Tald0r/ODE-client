@@ -273,7 +273,7 @@ uint SocketOutputStream::flush ()
 //			g_pLogManager->log1( "m_Head = %d , m_Tail = %d\n", m_Head, m_Tail );
 		//m_Head = m_Tail = 0;
 		
-	} catch ( NonBlockingIOException ) {
+	} catch ( NonBlockingIOException & ) {
 
 		// The socket took what it could and refused the rest. m_Head names
 		// the first byte the peer has not received, so the ring is left

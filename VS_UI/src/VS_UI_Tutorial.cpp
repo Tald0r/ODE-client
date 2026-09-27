@@ -777,7 +777,6 @@ void C_VS_UI_COMPUTER::Show()
 {
 	if(gpC_base == NULL || m_pC_button_group == NULL)return;
 
-	COLORREF color = RGB(0,255,0);
 	int scroll;
 	if(gpC_base->m_p_DDSurface_back->Lock())
 	{

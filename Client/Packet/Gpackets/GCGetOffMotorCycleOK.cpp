@@ -30,8 +30,6 @@ GCGetOffMotorCycleOK::GCGetOffMotorCycleOK ()
 //////////////////////////////////////////////////////////////////////
 GCGetOffMotorCycleOK::~GCGetOffMotorCycleOK ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 
@@ -41,6 +39,7 @@ GCGetOffMotorCycleOK::~GCGetOffMotorCycleOK ()
 void GCGetOffMotorCycleOK::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 		
 	__END_CATCH
 }
@@ -53,6 +52,7 @@ void GCGetOffMotorCycleOK::write ( SocketOutputStream & oStream )
      const
 {
 	__BEGIN_TRY
+	(void)oStream;
 		
 	__END_CATCH
 }

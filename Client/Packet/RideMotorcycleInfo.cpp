@@ -28,7 +28,6 @@ RideMotorcycleInfo::RideMotorcycleInfo ()
 //////////////////////////////////////////////////////////////////////////////
 RideMotorcycleInfo::~RideMotorcycleInfo () 
 {
-	__BEGIN_TRY
 
 	while ( !m_RideMotorcycleSlotInfoList.empty() ) 
 	{
@@ -37,7 +36,6 @@ RideMotorcycleInfo::~RideMotorcycleInfo ()
 		m_RideMotorcycleSlotInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -2,7 +2,9 @@
 // MSector.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MObject.h"
 #include "MItem.h"
@@ -73,7 +75,6 @@ void
 MSector::RemoveAllObject()	
 { 
 	m_mapObject.clear(); 
-	m_nImageObject;
 	m_fProperty = 0; 
 	m_fProperty2 = 0;
 
@@ -1936,6 +1937,7 @@ MSector::RemoveEffect(TYPE_OBJECTID id)
 bool		
 MSector::RemoveEffect(TYPE_OBJECTID id, MEffect*& pEffect)
 {
+	(void)pEffect;
 	EFFECT_LIST::iterator iEffect = m_listEffect.begin();
 
 	while (iEffect != m_listEffect.end())

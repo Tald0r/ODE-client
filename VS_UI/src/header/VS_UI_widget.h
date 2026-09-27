@@ -33,16 +33,19 @@ public:
         FORCE_UI_GRID,
         FORCE_UI_MAX,
     };
-    void ForceUI(unsigned int ID) {}
+    void ForceUI(unsigned int ID) { (void)ID; }
     bool IsDevice() { return false; }  // Stub: no device on non-Windows platforms
-    void Enable(bool enable) {}  // Stub: enable/disable device
+    void Enable(bool enable) { (void)enable; }  // Stub: enable/disable device
     void Enable() {}             // the no-argument form the option dialog and C_VS_UI::Init call
     void Disable() {}  // Stub: disable device
 };
 
-// Stub for global Immersion device pointer
-static CImm gpC_Imm_instance;
-#define gpC_Imm (&gpC_Imm_instance)
+// Stub for global Immersion device pointer. It comes from an accessor, not
+// the address of an object, so the `gpC_Imm != NULL` tests shared with
+// Windows (where gpC_Imm is a nullable CImm*) are not comparisons of an
+// object's address with NULL here.
+inline CImm* GetImmStub() { static CImm stub; return &stub; }
+#define gpC_Imm (GetImmStub())
 
 // The GetTickCount stub that stood here - gettimeofday, its own epoch -
 // went with VS_UI's last GetTickCount call (the fifth clocks slice): off
@@ -168,7 +171,7 @@ public:
 
 	// Desciption 이 있는부분에만 호출된다.
 	// ButtonGroup::ShowDescription(); 으로 호출이 되며, 필요하지 않을경우 사용하지 않아도 상
-	virtual void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button){}
+	virtual void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button){ (void)p_button; }
 
 };
 

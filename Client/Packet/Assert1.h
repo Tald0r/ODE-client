@@ -28,6 +28,7 @@ void __assert__ ( const char * file , uint line , const char * func , const char
 // DiagnosticSite (Exception.h).
 void __assert__ ( const char * func , const char * expr , const DiagnosticSite & site = DiagnosticSite() );
 
+#undef Assert
 #if defined(NDEBUG)
 	#define Assert(expr) ((void)0)
 #elif defined(__MFC__)

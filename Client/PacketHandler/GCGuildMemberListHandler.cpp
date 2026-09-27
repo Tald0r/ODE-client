@@ -17,6 +17,7 @@ void GCGuildMemberListHandler::execute ( GCGuildMemberList * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	UI_ShowGuildMemberList(pPacket);
 

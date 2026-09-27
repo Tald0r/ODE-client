@@ -13,6 +13,7 @@ void GCAddInjuriousCreatureHandler::execute (GCAddInjuriousCreature* pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	if (g_pJusticeAttackManager!=NULL)
 	{

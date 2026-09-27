@@ -226,7 +226,7 @@ static spritectl_sprite_t get_backend_alpha_sprite(CAlphaSprite* pSprite)
 
 					/* Copy colored pixels with alpha */
 					for (int j = 0; j < colorCount; j++) {
-						WORD alpha2 = *pPixels++;  // alpha value
+						pPixels++;  // alpha value
 						WORD color = *pPixels++;   // color value
 
 						if (x < width) {
@@ -608,6 +608,7 @@ void CSpriteSurface::BltSpriteEffect(POINT* pPoint, CSprite* pSprite) {
 }
 
 void CSpriteSurface::BltSpriteAlpha4444SmallNotTrans(POINT* pPoint, CSprite* pSprite, BYTE alpha, BYTE shift) {
+	(void)shift;
 	/* TODO: Implement */
 	BltSpriteAlpha(pPoint, pSprite, alpha);
 }
@@ -618,6 +619,7 @@ void CSpriteSurface::BltSpriteAlpha4444NotTrans(POINT* pPoint, CSprite* pSprite,
 }
 
 void CSpriteSurface::BltSprite1555SmallNotTrans(POINT* pPoint, CSprite* pSprite, BYTE shift) {
+	(void)shift;
 	/* TODO: Implement */
 	BltSprite(pPoint, pSprite);
 }
@@ -804,10 +806,17 @@ void CSpriteSurface::BltSpritePalEffect(POINT* pPoint, CSpritePal* pSprite, MPal
 }
 
 void CSpriteSurface::BltSpritePal1555SmallNotTrans(POINT* pPoint, CSpritePal* pSprite, BYTE shift, MPalette &pal) {
+	(void)pPoint;
+	(void)pSprite;
+	(void)shift;
+	(void)pal;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltSpritePal1555NotTrans(POINT* pPoint, CSpritePal* pSprite, MPalette &pal) {
+	(void)pPoint;
+	(void)pSprite;
+	(void)pal;
 	/* TODO: Implement */
 }
 
@@ -877,6 +886,7 @@ void CSpriteSurface::BltAlphaSprite4444NotTrans(POINT* pPoint, CAlphaSprite* pSp
 }
 
 void CSpriteSurface::BltAlphaSprite4444SmallNotTrans(POINT* pPoint, CAlphaSprite* pSprite, BYTE shift) {
+	(void)shift;
 	/* TODO: Implement scaling */
 	BltAlphaSprite(pPoint, pSprite);
 }
@@ -914,18 +924,32 @@ void CSpriteSurface::BltAlphaSpritePal(POINT* pPoint, CAlphaSpritePal* pSprite, 
 }
 
 void CSpriteSurface::BltAlphaSpritePalAlpha(POINT* pPoint, CAlphaSpritePal* pSprite, BYTE alpha, MPalette &pal) {
+	(void)pPoint;
+	(void)pSprite;
+	(void)alpha;
+	(void)pal;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltAlphaSpritePal4444(POINT* pPoint, CAlphaSpritePal* pSprite, MPalette &pal) {
+	(void)pPoint;
+	(void)pSprite;
+	(void)pal;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltAlphaSpritePal4444NotTrans(POINT* pPoint, CAlphaSpritePal* pSprite, MPalette &pal) {
+	(void)pPoint;
+	(void)pSprite;
+	(void)pal;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltAlphaSpritePal4444SmallNotTrans(POINT* pPoint, CAlphaSpritePal* pSprite, BYTE shift, MPalette &pal) {
+	(void)pPoint;
+	(void)pSprite;
+	(void)shift;
+	(void)pal;
 	/* TODO: Implement */
 }
 
@@ -952,6 +976,7 @@ void CSpriteSurface::BltIndexSprite(POINT* pPoint, CIndexSprite* pSprite) {
 }
 
 void CSpriteSurface::BltIndexSpriteDarkness(POINT* pPoint, CIndexSprite* pSprite, BYTE DarkBits) {
+	(void)DarkBits;
 	/* TODO: Implement darkness effect */
 	BltIndexSprite(pPoint, pSprite);
 }
@@ -974,11 +999,13 @@ void CSpriteSurface::BltIndexSpriteAlpha(POINT* pPoint, CIndexSprite* pSprite, B
 }
 
 void CSpriteSurface::BltIndexSpriteColor(POINT* pPoint, CIndexSprite* pSprite, BYTE rgb) {
+	(void)rgb;
 	/* TODO: Implement color tinting */
 	BltIndexSprite(pPoint, pSprite);
 }
 
 void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite, WORD colorSet) {
+	(void)colorSet;
 	/* TODO: Implement color set */
 	BltIndexSprite(pPoint, pSprite);
 }
@@ -1043,6 +1070,7 @@ void CSpriteSurface::BltIndexSpriteEffect(POINT* pPoint, CIndexSprite* pSprite) 
 }
 
 void CSpriteSurface::BltIndexSpriteBrightness(POINT* pPoint, CIndexSprite* pSprite, BYTE BrightBits) {
+	(void)BrightBits;
 	/* TODO: Implement brightness */
 	BltIndexSprite(pPoint, pSprite);
 }
@@ -1070,21 +1098,26 @@ void CSpriteSurface::BltShadowSprite(POINT* pPoint, CShadowSprite* pSprite) {
 }
 
 void CSpriteSurface::BltShadowSpriteSmall(POINT* pPoint, CShadowSprite* pSprite, BYTE shift) {
+	(void)shift;
 	/* TODO: Implement scaling */
 	BltShadowSprite(pPoint, pSprite);
 }
 
 void CSpriteSurface::BltShadowSpriteDarkness(POINT* pPoint, CShadowSprite* pSprite, BYTE DarkBits) {
+	(void)DarkBits;
 	/* TODO: Implement darkness effect */
 	BltShadowSprite(pPoint, pSprite);
 }
 
 void CSpriteSurface::BltShadowSprite4444(POINT* pPoint, CShadowSprite* pSprite, WORD pixel) {
+	(void)pixel;
 	/* TODO: Implement 4444 format */
 	BltShadowSprite(pPoint, pSprite);
 }
 
 void CSpriteSurface::BltShadowSpriteSmall4444(POINT* pPoint, CShadowSprite* pSprite, WORD pixel, BYTE shift) {
+	(void)pixel;
+	(void)shift;
 	/* TODO: Implement scaling + 4444 */
 	BltShadowSprite(pPoint, pSprite);
 }
@@ -1094,13 +1127,20 @@ void CSpriteSurface::BltShadowSpriteSmall4444(POINT* pPoint, CShadowSprite* pSpr
  * ============================================================================ */
 
 void CSpriteSurface::BltSpriteOutline(CSpriteOutlineManager *pSOM, WORD color) {
+	(void)pSOM;
+	(void)color;
 	/* TODO: Implement sprite outline */
 }
 
 void CSpriteSurface::BltSpriteOutlineOnly(CSpriteOutlineManager* pSOM, WORD color) {
+	(void)pSOM;
+	(void)color;
 	/* TODO: Implement */
 }
 
 void CSpriteSurface::BltSpriteOutlineDarkness(CSpriteOutlineManager* pSOM, WORD color, BYTE DarkBits) {
+	(void)pSOM;
+	(void)color;
+	(void)DarkBits;
 	/* TODO: Implement */
 }

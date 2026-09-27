@@ -20,6 +20,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------

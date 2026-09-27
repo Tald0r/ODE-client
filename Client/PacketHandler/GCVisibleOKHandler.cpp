@@ -17,6 +17,8 @@ void GCVisibleOKHandler::execute ( GCVisibleOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 

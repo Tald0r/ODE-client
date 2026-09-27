@@ -17,6 +17,7 @@ void GCTradeRemoveItemHandler::execute ( GCTradeRemoveItem * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------------------------

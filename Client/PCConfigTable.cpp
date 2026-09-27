@@ -183,7 +183,6 @@ PlayerConfigTable::SaveToFile(std::ofstream& file)
 	//---------------------------------------------------------------
 	if (num > LIMIT_PLAYER_CONFIG)
 	{
-		int removeNum = num - LIMIT_PLAYER_CONFIG;	// 제거할것 개수
 		num = LIMIT_PLAYER_CONFIG;
 
 		// 개수

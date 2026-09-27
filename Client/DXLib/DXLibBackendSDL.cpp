@@ -196,7 +196,6 @@ extern "C" void spritectl_render_device_reset(void);
 static int g_input_initialized = 0;
 static int g_sound_initialized = 0;
 static int g_music_initialized = 0;
-static int g_stream_initialized = 0;
 
 /* Input state */
 static Uint8 g_key_state[SDL_NUM_SCANCODES];
@@ -351,6 +350,7 @@ static void init_key_mapping(void) {
 }
 
 int dxlib_input_init(void* window_handle) {
+	(void)window_handle;
 	if (g_input_initialized) return 0;
 
 	/* Initialize SDL subsystems (if not already initialized) */
@@ -529,7 +529,7 @@ void dxlib_input_update(void) {
 	}
 
 	/* Update keyboard state */
-	const Uint8* state = SDL_GetKeyboardState(NULL);
+	SDL_GetKeyboardState(NULL);
 
 	/* Update mouse position from SDL (as fallback if no events received) */
 	SDL_GetMouseState(&g_mouse_x, &g_mouse_y);
@@ -1067,6 +1067,7 @@ int dxlib_music_set_volume(int volume) {
 }
 
 int dxlib_music_set_tempo(float tempo) {
+	(void)tempo;
 	/* SDL_mixer doesn't support tempo changes */
 	return 1;
 }
@@ -1111,27 +1112,33 @@ dxlib_stream_t dxlib_stream_load(const char* filename) {
 }
 
 void dxlib_stream_free(dxlib_stream_t stream) {
+	(void)stream;
 	dxlib_music_free();
 }
 
 int dxlib_stream_play(dxlib_stream_t stream, int loop) {
+	(void)stream;
 	return dxlib_music_play(loop);
 }
 
 void dxlib_stream_stop(dxlib_stream_t stream) {
+	(void)stream;
 	dxlib_music_stop();
 }
 
 int dxlib_stream_update(dxlib_stream_t stream) {
+	(void)stream;
 	/* SDL_mixer handles streaming automatically */
 	return 0;
 }
 
 int dxlib_stream_set_volume(dxlib_stream_t stream, int volume) {
+	(void)stream;
 	return dxlib_music_set_volume(volume);
 }
 
 int dxlib_stream_is_playing(dxlib_stream_t stream) {
+	(void)stream;
 	return dxlib_music_is_playing();
 }
 

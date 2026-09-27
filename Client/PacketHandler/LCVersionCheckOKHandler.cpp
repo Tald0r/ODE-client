@@ -19,6 +19,8 @@ void LCVersionCheckOKHandler::execute ( LCVersionCheckOK * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 
 
 

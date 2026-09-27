@@ -23,13 +23,13 @@ class UCRequestLoginMode : public Packet {
 public :
 
 	// 입력스트림(버퍼)으로부터 데이터를 읽어서 패킷을 초기화한다.
-	void read ( SocketInputStream & iStream ) { throw UnsupportedError(); }
+	void read ( SocketInputStream & iStream ) { (void)iStream; throw UnsupportedError(); }
 
     // 소켓으로부터 직접 데이터를 읽어서 패킷을 초기화한다.
     void read ( Socket * pSocket );
 		    
     // 출력스트림(버퍼)으로 패킷의 바이너리 이미지를 보낸다.
-    void write ( SocketOutputStream & oStream ) const { throw UnsupportedError(); }
+    void write ( SocketOutputStream & oStream ) const { (void)oStream; throw UnsupportedError(); }
 
     // 소켓으로 직접 패킷의 바이너리 이미지를 보낸다.
     void write ( Socket * pSocket ) const;

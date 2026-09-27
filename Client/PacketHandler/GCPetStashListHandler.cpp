@@ -17,6 +17,7 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 //	__BEGIN_DEBUG_EX
 	__BEGIN_DEBUG
 	
@@ -78,7 +79,7 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 			pItem->SetPetAttack( pPetInfo->canAttack()?true:false );
 			
 			pItem->ClearItemOption();
-			if(pPetInfo->getPetOption() != NULL)
+			if(pPetInfo->getPetOption() != 0)
 			{
 				pItem->AddItemOption(pPetInfo->getPetOption());
 			}

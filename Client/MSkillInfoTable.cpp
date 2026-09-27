@@ -121,10 +121,6 @@ MSkillInfoTable::LoadFromFileServerSkillInfo(std::ifstream& file)
 	for (int i=0; i<num; i++)
 	{
 		file.read((char*)&skillType, 4);
-		if (skillType==219)
-		{
-			i=i;
-		}
 
 		// Load into the slot the file names.
 		m_pTypeInfo[skillType].LoadFromFileServerSkillInfo( file );

@@ -8,7 +8,9 @@
 #ifndef	__CLIENTDEF_H__
 #define	__CLIENTDEF_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 //-----------------------------------------------------------------------------
 // class

@@ -19,6 +19,8 @@ void GCMakeItemFailHandler::execute ( GCMakeItemFail * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 

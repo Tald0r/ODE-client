@@ -106,6 +106,7 @@ static C_VS_UI_DIALOG * gpC_dialog_all_stage_clear = NULL;
 
 void ExecF_GameOverMessage(C_VS_UI_DIALOG * p_this_dialog, id_t id )
 {
+	(void)p_this_dialog;
 	switch( id )
 	{
 	case DIALOG_EXECID_OK :
@@ -128,6 +129,7 @@ void g_StartGameOverMessage( int _x, int _y )
 
 void ExecF_AllStageClearMessage( C_VS_UI_DIALOG * p_this_dialog, id_t id )
 {
+	(void)p_this_dialog;
 	switch( id )
 	{
 	case DIALOG_EXECID_OK :
@@ -154,6 +156,7 @@ void g_StartAllStageClearMessage(int _x, int _y )
 
 void ExecF_SelectItemFromShop(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -176,10 +179,11 @@ void g_StartTakeOutConfirmDialog(int _x, int _y)
 
 void ExecF_ConfirmUpToLastSkillLevel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch ( id )
 	{
 	case DIALOG_EXECID_OK :
-		if( g_CurrentSkillID != 0xFFFFFFFF )
+		if( static_cast<unsigned int>(g_CurrentSkillID) != 0xFFFFFFFF )
 			gpC_base->SendMessage( UI_OUSTERS_LEARN_SKILL, g_CurrentSkillID );
 		break;
 	}
@@ -199,10 +203,11 @@ void g_StartComfirmUpToLastSkillLevel( int _x, int _y )
 
 void ExecF_DownSkillLevel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch( id )
 	{
 	case DIALOG_EXECID_OK :
-		if( g_CurrentSkillID != 0xFFFFFFFF )
+		if( static_cast<unsigned int>(g_CurrentSkillID) != 0xFFFFFFFF )
 		{
 			gpC_base->SendMessage( UI_OUSTERS_DOWN_SKILL, g_CurrentSkillID );
 		}
@@ -212,6 +217,7 @@ void ExecF_DownSkillLevel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_GQuestNpcScript(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch( id )
 	{
 	case DIALOG_EXECID_OK :
@@ -237,7 +243,7 @@ void g_StartOustersDownSkill( int _x, int _y , int PriceRaito)
 	
 	std::string sstr = szCost;
 	for(int i = 3; i <= 13; i += 4)
-		if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+		if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 
 	if(PriceRaito != 1)
 	{
@@ -284,12 +290,7 @@ C_VS_UI_ITEM_LIST::C_VS_UI_ITEM_LIST()
 	
 	Set(window_x, window_y, window_w, window_h);
 
-	int ok_x = w-150,ok_y = h-44;
 	int cancel_x=w-70,cancel_y=h-44;
-	
-	int button_y1 = 190;
-	int prev_button_x = 30;
-	int next_button_y = 100;
 	
 	m_pC_button_group = new ButtonGroup(this);
 	
@@ -338,7 +339,7 @@ void	C_VS_UI_ITEM_LIST::Show()
 {
 	MItem *pCurrentFocusItem = NULL;
 
-	if( !( m_CurrentItem < 0 || m_CurrentItem >= m_ItemList.size() ) )
+	if( !( m_CurrentItem < 0 || static_cast<size_t>(m_CurrentItem) >= m_ItemList.size() ) )
 		pCurrentFocusItem = m_ItemList[m_CurrentItem].pItem;
 
 	Rect rect(x+20,y+20,110,139);
@@ -422,9 +423,8 @@ void	C_VS_UI_ITEM_LIST::Show()
 	for(i=0;i<line_num;i++)
 	{
 		COLORREF TitleColor,ShadowColor;
-		const COLORREF required_rgb = RGB(255, 128, 64);
 		
-		if( !(i+m_pC_scroll_bar->GetScrollPos() >= 0 && m_ItemList.size() > i+m_pC_scroll_bar->GetScrollPos() ))
+		if( !(i+m_pC_scroll_bar->GetScrollPos() >= 0 && m_ItemList.size() > static_cast<size_t>(i+m_pC_scroll_bar->GetScrollPos()) ))
 			continue;
 		
 		MItem *pItem = m_ItemList[i + m_pC_scroll_bar->GetScrollPos() ].pItem;
@@ -766,7 +766,7 @@ void	C_VS_UI_ITEM_LIST::Show()
 							}
 							else
 								SafeFormat::Format(sz_buf, "%s +%d", pPartName, PlusPoint);
-							g_PrintColorStr(vx, strY, sz_buf, gpC_base->m_item_desc_pi, RGB_GOLD);//RGB_YELLOW);
+						g_PrintColorStr(vx, strY, sz_buf, gpC_base->m_item_desc_pi, RGB_GOLD);//RGB_YELLOW);
 					}
 					strY += line_gap;
 					itr++;
@@ -805,7 +805,7 @@ void	C_VS_UI_ITEM_LIST::Show()
 							}
 							else
 								SafeFormat::Format(sz_buf, "%s +%d", pPartName, PlusPoint);
-							g_PrintColorStr(vx, strY, sz_buf, gpC_base->m_item_desc_pi, RGB_GOLD);//RGB_YELLOW);
+						g_PrintColorStr(vx, strY, sz_buf, gpC_base->m_item_desc_pi, RGB_GOLD);//RGB_YELLOW);
 					}
 					strY += line_gap;
 					itr++;
@@ -819,7 +819,6 @@ void	C_VS_UI_ITEM_LIST::Show()
 			
 			strY += line_gap;
 		}		
-		bool bl_required = false;
 		if(pCurrentFocusItem->IsQuestItem() > 0 )
 		{
 			bool bContinue = false;		
@@ -880,7 +879,7 @@ bool	C_VS_UI_ITEM_LIST::MouseControl(UINT message, int _x, int _y)
 
 	Window::MouseControl(message, _x, _y);
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 	m_pC_scroll_bar->MouseControl(message, _x, _y);
 
 	switch(message)
@@ -906,7 +905,7 @@ bool	C_VS_UI_ITEM_LIST::MouseControl(UINT message, int _x, int _y)
 
 			m_MouseFocus = select + m_pC_scroll_bar->GetScrollPos();			
 			
-			if(m_MouseFocus >= 0 && m_MouseFocus < m_ItemList.size() && m_ItemList[m_MouseFocus].pItem != NULL )
+			if(m_MouseFocus >= 0 && static_cast<size_t>(m_MouseFocus) < m_ItemList.size() && m_ItemList[m_MouseFocus].pItem != NULL )
 			{
 				m_CurrentItem = m_MouseFocus;
 			}
@@ -925,7 +924,7 @@ bool	C_VS_UI_ITEM_LIST::MouseControl(UINT message, int _x, int _y)
 
 		//	m_MouseFocus = select;
 			int CurrentItem = select + m_pC_scroll_bar->GetScrollPos();
-			if(CurrentItem  < 0 || m_ItemList.size() <= CurrentItem  )
+			if(CurrentItem  < 0 || m_ItemList.size() <= static_cast<size_t>(CurrentItem)  )
 				return false;
 
 			MItem *pItem = m_ItemList[CurrentItem ].pItem;
@@ -949,6 +948,7 @@ bool	C_VS_UI_ITEM_LIST::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_ITEM_LIST::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -958,7 +958,7 @@ void	C_VS_UI_ITEM_LIST::KeyboardControl(UINT message, UINT key, long extra)
 				--m_CurrentItem;
 			break;
 		case VK_RIGHT :
-			if( m_CurrentItem + 1 < m_ItemList.size() )
+			if( static_cast<size_t>(m_CurrentItem + 1) < m_ItemList.size() )
 				++m_CurrentItem;
 			break;
 		case VK_ESCAPE :
@@ -1008,6 +1008,7 @@ void	C_VS_UI_ITEM_LIST::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 
 void	C_VS_UI_ITEM_LIST::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_ITEM_LIST::Run(id_t id)
@@ -1058,7 +1059,7 @@ bool	C_VS_UI_ITEM_LIST::AddItem( ItemList pItem )
 
 std::string		C_VS_UI_ITEM_LIST::GetItemName( int Focus )
 {
-	if(Focus < 0 || Focus >= m_ItemList.size() )
+	if(Focus < 0 || static_cast<size_t>(Focus) >= m_ItemList.size() )
 		return "";
 
 	MItem* pItem = m_ItemList[ Focus ].pItem;
@@ -1207,7 +1208,7 @@ void	C_VS_UI_IMAGE_NOTICE::Show()
 
 	if(gpC_base->m_p_DDSurface_back->Lock())
 	{
-		for(int i=0;i<m_NoticeList.size();i++)
+		for(int i=0;static_cast<size_t>(i)<m_NoticeList.size();i++)
 		{
 			SNotice *pNotice = m_NoticeList[i];
 
@@ -1236,7 +1237,7 @@ void	C_VS_UI_IMAGE_NOTICE::Show()
 
 	if(g_FL2_GetDC())
 	{
-		for(int i=0;i<m_NoticeList.size();i++)
+		for(int i=0;static_cast<size_t>(i)<m_NoticeList.size();i++)
 		{
 			SNotice *pNotice = m_NoticeList[i];
 
@@ -1267,11 +1268,15 @@ void	C_VS_UI_IMAGE_NOTICE::Show()
 
 bool	C_VS_UI_IMAGE_NOTICE::MouseControl(UINT message, int _x, int _y)
 {
+	(void)message;
+	(void)_x;
+	(void)_y;
 	return true;
 }
 
 void	C_VS_UI_IMAGE_NOTICE::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -1286,24 +1291,30 @@ void	C_VS_UI_IMAGE_NOTICE::KeyboardControl(UINT message, UINT key, long extra)
 
 bool	C_VS_UI_IMAGE_NOTICE::IsPixel(int _x,int _y)
 {
+	(void)_x;
+	(void)_y;
 //	return IsInRect(_x, _y);
 	return false;
 }
 
 void	C_VS_UI_IMAGE_NOTICE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 }
 
 void	C_VS_UI_IMAGE_NOTICE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 {
+	(void)p_button;
 }
 
 void	C_VS_UI_IMAGE_NOTICE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_IMAGE_NOTICE::Run(id_t id)
 {
+	(void)id;
 }
 
 void	C_VS_UI_IMAGE_NOTICE::Process()
@@ -1358,11 +1369,10 @@ void	C_VS_UI_IMAGE_NOTICE::ClearNotice()
 
 void	C_VS_UI_IMAGE_NOTICE::DeleteNotice(int n)
 {
-	if(n < 0 || n>= m_NoticeList.size() )
+	if(n < 0 || static_cast<size_t>(n)>= m_NoticeList.size() )
 		return;
 
 	std::vector<SNotice*>::iterator itr = m_NoticeList.begin();
-	std::vector<SNotice*>::iterator	endItr = m_NoticeList.end();
 
 	itr += n;
 	SNotice *pNotice = *itr;	
@@ -1499,6 +1509,7 @@ void	C_VS_UI_BULLETIN_BOARD::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_BULLETIN_BOARD::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 
@@ -1623,7 +1634,7 @@ void	C_VS_UI_BULLETIN_BOARD::KeyboardControl(UINT message, UINT key, long extra)
 	{		
 		char ignore_char[] = {'%', '\\', '\"', '\''};
 	
-		for (int i=0; i<sizeof(ignore_char); i++)
+		for (int i=0; static_cast<size_t>(i)<sizeof(ignore_char); i++)
 			if ((char)key == ignore_char[i])
 				return;
 	}
@@ -1768,7 +1779,7 @@ C_VS_UI_REQUEST_RESURRECT::C_VS_UI_REQUEST_RESURRECT(bool resurrect, bool elixir
 	
 	AttrPin(true);
 	
-	int _y;
+	int _y = 0;
 	switch(g_eRaceInterface)
 	{
 	case RACE_SLAYER:
@@ -1784,6 +1795,8 @@ C_VS_UI_REQUEST_RESURRECT::C_VS_UI_REQUEST_RESURRECT(bool resurrect, bool elixir
 	case RACE_OUSTERS:
 		m_image_spk.Open(SPK_LEVELUP);
 		_y = 382;
+		break;
+	default:
 		break;
 	}
 
@@ -1817,6 +1830,8 @@ C_VS_UI_REQUEST_RESURRECT::C_VS_UI_REQUEST_RESURRECT(bool resurrect, bool elixir
 
 				case RACE_OUSTERS:
 					m_ResurrectButton[i].m_Image = RESURRECT_OUSTERS;
+					break;
+				default:
 					break;
 				}
 			}
@@ -1918,6 +1933,8 @@ void	C_VS_UI_REQUEST_RESURRECT::Show()
 
 				case RACE_OUSTERS:
 					m_image_spk.BltLocked( m_ResurrectButton[i].m_ButtonRect.left, m_ResurrectButton[i].m_ButtonRect.top, RESURRECT_GUARD_OUSTERS);
+					break;
+				default:
 					break;
 				}
 			}
@@ -2077,7 +2094,7 @@ C_VS_UI_MIXING_FORGE::C_VS_UI_MIXING_FORGE( FORGE_CLASS forge_class, FORGE_TYPE 
 
 	g_RegisterWindow(this);
 
-	int w_x, w_y;	
+	int w_x;	
 
 
 	switch( g_eRaceInterface )
@@ -2085,20 +2102,19 @@ C_VS_UI_MIXING_FORGE::C_VS_UI_MIXING_FORGE( FORGE_CLASS forge_class, FORGE_TYPE 
 	case RACE_VAMPIRE :
 		m_pC_inventory_spk = new C_SPRITE_PACK(SPK_VAMPIRE_INVENTORY);
 		w_x = 350;
-		w_y = 150;		
 		m_my_grid_rect.Set(17+w_x, 150+19, C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X*C_VS_UI_INVENTORY::GRID_X, C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y*C_VS_UI_INVENTORY::GRID_Y);
 		break;
 	case RACE_SLAYER :
 		m_pC_inventory_spk = new C_SPRITE_PACK(SPK_SLAYER_INVENTORY);
 		w_x = 350;
-		w_y = 150;		
 		m_my_grid_rect.Set(13+w_x, 150+26, C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X*C_VS_UI_INVENTORY::GRID_X, C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y*C_VS_UI_INVENTORY::GRID_Y);		
 		break;
 	case RACE_OUSTERS :
 		m_pC_inventory_spk = new C_SPRITE_PACK(SPK_OUSTERS_INVENTORY);
 		w_x = 350;
-		w_y = 150;		
 		m_my_grid_rect.Set(25+w_x, 150+35, C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X*C_VS_UI_INVENTORY::GRID_X, C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y*C_VS_UI_INVENTORY::GRID_Y);
+		break;
+	default:
 		break;
 	}
 
@@ -2202,6 +2218,7 @@ void	C_VS_UI_MIXING_FORGE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_MIXING_FORGE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 
@@ -2237,7 +2254,7 @@ bool	C_VS_UI_MIXING_FORGE::MouseControl(UINT message, int _x, int _y)
 {
 	Window::MouseControl(message, _x, _y);
 	_x-=x; _y-=y;	
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 	
 	const MItem * p_selected_item;
 
@@ -2287,7 +2304,7 @@ bool	C_VS_UI_MIXING_FORGE::MouseControl(UINT message, int _x, int _y)
 			if (distance_x >= 0 && distance_x < m_my_grid_rect.w && 
 				 distance_y >= 0 && distance_y < m_my_grid_rect.h)
 			{
-				if(gpC_Imm && m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)
+				if((gpC_Imm && m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X) || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)
 					gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 				m_focus_grid_x = distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X;
 				m_focus_grid_y = distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y;
@@ -2336,7 +2353,7 @@ bool	C_VS_UI_MIXING_FORGE::MouseControl(UINT message, int _x, int _y)
 				return true;
 			}			
 		}
-		if(gpC_Imm && m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED)
+		if((gpC_Imm && m_focus_grid_x != NOT_SELECTED) || m_focus_grid_y != NOT_SELECTED)
 			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		m_focus_grid_x = NOT_SELECTED;
 		m_focus_grid_y = NOT_SELECTED;
@@ -2409,6 +2426,8 @@ void	C_VS_UI_MIXING_FORGE::Show()
 			break;
 		case RACE_SLAYER :
 			m_pC_inventory_spk->BltLocked(350, 150, INVENTORY_WINDOW);
+			break;
+		default:
 			break;
 		}
 		
@@ -2552,7 +2571,7 @@ void	C_VS_UI_MIXING_FORGE::Show()
 
 	char sz_num[10];
 	COLORREF markColor = RGB(220, 220, 220);//RGB(140, 140, 255);
-	for(int i = 0; i < vNum.size(); i++)
+	for(int i = 0; static_cast<size_t>(i) < vNum.size(); i++)
 	{
 		SafeFormat::Format(sz_num, "%d", vNum[i]);
 		g_PrintColorStr(vNumRect[i].left, vNumRect[i].top, sz_num, gpC_base->m_item_desc_pi, markColor);
@@ -2618,6 +2637,8 @@ void	C_VS_UI_MIXING_FORGE::Process()
 //-----------------------------------------------------------------------------
 bool	C_VS_UI_MIXING_FORGE::IsPixel(int _x, int _y)
 {
+	(void)_x;
+	(void)_y;
 	return true;
 }
 
@@ -2632,6 +2653,8 @@ bool	C_VS_UI_MIXING_FORGE::IsPixel(int _x, int _y)
 //-----------------------------------------------------------------------------
 bool C_VS_UI_MIXING_FORGE::Check(int grid_start_x, int grid_start_y)
 {
+	(void)grid_start_x;
+	(void)grid_start_y;
 	MItem * p_item = g_pInventory->GetItem(m_focus_grid_x, m_focus_grid_y);
 	MItem * p_item2;
 	bool  b_check = false;
@@ -2940,6 +2963,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectClass(ITEM_CLASS item_class)
 				 item_class == ITEM_CLASS_OUSTERS_WRISTLET )
 				return true;
 			break;
+		default:
+			break;
 		}
 		break;
 	case CLASS_ARMOR:
@@ -2966,6 +2991,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectClass(ITEM_CLASS item_class)
 				item_class == ITEM_CLASS_SHIELD )
 				return true;
 			break;
+		default:
+			break;
 		}
 		break;		
 	case CLASS_ACCESSORY:
@@ -2990,6 +3017,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectClass(ITEM_CLASS item_class)
 				item_class == ITEM_CLASS_OUSTERS_RING ||
 				item_class == ITEM_CLASS_OUSTERS_STONE)
 				return true;
+			break;
+		default:
 			break;
 		}
 		break;
@@ -3030,6 +3059,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectType(TYPE_ITEMTYPE item_type, ITEM_CLASS ite
 			case CLASS_ACCESSORY:	if( item_type <=6 ) return true; break;
 			}
 			break;
+		default:
+			break;
 		}
 		break;
 
@@ -3061,6 +3092,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectType(TYPE_ITEMTYPE item_type, ITEM_CLASS ite
 			case CLASS_ACCESSORY :	if( item_type <= 8 ) return true; break;
 			}
 			break;
+		default:
+			break;
 		}
 		break;				
 
@@ -3090,6 +3123,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectType(TYPE_ITEMTYPE item_type, ITEM_CLASS ite
 			case CLASS_ARMOR:		if( item_type <= 10 ) return true; break;
 			case CLASS_ACCESSORY :	if( item_type <= 10 ) return true; break;
 			}
+			break;
+		default:
 			break;
 		}
 		break;		
@@ -3143,6 +3178,8 @@ bool C_VS_UI_MIXING_FORGE::IsCorrectType(TYPE_ITEMTYPE item_type, ITEM_CLASS ite
 			case CLASS_ARMOR :		if( item_type <= 11 ) return true; break;
 			case CLASS_ACCESSORY :	if( item_type <= 13 ) return true; break;
 			}
+			break;
+		default:
 			break;
 		}
 		break;
@@ -3360,9 +3397,7 @@ bool	C_VS_UI_REMOVE_OPTION::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
-
-	static char sz_temp[2][100];
+	m_pC_button_group->MouseControl(message, _x, _y);
 
 	switch(message)
 	{
@@ -3412,6 +3447,7 @@ bool	C_VS_UI_REMOVE_OPTION::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_REMOVE_OPTION::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -3485,6 +3521,7 @@ void	C_VS_UI_REMOVE_OPTION::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button
 
 void	C_VS_UI_REMOVE_OPTION::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_REMOVE_OPTION::Run(id_t id)
@@ -3524,11 +3561,11 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 	if( pItem == NULL || pTItem == NULL ||
 		pTItem->IsQuestItem() || pTItem->IsUniqueItem() || 
 		
-		pItem->GetItemClass() == ITEM_CLASS_MIXING_ITEM && pItem->GetItemType() != 18 &&pTItem->GetItemClass() != ITEM_CLASS_PET_ITEM && pTItem->GetItemOptionListCount() != 2 || // 일반적으로 2옵션중 하나를 삭제 한다.
-		pItem->GetItemClass() == ITEM_CLASS_MIXING_ITEM && pItem->GetItemType() == 18 &&pTItem->GetItemClass() != ITEM_CLASS_PET_ITEM && pTItem->GetItemOptionListCount() != 1||
+		(pItem->GetItemClass() == ITEM_CLASS_MIXING_ITEM && pItem->GetItemType() != 18 &&pTItem->GetItemClass() != ITEM_CLASS_PET_ITEM && pTItem->GetItemOptionListCount() != 2) || // 일반적으로 2옵션중 하나를 삭제 한다.
+		(pItem->GetItemClass() == ITEM_CLASS_MIXING_ITEM && pItem->GetItemType() == 18 &&pTItem->GetItemClass() != ITEM_CLASS_PET_ITEM && pTItem->GetItemOptionListCount() != 1)||
 		!(
 		pItem->GetItemClass() == ITEM_CLASS_MIXING_ITEM && 
-		(pItem->GetItemType() >= 9 && pItem->GetItemType() <= 18 || pItem->GetItemType() >= 22 && pItem->GetItemType() <= 24)
+		((pItem->GetItemType() >= 9 && pItem->GetItemType() <= 18) || (pItem->GetItemType() >= 22 && pItem->GetItemType() <= 24))
 		)
 		)
 		return false;
@@ -3543,13 +3580,13 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 	enum { CLASS_WEAPON, CLASS_ARMOR, CLASS_ACCESSORY , CLASS_ALL};	
 
 	int		RemoveItemClass = -1;
-	if(pItem->GetItemType() >= 9 && pItem->GetItemType() <=11 
+	if((pItem->GetItemType() >= 9 && pItem->GetItemType() <=11) 
 		|| pItem->GetItemType() == 22)
 		RemoveItemClass = CLASS_WEAPON;
-	else if(pItem->GetItemType() >= 12 && pItem->GetItemType() <= 14
+	else if((pItem->GetItemType() >= 12 && pItem->GetItemType() <= 14)
 		|| pItem->GetItemType() == 23)
 		RemoveItemClass = CLASS_ARMOR;
-	else if(pItem->GetItemType() >= 15 && pItem->GetItemType() <= 17
+	else if((pItem->GetItemType() >= 15 && pItem->GetItemType() <= 17)
 		|| pItem->GetItemType() == 24)
 		RemoveItemClass = CLASS_ACCESSORY;
 	else if(pItem->GetItemType() == 18) // 복조리
@@ -3569,6 +3606,8 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 	case RACE_SLAYER :
 		if( !pTItem->IsSlayerItem() )
 			return false;
+		break;
+	default:
 		break;
 	}
 	
@@ -3648,6 +3687,8 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 			case CLASS_ALL: break;
 			}
 			break;
+		default:
+			break;
 		}
 		break;
 
@@ -3681,6 +3722,8 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 			case CLASS_ALL: break;
 			}
 			break;
+		default:
+			break;
 		}
 		break;				
 
@@ -3713,6 +3756,8 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 			case CLASS_ACCESSORY :	if( pTItem->GetItemType() > 10 && pTItem->GetItemClass() != ITEM_CLASS_OUSTERS_STONE) return false; break;
 			case CLASS_ALL: break;
 			}
+			break;
+		default:
 			break;
 		}
 		break;		
@@ -3772,6 +3817,8 @@ C_VS_UI_REMOVE_OPTION::IsCanRemoveOption_Puritas(const MItem* pItem, const MItem
 			case CLASS_ALL: break;
 			}
 			break;
+		default:
+			break;
 		}
 		break;
 
@@ -3807,7 +3854,6 @@ C_VS_UI_OUSTERS_SKILL_INFO::C_VS_UI_OUSTERS_SKILL_INFO(int skillID, int window_x
 
 	int close_x = w-45, close_y = h-40;
 	int help_x = w-70, help_y = h-40;
-	int alpha_x = 30, alpha_y = h-40;
 	int learn_x = w-140, learn_y = h-43;
 
 	//공통버튼
@@ -3877,17 +3923,17 @@ void	C_VS_UI_OUSTERS_SKILL_INFO::Show()
 			{
 				if(sInfo.IsEnable() == false)
 				{
-					if(sprID < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
+					if(static_cast<DWORD>(sprID) < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
 						gpC_base->m_p_DDSurface_back->BltSpriteEffect(&p, &C_VS_UI_SKILL::m_C_spk[sprID]);
 				}
 				if(sInfo.IsPassive())
 				{
-					if(sprID < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
+					if(static_cast<DWORD>(sprID) < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
 						gpC_base->m_p_DDSurface_back->BltSpriteColorSet(&p, &C_VS_UI_SKILL::m_C_spk[sprID], 315);
 				}
 				else
 				{
-					if(sprID < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
+					if(static_cast<DWORD>(sprID) < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
 						gpC_base->m_p_DDSurface_back->BltSprite(&p, &C_VS_UI_SKILL::m_C_spk[sprID]);
 				}
 			}
@@ -3937,14 +3983,14 @@ void	C_VS_UI_OUSTERS_SKILL_INFO::Show()
 					
 					if(bCanLearn)
 					{
-						if(sprID < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
+						if(static_cast<DWORD>(sprID) < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
 							gpC_base->m_p_DDSurface_back->BltSpriteColor(&p, &C_VS_UI_SKILL::m_C_spk[sprID], rgb_GREEN);
 					}
 				}
 				
 				if(bCanLearn == false)
 				{
-					if(sprID < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
+					if(static_cast<DWORD>(sprID) < C_VS_UI_SKILL::m_C_spk.GetSize() && C_VS_UI_SKILL::m_C_spk[sprID].IsInit())
 						gpC_base->m_p_DDSurface_back->BltSpriteEffect(&p, &C_VS_UI_SKILL::m_C_spk[sprID]);
 				}
 			}
@@ -4120,6 +4166,7 @@ bool	C_VS_UI_OUSTERS_SKILL_INFO::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_OUSTERS_SKILL_INFO::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -4321,6 +4368,7 @@ void	C_VS_UI_OUSTERS_SKILL_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_butto
 
 void	C_VS_UI_OUSTERS_SKILL_INFO::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 {
+	(void)p_button;
 //	const static char *m_inventory_button_string[6] = 
 //	{
 //		(*g_pGameStringTable)[UI_STRING_MESSAGE_SHOW_HELP_GEAR_WINDOW].GetString(),
@@ -4352,6 +4400,7 @@ void	C_VS_UI_OUSTERS_SKILL_INFO::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_b
 
 void	C_VS_UI_OUSTERS_SKILL_INFO::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_OUSTERS_SKILL_INFO::Run(id_t id)
@@ -4384,7 +4433,7 @@ void	C_VS_UI_OUSTERS_SKILL_INFO::Run(id_t id)
 					&& !( m_skillID == SKILL_FIRE_OF_SOUL_STONE || m_skillID == SKILL_ICE_OF_SOUL_STONE || m_skillID == SKILL_SAND_OF_SOUL_STONE || m_skillID == SKILL_BLOCK_HEAD ||
 					m_skillID == SKILL_ABSORB_SOUL || m_skillID == SKILL_SUMMON_SYLPH)
 					&& sInfo.GetExpLevel() < 30) ||
-					status != MSkillDomain::SKILLSTATUS_LEARNED && (*g_pSkillInfoTable)[m_skillID].SkillPoint <= g_char_slot_ingame.skill_point)
+					(status != MSkillDomain::SKILLSTATUS_LEARNED && (*g_pSkillInfoTable)[m_skillID].SkillPoint <= g_char_slot_ingame.skill_point))
 				{
 					bool bCanLearn = false;
 
@@ -4544,7 +4593,7 @@ C_VS_UI_HORN::C_VS_UI_HORN(int currentZoneID)
 	
 	m_CurrentZone = 0;
 #ifdef _LIB
-	for(int i = 0; i < UiRuntime::HornMapCount(); i++)
+	for(int i = 0; static_cast<std::size_t>(i) < UiRuntime::HornMapCount(); i++)
 	{
 		portalList = UiRuntime::ReadHornPortals(i);
 		
@@ -4681,7 +4730,7 @@ bool	C_VS_UI_HORN::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 	
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 	
 	switch(message)
 	{
@@ -4784,6 +4833,7 @@ bool	C_VS_UI_HORN::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_HORN::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -4828,6 +4878,7 @@ void	C_VS_UI_HORN::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 
 void	C_VS_UI_HORN::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 int		C_VS_UI_HORN::GetNext(int map, bool bUp)
@@ -4960,7 +5011,7 @@ C_VS_UI_MAILBOX::C_VS_UI_MAILBOX()
 	Set(g_GameRect.right/2-window_w/2, g_GameRect.bottom/2-window_h/2, window_w, window_h);
 
 	m_listCount = 10;
-	m_overcnt = NULL;
+	m_overcnt = 0;
 	//공통버튼
 //	m_pC_button_group = new ButtonGroup(this);
 	m_pC_button_group = NULL;
@@ -5006,6 +5057,8 @@ void	C_VS_UI_MAILBOX::Start(TAB_ID tab_id)
 	case RACE_OUSTERS:
 		m_ptTab.x = 75;
 		m_ptTab.y = -3;
+		break;
+	default:
 		break;
 	}
 
@@ -5065,6 +5118,8 @@ void	C_VS_UI_MAILBOX::Show()
 				case NEW_HELP_ID:
 					color = RGB(255, 255, 0);
 					break;
+				default:
+					break;
 				}
 				
 				g_PrintColorStr( m_ptNewMail.x +30, m_ptNewMail.y+4, pLastMail->title.GetString(), gpC_base->m_chatting_pi, color );
@@ -5078,9 +5133,9 @@ void	C_VS_UI_MAILBOX::Show()
 		{
 			gpC_global_resource->DrawDialogLocked(x+10, y, w, h, GetAttributes()->alpha);
 
-			int titleSpriteID;
+			int titleSpriteID = 0;
 			int tabSpriteID = m_currentTab;
-			int contentsSpriteID;
+			int contentsSpriteID = 0;
 
 			switch(g_eRaceInterface)
 			{
@@ -5101,12 +5156,14 @@ void	C_VS_UI_MAILBOX::Show()
 				titleSpriteID = TITLE_OUSTERS;
 				contentsSpriteID = CONTENTS_OUSTERS;
 				break;
+			default:
+				break;
 			}
 			
 			if(m_pC_scroll_bar->GetScrollPos() >= 0 )
 			{
 				m_overcnt = m_pC_scroll_bar->GetScrollPos();
-				if(m_overcnt > m_mail[m_currentTab].size()-m_listCount)
+				if(static_cast<size_t>(m_overcnt) > m_mail[m_currentTab].size()-m_listCount)
 					m_overcnt = m_mail[m_currentTab].size()-m_listCount;
 			}
 			
@@ -5133,7 +5190,7 @@ void	C_VS_UI_MAILBOX::Show()
 
 			int line = 0;
 
-			for(int mailIndex = 0; line < m_listCount && mailIndex < m_mail[m_currentTab].size(); mailIndex++)
+			for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
 			{
 				if(m_mail[m_currentTab][mailIndex+m_overcnt].show)
 				{
@@ -5158,7 +5215,7 @@ void	C_VS_UI_MAILBOX::Show()
 		int line = 0;
 
 
-		for(int mailIndex = 0; line < m_listCount && mailIndex < m_mail[m_currentTab].size(); mailIndex++)
+		for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
 		{
 			if(m_mail[m_currentTab][mailIndex+m_overcnt].show)
 			{
@@ -5179,7 +5236,7 @@ void	C_VS_UI_MAILBOX::Show()
 		}
 		
 		g_FL2_ReleaseDC();
-		if(m_mail[m_currentTab].size()>m_listCount)
+		if(m_mail[m_currentTab].size()>static_cast<size_t>(m_listCount))
 		{
 			m_pC_scroll_bar->Show(x,y);
 		}
@@ -5216,7 +5273,7 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 
 			// 범위를 넘어가면 -1
 			int indexSize = 0;
-			for(int mailIndex = 0; mailIndex < m_mail[m_currentTab].size(); mailIndex++)
+			for(int mailIndex = 0; static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
 			{
 				if(m_mail[m_currentTab][mailIndex].show == true)
 					indexSize++;
@@ -5239,7 +5296,7 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 			if(m_focusContents != -1)
 			{
 				int index = 0;
-				for(int mailIndex = 0; mailIndex < m_mail[m_currentTab].size(); mailIndex++)
+				for(int mailIndex = 0; static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
 				{
 					if(m_mail[m_currentTab][mailIndex].show == true)
 					{
@@ -5285,6 +5342,7 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_MAILBOX::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -5358,6 +5416,7 @@ void	C_VS_UI_MAILBOX::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 
 void	C_VS_UI_MAILBOX::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 
@@ -5457,6 +5516,8 @@ void	C_VS_UI_MAILBOX::AddHelpMail(DWORD id, bool open)
 		mail.sender = strSender;
 		mail.title = message.m_strTitle[g_eRaceInterface];
 		mail.contents = message.m_strDetail[g_eRaceInterface];
+		break;
+	default:
 		break;
 	}
 	if(!mail.title.GetLength()) //제목이 없으면...리턴..
@@ -5657,6 +5718,7 @@ int	C_VS_UI_MAILBOX::m_guild_id;
 
 void ExecF_Union_Joinask(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	if(id == 0)
 	{
 			gpC_base->SendMessage(UI_REQUEST_UNION_ACCEPT, C_VS_UI_MAILBOX::GetGuildId(), 0);
@@ -5673,6 +5735,7 @@ void ExecF_Union_Joinask(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_Union_Quitask(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	if(id == 0)
 	{
 			gpC_base->SendMessage(UI_REQUEST_UNION_QUIT_ACCEPT, C_VS_UI_MAILBOX::GetGuildId(), 0);
@@ -5761,14 +5824,14 @@ void	C_VS_UI_MAILBOX::ReadMail(TAB_ID tabID, DWORD id)
 
 						if(itr->guild_type == 0)
 						{
-							m_pC_dialog = new C_VS_UI_NPC_DIALOG(ExecF_Union_Joinask, NULL, NULL, 500, 250);
+							m_pC_dialog = new C_VS_UI_NPC_DIALOG(ExecF_Union_Joinask, 0, NULL, 500, 250);
 							m_pC_dialog->SetMenu(d_menu, 3, false);
 							m_pC_dialog->SetMessage(pp_dmsg_union,sizeof(pp_dmsg_union)/sizeof(char *));//, SMO_NOFIT);
 							m_pC_dialog->Start();
 						}
 						else if(itr->guild_type  == 1)
 						{
-							m_pC_dialog = new C_VS_UI_NPC_DIALOG(ExecF_Union_Quitask, NULL, NULL, 500, 250);
+							m_pC_dialog = new C_VS_UI_NPC_DIALOG(ExecF_Union_Quitask, 0, NULL, 500, 250);
 							m_pC_dialog->SetMenu(d_menu2, 3, false);
 							m_pC_dialog->SetMessage(pp_dmsg_union2,sizeof(pp_dmsg_union)/sizeof(char *));//, SMO_NOFIT);
 							m_pC_dialog->Start();
@@ -5786,7 +5849,7 @@ void	C_VS_UI_MAILBOX::ReadMail(TAB_ID tabID, DWORD id)
 
 C_VS_UI_MAILBOX::C_VS_UI_MAIL::C_VS_UI_MAIL()
 {
-	id = NULL;
+	id = 0;
 	mark = false;
 	show = false;
 	open = false;
@@ -5885,7 +5948,7 @@ void C_VS_UI_MAILBOX::LoadFromFile(std::ifstream &file)
 		file.read((char *)&mailCount, sizeof(DWORD));
 		
 		C_VS_UI_MAIL tempMail;
-		for(int mail = 0; mail < mailCount; mail++)
+		for(int mail = 0; static_cast<DWORD>(mail) < mailCount; mail++)
 		{
 			if(tempMail.LoadFromFile(file))
 			{
@@ -5934,7 +5997,6 @@ C_VS_UI_FINDING_MINE::C_VS_UI_FINDING_MINE()
 	//공통버튼
 	m_pC_button_group = new ButtonGroup(this);
 
-	int close_x = 217, close_y = 242;
 	int start_x = 30, start_y = BLOCK_START_Y-41;
 ;
 
@@ -6121,7 +6183,7 @@ bool	C_VS_UI_FINDING_MINE::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 
 	switch(message)
 	{
@@ -6276,6 +6338,7 @@ bool	C_VS_UI_FINDING_MINE::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_FINDING_MINE::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -6415,6 +6478,7 @@ void	C_VS_UI_FINDING_MINE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 
 void	C_VS_UI_FINDING_MINE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 {
+	(void)p_button;
 // 	const static char *m_button_string[3] = 
 //	{
 //		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLOSE_HORN].GetString(),
@@ -6427,6 +6491,7 @@ void	C_VS_UI_FINDING_MINE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 
 void	C_VS_UI_FINDING_MINE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_FINDING_MINE::Run(id_t id)
@@ -7143,6 +7208,8 @@ void	C_VS_UI_ARROW_TILE::Show()
 			case RACE_OUSTERS :
 				myspr = SPK_OUSTERS_UP;
 				break;
+			default:
+				break;
 			}
 			m_SPK.BltLocked(startX+ArrowSizeX*GetMapSize()+m_SPK.GetWidth(SPK_GOAL)-2, startY+ArrowSizeY*GetMapSize(),SPK_IN_BOX_BOTTOM);
 			if( m_Player.X == -1 && m_Player.Y == 0 )		// 플레이어가 시작 준비중이면
@@ -7252,7 +7319,7 @@ bool	C_VS_UI_ARROW_TILE::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 
 	switch(message)
 	{
@@ -7271,6 +7338,7 @@ bool	C_VS_UI_ARROW_TILE::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_ARROW_TILE::KeyboardControl(UINT message, UINT key, long extra)	
 {		
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -7293,6 +7361,8 @@ void	C_VS_UI_ARROW_TILE::KeyboardControl(UINT message, UINT key, long extra)
 
 bool	C_VS_UI_ARROW_TILE::IsPixel(int _x,int _y)
 {
+	(void)_x;
+	(void)_y;
 	return true;
 }
 
@@ -7349,10 +7419,12 @@ void	C_VS_UI_ARROW_TILE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 
 void	C_VS_UI_ARROW_TILE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 {
+	(void)p_button;
 }
 
 void	C_VS_UI_ARROW_TILE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_ARROW_TILE::Run(id_t id)
@@ -7396,6 +7468,8 @@ void	C_VS_UI_ARROW_TILE::ProcessGameMain()
 		break;
 	case STAGE_END :
 		break;
+	default:
+		break;
 	}
 
 	if(m_Player.Status == PLAYER_STATUS_FINISH )
@@ -7431,6 +7505,8 @@ void	C_VS_UI_ARROW_TILE::ProcessTile()
 	case ATTR_SLIDING :
 		break;
 	case ATTR_TRAP :
+		break;
+	default:
 		break;
 	}
 }
@@ -7476,6 +7552,8 @@ void	C_VS_UI_ARROW_TILE::ProcessCharacter()
 		break;
 	case PLAYER_STATUS_DIE :
 		break;
+	default:
+		break;
 	}
 	
 	if( m_RemainCountMoveMonster > 0)
@@ -7516,7 +7594,7 @@ void	C_VS_UI_ARROW_TILE::ActionMove()					// Move 버튼 클릭시
 		return;
 	
 	// 출발점이면
-	if( m_Player.X == -1 && m_Player.Y == 0 || m_Player.Status == PLAYER_STATUS_READY)
+	if( (m_Player.X == -1 && m_Player.Y == 0) || m_Player.Status == PLAYER_STATUS_READY)
 	{
 		// 시작
 		m_Player.X = 0;
@@ -7832,6 +7910,8 @@ void	C_VS_UI_ARROW_TILE::AddMonster()
 		nMonster = sizeof(MonsterPos_9X9)/sizeof(POINT);
 		Pos = MonsterPos_9X9;
 		break;
+	default:
+		break;
 	}
 	
 	if( nMonster == 0 || Pos == NULL )
@@ -7952,6 +8032,8 @@ void	C_VS_UI_ARROW_TILE::InitStage()
 	case STAGE_9X9 :
 		h = 460;
 		break;		
+	default:
+		break;
 	}
 
 	Set(g_GameRect.right/2-w/2, g_GameRect.bottom/2 - h/2, w, h);
@@ -7973,6 +8055,8 @@ BYTE	C_VS_UI_ARROW_TILE::GetMapSize()
 	case STAGE_END :	
 	case STAGE_9X9 :
 		return 9;
+		break;
+	default:
 		break;
 	}
 	return 9;
@@ -8154,7 +8238,7 @@ void	C_VS_UI_CRAZY_MINE::Show()
 		int line=0;
 
 		bool bSel = false;
-		if ( m_SelectedHistory >= 0 && m_SelectedHistory < m_History.size() )
+		if ( m_SelectedHistory >= 0 && static_cast<size_t>(m_SelectedHistory) < m_History.size() )
 		{
 			bSel = true;
 		}
@@ -8200,7 +8284,7 @@ bool	C_VS_UI_CRAZY_MINE::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 
 	switch(message)
 	{
@@ -8242,6 +8326,7 @@ bool	C_VS_UI_CRAZY_MINE::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_CRAZY_MINE::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -8261,20 +8346,25 @@ void	C_VS_UI_CRAZY_MINE::KeyboardControl(UINT message, UINT key, long extra)
 
 bool	C_VS_UI_CRAZY_MINE::IsPixel(int _x,int _y)
 {
+	(void)_x;
+	(void)_y;
 	return true;
 }
 
 void	C_VS_UI_CRAZY_MINE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 	
 }
 
 void	C_VS_UI_CRAZY_MINE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 {
+	(void)p_button;
 }
 
 void	C_VS_UI_CRAZY_MINE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_CRAZY_MINE::Run(id_t id)
@@ -8302,7 +8392,7 @@ void C_VS_UI_CRAZY_MINE::DrawBoard()
 	bool bHistory = false;
 	SelectHistory sh;
 
-	if ( m_SelectedHistory >= 0 && m_SelectedHistory < m_History.size() )
+	if ( m_SelectedHistory >= 0 && static_cast<size_t>(m_SelectedHistory) < m_History.size() )
 	{
 		bHistory = true;
 		std::list<SelectHistory>::iterator itr = m_History.begin();
@@ -8413,7 +8503,7 @@ void C_VS_UI_CRAZY_MINE::ActionClick(int x, int y)
 //			InitMineBoard(m_MineBoardSize, m_MineCount);
 //		}
 
-		if ( y < m_History.size() )
+		if ( static_cast<size_t>(y) < m_History.size() )
 		{
 			m_SelectedHistory = y;
 		}
@@ -8654,8 +8744,8 @@ C_VS_UI_QUEST_INVENTORY::C_VS_UI_QUEST_INVENTORY(const MItem* pItem)
 {
 	g_RegisterWindow(this);
 
-	int	close_button_offset_x, close_button_offset_y;
-	int	help_button_offset_x, help_button_offset_y;
+	int	close_button_offset_x = 0, close_button_offset_y = 0;
+	int	help_button_offset_x = 0, help_button_offset_y = 0;
 
 	m_pCodeSheet = const_cast<MItem*>(pItem);
 	
@@ -8692,6 +8782,8 @@ C_VS_UI_QUEST_INVENTORY::C_VS_UI_QUEST_INVENTORY(const MItem* pItem)
 		help_button_offset_y = 204;
 
 		m_SPK.Open(SPK_VAMPIRE_INVENTORY);
+		break;
+	default:
 		break;
 	}
 	
@@ -8758,6 +8850,7 @@ C_VS_UI_QUEST_INVENTORY::~C_VS_UI_QUEST_INVENTORY()
 //-----------------------------------------------------------------------------
 void	C_VS_UI_QUEST_INVENTORY::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 	
 }
 
@@ -8788,6 +8881,7 @@ void	C_VS_UI_QUEST_INVENTORY::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_QUEST_INVENTORY::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 
@@ -8914,16 +9008,15 @@ void	C_VS_UI_QUEST_INVENTORY::Show()
 		} else
 			m_CurMousePos = -1;
 
-		const int minType = 22;
 		for(int iy=0;iy<6;iy++)
 		{
 			for(int ix=0;ix<10;ix++)
 			{
-				if(m_Inventory[iy*10+ix] == -1 )
+				if(static_cast<signed char>(m_Inventory[iy*10+ix]) == -1 )
 					continue;
 				m_SPK.BltLocked(x+m_FixPos.x+30*(ix), y+m_FixPos.y+30*(iy), INVENTORY_ITEMBACK);
 				gpC_item->BltLocked( x+m_FixPos.x+30*(ix) + 15 - gpC_item->GetWidth(m_ItemFrameMap[0])/2,
-					y+m_FixPos.y+30*(iy)+15-gpC_item->GetHeight(m_ItemFrameMap[0])/2, m_ItemFrameMap[m_Inventory[iy*10+ix]] );
+					y+m_FixPos.y+30*(iy)+15-gpC_item->GetHeight(m_ItemFrameMap[0])/2, m_ItemFrameMap[static_cast<int>(m_Inventory[iy*10+ix])] );
 				
 			}
 		}
@@ -8976,8 +9069,6 @@ bool	C_VS_UI_QUEST_INVENTORY::IsPixel(int _x, int _y)
 
 void	C_VS_UI_QUEST_INVENTORY::SetInventory(int i, BYTE Option)
 {
-	int offset = i*2;
-
 	m_Inventory[i] = Option >> 4;
 	m_Inventory[i+1] = (Option&0xF);
 }
@@ -9011,7 +9102,7 @@ bool	C_VS_UI_QUEST_INVENTORY::CanDropToInventory(const MItem* pItem)
 	// 4개의 방향을 체크해야 한다. 같은 아이템 타입이 있으면 무효!
 	bool	bCanDrop = true;
 
-	if( m_Inventory[InvenY*10+InvenX] != -1 )
+	if( static_cast<signed char>(m_Inventory[InvenY*10+InvenX]) != -1 )
 		return false;
 
 	// 왼쪽 -_-
@@ -9052,7 +9143,6 @@ C_VS_UI_STATUS_CTF::C_VS_UI_STATUS_CTF()
 	m_pC_spk.Open(SPK_CTF_STATUS);
 
 	int window_w = m_pC_spk.GetWidth(MAIN_WINDOW);
-	int window_h = m_pC_spk.GetHeight(MAIN_WINDOW);
 	
 	Set(g_GameRect.right/2 - window_w/2, 60, m_pC_spk.GetWidth(MAIN_WINDOW), m_pC_spk.GetHeight(MAIN_WINDOW));
 	
@@ -9168,6 +9258,7 @@ void	C_VS_UI_STATUS_CTF::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_STATUS_CTF::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 
@@ -9409,7 +9500,7 @@ void	C_VS_UI_STATUS_CTF::Process()
 bool	C_VS_UI_STATUS_CTF::IsPixel(int _x, int _y)
 {
 	//m_pC_monitor_spk->IsPixel(SCR2WIN_X(_x), SCR2WIN_Y(_y), MONITOR_WINDOW);
-	return m_pC_spk.IsPixel(SCR2WIN_X(_x),SCR2WIN_Y(_y),MAIN_WINDOW) | (m_pC_button_group->IsInRect(_x - x, _y -y)!=NULL);
+	return m_pC_spk.IsPixel(SCR2WIN_X(_x),SCR2WIN_Y(_y),MAIN_WINDOW) || (m_pC_button_group->IsInRect(_x - x, _y -y)!=NULL);
 }
 
 void	C_VS_UI_STATUS_CTF::SetStatus(const MonotonicClock::TimePoint &endtime, int &flag_s, int &flag_v, int &flag_o)
@@ -9642,6 +9733,7 @@ bool	C_VS_UI_REGEN_TOWER_MINIMAP::Timer(bool reset)
 
 void	C_VS_UI_REGEN_TOWER_MINIMAP::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	if (message == WM_KEYDOWN && key == VK_ESCAPE)
 	{
 		gpC_base->SendMessage(UI_CLOSE_SHRINE_MINIMAP,1 );
@@ -9857,6 +9949,7 @@ void	C_VS_UI_PET_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_PET_INFO::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 
@@ -10073,7 +10166,6 @@ void	C_VS_UI_PET_INFO::Show()
 	int str_y[5] = {y+66, y+79, y+92, y+110, y+123};
 	if( g_FL2_GetDC() )
 	{
-		COLORREF fontColor = RGB(255, 255, 120);
 		
 		// 펫 이름
 		const int name_x = x+130, name_y = y+25;
@@ -10414,6 +10506,7 @@ void C_VS_UI_HELPDESC::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button)
 
 void C_VS_UI_HELPDESC::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void C_VS_UI_HELPDESC::KeyboardControl(UINT message, UINT key, long extra)
@@ -10681,6 +10774,8 @@ C_VS_UI_SMS_MESSAGE::C_VS_UI_SMS_MESSAGE()
 		m_sub_rect.Set(0, 0, 200, 140);
 		m_pC_sub_scroll_bar->x = 155;
 		m_pC_sub_scroll_bar->y = 55;
+		break;
+	default:
 		break;
 	}
 
@@ -11058,7 +11153,6 @@ void	C_VS_UI_SMS_MESSAGE::KeyboardControl(UINT message, UINT key, long extra)
 bool	C_VS_UI_SMS_MESSAGE::MouseControl(UINT message, int _x, int _y)
 {
 	Window::MouseControl(message, _x, _y);
-	bool re = true;
 //	_x-=x; _y-=y;	
 //	bool re = m_pC_button_group->MouseControl(message, _x, _y);
 //
@@ -11067,7 +11161,7 @@ bool	C_VS_UI_SMS_MESSAGE::MouseControl(UINT message, int _x, int _y)
 	{
 		gpC_mouse_pointer->SetCursorDefault();
 		// sub window 안에 있으면 sub scroll
-		re &= m_pC_sub_scroll_bar->MouseControl(message, _x-m_sub_rect.x, _y-m_sub_rect.y);
+		m_pC_sub_scroll_bar->MouseControl(message, _x-m_sub_rect.x, _y-m_sub_rect.y);
 		switch(message)
 		{
 		case M_LEFTBUTTON_DOWN:
@@ -11271,7 +11365,7 @@ void	C_VS_UI_SMS_MESSAGE::Run(id_t id)
 						m_szOtherNum.push_back(temp);
 					}
 				}
-				if(m_szOtherNum.size()<=g_char_slot_ingame.m_SMS_Charge && g_char_slot_ingame.m_SMS_Charge)
+				if(m_szOtherNum.size()<=static_cast<size_t>(g_char_slot_ingame.m_SMS_Charge) && g_char_slot_ingame.m_SMS_Charge)
 					gpC_base->SendMessage(UI_SEND_SMS_MESSAGE, (intptr_t)m_szMyNum.c_str(), (intptr_t)m_szSMSMessage.c_str(), &m_szOtherNum);
 				else
 					gpC_base->SendMessage(UI_MESSAGE_BOX, UI_STRING_MESSAGE_SMS_FAIL_NOT_ENOUGH_CHARGE, 0, 	NULL);
@@ -11371,6 +11465,8 @@ C_VS_UI_SMS_LIST::C_VS_UI_SMS_LIST()
 		m_pC_scroll_bar = new C_VS_UI_SCROLL_BAR(0, Rect(m_Main.cx+292,  m_Main.cy+ 32, 30, 66), false, SPK_SLAYER_SMS_SCROLL);
 		
 		break;
+	default:
+		break;
 	}
 		
 	Set(m_Main.cx, m_Main.cy, m_SMS_spk.GetWidth(), m_SMS_spk.GetHeight());
@@ -11468,7 +11564,7 @@ void	C_VS_UI_SMS_LIST::DeleteList(int id)
 	while(itr != m_Addresses.end())
 	{
 		_AddressUnit = (*itr);
-		if(_AddressUnit->ElementID == id)
+		if(_AddressUnit->ElementID == static_cast<DWORD>(id))
 		{
 			m_Addresses.erase(itr);
 			break;
@@ -11513,7 +11609,7 @@ void C_VS_UI_SMS_LIST::Show()
 	{
 		int i;
 		char szString[32];
-		for(i =ScrPos; i< m_Addresses.size(); i++)
+		for(i =ScrPos; static_cast<size_t>(i)< m_Addresses.size(); i++)
 		{
 			if(i>ScrPos+4)
 				break;
@@ -11616,11 +11712,10 @@ bool	C_VS_UI_SMS_LIST::MouseControl(UINT message, int _x, int _y)
 //	
 	Window::MouseControl(message, _x, _y);
 
-	bool re = false;
 	if(NULL != m_pC_button_group)
-		re = m_pC_button_group->MouseControl(message, _x, _y);
+		m_pC_button_group->MouseControl(message, _x, _y);
 	if(NULL != m_pC_scroll_bar)
-		re &= m_pC_scroll_bar->MouseControl(message, _x, _y);
+		m_pC_scroll_bar->MouseControl(message, _x, _y);
 //	
 	switch(message)
 	{
@@ -11677,7 +11772,7 @@ void	C_VS_UI_SMS_LIST::Run(id_t id)
 		case SMS_ADD_SEND_ID:
 			if(-1 != m_SelectPos)
 			{
-				if(m_SelectPos< m_Addresses.size())
+				if(static_cast<size_t>(m_SelectPos)< m_Addresses.size())
 				{
 					AddressUnit* _AddressUnit = m_Addresses[m_SelectPos];
 					gpC_base->SendMessage(UI_SMS_ADD_SEND_LIST, (intptr_t)_AddressUnit->Number.c_str(), 0, NULL);
@@ -11687,7 +11782,7 @@ void	C_VS_UI_SMS_LIST::Run(id_t id)
 		case SMS_DELETE_LIST_ID:
 			if(-1 != m_SelectPos)
 			{
-				if(m_SelectPos< m_Addresses.size())
+				if(static_cast<size_t>(m_SelectPos)< m_Addresses.size())
 				{
 					AddressUnit* _AddressUnit = m_Addresses[m_SelectPos];
 					gpC_base->SendMessage(UI_SMS_DELETE, _AddressUnit->ElementID,0, NULL);
@@ -11845,6 +11940,8 @@ C_VS_UI_SMS_RECORD::C_VS_UI_SMS_RECORD()
 		m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(m_Main.cx+64, m_Main.cy+29, 115, 15, SMS_CHAT_ID_ID, this, 0));
 		m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(m_Main.cx+110, m_Main.cy+48, 65, 15, SMS_CHAT_NUM_ID, this, 0));
 
+		break;
+	default:
 		break;
 	}
 	
@@ -12258,6 +12355,8 @@ C_VS_UI_NAMING::C_VS_UI_NAMING(std::vector<C_VS_UI_NicknameInfo*> &_NamingList)
 	case RACE_OUSTERS:
 		m_pC_spk.Open(SPK_OUSTERS_NAMING);
 		break;		
+	default:
+		break;
 	}
 	
 //	int addok_x = w-40, addok_y = h-238;
@@ -12341,9 +12440,6 @@ void	C_VS_UI_NAMING::Finish()
 void	C_VS_UI_NAMING::Show()
 {
 
-	static DWORD SECOND_PET_QUEST = 0xffff;
-	const int tab_x = 0;
-	const int tab_y = 60;
 	int ScrPos = m_pC_scroll_bar->GetScrollPos();
 
 	gpC_global_resource->DrawDialog(x, y, w, h, GetAttributes()->alpha);
@@ -12394,7 +12490,7 @@ void	C_VS_UI_NAMING::Show()
 	{
 		int i;
 		char szString[64];
-		for(i =ScrPos; i< m_NameList.size(); i++)
+		for(i =ScrPos; static_cast<size_t>(i)< m_NameList.size(); i++)
 		{
 			if(i>ScrPos+8)
 				break;
@@ -12440,6 +12536,9 @@ void	C_VS_UI_NAMING::Show()
 
 void	C_VS_UI_NAMING::ShowDesc(int strX,int strY,const char *str)
 {
+	(void)strX;
+	(void)strY;
+	(void)str;
 	return;
 
 }
@@ -12478,7 +12577,7 @@ bool	C_VS_UI_NAMING::MouseControl(UINT message, int _x, int _y)
 			{
 				m_SelectPos = (_y-74 )/17;
 				m_SelectPos += m_pC_scroll_bar->GetScrollPos();
-				if(m_SelectPos>=m_NameList.size())
+				if(static_cast<size_t>(m_SelectPos)>=m_NameList.size())
 					m_SelectPos = m_NameList.size()-1;
 			}
 			else if(re && NULL == m_pC_button_group->IsInRect(_x, _y))
@@ -12496,6 +12595,9 @@ bool	C_VS_UI_NAMING::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_NAMING::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)message;
+	(void)key;
+	(void)extra;
 //	Window::KeyboardControl(message, key, extra);
 //	if (message == WM_KEYDOWN)
 //	{
@@ -12612,7 +12714,7 @@ void	C_VS_UI_NAMING::Run(id_t id)
 		gpC_base->SendMessage(UI_CLOSE_NAMING);
 		break;
 	case SELECT_ID:
-		if(m_SelectPos > -1 && m_SelectPos < m_NameList.size())
+		if(m_SelectPos > -1 && static_cast<size_t>(m_SelectPos) < m_NameList.size())
 		{
 			C_VS_UI_NicknameInfo* TempInfo = (C_VS_UI_NicknameInfo*)m_NameList[m_SelectPos];
 			if(TempInfo != NULL)
@@ -12744,6 +12846,8 @@ C_VS_UI_NAMING_CHANGE::C_VS_UI_NAMING_CHANGE(MItem* pItem, char* szCustom)
 	case RACE_OUSTERS:
 		m_pC_spk.Open(SPK_OUSTERS_NAMING);
 		break;		
+	default:
+		break;
 	}
 	
 	m_ChangeNick.SetPosition(x+24, y+86);
@@ -12815,8 +12919,6 @@ void	C_VS_UI_NAMING_CHANGE::Finish()
 
 void	C_VS_UI_NAMING_CHANGE::Show()
 {
-	const int tab_x = 0;
-	const int tab_y = 60;
 	m_ChangeNick.SetPosition(x+24, y+95);
 
 	gpC_global_resource->DrawDialog(x, y, w, h, GetAttributes()->alpha);
@@ -12863,7 +12965,7 @@ bool	C_VS_UI_NAMING_CHANGE::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 
 	_x-=x; _y-=y;
-	bool re = m_pC_button_group->MouseControl(message, _x, _y);
+	m_pC_button_group->MouseControl(message, _x, _y);
 
 	switch(message)
 	{
@@ -13064,6 +13166,8 @@ C_VS_UI_QUEST_MANAGER::C_VS_UI_QUEST_MANAGER()
 
 	case RACE_OUSTERS:
 		m_pImage_Spk->Open(SPK_OUSTERS_QUESTMAMAGER);
+		break;
+	default:
 		break;		
 	}
 	
@@ -13290,7 +13394,7 @@ void	C_VS_UI_QUEST_MANAGER::UpdateQuestItemInfo(std::vector<MItem*>& vItem)
 void	C_VS_UI_QUEST_MANAGER::DeleteQuestItem(int nSlot)
 {
 	std::vector<MItem*>::iterator itr = m_QuestItemInfo.begin();
-	for(int i = 0; i< m_QuestItemInfo.size() ; i++)
+	for(int i = 0; static_cast<size_t>(i)< m_QuestItemInfo.size() ; i++)
 	{
 		if(i == nSlot)
 		{
@@ -14081,8 +14185,8 @@ C_VS_UI_QUEST_LIST::C_VS_UI_QUEST_LIST(C_SPRITE_PACK* spr)
 		gpC_global_resource->m_pC_assemble_box_button_spk->GetHeight(C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA),
 		ALPHA_ID, this, C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA));	
 
-	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(5, 30, 60, 20, TAB1_ID, this, NULL));	
-	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(65, 30, 60, 20,	TAB2_ID, this, NULL));	
+	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(5, 30, 60, 20, TAB1_ID, this, 0));	
+	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(65, 30, 60, 20,	TAB2_ID, this, 0));	
 #ifndef _LIB
 //
 //	C_VS_UI_QUEST_MANAGER::_GQuestInfo* Test1 = new C_VS_UI_QUEST_MANAGER::_GQuestInfo;
@@ -14189,7 +14293,7 @@ void	C_VS_UI_QUEST_LIST::Show()
 			(*g_pGameStringTable)[UI_STRING_GQUEST_FAIL].GetString(),// = "실패";
 			(*g_pGameStringTable)[UI_STRING_GQUEST_CAN_REPLAY].GetString(),// = "재수행가";
 		};
-		for(int i =ScrPos; i< m_QuestListInfo[m_TabID].size(); i++)
+		for(int i =ScrPos; static_cast<size_t>(i)< m_QuestListInfo[m_TabID].size(); i++)
 		{
 			if(i>ScrPos+4)
 				break;
@@ -14288,7 +14392,7 @@ bool	C_VS_UI_QUEST_LIST::MouseControl(UINT message, int _x, int _y)
 			{
 				m_SelectPos = (_y-68 )/17;
 				m_SelectPos += m_pC_scroll_bar->GetScrollPos();
-				if(m_SelectPos<m_QuestListInfo[m_TabID].size())
+				if(static_cast<size_t>(m_SelectPos)<m_QuestListInfo[m_TabID].size())
 				{
 					C_VS_UI_QUEST_MANAGER::_GQuestInfo* TempInfo = (C_VS_UI_QUEST_MANAGER::_GQuestInfo*) m_QuestListInfo[m_TabID][m_SelectPos];
 					if(NULL != TempInfo)
@@ -14316,6 +14420,7 @@ bool	C_VS_UI_QUEST_LIST::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_QUEST_LIST::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -14474,7 +14579,6 @@ void	C_VS_UI_QUEST_LIST::SetQuestListInfo(void* pVoid)
 		std::vector<C_VS_UI_QUEST_MANAGER::_GQuestInfo*>::iterator itr = m_QuestListInfo[0].begin();
 		while(itr != m_QuestListInfo[0].end())
 		{
-			C_VS_UI_QUEST_MANAGER::_GQuestInfo * TempInfo2 = (*itr);
 			itr = m_QuestListInfo[0].erase(itr);
 		//	DeleteNew(TempInfo2);
 		}
@@ -14485,7 +14589,6 @@ void	C_VS_UI_QUEST_LIST::SetQuestListInfo(void* pVoid)
 		std::vector<C_VS_UI_QUEST_MANAGER::_GQuestInfo*>::iterator itr = m_QuestListInfo[1].begin();
 		while(itr != m_QuestListInfo[1].end())
 		{
-			C_VS_UI_QUEST_MANAGER::_GQuestInfo * TempInfo2 = (*itr);
 			itr = m_QuestListInfo[1].erase(itr);
 		//	DeleteNew(TempInfo2);
 		}
@@ -14634,7 +14737,6 @@ void	C_VS_UI_QUEST_DETAIL::Finish()
 
 void	C_VS_UI_QUEST_DETAIL::Show()
 {
-	int ScrPos = m_pC_scroll_bar->GetScrollPos();
 	if(gpC_base->m_p_DDSurface_back->Lock())
 	{	
 		gpC_global_resource->DrawDialogLocked4(x, y, w, h, GetAttributes()->alpha);
@@ -14725,6 +14827,7 @@ bool	C_VS_UI_QUEST_DETAIL::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_QUEST_DETAIL::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -15155,7 +15258,7 @@ void	C_VS_UI_QUEST_MISSION::Show()
 		};
 		char szString[512];
 		char szString2[512];
-		for(int i =ScrPos; i< m_QuestMissionInfo.size(); i++)
+		for(int i =ScrPos; static_cast<size_t>(i)< m_QuestMissionInfo.size(); i++)
 		{
 			if(i>ScrPos+5)
 				break;
@@ -15244,7 +15347,7 @@ bool	C_VS_UI_QUEST_MISSION::MouseControl(UINT message, int _x, int _y)
 			{
 				int ScrPos = m_pC_scroll_bar->GetScrollPos();
 				int TempPos = (_y-40)/17 + ScrPos;
-				if(TempPos < m_QuestMissionInfo.size())
+				if(static_cast<size_t>(TempPos) < m_QuestMissionInfo.size())
 				{
 					m_SelectPos = TempPos;
 					break;
@@ -15303,6 +15406,7 @@ bool	C_VS_UI_QUEST_MISSION::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_QUEST_MISSION::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -15500,7 +15604,6 @@ C_VS_UI_QUEST_ITEM::C_VS_UI_QUEST_ITEM(C_SPRITE_PACK* spr)
 
 	int pin_x = 6, pin_y = h-254+m_OustersOffset;
 	int close_x = w-20, close_y = h-252+m_OustersOffset;		
-	int alpha_x = 24, alpha_y = h-254+m_OustersOffset;
 		
 	//공통버튼
 	m_pC_button_group = new ButtonGroup(this);
@@ -15648,7 +15751,7 @@ void	C_VS_UI_QUEST_ITEM::Show()
 	//	m_pImage_Spk->BltLocked(x+5, y+210+m_OustersOffset, INVENTORY_SLOT);
 
 		int ScrPos = m_pC_scroll_bar->GetScrollPos();
-		for(int i =ScrPos*2; i< m_QuestItemInfo.size(); i++)
+		for(int i =ScrPos*2; static_cast<size_t>(i)< m_QuestItemInfo.size(); i++)
 		{
 			if(i>(ScrPos*2)+9)
 				break;
@@ -15695,7 +15798,7 @@ void	C_VS_UI_QUEST_ITEM::Show()
 							eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 							)
 						{
-							gpC_global_resource->m_pC_info_spk->BltLockedOutline(item_x, item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+							gpC_global_resource->m_pC_info_spk->BltLockedOutline(item_x, item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, static_cast<int>(C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE)+static_cast<int>(eType));
 						}
 					}
 				}
@@ -15713,7 +15816,7 @@ void	C_VS_UI_QUEST_ITEM::Show()
 								eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 								)
 							{
-								gpC_global_resource->m_pC_info_spk->BltLocked(item_x, item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+								gpC_global_resource->m_pC_info_spk->BltLocked(item_x, item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, static_cast<int>(C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE)+static_cast<int>(eType));
 							}
 						}
 					}
@@ -15728,7 +15831,7 @@ void	C_VS_UI_QUEST_ITEM::Show()
 								eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 								)
 							{
-								gpC_global_resource->m_pC_info_spk->BltLockedColor(item_x, item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
+								gpC_global_resource->m_pC_info_spk->BltLockedColor(item_x, item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, static_cast<int>(C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE)+static_cast<int>(eType), 0);
 							}
 						}
 					}
@@ -15805,7 +15908,7 @@ bool	C_VS_UI_QUEST_ITEM::MouseControl(UINT message, int _x, int _y)
 
 				int TempPos = (TempPosX*2 + TempPosY)+ScrPos*2;
 				
-				if(TempPos < m_QuestItemInfo.size())
+				if(static_cast<size_t>(TempPos) < m_QuestItemInfo.size())
 				{
 					MItem * p_item = m_QuestItemInfo[TempPos];
 					if(NULL != p_item)
@@ -15879,7 +15982,7 @@ bool	C_VS_UI_QUEST_ITEM::MouseControl(UINT message, int _x, int _y)
 
 				int TempPos = (TempPosX*2 + TempPosY)+ScrPos*2;
 				
-				if(TempPos < m_QuestItemInfo.size())
+				if(static_cast<size_t>(TempPos) < m_QuestItemInfo.size())
 				{
 					MItem * p_item = m_QuestItemInfo[TempPos];
 					
@@ -15932,7 +16035,7 @@ bool	C_VS_UI_QUEST_ITEM::MouseControl(UINT message, int _x, int _y)
 
 					int TempPos = (TempPosX*2 + TempPosY)+ScrPos*2;
 					
-					if(TempPos < m_QuestItemInfo.size())
+					if(static_cast<size_t>(TempPos) < m_QuestItemInfo.size())
 					{
 						MItem * p_item = m_QuestItemInfo[TempPos];
 						
@@ -15962,6 +16065,7 @@ bool	C_VS_UI_QUEST_ITEM::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_QUEST_ITEM::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)
@@ -16073,6 +16177,7 @@ void	C_VS_UI_QUEST_ITEM::Run(id_t id)
 		gpC_base->SendMessage(UI_CLOSE_QUEST_ITEM);
 //		break;
 //		
+		[[fallthrough]];
 	case ALPHA_ID:
 		AttrAlpha(!GetAttributes()->alpha);
 		EMPTY_MOVE;
@@ -16221,6 +16326,8 @@ C_VS_UI_RANGER_CHAT::C_VS_UI_RANGER_CHAT()
 	case RACE_OUSTERS:
 		m_Offset = 8;
 		break;
+	default:
+		break;
 	}
 
 	
@@ -16338,6 +16445,9 @@ bool	C_VS_UI_RANGER_CHAT::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_RANGER_CHAT::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)message;
+	(void)key;
+	(void)extra;
 
 }
 
@@ -16496,11 +16606,6 @@ void	C_VS_UI_PERSNALSHOP_MESSAGE::Finish()
 
 void	C_VS_UI_PERSNALSHOP_MESSAGE::Show()
 {
-	int box_x = 160+x, box_y = 189+y;
-	int name_x =190+x, name_y = 193+y;
-
-	RECT rect = { x+50, y+90, x+ 220, y+200 };
-
 	
 	if(gpC_base->m_p_DDSurface_back->Lock())
 	{
@@ -16547,7 +16652,7 @@ void	C_VS_UI_PERSNALSHOP_MESSAGE::KeyboardControl(UINT message, UINT key, long e
 {
 	char ignore_char[] = {'\"', '\'', '/',' '};
 	
-	for (int i=0; i<sizeof(ignore_char); i++)
+	for (int i=0; static_cast<size_t>(i)<sizeof(ignore_char); i++)
 		if ((char)key == ignore_char[i] || (char)key == 13)
  			return;
 
@@ -16634,6 +16739,7 @@ void	C_VS_UI_PERSNALSHOP_MESSAGE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_
 
 void	C_VS_UI_PERSNALSHOP_MESSAGE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 void	C_VS_UI_PERSNALSHOP_MESSAGE::Run(id_t id)
@@ -16733,6 +16839,8 @@ C_VS_UI_POWER_JJANG::C_VS_UI_POWER_JJANG()
 	case RACE_OUSTERS:
 		m_pC_spk.Open(SPK_OUSTERS_POWERJJANG);
 		break;		
+	default:
+		break;
 	}
 
 	m_pC_scroll_bar = new C_VS_UI_SCROLL_BAR(0, Rect(w-35,215,-1,window_h-280));
@@ -16740,7 +16848,6 @@ C_VS_UI_POWER_JJANG::C_VS_UI_POWER_JJANG()
 
 	int close_x = w-110, close_y = h-45;		
 	int select_x = w-190, select_y = h-45;		
-	int pin_x = w-24-20, pin_y = h-19;
 	int alpha_x = 6, alpha_y = h-21;
 	int phone_x = w - 85, phone_y = h - 267;
 	//공통버튼
@@ -16832,9 +16939,6 @@ void	C_VS_UI_POWER_JJANG::Finish()
 
 void	C_VS_UI_POWER_JJANG::Show()
 {
-	static DWORD SECOND_PET_QUEST = 0xffff;
-	const int tab_x = 0;
-	const int tab_y = 60;
 	int ScrPos = m_pC_scroll_bar->GetScrollPos();
 
 
@@ -16877,7 +16981,7 @@ void	C_VS_UI_POWER_JJANG::Show()
 	if ( gpC_base->m_p_DDSurface_back->Lock() )
 	{
 		m_pC_spk.BltLocked(x+ 38, y+ 20, JJANG_MAIN);
-		for(int i =ScrPos; i< m_Powerjjang_ItemList.size(); i++)
+		for(int i =ScrPos; static_cast<size_t>(i)< m_Powerjjang_ItemList.size(); i++)
 		{
 			if(i>ScrPos+2)
 				break;
@@ -16974,7 +17078,7 @@ bool	C_VS_UI_POWER_JJANG::MouseControl(UINT message, int _x, int _y)
 			{
 				int SelectPos = (_y-195 )/35;
 				SelectPos += m_pC_scroll_bar->GetScrollPos();
-				if(SelectPos>=m_Powerjjang_ItemList.size())
+				if(static_cast<size_t>(SelectPos)>=m_Powerjjang_ItemList.size())
 				{
 					SelectPos = /*m_Powerjjang_ItemList.size()*/-1;
 				}
@@ -17030,6 +17134,9 @@ bool	C_VS_UI_POWER_JJANG::MouseControl(UINT message, int _x, int _y)
 
 void	C_VS_UI_POWER_JJANG::KeyboardControl(UINT message, UINT key, long extra)	
 {	
+	(void)message;
+	(void)key;
+	(void)extra;
 //	Window::KeyboardControl(message, key, extra);
 //	if (message == WM_KEYDOWN)
 //	{
@@ -17265,7 +17372,7 @@ void	C_VS_UI_POWER_JJANG::PowerjjangGambleResult(BYTE bItemCode)
 	int ScrPos = m_pC_scroll_bar->GetScrollPos();
 	if(m_SelectPos != ScrPos)
 	{
-		for(int i = 0; i<m_Powerjjang_ItemList.size()-1; i++)
+		for(int i = 0; static_cast<size_t>(i)<m_Powerjjang_ItemList.size()-1; i++)
 		{
 			m_pC_scroll_bar->ScrollDown();
 			ScrPos = m_pC_scroll_bar->GetScrollPos();

@@ -18,6 +18,7 @@ void GCAddWolfHandler::execute ( GCAddWolf * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

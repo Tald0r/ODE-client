@@ -20,6 +20,7 @@ void GCCreatureDiedHandler::execute ( GCCreatureDied * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	// message

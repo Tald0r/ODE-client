@@ -24,8 +24,6 @@ CGAttack::CGAttack ()
 
 CGAttack::~CGAttack ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGAttack::read (SocketInputStream & iStream)

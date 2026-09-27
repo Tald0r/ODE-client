@@ -4,7 +4,9 @@
 // Description : 
 //////////////////////////////////////////////////////////////////////////////
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifndef __GC_SELECT_QUEST_ID_H__
 #define __GC_SELECT_QUEST_ID_H__

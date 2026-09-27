@@ -368,6 +368,7 @@ void	C_VS_UI_CHAR_DELETE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void C_VS_UI_CHAR_DELETE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -590,6 +591,9 @@ void C_VS_UI_NEWCHAR::RollDice(bool load)
 			m_p_slot->INT_PURE = 10;
 			m_p_slot->bonus_point = 15;
 		}
+		break;
+
+	default:
 		break;
 	}
 
@@ -1101,6 +1105,7 @@ int C_VS_UI_NEWCHAR::GetColor(int _x, int _y, bool bl_skin_color)
 
 void C_VS_UI_NEWCHAR::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 
 }
 
@@ -1202,6 +1207,7 @@ void C_VS_UI_NEWCHAR::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void C_VS_UI_NEWCHAR::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -1211,6 +1217,8 @@ void C_VS_UI_NEWCHAR::WindowEventReceiver(id_t event)
 //-----------------------------------------------------------------------------
 bool C_VS_UI_NEWCHAR::IsPixel(int _x, int _y)
 {
+	(void)_x;
+	(void)_y;
 	return true;
 //	return m_pC_back.IsPixel(SCR2WIN_X(_x), SCR2WIN_Y(_y), MAIN);
 }
@@ -1344,7 +1352,7 @@ void C_VS_UI_NEWCHAR::KeyboardControl(UINT message, UINT key, long extra)
 									'+', '=', '\\', '|', '[', ']', '{', '}', ';', ':', '\"', '\'', ',', '<', '.', '>',
 									'/', '?', ' '};
 
-		for (int i=0; i<sizeof(ignore_char); i++)
+		for (int i=0; static_cast<size_t>(i)<sizeof(ignore_char); i++)
 			if ((char)key == ignore_char[i])
 				return;
 	}
@@ -1599,6 +1607,9 @@ void C_VS_UI_NEWCHAR::Run(id_t id)
 						m_p_slot->woman_info.hair = W_HAIR2;
 						m_p_slot->woman_info.face = W_FACE2;
 						break;
+
+					default:
+						break;
 					}
 				}
 				else
@@ -1618,6 +1629,9 @@ void C_VS_UI_NEWCHAR::Run(id_t id)
 					case M_HAIR3:
 						m_p_slot->man_info.hair = M_HAIR2;
 						m_p_slot->man_info.face = M_FACE2;
+						break;
+
+					default:
 						break;
 					}
 				}
@@ -1645,6 +1659,9 @@ void C_VS_UI_NEWCHAR::Run(id_t id)
 						m_p_slot->woman_info.hair = W_HAIR2;
 						m_p_slot->woman_info.face = W_FACE2;
 						break;
+
+					default:
+						break;
 					}
 				}
 				else
@@ -1664,6 +1681,9 @@ void C_VS_UI_NEWCHAR::Run(id_t id)
 					case M_HAIR1:
 						m_p_slot->man_info.hair = M_HAIR2;
 						m_p_slot->man_info.face = M_FACE2;
+						break;
+
+					default:
 						break;
 					}
 				}
@@ -1933,6 +1953,9 @@ void	C_VS_UI_NEWCHAR::ShowCharacter(int _x, int _y, S_SLOT * p_slot, int index, 
 			else
 				_ShowCharacterSlayer( _x, _y, p_slot, index, enable, dark );
 			break;
+
+		default:
+			break;
 		}
 		gpC_base->m_p_DDSurface_back->Unlock();
 	}
@@ -1945,6 +1968,8 @@ void	C_VS_UI_NEWCHAR::ShowCharacter(int _x, int _y, S_SLOT * p_slot, int index, 
 //-----------------------------------------------------------------------------
 void C_VS_UI_NEWCHAR::DrawCover(int _x, int _y)
 {
+	(void)_x;
+	(void)_y;
 	//m_pC_new_char_spk->Blt(_x, _y, COVER);
 }
 
@@ -1980,6 +2005,9 @@ void C_VS_UI_NEWCHAR::Show()
 		case RACE_OUSTERS:
 			m_face_spk.BltLocked(426, 312, 8);
 			break;			
+
+		default:
+			break;
 		}		
 		
 		m_image_spk.BltLocked(250, 150);
@@ -2066,6 +2094,9 @@ void C_VS_UI_NEWCHAR::Show()
 	case RACE_OUSTERS:
 		m_image_spk.Blt(411,229-6+23, MALE_CHECK);
 		break;	
+
+	default:
+		break;
 	}	
 	
 	if(m_p_slot->Race != RACE_OUSTERS)
@@ -2236,6 +2267,7 @@ void C_VS_UI_CHAR_MANAGER::NewCharacterCreateOk()
 //-----------------------------------------------------------------------------
 void C_VS_UI_CHAR_MANAGER::NewCharacterCreateFailed(int error)
 {
+	(void)error;
 	g_msg_character_create_failed->Start();
 }
 
@@ -2595,6 +2627,7 @@ void C_VS_UI_CHAR_MANAGER::UnacquireMouseFocus()
 //-----------------------------------------------------------------------------
 void C_VS_UI_CHAR_MANAGER::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -2604,6 +2637,8 @@ void C_VS_UI_CHAR_MANAGER::WindowEventReceiver(id_t event)
 //-----------------------------------------------------------------------------
 bool C_VS_UI_CHAR_MANAGER::IsPixel(int _x, int _y)
 {
+	(void)_x;
+	(void)_y;
 	return true;
 //	return m_pC_back.IsPixel(SCR2WIN_X(_x), SCR2WIN_Y(_y));
 }
@@ -2689,9 +2724,11 @@ void C_VS_UI_CHAR_MANAGER::Run(id_t id)
 
 		case DELETE_1_ID:
 			i = 0;
+			[[fallthrough]];
 		case DELETE_2_ID:
 			if(i == -1)
 				i = 1;
+			[[fallthrough]];
 		case DELETE_3_ID:
 			if(i == -1)
 				i = 2;
@@ -2707,6 +2744,7 @@ void C_VS_UI_CHAR_MANAGER::Run(id_t id)
 			break;
 		case CANNOT_PLAY_ID :
 			i=0;
+			[[fallthrough]];
 		case CANNOT_PLAY_BY_ATTR_ID :
 			if(i == -1)
 				i=1;
@@ -2805,6 +2843,7 @@ bool C_VS_UI_CHAR_MANAGER::MouseControl(UINT message, int _x, int _y)
 -----------------------------------------------------------------------------*/
 void C_VS_UI_CHAR_MANAGER::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	switch(message)
 	{
 	case WM_KEYDOWN:
@@ -2840,6 +2879,7 @@ void C_VS_UI_CHAR_MANAGER::KeyboardControl(UINT message, UINT key, long extra)
 
 void C_VS_UI_CHAR_MANAGER::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 }
 
 //-----------------------------------------------------------------------------
@@ -2920,7 +2960,6 @@ void C_VS_UI_CHAR_MANAGER::Show()
 	}
 
 
-	COLORREF disable_color = RGB(100, 100, 100);
 
 	int i;
 
@@ -3052,26 +3091,26 @@ void C_VS_UI_CHAR_MANAGER::Show()
 					for(unsigned int i = 3; i <= 13; i += 4)
 						if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
 						
-						px = g_PrintColorStr(29, py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_FAME].GetString(), gpC_base->m_chatting_pi, RGB(160, 160, 160));
-						g_PrintColorStr(px, py, sstr.c_str(), gpC_base->m_chatting_pi, RGB(160, 160, 160));
+					px = g_PrintColorStr(29, py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_FAME].GetString(), gpC_base->m_chatting_pi, RGB(160, 160, 160));
+					g_PrintColorStr(px, py, sstr.c_str(), gpC_base->m_chatting_pi, RGB(160, 160, 160));
+					py+=16;
+					
+					if(m_p_slot->GRADE>0&&m_p_slot->GRADE<=50)
+					{
+						px= g_PrintColorStr(29,py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_GRADE].GetString(),gpC_base->m_chatting_pi, RGB(160,160,160));
+						char tempstr[100];
+						SafeFormat::Format(tempstr,"%s [%d]",grade[(m_p_slot->GRADE-1)/5],m_p_slot->GRADE);
+						//g_PrintColorStr(px,py,grade[(m_p_slot->GRADE-1)/5], gpC_base->m_chatting_pi, RGB(160,160,160));
+						g_PrintColorStr(px,py,tempstr, gpC_base->m_chatting_pi, RGB(160,160,160));
 						py+=16;
-						
-						if(m_p_slot->GRADE>0&&m_p_slot->GRADE<=50)
-						{
-							px= g_PrintColorStr(29,py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_GRADE].GetString(),gpC_base->m_chatting_pi, RGB(160,160,160));
-							char tempstr[100];
-							SafeFormat::Format(tempstr,"%s [%d]",grade[(m_p_slot->GRADE-1)/5],m_p_slot->GRADE);
-							//g_PrintColorStr(px,py,grade[(m_p_slot->GRADE-1)/5], gpC_base->m_chatting_pi, RGB(160,160,160));
-							g_PrintColorStr(px,py,tempstr, gpC_base->m_chatting_pi, RGB(160,160,160));
-							py+=16;
-						}
-						
-						// 계급 경험치 
-						//px = g_PrintColorStr(29,py,(*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_GRADE_EXP].GetString(),gpC_base->m_chatting_pi, RGB(160,160,160));
-						//char tempstr[100];
-						//wsprintf(tempstr,"%d",m_p_slot->GRADE_EXP);
-						//g_PrintColorStr(px,py,tempstr,gpC_base->m_chatting_pi, RGB(160,160,160));
-						
+					}
+					
+					// 계급 경험치 
+					//px = g_PrintColorStr(29,py,(*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_GRADE_EXP].GetString(),gpC_base->m_chatting_pi, RGB(160,160,160));
+					//char tempstr[100];
+					//wsprintf(tempstr,"%d",m_p_slot->GRADE_EXP);
+					//g_PrintColorStr(px,py,tempstr,gpC_base->m_chatting_pi, RGB(160,160,160));
+					
 				}
 				break;
 
@@ -3113,13 +3152,16 @@ void C_VS_UI_CHAR_MANAGER::Show()
 					for(unsigned int i = 3; i <= 13; i += 4)
 						if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
 						
-						g_PrintColorStr(px,py, sstr.c_str(), gpC_base->m_chatting_pi, RGB(160,160,160) );
-						py+=16;
-						
+					g_PrintColorStr(px,py, sstr.c_str(), gpC_base->m_chatting_pi, RGB(160,160,160) );
+					py+=16;
+					
 				}
 				break;
 
 			case RACE_OUSTERS:
+				break;
+
+			default:
 				break;
 			}
 			//px= g_PrintColorStr(29,py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CHAR_MANAGER_GRADE].GetString(),gpC_base->m_chatting_pi, RGB(160,160,160));
@@ -3318,6 +3360,7 @@ void C_VS_UI_SERVER_SELECT::UnacquireMouseFocus()
 //-----------------------------------------------------------------------------
 void C_VS_UI_SERVER_SELECT::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -3327,6 +3370,8 @@ void C_VS_UI_SERVER_SELECT::WindowEventReceiver(id_t event)
 //-----------------------------------------------------------------------------
 bool C_VS_UI_SERVER_SELECT::IsPixel(int _x, int _y)
 {
+	(void)_x;
+	(void)_y;
 //	return m_image_spk.IsPixel(SCR2WIN_X(_x), SCR2WIN_Y(_y));
 	return true;
 }
@@ -3450,6 +3495,7 @@ bool C_VS_UI_SERVER_SELECT::MouseControl(UINT message, int _x, int _y)
 -----------------------------------------------------------------------------*/
 void C_VS_UI_SERVER_SELECT::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	switch(message)
 	{
 	case WM_KEYDOWN:
@@ -3573,7 +3619,7 @@ void C_VS_UI_SERVER_SELECT::Show()
 				m_image_spk.BltLocked(SCROLL_X, SCROLL_Y+m_scroll*SCROLL_HEIGHT/(m_server_name.size()-12), SCROLL_TAG);
 		}
 		
-		if(m_server_select >= m_scroll && m_server_select < m_scroll+12)
+		if(static_cast<unsigned int>(m_server_select) >= m_scroll && static_cast<unsigned int>(m_server_select) < m_scroll+12)
 		{
 			RECT rect;
 			SetRect(&rect,
@@ -3590,9 +3636,9 @@ void C_VS_UI_SERVER_SELECT::Show()
 	char server_status_string[30];
 	//서버리스트 표시
 	g_FL2_GetDC();
-	for(int i = 0; i < min(m_server_name.size(), 12); i++)
+	for(int i = 0; static_cast<size_t>(i) < min(m_server_name.size(), 12); i++)
 	{
-		COLORREF statusColor = RGB_WHITE;
+		[[maybe_unused]] COLORREF statusColor = RGB_WHITE;
 		if(m_bl_group)
 		{
 			switch(m_server_status[i+m_scroll])
@@ -3685,7 +3731,7 @@ void C_VS_UI_SERVER_SELECT::Show()
 
 	static bool old_bl_group = m_bl_group;
 	static int old_focused_help = -1;
-	if(old_focused_help != m_focused_help && m_focused_help < HELP_MAX || old_bl_group != m_bl_group)
+	if((old_focused_help != m_focused_help && m_focused_help < HELP_MAX) || old_bl_group != m_bl_group)
 	{
 		if(m_focused_help == HELP_DEFAULT)
 		{
@@ -3861,6 +3907,7 @@ void C_VS_UI_LOGIN::UnacquireMouseFocus()
 
 void C_VS_UI_LOGIN::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 {
+	(void)p_button;
 }
 
 void C_VS_UI_LOGIN::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
@@ -3882,6 +3929,7 @@ void C_VS_UI_LOGIN::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void C_VS_UI_LOGIN::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -4168,6 +4216,7 @@ void C_VS_UI_LOGIN::SendNewUserToClient()
 -----------------------------------------------------------------------------*/
 void C_VS_UI_LOGIN::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	// SDL text, preedit and editor control keys are delivered once through
 	// InputFocusManager. This window handles only dialog-level actions.
 	switch (message)
@@ -4327,7 +4376,8 @@ void C_VS_UI_TITLE::ClearAllCharacter()
 
 void A(C_VS_UI_DIALOG * p, id_t id)
 {
-	int z = 0;
+	(void)p;
+	(void)id;
 }
 
 //-----------------------------------------------------------------------------
@@ -4414,7 +4464,6 @@ C_VS_UI_TITLE::C_VS_UI_TITLE()
 	
 	m_pC_use_grade = NULL;
 	
-	const InterfaceInformation *pSkin = &g_pSkinManager->Get( SkinManager::TITLE );
 	m_pC_button_group = new ButtonGroup(this);
 	if(g_MyFull)
 	{
@@ -4607,6 +4656,7 @@ void C_VS_UI_TITLE::RunCannotPlayByAttrMessage()
 //-----------------------------------------------------------------------------
 void C_VS_UI_TITLE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -5120,6 +5170,9 @@ C_VS_UI_OPTION::C_VS_UI_OPTION(bool IsTitle)
 		case RACE_OUSTERS:
 			m_vampire_plus_x = 12; m_vampire_plus_y = 10;
 			m_pC_main_spk = new C_SPRITE_PACK(SPK_OPTION_OUSTERS);
+			break;
+
+		default:
 			break;
 		}
 		
@@ -5989,6 +6042,9 @@ void	C_VS_UI_OPTION::SetValue(int _x, enum VALUE_RECT rect_value)
 	case RECT_ALPHA:
 		g_pUserOption->ALPHA_DEPTH = _x*MAX_ALPHA_DEPTH/m_rt_value[rect_value].w;
 		break;
+
+	default:
+		break;
 	}
 }
 
@@ -6001,7 +6057,8 @@ bool C_VS_UI_OPTION::MouseControl(UINT message, int _x, int _y)
 	static VALUE_RECT value = RECT_MOUSE_SPEED;
 
 	if(false == m_IsTitle)
-		_x -=m_vampire_plus_x; _y-=m_vampire_plus_y;
+		_x -=m_vampire_plus_x;
+	_y-=m_vampire_plus_y;
 	
 	//Window::MouseControl(message, _x, _y);
 	_x -=x; _y-=y;
@@ -6067,7 +6124,7 @@ bool C_VS_UI_OPTION::MouseControl(UINT message, int _x, int _y)
 			{
 				gC_vs_ui.SetAccelMode(ACCEL_NULL+14+m_focus_hotkey);
 			}
-			if(m_i_selected_tab == TAB_GRAPHIC && (m_check[CHECK_GAMMA] == CHECK_CHECK && m_rt_value[RECT_GAMMA].IsInRect(_x, _y) || m_check[CHECK_ALPHA_DEPTH] == CHECK_CHECK && m_rt_value[RECT_ALPHA].IsInRect(_x, _y)))
+			if(m_i_selected_tab == TAB_GRAPHIC && ((m_check[CHECK_GAMMA] == CHECK_CHECK && m_rt_value[RECT_GAMMA].IsInRect(_x, _y)) || (m_check[CHECK_ALPHA_DEPTH] == CHECK_CHECK && m_rt_value[RECT_ALPHA].IsInRect(_x, _y))))
 			{
 				m_bLBPush = true;
 				if(m_rt_value[RECT_GAMMA].IsInRect(_x, _y))
@@ -6076,7 +6133,7 @@ bool C_VS_UI_OPTION::MouseControl(UINT message, int _x, int _y)
 					value = RECT_ALPHA;
 				SetValue(_x, value);
 			}
-			else if(m_i_selected_tab == TAB_SOUND && (m_rt_value[RECT_SOUND].IsInRect(_x, _y) && m_check[CHECK_SOUND] || m_rt_value[RECT_MUSIC].IsInRect(_x, _y) && m_check[CHECK_MUSIC]))
+			else if(m_i_selected_tab == TAB_SOUND && ((m_rt_value[RECT_SOUND].IsInRect(_x, _y) && m_check[CHECK_SOUND]) || (m_rt_value[RECT_MUSIC].IsInRect(_x, _y) && m_check[CHECK_MUSIC])))
 			{
 				m_bLBPush = true;
 				if(m_rt_value[RECT_SOUND].IsInRect(_x, _y))
@@ -6121,6 +6178,9 @@ bool C_VS_UI_OPTION::MouseControl(UINT message, int _x, int _y)
 
 				case RECT_ALPHA:
 					break;
+
+				default:
+					break;
 				}
 			}
 		break;
@@ -6146,6 +6206,7 @@ bool C_VS_UI_OPTION::MouseControl(UINT message, int _x, int _y)
 -----------------------------------------------------------------------------*/
 void C_VS_UI_OPTION::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	// 만약 IME toggle되어 있을 경우를 대비하여 scan code로 한다.
 
 	if (message == WM_KEYUP)
@@ -6426,7 +6487,6 @@ void C_VS_UI_OPTION::Show()
 		"",						// 0xFF
 	};
 
-	const InterfaceInformation* pSkin = &g_pSkinManager->Get( SkinManager::OPTION );
 
 	int i = 0;
 //	int tab_x[4] = {pSkin->GetRect(0).left, pSkin->GetRect(0).top, pSkin->GetRect(0).right, pSkin->GetRect(0).bottom}, tab_y = 20;
@@ -6770,6 +6830,7 @@ void C_VS_UI_OPTION::UnacquireMouseFocus()
 //-----------------------------------------------------------------------------
 void C_VS_UI_OPTION::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -6869,6 +6930,7 @@ void	C_VS_UI_GO_BILING_PAGE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //-----------------------------------------------------------------------------
 void C_VS_UI_GO_BILING_PAGE::WindowEventReceiver(id_t event)
 {
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -7006,6 +7068,7 @@ bool C_VS_UI_GO_BILING_PAGE::MouseControl(UINT message, int _x, int _y)
 //-----------------------------------------------------------------------------
 void C_VS_UI_GO_BILING_PAGE::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)extra;
 	if (message == WM_KEYDOWN)
 	{
 		switch (key)

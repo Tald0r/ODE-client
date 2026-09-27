@@ -208,10 +208,6 @@ CTypeTable<Type>::SaveToFile(std::ofstream& file)
 	// 각각의 정보 저장
 	for (int i=0; i<m_Size; i++)
 	{
-		if (i==557)//石头返回效果
-		{
-			i=i;
-		}
 		m_pTypeInfo[i].SaveToFile(file);
 	}
 }
@@ -248,10 +244,6 @@ CTypeTable<Type>::LoadFromFile(std::ifstream& file)
 	// read each entry from the file
 	for (int i=0; i<m_Size && file.good(); i++)
 	{
-		if (i==700)
-		{
-			i=i;
-		}
  		m_pTypeInfo[i].LoadFromFile( file );
 	}
 }

@@ -31,8 +31,6 @@ GCSkillToObjectOK2::GCSkillToObjectOK2 ()
 //////////////////////////////////////////////////////////////////////
 GCSkillToObjectOK2::~GCSkillToObjectOK2 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

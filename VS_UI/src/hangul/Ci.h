@@ -70,7 +70,7 @@ public:
 	
 	virtual void	IME_NextComposition() = 0;
 	virtual void	IME_Composition() = 0;
-	virtual void	IME_MessageProcessor(UINT message, WPARAM wParam, LPARAM lParam = 0){}
+	virtual void	IME_MessageProcessor(UINT message, WPARAM wParam, LPARAM lParam = 0){ (void)message; (void)wParam; (void)lParam; }
 };
 
 class CI_KOREAN : public CI

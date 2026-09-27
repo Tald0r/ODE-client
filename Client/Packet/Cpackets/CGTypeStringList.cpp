@@ -14,8 +14,6 @@ CGTypeStringList::CGTypeStringList ()
 
 CGTypeStringList::~CGTypeStringList ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGTypeStringList::read (SocketInputStream & iStream)

@@ -301,6 +301,7 @@ MSlotItemManager::ReplaceItem(MItem* pItem, BYTE n, MItem*& pOldItem)
 bool			
 MSlotItemManager::CanReplaceItem(MItem* pItem, BYTE n, MItem*& pOldItem)
 {
+	(void)pItem;
 	//---------------------------------------------------------
 	// ItemSlot 범위를 넘어가는 경우..
 	//---------------------------------------------------------	

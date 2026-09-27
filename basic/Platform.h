@@ -1858,7 +1858,7 @@ static inline BOOL WaitMessage(void) {
 /* PeekMessage function */
 #ifndef PeekMessageA
 static inline BOOL PeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg) {
-	(void)hWnd; (void)wMsgFilterMin; (void)wMsgFilterMax; (void)wRemoveMsg;
+	(void)lpMsg; (void)hWnd; (void)wMsgFilterMin; (void)wMsgFilterMax; (void)wRemoveMsg;
 	return FALSE;
 }
 #define PeekMessage PeekMessageA
@@ -1915,6 +1915,7 @@ static inline BOOL GetVersionExA(LPOSVERSIONINFOA lpVersionInformation) {
 /* Exception handling */
 /* Exception filter type (must be defined before EXCEPTION_POINTERS) */
 #ifndef LPTOP_LEVEL_EXCEPTION_FILTER
+struct _EXCEPTION_POINTERS;
 typedef LONG (*LPTOP_LEVEL_EXCEPTION_FILTER)(struct _EXCEPTION_POINTERS*);
 #endif
 

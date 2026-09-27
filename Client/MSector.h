@@ -59,7 +59,9 @@
 #ifndef	__MSECTOR_H__
 #define	__MSECTOR_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "DrawTypeDef.h"
 #include "MTypeDef.h"

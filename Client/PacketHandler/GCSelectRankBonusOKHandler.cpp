@@ -20,6 +20,7 @@ void GCSelectRankBonusOKHandler::execute ( GCSelectRankBonusOK * pGCSelectRankBo
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 	const int type = pGCSelectRankBonusOK->getRankBonusType();

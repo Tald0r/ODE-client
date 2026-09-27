@@ -22,6 +22,7 @@ void GCGuildChatHandler::execute ( GCGuildChat * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	//cout << pPacket->toString() << endl;
 		char str[256];
@@ -34,7 +35,7 @@ void GCGuildChatHandler::execute ( GCGuildChat * pPacket , Player * pPlayer )
 		
 		snprintf( str, sizeof(str), "%s", pPacket->getMessage().c_str() );
 		
-		if (str[0] != NULL)
+		if (str[0] != '\0')
 		{
 			//--------------------------------------------------
 			// 나에게 보이는 글인가?

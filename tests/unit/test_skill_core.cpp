@@ -39,7 +39,8 @@ DWORD	s_Frame = 0;
 
 // The clock is all the skill core wants from a host.
 const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, &s_Now,
-							RecalculateStatus, ResetQuickItemSlot, RepairHint, EmptyMagazineFor };
+							RecalculateStatus, ResetQuickItemSlot, RepairHint, EmptyMagazineFor,
+							NULL, NULL };
 
 const char* const	kTempFile = "skill_core_test.bin";
 

@@ -33,10 +33,10 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	//-----------------------------------------------------------
 	// frameID가 아니고 effectSpriteType으로 해야되는데
 	// 일단은 alphaSprite라서 수치가 맞아떨어진다 - -;;
-	if (est>=EFFECTSPRITETYPE_DARKNESS_1_1
-		&& est<=EFFECTSPRITETYPE_DARKNESS_3_5 ||
-		est>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
-		est<=EFFECTSPRITETYPE_GRAY_DARKNESS_3_5)
+	if ((est>=EFFECTSPRITETYPE_DARKNESS_1_1
+		&& est<=EFFECTSPRITETYPE_DARKNESS_3_5) ||
+		(est>=EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
+		est<=EFFECTSPRITETYPE_GRAY_DARKNESS_3_5))
 	{
 		if (egInfo.pPreviousEffect!=NULL)
 		{
@@ -158,7 +158,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		sX = g_pTopView->PixelToMapX(egInfo.x1);
 		sY = g_pTopView->PixelToMapY(egInfo.y1);
 
-		for(int i=0;i<sizeof(pt)/sizeof(POINT);i++)
+		for(int i=0;static_cast<size_t>(i)<sizeof(pt)/sizeof(POINT);i++)
 		{
 			MEffect* pEffect;
 

@@ -114,6 +114,7 @@ void _AcquireDisappearHandler()
 
 void	ExecF_GoBilingPage(C_VS_UI_DIALOG *p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch(id)
 	{
 	case DIALOG_EXECID_OK :
@@ -764,6 +765,7 @@ bool C_VS_UI::MouseControl(UINT message, int x, int y)
 
 void C_VS_UI::DIKeyboardControl(CSDLInput::E_KEYBOARD_EVENT event, DWORD scan_code)
 {
+	(void)event;
 #ifdef OUTPUT_DEBUG
 //	DEBUG_ADD("[C_VS_UI] DIKeyboardControl");
 #endif
@@ -794,6 +796,9 @@ void C_VS_UI::DIKeyboardControl(CSDLInput::E_KEYBOARD_EVENT event, DWORD scan_co
 			case RACE_OUSTERS:
 				PlaySound(SOUND_OUSTERS_INTERFACE);
 				break;
+
+			default:
+				break;
 			}
 
 #ifdef OUTPUT_DEBUG
@@ -817,6 +822,9 @@ void C_VS_UI::DIKeyboardControl(CSDLInput::E_KEYBOARD_EVENT event, DWORD scan_co
 
 			case RACE_OUSTERS:
 				PlaySound(SOUND_OUSTERS_INTERFACE);
+				break;
+
+			default:
 				break;
 			}
 
@@ -876,7 +884,7 @@ void C_VS_UI::DIKeyboardControl(CSDLInput::E_KEYBOARD_EVENT event, DWORD scan_co
 	}
 
 	// function key는 단축키로 쓸 수 없다
-	if(m_bl_accel_mode && (scan_code >= DIK_F1 && scan_code <= DIK_F10 || scan_code >= DIK_F11 && scan_code <= DIK_F12))
+	if(m_bl_accel_mode && ((scan_code >= DIK_F1 && scan_code <= DIK_F10) || (scan_code >= DIK_F11 && scan_code <= DIK_F12)))
 	{
 #ifdef OUTPUT_DEBUG
 //		DEBUG_ADD("[C_VS_UI] DIKeyboardControl Function Key");
@@ -903,15 +911,15 @@ void C_VS_UI::DIKeyboardControl(CSDLInput::E_KEYBOARD_EVENT event, DWORD scan_co
 
 	if(!IsAccelMode() && 
 		(
-			!g_pUserOption->UseEnterChat && !ACCEL_HAS_CONTROL(pressed_key) && !ACCEL_HAS_ALT(pressed_key)
-			|| g_pUserOption->UseEnterChat && gC_vs_ui.IsInputMode() &&  !ACCEL_HAS_CONTROL(pressed_key) && !ACCEL_HAS_ALT(pressed_key)
+			(!g_pUserOption->UseEnterChat && !ACCEL_HAS_CONTROL(pressed_key) && !ACCEL_HAS_ALT(pressed_key))
+			|| (g_pUserOption->UseEnterChat && gC_vs_ui.IsInputMode() &&  !ACCEL_HAS_CONTROL(pressed_key) && !ACCEL_HAS_ALT(pressed_key))
 		))
 	{
 		BYTE key = ACCEL_GET_KEY(pressed_key);
-		if(key >= SCANCODE_1 && key <= SCANCODE_0 || 
-			key >= SCANCODE_Q && key <= SCANCODE_RBRACKET ||
-			key >= SCANCODE_A && key <= SCANCODE_GRAVE ||
-			key >= SCANCODE_BACKSLASH && key <= SCANCODE_SLASH ||
+		if((key >= SCANCODE_1 && key <= SCANCODE_0) || 
+			(key >= SCANCODE_Q && key <= SCANCODE_RBRACKET) ||
+			(key >= SCANCODE_A && key <= SCANCODE_GRAVE) ||
+			(key >= SCANCODE_BACKSLASH && key <= SCANCODE_SLASH) ||
 			key == SCANCODE_SPACE)
 		{
 #ifdef OUTPUT_DEBUG
@@ -950,7 +958,7 @@ void C_VS_UI::DIKeyboardControl(CSDLInput::E_KEYBOARD_EVENT event, DWORD scan_co
 		// 채팅모드가 아닐때는 채팅 단축키 안먹게! 
 		if(accel !=0 && 
 			(
-				(!g_pUserOption->UseEnterChat || g_pUserOption->UseEnterChat && gC_vs_ui.IsInputMode()) || // 채팅 모드일때
+				(!g_pUserOption->UseEnterChat || (g_pUserOption->UseEnterChat && gC_vs_ui.IsInputMode())) || // 채팅 모드일때
 				(accel != ACCEL_UNION_CHAT && accel != ACCEL_CHAT && accel != ACCEL_GUILD_CHAT && accel != ACCEL_ZONE_CHAT && accel != ACCEL_WHISPER && accel != ACCEL_PARTY_CHAT ) // 채팅 단축키가 아니고,
 			)
 		)
@@ -1754,7 +1762,7 @@ if(gbl_info_show)
 			{
 				int __x = (info->zoneX - GetX())*TILE_X;
 				int __y = (info->zoneY - GetY())*TILE_Y;
-				int _x, _y;
+				int _x = 0, _y = 0;
 				int direct = 0;
 
 				if(__y == 0)
@@ -2535,7 +2543,7 @@ int C_VS_UI::GetGearSize() const
 	if (m_pC_game)
 		return m_pC_game->GetGearSize();
 
-	return NULL;
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

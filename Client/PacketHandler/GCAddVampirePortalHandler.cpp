@@ -15,6 +15,7 @@ void GCAddVampirePortalHandler::execute ( GCAddVampirePortal * pPacket , Player 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 		
 
 

@@ -14,7 +14,6 @@ const int GCMonsterKillQuestInfo::szQuestInfo = szQuestID + szSpriteType + szWOR
 //////////////////////////////////////////////////////////////////////////////
 GCMonsterKillQuestInfo::~GCMonsterKillQuestInfo()
 {
-	__BEGIN_TRY 
 
 	std::list<QuestInfo*>::iterator itr = m_QuestInfoList.begin();
 	std::list<QuestInfo*>::iterator endItr = m_QuestInfoList.end();
@@ -30,7 +29,6 @@ GCMonsterKillQuestInfo::~GCMonsterKillQuestInfo()
 
 	m_QuestInfoList.clear();
 
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////////////

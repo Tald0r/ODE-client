@@ -18,6 +18,7 @@ void CRDisconnectHandler::execute ( CRDisconnect * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
 		
 
 	RequestServerPlayer* pRequestServerPlayer = dynamic_cast<RequestServerPlayer*>( pPlayer );

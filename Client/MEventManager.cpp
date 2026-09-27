@@ -23,11 +23,11 @@ MEvent::MEvent()
 	eventDelay = -1;
 	showTime = -1;
 	totalTime = -1;
-	eventFlag = NULL;
-	parameter1 = NULL;
-	parameter2 = NULL;
-	parameter3 = NULL;
-	parameter4 = NULL;
+	eventFlag = 0;
+	parameter1 = 0;
+	parameter2 = 0;
+	parameter3 = 0;
+	parameter4 = 0;
 }
 
 MEvent::~MEvent()
@@ -46,7 +46,7 @@ MEvent::IsShowTime() const
 	if( showTime == -1 )
 		return true;
 
-	if( ElapsedMillis() % totalTime < showTime )
+	if( ElapsedMillis() % totalTime < static_cast<DWORD>(showTime) )
 		return true;
 
 	return false;
@@ -112,7 +112,8 @@ void	MEventManager::RemoveEvent(EVENT_ID id)
 		return;
 	}
 
-	bool bFadeScreen = (event->eventFlag | EVENTFLAG_FADE_SCREEN) != false;
+	// was (eventFlag | EVENTFLAG_FADE_SCREEN) != false, which is always true
+	bool bFadeScreen = true;
 
 	m_Events.erase(id);
 
@@ -241,7 +242,7 @@ void	MEventManager::ProcessEvent()
 	{
 		if(itr->second.eventDelay != -1)
 		{
-			if(itr->second.ElapsedMillis() > itr->second.eventDelay)
+			if(itr->second.ElapsedMillis() > static_cast<DWORD>(itr->second.eventDelay))
 			{
 				EVENT_ID delete_id = itr->second.eventID;
 				itr++;

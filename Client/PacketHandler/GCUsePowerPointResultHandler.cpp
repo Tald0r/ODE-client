@@ -21,6 +21,7 @@ void GCUsePowerPointResultHandler::execute ( GCUsePowerPointResult * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	switch(pPacket->getErrorCode())

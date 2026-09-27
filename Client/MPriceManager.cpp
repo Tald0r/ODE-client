@@ -2,7 +2,9 @@
 // MPriceManager.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MPriceManager.h"
 #include "MItem.h"
@@ -46,6 +48,7 @@ MPriceManager::~MPriceManager()
 int
 MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 {
+	(void)bMysterious;
 	if (pItem==NULL)
 	{
 		return 0;

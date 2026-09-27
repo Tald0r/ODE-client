@@ -32,8 +32,6 @@ GCThrowItemOK1::GCThrowItemOK1 ()
 //////////////////////////////////////////////////////////////////////
 GCThrowItemOK1::~GCThrowItemOK1 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

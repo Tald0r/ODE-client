@@ -27,8 +27,6 @@ GCGQuestInventory::GCGQuestInventory ()
 //////////////////////////////////////////////////////////////////////
 GCGQuestInventory::~GCGQuestInventory ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void GCGQuestInventory::read(SocketInputStream & iStream)

@@ -27,7 +27,6 @@ PacketValidator::PacketValidator ()
 //----------------------------------------------------------------------
 PacketValidator::~PacketValidator () 
 {
-	__BEGIN_TRY
 
 	for ( uint i = 0 ; i < PLAYER_STATUS_MAX ; i ++ ) {
 		if ( m_PacketIDSets[i] != NULL ) {
@@ -38,7 +37,6 @@ PacketValidator::~PacketValidator ()
 
 	m_PacketIDSets.clear();
 
-	__END_CATCH
 }
 
 //----------------------------------------------------------------------
@@ -266,6 +264,7 @@ void PacketValidator::addPacketIDSet ( PlayerStatus playerStatus , PacketIDSet *
 void PacketValidator::deletePacketIDSet ( PlayerStatus playerStatus , PacketIDSet * pPacketIDSet ) 
 {
 	__BEGIN_TRY
+	(void)pPacketIDSet;
 
 	if ( playerStatus >= PLAYER_STATUS_MAX )
 		throw Error("invalid player status");

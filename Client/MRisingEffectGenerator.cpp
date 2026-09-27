@@ -32,8 +32,8 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
 	MEffectTarget* pTarget = egInfo.pEffectTarget;
 	
-	if(egInfo.nActionInfo >= SKILL_FIRE_CRACKER_VOLLEY_1 &&
-		egInfo.nActionInfo <= SKILL_FIRE_CRACKER_WIDE_VOLLEY_4 ||
+	if((egInfo.nActionInfo >= SKILL_FIRE_CRACKER_VOLLEY_1 &&
+		egInfo.nActionInfo <= SKILL_FIRE_CRACKER_WIDE_VOLLEY_4) ||
 		egInfo.nActionInfo ==SKILL_DRAGON_FIRE_CRACKER)
 	{
 		// 3연발

@@ -112,7 +112,7 @@ MChatManager::LoadFromFileCurse(const char* filename)
 		//-----------------------------------------------------
 		// 단어가 영어인지 한글인지 판단한다.
 		//-----------------------------------------------------
-		while (ch=*strTemp++)
+		while ((ch=*strTemp++))
 		{
 			//-----------------------------------------------------
 			// 한글인 경우
@@ -182,7 +182,7 @@ MChatManager::LoadFromFileCurse(const char* filename)
 bool				
 MChatManager::RemoveCurse(char* str, bool bForce) const
 {
-		if (!g_pUserOption->FilteringCurse && bForce == false || str==NULL)
+		if ((!g_pUserOption->FilteringCurse && bForce == false) || str==NULL)
 		{
 			return false;
 		}
@@ -243,7 +243,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	//------------------------------------------------------------
 	i = 0;
 	index = 0;
-	while (ch = *strOrg++)//, ch != '\0')
+	while ((ch = *strOrg++))//, ch != '\0')
 	{
 		//----------------------------------------------
 		// 소문자인 경우 --> 그대로 쓴다.
@@ -297,7 +297,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 				//---------------------------------------------------
 				// strFiltered에서 욕을 찾는다.
 				//---------------------------------------------------
-				while (pFind = strstr( strFilteredPtr, pString->GetString() ))
+				while ((pFind = strstr( strFilteredPtr, pString->GetString() )))
 				{					
 					int lenCurse = pString->GetLength();
 
@@ -366,7 +366,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	//------------------------------------------------------------
 	i = 0;
 	index = 0;
-	while (ch = *strOrg++)//, ch != '\0')
+	while ((ch = *strOrg++))//, ch != '\0')
 	{
 		//----------------------------------------------
 		// 한글인 경우..
@@ -450,7 +450,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 				case 2:
 					{
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetString();
-						for(j = 0; j<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetLength() ; j++)
+						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetLength() ; j++)
 						{
 							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
 								str[ indexFiltered[i+j] ] = pChangeString[j];
@@ -461,7 +461,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 				case 4:
 					{
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetString();
-						for(j = 0; j<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetLength() ; j++)
+						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetLength() ; j++)
 						{
 							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
 								str[ indexFiltered[i+j] ] = pChangeString[j];
@@ -472,7 +472,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 				case 6:
 					{
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetString();
-						for(j = 0; j<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetLength() ; j++)
+						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetLength() ; j++)
 						{
 							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
 								str[ indexFiltered[i+j] ] = pChangeString[j];
@@ -483,7 +483,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 				case 8:
 					{
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetString();
-						for(j = 0; j<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetLength() ; j++)
+						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetLength() ; j++)
 						{
 							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
 								str[ indexFiltered[i+j] ] = pChangeString[j];
@@ -625,7 +625,7 @@ MChatManager::AddMask(char* str, int percent) const
 	
 	int index = rand() & 0x0F;
 
-	while (ch = *str, ch != NULL)
+	while (ch = *str, ch != '\0')
 	{
 		int maskLen = 0;
 
@@ -661,7 +661,7 @@ MChatManager::AddMask(char* str, int percent) const
 			{
 				for (int i=0; i<maskLen; i++)
 				{
-					if (*str != NULL)
+					if (*str != '\0')
 					{			
 						*str = s_MaskString2[index++];
 						str++;

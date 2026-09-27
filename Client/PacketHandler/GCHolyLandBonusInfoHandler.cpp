@@ -17,6 +17,7 @@ void GCHolyLandBonusInfoHandler::execute ( GCHolyLandBonusInfo * pPacket , Playe
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	if(g_pPlayer == NULL || g_pSkillAvailable == NULL)
 		return;

@@ -112,7 +112,9 @@
 #ifndef	__MSKILLMANAGER_H__
 #define	__MSKILLMANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "SkillDef.h"
 #include "MString.h"

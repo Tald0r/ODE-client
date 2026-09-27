@@ -13,6 +13,7 @@ void GCEnterVampirePortalHandler::execute ( GCEnterVampirePortal * pPacket , Pla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 

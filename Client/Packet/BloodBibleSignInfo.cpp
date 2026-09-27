@@ -34,9 +34,7 @@ BloodBibleSignInfo::BloodBibleSignInfo ()
 //////////////////////////////////////////////////////////////////////
 BloodBibleSignInfo::~BloodBibleSignInfo () 
 {
-	__BEGIN_TRY
 
-	__END_CATCH
 }
 
 

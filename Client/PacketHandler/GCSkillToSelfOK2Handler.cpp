@@ -18,6 +18,7 @@ void GCSkillToSelfOK2Handler::execute ( GCSkillToSelfOK2 * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------

@@ -246,6 +246,7 @@ void LineEditor::InsertMark(unsigned short mark)
 // KeyboardControl - main entry point for keyboard messages
 void LineEditor::KeyboardControl(unsigned int message, unsigned int key, long extra)
 {
+	(void)extra;
 	switch (message)
 	{
 	case WM_CHAR:

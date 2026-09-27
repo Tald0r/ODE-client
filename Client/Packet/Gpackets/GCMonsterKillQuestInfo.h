@@ -4,7 +4,9 @@
 // Description : 
 //////////////////////////////////////////////////////////////////////////////
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifndef __GC_MONSTER_KILL_QUEST_INFO_H__
 #define __GC_MONSTER_KILL_QUEST_INFO_H__

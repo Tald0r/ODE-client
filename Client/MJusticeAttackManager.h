@@ -9,7 +9,9 @@
 #ifndef __MJUSTICE_ATTACK_MANAGER_H__
 #define __MJUSTICE_ATTACK_MANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <map>
 #include <string>

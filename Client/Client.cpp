@@ -13,7 +13,9 @@
 // Client.cpp
 //-----------------------------------------------------------------------------
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 /* version 5.0 */
@@ -333,6 +335,7 @@ bool ParsingNetmarble(const char* pCommandLine, NETMARBLE_INFO &info);
 bool
 ParsingRealServer(const char* pCommandLine, int Dimention, REALSERVER_INFO &info)
 {
+	(void)Dimention;
 	if( pCommandLine == NULL )
 		return false;
 	
@@ -537,8 +540,6 @@ CreateProgressBar(const char* str)
 		RemoveProgressBar();
 
 		InitCommonControls();
-
-		int cyVScroll = GetSystemMetrics(SM_CYVSCROLL); 
 
 		g_hWndProgress = CreateWindowEx(WS_EX_TOPMOST, PROGRESS_CLASS, str, 
 										WS_VISIBLE | PBS_SMOOTH, 
@@ -922,7 +923,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 					DEBUG_ADD("[WM_ACTIVATE]");
 			#endif
 
-					/*
+					/ *
 			//WORD fActive = LOWORD(wParam);           // activation flag 
 			//BOOL fMinimized = (BOOL) HIWORD(wParam); // minimized flag 
 
@@ -1414,7 +1415,7 @@ color
 				DEBUG_ADD("UI KeyCtrl OK");
 			#endif
 
-			TCHAR ch = (TCHAR)wParam;    // character code 	
+			[[maybe_unused]] TCHAR ch = (TCHAR)wParam;    // character code 	
 			
 			//switch (ch)
 			//{
@@ -1854,7 +1855,6 @@ bool
 CheckTerriblePatch()
 {
 	bool bCrash = false;
-	int errorCode = 0;
 
 	//-----------------------------------------------------------------------------
 	// ImageObject Patch
@@ -1905,17 +1905,14 @@ CheckTerriblePatch()
 	//-----------------------------------------------------------------------------
 	// Append 패치를 한다.
 	//-----------------------------------------------------------------------------
-	errorCode = 0;
 	for (int i=0; i<apt.GetSize(); i++)
 	{
-		errorCode ++;
 		if (!apt[i].ExecutePatch())
 		{
 			//bCrash = true;
 			break;
 		}
 
-		errorCode ++;
 		if (!apt[i].CheckFinalInfo())
 		{
 			#ifdef OUTPUT_DEBUG				
@@ -2222,7 +2219,7 @@ ConvertScreenEffect()
 //		fileSPK2.close();
 //	}
 	
-/*	std::ifstream fileSPK2("Data\\Info\\EffectScreenConvert.inf", ios::binary | );
+/ *	std::ifstream fileSPK2("Data\\Info\\EffectScreenConvert.inf", ios::binary | );
 	if (fileSPK2.is_open())
 	{
 		fileSPK2.close();
@@ -3906,7 +3903,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 			return FALSE;
 		}
 
-		bool bCheck = true;
 		bool bRunUpdater = false;
 		//char checkStr[9] = "NEWSTART";
 		//char checkStr[9] = "START";
@@ -3935,7 +3931,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		memcpy(checkStr,"00000000",8);
 		memcpy(T_checkStr,str,8);
 		//strcpy(checkStr,str);
-		int i = 0;
 
 #ifdef OUTPUT_DEBUG
 		bRunUpdater = false;
@@ -3966,7 +3961,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 			for( int i = 9; ; i++ )
 			{
 				//g_Dimension = lpCmdLine[8]-'0';
-				if ( lpCmdLine[i] == NULL )
+				if ( lpCmdLine[i] == '\0' )
 					break;
 				
 				if ( lpCmdLine[i] >= '0' && lpCmdLine[i] <= '9' )
@@ -4219,7 +4214,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		// _getcwd() can answer "/" there (the browser build's root), which
 		// the length test skips, and _rmdir() then read an uninitialized
 		// buffer.
-		char UpdateDir[_MAX_PATH] = { 0, };
+		char UpdateDir[_MAX_PATH + sizeof(DIRECTORY_UPDATE)] = { 0, };
 
 		int lenCWD = strlen(CWD);
 		if (lenCWD > 1)
@@ -4513,7 +4508,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 #endif
 
 		#ifndef __OUTPUT_DEBUG__
-		SystemParametersInfo(SPI_SETSCREENSAVERRUNNING, FALSE, NULL, NULL); 
+		SystemParametersInfo(SPI_SETSCREENSAVERRUNNING, FALSE, NULL, 0); 
 		#endif
 	}
 	else

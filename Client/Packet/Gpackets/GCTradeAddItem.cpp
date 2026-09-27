@@ -26,7 +26,6 @@ GCTradeAddItem::GCTradeAddItem()
 ////////////////////////////////////////////////////////////////////////////////
 GCTradeAddItem::~GCTradeAddItem()
 {
-	__BEGIN_TRY
 
 	while (!m_InfoList.empty())
 	{
@@ -35,7 +34,6 @@ GCTradeAddItem::~GCTradeAddItem()
 		m_InfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

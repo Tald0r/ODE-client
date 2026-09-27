@@ -31,8 +31,6 @@ GCAttackArmsOK3::GCAttackArmsOK3 ()
 //////////////////////////////////////////////////////////////////////
 GCAttackArmsOK3::~GCAttackArmsOK3 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

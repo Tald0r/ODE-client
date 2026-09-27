@@ -21,6 +21,7 @@ void GCPhoneSayHandler::execute ( GCPhoneSay * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	
 

@@ -19,6 +19,7 @@ void GCLightningHandler::execute ( GCLightning * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

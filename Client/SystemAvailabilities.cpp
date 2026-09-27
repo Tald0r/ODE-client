@@ -12,7 +12,7 @@ SystemAvailabilitiesManager *g_pSystemAvailableManager = NULL;
 SystemAvailabilitiesManager::SystemAvailabilitiesManager()
 {
 	// Default 로 모두 가능 상태로 되어있다.
-	for(int i = 0; i < m_Flag.size(); i++ )
+	for(int i = 0; static_cast<size_t>(i) < m_Flag.size(); i++ )
 		m_Flag.set(i);
 
 	m_OpenDegree = 0xFF;
@@ -212,6 +212,8 @@ bool	SystemAvailabilitiesManager::LoadFromStream(std::istream& in)
 						Kind = PARSE_MAX;
 					}
 				}
+				break;
+			default:
 				break;
 			}			
 		}

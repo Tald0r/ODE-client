@@ -214,6 +214,7 @@ MItemManager::CheckAffectStatusAll()				// 모든 아이템
 void			
 MItemManager::CheckAffectStatus(MItem* pItem)
 {
+	(void)pItem;
 	// pure virtual로 할려다가.. 그냥 쓸 경우도 있어서..
 }
 

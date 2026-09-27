@@ -221,7 +221,6 @@ CSprite::operator = (const CSprite& Sprite)
 	
 	// 압축 된 것 저장
 	int index;	
-	int i;
 	int j;
 
 	// 메모리 잡기
@@ -328,7 +327,6 @@ CSprite::SetPixel(WORD *pSource, WORD pitch, WORD width, WORD height)
 	// height줄 만큼 memory잡기
 	m_Pixels = new WORD* [height]{};
 
-	int i;
 	int j;
 
 	for (int i=0; i<height; i++)
@@ -441,7 +439,6 @@ CSprite::SetPixelNoColorkey(WORD *pSource, WORD pitch, WORD width, WORD height)
 	// height줄 만큼 memory잡기
 	m_Pixels = new WORD* [height]{};
 
-	int i;
 	int j;
 
 	for (int i=0; i<height; i++)
@@ -591,7 +588,7 @@ void
 CSprite::GetTightColorRect(WORD *pSource, WORD pitch, WORD width, WORD height, WORD colorkey, RECT& rect)
 {
 	WORD	*pSourceTemp, *pSourceTemp2;
-	int i, j;
+	int j;
 
 	rect.left = 0;
 	rect.right = 0;
@@ -859,7 +856,6 @@ CSprite::BltClip(WORD* pDest, WORD pitch, RECT* pRect)
 
 	BOOL	bPut;		
 
-	int i;
 	int j;
 	int rectBottom = pRect->bottom;	
 
@@ -1048,7 +1044,6 @@ CSprite::BltClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -1177,7 +1172,6 @@ CSprite::BltClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -1273,7 +1267,6 @@ CSprite::BltClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -1460,7 +1453,6 @@ CSprite::BltClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1657,7 +1649,6 @@ CSprite::BltHalfClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -1786,7 +1777,6 @@ CSprite::BltHalfClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -1882,7 +1872,6 @@ CSprite::BltHalfClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -2068,7 +2057,6 @@ CSprite::BltHalfClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2186,7 +2174,6 @@ CSprite::BltAlphaClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE alpha)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -2319,7 +2306,6 @@ CSprite::BltAlphaClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE alpha)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -2418,7 +2404,6 @@ CSprite::BltAlphaClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE alpha)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -2608,7 +2593,6 @@ CSprite::BltAlphaClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE alpha)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2723,7 +2707,6 @@ CSprite::BltColorClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -2856,7 +2839,6 @@ CSprite::BltColorClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -2955,7 +2937,6 @@ CSprite::BltColorClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -3143,7 +3124,6 @@ CSprite::BltColorClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -3193,7 +3173,6 @@ CSprite::BltScale(WORD *pDest, WORD pitch, BYTE scale)
 	WORD	*pDestTemp,
 			*pPixels;
 
-	int i;
 	int j;
 
 	int rectBottom = m_Height;
@@ -3251,7 +3230,6 @@ CSprite::BltScaleClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE scale)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -3383,7 +3361,6 @@ CSprite::BltScaleClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE scale)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -3482,7 +3459,6 @@ CSprite::BltScaleClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE scale)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -3670,7 +3646,6 @@ CSprite::BltScaleClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE scale)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -3786,7 +3761,6 @@ CSprite::BltDarknessClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE DarkBits
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -3918,7 +3892,6 @@ CSprite::BltDarknessClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE DarkBit
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -4017,7 +3990,6 @@ CSprite::BltDarknessClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE DarkBit
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -4205,7 +4177,6 @@ CSprite::BltDarknessClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE DarkBi
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -4319,7 +4290,6 @@ CSprite::BltColorSetClipLeft(WORD* pDest, WORD pitch, RECT* pRect, WORD colorSet
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -4451,7 +4421,6 @@ CSprite::BltColorSetClipRight(WORD* pDest, WORD pitch, RECT* pRect, WORD colorSe
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -4550,7 +4519,6 @@ CSprite::BltColorSetClipWidth(WORD* pDest, WORD pitch, RECT* pRect, WORD colorSe
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -4738,7 +4706,6 @@ CSprite::BltColorSetClipHeight(WORD *pDest, WORD pitch, RECT* pRect, WORD colorS
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -4845,7 +4812,6 @@ CSprite::BltEffectClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -4974,7 +4940,6 @@ CSprite::BltEffectClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -5070,7 +5035,6 @@ CSprite::BltEffectClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -5254,7 +5218,6 @@ CSprite::BltEffectClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -5541,7 +5504,6 @@ CSprite::BltAlphaFilterClipLeft(WORD *pDest, WORD pitch, RECT* pRect)
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -5982,7 +5944,6 @@ CSprite::BltAlphaFilterClipRight(WORD *pDest, WORD pitch, RECT* pRect)
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -6296,7 +6257,6 @@ CSprite::BltAlphaFilterClipWidth(WORD *pDest, WORD pitch, RECT* pRect)
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -6895,7 +6855,6 @@ CSprite::BltAlphaFilterClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -7075,7 +7034,7 @@ CSprite::memcpyAlphaFilter(WORD* pDest, WORD* pSource, BYTE* pFilter, WORD pixel
 			*pDest = *pSource; 
 		}
 		/*
-		/*
+		/ *
 		else
 		{
 			*pDest = 
@@ -7116,7 +7075,6 @@ CSprite::BltAlphaFilterDarkness(WORD *pDest, WORD pitch, BYTE DarkBits)
 	int	yIndex = -s_Y + m_Height - 1;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	int rectBottom = m_Height;
@@ -7275,7 +7233,6 @@ CSprite::BltAlphaFilterDarknessClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BY
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -7718,7 +7675,6 @@ CSprite::BltAlphaFilterDarknessClipRight(WORD *pDest, WORD pitch, RECT* pRect, B
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -8024,7 +7980,6 @@ CSprite::BltAlphaFilterDarknessClipWidth(WORD *pDest, WORD pitch, RECT* pRect, B
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -8620,7 +8575,6 @@ CSprite::BltAlphaFilterDarknessClipHeight(WORD *pDest, WORD pitch, RECT* pRect, 
 	int	yIndex = -s_Y + pRect->top;
 	int	xIndex;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -8788,7 +8742,7 @@ CSprite::memcpyAlphaFilterDarkness(WORD* pDest, WORD* pSource, BYTE* pFilter, WO
 		dg = ColorDraw::Green(dTemp);
 		db = ColorDraw::Blue(dTemp);		
 		
-		*pDest = ((alpha * (sb - db) >> 5) + db |
+		*pDest = (((alpha * (sb - db) >> 5) + db) |
 					((alpha * (sg - dg) >> 5) + dg) << ColorDraw::s_bSHIFT_G |
 					((alpha * (sr - dr) >> 5) + dr) << ColorDraw::s_bSHIFT_R);
 
@@ -8890,7 +8844,6 @@ CSprite::BltDarkerFilterClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -9025,7 +8978,6 @@ CSprite::BltDarkerFilterClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -9125,7 +9077,6 @@ CSprite::BltDarkerFilterClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	//---------------------------------------------
@@ -9320,7 +9271,6 @@ CSprite::BltDarkerFilterClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 	BYTE	*pFilter;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -9824,7 +9774,6 @@ CSprite::GetFileSize()
 	// 압축 된 것 저장
 	WORD index;	
 	
-	int i;
 	int j;
 	
 	//--------------------------------

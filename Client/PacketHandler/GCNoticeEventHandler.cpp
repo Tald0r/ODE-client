@@ -43,6 +43,7 @@ void GCNoticeEventHandler::execute ( GCNoticeEvent * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	__BEGIN_DEBUG
 
 //	char szBuffer[256];

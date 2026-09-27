@@ -19,6 +19,7 @@ void GCUnionOfferListHandler::execute ( GCUnionOfferList * pPacket , Player * pP
 
 {
 	__BEGIN_TRY// __BEGIN_DEBUG_EX
+	(void)pPlayer;
 	
 
 		

@@ -238,13 +238,6 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int direction = egInfo.direction;
 
 
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
-	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
-
 	// Zone에 추가한다.
 
 	bool bAdd = false;
@@ -254,7 +247,6 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	{
 		BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est[i]].BltType;
 		TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est[i]].FrameID;
-		bool			repeatFrame	= (*g_pEffectSpriteTypeTable)[est[i]].RepeatFrame;
 		
 		int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
 		

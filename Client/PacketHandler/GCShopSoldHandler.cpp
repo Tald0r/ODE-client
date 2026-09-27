@@ -22,6 +22,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------

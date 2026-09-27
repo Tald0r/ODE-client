@@ -14,8 +14,6 @@ CGDeleteSMSAddress::CGDeleteSMSAddress ()
 
 CGDeleteSMSAddress::~CGDeleteSMSAddress ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGDeleteSMSAddress::read (SocketInputStream & iStream)

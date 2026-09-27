@@ -27,8 +27,6 @@ GCLearnSkillOK::GCLearnSkillOK ()
 //////////////////////////////////////////////////////////////////////
 GCLearnSkillOK::~GCLearnSkillOK ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

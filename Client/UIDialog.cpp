@@ -315,7 +315,7 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 					//--------------------------------------------------
 					case PCTalkBox::NORMAL :
 					{						
-						if( g_pPCTalkBox->m_AnswerIDMap.size() >= answerID )
+						if( g_pPCTalkBox->m_AnswerIDMap.size() >= static_cast<size_t>(answerID) )
 							answerID = g_pPCTalkBox->m_AnswerIDMap[answerID-1] + 1;
 						
 						CGNPCAskAnswer _CGNPCAskAnswer;
@@ -494,6 +494,8 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 void
 UIDialog::PopupPCTalkDlg(int x, int y)
 {
+	(void)x;
+	(void)y;
 //				C_VS_UI_DIALOG m_pC_dialog = new C_VS_UI_DIALOG(50, 20, 6, 2, func, DIALOG_OK);
 //
 //				DIALOG_MENU d_menu[] = {
@@ -510,7 +512,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 //
 //				m_pC_dialog->SetMessage(pp_dmsg, sizeof(pp_dmsg)/sizeof(char *))
 
-	extern bool	g_bTestMode;
+	[[maybe_unused]] extern bool	g_bTestMode;
 
 	if(g_bActiveGame == false
 #ifdef OUTPUT_DEBUG
@@ -566,7 +568,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 	// 제목
 	//---------------------------------------------------------
 	const char*	content = g_pPCTalkBox->GetContent();
-	int lenContent = strlen(content);
+	[[maybe_unused]] int lenContent = strlen(content);
 
 	//---------------------------------------------------------
 	// dialog의 길이를 정한다.
@@ -651,7 +653,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 					continue;
 				}
 				strncpy(strID, pString->GetString(), 3);
-				strID[3] = NULL;
+				strID[3] = '\0';
 				SafeFormat::Copy(strName, pString->GetString()+3);
 
 				// 이름 다시 설정
@@ -680,7 +682,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 					continue;
 				}
 				strncpy(strID, pString->GetString(), 4);
-				strID[4] = NULL;
+				strID[4] = '\0';
 				SafeFormat::Copy(strName, pString->GetString()+4);
 
 				// 이름 다시 설정
@@ -817,6 +819,7 @@ UIDialog::PopupMessageDlg(UIDIALOG_MESSAGE msg, int x, int y)
 void
 UIDialog::PopupFreeMessageDlg(const char* msg, int x, int y, WORD fButton, bool IsAfterExit)
 {
+	(void)IsAfterExit;
 	int msgID= MESSAGE_FREE;
 	
 	//-------------------------------------------------------------
@@ -903,6 +906,8 @@ UIDialog::PopupFreeMessageDlg(const char* msg, int x, int y, WORD fButton, bool 
 void		
 UIDialog::ProcessMessageDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 {
+	(void)pDlg;
+	(void)id;
 	//if (id==DIALOG_OK)
 	//{
 		UnSetLockInputMessage();

@@ -18,6 +18,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	//------------------------------------------------------------------------
 	// TradeManager가 생성되지 않은 경우 --> -_-;;

@@ -20,6 +20,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	DEBUG_ADD("[GCShopListHandler::execute] run in execute function OK [0].");	
 		
@@ -59,7 +60,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 
 			//------------------------------------------------------
 			// 새로운 Shelf를 생성한다.
-			//------------------------------------------------------\
+			//------------------------------------------------------
 
 			ShopRackType_t shopType = pPacket->getShopType();
 			DEBUG_ADD_FORMAT("[GCShopListHandler::execute] OK [1.0]  %d\n", shopType);

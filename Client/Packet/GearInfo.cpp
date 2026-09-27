@@ -33,7 +33,6 @@ GearInfo::GearInfo ()
 //////////////////////////////////////////////////////////////////////
 GearInfo::~GearInfo () 
 {
-	__BEGIN_TRY
 
 	// 소속된 모든 객체들을 삭제한다.
 	while ( !m_GearSlotInfoList.empty() ) {
@@ -42,7 +41,6 @@ GearInfo::~GearInfo ()
 		m_GearSlotInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

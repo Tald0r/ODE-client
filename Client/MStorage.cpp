@@ -46,7 +46,7 @@ MStorage::Init(unsigned int n)
 	m_Size		= n;
 	m_pStorage	= new MItem** [m_Size];
 
-	for (int i=0; i<m_Size; i++)
+	for (int i=0; static_cast<unsigned int>(i)<m_Size; i++)
 	{
 		//--------------------------------------------------
 		// 각 보관함에 STORAGE_SLOT개의 slot을 만든다.
@@ -79,7 +79,7 @@ MStorage::Release()
 	//---------------------------------------------------
 	if (m_pStorage!=NULL)
 	{
-		for (int i=0; i<m_Size; i++)
+		for (int i=0; static_cast<unsigned int>(i)<m_Size; i++)
 		{
 			if (m_pStorage[i]!=NULL)
 			{

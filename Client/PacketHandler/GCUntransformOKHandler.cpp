@@ -20,6 +20,7 @@ void GCUntransformOKHandler::execute ( GCUntransformOK * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	bool bWerWolf = g_pPlayer->GetCreatureType() == CREATURETYPE_WER_WOLF;

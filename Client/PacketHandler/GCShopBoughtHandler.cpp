@@ -19,6 +19,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	// shop에 아이템 등장

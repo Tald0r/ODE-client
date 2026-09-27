@@ -85,6 +85,7 @@ void ExecF_Get_Event_Item(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_ModifyTax(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -97,6 +98,7 @@ void ExecF_ModifyTax(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_CampaignHelp(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -112,6 +114,7 @@ void ExecF_CampaignHelp(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 // by sigi
 void ExecF_ExchangeCancel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -128,6 +131,7 @@ void ExecF_ExchangeCancel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 // by sigi
 void ExecF_ExchangeAsk(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -244,6 +248,7 @@ void ExecF_FriendDeleteAsk(C_VS_UI_DIALOG* p_this_dialog, id_t id)
 
 void ExecF_PartyCancel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -259,6 +264,7 @@ void ExecF_PartyCancel(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_Enchant(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -283,6 +289,7 @@ void ExecF_Enchant(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_UsePetFood(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -331,6 +338,7 @@ void ExecF_UsePetFood(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 }
 void ExecF_Keep_PetItem(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -355,6 +363,7 @@ void ExecF_Keep_PetItem(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 }
 void ExecF_Get_Keep_PetItem(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -384,6 +393,7 @@ void ExecF_Get_Keep_PetItem(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 }
 void	ExecF_TransItem(C_VS_UI_DIALOG * p_this_dialog, id_t id )
 {
+	(void)p_this_dialog;
 	switch( id )
 	{
 	case DIALOG_EXECID_OK :
@@ -404,6 +414,7 @@ void	ExecF_TransItem(C_VS_UI_DIALOG * p_this_dialog, id_t id )
 
 void ExecF_NoSearchResult(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -418,6 +429,7 @@ void ExecF_NoSearchResult(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_DepositLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -432,6 +444,7 @@ void ExecF_DepositLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_WithdrawLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -446,6 +459,7 @@ void ExecF_WithdrawLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_BringFeeLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -461,6 +475,7 @@ void ExecF_BringFeeLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_ExchangeLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_CANCEL:
@@ -475,6 +490,7 @@ void ExecF_ExchangeLimit(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_PartyAsk(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -495,6 +511,7 @@ void ExecF_PartyAsk(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 // by sigi
 void ExecF_StorageBuy(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
@@ -514,6 +531,7 @@ void ExecF_StorageBuy(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void ExecF_Use_AskItem(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 	case DIALOG_EXECID_OK:
@@ -1938,6 +1956,8 @@ bool C_VS_UI_GAME::ReplaceItemInGear(MItem* pItem, int slot, MItem*& pOldItem)
 	case RACE_OUSTERS:
 		return g_pOustersGear->ReplaceItem(pItem, (MOustersGear::GEAR_OUSTERS)slot, pOldItem);
 		break;	
+	default:
+		break;
 	}
 
 	return false;
@@ -1962,6 +1982,8 @@ MItem * C_VS_UI_GAME::RemoveItemInGear(int slot)
 
 	case RACE_OUSTERS:
 		return g_pOustersGear->RemoveItem((MOustersGear::GEAR_OUSTERS)slot);
+		break;
+	default:
 		break;
 	}
 
@@ -1988,6 +2010,8 @@ bool	C_VS_UI_GAME::CanReplaceItemInGear(MItem* pItem, int slot, MItem*& pOldItem
 	case RACE_OUSTERS:
 		return g_pOustersGear->CanReplaceItem(pItem, (MOustersGear::GEAR_OUSTERS)slot, pOldItem);
 		break;		
+	default:
+		break;
 	}	
 
 	return false;
@@ -2013,6 +2037,8 @@ const MItem * C_VS_UI_GAME::GetGearItem(int slot) const
 	case RACE_OUSTERS:
 		return g_pOustersGear->GetItem((MOustersGear::GEAR_OUSTERS)slot);
 		break;
+	default:
+		break;
 	}
 
 	return NULL;
@@ -2031,6 +2057,8 @@ const MItem * C_VS_UI_GAME::GetGearItem_PickUp(int &slot) const
 
 	case RACE_OUSTERS:
 		return g_pOustersGear->GetGearItem_PickUp(slot);
+		break;
+	default:
 		break;
 	}
 
@@ -2051,6 +2079,8 @@ const MItem * C_VS_UI_GAME::GetGearCoreZapItem(int slot) const
 
 	case RACE_OUSTERS:
 		return g_pOustersGear->GetGearCoreZapItem(slot);
+		break;
+	default:
 		break;
 	}
 
@@ -2073,6 +2103,8 @@ const MItem * C_VS_UI_GAME::GetGearCoreZapedItem(int slot) const
 	case RACE_OUSTERS:
 		return g_pOustersGear->GetGearCoreZapedItem(slot);
 		break;
+	default:
+		break;
 	}
 
 	return NULL;
@@ -2093,6 +2125,8 @@ bool C_VS_UI_GAME::IsHasAllCoreZap(int CoreZapType) const
 	case RACE_OUSTERS:
 		return g_pOustersGear->IsHasAllCoreZap(CoreZapType);
 		break;
+	default:
+		break;
 	}
 
 	return false;
@@ -2111,6 +2145,8 @@ bool C_VS_UI_GAME::IsCloseBloodBibleSlot(int slot) const
 
 	case RACE_OUSTERS:
 		return g_pOustersGear->IsCloseBloodBibleSlot((MOustersGear::GEAR_OUSTERS)slot);
+		break;
+	default:
 		break;
 	}
 
@@ -2135,6 +2171,8 @@ int C_VS_UI_GAME::GetGearSize() const
 
 	case RACE_OUSTERS:
 		return g_pOustersGear->GetSize();
+		break;
+	default:
 		break;
 	}
 
@@ -4155,6 +4193,8 @@ void C_VS_UI_GAME::ToggleESC4UI()
 	case RACE_OUSTERS:
 		PlaySound(SOUND_VAMPIRE_BUTTON);
 		break;
+	default:
+		break;
 	}
 
 }
@@ -4461,6 +4501,8 @@ void C_VS_UI_GAME::HotKey_ESC()
 			case RACE_OUSTERS:
 				PlaySound(SOUND_VAMPIRE_BUTTON);
 				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -4640,6 +4682,8 @@ void C_VS_UI_GAME::Start()
 
 	case RACE_OUSTERS:
 		ChangeToOustersInterface();		
+	default:
+		break;
 	}	
 
 	// Client 공용 Inventory data structure.
@@ -6012,7 +6056,7 @@ C_VS_UI_GAMEMENU::C_VS_UI_GAMEMENU()
 //		gC_ci.SetEngInput();
 //	}
 
-	int x_offset, /*y1_offset,*/ y2_offset, y3_offset, y4_offset,px=0,py=0;
+	int x_offset=0, /*y1_offset,*/ y2_offset=0, y3_offset=0, y4_offset=0,px=0;
 
 	const InterfaceInformation *pSkin = &g_pSkinManager->Get( SkinManager::GAME_MENU );
 	
@@ -6044,6 +6088,8 @@ C_VS_UI_GAMEMENU::C_VS_UI_GAMEMENU()
 		y2_offset = pSkin->GetPoint(4).y;
 		y3_offset = pSkin->GetPoint(5).x;
 		y4_offset = pSkin->GetPoint(5).y;
+		break;
+	default:
 		break;
 	}	
 	
@@ -6140,6 +6186,7 @@ bool C_VS_UI_GAMEMENU::IsPixel(int _x, int _y)
 //-----------------------------------------------------------------------------
 void C_VS_UI_GAMEMENU::WindowEventReceiver(id_t event)
 {
+	(void)event;
 
 }
 
@@ -6225,6 +6272,7 @@ bool C_VS_UI_GAMEMENU::MouseControl(UINT message, int _x, int _y)
 -----------------------------------------------------------------------------*/
 void C_VS_UI_GAMEMENU::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)key;
 	// 만약 IME toggle되어 있을 경우를 대비하여 scan code로 한다.
 
 	id_t id = INVALID_ID;

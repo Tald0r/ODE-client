@@ -38,8 +38,6 @@ PacketSize_t CRWhisper::getPacketSize () const
 { 
 	int messageBytes = 0;
 
-	int num = m_Messages.size();
-
 	std::list<WHISPER_MESSAGE*>::const_iterator iString = m_Messages.begin();
 
 	while (iString != m_Messages.end())
