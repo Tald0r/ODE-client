@@ -199,9 +199,11 @@ one that sees that class.
 `DarkEden` builds and links on both, and on Linux run headless
 (`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and
 exits cleanly on `SDL_QUIT`; login and beyond are unverified off Windows (the
-port assessment's area F). **Nobody here has a Mac**: the macOS numbers come
-from GitHub's arm64 runner (`.github/workflows/macos.yml`, invoked on master
-pushes or manually), nothing has been watched on a Mac's display,
+port assessment's area F). **The macOS numbers come from GitHub's arm64
+runner** (`.github/workflows/macos.yml`, invoked on master pushes or
+manually) and one Apple Silicon Mac (macOS 27.0, Apple Clang 21, the
+`macos` preset's 12 ctest suites green on 2026-09-27); nothing has been
+watched on a Mac's display,
 and a `<SDL2/...>` include spelling breaks the Homebrew build - it is
 `<SDL.h>` everywhere (`basic/Platform.h` says why).
 
