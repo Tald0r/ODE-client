@@ -207,9 +207,9 @@ public:
 	const MItem * GetGearItem_PickUp(int &slot) const;
 	const MItem * GetGearCoreZapItem(int slot) const;
 	const MItem * GetGearCoreZapedItem(int slot) const ;
-	const bool IsHasAllCoreZap(int CoreZapType = 0) const;
-	const bool IsCloseBloodBibleSlot(int slot) const;
-	const int GetGearSize() const;
+	bool IsHasAllCoreZap(int CoreZapType = 0) const;
+	bool IsCloseBloodBibleSlot(int slot) const;
+	int GetGearSize() const;
 
 	// PDS interface
 //	void	DisconnectPCS(int slot);

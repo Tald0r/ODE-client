@@ -2187,7 +2187,7 @@ MFakeCreature::SyncTurretDirection()
 	m_FinalTurretDirect = 0xFF;
 }
 
-const BYTE
+BYTE
 MFakeCreature::GetTurretDirection() const
 {
 	return m_TurretDirect;

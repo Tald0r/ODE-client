@@ -129,19 +129,19 @@ XMLAttribute::ToString() const
 	return m_Value.c_str();
 }
 
-OUT const int
+OUT int
 XMLAttribute::ToInt() const
 {
 	return atoi( m_Value.c_str() );
 }
 
-OUT const DWORD
+OUT DWORD
 XMLAttribute::ToHex() const
 {
 	return strtol( m_Value.c_str(), NULL, 16 );
 }
 
-OUT const bool
+OUT bool
 XMLAttribute::ToBool() const
 {
 	return ( m_Value == "true" ) ? true : false;
@@ -291,7 +291,7 @@ XMLTree::GetChildByAttr( IN size_t index , IN const string& name) const
 	return NULL;
 }
 // 2004, 7, 13 sobeit add end
-OUT const size_t
+OUT size_t
 XMLTree::GetChildCount() const
 {
 	return m_ChildrenVector.size();

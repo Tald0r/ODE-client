@@ -40,7 +40,7 @@ MEvent::ElapsedMillis() const
 	return (DWORD)(MonotonicClock::Now() - eventStartTickCount).count();
 }
 
-const bool
+bool
 MEvent::IsShowTime() const
 {
 	if( showTime == -1 )
@@ -168,7 +168,7 @@ void	MEventManager::RemoveAllEventByType(EVENT_TYPE type)
 //--------------------------------------------------
 // Flag별 개수
 //--------------------------------------------------
-const int	MEventManager::GetEventCountByFlag(DWORD flag)
+int			MEventManager::GetEventCountByFlag(DWORD flag)
 {
 	EVENT_MAP::iterator itr = m_Events.begin();
 	int count = 0;
@@ -189,7 +189,7 @@ const int	MEventManager::GetEventCountByFlag(DWORD flag)
 //--------------------------------------------------
 // Flag로 empty검색
 //--------------------------------------------------
-const bool		MEventManager::IsEmptyEventByFlag(DWORD flag)
+bool			MEventManager::IsEmptyEventByFlag(DWORD flag)
 {
 	EVENT_MAP::iterator itr = m_Events.begin();
 

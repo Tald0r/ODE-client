@@ -1169,7 +1169,7 @@ MItem*	MSlayerGear::GetGearCoreZapedItem(int slot) const
 	return NULL;
 }
 
-const bool	MSlayerGear::IsHasAllCoreZap(int CoreZapType) const	
+bool		MSlayerGear::IsHasAllCoreZap(int CoreZapType) const	
 {
 	BYTE bType[4] = {0,};
 	if(CoreZapType == 0) // 질드레 코어 잽 일 경우
@@ -1196,7 +1196,7 @@ const bool	MSlayerGear::IsHasAllCoreZap(int CoreZapType) const
 	return false;
 }
 
-const bool	MSlayerGear::IsCloseBloodBibleSlot(int slot) const	
+bool		MSlayerGear::IsCloseBloodBibleSlot(int slot) const	
 {
 	if(slot>=GEAR_SLAYER_BLOOD_BIBLE1 && slot<=GEAR_SLAYER_BLOOD_BIBLE6)
 	{

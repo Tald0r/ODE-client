@@ -183,7 +183,7 @@ class MEffect : public MObject, public CAnimationFrame {
 		int				GetLinkSize()			{ return (m_pEffectTarget==NULL || m_pEffectTarget->IsEnd())? 0 : m_pEffectTarget->GetCurrentPhase(); }	
 
 		void			SetMulti(bool bMulti)	{ m_bMulti = bMulti; }
-		const bool		IsMulti()				{ return m_bMulti; }
+		bool			IsMulti()				{ return m_bMulti; }
 
 		void			SetDelayFrame(DWORD frame);
 		bool			IsDelayFrame() const;

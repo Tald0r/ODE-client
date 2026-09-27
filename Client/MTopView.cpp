@@ -7029,7 +7029,7 @@ MTopView::GetSelectedObject(int x, int y)
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{		
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectCheck).second);
 
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //
@@ -7805,7 +7805,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{		
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectCheck).second);
 
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //
@@ -8054,7 +8054,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 		//------------------------------------------------------
 		while (iImageObjectCheck != m_mapImageObject.rend())
 		{
-			MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
+			MImageObject* const pImageObject = (MImageObject*)((*iImageObjectCheck).second);
 
 //				MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //
@@ -8073,7 +8073,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectCheck).second);
 
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //		
@@ -10503,7 +10503,7 @@ MTopView::DetermineImageObject()
 				// Sector에 있는 모든 ImageObject들을 검색한다.
 				for (i=0; i<sector.GetImageObjectSize(); i++)
 				{
-					MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+					MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 					//----------------------------------------
 					// 출력 시점을 체크해야 되지만,
@@ -10729,7 +10729,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (int i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							//----------------------------------------
 							// Key값 = (Viewpoint << 32) | ID
@@ -10765,7 +10765,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 					// Sector에 있는 모든 ImageObject들을 검색한다.
 					for (i=0; i<sector.GetImageObjectSize(); i++)
 					{
-						MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+						MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 						{		
 							QWORD key = GetOutputImageObjectID(pImageObject);
@@ -10813,7 +10813,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							{						
 								// 이미 있는지 확인해보고 없으면 추가.
@@ -11004,7 +11004,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							//----------------------------------------
 							// Key값 = (Viewpoint << 32) | ID
@@ -11040,7 +11040,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 					// Sector에 있는 모든 ImageObject들을 검색한다.
 					for (i=0; i<sector.GetImageObjectSize(); i++)
 					{
-						MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+						MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 						{						
 							// 이미 있는지 확인해보고 없으면 추가.
@@ -11089,7 +11089,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							{								
 								// 이미 있는지 확인해보고 없으면 추가.
@@ -12275,7 +12275,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
-		MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 		{
@@ -12315,7 +12315,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput0 != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput0).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput0).second);
 
 		// 출력 시점이 0인경우 경우..는 출력
 		if (pImageObject->GetViewpoint() == 0)
@@ -12439,7 +12439,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	TYPE_SPRITEID	sprite;
 	while (bDrawBackGround && iImageObjectShadowOutput != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectShadowOutput).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectShadowOutput).second);
 
 		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
 		point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
@@ -12488,7 +12488,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 		// 출력 시점이 sY1보다 적은 경우..는 출력
 		if (pImageObject->GetViewpoint() < sY1)
@@ -12674,7 +12674,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	{
 		while (iCreatureOutput != m_mapCreature.end())
 		{
-			MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+			MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 			if (pCreature==g_pPlayer
 				|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
@@ -12874,7 +12874,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
-		MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 		// 2004, 04, 24 sobeit add start -ghost 일때 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
@@ -13101,7 +13101,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//-----------------------------------------------------	
 			while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 			{
-				MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+				MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 				// 출력 시점이 y와 같은 경우 출력
 				if (pImageObject->GetViewpoint() <= y)
@@ -13131,7 +13131,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//------------------------------------------------------
 			while (iCreatureOutput != m_mapCreature.end())
 			{
-				MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+				MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 				// 출력 시점이 sY1보다 적은 경우..는 출력
 				if (pCreature->GetY() <= y)
@@ -13445,7 +13445,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//-----------------------------------------------------	
 			while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 			{
-				MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+				MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 				// 출력 시점이 y와 같은 경우 출력
 				if (pImageObject->GetViewpoint() <= y)
@@ -13475,7 +13475,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//------------------------------------------------------
 			while (iCreatureOutput != m_mapCreature.end())
 			{
-				MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+				MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 				// 2004, 04, 24 sobeit add start -ghost 일때 
 				if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
@@ -13563,7 +13563,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
-		MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 		// 2004, 04, 24 sobeit add start -ghost 일때 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
@@ -13598,7 +13598,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
 		point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;

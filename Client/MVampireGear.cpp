@@ -874,7 +874,7 @@ MItem*	MVampireGear::GetGearCoreZapedItem(int slot) const
 	return NULL;
 }
 
-const bool	MVampireGear::IsHasAllCoreZap(int CoreZapType) const	
+bool		MVampireGear::IsHasAllCoreZap(int CoreZapType) const	
 {
 	BYTE bType[4] = {0,};
 	if(CoreZapType == 0) // 질드레 코어 잽 일 경우
@@ -901,7 +901,7 @@ const bool	MVampireGear::IsHasAllCoreZap(int CoreZapType) const
 	return false;
 }
 
-const bool	MVampireGear::IsCloseBloodBibleSlot(int slot) const	
+bool		MVampireGear::IsCloseBloodBibleSlot(int slot) const	
 {
 	if(slot>=GEAR_VAMPIRE_BLOOD_BIBLE1 && slot<=GEAR_VAMPIRE_BLOOD_BIBLE6)
 	{

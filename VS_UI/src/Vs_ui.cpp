@@ -2509,7 +2509,7 @@ const MItem * C_VS_UI::GetGearCoreZapedItem(int slot) const // 코어잽 밑에 
 
 	return NULL;
 }
-const bool C_VS_UI::IsHasAllCoreZap(int CoreZapType) const
+bool C_VS_UI::IsHasAllCoreZap(int CoreZapType) const
 {
 	if (m_pC_game)
 		return m_pC_game->IsHasAllCoreZap(CoreZapType);
@@ -2517,7 +2517,7 @@ const bool C_VS_UI::IsHasAllCoreZap(int CoreZapType) const
 	return false;
 }
 
-const bool C_VS_UI::IsCloseBloodBibleSlot(int slot) const
+bool C_VS_UI::IsCloseBloodBibleSlot(int slot) const
 {
 	if (m_pC_game)
 		return m_pC_game->IsCloseBloodBibleSlot(slot);
@@ -2530,7 +2530,7 @@ const bool C_VS_UI::IsCloseBloodBibleSlot(int slot) const
 //
 // slayer인지 vampire인지 모를 때 사용한다.
 //-----------------------------------------------------------------------------
-const int C_VS_UI::GetGearSize() const
+int C_VS_UI::GetGearSize() const
 {
 	if (m_pC_game)
 		return m_pC_game->GetGearSize();

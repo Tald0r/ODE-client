@@ -277,7 +277,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 
 		// 시야 관련
 		void	CalculateLightSight();
-		const int	GetLightSight() const			{ return m_LightSight; }
+		int			GetLightSight() const			{ return m_LightSight; }
 		char	GetTimeLightSight()	const		{ return m_TimeLightSight; }
 		void	SetTimeLightSight(char s);
 		void	SetItemLightSight(int s);
@@ -390,6 +390,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 
 		bool	FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server = false);	// Zone의 Sector에서도 빨리(-_-;) 이동한다.
 
+		using MCreature::KnockBackPosition;
 		bool	KnockBackPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 
 		//----------------------------------------------------------

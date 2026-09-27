@@ -880,6 +880,7 @@ public:
 //	void	WindowEventReceiver(id_t event);
 	void	ResetRect();
 	
+	using PI_Processor::Start;
 	void	Start(bool bl_set_load);
 	void	Finish();
 	void	Show();
@@ -1073,6 +1074,7 @@ public:
 	bool	IsCreateBombProgress()		{ return gbl_mine_progress; }
 	void	EndCreateBombProgress()	{ gbl_mine_progress = false; }
 
+	using PI_Processor::Start;
 	void	Start(bool bl_set_load = true);
 	void	Finish();
 	void	Show();
@@ -1178,6 +1180,7 @@ public:
 	C_VS_UI_GEAR();
 	virtual ~C_VS_UI_GEAR();
 
+	using PI_Processor::Start;
 	void	Start(bool bl_set_load = true);
 	void	Finish();
 	
@@ -2554,6 +2557,7 @@ public:
 	void	_Show5();	// Grade2
 	void	Process();
 //	void	Start(bool skill_mode);
+	using PI_Processor::Start;
 	void	Start(INFO_MODE	Info_Mode);
 	void	Finish();
 

@@ -2078,7 +2078,7 @@ const MItem * C_VS_UI_GAME::GetGearCoreZapedItem(int slot) const
 	return NULL;
 }
 
-const bool C_VS_UI_GAME::IsHasAllCoreZap(int CoreZapType) const
+bool C_VS_UI_GAME::IsHasAllCoreZap(int CoreZapType) const
 {
 	switch(g_eRaceInterface)
 	{
@@ -2097,7 +2097,7 @@ const bool C_VS_UI_GAME::IsHasAllCoreZap(int CoreZapType) const
 
 	return false;
 }
-const bool C_VS_UI_GAME::IsCloseBloodBibleSlot(int slot) const
+bool C_VS_UI_GAME::IsCloseBloodBibleSlot(int slot) const
 {
 	switch(g_eRaceInterface)
 	{
@@ -2121,7 +2121,7 @@ const bool C_VS_UI_GAME::IsCloseBloodBibleSlot(int slot) const
 //
 // 
 //-----------------------------------------------------------------------------
-const int C_VS_UI_GAME::GetGearSize() const
+int C_VS_UI_GAME::GetGearSize() const
 {
 	switch(g_eRaceInterface)
 	{
@@ -3114,7 +3114,7 @@ bool	C_VS_UI_GAME::IsRunningHorn() const
 //-----------------------------------------------------------------------------
 void C_VS_UI_GAME::RunMailBox()
 {
-	m_pC_mailbox->Start();
+	m_pC_mailbox->Start(C_VS_UI_MAILBOX::TAB_MAIL_ID);
 }
 
 

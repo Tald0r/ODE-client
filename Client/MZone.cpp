@@ -5153,7 +5153,7 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 				//--------------------------------------------
 				for (i=0; i<sector.GetImageObjectSize(); i++)
 				{
-					MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+					MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 					
 					if (pImageObject->GetSpriteID() != SPRITEID_NULL)
 					{

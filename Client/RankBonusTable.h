@@ -28,16 +28,16 @@ class RankBonusInfo {
 		};
 	
 	public :
-		const unsigned short	GetType() const			{ return m_type; }
+		unsigned short			GetType() const			{ return m_type; }
 		const char*				GetName() const			{ return m_Name.GetString(); }
-		const char				GetLevel() const		{ return m_level; }
-		const bool				IsSlayerSkill() const	{ return (m_race == RACE_SLAYER); }
-		const bool				IsVampireSkill() const	{ return (m_race == RACE_VAMPIRE); }
-		const bool				IsOustersSkill() const	{ return (m_race == RACE_OUSTERS); }
-		const unsigned short	GetSkillIconID() const	{ return m_skillIconID; }
-		const RANK_BONUS_STATUS	GetStatus() const		{ return m_status; }
+		char					GetLevel() const		{ return m_level; }
+		bool					IsSlayerSkill() const	{ return (m_race == RACE_SLAYER); }
+		bool					IsVampireSkill() const	{ return (m_race == RACE_VAMPIRE); }
+		bool					IsOustersSkill() const	{ return (m_race == RACE_OUSTERS); }
+		unsigned short			GetSkillIconID() const	{ return m_skillIconID; }
+		RANK_BONUS_STATUS		GetStatus() const		{ return m_status; }
 		void					SetStatus(RANK_BONUS_STATUS status)	{ m_status = status; }
-		const int				GetPoint() const		{ return m_point; }
+		int						GetPoint() const		{ return m_point; }
 
 	public :
 		RankBonusInfo();

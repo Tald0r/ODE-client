@@ -667,7 +667,7 @@ class MCreature : public MObject, public MStatus {
 		//--------------------------------------------------
 		bool				IsArmageddon() const			{ return m_bArmageddon; }
 		void				SetArmageddon(int delay)		{ m_bArmageddon = true; m_ArmageddonCount = delay; }
-		const int			GetArmageddon() const			{ if(IsArmageddon())return m_ArmageddonCount; return -1; }
+		int					GetArmageddon() const			{ if(IsArmageddon())return m_ArmageddonCount; return -1; }
 		void				StopArmageddon()				{ m_bArmageddon = false; }
 		void				UpdateArmageddon();
 
@@ -676,7 +676,7 @@ class MCreature : public MObject, public MStatus {
 		//--------------------------------------------------
 		bool				IsGhost(BYTE flag) const			{ return (m_fGhost&flag)?true:false; }
 		void				SetGhost(BYTE flag, int delay)		{ m_fGhost = flag; m_GhostCount = delay; }
-		const int			GetGhost() const			{ if(IsGhost(0xFF))return m_GhostCount; return -1; }
+		int					GetGhost() const			{ if(IsGhost(0xFF))return m_GhostCount; return -1; }
 		void				StopGhost()				{ m_fGhost = 0; }
 		void				UpdateGhost();
 		
@@ -746,29 +746,29 @@ class MCreature : public MObject, public MStatus {
 
 		// 흡혈
 		void				SetDrainCreatureID(TYPE_OBJECTID id)	{ m_DrainCreatureID = id; }
-		const TYPE_OBJECTID	GetDrainCreatureID() const				{ return m_DrainCreatureID; }
+		TYPE_OBJECTID		GetDrainCreatureID() const				{ return m_DrainCreatureID; }
 		void				StopDrain();	// 나를 흡혈하고 있던 Creature의 흡혈동작을 멈춘다
 
 		// 흡영
 		void				SetAbsorbCreatureID(TYPE_OBJECTID id)	{ m_DrainCreatureID = id; }
-		const TYPE_OBJECTID	GetAbsorbCreatureID() const				{ return m_DrainCreatureID; }
+		TYPE_OBJECTID		GetAbsorbCreatureID() const				{ return m_DrainCreatureID; }
 		void				StopAbsorb();	// 나를 흡혈하고 있던 Creature의 흡영동작을 멈춘다
 		
 		// PET
 		void				SetPetID(TYPE_OBJECTID id)				{ m_PetID = id; }
-		const TYPE_OBJECTID	GetPetID() const						{ return m_PetID; }
+		TYPE_OBJECTID		GetPetID() const						{ return m_PetID; }
 		
 		// Elemental
 		void				SetElementalID(TYPE_OBJECTID id)				{ m_ElementalID = id; }
-		const TYPE_OBJECTID	GetElementalID() const						{ return m_ElementalID; }
+		TYPE_OBJECTID		GetElementalID() const						{ return m_ElementalID; }
 		
 		//--------------------------------------------------
 		// HP Modify관련
 		//--------------------------------------------------		
 		const HPMODIFYLIST *GetHPModifyList() const			{ return &m_HPModifyList; }
 		void				AddHPModify(const int modify);
-		const bool			IsEmptyHPModifyList() const		{ return m_HPModifyList.empty(); }
-		const int			GetHPModifyListSize() const		{ return m_HPModifyList.size(); }
+		bool				IsEmptyHPModifyList() const		{ return m_HPModifyList.empty(); }
+		int					GetHPModifyListSize() const		{ return m_HPModifyList.size(); }
 
 		void			SetActionGrade( BYTE a ) { if( a != 0 ) m_GradeActionInfo = a; }
 		void			ClearActionGrade() {m_GradeActionInfo = 0;}

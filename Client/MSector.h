@@ -291,7 +291,7 @@ class MSector {
 		OBJECT_MAP::const_iterator	GetObjectEnd() const	{ return m_mapObject.end(); }
 
 		// Object*
-		MItem*	const		GetItem() const;
+		MItem*				GetItem() const;
 
 		BYTE					GetUndergroundCreatureSize() const	{ return m_nUndergroundCreature; }
 		BYTE					GetGroundCreatureSize() const		{ return m_nGroundCreature; }
@@ -306,11 +306,11 @@ class MSector {
 		OBJECT_MAP::iterator	GetGroundCreatureIterator();
 		OBJECT_MAP::iterator	GetFlyingCreatureIterator();
 
-		MCreature* const		GetCreature() const;
-		MCreature* const		GetUndergroundCreature() const;
-		MCreature* const		GetGroundCreature() const;
-		MCreature* const		GetFlyingCreature() const;
-		MImageObject* const		GetImageObject(TYPE_OBJECTID id) const;		
+		MCreature*				GetCreature() const;
+		MCreature*				GetUndergroundCreature() const;
+		MCreature*				GetGroundCreature() const;
+		MCreature*				GetFlyingCreature() const;
+		MImageObject*			GetImageObject(TYPE_OBJECTID id) const;		
 
 		// 개수		
 		BYTE			GetImageObjectSize() const		{ return m_nImageObject; }
@@ -428,7 +428,7 @@ class MSector {
 		//------------------------------------------------
 		void				SetVisitedFlag()		{ m_bVisitedFlag = true; }
 		void				UnSetVisitedFlag()		{ m_bVisitedFlag = false; }
-		const bool			IsVisitedFlag() const	{ return m_bVisitedFlag; }
+		bool				IsVisitedFlag() const	{ return m_bVisitedFlag; }
 
 
 		// 대지 아우 140 스킬 퓨리 오브 놈 관련 fury of gnome

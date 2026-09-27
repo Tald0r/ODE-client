@@ -771,6 +771,7 @@ public:
 	void	AddHelpMail(DWORD id,  bool open);
 
 	void	Show();
+	using PI_Processor::Start;
 	void	Start(TAB_ID tab_id = TAB_MAIL_ID);
 	void	Finish();
 	void	Process();
@@ -1713,6 +1714,7 @@ public:
 	void	Process();
 	void	Show();
 	bool	IsPixel(int _x, int _y);
+	using PI_Processor::Start;
 	void	Start(std::vector<MItem*>& Info);
 	void	Finish();
 	bool	MouseControl(UINT message, int _x, int _y);

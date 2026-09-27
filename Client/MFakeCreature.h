@@ -212,7 +212,7 @@ class MFakeCreature : public MCreatureWear {
 		bool				IsFakeEnd();
 
 		void				SetOwnerID(TYPE_OBJECTID id);
-		const TYPE_OBJECTID	GetOwnerID() const					{ return m_OwnerID; }
+		TYPE_OBJECTID		GetOwnerID() const					{ return m_OwnerID; }
 
 		static DWORD		GetFakeID();
 
@@ -231,7 +231,7 @@ class MFakeCreature : public MCreatureWear {
 		void				SetZone(MZone* pZone);
 		static POINT		CaculatePetPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int distance, int distanceMin, MOVE_TYPE moveType, TYPE_SECTORPOSITION petX, TYPE_SECTORPOSITION petY);
 		void				SyncTurretDirection();
-		const BYTE			GetTurretDirection() const;
+		BYTE				GetTurretDirection() const;
 		void				SetTurretFinalDirection(BYTE d);
 		void				UpdateTurret();
 		void				SetTurretDelay( BYTE delay ) { m_TurretDelay = delay; }

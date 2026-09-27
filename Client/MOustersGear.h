@@ -136,14 +136,14 @@ class MOustersGear : public MPlayerGear	{
 		//------------------------------------------------
 		// GetItem : 코어잽을 다 모았는지..
 		//------------------------------------------------
-		const bool			IsHasAllCoreZap(int CoreZapType) const	;
+		bool				IsHasAllCoreZap(int CoreZapType) const	;
 
 		//------------------------------------------------
 		// bool : 블러드 기어창이 열렸는지.
 		//------------------------------------------------
 		void			SetBloodBibleOpenSlot(int Num) { m_bBloodBibleOpenCount = Num;	}
 		BYTE			GetBloodBibleOpenSlot() { return m_bBloodBibleOpenCount;	}
-		const bool		IsCloseBloodBibleSlot(int slot) const	;
+		bool			IsCloseBloodBibleSlot(int slot) const	;
 
 	protected :
 		//------------------------------------------------

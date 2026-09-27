@@ -555,7 +555,7 @@ MSector::AddImageObject(const MImageObject* pImageObject)
 //----------------------------------------------------------------------
 // Item Flag를 보고 Item이 있다면 return해주면 된다.
 //----------------------------------------------------------------------
-MItem* const			
+MItem*			
 MSector::GetItem() const
 {
 	// Item이 있다면...
@@ -569,7 +569,7 @@ MSector::GetItem() const
 			return NULL;
 		
 		// 있으면 그 Object를 return한다.
-		return (MItem* const)((*iObject).second);
+		return (MItem*)((*iObject).second);
 	}
 
 	return NULL;
@@ -776,7 +776,7 @@ MSector::GetFlyingCreatureIterator()
 //----------------------------------------------------------------------
 // Creature Flag를 보고 Creature가 있다면 return해주면 된다.
 //----------------------------------------------------------------------
-MCreature * const
+MCreature *
 MSector::GetCreature() const
 {
 	// UndergroundCreature이 있다면...
@@ -788,7 +788,7 @@ MSector::GetCreature() const
 		if (iObject!=m_mapObject.end() 
 			&& iObject->first <= POSITION_FLYINGCREATURE_MAX)
 		{
-			return (MCreature* const)(iObject->second);
+			return (MCreature*)(iObject->second);
 		}
 	}
 	
@@ -800,7 +800,7 @@ MSector::GetCreature() const
 //----------------------------------------------------------------------
 // UndergroundCreature Flag를 보고 UndergroundCreature이 있다면 return해주면 된다.
 //----------------------------------------------------------------------
-MCreature * const
+MCreature *
 MSector::GetUndergroundCreature() const
 {
 	// UndergroundCreature이 있다면...
@@ -813,7 +813,7 @@ MSector::GetUndergroundCreature() const
 		if (iObject!=m_mapObject.end() 
 			&& iObject->first <= POSITION_UNDERGROUNDCREATURE_MAX)
 		{
-			return (MCreature* const)(iObject->second);
+			return (MCreature*)(iObject->second);
 		}
 	}
 	
@@ -825,7 +825,7 @@ MSector::GetUndergroundCreature() const
 //----------------------------------------------------------------------
 // Creature Flag를 보고 Creature이 있다면 return해주면 된다.
 //----------------------------------------------------------------------
-MCreature * const
+MCreature *
 MSector::GetGroundCreature() const
 {
 	// Creature이 있다면...
@@ -838,7 +838,7 @@ MSector::GetGroundCreature() const
 		if (iObject!=m_mapObject.end() 
 			&& iObject->first <= POSITION_GROUNDCREATURE_MAX)
 		{
-			return (MCreature* const)(iObject->second);
+			return (MCreature*)(iObject->second);
 		}
 	}
 	
@@ -850,7 +850,7 @@ MSector::GetGroundCreature() const
 //----------------------------------------------------------------------
 // FlyingCreature Flag를 보고 FlyingCreature이 있다면 return해주면 된다.
 //----------------------------------------------------------------------
-MCreature * const
+MCreature *
 MSector::GetFlyingCreature() const
 {
 	// FlyingCreature이 있다면...
@@ -862,7 +862,7 @@ MSector::GetFlyingCreature() const
 		if (iObject!=m_mapObject.end() 
 			&& iObject->first <= POSITION_FLYINGCREATURE_MAX)
 		{
-			return (MCreature* const)(iObject->second);
+			return (MCreature*)(iObject->second);
 		}
 	}
 	
@@ -875,7 +875,7 @@ MSector::GetFlyingCreature() const
 // ImageObject Flag를 보고 ImageObject가 있다면 
 // 원하는 id를 가지는 ImageObject가 있으면 return해주면 된다.
 //----------------------------------------------------------------------
-MImageObject* const	
+MImageObject*	
 MSector::GetImageObject(TYPE_OBJECTID id) const
 {
 	// ImageObject이 있다면...
@@ -894,7 +894,7 @@ MSector::GetImageObject(TYPE_OBJECTID id) const
 		{
 			// 같은 ID이면 return한다.
 			if ( ((*iObject).second)->GetID() == id )
-				return (MImageObject* const)((*iObject).second);
+				return (MImageObject*)((*iObject).second);
 
 			// 다음 ImageObject
 			iObject++;

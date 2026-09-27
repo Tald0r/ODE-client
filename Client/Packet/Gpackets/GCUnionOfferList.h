@@ -130,7 +130,7 @@ public:
 	void setGuildMaster( const string& GuildMaster ) { m_MasterName = GuildMaster; }
 
 	// get/set Date
-	const DWORD getDate() const noexcept { return m_Date; }
+	DWORD getDate() const noexcept { return m_Date; }
 	void setDate( DWORD date  ) noexcept { m_Date = date; }
 
 private :

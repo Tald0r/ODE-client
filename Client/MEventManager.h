@@ -106,7 +106,7 @@ class MEvent
 		DWORD					parameter4;			// EVENT_BACKGROUND에 종속
 		std::vector<int>		m_StringsID;		// GameString의 StringID가 들어간다.
 
-		const bool IsShowTime() const;
+		bool IsShowTime() const;
 		DWORD ElapsedMillis() const;		// milliseconds since the event started
 };
 
@@ -120,13 +120,13 @@ class MEventManager
 
 		void			AddEvent(MEvent &event);
 
-		const bool		IsEmptyEvent() const				{ return m_Events.empty(); }
-		const int		GetEventCount() const				{ return m_Events.size(); }
+		bool			IsEmptyEvent() const				{ return m_Events.empty(); }
+		int				GetEventCount() const				{ return m_Events.size(); }
 		const MEvent*	GetEvent(EVENT_ID id);
 
-		const bool		IsEmptyEventByFlag(DWORD flag);
+		bool			IsEmptyEventByFlag(DWORD flag);
 		const MEvent*	GetEventByFlag(DWORD flag, int count = 0);
-		const int		GetEventCountByFlag(DWORD flag);
+		int				GetEventCountByFlag(DWORD flag);
 
 		bool			IsEvent(EVENT_ID id);
 
