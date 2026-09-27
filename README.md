@@ -611,12 +611,13 @@ ctest --test-dir build/presets/macos --output-on-failure
 ```
 
 `tools/ci/verify-linux.sh macos` runs those steps the way the workflow does,
-then checks the warning budget in `tools/ci/warning-baselines.json`. That
-budget is the runner's Apple Clang: under Apple Clang 21 the build and the
-tests pass, but the budget step fails on warning kinds the older compiler
-does not emit (`-Wdeprecated-enum-enum-conversion`,
-`-Wmisleading-indentation`, `-Wnontrivial-memcall`) and on the linker's
-deployment-target warnings above.
+then checks the warning budget in `tools/ci/warning-baselines.json`. The
+project's own code builds without warnings; what the budget counts is the
+vendored code under `third_party/` and `build/_deps/` and the linker. It is
+recorded from the CI runners' compilers, so a different compiler version
+can count differently: under Apple Clang 21 the build and the tests pass,
+but the budget step reports the linker's deployment-target warnings above
+and a few more vendored-code diagnostics than the runner's Apple Clang.
 The executable is `build/presets/macos/bin/DarkEden`, run with the `Data/`
 tree beside it as on Linux. The macOS equivalent of the junctions and the
 copy in *Point the build at the data* is a pair of symbolic links:
