@@ -134,10 +134,10 @@ void CMessageStringTable::LoadFromFile(std::string strFileName)
 		
 		if ( ifile.eof() )
 			break;
-		uint key_begin = line.find_first_not_of( " \t" );
+		std::string::size_type key_begin = line.find_first_not_of( " \t" );
 		if ( key_begin == std::string::npos )
 			continue;
-		uint key_end = line.find( "," , key_begin );
+		std::string::size_type key_end = line.find( "," , key_begin );
 		std::string key = line.substr( key_begin , key_end - key_begin );
 		SetMessageName(i++,key);
 	}		
