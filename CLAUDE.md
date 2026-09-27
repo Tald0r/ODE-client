@@ -46,15 +46,14 @@ regenerate locally, never commit it. `/MP` is set once for all targets in
 
 ### Reading build output
 
-A clean Debug build is **about 4,600 warning lines and 0 errors** (measured
-2026-09-06 under `/std:c++20`; an older note here said ~27,000 dominated by C4290,
-which the C++20 mode no longer emits at all - MSVC accepts a `throw(X, Y)` list
-silently and reads `throw()` as `noexcept`). The noise is pre-existing: C4005,
-C4312, C5033 and **C4297**, the last being `throw()` functions whose bodies
-throw, 539 of them across 257 `Client/Packet` files - the ones that must lose
-the specification rather than gain `noexcept` when finding 3 of the C++20
-assessment is worked (ratchets R9/R10 count the specifications, since the
-build cannot). LNK4217/LNK4286 used to join the noise while 36 `Client/*.cpp`
+A clean Debug build is **1,254 distinct warnings (about 11,800 lines) and 0
+errors** on the CI runner (measured 2026-09-27, after
+`docs/compiler-warnings-2026-09-27.md`). They are MSVC `/W3` diagnostics GCC
+and Clang do not raise under `-Wall -Wextra`: the C4267/C4244 narrowing
+conversions (~1,050), C4996 CRT deprecations, a few C4668/C4312/C4005, and
+vendored code. The project's own code builds without warnings under Apple
+Clang, GCC and Clang; the C4297 packet destructors that rethrew into
+`noexcept` went with that cleanup. LNK4217/LNK4286 used to join the noise while 36 `Client/*.cpp`
 files compiled into both `DarkEden` and `VS_UI.lib`; `docs/RESTRUCTURING.md`
 task 4.0 ended that, but **15 remain** (measured 2026-09-10): `MStatusManager`
 symbols marked `dllimport` where `GameUI.obj` and `MPlayer.obj` use them, though
