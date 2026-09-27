@@ -349,7 +349,7 @@ private:
 	C_VS_UI_INVENTORY_SUB			*m_pC_SubInventory;
 public:
 	C_VS_UI_GAME();
-	~C_VS_UI_GAME();
+	virtual ~C_VS_UI_GAME();
 
 	struct PETINFO* GetPetInfo();
 	struct PETINFO* GetMyPetInfo();

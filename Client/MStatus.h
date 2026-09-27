@@ -17,7 +17,7 @@
 class MStatus {
 	public :
 		MStatus();
-		~MStatus();
+		virtual ~MStatus();
 
 		//-------------------------------------------
 		// 모든 값을 NULL으로 만든다.

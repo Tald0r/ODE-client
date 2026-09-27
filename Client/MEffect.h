@@ -88,7 +88,7 @@ class MEffect : public MObject, public CAnimationFrame {
 		// Old constructor: maintain backward compatibility (no resource container)
 		MEffect(BYTE bltType);
 
-		~MEffect();
+		virtual ~MEffect();
 
 		//--------------------------------------------------------
 		// Resource container management (newly added)

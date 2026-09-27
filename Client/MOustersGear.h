@@ -72,7 +72,7 @@ class MOustersGear : public MPlayerGear	{
 
 	public :
 		MOustersGear();
-		~MOustersGear();
+		virtual ~MOustersGear();
 
 		//------------------------------------------------
 		// 깨끗하게~ 초기화 시켜 준다.

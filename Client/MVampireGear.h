@@ -74,7 +74,7 @@ class MVampireGear : public MPlayerGear	{
 
 	public :
 		MVampireGear();
-		~MVampireGear();
+		virtual ~MVampireGear();
 
 		//------------------------------------------------
 		// 깨끗하게~ 초기화 시켜 준다.

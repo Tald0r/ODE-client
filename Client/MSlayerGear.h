@@ -152,7 +152,7 @@ class MSlayerGear : public MPlayerGear	{
 
 	public :
 		MSlayerGear();
-		~MSlayerGear();
+		virtual ~MSlayerGear();
 
 		//------------------------------------------------
 		// 깨끗하게~ 초기화 시켜 준다.

@@ -30,12 +30,6 @@
 template <class Type>
 class POSITION_NODE {
 	public :
-		void	operator = (const POSITION_NODE& node)
-		{
-			X = node.X;
-			Y = node.Y;
-		}
-
 		bool	operator == (const POSITION_NODE& node) const
 		{
 			return X==node.X && Y==node.Y;

@@ -125,13 +125,6 @@ class PORTAL_INFO
 			Type = type;
 			ZoneID = zoneID;
 		}
-
-	public :
-		void		operator = (PORTAL_INFO& info)
-		{
-			Type = info.Type;
-			ZoneID = info.ZoneID;
-		}
 };
 
 // ZoneID List

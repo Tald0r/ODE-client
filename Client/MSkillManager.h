@@ -389,12 +389,6 @@ class SKILLID_NODE {
 		void	SetDisable()		{ Flag &= ~FLAG_SKILL_ENABLE; }
 		BYTE	IsEnable() const	{ return Flag & FLAG_SKILL_ENABLE; }
 
-		void	operator = (const SKILLID_NODE& node)
-		{
-			SkillID		= node.SkillID;
-			Flag		= node.Flag;
-		}
-
 };
 		
 class MSkillSet : public std::map<ACTIONINFO, SKILLID_NODE> {

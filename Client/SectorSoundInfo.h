@@ -32,13 +32,6 @@ class SECTORSOUND_INFO
 			Y = y;
 		}
 
-		void		operator = (const SECTORSOUND_INFO& info)
-		{
-			ZoneSoundID = info.ZoneSoundID;
-			X = info.X;
-			Y = info.Y;
-		}
-
 		bool		operator == (const SECTORSOUND_INFO& info) const
 		{
 			return ZoneSoundID==info.ZoneSoundID
