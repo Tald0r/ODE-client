@@ -22,6 +22,7 @@ void GCSkillInfoHandler::execute ( GCSkillInfo * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	g_pUserInformation->HasSkillRestore = false;
@@ -233,7 +234,6 @@ void GCSkillInfoHandler::execute ( GCSkillInfo * pPacket , Player * pPlayer )
 						if (pInfo!=NULL)
 						{
 							int skillType	= pInfo->getSkillType();
-							int Turn		= pInfo->getSkillTurn();
 							DWORD delayTime = ConvertDurationToMillisecond( pInfo->getSkillTurn() );
 							int currentDelay = ConvertDurationToMillisecond( pInfo->getCastingTime() );							
 							
@@ -347,7 +347,6 @@ void GCSkillInfoHandler::execute ( GCSkillInfo * pPacket , Player * pPlayer )
 							if (pInfo!=NULL)
 							{
 								int skillType	= pInfo->getSkillType();
-								int Turn		= pInfo->getSkillTurn();
 								DWORD delayTime = ConvertDurationToMillisecond( pInfo->getSkillTurn() );
 								int currentDelay = ConvertDurationToMillisecond( pInfo->getCastingTime() );							
 								int	expLevel	= pInfo->getExpLevel();

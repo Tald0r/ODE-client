@@ -258,8 +258,8 @@ IsValidID(const char* strID, const char* strPermit)
 			//--------------------------------------------------------
 			// 영어 대소문자..
 			//--------------------------------------------------------
-			if (ch>='a' && ch<='z' 
-				|| ch>='A' && ch<='Z')
+			if ((ch>='a' && ch<='z') 
+				|| (ch>='A' && ch<='Z'))
 			{				
 				bExistEnglish = 1;
 			}
@@ -267,8 +267,8 @@ IsValidID(const char* strID, const char* strPermit)
 			// 숫자거나
 			// 허용된 문자인 경우는 괜찮다..
 			//--------------------------------------------------------
-			else if (ch>='0' && ch<='9'
-					|| strPermit!=NULL && strchr(strPermit, ch)!=NULL)
+			else if ((ch>='0' && ch<='9')
+					|| (strPermit!=NULL && strchr(strPermit, ch)!=NULL))
 			{
 			}
 			//--------------------------------------------------------
@@ -378,7 +378,7 @@ LoadImageToSurface(const char* pFilename, CDirectDrawSurface& surface)
 	bool bJpg = false;
 
 	// 확장자 체크를 위해 lowercase
-	for(int kkk = 0; kkk < strlen(checkStr); kkk++)
+	for(int kkk = 0; static_cast<size_t>(kkk) < strlen(checkStr); kkk++)
 		if(checkStr[kkk] >= 'A' && checkStr[kkk] <= 'Z')
 			checkStr[kkk] += 'a' - 'A';
 
@@ -414,8 +414,6 @@ LoadImageToSurface(const char* pFilename, CDirectDrawSurface& surface)
 		}
 
 		int pitch = width*bpp;
-
-		int green_shift = 0;
 
 		if (width > 0 && height > 0 && bpp > 0)
 		{
@@ -523,7 +521,7 @@ SaveSurfaceToImage(const char* pFilename, CDirectDrawSurface& surface)
 	bool bJpg = false;
 
 	// 확장자 체크를 위해 lowercase
-	for(int kkk = 0; kkk < strlen(checkStr); kkk++)
+	for(int kkk = 0; static_cast<size_t>(kkk) < strlen(checkStr); kkk++)
 		if(checkStr[kkk] >= 'A' && checkStr[kkk] <= 'Z')
 			checkStr[kkk] += 'a' - 'A';
 
@@ -550,7 +548,7 @@ SaveSurfaceToImage(const char* pFilename, CDirectDrawSurface& surface)
 	}
 	else if (bJpg)
 	{
-		int width = surface.GetWidth(), height = surface.GetHeight(), bpp = surface.Get_BPP();
+		int width = surface.GetWidth(), height = surface.GetHeight();
 		int out_bpp = 24;
 		if(surface.Lock())
 		{
@@ -566,7 +564,6 @@ SaveSurfaceToImage(const char* pFilename, CDirectDrawSurface& surface)
 
 				for (int x = 0; x < width; x++)
 				{
-					WORD color = *pSurfacePointTemp;
 					p_dataTemp[0] = CSDLGraphics::Blue(*pSurfacePointTemp)<<3;
 					p_dataTemp[1] = CSDLGraphics::Green(*pSurfacePointTemp)<<3;
 					p_dataTemp[2] = CSDLGraphics::Red(*pSurfacePointTemp)<<3;
@@ -997,7 +994,7 @@ bool LoadImageToSurface(const char* pFilename, CSpriteSurface& surface)
 	// Check file extension
 	char checkStr[10];
 	snprintf(checkStr, sizeof(checkStr), "%s", pFilename + fileLen - 4);
-	for (int i = 0; i < strlen(checkStr); i++) {
+	for (int i = 0; static_cast<size_t>(i) < strlen(checkStr); i++) {
 		if (checkStr[i] >= 'A' && checkStr[i] <= 'Z') {
 			checkStr[i] += 'a' - 'A';
 		}

@@ -432,6 +432,9 @@ void C_VS_UI_SLAYER_QUICKITEM::Process()
 //-----------------------------------------------------------------------------
 void C_VS_UI_SLAYER_QUICKITEM::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)message;
+	(void)key;
+	(void)extra;
 
 }
 
@@ -521,12 +524,12 @@ bool C_VS_UI_SLAYER_QUICKITEM::MouseControl(UINT message, int _x, int _y)
 						}
 					}
 					
-					if (m_bl_width &&
+					if ((m_bl_width &&
 						px >= x+m_p_slot_x[i] && px < x+m_p_slot_x[i]+QUICKSLOT_W &&
-						py >= y && py < y+QUICKSLOT_H ||
-						!m_bl_width &&
+						py >= y && py < y+QUICKSLOT_H) ||
+						(!m_bl_width &&
 						px >= x && px < x+QUICKSLOT_W &&
-						py >= y+m_p_slot_x[i] && py < y+m_p_slot_x[i]+QUICKSLOT_H
+						py >= y+m_p_slot_x[i] && py < y+m_p_slot_x[i]+QUICKSLOT_H)
 						)
 					{
 						if(m_focus_slot != i)
@@ -1024,10 +1027,10 @@ void C_VS_UI_SLAYER_QUICKITEM::Show()
 				}
 				
 				
-				if(m_bl_width)
-					temp_x += m_image_spk.GetWidth(SLOT);
-				else
-					temp_y += m_image_spk.GetHeight(SLOT+ROTATED_OFFSET);
+			if(m_bl_width)
+				temp_x += m_image_spk.GetWidth(SLOT);
+			else
+				temp_y += m_image_spk.GetHeight(SLOT+ROTATED_OFFSET);
 		}
 		
 		if(m_bl_width)
@@ -1142,7 +1145,7 @@ void C_VS_UI_SLAYER_QUICKITEM::Show()
 
 C_VS_UI_SLAYER_GEAR::C_VS_UI_SLAYER_GEAR()
 {
-	assert(MSlayerGear::MAX_GEAR_SLAYER == SLOT_SIZE);
+	assert(static_cast<int>(MSlayerGear::MAX_GEAR_SLAYER) == static_cast<int>(SLOT_SIZE));
 	 
 
 	m_slot_rect[SN_HELM].Set(80, 15, 60, 60);
@@ -1590,10 +1593,9 @@ void C_VS_UI_SLAYER::Show()
 			m_pC_main_spk->BltLockedClip(x+79, y+6, rect, SKILL_EXP_BAR);
 		}
 		
-		int sec = 0, min = 0, hour = 0;
+		int min = 0, hour = 0;
 		char sz_temp[20];
 		SafeFormat::Copy(sz_temp, m_time.c_str());
-		sec = atoi(sz_temp+strlen(sz_temp)-2);
 		sz_temp[strlen(sz_temp)-3] = '\0';
 		min = atoi(sz_temp+strlen(sz_temp)-2);
 		sz_temp[strlen(sz_temp)-3] = '\0';
@@ -2306,7 +2308,7 @@ void C_VS_UI_SLAYER_PORTAL::Show()
 	{		
 		m_map_spk.BltLocked(x, y, m_map);
 		
-		for(int i = 0; i < m_flag[m_map].size(); i++)
+		for(int i = 0; static_cast<size_t>(i) < m_flag[m_map].size(); i++)
 		{
 			int _x = gpC_mouse_pointer->GetX(), _y = gpC_mouse_pointer->GetY();
 			
@@ -2469,7 +2471,7 @@ bool	C_VS_UI_SLAYER_PORTAL::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 
 	int flag = -1;
-	for(int i = 0; i < m_flag[m_map].size(); i++)
+	for(int i = 0; static_cast<size_t>(i) < m_flag[m_map].size(); i++)
 	{
 		if(_x >= x+m_flag[m_map][i].x -10 && _x <= x+m_flag[m_map][i].x +10 &&
 			_y >= y+m_flag[m_map][i].y -20 && _y <= y+m_flag[m_map][i].y +10)

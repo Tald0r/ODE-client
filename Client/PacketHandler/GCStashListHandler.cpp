@@ -18,6 +18,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	int stashNum = pPacket->getStashNum();

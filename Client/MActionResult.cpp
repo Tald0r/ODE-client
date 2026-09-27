@@ -956,12 +956,12 @@ MActionResultNodeChangeItemOptionInInventory::Execute()
 	//	int Option2 = LOWORD(m_Type);
 
 	//	if(oriOption < newOption)
-		for(; Option != NULL; Option >>= 16)	// 2바이트 쉬프트 하면 LOWORD, HIWORD순으로 되나
+		for(; Option != 0; Option >>= 16)	// 2바이트 쉬프트 하면 LOWORD, HIWORD순으로 되나
 		{
 			int oriOption = (Option & 0xff00) >> 8;
 			int newOption = (Option & 0xff);
 
-			if(newOption == NULL && oriOption == NULL)
+			if(newOption == 0 && oriOption == 0)
 				continue;
 
 	//			continue;

@@ -18,6 +18,7 @@
 void GCRegenZoneStatusHandler::execute ( GCRegenZoneStatus * pPacket , Player * pPlayer )
 
 {
+	(void)pPlayer;
 	if( g_pRegenTowerInfoManager == NULL )
 		return;
 

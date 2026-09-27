@@ -34,6 +34,7 @@ void __assert__ ( const char * file , uint line , const char * func , const char
 // function spelling each platform wants is decided by the macro below.
 void __assert__ ( const char * func , const char * expr , const DiagnosticSite & site = DiagnosticSite() );
 
+#undef Assert
 #if defined(NDEBUG)
 	#define Assert(expr) ((void)0)
 #elif defined(__MFC__)

@@ -18,8 +18,6 @@ CGDropMoney::CGDropMoney ()
 
 CGDropMoney::~CGDropMoney ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGDropMoney::read (SocketInputStream & iStream)

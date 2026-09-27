@@ -15,6 +15,7 @@ void GCOtherGuildNameHandler::execute(GCOtherGuildName* pPacket, Player* pPlayer
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	// Other Info 검색후에-_- 파티 매니저도 검색해서 길드이름을 넣어준다.
 
 	std::string guildName = pPacket->getGuildName();

@@ -17,6 +17,7 @@
 void GCAddBatHandler::execute ( GCAddBat * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

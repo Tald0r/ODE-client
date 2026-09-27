@@ -4,7 +4,9 @@
 // Opening 동영상을 보여줄때의 loop
 //---------------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 #include "Client.h"
 #include "ServerInfo.h"
 #include "COpeningUpdate.h"
@@ -72,7 +74,7 @@ COpeningUpdate::Update()
 	//------------------------------------------
 	// Input
 	//------------------------------------------	
-	extern bool	g_bTestMode;
+	[[maybe_unused]] extern bool	g_bTestMode;
 	if (g_bActiveGame
 #ifdef OUTPUT_DEBUG
 		|| g_bTestMode

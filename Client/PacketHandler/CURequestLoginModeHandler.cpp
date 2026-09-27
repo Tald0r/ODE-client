@@ -19,6 +19,8 @@ void CURequestLoginModeHandler::execute ( CURequestLoginMode * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 	__END_CATCH
 }

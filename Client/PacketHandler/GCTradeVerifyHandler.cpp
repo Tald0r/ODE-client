@@ -172,7 +172,6 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
 				int gridX		= g_pTempInformation->Value2;
 				int gridY		= g_pTempInformation->Value3;
-				MItem* pMouseItem = UI_GetMouseItem();
 			
 				UI_PickUpItem( pItem );
 				g_pTradeManager->GetMyInventory()->RemoveItem( gridX, gridY );
@@ -208,7 +207,6 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				// pItem은 원래 들고 있던 item
-				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
 				int gridX		= g_pTempInformation->Value2;
 				int gridY		= g_pTempInformation->Value3;
 				MItem* pMouseItem = UI_GetMouseItem();
@@ -288,15 +286,13 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
-				int gridX		= g_pTempInformation->Value2;
-				int gridY		= g_pTempInformation->Value3;
 				MItem* pMouseItem = UI_GetMouseItem();
 
 				//----------------------------------------------------
 				// pMouseItem을 pItem에 추가시킨다.
 				//----------------------------------------------------
 				int total = pMouseItem->GetNumber() + pItem->GetNumber();
-				if ( total > pItem->GetMaxNumber() )
+				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber() )
 				{
 					// 한계 수치를 넘어갈 경우
 					pMouseItem->SetNumber( total - pItem->GetMaxNumber() );
@@ -377,7 +373,6 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			{
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-				int money		= g_pTempInformation->Value1;
 			
 				//if (!g_pMoneyManager->GetOtherMoneyManager->CanAddMoney(money))
 				//{
@@ -410,7 +405,6 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			{
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-				int money		= g_pTempInformation->Value1;
 				
 				//g_pTradeManager->GetMyMoneyManager()->UseMoney( money );
 				//g_pMoneyManager->AddMoney( money );	

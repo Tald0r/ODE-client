@@ -3,10 +3,13 @@
 
 #include "Client_PCH.h"
 #include "SafeFormat.h"
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_PointExchange.h"
 #include "VS_UI_filepath.h"
@@ -64,6 +67,9 @@ C_VS_UI_POINT_EXCHANGE::C_VS_UI_POINT_EXCHANGE()
 
 	case RACE_OUSTERS:
 		m_image_spk.Open(SPK_EXCHANGE_OUSTERS);
+		break;
+
+	default:
 		break;
 	}
 
@@ -292,6 +298,9 @@ bool C_VS_UI_POINT_EXCHANGE::Click(int clickX, int clickY)
 
 bool C_VS_UI_POINT_EXCHANGE::MouseControl(UINT message, int _x, int _y)
 {
+	(void)message;
+	(void)_x;
+	(void)_y;
 	// TODO: Implement mouse control for item hover, etc.
 	return true;
 }
@@ -429,18 +438,22 @@ void C_VS_UI_POINT_EXCHANGE::BuyItem()
 
 void C_VS_UI_POINT_EXCHANGE::CreateListing(MItem* pItem, int price)
 {
+	(void)pItem;
+	(void)price;
 	// Send create listing request to server
 	// TODO: Implement create listing packet - CGExchangeCreateListing
 }
 
 void C_VS_UI_POINT_EXCHANGE::CancelListing(ExchangeListingItem* pListing)
 {
+	(void)pListing;
 	// Send cancel listing request to server
 	// TODO: Implement cancel packet - CGExchangeCancelListing
 }
 
 void C_VS_UI_POINT_EXCHANGE::ClaimItem(ExchangeListingItem* pClaim)
 {
+	(void)pClaim;
 	// Send claim request to server
 	// TODO: Implement claim packet - CGExchangeClaim
 }
@@ -486,6 +499,7 @@ int C_VS_UI_POINT_EXCHANGE::GetTabX(int tabIndex) const
 
 int C_VS_UI_POINT_EXCHANGE::GetListingX(int index) const
 {
+	(void)index;
 	return LISTING_START_X;
 }
 
@@ -557,10 +571,7 @@ void C_VS_UI_POINT_EXCHANGE::DrawClaimList()
 
 void C_VS_UI_POINT_EXCHANGE::DrawListingItem(const ExchangeListingItem& item, int index)
 {
-	int itemX = x + GetListingX(index);
-	int itemY = y + GetListingY(index);
-	int itemW = w - LISTING_START_X * 2;
-	int itemH = LISTING_HEIGHT;
+	(void)index;
 
 	// Draw item background
 	if (gpC_base->m_p_DDSurface_back->Lock())

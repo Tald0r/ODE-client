@@ -28,11 +28,9 @@ GCAddSlayer::GCAddSlayer(const PCSlayerInfo3& info)
 
 GCAddSlayer::~GCAddSlayer()
 {
-	__BEGIN_TRY
 	
 	SAFE_DELETE(m_pEffectInfo);
 
-	__END_CATCH
 }
 
 void GCAddSlayer::read ( SocketInputStream & iStream )

@@ -52,4 +52,6 @@ __inline void __cdecl operator delete(void *p)
 
 #define new DEBUG_NEW
 
+#ifdef _MSC_VER
 #pragma warning(disable:4291)
+#endif

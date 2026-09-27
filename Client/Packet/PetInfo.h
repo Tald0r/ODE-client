@@ -18,6 +18,7 @@ class PetInfo
 {
 public:
 	PetInfo();
+	virtual ~PetInfo() {}
 
 	virtual void read(SocketInputStream& iStream);
 	virtual void write(SocketOutputStream& oStream) const;

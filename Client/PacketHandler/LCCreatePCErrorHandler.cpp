@@ -20,6 +20,7 @@ void LCCreatePCErrorHandler::execute ( LCCreatePCError * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	//cout << "Fail to create PC... (" << pPacket->toString() << ")" << endl;

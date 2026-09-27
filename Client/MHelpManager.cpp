@@ -482,6 +482,9 @@ MHelpManager::ExecuteEvent(HELP_EVENT he)
 					pHelpNode = NULL;	// while loop를 빠지기 위해서.
 				}
 				break;
+
+				default:
+					break;
 			}
 		}
 	}

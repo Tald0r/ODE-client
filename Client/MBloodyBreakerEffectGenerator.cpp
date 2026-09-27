@@ -11,9 +11,7 @@
 
 #include "DebugInfo.h"
 
-const char bloody_breaker_center_x = 6;
-const char bloody_breaker_center_y = 6;
-char bloody_breaker_map[8][13][13] = {0, };
+char bloody_breaker_map[8][13][13] = { { {0, } } };
 
 struct tempBreaker
 {
@@ -44,7 +42,6 @@ void	MakeMap(BYTE dic, std::vector<tempBreaker> &v_cp, int p)
     mask[7].x = -1;
     mask[7].y = -1;	
     
-	int l = 0;
 	for ( int i = 1; i <= 6; i++ )
 	{
 		int x = 0;
@@ -96,7 +93,6 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	
 	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
 	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	bool			repeatFrame	= (*g_pEffectSpriteTypeTable)[est].RepeatFrame;
 	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);	
 		
 	//int currentPhase = (egInfo.pEffectTarget==NULL? lastPhase +1 : egInfo.pEffectTarget->GetCurrentPhase());
@@ -116,7 +112,7 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	tY = g_pTopView->PixelToMapY(egInfo.y0);
 
 	
-	for(int i=0;i<v_cp.size();i++)
+	for(int i=0;static_cast<size_t>(i)<v_cp.size();i++)
 	{
 		MEffect *pEffect = new MEffect (bltType);
 

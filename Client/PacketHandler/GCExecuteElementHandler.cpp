@@ -18,6 +18,7 @@ void GCExecuteElementHandler::execute ( GCExecuteElement * pGCExecuteElement , P
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 //		__BEGIN_DEBUG_EX
 		
 

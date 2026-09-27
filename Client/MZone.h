@@ -38,7 +38,9 @@
 #ifndef	__MZONE_H__
 #define	__MZONE_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifdef PLATFORM_WINDOWS
 #include <Windows.h>
@@ -318,7 +320,7 @@ class MZone {
 
 		void		SetVisitedFlag(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)				{ m_ppSector[sY][sX].SetVisitedFlag(); }
 		void		UnSetVisitedFlag(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)			{ m_ppSector[sY][sX].UnSetVisitedFlag(); }
-		const bool	IsVisitedFlag(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const		{ return m_ppSector[sY][sX].IsVisitedFlag(); }
+		bool		IsVisitedFlag(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const		{ return m_ppSector[sY][sX].IsVisitedFlag(); }
 		
 		//--------------------------------------------------------------		
 		//

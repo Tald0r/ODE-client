@@ -30,8 +30,6 @@ GCDeleteEffectFromTile::GCDeleteEffectFromTile ()
 //////////////////////////////////////////////////////////////////////
 GCDeleteEffectFromTile::~GCDeleteEffectFromTile ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

@@ -5,7 +5,9 @@
 #ifndef _RAR_FILE_HEADER_
 #define _RAR_FILE_HEADER_
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifdef PLATFORM_WINDOWS
 #include <windows.h>

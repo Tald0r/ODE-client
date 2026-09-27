@@ -16,13 +16,12 @@ CGPetGamble::CGPetGamble ()
 
 CGPetGamble::~CGPetGamble ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGPetGamble::read (SocketInputStream & iStream)
 {
 	__BEGIN_TRY
+	(void)iStream;
 		
 	__END_CATCH
 }
@@ -30,6 +29,7 @@ void CGPetGamble::read (SocketInputStream & iStream)
 void CGPetGamble::write (SocketOutputStream & oStream) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 
 	__END_CATCH
 }

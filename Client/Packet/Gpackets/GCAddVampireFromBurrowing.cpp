@@ -14,7 +14,6 @@
 //----------------------------------------------------------------------
 GCAddVampireFromBurrowing::~GCAddVampireFromBurrowing()
 {
-	__BEGIN_TRY
 	
 	if( m_pEffectInfo != NULL )
 	{
@@ -22,7 +21,6 @@ GCAddVampireFromBurrowing::~GCAddVampireFromBurrowing()
 		m_pEffectInfo = NULL;
 	}
 
-	__END_CATCH
 }
 
 //----------------------------------------------------------------------

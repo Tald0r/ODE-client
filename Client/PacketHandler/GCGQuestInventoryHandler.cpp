@@ -17,6 +17,7 @@ void GCGQuestInventoryHandler::execute ( GCGQuestInventory * pGCGQuestInventory 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 //		__BEGIN_DEBUG_EX
 		
 
@@ -37,7 +38,7 @@ void GCGQuestInventoryHandler::execute ( GCGQuestInventory * pGCGQuestInventory 
 
 		std::vector<ItemType_t>	TempItemList = pGCGQuestInventory->getItemList();
 
-		for(int i = 0; i<TempItemList.size(); i++)
+		for(int i = 0; static_cast<size_t>(i)<TempItemList.size(); i++)
 		{
 			ItemType_t TempType = TempItemList[i];
 

@@ -17,6 +17,7 @@ void GCWaitGuildListHandler::execute ( GCWaitGuildList * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	//------------------------------------------------------
 	// 검증

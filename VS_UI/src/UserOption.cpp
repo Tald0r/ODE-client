@@ -232,7 +232,7 @@ UserOption::LoadFromFile(const char* filename)
 	fscanf(file, "%d %s\n", &DenyPartyRequest, ignore);
 	fscanf(file, "%d %s\n", &AutoHideSmoothScroll, ignore);
 	fscanf(file, "%d %s\n", &ChattingColor, ignore);
-	fscanf(file, "%d %s\n", &ALPHA_DEPTH, ignore);
+	fscanf(file, "%hhu %s\n", &ALPHA_DEPTH, ignore);
 	fscanf(file, "%d %s\n", &DefaultAlpha, ignore);
 	fscanf(file, "%d %s\n", &IsPreLoadMonster, ignore);
 	fscanf(file, "%d %s\n", &ChatWhite, ignore);

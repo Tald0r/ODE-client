@@ -17,5 +17,6 @@
 void GCMiniGameScoresHandler::execute ( GCMiniGameScores * pGCMiniGameScores , Player * pPlayer )
 
 {	
+	(void)pPlayer;
 	UI_MiniGameScores( pGCMiniGameScores );
 }

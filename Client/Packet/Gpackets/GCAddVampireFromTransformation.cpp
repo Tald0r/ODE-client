@@ -14,7 +14,6 @@
 //----------------------------------------------------------------------
 GCAddVampireFromTransformation::~GCAddVampireFromTransformation()
 {
-	__BEGIN_TRY
 	
 	if( m_pEffectInfo != NULL )
 	{
@@ -22,7 +21,6 @@ GCAddVampireFromTransformation::~GCAddVampireFromTransformation()
 		m_pEffectInfo = NULL;
 	}
 
-	__END_CATCH
 }
 
 //----------------------------------------------------------------------

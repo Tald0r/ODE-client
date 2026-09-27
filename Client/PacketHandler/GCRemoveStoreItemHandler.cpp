@@ -23,13 +23,14 @@ void GCRemoveStoreItemHandler::execute ( GCRemoveStoreItem * pPacket , Player * 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	//__BEGIN_DEBUG_EX
 	
  
 	if(gC_vs_ui.inventory_mode == 1 || gC_vs_ui.inventory_mode == 2)
 	{
 		
-		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=NULL)
+		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=0)
 		{
 			if(pPacket->getOwnerObjectID() == g_pStorage2->GetCuropenid())
 			{

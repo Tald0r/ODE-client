@@ -21,6 +21,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -206,6 +207,8 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 					bit <<= 1;
 				}
 			}
+			break;
+		default:
 			break;
 		}
 	}

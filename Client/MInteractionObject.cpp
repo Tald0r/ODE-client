@@ -78,6 +78,7 @@ MInteractionObject::LoadFromFile(ifstream& file)
 void
 MInteractionObject::SetAction(BYTE action)
 { 
+	(void)action;
 	// Action dispatch is disabled in this client.
 }
 
@@ -89,6 +90,7 @@ MInteractionObject::SetAction(BYTE action)
 void			
 MInteractionObject::SetNextAction(BYTE action)
 {
+	(void)action;
 	// Action dispatch is disabled in this client.
 }
 

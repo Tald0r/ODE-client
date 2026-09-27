@@ -167,7 +167,7 @@ MOustersGear::CanReplaceItem(MItem* pItem, BYTE n, MItem*& pOldItem)
 		
 	// bycsm 2004.12.31
 
-		if(n == GEAR_OUSTERS_FASCIA)
+	if(n == GEAR_OUSTERS_FASCIA)
 	{
 		if(pItem->IsGearSlotOustersFascia() == true)
 		{
@@ -988,7 +988,7 @@ MItem*	MOustersGear::GetGearCoreZapedItem(int slot) const
 	return NULL;
 }
 
-const bool	MOustersGear::IsHasAllCoreZap(int CoreZapType) const	
+bool		MOustersGear::IsHasAllCoreZap(int CoreZapType) const	
 {
 	BYTE bType[4] = {0,};
 	if(CoreZapType == 0) // 질드레 코어 잽 일 경우
@@ -1014,7 +1014,7 @@ const bool	MOustersGear::IsHasAllCoreZap(int CoreZapType) const
 	return false;
 }
 
-const bool	MOustersGear::IsCloseBloodBibleSlot(int slot) const	
+bool		MOustersGear::IsCloseBloodBibleSlot(int slot) const	
 {
 	if(slot>=GEAR_OUSTERS_BLOOD_BIBLE1 && slot<=GEAR_OUSTERS_BLOOD_BIBLE6)
 	{

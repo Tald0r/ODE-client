@@ -8,7 +8,9 @@
 #ifndef	__MPLAYER_H__
 #define	__MPLAYER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <list>
 #include <queue>
@@ -262,6 +264,9 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 				
 			case RACE_OUSTERS:
 				return (MPlayerGear *)g_pOustersGear;
+
+			default:
+				break;
 			}
 
 			return NULL;
@@ -277,7 +282,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 
 		// 시야 관련
 		void	CalculateLightSight();
-		const int	GetLightSight() const			{ return m_LightSight; }
+		int			GetLightSight() const			{ return m_LightSight; }
 		char	GetTimeLightSight()	const		{ return m_TimeLightSight; }
 		void	SetTimeLightSight(char s);
 		void	SetItemLightSight(int s);
@@ -390,6 +395,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 
 		bool	FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server = false);	// Zone의 Sector에서도 빨리(-_-;) 이동한다.
 
+		using MCreature::KnockBackPosition;
 		bool	KnockBackPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 
 		//----------------------------------------------------------

@@ -18,8 +18,6 @@ CGTameMonster::CGTameMonster ()
 
 CGTameMonster::~CGTameMonster ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGTameMonster::read (SocketInputStream & iStream)

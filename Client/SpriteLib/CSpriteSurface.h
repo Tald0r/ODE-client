@@ -181,7 +181,7 @@ class CSpriteSurface {
 		static void		memcpyBrightness(WORD* pDest, WORD* pSource, WORD pixels);
 		static void		Gamma4Pixel565(void *pDest, int len, int p);
 		static void		Gamma4Pixel555(void *pDest, int len, int p);
-		static WORD		memcpyAlpha1Pixel(WORD pDest, WORD pSource) { return 0; }
+		static WORD		memcpyAlpha1Pixel(WORD pDest, WORD pSource) { (void)pDest; (void)pSource; return 0; }
 
 		// GammaBox - applies Gamma4Pixel565/555 to each row of pRect on this surface
 		void	GammaBox565(RECT* pRect, int p);
@@ -352,9 +352,9 @@ class CSpriteSurface {
 		//------------------------------------------------------------
 		inline int		GetClipRight() const		{ return m_width; }  // Stub: return full width
 		inline int		GetClipBottom() const		{ return m_height; } // Stub: return full height
-		inline void		SetClipRight(int Right)		{ /* Stub: no-op */ }
-		inline void		SetClipRightBottom(int Right, int Bottom) { /* Stub: no-op */ }
-		inline void		SetClipLeftTop(int Left, int Top) { /* Stub: no-op */ }
+		inline void		SetClipRight(int Right)		{ (void)Right; /* Stub: no-op */ }
+		inline void		SetClipRightBottom(int Right, int Bottom) { (void)Right; (void)Bottom; /* Stub: no-op */ }
+		inline void		SetClipLeftTop(int Left, int Top) { (void)Left; (void)Top; /* Stub: no-op */ }
 
 		// GetSurface method (stub for compatibility - returns nullptr)
 		inline void*		GetSurface()				{ return nullptr; }

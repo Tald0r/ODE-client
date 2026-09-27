@@ -18,7 +18,9 @@
 //	#include <xercesc/sax2/DefaultHandler.hpp>
 //#pragma warning (pop)
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifdef PLATFORM_WINDOWS
 #include <Windows.h>
@@ -83,9 +85,9 @@ public:
 
 	OUT const char*		GetName() const;
 	OUT const char*		ToString() const;
-	OUT const int		ToInt() const;
-	OUT const DWORD		ToHex() const;
-	OUT const bool		ToBool() const;
+	OUT int				ToInt() const;
+	OUT DWORD			ToHex() const;
+	OUT bool			ToBool() const;
 };
 
 
@@ -139,7 +141,7 @@ public:
 	OUT const XMLTree* GetChild( IN const string& name ) const;
 	OUT const XMLTree* GetChild( IN size_t index ) const;
 	OUT const XMLTree* GetChildByAttr( IN size_t index , IN const string& name ) const;
-	OUT const size_t GetChildCount() const;
+	OUT size_t GetChildCount() const;
 
 	void Release();
 

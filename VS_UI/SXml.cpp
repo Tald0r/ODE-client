@@ -77,6 +77,7 @@ string XMLUtil::trim(const string& str)
 //////////////////////////////////////////////////////////////////////////////
 void XMLUtil::filelog(char* fmt, ...)
 {
+	(void)fmt;
 //	std::ofstream file(XML_ERROR_FILENAME, ios::out | ios::app);
 //	if (file.is_open())
 //	{
@@ -129,19 +130,19 @@ XMLAttribute::ToString() const
 	return m_Value.c_str();
 }
 
-OUT const int
+OUT int
 XMLAttribute::ToInt() const
 {
 	return atoi( m_Value.c_str() );
 }
 
-OUT const DWORD
+OUT DWORD
 XMLAttribute::ToHex() const
 {
 	return strtol( m_Value.c_str(), NULL, 16 );
 }
 
-OUT const bool
+OUT bool
 XMLAttribute::ToBool() const
 {
 	return ( m_Value == "true" ) ? true : false;
@@ -160,7 +161,7 @@ XMLTree::XMLTree()
 }
 
 XMLTree::XMLTree( IN const string& name )
-: m_pParent( NULL ), m_Name( name )
+: m_Name( name ), m_pParent( NULL )
 {
 }
 
@@ -284,14 +285,14 @@ XMLTree::GetChildByAttr( IN size_t index , IN const string& name) const
 		TempAttr = m_ChildrenVector[i]->GetAttribute(name);
 		if(NULL != TempAttr)
 		{
-			if(TempAttr->ToInt() == index)
+			if(static_cast<size_t>(TempAttr->ToInt()) == index)
 				return m_ChildrenVector[i];
 		}
 	}
 	return NULL;
 }
 // 2004, 7, 13 sobeit add end
-OUT const size_t
+OUT size_t
 XMLTree::GetChildCount() const
 {
 	return m_ChildrenVector.size();

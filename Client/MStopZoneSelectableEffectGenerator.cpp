@@ -34,10 +34,10 @@ MStopZoneSelectableEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo
 	// 다크니스의 경우 다양하게 찍어주기...
 	// 임시 땜빵 코드.. 케케~
 	//-----------------------------------------------------------
-	if (frameID>=EFFECTSPRITETYPE_DARKNESS_1_1
-		&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5 ||
-		frameID >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
-		frameID <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5 )
+	if ((frameID>=EFFECTSPRITETYPE_DARKNESS_1_1
+		&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5) ||
+		(frameID >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
+		frameID <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5) )
 	{
 		if (egInfo.pPreviousEffect!=NULL)
 		{

@@ -17,6 +17,7 @@ void GCRemoveCorpseHeadHandler::execute ( GCRemoveCorpseHead * pPacket , Player 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 
 
 	int objectID = pPacket->getObjectID();

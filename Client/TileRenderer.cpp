@@ -5,10 +5,6 @@
 // TileRenderer Implementation
 //----------------------------------------------------------------------
 
-// Debug counter to limit debug output
-static int g_DebugDrawCount = 0;
-static const int DEBUG_DRAW_LIMIT = 10;
-
 TileRenderer::TileRenderer()
 	: m_surface(nullptr)
 	, m_spritePack(nullptr)
@@ -74,6 +70,7 @@ bool TileRenderer::DrawTile(int spriteID, POINT* pPoint, float scale)
 
 bool TileRenderer::DrawTileInternal(int spriteID, POINT* pPoint, float scale)
 {
+	(void)scale;
 	// Handle SPRITEID_NULL (0xFFFF) or -1 (returned by MZoneTileProvider)
 	// Draw null tile sprite from m_nullTileSpritePack
 	if (spriteID == SPRITEID_NULL || spriteID == -1)

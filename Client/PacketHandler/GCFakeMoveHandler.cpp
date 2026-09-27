@@ -18,6 +18,7 @@ void GCFakeMoveHandler::execute ( GCFakeMove * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	MCreature *pCreature = g_pZone->GetCreature(pPacket->getObjectID());

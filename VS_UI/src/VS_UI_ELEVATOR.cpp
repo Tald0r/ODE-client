@@ -3,10 +3,13 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "Client_PCH.h"
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_ELEVATOR.h"
 #include "VS_UI_filepath.h"
@@ -147,7 +150,7 @@ void	C_VS_UI_ELEVATOR::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 	assert(p_button);
 	
 	if(p_button->GetFocusState() && p_button->GetPressState())m_image_spk.BltLocked(p_button->x, p_button->y, p_button->m_image_index);
-	else if(m_iLevel == p_button->GetID())
+	else if(static_cast<id_t>(m_iLevel) == p_button->GetID())
 		m_image_spk.BltLocked(p_button->x-1, p_button->y-1, p_button->m_image_index);
 }
 

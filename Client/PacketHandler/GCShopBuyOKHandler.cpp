@@ -29,6 +29,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//--------------------------------------------------------------
@@ -109,7 +110,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 				//------------------------------------------------
 				// 개수 초과					
 				//------------------------------------------------
-				if ( total > pItem->GetMaxNumber() )
+				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber() )
 				{
 					DEBUG_ADD_FORMAT("[Error] Cannot Add. MaxNum exceed=%d", total);
 				}

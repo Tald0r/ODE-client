@@ -11,7 +11,7 @@
 //-----------------------------------------------------------------------------
 MFunctionManager::MFunctionManager()
 {
-	m_nFunction = NULL;
+	m_nFunction = 0;
 	m_pFunction = NULL;
 }
 

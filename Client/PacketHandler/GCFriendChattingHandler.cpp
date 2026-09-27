@@ -24,6 +24,7 @@ void GCFriendChattingHandler::execute ( GCFriendChatting * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	switch(pPacket->getCommand())
 	{

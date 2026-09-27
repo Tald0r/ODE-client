@@ -18,6 +18,7 @@ void GCGetOffMotorCycleHandler::execute ( GCGetOffMotorCycle * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

@@ -162,6 +162,7 @@ public:
 	void	ChangeDir(const char* sz_cur_dirname, std::string& sz_pathname);
 
 	const char *	GetFileName()	{ if(m_filename.empty())return NULL; return m_filename.c_str(); }
+	using PI_Processor::Start;
 	void	Start(const char *type);
 	void	Finish();
 

@@ -17,6 +17,7 @@ void GCHPRecoveryStartToSelfHandler::execute ( GCHPRecoveryStartToSelf * pPacket
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	// item 사용 검증

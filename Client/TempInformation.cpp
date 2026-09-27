@@ -38,7 +38,7 @@ void TempInformation::SetMode(TempInformation::TEMP_MODE mode)
 	Mode = mode;
 }
 
-const TempInformation::TEMP_MODE TempInformation::GetMode() const
+TempInformation::TEMP_MODE TempInformation::GetMode() const
 {
 	return Mode;
 }

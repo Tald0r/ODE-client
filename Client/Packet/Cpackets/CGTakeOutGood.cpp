@@ -16,8 +16,6 @@ CGTakeOutGood::CGTakeOutGood ()
 
 CGTakeOutGood::~CGTakeOutGood ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGTakeOutGood::read (SocketInputStream & iStream)

@@ -120,7 +120,8 @@ void		RepairHint()					{}
 MMagazine*	EmptyMagazineFor(MItem*)		{ return NULL; }
 
 const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, &s_Now,
-							RecalculateStatus, ResetQuickItemSlot, RepairHint, EmptyMagazineFor };
+							RecalculateStatus, ResetQuickItemSlot, RepairHint, EmptyMagazineFor,
+							NULL, NULL };
 
 const ACTIONINFO	kRoot	= SKILL_SINGLE_BLOW;
 const ACTIONINFO	kChild	= SKILL_DOUBLE_IMPACT;

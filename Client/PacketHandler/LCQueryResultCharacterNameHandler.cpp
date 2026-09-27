@@ -20,6 +20,7 @@ void LCQueryResultCharacterNameHandler::execute ( LCQueryResultCharacterName * p
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	// 캐릭 생성중이고
 	// 캐릭터 아이디 맞는 경우..

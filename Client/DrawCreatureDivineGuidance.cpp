@@ -7,7 +7,9 @@
 // 작업하기가 영 불편해서 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <math.h>
 #include <list>
@@ -68,7 +70,6 @@ extern int defaultTrouserColor;
 
 namespace {
 	POINT pointTemp;
-	RECT rect;
 };
 
 extern int GetAdvancementPartFromItemClass( ITEM_CLASS itemClass , TYPE_FRAMEID frameID);
@@ -246,6 +247,7 @@ void	MTopView::DrawDivineGuidanceVampireCharacter(
 void	MTopView::DrawDivineGuidanceAdvancementClassVampireCharacter( 
 			POINT *pPoint, MCreature* pCreature, int direction, int body )
 {
+	(void)body;
 	static int tempGuidance = 0;
 	tempGuidance = (g_CurrentFrame)%20;
 	const int tempFrame = 30;

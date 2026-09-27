@@ -11,7 +11,9 @@
 #ifndef __CTYPEMAP2_H__
 #define	__CTYPEMAP2_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <map>
 

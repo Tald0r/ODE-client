@@ -30,8 +30,7 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
 	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
 
-	// creature의 좌표
-	int cx, cy, cz, effectCount = 0;	
+	int effectCount = 0;	
 
 	if( egInfo.nActionInfo == STEP_SKILL_KASAS_ARROW_2 || egInfo.nActionInfo == STEP_SKILL_BLAZE_BOLT_2 ||
 		egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_2 )
@@ -57,11 +56,6 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	//	pCreature->PacketSpecialAction( nActionInfo, g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetZ(), g_pPlayer->GetID());
 	//}
 	
-	// Creture의 좌표로 목표좌표를 설정한다.
-	cx = g_pTopView->MapToPixelX( pCreature->GetX() );
-	cy = g_pTopView->MapToPixelY( pCreature->GetY() );
-	cz = pCreature->GetZ();
-
 	MGuidanceEffect* pEffect = new MGuidanceEffect(bltType);	
 	
 	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);

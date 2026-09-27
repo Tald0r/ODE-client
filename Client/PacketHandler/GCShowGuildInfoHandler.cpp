@@ -17,6 +17,7 @@ void GCShowGuildInfoHandler::execute ( GCShowGuildInfo * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	//cout << pPacket->toString() << endl;
 	UI_ShowGuildInfo(pPacket);

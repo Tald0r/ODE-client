@@ -28,8 +28,6 @@ GCPhoneConnected::GCPhoneConnected ()
 //////////////////////////////////////////////////////////////////////
 GCPhoneConnected::~GCPhoneConnected ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

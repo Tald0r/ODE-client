@@ -83,7 +83,7 @@ class TempInformation {
 
 	public :
 		void			SetMode(TEMP_MODE mode);
-		const TEMP_MODE GetMode() const;
+		TEMP_MODE GetMode() const;
 
 		// intptr_t, not int, so that a mode parking a pointer here keeps all of
 		// it on 64-bit Windows.

@@ -106,8 +106,11 @@
 #define DIK_RMENU		0xB8	/* Right ALT */
 #define DIK_LALT		DIK_LMENU
 #define DIK_RALT		DIK_RMENU
+#undef DIK_LWIN
 #define DIK_LWIN		0x5B	/* Left Windows key */
+#undef DIK_RWIN
 #define DIK_RWIN		0x5C	/* Right Windows key */
+#undef DIK_APPS
 #define DIK_APPS		0x5D	/* Application key */
 
 /* Punctuation */
@@ -141,6 +144,7 @@
 #define DIK_PAUSE		0x45	/* Pause */
 
 /* Other special keys */
+#undef DIK_SYSRQ
 #define DIK_SYSRQ		0x54
 #define DIK_BREAK		0xD3
 #define DIK_CANCEL		0x4B	/* Control + Break */
@@ -150,6 +154,7 @@
 #define DIK_CONVERT		0x79	/* Japanese conversion */
 #define DIK_NOCONVERT		0x7B	/* Japanese non-conversion */
 #define DIK_KANA		0x70	/* Japanese Katakana */
+#undef DIK_KANJI
 #define DIK_KANJI		0x71	/* Japanese Kanji */
 #define DIK_HANGUL		0xF2	/* Korean Hangul */
 #define DIK_HANJA		0xF1	/* Korean Hanja */

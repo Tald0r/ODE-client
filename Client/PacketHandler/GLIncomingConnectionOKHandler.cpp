@@ -23,6 +23,7 @@ void GLIncomingConnectionOKHandler::execute ( GLIncomingConnectionOK * pPacket )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
 
 	__END_CATCH
 }

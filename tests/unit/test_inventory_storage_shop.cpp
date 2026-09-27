@@ -39,7 +39,8 @@ int		DropFrameCount(TYPE_FRAMEID)		{ return 0; }
 void	RefreshAffect(MItem* pItem)			{ s_Refreshed.push_back(pItem); }
 void	PlayItemSound(TYPE_SOUNDID sound)	{ s_Sounds.push_back(sound); }
 
-const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, NULL };
+const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, NULL,
+							NULL, NULL, NULL, NULL, NULL, NULL };
 
 struct ContainerWorld : GameModelWorld
 {

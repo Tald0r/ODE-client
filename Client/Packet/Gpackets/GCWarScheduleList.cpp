@@ -23,7 +23,6 @@ GCWarScheduleList::GCWarScheduleList()
 //////////////////////////////////////////////////////////////////////////////
 GCWarScheduleList::~GCWarScheduleList()
 {
-	__BEGIN_TRY 
 
 	WarScheduleInfoList::iterator itr = m_WarScheduleList.begin();
 
@@ -38,7 +37,6 @@ GCWarScheduleList::~GCWarScheduleList()
 
 	m_WarScheduleList.clear();
 	
-	__END_CATCH;
 }
 
 //////////////////////////////////////////////////////////////////////////////

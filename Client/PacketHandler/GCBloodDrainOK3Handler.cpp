@@ -18,6 +18,7 @@ void GCBloodDrainOK3Handler::execute ( GCBloodDrainOK3 * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

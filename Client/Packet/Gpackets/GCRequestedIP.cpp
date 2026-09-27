@@ -22,8 +22,6 @@ GCRequestedIP::GCRequestedIP ()
 
 GCRequestedIP::~GCRequestedIP ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void GCRequestedIP::read (SocketInputStream & iStream)

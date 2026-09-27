@@ -23,6 +23,7 @@ void GCAddSlayerHandler::execute ( GCAddSlayer * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

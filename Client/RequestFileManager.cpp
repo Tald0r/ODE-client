@@ -356,6 +356,8 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 			//------------------------------------------------------------------
 			case REQUEST_FILE_MODE_AFTER :
 			return false;
+			default:
+				break;
 		}
 	}
 

@@ -333,8 +333,8 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 	}
 
 	if (m_Action==ACTION_STAND 
-		|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND
-		|| IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND )
+		|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+		|| (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND) )
 	{
 		//-------------------------------------------------
 		// 장착해서 모양이 바뀌는 Item인 경우에만 처리한다.
@@ -443,6 +443,9 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 								m_ColorBody1 = m_ColorBody2 = pItem->GetItemOptionColorSet();
 						}
 					break;
+
+					default:
+						break;
 				}
 					
 				//-------------------------------------------------
@@ -680,8 +683,8 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 
 
 	if (m_Action==ACTION_STAND
-		|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND
-		|| IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND )
+		|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+		|| (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND) )
 	{
 		// 뱀파 옷추가
 		if(pItem->GetItemClass() == ITEM_CLASS_VAMPIRE_COAT)
@@ -862,6 +865,9 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 									RemoveEffectStatus(EFFECTSTATUS_HYPNOSIS);
 								}
 							break;
+
+							default:
+								break;
 						}
 					break;
 
@@ -890,6 +896,9 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 							SetAddonHair( m_HairFrameID, m_HairColorSet );
 						}
 					break;
+
+					default:
+						break;
 				}
 				
 			}
@@ -1142,6 +1151,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 							
 							(int)m_sX, (int)m_sY);	
 			}
+			[[fallthrough]];
 
 		case EFFECTSTATUS_GHOST:
 			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// 박쥐인 경우
@@ -1158,6 +1168,9 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			SetInstallTurretDirect(2);
 			SetDirection( 2 );
 			SetCurrentDirection( 2 );
+			break;
+
+		default:
 			break;
 	}
 
@@ -1207,7 +1220,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 					//-------------------------------------------------------
 					if (pEffect->IsEffectSprite() 
 						&& (pEffect->GetEffectSpriteType() == type ||
-						type2 != EFFECTSPRITETYPE_NULL && pEffect->GetEffectSpriteType() == type2 ) )
+						(type2 != EFFECTSPRITETYPE_NULL && pEffect->GetEffectSpriteType() == type2) ) )
 					{						
 						// free the memory
 						delete pEffect;
@@ -1242,8 +1255,8 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 					// 같은 type을 찾는다.
 					//-------------------------------------------------------
 					if (pEffect->IsEffectSprite() && 
-						( pEffect->GetEffectSpriteType() == type || type2 != EFFECTSPRITETYPE_NULL && 
-						type2 == pEffect->GetEffectSpriteType()) )
+						( pEffect->GetEffectSpriteType() == type || (type2 != EFFECTSPRITETYPE_NULL && 
+						type2 == pEffect->GetEffectSpriteType())) )
 					{
 						// 메모리 제거
 						delete pEffect;

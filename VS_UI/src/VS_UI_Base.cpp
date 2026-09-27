@@ -3,6 +3,7 @@
 #include "Client_PCH.h"
 #include "SafeFormat.h"
 #include <utility>
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 #include "VS_UI_Base.h"
@@ -177,18 +178,18 @@ void Base::InitFont()
 	
 	SetDefaultLogfont(lf); //by larosel
 	lf.lfHeight = 10;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_small_pi, lf, RGB(20, 70, 0));
 
 	SetDefaultLogfont(lf); //by larosel
 	lf.lfHeight = 12;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_chatting_pi, lf, RGB(20, 70, 0));
 
 	SetDefaultLogfont(lf); //by larosel
 	lf.lfHeight = 12;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_user_id_pi, lf, RGB(20, 70, 0));
 
 	// new style...
@@ -196,7 +197,7 @@ void Base::InitFont()
 	lf.lfHeight = 14;
 	lf.lfItalic = 1;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[1][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[1][static_cast<int>(Language)]);
 	SetFont(m_value_pi, lf, RGB(255, 255, 255), 0, TRANSPARENT, TA_RIGHT);
 
 	// new style...
@@ -204,32 +205,32 @@ void Base::InitFont()
 	lf.lfHeight = 14;
 	lf.lfItalic = 1;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[1][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[1][static_cast<int>(Language)]);
 	SetFont(m_value2_pi, lf, RGB(20, 70, 0));
 
 	// new style...
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 14;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[2][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[2][static_cast<int>(Language)]);
 	SetFont(m_item_name_pi, lf, RGB(255, 255, 255));
 
 	// new style...
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 12;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_item_desc_pi, lf, RGB(192, 192, 255));
 
 	// new style...
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 14;
 //	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_dialog_menu_pi, lf, RGB(255, 255, 255));
 
 	// new style...
 	SetDefaultLogfont(lf);
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	lf.lfHeight = 13;
 	SetFont(m_dialog_msg_pi, lf, RGB(255, 255, 255));
 
@@ -237,26 +238,26 @@ void Base::InitFont()
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 14;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_desc_menu_pi, lf, RGB(255, 255, 255));
 
 	// new style...
 	SetDefaultLogfont(lf);
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	lf.lfHeight = 14;
 	SetFont(m_desc_msg_pi, lf, RGB(255, 255, 255));
 
 	// new style...
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 16;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_money_pi, lf, RGB(255, 255, 255));
 
 	// new style...
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 16;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_char_value_pi, lf, RGB(255, 255, 255));
 
 	//
@@ -270,30 +271,30 @@ void Base::InitFont()
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 14;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont(m_info_pi, lf, RGB(255, 255, 255));
 
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 12;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont(m_item_pi, lf, RGB(255, 255, 255));
 
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 13;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont(m_char_name_pi, lf, RGB(255, 255, 255));
 
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 13;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont(m_char_chat_pi, lf, RGB(255, 255, 255));
 
 	//party
 	SetDefaultLogfont(lf); //by larosel
 	lf.lfHeight = 12;
 //	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont(m_party_name_pi, lf, RGB(20, 70, 0));
 
 	//xmas
@@ -301,19 +302,19 @@ void Base::InitFont()
 	lf.lfHeight = 10;
 //	lf.lfWeight = FW_BOLD;
 	lf.lfItalic = true;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont(m_xmas_pi, lf, RGB(20, 70, 0));
 
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 16;
 	lf.lfWeight = FW_BOLD;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[3][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[3][static_cast<int>(Language)]);
 	SetFont( m_char_chat_large_pi, lf, RGB(255,255,255));
 
 	// new style...
 	SetDefaultLogfont(lf);
 	lf.lfHeight = 16;
-	SafeFormat::Copy(lf.lfFaceName, szFontName[0][Language]);
+	SafeFormat::Copy(lf.lfFaceName, szFontName[0][static_cast<int>(Language)]);
 	SetFont(m_money2_pi, lf, RGB(255, 255, 255), 0, TRANSPARENT, TA_RIGHT);
 
 	

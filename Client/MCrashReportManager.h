@@ -23,7 +23,7 @@ public:
 	void	SetMessage(const char *pszMessage)					{ m_Message = pszMessage; }
 
 	const char *	GetExecutableTime() const					{ return m_ExecutableTime.GetString(); }
-	const WORD		GetVersion() const							{ return m_Version; }
+	WORD			GetVersion() const							{ return m_Version; }
 	const char *	GetAddress() const							{ return m_Address.GetString(); }
 	const char *	GetOS() const								{ return m_OS.GetString(); }
 	const char *	GetCallStack() const						{ return m_CallStack.GetString(); }

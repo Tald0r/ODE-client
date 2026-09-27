@@ -254,6 +254,7 @@
 #define DIK_AT              0x91
 #define DIK_COLON           0x92
 #define DIK_UNDERLINE       0x93
+#undef DIK_KANJI
 #define DIK_KANJI           0x94
 #define DIK_STOP            0x95
 #define DIK_AX              0x96
@@ -262,6 +263,7 @@
 #define DIK_RCONTROL        0x9D
 #define DIK_NUMPADCOMMA     0xB3
 #define DIK_DIVIDE          0xB5    /* / on numeric keypad */
+#undef DIK_SYSRQ
 #define DIK_SYSRQ           0xB7
 #define DIK_RMENU           0xB8    /* right Alt */
 #define DIK_HOME            0xC7    /* Home on arrow keypad */
@@ -274,8 +276,11 @@
 #define DIK_NEXT            0xD1    /* PgDn on arrow keypad */
 #define DIK_INSERT          0xD2    /* Insert on arrow keypad */
 #define DIK_DELETE          0xD3    /* Delete on arrow keypad */
+#undef DIK_LWIN
 #define DIK_LWIN            0xDB    /* Left Windows key */
+#undef DIK_RWIN
 #define DIK_RWIN            0xDC    /* Right Windows key */
+#undef DIK_APPS
 #define DIK_APPS            0xDD    /* AppMenu key */
 
 #endif // __INPUTCODES_H__

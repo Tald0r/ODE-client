@@ -18,6 +18,7 @@ void GCPhoneConnectedHandler::execute ( GCPhoneConnected * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	int pcsNumber = pPacket->getPhoneNumber();

@@ -19,8 +19,6 @@ CGDissectionCorpse::CGDissectionCorpse ()
 
 CGDissectionCorpse::~CGDissectionCorpse ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGDissectionCorpse::read (SocketInputStream & iStream)

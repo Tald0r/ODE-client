@@ -19,6 +19,7 @@ void GCUseBonusPointOKHandler::execute ( GCUseBonusPointOK * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

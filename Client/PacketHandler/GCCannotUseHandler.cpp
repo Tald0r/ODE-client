@@ -25,6 +25,7 @@ void GCCannotUseHandler::execute ( GCCannotUse * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

@@ -5,7 +5,9 @@
 #ifndef	__MSTRING_H__
 #define	__MSTRING_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #define	MAX_BUFFER_LENGTH		1024
 

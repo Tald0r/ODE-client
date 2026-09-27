@@ -20,6 +20,7 @@ void GCMakeItemOKHandler::execute ( GCMakeItemOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

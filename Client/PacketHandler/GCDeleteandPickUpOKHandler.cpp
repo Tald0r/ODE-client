@@ -184,7 +184,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					// pItem을 pOldItem에 쌓는다.
 					//----------------------------------------------------
 					int total = pOldItem->GetNumber() + pItem->GetNumber();
-					if ( total > pOldItem->GetMaxNumber() )
+					if ( static_cast<TYPE_ITEM_NUMBER>(total) > pOldItem->GetMaxNumber() )
 					{
 						DEBUG_ADD_FORMAT("[Error] Exceed Item Pile Limit : %d/%d", total, pOldItem->GetMaxNumber());
 						
@@ -265,8 +265,8 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					//------------------------------------------
 					// 다시 Quickslot에 넣는다.
 					//------------------------------------------
-					if (g_pQuickSlot!=NULL&&g_pPlayer->IsSlayer() || g_pPlayer->IsOusters() &&(
-						g_pArmsBand1 != NULL || g_pArmsBand2 != NULL ))
+					if ((g_pQuickSlot!=NULL&&g_pPlayer->IsSlayer()) || (g_pPlayer->IsOusters() &&(
+						g_pArmsBand1 != NULL || g_pArmsBand2 != NULL )))
 					{
 						MItem* pQuickItem = NULL ;//= g_pQuickSlot->GetItem( slot );
 						MOustersArmsBand* pQuickSlot = NULL;
@@ -319,7 +319,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 								// 더한 개수가 max를 넘지 않아야 한다.
 								//----------------------------------------------------
 								int addTotal = pQuickItem->GetNumber() + pItem->GetNumber();
-								if ( addTotal <= pQuickItem->GetMaxNumber() )
+								if ( static_cast<TYPE_ITEM_NUMBER>(addTotal) <= pQuickItem->GetMaxNumber() )
 								{
 									UI_DropItem();
 
@@ -424,6 +424,9 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 						g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(),
 													g_pSkillAvailable->IsEnableSkill(SKILL_INSTALL_MINE));
 					break;
+
+					default:
+					break;
 				}
 			}
 			//----------------------------------------------------------
@@ -473,6 +476,9 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 								g_pSkillAvailable->AddSkill( MAGIC_TRANSFORM_TO_BAT );
 							}
 						}
+					break;
+
+					default:
 					break;
 				}
 			}

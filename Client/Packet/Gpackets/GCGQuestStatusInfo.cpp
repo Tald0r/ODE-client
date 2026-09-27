@@ -30,7 +30,6 @@ GCGQuestStatusInfo::GCGQuestStatusInfo ()
 //////////////////////////////////////////////////////////////////////
 GCGQuestStatusInfo::~GCGQuestStatusInfo ()
 {
-	__BEGIN_TRY
 
 	std::list<QuestStatusInfo*>::iterator itr = m_Infos.begin();
 
@@ -40,7 +39,6 @@ GCGQuestStatusInfo::~GCGQuestStatusInfo ()
 		*itr = NULL;
 	}
 
-	__END_CATCH
 }
 
 

@@ -63,7 +63,7 @@ void
 DrawInventoryEffect()
 {
 		// 현재 inventory의 첫 좌표			
-		POINT point = UI_GetInventoryPosition();
+		[[maybe_unused]] POINT point = UI_GetInventoryPosition();
 		
 		// TODO: [SDL_BACKEND] DrawInventoryEffect not implemented for SDL backend
 		// g_pTopView->DrawInventoryEffect(&point);
@@ -279,8 +279,6 @@ DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 	if(pRect->left >= pRect->right || pRect->top >= pRect->bottom)return;
 
 		int reverseAlpha = 31-alpha;
-
-		if (alpha<0) alpha = 0;
 
 		// The SDL surface API has the same GPU gamma path on every platform.
 		// Borrowing framebuffer pixels here forces a WebGL readback for each

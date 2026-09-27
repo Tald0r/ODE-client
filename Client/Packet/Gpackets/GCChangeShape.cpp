@@ -29,8 +29,6 @@ GCChangeShape::GCChangeShape ()
 //////////////////////////////////////////////////////////////////////
 GCChangeShape::~GCChangeShape ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

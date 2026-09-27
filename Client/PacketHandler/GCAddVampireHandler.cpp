@@ -20,6 +20,7 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------

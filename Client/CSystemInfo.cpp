@@ -149,8 +149,9 @@ inline uint64_t theCycleCount(void)
     return 0;
 }
 
-static bool cpuid(unsigned long function, unsigned long& out_eax, unsigned long& out_ebx, unsigned long& out_ecx, unsigned long& out_edx)
+[[maybe_unused]] static bool cpuid(unsigned long function, unsigned long& out_eax, unsigned long& out_ebx, unsigned long& out_ecx, unsigned long& out_edx)
 {
+    (void)function;
     // Stub implementation - assume no special CPU features
     out_eax = out_ebx = out_ecx = out_edx = 0;
     return false;

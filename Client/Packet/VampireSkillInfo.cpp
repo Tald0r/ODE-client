@@ -34,7 +34,6 @@ VampireSkillInfo::VampireSkillInfo ()
 //////////////////////////////////////////////////////////////////////
 VampireSkillInfo::~VampireSkillInfo () 
 {
-	__BEGIN_TRY
 
 	// 소속된 모든 객체들을 삭제한다.
 	while ( !m_SubVampireSkillInfoList.empty() ) {
@@ -43,7 +42,6 @@ VampireSkillInfo::~VampireSkillInfo ()
 		m_SubVampireSkillInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

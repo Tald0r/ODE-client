@@ -146,7 +146,7 @@ MBloodyWaveEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	//---------------------------------------------
 	// Effect 생성
 	//---------------------------------------------
-	for (int i=0; i<v_cp.size(); i++)
+	for (int i=0; static_cast<size_t>(i)<v_cp.size(); i++)
 	{		
 		sX = tX + v_cp[i].x;
 		sY = tY + v_cp[i].y;

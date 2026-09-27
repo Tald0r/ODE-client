@@ -28,8 +28,6 @@ GCWhisperFailed::GCWhisperFailed ()
 //////////////////////////////////////////////////////////////////////
 GCWhisperFailed::~GCWhisperFailed ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 
@@ -39,6 +37,7 @@ GCWhisperFailed::~GCWhisperFailed ()
 void GCWhisperFailed::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 	__END_CATCH
 }
 
@@ -49,6 +48,7 @@ void GCWhisperFailed::read ( SocketInputStream & iStream )
 void GCWhisperFailed::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 	__END_CATCH
 }
 

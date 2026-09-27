@@ -3,7 +3,9 @@
 #include "Client_PCH.h"
 #include "SafeFormat.h"
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_PetStorage.h"
 #include "VS_UI_filepath.h"
@@ -56,10 +58,8 @@ C_VS_UI_PETSTORAGE::C_VS_UI_PETSTORAGE()
 
 	g_RegisterWindow(this);
 
-	int normal_tab_x_offset, special_tab_x_offset, mysterious_tab_x_offset;
 	int close_button_x, close_button_y;
 	int help_button_x, help_button_y;
-	int tab_y_offset;
 
 	switch(g_eRaceInterface)
 	{
@@ -74,6 +74,9 @@ C_VS_UI_PETSTORAGE::C_VS_UI_PETSTORAGE()
 	case RACE_OUSTERS:
 		m_image_spk.Open(SPK_OUSTERS_SHOP_STORAGE);
 		break;		
+
+	default:
+		break;
 	}
 
 	m_shelf_start_x_offset = 15;
@@ -81,10 +84,6 @@ C_VS_UI_PETSTORAGE::C_VS_UI_PETSTORAGE()
 	m_shelf_start_y_offset[1] = 125;
 	m_shelf_start_y_offset[2] = 227;
 	m_shelf_start_y_offset[3] = 329;
-	normal_tab_x_offset = 15;
-	special_tab_x_offset = 119;
-	mysterious_tab_x_offset = 224;
-	tab_y_offset = 422;
 	close_button_x = 258;
 	close_button_y = 452;
 	help_button_x = 193;
@@ -100,10 +99,6 @@ C_VS_UI_PETSTORAGE::C_VS_UI_PETSTORAGE()
 		m_shelf_start_y_offset[1] += 10;
 		m_shelf_start_y_offset[2] += 10;
 		m_shelf_start_y_offset[3] += 10;
-		normal_tab_x_offset += 10;
-		special_tab_x_offset += 10;
-		mysterious_tab_x_offset += 10;
-		tab_y_offset += 10;
 		close_button_x += 10;
 		close_button_y += 10;
 		help_button_x += 10;
@@ -364,8 +359,6 @@ void C_VS_UI_PETSTORAGE::Show()
 {
 	assert(m_pPetStorage != NULL);
 
-	int len = 0;
-
 	if (gpC_base->m_p_DDSurface_back->Lock())
 	{
 		gpC_global_resource->DrawDialogLocked(x, y, w, h);
@@ -496,7 +489,7 @@ void C_VS_UI_PETSTORAGE::Show()
 //-----------------------------------------------------------------------------
 void C_VS_UI_PETSTORAGE::WindowEventReceiver(id_t event)
 {
-
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -569,7 +562,7 @@ void C_VS_UI_PETSTORAGE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 	}
 	else if(p_button->GetID() < m_pPetStorage->GetSize())
 	{
-		if(p_button->GetFocusState() || m_pPetStorage != NULL && m_pPetStorage->GetCurrent() == p_button->GetID())
+		if(p_button->GetFocusState() || (m_pPetStorage != NULL && m_pPetStorage->GetCurrent() == p_button->GetID()))
 		{
 			if(p_button->GetPressState())
 				m_image_spk.BltLocked(x+p_button->x, y+p_button->y, p_button->m_image_index+6);
@@ -761,10 +754,7 @@ C_VS_UI_PERSNALSHOP::C_VS_UI_PERSNALSHOP()
 
 	g_RegisterWindow(this);
 	
-	int normal_tab_x_offset, special_tab_x_offset, mysterious_tab_x_offset;
 	int close_button_x, close_button_y;	
-	int help_button_x, help_button_y;
-	int tab_y_offset;
 
 	switch(g_eRaceInterface)
 	{
@@ -779,6 +769,9 @@ C_VS_UI_PERSNALSHOP::C_VS_UI_PERSNALSHOP()
 	case RACE_OUSTERS:
 		m_image_spk.Open(SPK_OUSTERS_SHOP_STORAGE);
 		break;		
+
+	default:
+		break;
 	}
 
 	m_shelf_start_x_offset = 15;
@@ -786,14 +779,8 @@ C_VS_UI_PERSNALSHOP::C_VS_UI_PERSNALSHOP()
 	m_shelf_start_y_offset[1] = 125;
 	m_shelf_start_y_offset[2] = 227;
 	m_shelf_start_y_offset[3] = 329;
-	normal_tab_x_offset = 15;
-	special_tab_x_offset = 119;
-	mysterious_tab_x_offset = 224;
-	tab_y_offset = 422;
 	close_button_x = 258;
 	close_button_y = 452;
-	help_button_x = 193;
-	help_button_y = 452;
 
 	Set(10, 30, 332, 497);
 	if(g_eRaceInterface == RACE_OUSTERS)
@@ -805,14 +792,8 @@ C_VS_UI_PERSNALSHOP::C_VS_UI_PERSNALSHOP()
 		m_shelf_start_y_offset[1] += 10;
 		m_shelf_start_y_offset[2] += 10;
 		m_shelf_start_y_offset[3] += 10;
-		normal_tab_x_offset += 10;
-		special_tab_x_offset += 10;
-		mysterious_tab_x_offset += 10;
-		tab_y_offset += 10;
 		close_button_x += 10;
 		close_button_y += 10;
-		help_button_x += 10;
-		help_button_y += 10;
 	}
 
 
@@ -829,6 +810,9 @@ C_VS_UI_PERSNALSHOP::C_VS_UI_PERSNALSHOP()
 	case RACE_OUSTERS:
 		m_image_btn.Open(SPK_PERSNALSHOP_OUSTERS);
 		break;		
+
+	default:
+		break;
 	}
 
 	// set button
@@ -1157,7 +1141,7 @@ void C_VS_UI_PERSNALSHOP::Show()
 							eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 							)
 						{
-							gpC_global_resource->m_pC_info_spk->BltLockedOutline(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+							gpC_global_resource->m_pC_info_spk->BltLockedOutline(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, RGB_WHITE, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 						}	
 					}
 				}
@@ -1175,7 +1159,7 @@ void C_VS_UI_PERSNALSHOP::Show()
 								eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 								)
 							{
-								gpC_global_resource->m_pC_info_spk->BltLocked(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+								gpC_global_resource->m_pC_info_spk->BltLocked(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 							}
 						}
 					}
@@ -1190,7 +1174,7 @@ void C_VS_UI_PERSNALSHOP::Show()
 								eType == ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH
 								)
 							{
-								gpC_global_resource->m_pC_info_spk->BltLockedColor(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType, 0);
+								gpC_global_resource->m_pC_info_spk->BltLockedColor(x+GetSlotX(i), item_y+gpC_item->GetHeight(frame_id)/2-(p_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType), 0);
 							}
 						}
 					}
@@ -1295,7 +1279,7 @@ void C_VS_UI_PERSNALSHOP::Show()
 //-----------------------------------------------------------------------------
 void C_VS_UI_PERSNALSHOP::WindowEventReceiver(id_t event)
 {
-
+	(void)event;
 }
 
 //-----------------------------------------------------------------------------
@@ -1416,16 +1400,16 @@ void C_VS_UI_PERSNALSHOP::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 
 void ExecF_sellConfirm2(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 	switch (id)
 	{
 		case DIALOG_EXECID_OK:
 			
 			//assert(m_select_item_slot != NOT_SELECTED);
 
-			int item_count = 1;  
 			if (m_pC_dialog_multi_buy_confirm != NULL)
 			{
-				item_count = m_pC_dialog_multi_buy_confirm->GetValue();
+				m_pC_dialog_multi_buy_confirm->GetValue();
 			}
 			 
 			//gpC_base->SendMessage(UI_SELECT_PERSNALSHOP_SLOT,3, 3, NULL);
@@ -1442,6 +1426,9 @@ void ExecF_sellConfirm2(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 
 void C_VS_UI_PERSNALSHOP::StartBuyConfirmDialog(int _x, int _y, int num)
 {
+	(void)_x;
+	(void)_y;
+	(void)num;
 //	DeleteNew(m_pC_dialog_remove_confirm);
 //
 //
@@ -1479,6 +1466,7 @@ void C_VS_UI_PERSNALSHOP::StartBuyConfirmDialog(int _x, int _y, int num)
 
 void ExecF_Remove_Persnalshop(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
+	(void)p_this_dialog;
 //	MItem * p_item = NULL;
 //	MItem * p_olditem = NULL;
 //	MItem * p_Newitem = NULL;

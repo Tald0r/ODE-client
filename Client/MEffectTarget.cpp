@@ -21,10 +21,7 @@ MEffectTarget::MEffectTarget(const MEffectTarget& target)
 {
 	m_pResult = NULL; 
 
-	if (&target!=NULL) 
-	{
-		*this = target; 
-	}
+	*this = target;
 
 	// 객체 ID를 할당한다.
 	//m_InstanceID = s_InstanceID++;

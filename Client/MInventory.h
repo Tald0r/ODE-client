@@ -91,7 +91,7 @@
 class MInventory : public MGridItemManager {
 	public :
 		MInventory();
-		~MInventory();
+		virtual ~MInventory();
 
 		//------------------------------------------------------
 		// Add

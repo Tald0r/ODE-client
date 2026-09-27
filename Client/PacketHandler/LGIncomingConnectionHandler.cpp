@@ -23,6 +23,7 @@ void LGIncomingConnectionHandler::execute ( LGIncomingConnection * pPacket )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
 
 	__END_CATCH
 }

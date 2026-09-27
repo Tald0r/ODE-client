@@ -25,7 +25,6 @@ GCGoodsList::GCGoodsList()
 //////////////////////////////////////////////////////////////////////////////
 GCGoodsList::~GCGoodsList()
 {
-	__BEGIN_TRY
 
 	std::list<GoodsInfo*>::iterator itr = m_GoodsList.begin();
 	std::list<GoodsInfo*>::iterator endItr = m_GoodsList.end();
@@ -43,7 +42,6 @@ GCGoodsList::~GCGoodsList()
 
 	m_GoodsList.clear();
 	
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////////////

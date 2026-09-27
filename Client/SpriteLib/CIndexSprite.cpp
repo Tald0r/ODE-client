@@ -65,7 +65,7 @@ FUNCTION_MEMCPYEFFECT	CIndexSprite::s_pMemcpyEffectFunctionTable[MAX_EFFECT] =
 void
 CIndexSprite::SetColorSet()
 {
-	int i,j,k, set;
+	int j,k, set;
 	WORD color;
 
 
@@ -270,7 +270,7 @@ CIndexSprite::SetColorSet()
 BOOL
 CIndexSprite::SaveIndexTableToFile(std::ofstream& file)
 {
-	int i,j,k;
+	int j,k;
 
 	int cg = MAX_COLORGRADATION;
 	int cs = MAX_COLORSET;
@@ -325,7 +325,7 @@ CIndexSprite::SaveIndexTableToFile(std::ofstream& file)
 BOOL
 CIndexSprite::LoadIndexTableFromFile(std::ifstream& file)
 {
-	int i,j,k;
+	int j,k;
 
 	int cg, cs, db;
 
@@ -602,7 +602,6 @@ CIndexSprite::operator = (const CIndexSprite& Sprite)
 	
 	// 압축 된 것 저장
 	int index;	
-	int i;
 	int j;
 
 	int colorCount, transPair, indexCount;
@@ -1623,7 +1622,6 @@ CIndexSprite::GetIndexInfo(WORD**& ppIndex)
 	WORD	*pDest,
 			*pPixels;
 
-	int i;
 	int j;
 	int k;
 	int l;
@@ -1936,7 +1934,6 @@ CIndexSprite::BltClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -2154,7 +2151,6 @@ CIndexSprite::BltClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	int	k;
 
@@ -2315,7 +2311,6 @@ CIndexSprite::BltClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -2597,7 +2592,6 @@ CIndexSprite::BltClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int  i;
 	int  j;
 	int  k;
 
@@ -2745,7 +2739,6 @@ CIndexSprite::BltDarknessClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE Dar
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -2956,7 +2949,6 @@ CIndexSprite::BltDarknessClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE Da
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	int	k;
 
@@ -3107,7 +3099,6 @@ CIndexSprite::BltDarknessClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE Da
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -3388,7 +3379,6 @@ CIndexSprite::BltDarknessClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE D
 			*pPixels;
 
 
-	int  i;
 	int  j;
 	int  k;
 
@@ -3536,7 +3526,6 @@ CIndexSprite::BltAlphaClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE alpha)
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -3746,7 +3735,6 @@ CIndexSprite::BltAlphaClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE alpha
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	int	k;
 
@@ -3897,7 +3885,6 @@ CIndexSprite::BltAlphaClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE alpha
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -4177,7 +4164,6 @@ CIndexSprite::BltAlphaClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE alph
 			*pPixels;
 
 
-	int  i;
 	int  j;
 	int  k;
 
@@ -4291,9 +4277,9 @@ CIndexSprite::BltWave(WORD *pDest, WORD pitch)
 							pPixels++;
 
 							// s_IndexValue와 관련된 색을 선택해서 출력한다.				
-							//*pDestTemp		= ColorSet[s_IndexValue[colorSet]][colorGradation];
+							// *pDestTemp		= ColorSet[s_IndexValue[colorSet]][colorGradation];
 
-							WORD color = GradationValue[s_IndexValue[colorSet]][colorGradation];//*pPixels;							
+							WORD color = GradationValue[s_IndexValue[colorSet]][colorGradation];// *pPixels;							
 							int change = color >> 4;	// 0~96 --> 0~6
 
 							*pDestTemp = *(pDestTemp + change);
@@ -4348,8 +4334,7 @@ CIndexSprite::BltColor(WORD *pDest, WORD pitch, BYTE rgb)
 			indexCount,			
 			colorCount;
 
-	int	colorSet,
-			colorGradation;
+	int	colorGradation;
 
 	WORD	*pDestTemp,
 			*pPixels;
@@ -4386,7 +4371,6 @@ CIndexSprite::BltColor(WORD *pDest, WORD pitch, BYTE rgb)
 						k = indexCount;
 						do 
 						{
-							colorSet		= (*pPixels >> 8) & 0xFF;	// set
 							colorGradation	= (*pPixels & 0xFF);			// gradation
 							pPixels++;
 
@@ -4434,11 +4418,10 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
-	int colorSet, colorGradation;
+	int colorGradation;
 
 	//---------------------------------------------
 	// 출력해야하는 모든 줄에 대해서..
@@ -4491,7 +4474,6 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 						{
 							k = indexCount;
 							do {						
-								colorSet		= (*pPixels >> 8) & 0xFF;	// set
 								colorGradation	= (*pPixels & 0xFF);			// gradation
 								pPixels++;
 
@@ -4530,7 +4512,6 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 						{
 							k = indexCount;
 							do {
-								colorSet		= (*pPixels >> 8) & 0xFF;	// set
 								colorGradation	= (*pPixels & 0xFF);			// gradation
 								pPixels++;
 
@@ -4602,7 +4583,6 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 					{
 						k = indexCount;
 						do {			
-							colorSet		= (*pPixels >> 8) & 0xFF;	// set
 							colorGradation	= (*pPixels & 0xFF);			// gradation
 							pPixels++;
 
@@ -4649,11 +4629,10 @@ CIndexSprite::BltColorClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	int	k;
 
-	int colorSet, colorGradation;
+	int colorGradation;
 
 	int rectBottom = pRect->bottom;
 	int rectRight = pRect->right;
@@ -4712,7 +4691,6 @@ CIndexSprite::BltColorClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 						{
 							k = indexCount;
 							do {
-								colorSet		= (*pPixels >> 8) & 0xFF;	// set
 								colorGradation	= (*pPixels & 0xFF);			// gradation
 								pPixels++;
 
@@ -4738,7 +4716,6 @@ CIndexSprite::BltColorClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 				{
 					k = indexCount;
 					do {
-						colorSet		= (*pPixels >> 8) & 0xFF;	// set
 						colorGradation	= (*pPixels & 0xFF);			// gradation
 						pPixels++;
 
@@ -4803,11 +4780,10 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
-	int colorSet, colorGradation;
+	int colorGradation;
 
 	//---------------------------------------------
 	// 출력해야하는 모든 줄에 대해서..
@@ -4861,7 +4837,6 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 						{
 							k = indexCount;
 							do {
-								colorSet		= (*pPixels >> 8) & 0xFF;	// set
 								colorGradation	= (*pPixels & 0xFF);			// gradation
 								pPixels++;
 
@@ -4900,7 +4875,6 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 						{
 							k = indexCount;
 							do {
-								colorSet		= (*pPixels >> 8) & 0xFF;	// set
 								colorGradation	= (*pPixels & 0xFF);			// gradation
 								pPixels++;
 
@@ -5003,7 +4977,6 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 							{
 								k = indexCount;
 								do {
-									colorSet		= (*pPixels >> 8) & 0xFF;	// set
 									colorGradation	= (*pPixels & 0xFF);			// gradation
 									pPixels++;
 
@@ -5029,7 +5002,6 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 					{
 						k = indexCount;
 						do {
-							colorSet		= (*pPixels >> 8) & 0xFF;	// set
 							colorGradation	= (*pPixels & 0xFF);			// gradation
 							pPixels++;
 
@@ -5089,11 +5061,10 @@ CIndexSprite::BltColorClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 			*pPixels;
 
 
-	int  i;
 	int  j;
 	int  k;
 
-	int colorSet, colorGradation;
+	int colorGradation;
 	int rectBottom = pRect->bottom;
 	for (int i=pRect->top; i<rectBottom; i++)
 	{			
@@ -5116,7 +5087,6 @@ CIndexSprite::BltColorClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 				{
 					k = indexCount;
 					do {
-						colorSet		= (*pPixels >> 8) & 0xFF;	// set
 						colorGradation	= (*pPixels & 0xFF);			// gradation
 						pPixels++;
 
@@ -5240,7 +5210,6 @@ CIndexSprite::BltColorSetClipLeft(WORD *pDest, WORD pitch, RECT* pRect, WORD col
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -5456,7 +5425,6 @@ CIndexSprite::BltColorSetClipRight(WORD *pDest, WORD pitch, RECT* pRect, WORD co
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	int	k;
 
@@ -5611,7 +5579,6 @@ CIndexSprite::BltColorSetClipWidth(WORD *pDest, WORD pitch, RECT* pRect, WORD co
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -5898,7 +5865,6 @@ CIndexSprite::BltColorSetClipHeight(WORD *pDest, WORD pitch, RECT* pRect, WORD c
 			*pPixels;
 
 
-	int  i;
 	int  j;
 	int  k;
 
@@ -6064,7 +6030,6 @@ CIndexSprite::BltEffectClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 //	register int k;
 
@@ -6273,7 +6238,6 @@ CIndexSprite::BltEffectClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	//register int	k;
 
@@ -6431,7 +6395,6 @@ CIndexSprite::BltEffectClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 //	register int k;
 
@@ -6706,7 +6669,6 @@ CIndexSprite::BltEffectClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int  i;
 	int  j;
 //	register int  k;
 
@@ -6761,6 +6723,9 @@ CIndexSprite::BltEffectClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 void		
 CIndexSprite::memcpyEffectDarker(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6769,6 +6734,9 @@ CIndexSprite::memcpyEffectDarker(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectGrayScale(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6777,6 +6745,9 @@ CIndexSprite::memcpyEffectGrayScale(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectLighten(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6785,6 +6756,9 @@ CIndexSprite::memcpyEffectLighten(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectDarken(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6793,6 +6767,9 @@ CIndexSprite::memcpyEffectDarken(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectColorDodge(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6801,6 +6778,9 @@ CIndexSprite::memcpyEffectColorDodge(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectScreen(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6809,6 +6789,9 @@ CIndexSprite::memcpyEffectScreen(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectDodgeBurn(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6817,6 +6800,9 @@ CIndexSprite::memcpyEffectDodgeBurn(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectDifferent(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -6825,6 +6811,9 @@ CIndexSprite::memcpyEffectDifferent(WORD* pDest, WORD* pSource, WORD pixels)
 void		
 CIndexSprite::memcpyEffectGradation(WORD* pDest, WORD* pSource, WORD pixels)
 {
+	(void)pDest;
+	(void)pSource;
+	(void)pixels;
 }
 
 //----------------------------------------------------------------------
@@ -7086,7 +7075,6 @@ CIndexSprite::BltBrightnessClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE D
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -7297,7 +7285,6 @@ CIndexSprite::BltBrightnessClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE 
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 	int	k;
 
@@ -7448,7 +7435,6 @@ CIndexSprite::BltBrightnessClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE 
 			index,
 			dist;
 
-	int i;
 	int j;
 	int k;
 
@@ -7729,7 +7715,6 @@ CIndexSprite::BltBrightnessClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE
 			*pPixels;
 
 
-	int  i;
 	int  j;
 	int  k;
 

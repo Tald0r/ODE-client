@@ -17,7 +17,7 @@
 #include "DataPath.h"
 
 
-#if __WINDOWS__
+#if defined(__WINDOWS__) && __WINDOWS__
 #include <io.h>			// for _open()
 #include <fcntl.h>		// for _open()/_close()/_read()/_write()...
 #include <string.h>		// for memcpy()

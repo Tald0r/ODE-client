@@ -28,8 +28,6 @@ GCFlagWarStatus::GCFlagWarStatus ()
 //////////////////////////////////////////////////////////////////////
 GCFlagWarStatus::~GCFlagWarStatus ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

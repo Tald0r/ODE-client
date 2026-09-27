@@ -16,6 +16,7 @@
 void GCAddBurrowingCreatureHandler::execute ( GCAddBurrowingCreature * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

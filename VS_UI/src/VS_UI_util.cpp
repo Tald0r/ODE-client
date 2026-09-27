@@ -308,7 +308,7 @@ void C_ANIMATION::Timer()
 		switch (m_play_order)
 		{
 			case PLAY:
-				if (m_pC_ani_object->FrrSize() > m_current_frame+1)
+				if (static_cast<UINT>(m_pC_ani_object->FrrSize()) > m_current_frame+1)
 					m_current_frame++;
 				else
 				{
@@ -331,7 +331,7 @@ void C_ANIMATION::Timer()
 				break;
 
 			case PLAY_LOOP:
-				if (m_pC_ani_object->FrrSize() > m_current_frame+1)
+				if (static_cast<UINT>(m_pC_ani_object->FrrSize()) > m_current_frame+1)
 					m_current_frame++;
 				else
 					m_current_frame = 0;
@@ -345,8 +345,11 @@ void C_ANIMATION::Timer()
 
 				if (m_current_frame == 0)
 					m_bl_reverse = false;
-				if (m_current_frame == m_pC_ani_object->FrrSize()-1)
+				if (m_current_frame == static_cast<UINT>(m_pC_ani_object->FrrSize()-1))
 					m_bl_reverse = true;
+				break;
+
+			default:
 				break;
 		}
 	}
@@ -412,6 +415,9 @@ void C_ANIMATION::RunNextPlayOrder()
 
 		case PLAY_LOOPBACK:
 			PlayLoopBack();
+			break;
+
+		default:
 			break;
 	}
 
@@ -1179,7 +1185,7 @@ C_SPRITE_FRAME_ARRAY::~C_SPRITE_FRAME_ARRAY()
 //-----------------------------------------------------------------------------
 void C_SPRITE_FRAME_ARRAY::AddSpriteFrame(C_SPRITE_FRAME * pC_sf)
 {
-	m_pC_sprite_frame_buf = (C_SPRITE_FRAME *)realloc(m_pC_sprite_frame_buf, sizeof(C_SPRITE_FRAME)*(m_size+1));
+	m_pC_sprite_frame_buf = (C_SPRITE_FRAME *)realloc((void *)m_pC_sprite_frame_buf, sizeof(C_SPRITE_FRAME)*(m_size+1));
 
 	m_pC_sprite_frame_buf[m_size] = *pC_sf;
 	m_size++;
@@ -1192,7 +1198,7 @@ void C_SPRITE_FRAME_ARRAY::AddSpriteFrame(C_SPRITE_FRAME * pC_sf)
 //-----------------------------------------------------------------------------
 int C_SPRITE_FRAME_ARRAY::GetRX(int index)
 {
-	if (index == NO_SPRITE_ID)
+	if (static_cast<unsigned long>(index) == NO_SPRITE_ID)
 		return 0;
 
 	if (index < 0 || index >= m_size)
@@ -1208,7 +1214,7 @@ int C_SPRITE_FRAME_ARRAY::GetRX(int index)
 //-----------------------------------------------------------------------------
 int C_SPRITE_FRAME_ARRAY::GetRY(int index)
 {
-	if (index == NO_SPRITE_ID)
+	if (static_cast<unsigned long>(index) == NO_SPRITE_ID)
 		return 0;
 
 	if (index < 0 || index >= m_size)

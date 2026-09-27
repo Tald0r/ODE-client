@@ -2,7 +2,9 @@
 
 #include "Client_PCH.h"
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #define DEBUG_OUTPUT
 #include "VS_UI_Message.h"
@@ -37,7 +39,8 @@ C_VS_UI_DIALOG *		g_msg_password_mismatch;
 //-----------------------------------------------------------------------------
 void g_ExecF(C_VS_UI_DIALOG * p_this_dialog, id_t id)
 {
-
+	(void)p_this_dialog;
+	(void)id;
 }
 
 //-----------------------------------------------------------------------------

@@ -28,8 +28,6 @@ CGThrowItem::CGThrowItem ()
 //////////////////////////////////////////////////////////////////////
 CGThrowItem::~CGThrowItem ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

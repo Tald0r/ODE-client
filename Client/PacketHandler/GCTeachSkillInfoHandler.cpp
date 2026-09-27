@@ -22,6 +22,7 @@ void GCTeachSkillInfoHandler::execute ( GCTeachSkillInfo * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	// get/set NPC's object id

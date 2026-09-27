@@ -29,8 +29,6 @@ GCDropItemToZone::GCDropItemToZone()
 //--------------------------------------------------------------------
 GCDropItemToZone::~GCDropItemToZone()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void GCDropItemToZone::read ( SocketInputStream & iStream )

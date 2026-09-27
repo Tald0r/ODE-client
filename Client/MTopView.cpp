@@ -15,7 +15,9 @@
 // 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 // DX3D.h removed (SDL2) - Direct3D has been replaced with SDL2
 // Unified: All platforms use TextSystem
@@ -4707,6 +4709,7 @@ MTopView::InitEffectFrames()
 void
 MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 {
+	(void)filename;
 	/* // 2001.7.14 주석처리
 	//------------------------------------------------------------
 	//
@@ -5095,7 +5098,6 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 
 				TYPE_SPRITEID first = (*g_pCreatureSpriteTable)[spriteType].FirstSpriteID;
 				TYPE_SPRITEID last	= (*g_pCreatureSpriteTable)[spriteType].LastSpriteID;
-				long			fp	= (*g_pCreatureSpriteTable)[spriteType].SpriteFilePosition;
 
 				if (!m_CreatureSPK.LoadFromFilePart(first, last)) {
 					LOG_ERROR("Rejected creature preload: type=%d", spriteType);
@@ -5463,7 +5465,6 @@ MTopView::ReleaseCreatureSPK(int n)
 			//
 			TYPE_SPRITEID first = (*g_pCreatureSpriteTable)[spriteType].FirstSpriteID;
 			TYPE_SPRITEID last	= (*g_pCreatureSpriteTable)[spriteType].LastSpriteID;
-			long			fp	= (*g_pCreatureSpriteTable)[spriteType].SpriteFilePosition;
 
 			m_CreatureSPK.ReleasePart(first, last);
 			// 		}
@@ -5640,6 +5641,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 bool		
 MTopView::LoadFromFileTileAndImageObjectSet(const CSpriteSetManager &TileSSM, const CSpriteSetManager &ImageObjectSSM)
 {
+	(void)ImageObjectSSM;
 	//--------------------------------------------------------
 	//
 	// Tile 일부 Load
@@ -6423,7 +6425,7 @@ MTopView::GetDirectionToPosition(int originX, int originY, int destX, int destY)
 void			
 MTopView::SetFadeStart(char start, char end, char step, BYTE r, BYTE g, BYTE b, WORD delay)
 {	
-	step = abs(step);
+	step = static_cast<char>(abs(static_cast<signed char>(step)));
 
 	m_FadeValue	= start;
 	m_FadeEnd	= end;
@@ -6512,7 +6514,7 @@ MTopView::DrawFade()
 		{
 			if(g_CurrentFrame - TempFadeFrame >= m_delayFrame)
 			{
-				if( m_FadeEnd == -1 && 1 == m_FadeValue ) // 질드레 연출땜에 어두워 진담에 잠시 유지..^^;
+				if( static_cast<signed char>(m_FadeEnd) == -1 && 1 == m_FadeValue ) // 질드레 연출땜에 어두워 진담에 잠시 유지..^^;
 				{
 					if(g_CurrentFrame - TempFadeFrame> 16*5) // 5초간 유지
 						m_bFade = false;
@@ -6628,12 +6630,12 @@ MTopView::GetSelectedObject(int x, int y)
 //	bool bSlayerPlayer = g_pPlayer->IsSlayer();
 
 	if ((m_bFirstTileDraw
-		|| !g_pPlayer->IsVampire()&& g_pPlayer->IsInDarkness() && (!g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )||g_pZone->GetID() == 3001)
+		|| (!g_pPlayer->IsVampire()&& g_pPlayer->IsInDarkness() && (!g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )||g_pZone->GetID() == 3001)
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 		)		
 	{
 		return NULL;
@@ -6819,9 +6821,7 @@ MTopView::GetSelectedObject(int x, int y)
 	//
 	//--------------------------------------------------------------
 
-	MObject*	pObject = NULL;	
 	MCreature*	pCreature = NULL;
-	MItem*		pItem	= NULL;
 	CFrame			frame;
 //	TYPE_SPRITEID	sprite;
 
@@ -6963,9 +6963,9 @@ MTopView::GetSelectedObject(int x, int y)
 							// 공격 mode인 경우는 공격가능한 캐릭터만 선택
 							// 아니면 아무나.
 							if (
-								(g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001 ||
-								!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness()) ||
-								!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) 
+								((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001) ||
+								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())) ||
+								(!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) 
 								|| g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 								|| g_bLight
@@ -7029,7 +7029,6 @@ MTopView::GetSelectedObject(int x, int y)
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{		
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
 
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //
@@ -7128,9 +7127,9 @@ MTopView::GetSelectedObject(int x, int y)
 
 							// 선택한 위치가 Creature의 영역에 속하면
 							if ((
-								g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001|| 
-								!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness()) ||
-								!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) 
+								(g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001)|| 
+								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())) ||
+								(!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) 
 								|| g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 								|| g_bLight
@@ -7207,9 +7206,9 @@ MTopView::GetSelectedObject(int x, int y)
 							rect.bottom	= rect.top + m_CreatureSPK[ frame.GetSpriteID() ].GetHeight();
 							*/			
 							// 선택한 위치가 Creature의 영역에 속하면
-							if ((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001 ||
-								!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness()) ||
-								!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) 
+							if (((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001) ||
+								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())) ||
+								(!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) 
 								|| g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 								|| g_bLight
@@ -7294,9 +7293,9 @@ MTopView::GetSelectedObject(int x, int y)
 						if (pCreature->GetID()!=pid)	
 						{							
 							// 선택한 위치가 Creature의 영역에 속하면
-							if ((g_pPlayer->IsVampire() &&g_pZone->GetID() != 3001||
-								!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())
-								|| !g_pPlayer->IsVampire() && g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) 								 
+							if (((g_pPlayer->IsVampire() &&g_pZone->GetID() != 3001)||
+								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness()))
+								|| (!g_pPlayer->IsVampire() && g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) 								 
 								||g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 								|| g_bLight
@@ -7367,8 +7366,8 @@ MTopView::GetSelectedObject(int x, int y)
 					// 뱀파이어거나
 					// 슬레이어인 경우는 볼 수 있는 상황이라면.. 
 					//------------------------------------------------
-					if (g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001
-						|| !g_pPlayer->IsVampire() && g_pPlayer->ShowInDarkness(currentX, currentY) 
+					if ((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001)
+						|| (!g_pPlayer->IsVampire() && g_pPlayer->ShowInDarkness(currentX, currentY)) 
 						|| g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 						|| g_bLight
@@ -7805,7 +7804,6 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{		
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
 
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //
@@ -8054,7 +8052,6 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 		//------------------------------------------------------
 		while (iImageObjectCheck != m_mapImageObject.rend())
 		{
-			MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
 
 //				MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //
@@ -8073,7 +8070,6 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectCheck).second);
 
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //		
@@ -8163,7 +8159,7 @@ MTopView::AddItemName(DRAWITEMNAME_NODE* pNode)
 	//-------------------------------------------------------
 	// MAX를 넘어간 경우
 	//-------------------------------------------------------
-	if (m_listDrawItemName.size() > g_pClientConfig->MAX_DRAWITEMNAME)
+	if (m_listDrawItemName.size() > static_cast<size_t>(g_pClientConfig->MAX_DRAWITEMNAME))
 	{
 		// 마지막 걸 제거한다.
 		DRAWITEMNAME_NODE* pDeleteNode = m_listDrawItemName.back();
@@ -8803,10 +8799,10 @@ MTopView::AddLightFilter2D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 	}
 
 	if (//true && m_b3DLight && 
-		!g_pPlayer->IsInDarkness()
+		(!g_pPlayer->IsInDarkness()
 		&& range!=0 
 		&& (m_DarkBits || g_pPlayer->IsInDarkness()) 
-		&& m_nLight < g_pClientConfig->MAX_LIGHT_DRAW
+		&& m_nLight < g_pClientConfig->MAX_LIGHT_DRAW)
 		|| bForceLight) // 무조건 출력해야하는 빛
 	{
 
@@ -8877,10 +8873,10 @@ MTopView::AddLightFilter3D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 	}
 
 	if (//true && 
-		!g_pPlayer->IsInDarkness()
+		(!g_pPlayer->IsInDarkness()
 		&& range!=0
 		&&	(m_DarkBits	|| g_pPlayer->IsInDarkness()) 
-		&& m_nLight < g_pClientConfig->MAX_LIGHT_DRAW
+		&& m_nLight < g_pClientConfig->MAX_LIGHT_DRAW)
 		|| bForceLight)	// 무조건 출력해야하는 빛
 	{
 
@@ -9420,7 +9416,7 @@ MTopView::DrawInformation()
 	strY = y+20;
 	for (int c=0; c<g_pSystemMessage->GetSize(); c++)
 	{
-		if ((*g_pSystemMessage)[c][0] != NULL)
+		if ((*g_pSystemMessage)[c][0] != '\0')
 		{
 			const COLORREF color = RGB(29<<3, 8<<3, 12<<3);
 
@@ -9450,14 +9446,14 @@ MTopView::DrawInformation()
 	int c;
 	for (c=0; c<g_pPlayerMessage->GetSize(); c++)
 	{
-		if ((*g_pPlayerMessage)[c][0] != NULL)
+		if ((*g_pPlayerMessage)[c][0] != '\0')
 		{
 			// 取出信息
 			SafeFormat::Copy(message,(*g_pPlayerMessage)[c]);
 			// 取出颜色类型
 			pColorType = &message[strlen(message)-1];
 			iColorType = atoi(pColorType);
-			pColorType[0]=NULL;
+			pColorType[0]='\0';
 			COLORREF color = RGB(20<<3,31<<3,12<<3);
 			switch(iColorType)
 			{
@@ -9487,7 +9483,7 @@ MTopView::DrawInformation()
 
 	for( c = 0; c< g_pNoticeMessage->GetSize(); c++ )
 	{
-		if( (*g_pNoticeMessage)[c][0] != NULL )
+		if( (*g_pNoticeMessage)[c][0] != '\0' )
 		{
 			const COLORREF color = RGB(20<<3,31<<3,12<<3);
 
@@ -9570,11 +9566,13 @@ MTopView::DrawInformation()
 			strY = 578;
 		}	
 		break;
+	default:
+		break;
 	}
 
 	for (c=g_pGameMessage->GetSize()-1; c>=0; c--)
 	{
-		if ((*g_pGameMessage)[c][0] != NULL)
+		if ((*g_pGameMessage)[c][0] != '\0')
 		{
 			const COLORREF color = RGB(8<<3, 28<<3, 8<<3);
 
@@ -9688,9 +9686,9 @@ MTopView::DrawEventString(int& strX, int& strY)
 
 	if(event != NULL)
 	{
-		for(int eventMessageCount = 0; eventMessageCount < (event->m_StringsID.empty()?1:event->m_StringsID.size()); eventMessageCount++)
+		for(int eventMessageCount = 0; static_cast<size_t>(eventMessageCount) < (event->m_StringsID.empty()?1:event->m_StringsID.size()); eventMessageCount++)
 		{
-			str[0] = NULL;
+			str[0] = '\0';
 
 			switch(event->eventFlag & EVENTFLAG_SHOW_DELAY_STRING)
 			{
@@ -9725,7 +9723,7 @@ MTopView::DrawEventString(int& strX, int& strY)
 				}
 				break;
 			}			
-			if (str[0] != NULL)
+			if (str[0] != '\0')
 			{
 				const COLORREF color = RGB(29<<3, 29<<3, 12<<3);
 
@@ -9749,8 +9747,7 @@ MTopView::DrawEventString(int& strX, int& strY)
 //----------------------------------------------------------------------
 void MTopView::DrawDebugInfo(void* pSurface)
 {
-	// SDL2: Unified - use CSpriteSurface for all platforms
-	CSpriteSurface* pSurfaceCast = (CSpriteSurface*)pSurface;
+	(void)pSurface;
 	#ifdef	OUTPUT_DEBUG		
 		//----------------------------------------------------------------
 		// debug용 code
@@ -10503,7 +10500,7 @@ MTopView::DetermineImageObject()
 				// Sector에 있는 모든 ImageObject들을 검색한다.
 				for (i=0; i<sector.GetImageObjectSize(); i++)
 				{
-					MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+					MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 					//----------------------------------------
 					// 출력 시점을 체크해야 되지만,
@@ -10729,7 +10726,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (int i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							//----------------------------------------
 							// Key값 = (Viewpoint << 32) | ID
@@ -10765,7 +10762,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 					// Sector에 있는 모든 ImageObject들을 검색한다.
 					for (i=0; i<sector.GetImageObjectSize(); i++)
 					{
-						MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+						MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 						{		
 							QWORD key = GetOutputImageObjectID(pImageObject);
@@ -10813,7 +10810,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							{						
 								// 이미 있는지 확인해보고 없으면 추가.
@@ -11004,7 +11001,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							//----------------------------------------
 							// Key값 = (Viewpoint << 32) | ID
@@ -11040,7 +11037,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 					// Sector에 있는 모든 ImageObject들을 검색한다.
 					for (i=0; i<sector.GetImageObjectSize(); i++)
 					{
-						MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+						MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 						{						
 							// 이미 있는지 확인해보고 없으면 추가.
@@ -11089,7 +11086,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 						// Sector에 있는 모든 ImageObject들을 검색한다.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
-							MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
+							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							{								
 								// 이미 있는지 확인해보고 없으면 추가.
@@ -12034,7 +12031,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		int n;
 		for (n=0; n<changeCount; n++)
 		{			
-			POINT tilePointTemp;
 
 			//------------------------------------------------------
 			// Zone의 영역이 아닌 경우에 Skip...
@@ -12096,7 +12092,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 
 			// 첫번째 줄			
-			tilePointTemp.y = firstTilePoint[n].y;
 
 			//---------------------------------------
 			// LOCK
@@ -12275,7 +12270,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
-		MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 		{
@@ -12315,7 +12310,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput0 != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput0).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput0).second);
 
 		// 출력 시점이 0인경우 경우..는 출력
 		if (pImageObject->GetViewpoint() == 0)
@@ -12375,7 +12370,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 //	if (!g_pUserInformation->Invisible)
 	{
-		bool bPutSelectedSector = false;
 		if (m_SelectSector.x!=SECTORPOSITION_NULL 
 			&& m_SelectSector.y!=SECTORPOSITION_NULL)		
 		{
@@ -12419,7 +12413,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				m_SelectSector.y = SECTORPOSITION_NULL;
 			}
 
-			bPutSelectedSector = true;
 		}	
 	}
 
@@ -12436,10 +12429,9 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	IMAGEOBJECT_OUTPUT_MAP::const_iterator iImageObjectShadowOutput = m_mapImageObject.begin();
 
-	TYPE_SPRITEID	sprite;
 	while (bDrawBackGround && iImageObjectShadowOutput != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectShadowOutput).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectShadowOutput).second);
 
 		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
 		point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
@@ -12459,10 +12451,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			*/
 			iImageObjectShadowOutput ++;
 			continue;
-		}
-		else
-		{
-			sprite = pImageObject->GetSpriteID();
 		}
 
 
@@ -12488,7 +12476,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 		// 출력 시점이 sY1보다 적은 경우..는 출력
 		if (pImageObject->GetViewpoint() < sY1)
@@ -12674,7 +12662,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	{
 		while (iCreatureOutput != m_mapCreature.end())
 		{
-			MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+			MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 			if (pCreature==g_pPlayer
 				|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
@@ -12874,7 +12862,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
-		MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 		// 2004, 04, 24 sobeit add start -ghost 일때 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
@@ -13101,7 +13089,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//-----------------------------------------------------	
 			while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 			{
-				MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+				MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 				// 출력 시점이 y와 같은 경우 출력
 				if (pImageObject->GetViewpoint() <= y)
@@ -13131,7 +13119,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//------------------------------------------------------
 			while (iCreatureOutput != m_mapCreature.end())
 			{
-				MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+				MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 				// 출력 시점이 sY1보다 적은 경우..는 출력
 				if (pCreature->GetY() <= y)
@@ -13445,7 +13433,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//-----------------------------------------------------	
 			while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 			{
-				MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+				MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 				// 출력 시점이 y와 같은 경우 출력
 				if (pImageObject->GetViewpoint() <= y)
@@ -13475,7 +13463,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//------------------------------------------------------
 			while (iCreatureOutput != m_mapCreature.end())
 			{
-				MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+				MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 				// 2004, 04, 24 sobeit add start -ghost 일때 
 				if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
@@ -13563,7 +13551,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
-		MCreature* const pCreature = (MCreature* const)((*iCreatureOutput).second);
+		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
 		// 2004, 04, 24 sobeit add start -ghost 일때 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
@@ -13598,7 +13586,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 	{
-		MImageObject* const pImageObject = (MImageObject* const)((*iImageObjectOutput).second);
+		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
 		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
 		point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
@@ -13712,7 +13700,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				//----------------------------------------------------------------
 				int pX = g_pPlayer->GetPixelX() - m_FirstZonePixel.x + 24;
 			int pY = g_pPlayer->GetPixelY() - m_FirstZonePixel.y - TILE_Y;
-			char sh[255]={0};
 			// add by Sonic 2006.9.30 修正人物视野焦点
 			if(g_MyFull)
 			{
@@ -14244,11 +14231,6 @@ MTopView::DrawTileSurface()
 	// 각 Sector출력
 	//------------------------------------------------------	
 	// 첫번째 줄
-	POINT tilePointTemp;
-	tilePointTemp.y = tilePoint.y;
-
-	int x;
-	int y;
 
 	DEBUG_ADD_FORMAT("[DrawTileSurface] (%d, %d) ~ (%d, %d)", sX1, sX2, sY1, sY2);
 
@@ -14482,7 +14464,6 @@ int
 	//		제일 긴 string의 길이를 얻는다.
 	//
 	//---------------------------------------------------------
-	int maxLen = 0;
 	int numString = g_pClientConfig->MAX_CHATSTRING;
 	int maxWidth = 0;
 	for (int i=g_pClientConfig->MAX_CHATSTRING_MINUS_1; i>=0; i--)
@@ -14492,7 +14473,7 @@ int
 		//---------------------------------------------------------
 		// 뭔가 있으면.. 출력해야한다.
 		//---------------------------------------------------------
-		if (str[0] != NULL)
+		if (str[0] != '\0')
 		{
 			int width = max( MinWidthChatBox, g_GetStringWidth(str, g_ClientPrintInfo[font]->hfont) );
 
@@ -14695,9 +14676,9 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 			pItem->GetItemClass() == ITEM_CLASS_CORPSE && 
 			((MCorpse *)pItem)->GetCreature() != NULL &&			
 			(
-				((MCorpse *)pItem)->GetCreature()->GetCreatureType() >= 526 && ((MCorpse *)pItem)->GetCreature()->GetCreatureType() <= 549 ||
-				((MCorpse *)pItem)->GetCreature()->GetCreatureType() >= 371 && ((MCorpse *)pItem)->GetCreature()->GetCreatureType() <= 376 ||
-				((MCorpse *)pItem)->GetCreature()->GetCreatureType() >= 560 && ((MCorpse *)pItem)->GetCreature()->GetCreatureType() <= 563 ||
+				(((MCorpse *)pItem)->GetCreature()->GetCreatureType() >= 526 && ((MCorpse *)pItem)->GetCreature()->GetCreatureType() <= 549) ||
+				(((MCorpse *)pItem)->GetCreature()->GetCreatureType() >= 371 && ((MCorpse *)pItem)->GetCreature()->GetCreatureType() <= 376) ||
+				(((MCorpse *)pItem)->GetCreature()->GetCreatureType() >= 560 && ((MCorpse *)pItem)->GetCreature()->GetCreatureType() <= 563) ||
 				((MCorpse *)pItem)->GetCreature()->GetCreatureType() == 670 ||
 				((MCorpse *)pItem)->GetCreature()->GetCreatureType() == 672 ||
 				((MCorpse *)pItem)->GetCreature()->GetCreatureType() == 673
@@ -14755,7 +14736,6 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 				// Creature를 선택한 것처럼해서 출력.. 사기당. - -;
 				if (m_SelectItemID == pItem->GetID())
 				{
-					TYPE_OBJECTID temp = m_SelectCreatureID;
 					m_SelectCreatureID = pCreature->GetID();
 
 //						POINT pointTemp = *pPoint;
@@ -14780,7 +14760,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 			// 죽은 캐릭터이면 선택 사각형을
 			// 한 Tile 크기로 제한한다.
 			//------------------------------------------------
-			if(!(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376 || pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563 || pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549 || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673 ))
+			if(!((pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) || (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673 ))
 			{
 				if(pCreature->GetCreatureType() == 482 || pCreature->GetCreatureType() == 650 )	// 트리는 select안되게
 				{
@@ -15138,14 +15118,13 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 				// Creature를 선택한 것처럼해서 출력.. 사기당. - -;
 				if (m_SelectItemID == pItem->GetID())
 				{
-					TYPE_OBJECTID temp = m_SelectCreatureID;
 					m_SelectCreatureID = pCreature->GetID();
 
 					if (
 							(
-							pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376	// 성물
-							|| pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563	// 성물
-							|| pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549	// 성단
+							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376)	// 성물
+							|| (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)	// 성물
+							|| (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549)	// 성단
 							|| pCreature->GetCreatureType() == 482	// 크리스마스 트리
 							|| pCreature->GetCreatureType() == 650	// 게시판
 							|| pCreature->GetCreatureType() == 672
@@ -15158,9 +15137,9 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 							(
 							pCreature->GetActionCount() < pCreature->GetActionCountMax()
 							// 틴버전일 경우에는 슬레이어시체 그림자 출력해줘야함
-							|| g_pUserInformation->GoreLevel == false
+							|| (g_pUserInformation->GoreLevel == false
 							&& pCreature->GetActionCount()>=pCreature->GetActionCountMax()/2
-							&& pCreature->IsDead()
+							&& pCreature->IsDead())
 							)
 						)
 					{
@@ -15174,9 +15153,9 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 				{
 					if (
 							(
-							pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376	// 성물
-							|| pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563	// 성물
-							|| pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549	// 성물
+							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376)	// 성물
+							|| (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)	// 성물
+							|| (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549)	// 성물
 							|| pCreature->GetCreatureType() == 482	// 크리스마스 트리
 							|| pCreature->GetCreatureType() == 650  // 게시판
 							|| pCreature->GetCreatureType() == 672
@@ -15189,9 +15168,9 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 							(
 							pCreature->GetActionCount() < pCreature->GetActionCountMax()
 							// 틴버전일 경우에는 슬레이어시체 그림자 출력해줘야함
-							|| g_pUserInformation->GoreLevel == false
+							|| (g_pUserInformation->GoreLevel == false
 							&& pCreature->GetActionCount()>=pCreature->GetActionCountMax()/2
-							&& pCreature->IsDead()
+							&& pCreature->IsDead())
 							)
 						)
 					{
@@ -16004,6 +15983,7 @@ MTopView::SurfaceLockRestore( BOOL bOldLock )
 void	
 MTopView::DrawEffect(POINT* pPoint, EFFECT_LIST::const_iterator iEffect, BYTE size)
 {	
+	(void)pPoint;
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_DRAW_EFFECT))
 		return;
 
@@ -16186,7 +16166,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 		// Attach가 아니거나.. Attach이더라도 Sprite로 출력하는 경우
 		//----------------------------------------------------------------		
 		if (pEffect->GetEffectType()!=MEffect::EFFECT_ATTACH ||
-			pEffect->GetEffectType()==MEffect::EFFECT_ATTACH && ((MAttachEffect*)pEffect)->IsEffectSprite()
+			(pEffect->GetEffectType()==MEffect::EFFECT_ATTACH && ((MAttachEffect*)pEffect)->IsEffectSprite())
 
 
 			)
@@ -16194,7 +16174,6 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 			int direction = pEffect->GetDirection();
 			int frameID = pEffect->GetFrameID();
 			int frame = pEffect->GetFrame();
-			BYTE bltType = pEffect->GetBltType();
 
 			// 2004, 9, 14, sobeit add start - 인스톨 터렛일때 이펙트 안보여줌
 			int TempSecreenEffect = GET_EFFECTSPRITETYPE_SCREEN( frameID );
@@ -16334,7 +16313,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 					if( bRediance || bLarSlash )
 					{						
-						if( bRediance && (pCreature->GetAction() == ACTION_SLAYER_SWORD ||  pCreature->GetAction() == ACTION_SLAYER_SWORD_FAST || pCreature->GetAction() == ACTION_SLAYER_SWORD_SLOW) ||
+						if( (bRediance && (pCreature->GetAction() == ACTION_SLAYER_SWORD ||  pCreature->GetAction() == ACTION_SLAYER_SWORD_FAST || pCreature->GetAction() == ACTION_SLAYER_SWORD_SLOW)) ||
 							pCreature->GetAction() == ACTION_SLAYER_SWORD_2 || pCreature->GetAction() == ACTION_SLAYER_SWORD_2_SLOW || pCreature->GetAction() == ACTION_SLAYER_SWORD_2_FAST )
 						{
 							frame = max(0,min(pCreature->GetActionCount(),pEffect->GetMaxFrame()-1) );
@@ -16377,8 +16356,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 							// 언제 출력되는건지 체크함 해준다.
 							if (type==0 
-								|| type==1 && !bFrameBackground
-								|| type==2 && bFrameBackground)
+								|| (type==1 && !bFrameBackground)
+								|| (type==2 && bFrameBackground))
 							{
 								int sprite = Frame.GetSpriteID();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetSpriteID();
 
@@ -16442,7 +16421,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 					}
 
 					// DEBUG: Log condition result before checking
-					bool conditionMet = (type==0 || type==1 && !bFrameBackground || type==2 && bFrameBackground);
+					bool conditionMet = (type==0 || (type==1 && !bFrameBackground) || (type==2 && bFrameBackground));
 					if (conditionMet)
 					{
 						int sprite = Frame.GetSpriteID();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetSpriteID();
@@ -16528,8 +16507,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 							// 언제 출력되는건지 체크함 해준다.
 							if (type==0 
-								|| type==1 && !bFrameBackground
-								|| type==2 && bFrameBackground)
+								|| (type==1 && !bFrameBackground)
+								|| (type==2 && bFrameBackground))
 							{
 								int sprite = Frame.GetSpriteID();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetSpriteID();
 
@@ -16620,7 +16599,6 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 						}
 					}
 
-					bool bBack = (*g_pEffectSpriteTypeTable)[est].bPairFrameBack;
 
 					// action에 맞는 effectFrameID를 골라주는 거당.
 					int aest = GET_ACTION_EFFECTSPRITETYPE(est);
@@ -16656,8 +16634,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 					// 언제 출력되는건지 체크함 해준다.
 					if (type==0 
-						|| type==1 && !bFrameBackground
-						|| type==2 && bFrameBackground)
+						|| (type==1 && !bFrameBackground)
+						|| (type==2 && bFrameBackground))
 					{
 						int sprite = Frame.GetSpriteID();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetSpriteID();
 
@@ -16741,8 +16719,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 							// 언제 출력되는건지 체크함 해준다.
 							if (type==0 
-								|| type==1 && !bFrameBackground
-								|| type==2 && bFrameBackground)
+								|| (type==1 && !bFrameBackground)
+								|| (type==2 && bFrameBackground))
 							{
 								int sprite = Frame.GetSpriteID();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetSpriteID();
 
@@ -16824,6 +16802,9 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 void
 MTopView::DrawMinimap(int x, int y, BYTE scale)
 {
+	(void)x;
+	(void)y;
+	(void)scale;
 
 	//------------------------------------------------
 	// vampire인 경우는 출력안한다.
@@ -17015,7 +16996,7 @@ MTopView::DrawItemBroken(int x, int y)
 		MAX_GEAR에 -10 한건 core zap+bloodbible 갯수 만큼 뺀거..^^;
 	*/
 	// 부서질려는 item출력
-	MPlayerGear* pGear;
+	MPlayerGear* pGear = NULL;
 	int spriteID;
 	int frameType;
 	int toSomewhatBroken;
@@ -17072,6 +17053,8 @@ MTopView::DrawItemBroken(int x, int y)
 			toSomewhatBroken = MOustersGear::MAX_GEAR_OUSTERS + 1-12;
 			toAlmostBroken = toSomewhatBroken << 1;
 		}
+		break;
+	default:
 		break;
 	}
 
@@ -17237,10 +17220,6 @@ MTopView::GetMaxEffectFrame(BLT_TYPE bltType, TYPE_FRAMEID frameID) const
 	int numFrame = 0;
 
 	// Check bounds to prevent crash (SDL backend defensive fix)
-	if (frameID < 0) {
-		return 0;
-	}
-
 	switch (bltType)
 	{
 		case BLT_SCREEN :
@@ -17377,7 +17356,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 			if (spriteID != SPRITEID_NULL)
 			{
 				// Boundary check for sprite
-				if (spriteID < 0 || spriteID >= m_EffectNormalSPK.GetSize()) {
+				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectNormalSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
 					DEBUG_ADD_FORMAT("DrawEffect(BLT_NORMAL): Invalid spriteID=%d", spriteID);
 #endif
@@ -17446,7 +17425,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				}
 
 				// Boundary check for sprite
-				if (spriteID < 0 || spriteID >= m_EffectAlphaSPK.GetSize()) {
+				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectAlphaSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
 					DEBUG_ADD_FORMAT("DrawEffect(BLT_EFFECT): Invalid spriteID=%d", spriteID);
 #endif
@@ -17560,7 +17539,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				}
 
 				// Boundary check for sprite
-				if (spriteID < 0 || spriteID >= m_EffectScreenSPK.GetSize()) {
+				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectScreenSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
 					DEBUG_ADD_FORMAT("DrawEffect(BLT_SCREEN): Invalid spriteID=%d", spriteID);
 #endif
@@ -17671,7 +17650,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 			if (spriteID != SPRITEID_NULL)
 			{
 				// Boundary check for sprite
-				if (spriteID < 0 || spriteID >= m_EffectShadowSPK.GetSize()) {
+				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectShadowSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
 					DEBUG_ADD_FORMAT("DrawEffect(BLT_SHADOW): Invalid spriteID=%d", spriteID);
 #endif
@@ -17776,7 +17755,7 @@ MTopView::DrawCreatureHPModify(POINT *point, MCreature* pCreature)
 	while(itr != pList->end())
 	{
 		char str[128];
-		COLORREF color;
+		COLORREF color = 0;
 
 		const int modifyValue = itr->modify;
 		if(itr->modify < 0 )
@@ -17972,7 +17951,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		if(bRequest == true)
 		{
 			POINT pointTemp;
-			TYPE_SPRITEID	RequestSpriteID;
+			TYPE_SPRITEID	RequestSpriteID = 0;
 
 			//---------------------------------------------------------------
 			// trade 신청하는 아이콘
@@ -18042,11 +18021,11 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 //						|| (strstr(pCreature->GetName(), "운영자")!=NULL);
 
 	bool bHalluName = (g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION) || 
-		!bMasterWords && 
+		(!bMasterWords && 
 		!g_pUserInformation->IsMaster && 
 		(pCreature->GetClassType() == MCreature::CLASS_PLAYER || 
 		pCreature->GetClassType() == MCreature::CLASS_CREATUREWEAR) && 
-		g_pPlayer->GetRace() != pCreature->GetRace()) &&
+		g_pPlayer->GetRace() != pCreature->GetRace())) &&
 		g_pZoneTable->Get( g_pZone->GetID() )->ChatMaskByRace &&
 		g_pPlayer->GetCreatureType() != CREATURETYPE_SLAYER_OPERATOR &&
 		g_pPlayer->GetCreatureType() != CREATURETYPE_VAMPIRE_OPERATOR &&
@@ -18713,7 +18692,6 @@ MTopView::DrawCreatureMyName()
 
 	const char* pCreatureName;
 	pCreatureName = g_pUserInformation->CharacterID.GetString();
-	bool bMasterWords = false;	
 	COLORREF	color;
 	FONTID		font = FONTID_USER_ID;
 
@@ -19540,7 +19518,7 @@ MTopView::ExcuteOustersFinEvent()
 						}
 					}
 
-					int body, action, direction, frame, creature_type;
+					int body, action, direction, frame;
 
 					MCreature *pCreature = g_pPlayer;
 
@@ -19549,7 +19527,6 @@ MTopView::ExcuteOustersFinEvent()
 					action		= pCreature->GetAction();
 					direction	= 6;//pCreature->GetDirection();
 					frame		= pCreature->GetFrame();//%m_CreatureFPK[body][action][direction].GetCount();
-					creature_type = pCreature->GetCreatureType();
 
 					// vampire
 					FRAME_ARRAY& FA = m_CreatureFPK[body][action][direction];

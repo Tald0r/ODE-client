@@ -14,8 +14,6 @@ CGAbsorbSoul::CGAbsorbSoul ()
 
 CGAbsorbSoul::~CGAbsorbSoul ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGAbsorbSoul::read (SocketInputStream & iStream)

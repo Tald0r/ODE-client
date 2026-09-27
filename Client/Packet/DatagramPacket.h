@@ -33,10 +33,14 @@ public :
 	// destructor
 	virtual ~DatagramPacket () {}
 
+	using Packet::read;
+	using Packet::write;
+
 	// 입력스트림(버퍼)으로부터 데이타를 읽어서 패킷을 초기화한다.
 	// 데이터그램 패킷이 TCP 소켓으로 전송되어 왔다면 프로토콜 에러로 간주한다.
 	virtual void read ( SocketInputStream & iStream ) 
 	{ 
+		(void)iStream;
 		throw ProtocolException("datagram packet from TCP socket"); 
 	}
 
@@ -47,6 +51,7 @@ public :
 	// 데이터그램 패킷을 TCP 소켓으로 출력할 수 없다.
 	virtual void write ( SocketOutputStream & oStream ) const
 	{ 
+		(void)oStream;
 		throw Error("cannot write datagram-packet to TCP-socket-stream"); 
 	}
 

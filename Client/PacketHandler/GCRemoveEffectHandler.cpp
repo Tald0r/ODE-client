@@ -21,6 +21,7 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -103,6 +104,8 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 							entry->SetAvailableTime();
 						}
 						break;						
+					default:
+						break;
 					}
 				}
 

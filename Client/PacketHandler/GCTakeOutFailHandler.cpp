@@ -18,6 +18,8 @@ void GCTakeOutFailHandler::execute ( GCTakeOutFail * pGCTakeOutFail , Player * p
 
 {
 	__BEGIN_TRY 
+	(void)pGCTakeOutFail;
+	(void)pPlayer;
 
 	g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_TAKE_OUT_FAIL].GetString() );
 

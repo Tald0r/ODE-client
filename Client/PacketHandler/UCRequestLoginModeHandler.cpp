@@ -16,6 +16,8 @@ void UCRequestLoginModeHandler::execute ( UCRequestLoginMode * pPacket , Player 
 
 {
 	__BEGIN_TRY 
+	(void)pPacket;
+	(void)pPlayer;
 	__END_CATCH  
 }
  

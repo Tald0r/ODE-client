@@ -27,8 +27,6 @@ CGAddGearToMouse::CGAddGearToMouse ()
 //////////////////////////////////////////////////////////////////////
 CGAddGearToMouse::~CGAddGearToMouse ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

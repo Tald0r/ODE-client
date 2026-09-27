@@ -116,7 +116,7 @@ void Player::processInput ()
 
 	try {
 		m_pInputStream->fill();
-	} catch ( NonBlockingIOException ) {
+	} catch ( NonBlockingIOException & ) {
 	}
 
 	__END_CATCH
@@ -205,7 +205,7 @@ void Player::processCommand ()
 		// 에서 던질 가능성이 있다.
 		throw Error( nsee.toString() );
 
-	} catch ( InsufficientDataException ) {
+	} catch ( InsufficientDataException & ) {
 
 		// do nothing
 

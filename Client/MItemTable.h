@@ -32,7 +32,9 @@
 #ifndef	__MITEMTABLE_H__
 #define	__MITEMTABLE_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 // BYTE, WORD, COLORREF: the library's sources see them through
 // Client_PCH.h; a test including this header alone needs them too.

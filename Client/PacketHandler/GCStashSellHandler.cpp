@@ -22,6 +22,7 @@ void GCStashSellHandler::execute ( GCStashSell * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	__BEGIN_DEBUG
 	
 

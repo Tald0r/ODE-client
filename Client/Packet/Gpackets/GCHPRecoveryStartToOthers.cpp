@@ -30,8 +30,6 @@ GCHPRecoveryStartToOthers::GCHPRecoveryStartToOthers ()
 //////////////////////////////////////////////////////////////////////
 GCHPRecoveryStartToOthers::~GCHPRecoveryStartToOthers ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

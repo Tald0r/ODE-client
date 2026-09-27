@@ -17,6 +17,8 @@ void GCGetOffMotorCycleFailedHandler::execute ( GCGetOffMotorCycleFailed * pPack
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 

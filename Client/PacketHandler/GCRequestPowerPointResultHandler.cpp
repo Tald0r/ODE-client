@@ -22,6 +22,7 @@ void GCRequestPowerPointResultHandler::execute ( GCRequestPowerPointResult * pPa
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	switch(pPacket->getErrorCode())

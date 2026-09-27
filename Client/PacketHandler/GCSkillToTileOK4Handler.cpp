@@ -18,6 +18,7 @@ void GCSkillToTileOK4Handler::execute ( GCSkillToTileOK4 * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

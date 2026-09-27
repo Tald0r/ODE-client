@@ -9,6 +9,7 @@
 void CGStoreOpen::read (SocketInputStream & iStream)
 {
 	__BEGIN_TRY
+	(void)iStream;
 
 	__END_CATCH
 }
@@ -16,6 +17,7 @@ void CGStoreOpen::read (SocketInputStream & iStream)
 void CGStoreOpen::write (SocketOutputStream & oStream) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 
 	__END_CATCH
 }

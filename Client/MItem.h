@@ -2375,15 +2375,15 @@ public :
 
 	// pet info
 	void					SetPetExpRemain(DWORD exp)			{ m_PetExpRemain = exp; }
-	const DWORD				GetPetExpRemain() const				{ return m_PetExpRemain; }
+	DWORD					GetPetExpRemain() const				{ return m_PetExpRemain; }
 	void					SetPetFoodType(WORD type)		{ m_PetFoodType = type; }
-	const DWORD				GetPetFoodType() const			{ return m_PetFoodType; }
+	DWORD					GetPetFoodType() const			{ return m_PetFoodType; }
 	void					SetPetGamble(bool bGamble)		{ m_bCanGamble = bGamble; }
-	const bool				IsCanGamble() const				{ return m_bCanGamble; }
+	bool					IsCanGamble() const				{ return m_bCanGamble; }
 	void					SetPetCutHead(bool bCutHead)	{ m_bCutHead = bCutHead; }
-	const bool				IsCanCutHead() const			{ return m_bCutHead; }
+	bool					IsCanCutHead() const			{ return m_bCutHead; }
 	void					SetPetAttack(bool bAttack)	{ m_bCanAttack = bAttack; }
-	const bool				IsCanAttack() const			{ return m_bCanAttack; }
+	bool					IsCanAttack() const			{ return m_bCanAttack; }
 
 	// Setting the durability restarts the countdown.
 	void					SetCurrentDurability(TYPE_ITEM_DURATION d)	{ MItem::SetCurrentDurability(d); m_UpdateTime = MonotonicClock::Now(); }
@@ -2402,7 +2402,7 @@ public :
 
 	//2004, 5, 11 sobeit add start
 	void					SetPetKeepedDay(DWORD day)			{ m_PetKeepedDay = day; }
-	const DWORD				GetPetKeepedDay() const				{ return m_PetKeepedDay; }
+	DWORD					GetPetKeepedDay() const				{ return m_PetKeepedDay; }
 	//2004, 5, 11 sobeit add end
 	std::string				GetPetName();
 	std::string				GetPetOptionName();

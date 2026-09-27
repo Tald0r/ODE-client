@@ -362,7 +362,7 @@ bool CTypePack<Type>::SaveToFile(std::ofstream&dataFile, std::ofstream&indexFile
 	//--------------------------------------------------
 	// index 저장
 	//--------------------------------------------------
-	for (i=0; i<vIndex.size(); i++)
+	for (i=0; static_cast<size_t>(i)<vIndex.size(); i++)
 	{
 		indexFile.write((const char*)&vIndex[i], 4);
 	}
@@ -791,7 +791,7 @@ bool CTypePack2<TypeBase, Type1, Type2>::SaveToFile(std::ofstream&dataFile, std:
 	//--------------------------------------------------
 	// index 저장
 	//--------------------------------------------------
-	for (i=0; i<vIndex.size(); i++)
+	for (i=0; static_cast<size_t>(i)<vIndex.size(); i++)
 	{
 		indexFile.write((const char*)&vIndex[i], 4);
 	}

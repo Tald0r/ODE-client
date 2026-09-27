@@ -27,10 +27,11 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 		//__BEGIN_DEBUG_EX
 		
 		
-		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=NULL)
+		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=0)
 		{
 			if( pPacket->getOwnerObjectID() == g_pStorage2->GetCuropenid())
 			{

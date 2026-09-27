@@ -87,6 +87,8 @@ void CSDLInput::Clear()
 /* Initialize using SDL backend */
 BOOL CSDLInput::Init(HWND hWnd, HINSTANCE hInst, E_EXCLUSIVE ex)
 {
+	(void)hInst;
+	(void)ex;
 	// Initialize SDL backend
 	if (dxlib_input_init(hWnd) != 0) {
 		return FALSE;
@@ -235,6 +237,7 @@ void CSDLInput::DispatchMouseAt(E_MOUSE_EVENT event, int x, int y)
 /* Set acquire (SDL backend - no-op) */
 HRESULT CSDLInput::SetAcquire(bool active_app)
 {
+	(void)active_app;
 	if (!m_pMouse || !m_pKeyboard)
 		return S_FALSE;
 	return S_OK;

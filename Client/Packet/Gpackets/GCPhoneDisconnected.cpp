@@ -28,8 +28,6 @@ GCPhoneDisconnected::GCPhoneDisconnected ()
 //////////////////////////////////////////////////////////////////////
 GCPhoneDisconnected::~GCPhoneDisconnected ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

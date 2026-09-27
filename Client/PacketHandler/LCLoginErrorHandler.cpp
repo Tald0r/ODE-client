@@ -23,6 +23,7 @@ void LCLoginErrorHandler::execute ( LCLoginError * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	//cout << "Access Denied... (" << pPacket->toString() << ")" << endl;

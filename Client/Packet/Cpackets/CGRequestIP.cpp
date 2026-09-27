@@ -29,8 +29,6 @@ CGRequestIP::CGRequestIP ()
 //////////////////////////////////////////////////////////////////////
 CGRequestIP::~CGRequestIP ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

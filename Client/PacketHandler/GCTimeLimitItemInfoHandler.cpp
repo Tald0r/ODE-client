@@ -21,6 +21,7 @@ void GCTimeLimitItemInfoHandler::execute ( GCTimeLimitItemInfo * pPacket , Playe
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 		
 	if( g_pTimeItemManager != NULL && !pPacket->m_TimeLimitItemInfos.empty())

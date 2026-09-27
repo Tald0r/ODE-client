@@ -435,7 +435,6 @@ private:
 
             int rendered = 0;
             int renderedHalf = 0;      // 半透明对象计数
-            int skippedInvalid = 0;
             int skippedNoSprite = 0;
             int skippedOffScreen = 0;
             int skippedTrans = 0;      // 完全透明对象计数
@@ -453,7 +452,6 @@ private:
                 // 跳过明显无效的对象
                 if (imgObj.sectorX >= mapWidth || imgObj.sectorY >= mapHeight ||
                     imgObj.sectorX >= 10000 || imgObj.sectorY >= 10000) {
-                    skippedInvalid++;
                     if (!debugPrinted) {
                         std::cout << "  [SKIP] spriteID=" << imgObj.spriteID
                                   << " at sector=(" << imgObj.sectorX << "," << imgObj.sectorY << ") - invalid coordinates" << std::endl;

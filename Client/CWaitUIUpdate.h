@@ -5,7 +5,7 @@
 //-----------------------------------------------------------------------------
 
 #ifndef	__CWAITUIUPDATE_H__
-#define	__CWaitUIUPDATE_H__
+#define	__CWAITUIUPDATE_H__
 
 #include "WinLib/CWinUpdate.h"
 #include "InputService.h"

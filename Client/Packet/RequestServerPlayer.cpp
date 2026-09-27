@@ -80,6 +80,9 @@ void RequestServerPlayer::processCommand ()
 				return;
 			}			
 		break;
+
+		default:
+		break;
 	}	
 
 	std::unique_ptr<Packet> pPacket;
@@ -226,7 +229,7 @@ void RequestServerPlayer::processCommand ()
 				}			
 			}
 
-		} catch ( InsufficientDataException ) {
+		} catch ( InsufficientDataException & ) {
 
 			// 단지 루프의 탈출 조건일 뿐이다. 상위로 전달할 필요는 없다.
 			if (Wire::CurrentTime() > m_ExpireTime)
@@ -236,7 +239,7 @@ void RequestServerPlayer::processCommand ()
 
 		}
 
-	} catch (Throwable)	{
+	} catch (Throwable &)	{
 		throw;
 	}
 	__END_CATCH

@@ -20,6 +20,7 @@ void CGStashRequestBuy::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
 	__BEGIN_DEBUG
+	(void)iStream;
 		
 	__END_DEBUG
 	__END_CATCH
@@ -33,6 +34,7 @@ void CGStashRequestBuy::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 	__BEGIN_DEBUG
+	(void)oStream;
 
 	__END_DEBUG
 	__END_CATCH

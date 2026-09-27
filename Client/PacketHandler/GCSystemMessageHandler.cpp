@@ -22,6 +22,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	// The message can be up to 255 bytes; a fixed char[128] here overflowed.
 	static std::string previous1;
@@ -107,6 +108,8 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 			}
 			return;
 
+		default:
+			break;
 			
 	}
 

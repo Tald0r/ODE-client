@@ -13,6 +13,8 @@
 void GCRequestFailedHandler::execute ( GCRequestFailed * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 
 	// Nothing to do. This answered a CGRequestIP the server could not
 	// satisfy by forgetting the pending request (and, once, dropping a

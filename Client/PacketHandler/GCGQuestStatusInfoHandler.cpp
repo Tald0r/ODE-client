@@ -20,6 +20,7 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 //	__BEGIN_DEBUG_EX
 		
 	if(gC_vs_ui.IsRunningQuestManager()) 

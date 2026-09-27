@@ -20,8 +20,6 @@ CGPickupMoney::CGPickupMoney ()
 
 CGPickupMoney::~CGPickupMoney ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGPickupMoney::read (SocketInputStream & iStream)

@@ -30,8 +30,6 @@ GCGetOffMotorCycle::GCGetOffMotorCycle ()
 //////////////////////////////////////////////////////////////////////
 GCGetOffMotorCycle::~GCGetOffMotorCycle ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

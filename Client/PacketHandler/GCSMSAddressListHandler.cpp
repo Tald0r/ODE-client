@@ -19,6 +19,7 @@ void GCSMSAddressListHandler::execute ( GCSMSAddressList * pGCSMSAddressList , P
 
 {
 	__BEGIN_TRY /*__BEGIN_DEBUG_EX*/
+	(void)pPlayer;
 		
 
 		std::vector<AddressUnit*> TempList = pGCSMSAddressList->getAddresses();

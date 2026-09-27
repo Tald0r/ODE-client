@@ -18,6 +18,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	// Creature를 생성해서 MCorpse에 추가해서 Zone에 넣는다.
 	//------------------------------------------------------

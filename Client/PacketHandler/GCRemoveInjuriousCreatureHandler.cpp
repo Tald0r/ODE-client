@@ -15,6 +15,7 @@ void GCRemoveInjuriousCreatureHandler::execute (GCRemoveInjuriousCreature* pPack
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	if (g_pJusticeAttackManager!=NULL)
 	{

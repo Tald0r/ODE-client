@@ -18,6 +18,7 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	
 	// message
@@ -78,7 +79,7 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	}
 
 	//
-	if (skilltype >= g_pActionInfoTable->GetMinResultActionInfo())
+	if (static_cast<DWORD>(skilltype) >= g_pActionInfoTable->GetMinResultActionInfo())
 	{
 		DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skilltype);
 		return;
@@ -89,8 +90,6 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 
 
 	DEBUG_ADD_FORMAT("SkillType = %d", skilltype);
-
-	int resultSkillID = g_pActionInfoTable->GetMinResultActionInfo() + skilltype;
 
 	if (pCreature->IsOusters() && skilltype==SKILL_ABSORB_SOUL)
 	{

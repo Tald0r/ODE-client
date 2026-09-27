@@ -14,8 +14,6 @@ CGAddSMSAddress::CGAddSMSAddress ()
 
 CGAddSMSAddress::~CGAddSMSAddress ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGAddSMSAddress::read (SocketInputStream & iStream)

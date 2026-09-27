@@ -17,6 +17,7 @@ void GCMPRecoveryStartHandler::execute ( GCMPRecoveryStart * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 	// item 사용 검증

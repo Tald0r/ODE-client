@@ -120,7 +120,7 @@ private:
 
 	// ButtonVisual interface
 	void	ShowButtonWidget(C_VS_UI_EVENT_BUTTON* p_button);
-	void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON* p_button) {}
+	void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON* p_button) { (void)p_button; }
 
 	// Layout helpers
 	int	GetTabX(int tabIndex) const;

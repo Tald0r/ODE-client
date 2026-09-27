@@ -268,6 +268,8 @@ C_VS_UI_PROGRESS::~C_VS_UI_PROGRESS()
 //-----------------------------------------------------------------------------
 bool C_VS_UI_PROGRESS::IsPixel(int _x, int _y)
 {
+	(void)_x;
+	(void)_y;
 //	return m_pC_progress->IsPixel(SCR2WIN_X(_x), SCR2WIN_Y(_y), SLAYER_PROGRESS_1);
 	return true;//(*m_pC_progress)[BACK].IsColorPixel(SCR2WIN_X(_x), SCR2WIN_Y(_y));
 }
@@ -279,6 +281,7 @@ bool C_VS_UI_PROGRESS::IsPixel(int _x, int _y)
 //-----------------------------------------------------------------------------
 void C_VS_UI_PROGRESS::WindowEventReceiver(id_t event)
 {
+	(void)event;
 
 }
 

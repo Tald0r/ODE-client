@@ -522,8 +522,8 @@ MSkillSet::SetAvailableSkills()
 				bHasBomb			= bHasBomb || itemClass==ITEM_CLASS_BOMB;
 				bHasMine			= bHasMine || itemClass==ITEM_CLASS_MINE;
 
-				bHasMineMaterial	= bHasMineMaterial || itemClass==ITEM_CLASS_BOMB_MATERIAL && !isBombMaterial;
-				bHasBombMaterial	= bHasBombMaterial || itemClass==ITEM_CLASS_BOMB_MATERIAL && isBombMaterial;
+				bHasMineMaterial	= bHasMineMaterial || (itemClass==ITEM_CLASS_BOMB_MATERIAL && !isBombMaterial);
+				bHasBombMaterial	= bHasBombMaterial || (itemClass==ITEM_CLASS_BOMB_MATERIAL && isBombMaterial);
 			}
 
 			// 지뢰 설치 기술을 배웠고 지뢰가 있다면 icon을 enable시킨다.
@@ -677,7 +677,7 @@ MSkillSet::SetAvailableSkills()
 
 						// 레어존에서는 인비저빌리티 못쓰게 한다...하드하드
 						if ((*g_pSkillInfoTable)[id].GetMP() > playerMP
-							|| id == MAGIC_INVISIBILITY && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115))
+							|| (id == MAGIC_INVISIBILITY && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115)))
 						{
 							flag = 0;
 						}
@@ -748,6 +748,9 @@ MSkillSet::SetAvailableSkills()
 								flag=0;
 							break;
 							
+							default:
+							break;
+
 						}
 
 						insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
@@ -914,13 +917,13 @@ MSkillSet::SetAvailableSkills()
 									{	
 										const int itemClass = pItem->GetItemClass();
 										
-										if (itemClass == ITEM_CLASS_OUSTERS_CHAKRAM && sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_COMBAT || 
-											itemClass == ITEM_CLASS_OUSTERS_WRISTLET &&
+										if ((itemClass == ITEM_CLASS_OUSTERS_CHAKRAM && sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_COMBAT) ||
+											(itemClass == ITEM_CLASS_OUSTERS_WRISTLET &&
 												(
-													sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_FIRE && sInfo.Fire <= g_pPlayer->GetElementalFire() ||
-													sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_WATER && sInfo.Water <= g_pPlayer->GetElementalWater() ||
-													sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_EARTH && sInfo.Earth <= g_pPlayer->GetElementalEarth()
-												)
+													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_FIRE && static_cast<DWORD>(sInfo.Fire) <= g_pPlayer->GetElementalFire()) ||
+													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_WATER && static_cast<DWORD>(sInfo.Water) <= g_pPlayer->GetElementalWater()) ||
+													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_EARTH && static_cast<DWORD>(sInfo.Earth) <= g_pPlayer->GetElementalEarth())
+												))
 											)
 										{
 											flag = FLAG_SKILL_ENABLE;
@@ -975,6 +978,9 @@ MSkillSet::SetAvailableSkills()
 
 		}
 		break;
+
+	default:
+		break;
 	}
 
 
@@ -1006,7 +1012,7 @@ MSkillSet::SetAvailableSkills()
 	if (g_pPlayer->GetCreatureType()!=CREATURETYPE_BAT
 		&& g_pPlayer->GetCreatureType()!=CREATURETYPE_WOLF)
 	{
-		MPlayerGear* pGear;
+		MPlayerGear* pGear = NULL;
 		MItemClassFinder itemFinder( ITEM_CLASS_COUPLE_RING );
 		
 		switch(g_pPlayer->GetRace())
@@ -1022,6 +1028,9 @@ MSkillSet::SetAvailableSkills()
 
 		case RACE_OUSTERS:
 			pGear = g_pOustersGear;
+			break;
+
+		default:
 			break;
 		}
 		

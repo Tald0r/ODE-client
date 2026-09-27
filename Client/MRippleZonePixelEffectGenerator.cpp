@@ -36,7 +36,6 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	// 시작 좌표
 	int sx = egInfo.x0;
 	int sy = egInfo.y0;
-	int sz = 0;//egInfo.z0;
 
 	// 목표 좌표
 	int tx = egInfo.x1; 
@@ -182,8 +181,6 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		}
 
 		int currentPixel = sqrt(cx*cx + cy*cy);
-
-		float basis = ((cx==0)? 0 : (float)cy / (float)cx);
 
 		if (currentPixel==0)
 		{			

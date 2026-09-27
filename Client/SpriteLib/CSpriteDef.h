@@ -5,7 +5,9 @@
 #ifndef	__CSPRITEDEF_H__
 #define	__CSPRITEDEF_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <list>
 #include <cstdint>

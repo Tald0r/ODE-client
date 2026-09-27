@@ -28,8 +28,6 @@ CGSelectPortal::CGSelectPortal ()
 //////////////////////////////////////////////////////////////////////
 CGSelectPortal::~CGSelectPortal ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

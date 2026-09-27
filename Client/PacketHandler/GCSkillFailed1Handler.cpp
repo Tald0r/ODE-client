@@ -22,6 +22,7 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------------------

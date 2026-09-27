@@ -17,6 +17,8 @@
 void GCUntransformFailHandler::execute ( GCUntransformFail* pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 

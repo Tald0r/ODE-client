@@ -416,10 +416,9 @@ void C_VS_UI_VAMPIRE::Show()
 		
 		m_pC_common_button_group->Show();
 		
-		int sec = 0, min = 0, hour = 0;
+		int min = 0, hour = 0;
 		char sz_temp[20];
 		SafeFormat::Copy(sz_temp, m_time.c_str());
-		sec = atoi(sz_temp+strlen(sz_temp)-2);
 		sz_temp[strlen(sz_temp)-3] = '\0';
 		min = atoi(sz_temp+strlen(sz_temp)-2);
 		sz_temp[strlen(sz_temp)-3] = '\0';
@@ -771,7 +770,7 @@ void C_VS_UI_VAMPIRE::HotKey_F1()
 //-----------------------------------------------------------------------------
 C_VS_UI_VAMPIRE_GEAR::C_VS_UI_VAMPIRE_GEAR()
 {
-	assert(MVampireGear::MAX_GEAR_VAMPIRE == SLOT_SIZE);
+	assert(static_cast<int>(MVampireGear::MAX_GEAR_VAMPIRE) == static_cast<int>(SLOT_SIZE));
 	
 
 //	{

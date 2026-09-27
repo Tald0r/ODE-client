@@ -34,7 +34,6 @@ SlayerSkillInfo::SlayerSkillInfo ()
 //////////////////////////////////////////////////////////////////////
 SlayerSkillInfo::~SlayerSkillInfo () 
 {
-	__BEGIN_TRY
 
 	// 소속된 모든 객체들을 삭제한다.
 	while ( !m_SubSlayerSkillInfoList.empty() ) {
@@ -43,7 +42,6 @@ SlayerSkillInfo::~SlayerSkillInfo ()
 		m_SubSlayerSkillInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

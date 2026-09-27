@@ -18,6 +18,7 @@ void GCThrowItemOK3Handler::execute ( GCThrowItemOK3 * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

@@ -957,7 +957,6 @@ int spritectl_load_pack(const char* filename, spritectl_pack_t* pack) {
 	FILE* file;
 	uint16_t count;
 	spritectl_pack_t pack_ptr = NULL;
-	int result = -1;
 
 	if (!filename || !pack) {
 		return -1;
@@ -1210,10 +1209,12 @@ int spritectl_decode_rle_data(const uint16_t* rle_data, int rle_len,
 int spritectl_decode_rle_sprite(const uint8_t* compressed, size_t compressed_size,
                                 int width, int height,
                                 uint16_t* pixels_out, size_t pixels_size) {
-	FILE* file;
-	uint16_t* scanline_lengths = NULL;
-	uint8_t** scanlines = NULL;
-	int result = -1;
+	(void)compressed;
+	(void)compressed_size;
+	(void)width;
+	(void)height;
+	(void)pixels_out;
+	(void)pixels_size;
 
 	/* For now, we'll load from FILE pointer instead of raw buffer */
 	/* This is a simpler implementation that matches the original */
@@ -1232,6 +1233,7 @@ int spritectl_decode_rle_sprite(const uint8_t* compressed, size_t compressed_siz
  */
 int spritectl_load_sprite_from_file(FILE* file, spritectl_sprite_t* sprite_out,
                                     uint16_t colorkey) {
+	(void)colorkey;
 	uint16_t width = 0, height = 0;
 	uint16_t* scanline_lengths = NULL;
 	uint16_t** scanline_rle = NULL;

@@ -19,6 +19,7 @@
 void GCExchangeBuyHandler::execute(GCExchangeBuy* pPacket, Player* pPlayer)
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	// The message is the server's own text: "Success" on a purchase, the
 	// reason on a refusal. Its BYTE length prefix bounds it at 255 bytes,

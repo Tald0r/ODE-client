@@ -6,7 +6,9 @@
 //
 //////////////////////////////////////////////////////////////////////
 #include "Client_PCH.h"
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 // include files
 #include "Gpackets/GCBloodBibleList.h"
 
@@ -28,6 +30,7 @@ void GCBloodBibleListHandler::execute ( GCBloodBibleList * pPacket , Player * pP
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	
 	if (g_pPlayer==NULL
 		|| g_pZone==NULL
@@ -48,7 +51,7 @@ void GCBloodBibleListHandler::execute ( GCBloodBibleList * pPacket , Player * pP
 
 	char str[192];
 	char str2[192];
-	for(int i = 0; i< BloodBibleList.size(); i++)
+	for(int i = 0; static_cast<size_t>(i)< BloodBibleList.size(); i++)
 	{
 		// The two arguments are table lookups indexed by a packet field.
 		// CTypeTable::operator[] range-checks that (it has done so in

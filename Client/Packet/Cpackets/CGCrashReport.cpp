@@ -15,8 +15,6 @@ CGCrashReport::CGCrashReport ()
 
 CGCrashReport::~CGCrashReport ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGCrashReport::read (SocketInputStream & iStream)

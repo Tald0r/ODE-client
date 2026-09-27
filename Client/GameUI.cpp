@@ -176,6 +176,7 @@ void UI_RunFriendWait(GCFriendChatting* pPacket)
 }
 void UI_RunFriendOK(GCFriendChatting* pPacket)
 {
+	(void)pPacket;
 	gC_vs_ui.RunFriendOK();
 	gpC_base->SendMessage(UI_FRIEND_CHATTING_UPDATE, 0, 0, NULL);
 }
@@ -350,7 +351,6 @@ UI_AddEffectStatus(int es, DWORD delayFrame)
 			// 이미 있는지 검사.. 음.. vector라.. - -;
 			//-----------------------------------------------------------------
 			S_SLOT::UI_EFFECTSTATUS_TYPE::iterator itr = status.begin(); 
-			S_SLOT::UI_EFFECTSTATUS_TYPE::iterator endItr = status.end();
 
 			while (itr != status.end())
 			{
@@ -401,7 +401,7 @@ UI_RemoveEffectStatus(int es)
 		//---------------------------------------------------------------
 		// EffectStatus와 관련된 ActionInfo가 있는 경우
 		//---------------------------------------------------------------
-		if (ai < g_pActionInfoTable->GetMinResultActionInfo())
+		if (static_cast<DWORD>(ai) < g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			S_SLOT::UI_EFFECTSTATUS_TYPE& status = g_char_slot_ingame.STATUS;
 
@@ -420,8 +420,8 @@ UI_RemoveEffectStatus(int es)
 				{
 					status.erase( itr );
 
-				if(ai == SKILL_BLOOD_DRAIN)
-					g_char_slot_ingame.bl_drained = false;
+					if(ai == SKILL_BLOOD_DRAIN)
+						g_char_slot_ingame.bl_drained = false;
 
 					// 더 체크할 필요없다.
 					return;
@@ -578,6 +578,8 @@ UI_SetServerList()
 void	
 UI_SetCurrentServerName(const char *name, int status)
 {
+	(void)name;
+	(void)status;
 //	gC_vs_ui.SetCurrentServerName(name, (C_VS_UI_SERVER_SELECT::SERVER_STATUS)status);
 }
 
@@ -1168,6 +1170,8 @@ UI_SaveHotKeyToServer()
 void
 UI_SetHotKey(int hotkey, int id)
 {
+	(void)hotkey;
+	(void)id;
 //	if (id>0 && id < (*g_pActionInfoTable).GetMinResultActionInfo())
 //	{
 //		gC_vs_ui.SetHotkey((C_VS_UI_SKILL::HOTKEY)hotkey, (ACTIONINFO)id); 
@@ -1180,6 +1184,7 @@ UI_SetHotKey(int hotkey, int id)
 int		
 UI_GetHotKey(int hotkey)
 {
+	(void)hotkey;
 //	return gC_vs_ui.GetHotkey((C_VS_UI_SKILL::HOTKEY)hotkey);
 	return -1;
 }
@@ -1480,6 +1485,9 @@ UI_GetInterfaceRace()
 	case RACE_OUSTERS:
 		return RACE_OUSTERS;
 		break;
+
+	default:
+		break;
 	}
 	return RACE_SLAYER;
 }
@@ -1605,6 +1613,9 @@ UI_ChangeInterfaceRace(Race race)
 	case RACE_OUSTERS:
 		gC_vs_ui.ChangeToOustersInterface();
 		break;
+
+	default:
+		break;
 	}
 
 	if(bLevelUp)
@@ -1715,6 +1726,7 @@ UI_UnlockItemTrade()
 void
 UI_RunSkillTree(int domain, int maxLevel)
 {
+	(void)maxLevel;
 	/*
 	BOOL bExistSkillTree = FALSE;
 	// 적절한 SkillTree를 띄운다.
@@ -2755,6 +2767,7 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 void
 UI_StartProgress(int zoneID)
 {
+	(void)zoneID;
 	DEBUG_ADD("[UI] Start Progress");
 	
 	//---------------------------------------
@@ -2820,8 +2833,6 @@ UI_StartProgress(int zoneID)
 
 	DEBUG_ADD("[UI] Start Progress : StartProgress OK");
 	
-	int oldZoneID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
-
 	/*
 	PROGRESS_SPK_INDEX index;
 			
@@ -3431,7 +3442,7 @@ UI_ShowWaitGuildList( GCWaitGuildList *pPacket)
 	GuildInfo *pInfo = NULL;
 	C_VS_UI_TEAM_LIST::READY_TEAM_LIST ready_team_info;
 
-	while(pInfo = pPacket->popFrontGuildInfoList())
+	while((pInfo = pPacket->popFrontGuildInfoList()))
 	{
 		ready_team_info.guild_id = pInfo->getGuildID();
 		ready_team_info.TEAM_NAME = pInfo->getGuildName();
@@ -3460,7 +3471,7 @@ UI_ShowActiveGuildList( GCActiveGuildList *pPacket)
 	GuildInfo *pInfo = NULL;
 	C_VS_UI_TEAM_LIST::REGIST_TEAM_LIST regist_team_info;
 
-	while(pInfo = pPacket->popFrontGuildInfoList())
+	while((pInfo = pPacket->popFrontGuildInfoList()))
 	{
 		regist_team_info.guild_id = pInfo->getGuildID();
 		regist_team_info.TEAM_NAME = pInfo->getGuildName();
@@ -3492,7 +3503,7 @@ UI_ShowGuildMemberList( GCGuildMemberList *pPacket)
 
 	bool SetServerName;
 	BYTE bAvailableRecall = pPacket->getType();
-	while(pInfo = pPacket->popFrontGuildMemberInfoList())
+	while((pInfo = pPacket->popFrontGuildMemberInfoList()))
 	{
 		SetServerName = false;
 		member_info.MEMBER_NAME = pInfo->getName();
@@ -3620,7 +3631,7 @@ UI_ShowUnionGuildMemberInfo(GCShowUnionInfo *pPacket)
 	gC_vs_ui.AddRegistTeamInfo(regist_team_info);
 
 	SingleGuildInfo *pInfo = NULL;
-	while(pInfo = pPacket->popFrontUnionGuildInfoList())
+	while((pInfo = pPacket->popFrontUnionGuildInfoList()))
 	{
 		regist_team_info.guild_id = pInfo->getGuildID();
 		regist_team_info.TEAM_NAME = pInfo->getGuildName();
@@ -4077,6 +4088,8 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 					snprintf(str, sizeof(str), "%s", GetGameString(STRING_MESSAGE_SELECT_MINI_GAME));
 					selectType = 1;
 					break;
+				default:
+					break;
 				}		
 				g_pPCTalkBox->SetContent( str );
 
@@ -4088,7 +4101,7 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 				{
 					SafeFormat::Format(tempstr,"%4d",ID);
 					
-					switch( mkq->GetGameType() )
+					switch( static_cast<int>(mkq->GetGameType()) )
 					{
 					case GAME_MINE :
 						SafeFormat::Append(tempstr,(*g_pGameStringTable)[STRING_MESSAGE_SELECT_CRAZY_MINE].GetString() );
@@ -4234,6 +4247,7 @@ void		UI_CloseQuestStatus()
 
 void		UI_RunPopupMessage(int type)
 {
+	(void)type;
 }
 
 void		UI_LotteryResult(bool bSuccess)
@@ -4615,6 +4629,9 @@ int			GetMyLevelWarStair()
 		else if (MyStat <= 90 )
 			return 4;
 		break;
+
+	default:
+		break;
 	}
 
 	return 0;
@@ -4643,7 +4660,7 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 
 	// 레벨 전쟁 예고
 	case 3:
-		if(parameter/100000000 != GetMyLevelWarStair())
+		if(parameter/100000000 != static_cast<DWORD>(GetMyLevelWarStair()))
 			return;
 		parameter %= 100000000;
 		FileName = "LevelWar";
@@ -4652,7 +4669,7 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 	
 	// 레벨 전쟁 시작
 	case 4:
-		if(parameter/100000000 != GetMyLevelWarStair())
+		if(parameter/100000000 != static_cast<DWORD>(GetMyLevelWarStair()))
 			return;
 		parameter %= 100000000;
 		FileName = "StartLevelWar";

@@ -13,7 +13,7 @@
 #include "VS_UI_util.h"
 
 #include "MSkillManager.h"
-/*
+/ *
 #define SKILLTREE_CLOSE_ID				0xFFFFFFFF
 
 struct SKILLTREE_SKILL

@@ -22,6 +22,7 @@ void LCCreatePCOKHandler::execute ( LCCreatePCOK * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
 
 
 	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);

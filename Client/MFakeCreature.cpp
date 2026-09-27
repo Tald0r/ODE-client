@@ -48,8 +48,7 @@ extern POINT GetNextTileByDirection(int TileX, int TileY, BYTE Dir);
 #define	ActionMoveNextPosition()					\
 		if (!m_bFastMove)							\
 		{											\
-			if (m_NextX != SECTORPOSITION_NULL		\
-				&& m_NextDirection != SECTORPOSITION_NULL)	\
+			if (m_NextX != SECTORPOSITION_NULL)		\
 			{										\
 				MoveNextPosition();					\
 			}										\
@@ -189,6 +188,8 @@ MFakeCreature::SetFakeCreatureType(FAKE_CREATURE_TYPE fct)
 			break;
 		case FAKE_CREATURE_ROCKET:
 			break;
+		default:
+			break;
 	}
 }
 
@@ -276,6 +277,8 @@ MFakeCreature::Action()
 		case FAKE_CREATURE_WILD_WOLF:
 			KeepWildWolfAttack();
 			break;
+		default:
+			break;
 
 	}
 	//--------------------------------------------------------
@@ -345,9 +348,9 @@ MFakeCreature::Action()
 	// 기억된 다음 행동... 
 	//--------------------------------------------------------
 	else if (m_bNextAction 
-			|| m_NextAction!=ACTION_STAND 
-			&& (!bSlayer || bSlayer && m_NextAction != ACTION_SLAYER_MOTOR_STAND)
-			&& m_NextAction!=m_MoveAction)
+			|| (m_NextAction!=ACTION_STAND 
+			&& (!bSlayer || (bSlayer && m_NextAction != ACTION_SLAYER_MOTOR_STAND))
+			&& m_NextAction!=m_MoveAction))
 	{
 		SetAction( m_NextAction );
 	}	 
@@ -394,7 +397,7 @@ MFakeCreature::Action()
 				// 적절한 Action 수행
 				//switch (m_Action)
 				if (m_Action==ACTION_STAND 
-					|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+					|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND))
 				{
 					m_ActionCount++;
 				}
@@ -442,8 +445,8 @@ MFakeCreature::Action()
 					BOOL bSlayer = IsSlayer();
 
 					if (m_bNextAction 
-						|| m_NextAction!=ACTION_STAND 
-						&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+						|| (m_NextAction!=ACTION_STAND 
+						&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))
 					{
 						m_Action = ((m_MoveDevice==MOVE_DEVICE_RIDE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND);
 						SetAction( m_NextAction );
@@ -512,8 +515,8 @@ MFakeCreature::Action()
 							BOOL bSlayer = IsSlayer();
 
 							if (m_bNextAction 
-								|| m_NextAction!=ACTION_STAND 
-								&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+								|| (m_NextAction!=ACTION_STAND 
+								&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))
 							{
 								m_Action = ((m_MoveDevice==MOVE_DEVICE_RIDE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND);
 								SetAction( m_NextAction );
@@ -587,6 +590,9 @@ MFakeCreature::SetFakePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			m_FakeSY = 0.0f;
 		}
 		break;
+
+		default:
+			break;
 	}
 }
 
@@ -644,6 +650,9 @@ MFakeCreature::UpdateFake()
 			}
 		}
 		break;
+
+		default:
+			break;
 	}
 }
 
@@ -717,6 +726,8 @@ MFakeCreature::IsFakeEnd()
 					return true;
 			}
 			break;
+		default:
+			break;
 	}
 
 	return false;
@@ -739,6 +750,9 @@ MFakeCreature::PacketSpecialActionToOther(TYPE_ACTIONINFO nActionInfo, TYPE_OBJE
 			SetCurrentDirection( dir );
 		}
 		break;
+
+		default:
+			break;
 	}
 }
 
@@ -899,7 +913,7 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 	// 잘못된 값
 	// 이전에 못 갔던 곳..
 	if (sX==SECTORPOSITION_NULL || sY==SECTORPOSITION_NULL
-		|| sX==m_BlockDestX && sY==m_BlockDestY)
+		|| (sX==m_BlockDestX && sY==m_BlockDestY))
 	{
 		return false;
 	}
@@ -909,8 +923,6 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 		BOOL bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
 		if(!bCanStand)
 		{
-			extern POINT g_DirectionValue[MAX_DIRECTION];
-			
 			POINT MovePoint;
 
 			if( sY > GetY() )
@@ -929,8 +941,7 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 
 			int limit = 20;	// 유효값 20번내에 못찾으면 포기
 
-			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY ) &&
-				sX >= 0 && sY >= 0 
+			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY )
 				&& sX < m_pZone->GetWidth() && sY < m_pZone->GetHeight()
 				&& limit-- > 0
 				)
@@ -940,7 +951,7 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 				bCanStand = m_pZone->CanMove( m_MoveType, sX,sY );
 			};
 
-			if( bCanStand == FALSE || GetX() == sX && GetY() == sY)
+			if( bCanStand == FALSE || (GetX() == sX && GetY() == sY))
 				return false;
 		}
 	}
@@ -1052,8 +1063,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (sX<0 || sY<0 
-		|| sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
+	if (sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
 		)
 	{
 		// Zone영역 밖이면 check 안 할 경우
@@ -2187,7 +2197,7 @@ MFakeCreature::SyncTurretDirection()
 	m_FinalTurretDirect = 0xFF;
 }
 
-const BYTE
+BYTE
 MFakeCreature::GetTurretDirection() const
 {
 	return m_TurretDirect;
@@ -2429,7 +2439,7 @@ MFakeCreature::KeepWildWolfAttack()
 					POINT TargetPoint = GetNextTileByDirection(m_DestX, m_DestY, TempDir);
 					m_bTraceFlag = true;
 					SetCurrentDirection(TempDir);
-					SetFakeCreatureFastMoveAction(TargetPoint.x, TargetPoint.y, ACTIONINFO_NULL, NULL);	
+					SetFakeCreatureFastMoveAction(TargetPoint.x, TargetPoint.y, ACTIONINFO_NULL, 0);	
 					//SetNextDestination(TargetPoint.x, TargetPoint.y);
 					m_DestX = TargetPoint.x;
 					m_DestY = TargetPoint.y;

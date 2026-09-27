@@ -18,6 +18,7 @@
 void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -127,6 +128,8 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 			}
 			break;
 			
+		default:
+			break;
 	}
 
 

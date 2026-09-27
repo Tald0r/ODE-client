@@ -28,8 +28,6 @@ GCSystemAvailabilities::GCSystemAvailabilities ()
 //////////////////////////////////////////////////////////////////////
 GCSystemAvailabilities::~GCSystemAvailabilities ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

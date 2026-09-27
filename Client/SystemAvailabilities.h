@@ -10,7 +10,9 @@
 
 #pragma once
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include <map>
 #include <list>

@@ -17,6 +17,7 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

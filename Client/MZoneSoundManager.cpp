@@ -60,6 +60,7 @@ ZONESOUND_NODE::~ZONESOUND_NODE()
 void					
 ZONESOUND_NODE::SaveToFile(std::ofstream& file)
 {
+	(void)file;
 	// 사실 이거는 file 입출력할 필요가 없당.
 }
 
@@ -69,6 +70,7 @@ ZONESOUND_NODE::SaveToFile(std::ofstream& file)
 void					
 ZONESOUND_NODE::LoadFromFile(std::ifstream& file)
 {
+	(void)file;
 	// 사실 이거는 file 입출력할 필요가 없당.
 }
 

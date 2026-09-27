@@ -8,7 +8,9 @@
 #ifndef __GC_HOLY_LAND_BONUS_INFO_H__
 #define __GC_HOLY_LAND_BONUS_INFO_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 // include files
 #include <list>

@@ -33,8 +33,6 @@ CGBloodDrain::CGBloodDrain ()
 //////////////////////////////////////////////////////////////////////
 CGBloodDrain::~CGBloodDrain ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

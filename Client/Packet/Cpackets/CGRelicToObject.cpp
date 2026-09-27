@@ -14,8 +14,6 @@ CGRelicToObject::CGRelicToObject ()
 
 CGRelicToObject::~CGRelicToObject ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGRelicToObject::read (SocketInputStream & iStream)

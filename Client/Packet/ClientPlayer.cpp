@@ -142,7 +142,7 @@ void ClientPlayer::processCommand ()
 
 				memcpy( &packetID   , &header[0] , szPacketID );
 				memcpy( &packetSize , &header[szPacketID] , szPacketSize );
-				BYTE seq = header[szPacketID+szPacketSize];
+				[[maybe_unused]] BYTE seq = header[szPacketID+szPacketSize];
 
 #ifdef __DEBUG_OUTPUT__
 				ofstream file("packetID.log", ios::out | ios::app);

@@ -48,7 +48,6 @@ public:
 			+ szBYTE					// 권한
 			+ szuint
 			+ szLevel;
-			+ szExp;
 	}
 
 	static uint getMaxSize () noexcept
@@ -76,7 +75,6 @@ public:
 			+ szBYTE					// 권한
 			+ szuint
 			+ szLevel;
-			+ szExp;
 	}
 #ifdef __DEBUG_OUTPUT__
 	string toString () const;

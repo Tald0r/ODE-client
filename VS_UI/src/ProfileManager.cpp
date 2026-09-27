@@ -226,10 +226,6 @@ ProfileManager::InitProfiles()
 			WORD* lpSurface;
 			unsigned short pitch;
 
-			// Create temporary surfaces for the profile
-			RECT bmpRect = { 0, 0, smallSize.x, smallSize.y };
-			RECT bmpRectBig = { 0, 0, bigSize.x, bigSize.y };
-
 			// For now, just initialize empty sprites
 			// The profile will load but without character portrait image
 			lpSurface = new WORD[smallSize.x * smallSize.y];

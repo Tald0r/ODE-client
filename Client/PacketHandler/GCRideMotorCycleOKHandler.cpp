@@ -19,6 +19,7 @@ void GCRideMotorCycleOKHandler::execute ( GCRideMotorCycleOK * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

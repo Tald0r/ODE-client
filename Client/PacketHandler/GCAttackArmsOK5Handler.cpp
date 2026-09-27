@@ -20,6 +20,7 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 			// message

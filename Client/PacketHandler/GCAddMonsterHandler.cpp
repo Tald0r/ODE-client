@@ -21,6 +21,7 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//	cout << pPacket->toString() << endl;

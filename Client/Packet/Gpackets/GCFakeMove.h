@@ -35,6 +35,8 @@ public :
 	GCFakeMove(ObjectID_t objectID, Coord_t x, Coord_t y, Coord_t x2, Coord_t y2)
 		: m_ObjectID(objectID), m_ToX(x2), m_ToY(y2)
 	{
+		(void)x;
+		(void)y;
 	}
 
 

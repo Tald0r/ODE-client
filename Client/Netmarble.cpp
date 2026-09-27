@@ -106,7 +106,7 @@ BOOL AnalyzeArgument(char *key)
 	if(strlen(buf)==0)
 		return FALSE;
 
-	char arg[6][1024*2] = {0,};
+	char arg[6][1024*2] = {{0,},};
 
 	int argcnt = 0;
 	char* token = _StrTok(buf, ',');

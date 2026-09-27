@@ -28,8 +28,6 @@ GCTakeOff::GCTakeOff ()
 //////////////////////////////////////////////////////////////////////
 GCTakeOff::~GCTakeOff ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

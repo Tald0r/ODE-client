@@ -18,6 +18,7 @@ void GCBloodBibleSignInfoHandler::execute ( GCBloodBibleSignInfo * pPacket , Pla
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	
 	SetBloodBibleSlot(pPacket->getSignInfo());
 	//cout << pPacket->toString() << endl;

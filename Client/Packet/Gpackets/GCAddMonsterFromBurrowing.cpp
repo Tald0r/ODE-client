@@ -25,7 +25,6 @@ GCAddMonsterFromBurrowing::GCAddMonsterFromBurrowing()
 //--------------------------------------------------------------------
 GCAddMonsterFromBurrowing::~GCAddMonsterFromBurrowing()
 {
-	__BEGIN_TRY
 
 	if( m_pEffectInfo != NULL )
 	{
@@ -33,7 +32,6 @@ GCAddMonsterFromBurrowing::~GCAddMonsterFromBurrowing()
 		m_pEffectInfo = NULL;
 	}
 
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////

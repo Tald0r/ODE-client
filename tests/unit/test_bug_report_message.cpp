@@ -69,11 +69,21 @@ CapturingTarget *	s_pTarget = NULL;
 
 Player *	HostBugReportTarget ()	{ return s_pTarget; }
 
-// Only the one entry is filled (designated, so the struct can grow or
-// shrink without this file counting NULLs): every other accessor
-// answers its documented default with a NULL member, and nothing here
-// asks.
-const WireHost	s_Host = { .BugReportTarget = HostBugReportTarget };
+// Only the one entry is filled: every other accessor answers its
+// documented default with a NULL member, and nothing here asks.
+const WireHost	s_Host = {
+	.MaxProcessPacket		= NULL,
+	.MaxRequestService		= NULL,
+	.ClientCommunicationUDPPort	= NULL,
+	.BugReportTarget		= HostBugReportTarget,
+	.EncryptZoneID			= NULL,
+	.EncryptServerID		= NULL,
+	.EncryptUsesEnglishSeed		= NULL,
+	.CurrentTime			= NULL,
+	.SendOtherRequest		= NULL,
+	.HasOtherRequest		= NULL,
+	.RemoveOtherRequest		= NULL,
+};
 
 // Puts the library back however the test leaves.
 struct NoHost

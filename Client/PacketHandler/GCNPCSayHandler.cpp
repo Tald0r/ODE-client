@@ -22,6 +22,7 @@ void GCNPCSayHandler::execute ( GCNPCSay * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 		// Debug Message
 

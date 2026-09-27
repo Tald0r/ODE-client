@@ -22,7 +22,6 @@ GCAddMonsterFromTransformation::GCAddMonsterFromTransformation()
 //--------------------------------------------------------------------
 GCAddMonsterFromTransformation::~GCAddMonsterFromTransformation()
 {
-	__BEGIN_TRY
 
 	if( m_pEffectInfo != NULL )
 	{
@@ -30,7 +29,6 @@ GCAddMonsterFromTransformation::~GCAddMonsterFromTransformation()
 		m_pEffectInfo = NULL;
 	}
 
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////

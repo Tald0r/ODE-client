@@ -23,6 +23,7 @@ void LCQueryResultPlayerIDHandler::execute ( LCQueryResultPlayerID * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	/*

@@ -28,7 +28,6 @@ CAlphaSprite555::SaveToFile(ofstream& file)
 	// 압축 된 것 저장
 	WORD index;	
 
-	int i;
 	int j;
 	int k;
 

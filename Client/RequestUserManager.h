@@ -28,7 +28,9 @@
 #define __REQUEST_USER_MANAGER_H__
 
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #ifdef PLATFORM_WINDOWS
 #include <Windows.h>

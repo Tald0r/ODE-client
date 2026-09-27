@@ -49,7 +49,9 @@ MEffect: Effect anchored to a Tile
 #ifndef	__MEFFECT_H__
 #define	__MEFFECT_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "framelib/CAnimationFrame.h"
 #include "MTypeDef.h"
@@ -88,7 +90,7 @@ class MEffect : public MObject, public CAnimationFrame {
 		// Old constructor: maintain backward compatibility (no resource container)
 		MEffect(BYTE bltType);
 
-		~MEffect();
+		virtual ~MEffect();
 
 		//--------------------------------------------------------
 		// Resource container management (newly added)
@@ -183,7 +185,7 @@ class MEffect : public MObject, public CAnimationFrame {
 		int				GetLinkSize()			{ return (m_pEffectTarget==NULL || m_pEffectTarget->IsEnd())? 0 : m_pEffectTarget->GetCurrentPhase(); }	
 
 		void			SetMulti(bool bMulti)	{ m_bMulti = bMulti; }
-		const bool		IsMulti()				{ return m_bMulti; }
+		bool			IsMulti()				{ return m_bMulti; }
 
 		void			SetDelayFrame(DWORD frame);
 		bool			IsDelayFrame() const;

@@ -155,7 +155,7 @@ MFollowPathEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 	BYTE Dir = egInfo.direction;
 	
-	if( currentPhase-2 >= FollowPath[Dir].size() || currentPhase < 0 )
+	if( static_cast<size_t>(currentPhase-2) >= FollowPath[Dir].size() || currentPhase < 0 )
 		return false;
 
 	MLinearEffect* pEffect = new MLinearEffect(bltType);

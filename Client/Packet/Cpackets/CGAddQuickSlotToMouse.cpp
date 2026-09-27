@@ -27,8 +27,6 @@ CGAddQuickSlotToMouse::CGAddQuickSlotToMouse ()
 //////////////////////////////////////////////////////////////////////
 CGAddQuickSlotToMouse::~CGAddQuickSlotToMouse ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

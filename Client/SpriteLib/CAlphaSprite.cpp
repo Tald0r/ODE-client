@@ -584,7 +584,6 @@ CAlphaSprite::BltClip(WORD* pDest, WORD pitch, RECT* pRect)
 
 	BOOL	bPut;		
 
-	int i;
 	int j;
 	int rectBottom = pRect->bottom;	
 
@@ -751,7 +750,6 @@ CAlphaSprite::BltClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -882,7 +880,6 @@ CAlphaSprite::BltClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -980,7 +977,6 @@ CAlphaSprite::BltClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1164,7 +1160,6 @@ CAlphaSprite::BltClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1277,7 +1272,6 @@ CAlphaSprite::Blt4444ClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1408,7 +1402,6 @@ CAlphaSprite::Blt4444ClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -1506,7 +1499,6 @@ CAlphaSprite::Blt4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1665,7 +1657,6 @@ CAlphaSprite::Blt4444ClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1783,7 +1774,6 @@ CAlphaSprite::Blt4444NotTransClipLeft(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1918,7 +1908,6 @@ CAlphaSprite::Blt4444NotTransClipRight(WORD* pDest, WORD pitch, RECT* pRect)
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -2019,7 +2008,6 @@ CAlphaSprite::Blt4444NotTransClipWidth(WORD* pDest, WORD pitch, RECT* pRect)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2184,7 +2172,6 @@ CAlphaSprite::Blt4444NotTransClipHeight(WORD *pDest, WORD pitch, RECT* pRect)
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2304,7 +2291,6 @@ CAlphaSprite::BltAlphaClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE alpha)
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2437,7 +2423,6 @@ CAlphaSprite::BltAlphaClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE alpha
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -2537,7 +2522,6 @@ CAlphaSprite::BltAlphaClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE alpha
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2725,7 +2709,6 @@ CAlphaSprite::BltAlphaClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE alph
 			*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2800,7 +2783,7 @@ CAlphaSprite::memcpyAlphaValue(WORD* pDest, WORD* pSource, WORD pixels)
 		dg = ColorDraw::Green(dTemp);
 		db = ColorDraw::Blue(dTemp);		
 		
-		*pDest = ((s_Value1 * (sb - db) >> 5) + db |
+		*pDest = (((s_Value1 * (sb - db) >> 5) + db) |
 					((s_Value1 * (sg - dg) >> 5) + dg) << ColorDraw::s_bSHIFT_G |
 					((s_Value1 * (sr - dr) >> 5) + dr) << ColorDraw::s_bSHIFT_R);
 	

@@ -22,6 +22,7 @@ void GCNotifyWinHandler::execute ( GCNotifyWin * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 	
 	//cout << pPacket->toString() << endl;
 	UI_RunImageNotice( pPacket->getName().c_str(), pPacket->getGiftID() );

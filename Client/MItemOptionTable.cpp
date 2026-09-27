@@ -161,6 +161,7 @@ ITEMOPTION_INFO::LoadFromFile(std::ifstream& file)
 void			
 ITEMOPTION_INFO::SaveToFile(std::ofstream& file)
 {
+	(void)file;
 }
 
 //--------------------------------------------------------------------------

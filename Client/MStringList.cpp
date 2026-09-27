@@ -77,7 +77,7 @@ MStringList::GetIterator(unsigned int index)
 
 	iterator iString = begin();
 
-	for (int i=0; i<index; i++)
+	for (int i=0; static_cast<unsigned int>(i)<index; i++)
 	{
 		iString++;
 	}

@@ -27,6 +27,7 @@ void GCDownSkillFailedHandler::execute ( GCDownSkillFailed * pGCDownSkillFailed 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 
 	switch( pGCDownSkillFailed->getDesc() )
 	{

@@ -31,8 +31,6 @@ GCSkillToTileOK4::GCSkillToTileOK4 ()
 //////////////////////////////////////////////////////////////////////
 GCSkillToTileOK4::~GCSkillToTileOK4 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

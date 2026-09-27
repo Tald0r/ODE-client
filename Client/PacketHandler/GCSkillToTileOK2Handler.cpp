@@ -20,6 +20,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------------------
@@ -86,7 +87,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			if( (*g_pActionInfoTable)[skillID].IsUseActionStep() && pPacket->getGrade() > 0)
 				skillID = (*g_pActionInfoTable)[skillID].GetActionStep( pPacket->getGrade() - 1);
 
-				int useSkillID = skillID;
+			int useSkillID = skillID;
 		
 			DEBUG_ADD("CurWA");
 
@@ -97,7 +98,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 
 				useSkillID = pCreature->GetBasicActionInfo();
 
-				if (useSkillID >= g_pActionInfoTable->GetMinResultActionInfo())
+				if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
 					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", useSkillID);
 					return;

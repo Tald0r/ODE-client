@@ -32,8 +32,6 @@ WorldInfo::WorldInfo ()
 //////////////////////////////////////////////////////////////////////
 WorldInfo::~WorldInfo () 
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

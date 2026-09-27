@@ -116,7 +116,7 @@ SKILLTREE_SKILL C_VS_UI_SKILL_TREE_GUN::m_skill_icon_tab[GUN_SKILL_COUNT] = {
 	SKILL_DISARM_MINE,
 //	SKILL_INSTALL_MINE,
 	SKILL_MAKE_MINE,
-/*	
+/ *	
 	MINE_VIPER,
 	MINE_DIAMONDBACK,
 	MINE_SIDEWINDER,
@@ -251,7 +251,7 @@ void	C_VS_UI_SKILL_TREE::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 	}
 	else if(p_button->m_image_index != -1)
 	{
-		//*
+		// *
 		assert(m_skill_domain != MAX_SKILLDOMAIN);
 
 		MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)p_button->GetID());

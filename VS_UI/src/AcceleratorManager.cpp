@@ -71,6 +71,7 @@ AcceleratorManager::~AcceleratorManager()
 void		
 AcceleratorManager::Function_ACCEL_F1(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F1();
 }
 
@@ -80,6 +81,7 @@ AcceleratorManager::Function_ACCEL_F1(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F2(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F2();
 }
 
@@ -89,6 +91,7 @@ AcceleratorManager::Function_ACCEL_F2(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F3(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F3();
 }
 
@@ -98,6 +101,7 @@ AcceleratorManager::Function_ACCEL_F3(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F4(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F4();
 }
 
@@ -107,6 +111,7 @@ AcceleratorManager::Function_ACCEL_F4(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F5(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F5();
 }
 
@@ -116,6 +121,7 @@ AcceleratorManager::Function_ACCEL_F5(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F6(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F6();
 }
 
@@ -125,6 +131,7 @@ AcceleratorManager::Function_ACCEL_F6(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F7(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F7();
 }
 
@@ -134,6 +141,7 @@ AcceleratorManager::Function_ACCEL_F7(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F8(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F8();
 }
 
@@ -143,6 +151,7 @@ AcceleratorManager::Function_ACCEL_F8(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F9(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F9();
 }
 
@@ -152,6 +161,7 @@ AcceleratorManager::Function_ACCEL_F9(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F10(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F10();
 }
 
@@ -161,6 +171,7 @@ AcceleratorManager::Function_ACCEL_F10(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F11(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F11();
 }
 
@@ -170,6 +181,7 @@ AcceleratorManager::Function_ACCEL_F11(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_F12(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_F12();
 }
 
@@ -179,6 +191,7 @@ AcceleratorManager::Function_ACCEL_F12(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_ESC(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_ESC();
 }
 
@@ -188,6 +201,7 @@ AcceleratorManager::Function_ACCEL_ESC(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_SKILL(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Skill();
 }
 
@@ -197,6 +211,7 @@ AcceleratorManager::Function_ACCEL_SKILL(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_INVENTORY(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Inventory();
 }
 
@@ -206,6 +221,7 @@ AcceleratorManager::Function_ACCEL_INVENTORY(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_GEAR(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Gear();
 }
 
@@ -215,6 +231,7 @@ AcceleratorManager::Function_ACCEL_GEAR(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_CHARINFO(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_CharInfo();
 }
 
@@ -224,6 +241,7 @@ AcceleratorManager::Function_ACCEL_CHARINFO(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_SKILLINFO(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_SkillInfo();
 }
 
@@ -233,6 +251,7 @@ AcceleratorManager::Function_ACCEL_SKILLINFO(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_MINIMAP(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Minimap();
 }
 
@@ -242,6 +261,7 @@ AcceleratorManager::Function_ACCEL_MINIMAP(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_PARTY(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Party();
 }
 
@@ -251,6 +271,7 @@ AcceleratorManager::Function_ACCEL_PARTY(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_MARK(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Mark();
 }
 
@@ -260,6 +281,7 @@ AcceleratorManager::Function_ACCEL_MARK(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_HELP(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Help();
 }
 
@@ -269,6 +291,7 @@ AcceleratorManager::Function_ACCEL_HELP(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_QUICKITEM_SLOT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_QuickItemSlot();
 }
 
@@ -278,6 +301,7 @@ AcceleratorManager::Function_ACCEL_QUICKITEM_SLOT(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_EXTEND_CHAT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_ExtendChat();
 }
 
@@ -287,6 +311,7 @@ AcceleratorManager::Function_ACCEL_EXTEND_CHAT(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_CHAT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Chat();
 }
 
@@ -296,6 +321,7 @@ AcceleratorManager::Function_ACCEL_CHAT(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_GUILD_CHAT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_GuildChat();
 }
 //-----------------------------------------------------------------------------
@@ -304,6 +330,7 @@ AcceleratorManager::Function_ACCEL_GUILD_CHAT(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_UNION_CHAT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_UnionChat();
 }
 //-----------------------------------------------------------------------------
@@ -312,6 +339,7 @@ AcceleratorManager::Function_ACCEL_UNION_CHAT(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_ZONE_CHAT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_ZoneChat();
 }
 
@@ -321,6 +349,7 @@ AcceleratorManager::Function_ACCEL_ZONE_CHAT(void* pVoid)
 void		
 AcceleratorManager::Function_ACCEL_WHISPER(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Whisper();
 }
 
@@ -330,6 +359,7 @@ AcceleratorManager::Function_ACCEL_WHISPER(void* pVoid)
 void
 AcceleratorManager::Function_ACCEL_GRADE1INFO(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Grade1Info();
 }
 
@@ -339,6 +369,7 @@ AcceleratorManager::Function_ACCEL_GRADE1INFO(void* pVoid)
 void
 AcceleratorManager::Function_ACCEL_PARTY_CHAT(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_PartyChat();
 }
 
@@ -348,6 +379,7 @@ AcceleratorManager::Function_ACCEL_PARTY_CHAT(void* pVoid)
 void
 AcceleratorManager::Function_ACCEL_QUEST(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_Quest();
 }
 
@@ -357,6 +389,7 @@ AcceleratorManager::Function_ACCEL_QUEST(void* pVoid)
 void
 AcceleratorManager::Function_ACCEL_MAILBOX(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_MailBox();
 }
 
@@ -366,6 +399,7 @@ AcceleratorManager::Function_ACCEL_MAILBOX(void* pVoid)
 void
 AcceleratorManager::Function_ACCEL_PETINFO(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_PetInfo();
 }
 //////
@@ -376,6 +410,7 @@ AcceleratorManager::Function_ACCEL_PETINFO(void* pVoid)
 void
 AcceleratorManager::Function_ACCEL_SUMMON_PET(void* pVoid)
 {
+	(void)pVoid;
 	gC_vs_ui.HotKey_SummonPet();
 }
  //2004, 5, 17 sobeit add start

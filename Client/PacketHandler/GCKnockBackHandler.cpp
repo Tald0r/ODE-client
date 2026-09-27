@@ -17,6 +17,7 @@ void GCKnockBackHandler::execute ( GCKnockBack * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	
 

@@ -18,6 +18,7 @@ void GCSystemAvailabilitiesHandler::execute ( GCSystemAvailabilities * pGCSystem
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 	g_pSystemAvailableManager->SetFlag( pGCSystemAvailabilities->getFlag() );
 	g_pSystemAvailableManager->SetLimitSkillLevel( pGCSystemAvailabilities->getSkillLimit() );

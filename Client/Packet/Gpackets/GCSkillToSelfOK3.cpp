@@ -29,8 +29,6 @@ GCSkillToSelfOK3::GCSkillToSelfOK3 ()
 //////////////////////////////////////////////////////////////////////
 GCSkillToSelfOK3::~GCSkillToSelfOK3 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

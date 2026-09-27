@@ -250,7 +250,6 @@ MLoadingSPKWorkNode3::Execute(MWorkNode*& pRemainNode)
 		{
 			// -_-;;
 			// 뭐지.. 이럴 수 있나..
-			int a =0;
 		}
 		spkFile.close();
 	}

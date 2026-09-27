@@ -31,10 +31,6 @@ void CAlphaSpritePal::SetPixel(BYTE *pSource, WORD pitch, BYTE *pSourceAlpha, WO
 	int		index;//,				// data의 index로 사용
 //			lastColorIndex;		// 투명이 아닌색 개수의 최근 index
 	int		count;				// 반복수
-	int		trans,				// 투명색 개수
-			color;				// 투명이 아닌색 개수
-
-	BOOL	bCheckTrans;		// 최근에 검사한게 투명색인가?
 
 	BYTE	*pSourceTemp;
 	BYTE	*pAlphaTemp;
@@ -52,9 +48,6 @@ void CAlphaSpritePal::SetPixel(BYTE *pSource, WORD pitch, BYTE *pSourceAlpha, WO
 	{
 		index = 0;
 		count = 0;
-		trans = 0;
-		color = 0;
-		bCheckTrans = TRUE;
 
 		pSourceTemp = pSource;
 		pAlphaTemp = pSourceAlpha;
@@ -360,7 +353,6 @@ CAlphaSpritePal::BltClip(WORD* pDest, WORD pitch, RECT* pRect, MPalette &pal)
 
 	BOOL	bPut;		
 
-	int i;
 	int j;
 	int rectBottom = pRect->bottom;	
 
@@ -562,7 +554,6 @@ CAlphaSpritePal::BltClipLeft(WORD* pDest, WORD pitch, RECT* pRect, MPalette &pal
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -693,7 +684,6 @@ CAlphaSpritePal::BltClipRight(WORD* pDest, WORD pitch, RECT* pRect, MPalette &pa
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -791,7 +781,6 @@ CAlphaSpritePal::BltClipWidth(WORD* pDest, WORD pitch, RECT* pRect, MPalette &pa
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -975,7 +964,6 @@ CAlphaSpritePal::BltClipHeight(WORD *pDest, WORD pitch, RECT* pRect, MPalette &p
 	BYTE	*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1088,7 +1076,6 @@ CAlphaSpritePal::Blt4444ClipLeft(WORD* pDest, WORD pitch, RECT* pRect, MPalette 
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1219,7 +1206,6 @@ CAlphaSpritePal::Blt4444ClipRight(WORD* pDest, WORD pitch, RECT* pRect, MPalette
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -1317,7 +1303,6 @@ CAlphaSpritePal::Blt4444ClipWidth(WORD* pDest, WORD pitch, RECT* pRect, MPalette
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1476,7 +1461,6 @@ CAlphaSpritePal::Blt4444ClipHeight(WORD *pDest, WORD pitch, RECT* pRect, MPalett
 	BYTE	*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1594,7 +1578,6 @@ CAlphaSpritePal::Blt4444NotTransClipLeft(WORD* pDest, WORD pitch, RECT* pRect, M
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1729,7 +1712,6 @@ CAlphaSpritePal::Blt4444NotTransClipRight(WORD* pDest, WORD pitch, RECT* pRect, 
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -1830,7 +1812,6 @@ CAlphaSpritePal::Blt4444NotTransClipWidth(WORD* pDest, WORD pitch, RECT* pRect, 
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -1995,7 +1976,6 @@ CAlphaSpritePal::Blt4444NotTransClipHeight(WORD *pDest, WORD pitch, RECT* pRect,
 	BYTE	*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2115,7 +2095,6 @@ CAlphaSpritePal::BltAlphaClipLeft(WORD* pDest, WORD pitch, RECT* pRect, BYTE alp
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2248,7 +2227,6 @@ CAlphaSpritePal::BltAlphaClipRight(WORD* pDest, WORD pitch, RECT* pRect, BYTE al
 			colorCount,
 			index;
 
-	int	i;
 	int	j;
 
 	int rectBottom = pRect->bottom;
@@ -2348,7 +2326,6 @@ CAlphaSpritePal::BltAlphaClipWidth(WORD* pDest, WORD pitch, RECT* pRect, BYTE al
 			index,
 			dist;
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2536,7 +2513,6 @@ CAlphaSpritePal::BltAlphaClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE a
 	BYTE	*pPixels;
 
 
-	int i;
 	int j;
 
 	int rectBottom = pRect->bottom;
@@ -2611,7 +2587,7 @@ CAlphaSpritePal::memcpyAlphaValue(WORD* pDest, BYTE* pSource, WORD pixels, MPale
 		dg = ColorDraw::Green(dTemp);
 		db = ColorDraw::Blue(dTemp);		
 		
-		*pDest = ((s_Value1 * (sb - db) >> 5) + db |
+		*pDest = (((s_Value1 * (sb - db) >> 5) + db) |
 					((s_Value1 * (sg - dg) >> 5) + dg) << ColorDraw::s_bSHIFT_G |
 					((s_Value1 * (sr - dr) >> 5) + dr) << ColorDraw::s_bSHIFT_R);
 	

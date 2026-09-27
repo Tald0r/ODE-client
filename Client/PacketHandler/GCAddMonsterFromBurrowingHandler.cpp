@@ -17,6 +17,7 @@ void GCAddMonsterFromBurrowingHandler::execute ( GCAddMonsterFromBurrowing * pPa
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------

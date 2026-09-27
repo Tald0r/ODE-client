@@ -18,6 +18,7 @@ void GCAddVampireFromBurrowingHandler::execute ( GCAddVampireFromBurrowing * pPa
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

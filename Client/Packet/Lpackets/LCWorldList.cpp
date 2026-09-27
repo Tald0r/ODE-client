@@ -27,7 +27,6 @@ LCWorldList::LCWorldList ()
 //----------------------------------------------------------------------
 LCWorldList::~LCWorldList ()
 {
-	__BEGIN_TRY
 
 	// 소속된 모든 객체들을 삭제한다.
 	while ( !m_WorldInfoList.empty() ) 
@@ -41,7 +40,6 @@ LCWorldList::~LCWorldList ()
 		m_WorldInfoList.pop_front();
 	}
 
-	__END_CATCH
 }
 
 

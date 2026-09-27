@@ -1090,9 +1090,9 @@ UIMessageManager::Execute(DWORD message, intptr_t left, intptr_t right, void* vo
 		&& (g_pZone==NULL
 			|| g_pPlayer==NULL
 			|| g_pInventory==NULL
-			|| g_pPlayer->IsSlayer() && g_pSlayerGear==NULL
-			|| g_pPlayer->IsVampire() && g_pVampireGear==NULL
-			|| g_pPlayer->IsOusters() && g_pOustersGear==NULL
+			|| (g_pPlayer->IsSlayer() && g_pSlayerGear==NULL)
+			|| (g_pPlayer->IsVampire() && g_pVampireGear==NULL)
+			|| (g_pPlayer->IsOusters() && g_pOustersGear==NULL)
 			|| g_pTempInformation==NULL
 			// 2004, 12, 17, sobeit add start
 			|| message >= MAX_UI_MESSAGE
@@ -1126,6 +1126,8 @@ UIMessageManager::Execute(DWORD message, intptr_t left, intptr_t right, void* vo
 void
 UIMessageManager::Execute_UI_NEW_CHARACTER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("UI_NEW_CHARACTER");
 	if (g_Mode!=MODE_WAIT_SELECTPC)
 	{
@@ -1157,7 +1159,7 @@ UIMessageManager::Execute_UI_NEW_CHARACTER(intptr_t left, intptr_t right, void* 
 	//---------------------------------------------
 	int len = strlen(pChar->sz_name);	
 	
-	if (len<PlayerInfo::minIDLength || len>PlayerInfo::maxIDLength)
+	if (static_cast<uint>(len)<PlayerInfo::minIDLength || static_cast<uint>(len)>PlayerInfo::maxIDLength)
 	{
 		char strTemp[128];
 		SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), PlayerInfo::minIDLength, PlayerInfo::maxIDLength);
@@ -1436,6 +1438,8 @@ RegisterNewUser(LOGIN* pLogin)
 void
 UIMessageManager::Execute_UI_RUN_NEWUSER_REGISTRATION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] UI_RUN_NEWUSER_REGISTRATION");
 
 	LOGIN* pLogin = (LOGIN*)void_ptr;
@@ -1521,6 +1525,9 @@ UIMessageManager::Execute_UI_RUN_NEWUSER_REGISTRATION(intptr_t left, intptr_t ri
 void
 UIMessageManager::Execute_UI_INFO_CLOSE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_INFO_CLOSE");
 	
 	if (g_Mode!=MODE_WAIT_SELECTPC
@@ -1541,6 +1548,8 @@ UIMessageManager::Execute_UI_INFO_CLOSE(intptr_t left, intptr_t right, void* voi
 void
 UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	//
 	// left = id
 	//
@@ -1555,7 +1564,7 @@ UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void*
 	{
 		int len = strlen(pName);	
 		
-		if (len<PlayerInfo::minIDLength || len>PlayerInfo::maxIDLength)
+		if (static_cast<uint>(len)<PlayerInfo::minIDLength || static_cast<uint>(len)>PlayerInfo::maxIDLength)
 		{
 			char strTemp[128];
 			SafeFormat::Format(strTemp, "ID는 %d~%d자입니다", PlayerInfo::minIDLength, PlayerInfo::maxIDLength);
@@ -1591,7 +1600,7 @@ UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void*
 	}
 
 	// 지워도 되는게 맞는지.. 흠 *_*;
-	DeleteNewArray( void_ptr );
+	DeleteNewArray( pName );
 }
 
 
@@ -1603,6 +1612,8 @@ UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_DELETE_CHARACTER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] UI_DELETE_CHARACTER");
 	
 	if (g_Mode!=MODE_WAIT_SELECTPC)
@@ -1642,6 +1653,9 @@ UIMessageManager::Execute_UI_DELETE_CHARACTER(intptr_t left, intptr_t right, voi
 void
 UIMessageManager::Execute_UI_TERMINATION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_TERMINATION");
 	
 	if (g_Mode!=MODE_MAINMENU)		
@@ -1669,6 +1683,8 @@ extern BYTE g_macAddress[6];
 void
 UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] UI_LOGIN");
 
 	g_dwSeqNumL = rand()%1024;
@@ -1851,6 +1867,9 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 void
 UIMessageManager::Execute_UI_CHARACTER_MANAGER_FINISHED(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CHARACTER_MANAGER_FINISHED");
 
 	if (g_Mode!=MODE_WAIT_SELECTPC)
@@ -1906,6 +1925,8 @@ UIMessageManager::Execute_UI_CHARACTER_MANAGER_FINISHED(intptr_t left, intptr_t 
 void
 UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CONNECT");
 	
 	if (g_Mode!=MODE_WAIT_SELECTPC)
@@ -2231,13 +2252,13 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 			memset( strOrg, 0, sizeof(strOrg) );
 			memcpy( strOrg, strChat.c_str(), strChat.size() );
 
-			if (str!=NULL && str[0]!=NULL)
+			if (str!=NULL && str[0]!='\0')
 			{
 				RemoveStringSpace( str );							
 
 				DEBUG_ADD_FORMAT("[After RemoveSpace] %s", str );
 					
-				if (str!=NULL && str[0]!=NULL)
+				if (str!=NULL && str[0]!='\0')
 				{
 					// 2004, 10, 25, sobeit add start - 드레곤 아이 관련
 					if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_DRAGON_EYES))
@@ -2289,7 +2310,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 
 							if (strlen(str)>nSayPrefix+60)
 							{
-								str[nSayPrefix+60]=NULL;
+								str[nSayPrefix+60]='\0';
 							}
 
 							SafeFormat::Copy(TempBuffer, str+nSayPrefix);
@@ -2420,7 +2441,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 									//------------------------------------------------------
 									// ID길이가 잘못된 경우										
 									//------------------------------------------------------
-									if (nameLen<PlayerInfo::minIDLength || nameLen>PlayerInfo::maxIDLength)
+									if (static_cast<uint>(nameLen)<PlayerInfo::minIDLength || static_cast<uint>(nameLen)>PlayerInfo::maxIDLength)
 									{
 										char strTemp[256];
 										SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
@@ -2547,12 +2568,12 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 										//------------------------------------------------------
 										// ID길이가 잘못된 경우										
 										//------------------------------------------------------
-										if (nameLen<PlayerInfo::minIDLength || nameLen>PlayerInfo::maxIDLength)
+										if (static_cast<uint>(nameLen)<PlayerInfo::minIDLength || static_cast<uint>(nameLen)>PlayerInfo::maxIDLength)
 										{
 											char strTemp[256];
 											SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
 													PlayerInfo::minIDLength,
-													nameLen>PlayerInfo::maxIDLength);
+													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
 
 											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
 										}
@@ -2609,12 +2630,12 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 										//------------------------------------------------------
 										// ID길이가 잘못된 경우										
 										//------------------------------------------------------
-										if (nameLen<PlayerInfo::minIDLength || nameLen>PlayerInfo::maxIDLength)
+										if (static_cast<uint>(nameLen)<PlayerInfo::minIDLength || static_cast<uint>(nameLen)>PlayerInfo::maxIDLength)
 										{
 											char strTemp[256];
 											SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
 													PlayerInfo::minIDLength,
-													nameLen>PlayerInfo::maxIDLength);
+													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
 
 											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, right );
 										}
@@ -2977,6 +2998,9 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 void
 UIMessageManager::Execute_UI_LOGOUT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_LOGOUT");
 
 	if (g_Mode!=MODE_GAME)
@@ -2995,7 +3019,6 @@ UIMessageManager::Execute_UI_LOGOUT(intptr_t left, intptr_t right, void* void_pt
 	// Logout 시간이 설정되어 있지 않으면 설정하고
 	// 설정되어있다면 남은 시간을 출력해준다.
 	//-------------------------------------------------------------------
-	int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
 
 	//ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( zoneID );
 	
@@ -3086,6 +3109,8 @@ UIMessageManager::Execute_UI_LOGOUT(intptr_t left, intptr_t right, void* void_pt
 void
 UIMessageManager::Execute_UI_SELECT_SKILL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD_FORMAT("[UI] UI_SELECT_SKILL(%d)", left);
 
 	if (g_Mode!=MODE_GAME)
@@ -3120,6 +3145,9 @@ UIMessageManager::Execute_UI_SELECT_SKILL(intptr_t left, intptr_t right, void* v
 void
 UIMessageManager::Execute_UI_CANCEL_SELECT_SKILL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CANCEL_SELECT_SKILL");
 
 	if (g_Mode!=MODE_GAME)
@@ -3175,6 +3203,9 @@ bool IsExistCorpseFromPlayer(MCreature* OriginCreature, int creature_type)
 void
 UIMessageManager::Execute_UI_ITEM_DROP_TO_CLIENT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_DROP_TO_CLIENT");
 
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -3217,7 +3248,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_CLIENT(intptr_t left, intptr_t right, 
 		if (pItem != NULL && (pItem->GetItemClass() == ITEM_CLASS_RELIC ||
 			pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE || 
 			pItem->GetItemClass() == ITEM_CLASS_CASTLE_SYMBOL ||
-			pItem->GetItemClass() == ITEM_CLASS_EVENT_ITEM && (pItem->GetItemType() == 27 || pItem->GetItemType() == 31) ||
+			(pItem->GetItemClass() == ITEM_CLASS_EVENT_ITEM && (pItem->GetItemType() == 27 || pItem->GetItemType() == 31)) ||
 			pItem->GetItemClass() == ITEM_CLASS_SWEEPER || pItem->GetItemClass() == ITEM_CLASS_PET_FOOD
 			))
 		{
@@ -3252,11 +3283,11 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_CLIENT(intptr_t left, intptr_t right, 
 			{
 				if(bCorpse)	// 시체에 아이템을 넣쟈
 				{
-					if(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376 || 
-						pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563 ||
-						pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549 ||
-						pCreature->GetCreatureType() == 670	&& pItem->GetItemClass() == ITEM_CLASS_EVENT_ITEM || // 깃발일경우
-						pCreature->GetCreatureType() == 672 && pItem->GetItemClass() == ITEM_CLASS_SWEEPER
+					if((pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || 
+						(pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) ||
+						(pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) ||
+						(pCreature->GetCreatureType() == 670	&& pItem->GetItemClass() == ITEM_CLASS_EVENT_ITEM) || // 깃발일경우
+						(pCreature->GetCreatureType() == 672 && pItem->GetItemClass() == ITEM_CLASS_SWEEPER)
 					)
 					{
 						if(abs(g_pPlayer->GetX()-pCreature->GetX()) < 3 && abs(g_pPlayer->GetY()-pCreature->GetY()) < 3)
@@ -3584,7 +3615,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_INVENTORY(intptr_t left, intptr_t righ
 				&& pMouseItem->GetItemType() != 41
 				)
 			{
-				int mx,my;
+				int mx = 0, my = 0;
 				
 				
 				if(pMouseItem->GetItemType() < 12)
@@ -3658,6 +3689,8 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_INVENTORY(intptr_t left, intptr_t righ
 void
 UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_DROP_TO_QUICKSLOT");
 
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -3819,6 +3852,8 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 void
 UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ADD_ITEM_TO_GEAR");
 	
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -3840,7 +3875,6 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 			&& g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 		{
 			MItem* pMouseItem = (MItem*)gpC_mouse_pointer->GetPickUpItem();	// 들고 있는 item
-			MItem* pGearItem = (MItem*)void_ptr;	// gear에 있다면.. 교환될 아이템
 			
 			//-----------------------------------------------------------------
 			// mouse에 뭔가를 들고 있어야 한다.
@@ -3875,6 +3909,9 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 
 					case RACE_OUSTERS:
 						g_pOustersGear->ReplaceItem( pMouseItem, (MVampireGear::GEAR_VAMPIRE)left, pRemovedItem );
+						break;
+
+					default:
 						break;
 					}
 
@@ -4013,6 +4050,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_QUICKSLOT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	DEBUG_ADD("[UI] UI_ITEM_PICKUP_FROM_QUICKSLOT");
 	
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -4224,6 +4262,7 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_INVENTORY(intptr_t left, intptr_t 
 void
 UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_GEAR(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	DEBUG_ADD("[UI] UI_REMOVE_ITEM_FROM_GEAR");
 	
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -4280,6 +4319,9 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_GEAR(intptr_t left, intptr_t right
 					case RACE_OUSTERS:
 						pRemovedItem = g_pOustersGear->RemoveItem( (MOustersGear::GEAR_OUSTERS)itemSlot );
 						break;
+
+					default:
+						break;
 					}
 
 
@@ -4327,6 +4369,8 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_GEAR(intptr_t left, intptr_t right
 void
 UIMessageManager::Execute_UI_ITEM_USE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_USE");
 	
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -4342,9 +4386,9 @@ UIMessageManager::Execute_UI_ITEM_USE(intptr_t left, intptr_t right, void* void_
 	if (pItem!=NULL && g_pPlayer->IsItemCheckBufferNULL())
 	{
 		// 자기종족 아이템만 쓰쟈-ㅅ-;
-		if(g_pPlayer->IsSlayer() && pItem->IsSlayerItem() ||
-			g_pPlayer->IsVampire() && pItem->IsVampireItem() ||
-			g_pPlayer->IsOusters() && pItem->IsOustersItem())
+		if((g_pPlayer->IsSlayer() && pItem->IsSlayerItem()) ||
+			(g_pPlayer->IsVampire() && pItem->IsVampireItem()) ||
+			(g_pPlayer->IsOusters() && pItem->IsOustersItem()))
 		{
 			pItem->UseInventory();
 		}
@@ -4375,6 +4419,8 @@ UIMessageManager::Execute_UI_ITEM_USE(intptr_t left, intptr_t right, void* void_
 void
 UIMessageManager::Execute_UI_ITEM_USE_QUICKSLOT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_USE_QUICKSLOT");
 
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -4387,10 +4433,9 @@ UIMessageManager::Execute_UI_ITEM_USE_QUICKSLOT(intptr_t left, intptr_t right, v
 	// right = by FunctionKey
 	//
 	//MItem* pItem = (MItem*)void_ptr;
-	if (g_pPlayer!=NULL && (g_pQuickSlot!=NULL && g_pPlayer->IsSlayer() || 
-		g_pPlayer->IsOusters() && (g_pArmsBand1 != NULL || g_pArmsBand2 != NULL) ) )
+	if (g_pPlayer!=NULL && ((g_pQuickSlot!=NULL && g_pPlayer->IsSlayer()) || 
+		(g_pPlayer->IsOusters() && (g_pArmsBand1 != NULL || g_pArmsBand2 != NULL)) ) )
 	{
-		int bByFunctionKey = right;	// by FunctionKey
 		MSlotItemManager *pQuickSlot = g_pQuickSlot;
 
 		int slot = left;
@@ -4435,9 +4480,9 @@ UIMessageManager::Execute_UI_ITEM_USE_QUICKSLOT(intptr_t left, intptr_t right, v
 //				__END_HELP_EVENT
 
 				// 자기종족 아이템만 쓰쟈-ㅅ-;
-				if(g_pPlayer->IsSlayer() && pItem->IsSlayerItem() ||
-					g_pPlayer->IsVampire() && pItem->IsVampireItem() ||
-					g_pPlayer->IsOusters() && pItem->IsOustersItem())
+				if((g_pPlayer->IsSlayer() && pItem->IsSlayerItem()) ||
+					(g_pPlayer->IsVampire() && pItem->IsVampireItem()) ||
+					(g_pPlayer->IsOusters() && pItem->IsOustersItem()))
 				{
 					pItem->UseQuickItem();
 				}
@@ -4570,7 +4615,7 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_INVENTORY(intptr_t left, intptr_t 
 				else
 				//end yckou
 				
-				if ( total > pItem->GetMaxNumber())
+				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber())
 				{
 					// 한계 수치를 넘어갈 경우
 					pMouseItem->SetNumber( total - pItem->GetMaxNumber() );
@@ -4669,6 +4714,8 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_INVENTORY(intptr_t left, intptr_t 
 void
 UIMessageManager::Execute_UI_ITEM_INSERT_FROM_GEAR(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] UI_ITEM_INSERT_FROM_GEAR");
 
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -4734,6 +4781,7 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_GEAR(intptr_t left, intptr_t right
 void
 UIMessageManager::Execute_UI_ITEM_INSERT_FROM_QUICKSLOT(intptr_t left, intptr_t right, void* void_ptr)
 {				
+	(void)right;
 	DEBUG_ADD("[UI] UI_ITEM_INSERT_FROM_QUICKSLOT");
 	
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -4785,7 +4833,7 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_QUICKSLOT(intptr_t left, intptr_t 
 				// pMouseItem을 pItem에 추가시킨다.
 				//----------------------------------------------------
 				int total = pMouseItem->GetNumber() + pItem->GetNumber();
-				if ( total > pItem->GetMaxNumber() )
+				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber() )
 				{
 					// 한계 수치를 넘어갈 경우
 					pMouseItem->SetNumber( total - pItem->GetMaxNumber() );
@@ -4822,6 +4870,9 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_QUICKSLOT(intptr_t left, intptr_t 
 void
 UIMessageManager::Execute_UI_CLOSE_SHOP(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_SHOP");
 	
 	if (g_Mode!=MODE_GAME)
@@ -5028,6 +5079,9 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 void
 UIMessageManager::Execute_UI_ITEM_SELL_FINISHED(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_SELL_FINISHED");
 	
 	if (g_Mode!=MODE_GAME)
@@ -5059,6 +5113,7 @@ UIMessageManager::Execute_UI_ITEM_SELL_FINISHED(intptr_t left, intptr_t right, v
 void
 UIMessageManager::Execute_UI_SELL_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {				
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_SELL_ITEM");
 	
 	if (g_Mode!=MODE_GAME)
@@ -5129,6 +5184,9 @@ UIMessageManager::Execute_UI_SELL_ITEM(intptr_t left, intptr_t right, void* void
 void
 UIMessageManager::Execute_UI_SELL_ALL_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {				
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_SELL_ALL_ITEM");
 	
 	if (g_Mode!=MODE_GAME)
@@ -5174,6 +5232,9 @@ UIMessageManager::Execute_UI_SELL_ALL_ITEM(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_REMOVE_BACKGROUND_MOUSE_FOCUS(intptr_t left, intptr_t right, void* void_ptr)
 {	
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		return;
@@ -5185,6 +5246,9 @@ UIMessageManager::Execute_UI_REMOVE_BACKGROUND_MOUSE_FOCUS(intptr_t left, intptr
 void
 UIMessageManager::Execute_UI_BACKGROUND_MOUSE_FOCUS(intptr_t left, intptr_t right, void* void_ptr)
 {	
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		return;
@@ -5455,6 +5519,9 @@ UIMessageManager::Execute_UI_PLEASE_PCS_CONNECT_ME(intptr_t left, intptr_t right
 void
 UIMessageManager::Execute_UI_GAMEMENU_CONTINUE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_GAMEMENU_CONTINUE");
 
 	
@@ -5491,6 +5558,8 @@ UIMessageManager::Execute_UI_MINIMAP_TOGGLE(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_DROP_MONEY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	return;
 	//
 	// 인벤토리에서 돈을 drop한다.
@@ -5541,6 +5610,8 @@ UIMessageManager::Execute_UI_DROP_MONEY(intptr_t left, intptr_t right, void* voi
 void
 UIMessageManager::Execute_UI_CLICK_BONUS_POINT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	//
 	// vampire bonus point를 올리기 위해 버튼을 눌렀다.
 	//
@@ -5607,6 +5678,9 @@ UIMessageManager::Execute_UI_CLICK_BONUS_POINT(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	//
 	// character info button을 눌렀다. 자신의 정보를 보여줘야 한다!
 	//
@@ -5770,6 +5844,8 @@ UIMessageManager::Execute_UI_INFO(intptr_t left, intptr_t right, void* void_ptr)
 void
 UIMessageManager::Execute_UI_REPAIR_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {				
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_REPAIR_ITEM");
 
 	
@@ -5858,6 +5934,9 @@ UIMessageManager::Execute_UI_REPAIR_ITEM(intptr_t left, intptr_t right, void* vo
 					{
 						bInGear = TRUE;
 					}
+					break;
+
+				default:
 					break;
 				}
 			}
@@ -5960,6 +6039,8 @@ UIMessageManager::Execute_UI_REPAIR_ITEM(intptr_t left, intptr_t right, void* vo
 void
 UIMessageManager::Execute_UI_SILVERING_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {				
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_SILVERING_ITEM");
 
 	
@@ -6016,6 +6097,9 @@ UIMessageManager::Execute_UI_SILVERING_ITEM(intptr_t left, intptr_t right, void*
 				{
 					bInGear = TRUE;
 				}
+				break;
+
+			default:
 				break;
 			}
 		}
@@ -6107,6 +6191,9 @@ UIMessageManager::Execute_UI_SILVERING_ITEM(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_ITEM_REPAIR_FINISHED(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_REPAIR_FINISHED");
 	
 	
@@ -6134,6 +6221,9 @@ UIMessageManager::Execute_UI_ITEM_REPAIR_FINISHED(intptr_t left, intptr_t right,
 void
 UIMessageManager::Execute_UI_ITEM_SILVERING_FINISHED(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_ITEM_SILVERING_FINISHED");
 
 	
@@ -6162,6 +6252,9 @@ UIMessageManager::Execute_UI_ITEM_SILVERING_FINISHED(intptr_t left, intptr_t rig
 void
 UIMessageManager::Execute_UI_FINISH_LEVELUP_BUTTON(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_FINISH_LEVELUP_BUTTON");
 
 	
@@ -6183,6 +6276,9 @@ UIMessageManager::Execute_UI_FINISH_LEVELUP_BUTTON(intptr_t left, intptr_t right
 void
 UIMessageManager::Execute_UI_RUNNING_GAMEMENU(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_RUNNING_GAMEMENU");
 
 	
@@ -6207,6 +6303,8 @@ UIMessageManager::Execute_UI_RUNNING_GAMEMENU(intptr_t left, intptr_t right, voi
 void
 UIMessageManager::Execute_UI_STORAGE_BUY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_STORAGE_BUY");
 
 	
@@ -6283,6 +6381,7 @@ UIMessageManager::Execute_UI_STORAGE_BUY(intptr_t left, intptr_t right, void* vo
 void
 UIMessageManager::Execute_UI_SELECT_STORAGE_SLOT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_SELECT_STORAGE_SLOT");
 
 	
@@ -6383,7 +6482,7 @@ UIMessageManager::Execute_UI_SELECT_STORAGE_SLOT(intptr_t left, intptr_t right, 
 						// pMouseItem을 pStorageItem에 추가시킨다.
 						//----------------------------------------------------
 						int total = pMouseItem->GetNumber() + pStorageItem->GetNumber();
-						if ( total > pStorageItem->GetMaxNumber() )
+						if ( static_cast<TYPE_ITEM_NUMBER>(total) > pStorageItem->GetMaxNumber() )
 						{
 							// 한계 수치를 넘어갈 경우
 							pMouseItem->SetNumber( total - pStorageItem->GetMaxNumber() );
@@ -6456,6 +6555,8 @@ UIMessageManager::Execute_UI_SELECT_STORAGE_SLOT(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_DEPOSIT_MONEY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_DEPOSIT_MONEY");
 
 	
@@ -6501,6 +6602,8 @@ UIMessageManager::Execute_UI_DEPOSIT_MONEY(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_WITHDRAW_MONEY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_WITHDRAW_MONEY");
 
 	
@@ -6544,6 +6647,9 @@ UIMessageManager::Execute_UI_WITHDRAW_MONEY(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_CLOSE_STORAGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_STORAGE");
 	
 	if (g_Mode!=MODE_GAME)
@@ -6570,6 +6676,7 @@ UIMessageManager::Execute_UI_CLOSE_STORAGE(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_EXCHANGE_MONEY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_EXCHANGE_MONEY");
 	
 	if (g_Mode!=MODE_GAME)
@@ -6933,6 +7040,9 @@ UIMessageManager::Execute_UI_ITEM_SELECT_EXCHANGE(intptr_t left, intptr_t right,
 void
 UIMessageManager::Execute_UI_OK_EXCHANGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_OK_EXCHANGE");
 	
 	if (g_Mode!=MODE_GAME)
@@ -6987,6 +7097,9 @@ UIMessageManager::Execute_UI_OK_EXCHANGE(intptr_t left, intptr_t right, void* vo
 void
 UIMessageManager::Execute_UI_CANCEL_EXCHANGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CANCEL_EXCHANGE");
 	
 	if (g_Mode!=MODE_GAME)
@@ -7058,6 +7171,9 @@ UIMessageManager::Execute_UI_CANCEL_EXCHANGE(intptr_t left, intptr_t right, void
 void
 UIMessageManager::Execute_UI_CLOSE_EXCHANGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_EXCHANGE");
 	
 	if (g_Mode!=MODE_GAME)
@@ -7142,6 +7258,8 @@ UIMessageManager::Execute_UI_CLOSE_EXCHANGE(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_EXCHANGE_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_EXCHANGE_ACCEPT");
 	
 	if (g_Mode!=MODE_GAME)
@@ -7203,6 +7321,9 @@ UIMessageManager::Execute_UI_EXCHANGE_ACCEPT(intptr_t left, intptr_t right, void
 void
 UIMessageManager::Execute_UI_EXCHANGE_REQUEST_CANCEL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_EXCHANGE_REQUEST_CANCEL");
 	
 	if (g_Mode!=MODE_GAME)
@@ -7435,6 +7556,7 @@ UIMessageManager::Execute_UI_CLOSE_GAME_OPTION(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_CHANGE_OPTION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CHANGE_TITLE_OPTION");
 	
 //	if (g_Mode!=MODE_MAINMENU)
@@ -7625,6 +7747,9 @@ UIMessageManager::Execute_UI_CHANGE_OPTION(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_CLOSE_OPTION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (!GetDisplaySettings().Save())
 		DEBUG_ADD("[Error] Could not save UserSet/Display.ini");
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_TITLE_OPTION");
@@ -7676,6 +7801,9 @@ UIMessageManager::Execute_UI_CLOSE_OPTION(intptr_t left, intptr_t right, void* v
 void
 UIMessageManager::Execute_UI_CLOSE_BOOKCASE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_BOOKCASE");
 
 	
@@ -7697,6 +7825,9 @@ UIMessageManager::Execute_UI_CLOSE_BOOKCASE(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_CLOSE_BRIEFING(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_BRIEFING");
 
 	
@@ -7718,6 +7849,9 @@ UIMessageManager::Execute_UI_CLOSE_BRIEFING(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_CLOSE_COMPUTER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_COMPUTER");
 	
 	if (g_Mode!=MODE_GAME)
@@ -7738,6 +7872,8 @@ UIMessageManager::Execute_UI_CLOSE_COMPUTER(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_CLOSE_TUTORIAL_EXIT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_TUTORIAL_EXIT");
 
 	
@@ -7785,6 +7921,9 @@ UIMessageManager::Execute_UI_CLOSE_TUTORIAL_EXIT(intptr_t left, intptr_t right, 
 void	
 UIMessageManager::Execute_UI_CLOSE_DESC_DIALOG(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_DESC_DIALOG");
 
 	
@@ -7806,6 +7945,9 @@ UIMessageManager::Execute_UI_CLOSE_DESC_DIALOG(intptr_t left, intptr_t right, vo
 void	
 UIMessageManager::Execute_UI_CLOSE_ELEVATOR(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_ELEVATOR");
 	
 	
@@ -7827,6 +7969,8 @@ UIMessageManager::Execute_UI_CLOSE_ELEVATOR(intptr_t left, intptr_t right, void*
 void	
 UIMessageManager::Execute_UI_SELECT_ELEVATOR(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_SELECT_ELEVATOR");
 
 	
@@ -7926,6 +8070,9 @@ UIMessageManager::Execute_UI_REQUEST_SERVER_LIST(intptr_t left, intptr_t right, 
 void	
 UIMessageManager::Execute_UI_ITEM_TO_QUICKITEMSLOT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 //	DEBUG_ADD("[UI] UI_ITEM_TO_QUICKITEMSLOT");
 //	// focus_grid_x, focus_grid_y, (MItem *)p_item
 //
@@ -8135,6 +8282,9 @@ UIMessageManager::Execute_UI_ITEM_TO_QUICKITEMSLOT(intptr_t left, intptr_t right
 void	
 UIMessageManager::Execute_UI_CLOSE_SLAYER_PORTAL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_SLAYER_PORTAL");
 
 	
@@ -8166,6 +8316,7 @@ UIMessageManager::Execute_UI_CLOSE_SLAYER_PORTAL(intptr_t left, intptr_t right, 
 void	
 UIMessageManager::Execute_UI_SLAYER_PORTAL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_SLAYER_PORTAL");
 
 	
@@ -8180,7 +8331,6 @@ UIMessageManager::Execute_UI_SLAYER_PORTAL(intptr_t left, intptr_t right, void* 
 	int zoneX = HIWORD(right);
 	int zoneY = LOWORD(right);
 	
-	int cost = int( pow(g_pPlayer->GetLEVEL(), 1.3) * 100 );
 
 //	if( g_pMoneyManager->GetMoney() < cost && g_pPlayer->IsOusters() )
 //	{
@@ -8215,6 +8365,8 @@ UIMessageManager::Execute_UI_SLAYER_PORTAL(intptr_t left, intptr_t right, void* 
 void	
 UIMessageManager::Execute_UI_FINISH_REQUEST_PARTY_BUTTON(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_FINISH_REQUEST_PARTY_BUTTON");
 
 	
@@ -8248,6 +8400,9 @@ UIMessageManager::Execute_UI_FINISH_REQUEST_PARTY_BUTTON(intptr_t left, intptr_t
 void	
 UIMessageManager::Execute_UI_PARTY_REQUEST_CANCEL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_PARTY_REQUEST_CANCEL");
 
 	
@@ -8290,6 +8445,8 @@ UIMessageManager::Execute_UI_PARTY_REQUEST_CANCEL(intptr_t left, intptr_t right,
 void	
 UIMessageManager::Execute_UI_PARTY_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_PARTY_ACCEPT");
 
 	
@@ -8347,6 +8504,9 @@ UIMessageManager::Execute_UI_PARTY_ACCEPT(intptr_t left, intptr_t right, void* v
 void	
 UIMessageManager::Execute_UI_CLOSE_PARTY_MANAGER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_PARTY_MANAGER");
 
 	
@@ -8368,6 +8528,8 @@ UIMessageManager::Execute_UI_CLOSE_PARTY_MANAGER(intptr_t left, intptr_t right, 
 void	
 UIMessageManager::Execute_UI_AWAY_PARTY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_AWAY_PARTY");
 
 	
@@ -8439,6 +8601,9 @@ UIMessageManager::Execute_UI_AWAY_PARTY(intptr_t left, intptr_t right, void* voi
 void	
 UIMessageManager::Execute_UI_FINISH_REQUEST_DIE_BUTTON(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_FINISH_REQUEST_DIE_BUTTON");
 
 	
@@ -8450,7 +8615,6 @@ UIMessageManager::Execute_UI_FINISH_REQUEST_DIE_BUTTON(intptr_t left, intptr_t r
 
 
 	// 다이-_-요청 닫기 left == TRUE : timeout
-	BOOL bTimeout = left;
 
 	if (g_pPlayer->IsDead() && !g_pPlayer->IsWaitVerify())
 	{
@@ -8491,6 +8655,7 @@ UIMessageManager::Execute_UI_FINISH_REQUEST_DIE_BUTTON(intptr_t left, intptr_t r
 void	
 UIMessageManager::Execute_UI_CONNECT_SERVER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 //	DEBUG_ADD_FORMAT("[UI] UI_CONNECT_SERVER. %s(%d)", (left? "group" : "server"), right);
 
 	// left == true : group
@@ -8564,6 +8729,8 @@ UIMessageManager::Execute_UI_CONNECT_SERVER(intptr_t left, intptr_t right, void*
 void	
 UIMessageManager::Execute_UI_CLOSE_SERVER_SELECT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_SERVER_SELECT");
 
 	// left == true : group 
@@ -8596,6 +8763,8 @@ UIMessageManager::Execute_UI_CLOSE_SERVER_SELECT(intptr_t left, intptr_t right, 
 void	
 UIMessageManager::Execute_UI_NEWCHARACTER_CHECK(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] UI_NEWCHARACTER_CHECK");
 
 	char* pName = (char*)void_ptr;
@@ -8611,7 +8780,7 @@ UIMessageManager::Execute_UI_NEWCHARACTER_CHECK(intptr_t left, intptr_t right, v
 
 			int len = strlen(pName);	
 			
-			if (len<PlayerInfo::minIDLength || len>PlayerInfo::maxIDLength)
+			if (static_cast<uint>(len)<PlayerInfo::minIDLength || static_cast<uint>(len)>PlayerInfo::maxIDLength)
 			{
 				char strTemp[128];
 				SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), PlayerInfo::minIDLength, PlayerInfo::maxIDLength);
@@ -8754,6 +8923,9 @@ UIMessageManager::Execute_UI_CLOSE_SELECT_EXPLOSIVE(intptr_t left, intptr_t righ
 void
 UIMessageManager::Execute_UI_CLOSE_TEAM_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_TEAM_LIST");
 	
 	if (g_Mode!=MODE_GAME)
@@ -8778,18 +8950,27 @@ UIMessageManager::Execute_UI_CLOSE_TEAM_LIST(intptr_t left, intptr_t right, void
 void
 UIMessageManager::Execute_UI_CLOSE_TEAM_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseTeamInfo(); 
 }
 
 void
 UIMessageManager::Execute_UI_CLOSE_TEAM_MEMBER_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseTeamMemberInfo();
 }
 
 void
 UIMessageManager::Execute_UI_CLOSE_TEAM_REGIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_TEAM_REGIST");
 	
 	if (g_Mode!=MODE_GAME)
@@ -8812,6 +8993,9 @@ UIMessageManager::Execute_UI_CLOSE_TEAM_REGIST(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_CLOSE_TEAM_MEMBER_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] UI_CLOSE_TEAM_MEMBER_LIST");
 	
 	if (g_Mode!=MODE_GAME)
@@ -8833,6 +9017,9 @@ UIMessageManager::Execute_UI_CLOSE_TEAM_MEMBER_LIST(intptr_t left, intptr_t righ
 void
 UIMessageManager::Execute_UI_REQUEST_GUILD_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+		(void)left;
+		(void)right;
+		(void)void_ptr;
 		CGSelectGuild  _CGSelectGuild ;
 			
 		_CGSelectGuild.setGuildID(g_pPlayer->GetGuildNumber());
@@ -8844,6 +9031,9 @@ UIMessageManager::Execute_UI_REQUEST_GUILD_INFO(intptr_t left, intptr_t right, v
 void
 UIMessageManager::Execute_UI_REQUEST_GUILD_MEMBER_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+		(void)left;
+		(void)right;
+		(void)void_ptr;
 		CGRequestGuildMemberList  _CGRequestGuildMemberList ;
 			
 		g_pSocket->sendPacket( &_CGRequestGuildMemberList  );				
@@ -8867,6 +9057,8 @@ UIMessageManager::Execute_UI_MODIFY_GUILD_MEMBER(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_SELECT_TEAM_MEMBER_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	char *pName = (char *)void_ptr;
 
 	if(pName != NULL)
@@ -8882,6 +9074,7 @@ UIMessageManager::Execute_UI_SELECT_TEAM_MEMBER_LIST(intptr_t left, intptr_t rig
 void
 UIMessageManager::Execute_UI_SELECT_READY_TEAM_LIST(intptr_t left, intptr_t right, void* void_ptr)		// void_ptr = TEAM_NAME
 {
+	(void)right;
 	char *pName = (char *)void_ptr;
 
 	if(pName != NULL)
@@ -8897,6 +9090,8 @@ UIMessageManager::Execute_UI_SELECT_READY_TEAM_LIST(intptr_t left, intptr_t righ
 void
 UIMessageManager::Execute_UI_CLOSE_FRIEND_CHATTING_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	C_VS_UI_FRIEND_CHATTING_INFO* pInfo = (C_VS_UI_FRIEND_CHATTING_INFO*)void_ptr;
 	gC_vs_ui.CloseFriendChattingInfo(pInfo);
 }
@@ -8904,6 +9099,8 @@ UIMessageManager::Execute_UI_CLOSE_FRIEND_CHATTING_INFO(intptr_t left, intptr_t 
 void
 UIMessageManager::Execute_UI_OPEN_FRIEND_CHATTING_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	C_VS_UI_FRIEND_INFO::FRIEND_LIST* pList = (C_VS_UI_FRIEND_INFO::FRIEND_LIST*)void_ptr;
 	gC_vs_ui.OpenFriendChattingInfo(pList);
 }
@@ -8911,6 +9108,8 @@ UIMessageManager::Execute_UI_OPEN_FRIEND_CHATTING_INFO(intptr_t left, intptr_t r
 ////////////////////////friend message////////////////////////////////////////////////////////
 void UIMessageManager::Execute_UI_FRIEND_CHATTING_SEND_MESSAGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	C_VS_UI_FRIEND_CHATTING_INFO::FRIEND_SEND_MESSAGE* pMessage = (C_VS_UI_FRIEND_CHATTING_INFO::FRIEND_SEND_MESSAGE*)void_ptr;
 	GCFriendChatting gcFriend;
 	gcFriend.setCommand(CG_MESSAGE);
@@ -8921,12 +9120,17 @@ void UIMessageManager::Execute_UI_FRIEND_CHATTING_SEND_MESSAGE(intptr_t left, in
 }
 void UIMessageManager::Execute_UI_FRIEND_CHATTING_UPDATE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	GCFriendChatting gcFriend;
 	gcFriend.setCommand(CG_UPDATE);
 	g_pSocket->sendPacket( &gcFriend  );
 }
 void UIMessageManager::Execute_UI_FRIEND_CHATTING_ADD_FRIEND(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	if(!gC_vs_ui.IsFriendWaitAskRuning())
 	{
 		char* pName = (char*)void_ptr;
@@ -8942,9 +9146,9 @@ void UIMessageManager::Execute_UI_FRIEND_CHATTING_ADD_FRIEND(intptr_t left, intp
 //////////////////////////ask_friend_request///////////////////////////////////////////////////
 void UIMessageManager::Execute_UI_FRIEND_REQUEST_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	C_VS_UI_ASK_DIALOG* pDialog = (C_VS_UI_ASK_DIALOG*)void_ptr;
 	char* pName = (char*)pDialog->GetpTemporayValue();
-	bool IsAgree = (bool)left;
 	GCFriendChatting gcFriend;
 
 	if(left == 0)
@@ -8963,6 +9167,8 @@ void UIMessageManager::Execute_UI_FRIEND_REQUEST_ACCEPT(intptr_t left, intptr_t 
 ////////////////////////////////////////////ask_friend_close///////////////////////////////////
 void UIMessageManager::Execute_UI_FRIEND_ASK_CLOSE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	C_VS_UI_ASK_DIALOG* pDialog = (C_VS_UI_ASK_DIALOG*)void_ptr;
 	char* pName = (char*)pDialog->GetpTemporayValue();
 	if(pDialog->GetAskType() == C_VS_UI_ASK_DIALOG::ASK_FRIEND_WAIT)
@@ -8974,6 +9180,8 @@ void UIMessageManager::Execute_UI_FRIEND_ASK_CLOSE(intptr_t left, intptr_t right
 //////////////////////////////////////////////ask_friend_delete_ask//////////////////////////////
 void UIMessageManager::Execute_UI_FRIEND_DELETE_ASK(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	C_VS_UI_FRIEND_INFO::FRIEND_LIST* pList = (C_VS_UI_FRIEND_INFO::FRIEND_LIST*)void_ptr;
 	char* pName = new char[pList->Name.size()+1];
 	memcpy(pName, pList->Name.c_str(), pList->Name.size() + 1);
@@ -8982,6 +9190,8 @@ void UIMessageManager::Execute_UI_FRIEND_DELETE_ASK(intptr_t left, intptr_t righ
 ////////////////////////////////////////////////ask_friend_delete_accept/////////////////////////
 void UIMessageManager::Execute_UI_FRIEND_DELETE_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	C_VS_UI_ASK_DIALOG* pDialog = (C_VS_UI_ASK_DIALOG*)void_ptr;
 	char* pName = (char*)pDialog->GetpTemporayValue();
 	GCFriendChatting gcFriend;
@@ -8997,6 +9207,7 @@ void UIMessageManager::Execute_UI_FRIEND_DELETE_ACCEPT(intptr_t left, intptr_t r
 void
 UIMessageManager::Execute_UI_SELECT_REGIST_TEAM_LIST(intptr_t left, intptr_t right, void* void_ptr)		// void_ptr = TEAM_NAME
 {
+	(void)right;
 	char *pName = (char *)void_ptr;
 
 	if(pName != NULL)
@@ -9012,6 +9223,8 @@ UIMessageManager::Execute_UI_SELECT_REGIST_TEAM_LIST(intptr_t left, intptr_t rig
 void
 UIMessageManager::Execute_UI_JOIN_READY_TEAM(intptr_t left, intptr_t right, void* void_ptr)				// void_ptr = TEAM_NAME
 {
+	(void)right;
+	(void)void_ptr;
 	CGTryJoinGuild _CGTryJoinGuild;
 	_CGTryJoinGuild.setGuildID(left);
 	_CGTryJoinGuild.setGuildMemberRank(2);
@@ -9021,6 +9234,8 @@ UIMessageManager::Execute_UI_JOIN_READY_TEAM(intptr_t left, intptr_t right, void
 void
 UIMessageManager::Execute_UI_JOIN_REGIST_TEAM(intptr_t left, intptr_t right, void* void_ptr)			// void_ptr = TEAM_NAME
 {
+	(void)right;
+	(void)void_ptr;
 	CGTryJoinGuild _CGTryJoinGuild;
 	_CGTryJoinGuild.setGuildID(left);
 	_CGTryJoinGuild.setGuildMemberRank(3);
@@ -9052,6 +9267,7 @@ UIMessageManager::Execute_UI_REGIST_GUILD_MEMBER(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_REGIST_GUILD_TEAM(intptr_t left, intptr_t right, void* void_ptr)			// left = TEAM_NAME, void_ptr = introduction max:150byte 창 닫아줄것!
 {
+	(void)right;
 
 	if(void_ptr == NULL || (char *)left == NULL)
 	{
@@ -9072,6 +9288,7 @@ UIMessageManager::Execute_UI_REGIST_GUILD_TEAM(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_CLOSE_FILE_DIALOG(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	switch(left)
 	{
 	case C_VS_UI_FILE_DIALOG::MODE_PROFILE_SELECT:
@@ -9131,6 +9348,8 @@ UIMessageManager::Execute_UI_CLOSE_FILE_DIALOG(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_ENCHANT_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] UI_ENCHANT_ACCEPT");
 
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -9189,12 +9408,17 @@ UIMessageManager::Execute_UI_ENCHANT_ACCEPT(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_ENCHANT_CANCEL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	UI_CloseEnchant();
 }
 
 void 
 UIMessageManager::Execute_UI_MESSAGE_BOX(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if(left < MAX_GAME_STRING)
 		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[left].GetString() );
 }
@@ -9203,11 +9427,15 @@ UIMessageManager::Execute_UI_MESSAGE_BOX(intptr_t left, intptr_t right, void* vo
 void 
 UIMessageManager::Execute_UI_CLOSE_OTHER_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseOtherInfo();
 }
 
 void UIMessageManager::Execute_UI_MODIFY_TEAM_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	if(void_ptr != NULL)
 	{
 		CGModifyGuildIntro _CGModifyGuildIntro;
@@ -9219,6 +9447,7 @@ void UIMessageManager::Execute_UI_MODIFY_TEAM_INFO(intptr_t left, intptr_t right
 
 void UIMessageManager::Execute_UI_MODIFY_GUILD_MEMBER_INTRO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	if(void_ptr != NULL)
 	{
 		CGModifyGuildMemberIntro _CGModifyGuildMemberIntro;
@@ -9230,6 +9459,8 @@ void UIMessageManager::Execute_UI_MODIFY_GUILD_MEMBER_INTRO(intptr_t left, intpt
 
 void UIMessageManager::Execute_UI_SEND_NAME_FOR_SOUL_CHAIN(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
 	// 이미 추적버튼을 누른상태일경우
 	if(g_pPlayer->IsWaitVerify())
 		return;
@@ -9250,6 +9481,9 @@ void UIMessageManager::Execute_UI_SEND_NAME_FOR_SOUL_CHAIN(intptr_t left, intptr
 
 void UIMessageManager::Execute_UI_CLOSE_TRACE_WINDOW(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 //	//------------------------------------------------------------------
 //	// Player가 기다리던 skill의 성공유무를 검증받았다.
 //	//------------------------------------------------------------------	
@@ -9276,11 +9510,16 @@ void UIMessageManager::Execute_UI_CLOSE_TRACE_WINDOW(intptr_t left, intptr_t rig
 // 넷마블용 수정
 void UIMessageManager::Execute_UI_RUN_CONNECT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	UI_RunConnect();
 }
 
 void UIMessageManager::Excute_UI_SELECT_GRADE_SKILL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if(left >= g_pRankBonusTable->GetSize() || (*g_pRankBonusTable)[left].GetStatus() == RankBonusInfo::STATUS_CANNOT_LEARN || (*g_pRankBonusTable)[left].GetStatus() == RankBonusInfo::STATUS_LEARNED
 		|| !g_pPlayer->IsWaitVerifyNULL() || g_pTempInformation->GetMode() != TempInformation::MODE_NULL)
 		return;
@@ -9329,12 +9568,17 @@ void UIMessageManager::Excute_UI_USE_XMAS_TREE(intptr_t left, intptr_t right, vo
 
 void UIMessageManager::Excute_UI_CLOSE_XMAS_CARD_WINDOW(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseXmasCardWindow();
 }
 
 
 void UIMessageManager::Excute_UI_SEND_BRING_FEE(intptr_t left,intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	// 검증할게 있으면 리턴.
 	if(g_pTempInformation->GetMode() != TempInformation::MODE_NULL)
 	{
@@ -9358,6 +9602,9 @@ void UIMessageManager::Excute_UI_SEND_BRING_FEE(intptr_t left,intptr_t right, vo
 
 void UIMessageManager::Excute_UI_CLOSE_BRING_FEE_WINDOW(intptr_t left,intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	// 검증할게 없을경우
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
@@ -9368,16 +9615,23 @@ void UIMessageManager::Excute_UI_CLOSE_BRING_FEE_WINDOW(intptr_t left,intptr_t r
 
 void UIMessageManager::Excute_UI_CLOSE_WAR_LIST(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseWarListWindow();	
 }
 
 void UIMessageManager::Execute_UI_CLOSE_BLOOD_BIBLE_STATUS(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseBloodBibleStatus();	
 }
 
 void UIMessageManager::Execute_UI_SEND_NAME_FOR_COUPLE(intptr_t left, intptr_t right, void *void_ptr)
 {	
+	(void)right;
 	if( g_pPlayer->GetWaitVerify() != MPlayer::WAIT_VERIFY_NULL 
 		&& g_pTempInformation->GetMode()!=TempInformation::MODE_NULL)
 	{
@@ -9405,6 +9659,9 @@ void UIMessageManager::Execute_UI_SEND_NAME_FOR_COUPLE(intptr_t left, intptr_t r
 
 void UIMessageManager::Execute_UI_CLOSE_INPUT_NAME_WINDOW(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if( g_pPlayer->GetWaitVerify() != MPlayer::WAIT_VERIFY_NPC_ASK	)
 	{
 		g_pUIDialog->ClosePCTalkDlg();
@@ -9434,6 +9691,7 @@ void UIMessageManager::Execute_UI_CLOSE_INPUT_NAME_WINDOW(intptr_t left, intptr_
 void
 UIMessageManager::Execute_UI_ITEM_USE_GEAR(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	DEBUG_ADD("[UI] UI_ITEM_USE_GEAR");
 
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -9446,7 +9704,7 @@ UIMessageManager::Execute_UI_ITEM_USE_GEAR(intptr_t left, intptr_t right, void* 
 	// right = by FunctionKey
 	//
 	//MItem* pItem = (MItem*)void_ptr;
-	if (g_pPlayer!=NULL && (g_pPlayer->IsSlayer() && g_pSlayerGear!=NULL || g_pPlayer->IsVampire() && g_pVampireGear!= NULL || g_pPlayer->IsOusters() && g_pOustersGear!= NULL))
+	if (g_pPlayer!=NULL && ((g_pPlayer->IsSlayer() && g_pSlayerGear!=NULL) || (g_pPlayer->IsVampire() && g_pVampireGear!= NULL) || (g_pPlayer->IsOusters() && g_pOustersGear!= NULL)))
 	{
 		MItem* pSlotItem = static_cast<MItem*>(void_ptr);
 
@@ -9456,9 +9714,9 @@ UIMessageManager::Execute_UI_ITEM_USE_GEAR(intptr_t left, intptr_t right, void* 
 			if (g_pPlayer->IsItemCheckBufferNULL())
 			{
 				// 자기종족 아이템만 쓰쟈-ㅅ-;
-				if(g_pPlayer->IsSlayer() && pSlotItem->IsSlayerItem() ||
-					g_pPlayer->IsVampire() && pSlotItem->IsVampireItem() ||
-					g_pPlayer->IsOusters() && pSlotItem->IsOustersItem())
+				if((g_pPlayer->IsSlayer() && pSlotItem->IsSlayerItem()) ||
+					(g_pPlayer->IsVampire() && pSlotItem->IsVampireItem()) ||
+					(g_pPlayer->IsOusters() && pSlotItem->IsOustersItem()))
 				{
 					pSlotItem->UseQuickItem();
 				}
@@ -9486,6 +9744,8 @@ UIMessageManager::Execute_UI_ITEM_USE_GEAR(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_GO_BILING_PAGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if(left == TRUE)
 	{
 		// 종료..
@@ -9498,6 +9758,9 @@ UIMessageManager::Execute_GO_BILING_PAGE(intptr_t left, intptr_t right, void* vo
 void 
 UIMessageManager::Execute_UI_CLOSE_POPUP_MESSAGE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.ClosePopupMessage();
 }
 
@@ -9505,12 +9768,17 @@ UIMessageManager::Execute_UI_CLOSE_POPUP_MESSAGE(intptr_t left, intptr_t right, 
 void 
 UIMessageManager::Execute_UI_CLOSE_QUEST_STATUS(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseQuestStatusWindow();
 }
 
 void 
 UIMessageManager::Execute_UI_CLOSE_LOTTERY_CARD(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)void_ptr;
 	gC_vs_ui.CloseLotteryCard();
 	gC_vs_ui.SetQuestStatusInit();
 
@@ -9534,6 +9802,7 @@ UIMessageManager::Execute_UI_CLOSE_LOTTERY_CARD(intptr_t left, intptr_t right, v
 void 
 UIMessageManager::Execute_UI_LOTTERY_CARD_STATUS(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)void_ptr;
 	// left = step, right = 상품 ID
 	
 	CGLotterySelect _CGLotterySelect;
@@ -9548,6 +9817,9 @@ UIMessageManager::Execute_UI_LOTTERY_CARD_STATUS(intptr_t left, intptr_t right, 
 void 
 UIMessageManager::Execute_UI_FINISH_SCRATCH_LOTTERY(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	CGLotterySelect _CGLotterySelect;
 	
 	_CGLotterySelect.setType( TYPE_FINISH_SCRATCH );
@@ -9561,12 +9833,17 @@ UIMessageManager::Execute_UI_FINISH_SCRATCH_LOTTERY(intptr_t left, intptr_t righ
 void 
 UIMessageManager::Execute_UI_CLOSE_IMAGE_NOTICE(intptr_t left,intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseImageNotice();
 }
 
 void 
 UIMessageManager::Execute_UI_SELECT_ITEM_FROM_SHOP(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	CGTakeOutGood _CGTakeOutGood;
 
 	_CGTakeOutGood.setObjectID( (DWORD) left );
@@ -9577,6 +9854,9 @@ UIMessageManager::Execute_UI_SELECT_ITEM_FROM_SHOP(intptr_t left, intptr_t right
 void 
 UIMessageManager::Execute_UI_CLOSE_ITEM_LIST( intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	g_pUIDialog->ClosePCTalkDlg();	
 	gC_vs_ui.CloseItemListWindow();
 }
@@ -9584,18 +9864,26 @@ UIMessageManager::Execute_UI_CLOSE_ITEM_LIST( intptr_t left, intptr_t right, voi
 void 
 UIMessageManager::Execute_UI_CLOSE_BULLETIN_BOARD(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseBulletinBoardWindow();
 }
 
 void 
 UIMessageManager::Execute_UI_TRANS_ITEM_CANCEL(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	UI_CloseTransItem();
 }
 
 void 
 UIMessageManager::Execute_UI_TRANS_ITEM_ACCEPT(intptr_t left, intptr_t right, void *void_ptr)
 {	
+	(void)left;
+	(void)right;
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
 	{
 		DEBUG_ADD("Not Mode MODE_GAME or Dead");
@@ -9649,6 +9937,8 @@ UIMessageManager::Execute_UI_TRANS_ITEM_ACCEPT(intptr_t left, intptr_t right, vo
 void 
 UIMessageManager::Execute_UI_REQUEST_RESURRECT(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if( left == 0 || left == 1)
 	{
 		// Resurrect Scroll
@@ -9686,6 +9976,8 @@ UIMessageManager::Execute_UI_REQUEST_RESURRECT(intptr_t left, intptr_t right, vo
 void 
 UIMessageManager::Execute_UI_CLOSE_MIXING_FORGE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if(left == 0 )
 	{
 		gC_vs_ui.CloseMixingForge();
@@ -9700,6 +9992,7 @@ UIMessageManager::Execute_UI_CLOSE_MIXING_FORGE(intptr_t left, intptr_t right, v
 void 
 UIMessageManager::Execute_UI_MIXING_FORGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	if( g_pPlayer->GetItemCheckBufferStatus() != MPlayer::ITEM_CHECK_BUFFER_USE_MIXING_ITEM ||
 		g_pTempInformation->GetMode() != TempInformation::MODE_NULL )
 		return;
@@ -9746,6 +10039,9 @@ UIMessageManager::Execute_UI_MIXING_FORGE(intptr_t left, intptr_t right, void* v
 void 
 UIMessageManager::Execute_UI_CLOSE_REMOVE_OPTION(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseRemoveOptionFromRareItem();
 }
 
@@ -9782,12 +10078,17 @@ UIMessageManager::Execute_UI_SEND_REMOVE_OPTION(intptr_t left, intptr_t right, v
 void 
 UIMessageManager::Execute_UI_CLOSE_OUSTERS_SKILL_INFO(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseOustersSkillInfo();
 }
 
 void 
 UIMessageManager::Execute_UI_LEARN_OUSTERS_SKILL(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if( g_pTempInformation->GetMode() != TempInformation::MODE_NULL )
 		return;		
 		
@@ -9819,12 +10120,18 @@ UIMessageManager::Execute_UI_LEARN_OUSTERS_SKILL(intptr_t left, intptr_t right, 
 void 
 UIMessageManager::Execute_UI_RUN_LEVELUP(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	UI_LevelUp();
 }
 
 void 
 UIMessageManager::Execute_UI_CLOSE_HORN(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseHorn();
 }
 
@@ -9832,6 +10139,8 @@ UIMessageManager::Execute_UI_CLOSE_HORN(intptr_t left, intptr_t right, void *voi
 void 
 UIMessageManager::Execute_UI_OUSTERS_DOWN_SKILL(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if( left < 0 || left >= MAX_ACTIONINFO)
 		return;
 
@@ -9854,6 +10163,8 @@ UIMessageManager::Execute_UI_OUSTERS_DOWN_SKILL(intptr_t left, intptr_t right, v
 void 
 UIMessageManager::Execute_UI_CLEAR_ALL_STAGE(intptr_t left, intptr_t right, void *void_ptr)
 {	
+	(void)right;
+	(void)void_ptr;
 	// LEFT = GAMETYPE
 	switch( left )
 	{
@@ -9869,23 +10180,35 @@ UIMessageManager::Execute_UI_CLEAR_ALL_STAGE(intptr_t left, intptr_t right, void
 void 
 UIMessageManager::Execute_UI_CLOSE_FINDING_MINE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseFindingMine();
 }
 
 void 
 UIMessageManager::Execute_UI_CLOSE_NEMONEMO(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	//gC_vs_ui.CloseNemo
 }
 
 void 
 UIMessageManager::Execute_UI_CLOSE_PUSHPUSH(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 }
 
 void 
 UIMessageManager::Execute_UI_CLOSE_CRAZY_MINE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseCrazyMine();
 
 	CGFailQuest _CGFailQuest;
@@ -9899,6 +10222,9 @@ UIMessageManager::Execute_UI_CLOSE_CRAZY_MINE(intptr_t left, intptr_t right, voi
 void 
 UIMessageManager::Execute_UI_CLOSE_ARROW_TILE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseArrowTile();
 	CGFailQuest _CGFailQuest;
 
@@ -9911,6 +10237,7 @@ UIMessageManager::Execute_UI_CLOSE_ARROW_TILE(intptr_t left, intptr_t right, voi
 void 
 UIMessageManager::Execute_UI_CLEAR_STAGE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)void_ptr;
 	WORD	GameType = HIWORD(left);
 	WORD	Stage = LOWORD(left);
 	DWORD	Time = (DWORD)right;
@@ -9931,6 +10258,8 @@ UIMessageManager::Execute_UI_CLEAR_STAGE(intptr_t left, intptr_t right, void *vo
 void
 UIMessageManager::Execute_UI_FORCE_DIE(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	// 나를 죽여죠
 	gC_vs_ui.CloseAllDialog();
 	
@@ -9977,12 +10306,16 @@ UIMessageManager::Execute_UI_ADD_ITEM_TO_CODE_SHEET(intptr_t left, intptr_t righ
 void 
 UIMessageManager::Execute_UI_SEND_BUG_REPORT(intptr_t left,intptr_t right, void *void_ptr)
 {
+	(void)right;
 	SendBugReport("[UI_BUG] %d, %s", left, reinterpret_cast<char*>( void_ptr ) );
 }
 
 void 
 UIMessageManager::Execute_UI_GO_BEGINNER_ZONE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 //	Execute_UI_CLOSE_POPUP_MESSAGE(left,right,void_ptr);
 //
 //	CGSelectWayPoint _CGSelectWayPoint;
@@ -10070,6 +10403,8 @@ UIMessageManager::Execute_UI_CLOSE_SHRINE_MINIMAP(intptr_t left, intptr_t right,
 void 
 UIMessageManager::Execute_UI_WARP_TO_REGEN_TOWER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if( g_pRegenTowerInfoManager == NULL || left < 0 || 
 		left >= g_pRegenTowerInfoManager->GetSize() || 
 		g_pRegenTowerInfoManager->Get(left).owner != g_pPlayer->GetRace() )
@@ -10088,18 +10423,27 @@ UIMessageManager::Execute_UI_WARP_TO_REGEN_TOWER(intptr_t left, intptr_t right, 
 void 
 UIMessageManager::Execute_UI_CLOSE_MAILBOX(intptr_t left, intptr_t right, void *void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseMailBox();
 }
 
 void
 UIMessageManager::Execute_UI_CLOSE_PET_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.ClosePetInfo();
 }
 
 void	
 UIMessageManager::Execute_UI_PET_GAMBLE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	CGPetGamble _CGPetGamble;
 	g_pSocket->sendPacket( &_CGPetGamble );
 	// 겜블하는동안 아이템 못빼게
@@ -10109,6 +10453,9 @@ UIMessageManager::Execute_UI_PET_GAMBLE(intptr_t left, intptr_t right, void* voi
 void
 UIMessageManager::Execute_UI_CLOSE_USE_PET_FOOD(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10120,6 +10467,9 @@ UIMessageManager::Execute_UI_CLOSE_USE_PET_FOOD(intptr_t left, intptr_t right, v
 void	 
 UIMessageManager::Execute_UI_CLOSE_PETSTORAGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10147,17 +10497,24 @@ UIMessageManager::Execute_UI_CLOSE_PETSTORAGE(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_CLOSE_KEEP_PETITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseKeepPetItemDialog();
 }
 void	 
 UIMessageManager::Execute_UI_CLOSE_GET_KEEP_PETITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	gC_vs_ui.CloseGetKeepPetItemDialog();
 }
 
 void	 
 UIMessageManager::Execute_UI_KEEP_PETITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
 	DEBUG_ADD("[UI] Execute_UI_KEEP_PETITEM");
 	
 	if (g_Mode!=MODE_GAME)
@@ -10190,6 +10547,7 @@ UIMessageManager::Execute_UI_KEEP_PETITEM(intptr_t left, intptr_t right, void* v
 void	 
 UIMessageManager::Execute_UI_GET_KEEP_PETITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
 	DEBUG_ADD("[UI] Execute_UI_GET_KEEP_PETITEM");
 	
 	if (g_Mode!=MODE_GAME)
@@ -10223,6 +10581,9 @@ UIMessageManager::Execute_UI_GET_KEEP_PETITEM(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_CLOSE_SMS_MESSAGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10288,6 +10649,9 @@ UIMessageManager::Execute_UI_SEND_SMS_MESSAGE(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_SMS_OPEN_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10336,6 +10700,8 @@ UIMessageManager::Execute_UI_SMS_RECORD(intptr_t left, intptr_t right, void* voi
 void	 
 UIMessageManager::Execute_UI_SMS_DELETE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10357,6 +10723,9 @@ UIMessageManager::Execute_UI_SMS_DELETE(intptr_t left, intptr_t right, void* voi
 void	 
 UIMessageManager::Execute_UI_CLOSE_SMS_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10372,6 +10741,9 @@ UIMessageManager::Execute_UI_CLOSE_SMS_LIST(intptr_t left, intptr_t right, void*
 void	 
 UIMessageManager::Execute_UI_CLOSE_SMS_RECORD(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10386,6 +10758,8 @@ UIMessageManager::Execute_UI_CLOSE_SMS_RECORD(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_SMS_ADD_SEND_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10402,6 +10776,9 @@ UIMessageManager::Execute_UI_SMS_ADD_SEND_LIST(intptr_t left, intptr_t right, vo
 void	 
 UIMessageManager::Execute_UI_CLOSE_NAMING(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10417,6 +10794,8 @@ UIMessageManager::Execute_UI_CLOSE_NAMING(intptr_t left, intptr_t right, void* v
 void	 
 UIMessageManager::Execute_UI_SELECT_NAMING(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10438,6 +10817,9 @@ UIMessageManager::Execute_UI_SELECT_NAMING(intptr_t left, intptr_t right, void* 
 void	 
 UIMessageManager::Execute_UI_CLOSE_NAMING_CHANGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10454,6 +10836,7 @@ UIMessageManager::Execute_UI_CLOSE_NAMING_CHANGE(intptr_t left, intptr_t right, 
 void	 
 UIMessageManager::Execute_UI_CHANGE_CUSTOM_NAMING(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10549,6 +10932,8 @@ UIMessageManager::Execute_UI_CHANGE_CUSTOM_NAMING(intptr_t left, intptr_t right,
 void	 
 UIMessageManager::Execute_UI_RUN_NAMING_CHANGE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10599,6 +10984,9 @@ UIMessageManager::Execute_UI_RUN_NAMING_CHANGE(intptr_t left, intptr_t right, vo
 void	 
 UIMessageManager::Execute_UI_CLOSE_QUEST_MANAGER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10613,6 +11001,9 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_MANAGER(intptr_t left, intptr_t right, 
 void	 
 UIMessageManager::Execute_UI_CLOSE_QUEST_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10627,6 +11018,9 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_LIST(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_CLOSE_QUEST_DETAIL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10641,6 +11035,9 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_DETAIL(intptr_t left, intptr_t right, v
 void	 
 UIMessageManager::Execute_UI_CLOSE_QUEST_MISSION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10655,6 +11052,9 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_MISSION(intptr_t left, intptr_t right, 
 void	 
 UIMessageManager::Execute_UI_CLOSE_QUEST_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10669,6 +11069,8 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_ITEM(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_CLOSE_QUEST_ICON(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10683,6 +11085,8 @@ UIMessageManager::Execute_UI_CLOSE_QUEST_ICON(intptr_t left, intptr_t right, voi
 void	 
 UIMessageManager::Execute_UI_GQUEST_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10699,6 +11103,8 @@ UIMessageManager::Execute_UI_GQUEST_ACCEPT(intptr_t left, intptr_t right, void* 
 void	 
 UIMessageManager::Execute_UI_GQUEST_GIVEUP(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	if (g_Mode!=MODE_GAME)
 	{
 		DEBUG_ADD("Not Mode MODE_GAME");
@@ -10720,6 +11126,7 @@ UIMessageManager::Execute_UI_GQUEST_GIVEUP(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_ITEM_USE_GQUEST_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_GQUEST_ITEM");
 	
 	if (g_Mode!=MODE_GAME || g_pPlayer->IsDead())
@@ -10744,6 +11151,8 @@ UIMessageManager::Execute_UI_ITEM_USE_GQUEST_ITEM(intptr_t left, intptr_t right,
 void
 UIMessageManager::Execute_UI_ITEM_USE_REQUEST_GUILD_LIST(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_REQUEST_GUILD_LIST");
 	CGRequestGuildList _CGRequestGuildlist;	
@@ -10756,6 +11165,9 @@ UIMessageManager::Execute_UI_ITEM_USE_REQUEST_GUILD_LIST(intptr_t left, intptr_t
 void
 UIMessageManager::Execute_UI_ITEM_USE_UNION_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_INFO");
 	CGRequestUnionInfo _CGRequestUnioninfo;	
@@ -10767,6 +11179,8 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_INFO(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_ITEM_USE_REQUEST_UNION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_REQUEST_UNION");
 	
 	if(g_pUserInformation->GuildGrade != 1) // 길드마스터가 아니라면
@@ -10788,6 +11202,7 @@ UIMessageManager::Execute_UI_ITEM_USE_REQUEST_UNION(intptr_t left, intptr_t righ
 void
 UIMessageManager::Execute_UI_ITEM_USE_QUIT(intptr_t left, intptr_t right, void* void_ptr)
 {	
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_REQUEST_DENY");
 
 	if(g_pUserInformation->GuildGrade != 1) // 길드마스터가 아니라면
@@ -10807,6 +11222,8 @@ UIMessageManager::Execute_UI_ITEM_USE_QUIT(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_ITEM_USE_EXPER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_EXPER"); 
 	if(g_pUserInformation->GuildGrade != 1) // 길드마스터가 아니라면
 	{
@@ -10830,6 +11247,8 @@ UIMessageManager::Execute_UI_ITEM_USE_EXPER(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_ITEM_USE_UNION_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_ACCEPT");
 	CGAcceptUnion  _CGAcceptUnion;
 	_CGAcceptUnion.setGuildID(left);
@@ -10841,6 +11260,8 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_ACCEPT(intptr_t left, intptr_t right
 void
 UIMessageManager::Execute_UI_ITEM_USE_UNION_DENY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_DENY");
 	CGDenyUnion  _CGDenyUnion;
 	_CGDenyUnion.setGuildID(left);
@@ -10854,6 +11275,8 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_DENY(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_ITEM_USE_UNION_QUIT_ACCEPT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_QUIT_ACCEPT");
 	CGQuitUnionAccept _CGQuitUnionAccept;
 	_CGQuitUnionAccept.setGuildID(left);
@@ -10865,6 +11288,8 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_QUIT_ACCEPT(intptr_t left, intptr_t 
 void
 UIMessageManager::Execute_UI_ITEM_USE_UNION_QUIT_DENY(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_ITEM_USE_UNION_QUIT_DENY");
 	CGQuitUnionDeny _CGQuitUnionDeny;
 	_CGQuitUnionDeny.setGuildID(left);
@@ -10879,6 +11304,9 @@ UIMessageManager::Execute_UI_ITEM_USE_UNION_QUIT_DENY(intptr_t left, intptr_t ri
 void
 UIMessageManager::Execute_UI_RECALL_BY_NAME(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_RECALL_BY_NAME");
 	const char *szSelectedID = gC_vs_ui.GetTeamMember_SelectedID();
 	if(szSelectedID != NULL && strlen(szSelectedID)>0)
@@ -10897,6 +11325,8 @@ UIMessageManager::Execute_UI_RECALL_BY_NAME(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_UI_MODIFY_TAX(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_UI_MODIFY_TAX");
 
 	CGModifyTaxRatio _CGModifyTaxRatio;
@@ -10909,6 +11339,7 @@ UIMessageManager::Execute_UI_UI_MODIFY_TAX(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_APPOINT_SUBMASTER(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_APPOINT_SUBMASTER");
 
 	CGAppointSubmaster _CGAppointSubmaster;
@@ -10922,6 +11353,8 @@ UIMessageManager::Execute_UI_APPOINT_SUBMASTER(intptr_t left, intptr_t right, vo
  void
 UIMessageManager::Execute_UI_DISPLAY_ITEM(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)left;
+	(void)right;
 	  	DEBUG_ADD("[UI] UI_SELECT_PERSNALSHOP_SLOT");
 
 	
@@ -10937,10 +11370,8 @@ UIMessageManager::Execute_UI_DISPLAY_ITEM(intptr_t left, intptr_t right, void* v
 	MItem* pItem = (MItem*)void_ptr;
 	g_pStorage2->SetCurrent( 0 );	// 확인용
  
- 	int slot = right;
 
 	
-	const MItem* pStorageItem = g_pStorage2->GetItem( slot );
 	//TYPE_OBJECTID mouseItemID = pMouseItem->GetID();		
 	
 	// Event GiftBox 아이템인 경우 못 놓는다.
@@ -10992,9 +11423,9 @@ UIMessageManager::Execute_UI_DISPLAY_ITEM(intptr_t left, intptr_t right, void* v
  void
 UIMessageManager::Execute_UI_UNDISPLAY_ITEM(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)right;
 
 	MItem* pMouseItem = (MItem*)void_ptr;
-	const MItem* pStorageItem = g_pStorage2->GetItem( right );
 
 	if (pMouseItem!=NULL)
 	{
@@ -11023,6 +11454,8 @@ static const size_t STORE_SIGN_MAX_BYTES = 80;
  void
 UIMessageManager::Execute_UI_STORE_SIGN(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)left;
+	(void)right;
 	 DEBUG_ADD("[UI] Execute_UI_STORE_SIGN");
 
 	DEBUG_ADD_FORMAT("[Original] %s", (char*)void_ptr );
@@ -11048,6 +11481,9 @@ UIMessageManager::Execute_UI_STORE_SIGN(intptr_t left, intptr_t right, void* voi
  void
  UIMessageManager::Execute_UI_STORE_OPEN(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	 	DEBUG_ADD("[UI] Execute_UI_STORE_OPEN");
 		
 		CGStoreOpen _CGCGStoreOpen;
@@ -11059,6 +11495,9 @@ UIMessageManager::Execute_UI_STORE_SIGN(intptr_t left, intptr_t right, void* voi
  void
 UIMessageManager::Execute_UI_STORE_CLOSE(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	 DEBUG_ADD("[UI] Execute_UI_STORE_CLOSE");
 	 
 	 CGStoreClose _CGStoreClose;
@@ -11072,6 +11511,7 @@ UIMessageManager::Execute_UI_STORE_CLOSE(intptr_t left, intptr_t right, void* vo
  void
 UIMessageManager::Execute_UI_REQUEST_STORE_INFO(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)void_ptr;
 	 DEBUG_ADD("[UI] Execute_UI_REQUEST_STORE_INFO");
 	 
 	 if(g_pPlayer->IsFlyingCreature() 
@@ -11102,6 +11542,9 @@ UIMessageManager::Execute_UI_REQUEST_STORE_INFO(intptr_t left, intptr_t right, v
  void
 UIMessageManager::Execute_UI_MY_STORE_INFO(intptr_t left, intptr_t right, void* void_ptr)
  {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 
 	 DEBUG_ADD("[UI] Execute_UI_MY_STORE_INFO"); // 아이템 정보 리스트 
 	 
@@ -11125,6 +11568,9 @@ UIMessageManager::Execute_UI_MY_STORE_INFO(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_OTHER_STORE_INFO(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	// not sure
 		 DEBUG_ADD("[UI] Execute_UI_OTHER_STORE_INFO");
 	 
@@ -11136,9 +11582,10 @@ UIMessageManager::Execute_UI_OTHER_STORE_INFO(intptr_t left, intptr_t right, voi
 void
 UIMessageManager::Execute_UI_BUY_STORE_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_BUY_STORE_ITEM");
 	
-	if(g_pTopView->GetSelectedCreature() == NULL)
+	if(g_pTopView->GetSelectedCreature() == 0)
 		return;
 	MItem* pItem = (MItem*)void_ptr;		// inventory에 있는 아이템(NULL일 수도 있다)
 	
@@ -11157,6 +11604,9 @@ UIMessageManager::Execute_UI_BUY_STORE_ITEM(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_REMOVE_STORE_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	 DEBUG_ADD("[UI] Execute_UI_REMOVE_STORE_ITEM");
 	 
 	 GCRemoveStoreItem _GCRemoveStoreItem;
@@ -11168,6 +11618,9 @@ UIMessageManager::Execute_UI_REMOVE_STORE_ITEM(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_ADD_STORE_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 
 	DEBUG_ADD("[UI] Execute_UI_ADD_STORE_ITEM");
 	 
@@ -11181,6 +11634,9 @@ UIMessageManager::Execute_UI_ADD_STORE_ITEM(intptr_t left, intptr_t right, void*
 void
 UIMessageManager::Execute_UI_CLOSE_PERSNALSHOP(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_PERSNALSHOP");
 	gC_vs_ui.ClosePersnalShop();	
 	
@@ -11196,12 +11652,17 @@ UIMessageManager::Execute_UI_CLOSE_PERSNALSHOP(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_CLOSE_POWER_JJANG(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_POWER_JJANG");
 	gC_vs_ui.ClosePowerjjang();
 }
 void
 UIMessageManager::Execute_UI_REQUEST_POWER_JJANG_POINT(intptr_t left, intptr_t right, void* void_ptr)
 { 
+	(void)left;
+	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_REQUEST_POWER_JJANG_POINT");
 
 	CGRequestPowerPoint _CGRequestPowerPoint;
@@ -11211,6 +11672,9 @@ UIMessageManager::Execute_UI_REQUEST_POWER_JJANG_POINT(intptr_t left, intptr_t r
 void
 UIMessageManager::Execute_UI_POWER_JJANG_GAMBLE(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_POWER_JJANG_GAMBLE");
 
 	CGUsePowerPoint _CGUsePowerPoint;
@@ -11221,6 +11685,9 @@ UIMessageManager::Execute_UI_POWER_JJANG_GAMBLE(intptr_t left, intptr_t right, v
 void
 UIMessageManager::Execute_UI_CLOSE_SWAPADVANCEMENTITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_SWAPADVANCEMENTITEM");
 
 	gC_vs_ui.FinishSwapAdvancementItem();
@@ -11229,6 +11696,7 @@ UIMessageManager::Execute_UI_CLOSE_SWAPADVANCEMENTITEM(intptr_t left, intptr_t r
 void
 UIMessageManager::Execute_UI_SWAPADVANCEMENTITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_SWAPADVANCEMENTITEM");
 	
 	if (g_Mode!=MODE_GAME)
@@ -11285,6 +11753,7 @@ UIMessageManager::Execute_UI_SWAPADVANCEMENTITEM(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_LEARN_ADVANCE_SKILL(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_LEARN_ADVANCE_SKILL");
 	CGLearnSkill _CGLearnSkill;
 	
@@ -11298,6 +11767,7 @@ UIMessageManager::Execute_UI_LEARN_ADVANCE_SKILL(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_CAMPAIGN_HELP(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CAMPAIGN_HELP");
 	
 	// 성금 관련 패킷 보내기 - 금액 * 10000
@@ -11316,6 +11786,9 @@ UIMessageManager::Execute_UI_CAMPAIGN_HELP(intptr_t left, intptr_t right, void* 
 void
 UIMessageManager::Execute_UI_RUN_NEXT_GQUEST_EXCUTE_ELEMENT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)left;
+	(void)right;
+	(void)void_ptr;
 	// quest element List에 저장된 다음 element를 실행 한다.
 	DEBUG_ADD("[UI] Execute_UI_RUN_NEXT_GQUEST_EXCUTE_ELEMENT");
 	gC_vs_ui.RunNextGQuestExcuteElement();
@@ -11324,6 +11797,7 @@ UIMessageManager::Execute_UI_RUN_NEXT_GQUEST_EXCUTE_ELEMENT(intptr_t left, intpt
 void
 UIMessageManager::Execute_UI_GQUEST_SET_ACTION(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_GQUEST_SET_ACTION");
 	// 특정 element 실행 시 특정 동작을 한다.
 	if(left == 1) // dead
@@ -11336,6 +11810,8 @@ UIMessageManager::Execute_UI_GQUEST_SET_ACTION(intptr_t left, intptr_t right, vo
 void
 UIMessageManager::Execute_UI_GQUEST_ENDING_EVENT(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_GQUEST_ENDING_EVENT");
 	// 특정 퀘스트 완료시 관련 이벤트를 진행 한다.
 	MEvent event;
@@ -11368,6 +11844,8 @@ UIMessageManager::Execute_UI_GQUEST_ENDING_EVENT(intptr_t left, intptr_t right, 
 void
 UIMessageManager::Execute_UI_REQUEST_EVENT_ITEM(intptr_t left, intptr_t right, void* void_ptr)
 {
+	(void)right;
+	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_REQUEST_EVENT_ITEM");
 	{
 		CGGetEventItem _CGGetEventItem;

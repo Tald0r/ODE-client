@@ -436,7 +436,7 @@ MVampirePortalItem::MVampirePortalItem()
 bool				
 MVampirePortalItem::IsMarked() const
 {
-	return m_ZoneID!=0 && m_ZoneID!=OBJECTID_NULL;
+	return m_ZoneID!=0 && static_cast<unsigned int>(m_ZoneID)!=OBJECTID_NULL;
 }
 
 //----------------------------------------------------------------------
@@ -635,7 +635,7 @@ void	MWater::UseInventory()
 
 {
 	bool bUseOK = false;
-	bool bCreateHolyWater = GetItemType() >= 0 && GetItemType() <= 2;
+	bool bCreateHolyWater = GetItemType() <= 2;
 	bool bCreateHolyPotion = GetItemType() >= 3 && GetItemType() <= 6;
 
 	TYPE_ACTIONINFO useSkill = ACTIONINFO_NULL;
@@ -1174,7 +1174,7 @@ void	MMixingItem::UseInventory()
 	#endif
 
 {
-	if( GetItemType() >= 0 && GetItemType() <= 8 )
+	if( GetItemType() <= 8 )
 	{
 		if( GetNumber() > 1 )	// 아이템 분리
 		{
@@ -1188,10 +1188,10 @@ void	MMixingItem::UseInventory()
 		}
 		else
 		{
-			C_VS_UI_MIXING_FORGE::FORGE_CLASS fc;
-			C_VS_UI_MIXING_FORGE::FORGE_TYPE  ft;
+			C_VS_UI_MIXING_FORGE::FORGE_CLASS fc = C_VS_UI_MIXING_FORGE::CLASS_WEAPON;
+			C_VS_UI_MIXING_FORGE::FORGE_TYPE  ft = C_VS_UI_MIXING_FORGE::TYPE_A;
 			
-			if(GetItemType() >= 0 && GetItemType() <= 2)
+			if(GetItemType() <= 2)
 			{
 				fc = C_VS_UI_MIXING_FORGE::CLASS_WEAPON;
 				ft = C_VS_UI_MIXING_FORGE::FORGE_TYPE(C_VS_UI_MIXING_FORGE::TYPE_A + GetItemType());
@@ -1309,7 +1309,7 @@ void MVampireETC::UseInventory()
 		//----------------------------------------------------
 		// skill이 제대로 설정된 경우
 		//----------------------------------------------------
-		if (useSkill != ACTIONINFO_NULL)
+		// useSkill is always set above (every other path returns)
 		{
 			if (//(*g_pActionInfoTable)[playerSkill].IsTargetItem()
 				g_pSkillAvailable->IsEnableSkill( useSkill )
@@ -1413,7 +1413,7 @@ void	MSkull::UseInventory()
 		//----------------------------------------------------
 		// skill이 제대로 설정된 경우
 		//----------------------------------------------------
-		if (useSkill != ACTIONINFO_NULL)
+		// useSkill is always set above (every other path returns)
 		{
 			if (//(*g_pActionInfoTable)[playerSkill].IsTargetItem()
 				g_pSkillAvailable->IsEnableSkill( useSkill )
@@ -1534,7 +1534,7 @@ void	MEventTreeItem::UseInventory()
 	#endif
 {
 	if(GetItemType() == 12 ||
-		GetItemType() >= 26 && GetItemType() <= 28)
+		(GetItemType() >= 26 && GetItemType() <= 28))
 	{
 		bool bUseOK = true;
 
@@ -1542,7 +1542,7 @@ void	MEventTreeItem::UseInventory()
 					|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_OPERATOR
 					|| g_pPlayer->GetCreatureType()==CREATURETYPE_OUSTERS_OPERATOR;
 		
-		if(IsPlayerInSafePosition() || g_pZone != NULL && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115))
+		if(IsPlayerInSafePosition() || (g_pZone != NULL && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115)))
 			// 안전지대와 마스터 레어에서는 못쓴다
 		{				
 			// 각 성이 아니면서 운영자가 아니면
@@ -1583,7 +1583,7 @@ void	MEventTreeItem::UseInventory()
 						MCorpse *pCorpse = (MCorpse *)pItem;
 						pCreature = pCorpse->GetCreature();
 						
-						if(pCreature != NULL && pCreature->GetCreatureType() == 482 || pCreature->GetCreatureType() == 650)
+						if((pCreature != NULL && pCreature->GetCreatureType() == 482) || pCreature->GetCreatureType() == 650)
 						{
 							bUseOK = false;
 							if(GetItemType() == 12)	// 크리스 마스 트리
@@ -2130,6 +2130,9 @@ std::string MPetItem::GetPetOptionName()
 				petOptionName = (*g_pGameStringTable)[STRING_MESSAGE_OPTION_NAME_ATTR_3+optionLevel].GetString();
 				petOptionName += " ";
 				break;
+
+			default:
+				break;
 			}
 		}
 	}
@@ -2178,6 +2181,9 @@ std::string MPetItem::GetPetOptionEName()
 			case ITEMOPTION_TABLE::PART_ALL_ATTR:
 				petOptionName = (*g_pGameStringTable)[STRING_MESSAGE_OPTION_ENAME_ATTR_3+optionLevel].GetString();
 				petOptionName += " ";
+				break;
+
+			default:
 				break;
 			}
 		}
@@ -2247,7 +2253,7 @@ void MMoonCardItem::UseInventory()
 	// 2개 이상 있어야 분리 된다.
 	// edit by sonic 2006.11.1  将四叶草设为可分开
 	//if(GetItemType() == 2 && GetNumber() > 1 && GetNumber() < GetMaxNumber())
-	if(GetItemType() == 2 || GetItemType() ==3 && GetNumber() > 1 && GetNumber() < GetMaxNumber())
+	if(GetItemType() == 2 || (GetItemType() ==3 && GetNumber() > 1 && GetNumber() < GetMaxNumber()))
 	{
 		// 아이템 분리
 		CGAddInventoryToMouse _CGAddInventoryToMouse;

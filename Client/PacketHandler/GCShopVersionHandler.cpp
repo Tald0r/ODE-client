@@ -19,6 +19,7 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------

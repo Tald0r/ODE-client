@@ -20,6 +20,7 @@ void GCTradeFinishHandler::execute ( GCTradeFinish * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------------------------

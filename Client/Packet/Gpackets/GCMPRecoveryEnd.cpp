@@ -24,8 +24,6 @@ GCMPRecoveryEnd::GCMPRecoveryEnd()
 //--------------------------------------------------------------------
 GCMPRecoveryEnd::~GCMPRecoveryEnd()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////

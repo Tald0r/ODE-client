@@ -37,7 +37,7 @@ MShop::Init(unsigned int n)
 	m_pShelf	= new MShopShelf* [m_Size];
 
 	// NULL로 초기화 한다.
-	for (int i=0; i<m_Size; i++)
+	for (int i=0; static_cast<unsigned int>(i)<m_Size; i++)
 	{
 		m_pShelf[i] = NULL;
 	}
@@ -54,7 +54,7 @@ MShop::Release()
 	//---------------------------------------------------
 	if (m_pShelf!=NULL)
 	{
-		for (int i=0; i<m_Size; i++)
+		for (int i=0; static_cast<unsigned int>(i)<m_Size; i++)
 		{
 			if (m_pShelf[i]!=NULL)
 			{

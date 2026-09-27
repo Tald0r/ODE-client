@@ -36,7 +36,7 @@ MRippleZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	MCreature::GetPositionToDirection(x,y, egInfo.direction);
 
 	// Zone의 영역을 벗어나는 경우..
-	if (x<0 || y<0 || x>=g_pZone->GetWidth() || y>=g_pZone->GetHeight())
+	if (x>=g_pZone->GetWidth() || y>=g_pZone->GetHeight())
 			return false;
 
 	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;

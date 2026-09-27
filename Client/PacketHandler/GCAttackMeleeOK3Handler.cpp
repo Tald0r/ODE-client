@@ -19,6 +19,7 @@ void GCAttackMeleeOK3Handler::execute ( GCAttackMeleeOK3 * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	// message

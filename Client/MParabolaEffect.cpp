@@ -110,10 +110,10 @@ MParabolaEffect::Update()
 		//------------------------------------------
 		// 다 움직인 경우를 생각해봐야 한다.
 		//------------------------------------------
-		if (fabs(m_PixelX-m_TargetX)<m_StepPixel &&
+		if ((fabs(m_PixelX-m_TargetX)<m_StepPixel &&
 			fabs(m_PixelY-m_TargetY)<m_StepPixel &&
 			//fabs(m_PixelZ-m_TargetZ)<m_StepPixel &&
-			m_RadCurrent >= MathTable::FPI			
+			m_RadCurrent >= MathTable::FPI)			
 			|| m_PixelZ < m_TargetZ	// 바닥에 떨어진 경우.
 			
 			)

@@ -11,7 +11,9 @@
 #ifndef __VS_UI_DESCRIPTION_H__
 #define __VS_UI_DESCRIPTION_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "VS_UI_descriptor.h"
 

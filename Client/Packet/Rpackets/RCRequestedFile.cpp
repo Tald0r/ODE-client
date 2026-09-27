@@ -43,9 +43,6 @@ void RCRequestedFileInfo::read ( SocketInputStream & iStream )
 	if ( szFilename == 0 )
 		throw InvalidProtocolException("szFilename == 0");
 
-	if ( szFilename > 255 )
-		throw InvalidProtocolException("too large Filename length");
-
 	iStream.read( m_Filename, szFilename );
 
 	// m_FileSize
@@ -74,9 +71,6 @@ void RCRequestedFileInfo::write ( SocketOutputStream & oStream ) const
 
 	if ( szFilename == 0 )
 		throw InvalidProtocolException("szFilename == 0");
-
-	if ( szFilename > 255 )
-		throw InvalidProtocolException("too large Filename length");
 
 	oStream.write( szFilename );
 

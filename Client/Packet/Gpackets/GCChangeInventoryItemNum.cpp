@@ -31,8 +31,6 @@ GCChangeInventoryItemNum::GCChangeInventoryItemNum ()
 //////////////////////////////////////////////////////////////////////
 GCChangeInventoryItemNum::~GCChangeInventoryItemNum ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

@@ -17,6 +17,8 @@ void GCCastingSkillHandler::execute ( GCCastingSkill * pPacket , Player * pPlaye
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 
 	

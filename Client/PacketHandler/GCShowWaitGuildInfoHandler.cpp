@@ -18,6 +18,7 @@ void GCShowWaitGuildInfoHandler::execute ( GCShowWaitGuildInfo * pPacket , Playe
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 		UI_ShowWaitGuildInfo(pPacket);
 

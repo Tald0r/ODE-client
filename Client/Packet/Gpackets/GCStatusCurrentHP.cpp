@@ -25,8 +25,6 @@ GCStatusCurrentHP::GCStatusCurrentHP()
 //--------------------------------------------------------------------
 GCStatusCurrentHP::~GCStatusCurrentHP()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 //////////////////////////////////////////////////////////////////////

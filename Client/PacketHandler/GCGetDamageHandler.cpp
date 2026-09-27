@@ -19,6 +19,7 @@ void GCGetDamageHandler::execute ( GCGetDamage * pGCGetDamage , Player * pPlayer
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	// message
 

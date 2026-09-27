@@ -25,7 +25,9 @@
 #ifndef	__MATTACH_ORBIT_EFFECT_H__
 #define	__MATTACH_ORBIT_EFFECT_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 // 이 값 바꿔줄때 NextOrbitStep()도 고려해야 한다.
 #define	MAX_EFFECT_ORBIT_TYPE		3
@@ -48,7 +50,7 @@ class MAttachOrbitEffect : public MAttachEffect {
 		virtual bool			Update();
 
 		//void					NextOrbitStep()		{ m_OrbitStep = ++m_OrbitStep % MAX_EFFECT_ORBIT_STEP; }
-		void					NextOrbitStep()		{ m_OrbitStep = ++m_OrbitStep & 0x0000003F; }
+		void					NextOrbitStep()		{ m_OrbitStep = (m_OrbitStep + 1) & 0x0000003F; }
 
 		//--------------------------------------------------------
 		// 좌표값 + Orbit보정값

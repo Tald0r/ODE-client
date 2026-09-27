@@ -17,6 +17,8 @@ void GCReconnectHandler::execute ( GCReconnect * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 		
 	__END_CATCH
 }

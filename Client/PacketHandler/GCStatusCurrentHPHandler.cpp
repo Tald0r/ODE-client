@@ -16,6 +16,7 @@ void GCStatusCurrentHPHandler::execute ( GCStatusCurrentHP * pPacket , Player * 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

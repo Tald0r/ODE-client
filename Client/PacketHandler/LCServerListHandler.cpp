@@ -24,6 +24,7 @@ void LCServerListHandler::execute ( LCServerList * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 
 

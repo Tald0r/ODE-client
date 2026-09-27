@@ -126,8 +126,8 @@ public:
     void SetInputStringColor(unsigned long rgb) { m_PrintInfo.text_color = rgb; }
 
     // Editor mode (stub for compatibility)
-    void SetEditorMode(int gap, int height = 0) { /* Stub: not needed for SDL implementation */ }
-    void SetDigitOnlyMode(bool enable) { /* Stub: not needed for SDL implementation */ }
+    void SetEditorMode(int gap, int height = 0) { (void)gap; (void)height; /* Stub: not needed for SDL implementation */ }
+    void SetDigitOnlyMode(bool enable) { (void)enable; /* Stub: not needed for SDL implementation */ }
 
     void SetPosition(int x, int y);
     void SetAbsWidth(int width);

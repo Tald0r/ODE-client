@@ -19,6 +19,7 @@ void GCDeleteEffectFromTileHandler::execute ( GCDeleteEffectFromTile * pPacket ,
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

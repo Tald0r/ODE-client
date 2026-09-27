@@ -30,8 +30,6 @@ GCRideMotorCycle::GCRideMotorCycle ()
 //////////////////////////////////////////////////////////////////////
 GCRideMotorCycle::~GCRideMotorCycle ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

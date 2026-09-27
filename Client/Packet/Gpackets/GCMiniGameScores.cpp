@@ -28,8 +28,6 @@ GCMiniGameScores::GCMiniGameScores ()
 //////////////////////////////////////////////////////////////////////
 GCMiniGameScores::~GCMiniGameScores ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

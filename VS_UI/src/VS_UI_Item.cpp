@@ -65,7 +65,7 @@ void C_VS_UI_ITEM::Blt(POINT &point, SPRITE_ID id)
 //	if (id >= ITEM_COUNT)
 //		return;
 //#endif
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	if (gpC_base->m_p_DDSurface_back->Lock())
@@ -105,7 +105,7 @@ void C_VS_UI_ITEM::BltOutline(int x, int y, int color, SPRITE_ID id)
 	//	m_pC_axs_spk->BltOutline(x, y, color);
 	//	return;
 	//}
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	// focus된 것은 외곽선을 그린다.
@@ -146,7 +146,7 @@ void C_VS_UI_ITEM::BltOutlineOnly(int x, int y, int color, SPRITE_ID id)
 	//	return;
 	//}
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	// focus된 것은 외곽선을 그린다.
@@ -179,7 +179,7 @@ int C_VS_UI_ITEM::GetWidth(SPRITE_ID id)
 //	if (id >= ITEM_COUNT)
 //		return 0;
 //#endif
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return 0;
 	return m_item_ispk[id].GetWidth();
 }
@@ -195,7 +195,7 @@ int C_VS_UI_ITEM::GetHeight(SPRITE_ID id)
 //	if (id >= ITEM_COUNT)
 //		return 0;
 //#endif
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return 0;
 	return m_item_ispk[id].GetHeight();
 }
@@ -350,7 +350,7 @@ void C_VS_UI_ITEM::BltColor(int x, int y, SPRITE_ID id, int rgb)
 //		return;
 //	}
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	if (gpC_base->m_p_DDSurface_back->Lock())
@@ -384,7 +384,7 @@ void C_VS_UI_ITEM::BltDarkness(int x, int y, SPRITE_ID id, int dark)
 //		return;
 //	}
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	if (gpC_base->m_p_DDSurface_back->Lock())
@@ -411,7 +411,7 @@ void C_VS_UI_ITEM::BltColorSet(int x, int y, SPRITE_ID id, int color_set)
 	point.x = x;
 	point.y = y;
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	if (gpC_base->m_p_DDSurface_back->Lock())
@@ -440,7 +440,7 @@ void C_VS_UI_ITEM::BltLocked(POINT &point, SPRITE_ID id)
 //		return;
 //#endif
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_item_ispk[id]);
@@ -476,7 +476,7 @@ void C_VS_UI_ITEM::BltLockedOutline(int x, int y, int color, SPRITE_ID id)
 	//	return;
 	//}
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	// focus된 것은 외곽선을 그린다.
@@ -512,7 +512,7 @@ void C_VS_UI_ITEM::BltLockedOutlineOnly(int x, int y, int color, SPRITE_ID id)
 	//	return;
 	//}
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	// focus된 것은 외곽선을 그린다.
@@ -546,7 +546,7 @@ void C_VS_UI_ITEM::BltLockedColor(int x, int y, SPRITE_ID id, int rgb)
 	point.x = x;
 	point.y = y;
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 //	if (p_sprite == NULL)
@@ -575,7 +575,7 @@ void C_VS_UI_ITEM::BltLockedDarkness(int x, int y, SPRITE_ID id, int dark)
 	point.x = x;
 	point.y = y;
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 //	if (p_sprite == NULL)
@@ -600,7 +600,7 @@ void C_VS_UI_ITEM::BltLockedColorSet(int x, int y, SPRITE_ID id, int color_set)
 //		return;
 //#endif
 
-	if(id >= m_item_ispk.GetSize() || id < 0)
+	if(id >= m_item_ispk.GetSize())
 		return;
 
 	POINT point;

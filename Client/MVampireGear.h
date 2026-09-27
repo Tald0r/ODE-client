@@ -74,7 +74,7 @@ class MVampireGear : public MPlayerGear	{
 
 	public :
 		MVampireGear();
-		~MVampireGear();
+		virtual ~MVampireGear();
 
 		//------------------------------------------------
 		// 깨끗하게~ 초기화 시켜 준다.
@@ -138,13 +138,13 @@ class MVampireGear : public MPlayerGear	{
 		//------------------------------------------------
 		// GetItem : 코어잽을 다 모았는지..
 		//------------------------------------------------
-		const bool			IsHasAllCoreZap(int CoreZapType) const	;
+		bool				IsHasAllCoreZap(int CoreZapType) const	;
 		//------------------------------------------------
 		// bool : 블러드 기어창이 열렸는지.
 		//------------------------------------------------
 		void			SetBloodBibleOpenSlot(int Num) { m_bBloodBibleOpenCount = Num;	}
 		BYTE			GetBloodBibleOpenSlot() { return m_bBloodBibleOpenCount;	}
-		const bool		IsCloseBloodBibleSlot(int slot) const	;
+		bool			IsCloseBloodBibleSlot(int slot) const	;
 
 
 	protected :

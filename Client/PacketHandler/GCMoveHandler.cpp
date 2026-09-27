@@ -21,6 +21,7 @@ void GCMoveHandler::execute ( GCMove * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 		// ID가 getObjectID()인 Creature를 움직여준다.

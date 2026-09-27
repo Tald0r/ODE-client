@@ -21,6 +21,7 @@ void LCDeletePCErrorHandler::execute ( LCDeletePCError * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	//#ifdef __DEBUG_OUTPUT__
 	//cout << "Fail to delete PC... (" << pPacket->toString() << ")" << endl;

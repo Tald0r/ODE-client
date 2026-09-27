@@ -65,8 +65,6 @@ MStopZoneMultipleEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int ex[numEffect];
 	int ey[numEffect];
 
-	const int phaseUpper = 150;	// 한 단계에서 위로 더 올라가는 좌표 보정
-
 	int effectCount = 0;
 
 	// numEffectPhase * numEffect 개의 effect를 생성한다.

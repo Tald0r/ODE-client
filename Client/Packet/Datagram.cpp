@@ -35,14 +35,12 @@ Datagram::Datagram ()
 //////////////////////////////////////////////////////////////////////
 Datagram::~Datagram () 
 { 
-	__BEGIN_TRY
 
 	if ( m_Data != NULL ) {
 		delete [] m_Data; 
 		m_Data = NULL;
 	}
 
-	__END_CATCH
 }
 
 

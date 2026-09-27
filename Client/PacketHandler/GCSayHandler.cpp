@@ -27,6 +27,7 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	// Debug Message	

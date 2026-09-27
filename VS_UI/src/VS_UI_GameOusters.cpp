@@ -247,10 +247,9 @@ void C_VS_UI_OUSTERS::Show()
 		
 		m_pC_common_button_group->Show();
 		
-		int sec = 0, min = 0, hour = 0;
+		int min = 0, hour = 0;
 		char sz_temp[20];
 		SafeFormat::Copy(sz_temp, m_time.c_str());
-		sec = atoi(sz_temp+strlen(sz_temp)-2);
 		sz_temp[strlen(sz_temp)-3] = '\0';
 		min = atoi(sz_temp+strlen(sz_temp)-2);
 		sz_temp[strlen(sz_temp)-3] = '\0';
@@ -324,7 +323,7 @@ void C_VS_UI_OUSTERS::Show()
 		// EXP 는 버튼이 없다
 		{
 			//modify by viva : exp_bar etc.  num_x is the str's x
-			const int bar_x = 110 - 25, bar_y = 98 - 12, str_x = 27, num_x = 46-15, bar_gap = 14;
+			const int bar_x = 110 - 25, bar_y = 98 - 12, num_x = 46-15, bar_gap = 14;
 			char sz_temp[100];
 			Rect rect;
 
@@ -503,7 +502,7 @@ void C_VS_UI_OUSTERS::HotKey_F8()
 //-----------------------------------------------------------------------------
 C_VS_UI_OUSTERS_GEAR::C_VS_UI_OUSTERS_GEAR()
 {
-	assert(MOustersGear::MAX_GEAR_OUSTERS == SLOT_SIZE);
+	assert(static_cast<int>(MOustersGear::MAX_GEAR_OUSTERS) == static_cast<int>(SLOT_SIZE));
   
 //	if(g_char_slot_ingame.m_AdvancementLevel > 0)// 2차전직 bycsm 2004.12.31 
 //	{
@@ -829,6 +828,9 @@ void C_VS_UI_OUSTERS_QUICKITEM::Process()
 //-----------------------------------------------------------------------------
 void C_VS_UI_OUSTERS_QUICKITEM::KeyboardControl(UINT message, UINT key, long extra)
 {
+	(void)message;
+	(void)key;
+	(void)extra;
 
 }
 
@@ -918,12 +920,12 @@ bool C_VS_UI_OUSTERS_QUICKITEM::MouseControl(UINT message, int _x, int _y)
 						}
 					}
 					
-					if (m_bl_width &&
+					if ((m_bl_width &&
 						px >= x+m_p_slot_x[i] && px < x+m_p_slot_x[i]+QUICKSLOT_W &&
-						py >= y && py < y+QUICKSLOT_H ||
-						!m_bl_width &&
+						py >= y && py < y+QUICKSLOT_H) ||
+						(!m_bl_width &&
 						px >= x && px < x+QUICKSLOT_W &&
-						py >= y+m_p_slot_x[i] && py < y+m_p_slot_x[i]+QUICKSLOT_H
+						py >= y+m_p_slot_x[i] && py < y+m_p_slot_x[i]+QUICKSLOT_H)
 						)
 					{
 						if(m_focus_slot != i)
@@ -1465,10 +1467,10 @@ void C_VS_UI_OUSTERS_QUICKITEM::Show()
 				}
 				
 				
-				if(m_bl_width)
-					temp_x += m_image_spk.GetWidth(SLOT);
-				else
-					temp_y += m_image_spk.GetHeight(SLOT+ROTATED_OFFSET);
+			if(m_bl_width)
+				temp_x += m_image_spk.GetWidth(SLOT);
+			else
+				temp_y += m_image_spk.GetHeight(SLOT+ROTATED_OFFSET);
 		}
 		
 		if(m_bl_width)
@@ -1751,7 +1753,7 @@ bool C_VS_UI_OUSTERS_QUICKITEM::Click()
 //-----------------------------------------------------------------------------
 void C_VS_UI_OUSTERS_QUICKITEM::Use(int slot, bool bFunctionKey)
 {
-	if (slot == NOT_SELECTED || gbl_item_lock || g_pArmsBand1 == NULL && g_pArmsBand2 == NULL)
+	if (slot == NOT_SELECTED || gbl_item_lock || (g_pArmsBand1 == NULL && g_pArmsBand2 == NULL))
 		return;
 
 	if (gpC_mouse_pointer->GetPickUpItem())

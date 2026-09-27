@@ -959,6 +959,7 @@ public:
 	void	KeyboardControl(UINT message, UINT key, long extra);
 	void	Show();
 	void	Process();
+	using PI_Processor::Start;
 	void	Start(bool back = false);
 	void	Finish();
 	void	NewCharacterCreateOk();
@@ -1085,6 +1086,7 @@ public:
 	void	KeyboardControl(UINT message, UINT key, long extra);
 	void	Show();
 	void	Process();
+	using PI_Processor::Start;
 	void	Start(bool bGroup);
 	void	Finish();
 

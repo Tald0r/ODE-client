@@ -15,6 +15,7 @@ void GCHPRecoveryEndToSelfHandler::execute ( GCHPRecoveryEndToSelf * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

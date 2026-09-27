@@ -19,6 +19,7 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	if (g_pZone==NULL
@@ -60,7 +61,7 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 		return;
 	}
 
-	if (g_pPlayer->GetID()!=objectID)
+	if (g_pPlayer->GetID()!=static_cast<TYPE_OBJECTID>(objectID))
 	{
 		// Zone에 들어있는거도 바꾼다.
 		g_pZone->RemoveCreature( g_pPlayer->GetID() );

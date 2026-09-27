@@ -27,6 +27,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	//__BEGIN_DEBUG_EX
 	
 
@@ -46,7 +47,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 				pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
 		}
 
-		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=NULL)
+		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=0)
 		{
 			if(false == pPacket->getStoreInfo()->isOpen() && g_pStorage2->GetCuropenid() == pPacket->getObjectID())
 			{

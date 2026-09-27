@@ -20,6 +20,7 @@
 void GCFlagWarStatusHandler::execute ( GCFlagWarStatus * pGCFlagWarStatus , Player * pPlayer )
 
 {
+	(void)pPlayer;
 	// The war's end as a point on the monotonic clock: the server sends
 	// the seconds remaining.
 	const WORD timeRemain = pGCFlagWarStatus->getTimeRemain();

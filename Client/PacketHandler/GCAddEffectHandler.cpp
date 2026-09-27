@@ -19,6 +19,7 @@
 void GCAddEffectHandler::execute ( GCAddEffect * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	//------------------------------------------------------
@@ -154,6 +155,9 @@ void GCAddEffectHandler::execute ( GCAddEffect * pPacket , Player * pPlayer )
 						NULL );
 						
 				}
+				break;
+
+			default:
 				break;
 			}
 		}

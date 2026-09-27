@@ -56,7 +56,6 @@ MObjectSelector::CanSelect(MCreature* pCreature)
 	// 정당방위가 성립되는 경우
 	// 전쟁중일때 상대 길드인경우
 	
-	WORD CurZoneID = g_pZone->GetID();
 	// 2004, 9, 15, sobeit add start
 	bool	IsAvailablePK = true;
 //	if( g_pUserInformation->IsNonPK && NULL != pCreature )
@@ -76,14 +75,14 @@ MObjectSelector::CanSelect(MCreature* pCreature)
 			|| m_SelectTarget==SELECT_ALL
 
 			|| (m_SelectBy==SELECT_BY_RACE 
-					&& (m_SelectTarget==SELECT_ENEMY && g_pPlayer->CanAttackTribe( pCreature )
-						|| m_SelectTarget==SELECT_FRIEND && !g_pPlayer->CanAttackTribe( pCreature )
+					&& ((m_SelectTarget==SELECT_ENEMY && g_pPlayer->CanAttackTribe( pCreature ))
+						|| (m_SelectTarget==SELECT_FRIEND && !g_pPlayer->CanAttackTribe( pCreature ))
 						)
 				)
 
 			|| (m_SelectBy==SELECT_BY_GUILD
-					&& (m_SelectTarget==SELECT_ENEMY && g_pPlayer->CanAttackGuild( pCreature )
-						|| m_SelectTarget==SELECT_FRIEND && !g_pPlayer->CanAttackGuild( pCreature )
+					&& ((m_SelectTarget==SELECT_ENEMY && g_pPlayer->CanAttackGuild( pCreature ))
+						|| (m_SelectTarget==SELECT_FRIEND && !g_pPlayer->CanAttackGuild( pCreature ))
 						)
 				)
 
@@ -114,7 +113,6 @@ MObjectSelector::CanAttack(MCreature* pCreature)
 	// SelectByGuild이면 CanAttackGuild로 체크
 	// 정당방위가 성립되는 경우
 	// NPC는 언제나 선택 가능하다.
-	WORD CurZoneID = g_pZone->GetID();
 
 //	bool bFreePKZone = g_pZoneTable->Get( g_pZone->GetID() )->FreePK;
 	// 2004, 9, 15, sobeit add start
@@ -133,10 +131,10 @@ MObjectSelector::CanAttack(MCreature* pCreature)
 	return (
 				g_pSDLInput->KeyDown(DIK_LSHIFT)
 				|| g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION)
-				|| m_SelectBy==SELECT_BY_RACE 
-						&& g_pPlayer->CanAttackTribe(pCreature)
-				|| m_SelectBy==SELECT_BY_GUILD
-						&& g_pPlayer->CanAttackGuild(pCreature)
+				|| (m_SelectBy==SELECT_BY_RACE 
+						&& g_pPlayer->CanAttackTribe(pCreature))
+				|| (m_SelectBy==SELECT_BY_GUILD
+						&& g_pPlayer->CanAttackGuild(pCreature))
 				|| g_pJusticeAttackManager->HasCreature( pCreature->GetName() )
 				|| IsWarEnemy( pCreature )
 			)

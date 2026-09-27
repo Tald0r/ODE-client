@@ -16,6 +16,7 @@ void GCNicknameListHandler::execute ( GCNicknameList * pGCNicknameList , Player 
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 //		__BEGIN_DEBUG_EX
 		
 

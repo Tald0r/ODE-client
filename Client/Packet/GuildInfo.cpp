@@ -29,8 +29,6 @@ GuildInfo::GuildInfo ()
 //////////////////////////////////////////////////////////////////////
 GuildInfo::~GuildInfo () 
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 
@@ -70,7 +68,7 @@ void GuildInfo::read ( SocketInputStream & iStream )
 	if ( szGuildExpireDate != 0 )
 		iStream.read( m_GuildExpireDate, szGuildExpireDate );
 	else
-		m_GuildExpireDate == "";
+		(void)(m_GuildExpireDate == "");
 
 	__END_CATCH
 }

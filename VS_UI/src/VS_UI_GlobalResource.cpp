@@ -82,6 +82,8 @@ void C_GLOBAL_RESOURCE::LoadAssemble()
 		m_pC_assemble_box_button_spk = new C_SPRITE_PACK(SPK_ASSEMBLE_BOX_BUTTON_OUSTERS);
 		m_pC_info_spk = new C_SPRITE_PACK(SPK_INFO_OUSTERS);
 		break;
+	default:
+		break;
 	}	
 }
 
@@ -320,6 +322,8 @@ void C_GLOBAL_RESOURCE::DrawDialogLocked(int x, int y, int w, int h, bool alpha)
 			SetRect(&alpha_rect, x+14, y+13, x+rect.w-3, y+rect.h-3);
 			DrawAlphaBox(&alpha_rect, 0, 4, 0, g_pUserOption->ALPHA_DEPTH);
 			break;			
+		default:
+			break;
 		}
 		m_pC_assemble_box_spk->BltLockedClip(x, y, rect, C_GLOBAL_RESOURCE::AB_BACK_ALPHA);
 	}
@@ -428,6 +432,8 @@ void C_GLOBAL_RESOURCE::DrawDialogLocked2(int x, int y, int w, int h, bool alpha
 		case RACE_OUSTERS:
 			SetRect(&alpha_rect, x+2, y+2, x+rect.w-2, y+rect.h-7);
 			DrawAlphaBox(&alpha_rect, 2, 0, 0, g_pUserOption->ALPHA_DEPTH);
+			break;
+		default:
 			break;
 		}		
 		m_pC_assemble_box_spk->BltLockedClip(x, y, rect, C_GLOBAL_RESOURCE::AB_BACK_ALPHA2);
@@ -614,6 +620,8 @@ void C_GLOBAL_RESOURCE::DrawDialogLocked4(int x, int y, int w, int h, bool alpha
 			SetRect(&alpha_rect, x+2, y+2, x+rect.w-2, y+rect.h-1);
 			DrawAlphaBox(&alpha_rect, 2, 0, 0, g_pUserOption->ALPHA_DEPTH);
 			break;
+		default:
+			break;
 		}		
 		m_pC_assemble_box_spk->BltLockedClip(x, y, rect, C_GLOBAL_RESOURCE::AB_BACK_ALPHA2);
 	}
@@ -666,6 +674,8 @@ void C_GLOBAL_RESOURCE::DrawTempChatBoxLocked(int x, int y, int w, int h, bool a
 		case RACE_OUSTERS:
 			SetRect(&alpha_rect, x+2, y+2, x+rect.w-2, y+rect.h);
 			DrawAlphaBox(&alpha_rect, 2, 0, 0, g_pUserOption->ALPHA_DEPTH);
+			break;
+		default:
 			break;
 		}		
 		m_pC_assemble_box_spk->BltLockedClip(x, y, rect, C_GLOBAL_RESOURCE::AB_BACK_ALPHA2);

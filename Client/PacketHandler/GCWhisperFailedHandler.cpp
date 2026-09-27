@@ -19,6 +19,8 @@ void GCWhisperFailedHandler::execute ( GCWhisperFailed * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 
 
 	// info = 5

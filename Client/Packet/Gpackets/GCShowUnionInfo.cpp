@@ -15,7 +15,6 @@
 //////////////////////////////////////////////////////////////////////
 GCShowUnionInfo::~GCShowUnionInfo()
 {
-    __BEGIN_TRY
     while (!m_GuildList.empty())
     {
         SingleGuildInfo* pGuildInfo = m_GuildList.front();
@@ -27,7 +26,6 @@ GCShowUnionInfo::~GCShowUnionInfo()
 
     m_GuildList.clear();
 
-    __END_CATCH
 }
 
 PacketSize_t GCShowUnionInfo::getPacketSize() const

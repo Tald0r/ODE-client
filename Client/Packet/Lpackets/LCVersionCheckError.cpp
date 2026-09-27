@@ -16,6 +16,7 @@
 void LCVersionCheckError::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 	__END_CATCH
 }
 
@@ -26,6 +27,7 @@ void LCVersionCheckError::read ( SocketInputStream & iStream )
 void LCVersionCheckError::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 	__END_CATCH
 }
 

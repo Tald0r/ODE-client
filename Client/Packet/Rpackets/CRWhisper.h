@@ -76,7 +76,7 @@ public :
 
 	// World
 	void setWorldID(const WorldID_t id)	{ m_WorldID = id; }
-	const WorldID_t getWorldID() const	{ return m_WorldID; }
+	WorldID_t getWorldID() const	{ return m_WorldID; }
 
 private :
 	

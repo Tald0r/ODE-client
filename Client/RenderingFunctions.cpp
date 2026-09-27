@@ -65,6 +65,10 @@ void g_SetFL2Surface(void* pSurface)
 //----------------------------------------------------------------------
 bool InitializeGL(int width, int height, int bpp, int fullscreen)
 {
+    (void)width;
+    (void)height;
+    (void)bpp;
+    (void)fullscreen;
     // Stub: SDL backend handles this
     return true;
 }
@@ -74,11 +78,17 @@ bool InitializeGL(int width, int height, int bpp, int fullscreen)
 //----------------------------------------------------------------------
 void rectangle(S_SURFACEINFO* pSurfaceInfo, Rect* pRect, int color)
 {
+    (void)pSurfaceInfo;
+    (void)pRect;
+    (void)color;
     // Stub: Would draw rectangle outline
 }
 
 void FillRect(S_SURFACEINFO* pSurfaceInfo, Rect* pRect, int color)
 {
+    (void)pSurfaceInfo;
+    (void)pRect;
+    (void)color;
     // Stub: Would fill rectangle
 }
 
@@ -272,8 +282,8 @@ void g_PrintColorStrOut(int x, int y, const char* pStr, void* info,
 //----------------------------------------------------------------------
 int g_GetStringWidth(const char* pStr, void* pFont)
 {
-    if (pStr == NULL)
-        return 0;
+	if (pStr == NULL)
+		return 0;
 
 	TextSystem::TextService& service = TextSystem::TextService::Get();
 	TextSystem::TextStyle style = service.GetDefaultStyle();

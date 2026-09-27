@@ -24,6 +24,7 @@ void GCNicknameVerifyHandler::execute ( GCNicknameVerify * pPacket , Player * pP
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 //	__BEGIN_DEBUG_EX
 //	__BEGIN_DEBUG
 		

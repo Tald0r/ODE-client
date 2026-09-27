@@ -25,7 +25,6 @@
 bool
 MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
 	int direction = egInfo.direction;
 
 	//-----------------------------------------------------------
@@ -74,27 +73,27 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	{
 	case EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3 :
 		if( pCreature != NULL && ( pCreature->GetCreatureType() == 104 ||
-			pCreature->GetCreatureType() >= 111 && pCreature->GetCreatureType() <= 119 ||
+			(pCreature->GetCreatureType() >= 111 && pCreature->GetCreatureType() <= 119) ||
 			pCreature->GetCreatureType() == 358 ||
 			pCreature->GetCreatureType() == 359 ||
 			pCreature->GetCreatureType() == 467 ||
 			pCreature->GetCreatureType() == 582 ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_FRONT_GOLEMER;
 		else if( pCreature != NULL && (pCreature->GetCreatureType() == 106 ||
-			pCreature->GetCreatureType() >= 129 && pCreature->GetCreatureType() <= 137 ) )
+			(pCreature->GetCreatureType() >= 129 && pCreature->GetCreatureType() <= 137) ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_FRONT_ALCAN;
 		
 		break;
 	case EFFECTSPRITETYPE_JABBING_VEIN_REAR_3 :
 		if( pCreature != NULL && ( pCreature->GetCreatureType() == 104 ||
-			pCreature->GetCreatureType() >= 111 && pCreature->GetCreatureType() <= 119 ||
+			(pCreature->GetCreatureType() >= 111 && pCreature->GetCreatureType() <= 119) ||
 			pCreature->GetCreatureType() == 358 ||
 			pCreature->GetCreatureType() == 359 ||
 			pCreature->GetCreatureType() == 467 ||
 			pCreature->GetCreatureType() == 582 ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_REAR_GOLEMER;
 		else if( pCreature != NULL && (pCreature->GetCreatureType() == 106 ||
-			pCreature->GetCreatureType() >= 129 && pCreature->GetCreatureType() <= 137 ) )
+			(pCreature->GetCreatureType() >= 129 && pCreature->GetCreatureType() <= 137) ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_REAR_ALCAN;
 		break;
 	case EFFECTSPRITETYPE_TRIDENT_BOMB_1 :

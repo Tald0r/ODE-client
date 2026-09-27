@@ -81,8 +81,6 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 		int currentPixel = sqrt(cx*cx + cy*cy);
 
-		float basis = ((cx==0)? 0 : (float)cy / (float)cx);
-
 		if (currentPixel==0)
 		{
 		}

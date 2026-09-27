@@ -773,9 +773,6 @@ MSkillDomain::AddSkill(ACTIONINFO id)
 {
 	SKILLID_MAP::iterator	iSkill;
 
-	if(SKILL_ABERRATION == id)
-		int a= 0;
-
 	iSkill = m_mapSkillID.begin();
 
 	while( iSkill != m_mapSkillID.end() )
@@ -804,8 +801,6 @@ MSkillDomain::AddSkill(ACTIONINFO id)
 		//-----------------------------------------------
 		// A root-level skill is marked as learnable next.
 		//-----------------------------------------------
-		if(id == SKILL_ABERRATION)
-			int a =0 ;
 		if (skillLevel==0)
 		{
 			m_mapSkillID.insert(SKILLID_MAP::value_type( id, SKILLSTATUS_NEXT ));
@@ -1650,7 +1645,6 @@ MSkillDomain::IsAvailableDeleteSkill(ACTIONINFO id)
 		//--------------------------------------------------
 		// ID가 *iNextSkil인 Skill를 찾는다.
 		//--------------------------------------------------
-		int TempSkillID = *iNextSkill;
 		if(false == (*g_pSkillInfoTable)[*iNextSkill].CanDelete)
 			return false;
 		SKILLID_MAP::iterator iSkill = m_mapSkillID.find( *iNextSkill );

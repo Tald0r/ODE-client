@@ -18,6 +18,7 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 

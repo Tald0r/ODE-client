@@ -34,8 +34,6 @@ GCGetDamage::GCGetDamage ()
 //////////////////////////////////////////////////////////////////////
 GCGetDamage::~GCGetDamage ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

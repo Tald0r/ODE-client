@@ -21,6 +21,7 @@ void GCPartySayHandler::execute ( GCPartySay * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 		
 	if ((g_Mode==MODE_GAME
 			|| g_Mode==MODE_WAIT_UPDATEINFO			// 로딩 중이 아니거나..

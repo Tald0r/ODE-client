@@ -21,6 +21,8 @@ void GCSelectRankBonusFailedHandler::execute ( GCSelectRankBonusFailed * pGCSele
 
 {
 	__BEGIN_TRY
+	(void)pGCSelectRankBonusFailed;
+	(void)pPlayer;
 
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 		g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_SKILL_NOT_SUPPORT].GetString());

@@ -18,6 +18,7 @@ void GCShowGuildMemberInfoHandler::execute ( GCShowGuildMemberInfo * pPacket , P
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 		UI_ShowGuildMemberInfo(pPacket);
 

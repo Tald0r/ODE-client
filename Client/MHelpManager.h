@@ -33,7 +33,9 @@
 #ifndef __MHELPMANAGER_H__
 #define	__MHELPMANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "CTypeTable.h"
 #include "MHelpDef.h"

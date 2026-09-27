@@ -70,12 +70,9 @@ void RCPositionInfoHandler::execute ( RCPositionInfo * pPacket )
 			pInfo->zoneX = pPacket->getZoneX();
 			pInfo->zoneY = pPacket->getZoneY();
 
-			int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-
 			int sight15 = g_pPlayer->GetSight() + (g_pPlayer->GetSight()>>1);
 
-			if (pInfo->zoneID == pInfo->zoneID
-				&&	
+			if (
 					(abs(g_pPlayer->GetX()-pInfo->zoneX) + abs(g_pPlayer->GetY()-pInfo->zoneY))
 						<= sight15
 				)

@@ -31,8 +31,6 @@ ServerGroupInfo::ServerGroupInfo ()
 //////////////////////////////////////////////////////////////////////
 ServerGroupInfo::~ServerGroupInfo () 
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

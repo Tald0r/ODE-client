@@ -167,6 +167,9 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 				pRequestServerPlayer->setRequestMode(REQUEST_CLIENT_MODE_GUILDMARK);
 				pRequestServerPlayer->setPlayerStatus(CPS_REQUEST_SERVER_NORMAL);
 			break;
+
+			default:
+				break;
 		}
 	}
 

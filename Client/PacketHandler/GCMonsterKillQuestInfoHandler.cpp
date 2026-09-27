@@ -23,6 +23,7 @@ void GCMonsterKillQuestInfoHandler::execute ( GCMonsterKillQuestInfo * pPacket ,
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 		
 	while(! pPacket->empty() )

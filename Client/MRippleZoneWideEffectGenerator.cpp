@@ -83,7 +83,7 @@ MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	for (i=0; i<n; i++)
 	{
 		// Zone의 영역을 벗어나는 경우..
-		if (x<0 || y<0 || x>=g_pZone->GetWidth() || y>=g_pZone->GetHeight())
+		if (x>=g_pZone->GetWidth() || y>=g_pZone->GetHeight())
 			continue;
 
 		pEffect = new MEffect(bltType);

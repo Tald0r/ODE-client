@@ -25,6 +25,7 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	if (g_pPlayer==NULL
@@ -47,7 +48,7 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 		
 //		pPacket->
 
-		if (pCreature!=NULL || pPacket->getNPCID() >= 634 && pPacket->getNPCID() <= 637 )
+		if (pCreature!=NULL || (pPacket->getNPCID() >= 634 && pPacket->getNPCID() <= 637) )
 		{		
 			unsigned int CreatureType;
 
@@ -93,8 +94,6 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 
 			g_pPCTalkBox->m_AnswerIDMap.clear();
 
-			int idnum=0;
-			
 			for (int i=0; i<contentSize; i++)
 			{
 				// g_PCTalkBox에 추가

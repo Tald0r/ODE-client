@@ -27,8 +27,6 @@ CGUsePotionFromQuickSlot::CGUsePotionFromQuickSlot ()
 //////////////////////////////////////////////////////////////////////
 CGUsePotionFromQuickSlot::~CGUsePotionFromQuickSlot ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

@@ -228,7 +228,7 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		for( int i=0;i<pEInfo->getListNum();i++)
 		{
 			EFFECTSTATUS	status = (EFFECTSTATUS) pEInfo->popFrontListElement();
-			WORD			delay = pEInfo->popFrontListElement();
+			pEInfo->popFrontListElement();
 			
 			if( status == EFFECTSTATUS_TRANSFORM_TO_BAT )
 			{
@@ -330,7 +330,7 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 			// GCModifyNicknameHandler and the three GCAdd*Handlers clamp the
 			// same way.
 			DWORD TempIndex = TempNick->getNicknameIndex();
-			if(TempIndex >= g_pNickNameStringTable->GetSize())
+			if(TempIndex >= static_cast<DWORD>(g_pNickNameStringTable->GetSize()))
 				TempIndex = 0;
 			szNickName = (*g_pNickNameStringTable)[TempIndex].GetString();
 		}
@@ -451,11 +451,11 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 	// Zone이동할때 다른 날씨로 바뀌는 경우라면..
 	// 날씨를 완전히 제거한다.
 	//--------------------------------------------------
-	if (g_pWeather->GetWeatherType()==MWeather::WEATHER_SNOW
-		&& pPacket->getWeather()!=WEATHER_SNOWY
+	if ((g_pWeather->GetWeatherType()==MWeather::WEATHER_SNOW
+		&& pPacket->getWeather()!=WEATHER_SNOWY)
 		
-		|| g_pWeather->GetWeatherType()==MWeather::WEATHER_RAIN
-		&& pPacket->getWeather()!=WEATHER_RAINY	)
+		|| (g_pWeather->GetWeatherType()==MWeather::WEATHER_RAIN
+		&& pPacket->getWeather()!=WEATHER_RAINY)	)
 	{
 		g_pWeather->Release();
 	}
@@ -859,6 +859,8 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 //			g_pPlayer->SetChangeColorSet( pInfo->getBatColor() );
 		}
 		break;
+		default:
+			break;
 	}
 
 

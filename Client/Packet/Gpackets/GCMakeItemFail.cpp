@@ -30,8 +30,6 @@ GCMakeItemFail::GCMakeItemFail ()
 //////////////////////////////////////////////////////////////////////
 GCMakeItemFail::~GCMakeItemFail ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

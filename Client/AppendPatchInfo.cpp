@@ -63,7 +63,6 @@ APPEND_PATCH_NODE::Append(const char* orgFilename) const
 			
 			// 개수 변경
 			orgFile.seekp( 0, std::ios::beg );
-			WORD afterNum = max(afterSpkSize, orgSpkSize);	// 큰 개수로 설정 - -;
 
 			orgFile.write((const char*)&afterSpkSize, 2);
 			orgFile.close();

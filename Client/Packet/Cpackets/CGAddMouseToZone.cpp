@@ -18,8 +18,6 @@ CGAddMouseToZone::CGAddMouseToZone ()
 
 CGAddMouseToZone::~CGAddMouseToZone ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGAddMouseToZone::read (SocketInputStream & iStream)

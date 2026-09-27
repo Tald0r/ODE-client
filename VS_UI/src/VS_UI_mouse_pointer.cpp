@@ -236,7 +236,7 @@ void C_VS_UI_MOUSE_POINTER::Show()
 				{
 
 					//gpC_global_resource->m_pC_info_spk->BltLocked(m_mouse_x-(m_p_current_pickup_item->GetGridWidth()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X)/2, m_mouse_y-(m_p_current_pickup_item->GetGridHeight()*C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)/2, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
-					gpC_global_resource->m_pC_info_spk->BltLocked(m_mouse_x-m_half_x-6, m_mouse_y-m_half_y-14, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+eType);
+					gpC_global_resource->m_pC_info_spk->BltLocked(m_mouse_x-m_half_x-6, m_mouse_y-m_half_y-14, C_GLOBAL_RESOURCE::OUSTERS_ELEMENTAL_MARK_FIRE+static_cast<int>(eType));
 				}
 			}
 
@@ -273,6 +273,9 @@ void C_VS_UI_MOUSE_POINTER::Show()
 			case RACE_OUSTERS:
 				temp_cursor = CURSOR_OUSTERS_PICKUP;
 				break;
+
+			default:
+				break;
 			}
 			if(MousePushed())
 				m_pC_mouse_pointer_spk->Blt(m_mouse_x + g_mouse_point_fix[temp_cursor+1].x, m_mouse_y + g_mouse_point_fix[temp_cursor+1].y, temp_cursor + frame +1);
@@ -287,7 +290,7 @@ void C_VS_UI_MOUSE_POINTER::Show()
 				m_pC_mouse_pointer_spk->Blt(m_mouse_x + g_mouse_point_fix[CURSOR_DESCRIPTION].x, m_mouse_y + g_mouse_point_fix[CURSOR_DESCRIPTION].y, CURSOR_DESCRIPTION);
 			else
 			{
-				int temp_cursor;
+				int temp_cursor = 0;
 				switch(g_eRaceInterface)
 				{
 				case RACE_SLAYER:
@@ -300,6 +303,9 @@ void C_VS_UI_MOUSE_POINTER::Show()
 					
 				case RACE_OUSTERS:
 					temp_cursor = CURSOR_OUSTERS_NORMAL;
+					break;
+
+				default:
 					break;
 				}
 				m_pC_mouse_pointer_spk->Blt(m_mouse_x, m_mouse_y, temp_cursor);
@@ -517,6 +523,9 @@ void	C_VS_UI_MOUSE_POINTER::SetCursorDefault()
 	case RACE_OUSTERS:
 		SetCursor(CURSOR_OUSTERS_NORMAL);
 		break;
+
+	default:
+		break;
 	}
 }
 
@@ -540,6 +549,9 @@ void	C_VS_UI_MOUSE_POINTER::SetCursorPickUp(LPCSTR str, COLORREF color)
 	case RACE_OUSTERS:
 		SetCursor(CURSOR_OUSTERS_PICKUP);
 		break;
+
+	default:
+		break;
 	}
 
 	m_string = str;
@@ -560,6 +572,9 @@ void	C_VS_UI_MOUSE_POINTER::SetCursorAttack()
 		
 	case RACE_OUSTERS:
 		SetCursor(CURSOR_OUSTERS_ATTACK);
+		break;
+
+	default:
 		break;
 	}
 }

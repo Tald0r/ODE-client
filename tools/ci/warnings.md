@@ -82,3 +82,14 @@ Windows adds 25 upstream C4244 sites and six C4267 sites. Four new project
 `getenv` deprecation sites found during the first clean build were replaced by
 an owned configuration reader using `_dupenv_s` on Windows; the C4996 budget
 therefore stays unchanged.
+
+The 2026-09-27 cleanup (`docs/compiler-warnings-2026-09-27.md`) cleared every
+warning GCC and Clang report in the project's own code, so the Unix budgets
+now count only vendored code and the linker. All ten profiles were re-recorded
+from the complete clean CI builds of that branch: macOS 4,048 -> 243 (arm64)
+and 4,047 -> 242 (x86_64), the same for the ASan presets; Linux GCC 3,998 ->
+205, GCC with sanitizers 3,997 -> 205, Clang 4,076 -> 221; Windows Debug and
+ASan 1,775 -> 1,254 and Release 1,547 -> 1,254. On Windows the C4297, C4101
+and C4018 budgets fall to zero; what is left there is mostly the C4267/C4244
+narrowing conversions and C4996 CRT deprecations that GCC and Clang do not
+raise under `-Wall -Wextra`. No category grew in any profile.

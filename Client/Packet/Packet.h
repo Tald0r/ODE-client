@@ -586,13 +586,13 @@ public :
 	virtual void read (SocketInputStream & iStream)  = 0;
 
 	// 소켓으로부터 직접 데이터를 읽어서 패킷을 초기화한다.
-	virtual void read (Socket* pSocket)  { throw UnsupportedError(); }	
+	virtual void read (Socket* pSocket)  { (void)pSocket; throw UnsupportedError(); }	
 
 	// 출력스트림(버퍼)으로 패킷의 바이너리 이미지를 보낸다.
 	virtual void write (SocketOutputStream & oStream) const  = 0;
 
 	// 소켓으로 직접 패킷의 바이너리 이미지를 보낸다.
-	virtual void write (Socket* pSocket) const  { throw UnsupportedError(); }	
+	virtual void write (Socket* pSocket) const  { (void)pSocket; throw UnsupportedError(); }	
 
 	
 	// A packet carries no handler entry point (RESTRUCTURING.md tasks

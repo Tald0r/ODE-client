@@ -1176,7 +1176,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	// 잘못된 값
 	// 이전에 못 갔던 곳..
 	if (sX==SECTORPOSITION_NULL || sY==SECTORPOSITION_NULL
-		|| sX==m_BlockDestX && sY==m_BlockDestY)
+		|| (sX==m_BlockDestX && sY==m_BlockDestY))
 	{
 		return false;
 	}
@@ -1213,8 +1213,6 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		BOOL bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
 		if(!bCanStand)
 		{
-			extern POINT g_DirectionValue[MAX_DIRECTION];
-			
 			POINT MovePoint;
 
 			if( sY > GetY() )
@@ -1233,8 +1231,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 			int limit = 20;	// 유효값 20번내에 못찾으면 포기
 
-			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY ) &&
-				sX >= 0 && sY >= 0 
+			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY )
 				&& sX < m_pZone->GetWidth() && sY < m_pZone->GetHeight()
 				&& limit-- > 0
 				)
@@ -1244,7 +1241,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				bCanStand = m_pZone->CanMove( m_MoveType, sX,sY );
 			};
 
-			if( bCanStand == FALSE || GetX() == sX && GetY() == sY)
+			if( bCanStand == FALSE || (GetX() == sX && GetY() == sY))
 				return false;
 		}
 	}
@@ -1409,9 +1406,9 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		// 성물을 들었을때는 자기편 안전지대는 못간다!
 	bool bHasRelic = 
 		( m_bEffectStatus[EFFECTSTATUS_HAS_VAMPIRE_RELIC] || m_bEffectStatus[EFFECTSTATUS_HAS_SLAYER_RELIC] ) && 
-		(g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer() ||
-		g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire() ||
-		g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters()
+		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
+		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()) ||
+		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters())
 		);
 
 	bool bHasBloodBible =
@@ -1422,9 +1419,9 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_LEGIOS] ||m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_HILLEL] ||
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_JAVE] ||m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_NEMA] ||
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_AROSA] ||m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_CHASPA] ) && 
-		(g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer() ||
-		g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters() ||
-		g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()
+		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
+		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters()) ||
+		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire())
 		);
 
 	if(bHasBloodBible)
@@ -1438,9 +1435,9 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 
 	if( HasEffectStatus( EFFECTSTATUS_HAS_FLAG ) &&
-		(g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer() ||
-		g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire() ||
-		g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters()
+		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
+		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()) ||
+		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters())
 		) )
 	{
 		bHasRelic = true;
@@ -1450,8 +1447,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (sX<0 || sY<0 
-		|| sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
+	if (sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
 		// [새기술] Sanctuary 로는 못 움직인다.
 		|| g_pZone->GetSector(m_X, m_Y).HasSanctuary()
 		|| bHasRelic
@@ -1583,7 +1579,6 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		if (y1 > g_pZone->GetHeight())	
 			y1 = g_pZone->GetHeight();
 		
-		int size = x1-x0;	// byte수
 		for (int i=y0; i<y1; i++)
 		{			
 			for (int j=x0; j<x1; j++)
@@ -1948,8 +1943,8 @@ MPlayer::SelfSpecialAction()
 		// 하드하드...
 		//			
 		if (m_nSpecialActionInfo==SKILL_INSTALL_MINE
-			|| m_nSpecialActionInfo>=MINE_ANKLE_KILLER 
-				&& m_nSpecialActionInfo<=MINE_SWIFT_EX)
+			|| (m_nSpecialActionInfo>=MINE_ANKLE_KILLER 
+				&& m_nSpecialActionInfo<=MINE_SWIFT_EX))
 		{
 			int					useSkill = SKILL_INSTALL_MINE;					
 
@@ -2840,8 +2835,8 @@ MPlayer::KeepTraceCreature()
 	{
 		if( (DWORD)(MonotonicClock::Now() - m_TraceTimer).count() / 1000 > g_pClientConfig->TRACE_CHARACTER_LIMIT_TIME )
 		{
-			if( pCreature != NULL &&					// 동족일 경우만.
-				(pCreature->IsSlayer() && IsSlayer()) || 
+			if( (pCreature != NULL &&					// 동족일 경우만.
+				(pCreature->IsSlayer() && IsSlayer())) || 
 				(pCreature->IsVampire() && IsVampire()) ||
 				(pCreature->IsOusters() && IsOusters())
 				)
@@ -2857,11 +2852,11 @@ MPlayer::KeepTraceCreature()
 	// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.
 	//-------------------------------------------------------
 	if ((pCreature==NULL || 
-		pCreature->IsInDarkness() && !pCreature->IsNPC() && 
-		(!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS) ||
-		IsVampire() && g_pZone->GetID() == 3001)
+		(pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+		((!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS)) ||
+		(IsVampire() && g_pZone->GetID() == 3001)))
 		||bTraceTimer
-		|| pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters())
+		|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()))
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
@@ -2978,13 +2973,13 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 	if (!IsNotDelay() 
 		|| IsInCasket()	// [새기술3]
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInDarkness() && 
+		|| (IsInDarkness() && 
 		!HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		 )
+		 ))
 	{
 		return false;
 	}
@@ -3041,7 +3036,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 			SetTraceID( id );
 			SetRequestMode( g_pTopView->GetRequestMode() );
 			BasicActionToCreature();				
-			SetTraceID( NULL );
+			SetTraceID( 0 );
 			return false;	
 		}	
 		// 2004,5, 28 sobeit add end
@@ -3055,12 +3050,12 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		{
 			if( pCreature->GetObjectType() == MObject::TYPE_CREATURE )
 			{
-				if( IsSlayer() && g_pZone->GetSector( GetX(), GetY() ).IsSafeSlayer() && 
-					pCreature->IsSlayer() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeSlayer() && pCreature->IsPlayerOnly() ||
-					IsVampire() && g_pZone->GetSector( GetX(), GetY() ).IsSafeVampire() && 
-					pCreature->IsVampire() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeVampire() && pCreature->IsPlayerOnly() ||
-					IsOusters() && g_pZone->GetSector( GetX(), GetY() ).IsSafeOusters() && 
-					pCreature->IsOusters() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeOusters() && pCreature->IsPlayerOnly()
+				if( (IsSlayer() && g_pZone->GetSector( GetX(), GetY() ).IsSafeSlayer() && 
+					pCreature->IsSlayer() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeSlayer() && pCreature->IsPlayerOnly()) ||
+					(IsVampire() && g_pZone->GetSector( GetX(), GetY() ).IsSafeVampire() && 
+					pCreature->IsVampire() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeVampire() && pCreature->IsPlayerOnly()) ||
+					(IsOusters() && g_pZone->GetSector( GetX(), GetY() ).IsSafeOusters() && 
+					pCreature->IsOusters() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeOusters() && pCreature->IsPlayerOnly())
 					)
 				{
 					//						UnSetLockMode();
@@ -3075,15 +3070,15 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 //		MItem *pOustersItem = g_pOustersGear->GetItem(MOustersGear::GEAR_OUSTERS_RIGHTHAND);
 		if (pCreature==NULL
 			|| pCreature->IsDead()
-			|| pCreature->IsInDarkness() && !pCreature->IsNPC() && 
-			( !IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) ||
-			IsVampire() &&g_pZone->GetID() == 3001)
-			|| pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()
+			|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+			( (!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) ||
+			(IsVampire() &&g_pZone->GetID() == 3001)))
+			|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
 #endif
-			)
+			))
 		{
 			UnSetRepeatAction();
 			
@@ -3132,7 +3127,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		else if (m_MoveDevice == MOVE_DEVICE_RIDE 
 				|| m_MoveDevice == MOVE_DEVICE_SUMMON_SYLPH || HasEffectStatusSummonSylph( dynamic_cast<MCreature*>(this) )
 				|| m_CreatureType==CREATURETYPE_BAT
-				|| !(bOusters && pOustersItem!=NULL && pOustersItem->GetItemClass() == ITEM_CLASS_OUSTERS_CHAKRAM || !bOusters)
+				|| !((bOusters && pOustersItem!=NULL && pOustersItem->GetItemClass() == ITEM_CLASS_OUSTERS_CHAKRAM) || !bOusters)
 				|| CanActionByZoneInfo()
 				)
 		{
@@ -3161,7 +3156,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		{
 			bTraceCreatureToForceAttack = CanAttackTribe( pCreature )
 										// 뱀파이어인 경우에는 Guild에 따라서 공격할 수 있거나..
-										|| IsVampire() && CanAttackGuild( pCreature )
+										|| (IsVampire() && CanAttackGuild( pCreature ))
 										|| g_pObjectSelector->IsWarEnemy( pCreature );
 									//	|| m_pZone->IsFreePKZone();			// -_- 바나툴
 
@@ -3213,9 +3208,9 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 				//	&&	
 
 				if (
-					(IsOusters() && 
+					((IsOusters() && 
 					g_pOustersGear->GetItem( MOustersGear::GEAR_OUSTERS_RIGHTHAND ) != NULL &&
-					g_pOustersGear->GetItem( MOustersGear::GEAR_OUSTERS_RIGHTHAND )->GetItemClass() == ITEM_CLASS_OUSTERS_CHAKRAM || 
+					g_pOustersGear->GetItem( MOustersGear::GEAR_OUSTERS_RIGHTHAND )->GetItemClass() == ITEM_CLASS_OUSTERS_CHAKRAM) || 
 					!IsOusters() ) 
 					&& 	(*g_pActionInfoTable)[m_nBasicActionInfo].IsWeaponTypeGunAny() 
 					)
@@ -3410,12 +3405,12 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 	if (!IsNotDelay() 
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
 		|| IsInCasket()	// [새기술3]
-		|| IsInDarkness() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || g_pZone->GetID() == 3001)
+		|| (IsInDarkness() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || g_pZone->GetID() == 3001)
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 	{
 		return false;
 	}
@@ -3551,27 +3546,28 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.
 			if (pCreature==NULL 
 				// 시체한테 쓸 수 있는 스킬 정보를 추가해야한다.
-				|| pCreature->IsDead() && originalSkill!=MAGIC_RESURRECT && originalSkill!=SKILL_TRANSFUSION  && originalSkill!=SKILL_SOUL_REBIRTH 
-				|| pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()
+				|| (pCreature->IsDead() && originalSkill!=MAGIC_RESURRECT && originalSkill!=SKILL_TRANSFUSION  && originalSkill!=SKILL_SOUL_REBIRTH) 
+				|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters())
 				// 2004, 10, 14, sobiet modify start - 라이트니스걸렸을때 다크니스 안에 녀석 공격이 안된다고 해서 수정..
 //				|| pCreature->IsInDarkness() && !pCreature->IsNPC() && 
 //				!(IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )  ||
 //				g_pZone->GetID() != 3001 && IsVampire() )
 //				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST ) 
-				|| pCreature->IsInDarkness() && !pCreature->IsNPC() && !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST ) &&
-				(!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )  ||	g_pZone->GetID() == 3001 && IsVampire() )
+				|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST ) &&
+				((!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS ))  ||	(g_pZone->GetID() == 3001 && IsVampire()) )
 				// 2004, 10, 14, sobiet modify end- 라이트니스걸렸을때 다크니스 안에 녀석 공격이 안된다고 해서 수정..
 #ifdef __METROTECH_TEST__
 				&& !g_bLight
 #endif
-				|| (*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_SLAYER && (!pCreature->IsSlayer() || !pCreature->IsPlayerOnly())
-				|| (*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_VAMPIRE && (!pCreature->IsVampire() || !pCreature->IsPlayerOnly())
-				|| (*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_OUSTERS && (!pCreature->IsOusters() || !pCreature->IsPlayerOnly())
-				|| (*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_MONSTER && (!pCreature->IsVampire() || pCreature->IsPlayerOnly())
+				)
+				|| ((*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_SLAYER && (!pCreature->IsSlayer() || !pCreature->IsPlayerOnly()))
+				|| ((*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_VAMPIRE && (!pCreature->IsVampire() || !pCreature->IsPlayerOnly()))
+				|| ((*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_OUSTERS && (!pCreature->IsOusters() || !pCreature->IsPlayerOnly()))
+				|| ((*g_pActionInfoTable)[originalSkill].GetUser() == FLAG_ACTIONINFO_USER_MONSTER && (!pCreature->IsVampire() || pCreature->IsPlayerOnly()))
 
-				|| IsSlayer() && !(*g_pActionInfoTable)[originalSkill].IsUserSlayer() && pCreature->IsSlayer() && pCreature->IsPlayerOnly() && !bForceAttack
-				|| IsVampire() && !(*g_pActionInfoTable)[originalSkill].IsUserVampire() && pCreature->IsVampire() && pCreature->IsPlayerOnly() && !bForceAttack				
-				|| IsOusters() && !(*g_pActionInfoTable)[originalSkill].IsUserOusters() && pCreature->IsOusters() && pCreature->IsPlayerOnly() && !bForceAttack				
+				|| (IsSlayer() && !(*g_pActionInfoTable)[originalSkill].IsUserSlayer() && pCreature->IsSlayer() && pCreature->IsPlayerOnly() && !bForceAttack)
+				|| (IsVampire() && !(*g_pActionInfoTable)[originalSkill].IsUserVampire() && pCreature->IsVampire() && pCreature->IsPlayerOnly() && !bForceAttack)				
+				|| (IsOusters() && !(*g_pActionInfoTable)[originalSkill].IsUserOusters() && pCreature->IsOusters() && pCreature->IsPlayerOnly() && !bForceAttack)				
 				) 
 			{
 				// [SKILLREPEAT DIAG] kept
@@ -3605,12 +3601,12 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			{
 				if( pCreature->GetObjectType() == MObject::TYPE_CREATURE )
 				{
-					if( IsSlayer() && g_pZone->GetSector( GetX(), GetY() ).IsSafeSlayer() && 
-						pCreature->IsSlayer() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeSlayer() && pCreature->IsPlayerOnly() ||
-						IsVampire() && g_pZone->GetSector( GetX(), GetY() ).IsSafeVampire() && 
-						pCreature->IsVampire() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeVampire() && pCreature->IsPlayerOnly() ||
-						IsOusters() && g_pZone->GetSector( GetX(), GetY() ).IsSafeOusters() && 
-						pCreature->IsOusters() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeOusters() && pCreature->IsPlayerOnly())
+					if( (IsSlayer() && g_pZone->GetSector( GetX(), GetY() ).IsSafeSlayer() && 
+						pCreature->IsSlayer() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeSlayer() && pCreature->IsPlayerOnly()) ||
+						(IsVampire() && g_pZone->GetSector( GetX(), GetY() ).IsSafeVampire() && 
+						pCreature->IsVampire() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeVampire() && pCreature->IsPlayerOnly()) ||
+						(IsOusters() && g_pZone->GetSector( GetX(), GetY() ).IsSafeOusters() && 
+						pCreature->IsOusters() && !g_pZone->GetSector( pCreature->GetX(), pCreature->GetY() ).IsSafeOusters() && pCreature->IsPlayerOnly()))
 					{
 						// [SKILLREPEAT DIAG] kept
 						DEBUG_ADD_FORMAT("[SKILLREPEAT] abort=SAFESECTOR");
@@ -4266,7 +4262,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 						MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 						if(pCreature != NULL)
 						{
-							if(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376 || pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563 || pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549 || pCreature->GetCreatureType() == 670 || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673)
+							if((pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) || (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) || pCreature->GetCreatureType() == 670 || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673)
 								return false;
 						}
 						
@@ -4311,7 +4307,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 						MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 						if(pCreature != NULL)
 						{
-							if(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376 || pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563 || pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549 || pCreature->GetCreatureType() == 670 || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673)
+							if((pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) || (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) || pCreature->GetCreatureType() == 670 || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673)
 								return false;
 						}
 					
@@ -4524,12 +4520,12 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 	if (!IsNotDelay() 
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
 		|| IsInCasket()	// [새기술3]
-		|| IsInDarkness() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS )||g_pZone->GetID() == 3001)
+		|| (IsInDarkness() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS )||g_pZone->GetID() == 3001)
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 	{
 		return false;
 	}
@@ -4541,14 +4537,14 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 
 		// item이 zone에 없는 경우
 		if (pItem==NULL
-			|| g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && 
+			|| (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && 
 			( !IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || 
-			IsVampire() && g_pZone->GetID() == 3001) )
+			(IsVampire() && g_pZone->GetID() == 3001)) )
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
 #endif
-			) 
+			)) 
 		{
 			return false;
 		}
@@ -4928,6 +4924,9 @@ MPlayer::CanAttackTribe( enum CREATURETRIBE to ) const
 		case ATTACK_MODE_NORMAL :
 			return GetCreatureTribe()!=to;// && to!=CREATURETRIBE_NPC;
 		break;		
+
+		default:
+		break;
 	}
 
 	return false;
@@ -4965,17 +4964,20 @@ MPlayer::CanAttackGuild( const MCreature* pCreature ) const
 		{
 			int gn = pCreature->GetGuildNumber();
 
-			return m_GuildNumber!=gn
+			return (m_GuildNumber!=gn
 					// 현재는 사용자끼리는 공격하면 안되기 때문에..
 					// 사용자 길드가 아닌 경우만 공격할 수 있다.
 					// 나중에는 이거 빠져야되지 않을까?
 
 					// vampire인 경우. 일단 vampire만 AttackByGuild를 사용하기 때문
-					&& gn!=GUILDID_VAMPIRE_DEFAULT && gn<MIN_USER_GUILDID
+					&& gn!=GUILDID_VAMPIRE_DEFAULT && gn<MIN_USER_GUILDID)
 					|| GetCreatureTribe()!=pCreature->GetCreatureTribe();
 					// && to!=CREATURETRIBE_NPC;
 		}
 		break;		
+
+		default:
+		break;
 	}
 
 	return false;
@@ -5216,13 +5218,13 @@ MPlayer::ActionInTraceDistance()
 
 			// 추적을 완료했으므로 Item을 줍는다.
 			if (pItem!=NULL
-				&& (!g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() || IsVampire() && g_pZone->GetID() != 3001 || 
-				!IsVampire() && HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
+				&& (!g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() || (IsVampire() && g_pZone->GetID() != 3001) || 
+				(!IsVampire() && HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
 				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 				&& !g_bLight
 #endif
-				||!IsOusters())
+				)||!IsOusters())
 				)
 			{
 				PickupItem( pItem );
@@ -5537,15 +5539,15 @@ MPlayer::ActionMove()
 					// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.					
 					//-------------------------------------------------------								
 					if (pCreature==NULL 
-						|| pCreature->IsInDarkness() && !pCreature->IsNPC() && 
-						(!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )  || 
-						g_pZone->GetID() == 3001 && IsVampire() ||
-						pCreature->IsOusters() && pCreature->IsInGroundElemental() && !g_pPlayer->IsOusters())
+						|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+						((!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS ))  || 
+						(g_pZone->GetID() == 3001 && IsVampire()) ||
+						(pCreature->IsOusters() && pCreature->IsInGroundElemental() && !g_pPlayer->IsOusters()))
 						&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )						
 #ifdef __METROTECH_TEST__
 						&& !g_bLight
 #endif
-						) 
+						)) 
 					{
 						if (IsRepeatAction())
 						{
@@ -5599,14 +5601,14 @@ MPlayer::ActionMove()
 					// 추적하는 Item이 사라졌을 경우 --> 추적 중지
 					//-------------------------------------------------------
 					if (pItem==NULL
-						|| g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness()&& 
+						|| (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness()&& 
 						(!IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) ||
-						IsVampire() &&g_pZone->GetID() == 3001) )
+						(IsVampire() &&g_pZone->GetID() == 3001)) )
 						&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 						&& !g_bLight
 #endif
-						) 
+						)) 
 					{
 						// 추적 중지
 						TraceNULL();
@@ -6852,7 +6854,7 @@ MPlayer::ActionToSendPacket()
 	}
 	*/
 
-	BOOL	bActionStand	= (m_Action==ACTION_STAND || IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND || IsOusters() && m_Action == ACTION_OUSTERS_FAST_MOVE_STAND);
+	BOOL	bActionStand	= (m_Action==ACTION_STAND || (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND) || (IsOusters() && m_Action == ACTION_OUSTERS_FAST_MOVE_STAND));
 	int		actionCountMax_1 = m_ActionCountMax-1;
 	BOOL	bEndAction		= (m_ActionCount==actionCountMax_1) || bActionStand;
 	int		StartFrame		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetStartFrame( m_WeaponSpeed );
@@ -6863,8 +6865,8 @@ MPlayer::ActionToSendPacket()
 	// Effect가 시작되는 경우는..
 	// (1) StartFrame인 경우
 	// (2) 마지막 ActionFrame인 경우
-	BOOL	bStartEffect = m_ActionCount==StartFrame || 
-							StartFrame >= m_ActionCountMax && bEndAction;
+	[[maybe_unused]] BOOL	bStartEffect = m_ActionCount==StartFrame || 
+							(StartFrame >= m_ActionCountMax && bEndAction);
 	
 	//BOOL	bCastingEffect	= GetActionInfoCastingStartFrame(m_nUsedActionInfo)==m_ActionCount;
 		// 반복 action의 시작 frame
@@ -7633,7 +7635,7 @@ MPlayer::ActionEffect()
 		}
 	}
 
-	BOOL	bActionStand	= (m_Action==ACTION_STAND || IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND);
+	BOOL	bActionStand	= (m_Action==ACTION_STAND || (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND));
 	int		actionCountMax_1 = m_ActionCountMax-1;
 	BOOL	bEndAction		= (m_ActionCount==actionCountMax_1) || bActionStand;
 	int		StartFrame		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetStartFrame( m_WeaponSpeed );
@@ -7644,7 +7646,7 @@ MPlayer::ActionEffect()
 	// (1) StartFrame인 경우
 	// (2) 마지막 ActionFrame인 경우
 	BOOL	bStartEffect = m_ActionCount==StartFrame || 
-							StartFrame >= m_ActionCountMax && bEndAction;
+							(StartFrame >= m_ActionCountMax && bEndAction);
 
 	// 반복 action의 시작 frame
 	bStartAction |= m_bRepeatAction 
@@ -7783,8 +7785,6 @@ MPlayer::ActionEffect()
 	//
 	//----------------------------------------------------------
 	// affect 후에 이게 바뀔 수도 있다 T_T;
-	TYPE_ACTIONINFO currentUsedActionInfo = SkillInfo;
-
 	if (bStartEffect)
 	{
 		AffectUsedActionInfo(SkillInfo);
@@ -8089,8 +8089,8 @@ MPlayer::SetAction(BYTE action)
 			// 그냥 서있는 경우면... 끝동작으로 만든다.
 			// Action이 끝났다고 표시해주기 위해서..
 			if (m_Action==ACTION_STAND 
-				|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND
-				|| IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND)
+				|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+				|| (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND))
 			{			
 				m_ActionCount = 0;
 				m_ActionCountMax = 0;			
@@ -8158,9 +8158,9 @@ MPlayer::SetAction(BYTE action)
 //			}
 
 			if (// 오토바이 타고 있을때는 action 안 보여준다.
-				m_MoveDevice==MOVE_DEVICE_RIDE && action!=ACTION_SLAYER_MOTOR_STAND
+				(m_MoveDevice==MOVE_DEVICE_RIDE && action!=ACTION_SLAYER_MOTOR_STAND)
 				// damaged인 경우..
-				|| action==ACTION_DAMAGED 						
+				|| (action==ACTION_DAMAGED 						
 						&& (// 공격받는 중이 아니거나 정지 동작이 아니면 공격 받는 모습 표현 안 한다
 							m_Action!=ACTION_DAMAGED && m_Action!=ACTION_STAND && m_Action!=ACTION_MOVE
 
@@ -8168,7 +8168,7 @@ MPlayer::SetAction(BYTE action)
 	//						m_Action==ACTION_DRAINED
 							// 뱀파이어일때, 흡혈하는 동작 중에는 damaged를 안 보여준다.
 	//						|| IsVampire() && m_Action==ACTION_VAMPIRE_DRAIN
-							)
+							))
 				)
 			{
 				SetNextAction(ACTION_STAND);
@@ -8228,7 +8228,7 @@ MPlayer::SetAction(BYTE action)
 						if (m_RepeatCount!=0 
 							
 							&& action!=ACTION_STAND 
-							&& (!bSlayer || bSlayer && action!=ACTION_SLAYER_MOTOR_STAND))
+							&& (!bSlayer || (bSlayer && action!=ACTION_SLAYER_MOTOR_STAND)))
 						{
 							// count 설정..
 							//m_ActionCount = (*g_pActionInfoTable)[m_nUsedActionInfo].GetRepeatStartFrame( m_WeaponSpeed );
@@ -8252,9 +8252,9 @@ MPlayer::SetAction(BYTE action)
 				else
 				{			
 					if (m_ActionCount!=m_ActionCountMax
-						&& (action==ACTION_STAND && m_Action==ACTION_STAND
-							|| IsSlayer() && action==ACTION_SLAYER_MOTOR_STAND && m_Action==ACTION_SLAYER_MOTOR_STAND
-							|| IsOusters() && action==ACTION_OUSTERS_FAST_MOVE_STAND && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND)
+						&& ((action==ACTION_STAND && m_Action==ACTION_STAND)
+							|| (IsSlayer() && action==ACTION_SLAYER_MOTOR_STAND && m_Action==ACTION_SLAYER_MOTOR_STAND)
+							|| (IsOusters() && action==ACTION_OUSTERS_FAST_MOVE_STAND && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND))
 							)
 					{
 						// 같은 정지 동작이면 설정하지 않는다.
@@ -8469,8 +8469,8 @@ MPlayer::SetNextAction(BYTE action)
 		if(IsOusters() && HasEffectStatusSummonSylph( dynamic_cast<MCreature*>(this) ))
 			action = ACTION_OUSTERS_FAST_MOVE_MOVE;
 
-	if (m_Action==ACTION_STAND || IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND
-		|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND) 
+	if (m_Action==ACTION_STAND || (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND)
+		|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)) 
 	{
 		//SetAction( action );
 		m_ActionCount = m_ActionCountMax;
@@ -8489,8 +8489,8 @@ MPlayer::SetNextAction(BYTE action)
 void	
 MPlayer::SetNextActionToMove()
 { 	
-	if (m_Action==ACTION_STAND || IsOusters() && m_Action == ACTION_OUSTERS_FAST_MOVE_STAND
-		|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND) 
+	if (m_Action==ACTION_STAND || (IsOusters() && m_Action == ACTION_OUSTERS_FAST_MOVE_STAND)
+		|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)) 
 	{
 		//SetAction( action );
 		m_ActionCount = m_ActionCountMax;
@@ -8714,7 +8714,7 @@ MPlayer::CheckRepeatAction()
 	//----------------------------------------------------------------------
 	if (m_ActionCount>=m_ActionCountMax-1 
 			|| m_Action==ACTION_STAND 
-			|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
+			|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND))
 	{
 		static DWORD repeatFrameIncTurn = 0;
 
@@ -8794,7 +8794,7 @@ MPlayer::CheckRepeatAction()
 
 						if ((*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame() //m_WeaponSpeed )
 							&& m_Action!=ACTION_STAND 
-							&& (!bSlayer || bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND)
+							&& (!bSlayer || (bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND))
 							&& m_ActionCountMax!=0 )	// 이걸로 될려나.. - -;
 						{	
 							//m_ActionCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( m_Action );
@@ -8954,9 +8954,9 @@ MPlayer::CheckBufferAction()
 	BOOL bSlayer = IsSlayer();
 
 	if (m_bNextAction || 
-		m_NextAction!=ACTION_STAND 
-		&& (!IsOusters() || IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND)// && m_fNextTrace==FLAG_TRACE_NULL)
-		&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))// && m_fNextTrace==FLAG_TRACE_NULL)
+		(m_NextAction!=ACTION_STAND 
+		&& (!IsOusters() || (IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND))// && m_fNextTrace==FLAG_TRACE_NULL)
+		&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))))// && m_fNextTrace==FLAG_TRACE_NULL)
 	{
 		SetAction( m_NextAction );	
 
@@ -9023,7 +9023,7 @@ MPlayer::UnSetRepeatAction()
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL 
 		&& (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame() //m_WeaponSpeed )
 		&& m_Action!=ACTION_STAND 
-		&& (!bSlayer || bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND)
+		&& (!bSlayer || (bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND))
 		&& m_ActionCountMax!=0 )	// 이걸로 될려나.. - -;
 	{	
 		//m_ActionCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( m_Action );		
@@ -9126,6 +9126,8 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 //				g_pUserInformation->bCompetence = true;
 			break;
 
+			default:
+			break;
 		}
 	__END_HELP_EVENT
 
@@ -9174,6 +9176,8 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//gC_vs_ui.SelectSkill( SKILL_TURRET_FIRE );
 			break;
 
+		default:
+			break;
 	}
 
 	bool re = MCreature::AddEffectStatus( status, delayFrame );
@@ -9225,7 +9229,7 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 		if(IsAdvancementClass() && status==EFFECTSTATUS_SUMMON_SYLPH)
 		{
 				m_bEffectStatus[status]=true;
-				bool re = MCreature::RemoveEffectStatus( status );
+				MCreature::RemoveEffectStatus( status );
 		}
 		break;
 		/*   end    */
@@ -9303,6 +9307,9 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 			ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,	
 				GetX(), GetY(), 0, 0, NULL, false);
 			SetDelay(1000);
+			break;
+
+		default:
 			break;
 	}
 	
@@ -9651,7 +9658,7 @@ MPlayer::Action()
 			// 뭔가 기술을 사용하고 있다면 
 			// 그 기술의 결과 시점에서 결과를 보여주게 할려고...
 			//------------------------------------------------------------
-			BOOL	bActionStand	= (m_Action==ACTION_STAND || IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND);
+			BOOL	bActionStand	= (m_Action==ACTION_STAND || (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND));
 			//int		actionCountMax_1 = m_ActionCountMax-1;
 			//BOOL	bEndAction		= (m_ActionCount==actionCountMax_1) || bActionStand;
 			int		StartFrame		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetStartFrame( m_WeaponSpeed );
@@ -9723,14 +9730,14 @@ MPlayer::Action()
 	//--------------------------------------------------------
 	// 기술 사용후의 delay가 모두 끝난 상태이면...
 	//--------------------------------------------------------	
-	if (!m_bTurning	// [새기술]
+	if ((!m_bTurning	// [새기술]
 		&& !HasEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS)
 		&& !IsCauseCriticalWounds()
 //		&& !IsBloodyZenith()
 		&& !IsGunShotGuidance()
 		&& !HasEffectStatus(EFFECTSTATUS_SOUL_CHAIN)
 		&& !HasEffectStatus(EFFECTSTATUS_TRAP_TRIGGERED)
-		&& !HasEffectStatus(EFFECTSTATUS_TRAPPED) 
+		&& !HasEffectStatus(EFFECTSTATUS_TRAPPED))
 //		&& g_pUserInformation->LogoutTime == 0
 		|| g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
@@ -9762,21 +9769,21 @@ MPlayer::Action()
 			HasEffectStatus( EFFECTSTATUS_AMBER_OF_GUARD ) || HasEffectStatus( EFFECTSTATUS_AMBER_OF_AVENGER ) ||
 			HasEffectStatus( EFFECTSTATUS_AMBER_OF_IMMORTAL ) || HasEffectStatus( EFFECTSTATUS_AMBER_OF_CURSE ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_CASTLE_SYMBOL_5 ) || HasEffectStatus( EFFECTSTATUS_HAS_CASTLE_SYMBOL_6 ) ||
-			IsCreatureMove( dynamic_cast<MCreature*>(this) ) && HasEffectStatus( EFFECTSTATUS_ICE_FIELD_TO_CREATURE ) ||
-			IsCreatureMove( dynamic_cast<MCreature*>(this) ) && HasEffectStatus( EFFECTSTATUS_FROZEN_ARMOR_TO_ENEMY ) ||
-			IsCreatureActionAttack( this ) && (	HasEffectStatus( EFFECTSTATUS_ICE_OF_SOUL_STONE ) || (IsInFuryOfGnome() && !IsOusters()/*(IsSlayer() || IsVampire())*/)	) || 
-			IsCreatureMove( dynamic_cast<MCreature*>(this) ) && HasEffectStatus( EFFECTSTATUS_JABBING_VEIN ) ||
+			(IsCreatureMove( dynamic_cast<MCreature*>(this) ) && HasEffectStatus( EFFECTSTATUS_ICE_FIELD_TO_CREATURE )) ||
+			(IsCreatureMove( dynamic_cast<MCreature*>(this) ) && HasEffectStatus( EFFECTSTATUS_FROZEN_ARMOR_TO_ENEMY )) ||
+			(IsCreatureActionAttack( this ) && (	HasEffectStatus( EFFECTSTATUS_ICE_OF_SOUL_STONE ) || (IsInFuryOfGnome() && !IsOusters()/*(IsSlayer() || IsVampire())*/)	)) || 
+			(IsCreatureMove( dynamic_cast<MCreature*>(this) ) && HasEffectStatus( EFFECTSTATUS_JABBING_VEIN )) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_2 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_3 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_4 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_5 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_6 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_7 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_8 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_9 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_10 ) ||
-			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_11 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_12 )
+			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_11 ) || (HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_12 )
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )			
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
 #endif
-			)			
+			))			
 		{
 			if (g_CurrentFrame & 0x01)
 			{
@@ -9818,7 +9825,7 @@ MPlayer::Action()
 				//--------------------------------------------------------
 				// 사정거리 이내에 적이 없는 경우
 				//--------------------------------------------------------
-				if (creatureID == OBJECTID_NULL)
+				if (static_cast<TYPE_OBJECTID>(creatureID) == OBJECTID_NULL)
 				{
 					// [SKILLREPEAT DIAG] kept
 					if (m_bRepeatAction)
@@ -9927,10 +9934,10 @@ MPlayer::Action()
 			//------------------------------------------
 			BOOL bSlayer = IsSlayer();
 			if (m_bNextAction ||
-				(!IsOusters() || IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND )
+				((!IsOusters() || (IsOusters() && m_NextAction!=ACTION_OUSTERS_FAST_MOVE_STAND ))
 				&& m_NextAction!=ACTION_STAND 
-				&& (!bSlayer || bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND)
-				&& m_NextAction!=m_MoveAction)
+				&& (!bSlayer || (bSlayer && m_NextAction!=ACTION_SLAYER_MOTOR_STAND))
+				&& m_NextAction!=m_MoveAction))
 			{
 				SetAction( m_NextAction );
 				
@@ -9978,8 +9985,8 @@ MPlayer::Action()
 					BOOL bSlayer = IsSlayer();
 
 						// 정지 동작
-					if (m_Action==ACTION_STAND || IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_MOVE
-						|| bSlayer && m_Action==ACTION_SLAYER_MOTOR_STAND)
+					if (m_Action==ACTION_STAND || (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_MOVE)
+						|| (bSlayer && m_Action==ACTION_SLAYER_MOTOR_STAND))
 					{
 												
 						m_ActionCount++;						
@@ -10349,6 +10356,7 @@ MPlayer::RemoveEffectTarget(BYTE id)
 void
 MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction)
 {
+	(void)direction;
 	// 2004, 9, 16, sobeit add start - 터렛 방향 바꾸기, 뺄까..ㅡㅡ;
 //	if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 //	{
@@ -10877,6 +10885,7 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 bool		
 MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 {
+	(void)effectID;
 	/*
 	MActionResult* pResult = new MActionResult;
 	pResult->Add( new MActionResultNodeActionInfo( m_ID, m_TraceID, m_nUsedActionInfo ) );
@@ -11053,13 +11062,13 @@ MPlayer::BasicActionToCreature()
 			//---------------------------------------------------------------
 			// Trade 할려는 경우
 			//---------------------------------------------------------------
-			case REQUEST_TRADE :
+			case MRequestMode::REQUEST_TRADE :
 			{
 				if (IsWaitVerifyNULL() 
 					&& g_pTempInformation->GetMode() == TempInformation::MODE_NULL
-					&& (IsSlayer() && pCreature->IsSlayer() || 
-					IsVampire() && pCreature->IsVampire() || 
-					IsOusters() && pCreature->IsOusters())
+					&& ((IsSlayer() && pCreature->IsSlayer()) || 
+					(IsVampire() && pCreature->IsVampire()) || 
+					(IsOusters() && pCreature->IsOusters()))
 					)
 				{
 						// 교환 신청
@@ -11086,14 +11095,14 @@ MPlayer::BasicActionToCreature()
 			//---------------------------------------------------------------
 			// Party 할려는 경우
 			//---------------------------------------------------------------
-			case REQUEST_PARTY :
+			case MRequestMode::REQUEST_PARTY :
 			{
 				if (IsWaitVerifyNULL() 
 					&& g_pTempInformation->GetMode() == TempInformation::MODE_NULL
 					&& g_pParty!=NULL
 					// 내 파티원이 아닌 경우에만 신청 가능하다.
 					&& !g_pParty->HasMember( pCreature->GetName() )
-					&& (IsSlayer() && pCreature->IsSlayer() || IsVampire() && pCreature->IsVampire() || IsOusters() && pCreature->IsOusters())
+					&& ((IsSlayer() && pCreature->IsSlayer()) || (IsVampire() && pCreature->IsVampire()) || (IsOusters() && pCreature->IsOusters()))
 					&& g_pSystemAvailableManager->IsAvailablePartySystem()
 					)
 				{
@@ -11131,9 +11140,9 @@ MPlayer::BasicActionToCreature()
 //				else
 				if (IsWaitVerifyNULL() 
 					&& g_pTempInformation->GetMode() == TempInformation::MODE_NULL
-					&& (IsSlayer() && pCreature->IsSlayer() || 
-					IsVampire() && pCreature->IsVampire() || 
-					IsOusters() && pCreature->IsOusters() ||
+					&& ((IsSlayer() && pCreature->IsSlayer()) || 
+					(IsVampire() && pCreature->IsVampire()) || 
+					(IsOusters() && pCreature->IsOusters()) ||
 					GetCreatureType() == CREATURETYPE_SLAYER_OPERATOR ||
 					GetCreatureType() == CREATURETYPE_VAMPIRE_OPERATOR ||
 					GetCreatureType() == CREATURETYPE_OUSTERS_OPERATOR ||
@@ -11168,6 +11177,8 @@ MPlayer::BasicActionToCreature()
 				}
 			}
 			break;
+			default:
+				break;
 	
 		}
 
@@ -11199,7 +11210,7 @@ MPlayer::BasicActionToCreature()
 			pOustersItem = g_pOustersGear->GetItem(MOustersGear::GEAR_OUSTERS_RIGHTHAND);
 
 		if (m_bTraceCreatureToForceAttack 
-			&& (bOusters && pOustersItem != NULL && pOustersItem->GetItemClass() == ITEM_CLASS_OUSTERS_CHAKRAM
+			&& ((bOusters && pOustersItem != NULL && pOustersItem->GetItemClass() == ITEM_CLASS_OUSTERS_CHAKRAM)
 				|| !bOusters)
 			)
 		{
@@ -11573,9 +11584,9 @@ MPlayer::PickupItem(MItem* pItem)
 						)
 					{	
 						if (pItem->GetNumber()>0 || 
-							pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376 || 
-							pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563 || 
-							pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549 ||
+							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || 
+							(pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) || 
+							(pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) ||
 							pCreature->GetCreatureType() == 670 ||			// 깃대면
 							pCreature->GetCreatureType() == 672	||			// 스위퍼 보관대이면
 							pCreature->GetCreatureType() == 673
@@ -11606,12 +11617,12 @@ MPlayer::PickupItem(MItem* pItem)
 							// 성물이 아닌 경우에만, 수호성단이 아닌 경우에만.
 							if ( m_CreatureType==CREATURETYPE_WOLF && 
 								!(
-								pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376 || 
+								(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || 
 								pCreature->GetCreatureType() == 670	||			// 깃대면
 								pCreature->GetCreatureType() == 672 ||			// 스위퍼 보관대이면
 								pCreature->GetCreatureType() == 673 ||
-								pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549 || 
-								pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563
+								(pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) || 
+								(pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)
 								)								
 							   )
 							{
@@ -11772,9 +11783,9 @@ MPlayer::PickupItemToInventory(MItem* pItem)
 		if (IsItemCheckBufferNULL())
 		{
 			if (g_pInventory->GetFitPosition(pItem, fitPoint) && 
-				(pItem->IsSlayerItem() && IsSlayer() || 
-				pItem->IsVampireItem() && IsVampire() || 
-				pItem->IsOustersItem() && IsOusters()))
+				((pItem->IsSlayerItem() && IsSlayer()) || 
+				(pItem->IsVampireItem() && IsVampire()) || 
+				(pItem->IsOustersItem() && IsOusters())))
 			{
 				CGAddZoneToInventory _CGAddZoneToInventory;
 				
@@ -11868,9 +11879,9 @@ MPlayer::PickupItemToMouse(MItem* pItem)
 		//------------------------------------------
 		if (IsItemCheckBufferNULL())
 		{
-			if(pItem->IsSlayerItem() && IsSlayer() || 
-				pItem->IsVampireItem() && IsVampire() ||
-				pItem->IsOustersItem() && IsOusters())
+			if((pItem->IsSlayerItem() && IsSlayer()) || 
+				(pItem->IsVampireItem() && IsVampire()) ||
+				(pItem->IsOustersItem() && IsOusters()))
 			{
 				CGAddZoneToMouse _CGAddZoneToMouse;
 				
@@ -11905,12 +11916,12 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 	//------------------------------------------------------------------
 	// 일단 QuickSlot에 들어갈 수 있는지를 확인해야 한다.
 	//------------------------------------------------------------------
-	if ( (g_pQuickSlot!=NULL&&IsSlayer()) || ((g_pArmsBand1!=NULL||g_pArmsBand2!=NULL)&&IsOusters())
+	if ( (g_pQuickSlot!=NULL&&IsSlayer()) || (((g_pArmsBand1!=NULL||g_pArmsBand2!=NULL)&&IsOusters())
 		&& IsItemCheckBufferNULL()
 		&& g_pTempInformation->GetMode()==TempInformation::MODE_NULL
-		&& (pItem->IsSlayerItem() && IsSlayer() || 
-		pItem->IsVampireItem() && IsVampire() || 
-		pItem->IsOustersItem() && IsOusters()))
+		&& ((pItem->IsSlayerItem() && IsSlayer()) || 
+		(pItem->IsVampireItem() && IsVampire()) || 
+		(pItem->IsOustersItem() && IsOusters()))))
 	{
 		BOOL FirstArmsband = TRUE;
 		int slot;
@@ -12263,7 +12274,7 @@ MPlayer::CalculateStatus()
 	//-----------------------------------------------------------------
 	// item 착용한거에 따라서...
 	//-----------------------------------------------------------------
-	MItemManager* pGear;
+	MItemManager* pGear = NULL;
 
 	int weaponSpeed = 0;
 	int weaponTohit = 0;
@@ -12358,6 +12369,8 @@ MPlayer::CalculateStatus()
 			}
 			g_StatusManager.SetCurrentWeaponDomain( SKILLDOMAIN_OUSTERS, GetLEVEL() );
 		}
+		break;
+	default:
 		break;
 	}
 
@@ -12478,6 +12491,7 @@ MPlayer::CalculateStatus()
 				case ITEMOPTION_TABLE::PART_ATTACK_SPEED : AttackSpeed += optionInfo.PlusPoint; break;
 					
 				case ITEMOPTION_TABLE::PART_VISION :	SetItemLightSight(GetItemLightSight() + optionInfo.PlusPoint); break;
+				default: break;
 				}
 				optionListItr++;
 			}
@@ -12504,6 +12518,7 @@ MPlayer::CalculateStatus()
 				case ITEMOPTION_TABLE::PART_ATTACK_SPEED : AttackSpeed += optionInfo.PlusPoint; break;
 					
 				case ITEMOPTION_TABLE::PART_VISION :	SetItemLightSight(GetItemLightSight() + optionInfo.PlusPoint); break;
+				default: break;
 				}
 
 				itr++;
@@ -12548,7 +12563,7 @@ MPlayer::CalculateStatus()
 	//-----------------------------------------------------------------	
 //	m_Status[MODIFY_MIN_DAMAGE] = MinDAM; 
 //	m_Status[MODIFY_MAX_DAMAGE] = MaxDAM; 
-	int maxDAM, minDAM;
+	int maxDAM = 0, minDAM = 0;
 	int maxSilverDAM = 0, minSilverDAM = 0;
 
 	//-----------------------------------------------------------------
@@ -12584,11 +12599,11 @@ MPlayer::CalculateStatus()
 				// 은도금이 되어 있는 경우 : 은데미지 +10%
 				// 총인 경우 은총알 체크
 				//-----------------------------------------------------------------
-				if (!pWeapon->IsGunItem() && pWeapon->GetSilver() > 0
-					|| pWeapon->IsGunItem() 
+				if ((!pWeapon->IsGunItem() && pWeapon->GetSilver() > 0)
+					|| (pWeapon->IsGunItem() 
 						&& g_pCurrentMagazine!=NULL 
 						&& g_pCurrentMagazine->GetItemType()>=8
-						&& g_pCurrentMagazine->GetItemType()<=15)
+						&& g_pCurrentMagazine->GetItemType()<=15))
 				{
 					minSilverDAM += pWeapon->GetMinDamage() / 10;
 					maxSilverDAM += pWeapon->GetMaxDamage() / 10;
@@ -12637,6 +12652,8 @@ MPlayer::CalculateStatus()
 				
 			}
 		}
+		break;
+	default:
 		break;
 	}
 
@@ -12769,7 +12786,7 @@ MPlayer::FindEnemy()
 		// 특수 기술이 설정되지 않은 경우
 		if (m_nSpecialActionInfo==ACTIONINFO_NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		actionDistance = GetActionInfoRange( m_nSpecialActionInfo );
@@ -12808,7 +12825,7 @@ MPlayer::FindEnemy()
 				//--------------------------------------------------
 				// 처음 선택된 캐릭터인 경우
 				//--------------------------------------------------
-				if (targetCreatureID==OBJECTID_NULL)
+				if (static_cast<TYPE_OBJECTID>(targetCreatureID)==OBJECTID_NULL)
 				{
 					targetCreatureID = pCreature->GetID();
 				}
@@ -12936,8 +12953,8 @@ void
 MPlayer::CheckInDarkness()
 {
 	if (g_pZone!=NULL && 
-		( !IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS)|| g_pZone->GetID() == 3001 ) || 
-		g_pZone->GetID() == 3001 && IsVampire())
+		( (!IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS)|| g_pZone->GetID() == 3001 )) || 
+		(g_pZone->GetID() == 3001 && IsVampire()))
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
@@ -13195,6 +13212,8 @@ void	MPlayer::CalculateSight()
 				case ITEMOPTION_TABLE::PART_VISION :	
 					SetItemLightSight(GetItemLightSight() + optionInfo.PlusPoint); 
 					break;
+				default:
+					break;
 				}
 				optionListItr++;
 			}
@@ -13213,6 +13232,8 @@ void	MPlayer::CalculateSight()
 				case ITEMOPTION_TABLE::PART_VISION :	
 					SetItemLightSight(GetItemLightSight() + optionInfo.PlusPoint); 
 					break;
+				default:
+					break;
 				}
 				itr++;
 			}
@@ -13230,8 +13251,8 @@ void	MPlayer::CalculateSight()
 		SetItemLightSight( GetItemLightSight() + 15 );
 	} else
 	{
-		if( HasEffectStatus( EFFECTSTATUS_FLARE ) && IsVampire() || 
-			HasEffectStatus( EFFECTSTATUS_YELLOW_POISON ) && IsSlayer() ||
+		if( (HasEffectStatus( EFFECTSTATUS_FLARE ) && IsVampire()) || 
+			(HasEffectStatus( EFFECTSTATUS_YELLOW_POISON ) && IsSlayer()) ||
 			HasEffectStatus( EFFECTSTATUS_YELLOW_POISON_TO_CREATURE ) )//||
 //			HasEffectStatus( EFFECTSTATUS_BLINDNESS ))
 			SetItemLightSight( 1 );

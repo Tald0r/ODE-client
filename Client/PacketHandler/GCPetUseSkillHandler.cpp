@@ -21,6 +21,7 @@ void GCPetUseSkillHandler::execute ( GCPetUseSkill * pGCPetUseSkill , Player * p
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 	TYPE_OBJECTID attackerID = pGCPetUseSkill->getAttacker();
 	TYPE_OBJECTID targetID = pGCPetUseSkill->getTarget();

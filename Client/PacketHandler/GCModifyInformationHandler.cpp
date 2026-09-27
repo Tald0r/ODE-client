@@ -17,6 +17,7 @@ void GCModifyInformationHandler::execute ( GCModifyInformation * pPacket, Player
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	// message

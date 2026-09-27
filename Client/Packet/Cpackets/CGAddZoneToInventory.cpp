@@ -18,8 +18,6 @@ CGAddZoneToInventory::CGAddZoneToInventory ()
 
 CGAddZoneToInventory::~CGAddZoneToInventory ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGAddZoneToInventory::read (SocketInputStream & iStream)

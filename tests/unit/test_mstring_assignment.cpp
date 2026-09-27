@@ -29,10 +29,11 @@ TEST(MStringAssignment, CopiesItsOwnTextBeforeReleasingStorage)
 TEST(MStringAssignment, SelfAssignmentPreservesTheObject)
 {
 	MString value("unchanged");
-	value = value;
+	MString& self = value;
+	value = self;
 	CHECK(HasText(value, "unchanged"));
 	value.Init(0);
-	value = value;
+	value = self;
 	CHECK(HasText(value, ""));
 }
 

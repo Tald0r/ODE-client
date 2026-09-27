@@ -247,6 +247,7 @@ int platform_thread_wait(platform_thread_t thread) {
 }
 
 void platform_thread_close(platform_thread_t thread) {
+	(void)thread;
 	/* SDL threads are automatically cleaned up by SDL_WaitThread */
 	/* No explicit close needed */
 }
@@ -510,7 +511,7 @@ BYTE platform_get_scan_code(DWORD lParam) {
 #ifndef PLATFORM_WINDOWS
 
 /* Config file path (fallback for registry) */
-static char g_config_file_path[PATH_MAX] = {0};
+static char g_config_file_path[PATH_MAX + sizeof("DarkEden.conf")] = {0};
 
 static void get_config_file_path(void) {
 	if (g_config_file_path[0] != '\0') return; /* Already computed */

@@ -21,6 +21,7 @@ void GCNPCSayDynamicHandler::execute ( GCNPCSayDynamic * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 	
 
 	//------------------------------------------------------

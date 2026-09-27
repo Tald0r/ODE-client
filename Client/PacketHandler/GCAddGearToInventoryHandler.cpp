@@ -19,6 +19,7 @@
 void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 
@@ -112,6 +113,8 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 			}
 			break;
 
+		default:
+			break;
 	}
 
 

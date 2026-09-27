@@ -308,6 +308,6 @@ CMessageArray::Clear()
 	if (!m_ppMessage) return;
 	for (int i=0; i<m_Max; i++)
 	{
-		m_ppMessage[i][0] = NULL;
+		m_ppMessage[i][0] = '\0';
 	}
 }

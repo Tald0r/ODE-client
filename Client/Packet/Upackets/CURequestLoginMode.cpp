@@ -16,6 +16,7 @@
 void CURequestLoginMode::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 	__END_CATCH
 }
 
@@ -26,6 +27,7 @@ void CURequestLoginMode::read ( SocketInputStream & iStream )
 void CURequestLoginMode::read ( Socket * pSocket )
 {
 	__BEGIN_TRY
+	(void)pSocket;
 	__END_CATCH
 }
 
@@ -36,6 +38,7 @@ void CURequestLoginMode::read ( Socket * pSocket )
 void CURequestLoginMode::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 	__END_CATCH
 }
 

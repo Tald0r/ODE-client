@@ -38,8 +38,6 @@ GCShopBuyOK::GCShopBuyOK()
 //////////////////////////////////////////////////////////////////////////////
 GCShopBuyOK::~GCShopBuyOK()
 {
-	__BEGIN_TRY 
-	__END_CATCH;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -88,7 +86,6 @@ void GCShopBuyOK::write ( SocketOutputStream & oStream ) const
 	oStream.write(m_ItemClass);
 	oStream.write(m_ItemType);
 	
-	BYTE optionSize = m_OptionType.size();
 	std::list<OptionType_t>::const_iterator itr = m_OptionType.begin();
 	for (; itr!=m_OptionType.end(); itr++)
 	{

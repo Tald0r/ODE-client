@@ -19,6 +19,7 @@ void GCChangeWeatherHandler::execute ( GCChangeWeather * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	

@@ -7,7 +7,9 @@
 #ifndef	__SERVERINFORMATION_H__
 #define	__SERVERINFORMATION_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "CTypeMap2.h"
 #include "MString.h"

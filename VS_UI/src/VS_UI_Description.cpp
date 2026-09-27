@@ -2,6 +2,7 @@
 
 #include "Client_PCH.h"
 #include <assert.h>
+#undef assert
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 
@@ -142,6 +143,7 @@ BuildItemTooltipNames(MItem* pItem)
 //-----------------------------------------------------------------------------
 void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)right;
 //	//test
 //	int _grade = 4;
 
@@ -623,7 +625,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			if (p_item->GetMaxDurability() != -1&&!p_item->IsUniqueItem()&&p_item->GetItemClass()!=ITEM_CLASS_VAMPIRE_AMULET && !p_item->IsQuestItem())
 			{
 				vx = g_PrintColorStr(px, py, (*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_DURABILITY].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
-				SafeFormat::Format(sz_buf, "???/???");
+				SafeFormat::Format(sz_buf, "??\?/???");
 				g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);				
 				py += SMALL_FONT_Y_GAP;
 			}
@@ -631,7 +633,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			if (p_item->GetSilverMax() != -1)
 			{
 				vx = g_PrintColorStr(px, py,(*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_SILVERING].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
-				SafeFormat::Format(sz_buf, "???/???");
+				SafeFormat::Format(sz_buf, "??\?/???");
 				g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);				
 				py += SMALL_FONT_Y_GAP;
 			}
@@ -747,7 +749,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			if (p_item->IsChargeItem() == true)
 			{
 				vx = g_PrintColorStr(px, py,(*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_LEFT_NUM].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
-				SafeFormat::Format(sz_buf, "???/???");
+				SafeFormat::Format(sz_buf, "??\?/???");
 				g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);				
 				py += SMALL_FONT_Y_GAP;
 			}
@@ -874,7 +876,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			
 			if(p_AddItem!=NULL)
 			{
-				if(p_AddItem->GetItemClass() == ITEM_CLASS_CORE_ZAP && p_AddItem->GetItemType()>=0 && p_AddItem->GetItemType()<=3)
+				if(p_AddItem->GetItemClass() == ITEM_CLASS_CORE_ZAP && p_AddItem->GetItemType()<=3)
 				{
 						const std::list<TYPE_ITEM_OPTION> &optionList=p_item->GetItemOptionList();
 					const std::list<TYPE_ITEM_OPTION> &DefaultOptionList = p_item->GetItemDefaultOptionList();
@@ -1041,7 +1043,6 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 						bl_required = true;
 						
 						int LevelGrade = (RequireAdvancementLevel-1)/10;
-						int LevelUnits = (RequireAdvancementLevel-1)%10;
 
 						//sprintf(sz_buf, (*g_pGameStringTable)[UI_STRING_MESSAGE_REQUIRE_ADVANCEMENT_LEVEL_0+LevelGrade].GetString(), LevelUnits+1);
 						SafeFormat::Format(sz_buf, GetGameString(UI_STRING_MESSAGE_REQUIRE_ADVANCEMENT_LEVEL_0+LevelGrade), RequireAdvancementLevel);
@@ -1114,7 +1115,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 		// Price
 		// by csm
 
-		if(gC_vs_ui.IsRunningPersnalShop() && p_item->GetPersnalPrice() !=-1 ) 
+		if(gC_vs_ui.IsRunningPersnalShop() && p_item->GetPersnalPrice() != static_cast<TYPE_ITEM_PRICE>(-1) ) 
 		{
 			
 			std::string sstr;
@@ -1142,7 +1143,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					SafeFormat::Format(sz_buf, "%d", TempPrice);
 					std::string sstr = sz_buf;
 					for(int i = 3; i <= 13; i += 4)
-						if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+						if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 					SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 					vx = g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 					SafeFormat::Format(sz_buf, "(%dx%d)", TempPrice/p_item->GetNumber(),max(0, p_item->GetNumber()));
@@ -1165,7 +1166,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 
 					sstr = sz_buf;
 					for(int i = 3; i <= 13; i += 4)
-						if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+						if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 					SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 					g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 				}
@@ -1203,7 +1204,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					SafeFormat::Format(sz_buf, "%d", TempPrice*max(0,p_item->GetNumber()));
 					sstr = sz_buf;
 					for(int i = 3; i <= 13; i += 4)
-						if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+						if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 					SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 					vx = g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 					
@@ -1226,7 +1227,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					SafeFormat::Format(sz_buf, "%d", TempPrice);
 					sstr = sz_buf;
 					for(int i = 3; i <= 13; i += 4)
-						if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+						if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 					SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 					g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 				}
@@ -1277,7 +1278,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 						SafeFormat::Format(sz_buf, "%d", TempPrice*p_item->GetNumber());
 						sstr = sz_buf;
 						for(int i = 3; i <= 13; i += 4)
-							if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+							if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 						SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 						vx = g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 						SafeFormat::Format(sz_buf, "(%dx%d)", TempPrice, max(p_item->GetNumber(),0) );
@@ -1299,7 +1300,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 						SafeFormat::Format(sz_buf, "%d", TempPrice);
 						sstr = sz_buf;
 						for(int i = 3; i <= 13; i += 4)
-							if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+							if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 						SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 						g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 					}
@@ -1331,7 +1332,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 				SafeFormat::Format(sz_buf, "%d", TempPrice);
 				std::string sstr = sz_buf;
 				for(int i = 3; i <= 13; i += 4)
-					if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+					if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 				SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 				g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 			}			
@@ -1358,7 +1359,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 				SafeFormat::Format(sz_buf, "%d", max( 0, TempPrice));
 				std::string sstr = sz_buf;
 				for(int i = 3; i <= 13; i += 4)
-					if(sstr.size() > i)sstr.insert(sstr.size()-i, ",");
+					if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 				SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 				g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 			}			
@@ -1388,10 +1389,10 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 		{
 			bCanUpgrade = false;
 		} else		
-		if(pMouseItem->GetItemType() >= 8 && 
-			pMouseItem->GetItemType() <=14  ||
-			pMouseItem->GetItemType() >= 17 && 
-			pMouseItem->GetItemType() <= 21)
+		if((pMouseItem->GetItemType() >= 8 &&
+			pMouseItem->GetItemType() <=14)  ||
+			(pMouseItem->GetItemType() >= 17 &&
+			pMouseItem->GetItemType() <= 21))
 		{
 			if(p_item->GetItemOptionListCount() == 0)
 				bCanUpgrade = true;
@@ -1538,7 +1539,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 		MPetItem* pPetItem = (MPetItem*)p_item;
 		int bCanUpgrade = 0;
 		
-		if((pMouseItem->GetItemType() < 13 || pMouseItem->GetItemType() >= 16 && pMouseItem->GetItemType() <= 19) &&
+		if((pMouseItem->GetItemType() < 13 || (pMouseItem->GetItemType() >= 16 && pMouseItem->GetItemType() <= 19)) &&
 			pPetItem->GetSilver() == 0 &&
 			pPetItem->GetNumber() >= 10)
 			bCanUpgrade = 1;
@@ -1683,6 +1684,8 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 //-----------------------------------------------------------------------------
 void	_Skill_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)void_ptr;
+	(void)right;
 
 	RECT _rect;
 	SetRect(&_rect, rect.x, rect.y, rect.x+rect.w, rect.y+rect.h);
@@ -1773,6 +1776,9 @@ void	_Skill_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			case RACE_OUSTERS:
 				vx = g_PrintColorStr(px, py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CONSUME_EP].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
 				break;
+
+			default:
+				break;
 			}
 
 		if( left == SKILL_WILL_OF_LIFE )
@@ -1822,6 +1828,7 @@ void	_Skill_Description_Show(Rect rect, void * void_ptr, long left, long right)
 //-----------------------------------------------------------------------------
 void	_BloodBible_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)left;
 	S_BLOOD_BIBLE_DESCRIPTION *desc = (S_BLOOD_BIBLE_DESCRIPTION*)void_ptr;
 	COLORREF color = (COLORREF) right;
 	RECT _rect;
@@ -1891,6 +1898,7 @@ void	_BloodBible_Description_Show(Rect rect, void * void_ptr, long left, long ri
 
 void	_Strings_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)right;
 	LPSTR* ptr = (LPSTR *)void_ptr;
 
 
@@ -1924,6 +1932,7 @@ void	_Strings_Description_Show(Rect rect, void * void_ptr, long left, long right
 //-----------------------------------------------------------------------------
 void	_Info_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)right;
 
 	RECT _rect;
 	SetRect(&_rect, rect.x, rect.y, rect.x+rect.w, rect.y+rect.h);
@@ -1949,6 +1958,7 @@ void	_Info_Description_Show(Rect rect, void * void_ptr, long left, long right)
 //-----------------------------------------------------------------------------
 void	_SkillTree_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)right;
 
 	RECT _rect;
 	SetRect(&_rect, rect.x, rect.y, rect.x+rect.w, rect.y+rect.h);
@@ -2016,7 +2026,7 @@ void	_SkillTree_Description_Show(Rect rect, void * void_ptr, long left, long rig
 	
 	if(status==MSkillDomain::SKILLSTATUS_LEARNED || g_eRaceInterface == RACE_OUSTERS)
 	{
-		if (g_eRaceInterface != RACE_VAMPIRE && !(*g_pSkillInfoTable)[left].IsPassive() || g_eRaceInterface == RACE_OUSTERS)
+		if ((g_eRaceInterface != RACE_VAMPIRE && !(*g_pSkillInfoTable)[left].IsPassive()) || g_eRaceInterface == RACE_OUSTERS)
 		{
 			SafeFormat::Format(sz_buf,"%s: ",(*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_LEVEL].GetString());
 			vx = g_PrintColorStr(px, py, sz_buf, gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
@@ -2059,6 +2069,9 @@ void	_SkillTree_Description_Show(Rect rect, void * void_ptr, long left, long rig
 			
 		case RACE_OUSTERS:
 			vx = g_PrintColorStr(px, py, (*g_pGameStringTable)[UI_STRING_MESSAGE_CONSUME_EP].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
+			break;
+
+		default:
 			break;
 		}
 		
@@ -2185,6 +2198,9 @@ void	_SkillTree_Description_Show(Rect rect, void * void_ptr, long left, long rig
 		case RACE_OUSTERS:
 			domain_level = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetDomainLevel();
 			break;
+
+		default:
+			break;
 		}
 
 		if(g_eRaceInterface == RACE_OUSTERS)
@@ -2272,6 +2288,7 @@ void	_SkillTree_Description_Show(Rect rect, void * void_ptr, long left, long rig
 //-----------------------------------------------------------------------------
 void	_Help_Description_Show(Rect rect, void * void_ptr, long left, long right)
 {
+	(void)left;
 
 	RECT _rect;
 	SetRect(&_rect, rect.x, rect.y, rect.x+rect.w, rect.y+rect.h);
@@ -2344,7 +2361,7 @@ void _Item_Description_Calculator(void (*fp_show)(Rect, void *, long, long), int
 	{
 		if(pAddItem->GetItemClass() == ITEM_CLASS_CORE_ZAP)
 		{
-			if(pAddItem->GetItemType() >= 0 && pAddItem->GetItemType() <=3)
+			if(pAddItem->GetItemType() <=3)
 				line_count+= 3;
 		}
 	}
@@ -2491,7 +2508,7 @@ void _Item_Description_Calculator(void (*fp_show)(Rect, void *, long, long), int
 				line_count++;
 			if (p_item->IsPileItem() == true || p_item->IsChargeItem())
 				line_count++;
-			if (p_item->GetPersnalPrice() != -1)
+			if (p_item->GetPersnalPrice() != static_cast<TYPE_ITEM_PRICE>(-1))
 				line_count++;
 			// 2004, 04, 3 sobeit add start
 			if(p_item->GetLucky() != -9999 && itemClass != ITEM_CLASS_COUPLE_RING && itemClass != ITEM_CLASS_VAMPIRE_COUPLE_RING)
@@ -2546,9 +2563,9 @@ void _Item_Description_Calculator(void (*fp_show)(Rect, void *, long, long), int
 
 					}
 					
-					if(!p_item->IsSlayerItem() && g_eRaceInterface == RACE_SLAYER ||
-						!p_item->IsVampireItem() && g_eRaceInterface == RACE_VAMPIRE ||
-						!p_item->IsOustersItem() && g_eRaceInterface == RACE_OUSTERS)
+					if((!p_item->IsSlayerItem() && g_eRaceInterface == RACE_SLAYER) ||
+						(!p_item->IsVampireItem() && g_eRaceInterface == RACE_VAMPIRE) ||
+						(!p_item->IsOustersItem() && g_eRaceInterface == RACE_OUSTERS))
 						line_count++;
 					
 					if (p_item->IsGenderForMale() || p_item->IsGenderForFemale())
@@ -2723,7 +2740,7 @@ void _Skill_Description_Calculator(void (*fp_show)(Rect, void *, long, long), in
 		g_descriptor_manager.RectCalculationFinished(fp_show, rect, void_ptr, left, right);
 		return;
 	}	
-	if (g_eRaceInterface == RACE_VAMPIRE || (*g_pSkillInfoTable)[left].IsPassive() && g_eRaceInterface != RACE_OUSTERS || left == SKILL_LOVE_CHAIN)
+	if (g_eRaceInterface == RACE_VAMPIRE || ((*g_pSkillInfoTable)[left].IsPassive() && g_eRaceInterface != RACE_OUSTERS) || left == SKILL_LOVE_CHAIN)
 	{
 		line_count--;
 	}

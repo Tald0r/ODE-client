@@ -129,7 +129,7 @@ MParty::AddMember(PARTY_INFO* pInfo)
 	if (pInfo == nullptr
 		|| (pInfo->Name.GetString() == nullptr && pInfo->ID == OBJECTID_NULL))
 		return false;
-	if (GetSize() >= m_pInfo.capacity())
+	if (static_cast<size_t>(GetSize()) >= m_pInfo.capacity())
 		return false;
 
 	if (pInfo->Name.GetString() == nullptr)
@@ -174,7 +174,7 @@ MParty::RemoveMember(int creatureID)
 	for (auto member = m_pInfo.begin(); member != m_pInfo.end(); ++member)
 	{
 		PARTY_INFO* info = *member;
-		if (info && info->ID == creatureID)
+		if (info && info->ID == static_cast<TYPE_OBJECTID>(creatureID))
 		{
 			LeaveByID(creatureID);
 			delete info;
@@ -191,7 +191,7 @@ MParty::RemoveMember(int creatureID)
 PARTY_INFO*	
 MParty::GetMemberInfo(int n) const
 {
-	if (n>=0 && n < m_pInfo.size())
+	if (n>=0 && static_cast<size_t>(n) < m_pInfo.size())
 	{
 		return m_pInfo[n];
 	}
@@ -205,7 +205,7 @@ MParty::GetMemberInfo(int n) const
 PARTY_INFO*	
 MParty::GetMemberInfo(const char* pName) const
 {
-	if (pName==NULL || pName[0]==NULL)
+	if (pName==NULL || pName[0]=='\0')
 	{
 		return NULL;
 	}
@@ -233,7 +233,7 @@ MParty::GetMemberInfo(const char* pName) const
 PARTY_INFO*	
 MParty::GetMemberInfoByIP(const char* pIP) const
 {
-	if (pIP==NULL || pIP[0]==NULL)
+	if (pIP==NULL || pIP[0]=='\0')
 	{
 		return NULL;
 	}
@@ -261,7 +261,7 @@ MParty::GetMemberInfoByIP(const char* pIP) const
 bool		
 MParty::HasMember(const char* pName) const
 {
-	if (pName==NULL || pName[0]==NULL)
+	if (pName==NULL || pName[0]=='\0')
 	{
 		return false;
 	}

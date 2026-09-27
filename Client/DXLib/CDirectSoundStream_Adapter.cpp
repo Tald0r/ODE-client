@@ -144,6 +144,7 @@ BOOL CSDLStream::UpdateProgress()
 /* Handle notification (stub for SDL backend) */
 BOOL CSDLStream::HandleNotification(BOOL bLooped)
 {
+	(void)bLooped;
 	// Not applicable for SDL backend
 	return TRUE;
 }
@@ -151,6 +152,7 @@ BOOL CSDLStream::HandleNotification(BOOL bLooped)
 /* Fill buffer (stub for SDL backend) */
 BOOL CSDLStream::FillBuffer(BOOL bLooped)
 {
+	(void)bLooped;
 	// Not applicable for SDL backend
 	return TRUE;
 }
@@ -158,6 +160,9 @@ BOOL CSDLStream::FillBuffer(BOOL bLooped)
 /* Read stream (stub for SDL backend) */
 BOOL CSDLStream::ReadStream(BOOL bLooped, VOID* pbBuffer, DWORD dwBufferLength)
 {
+	(void)bLooped;
+	(void)pbBuffer;
+	(void)dwBufferLength;
 	// Not applicable for SDL backend
 	return TRUE;
 }
@@ -165,6 +170,7 @@ BOOL CSDLStream::ReadStream(BOOL bLooped, VOID* pbBuffer, DWORD dwBufferLength)
 /* Restore buffers (stub for SDL backend) */
 BOOL CSDLStream::RestoreBuffers(BOOL bLooped)
 {
+	(void)bLooped;
 	// Not applicable for SDL backend
 	return TRUE;
 }
@@ -180,6 +186,11 @@ BOOL CSDLStream::Reset()
 HRESULT CSDLStream::WaveReadFile(HMMIO hmmioIn, UINT cbRead, BYTE* pbDest,
 	DXLIB_CKINFO* pckIn, UINT* cbActualRead)
 {
+	(void)hmmioIn;
+	(void)cbRead;
+	(void)pbDest;
+	(void)pckIn;
+	(void)cbActualRead;
 	// Not applicable for SDL backend
 	return S_OK;
 }

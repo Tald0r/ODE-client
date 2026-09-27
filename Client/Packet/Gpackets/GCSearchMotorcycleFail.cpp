@@ -17,6 +17,7 @@
 void GCSearchMotorcycleFail::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
+	(void)iStream;
 	__END_CATCH
 }
 
@@ -27,6 +28,7 @@ void GCSearchMotorcycleFail::read ( SocketInputStream & iStream )
 void GCSearchMotorcycleFail::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
+	(void)oStream;
 	__END_CATCH
 }
 

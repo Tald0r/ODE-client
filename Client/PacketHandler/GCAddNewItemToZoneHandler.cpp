@@ -18,6 +18,7 @@ void GCAddNewItemToZoneHandler::execute ( GCAddNewItemToZone * pPacket , Player 
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 		
 
 	#ifdef __DEBUG_OUTPUT__

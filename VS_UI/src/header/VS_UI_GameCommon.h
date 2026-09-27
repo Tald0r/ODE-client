@@ -876,10 +876,11 @@ public:
 	void	ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button);
 	void	ShowButtonDescription(C_VS_UI_EVENT_BUTTON *p_button);
 	bool	MouseControl(UINT message, int _x, int _y);
-	void	KeyboardControl(UINT message, UINT key, long extra){}
+	void	KeyboardControl(UINT message, UINT key, long extra){ (void)message; (void)key; (void)extra; }
 //	void	WindowEventReceiver(id_t event);
 	void	ResetRect();
 	
+	using PI_Processor::Start;
 	void	Start(bool bl_set_load);
 	void	Finish();
 	void	Show();
@@ -897,7 +898,8 @@ private:
 	int					m_tag_y, m_tag_diff_y;
 
 	int scroll_up_x, scroll_up_y, scroll_down_x, scroll_down_y;
-	int history_x, history_y, history_width;
+	int history_x, history_y;
+	[[maybe_unused]] int history_width;
 	int	lev_send_width;
 	int close_x, close_y;
 
@@ -1073,6 +1075,7 @@ public:
 	bool	IsCreateBombProgress()		{ return gbl_mine_progress; }
 	void	EndCreateBombProgress()	{ gbl_mine_progress = false; }
 
+	using PI_Processor::Start;
 	void	Start(bool bl_set_load = true);
 	void	Finish();
 	void	Show();
@@ -1178,6 +1181,7 @@ public:
 	C_VS_UI_GEAR();
 	virtual ~C_VS_UI_GEAR();
 
+	using PI_Processor::Start;
 	void	Start(bool bl_set_load = true);
 	void	Finish();
 	
@@ -1295,7 +1299,7 @@ public:
 	void	CancelPushState();
 	void	UnacquireMouseFocus();	
 	void	WindowEventReceiver(id_t event);
-	bool	IsPixel(int _x, int _y)	{ return false; }
+	bool	IsPixel(int _x, int _y)	{ (void)_x; (void)_y; return false; }
 	bool	IsPixel2(int _x, int _y);
 
 	bool	MouseControl(UINT message, int _x, int _y);
@@ -2554,6 +2558,7 @@ public:
 	void	_Show5();	// Grade2
 	void	Process();
 //	void	Start(bool skill_mode);
+	using PI_Processor::Start;
 	void	Start(INFO_MODE	Info_Mode);
 	void	Finish();
 

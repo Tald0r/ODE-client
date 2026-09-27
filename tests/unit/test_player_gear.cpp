@@ -52,7 +52,8 @@ void	RepairHint()						{ s_RepairHints++; }
 MMagazine*	EmptyMagazineFor(MItem*)		{ return NULL; }
 
 const MItemHost	s_Host = { &s_Frame, DropFrameCount, RefreshAffect, PlayItemSound, NULL,
-							RecalculateStatus, ResetQuickItemSlot, RepairHint, EmptyMagazineFor };
+							RecalculateStatus, ResetQuickItemSlot, RepairHint, EmptyMagazineFor,
+							NULL, NULL };
 
 //----------------------------------------------------------------------
 // The tables: each class carries the race that may wear it and a gear

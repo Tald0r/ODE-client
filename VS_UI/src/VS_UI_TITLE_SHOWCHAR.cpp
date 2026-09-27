@@ -293,20 +293,20 @@ void	C_VS_UI_NEWCHAR::_ShowCharacterSlayer( int _x, int _y, S_SLOT* p_slot, int 
 		else
 			if(item_color == UNIQUE_ITEM_COLOR)
 				item_color = MItem::GetUniqueItemColorset();
-			CIndexSprite::SetUsingColorSet(item_color, 0); // blt와 한쌍을 이뤄야 함. 출력직전에 설정.
+		CIndexSprite::SetUsingColorSet(item_color, 0); // blt와 한쌍을 이뤄야 함. 출력직전에 설정.
 			
-			part_id = info->helmet +female_plus;
-			sprite_id = m_slayer_cfpk[part_id][enable][2][index].GetSpriteID();
+		part_id = info->helmet +female_plus;
+		sprite_id = m_slayer_cfpk[part_id][enable][2][index].GetSpriteID();
 			
-			// 						AssertSlayerSprite(sprite_id);
+		// 						AssertSlayerSprite(sprite_id);
 			
-			point.x = _x+m_slayer_cfpk[part_id][enable][2][index].GetCX();
-			point.y = _y+m_slayer_cfpk[part_id][enable][2][index].GetCY();
+		point.x = _x+m_slayer_cfpk[part_id][enable][2][index].GetCX();
+		point.y = _y+m_slayer_cfpk[part_id][enable][2][index].GetCY();
 			
-			if(dark)
-				gpC_base->m_p_DDSurface_back->BltIndexSpriteDarkness(&point, &m_slayer_ispk[sprite_id], DARK_BIT);
-			else
-				gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_slayer_ispk[sprite_id]);
+		if(dark)
+			gpC_base->m_p_DDSurface_back->BltIndexSpriteDarkness(&point, &m_slayer_ispk[sprite_id], DARK_BIT);
+		else
+			gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_slayer_ispk[sprite_id]);
 	}
 	
 	// 무기 & 방어구
@@ -319,20 +319,20 @@ void	C_VS_UI_NEWCHAR::_ShowCharacterSlayer( int _x, int _y, S_SLOT* p_slot, int 
 			if(item_color == UNIQUE_ITEM_COLOR)
 				item_color = MItem::GetUniqueItemColorset();
 			
-			CIndexSprite::SetUsingColorSet(item_color, 0); // blt와 한쌍을 이뤄야 함. 출력직전에 설정.
+		CIndexSprite::SetUsingColorSet(item_color, 0); // blt와 한쌍을 이뤄야 함. 출력직전에 설정.
 			
-			part_id = info->right +female_plus;
-			sprite_id = m_slayer_cfpk[part_id][enable][2][index].GetSpriteID();
+		part_id = info->right +female_plus;
+		sprite_id = m_slayer_cfpk[part_id][enable][2][index].GetSpriteID();
 			
-			// 						AssertSlayerSprite(sprite_id);
+		// 						AssertSlayerSprite(sprite_id);
 			
-			point.x = _x+m_slayer_cfpk[part_id][enable][2][index].GetCX();
-			point.y = _y+m_slayer_cfpk[part_id][enable][2][index].GetCY();
+		point.x = _x+m_slayer_cfpk[part_id][enable][2][index].GetCX();
+		point.y = _y+m_slayer_cfpk[part_id][enable][2][index].GetCY();
 			
-			if(dark)
-				gpC_base->m_p_DDSurface_back->BltIndexSpriteDarkness(&point, &m_slayer_ispk[sprite_id], DARK_BIT);
-			else
-				gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_slayer_ispk[sprite_id]);
+		if(dark)
+			gpC_base->m_p_DDSurface_back->BltIndexSpriteDarkness(&point, &m_slayer_ispk[sprite_id], DARK_BIT);
+		else
+			gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_slayer_ispk[sprite_id]);
 	}
 	
 	if (/*p_slot->bl_female && */info->left != M_NO_WEAR)
@@ -344,20 +344,20 @@ void	C_VS_UI_NEWCHAR::_ShowCharacterSlayer( int _x, int _y, S_SLOT* p_slot, int 
 			if(item_color == UNIQUE_ITEM_COLOR)
 				item_color = MItem::GetUniqueItemColorset();
 			
-			CIndexSprite::SetUsingColorSet(item_color, 0); // blt와 한쌍을 이뤄야 함. 출력직전에 설정.
+		CIndexSprite::SetUsingColorSet(item_color, 0); // blt와 한쌍을 이뤄야 함. 출력직전에 설정.
 			
-			part_id = info->left +female_plus;
-			sprite_id = m_slayer_cfpk[part_id][enable][2][index].GetSpriteID();
+		part_id = info->left +female_plus;
+		sprite_id = m_slayer_cfpk[part_id][enable][2][index].GetSpriteID();
 			
-			// 						AssertSlayerSprite(sprite_id);
+		// 						AssertSlayerSprite(sprite_id);
 			
-			point.x = _x+m_slayer_cfpk[part_id][enable][2][index].GetCX();
-			point.y = _y+m_slayer_cfpk[part_id][enable][2][index].GetCY();
+		point.x = _x+m_slayer_cfpk[part_id][enable][2][index].GetCX();
+		point.y = _y+m_slayer_cfpk[part_id][enable][2][index].GetCY();
 			
-			if(dark)
-				gpC_base->m_p_DDSurface_back->BltIndexSpriteDarkness(&point, &m_slayer_ispk[sprite_id], DARK_BIT);
-			else
-				gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_slayer_ispk[sprite_id]);
+		if(dark)
+			gpC_base->m_p_DDSurface_back->BltIndexSpriteDarkness(&point, &m_slayer_ispk[sprite_id], DARK_BIT);
+		else
+			gpC_base->m_p_DDSurface_back->BltIndexSprite(&point, &m_slayer_ispk[sprite_id]);
 	}
 	}catch(...){}
 }
@@ -684,6 +684,7 @@ void	C_VS_UI_NEWCHAR::_ShowCharacterACSlayer( int _x, int _y, S_SLOT* p_slot, in
 		case AC_ADDON_LEFTHAND :
 			if( info->left == M_NO_WEAR )
 				continue;
+			[[fallthrough]];
 		case AC_ADDON_RIGHTHAND :
 			if( clothes == AC_ADDON_RIGHTHAND && info->right == M_NO_WEAR )
 				continue;

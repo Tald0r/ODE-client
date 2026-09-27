@@ -28,9 +28,7 @@ GCShopMarketCondition::GCShopMarketCondition()
 //--------------------------------------------------------------------
 GCShopMarketCondition::~GCShopMarketCondition()
 {
-	__BEGIN_TRY 
 	
-	__END_CATCH;
 }
 
 //--------------------------------------------------------------------

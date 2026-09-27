@@ -12,7 +12,7 @@
 #include "Client_PCH.h"
 
 #include "SocketAPI.h"
-#if __WINDOWS__
+#if defined(__WINDOWS__) && __WINDOWS__
 #elif defined(PLATFORM_POSIX)
 #include <sys/types.h>			// for accept()
 #include <sys/socket.h>
@@ -26,7 +26,7 @@
 
 using namespace FileAPI;
 
-#if __WINDOWS__
+#if defined(__WINDOWS__) && __WINDOWS__
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -87,7 +87,7 @@ SOCKET SocketAPI::socket_ex ( int domain , int type , int protocol )
 {
 	__BEGIN_TRY
 
-#if __WINDOWS__
+#if defined(__WINDOWS__) && __WINDOWS__
 	ensureWinsockStarted();
 #endif
 
@@ -1015,6 +1015,9 @@ void SocketAPI::closesocket_ex ( SOCKET s )
 void SocketAPI::ioctlsocket_ex ( SOCKET s , long cmd , ulong * argp )
 {
 	__BEGIN_TRY
+	(void)s;
+	(void)cmd;
+	(void)argp;
 
 #if defined(PLATFORM_POSIX)
 	throw UnsupportedError();

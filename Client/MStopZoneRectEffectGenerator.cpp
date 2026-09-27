@@ -37,10 +37,10 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	// 임시 땜빵 코드.. 케케~
 	//-----------------------------------------------------------
 	BOOL bDarkness = FALSE, bGrayDarkness = FALSE, bSharpHail = FALSE;
-	if (frameID>=EFFECTSPRITETYPE_DARKNESS_1_1
-		&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5 ||
-		frameID >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
-		frameID <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5 )
+	if ((frameID>=EFFECTSPRITETYPE_DARKNESS_1_1
+		&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5) ||
+		(frameID >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
+		frameID <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5) )
 	{
 		if (egInfo.pPreviousEffect!=NULL)
 		{

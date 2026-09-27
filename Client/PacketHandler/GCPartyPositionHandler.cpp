@@ -26,6 +26,7 @@ void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPla
 
 {
 	__BEGIN_TRY 
+	(void)pPlayer;
 		
 	if ((g_Mode==MODE_GAME
 			|| g_Mode==MODE_WAIT_UPDATEINFO			// 로딩 중이 아니거나..
@@ -36,9 +37,6 @@ void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPla
 		&& g_pGameMessage!=NULL
 		&& g_pRequestUserManager!=NULL)
 	{
-		// 정보 다시 설정
-		RequestUserInfo* pUserInfo = g_pRequestUserManager->GetUserInfo( pPacket->getName().c_str() );
-
 		PARTY_INFO*	pInfo = NULL;
 
 		// 이름이 없는 경우엔 리턴
@@ -57,13 +55,9 @@ void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPla
 			pInfo->HP	= pPacket->getHP();
 			pInfo->MaxHP= pPacket->getMaxHP();
 
-			int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-
 			int sight15 = g_pPlayer->GetSight() + (g_pPlayer->GetSight()>>1);
 
-			if (pInfo->zoneID == pInfo->zoneID
-				&&	
-					(abs(g_pPlayer->GetX()-pInfo->zoneX) + abs(g_pPlayer->GetY()-pInfo->zoneY))
+			if ((abs(g_pPlayer->GetX()-pInfo->zoneX) + abs(g_pPlayer->GetY()-pInfo->zoneY))
 						<= sight15
 				)
 			{

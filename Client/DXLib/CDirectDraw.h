@@ -221,10 +221,10 @@ public:
 	static inline bool		RestoreAllSurfaces() { return true; }
 	static inline void		ReleaseSurface() { }
 	static void		ReleaseAll();
-	static inline void		SetGammaRamp(WORD step = (WORD)-1) { }
+	static inline void		SetGammaRamp(WORD step = (WORD)-1) { (void)step; }
 	static inline void		RestoreGammaRamp() { }
-	static inline void		SetAddGammaRamp(WORD rStep = 0, WORD gStep = 0, WORD bStep = 0) { }
-	static inline void		SetDisplayMode(WORD width, WORD height, WORD bpp, DWORD flags1, DWORD flags2) { }
+	static inline void		SetAddGammaRamp(WORD rStep = 0, WORD gStep = 0, WORD bStep = 0) { (void)rStep; (void)gStep; (void)bStep; }
+	static inline void		SetDisplayMode(WORD width, WORD height, WORD bpp, DWORD flags1, DWORD flags2) { (void)width; (void)height; (void)bpp; (void)flags1; (void)flags2; }
 	static inline void		RestoreDisplayMode() { }
 
 	// InitMask - implemented in .cpp to initialize static arrays

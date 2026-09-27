@@ -16,6 +16,8 @@
 void GCRequestedIPHandler::execute ( GCRequestedIP * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
+	(void)pPacket;
+	(void)pPlayer;
 
 	// Nothing to do. The reply to a CGRequestIP - a peer's address, and
 	// the connection this client would then have dialled to it for a

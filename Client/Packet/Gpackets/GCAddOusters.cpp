@@ -27,11 +27,9 @@ GCAddOusters::GCAddOusters(const PCOustersInfo3& info)
 
 GCAddOusters::~GCAddOusters()
 {
-	__BEGIN_TRY
 	
 	SAFE_DELETE(m_pEffectInfo);
 
-	__END_CATCH
 }
 
 void GCAddOusters::read ( SocketInputStream & iStream )

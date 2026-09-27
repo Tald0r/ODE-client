@@ -189,6 +189,7 @@ bool CSDLMusic::CreatePerformance()
 /* Create port (stub for SDL backend) */
 bool CSDLMusic::CreatePort(DIRECTMUSIC_TYPE type)
 {
+	(void)type;
 	// Not applicable for SDL backend
 	return true;
 }

@@ -19,8 +19,6 @@ CGRequestPowerPoint::CGRequestPowerPoint ()
 	
 CGRequestPowerPoint::~CGRequestPowerPoint ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 void CGRequestPowerPoint::read ( SocketInputStream & iStream )

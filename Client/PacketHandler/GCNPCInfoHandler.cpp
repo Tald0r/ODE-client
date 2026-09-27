@@ -28,6 +28,7 @@ void GCNPCInfoHandler::execute ( GCNPCInfo * pPacket , Player * pPlayer )
 
 {
 	__BEGIN_TRY
+	(void)pPlayer;
 
 	
 	// NPC 정보만 날라온다-_-;

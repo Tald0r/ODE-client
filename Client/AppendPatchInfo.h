@@ -10,7 +10,9 @@
 #ifndef __APPENDPATCHINFO_H__
 #define __APPENDPATCHINFO_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MString.h"
 #include "CTypeTable.h"

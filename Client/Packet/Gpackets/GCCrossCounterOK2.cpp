@@ -32,8 +32,6 @@ GCCrossCounterOK2::GCCrossCounterOK2 ()
 //////////////////////////////////////////////////////////////////////
 GCCrossCounterOK2::~GCCrossCounterOK2 ()
 {
-	__BEGIN_TRY
-	__END_CATCH
 }
 
 

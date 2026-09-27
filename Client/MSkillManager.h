@@ -112,7 +112,9 @@
 #ifndef	__MSKILLMANAGER_H__
 #define	__MSKILLMANAGER_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "SkillDef.h"
 #include "MString.h"
@@ -388,12 +390,6 @@ class SKILLID_NODE {
 		void	SetEnable()			{ Flag |= FLAG_SKILL_ENABLE; }
 		void	SetDisable()		{ Flag &= ~FLAG_SKILL_ENABLE; }
 		BYTE	IsEnable() const	{ return Flag & FLAG_SKILL_ENABLE; }
-
-		void	operator = (const SKILLID_NODE& node)
-		{
-			SkillID		= node.SkillID;
-			Flag		= node.Flag;
-		}
 
 };
 		

@@ -22,6 +22,8 @@ GUILD_INFO::GUILD_INFO()
 
 GUILD_INFO::GUILD_INFO(const char* pGuildName, const char* pLeaderName)
 {
+	(void)pGuildName;
+	(void)pLeaderName;
 	m_SpriteID = SPRITEID_NULL;
 //	m_GuildName = pGuildName;
 //	m_LeaderName = pLeaderName;

@@ -5,7 +5,9 @@
 #ifndef __SECTORSOUNDINFO_H__
 #define __SECTORSOUNDINFO_H__
 
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 #include "MTypeDef.h"
 #include <list>
@@ -30,13 +32,6 @@ class SECTORSOUND_INFO
 			ZoneSoundID = zoneSoundID;
 			X = x;
 			Y = y;
-		}
-
-		void		operator = (const SECTORSOUND_INFO& info)
-		{
-			ZoneSoundID = info.ZoneSoundID;
-			X = info.X;
-			Y = info.Y;
 		}
 
 		bool		operator == (const SECTORSOUND_INFO& info) const
