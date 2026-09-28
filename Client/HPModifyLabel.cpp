@@ -19,6 +19,6 @@ FormatHPModifyLabel(int modify, char (&str)[128], COLORREF& color)
 	else
 	{
 		SafeFormat::Format(str, "+%d", modify);
-		RGB(150, 255, 150);
+		color = RGB(150, 255, 150);
 	}
 }
