@@ -21786,7 +21786,6 @@ void C_VS_UI_EFFECT_STATUS::Show()
 		if(gpC_base->m_p_DDSurface_back->Lock())
 		{
 			Rect rect(0, 0, w-4, h);
-			int i=0;
 			m_pC_effect_status_spk->BltLockedClip(x, y, rect, MAIN_WIDTH);
 			m_pC_effect_status_spk->BltLocked(x+w-m_pC_effect_status_spk->GetWidth(MAIN_WIDTH_RIGHT), y, MAIN_WIDTH_RIGHT);
 
@@ -21794,7 +21793,7 @@ void C_VS_UI_EFFECT_STATUS::Show()
 			{
 				const MonotonicClock::TimePoint CurrentFrame = MonotonicClock::Now();
 
-				for(int i = 0; static_cast<size_t>(i) < min(10, g_char_slot_ingame.STATUS.size()); i++)
+				for(int i = 0; i < 10 && static_cast<size_t>(i + m_scroll) < g_char_slot_ingame.STATUS.size(); i++)
 				{
 					const int skill_id = g_char_slot_ingame.STATUS[i+m_scroll].actionInfo;
 					if(skill_id == ACTIONINFO_NULL || skill_id < 0 || skill_id >= g_pSkillInfoTable->GetSize())
@@ -21823,8 +21822,13 @@ void C_VS_UI_EFFECT_STATUS::Show()
 			}
 			if(!g_pUserInformation->WarInfo.empty())
 			{
-				for(int a=0;static_cast<size_t>(a)<g_pUserInformation->WarInfo.size();i++,a++)
+				for(size_t a = 0; a < g_pUserInformation->WarInfo.size(); a++)
 				{					
+					// War entries follow the status entries in one list scrolled by
+					// m_scroll, the same slots MouseControl gives them.
+					const int i = static_cast<int>(g_char_slot_ingame.STATUS.size() + a) - m_scroll;
+					if(i < 0)
+						continue;
 					if(i>=10)
 						break;
 					POINT point = {x+5+i*20, y+5};
@@ -21899,7 +21903,6 @@ void C_VS_UI_EFFECT_STATUS::Show()
 		if(gpC_base->m_p_DDSurface_back->Lock())
 		{
 			Rect rect(0, 0, w, h-4);
-			int i=0;
 			m_pC_effect_status_spk->BltLockedClip(x, y, rect, MAIN_HEIGHT);
 			m_pC_effect_status_spk->BltLocked(x, y+h-m_pC_effect_status_spk->GetHeight(MAIN_HEIGHT_BOTTOM), MAIN_HEIGHT_BOTTOM);
 			
@@ -21907,7 +21910,7 @@ void C_VS_UI_EFFECT_STATUS::Show()
 			{
 				const MonotonicClock::TimePoint CurrentFrame = MonotonicClock::Now();
 				
-				for(int i = 0; static_cast<size_t>(i) < min(10, g_char_slot_ingame.STATUS.size()); i++)
+				for(int i = 0; i < 10 && static_cast<size_t>(i + m_scroll) < g_char_slot_ingame.STATUS.size(); i++)
 				{
 					const int skill_id = g_char_slot_ingame.STATUS[i+m_scroll].actionInfo;
 					if(skill_id == ACTIONINFO_NULL || skill_id < 0 || skill_id >= g_pSkillInfoTable->GetSize())
@@ -21935,8 +21938,13 @@ void C_VS_UI_EFFECT_STATUS::Show()
 				}
 			}if(!g_pUserInformation->WarInfo.empty())
 			{
-				for(int a=0;static_cast<size_t>(a)<g_pUserInformation->WarInfo.size();i++,a++)
+				for(size_t a = 0; a < g_pUserInformation->WarInfo.size(); a++)
 				{					
+					// War entries follow the status entries in one list scrolled by
+					// m_scroll, the same slots MouseControl gives them.
+					const int i = static_cast<int>(g_char_slot_ingame.STATUS.size() + a) - m_scroll;
+					if(i < 0)
+						continue;
 					if(i>=10)
 						break;
 					POINT point = {x+5, y+5+i*20};
