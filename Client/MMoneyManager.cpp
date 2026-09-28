@@ -127,3 +127,20 @@ MMoneyManager::CanUseMoney(int money)
 
 	return true;
 }
+
+//-----------------------------------------------------------------------------
+// Donation Gold
+//-----------------------------------------------------------------------------
+bool
+MMoneyManager::DonationGold(std::int64_t units, int balance, std::uint32_t& outGold)
+{
+	(void)balance;
+
+	if (units <= 0)
+	{
+		return false;
+	}
+
+	outGold = static_cast<std::uint32_t>(units * 10000);
+	return true;
+}

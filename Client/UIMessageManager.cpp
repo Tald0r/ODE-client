@@ -11774,12 +11774,12 @@ UIMessageManager::Execute_UI_CAMPAIGN_HELP(intptr_t left, intptr_t right, void* 
 	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CAMPAIGN_HELP");
 	
-	// 성금 관련 패킷 보내기 - 금액 * 10000
-
-	if(left>0)
+	// Send the donation packet; the dialog's amount is in units of 10,000.
+	std::uint32_t gold = 0;
+	if (MMoneyManager::DonationGold(left, g_pMoneyManager->GetMoney(), gold))
 	{
 		CGDonationMoney _CGDonationMoney;
-		_CGDonationMoney.setGold(static_cast<Gold_t>(left*10000));
+		_CGDonationMoney.setGold(static_cast<Gold_t>(gold));
 		_CGDonationMoney.setDonationType(static_cast<BYTE>(right));
 		g_pSocket->sendPacket( &_CGDonationMoney );
 	}
