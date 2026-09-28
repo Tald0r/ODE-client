@@ -3070,10 +3070,10 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 //		MItem *pOustersItem = g_pOustersGear->GetItem(MOustersGear::GEAR_OUSTERS_RIGHTHAND);
 		if (pCreature==NULL
 			|| pCreature->IsDead()
-			|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+			|| (((pCreature->IsInDarkness() && !pCreature->IsNPC() &&
 			( (!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) ||
 			(IsVampire() &&g_pZone->GetID() == 3001)))
-			|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()
+			|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()))
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
