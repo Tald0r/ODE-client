@@ -41,8 +41,9 @@ class MMoneyManager {
 		// Donation
 		//
 		// The donation dialog takes the amount in units of 10,000.
-		// Gives the gold to send for that many units, or false
-		// when nothing is to be sent.
+		// Gives the gold to send for that many units, or false,
+		// leaving outGold alone, when the amount is not positive
+		// or the balance does not cover it.
 		//-------------------------------------------------------
 		static bool	DonationGold(std::int64_t units, int balance, std::uint32_t& outGold);
 

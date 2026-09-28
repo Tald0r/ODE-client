@@ -134,9 +134,10 @@ MMoneyManager::CanUseMoney(int money)
 bool
 MMoneyManager::DonationGold(std::int64_t units, int balance, std::uint32_t& outGold)
 {
-	(void)balance;
-
-	if (units <= 0)
+	// Only a positive amount the balance covers. The bound is checked
+	// by division, so an amount above it is never multiplied and
+	// cannot wrap the 32-bit gold of the packet.
+	if (units <= 0 || balance <= 0 || units > balance / 10000)
 	{
 		return false;
 	}

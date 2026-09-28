@@ -11783,6 +11783,12 @@ UIMessageManager::Execute_UI_CAMPAIGN_HELP(intptr_t left, intptr_t right, void* 
 		_CGDonationMoney.setDonationType(static_cast<BYTE>(right));
 		g_pSocket->sendPacket( &_CGDonationMoney );
 	}
+	else if (left > 0)
+	{
+		// More than the balance: the message the server's
+		// NPC_RESPONSE_NOT_ENOUGH_MONEY reply would have shown.
+		g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_WAR_NOT_ENOUGH_MONEY].GetString());
+	}
 // 2005, 1, 11, sobeit add end - 불우이웃 돕기 성금 관련
 }
 
