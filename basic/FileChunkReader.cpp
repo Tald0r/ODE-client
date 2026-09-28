@@ -17,7 +17,19 @@ FileChunkReader::Open(const std::string& path)
 	{
 		m_Stream.seekg( 0, std::ios::end );
 
-		m_BytesLeft = static_cast<DWORD>(m_Stream.tellg());
+		// A file that opens but cannot seek (a pipe or a device) has no
+		// size to read: tellg gives -1. It is treated like a file that
+		// does not open, not as 0xFFFFFFFF bytes still to send.
+		const std::streamoff end = m_Stream.tellg();
+
+		if (end < 0)
+		{
+			m_Stream.close();
+			m_BytesLeft = 0;
+			return;
+		}
+
+		m_BytesLeft = static_cast<DWORD>(end);
 
 		m_Stream.seekg( 0, std::ios::beg );
 	}

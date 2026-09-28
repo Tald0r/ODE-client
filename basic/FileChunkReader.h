@@ -26,7 +26,8 @@ class FileChunkReader
 {
 	public :
 		// Opens path for binary reading; the bytes left are its size, or
-		// none when it does not open.
+		// none when it does not open or its size cannot be read, and then
+		// it is left closed.
 		void		Open(const std::string& path);
 
 		// Reads up to count bytes into pBuffer and returns how many it read.

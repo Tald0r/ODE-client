@@ -421,6 +421,13 @@ PackFileManager<FileInfoType>::SaveToFileData(const char* pFilename)
 {
 	std::ofstream file(pFilename, std::ios::binary | std::ios::trunc);
 
+	// A stream that did not open reports position -1, which would be
+	// stored as every entry's file position.
+	if (!file.is_open())
+	{
+		return false;
+	}
+
 	// 개수
 	WORD num = static_cast<WORD>(m_IDInfos.size());
 	file.write((const char*)&num, 2);	
