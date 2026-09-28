@@ -2835,10 +2835,10 @@ MPlayer::KeepTraceCreature()
 	{
 		if( (DWORD)(MonotonicClock::Now() - m_TraceTimer).count() / 1000 > g_pClientConfig->TRACE_CHARACTER_LIMIT_TIME )
 		{
-			if( (pCreature != NULL &&					// 동족일 경우만.
-				(pCreature->IsSlayer() && IsSlayer())) || 
+			if( pCreature != NULL &&					// only for the same race
+				((pCreature->IsSlayer() && IsSlayer()) ||
 				(pCreature->IsVampire() && IsVampire()) ||
-				(pCreature->IsOusters() && IsOusters())
+				(pCreature->IsOusters() && IsOusters()))
 				)
 			{
 				bTraceTimer = true;
