@@ -289,12 +289,13 @@ MParty::HasMember(const char* pName) const
 // Is Member In Sight
 //----------------------------------------------------------------------
 bool
-MParty::IsMemberInSight(int /*memberZone*/, int memberX, int memberY,
-						int /*myZone*/, int myX, int myY, int sight)
+MParty::IsMemberInSight(int memberZone, int memberX, int memberY,
+						int myZone, int myX, int myY, int sight)
 {
 	const int sight15 = sight + (sight>>1);
 
-	return (std::abs(myX-memberX) + std::abs(myY-memberY)) <= sight15;
+	return memberZone == myZone
+		&& (std::abs(myX-memberX) + std::abs(myY-memberY)) <= sight15;
 }
 
 //----------------------------------------------------------------------
