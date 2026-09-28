@@ -169,11 +169,6 @@ const ClientRule	kClientRules[] = {
 	// prices").
 	{ ITEM_CLASS_COUPLE_RING,			decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_VAMPIRE_COUPLE_RING,	decore::GradePolicy::Accessory,	true },
-	// Drift from the server's table, each fixed by its own commit.
-	{ ITEM_CLASS_CORE_ZAP,				decore::GradePolicy::Plain,		true },
-	{ ITEM_CLASS_CARRYING_RECEIVER,		decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_DERMIS,				decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_FASCIA,				decore::GradePolicy::Grocery,	true },
 };
 
 ClientRule	RuleOf(ITEM_CLASS itemClass)
@@ -361,4 +356,57 @@ TEST(ItemGrade, TheVampireAmuletIsPricedOnTheTableDurability)
 	CHECK_EQ(26, prices.GetItemPrice(&amulet, MPriceManager::NPC_TO_PC));
 	// (80000 - 26.7) / 10 is 7997.3: 7997, where 1000 made it 7992.
 	CHECK_EQ(7997, prices.GetItemPrice(&amulet, MPriceManager::REPAIR));
+}
+
+//----------------------------------------------------------------------
+// Gear the server keeps no durability for is priced at full
+//----------------------------------------------------------------------
+// Dermis, Fascia and CarryingReceiver keep no durability on the server
+// either, and their table durability is 0: the maximum is 0, so the
+// shop never discounts wear (getPrice discounts only above 1), and a
+// repair costs the minimum of 1 (getRepairPrice: nothing lost, a tenth
+// of nothing, raised to 1). The durability the server sends for them is
+// 1. CoreZap's server table has no durability column and reads 1, so
+// its maximum is 1, equal to the durability: full price, and a repair of
+// 0. The client computes the same from its own table, so the row must
+// hold what the server's does; both cases are pinned. The grade is 4,
+// so the price is the table's 100000 as it is.
+//----------------------------------------------------------------------
+TEST(ItemGrade, GearWithoutDurabilityIsPricedWithoutWear)
+{
+	GradeWorld world;
+	MPriceManager prices;
+
+	MDermis dermis;
+	MFascia fascia;
+	MCarryingReceiver receiver;
+	MItem* const pZeroed[] = { &dermis, &fascia, &receiver };
+
+	for (MItem* pItem : pZeroed)
+	{
+		pItem->SetItemType(1);			// table durability 0
+		pItem->SetGrade(4);
+		pItem->SetCurrentDurability(1);
+
+		CHECK_EQ(0, pItem->GetMaxDurability());
+		CHECK_EQ(kPrice, prices.GetItemPrice(pItem, MPriceManager::NPC_TO_PC));
+		CHECK_EQ(kPrice / 4, prices.GetItemPrice(pItem, MPriceManager::PC_TO_NPC));
+		CHECK_EQ(1, prices.GetItemPrice(pItem, MPriceManager::REPAIR));
+	}
+
+	// CoreZap with the server's table durability of 1.
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_CORE_ZAP, 0).Value1 = 1;
+	MCoreZap coreZap;
+	coreZap.SetItemType(0);
+	coreZap.SetGrade(4);
+	coreZap.SetCurrentDurability(1);
+	CHECK_EQ(1, coreZap.GetMaxDurability());
+	CHECK_EQ(kPrice, prices.GetItemPrice(&coreZap, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(0, prices.GetItemPrice(&coreZap, MPriceManager::REPAIR));
+
+	// And with a table durability of 0, as the other three.
+	coreZap.SetItemType(1);
+	CHECK_EQ(0, coreZap.GetMaxDurability());
+	CHECK_EQ(kPrice, prices.GetItemPrice(&coreZap, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1, prices.GetItemPrice(&coreZap, MPriceManager::REPAIR));
 }

@@ -658,17 +658,13 @@ void	MUsePotionItem::UseInventory()
 //----------------------------------------------------------------------
 // The grade policy and the durability of a wire item class: the
 // server's table (decore::gradePolicyOf and hasDurability, the rule its
-// ConcreteItem reads), except for the classes below, whose rule is the
-// C++ family the client declared them in.
+// ConcreteItem reads), except for the two couple rings.
 //
-// The couple rings are the server's own exception: it builds them
-// outside ConcreteItem, so the table gives them no grade and no
-// durability, and reports a maximum durability of 1, a placeholder
-// only its price reads. The client keeps the ring's rule for them; the
-// item description shows neither their luck nor their durability.
-//
-// The others are drift from the server's table, and the fix: commits
-// after this one move them onto it.
+// The server builds the couple rings outside ConcreteItem, so the table
+// gives them no grade and no durability, and the server reports a
+// maximum durability of 1 for them, a placeholder only its price reads.
+// The client keeps the ring's rule for them; the item description shows
+// neither their luck nor their durability.
 //----------------------------------------------------------------------
 static decore::GradePolicy
 GradePolicyOf(ITEM_CLASS itemClass)
@@ -691,10 +687,6 @@ HasDurability(ITEM_CLASS itemClass)
 	{
 		case ITEM_CLASS_COUPLE_RING :
 		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
-		case ITEM_CLASS_CORE_ZAP :
-		case ITEM_CLASS_CARRYING_RECEIVER :
-		case ITEM_CLASS_DERMIS :
-		case ITEM_CLASS_FASCIA :
 			return true;
 
 		default :
