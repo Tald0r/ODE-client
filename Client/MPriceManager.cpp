@@ -204,40 +204,60 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		long	originalPrice = pItem->GetPrice();
 		long	maxDurability = itemDur;
 			
-		finalPrice = originalPrice;
-		
+		//--------------------------------------------------
+		// The server's arithmetic (PriceManager::getPrice and
+		// getRepairPrice): double from the table price through the
+		// options, the wear and the rate, truncated once at the end.
+		//--------------------------------------------------
 		{
-			// The options add their multipliers.
+			double price = (double)originalPrice;
+
+			// Each option adds its multiplier's share of the price.
 			if (!pItem->IsEmptyItemOptionList())
 			{
-				int priceMult = pItem->GetItemOptionPriceMultiplier();//(*g_pItemOptionTable)[pItem->GetItemOption()].PriceMultiplier;
-				finalPrice = finalPrice * priceMult / 100;
+				double optionedPrice = 0;
+				const std::list<TYPE_ITEM_OPTION>& optionList = pItem->GetItemOptionList();
+				std::list<TYPE_ITEM_OPTION>::const_iterator itr = optionList.begin();
+
+				while (itr != optionList.end())
+				{
+					double priceMult = (double)(*g_pItemOptionTable)[*itr].PriceMultiplier;
+					optionedPrice += price * priceMult / 100;
+					itr++;
+				}
+
+				price = optionedPrice;
 			}
-			
-			// Wear takes its share of the price...
-			float damaged;
-			if (maxDurability==0)
+
+			if (type==REPAIR)
 			{
-				damaged = 1;
+				//--------------------------------------------------
+				// A repair charges a tenth of what the wear took:
+				// 100 / nRatio is the server's divisor of 10.
+				//--------------------------------------------------
+				double wornPrice = price;
+				if (maxDurability != 0)
+				{
+					wornPrice = price * (double)curDurability / (double)maxDurability;
+				}
+
+				price = (price - wornPrice) / (100 / nRatio);
 			}
 			else
 			{
-				damaged = (float)curDurability / (float)maxDurability;
+				// Wear takes its share of the price, on an item whose
+				// maximum durability is above one...
+				if (maxDurability > 1)
+				{
+					price = price * (double)curDurability / (double)maxDurability;
+				}
+
+				// ...then the rate.
+				price = price * nRatio / 100;
 			}
 
-			//--------------------------------------------------
-			// ...and a repair charges for that share.
-			//--------------------------------------------------
-			if (type==REPAIR)
-			{
-				damaged = 1.0f - damaged;
-			}
-			
-			finalPrice = static_cast<__int64>(finalPrice * damaged);
-			
-			// Then the rate.
-			finalPrice = finalPrice * nRatio / 100;
-		}	
+			finalPrice = static_cast<__int64>(price);
+		}
 	}
 
 	
