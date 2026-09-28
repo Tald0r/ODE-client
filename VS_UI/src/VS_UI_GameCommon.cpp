@@ -2606,6 +2606,13 @@ C_VS_UI_GEAR::C_VS_UI_GEAR()
 	m_pC_button_group = new ButtonGroup(this);
 	int close_button_offset_x = 0, close_button_offset_y = 0, help_button_offset_x = 0, help_button_offset_y = 0;
 	int alpha_button_offset_x = 0, alpha_button_offset_y = 0;
+
+	// Each race case below sets these; any other race keeps them empty
+	// so the destructor's DeleteNew calls do nothing.
+	m_pC_gear_spk = NULL;
+	m_pC_gear_slot_spk = NULL;
+	m_pC_advance_gear_spk = NULL;
+	m_bl_Abvencement = FALSE;
 	
 	switch(g_eRaceInterface)
 	{
@@ -3694,6 +3701,9 @@ void C_VS_UI_GEAR::Use()
 		default:
 			break;
 		}
+
+		if (pGear == NULL)
+			return;
 		
 		const MItem * p_item = pGear->GetItem(m_focus_slot);
 		
@@ -12806,7 +12816,7 @@ void	C_VS_UI_INFO::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 			break;
 
 		default:
-			break;
+			return;
 		}
 		if( id < 0 || id >= m_draw_grade_skill_mark || g_pRankBonusTable == NULL || 
 			g_pRankBonusTable->GetSize() <= m_grade_skill_id[id] ) 
@@ -12979,7 +12989,7 @@ void	C_VS_UI_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 				break;
 
 			default:
-				break;
+				return;
 			}
 
 			if(p_button->GetFocusState())
@@ -13286,7 +13296,8 @@ void C_VS_UI_INFO::Run(id_t id)
 				break;
 
 			default:
-				break;
+				m_selected_grade_skill = -1;
+				return;
 			}
 			
 			// 스킬 상태가 NULL 이어야 하고, 현재 선택한 계급이 자기 계급과 같거나 낮아야 한다.
@@ -20198,6 +20209,7 @@ C_VS_UI_HPBAR::C_VS_UI_HPBAR()
 	
 	switch(g_eRaceInterface)
 	{
+	default:	// any other race gets the slayer pack: Set() below reads it unconditionally
 	case RACE_SLAYER:
 		m_pC_hpbar_spk = new C_SPRITE_PACK(SPK_HPBAR_SLAYER);
 		break;
@@ -20209,8 +20221,6 @@ C_VS_UI_HPBAR::C_VS_UI_HPBAR()
 	case RACE_OUSTERS:
 		m_pC_hpbar_spk = new C_SPRITE_PACK(SPK_HPBAR_OUSTERS);
 		break;	
-	default:
-		break;
 	}	
 	Set(0, 0, m_pC_hpbar_spk->GetWidth(), m_pC_hpbar_spk->GetHeight());
 	
@@ -20453,7 +20463,7 @@ bool C_VS_UI_HPBAR::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 	_x-=x; _y-=y;
 	
-	bool re;
+	bool re = true;	// what an empty ButtonGroup::MouseControl returns; only a race outside the three skips the switch below
 	int descType = 0;
 	switch(g_eRaceInterface)
 	{
@@ -21212,6 +21222,7 @@ C_VS_UI_EFFECT_STATUS::C_VS_UI_EFFECT_STATUS()
 	
 	switch(g_eRaceInterface)
 	{
+	default:	// any other race gets the slayer pack: Set(), the buttons and Show() read it unconditionally
 	case RACE_SLAYER:
 		m_pC_effect_status_spk = new C_SPRITE_PACK(SPK_EFFECT_STATUS_SLAYER);
 		break;
@@ -21223,8 +21234,6 @@ C_VS_UI_EFFECT_STATUS::C_VS_UI_EFFECT_STATUS()
 	case RACE_OUSTERS:
 		m_pC_effect_status_spk = new C_SPRITE_PACK(SPK_EFFECT_STATUS_OUSTERS);
 		break;
-	default:
-		break;	
 	}
 	
 	Set(240, 0, m_pC_effect_status_spk->GetWidth(), m_pC_effect_status_spk->GetHeight());
@@ -27694,7 +27703,7 @@ void C_VS_UI_TEAM_REGIST::Show()
 	const int line_gap = 12;
 	
 	
-	char sz_string[256];
+	char sz_string[256] = "";
 	int py = m_print_y;
 	
 	if(m_bl_member)	//member regist
