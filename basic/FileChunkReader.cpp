@@ -42,7 +42,12 @@ FileChunkReader::Read(char* pBuffer, DWORD count)
 void
 FileChunkReader::Unread(DWORD nBack)
 {
-	m_Stream.seekg( -nBack, std::ios::cur );
+	// A short read - the file's last chunk - leaves the stream failed, and
+	// a failed stream ignores seekg; the bytes to hand back were read, so
+	// the stream is good again. The offset is negated as a signed type:
+	// negating the unsigned count gave 2^32 - nBack, a seek past the end.
+	m_Stream.clear();
+	m_Stream.seekg( -static_cast<std::streamoff>(nBack), std::ios::cur );
 	m_BytesLeft += nBack;
 }
 
