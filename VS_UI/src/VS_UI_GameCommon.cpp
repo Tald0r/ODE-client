@@ -13392,10 +13392,10 @@ void C_VS_UI_INFO::Run(id_t id)
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
 				size_t row = 0;
-				if(m_ousters_Magic == -1)
+				if(m_ousters_Magic != -1)
 					row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 
-				if(list.size() > id-GRADE3_BUTTON4_ID && row < list.size())
+				if(row < list.size())
 				{
 					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
