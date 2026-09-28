@@ -44,17 +44,16 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 
 	int effectPosition = rand()/(RAND_MAX/MAX_EFFECT_ORBIT_STEP);
 
-	if( ConsultsPreviousOrbitStep(egInfo.effectSpriteType, pCreature->GetAttachEffectSize() > 0) )
+	if( ConsultsPreviousOrbitStep(egInfo.effectSpriteType, pCreature->IsExistAttachEffect()) )
 	{
-		
-		MAttachOrbitEffect* pOldEffect = (MAttachOrbitEffect* )(*(pCreature->GetAttachEffectIterator()));
-		if( pOldEffect != NULL )
+		MAttachEffect* pOldEffect = *(pCreature->GetAttachEffectIterator());
+		if( pOldEffect != NULL && pOldEffect->GetEffectType() == MEffect::EFFECT_ATTACH_ORBIT )
 		{
-			effectPosition = pOldEffect->m_OrbitStep;
+			effectPosition = static_cast<MAttachOrbitEffect*>(pOldEffect)->m_OrbitStep;
 		}
-		if( ClearsBeforeAttach(egInfo.effectSpriteType) )
-			pCreature->ClearAttachEffect();
 	}
+	if( ClearsBeforeAttach(egInfo.effectSpriteType) )
+		pCreature->ClearAttachEffect();
 
 	// Creature에게 붙이는 Effect를 생성해서 pointer를 넘겨받는다.
 	MAttachOrbitEffect* pEffect = (MAttachOrbitEffect*)pCreature->CreateAttachEffect( egInfo.effectSpriteType, 

@@ -11,11 +11,11 @@
 bool
 ConsultsPreviousOrbitStep(unsigned short spriteType, bool hasAttachedEffect)
 {
-	return spriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK
-		|| spriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL
-		|| spriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL
-		|| (spriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL
-			&& hasAttachedEffect);
+	return hasAttachedEffect
+		&& (spriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK
+			|| spriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL
+			|| spriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL
+			|| spriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL);
 }
 
 //----------------------------------------------------------------------

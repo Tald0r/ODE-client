@@ -14,8 +14,10 @@
 // ConsultsPreviousOrbitStep
 //----------------------------------------------------------------------
 // Whether a new orbit effect of spriteType continues from the orbit step
-// of the creature's first attached effect. hasAttachedEffect says
-// whether the creature has an attached effect at all.
+// of the creature's first attached effect: true for the four summoned
+// elemental types, and only when hasAttachedEffect says the creature has
+// an attached effect to read. The caller still checks that the effect
+// is an orbit effect.
 //----------------------------------------------------------------------
 bool	ConsultsPreviousOrbitStep(unsigned short spriteType, bool hasAttachedEffect);
 
