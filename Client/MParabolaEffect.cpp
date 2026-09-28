@@ -7,6 +7,7 @@
 #include "MLinearEffect.h"
 #include "MParabolaEffect.h"
 #include "MathTable.h"
+#include "ParabolaStep.h"
 #include "EffectSpriteTypeDef.h"
 #include "MEffectSpriteTypeTable.h"
 #include "PacketFunction.h"
@@ -50,10 +51,7 @@ MParabolaEffect::SetTarget(int x, int y, int z, WORD speed)
 	//--------------------------------------------------
 	// Grenade는 매 순간마다 Z축의 높이가 달라진다.
 	//--------------------------------------------------
-	int steps = (int)m_Len / speed;	// 몇번 움직여야 목표 도달인가?
-
-	//m_RadStep = (float)PI / steps;	// 매번 움직일때마다 달라지는 theta
-	m_RadStep = static_cast<int>(MathTable::FPI / (float)steps);
+	m_RadStep = ParabolaRadStep(m_Len, speed);
 	m_RadCurrent = 0;
 }
 void
