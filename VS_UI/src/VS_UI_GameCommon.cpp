@@ -10173,11 +10173,11 @@ void C_VS_UI_SKILL::Show2()
 			  {
 				  const MItem * p_item = g_pInventory->GetItem(C_VS_UI_INVENTORY::m_mine_grid_x, C_VS_UI_INVENTORY::m_mine_grid_y);
 				  
-				  if ((p_item && 
-					  (p_item->GetItemClass() == ITEM_CLASS_MINE && (GetSelectedSkillID() == SKILL_INSTALL_MINE || GetSelectedSkillID() == MINE_ANKLE_KILLER || GetSelectedSkillID() == MINE_POMZ || GetSelectedSkillID() == MINE_AP_C1 || GetSelectedSkillID() == MINE_DIAMONDBACK || GetSelectedSkillID() == MINE_SWIFT_EX || GetSelectedSkillID() == MINE_SIDEWINDER || GetSelectedSkillID() == MINE_COBRA))) ||
+				  if (p_item &&
+					  ((p_item->GetItemClass() == ITEM_CLASS_MINE && (GetSelectedSkillID() == SKILL_INSTALL_MINE || GetSelectedSkillID() == MINE_ANKLE_KILLER || GetSelectedSkillID() == MINE_POMZ || GetSelectedSkillID() == MINE_AP_C1 || GetSelectedSkillID() == MINE_DIAMONDBACK || GetSelectedSkillID() == MINE_SWIFT_EX || GetSelectedSkillID() == MINE_SIDEWINDER || GetSelectedSkillID() == MINE_COBRA)) ||
 					  (p_item->GetItemClass() == ITEM_CLASS_BOMB_MATERIAL && p_item->GetItemType() > 4 && GetSelectedSkillID() == SKILL_MAKE_MINE) ||
-					  (p_item->GetItemClass() == ITEM_CLASS_BOMB_MATERIAL && p_item->GetItemType() < 5 && GetSelectedSkillID() == SKILL_MAKE_BOMB)
-					  ) // Item이 있다.
+					  (p_item->GetItemClass() == ITEM_CLASS_BOMB_MATERIAL && p_item->GetItemType() < 5 && GetSelectedSkillID() == SKILL_MAKE_BOMB))
+					  ) // the item is still in the saved grid cell
 				  {
 					  if(!gpC_mouse_pointer->RightMousePushed())
 						  gC_vs_ui.EndInstallMineProgress();
