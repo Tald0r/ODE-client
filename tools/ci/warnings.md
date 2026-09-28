@@ -93,3 +93,13 @@ ASan 1,775 -> 1,254 and Release 1,547 -> 1,254. On Windows the C4297, C4101
 and C4018 budgets fall to zero; what is left there is mostly the C4267/C4244
 narrowing conversions and C4996 CRT deprecations that GCC and Clang do not
 raise under `-Wall -Wextra`. No category grew in any profile.
+
+The MSVC follow-up in the same document cleared the 1,106 project warnings
+only MSVC reports (C4267/C4244/C4312 conversions, C4996 deprecations through
+`basic/CrtCompat.h`, C4273 and the `LNK-LOCAL-IMPORT` pairs, C4005, C4116,
+C4477 and the C4146 fix). The three Windows profiles were re-recorded from
+the complete clean builds of workflow_dispatch run 36360661797: Debug, ASan
+and Release 1,254 -> 57. What is left is the dependency population recorded
+above - IXWebSocket's 25 C4244 and six C4267, `third_party/`'s ten C4996 and
+the SDK's 16 C4668 - so no Windows budget counts project code any more. The
+Unix budgets are unchanged.
