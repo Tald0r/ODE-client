@@ -28228,7 +28228,7 @@ C_VS_UI_OTHER_INFO::C_VS_UI_OTHER_INFO()
 	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(alpha_x, alpha_y, gpC_global_resource->m_pC_assemble_box_button_spk->GetWidth(C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA), gpC_global_resource->m_pC_assemble_box_button_spk->GetHeight(C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA), ALPHA_ID, this, C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA));
 	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(0, 0, 0, 0, PET_INFO_ID, this, 0));
 	
-	ZeroMemory((void*)&m_player_info,sizeof(PLAYER_INFO));
+	m_player_info = PLAYER_INFO{};
 	// profile
 	m_p_face = NULL;
 	
@@ -29622,9 +29622,7 @@ void	C_VS_UI_OTHER_INFO::Start()
 	m_pC_button_group->Init();	
 	gpC_window_manager->AppearWindow(this);
 	
-	ZeroMemory((void*)&m_player_info,sizeof(PLAYER_INFO));
-//	m_player_info.TEAM_NAME="";
-	m_player_info.PLAYER_NAME="";
+	m_player_info = PLAYER_INFO{};
 	
 	TopDomain=0;
 	m_p_guild_mark = NULL;
