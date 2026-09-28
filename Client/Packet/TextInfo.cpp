@@ -53,21 +53,23 @@ void TextInfo::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_ID );
 
-	BYTE szWriter = static_cast<BYTE>(m_Writer.size());
-
-	if ( szWriter == 0 )
+	if ( m_Writer.empty() )
 		throw InvalidProtocolException("empty BBS_ID");
-	if ( szWriter > 20 )
-		throw InvalidProtocolException("Too large lenth");
+	if ( m_Writer.size() > 20 )
+		throw InvalidProtocolException("too large Writer length");
+
+	BYTE szWriter = static_cast<BYTE>(m_Writer.size());
 
 	oStream.write( szWriter );
 	
 	oStream.write( m_Writer );
 
-	BYTE szTopic = static_cast<BYTE>(m_Topic.size());
-	
-	if ( szTopic == 0 )
+	if ( m_Topic.empty() )
 		throw InvalidProtocolException ("empty BBS_Topic");
+	if ( m_Topic.size() > 255 )
+		throw InvalidProtocolException ("too large Topic length");
+
+	BYTE szTopic = static_cast<BYTE>(m_Topic.size());
 
 	oStream.write( szTopic );
 	

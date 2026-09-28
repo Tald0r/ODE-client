@@ -2,8 +2,9 @@
 // test_gc_write_caps_strings.cpp
 //----------------------------------------------------------------------
 //
-// Server-to-client packet write()s that put a BYTE-length-prefixed
-// string on the wire, over the lengths a length byte cannot express.
+// Server-to-client packet write()s, and the embedded TextInfo record,
+// that put a BYTE-length-prefixed string on the wire, over the lengths
+// a length byte cannot express.
 // The client only reads these packets live; write() runs in tests and
 // goldens, and it must refuse what the server's copy refuses
 // (opendarkeden-server src/Core, de::wire::writeString) instead of
@@ -30,6 +31,7 @@
 #include "SocketEncryptOutputStream.h"
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
+#include "TextInfo.h"
 
 #include "Gpackets/GCBloodBibleStatus.h"
 #include "Gpackets/GCModifyGuildMemberInfo.h"
@@ -77,11 +79,17 @@ struct GCCapInFixture
 };
 
 //----------------------------------------------------------------------
-// The body size an object reports for itself.
+// The body size an object reports for itself: a packet's body, or an
+// embedded record's share of one.
 //----------------------------------------------------------------------
 size_t	BodySize ( const Packet & packet )
 {
 	return packet.getPacketSize();
+}
+
+size_t	BodySize ( const TextInfo & info )
+{
+	return info.getSize();
 }
 
 //----------------------------------------------------------------------
@@ -461,4 +469,31 @@ TEST(GCStringWriteCaps, GCShowWaitGuildInfoMemberCount)
 			CHECK_EQ(0, ringSize);
 		}
 	}
+}
+
+//----------------------------------------------------------------------
+// TextInfo: a bulletin-board row with no packet around it and no server
+// copy. Its own getMaxSize() budgets a 20-byte writer and a 255-byte
+// topic.
+//----------------------------------------------------------------------
+TEST(GCStringWriteCaps, TextInfoWriter)
+{
+	const GCCapCase<TextInfo> c = {
+		+[](TextInfo& t, const std::string& s) {
+			t.setID(1); t.setWriter(s); t.setTopic("t"); t.setHit(2); },
+		+[](TextInfo& t) { return t.getWriter(); },
+		20, szDWORD, 20 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, TextInfoTopic)
+{
+	const GCCapCase<TextInfo> c = {
+		+[](TextInfo& t, const std::string& s) {
+			t.setID(1); t.setWriter("w"); t.setTopic(s); t.setHit(2); },
+		+[](TextInfo& t) { return t.getTopic(); },
+		255, szDWORD + szBYTE + 1, 255 };
+
+	CheckGCStringWriteCap(c);
 }
