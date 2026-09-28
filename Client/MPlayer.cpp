@@ -12722,9 +12722,9 @@ MPlayer::FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool ser
 // KnockBackPosition
 //----------------------------------------------------------------------
 bool	
-MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE Action)
 {
-	if (MCreature::KnockBackPosition( x, y ))
+	if (MCreature::KnockBackPosition( x, y, Action ))
 	{
 		// 2001.8.8  계속 추적하게 해보기 위한 주석처리
 		// 그러나.. 뭔가 문제가 있어서.. 다시... - -;;

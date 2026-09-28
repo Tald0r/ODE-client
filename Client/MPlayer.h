@@ -395,8 +395,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 
 		bool	FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server = false);	// Zone의 Sector에서도 빨리(-_-;) 이동한다.
 
-		using MCreature::KnockBackPosition;
-		bool	KnockBackPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
+		bool	KnockBackPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE Action = 0);
 
 		//----------------------------------------------------------
 		//
