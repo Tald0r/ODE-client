@@ -11273,11 +11273,15 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 					m_p_image_spk->BltLocked(x +away_x, y +away_y +window_default_height + inc_y + i*window_gap, AWAY_BUTTON);
 			}
 
+			// A dead member's face is drawn in red.
+			const PARTY_INFO* const member = (i == 0) ? NULL : g_pParty->GetMemberInfo(i-1);
+			const bool bDead = (i == 0) ? (g_char_slot_ingame.HP == 0) : (member != NULL && member->HP == 0);
+
 			if(m_v_face_name.empty() || static_cast<size_t>(idx) == m_v_face_name.size() || (static_cast<size_t>(idx) < m_v_face_name.size() && m_vp_face[idx] == NULL))
 			{	// default face
 				if(spriteID < 0 || spriteID >= m_p_face_spk->GetSize())spriteID = 0;
 				
-				if((i == 0 && g_char_slot_ingame.HP == 0) || (i != 0 && g_pParty->GetMemberInfo(i-1)->HP == 0))
+				if(bDead)
 					m_p_face_spk->BltLockedColor(point.x, point.y, spriteID, rgb_RED);
 				else
 					m_p_face_spk->BltLocked(point.x, point.y, spriteID);
@@ -11286,7 +11290,7 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 			else
 			{
 				//user face
-				if((i == 0 && g_char_slot_ingame.HP == 0) || (i != 0 && g_pParty->GetMemberInfo(i-1)->HP == 0))
+				if(bDead)
 				{
 					m_vp_face[idx]->BltLockedColor(point.x, point.y, 0, rgb_RED);
 				}
