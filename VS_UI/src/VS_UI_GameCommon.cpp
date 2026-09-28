@@ -946,7 +946,6 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		// Guild Tab
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_INFO].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_MEMBER_LIST].GetString(),
-		"", // Placeholder for TEAM_COMMAND_WINDOW (commented out in enum)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_WAIT_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_UNION_WINDOW].GetString(),
@@ -962,11 +961,13 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_SKILL_HELP].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_HELP].GetString(),
 		//add by viva : friend button description
-//		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
 		//end
 		// MAX+
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_OFF].GetString(),
 	};
+	// One entry per EXEC_INDEX button ID, plus AUTO_HIDE_OFF at EXEC_MAX.
+	static_assert(sizeof(slayer_string)/sizeof(slayer_string[0]) == EXEC_MAX+1, "tooltip table must match EXEC_INDEX");
 	
 	const static char* vampire_string[] =
 	{
@@ -993,7 +994,6 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		// Guild Tab
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_INFO].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_MEMBER_LIST].GetString(),
-		"", // Placeholder for CLAN_COMMAND_WINDOW (commented out in enum)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_WAIT_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_UNION_WINDOW].GetString(),
@@ -1009,11 +1009,13 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_MAGIC_HELP].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_HELP].GetString(),
 		//add by viva : friend button description
-//		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
 		//end
 		// MAX+
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_OFF].GetString(),
 	};
+	// One entry per EXEC_INDEX button ID, plus AUTO_HIDE_OFF at EXEC_MAX.
+	static_assert(sizeof(vampire_string)/sizeof(vampire_string[0]) == EXEC_MAX+1, "tooltip table must match EXEC_INDEX");
 	
 	const static char* ousters_string[] =
 	{
@@ -1040,7 +1042,6 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		// Guild Tab
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_INFO].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_MEMBER_LIST].GetString(),
-		"", // Placeholder for GUILD_COMMAND_WINDOW (commented out in enum)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_WAIT_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_UNION_WINDOW].GetString(),
@@ -1056,11 +1057,13 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_MAGIC_HELP].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_HELP].GetString(),
 		//add by viva : friend button description
-//		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
 		//end
 		// MAX+
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_OFF].GetString(),
 	};
+	// One entry per EXEC_INDEX button ID, plus AUTO_HIDE_OFF at EXEC_MAX.
+	static_assert(sizeof(ousters_string)/sizeof(ousters_string[0]) == EXEC_MAX+1, "tooltip table must match EXEC_INDEX");
 	
 	switch(g_eRaceInterface)
 	{
