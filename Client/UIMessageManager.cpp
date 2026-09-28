@@ -2574,7 +2574,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											char strTemp[256];
 											SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
 													PlayerInfo::minIDLength,
-													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
+													PlayerInfo::maxIDLength);
 
 											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
@@ -2636,7 +2636,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											char strTemp[256];
 											SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
 													PlayerInfo::minIDLength,
-													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
+													PlayerInfo::maxIDLength);
 
 											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
