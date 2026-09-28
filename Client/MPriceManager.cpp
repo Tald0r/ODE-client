@@ -174,11 +174,16 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 	__int64	finalPrice;
 
+	// A time-limited item (one the timed-item register holds) is priced
+	// by the server's rule below, which gives it a flat 50 ahead of the
+	// crown price and the charges.
+	const bool bTimeLimited = g_pTimeItemManager != NULL
+							&& g_pTimeItemManager->IsExist( pItem->GetID() );
 
-	// 2004, 08, 02, sobeit add start
-	if(pItem->GetItemClass() == ITEM_CLASS_MOON_CARD && pItem->GetItemType() == 4)
+	// The crown moon card is worth what the server last announced.
+	if(!bTimeLimited
+		&& pItem->GetItemClass() == ITEM_CLASS_MOON_CARD && pItem->GetItemType() == 4)
 		return m_EventFixPrice;
-	// 2004, 08, 02, sobeit add end				
 	//-------------------------------------------------------
 	// The rate, by what the player is doing
 	//-------------------------------------------------------
@@ -253,7 +258,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	// A charged item is priced by its charges, and nothing below
 	// applies to it.
 	//-------------------------------------------------------
-	if (pItem->IsChargeItem())
+	if (pItem->IsChargeItem() && !bTimeLimited)
 	{		
 		int curCharge = pItem->GetNumber();
 		
@@ -291,6 +296,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 		input.marketCond = nRatio;
 		input.crownPrice = m_EventFixPrice;
+		input.timeLimited = bTimeLimited;
 		input.race = PriceRaceOf(HostRace());
 		input.currentStatSum = HostStatSum();
 		// The consumables are half price under the premium event or the

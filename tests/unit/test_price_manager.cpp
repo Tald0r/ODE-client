@@ -510,6 +510,39 @@ TEST(PriceManager, TheHeadPriceBonusPaysWholeMultiplesOnly)
 }
 
 //----------------------------------------------------------------------
+// A time-limited item is bought and sold for 50, whatever it is
+// (decore::itemPrice, PriceManager::getPrice's second rule); the client
+// knows one through the timed-item register
+//----------------------------------------------------------------------
+TEST(PriceManager, ATimeLimitedItemIsPricedAt50)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	Gear sword(ITEM_CLASS_SWORD, 100, 50, 77);
+	Item crown(ITEM_CLASS_MOON_CARD, 4, 78);
+	Charged portal(ITEM_CLASS_SLAYER_PORTAL_ITEM, 3);
+	portal.SetID(79);
+	prices.SetEventItemPrice(777);
+
+	// Registered nowhere: the ordinary prices.
+	CHECK_EQ(125, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(777, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(4000, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+
+	// price.tsv, time-limited-sells-for-50 and time-limited-before-crown:
+	// the rule comes before the wear, the rate, the crown price and the
+	// charges.
+	g_pTimeItemManager->AddTimeItem(77, 60);
+	g_pTimeItemManager->AddTimeItem(78, 60);
+	g_pTimeItemManager->AddTimeItem(79, 60);
+	CHECK_EQ(50, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(50, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(50, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(50, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
 // Star prices
 //----------------------------------------------------------------------
 TEST(PriceManager, StarPriceFollowsTheFirstOptionsPartAndTheItemType)
