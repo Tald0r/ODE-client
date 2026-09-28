@@ -74,21 +74,38 @@ void GCShowWaitGuildInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
+	if ( m_GuildName.empty() )
+		throw InvalidProtocolException( "szGuildName == 0" );
+	if ( m_GuildName.size() > 30 )
+		throw InvalidProtocolException( "too long szGuildName length" );
+
+	if ( m_GuildMaster.empty() )
+		throw InvalidProtocolException( "szGuildMaster == 0" );
+	if ( m_GuildMaster.size() > 20 )
+		throw InvalidProtocolException( "too long szGuildMaster length" );
+
+	if ( m_GuildIntro.size() > 255 )
+		throw InvalidProtocolException( "too long szGuildIntro length" );
+
+	// At most five founding members, each named in 1..20 bytes: the
+	// server's limit and the factory's getPacketMaxSize() budget.
+	if ( m_MemberList.size() > 5 )
+		throw InvalidProtocolException( "too many founding members" );
+
+	std::list<std::string>::const_iterator itr = m_MemberList.begin();
+	for ( ; itr != m_MemberList.end(); itr++ )
+	{
+		if ( (*itr).empty() )
+			throw InvalidProtocolException( "szMember == 0" );
+		if ( (*itr).size() > 20 )
+			throw InvalidProtocolException( "too long szMember length" );
+	}
+
 	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
 	BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
 	BYTE szGuildIntro = static_cast<BYTE>(m_GuildIntro.size());
 	BYTE MemberNum = static_cast<BYTE>(m_MemberList.size());
 	BYTE szMember;
-
-	if ( szGuildName == 0 )
-		throw InvalidProtocolException( "szGuildName == 0" );
-	if ( szGuildName > 30 )
-		throw InvalidProtocolException( "too long szGuildName length" );
-
-	if ( szGuildMaster == 0 )
-		throw InvalidProtocolException( "szGuildMaster == 0" );
-	if ( szGuildMaster > 20 )
-		throw InvalidProtocolException( "too long szGuildMaster length" );
 
 	oStream.write( m_GuildID );
 	oStream.write( szGuildName );
@@ -105,15 +122,9 @@ void GCShowWaitGuildInfo::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_JoinFee );
 	oStream.write( MemberNum );
 
-	std::list<std::string>::const_iterator itr = m_MemberList.begin();
-	for ( ; itr != m_MemberList.end(); itr++ )
+	for ( itr = m_MemberList.begin(); itr != m_MemberList.end(); itr++ )
 	{
 		szMember = static_cast<BYTE>((*itr).size());
-
-		if ( szMember == 0 )
-			throw InvalidProtocolException( "szMember == 0" );
-		if ( szMember > 20 )
-			throw InvalidProtocolException( "too long szMember length" );
 
 		oStream.write( szMember );
 		oStream.write( (*itr) );

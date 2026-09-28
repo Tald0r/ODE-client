@@ -59,19 +59,22 @@ void GCShowGuildInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
+	if ( m_GuildName.empty() )
+		throw InvalidProtocolException( "szGuildName == 0" );
+	if ( m_GuildName.size() > 30 )
+		throw InvalidProtocolException( "too long szGuildName length" );
+
+	if ( m_GuildMaster.empty() )
+		throw InvalidProtocolException( "szGuildMaster == 0" );
+	if ( m_GuildMaster.size() > 20 )
+		throw InvalidProtocolException( "too long szGuildMaster length" );
+
+	if ( m_GuildIntro.size() > 255 )
+		throw InvalidProtocolException( "too long szGuildIntro length" );
+
 	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
 	BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
 	BYTE szGuildIntro = static_cast<BYTE>(m_GuildIntro.size());
-
-	if ( szGuildName == 0 )
-		throw InvalidProtocolException( "szGuildName == 0" );
-	if ( szGuildName > 30 )
-		throw InvalidProtocolException( "too long szGuildName length" );
-
-	if ( szGuildMaster == 0 )
-		throw InvalidProtocolException( "szGuildMaster == 0" );
-	if ( szGuildMaster > 20 )
-		throw InvalidProtocolException( "too long szGuildMaster length" );
 
 	oStream.write( m_GuildID );
 	oStream.write( szGuildName );

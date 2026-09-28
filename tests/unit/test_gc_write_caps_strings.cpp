@@ -35,6 +35,10 @@
 #include "Gpackets/GCModifyGuildMemberInfo.h"
 #include "Gpackets/GCNPCSayDynamic.h"
 #include "Gpackets/GCNotifyWin.h"
+#include "Gpackets/GCShowGuildInfo.h"
+#include "Gpackets/GCShowGuildMemberInfo.h"
+#include "Gpackets/GCShowUnionInfo.h"
+#include "Gpackets/GCShowWaitGuildInfo.h"
 #include "Gpackets/GCSystemMessage.h"
 
 #include <string>
@@ -258,4 +262,203 @@ TEST(GCStringWriteCaps, GCSystemMessageEmptyLeavesNothing)
 
 	CHECK(WriteThrows(packet, ringSize));
 	CHECK_EQ(0, ringSize);
+}
+
+//----------------------------------------------------------------------
+// Guild windows: several strings each, with caps below the length byte's.
+// write() checks every field before its first write, so a refusal leaves
+// the ring empty. The name and master caps used to be tested on the
+// narrowed length, so 256 + cap slipped under them.
+//----------------------------------------------------------------------
+namespace {
+
+void	FillShowGuildInfo ( GCShowGuildInfo & p, const std::string & name,
+			    const std::string & master, const std::string & intro )
+{
+	p.setGuildID(1); p.setGuildName(name); p.setGuildState(0);
+	p.setGuildMaster(master); p.setGuildMemberCount(2);
+	p.setGuildIntro(intro); p.setJoinFee(3);
+}
+
+void	FillSingleGuildInfo ( SingleGuildInfo & g, const std::string & name,
+			      const std::string & master, const std::string & intro )
+{
+	g.setGuildID(1); g.setGuildName(name); g.setGuildState(0);
+	g.setGuildMaster(master); g.setGuildMemberCount(2);
+	g.setGuildIntro(intro); g.setJoinFee(3);
+}
+
+void	FillShowWaitGuildInfo ( GCShowWaitGuildInfo & p, const std::string & name,
+				const std::string & master, const std::string & intro )
+{
+	p.setGuildID(1); p.setGuildName(name); p.setGuildState(0);
+	p.setGuildMaster(master); p.setGuildMemberCount(2);
+	p.setGuildIntro(intro); p.setJoinFee(3);
+}
+
+} // namespace
+
+TEST(GCStringWriteCaps, GCShowGuildInfoGuildName)
+{
+	const GCCapCase<GCShowGuildInfo> c = {
+		+[](GCShowGuildInfo& p, const std::string& s) { FillShowGuildInfo(p, s, "m", "i"); },
+		+[](GCShowGuildInfo& p) { return p.getGuildName(); },
+		30, 0, 30 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowGuildInfoGuildMaster)
+{
+	const GCCapCase<GCShowGuildInfo> c = {
+		+[](GCShowGuildInfo& p, const std::string& s) { FillShowGuildInfo(p, "g", s, "i"); },
+		+[](GCShowGuildInfo& p) { return p.getGuildMaster(); },
+		20, 0, 20 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowGuildInfoGuildIntro)
+{
+	const GCCapCase<GCShowGuildInfo> c = {
+		+[](GCShowGuildInfo& p, const std::string& s) { FillShowGuildInfo(p, "g", "m", s); },
+		+[](GCShowGuildInfo& p) { return p.getGuildIntro(); },
+		255, 0, 255 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowGuildMemberInfoName)
+{
+	const GCCapCase<GCShowGuildMemberInfo> c = {
+		+[](GCShowGuildMemberInfo& p, const std::string& s) {
+			p.setGuildID(1); p.setName(s); p.setGuildMemberRank(0);
+			p.setGuildMemberIntro("i"); },
+		+[](GCShowGuildMemberInfo& p) { return p.getName(); },
+		20, 0, 20 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowGuildMemberInfoIntro)
+{
+	const GCCapCase<GCShowGuildMemberInfo> c = {
+		+[](GCShowGuildMemberInfo& p, const std::string& s) {
+			p.setGuildID(1); p.setName("n"); p.setGuildMemberRank(0);
+			p.setGuildMemberIntro(s); },
+		+[](GCShowGuildMemberInfo& p) { return p.getGuildMemberIntro(); },
+		255, 0, 255 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowUnionInfoGuildName)
+{
+	const GCCapCase<GCShowUnionInfo> c = {
+		+[](GCShowUnionInfo& p, const std::string& s) {
+			FillSingleGuildInfo(p.getMasterGuildInfo(), s, "m", "i"); },
+		+[](GCShowUnionInfo& p) { return p.getMasterGuildInfo().getGuildName(); },
+		30, 0, 30 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowUnionInfoGuildMaster)
+{
+	const GCCapCase<GCShowUnionInfo> c = {
+		+[](GCShowUnionInfo& p, const std::string& s) {
+			FillSingleGuildInfo(p.getMasterGuildInfo(), "g", s, "i"); },
+		+[](GCShowUnionInfo& p) { return p.getMasterGuildInfo().getGuildMaster(); },
+		20, 0, 20 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowUnionInfoGuildIntro)
+{
+	const GCCapCase<GCShowUnionInfo> c = {
+		+[](GCShowUnionInfo& p, const std::string& s) {
+			FillSingleGuildInfo(p.getMasterGuildInfo(), "g", "m", s); },
+		+[](GCShowUnionInfo& p) { return p.getMasterGuildInfo().getGuildIntro(); },
+		255, 0, 255 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowWaitGuildInfoGuildName)
+{
+	const GCCapCase<GCShowWaitGuildInfo> c = {
+		+[](GCShowWaitGuildInfo& p, const std::string& s) { FillShowWaitGuildInfo(p, s, "m", "i"); },
+		+[](GCShowWaitGuildInfo& p) { return p.getGuildName(); },
+		30, 0, 30 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowWaitGuildInfoGuildMaster)
+{
+	const GCCapCase<GCShowWaitGuildInfo> c = {
+		+[](GCShowWaitGuildInfo& p, const std::string& s) { FillShowWaitGuildInfo(p, "g", s, "i"); },
+		+[](GCShowWaitGuildInfo& p) { return p.getGuildMaster(); },
+		20, 0, 20 };
+
+	CheckGCStringWriteCap(c);
+}
+
+TEST(GCStringWriteCaps, GCShowWaitGuildInfoGuildIntro)
+{
+	const GCCapCase<GCShowWaitGuildInfo> c = {
+		+[](GCShowWaitGuildInfo& p, const std::string& s) { FillShowWaitGuildInfo(p, "g", "m", s); },
+		+[](GCShowWaitGuildInfo& p) { return p.getGuildIntro(); },
+		255, 0, 255 };
+
+	CheckGCStringWriteCap(c);
+}
+
+//----------------------------------------------------------------------
+// A founding member's name: the members come last, but they too are
+// checked before the first write.
+//----------------------------------------------------------------------
+TEST(GCStringWriteCaps, GCShowWaitGuildInfoMemberName)
+{
+	const GCCapCase<GCShowWaitGuildInfo> c = {
+		+[](GCShowWaitGuildInfo& p, const std::string& s) {
+			FillShowWaitGuildInfo(p, "g", "m", "i"); p.addMember(s); },
+		+[](GCShowWaitGuildInfo& p) { return p.popMember(); },
+		20, 0, 20 };
+
+	CheckGCStringWriteCap(c);
+}
+
+//----------------------------------------------------------------------
+// At most five founding members, as on the server (kMaxCount) and in
+// the factory's own getPacketMaxSize() budget.
+//----------------------------------------------------------------------
+TEST(GCStringWriteCaps, GCShowWaitGuildInfoMemberCount)
+{
+	GCShowWaitGuildInfoFactory	factory;
+
+	for (int count = 5; count <= 6; count++)
+	{
+		GCShowWaitGuildInfo	packet;
+		size_t			ringSize = 0;
+
+		FillShowWaitGuildInfo(packet, std::string(30, 'g'),
+			std::string(20, 'm'), std::string(255, 'i'));
+
+		for (int i = 0; i < count; i++)
+			packet.addMember(std::string(20, 'a'));
+
+		if (count == 5)
+		{
+			CHECK(!WriteThrows(packet, ringSize));
+			CHECK_EQ(BodySize(packet), ringSize);
+			CHECK(ringSize <= (size_t)factory.getPacketMaxSize());
+		}
+		else
+		{
+			CHECK(WriteThrows(packet, ringSize));
+			CHECK_EQ(0, ringSize);
+		}
+	}
 }
