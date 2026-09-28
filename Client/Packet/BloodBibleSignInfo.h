@@ -30,7 +30,7 @@ public:
     void read (SocketInputStream & iStream);
     void write (SocketOutputStream & oStream) const;
 
-	PacketSize_t getSize () const noexcept { return szuint + szBYTE + szItemType * m_SignList.size(); }
+	PacketSize_t getSize () const noexcept { return static_cast<PacketSize_t>(szuint + szBYTE + szItemType * m_SignList.size()); }
 	static uint getMaxSize () noexcept { return szuint + szBYTE + szItemType * BLOOD_BIBLE_SIGN_SLOT_NUM; }
 
 public:

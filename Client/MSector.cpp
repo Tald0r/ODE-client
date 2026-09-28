@@ -296,12 +296,12 @@ MSector::AddUndergroundCreature(const MCreature* pUndergroundCreature)
 		return false;
 	
 
-	int beforeSize = m_mapObject.size();
+	int beforeSize = static_cast<int>(m_mapObject.size());
 
 	// UndergroundCreature의 위치에 UndergroundCreature을 추가한다.
 	m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pUndergroundCreature) );
 
-	int afterSize = m_mapObject.size();
+	int afterSize = static_cast<int>(m_mapObject.size());
 
 	// 추가가 안 됐다면..
 	if (afterSize==beforeSize)
@@ -389,12 +389,12 @@ MSector::AddGroundCreature(const MCreature* pCreature)
 	if (pos > POSITION_GROUNDCREATURE_MAX)
 		return false;
 
-	int beforeSize = m_mapObject.size();
+	int beforeSize = static_cast<int>(m_mapObject.size());
 
 	// Creature의 위치에 Creature을 추가한다.
 	m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pCreature) );
 
-	int afterSize = m_mapObject.size();
+	int afterSize = static_cast<int>(m_mapObject.size());
 
 	// 추가가 안 됐다면..
 	if (afterSize==beforeSize)
@@ -461,12 +461,12 @@ MSector::AddFlyingCreature(const MCreature* pFlyingCreature)
 	if (pos > POSITION_FLYINGCREATURE_MAX)
 		return false;	
 
-	int beforeSize = m_mapObject.size();
+	int beforeSize = static_cast<int>(m_mapObject.size());
 
 	// FlyingCreature의 위치에 FlyingCreature을 추가한다.
 	m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pFlyingCreature) );
 
-	int afterSize = m_mapObject.size();
+	int afterSize = static_cast<int>(m_mapObject.size());
 
 	// 추가가 안 됐다면..
 	if (afterSize==beforeSize)
@@ -2073,7 +2073,7 @@ MSector::AddSectorSound(int zoneSoundID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSIT
 		// 현재 위치에 추가하면 된다.
 		if (iData->ZoneSoundID > zoneSoundID)
 		{
-			m_listSectorSound.insert(iData, SECTORSOUND_INFO(zoneSoundID, x, y));
+			m_listSectorSound.insert(iData, SECTORSOUND_INFO(zoneSoundID, static_cast<unsigned char>(x), static_cast<unsigned char>(y)));
 
 			return true;
 		}
@@ -2090,7 +2090,7 @@ MSector::AddSectorSound(int zoneSoundID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSIT
 
 	// list의 모든 원소들보다 크므로 
 	// list의 끝에 추가한다.
-	m_listSectorSound.push_back( SECTORSOUND_INFO(zoneSoundID, x, y) );
+	m_listSectorSound.push_back( SECTORSOUND_INFO(zoneSoundID, static_cast<unsigned char>(x), static_cast<unsigned char>(y)) );
 
 	return true;
 }

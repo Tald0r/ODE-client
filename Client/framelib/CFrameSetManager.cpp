@@ -63,7 +63,7 @@ CFrameSetManager::SaveFrameSetIndex(ofstream& setIndex, ifstream& packIndex)
 	DATA_LIST::iterator iData = m_List.begin();
 
 	// FrameSet의 Frame개수 저장
-	count = m_List.size();
+	count = static_cast<TYPE_FRAMEID>(m_List.size());
 	setIndex.write((const char*)&count, SIZE_FRAMEID);
 
 	// List의 모든 node에 대해서..

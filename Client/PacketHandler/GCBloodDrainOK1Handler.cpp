@@ -71,7 +71,7 @@ void GCBloodDrainOK1Handler::execute ( GCBloodDrainOK1 * pPacket , Player * pPla
 
 			// 결과 바로 표현
 			pCreature->PacketSpecialActionResult( 
-					SKILL_BLOOD_DRAIN + (*g_pActionInfoTable).GetMinResultActionInfo(),
+					static_cast<TYPE_ACTIONINFO>(SKILL_BLOOD_DRAIN + (*g_pActionInfoTable).GetMinResultActionInfo()),
 					pCreature->GetID(),
 					pCreature->GetX(),
 					pCreature->GetY()

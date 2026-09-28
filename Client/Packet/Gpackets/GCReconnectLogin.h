@@ -40,9 +40,9 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szBYTE + m_LoginServerIP.size() 	// 게임 서버 아이피
+		return static_cast<PacketSize_t>(szBYTE + m_LoginServerIP.size() 	// 게임 서버 아이피
 			+ szuint							// 게임 서버 포트
-			+ szDWORD; 							// 인증 키
+			+ szDWORD); 							// 인증 키
 	}
 
 	#ifdef __DEBUG_OUTPUT__

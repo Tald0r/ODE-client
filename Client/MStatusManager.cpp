@@ -45,9 +45,6 @@
 //----------------------------------------------------------------------
 // global
 //----------------------------------------------------------------------
-#ifdef PLATFORM_WINDOWS
-__declspec(dllexport)
-#endif
 MStatusManager		g_StatusManager;
 
 

@@ -2,6 +2,7 @@
 // UIDialog.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "SafeFormat.h"
 
 namespace {
@@ -358,8 +359,8 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 								CGLearnSkill _CGLearnSkill;
 					
 								//_CGLearnSkill.setObjectID( (*g_pPCTalkBox).GetNPCID() );
-								_CGLearnSkill.setSkillType( id );
-								_CGLearnSkill.setSkillDomainType( (*g_pTempInformation).Value1 );
+								_CGLearnSkill.setSkillType( static_cast<SkillType_t>(id) );
+								_CGLearnSkill.setSkillDomainType( static_cast<SkillDomainType_t>((*g_pTempInformation).Value1) );
 
 								g_pSocket->sendPacket( &_CGLearnSkill );
 
@@ -438,7 +439,7 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 								CGSelectBloodBible _CGSelectBloodBible;
 					
 								//_CGLearnSkill.setObjectID( (*g_pPCTalkBox).GetNPCID() );
-								_CGSelectBloodBible.setBloodBibleID( id );
+								_CGSelectBloodBible.setBloodBibleID( static_cast<ItemType_t>(id) );
 								
 								g_pSocket->sendPacket( &_CGSelectBloodBible );
 
@@ -557,7 +558,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 	//---------------------------------------------------------
 	// size 체크
 	//---------------------------------------------------------
-	int msgSize = g_pPCTalkBox->size();
+	int msgSize = static_cast<int>(g_pPCTalkBox->size());
 
 	if (msgSize==0)
 	{
@@ -568,7 +569,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 	// 제목
 	//---------------------------------------------------------
 	const char*	content = g_pPCTalkBox->GetContent();
-	[[maybe_unused]] int lenContent = strlen(content);
+	[[maybe_unused]] int lenContent = static_cast<int>(strlen(content));
 
 	//---------------------------------------------------------
 	// dialog의 길이를 정한다.
@@ -652,7 +653,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 					++iString;
 					continue;
 				}
-				strncpy(strID, pString->GetString(), 3);
+				Basic::CopyBounded(strID, pString->GetString(), 3);
 				strID[3] = '\0';
 				SafeFormat::Copy(strName, pString->GetString()+3);
 
@@ -681,7 +682,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 					++iString;
 					continue;
 				}
-				strncpy(strID, pString->GetString(), 4);
+				Basic::CopyBounded(strID, pString->GetString(), 4);
 				strID[4] = '\0';
 				SafeFormat::Copy(strName, pString->GetString()+4);
 
@@ -825,7 +826,7 @@ UIDialog::PopupFreeMessageDlg(const char* msg, int x, int y, WORD fButton, bool 
 	//-------------------------------------------------------------
 	// MESSAGE_FREE
 	//-------------------------------------------------------------
-	int msgSize = strlen(msg);
+	int msgSize = static_cast<int>(strlen(msg));
 
 	int dlgSizeY, numStr;
 
@@ -849,7 +850,7 @@ UIDialog::PopupFreeMessageDlg(const char* msg, int x, int y, WORD fButton, bool 
 			str--;
 		}
 
-		strncpy(m_ppDlgMessage[msgID][0], msg, i);
+		Basic::CopyBounded(m_ppDlgMessage[msgID][0], msg, i);
 		m_ppDlgMessage[msgID][0][i] = '\0';
 		//------------------------------------------
 		//yckou

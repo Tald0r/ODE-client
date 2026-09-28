@@ -94,7 +94,7 @@ void GCGoodsList::write ( SocketOutputStream & oStream ) const
 	__BEGIN_TRY
 	__BEGIN_DEBUG
 		
-	BYTE totalNum = m_GoodsList.size();
+	BYTE totalNum = static_cast<BYTE>(m_GoodsList.size());
 	if ( totalNum > MAX_GOODS_LIST ) throw DisconnectException("GCGoodsList : 아이템 개수가 틀려먹었습니다.");
 
 	oStream.write( totalNum );
@@ -112,7 +112,7 @@ void GCGoodsList::write ( SocketOutputStream & oStream ) const
 		oStream.write( pGI->itemType );
 		oStream.write( pGI->grade );
 		
-		BYTE optionNum = pGI->optionType.size();
+		BYTE optionNum = static_cast<BYTE>(pGI->optionType.size());
 		oStream.write( optionNum );
 
 		std::list<OptionType_t>::const_iterator oitr = pGI->optionType.begin();

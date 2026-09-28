@@ -59,7 +59,7 @@ void RCSay::write ( Datagram & oDatagram ) const
 	__BEGIN_TRY
 
 	// Name
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
@@ -71,7 +71,7 @@ void RCSay::write ( Datagram & oDatagram ) const
 	oDatagram.write( m_Name );
 
 	// message
-	BYTE szMessage = m_Message.size();
+	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");

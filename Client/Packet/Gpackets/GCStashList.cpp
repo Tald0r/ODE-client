@@ -159,7 +159,7 @@ void GCStashList::write ( SocketOutputStream & oStream ) const
 				oStream.write(item.itemClass);
 				oStream.write(item.itemType);
 
-				BYTE optionSize = item.optionType.size();
+				BYTE optionSize = static_cast<BYTE>(item.optionType.size());
 				oStream.write(optionSize);
 				std::list<OptionType_t>::const_iterator iOption;
 				for (iOption=item.optionType.begin(); iOption!=item.optionType.end(); iOption++)

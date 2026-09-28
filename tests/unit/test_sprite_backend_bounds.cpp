@@ -1,4 +1,5 @@
 #include "test_framework.h"
+#include "CrtCompat.h"
 #include "SpriteLibBackendSDL.h"
 #include <array>
 #include <climits>
@@ -16,7 +17,7 @@ struct SpriteOwner {
 
 int Load(const std::vector<uint16_t>& words, spritectl_sprite_t* result, size_t byteLimit = SIZE_MAX)
 {
-	FILE* file = std::tmpfile();
+	FILE* file = Basic::TemporaryFile();
 	CHECK(file != nullptr);
 	if (!file) return -1;
 	size_t written = 0;

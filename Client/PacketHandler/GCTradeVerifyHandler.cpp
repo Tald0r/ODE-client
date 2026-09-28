@@ -170,8 +170,8 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
-				int gridX		= g_pTempInformation->Value2;
-				int gridY		= g_pTempInformation->Value3;
+				int gridX		= static_cast<int>(g_pTempInformation->Value2);
+				int gridY		= static_cast<int>(g_pTempInformation->Value3);
 			
 				UI_PickUpItem( pItem );
 				g_pTradeManager->GetMyInventory()->RemoveItem( gridX, gridY );
@@ -207,8 +207,8 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				// pItem은 원래 들고 있던 item
-				int gridX		= g_pTempInformation->Value2;
-				int gridY		= g_pTempInformation->Value3;
+				int gridX		= static_cast<int>(g_pTempInformation->Value2);
+				int gridY		= static_cast<int>(g_pTempInformation->Value3);
 				MItem* pMouseItem = UI_GetMouseItem();
 
 				// pItem == pMouseItem이다.

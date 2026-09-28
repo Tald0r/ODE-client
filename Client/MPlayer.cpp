@@ -634,7 +634,7 @@ SendPositionInfoToParty()
 
 				_CGPartyPosition.setZoneID ( zoneID );
 				_CGPartyPosition.setXY( x, y );
-				_CGPartyPosition.setHP( g_pPlayer->GetMAX_HP(), g_pPlayer->GetHP());
+				_CGPartyPosition.setHP( static_cast<HP_t>(g_pPlayer->GetMAX_HP()), static_cast<HP_t>(g_pPlayer->GetHP()));
 
 				g_pSocket->sendPacket( &_CGPartyPosition );
 			}
@@ -718,7 +718,7 @@ SendStatusInfoToParty()
 
 					_CGPartyPosition.setZoneID ( zoneID );
 					_CGPartyPosition.setXY( x, y );
-					_CGPartyPosition.setHP( g_pPlayer->GetMAX_HP(), g_pPlayer->GetHP());
+					_CGPartyPosition.setHP( static_cast<HP_t>(g_pPlayer->GetMAX_HP()), static_cast<HP_t>(g_pPlayer->GetHP()));
 
 					g_pSocket->sendPacket( &_CGPartyPosition );
 				}
@@ -1236,8 +1236,8 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				&& limit-- > 0
 				)
 			{
-				if( GetX() != sX )sX += MovePoint.x;
-				if( GetY() != sY )sY += MovePoint.y;
+				if( GetX() != sX )sX = static_cast<TYPE_SECTORPOSITION>(sX + MovePoint.x);
+				if( GetY() != sY )sY = static_cast<TYPE_SECTORPOSITION>(sY + MovePoint.y);
 				bCanStand = m_pZone->CanMove( m_MoveType, sX,sY );
 			};
 
@@ -1705,7 +1705,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				//-------------------------------------------------------
 				// 갔던 곳이면 안 간다.
 				//-------------------------------------------------------
-				if (g_pZone->IsVisitedFlag(next.x, next.y)) continue;
+				if (g_pZone->IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
 
 				// 한 화면을 넘어가는 경우는 check하지 않는다.				
 				if (next.x<x0 || next.y<y0 
@@ -1714,12 +1714,12 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				//-------------------------------------------------------
 				// 갈 수 있으면 pqueue에 넣는다.
 				//-------------------------------------------------------
-				if (m_pZone->CanMove(m_MoveType, next.x, next.y)
+				if (m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))
 					&& !bHasRelic && !bHasBloodBible
 					
 					)
 				{		
-					g_pZone->SetVisitedFlag(next.x, next.y);
+					g_pZone->SetVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y));
 //					m_ppVisited[next.y][next.x] = true;
 
 					//-------------------------------------------------------
@@ -2317,8 +2317,8 @@ MPlayer::SelfSpecialAction()
 								_CGSkillToInventory.setObjectID( pItem->GetID() );
 								_CGSkillToInventory.setX( pItem->GetGridX() );
 								_CGSkillToInventory.setY( pItem->GetGridY() );
-								_CGSkillToInventory.setTargetX( fitPoint.x );
-								_CGSkillToInventory.setTargetY( fitPoint.y );
+								_CGSkillToInventory.setTargetX( static_cast<Coord_t>(fitPoint.x) );
+								_CGSkillToInventory.setTargetY( static_cast<Coord_t>(fitPoint.y) );
 								_CGSkillToInventory.setSkillType( SKILL_CREATE_HOLY_POTION );
 								//_CGSkillToInventory.setCEffectID( 0 );	// -_-;;							
 
@@ -5828,8 +5828,8 @@ MPlayer::ActionMove()
 				}
 
 				CGMove _CGMove;
-				_CGMove.setX( m_X );
-				_CGMove.setY( m_Y );
+				_CGMove.setX( static_cast<Coord_t>(m_X) );
+				_CGMove.setY( static_cast<Coord_t>(m_Y) );
 				_CGMove.setDir( m_Direction );
 				g_pSocket->sendPacket( &_CGMove );
 
@@ -7045,8 +7045,8 @@ MPlayer::ActionToSendPacket()
 				if (m_fTraceBuffer & FLAG_TRACE_CREATURE_BASIC) 
 				{
 					CGAttack _CGAttack;
-					_CGAttack.setX( m_X );
-					_CGAttack.setY( m_Y );
+					_CGAttack.setX( static_cast<Coord_t>(m_X) );
+					_CGAttack.setY( static_cast<Coord_t>(m_Y) );
 					_CGAttack.setDir( m_Direction );
 					_CGAttack.setObjectID( m_TraceID );
 					g_pSocket->sendPacket( &_CGAttack );
@@ -7123,8 +7123,8 @@ MPlayer::ActionToSendPacket()
 
 						POINT p;
 						g_pInventory->GetFitPosition(&pupa, p);
-						_CGAbsorbSoul.setTargetInvenX(p.x);
-						_CGAbsorbSoul.setTargetInvenY(p.y);
+						_CGAbsorbSoul.setTargetInvenX(static_cast<CoordInven_t>(p.x));
+						_CGAbsorbSoul.setTargetInvenY(static_cast<CoordInven_t>(p.y));
 
 						// (!!!) 검증 packet을 받을때까지 item을 못 움직이도록 해야한다.
 						// Item관련 행위 중단
@@ -7271,8 +7271,8 @@ MPlayer::ActionToSendPacket()
 
 							CGThrowBomb	cgThrowBomb;
 
-							cgThrowBomb.setZoneX( m_TraceX );
-							cgThrowBomb.setZoneY( m_TraceY );
+							cgThrowBomb.setZoneX( static_cast<Coord_t>(m_TraceX) );
+							cgThrowBomb.setZoneY( static_cast<Coord_t>(m_TraceY) );
 							cgThrowBomb.setBombX( pUsingItem->GetGridX() );
 							cgThrowBomb.setBombY( pUsingItem->GetGridY() );
 							cgThrowBomb.setAttackSlayerFlag( m_TraceID!=OBJECTID_NULL );
@@ -7397,8 +7397,8 @@ MPlayer::ActionToSendPacket()
 					CGSkillToTile _CGSkillToTile;
 					_CGSkillToTile.setSkillType( SkillType );
 					_CGSkillToTile.setCEffectID( m_pEffectTarget->GetEffectID() );
-					_CGSkillToTile.setX( m_TraceX );
-					_CGSkillToTile.setY( m_TraceY );
+					_CGSkillToTile.setX( static_cast<Coord_t>(m_TraceX) );
+					_CGSkillToTile.setY( static_cast<Coord_t>(m_TraceY) );
 					g_pSocket->sendPacket( &_CGSkillToTile );
 
 					// 2001.8.20 주석처리
@@ -7688,8 +7688,8 @@ MPlayer::ActionEffect()
 				SetSweepViewValue(1);
 				g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
 
-				m_TempSelectPosX = g_SelectSector.x;
-				m_TempSelectPosY = g_SelectSector.y;
+				m_TempSelectPosX = static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x);
+				m_TempSelectPosY = static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y);
 				m_SweepViceX = m_TraceX;
 				m_SweepViceY = m_TraceY;
 				ExecuteActionInfoFromMainNode(SKILL_CLIENT_SWEEP_VICE,m_SweepViceX, m_SweepViceY, 0,g_pPlayer->GetDirection(),0	,	
@@ -8824,8 +8824,8 @@ MPlayer::CheckRepeatAction()
 				POINT temp = g_pTopView->ScreenToPixel(g_x, g_y);
 				temp = MTopView::PixelToMap( temp.x, temp.y );
 				
-				m_NextTraceX = temp.x;
-				m_NextTraceY = temp.y;
+				m_NextTraceX = static_cast<TYPE_SECTORPOSITION>(temp.x);
+				m_NextTraceY = static_cast<TYPE_SECTORPOSITION>(temp.y);
 
 				if (repeatFrameIncTurn!=g_CurrentFrame)
 				{
@@ -9482,8 +9482,8 @@ MPlayer::Action()
 					if(pItem != NULL)
 					{
 						CGDissectionCorpse _CGDissectionCorpse;
-						_CGDissectionCorpse.setX( pItem->GetX() );
-						_CGDissectionCorpse.setY( pItem->GetY() );
+						_CGDissectionCorpse.setX( static_cast<Coord_t>(pItem->GetX()) );
+						_CGDissectionCorpse.setY( static_cast<Coord_t>(pItem->GetY()) );
 						_CGDissectionCorpse.setPet( true );
 						_CGDissectionCorpse.setObjectID( pItem->GetID() );
 
@@ -9650,7 +9650,7 @@ MPlayer::Action()
 	
 	if (m_nUsedActionInfo < g_pActionInfoTable->GetMinResultActionInfo())
 	{		
-		int numTarget = m_listEffectTarget.size();
+		int numTarget = static_cast<int>(m_listEffectTarget.size());
 
 		if (numTarget!=0)
 		{
@@ -9688,7 +9688,7 @@ MPlayer::Action()
 						if (pResult!=NULL)
 						{
 							// 실행한 결과는 없앤다.
-							int numTargetBeforeExecute = m_listEffectTarget.size();
+							int numTargetBeforeExecute = static_cast<int>(m_listEffectTarget.size());
 
 							pEffectTarget->SetResultNULL();
 
@@ -9696,7 +9696,7 @@ MPlayer::Action()
 
 							delete pResult;
 
-							int numTargetAfterExecute = m_listEffectTarget.size();
+							int numTargetAfterExecute = static_cast<int>(m_listEffectTarget.size());
 							
 							// pResult->Execute()에서 m_listEffectTarget이 제거될 수가 있다 - -;
 							// 콩가루 구조... 수정이 필요하다 - -;;
@@ -11600,8 +11600,8 @@ MPlayer::PickupItem(MItem* pItem)
 								&& !m_bEffectStatus[EFFECTSTATUS_CURSE_PARALYSIS])
 							{
 								CGDissectionCorpse _CGDissectionCorpse;
-								_CGDissectionCorpse.setX( pItem->GetX() );
-								_CGDissectionCorpse.setY( pItem->GetY() );
+								_CGDissectionCorpse.setX( static_cast<Coord_t>(pItem->GetX()) );
+								_CGDissectionCorpse.setY( static_cast<Coord_t>(pItem->GetY()) );
 								_CGDissectionCorpse.setObjectID( pItem->GetID() );
 
 								g_pSocket->sendPacket( &_CGDissectionCorpse );
@@ -11790,15 +11790,15 @@ MPlayer::PickupItemToInventory(MItem* pItem)
 				CGAddZoneToInventory _CGAddZoneToInventory;
 				
 				_CGAddZoneToInventory.setObjectID( pItem->GetID() );
-				_CGAddZoneToInventory.setZoneX( pItem->GetX() );
-				_CGAddZoneToInventory.setZoneY( pItem->GetY() );
-				_CGAddZoneToInventory.setInvenX( fitPoint.x );
-				_CGAddZoneToInventory.setInvenY( fitPoint.y );
+				_CGAddZoneToInventory.setZoneX( static_cast<Coord_t>(pItem->GetX()) );
+				_CGAddZoneToInventory.setZoneY( static_cast<Coord_t>(pItem->GetY()) );
+				_CGAddZoneToInventory.setInvenX( static_cast<CoordInven_t>(fitPoint.x) );
+				_CGAddZoneToInventory.setInvenY( static_cast<CoordInven_t>(fitPoint.y) );
 
 				g_pSocket->sendPacket( &_CGAddZoneToInventory );
 
 				// 주울려는 item을 기억한다.
-				pItem->SetGridXY( fitPoint.x, fitPoint.y );
+				pItem->SetGridXY( static_cast<BYTE>(fitPoint.x), static_cast<BYTE>(fitPoint.y) );
 				SetItemCheckBuffer(pItem, ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY);											
 			}
 			else
@@ -11840,8 +11840,8 @@ MPlayer::PickupMoney(MMoney* pItem)
 			CGPickupMoney _CGPickupMoney;
 			
 			_CGPickupMoney.setObjectID( pItem->GetID() );
-			_CGPickupMoney.setZoneX( pItem->GetX() );
-			_CGPickupMoney.setZoneY( pItem->GetY() );
+			_CGPickupMoney.setZoneX( static_cast<Coord_t>(pItem->GetX()) );
+			_CGPickupMoney.setZoneY( static_cast<Coord_t>(pItem->GetY()) );
 		
 			g_pSocket->sendPacket( &_CGPickupMoney );
 
@@ -11886,8 +11886,8 @@ MPlayer::PickupItemToMouse(MItem* pItem)
 				CGAddZoneToMouse _CGAddZoneToMouse;
 				
 				_CGAddZoneToMouse.setObjectID( pItem->GetID() );
-				_CGAddZoneToMouse.setZoneX( pItem->GetX() );
-				_CGAddZoneToMouse.setZoneY( pItem->GetY() );
+				_CGAddZoneToMouse.setZoneX( static_cast<Coord_t>(pItem->GetX()) );
+				_CGAddZoneToMouse.setZoneY( static_cast<Coord_t>(pItem->GetY()) );
 				
 				g_pSocket->sendPacket( &_CGAddZoneToMouse );
 				
@@ -11954,8 +11954,8 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 			CGAddZoneToMouse _CGAddZoneToMouse;
 
 			_CGAddZoneToMouse.setObjectID( pItem->GetID() );
-			_CGAddZoneToMouse.setZoneX( pItem->GetX() );
-			_CGAddZoneToMouse.setZoneY( pItem->GetY() );
+			_CGAddZoneToMouse.setZoneX( static_cast<Coord_t>(pItem->GetX()) );
+			_CGAddZoneToMouse.setZoneY( static_cast<Coord_t>(pItem->GetY()) );
 
 			g_pSocket->sendPacket( &_CGAddZoneToMouse );
 
@@ -11998,8 +11998,8 @@ MPlayer::RideMotorcycle(MMotorcycle* pMotorcycle)
 		CGRideMotorCycle _CGRideMotorCycle;
 
 		_CGRideMotorCycle.setObjectID( pMotorcycle->GetID() );
-		_CGRideMotorCycle.setX( pMotorcycle->GetX() );
-		_CGRideMotorCycle.setY( pMotorcycle->GetY() );
+		_CGRideMotorCycle.setX( static_cast<Coord_t>(pMotorcycle->GetX()) );
+		_CGRideMotorCycle.setY( static_cast<Coord_t>(pMotorcycle->GetY()) );
 
 		g_pSocket->sendPacket( &_CGRideMotorCycle );
 
@@ -13400,8 +13400,8 @@ bool MPlayer::UpdateBurningSol()
 				m_bBurningSolCount = bCheckFrame;
 		}
 		POINT  TempPos = g_pTopView->GetSelectedSector(g_x, g_y);
-		m_TempSelectPosX = TempPos.x;
-		m_TempSelectPosY = TempPos.y;
+		m_TempSelectPosX = static_cast<TYPE_SECTORPOSITION>(TempPos.x);
+		m_TempSelectPosY = static_cast<TYPE_SECTORPOSITION>(TempPos.y);
 		m_Direction = MTopView::GetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
 		ChangeNearDirection();
 		//else

@@ -40,10 +40,10 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szDWORD 						// authentication key
+		return static_cast<PacketSize_t>(szDWORD 						// authentication key
 			+ szPCType 						// Slayer or Vampire?
 			+ szBYTE + m_PCName.size()  	// name
-			+ 6;
+			+ 6);
 	}
 
 	#ifdef __DEBUG_OUTPUT__

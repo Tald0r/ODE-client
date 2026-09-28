@@ -53,7 +53,7 @@ void GCKnocksTargetBackOK4Handler::execute ( GCKnocksTargetBackOK4 * pPacket , P
 
 			// 결과 바로 표현
 			pCreature->PacketSpecialActionResult( 
-								pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo(),
+								static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
 								pCreature->GetID(),
 								pCreature->GetX(),
 								pCreature->GetY()

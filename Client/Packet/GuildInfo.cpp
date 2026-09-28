@@ -81,9 +81,9 @@ void GuildInfo::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	BYTE szGuildName = m_GuildName.size();
-	BYTE szGuildMaster = m_GuildMaster.size();
-	BYTE szGuildExpireDate = m_GuildExpireDate.size();
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+	BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
+	BYTE szGuildExpireDate = static_cast<BYTE>(m_GuildExpireDate.size());
 	
 	if ( szGuildName == 0 )
 		throw InvalidProtocolException( "szGuildName == 0" );
@@ -118,8 +118,8 @@ PacketSize_t GuildInfo::getSize()
 {
 	__BEGIN_TRY
 
-	BYTE szGuildName = m_GuildName.size();
-	BYTE szGuildMaster = m_GuildMaster.size();
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+	BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
 
 	PacketSize_t PacketSize = szGuildID + szBYTE + szGuildName + szBYTE + szGuildMaster + szBYTE;
 

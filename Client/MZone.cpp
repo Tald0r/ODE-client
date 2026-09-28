@@ -644,7 +644,7 @@ MZone::SaveToFileSectorSound(std::ofstream& file)
 
 			SECTORSOUND_LIST::const_iterator iSound = listSound.begin();
 
-			int num = listSound.size();
+			int num = static_cast<int>(listSound.size());
 
 			// 한 Sector에 있는 sound의 개수 저장
 			file.write((const char*)&num, 4);
@@ -2725,8 +2725,8 @@ MZone::AddCreature(MCreature* pCreature)
 			if (pInfo!=NULL)
 			{
 				pInfo->bInSight = true;
-				pInfo->HP = pCreature->GetHP();
-				pInfo->MaxHP = pCreature->GetMAX_HP();
+				pInfo->HP = static_cast<WORD>(pCreature->GetHP());
+				pInfo->MaxHP = static_cast<WORD>(pCreature->GetMAX_HP());
 				pInfo->guildID = pCreature->GetGuildNumber();
 			}			
 		}
@@ -4504,7 +4504,7 @@ MZone::UpdateEffects()
 	EFFECT_MAP::iterator iTemp;
 	
 	MEffect* pEffect;
-	int count = m_mapEffect.size();
+	int count = static_cast<int>(m_mapEffect.size());
 
 
 	int		sX, sY;		// 변경 전의 좌표
@@ -4967,7 +4967,7 @@ MZone::UpdateGroundEffects()
 	EFFECT_MAP::iterator iTemp;
 	
 	MEffect* pEffect;
-	int count = m_mapGroundEffect.size();
+	int count = static_cast<int>(m_mapGroundEffect.size());
 
 
 	

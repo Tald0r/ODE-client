@@ -110,11 +110,11 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 						{
 							pNewInfo->bInSight = true;
 
-							pNewInfo->HP = pCreature->GetHP();
-							pNewInfo->MaxHP = pCreature->GetMAX_HP();
+							pNewInfo->HP = static_cast<WORD>(pCreature->GetHP());
+							pNewInfo->MaxHP = static_cast<WORD>(pCreature->GetMAX_HP());
 							pNewInfo->zoneID = (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-							pNewInfo->zoneX = pCreature->GetServerX();
-							pNewInfo->zoneY = pCreature->GetServerY();
+							pNewInfo->zoneX = static_cast<BYTE>(pCreature->GetServerX());
+							pNewInfo->zoneY = static_cast<BYTE>(pCreature->GetServerY());
 							pNewInfo->guildID = pCreature->GetGuildNumber();
 
 							pCreature->SetPlayerParty();

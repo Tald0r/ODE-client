@@ -86,7 +86,7 @@ class MWorkThread {
 		//---------------------------------------------------
 		// Get Size
 		//---------------------------------------------------
-		int					GetSize() const				{ return m_dequeWorkNode.size(); }
+		int					GetSize() const				{ return static_cast<int>(m_dequeWorkNode.size()); }
 
 		//---------------------------------------------------
 		// Is...

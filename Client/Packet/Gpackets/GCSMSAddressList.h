@@ -28,7 +28,7 @@ struct AddressUnit
 	string	CustomName;
 	string	Number;
 
-	PacketSize_t getPacketSize() const { return szDWORD + szBYTE + CharacterName.size() + szBYTE + CustomName.size() + szBYTE + Number.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szDWORD + szBYTE + CharacterName.size() + szBYTE + CustomName.size() + szBYTE + Number.size()); }
 	static PacketSize_t getMaxPacketSize() { return szDWORD + szBYTE + 20 + szBYTE + 40 + szBYTE + 11; }
 
 	void read(SocketInputStream & iStream);

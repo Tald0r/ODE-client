@@ -159,7 +159,7 @@ void PCVampireInfo2::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	// write vampire name
 	//--------------------------------------------------
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
@@ -252,7 +252,7 @@ void PCVampireInfo2::write ( SocketOutputStream & oStream ) const
 	// 길드 아이디
 	oStream.write( m_GuildID );
 
-	BYTE szGuildName = m_GuildName.size();
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
 
 	if ( szGuildName > 30 )
 		throw InvalidProtocolException( "too long guild name length" );

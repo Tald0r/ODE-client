@@ -2832,7 +2832,7 @@ void	C_VS_UI_FILE_DIALOG::Show()
 	// Drive List 출력
 	//drive 선택 open 되어있으면
 	if(m_bl_open_drive) {
-		SetRect(&rect, x+m_string_x-5,y+37+m_string_gap-3, x+m_string_x-5 + 350, y+37+m_string_gap-3+m_string_gap*m_directories.paths.size());
+		SetRect(&rect, x+m_string_x-5,y+37+m_string_gap-3, x+m_string_x-5 + 350, static_cast<int>(y+37+m_string_gap-3+m_string_gap*m_directories.paths.size()));
 		
 		DrawAlphaBox(&rect, 100, 100,100, 20);
 		gpC_global_resource->DrawOutBox(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);		
@@ -2865,7 +2865,7 @@ void	C_VS_UI_FILE_DIALOG::Show()
 			title = Basic::BuildDialogPathLabel(m_directories.paths[m_directories.current], m_filter);
 			if(title.size()>38)
 			{	
-				SetRect(&rect, x+m_string_x+10,y+45,x+m_string_x+9*title.size(),y+68);
+				SetRect(&rect, x+m_string_x+10,y+45,static_cast<int>(x+m_string_x+9*title.size()),y+68);
 				DrawAlphaBox(&rect, 0, 0, 0, 20);		
 				gpC_global_resource->DrawOutBox(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);
 				g_PrintColorStr(x+m_string_x+15, y+49, title.c_str(), gpC_base->m_desc_menu_pi, RGB_WHITE);
@@ -2876,7 +2876,7 @@ void	C_VS_UI_FILE_DIALOG::Show()
 			title = Basic::BuildDialogPathLabel(m_directories.paths[STAY_FOLDER-1], m_filter);
 			if(title.size()>38)
 			{	
-				SetRect(&rect, x+m_string_x+17,y+35+(STAY_FOLDER)*m_string_gap,x+m_string_x+17+9*title.size(),y+39+(STAY_FOLDER)*m_string_gap+18);
+				SetRect(&rect, x+m_string_x+17,y+35+(STAY_FOLDER)*m_string_gap,static_cast<int>(x+m_string_x+17+9*title.size()),y+39+(STAY_FOLDER)*m_string_gap+18);
 				DrawAlphaBox(&rect, 0, 0, 0, 20);		
 				gpC_global_resource->DrawOutBox(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);
 				g_PrintColorStr(x+m_string_x+17, y+37+(STAY_FOLDER)*m_string_gap, title.c_str(), gpC_base->m_desc_menu_pi, RGB_WHITE);
@@ -2887,7 +2887,7 @@ void	C_VS_UI_FILE_DIALOG::Show()
 			if(m_tempselect != -1 && m_tempselect >= m_pC_scroll_bar->GetScrollPos() && m_tempselect < m_pC_scroll_bar->GetScrollPos()+m_scroll_max)
 			if(m_vs_file_list[m_tempselect].size()>38)	
 			{
-				SetRect(&rect,  x+m_string_x, y + m_string_y + (m_tempselect - m_pC_scroll_bar->GetScrollPos()) * m_string_gap-3, x+m_string_x + 8*m_vs_file_list[m_tempselect].size(),y + m_string_y + (m_tempselect - m_pC_scroll_bar->GetScrollPos()) * m_string_gap-3 + m_string_gap);
+				SetRect(&rect,  x+m_string_x, y + m_string_y + (m_tempselect - m_pC_scroll_bar->GetScrollPos()) * m_string_gap-3, static_cast<int>(x+m_string_x + 8*m_vs_file_list[m_tempselect].size()),y + m_string_y + (m_tempselect - m_pC_scroll_bar->GetScrollPos()) * m_string_gap-3 + m_string_gap);
 				DrawAlphaBox(&rect, 0, 0, 0, 20);
 				gpC_global_resource->DrawOutBox(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);
 				const char *temp=m_vs_file_list[m_tempselect].c_str();

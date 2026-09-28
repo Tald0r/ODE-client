@@ -496,7 +496,7 @@ void
 CreatureSpriteTypeMapper::Release()
 {
 	// Use size() not capacity()
-	int numSpriteTypes = m_CreatureSpriteTypes.size();
+	int numSpriteTypes = static_cast<int>(m_CreatureSpriteTypes.size());
 
 	for (int i=0; i<numSpriteTypes; i++)
 	{
@@ -544,7 +544,7 @@ CreatureSpriteTypeMapper::GetRandomCreatureType(TYPE_SPRITEID spriteID) const
 
 	const CREATURE_TYPES* pCreatureTypes = m_CreatureSpriteTypes[spriteID];
 
-	int numCreatures = pCreatureTypes->capacity();
+	int numCreatures = static_cast<int>(pCreatureTypes->capacity());
 
 	if (numCreatures==0)
 	{
@@ -563,7 +563,7 @@ void
 CreatureSpriteTypeMapper::SaveToFile(std::ofstream& file)
 {
 	// Use size() not capacity()
-	int numSpriteTypes = m_CreatureSpriteTypes.size();
+	int numSpriteTypes = static_cast<int>(m_CreatureSpriteTypes.size());
 
 	file.write((const char*)&numSpriteTypes, 4);
 
@@ -578,7 +578,7 @@ CreatureSpriteTypeMapper::SaveToFile(std::ofstream& file)
 		}
 		else
 		{
-			int numCreatureTypes = pCreatureTypes->size();
+			int numCreatureTypes = static_cast<int>(pCreatureTypes->size());
 
 			file.write((const char*)&numCreatureTypes, 4);
 

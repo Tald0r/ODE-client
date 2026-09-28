@@ -106,7 +106,7 @@ class DLLIFC CImmBox : public CImmEnclosure
         DWORD dwWidth = IMM_EFFECT_DONT_CHANGE,
         DWORD dwHeight = IMM_EFFECT_DONT_CHANGE,
         DWORD dwWallWidth = IMM_EFFECT_DONT_CHANGE,
-        CImmEffect* pInsideEffect = (CImmEffect*) IMM_EFFECT_DONT_CHANGE  
+        CImmEffect* pInsideEffect = (CImmEffect*)(intptr_t) IMM_EFFECT_DONT_CHANGE  
         );
 
     BOOL
@@ -114,7 +114,7 @@ class DLLIFC CImmBox : public CImmEnclosure
         LPCRECT pRectOutside,
         LONG lStiffness = IMM_EFFECT_DONT_CHANGE,
         DWORD dwWallWidth = IMM_EFFECT_DONT_CHANGE,
-        CImmEffect* pInsideEffect = (CImmEffect*) IMM_EFFECT_DONT_CHANGE  
+        CImmEffect* pInsideEffect = (CImmEffect*)(intptr_t) IMM_EFFECT_DONT_CHANGE  
         );
 
 

@@ -336,7 +336,7 @@ bool CTypePack<Type>::SaveToFile(std::ofstream&dataFile, std::ofstream&indexFile
 
 	for(i = 0; i < m_Size; i++)
 	{
-		index = dataFile.tellp();
+		index = static_cast<DWORD>(dataFile.tellp());
 		if(m_pData[i].SaveToFile(dataFile) == false)
 		{
 			realSize--;
@@ -765,7 +765,7 @@ bool CTypePack2<TypeBase, Type1, Type2>::SaveToFile(std::ofstream&dataFile, std:
 
 	for(i = 0; i < m_Size; i++)
 	{
-		index = dataFile.tellp();
+		index = static_cast<DWORD>(dataFile.tellp());
 		if(m_pData[i].SaveToFile(dataFile) == false)
 		{
 			realSize--;

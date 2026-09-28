@@ -53,7 +53,7 @@ MParabolaEffect::SetTarget(int x, int y, int z, WORD speed)
 	int steps = (int)m_Len / speed;	// 몇번 움직여야 목표 도달인가?
 
 	//m_RadStep = (float)PI / steps;	// 매번 움직일때마다 달라지는 theta
-	m_RadStep = MathTable::FPI / (float)steps;
+	m_RadStep = static_cast<int>(MathTable::FPI / (float)steps);
 	m_RadCurrent = 0;
 }
 void
@@ -70,8 +70,8 @@ MParabolaEffect::MakeCannonadeSmoke()
 			
 	pEffect->SetFrameID( frameID, maxFrame );	
 
-	pEffect->SetPixelPosition( m_PixelX, m_PixelY, m_PixelZ);
-	pEffect->SetZ(m_PixelZ);			
+	pEffect->SetPixelPosition( static_cast<int>(m_PixelX), static_cast<int>(m_PixelY), static_cast<int>(m_PixelZ));
+	pEffect->SetZ(static_cast<int>(m_PixelZ));			
 //	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
 	pEffect->SetCount( 9 );			// 지속되는 Frame
 			

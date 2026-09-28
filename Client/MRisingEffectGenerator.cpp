@@ -54,7 +54,7 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		float Radian = float( angle ) * ( PI / 180.0f );
 		float sinValue = float(coord_z) * sinf( Radian );
 		float cosValue = float(coord_z) * cosf( Radian );
-		int step_count = sqrt(int(sinValue * sinValue)+ int(cosValue)*int(cosValue)) / egInfo.count;		
+		int step_count = static_cast<int>(sqrt(int(sinValue * sinValue)+ int(cosValue)*int(cosValue)) / egInfo.count);		
 		
 		tx[0] = egInfo.x0 + int(sinValue);
 		tz[0] = egInfo.z0 + int(cosValue);
@@ -116,7 +116,7 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		float Radian = float( angle1 ) * ( PI / 180.0f );
 		float sinValue = float(coord_z) * sinf( Radian );
 		float cosValue = float(coord_z) * cosf( Radian );
-		int step_count = sqrt(int(sinValue * sinValue)+ int(cosValue)*int(cosValue)) / egInfo.count;		
+		int step_count = static_cast<int>(sqrt(int(sinValue * sinValue)+ int(cosValue)*int(cosValue)) / egInfo.count);		
 		
 		tx[0] = egInfo.x0 + int(sinValue);
 		tz[0] = egInfo.z0 + int(cosValue);
@@ -128,7 +128,7 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		Radian = float( angle2 ) * (PI / 180.0f);
 		sinValue = float(coord_z) * sinf( Radian );
 		cosValue = float(coord_z) * cosf( Radian );
-		step_count = sqrt(int(sinValue * sinValue) + int(cosValue)*int(cosValue)) / egInfo.count;
+		step_count = static_cast<int>(sqrt(int(sinValue * sinValue) + int(cosValue)*int(cosValue)) / egInfo.count);
 
 		tx[1] = egInfo.x0 + int(sinValue);
 		tz[1] = egInfo.z0 + int(cosValue);

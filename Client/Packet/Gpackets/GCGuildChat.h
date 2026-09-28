@@ -37,12 +37,12 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize() const
 	{
-		return ((m_Type==0)?(szBYTE):(szBYTE+szBYTE+m_SendGuildName.size())) +
+		return static_cast<PacketSize_t>(((m_Type==0)?(szBYTE):(szBYTE+szBYTE+m_SendGuildName.size())) +
 			   szBYTE +					// sender size
 			   m_Sender.size() +		// sender
 			   szuint +					// text color
 			   szBYTE +					// message size
-			   m_Message.size();		// message
+			   m_Message.size());		// message
 	}
 
 #ifdef __DEBUG_OUTPUT__

@@ -26,7 +26,7 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_CREATE_ITEM; }
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szObjectID +  // 아이템 오브젝트 ID
+		return static_cast<PacketSize_t>(szObjectID +  // 아이템 오브젝트 ID
 			szBYTE +         // 아이템 클래스
 			szItemType +     // 아이템 타입
 			szBYTE + m_OptionType.size() +   // 아이템 옵션
@@ -36,7 +36,7 @@ public:
 			szEnchantLevel + // 아이템 인챈트 레벨
 			szItemNum +      // 아이템 숫자
 			szCoordInven +   // 아이템 X 좌표
-			szCoordInven;    // 아이템 Y 좌표
+			szCoordInven);    // 아이템 Y 좌표
 	}
 
 #ifdef __DEBUG_OUTPUT__
@@ -54,7 +54,7 @@ public:
 	ItemType_t getItemType() const noexcept { return m_ItemType; }
 	void setItemType(ItemType_t ItemType) noexcept { m_ItemType = ItemType; }
 
-	int getOptionTypeSize() const { return m_OptionType.size(); }
+	int getOptionTypeSize() const { return static_cast<int>(m_OptionType.size()); }
 	const std::list<OptionType_t>& getOptionType() const { return m_OptionType; }
 	OptionType_t popOptionType()
 	{

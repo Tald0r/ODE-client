@@ -39,9 +39,9 @@ public :
 	// const static GCAddBurrowingCreaturePacketSize 를 정의, 리턴하라.
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szObjectID 
+		return static_cast<PacketSize_t>(szObjectID 
 			+ szBYTE + m_Name.size() 
-			+ szCoord + szCoord; 
+			+ szCoord + szCoord); 
 	}
 
 	#ifdef __DEBUG_OUTPUT__

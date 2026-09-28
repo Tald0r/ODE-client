@@ -26,7 +26,7 @@ public:
     void read(SocketInputStream & iStream);
     void write(SocketOutputStream & oStream) const;
 	PacketID_t getPacketID() const noexcept { return PACKET_CG_MODIFY_NICKNAME; }
-	PacketSize_t getPacketSize() const { return szObjectID + szBYTE + m_Nickname.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szObjectID + szBYTE + m_Nickname.size()); }
 #ifdef __DEBUG_OUTPUT__
 	string getPacketName() const { return "CGModifyNickname"; }
 	string toString() const;

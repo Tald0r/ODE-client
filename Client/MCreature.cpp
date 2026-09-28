@@ -181,12 +181,12 @@ extern WORD					g_ZoneCreatureColorSet;
 			{														\
 				m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);	\
 																	\
-				m_ServerX = sX;										\
-				m_ServerY = sY;										\
+				m_ServerX = static_cast<TYPE_SECTORPOSITION>(sX);	\
+				m_ServerY = static_cast<TYPE_SECTORPOSITION>(sY);	\
 																	\
 				if (m_bAlive)										\
 				{													\
-					m_pZone->SetServerBlock(m_MoveType, sX, sY);	\
+					m_pZone->SetServerBlock(m_MoveType, static_cast<TYPE_SECTORPOSITION>(sX), static_cast<TYPE_SECTORPOSITION>(sY));	\
 				}													\
 			}														\
 		}
@@ -552,12 +552,12 @@ MCreature::InitMoveTable()
 
 				// 현재 값에서 이전 값을 빼서 차이를 구한다.
 				// fX를 반올림 하는것도 괜찮지 싶다.
-				m_cXTable[maxFrame][d][f] = fX - pX;
-				m_cYTable[maxFrame][d][f] = fY - pY;
+				m_cXTable[maxFrame][d][f] = static_cast<int>(fX - pX);
+				m_cYTable[maxFrame][d][f] = static_cast<int>(fY - pY);
 
 				// 현재의 값을 기억해둔다.
-				pX = fX;
-				pY = fY;
+				pX = static_cast<int>(fX);
+				pY = static_cast<int>(fY);
 			}
 
 			m_cXTable[maxFrame][d][maxFrame] = totalX - pX;
@@ -7274,7 +7274,7 @@ MCreature::UpdateStatus()
 			// 좌표를 수정해준다.
 			if (pInfo!=NULL)
 			{
-				pInfo->HP = m_Status[MODIFY_CURRENT_HP];
+				pInfo->HP = static_cast<WORD>(m_Status[MODIFY_CURRENT_HP]);
 			}
 		}
 	}
@@ -7861,8 +7861,8 @@ MCreature::PacketMove(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE directi
 		if (pInfo!=NULL)
 		{
 			pInfo->zoneID = (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-			pInfo->zoneX = x;
-			pInfo->zoneY = y;
+			pInfo->zoneX = static_cast<BYTE>(x);
+			pInfo->zoneY = static_cast<BYTE>(y);
 		}
 	}
 
@@ -9506,7 +9506,7 @@ MCreature::SetStatus(DWORD n, DWORD value)
 				// 좌표를 수정해준다.
 				if (pInfo!=NULL)
 				{
-					pInfo->MaxHP = value;
+					pInfo->MaxHP = static_cast<WORD>(value);
 				}
 			}
 		break;

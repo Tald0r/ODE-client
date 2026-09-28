@@ -73,7 +73,7 @@ public :
 	void pop_front () { m_Updates.pop_front(); }
 	Update * front () const { return m_Updates.front(); }
 	bool empty () const { return m_Updates.empty(); }
-	int	getNum() const	{ return m_Updates.size(); }
+	int	getNum() const	{ return static_cast<int>(m_Updates.size()); }
 
 	// get debug std::string
 	std::string toString () const;

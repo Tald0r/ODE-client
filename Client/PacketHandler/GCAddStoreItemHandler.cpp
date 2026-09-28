@@ -118,7 +118,7 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 							// Sub Item이 있으면 생성한다.
 							//------------------------------------------------------------
 							
-							int subNum =pPacket->getItem().getSubItems().size();
+							int subNum =static_cast<int>(pPacket->getItem().getSubItems().size());
 							
 							if (subNum!=0)
 							{

@@ -36,7 +36,7 @@ public:
 
 	uint getSize () const noexcept
 	{
-		return szBYTE					// 이름길이
+		return static_cast<uint>(szBYTE					// 이름길이
 			+ m_Name.size() 			// 아우스터스 이름
 			+ szSlot					// 슬롯
 			+ szAlignment				// 성향
@@ -52,7 +52,7 @@ public:
 			+ szFame					// 명성
 			+ szBonus					// 보너스 포인트
 			+ szSkillBonus				// 스킬보너스 포인트
-			+ szLevel;
+			+ szLevel);
 	}
 
 	// get max size of object

@@ -45,7 +45,7 @@ void GCBloodBibleList::write ( SocketOutputStream & oStream ) const
 
 	Assert( m_BloodBibleList.size() <= 12 );
 
-	BYTE num = m_BloodBibleList.size();
+	BYTE num = static_cast<BYTE>(m_BloodBibleList.size());
 
 	oStream.write(num);
 
@@ -66,7 +66,7 @@ PacketSize_t GCBloodBibleList::getPacketSize() const
 
 	PacketSize_t result = 0;
 
-	result += szBYTE + szItemType * m_BloodBibleList.size();
+	result = static_cast<PacketSize_t>(result + (szBYTE + szItemType * m_BloodBibleList.size()));
 
 	return result;
 

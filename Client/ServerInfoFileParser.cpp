@@ -37,7 +37,7 @@ std::string			ServerInfoFileParser::getProperty(int dimension, std::string key)
 		line = sztemp;
 		while(1)
 		{
-			int pos = line.find(" ");
+			int pos = static_cast<int>(line.find(" "));
 			if(pos != -1)
 			{
 				line.erase( pos, 1 );
@@ -58,10 +58,10 @@ std::string			ServerInfoFileParser::getProperty(int dimension, std::string key)
 		
 		if( dim == dimension && bStart )
 		{
-			int pos = line.find( ukey );
+			int pos = static_cast<int>(line.find( ukey ));
 			if( pos == 0 )
 			{
-				pos = line.find(":");
+				pos = static_cast<int>(line.find(":"));
 				if( pos == -1 )
 					continue;
 				

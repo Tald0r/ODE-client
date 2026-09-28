@@ -62,7 +62,7 @@ ZONETABLE_INFO::ZONETABLE_INFO()
 TYPE_SOUNDID			
 ZONETABLE_INFO::GetRandomSoundID() const
 {
-	int numSound = SoundIDList.size();
+	int numSound = static_cast<int>(SoundIDList.size());
 
 	if (numSound == 0)
 	{
@@ -98,7 +98,7 @@ ZONETABLE_INFO::SaveToFile(std::ofstream& file)
 	TeenFilename.SaveToFile( file );
 	
 	// sound ID들 저장
-	int numSound = SoundIDList.size();
+	int numSound = static_cast<int>(SoundIDList.size());
 
 	file.write((const char*)&numSound, 4);
 
@@ -264,7 +264,7 @@ CZoneTable::SaveToFile(std::ofstream& file)
 	//---------------------------------------------
 	// 전체 개수 저장
 	//---------------------------------------------
-	int size = m_mapZoneInfo.size();
+	int size = static_cast<int>(m_mapZoneInfo.size());
 
 	file.write((const char*)&size , 4);
 

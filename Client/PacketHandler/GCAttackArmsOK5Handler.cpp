@@ -60,7 +60,7 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 					pPacket->getSkillType() == SKILL_ULTIMATE_BLOW || pPacket->getSkillType() == SKILL_HARPOON_BOMB)
 		{
 			pTargetCreature->PacketSpecialActionResult( 
-					pPacket->getSkillType()+g_pActionInfoTable->GetMinResultActionInfo(),
+					static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType()+g_pActionInfoTable->GetMinResultActionInfo()),
 					pTargetCreature->GetID(),
 					pTargetCreature->GetX(),
 					pTargetCreature->GetY()

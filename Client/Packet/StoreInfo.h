@@ -40,7 +40,7 @@ class StoreOutlook
 public:
 	StoreOutlook() : m_Open(0) { }
 
-	PacketSize_t getSize() const { return szBYTE + ( (m_Open==0)?0:(szBYTE+m_Sign.size()) ); }
+	PacketSize_t getSize() const { return static_cast<PacketSize_t>(szBYTE + ( (m_Open==0)?0:(szBYTE+m_Sign.size()) )); }
 	static PacketSize_t getMaxSize() { return szBYTE + szBYTE + MAX_SIGN_SIZE; }
 
 	void read(SocketInputStream& iStream);

@@ -662,7 +662,7 @@ bool WindowManager::CancelPushStateOfCurrentPushedWindow()
 //-----------------------------------------------------------------------------
 int WindowManager::ShowedWindowSize() const 
 { 
-	return m_show_list.size()+m_show_list_pinned_window.size(); 
+	return static_cast<int>(m_show_list.size()+m_show_list_pinned_window.size()); 
 }
 
 //-----------------------------------------------------------------------------

@@ -64,8 +64,8 @@ void ScriptParameter::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	BYTE szName = m_Name.size();
-	BYTE szValue = m_Value.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
+	BYTE szValue = static_cast<BYTE>(m_Value.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException( "szName == 0" );
@@ -87,8 +87,8 @@ PacketSize_t ScriptParameter::getSize()
 {
 	__BEGIN_TRY
 
-	BYTE szName = m_Name.size();
-	BYTE szValue = m_Value.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
+	BYTE szValue = static_cast<BYTE>(m_Value.size());
 
 	PacketSize_t PacketSize = szBYTE + szName + szBYTE + szValue;
 

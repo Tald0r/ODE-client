@@ -36,7 +36,7 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_CG_STORE_SIGN; }
 	
 	// get packet's body size
-	PacketSize_t getPacketSize() const { return szBYTE + m_Sign.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szBYTE + m_Sign.size()); }
 
 	// get packet name
 	string getPacketName() const { return "CGStoreSign"; }

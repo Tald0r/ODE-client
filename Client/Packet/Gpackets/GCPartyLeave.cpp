@@ -50,12 +50,12 @@ void GCPartyLeave::write (SocketOutputStream & oStream) const
 	
 	BYTE name_length = 0;
 
-	name_length = m_Expeller.size();
+	name_length = static_cast<BYTE>(m_Expeller.size());
 	oStream.write(name_length);
 	if (name_length > 0)
 		oStream.write(m_Expeller);
 
-	name_length = m_Expellee.size();
+	name_length = static_cast<BYTE>(m_Expellee.size());
 	oStream.write(name_length);
 	if (name_length > 0)
 		oStream.write(m_Expellee);

@@ -60,7 +60,7 @@ void GCAddWolf::write ( SocketOutputStream & oStream ) const
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( m_ObjectID );
 
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");

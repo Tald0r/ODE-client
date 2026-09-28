@@ -37,7 +37,7 @@ public :
 	// get packet's body size
 	// Both length-prefixed strings write() emits; the server's copy
 	// declares the same.
-	PacketSize_t getPacketSize () const { return szBYTE + m_Message.size() + szBYTE + m_PlayerID.size(); }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szBYTE + m_Message.size() + szBYTE + m_PlayerID.size()); }
 
 	#ifdef __DEBUG_OUTPUT__
 		// get packet name

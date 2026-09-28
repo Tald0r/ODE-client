@@ -139,7 +139,7 @@ int creature_framepack_save_to_file(const CreatureFramePack* pack, FILE* file)
     
     /* Write each ActionArray */
     for (int i = 0; i < vecLen(&pack->creatures); i++) {
-        ActionArray* aa = vecRef((vector(ActionArray)*)&pack->creatures, i);
+        ActionArray* aa = (ActionArray*)vecRef(&pack->creatures, i);
         if (!action_array_save(aa, file)) {
             return 0;
         }
@@ -160,7 +160,7 @@ void creature_framepack_info_to_file(const CreatureFramePack* pack, const char* 
     
     /* Iterate through all creature types */
     for (int type = 0; type < vecLen(&pack->creatures); type++) {
-        ActionArray* aa = vecRef((vector(ActionArray)*)&pack->creatures, type);
+        ActionArray* aa = (ActionArray*)vecRef(&pack->creatures, type);
         
         if (action_array_size(aa) == 0) {
             fprintf(file, "[%d] (empty)\n", type);

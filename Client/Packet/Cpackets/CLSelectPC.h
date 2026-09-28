@@ -39,8 +39,8 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szBYTE + m_PCName.size() 	// pc name
-			+ szPCType; 					// pc type
+		return static_cast<PacketSize_t>(szBYTE + m_PCName.size() 	// pc name
+			+ szPCType); 					// pc type
 	}
 
 	#ifdef __DEBUG_OUTPUT__

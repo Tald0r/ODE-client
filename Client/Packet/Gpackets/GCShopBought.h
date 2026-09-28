@@ -31,7 +31,7 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_SHOP_BOUGHT; }
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szObjectID +   // NPC OID
+		return static_cast<PacketSize_t>(szObjectID +   // NPC OID
 			szShopVersion +   // shop version
 			szShopRackType +  // shop rack type
 			szBYTE +          // shop rack index
@@ -42,7 +42,7 @@ public:
 			szDurability +    // item durability
 			szSilver +        // silver coating amount
 			szGrade +         // grade
-			szEnchantLevel;   // enchant level
+			szEnchantLevel);   // enchant level
 	}
 
 #ifdef __DEBUG_OUTPUT__
@@ -72,7 +72,7 @@ public:
 	ItemType_t getItemType(void) const noexcept { return m_ItemType;}
 	void setItemType(ItemType_t type) noexcept { m_ItemType = type;}
 	
-	int getOptionTypeSize(void) const { return m_OptionType.size();}
+	int getOptionTypeSize(void) const { return static_cast<int>(m_OptionType.size());}
 	const std::list<OptionType_t>& getOptionType() const { return m_OptionType; }
 	OptionType_t popOptionType(void)
 	{

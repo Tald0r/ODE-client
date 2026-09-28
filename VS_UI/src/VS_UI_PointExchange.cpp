@@ -547,7 +547,7 @@ void C_VS_UI_POINT_EXCHANGE::DrawBrowseList()
 	// Draw listing items
 	for (size_t i = 0; i < m_listingItems.size(); i++)
 	{
-		DrawListingItem(m_listingItems[i], i);
+		DrawListingItem(m_listingItems[i], static_cast<int>(i));
 	}
 }
 

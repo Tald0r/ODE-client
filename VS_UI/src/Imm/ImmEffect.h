@@ -162,7 +162,7 @@ class DLLIFC CImmEffect
         LONG lDirectionX,
         LONG lDirectionY,
         DWORD dwDuration = IMM_EFFECT_DONT_CHANGE,
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR,
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR,
         DWORD dwSamplePeriod = IMM_EFFECT_DONT_CHANGE,
         DWORD dwGain = IMM_EFFECT_DONT_CHANGE,
         DWORD dwTriggerButton = IMM_EFFECT_DONT_CHANGE,
@@ -176,7 +176,7 @@ class DLLIFC CImmEffect
     ChangeBaseParamsPolar( 
         LONG lAngle,
         DWORD dwDuration = IMM_EFFECT_DONT_CHANGE, // milliseconds
-        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE) IMM_EFFECT_DONT_CHANGE_PTR,
+        LPIMM_ENVELOPE pEnvelope = (LPIMM_ENVELOPE)(intptr_t) IMM_EFFECT_DONT_CHANGE_PTR,
         DWORD dwSamplePeriod = IMM_EFFECT_DONT_CHANGE,
         DWORD dwGain = IMM_EFFECT_DONT_CHANGE,
         DWORD dwTriggerButton = IMM_EFFECT_DONT_CHANGE,

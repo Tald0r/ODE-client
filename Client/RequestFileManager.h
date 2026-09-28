@@ -29,7 +29,7 @@
 #include <string>
 #include <list>
 #include <map>
-#include <fstream>
+#include "FileChunkReader.h"
 #include "Types/RequestTypes.h"
 #include "Packet/Exception.h"
 class RequestServerPlayer;
@@ -60,9 +60,8 @@ class SendFileInfo
 		std::string				m_Filename;		// 보내주는 file이름		
 		REQUEST_FILE_TYPE		m_FileType;		// 어떤 file인가?
 		
-		// 보내는 동안
-		std::ifstream			m_FileStream;	// 보내주는 Filename을 open한 것
-		DWORD					m_FileSizeLeft;
+		// while sending
+		Basic::FileChunkReader	m_File;			// m_Filename, opened
 
 	public :
 		SendFileInfo(const char* pFilename, REQUEST_FILE_TYPE fileType);
@@ -78,7 +77,7 @@ class SendFileInfo
 		REQUEST_FILE_MODE	GetMode() const			{ return m_Mode; }
 		REQUEST_FILE_TYPE	GetFileType() const		{ return m_FileType; }
 		const std::string&	GetFilename() const		{ return m_Filename; }
-		DWORD			GetFileSizeLeft() const	{ return m_FileSizeLeft; }
+		DWORD			GetFileSizeLeft() const	{ return m_File.GetBytesLeft(); }
 };
 
 //---------------------------------------------------------------------------
@@ -101,7 +100,7 @@ class RequestSendInfo
 
 		const std::string&	GetRequestUser() const	{ return m_RequestUser; }
 
-		DWORD				GetSize() const		{ return m_FileInfos.size(); }
+		DWORD				GetSize() const		{ return static_cast<DWORD>(m_FileInfos.size()); }
 		SendFileInfo*		GetFront()			{ return (m_FileInfos.empty()? NULL : m_FileInfos.front()); }
 		void				DeleteFront()		{ if (!m_FileInfos.empty()) { delete m_FileInfos.front(); m_FileInfos.pop_front(); } }		
 		bool				IsEnd()	const		{ return m_FileInfos.empty(); }

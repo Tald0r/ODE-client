@@ -15,6 +15,7 @@
 // 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
 #endif
@@ -6315,7 +6316,7 @@ MTopView::GetSelectedSector(int x, int y)
 
 	point = PixelToMap(point.x, point.y);
 
-	if (g_pZone->IsPositionInZone( point.x, point.y ))
+	if (g_pZone->IsPositionInZone( static_cast<TYPE_SECTORPOSITION>(point.x), static_cast<TYPE_SECTORPOSITION>(point.y) ))
 	{
 		return point;
 	}
@@ -6682,7 +6683,7 @@ MTopView::GetSelectedObject(int x, int y)
 			DEBUG_ADD("ptChk");
 		#endif
 
-		const MSector& sector = m_pZone->GetSector(sectorPoint.x, sectorPoint.y);
+		const MSector& sector = m_pZone->GetSector(static_cast<TYPE_SECTORPOSITION>(sectorPoint.x), static_cast<TYPE_SECTORPOSITION>(sectorPoint.y));
 
 		if (sector.IsPortal())
 		{
@@ -7756,8 +7757,8 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 							// mouse좌표가 Sprite에 속하는지 알아보기
 							// Sprite에서의 좌표가 색깔이 있는 경우일때
 							if (m_CreatureSPK[ frame.GetSpriteID() ].IsColorPixel( 
-									x - objectPixelPoint.x, 
-									y - objectPixelPoint.y 
+									static_cast<short>(x - objectPixelPoint.x), 
+									static_cast<short>(y - objectPixelPoint.y) 
 								))
 							{
 								return pCreature;
@@ -7880,8 +7881,8 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 							// mouse좌표가 Sprite에 속하는지 알아보기
 							// Sprite에서의 좌표가 색깔이 있는 경우일때
 							if (m_CreatureSPK[ frame.GetSpriteID() ].IsColorPixel( 
-									x - objectPixelPoint.x, 
-									y - objectPixelPoint.y 
+									static_cast<short>(x - objectPixelPoint.x), 
+									static_cast<short>(y - objectPixelPoint.y) 
 								))
 							{
 								return pCreature;
@@ -7936,8 +7937,8 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 							// mouse좌표가 Sprite에 속하는지 알아보기
 							// Sprite에서의 좌표가 색깔이 있는 경우일때
 							if (m_CreatureSPK[ frame.GetSpriteID() ].IsColorPixel( 
-									x - objectPixelPoint.x, 
-									y - objectPixelPoint.y 
+									static_cast<short>(x - objectPixelPoint.x), 
+									static_cast<short>(y - objectPixelPoint.y) 
 								))
 							{
 								return pCreature;
@@ -7987,8 +7988,8 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 							// mouse좌표가 Sprite에 속하는지 알아보기
 							// Sprite에서의 좌표가 색깔이 있는 경우일때
 							if (m_EtcSPK[ SPRITEID_CREATURE_BURROW ].IsColorPixel( 
-									x - objectPixelPoint.x, 
-									y - objectPixelPoint.y 
+									static_cast<short>(x - objectPixelPoint.x), 
+									static_cast<short>(y - objectPixelPoint.y) 
 								))
 							{
 								return pCreature;
@@ -8033,8 +8034,8 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 					// mouse좌표가 Sprite에 속하는지 알아보기
 					// Sprite에서의 좌표가 색깔이 있는 경우일때
 					if (m_ItemTileISPK[ frame.GetSpriteID() ].IsColorPixel( 
-							x - objectPixelPoint.x, 
-							y - objectPixelPoint.y 
+							static_cast<short>(x - objectPixelPoint.x), 
+							static_cast<short>(y - objectPixelPoint.y) 
 						))
 					{
 
@@ -8831,14 +8832,14 @@ MTopView::AddLightFilter2D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 			POINT screenPoint = PixelToScreen(x,y);	
 
 			// screen -> filter
-			fx = (float)screenPoint.x / s_LightWidth;
-			fy = (float)screenPoint.y / s_LightHeight;
+			fx = static_cast<int>((float)screenPoint.x / s_LightWidth);
+			fy = static_cast<int>((float)screenPoint.y / s_LightHeight);
 		}
 		else
 		{
 			// screen -> filter
-			fx = (float)x / s_LightWidth;
-			fy = (float)y / s_LightHeight;
+			fx = static_cast<int>((float)x / s_LightWidth);
+			fy = static_cast<int>((float)y / s_LightHeight);
 		}
 
 		// filter 중심 맞추기
@@ -8905,14 +8906,14 @@ MTopView::AddLightFilter3D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 			POINT screenPoint = PixelToScreen(x,y);	
 
 			// screen -> filter
-			fx = (float)screenPoint.x / s_LightWidth;
-			fy = (float)screenPoint.y / s_LightHeight;
+			fx = static_cast<int>((float)screenPoint.x / s_LightWidth);
+			fy = static_cast<int>((float)screenPoint.y / s_LightHeight);
 		}
 		else
 		{
 			// screen -> filter
-			fx = (float)x / s_LightWidth;
-			fy = (float)y / s_LightHeight;
+			fx = static_cast<int>((float)x / s_LightWidth);
+			fy = static_cast<int>((float)y / s_LightHeight);
 		}
 
 		// filter 중심 맞추기
@@ -15456,8 +15457,8 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 
 				// 그림에 맞춘 filter 좌표 보정
-				CSprite::SetFilter(m_FilterPosition.x - pPoint->x,
-									m_FilterPosition.y - pPoint->y,
+				CSprite::SetFilter(static_cast<short>(m_FilterPosition.x - pPoint->x),
+									static_cast<short>(m_FilterPosition.y - pPoint->y),
 									&m_ImageObjectFilter);
 
 				if (m_ImageObjectSPK[ spriteID ].IsIntersectFilter())
@@ -15711,8 +15712,8 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 					//--------------------------------
 					if (bTrans)
 					{
-						CSprite::SetFilter(m_FilterPosition.x - pPoint->x,
-											m_FilterPosition.y - pPoint->y,
+						CSprite::SetFilter(static_cast<short>(m_FilterPosition.x - pPoint->x),
+											static_cast<short>(m_FilterPosition.y - pPoint->y),
 											&m_ImageObjectFilter);
 
 							m_pSurface->BltSpriteAlphaFilter(pPoint, 
@@ -17748,7 +17749,7 @@ MTopView::DrawCreatureHPModify(POINT *point, MCreature* pCreature)
 
 	MCreature::HPMODIFYLIST::iterator itr = pList->begin();
 
-	int py = point->y - (pList->size()-1)*15;
+	int py = static_cast<int>(point->y - (pList->size()-1)*15);
 
 	g_FL2_GetDC();
 
@@ -19083,7 +19084,7 @@ MTopView::ExcuteAdvancementQuestEnding(void *pVoid)
 
 				if( g_oggfile != NULL)
 					fclose(g_oggfile );
-				g_oggfile = fopen( Basic::NormalizeDataPath( "Data\\Music\\Silence_of_Battlefield.ogg" ).c_str(), "rb");
+				g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( "Data\\Music\\Silence_of_Battlefield.ogg" ).c_str(), "rb");
 				g_pOGG->streamLoad(g_oggfile, NULL);
 				g_pOGG->streamPlay(0);
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;
@@ -19107,7 +19108,7 @@ MTopView::ExcuteAdvancementQuestEnding(void *pVoid)
 		else
 		{
 			m_pSurface->BltSprite( &pointZero, &m_AdvacementQuestEnding[SpkIndex] );
-			m_pSurface->BltSpriteAlpha( &pointZero, &m_AdvacementQuestEnding[SpkIndex+1], AdvancementQuestEndingEvent->parameter3 );
+			m_pSurface->BltSpriteAlpha( &pointZero, &m_AdvacementQuestEnding[SpkIndex+1], static_cast<BYTE>(AdvancementQuestEndingEvent->parameter3) );
 		}
 		m_pSurface->Unlock();
 		// Was gated on g_FrameCount & 0x01 when draws only happened on logic
@@ -19163,7 +19164,7 @@ MTopView::ExcuteAdvancementQuestEnding(void *pVoid)
 		rect.top = 0;
 		rect.bottom = g_GameRect.bottom;
 
-		DrawAlphaBox(&rect, fadeColor[0], fadeColor[1], fadeColor[2], min(31, AdvancementQuestEndingEvent->ElapsedMillis() /fadeSpeed)^fadeDirect);	
+		DrawAlphaBox(&rect, fadeColor[0], fadeColor[1], fadeColor[2], static_cast<BYTE>(min(31, AdvancementQuestEndingEvent->ElapsedMillis() /fadeSpeed)^fadeDirect));	
 
 		if(bFinEnd)
 		{
@@ -19274,7 +19275,7 @@ MTopView::ExcuteOustersFinEvent()
 
 				if( g_oggfile != NULL)
 					fclose(g_oggfile );
-				g_oggfile = fopen( Basic::NormalizeDataPath( "Data\\Music\\chaos.ogg" ).c_str(), "rb");
+				g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( "Data\\Music\\chaos.ogg" ).c_str(), "rb");
 				g_pOGG->streamLoad(g_oggfile, NULL);
 				g_pOGG->streamPlay(0);
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;
@@ -19626,7 +19627,7 @@ MTopView::ExcuteOustersFinEvent()
 		rect.top = 0;
 		rect.bottom = g_GameRect.bottom;
 
-		DrawAlphaBox(&rect, fadeColor[0], fadeColor[1], fadeColor[2], min(31, OustersFinEvent->ElapsedMillis() /fadeSpeed)^fadeDirect);	
+		DrawAlphaBox(&rect, fadeColor[0], fadeColor[1], fadeColor[2], static_cast<BYTE>(min(31, OustersFinEvent->ElapsedMillis() /fadeSpeed)^fadeDirect));	
 
 		if(bFinEnd)
 		{

@@ -32,7 +32,7 @@ public:
     void read(SocketInputStream & iStream);
     void write(SocketOutputStream & oStream) const;
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_GQUEST_INVENTORY; }
-	PacketSize_t getPacketSize() const { return szBYTE + szItemType * m_ItemList.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szBYTE + szItemType * m_ItemList.size()); }
 #ifdef __DEBUG_OUTPUT__
 	string getPacketName() const { return "GCGQuestInventory"; }
 	string toString() const;

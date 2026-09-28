@@ -230,7 +230,7 @@ ITEMTABLE_INFO::SaveToFile(std::ofstream& file)
 
 	file.write((const char*)&CriticalHit, 4);	
 
-	BYTE DefaultOptionListSize = DefaultOptionList.size();
+	BYTE DefaultOptionListSize = static_cast<BYTE>(DefaultOptionList.size());
 	file.write((const char*)&DefaultOptionListSize, 1);
 	std::list<TYPE_ITEM_OPTION>::iterator itr = DefaultOptionList.begin();
 

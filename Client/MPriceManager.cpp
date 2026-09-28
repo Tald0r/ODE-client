@@ -233,7 +233,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 				damaged = 1.0f - damaged;
 			}
 			
-			finalPrice = finalPrice * damaged;
+			finalPrice = static_cast<__int64>(finalPrice * damaged);
 			
 			// Then the rate.
 			finalPrice = finalPrice * nRatio / 100;

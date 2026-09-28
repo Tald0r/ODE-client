@@ -283,10 +283,10 @@ bool CSpritePalBase::SaveToFile(std::ofstream &file)
 	{
 		if(i == m_Height -1)
 		{
-			index = (m_pData+m_Size) - m_pPixels[i];
+			index = static_cast<WORD>((m_pData+m_Size) - m_pPixels[i]);
 		}
 		else
-			index = m_pPixels[i+1] - m_pPixels[i];
+			index = static_cast<WORD>(m_pPixels[i+1] - m_pPixels[i]);
 		// byte수와 실제 data를 저장한다.
 		file.write((const char*)&index, 2);
 	}

@@ -120,7 +120,7 @@ class DLLIFC CImmEllipse : public CImmEffect
         DWORD dwSaturation = IMM_EFFECT_DONT_CHANGE,
         DWORD dwStiffnessMask = IMM_EFFECT_DONT_CHANGE,
         DWORD dwClippingMask = IMM_EFFECT_DONT_CHANGE,
-        CImmEffect* pInsideEffect = (CImmEffect*) IMM_EFFECT_DONT_CHANGE,
+        CImmEffect* pInsideEffect = (CImmEffect*)(intptr_t) IMM_EFFECT_DONT_CHANGE,
 		LONG lAngle = IMM_EFFECT_DONT_CHANGE
         );
 
@@ -132,7 +132,7 @@ class DLLIFC CImmEllipse : public CImmEffect
         DWORD dwSaturation = IMM_EFFECT_DONT_CHANGE,
         DWORD dwStiffnessMask = IMM_EFFECT_DONT_CHANGE,
         DWORD dwClippingMask = IMM_EFFECT_DONT_CHANGE,
-        CImmEffect* pInsideEffect = (CImmEffect*) IMM_EFFECT_DONT_CHANGE,  
+        CImmEffect* pInsideEffect = (CImmEffect*)(intptr_t) IMM_EFFECT_DONT_CHANGE,  
 		LONG lAngle = IMM_EFFECT_DONT_CHANGE
         );
 

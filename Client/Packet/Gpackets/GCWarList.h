@@ -37,7 +37,7 @@ public:
 #endif
 
 public:
-	int 	getSize() const { return m_WarInfos.size(); }
+	int 	getSize() const { return static_cast<int>(m_WarInfos.size()); }
 	bool 	isEmpty() const { return m_WarInfos.empty(); }
 
 	void addWarInfo( WarInfo* pWarInfo ) { m_WarInfos.push_back( pWarInfo ); }

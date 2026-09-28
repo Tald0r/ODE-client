@@ -22,7 +22,7 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_PARTY_LEAVE; }
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szBYTE*2 + m_Expeller.size() + m_Expellee.size();
+		return static_cast<PacketSize_t>(szBYTE*2 + m_Expeller.size() + m_Expellee.size());
 	}
 	#ifdef __DEBUG_OUTPUT__
 		std::string getPacketName() const { return "GCPartyLeave"; }

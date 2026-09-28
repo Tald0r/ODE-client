@@ -59,7 +59,7 @@ public:
 	ServerGroupID_t getCurrentServerGroupID() const noexcept { return m_CurrentServerGroupID; }
 	void setCurrentServerGroupID( ServerGroupID_t ServerGroupID ) noexcept { m_CurrentServerGroupID = ServerGroupID; }
 
-    BYTE getListNum() const { return m_ServerGroupInfoList.size(); }
+    BYTE getListNum() const { return static_cast<BYTE>(m_ServerGroupInfoList.size()); }
 
 	// add / delete / clear S List
 	void addListElement(ServerGroupInfo* pServerGroupInfo) { m_ServerGroupInfoList.push_back(pServerGroupInfo); }

@@ -50,6 +50,11 @@ set(BASIC_SOURCES
 	# links, so the two functions live here for the reason DebugLog and
 	# SafeFormat do: basic is the one library every target already links.
 	FileDialogListing.cpp
+	# The chunked file read behind SendFileInfo, which sends a peer the
+	# profile file it asked for (docs/RESTRUCTURING.md task 3.1, "moved,
+	# then fixed"). RequestFileManager is in the executable, which no test
+	# binary links.
+	FileChunkReader.cpp
 	BasicData.cpp
 	Timer2.cpp
 	BasicException.cpp

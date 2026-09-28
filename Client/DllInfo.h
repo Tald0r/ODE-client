@@ -5,26 +5,10 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-// Platform-specific exports
-#ifdef PLATFORM_WINDOWS
-	//#define __WORK__
-	//#define __MK_DLL__			// DLL만들때
-	#ifdef __WORK__
-
-		#define         __EX
-
-	#else
-
-		#ifdef __MK_DLL__
-			#define __EX __declspec(dllexport)
-		#else
-			#define __EX __declspec(dllimport)
-		#endif
-
-	#endif
-#else
-	// Non-Windows platforms: don't use __declspec
-	#define __EX
-#endif
+// __EX marked the classes that were once built into a DLL of their own
+// (dllexport there, dllimport in the game). They are compiled into the
+// executable that uses them now, so it marks nothing: importing a symbol
+// the same image defines is what MSVC's C4273 and LNK4217 report.
+#define __EX
 
 #endif

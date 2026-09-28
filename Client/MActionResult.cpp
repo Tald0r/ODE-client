@@ -945,7 +945,7 @@ MActionResultNodeChangeItemOptionInInventory::Execute()
 		{
 			// 펫 2차 인첸트 옵션 붙이기, 아래 코드 그대로 써도 될거 같은데 양군이 쫄랐다.-ㅅ-
 			pInvenItem->ClearItemOption();	// 일단 머가 있을지 모르니 지우고 본다-0-
-			pInvenItem->AddItemOption(m_Type);
+			pInvenItem->AddItemOption(static_cast<TYPE_ITEM_OPTION>(m_Type));
 			bSucces = true;
 		}
 	}

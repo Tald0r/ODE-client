@@ -75,7 +75,7 @@ void LCWorldList::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_CurrentWorldID );
 
-	BYTE ListNum = m_WorldInfoList.size();
+	BYTE ListNum = static_cast<BYTE>(m_WorldInfoList.size());
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( ListNum );
 

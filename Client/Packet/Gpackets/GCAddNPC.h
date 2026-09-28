@@ -40,11 +40,11 @@ public :
 	// const static GCAddNPCPacketSize 를 정의, 리턴하라.
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szObjectID 
+		return static_cast<PacketSize_t>(szObjectID 
 			+ szBYTE + m_Name.size() + szNPCID
 			+ szSpriteType 
 			+ szColor + szColor
-			+ szCoord + szCoord + szDir;
+			+ szCoord + szCoord + szDir);
 	}
 
 	#ifdef __DEBUG_OUTPUT__

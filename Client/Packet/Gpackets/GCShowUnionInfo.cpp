@@ -73,7 +73,7 @@ void GCShowUnionInfo::write ( SocketOutputStream & oStream ) const
 
 	m_MasterGuildInfo.write(oStream);
 
-	BYTE szNum = m_GuildList.size();
+	BYTE szNum = static_cast<BYTE>(m_GuildList.size());
 	oStream.write(szNum);
 
 	std::list<SingleGuildInfo*>::const_iterator itr = m_GuildList.begin();

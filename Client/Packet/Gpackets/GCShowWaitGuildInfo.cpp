@@ -74,10 +74,10 @@ void GCShowWaitGuildInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE szGuildName = m_GuildName.size();
-	BYTE szGuildMaster = m_GuildMaster.size();
-	BYTE szGuildIntro = m_GuildIntro.size();
-	BYTE MemberNum = m_MemberList.size();
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+	BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
+	BYTE szGuildIntro = static_cast<BYTE>(m_GuildIntro.size());
+	BYTE MemberNum = static_cast<BYTE>(m_MemberList.size());
 	BYTE szMember;
 
 	if ( szGuildName == 0 )
@@ -108,7 +108,7 @@ void GCShowWaitGuildInfo::write ( SocketOutputStream & oStream ) const
 	std::list<std::string>::const_iterator itr = m_MemberList.begin();
 	for ( ; itr != m_MemberList.end(); itr++ )
 	{
-		szMember = (*itr).size();
+		szMember = static_cast<BYTE>((*itr).size());
 
 		if ( szMember == 0 )
 			throw InvalidProtocolException( "szMember == 0" );
@@ -126,7 +126,7 @@ void GCShowWaitGuildInfo::write ( SocketOutputStream & oStream ) const
 // get packet's body size
 PacketSize_t GCShowWaitGuildInfo::getPacketSize() const
 {
-	PacketSize_t PacketSize = szGuildID +
+	PacketSize_t PacketSize = static_cast<PacketSize_t>(szGuildID +
 							  szBYTE +
 							  m_GuildName.size() +
 							  szGuildState +
@@ -136,12 +136,12 @@ PacketSize_t GCShowWaitGuildInfo::getPacketSize() const
 							  szBYTE +
 							  m_GuildIntro.size() +
 							  szGold +
-							  szBYTE;
+							  szBYTE);
 
 	std::list<std::string>::const_iterator itr = m_MemberList.begin();
 	for ( ; itr != m_MemberList.end() ; itr++ )
 	{
-		PacketSize += szBYTE + (*itr).size();
+		PacketSize = static_cast<PacketSize_t>(PacketSize + (szBYTE + (*itr).size()));
 	}
 
 	return PacketSize;

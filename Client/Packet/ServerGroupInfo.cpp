@@ -59,7 +59,7 @@ void ServerGroupInfo::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	BYTE szGroupName = m_GroupName.size();
+	BYTE szGroupName = static_cast<BYTE>(m_GroupName.size());
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( m_GroupID );
 	oStream.write( szGroupName );
@@ -76,7 +76,7 @@ PacketSize_t ServerGroupInfo::getSize()
 {
 	__BEGIN_TRY
 
-	BYTE szGroupName = m_GroupName.size();
+	BYTE szGroupName = static_cast<BYTE>(m_GroupName.size());
 
 	PacketSize_t PacketSize = szServerGroupID + szBYTE + szGroupName + szBYTE;
 

@@ -51,7 +51,7 @@ void GCBloodBibleStatus::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_X );
 	oStream.write( m_Y );
 
-	BYTE szOwnerName = m_OwnerName.size();
+	BYTE szOwnerName = static_cast<BYTE>(m_OwnerName.size());
 	oStream.write( szOwnerName );
 
 	if (szOwnerName>0)

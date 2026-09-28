@@ -118,7 +118,7 @@ public:
 
 	uint getSize () const noexcept 
 	{ 
-		return szObjectID 					// 크리처 아이디
+		return static_cast<uint>(szObjectID 					// 크리처 아이디
 			+ szBYTE + m_Name.size() 		// 이름
 			+ szCoord + szCoord + szDir 	// 좌표와 방향
 			+ szDWORD						// 슬레이어 플래그
@@ -131,7 +131,7 @@ public:
 			+ szGuildID						// 공격 스피드
 			+ szBYTE						// 권한
 			+ szuint
-			+ szLevel;
+			+ szLevel);
 	}
 
 	static uint getMaxSize () noexcept

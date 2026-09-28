@@ -218,7 +218,7 @@ void C_VS_UI_BOOKCASE::Show()
 
 		if((*m_p_book_list).size() > num)
 		{
-			int size = (*g_pGameStringTable)[UI_STRING_MESSAGE_BOOK_NAME_0+num].GetLength()+1;
+			int size = static_cast<int>((*g_pGameStringTable)[UI_STRING_MESSAGE_BOOK_NAME_0+num].GetLength()+1);
 
 			if (size > 0)
 			{
@@ -803,7 +803,7 @@ void C_VS_UI_COMPUTER::Show()
 		gpC_base->m_p_DDSurface_back->Unlock();
 	}
 
-	int limit = m_tree.size()+1;
+	int limit = static_cast<int>(m_tree.size()+1);
 	Timer();
 	m_isclose = false;
 
@@ -1154,7 +1154,7 @@ int	C_VS_UI_COMPUTER::PrintTree(int _x, int _y, int y_distance, int depth, int &
 			RGB(159,120,237),
 	};
 	
-	int max = tree.size();
+	int max = static_cast<int>(tree.size());
 	//	if(max == 0)return max;
 	int i, open = 0, y_plus = 0;
 	
@@ -1231,7 +1231,7 @@ int	C_VS_UI_COMPUTER::PrintTree(int _x, int _y, int y_distance, int depth, int &
 ////////////////////////////////////////////////////////////////////////
 bool C_VS_UI_COMPUTER::OpenTree(int &index, std::vector<C_TREE_BASE> &tree)
 {
-	int max = tree.size();
+	int max = static_cast<int>(tree.size());
 	bool re = false;
 
 	int itemType = 0;
@@ -1298,7 +1298,7 @@ bool C_VS_UI_COMPUTER::OpenTree(int &index, std::vector<C_TREE_BASE> &tree)
 		{
 			if(OpenTree(index, tree[i].Tree))
 			{
-				tree[i].open = tree[i].Tree.size()+1;
+				tree[i].open = static_cast<int>(tree[i].Tree.size()+1);
 				tree[i].select = false;
 				re = true;
 			}

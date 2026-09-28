@@ -96,7 +96,7 @@ void CLLogin::write ( SocketOutputStream & oStream ) const
 	}
 	else
 	{
-		int	szID = m_ID.size();
+		int	szID = static_cast<int>(m_ID.size());
 
 		if ( szID == 0 )
 			throw InvalidProtocolException("empty ID");
@@ -141,8 +141,8 @@ PacketSize_t CLLogin::getPacketSize () const
 {
 	if( !m_bNetmarble )
 	{
-		return szBYTE + m_ID.size() + szBYTE + m_Password.size() + 6 + szBYTE;
+		return static_cast<PacketSize_t>(szBYTE + m_ID.size() + szBYTE + m_Password.size() + 6 + szBYTE);
 	}
 	
-	return szint + m_ID.size();
+	return static_cast<PacketSize_t>(szint + m_ID.size());
 }

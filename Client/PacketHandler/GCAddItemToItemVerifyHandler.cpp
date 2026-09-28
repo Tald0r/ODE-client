@@ -35,12 +35,12 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 
 	if(g_pTempInformation->GetMode() == TempInformation::MODE_ITEM_TO_ITEM)
 	{
-		pInventoryItem = g_pInventory->GetItem(g_pTempInformation->Value1, g_pTempInformation->Value2);
+		pInventoryItem = g_pInventory->GetItem(static_cast<BYTE>(g_pTempInformation->Value1), static_cast<BYTE>(g_pTempInformation->Value2));
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 	} else if( g_pTempInformation->GetMode() == TempInformation::MODE_ITEM_MIXING )
 	{
-		pItem[0] = g_pInventory->GetItem( g_pTempInformation->Value1, g_pTempInformation->Value2 );
-		pItem[1] = g_pInventory->GetItem( g_pTempInformation->Value3, g_pTempInformation->Value4 );
+		pItem[0] = g_pInventory->GetItem( static_cast<BYTE>(g_pTempInformation->Value1), static_cast<BYTE>(g_pTempInformation->Value2) );
+		pItem[1] = g_pInventory->GetItem( static_cast<BYTE>(g_pTempInformation->Value3), static_cast<BYTE>(g_pTempInformation->Value4) );
 
 		g_pTempInformation->SetMode( TempInformation::MODE_NULL);
 	}		
@@ -269,7 +269,7 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			{
 				DWORD OptionType = pPacket->getParameter();
 
-				pInventoryItem->RemoveItemOption( OptionType );
+				pInventoryItem->RemoveItemOption( static_cast<TYPE_ITEM_OPTION>(OptionType) );
 				
 				AddNewInventoryEffect( pInventoryItem->GetID(),
 				MAGIC_ENCHANT_OPTION_PLUS,

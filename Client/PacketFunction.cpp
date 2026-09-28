@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #ifdef PLATFORM_WINDOWS
 #include <WINDOWS.H>
 #include <nb30.h>
@@ -3094,7 +3095,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		|| g_PreviousCreatureType==CREATURETYPE_BAT
 		|| g_PreviousCreatureType==CREATURETYPE_WER_WOLF)
 	{
-		g_pPlayer->SetCreatureType( g_PreviousCreatureType );
+		g_pPlayer->SetCreatureType( static_cast<TYPE_CREATURETYPE>(g_PreviousCreatureType) );
 
 		if( pInfo->getCompetence() == 0 )
 			g_pPlayer->SetCompetence( 0 );
@@ -4680,7 +4681,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 		}
 
 
-		pFakeCreature->SetFakeCreatureFastMoveAction(x+cxy[i].x, y+cxy[i].y, 
+		pFakeCreature->SetFakeCreatureFastMoveAction(static_cast<TYPE_SECTORPOSITION>(x+cxy[i].x), static_cast<TYPE_SECTORPOSITION>(y+cxy[i].y), 
 													skillID, 
 													pTargetCreature->GetID());
 	}
@@ -4934,7 +4935,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 //		MActionResult* pResult = new MActionResult;
 		
 		pFakeCreature->SetFakeCreatureFastMoveAction(
-			pTargetCreature->GetX() + Position[i].x, pTargetCreature->GetY() + Position[i].y,
+			static_cast<TYPE_SECTORPOSITION>(pTargetCreature->GetX() + Position[i].x), static_cast<TYPE_SECTORPOSITION>(pTargetCreature->GetY() + Position[i].y),
 			skillID, 
 			pTargetCreature->GetID() );
 		
@@ -5072,7 +5073,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		}
 		
 		pFakeCreature->SetFakeCreatureFastMoveAction(
-			pTargetCreature->GetX()+TargetList[i].x, pTargetCreature->GetY() +TargetList[i].y,
+			static_cast<TYPE_SECTORPOSITION>(pTargetCreature->GetX()+TargetList[i].x), static_cast<TYPE_SECTORPOSITION>(pTargetCreature->GetY() +TargetList[i].y),
 			skillID, 
 			pTargetCreature->GetID() );
 
@@ -5781,7 +5782,7 @@ CheckMacScreenMode()
 	{
 		std::string CheckIP = (itr->second);
 		std::string MyIPAddress = GetLocalIP();
-		if(0 == stricmp(MyIPAddress.c_str(), CheckIP.c_str()))
+		if(0 == _stricmp(MyIPAddress.c_str(), CheckIP.c_str()))
 		{
 			if(IDYES == MessageBox(g_hWnd, "Connect in window mode?", "QUESTION", MB_YESNO|MB_ICONQUESTION))
 				g_bFullScreen = false;

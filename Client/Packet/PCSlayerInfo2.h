@@ -23,7 +23,7 @@ public:
 
 	uint getSize () const noexcept
 	{
-		return szObjectID
+		return static_cast<uint>(szObjectID
 			+ szBYTE + m_Name.size() 
 			+ szSex
 			+ szHairStyle
@@ -47,7 +47,7 @@ public:
 			+ szuint
 			+ szLevel
 			+ szExp
-			+ szBonus;
+			+ szBonus);
 	}
 
 	static uint getMaxSize () noexcept

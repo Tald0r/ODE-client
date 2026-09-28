@@ -43,7 +43,7 @@ void GCTimeLimitItemInfo::write(SocketOutputStream& oStream ) const
 {
 	__BEGIN_TRY
 
-	BYTE szInfo = m_TimeLimitItemInfos.size();
+	BYTE szInfo = static_cast<BYTE>(m_TimeLimitItemInfos.size());
 
 	Assert( szInfo <= MAX_TIME_LIMIT_ITEM_INFO );
 
@@ -65,7 +65,7 @@ PacketSize_t GCTimeLimitItemInfo::getPacketSize() const
 {
 	__BEGIN_TRY
 
-	return szBYTE + m_TimeLimitItemInfos.size() * ( szObjectID + szDWORD );
+	return static_cast<PacketSize_t>(szBYTE + m_TimeLimitItemInfos.size() * ( szObjectID + szDWORD ));
 
 	__END_CATCH
 }

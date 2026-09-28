@@ -47,7 +47,7 @@ APPEND_PATCH_NODE::Append(const char* orgFilename) const
 			while (1)
 			{
 				appendFile.read(buffer, 4096);
-				n = appendFile.gcount();
+				n = static_cast<int>(appendFile.gcount());
 
 				if (n > 0)
 				{
@@ -193,7 +193,7 @@ AppendPatch::SetFinalInfo(const char* currentFilename)
 	file.seekg( 0, std::ios::end );
 
 	// appendFilesize - AppendPack 크기
-	m_finalFilesize = file.tellg();	
+	m_finalFilesize = static_cast<long>(file.tellg());	
 	
 	file.close();
 
@@ -282,7 +282,7 @@ AppendPatch::CheckFinalInfo() const
 		}
 
 		orgFile.seekg( 0, std::ios::end );
-		long fpEnd = orgFile.tellg();
+		long fpEnd = static_cast<long>(orgFile.tellg());
 
 		if (fpEnd != m_finalFilesize)
 		{
@@ -339,7 +339,7 @@ AppendPatch::SaveToFile(std::ofstream& file)
 	file.write((const char*)&m_finalFilesize, 4);
 	file.write((const char*)&m_finalSpkSize, 2);
 
-	int num = m_AppendPatch.size();
+	int num = static_cast<int>(m_AppendPatch.size());
 	file.write((const char*)&num, 4);
 
 	APPEND_PATCH_VECTOR::const_iterator iNode = m_AppendPatch.begin();

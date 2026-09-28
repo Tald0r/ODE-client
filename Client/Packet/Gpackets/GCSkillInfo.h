@@ -75,7 +75,7 @@ public :
 	void clearList() { m_pPCSkillInfoList.clear(); }
 
 	//
-	int	getListNum() { return m_pPCSkillInfoList.size(); }
+	int	getListNum() { return static_cast<int>(m_pPCSkillInfoList.size()); }
 	
 	// pop front Element in Status List
 	PCSkillInfo * popFrontListElement()

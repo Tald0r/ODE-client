@@ -46,19 +46,16 @@ regenerate locally, never commit it. `/MP` is set once for all targets in
 
 ### Reading build output
 
-A clean Debug build is **1,254 distinct warnings (about 11,800 lines) and 0
-errors** on the CI runner (measured 2026-09-27, after
-`docs/compiler-warnings-2026-09-27.md`). They are MSVC `/W3` diagnostics GCC
-and Clang do not raise under `-Wall -Wextra`: the C4267/C4244 narrowing
-conversions (~1,050), C4996 CRT deprecations, a few C4668/C4312/C4005, and
-vendored code. The project's own code builds without warnings under Apple
-Clang, GCC and Clang; the C4297 packet destructors that rethrew into
-`noexcept` went with that cleanup. LNK4217/LNK4286 used to join the noise while 36 `Client/*.cpp`
-files compiled into both `DarkEden` and `VS_UI.lib`; `docs/RESTRUCTURING.md`
-task 4.0 ended that, but **15 remain** (measured 2026-09-10): `MStatusManager`
-symbols marked `dllimport` where `GameUI.obj` and `MPlayer.obj` use them, though
-they are defined in the same image. Pre-existing and harmless; not a sign of a
-double-compiled source. Judge a build by `error C####`, `error LNK`, `error MSB`
+A clean Debug build is **57 distinct warnings (about 900 lines) and 0 errors**
+on the CI runner (measured 2026-09-28), none of them in project code:
+IXWebSocket's C4244/C4267, `third_party/`'s C4996 and the Windows SDK's
+C4668. The project's own code builds without warnings under MSVC, Apple
+Clang, GCC and Clang (`docs/compiler-warnings-2026-09-27.md`), so a warning
+in `Client/`, `VS_UI/`, `basic/`, `tests/` or `tools/` is new: the budget
+(`tools/ci/warnings.md`) fails on it. Clear a C4996 through
+`basic/CrtCompat.h`'s portable spelling, never `_CRT_SECURE_NO_WARNINGS`.
+The LNK4217 imports of `MStatusManager` are gone too: `__EX` no longer marks
+classes compiled into the same image `dllimport`. Judge a build by `error C####`, `error LNK`, `error MSB`
 or `fatal error` — never by grepping `"error"`, which matches ~2,700 identifiers such
 as `GCMoveErrorHandler`. Redirect builds to a log file; piping through `tail` buffers
 the output and hides all progress.

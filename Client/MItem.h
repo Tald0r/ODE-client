@@ -192,12 +192,12 @@ class MItem : public MObject, public CAnimationFrame {
 		//-------------------------------------------------------
 		// ItemOption
 		//-------------------------------------------------------
-		int									GetItemDefaultOptionCount() const	{ return (*g_pItemTable)[GetItemClass()][m_ItemType].DefaultOptionList.size(); }
+		int									GetItemDefaultOptionCount() const	{ return static_cast<int>((*g_pItemTable)[GetItemClass()][m_ItemType].DefaultOptionList.size()); }
 		bool								IsEmptyItemDefaultOption() const	{ return (*g_pItemTable)[GetItemClass()][m_ItemType].DefaultOptionList.empty(); }
 		const std::list<TYPE_ITEM_OPTION>&	GetItemDefaultOptionList() const	{ return (*g_pItemTable)[GetItemClass()][m_ItemType].DefaultOptionList; }		
 		void								SetItemOptionList(const std::list<TYPE_ITEM_OPTION> &option_list)	{ m_ItemOptionList = option_list; }
 		const std::list<TYPE_ITEM_OPTION>&	GetItemOptionList() const					{ return m_ItemOptionList; }		
-		int									GetItemOptionListCount() const				{ return m_ItemOptionList.size(); }
+		int									GetItemOptionListCount() const				{ return static_cast<int>(m_ItemOptionList.size()); }
 		bool								IsEmptyItemOptionList() const				{ return m_ItemOptionList.empty(); }
 		void								RemoveItemOption(TYPE_ITEM_OPTION option);
 		void								AddItemOption(TYPE_ITEM_OPTION option);

@@ -216,7 +216,7 @@ MCompareHelpNode::LoadFromFile(std::ifstream& file)
 HELP_OUTPUT			
 MOutputHelpNode::GetOutputType() const
 {
-	int numOutputID = size();
+	int numOutputID = static_cast<int>(size());
 
 	if (numOutputID == 0)
 	{
@@ -245,7 +245,7 @@ MOutputHelpNode::SaveToFile(std::ofstream& file)
 	//-----------------------------------------------
 	// ID 개수 저장
 	//-----------------------------------------------
-	int numID = size();
+	int numID = static_cast<int>(size());
 	file.write((const char*)&numID, 4);
 
 	//-----------------------------------------------

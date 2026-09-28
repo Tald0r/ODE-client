@@ -61,7 +61,7 @@ void GLIncomingConnectionError::write ( Datagram & oDatagram ) const
 
 	//--------------------------------------------------
 	//--------------------------------------------------
-	BYTE szMessage = m_Message.size();
+	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 ) 
 		throw InvalidProtocolException("szMessage == 0");
@@ -76,7 +76,7 @@ void GLIncomingConnectionError::write ( Datagram & oDatagram ) const
 
 	//--------------------------------------------------
 	//--------------------------------------------------
-	BYTE szPlayerID = m_PlayerID.size();
+	BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
 
 	if ( szPlayerID == 0 ) 
 		throw InvalidProtocolException("szPlayerID == 0");

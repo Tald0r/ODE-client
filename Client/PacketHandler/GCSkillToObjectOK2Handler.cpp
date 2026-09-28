@@ -177,7 +177,7 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 		if (pCreature == NULL)
 		{
 			ExecuteActionInfoFromMainNode(
-						skillID + (*g_pActionInfoTable).GetMinResultActionInfo(),										// 사용 기술 번호
+						static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),										// 사용 기술 번호
 					
 						g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetZ(),
 						g_pPlayer->GetDirection(),														// 사용 방향

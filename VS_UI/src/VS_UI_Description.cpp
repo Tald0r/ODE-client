@@ -2383,7 +2383,7 @@ void _Item_Description_Calculator(void (*fp_show)(Rect, void *, long, long), int
 			line_count++;
 		}
 		
-		line_count+=(*g_pItemTable)[itemClass][itemType].DefaultOptionList.size();
+		line_count = static_cast<int>(line_count + (*g_pItemTable)[itemClass][itemType].DefaultOptionList.size());
 
 
 

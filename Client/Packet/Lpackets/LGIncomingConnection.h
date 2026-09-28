@@ -50,9 +50,9 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize () const 
 	{ 
-		return + szBYTE + m_PlayerID.size()	// Player ID
+		return static_cast<PacketSize_t>(+ szBYTE + m_PlayerID.size()	// Player ID
 			+ szBYTE + m_PCName.size() 		// PC name
-			+ szBYTE + m_ClientIP.size(); 	// client ip
+			+ szBYTE + m_ClientIP.size()); 	// client ip
 	}
 
 	#ifdef __DEBUG_OUTPUT__

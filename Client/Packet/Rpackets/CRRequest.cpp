@@ -73,7 +73,7 @@ void CRRequest::write ( SocketOutputStream & oStream )
 	oStream.write( code);
 
 	
-	BYTE num = m_RequestName.size();
+	BYTE num = static_cast<BYTE>(m_RequestName.size());
 	
 	if (num > 20)
 		throw InvalidProtocolException("szRequestName>20");

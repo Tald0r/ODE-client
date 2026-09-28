@@ -2,6 +2,7 @@
 // UtilityFunction.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "DXLib/DXLib.h"
 
 #include "UtilityFunction.h"
@@ -75,7 +76,7 @@ IsValidSSN(const char* strSSN1, const char* strSSN2)
 	//----------------------------------------------------------
 	// SSN1 의 길이 체크. 6자여야 한다.
 	//----------------------------------------------------------
-	int lenSSN1 = strlen(strSSN1);
+	int lenSSN1 = static_cast<int>(strlen(strSSN1));
 
 	if (lenSSN1 != 6)
 	{
@@ -85,7 +86,7 @@ IsValidSSN(const char* strSSN1, const char* strSSN2)
 	//----------------------------------------------------------
 	// SSN2의 길이 체크. 7자여야 한다.
 	//----------------------------------------------------------
-	int lenSSN2 = strlen(strSSN2);
+	int lenSSN2 = static_cast<int>(strlen(strSSN2));
 
 	if (lenSSN2 != 7)
 	{
@@ -361,7 +362,7 @@ LoadImageToSurface(const char* pFilename, CDirectDrawSurface& surface)
 	const std::string sResolved = Basic::NormalizeDataPath(pFilename);
 	pFilename = sResolved.c_str();
 
-	int fileLen = strlen(pFilename);
+	int fileLen = static_cast<int>(strlen(pFilename));
 
 	// file이름이 넘 짧은 경우... strlen("이름.bmp")==8
 	if (fileLen < 8)
@@ -504,7 +505,7 @@ SaveSurfaceToImage(const char* pFilename, CDirectDrawSurface& surface)
 		return false;
 	}
 
-	int fileLen = strlen(pFilename);
+	int fileLen = static_cast<int>(strlen(pFilename));
 
 	// file이름이 넘 짧은 경우... strlen("이름.bmp")==8
 	if (fileLen < 8)
@@ -654,7 +655,7 @@ bool LoadJPG(LPCTSTR lpszFileName, int &width, int &height, int &bpp, unsigned c
 	* requires it in order to read binary files.
 	*/
 
-  if ((infile = fopen(lpszFileName, "rb")) == NULL) {
+  if ((infile = Basic::OpenFile(lpszFileName, "rb")) == NULL) {
 	 //fprintf(stderr, "can't open %s\n", filename);
 	 return 0;
   }
@@ -836,7 +837,7 @@ bool SaveJPG(LPCTSTR lpszFileName, int &width, int &height, int &bpp, unsigned c
 	* VERY IMPORTANT: use "b" option to fopen() if you are on a machine that
 	* requires it in order to write binary files.
 	*/
-  if ((outfile = fopen(lpszFileName, "wb")) == NULL) {
+  if ((outfile = Basic::OpenFile(lpszFileName, "wb")) == NULL) {
 //	 fprintf(stderr, "can't open %s\n", filename);
 	 return FALSE;
   }
@@ -985,7 +986,7 @@ bool LoadImageToSurface(const char* pFilename, CSpriteSurface& surface)
 	const std::string sResolved = Basic::NormalizeDataPath(pFilename);
 	pFilename = sResolved.c_str();
 
-	int fileLen = strlen(pFilename);
+	int fileLen = static_cast<int>(strlen(pFilename));
 
 	if (fileLen < 8) {
 		return false;

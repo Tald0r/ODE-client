@@ -21,7 +21,7 @@ public:
     void read(SocketInputStream & iStream);
     void write(SocketOutputStream & oStream) const;
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_NOTIFY_WIN; }
-	PacketSize_t getPacketSize() const { return szDWORD + szBYTE + m_Name.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szDWORD + szBYTE + m_Name.size()); }
 	
 #ifdef __DEBUG_OUTPUT__
 	std::string getPacketName() const { return "GCNotifyWin"; }

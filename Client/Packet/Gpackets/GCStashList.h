@@ -16,7 +16,7 @@ typedef struct _STASHITEM
 {
 	int getPacketSize() const
 	{ 
-		return szObjectID + 
+		return static_cast<int>(szObjectID + 
 				szBYTE + 
 				szItemType + 
 				szBYTE + optionType.size() +
@@ -24,7 +24,7 @@ typedef struct _STASHITEM
 				szItemNum +
 				szSilver +
 				szGrade +
-				szEnchantLevel;
+				szEnchantLevel);
 	}
 
 	static int getPacketMaxSize() 

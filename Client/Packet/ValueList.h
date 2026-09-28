@@ -23,7 +23,7 @@ public:
     void read (SocketInputStream & iStream);
     void write (SocketOutputStream & oStream) const;
 
-	PacketSize_t 	getPacketSize () const noexcept		{ return szBYTE + sizeof(T) * m_Values.size(); }
+	PacketSize_t 	getPacketSize () const noexcept		{ return static_cast<PacketSize_t>(szBYTE + sizeof(T) * m_Values.size()); }
 	static uint 	getPacketMaxSize() noexcept 	{ return szBYTE + sizeof(T) * 255; }
 
 	std::string toString () const;
@@ -33,7 +33,7 @@ public:
 	bool						IsEmpty() { return m_Values.empty(); }
 
 public:
-	int getSize() const noexcept 			{ return m_Values.size(); }
+	int getSize() const noexcept 			{ return static_cast<int>(m_Values.size()); }
 
 	void addValue(const T& info) 	{ m_Values.push_back(info); }
 
@@ -82,7 +82,7 @@ void ValueList<T>::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	BYTE numValue = m_Values.size();
+	BYTE numValue = static_cast<BYTE>(m_Values.size());
 	oStream.write( numValue );
 
 	typename std::list<T>::const_iterator itr = m_Values.begin();

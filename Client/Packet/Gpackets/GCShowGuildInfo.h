@@ -38,7 +38,7 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize() const
 	{ 
-		return szGuildID +				// Guild ID
+		return static_cast<PacketSize_t>(szGuildID +				// Guild ID
 			   szBYTE +					// Guild Name length
 			   m_GuildName.size() +		// Guild Name
 			   szGuildState +			// Guild State
@@ -47,7 +47,7 @@ public :
 			   szBYTE +					// Guild Member Count
 			   szBYTE +					// Guild Intro length
 			   m_GuildIntro.size() +	// Guild Intro
-			   szGold;					// Join Fee
+			   szGold);					// Join Fee
 	}
 
 #ifdef __DEBUG_OUTPUT__

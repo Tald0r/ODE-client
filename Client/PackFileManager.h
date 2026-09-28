@@ -422,7 +422,7 @@ PackFileManager<FileInfoType>::SaveToFileData(const char* pFilename)
 	std::ofstream file(pFilename, std::ios::binary | std::ios::trunc);
 
 	// 개수
-	WORD num = m_IDInfos.size();
+	WORD num = static_cast<WORD>(m_IDInfos.size());
 	file.write((const char*)&num, 2);	
 
 	// data
@@ -434,7 +434,7 @@ PackFileManager<FileInfoType>::SaveToFileData(const char* pFilename)
 
 		if (pInfo!=NULL)
 		{
-			long fp = file.tellp();
+			long fp = static_cast<long>(file.tellp());
 
 			pInfo->SetFilePosition( fp );
 

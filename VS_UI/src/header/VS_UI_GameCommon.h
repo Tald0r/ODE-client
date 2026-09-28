@@ -706,7 +706,7 @@ public:
 	// WHISPER	// by larosel
 	//-------------------------
 	std::string	GetWhisperID(int num = -1);	// by larosel
-	int		GetWhisperSize(){ return m_sz_whisper_id.size();}	// by larosel
+	int		GetWhisperSize(){ return static_cast<int>(m_sz_whisper_id.size());}	// by larosel
 	bool	AddWhisperID(const char *sz_ID);	// by larosel
 	void	ChangeWhisperFocus();	// by larosel
 	bool	GetWhisperFocus(){ return m_bl_focus_whisper; }	// by larosel

@@ -46,13 +46,13 @@ public :
 	// get packet's body size
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szItemType 
+		return static_cast<PacketSize_t>(szItemType 
 				+ szZoneID 
 				+ szStorage 
 				+ szBYTE + m_OwnerName.size() 
 				+ szRace 
 				+ szRace 
-				+ szZoneCoord + szZoneCoord;
+				+ szZoneCoord + szZoneCoord);
 	}
 
 	// get packet name

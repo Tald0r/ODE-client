@@ -723,8 +723,8 @@ void	MWater::UseInventory()
 						_CGSkillToInventory.setObjectID( GetID() );
 						_CGSkillToInventory.setX( GetGridX() );
 						_CGSkillToInventory.setY( GetGridY() );
-						_CGSkillToInventory.setTargetX( fitPoint.x );
-						_CGSkillToInventory.setTargetY( fitPoint.y );
+						_CGSkillToInventory.setTargetX( static_cast<Coord_t>(fitPoint.x) );
+						_CGSkillToInventory.setTargetY( static_cast<Coord_t>(fitPoint.y) );
 						_CGSkillToInventory.setSkillType( useSkill );
 
 						g_pSocket->sendPacket( &_CGSkillToInventory );
@@ -932,8 +932,8 @@ void	MBombMaterial::UseInventory()
 				_CGSkillToInventory.setObjectID( GetID() );
 				_CGSkillToInventory.setX( GetGridX() );
 				_CGSkillToInventory.setY( GetGridY() );
-				_CGSkillToInventory.setTargetX( fitPoint.x );
-				_CGSkillToInventory.setTargetY( fitPoint.y );
+				_CGSkillToInventory.setTargetX( static_cast<Coord_t>(fitPoint.x) );
+				_CGSkillToInventory.setTargetY( static_cast<Coord_t>(fitPoint.y) );
 				_CGSkillToInventory.setSkillType( useSkill );
 
 				g_pSocket->sendPacket( &_CGSkillToInventory );								

@@ -55,7 +55,7 @@ public :
 
 	// get packet's body size
 	// 최적화시, 미리 계산된 정수를 사용한다.
-	PacketSize_t getPacketSize () const { return szBYTE + m_RequestServerName.size() + szBYTE + m_RequestClientName.size(); }
+	PacketSize_t getPacketSize () const { return static_cast<PacketSize_t>(szBYTE + m_RequestServerName.size() + szBYTE + m_RequestClientName.size()); }
 	static PacketSize_t getPacketMaxSize() noexcept { return  szBYTE + 10 + szBYTE + 10;}
 
 	// get / set ListNumber

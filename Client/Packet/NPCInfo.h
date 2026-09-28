@@ -40,10 +40,10 @@ public:
 
 	uint getSize(void) 
 	{ 
-		return szBYTE + 
+		return static_cast<uint>(szBYTE + 
 			m_Name.size() + 
 			szNPCID + 
-			szZoneCoord + szZoneCoord; 
+			szZoneCoord + szZoneCoord); 
 	}
 	
 	void read(SocketInputStream& iStream);

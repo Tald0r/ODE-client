@@ -60,7 +60,7 @@ public :
 
 public:
 
-	BYTE getListNum() const { return m_BloodBibleBonusInfoList.size(); }
+	BYTE getListNum() const { return static_cast<BYTE>(m_BloodBibleBonusInfoList.size()); }
 
 	void addBloodBibleBonusInfo( BloodBibleBonusInfo* pBloodBibleBonusInfo ) { m_BloodBibleBonusInfoList.push_back( pBloodBibleBonusInfo ); }
 

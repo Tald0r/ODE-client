@@ -158,14 +158,14 @@ MGuildMarkManager::CreateGuildMark(WORD guildID, const char* pFilename)
 	surface.FillSurface( 0 );
 	surface.Blt(&destBigRect, &bmpSurface, &bmpRect);
 	surface.LockW(lpSurface, pitch);
-	pSprite->SetPixel(lpSurface, pitch, bigSize.x, bigSize.y);
+	pSprite->SetPixel(lpSurface, pitch, static_cast<WORD>(bigSize.x), static_cast<WORD>(bigSize.y));
 	surface.Unlock();
 
 	// SmallSize
 	surface.FillSurface( 0 );
 	surface.Blt(&destSmallRect, &bmpSurface, &bmpRect);
 	surface.LockW(lpSurface, pitch);
-	pSpriteSmall->SetPixel(lpSurface, pitch, smallSize.x, smallSize.y);
+	pSpriteSmall->SetPixel(lpSurface, pitch, static_cast<WORD>(smallSize.x), static_cast<WORD>(smallSize.y));
 	surface.Unlock();
 
 	//-----------------------------------------------------
@@ -381,10 +381,10 @@ MGuildMarkManager::SaveGuildMark(WORD guildID, CSprite* pSprite, CSprite* pSprit
 			//---------------------------------------------------------
 			spkFile.seekp( 0, ios::end );
 
-			long fp = spkFile.tellp();		// index file에 저장할 fp			
+			long fp = static_cast<long>(spkFile.tellp());		// index file에 저장할 fp			
 			pSprite->SaveToFile( spkFile );
 
-			long fpSmall = spkFile.tellp();		// index file에 저장할 fp
+			long fpSmall = static_cast<long>(spkFile.tellp());		// index file에 저장할 fp
 			pSpriteSmall->SaveToFile( spkFile );
 
 			
@@ -513,7 +513,7 @@ MGuildMarkManager::MergeGuildMark(const char* pSPKFilenameOrg,
 			spkInputFile.read((char*)&orgSize, 2);		
 
 			spkInputFile.seekg( 0, ios::end );		
-			orgFP = spkInputFile.tellg();
+			orgFP = static_cast<long>(spkInputFile.tellg());
 
 			spkInputFile.close();		
 		}
@@ -525,7 +525,7 @@ MGuildMarkManager::MergeGuildMark(const char* pSPKFilenameOrg,
 		spkiInputFileApp.read((char*)&appiSize, 2);
 
 		spkInputFileApp.seekg( 0, ios::end );		
-		appFP = spkInputFileApp.tellg();
+		appFP = static_cast<long>(spkInputFileApp.tellg());
 
 		spkInputFileApp.close();
 		spkiInputFileApp.close();
@@ -816,14 +816,14 @@ MGuildMarkManager::CreateGuildMark(const char* pFilename, CSprite *&pSprite, CSp
 	surface.FillSurface( 0 );
 	surface.Blt(&destBigRect, &bmpSurface, &bmpRect);
 	surface.LockW(lpSurface, pitch);
-	pSprite->SetPixel(lpSurface, pitch, bigSize.x, bigSize.y);
+	pSprite->SetPixel(lpSurface, pitch, static_cast<WORD>(bigSize.x), static_cast<WORD>(bigSize.y));
 	surface.Unlock();
 
 	// SmallSize
 	surface.FillSurface( 0 );
 	surface.Blt(&destSmallRect, &bmpSurface, &bmpRect);
 	surface.LockW(lpSurface, pitch);
-	pSpriteSmall->SetPixel(lpSurface, pitch, smallSize.x, smallSize.y);
+	pSpriteSmall->SetPixel(lpSurface, pitch, static_cast<WORD>(smallSize.x), static_cast<WORD>(smallSize.y));
 	surface.Unlock();
 
 	//-----------------------------------------------------

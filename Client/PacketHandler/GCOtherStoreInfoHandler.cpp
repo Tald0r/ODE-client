@@ -80,7 +80,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 			// 접근하는 Storage를 지정한다.
 			//------------------------------------------------------------
 			//int numitem = pPacket->getStoreInfo().getItems().size();
-			int numitem = pPacket->getStoreInfo()->getItems().size();
+			int numitem = static_cast<int>(pPacket->getStoreInfo()->getItems().size());
 			for (int index=0; index<numitem; index++)
 			{
 //

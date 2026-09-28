@@ -39,11 +39,11 @@ public :
 
 	PacketSize_t getSize() const 
 	{ 
-		return WarInfo::getSize() 
+		return static_cast<PacketSize_t>(WarInfo::getSize() 
 				+ szZoneID 
 				+ szBYTE + m_AttackGuildName.size() 
 				+ szBYTE + m_DefenseGuildName.size() 
-				+ m_GuildIDs.getPacketSize();
+				+ m_GuildIDs.getPacketSize());
 	}
 
 	static PacketSize_t getMaxSize() 

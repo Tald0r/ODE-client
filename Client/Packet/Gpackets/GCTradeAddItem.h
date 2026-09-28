@@ -37,7 +37,7 @@ public:
 		size += szObjectID;                           // m_ItemObjectID
 		size += szBYTE;                               // m_ItemClass
 		size += szItemType;                           // m_ItemType
-		size += szBYTE + m_OptionType.size();         // m_OptionType
+		size = static_cast<PacketSize_t>(size + (szBYTE + m_OptionType.size()));         // m_OptionType
 		size += szDurability;                         // m_Durability
 		size += szItemNum;                            // m_ItemNum
 		size += szSilver;                             // silver coating amount
@@ -72,7 +72,7 @@ public:
 	ItemType_t getItemType() const noexcept { return m_ItemType; }
 	void setItemType(ItemType_t itemType) { m_ItemType = itemType; }
 
-	int getOptionTypeSize() const { return m_OptionType.size(); }
+	int getOptionTypeSize() const { return static_cast<int>(m_OptionType.size()); }
 	const std::list<OptionType_t>& getOptionType() const { return m_OptionType; }
 	OptionType_t popOptionType()
 	{

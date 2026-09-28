@@ -26,8 +26,8 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_ADD_VAMPIRE_PORTAL; }
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szObjectID + szBYTE + m_OwnerID.size() + szDuration 
-			+ szCoord*2 + szZoneID + szCoord*2 + szBYTE;
+		return static_cast<PacketSize_t>(szObjectID + szBYTE + m_OwnerID.size() + szDuration 
+			+ szCoord*2 + szZoneID + szCoord*2 + szBYTE);
 	}
 	#ifdef __DEBUG_OUTPUT__
 		std::string getPacketName() const { return "GCAddVampirePortal"; }

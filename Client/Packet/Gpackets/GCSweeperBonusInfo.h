@@ -56,7 +56,7 @@ public :
 
 public:
 
-	BYTE getListNum() const { return m_SweeperBonusInfoList.size(); }
+	BYTE getListNum() const { return static_cast<BYTE>(m_SweeperBonusInfoList.size()); }
 
 	void addSweeperBonusInfo( SweeperBonusInfo* pSweeperBonusInfo ) { m_SweeperBonusInfoList.push_back( pSweeperBonusInfo ); }
 

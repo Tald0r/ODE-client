@@ -1,6 +1,7 @@
 ﻿  // VS_UI_GameCommon.cpp
 
 #include "Client_PCH.h"
+#include "CrtCompat.h"
 #include "VS_UI_GameCommon.h"
 #include "VS_UI_GameCommon2.h"
 #include "VS_UI_GlobalResource.h"
@@ -5164,7 +5165,7 @@ void	C_VS_UI_MAILBOX::Show()
 			{
 				m_overcnt = m_pC_scroll_bar->GetScrollPos();
 				if(static_cast<size_t>(m_overcnt) > m_mail[m_currentTab].size()-m_listCount)
-					m_overcnt = m_mail[m_currentTab].size()-m_listCount;
+					m_overcnt = static_cast<int>(m_mail[m_currentTab].size()-m_listCount);
 			}
 			
 
@@ -5483,7 +5484,7 @@ void	C_VS_UI_MAILBOX::AddHelpMail(DWORD id, bool open)
 	if (!message.IsEligible(g_eRaceInterface, g_char_slot_ingame.level, attributes)) return;
 
 	int nSender = message.m_iSender[g_eRaceInterface];
-	int nMaxSenderSize = MHelpMessageManager::Instance().getSenderSize();
+	int nMaxSenderSize = static_cast<int>(MHelpMessageManager::Instance().getSenderSize());
 	MString  strSender;
 	
 	if(nSender<0 || nSender >= nMaxSenderSize)
@@ -5920,7 +5921,7 @@ void C_VS_UI_MAILBOX::SaveToFile(std::ofstream &file)
 
 	for(int tab = 0; tab < tabCount; tab++)
 	{
-		DWORD mailCount = m_mail[tab].size();
+		DWORD mailCount = static_cast<DWORD>(m_mail[tab].size());
 		file.write((const char *)&mailCount, sizeof(DWORD));
 
 		MAILVECTOR_TYPE::iterator itr = m_mail[tab].begin();
@@ -11844,7 +11845,7 @@ public:
 
 void C_VS_UI_SMS_LIST::Address_Sort(int nSort)
 {
-	int nSize = m_Addresses.size();
+	int nSize = static_cast<int>(m_Addresses.size());
 	if(nSize < 2) return;
 	if(nSort == SORT_BY_NAME)
 	{
@@ -12578,7 +12579,7 @@ bool	C_VS_UI_NAMING::MouseControl(UINT message, int _x, int _y)
 				m_SelectPos = (_y-74 )/17;
 				m_SelectPos += m_pC_scroll_bar->GetScrollPos();
 				if(static_cast<size_t>(m_SelectPos)>=m_NameList.size())
-					m_SelectPos = m_NameList.size()-1;
+					m_SelectPos = static_cast<int>(m_NameList.size()-1);
 			}
 			else if(re && NULL == m_pC_button_group->IsInRect(_x, _y))
 			{
@@ -13452,7 +13453,7 @@ bool	C_VS_UI_QUEST_MANAGER::SetQuestManagerInfo(void* pVoid)
 					if(NULL != pChildElement2)
 					{
 						TempMission->szMissionTitle =  (char*)pChildElement2->GetText().c_str();
-						if(0 == stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
+						if(0 == _stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
 						{
 							TempMission->bTimeLimited = true;
 							TempMission->tpTimeLimitStart = MonotonicClock::Now();
@@ -13561,7 +13562,7 @@ bool	C_VS_UI_QUEST_MANAGER::UpdateQuestInfo(_GQuestInfo *QInfo, int nType)
 							if(NULL != pChildElement2)
 							{
 								TempMission->szMissionTitle =  (char*)pChildElement2->GetText().c_str();
-								if(0 == stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
+								if(0 == _stricmp(pChildElement2->GetName().c_str(),"Time")) // a mission with a time limit
 								{
 									TempMission->bTimeLimited = true;
 									TempMission->tpTimeLimitStart = MonotonicClock::Now();
@@ -14399,7 +14400,7 @@ bool	C_VS_UI_QUEST_LIST::MouseControl(UINT message, int _x, int _y)
 						gC_vs_ui.SetQuestManagerSubWindow(TempInfo->dwQuestID);
 				}
 				else
-					m_SelectPos = m_QuestListInfo[m_TabID].size()-1;
+					m_SelectPos = static_cast<int>(m_QuestListInfo[m_TabID].size()-1);
 			}
 			else if(re&&NULL == m_pC_button_group->IsInRect(_x, _y))
 			{

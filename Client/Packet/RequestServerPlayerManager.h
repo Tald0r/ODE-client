@@ -65,7 +65,7 @@ class RequestServerPlayerManager {
 		void		Broadcast(Packet* pPacket);
 
 
-		int			GetSize() const			{ return m_listRequestServerPlayer.size(); }
+		int			GetSize() const			{ return static_cast<int>(m_listRequestServerPlayer.size()); }
 
 		// Check if thread should continue running
 		bool		IsThreadRunning() const		{ return m_bThreadRunning; }		

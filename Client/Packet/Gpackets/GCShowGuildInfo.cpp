@@ -59,9 +59,9 @@ void GCShowGuildInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE szGuildName = m_GuildName.size();
-	BYTE szGuildMaster = m_GuildMaster.size();
-	BYTE szGuildIntro = m_GuildIntro.size();
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+	BYTE szGuildMaster = static_cast<BYTE>(m_GuildMaster.size());
+	BYTE szGuildIntro = static_cast<BYTE>(m_GuildIntro.size());
 
 	if ( szGuildName == 0 )
 		throw InvalidProtocolException( "szGuildName == 0" );

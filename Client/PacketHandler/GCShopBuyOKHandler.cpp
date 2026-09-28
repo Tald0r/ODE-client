@@ -38,10 +38,10 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 	if (g_pTempInformation->GetMode() == TempInformation::MODE_SHOP_BUY)
 	{
 		MShop* pShop = (MShop*)g_pTempInformation->pValue;		
-		int ShelfType	= g_pTempInformation->Value1;
-		int index		= g_pTempInformation->Value2;
-		int x			= g_pTempInformation->Value3;
-		int y			= g_pTempInformation->Value4;
+		int ShelfType	= static_cast<int>(g_pTempInformation->Value1);
+		int index		= static_cast<int>(g_pTempInformation->Value2);
+		int x			= static_cast<int>(g_pTempInformation->Value3);
+		int y			= static_cast<int>(g_pTempInformation->Value4);
 
 		DEBUG_ADD_FORMAT("[BuyOK] TempInfo. ShelfType=%d, index=%d, xy=(%d, %d)", ShelfType, index, x, y);
 		

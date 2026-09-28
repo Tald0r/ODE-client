@@ -191,7 +191,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	bool existCurseEng = false;
 	bool existCurseKor = false;
 
-	int len = strlen(str);
+	int len = static_cast<int>(strlen(str));
 	int i;
 	int index;
 	
@@ -299,7 +299,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 				//---------------------------------------------------
 				while ((pFind = strstr( strFilteredPtr, pString->GetString() )))
 				{					
-					int lenCurse = pString->GetLength();
+					int lenCurse = static_cast<int>(pString->GetLength());
 
 					//---------------------------------------------------
 					// 찾았으면.. 표시해둔다.
@@ -534,7 +534,7 @@ MChatManager::RemoveCurseKorean(const char* strKor,
 								int byteCurse, const MStringMap& mapCurse, 
 								BYTE* isCurse) const
 {
-	int len = strlen(strKor);
+	int len = static_cast<int>(strlen(strKor));
 
 	//---------------------------------------------------------
 	// string 길이가 짧은 경우

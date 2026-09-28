@@ -23,41 +23,7 @@ CheckSystem::~CheckSystem()
 
 BOOL CheckSystem::GetSystem()
 {
-	OSVERSIONINFO OsInfo;
-	OsInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if (GetVersionEx(&OsInfo))
-	{
-		// platform
-		switch (OsInfo.dwPlatformId)
-		{
-		case VER_PLATFORM_WIN32_WINDOWS:
-			if(OsInfo.dwMajorVersion == 3) {
-				//MessageBox(0,"꾸鱗溝固:WIN95","斤口",MB_OK);
-				//strcpy(sys.chSystem,"꾸鱗溝固:WIN95");
-				//return FALSE;
-			} else if(OsInfo.dwMajorVersion == 4) {
-				//MessageBox(0,"꾸鱗溝固:WIN98","斤口",MB_OK);
-				//return FALSE;
-				//strcpy(sys.chSystem,"꾸鱗溝固:WIN98");
-			}
-			break;
-		case VER_PLATFORM_WIN32_NT:
-			if(OsInfo.dwMajorVersion == 5) {
-				//MessageBox(0,"꾸鱗溝固:WIN2000","斤口",MB_OK);
-				//return TRUE;
-				//strcpy(sys.chSystem,"꾸鱗溝固:WIN2000");
-			} else {
-				//return TRUE;
-				//MessageBox(0,"꾸鱗溝固:WINNT","斤口",MB_OK);
-				//strcpy(sys.chSystem,"꾸鱗溝固:WINNT");
-			}
-			break;
-		default:
-			//return FALSE;
-			//strcpy(sys.chSystem,"灌列溝固!!");
-			break;
-		}
-		// version and language
-	}
+	// Every branch of the old version switch was commented out, so the
+	// GetVersionEx query it made - deprecated - never changed the result.
 	return FALSE;
 }

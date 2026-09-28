@@ -25,7 +25,7 @@ public:
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_ADD_BAT; }
 	PacketSize_t getPacketSize() const 
 	{ 
-		return szObjectID 
+		return static_cast<PacketSize_t>(szObjectID 
 			+ szBYTE + m_Name.size() 
 			//+ szSpriteType 
 			//+ szColor + szColor
@@ -34,7 +34,7 @@ public:
 			+ szHP*2
 			+ szGuildID
 			+ szColor
-			;
+			);
 	}
 
 	#ifdef __DEBUG_OUTPUT__	

@@ -103,7 +103,7 @@ CSpritePackList::AddSprite(TYPE_SPRITEID n, CSprite* pSprite)
 {	
 	// n이 너무 클때
 	if ( n > m_listSprite.size() )
-		n = m_listSprite.size();
+		n = static_cast<TYPE_SPRITEID>(m_listSprite.size());
 
 	SPRITE_LIST::iterator	iSprite = m_listSprite.begin();
 
@@ -202,7 +202,7 @@ CSpritePackList::SaveToFile(ofstream& spkFile, ofstream& indexFile)
 		return FALSE;	
 
 	// Size 저장
-	TYPE_SPRITEID size = m_listSprite.size();
+	TYPE_SPRITEID size = static_cast<TYPE_SPRITEID>(m_listSprite.size());
 	spkFile.write((const char *)&size, SIZE_SPRITEID); 
 	indexFile.write((const char *)&size, SIZE_SPRITEID);
 
@@ -221,7 +221,7 @@ CSpritePackList::SaveToFile(ofstream& spkFile, ofstream& indexFile)
 	while (iSprite != m_listSprite.end())
 	{
 		// SpritePack file에 쓰여지는 index를 저장
-		pIndex[i++] = spkFile.tellp();
+		pIndex[i++] = static_cast<long>(spkFile.tellp());
 
 		// Sprite 저장
 		(*iSprite)->SaveToFile(spkFile);		// CSprite저장	

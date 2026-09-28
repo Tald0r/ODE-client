@@ -60,7 +60,7 @@ public :
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_FRIEND_CHATTING; }
 	
 	// get packet's body size
-	PacketSize_t getPacketSize() const { return szDWORD + szBYTE + m_PlayerName.size() + szWORD + m_Message.size() + szBYTE + szBYTE; }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szDWORD + szBYTE + m_PlayerName.size() + szWORD + m_Message.size() + szBYTE + szBYTE); }
 
 	// get packet name
 	string getPacketName() const { return "GCFriendChatting"; }

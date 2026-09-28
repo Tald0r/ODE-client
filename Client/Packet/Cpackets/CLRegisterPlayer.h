@@ -41,7 +41,7 @@ public :
 	PacketSize_t getPacketSize () const
 	{
 		// 최적화시 미리 계산된 상수를 사용하도록 한다.
-		return    szBYTE + m_ID.size() 			// 아이디
+		return    static_cast<PacketSize_t>(szBYTE + m_ID.size() 			// 아이디
 				+ szBYTE + m_Password.size() 	// 암호
 				+ szBYTE + m_Name.size() 		// 이름
 				+ szBYTE						// 성별
@@ -54,7 +54,7 @@ public :
 				+ szBYTE + m_Email.size() 		// 전자메일
 				+ szBYTE + m_Homepage.size() 	// 홈페이지
 				+ szBYTE + m_Profile.size() 	// 자기소개글
-				+ szBYTE;						// 공개여부
+				+ szBYTE);						// 공개여부
 	}
 
 #ifdef __DEBUG_OUTPUT__

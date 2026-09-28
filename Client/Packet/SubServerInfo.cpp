@@ -48,7 +48,7 @@ void SubServerInfo::write ( SocketOutputStream & oStream ) const
 	try {
 
 	// 이름 크기
-	BYTE szServerName = m_ServerName.size();
+	BYTE szServerName = static_cast<BYTE>(m_ServerName.size());
 
 	oStream.write( m_ServerID );
 

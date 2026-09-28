@@ -1871,7 +1871,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 						pointTemp2.y = pointTemp.y - (pCreature->GetCY() >> 1)*fastMoveShadow;
 						if(pCreature->IsBloodyZenith())
 						{
-							pointTemp2.y -= sin((double)max(0, pCreature->GetMoveCount()-fastMoveShadow)*3.141592/(double)pCreature->GetMoveCountMax())*100;
+							pointTemp2.y = static_cast<LONG>(pointTemp2.y - sin((double)max(0, pCreature->GetMoveCount()-fastMoveShadow)*3.141592/(double)pCreature->GetMoveCountMax())*100);
 						}
 						
 						//CSpriteSurface::s_Value1 = 1;
@@ -1883,7 +1883,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 				
 				if(pCreature->IsBloodyZenith())
 				{
-					pointTemp.y -= sin((double)pCreature->GetMoveCount()*3.141592/(double)pCreature->GetMoveCountMax())*100;
+					pointTemp.y = static_cast<LONG>(pointTemp.y - sin((double)pCreature->GetMoveCount()*3.141592/(double)pCreature->GetMoveCountMax())*100);
 				}
 				WORD colorSet = pCreature->GetAttachEffectColor();
 				
@@ -3056,7 +3056,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 						pointTemp2.y = pointTemp.y - (pCreature->GetCY() >> 1)*fastMoveShadow;
 						if(pCreature->IsBloodyZenith())
 						{
-							pointTemp2.y -= sin((double)max(0, pCreature->GetMoveCount()-fastMoveShadow)*3.141592/(double)pCreature->GetMoveCountMax())*100;
+							pointTemp2.y = static_cast<LONG>(pointTemp2.y - sin((double)max(0, pCreature->GetMoveCount()-fastMoveShadow)*3.141592/(double)pCreature->GetMoveCountMax())*100);
 						}
 						
 						m_pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, min(2, fastMoveShadow));
@@ -3066,7 +3066,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 				
 				if(pCreature->IsBloodyZenith())
 				{
-					pointTemp.y -= sin((double)pCreature->GetMoveCount()*3.141592/(double)pCreature->GetMoveCountMax())*100;
+					pointTemp.y = static_cast<LONG>(pointTemp.y - sin((double)pCreature->GetMoveCount()*3.141592/(double)pCreature->GetMoveCountMax())*100);
 				}
 				WORD colorSet = pCreature->GetAttachEffectColor();
 				
@@ -3306,7 +3306,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 							pointTemp2.y = pointTemp.y - (pCreature->GetCY() >> 1)*fastMoveShadow;
 							if(pCreature->IsBloodyZenith())
 							{
-								pointTemp2.y -= sin((double)max(0, pCreature->GetMoveCount()-fastMoveShadow)*3.141592/(double)pCreature->GetMoveCountMax())*100;
+								pointTemp2.y = static_cast<LONG>(pointTemp2.y - sin((double)max(0, pCreature->GetMoveCount()-fastMoveShadow)*3.141592/(double)pCreature->GetMoveCountMax())*100);
 							}
 							
 							m_pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, min(2, fastMoveShadow));
@@ -3316,7 +3316,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					
 					if(pCreature->IsBloodyZenith())
 					{
-						pointTemp.y -= sin((double)pCreature->GetMoveCount()*3.141592/(double)pCreature->GetMoveCountMax())*100;
+						pointTemp.y = static_cast<LONG>(pointTemp.y - sin((double)pCreature->GetMoveCount()*3.141592/(double)pCreature->GetMoveCountMax())*100);
 					}
 					WORD colorSet = pCreature->GetAttachEffectColor();
 					

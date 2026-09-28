@@ -75,7 +75,7 @@ void LCServerList::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_CurrentServerGroupID );
 
-	BYTE ListNum = m_ServerGroupInfoList.size();
+	BYTE ListNum = static_cast<BYTE>(m_ServerGroupInfoList.size());
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( ListNum );
 

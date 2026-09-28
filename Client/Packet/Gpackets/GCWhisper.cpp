@@ -57,7 +57,7 @@ void GCWhisper::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
@@ -71,7 +71,7 @@ void GCWhisper::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_Color );
 		
-	BYTE szMessage = m_Message.size();
+	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");

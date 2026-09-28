@@ -18,13 +18,13 @@ typedef struct _GoodsInfo
 {
 	int getPacketSize() const
 	{ 
-		return szObjectID + 
+		return static_cast<int>(szObjectID + 
 				szBYTE + 
 				szItemType + 
 				szGrade +
 				szBYTE + optionType.size() +
 				szItemNum +
-				szDWORD;
+				szDWORD);
 	}
 
 	static int getPacketMaxSize() 

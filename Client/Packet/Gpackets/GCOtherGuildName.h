@@ -38,7 +38,7 @@ public :
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_OTHER_GUILD_NAME; }
 	
 	// get packet's body size
-	PacketSize_t getPacketSize() const { return szObjectID + szGuildID + szBYTE + m_GuildName.size(); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szObjectID + szGuildID + szBYTE + m_GuildName.size()); }
 
 #ifdef __DEBUG_OUTPUT__
 	// get packet name

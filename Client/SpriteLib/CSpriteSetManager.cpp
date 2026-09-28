@@ -68,7 +68,7 @@ CSpriteSetManager::SaveSpriteSetIndex(ofstream& setIndex, ifstream& spkIndex)
 	DATA_LIST::iterator iData = m_List.begin();
 
 	// SpriteSet의 Sprite개수 저장
-	count = m_List.size();
+	count = static_cast<TYPE_SPRITEID>(m_List.size());
 	setIndex.write((const char*)&count, SIZE_SPRITEID);
 
 	// List의 모든 node에 대해서..

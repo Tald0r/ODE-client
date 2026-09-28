@@ -20,7 +20,7 @@ PacketSize_t NicknameInfo::getSize() const
 			return szWORD + szBYTE + szWORD;
 		case NICK_CUSTOM_FORCED:
 		case NICK_CUSTOM:
-			return szWORD + szBYTE + szBYTE + m_Nickname.size();
+			return static_cast<PacketSize_t>(szWORD + szBYTE + szBYTE + m_Nickname.size());
 		default:
 			assert(false);
 	}
@@ -86,7 +86,7 @@ void NicknameInfo::write(SocketOutputStream& oStream) const
 		case NICK_CUSTOM_FORCED:
 		case NICK_CUSTOM:
 			{
-				BYTE szSTR = m_Nickname.size();
+				BYTE szSTR = static_cast<BYTE>(m_Nickname.size());
 				oStream.write( szSTR );
 				if ( szSTR != 0 ) oStream.write( m_Nickname );
 				break;

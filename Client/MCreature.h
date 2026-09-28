@@ -430,8 +430,8 @@ class MCreature : public MObject, public MStatus {
 		//------------------------------------------------
 		bool		IsExistAttachEffect() const		{ return !m_listEffect.empty(); }
 		bool		IsExistGroundAttachEffect() const		{ return !m_listGroundEffect.empty(); }
-		int			GetAttachEffectSize() const		{ return m_listEffect.size(); }
-		int			GetGroundAttachEffectSize() const		{ return m_listGroundEffect.size(); }
+		int			GetAttachEffectSize() const		{ return static_cast<int>(m_listEffect.size()); }
+		int			GetGroundAttachEffectSize() const		{ return static_cast<int>(m_listGroundEffect.size()); }
 		void		ClearAttachEffect();
 		
 
@@ -768,7 +768,7 @@ class MCreature : public MObject, public MStatus {
 		const HPMODIFYLIST *GetHPModifyList() const			{ return &m_HPModifyList; }
 		void				AddHPModify(const int modify);
 		bool				IsEmptyHPModifyList() const		{ return m_HPModifyList.empty(); }
-		int					GetHPModifyListSize() const		{ return m_HPModifyList.size(); }
+		int					GetHPModifyListSize() const		{ return static_cast<int>(m_HPModifyList.size()); }
 
 		void			SetActionGrade( BYTE a ) { if( a != 0 ) m_GradeActionInfo = a; }
 		void			ClearActionGrade() {m_GradeActionInfo = 0;}

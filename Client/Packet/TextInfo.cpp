@@ -53,7 +53,7 @@ void TextInfo::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_ID );
 
-	BYTE szWriter = m_Writer.size();
+	BYTE szWriter = static_cast<BYTE>(m_Writer.size());
 
 	if ( szWriter == 0 )
 		throw InvalidProtocolException("empty BBS_ID");
@@ -64,7 +64,7 @@ void TextInfo::write ( SocketOutputStream & oStream ) const
 	
 	oStream.write( m_Writer );
 
-	BYTE szTopic = m_Topic.size();
+	BYTE szTopic = static_cast<BYTE>(m_Topic.size());
 	
 	if ( szTopic == 0 )
 		throw InvalidProtocolException ("empty BBS_Topic");

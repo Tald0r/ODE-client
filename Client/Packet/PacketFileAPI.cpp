@@ -18,7 +18,8 @@
 
 
 #if defined(__WINDOWS__) && __WINDOWS__
-#include <io.h>			// for _open()
+#include <io.h>			// for _sopen_s()
+#include <share.h>		// for _SH_DENYNO
 #include <fcntl.h>		// for _open()/_close()/_read()/_write()...
 #include <string.h>		// for memcpy()
 #elif defined(PLATFORM_POSIX)
@@ -41,7 +42,8 @@ int FileAPI::open_ex ( const char * filename , int flags )
 	// The game's spelling of the path, resolved to the disk's (basic/DataPath.h).
 	int fd = open(Basic::NormalizeDataPath(filename).c_str(),flags);
 #elif __WINDOWS__
-	int fd = _open(filename,flags);
+	int fd = -1;
+	_sopen_s(&fd, filename, flags, _SH_DENYNO, 0);
 #endif
 	if ( fd < 0 ) {
 
@@ -101,7 +103,8 @@ int FileAPI::open_ex ( const char * filename , int flags , int mode )
 #if defined(PLATFORM_POSIX)
 	int fd = open(Basic::NormalizeDataPath(filename).c_str(),flags,mode);
 #elif __WINDOWS__
-	int fd = _open(filename,flags,mode);
+	int fd = -1;
+	_sopen_s(&fd, filename, flags, _SH_DENYNO, mode);
 #endif
 
 	if ( fd < 0 ) {
@@ -301,7 +304,11 @@ void FileAPI::close_ex ( int fd )
 {
 	__BEGIN_TRY
 
+#if defined(PLATFORM_POSIX)
 	if ( close(fd) < 0 ) {
+#else
+	if ( _close(fd) < 0 ) {
+#endif
 #if defined(PLATFORM_POSIX)
 		switch ( errno ) {
 			case EBADF : 

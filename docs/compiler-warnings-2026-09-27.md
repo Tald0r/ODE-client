@@ -2,7 +2,8 @@
 
 The client's own code - `Client/`, `VS_UI/`, `basic/`, `tests/`, `tools/` -
 now builds without compiler warnings under Apple Clang 21 (macOS arm64),
-GCC 13 and Clang 18 (Linux). Before, the macOS build reported 4,105
+GCC 13 and Clang 18 (Linux), and MSVC (Windows x64) after the follow-up
+in [MSVC-only warnings](#msvc-only-warnings). Before, the macOS build reported 4,105
 distinct warnings and the Linux GCC one about 4,000; about 6,100 distinct
 project sites across both compilers were cleared, in 842 files. What the
 warning budget still counts (`tools/ci/warnings.md`) is vendored code
@@ -424,3 +425,146 @@ entry was reported by the agent that cleared the warning at that site.
 ### `tools/viewers/sprite_viewer/main.cpp`
 
 - line 160: Same as item_viewer: with an empty sprite pack, `m_currentIndex < GetSize() - 1` wraps to 0xFFFFFFFF and lets the index increment. Behaviour preserved.
+
+## MSVC-only warnings
+
+After the cleanup above, the Windows Debug build still reported 1,106
+distinct warnings in project code (CI run 36356004472): MSVC `/W3`
+diagnostics that GCC and Clang do not raise under `-Wall -Wextra`. They are
+cleared the same way, with the same differential compiles (Windows through
+MinGW, `_DEBUG`, the debug macros, Emscripten) and nothing suppressed:
+
+- **C4267/C4244** (942 sites), narrowing conversions: a `static_cast` to the
+  destination's declared type, which is the conversion MSVC already made.
+  A compound assignment becomes `x = static_cast<T>(x + y)`. **C4312**
+  (14) goes through `intptr_t`.
+- **C4996** (128), CRT deprecations: each call goes through the Windows
+  CRT's non-deprecated equivalent, and through the same call as before
+  elsewhere. `basic/CrtCompat.h` holds the portable spellings, tested in
+  `tests/unit/test_crt_compat.cpp`; nothing defines
+  `_CRT_SECURE_NO_WARNINGS`.
+- **C4273** (11) and the 15 **LNK4217** link warnings: `__EX` marked
+  `dllimport` classes that are compiled into the executable using them. It
+  is now empty, as it already was off Windows.
+- **C4005** (6), **C4116** (2), **C4477** (2): `DIK_Defines.h` `#undef`s
+  the six keys `dinput.h` also defines, `framepack.c` casts the element
+  pointer instead of naming a type inside the cast, and `sizeof` prints
+  with `%zu`.
+- **C4146** (1) was a defect and is fixed; see below.
+
+The Windows budgets fell from 1,254 to 57 distinct warnings in Debug, ASan
+and Release (CI run 36360661797). None of the 57 is in project code:
+IXWebSocket's C4244/C4267, `third_party/`'s C4996 and the Windows SDK's
+C4668.
+
+The deliberate changes:
+
+- **`SendFileInfo::SendBack`** handed the bytes a socket did not take back
+  to the file by seeking `-nBack`, a negated `DWORD`, so it seeked about
+  4 GB forward. Every later read then failed, and the peer never received
+  the rest of the profile file. The file reading moved into `basic`
+  (`Basic::FileChunkReader`) and was fixed test-first
+  (`tests/unit/test_file_chunk_reader.cpp`). The fix also clears the
+  stream, because a short last chunk leaves it failed and a failed stream
+  ignores `seekg`.
+- **`Basic::LocalTime`** leaves a zeroed `tm` where `localtime` returned
+  NULL, which `DebugLog`'s Windows timestamp then dereferenced.
+- **On Windows, the `_s` scanners** fail a `%s` conversion whose word would
+  have overflowed its buffer. The old call overflowed it.
+- **The two `GetSystem()` bodies** no longer query the version. `Client.cpp`'s
+  rejected only Windows 9x or a failed query, neither possible for an x64
+  build, so it returns `TRUE`; its one call is inside a comment.
+  `CheckSystem::GetSystem()` had every return commented out and returns
+  `FALSE`, as it always did.
+
+### Findings kept as they were (MSVC)
+
+Line numbers are those of `5bee7fd9`. Each entry was reported by the agent
+that cleared the warning at that site.
+
+#### `Client/Client.cpp`
+
+- lines 484, 494, 503: frame-pack `GetSize()` (unsigned short) is stored in the `BYTE` max-action arrays.
+
+#### `Client/MEffectGeneratorTable.cpp`
+
+- lines 375, 699 (latent): `Step` narrowed to `BYTE` would break the `(x<<8)|y` coordinate encoding `MActionInfoTable.h` describes. Nothing uses it today.
+
+#### `Client/MEffectSpriteTypeTable.cpp`
+
+- line 92: the pair count is saved as one byte, so more than 255 pairs corrupt the table.
+
+#### `Client/MFakeCreature.cpp`
+
+- lines 725, 2276 (and the `IsInSector` arguments at 2318-2336): `firstSector.x/y` is the player position plus a negative skip minus 1. It goes negative within about 9-17 tiles of the map's left or top edge and wraps to about 65527 as an unsigned short. `IsInSector` then returns false, and the fake creature or ghost is treated as off-screen.
+
+#### `Client/MGuildMarkManager.cpp`, `Client/MLoadingSPKWorkNode.cpp`, `Client/MItemTable.cpp`
+
+- `MGuildMarkManager.cpp` lines 384, 387, 516, 528 and `MLoadingSPKWorkNode.cpp` line 325: file offsets are held in `long`, which is 32-bit on Windows, so SPK files over 2 GB are out of reach. `MItemTable.cpp` line 233 writes the option-list size as one byte, which truncates past 255.
+
+#### `Client/MParabolaEffect.cpp`
+
+- line 56: `m_RadStep = FPI / (float)steps`, where `steps = (int)m_Len / speed` is 0 when the distance is shorter than the speed. The infinity converted to `int` is undefined (INT_MIN on x64).
+
+#### `Client/MPriceManager.cpp`
+
+- line 236: `finalPrice * damaged` is computed in `float`, so prices above 2^24 lose precision, and the result is truncated rather than rounded.
+
+#### `Client/MSector.cpp`
+
+- lines 2076, 2093: the sector x/y (unsigned short) is stored in `SECTORSOUND_INFO`'s `unsigned char X/Y`, so coordinates above 255 wrap. That is a limit of the format.
+
+#### `Client/MZone.cpp`
+
+- lines 2728, 2729: party HP and MaxHP go from `DWORD` into `WORD` `PARTY_INFO` fields.
+
+#### `Client/PackFileManager.h`, `Client/RequestFileManager.cpp`
+
+- `PackFileManager.h` line 437 and `RequestFileManager.cpp` line 109 (now `basic/FileChunkReader.cpp`): file positions are held in a 32-bit `long`/`DWORD`, so a failed `tellg` (-1) becomes 0xFFFFFFFF bytes left.
+
+#### `Client/Packet/Cpackets/CGAbsorbSoul.h`
+
+- lines 79, 82: `getTargetZoneX()`/`Y()` return `Coord_t` (`BYTE`) over `ZoneCoord_t` (`WORD`) members, so zone coordinates above 255 are cut. Nothing calls them today.
+
+#### `Client/Packet/Gpackets/GCExecuteElement.h`, `GCGuildResponse.h`, `GCActiveGuildList.h`, `GCNoticeEvent.h`, `GCRequestFailed.h`
+
+- `GCExecuteElement.h` line 40: `getQuestID()` returns `WORD` over a quest ID that is read and written as a `DWORD`, so IDs of 65536 or more are cut.
+- `GCGuildResponse.h` line 50 returns `BYTE` over a `WORD` wire code; `GCActiveGuildList.h` line 63 returns `BYTE` over a `WORD` count; `GCNoticeEvent.h` line 120 returns `BYTE` over a `WORD` code; `GCRequestFailed.h` line 44 stores a `WORD` in a `BYTE` code. The values fit today.
+
+#### `Client/Packet/Gpackets/GCMiniGameScores.cpp`
+
+- line 74 (and 96): `BYTE count = m_Scores.size(); if (count > 10) count = 10;` truncates before clamping, so 256 entries become 0. Its `getPacketSize()` loop (lines 101-104) never advances the iterator, so the size is wrong whenever the names differ in length.
+
+#### `Client/Packet/Gpackets/GCSkillToInventoryOK2.h`, `GCSkillToTileOK3.h`
+
+- `GCSkillToInventoryOK2.h` line 64, `GCSkillToTileOK3.h` line 66: `getObjectID()` returns `CEffectID_t` (16-bit) from a 32-bit `ObjectID_t` member, and both handlers pass it to `g_pZone->GetCreature()`. A creature ID of 65536 or more is cut to 16 bits, and the lookup fails.
+
+#### Packet string and count prefixes
+
+- The length prefix is checked after truncation to `BYTE` (`BYTE sz = str.size(); if (sz > N) throw ...`) in `GCWhisper.cpp` 60/74, `GLIncomingConnectionError.cpp` 64/79, `GLIncomingConnectionOK.cpp` 60, `LCQueryResultCharacterName.cpp` 55, `LCQueryResultPlayerID.cpp` 55, `LCReconnect.cpp` 98, `LGIncomingConnection.cpp` 80/95/110, `CRWhisper.cpp` 135/148/171, `RCCharacterInfo.cpp` 57, `RCPositionInfo.cpp` 61, `RCSay.cpp` 62/74 and `RCStatusHP.cpp` 58. A 257-byte string passes the check as 1 and is written whole behind a 1-byte prefix, which desyncs the stream. `CRConnect.cpp` 72/82, `CRRequest.cpp` 76, `RCRequestedFile.cpp` 70, `LCRegisterPlayerOK.cpp` 36 and `GCWarScheduleList.cpp` 112/118 write the same prefix with no upper bound.
+- Element counts written as `BYTE` wrap past 255 unchecked: `GCWarList.cpp` 110, `GCWarScheduleList.cpp` 94, `LCServerList.cpp` 78, `LCWorldList.cpp` 78, `CRWhisper.cpp` 161, `RCRequestedFile.cpp` 175.
+
+#### `Client/Packet/PCVampireInfo.cpp`
+
+- line 18: `m_CoatType = flag` narrows a `DWORD` to the `WORD` `ItemType_t`. The commented-out `(flag & 7)` suggests a mask was meant.
+
+#### `Client/Packet/SocketImpl.cpp`
+
+- line 278 (`accept`): a 64-bit Windows `SOCKET` is narrowed to the `uint` `ClientID` and stored back into the `SOCKET` member.
+
+#### `Client/PacketHandler/GCPartyJoinedHandler.cpp`, `GCPartyPositionHandler.cpp`
+
+- `GCPartyJoinedHandler.cpp` lines 113-117, `GCPartyPositionHandler.cpp` lines 53-54: a `DWORD` HP goes into a `WORD`, and `WORD` zone coordinates go into `MParty`'s `BYTE` fields.
+
+#### `Client/UIMessageManager.cpp`
+
+- line 11778: `setGold(left*10000)`. A donation above 429,496 wraps in the 32-bit `Gold_t`; the value comes from the donation dialog.
+
+#### `VS_UI/src/KeyAccelerator.cpp`
+
+- lines 209, 223, 232: `capacity()` is used as the element count, so `SaveToFile` can read past `size()` and write the wrong count. `size()` was meant.
+
+#### `VS_UI/src/VS_UI_GameCommon.cpp`
+
+- lines 24042-24051: the branches check only `size() != 0` before `size()-9`, which wraps for 1-8 entries and divides by zero for 9.
+- line 30939: `(m_v_war_list.size()-print_list)` wraps with fewer than 10 entries when `m_scroll != 0`.

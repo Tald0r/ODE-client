@@ -77,12 +77,12 @@ void GCGuildChat::write ( SocketOutputStream & oStream ) const
 		if ( m_SendGuildName.size() > 30 )
 			throw InvalidProtocolException("too long guild name length");
 
-		BYTE szGName = m_SendGuildName.size();
+		BYTE szGName = static_cast<BYTE>(m_SendGuildName.size());
 		oStream.write( szGName );
 		oStream.write( m_SendGuildName );
 	}
 
-	BYTE szSender = m_Sender.size();
+	BYTE szSender = static_cast<BYTE>(m_Sender.size());
 
 	if ( szSender == 0 )
 		throw InvalidProtocolException("szSener == 0");
@@ -94,7 +94,7 @@ void GCGuildChat::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_Sender );
 	oStream.write( m_Color );
 
-	BYTE szMessage = m_Message.size();
+	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");

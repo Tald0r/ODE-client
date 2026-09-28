@@ -47,7 +47,7 @@ void GCSystemMessage::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE szMessage = m_Message.size();
+	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	oStream.write( szMessage );
 

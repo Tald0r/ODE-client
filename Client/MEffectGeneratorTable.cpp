@@ -372,8 +372,8 @@ MEffectGeneratorTable::Generate(
 		egInfo.z1					= targetZ;
 		egInfo.creatureID			= targetID;
 		egInfo.direction			= direction;
-		egInfo.step					= info.Step;
-		egInfo.count				= count;
+		egInfo.step					= static_cast<BYTE>(info.Step);
+		egInfo.count				= static_cast<WORD>(count);
 		egInfo.linkCount			= info.LinkCount;
 		egInfo.power				= power;
 		egInfo.pPreviousEffect		= NULL;
@@ -696,8 +696,8 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 	egInfo.z1					= targetZ;
 	egInfo.creatureID			= targetID;
 	egInfo.direction			= pEffect->GetDirection();
-	egInfo.step					= info.Step;
-	egInfo.count				= count;
+	egInfo.step					= static_cast<BYTE>(info.Step);
+	egInfo.count				= static_cast<WORD>(count);
 	egInfo.linkCount			= info.LinkCount;
 	egInfo.power				= pEffect->GetPower();
 	egInfo.pPreviousEffect		= pEffect;

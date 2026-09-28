@@ -38,7 +38,7 @@ public :
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_RANK_BONUS_INFO; }
 	
 	// get packet's body size
-	PacketSize_t getPacketSize() const { return szBYTE + ( szDWORD * m_RankBonusInfoList.size() ); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szBYTE + ( szDWORD * m_RankBonusInfoList.size() )); }
 
 #ifdef __DEBUG_OUTPUT__
 	// get packet name
@@ -53,7 +53,7 @@ public :
 //--------------------------------------------------
 public :
 
-	BYTE getListNum() const { return m_RankBonusInfoList.size(); }
+	BYTE getListNum() const { return static_cast<BYTE>(m_RankBonusInfoList.size()); }
 
     // add
 	void addListElement( DWORD rankBonusType ) { m_RankBonusInfoList.push_back( rankBonusType ); }

@@ -88,7 +88,7 @@ class MParty {
 		//--------------------------------------------------------
 		// Get Size - 현재 파티원의 수 (나를 제외한)
 		//--------------------------------------------------------
-		int			GetSize() const		{ return m_pInfo.size(); }
+		int			GetSize() const		{ return static_cast<int>(m_pInfo.size()); }
 
 		//--------------------------------------------------------
 		// Add / Remove

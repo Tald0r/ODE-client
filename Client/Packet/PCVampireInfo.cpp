@@ -15,7 +15,7 @@ void PCVampireInfo::setShapeInfo(DWORD flag, Color_t color[VAMPIRE_COLOR_MAX])
 {
 	// 현재는 vampire coat만 모양이 바뀌므로..
 	// 나중에 다른 부위도 바뀐다면 PCSlayerInfo를 참조해서 바꿔야될 것이다
-	m_CoatType = flag;//(flag & 7);
+	m_CoatType = static_cast<ItemType_t>(flag);//(flag & 7);
 	m_CoatColor = color[0];
 }
 
@@ -124,7 +124,7 @@ void PCVampireInfo::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	// write vampire name
 	//--------------------------------------------------
-	BYTE szName = m_Name.size();
+	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");

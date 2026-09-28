@@ -381,7 +381,7 @@ MWeather::GenerateRain(const BYTE& n)
 				case 0 :
 					m_pMapEffect[n].Set(MAP_EFFECT::MAP_EFFECT_FALL,
 								0, 
-								rand()%g_GameRect.right, rand()%g_GameRect.bottom, 
+								static_cast<short>(rand()%g_GameRect.right), static_cast<short>(rand()%g_GameRect.bottom), 
 								-1*((rand()%4)+1), rand()%30+20, 
 								rand()%25);
 				break;
@@ -389,7 +389,7 @@ MWeather::GenerateRain(const BYTE& n)
 				case 1 :
 					m_pMapEffect[n].Set(MAP_EFFECT::MAP_EFFECT_FALL,
 								rand()%2+1, 
-								rand()%g_GameRect.right, rand()%g_GameRect.bottom, 
+								static_cast<short>(rand()%g_GameRect.right), static_cast<short>(rand()%g_GameRect.bottom), 
 								-1*((rand()%6)+3), rand()%28+17, 
 								rand()%20);
 				break;
@@ -459,7 +459,7 @@ MWeather::GenerateSnow(const BYTE& n)
 				case 0 :
 					m_pMapEffect[n].Set(MAP_EFFECT::MAP_EFFECT_FALL,
 								rand()%5+7, 
-								rand()%g_GameRect.right, rand()%g_GameRect.bottom, 
+								static_cast<short>(rand()%g_GameRect.right), static_cast<short>(rand()%g_GameRect.bottom), 
 								-1*((rand()%3)+1), rand()%7+4, 
 								rand()%120);
 				break;
@@ -467,7 +467,7 @@ MWeather::GenerateSnow(const BYTE& n)
 				case 1 :
 					m_pMapEffect[n].Set(MAP_EFFECT::MAP_EFFECT_FALL,
 								rand()%5+7,  
-								rand()%g_GameRect.right, rand()%g_GameRect.bottom, 
+								static_cast<short>(rand()%g_GameRect.right), static_cast<short>(rand()%g_GameRect.bottom), 
 								-1*((rand()%3)+3), rand()%7+4, 
 								rand()%120);
 				break;
@@ -552,7 +552,7 @@ MWeather::GenerateSpot(const BYTE& n)
 //		case 0 :
 			m_pMapEffect[n].Set(MAP_EFFECT::MAP_EFFECT_FALL,
 				18+rand()%6,
-				rand()%g_GameRect.right, rand()%g_GameRect.bottom, 
+				static_cast<short>(rand()%g_GameRect.right), static_cast<short>(rand()%g_GameRect.bottom), 
 				0, -((rand()%4)+1),
 				30+rand()%30);
 //			break;

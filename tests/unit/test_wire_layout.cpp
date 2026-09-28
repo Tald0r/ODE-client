@@ -35,6 +35,7 @@
 //----------------------------------------------------------------------
 
 #include "test_framework.h"
+#include "CrtCompat.h"
 #include "SocketInputStream.h"
 
 #include "Packet.h"
@@ -157,8 +158,8 @@ std::string	RenderInventory(const std::map<PacketID_t, InventoryEntry>& inventor
 // compares instead of silently re-recording.
 bool	IsRecording()
 {
-	const char* value = std::getenv("UPDATE_GOLDENS");
-	return value != NULL && std::strcmp(value, "1") == 0;
+	const std::optional<std::string> value = Basic::GetEnvironment("UPDATE_GOLDENS");
+	return value.has_value() && *value == "1";
 }
 
 // Print the first line that differs, since CHECK cannot show strings.

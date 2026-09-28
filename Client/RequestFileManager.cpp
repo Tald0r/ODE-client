@@ -76,16 +76,14 @@ SendFileInfo::SendFileInfo(const char* pFilename,
 
 	m_Filename	= pFilename;
 	m_FileType	= fileType;
-
-	m_FileSizeLeft = 0;
 }
 
 SendFileInfo::~SendFileInfo()
 {
-	// 화일 닫기
-	if (m_FileStream.is_open())
+	// close the file
+	if (m_File.IsOpen())
 	{
-		m_FileStream.close();
+		m_File.Close();
 	}
 }
 
@@ -100,20 +98,7 @@ SendFileInfo::StartSend()
 	// m_Filename stays as ProfileManager spelled it ("<dir>\<file>"),
 	// since that is the name sent to the peer; only the open resolves
 	// it for the disk (basic/DataPath.h, the identity on Windows).
-	m_FileStream.open( Basic::NormalizeDataPath(m_Filename).c_str(), std::ios::in | std::ios::binary);// |  );
-
-	if (m_FileStream.is_open())
-	{
-		m_FileStream.seekg( 0, std::ios::end );
-
-		m_FileSizeLeft = m_FileStream.tellg();	// filesize를 알아오기 위해서
-
-		m_FileStream.seekg( 0, std::ios::beg );
-	}
-	else
-	{
-		m_FileSizeLeft = 0;
-	}
+	m_File.Open( Basic::NormalizeDataPath(m_Filename) );
 }
 
 //---------------------------------------------------------------------------
@@ -122,13 +107,7 @@ SendFileInfo::StartSend()
 DWORD		
 SendFileInfo::Send(char* pBuffer)
 {
-	m_FileStream.read(pBuffer, MAX_BUFFER);
-
-	DWORD nRead = m_FileStream.gcount();
-
-	m_FileSizeLeft -= nRead;
-
-	return nRead;
+	return m_File.Read(pBuffer, MAX_BUFFER);
 }
 
 //---------------------------------------------------------------------------
@@ -139,8 +118,7 @@ SendFileInfo::Send(char* pBuffer)
 void
 SendFileInfo::SendBack(DWORD nBack)
 {
-	m_FileStream.seekg( -nBack, std::ios::cur );
-	m_FileSizeLeft += nBack;
+	m_File.Unread( nBack );
 }
 
 //---------------------------------------------------------------------------
@@ -151,7 +129,7 @@ SendFileInfo::EndSend()
 {
 	m_Mode = REQUEST_FILE_MODE_AFTER;
 
-	m_FileStream.close();
+	m_File.Close();
 }
 
 //---------------------------------------------------------------------------

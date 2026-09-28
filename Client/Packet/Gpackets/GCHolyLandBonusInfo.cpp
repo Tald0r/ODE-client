@@ -55,7 +55,7 @@ void GCHolyLandBonusInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE ListNum = m_BloodBibleBonusInfoList.size();
+	BYTE ListNum = static_cast<BYTE>(m_BloodBibleBonusInfoList.size());
 	oStream.write( ListNum );
 
 	BloodBibleBonusInfoListConstItor itr = m_BloodBibleBonusInfoList.begin();

@@ -580,7 +580,7 @@ MFakeCreature::SetFakePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			// m_cX = 100 / c
 			int gapX = m_FakeX - m_X;
 			int gapY = m_FakeY - m_Y;
-			float step = actionCountMax;
+			float step = static_cast<float>(actionCountMax);
 			m_FakeCX = gapX*TILE_X / step;
 			m_FakeCY = gapY*TILE_Y / step;
 
@@ -616,8 +616,8 @@ MFakeCreature::UpdateFake()
 				m_FakeSX += m_FakeCX;
 				m_FakeSY += m_FakeCY;
 
-				int sX = m_FakeSX;
-				int sY = m_FakeSY;
+				int sX = static_cast<int>(m_FakeSX);
+				int sY = static_cast<int>(m_FakeSY);
 
 				// 한 타일 좌표를 넘게 이동했으면..
 				if (abs(sX) >= TILE_X || abs(sY) >= TILE_Y)
@@ -637,8 +637,8 @@ MFakeCreature::UpdateFake()
 					sX %= TILE_X;
 					sY %= TILE_Y;
 
-					m_FakeSX = sX;
-					m_FakeSY = sY;
+					m_FakeSX = static_cast<float>(sX);
+					m_FakeSY = static_cast<float>(sY);
 				}
 			}			
 			else
@@ -722,7 +722,7 @@ MFakeCreature::IsFakeEnd()
 				endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 				endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
 				// 화면 밖으로 가믄 없애자..일단..
-				if(!IsInSector(firstSector.x, firstSector.y, endSector.x, endSector.y))
+				if(!IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
 					return true;
 			}
 			break;
@@ -867,7 +867,7 @@ MFakeCreature::KeepTraceCreature()
 					}
 
 					POINT p = CaculatePetPosition(pCreature->GetX(), pCreature->GetY(), 2, minDistance, GetMoveType(), GetX(), GetY());
-					SetNextDestination(p.x, p.y);
+					SetNextDestination(static_cast<TYPE_SECTORPOSITION>(p.x), static_cast<TYPE_SECTORPOSITION>(p.y));
 					SetAction( m_MoveAction );
 				}
 			}
@@ -946,8 +946,8 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 				&& limit-- > 0
 				)
 			{
-				if( GetX() != sX )sX += MovePoint.x;
-				if( GetY() != sY )sY += MovePoint.y;
+				if( GetX() != sX )sX = static_cast<TYPE_SECTORPOSITION>(sX + MovePoint.x);
+				if( GetY() != sY )sY = static_cast<TYPE_SECTORPOSITION>(sY + MovePoint.y);
 				bCanStand = m_pZone->CanMove( m_MoveType, sX,sY );
 			};
 
@@ -1318,7 +1318,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				//-------------------------------------------------------
 				// 갔던 곳이면 안 간다.
 				//-------------------------------------------------------
-				if (g_pZone->IsVisitedFlag(next.x, next.y)) continue;
+				if (g_pZone->IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
 
 				// 한 화면을 넘어가는 경우는 check하지 않는다.				
 				if (next.x<x0 || next.y<y0 
@@ -1327,9 +1327,9 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				//-------------------------------------------------------
 				// 갈 수 있으면 pqueue에 넣는다.
 				//-------------------------------------------------------
-				if (m_pZone->CanMove(m_MoveType, next.x, next.y))
+				if (m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y)))
 				{				
-					g_pZone->SetVisitedFlag(next.x, next.y);
+					g_pZone->SetVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y));
 
 					//-------------------------------------------------------
 					// Node를 만들어서 priority queue에 추가한다.
@@ -2273,7 +2273,7 @@ MFakeCreature::KeepWanderCreature()
 	endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 	endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
 	// 화면 안에 있는 유령 이믄..
-	if(IsInSector(firstSector.x, firstSector.y, endSector.x, endSector.y))
+	if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
 	{
 		NextMove.x = GetX(); NextMove.y = GetY();
 		switch (m_Direction)
@@ -2288,7 +2288,7 @@ MFakeCreature::KeepWanderCreature()
 			case DIRECTION_RIGHT		: NextMove.x++;				break;
 		}
 
-		if(	!m_pZone->CanMove(m_MoveType, NextMove.x,NextMove.y))
+		if(	!m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(NextMove.x),static_cast<TYPE_SECTORPOSITION>(NextMove.y)))
 			m_Direction = (m_Direction + 3 + rand()%3)%8;
 		
 		if( m_Action != ACTION_MOVE )
@@ -2315,25 +2315,25 @@ MFakeCreature::KeepWanderCreature()
 				SetAction(ACTION_STAND);
 				return;
 			}
-			if(IsInSector(firstSector.x-1, firstSector.y, firstSector.x-1, endSector.y))
+			if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x-1), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(firstSector.x-1), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
 			{// 왼쪽 벽
 				m_Direction = 3 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
-			else if(IsInSector(endSector.x+1, firstSector.y, endSector.x+1, endSector.y))
+			else if(IsInSector(static_cast<TYPE_SECTORPOSITION>(endSector.x+1), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(endSector.x+1), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
 			{// 오른쪽 벽
 				m_Direction = (7 + rand()%3)%8;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
-			else if(IsInSector(firstSector.x, firstSector.y-1, endSector.x, firstSector.y-1))
+			else if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y-1), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y-1)))
 			{// 위쪽 벽
 				m_Direction = 1 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
-			else if(IsInSector(firstSector.x, endSector.y+1, endSector.x, endSector.y+1))
+			else if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y+1), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y+1)))
 			{// 아래쪽 벽
 				m_Direction = 5 + rand()%3;
 				m_DirectionMove = m_Direction;
@@ -2439,10 +2439,10 @@ MFakeCreature::KeepWildWolfAttack()
 					POINT TargetPoint = GetNextTileByDirection(m_DestX, m_DestY, TempDir);
 					m_bTraceFlag = true;
 					SetCurrentDirection(TempDir);
-					SetFakeCreatureFastMoveAction(TargetPoint.x, TargetPoint.y, ACTIONINFO_NULL, 0);	
+					SetFakeCreatureFastMoveAction(static_cast<TYPE_SECTORPOSITION>(TargetPoint.x), static_cast<TYPE_SECTORPOSITION>(TargetPoint.y), ACTIONINFO_NULL, 0);	
 					//SetNextDestination(TargetPoint.x, TargetPoint.y);
-					m_DestX = TargetPoint.x;
-					m_DestY = TargetPoint.y;
+					m_DestX = static_cast<TYPE_SECTORPOSITION>(TargetPoint.x);
+					m_DestY = static_cast<TYPE_SECTORPOSITION>(TargetPoint.y);
 					m_WildWolf_Mode ++;
 					m_DirectionMove = TempDir;
 					if( m_Action != ACTION_MOVE )
@@ -2481,11 +2481,11 @@ MFakeCreature::KeepWildWolfAttack()
 						POINT TargetPoint = GetNextTileByDirection(pCreature->GetX(), pCreature->GetY(), TempDir);
 						m_bTraceFlag = true;
 						SetCurrentDirection(TempDir);
-						SetFakeCreatureFastMoveAction(TargetPoint.x, TargetPoint.y, ACTIONINFO_NULL, pCreature->GetID());	
+						SetFakeCreatureFastMoveAction(static_cast<TYPE_SECTORPOSITION>(TargetPoint.x), static_cast<TYPE_SECTORPOSITION>(TargetPoint.y), ACTIONINFO_NULL, pCreature->GetID());	
 						//SetNextDestination(TargetPoint.x, TargetPoint.y);
 						m_WildWolf_Mode ++;
-						m_DestX = TargetPoint.x;
-						m_DestY = TargetPoint.y;
+						m_DestX = static_cast<TYPE_SECTORPOSITION>(TargetPoint.x);
+						m_DestY = static_cast<TYPE_SECTORPOSITION>(TargetPoint.y);
 						m_DirectionMove = TempDir;
 						if( m_Action != ACTION_MOVE )
 							SetAction(ACTION_MOVE);
@@ -2500,11 +2500,11 @@ MFakeCreature::KeepWildWolfAttack()
 						POINT TargetPoint = GetNextTileByDirection(GetX(), GetY(), TempDir );
 						m_bTraceFlag = true;
 						SetCurrentDirection(TempDir);
-						SetFakeCreatureFastMoveAction(TargetPoint.x, TargetPoint.y, ACTIONINFO_NULL, pCreature->GetID());	
+						SetFakeCreatureFastMoveAction(static_cast<TYPE_SECTORPOSITION>(TargetPoint.x), static_cast<TYPE_SECTORPOSITION>(TargetPoint.y), ACTIONINFO_NULL, pCreature->GetID());	
 						//SetNextDestination(TargetPoint.x, TargetPoint.y);
 						m_WildWolf_Mode ++;
-						m_DestX = TargetPoint.x;
-						m_DestY = TargetPoint.y;
+						m_DestX = static_cast<TYPE_SECTORPOSITION>(TargetPoint.x);
+						m_DestY = static_cast<TYPE_SECTORPOSITION>(TargetPoint.y);
 						m_DirectionMove = TempDir;
 						if( m_Action != ACTION_MOVE )
 							SetAction(ACTION_MOVE);

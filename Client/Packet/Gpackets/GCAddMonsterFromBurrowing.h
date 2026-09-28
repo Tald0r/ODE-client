@@ -27,7 +27,7 @@ public:
 	PacketID_t getPacketID () const noexcept { return PACKET_GC_ADD_MONSTER_FROM_BURROWING; }
 	PacketSize_t getPacketSize () const 
 	{ 
-		return szObjectID + // object id
+		return static_cast<PacketSize_t>(szObjectID + // object id
 			szMonsterType + // monster type
 			szBYTE + // monster name length
 			m_MonsterName.size() + // monster name
@@ -37,7 +37,7 @@ public:
 			szCoord + // y coord
 			szDir +  // direction
 			m_pEffectInfo->getSize() + // effects info on monster
-			szHP * 2; // current & max hp
+			szHP * 2); // current & max hp
 	}
 
 	#ifdef __DEBUG_OUTPUT__

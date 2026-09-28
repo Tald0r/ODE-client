@@ -52,7 +52,7 @@ void LCQueryResultCharacterName::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	// write player id
 	//--------------------------------------------------
-	BYTE szCharacterName = m_CharacterName.size();
+	BYTE szCharacterName = static_cast<BYTE>(m_CharacterName.size());
 
 	if ( szCharacterName == 0 )
 		throw InvalidProtocolException("empty CharacterName");
