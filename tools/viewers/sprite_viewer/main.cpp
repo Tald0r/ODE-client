@@ -157,7 +157,7 @@ private:
 
                 case SDLK_RIGHT:
                     // Next sprite
-                    if (static_cast<DWORD>(m_currentIndex) < m_spritePack->GetSize() - 1) {
+                    if (static_cast<DWORD>(m_currentIndex) + 1 < m_spritePack->GetSize()) {
                         m_currentIndex++;
                     }
                     break;
