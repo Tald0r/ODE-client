@@ -6,6 +6,7 @@
 #include "CFilter.h"
 #include "CShadowSprite.h"
 #include "SpriteScanline.h"
+#include <cstring>
 #include <memory>
 #include <vector>
 
@@ -1567,91 +1568,62 @@ CShadowSprite::BltDarknessClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE 
 //----------------------------------------------------------------------
 // ShadowDarkness Copy
 //----------------------------------------------------------------------
-// dest의 pixels개를 s_Value1만큼 어둡게 출력을 한다.
+// Darkens `pixels` pixels at dest in place, each colour channel shifted
+// right by s_Value1 bits. Every pixel of the run is darkened once.
+//
+// A run starts at any pixel, so the one, two and four pixels handled at
+// a time are read and written through memcpy, which assumes no
+// alignment; compilers turn each into a single load or store.
 //----------------------------------------------------------------------
+namespace {
+
+template <typename T>
+inline void
+DarkenPixels(BYTE* pDest, T mask, BYTE shift)
+{
+	T value;
+	std::memcpy(&value, pDest, sizeof(value));
+	value = static_cast<T>((value >> shift) & mask);
+	std::memcpy(pDest, &value, sizeof(value));
+}
+
+}
+
 void	
 CShadowSprite::memcpyShadowDarkness(WORD* pDest, WORD pixels)
 {
-	QWORD	*qpDest		= (QWORD*)pDest;
+	BYTE*	pBytes	= (BYTE*)pDest;
 
-	int j;
+	const int qTimes = pixels >> 2;	// pixels / 4
 
-	BYTE qTimes = pixels >> 2;	// pixels / 4
-
-	// 반투명
+	// The pixels left over from whole groups of four go first: one, two,
+	// or one and then two.
 	switch ( pixels & 0x03 )	// pixels % 4
 	{
-		//------------------
-		// 4점씩
-		//------------------
-		case 0 :			
-			// 네점씩 찍기
-			for (j=0; j<qTimes; j++)
-			{
-				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);				
-
-				qpDest++;				
-			}
-		break;
-
-		//------------------
-		// 1점 + 4점씩
-		//------------------
 		case 1 :
-			// 한점 찍기
-			*(WORD*)qpDest = ((*(WORD*)qpDest >> s_Value1) & ColorDraw::s_wMASK_SHIFT[s_Value1]);
-			
-				
-			qpDest = (QWORD*)((WORD*)qpDest + 1);			
-
-			// 네점씩 찍기
-			for (j=0; j<qTimes; j++)
-			{
-				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);
-
-				qpDest++;				
-			}
-			
+			DarkenPixels<WORD>(pBytes, ColorDraw::s_wMASK_SHIFT[s_Value1], s_Value1);
+			pBytes += sizeof(WORD);
 		break;
 
-		//------------------
-		// 2점 + 4점씩
-		//------------------
 		case 2 :
-			// 두점 찍기
-			*(DWORD*)qpDest = ((*(DWORD*)qpDest >> s_Value1) & ColorDraw::s_dwMASK_SHIFT[s_Value1]);			
-				
-			qpDest = (QWORD*)((DWORD*)qpDest + 1);			
-
-			// 네점씩 찍기
-			for (j=0; j<qTimes; j++)
-			{
-				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);
-
-				qpDest++;				
-			}
+			DarkenPixels<DWORD>(pBytes, ColorDraw::s_dwMASK_SHIFT[s_Value1], s_Value1);
+			pBytes += sizeof(DWORD);
 		break;
 
-		//------------------
-		// 1점 + 2점 + 4점씩
-		//------------------
 		case 3 :
-			// 한점 찍기
-			*(WORD*)qpDest = ((*(WORD*)qpDest >> s_Value1) & ColorDraw::s_wMASK_SHIFT[s_Value1]);	
+			DarkenPixels<WORD>(pBytes, ColorDraw::s_wMASK_SHIFT[s_Value1], s_Value1);
+			pBytes += sizeof(WORD);
 
-			// 두점 찍기
-			*(DWORD*)qpDest = ((*(DWORD*)qpDest >> s_Value1) & ColorDraw::s_dwMASK_SHIFT[s_Value1]);
-				
-			qpDest = (QWORD*)((DWORD*)qpDest + 1);			
-
-			// 네점씩 찍기
-			for (j=0; j<qTimes; j++)
-			{
-				*qpDest = ((*qpDest >> s_Value1) & ColorDraw::s_qwMASK_SHIFT[s_Value1]);
-
-				qpDest++;				
-			}
+			DarkenPixels<DWORD>(pBytes, ColorDraw::s_dwMASK_SHIFT[s_Value1], s_Value1);
+			pBytes += sizeof(DWORD);
 		break;
+	}
+
+	// Four pixels at a time
+	for (int j=0; j<qTimes; j++)
+	{
+		DarkenPixels<uint64_t>(pBytes, ColorDraw::s_qwMASK_SHIFT[s_Value1], s_Value1);
+		pBytes += sizeof(uint64_t);
 	}
 }
 
