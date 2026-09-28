@@ -24,10 +24,10 @@ CanPickupItemToQuickslot(Race race, bool bHasBelt, bool bHasArmsBand,
 	const bool bVampire	= race==RACE_VAMPIRE;
 	const bool bOusters	= race==RACE_OUSTERS;
 
-	return (bHasBelt && bSlayer) || ((bHasArmsBand && bOusters)
+	return ((bHasBelt && bSlayer) || (bHasArmsBand && bOusters))
 		&& bItemCheckBufferNULL
 		&& bTempModeNULL
 		&& ((pItem->IsSlayerItem() && bSlayer) || 
 		(pItem->IsVampireItem() && bVampire) || 
-		(pItem->IsOustersItem() && bOusters)));
+		(pItem->IsOustersItem() && bOusters));
 }
