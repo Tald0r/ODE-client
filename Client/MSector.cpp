@@ -1938,18 +1938,17 @@ MSector::RemoveEffect(TYPE_OBJECTID id)
 bool		
 MSector::RemoveEffect(TYPE_OBJECTID id, MEffect*& pEffect)
 {
-	(void)pEffect;
 	EFFECT_LIST::iterator iEffect = m_listEffect.begin();
 
 	while (iEffect != m_listEffect.end())
 	{
-		MEffect* pEffect = *iEffect;
+		MEffect* pCur = *iEffect;
 
 		// 원하는 id인지 check
-		if (pEffect->GetID()==id)
+		if (pCur->GetID()==id)
 		{
-			// 제거할 Effect를 넘겨준다.
-			pEffect = *iEffect;
+			// Hand the removed effect back to the caller.
+			pEffect = pCur;
 
 			// 제거~
 			m_listEffect.erase( iEffect );
