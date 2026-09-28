@@ -5161,8 +5161,9 @@ void	C_VS_UI_MAILBOX::Show()
 			if(m_pC_scroll_bar->GetScrollPos() >= 0 )
 			{
 				m_overcnt = m_pC_scroll_bar->GetScrollPos();
-				if(static_cast<size_t>(m_overcnt) > m_mail[m_currentTab].size()-m_listCount)
-					m_overcnt = static_cast<int>(m_mail[m_currentTab].size()-m_listCount);
+				const int maxOver = (std::max)(0, static_cast<int>(m_mail[m_currentTab].size()) - m_listCount);
+				if(m_overcnt > maxOver)
+					m_overcnt = maxOver;
 			}
 			
 
@@ -5188,7 +5189,7 @@ void	C_VS_UI_MAILBOX::Show()
 
 			int line = 0;
 
-			for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+			for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex + m_overcnt) < m_mail[m_currentTab].size(); mailIndex++)
 			{
 				if(m_mail[m_currentTab][mailIndex+m_overcnt].show)
 				{
@@ -5213,7 +5214,7 @@ void	C_VS_UI_MAILBOX::Show()
 		int line = 0;
 
 
-		for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+		for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex + m_overcnt) < m_mail[m_currentTab].size(); mailIndex++)
 		{
 			if(m_mail[m_currentTab][mailIndex+m_overcnt].show)
 			{
@@ -5271,7 +5272,7 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 
 			// 범위를 넘어가면 -1
 			int indexSize = 0;
-			for(int mailIndex = 0; static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+			for(size_t mailIndex = static_cast<size_t>(m_overcnt); mailIndex < m_mail[m_currentTab].size(); mailIndex++)
 			{
 				if(m_mail[m_currentTab][mailIndex].show == true)
 					indexSize++;
@@ -5294,13 +5295,13 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 			if(m_focusContents != -1)
 			{
 				int index = 0;
-				for(int mailIndex = 0; static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+				for(size_t mailIndex = static_cast<size_t>(m_overcnt); mailIndex < m_mail[m_currentTab].size(); mailIndex++)
 				{
 					if(m_mail[m_currentTab][mailIndex].show == true)
 					{
 						if(index == m_focusContents)
 						{
-							int ID = m_mail[m_currentTab][mailIndex+m_overcnt].id;
+							int ID = m_mail[m_currentTab][mailIndex].id;
 							ReadMail(m_currentTab, ID);
 							break;
 						}
