@@ -2849,11 +2849,13 @@ MPlayer::KeepTraceCreature()
 	}
 	
 	//-------------------------------------------------------
-	// 추적하는 Creature가 사라졌을 경우 --> 추적 중지
-	// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.
+	// Stop tracing when the traced creature is gone. A player who is not
+	// a vampire cannot follow a character into darkness without
+	// LIGHTNESS, and in zone 3001 neither can a vampire; ghost mode
+	// ignores those limits, but never a creature that no longer exists.
 	//-------------------------------------------------------
-	if ((pCreature==NULL || 
-		(pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+	if (pCreature==NULL ||
+		(((pCreature->IsInDarkness() && !pCreature->IsNPC() && 
 		((!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS)) ||
 		(IsVampire() && g_pZone->GetID() == 3001)))
 		||bTraceTimer
@@ -2862,7 +2864,7 @@ MPlayer::KeepTraceCreature()
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 	{
 		// 추적 중지
 		TraceNULL();
