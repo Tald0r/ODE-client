@@ -33,13 +33,16 @@ extern POINT GetNextTileByDirection(int TileX, int TileY, BYTE Dir);
 #define MoveNextPosition()					\
 											\
 		MovePosition( m_NextX, m_NextY );	\
-		int dir = m_Direction;				\
+		if (m_NextDirection != DIRECTION_NULL)	\
+		{									\
+			int dir = m_Direction;			\
 											\
-		SetAction( m_MoveAction );			\
-		m_Direction = m_NextDirection;		\
-		m_DirectionMove = m_NextDirection;	\
-		ActionMove();						\
-		m_Direction = dir;					\
+			SetAction( m_MoveAction );		\
+			m_Direction = m_NextDirection;	\
+			m_DirectionMove = m_NextDirection;	\
+			ActionMove();					\
+			m_Direction = dir;				\
+		}									\
 											\
 		m_NextX = SECTORPOSITION_NULL;		\
 		m_NextY = SECTORPOSITION_NULL;		\

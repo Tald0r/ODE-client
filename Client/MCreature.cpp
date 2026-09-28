@@ -146,13 +146,16 @@ extern WORD					g_ZoneCreatureColorSet;
 #define MoveNextPosition()					\
 											\
 		MovePosition( m_NextX, m_NextY );	\
-		int dir = m_Direction;				\
+		if (m_NextDirection != DIRECTION_NULL)	\
+		{									\
+			int dir = m_Direction;			\
 											\
-		SetAction( m_MoveAction );			\
-		m_Direction = m_NextDirection;		\
-		m_DirectionMove = m_NextDirection;	\
-		ActionMove();						\
-		m_Direction = dir;					\
+			SetAction( m_MoveAction );		\
+			m_Direction = m_NextDirection;	\
+			m_DirectionMove = m_NextDirection;	\
+			ActionMove();					\
+			m_Direction = dir;				\
+		}									\
 											\
 		m_NextX = SECTORPOSITION_NULL;		\
 		m_NextY = SECTORPOSITION_NULL;		\
@@ -8060,8 +8063,11 @@ MCreature::AffectMoveBuffer()
 		
 		// 이전 정보를 바로 update시킨다.
 		MovePosition(m_NextX, m_NextY);
-		m_Direction = m_NextDirection;
-		m_DirectionMove = m_NextDirection;
+		if (m_NextDirection != DIRECTION_NULL)
+		{
+			m_Direction = m_NextDirection;
+			m_DirectionMove = m_NextDirection;
+		}
 
 		// (m_X, m_Y)에서 m_CurrentDirection으로 이동시킨다.
 		SetNextAction( m_MoveAction );
