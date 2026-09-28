@@ -17056,7 +17056,7 @@ MTopView::DrawItemBroken(int x, int y)
 		}
 		break;
 	default:
-		break;
+		return;	// no gear for a non-player race (RACE_MAX)
 	}
 
 	//----------------------------------------------------------------
