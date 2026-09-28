@@ -18289,7 +18289,7 @@ bool C_VS_UI_INVENTORY_SUB::MouseControl(UINT message, int _x, int _y)
 				//					break; // escape 'for'
 			}
 		}
-		if(m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED)
+		if(gpC_Imm != NULL && (m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED))
 			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		m_focus_grid_x = NOT_SELECTED;
 		m_focus_grid_y = NOT_SELECTED;

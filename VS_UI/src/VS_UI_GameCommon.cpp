@@ -2913,7 +2913,8 @@ bool C_VS_UI_GEAR::MouseControl(UINT message, int _x, int _y)
 					if(m_focus_slot != i)
 					{
 						m_focus_slot = i;
-						gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
+						if(gpC_Imm != NULL)
+							gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 					}
 					
 					p_selected_item = gC_vs_ui.GetGearItem(m_focus_slot);
@@ -2968,7 +2969,8 @@ bool C_VS_UI_GEAR::MouseControl(UINT message, int _x, int _y)
 		if(m_focus_slot != NOT_SELECTED)
 		{
 			m_focus_slot = NOT_SELECTED;
-			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
+			if(gpC_Imm != NULL)
+				gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		}
 		break;
 		
@@ -8361,7 +8363,7 @@ bool C_VS_UI_INVENTORY::MouseControl(UINT message, int _x, int _y)
 				//					break; // escape 'for'
 			}
 		}
-		if(m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED)
+		if(gpC_Imm != NULL && (m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED))
 			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		m_focus_grid_x = NOT_SELECTED;
 		m_focus_grid_y = NOT_SELECTED;
@@ -9789,7 +9791,8 @@ bool C_VS_UI_SKILL::MouseControl(UINT message, int _x, int _y)
 			
 			if(m_focused_slot != focused_slot)
 			{
-				gpC_Imm->ForceUI(CImm::FORCE_UI_WINDOW);
+				if(gpC_Imm != NULL)
+					gpC_Imm->ForceUI(CImm::FORCE_UI_WINDOW);
 				m_focused_slot = focused_slot;
 			}
 			
