@@ -41,7 +41,7 @@ public:
 	
 public:
 	BYTE getCode(void) const noexcept { return m_Code;}
-	void setCode(WORD code) noexcept { m_Code = static_cast<BYTE>(code);}
+	void setCode(BYTE code) noexcept { m_Code = code; }
 
 	const std::string& getName(void) const noexcept { return m_Name;}
 	void setName(const char* Name) { m_Name = Name;}
