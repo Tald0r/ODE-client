@@ -109,15 +109,21 @@ void GCWarScheduleList::write (SocketOutputStream & oStream) const
 			for ( int i=0; i<5; ++i )
 			{
 				oStream.write( (*itr)->challengerGuildID[i] );
-				BYTE szGuildName = static_cast<BYTE>((*itr)->challengerGuildName[i].size());
+				// A guild name is 0..16 bytes, the server's bound; it is
+				// checked on the std::string, before the narrowing.
+				if ( (*itr)->challengerGuildName[i].size() > 16 )
+					throw InvalidProtocolException("too large guild name length");
+				const BYTE szGuildName = static_cast<BYTE>((*itr)->challengerGuildName[i].size());
 				oStream.write( szGuildName );
-				oStream.write( (*itr)->challengerGuildName[i] );
+				oStream.write( std::span<const char>( (*itr)->challengerGuildName[i].data(), szGuildName ) );
 			}
 
 			oStream.write( (*itr)->reinforceGuildID );
-			BYTE szGuildName = static_cast<BYTE>((*itr)->reinforceGuildName.size());
+			if ( (*itr)->reinforceGuildName.size() > 16 )
+				throw InvalidProtocolException("too large guild name length");
+			const BYTE szGuildName = static_cast<BYTE>((*itr)->reinforceGuildName.size());
 			oStream.write( szGuildName );
-			oStream.write( (*itr)->reinforceGuildName );
+			oStream.write( std::span<const char>( (*itr)->reinforceGuildName.data(), szGuildName ) );
 		}
 	}
 	__END_CATCH

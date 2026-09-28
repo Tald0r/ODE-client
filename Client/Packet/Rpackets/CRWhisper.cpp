@@ -132,30 +132,33 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 		throw InvalidProtocolException("invalid race");
 
 	// Name
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_Name.size() > 10 )
+		throw InvalidProtocolException("too large name length");
+
 	BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
 
-	if ( szName > 10 )
-		throw InvalidProtocolException("too large name length");
-
 	oStream.write( szName );
 
-	oStream.write( m_Name );
+	oStream.write( std::span<const char>( m_Name.data(), szName ) );
 
 	// TargetName
+	if ( m_TargetName.size() > 10 )
+		throw InvalidProtocolException("too large name length");
+
 	szName = static_cast<BYTE>(m_TargetName.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
 
-	if ( szName > 10 )
-		throw InvalidProtocolException("too large name length");
-
 	oStream.write( szName );
 
-	oStream.write( m_TargetName );
+	oStream.write( std::span<const char>( m_TargetName.data(), szName ) );
 		
 	// message
 	BYTE numMessage = static_cast<BYTE>(m_Messages.size());
@@ -168,17 +171,17 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 	{
 		WHISPER_MESSAGE* pString = *iString;
 
-		BYTE szMessage = static_cast<BYTE>(pString->msg.size());
+		if ( pString->msg.size() > 128 )
+			throw InvalidProtocolException("too large message length");
+
+		const BYTE szMessage = static_cast<BYTE>(pString->msg.size());
 
 		if ( szMessage == 0 )
 			throw InvalidProtocolException("szMessage == 0");
 
-		if ( szMessage > 128 )
-			throw InvalidProtocolException("too large message length");
-
 		oStream.write( szMessage );
 
-		oStream.write( pString->msg );
+		oStream.write( std::span<const char>( pString->msg.data(), szMessage ) );
 
 		oStream.write( pString->color );
 

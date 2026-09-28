@@ -57,17 +57,20 @@ void GLIncomingConnectionOK::write ( Datagram & oDatagram ) const
 	//--------------------------------------------------
 	// write Player ID
 	//--------------------------------------------------
-	BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_PlayerID.size() > 20 )
+		throw InvalidProtocolException("too long playerID size");
+
+	const BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
 
 	if ( szPlayerID == 0 )
 		throw InvalidProtocolException("szPlayerID == 0");
 
-	if ( szPlayerID > 20 )
-		throw InvalidProtocolException("too long playerID size");
-
 	oDatagram.write( szPlayerID );
 
-	oDatagram.write( m_PlayerID );
+	oDatagram.write( std::span<const char>( m_PlayerID.data(), szPlayerID ) );
 
 	//--------------------------------------------------
 	// write TCP Port

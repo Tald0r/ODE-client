@@ -61,32 +61,35 @@ void GLIncomingConnectionError::write ( Datagram & oDatagram ) const
 
 	//--------------------------------------------------
 	//--------------------------------------------------
-	BYTE szMessage = static_cast<BYTE>(m_Message.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_Message.size() >= 80 )
+		throw InvalidProtocolException("too large message length");
+
+	const BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 ) 
 		throw InvalidProtocolException("szMessage == 0");
 
-	if ( szMessage >= 80 )
-		throw InvalidProtocolException("too large message length");
-
 	oDatagram.write( szMessage );
 
-	oDatagram.write( m_Message );
+	oDatagram.write( std::span<const char>( m_Message.data(), szMessage ) );
 
 
 	//--------------------------------------------------
 	//--------------------------------------------------
-	BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
+	if ( m_PlayerID.size() >= 80 )
+		throw InvalidProtocolException("too large playerID length");
+
+	const BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
 
 	if ( szPlayerID == 0 ) 
 		throw InvalidProtocolException("szPlayerID == 0");
 
-	if ( szPlayerID >= 80 )
-		throw InvalidProtocolException("too large playerID length");
-
 	oDatagram.write( szPlayerID );
 
-	oDatagram.write( m_PlayerID );
+	oDatagram.write( std::span<const char>( m_PlayerID.data(), szPlayerID ) );
 
 	__END_CATCH
 }

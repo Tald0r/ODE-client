@@ -57,31 +57,34 @@ void GCWhisper::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 
-	BYTE szName = static_cast<BYTE>(m_Name.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_Name.size() > 10 )
+		throw InvalidProtocolException("too large name length");
+
+	const BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
 
-	if ( szName > 10 )
-		throw InvalidProtocolException("too large name length");
-
 	oStream.write( szName );
 
-	oStream.write( m_Name );
+	oStream.write( std::span<const char>( m_Name.data(), szName ) );
 
 	oStream.write( m_Color );
 		
-	BYTE szMessage = static_cast<BYTE>(m_Message.size());
+	if ( m_Message.size() > 128 )
+		throw InvalidProtocolException("too large message length");
+
+	const BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");
 
-	if ( szMessage > 128 )
-		throw InvalidProtocolException("too large message length");
-
 	oStream.write( szMessage );
 
-	oStream.write( m_Message );
+	oStream.write( std::span<const char>( m_Message.data(), szMessage ) );
 
 	oStream.write( m_Race );
 

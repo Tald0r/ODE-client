@@ -73,16 +73,19 @@ void CRRequest::write ( SocketOutputStream & oStream )
 	oStream.write( code);
 
 	
-	BYTE num = static_cast<BYTE>(m_RequestName.size());
-	
-	if (num > 20)
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if (m_RequestName.size() > 20)
 		throw InvalidProtocolException("szRequestName>20");
+
+	const BYTE num = static_cast<BYTE>(m_RequestName.size());
 
 	oStream.write( num );
 
 	if (num > 0)
 	{
-		oStream.write( m_RequestName );	
+		oStream.write( std::span<const char>( m_RequestName.data(), num ) );
 	}
 
 	

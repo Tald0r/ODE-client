@@ -66,15 +66,21 @@ void RCRequestedFileInfo::write ( SocketOutputStream & oStream ) const
 	// m_Version
 	oStream.write( m_Version );
 
-	// m_Filename
-	BYTE szFilename = static_cast<BYTE>(m_Filename.size());
+	// m_Filename: 1..255 bytes, all a length byte can say and what
+	// getPacketMaxSize() budgets. The cap runs on the std::string's own
+	// size, before the narrowing: 257 bytes narrow to 1, and a check on
+	// the BYTE would pass the whole name behind that length byte.
+	if ( m_Filename.size() > 255 )
+		throw InvalidProtocolException("too large Filename length");
+
+	const BYTE szFilename = static_cast<BYTE>(m_Filename.size());
 
 	if ( szFilename == 0 )
 		throw InvalidProtocolException("szFilename == 0");
 
 	oStream.write( szFilename );
 
-	oStream.write( m_Filename );
+	oStream.write( std::span<const char>( m_Filename.data(), szFilename ) );
 		
 	// m_FileSize
 	oStream.write( m_FileSize );
