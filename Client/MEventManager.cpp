@@ -176,7 +176,7 @@ int			MEventManager::GetEventCountByFlag(DWORD flag)
 
 	while(itr != m_Events.end())
 	{
-		if(itr->second.eventFlag | flag)
+		if(itr->second.eventFlag & flag)
 		{
 			count++;
 		}
@@ -196,7 +196,7 @@ bool			MEventManager::IsEmptyEventByFlag(DWORD flag)
 
 	while(itr != m_Events.end())
 	{
-		if(itr->second.eventFlag | flag)
+		if(itr->second.eventFlag & flag)
 		{
 			return false;
 		}
