@@ -47,7 +47,8 @@ public:
 			+ szGuildMemberRank			// guild member rank
 			+ szBYTE					// 권한
 			+ szuint
-			+ szLevel);
+			+ szLevel
+			+ szExp);
 	}
 
 	static uint getMaxSize () noexcept
@@ -74,7 +75,8 @@ public:
 			+ szGuildMemberRank +		// guild member rank
 			+ szBYTE					// 권한
 			+ szuint
-			+ szLevel;
+			+ szLevel
+			+ szExp;
 	}
 #ifdef __DEBUG_OUTPUT__
 	string toString () const;
