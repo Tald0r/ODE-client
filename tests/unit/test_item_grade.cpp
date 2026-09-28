@@ -204,11 +204,11 @@ Shown	Expected(const ClientRule& rule, const Row& row, int grade)
 
 	Shown shown;
 	shown.maxDurability = (int)decore::maxDurabilityBase((unsigned)row.durability, rule.hasDurability, offsets.durability);
-	shown.minDamage = weapon ? std::max(1, row.minDamage + offsets.damage) : -1;
-	shown.maxDamage = weapon ? std::max(1, row.maxDamage + offsets.damage) : -1;
-	shown.critical = weapon ? std::max(0, row.critical + offsets.critical) : -1;
-	shown.defense = armor ? std::max(0, row.defense + offsets.defense) : row.defense;
-	shown.protection = armor ? std::max(0, row.protection + offsets.protection) : row.protection;
+	shown.minDamage = weapon ? (std::max)(1, row.minDamage + offsets.damage) : -1;
+	shown.maxDamage = weapon ? (std::max)(1, row.maxDamage + offsets.damage) : -1;
+	shown.critical = weapon ? (std::max)(0, row.critical + offsets.critical) : -1;
+	shown.defense = armor ? (std::max)(0, row.defense + offsets.defense) : row.defense;
+	shown.protection = armor ? (std::max)(0, row.protection + offsets.protection) : row.protection;
 	shown.luck = rule.policy == decore::GradePolicy::Accessory ? offsets.luck : -9999;
 	return shown;
 }
@@ -284,7 +284,7 @@ TEST(ItemGrade, TheBloodBibleSignKeepsTheGearRule)
 
 			const Row& row = kRows[type];
 			CheckShown("BloodBibleSign", type, grade, "max durability",
-				std::max(1000, row.durability + (grade - 4) * 1000), sign.GetMaxDurability());
+				(std::max)(1000, row.durability + (grade - 4) * 1000), sign.GetMaxDurability());
 			CheckShown("BloodBibleSign", type, grade, "min damage", -1, sign.GetMinDamage());
 			CheckShown("BloodBibleSign", type, grade, "critical", -1, sign.GetCriticalHit());
 			CheckShown("BloodBibleSign", type, grade, "defense", row.defense, sign.GetDefenseValue());
