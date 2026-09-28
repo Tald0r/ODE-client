@@ -1583,7 +1583,7 @@ void	MEventTreeItem::UseInventory()
 						MCorpse *pCorpse = (MCorpse *)pItem;
 						pCreature = pCorpse->GetCreature();
 						
-						if((pCreature != NULL && pCreature->GetCreatureType() == 482) || pCreature->GetCreatureType() == 650)
+						if(pCreature != NULL && (pCreature->GetCreatureType() == 482 || pCreature->GetCreatureType() == 650))
 						{
 							bUseOK = false;
 							if(GetItemType() == 12)	// 크리스 마스 트리
