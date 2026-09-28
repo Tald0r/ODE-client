@@ -160,7 +160,11 @@ void CRWhisper::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( std::span<const char>( m_TargetName.data(), szName ) );
 		
-	// message
+	// message: at most 255, all a count byte can say. The count is
+	// checked on the list's own size, before the narrowing.
+	if ( m_Messages.size() > 255 )
+		throw InvalidProtocolException("too many whisper messages");
+
 	BYTE numMessage = static_cast<BYTE>(m_Messages.size());
 
 	oStream.write( numMessage );

@@ -91,6 +91,12 @@ void GCWarScheduleList::write (SocketOutputStream & oStream) const
 	__BEGIN_TRY
 
 
+	// At most MAX_WAR_NUM entries, what getPacketMaxSize() budgets. The
+	// count is checked on the list's own size, before the narrowing to
+	// the BYTE that goes on the wire.
+	if ( m_WarScheduleList.size() > MAX_WAR_NUM )
+		throw InvalidProtocolException("too many war schedules");
+
 	BYTE ListNum = static_cast<BYTE>(m_WarScheduleList.size());
 		
 	oStream.write( ListNum );

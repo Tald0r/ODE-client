@@ -75,6 +75,12 @@ void LCServerList::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_CurrentServerGroupID );
 
+	// At most 37 groups, what ServerGroupInfo::getMaxSize() budgets.
+	// The count is checked on the list's own size, before the narrowing
+	// to the BYTE that goes on the wire.
+	if ( m_ServerGroupInfoList.size() > 37 )
+		throw InvalidProtocolException("too many server groups");
+
 	BYTE ListNum = static_cast<BYTE>(m_ServerGroupInfoList.size());
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( ListNum );

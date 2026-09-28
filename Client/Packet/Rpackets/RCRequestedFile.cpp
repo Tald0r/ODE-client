@@ -178,6 +178,12 @@ RCRequestedFile::read ( SocketInputStream & iStream )
 void 
 RCRequestedFile::write ( SocketOutputStream & oStream ) const
 {
+	// One file info at most: getPacketMaxSize() budgets exactly one, and
+	// RequestSendInfo::MakeRCRequestedFilePacket adds only one. The count
+	// is checked on the list's own size, before the narrowing.
+	if ( m_FileInfos.size() > 1 )
+		throw InvalidProtocolException("too many file infos");
+
 	BYTE listNum = static_cast<BYTE>(m_FileInfos.size());
 
 	oStream.write( listNum );
