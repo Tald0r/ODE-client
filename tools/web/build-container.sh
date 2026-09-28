@@ -12,6 +12,6 @@ emcmake cmake -S /work/source -B /work/build-wasm \
 # one parallel build each run their own sub-make, and those raced on the
 # iconv external project's configure step in a fresh tree. WEB_BUILD_TARGETS
 # narrows the set; the container image builds only the game.
-for target in ${WEB_BUILD_TARGETS:-DarkEden web_sprite_tests transport_tests}; do
+for target in ${WEB_BUILD_TARGETS:-DarkEden web_sprite_tests transport_tests decore_tests}; do
     cmake --build /work/build-wasm --target "$target" -j "${WEB_BUILD_JOBS:-8}"
 done

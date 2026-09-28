@@ -33,6 +33,9 @@ int		s_BasicStatSum = 0;
 bool	s_PotionHalf = false;
 bool	s_GambleHalf = false;
 int		s_TaxPercent = 100;
+TYPE_OBJECTID	s_GivenAwayID = 0;	// the one item the game gave away; 0 for none
+bool	s_PayPlaying = true;
+int		s_PotionPriceRatio = 0;
 
 int		Race()				{ return s_Race; }
 int		Level()				{ return s_Level; }
@@ -41,8 +44,22 @@ int		BasicStatSum()		{ return s_BasicStatSum; }
 bool	IsPotionHalfPrice()	{ return s_PotionHalf; }
 bool	IsGambleHalfPrice()	{ return s_GambleHalf; }
 DWORD	ShopTaxPercent()	{ return (DWORD)s_TaxPercent; }
+bool	IsCreateTypeGame(const MItem* pItem)	{ return s_GivenAwayID != 0 && pItem->GetID() == s_GivenAwayID; }
+bool	IsPayPlaying()		{ return s_PayPlaying; }
+int		PotionPriceRatio()	{ return s_PotionPriceRatio; }
 
-const MPriceHost	s_Host = { Race, Level, StatSum, BasicStatSum, IsPotionHalfPrice, IsGambleHalfPrice, ShopTaxPercent };
+const MPriceHost	s_Host = {
+	.Race				= Race,
+	.Level				= Level,
+	.StatSum			= StatSum,
+	.BasicStatSum		= BasicStatSum,
+	.IsPotionHalfPrice	= IsPotionHalfPrice,
+	.IsGambleHalfPrice	= IsGambleHalfPrice,
+	.ShopTaxPercent		= ShopTaxPercent,
+	.IsCreateTypeGame	= IsCreateTypeGame,
+	.IsPayPlaying		= IsPayPlaying,
+	.PotionPriceRatio	= PotionPriceRatio,
+};
 
 const char* const	kTempFile = "price_manager_test.bin";
 
@@ -81,6 +98,9 @@ struct PriceWorld : GameModelWorld
 		s_PotionHalf = false;
 		s_GambleHalf = false;
 		s_TaxPercent = 100;
+		s_GivenAwayID = 0;
+		s_PayPlaying = true;
+		s_PotionPriceRatio = 0;
 
 		g_pItemTable->InitClass(ITEM_CLASS_SWORD, 2);
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SWORD, 0).Price = 1000;
@@ -102,6 +122,8 @@ struct PriceWorld : GameModelWorld
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_PORTAL_ITEM, 0).Price = 500;
 		g_pItemTable->InitClass(ITEM_CLASS_BLOOD_BIBLE_SIGN, 1);
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_BLOOD_BIBLE_SIGN, 0).Price = 500;
+		g_pItemTable->InitClass(ITEM_CLASS_SLAYER_PORTAL_ITEM, 1);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SLAYER_PORTAL_ITEM, 0).Price = 1000;
 		g_pItemTable->InitClass(ITEM_CLASS_OUSTERS_SUMMON_ITEM, 1);
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_OUSTERS_SUMMON_ITEM, 0).Price = 1000;
 		// Blades: 4200 and 6000, so the class average is 5100 -> 500 in hundreds.
@@ -286,6 +308,43 @@ TEST(PriceManager, RepairCostsATenthOfTheDamageAndSomeItemsAreNeverRepaired)
 }
 
 //----------------------------------------------------------------------
+// A repair quote is the server's repair price (decore::repairPrice,
+// PriceManager::getRepairPrice) and nothing else: none of the buy and
+// sell adjustments, and no early return that only a buy or sell has.
+//----------------------------------------------------------------------
+TEST(PriceManager, RepairQuotesAreTheServersRepairPriceAlone)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	// A worn potion as a weak slayer under the half price, and a worn
+	// skull as a vampire at a 40% head price: the server charges a
+	// tenth of the wear, 5 and 20, with no discount, share or rate.
+	Gear potion(ITEM_CLASS_POTION, 100, 50);
+	Gear skull(ITEM_CLASS_SKULL, 100, 50);
+	s_Race = RACE_SLAYER;
+	s_StatSum = 40;
+	s_PotionHalf = true;
+	CHECK_EQ(5, prices.GetItemPrice(&potion, MPriceManager::REPAIR));
+	s_Race = RACE_VAMPIRE;
+	g_pUserInformation->HeadPrice = 40;
+	CHECK_EQ(20, prices.GetItemPrice(&skull, MPriceManager::REPAIR));
+
+	// A maximum durability of 0 is "no durability" to the server, and
+	// repairing such an item costs 1 even at 0 of 0 (repair_price.tsv,
+	// no-durability-costs-1).
+	Gear zero(ITEM_CLASS_SWORD, 0, 0);
+	CHECK_EQ(1, prices.GetItemPrice(&zero, MPriceManager::REPAIR));
+
+	// The crown moon card's price is a buy and sell price; a moon card
+	// has no durability, so there is nothing to repair.
+	Item crown(ITEM_CLASS_MOON_CARD, 4);
+	prices.SetEventItemPrice(777);
+	CHECK_EQ(777, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(0, prices.GetItemPrice(&crown, MPriceManager::REPAIR));
+}
+
+//----------------------------------------------------------------------
 // Charges
 //----------------------------------------------------------------------
 TEST(PriceManager, ChargedItemsPriceEveryChargeAndRepairRefillsThem)
@@ -293,8 +352,10 @@ TEST(PriceManager, ChargedItemsPriceEveryChargeAndRepairRefillsThem)
 	PriceWorld world;
 	MPriceManager prices;
 
-	// 1000 for the item and 5000 a charge, three of ten held.
-	Charged charged(ITEM_CLASS_SWORD, 3);
+	// A slayer portal: 1000 for the item and 5000 a charge, three of ten
+	// held. (The server charges for charges only on the two portals and
+	// the Ousters summon item, the classes the client makes charged.)
+	Charged charged(ITEM_CLASS_SLAYER_PORTAL_ITEM, 3);
 	CHECK_EQ(16000, prices.GetItemPrice(&charged, MPriceManager::NPC_TO_PC));
 	CHECK_EQ(4000, prices.GetItemPrice(&charged, MPriceManager::PC_TO_NPC));
 	CHECK_EQ(35000, prices.GetItemPrice(&charged, MPriceManager::REPAIR));
@@ -395,17 +456,154 @@ TEST(PriceManager, TheHostShapesPotionSkullAndTaxedPrices)
 
 	// A skull (400 at the 25% buying rate: 100) is worth half to a
 	// vampire and three quarters to an Ousters, then the server's
-	// head-price rate applies.
+	// head-price bonus applies, in whole multiples: at 200% twice.
 	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	s_Race = RACE_VAMPIRE;
 	CHECK_EQ(50, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	s_Race = RACE_OUSTERS;
 	CHECK_EQ(75, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
-	g_pUserInformation->HeadPrice = 40;
-	CHECK_EQ(30, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	g_pUserInformation->HeadPrice = 200;
+	CHECK_EQ(150, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	s_Race = RACE_SLAYER;
-	CHECK_EQ(40, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(200, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));	// the rate is for skulls only
+}
+
+//----------------------------------------------------------------------
+// The skull's race share is taken from the untruncated price, and the
+// quote is floored at 1 after it (decore::itemPrice,
+// PriceManager::getPrice steps 8 and 11)
+//----------------------------------------------------------------------
+TEST(PriceManager, TheSkullRaceShareIsTakenBeforeTruncatingAndNeverSellsForNothing)
+{
+	PriceWorld world;
+	MPriceManager prices;
+	Item skull(ITEM_CLASS_SKULL);
+
+	// 22 at the 25% buying rate is 5.5. An Ousters gets three quarters
+	// of that, 4.125: the server pays 4, not 3 from a truncated 5.
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SKULL, 0).Price = 22;
+	s_Race = RACE_OUSTERS;
+	CHECK_EQ(4, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// 5 at 25% is 1.25, and a vampire's half of it is 0.625: the server
+	// pays 1, since nothing sells for less.
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SKULL, 0).Price = 5;
+	s_Race = RACE_VAMPIRE;
+	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	s_Race = RACE_OUSTERS;
+	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// A slayer gets the whole price (price.tsv, slayer-skull-full).
+	s_Race = RACE_SLAYER;
+	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
+// The head price is a percentage the server divides by 100 in integers
+// before it multiplies (decore::skullSellTotal, the shop sell handler)
+//----------------------------------------------------------------------
+TEST(PriceManager, TheHeadPriceBonusPaysWholeMultiplesOnly)
+{
+	PriceWorld world;
+	MPriceManager prices;
+	Item skull(ITEM_CLASS_SKULL);
+	s_Race = RACE_SLAYER;
+
+	// 400 at the 25% buying rate is 100.
+	g_pUserInformation->HeadPrice = 100;
+	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// price.tsv, head-bonus-150-pays-x1 and head-bonus-299-pays-x2.
+	g_pUserInformation->HeadPrice = 150;
+	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	g_pUserInformation->HeadPrice = 299;
+	CHECK_EQ(200, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// head-bonus-99-pays-nothing: below 100% a skull sells for 0.
+	g_pUserInformation->HeadPrice = 99;
+	CHECK_EQ(0, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// Only a skull: a sword keeps its price.
+	Item sword(ITEM_CLASS_SWORD);
+	CHECK_EQ(250, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
+// A time-limited item is bought and sold for 50, whatever it is
+// (decore::itemPrice, PriceManager::getPrice's second rule); the client
+// knows one through the timed-item register
+//----------------------------------------------------------------------
+TEST(PriceManager, ATimeLimitedItemIsPricedAt50)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	Gear sword(ITEM_CLASS_SWORD, 100, 50, 77);
+	Item crown(ITEM_CLASS_MOON_CARD, 4, 78);
+	Charged portal(ITEM_CLASS_SLAYER_PORTAL_ITEM, 3);
+	portal.SetID(79);
+	prices.SetEventItemPrice(777);
+
+	// Registered nowhere: the ordinary prices.
+	CHECK_EQ(125, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(777, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(4000, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+
+	// price.tsv, time-limited-sells-for-50 and time-limited-before-crown:
+	// the rule comes before the wear, the rate, the crown price and the
+	// charges.
+	g_pTimeItemManager->AddTimeItem(77, 60);
+	g_pTimeItemManager->AddTimeItem(78, 60);
+	g_pTimeItemManager->AddTimeItem(79, 60);
+	CHECK_EQ(50, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(50, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(50, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(50, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
+// The inputs the server never sends come through the host, and without
+// one they are the documented defaults: not given away, paying, no
+// Blood Bible percentage
+//----------------------------------------------------------------------
+TEST(PriceManager, TheServerOnlyInputsComeThroughTheHost)
+{
+	PriceWorld world;
+	MPriceManager prices;
+	Item potion(ITEM_CLASS_POTION, 1, 5);
+	Item sword(ITEM_CLASS_SWORD, 0, 6);
+	Charged portal(ITEM_CLASS_SLAYER_PORTAL_ITEM, 3);
+	portal.SetID(7);
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_POTION, 1).Price = 1000;
+
+	// Given away: price.tsv, create-type-game-sells-for-1, ahead of the
+	// charges; another item is not.
+	s_GivenAwayID = 6;
+	CHECK_EQ(1, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1000, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	s_GivenAwayID = 7;
+	CHECK_EQ(1, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+	s_GivenAwayID = 0;
+
+	// The half price is for a player who pays: premium-half-potion.
+	s_PotionHalf = true;
+	CHECK_EQ(500, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	s_PayPlaying = false;
+	CHECK_EQ(1000, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	s_PotionHalf = false;
+	s_PayPlaying = true;
+
+	// blood-bible-potion-minus-10 and blood-bible-not-on-sword.
+	s_PotionPriceRatio = -10;
+	CHECK_EQ(900, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+
+	// Without a host nothing is given away and there is no Blood Bible.
+	s_GivenAwayID = 6;
+	MPriceManager::SetHost(NULL);
+	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1000, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
 }
 
 //----------------------------------------------------------------------

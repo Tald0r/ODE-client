@@ -13,7 +13,119 @@
 #include "MTimeItemManager.h"
 #include "RaceType.h"
 
+#include "domain/ItemPrice.h"
+
+#include <vector>
+
 #define CHARGE_PRICE		5000
+
+//-----------------------------------------------------------------------------
+// The price rule is the server's (decore, third_party/decore/README.md),
+// and it branches on the wire item-class ids: they must be this client's.
+//-----------------------------------------------------------------------------
+static_assert(decore::itemclass::Potion == ITEM_CLASS_POTION);
+static_assert(decore::itemclass::Skull == ITEM_CLASS_SKULL);
+static_assert(decore::itemclass::Serum == ITEM_CLASS_SERUM);
+static_assert(decore::itemclass::SlayerPortalItem == ITEM_CLASS_SLAYER_PORTAL_ITEM);
+static_assert(decore::itemclass::VampirePortalItem == ITEM_CLASS_VAMPIRE_PORTAL_ITEM);
+static_assert(decore::itemclass::Larva == ITEM_CLASS_LARVA);
+static_assert(decore::itemclass::Pupa == ITEM_CLASS_PUPA);
+static_assert(decore::itemclass::ComposMei == ITEM_CLASS_COMPOS_MEI);
+static_assert(decore::itemclass::OustersSummonItem == ITEM_CLASS_OUSTERS_SUMMON_ITEM);
+static_assert(decore::itemclass::MoonCard == ITEM_CLASS_MOON_CARD);
+
+namespace {
+
+//-----------------------------------------------------------------------------
+// What the price rule reads off the item: its class and type, the
+// table price, the grade it is priced by, each option's price
+// multiplier (kept in multipliers, which the input points into) and
+// its durability. maxDurability is the one the caller settled on;
+// every other field is left for the caller: 0, false, no race.
+//-----------------------------------------------------------------------------
+decore::ItemPriceInput
+GatherPriceInput(const MItem* pItem, int maxDurability, std::vector<int>& multipliers)
+{
+	decore::ItemPriceInput input = {};
+	input.itemClass = (int)pItem->GetItemClass();
+	input.itemType = (int)pItem->GetItemType();
+	input.basePrice = (unsigned)(*g_pItemTable)[pItem->GetItemClass()][pItem->GetItemType()].Price;
+	input.grade = pItem->GetPriceGrade();
+
+	const std::list<TYPE_ITEM_OPTION>& optionList = pItem->GetItemOptionList();
+	std::list<TYPE_ITEM_OPTION>::const_iterator itr = optionList.begin();
+	while (itr != optionList.end())
+	{
+		multipliers.push_back((*g_pItemOptionTable)[*itr].PriceMultiplier);
+		itr++;
+	}
+	input.optionPriceMultipliers = multipliers.data();
+	input.optionCount = (int)multipliers.size();
+
+	input.curDurability = (unsigned)pItem->GetCurrentDurability();
+	input.maxDurability = (unsigned)maxDurability;
+	input.race = decore::PriceRace::None;
+	return input;
+}
+
+//-----------------------------------------------------------------------------
+// The price rule's race for RaceType.h's race, or the host's -1.
+//-----------------------------------------------------------------------------
+decore::PriceRace
+PriceRaceOf(int race)
+{
+	switch (race)
+	{
+		case RACE_SLAYER :	return decore::PriceRace::Slayer;
+		case RACE_VAMPIRE :	return decore::PriceRace::Vampire;
+		case RACE_OUSTERS :	return decore::PriceRace::Ousters;
+	}
+	return decore::PriceRace::None;
+}
+
+//-----------------------------------------------------------------------------
+// What repairing the item costs: the server's repair price
+// (decore::repairPrice, PriceManager::getRepairPrice), with none of the
+// buy and sell adjustments. A charged item is charged for the charges
+// it lacks; anything else for a tenth of what the wear took.
+//-----------------------------------------------------------------------------
+int
+RepairPrice(const MItem* pItem)
+{
+	// A vampire portal, a timed item and a blood bible sign are never
+	// repaired.
+	if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
+		|| (g_pTimeItemManager != NULL && g_pTimeItemManager->IsExist( pItem->GetID() ))
+		|| pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE_SIGN)
+	{
+		return 0;
+	}
+
+	// An item whose class has no durability (MItem's -1) is not
+	// repaired, unless it holds charges.
+	int maxDurability = pItem->GetMaxDurability();
+	if (maxDurability < 0)
+	{
+		if (!pItem->IsChargeItem())
+		{
+			return 0;
+		}
+		maxDurability = 0;
+	}
+
+	std::vector<int> multipliers;
+	decore::ItemPriceInput input = GatherPriceInput(pItem, maxDurability, multipliers);
+
+	if (pItem->IsChargeItem())
+	{
+		input.charge = (int)pItem->GetNumber();
+		input.maxCharge = (int)pItem->GetMaxNumber();
+	}
+
+	return decore::repairPrice(input);
+}
+
+} // namespace
 
 //-----------------------------------------------------------------------------
 // Global
@@ -56,17 +168,29 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	if(!pItem->IsIdentified())
 		return GetMysteriousPrice(pItem);
 
+	// A repair is the server's repair price and nothing below.
+	if (type==REPAIR)
+		return RepairPrice(pItem);
+
 	__int64	finalPrice;
 
+	// An item the game gave away, and a time-limited item (one the
+	// timed-item register holds), are priced by the server's rule below,
+	// which gives them a flat 1 and 50 ahead of the crown price and the
+	// charges.
+	const bool bCreateTypeGame = HostIsCreateTypeGame(pItem);
+	const bool bTimeLimited = g_pTimeItemManager != NULL
+							&& g_pTimeItemManager->IsExist( pItem->GetID() );
+	const bool bFlatPrice = bCreateTypeGame || bTimeLimited;
 
-	// 2004, 08, 02, sobeit add start
-	if(pItem->GetItemClass() == ITEM_CLASS_MOON_CARD && pItem->GetItemType() == 4)
+	// The crown moon card is worth what the server last announced.
+	if(!bFlatPrice
+		&& pItem->GetItemClass() == ITEM_CLASS_MOON_CARD && pItem->GetItemType() == 4)
 		return m_EventFixPrice;
-	// 2004, 08, 02, sobeit add end				
 	//-------------------------------------------------------
 	// The rate, by what the player is doing
 	//-------------------------------------------------------
-	int nRatio;
+	int nRatio = 100;
 
 	switch (type)
 	{
@@ -127,21 +251,9 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		break;
 
 		//-------------------------------------------------------
-		// Repair
+		// Repair: priced above (RepairPrice)
 		//-------------------------------------------------------
 		case REPAIR :
-			// A vampire portal, a timed item and a blood bible sign
-			// are never repaired.
-			if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
-				|| g_pTimeItemManager->IsExist( pItem->GetID() )
-				|| pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE_SIGN
-				)
-			{
-				return 0;	
-			}
-
-			// A repair costs a tenth of the price.
-			nRatio = 10;
 		break;
 	}
 
@@ -149,24 +261,15 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	// A charged item is priced by its charges, and nothing below
 	// applies to it.
 	//-------------------------------------------------------
-	if (pItem->IsChargeItem())
+	if (pItem->IsChargeItem() && !bFlatPrice)
 	{		
 		int curCharge = pItem->GetNumber();
-		int maxCharge = pItem->GetMaxNumber();
 		
 		int ChargePrice = CHARGE_PRICE;
 		
 		if( pItem->GetItemClass() == ITEM_CLASS_OUSTERS_SUMMON_ITEM )
 			ChargePrice = 1000;
 
-		if (type==REPAIR)
-		{
-			// Refill the missing charges.
-			int charge = maxCharge - curCharge;
-
-			return charge * ChargePrice;
-		}
-		
 		int itemPrice = pItem->GetPrice();
 
 		int finalPrice = itemPrice + curCharge * ChargePrice;
@@ -177,111 +280,34 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	}	
 
 	//-------------------------------------------------------
-	// Everything else: the table price, by options and by wear.
+	// Everything else is the server's rule (decore::itemPrice): the
+	// table price, the grade, the options, the wear and the rate, then
+	// the player's adjustments - the weak slayer's potion discount,
+	// the skull's race share and the half price - in double, truncated
+	// once at the end and never below 1.
 	//-------------------------------------------------------
 	{
 		int		itemDur = pItem->GetMaxDurability();
-		long	curDurability = pItem->GetCurrentDurability();
-		
-		//--------------------------------------------------
-		// Nothing to repair on a whole item, or on one with no
-		// durability to lose.
-		//--------------------------------------------------
-		if (type==REPAIR)
-		{
-			if (itemDur<0 || itemDur==curDurability)
-			{
-				return 0;
-			}
-		}
-		
 
 		if (itemDur<0)
 		{
 			itemDur = 0;
 		}
 
-		long	maxDurability = itemDur;
-			
-		//--------------------------------------------------
-		// The server's arithmetic (PriceManager::getPrice and
-		// getRepairPrice): double from the table price through the
-		// grade, the options, the wear and the rate, truncated once
-		// at the end.
-		//--------------------------------------------------
-		{
-			double price = pItem->GetGradedPrice();
+		std::vector<int> multipliers;
+		decore::ItemPriceInput input = GatherPriceInput(pItem, itemDur, multipliers);
 
-			// Each option adds its multiplier's share of the price.
-			if (!pItem->IsEmptyItemOptionList())
-			{
-				double optionedPrice = 0;
-				const std::list<TYPE_ITEM_OPTION>& optionList = pItem->GetItemOptionList();
-				std::list<TYPE_ITEM_OPTION>::const_iterator itr = optionList.begin();
-
-				while (itr != optionList.end())
-				{
-					double priceMult = (double)(*g_pItemOptionTable)[*itr].PriceMultiplier;
-					optionedPrice += price * priceMult / 100;
-					itr++;
-				}
-
-				price = optionedPrice;
-			}
-
-			if (type==REPAIR)
-			{
-				//--------------------------------------------------
-				// A repair charges a tenth of what the wear took:
-				// 100 / nRatio is the server's divisor of 10.
-				//--------------------------------------------------
-				double wornPrice = price;
-				if (maxDurability != 0)
-				{
-					wornPrice = price * (double)curDurability / (double)maxDurability;
-				}
-
-				price = (price - wornPrice) / (100 / nRatio);
-			}
-			else
-			{
-				// Wear takes its share of the price, on an item whose
-				// maximum durability is above one...
-				if (maxDurability > 1)
-				{
-					price = price * (double)curDurability / (double)maxDurability;
-				}
-
-				// ...then the rate.
-				price = price * nRatio / 100;
-			}
-
-			finalPrice = static_cast<__int64>(price);
-		}
-	}
-
-	
-	// A weak slayer pays 70% for the two basic potions.
-	if (pItem->GetItemClass()==ITEM_CLASS_POTION)
-	{
-		if ((pItem->GetItemType()==0 || pItem->GetItemType()==5)
-			&& HostRace()==RACE_SLAYER
-			&& HostStatSum() <= 40)
-		{
-			finalPrice = finalPrice * 70 / 100;
-		}
-	}
-
-	// The consumables are half price under the premium event or the
-	// NEMA blood bible.
-	if ((pItem->GetItemClass() == ITEM_CLASS_POTION ||
-		 pItem->GetItemClass() == ITEM_CLASS_SERUM ||
-		 pItem->GetItemClass() == ITEM_CLASS_LARVA ||
-		 pItem->GetItemClass() == ITEM_CLASS_PUPA ||
-		 pItem->GetItemClass() == ITEM_CLASS_COMPOS_MEI)
-		&& HostPotionHalfPrice())
-	{
-		finalPrice /= 2;
+		input.marketCond = nRatio;
+		input.crownPrice = m_EventFixPrice;
+		input.createTypeGame = bCreateTypeGame;
+		input.timeLimited = bTimeLimited;
+		input.race = PriceRaceOf(HostRace());
+		input.currentStatSum = HostStatSum();
+		// The consumables are half price under the premium event or the
+		// NEMA blood bible, for a player who pays.
+		input.premiumHalf = HostPotionHalfPrice() && HostIsPayPlaying();
+		input.potionPriceRatio = HostPotionPriceRatio();
+		finalPrice = decore::itemPrice(input);
 	}
 
 	// The tax-change event scales what the shop charges.
@@ -290,32 +316,20 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		finalPrice = finalPrice * HostShopTaxPercent() / 100;
 	}
 
-	// Nothing is free.
+	// A tax below 100% does not make it free either.
 	if (finalPrice==0)
 	{
 		return 1;
 	}
 
-	// A skull is worth half to a vampire and three quarters to an Ousters.
-	if (pItem->GetItemClass()==ITEM_CLASS_SKULL)
-	{
-		int race = HostRace();
-
-		if (race==RACE_VAMPIRE)
-		{
-			finalPrice >>= 1;
-		}
-		else if (race==RACE_OUSTERS)
-		{
-			finalPrice = finalPrice * 75 / 100;
-		}
-	}
-
-		
-	// Then the head-price rate the server sent.
+	// Then the head-price bonus the server sent at login, a percentage
+	// it divides by 100 in integers before multiplying: 150% pays x1,
+	// below 100% nothing (decore::skullSellTotal). The server applies it
+	// to the price times the count, which comes to the same as applying
+	// it to one skull and multiplying, as the callers do.
 	if(pItem->GetItemClass() == ITEM_CLASS_SKULL)
 	{
-		finalPrice    = finalPrice * g_pUserInformation->HeadPrice / 100;
+		finalPrice = (__int64)decore::skullSellTotal((unsigned)finalPrice, (unsigned)g_pUserInformation->HeadPrice);
 	}
 
 

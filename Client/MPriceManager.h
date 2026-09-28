@@ -20,6 +20,12 @@ struct STAR_ITEM_PRICE {
 // the executable installs these once at start-up (GameInit.cpp); a test
 // binary installs its own, or none - and without one a price carries
 // no player, event or skill adjustment.
+//
+// The last three are inputs of the server's price rule (decore::
+// itemPrice) that the server never sends: the executable answers them
+// with the documented defaults below, which are also the answers
+// without a host. The crown moon card's price is not among them: the
+// server announces it (NOTICE_EVENT_CROWN_PRICE, SetEventItemPrice).
 //-----------------------------------------------------------------------------
 struct MPriceHost {
 	int		(*Race)();					// RACE_SLAYER, RACE_VAMPIRE or RACE_OUSTERS (RaceType.h); -1 for none of them
@@ -29,6 +35,9 @@ struct MPriceHost {
 	bool	(*IsPotionHalfPrice)();		// the premium half-price event, or the NEMA blood bible
 	bool	(*IsGambleHalfPrice)();		// the JAVE blood bible
 	DWORD	(*ShopTaxPercent)();		// the tax-change event's percentage as the server sent it; 100 without one
+	bool	(*IsCreateTypeGame)(const MItem* pItem);	// the game gave the item away (CREATE_TYPE_GAME), so it sells for 1; default false
+	bool	(*IsPayPlaying)();			// the player pays, which the premium half price needs (GamePlayer::isPayPlaying); default true
+	int		(*PotionPriceRatio)();		// the Blood Bible potion price percentage (OPTION_POTION_PRICE), 0 for none; default 0
 };
 
 class MPriceManager {
@@ -67,7 +76,8 @@ class MPriceManager {
 
 	protected :
 		// The host's answers, and what they are without one: no race,
-		// no level, no stats, no discount, no tax.
+		// no level, no stats, no discount, no tax, and the defaults of
+		// the three the server never sends.
 		static int		HostRace()				{ return s_pHost!=NULL ? s_pHost->Race() : -1; }
 		static int		HostLevel()				{ return s_pHost!=NULL ? s_pHost->Level() : 0; }
 		static int		HostStatSum()			{ return s_pHost!=NULL ? s_pHost->StatSum() : 0; }
@@ -75,6 +85,9 @@ class MPriceManager {
 		static bool		HostPotionHalfPrice()	{ return s_pHost!=NULL && s_pHost->IsPotionHalfPrice(); }
 		static bool		HostGambleHalfPrice()	{ return s_pHost!=NULL && s_pHost->IsGambleHalfPrice(); }
 		static DWORD	HostShopTaxPercent()	{ return s_pHost!=NULL ? s_pHost->ShopTaxPercent() : 100; }
+		static bool		HostIsCreateTypeGame(const MItem* pItem)	{ return s_pHost!=NULL && s_pHost->IsCreateTypeGame(pItem); }
+		static bool		HostIsPayPlaying()		{ return s_pHost==NULL || s_pHost->IsPayPlaying(); }
+		static int		HostPotionPriceRatio()	{ return s_pHost!=NULL ? s_pHost->PotionPriceRatio() : 0; }
 
 
 		// The market conditions, as the NPC sees them

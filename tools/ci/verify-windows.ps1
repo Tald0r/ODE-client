@@ -61,7 +61,7 @@ try {
 	Invoke-LoggedCMake -Arguments @('--preset', $ConfigurePreset,
 		"-DBASH_EXECUTABLE=$bashExe", "-DPERL_EXECUTABLE=$perlExe") -LogPath "$logDir/configure.log"
 
-	$requiredTests = @('unit_tests', 'user_option_tests', 'ui_tests', 'ratchets', 'arch_includes',
+	$requiredTests = @('unit_tests', 'user_option_tests', 'ui_tests', 'decore_tests', 'decore_vendored', 'ratchets', 'arch_includes',
 		'source_encoding', 'warning_policy', 'warning_budget_parser', 'format_arity', 'packet_indices', 'wire_inventory_fresh')
 	$warningFailures = @()
 	foreach ($preset in $BuildPresets) {

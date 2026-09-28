@@ -308,6 +308,10 @@ endif()
 
 # Subdirectories
 add_subdirectory(third_party/unrar)
+# The rules the client and the server compute alike, vendored from the
+# server (third_party/decore/README.md). Here, after
+# link_libraries(project_warnings), so it builds under the warning policy.
+add_subdirectory(third_party/decore)
 add_subdirectory(basic)
 add_subdirectory(Client/DXLib)
 add_subdirectory(Client/SpriteLib)
@@ -450,7 +454,9 @@ target_compile_definitions(gamemodel PRIVATE
 # table's language test reads); framelib for CAnimationFrame, the item
 # model's animation base (task 4.4 - its .cpp holds the constructor).
 # basic owns the shared text codec and publishes its iconv dependency.
-target_link_libraries(gamemodel PUBLIC basic packetwire framelib)
+# decore is the server's rules, vendored (third_party/decore); PUBLIC, so
+# a consumer that includes a model header reaching "domain/X.h" builds.
+target_link_libraries(gamemodel PUBLIC basic packetwire framelib decore)
 
 message(STATUS "gamemodel library: ${_gamemodel_count} sources from tests/arch/gamemodel_files.txt")
 

@@ -3,12 +3,16 @@
 //----------------------------------------------------------------------
 //
 // What a shop quotes for an item with options and wear must be what
-// the server charges or pays. The server (opendarkeden-server,
-// PriceManager::getPrice and getRepairPrice) works in double from the
+// the server charges or pays. The server's rule (decore::itemPrice and
+// repairPrice, vendored in third_party/decore) works in double from the
 // table price through the options, the wear and the market rate, and
-// truncates once at the end; ServerPrice and ServerRepairPrice below
-// transcribe that arithmetic and are the reference every quote here is
-// checked against.
+// truncates once at the end. Its parity vectors
+// (third_party/decore/domain/vectors/price.tsv and repair_price.tsv,
+// asserted by decore_tests) are the reference: the named checks below
+// are their seed-* rows. The sweep checks the adapter instead - that
+// MPriceManager hands the rule the item's price, options, durability
+// and rate - by comparing every quote with the rule called on inputs
+// built by hand.
 //
 //----------------------------------------------------------------------
 
@@ -18,84 +22,42 @@
 #include "gamemodel_world.h"
 #include "MPriceManager.h"
 
+#include "domain/ItemPrice.h"
+
 #include <cstdio>
 #include <vector>
 
 namespace {
 
 //----------------------------------------------------------------------
-// The server's arithmetic, for an item with no grade and no charges.
+// The server's rule on a sword with no grade and no charges, given
+// the table price, the options' multipliers and the durability by hand.
 //----------------------------------------------------------------------
-double	ServerOptionedPrice(int price, const std::vector<int>& multipliers)
+decore::ItemPriceInput	RuleInput(int price, const std::vector<int>& multipliers, int cur, int max)
 {
-	double originalPrice = price;
-
-	if (!multipliers.empty())
-	{
-		double finalPrice = 0;
-		for (size_t i = 0; i < multipliers.size(); i++)
-		{
-			double priceMultiplier = (double)multipliers[i];
-			finalPrice += (originalPrice * priceMultiplier / 100);
-		}
-		originalPrice = finalPrice;
-	}
-
-	return originalPrice;
+	decore::ItemPriceInput input = {};
+	input.itemClass = ITEM_CLASS_SWORD;
+	input.basePrice = (unsigned)price;
+	input.grade = -1;
+	input.optionPriceMultipliers = multipliers.data();
+	input.optionCount = (int)multipliers.size();
+	input.curDurability = (unsigned)cur;
+	input.maxDurability = (unsigned)max;
+	return input;
 }
 
-// PriceManager::getPrice: nDiscount is the market rate the shop list
-// sent, which the client holds as its buying and selling conditions.
-int		ServerPrice(int price, const std::vector<int>& multipliers, int cur, int max, int nDiscount)
+// nDiscount is the market rate the shop list sent, which the client
+// holds as its buying and selling conditions.
+int		RulePrice(int price, const std::vector<int>& multipliers, int cur, int max, int nDiscount)
 {
-	double originalPrice = ServerOptionedPrice(price, multipliers);
-	double finalPrice = 0;
-
-	double maxDurability = (double)max;
-	double curDurability = (double)cur;
-
-	if (maxDurability > 1)
-		finalPrice = originalPrice * curDurability / maxDurability;
-	else
-		finalPrice = originalPrice;
-
-	finalPrice = finalPrice * nDiscount / 100;
-
-	int result = (int)finalPrice;
-	return result > 1 ? result : 1;
+	decore::ItemPriceInput input = RuleInput(price, multipliers, cur, max);
+	input.marketCond = nDiscount;
+	return decore::itemPrice(input);
 }
 
-// PriceManager::getRepairPrice.
-int		ServerRepairPrice(int price, const std::vector<int>& multipliers, int cur, int max)
+int		RuleRepairPrice(int price, const std::vector<int>& multipliers, int cur, int max)
 {
-	double originalPrice = ServerOptionedPrice(price, multipliers);
-	double finalPrice = 0;
-
-	double maxDurability = (double)max;
-	double curDurability = (double)cur;
-
-	if (maxDurability != 0)
-	{
-		if (curDurability == maxDurability)
-		{
-			return 0;
-		}
-		finalPrice = originalPrice * curDurability / maxDurability;
-	}
-	else
-	{
-		finalPrice = originalPrice;
-	}
-
-	finalPrice = (originalPrice - finalPrice) / 10.0;
-
-	if (finalPrice < 1.0)
-	{
-		return 1;
-	}
-
-	int result = (int)finalPrice;
-	return result > 0 ? result : 0;
+	return decore::repairPrice(RuleInput(price, multipliers, cur, max));
 }
 
 //----------------------------------------------------------------------
@@ -167,34 +129,30 @@ TEST(PriceRounding, WornPricesAndRepairsMatchTheServer)
 {
 	RoundingWorld world;
 	MPriceManager prices;
-	const std::vector<int> none;
 
-	// Repairing 40 of 100 on a 1000 item: the server charges 40.
+	// Repairing 40 of 100 on a 1000 item: the server charges 40
+	// (repair_price.tsv, seed-40-of-100-lost-on-1000).
 	Gear worn(100, 60);
-	CHECK_EQ(ServerRepairPrice(1000, none, 60, 100), 40);
 	CHECK_EQ(40, prices.GetItemPrice(&worn, MPriceManager::REPAIR));
 
-	// A 5000 item at 39 of 50 sells for 3900.
+	// A 5000 item at 39 of 50 sells for 3900 (price.tsv,
+	// seed-worn-5000-at-39-of-50).
 	world.SetSwordPrice(5000);
 	Gear g(50, 39);
-	CHECK_EQ(ServerPrice(5000, none, 39, 50, 100), 3900);
 	CHECK_EQ(3900, prices.GetItemPrice(&g, MPriceManager::NPC_TO_PC));
 
 	// Half of 27 at a 30% rate is 4.05: 4, not 3 from truncating 13.5
-	// before the rate.
+	// before the rate (seed-half-of-27-at-30pct).
 	world.SetSwordPrice(27);
 	Gear half(2, 1);
 	prices.SetMarketCondBuy(30);
-	CHECK_EQ(ServerPrice(27, none, 1, 2, 30), 4);
 	CHECK_EQ(4, prices.GetItemPrice(&half, MPriceManager::PC_TO_NPC));
 
 	// 1001 at 150% is 1501.5, and two thirds of that is 1001: the
-	// half is not dropped before the wear.
+	// half is not dropped before the wear (seed-1001-at-150pct-two-thirds).
 	world.SetSwordPrice(1001);
 	Gear optioned(3, 2);
 	optioned.AddItemOption(1);
-	std::vector<int> rows(1, 1);
-	CHECK_EQ(ServerPrice(1001, Multipliers(rows), 2, 3, 100), 1001);
 	CHECK_EQ(1001, prices.GetItemPrice(&optioned, MPriceManager::NPC_TO_PC));
 }
 
@@ -205,11 +163,10 @@ TEST(PriceRounding, PricesPast2To24KeepEveryUnit)
 {
 	RoundingWorld world;
 	MPriceManager prices;
-	const std::vector<int> none;
 
+	// price.tsv, seed-price-past-2-to-24.
 	world.SetSwordPrice(16777217);
 	Gear fresh(100, 100);
-	CHECK_EQ(ServerPrice(16777217, none, 100, 100, 100), 16777217);
 	CHECK_EQ(16777217, prices.GetItemPrice(&fresh, MPriceManager::NPC_TO_PC));
 }
 
@@ -270,7 +227,7 @@ TEST(PriceRounding, EveryQuoteInASweepMatchesTheServer)
 						prices.SetMarketCondSell(kRates[k]);
 						prices.SetMarketCondBuy(kRates[k]);
 
-						const int expected = ServerPrice(kPrices[p], multipliers, cur, max, kRates[k]);
+						const int expected = RulePrice(kPrices[p], multipliers, cur, max, kRates[k]);
 						const int bought = prices.GetItemPrice(&item, MPriceManager::NPC_TO_PC);
 						const int sold = prices.GetItemPrice(&item, MPriceManager::PC_TO_NPC);
 						checked += 2;
@@ -291,7 +248,7 @@ TEST(PriceRounding, EveryQuoteInASweepMatchesTheServer)
 					// The server repairs only what has a durability.
 					if (max > 0)
 					{
-						const int expected = ServerRepairPrice(kPrices[p], multipliers, cur, max);
+						const int expected = RuleRepairPrice(kPrices[p], multipliers, cur, max);
 						const int repaired = prices.GetItemPrice(&item, MPriceManager::REPAIR);
 						checked++;
 

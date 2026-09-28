@@ -1184,10 +1184,8 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			
 			if(p_item->IsPileItem() && p_item->GetNumber() >= 1)
 			{
+				// A time-limited item's 50 is the price manager's.
 				int TempPrice = max( 0, g_pPriceManager->GetItemPrice(p_item, MPriceManager::PC_TO_NPC) );
-				
-				if( g_pTimeItemManager->IsExist( p_item->GetID() ) )
-					TempPrice = 50;
 
 				std::string sstr;
 				if(gC_ci->IsKorean() && g_pUserOption->ShowGameMoneyWithHANGUL)
@@ -1215,7 +1213,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			else 
 			{
 				std::string sstr;
-				int TempPrice = g_pTimeItemManager->IsExist(p_item->GetID()) ? 50 : max( 0, g_pPriceManager->GetItemPrice(p_item, MPriceManager::PC_TO_NPC)) ;
+				int TempPrice = max( 0, g_pPriceManager->GetItemPrice(p_item, MPriceManager::PC_TO_NPC) );
 				if(gC_ci->IsKorean() && g_pUserOption->ShowGameMoneyWithHANGUL)
 				{
 					sstr = "$";
