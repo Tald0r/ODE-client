@@ -109,3 +109,16 @@ bool ZoneMapData::LoadFromFile(std::ifstream& file, bool skipImageObjects)
 	*this = std::move(loaded);
 	return true;
 }
+
+bool ClipSectorRect(int& left, int& top, int& right, int& bottom, int width, int height)
+{
+	if (top < 0) top = 0;
+	if (left < 0) left = 0;
+	if (bottom >= height) bottom = height-1;
+	if (right >= width) right = width-1;
+
+	if (top > bottom) { int temp=top; top=bottom; bottom=temp; }
+	if (left > right) { left=right; right=left; }
+
+	return top <= bottom && left <= right;
+}

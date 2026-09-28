@@ -2337,13 +2337,8 @@ MZone::AddPortal(int type, int zoneID, const RECT& rect)
 	int bottom = rect.bottom;
 	int right = rect.right;
 
-	if (top < 0) top = 0;
-	if (left < 0) left = 0;
-	if (bottom >= m_Height) bottom = m_Height-1;
-	if (right >= m_Width) right = m_Width-1;
-
-	if (top > bottom) { int temp=top; top=bottom; bottom=temp; }
-	if (left > right) { left=right; right=left; }
+	if (!ClipSectorRect(left, top, right, bottom, m_Width, m_Height))
+		return;
 
 	for (int i=top; i<=bottom; i++)
 	{
@@ -5626,13 +5621,8 @@ MZone::SetSafeSector( const RECT& rect, BYTE fSafe )
 	int bottom = rect.bottom;
 	int right = rect.right;
 
-	if (top < 0) top = 0;
-	if (left < 0) left = 0;
-	if (bottom >= m_Height) bottom = m_Height-1;
-	if (right >= m_Width) right = m_Width-1;
-
-	if (top > bottom) { int temp=top; top=bottom; bottom=temp; }
-	if (left > right) { left=right; right=left; }
+	if (!ClipSectorRect(left, top, right, bottom, m_Width, m_Height))
+		return;
 
 	for (int i=top; i<=bottom; i++)
 	{
