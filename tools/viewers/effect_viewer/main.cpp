@@ -254,7 +254,10 @@ public:
         }
 
         // Test 2: Boundary checking
-        CEffectFrame* frame = m_resources->GetEffectFrame(BLT_EFFECT, static_cast<TYPE_FRAMEID>(99999), 0, 0);
+        // Probe the first id past the end. The pack's size type is TYPE_FRAMEID,
+        // so this id is always representable and always out of range.
+        const TYPE_FRAMEID outOfRange = m_resources->m_EffectAlphaFPK.GetSize();
+        CEffectFrame* frame = m_resources->GetEffectFrame(BLT_EFFECT, outOfRange, 0, 0);
         if (frame == nullptr) {
             std::cout << "[PASS] Boundary check working" << std::endl;
             passCount++;
