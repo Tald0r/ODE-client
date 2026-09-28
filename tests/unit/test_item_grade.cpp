@@ -30,6 +30,7 @@
 #include "type_table_access.h"
 
 #include "gamemodel_world.h"
+#include "MPriceManager.h"
 
 #include "domain/ItemDurability.h"
 #include "domain/ItemGrade.h"
@@ -62,6 +63,9 @@ const int	kRowCount = (int)(sizeof(kRows) / sizeof(kRows[0]));
 
 const int	kGrades[] = { -1, 0, 1, 3, 4, 5, 6, 7, 10 };
 
+// Every row's table price.
+const int	kPrice = 100000;
+
 struct GradeWorld : GameModelWorld
 {
 	GradeWorld()
@@ -78,6 +82,7 @@ struct GradeWorld : GameModelWorld
 				info.Value4 = kRows[t].maxDamage;
 				info.Value6 = kRows[t].defense;
 				info.CriticalHit = kRows[t].critical;
+				info.Price = kPrice;
 			}
 		}
 	}
@@ -165,7 +170,6 @@ const ClientRule	kClientRules[] = {
 	{ ITEM_CLASS_COUPLE_RING,			decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_VAMPIRE_COUPLE_RING,	decore::GradePolicy::Accessory,	true },
 	// Drift from the server's table, each fixed by its own commit.
-	{ ITEM_CLASS_VAMPIRE_AMULET,		decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_CORE_ZAP,				decore::GradePolicy::Plain,		true },
 	{ ITEM_CLASS_CARRYING_RECEIVER,		decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_DERMIS,				decore::GradePolicy::Accessory,	true },
@@ -327,4 +331,34 @@ TEST(ItemGrade, TheMotorcycleShowsTheTableDurabilityWhateverTheGrade)
 	MMotorcycle strong;
 	strong.SetItemType(0);
 	CHECK_EQ(65000, strong.GetMaxDurability());
+}
+
+//----------------------------------------------------------------------
+// A class without durability is priced without wear
+//----------------------------------------------------------------------
+// The server keeps no durability for VampireAmulet: its durability
+// reads 1, whatever the item has been through, and that is what it
+// sends, while its maximum is the table's durability, untouched by the
+// grade. So the shop prices it at 1 / maximum of its price (getPrice)
+// and quotes a repair of nearly a tenth of it (getRepairPrice), and the
+// repair changes nothing. The expected prices are the server's rule
+// (decore::itemPrice and repairPrice) on that maximum: at grade 0 the
+// table price 100000 is 80000 before the wear.
+//----------------------------------------------------------------------
+TEST(ItemGrade, TheVampireAmuletIsPricedOnTheTableDurability)
+{
+	GradeWorld world;
+	MPriceManager prices;
+
+	MVampireAmulet amulet;
+	amulet.SetItemType(0);
+	amulet.SetGrade(0);
+	amulet.SetCurrentDurability(1);
+
+	// 3000, not the 1000 the grade used to leave after the floor.
+	CHECK_EQ(3000, amulet.GetMaxDurability());
+	// 80000 * 1 / 3000 is 26.7: 26, where 1000 made it 80.
+	CHECK_EQ(26, prices.GetItemPrice(&amulet, MPriceManager::NPC_TO_PC));
+	// (80000 - 26.7) / 10 is 7997.3: 7997, where 1000 made it 7992.
+	CHECK_EQ(7997, prices.GetItemPrice(&amulet, MPriceManager::REPAIR));
 }
