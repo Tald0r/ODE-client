@@ -46,12 +46,15 @@ void GCModifyGuildMemberInfo::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
-	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
+	oStream.write( m_GuildID );
 
 //	if ( szGuildName == 0 )
 //		throw InvalidProtocolException("szGuildName == 0");
 
-	oStream.write( m_GuildID );
+	if ( m_GuildName.size() > 255 )
+		throw InvalidProtocolException("too long GuildName length");
+
+	BYTE szGuildName = static_cast<BYTE>(m_GuildName.size());
 	oStream.write( szGuildName );
 	if( szGuildName != 0 )
 	{

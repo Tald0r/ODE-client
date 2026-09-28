@@ -47,12 +47,14 @@ void GCSystemMessage::write ( SocketOutputStream & oStream ) const
 {
 	__BEGIN_TRY
 		
+	if ( m_Message.empty() )
+		throw InvalidProtocolException("szMessage == 0");
+	if ( m_Message.size() > 255 )
+		throw InvalidProtocolException("too large message length");
+
 	BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	oStream.write( szMessage );
-
-	if ( szMessage == 0 )
-		throw InvalidProtocolException("szMessage == 0");
 
 	oStream.write( m_Message );
 
