@@ -5,6 +5,7 @@
 #include "MAnimationObject.h"
 #include "MShadowAnimationObject.h"
 #include "MInteractionObject.h"
+#include "ZoneMapData.h"
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -60,4 +61,52 @@ TEST(ZoneMapRecords, TheImageBaseDestroysTheOwnedDerivedRecord)
 		std::unique_ptr<MImageObject> record = std::make_unique<Derived>(destroyed);
 	}
 	CHECK(destroyed);
+}
+
+TEST(ZoneMapRecords, ClipSectorRectKeepsAnInRangeRect)
+{
+	int left = 2, top = 3, right = 7, bottom = 9;
+	CHECK(ClipSectorRect(left, top, right, bottom, 20, 20));
+	CHECK_EQ(2, left);
+	CHECK_EQ(3, top);
+	CHECK_EQ(7, right);
+	CHECK_EQ(9, bottom);
+
+	left = -3; top = -1; right = 40; bottom = 25;
+	CHECK(ClipSectorRect(left, top, right, bottom, 20, 20));
+	CHECK_EQ(0, left);
+	CHECK_EQ(0, top);
+	CHECK_EQ(19, right);
+	CHECK_EQ(19, bottom);
+}
+
+TEST(ZoneMapRecords, ClipSectorRectOrdersInvertedEdges)
+{
+	int left = 10, top = 8, right = 5, bottom = 4;
+	CHECK(ClipSectorRect(left, top, right, bottom, 20, 20));
+	CHECK_EQ(5, left);
+	CHECK_EQ(10, right);
+	CHECK_EQ(4, top);
+	CHECK_EQ(8, bottom);
+}
+
+TEST(ZoneMapRecords, ClipSectorRectRejectsARectRightOfTheGrid)
+{
+	// Clamping before ordering would give 19..30 once the swap is repaired,
+	// and index past the row.
+	int left = 30, top = 0, right = 40, bottom = 0;
+	CHECK(!ClipSectorRect(left, top, right, bottom, 20, 20));
+}
+
+TEST(ZoneMapRecords, ClipSectorRectRejectsARectBelowTheGrid)
+{
+	// Clamping before ordering gives rows 19..30, past the last row.
+	int left = 0, top = 30, right = 0, bottom = 35;
+	CHECK(!ClipSectorRect(left, top, right, bottom, 20, 20));
+}
+
+TEST(ZoneMapRecords, ClipSectorRectRejectsAnEmptyGrid)
+{
+	int left = 0, top = 0, right = 0, bottom = 0;
+	CHECK(!ClipSectorRect(left, top, right, bottom, 0, 0));
 }

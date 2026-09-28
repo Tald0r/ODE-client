@@ -39,6 +39,6 @@ struct ZoneMapData {
 };
 
 // Fits an inclusive sector rect (portal or safe zone from the zone info
-// file) to a width x height grid: clamps it to the grid and orders its
-// edges. Returns false when no sector of the rect is left to visit.
+// file) to a width x height grid: orders its edges, then clamps them to
+// the grid. Returns false when no sector of the rect is left to visit.
 bool ClipSectorRect(int& left, int& top, int& right, int& bottom, int width, int height);
