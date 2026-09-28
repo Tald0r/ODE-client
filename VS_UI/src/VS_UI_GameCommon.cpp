@@ -13140,35 +13140,42 @@ void	C_VS_UI_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //	}
 	else if(p_button->GetID() >= GRADE2_BUTTON8_ID && p_button->GetID() <= GRADE3_BUTTON6_ID)
 	{
-		MSkillDomain::SKILL_STEP_LIST::iterator ss;
-		MSkillDomain::SKILL_STEP_LIST list; 
 		MSkillDomain::SKILLSTATUS status = MSkillDomain::SKILLSTATUS_NULL;
 		int sprID;
 		if(p_button->GetFocusState())
 		{	
+			// GRADE3_BUTTON1..3 are the icons of rows 0..2 and GRADE3_BUTTON4..6 the
+			// text boxes of the same rows (GRADE2_BUTTON8_ID is handled above).
+			const int slot = static_cast<int>(p_button->GetID()) - GRADE3_BUTTON1_ID;
 			if(g_eRaceInterface == RACE_SLAYER)
 			{
-				list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList((SKILL_STEP)(SKILL_STEP_SLAYER_BLADE_ADVANCEMENT + static_cast<int>(m_skill_domain))));
+				// Row r shows list[r + scroll], as _Show5 draws it and Run acts on it.
+				const int scroll = m_pC_grade3_scroll_bar->GetScrollPos();
+				const size_t row = static_cast<size_t>((slot < 3 ? slot : slot - 3) + (scroll > 0 ? scroll : 0));
+				const MSkillDomain::SKILL_STEP_LIST* pList = (*g_pSkillManager)[m_skill_domain].GetSkillStepList((SKILL_STEP)(SKILL_STEP_SLAYER_BLADE_ADVANCEMENT + static_cast<int>(m_skill_domain)));
 				
-				if(list.size() >= p_button->GetID()-GRADE3_BUTTON1_ID)
+				if(pList != NULL && row < pList->size())
 				{
-					ss= list.begin()+p_button->GetID()-GRADE3_BUTTON1_ID;
-					if((ACTIONINFO)*ss > 0 && (ACTIONINFO)*ss< MAX_ACTIONINFO)
+					const ACTIONINFO skill = (ACTIONINFO)(*pList)[row];
+					if(skill > 0 && skill < MAX_ACTIONINFO)
 					{
-						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)*ss);
-						sprID = (*g_pSkillInfoTable)[(ACTIONINFO)*ss].GetSpriteID();
+						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(skill);
+						sprID = (*g_pSkillInfoTable)[skill].GetSpriteID();
 					}
 				}
 				
 			}
 			else if(g_eRaceInterface == RACE_VAMPIRE)
 			{
-				list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList((SKILL_STEP)(SKILL_STEP_VAMPIRE_ADVANCEMENT)));
-				ss= list.begin()+p_button->GetID()-GRADE3_BUTTON1_ID;
-				if((ACTIONINFO)*ss > 0 && (ACTIONINFO)*ss< MAX_ACTIONINFO)
+				const MSkillDomain::SKILL_STEP_LIST* pList = (*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList((SKILL_STEP)(SKILL_STEP_VAMPIRE_ADVANCEMENT));
+				if(pList != NULL && static_cast<size_t>(slot) < pList->size())
 				{
-					status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)*ss);
-					sprID = (*g_pSkillInfoTable)[(ACTIONINFO)*ss].GetSpriteID();
+					const ACTIONINFO skill = (ACTIONINFO)(*pList)[static_cast<size_t>(slot)];
+					if(skill > 0 && skill < MAX_ACTIONINFO)
+					{
+						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(skill);
+						sprID = (*g_pSkillInfoTable)[skill].GetSpriteID();
+					}
 				}
 
 			}
@@ -13181,12 +13188,15 @@ void	C_VS_UI_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 				else
 					step = (SKILL_STEP)(SKILL_STEP_OUSTERS_COMBAT_ADVANCEMENT +  p_button->GetID()-GRADE3_BUTTON1_ID + m_pC_grade3_scroll_bar->GetScrollPos());
 
-				list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList((SKILL_STEP)(step)));
-				ss= list.begin()+p_button->GetID()-GRADE3_BUTTON1_ID;
-				if((ACTIONINFO)*ss > 0 && (ACTIONINFO)*ss< MAX_ACTIONINFO)
+				const MSkillDomain::SKILL_STEP_LIST* pList = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList((SKILL_STEP)(step));
+				if(pList != NULL && static_cast<size_t>(slot) < pList->size())
 				{
-					status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)*ss);
-					sprID = (*g_pSkillInfoTable)[(ACTIONINFO)*ss].GetSpriteID();
+					const ACTIONINFO skill = (ACTIONINFO)(*pList)[static_cast<size_t>(slot)];
+					if(skill > 0 && skill < MAX_ACTIONINFO)
+					{
+						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(skill);
+						sprID = (*g_pSkillInfoTable)[skill].GetSpriteID();
+					}
 				}
 			}
 //			gpC_base->m_p_DDSurface_back->BltSpriteColor(&pt,&C_VS_UI_SKILL::m_C_spk[sprID],rgb_GREEN);
@@ -13345,10 +13355,12 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON4_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				if(list.size() > id-GRADE3_BUTTON4_ID)
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
+				if(row < list.size())
+				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
+				}
 			}
 		}
 
@@ -13359,17 +13371,18 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON4_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				if(list.size() > id-GRADE3_BUTTON4_ID)
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
+				if(row < list.size())
+				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
+				}
 			}
 		}
 
 		if(g_eRaceInterface ==RACE_OUSTERS)
 		{
 			SKILL_STEP step;
-			MSkillDomain::SKILL_STEP_LIST::iterator ss;
 			if(m_ousters_Magic!= -1)
 				step= (SKILL_STEP)(SKILL_STEP_OUSTERS_COMBAT_ADVANCEMENT +m_ousters_Magic);
 			else
@@ -13378,14 +13391,15 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
-				if(m_ousters_Magic!= -1)
-					ss = list.begin();
-			    else
-					ss = list.begin()+id-GRADE3_BUTTON4_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+				size_t row = 0;
+				if(m_ousters_Magic == -1)
+					row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				if(list.size() > id-GRADE3_BUTTON4_ID)
+				if(list.size() > id-GRADE3_BUTTON4_ID && row < list.size())
+				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
+				}
 			}
 		}
 
@@ -13399,13 +13413,13 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON1_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(SkillID);
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON1_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 				
-				if(list.size() > id-GRADE3_BUTTON1_ID)
+				if(row < list.size())
 				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
+					MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(SkillID);
+
 					if((*g_pSkillInfoTable)[SkillID].GetLearnLevel() <= domain_level && MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status)
 					{
 						int dx = 0;
@@ -13437,13 +13451,13 @@ void C_VS_UI_INFO::Run(id_t id)
 			{
 				
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON1_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON1_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 				
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStatus(SkillID);
-				
-				if(list.size() > id-GRADE3_BUTTON1_ID)
+				if(row < list.size())
 				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
+					MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStatus(SkillID);
+
 					if((*g_pSkillInfoTable)[SkillID].GetLearnLevel() <= domain_level && (*g_pSkillInfoTable)[SkillID].GetLearnLevel() >= 0  && MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status)
 					{
 						int dx = 0;
@@ -13475,16 +13489,14 @@ void C_VS_UI_INFO::Run(id_t id)
 
 			if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 			{
-				MSkillDomain::SKILL_STEP_LIST::iterator ss;
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
+				size_t row = 0;
 				if(m_ousters_Magic != -1)
-					 ss= list.begin()+id-GRADE3_BUTTON1_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-				else
-					ss = list.begin();
+					row = static_cast<size_t>(id-GRADE3_BUTTON1_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 				
-				if(list.size() > id-GRADE3_BUTTON1_ID || m_ousters_Magic == -1 )
+				if(row < list.size())
 				{
-					const ACTIONINFO SkillID = (ACTIONINFO)*ss;
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStatus(SkillID);
 					//if(MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status&& SkillID>0)
 					if(((*g_pSkillInfoTable)[SkillID].SkillPoint <= g_char_slot_ingame.skill_point && (*g_pSkillInfoTable)[SkillID].GetLearnLevel() <= g_char_slot_ingame.level && MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status))// && bCanLearn)
