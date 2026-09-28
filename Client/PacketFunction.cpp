@@ -335,6 +335,9 @@ InitPacketItemTable()
 
 	MShoulderArmor* pShoulder1 = new MShoulderArmor;	pShoulder1->SetItemType( 0 ); pShoulder1->ClearItemOption();
 
+	g_pPacketItemShoulder[SHOULDER_NONE]		= NULL;
+	g_pPacketItemShoulder[SHOULDER1]			= pShoulder1;
+
 	
 }
 
