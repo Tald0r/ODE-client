@@ -217,3 +217,10 @@ Client/TalkBox.cpp
 Client/TalkBox.h
 Client/MStringList.cpp
 Client/MStringList.h
+
+# The elemental orbit effects: which continue the previous orbit step
+# and which replace the attached effects (EffectSpriteTypeDef.h is the
+# plain sprite-type enum).
+Client/OrbitEffectPolicy.cpp
+Client/OrbitEffectPolicy.h
+Client/EffectSpriteTypeDef.h

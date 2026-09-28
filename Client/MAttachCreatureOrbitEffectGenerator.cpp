@@ -12,6 +12,7 @@
 #include "DebugInfo.h"
 #include "EffectSpriteTypeDef.h"
 #include "MAttachOrbitEffect.h"
+#include "OrbitEffectPolicy.h"
 
 //----------------------------------------------------------------------
 // Global
@@ -43,15 +44,7 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 
 	int effectPosition = rand()/(RAND_MAX/MAX_EFFECT_ORBIT_STEP);
 
-	if( egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK 
-		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL
-		|| 
-			(
-			egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL
-			|| (egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL
-			&& pCreature->GetAttachEffectSize() > 0)
-			)
-		)
+	if( ConsultsPreviousOrbitStep(egInfo.effectSpriteType, pCreature->GetAttachEffectSize() > 0) )
 	{
 		
 		MAttachOrbitEffect* pOldEffect = (MAttachOrbitEffect* )(*(pCreature->GetAttachEffectIterator()));
@@ -59,8 +52,7 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 		{
 			effectPosition = pOldEffect->m_OrbitStep;
 		}
-		if(egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK 
-		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL)
+		if( ClearsBeforeAttach(egInfo.effectSpriteType) )
 			pCreature->ClearAttachEffect();
 	}
 
