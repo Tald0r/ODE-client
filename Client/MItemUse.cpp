@@ -2253,7 +2253,7 @@ void MMoonCardItem::UseInventory()
 	// 2개 이상 있어야 분리 된다.
 	// edit by sonic 2006.11.1  将四叶草设为可分开
 	//if(GetItemType() == 2 && GetNumber() > 1 && GetNumber() < GetMaxNumber())
-	if(GetItemType() == 2 || (GetItemType() ==3 && GetNumber() > 1 && GetNumber() < GetMaxNumber()))
+	if((GetItemType() == 2 || GetItemType() == 3) && GetNumber() > 1 && GetNumber() < GetMaxNumber())
 	{
 		// 아이템 분리
 		CGAddInventoryToMouse _CGAddInventoryToMouse;
