@@ -450,6 +450,36 @@ TEST(PriceManager, TheHostShapesPotionSkullAndTaxedPrices)
 }
 
 //----------------------------------------------------------------------
+// The skull's race share is taken from the untruncated price, and the
+// quote is floored at 1 after it (decore::itemPrice,
+// PriceManager::getPrice steps 8 and 11)
+//----------------------------------------------------------------------
+TEST(PriceManager, TheSkullRaceShareIsTakenBeforeTruncatingAndNeverSellsForNothing)
+{
+	PriceWorld world;
+	MPriceManager prices;
+	Item skull(ITEM_CLASS_SKULL);
+
+	// 22 at the 25% buying rate is 5.5. An Ousters gets three quarters
+	// of that, 4.125: the server pays 4, not 3 from a truncated 5.
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SKULL, 0).Price = 22;
+	s_Race = RACE_OUSTERS;
+	CHECK_EQ(4, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// 5 at 25% is 1.25, and a vampire's half of it is 0.625: the server
+	// pays 1, since nothing sells for less.
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SKULL, 0).Price = 5;
+	s_Race = RACE_VAMPIRE;
+	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	s_Race = RACE_OUSTERS;
+	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// A slayer gets the whole price (price.tsv, slayer-skull-full).
+	s_Race = RACE_SLAYER;
+	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
 // Star prices
 //----------------------------------------------------------------------
 TEST(PriceManager, StarPriceFollowsTheFirstOptionsPartAndTheItemType)

@@ -69,6 +69,21 @@ GatherPriceInput(const MItem* pItem, int maxDurability, std::vector<int>& multip
 }
 
 //-----------------------------------------------------------------------------
+// The price rule's race for RaceType.h's race, or the host's -1.
+//-----------------------------------------------------------------------------
+decore::PriceRace
+PriceRaceOf(int race)
+{
+	switch (race)
+	{
+		case RACE_SLAYER :	return decore::PriceRace::Slayer;
+		case RACE_VAMPIRE :	return decore::PriceRace::Vampire;
+		case RACE_OUSTERS :	return decore::PriceRace::Ousters;
+	}
+	return decore::PriceRace::None;
+}
+
+//-----------------------------------------------------------------------------
 // What repairing the item costs: the server's repair price
 // (decore::repairPrice, PriceManager::getRepairPrice), with none of the
 // buy and sell adjustments. A charged item is charged for the charges
@@ -257,9 +272,11 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	}	
 
 	//-------------------------------------------------------
-	// Everything else: the server's rule over the table price, the
-	// grade, the options, the wear and the rate (decore::itemPrice,
-	// which truncates once at the end).
+	// Everything else is the server's rule (decore::itemPrice): the
+	// table price, the grade, the options, the wear and the rate, then
+	// the player's adjustments - the weak slayer's potion discount,
+	// the skull's race share and the half price - in double, truncated
+	// once at the end and never below 1.
 	//-------------------------------------------------------
 	{
 		int		itemDur = pItem->GetMaxDurability();
@@ -274,31 +291,12 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 		input.marketCond = nRatio;
 		input.crownPrice = m_EventFixPrice;
+		input.race = PriceRaceOf(HostRace());
+		input.currentStatSum = HostStatSum();
+		// The consumables are half price under the premium event or the
+		// NEMA blood bible.
+		input.premiumHalf = HostPotionHalfPrice();
 		finalPrice = decore::itemPrice(input);
-	}
-
-	
-	// A weak slayer pays 70% for the two basic potions.
-	if (pItem->GetItemClass()==ITEM_CLASS_POTION)
-	{
-		if ((pItem->GetItemType()==0 || pItem->GetItemType()==5)
-			&& HostRace()==RACE_SLAYER
-			&& HostStatSum() <= 40)
-		{
-			finalPrice = finalPrice * 70 / 100;
-		}
-	}
-
-	// The consumables are half price under the premium event or the
-	// NEMA blood bible.
-	if ((pItem->GetItemClass() == ITEM_CLASS_POTION ||
-		 pItem->GetItemClass() == ITEM_CLASS_SERUM ||
-		 pItem->GetItemClass() == ITEM_CLASS_LARVA ||
-		 pItem->GetItemClass() == ITEM_CLASS_PUPA ||
-		 pItem->GetItemClass() == ITEM_CLASS_COMPOS_MEI)
-		&& HostPotionHalfPrice())
-	{
-		finalPrice /= 2;
 	}
 
 	// The tax-change event scales what the shop charges.
@@ -307,28 +305,12 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		finalPrice = finalPrice * HostShopTaxPercent() / 100;
 	}
 
-	// Nothing is free.
+	// A tax below 100% does not make it free either.
 	if (finalPrice==0)
 	{
 		return 1;
 	}
 
-	// A skull is worth half to a vampire and three quarters to an Ousters.
-	if (pItem->GetItemClass()==ITEM_CLASS_SKULL)
-	{
-		int race = HostRace();
-
-		if (race==RACE_VAMPIRE)
-		{
-			finalPrice >>= 1;
-		}
-		else if (race==RACE_OUSTERS)
-		{
-			finalPrice = finalPrice * 75 / 100;
-		}
-	}
-
-		
 	// Then the head-price rate the server sent.
 	if(pItem->GetItemClass() == ITEM_CLASS_SKULL)
 	{
