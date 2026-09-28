@@ -102,6 +102,8 @@ struct PriceWorld : GameModelWorld
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_PORTAL_ITEM, 0).Price = 500;
 		g_pItemTable->InitClass(ITEM_CLASS_BLOOD_BIBLE_SIGN, 1);
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_BLOOD_BIBLE_SIGN, 0).Price = 500;
+		g_pItemTable->InitClass(ITEM_CLASS_SLAYER_PORTAL_ITEM, 1);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SLAYER_PORTAL_ITEM, 0).Price = 1000;
 		g_pItemTable->InitClass(ITEM_CLASS_OUSTERS_SUMMON_ITEM, 1);
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_OUSTERS_SUMMON_ITEM, 0).Price = 1000;
 		// Blades: 4200 and 6000, so the class average is 5100 -> 500 in hundreds.
@@ -286,6 +288,43 @@ TEST(PriceManager, RepairCostsATenthOfTheDamageAndSomeItemsAreNeverRepaired)
 }
 
 //----------------------------------------------------------------------
+// A repair quote is the server's repair price (decore::repairPrice,
+// PriceManager::getRepairPrice) and nothing else: none of the buy and
+// sell adjustments, and no early return that only a buy or sell has.
+//----------------------------------------------------------------------
+TEST(PriceManager, RepairQuotesAreTheServersRepairPriceAlone)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	// A worn potion as a weak slayer under the half price, and a worn
+	// skull as a vampire at a 40% head price: the server charges a
+	// tenth of the wear, 5 and 20, with no discount, share or rate.
+	Gear potion(ITEM_CLASS_POTION, 100, 50);
+	Gear skull(ITEM_CLASS_SKULL, 100, 50);
+	s_Race = RACE_SLAYER;
+	s_StatSum = 40;
+	s_PotionHalf = true;
+	CHECK_EQ(5, prices.GetItemPrice(&potion, MPriceManager::REPAIR));
+	s_Race = RACE_VAMPIRE;
+	g_pUserInformation->HeadPrice = 40;
+	CHECK_EQ(20, prices.GetItemPrice(&skull, MPriceManager::REPAIR));
+
+	// A maximum durability of 0 is "no durability" to the server, and
+	// repairing such an item costs 1 even at 0 of 0 (repair_price.tsv,
+	// no-durability-costs-1).
+	Gear zero(ITEM_CLASS_SWORD, 0, 0);
+	CHECK_EQ(1, prices.GetItemPrice(&zero, MPriceManager::REPAIR));
+
+	// The crown moon card's price is a buy and sell price; a moon card
+	// has no durability, so there is nothing to repair.
+	Item crown(ITEM_CLASS_MOON_CARD, 4);
+	prices.SetEventItemPrice(777);
+	CHECK_EQ(777, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(0, prices.GetItemPrice(&crown, MPriceManager::REPAIR));
+}
+
+//----------------------------------------------------------------------
 // Charges
 //----------------------------------------------------------------------
 TEST(PriceManager, ChargedItemsPriceEveryChargeAndRepairRefillsThem)
@@ -293,8 +332,10 @@ TEST(PriceManager, ChargedItemsPriceEveryChargeAndRepairRefillsThem)
 	PriceWorld world;
 	MPriceManager prices;
 
-	// 1000 for the item and 5000 a charge, three of ten held.
-	Charged charged(ITEM_CLASS_SWORD, 3);
+	// A slayer portal: 1000 for the item and 5000 a charge, three of ten
+	// held. (The server charges for charges only on the two portals and
+	// the Ousters summon item, the classes the client makes charged.)
+	Charged charged(ITEM_CLASS_SLAYER_PORTAL_ITEM, 3);
 	CHECK_EQ(16000, prices.GetItemPrice(&charged, MPriceManager::NPC_TO_PC));
 	CHECK_EQ(4000, prices.GetItemPrice(&charged, MPriceManager::PC_TO_NPC));
 	CHECK_EQ(35000, prices.GetItemPrice(&charged, MPriceManager::REPAIR));

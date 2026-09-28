@@ -68,6 +68,48 @@ GatherPriceInput(const MItem* pItem, int maxDurability, std::vector<int>& multip
 	return input;
 }
 
+//-----------------------------------------------------------------------------
+// What repairing the item costs: the server's repair price
+// (decore::repairPrice, PriceManager::getRepairPrice), with none of the
+// buy and sell adjustments. A charged item is charged for the charges
+// it lacks; anything else for a tenth of what the wear took.
+//-----------------------------------------------------------------------------
+int
+RepairPrice(const MItem* pItem)
+{
+	// A vampire portal, a timed item and a blood bible sign are never
+	// repaired.
+	if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
+		|| (g_pTimeItemManager != NULL && g_pTimeItemManager->IsExist( pItem->GetID() ))
+		|| pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE_SIGN)
+	{
+		return 0;
+	}
+
+	// An item whose class has no durability (MItem's -1) is not
+	// repaired, unless it holds charges.
+	int maxDurability = pItem->GetMaxDurability();
+	if (maxDurability < 0)
+	{
+		if (!pItem->IsChargeItem())
+		{
+			return 0;
+		}
+		maxDurability = 0;
+	}
+
+	std::vector<int> multipliers;
+	decore::ItemPriceInput input = GatherPriceInput(pItem, maxDurability, multipliers);
+
+	if (pItem->IsChargeItem())
+	{
+		input.charge = (int)pItem->GetNumber();
+		input.maxCharge = (int)pItem->GetMaxNumber();
+	}
+
+	return decore::repairPrice(input);
+}
+
 } // namespace
 
 //-----------------------------------------------------------------------------
@@ -110,6 +152,10 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	}
 	if(!pItem->IsIdentified())
 		return GetMysteriousPrice(pItem);
+
+	// A repair is the server's repair price and nothing below.
+	if (type==REPAIR)
+		return RepairPrice(pItem);
 
 	__int64	finalPrice;
 
@@ -182,20 +228,9 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		break;
 
 		//-------------------------------------------------------
-		// Repair
+		// Repair: priced above (RepairPrice)
 		//-------------------------------------------------------
 		case REPAIR :
-			// A vampire portal, a timed item and a blood bible sign
-			// are never repaired.
-			if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
-				|| g_pTimeItemManager->IsExist( pItem->GetID() )
-				|| pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE_SIGN
-				)
-			{
-				return 0;	
-			}
-
-			// decore::repairPrice charges a tenth of what the wear took.
 		break;
 	}
 
@@ -206,21 +241,12 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	if (pItem->IsChargeItem())
 	{		
 		int curCharge = pItem->GetNumber();
-		int maxCharge = pItem->GetMaxNumber();
 		
 		int ChargePrice = CHARGE_PRICE;
 		
 		if( pItem->GetItemClass() == ITEM_CLASS_OUSTERS_SUMMON_ITEM )
 			ChargePrice = 1000;
 
-		if (type==REPAIR)
-		{
-			// Refill the missing charges.
-			int charge = maxCharge - curCharge;
-
-			return charge * ChargePrice;
-		}
-		
 		int itemPrice = pItem->GetPrice();
 
 		int finalPrice = itemPrice + curCharge * ChargePrice;
@@ -232,25 +258,11 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 	//-------------------------------------------------------
 	// Everything else: the server's rule over the table price, the
-	// grade, the options, the wear and the rate (decore::itemPrice and
-	// decore::repairPrice, which truncate once at the end).
+	// grade, the options, the wear and the rate (decore::itemPrice,
+	// which truncates once at the end).
 	//-------------------------------------------------------
 	{
 		int		itemDur = pItem->GetMaxDurability();
-		long	curDurability = pItem->GetCurrentDurability();
-		
-		//--------------------------------------------------
-		// Nothing to repair on a whole item, or on one with no
-		// durability to lose.
-		//--------------------------------------------------
-		if (type==REPAIR)
-		{
-			if (itemDur<0 || itemDur==curDurability)
-			{
-				return 0;
-			}
-		}
-		
 
 		if (itemDur<0)
 		{
@@ -260,16 +272,9 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		std::vector<int> multipliers;
 		decore::ItemPriceInput input = GatherPriceInput(pItem, itemDur, multipliers);
 
-		if (type==REPAIR)
-		{
-			finalPrice = decore::repairPrice(input);
-		}
-		else
-		{
-			input.marketCond = nRatio;
-			input.crownPrice = m_EventFixPrice;
-			finalPrice = decore::itemPrice(input);
-		}
+		input.marketCond = nRatio;
+		input.crownPrice = m_EventFixPrice;
+		finalPrice = decore::itemPrice(input);
 	}
 
 	
