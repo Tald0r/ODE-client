@@ -786,12 +786,50 @@ Fixed:
 
 Not fixed, for whoever takes them up:
 
-- **Shop prices.** `MPriceManager::GetItemPrice` applies the tax-change
-  percentage and the head-price rate to each item, where the server's shop
-  handlers apply them to the total. Its potion, skull and half-price steps
-  work on the truncated integer. The server adds a portal's charges after the
-  grade and uses the grade's durability offset in the maximum durability it
-  prices wear against.
+- **Shop prices.** Partly fixed by slice 1 of the shared rules library
+  (`docs/RESTRUCTURING.md` task 4.12). `MPriceManager::GetItemPrice` and the
+  gear maximum-durability getters now call the server's own rule, vendored
+  as `decore` (`05cf98e8`, `8eb744e1`). As a result:
+  - the skull's race share is taken before truncating, and the quote is
+    floored at 1 last (`7b209c6f`);
+  - the head-price bonus pays whole multiples, so 150% pays x1
+    (`0e1ef314`);
+  - a time-limited item is priced at 50 (`1353c5c6`);
+  - a repair is the server's repair price alone (`fc76cc38`);
+  - the maximum durability is floored at 1000 before the options and
+    not capped at 65000 (`cc8edf02`).
+
+  What remains:
+  - **Castle tax.** The tax-change percentage is still applied to each
+    quote, where the server's buy handler applies the castle tax to the
+    total. The market condition may also already carry the tax (slice 5).
+  - **Grade policy.** Six classes the client grades by the wrong C++
+    family (ShoulderArmor, Persona, Fascia, Mitten, CoreZap, and
+    VampireAmulet's durability) (slice 2).
+  - **No-durability classes.** Dermis, Fascia, CarryingReceiver and
+    CoreZap have no durability on the server, so its rule prices them in
+    full, with no wear, and quotes 1 to repair them (slice 2).
+  - **Pay state and server-only inputs.** The server never sends these, so
+    `MPriceHost` answers them with documented defaults: the player pays,
+    no item was given away, and there is no Blood Bible potion percentage.
+    The client's half price also fires for the NEMA blood bible, which the
+    skill table describes as a stat bible (the potion bible there is
+    GREGORI), and applies it to all five consumable classes, where the
+    server's Blood Bible percentage covers potions and serums only.
+  - **Charged items.** A portal's or summon gem's buy and sell quote is
+    still the client's own: its charges plus the rate, with no floor at 1
+    and no half price or tax.
+  - **Unidentified items.** An unidentified item's repair quote is the
+    gamble price, and an unidentified time-limited or given-away item gets
+    the gamble price before the 50 and 1 rules apply.
+  - **Classes with no durability entry.** An item whose class has no
+    durability (`MItem`'s -1) quotes 0 to repair; the server charges 1.
+  - **Motorcycles.** `MMotorcycle::GetMaxDurability` keeps the old rule: no
+    floor before the options, the 65000 cap, and no options at a 0% total
+    (slice 2).
+  - **Negative option totals.** Durability options that sum below -100%
+    wrap to a huge unsigned maximum on the server; the client's `int`
+    getters receive it as a negative number.
 - **Fast-move wobble.** After a fast move, `MCreature::AffectMoveBuffer` can
   still take one step in the previous direction before the next buffered move
   corrects the position; a stale `m_NextDirection` from the jump branch can

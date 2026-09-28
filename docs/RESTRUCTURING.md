@@ -789,10 +789,14 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slice 1's adapters - the `refactor:` and `fix:`
-  > commits that route `MPriceManager` and the `MItem` durability getters
-  > through `decore` - then slices 2-6). The copy is in: `decore`, a static
-  > library linked `PUBLIC` by `gamemodel`, synced from server `72dba238`.
+  > **Status:** in progress (slices 2-6). Slice 1 is in: `MPriceManager`'s
+  > buy, sell and repair quotes and the `MGearItem`/`MArmorItem2` maximum
+  > durability call `decore`, the inputs the server never sends are
+  > `MPriceHost` entries with documented defaults, and `unit_tests` checks
+  > the adapters against the vector rows (the named residuals are in
+  > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*). The copy is
+  > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
+  > from server `72dba238`.
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
