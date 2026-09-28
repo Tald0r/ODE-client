@@ -16169,9 +16169,8 @@ void	C_VS_UI_QUEST_ITEM::Run(id_t id)
 	{
 	case CLOSE_ID:
 		gpC_base->SendMessage(UI_CLOSE_QUEST_ITEM);
-//		break;
-//		
-		[[fallthrough]];
+		break;
+
 	case ALPHA_ID:
 		AttrAlpha(!GetAttributes()->alpha);
 		EMPTY_MOVE;
