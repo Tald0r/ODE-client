@@ -599,6 +599,10 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 		void	ActionEffect();			// effect
 		void	ActionToSendPacket();		// packet을 보낸다..
 		bool	ActionInTraceDistance();	// 행동 가능 거리에 있을 때
+
+		// true if the item lies on a dark tile that hides it from this player
+		bool	IsItemHiddenInDarkness(const MItem* pItem) const;
+
 		void	AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo);		// m_nUsedActionInfo를 적용시킨다.
 		void	AttachCastingEffect(TYPE_ACTIONINFO nUsedActionInfo, BOOL bForceAttach=FALSE);
 

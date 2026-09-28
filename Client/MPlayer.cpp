@@ -4506,6 +4506,25 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 }
 
 //----------------------------------------------------------------------
+// Is Item Hidden In Darkness
+//----------------------------------------------------------------------
+// An item on a dark tile cannot be traced or picked up unless the player
+// is a ghost, or is a vampire or has LIGHTNESS outside zone 3001.
+// This is the negation of the item hover gate in CGameUpdate.cpp.
+//----------------------------------------------------------------------
+bool
+MPlayer::IsItemHiddenInDarkness(const MItem* pItem) const
+{
+	return g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness()
+		&& !HasEffectStatus( EFFECTSTATUS_GHOST )
+#ifdef __METROTECH_TEST__
+		&& !g_bLight
+#endif
+		&& (g_pZone->GetID() == 3001
+			|| (!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )));
+}
+
+//----------------------------------------------------------------------
 // Trace Item
 //----------------------------------------------------------------------
 // Item으로 다가가서 주워야 한다.
@@ -4535,16 +4554,9 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 		// Zone에 존재하는 Item인지 check한다.
 		MItem*	pItem = m_pZone->GetItem(id);
 
-		// item이 zone에 없는 경우
+		// the item is not in the zone, or darkness hides it
 		if (pItem==NULL
-			|| (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && 
-			( !IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || 
-			(IsVampire() && g_pZone->GetID() == 3001)) )
-			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-			&& !g_bLight
-#endif
-			)) 
+			|| IsItemHiddenInDarkness( pItem ))
 		{
 			return false;
 		}
@@ -5218,14 +5230,7 @@ MPlayer::ActionInTraceDistance()
 
 			// 추적을 완료했으므로 Item을 줍는다.
 			if (pItem!=NULL
-				&& (!g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() || (IsVampire() && g_pZone->GetID() != 3001) || 
-				(!IsVampire() && HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
-				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-				&& !g_bLight
-#endif
-				)||!IsOusters())
-				)
+				&& !IsItemHiddenInDarkness( pItem ))
 			{
 				PickupItem( pItem );
 			}
@@ -5601,14 +5606,7 @@ MPlayer::ActionMove()
 					// 추적하는 Item이 사라졌을 경우 --> 추적 중지
 					//-------------------------------------------------------
 					if (pItem==NULL
-						|| (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness()&& 
-						(!IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) ||
-						(IsVampire() &&g_pZone->GetID() == 3001)) )
-						&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-						&& !g_bLight
-#endif
-						)) 
+						|| IsItemHiddenInDarkness( pItem ))
 					{
 						// 추적 중지
 						TraceNULL();
