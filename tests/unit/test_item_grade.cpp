@@ -168,11 +168,8 @@ const ClientRule	kClientRules[] = {
 	{ ITEM_CLASS_VAMPIRE_AMULET,		decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_CORE_ZAP,				decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_CARRYING_RECEIVER,		decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_SHOULDER_ARMOR,		decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_DERMIS,				decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_PERSONA,				decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_FASCIA,				decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_MITTEN,				decore::GradePolicy::Cloth,		true },
+	{ ITEM_CLASS_FASCIA,				decore::GradePolicy::Grocery,	true },
 };
 
 ClientRule	RuleOf(ITEM_CLASS itemClass)

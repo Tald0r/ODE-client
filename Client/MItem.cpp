@@ -678,13 +678,7 @@ GradePolicyOf(ITEM_CLASS itemClass)
 		case ITEM_CLASS_COUPLE_RING :
 		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
 		case ITEM_CLASS_CORE_ZAP :
-		case ITEM_CLASS_SHOULDER_ARMOR :
-		case ITEM_CLASS_PERSONA :
-		case ITEM_CLASS_FASCIA :
 			return decore::GradePolicy::Accessory;
-
-		case ITEM_CLASS_MITTEN :
-			return decore::GradePolicy::Cloth;
 
 		default :
 			return decore::gradePolicyOf((int)itemClass);
