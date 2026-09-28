@@ -638,10 +638,15 @@ class MGearItem : public MItem {
 	public :
 		bool			IsGearItem() const			{ return true; }
 
-		// 값
-		virtual int	GetMaxDurability() const;//	{ return (*g_pItemTable)[GetItemClass()][m_ItemType].Value1; }	// 내구성
-		virtual int	GetProtectionValue() const	{ return (*g_pItemTable)[GetItemClass()][m_ItemType].Value2; }	// 방어력
-		virtual int	GetDefenseValue() const		{ return (*g_pItemTable)[GetItemClass()][m_ItemType].Value6; }	// def
+		// The values the grade moves, by the item class's grade policy
+		// and durability (MItem.cpp)
+		virtual int	GetMaxDurability() const;
+		virtual int	GetProtectionValue() const;
+		virtual int	GetDefenseValue() const;
+		virtual int	GetMinDamage() const;
+		virtual int	GetMaxDamage() const;
+		virtual int	GetCriticalHit() const;
+		virtual int	GetLucky() const;
 };
 
 //----------------------------------------------------------------------
@@ -682,9 +687,6 @@ class MArmorItem : public MGearItem
 	public :
 		MArmorItem() {}
 		~MArmorItem() {}
-
-		int		GetProtectionValue() const;
-		int		GetDefenseValue() const;
 };
 //----------------------------------------------------------------------
 // MArmorItem2
@@ -694,10 +696,6 @@ class MArmorItem2 : public MGearItem
 	public :
 		MArmorItem2() {}
 		~MArmorItem2() {}
-
-		int		GetProtectionValue() const;
-		int		GetDefenseValue() const;
-		int		GetMaxDurability() const;
 };
 //----------------------------------------------------------------------
 // Accessory Item
@@ -707,8 +705,6 @@ class MAccessoryItem : public MGearItem
 	public :
 		MAccessoryItem() {}
 		~MAccessoryItem() {}
-
-		int		GetLucky() const;
 };
 //----------------------------------------------------------------------
 // BELT
@@ -1026,10 +1022,7 @@ class MWeaponItem : public MGearItem
 
 		bool		IsBasicWeapon() const		{ return true; }
 		
-		int			GetMinDamage() const;//		{ return (*g_pItemTable)[GetItemClass()][m_ItemType].Value3; }	// 최소 공격력
-		int			GetMaxDamage() const;//		{ return (*g_pItemTable)[GetItemClass()][m_ItemType].Value4; }	// 최대 공격력		
-		int			GetToHit() const;//			{ return (*g_pItemTable)[GetItemClass()][m_ItemType].ToHit; }		// 최대 공격력		
-		int			GetCriticalHit() const;//		{ return (*g_pItemTable)[GetItemClass()][m_ItemType].CriticalHit; }
+		int			GetToHit() const;
 
 };
 
@@ -2548,6 +2541,8 @@ public :
 	bool	IsGearSlotOustersBloodBible() const			{ return true; }
 
 	bool	IsDurationAlwaysOkay() const		{ return true; }	// 내구 체크 안하는 아이템
+
+	int		GetMaxDurability() const;
 };
 
 class MWarItem : public MItem {

@@ -26,6 +26,7 @@
 
 #include "domain/ItemClass.h"
 #include "domain/ItemDurability.h"
+#include "domain/ItemGrade.h"
 
 #include <fstream>
 #include <vector>
@@ -653,15 +654,86 @@ void	MUsePotionItem::UseInventory()
 }
 
 //----------------------------------------------------------------------
+// Grade Policy Of / Has Durability
+//----------------------------------------------------------------------
+// The grade policy and the durability of a wire item class: the
+// server's table (decore::gradePolicyOf and hasDurability, the rule its
+// ConcreteItem reads), except for the classes below, whose rule is the
+// C++ family the client declared them in.
+//
+// The couple rings are the server's own exception: it builds them
+// outside ConcreteItem, so the table gives them no grade and no
+// durability, and reports a maximum durability of 1, a placeholder
+// only its price reads. The client keeps the ring's rule for them; the
+// item description shows neither their luck nor their durability.
+//
+// The others are drift from the server's table, and the fix: commits
+// after this one move them onto it.
+//----------------------------------------------------------------------
+static decore::GradePolicy
+GradePolicyOf(ITEM_CLASS itemClass)
+{
+	switch (itemClass)
+	{
+		case ITEM_CLASS_COUPLE_RING :
+		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
+		case ITEM_CLASS_CORE_ZAP :
+		case ITEM_CLASS_SHOULDER_ARMOR :
+		case ITEM_CLASS_PERSONA :
+		case ITEM_CLASS_FASCIA :
+			return decore::GradePolicy::Accessory;
+
+		case ITEM_CLASS_MITTEN :
+			return decore::GradePolicy::Cloth;
+
+		default :
+			return decore::gradePolicyOf((int)itemClass);
+	}
+}
+
+static bool
+HasDurability(ITEM_CLASS itemClass)
+{
+	switch (itemClass)
+	{
+		case ITEM_CLASS_COUPLE_RING :
+		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
+		case ITEM_CLASS_VAMPIRE_AMULET :
+		case ITEM_CLASS_CORE_ZAP :
+		case ITEM_CLASS_CARRYING_RECEIVER :
+		case ITEM_CLASS_DERMIS :
+		case ITEM_CLASS_FASCIA :
+			return true;
+
+		default :
+			return decore::hasDurability((int)itemClass);
+	}
+}
+
+//----------------------------------------------------------------------
+// Item Grade Offsets
+//----------------------------------------------------------------------
+// How far the item's grade moves each attribute under its class's
+// grade policy (decore::gradeOffsets); all 0 for a class without one.
+//----------------------------------------------------------------------
+static decore::GradeOffsets
+ItemGradeOffsets(const MItem* pItem)
+{
+	return decore::gradeOffsets(GradePolicyOf(pItem->GetItemClass()), pItem->GetGrade());
+}
+
+//----------------------------------------------------------------------
 // Gear Max Durability
 //----------------------------------------------------------------------
 // The server's maximum durability for a gear item (decore::maxDurability:
-// ConcreteItem::getMaxDurability, then computeMaxDurability): the table
-// durability moved by gradePitch a grade from grade 4, floored at 1000,
-// then scaled by the durability options' plus-points. Nothing caps it.
+// ConcreteItem::getMaxDurability, then computeMaxDurability): for a
+// class that keeps a durability, the table durability moved by the
+// grade's durability offset and floored at 1000, otherwise the table
+// durability as it is; then scaled by the durability options'
+// plus-points. Nothing caps it.
 //----------------------------------------------------------------------
 static int
-GearMaxDurability(const MItem* pItem, int tableDurability, int gradePitch)
+GearMaxDurability(const MItem* pItem, bool hasDurability, int gradeDurabilityOffset)
 {
 	std::vector<int> plusPoints;
 
@@ -680,75 +752,130 @@ GearMaxDurability(const MItem* pItem, int tableDurability, int gradePitch)
 		itr++;
 	}
 
-	return (int)decore::maxDurability((unsigned)tableDurability, true, (pItem->GetGrade()-4)*gradePitch,
+	const int tableDurability = (*g_pItemTable)[pItem->GetItemClass()][pItem->GetItemType()].Value1;
+
+	return (int)decore::maxDurability((unsigned)tableDurability, hasDurability, gradeDurabilityOffset,
 									  plusPoints.data(), (int)plusPoints.size());
 }
 
 //----------------------------------------------------------------------
-// MGearItem::Get MaxDurability
+// MGearItem - what the grade moves
 //----------------------------------------------------------------------
-int
-MGearItem::GetMaxDurability() const
+// The item's value is the server's (ConcreteItem): the table value plus
+// the grade's offset, floored where the server floors it. Only what the
+// policy moves is shown: damage and critical for a weapon (-1, which
+// the item description hides, for any other gear), luck for an
+// accessory (-9999 otherwise), and for the armor policies the defense
+// and protection with the offset and floored at 0; any other gear shows
+// the table's defense and protection as they are.
+//----------------------------------------------------------------------
+static bool
+IsWeaponPolicy(decore::GradePolicy policy)
 {
-	return GearMaxDurability(this, (*g_pItemTable)[GetItemClass()][m_ItemType].Value1, 1000);
+	return policy == decore::GradePolicy::Weapon;
+}
+
+static bool
+IsArmorPolicy(decore::GradePolicy policy)
+{
+	return policy == decore::GradePolicy::Cloth || policy == decore::GradePolicy::Grocery;
 }
 
 int
-MWeaponItem::GetMinDamage() const
+MGearItem::GetMaxDurability() const
 {
-	return max(1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value3 + (GetGrade()-4) );
-}	// 최소 공격력
+	return GearMaxDurability(this, HasDurability(GetItemClass()), ItemGradeOffsets(this).durability);
+}
 
 int
-MWeaponItem::GetMaxDamage() const
+MGearItem::GetProtectionValue() const
 {
-	return max(1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value4 + (GetGrade()-4) );
-}	// 최대 공격력		
+	const int tableValue = (*g_pItemTable)[GetItemClass()][m_ItemType].Value2;
+
+	if (!IsArmorPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return tableValue;
+	}
+
+	return max( 0, tableValue + ItemGradeOffsets(this).protection );
+}
+
+int
+MGearItem::GetDefenseValue() const
+{
+	const int tableValue = (*g_pItemTable)[GetItemClass()][m_ItemType].Value6;
+
+	if (!IsArmorPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return tableValue;
+	}
+
+	return max( 0, tableValue + ItemGradeOffsets(this).defense );
+}
+
+int
+MGearItem::GetMinDamage() const
+{
+	if (!IsWeaponPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return MItem::GetMinDamage();
+	}
+
+	return max( 1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value3 + ItemGradeOffsets(this).damage );
+}
+
+int
+MGearItem::GetMaxDamage() const
+{
+	if (!IsWeaponPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return MItem::GetMaxDamage();
+	}
+
+	return max( 1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value4 + ItemGradeOffsets(this).damage );
+}
+
+int
+MGearItem::GetCriticalHit() const
+{
+	if (!IsWeaponPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return MItem::GetCriticalHit();
+	}
+
+	return max( 0, (*g_pItemTable)[GetItemClass()][m_ItemType].CriticalHit + ItemGradeOffsets(this).critical );
+}
+
+int
+MGearItem::GetLucky() const
+{
+	if (GradePolicyOf(GetItemClass()) != decore::GradePolicy::Accessory)
+	{
+		return MItem::GetLucky();
+	}
+
+	return ItemGradeOffsets(this).luck;
+}
 
 int
 MWeaponItem::GetToHit() const
 {
 	return (*g_pItemTable)[GetItemClass()][m_ItemType].ToHit;
-}		// 최대 공격력		
-
-int
-MWeaponItem::GetCriticalHit() const
-{
-	return max( 0, (*g_pItemTable)[GetItemClass()][m_ItemType].CriticalHit + (GetGrade()-4)*2 );
 }
 
+//----------------------------------------------------------------------
+// MBloodBibleSign::Get MaxDurability
+//----------------------------------------------------------------------
+// The client makes a blood bible sign itself, from GCBloodBibleSignInfo;
+// the server builds no such item, so its table has no rule for the
+// class. It keeps the gear rule it was written with: a durability the
+// grade moves 1000 a step. The item description does not show it, and
+// the shop never repairs one.
+//----------------------------------------------------------------------
 int
-MArmorItem::GetProtectionValue() const
+MBloodBibleSign::GetMaxDurability() const
 {
-	return max( 0, MGearItem::GetProtectionValue() + (GetGrade()-4) );
-}
-
-int
-MArmorItem::GetDefenseValue() const
-{
-	return max( 0, MGearItem::GetDefenseValue() + (GetGrade()-4)*2 );
-}
-int 
-MArmorItem2::GetProtectionValue() const
-{
-	return max( 0, MGearItem::GetProtectionValue() + ((GetGrade()-4)/2) );
-}
-
-int
-MArmorItem2::GetDefenseValue() const
-{
-	return max( 0, MGearItem::GetDefenseValue() + (GetGrade()-4) );
-}
-int
-MArmorItem2::GetMaxDurability() const
-{
-	return GearMaxDurability(this, (*g_pItemTable)[GetItemClass()][m_ItemType].Value1, 500);
-}
-
-int
-MAccessoryItem::GetLucky() const
-{
-	return  (GetGrade()-4);
+	return GearMaxDurability(this, true, (GetGrade()-4)*1000);
 }
 
 //----------------------------------------------------------------------
