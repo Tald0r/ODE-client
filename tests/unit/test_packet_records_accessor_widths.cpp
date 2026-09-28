@@ -30,6 +30,7 @@
 #include "Gpackets/GCRequestFailed.h"
 #include "Gpackets/GCSkillToInventoryOK2.h"
 #include "Gpackets/GCSkillToTileOK3.h"
+#include "Gpackets/GCWaitGuildList.h"
 
 #include <type_traits>
 #include <vector>
@@ -151,11 +152,21 @@ TEST(PacketRecordsAccessorWidths, NoticeEventCodeIsAWORD)
 }
 
 //----------------------------------------------------------------------
-// GCActiveGuildList: the list count is a WORD on the wire.
+// GCActiveGuildList and GCWaitGuildList: the list count is a WORD on
+// the wire.
 //----------------------------------------------------------------------
 TEST(PacketRecordsAccessorWidths, ActiveGuildListCountIsAWORD)
 {
 	GCActiveGuildList	packet;
+	for (int i = 0; i < 256; i++)
+		packet.addGuildInfo(new GuildInfo());
+
+	CHECK_EQ(256, (long long)packet.getListNum());
+}
+
+TEST(PacketRecordsAccessorWidths, WaitGuildListCountIsAWORD)
+{
+	GCWaitGuildList	packet;
 	for (int i = 0; i < 256; i++)
 		packet.addGuildInfo(new GuildInfo());
 
