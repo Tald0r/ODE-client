@@ -677,7 +677,6 @@ GradePolicyOf(ITEM_CLASS itemClass)
 	{
 		case ITEM_CLASS_COUPLE_RING :
 		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
-		case ITEM_CLASS_CORE_ZAP :
 			return decore::GradePolicy::Accessory;
 
 		default :

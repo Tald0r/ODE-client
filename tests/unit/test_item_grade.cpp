@@ -166,7 +166,7 @@ const ClientRule	kClientRules[] = {
 	{ ITEM_CLASS_VAMPIRE_COUPLE_RING,	decore::GradePolicy::Accessory,	true },
 	// Drift from the server's table, each fixed by its own commit.
 	{ ITEM_CLASS_VAMPIRE_AMULET,		decore::GradePolicy::Accessory,	true },
-	{ ITEM_CLASS_CORE_ZAP,				decore::GradePolicy::Accessory,	true },
+	{ ITEM_CLASS_CORE_ZAP,				decore::GradePolicy::Plain,		true },
 	{ ITEM_CLASS_CARRYING_RECEIVER,		decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_DERMIS,				decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_FASCIA,				decore::GradePolicy::Grocery,	true },
