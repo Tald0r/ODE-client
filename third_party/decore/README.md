@@ -43,5 +43,5 @@ floating-point arithmetic the same as the server's build. The files are
 LF on every checkout (`.gitattributes`), so the hashes hold on Windows too.
 
 The price and durability differences from the server that remain after
-slice 1 are listed under "Shop prices" in
+slices 1 and 2 are listed under "Shop prices" in
 `docs/compiler-warnings-2026-09-27.md` ("Found while fixing").

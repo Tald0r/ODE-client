@@ -789,14 +789,22 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slices 2-6). Slice 1 is in: `MPriceManager`'s
-  > buy, sell and repair quotes and the `MGearItem`/`MArmorItem2` maximum
-  > durability call `decore`, the inputs the server never sends are
-  > `MPriceHost` entries with documented defaults, and `unit_tests` checks
-  > the adapters against the vector rows (the named residuals are in
-  > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*). The copy is
+  > **Status:** in progress (slices 3-6). Slice 1 is in: `MPriceManager`'s
+  > buy, sell and repair quotes and the gear maximum durability call
+  > `decore`, the inputs the server never sends are `MPriceHost` entries
+  > with documented defaults, and `unit_tests` checks the adapters against
+  > the vector rows. Slice 2 is in: `MGearItem`'s grade getters (maximum
+  > durability, damage, critical, defense, protection, luck) read
+  > `decore::gradePolicyOf`, `hasDurability` and `gradeOffsets` by the item
+  > class. The only classes kept off the table are the two couple rings,
+  > which the server builds outside `ConcreteItem`, and `MMotorcycle`
+  > keeps its own maximum, since the server's is a placeholder 1.
+  > `tests/unit/test_item_grade.cpp` checks every gear class
+  > (`c87c4d0b`, and the fixes `5a3a1430`, `d63e2c5c`, `d31bc7c9`,
+  > `dcd47512`). The named residuals are in
+  > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
-  > from server `72dba238`.
+  > from server `291bee79` (PR #277, which merges first).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
