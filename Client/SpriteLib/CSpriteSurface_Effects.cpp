@@ -362,35 +362,36 @@ CSpriteSurface::memcpyPalEffectSimpleOutline(WORD* pDest, BYTE* pSource, WORD pi
 void		
 CSpriteSurface::memcpyPalEffectWipeOut(WORD* pDest, BYTE* pSource, WORD pixels, MPalette &pal)
 {
-	(void)pal;
-
 	int skipPixels = (pixels * s_Value1) >> 6;	// / 64
 	int drawPixels = (pixels - skipPixels)>>1;
 	int drawPixels2 = pixels - drawPixels - skipPixels;
-	
-	// [1] Copy the first drawPixels entries.
-	// [2] Leave skipPixels entries in the center untouched.
-	// [3] Copy the final drawPixels2 entries.
-	
-	//------------------------------------------------------------	
-	// Copy the left segment (legacy raw copy, not palette expansion).
-	//------------------------------------------------------------	
-	memcpy(pDest, pSource, (drawPixels<<1));
-	pDest += drawPixels;
-	pSource += drawPixels;
 
-	//------------------------------------------------------------	
+	// [1] Draw the first drawPixels entries.
+	// [2] Leave skipPixels entries in the center untouched.
+	// [3] Draw the final drawPixels2 entries.
+
+	//------------------------------------------------------------
+	// Draw the left segment through the palette, one source index
+	// byte per pixel.
+	//------------------------------------------------------------
+	for (int n = 0; n < drawPixels; n++)
+	{
+		*pDest++ = pal[*pSource++];
+	}
+
+	//------------------------------------------------------------
 	// Advance over the center segment without drawing.
-	//------------------------------------------------------------	
+	//------------------------------------------------------------
 	pDest += skipPixels;
 	pSource += skipPixels;
 
-	//------------------------------------------------------------	
-	// Copy the right segment.
-	//------------------------------------------------------------	
-	memcpy(pDest, pSource, (drawPixels2<<1));
-	//pDest += drawPixels2;
-	//pSource += drawPixels2;
+	//------------------------------------------------------------
+	// Draw the right segment.
+	//------------------------------------------------------------
+	for (int n = 0; n < drawPixels2; n++)
+	{
+		*pDest++ = pal[*pSource++];
+	}
 }
 
 //----------------------------------------------------------------------
