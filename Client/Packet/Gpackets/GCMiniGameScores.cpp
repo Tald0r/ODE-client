@@ -71,16 +71,20 @@ void GCMiniGameScores::write ( SocketOutputStream & oStream )
 	oStream.write(m_GameType);
 	oStream.write(m_Level);
 
-	BYTE count = static_cast<BYTE>(m_Scores.size());
-	if ( count > 10 ) count = 10;
+	// At most 10 scores go out; clamp before narrowing to the count byte.
+	const uint count = m_Scores.size() > 10 ? 10 : static_cast<uint>(m_Scores.size());
 	
-	oStream.write( count );
+	oStream.write( static_cast<BYTE>(count) );
 
 	std::list<std::pair<std::string,WORD> >::const_iterator itr = m_Scores.begin();
 
 	for ( uint i=0; i<count; ++i )
 	{
-		oStream.write( (BYTE)(*itr).first.size() );
+		// A name is at most 20 bytes, the bound the factory's max size budgets.
+		if ( (*itr).first.size() > 20 )
+			throw InvalidProtocolException( "too long MiniGameName length" );
+
+		oStream.write( static_cast<BYTE>((*itr).first.size()) );
 		oStream.write( (*itr).first );
 		oStream.write( (*itr).second );
 		itr++;
@@ -93,14 +97,14 @@ PacketSize_t GCMiniGameScores::getPacketSize() const
 {
 	PacketSize_t ret = szBYTE + szBYTE + szBYTE;
 
-	BYTE count = static_cast<BYTE>(m_Scores.size());
-	if ( count > 10 ) count = 10;
+	const uint count = m_Scores.size() > 10 ? 10 : static_cast<uint>(m_Scores.size());
 
 	std::list<std::pair<std::string,WORD> >::const_iterator itr = m_Scores.begin();
 
 	for ( uint i=0; i<count; ++i )
 	{
 		ret = static_cast<PacketSize_t>(ret + (szBYTE + (*itr).first.size() + szWORD));
+		itr++;
 	}
 	return ret;
 }
