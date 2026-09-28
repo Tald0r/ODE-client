@@ -90,6 +90,12 @@ void GCShopBought::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_ItemClass );
 	oStream.write( m_ItemType );
 	
+	// The option count is a BYTE, and read() takes it ahead of the options.
+	if ( m_OptionType.size() > 255 )
+		throw InvalidProtocolException( "too many item options" );
+
+	oStream.write( static_cast<BYTE>(m_OptionType.size()) );
+
 	std::list<OptionType_t>::const_iterator itr = m_OptionType.begin();
 	for (; itr!=m_OptionType.end(); itr++)
 	{
