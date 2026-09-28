@@ -311,10 +311,14 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		return 1;
 	}
 
-	// Then the head-price rate the server sent.
+	// Then the head-price bonus the server sent at login, a percentage
+	// it divides by 100 in integers before multiplying: 150% pays x1,
+	// below 100% nothing (decore::skullSellTotal). The server applies it
+	// to the price times the count, which comes to the same as applying
+	// it to one skull and multiplying, as the callers do.
 	if(pItem->GetItemClass() == ITEM_CLASS_SKULL)
 	{
-		finalPrice    = finalPrice * g_pUserInformation->HeadPrice / 100;
+		finalPrice = (__int64)decore::skullSellTotal((unsigned)finalPrice, (unsigned)g_pUserInformation->HeadPrice);
 	}
 
 

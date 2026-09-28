@@ -436,16 +436,16 @@ TEST(PriceManager, TheHostShapesPotionSkullAndTaxedPrices)
 
 	// A skull (400 at the 25% buying rate: 100) is worth half to a
 	// vampire and three quarters to an Ousters, then the server's
-	// head-price rate applies.
+	// head-price bonus applies, in whole multiples: at 200% twice.
 	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	s_Race = RACE_VAMPIRE;
 	CHECK_EQ(50, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	s_Race = RACE_OUSTERS;
 	CHECK_EQ(75, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
-	g_pUserInformation->HeadPrice = 40;
-	CHECK_EQ(30, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	g_pUserInformation->HeadPrice = 200;
+	CHECK_EQ(150, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	s_Race = RACE_SLAYER;
-	CHECK_EQ(40, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(200, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
 	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));	// the rate is for skulls only
 }
 
@@ -477,6 +477,36 @@ TEST(PriceManager, TheSkullRaceShareIsTakenBeforeTruncatingAndNeverSellsForNothi
 	// A slayer gets the whole price (price.tsv, slayer-skull-full).
 	s_Race = RACE_SLAYER;
 	CHECK_EQ(1, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
+// The head price is a percentage the server divides by 100 in integers
+// before it multiplies (decore::skullSellTotal, the shop sell handler)
+//----------------------------------------------------------------------
+TEST(PriceManager, TheHeadPriceBonusPaysWholeMultiplesOnly)
+{
+	PriceWorld world;
+	MPriceManager prices;
+	Item skull(ITEM_CLASS_SKULL);
+	s_Race = RACE_SLAYER;
+
+	// 400 at the 25% buying rate is 100.
+	g_pUserInformation->HeadPrice = 100;
+	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// price.tsv, head-bonus-150-pays-x1 and head-bonus-299-pays-x2.
+	g_pUserInformation->HeadPrice = 150;
+	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+	g_pUserInformation->HeadPrice = 299;
+	CHECK_EQ(200, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// head-bonus-99-pays-nothing: below 100% a skull sells for 0.
+	g_pUserInformation->HeadPrice = 99;
+	CHECK_EQ(0, prices.GetItemPrice(&skull, MPriceManager::PC_TO_NPC));
+
+	// Only a skull: a sword keeps its price.
+	Item sword(ITEM_CLASS_SWORD);
+	CHECK_EQ(250, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
 }
 
 //----------------------------------------------------------------------
