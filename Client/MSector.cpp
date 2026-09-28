@@ -75,6 +75,7 @@ void
 MSector::RemoveAllObject()	
 { 
 	m_mapObject.clear(); 
+	m_nImageObject = 0;
 	m_fProperty = 0; 
 	m_fProperty2 = 0;
 
