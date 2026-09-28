@@ -16,13 +16,17 @@
 // The angle, in MathTable units, by which the arc advances on each move
 // of speed pixels along a path len pixels long, so that the arc covers
 // FPI (half a turn) by the time the effect reaches its target.
+// A path shorter than one move, or a zero speed, counts as one move, so
+// the arc completes on the first update.
 //----------------------------------------------------------------------
 inline int
 ParabolaRadStep(float len, unsigned speed)
 {
-	int steps = static_cast<int>(len) / static_cast<int>(speed);	// moves needed to reach the target
+	int steps = speed ? static_cast<int>(len) / static_cast<int>(speed) : 0;	// moves needed to reach the target
+	if (steps < 1)
+		steps = 1;
 
-	return static_cast<int>(MathTable::FPI / (float)steps);
+	return MathTable::FPI / steps;
 }
 
 #endif
