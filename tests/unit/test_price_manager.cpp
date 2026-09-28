@@ -33,6 +33,9 @@ int		s_BasicStatSum = 0;
 bool	s_PotionHalf = false;
 bool	s_GambleHalf = false;
 int		s_TaxPercent = 100;
+TYPE_OBJECTID	s_GivenAwayID = 0;	// the one item the game gave away; 0 for none
+bool	s_PayPlaying = true;
+int		s_PotionPriceRatio = 0;
 
 int		Race()				{ return s_Race; }
 int		Level()				{ return s_Level; }
@@ -41,8 +44,22 @@ int		BasicStatSum()		{ return s_BasicStatSum; }
 bool	IsPotionHalfPrice()	{ return s_PotionHalf; }
 bool	IsGambleHalfPrice()	{ return s_GambleHalf; }
 DWORD	ShopTaxPercent()	{ return (DWORD)s_TaxPercent; }
+bool	IsCreateTypeGame(const MItem* pItem)	{ return s_GivenAwayID != 0 && pItem->GetID() == s_GivenAwayID; }
+bool	IsPayPlaying()		{ return s_PayPlaying; }
+int		PotionPriceRatio()	{ return s_PotionPriceRatio; }
 
-const MPriceHost	s_Host = { Race, Level, StatSum, BasicStatSum, IsPotionHalfPrice, IsGambleHalfPrice, ShopTaxPercent };
+const MPriceHost	s_Host = {
+	.Race				= Race,
+	.Level				= Level,
+	.StatSum			= StatSum,
+	.BasicStatSum		= BasicStatSum,
+	.IsPotionHalfPrice	= IsPotionHalfPrice,
+	.IsGambleHalfPrice	= IsGambleHalfPrice,
+	.ShopTaxPercent		= ShopTaxPercent,
+	.IsCreateTypeGame	= IsCreateTypeGame,
+	.IsPayPlaying		= IsPayPlaying,
+	.PotionPriceRatio	= PotionPriceRatio,
+};
 
 const char* const	kTempFile = "price_manager_test.bin";
 
@@ -81,6 +98,9 @@ struct PriceWorld : GameModelWorld
 		s_PotionHalf = false;
 		s_GambleHalf = false;
 		s_TaxPercent = 100;
+		s_GivenAwayID = 0;
+		s_PayPlaying = true;
+		s_PotionPriceRatio = 0;
 
 		g_pItemTable->InitClass(ITEM_CLASS_SWORD, 2);
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SWORD, 0).Price = 1000;
@@ -540,6 +560,50 @@ TEST(PriceManager, ATimeLimitedItemIsPricedAt50)
 	CHECK_EQ(50, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
 	CHECK_EQ(50, prices.GetItemPrice(&crown, MPriceManager::PC_TO_NPC));
 	CHECK_EQ(50, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+}
+
+//----------------------------------------------------------------------
+// The inputs the server never sends come through the host, and without
+// one they are the documented defaults: not given away, paying, no
+// Blood Bible percentage
+//----------------------------------------------------------------------
+TEST(PriceManager, TheServerOnlyInputsComeThroughTheHost)
+{
+	PriceWorld world;
+	MPriceManager prices;
+	Item potion(ITEM_CLASS_POTION, 1, 5);
+	Item sword(ITEM_CLASS_SWORD, 0, 6);
+	Charged portal(ITEM_CLASS_SLAYER_PORTAL_ITEM, 3);
+	portal.SetID(7);
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_POTION, 1).Price = 1000;
+
+	// Given away: price.tsv, create-type-game-sells-for-1, ahead of the
+	// charges; another item is not.
+	s_GivenAwayID = 6;
+	CHECK_EQ(1, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1000, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	s_GivenAwayID = 7;
+	CHECK_EQ(1, prices.GetItemPrice(&portal, MPriceManager::PC_TO_NPC));
+	s_GivenAwayID = 0;
+
+	// The half price is for a player who pays: premium-half-potion.
+	s_PotionHalf = true;
+	CHECK_EQ(500, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	s_PayPlaying = false;
+	CHECK_EQ(1000, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	s_PotionHalf = false;
+	s_PayPlaying = true;
+
+	// blood-bible-potion-minus-10 and blood-bible-not-on-sword.
+	s_PotionPriceRatio = -10;
+	CHECK_EQ(900, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+
+	// Without a host nothing is given away and there is no Blood Bible.
+	s_GivenAwayID = 6;
+	MPriceManager::SetHost(NULL);
+	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(1000, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
 }
 
 //----------------------------------------------------------------------

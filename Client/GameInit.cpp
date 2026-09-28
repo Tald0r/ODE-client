@@ -2937,7 +2937,27 @@ static DWORD	PriceShopTaxPercent()
 	return 100;
 }
 
-static const MPriceHost	s_PriceHost = { PriceRace, PriceLevel, PriceStatSum, PriceBasicStatSum, PricePotionHalf, PriceGambleHalf, PriceShopTaxPercent };
+// Three inputs of the server's price rule the server never sends; these
+// are the documented defaults (MPriceManager.h).
+// The server never tells the client that it gave an item away.
+static bool	PriceIsCreateTypeGame(const MItem*)	{ return false; }
+// The server's GamePlayer::isPayPlaying always answers yes.
+static bool	PriceIsPayPlaying()		{ return true; }
+// The server never sends the player's Blood Bible potion percentage.
+static int	PricePotionPriceRatio()	{ return 0; }
+
+static const MPriceHost	s_PriceHost = {
+	.Race				= PriceRace,
+	.Level				= PriceLevel,
+	.StatSum			= PriceStatSum,
+	.BasicStatSum		= PriceBasicStatSum,
+	.IsPotionHalfPrice	= PricePotionHalf,
+	.IsGambleHalfPrice	= PriceGambleHalf,
+	.ShopTaxPercent		= PriceShopTaxPercent,
+	.IsCreateTypeGame	= PriceIsCreateTypeGame,
+	.IsPayPlaying		= PriceIsPayPlaying,
+	.PotionPriceRatio	= PricePotionPriceRatio,
+};
 
 // Live creature actions used by the library-owned party roster.
 static bool PartyJoinByID(TYPE_OBJECTID id, MString& name)

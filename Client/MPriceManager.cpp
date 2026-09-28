@@ -174,14 +174,17 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 	__int64	finalPrice;
 
-	// A time-limited item (one the timed-item register holds) is priced
-	// by the server's rule below, which gives it a flat 50 ahead of the
-	// crown price and the charges.
+	// An item the game gave away, and a time-limited item (one the
+	// timed-item register holds), are priced by the server's rule below,
+	// which gives them a flat 1 and 50 ahead of the crown price and the
+	// charges.
+	const bool bCreateTypeGame = HostIsCreateTypeGame(pItem);
 	const bool bTimeLimited = g_pTimeItemManager != NULL
 							&& g_pTimeItemManager->IsExist( pItem->GetID() );
+	const bool bFlatPrice = bCreateTypeGame || bTimeLimited;
 
 	// The crown moon card is worth what the server last announced.
-	if(!bTimeLimited
+	if(!bFlatPrice
 		&& pItem->GetItemClass() == ITEM_CLASS_MOON_CARD && pItem->GetItemType() == 4)
 		return m_EventFixPrice;
 	//-------------------------------------------------------
@@ -258,7 +261,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	// A charged item is priced by its charges, and nothing below
 	// applies to it.
 	//-------------------------------------------------------
-	if (pItem->IsChargeItem() && !bTimeLimited)
+	if (pItem->IsChargeItem() && !bFlatPrice)
 	{		
 		int curCharge = pItem->GetNumber();
 		
@@ -296,12 +299,14 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 		input.marketCond = nRatio;
 		input.crownPrice = m_EventFixPrice;
+		input.createTypeGame = bCreateTypeGame;
 		input.timeLimited = bTimeLimited;
 		input.race = PriceRaceOf(HostRace());
 		input.currentStatSum = HostStatSum();
 		// The consumables are half price under the premium event or the
-		// NEMA blood bible.
-		input.premiumHalf = HostPotionHalfPrice();
+		// NEMA blood bible, for a player who pays.
+		input.premiumHalf = HostPotionHalfPrice() && HostIsPayPlaying();
+		input.potionPriceRatio = HostPotionPriceRatio();
 		finalPrice = decore::itemPrice(input);
 	}
 
