@@ -9757,7 +9757,7 @@ MPlayer::Action()
 		//--------------------------------------------------------
 		// 무슨 effect가 걸려있다면 2배 느리게 움직인다.
 		//--------------------------------------------------------
-		if (HasEffectStatus( EFFECTSTATUS_HAS_SLAYER_RELIC )       || HasEffectStatus( EFFECTSTATUS_HAS_VAMPIRE_RELIC ) ||
+		if ((HasEffectStatus( EFFECTSTATUS_HAS_SLAYER_RELIC )       || HasEffectStatus( EFFECTSTATUS_HAS_VAMPIRE_RELIC ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_GREGORI )|| HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_NEMA ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_LEGIOS ) || HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_MIHOLE ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_AROSA )  || HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_ARMEGA ) ||
@@ -9776,12 +9776,12 @@ MPlayer::Action()
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_5 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_6 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_7 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_8 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_9 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_10 ) ||
-			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_11 ) || (HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_12 )
+			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_11 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_12 ))
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )			
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
 #endif
-			))			
+			)			
 		{
 			if (g_CurrentFrame & 0x01)
 			{
