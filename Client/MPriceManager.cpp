@@ -13,7 +13,62 @@
 #include "MTimeItemManager.h"
 #include "RaceType.h"
 
+#include "domain/ItemPrice.h"
+
+#include <vector>
+
 #define CHARGE_PRICE		5000
+
+//-----------------------------------------------------------------------------
+// The price rule is the server's (decore, third_party/decore/README.md),
+// and it branches on the wire item-class ids: they must be this client's.
+//-----------------------------------------------------------------------------
+static_assert(decore::itemclass::Potion == ITEM_CLASS_POTION);
+static_assert(decore::itemclass::Skull == ITEM_CLASS_SKULL);
+static_assert(decore::itemclass::Serum == ITEM_CLASS_SERUM);
+static_assert(decore::itemclass::SlayerPortalItem == ITEM_CLASS_SLAYER_PORTAL_ITEM);
+static_assert(decore::itemclass::VampirePortalItem == ITEM_CLASS_VAMPIRE_PORTAL_ITEM);
+static_assert(decore::itemclass::Larva == ITEM_CLASS_LARVA);
+static_assert(decore::itemclass::Pupa == ITEM_CLASS_PUPA);
+static_assert(decore::itemclass::ComposMei == ITEM_CLASS_COMPOS_MEI);
+static_assert(decore::itemclass::OustersSummonItem == ITEM_CLASS_OUSTERS_SUMMON_ITEM);
+static_assert(decore::itemclass::MoonCard == ITEM_CLASS_MOON_CARD);
+
+namespace {
+
+//-----------------------------------------------------------------------------
+// What the price rule reads off the item: its class and type, the
+// table price, the grade it is priced by, each option's price
+// multiplier (kept in multipliers, which the input points into) and
+// its durability. maxDurability is the one the caller settled on;
+// every other field is left for the caller: 0, false, no race.
+//-----------------------------------------------------------------------------
+decore::ItemPriceInput
+GatherPriceInput(const MItem* pItem, int maxDurability, std::vector<int>& multipliers)
+{
+	decore::ItemPriceInput input = {};
+	input.itemClass = (int)pItem->GetItemClass();
+	input.itemType = (int)pItem->GetItemType();
+	input.basePrice = (unsigned)(*g_pItemTable)[pItem->GetItemClass()][pItem->GetItemType()].Price;
+	input.grade = pItem->GetPriceGrade();
+
+	const std::list<TYPE_ITEM_OPTION>& optionList = pItem->GetItemOptionList();
+	std::list<TYPE_ITEM_OPTION>::const_iterator itr = optionList.begin();
+	while (itr != optionList.end())
+	{
+		multipliers.push_back((*g_pItemOptionTable)[*itr].PriceMultiplier);
+		itr++;
+	}
+	input.optionPriceMultipliers = multipliers.data();
+	input.optionCount = (int)multipliers.size();
+
+	input.curDurability = (unsigned)pItem->GetCurrentDurability();
+	input.maxDurability = (unsigned)maxDurability;
+	input.race = decore::PriceRace::None;
+	return input;
+}
+
+} // namespace
 
 //-----------------------------------------------------------------------------
 // Global
@@ -66,7 +121,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	//-------------------------------------------------------
 	// The rate, by what the player is doing
 	//-------------------------------------------------------
-	int nRatio;
+	int nRatio = 100;
 
 	switch (type)
 	{
@@ -140,8 +195,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 				return 0;	
 			}
 
-			// A repair costs a tenth of the price.
-			nRatio = 10;
+			// decore::repairPrice charges a tenth of what the wear took.
 		break;
 	}
 
@@ -177,7 +231,9 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 	}	
 
 	//-------------------------------------------------------
-	// Everything else: the table price, by options and by wear.
+	// Everything else: the server's rule over the table price, the
+	// grade, the options, the wear and the rate (decore::itemPrice and
+	// decore::repairPrice, which truncate once at the end).
 	//-------------------------------------------------------
 	{
 		int		itemDur = pItem->GetMaxDurability();
@@ -201,62 +257,18 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 			itemDur = 0;
 		}
 
-		long	maxDurability = itemDur;
-			
-		//--------------------------------------------------
-		// The server's arithmetic (PriceManager::getPrice and
-		// getRepairPrice): double from the table price through the
-		// grade, the options, the wear and the rate, truncated once
-		// at the end.
-		//--------------------------------------------------
+		std::vector<int> multipliers;
+		decore::ItemPriceInput input = GatherPriceInput(pItem, itemDur, multipliers);
+
+		if (type==REPAIR)
 		{
-			double price = pItem->GetGradedPrice();
-
-			// Each option adds its multiplier's share of the price.
-			if (!pItem->IsEmptyItemOptionList())
-			{
-				double optionedPrice = 0;
-				const std::list<TYPE_ITEM_OPTION>& optionList = pItem->GetItemOptionList();
-				std::list<TYPE_ITEM_OPTION>::const_iterator itr = optionList.begin();
-
-				while (itr != optionList.end())
-				{
-					double priceMult = (double)(*g_pItemOptionTable)[*itr].PriceMultiplier;
-					optionedPrice += price * priceMult / 100;
-					itr++;
-				}
-
-				price = optionedPrice;
-			}
-
-			if (type==REPAIR)
-			{
-				//--------------------------------------------------
-				// A repair charges a tenth of what the wear took:
-				// 100 / nRatio is the server's divisor of 10.
-				//--------------------------------------------------
-				double wornPrice = price;
-				if (maxDurability != 0)
-				{
-					wornPrice = price * (double)curDurability / (double)maxDurability;
-				}
-
-				price = (price - wornPrice) / (100 / nRatio);
-			}
-			else
-			{
-				// Wear takes its share of the price, on an item whose
-				// maximum durability is above one...
-				if (maxDurability > 1)
-				{
-					price = price * (double)curDurability / (double)maxDurability;
-				}
-
-				// ...then the rate.
-				price = price * nRatio / 100;
-			}
-
-			finalPrice = static_cast<__int64>(price);
+			finalPrice = decore::repairPrice(input);
+		}
+		else
+		{
+			input.marketCond = nRatio;
+			input.crownPrice = m_EventFixPrice;
+			finalPrice = decore::itemPrice(input);
 		}
 	}
 

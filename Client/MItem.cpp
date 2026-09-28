@@ -319,21 +319,16 @@ MItem::GetPrice() const
 }
 
 //----------------------------------------------------------------------
-// Get Graded Price
+// Get Price Grade
 //----------------------------------------------------------------------
-// The table price scaled by the grade without truncating, in the
-// server's own arithmetic: price * ((80 + 5 * grade) / 100.0).
+// The grade the shop's price rule (decore::itemPrice and repairPrice,
+// MPriceManager) scales the table price by: the item's grade when it
+// is priced by grade, otherwise -1, which the rule reads as none.
 //----------------------------------------------------------------------
-double
-MItem::GetGradedPrice() const
+int
+MItem::GetPriceGrade() const
 {
-	double price = (double)(*g_pItemTable)[GetItemClass()][m_ItemType].Price;
-	if( IsPricedByGrade(this) )
-	{
-		double gradePercent = 80 + (5 * GetGrade());
-		price *= (gradePercent / 100.0);
-	}
-	return price;
+	return IsPricedByGrade(this) ? GetGrade() : -1;
 }
 
 //----------------------------------------------------------------------
