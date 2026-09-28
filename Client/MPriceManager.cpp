@@ -201,16 +201,16 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 			itemDur = 0;
 		}
 
-		long	originalPrice = pItem->GetPrice();
 		long	maxDurability = itemDur;
 			
 		//--------------------------------------------------
 		// The server's arithmetic (PriceManager::getPrice and
 		// getRepairPrice): double from the table price through the
-		// options, the wear and the rate, truncated once at the end.
+		// grade, the options, the wear and the rate, truncated once
+		// at the end.
 		//--------------------------------------------------
 		{
-			double price = (double)originalPrice;
+			double price = pItem->GetGradedPrice();
 
 			// Each option adds its multiplier's share of the price.
 			if (!pItem->IsEmptyItemOptionList())

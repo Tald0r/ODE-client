@@ -333,6 +333,7 @@ class MItem : public MObject, public CAnimationFrame {
 		const char*				GetDescription() const;
 		TYPE_ITEM_WEIGHT		GetWeight() const;
 		TYPE_ITEM_PRICE			GetPrice() const;
+		double					GetGradedPrice() const;		// unrounded, as the server prices
 		BYTE					GetGridWidth() const;
 		BYTE					GetGridHeight() const;
 
