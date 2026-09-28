@@ -664,7 +664,8 @@ void	MUsePotionItem::UseInventory()
 // gives them no grade and no durability, and the server reports a
 // maximum durability of 1 for them, a placeholder only its price reads.
 // The client keeps the ring's rule for them; the item description shows
-// neither their luck nor their durability.
+// neither their luck nor their durability, and MPriceManager quotes
+// their repair at the server's 0, not from this maximum.
 //----------------------------------------------------------------------
 static decore::GradePolicy
 GradePolicyOf(ITEM_CLASS itemClass)

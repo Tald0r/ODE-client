@@ -203,8 +203,9 @@ struct ClientRule
 const ClientRule	kClientRules[] = {
 	// The server builds the couple rings outside ConcreteItem, so its
 	// table has no grade and no durability for them; the client keeps
-	// the ring's rule (docs/compiler-warnings-2026-09-27.md, "Shop
-	// prices").
+	// the ring's rule, and quotes no repair from it
+	// (TheCoupleRingsQuoteNoRepair; docs/compiler-warnings-2026-09-27.md,
+	// "Shop prices").
 	{ ITEM_CLASS_COUPLE_RING,			decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_VAMPIRE_COUPLE_RING,	decore::GradePolicy::Accessory,	true },
 };
@@ -470,4 +471,67 @@ TEST(ItemGrade, GearWithoutDurabilityIsPricedWithoutWear)
 			CheckShown(name, type, 4, "repair", 0, prices.GetItemPrice(pItem, MPriceManager::REPAIR));
 		}
 	}
+}
+
+//----------------------------------------------------------------------
+// A couple ring's repair costs nothing
+//----------------------------------------------------------------------
+// The server builds the couple rings outside ConcreteItem, so Item's
+// defaults give them a grade of -1, a durability of 1 and a maximum of
+// 1, and that is what it sends. Its repair price is 0 (getRepairPrice:
+// the durability is the maximum). Its repair of all the worn gear
+// (CGRequestRepairHandler::executeAll) adds that 0 for a worn couple
+// ring, and it refuses to repair one on its own (isRepairableItem). The
+// client keeps the ring's rule for their maximum (kClientRules), at
+// least 1000, so it quoted a repair of nearly a tenth of the price. The
+// gear window adds every worn item's quote into the repair-all total it
+// asks the player to confirm (VS_UI_GameCommon.cpp), and opens that
+// dialog whenever the total is above 0, so the ring alone opened it.
+// The quote is the server's 0 at any durability the client holds.
+//----------------------------------------------------------------------
+TEST(ItemGrade, TheCoupleRingsQuoteNoRepair)
+{
+	GradeWorld world;
+	MPriceManager prices;
+
+	StandIn<MRing, ITEM_CLASS_COUPLE_RING> ring;
+	StandIn<MVampireRing, ITEM_CLASS_VAMPIRE_COUPLE_RING> vampireRing;
+	const struct { MItem* pItem; const char* name; } rings[] = {
+		{ &ring, "CoupleRing" },
+		{ &vampireRing, "VampireCoupleRing" },
+	};
+
+	for (const auto& couple : rings)
+	{
+		MItem* const pItem = couple.pItem;
+		pItem->SetItemType(0);
+		pItem->SetGrade(-1);
+
+		// The client's maximum is the ring's, floored at 1000.
+		CheckShown(couple.name, 0, -1, "max durability", 1000, pItem->GetMaxDurability());
+
+		// The durability the server sends, none, and the maximum the
+		// client sets after a repair: the quote is 0 at each.
+		const int durabilities[] = { 1, 0, 1000 };
+		for (int durability : durabilities)
+		{
+			pItem->SetCurrentDurability(durability);
+			CheckShown(couple.name, 0, -1, "repair", 0, prices.GetItemPrice(pItem, MPriceManager::REPAIR));
+		}
+	}
+
+	// The gear window's repair-all total for a fresh sword and the two
+	// rings as the server sends them: nothing to repair, so no dialog.
+	MSword sword;
+	sword.SetItemType(0);
+	sword.SetGrade(4);
+	sword.SetCurrentDurability(sword.GetMaxDurability());
+	ring.SetCurrentDurability(1);
+	vampireRing.SetCurrentDurability(1);
+
+	int sum = 0;
+	MItem* const pWorn[] = { &sword, &ring, &vampireRing };
+	for (MItem* pItem : pWorn)
+		sum += prices.GetItemPrice(pItem, MPriceManager::REPAIR);
+	CHECK_EQ(0, sum);
 }

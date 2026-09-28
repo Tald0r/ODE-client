@@ -101,6 +101,19 @@ RepairPrice(const MItem* pItem)
 		return 0;
 	}
 
+	// Nor is a couple ring. The server builds it outside ConcreteItem,
+	// with Item's durability and maximum of 1, so its repair price is 0
+	// (the durability is the maximum): that is what its repair of all the
+	// worn gear adds for one, and it refuses to repair one on its own
+	// (isRepairableItem). The client's maximum is the ring's rule, at
+	// least 1000 (MItem.cpp), which would quote nearly a tenth of the
+	// price.
+	if (pItem->GetItemClass() == ITEM_CLASS_COUPLE_RING
+		|| pItem->GetItemClass() == ITEM_CLASS_VAMPIRE_COUPLE_RING)
+	{
+		return 0;
+	}
+
 	// An item whose class has no durability (MItem's -1) is not
 	// repaired, unless it holds charges.
 	int maxDurability = pItem->GetMaxDurability();
