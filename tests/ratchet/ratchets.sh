@@ -196,7 +196,9 @@ check () {
 # table (tools/i18n/npc_gen.pl). A recorded GROWTH, the same shape as
 # MNPCScriptTableEnglish.cpp: it writes g_pNPCTable, an executable global,
 # so it is an exe TU by construction.
-R1_BASELINE=456
+# 454: the NPC talk boxes (TalkBox.cpp, MStringList.cpp) join gamemodel so
+# the menu-answer mapping can be tested.
+R1_BASELINE=454
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -235,7 +237,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# is rewritten on every configure, so its mtime is the configure time.
 	# 454 = 453 + 1: MNPCTableEnglish.cpp, the same growth as the MSVC
 	# baseline above records.
-	R1_NINJA_BASELINE=454
+	# 452: the NPC talk boxes join gamemodel, as the MSVC baseline above records.
+	R1_NINJA_BASELINE=452
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

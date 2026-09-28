@@ -211,3 +211,9 @@ Client/MParty.h
 # The HP-modify number drawn over a creature: its text and colour.
 Client/HPModifyLabel.cpp
 Client/HPModifyLabel.h
+
+# NPC talk boxes: the player's answer menu and the NPC's lines, over MString.
+Client/TalkBox.cpp
+Client/TalkBox.h
+Client/MStringList.cpp
+Client/MStringList.h

@@ -63,6 +63,11 @@ class PCTalkBox : public MStringList
 		//----------------------------------------------------------------
 		void				SetAnswerID(unsigned int id)		{ m_AnswerID = id; }
 		unsigned int		GetAnswerID() const					{ return m_AnswerID; }
+
+		//----------------------------------------------------------------
+		// Map Menu Answer - the answer id sent for the chosen menu line
+		//----------------------------------------------------------------
+		int					MapMenuAnswer(int menuID) const;
 			
 		std::vector<int>	m_AnswerIDMap;	// 시간이 없어서 어쩔 수 없다-_-;
 
