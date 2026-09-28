@@ -29,13 +29,14 @@ PCTalkBox::PCTalkBox()
 //--------------------------------------------------------------------------
 // menuID is the 1-based exec id of the chosen menu line. m_AnswerIDMap
 // holds the 0-based answer index of each line, so line menuID answers
-// m_AnswerIDMap[menuID-1] + 1. An id past the end of the map is returned
-// unchanged.
+// m_AnswerIDMap[menuID-1] + 1. Any other id - below 1, such as the
+// negative DIALOG_EXECID_* values, or past the end of the map - is
+// returned unchanged.
 //--------------------------------------------------------------------------
 int
 PCTalkBox::MapMenuAnswer(int menuID) const
 {
-	if( m_AnswerIDMap.size() >= static_cast<size_t>(menuID) )
+	if( menuID > 0 && m_AnswerIDMap.size() >= static_cast<size_t>(menuID) )
 		return m_AnswerIDMap[menuID-1] + 1;
 
 	return menuID;
