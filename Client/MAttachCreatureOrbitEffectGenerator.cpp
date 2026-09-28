@@ -42,7 +42,7 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 		}
 	}
 
-	int effectPosition = rand()/(RAND_MAX/MAX_EFFECT_ORBIT_STEP);
+	int effectPosition = RandomIndex(rand(), MAX_EFFECT_ORBIT_STEP);
 
 	if( ConsultsPreviousOrbitStep(egInfo.effectSpriteType, pCreature->IsExistAttachEffect()) )
 	{

@@ -10,6 +10,7 @@
 #include "SkillDef.h"
 #include "UserInformation.h"
 #include "VS_UI.h"
+#include "OrbitEffectPolicy.h"
 extern MonotonicClock::TimePoint g_FrameNow;
 extern bool			HasEffectStatusSummonSylph( MCreature* pCreature );
 extern void			RemoveEffectStatusSummonSylph( MCreature* pCreature );
@@ -849,7 +850,7 @@ MFakeCreature::KeepTraceCreature()
 
 				if(GetCreatureType() == 702 || GetCreatureType() == 703 || GetCreatureType() == 704)
 				{
-					SetTurretFinalDirection( rand()/(RAND_MAX/32) );
+					SetTurretFinalDirection( (BYTE)RandomIndex(rand(), 32) );
 					m_nextMoveTime = MonotonicClock::Now() + MonotonicClock::Millis((rand()%3+2)*1000);
 					m_PatrolCount--;
 				}
