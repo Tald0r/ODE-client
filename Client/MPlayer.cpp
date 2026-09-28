@@ -68,6 +68,7 @@
 #include "RankBonusTable.h"
 #include "RankBonusDef.h"
 #include "MOustersGear.h"
+#include "MQuickSlot.h"
 
 #include "Cpackets/CGAbsorbSoul.h"
 
@@ -11914,12 +11915,12 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 	//------------------------------------------------------------------
 	// 일단 QuickSlot에 들어갈 수 있는지를 확인해야 한다.
 	//------------------------------------------------------------------
-	if ( (g_pQuickSlot!=NULL&&IsSlayer()) || (((g_pArmsBand1!=NULL||g_pArmsBand2!=NULL)&&IsOusters())
-		&& IsItemCheckBufferNULL()
-		&& g_pTempInformation->GetMode()==TempInformation::MODE_NULL
-		&& ((pItem->IsSlayerItem() && IsSlayer()) || 
-		(pItem->IsVampireItem() && IsVampire()) || 
-		(pItem->IsOustersItem() && IsOusters()))))
+	if (CanPickupItemToQuickslot( GetRace(),
+		g_pQuickSlot!=NULL,
+		g_pArmsBand1!=NULL||g_pArmsBand2!=NULL,
+		IsItemCheckBufferNULL(),
+		g_pTempInformation->GetMode()==TempInformation::MODE_NULL,
+		pItem ))
 	{
 		BOOL FirstArmsband = TRUE;
 		int slot;
