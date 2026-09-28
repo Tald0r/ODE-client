@@ -3850,9 +3850,6 @@ C_VS_UI_OUSTERS_SKILL_INFO::C_VS_UI_OUSTERS_SKILL_INFO(int skillID, int window_x
 
 	SetSkillID(skillID);
 	
-	//공통버튼
-	m_pC_button_group = new ButtonGroup(this);
-
 	int close_x = w-45, close_y = h-40;
 	int help_x = w-70, help_y = h-40;
 	int learn_x = w-140, learn_y = h-43;
@@ -5995,11 +5992,7 @@ C_VS_UI_FINDING_MINE::C_VS_UI_FINDING_MINE()
 
 // 	m_SPK.Open(SPK_HORN);
 	
-	//공통버튼
-	m_pC_button_group = new ButtonGroup(this);
-
 	int start_x = 30, start_y = BLOCK_START_Y-41;
-;
 
 	//공통버튼
 	m_pC_button_group = new ButtonGroup(this);
