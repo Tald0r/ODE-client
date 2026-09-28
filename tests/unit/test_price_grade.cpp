@@ -3,12 +3,16 @@
 //----------------------------------------------------------------------
 //
 // A graded item's shop quote must be what the server charges or pays.
-// The server (opendarkeden-server, PriceManager::getPrice and
-// getRepairPrice) scales the table price by (80 + 5 * grade) / 100.0
+// The server's rule (decore::itemPrice and repairPrice, vendored in
+// third_party/decore) scales the table price by (80 + 5 * grade) / 100.0
 // in double whenever the item's grade is not -1, before the options,
-// the wear and the market rate, and truncates once at the end.
-// ServerPrice and ServerRepairPrice below transcribe that arithmetic
-// and are the reference every quote here is checked against.
+// the wear and the market rate, and truncates once at the end. Its
+// parity vectors (third_party/decore/domain/vectors/price.tsv and
+// repair_price.tsv, asserted by decore_tests) are the reference: the
+// named checks below are their seed-* rows. The sweep checks the
+// adapter instead - that MPriceManager hands the rule the grade it
+// prices by, the options, the durability and the rate - by comparing
+// every quote with the rule called on inputs built by hand.
 //
 //----------------------------------------------------------------------
 
@@ -18,89 +22,40 @@
 #include "gamemodel_world.h"
 #include "MPriceManager.h"
 
+#include "domain/ItemPrice.h"
+
 #include <cstdio>
 #include <vector>
 
 namespace {
 
 //----------------------------------------------------------------------
-// The server's arithmetic, for an item with no charges.
+// The server's rule on a sword with no charges, given the table price,
+// the grade, the options' multipliers and the durability by hand.
 //----------------------------------------------------------------------
-double	ServerOptionedPrice(int price, int grade, const std::vector<int>& multipliers)
+decore::ItemPriceInput	RuleInput(int price, int grade, const std::vector<int>& multipliers, int cur, int max)
 {
-	double originalPrice = price;
-
-	if (grade != -1)
-	{
-		double gradePercent = 80 + (5 * grade);
-		originalPrice *= (gradePercent / 100.0);
-	}
-
-	if (!multipliers.empty())
-	{
-		double finalPrice = 0;
-		for (size_t i = 0; i < multipliers.size(); i++)
-		{
-			double priceMultiplier = (double)multipliers[i];
-			finalPrice += (originalPrice * priceMultiplier / 100);
-		}
-		originalPrice = finalPrice;
-	}
-
-	return originalPrice;
+	decore::ItemPriceInput input = {};
+	input.itemClass = ITEM_CLASS_SWORD;
+	input.basePrice = (unsigned)price;
+	input.grade = grade;
+	input.optionPriceMultipliers = multipliers.data();
+	input.optionCount = (int)multipliers.size();
+	input.curDurability = (unsigned)cur;
+	input.maxDurability = (unsigned)max;
+	return input;
 }
 
-// PriceManager::getPrice.
-int		ServerPrice(int price, int grade, const std::vector<int>& multipliers, int cur, int max, int nDiscount)
+int		RulePrice(int price, int grade, const std::vector<int>& multipliers, int cur, int max, int nDiscount)
 {
-	double originalPrice = ServerOptionedPrice(price, grade, multipliers);
-	double finalPrice = 0;
-
-	double maxDurability = (double)max;
-	double curDurability = (double)cur;
-
-	if (maxDurability > 1)
-		finalPrice = originalPrice * curDurability / maxDurability;
-	else
-		finalPrice = originalPrice;
-
-	finalPrice = finalPrice * nDiscount / 100;
-
-	int result = (int)finalPrice;
-	return result > 1 ? result : 1;
+	decore::ItemPriceInput input = RuleInput(price, grade, multipliers, cur, max);
+	input.marketCond = nDiscount;
+	return decore::itemPrice(input);
 }
 
-// PriceManager::getRepairPrice.
-int		ServerRepairPrice(int price, int grade, const std::vector<int>& multipliers, int cur, int max)
+int		RuleRepairPrice(int price, int grade, const std::vector<int>& multipliers, int cur, int max)
 {
-	double originalPrice = ServerOptionedPrice(price, grade, multipliers);
-	double finalPrice = 0;
-
-	double maxDurability = (double)max;
-	double curDurability = (double)cur;
-
-	if (maxDurability != 0)
-	{
-		if (curDurability == maxDurability)
-		{
-			return 0;
-		}
-		finalPrice = originalPrice * curDurability / maxDurability;
-	}
-	else
-	{
-		finalPrice = originalPrice;
-	}
-
-	finalPrice = (originalPrice - finalPrice) / 10.0;
-
-	if (finalPrice < 1.0)
-	{
-		return 1;
-	}
-
-	int result = (int)finalPrice;
-	return result > 0 ? result : 0;
+	return decore::repairPrice(RuleInput(price, grade, multipliers, cur, max));
 }
 
 //----------------------------------------------------------------------
@@ -182,21 +137,20 @@ TEST(PriceGrade, GradedPricesMatchTheServer)
 {
 	GradeWorld world;
 	MPriceManager prices;
-	const std::vector<int> none;
 
 	// 27 at grade 3 is 25.65, and two thirds of that is 17.1: the
-	// server pays 17, not 16 from two thirds of a truncated 25.
+	// server pays 17, not 16 from two thirds of a truncated 25
+	// (price.tsv, seed-grade-3-on-27-two-thirds).
 	world.SetSwordPrice(27);
 	GradedGear worn(3, 3, 2);
-	CHECK_EQ(ServerPrice(27, 3, none, 2, 3, 100), 17);
 	CHECK_EQ(17, prices.GetItemPrice(&worn, MPriceManager::NPC_TO_PC));
 
 	// 1003 at grade 9 is 1253.75. Repairing 3 of 4 is a tenth of the
 	// 940.3125 the wear took: the server charges 94, not 93 from a
-	// truncated 1253.
+	// truncated 1253 (repair_price.tsv,
+	// seed-grade-9-on-1003-three-quarters-lost).
 	world.SetSwordPrice(1003);
 	GradedGear dented(9, 4, 1);
-	CHECK_EQ(ServerRepairPrice(1003, 9, none, 1, 4), 94);
 	CHECK_EQ(94, prices.GetItemPrice(&dented, MPriceManager::REPAIR));
 }
 
@@ -207,23 +161,19 @@ TEST(PriceGrade, EveryGradeButNoneScalesAGearPrice)
 {
 	GradeWorld world;
 	MPriceManager prices;
-	const std::vector<int> none;
 
 	world.SetSwordPrice(1000);
 
-	// No grade: the table price.
+	// No grade: the table price (price.tsv, seed-no-grade).
 	GradedGear ungraded(-1, 100, 100);
-	CHECK_EQ(ServerPrice(1000, -1, none, 100, 100, 100), 1000);
 	CHECK_EQ(1000, prices.GetItemPrice(&ungraded, MPriceManager::NPC_TO_PC));
 
-	// Grade 0 is a grade to the server: 80%.
+	// Grade 0 is a grade to the server: 80% (seed-grade-0-is-80pct).
 	GradedGear zero(0, 100, 100);
-	CHECK_EQ(ServerPrice(1000, 0, none, 100, 100, 100), 800);
 	CHECK_EQ(800, prices.GetItemPrice(&zero, MPriceManager::NPC_TO_PC));
 
-	// So is a grade past 10: grade 11 is 135%.
+	// So is a grade past 10: grade 11 is 135% (seed-grade-11-is-135pct).
 	GradedGear eleven(11, 100, 100);
-	CHECK_EQ(ServerPrice(1000, 11, none, 100, 100, 100), 1350);
 	CHECK_EQ(1350, prices.GetItemPrice(&eleven, MPriceManager::NPC_TO_PC));
 
 	// An item that is not gear is not priced by its grade field.
@@ -286,7 +236,7 @@ TEST(PriceGrade, EveryGradedQuoteInASweepMatchesTheServer)
 							prices.SetMarketCondSell(kRates[k]);
 							prices.SetMarketCondBuy(kRates[k]);
 
-							const int expected = ServerPrice(kPrices[p], grade, multipliers, cur, max, kRates[k]);
+							const int expected = RulePrice(kPrices[p], grade, multipliers, cur, max, kRates[k]);
 							const int bought = prices.GetItemPrice(&item, MPriceManager::NPC_TO_PC);
 							const int sold = prices.GetItemPrice(&item, MPriceManager::PC_TO_NPC);
 							checked += 2;
@@ -307,7 +257,7 @@ TEST(PriceGrade, EveryGradedQuoteInASweepMatchesTheServer)
 						// The server repairs only what has a durability.
 						if (max > 0)
 						{
-							const int expected = ServerRepairPrice(kPrices[p], grade, multipliers, cur, max);
+							const int expected = RuleRepairPrice(kPrices[p], grade, multipliers, cur, max);
 							const int repaired = prices.GetItemPrice(&item, MPriceManager::REPAIR);
 							checked++;
 
