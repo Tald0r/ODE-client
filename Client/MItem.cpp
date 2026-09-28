@@ -24,7 +24,10 @@
 #include "MGameStringTable.h"
 #include "MItemLimits.h"
 
+#include "domain/ItemDurability.h"
+
 #include <fstream>
+#include <vector>
 #include <algorithm>
 
 //----------------------------------------------------------------------
@@ -552,35 +555,44 @@ void	MUsePotionItem::UseInventory()
 }
 
 //----------------------------------------------------------------------
-// MGearItem::Get MaxDurability
+// Gear Max Durability
 //----------------------------------------------------------------------
-int	
-MGearItem::GetMaxDurability() const	
-{ 
-	int maxDur = (*g_pItemTable)[GetItemClass()][m_ItemType].Value1; 
+// The server's maximum durability for a gear item (decore::maxDurability:
+// ConcreteItem::getMaxDurability, then computeMaxDurability): the table
+// durability moved by gradePitch a grade from grade 4, floored at 1000,
+// then scaled by the durability options' plus-points. Nothing caps it.
+//----------------------------------------------------------------------
+static int
+GearMaxDurability(const MItem* pItem, int tableDurability, int gradePitch)
+{
+	std::vector<int> plusPoints;
 
-	maxDur += (GetGrade()-4)*1000;
+	const std::list<TYPE_ITEM_OPTION>& optionList = pItem->GetItemOptionList();
+	std::list<TYPE_ITEM_OPTION>::const_iterator itr = optionList.begin();
 
-	int plus_point = 100;
-
-	std::list<TYPE_ITEM_OPTION>::const_iterator itr = m_ItemOptionList.begin();
-
-	while(itr != m_ItemOptionList.end())
+	while(itr != optionList.end())
 	{
 		const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[*itr];
 		
 		if (optionInfo.Part == ITEMOPTION_TABLE::PART_DURABILITY)
 		{
-			plus_point += optionInfo.PlusPoint-100;
+			plusPoints.push_back(optionInfo.PlusPoint);
 		}
 
 		itr++;
 	}
 
-	if(plus_point != 0)
-		maxDur = maxDur * plus_point / 100;
+	return (int)decore::maxDurability((unsigned)tableDurability, true, (pItem->GetGrade()-4)*gradePitch,
+									  plusPoints.data(), (int)plusPoints.size());
+}
 
-	return max( min( 65000, maxDur ), 1000 );
+//----------------------------------------------------------------------
+// MGearItem::Get MaxDurability
+//----------------------------------------------------------------------
+int
+MGearItem::GetMaxDurability() const
+{
+	return GearMaxDurability(this, (*g_pItemTable)[GetItemClass()][m_ItemType].Value1, 1000);
 }
 
 int
@@ -629,33 +641,10 @@ MArmorItem2::GetDefenseValue() const
 {
 	return max( 0, MGearItem::GetDefenseValue() + (GetGrade()-4) );
 }
-int	
-MArmorItem2::GetMaxDurability() const	
-{ 
-	int maxDur = (*g_pItemTable)[GetItemClass()][m_ItemType].Value1; 
-
-	maxDur += (GetGrade()-4)*500;
-
-	int plus_point = 100;
-
-	std::list<TYPE_ITEM_OPTION>::const_iterator itr = m_ItemOptionList.begin();
-
-	while(itr != m_ItemOptionList.end())
-	{
-		const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[*itr];
-		
-		if (optionInfo.Part == ITEMOPTION_TABLE::PART_DURABILITY)
-		{
-			plus_point += optionInfo.PlusPoint-100;
-		}
-
-		itr++;
-	}
-
-	if(plus_point != 0)
-		maxDur = maxDur * plus_point / 100;
-
-	return max( min( 65000, maxDur ), 1000 );
+int
+MArmorItem2::GetMaxDurability() const
+{
+	return GearMaxDurability(this, (*g_pItemTable)[GetItemClass()][m_ItemType].Value1, 500);
 }
 
 int
