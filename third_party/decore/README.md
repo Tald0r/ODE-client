@@ -4,7 +4,7 @@
 `src/domain` in [bound2/opendarkeden-server](https://github.com/bound2/opendarkeden-server):
 the rules the client and the server both compute, implemented once, there.
 
-Last synced from server commit: 72dba2381c2c5a0039495770d4ee05aaffce3e8a
+Last synced from server commit: 291bee79b7f1d0333c4cbbb18cff8b0e01e03558
 
 **Never edit anything under `domain/`, and never reformat it.** Change the
 rule on the server, then resync:

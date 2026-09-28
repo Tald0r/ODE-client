@@ -8,6 +8,7 @@
 add_library(decore STATIC
 	domain/Formulas.cpp
 	domain/ItemDurability.cpp
+	domain/ItemGrade.cpp
 	domain/ItemPrice.cpp
 )
 

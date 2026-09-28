@@ -15,8 +15,9 @@
 // The reader mirrors the server's (tests/formula_test.cpp there): LF
 // only, '#' comments and blank lines skipped, each row is function, row
 // name, the inputs in the order the file's header documents, and the
-// expected value last, compared as decimal text with std::to_string of
-// the result. Row names are unique within a file, every file has at
+// expected value last, compared as text: a number as std::to_string
+// writes it, a grade policy by its enumerator name, and gradeOffsets'
+// struct as its six fields comma-separated, in declaration order. Row names are unique within a file, every file has at
 // least one row for each function it belongs to, and a vector file this
 // suite does not know fails rather than being skipped.
 //
@@ -28,6 +29,7 @@
 #include "test_framework.h"
 
 #include "domain/ItemDurability.h"
+#include "domain/ItemGrade.h"
 #include "domain/ItemPrice.h"
 
 #include <cstdio>
@@ -53,6 +55,7 @@ const std::map<std::string, std::set<std::string>>&	KnownFiles()
 		{ "price.tsv", { "itemPrice", "skullSellTotal" } },
 		{ "repair_price.tsv", { "repairPrice" } },
 		{ "durability.tsv", { "maxDurabilityBase", "maxDurabilityWithOptions", "maxDurability" } },
+		{ "item_grade.tsv", { "gradeOffsets", "gradePolicyOf", "hasDurability" } },
 	};
 	return files;
 }
@@ -60,6 +63,29 @@ const std::map<std::string, std::set<std::string>>&	KnownFiles()
 void	Fail(const std::string& message)
 {
 	::testfw::RecordFailure(__FILE__, __LINE__, message.c_str());
+}
+
+//----------------------------------------------------------------------
+// The grade policies, and the names the vector files spell them by: the
+// enumerator names, as the server's harness spells them.
+//----------------------------------------------------------------------
+const decore::GradePolicy	kGradePolicies[] = {
+	decore::GradePolicy::None, decore::GradePolicy::Plain, decore::GradePolicy::Weapon,
+	decore::GradePolicy::Cloth, decore::GradePolicy::Grocery, decore::GradePolicy::Accessory,
+};
+
+std::string	GradePolicyName(decore::GradePolicy policy)
+{
+	switch (policy)
+	{
+		case decore::GradePolicy::None :		return "None";
+		case decore::GradePolicy::Plain :		return "Plain";
+		case decore::GradePolicy::Weapon :		return "Weapon";
+		case decore::GradePolicy::Cloth :		return "Cloth";
+		case decore::GradePolicy::Grocery :		return "Grocery";
+		case decore::GradePolicy::Accessory :	return "Accessory";
+	}
+	return "?";
 }
 
 std::vector<std::string>	SplitTabs(const std::string& line)
@@ -140,6 +166,18 @@ public:
 		return decore::PriceRace::None;
 	}
 
+	decore::GradePolicy	GradePolicy()
+	{
+		const std::string text = Next();
+		for (decore::GradePolicy policy : kGradePolicies)
+		{
+			if (text == GradePolicyName(policy))
+				return policy;
+		}
+		SetError("not a grade policy: \"" + text + "\"");
+		return decore::GradePolicy::None;
+	}
+
 	// Every input consumed, and exactly the expected column left.
 	void	Finish()
 	{
@@ -191,8 +229,8 @@ decore::ItemPriceInput	ReadPriceItem(RowReader& in, std::vector<int>& multiplier
 }
 
 //----------------------------------------------------------------------
-// Evaluates one row and returns the result as decimal text; sets
-// `error` for a row this suite cannot read.
+// Evaluates one row and returns the result as the expected column
+// spells it; sets `error` for a row this suite cannot read.
 //----------------------------------------------------------------------
 std::string	EvaluateRow(const std::vector<std::string>& fields, std::string& error)
 {
@@ -255,6 +293,30 @@ std::string	EvaluateRow(const std::vector<std::string>& fields, std::string& err
 		const std::vector<int> plusPoints = in.List();
 		in.Finish();
 		result = decore::maxDurability(info, hasDurability, offset, plusPoints.data(), (int)plusPoints.size());
+	}
+	else if (function == "gradeOffsets")
+	{
+		const decore::GradePolicy policy = in.GradePolicy();
+		const int grade = (int)in.Integer();
+		in.Finish();
+		error = in.Error();
+		const decore::GradeOffsets offsets = decore::gradeOffsets(policy, grade);
+		return std::to_string(offsets.durability) + "," + std::to_string(offsets.damage)
+			+ "," + std::to_string(offsets.critical) + "," + std::to_string(offsets.defense)
+			+ "," + std::to_string(offsets.protection) + "," + std::to_string(offsets.luck);
+	}
+	else if (function == "gradePolicyOf")
+	{
+		const int itemClass = (int)in.Integer();
+		in.Finish();
+		error = in.Error();
+		return GradePolicyName(decore::gradePolicyOf(itemClass));
+	}
+	else if (function == "hasDurability")
+	{
+		const int itemClass = (int)in.Integer();
+		in.Finish();
+		result = decore::hasDurability(itemClass) ? 1 : 0;
 	}
 	else
 	{
@@ -353,6 +415,11 @@ TEST(DecoreVectors, RepairPrice)
 TEST(DecoreVectors, Durability)
 {
 	CHECK(CheckVectorFile("durability.tsv") > 0);
+}
+
+TEST(DecoreVectors, ItemGrade)
+{
+	CHECK(CheckVectorFile("item_grade.tsv") > 0);
 }
 
 //----------------------------------------------------------------------

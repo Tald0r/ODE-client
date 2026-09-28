@@ -24,11 +24,109 @@
 #include "MGameStringTable.h"
 #include "MItemLimits.h"
 
+#include "domain/ItemClass.h"
 #include "domain/ItemDurability.h"
 
 #include <fstream>
 #include <vector>
 #include <algorithm>
+
+//----------------------------------------------------------------------
+// de-core's rules (third_party/decore) name the wire item classes by
+// decore::itemclass, and its grade and durability table is keyed by
+// them: each id must be this client's.
+//----------------------------------------------------------------------
+static_assert(decore::itemclass::Motorcycle == ITEM_CLASS_MOTORCYCLE);
+static_assert(decore::itemclass::Potion == ITEM_CLASS_POTION);
+static_assert(decore::itemclass::Water == ITEM_CLASS_WATER);
+static_assert(decore::itemclass::HolyWater == ITEM_CLASS_HOLYWATER);
+static_assert(decore::itemclass::Magazine == ITEM_CLASS_MAGAZINE);
+static_assert(decore::itemclass::BombMaterial == ITEM_CLASS_BOMB_MATERIAL);
+static_assert(decore::itemclass::Etc == ITEM_CLASS_ETC);
+static_assert(decore::itemclass::Key == ITEM_CLASS_KEY);
+static_assert(decore::itemclass::Ring == ITEM_CLASS_RING);
+static_assert(decore::itemclass::Bracelet == ITEM_CLASS_BRACELET);
+static_assert(decore::itemclass::Necklace == ITEM_CLASS_NECKLACE);
+static_assert(decore::itemclass::Coat == ITEM_CLASS_COAT);
+static_assert(decore::itemclass::Trouser == ITEM_CLASS_TROUSER);
+static_assert(decore::itemclass::Shoes == ITEM_CLASS_SHOES);
+static_assert(decore::itemclass::Sword == ITEM_CLASS_SWORD);
+static_assert(decore::itemclass::Blade == ITEM_CLASS_BLADE);
+static_assert(decore::itemclass::Shield == ITEM_CLASS_SHIELD);
+static_assert(decore::itemclass::Cross == ITEM_CLASS_CROSS);
+static_assert(decore::itemclass::Glove == ITEM_CLASS_GLOVE);
+static_assert(decore::itemclass::Helm == ITEM_CLASS_HELM);
+static_assert(decore::itemclass::SG == ITEM_CLASS_SG);
+static_assert(decore::itemclass::SMG == ITEM_CLASS_SMG);
+static_assert(decore::itemclass::AR == ITEM_CLASS_AR);
+static_assert(decore::itemclass::SR == ITEM_CLASS_SR);
+static_assert(decore::itemclass::Bomb == ITEM_CLASS_BOMB);
+static_assert(decore::itemclass::Mine == ITEM_CLASS_MINE);
+static_assert(decore::itemclass::Belt == ITEM_CLASS_BELT);
+static_assert(decore::itemclass::LearningItem == ITEM_CLASS_LEARNINGITEM);
+static_assert(decore::itemclass::Money == ITEM_CLASS_MONEY);
+static_assert(decore::itemclass::Corpse == ITEM_CLASS_CORPSE);
+static_assert(decore::itemclass::VampireRing == ITEM_CLASS_VAMPIRE_RING);
+static_assert(decore::itemclass::VampireBracelet == ITEM_CLASS_VAMPIRE_BRACELET);
+static_assert(decore::itemclass::VampireNecklace == ITEM_CLASS_VAMPIRE_NECKLACE);
+static_assert(decore::itemclass::VampireCoat == ITEM_CLASS_VAMPIRE_COAT);
+static_assert(decore::itemclass::Skull == ITEM_CLASS_SKULL);
+static_assert(decore::itemclass::Mace == ITEM_CLASS_MACE);
+static_assert(decore::itemclass::Serum == ITEM_CLASS_SERUM);
+static_assert(decore::itemclass::VampireEtc == ITEM_CLASS_VAMPIRE_ETC);
+static_assert(decore::itemclass::SlayerPortalItem == ITEM_CLASS_SLAYER_PORTAL_ITEM);
+static_assert(decore::itemclass::VampirePortalItem == ITEM_CLASS_VAMPIRE_PORTAL_ITEM);
+static_assert(decore::itemclass::EventGiftBox == ITEM_CLASS_EVENT_GIFT_BOX);
+static_assert(decore::itemclass::EventStar == ITEM_CLASS_EVENT_STAR);
+static_assert(decore::itemclass::VampireEarring == ITEM_CLASS_VAMPIRE_EARRING);
+static_assert(decore::itemclass::Relic == ITEM_CLASS_RELIC);
+static_assert(decore::itemclass::VampireWeapon == ITEM_CLASS_VAMPIRE_WEAPON);
+static_assert(decore::itemclass::VampireAmulet == ITEM_CLASS_VAMPIRE_AMULET);
+static_assert(decore::itemclass::QuestItem == ITEM_CLASS_QUEST_ITEM);
+static_assert(decore::itemclass::EventTree == ITEM_CLASS_EVENT_TREE);
+static_assert(decore::itemclass::EventEtc == ITEM_CLASS_EVENT_ETC);
+static_assert(decore::itemclass::BloodBible == ITEM_CLASS_BLOOD_BIBLE);
+static_assert(decore::itemclass::CastleSymbol == ITEM_CLASS_CASTLE_SYMBOL);
+static_assert(decore::itemclass::CoupleRing == ITEM_CLASS_COUPLE_RING);
+static_assert(decore::itemclass::VampireCoupleRing == ITEM_CLASS_VAMPIRE_COUPLE_RING);
+static_assert(decore::itemclass::EventItem == ITEM_CLASS_EVENT_ITEM);
+static_assert(decore::itemclass::DyePotion == ITEM_CLASS_DYE_POTION);
+static_assert(decore::itemclass::ResurrectItem == ITEM_CLASS_RESURRECT_ITEM);
+static_assert(decore::itemclass::MixingItem == ITEM_CLASS_MIXING_ITEM);
+static_assert(decore::itemclass::OustersArmsband == ITEM_CLASS_OUSTERS_ARMSBAND);
+static_assert(decore::itemclass::OustersBoots == ITEM_CLASS_OUSTERS_BOOTS);
+static_assert(decore::itemclass::OustersChakram == ITEM_CLASS_OUSTERS_CHAKRAM);
+static_assert(decore::itemclass::OustersCirclet == ITEM_CLASS_OUSTERS_CIRCLET);
+static_assert(decore::itemclass::OustersCoat == ITEM_CLASS_OUSTERS_COAT);
+static_assert(decore::itemclass::OustersPendent == ITEM_CLASS_OUSTERS_PENDENT);
+static_assert(decore::itemclass::OustersRing == ITEM_CLASS_OUSTERS_RING);
+static_assert(decore::itemclass::OustersStone == ITEM_CLASS_OUSTERS_STONE);
+static_assert(decore::itemclass::OustersWristlet == ITEM_CLASS_OUSTERS_WRISTLET);
+static_assert(decore::itemclass::Larva == ITEM_CLASS_LARVA);
+static_assert(decore::itemclass::Pupa == ITEM_CLASS_PUPA);
+static_assert(decore::itemclass::ComposMei == ITEM_CLASS_COMPOS_MEI);
+static_assert(decore::itemclass::OustersSummonItem == ITEM_CLASS_OUSTERS_SUMMON_ITEM);
+static_assert(decore::itemclass::EffectItem == ITEM_CLASS_EFFECT_ITEM);
+static_assert(decore::itemclass::CodeSheet == ITEM_CLASS_CODE_SHEET);
+static_assert(decore::itemclass::MoonCard == ITEM_CLASS_MOON_CARD);
+static_assert(decore::itemclass::Sweeper == ITEM_CLASS_SWEEPER);
+static_assert(decore::itemclass::PetItem == ITEM_CLASS_PET_ITEM);
+static_assert(decore::itemclass::PetFood == ITEM_CLASS_PET_FOOD);
+static_assert(decore::itemclass::PetEnchantItem == ITEM_CLASS_PET_ENCHANT_ITEM);
+static_assert(decore::itemclass::LuckyBag == ITEM_CLASS_LUCKY_BAG);
+static_assert(decore::itemclass::SMSItem == ITEM_CLASS_SMS_ITEM);
+static_assert(decore::itemclass::CoreZap == ITEM_CLASS_CORE_ZAP);
+static_assert(decore::itemclass::GQuestItem == ITEM_CLASS_GQUEST_ITEM);
+static_assert(decore::itemclass::TrapItem == ITEM_CLASS_TRAP_ITEM);
+static_assert(decore::itemclass::BloodBibleSign == ITEM_CLASS_BLOOD_BIBLE_SIGN);
+static_assert(decore::itemclass::WarItem == ITEM_CLASS_WAR_ITEM);
+static_assert(decore::itemclass::CarryingReceiver == ITEM_CLASS_CARRYING_RECEIVER);
+static_assert(decore::itemclass::ShoulderArmor == ITEM_CLASS_SHOULDER_ARMOR);
+static_assert(decore::itemclass::Dermis == ITEM_CLASS_DERMIS);
+static_assert(decore::itemclass::Persona == ITEM_CLASS_PERSONA);
+static_assert(decore::itemclass::Fascia == ITEM_CLASS_FASCIA);
+static_assert(decore::itemclass::Mitten == ITEM_CLASS_MITTEN);
+static_assert(decore::itemclass::Count == MAX_ITEM_CLASS);
 
 //----------------------------------------------------------------------
 //
