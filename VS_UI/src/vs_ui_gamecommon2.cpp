@@ -17365,7 +17365,7 @@ void	C_VS_UI_POWER_JJANG::PowerjjangGambleResult(BYTE bItemCode)
 	int ScrPos = m_pC_scroll_bar->GetScrollPos();
 	if(m_SelectPos != ScrPos)
 	{
-		for(int i = 0; static_cast<size_t>(i)<m_Powerjjang_ItemList.size()-1; i++)
+		for(size_t i = 0; i + 1 < m_Powerjjang_ItemList.size(); i++)
 		{
 			m_pC_scroll_bar->ScrollDown();
 			ScrPos = m_pC_scroll_bar->GetScrollPos();
