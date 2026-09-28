@@ -24065,6 +24065,9 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 		m_lev_search.Acquire();
 	
 	int scroll_tag_x = x+365+m_vampire_point.x, scroll_tag_y = y+108+m_vampire_point.y, scroll_tag_height = 198;
+	// The shown list is the search result when there is one, else the full list.
+	const size_t search_size = m_bl_ready ? m_v_ready_team_search_list.size() : m_v_regist_team_search_list.size();
+	const size_t shown_size = search_size ? search_size : (m_bl_ready ? m_v_ready_team_list.size() : m_v_regist_team_list.size());
 	
 	Window::MouseControl(message, _x, _y);
 	
@@ -24073,19 +24076,10 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 	case M_MOVING:
 		if(m_bl_scrolling)
 		{
-			if(m_bl_ready)
+			if(shown_size > 9)	// only when the shown list scrolls
 			{
-				if(m_v_ready_team_search_list.size())
-					m_scroll = static_cast<int>(min(m_v_ready_team_search_list.size()-9, (m_v_ready_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height));
-				else
-					m_scroll = static_cast<int>(min(m_v_ready_team_list.size()-9, (m_v_ready_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height));
-			}
-			else
-			{
-				if(m_v_regist_team_search_list.size())
-					m_scroll = static_cast<int>(min(m_v_regist_team_search_list.size()-9, (m_v_regist_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height));
-				else
-					m_scroll = static_cast<int>(min(m_v_regist_team_list.size()-9, (m_v_regist_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height));
+				const size_t range = shown_size - 9;
+				m_scroll = static_cast<int>(min(range, range*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/range/2)/scroll_tag_height));
 			}
 		}
 		else
@@ -24115,33 +24109,11 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 	case M_LB_DOUBLECLICK:
 		if(_x >= scroll_tag_x && _x <= scroll_tag_x+m_guild_spk.GetWidth(SCROLL_BAR) && _y >= scroll_tag_y && _y <= scroll_tag_y+scroll_tag_height)
 		{
-			if(m_bl_ready)
+			if(shown_size > 9)	// only when the shown list scrolls
 			{
-				if(m_v_ready_team_search_list.size() > 9)
-				{
-					m_bl_scrolling = true;
-					m_scroll = static_cast<int>((m_v_ready_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height);
-				}
-				else
-					if(m_v_ready_team_list.size() > 9)	// 스크롤이 생기는 경우에만
-					{
-						m_bl_scrolling = true;
-						m_scroll = static_cast<int>((m_v_ready_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height);
-					}
-			}
-			else
-			{
-				if(m_v_regist_team_search_list.size() > 9)	// 스크롤이 생기는 경우에만
-				{
-					m_bl_scrolling = true;
-					m_scroll = static_cast<int>((m_v_regist_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height);
-				}
-				else
-					if(m_v_regist_team_list.size() > 9)	// 스크롤이 생기는 경우에만
-					{
-						m_bl_scrolling = true;
-						m_scroll = static_cast<int>((m_v_regist_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height);
-					}
+				m_bl_scrolling = true;
+				const size_t range = shown_size - 9;
+				m_scroll = static_cast<int>(range*(_y - scroll_tag_y + scroll_tag_height/range/2)/scroll_tag_height);
 			}
 		}
 		else if(m_iFocus != -1)
