@@ -174,3 +174,15 @@ TEST(PartyModel, IndexQueriesOnlyReturnOccupiedMembers)
 	CHECK(party.RemoveMember(1));
 	CHECK(party.GetMemberInfo(0) == nullptr);
 }
+
+TEST(PartyModel, MemberIsInSightOnlyInThePlayersZoneAndWithinOneAndAHalfSight)
+{
+	// Sight 13 gives a range of 13 + 6 = 19 tiles, summed over X and Y.
+	CHECK(MParty::IsMemberInSight(13, 100, 100, 13, 102, 101, 13));
+	CHECK(MParty::IsMemberInSight(13, 100, 100, 13, 110, 109, 13));
+	CHECK(!MParty::IsMemberInSight(13, 100, 100, 13, 110, 110, 13));
+	CHECK(!MParty::IsMemberInSight(13, 0, 0, 13, 100, 100, 13));
+	// A member in another zone is not in sight, whatever its coordinates.
+	CHECK(!MParty::IsMemberInSight(14, 100, 100, 13, 100, 100, 13));
+	CHECK(!MParty::IsMemberInSight(14, 100, 100, 13, 102, 101, 13));
+}

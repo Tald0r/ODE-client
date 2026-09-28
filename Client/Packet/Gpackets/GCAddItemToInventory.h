@@ -26,7 +26,7 @@ public:
 public:
     void read(SocketInputStream & iStream);
     void write(SocketOutputStream & oStream) const;
-	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szObjectID + szCoord + szCoord + szBYTE + szItemType + szBYTE + m_OptionType.size() + szDurability); }
+	PacketSize_t getPacketSize() const { return static_cast<PacketSize_t>(szObjectID + szCoord + szCoord + szBYTE + szItemType + szBYTE + m_OptionType.size() + szDurability + szItemNum); }
 
 #ifdef __DEBUG_OUTPUT__	
 	std::string getPacketName() const { return "GCAddItemToInventory"; }

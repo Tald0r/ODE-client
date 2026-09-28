@@ -610,7 +610,7 @@ void C_VS_UI_DIALOG::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 						if(p_button->y-i*TEXT_EXTRA_HGAP-y_skip_line+m_menu_str_height*i<m_menu_rect.y+m_menu_rect.h)
 						{
 							//m_p_menu[p_button->m_image_index].sz_menu_str[i].c_str()
-							if(m_p_menu != NULL && static_cast<UINT>(p_button->m_image_index) < m_menu_count && static_cast<size_t>(i) <= m_p_menu[p_button->m_image_index].sz_menu_str.size() && m_p_menu[p_button->m_image_index].sz_menu_str[i].size() > 0)
+							if(m_p_menu != NULL && static_cast<UINT>(p_button->m_image_index) < m_menu_count && static_cast<size_t>(i) < m_p_menu[p_button->m_image_index].sz_menu_str.size() && m_p_menu[p_button->m_image_index].sz_menu_str[i].size() > 0)
 								textService.DrawLine(
 									target,
 									m_p_menu[p_button->m_image_index].sz_menu_str[i].c_str(),

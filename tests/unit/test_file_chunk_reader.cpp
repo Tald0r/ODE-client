@@ -21,6 +21,12 @@
 #include <string>
 #include <vector>
 
+#ifndef _WIN32
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 namespace {
 
 // A file of `size` bytes whose every byte says where it is.
@@ -127,3 +133,54 @@ TEST(FileChunkReader, UnreadAfterTheShortLastChunkReturnsItsTail)
 	CHECK_EQ(0u, reader.GetBytesLeft());
 	reader.Close();
 }
+
+#ifndef _WIN32
+// A FIFO opens but cannot seek, so its size cannot be read: tellg after
+// the seek to the end is -1. Such a file is treated as one that does not
+// open, rather than as 0xFFFFFFFF bytes left, which the send loop would
+// wait on forever. The FIFO is held open at both ends without blocking,
+// so the reader's own blocking open returns at once.
+namespace {
+
+struct Fifo
+{
+	std::string path;
+	int keeper = -1;
+	int writer = -1;
+	bool made = false;
+
+	Fifo()
+	{
+		const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+		path = (std::filesystem::temp_directory_path()
+			/ ("darkeden_file_chunk_reader_fifo_" + std::to_string(stamp))).string();
+		made = mkfifo(path.c_str(), 0600) == 0;
+		if (made)
+			keeper = open(path.c_str(), O_RDONLY | O_NONBLOCK);
+		if (keeper >= 0)
+			writer = open(path.c_str(), O_WRONLY | O_NONBLOCK);
+	}
+
+	~Fifo()
+	{
+		if (writer >= 0) close(writer);
+		if (keeper >= 0) close(keeper);
+		if (made) unlink(path.c_str());
+	}
+};
+
+}
+
+TEST(FileChunkReader, AFileWhoseSizeCannotBeReadLeavesNothing)
+{
+	Fifo fifo;
+	CHECK(fifo.writer >= 0);
+	if (fifo.writer < 0) return;
+
+	Basic::FileChunkReader reader;
+	reader.Open(fifo.path);
+	CHECK(!reader.IsOpen());
+	CHECK_EQ(0u, reader.GetBytesLeft());
+	reader.Close();
+}
+#endif

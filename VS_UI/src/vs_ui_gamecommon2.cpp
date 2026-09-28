@@ -2305,7 +2305,7 @@ bool	C_VS_UI_MIXING_FORGE::MouseControl(UINT message, int _x, int _y)
 			if (distance_x >= 0 && distance_x < m_my_grid_rect.w && 
 				 distance_y >= 0 && distance_y < m_my_grid_rect.h)
 			{
-				if((gpC_Imm && m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X) || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)
+				if(gpC_Imm != NULL && (m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y))
 					gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 				m_focus_grid_x = distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X;
 				m_focus_grid_y = distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y;
@@ -2354,7 +2354,7 @@ bool	C_VS_UI_MIXING_FORGE::MouseControl(UINT message, int _x, int _y)
 				return true;
 			}			
 		}
-		if((gpC_Imm && m_focus_grid_x != NOT_SELECTED) || m_focus_grid_y != NOT_SELECTED)
+		if(gpC_Imm != NULL && (m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED))
 			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		m_focus_grid_x = NOT_SELECTED;
 		m_focus_grid_y = NOT_SELECTED;
@@ -3850,9 +3850,6 @@ C_VS_UI_OUSTERS_SKILL_INFO::C_VS_UI_OUSTERS_SKILL_INFO(int skillID, int window_x
 
 	SetSkillID(skillID);
 	
-	//공통버튼
-	m_pC_button_group = new ButtonGroup(this);
-
 	int close_x = w-45, close_y = h-40;
 	int help_x = w-70, help_y = h-40;
 	int learn_x = w-140, learn_y = h-43;
@@ -5164,8 +5161,9 @@ void	C_VS_UI_MAILBOX::Show()
 			if(m_pC_scroll_bar->GetScrollPos() >= 0 )
 			{
 				m_overcnt = m_pC_scroll_bar->GetScrollPos();
-				if(static_cast<size_t>(m_overcnt) > m_mail[m_currentTab].size()-m_listCount)
-					m_overcnt = static_cast<int>(m_mail[m_currentTab].size()-m_listCount);
+				const int maxOver = (std::max)(0, static_cast<int>(m_mail[m_currentTab].size()) - m_listCount);
+				if(m_overcnt > maxOver)
+					m_overcnt = maxOver;
 			}
 			
 
@@ -5191,7 +5189,7 @@ void	C_VS_UI_MAILBOX::Show()
 
 			int line = 0;
 
-			for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+			for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex + m_overcnt) < m_mail[m_currentTab].size(); mailIndex++)
 			{
 				if(m_mail[m_currentTab][mailIndex+m_overcnt].show)
 				{
@@ -5216,7 +5214,7 @@ void	C_VS_UI_MAILBOX::Show()
 		int line = 0;
 
 
-		for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+		for(int mailIndex = 0; line < m_listCount && static_cast<size_t>(mailIndex + m_overcnt) < m_mail[m_currentTab].size(); mailIndex++)
 		{
 			if(m_mail[m_currentTab][mailIndex+m_overcnt].show)
 			{
@@ -5274,7 +5272,7 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 
 			// 범위를 넘어가면 -1
 			int indexSize = 0;
-			for(int mailIndex = 0; static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+			for(size_t mailIndex = static_cast<size_t>(m_overcnt); mailIndex < m_mail[m_currentTab].size(); mailIndex++)
 			{
 				if(m_mail[m_currentTab][mailIndex].show == true)
 					indexSize++;
@@ -5297,13 +5295,13 @@ bool	C_VS_UI_MAILBOX::MouseControl(UINT message, int _x, int _y)
 			if(m_focusContents != -1)
 			{
 				int index = 0;
-				for(int mailIndex = 0; static_cast<size_t>(mailIndex) < m_mail[m_currentTab].size(); mailIndex++)
+				for(size_t mailIndex = static_cast<size_t>(m_overcnt); mailIndex < m_mail[m_currentTab].size(); mailIndex++)
 				{
 					if(m_mail[m_currentTab][mailIndex].show == true)
 					{
 						if(index == m_focusContents)
 						{
-							int ID = m_mail[m_currentTab][mailIndex+m_overcnt].id;
+							int ID = m_mail[m_currentTab][mailIndex].id;
 							ReadMail(m_currentTab, ID);
 							break;
 						}
@@ -5995,11 +5993,7 @@ C_VS_UI_FINDING_MINE::C_VS_UI_FINDING_MINE()
 
 // 	m_SPK.Open(SPK_HORN);
 	
-	//공통버튼
-	m_pC_button_group = new ButtonGroup(this);
-
 	int start_x = 30, start_y = BLOCK_START_Y-41;
-;
 
 	//공통버튼
 	m_pC_button_group = new ButtonGroup(this);
@@ -16176,9 +16170,8 @@ void	C_VS_UI_QUEST_ITEM::Run(id_t id)
 	{
 	case CLOSE_ID:
 		gpC_base->SendMessage(UI_CLOSE_QUEST_ITEM);
-//		break;
-//		
-		[[fallthrough]];
+		break;
+
 	case ALPHA_ID:
 		AttrAlpha(!GetAttributes()->alpha);
 		EMPTY_MOVE;
@@ -17373,7 +17366,7 @@ void	C_VS_UI_POWER_JJANG::PowerjjangGambleResult(BYTE bItemCode)
 	int ScrPos = m_pC_scroll_bar->GetScrollPos();
 	if(m_SelectPos != ScrPos)
 	{
-		for(int i = 0; static_cast<size_t>(i)<m_Powerjjang_ItemList.size()-1; i++)
+		for(size_t i = 0; i + 1 < m_Powerjjang_ItemList.size(); i++)
 		{
 			m_pC_scroll_bar->ScrollDown();
 			ScrPos = m_pC_scroll_bar->GetScrollPos();
@@ -18296,7 +18289,7 @@ bool C_VS_UI_INVENTORY_SUB::MouseControl(UINT message, int _x, int _y)
 				//					break; // escape 'for'
 			}
 		}
-		if(m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED)
+		if(gpC_Imm != NULL && (m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED))
 			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		m_focus_grid_x = NOT_SELECTED;
 		m_focus_grid_y = NOT_SELECTED;

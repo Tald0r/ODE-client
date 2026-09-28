@@ -7,6 +7,7 @@
 #include <optional>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 
 namespace {
 bool Fail(std::ifstream& file)
@@ -108,4 +109,19 @@ bool ZoneMapData::LoadFromFile(std::ifstream& file, bool skipImageObjects)
 	}
 	*this = std::move(loaded);
 	return true;
+}
+
+bool ClipSectorRect(int& left, int& top, int& right, int& bottom, int width, int height)
+{
+	// Order the edges first, so that clamping an edge that lies off the
+	// grid leaves an empty range instead of one reaching past the grid.
+	if (top > bottom) std::swap(top, bottom);
+	if (left > right) std::swap(left, right);
+
+	if (top < 0) top = 0;
+	if (left < 0) left = 0;
+	if (bottom >= height) bottom = height-1;
+	if (right >= width) right = width-1;
+
+	return top <= bottom && left <= right;
 }

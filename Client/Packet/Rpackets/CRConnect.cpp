@@ -68,24 +68,33 @@ void CRConnect::write ( SocketOutputStream & oStream )
 {
 	__BEGIN_TRY
 		
-	// servername
+	// servername: 1..10 bytes, what getPacketMaxSize() budgets.
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if (m_RequestServerName.size() > 10)
+		throw InvalidProtocolException("szRequestServerName>10");
+
 	BYTE num = static_cast<BYTE>(m_RequestServerName.size());
 	
 	if (num == 0)
 		throw InvalidProtocolException("szRequestServerName==0");
 
 	oStream.write( num );
-	oStream.write( m_RequestServerName );	
+	oStream.write( std::span<const char>( m_RequestServerName.data(), num ) );
 
 
-	// clientname
+	// clientname: 1..10 bytes, likewise.
+	if (m_RequestClientName.size() > 10)
+		throw InvalidProtocolException("szRequestClientName>10");
+
 	num = static_cast<BYTE>(m_RequestClientName.size());
 	
 	if (num == 0)
 		throw InvalidProtocolException("szRequestClientName==0");
 
 	oStream.write( num );
-	oStream.write( m_RequestClientName );
+	oStream.write( std::span<const char>( m_RequestClientName.data(), num ) );
 
 	__END_CATCH
 }

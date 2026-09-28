@@ -294,16 +294,45 @@ MItem::GetWeight() const
 }
 
 //----------------------------------------------------------------------
-// Get Weight
+// Get Price
 //----------------------------------------------------------------------
+// A gear item whose grade is not -1 is priced by its grade, as the
+// server's PriceManager prices every item whose getGrade() is not -1.
+// Only gear is: the server sends a pet item's days since its last
+// feeding in the grade field, while pricing the pet with no grade.
+//----------------------------------------------------------------------
+static bool
+IsPricedByGrade(const MItem* pItem)
+{
+	return pItem->GetGrade() != -1 && pItem->IsGearItem();
+}
+
 TYPE_ITEM_PRICE
 MItem::GetPrice() const
 {
 	TYPE_ITEM_PRICE price;
-	if( GetGrade() > 0 &&  GetGrade() <= 10 && IsGearItem() )
+	if( IsPricedByGrade(this) )
 		price = (*g_pItemTable)[GetItemClass()][m_ItemType].Price * ( 100 + (GetGrade()-4)*5 ) / 100;
 	else
 		price = (*g_pItemTable)[GetItemClass()][m_ItemType].Price;
+	return price;
+}
+
+//----------------------------------------------------------------------
+// Get Graded Price
+//----------------------------------------------------------------------
+// The table price scaled by the grade without truncating, in the
+// server's own arithmetic: price * ((80 + 5 * grade) / 100.0).
+//----------------------------------------------------------------------
+double
+MItem::GetGradedPrice() const
+{
+	double price = (double)(*g_pItemTable)[GetItemClass()][m_ItemType].Price;
+	if( IsPricedByGrade(this) )
+	{
+		double gradePercent = 80 + (5 * GetGrade());
+		price *= (gradePercent / 100.0);
+	}
 	return price;
 }
 

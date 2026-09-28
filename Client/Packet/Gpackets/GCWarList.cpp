@@ -107,6 +107,12 @@ void GCWarList::write (SocketOutputStream & oStream) const
 {
 	__BEGIN_TRY
 
+	// At most 24 wars, the server's bound. The count is checked on the
+	// list's own size, before the narrowing to the BYTE that goes on
+	// the wire: 256 wars would narrow to 0 ahead of every entry.
+	if ( m_WarInfos.size() > 24 )
+		throw InvalidProtocolException("too many wars");
+
 	BYTE count = static_cast<BYTE>(m_WarInfos.size());
 		
 	oStream.write( count );

@@ -16,4 +16,17 @@ extern MBelt*					g_pQuickSlot;
 extern MOustersArmsBand*		g_pArmsBand1;
 extern MOustersArmsBand*		g_pArmsBand2;
 
+//----------------------------------------------------------------------
+// Can Pickup Item To Quickslot
+//----------------------------------------------------------------------
+// Whether an item picked up from the zone may go straight into the
+// belt (slayer) or an armsband (ousters). The caller passes the
+// executable-side state: whether the belt or an armsband is worn,
+// whether the item check buffer is empty and whether no temporary
+// mode is pending.
+//----------------------------------------------------------------------
+bool	CanPickupItemToQuickslot(Race race, bool bHasBelt, bool bHasArmsBand,
+								bool bItemCheckBufferNULL, bool bTempModeNULL,
+								const MItem* pItem);
+
 #endif

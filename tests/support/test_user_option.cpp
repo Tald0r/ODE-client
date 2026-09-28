@@ -1,5 +1,7 @@
 #include "test_framework.h"
+#include "CrtCompat.h"
 #include <chrono>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -206,4 +208,57 @@ TEST(UserOption, NameIsFoundUnderAnotherLetterCase)
     UserOption loaded;
     CHECK(loaded.LoadFromFile((root.path.string() + "\\USERSET\\useroption.SET").c_str()));
     CHECK_EQ(6, loaded.VolumeMusic);
+}
+
+// KeyAccelerator::Init clears the accelerators and resizes them, and a
+// vector keeps its capacity through clear(), so after a larger Init the
+// capacity exceeds the size. Loading a settings file with fewer entries
+// than the defaults did leaves exactly that. The count saved and the keys
+// looked up are the size's; entries past it are unbound.
+namespace {
+struct TemporaryFile {
+    std::filesystem::path path;
+    explicit TemporaryFile(const char* tag) {
+        std::error_code error;
+        path = std::filesystem::temp_directory_path(error) / (std::string("key_accelerator_") + tag + "_" +
+            std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    }
+    ~TemporaryFile() {
+        std::error_code error;
+        std::filesystem::remove(path, error);
+    }
+};
+}
+
+TEST(KeyAccelerator, SaveWritesSizeNotCapacity)
+{
+    KeyAccelerator keys;
+    keys.Init(8);
+    keys.Init(3);
+    keys.SetAcceleratorKey(1, DIK_I);
+    TemporaryFile temp("save");
+    FILE* file = Basic::OpenFile(temp.path.string().c_str(), "w+b");
+    CHECK(file != nullptr);
+    if (file == nullptr) return;
+    keys.SaveToFile(file);
+    std::fflush(file);
+    const long length = std::ftell(file);
+    std::rewind(file);
+    int count = 0;
+    CHECK_EQ(4, static_cast<long long>(std::fread(&count, 1, 4, file)));
+    WORD key = 0;
+    CHECK_EQ(2, static_cast<long long>(std::fread(&key, 1, 2, file)));
+    std::fclose(file);
+    CHECK_EQ(3, count);
+    CHECK_EQ(DIK_I, key);
+    CHECK_EQ(4 + 2 * 2, length);
+}
+
+TEST(KeyAccelerator, GetKeyBeyondSizeIsUnbound)
+{
+    KeyAccelerator keys;
+    keys.Init(8);
+    keys.SetAcceleratorKey(5, DIK_K);
+    keys.Init(3);
+    CHECK_EQ(0, keys.GetKey(5));
 }

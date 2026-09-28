@@ -1034,10 +1034,13 @@ MSkillSet::SetAvailableSkills()
 			break;
 		}
 		
-		MItem *pItem = pGear->FindItem( itemFinder );
-		if(pItem != NULL)
+		if (pGear != NULL)
 		{
-			insert(SKILLID_MAP::value_type( (ACTIONINFO)SKILL_LOVE_CHAIN, SKILLID_NODE((ACTIONINFO)(SKILL_LOVE_CHAIN), pItem->IsAffectStatus() ) ));
+			MItem *pItem = pGear->FindItem( itemFinder );
+			if(pItem != NULL)
+			{
+				insert(SKILLID_MAP::value_type( (ACTIONINFO)SKILL_LOVE_CHAIN, SKILLID_NODE((ACTIONINFO)(SKILL_LOVE_CHAIN), pItem->IsAffectStatus() ) ));
+			}
 		}
 	}
 	

@@ -930,7 +930,8 @@ bool C_VS_UI_OUSTERS_QUICKITEM::MouseControl(UINT message, int _x, int _y)
 					{
 						if(m_focus_slot != i)
 						{
-							gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
+							if(gpC_Imm != NULL)
+								gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 							m_focus_slot = i;
 						}
 

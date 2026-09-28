@@ -12,6 +12,7 @@
 #include "DebugInfo.h"
 #include "EffectSpriteTypeDef.h"
 #include "MAttachOrbitEffect.h"
+#include "OrbitEffectPolicy.h"
 
 //----------------------------------------------------------------------
 // Global
@@ -41,28 +42,18 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 		}
 	}
 
-	int effectPosition = rand()/(RAND_MAX/MAX_EFFECT_ORBIT_STEP);
+	int effectPosition = RandomIndex(rand(), MAX_EFFECT_ORBIT_STEP);
 
-	if( egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK 
-		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL
-		|| 
-			(
-			egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL
-			|| (egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL
-			&& pCreature->GetAttachEffectSize() > 0)
-			)
-		)
+	if( ConsultsPreviousOrbitStep(egInfo.effectSpriteType, pCreature->IsExistAttachEffect()) )
 	{
-		
-		MAttachOrbitEffect* pOldEffect = (MAttachOrbitEffect* )(*(pCreature->GetAttachEffectIterator()));
-		if( pOldEffect != NULL )
+		MAttachEffect* pOldEffect = *(pCreature->GetAttachEffectIterator());
+		if( pOldEffect != NULL && pOldEffect->GetEffectType() == MEffect::EFFECT_ATTACH_ORBIT )
 		{
-			effectPosition = pOldEffect->m_OrbitStep;
+			effectPosition = static_cast<MAttachOrbitEffect*>(pOldEffect)->m_OrbitStep;
 		}
-		if(egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK 
-		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL)
-			pCreature->ClearAttachEffect();
 	}
+	if( ClearsBeforeAttach(egInfo.effectSpriteType) )
+		pCreature->ClearAttachEffect();
 
 	// Creature에게 붙이는 Effect를 생성해서 pointer를 넘겨받는다.
 	MAttachOrbitEffect* pEffect = (MAttachOrbitEffect*)pCreature->CreateAttachEffect( egInfo.effectSpriteType, 

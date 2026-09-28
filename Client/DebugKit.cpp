@@ -53,7 +53,7 @@ std::string CDebugKit::GetMsgFileName()
 		return m_DebugInfo->getProperty("MsgFileName");
 	}
 	catch (NoSuchElementException&) {
-		return NULL;
+		return std::string();
 	}
 }
 

@@ -77,47 +77,50 @@ void LGIncomingConnection::write ( Datagram & oDatagram ) const
 	//--------------------------------------------------
 	// write player id
 	//--------------------------------------------------
-	BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_PlayerID.size() > 20 )
+		throw InvalidProtocolException("too long name length");
+
+	const BYTE szPlayerID = static_cast<BYTE>(m_PlayerID.size());
 
 	if ( szPlayerID == 0 )
 		throw InvalidProtocolException("szPlayerID == 0");
 
-	if ( szPlayerID > 20 )
-		throw InvalidProtocolException("too long name length");
-
 	oDatagram.write( szPlayerID );
 
-	oDatagram.write( m_PlayerID );
+	oDatagram.write( std::span<const char>( m_PlayerID.data(), szPlayerID ) );
 
 	//--------------------------------------------------
 	// write PC name
 	//--------------------------------------------------
-	BYTE szPCName = static_cast<BYTE>(m_PCName.size());
+	if ( m_PCName.size() > 20 )
+		throw InvalidProtocolException("too long name length");
+
+	const BYTE szPCName = static_cast<BYTE>(m_PCName.size());
 
 	if ( szPCName == 0 )
 		throw InvalidProtocolException("szPCName == 0");
 
-	if ( szPCName > 20 )
-		throw InvalidProtocolException("too long name length");
-
 	oDatagram.write( szPCName );
 
-	oDatagram.write( m_PCName );
+	oDatagram.write( std::span<const char>( m_PCName.data(), szPCName ) );
 
 	//--------------------------------------------------
 	// write client IP
 	//--------------------------------------------------
-	BYTE szClientIP = static_cast<BYTE>(m_ClientIP.size());
+	if ( m_ClientIP.size() > 15 )
+		throw InvalidProtocolException("too long IP length");
+
+	const BYTE szClientIP = static_cast<BYTE>(m_ClientIP.size());
 
 	if ( szClientIP == 0 )
 		throw InvalidProtocolException("szClientIP == 0");
 
-	if ( szClientIP > 15 )
-		throw InvalidProtocolException("too long IP length");
-
 	oDatagram.write( szClientIP );
 
-	oDatagram.write( m_ClientIP );
+	oDatagram.write( std::span<const char>( m_ClientIP.data(), szClientIP ) );
 
 	__END_CATCH
 }

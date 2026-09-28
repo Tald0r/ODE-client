@@ -946,7 +946,6 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		// Guild Tab
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_INFO].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_MEMBER_LIST].GetString(),
-		"", // Placeholder for TEAM_COMMAND_WINDOW (commented out in enum)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_WAIT_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_UNION_WINDOW].GetString(),
@@ -962,11 +961,13 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_SKILL_HELP].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_HELP].GetString(),
 		//add by viva : friend button description
-//		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
 		//end
 		// MAX+
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_OFF].GetString(),
 	};
+	// One entry per EXEC_INDEX button ID, plus AUTO_HIDE_OFF at EXEC_MAX.
+	static_assert(sizeof(slayer_string)/sizeof(slayer_string[0]) == EXEC_MAX+1, "tooltip table must match EXEC_INDEX");
 	
 	const static char* vampire_string[] =
 	{
@@ -993,7 +994,6 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		// Guild Tab
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_INFO].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_MEMBER_LIST].GetString(),
-		"", // Placeholder for CLAN_COMMAND_WINDOW (commented out in enum)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_WAIT_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_UNION_WINDOW].GetString(),
@@ -1009,11 +1009,13 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_MAGIC_HELP].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_CLAN_HELP].GetString(),
 		//add by viva : friend button description
-//		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
 		//end
 		// MAX+
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_OFF].GetString(),
 	};
+	// One entry per EXEC_INDEX button ID, plus AUTO_HIDE_OFF at EXEC_MAX.
+	static_assert(sizeof(vampire_string)/sizeof(vampire_string[0]) == EXEC_MAX+1, "tooltip table must match EXEC_INDEX");
 	
 	const static char* ousters_string[] =
 	{
@@ -1040,7 +1042,6 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		// Guild Tab
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_INFO].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_MEMBER_LIST].GetString(),
-		"", // Placeholder for GUILD_COMMAND_WINDOW (commented out in enum)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_WAIT_LIST_WINDOW].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_UNION_WINDOW].GetString(),
@@ -1056,11 +1057,13 @@ void	C_VS_UI_TRIBE::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_MAGIC_HELP].GetString(),
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_GUILD_HELP].GetString(),
 		//add by viva : friend button description
-//		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_FRIEND].GetString(),
 		//end
 		// MAX+
 		(*g_pGameStringTable)[UI_STRING_MESSAGE_AUTO_HIDE_OFF].GetString(),
 	};
+	// One entry per EXEC_INDEX button ID, plus AUTO_HIDE_OFF at EXEC_MAX.
+	static_assert(sizeof(ousters_string)/sizeof(ousters_string[0]) == EXEC_MAX+1, "tooltip table must match EXEC_INDEX");
 	
 	switch(g_eRaceInterface)
 	{
@@ -2603,6 +2606,13 @@ C_VS_UI_GEAR::C_VS_UI_GEAR()
 	m_pC_button_group = new ButtonGroup(this);
 	int close_button_offset_x = 0, close_button_offset_y = 0, help_button_offset_x = 0, help_button_offset_y = 0;
 	int alpha_button_offset_x = 0, alpha_button_offset_y = 0;
+
+	// Each race case below sets these; any other race keeps them empty
+	// so the destructor's DeleteNew calls do nothing.
+	m_pC_gear_spk = NULL;
+	m_pC_gear_slot_spk = NULL;
+	m_pC_advance_gear_spk = NULL;
+	m_bl_Abvencement = FALSE;
 	
 	switch(g_eRaceInterface)
 	{
@@ -2903,7 +2913,8 @@ bool C_VS_UI_GEAR::MouseControl(UINT message, int _x, int _y)
 					if(m_focus_slot != i)
 					{
 						m_focus_slot = i;
-						gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
+						if(gpC_Imm != NULL)
+							gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 					}
 					
 					p_selected_item = gC_vs_ui.GetGearItem(m_focus_slot);
@@ -2958,7 +2969,8 @@ bool C_VS_UI_GEAR::MouseControl(UINT message, int _x, int _y)
 		if(m_focus_slot != NOT_SELECTED)
 		{
 			m_focus_slot = NOT_SELECTED;
-			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
+			if(gpC_Imm != NULL)
+				gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		}
 		break;
 		
@@ -3691,6 +3703,9 @@ void C_VS_UI_GEAR::Use()
 		default:
 			break;
 		}
+
+		if (pGear == NULL)
+			return;
 		
 		const MItem * p_item = pGear->GetItem(m_focus_slot);
 		
@@ -8348,7 +8363,7 @@ bool C_VS_UI_INVENTORY::MouseControl(UINT message, int _x, int _y)
 				//					break; // escape 'for'
 			}
 		}
-		if(m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED)
+		if(gpC_Imm != NULL && (m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED))
 			gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 		m_focus_grid_x = NOT_SELECTED;
 		m_focus_grid_y = NOT_SELECTED;
@@ -9776,7 +9791,8 @@ bool C_VS_UI_SKILL::MouseControl(UINT message, int _x, int _y)
 			
 			if(m_focused_slot != focused_slot)
 			{
-				gpC_Imm->ForceUI(CImm::FORCE_UI_WINDOW);
+				if(gpC_Imm != NULL)
+					gpC_Imm->ForceUI(CImm::FORCE_UI_WINDOW);
 				m_focused_slot = focused_slot;
 			}
 			
@@ -10160,11 +10176,11 @@ void C_VS_UI_SKILL::Show2()
 			  {
 				  const MItem * p_item = g_pInventory->GetItem(C_VS_UI_INVENTORY::m_mine_grid_x, C_VS_UI_INVENTORY::m_mine_grid_y);
 				  
-				  if ((p_item && 
-					  (p_item->GetItemClass() == ITEM_CLASS_MINE && (GetSelectedSkillID() == SKILL_INSTALL_MINE || GetSelectedSkillID() == MINE_ANKLE_KILLER || GetSelectedSkillID() == MINE_POMZ || GetSelectedSkillID() == MINE_AP_C1 || GetSelectedSkillID() == MINE_DIAMONDBACK || GetSelectedSkillID() == MINE_SWIFT_EX || GetSelectedSkillID() == MINE_SIDEWINDER || GetSelectedSkillID() == MINE_COBRA))) ||
+				  if (p_item &&
+					  ((p_item->GetItemClass() == ITEM_CLASS_MINE && (GetSelectedSkillID() == SKILL_INSTALL_MINE || GetSelectedSkillID() == MINE_ANKLE_KILLER || GetSelectedSkillID() == MINE_POMZ || GetSelectedSkillID() == MINE_AP_C1 || GetSelectedSkillID() == MINE_DIAMONDBACK || GetSelectedSkillID() == MINE_SWIFT_EX || GetSelectedSkillID() == MINE_SIDEWINDER || GetSelectedSkillID() == MINE_COBRA)) ||
 					  (p_item->GetItemClass() == ITEM_CLASS_BOMB_MATERIAL && p_item->GetItemType() > 4 && GetSelectedSkillID() == SKILL_MAKE_MINE) ||
-					  (p_item->GetItemClass() == ITEM_CLASS_BOMB_MATERIAL && p_item->GetItemType() < 5 && GetSelectedSkillID() == SKILL_MAKE_BOMB)
-					  ) // Item이 있다.
+					  (p_item->GetItemClass() == ITEM_CLASS_BOMB_MATERIAL && p_item->GetItemType() < 5 && GetSelectedSkillID() == SKILL_MAKE_BOMB))
+					  ) // the item is still in the saved grid cell
 				  {
 					  if(!gpC_mouse_pointer->RightMousePushed())
 						  gC_vs_ui.EndInstallMineProgress();
@@ -11260,11 +11276,15 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 					m_p_image_spk->BltLocked(x +away_x, y +away_y +window_default_height + inc_y + i*window_gap, AWAY_BUTTON);
 			}
 
+			// A dead member's face is drawn in red.
+			const PARTY_INFO* const member = (i == 0) ? NULL : g_pParty->GetMemberInfo(i-1);
+			const bool bDead = (i == 0) ? (g_char_slot_ingame.HP == 0) : (member != NULL && member->HP == 0);
+
 			if(m_v_face_name.empty() || static_cast<size_t>(idx) == m_v_face_name.size() || (static_cast<size_t>(idx) < m_v_face_name.size() && m_vp_face[idx] == NULL))
 			{	// default face
 				if(spriteID < 0 || spriteID >= m_p_face_spk->GetSize())spriteID = 0;
 				
-				if((i == 0 && g_char_slot_ingame.HP == 0) || (i != 0 && g_pParty->GetMemberInfo(i-1)->HP == 0))
+				if(bDead)
 					m_p_face_spk->BltLockedColor(point.x, point.y, spriteID, rgb_RED);
 				else
 					m_p_face_spk->BltLocked(point.x, point.y, spriteID);
@@ -11273,7 +11293,7 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 			else
 			{
 				//user face
-				if((i == 0 && g_char_slot_ingame.HP == 0) || (i != 0 && g_pParty->GetMemberInfo(i-1)->HP == 0))
+				if(bDead)
 				{
 					m_vp_face[idx]->BltLockedColor(point.x, point.y, 0, rgb_RED);
 				}
@@ -12803,7 +12823,7 @@ void	C_VS_UI_INFO::ShowButtonDescription(C_VS_UI_EVENT_BUTTON * p_button)
 			break;
 
 		default:
-			break;
+			return;
 		}
 		if( id < 0 || id >= m_draw_grade_skill_mark || g_pRankBonusTable == NULL || 
 			g_pRankBonusTable->GetSize() <= m_grade_skill_id[id] ) 
@@ -12976,7 +12996,7 @@ void	C_VS_UI_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 				break;
 
 			default:
-				break;
+				return;
 			}
 
 			if(p_button->GetFocusState())
@@ -13123,35 +13143,42 @@ void	C_VS_UI_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 //	}
 	else if(p_button->GetID() >= GRADE2_BUTTON8_ID && p_button->GetID() <= GRADE3_BUTTON6_ID)
 	{
-		MSkillDomain::SKILL_STEP_LIST::iterator ss;
-		MSkillDomain::SKILL_STEP_LIST list; 
 		MSkillDomain::SKILLSTATUS status = MSkillDomain::SKILLSTATUS_NULL;
 		int sprID;
 		if(p_button->GetFocusState())
 		{	
+			// GRADE3_BUTTON1..3 are the icons of rows 0..2 and GRADE3_BUTTON4..6 the
+			// text boxes of the same rows (GRADE2_BUTTON8_ID is handled above).
+			const int slot = static_cast<int>(p_button->GetID()) - GRADE3_BUTTON1_ID;
 			if(g_eRaceInterface == RACE_SLAYER)
 			{
-				list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList((SKILL_STEP)(SKILL_STEP_SLAYER_BLADE_ADVANCEMENT + static_cast<int>(m_skill_domain))));
+				// Row r shows list[r + scroll], as _Show5 draws it and Run acts on it.
+				const int scroll = m_pC_grade3_scroll_bar->GetScrollPos();
+				const size_t row = static_cast<size_t>((slot < 3 ? slot : slot - 3) + (scroll > 0 ? scroll : 0));
+				const MSkillDomain::SKILL_STEP_LIST* pList = (*g_pSkillManager)[m_skill_domain].GetSkillStepList((SKILL_STEP)(SKILL_STEP_SLAYER_BLADE_ADVANCEMENT + static_cast<int>(m_skill_domain)));
 				
-				if(list.size() >= p_button->GetID()-GRADE3_BUTTON1_ID)
+				if(pList != NULL && row < pList->size())
 				{
-					ss= list.begin()+p_button->GetID()-GRADE3_BUTTON1_ID;
-					if((ACTIONINFO)*ss > 0 && (ACTIONINFO)*ss< MAX_ACTIONINFO)
+					const ACTIONINFO skill = (ACTIONINFO)(*pList)[row];
+					if(skill > 0 && skill < MAX_ACTIONINFO)
 					{
-						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)*ss);
-						sprID = (*g_pSkillInfoTable)[(ACTIONINFO)*ss].GetSpriteID();
+						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(skill);
+						sprID = (*g_pSkillInfoTable)[skill].GetSpriteID();
 					}
 				}
 				
 			}
 			else if(g_eRaceInterface == RACE_VAMPIRE)
 			{
-				list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList((SKILL_STEP)(SKILL_STEP_VAMPIRE_ADVANCEMENT)));
-				ss= list.begin()+p_button->GetID()-GRADE3_BUTTON1_ID;
-				if((ACTIONINFO)*ss > 0 && (ACTIONINFO)*ss< MAX_ACTIONINFO)
+				const MSkillDomain::SKILL_STEP_LIST* pList = (*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList((SKILL_STEP)(SKILL_STEP_VAMPIRE_ADVANCEMENT));
+				if(pList != NULL && static_cast<size_t>(slot) < pList->size())
 				{
-					status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)*ss);
-					sprID = (*g_pSkillInfoTable)[(ACTIONINFO)*ss].GetSpriteID();
+					const ACTIONINFO skill = (ACTIONINFO)(*pList)[static_cast<size_t>(slot)];
+					if(skill > 0 && skill < MAX_ACTIONINFO)
+					{
+						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(skill);
+						sprID = (*g_pSkillInfoTable)[skill].GetSpriteID();
+					}
 				}
 
 			}
@@ -13164,12 +13191,15 @@ void	C_VS_UI_INFO::ShowButtonWidget(C_VS_UI_EVENT_BUTTON * p_button)
 				else
 					step = (SKILL_STEP)(SKILL_STEP_OUSTERS_COMBAT_ADVANCEMENT +  p_button->GetID()-GRADE3_BUTTON1_ID + m_pC_grade3_scroll_bar->GetScrollPos());
 
-				list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList((SKILL_STEP)(step)));
-				ss= list.begin()+p_button->GetID()-GRADE3_BUTTON1_ID;
-				if((ACTIONINFO)*ss > 0 && (ACTIONINFO)*ss< MAX_ACTIONINFO)
+				const MSkillDomain::SKILL_STEP_LIST* pList = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList((SKILL_STEP)(step));
+				if(pList != NULL && static_cast<size_t>(slot) < pList->size())
 				{
-					status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus((ACTIONINFO)*ss);
-					sprID = (*g_pSkillInfoTable)[(ACTIONINFO)*ss].GetSpriteID();
+					const ACTIONINFO skill = (ACTIONINFO)(*pList)[static_cast<size_t>(slot)];
+					if(skill > 0 && skill < MAX_ACTIONINFO)
+					{
+						status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(skill);
+						sprID = (*g_pSkillInfoTable)[skill].GetSpriteID();
+					}
 				}
 			}
 //			gpC_base->m_p_DDSurface_back->BltSpriteColor(&pt,&C_VS_UI_SKILL::m_C_spk[sprID],rgb_GREEN);
@@ -13283,7 +13313,8 @@ void C_VS_UI_INFO::Run(id_t id)
 				break;
 
 			default:
-				break;
+				m_selected_grade_skill = -1;
+				return;
 			}
 			
 			// 스킬 상태가 NULL 이어야 하고, 현재 선택한 계급이 자기 계급과 같거나 낮아야 한다.
@@ -13327,10 +13358,12 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON4_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				if(list.size() > id-GRADE3_BUTTON4_ID)
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
+				if(row < list.size())
+				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
+				}
 			}
 		}
 
@@ -13341,17 +13374,18 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON4_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				if(list.size() > id-GRADE3_BUTTON4_ID)
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
+				if(row < list.size())
+				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
+				}
 			}
 		}
 
 		if(g_eRaceInterface ==RACE_OUSTERS)
 		{
 			SKILL_STEP step;
-			MSkillDomain::SKILL_STEP_LIST::iterator ss;
 			if(m_ousters_Magic!= -1)
 				step= (SKILL_STEP)(SKILL_STEP_OUSTERS_COMBAT_ADVANCEMENT +m_ousters_Magic);
 			else
@@ -13360,14 +13394,15 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
-				if(m_ousters_Magic!= -1)
-					ss = list.begin();
-			    else
-					ss = list.begin()+id-GRADE3_BUTTON4_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+				size_t row = 0;
+				if(m_ousters_Magic != -1)
+					row = static_cast<size_t>(id-GRADE3_BUTTON4_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				if(list.size() > id-GRADE3_BUTTON4_ID)
+				if(row < list.size())
+				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					gC_vs_ui.RunDescDialog(DID_SKILL, (void *)SkillID);
+				}
 			}
 		}
 
@@ -13381,13 +13416,13 @@ void C_VS_UI_INFO::Run(id_t id)
 			if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 			{
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON1_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(SkillID);
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON1_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 				
-				if(list.size() > id-GRADE3_BUTTON1_ID)
+				if(row < list.size())
 				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
+					MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(SkillID);
+
 					if((*g_pSkillInfoTable)[SkillID].GetLearnLevel() <= domain_level && MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status)
 					{
 						int dx = 0;
@@ -13419,13 +13454,13 @@ void C_VS_UI_INFO::Run(id_t id)
 			{
 				
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
-				MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin()+id-GRADE3_BUTTON1_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+				const size_t row = static_cast<size_t>(id-GRADE3_BUTTON1_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 				
-				const ACTIONINFO SkillID = (ACTIONINFO)*ss;
-				MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStatus(SkillID);
-				
-				if(list.size() > id-GRADE3_BUTTON1_ID)
+				if(row < list.size())
 				{
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
+					MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStatus(SkillID);
+
 					if((*g_pSkillInfoTable)[SkillID].GetLearnLevel() <= domain_level && (*g_pSkillInfoTable)[SkillID].GetLearnLevel() >= 0  && MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status)
 					{
 						int dx = 0;
@@ -13457,16 +13492,14 @@ void C_VS_UI_INFO::Run(id_t id)
 
 			if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 			{
-				MSkillDomain::SKILL_STEP_LIST::iterator ss;
 				MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
+				size_t row = 0;
 				if(m_ousters_Magic != -1)
-					 ss= list.begin()+id-GRADE3_BUTTON1_ID+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
-				else
-					ss = list.begin();
+					row = static_cast<size_t>(id-GRADE3_BUTTON1_ID) + static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos()));
 				
-				if(list.size() > id-GRADE3_BUTTON1_ID || m_ousters_Magic == -1 )
+				if(row < list.size())
 				{
-					const ACTIONINFO SkillID = (ACTIONINFO)*ss;
+					const ACTIONINFO SkillID = (ACTIONINFO)list[row];
 					MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStatus(SkillID);
 					//if(MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status&& SkillID>0)
 					if(((*g_pSkillInfoTable)[SkillID].SkillPoint <= g_char_slot_ingame.skill_point && (*g_pSkillInfoTable)[SkillID].GetLearnLevel() <= g_char_slot_ingame.level && MSkillDomain::SKILLSTATUS::SKILLSTATUS_LEARNED !=status))// && bCanLearn)
@@ -18718,13 +18751,15 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					
 					m_advance_skill_count = static_cast<int>(list.size());
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(SkillID);
@@ -18912,14 +18947,16 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					
 					const int level_plus = 127;
 					DWORD shadow_color = RGB_BLACK;
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						
@@ -19017,12 +19054,14 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					m_advance_skill_count = static_cast<int>(list.size());
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
@@ -19205,14 +19244,16 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					// eidt by coffee 2007-2-25 start  修正显示技能位置
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// end
 					
 					const int level_plus = 127;
 					DWORD shadow_color = RGB_BLACK;
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						
@@ -19620,15 +19661,17 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					MSkillDomain::SKILL_STEP_LIST::iterator ss;
 					m_advance_skill_count = static_cast<int>(list.size());
 
 					if(m_advance_skill_count>2)
-						ss = list.begin()+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+						ss = list.begin()+first_row;
 					else
 						ss = list.begin();
 					
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStatus(SkillID);
@@ -19811,19 +19854,21 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					
 					if(m_advance_skill_count>2)
-						ss = list.begin()+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+						ss = list.begin()+first_row;
 					else
 						ss = list.begin();
 
 					const int level_plus = 127;
 					DWORD shadow_color = RGB_BLACK;
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						
@@ -20195,6 +20240,7 @@ C_VS_UI_HPBAR::C_VS_UI_HPBAR()
 	
 	switch(g_eRaceInterface)
 	{
+	default:	// any other race gets the slayer pack: Set() below reads it unconditionally
 	case RACE_SLAYER:
 		m_pC_hpbar_spk = new C_SPRITE_PACK(SPK_HPBAR_SLAYER);
 		break;
@@ -20206,8 +20252,6 @@ C_VS_UI_HPBAR::C_VS_UI_HPBAR()
 	case RACE_OUSTERS:
 		m_pC_hpbar_spk = new C_SPRITE_PACK(SPK_HPBAR_OUSTERS);
 		break;	
-	default:
-		break;
 	}	
 	Set(0, 0, m_pC_hpbar_spk->GetWidth(), m_pC_hpbar_spk->GetHeight());
 	
@@ -20450,7 +20494,7 @@ bool C_VS_UI_HPBAR::MouseControl(UINT message, int _x, int _y)
 	Window::MouseControl(message, _x, _y);
 	_x-=x; _y-=y;
 	
-	bool re;
+	bool re = true;	// what an empty ButtonGroup::MouseControl returns; only a race outside the three skips the switch below
 	int descType = 0;
 	switch(g_eRaceInterface)
 	{
@@ -21209,6 +21253,7 @@ C_VS_UI_EFFECT_STATUS::C_VS_UI_EFFECT_STATUS()
 	
 	switch(g_eRaceInterface)
 	{
+	default:	// any other race gets the slayer pack: Set(), the buttons and Show() read it unconditionally
 	case RACE_SLAYER:
 		m_pC_effect_status_spk = new C_SPRITE_PACK(SPK_EFFECT_STATUS_SLAYER);
 		break;
@@ -21220,8 +21265,6 @@ C_VS_UI_EFFECT_STATUS::C_VS_UI_EFFECT_STATUS()
 	case RACE_OUSTERS:
 		m_pC_effect_status_spk = new C_SPRITE_PACK(SPK_EFFECT_STATUS_OUSTERS);
 		break;
-	default:
-		break;	
 	}
 	
 	Set(240, 0, m_pC_effect_status_spk->GetWidth(), m_pC_effect_status_spk->GetHeight());
@@ -21758,7 +21801,6 @@ void C_VS_UI_EFFECT_STATUS::Show()
 		if(gpC_base->m_p_DDSurface_back->Lock())
 		{
 			Rect rect(0, 0, w-4, h);
-			int i=0;
 			m_pC_effect_status_spk->BltLockedClip(x, y, rect, MAIN_WIDTH);
 			m_pC_effect_status_spk->BltLocked(x+w-m_pC_effect_status_spk->GetWidth(MAIN_WIDTH_RIGHT), y, MAIN_WIDTH_RIGHT);
 
@@ -21766,7 +21808,7 @@ void C_VS_UI_EFFECT_STATUS::Show()
 			{
 				const MonotonicClock::TimePoint CurrentFrame = MonotonicClock::Now();
 
-				for(int i = 0; static_cast<size_t>(i) < min(10, g_char_slot_ingame.STATUS.size()); i++)
+				for(int i = 0; i < 10 && static_cast<size_t>(i + m_scroll) < g_char_slot_ingame.STATUS.size(); i++)
 				{
 					const int skill_id = g_char_slot_ingame.STATUS[i+m_scroll].actionInfo;
 					if(skill_id == ACTIONINFO_NULL || skill_id < 0 || skill_id >= g_pSkillInfoTable->GetSize())
@@ -21795,8 +21837,13 @@ void C_VS_UI_EFFECT_STATUS::Show()
 			}
 			if(!g_pUserInformation->WarInfo.empty())
 			{
-				for(int a=0;static_cast<size_t>(a)<g_pUserInformation->WarInfo.size();i++,a++)
+				for(size_t a = 0; a < g_pUserInformation->WarInfo.size(); a++)
 				{					
+					// War entries follow the status entries in one list scrolled by
+					// m_scroll, the same slots MouseControl gives them.
+					const int i = static_cast<int>(g_char_slot_ingame.STATUS.size() + a) - m_scroll;
+					if(i < 0)
+						continue;
 					if(i>=10)
 						break;
 					POINT point = {x+5+i*20, y+5};
@@ -21871,7 +21918,6 @@ void C_VS_UI_EFFECT_STATUS::Show()
 		if(gpC_base->m_p_DDSurface_back->Lock())
 		{
 			Rect rect(0, 0, w, h-4);
-			int i=0;
 			m_pC_effect_status_spk->BltLockedClip(x, y, rect, MAIN_HEIGHT);
 			m_pC_effect_status_spk->BltLocked(x, y+h-m_pC_effect_status_spk->GetHeight(MAIN_HEIGHT_BOTTOM), MAIN_HEIGHT_BOTTOM);
 			
@@ -21879,7 +21925,7 @@ void C_VS_UI_EFFECT_STATUS::Show()
 			{
 				const MonotonicClock::TimePoint CurrentFrame = MonotonicClock::Now();
 				
-				for(int i = 0; static_cast<size_t>(i) < min(10, g_char_slot_ingame.STATUS.size()); i++)
+				for(int i = 0; i < 10 && static_cast<size_t>(i + m_scroll) < g_char_slot_ingame.STATUS.size(); i++)
 				{
 					const int skill_id = g_char_slot_ingame.STATUS[i+m_scroll].actionInfo;
 					if(skill_id == ACTIONINFO_NULL || skill_id < 0 || skill_id >= g_pSkillInfoTable->GetSize())
@@ -21907,8 +21953,13 @@ void C_VS_UI_EFFECT_STATUS::Show()
 				}
 			}if(!g_pUserInformation->WarInfo.empty())
 			{
-				for(int a=0;static_cast<size_t>(a)<g_pUserInformation->WarInfo.size();i++,a++)
+				for(size_t a = 0; a < g_pUserInformation->WarInfo.size(); a++)
 				{					
+					// War entries follow the status entries in one list scrolled by
+					// m_scroll, the same slots MouseControl gives them.
+					const int i = static_cast<int>(g_char_slot_ingame.STATUS.size() + a) - m_scroll;
+					if(i < 0)
+						continue;
 					if(i>=10)
 						break;
 					POINT point = {x+5, y+5+i*20};
@@ -22279,7 +22330,7 @@ C_VS_UI_MINIMAP::C_VS_UI_MINIMAP()
 	m_p_minimap_surface->SetTransparency(0xffff);
 	
 	m_surface_w = 200;
-	m_surface_w = 100;
+	m_surface_h = 100;
 	m_Block.clear();
 	m_Flag.clear();
 	
@@ -24029,6 +24080,9 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 		m_lev_search.Acquire();
 	
 	int scroll_tag_x = x+365+m_vampire_point.x, scroll_tag_y = y+108+m_vampire_point.y, scroll_tag_height = 198;
+	// The shown list is the search result when there is one, else the full list.
+	const size_t search_size = m_bl_ready ? m_v_ready_team_search_list.size() : m_v_regist_team_search_list.size();
+	const size_t shown_size = search_size ? search_size : (m_bl_ready ? m_v_ready_team_list.size() : m_v_regist_team_list.size());
 	
 	Window::MouseControl(message, _x, _y);
 	
@@ -24037,19 +24091,10 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 	case M_MOVING:
 		if(m_bl_scrolling)
 		{
-			if(m_bl_ready)
+			if(shown_size > 9)	// only when the shown list scrolls
 			{
-				if(m_v_ready_team_search_list.size())
-					m_scroll = static_cast<int>(min(m_v_ready_team_search_list.size()-9, (m_v_ready_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height));
-				else
-					m_scroll = static_cast<int>(min(m_v_ready_team_list.size()-9, (m_v_ready_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height));
-			}
-			else
-			{
-				if(m_v_regist_team_search_list.size())
-					m_scroll = static_cast<int>(min(m_v_regist_team_search_list.size()-9, (m_v_regist_team_search_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height));
-				else
-					m_scroll = static_cast<int>(min(m_v_regist_team_list.size()-9, (m_v_regist_team_list.size()-9)*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height));
+				const size_t range = shown_size - 9;
+				m_scroll = static_cast<int>(min(range, range*(max(_y, scroll_tag_y) - scroll_tag_y + scroll_tag_height/range/2)/scroll_tag_height));
 			}
 		}
 		else
@@ -24079,33 +24124,11 @@ bool	C_VS_UI_TEAM_LIST::MouseControl(UINT message, int _x, int _y)
 	case M_LB_DOUBLECLICK:
 		if(_x >= scroll_tag_x && _x <= scroll_tag_x+m_guild_spk.GetWidth(SCROLL_BAR) && _y >= scroll_tag_y && _y <= scroll_tag_y+scroll_tag_height)
 		{
-			if(m_bl_ready)
+			if(shown_size > 9)	// only when the shown list scrolls
 			{
-				if(m_v_ready_team_search_list.size() > 9)
-				{
-					m_bl_scrolling = true;
-					m_scroll = static_cast<int>((m_v_ready_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_search_list.size()-9)/2)/scroll_tag_height);
-				}
-				else
-					if(m_v_ready_team_list.size() > 9)	// 스크롤이 생기는 경우에만
-					{
-						m_bl_scrolling = true;
-						m_scroll = static_cast<int>((m_v_ready_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_ready_team_list.size()-9)/2)/scroll_tag_height);
-					}
-			}
-			else
-			{
-				if(m_v_regist_team_search_list.size() > 9)	// 스크롤이 생기는 경우에만
-				{
-					m_bl_scrolling = true;
-					m_scroll = static_cast<int>((m_v_regist_team_search_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_search_list.size()-9)/2)/scroll_tag_height);
-				}
-				else
-					if(m_v_regist_team_list.size() > 9)	// 스크롤이 생기는 경우에만
-					{
-						m_bl_scrolling = true;
-						m_scroll = static_cast<int>((m_v_regist_team_list.size()-9)*(_y - scroll_tag_y + scroll_tag_height/(m_v_regist_team_list.size()-9)/2)/scroll_tag_height);
-					}
+				m_bl_scrolling = true;
+				const size_t range = shown_size - 9;
+				m_scroll = static_cast<int>(range*(_y - scroll_tag_y + scroll_tag_height/range/2)/scroll_tag_height);
 			}
 		}
 		else if(m_iFocus != -1)
@@ -24199,14 +24222,19 @@ C_VS_UI_TEAM_MEMBER_LIST::C_VS_UI_TEAM_MEMBER_LIST()
 	switch(g_eRaceInterface)
 	{
 	case RACE_SLAYER:
-		m_guild_member_list_spk.Open(SPK_VAMPIRE_TEAM_MEMBER);
-		break;
-		
-	case RACE_VAMPIRE:
 		m_guild_member_list_spk.Open(SPK_SLAYER_TEAM_MEMBER);
 		break;
 		
+	case RACE_VAMPIRE:
+		m_guild_member_list_spk.Open(SPK_VAMPIRE_TEAM_MEMBER);
+		break;
+		
 	case RACE_OUSTERS:
+		// Ousters keep the slayer pack: TeamMemberOusters.spk
+		// (SPK_OUSTERS_TEAM_MEMBER) does not ship, as
+		// docs/sprite-asset-inventory-2026-09-23.tsv lists only the slayer
+		// and vampire packs, and a pack that fails to open leaves the
+		// close button 0x0.
 		m_guild_member_list_spk.Open(SPK_SLAYER_TEAM_MEMBER);
 		break;
 	default:
@@ -27691,7 +27719,7 @@ void C_VS_UI_TEAM_REGIST::Show()
 	const int line_gap = 12;
 	
 	
-	char sz_string[256];
+	char sz_string[256] = "";
 	int py = m_print_y;
 	
 	if(m_bl_member)	//member regist
@@ -28187,7 +28215,7 @@ C_VS_UI_OTHER_INFO::C_VS_UI_OTHER_INFO()
 	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(alpha_x, alpha_y, gpC_global_resource->m_pC_assemble_box_button_spk->GetWidth(C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA), gpC_global_resource->m_pC_assemble_box_button_spk->GetHeight(C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA), ALPHA_ID, this, C_GLOBAL_RESOURCE::AB_BUTTON_ALPHA));
 	m_pC_button_group->Add(new C_VS_UI_EVENT_BUTTON(0, 0, 0, 0, PET_INFO_ID, this, 0));
 	
-	ZeroMemory((void*)&m_player_info,sizeof(PLAYER_INFO));
+	m_player_info = PLAYER_INFO{};
 	// profile
 	m_p_face = NULL;
 	
@@ -29581,9 +29609,7 @@ void	C_VS_UI_OTHER_INFO::Start()
 	m_pC_button_group->Init();	
 	gpC_window_manager->AppearWindow(this);
 	
-	ZeroMemory((void*)&m_player_info,sizeof(PLAYER_INFO));
-//	m_player_info.TEAM_NAME="";
-	m_player_info.PLAYER_NAME="";
+	m_player_info = PLAYER_INFO{};
 	
 	TopDomain=0;
 	m_p_guild_mark = NULL;
@@ -34384,7 +34410,7 @@ C_VS_UI_WORLDMAP::C_VS_UI_WORLDMAP()
 	m_p_minimap_surface->SetTransparency(0xffff);
 	
 	m_surface_w = m_pC_minimap_spk->GetWidth(MINIMAP_MAIN);
-	m_surface_w = m_pC_minimap_spk->GetHeight(MINIMAP_MAIN);
+	m_surface_h = m_pC_minimap_spk->GetHeight(MINIMAP_MAIN);
 	m_Block.clear();
 	m_Flag.clear();
 	

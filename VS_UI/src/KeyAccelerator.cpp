@@ -206,7 +206,7 @@ KeyAccelerator::GetAcceleratorSimilar(WORD key) const
 WORD
 KeyAccelerator::GetKey(BYTE accel) const
 {
-	if (accel < m_Accelerators.capacity())
+	if (accel < m_Accelerators.size())
 	{	
 		return m_Accelerators[accel];
 	}
@@ -220,7 +220,7 @@ KeyAccelerator::GetKey(BYTE accel) const
 void				
 KeyAccelerator::SaveToFile(FILE *file)
 {
-	int num = static_cast<int>(m_Accelerators.capacity());
+	int num = static_cast<int>(m_Accelerators.size());
 
 	fwrite((const void*)&num, 1, 4, file);
 

@@ -31,10 +31,12 @@ void GCNotifyWin::write ( SocketOutputStream & oStream ) const
 		
 	oStream.write( m_GiftID );
 
-	BYTE szMessage = static_cast<BYTE>(m_Name.size());
-
-	if ( szMessage == 0 )
+	if ( m_Name.empty() )
 		throw InvalidProtocolException("szMessage == 0");
+	if ( m_Name.size() > 255 )
+		throw InvalidProtocolException("too large message length");
+
+	BYTE szMessage = static_cast<BYTE>(m_Name.size());
 
 	oStream.write( szMessage );
 

@@ -110,7 +110,7 @@ std::string ValueList<T>::toString ()
 
 	msg << "Values(";
 
-	std::list<T>::const_iterator itr = m_Values.begin();
+	typename std::list<T>::const_iterator itr = m_Values.begin();
 
 	for ( ; itr!= m_Values.end() ; itr++ ) {
 		const T& info = *itr;

@@ -75,6 +75,12 @@ void LCWorldList::write ( SocketOutputStream & oStream ) const
 
 	oStream.write( m_CurrentWorldID );
 
+	// At most 37 worlds, what WorldInfo::getMaxSize() budgets. The count
+	// is checked on the list's own size, before the narrowing to the
+	// BYTE that goes on the wire.
+	if ( m_WorldInfoList.size() > 37 )
+		throw InvalidProtocolException("too many worlds");
+
 	BYTE ListNum = static_cast<BYTE>(m_WorldInfoList.size());
 	// 최적화 작업시 실제 크기를 명시하도록 한다.
 	oStream.write( ListNum );

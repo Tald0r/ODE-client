@@ -47,7 +47,7 @@ public:
 	string toString() const;
 #endif	
 public:
-	BYTE getCode(void) const noexcept { return static_cast<BYTE>(m_Code);}
+	WORD getCode(void) const noexcept { return m_Code; }
 	void setCode(WORD code) noexcept { m_Code = code;}
 
 	uint getParameter(void) const noexcept { return m_Parameter; }

@@ -48,7 +48,8 @@ public:
 			+ szBYTE + m_GuildName.size()	// 길드 이름
 			+ szGuildMemberRank				// guild member rank
 			+ szuint
-			+ szLevel);
+			+ szLevel
+			+ szExp);
 	}
 
 	static uint getMaxSize () noexcept
@@ -76,7 +77,8 @@ public:
 			+ szBYTE + 30				// 길드 이름
 			+ szGuildMemberRank	 		// guild member rank
 			+ szuint
-			+ szLevel;
+			+ szLevel
+			+ szExp;
 	}
 #ifdef __DEBUG_OUTPUT__
 	string toString () const;

@@ -395,8 +395,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 
 		bool	FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server = false);	// Zone의 Sector에서도 빨리(-_-;) 이동한다.
 
-		using MCreature::KnockBackPosition;
-		bool	KnockBackPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
+		bool	KnockBackPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE Action = 0);
 
 		//----------------------------------------------------------
 		//
@@ -599,6 +598,10 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 		void	ActionEffect();			// effect
 		void	ActionToSendPacket();		// packet을 보낸다..
 		bool	ActionInTraceDistance();	// 행동 가능 거리에 있을 때
+
+		// true if the item lies on a dark tile that hides it from this player
+		bool	IsItemHiddenInDarkness(const MItem* pItem) const;
+
 		void	AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo);		// m_nUsedActionInfo를 적용시킨다.
 		void	AttachCastingEffect(TYPE_ACTIONINFO nUsedActionInfo, BOOL bForceAttach=FALSE);
 

@@ -335,6 +335,9 @@ InitPacketItemTable()
 
 	MShoulderArmor* pShoulder1 = new MShoulderArmor;	pShoulder1->SetItemType( 0 ); pShoulder1->ClearItemOption();
 
+	g_pPacketItemShoulder[SHOULDER_NONE]		= NULL;
+	g_pPacketItemShoulder[SHOULDER1]			= pShoulder1;
+
 	
 }
 
@@ -3727,7 +3730,7 @@ PopupErrorMessage(ErrorID errorID)
 			break;
 		case CHECK_VERSION_ERROR:
 			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_CHECK_VERSION_ERROR].GetString(), -1,-1,UI_DIALOG_OK, true);
-			[[fallthrough]];
+			break;
 		default : //case ETC_ERROR : 
 				g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_ERROR_ETC_ERROR].GetString());
 				

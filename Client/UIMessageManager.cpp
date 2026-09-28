@@ -2574,7 +2574,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											char strTemp[256];
 											SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
 													PlayerInfo::minIDLength,
-													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
+													PlayerInfo::maxIDLength);
 
 											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
@@ -2636,7 +2636,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											char strTemp[256];
 											SafeFormat::Format(strTemp, GetGameString(STRING_USER_REGISTER_ID_LENGTH), 
 													PlayerInfo::minIDLength,
-													static_cast<uint>(nameLen)>PlayerInfo::maxIDLength);
+													PlayerInfo::maxIDLength);
 
 											UI_AddChatToHistory( strTemp, NULL, CLD_INFO, static_cast<DWORD>(right) );
 										}
@@ -3909,7 +3909,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 						break;
 
 					case RACE_OUSTERS:
-						g_pOustersGear->ReplaceItem( pMouseItem, (MVampireGear::GEAR_VAMPIRE)left, pRemovedItem );
+						g_pOustersGear->ReplaceItem( pMouseItem, (MOustersGear::GEAR_OUSTERS)left, pRemovedItem );
 						break;
 
 					default:
@@ -11428,6 +11428,9 @@ UIMessageManager::Execute_UI_UNDISPLAY_ITEM(intptr_t left, intptr_t right, void*
 
 	MItem* pMouseItem = (MItem*)void_ptr;
 
+	if(g_pStorage2 == NULL)
+		return;
+
 	if (pMouseItem!=NULL)
 	{
 //		if (pStorageItem!=NULL)
@@ -11771,14 +11774,20 @@ UIMessageManager::Execute_UI_CAMPAIGN_HELP(intptr_t left, intptr_t right, void* 
 	(void)void_ptr;
 	DEBUG_ADD("[UI] Execute_UI_CAMPAIGN_HELP");
 	
-	// 성금 관련 패킷 보내기 - 금액 * 10000
-
-	if(left>0)
+	// Send the donation packet; the dialog's amount is in units of 10,000.
+	std::uint32_t gold = 0;
+	if (MMoneyManager::DonationGold(left, g_pMoneyManager->GetMoney(), gold))
 	{
 		CGDonationMoney _CGDonationMoney;
-		_CGDonationMoney.setGold(static_cast<Gold_t>(left*10000));
+		_CGDonationMoney.setGold(static_cast<Gold_t>(gold));
 		_CGDonationMoney.setDonationType(static_cast<BYTE>(right));
 		g_pSocket->sendPacket( &_CGDonationMoney );
+	}
+	else if (left > 0)
+	{
+		// More than the balance: the message the server's
+		// NPC_RESPONSE_NOT_ENOUGH_MONEY reply would have shown.
+		g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_WAR_NOT_ENOUGH_MONEY].GetString());
 	}
 // 2005, 1, 11, sobeit add end - 불우이웃 돕기 성금 관련
 }

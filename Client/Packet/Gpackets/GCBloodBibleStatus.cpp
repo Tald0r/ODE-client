@@ -51,6 +51,9 @@ void GCBloodBibleStatus::write ( SocketOutputStream & oStream ) const
 	oStream.write( m_X );
 	oStream.write( m_Y );
 
+	if ( m_OwnerName.size() > 255 )
+		throw InvalidProtocolException("too large owner name length");
+
 	BYTE szOwnerName = static_cast<BYTE>(m_OwnerName.size());
 	oStream.write( szOwnerName );
 

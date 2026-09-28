@@ -68,6 +68,7 @@
 #include "RankBonusTable.h"
 #include "RankBonusDef.h"
 #include "MOustersGear.h"
+#include "MQuickSlot.h"
 
 #include "Cpackets/CGAbsorbSoul.h"
 
@@ -2835,10 +2836,10 @@ MPlayer::KeepTraceCreature()
 	{
 		if( (DWORD)(MonotonicClock::Now() - m_TraceTimer).count() / 1000 > g_pClientConfig->TRACE_CHARACTER_LIMIT_TIME )
 		{
-			if( (pCreature != NULL &&					// 동족일 경우만.
-				(pCreature->IsSlayer() && IsSlayer())) || 
+			if( pCreature != NULL &&					// only for the same race
+				((pCreature->IsSlayer() && IsSlayer()) ||
 				(pCreature->IsVampire() && IsVampire()) ||
-				(pCreature->IsOusters() && IsOusters())
+				(pCreature->IsOusters() && IsOusters()))
 				)
 			{
 				bTraceTimer = true;
@@ -2848,11 +2849,13 @@ MPlayer::KeepTraceCreature()
 	}
 	
 	//-------------------------------------------------------
-	// 추적하는 Creature가 사라졌을 경우 --> 추적 중지
-	// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.
+	// Stop tracing when the traced creature is gone. A player who is not
+	// a vampire cannot follow a character into darkness without
+	// LIGHTNESS, and in zone 3001 neither can a vampire; ghost mode
+	// ignores those limits, but never a creature that no longer exists.
 	//-------------------------------------------------------
-	if ((pCreature==NULL || 
-		(pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+	if (pCreature==NULL ||
+		(((pCreature->IsInDarkness() && !pCreature->IsNPC() && 
 		((!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS)) ||
 		(IsVampire() && g_pZone->GetID() == 3001)))
 		||bTraceTimer
@@ -2861,7 +2864,7 @@ MPlayer::KeepTraceCreature()
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
-		)
+		))
 	{
 		// 추적 중지
 		TraceNULL();
@@ -3070,10 +3073,10 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 //		MItem *pOustersItem = g_pOustersGear->GetItem(MOustersGear::GEAR_OUSTERS_RIGHTHAND);
 		if (pCreature==NULL
 			|| pCreature->IsDead()
-			|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && 
+			|| (((pCreature->IsInDarkness() && !pCreature->IsNPC() &&
 			( (!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) ||
 			(IsVampire() &&g_pZone->GetID() == 3001)))
-			|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()
+			|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters()))
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
@@ -4506,6 +4509,25 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 }
 
 //----------------------------------------------------------------------
+// Is Item Hidden In Darkness
+//----------------------------------------------------------------------
+// An item on a dark tile cannot be traced or picked up unless the player
+// is a ghost, or is a vampire or has LIGHTNESS outside zone 3001.
+// This is the negation of the item hover gate in CGameUpdate.cpp.
+//----------------------------------------------------------------------
+bool
+MPlayer::IsItemHiddenInDarkness(const MItem* pItem) const
+{
+	return g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness()
+		&& !HasEffectStatus( EFFECTSTATUS_GHOST )
+#ifdef __METROTECH_TEST__
+		&& !g_bLight
+#endif
+		&& (g_pZone->GetID() == 3001
+			|| (!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )));
+}
+
+//----------------------------------------------------------------------
 // Trace Item
 //----------------------------------------------------------------------
 // Item으로 다가가서 주워야 한다.
@@ -4535,16 +4557,9 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 		// Zone에 존재하는 Item인지 check한다.
 		MItem*	pItem = m_pZone->GetItem(id);
 
-		// item이 zone에 없는 경우
+		// the item is not in the zone, or darkness hides it
 		if (pItem==NULL
-			|| (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && 
-			( !IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || 
-			(IsVampire() && g_pZone->GetID() == 3001)) )
-			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-			&& !g_bLight
-#endif
-			)) 
+			|| IsItemHiddenInDarkness( pItem ))
 		{
 			return false;
 		}
@@ -5218,14 +5233,7 @@ MPlayer::ActionInTraceDistance()
 
 			// 추적을 완료했으므로 Item을 줍는다.
 			if (pItem!=NULL
-				&& (!g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() || (IsVampire() && g_pZone->GetID() != 3001) || 
-				(!IsVampire() && HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
-				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-				&& !g_bLight
-#endif
-				)||!IsOusters())
-				)
+				&& !IsItemHiddenInDarkness( pItem ))
 			{
 				PickupItem( pItem );
 			}
@@ -5601,14 +5609,7 @@ MPlayer::ActionMove()
 					// 추적하는 Item이 사라졌을 경우 --> 추적 중지
 					//-------------------------------------------------------
 					if (pItem==NULL
-						|| (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness()&& 
-						(!IsVampire() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) ||
-						(IsVampire() &&g_pZone->GetID() == 3001)) )
-						&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-						&& !g_bLight
-#endif
-						)) 
+						|| IsItemHiddenInDarkness( pItem ))
 					{
 						// 추적 중지
 						TraceNULL();
@@ -9759,7 +9760,7 @@ MPlayer::Action()
 		//--------------------------------------------------------
 		// 무슨 effect가 걸려있다면 2배 느리게 움직인다.
 		//--------------------------------------------------------
-		if (HasEffectStatus( EFFECTSTATUS_HAS_SLAYER_RELIC )       || HasEffectStatus( EFFECTSTATUS_HAS_VAMPIRE_RELIC ) ||
+		if ((HasEffectStatus( EFFECTSTATUS_HAS_SLAYER_RELIC )       || HasEffectStatus( EFFECTSTATUS_HAS_VAMPIRE_RELIC ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_GREGORI )|| HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_NEMA ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_LEGIOS ) || HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_MIHOLE ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_AROSA )  || HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_ARMEGA ) ||
@@ -9778,12 +9779,12 @@ MPlayer::Action()
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_5 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_6 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_7 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_8 ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_9 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_10 ) ||
-			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_11 ) || (HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_12 )
+			HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_11 ) || HasEffectStatus( EFFECTSTATUS_HAS_SWEEPER_12 ))
 			&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )			
 #ifdef __METROTECH_TEST__
 			&& !g_bLight
 #endif
-			))			
+			)			
 		{
 			if (g_CurrentFrame & 0x01)
 			{
@@ -11916,12 +11917,12 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 	//------------------------------------------------------------------
 	// 일단 QuickSlot에 들어갈 수 있는지를 확인해야 한다.
 	//------------------------------------------------------------------
-	if ( (g_pQuickSlot!=NULL&&IsSlayer()) || (((g_pArmsBand1!=NULL||g_pArmsBand2!=NULL)&&IsOusters())
-		&& IsItemCheckBufferNULL()
-		&& g_pTempInformation->GetMode()==TempInformation::MODE_NULL
-		&& ((pItem->IsSlayerItem() && IsSlayer()) || 
-		(pItem->IsVampireItem() && IsVampire()) || 
-		(pItem->IsOustersItem() && IsOusters()))))
+	if (CanPickupItemToQuickslot( GetRace(),
+		g_pQuickSlot!=NULL,
+		g_pArmsBand1!=NULL||g_pArmsBand2!=NULL,
+		IsItemCheckBufferNULL(),
+		g_pTempInformation->GetMode()==TempInformation::MODE_NULL,
+		pItem ))
 	{
 		BOOL FirstArmsband = TRUE;
 		int slot;
@@ -12724,9 +12725,9 @@ MPlayer::FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool ser
 // KnockBackPosition
 //----------------------------------------------------------------------
 bool	
-MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE Action)
 {
-	if (MCreature::KnockBackPosition( x, y ))
+	if (MCreature::KnockBackPosition( x, y, Action ))
 	{
 		// 2001.8.8  계속 추적하게 해보기 위한 주석처리
 		// 그러나.. 뭔가 문제가 있어서.. 다시... - -;;
@@ -12786,7 +12787,7 @@ MPlayer::FindEnemy()
 		// 특수 기술이 설정되지 않은 경우
 		if (m_nSpecialActionInfo==ACTIONINFO_NULL)
 		{
-			return 0;
+			return OBJECTID_NULL;
 		}
 
 		actionDistance = GetActionInfoRange( m_nSpecialActionInfo );

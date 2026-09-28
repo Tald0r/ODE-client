@@ -61,7 +61,7 @@ public :
 	#endif
 
 	// get / set ObjectID 
-	CEffectID_t getObjectID() const noexcept { return static_cast<CEffectID_t>(m_ObjectID); }
+	ObjectID_t getObjectID() const noexcept { return m_ObjectID; }
 	void setObjectID( ObjectID_t ObjectID ) noexcept { m_ObjectID = ObjectID; }
 
 	// get / set SkillType

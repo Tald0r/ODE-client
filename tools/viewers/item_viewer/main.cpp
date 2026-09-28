@@ -156,7 +156,7 @@ private:
 
                 case SDLK_RIGHT:
                     // Next item
-                    if (static_cast<DWORD>(m_currentIndex) < m_itemPack->GetSize() - 1) {
+                    if (static_cast<DWORD>(m_currentIndex) + 1 < m_itemPack->GetSize()) {
                         m_currentIndex++;
                     }
                     break;

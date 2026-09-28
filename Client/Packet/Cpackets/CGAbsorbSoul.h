@@ -76,10 +76,10 @@ public:
 	Coord_t getTargetInvenY() const noexcept { return m_TargetInvenY; }
 	void setTargetInvenY( CoordInven_t y ) noexcept { m_TargetInvenY = y; }
 
-	Coord_t getTargetZoneX() const noexcept { return static_cast<Coord_t>(m_TargetZoneX); }
+	ZoneCoord_t getTargetZoneX() const noexcept { return m_TargetZoneX; }
 	void setTargetZoneX( ZoneCoord_t x ) noexcept { m_TargetZoneX = x; }
 
-	Coord_t getTargetZoneY() const noexcept { return static_cast<Coord_t>(m_TargetZoneY); }
+	ZoneCoord_t getTargetZoneY() const noexcept { return m_TargetZoneY; }
 	void setTargetZoneY( ZoneCoord_t y ) noexcept { m_TargetZoneY = y; }
 	
 private :

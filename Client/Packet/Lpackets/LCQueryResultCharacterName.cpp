@@ -52,17 +52,20 @@ void LCQueryResultCharacterName::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	// write player id
 	//--------------------------------------------------
-	BYTE szCharacterName = static_cast<BYTE>(m_CharacterName.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_CharacterName.size() > 20 )
+		throw InvalidProtocolException("too large CharacterName length");
+
+	const BYTE szCharacterName = static_cast<BYTE>(m_CharacterName.size());
 
 	if ( szCharacterName == 0 )
 		throw InvalidProtocolException("empty CharacterName");
 
-	if ( szCharacterName > 20 )
-		throw InvalidProtocolException("too large CharacterName length");
-
 	oStream.write( szCharacterName );
 
-	oStream.write( m_CharacterName );
+	oStream.write( std::span<const char>( m_CharacterName.data(), szCharacterName ) );
 
 	//--------------------------------------------------
 	// write id existence

@@ -114,6 +114,14 @@ class MParty {
 
 		bool		HasMember(const char* pName) const;
 
+		//--------------------------------------------------------
+		// Is Member In Sight - in the player's zone and within
+		// 1.5 times the sight range (sum of the tile distances)
+		// of the player's position
+		//--------------------------------------------------------
+		static bool	IsMemberInSight(int memberZone, int memberX, int memberY,
+									int myZone, int myX, int myY, int sight);
+
 	private:
 		static const MPartyHost* s_Host;
 		static bool JoinByID(TYPE_OBJECTID id, MString& name);

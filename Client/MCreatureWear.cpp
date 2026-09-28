@@ -1151,13 +1151,12 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 							
 							(int)m_sX, (int)m_sY);	
 			}
-			[[fallthrough]];
+			break;
 
 		case EFFECTSTATUS_GHOST:
 			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// 박쥐인 경우
 				SetGroundCreature();
 			break;
-		break;
 		case EFFECTSTATUS_GLACIER:	
 			MCreature::RemoveGlacierEffect();
 			break;

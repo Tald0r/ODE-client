@@ -66,6 +66,7 @@
 #include "MLoadingSPKWorkNode.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
+#include "HPModifyLabel.h"
 //#include "MZoneInfo.h"
 #include "MObjectSelector.h"
 #include "MPortal.h"
@@ -17056,7 +17057,7 @@ MTopView::DrawItemBroken(int x, int y)
 		}
 		break;
 	default:
-		break;
+		return;	// no gear for a non-player race (RACE_MAX)
 	}
 
 	//----------------------------------------------------------------
@@ -17758,17 +17759,7 @@ MTopView::DrawCreatureHPModify(POINT *point, MCreature* pCreature)
 		char str[128];
 		COLORREF color = 0;
 
-		const int modifyValue = itr->modify;
-		if(itr->modify < 0 )
-		{
-			SafeFormat::Format(str, "%d", modifyValue);
-			color = RGB(255, 150, 150);
-		}
-		else
-		{
-			SafeFormat::Format(str, "+%d", modifyValue);
-			RGB(150, 255, 150);
-		}
+		FormatHPModifyLabel(itr->modify, str, color);
 
 		g_PrintColorStrOut(point->x + 24 - g_GetStringWidth(str, gpC_base->m_chatting_pi.hfont)/2, py, str, gpC_base->m_chatting_pi, color, RGB_BLACK);
 

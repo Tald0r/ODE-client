@@ -775,7 +775,7 @@ bool	C_VS_UI_EXCHANGE::MouseControl(UINT message, int _x, int _y)
 				if (distance_x >= 0 && distance_x < m_my_grid_rect.w && 
 					 distance_y >= 0 && distance_y < m_my_grid_rect.h)
 				{
-					if((gpC_Imm && m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X) || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y)
+					if(gpC_Imm != NULL && (m_focus_grid_x != distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X || m_focus_grid_y != distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y))
 						gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 					m_focus_grid_x = distance_x/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X;
 					m_focus_grid_y = distance_y/C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y;
@@ -879,7 +879,7 @@ bool	C_VS_UI_EXCHANGE::MouseControl(UINT message, int _x, int _y)
 					break; // escape 'for'
 				}
 			}
-			if((gpC_Imm && m_focus_grid_x != NOT_SELECTED) || m_focus_grid_y != NOT_SELECTED)
+			if(gpC_Imm != NULL && (m_focus_grid_x != NOT_SELECTED || m_focus_grid_y != NOT_SELECTED))
 				gpC_Imm->ForceUI(CImm::FORCE_UI_GRID);
 			m_focus_grid_x = NOT_SELECTED;
 			m_focus_grid_y = NOT_SELECTED;

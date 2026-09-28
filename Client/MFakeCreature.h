@@ -239,7 +239,7 @@ class MFakeCreature : public MCreatureWear {
 		
 		//2004, 03, 22 sobeit add start
 		void				KeepWanderCreature();
-		bool				IsInSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_SECTORPOSITION eX, TYPE_SECTORPOSITION eY);
+		bool				IsInSector(LONG sX, LONG sY, LONG eX, LONG eY);
 		//2004, 03, 22 sobeit add end
 
 		// 2004, 11, 8, sobeit add start

@@ -181,3 +181,50 @@ TEST(MoneyManager, NoHookMeansNoHintAndNoCrash)
 	CHECK(wallet.SetMoney(1000000));
 	CHECK_EQ(0, g_HintCount);
 }
+
+//----------------------------------------------------------------------
+// The donation dialog takes its amount in units of 10,000, and the
+// dialog's own cap (balance / 10,000) does not always run before the
+// amount is sent. DonationGold gives the gold for a CGDonationMoney:
+// only a positive amount the balance covers, checked before any
+// multiplication. The old inline left*10000 wrapped in the 32-bit
+// Gold_t above 429,496 units and sent a smaller amount the server
+// accepted.
+//----------------------------------------------------------------------
+TEST(MoneyManager, DonationGoldSendsWhatTheBalanceCovers)
+{
+	std::uint32_t gold = 0;
+	CHECK(MMoneyManager::DonationGold(200000, 2000000000, gold));
+	CHECK_EQ(2000000000, gold);
+
+	gold = 0;
+	CHECK(MMoneyManager::DonationGold(1, 10000, gold));
+	CHECK_EQ(10000, gold);
+}
+
+TEST(MoneyManager, DonationGoldRefusesMoreThanTheBalance)
+{
+	std::uint32_t gold = 7;
+	CHECK(!MMoneyManager::DonationGold(200001, 2000000000, gold));
+	CHECK(!MMoneyManager::DonationGold(1, 9999, gold));
+	CHECK(!MMoneyManager::DonationGold(1, 0, gold));
+	CHECK_EQ(7, gold);			// a refusal leaves the output alone
+}
+
+TEST(MoneyManager, DonationGoldRefusesAnAmountThatWouldWrap)
+{
+	std::uint32_t gold = 7;
+	// 500,000 units is 5,000,000,000 gold, which wrapped to 705,032,704.
+	CHECK(!MMoneyManager::DonationGold(500000, 2000000000, gold));
+	// The dialog's largest value.
+	CHECK(!MMoneyManager::DonationGold(2147483647, 2000000000, gold));
+	CHECK_EQ(7, gold);
+}
+
+TEST(MoneyManager, DonationGoldRefusesNothingOrLess)
+{
+	std::uint32_t gold = 7;
+	CHECK(!MMoneyManager::DonationGold(0, 2000000000, gold));
+	CHECK(!MMoneyManager::DonationGold(-1, 2000000000, gold));
+	CHECK_EQ(7, gold);
+}

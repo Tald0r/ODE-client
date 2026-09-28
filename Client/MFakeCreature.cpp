@@ -10,6 +10,7 @@
 #include "SkillDef.h"
 #include "UserInformation.h"
 #include "VS_UI.h"
+#include "OrbitEffectPolicy.h"
 extern MonotonicClock::TimePoint g_FrameNow;
 extern bool			HasEffectStatusSummonSylph( MCreature* pCreature );
 extern void			RemoveEffectStatusSummonSylph( MCreature* pCreature );
@@ -33,13 +34,16 @@ extern POINT GetNextTileByDirection(int TileX, int TileY, BYTE Dir);
 #define MoveNextPosition()					\
 											\
 		MovePosition( m_NextX, m_NextY );	\
-		int dir = m_Direction;				\
+		if (m_NextDirection != DIRECTION_NULL)	\
+		{									\
+			int dir = m_Direction;			\
 											\
-		SetAction( m_MoveAction );			\
-		m_Direction = m_NextDirection;		\
-		m_DirectionMove = m_NextDirection;	\
-		ActionMove();						\
-		m_Direction = dir;					\
+			SetAction( m_MoveAction );		\
+			m_Direction = m_NextDirection;	\
+			m_DirectionMove = m_NextDirection;	\
+			ActionMove();					\
+			m_Direction = dir;				\
+		}									\
 											\
 		m_NextX = SECTORPOSITION_NULL;		\
 		m_NextY = SECTORPOSITION_NULL;		\
@@ -722,7 +726,7 @@ MFakeCreature::IsFakeEnd()
 				endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 				endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
 				// 화면 밖으로 가믄 없애자..일단..
-				if(!IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
+				if(!IsInSector(firstSector.x, firstSector.y, endSector.x, endSector.y))
 					return true;
 			}
 			break;
@@ -846,7 +850,7 @@ MFakeCreature::KeepTraceCreature()
 
 				if(GetCreatureType() == 702 || GetCreatureType() == 703 || GetCreatureType() == 704)
 				{
-					SetTurretFinalDirection( rand()/(RAND_MAX/32) );
+					SetTurretFinalDirection( (BYTE)RandomIndex(rand(), 32) );
 					m_nextMoveTime = MonotonicClock::Now() + MonotonicClock::Millis((rand()%3+2)*1000);
 					m_PatrolCount--;
 				}
@@ -2273,7 +2277,7 @@ MFakeCreature::KeepWanderCreature()
 	endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 	endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
 	// 화면 안에 있는 유령 이믄..
-	if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
+	if(IsInSector(firstSector.x, firstSector.y, endSector.x, endSector.y))
 	{
 		NextMove.x = GetX(); NextMove.y = GetY();
 		switch (m_Direction)
@@ -2315,25 +2319,25 @@ MFakeCreature::KeepWanderCreature()
 				SetAction(ACTION_STAND);
 				return;
 			}
-			if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x-1), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(firstSector.x-1), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
+			if(IsInSector(firstSector.x-1, firstSector.y, firstSector.x-1, endSector.y))
 			{// 왼쪽 벽
 				m_Direction = 3 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
-			else if(IsInSector(static_cast<TYPE_SECTORPOSITION>(endSector.x+1), static_cast<TYPE_SECTORPOSITION>(firstSector.y), static_cast<TYPE_SECTORPOSITION>(endSector.x+1), static_cast<TYPE_SECTORPOSITION>(endSector.y)))
+			else if(IsInSector(endSector.x+1, firstSector.y, endSector.x+1, endSector.y))
 			{// 오른쪽 벽
 				m_Direction = (7 + rand()%3)%8;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
-			else if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y-1), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(firstSector.y-1)))
+			else if(IsInSector(firstSector.x, firstSector.y-1, endSector.x, firstSector.y-1))
 			{// 위쪽 벽
 				m_Direction = 1 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
-			else if(IsInSector(static_cast<TYPE_SECTORPOSITION>(firstSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y+1), static_cast<TYPE_SECTORPOSITION>(endSector.x), static_cast<TYPE_SECTORPOSITION>(endSector.y+1)))
+			else if(IsInSector(firstSector.x, endSector.y+1, endSector.x, endSector.y+1))
 			{// 아래쪽 벽
 				m_Direction = 5 + rand()%3;
 				m_DirectionMove = m_Direction;
@@ -2349,7 +2353,7 @@ MFakeCreature::KeepWanderCreature()
 
 }
 bool
-MFakeCreature::IsInSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_SECTORPOSITION eX, TYPE_SECTORPOSITION eY)
+MFakeCreature::IsInSector(LONG sX, LONG sY, LONG eX, LONG eY)
 {
 	if (GetX() >= sX && GetX() <= eX
 		&& GetY() >= sY && GetY() <= eY)

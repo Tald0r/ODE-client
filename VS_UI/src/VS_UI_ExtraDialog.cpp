@@ -462,7 +462,7 @@ void	C_VS_UI_MONEY_DIALOG::KeyboardControl(UINT message, UINT key, long extra)
 
 			case MONEY_WITHDRAW:
 				gC_vs_ui.RunWithdrawLimit();
-				[[fallthrough]];
+				break;
 			case MONEY_BRING_FEE :
 				gC_vs_ui.RunBringFeeLimit();
 				break;

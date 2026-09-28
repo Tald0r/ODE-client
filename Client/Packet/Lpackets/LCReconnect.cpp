@@ -95,17 +95,20 @@ void LCReconnect::write ( SocketOutputStream & oStream ) const
 	//--------------------------------------------------
 	// write game server's ip
 	//--------------------------------------------------
-	BYTE szGameServerIP = static_cast<BYTE>(m_GameServerIP.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_GameServerIP.size() > 15 )
+		throw InvalidProtocolException("too long IP length");
+
+	const BYTE szGameServerIP = static_cast<BYTE>(m_GameServerIP.size());
 
 	if ( szGameServerIP == 0 )
 		throw InvalidProtocolException("szGameServerIP == 0");
 
-	if ( szGameServerIP > 15 )
-		throw InvalidProtocolException("too long IP length");
-
 	oStream.write( szGameServerIP );
 
-	oStream.write( m_GameServerIP );
+	oStream.write( std::span<const char>( m_GameServerIP.data(), szGameServerIP ) );
 
 	//--------------------------------------------------
 	// write game server's port

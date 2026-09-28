@@ -4,6 +4,8 @@
 #include "Client_PCH.h"
 #include "MParty.h"
 
+#include <cstdlib>
+
 #include "ClientConfig.h"
 
 #define	MAX_PARTY_MEMBER	6
@@ -281,6 +283,19 @@ MParty::HasMember(const char* pName) const
 	}
 
 	return false;
+}
+
+//----------------------------------------------------------------------
+// Is Member In Sight
+//----------------------------------------------------------------------
+bool
+MParty::IsMemberInSight(int memberZone, int memberX, int memberY,
+						int myZone, int myX, int myY, int sight)
+{
+	const int sight15 = sight + (sight>>1);
+
+	return memberZone == myZone
+		&& (std::abs(myX-memberX) + std::abs(myY-memberY)) <= sight15;
 }
 
 //----------------------------------------------------------------------

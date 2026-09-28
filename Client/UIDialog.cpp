@@ -316,8 +316,7 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 					//--------------------------------------------------
 					case PCTalkBox::NORMAL :
 					{						
-						if( g_pPCTalkBox->m_AnswerIDMap.size() >= static_cast<size_t>(answerID) )
-							answerID = g_pPCTalkBox->m_AnswerIDMap[answerID-1] + 1;
+						answerID = g_pPCTalkBox->MapMenuAnswer(answerID);
 						
 						CGNPCAskAnswer _CGNPCAskAnswer;
 
@@ -565,30 +564,6 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 		return;
 	}
 
-	//---------------------------------------------------------
-	// 제목
-	//---------------------------------------------------------
-	const char*	content = g_pPCTalkBox->GetContent();
-	[[maybe_unused]] int lenContent = static_cast<int>(strlen(content));
-
-	//---------------------------------------------------------
-	// dialog의 길이를 정한다.
-	//---------------------------------------------------------
-	// -1 넣으면 자동이다.
-	/*
-	int lengthY;
-	
-	if (g_pPCTalkBox->size() < 2)
-	{
-		lengthY = 0;
-	}
-	else
-	{
-		lengthY = g_pPCTalkBox->size() / 3;
-	}
-
-	lengthY += lenContent/150 + 1;	//(lenContent/40)/3 + 1;
-	*/
 	//---------------------------------------------------------
 	// dialog 생성
 	//---------------------------------------------------------

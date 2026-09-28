@@ -7,6 +7,8 @@
 #ifndef __MMONEYMANAGER_H__
 #define __MMONEYMANAGER_H__
 
+#include <cstdint>
+
 class MMoneyManager {
 
 	public :
@@ -34,6 +36,16 @@ class MMoneyManager {
 		void		SetMoneyLimit(int limit)	{ m_MoneyLimit = limit; }
 		int			GetMoneyLimit() const		{ return m_MoneyLimit;}
 		int			GetMaxAddMoney() const		{ return m_MoneyLimit - m_Money; }
+
+		//-------------------------------------------------------
+		// Donation
+		//
+		// The donation dialog takes the amount in units of 10,000.
+		// Gives the gold to send for that many units, or false,
+		// leaving outGold alone, when the amount is not positive
+		// or the balance does not cover it.
+		//-------------------------------------------------------
+		static bool	DonationGold(std::int64_t units, int balance, std::uint32_t& outGold);
 
 		//-------------------------------------------------------
 		// Storage hint (docs/RESTRUCTURING.md task 4.2)

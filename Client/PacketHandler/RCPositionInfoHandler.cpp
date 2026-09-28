@@ -70,19 +70,11 @@ void RCPositionInfoHandler::execute ( RCPositionInfo * pPacket )
 			pInfo->zoneX = pPacket->getZoneX();
 			pInfo->zoneY = pPacket->getZoneY();
 
-			int sight15 = g_pPlayer->GetSight() + (g_pPlayer->GetSight()>>1);
+			const int currentZoneID = (g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall);
 
-			if (
-					(abs(g_pPlayer->GetX()-pInfo->zoneX) + abs(g_pPlayer->GetY()-pInfo->zoneY))
-						<= sight15
-				)
-			{
-				pInfo->bInSight = true;
-			}
-			else
-			{
-				pInfo->bInSight = false;
-			}
+			pInfo->bInSight = MParty::IsMemberInSight(pInfo->zoneID, pInfo->zoneX, pInfo->zoneY,
+												currentZoneID, g_pPlayer->GetX(), g_pPlayer->GetY(),
+												g_pPlayer->GetSight());
 			
 			#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
 				if (g_pGameMessage!=NULL)

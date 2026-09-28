@@ -59,28 +59,31 @@ void RCSay::write ( Datagram & oDatagram ) const
 	__BEGIN_TRY
 
 	// Name
-	BYTE szName = static_cast<BYTE>(m_Name.size());
+	// Each cap runs on the std::string's own size, before the narrowing
+	// to the BYTE that goes on the wire: 257 bytes narrow to 1, and a
+	// check on the BYTE would pass them all behind that length byte.
+	if ( m_Name.size() > 20 )
+		throw InvalidProtocolException("too long Name length");
+
+	const BYTE szName = static_cast<BYTE>(m_Name.size());
 
 	if ( szName == 0 )
 		throw InvalidProtocolException("szName == 0");
 
-	if ( szName > 20 )
-		throw InvalidProtocolException("too long Name length");
-
 	oDatagram.write( szName );
-	oDatagram.write( m_Name );
+	oDatagram.write( std::span<const char>( m_Name.data(), szName ) );
 
 	// message
-	BYTE szMessage = static_cast<BYTE>(m_Message.size());
+	if ( m_Message.size() > 128 )
+		throw InvalidProtocolException("too long message length");
+
+	const BYTE szMessage = static_cast<BYTE>(m_Message.size());
 
 	if ( szMessage == 0 )
 		throw InvalidProtocolException("szMessage == 0");
 
-	if ( szMessage > 128 )
-		throw InvalidProtocolException("too long message length");
-
 	oDatagram.write( szMessage );
-	oDatagram.write( m_Message );
+	oDatagram.write( std::span<const char>( m_Message.data(), szMessage ) );
 
 	// color
 	oDatagram.write( m_Color );
