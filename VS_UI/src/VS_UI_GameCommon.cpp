@@ -24235,14 +24235,19 @@ C_VS_UI_TEAM_MEMBER_LIST::C_VS_UI_TEAM_MEMBER_LIST()
 	switch(g_eRaceInterface)
 	{
 	case RACE_SLAYER:
-		m_guild_member_list_spk.Open(SPK_VAMPIRE_TEAM_MEMBER);
-		break;
-		
-	case RACE_VAMPIRE:
 		m_guild_member_list_spk.Open(SPK_SLAYER_TEAM_MEMBER);
 		break;
 		
+	case RACE_VAMPIRE:
+		m_guild_member_list_spk.Open(SPK_VAMPIRE_TEAM_MEMBER);
+		break;
+		
 	case RACE_OUSTERS:
+		// Ousters keep the slayer pack: TeamMemberOusters.spk
+		// (SPK_OUSTERS_TEAM_MEMBER) does not ship, as
+		// docs/sprite-asset-inventory-2026-09-23.tsv lists only the slayer
+		// and vampire packs, and a pack that fails to open leaves the
+		// close button 0x0.
 		m_guild_member_list_spk.Open(SPK_SLAYER_TEAM_MEMBER);
 		break;
 	default:
