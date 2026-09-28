@@ -796,12 +796,16 @@ rounds settled* for the host rules). Test fixtures share
   > the vector rows. Slice 2 is in: `MGearItem`'s grade getters (maximum
   > durability, damage, critical, defense, protection, luck) read
   > `decore::gradePolicyOf`, `hasDurability` and `gradeOffsets` by the item
-  > class. The only classes kept off the table are the two couple rings,
-  > which the server builds outside `ConcreteItem`, and `MMotorcycle`
-  > keeps its own maximum, since the server's is a placeholder 1.
+  > class. Three classes are kept off the table: the two couple rings,
+  > which the server builds outside `ConcreteItem` (the client keeps the
+  > ring's rule and quotes their repair at the server's 0), and
+  > `MBloodBibleSign`, which the client makes itself and which keeps the
+  > gear rule of 1000 a grade. `MMotorcycle` keeps its own maximum, since
+  > the server's is a placeholder 1. Dermis, Fascia, CarryingReceiver and
+  > CoreZap start their maximum from the server info's 1, not the table.
   > `tests/unit/test_item_grade.cpp` checks every gear class
   > (`c87c4d0b`, and the fixes `5a3a1430`, `d63e2c5c`, `d31bc7c9`,
-  > `dcd47512`). The named residuals are in
+  > `dcd47512`, `bd801202`, `3f542250`). The named residuals are in
   > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
   > from server `291bee79` (PR #277, which merges first).

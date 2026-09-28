@@ -404,9 +404,21 @@ find({ no_chdir => 1, wanted => sub {
 	push @decore_files, $p;
 } }, "$decore_dir/domain");
 @decore_files = sort @decore_files;
-my $decore_cpp = grep { /\.cpp$/ } @decore_files;
-# 3 today; a missing copy must not pass as a clean one.
-die "$decore_dir/domain holds only $decore_cpp .cpp files - is the copy intact?" unless $decore_cpp >= 3;
+# A missing copy must not pass as a clean one: the .cpp files found are
+# exactly the ones MANIFEST lists (sync.pl writes both, so a resync that
+# adds or drops a file keeps them equal).
+my @decore_cpp = map { m{^\Q$decore_dir\E/(.*)$} ? $1 : $_ } grep { /\.cpp$/ } @decore_files;
+my @manifest_cpp;
+open my $manifest, '<', "$decore_dir/MANIFEST" or die "$decore_dir/MANIFEST: $!";
+while (<$manifest>) {
+	s/\r?\n$//;
+	push @manifest_cpp, $1 if m{^[0-9a-f]{64}\s+(domain/[^/]+\.cpp)$};
+}
+close $manifest;
+@manifest_cpp = sort @manifest_cpp;
+die "$decore_dir/MANIFEST lists no .cpp file - is the copy intact?" unless @manifest_cpp;
+die "$decore_dir/domain holds .cpp files (@decore_cpp) other than MANIFEST's (@manifest_cpp) - is the copy intact?"
+	unless "@decore_cpp" eq "@manifest_cpp";
 my %decore_angle = map { $_ => 1 } qw(algorithm cmath);
 for my $file (@decore_files) {
 	open my $fh, '<', $file or die "$file: $!";

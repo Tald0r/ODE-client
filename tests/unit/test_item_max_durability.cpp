@@ -22,7 +22,7 @@ namespace {
 // Option rows: every one a durability option with the plus-point
 // below (100 is neutral), except row 4, which is a damage option. Row
 // 0 is the empty slot.
-const int	kPlusPoints[] = { 200, 150, 110, 0, 300 };
+const int	kPlusPoints[] = { 200, 150, 110, 0, 300, 120 };
 const int	kOptionRows = (int)(sizeof(kPlusPoints) / sizeof(kPlusPoints[0]));
 
 struct DurabilityWorld : GameModelWorld
@@ -116,8 +116,8 @@ TEST(ItemMaxDurability, OnlyDurabilityOptionsCountAndTheEmptySlotIsSkipped)
 	sword.AddItemOption(0);
 	CHECK_EQ(3000, sword.GetMaxDurability());
 
-	// options-add-their-excess: 150 and 110 are +60%.
-	sword.AddItemOption(1);
+	// options-add-their-excess: 110 and 120 are +30%, 3000 to 3900.
 	sword.AddItemOption(2);
-	CHECK_EQ(4800, sword.GetMaxDurability());
+	sword.AddItemOption(5);
+	CHECK_EQ(3900, sword.GetMaxDurability());
 }

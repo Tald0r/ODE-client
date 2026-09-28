@@ -15,12 +15,12 @@
 // cannot be linked into a test binary: the two couple rings, whose use
 // bodies are executable-side, and the four guns (see kGunsAddNothing).
 // Every getter the grade moves is compared, at grades on both sides of
-// 4, with the server's rule for that class. The client shows only what a policy
-// moves: damage and critical for a weapon policy (-1 otherwise, which
-// the item description hides), luck for an accessory policy (-9999
-// otherwise), and for the armor policies the defense and protection
-// with the offset and floored at 0; any other gear shows the table's
-// defense and protection as they are.
+// 4, with the server's rule for that class. The client shows only what
+// a policy moves: damage and critical for a weapon policy (-1
+// otherwise, which the item description hides), luck for an accessory
+// policy (-9999 otherwise), and for the armor policies the defense and
+// protection with the offset and floored at 0; any other gear shows
+// the table's defense and protection as they are.
 //
 // kClientRules lists the classes whose client rule is not the server's
 // table, with the policy and durability the client applies to them.
@@ -400,9 +400,13 @@ TEST(ItemGrade, TheMotorcycleShowsTheTableDurabilityWhateverTheGrade)
 // The server keeps no durability for VampireAmulet: its durability
 // reads 1, whatever the item has been through, and that is what it
 // sends, while its maximum is the table's durability, untouched by the
-// grade. So the shop prices it at 1 / maximum of its price (getPrice)
-// and quotes a repair of nearly a tenth of it (getRepairPrice), and the
-// repair changes nothing. The expected prices are the server's rule
+// grade. So the shop prices it at 1 / maximum of its price (getPrice),
+// and its repair price is nearly a tenth of it (getRepairPrice). The
+// server refuses to repair an amulet on its own (isRepairableItem, and
+// the gear window never asks), but its repair of all the worn gear
+// (CGRequestRepairHandler::executeAll) charges that price for a worn
+// one, every time, since the durability stays 1. The client's quote is
+// that charge. The expected prices are the server's rule
 // (decore::itemPrice and repairPrice) on that maximum: at grade 0 the
 // table price 100000 is 80000 before the wear.
 //----------------------------------------------------------------------

@@ -17,9 +17,10 @@
 // name, the inputs in the order the file's header documents, and the
 // expected value last, compared as text: a number as std::to_string
 // writes it, a grade policy by its enumerator name, and gradeOffsets'
-// struct as its six fields comma-separated, in declaration order. Row names are unique within a file, every file has at
-// least one row for each function it belongs to, and a vector file this
-// suite does not know fails rather than being skipped.
+// struct as its six fields comma-separated, in declaration order. Row
+// names are unique within a file, every file has at least one row for
+// each function it belongs to, and a vector file this suite does not
+// know fails rather than being skipped.
 //
 // decore_tests links only decore and the test framework, which proves the
 // copy is self-contained.

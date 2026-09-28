@@ -805,23 +805,44 @@ Not fixed, for whoever takes them up:
     (`d63e2c5c`);
   - VampireAmulet's maximum durability is the table's, untouched by the
     grade (`d31bc7c9`);
-  - Dermis, Fascia, CarryingReceiver and CoreZap keep no durability, so
-    they are priced in full with no wear, and a repair quotes 1, or 0 for
-    a CoreZap whose table durability is 1 (`dcd47512`).
+  - Dermis, Fascia, CarryingReceiver and CoreZap keep no durability, and
+    the server's item info for them has none to read (`ItemInfo`'s 1), so
+    their maximum is 1 whatever the client's table row holds: they are
+    priced in full with no wear, and a repair quotes 0 (`dcd47512`,
+    `bd801202`);
+  - a couple ring's repair quotes the server's 0, so the gear window's
+    repair-all total no longer counts it, or opens for it alone
+    (`3f542250`).
 
   What remains:
   - **Castle tax.** The tax-change percentage is still applied to each
     quote, where the server's buy handler applies the castle tax to the
     total. The market condition may also already carry the tax (slice 5).
-  - **CoreZap's table durability.** The server's CoreZap info has no
-    durability column and reads 1, so its repair quote is 0. The client
-    computes the same rule from its own item table, so it quotes 0 only if
-    its CoreZap rows hold 1 (with 0 it quotes 1). The table data is not in
-    this repository.
   - **The no-durability gear's description.** The item description prints
-    the durability of Dermis, Fascia and CarryingReceiver as "1/0", the
-    durability the server sends over their table maximum of 0. It hides it
-    for VampireAmulet and CoreZap only.
+    the durability of Dermis, Fascia and CarryingReceiver as "1/1", the
+    durability and maximum the server keeps for items that wear nothing.
+    It hides the durability of VampireAmulet, CoreZap, the couple rings
+    and the blood bible sign.
+  - **Repair-all charges what it will not repair.** The server's
+    `CGRequestRepairHandler::executeAll` adds `getRepairPrice` for every
+    worn item without asking `isRepairableItem`, and then repairs only
+    the repairable ones. A worn VampireAmulet is charged nearly a tenth
+    of its price on every repair-all, since its durability stays 1; a
+    damaged unique or time-limited item is charged and not repaired. The
+    client's quote for the amulet is that charge, so the first repair-all
+    total includes it (see the next item for the later ones); a
+    time-limited item it quotes 0. A single repair of any of them the
+    server refuses, and the gear window does not ask for one. These are
+    the server's to change.
+  - **Durability options on gear that wears nothing.** The server scales
+    the maximum of 1 by durability options as it scales any other, and
+    truncates. With options totalling 200% or more, a Dermis, Fascia or
+    carrying receiver's maximum is above the 1 it sends: the client
+    quotes the repair the server's repair-all charges, but the gear
+    window also offers a single repair, which the server refuses
+    (`NPC_RESPONSE_REPAIR_FAIL_ITEM_TYPE`). The client quotes a couple
+    ring's repair at 0 by class, so a couple ring with such options would
+    be charged more in a repair-all than the total the player confirmed.
   - **Pay state and server-only inputs.** The server never sends these, so
     `MPriceHost` answers them with documented defaults: the player pays,
     no item was given away, and there is no Blood Bible potion percentage.
@@ -847,23 +868,29 @@ Not fixed, for whoever takes them up:
     `MMotorcycle::GetMaxDurability`, the table's durability scaled by the
     options: no floor, the 65000 cap, and no options at a 0% total. It is
     deliberately not `maxDurabilityBase`. For the couple rings it is the
-    ring's rule, the one exception left in `MItem.cpp`, and the description
+    ring's rule, an exception kept in `MItem.cpp`, and the description
     hides that value. So the client discounts wear on a motorcycle's and a
-    couple ring's quote and prices their repair from that maximum, where
-    the server does not. No transaction follows those quotes, though: the
-    server refuses to sell or repair a couple ring (`canSell`,
-    `isRepairableItem`) and to repair a motorcycle. The relic, castle
-    symbol, blood bible and sweeper have no maximum on the client
-    (`MItem`'s -1), so they are priced in full as on the server. A blood
-    bible sign is made by the client alone and keeps its old gear rule.
+    couple ring's buy and sell quote, where the server does not; no sale
+    follows, since the server refuses to sell either (`canSell`). A couple
+    ring's repair quote is the server's 0 (`3f542250`): its repair-all
+    adds `getRepairPrice`, which is 0 at a durability and maximum of 1,
+    and it refuses a single repair (`isRepairableItem`). The server
+    repairs a motorcycle only through its key (`executeMotorcycle`), at
+    its own price. The relic, castle symbol, blood bible and sweeper have
+    no maximum on the client (`MItem`'s -1), so they are priced in full
+    as on the server. The classes still off the server's table on the
+    client are the two couple rings, the motorcycle and the blood bible
+    sign, which the client makes alone and which keeps its old gear rule.
   - **Durability the client sets itself.** For the classes without
     durability, the server's durability stays at the 1 it sends. The
     client sets an item's current durability to its maximum on the NPC
     shop rack (`MNPC.cpp`) and after a repair (`GCNPCResponseHandler`), so a
     vampire amulet in those states is quoted at full price where the
-    server charges 1/max of it, and a repaired Dermis, Fascia or carrying
-    receiver describes its durability as "0/0". Their prices are
-    unaffected.
+    server charges 1/max of it, and its repair at 0 where the server's
+    repair-all goes on charging nearly a tenth of it: every repair-all
+    total after the first understates the charge by that much. Dermis,
+    Fascia, carrying receiver and CoreZap are unaffected, since their
+    maximum is the 1 they already hold.
   - **Negative option totals.** Durability options that sum below -100%
     wrap to a huge unsigned maximum on the server; the client's `int`
     getters receive it as a negative number.
