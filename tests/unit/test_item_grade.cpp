@@ -24,6 +24,8 @@
 //
 // kClientRules lists the classes whose client rule is not the server's
 // table, with the policy and durability the client applies to them.
+// kInfoWithoutDurability lists the classes whose server item info has
+// no durability to read, so their maximum starts from 1, not the table.
 //
 //----------------------------------------------------------------------
 
@@ -207,6 +209,32 @@ const ClientRule	kClientRules[] = {
 	{ ITEM_CLASS_VAMPIRE_COUPLE_RING,	decore::GradePolicy::Accessory,	true },
 };
 
+//----------------------------------------------------------------------
+// The gear classes whose server item info reads no durability column:
+// Dermis, Fascia and CarryingReceiver load GearInfoNoDurabilityRow
+// (loadGearInfosNoDurability), CoreZap's info has no durability field,
+// and none of the four overrides ItemInfo::getDurability, which returns
+// 1. ConcreteItem::getMaxDurability starts from that 1, whatever the
+// item table holds; the client's row is not read.
+//----------------------------------------------------------------------
+const ITEM_CLASS	kInfoWithoutDurability[] = {
+	ITEM_CLASS_CORE_ZAP,
+	ITEM_CLASS_CARRYING_RECEIVER,
+	ITEM_CLASS_DERMIS,
+	ITEM_CLASS_FASCIA,
+};
+
+// The durability the server's item info gives the class's row.
+int	InfoDurability(ITEM_CLASS itemClass, const Row& row)
+{
+	for (ITEM_CLASS infoless : kInfoWithoutDurability)
+	{
+		if (infoless == itemClass)
+			return 1;
+	}
+	return row.durability;
+}
+
 ClientRule	RuleOf(ITEM_CLASS itemClass)
 {
 	for (const ClientRule& rule : kClientRules)
@@ -239,7 +267,8 @@ Shown	Expected(const ClientRule& rule, const Row& row, int grade)
 	const bool armor = rule.policy == decore::GradePolicy::Cloth || rule.policy == decore::GradePolicy::Grocery;
 
 	Shown shown;
-	shown.maxDurability = (int)decore::maxDurabilityBase((unsigned)row.durability, rule.hasDurability, offsets.durability);
+	shown.maxDurability = (int)decore::maxDurabilityBase((unsigned)InfoDurability(rule.itemClass, row), rule.hasDurability,
+		offsets.durability);
 	shown.minDamage = weapon ? (std::max)(1, row.minDamage + offsets.damage) : -1;
 	shown.maxDamage = weapon ? (std::max)(1, row.maxDamage + offsets.damage) : -1;
 	shown.critical = weapon ? (std::max)(0, row.critical + offsets.critical) : -1;
@@ -397,16 +426,17 @@ TEST(ItemGrade, TheVampireAmuletIsPricedOnTheTableDurability)
 //----------------------------------------------------------------------
 // Gear the server keeps no durability for is priced at full
 //----------------------------------------------------------------------
-// Dermis, Fascia and CarryingReceiver keep no durability on the server
-// either, and their table durability is 0: the maximum is 0, so the
-// shop never discounts wear (getPrice discounts only above 1), and a
-// repair costs the minimum of 1 (getRepairPrice: nothing lost, a tenth
-// of nothing, raised to 1). The durability the server sends for them is
-// 1. CoreZap's server table has no durability column and reads 1, so
-// its maximum is 1, equal to the durability: full price, and a repair of
-// 0. The client computes the same from its own table, so the row must
-// hold what the server's does; both cases are pinned. The grade is 4,
-// so the price is the table's 100000 as it is.
+// Dermis, Fascia, CarryingReceiver and CoreZap keep no durability on the
+// server, and their item info has none to read (kInfoWithoutDurability):
+// the maximum is ItemInfo's 1, whatever the item table's row holds, and
+// the durability the server sends is 1. So the shop never discounts
+// wear (getPrice discounts only above a maximum of 1), and a repair
+// costs 0 (getRepairPrice returns 0 when the durability is the
+// maximum). The client's table rows are not the server's, so both rows
+// are checked: a durability of 3000 and one of 0 give the same answer.
+// The grade is 4, so the price is the table's 100000 as it is. The
+// server also refuses a single repair of the first three
+// (isRepairableItem); the quote of 0 is what its repair-all charges.
 //----------------------------------------------------------------------
 TEST(ItemGrade, GearWithoutDurabilityIsPricedWithoutWear)
 {
@@ -416,33 +446,28 @@ TEST(ItemGrade, GearWithoutDurabilityIsPricedWithoutWear)
 	MDermis dermis;
 	MFascia fascia;
 	MCarryingReceiver receiver;
-	MItem* const pZeroed[] = { &dermis, &fascia, &receiver };
-
-	for (MItem* pItem : pZeroed)
-	{
-		pItem->SetItemType(1);			// table durability 0
-		pItem->SetGrade(4);
-		pItem->SetCurrentDurability(1);
-
-		CHECK_EQ(0, pItem->GetMaxDurability());
-		CHECK_EQ(kPrice, prices.GetItemPrice(pItem, MPriceManager::NPC_TO_PC));
-		CHECK_EQ(kPrice / 4, prices.GetItemPrice(pItem, MPriceManager::PC_TO_NPC));
-		CHECK_EQ(1, prices.GetItemPrice(pItem, MPriceManager::REPAIR));
-	}
-
-	// CoreZap with the server's table durability of 1.
-	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_CORE_ZAP, 0).Value1 = 1;
 	MCoreZap coreZap;
-	coreZap.SetItemType(0);
-	coreZap.SetGrade(4);
-	coreZap.SetCurrentDurability(1);
-	CHECK_EQ(1, coreZap.GetMaxDurability());
-	CHECK_EQ(kPrice, prices.GetItemPrice(&coreZap, MPriceManager::NPC_TO_PC));
-	CHECK_EQ(0, prices.GetItemPrice(&coreZap, MPriceManager::REPAIR));
+	const struct { MItem* pItem; const char* name; } infoless[] = {
+		{ &dermis, "Dermis" },
+		{ &fascia, "Fascia" },
+		{ &receiver, "CarryingReceiver" },
+		{ &coreZap, "CoreZap" },
+	};
 
-	// And with a table durability of 0, as the other three.
-	coreZap.SetItemType(1);
-	CHECK_EQ(0, coreZap.GetMaxDurability());
-	CHECK_EQ(kPrice, prices.GetItemPrice(&coreZap, MPriceManager::NPC_TO_PC));
-	CHECK_EQ(1, prices.GetItemPrice(&coreZap, MPriceManager::REPAIR));
+	for (const auto& gear : infoless)
+	{
+		MItem* const pItem = gear.pItem;
+		const char* const name = gear.name;
+		for (int type = 0; type < kRowCount; type++)
+		{
+			pItem->SetItemType(type);		// table durability 3000, then 0
+			pItem->SetGrade(4);
+			pItem->SetCurrentDurability(1);
+
+			CheckShown(name, type, 4, "max durability", 1, pItem->GetMaxDurability());
+			CheckShown(name, type, 4, "buy price", kPrice, prices.GetItemPrice(pItem, MPriceManager::NPC_TO_PC));
+			CheckShown(name, type, 4, "sell price", kPrice / 4, prices.GetItemPrice(pItem, MPriceManager::PC_TO_NPC));
+			CheckShown(name, type, 4, "repair", 0, prices.GetItemPrice(pItem, MPriceManager::REPAIR));
+		}
+	}
 }

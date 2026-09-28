@@ -695,6 +695,34 @@ HasDurability(ITEM_CLASS itemClass)
 }
 
 //----------------------------------------------------------------------
+// Info Durability
+//----------------------------------------------------------------------
+// The durability the server's item info gives the item, the start of
+// its maximum. For most gear that is the item table's durability. The
+// server's infos for Dermis, Fascia and CarryingReceiver load the row
+// shape without a durability (loadGearInfosNoDurability), CoreZap's
+// info has no durability field, and none of the four overrides
+// ItemInfo::getDurability, which returns 1. So their maximum starts
+// from 1, whatever the client's table row holds. (VampireAmulet keeps
+// no durability either, but its info reads the table's.)
+//----------------------------------------------------------------------
+static int
+InfoDurability(const MItem* pItem)
+{
+	switch (pItem->GetItemClass())
+	{
+		case ITEM_CLASS_CORE_ZAP :
+		case ITEM_CLASS_CARRYING_RECEIVER :
+		case ITEM_CLASS_DERMIS :
+		case ITEM_CLASS_FASCIA :
+			return 1;
+
+		default :
+			return (*g_pItemTable)[pItem->GetItemClass()][pItem->GetItemType()].Value1;
+	}
+}
+
+//----------------------------------------------------------------------
 // Item Grade Offsets
 //----------------------------------------------------------------------
 // How far the item's grade moves each attribute under its class's
@@ -711,9 +739,9 @@ ItemGradeOffsets(const MItem* pItem)
 //----------------------------------------------------------------------
 // The server's maximum durability for a gear item (decore::maxDurability:
 // ConcreteItem::getMaxDurability, then computeMaxDurability): for a
-// class that keeps a durability, the table durability moved by the
-// grade's durability offset and floored at 1000, otherwise the table
-// durability as it is; then scaled by the durability options'
+// class that keeps a durability, the info durability (InfoDurability)
+// moved by the grade's durability offset and floored at 1000, otherwise
+// the info durability as it is; then scaled by the durability options'
 // plus-points. Nothing caps it.
 //----------------------------------------------------------------------
 static int
@@ -736,9 +764,7 @@ GearMaxDurability(const MItem* pItem, bool hasDurability, int gradeDurabilityOff
 		itr++;
 	}
 
-	const int tableDurability = (*g_pItemTable)[pItem->GetItemClass()][pItem->GetItemType()].Value1;
-
-	return (int)decore::maxDurability((unsigned)tableDurability, hasDurability, gradeDurabilityOffset,
+	return (int)decore::maxDurability((unsigned)InfoDurability(pItem), hasDurability, gradeDurabilityOffset,
 									  plusPoints.data(), (int)plusPoints.size());
 }
 
