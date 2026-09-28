@@ -10,11 +10,12 @@
 // durability, damage, critical, defense and protection and its luck,
 // and either keeps a durability of its own or does not.
 //
-// Every gear class is built here through the real MItem subclass (or,
-// for the two couple rings, whose use bodies are executable-side, a
-// stand-in of their family that answers their class), and every getter
-// the grade moves is compared, at grades on both sides of 4, with the
-// server's rule for that class. The client shows only what a policy
+// Every gear class is built here through the real MItem subclass, or a
+// stand-in of its family that answers its class where the real one
+// cannot be linked into a test binary: the two couple rings, whose use
+// bodies are executable-side, and the four guns (see kGunsAddNothing).
+// Every getter the grade moves is compared, at grades on both sides of
+// 4, with the server's rule for that class. The client shows only what a policy
 // moves: damage and critical for a weapon policy (-1 otherwise, which
 // the item description hides), luck for an accessory policy (-9999
 // otherwise), and for the armor policies the defense and protection
@@ -37,6 +38,7 @@
 
 #include <algorithm>
 #include <string>
+#include <type_traits>
 
 namespace {
 
@@ -99,6 +101,40 @@ struct StandIn : public Family
 	static MItem*	NewItem()			{ return new StandIn; }
 };
 
+//----------------------------------------------------------------------
+// The guns stand in as their family, MWeaponItem. A real gun's vtable
+// is emitted wherever the gun is built, and it carries MGunItem's
+// inline GetMagazineSize and destructor, which call through an
+// MMagazine*; under UBSan's vptr check that needs MMagazine's typeinfo,
+// which the executable alone defines (MItemUse.cpp holds its key
+// function), so unit_tests would not link. A stand-in has none of that,
+// and the grade reaches a gun only through the getters it inherits:
+// each one below is declared above MGunItem (a pointer to member names
+// the class that declares it, so an override in a gun class would fail
+// the assertion). decltype evaluates nothing, so no vtable is emitted.
+//----------------------------------------------------------------------
+template <class Gun>
+constexpr bool	AddsNothingTheGradeMoves()
+{
+	return std::is_same_v<decltype(&Gun::GetMaxDurability), decltype(&MWeaponItem::GetMaxDurability)>
+		&& std::is_same_v<decltype(&Gun::GetMinDamage), decltype(&MWeaponItem::GetMinDamage)>
+		&& std::is_same_v<decltype(&Gun::GetMaxDamage), decltype(&MWeaponItem::GetMaxDamage)>
+		&& std::is_same_v<decltype(&Gun::GetCriticalHit), decltype(&MWeaponItem::GetCriticalHit)>
+		&& std::is_same_v<decltype(&Gun::GetDefenseValue), decltype(&MWeaponItem::GetDefenseValue)>
+		&& std::is_same_v<decltype(&Gun::GetProtectionValue), decltype(&MWeaponItem::GetProtectionValue)>
+		&& std::is_same_v<decltype(&Gun::GetLucky), decltype(&MWeaponItem::GetLucky)>
+		&& std::is_same_v<decltype(&Gun::SetGrade), decltype(&MWeaponItem::SetGrade)>
+		&& std::is_same_v<decltype(&Gun::GetGrade), decltype(&MWeaponItem::GetGrade)>
+		&& std::is_same_v<decltype(&Gun::SetItemType), decltype(&MWeaponItem::SetItemType)>
+		&& std::is_same_v<decltype(&Gun::IsGearItem), decltype(&MWeaponItem::IsGearItem)>;
+}
+
+constexpr bool	kGunsAddNothing = AddsNothingTheGradeMoves<MGunSG>()
+								&& AddsNothingTheGradeMoves<MGunSMG>()
+								&& AddsNothingTheGradeMoves<MGunAR>()
+								&& AddsNothingTheGradeMoves<MGunTR>();
+static_assert(kGunsAddNothing, "a gun class overrides a getter the grade moves: build it for real");
+
 struct GearClass
 {
 	ITEM_CLASS	itemClass;
@@ -119,10 +155,10 @@ const GearClass	kGearClasses[] = {
 	{ ITEM_CLASS_CROSS,					"Cross",				&MCross::NewItem },
 	{ ITEM_CLASS_GLOVE,					"Glove",				&MGlove::NewItem },
 	{ ITEM_CLASS_HELM,					"Helm",					&MHelm::NewItem },
-	{ ITEM_CLASS_SG,					"SG",					&MGunSG::NewItem },
-	{ ITEM_CLASS_SMG,					"SMG",					&MGunSMG::NewItem },
-	{ ITEM_CLASS_AR,					"AR",					&MGunAR::NewItem },
-	{ ITEM_CLASS_SR,					"SR",					&MGunTR::NewItem },
+	{ ITEM_CLASS_SG,					"SG",					&StandIn<MWeaponItem, ITEM_CLASS_SG>::NewItem },
+	{ ITEM_CLASS_SMG,					"SMG",					&StandIn<MWeaponItem, ITEM_CLASS_SMG>::NewItem },
+	{ ITEM_CLASS_AR,					"AR",					&StandIn<MWeaponItem, ITEM_CLASS_AR>::NewItem },
+	{ ITEM_CLASS_SR,					"SR",					&StandIn<MWeaponItem, ITEM_CLASS_SR>::NewItem },
 	{ ITEM_CLASS_BELT,					"Belt",					&MBelt::NewItem },
 	{ ITEM_CLASS_VAMPIRE_RING,			"VampireRing",			&MVampireRing::NewItem },
 	{ ITEM_CLASS_VAMPIRE_BRACELET,		"VampireBracelet",		&MVampireBracelet::NewItem },
