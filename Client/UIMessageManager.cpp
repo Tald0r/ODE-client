@@ -11428,6 +11428,9 @@ UIMessageManager::Execute_UI_UNDISPLAY_ITEM(intptr_t left, intptr_t right, void*
 
 	MItem* pMouseItem = (MItem*)void_ptr;
 
+	if(g_pStorage2 == NULL)
+		return;
+
 	if (pMouseItem!=NULL)
 	{
 //		if (pStorageItem!=NULL)
