@@ -11,6 +11,6 @@ docker run --rm --mount "type=bind,source=$repo,target=/src,readonly" `
 if ($LASTEXITCODE -ne 0) { throw 'Browser build failed' }
 docker run --rm --mount "type=volume,source=$Volume,target=/work,readonly" `
     --mount "type=bind,source=$output,target=/out" $image bash -c `
-    'cp /work/build-wasm/bin/DarkEden.mjs /work/build-wasm/bin/DarkEden.wasm /work/build-wasm/bin/index.html /work/build-wasm/bin/launcher.mjs /work/build-wasm/bin/touch-controls.mjs /work/build-wasm/bin/asset-store.mjs /work/build-wasm/bin/client-config.json /work/build-wasm/bin/web_sprite_tests.* /work/build-wasm/bin/transport_tests.* /out/'
+    'cp /work/build-wasm/bin/DarkEden.mjs /work/build-wasm/bin/DarkEden.wasm /work/build-wasm/bin/index.html /work/build-wasm/bin/launcher.mjs /work/build-wasm/bin/touch-controls.mjs /work/build-wasm/bin/asset-store.mjs /work/build-wasm/bin/client-config.json /work/build-wasm/bin/web_sprite_tests.* /work/build-wasm/bin/transport_tests.* /work/build-wasm/bin/decore_tests.* /out/'
 if ($LASTEXITCODE -ne 0) { throw 'Cannot copy browser build output' }
 Write-Output "Browser files: $output"

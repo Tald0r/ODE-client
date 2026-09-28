@@ -31,6 +31,10 @@ jobs:
           docker run --rm --mount type=volume,source=darkeden-web-ci,target=/work,readonly \
             --mount type=bind,source="$PWD/build/web",target=/out \
             alpine:3.22 cp -r /work/build-wasm/bin/. /out/
+      - name: Assert the vendored server rules' vectors in WebAssembly
+        # third_party/decore: the same rows decore_tests asserts natively,
+        # from the copy em++ built, under the runner's node.
+        run: node build/web/decore_tests.js
       - name: Verify compressed assets and bounded filesystem reads
         run: |
           python3 tests/web/test_compress_assets.py

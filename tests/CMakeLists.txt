@@ -84,6 +84,27 @@ set_source_files_properties(
 
 add_test(NAME unit_tests COMMAND unit_tests)
 
+#----------------------------------------------------------------------
+# decore_tests - the shared parity vectors of the vendored server rules
+# (third_party/decore/README.md), every row asserted against the copy
+# this toolchain built. It links only decore and the framework, which
+# proves the copy is self-contained; the vector directory arrives as a
+# compile definition, as WIRE_GOLDEN_DIR does above. Globbed like unit/,
+# so a later slice adds a file. The Emscripten build defines its own
+# decore_tests, with the vectors embedded, in cmake/web/Tests.cmake.
+#----------------------------------------------------------------------
+if(NOT EMSCRIPTEN)
+	file(GLOB DECORE_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/decore/*.cpp)
+	add_executable(decore_tests
+		framework/test_main.cpp
+		${DECORE_TEST_SOURCES}
+	)
+	target_link_libraries(decore_tests PRIVATE test_framework decore)
+	target_compile_definitions(decore_tests PRIVATE
+		"DECORE_VECTOR_DIR=\"${CMAKE_SOURCE_DIR}/third_party/decore/domain/vectors\"")
+	add_test(NAME decore_tests COMMAND decore_tests)
+endif()
+
 # Runs the texture compositor on SDL's deterministic software device in CI.
 # Invoke sprite_gpu_tests --accelerated locally to require a real GPU device;
 # that run fails, rather than silently skipping, if acceleration is unavailable.
@@ -169,6 +190,19 @@ if(PERL_EXECUTABLE)
 	)
 else()
 	message(STATUS "perl not found: the arch_includes test is not registered")
+endif()
+
+# decore_vendored - the de-core copy is what tools/decore/sync.pl wrote:
+# the MANIFEST hashes match, nothing under third_party/decore/domain is
+# unlisted, and the decore target builds every vendored .cpp. A hand edit
+# fails it; resync instead. Skipped without perl, not passed.
+if(PERL_EXECUTABLE)
+	add_test(
+		NAME decore_vendored
+		COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/decore/sync.pl --verify-manifest
+	)
+else()
+	message(STATUS "perl not found: the decore_vendored test is not registered")
 endif()
 
 if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

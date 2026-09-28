@@ -25,6 +25,7 @@ docker/*.template text eol=lf
 # all three are LF in the repository already - this only stops a CRLF
 # checkout from being the first thing to change that.
 tests/tools/*.pl text eol=lf
+tools/decore/*.pl text eol=lf
 
 # Golden wire bytes (tests/unit/test_packet_goldens.cpp): one hex line per
 # file, compared byte for byte and shared with the server repo's copies.
@@ -55,3 +56,9 @@ third_party/unrar/* -text whitespace=-trailing-space,-space-before-tab
 third_party/unrar/CMakeLists.txt text eol=lf whitespace=blank-at-eol,blank-at-eof
 third_party/unrar/README.md text eol=lf whitespace=blank-at-eol,blank-at-eof
 tests/fixtures/rar/*.rar binary
+
+# The de-core copy the server's rules are vendored as (third_party/decore/
+# README.md): byte-identical to the server's LF files, and hashed in
+# MANIFEST, so a CRLF checkout would fail every comparison. The client's own
+# CMakeLists.txt, README.md and MANIFEST there are LF as well.
+third_party/decore/** text eol=lf

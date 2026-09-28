@@ -32,6 +32,13 @@
 #       or VS_UI (MinTr.h, DebugInfo.h, DebugKit.h) may not be included
 #       anywhere in the closure, so the library stays linkable into a
 #       test binary without game stubs.
+#   DC1 The vendored de-core copy (third_party/decore/domain, the
+#       server's rules - third_party/decore/README.md) quote-includes
+#       only "domain/X.h" headers that exist in the copy, and
+#       angle-includes only <algorithm> and <cmath>: the server's D1,
+#       held on this side too, so the copy stays freestanding and every
+#       client toolchain can build it. Every line is checked, dead
+#       branches included. gamemodel may include its headers (M1).
 #
 # W1/W2 look at the lines the library's compile actually sees. The
 # packet sources were the once-shared client/server copies and carried
@@ -134,6 +141,7 @@ die "$members_file lists only " . scalar(@members) . " files - truncated?" unles
 #       once; the list is not truncated.
 #   M1  A file in the gamemodel closure may include only files under
 #       basic/, Client/framelib/ or Client/Packet/, Client/Client_PCH.h,
+#       a de-core header (third_party/decore/domain/*.h, held to DC1),
 #       or a file listed in the membership file. Anything else - an
 #       SDL, UI, dxlib or unlisted game header - is a reach out of the
 #       model.
@@ -164,8 +172,10 @@ my @gm_members;
 # with CMakeLists.txt.
 #----------------------------------------------------------------------
 # Client/framelib is gamemodel's extra include dir; it comes last so
-# packetwire's resolution order is unchanged.
-my @searchdirs = ('.', 'basic', 'Client', 'Client/Packet', 'Client/framelib');
+# packetwire's resolution order is unchanged. third_party/decore is the
+# include dir gamemodel gets from linking decore ("domain/X.h"); it comes
+# after that, so nothing that resolved before resolves anywhere else now.
+my @searchdirs = ('.', 'basic', 'Client', 'Client/Packet', 'Client/framelib', 'third_party/decore');
 
 sub normalize {
 	my ($p) = @_;
@@ -377,8 +387,46 @@ my $count = walk_closure(\@members, 'W', sub {
 my $gm_count = walk_closure(\@gm_members, 'M', sub {
 	my ($r) = @_;
 	return $r =~ m{^basic/} || $r =~ m{^Client/framelib/} || $r =~ m{^Client/Packet/}
-		|| $r eq 'Client/Client_PCH.h' || $gm_listed{lc $r};
+		|| $r eq 'Client/Client_PCH.h' || $gm_listed{lc $r}
+		|| $r =~ m{^third_party/decore/domain/[^/]+\.h$};
 });
+
+#----------------------------------------------------------------------
+# DC1 - the vendored de-core copy. Every .h and .cpp under
+# third_party/decore/domain is walked, which covers the closure: a quote
+# include may only name another file there.
+#----------------------------------------------------------------------
+my $decore_dir = 'third_party/decore';
+my @decore_files;
+find({ no_chdir => 1, wanted => sub {
+	return unless -f $_ && /\.(?:h|cpp)$/;
+	(my $p = $_) =~ s{\\}{/}g;
+	push @decore_files, $p;
+} }, "$decore_dir/domain");
+@decore_files = sort @decore_files;
+my $decore_cpp = grep { /\.cpp$/ } @decore_files;
+# 3 today; a missing copy must not pass as a clean one.
+die "$decore_dir/domain holds only $decore_cpp .cpp files - is the copy intact?" unless $decore_cpp >= 3;
+my %decore_angle = map { $_ => 1 } qw(algorithm cmath);
+for my $file (@decore_files) {
+	open my $fh, '<', $file or die "$file: $!";
+	while (<$fh>) {
+		s/\r?\n$//;
+		if (/^\s*#\s*include\s*"([^"]+)"/) {
+			my $inc = $1;
+			if ($inc !~ m{^domain/[^/\\]+\.h$}) {
+				violate("DC1|$file|$inc (not spelled \"domain/X.h\")");
+			} elsif (!-f "$decore_dir/$inc") {
+				violate("DC1|$file|$inc (not in the copy)");
+			}
+		} elsif (/^\s*#\s*include\s*<([^>]+)>/) {
+			violate("DC1|$file|<$1> (only <algorithm> and <cmath>)") unless $decore_angle{$1};
+		} elsif (/^\s*#\s*include\b/) {
+			violate("DC1|$file|$_ (an include this rule cannot read)");
+		}
+	}
+	close $fh;
+}
 
 #----------------------------------------------------------------------
 # Report
@@ -398,8 +446,8 @@ for my $b (sort keys %baseline) {
 my $nmembers = scalar @members;
 my $gm_nmembers = scalar @gm_members;
 if ($fail) {
-	print "arch_includes: FAILED (packetwire $nmembers members, $count files walked; gamemodel $gm_nmembers members, $gm_count files walked)\n";
+	print "arch_includes: FAILED (packetwire $nmembers members, $count files walked; gamemodel $gm_nmembers members, $gm_count files walked; de-core " . scalar(@decore_files) . " files)\n";
 	exit 1;
 }
-print "arch_includes: OK (packetwire $nmembers members, $count files walked, W0/W1/W2 clean; gamemodel $gm_nmembers members, $gm_count files walked, M0/M1/M2 clean)\n";
+print "arch_includes: OK (packetwire $nmembers members, $count files walked, W0/W1/W2 clean; gamemodel $gm_nmembers members, $gm_count files walked, M0/M1/M2 clean; de-core " . scalar(@decore_files) . " files, DC1 clean)\n";
 exit 0;

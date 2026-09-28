@@ -189,7 +189,8 @@ per-task status lines no longer restate.
 - No new test framework. `tests/framework/test_framework.h` stays; tests are
   files in `tests/unit/` (globbed — reconfigure after adding one).
 - Not a port of the server's kernel wholesale: the two repos stay separate
-  codebases pinned to one wire contract by the shared inventory.
+  codebases pinned to one wire contract by the shared inventory, and to one
+  rule implementation by the vendored de-core subset (task 4.12).
 
 ## Exemption list (tangled, outside the unit-test libraries)
 
@@ -532,7 +533,8 @@ reuse contracts; the move and the behavior change are separate commits.
 
 Background work, one class family per branch, each independently mergeable.
 Target library: `gamemodel` — links `basic` + `packetwire` + `framelib`
-(+ iconv for `MString`), **no** SDL/dxlib/VS_UI. Membership is
++ `decore` (the server's rules, vendored; task 4.12) (+ iconv for
+`MString`), **no** SDL/dxlib/VS_UI. Membership is
 `tests/arch/gamemodel_files.txt` (`.cpp` lines compiled, `.h` lines
 allowed in the closure), read by CMake, which removes each member from the
 executable by absolute path and asserts it, by the include checker (M0–M2)
@@ -777,6 +779,33 @@ rounds settled* for the host rules). Test fixtures share
   > units still call executable functions; R4 zero does not prove their isolation.
   - Owner: R4, `UiRuntime.h`, the designated installer in `GameInit.cpp` and
     `tests/ui/test_ui_runtime.cpp` (real sprites, packets and copied snapshots).
+
+- [ ] **4.12 Shared rules library:** the rules the client and the server both
+  compute are implemented once, in the server's de-core (`src/domain`), and
+  this repo builds a byte-identical, hash-manifested copy of a listed subset,
+  `third_party/decore/` (the server's task 3.6 is the other half). Six slices,
+  each a server change and then this repo's: (1) the shop buy, sell and repair
+  price and the maximum durability; (2) the per-class grade policy and
+  durability class table; (3) callers of the existing de-core functions (this
+  repo only); (4) equip requirements; (5) the castle tax; (6)
+  `SkillOutputFormulas` and the small rules.
+  > **Status:** in progress (slice 1's adapters - the `refactor:` and `fix:`
+  > commits that route `MPriceManager` and the `MItem` durability getters
+  > through `decore` - then slices 2-6). The copy is in: `decore`, a static
+  > library linked `PUBLIC` by `gamemodel`, synced from server `72dba238`.
+  > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
+  > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
+  > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
+  > rows are recorded on the server; a row that fails here is a toolchain
+  > difference to investigate, never a row to re-record. Every
+  > `ItemPriceInput` field is set by the caller (value-initialise with
+  > `= {}`), and each adapter `static_assert`s `decore::itemclass` against
+  > its `ITEM_CLASS_*`.
+  - Owner: `decore_vendored` (`sync.pl --verify-manifest`: hashes, no
+    unlisted file, every vendored `.cpp` built), `decore_tests` (every vector
+    row on every toolchain, and under node in `web.yml`), the
+    `decore-upstream` job in `linux.yml` (`sync.pl --check` against server
+    master), and `arch_includes` rule DC1.
 
 ## Phase 5 — Long tail
 

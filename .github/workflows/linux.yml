@@ -5,7 +5,9 @@ name: Linux build and tests
 # Three presets - GCC, Clang, and GCC under AddressSanitizer and
 # UndefinedBehaviorSanitizer - each a full build (every library, the test
 # binaries and the DarkEden executable) followed by ctest, through the
-# same script a developer runs locally (tools/ci/verify-linux.sh).
+# same script a developer runs locally (tools/ci/verify-linux.sh). A
+# fourth job, decore-upstream, compares the vendored server rules
+# (third_party/decore) with the server's master.
 
 on:
   push:
@@ -54,3 +56,26 @@ jobs:
             build/verification/
             build/presets/${{ matrix.preset }}/Testing/Temporary/
             build/presets/${{ matrix.preset }}/CMakeFiles/CMakeConfigureLog.yaml
+
+  # Is third_party/decore still what the server's master would sync? A
+  # separate job, so a stale copy reads as "vendor behind server" and not
+  # as a broken build. It compares bytes and the subset, never the commit
+  # recorded in the README: master moves on for changes outside the subset.
+  # A failure means: perl tools/decore/sync.pl <server-root>, then commit.
+  decore-upstream:
+    name: decore-upstream
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Check out the server's de-core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: bound2/opendarkeden-server
+          path: build/server
+          sparse-checkout: src/domain
+          persist-credentials: false
+      - name: Compare the vendored copy with server master
+        run: perl tools/decore/sync.pl --check build/server
