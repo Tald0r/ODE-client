@@ -12784,7 +12784,7 @@ MPlayer::FindEnemy()
 		// 특수 기술이 설정되지 않은 경우
 		if (m_nSpecialActionInfo==ACTIONINFO_NULL)
 		{
-			return 0;
+			return OBJECTID_NULL;
 		}
 
 		actionDistance = GetActionInfoRange( m_nSpecialActionInfo );
