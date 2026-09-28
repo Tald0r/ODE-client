@@ -275,7 +275,7 @@ SocketImpl * SocketImpl::accept ()
     uint len = sizeof(ClientAddr);
  
     // get client socket descriptor
-    uint ClientID = static_cast<uint>(SocketAPI::accept_ex( m_SocketID , (struct sockaddr *)&ClientAddr , &len ));
+    SOCKET ClientID = SocketAPI::accept_ex( m_SocketID , (struct sockaddr *)&ClientAddr , &len );
  
     // create MSocketImpl with socket descriptor
     SocketImpl * client = new SocketImpl();
