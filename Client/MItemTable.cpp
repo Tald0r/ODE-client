@@ -230,16 +230,17 @@ ITEMTABLE_INFO::SaveToFile(std::ofstream& file)
 
 	file.write((const char*)&CriticalHit, 4);	
 
-	BYTE DefaultOptionListSize = static_cast<BYTE>(DefaultOptionList.size());
+	// The count is one byte, so at most 255 options are saved: the count
+	// and the options that follow it always agree.
+	const size_t optionCount = DefaultOptionList.size() < 255 ? DefaultOptionList.size() : 255;
+	BYTE DefaultOptionListSize = static_cast<BYTE>(optionCount);
 	file.write((const char*)&DefaultOptionListSize, 1);
-	std::list<TYPE_ITEM_OPTION>::iterator itr = DefaultOptionList.begin();
+	std::list<TYPE_ITEM_OPTION>::const_iterator itr = DefaultOptionList.begin();
 
-	while(itr != DefaultOptionList.end())
+	for (size_t i = 0; i < optionCount; ++i, ++itr)
 	{
 		TYPE_ITEM_OPTION Option = *itr;
 		file.write((const char*)&Option, sizeof(TYPE_ITEM_OPTION));
-
-		itr++;
 	}
 
 	file.write((const char*)&ItemStyle, 4);
