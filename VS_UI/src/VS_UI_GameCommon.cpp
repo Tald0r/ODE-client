@@ -22315,7 +22315,7 @@ C_VS_UI_MINIMAP::C_VS_UI_MINIMAP()
 	m_p_minimap_surface->SetTransparency(0xffff);
 	
 	m_surface_w = 200;
-	m_surface_w = 100;
+	m_surface_h = 100;
 	m_Block.clear();
 	m_Flag.clear();
 	
@@ -34423,7 +34423,7 @@ C_VS_UI_WORLDMAP::C_VS_UI_WORLDMAP()
 	m_p_minimap_surface->SetTransparency(0xffff);
 	
 	m_surface_w = m_pC_minimap_spk->GetWidth(MINIMAP_MAIN);
-	m_surface_w = m_pC_minimap_spk->GetHeight(MINIMAP_MAIN);
+	m_surface_h = m_pC_minimap_spk->GetHeight(MINIMAP_MAIN);
 	m_Block.clear();
 	m_Flag.clear();
 	
