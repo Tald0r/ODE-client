@@ -18751,13 +18751,15 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					
 					m_advance_skill_count = static_cast<int>(list.size());
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[m_skill_domain].GetSkillStatus(SkillID);
@@ -18945,14 +18947,16 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[m_skill_domain].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[m_skill_domain].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					
 					const int level_plus = 127;
 					DWORD shadow_color = RGB_BLACK;
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						
@@ -19050,12 +19054,14 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					m_advance_skill_count = static_cast<int>(list.size());
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
@@ -19238,14 +19244,16 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					// eidt by coffee 2007-2-25 start  修正显示技能位置
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// end
 					
 					const int level_plus = 127;
 					DWORD shadow_color = RGB_BLACK;
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						
@@ -19653,15 +19661,17 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					MSkillDomain::SKILL_STEP_LIST::iterator ss;
 					m_advance_skill_count = static_cast<int>(list.size());
 
 					if(m_advance_skill_count>2)
-						ss = list.begin()+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+						ss = list.begin()+first_row;
 					else
 						ss = list.begin();
 					
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						MSkillDomain::SKILLSTATUS status = (*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStatus(SkillID);
@@ -19844,19 +19854,21 @@ void	C_VS_UI_INFO::_Show5()
 				if((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].IsExistSkillStep(step))
 				{
 					MSkillDomain::SKILL_STEP_LIST list = *((*g_pSkillManager)[SKILLDOMAIN_OUSTERS].GetSkillStepList(step));
+					// The scroll position clamped to this list: one left over from a longer list draws no rows.
+					const size_t first_row = min(list.size(), static_cast<size_t>(max(0,m_pC_grade3_scroll_bar->GetScrollPos())));
 					//edit by coffee 2007-2-25
 					//MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin();//+max(0,m_pC_skill_scroll_bar->GetScrollPos());
-					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+					MSkillDomain::SKILL_STEP_LIST::iterator ss = list.begin() + first_row;
 					// edit by coffee 2007-2-25 end
 					
 					if(m_advance_skill_count>2)
-						ss = list.begin()+max(0,m_pC_grade3_scroll_bar->GetScrollPos());
+						ss = list.begin()+first_row;
 					else
 						ss = list.begin();
 
 					const int level_plus = 127;
 					DWORD shadow_color = RGB_BLACK;
-					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - max(0,m_pC_grade3_scroll_bar->GetScrollPos()) ); i++)
+					for(int i = 0; static_cast<size_t>(i) < min( 3, list.size() - first_row ); i++)
 					{
 						const ACTIONINFO SkillID = (ACTIONINFO)*ss;
 						
