@@ -207,3 +207,7 @@ Client/MQuestInfo.h
 # Party records and membership, with live creature actions behind MPartyHost.
 Client/MParty.cpp
 Client/MParty.h
+
+# The HP-modify number drawn over a creature: its text and colour.
+Client/HPModifyLabel.cpp
+Client/HPModifyLabel.h
