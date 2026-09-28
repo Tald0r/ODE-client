@@ -259,7 +259,7 @@ void C_VS_UI_MOUSE_POINTER::Show()
 
 		if(m_cursor == CURSOR_RESIZE && gpC_window_manager->GetMouseFocusedWindow() == m_resize_window)
 		{
-			int temp_cursor;
+			int temp_cursor = CURSOR_SLAYER_PICKUP;
 			switch(g_eRaceInterface)
 			{
 			case RACE_SLAYER:
