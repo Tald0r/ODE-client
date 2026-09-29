@@ -638,6 +638,19 @@ class MSkillInfoTable : public CTypeTable<SKILLINFO_NODE> {
 
 extern MSkillInfoTable*		g_pSkillInfoTable;
 
+//----------------------------------------------------------------------
+// Will of Life
+//----------------------------------------------------------------------
+// The HP one cast of Will of Life costs a vampire of level `level`,
+// which is also the HP the effect adds to each regeneration while it
+// lasts: the server's WillOfLife handler takes both from the formula's
+// Damage (decore::skillformula::WillOfLife, 5 + level / 7).
+int				GetWillOfLifeHP(int level);
+
+// The time, in milliseconds, from a cast of Will of Life until a vampire
+// of level `level` may cast it again: (3 + level / 10) * 2 seconds.
+int				GetWillOfLifeDelay(int level);
+
 
 //----------------------------------------------------------------------
 //

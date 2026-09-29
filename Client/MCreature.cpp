@@ -10125,8 +10125,10 @@ MCreature::SetRegen(int amount, DWORD delay)
 		if((*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetStatus() == RankBonusInfo::STATUS_LEARNED)
 			amount += (*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetPoint();
 
+		// Will of Life adds the HP its cast costs (the server's
+		// EffectWillOfLife bonus).
 		if( HasEffectStatus( EFFECTSTATUS_WILL_OF_LIFE ) )
-			amount += (5+ ( GetLEVEL() / 7 ) );		
+			amount += GetWillOfLifeHP( (int)GetLEVEL() );
 	}
 	m_RegenAmount = amount; 
 	

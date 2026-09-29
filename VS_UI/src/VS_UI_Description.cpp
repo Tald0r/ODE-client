@@ -1800,7 +1800,7 @@ void	_Skill_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			}
 
 		if( left == SKILL_WILL_OF_LIFE )
-			SafeFormat::Format(sz_buf, "%d",5 + (g_char_slot_ingame.level / 7));
+			SafeFormat::Format(sz_buf, "%d", GetWillOfLifeHP(g_char_slot_ingame.level));
 		else
 			SafeFormat::Format(sz_buf, "%d", SkillConsumeMP(left));
 		g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);

@@ -11,6 +11,7 @@
 #include "MSkillManager.h"
 
 #include "domain/Formulas.h"
+#include "domain/SkillOutputFormulas.h"
 
 #ifndef __NEW_SKILL__
 	#define __NEW_SKILL__
@@ -171,6 +172,51 @@ MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT) const
 	}
 
 	return decore::vampireSkillConsumeMP(info.GetMP(), info.GetLearnLevel(), currentINT);
+}
+
+//----------------------------------------------------------------------
+// Will of Life
+//----------------------------------------------------------------------
+namespace {
+
+// What the server's Will of Life formula gives a vampire of `level`.
+// The input is filled as the server's SkillInput(Vampire*)
+// (skill/SkillHandler.cpp) fills what decore::skillformula::WillOfLife
+// reads: SkillLevel is the vampire's level. The fields that constructor
+// sets to the same value for every vampire are set so too (DomainLevel
+// 0, TargetType TARGET_MAX, no gun, so GunClass::Other, and PartySize
+// 0, never the size of the vampire's party), and DomainGrade is -1, as
+// for every formula that does not read the grade. STR, DEX, INTE and
+// Range (the current stats and the advancement class level) are left 0,
+// because WillOfLife does not read them: this input is valid for
+// WillOfLife only, not for another skill's formula.
+decore::skillformula::SkillOutput	WillOfLifeOutput(int level)
+{
+	decore::skillformula::SkillInput in = {};
+	in.SkillLevel = level;
+	in.DomainLevel = 0;
+	in.DomainGrade = -1;
+	in.TargetType = decore::skillformula::SkillInput::TARGET_MAX;
+	in.Gun = decore::skillformula::GunClass::Other;
+	in.PartySize = 0;
+
+	decore::skillformula::SkillOutput out;
+	decore::skillformula::WillOfLife(in, out);
+	return out;
+}
+
+} // namespace
+
+int
+GetWillOfLifeHP(int level)
+{
+	return WillOfLifeOutput(level).Damage;
+}
+
+int
+GetWillOfLifeDelay(int level)
+{
+	return (3 + (level / 10)) * 2 * 1000;
 }
 
 //----------------------------------------------------------------------
