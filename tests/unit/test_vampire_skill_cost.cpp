@@ -106,6 +106,35 @@ TEST(VampireSkillCost, SomeSkillsPayTheTableCost)
 	}
 }
 
+// The inverse: skills whose server handlers do charge decreaseConsumeMP
+// (GroundAttack.cpp, BloodySnake.cpp, BiteOfDeath.cpp, RapidGliding.cpp,
+// the three TransformTo*.cpp, Hide.cpp and Invisibility.cpp; each target
+// overload passes on to the tile one that charges it). The skill bar
+// adds the first four by name or by form and the others from the
+// learned skills, and reads this cost for all of them. One added to the
+// table-cost list by mistake would cost 200 here where the server
+// charges 10.
+TEST(VampireSkillCost, TheOtherGatedSkillsAreDiscounted)
+{
+	static_assert(MAGIC_HIDE == 98 && MAGIC_INVISIBILITY == 100
+		&& MAGIC_TRANSFORM_TO_WOLF == 101 && MAGIC_TRANSFORM_TO_BAT == 102
+		&& MAGIC_GROUND_ATTACK == 179 && MAGIC_BLOODY_SNAKE == 184
+		&& MAGIC_RAPID_GLIDING == 203 && SKILL_TRANSFORM_TO_WERWOLF == 273
+		&& SKILL_BITE_OF_DEATH == 278,
+		"the server's skill types (src/Core/types/SkillTypes.h there)");
+	const ACTIONINFO skills[] = {
+		MAGIC_GROUND_ATTACK, MAGIC_BLOODY_SNAKE, SKILL_BITE_OF_DEATH,
+		MAGIC_RAPID_GLIDING, MAGIC_TRANSFORM_TO_WOLF, MAGIC_TRANSFORM_TO_BAT,
+		SKILL_TRANSFORM_TO_WERWOLF, MAGIC_HIDE, MAGIC_INVISIBILITY,
+	};
+	for (ACTIONINFO id : skills)
+	{
+		CostTable cost(id);
+		CHECK_EQ(200, cost.table.GetVampireConsumeMP(id, 31));	// consume-level-11-int-at-level
+		CHECK_EQ(10, cost.table.GetVampireConsumeMP(id, 98));	// consume-level-11-int-past-7x
+	}
+}
+
 // A skill the table does not hold costs nothing.
 TEST(VampireSkillCost, AnUnknownSkillCostsNothing)
 {
