@@ -109,8 +109,9 @@ TEST(PacketFuzzFindings, EveryNicknameTypeInRangeStillReads)
 	CHECK(!NicknameReadIsRefused({ 0x34, 0x12, NicknameInfo::NICK_CUSTOM, 0 }));
 }
 
-// The fuzzer's input (tests/fuzz/regressions/client_stream/
-// GCModifyNickname-type-0xff.hex) without its encrypt code byte: one
+// The first frame of the fuzzer's input (tests/fuzz/regressions/
+// client_stream/GCModifyNickname-type-0xff.hex), byte for byte, without
+// the encrypt code byte before it and the 8 zero bytes after it: one
 // GCModifyNickname frame of 30 bytes whose nickname type is 0xff.
 TEST(PacketFuzzFindings, ModifyNicknameFrameWithTypeFfIsRefused)
 {
@@ -118,7 +119,7 @@ TEST(PacketFuzzFindings, ModifyNicknameFrameWithTypeFfIsRefused)
 		0x15, 0x01,			// id 0x0115, GCModifyNickname
 		0x1e, 0x00, 0x00, 0x00,		// body size 30
 		0x00,				// sequence
-		0x00, 0x00, 0x00, 0xff,		// object id
+		0x00, 0x00, 0xff, 0xff,		// object id
 		0xff, 0xff,			// nickname id
 		0xff,				// nickname type
 		0xff, 0xff,			// unread: the type ended the parse
