@@ -378,8 +378,11 @@ class MItem : public MObject, public CAnimationFrame {
 		//---------------------------------------------------
 		// Requirements
 		//---------------------------------------------------
-		// int, not BYTE: the slayer ceiling is 290 and Ousters gear is uncapped,
-		// so a byte return wrapped level-150 requirements (task 4.4 fix).
+		// What the item asks, by the server's rule for its race
+		// (decore::requiredStats; MItem.cpp says how the race is chosen).
+		// int, not BYTE: the slayer ceiling is 290 and an ousters' STR, DEX,
+		// INT and sum are uncapped, so a byte return wrapped level-150
+		// requirements (task 4.4 fix).
 		int					GetRequireSTR()	const;
 		int					GetRequireDEX()	const;
 		int					GetRequireINT()	const;

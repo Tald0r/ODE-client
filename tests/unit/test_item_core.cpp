@@ -18,7 +18,6 @@
 #include "type_table_access.h"
 
 #include "gamemodel_world.h"
-#include "MItemLimits.h"
 #include "RaceType.h"
 
 #include <cstring>
@@ -181,9 +180,9 @@ TEST(ItemCore, RequiredStrengthAddsOptionsAndCapsAtTheOldCeiling)
 	CHECK_EQ(10, item.GetItemOptionRequireSUM());
 	CHECK_EQ(70, item.GetRequireSTR());
 
-	// Past the old ceiling the sum is clamped to it.
+	// Past the old ceiling of 200 the sum is clamped to it.
 	SwordInfo().SetRequireSTR(190);
-	CHECK_EQ(MAX_SLAYER_ATTR_OLD, item.GetRequireSTR());
+	CHECK_EQ(200, item.GetRequireSTR());
 
 	// Ousters gear is not clamped.
 	SwordInfo().Race = FLAG_RACE_OUSTERS;

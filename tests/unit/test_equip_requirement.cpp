@@ -43,6 +43,8 @@ const OptionRow	kOptions[] = {
 	{ 0, 70 },		// 3
 	{ 0, 10 },		// 4
 	{ 5, 10 },		// 5
+	{ 0, 120 },		// 6
+	{ 0, 5 },		// 7
 };
 const int	kOptionRows = (int)(sizeof(kOptions) / sizeof(kOptions[0]));
 
@@ -210,6 +212,29 @@ TEST(EquipRequirement, SlayerAndOustersLevelZeroStaysZero)
 	CHECK_EQ(0, item.GetRequireLevel());
 
 	SetGear(FLAG_RACE_OUSTERS, 50, 40, 30, 120, 0);
+	CHECK_EQ(0, item.GetRequireLevel());
+}
+
+// A level is kept in 8 bits and each option is added to the kept
+// value: vampire-8-bit-wrap-under-cap asks 14 of a table level of 150
+// raised by 120 (270 wraps to 14, under the cap); vampire-wrap-to-zero-
+// still-raised asks 5 of 136 raised by 120 (0) and then 5; and
+// ousters-wrap-to-zero-skips-later-options asks nothing of the same
+// item, since an ousters' level of 0 is not raised.
+TEST(EquipRequirement, OptionsAddToTheLevelAtItsWidth)
+{
+	EquipWorld world;
+	Gear item;
+	item.AddItemOption(6);
+
+	SetGear(FLAG_RACE_VAMPIRE, 0, 0, 0, 0, 150);
+	CHECK_EQ(14, item.GetRequireLevel());
+
+	item.AddItemOption(7);
+	SetGear(FLAG_RACE_VAMPIRE, 0, 0, 0, 0, 136);
+	CHECK_EQ(5, item.GetRequireLevel());
+
+	SetGear(FLAG_RACE_OUSTERS, 0, 0, 0, 0, 136);
 	CHECK_EQ(0, item.GetRequireLevel());
 }
 

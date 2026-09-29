@@ -1186,160 +1186,97 @@ MItem::GetItemOptionRequireSUM() const
 }
 
 //----------------------------------------------------------------------
-// Get Require STR
+// The requirement an item shows and checks
 //----------------------------------------------------------------------
+// Which race's rule an item's requirement follows. The item has no
+// wearer here, so its race flags choose: an ousters item takes the
+// ousters rule, then a vampire item the vampire's, and anything else
+// the slayer's. In the server's item tables a slayer item never asks a
+// level and a vampire item never asks STR, DEX or INT, so the fields a
+// rule passes through untouched are 0 on the items it is chosen for.
+//----------------------------------------------------------------------
+static decore::EquipRace
+RequirementRaceOf(const MItem& item)
+{
+	if (item.IsOustersItem())
+	{
+		return decore::EquipRace::Ousters;
+	}
+	if (item.IsVampireItem())
+	{
+		return decore::EquipRace::Vampire;
+	}
+	return decore::EquipRace::Slayer;
+}
+
+//----------------------------------------------------------------------
+// What the item asks: its table's STR, DEX, INT, sum and level, raised
+// by each option's sum and level requirement in the option list's
+// order and capped, by the server's rule (decore::requiredStats, which
+// Slayer, Vampire and Ousters::isRealWearing call). A quest item asks
+// nothing: that is the client's own rule, which the server has no
+// counterpart for.
+//----------------------------------------------------------------------
+static decore::EquipRequirement
+RequirementOf(const MItem& item)
+{
+	decore::EquipRequirement base = {};
+	if (item.IsQuestItem())
+	{
+		return base;
+	}
+
+	const ITEMTABLE_INFO& info = (*g_pItemTable)[item.GetItemClass()][item.GetItemType()];
+	base.str = info.GetRequireSTR();
+	base.dex = info.GetRequireDEX();
+	base.inte = info.GetRequireINT();
+	base.sum = info.GetRequireSUM();
+	base.level = info.GetRequireLevel();
+
+	const std::list<TYPE_ITEM_OPTION>& options = item.GetItemOptionList();
+	std::vector<int> optionReqSums;
+	std::vector<int> optionReqLevels;
+	optionReqSums.reserve(options.size());
+	optionReqLevels.reserve(options.size());
+	for (TYPE_ITEM_OPTION option : options)
+	{
+		const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[option];
+		optionReqSums.push_back(optionInfo.RequireSUM);
+		optionReqLevels.push_back(optionInfo.RequireLevel);
+	}
+
+	return decore::requiredStats(RequirementRaceOf(item), base, optionReqSums.data(),
+								 optionReqLevels.data(), static_cast<int>(optionReqSums.size()));
+}
+
 int
 MItem::GetRequireSTR() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireSTR();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-
-	if( original <= MAX_SLAYER_ATTR_OLD)
-		maxValue = MAX_SLAYER_ATTR_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR;
-	
-	original += (GetItemOptionRequireSUM()<<1);
-
-	if( IsOustersItem() )
-		return original;
-	
-	return min(original, maxValue);
-	
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireSTR());
-		//(*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).str;
 }
 
-//----------------------------------------------------------------------
-// Get Require DEX
-//----------------------------------------------------------------------
 int
 MItem::GetRequireDEX() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireDEX();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-
-	if( original <= MAX_SLAYER_ATTR_OLD )
-		maxValue = MAX_SLAYER_ATTR_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR;
-
-	original += (GetItemOptionRequireSUM()<<1);
-	
-	if( IsOustersItem() )
-		return original;
-
-	return min(original, maxValue);
-
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireDEX());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).dex;
 }
 
-//----------------------------------------------------------------------
-// Get Require INT
-//----------------------------------------------------------------------
 int
 MItem::GetRequireINT() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireINT();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-
-	if( original <= MAX_SLAYER_ATTR_OLD)
-		maxValue = MAX_SLAYER_ATTR_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR;
-
-	original += (GetItemOptionRequireSUM()<<1);
-
-	if( IsOustersItem() )
-		return original;
-
-	return min(original, maxValue);
-
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireINT());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).inte;
 }
 
-//----------------------------------------------------------------------
-// Get Require SUM
-//----------------------------------------------------------------------
 int
 MItem::GetRequireSUM() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireSUM();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-	if( original <= MAX_SLAYER_ATTR_SUM_OLD )
-		maxValue = MAX_SLAYER_ATTR_SUM_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR_SUM;
-	original += GetItemOptionRequireSUM();
-
-	if( IsOustersItem() )
-		return original;
-
-	return min(original, maxValue);
-
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireSUM());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).sum;
 }
 
-//----------------------------------------------------------------------
-// Get Require Level
-//----------------------------------------------------------------------
 int
 MItem::GetRequireLevel() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireLevel();
-	int maxValue = 0;
-	
-	if( IsQuestItem() )
-		return 0;
-
-	// A vampire's options raise a level of 0 too; a slayer's or an
-	// ousters' level of 0 asks nothing, options or not.
-	const bool bVampireRule = IsVampireItem() && !IsOustersItem();
-	if( original == 0 && !bVampireRule )
-		return 0;
-
-	if( original <= 100 )
-		maxValue = MAX_VAMPIRE_LEVEL_OLD;
-	else
-		maxValue = MAX_VAMPIRE_LEVEL;
-
-	// what the options add
-	original += GetItemOptionRequireLevel();
-
-	// An ousters' level stops at one cap, whatever the table asks.
-	if( IsOustersItem() )
-		return min(original, MAX_OUSTERS_LEVEL);
-
-	return min(original, maxValue);
-	//return max(original, GetItemOptionRequireLevel());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).level;
 }
 
 //----------------------------------------------------------------------
