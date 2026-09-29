@@ -628,6 +628,12 @@ class MSkillInfoTable : public CTypeTable<SKILLINFO_NODE> {
 		// LoadFromFileServerSkillInfo(), and only when the client runs in
 		// English - see UseEnglishText().
 		void			UseEnglishNames();
+
+		// What a vampire pays, in HP, to use skill `id` at its current
+		// INT `currentINT`. The id is an int so that one from outside
+		// ACTIONINFO's range costs nothing rather than being loaded as
+		// the enum.
+		int				GetVampireConsumeMP(int id, int currentINT) const;
 };
 
 extern MSkillInfoTable*		g_pSkillInfoTable;

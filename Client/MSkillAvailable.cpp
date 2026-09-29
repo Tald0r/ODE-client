@@ -81,6 +81,9 @@ MSkillSet::SetAvailableSkills()
 		playerMP = g_pPlayer->GetHP();	
 	}
 
+	// What a vampire's skill costs takes its current INT (GetVampireConsumeMP).
+	const int playerINT = (int)g_pPlayer->GetINT();
+
 	// 모든 skill들을 지운다.
 	clear();
 	
@@ -676,7 +679,7 @@ MSkillSet::SetAvailableSkills()
 						ACTIONINFO id = vampireDomain.GetSkillID();
 
 						// 레어존에서는 인비저빌리티 못쓰게 한다...하드하드
-						if ((*g_pSkillInfoTable)[id].GetMP() > playerMP
+						if (g_pSkillInfoTable->GetVampireConsumeMP(id, playerINT) > playerMP
 							|| (id == MAGIC_INVISIBILITY && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115)))
 						{
 							flag = 0;
@@ -818,7 +821,7 @@ MSkillSet::SetAvailableSkills()
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicGroundAttack)
 			{
-				if ((*g_pSkillInfoTable)[MAGIC_GROUND_ATTACK].GetMP() > playerMP)
+				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_GROUND_ATTACK, playerINT) > playerMP)
 				{
 					flag = 0;
 				}
@@ -837,7 +840,7 @@ MSkillSet::SetAvailableSkills()
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicBloodySnake)
 			{
-				if ((*g_pSkillInfoTable)[MAGIC_BLOODY_SNAKE].GetMP() > playerMP)
+				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_BLOODY_SNAKE, playerINT) > playerMP)
 				{
 					flag = 0;
 				}
@@ -854,7 +857,7 @@ MSkillSet::SetAvailableSkills()
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicBloodyWarp)
 			{
-				if ((*g_pSkillInfoTable)[MAGIC_BLOODY_WARP].GetMP() > playerMP)
+				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_BLOODY_WARP, playerINT) > playerMP)
 				{
 					flag = 0;
 				}
@@ -1083,12 +1086,15 @@ MSkillSet::SetAvailableVampireSkills()
 		playerMP = g_pPlayer->GetHP();	
 	}
 
+	// What a vampire's skill costs takes its current INT (GetVampireConsumeMP).
+	const int playerINT = (int)g_pPlayer->GetINT();
+
 	if (PlayerCreatureType!=CREATURETYPE_BAT
 		&& PlayerCreatureType!=CREATURETYPE_WOLF
 		&& PlayerCreatureType!=CREATURETYPE_WER_WOLF
 		&& PlayerCreatureType!=CREATURETYPE_INSTALL_TURRET)
 	{
-		if ((*g_pSkillInfoTable)[SKILL_BLOOD_DRAIN].GetMP() > playerMP)
+		if (g_pSkillInfoTable->GetVampireConsumeMP(SKILL_BLOOD_DRAIN, playerINT) > playerMP)
 		{
 			flag = 0;
 		}
@@ -1115,7 +1121,7 @@ MSkillSet::SetAvailableVampireSkills()
 	{
 	case CREATURETYPE_WOLF :
 		{
-			if ((*g_pSkillInfoTable)[MAGIC_EAT_CORPSE].GetMP() > playerMP)
+			if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_EAT_CORPSE, playerINT) > playerMP)
 			{
 				flag = 0;
 			}
@@ -1128,7 +1134,7 @@ MSkillSet::SetAvailableVampireSkills()
 			// 짖기 - -;
 			if( vampireDomain.GetSkillStatus( MAGIC_HOWL ) == MSkillDomain::SKILLSTATUS_LEARNED )
 			{
-				if( (*g_pSkillInfoTable)[MAGIC_HOWL].GetMP() > playerMP)				
+				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_HOWL, playerINT) > playerMP)				
 				{
 					flag = 0;
 				}
@@ -1142,7 +1148,7 @@ MSkillSet::SetAvailableVampireSkills()
 		break;
 	case CREATURETYPE_WER_WOLF :
 		{
-			if( (*g_pSkillInfoTable)[SKILL_BITE_OF_DEATH].GetMP() > playerMP )
+			if( g_pSkillInfoTable->GetVampireConsumeMP(SKILL_BITE_OF_DEATH, playerINT) > playerMP )
 			{
 				flag  = 0;
 			}
@@ -1154,7 +1160,7 @@ MSkillSet::SetAvailableVampireSkills()
 
 			if( vampireDomain.GetSkillStatus( MAGIC_RAPID_GLIDING ) == MSkillDomain::SKILLSTATUS_LEARNED )
 			{
-				if( (*g_pSkillInfoTable)[MAGIC_RAPID_GLIDING].GetMP() > playerMP )
+				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_RAPID_GLIDING, playerINT) > playerMP )
 				{
 					flag  = 0;
 				}

@@ -10,6 +10,8 @@
 #include "Client_PCH.h"
 #include "MSkillManager.h"
 
+#include "domain/Formulas.h"
+
 #ifndef __NEW_SKILL__
 	#define __NEW_SKILL__
 	//#undef  __NEW_SKILL__
@@ -92,6 +94,83 @@ MSkillInfoTable::UseEnglishNames()
 			m_pTypeInfo[i].SetHName( pName );
 		}
 	}
+}
+
+//----------------------------------------------------------------------
+// Get Vampire Consume MP
+//----------------------------------------------------------------------
+// A vampire uses its HP as MP. This is what one use of skill `id` costs
+// it at its current INT: the server's decreaseConsumeMP (SkillUtil.cpp),
+// decore::vampireSkillConsumeMP of the skill's consume MP and level
+// from the skill table and the INT. The ratio of the gear's consume-MP
+// options is a further host input on the server (hasEnoughMana), which
+// the client does not apply.
+//
+// The list below is every vampire skill whose server handler (an
+// execute(Vampire*) under src/server/gameserver/skill) never calls
+// decreaseConsumeMP; those skills keep the table cost. Extreme, Mephisto,
+// PoisonMesh, StoneSkin and, through SimpleTileMeleeSkill, ViolentPhantom
+// and Deadly Claw charge it undiscounted. Howl charges 10, Transfusion
+// 12% of the current HP and Will of Life its own output. Blood Drain, Eat
+// Corpse, Bloody Warp (which always fails), Open Casket, Unburrow,
+// Uninvisibility and Untransform charge nothing. The client showed the
+// table cost for those ten before and still does: the skill bar gates
+// Bloody Warp and every learned vampire skill on this cost. AttackMelee
+// also has a vampire handler that charges nothing, but it is the basic
+// attack, not a skill with a table cost.
+//----------------------------------------------------------------------
+namespace {
+
+// The server's skill types (src/Core/types/SkillTypes.h there) for the
+// skills above; the ids are the wire's, so they must agree.
+static_assert(SKILL_BLOOD_DRAIN == 79 && MAGIC_UN_BURROW == 107 && MAGIC_UN_TRANSFORM == 108
+	&& MAGIC_UN_INVISIBILITY == 109 && MAGIC_EAT_CORPSE == 111 && MAGIC_HOWL == 112
+	&& SKILL_MEPHISTO == 154 && SKILL_TRANSFUSION == 156 && SKILL_EXTREME == 157
+	&& MAGIC_OPEN_CASKET == 177 && MAGIC_BLOODY_WARP == 183
+	&& SKILL_POISON_MESH == 205 && SKILL_WILL_OF_LIFE == 207 && SKILL_STONE_SKIN == 274
+	&& SKILL_VIOLENT_PHANTOM == 328 && SKILL_VAMPIRE_INNATE_DEADLY_CLAW == 391,
+	"the vampire skills that keep the table cost are the server's");
+
+bool	IsChargedTheTableCost(int id)
+{
+	switch (id)
+	{
+		case SKILL_EXTREME :
+		case SKILL_MEPHISTO :
+		case SKILL_POISON_MESH :
+		case SKILL_STONE_SKIN :
+		case SKILL_VIOLENT_PHANTOM :
+		case SKILL_VAMPIRE_INNATE_DEADLY_CLAW :
+		case MAGIC_HOWL :
+		case SKILL_TRANSFUSION :
+		case SKILL_WILL_OF_LIFE :
+		case SKILL_BLOOD_DRAIN :
+		case MAGIC_EAT_CORPSE :
+		case MAGIC_BLOODY_WARP :
+		case MAGIC_OPEN_CASKET :
+		case MAGIC_UN_BURROW :
+		case MAGIC_UN_INVISIBILITY :
+		case MAGIC_UN_TRANSFORM :
+			return true;
+
+		default :
+			return false;
+	}
+}
+
+} // namespace
+
+int
+MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT) const
+{
+	const SKILLINFO_NODE& info = (*this)[id];
+
+	if (IsChargedTheTableCost(id))
+	{
+		return info.GetMP();
+	}
+
+	return decore::vampireSkillConsumeMP(info.GetMP(), info.GetLearnLevel(), currentINT);
 }
 
 //----------------------------------------------------------------------

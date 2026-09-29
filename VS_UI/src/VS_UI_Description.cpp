@@ -1676,6 +1676,20 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 }
 
 //-----------------------------------------------------------------------------
+// SkillConsumeMP
+//
+// The cost a skill's description shows: MP, or a vampire's HP, or an
+// ousters' EP. A vampire's takes its current INT
+// (MSkillInfoTable::GetVampireConsumeMP).
+//-----------------------------------------------------------------------------
+static int	SkillConsumeMP(long skill)
+{
+	if (g_eRaceInterface == RACE_VAMPIRE)
+		return g_pSkillInfoTable->GetVampireConsumeMP((int)skill, g_char_slot_ingame.INT_CUR);
+	return (*g_pSkillInfoTable)[skill].GetMP();
+}
+
+//-----------------------------------------------------------------------------
 // _Skill_Description_Show
 //
 // 
@@ -1782,7 +1796,7 @@ void	_Skill_Description_Show(Rect rect, void * void_ptr, long left, long right)
 		if( left == SKILL_WILL_OF_LIFE )
 			SafeFormat::Format(sz_buf, "%d",5 + (g_char_slot_ingame.level / 7));
 		else
-			SafeFormat::Format(sz_buf, "%d", (*g_pSkillInfoTable)[left].GetMP());
+			SafeFormat::Format(sz_buf, "%d", SkillConsumeMP(left));
 		g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 		py += SMALL_FONT_Y_GAP;
 	}
@@ -2073,7 +2087,7 @@ void	_SkillTree_Description_Show(Rect rect, void * void_ptr, long left, long rig
 			break;
 		}
 		
-		SafeFormat::Format(sz_buf, "%d", (*g_pSkillInfoTable)[left].GetMP());
+		SafeFormat::Format(sz_buf, "%d", SkillConsumeMP(left));
 		g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 	}
 	else

@@ -690,7 +690,15 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 	//------------------------------------------
 	// 바뀌는 수치 계산
 	//------------------------------------------
-	g_pPlayer->CalculateStatus();		
+	g_pPlayer->CalculateStatus();
+
+	// A vampire's skill costs fall as its current INT rises
+	// (MSkillInfoTable::GetVampireConsumeMP), so which skills it can use
+	// changes with INT as well as with HP.
+	if (g_pPlayer->IsVampire())
+	{
+		g_pSkillAvailable->CheckMP();
+	}
 }
 
 //-----------------------------------------------------------------------------

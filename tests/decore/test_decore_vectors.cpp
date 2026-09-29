@@ -17,10 +17,12 @@
 // name, the inputs in the order the file's header documents, and the
 // expected value last, compared as text: a number as std::to_string
 // writes it, a grade policy by its enumerator name, and gradeOffsets'
-// struct as its six fields comma-separated, in declaration order. Row
-// names are unique within a file, every file has at least one row for
-// each function it belongs to, and a vector file this suite does not
-// know fails rather than being skipped.
+// struct as its six fields comma-separated, in declaration order. A
+// weapon family is read by its enumerator name, and a StatAttr as its
+// six fields in declaration order. An empty field where a number is read
+// is an error, not an input of 0. Row names are unique within a file,
+// every file has at least one row for each function it belongs to, and a
+// vector file this suite does not know fails rather than being skipped.
 //
 // decore_tests links only decore and the test framework, which proves the
 // copy is self-contained.
@@ -29,6 +31,7 @@
 
 #include "test_framework.h"
 
+#include "domain/Formulas.h"
 #include "domain/ItemDurability.h"
 #include "domain/ItemGrade.h"
 #include "domain/ItemPrice.h"
@@ -57,6 +60,14 @@ const std::map<std::string, std::set<std::string>>&	KnownFiles()
 		{ "repair_price.tsv", { "repairPrice" } },
 		{ "durability.tsv", { "maxDurabilityBase", "maxDurabilityWithOptions", "maxDurability" } },
 		{ "item_grade.tsv", { "gradeOffsets", "gradePolicyOf", "hasDurability" } },
+		{ "stats.tsv", {
+			"slayerToHit", "vampireToHit", "oustersToHit",
+			"slayerDefense", "vampireDefense", "oustersDefense",
+			"slayerProtection", "vampireProtection", "oustersProtection",
+			"slayerMinDamage", "vampireMinDamage", "oustersMinDamage",
+			"slayerMaxDamage", "vampireMaxDamage", "oustersMaxDamage",
+			"slayerStealRatio", "vampireStealRatio", "oustersStealRatio",
+			"vampireSkillConsumeMP", "vampireDexHPRegenBonus" } },
 	};
 	return files;
 }
@@ -89,6 +100,31 @@ std::string	GradePolicyName(decore::GradePolicy policy)
 	return "?";
 }
 
+//----------------------------------------------------------------------
+// The weapon families, and the names the vector files spell them by: the
+// enumerator names, as the server's harness spells them.
+//----------------------------------------------------------------------
+const decore::WeaponFamily	kWeaponFamilies[] = {
+	decore::WeaponFamily::None, decore::WeaponFamily::Sword, decore::WeaponFamily::Blade,
+	decore::WeaponFamily::Cross, decore::WeaponFamily::Mace, decore::WeaponFamily::Arms,
+	decore::WeaponFamily::Other,
+};
+
+std::string	WeaponFamilyName(decore::WeaponFamily weapon)
+{
+	switch (weapon)
+	{
+		case decore::WeaponFamily::None :	return "None";
+		case decore::WeaponFamily::Sword :	return "Sword";
+		case decore::WeaponFamily::Blade :	return "Blade";
+		case decore::WeaponFamily::Cross :	return "Cross";
+		case decore::WeaponFamily::Mace :	return "Mace";
+		case decore::WeaponFamily::Arms :	return "Arms";
+		case decore::WeaponFamily::Other :	return "Other";
+	}
+	return "?";
+}
+
 std::vector<std::string>	SplitTabs(const std::string& line)
 {
 	std::vector<std::string> fields;
@@ -113,11 +149,16 @@ public:
 	explicit RowReader(const std::vector<std::string>& fields)
 		: m_Fields(fields), m_Next(2) {}
 
+	// An empty field is malformed: a doubled tab or a missing value must
+	// not pass as an input of 0.
 	long long	Integer()
 	{
 		const std::string text = Next();
 		if (text.empty())
+		{
+			SetError("empty field");
 			return 0;
+		}
 		char* end = nullptr;
 		const long long value = std::strtoll(text.c_str(), &end, 10);
 		if (end == nullptr || *end != '\0')
@@ -179,6 +220,31 @@ public:
 		return decore::GradePolicy::None;
 	}
 
+	decore::WeaponFamily	WeaponFamily()
+	{
+		const std::string text = Next();
+		for (decore::WeaponFamily weapon : kWeaponFamilies)
+		{
+			if (text == WeaponFamilyName(weapon))
+				return weapon;
+		}
+		SetError("not a weapon family: \"" + text + "\"");
+		return decore::WeaponFamily::None;
+	}
+
+	// The six StatAttr fields in declaration order.
+	decore::StatAttr	StatAttr()
+	{
+		decore::StatAttr a = {};
+		a.str = (int)Integer();
+		a.dex = (int)Integer();
+		a.inte = (int)Integer();
+		a.level = (int)Integer();
+		a.weapon = WeaponFamily();
+		a.weaponDomainLevel = (int)Integer();
+		return a;
+	}
+
 	// Every input consumed, and exactly the expected column left.
 	void	Finish()
 	{
@@ -227,6 +293,44 @@ decore::ItemPriceInput	ReadPriceItem(RowReader& in, std::vector<int>& multiplier
 	input.curDurability = (unsigned)in.Integer();
 	input.maxDurability = (unsigned)in.Integer();
 	return input;
+}
+
+//----------------------------------------------------------------------
+// The stat functions a row names, by the arguments they take after the
+// StatAttr: none, or one int (the combat damage bonus, or the steal
+// amount).
+//----------------------------------------------------------------------
+typedef int (*StatFunction)(const decore::StatAttr&);
+typedef int (*StatFunctionWithInt)(const decore::StatAttr&, int);
+
+const std::map<std::string, StatFunction>&	StatFunctions()
+{
+	static const std::map<std::string, StatFunction> functions = {
+		{ "slayerToHit", decore::slayerToHit },
+		{ "vampireToHit", decore::vampireToHit },
+		{ "oustersToHit", decore::oustersToHit },
+		{ "slayerDefense", decore::slayerDefense },
+		{ "vampireDefense", decore::vampireDefense },
+		{ "oustersDefense", decore::oustersDefense },
+		{ "slayerProtection", decore::slayerProtection },
+		{ "vampireProtection", decore::vampireProtection },
+		{ "oustersProtection", decore::oustersProtection },
+		{ "oustersMinDamage", decore::oustersMinDamage },
+		{ "oustersMaxDamage", decore::oustersMaxDamage },
+	};
+	return functions;
+}
+
+const std::map<std::string, StatFunctionWithInt>&	StatFunctionsWithInt()
+{
+	static const std::map<std::string, StatFunctionWithInt> functions = {
+		{ "slayerMinDamage", decore::slayerMinDamage },
+		{ "slayerMaxDamage", decore::slayerMaxDamage },
+		{ "vampireMinDamage", decore::vampireMinDamage },
+		{ "vampireMaxDamage", decore::vampireMaxDamage },
+		{ "slayerStealRatio", decore::slayerStealRatio },
+	};
+	return functions;
 }
 
 //----------------------------------------------------------------------
@@ -318,6 +422,45 @@ std::string	EvaluateRow(const std::vector<std::string>& fields, std::string& err
 		const int itemClass = (int)in.Integer();
 		in.Finish();
 		result = decore::hasDurability(itemClass) ? 1 : 0;
+	}
+	else if (StatFunctions().count(function) != 0)
+	{
+		const decore::StatAttr a = in.StatAttr();
+		in.Finish();
+		result = StatFunctions().at(function)(a);
+	}
+	else if (StatFunctionsWithInt().count(function) != 0)
+	{
+		const decore::StatAttr a = in.StatAttr();
+		const int value = (int)in.Integer();
+		in.Finish();
+		result = StatFunctionsWithInt().at(function)(a, value);
+	}
+	else if (function == "vampireStealRatio")
+	{
+		const int amount = (int)in.Integer();
+		in.Finish();
+		result = decore::vampireStealRatio(amount);
+	}
+	else if (function == "oustersStealRatio")
+	{
+		const int amount = (int)in.Integer();
+		in.Finish();
+		result = decore::oustersStealRatio(amount);
+	}
+	else if (function == "vampireSkillConsumeMP")
+	{
+		const int originalMP = (int)in.Integer();
+		const int magicLevel = (int)in.Integer();
+		const int intStat = (int)in.Integer();
+		in.Finish();
+		result = decore::vampireSkillConsumeMP(originalMP, magicLevel, intStat);
+	}
+	else if (function == "vampireDexHPRegenBonus")
+	{
+		const int dexBasic = (int)in.Integer();
+		in.Finish();
+		result = decore::vampireDexHPRegenBonus(dexBasic);
 	}
 	else
 	{
@@ -421,6 +564,36 @@ TEST(DecoreVectors, Durability)
 TEST(DecoreVectors, ItemGrade)
 {
 	CHECK(CheckVectorFile("item_grade.tsv") > 0);
+}
+
+TEST(DecoreVectors, Stats)
+{
+	CHECK(CheckVectorFile("stats.tsv") > 0);
+}
+
+//----------------------------------------------------------------------
+// A doubled tab or a missing value leaves an empty field; read as a
+// number it is an error, not an input of 0, and so is a flag read the
+// same way (the server's SharedVectors.AnEmptyNumberIsAnError).
+//----------------------------------------------------------------------
+TEST(DecoreVectors, AnEmptyNumberIsAnError)
+{
+	const std::vector<std::string> fields = { "hasDurability", "empty-item-class", "", "0" };
+	RowReader in(fields);
+	CHECK_EQ(0LL, in.Integer());
+	in.Finish();
+	CHECK(in.Error() == "empty field");
+
+	const std::vector<std::string> flagFields = { "itemPrice", "empty-flag", "", "0" };
+	RowReader flags(flagFields);
+	CHECK_EQ(false, flags.Flag());
+	CHECK(flags.Error() == "empty field");
+
+	const std::vector<std::string> filled = { "hasDurability", "filled", "7", "0" };
+	RowReader ok(filled);
+	CHECK_EQ(7LL, ok.Integer());
+	ok.Finish();
+	CHECK(ok.Error().empty());
 }
 
 //----------------------------------------------------------------------

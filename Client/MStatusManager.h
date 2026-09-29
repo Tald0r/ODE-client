@@ -1,47 +1,50 @@
 //----------------------------------------------------------------------
 // MStatusManager.h
 //----------------------------------------------------------------------
+//
+// The client's own derivation of the combat stats from STR, DEX, INT and
+// the weapon's skill domain. In game the server sends these values; the
+// client computes them for the character-select slots, where it has
+// only what the character list carries, and MPlayer::CalculateStatus
+// takes the attack speed from it. A gamemodel member, so a unit test
+// reaches it (tests/unit/test_status_manager.cpp).
+//
+//----------------------------------------------------------------------
 
 
 #ifndef __MSTATUSMANAGER_H__
 #define	__MSTATUSMANAGER_H__
 
-#include "DllInfo.h"
+class PCSlayerInfo;
+class PCVampireInfo;
+class PCOustersInfo;
 
-class __EX MStatusManager {
+class MStatusManager {
 	public :
 		MStatusManager();
 		~MStatusManager();
 
 		//--------------------------------------------------------------
-		// 계산을 위한 값 설정
+		// The inputs of the computation
 		//--------------------------------------------------------------
-		//Edit by Sonic Start 2006.9.6
 		void		Set(int str,int dex, int intel);
+
+		//--------------------------------------------------------------
+		// The skill domain of the weapon in hand and its level. For a
+		// vampire or an ousters the domain is SKILLDOMAIN_VAMPIRE or
+		// SKILLDOMAIN_OUSTERS and the level is the character's level.
+		//--------------------------------------------------------------
 		void		SetCurrentWeaponDomain(int domain, int level);
-		/*
-		void		Set(int str, int dex, int intel)		
-		{
-
-			m_STR = str;
-			m_DEX = dex;
-			m_INT = intel;
-		}
-		
 
 		//--------------------------------------------------------------
-		// 현재 사용하는 무기의 domain level을 설정한다.
-		// Vampire는 domain level을 설정한다.
+		// All the inputs at once, from a character-select slot.
 		//--------------------------------------------------------------
-		void		SetCurrentWeaponDomain(int domain, int level)
-		{
-			m_Domain	 = domain;
-			m_DomainLevel = level;
-		}
-		*/
-		//Edit by sonic End 2006.9.6
+		void		SetCharacterSelectSlot(const PCSlayerInfo& info);
+		void		SetCharacterSelectSlot(const PCVampireInfo& info);
+		void		SetCharacterSelectSlot(const PCOustersInfo& info);
+
 		//--------------------------------------------------------------
-		// 특정한 값을 얻어낸다.
+		// The derived values
 		//--------------------------------------------------------------
 		int			GetTOHIT();
 		int			GetMinDAM();		// min
@@ -49,7 +52,6 @@ class __EX MStatusManager {
 		int			GetDefense();
 		int			GetProtection();
 		int			GetAttackSpeed();
-		//int			GetCC();
 
 	protected :
 		int			m_STR;
@@ -60,7 +62,7 @@ class __EX MStatusManager {
 		int			m_DomainLevel;
 };
 
-extern __EX MStatusManager		g_StatusManager;
+extern MStatusManager		g_StatusManager;
 
 #endif
 
