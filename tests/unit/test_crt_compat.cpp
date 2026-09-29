@@ -33,6 +33,19 @@ TEST(CrtCompat, ScanStringParsesNumbersAndWords)
 	CHECK_EQ(0, Basic::ScanString("x", "%d", &first));
 }
 
+// CRT_BUFFER's halves take only a char array (a pointer does not
+// compile): the array itself, and its length, which the Windows scanners
+// receive as the capacity.
+TEST(CrtCompat, CrtBufferPassesTheArrayAndItsLength)
+{
+	char word[16] = {};
+	char ignore[256] = {};
+	CHECK(&Basic::CrtArray(word) == &word);
+	CHECK_EQ(16u, Basic::CrtCapacity(word));
+	CHECK_EQ(256u, Basic::CrtCapacity(ignore));
+	CHECK_EQ(static_cast<unsigned>(sizeof(ignore)), Basic::CrtCapacity(ignore));
+}
+
 TEST(CrtCompat, OpenFileWritesAndScanFileReadsBack)
 {
 	const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
