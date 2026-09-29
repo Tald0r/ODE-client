@@ -81,8 +81,10 @@ MSkillSet::SetAvailableSkills()
 		playerMP = g_pPlayer->GetHP();	
 	}
 
-	// What a vampire's skill costs takes its current INT (GetVampireConsumeMP).
+	// What a vampire's skill costs takes its current INT, and Will of
+	// Life's its level (GetVampireConsumeMP).
 	const int playerINT = (int)g_pPlayer->GetINT();
+	const int playerLevel = (int)g_pPlayer->GetLEVEL();
 
 	// Clear every skill.
 	clear();
@@ -679,7 +681,7 @@ MSkillSet::SetAvailableSkills()
 						ACTIONINFO id = vampireDomain.GetSkillID();
 
 						// Invisibility is not allowed in the lair zones.
-						if (g_pSkillInfoTable->GetVampireConsumeMP(id, playerINT) > playerMP
+						if (g_pSkillInfoTable->GetVampireConsumeMP(id, playerINT, playerLevel) > playerMP
 							|| (id == MAGIC_INVISIBILITY && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115)))
 						{
 							flag = 0;
@@ -821,7 +823,7 @@ MSkillSet::SetAvailableSkills()
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicGroundAttack)
 			{
-				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_GROUND_ATTACK, playerINT) > playerMP)
+				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_GROUND_ATTACK, playerINT, playerLevel) > playerMP)
 				{
 					flag = 0;
 				}
@@ -840,7 +842,7 @@ MSkillSet::SetAvailableSkills()
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicBloodySnake)
 			{
-				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_BLOODY_SNAKE, playerINT) > playerMP)
+				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_BLOODY_SNAKE, playerINT, playerLevel) > playerMP)
 				{
 					flag = 0;
 				}
@@ -857,7 +859,7 @@ MSkillSet::SetAvailableSkills()
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicBloodyWarp)
 			{
-				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_BLOODY_WARP, playerINT) > playerMP)
+				if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_BLOODY_WARP, playerINT, playerLevel) > playerMP)
 				{
 					flag = 0;
 				}
@@ -1086,15 +1088,17 @@ MSkillSet::SetAvailableVampireSkills()
 		playerMP = g_pPlayer->GetHP();	
 	}
 
-	// What a vampire's skill costs takes its current INT (GetVampireConsumeMP).
+	// What a vampire's skill costs takes its current INT, and Will of
+	// Life's its level (GetVampireConsumeMP).
 	const int playerINT = (int)g_pPlayer->GetINT();
+	const int playerLevel = (int)g_pPlayer->GetLEVEL();
 
 	if (PlayerCreatureType!=CREATURETYPE_BAT
 		&& PlayerCreatureType!=CREATURETYPE_WOLF
 		&& PlayerCreatureType!=CREATURETYPE_WER_WOLF
 		&& PlayerCreatureType!=CREATURETYPE_INSTALL_TURRET)
 	{
-		if (g_pSkillInfoTable->GetVampireConsumeMP(SKILL_BLOOD_DRAIN, playerINT) > playerMP)
+		if (g_pSkillInfoTable->GetVampireConsumeMP(SKILL_BLOOD_DRAIN, playerINT, playerLevel) > playerMP)
 		{
 			flag = 0;
 		}
@@ -1121,7 +1125,7 @@ MSkillSet::SetAvailableVampireSkills()
 	{
 	case CREATURETYPE_WOLF :
 		{
-			if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_EAT_CORPSE, playerINT) > playerMP)
+			if (g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_EAT_CORPSE, playerINT, playerLevel) > playerMP)
 			{
 				flag = 0;
 			}
@@ -1134,7 +1138,7 @@ MSkillSet::SetAvailableVampireSkills()
 			// Howl
 			if( vampireDomain.GetSkillStatus( MAGIC_HOWL ) == MSkillDomain::SKILLSTATUS_LEARNED )
 			{
-				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_HOWL, playerINT) > playerMP)				
+				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_HOWL, playerINT, playerLevel) > playerMP)				
 				{
 					flag = 0;
 				}
@@ -1148,7 +1152,7 @@ MSkillSet::SetAvailableVampireSkills()
 		break;
 	case CREATURETYPE_WER_WOLF :
 		{
-			if( g_pSkillInfoTable->GetVampireConsumeMP(SKILL_BITE_OF_DEATH, playerINT) > playerMP )
+			if( g_pSkillInfoTable->GetVampireConsumeMP(SKILL_BITE_OF_DEATH, playerINT, playerLevel) > playerMP )
 			{
 				flag  = 0;
 			}
@@ -1160,7 +1164,7 @@ MSkillSet::SetAvailableVampireSkills()
 
 			if( vampireDomain.GetSkillStatus( MAGIC_RAPID_GLIDING ) == MSkillDomain::SKILLSTATUS_LEARNED )
 			{
-				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_RAPID_GLIDING, playerINT) > playerMP )
+				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_RAPID_GLIDING, playerINT, playerLevel) > playerMP )
 				{
 					flag  = 0;
 				}

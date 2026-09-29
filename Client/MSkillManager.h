@@ -630,13 +630,41 @@ class MSkillInfoTable : public CTypeTable<SKILLINFO_NODE> {
 		void			UseEnglishNames();
 
 		// What a vampire pays, in HP, to use skill `id` at its current
-		// INT `currentINT`. The id is an int so that one from outside
-		// ACTIONINFO's range costs nothing rather than being loaded as
-		// the enum.
-		int				GetVampireConsumeMP(int id, int currentINT) const;
+		// INT `currentINT` and its level `level` (only Will of Life's
+		// cost reads the level). The id is an int so that one from
+		// outside ACTIONINFO's range costs nothing rather than being
+		// loaded as the enum.
+		int				GetVampireConsumeMP(int id, int currentINT, int level) const;
 };
 
 extern MSkillInfoTable*		g_pSkillInfoTable;
+
+//----------------------------------------------------------------------
+// Skill range
+//----------------------------------------------------------------------
+// The range, in tiles, of a skill whose table ranges are `minRange` and
+// `maxRange`, for a player of race `race` at the skill's proficiency
+// level `expLevel`: it grows from the minimum at level 0 to the maximum
+// at the top level, in proportion. A slayer's is the server's rule,
+// decore::skillRange (top level 100, each input and the result read
+// modulo 256); a vampire's (top level 100) and an ousters' (30) are the
+// client's integer step, truncated toward zero.
+int				GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel);
+
+//----------------------------------------------------------------------
+// Will of Life
+//----------------------------------------------------------------------
+// The HP one cast of Will of Life costs a vampire of level `level`,
+// which is also the HP the effect adds to each regeneration while it
+// lasts: the server's WillOfLife handler takes both from the formula's
+// Damage (decore::skillformula::WillOfLife, 5 + level / 7).
+int				GetWillOfLifeHP(int level);
+
+// The time, in milliseconds, from a cast of Will of Life until a vampire
+// of level `level` may cast it again: the server's run time, the
+// formula's Delay (2 * (30 + level) tenths of a second), 6 seconds and
+// 200 ms a level.
+int				GetWillOfLifeDelay(int level);
 
 
 //----------------------------------------------------------------------
