@@ -80,8 +80,9 @@ tree; what the player can use right now stays executable-side), and the
 combat-stat preview
 (`MStatusManager`: the character-select to-hit, defense, protection
 and damage, and the attack speed `MPlayer::CalculateStatus` takes from
-it), and the creature status array (`MStatus`) with the request/answer
-mode register (`TempInformation`) - with the user, config and
+it), and the creature status array (`MStatus`), with `AffectModifyInfo`,
+which applies a ModifyInfo packet to it, and the request/answer mode
+register (`TempInformation`) - with the user, config and
 timed-item loaders it reads, and their string support, membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12 and 4.14),
