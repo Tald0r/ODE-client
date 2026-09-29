@@ -1336,6 +1336,112 @@ MItem::GetRequireLevel() const
 }
 
 //----------------------------------------------------------------------
+// Is Usable By
+//----------------------------------------------------------------------
+// Whether `user` may use this item, which CheckAffectStatus turns into
+// the item's affect status:
+// - a pet whose life has run out lends nothing;
+// - an item not made for the user's race is refused;
+// - a slayer needs the item's STR, DEX, INT and their sum, a vampire its
+//   level, and both the item's gender; an ousters needs STR, DEX, INT,
+//   their sum and the level, and no gender. A requirement of 0 asks
+//   nothing;
+// - a quest item is usable whatever its requirements, by a slayer or a
+//   vampire the gender allows, and by any ousters.
+//----------------------------------------------------------------------
+bool
+MItem::IsUsableBy(const MItemUser& user) const
+{
+	if (GetItemClass() == ITEM_CLASS_PET_ITEM)
+	{
+		// The pet's durability is minutes of life, counted down from the
+		// moment it was set; at zero the pet is dead and lends no status.
+		if (static_cast<const MPetItem*>(this)->GetRemainingDurability() == 0)
+		{
+			return false;
+		}
+	}
+
+	const bool genderAllows = IsGenderForAll()
+		|| (IsGenderForMale() && user.bMale)
+		|| (IsGenderForFemale() && !user.bMale);
+
+	switch (user.race)
+	{
+	case RACE_SLAYER:
+	{
+		if (!IsSlayerItem())
+		{
+			return false;
+		}
+		if (genderAllows && IsQuestItem())
+		{
+			return true;
+		}
+
+		const int reqSTR = GetRequireSTR();
+		const int reqDEX = GetRequireDEX();
+		const int reqINT = GetRequireINT();
+		const int reqSUM = GetRequireSUM();
+		const int sum = user.str + user.dex + user.inte;
+
+		return genderAllows
+			&& (reqSTR == 0 || user.str >= reqSTR)
+			&& (reqDEX == 0 || user.dex >= reqDEX)
+			&& (reqINT == 0 || user.inte >= reqINT)
+			&& (reqSUM == 0 || sum >= reqSUM);
+	}
+
+	case RACE_VAMPIRE:
+	{
+		if (!IsVampireItem())
+		{
+			return false;
+		}
+		if (genderAllows && IsQuestItem())
+		{
+			return true;
+		}
+
+		const int reqLevel = GetRequireLevel();
+
+		return genderAllows
+			&& (reqLevel == 0 || static_cast<DWORD>(user.level) >= static_cast<DWORD>(reqLevel));
+	}
+
+	case RACE_OUSTERS:
+	{
+		if (!IsOustersItem())
+		{
+			return false;
+		}
+		if (IsQuestItem())
+		{
+			return true;
+		}
+
+		const int reqLevel = GetRequireLevel();
+		const int reqSTR = GetRequireSTR();
+		const int reqDEX = GetRequireDEX();
+		const int reqINT = GetRequireINT();
+		const int reqSUM = GetRequireSUM();
+		const int sum = user.str + user.dex + user.inte;
+
+		return (reqLevel == 0 || static_cast<DWORD>(user.level) >= static_cast<DWORD>(reqLevel))
+			&& (reqSTR == 0 || user.str >= reqSTR)
+			&& (reqDEX == 0 || user.dex >= reqDEX)
+			&& (reqINT == 0 || user.inte >= reqINT)
+			&& (reqSUM == 0 || sum >= reqSUM);
+	}
+
+	default:
+		// No creature has another race (MCreature::GetRace returns one of
+		// the three).
+		return false;
+	}
+}
+
+//----------------------------------------------------------------------
 // Get UseActionInfo
 //----------------------------------------------------------------------
 TYPE_ACTIONINFO 

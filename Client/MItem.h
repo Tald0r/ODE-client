@@ -96,6 +96,20 @@ struct MItemHost {
 	void			(*ItemDestroyed)(MItem* pItem) noexcept = nullptr;
 };
 
+//----------------------------------------------------------------------
+// MItemUser - the character MItem::IsUsableBy judges an item for: its
+// race and current stats. The executable's MCreature::CheckAffectStatus
+// fills it from the creature; a test fills it by hand.
+//----------------------------------------------------------------------
+struct MItemUser {
+	Race	race;		// RACE_SLAYER, RACE_VAMPIRE or RACE_OUSTERS
+	int		str;		// current STR, DEX and INT
+	int		dex;
+	int		inte;
+	int		level;
+	bool	bMale;
+};
+
 
 #define	MAX_DROP_COUNT					6
 
@@ -362,7 +376,7 @@ class MItem : public MObject, public CAnimationFrame {
 		bool					IsGenderForAll() const;
 
 		//---------------------------------------------------
-		// 필요능력
+		// Requirements
 		//---------------------------------------------------
 		// int, not BYTE: the slayer ceiling is 295 and Ousters gear is uncapped,
 		// so a byte return wrapped level-150 requirements (task 4.4 fix).
@@ -371,6 +385,10 @@ class MItem : public MObject, public CAnimationFrame {
 		int					GetRequireINT()	const;
 		int					GetRequireLevel() const;
 		int					GetRequireSUM() const;
+
+		// Whether `user` may use the item: the rule the player's
+		// CheckAffectStatus applies to every item it holds or wears.
+		bool				IsUsableBy(const MItemUser& user) const;
 
 		//---------------------------------------------------
 		// 장착했을 때 바뀌는.. BasicActionInfo

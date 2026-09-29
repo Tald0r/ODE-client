@@ -5241,258 +5241,28 @@ MCreature::GetChatString(BYTE i)
 //----------------------------------------------------------------------
 // Check AffectStatus
 //----------------------------------------------------------------------
-// pItem을 this Creature가 사용할 수 있는지의 여부를 체크해서 설정한다.
+// Sets whether this creature can use pItem. The rule is the item's
+// (MItem::IsUsableBy, in gamemodel); this reads the creature's race,
+// current stats and sex for it.
 //----------------------------------------------------------------------
 void	
 MCreature::CheckAffectStatus(MItem* pItem)
 {
-	if(pItem->GetItemClass() == ITEM_CLASS_PET_ITEM)
+	MItemUser user;
+	user.race = GetRace();
+	user.str = static_cast<int>(GetSTR());
+	user.dex = static_cast<int>(GetDEX());
+	user.inte = static_cast<int>(GetINT());
+	user.level = static_cast<int>(GetLEVEL());
+	user.bMale = IsMale();
+
+	if (pItem->IsUsableBy(user))
 	{
-		// The pet's durability is minutes of life, counted down from the
-		// moment it was set; at zero the pet is dead and lends no status.
-		if(((MPetItem *)pItem)->GetRemainingDurability() == 0)
-		{
-			pItem->UnSetAffectStatus();
-			return;
-		}
+		pItem->SetAffectStatus();
 	}
-
-	//-----------------------------------------------------
-	// Slayer
-	//-----------------------------------------------------
-	switch(GetRace())
+	else
 	{
-	case RACE_SLAYER:
-		if (pItem->IsSlayerItem())
-		{
-			//-----------------------------------------------------
-			// 슬레이어인 경우는 STR, DEX, INT체크
-			//-----------------------------------------------------
-			int reqSTR = pItem->GetRequireSTR();
-			int reqDEX = pItem->GetRequireDEX();
-			int reqINT = pItem->GetRequireINT();
-			int reqSUM = pItem->GetRequireSUM();
-			
-			int str = GetSTR();
-			int dex = GetDEX();
-			int inte = GetINT();
-			int sum = str+dex+inte;
-			
-			//-----------------------------------------------------
-			// 제한 수치가 없거나 
-			// 특정 수치를 하나 만족하는 경우..
-			//-----------------------------------------------------
-			if (
-				//-----------------------------------------------------
-				// 성별 검사
-				//-----------------------------------------------------
-				(pItem->IsGenderForAll() 
-				|| (pItem->IsGenderForMale() && IsMale())
-				|| (pItem->IsGenderForFemale() && IsFemale())
-				)
-				
-				//-----------------------------------------------------
-				// 필요능력치가 없거나..
-				//-----------------------------------------------------
-				&& (
-				
-				//-----------------------------------------------------
-				// 있는경우.. 다 만족시켜야 한다.
-				//-----------------------------------------------------
-				(reqSTR==0 || (reqSTR!=0 && str >= reqSTR))
-				&&	(reqDEX==0 || (reqDEX!=0 && dex >= reqDEX))
-				&&	(reqINT==0 || (reqINT!=0 && inte >= reqINT))
-				&&	(reqSUM==0 || (reqSUM!=0 && sum >= reqSUM))
-				)					
-				)
-			{
-				pItem->SetAffectStatus();
-			}
-			else
-			{
-				pItem->UnSetAffectStatus();
-			}
-			
-			if((pItem->IsGenderForAll() 
-				|| (pItem->IsGenderForMale() && IsMale())
-				|| (pItem->IsGenderForFemale() && IsFemale())) &&
-				pItem->IsQuestItem() )
-			{
-				pItem->SetAffectStatus();
-			}
-		}
-		else
-		{
-			//-----------------------------------------------------
-			// 타종족 아이템 사용 불가
-			//-----------------------------------------------------
-			pItem->UnSetAffectStatus();
-		}
-		break;
-
-	case RACE_VAMPIRE:
-		if (pItem->IsVampireItem())
-		{
-			int reqLevel =  pItem->GetRequireLevel();
-
-			//-----------------------------------------------------
-			// 뱀파이어인 경우는 level로 체크한다.
-			//-----------------------------------------------------
-			if (
-					//-----------------------------------------------------
-					// 성별 검사
-					//-----------------------------------------------------
-					(pItem->IsGenderForAll() 
-						|| (pItem->IsGenderForMale() && IsMale())
-						|| (pItem->IsGenderForFemale() && IsFemale())
-					)
-					&&
-					(reqLevel==0 || (reqLevel!=0 && GetLEVEL() >= static_cast<DWORD>(reqLevel)))
-				)
-			{
-				pItem->SetAffectStatus();
-			}
-			else
-			{
-				pItem->UnSetAffectStatus();
-			}
-			if((pItem->IsGenderForAll() 
-				|| (pItem->IsGenderForMale() && IsMale())
-				|| (pItem->IsGenderForFemale() && IsFemale())) &&
-				pItem->IsQuestItem()  )
-			{
-				pItem->SetAffectStatus();
-			}
-			
-
-			//-----------------------------------------------------
-			// item 종류에 따라서 skill 체크한다.
-			//-----------------------------------------------------
-			// g_pSkillAvailable은 player의 skill정보이다.
-			// 어차피 다른 creature가 CheckAffectStatus()를 사용할 일은 없지만.. --;
-			// 일단은 item level체크로만 끝내도록 한다...
-			/*
-			switch (pItem->GetItemClass())
-			{
-				//-----------------------------------------------------
-				// Portal Item
-				//-----------------------------------------------------
-				case ITEM_CLASS_VAMPIRE_PORTAL_ITEM :
-					if (((MVampirePortalItem*)pItem)->IsMarked())
-					{
-						if (g_pSkillAvailable->find( MAGIC_BLOODY_TUNNEL ) != g_pSkillAvailable->end())
-						{
-							pItem->SetAffectStatus();
-						}
-						else
-						{
-							pItem->UnSetAffectStatus();
-						}
-					}
-					else
-					{
-						if (g_pSkillAvailable->find( MAGIC_BLOODY_MARK ) != g_pSkillAvailable->end())
-						{
-							pItem->SetAffectStatus();
-						}
-						else
-						{
-							pItem->UnSetAffectStatus();
-						}
-					}
-				break;
-
-				//-----------------------------------------------------
-				// Vampire ETC
-				//-----------------------------------------------------
-				case ITEM_CLASS_VAMPIRE_ETC :
-					if (pItem->GetItemType()==0)
-					{
-						if (g_pSkillAvailable->find( MAGIC_TRANSFORM_TO_WOLF ) != g_pSkillAvailable->end())
-						{
-							pItem->SetAffectStatus();
-						}
-						else
-						{
-							pItem->UnSetAffectStatus();
-						}
-					} 
-					else if (pItem->GetItemType()==1)
-					{
-						if (g_pSkillAvailable->find( MAGIC_TRANSFORM_TO_BAT ) != g_pSkillAvailable->end())
-						{
-							pItem->SetAffectStatus();
-						}
-						else
-						{
-							pItem->UnSetAffectStatus();
-						}
-					}
-				break;
-			}
-			*/
-		}
-		else
-		{
-			//-----------------------------------------------------
-			// 타종족 아이템 사용 불가
-			//-----------------------------------------------------
-			pItem->UnSetAffectStatus();
-		}
-		break;
-
-	case RACE_OUSTERS:
-		if (pItem->IsOustersItem())
-		{
-			int reqLevel =  pItem->GetRequireLevel();
-
-			//-----------------------------------------------------
-			// 슬레이어인 경우는 STR, DEX, INT체크
-			//-----------------------------------------------------
-			int reqSTR = pItem->GetRequireSTR();
-			int reqDEX = pItem->GetRequireDEX();
-			int reqINT = pItem->GetRequireINT();
-			int reqSUM = pItem->GetRequireSUM();
-			
-			int str = GetSTR();
-			int dex = GetDEX();
-			int inte = GetINT();
-			int sum = str+dex+inte;
-
-			//-----------------------------------------------------
-			// 아우스터즈인 경우도-_- level로 체크한다.
-			//-----------------------------------------------------
-			if (
-				(reqLevel==0 || (reqLevel!=0 && GetLEVEL() >= static_cast<DWORD>(reqLevel)))
-				&&	(reqSTR==0 || (reqSTR!=0 && str >= reqSTR))
-				&&	(reqDEX==0 || (reqDEX!=0 && dex >= reqDEX))
-				&&	(reqINT==0 || (reqINT!=0 && inte >= reqINT))
-				&&	(reqSUM==0 || (reqSUM!=0 && sum >= reqSUM))
-				)
-			{
-				pItem->SetAffectStatus();
-			}
-			else
-			{
-				pItem->UnSetAffectStatus();
-			}
-			if(	pItem->IsQuestItem() )
-			{
-				pItem->SetAffectStatus();
-			}
-
-		}
-		else
-		{
-			//-----------------------------------------------------
-			// 타종족 아이템 사용 불가
-			//-----------------------------------------------------
-			pItem->UnSetAffectStatus();
-		}
-		break;
-
-	default:
-		break;
+		pItem->UnSetAffectStatus();
 	}
 }
 
