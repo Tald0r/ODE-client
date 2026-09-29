@@ -14,6 +14,7 @@
 //#include "SkillDef.h"
 #include "Packet/Types/PacketItemDef.h"
 #include "Packet/WireHost.h"
+#include "AffectModifyInfo.h"
 //#include "Packet/Types/ItemTypes.h"
 class MActionResult;
 class MCreature;
@@ -29,8 +30,6 @@ class GearInfo;
 class ExtraInfo;
 class EffectInfo;
 class MItem;
-class MStatus;
-class ModifyInfo;
 class MFakeCreature;
 class BloodBibleSignInfo;
 //-----------------------------------------------------------------------------
@@ -95,7 +94,6 @@ extern void		SetInventoryInfo(InventoryInfo* pInventoryInfo);
 extern void		SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo = NULL);
 extern void		SetExtraInfo(ExtraInfo* pExtraInfo);
 extern void		SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame=0);
-extern void		AffectModifyInfo(MStatus* pStatus, ModifyInfo* pInfo);
 
 //-----------------------------------------------------------------------------
 // set addon
