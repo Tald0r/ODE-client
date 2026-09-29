@@ -840,8 +840,12 @@ rounds settled* for the host rules). Test fixtures share
   > `test_vampire_skill_cost.cpp` check them against `stats.tsv` rows.
   > Left on the host side: a vampire's skill is enabled at cost <= HP
   > where the server wants HP > cost, no race's cost applies the gear's
-  > consume-MP ratio, and the character list's four-bit weapon field
-  > turns a mace into a sword. Slice 4 is in
+  > consume-MP ratio. The character list's four-bit weapon field, which
+  > turned a mace into a sword, is fixed on the wire in both repos
+  > (server PR #285, `c3b563a8`; client `2e0f39c3`): bits 17-18 carry
+  > an extension code for cross1, mace and mace1, and the slot previews
+  > them at their own domain (`test_status_manager.cpp`,
+  > `test_slayer_outlook.cpp`). Slice 4 is in
   > (`feat/shared-equip-and-tax`): an item's requirement, which the
   > descriptions show (`MItem::GetRequireSTR/DEX/INT/SUM/Level`), is
   > `decore::requiredStats` over the item table and each option's
