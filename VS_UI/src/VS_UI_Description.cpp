@@ -1685,13 +1685,13 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 // SkillConsumeMP
 //
 // The cost a skill's description shows: MP, or a vampire's HP, or an
-// ousters' EP. A vampire's takes its current INT
-// (MSkillInfoTable::GetVampireConsumeMP).
+// ousters' EP. A vampire's takes its current INT, and Will of Life's its
+// level (MSkillInfoTable::GetVampireConsumeMP).
 //-----------------------------------------------------------------------------
 static int	SkillConsumeMP(long skill)
 {
 	if (g_eRaceInterface == RACE_VAMPIRE)
-		return g_pSkillInfoTable->GetVampireConsumeMP((int)skill, g_char_slot_ingame.INT_CUR);
+		return g_pSkillInfoTable->GetVampireConsumeMP((int)skill, g_char_slot_ingame.INT_CUR, g_char_slot_ingame.level);
 	return (*g_pSkillInfoTable)[skill].GetMP();
 }
 
@@ -1799,10 +1799,7 @@ void	_Skill_Description_Show(Rect rect, void * void_ptr, long left, long right)
 				break;
 			}
 
-		if( left == SKILL_WILL_OF_LIFE )
-			SafeFormat::Format(sz_buf, "%d",5 + (g_char_slot_ingame.level / 7));
-		else
-			SafeFormat::Format(sz_buf, "%d", SkillConsumeMP(left));
+		SafeFormat::Format(sz_buf, "%d", SkillConsumeMP(left));
 		g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 		py += SMALL_FONT_Y_GAP;
 	}

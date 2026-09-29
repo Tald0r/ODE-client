@@ -4,7 +4,7 @@
 `src/domain` in [bound2/opendarkeden-server](https://github.com/bound2/opendarkeden-server):
 the rules the client and the server both compute, implemented once, there.
 
-Last synced from server commit: 73750a3c6e26295b2b42320fe6279fae31b335ea
+Last synced from server commit: 831a8edc7f673c71d35c1f9b5630249412b86e0b
 
 **Never edit anything under `domain/`, and never reformat it.** Change the
 rule on the server, then resync:
@@ -46,5 +46,7 @@ The price and durability differences from the server that remain after
 slices 1 and 2 are listed under "Shop prices" in
 `docs/compiler-warnings-2026-09-27.md` ("Found while fixing"). Those of
 the equip requirement (slice 4), such as the advancement-class check the
-server applies and de-core does not hold, are in `docs/RESTRUCTURING.md`
-task 4.12.
+server applies and de-core does not hold, and those of Will of Life and
+the slayer skill range (slice 6), such as the party size every caller
+passes as 0 and the skill data the client loads from `SkillInfo.inf`,
+are in `docs/RESTRUCTURING.md` task 4.12.
