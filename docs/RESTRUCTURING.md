@@ -789,7 +789,7 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slices 3-6). Slice 1 is in: `MPriceManager`'s
+  > **Status:** in progress (slices 4-6). Slice 1 is in: `MPriceManager`'s
   > buy, sell and repair quotes and the gear maximum durability call
   > `decore`, the inputs the server never sends are `MPriceHost` entries
   > with documented defaults, and `unit_tests` checks the adapters against
@@ -806,9 +806,28 @@ rounds settled* for the host rules). Test fixtures share
   > `tests/unit/test_item_grade.cpp` checks every gear class
   > (`c87c4d0b`, and the fixes `5a3a1430`, `d63e2c5c`, `d31bc7c9`,
   > `dcd47512`, `bd801202`, `3f542250`). The named residuals are in
-  > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*. The copy is
+  > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*. Slice 3 is
+  > in (`feat/shared-stat-rules`): `MStatusManager` joined `gamemodel`,
+  > and the character-select preview's to-hit, defense, protection and
+  > damage call the server's per-race rules with its 10000 caps and a
+  > combat damage bonus of 0; the slots feed it the slayer's real weapon
+  > domain level (the cross in the heal domain, the mace in the enchant
+  > domain) and the vampire's level, not its experience. The attack
+  > speed stays the client's own (no rows; `MPlayer::CalculateStatus`'s
+  > recompute is to be deleted). `MSkillInfoTable::GetVampireConsumeMP`
+  > gives the skill bar and both skill descriptions the server's
+  > INT-discounted cost, except for the eleven vampire skills whose
+  > server handlers charge otherwise (it lists them), and
+  > `MCreature::SetRegen` takes the DEX bonus from `decore`, which it
+  > already equalled. `tests/unit/test_status_manager.cpp` and
+  > `test_vampire_skill_cost.cpp` check them against `stats.tsv` rows.
+  > Left on the host side: a vampire's skill is enabled at cost <= HP
+  > where the server wants HP > cost, no race's cost applies the gear's
+  > consume-MP ratio, and the character list's four-bit weapon field
+  > turns a mace into a sword. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
-  > from server `9e9e8d97` (PR #277 and the review fixes in PR #279).
+  > from server `133a5d54` (PR #278; before it PR #277 and the review
+  > fixes in PR #279).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
