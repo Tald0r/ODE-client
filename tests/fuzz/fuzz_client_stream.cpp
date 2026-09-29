@@ -32,6 +32,14 @@
 // Keep it in step with processCommand: a gate added there and not here
 // makes this target report inputs production refuses.
 //
+// Each input is read twice, from a fresh stream each time: once with
+// the stream at the start of the ring, and once with the ring's wrap
+// point in the middle of the stream, so the reversed-order branches of
+// SocketInputStream's peek, read and skip (the ones production takes
+// once its 32 KB ring has wrapped) see the same bytes. The fuzzer
+// moves the wrap point relative to the frames by changing the input's
+// length. A stream shorter than two bytes gets only the first pass.
+//
 // Outcomes: a Throwable (the only type processCommand's caller,
 // UpdateSocketInput at GameMain.cpp:272, catches) is a rejected input
 // and returns 0. Anything else, a std::exception included, escapes this
@@ -117,6 +125,27 @@ void	ReadFrames(SocketInputStream& stream)
 	}
 }
 
+//----------------------------------------------------------------------
+// Loads the stream into a fresh ring starting at `head` and reads it.
+// Catches only what production's loop catches; see the file header.
+//----------------------------------------------------------------------
+void	ReadAt(uchar code, const std::uint8_t* bytes, unsigned int len, unsigned int head)
+{
+	Socket				socket(new SocketImpl());
+	SocketEncryptInputStream	stream(&socket, kInputBufferLen);
+	stream.setEncryptCode(code);
+	if (!SocketInputStreamTestAccess::Preload(stream, bytes, len, head))
+		return;
+
+	try {
+		ReadFrames(stream);
+	} catch (AssertionError&) {
+		if (g_bAbortOnAssert)
+			std::abort();
+	} catch (Throwable&) {
+	}
+}
+
 } // namespace
 
 //----------------------------------------------------------------------
@@ -145,19 +174,12 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
 	if (streamLen >= kInputBufferLen)
 		return 0;
 
-	Socket				socket(new SocketImpl());
-	SocketEncryptInputStream	stream(&socket, kInputBufferLen);
-	stream.setEncryptCode(code);
-	if (!SocketInputStreamTestAccess::Preload(stream, data + 1, (unsigned int)streamLen))
-		return 0;
+	ReadAt(code, data + 1, (unsigned int)streamLen, 0);
 
-	try {
-		ReadFrames(stream);
-	} catch (AssertionError&) {
-		if (g_bAbortOnAssert)
-			std::abort();
-	} catch (Throwable&) {
-	}
+	// The wrap point streamLen / 2 bytes into the stream.
+	const unsigned int	half = (unsigned int)(streamLen / 2);
+	if (half > 0)
+		ReadAt(code, data + 1, (unsigned int)streamLen, kInputBufferLen - half);
 
 	return 0;
 }
