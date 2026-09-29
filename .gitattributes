@@ -31,6 +31,11 @@ tools/decore/*.pl text eol=lf
 # file, compared byte for byte and shared with the server repo's copies.
 tests/golden/*.hex text eol=lf
 
+# The fuzz corpus converter, and the committed fuzz crash inputs in the
+# goldens' hex style, both read by the fuzz_replay_* ctests.
+tools/fuzz/*.pl text eol=lf
+tests/fuzz/regressions/**/*.hex text eol=lf
+
 # The translation tools and tables are read line by line by perl; the
 # generated English overrides of the packed UI text keep each archive
 # member's own line endings byte for byte (uitext_apply.pl), so no

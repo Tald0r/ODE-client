@@ -65,6 +65,12 @@ void StoreInfo::read(SocketInputStream& iStream, bool toOther)
 	BYTE ItemNum;
 	iStream.read(ItemNum);
 
+	// The count is a wire byte (up to 255) and m_Items holds
+	// MAX_ITEM_NUM entries: refuse a larger count before any item is
+	// read into the vector.
+	if ( static_cast<size_t>(ItemNum) > m_Items.size() )
+		throw InvalidProtocolException("store item count out of range");
+
 	for ( int i=0; i<ItemNum; ++i )
 	{
 		m_Items[i].read(iStream);

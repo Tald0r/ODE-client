@@ -64,7 +64,7 @@ run build cmake --build --preset "$preset" --clean-first
 
 # The required tests, the same list verify-windows.ps1 asserts. A tree
 # that registered only unit_tests would otherwise go green.
-required="unit_tests user_option_tests ui_tests decore_tests decore_vendored ratchets arch_includes source_encoding warning_policy warning_budget_parser format_arity packet_indices wire_inventory_fresh"
+required="unit_tests user_option_tests ui_tests decore_tests decore_vendored ratchets arch_includes source_encoding warning_policy warning_budget_parser format_arity packet_indices wire_inventory_fresh fuzz_replay_client_stream"
 inventory="$logdir/inventory.txt"
 if ! ctest --preset "$preset" --show-only > "$inventory" 2>&1; then
 	echo "-- cannot list the tests of $preset:" >&2

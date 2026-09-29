@@ -28,6 +28,7 @@
 
 #include "test_framework.h"
 
+#include "packet_stream_preload.h"
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
 
@@ -38,30 +39,13 @@
 #endif
 
 //----------------------------------------------------------------------
-// Befriended by SocketInputStream: writes test bytes into the private
-// ring buffer, optionally starting at a nonzero head so a read has to
-// reassemble across the wrap point.
+// SocketInputStreamTestAccess is defined in packet_stream_preload.h,
+// shared with the fuzz harnesses, which cannot use CHECK. In unit_tests
+// packet_stream_access.cpp installs its preload hook, which CHECKs that
+// the bytes fit, so a test that preloads more than the ring holds fails
+// instead of reading an empty stream. A new test binary that includes
+// this header compiles that file too.
 //----------------------------------------------------------------------
-class SocketInputStreamTestAccess
-{
-public:
-	static void Preload(SocketInputStream& stream, const unsigned char* data,
-			    unsigned int len, unsigned int head = 0)
-	{
-		// The ring keeps one slot empty to distinguish full from empty.
-		// An oversized preload would wrap onto its own head and read
-		// as an EMPTY ring, so it is refused here, not just recorded.
-		CHECK(len < stream.m_BufferLen);
-		if (len >= stream.m_BufferLen)
-			return;
-
-		for (unsigned int i = 0; i < len; i++)
-			stream.m_Buffer[(head + i) % stream.m_BufferLen] = (char)data[i];
-
-		stream.m_Head = head;
-		stream.m_Tail = (head + len) % stream.m_BufferLen;
-	}
-};
 
 //----------------------------------------------------------------------
 // Befriended by SocketOutputStream: copies out what write() has put in

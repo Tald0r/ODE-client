@@ -177,6 +177,46 @@ if(USE_ASAN OR USE_TSAN OR USE_UBSAN)
     endif()
 endif()
 
+# libFuzzer targets (tests/fuzz/CMakeLists.txt). Off by default and in
+# every preset but linux-fuzz and macos-fuzz; the replay build of the
+# same targets is part of every native test tree and needs none of this.
+#
+# -fsanitize=fuzzer-no-link instruments every target for coverage, so
+# the libraries a fuzz target links report the edges it reaches. The
+# instrumentation's callbacks resolve out of the sanitizer runtime,
+# which is why AddressSanitizer is required: without it, every other
+# executable in the tree would fail to link. libFuzzer's own runtime
+# (its main) is linked into the fuzz targets alone - from
+# DARKEDEN_LIBFUZZER_ARCHIVE when set, for a compiler that ships none,
+# as Apple Clang does not; otherwise through -fsanitize=fuzzer.
+option(BUILD_FUZZERS "Build the libFuzzer packet-read targets (Clang, with USE_ASAN)" OFF)
+set(DARKEDEN_LIBFUZZER_ARCHIVE "" CACHE FILEPATH
+    "libFuzzer runtime archive for the fuzz targets (libclang_rt.fuzzer_*.a); empty links -fsanitize=fuzzer")
+if(BUILD_FUZZERS)
+    if(MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")
+        message(FATAL_ERROR
+            "BUILD_FUZZERS needs Clang or Apple Clang with the GNU-style driver "
+            "(this is ${CMAKE_CXX_COMPILER_ID}). The replay targets build "
+            "without it on every compiler.")
+    endif()
+    if(NOT BUILD_TESTS)
+        message(FATAL_ERROR "BUILD_FUZZERS requires BUILD_TESTS=ON: the targets live under tests/fuzz")
+    endif()
+    if(NOT USE_ASAN)
+        message(FATAL_ERROR "BUILD_FUZZERS requires USE_ASAN=ON: the coverage callbacks resolve out of its runtime")
+    endif()
+    if(DARKEDEN_LIBFUZZER_ARCHIVE AND NOT EXISTS "${DARKEDEN_LIBFUZZER_ARCHIVE}")
+        message(FATAL_ERROR "DARKEDEN_LIBFUZZER_ARCHIVE does not exist: ${DARKEDEN_LIBFUZZER_ARCHIVE}")
+    endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=fuzzer-no-link")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=fuzzer-no-link")
+    if(DARKEDEN_LIBFUZZER_ARCHIVE)
+        message(STATUS "Fuzz targets: -fsanitize=fuzzer-no-link, libFuzzer from ${DARKEDEN_LIBFUZZER_ARCHIVE}")
+    else()
+        message(STATUS "Fuzz targets: -fsanitize=fuzzer-no-link, libFuzzer through -fsanitize=fuzzer")
+    endif()
+endif()
+
 # Runtime checks for the ordinary Debug build.
 #
 # /RTC1 is /RTCs plus /RTCu: it reports a local read before it was written, and
@@ -1194,6 +1234,7 @@ file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/warning-policy-$<CONFIG>-$<COMPILE_LAN
 message(STATUS "")
 message(STATUS "=== Dark Eden Client Configuration ===")
 message(STATUS "  Build Tests:      ${BUILD_TESTS}")
+message(STATUS "  Build Fuzzers:    ${BUILD_FUZZERS}")
 message(STATUS "  Use SDL Backend:  ${USE_SDL_BACKEND}")
 message(STATUS "  Build Engine:     ${BUILD_ENGINE}")
 message(STATUS "  C++ Standard:     ${CMAKE_CXX_STANDARD}")
