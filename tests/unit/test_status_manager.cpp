@@ -218,7 +218,11 @@ TEST(StatusManager, AttackSpeedIsTheClientsOwn)
 //----------------------------------------------------------------------
 // The character-select slots
 //----------------------------------------------------------------------
-TEST(StatusManager, SlayerSlotReadsTheWeaponDomain)
+// The slot reads the level of the domain its weapon belongs to, as the
+// server's domainLevelOf does: the cross is the heal domain's weapon
+// (55 here), not the enchant domain's (66). slayerToHit adds 1.5 times it
+// to DEX/2 = 28, truncated (slayer-tohit-*-odd-domain for the sword).
+TEST(StatusManager, SlayerSlotReadsTheWeaponDomainLevel)
 {
 	MStatusManager status;
 
@@ -227,18 +231,18 @@ TEST(StatusManager, SlayerSlotReadsTheWeaponDomain)
 	CHECK_EQ(28, status.GetDefense());
 
 	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_SWORD));
-	CHECK_EQ(29, status.GetTOHIT());
+	CHECK_EQ(77, status.GetTOHIT());
 
 	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_BLADE1));
-	CHECK_EQ(29, status.GetTOHIT());
+	CHECK_EQ(44, status.GetTOHIT());
 
 	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_SR));
-	CHECK_EQ(29, status.GetTOHIT());
+	CHECK_EQ(94, status.GetTOHIT());
 	CHECK_EQ(1, status.GetMinDAM());
 	CHECK_EQ(2, status.GetMaxDAM());
 
 	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_CROSS));
-	CHECK_EQ(29, status.GetTOHIT());
+	CHECK_EQ(110, status.GetTOHIT());
 	CHECK_EQ(30, status.GetProtection());
 }
 

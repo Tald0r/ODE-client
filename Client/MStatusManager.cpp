@@ -289,11 +289,23 @@ MStatusManager::SetCurrentWeaponDomain(int domain, int level)
 // carries the base STR, DEX and INT; a slayer's weapon shape and the
 // six domain levels; a vampire's or ousters' level and experience.
 //--------------------------------------------------------------
+// The list's six domain levels are indexed by the wire's SkillDomain,
+// which runs in SKILLDOMAIN's order.
+static_assert((int)SKILL_DOMAIN_BLADE == (int)SKILLDOMAIN_BLADE
+	&& (int)SKILL_DOMAIN_SWORD == (int)SKILLDOMAIN_SWORD
+	&& (int)SKILL_DOMAIN_GUN == (int)SKILLDOMAIN_GUN
+	&& (int)SKILL_DOMAIN_HEAL == (int)SKILLDOMAIN_HEAL
+	&& (int)SKILL_DOMAIN_ENCHANT == (int)SKILLDOMAIN_ENCHANT
+	&& (int)SKILL_DOMAIN_ETC == (int)SKILLDOMAIN_ETC,
+	"PCSlayerInfo's domain levels are read by SKILLDOMAIN");
+
 void
 MStatusManager::SetCharacterSelectSlot(const PCSlayerInfo& info)
 {
-	// Map WeaponType to SKILLDOMAIN
-	// WeaponType enum has 19 values (0-18), so array must have WEAPON_MAX elements
+	// The skill domain of each weapon shape. The cross is the heal
+	// domain's weapon and the mace the enchant domain's, as the server's
+	// AbilityBalance.cpp (domainLevelOf) and MPlayer::CalculateStatus
+	// have it.
 	static const SKILLDOMAIN weaponDomain[WEAPON_MAX] =
 	{
 		MAX_SKILLDOMAIN,          // WEAPON_NONE (0)
@@ -311,22 +323,25 @@ MStatusManager::SetCharacterSelectSlot(const PCSlayerInfo& info)
 		SKILLDOMAIN_GUN,          // WEAPON_AR3 (12)
 		SKILLDOMAIN_GUN,          // WEAPON_SG (13)
 		SKILLDOMAIN_GUN,          // WEAPON_SMG (14)
-		SKILLDOMAIN_ENCHANT,      // WEAPON_CROSS (15)
-		SKILLDOMAIN_ENCHANT,      // WEAPON_CROSS1 (16)
-		SKILLDOMAIN_HEAL,         // WEAPON_MACE (17)
-		SKILLDOMAIN_HEAL,         // WEAPON_MACE1 (18)
+		SKILLDOMAIN_HEAL,         // WEAPON_CROSS (15)
+		SKILLDOMAIN_HEAL,         // WEAPON_CROSS1 (16)
+		SKILLDOMAIN_ENCHANT,      // WEAPON_MACE (17)
+		SKILLDOMAIN_ENCHANT,      // WEAPON_MACE1 (18)
 	};
 
-	// Validate weapon type before accessing array
+	// The weapon's domain at the character's level in it; bare hands
+	// have no domain level, as on the server.
 	const WeaponType weaponType = info.getWeaponType();
 	if (weaponType >= 0 && weaponType < WEAPON_MAX)
 	{
-		SetCurrentWeaponDomain( weaponDomain[weaponType], 1 );
+		const SKILLDOMAIN domain = weaponDomain[weaponType];
+		const int level = domain < SKILLDOMAIN_ETC ? info.getSkillDomainLevel((SkillDomain)domain) : 0;
+		SetCurrentWeaponDomain( domain, level );
 	}
 	else
 	{
 		// Fallback to ETC domain if weapon type is invalid
-		SetCurrentWeaponDomain( SKILLDOMAIN_ETC, 1 );
+		SetCurrentWeaponDomain( SKILLDOMAIN_ETC, 0 );
 	}
 
 	Set(info.getSTR(), info.getDEX(), info.getINT());
