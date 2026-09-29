@@ -202,24 +202,24 @@ Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defa
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
 measured on 2026-09-29 on the packet-read fuzzing branch merged with master
 at `3941724d` (the slayer weapon extension and the action and effect table
-move): **1334 tests, 1,434,117 checks, 0 failed** on the `macos` preset; the
-sanitizer and Linux trees were not re-measured at this merge
-(`decore_tests`: 13 tests, 2009 checks on all four at the last measurement).
-Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
-`linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
-Silicon Mac, and run in it; both scripts stop at the warning step,
-which has no `aarch64` baseline, after ctest passed, so the totals were read
-by running the binary. Run from a git worktree,
-the container also needs the common git directory mounted and `GIT_DIR` and
-`GIT_WORK_TREE` set, or `ratchets` and `source_encoding` fail on "not a git
-repository". macOS: Apple Silicon, Apple Clang 21, `macos` preset,
-read with `build/defects/run-tests.sh unit_tests ''`, and the `macos-asan`
-preset's `unit_tests`, with no ASan or UBSan report. The Windows trees were not
-re-measured for this figure, and no CI run produced either number. A
-platform-conditional test can make the check totals differ by one between
-platforms; that is not a failure. The Linux
-recipe is the `linux`, `linux-clang` and `linux-asan` presets in
-`CMakePresets.json`, the macOS one the `macos` and `macos-asan` presets.
+move), the same on all four: **1334 tests, 1,434,118 checks, 0 failed**
+(`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests`
+built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and `linux-clang` (Clang
+18.1) in the Docker image, its native arm64 on an Apple Silicon Mac, and run
+in it; both scripts stop at the warning step, which has no `aarch64`
+baseline, after ctest passed, so the totals were read by running the binary.
+Run from a git worktree, the container also needs the common git directory
+mounted, at its host path or with `GIT_DIR` and `GIT_WORK_TREE` set, or
+`ratchets` and `source_encoding` fail on "not a git repository". macOS:
+Apple Silicon, Apple Clang 21, the `macos` preset, read with
+`build/defects/run-tests.sh unit_tests ''`, and the `macos-asan` preset's
+`unit_tests` under `ASAN_OPTIONS=detect_leaks=0` and
+`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. The Windows
+trees were not re-measured for this figure, and no CI run produced either
+number. A platform-conditional test can make the check totals differ by one
+between platforms; that is not a failure. The Linux recipe is the `linux`,
+`linux-clang` and `linux-asan` presets in `CMakePresets.json`, the macOS one
+the `macos` and `macos-asan` presets.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to
 an enum before its range check passed the Linux job and aborted the first
 macOS sanitizer run, so a Clang sanitizer build (the `macos-asan` preset, or
@@ -228,17 +228,16 @@ one that sees that class.
 `DarkEden` builds and links on both, and on Linux run headless
 (`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and
 exits cleanly on `SDL_QUIT`; login and beyond are unverified off Windows (the
-port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`, arm64 and Intel
-runners, invoked on master pushes or manually) has not produced the totals
-above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21) built every target
-and ran the `macos` preset's 14 ctest tests green on 2026-09-29 (16 since
-the fuzz replay test and its corpus step; `verify-linux.sh` and
-`verify-windows.ps1` require 14 of them by name, `fuzz_replay_client_stream`
-the latest), and is where
-the macOS totals above were read; nothing has been
-watched on a Mac's display,
-and a `<SDL2/...>` include spelling breaks the Homebrew build - it is
-`<SDL.h>` everywhere (`basic/Platform.h` says why).
+port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`,
+arm64 and Intel runners, invoked on master pushes or manually) has not
+produced the totals above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21)
+built every target and ran the `macos` preset's 14 ctest tests green on
+2026-09-29 (16 since the fuzz replay test and its corpus step;
+`verify-linux.sh` and `verify-windows.ps1` require 14 of them by name,
+`fuzz_replay_client_stream` the latest), and is where the macOS totals above
+were read; nothing has been watched on a Mac's display, and a `<SDL2/...>`
+include spelling breaks the Homebrew build - it is `<SDL.h>` everywhere
+(`basic/Platform.h` says why).
 
 ### Fuzzing the packet readers
 
@@ -275,6 +274,7 @@ cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
 `-max_len=32768` is the longest input the harness reads: the code byte
 and a stream of at most 32767 bytes, one less than the 32768-byte input
 ring; a longer input returns without being read.
+
 Run it from a scratch directory: a failed `Assert` appends to
 `assertion_failed.log` in the working directory, and hostile input fails
 about a thousand in fifteen minutes. Apple Clang ships no libFuzzer, so
@@ -285,8 +285,9 @@ Homebrew path of `llvm@21`; on an Intel Mac (Homebrew under `/usr/local`)
 or with another LLVM version, configure stops with "does not exist" until
 you pass `-DDARKEDEN_LIBFUZZER_ARCHIVE=<path to libclang_rt.fuzzer_osx.a>`.
 With that hybrid, `-fork` reports an ASan container-overflow inside
-libFuzzer's own merge code, not in ours, so fuzz single-process on a Mac. `linux-fuzz` uses the distribution Clang and
-`-fsanitize=fuzzer`, which needs the `libclang-rt-18-dev` package; the
+libFuzzer's own merge code, not in ours, so fuzz single-process on a Mac.
+`linux-fuzz` uses the distribution Clang and `-fsanitize=fuzzer`, which
+needs the `libclang-rt-18-dev` package; the
 `darkeden-linux` image does not carry it yet, and `apt-get install` of it in
 the container is enough (done on 2026-09-29: the target built, fuzzed for two
 minutes without a finding, and `unit_tests` and the fuzz ctests passed under
