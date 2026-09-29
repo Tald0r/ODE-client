@@ -22,10 +22,14 @@
 // six fields in declaration order. An equip race is read by its
 // EquipRace enumerator name, an EquipRequirement as its six fields and
 // an EquipStats as its five, in declaration order, and requiredStats'
-// result is written as its six fields comma-separated. An empty field
-// where a number is read is an error, not an input of 0, and so is a
-// value past its column's 32-bit type; an option list is "-" or
-// integers joined by single commas. Row names are unique within a file,
+// result is written as its six fields comma-separated. A skill output
+// row reads the ten SkillInput fields in declaration order, each as a
+// 32-bit int except the gun, read by its GunClass enumerator name, and
+// is written as the six SkillOutput fields comma-separated, in
+// declaration order, from a zeroed SkillOutput. An empty field where a
+// number is read is an error, not an input of 0, and so is a value past
+// its column's 32-bit type; an option list is "-" or integers joined by
+// single commas. Row names are unique within a file,
 // every file has at least one row for each function it belongs to, and a
 // vector file this suite does not know fails rather than being skipped.
 //
@@ -41,6 +45,8 @@
 #include "domain/ItemDurability.h"
 #include "domain/ItemGrade.h"
 #include "domain/ItemPrice.h"
+#include "domain/SkillOutputFormulas.h"
+#include "domain/SkillRange.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -76,6 +82,8 @@ const std::map<std::string, std::set<std::string>>&	KnownFiles()
 			"slayerStealRatio", "vampireStealRatio", "oustersStealRatio",
 			"vampireSkillConsumeMP", "vampireDexHPRegenBonus" } },
 		{ "equip.tsv", { "requiredStats", "meetsRequirement", "genderAllows" } },
+		{ "skill_output.tsv", { "WillOfLife", "Bless", "partyEffectBoost", "partyDurationBoost" } },
+		{ "skill_range.tsv", { "skillRange" } },
 	};
 	return files;
 }
@@ -129,6 +137,29 @@ std::string	WeaponFamilyName(decore::WeaponFamily weapon)
 		case decore::WeaponFamily::Mace :	return "Mace";
 		case decore::WeaponFamily::Arms :	return "Arms";
 		case decore::WeaponFamily::Other :	return "Other";
+	}
+	return "?";
+}
+
+//----------------------------------------------------------------------
+// The gun classes, and the names the vector files spell them by: the
+// enumerator names, as the server's harness spells them.
+//----------------------------------------------------------------------
+const decore::skillformula::GunClass	kGunClasses[] = {
+	decore::skillformula::GunClass::SG, decore::skillformula::GunClass::AR,
+	decore::skillformula::GunClass::SMG, decore::skillformula::GunClass::SR,
+	decore::skillformula::GunClass::Other,
+};
+
+std::string	GunClassName(decore::skillformula::GunClass gun)
+{
+	switch (gun)
+	{
+		case decore::skillformula::GunClass::SG :		return "SG";
+		case decore::skillformula::GunClass::AR :		return "AR";
+		case decore::skillformula::GunClass::SMG :		return "SMG";
+		case decore::skillformula::GunClass::SR :		return "SR";
+		case decore::skillformula::GunClass::Other :	return "Other";
 	}
 	return "?";
 }
@@ -317,6 +348,35 @@ public:
 		return a;
 	}
 
+	decore::skillformula::GunClass	GunClass()
+	{
+		const std::string text = Next();
+		for (decore::skillformula::GunClass gun : kGunClasses)
+		{
+			if (text == GunClassName(gun))
+				return gun;
+		}
+		SetError("not a gun class: \"" + text + "\"");
+		return decore::skillformula::GunClass::Other;
+	}
+
+	// The ten SkillInput fields in declaration order.
+	decore::skillformula::SkillInput	SkillInput()
+	{
+		decore::skillformula::SkillInput in = {};
+		in.SkillLevel = IntInteger();
+		in.DomainLevel = IntInteger();
+		in.DomainGrade = IntInteger();
+		in.STR = IntInteger();
+		in.DEX = IntInteger();
+		in.INTE = IntInteger();
+		in.TargetType = IntInteger();
+		in.Range = IntInteger();
+		in.Gun = GunClass();
+		in.PartySize = IntInteger();
+		return in;
+	}
+
 	// Every input consumed, and exactly the expected column left.
 	void	Finish()
 	{
@@ -401,6 +461,21 @@ const std::map<std::string, StatFunctionWithInt>&	StatFunctionsWithInt()
 		{ "vampireMinDamage", decore::vampireMinDamage },
 		{ "vampireMaxDamage", decore::vampireMaxDamage },
 		{ "slayerStealRatio", decore::slayerStealRatio },
+	};
+	return functions;
+}
+
+//----------------------------------------------------------------------
+// The skill output formulas a row names. Each takes the ten SkillInput
+// fields and yields the six SkillOutput fields.
+//----------------------------------------------------------------------
+typedef void (*SkillOutputFunction)(const decore::skillformula::SkillInput&, decore::skillformula::SkillOutput&);
+
+const std::map<std::string, SkillOutputFunction>&	SkillOutputFunctions()
+{
+	static const std::map<std::string, SkillOutputFunction> functions = {
+		{ "WillOfLife", decore::skillformula::WillOfLife },
+		{ "Bless", decore::skillformula::Bless },
 	};
 	return functions;
 }
@@ -533,6 +608,38 @@ std::string	EvaluateRow(const std::vector<std::string>& fields, std::string& err
 		const int reqGender = (int)in.Integer();
 		in.Finish();
 		result = decore::genderAllows(sex, reqGender) ? 1 : 0;
+	}
+	else if (SkillOutputFunctions().count(function) != 0)
+	{
+		const decore::skillformula::SkillInput input = in.SkillInput();
+		in.Finish();
+		error = in.Error();
+		if (!error.empty())
+			return std::string();
+		decore::skillformula::SkillOutput out;
+		SkillOutputFunctions().at(function)(input, out);
+		return std::to_string(out.Damage) + "," + std::to_string(out.Duration) + "," + std::to_string(out.Tick)
+			+ "," + std::to_string(out.ToHit) + "," + std::to_string(out.Range) + "," + std::to_string(out.Delay);
+	}
+	else if (function == "partyEffectBoost")
+	{
+		const int partySize = in.IntInteger();
+		in.Finish();
+		result = decore::skillformula::partyEffectBoost(partySize);
+	}
+	else if (function == "partyDurationBoost")
+	{
+		const int partySize = in.IntInteger();
+		in.Finish();
+		result = decore::skillformula::partyDurationBoost(partySize);
+	}
+	else if (function == "skillRange")
+	{
+		const int minRange = in.IntInteger();
+		const int maxRange = in.IntInteger();
+		const int expLevel = in.IntInteger();
+		in.Finish();
+		result = decore::skillRange(minRange, maxRange, expLevel);
 	}
 	else if (StatFunctions().count(function) != 0)
 	{
@@ -687,6 +794,16 @@ TEST(DecoreVectors, Equip)
 	CHECK(CheckVectorFile("equip.tsv") > 0);
 }
 
+TEST(DecoreVectors, SkillOutput)
+{
+	CHECK(CheckVectorFile("skill_output.tsv") > 0);
+}
+
+TEST(DecoreVectors, SkillRange)
+{
+	CHECK(CheckVectorFile("skill_range.tsv") > 0);
+}
+
 //----------------------------------------------------------------------
 // A doubled tab or a missing value leaves an empty field; read as a
 // number it is an error, not an input of 0, and so is a flag read the
@@ -767,6 +884,28 @@ TEST(DecoreVectors, AMalformedListIsAnError)
 	RowReader twoOptions(two);
 	CHECK(twoOptions.List() == std::vector<int>({ 30, 40 }));
 	CHECK(twoOptions.Error().empty());
+}
+
+//----------------------------------------------------------------------
+// A gun class is one of the five enumerator names, spelled exactly (the
+// server's SharedVectors.AnUnknownGunClassIsAnError).
+//----------------------------------------------------------------------
+TEST(DecoreVectors, AnUnknownGunClassIsAnError)
+{
+	for (const char* text : { "", "sg", "Rifle", "SR " })
+	{
+		const std::vector<std::string> fields = { "WillOfLife", "bad-gun", text, "0" };
+		RowReader in(fields);
+		CHECK(in.GunClass() == decore::skillformula::GunClass::Other);
+		CHECK(in.Error() == "not a gun class: \"" + std::string(text) + "\"");
+	}
+	for (decore::skillformula::GunClass gun : kGunClasses)
+	{
+		const std::vector<std::string> fields = { "WillOfLife", "good-gun", GunClassName(gun), "0" };
+		RowReader in(fields);
+		CHECK(in.GunClass() == gun);
+		CHECK(in.Error().empty());
+	}
 }
 
 //----------------------------------------------------------------------

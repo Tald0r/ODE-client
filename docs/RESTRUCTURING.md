@@ -974,12 +974,19 @@ rounds settled* for the host rules). Test fixtures share
   > purchase quote, and the notice is still recorded as a zone event
   > that nothing reads. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
-  > from server `73750a3c` (PR #281, the equip requirements:
+  > from server `831a8edc` (PR #283, the skill output formulas:
+  > `SkillOutputFormulas`, whose party tables are read through the
+  > clamping `partyEffectBoost` and `partyDurationBoost`, and
+  > `skill_output.tsv`; PR #284, the slayer skill range: `SkillRange` and
+  > `skill_range.tsv`, while its party experience pool and dark and light
+  > rule stay on the server, with their rows in `vectors/server/`, which
+  > the sync does not copy; before them PR #281, the equip requirements:
   > `EquipRequirement` and `equip.tsv`; PR #282, the castle tax:
   > `applyCastleTax` and the `tax-*` rows of `price.tsv`, which
   > `decore_tests` asserts and `MPriceManager::GetPurchasePrice` calls;
-  > before them PR #280, PR #278, PR #277 and the review fixes in PR
-  > #279).
+  > and PR #280, PR #278, PR #277 and the review fixes in PR #279).
+  > `decore_tests` asserts both new files; no client code calls the new
+  > functions in this commit.
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
