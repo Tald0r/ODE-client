@@ -24,11 +24,110 @@
 #include "MGameStringTable.h"
 #include "MItemLimits.h"
 
+#include "domain/ItemClass.h"
 #include "domain/ItemDurability.h"
+#include "domain/ItemGrade.h"
 
 #include <fstream>
 #include <vector>
 #include <algorithm>
+
+//----------------------------------------------------------------------
+// de-core's rules (third_party/decore) name the wire item classes by
+// decore::itemclass, and its grade and durability table is keyed by
+// them: each id must be this client's.
+//----------------------------------------------------------------------
+static_assert(decore::itemclass::Motorcycle == ITEM_CLASS_MOTORCYCLE);
+static_assert(decore::itemclass::Potion == ITEM_CLASS_POTION);
+static_assert(decore::itemclass::Water == ITEM_CLASS_WATER);
+static_assert(decore::itemclass::HolyWater == ITEM_CLASS_HOLYWATER);
+static_assert(decore::itemclass::Magazine == ITEM_CLASS_MAGAZINE);
+static_assert(decore::itemclass::BombMaterial == ITEM_CLASS_BOMB_MATERIAL);
+static_assert(decore::itemclass::Etc == ITEM_CLASS_ETC);
+static_assert(decore::itemclass::Key == ITEM_CLASS_KEY);
+static_assert(decore::itemclass::Ring == ITEM_CLASS_RING);
+static_assert(decore::itemclass::Bracelet == ITEM_CLASS_BRACELET);
+static_assert(decore::itemclass::Necklace == ITEM_CLASS_NECKLACE);
+static_assert(decore::itemclass::Coat == ITEM_CLASS_COAT);
+static_assert(decore::itemclass::Trouser == ITEM_CLASS_TROUSER);
+static_assert(decore::itemclass::Shoes == ITEM_CLASS_SHOES);
+static_assert(decore::itemclass::Sword == ITEM_CLASS_SWORD);
+static_assert(decore::itemclass::Blade == ITEM_CLASS_BLADE);
+static_assert(decore::itemclass::Shield == ITEM_CLASS_SHIELD);
+static_assert(decore::itemclass::Cross == ITEM_CLASS_CROSS);
+static_assert(decore::itemclass::Glove == ITEM_CLASS_GLOVE);
+static_assert(decore::itemclass::Helm == ITEM_CLASS_HELM);
+static_assert(decore::itemclass::SG == ITEM_CLASS_SG);
+static_assert(decore::itemclass::SMG == ITEM_CLASS_SMG);
+static_assert(decore::itemclass::AR == ITEM_CLASS_AR);
+static_assert(decore::itemclass::SR == ITEM_CLASS_SR);
+static_assert(decore::itemclass::Bomb == ITEM_CLASS_BOMB);
+static_assert(decore::itemclass::Mine == ITEM_CLASS_MINE);
+static_assert(decore::itemclass::Belt == ITEM_CLASS_BELT);
+static_assert(decore::itemclass::LearningItem == ITEM_CLASS_LEARNINGITEM);
+static_assert(decore::itemclass::Money == ITEM_CLASS_MONEY);
+static_assert(decore::itemclass::Corpse == ITEM_CLASS_CORPSE);
+static_assert(decore::itemclass::VampireRing == ITEM_CLASS_VAMPIRE_RING);
+static_assert(decore::itemclass::VampireBracelet == ITEM_CLASS_VAMPIRE_BRACELET);
+static_assert(decore::itemclass::VampireNecklace == ITEM_CLASS_VAMPIRE_NECKLACE);
+static_assert(decore::itemclass::VampireCoat == ITEM_CLASS_VAMPIRE_COAT);
+static_assert(decore::itemclass::Skull == ITEM_CLASS_SKULL);
+static_assert(decore::itemclass::Mace == ITEM_CLASS_MACE);
+static_assert(decore::itemclass::Serum == ITEM_CLASS_SERUM);
+static_assert(decore::itemclass::VampireEtc == ITEM_CLASS_VAMPIRE_ETC);
+static_assert(decore::itemclass::SlayerPortalItem == ITEM_CLASS_SLAYER_PORTAL_ITEM);
+static_assert(decore::itemclass::VampirePortalItem == ITEM_CLASS_VAMPIRE_PORTAL_ITEM);
+static_assert(decore::itemclass::EventGiftBox == ITEM_CLASS_EVENT_GIFT_BOX);
+static_assert(decore::itemclass::EventStar == ITEM_CLASS_EVENT_STAR);
+static_assert(decore::itemclass::VampireEarring == ITEM_CLASS_VAMPIRE_EARRING);
+static_assert(decore::itemclass::Relic == ITEM_CLASS_RELIC);
+static_assert(decore::itemclass::VampireWeapon == ITEM_CLASS_VAMPIRE_WEAPON);
+static_assert(decore::itemclass::VampireAmulet == ITEM_CLASS_VAMPIRE_AMULET);
+static_assert(decore::itemclass::QuestItem == ITEM_CLASS_QUEST_ITEM);
+static_assert(decore::itemclass::EventTree == ITEM_CLASS_EVENT_TREE);
+static_assert(decore::itemclass::EventEtc == ITEM_CLASS_EVENT_ETC);
+static_assert(decore::itemclass::BloodBible == ITEM_CLASS_BLOOD_BIBLE);
+static_assert(decore::itemclass::CastleSymbol == ITEM_CLASS_CASTLE_SYMBOL);
+static_assert(decore::itemclass::CoupleRing == ITEM_CLASS_COUPLE_RING);
+static_assert(decore::itemclass::VampireCoupleRing == ITEM_CLASS_VAMPIRE_COUPLE_RING);
+static_assert(decore::itemclass::EventItem == ITEM_CLASS_EVENT_ITEM);
+static_assert(decore::itemclass::DyePotion == ITEM_CLASS_DYE_POTION);
+static_assert(decore::itemclass::ResurrectItem == ITEM_CLASS_RESURRECT_ITEM);
+static_assert(decore::itemclass::MixingItem == ITEM_CLASS_MIXING_ITEM);
+static_assert(decore::itemclass::OustersArmsband == ITEM_CLASS_OUSTERS_ARMSBAND);
+static_assert(decore::itemclass::OustersBoots == ITEM_CLASS_OUSTERS_BOOTS);
+static_assert(decore::itemclass::OustersChakram == ITEM_CLASS_OUSTERS_CHAKRAM);
+static_assert(decore::itemclass::OustersCirclet == ITEM_CLASS_OUSTERS_CIRCLET);
+static_assert(decore::itemclass::OustersCoat == ITEM_CLASS_OUSTERS_COAT);
+static_assert(decore::itemclass::OustersPendent == ITEM_CLASS_OUSTERS_PENDENT);
+static_assert(decore::itemclass::OustersRing == ITEM_CLASS_OUSTERS_RING);
+static_assert(decore::itemclass::OustersStone == ITEM_CLASS_OUSTERS_STONE);
+static_assert(decore::itemclass::OustersWristlet == ITEM_CLASS_OUSTERS_WRISTLET);
+static_assert(decore::itemclass::Larva == ITEM_CLASS_LARVA);
+static_assert(decore::itemclass::Pupa == ITEM_CLASS_PUPA);
+static_assert(decore::itemclass::ComposMei == ITEM_CLASS_COMPOS_MEI);
+static_assert(decore::itemclass::OustersSummonItem == ITEM_CLASS_OUSTERS_SUMMON_ITEM);
+static_assert(decore::itemclass::EffectItem == ITEM_CLASS_EFFECT_ITEM);
+static_assert(decore::itemclass::CodeSheet == ITEM_CLASS_CODE_SHEET);
+static_assert(decore::itemclass::MoonCard == ITEM_CLASS_MOON_CARD);
+static_assert(decore::itemclass::Sweeper == ITEM_CLASS_SWEEPER);
+static_assert(decore::itemclass::PetItem == ITEM_CLASS_PET_ITEM);
+static_assert(decore::itemclass::PetFood == ITEM_CLASS_PET_FOOD);
+static_assert(decore::itemclass::PetEnchantItem == ITEM_CLASS_PET_ENCHANT_ITEM);
+static_assert(decore::itemclass::LuckyBag == ITEM_CLASS_LUCKY_BAG);
+static_assert(decore::itemclass::SMSItem == ITEM_CLASS_SMS_ITEM);
+static_assert(decore::itemclass::CoreZap == ITEM_CLASS_CORE_ZAP);
+static_assert(decore::itemclass::GQuestItem == ITEM_CLASS_GQUEST_ITEM);
+static_assert(decore::itemclass::TrapItem == ITEM_CLASS_TRAP_ITEM);
+static_assert(decore::itemclass::BloodBibleSign == ITEM_CLASS_BLOOD_BIBLE_SIGN);
+static_assert(decore::itemclass::WarItem == ITEM_CLASS_WAR_ITEM);
+static_assert(decore::itemclass::CarryingReceiver == ITEM_CLASS_CARRYING_RECEIVER);
+static_assert(decore::itemclass::ShoulderArmor == ITEM_CLASS_SHOULDER_ARMOR);
+static_assert(decore::itemclass::Dermis == ITEM_CLASS_DERMIS);
+static_assert(decore::itemclass::Persona == ITEM_CLASS_PERSONA);
+static_assert(decore::itemclass::Fascia == ITEM_CLASS_FASCIA);
+static_assert(decore::itemclass::Mitten == ITEM_CLASS_MITTEN);
+static_assert(decore::itemclass::Count == MAX_ITEM_CLASS);
 
 //----------------------------------------------------------------------
 //
@@ -555,15 +654,99 @@ void	MUsePotionItem::UseInventory()
 }
 
 //----------------------------------------------------------------------
+// Grade Policy Of / Has Durability
+//----------------------------------------------------------------------
+// The grade policy and the durability of a wire item class: the
+// server's table (decore::gradePolicyOf and hasDurability, the rule its
+// ConcreteItem reads), except for the two couple rings.
+//
+// The server builds the couple rings outside ConcreteItem, so the table
+// gives them no grade and no durability, and the server reports a
+// maximum durability of 1 for them, a placeholder only its price reads.
+// The client keeps the ring's rule for them; the item description shows
+// neither their luck nor their durability, and MPriceManager quotes
+// their repair at the server's 0, not from this maximum.
+//----------------------------------------------------------------------
+static decore::GradePolicy
+GradePolicyOf(ITEM_CLASS itemClass)
+{
+	switch (itemClass)
+	{
+		case ITEM_CLASS_COUPLE_RING :
+		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
+			return decore::GradePolicy::Accessory;
+
+		default :
+			return decore::gradePolicyOf((int)itemClass);
+	}
+}
+
+static bool
+HasDurability(ITEM_CLASS itemClass)
+{
+	switch (itemClass)
+	{
+		case ITEM_CLASS_COUPLE_RING :
+		case ITEM_CLASS_VAMPIRE_COUPLE_RING :
+			return true;
+
+		default :
+			return decore::hasDurability((int)itemClass);
+	}
+}
+
+//----------------------------------------------------------------------
+// Info Durability
+//----------------------------------------------------------------------
+// The durability the server's item info gives the item, the start of
+// its maximum. For most gear that is the item table's durability. The
+// server's infos for Dermis, Fascia and CarryingReceiver load the row
+// shape without a durability (loadGearInfosNoDurability), CoreZap's
+// info has no durability field, and none of the four overrides
+// ItemInfo::getDurability, which returns 1. So their maximum starts
+// from 1, whatever the client's table row holds. (VampireAmulet keeps
+// no durability either, but its info reads the table's.)
+//----------------------------------------------------------------------
+static int
+InfoDurability(const MItem* pItem)
+{
+	switch (pItem->GetItemClass())
+	{
+		case ITEM_CLASS_CORE_ZAP :
+		case ITEM_CLASS_CARRYING_RECEIVER :
+		case ITEM_CLASS_DERMIS :
+		case ITEM_CLASS_FASCIA :
+			return 1;
+
+		default :
+			return (*g_pItemTable)[pItem->GetItemClass()][pItem->GetItemType()].Value1;
+	}
+}
+
+//----------------------------------------------------------------------
+// Item Grade Offsets
+//----------------------------------------------------------------------
+// How far the item's grade moves each attribute under its class's
+// grade policy (decore::gradeOffsets); all 0 for a class without one.
+//----------------------------------------------------------------------
+static decore::GradeOffsets
+ItemGradeOffsets(const MItem* pItem)
+{
+	return decore::gradeOffsets(GradePolicyOf(pItem->GetItemClass()), pItem->GetGrade());
+}
+
+//----------------------------------------------------------------------
 // Gear Max Durability
 //----------------------------------------------------------------------
 // The server's maximum durability for a gear item (decore::maxDurability:
-// ConcreteItem::getMaxDurability, then computeMaxDurability): the table
-// durability moved by gradePitch a grade from grade 4, floored at 1000,
-// then scaled by the durability options' plus-points. Nothing caps it.
+// ConcreteItem::getMaxDurability, then computeMaxDurability): for a
+// class that keeps a durability, the info durability (InfoDurability)
+// moved by the grade's durability offset and floored at 1000, otherwise
+// the info durability as it is; then scaled by the durability options'
+// plus-points. Nothing caps it.
 //----------------------------------------------------------------------
 static int
-GearMaxDurability(const MItem* pItem, int tableDurability, int gradePitch)
+GearMaxDurability(const MItem* pItem, bool hasDurability, int gradeDurabilityOffset)
 {
 	std::vector<int> plusPoints;
 
@@ -582,75 +765,128 @@ GearMaxDurability(const MItem* pItem, int tableDurability, int gradePitch)
 		itr++;
 	}
 
-	return (int)decore::maxDurability((unsigned)tableDurability, true, (pItem->GetGrade()-4)*gradePitch,
+	return (int)decore::maxDurability((unsigned)InfoDurability(pItem), hasDurability, gradeDurabilityOffset,
 									  plusPoints.data(), (int)plusPoints.size());
 }
 
 //----------------------------------------------------------------------
-// MGearItem::Get MaxDurability
+// MGearItem - what the grade moves
 //----------------------------------------------------------------------
-int
-MGearItem::GetMaxDurability() const
+// The item's value is the server's (ConcreteItem): the table value plus
+// the grade's offset, floored where the server floors it. Only what the
+// policy moves is shown: damage and critical for a weapon (-1, which
+// the item description hides, for any other gear), luck for an
+// accessory (-9999 otherwise), and for the armor policies the defense
+// and protection with the offset and floored at 0; any other gear shows
+// the table's defense and protection as they are.
+//----------------------------------------------------------------------
+static bool
+IsWeaponPolicy(decore::GradePolicy policy)
 {
-	return GearMaxDurability(this, (*g_pItemTable)[GetItemClass()][m_ItemType].Value1, 1000);
+	return policy == decore::GradePolicy::Weapon;
+}
+
+static bool
+IsArmorPolicy(decore::GradePolicy policy)
+{
+	return policy == decore::GradePolicy::Cloth || policy == decore::GradePolicy::Grocery;
 }
 
 int
-MWeaponItem::GetMinDamage() const
+MGearItem::GetMaxDurability() const
 {
-	return max(1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value3 + (GetGrade()-4) );
-}	// 최소 공격력
+	return GearMaxDurability(this, HasDurability(GetItemClass()), ItemGradeOffsets(this).durability);
+}
 
 int
-MWeaponItem::GetMaxDamage() const
+MGearItem::GetProtectionValue() const
 {
-	return max(1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value4 + (GetGrade()-4) );
-}	// 최대 공격력		
+	const int tableValue = (*g_pItemTable)[GetItemClass()][m_ItemType].Value2;
+
+	if (!IsArmorPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return tableValue;
+	}
+
+	return max( 0, tableValue + ItemGradeOffsets(this).protection );
+}
+
+int
+MGearItem::GetDefenseValue() const
+{
+	const int tableValue = (*g_pItemTable)[GetItemClass()][m_ItemType].Value6;
+
+	if (!IsArmorPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return tableValue;
+	}
+
+	return max( 0, tableValue + ItemGradeOffsets(this).defense );
+}
+
+int
+MGearItem::GetMinDamage() const
+{
+	if (!IsWeaponPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return MItem::GetMinDamage();
+	}
+
+	return max( 1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value3 + ItemGradeOffsets(this).damage );
+}
+
+int
+MGearItem::GetMaxDamage() const
+{
+	if (!IsWeaponPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return MItem::GetMaxDamage();
+	}
+
+	return max( 1, (*g_pItemTable)[GetItemClass()][m_ItemType].Value4 + ItemGradeOffsets(this).damage );
+}
+
+int
+MGearItem::GetCriticalHit() const
+{
+	if (!IsWeaponPolicy(GradePolicyOf(GetItemClass())))
+	{
+		return MItem::GetCriticalHit();
+	}
+
+	return max( 0, (*g_pItemTable)[GetItemClass()][m_ItemType].CriticalHit + ItemGradeOffsets(this).critical );
+}
+
+int
+MGearItem::GetLucky() const
+{
+	if (GradePolicyOf(GetItemClass()) != decore::GradePolicy::Accessory)
+	{
+		return MItem::GetLucky();
+	}
+
+	return ItemGradeOffsets(this).luck;
+}
 
 int
 MWeaponItem::GetToHit() const
 {
 	return (*g_pItemTable)[GetItemClass()][m_ItemType].ToHit;
-}		// 최대 공격력		
-
-int
-MWeaponItem::GetCriticalHit() const
-{
-	return max( 0, (*g_pItemTable)[GetItemClass()][m_ItemType].CriticalHit + (GetGrade()-4)*2 );
 }
 
+//----------------------------------------------------------------------
+// MBloodBibleSign::Get MaxDurability
+//----------------------------------------------------------------------
+// The client makes a blood bible sign itself, from GCBloodBibleSignInfo;
+// the server builds no such item, so its table has no rule for the
+// class. It keeps the gear rule it was written with: a durability the
+// grade moves 1000 a step. The item description does not show it, and
+// the shop never repairs one.
+//----------------------------------------------------------------------
 int
-MArmorItem::GetProtectionValue() const
+MBloodBibleSign::GetMaxDurability() const
 {
-	return max( 0, MGearItem::GetProtectionValue() + (GetGrade()-4) );
-}
-
-int
-MArmorItem::GetDefenseValue() const
-{
-	return max( 0, MGearItem::GetDefenseValue() + (GetGrade()-4)*2 );
-}
-int 
-MArmorItem2::GetProtectionValue() const
-{
-	return max( 0, MGearItem::GetProtectionValue() + ((GetGrade()-4)/2) );
-}
-
-int
-MArmorItem2::GetDefenseValue() const
-{
-	return max( 0, MGearItem::GetDefenseValue() + (GetGrade()-4) );
-}
-int
-MArmorItem2::GetMaxDurability() const
-{
-	return GearMaxDurability(this, (*g_pItemTable)[GetItemClass()][m_ItemType].Value1, 500);
-}
-
-int
-MAccessoryItem::GetLucky() const
-{
-	return  (GetGrade()-4);
+	return GearMaxDurability(this, true, (GetGrade()-4)*1000);
 }
 
 //----------------------------------------------------------------------

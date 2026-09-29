@@ -23,23 +23,10 @@
 #ifndef DECORE_ITEM_PRICE_H
 #define DECORE_ITEM_PRICE_H
 
-namespace decore {
+// The wire item-class ids the price rules branch on.
+#include "domain/ItemClass.h"
 
-// The wire item-class ids the price rules branch on (Item::ItemClass on
-// the server, ITEM_CLASS on the client). Each adapter static_asserts them
-// against its own enum.
-namespace itemclass {
-constexpr int Potion = 1;
-constexpr int Skull = 34;
-constexpr int Serum = 36;
-constexpr int SlayerPortalItem = 38;
-constexpr int VampirePortalItem = 39;
-constexpr int Larva = 66;
-constexpr int Pupa = 67;
-constexpr int ComposMei = 68;
-constexpr int OustersSummonItem = 69;
-constexpr int MoonCard = 72;
-} // namespace itemclass
+namespace decore {
 
 // The race of the creature a price is quoted to; None for no creature or
 // one that is not a player race.
@@ -76,9 +63,18 @@ struct ItemPriceInput {
 // The price of one item (PriceManager::getPrice). Never below 1.
 int itemPrice(const ItemPriceInput& input);
 
-// The cost of repairing one item (PriceManager::getRepairPrice): 0 at full
-// durability, never below 1 otherwise. A slayer portal or an ousters
-// summon item is charged for the charges it lacks.
+// The cost of repairing one item (PriceManager::getRepairPrice). A slayer
+// portal or an ousters summon item is charged for the charges it lacks,
+// whatever its durability: 0 when it is full, and below 0 when its charge
+// is above its maximum. Any other item costs 0 when it has a maximum
+// durability and is at it, and at least 1 otherwise, a maximum of 0
+// included.
+//
+// The result is an int, and the server's Price_t is a 32-bit unsigned: its
+// adapter converts the result modulo 2^32, so for the over-charged portal
+// the vectors pin at -5000 the server charges 4294962296, the value the
+// unsigned arithmetic it replaced gave. A caller with an unsigned price
+// type gets the server's value by the same conversion.
 int repairPrice(const ItemPriceInput& input);
 
 // What a sale of skulls pays (the shop sell handler): the price of the

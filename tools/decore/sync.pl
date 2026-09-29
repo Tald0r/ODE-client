@@ -18,8 +18,9 @@
 # disagree: the sources listed in DECORE_VENDORED_SOURCES in
 # src/domain/CMakeLists.txt, every header those include in quotes,
 # directly or through another header (a bare "X.h" is read as
-# domain/X.h, as that script reads it), and every file in
-# src/domain/vectors/.
+# domain/X.h, as that script reads it), and every *.tsv file in
+# src/domain/vectors/ (only .tsv files are vectors, so an editor backup
+# or a Finder .DS_Store on the server side is never vendored).
 #
 # A sync copies the subset byte for byte, deletes anything under
 # domain/ that left it, rewrites third_party/decore/MANIFEST (one
@@ -54,7 +55,13 @@ use File::Basename qw(dirname);
 use File::Find qw(find);
 use File::Path qw(make_path);
 
-my $client_root = dirname(__FILE__) . "/../..";
+# On Windows perls, the script's own path with forward slashes, which
+# they all accept: under Git for Windows' msys perl, dirname() does not
+# split on a backslash, so a backslash path to the script would lose its
+# directory. Elsewhere a backslash is an ordinary filename character.
+my $self = __FILE__;
+$self =~ s{\\}{/}g if $^O =~ /^(?:MSWin32|msys|cygwin)$/;
+my $client_root = dirname($self) . "/../..";
 my $vendor      = "$client_root/third_party/decore";
 my $manifest    = "$vendor/MANIFEST";
 my $readme      = "$vendor/README.md";
@@ -109,7 +116,9 @@ sub server_subset {
 		close $src;
 	}
 	opendir my $vd, "$root/src/domain/vectors" or die "$root/src/domain/vectors: $!\n";
-	$seen{"domain/vectors/$_"} = 1 for grep { -f "$root/src/domain/vectors/$_" } readdir $vd;
+	# Only .tsv files are vectors, the server's decore_client_diff.sh rule,
+	# so a stray editor backup or .DS_Store is never vendored.
+	$seen{"domain/vectors/$_"} = 1 for grep { /\.tsv\z/ && -f "$root/src/domain/vectors/$_" } readdir $vd;
 	closedir $vd;
 	return sort keys %seen;
 }

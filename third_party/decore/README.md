@@ -4,7 +4,7 @@
 `src/domain` in [bound2/opendarkeden-server](https://github.com/bound2/opendarkeden-server):
 the rules the client and the server both compute, implemented once, there.
 
-Last synced from server commit: 72dba2381c2c5a0039495770d4ee05aaffce3e8a
+Last synced from server commit: 9e9e8d97837238d2455baf36080f5086b20b658e
 
 **Never edit anything under `domain/`, and never reformat it.** Change the
 rule on the server, then resync:
@@ -43,5 +43,5 @@ floating-point arithmetic the same as the server's build. The files are
 LF on every checkout (`.gitattributes`), so the hashes hold on Windows too.
 
 The price and durability differences from the server that remain after
-slice 1 are listed under "Shop prices" in
+slices 1 and 2 are listed under "Shop prices" in
 `docs/compiler-warnings-2026-09-27.md` ("Found while fixing").
