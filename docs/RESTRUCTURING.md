@@ -826,8 +826,8 @@ rounds settled* for the host rules). Test fixtures share
   > consume-MP ratio, and the character list's four-bit weapon field
   > turns a mace into a sword. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
-  > from server `133a5d54` (PR #278; before it PR #277 and the review
-  > fixes in PR #279).
+  > from server `9d380a00` (PR #280, which rewords `stats.tsv`'s header;
+  > before it PR #278, PR #277 and the review fixes in PR #279).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
