@@ -115,12 +115,15 @@ and `dxlib`. The input pump reaches application state and text editors through
 backend without game-global stubs. `ui_tests` links `VS_UI` for independently
 reachable widgets; `user_option_tests` also links it for key bindings.
 Packet tests construct real packets through the real
-factories and pin their bytes against `tests/golden/*.hex` — 138 of those files are
-also pinned by the server repo and 135 are byte-identical copies of its goldens
-(measured 2026-09-10; `CLLogin.code0.hex`, `GCGuildChat.code0.hex` and
-`GCAddItemToItemVerify.threeenchant.code0.hex` differ - the last one the server
-re-recorded with other fixture values on 2026-09-10 - and a slice that adds a
-shared golden moves these counts), so `diff -r` of the two golden directories
+factories and pin their bytes against `tests/golden/*.hex` — 144 of those files
+share a name with a server golden and 122 are byte-identical copies of it
+(measured 2026-09-29 against the server's `c1157eb1`, with the two `LCPCList`
+goldens). The other 22 differ: the server re-recorded `CGMove` and `GCMoveOK`
+(every code, and the framed one), `CGSay` and `CGWhisper` with stronger
+fixtures on 2026-09-16 (its `93883b4f`), and `CGBloodDrain`, `CGSkillToNamed`,
+`CLLogin`, `GCAddItemToItemVerify.threeenchant`, `GCGuildChat`, `GCSay` and
+`GCSystemMessage` hold other fixture values in the two repos. A slice that adds
+a shared golden moves these counts. `diff -r` of the two golden directories
 is the cross-repo wire check (`tests/unit/test_packet_goldens.cpp` has
 the recipe and the `UPDATE_GOLDENS=1` re-record rule).
 

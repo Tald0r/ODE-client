@@ -96,6 +96,7 @@
 #include "Gpackets/GCUsePowerPointResult.h"
 #include "Gpackets/GCExchangeBuy.h"
 #include "Gpackets/GCExchangeList.h"
+#include "Lpackets/LCPCList.h"
 #include "Rpackets/RCPositionInfo.h"
 
 #include "Datagram.h"
@@ -1536,4 +1537,160 @@ TEST(Datagram, RCPositionInfoFrameMatchesGolden)
 	Fill(packet);
 	Datagram datagram;
 	ExpectGolden("RCPositionInfo.datagram", 0, DatagramWritten(packet, datagram));
+}
+
+//----------------------------------------------------------------------
+// LCPCList - the character-select screen: three type tags, then one
+// record per filled slot, of a different shape per race. The fixtures
+// are the server's makeSlayerInfo, makeVampireInfo and makeOustersInfo
+// (its tests/packet_login_test.cpp), so both goldens are byte-identical
+// copies of the server's. The canonical slayer holds a cross, the
+// widest weapon the outlook's four weapon bits carry alone; the mace
+// variant holds the same slayer's mace, the one fixture whose outlook
+// needs the weapon extension code (bits 17-18). The outlook sits at
+// body offset 56: 0x00017c9d with the cross, 0x0005049d with the mace.
+//----------------------------------------------------------------------
+namespace {
+
+const Attr_t	kPCListSTR = 0x0781;	// 1921, under every race's cap
+const Attr_t	kPCListDEX = 0x0792;	// 1938
+const Attr_t	kPCListINT = 0x07A3;	// 1955
+
+PCSlayerInfo*	MakePCListSlayer()
+{
+	PCSlayerInfo* pInfo = new PCSlayerInfo();
+	pInfo->setName("GoldSlayer");
+	pInfo->setSlot(SLOT1);
+	pInfo->setAlignment((Alignment_t)0x8A9BACBD);
+	pInfo->setSTR(kPCListSTR);
+	pInfo->setDEX(kPCListDEX);
+	pInfo->setINT(kPCListINT);
+	pInfo->setRank(0x8B);
+	pInfo->setSTRExp(0x8C9DAEBF);
+	pInfo->setDEXExp(0x8D9EAFC0);
+	pInfo->setINTExp(0x8E9FB0C1);
+	pInfo->setHP(0x8A1B, 0x8B2C);
+	pInfo->setMP(0x8C3D, 0x8D4E);
+	pInfo->setFame(0x8FA0B1C2);
+	for (int i = 0; i < SKILL_DOMAIN_VAMPIRE; i++)
+		pInfo->setSkillDomainLevel((SkillDomain)i, (SkillLevel_t)(0x80 + i));
+	pInfo->setSex(MALE);
+	pInfo->setHairStyle(HAIR_STYLE3);
+	pInfo->setHelmetType(HELMET3);
+	pInfo->setJacketType(JACKET4);
+	pInfo->setPantsType(PANTS4);
+	pInfo->setWeaponType(WEAPON_CROSS);
+	pInfo->setShieldType(SHIELD2);
+	pInfo->setHairColor(0x8A11);
+	pInfo->setSkinColor(0x8B22);
+	pInfo->setHelmetColor(0x8C33);
+	pInfo->setJacketColor(0x8D44);
+	pInfo->setPantsColor(0x8E55);
+	pInfo->setWeaponColor(0x8F66);
+	pInfo->setShieldColor(0x9077);
+	pInfo->setAdvancementLevel(0x8D);
+	return pInfo;
+}
+
+PCVampireInfo*	MakePCListVampire()
+{
+	PCVampireInfo* pInfo = new PCVampireInfo();
+	pInfo->setName("GoldVampireName");
+	pInfo->setSlot(SLOT2);
+	pInfo->setAlignment((Alignment_t)0x8F9EADBC);
+	pInfo->setSex(FEMALE);
+	pInfo->setBatColor(0x9188);
+	pInfo->setSkinColor(0x9299);
+	// The server's VAMPIRE_COAT4, which the client's VampireCoatType
+	// stops short of; the coat type is an ItemType_t carried as one byte.
+	pInfo->setCoatType(4);
+	pInfo->setCoatColor(0x93AA);
+	pInfo->setSTR(kPCListSTR);
+	pInfo->setDEX(kPCListDEX);
+	pInfo->setINT(kPCListINT);
+	pInfo->setHP(0x94BB, 0x95CC);
+	pInfo->setLevel(0x96);
+	pInfo->setRank(0x97);
+	pInfo->setExp(0x98A9BACB);
+	pInfo->setFame(0x99AABBCC);
+	pInfo->setBonus(0x9ADD);
+	pInfo->setAdvancementLevel(0x9B);
+	return pInfo;
+}
+
+PCOustersInfo*	MakePCListOusters()
+{
+	PCOustersInfo* pInfo = new PCOustersInfo();
+	pInfo->setName("GoldOusters");
+	pInfo->setSlot(SLOT3);
+	pInfo->setAlignment((Alignment_t)0x9C8DAEBF);
+	pInfo->setSex(MALE);
+	pInfo->setCoatColor(0x9D11);
+	pInfo->setHairColor(0x9E22);
+	pInfo->setArmColor(0x9F33);
+	pInfo->setBootsColor(0xA044);
+	// Coat and arm type share one byte: three bits and one bit.
+	pInfo->setCoatType(OUSTERS_COAT4);
+	pInfo->setArmType(OUSTERS_ARM_CHAKRAM);
+	pInfo->setSTR(kPCListSTR);
+	pInfo->setDEX(kPCListDEX);
+	pInfo->setINT(kPCListINT);
+	pInfo->setHP(0xA155, 0xA266);
+	pInfo->setMP(0xA377, 0xA488);
+	pInfo->setLevel(0xA5);
+	pInfo->setRank(0xA6);
+	pInfo->setExp(0xA7B8C9DA);
+	pInfo->setFame(0xA8B9CADB);
+	pInfo->setBonus(0xA9EE);
+	pInfo->setSkillBonus(0xAAFF);
+	pInfo->setAdvancementLevel(0xAB);
+	return pInfo;
+}
+
+// All three slots filled, a different race in each, so the type-tag
+// prefix, the three record shapes and the slot each record claims are
+// all exercised at once. The packet owns the records.
+void	Fill(LCPCList& p, WeaponType slayerWeapon)
+{
+	PCSlayerInfo* pSlayer = MakePCListSlayer();
+	pSlayer->setWeaponType(slayerWeapon);
+	p.setPCInfo(SLOT1, pSlayer);
+	p.setPCInfo(SLOT2, MakePCListVampire());
+	p.setPCInfo(SLOT3, MakePCListOusters());
+}
+
+const PCSlayerInfo&	SlayerOf(const LCPCList& p)
+{
+	return *dynamic_cast<const PCSlayerInfo*>(p.getPCInfo(SLOT1));
+}
+
+// Round-trips the list, checks what the slayer's outlook reads back as,
+// and pins the bytes. write() emits every field of every record, so
+// equal re-serialised bytes mean equal fields.
+void	PinPCList(const char* golden, WeaponType slayerWeapon)
+{
+	LCPCList src, dst;
+	Fill(src, slayerWeapon);
+	CHECK_EQ(slayerWeapon, SlayerOf(src).getWeaponType());
+	CHECK_EQ(SHIELD2, SlayerOf(src).getShieldType());
+	CHECK(EncrypterFree(src));
+	RoundTrip(src, dst, 0);
+	CHECK(WriteBody(dst, 0) == WriteBody(src, 0));
+	CHECK_EQ(slayerWeapon, SlayerOf(dst).getWeaponType());
+	CHECK_EQ(SHIELD2, SlayerOf(dst).getShieldType());
+	CHECK_EQ(PC_VAMPIRE, dst.getPCInfo(SLOT2)->getPCType());
+	CHECK_EQ(PC_OUSTERS, dst.getPCInfo(SLOT3)->getPCType());
+	ExpectGolden(golden, 0, WriteBody(src, 0));
+}
+
+} // namespace
+
+TEST(LCPCList, RoundTripsAndMatchesTheSharedGolden)
+{
+	PinPCList("LCPCList", WEAPON_CROSS);
+}
+
+TEST(LCPCList, MaceSlayerRoundTripsAndMatchesTheSharedGolden)
+{
+	PinPCList("LCPCList.mace", WEAPON_MACE);
 }
