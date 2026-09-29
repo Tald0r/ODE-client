@@ -296,18 +296,18 @@ MStringMap::LoadFromFile(std::ifstream& file)
 	int num;
 
 	//---------------------------------------------------
-	// size 읽기
+	// the count
 	//---------------------------------------------------
 	file.read((char*)&num, 4);
 
 	//---------------------------------------------------
-	// 각각의 string을 읽는다.
+	// each entry
 	//---------------------------------------------------
 	bool bSame;
 	for (int i=0; i<num; i++)
 	{
 		//---------------------------------------------------
-		// key와 value가 같은지 아닌지 체크하기 
+		// whether the value is the key
 		//---------------------------------------------------
 		file.read((char*)&bSame, 1);
 
@@ -317,24 +317,24 @@ MStringMap::LoadFromFile(std::ifstream& file)
 		pKeyString->LoadFromFile( file );
 		
 		//---------------------------------------------------
-		// key와 value가 같은 값인 경우..
+		// the value is the key: one string
 		//---------------------------------------------------
 		if (bSame)
 		{
 			pValueString = pKeyString;
 		}
 		//---------------------------------------------------
-		// 다른 값이면 하나 더 loading..
+		// a value of its own: a second string
 		//---------------------------------------------------
 		else
 		{
-			MString* pValueString	= new MString;
+			pValueString	= new MString;
 
 			pValueString->LoadFromFile( file );			
 		}
 
 		//---------------------------------------------------
-		// map에 추가한다.
+		// add it to the map
 		//---------------------------------------------------
 		insert( STRING_MAP::value_type( pKeyString, pValueString ) );
 	}

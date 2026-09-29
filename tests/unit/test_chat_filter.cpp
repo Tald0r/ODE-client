@@ -243,6 +243,40 @@ TEST(StringMap, SaveAndLoadRoundTripWordsThatAreTheirOwnValue)
 	std::remove(kBinFile);
 }
 
+TEST(StringMap, SaveAndLoadRoundTripAValueThatIsNotTheKey)
+{
+	MStringMap map;
+	map.Add("key", "value");
+	map.Add("self");
+	{
+		std::ofstream out(kBinFile, std::ios::binary | std::ios::trunc);
+		map.SaveToFile(out);
+	}
+
+	// An entry whose value is not its key: flag 0, the key, the value.
+	std::ifstream check(kBinFile, std::ios::binary);
+	std::string bytes((std::istreambuf_iterator<char>(check)), std::istreambuf_iterator<char>());
+	CHECK(bytes == DiskInt(2) + std::string(1, '\0') + DiskString("key") + DiskString("value")
+		+ std::string(1, '\1') + DiskString("self"));
+
+	// The loader read the value into a second, inner pValueString and
+	// inserted the outer one, which was never set.
+	MStringMap loaded;
+	{
+		std::ifstream in(kBinFile, std::ios::binary);
+		loaded.LoadFromFile(in);
+		CHECK(in.good());
+		CHECK(in.peek() == EOF);
+	}
+	CHECK_EQ(2, (int)loaded.size());
+	CHECK(StrEq(loaded.Get("key"), "value"));
+	CHECK(StrEq(loaded.Get("self"), "self"));
+	MStringMap::const_iterator it = loaded.begin();
+	CHECK(StrEq(it->first, "key"));
+	CHECK(it->first != it->second);
+	std::remove(kBinFile);
+}
+
 TEST(StringMap, LoadOfAnEmptyMapReadsOnlyTheCount)
 {
 	WriteFile(kBinFile, DiskInt(0) + "rest");
