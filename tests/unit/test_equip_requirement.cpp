@@ -11,10 +11,14 @@
 // pinned by the rows of third_party/decore/domain/vectors/equip.tsv,
 // which decore_tests asserts. Each check of the requirement and of
 // whether a character meets it names the equip.tsv row it takes its
-// numbers from. The tests of what de-core leaves to its caller name
-// none, since equip.tsv has no row for them: the gates before its rule
-// (a quest item, another race's item, a dead pet, a couple ring) and
-// the reading of an item with both of the client's gender flags set.
+// numbers from. Where a check's numbers are not a row's own, its
+// comment says they are derived from the rule of the row it cites:
+// another race's answer for an item made for several races (a row is
+// one race's call), or a row's rule over other inputs. The tests of
+// what de-core leaves to its caller name none, since equip.tsv has no
+// row for them: the gates before its rule (a quest item, another
+// race's item, a pet, a couple ring) and the reading of an item with
+// both of the client's gender flags set.
 //
 // The items are real MItem objects over a table row whose race flags,
 // requirement and gender these tests set, and an option table whose
@@ -199,8 +203,7 @@ TEST(EquipRequirement, OustersLevelStopsAt150)
 
 	SetGear(FLAG_RACE_OUSTERS, 0, 0, 0, 0, 100);
 	item.RemoveItemOption(3);
-	item.AddItemOption(4);
-	item.AddItemOption(4);
+	item.AddItemOption(9);
 	CHECK_EQ(120, item.GetRequireLevel());
 }
 
@@ -363,9 +366,11 @@ TEST(EquipRequirement, AnItemForSeveralRacesIsCheckedByTheWearersRule)
 	item.AddItemOption(8);
 
 	// slayer-attr-old-cap-passed-by-1: 181/181/181/250 raised by an
-	// option of sum 10 asks a slayer 200/200/200/260, and an ousters
-	// 201/201/201/260, since its STR, DEX and INT are not capped
-	// (ousters-attrs-not-capped).
+	// option of sum 10 asks a slayer 200/200/200/260 (the option's level
+	// of 10 is not the slayer rule's). An ousters is asked
+	// 201/201/201/260, derived from ousters-one-option's rule, twice the
+	// option's sum on each stat and once on the sum, with no cap on STR,
+	// DEX or INT (ousters-attrs-not-capped).
 	SetGear(FLAG_RACE_SLAYER | FLAG_RACE_OUSTERS, 181, 181, 181, 250, 0);
 	CHECK(item.IsUsableBy(User(RACE_SLAYER, 200, 200, 200, 0, true)));
 	CHECK(!item.IsUsableBy(User(RACE_SLAYER, 199, 200, 200, 0, true)));
@@ -383,12 +388,12 @@ TEST(EquipRequirement, AnItemForSeveralRacesIsCheckedByTheWearersRule)
 	CHECK(!item.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 9, true)));
 	CHECK(item.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 10, true)));
 
-	// vampire-old-cap-passed: a level of 90 raised by 20 asks a vampire
-	// 100, and an ousters 110, since its level has no lower cap
-	// (ousters-no-old-level-cap).
+	// vampire-old-cap-passed: a level of 90 raised by an option of 20
+	// asks a vampire 100. An ousters is asked 110, derived from
+	// ousters-no-old-level-cap's rule, which has no cap at 100 (that
+	// row raises 100 by 20 to 120).
 	Gear levelled;
-	levelled.AddItemOption(4);
-	levelled.AddItemOption(4);
+	levelled.AddItemOption(9);
 	SetGear(FLAG_RACE_VAMPIRE | FLAG_RACE_OUSTERS, 0, 0, 0, 0, 90);
 	CHECK(levelled.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 100, true)));
 	CHECK(!levelled.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 99, true)));
@@ -523,12 +528,15 @@ TEST(EquipRequirement, ACoupleRingAsksASlayerOrAVampireNothing)
 	CHECK(ring.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
 	ring.SetQuestFlag(false);
 
-	// 100/100/100/300 at level 100 raised by the option asks an ousters
-	// 120/120/120/310 at level 110.
-	SetRow(ITEM_CLASS_COUPLE_RING, FLAG_RACE_OUSTERS, 100, 100, 100, 300, 100);
+	// ousters-one-option: 50/40/30/120 at level 50 with an option of sum
+	// 5 and level 10 asks an ousters 60/50/40/125 at level 60, and one
+	// level short is refused (ousters-level-one-short).
+	ring.RemoveItemOption(8);
+	ring.AddItemOption(5);
+	SetRow(ITEM_CLASS_COUPLE_RING, FLAG_RACE_OUSTERS, 50, 40, 30, 120, 50);
 	CHECK(!ring.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 1, true)));
-	CHECK(!ring.IsUsableBy(User(RACE_OUSTERS, 120, 120, 120, 109, true)));
-	CHECK(ring.IsUsableBy(User(RACE_OUSTERS, 120, 120, 120, 110, true)));
+	CHECK(!ring.IsUsableBy(User(RACE_OUSTERS, 60, 50, 40, 59, true)));
+	CHECK(ring.IsUsableBy(User(RACE_OUSTERS, 60, 50, 40, 60, true)));
 }
 
 // A pet whose life has run out lends nothing; a living one asks
