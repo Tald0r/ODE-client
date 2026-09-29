@@ -1,11 +1,12 @@
 //----------------------------------------------------------------------
 // AffectModifyInfo.h
 //----------------------------------------------------------------------
-// Applies a ModifyInfo packet's status changes to a status array. Every
-// packet that carries a ModifyInfo (GCModifyInformation, GCOtherModifyInfo
-// and the skill, attack and item replies deriving from it) is applied
-// through this one function, kept free of game state so that it can be
-// tested on its own.
+// Applies a ModifyInfo packet's status changes to a status array. The 28
+// handlers that apply a ModifyInfo (GCModifyInformation, GCOtherModifyInfo
+// and the skill, attack and item replies deriving from it) all go through
+// this one function, kept free of game state so that it can be tested on
+// its own. GCMakeItemFail also derives from ModifyInfo, but its handler
+// ignores the ModifyInfo it carries.
 //----------------------------------------------------------------------
 
 #ifndef __AFFECTMODIFYINFO_H__

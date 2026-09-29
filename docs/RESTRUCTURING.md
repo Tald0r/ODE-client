@@ -1201,7 +1201,12 @@ rounds settled* for the host rules). Test fixtures share
   > call names a `MODIFY_*` constant; `ApplyStatus` stays in range; the
   > only `new MStatus` is inside a comment in `Client.cpp`. The library
   > function now accepts any `MStatus*`, so a future caller with a bare
-  > status would reach it; the tests pin where the bound lives.
+  > status would reach it. The tests pin only that `AffectModifyInfo`
+  > passes every wire type byte on unchecked, so the bound must live in
+  > `SetStatus`; they check against `BoundedStatus`, a test double that
+  > copies the overrides' check. The real bounds in `MCreature::SetStatus`
+  > and `MPlayer::SetStatus` are executable-side and untested: either
+  > could lose its check with `unit_tests` still passing.
   - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1,
     `test_status_model.cpp` and `test_affect_modify_info.cpp`.
 
