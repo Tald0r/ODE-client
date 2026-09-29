@@ -289,6 +289,115 @@ TEST(StringMap, LoadOfAnEmptyMapReadsOnlyTheCount)
 	std::remove(kBinFile);
 }
 
+TEST(StringMap, AnyFlagByteButZeroMeansTheValueIsTheKey)
+{
+	// The flag was read straight into a bool: a byte of 2 or 0x80 is
+	// neither true nor false, and Clang tests the low bit.
+	WriteFile(kBinFile, DiskInt(3)
+		+ std::string(1, '\x02') + DiskString("alpha")
+		+ std::string(1, '\x80') + DiskString("beta")
+		+ std::string(1, '\xFF') + DiskString("gamma"));
+	MStringMap map;
+	std::ifstream in(kBinFile, std::ios::binary);
+	map.LoadFromFile(in);
+	CHECK(in.good());
+	CHECK(in.peek() == EOF);
+	CHECK_EQ(3, (int)map.size());
+	CHECK(StrEq(map.Get("alpha"), "alpha"));
+	CHECK(StrEq(map.Get("beta"), "beta"));
+	CHECK(StrEq(map.Get("gamma"), "gamma"));
+	in.close();
+	std::remove(kBinFile);
+}
+
+TEST(StringMap, ACountLargerThanTheFileLoadsWhatIsThere)
+{
+	// Three entries announced, one there: the second's reads failed, its
+	// key stayed an MString with no string, and inserting it compared a
+	// NULL with strcmp.
+	WriteFile(kBinFile, DiskInt(3) + std::string(1, '\1') + DiskString("alpha"));
+	MStringMap map;
+	std::ifstream in(kBinFile, std::ios::binary);
+	map.LoadFromFile(in);
+	CHECK(in.fail());
+	CHECK_EQ(1, (int)map.size());
+	CHECK(StrEq(map.Get("alpha"), "alpha"));
+	in.close();
+	std::remove(kBinFile);
+}
+
+TEST(StringMap, AnEntryCutShortIsDropped)
+{
+	// Cut inside the second entry's value, then inside its key.
+	const std::string first = DiskInt(2) + std::string(1, '\0') + DiskString("key") + DiskString("value");
+	const std::string second = std::string(1, '\0') + DiskString("next") + DiskString("longer");
+	const std::string cuts[] = {
+		first + second.substr(0, second.size() - 2),
+		first + second.substr(0, 1 + 4 + 2),
+		first + second.substr(0, 1),
+	};
+	for (const std::string& bytes : cuts)
+	{
+		WriteFile(kBinFile, bytes);
+		MStringMap map;
+		std::ifstream in(kBinFile, std::ios::binary);
+		map.LoadFromFile(in);
+		CHECK(in.fail());
+		CHECK_EQ(1, (int)map.size());
+		CHECK(StrEq(map.Get("key"), "value"));
+		CHECK(map.Get("next") == NULL);
+	}
+	std::remove(kBinFile);
+}
+
+TEST(StringMap, AFileWithoutACountLoadsNothing)
+{
+	// The count was read into an uninitialised int, so a file shorter
+	// than four bytes looped over whatever the stack held.
+	const std::string files[] = { "", "\x05", "\x05\x00\x00" };
+	for (const std::string& bytes : files)
+	{
+		WriteFile(kBinFile, bytes);
+		MStringMap map;
+		map.Add("before");
+		std::ifstream in(kBinFile, std::ios::binary);
+		map.LoadFromFile(in);
+		CHECK(in.fail());
+		CHECK_EQ(1, (int)map.size());	// what the map held is kept
+		CHECK(StrEq(map.Get("before"), "before"));
+	}
+	std::remove(kBinFile);
+}
+
+TEST(StringMap, ANegativeCountLoadsNothing)
+{
+	WriteFile(kBinFile, DiskInt(-1) + std::string(1, '\1') + DiskString("alpha"));
+	MStringMap map;
+	std::ifstream in(kBinFile, std::ios::binary);
+	map.LoadFromFile(in);
+	CHECK(in.good());
+	CHECK_EQ(0, (int)map.size());
+	in.close();
+	std::remove(kBinFile);
+}
+
+TEST(StringMap, ARepeatedKeyKeepsItsFirstValue)
+{
+	WriteFile(kBinFile, DiskInt(3)
+		+ std::string(1, '\0') + DiskString("key") + DiskString("one")
+		+ std::string(1, '\0') + DiskString("key") + DiskString("two")
+		+ std::string(1, '\1') + DiskString("key"));
+	MStringMap map;
+	std::ifstream in(kBinFile, std::ios::binary);
+	map.LoadFromFile(in);
+	CHECK(in.good());
+	CHECK(in.peek() == EOF);
+	CHECK_EQ(1, (int)map.size());
+	CHECK(StrEq(map.Get("key"), "one"));
+	in.close();
+	std::remove(kBinFile);
+}
+
 //----------------------------------------------------------------------
 // MChatManager: the ignore list
 //----------------------------------------------------------------------

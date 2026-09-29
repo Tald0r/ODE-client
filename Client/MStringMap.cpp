@@ -293,40 +293,42 @@ MStringMap::SaveToFile(std::ofstream& file)
 void				
 MStringMap::LoadFromFile(std::ifstream& file)
 {	
-	int num;
+	//---------------------------------------------------
+	// the count; a file too short to hold one loads nothing
+	//---------------------------------------------------
+	int num = 0;
 
-	//---------------------------------------------------
-	// the count
-	//---------------------------------------------------
-	file.read((char*)&num, 4);
+	if (!file.read((char*)&num, 4))
+	{
+		return;
+	}
 
 	//---------------------------------------------------
 	// each entry
 	//---------------------------------------------------
-	bool bSame;
 	for (int i=0; i<num; i++)
 	{
 		//---------------------------------------------------
-		// whether the value is the key
+		// whether the value is the key: read as a byte, any
+		// byte but 0 meaning it is (SaveToFile writes 0 or 1)
 		//---------------------------------------------------
-		file.read((char*)&bSame, 1);
+		char same = 0;
+
+		if (!file.read(&same, 1))
+		{
+			break;
+		}
 
 		MString* pKeyString		= new MString;
-		MString* pValueString;
+		MString* pValueString	= pKeyString;
 
 		pKeyString->LoadFromFile( file );
 		
 		//---------------------------------------------------
-		// the value is the key: one string
-		//---------------------------------------------------
-		if (bSame)
-		{
-			pValueString = pKeyString;
-		}
-		//---------------------------------------------------
 		// a value of its own: a second string
+		// (otherwise the value is the key: one string)
 		//---------------------------------------------------
-		else
+		if (file && same==0)
 		{
 			pValueString	= new MString;
 
@@ -334,8 +336,30 @@ MStringMap::LoadFromFile(std::ifstream& file)
 		}
 
 		//---------------------------------------------------
-		// add it to the map
+		// An entry the file cuts short is dropped, with what
+		// was read of it, and the load stops there.
 		//---------------------------------------------------
-		insert( STRING_MAP::value_type( pKeyString, pValueString ) );
+		if (!file)
+		{
+			if (pValueString!=pKeyString)
+			{
+				delete pValueString;
+			}
+			delete pKeyString;
+			break;
+		}
+
+		//---------------------------------------------------
+		// add it to the map; a key already there keeps its
+		// first value
+		//---------------------------------------------------
+		if (!insert( STRING_MAP::value_type( pKeyString, pValueString ) ).second)
+		{
+			if (pValueString!=pKeyString)
+			{
+				delete pValueString;
+			}
+			delete pKeyString;
+		}
 	}
 }
