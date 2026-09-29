@@ -565,6 +565,26 @@ TEST(ChatFilter, KoreanWordsFromTheBinaryListAreConvertedAndMatchNothing)
 	CHECK(Passes(chat, "a\xEA\xB0\x80"));
 }
 
+TEST(ChatFilter, AnEmptyWordInTheBinaryListIsIgnored)
+{
+	ChatWorld world;
+
+	// An empty English entry (a zero length) in the binary file: strstr
+	// finds "" at once and the search never moved on, so the first line
+	// with a letter in it hung the client.
+	WriteFile(kBinFile,
+		DiskInt(2) + std::string(1, '\1') + DiskString("")
+			+ std::string(1, '\1') + DiskString("darn")
+		+ DiskInt(1) + std::string(1, '\1') + DiskString("")
+		+ DiskInt(0) + DiskInt(0) + DiskInt(0) + DiskInt(0));
+	MChatManager chat;
+	chat.LoadFromFile(kBinFile);
+
+	CHECK(Filters(chat, "oh darn", "oh xxxx"));
+	CHECK(Passes(chat, "hello"));
+	CHECK(Passes(chat, GA));
+}
+
 TEST(ChatFilter, EnglishListsRoundTripThroughTheBinaryFile)
 {
 	ChatWorld world;

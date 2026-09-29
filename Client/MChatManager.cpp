@@ -324,7 +324,9 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 		{
 			const MString* pString = iString->second;
 
-			if (pString!=NULL)
+			// An empty word would match everywhere without moving the
+			// search on; only the binary file can hold one.
+			if (pString!=NULL && pString->GetLength()!=0)
 			{
 				strFilteredPtr = strFiltered;
 
