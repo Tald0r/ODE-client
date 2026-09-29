@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -668,4 +669,41 @@ TEST(ActionInfoTable, LoadKeepsAnEffectStatusCutPartWay)
 	ActionInfoFlags info;
 	CHECK(!LoadOneRow(info, b));
 	CHECK_EQ((int)EFFECTSTATUS_NULL, info.EffectStatus());
+}
+
+// The writer puts the two-byte casting action info on disk as four bytes
+// with the upper half zero, then the castingAction flag. It used to
+// write four bytes starting at the two-byte member, so the upper half
+// was the flag stored after it and the padding behind that: a casting
+// row's file held 0x01 in the field's third byte. The loader keeps only
+// the low 16 bits either way, so a round trip cannot tell the two
+// writers apart; the saved bytes can.
+TEST(ActionInfoTable, SaveWritesTheCastingActionInfoWithAZeroUpperHalf)
+{
+	{
+		MActionInfo info;
+		info.Set("Bloody Nail", 7, 120, 5, FLAG_ACTIONINFO_TARGET_OTHER);
+		info.SetCastingActionInfo(301);
+		info.SetCastingAction();
+		std::ofstream out(kTempFile, std::ios::binary | std::ios::trunc);
+		info.SaveToFile(out);
+		CHECK(out.good());
+	}
+
+	std::vector<unsigned char> saved;
+	{
+		std::ifstream in(kTempFile, std::ios::binary);
+		saved.assign(std::istreambuf_iterator<char>(in),
+			std::istreambuf_iterator<char>());
+	}
+	RemoveScratch();
+
+	CHECK(saved.size() > kCastingAction);
+	if (saved.size() <= kCastingAction)
+		return;
+	CHECK_EQ(0x2D, (int)saved[kCastingActionInfo]);		// 301 = 0x012D
+	CHECK_EQ(0x01, (int)saved[kCastingActionInfo + 1]);
+	CHECK_EQ(0, (int)saved[kCastingActionInfo + 2]);
+	CHECK_EQ(0, (int)saved[kCastingActionInfo + 3]);
+	CHECK_EQ(1, (int)saved[kCastingAction]);
 }
