@@ -16,15 +16,29 @@
 // level 100, in double arithmetic with one truncation, each input and
 // the result read modulo 256. The inputs are rows of
 // third_party/decore/domain/vectors/skill_range.tsv, which decore_tests
-// asserts on every toolchain; each check names its row. A vampire's and
-// an ousters' have no server counterpart and keep the client's integer
-// step, to level 100 and to level 30.
+// asserts on every toolchain; each check names its row.
+//
+// A vampire's and an ousters' keep the client's integer step, to level
+// 100 and to level 30. The server ranges no vampire skill by its level
+// (Rapid Gliding's, Bloody Zenith's and Set Afire's ranges are its
+// stats'). It ranges five ousters skills by the level of the skill
+// slot, each by the Range of its own formula in
+// third_party/decore/domain/SkillOutputFormulas.cpp: Blunting and
+// Tendril 1 + level / 10, Prominence 2 + level / 10, Teleport and
+// Charging Attack 3 + level / 10, Teleport's at most 6. Each has a span
+// of 3 in the server's seed and in the SkillInfo.inf the upstream tree
+// carried, and a span of 3 stepped to level 30 is the minimum plus
+// level / 10, so the client's step gives the server's range; the checks
+// below call those formulas. A span other than 3 for one of them would
+// not.
 //
 //----------------------------------------------------------------------
 
 #include "test_framework.h"
 
 #include "MSkillManager.h"
+
+#include "domain/SkillOutputFormulas.h"
 
 // The server's four sliding and walking skills at their SkillBalance
 // ranges (Flash Sliding and Blaze Walk 2 to 7, Shadow Walk and Blitz
@@ -91,4 +105,49 @@ TEST(SkillRange, AnOustersSkillGrowsToItsMaximumAtLevel30)
 	CHECK_EQ(3, GetSkillRangeAtLevel(RACE_OUSTERS, 2, 7, 10));
 	CHECK_EQ(4, GetSkillRangeAtLevel(RACE_OUSTERS, 2, 7, 15));
 	CHECK_EQ(7, GetSkillRangeAtLevel(RACE_OUSTERS, 2, 7, 30));
+}
+
+namespace {
+
+// The Range of the server's formula for an ousters skill at `level`.
+// The input is filled as the server's SkillInput(Ousters*, slot)
+// (skill/SkillHandler.cpp) fills it, SkillLevel being the slot's level;
+// the five formulas' Range reads nothing else, so the stats, the
+// weapon and the advancement class level are left 0 and GunClass::Other.
+int OustersFormulaRange(void (*formula)(const decore::skillformula::SkillInput&,
+										 decore::skillformula::SkillOutput&),
+						int level)
+{
+	decore::skillformula::SkillInput in = {};
+	in.SkillLevel = level;
+	in.DomainLevel = 0;
+	in.DomainGrade = -1;
+	in.TargetType = decore::skillformula::SkillInput::TARGET_MAX;
+	in.Gun = decore::skillformula::GunClass::Other;
+	in.PartySize = 1;
+
+	decore::skillformula::SkillOutput out;
+	formula(in, out);
+	return out.Range;
+}
+
+} // namespace
+
+// The five ousters skills the server ranges by their level, at their
+// seed ranges, at every level 0 to 30.
+TEST(SkillRange, AnOustersSkillStepsAsTheServersFormula)
+{
+	for (int level = 0; level <= 30; level++)
+	{
+		CHECK_EQ(OustersFormulaRange(decore::skillformula::Blunting, level),
+				 GetSkillRangeAtLevel(RACE_OUSTERS, 1, 4, level));
+		CHECK_EQ(OustersFormulaRange(decore::skillformula::Tendril, level),
+				 GetSkillRangeAtLevel(RACE_OUSTERS, 1, 4, level));
+		CHECK_EQ(OustersFormulaRange(decore::skillformula::Prominence, level),
+				 GetSkillRangeAtLevel(RACE_OUSTERS, 2, 5, level));
+		CHECK_EQ(OustersFormulaRange(decore::skillformula::Teleport, level),
+				 GetSkillRangeAtLevel(RACE_OUSTERS, 3, 6, level));
+		CHECK_EQ(OustersFormulaRange(decore::skillformula::ChargingAttack, level),
+				 GetSkillRangeAtLevel(RACE_OUSTERS, 3, 6, level));
+	}
 }

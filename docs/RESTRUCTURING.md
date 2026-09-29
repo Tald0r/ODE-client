@@ -1004,8 +1004,16 @@ rounds settled* for the host rules). Test fixtures share
   > weapon's range, and Rapid Gliding, Bloody Zenith and Soul Rebirth's
   > formulas) and which moved into `gamemodel` for its test
   > (`52d872e3`, `8d2b12b9`); a vampire's and an ousters' keep the
-  > client's integer step, to level 100 and to level 30, since the
-  > server ranges neither by a level. That was a refactor: the rule
+  > client's integer step, to level 100 and to level 30. The server
+  > ranges no vampire skill by its level (Rapid Gliding's, Bloody
+  > Zenith's and Set Afire's ranges are its stats'). It ranges
+  > Blunting, Tendril, Prominence, Teleport and Charging Attack by their
+  > formulas' Range, the minimum plus the slot's level / 10, which the
+  > step to level 30 gives for the span of 3 each has in the seed and
+  > in the upstream `SkillInfo.inf`; `test_skill_range.cpp` checks the
+  > step against those `decore::skillformula` formulas at levels 0 to
+  > 30 (`8d2b12b9`'s message says the ousters' step has no server
+  > counterpart). The slayer change was a refactor: the rule
   > differs from the integer step only at a span of 50 or more (one
   > lower at levels 29 and 58), with a maximum below the minimum, and
   > past 255, and no slayer range in the data that could be checked
@@ -1065,7 +1073,15 @@ rounds settled* for the host rules). Test fixtures share
   > - The server checks most skills other than its four sliding and
   >   walking ones against the table's maximum range, not this rule, so
   >   the client's walking range for them errs short, the safe
-  >   direction.
+  >   direction. Three slayer skills are checked against their
+  >   formula's Range instead: Hit Convert (2 + level / 33), Multi
+  >   Amputate (2 + level / 25) and Ultimate Blow (1 + level / 50).
+  >   Where the client ranges them by the table (the action info file,
+  >   not in the repository, decides whether they take the weapon's
+  >   range), `decore::skillRange` at the seed's ranges equals that for
+  >   Multi Amputate (2 to 6) and Ultimate Blow (1 to 3) at every level,
+  >   and is one tile short for Hit Convert (2 to 5) at levels 33, 66
+  >   and 99, also the safe direction.
   > The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
   > from server `831a8edc` (PR #283, the skill output formulas:

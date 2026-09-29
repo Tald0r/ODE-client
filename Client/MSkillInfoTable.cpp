@@ -187,9 +187,13 @@ MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT, int level) const
 // Skill range
 //----------------------------------------------------------------------
 // A slayer's is the server's rule (decore::skillRange, which its
-// computeSkillRange calls for the four sliding and walking skills). The
-// server ranges no vampire or ousters skill by its level, so theirs keep
-// the client's integer step.
+// computeSkillRange calls for the four sliding and walking skills). A
+// vampire's and an ousters' keep the client's integer step. The server
+// ranges no vampire skill by its level. It ranges Blunting, Tendril,
+// Prominence, Teleport and Charging Attack by their formulas' Range
+// (decore::skillformula), the minimum plus level / 10, which the step
+// to level 30 gives for their span of 3 in the server's seed; a
+// different span would need those formulas here.
 int
 GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
 {
