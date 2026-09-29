@@ -28,6 +28,7 @@
 #include "Gpackets/GCMyStoreInfo.h"
 #include "Gpackets/GCOtherStoreInfo.h"
 
+#include <string>
 #include <vector>
 
 namespace {
@@ -51,20 +52,36 @@ struct FindingInFixture
 	}
 };
 
-// Reads one framed packet; true when read() refused it as a protocol
-// violation.
-bool	FramedReadIsRefused(Packet& packet, const std::vector<unsigned char>& frame)
+// Reads one framed packet. Returns true when read() refused it as a
+// protocol violation; `why` receives the refusal's message, or stays
+// empty when the frame was read.
+bool	FramedReadIsRefused(Packet& packet, const std::vector<unsigned char>& frame,
+			    std::string& why)
 {
 	FindingInFixture f(frame);
 	bool bRefused = false;
+	why.clear();
 	try {
 		f.m_Stream.read(&packet);
-	} catch (InvalidProtocolException&) {
+	} catch (InvalidProtocolException& e) {
 		bRefused = true;
+		why = e.getMessage();
 	}
 	// The refused frame is discarded whole, as a completed one is.
 	CHECK_EQ(0u, f.m_Stream.length());
 	return bRefused;
+}
+
+bool	FramedReadIsRefused(Packet& packet, const std::vector<unsigned char>& frame)
+{
+	std::string why;
+	return FramedReadIsRefused(packet, frame, why);
+}
+
+// True when `why` contains `reason`.
+bool	RefusedFor(const std::string& why, const char* reason)
+{
+	return why.find(reason) != std::string::npos;
 }
 
 // NicknameInfo's body: id (WORD, little-endian) and type, then the
@@ -198,6 +215,10 @@ TEST(PacketFuzzFindings, StoreItemCountUpToTheVectorStillReads)
 // The fuzzer's input (tests/fuzz/regressions/client_stream/
 // GCMyStoreInfo-item-count-0xa9.hex) without its encrypt code byte:
 // one GCMyStoreInfo frame of 64 bytes, count 169, one item present.
+// The check names the count refusal: without it the parse writes past
+// m_Items and then runs off the 64-byte body, which the framed read
+// also refuses ("packet parser underflowed declared body"), so a bare
+// "refused" would pass on the unfixed code in a build without ASan.
 TEST(PacketFuzzFindings, MyStoreInfoFrameWithCountA9IsRefused)
 {
 	std::vector<unsigned char> frame = {
@@ -213,7 +234,9 @@ TEST(PacketFuzzFindings, MyStoreInfoFrameWithCountA9IsRefused)
 	frame.resize(7 + 64, 0x00);
 
 	GCMyStoreInfo packet;
-	CHECK(FramedReadIsRefused(packet, frame));
+	std::string why;
+	CHECK(FramedReadIsRefused(packet, frame, why));
+	CHECK(RefusedFor(why, "store item count out of range"));
 }
 
 // The same count through GCOtherStoreInfo, the other packet that
@@ -236,5 +259,7 @@ TEST(PacketFuzzFindings, OtherStoreInfoFrameWithCount21IsRefused)
 	frame.insert(frame.end(), body.begin(), body.end());
 
 	GCOtherStoreInfo packet;
-	CHECK(FramedReadIsRefused(packet, frame));
+	std::string why;
+	CHECK(FramedReadIsRefused(packet, frame, why));
+	CHECK(RefusedFor(why, "store item count out of range"));
 }
