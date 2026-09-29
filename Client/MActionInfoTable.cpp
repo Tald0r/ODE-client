@@ -23,7 +23,7 @@ namespace {
 bool
 ReadFlag(std::ifstream& file, bool current)
 {
-	BYTE b = current ? 1 : 0;
+	BYTE b = current;
 	file.read((char*)&b, 1);
 	return b != 0;
 }

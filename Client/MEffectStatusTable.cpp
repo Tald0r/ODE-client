@@ -63,10 +63,10 @@ EFFECTSTATUS_NODE::LoadFromFile(std::ifstream& file)
 	// The flags are bytes on disk and any non-zero byte is true: read
 	// straight into a bool's storage, every byte but 0 and 1 made an
 	// invalid bool. A failed read leaves a field as it was.
-	BYTE flag = bUseEffectSprite ? 1 : 0;
+	BYTE flag = bUseEffectSprite;
 	file.read((char*)&flag, 1);
 	bUseEffectSprite = flag != 0;
-	flag = bAttachGround ? 1 : 0;
+	flag = bAttachGround;
 	file.read((char*)&flag, 1);
 	bAttachGround = flag != 0;
 
