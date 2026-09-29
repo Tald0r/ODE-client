@@ -10126,10 +10126,14 @@ MCreature::SetRegen(int amount, DWORD delay)
 			amount += (*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetPoint();
 
 		// Will of Life adds the HP its cast costs (the server's
-		// EffectWillOfLife bonus), at the current level; the server keeps
-		// the bonus of the level the skill was cast at, so a change of level
-		// while the effect lasts skews the prediction until the server's HP
-		// updates correct it.
+		// EffectWillOfLife bonus), at the level current when this runs. The
+		// server keeps the bonus of the level the skill was cast at. That is
+		// the same while only the cast's CheckRegen has run: a level change
+		// (Function_MODIFY_LEVEL) calls no CheckRegen. If another call (an
+		// effect status added or removed, a creature type change, a basic DEX
+		// change, a rank bonus packet) follows a level change across a
+		// multiple of seven while the effect lasts, the prediction is off by
+		// 1 HP a tick until the server's HP updates correct it.
 		if( HasEffectStatus( EFFECTSTATUS_WILL_OF_LIFE ) )
 			amount += GetWillOfLifeHP( (int)GetLEVEL() );
 	}

@@ -984,7 +984,8 @@ rounds settled* for the host rules). Test fixtures share
   > the party size 0 included, and says it is valid for that formula
   > only. The skill description's HP cost and `MCreature::SetRegen`'s
   > bonus while the effect lasts take its Damage, which they already
-  > equalled (`5c0e7c7c`; `SetRegen` at the current level, below). The
+  > equalled (`5c0e7c7c`; `SetRegen` at the level of its last
+  > `CheckRegen`, below). The
   > reuse time, which the cooldown bar (`C_VS_UI_SKILL::GetDelay`) and
   > the two skill packet handlers (`GCSkillToSelfOK1`, `GCSkillFailed1`)
   > computed as (3 + level / 10) * 2 s, is the server's run time, Delay *
@@ -1064,12 +1065,16 @@ rounds settled* for the host rules). Test fixtures share
   >   tell them apart and waits the full reuse time after every
   >   `GCSkillFailed1`, longer than the server, the safe direction; it
   >   did so before this slice, with the shorter old time.
-  > - `MCreature::SetRegen` predicts Will of Life's bonus at the current
-  >   level, where the server's `EffectWillOfLife` keeps the Damage of
-  >   the level it was cast at, so a change of level across a multiple
-  >   of seven while the effect lasts (3 to 18 s) skews the prediction
-  >   by 1 HP a tick until the server's HP updates correct it. It did so
-  >   before this slice.
+  > - `MCreature::SetRegen` predicts Will of Life's bonus at the level
+  >   current when `CheckRegen` last ran, where the server's
+  >   `EffectWillOfLife` keeps the Damage of the level it was cast at.
+  >   A level change alone does not skew it (`Function_MODIFY_LEVEL`
+  >   calls no `CheckRegen`), so the prediction is the cast level's
+  >   unless another `CheckRegen` (an effect status added or removed, a
+  >   creature type change, `MODIFY_BASIC_DEX`, a rank bonus packet)
+  >   follows a level change across a multiple of seven while the
+  >   effect lasts (3 to 18 s); then it is off by 1 HP a tick until the
+  >   server's HP updates correct it. It did so before this slice.
   > - The server checks most skills other than its four sliding and
   >   walking ones against the table's maximum range, not this rule, so
   >   the client's walking range for them errs short, the safe
