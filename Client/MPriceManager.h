@@ -27,7 +27,10 @@ struct STAR_ITEM_PRICE {
 // without a host. The crown moon card's price is not among them: the
 // server announces it (NOTICE_EVENT_CROWN_PRICE, SetEventItemPrice).
 // Nor is the castle tax: the packets that open the shop carry its
-// ratio (SetShopTaxRatio).
+// ratio (SetShopTaxRatio). The host once carried the tax-change
+// notice's percentage (EVENTID_TAX_CHANGE, ShopTaxPercent), which
+// taxed every buy price a second time; task 4.12's slice 5 removed it,
+// so no notice can reach a price.
 //-----------------------------------------------------------------------------
 struct MPriceHost {
 	int		(*Race)();					// RACE_SLAYER, RACE_VAMPIRE or RACE_OUSTERS (RaceType.h); -1 for none of them

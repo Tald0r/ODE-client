@@ -777,27 +777,6 @@ TEST(PriceManager, PurchaseAtARatioOf100OrBelowIsUntaxed)
 	CHECK_EQ(4000, prices.GetPurchasePrice(&world.gamble, 1));
 }
 
-TEST(PriceManager, TheTaxChangeNoticeDoesNotTaxAPurchaseAgain)
-{
-	ShopWorld world;
-	MPriceManager prices;
-
-	// The notice of a castle's new ratio (EVENTID_TAX_CHANGE) used to
-	// scale every buy price again, through the host; it reaches no
-	// price now, and the shop's own ratio is the only tax. These are
-	// the rows it moved: 1210, 57 and 4400 at a ratio of 110 with the
-	// notice at 110%, and 1100, 54 and 4400 at 100.
-	prices.SetShopTaxRatio(110);
-	CHECK_EQ(1100, prices.GetPurchasePrice(&world.sword, 1));
-	CHECK_EQ(56, prices.GetPurchasePrice(&world.potion, 3));
-	CHECK_EQ(4400, prices.GetPurchasePrice(&world.gamble, 1));
-
-	prices.SetShopTaxRatio(100);
-	CHECK_EQ(1000, prices.GetPurchasePrice(&world.sword, 1));
-	CHECK_EQ(51, prices.GetPurchasePrice(&world.potion, 3));
-	CHECK_EQ(4000, prices.GetPurchasePrice(&world.gamble, 1));
-}
-
 TEST(PriceManager, TheTaxRatioAndTheMarketConditionAreKeptApart)
 {
 	ShopWorld world;
