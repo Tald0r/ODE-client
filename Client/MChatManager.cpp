@@ -325,12 +325,11 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 					int lenCurse = static_cast<int>(pString->GetLength());
 
 					//---------------------------------------------------
-					// found: mark it
+					// found: mark its letters, counted from the start of
+					// strFiltered (not from where this search started, so
+					// a second occurrence is marked where it is)
 					//---------------------------------------------------
-					// 2004, 10, 26, sobeit modify start - curse filter change
-					//memset( isCurse+(pFind-strFilteredPtr), true, lenCurse);
-					memset( isCurse+(pFind-strFilteredPtr), lenCurse, lenCurse);
-					// 2004, 10, 26, sobeit modify end - curse filter change
+					memset( isCurse+(pFind-strFiltered), lenCurse, lenCurse);
 					
 					//---------------------------------------------------
 					// where the next search starts

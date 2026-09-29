@@ -398,6 +398,21 @@ TEST(ChatFilter, AdjacentAndOverlappingEnglishWordsAreAllMasked)
 	CHECK(Filters(chat, "Darnie!", "xxxxxx!"));
 }
 
+TEST(ChatFilter, AnEnglishWordIsMaskedEveryTimeItOccurs)
+{
+	ChatWorld world;
+	MChatManager chat;
+	LoadWords(chat, kWords);
+
+	CHECK(Filters(chat, "darn darn", "xxxx xxxx"));
+	CHECK(Filters(chat, "darndarn", "xxxxxxxx"));
+	// The second match must not be marked from where the first ended:
+	// that masked the "a" and left the second word.
+	CHECK(Filters(chat, "darn a darn", "xxxx a xxxx"));
+	CHECK(Filters(chat, "darn, Darn and DARN!", "xxxx, xxxx and xxxx!"));
+	CHECK(Filters(chat, "heck darn heck darn", "xxxx xxxx xxxx xxxx"));
+}
+
 TEST(ChatFilter, OnlyLowerCaseLettersEnterTheEnglishList)
 {
 	ChatWorld world;
