@@ -399,9 +399,9 @@ constexpr DWORD	EnumValueCount(DWORD largestEnumerator)
 // the field's enum type can hold. The client's types run past two of
 // their fields: HelmetType to HELMET_MAX (6), so it holds 0..7 in a
 // two-bit field, and ShieldType to SHIELD_MAX (5), so it holds 0..7 in
-// a two-bit field too. Their extra values (HELMET4, HELMET5, SHIELD3,
-// SHIELD4) come from the zone view, PCSlayerInfo3, whose helmet and
-// shield fields are three bits wide.
+// a two-bit field too. The values past the field (HELMET4, HELMET5
+// and SHIELD4) come from the zone view, PCSlayerInfo3, whose helmet
+// and shield fields are three bits wide.
 struct OutlookField
 {
 	const char*	name;
