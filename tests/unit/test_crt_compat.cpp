@@ -36,9 +36,19 @@ TEST(CrtCompat, ScanStringParsesNumbersAndWords)
 	CHECK_EQ(0, Basic::ScanString("x", "%d", &first));
 }
 
-// CRT_BUFFER's halves take only a char array (a pointer does not
-// compile): the array itself, and its length, which the Windows scanners
-// receive as the capacity.
+// CRT_BUFFER's halves take only a writable char array: the array itself,
+// and its length, which the Windows scanners receive as the capacity. A
+// pointer has no capacity to give, and a const array is no scan
+// destination, so neither compiles; the static_asserts hold that on
+// every platform, whichever branch CRT_BUFFER takes there.
+template<typename T>
+concept CrtArrayTakes = requires(T& buffer) { Basic::CrtArray(buffer); };
+template<typename T>
+concept CrtCapacityTakes = requires(T& buffer) { Basic::CrtCapacity(buffer); };
+static_assert(CrtArrayTakes<char[16]> && CrtCapacityTakes<char[16]>);
+static_assert(!CrtArrayTakes<char*> && !CrtCapacityTakes<char*>);
+static_assert(!CrtArrayTakes<const char[16]> && !CrtCapacityTakes<const char[16]>);
+
 TEST(CrtCompat, CrtBufferPassesTheArrayAndItsLength)
 {
 	char word[16] = {};
@@ -106,16 +116,16 @@ TEST(CrtCompat, LocalTimeZeroesTheResultWhenItCannotConvert)
 	const std::time_t never = std::numeric_limits<std::time_t>::max();
 	std::tm result;
 	std::memset(&result, 0x7f, sizeof(result));
-	if (!Basic::LocalTime(&never, &result))
-	{
-		CHECK_EQ(0, result.tm_year);
-		CHECK_EQ(0, result.tm_mon);
-		CHECK_EQ(0, result.tm_mday);
-		CHECK_EQ(0, result.tm_hour);
-		CHECK_EQ(0, result.tm_min);
-		CHECK_EQ(0, result.tm_sec);
-		CHECK_EQ(0, result.tm_isdst);
-	}
+	// Darwin's localtime_r returns NULL for it, glibc's fails with
+	// EOVERFLOW and the UCRT's localtime_s rejects any time past 3000.
+	CHECK(!Basic::LocalTime(&never, &result));
+	CHECK_EQ(0, result.tm_year);
+	CHECK_EQ(0, result.tm_mon);
+	CHECK_EQ(0, result.tm_mday);
+	CHECK_EQ(0, result.tm_hour);
+	CHECK_EQ(0, result.tm_min);
+	CHECK_EQ(0, result.tm_sec);
+	CHECK_EQ(0, result.tm_isdst);
 }
 
 TEST(CrtCompat, DuplicateStringCopies)

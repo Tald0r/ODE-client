@@ -16,10 +16,11 @@
 // input the result is the same; a word longer than the buffer overflowed
 // it before and now fails that conversion on Windows instead.
 //
-// CRT_BUFFER takes a char array only: a pointer has no capacity to pass,
-// and sizeof would give the pointer's size, so it fails to compile on
-// every platform. Nothing catches a %s buffer passed without CRT_BUFFER;
-// on Windows that reads the next argument as the capacity.
+// CRT_BUFFER takes a writable char array only: a pointer has no capacity
+// to pass, and sizeof would give the pointer's size, so it fails to
+// compile on every platform (static_asserts in tests/unit/test_crt_compat.cpp
+// hold that). Nothing catches a %s buffer passed without CRT_BUFFER; on
+// Windows that reads the next argument as the capacity.
 //
 //----------------------------------------------------------------------
 
