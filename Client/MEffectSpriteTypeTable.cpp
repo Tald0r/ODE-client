@@ -110,16 +110,21 @@ EFFECTSPRITETYPETABLE_INFO::SaveToFile(std::ofstream& file)
 void			
 EFFECTSPRITETYPETABLE_INFO::LoadFromFile(std::ifstream& file)
 {
-	BYTE bt;
-	file.read((char*)&bt, 1);
-	BltType = (BLT_TYPE)bt;
+	// BLT_TYPE holds 0..3: a byte past BLT_SCREEN would be a value the
+	// enum cannot represent, so it draws as BLT_EFFECT, the draw type
+	// MAttachEffect gives a type the table does not describe. A failed
+	// read leaves a field as it was.
+	BYTE bt = 0;
+	if (file.read((char*)&bt, 1))
+		BltType = bt <= BLT_SCREEN ? (BLT_TYPE)bt : BLT_EFFECT;
 	file.read((char*)&FrameID, SIZE_FRAMEID);	
-	BYTE flag;
-	
-	file.read((char*)&flag, 1);
-	
-	RepeatFrame = (flag>>1)&0x1;
-	bPairFrameBack = (flag)&0x1;
+
+	BYTE flag = 0;
+	if (file.read((char*)&flag, 1))
+	{
+		RepeatFrame = (flag>>1)&0x1;
+		bPairFrameBack = (flag)&0x1;
+	}
 
 	file.read((char*)&ActionEffectFrameID, SIZE_FRAMEID);
 	//file.read((char*)&PairFrameID, SIZE_FRAMEID);	
@@ -130,14 +135,17 @@ EFFECTSPRITETYPETABLE_INFO::LoadFromFile(std::ifstream& file)
 	//----------------------------------------------------------
 	PairFrameIDList.clear();
 
-	BYTE numPair;	
+	BYTE numPair = 0;	
 	file.read((char*)&numPair, 1);
 
+	// Keep only the pairs the file holds: a count past the end of the
+	// file used to add the last frame read once per missing pair.
 	TYPE_FRAMEID frameID;
 	int intNumPair = numPair;
 	for (int i=0; i<intNumPair; i++)
 	{	
-		file.read((char*)&frameID, SIZE_FRAMEID);
+		if (!file.read((char*)&frameID, SIZE_FRAMEID))
+			break;
 
 		PairFrameIDList.push_back( frameID );
 	}

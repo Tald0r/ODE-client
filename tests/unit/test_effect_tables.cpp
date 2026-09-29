@@ -633,3 +633,57 @@ TEST(EffectStatusTable, LoadKeepsTheColourPartOfARecordCutBeforeIt)
 	CHECK_EQ(0x7C00, (int)table[0].EffectColor);
 	CHECK_EQ((int)ADDON_NULL, (int)table[0].EffectColorPart);
 }
+
+//======================================================================
+// EffectSpriteType.inf: bytes the writer never emits.
+//
+// The draw type byte was cast to BLT_TYPE unchecked. BLT_TYPE holds 0..3,
+// so a byte of 4 or more is a value the enum cannot represent: undefined,
+// and Clang's -fsanitize=enum traps its load (GameInitInfo logs the first
+// ten rows' draw types at start-up, and every effect generator reads it).
+// Such a row now draws as BLT_EFFECT, the draw type MAttachEffect already
+// gives an effect sprite type the table does not describe.
+//======================================================================
+TEST(EffectSpriteTypeTable, LoadReadsADrawTypePastTheLastEnumeratorAsEffect)
+{
+	Bytes b;
+	b.Int(3);
+	AppendSpriteType(b, BLT_SCREEN, 100, 0, {});
+	AppendSpriteType(b, BLT_NORMAL, 200, 0, {});
+	AppendSpriteType(b, BLT_NORMAL, 300, 0, {});
+	b.data[4 + 9] = 4;			// the second row's draw type
+	b.data[4 + 9 + 9] = 0xFF;		// the third row's
+	WriteScratch(b);
+
+	EFFECTSPRITETYPE_TABLE table;
+	CHECK(LoadScratch(table));
+	RemoveScratch();
+
+	CHECK_EQ(3, table.GetSize());
+	CHECK_EQ((int)BLT_SCREEN, (int)table[0].BltType);
+	CHECK_EQ((int)BLT_EFFECT, (int)table[1].BltType);
+	CHECK_EQ(200, (int)table[1].FrameID);
+	CHECK_EQ((int)BLT_EFFECT, (int)table[2].BltType);
+	CHECK_EQ(300, (int)table[2].FrameID);
+}
+
+// A pair list that claims more pairs than the file holds keeps only the
+// pairs that were read. The loop used to push one entry per pair the
+// count claimed, repeating the last frame read for every failed read.
+TEST(EffectSpriteTypeTable, LoadKeepsOnlyThePairsTheFileHolds)
+{
+	Bytes b;
+	b.Int(2);
+	AppendSpriteType(b, BLT_EFFECT, 100, 0, {});
+	AppendSpriteType(b, BLT_NORMAL, 200, 0, { 201 });
+	b.data[b.data.size() - 3] = 200;	// the second record claims 200 pairs
+	WriteScratch(b);
+
+	EFFECTSPRITETYPE_TABLE table;
+	CHECK(!LoadScratch(table));
+	RemoveScratch();
+
+	CHECK_EQ(2, table.GetSize());
+	CHECK_EQ(200, (int)table[1].FrameID);
+	CHECK((Pairs(table[1]) == std::vector<int>{ 201 }));
+}
