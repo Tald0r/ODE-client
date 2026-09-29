@@ -95,6 +95,18 @@ MSkillInfoTable::UseEnglishNames()
 }
 
 //----------------------------------------------------------------------
+// Get Vampire Consume MP
+//----------------------------------------------------------------------
+// A vampire uses its HP as MP. This is what one use of skill `id` costs
+// it at its current INT.
+//----------------------------------------------------------------------
+int
+MSkillInfoTable::GetVampireConsumeMP(int id, int /*currentINT*/) const
+{
+	return (*this)[id].GetMP();
+}
+
+//----------------------------------------------------------------------
 // Save From File  ServerSkillInfo
 //----------------------------------------------------------------------
 void			
