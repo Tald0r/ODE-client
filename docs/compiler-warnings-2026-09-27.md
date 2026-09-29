@@ -848,12 +848,28 @@ Not fixed, for whoever takes them up:
     `bd801202`);
   - a couple ring's repair quotes the server's 0, so the gear window's
     repair-all total no longer counts it, or opens for it alone
-    (`3f542250`).
+    (`3f542250`);
+  - a shop purchase is quoted as the server's buy handler charges it
+    (slice 5): the item at a market condition of 100 times the count,
+    or the mysterious rack's price once, then the castle tax once on
+    that total at the ratio the shop sent (`decore::applyCastleTax`);
+    a motorcycle, which the handler prices on its own, is the price of
+    one and untaxed. The tax-change notice's percentage, which taxed every buy price a
+    second time and was the mysterious rack's only tax, reaches no
+    price, and the ratio no longer stands in for the market condition
+    (`5536db6e`).
 
   What remains:
-  - **Castle tax.** The tax-change percentage is still applied to each
-    quote, where the server's buy handler applies the castle tax to the
-    total. The market condition may also already carry the tax (slice 5).
+  - **Castle tax on the wire.** The packets that open the shop carry the
+    castle's ratio where the NPC's market condition would be, so the
+    purchase quote takes the item at a market condition of 100, every
+    seed shop's; a shop set to another rate would be quoted wrong.
+    `GCShopVersion` sends the NPC's market condition instead when the
+    ratio is 100, and the client takes it as the ratio. The field is the
+    16-bit `MarketCond_t`: a ratio only the GM command can set, outside
+    -32768..32767, wraps (40000 arrives as -25536 and is quoted
+    untaxed). A separate ratio field is the plan's open decision 7
+    (`docs/RESTRUCTURING.md` task 4.12).
   - **The no-durability gear's description.** The item description prints
     the durability of Dermis, Fascia and CarryingReceiver as "1/1", the
     durability and maximum the server keeps for items that wear nothing.
@@ -904,10 +920,13 @@ Not fixed, for whoever takes them up:
     server's Blood Bible percentage covers potions and serums only.
   - **Charged items.** A portal's or summon gem's buy and sell quote is
     still the client's own: its charges plus the rate, with no floor at 1
-    and no half price or tax.
+    and no half price. A purchase of one takes the castle tax like any
+    other purchase.
   - **Unidentified items.** An unidentified item's repair quote is the
     gamble price, and an unidentified time-limited or given-away item gets
-    the gamble price before the 50 and 1 rules apply.
+    the gamble price before the 50 and 1 rules apply. The gamble price's
+    Blood Bible adjustment differs: the server applies the percentage
+    `getGamblePriceRatio` gives, the client halves the price.
   - **Classes with no durability entry.** An item whose class has no
     durability (`MItem`'s -1) quotes 0 to repair; the server charges 1.
   - **Classes the server builds outside `ConcreteItem`.** For the

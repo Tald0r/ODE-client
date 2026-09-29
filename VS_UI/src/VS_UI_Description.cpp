@@ -1257,15 +1257,21 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			}
 			else
 			{
-//				sprintf(sz_buf, "%d", g_pPriceManager->GetItemPrice(p_item, MPriceManager::NPC_TO_PC, C_VS_UI_SHOP::m_bl_mysterious_tab));
+				// What the shop charges: the total the castle tax is taken
+				// on, and in brackets the price of one. The castle tax is
+				// taken once on the total, so the bracket times the count
+				// can differ from it: three potions at 17 are quoted 18
+				// each at 110%, so the bracket times the count is 54 where
+				// the total, taxed once on 51, is 56.
 				if(p_item->IsPileItem() && p_item->GetNumber() >= 1)
 				{
-					int TempPrice = max( 0, g_pPriceManager->GetItemPrice(p_item, MPriceManager::NPC_TO_PC) );
+					const unsigned TempPrice = g_pPriceManager->GetPurchasePrice(p_item, 1);
+					const unsigned TotalPrice = g_pPriceManager->GetPurchasePrice(p_item, p_item->GetNumber());
 					std::string sstr;
 					if(gC_ci->IsKorean() && g_pUserOption->ShowGameMoneyWithHANGUL)
 					{
 						sstr = "$";
-						sstr += g_GetStringByMoney(TempPrice*p_item->GetNumber());
+						sstr += g_GetStringByMoney(TotalPrice);
 						vx = g_PrintColorStr(vx, py, sstr.c_str(), gpC_base->m_item_desc_pi, RGB_WHITE);
 						sstr = g_GetStringByMoney(TempPrice);
 						SafeFormat::Format(sz_buf, "(%sx%d)", sstr.c_str(), max(p_item->GetNumber(),0) );
@@ -1273,20 +1279,20 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					}
 					else
 					{
-						SafeFormat::Format(sz_buf, "%d", TempPrice*p_item->GetNumber());
+						SafeFormat::Format(sz_buf, "%u", TotalPrice);
 						sstr = sz_buf;
 						for(int i = 3; i <= 13; i += 4)
 							if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 						SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 						vx = g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
-						SafeFormat::Format(sz_buf, "(%dx%d)", TempPrice, max(p_item->GetNumber(),0) );
+						SafeFormat::Format(sz_buf, "(%ux%d)", TempPrice, max(p_item->GetNumber(),0) );
 						g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, required_rgb);
 					}
 				}
 				else 
 				{
 					std::string sstr;
-					int TempPrice = max( 0, g_pPriceManager->GetItemPrice(p_item, MPriceManager::NPC_TO_PC) );
+					const unsigned TempPrice = g_pPriceManager->GetPurchasePrice(p_item, 1);
 					if(gC_ci->IsKorean() && g_pUserOption->ShowGameMoneyWithHANGUL)
 					{
 						sstr = "$";
@@ -1295,7 +1301,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					}
 					else
 					{
-						SafeFormat::Format(sz_buf, "%d", TempPrice);
+						SafeFormat::Format(sz_buf, "%u", TempPrice);
 						sstr = sz_buf;
 						for(int i = 3; i <= 13; i += 4)
 							if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");

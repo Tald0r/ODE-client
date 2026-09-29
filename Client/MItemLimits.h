@@ -1,15 +1,16 @@
 ﻿//----------------------------------------------------------------------
-// MItemLimits.h - pile sizes and attribute caps the item classes apply
+// MItemLimits.h - pile sizes the item classes apply
 //----------------------------------------------------------------------
 // Moved out of MItem.cpp when it was split into the gamemodel core and
 // the executable's MItemUse.cpp (docs/RESTRUCTURING.md task 4.4), so
-// both halves read one set of numbers.
+// both halves read one set of numbers. The requirement caps it held are
+// the server's, in decore::requiredStats (third_party/decore).
 //----------------------------------------------------------------------
 #ifndef __MITEMLIMITS_H__
 #define __MITEMLIMITS_H__
 
 //----------------------------------------------------------------------
-// Pile sizes and attribute caps
+// Pile sizes
 //----------------------------------------------------------------------
 //#define MAX_FIRE_CRACKER_PILE_NUMBER	9
 //#define	MAX_POTION_PILE_NUMBER			9
@@ -31,15 +32,6 @@
 //#define MAX_OUSTERS_LARVA_NUMBER		9
 //#define MAX_MOON_CARD_NUMBER			99
 //#define MAX_LUCKY_BAG_NUMBER			50
-//
-//#define MAX_SLAYER_ATTR_OLD				200
-//#define MAX_SLAYER_ATTR_SUM_OLD			300
-//#define MAX_VAMPIRE_LEVEL_OLD			100
-//
-//#define	MAX_SLAYER_ATTR					295
-//#define	MAX_SLAYER_ATTR_SUM				435
-//#define MAX_VAMPIRE_LEVEL				150
-//#define MAX_OUSTERS_LEVEL				150
 //#define MAX_PET_ENCHANT_PILE_NUMBER		50
 //#define MAX_PET_FOOD_PILE_NUMBER		9
 
@@ -63,15 +55,6 @@
 #define MAX_OUSTERS_LARVA_NUMBER		30
 #define MAX_MOON_CARD_NUMBER			99
 #define MAX_LUCKY_BAG_NUMBER			50
-
-#define MAX_SLAYER_ATTR_OLD				200
-#define MAX_SLAYER_ATTR_SUM_OLD			300
-#define MAX_VAMPIRE_LEVEL_OLD			100
-
-#define	MAX_SLAYER_ATTR					295
-#define	MAX_SLAYER_ATTR_SUM				435
-#define MAX_VAMPIRE_LEVEL				150
-#define MAX_OUSTERS_LEVEL				150
 #define MAX_PET_ENCHANT_PILE_NUMBER		50
 #define MAX_PET_FOOD_PILE_NUMBER		9
 

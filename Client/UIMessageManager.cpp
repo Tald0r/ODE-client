@@ -4898,7 +4898,7 @@ UIMessageManager::Execute_UI_CLOSE_SHOP(intptr_t left, intptr_t right, void* voi
 
 //-----------------------------------------------------------------------------
 //
-// 상점에서 살려는 물건을 선택했을 때,
+// The player picked an item to buy from the shop.
 //
 //-----------------------------------------------------------------------------
 //
@@ -4917,12 +4917,12 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 		return;
 	}
 
-	// 검증할게 없는 경우
+	// Only when no other request is waiting for the server's answer
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
-		int index = static_cast<int>(left);					// 살려는 아이템의 위치
-		int number = static_cast<int>(right);					// 살려는 개수
-		MShop* pShop = (MShop*)void_ptr;	// 상점
+		int index = static_cast<int>(left);					// the shelf slot of the item to buy
+		int number = static_cast<int>(right);					// how many to buy
+		MShop* pShop = (MShop*)void_ptr;	// the shop
 		int npcID = (*g_pPCTalkBox).GetNPCID();					
 
 		if (pShop!=NULL)
@@ -4940,7 +4940,7 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 					int oldNumber = pItem->GetNumber();					
 
 					//-------------------------------------------------
-					// 살 수 있는지 체크한다.
+					// Whether the player can pay for it.
 					//-------------------------------------------------							
 					bool bBuyPossible = false;
 					//GAME_STRINGID buyImpossibleMessage = STRING_MESSAGE_CANNOT_BUY;
@@ -4949,21 +4949,23 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 					switch (pShop->GetShopType())
 					{
 						//-------------------------------------------------
-						// 보통 상점
+						// A shop that sells for money
 						//-------------------------------------------------
 						case MShop::SHOP_NORMAL :
 						{
-							int price = number * (*g_pPriceManager).GetItemPrice(pItem, MPriceManager::NPC_TO_PC, pShopShelf->GetShelfType()==MShopShelf::SHELF_UNKNOWN);
-							int money = (*g_pMoneyManager).GetMoney();
+							// The total with the castle tax, which past the server's
+							// int range is 2^31, more than any purse.
+							const unsigned price = g_pPriceManager->GetPurchasePrice(pItem, number);
+							const int money = (*g_pMoneyManager).GetMoney();
 
-							bBuyPossible = (price <= money);
+							bBuyPossible = (money >= 0 && price <= (unsigned)money);
 
 							buyImpossibleMessage = STRING_MESSAGE_CANNOT_BUY_NO_MONEY;
 						}
 						break;
 
 						//-------------------------------------------------
-						// 이벤트별 상점
+						// An event shop that sells for stars
 						//-------------------------------------------------
 						case MShop::SHOP_EVENT_STAR :
 						{
@@ -4973,14 +4975,14 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 
 							if (starPrice.type!=-1 && starPrice.number!=0)
 							{
-								// 몇개나 있는지 찾아본다.
+								// How many stars of the price's colour the player has.
 								MItemClassTypeNumberFinder starFinder(ITEM_CLASS_EVENT_STAR, 
 																		starPrice.type);
 
 
 								((MItemManager*)g_pInventory)->FindItem( starFinder );
 
-								// 가지고 있는게 더 많아야 한다.
+								// At least as many as the price.
 								bBuyPossible = (starFinder.GetTotalNumber() >= starPrice.number);
 
 								buyImpossibleMessage = STRING_MESSAGE_CANNOT_BUY_NO_STAR;
@@ -4991,12 +4993,12 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 					}
 
 					//-------------------------------------------------
-					// 돈이 충분한 경우
+					// The player can pay
 					//-------------------------------------------------
 					if (bBuyPossible)
 					{								
 						//-------------------------------------------------
-						// inventory에 넣을 위치를 찾는다.
+						// Where the item goes in the inventory
 						//-------------------------------------------------
 						pItem->SetNumber( number );
 
@@ -5017,7 +5019,7 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 
 								
 								//-------------------------------------------------
-								// 검증을 위한 Temp Information설정
+								// Remember the request, to check the server's answer against
 								//-------------------------------------------------
 								(*g_pTempInformation).Mode	= TempInformation::MODE_SHOP_BUY;
 								(*g_pTempInformation).Value1 = pShop->GetCurrent();
@@ -5027,25 +5029,24 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 								(*g_pTempInformation).pValue = (void*)pShop;
 
 								//-------------------------------------------------
-								// 다른 아이템에 접근 못하도록..
+								// No other item can be moved until the answer comes
 								//-------------------------------------------------
 								UI_LockItemTrade();
 						}
 						else
 						{
-							// inventory가 꽉차서 못 산다!
+							// The inventory is full, so the item cannot be bought.
 							g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CANNOT_BUY_NO_SPACE ].GetString());
 							
-							// 2004, 5, 7 , sobeit add start - 인벤에 자리가 없으면 보관함 사라고 도움말 보여줌
+							// With no room in the inventory, the help suggests buying a storage box.
 							ExecuteHelpEvent( HELP_EVENT_STORAGE_BUY );
-							// 2004, 5, 6, sobeit add end
 						}
 
 						pItem->SetNumber( oldNumber );
 
 					}
 					//-------------------------------------------------
-					// 돈 혹은 별이.. 부족한 경우
+					// Not enough money or stars
 					//-------------------------------------------------					
 					else
 					{
@@ -5054,19 +5055,19 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 				}
 				else
 				{
-					// 선반의 index 위치에 아이템이 없는 경우
+					// No item in that shelf slot
 					DEBUG_ADD_FORMAT("[Error] There is NO Item in index=%d", index);
 				}
 			}
 			else
 			{
-				// 선반이 설정 안 된 경우
+				// The shop has no current shelf
 				DEBUG_ADD_FORMAT("[Error] There is NO Shelf type=%d", (int)pShop->GetCurrent());
 			}
 		}
 		else
 		{
-			// shop이 설정 안 된 경우
+			// No shop
 			DEBUG_ADD_FORMAT("[Error] There is NO Shop. npc id=%d", npcID);
 		}
 	}

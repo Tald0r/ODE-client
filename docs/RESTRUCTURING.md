@@ -599,9 +599,10 @@ rounds settled* for the host rules). Test fixtures share
   > wallets carry none); `operator=` keeps the target's hook. The trade
   > manager's accept delay reads the clock `MItemHost` carries. The price
   > manager goes through **`MPriceHost`** (race, level, stat sums, the
-  > potion and gamble half-price events, the shop tax percentage carried
-  > unsigned as the server sends it); without a host a price carries no
-  > player, event or skill adjustment. Fixed test-first: `CanAddMoney`
+  > potion and gamble half-price events, and, until task 4.12's slice 5
+  > removed it, the shop tax percentage carried unsigned as the server
+  > sends it); without a host a price carries no player, event or skill
+  > adjustment. Fixed test-first: `CanAddMoney`
   > ignored the balance, so a wallet near the limit said yes and the
   > `AddMoney` after it said no, with the other side's money nowhere to
   > go; `MItem`'s constructor never set `m_bTrade`, the grid position or
@@ -611,9 +612,9 @@ rounds settled* for the host rules). Test fixtures share
   > `MPetItem` never set its remaining experience or food type.
   > **Known, not fixed:** `CancelTrade` refunds money only — the offered
   > items keep their flag until the next trade start clears it, and a
-  > refused refund still answers true; `bMysterious` is a dead parameter
-  > `UIMessageManager` still computes; a star price for item type 0 is
-  > −20 stars.
+  > refused refund still answers true; a star price for item type 0 is
+  > −20 stars. (`GetItemPrice`'s dead `bMysterious` parameter, also
+  > listed here, went with the purchase quote of task 4.12's slice 5.)
   - Owner: the membership file, the CMake assertion, the include checker.
 
 - [x] **4.3 Containers:** `MItemManager`, `MGridItemManager`,
@@ -660,7 +661,8 @@ rounds settled* for the host rules). Test fixtures share
   > **Fixed test-first, in the library:** `IsQuestItem` tested the item's
   > own flag only when the timed-item register existed; the requirement
   > getters returned `BYTE` while the slayer ceiling is 295 (a level-150
-  > item looked easy to equip); `ITEMOPTION_INFO`, `SKILLINFO_NODE`
+  > item looked easy to equip; 295 was the client's own bug, and task
+  > 4.12's slice 4 makes it the server's 290); `ITEMOPTION_INFO`, `SKILLINFO_NODE`
   > (`m_SkillStep`, which `AddSkill` branches on) and the item table rows
   > had constructors that left fields unset; `CheckItemStatus` compared an
   > unsigned percentage against `int` thresholds read unchecked from the
@@ -797,7 +799,7 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slices 4-6). Slice 1 is in: `MPriceManager`'s
+  > **Status:** in progress (slice 6). Slice 1 is in: `MPriceManager`'s
   > buy, sell and repair quotes and the gear maximum durability call
   > `decore`, the inputs the server never sends are `MPriceHost` entries
   > with documented defaults, and `unit_tests` checks the adapters against
@@ -835,10 +837,149 @@ rounds settled* for the host rules). Test fixtures share
   > Left on the host side: a vampire's skill is enabled at cost <= HP
   > where the server wants HP > cost, no race's cost applies the gear's
   > consume-MP ratio, and the character list's four-bit weapon field
-  > turns a mace into a sword. The copy is
+  > turns a mace into a sword. Slice 4 is in
+  > (`feat/shared-equip-and-tax`): an item's requirement, which the
+  > descriptions show (`MItem::GetRequireSTR/DEX/INT/SUM/Level`), is
+  > `decore::requiredStats` over the item table and each option's
+  > `RequireSUM` and `RequireLevel` in option order, by the rule of the
+  > item's race flag (ousters, then vampire, then slayer). Whether the
+  > player may use an item moved from `MCreature::CheckAffectStatus`
+  > into `MItem::IsUsableBy` (`gamemodel`), which asks
+  > `decore::meetsRequirement`. That brought the server's slayer cap of
+  > 290 (the client had 295), its ousters level cap of 150, a vampire
+  > table level of 0 raised by the options, and the 16- and 8-bit
+  > widths the options are added at. The client's two gender flags map
+  > to `decore::gender`: neither is Both, one alone is that sex, and
+  > both set is read as Both, since no server value names both sexes and
+  > the server's seed has no such item; nor has the client's own item
+  > data in history (below), with 40 male-only rows, 40 female-only
+  > and none with both. `MItemLimits.h`'s caps and the unused copies in
+  > the two VS_UI game files are gone.
+  > `tests/unit/test_equip_requirement.cpp` checks the requirement and
+  > the check against `equip.tsv` rows (`2cef2abf`..`e0f27757`; the
+  > fixes `bd3072a0`, `78bf217c`, `50110b35`, `ec6601fa`). The check
+  > takes the requirement by the rule of the user's race, as
+  > `isRealWearing` does, also for an item made for several races,
+  > whose description still shows its first flag's rule (the fix
+  > `02a57a4f`). The server's seed has such classes that ask
+  > something: the blood bibles and castle symbols for all three races
+  > and the relics for slayers and vampires, each asking a sum of 30
+  > with no option, which every race's rule returns as it is, so the
+  > wearer's rule moves none of them. The pets, three of them made for
+  > all three races and any of them given an option by the pet
+  > enchant, take no rule at all (below). The client's own item data
+  > says the same where it reaches: the in-code item table `a8b0a5af`
+  > deleted (`git show a8b0a5af~1:Client/MItemTable.cpp`, the same
+  > file as at `9e6c4a34~1`, and its `InitItem2` companion
+  > `Client/MitemTableInit.cpp`) has those three classes as its only
+  > multi-race ones that ask anything (`MItemTable.cpp` lines 18992,
+  > 22255 and 22618), each asking a sum of 30, and its couple rings
+  > (lines 22801-22924) are for slayers (Race 1) and vampires (Race 2)
+  > with every requirement 0 and neither gender flag, so the
+  > couple-ring gate below changes nothing against it. That data stops
+  > at class 69 (`ITEM_CLASS_OUSTERS_SUMMON_ITEM`) and predates the
+  > pets (classes 74-76): it has no pet class, and nothing in the tree
+  > says how the client's own `Item.inf` flags a pet. Four gates come
+  > before the server's check, in this order: an item without the
+  > user's race flag is refused; a pet of the user's race is usable
+  > while it lives, whatever its table, options or gender flags ask,
+  > and a dead one lends nothing; a quest item (`IsQuestItem`) asks
+  > nothing and is usable by a slayer or vampire its gender allows and
+  > by any ousters; and a couple ring is usable by a slayer or a
+  > vampire whatever it asks, stats, level or gender. The first is the
+  > client's own, and for a pet it is stricter than the server, whose
+  > `isUsableItem` lets any race use a pet item and which never reads
+  > `PetItemInfo`'s `Race` column; it is kept so the affect status
+  > agrees with the client's use handlers (below). The second is the
+  > server's (the fixes `3954a3b0` and the race-gate order after it):
+  > `executePetItem` refuses a pet with no HP left (the client counts
+  > down the HP the server sends as the pet's durability) and a
+  > second-stage pet to an owner under quest level 40, which the
+  > client does not check, and asks no wearing requirement. The
+  > third is the server's time-limited gate for an item the timed-item
+  > register holds, which `IsQuestItem` counts (`isRealWearing` asks a
+  > time-limited item only its gender, and an ousters nothing), and
+  > the client's own only for an item flagged a quest item
+  > (`m_Quest`). The fourth is the server's: `Slayer` and
+  > `Vampire::isRealWearing` let a couple ring through
+  > (`isCoupleRing`) after their time-limited and premium-zone gates,
+  > before any requirement, and `Ousters::isRealWearing` has no such
+  > case (the fix `e5a331f7`).
+  > Left over: the server's advancement-class check is not in de-core and the
+  > client has none (the server refuses an item asking
+  > `reqAdvancedLevel > 0` unless the wearer is advanced with a class
+  > level at least that, and refuses an advanced wearer a non-advanced
+  > weapon, coat, trousers or ousters boots), so the client shows such
+  > an item usable where the server refuses it; the owner chooses
+  > between a client-local check and a de-core function with a per-race
+  > class predicate. The server asks the advancement class of a slayer
+  > or a vampire before its time-limited gate, and of an ousters after
+  > it. The premium-zone pay gate stays server-only: in a premium zone
+  > a player who does not pay may not use a unique item or one with
+  > several options, whatever the race, nor, as a slayer or a vampire,
+  > a couple ring (`Ousters::isRealWearing` has that clause commented
+  > out). A living pet of the player's race now asks nothing, as the
+  > server asks nothing of a pet item. Before, the client
+  > judged it by the gear rule: a pet gets an option from the pet
+  > enchant, asking a level of 20 at most, which the vampire rule adds
+  > to a level of 0, so a vampire under that level saw a vampire-only
+  > pet drawn as unusable, and `02a57a4f` had briefly moved a pet made
+  > for all three races, as the seed's types 0-2 are, to that rule
+  > too, from the ousters rule its flags chose, which leaves a level
+  > of 0 alone. The server seed's pets (`PetItemInfo`) are the Gara
+  > Bezz, the Wolfdog Leash and the Wolverine Leash (types 0-2, Race
+  > 7) for all three races, the Radio Controller (3, Race 1) for
+  > slayers, the Stirge Bag (4, Race 2) for vampires and the Summon
+  > Pixie (5, Race 4) for ousters. The client still asks a pet's race:
+  > `UIMessageManager`'s `Execute_UI_ITEM_USE` and
+  > `Execute_UI_ITEM_USE_SUBINVENTORY` send a use only for an item
+  > flagged for the player's race, a pet included, and `IsUsableBy`'s
+  > race gate agrees with them, so another race's pet is drawn unusable
+  > and cannot be summoned from the client, where the server would let
+  > it; letting a pet through both is the owner's call. Slice 5
+  > is in (the same branch): a shop purchase is quoted in one place,
+  > `MPriceManager::GetPurchasePrice`, which the buy check and the
+  > shop tooltip ask, and it charges what the server's buy handler
+  > does: the item at a market condition of 100 times the count, or
+  > the mysterious rack's price once, then `decore::applyCastleTax`
+  > at the castle's ratio, in the server's unsigned 32-bit width; a
+  > motorcycle, which the handler prices in `executeMotorcycle`, is
+  > the price of one at that market condition and untaxed. The
+  > ratio has its own state (`SetShopTaxRatio`, from `GCShopVersion`,
+  > `GCShopList` and `GCShopListMysterious`), apart from the market
+  > condition the sell dialog's `GCShopMarketCondition` sets, and the
+  > tax-change notice's percentage (`EVENTID_TAX_CHANGE`, the removed
+  > `MPriceHost::ShopTaxPercent`), which taxed every buy price a
+  > second time and was the mysterious rack's only tax, reaches no
+  > price (`5bc25d48`, the fix `5536db6e`).
+  > `tests/unit/test_price_manager.cpp` checks the server slice's
+  > worked table. Left over, all from the wire (the plan's open
+  > decision 7: a separate ratio field, at least 32 bits wide, with
+  > goldens re-recorded in both repos): the packets that open the
+  > shop carry the ratio where the NPC's market condition would be,
+  > so a purchase takes the item at a market condition of 100, every
+  > seed shop's, and a shop set to sell at another rate would be
+  > quoted wrong; `GCShopVersion` sends the NPC's market condition in
+  > the ratio's place when the ratio is 100, which the client takes
+  > as the ratio (no tax while that condition is 100); and the field
+  > is the 16-bit `MarketCond_t`, so a ratio outside -32768..32767,
+  > which only the GM command can set, wraps (40000 arrives as
+  > -25536 and is quoted untaxed where the server charges x400). The
+  > gamble's Blood Bible adjustment still differs (the server applies
+  > `getGamblePriceRatio`'s percentage, the client halves), and the
+  > server's own product of price and count can wrap in `Price_t`
+  > before the tax, which the client now reproduces. The item
+  > description dialog prints `GetItemPrice(NPC_TO_PC)`, the item's
+  > untaxed price at the sell dialog's market condition, not a
+  > purchase quote, and the notice is still recorded as a zone event
+  > that nothing reads. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
-  > from server `9d380a00` (PR #280, which rewords `stats.tsv`'s header;
-  > before it PR #278, PR #277 and the review fixes in PR #279).
+  > from server `73750a3c` (PR #281, the equip requirements:
+  > `EquipRequirement` and `equip.tsv`; PR #282, the castle tax:
+  > `applyCastleTax` and the `tax-*` rows of `price.tsv`, which
+  > `decore_tests` asserts and `MPriceManager::GetPurchasePrice` calls;
+  > before them PR #280, PR #278, PR #277 and the review fixes in PR
+  > #279).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector

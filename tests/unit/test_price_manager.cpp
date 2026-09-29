@@ -5,9 +5,10 @@
 // The price manager (docs/RESTRUCTURING.md task 4.2, third slice): what
 // a shop charges or pays for an item. It reads the item and option
 // tables, the timed-item register and the user's head-price rate, all
-// library-defined; the player's race, level and stats, the half-price
-// event and skills, and the shop tax come through MPriceHost, driven
-// here by hand.
+// library-defined; the player's race, level and stats, and the
+// half-price event and skills come through MPriceHost, driven here by
+// hand. The castle's tax ratio is set on the manager, as the shop's
+// packets set it.
 //
 //----------------------------------------------------------------------
 
@@ -32,7 +33,6 @@ int		s_StatSum = 0;
 int		s_BasicStatSum = 0;
 bool	s_PotionHalf = false;
 bool	s_GambleHalf = false;
-int		s_TaxPercent = 100;
 TYPE_OBJECTID	s_GivenAwayID = 0;	// the one item the game gave away; 0 for none
 bool	s_PayPlaying = true;
 int		s_PotionPriceRatio = 0;
@@ -43,7 +43,6 @@ int		StatSum()			{ return s_StatSum; }
 int		BasicStatSum()		{ return s_BasicStatSum; }
 bool	IsPotionHalfPrice()	{ return s_PotionHalf; }
 bool	IsGambleHalfPrice()	{ return s_GambleHalf; }
-DWORD	ShopTaxPercent()	{ return (DWORD)s_TaxPercent; }
 bool	IsCreateTypeGame(const MItem* pItem)	{ return s_GivenAwayID != 0 && pItem->GetID() == s_GivenAwayID; }
 bool	IsPayPlaying()		{ return s_PayPlaying; }
 int		PotionPriceRatio()	{ return s_PotionPriceRatio; }
@@ -55,7 +54,6 @@ const MPriceHost	s_Host = {
 	.BasicStatSum		= BasicStatSum,
 	.IsPotionHalfPrice	= IsPotionHalfPrice,
 	.IsGambleHalfPrice	= IsGambleHalfPrice,
-	.ShopTaxPercent		= ShopTaxPercent,
 	.IsCreateTypeGame	= IsCreateTypeGame,
 	.IsPayPlaying		= IsPayPlaying,
 	.PotionPriceRatio	= PotionPriceRatio,
@@ -97,7 +95,6 @@ struct PriceWorld : GameModelWorld
 		s_BasicStatSum = 0;
 		s_PotionHalf = false;
 		s_GambleHalf = false;
-		s_TaxPercent = 100;
 		s_GivenAwayID = 0;
 		s_PayPlaying = true;
 		s_PotionPriceRatio = 0;
@@ -366,10 +363,9 @@ TEST(PriceManager, ChargedItemsPriceEveryChargeAndRepairRefillsThem)
 	CHECK_EQ(7000, prices.GetItemPrice(&summon, MPriceManager::REPAIR));
 
 	// A charged consumable is priced by its charges alone: no half
-	// price, no tax (today's behaviour, pinned).
+	// price (today's behaviour, pinned).
 	Charged chargedPotion(ITEM_CLASS_POTION, 2);
 	s_PotionHalf = true;
-	s_TaxPercent = 200;
 	CHECK_EQ(10100, prices.GetItemPrice(&chargedPotion, MPriceManager::NPC_TO_PC));
 }
 
@@ -399,7 +395,7 @@ TEST(PriceManager, SilveringCostsTheFullCoatUntilTheCoatIsFull)
 //----------------------------------------------------------------------
 // What the host changes
 //----------------------------------------------------------------------
-TEST(PriceManager, TheHostShapesPotionSkullAndTaxedPrices)
+TEST(PriceManager, TheHostShapesPotionAndSkullPrices)
 {
 	PriceWorld world;
 	MPriceManager prices;
@@ -415,15 +411,13 @@ TEST(PriceManager, TheHostShapesPotionSkullAndTaxedPrices)
 	s_Race = RACE_VAMPIRE;
 	s_StatSum = 10;
 	s_PotionHalf = true;
-	s_TaxPercent = 200;
 	MPriceManager::SetHost(NULL);
 	CHECK_EQ(100, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
 	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::NPC_TO_PC));
 	MPriceManager::SetHost(&s_Host);
-	CHECK_EQ(100, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));		// 100 / 2 * 200%
-	CHECK_EQ(100, prices.GetItemPrice(&skull, MPriceManager::NPC_TO_PC));		// 100 * 200% / 2
+	CHECK_EQ(50, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));		// 100 / 2
+	CHECK_EQ(50, prices.GetItemPrice(&skull, MPriceManager::NPC_TO_PC));		// 100 / 2
 	s_PotionHalf = false;
-	s_TaxPercent = 100;
 
 	// A slayer with 40 or fewer stat points pays 70% for the two basic
 	// potions, the first and the sixth.
@@ -446,12 +440,14 @@ TEST(PriceManager, TheHostShapesPotionSkullAndTaxedPrices)
 	CHECK_EQ(100, prices.GetItemPrice(&serum, MPriceManager::NPC_TO_PC));
 	CHECK_EQ(1000, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
 
-	// The shop tax scales what the shop charges, not what it pays.
-	s_TaxPercent = 120;
-	CHECK_EQ(42, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
-	CHECK_EQ(1200, prices.GetItemPrice(&sword, MPriceManager::NPC_TO_PC));
+	// The castle tax is no part of an item's price: a purchase takes
+	// it on the half price, and a sale pays untaxed.
+	prices.SetShopTaxRatio(120);
+	CHECK_EQ(35, prices.GetItemPrice(&potion, MPriceManager::NPC_TO_PC));
+	CHECK_EQ(42, prices.GetPurchasePrice(&potion, 1));
+	CHECK_EQ(1200, prices.GetPurchasePrice(&sword, 1));
 	CHECK_EQ(250, prices.GetItemPrice(&sword, MPriceManager::PC_TO_NPC));
-	s_TaxPercent = 100;
+	prices.SetShopTaxRatio(100);
 	s_PotionHalf = false;
 
 	// A skull (400 at the 25% buying rate: 100) is worth half to a
@@ -661,13 +657,11 @@ TEST(PriceManager, MysteriousPriceScalesTheClassAverageByTheCharacter)
 	s_Race = RACE_SLAYER;
 	s_BasicStatSum = 45;
 	s_GambleHalf = true;
-	s_TaxPercent = 200;
 	MPriceManager::SetHost(NULL);
 	CHECK_EQ(500, prices.GetMysteriousPrice(&blade));
 	MPriceManager::SetHost(&s_Host);
-	CHECK_EQ(1500, prices.GetMysteriousPrice(&blade));		// 500 * 3 / 2 * 200%
+	CHECK_EQ(750, prices.GetMysteriousPrice(&blade));		// 500 * 3 / 2
 	s_GambleHalf = false;
-	s_TaxPercent = 100;
 
 	// A slayer pays by basic stats in fifteens, never less than once.
 	s_Race = RACE_SLAYER;
@@ -689,32 +683,161 @@ TEST(PriceManager, MysteriousPriceScalesTheClassAverageByTheCharacter)
 	s_Level = 100;
 	CHECK_EQ(10000, prices.GetMysteriousPrice(&blade));
 
-	// Half under the gamble skill, then the shop tax, in every trade.
+	// Half under the gamble skill, in every trade. The castle tax is
+	// a purchase's alone (GetPurchasePrice).
 	s_Race = RACE_VAMPIRE;
 	s_Level = 50;
 	s_GambleHalf = true;
+	prices.SetShopTaxRatio(150);
 	CHECK_EQ(2500, prices.GetMysteriousPrice(&blade));
-	s_TaxPercent = 150;
-	CHECK_EQ(3750, prices.GetMysteriousPrice(&blade));
-	CHECK_EQ(3750, prices.GetItemPrice(&blade, MPriceManager::PC_TO_NPC));
-	CHECK_EQ(3750, prices.GetItemPrice(&blade, MPriceManager::REPAIR));
+	CHECK_EQ(2500, prices.GetItemPrice(&blade, MPriceManager::PC_TO_NPC));
+	CHECK_EQ(2500, prices.GetItemPrice(&blade, MPriceManager::REPAIR));
 
 	// A class with no loaded average is worth nothing as a gamble.
 	Item sword(ITEM_CLASS_SWORD);
 	sword.UnSetIdentified();
 	CHECK_EQ(0, prices.GetMysteriousPrice(&sword));
 
-	// The tax is applied in 64 bits: an expensive class at the top
-	// multiplier is 120,000,000, which times a percentage does not fit
-	// a 32-bit int on the way to the division.
+	// An expensive class at the top multiplier.
 	LoadClassFromFile(ITEM_CLASS_CROSS, 60000000, 60000000);
 	Item cross(ITEM_CLASS_CROSS);
 	cross.UnSetIdentified();
 	s_Race = RACE_OUSTERS;
 	s_Level = 100;
 	s_GambleHalf = false;
-	s_TaxPercent = 100;
 	CHECK_EQ(120000000, prices.GetMysteriousPrice(&cross));
-	s_TaxPercent = 150;
-	CHECK_EQ(180000000, prices.GetMysteriousPrice(&cross));
+}
+
+//----------------------------------------------------------------------
+// A shop purchase and the castle tax
+//----------------------------------------------------------------------
+// The server's buy handler (CGShopRequestBuyHandler::executeNormal)
+// prices one item at the NPC's market condition and multiplies it by
+// the count, or takes the mysterious rack's price as it is, and then
+// charges the castle's tax once on that total:
+// decore::applyCastleTax(total, ratio). The ratio is what the packets
+// opening the shop carry as MarketCondSell (SetShopTaxRatio). The
+// figures are the server slice's worked table: a sword at 1000,
+// potions at 17 bought three at a time, and a gamble at 4000.
+namespace {
+
+struct ShopWorld : PriceWorld
+{
+	Item	sword;
+	Item	potion;
+	Item	gamble;
+
+	ShopWorld() : sword(ITEM_CLASS_SWORD), potion(ITEM_CLASS_POTION), gamble(ITEM_CLASS_BLADE)
+	{
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_POTION, 0).Price = 17;
+		gamble.UnSetIdentified();
+		s_Race = RACE_VAMPIRE;
+		s_Level = 40;					// the blade's average, 500, eight times
+	}
+};
+
+} // namespace
+
+TEST(PriceManager, PurchaseIsTaxedOnceOnTheTotalAtTheCastleRatio)
+{
+	ShopWorld world;
+	MPriceManager prices;
+
+	prices.SetShopTaxRatio(110);
+	CHECK_EQ(1100, prices.GetPurchasePrice(&world.sword, 1));
+	CHECK_EQ(56, prices.GetPurchasePrice(&world.potion, 3));	// 51 x 1.1, not 3 x 18
+	CHECK_EQ(4400, prices.GetPurchasePrice(&world.gamble, 1));
+
+	// The gamble's price is the total whatever the count.
+	CHECK_EQ(4400, prices.GetPurchasePrice(&world.gamble, 3));
+
+	// The ratios a guild master can set, and the other default.
+	prices.SetShopTaxRatio(105);
+	CHECK_EQ(53, prices.GetPurchasePrice(&world.potion, 3));	// 53.55, not 3 x 17
+	prices.SetShopTaxRatio(150);
+	CHECK_EQ(76, prices.GetPurchasePrice(&world.potion, 3));	// 76.5, not 3 x 25
+}
+
+TEST(PriceManager, PurchaseAtARatioOf100OrBelowIsUntaxed)
+{
+	ShopWorld world;
+	MPriceManager prices;
+
+	// An NPC no castle taxes, and a member of the owning guild at one
+	// it does: the server sends 100 and charges the untaxed total.
+	prices.SetShopTaxRatio(100);
+	CHECK_EQ(1000, prices.GetPurchasePrice(&world.sword, 1));
+	CHECK_EQ(51, prices.GetPurchasePrice(&world.potion, 3));
+	CHECK_EQ(4000, prices.GetPurchasePrice(&world.gamble, 1));
+
+	// A ratio below 100 (only a GM can set one) is no discount.
+	prices.SetShopTaxRatio(90);
+	CHECK_EQ(1000, prices.GetPurchasePrice(&world.sword, 1));
+	CHECK_EQ(51, prices.GetPurchasePrice(&world.potion, 3));
+	CHECK_EQ(4000, prices.GetPurchasePrice(&world.gamble, 1));
+}
+
+TEST(PriceManager, TheTaxRatioAndTheMarketConditionAreKeptApart)
+{
+	ShopWorld world;
+	MPriceManager prices;
+
+	// The sell dialog (GCShopMarketCondition) sets the NPC's market
+	// condition; it is not the ratio the next purchase is taxed at.
+	prices.SetShopTaxRatio(110);
+	prices.SetMarketCondSell(100);
+	CHECK_EQ(1100, prices.GetPurchasePrice(&world.sword, 1));
+
+	// A purchase takes the item at a market condition of 100, the only
+	// one the shops use, since the packets opening the shop carry the
+	// ratio in its place.
+	prices.SetMarketCondSell(120);
+	CHECK_EQ(1100, prices.GetPurchasePrice(&world.sword, 1));
+
+	// And the ratio is no market condition: the item's own buy price
+	// stays untaxed.
+	CHECK_EQ(1200, prices.GetItemPrice(&world.sword, MPriceManager::NPC_TO_PC));
+	prices.SetMarketCondSell(100);
+	CHECK_EQ(1000, prices.GetItemPrice(&world.sword, MPriceManager::NPC_TO_PC));
+}
+
+TEST(PriceManager, AMotorcycleIsBoughtUntaxedAtThePriceOfOne)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	// The server's buy handler sends a motorcycle to executeMotorcycle,
+	// which charges the price of one and takes no castle tax; a
+	// motorcycle is not stackable, so the count is 1 there.
+	g_pItemTable->InitClass(ITEM_CLASS_MOTORCYCLE, 1);
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_MOTORCYCLE, 0).Price = 30000;
+	Item motorcycle(ITEM_CLASS_MOTORCYCLE);
+
+	prices.SetShopTaxRatio(110);
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 1));
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 3));
+	prices.SetShopTaxRatio(150);
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 1));
+	prices.SetShopTaxRatio(100);
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 1));
+}
+
+TEST(PriceManager, APurchaseTaxedPastTheServersIntIsMoreThanAnyPurse)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	// 120,000,000 taxed at 2000% (a ratio only a GM can set) is past
+	// 2^31, which the server's tax turns into 2147483648
+	// (decore::applyCastleTax): a total above any purse (MAX_MONEY,
+	// 2,000,000,000), so the purchase is refused.
+	LoadClassFromFile(ITEM_CLASS_CROSS, 60000000, 60000000);
+	Item cross(ITEM_CLASS_CROSS);
+	cross.UnSetIdentified();
+	s_Race = RACE_OUSTERS;
+	s_Level = 100;
+	prices.SetShopTaxRatio(2000);
+	CHECK_EQ(2147483648LL, (long long)prices.GetPurchasePrice(&cross, 1));
+	prices.SetShopTaxRatio(100);
+	CHECK_EQ(120000000, prices.GetPurchasePrice(&cross, 1));
 }

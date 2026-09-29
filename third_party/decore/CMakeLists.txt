@@ -6,6 +6,7 @@
 # build only when a sync adds it to MANIFEST and this list names it; the
 # decore_vendored ctest fails while the two disagree.
 add_library(decore STATIC
+	domain/EquipRequirement.cpp
 	domain/Formulas.cpp
 	domain/ItemDurability.cpp
 	domain/ItemGrade.cpp

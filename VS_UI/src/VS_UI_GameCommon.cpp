@@ -57,10 +57,6 @@
 #define MAX_SLAYER_DOMAIN_SUM_OLD		100
 #define MAX_VAMPIRE_LEVEL_OLD			100
 
-#define	MAX_SLAYER_ATTR					290
-#define	MAX_SLAYER_ATTR_SUM				435
-#define MAX_VAMPIRE_LEVEL				150
-
 extern BOOL g_bLButtonDown;
 
 bool					gbl_mine_progress = false;

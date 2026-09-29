@@ -26,7 +26,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
 	if (g_pZone==NULL)
 	{
@@ -34,21 +34,21 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The zone exists
 	//------------------------------------------------------
 	else
 	{
 		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
 
 		//------------------------------------------------------
-		// 그런 creature가 없는 경우
+		// No creature has that id
 		//------------------------------------------------------
 		if (pCreature==NULL)
 		{
 			DEBUG_ADD("[Error] OK 111");
 		}
 		//------------------------------------------------------
-		// NPC인 경우
+		// The creature is an NPC
 		//------------------------------------------------------
 		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
 		{
@@ -59,7 +59,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 			MNPC* pNPC = (MNPC*)pCreature;
 
 			//------------------------------------------------------
-			// 새로운 Shelf를 생성한다.
+			// A new rack for the items
 			//------------------------------------------------------
 
 			ShopRackType_t shopType = pPacket->getShopType();
@@ -83,7 +83,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 
 			DEBUG_ADD("[GCShopListHandler::execute] OK [2]\n");
 			//------------------------------------------------------
-			// 아이템들 추가
+			// Add the items
 			//------------------------------------------------------
 			for (int i=0; i<SHOP_RACK_INDEX_MAX; i++)
 			{
@@ -113,7 +113,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 					pItem->SetGrade( item.grade );
 					pItem->SetEnchantLevel( item.enchantLevel );
 
-					// Shelf에 item추가
+					// Put the item on the rack
 					pShelf->SetItem( i, pItem );
 				}
 			}
@@ -122,32 +122,32 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 
 			//------------------------------------------------------
 			//
-			// NPC의 상점에 shelf를 추가한다.
+			// Put the rack in the NPC's shop
 			//
 			//------------------------------------------------------
 			MShop* pShop = pNPC->GetShop();
 
 			if (pShop==NULL)
 			{
-				// 상점이 없었으면 생성한다.
+				// The NPC has no shop yet: create it
 				pShop = new MShop;
 				pShop->Init( MShopShelf::MAX_SHELF );
 
-				// NPC에 상점 설정
+				// and give it to the NPC
 				pNPC->SetShop( pShop );
 
-				// normal item 선반을 생성한다.
+				// Build the normal rack (and the mysterious one) from the shop templates.
 				pNPC->CreateFixedShelf();
 				pNPC->CreateFixedShelf(true);	// mysterious -_-;
 			}
 
 			//------------------------------------------------------
-			// 상점의 종류 설정
+			// The kind of shop
 			//------------------------------------------------------
 			pShop->SetShopType( (MShop::SHOP_TYPE)pPacket->getNPCShopType() );
 
 			//------------------------------------------------------
-			// default로 normal 상점에 접근하게 한다.
+			// The normal rack is the one shown first.
 			//------------------------------------------------------
 			if (pShop->GetShopType()==MShop::SHOP_EVENT_STAR)
 			{
@@ -159,26 +159,27 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 			}
 
 			//------------------------------------------------------
-			// 선반의 가격 비율 
+			// The NPC's buying rate, and the castle's tax ratio for this
+			// player (MPriceManager::SetShopTaxRatio)
 			//------------------------------------------------------
 			g_pPriceManager->SetMarketCondBuy( pPacket->getMarketCondBuy() );
-			g_pPriceManager->SetMarketCondSell( pPacket->getMarketCondSell() );			
+			g_pPriceManager->SetShopTaxRatio( pPacket->getMarketCondSell() );
 			
 			//------------------------------------------------------
-			// 상점에 선반 설정
+			// Put the rack in the shop
 			//------------------------------------------------------
 			pShop->SetShelf( pShelf->GetShelfType(), pShelf );
 
 			//------------------------------------------------------
-			// 정상적으로 된 경우
-			// --> 상점을 실행한다.
+			// Everything is in place:
+			// open the shop.
 			//------------------------------------------------------
-			UI_SetShop( pShop );		// shop 설정
+			UI_SetShop( pShop );		// the shop to show
 			UI_RunShop();
-			UI_SetShop( pShop );		// shop 설정
+			UI_SetShop( pShop );		// the shop to show
 		}
 		//------------------------------------------------------
-		// NPC가 아닌 경우
+		// The creature is not an NPC
 		//------------------------------------------------------
 		else
 		{

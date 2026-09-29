@@ -23,7 +23,10 @@
 #include "MTimeItemManager.h"
 #include "MGameStringTable.h"
 #include "MItemLimits.h"
+#include "Packet/Types/CreatureTypes.h"
+#include "Packet/Types/ItemTypes.h"
 
+#include "domain/EquipRequirement.h"
 #include "domain/ItemClass.h"
 #include "domain/ItemDurability.h"
 #include "domain/ItemGrade.h"
@@ -128,6 +131,16 @@ static_assert(decore::itemclass::Persona == ITEM_CLASS_PERSONA);
 static_assert(decore::itemclass::Fascia == ITEM_CLASS_FASCIA);
 static_assert(decore::itemclass::Mitten == ITEM_CLASS_MITTEN);
 static_assert(decore::itemclass::Count == MAX_ITEM_CLASS);
+
+//----------------------------------------------------------------------
+// de-core's equip rules number a wearer's sex and an item's gender
+// requirement as the wire does (Sex, GenderRestriction).
+//----------------------------------------------------------------------
+static_assert(decore::sex::Female == FEMALE);
+static_assert(decore::sex::Male == MALE);
+static_assert(decore::gender::Both == GENDER_BOTH);
+static_assert(decore::gender::Male == GENDER_MALE);
+static_assert(decore::gender::Female == GENDER_FEMALE);
 
 //----------------------------------------------------------------------
 //
@@ -1173,153 +1186,246 @@ MItem::GetItemOptionRequireSUM() const
 }
 
 //----------------------------------------------------------------------
-// Get Require STR
+// The requirement an item shows and checks
 //----------------------------------------------------------------------
+// Which race's rule the requirement an item shows follows. The item
+// descriptions have no wearer, so the race flags choose: an ousters
+// item takes the ousters rule, then a vampire item the vampire's, and
+// anything else the slayer's. In the server's item tables a slayer item
+// never asks a level and a vampire item never asks STR, DEX or INT, so
+// the fields a rule passes through untouched are 0 on the items it is
+// chosen for. An item made for several races shows the first flag's
+// rule; IsUsableBy checks it by the wearer's.
+//----------------------------------------------------------------------
+static decore::EquipRace
+RequirementRaceOf(const MItem& item)
+{
+	if (item.IsOustersItem())
+	{
+		return decore::EquipRace::Ousters;
+	}
+	if (item.IsVampireItem())
+	{
+		return decore::EquipRace::Vampire;
+	}
+	return decore::EquipRace::Slayer;
+}
+
+//----------------------------------------------------------------------
+// The item's gender requirement as the server numbers it
+// (decore::gender). The client's item table marks it with two flags
+// where the server keeps one value: neither flag is Both, bMaleOnly
+// alone Male and bFemaleOnly alone Female. An item with both flags
+// names both sexes; no server value says that, and the server's seed
+// has no item with two gender entries, so it is read as Both, which is
+// what the client did before it asked the server's rule: either sex
+// may use it.
+//----------------------------------------------------------------------
+static int
+GenderRequirementOf(const MItem& item)
+{
+	const bool bMaleOnly = item.IsGenderForMale();
+	const bool bFemaleOnly = item.IsGenderForFemale();
+	if (bMaleOnly && !bFemaleOnly)
+	{
+		return decore::gender::Male;
+	}
+	if (bFemaleOnly && !bMaleOnly)
+	{
+		return decore::gender::Female;
+	}
+	return decore::gender::Both;
+}
+
+//----------------------------------------------------------------------
+// What the item asks: its table's STR, DEX, INT, sum and level, raised
+// by each option's sum and level requirement in the option list's
+// order and capped, by the server's rule (decore::requiredStats, which
+// Slayer, Vampire and Ousters::isRealWearing call), and its gender. A
+// quest item (IsQuestItem) asks nothing. For an item the timed-item
+// register holds, which IsQuestItem counts, that is the server's rule:
+// isRealWearing lets a time-limited item through before any stat or
+// level. For an item flagged a quest item (m_Quest) it is the client's
+// own. `race` is whose rule applies: the wearer's when an item is
+// checked, as isRealWearing asks it, and RequirementRaceOf's when it is
+// shown.
+//----------------------------------------------------------------------
+static decore::EquipRequirement
+RequirementOf(const MItem& item, decore::EquipRace race)
+{
+	decore::EquipRequirement base = {};
+	if (item.IsQuestItem())
+	{
+		return base;
+	}
+
+	const ITEMTABLE_INFO& info = (*g_pItemTable)[item.GetItemClass()][item.GetItemType()];
+	base.str = info.GetRequireSTR();
+	base.dex = info.GetRequireDEX();
+	base.inte = info.GetRequireINT();
+	base.sum = info.GetRequireSUM();
+	base.level = info.GetRequireLevel();
+	base.gender = GenderRequirementOf(item);
+
+	const std::list<TYPE_ITEM_OPTION>& options = item.GetItemOptionList();
+	std::vector<int> optionReqSums;
+	std::vector<int> optionReqLevels;
+	optionReqSums.reserve(options.size());
+	optionReqLevels.reserve(options.size());
+	for (TYPE_ITEM_OPTION option : options)
+	{
+		const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[option];
+		optionReqSums.push_back(optionInfo.RequireSUM);
+		optionReqLevels.push_back(optionInfo.RequireLevel);
+	}
+
+	return decore::requiredStats(race, base, optionReqSums.data(),
+								 optionReqLevels.data(), static_cast<int>(optionReqSums.size()));
+}
+
+// The requirement an item shows, by its race flags' rule.
+static decore::EquipRequirement
+RequirementOf(const MItem& item)
+{
+	return RequirementOf(item, RequirementRaceOf(item));
+}
+
 int
 MItem::GetRequireSTR() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireSTR();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-
-	if( original <= MAX_SLAYER_ATTR_OLD)
-		maxValue = MAX_SLAYER_ATTR_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR;
-	
-	original += (GetItemOptionRequireSUM()<<1);
-
-	if( IsOustersItem() )
-		return original;
-	
-	return min(original, maxValue);
-	
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireSTR());
-		//(*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).str;
 }
 
-//----------------------------------------------------------------------
-// Get Require DEX
-//----------------------------------------------------------------------
 int
 MItem::GetRequireDEX() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireDEX();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-
-	if( original <= MAX_SLAYER_ATTR_OLD )
-		maxValue = MAX_SLAYER_ATTR_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR;
-
-	original += (GetItemOptionRequireSUM()<<1);
-	
-	if( IsOustersItem() )
-		return original;
-
-	return min(original, maxValue);
-
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireDEX());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).dex;
 }
 
-//----------------------------------------------------------------------
-// Get Require INT
-//----------------------------------------------------------------------
 int
 MItem::GetRequireINT() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireINT();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-
-	if( original <= MAX_SLAYER_ATTR_OLD)
-		maxValue = MAX_SLAYER_ATTR_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR;
-
-	original += (GetItemOptionRequireSUM()<<1);
-
-	if( IsOustersItem() )
-		return original;
-
-	return min(original, maxValue);
-
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireINT());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).inte;
 }
 
-//----------------------------------------------------------------------
-// Get Require SUM
-//----------------------------------------------------------------------
 int
 MItem::GetRequireSUM() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireSUM();
-	int maxValue = 0;
-
-	if (original==0 || IsQuestItem() )
-	{
-		return 0;
-	}
-	if( original <= MAX_SLAYER_ATTR_SUM_OLD )
-		maxValue = MAX_SLAYER_ATTR_SUM_OLD;
-	else
-		maxValue = MAX_SLAYER_ATTR_SUM;
-	original += GetItemOptionRequireSUM();
-
-	if( IsOustersItem() )
-		return original;
-
-	return min(original, maxValue);
-
-	// option에 따른 증가치
-	//return max(original, GetItemOptionRequireSUM());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	return RequirementOf(*this).sum;
 }
 
-//----------------------------------------------------------------------
-// Get Require Level
-//----------------------------------------------------------------------
 int
 MItem::GetRequireLevel() const
 {
-	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireLevel();
-	int maxValue = 0;
-	
-	if(original == 0 || IsQuestItem() )
-		return 0;
+	return RequirementOf(*this).level;
+}
 
-	if( original <= 100 )
-		maxValue = MAX_VAMPIRE_LEVEL_OLD;
-	else
-		maxValue = MAX_VAMPIRE_LEVEL;
+//----------------------------------------------------------------------
+// Is Usable By
+//----------------------------------------------------------------------
+// Whether `user` may use this item, which CheckAffectStatus turns into
+// the item's affect status. The requirement and the check are the
+// server's (decore::meetsRequirement over RequirementOf's answer by the
+// user's race's rule, also for an item made for several races): a
+// slayer needs the STR, DEX, INT, their sum and the gender, a vampire
+// the level and the gender, an ousters the four stats and the level.
+// Four gates come before it:
+// - an item not made for the user's race is refused (the client's
+//   own; the server refuses it elsewhere, before its wearing check).
+//   For a pet this is stricter than the server, which lets any race use
+//   a pet item (isUsableItem) and never reads PetItemInfo's Race column;
+//   it is kept so the affect status agrees with the client's use
+//   handlers (UIMessageManager's Execute_UI_ITEM_USE), which send a use
+//   request only for an item made for the player's race;
+// - a pet of the user's race is usable while it lives, whatever its
+//   table, its options or its gender flags ask, and a dead one lends
+//   nothing. That is the server's: executePetItem refuses a pet with no
+//   HP left and a second-stage pet to an owner under quest level 40,
+//   which this does not check (MItemUser has no quest level), and asks
+//   no wearing requirement;
+// - a quest item (IsQuestItem) is usable whatever it asks, by a slayer
+//   or a vampire the gender allows and by any ousters. For an item the
+//   timed-item register holds, which IsQuestItem counts, this is the
+//   server's time-limited gate (isRealWearing: the gender for a slayer
+//   or a vampire, nothing for an ousters); for an item flagged a quest
+//   item (m_Quest) it is the client's own;
+// - a couple ring is usable by a slayer or a vampire whatever it asks,
+//   stats, level or gender: the server's Slayer and
+//   Vampire::isRealWearing let one through (isCoupleRing) after their
+//   time-limited gate. Ousters::isRealWearing has no such case.
+// Two gates of the server's are not here. It checks an advancement
+// class, before its time-limited gate for a slayer or a vampire and
+// after it for an ousters. And in a premium zone, after the time-limited
+// gate, it refuses a player who does not pay a unique item or one with
+// several options, whatever the race, and a slayer or a vampire also a
+// couple ring (Ousters::isRealWearing has that clause commented out).
+//----------------------------------------------------------------------
+bool
+MItem::IsUsableBy(const MItemUser& user) const
+{
+	decore::EquipRace race = decore::EquipRace::Slayer;
+	switch (user.race)
+	{
+	case RACE_SLAYER:
+		if (!IsSlayerItem())
+		{
+			return false;
+		}
+		race = decore::EquipRace::Slayer;
+		break;
 
-	// option에 따른 증가치
-	original += GetItemOptionRequireLevel();
+	case RACE_VAMPIRE:
+		if (!IsVampireItem())
+		{
+			return false;
+		}
+		race = decore::EquipRace::Vampire;
+		break;
 
-	if( IsOustersItem() )
-		return original;
+	case RACE_OUSTERS:
+		if (!IsOustersItem())
+		{
+			return false;
+		}
+		race = decore::EquipRace::Ousters;
+		break;
 
-	return min(original, maxValue);
-	//return max(original, GetItemOptionRequireLevel());
-	//+ (*g_pItemOptionTable)[m_ItemOption].PlusRequireAbility;
+	default:
+		// No creature has another race (MCreature::GetRace returns one of
+		// the three).
+		return false;
+	}
+
+	if (GetItemClass() == ITEM_CLASS_PET_ITEM)
+	{
+		// The pet's durability is minutes of life, counted down from the
+		// moment it was set; at zero the pet is dead and lends no status.
+		// A living pet asks nothing.
+		return static_cast<const MPetItem*>(this)->GetRemainingDurability() != 0;
+	}
+
+	const int sex = user.bMale ? decore::sex::Male : decore::sex::Female;
+
+	if (IsQuestItem())
+	{
+		return race == decore::EquipRace::Ousters
+			|| decore::genderAllows(sex, GenderRequirementOf(*this));
+	}
+
+	if (race != decore::EquipRace::Ousters
+		&& (GetItemClass() == ITEM_CLASS_COUPLE_RING
+			|| GetItemClass() == ITEM_CLASS_VAMPIRE_COUPLE_RING))
+	{
+		return true;
+	}
+
+	decore::EquipStats current = {};
+	current.str = user.str;
+	current.dex = user.dex;
+	current.inte = user.inte;
+	current.level = user.level;
+	current.sex = sex;
+	return decore::meetsRequirement(race, RequirementOf(*this, race), current);
 }
 
 //----------------------------------------------------------------------

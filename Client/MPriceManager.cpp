@@ -19,6 +19,16 @@
 
 #define CHARGE_PRICE		5000
 
+// The market condition a shop purchase is priced at. The packets that
+// open the shop carry the castle's tax ratio where the NPC's market
+// condition would be (MPriceManager::SetShopTaxRatio), so the client
+// never learns the market condition of the NPC it buys from. Every shop
+// in the server's seed sells at 100 (the MarketConditionSell of its
+// PrepareShop triggers), so the purchase quote is exact there; a shop
+// set to another rate is quoted at 100 until the wire carries the rate
+// and the ratio apart (docs/RESTRUCTURING.md task 4.12).
+static const int	PURCHASE_MARKET_CONDITION = 100;
+
 //-----------------------------------------------------------------------------
 // The price rule is the server's (decore, third_party/decore/README.md),
 // and it branches on the wire item-class ids: they must be this client's.
@@ -155,6 +165,7 @@ MPriceManager::MPriceManager()
 {
 	m_MarketCondBuy		= 25;		// when the NPC buys
 	m_MarketCondSell	= 100;		// when the NPC sells
+	m_ShopTaxRatio		= 100;		// no castle tax
 	m_EventFixPrice		= 0;
 }
 
@@ -171,9 +182,20 @@ MPriceManager::~MPriceManager()
 // Get Item Price
 //-----------------------------------------------------------------------------
 int
-MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
+MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type)
 {
-	(void)bMysterious;
+	return PriceAt(pItem, type, m_MarketCondSell);
+}
+
+//-----------------------------------------------------------------------------
+// Price At
+//-----------------------------------------------------------------------------
+// The price of one item in the trade, with the NPC selling at
+// marketCondSell.
+//-----------------------------------------------------------------------------
+int
+MPriceManager::PriceAt(MItem* pItem, TRADE_TYPE type, int marketCondSell)
+{
 	if (pItem==NULL)
 	{
 		return 0;
@@ -218,7 +240,7 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 			}
 			else
 			{
-				nRatio = m_MarketCondSell;
+				nRatio = marketCondSell;
 			}
 		break;
 
@@ -323,18 +345,6 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 		finalPrice = decore::itemPrice(input);
 	}
 
-	// The tax-change event scales what the shop charges.
-	if (type == NPC_TO_PC)
-	{
-		finalPrice = finalPrice * HostShopTaxPercent() / 100;
-	}
-
-	// A tax below 100% does not make it free either.
-	if (finalPrice==0)
-	{
-		return 1;
-	}
-
 	// Then the head-price bonus the server sent at login, a percentage
 	// it divides by 100 in integers before multiplying: 150% pays x1,
 	// below 100% nothing (decore::skullSellTotal). The server applies it
@@ -347,6 +357,49 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 
 	return (int)finalPrice;
+}
+
+//-----------------------------------------------------------------------------
+// Get Purchase Price
+//-----------------------------------------------------------------------------
+// What the server's buy handler (CGShopRequestBuyHandler::executeNormal)
+// charges for count of the item: the price of one at the NPC's market
+// condition, here PURCHASE_MARKET_CONDITION, times the count, or the
+// mysterious rack's price whatever the count; then the castle's tax,
+// taken once on that total at the shop's ratio (decore::applyCastleTax).
+// The widths are the server's 32-bit unsigned Price_t: the product wraps
+// as the server's does, and a taxed total past the int range is
+// 2147483648, more than any purse.
+// A motorcycle is the exception, as the handler sends it to
+// executeMotorcycle: the price of one at the same market condition,
+// whatever the count (the server buys one of an item that does not
+// stack), and no castle tax.
+//-----------------------------------------------------------------------------
+unsigned
+MPriceManager::GetPurchasePrice(MItem* pItem, int count)
+{
+	if (pItem==NULL)
+	{
+		return 0;
+	}
+
+	if (pItem->GetItemClass() == ITEM_CLASS_MOTORCYCLE)
+	{
+		return (unsigned)PriceAt(pItem, NPC_TO_PC, PURCHASE_MARKET_CONDITION);
+	}
+
+	unsigned total;
+
+	if (!pItem->IsIdentified())
+	{
+		total = (unsigned)GetMysteriousPrice(pItem);
+	}
+	else
+	{
+		total = (unsigned)PriceAt(pItem, NPC_TO_PC, PURCHASE_MARKET_CONDITION) * (unsigned)count;
+	}
+
+	return decore::applyCastleTax(total, m_ShopTaxRatio);
 }
 
 //-----------------------------------------------------------------------------
@@ -416,13 +469,11 @@ int MPriceManager::GetMysteriousPrice(MItem *pItem) const
 
 	__int64 final_price = (__int64)avr * multiplier;
 
-	// Half under the JAVE blood bible, then the shop tax.
+	// Half under the JAVE blood bible.
 	if (HostGambleHalfPrice())
 	{
 		final_price /= 2;
 	}
-
-	final_price = final_price * HostShopTaxPercent() / 100;
 
 	return (int)final_price;
 }
