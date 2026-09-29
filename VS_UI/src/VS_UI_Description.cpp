@@ -1257,10 +1257,14 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			}
 			else
 			{
+				// What the shop charges: the total the castle tax is taken
+				// on, and in brackets the price of one. The castle tax is
+				// taken once on the total, so the bracket times the count
+				// can differ from it (three at 18 each come to 56 at 110%).
 				if(p_item->IsPileItem() && p_item->GetNumber() >= 1)
 				{
-					int TempPrice = max( 0, g_pPriceManager->GetPurchasePrice(p_item, 1) );
-					int TotalPrice = max( 0, g_pPriceManager->GetPurchasePrice(p_item, p_item->GetNumber()) );
+					const unsigned TempPrice = g_pPriceManager->GetPurchasePrice(p_item, 1);
+					const unsigned TotalPrice = g_pPriceManager->GetPurchasePrice(p_item, p_item->GetNumber());
 					std::string sstr;
 					if(gC_ci->IsKorean() && g_pUserOption->ShowGameMoneyWithHANGUL)
 					{
@@ -1273,20 +1277,20 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					}
 					else
 					{
-						SafeFormat::Format(sz_buf, "%d", TotalPrice);
+						SafeFormat::Format(sz_buf, "%u", TotalPrice);
 						sstr = sz_buf;
 						for(int i = 3; i <= 13; i += 4)
 							if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");
 						SafeFormat::Format(sz_buf, "$%s", sstr.c_str());
 						vx = g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
-						SafeFormat::Format(sz_buf, "(%dx%d)", TempPrice, max(p_item->GetNumber(),0) );
+						SafeFormat::Format(sz_buf, "(%ux%d)", TempPrice, max(p_item->GetNumber(),0) );
 						g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, required_rgb);
 					}
 				}
 				else 
 				{
 					std::string sstr;
-					int TempPrice = max( 0, g_pPriceManager->GetPurchasePrice(p_item, 1) );
+					const unsigned TempPrice = g_pPriceManager->GetPurchasePrice(p_item, 1);
 					if(gC_ci->IsKorean() && g_pUserOption->ShowGameMoneyWithHANGUL)
 					{
 						sstr = "$";
@@ -1295,7 +1299,7 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 					}
 					else
 					{
-						SafeFormat::Format(sz_buf, "%d", TempPrice);
+						SafeFormat::Format(sz_buf, "%u", TempPrice);
 						sstr = sz_buf;
 						for(int i = 3; i <= 13; i += 4)
 							if(sstr.size() > static_cast<size_t>(i))sstr.insert(sstr.size()-i, ",");

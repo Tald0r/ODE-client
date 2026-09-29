@@ -51,7 +51,7 @@ enum EVENT_ID
 	EVENTID_METEOR,						// 메테오 시작할때 색, 배경 바꾸기
 	EVENTID_METEOR_SHAKE,				// 메테오 땅에 떨어질때 흔들기
 	EVENTID_PREMIUM_HALF,				// 프리미엄 사용자는 포션/혈청 반값
-	EVENTID_TAX_CHANGE,					// 상점 세금 바뀜
+	EVENTID_TAX_CHANGE,					// a castle's shop tax ratio changed; nothing reads it, since the shop sends the ratio it taxes at (MPriceManager::SetShopTaxRatio)
 	EVENTID_LOGOUT,						// ?초 후에 로그아웃 합니다.
 	EVENTID_LOVECHAIN,					// ?초 후에 이동 합니다.
 	EVENTID_FORCE_LOGOUT_BY_PREMIUM,	// 유료 사용자가 아니라서 몇초후에 로그아웃됨 

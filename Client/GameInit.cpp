@@ -2927,16 +2927,6 @@ static bool	PricePotionHalf()
 
 static bool	PriceGambleHalf()		{ return g_pSkillAvailable->IsEnableSkill(SKILL_HOLYLAND_BLOOD_BIBLE_JAVE); }
 
-static DWORD	PriceShopTaxPercent()
-{
-	if (g_pEventManager->IsEvent(EVENTID_TAX_CHANGE))
-	{
-		return g_pEventManager->GetEvent(EVENTID_TAX_CHANGE)->parameter1;
-	}
-
-	return 100;
-}
-
 // Three inputs of the server's price rule the server never sends; these
 // are the documented defaults (MPriceManager.h).
 // The server never tells the client that it gave an item away.
@@ -2953,7 +2943,6 @@ static const MPriceHost	s_PriceHost = {
 	.BasicStatSum		= PriceBasicStatSum,
 	.IsPotionHalfPrice	= PricePotionHalf,
 	.IsGambleHalfPrice	= PriceGambleHalf,
-	.ShopTaxPercent		= PriceShopTaxPercent,
 	.IsCreateTypeGame	= PriceIsCreateTypeGame,
 	.IsPayPlaying		= PriceIsPayPlaying,
 	.PotionPriceRatio	= PricePotionPriceRatio,
