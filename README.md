@@ -522,7 +522,8 @@ The fonts are not optional: nothing under `Data/` is a font, and
 `Client/TextSystem/TextBackendSDL.cpp` looks for Noto CJK and DejaVu under
 `/usr/share/fonts`. Without one of them the client draws no text.
 
-Three presets do the configure (`CMakePresets.json`); each writes under
+Three presets do the configure (`CMakePresets.json`), and a fourth builds
+the packet-read fuzzers; each writes under
 `build/presets/<preset>/`:
 
 | Preset | Compiler | Flags |
@@ -530,6 +531,7 @@ Three presets do the configure (`CMakePresets.json`); each writes under
 | `linux` | GCC | Debug |
 | `linux-clang` | Clang | Debug |
 | `linux-asan` | GCC | `-fsanitize=address,undefined` |
+| `linux-fuzz` | Clang | `linux-clang` with ASan, UBSan and the libFuzzer targets; needs the `libclang-rt` package (CLAUDE.md, *Fuzzing the packet readers*) |
 
 ```bash
 cmake --preset linux
@@ -537,7 +539,8 @@ cmake --build --preset linux
 ctest --test-dir build/presets/linux --output-on-failure
 ```
 
-`tools/ci/verify-linux.sh <preset>` runs those three steps the way the
+`tools/ci/verify-linux.sh <preset>` (any preset but `linux-fuzz`) runs
+those three steps the way the
 Linux workflow (`.github/workflows/linux.yml`) does, with UBSan reports made
 fatal under `linux-asan`. On a Windows machine or a Mac with Docker
 (OrbStack, which this was verified with, or Docker Desktop),
@@ -596,7 +599,8 @@ Windows; none of that has been watched on a Linux display yet.
 The same tree, the same tests, Apple Clang. CI builds and tests it on
 GitHub's arm64 and Intel runners (`.github/workflows/macos.yml`, macOS 15),
 and it has been built and tested on an Apple Silicon Mac (macOS 27.0, Apple
-Clang 21, CMake 4.4: every target, all 14 ctest tests passing on 2026-09-29). Nothing has
+Clang 21, CMake 4.4: every target, all 14 ctest tests passing on 2026-09-29;
+16 since the packet-read fuzz replay test and its corpus step joined them). Nothing has
 been watched on a Mac's display yet. Dependencies come from Homebrew, on
 Apple Silicon or Intel:
 
@@ -612,6 +616,7 @@ target, which is harmless for a build run on the machine that made it.
 
 No font package: `Client/TextSystem/TextBackendSDL.cpp` uses the system's own
 (Apple SD Gothic Neo, Arial Unicode, Hiragino Sans GB, Helvetica). Two presets,
+and a third for the packet-read fuzzers,
 each under `build/presets/<preset>/`; CMake finds Homebrew through the
 preset's prefix path, or through `HOMEBREW_PREFIX` when configuring by hand:
 
@@ -619,6 +624,7 @@ preset's prefix path, or through `HOMEBREW_PREFIX` when configuring by hand:
 |---|---|---|
 | `macos` | Apple Clang | Debug |
 | `macos-asan` | Apple Clang | `-fsanitize=address,undefined` |
+| `macos-fuzz` | Apple Clang | `macos-asan` plus the libFuzzer targets, linking Homebrew `llvm@21`'s libFuzzer (CLAUDE.md, *Fuzzing the packet readers*) |
 
 ```bash
 cmake --preset macos

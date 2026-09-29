@@ -201,22 +201,26 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, after the chat filter joined gamemodel with its tests and
-fixes (`docs/RESTRUCTURING.md` task 4.13, on top of the action and effect table
-move; 1327 tests and 1,434,061 checks before it), the same on all four at the
-same tree: **1366 tests, 1,436,011 checks, 0 failed** (`decore_tests`: 13
-tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
-13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
-an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
-which has no `aarch64` baseline, after ctest passed, so the totals were read
-by running the binary. macOS: Apple Silicon, Apple Clang 21, `macos` preset,
-read with `build/defects/run-tests.sh unit_tests ''`, and the `macos-asan`
-preset's `unit_tests`, with no ASan or UBSan report. The Windows trees were not
-re-measured for this figure, and no CI run produced either number. A
+measured on 2026-09-29 on the chat filter branch merged with master at
+`df3674bb` (the packet-read fuzzing), with the chat filter in gamemodel with its
+tests and fixes (`docs/RESTRUCTURING.md` task 4.13): **1373 tests, 1,436,068 checks, 0 failed** (`decore_tests`: 13 tests, 2009
+checks, measured on macOS only, this run). The `unit_tests` figure was measured
+on this merged tree, in all four builds and identical in each: Linux GCC 13.3
+(`tools/ci/verify-linux.sh linux`) and Linux Clang 18.1 (`linux-clang`) in the
+Docker image, its native arm64 on an Apple Silicon Mac, with the totals read by
+running `unit_tests` in it (both scripts pass ctest, then stop at the warning
+step, which has no `aarch64` baseline); macOS Apple Clang 21, the `macos`
+preset, read with `build/defects/run-tests.sh unit_tests ''`; and the
+`macos-asan` preset under `ASAN_OPTIONS=detect_leaks=0` and
+`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. Run from a git
+worktree, the container also needs the common git directory mounted, at its
+host path or with `GIT_DIR` and `GIT_WORK_TREE` set, or `ratchets` and
+`source_encoding` fail on "not a git repository". The Windows trees were not
+re-measured for this figure, and no CI run produced it. A
 platform-conditional test can make the check totals differ by one between
-platforms; that is not a failure. The Linux
-recipe is the `linux`, `linux-clang` and `linux-asan` presets in
-`CMakePresets.json`, the macOS one the `macos` and `macos-asan` presets.
+platforms; that is not a failure. The Linux recipe is the `linux`,
+`linux-clang` and `linux-asan` presets in `CMakePresets.json`, the macOS one
+the `macos` and `macos-asan` presets.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to
 an enum before its range check passed the Linux job and aborted the first
 macOS sanitizer run, so a Clang sanitizer build (the `macos-asan` preset, or
@@ -225,14 +229,76 @@ one that sees that class.
 `DarkEden` builds and links on both, and on Linux run headless
 (`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and
 exits cleanly on `SDL_QUIT`; login and beyond are unverified off Windows (the
-port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`, arm64 and Intel
-runners, invoked on master pushes or manually) has not produced the totals
-above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21) built every target
-and ran the `macos` preset's 14 ctest tests green on 2026-09-29, and is where
-the macOS totals above were read; nothing has been
-watched on a Mac's display,
-and a `<SDL2/...>` include spelling breaks the Homebrew build - it is
-`<SDL.h>` everywhere (`basic/Platform.h` says why).
+port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`,
+arm64 and Intel runners, invoked on master pushes or manually) has not
+produced the totals above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21)
+built every target and ran the `macos` preset's 14 ctest tests green on
+2026-09-29 (16 since the fuzz replay test and its corpus step;
+`verify-linux.sh` and `verify-windows.ps1` require 14 of them by name,
+`fuzz_replay_client_stream` the latest), and is where the macOS totals above
+were read; nothing has been watched on a Mac's display, and a `<SDL2/...>`
+include spelling breaks the Homebrew build - it is `<SDL.h>` everywhere
+(`basic/Platform.h` says why).
+
+### Fuzzing the packet readers
+
+`tests/fuzz/fuzz_client_stream.cpp` is a libFuzzer target over the bytes a
+game server sends: `[encrypt code byte][stream]`, read frame by frame through
+the same gates as `ClientPlayer::processCommand` (its header lists them with
+their line numbers; keep the two in step), once from the start of the input
+ring and once with the ring's wrap point in the middle of the stream. Only a
+`Throwable` is a rejected input, since that is all `UpdateSocketInput`
+catches; a `std::exception` from a reader is a crash, as in the client.
+Every native test tree builds it with `tests/fuzz/replay_main.cpp` as
+`fuzz_replay_client_stream`, and the
+ctest of that name replays two sets of inputs through it: the seed corpus, which the
+`fuzz_corpus_client_stream` setup step writes into the build tree with
+`tools/fuzz/golden2corpus.pl` (one seed per `GC` golden, plus an empty and a
+zero-filled frame per `GC` id, 536 today), and
+`tests/fuzz/regressions/client_stream/*.hex`, one file per fixed crash in
+the goldens' hex style (`xxd -p crash-... | tr -d '\n'`), named after the
+packet and the value. A crash there is a finding that came back.
+
+The fuzzer itself needs Clang with a libFuzzer runtime and ASan
+(`BUILD_FUZZERS`, off by default, refused on other compilers):
+
+```bash
+cmake --preset macos-fuzz        # or linux-fuzz
+cmake --build --preset macos-fuzz --target fuzz_client_stream
+perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'
+cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+  UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+  <repo>/build/presets/macos-fuzz/bin/fuzz_client_stream -max_total_time=600 \
+  -timeout=10 -rss_limit_mb=2048 -max_len=32768 -close_fd_mask=3 corpus
+```
+
+`-max_len=32768` is the longest input the harness reads: the code byte
+and a stream of at most 32767 bytes, one less than the 32768-byte input
+ring; a longer input returns without being read.
+
+Run it from a scratch directory: a failed `Assert` appends to
+`assertion_failed.log` in the working directory, and hostile input fails
+about a thousand in fifteen minutes. Apple Clang ships no libFuzzer, so
+`macos-fuzz` compiles with Apple Clang and links Homebrew `llvm@21`'s
+`libclang_rt.fuzzer_osx.a` (`DARKEDEN_LIBFUZZER_ARCHIVE`); llvm@21's own
+ASan hangs at startup on macOS 27. The preset names the Apple Silicon
+Homebrew path of `llvm@21`; on an Intel Mac (Homebrew under `/usr/local`)
+or with another LLVM version, configure stops with "does not exist" until
+you pass `-DDARKEDEN_LIBFUZZER_ARCHIVE=<path to libclang_rt.fuzzer_osx.a>`.
+With that hybrid, `-fork` reports an ASan container-overflow inside
+libFuzzer's own merge code, not in ours, so fuzz single-process on a Mac.
+`linux-fuzz` uses the distribution Clang and `-fsanitize=fuzzer`, which
+needs the `libclang-rt-18-dev` package; the
+`darkeden-linux` image does not carry it yet, and `apt-get install` of it in
+the container is enough (done on 2026-09-29: the target built, fuzzed for two
+minutes without a finding, and `unit_tests` and the fuzz ctests passed under
+that preset's Clang ASan and UBSan). `-close_fd_mask=3` hides the
+crash's own message, so triage by replaying the file through the replay
+binary of an ASan tree:
+`build/presets/macos-asan/bin/fuzz_replay_client_stream crash-...`.
+`DE_FUZZ_ABORT_ON_ASSERT=1` turns a failed `Assert` (an `AssertionError`,
+normally a rejected input) into a crash, to see which ones hostile input
+reaches. The findings so far are under *Found by fuzzing* in the review.
 
 ## Traps
 
@@ -337,7 +403,11 @@ Critical among them. In priority order:
    - Both passes found live defects, listed under *Found by reading* in the
      review — including one that needs no hostile server at all.
    What remains unaudited is everything the two instruments do not model: a
-   length or index that reaches memory by some third route.
+   length or index that reaches memory by some third route. The packet-read
+   fuzz target (*Fuzzing the packet readers* above) is the first check that
+   does not model a route at all: it drives every `read()` with hostile bytes
+   under ASan and UBSan, and found a heap overflow in `StoreInfo::read` that
+   neither instrument counts. It stops at `read()`; handlers are not reached.
 2. Fixed-size buffers fed by variable-length server strings (the 21-byte chat rows
    are fixed; 128-byte stack buffers remain in other handlers), and format strings
    loaded from data files passed to sprintf (C19/C20/C22). That last one is
