@@ -1166,8 +1166,13 @@ rounds settled* for the host rules). Test fixtures share
   `gamemodel`; `MChatHost` supplies the player's "filter bad words" option.
   > **Status:** moved (2026-09-29). `RemoveCurse` rewrites every server
   > chat line (`GCSay`, `GCWhisper`, `GCGlobalChat`, `GCGuildChat`,
-  > `GCPartySay`, `RCSay`, `CRWhisper`) and the new-character name in
-  > place. Both implementations move unchanged but for one read (and
+  > `GCPartySay`, `RCSay`, `CRWhisper`) in place, and checks what a
+  > player types: the new-character name (`Execute_UI_NEW_CHARACTER`,
+  > `Execute_UI_NEWCHARACTER_CHECK`), a new account's login ID
+  > (`RegisterNewUser`), the custom nickname
+  > (`Execute_UI_CHANGE_CUSTOM_NAMING`) and the personal-store sign
+  > (`Execute_UI_STORE_SIGN`). All of these run after `InitGame` has
+  > called `InitGameObject`, which installs the host. Both implementations move unchanged but for one read (and
   > `RemoveCurse`'s comments, translated from Korean): the filter asked `g_pUserOption->FilteringCurse` (VS_UI) directly, and now
   > asks the host, which the executable installs in `InitGameObject` and
   > clears at shutdown. Without a host the answer is `UserOption`'s
@@ -1178,8 +1183,8 @@ rounds settled* for the host rules). Test fixtures share
   > through the real loaders (English case, punctuation, word edges,
   > adjacent and overlapping words; Korean words of one to four
   > syllables in CP949; stray lead bytes, every byte value, 255-byte
-  > lines; `AddMask`), under ASan and Clang UBSan too, and six defects
-  > were fixed test-first: a repeated English word was masked only the
+  > lines; `AddMask` at every percent), under ASan and Clang UBSan too,
+  > and seven defects were fixed test-first: a repeated English word was masked only the
   > first time, and the second match's marks landed on the wrong letters;
   > both mask texts (165 characters in 256-byte arrays) were indexed by a
   > running count, so a word past the 165th letter, or an `AddMask` line
@@ -1189,7 +1194,11 @@ rounds settled* for the host rules). Test fixtures share
   > binary list hung the filter; and the map loader stored an unset
   > pointer for an entry whose value is not its key, read its flag
   > straight into a `bool`, looped over an uninitialised count and
-  > inserted a key it could not read.
+  > inserted a key it could not read. The seventh was found by the
+  > branch's review, since the first `AddMask` tests used only percents
+  > 0 and 100: a kept two-byte character stepped two bytes, so at any
+  > percent in between (`GCSay` passes 50) a line that ends in a lone
+  > lead byte stepped over its NUL and masked the memory after it.
   > **Known, not fixed:** the Korean lists the game loads from its
   > binary file pass through `MString::LoadFromFile`, which converts each
   > word from CP949 to UTF-8, while the filter pairs bytes and looks the
@@ -1198,8 +1207,12 @@ rounds settled* for the host rules). Test fixtures share
   > `KoreanWordsFromTheBinaryListAreConvertedAndMatchNothing`); fixing it
   > needs a decision on the encoding chat is filtered in. A replacement
   > longer than its word (the built-in English "love you" for three
-  > syllables, "I love you" for four; the shipped Korean ones are as long
-  > as the words) runs on over the next Korean character (pinned).
+  > syllables, "I love you" for four) runs on over the next Korean
+  > character (pinned). The shipped Korean string table is not in the
+  > repository, so its replacements' lengths are not checked: the header
+  > gives the one-syllable one as a heart symbol, two bytes in CP949 but
+  > three if the table goes through the same UTF-8 conversion as the
+  > word lists.
   > `LoadFromFileCurse` has no caller; on an empty or blank file its
   > first word is an uninitialised buffer. The new-character name checks
   > (`Execute_UI_NEW_CHARACTER`, `Execute_UI_NEWCHARACTER_CHECK`) call

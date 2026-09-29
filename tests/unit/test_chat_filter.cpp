@@ -5,7 +5,8 @@
 // The chat filter (gamemodel, docs/RESTRUCTURING.md task 4.13):
 // MStringMap, the MString-to-MString map the curse lists and the ignored
 // IDs are kept in, and MChatManager::RemoveCurse, which rewrites every
-// server chat line and the new-character name in place.
+// server chat line in place and checks the names and the store sign a
+// player types (docs/RESTRUCTURING.md task 4.13 lists the callers).
 //
 // RemoveCurse runs two passes over the line. The English pass keeps the
 // letters (lower-cased, everything else skipped, so "d.a.r.n" is still
@@ -461,7 +462,8 @@ TEST(ChatFilter, TheHostTurnsTheFilterOffUnlessForced)
 	CHECK(Passes(chat, "darn " GA));
 	CHECK_EQ(1, gHostCalls);
 
-	// Whispers and the new-character name pass bForce.
+	// Whispers pass bForce (GCWhisper, CRWhisper); the new-character
+	// name checks do not (task 4.13).
 	const Filtered forced = Filter(chat, "darn " GA, true);
 	CHECK(forced.found);
 	CHECK(forced.text == "xxxx <3");
@@ -644,9 +646,10 @@ TEST(ChatFilter, LongerKoreanReplacementsRunOnOverTheNextCharacter)
 	LoadWords(chat, kWords);
 
 	// Pinned as it is, not as it should be: a replacement longer than the
-	// word goes on over the Korean character after it. The shipped Korean
-	// string table's replacements are as long as the words (2, 4, 6 and 8
-	// bytes); the built-in English ones are not.
+	// word goes on over the Korean character after it. The built-in
+	// English replacements are longer than the words. The shipped Korean
+	// string table is not in the repository, so whether its replacements
+	// are as long as the words (2, 4, 6 and 8 bytes) is not checked.
 	CHECK(Filters(chat, DA RA GA NA, "love you"));
 	CHECK(Filters(chat, DA RA GA " " NA, "love y ou"));
 }
