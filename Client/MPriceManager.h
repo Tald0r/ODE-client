@@ -64,8 +64,10 @@ class MPriceManager {
 
 		//-------------------------------------------------------
 		// A shop purchase: what buying count of pItem costs, with the
-		// castle tax, as the server's buy handler charges it. The
-		// buy check and every buy price the shop shows ask here.
+		// castle tax, as the server's buy handler charges it; a
+		// motorcycle, which that handler prices on its own, is one
+		// item's price and untaxed. The buy check and every buy price
+		// the shop shows ask here.
 		//-------------------------------------------------------
 		unsigned	GetPurchasePrice(MItem* pItem, int count);
 

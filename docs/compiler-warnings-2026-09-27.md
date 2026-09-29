@@ -852,8 +852,9 @@ Not fixed, for whoever takes them up:
   - a shop purchase is quoted as the server's buy handler charges it
     (slice 5): the item at a market condition of 100 times the count,
     or the mysterious rack's price once, then the castle tax once on
-    that total at the ratio the shop sent (`decore::applyCastleTax`).
-    The tax-change notice's percentage, which taxed every buy price a
+    that total at the ratio the shop sent (`decore::applyCastleTax`);
+    a motorcycle, which the handler prices on its own, is the price of
+    one and untaxed. The tax-change notice's percentage, which taxed every buy price a
     second time and was the mysterious rack's only tax, reaches no
     price, and the ratio no longer stands in for the market condition
     (`5536db6e`).

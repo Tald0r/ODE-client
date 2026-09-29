@@ -370,6 +370,10 @@ MPriceManager::PriceAt(MItem* pItem, TRADE_TYPE type, int marketCondSell)
 // The widths are the server's 32-bit unsigned Price_t: the product wraps
 // as the server's does, and a taxed total past the int range is
 // 2147483648, more than any purse.
+// A motorcycle is the exception, as the handler sends it to
+// executeMotorcycle: the price of one at the same market condition,
+// whatever the count (the server buys one of an item that does not
+// stack), and no castle tax.
 //-----------------------------------------------------------------------------
 unsigned
 MPriceManager::GetPurchasePrice(MItem* pItem, int count)
@@ -377,6 +381,11 @@ MPriceManager::GetPurchasePrice(MItem* pItem, int count)
 	if (pItem==NULL)
 	{
 		return 0;
+	}
+
+	if (pItem->GetItemClass() == ITEM_CLASS_MOTORCYCLE)
+	{
+		return (unsigned)PriceAt(pItem, NPC_TO_PC, PURCHASE_MARKET_CONDITION);
 	}
 
 	unsigned total;

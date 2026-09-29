@@ -877,7 +877,9 @@ rounds settled* for the host rules). Test fixtures share
   > shop tooltip ask, and it charges what the server's buy handler
   > does: the item at a market condition of 100 times the count, or
   > the mysterious rack's price once, then `decore::applyCastleTax`
-  > at the castle's ratio, in the server's unsigned 32-bit width. The
+  > at the castle's ratio, in the server's unsigned 32-bit width; a
+  > motorcycle, which the handler prices in `executeMotorcycle`, is
+  > the price of one at that market condition and untaxed. The
   > ratio has its own state (`SetShopTaxRatio`, from `GCShopVersion`,
   > `GCShopList` and `GCShopListMysterious`), apart from the market
   > condition the sell dialog's `GCShopMarketCondition` sets, and the

@@ -822,6 +822,27 @@ TEST(PriceManager, TheTaxRatioAndTheMarketConditionAreKeptApart)
 	CHECK_EQ(1000, prices.GetItemPrice(&world.sword, MPriceManager::NPC_TO_PC));
 }
 
+TEST(PriceManager, AMotorcycleIsBoughtUntaxedAtThePriceOfOne)
+{
+	PriceWorld world;
+	MPriceManager prices;
+
+	// The server's buy handler sends a motorcycle to executeMotorcycle,
+	// which charges the price of one and takes no castle tax; a
+	// motorcycle is not stackable, so the count is 1 there.
+	g_pItemTable->InitClass(ITEM_CLASS_MOTORCYCLE, 1);
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_MOTORCYCLE, 0).Price = 30000;
+	Item motorcycle(ITEM_CLASS_MOTORCYCLE);
+
+	prices.SetShopTaxRatio(110);
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 1));
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 3));
+	prices.SetShopTaxRatio(150);
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 1));
+	prices.SetShopTaxRatio(100);
+	CHECK_EQ(30000, prices.GetPurchasePrice(&motorcycle, 1));
+}
+
 TEST(PriceManager, APurchaseTaxedPastTheServersIntIsMoreThanAnyPurse)
 {
 	PriceWorld world;
