@@ -10,9 +10,15 @@
 // range, and the three with a formula of their own), so how close the
 // character walks before using a skill follows it.
 //
-// The range grows from the minimum at level 0 to the maximum at the top
-// level, 100 for a slayer or a vampire and 30 for an ousters, in integer
-// arithmetic.
+// A slayer's is the server's rule, decore::skillRange, which the
+// server's four sliding and walking skills check their target's distance
+// against: the range grows from the minimum at level 0 to the maximum at
+// level 100, in double arithmetic with one truncation, each input and
+// the result read modulo 256. The inputs are rows of
+// third_party/decore/domain/vectors/skill_range.tsv, which decore_tests
+// asserts on every toolchain; each check names its row. A vampire's and
+// an ousters' have no server counterpart and keep the client's integer
+// step, to level 100 and to level 30.
 //
 //----------------------------------------------------------------------
 
@@ -21,28 +27,47 @@
 #include "MSkillManager.h"
 
 // The server's four sliding and walking skills at their SkillBalance
-// ranges (Flash Sliding 2 to 7, Shadow Walk 2 to 6).
+// ranges (Flash Sliding and Blaze Walk 2 to 7, Shadow Walk and Blitz
+// Sliding 2 to 6), where the client's integer step gave the same.
 TEST(SkillRange, ASlayerSkillGrowsToItsMaximumAtLevel100)
 {
-	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 0));
-	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 1));
-	CHECK_EQ(3, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 20));
-	CHECK_EQ(4, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 50));
-	CHECK_EQ(6, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 99));
-	CHECK_EQ(7, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 100));
-	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 6, 20));
-	CHECK_EQ(5, GetSkillRangeAtLevel(RACE_SLAYER, 2, 6, 99));
-	CHECK_EQ(7, GetSkillRangeAtLevel(RACE_SLAYER, 7, 7, 63));
+	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 0));		// seed-flash-sliding-level-0
+	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 1));		// seed-flash-sliding-level-1
+	CHECK_EQ(3, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 20));		// seed-flash-sliding-level-20
+	CHECK_EQ(4, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 50));		// seed-flash-sliding-level-50
+	CHECK_EQ(6, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 99));		// seed-flash-sliding-level-99
+	CHECK_EQ(7, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 100));		// seed-flash-sliding-level-100
+	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 6, 20));		// seed-shadow-walk-level-20
+	CHECK_EQ(3, GetSkillRangeAtLevel(RACE_SLAYER, 2, 6, 25));		// seed-shadow-walk-level-25
+	CHECK_EQ(5, GetSkillRangeAtLevel(RACE_SLAYER, 2, 6, 99));		// seed-shadow-walk-level-99
+	CHECK_EQ(6, GetSkillRangeAtLevel(RACE_SLAYER, 2, 6, 100));		// seed-shadow-walk-level-100
+	CHECK_EQ(7, GetSkillRangeAtLevel(RACE_SLAYER, 7, 7, 63));		// zero-span
+	CHECK_EQ(1, GetSkillRangeAtLevel(RACE_SLAYER, 5, 0, 80));		// no-fma-5-0-level-80
 }
 
-// The client's integer step at a span of 50 or more and with the
-// maximum below the minimum.
-TEST(SkillRange, ASlayerSkillTakesTheIntegerStep)
+// Where the server's rule differs from the client's integer step, one
+// lower each time: 0.29 and 0.58 round low in binary, so a span of 50
+// or more truncates one below the integer answer at levels 29 and 58;
+// and with the maximum below the minimum the server truncates the whole
+// range, not the step. Neither the server's seed nor the client's
+// in-code overrides give a slayer skill such a range.
+TEST(SkillRange, ASlayerSkillTakesTheServersRule)
 {
-	CHECK_EQ(29, GetSkillRangeAtLevel(RACE_SLAYER, 0, 100, 29));
-	CHECK_EQ(29, GetSkillRangeAtLevel(RACE_SLAYER, 0, 50, 58));
-	CHECK_EQ(5, GetSkillRangeAtLevel(RACE_SLAYER, 6, 2, 30));
-	CHECK_EQ(1, GetSkillRangeAtLevel(RACE_SLAYER, 1, 0, 50));
+	CHECK_EQ(28, GetSkillRangeAtLevel(RACE_SLAYER, 0, 100, 29));	// level-29-span-100
+	CHECK_EQ(28, GetSkillRangeAtLevel(RACE_SLAYER, 0, 50, 58));		// level-58-span-50
+	CHECK_EQ(127, GetSkillRangeAtLevel(RACE_SLAYER, 12, 212, 58));	// level-58-span-200-from-12
+	CHECK_EQ(4, GetSkillRangeAtLevel(RACE_SLAYER, 6, 2, 30));		// max-below-min-6-2-level-30
+	CHECK_EQ(0, GetSkillRangeAtLevel(RACE_SLAYER, 1, 0, 50));		// max-below-min-1-0-level-50
+}
+
+// Each input and the result wrap at 256, as the server's 8-bit types
+// do; a slayer's proficiency level stops at 100.
+TEST(SkillRange, ASlayerSkillWrapsAt256)
+{
+	CHECK_EQ(7, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 101));		// wrap-level-101
+	CHECK_EQ(2, GetSkillRangeAtLevel(RACE_SLAYER, 2, 7, 256));		// wrap-level-256-is-0
+	CHECK_EQ(3, GetSkillRangeAtLevel(RACE_SLAYER, 256, 7, 50));		// wrap-min-256-is-0
+	CHECK_EQ(84, GetSkillRangeAtLevel(RACE_SLAYER, 200, 255, 255));	// wrap-result-above-255
 }
 
 // The server ranges no vampire skill by a proficiency level; the client
@@ -56,6 +81,7 @@ TEST(SkillRange, AVampireSkillTakesTheIntegerStepTo100)
 	CHECK_EQ(0, GetSkillRangeAtLevel(RACE_VAMPIRE, 1, 0, 100));
 	CHECK_EQ(4, GetSkillRangeAtLevel(RACE_VAMPIRE, 2, 7, 50));
 	CHECK_EQ(29, GetSkillRangeAtLevel(RACE_VAMPIRE, 0, 100, 29));
+	CHECK_EQ(5, GetSkillRangeAtLevel(RACE_VAMPIRE, 6, 2, 30));
 }
 
 // An ousters raises a skill to level 30.

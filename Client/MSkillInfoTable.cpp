@@ -12,6 +12,7 @@
 
 #include "domain/Formulas.h"
 #include "domain/SkillOutputFormulas.h"
+#include "domain/SkillRange.h"
 
 #ifndef __NEW_SKILL__
 	#define __NEW_SKILL__
@@ -185,10 +186,19 @@ MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT, int level) const
 //----------------------------------------------------------------------
 // Skill range
 //----------------------------------------------------------------------
+// A slayer's is the server's rule (decore::skillRange, which its
+// computeSkillRange calls for the four sliding and walking skills). The
+// server ranges no vampire or ousters skill by its level, so theirs keep
+// the client's integer step.
 int
 GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
 {
-	// A slayer or a vampire raises a skill to level 100, an ousters to 30.
+	if (race == RACE_SLAYER)
+	{
+		return decore::skillRange(minRange, maxRange, expLevel);
+	}
+
+	// A vampire's skill is scaled to level 100, an ousters' to 30.
 	const int maxLevel = (race == RACE_OUSTERS) ? 30 : 100;
 
 	return (int)(minRange + (maxRange - minRange) * expLevel / maxLevel);
