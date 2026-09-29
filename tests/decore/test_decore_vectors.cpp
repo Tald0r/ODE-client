@@ -19,8 +19,13 @@
 // writes it, a grade policy by its enumerator name, and gradeOffsets'
 // struct as its six fields comma-separated, in declaration order. A
 // weapon family is read by its enumerator name, and a StatAttr as its
-// six fields in declaration order. An empty field where a number is read
-// is an error, not an input of 0. Row names are unique within a file,
+// six fields in declaration order. An equip race is read by its
+// EquipRace enumerator name, an EquipRequirement as its six fields and
+// an EquipStats as its five, in declaration order, and requiredStats'
+// result is written as its six fields comma-separated. An empty field
+// where a number is read is an error, not an input of 0, and so is a
+// value past its column's 32-bit type; an option list is "-" or
+// integers joined by single commas. Row names are unique within a file,
 // every file has at least one row for each function it belongs to, and a
 // vector file this suite does not know fails rather than being skipped.
 //
@@ -31,6 +36,7 @@
 
 #include "test_framework.h"
 
+#include "domain/EquipRequirement.h"
 #include "domain/Formulas.h"
 #include "domain/ItemDurability.h"
 #include "domain/ItemGrade.h"
@@ -40,6 +46,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <set>
 #include <sstream>
@@ -56,7 +63,7 @@ namespace {
 const std::map<std::string, std::set<std::string>>&	KnownFiles()
 {
 	static const std::map<std::string, std::set<std::string>> files = {
-		{ "price.tsv", { "itemPrice", "skullSellTotal" } },
+		{ "price.tsv", { "itemPrice", "skullSellTotal", "applyCastleTax" } },
 		{ "repair_price.tsv", { "repairPrice" } },
 		{ "durability.tsv", { "maxDurabilityBase", "maxDurabilityWithOptions", "maxDurability" } },
 		{ "item_grade.tsv", { "gradeOffsets", "gradePolicyOf", "hasDurability" } },
@@ -68,6 +75,7 @@ const std::map<std::string, std::set<std::string>>&	KnownFiles()
 			"slayerMaxDamage", "vampireMaxDamage", "oustersMaxDamage",
 			"slayerStealRatio", "vampireStealRatio", "oustersStealRatio",
 			"vampireSkillConsumeMP", "vampireDexHPRegenBonus" } },
+		{ "equip.tsv", { "requiredStats", "meetsRequirement", "genderAllows" } },
 	};
 	return files;
 }
@@ -166,6 +174,25 @@ public:
 		return value;
 	}
 
+	// A column of a 32-bit type: a value past the type is an error, so a
+	// mistyped limit row cannot wrap to another input and still pass.
+	unsigned	UnsignedInteger()
+	{
+		const long long value = Integer();
+		if (value < 0 || value > (long long)std::numeric_limits<unsigned>::max())
+			SetError("out of unsigned range");
+		return (unsigned)value;
+	}
+
+	int	IntInteger()
+	{
+		const long long value = Integer();
+		if (value < (long long)std::numeric_limits<int>::min()
+			|| value > (long long)std::numeric_limits<int>::max())
+			SetError("out of int range");
+		return (int)value;
+	}
+
 	bool	Flag()
 	{
 		const long long value = Integer();
@@ -180,6 +207,13 @@ public:
 		std::vector<int> values;
 		if (text == "-")
 			return values;
+		// getline yields no token for an empty cell or after a trailing
+		// comma, so either would silently drop an entry.
+		if (text.empty() || text[text.size() - 1] == ',')
+		{
+			SetError("not an integer list: \"" + text + "\"");
+			return values;
+		}
 		std::stringstream items(text);
 		std::string item;
 		while (std::getline(items, item, ','))
@@ -206,6 +240,44 @@ public:
 			return decore::PriceRace::Ousters;
 		SetError("not a race: \"" + text + "\"");
 		return decore::PriceRace::None;
+	}
+
+	decore::EquipRace	EquipRace()
+	{
+		const std::string text = Next();
+		if (text == "Slayer")
+			return decore::EquipRace::Slayer;
+		if (text == "Vampire")
+			return decore::EquipRace::Vampire;
+		if (text == "Ousters")
+			return decore::EquipRace::Ousters;
+		SetError("not an equip race: \"" + text + "\"");
+		return decore::EquipRace::Slayer;
+	}
+
+	// The six EquipRequirement fields in declaration order.
+	decore::EquipRequirement	EquipRequirement()
+	{
+		decore::EquipRequirement r = {};
+		r.str = (int)Integer();
+		r.dex = (int)Integer();
+		r.inte = (int)Integer();
+		r.sum = (int)Integer();
+		r.level = (int)Integer();
+		r.gender = (int)Integer();
+		return r;
+	}
+
+	// The five EquipStats fields in declaration order.
+	decore::EquipStats	EquipStats()
+	{
+		decore::EquipStats c = {};
+		c.str = (int)Integer();
+		c.dex = (int)Integer();
+		c.inte = (int)Integer();
+		c.level = (int)Integer();
+		c.sex = (int)Integer();
+		return c;
 	}
 
 	decore::GradePolicy	GradePolicy()
@@ -370,10 +442,17 @@ std::string	EvaluateRow(const std::vector<std::string>& fields, std::string& err
 	}
 	else if (function == "skullSellTotal")
 	{
-		const unsigned priceTimesNum = (unsigned)in.Integer();
-		const unsigned bonus = (unsigned)in.Integer();
+		const unsigned priceTimesNum = in.UnsignedInteger();
+		const unsigned bonus = in.UnsignedInteger();
 		in.Finish();
 		result = decore::skullSellTotal(priceTimesNum, bonus);
+	}
+	else if (function == "applyCastleTax")
+	{
+		const unsigned total = in.UnsignedInteger();
+		const int ratio = in.IntInteger();
+		in.Finish();
+		result = decore::applyCastleTax(total, ratio);
 	}
 	else if (function == "maxDurabilityBase")
 	{
@@ -422,6 +501,38 @@ std::string	EvaluateRow(const std::vector<std::string>& fields, std::string& err
 		const int itemClass = (int)in.Integer();
 		in.Finish();
 		result = decore::hasDurability(itemClass) ? 1 : 0;
+	}
+	else if (function == "requiredStats")
+	{
+		const decore::EquipRace race = in.EquipRace();
+		const decore::EquipRequirement base = in.EquipRequirement();
+		const std::vector<int> reqSums = in.List();
+		const std::vector<int> reqLevels = in.List();
+		in.Finish();
+		error = in.Error();
+		if (error.empty() && reqSums.size() != reqLevels.size())
+			error = "the option sum and level lists differ in length";
+		if (!error.empty())
+			return std::string();
+		const decore::EquipRequirement r =
+			decore::requiredStats(race, base, reqSums.data(), reqLevels.data(), (int)reqSums.size());
+		return std::to_string(r.str) + "," + std::to_string(r.dex) + "," + std::to_string(r.inte)
+			+ "," + std::to_string(r.sum) + "," + std::to_string(r.level) + "," + std::to_string(r.gender);
+	}
+	else if (function == "meetsRequirement")
+	{
+		const decore::EquipRace race = in.EquipRace();
+		const decore::EquipRequirement required = in.EquipRequirement();
+		const decore::EquipStats current = in.EquipStats();
+		in.Finish();
+		result = decore::meetsRequirement(race, required, current) ? 1 : 0;
+	}
+	else if (function == "genderAllows")
+	{
+		const int sex = (int)in.Integer();
+		const int reqGender = (int)in.Integer();
+		in.Finish();
+		result = decore::genderAllows(sex, reqGender) ? 1 : 0;
 	}
 	else if (StatFunctions().count(function) != 0)
 	{
@@ -571,6 +682,11 @@ TEST(DecoreVectors, Stats)
 	CHECK(CheckVectorFile("stats.tsv") > 0);
 }
 
+TEST(DecoreVectors, Equip)
+{
+	CHECK(CheckVectorFile("equip.tsv") > 0);
+}
+
 //----------------------------------------------------------------------
 // A doubled tab or a missing value leaves an empty field; read as a
 // number it is an error, not an input of 0, and so is a flag read the
@@ -594,6 +710,63 @@ TEST(DecoreVectors, AnEmptyNumberIsAnError)
 	CHECK_EQ(7LL, ok.Integer());
 	ok.Finish();
 	CHECK(ok.Error().empty());
+}
+
+//----------------------------------------------------------------------
+// A 32-bit column reads its limits and rejects a value one past them
+// (the server's SharedVectors.AnOutOfRangeNumberIsAnError).
+//----------------------------------------------------------------------
+TEST(DecoreVectors, AnOutOfRangeNumberIsAnError)
+{
+	const std::vector<std::string> limits = { "applyCastleTax", "limits", "4294967295",
+		"-2147483648", "2147483647", "0" };
+	RowReader ok(limits);
+	CHECK_EQ(4294967295u, ok.UnsignedInteger());
+	CHECK_EQ(std::numeric_limits<int>::min(), ok.IntInteger());
+	CHECK_EQ(std::numeric_limits<int>::max(), ok.IntInteger());
+	ok.Finish();
+	CHECK(ok.Error().empty());
+
+	for (const char* text : { "4294967296", "-1" })
+	{
+		const std::vector<std::string> fields = { "applyCastleTax", "past-unsigned", text, "0" };
+		RowReader in(fields);
+		in.UnsignedInteger();
+		CHECK(in.Error() == "out of unsigned range");
+	}
+	for (const char* text : { "2147483648", "-2147483649" })
+	{
+		const std::vector<std::string> fields = { "applyCastleTax", "past-int", text, "0" };
+		RowReader in(fields);
+		in.IntInteger();
+		CHECK(in.Error() == "out of int range");
+	}
+}
+
+//----------------------------------------------------------------------
+// A list is "-" or integers joined by single commas: an empty cell or an
+// empty entry anywhere would otherwise read as one option fewer (the
+// server's SharedVectors.AMalformedListIsAnError).
+//----------------------------------------------------------------------
+TEST(DecoreVectors, AMalformedListIsAnError)
+{
+	for (const char* text : { "", "5,", ",5", "5,,6", "5,x" })
+	{
+		const std::vector<std::string> fields = { "requiredStats", "malformed-list", text, "0" };
+		RowReader in(fields);
+		in.List();
+		CHECK(in.Error() == "not an integer list: \"" + std::string(text) + "\"");
+	}
+
+	const std::vector<std::string> none = { "requiredStats", "no-options", "-", "0" };
+	RowReader noOptions(none);
+	CHECK(noOptions.List().empty());
+	CHECK(noOptions.Error().empty());
+
+	const std::vector<std::string> two = { "requiredStats", "two-options", "30,40", "0" };
+	RowReader twoOptions(two);
+	CHECK(twoOptions.List() == std::vector<int>({ 30, 40 }));
+	CHECK(twoOptions.Error().empty());
 }
 
 //----------------------------------------------------------------------

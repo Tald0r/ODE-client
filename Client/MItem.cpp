@@ -23,7 +23,10 @@
 #include "MTimeItemManager.h"
 #include "MGameStringTable.h"
 #include "MItemLimits.h"
+#include "Packet/Types/CreatureTypes.h"
+#include "Packet/Types/ItemTypes.h"
 
+#include "domain/EquipRequirement.h"
 #include "domain/ItemClass.h"
 #include "domain/ItemDurability.h"
 #include "domain/ItemGrade.h"
@@ -128,6 +131,16 @@ static_assert(decore::itemclass::Persona == ITEM_CLASS_PERSONA);
 static_assert(decore::itemclass::Fascia == ITEM_CLASS_FASCIA);
 static_assert(decore::itemclass::Mitten == ITEM_CLASS_MITTEN);
 static_assert(decore::itemclass::Count == MAX_ITEM_CLASS);
+
+//----------------------------------------------------------------------
+// de-core's equip rules number a wearer's sex and an item's gender
+// requirement as the wire does (Sex, GenderRestriction).
+//----------------------------------------------------------------------
+static_assert(decore::sex::Female == FEMALE);
+static_assert(decore::sex::Male == MALE);
+static_assert(decore::gender::Both == GENDER_BOTH);
+static_assert(decore::gender::Male == GENDER_MALE);
+static_assert(decore::gender::Female == GENDER_FEMALE);
 
 //----------------------------------------------------------------------
 //
