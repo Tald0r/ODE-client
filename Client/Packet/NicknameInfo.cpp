@@ -57,7 +57,9 @@ void NicknameInfo::read(SocketInputStream& iStream)
 				break;
 			}
 		default:
-			assert(false);
+			// The type is a wire byte and can hold any value: refuse an
+			// unknown one as a protocol violation, as the server's copy does.
+			throw InvalidProtocolException("nickname type out of range");
 	}
 
 	__END_CATCH
