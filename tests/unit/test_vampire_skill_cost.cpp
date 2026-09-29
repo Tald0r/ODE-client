@@ -13,8 +13,8 @@
 // INT: the more the INT, less 20, exceeds the skill's level, the larger
 // the discount. The checks below are rows of
 // third_party/decore/domain/vectors/stats.tsv, which decore_tests
-// asserts on every toolchain. Eleven skills' handlers do not charge it,
-// and those keep the table cost.
+// asserts on every toolchain. Sixteen skills' server handlers do not
+// charge it, and those keep the table cost.
 //
 //----------------------------------------------------------------------
 
@@ -73,12 +73,16 @@ TEST(VampireSkillCost, ALevelZeroSkill)
 	CHECK_EQ(5, table.GetVampireConsumeMP(MAGIC_HIDE, 21));
 }
 
-// Skills whose handler does not charge decreaseConsumeMP. Extreme,
+// Every vampire skill whose server handler (an execute(Vampire*) under
+// src/server/gameserver/skill) never calls decreaseConsumeMP. Extreme,
 // Mephisto, PoisonMesh, StoneSkin, and ViolentPhantom and Deadly Claw
 // (through SimpleTileMeleeSkill) charge the table cost undiscounted.
 // Howl charges 10, Transfusion 12% of the current HP and Will of Life its
-// own output; Blood Drain and Eat Corpse no mana at all. The client shows
-// those five the table cost, as it did.
+// own output. Blood Drain, Eat Corpse, Bloody Warp (which always fails),
+// Open Casket, Unburrow, Uninvisibility and Untransform charge nothing.
+// The client charges all sixteen the table cost: for the first six that
+// is the server's charge, for the other ten what the client charged
+// before the discount.
 TEST(VampireSkillCost, SomeSkillsPayTheTableCost)
 {
 	const ACTIONINFO skills[] = {
@@ -86,6 +90,24 @@ TEST(VampireSkillCost, SomeSkillsPayTheTableCost)
 		SKILL_VIOLENT_PHANTOM, SKILL_VAMPIRE_INNATE_DEADLY_CLAW,
 		MAGIC_HOWL, SKILL_TRANSFUSION, SKILL_WILL_OF_LIFE, SKILL_BLOOD_DRAIN,
 		MAGIC_EAT_CORPSE,
+	};
+	for (ACTIONINFO id : skills)
+	{
+		CostTable cost(id);
+		CHECK_EQ(200, cost.table.GetVampireConsumeMP(id, 98));
+	}
+}
+
+// The handlers that charge nothing and were left out of the list at
+// first: the skill bar gates Bloody Warp on this cost (HasMagicBloodyWarp,
+// and the learned-skill loop gates every learned vampire skill), so each
+// keeps the table cost it had before the discount, as Blood Drain and Eat
+// Corpse do.
+TEST(VampireSkillCost, TheSkillsThatChargeNothingPayTheTableCost)
+{
+	const ACTIONINFO skills[] = {
+		MAGIC_BLOODY_WARP, MAGIC_OPEN_CASKET, MAGIC_UN_BURROW,
+		MAGIC_UN_INVISIBILITY, MAGIC_UN_TRANSFORM,
 	};
 	for (ACTIONINFO id : skills)
 	{

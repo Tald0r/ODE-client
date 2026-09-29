@@ -816,8 +816,11 @@ rounds settled* for the host rules). Test fixtures share
   > speed stays the client's own (no rows; `MPlayer::CalculateStatus`'s
   > recompute is to be deleted). `MSkillInfoTable::GetVampireConsumeMP`
   > gives the skill bar and both skill descriptions the server's
-  > INT-discounted cost, except for the eleven vampire skills whose
-  > server handlers charge otherwise (it lists them), and
+  > INT-discounted cost, except for the sixteen vampire skills whose
+  > server handlers (`execute(Vampire*)` under
+  > `src/server/gameserver/skill`) never call `decreaseConsumeMP`: six
+  > charge the table cost undiscounted, three a cost of their own and
+  > seven nothing, and all sixteen keep the table cost (it lists them), and
   > `MCreature::SetRegen` takes the DEX bonus from `decore`, which it
   > already equalled. `tests/unit/test_status_manager.cpp` and
   > `test_vampire_skill_cost.cpp` check them against `stats.tsv` rows.
