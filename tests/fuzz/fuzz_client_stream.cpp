@@ -42,15 +42,15 @@
 //
 // Outcomes: a Throwable (the only type processCommand's caller,
 // UpdateSocketInput in Client/GameMain.cpp, catches) is a rejected
-// input and returns 0. Anything else, a std::exception included, escapes this
-// function, since in production it would escape the game loop and end
-// the client through std::terminate: libFuzzer and the replay driver
-// report it as a crash. A crash, a sanitizer report or an abort is a
-// finding. PacketAssert.h's Assert
-// throws AssertionError in builds without NDEBUG, which is a rejection
-// too; set DE_FUZZ_ABORT_ON_ASSERT to make it abort instead, to see
-// which Asserts hostile input reaches (a Release build compiles them
-// out). A failed Assert appends to assertion_failed.log in the current
+// input and returns 0. Anything else, a std::exception included,
+// escapes this function, since in production it would escape the game
+// loop and end the client through std::terminate: libFuzzer and the
+// replay driver report it as a crash. A crash, a sanitizer report or
+// an abort is a finding. PacketAssert.h's Assert throws AssertionError
+// in builds without NDEBUG, which is a rejection too; set
+// DE_FUZZ_ABORT_ON_ASSERT to make it abort instead, to see which
+// Asserts hostile input reaches (a Release build compiles them out). A
+// failed Assert appends to assertion_failed.log in the current
 // directory, so run a fuzzer from a scratch directory.
 //
 // Built twice by tests/fuzz/CMakeLists.txt: with replay_main.cpp as the
