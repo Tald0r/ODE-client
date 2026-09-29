@@ -830,7 +830,8 @@ Not fixed, for whoever takes them up:
     of its price on every repair-all, since its durability stays 1; a
     damaged unique or time-limited item is charged and not repaired. The
     client's quote for the amulet is that charge, so the first repair-all
-    total includes it (see the next item for the later ones); a
+    total includes it (see "Durability the client sets itself" below for
+    the later ones); a
     time-limited item it quotes 0. A single repair of any of them the
     server refuses, and the gear window does not ask for one. These are
     the server's to change.
@@ -878,9 +879,10 @@ Not fixed, for whoever takes them up:
     repairs a motorcycle only through its key (`executeMotorcycle`), at
     its own price. The relic, castle symbol, blood bible and sweeper have
     no maximum on the client (`MItem`'s -1), so they are priced in full
-    as on the server. The classes still off the server's table on the
-    client are the two couple rings, the motorcycle and the blood bible
-    sign, which the client makes alone and which keeps its old gear rule.
+    as on the server. Four classes still keep rules of their own on the
+    client rather than the server's table: the two couple rings, the
+    motorcycle, and the blood bible sign, which the client makes alone and
+    which keeps its old gear rule.
   - **Durability the client sets itself.** For the classes without
     durability, the server's durability stays at the 1 it sends. The
     client sets an item's current durability to its maximum on the NPC
