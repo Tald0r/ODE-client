@@ -65,7 +65,9 @@ the output and hides all progress.
 ### What can be tested
 
 Only code compiled into a **static library**: `basic`, `SpriteLib`, `dxlib`,
-`gamemodel` (the pure data tables, the item table, the money manager, the item
+`gamemodel` (the pure data tables, the action and effect tables
+(`MActionInfoTable`, `MEffectSpriteTypeTable`, `MEffectStatusTable`,
+`MCreatureSpriteTable`), the item table, the money manager, the item
 core - `MItem`, with what an item requires and whether the player may
 use it (`MItem::IsUsableBy`, which `MCreature::CheckAffectStatus` asks),
 the gear families, the item managers, the containers
@@ -198,10 +200,10 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, after the slayer weapon extension branch was merged with
-the shared-rules slice 6 work, the same on all four: **1291 tests, 1,433,460 checks,
-0 failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux:
-`unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
+measured on 2026-09-29, after the slayer weapon extension branch and the shared-rules
+slice 6 branch (with its action and effect table loader tests and fixes) were merged, the same on all four at the
+same tree: **1327 tests, 1,434,061 checks, 0 failed** (`decore_tests`: 13
+tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
 13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
 an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
 which has no `aarch64` baseline, after ctest passed, so the totals were read
