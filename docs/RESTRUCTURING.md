@@ -851,8 +851,9 @@ rounds settled* for the host rules). Test fixtures share
   > widths the options are added at. The client's two gender flags map
   > to `decore::gender`: neither is Both, one alone is that sex, and
   > both set is read as Both, since no server value names both sexes and
-  > the server's seed has no such item (no client item data was at
-  > hand to look in). `MItemLimits.h`'s caps and the unused copies in
+  > the server's seed has no such item; nor has the client's own item
+  > data in history (below), with 40 male-only rows, 40 female-only
+  > and none with both. `MItemLimits.h`'s caps and the unused copies in
   > the two VS_UI game files are gone.
   > `tests/unit/test_equip_requirement.cpp` checks the requirement and
   > the check against `equip.tsv` rows (`2cef2abf`..`e0f27757`; the
@@ -860,24 +861,47 @@ rounds settled* for the host rules). Test fixtures share
   > takes the requirement by the rule of the user's race, as
   > `isRealWearing` does, also for an item made for several races,
   > whose description still shows its first flag's rule (the fix
-  > `02a57a4f`). The server's seed has such classes (the blood bibles
-  > and castle symbols for all three races, the relics for slayers and
-  > vampires), each asking a sum of 30 with no option, so no seed
-  > item's requirement moves. Four gates come before the server's
-  > check: a quest item (`IsQuestItem`) asks nothing and is usable by
-  > a slayer or vampire its gender allows and by any ousters, an item
-  > without the user's race flag is refused, a pet whose life has run
-  > out lends nothing, and a couple ring is usable by a slayer or a
-  > vampire whatever it asks, stats, level or gender. The second and
-  > third are the client's own. The first is the server's time-limited
-  > gate for an item the timed-item register holds, which
-  > `IsQuestItem` counts (`isRealWearing` asks a time-limited item
-  > only its gender, and an ousters nothing), and the client's own
-  > only for an item flagged a quest item (`m_Quest`). The fourth is
-  > the server's: `Slayer` and `Vampire::isRealWearing` let a couple
-  > ring through (`isCoupleRing`) after their time-limited and
-  > premium-zone gates, before any requirement, and
-  > `Ousters::isRealWearing` has no such case (the fix `e5a331f7`).
+  > `02a57a4f`). The server's seed has such classes that ask
+  > something: the blood bibles and castle symbols for all three races
+  > and the relics for slayers and vampires, each asking a sum of 30
+  > with no option, which every race's rule returns as it is, so the
+  > wearer's rule moves none of them. The pets, three of them made for
+  > all three races and any of them given an option by the pet
+  > enchant, take no rule at all (below). The client's own item data
+  > says the same where it reaches: the in-code item table `a8b0a5af`
+  > deleted (`git show a8b0a5af~1:Client/MItemTable.cpp`, the same
+  > file as at `9e6c4a34~1`, and its `InitItem2` companion
+  > `Client/MitemTableInit.cpp`) has those three classes as its only
+  > multi-race ones that ask anything (`MItemTable.cpp` lines 18992,
+  > 22255 and 22618), each asking a sum of 30, and its couple rings
+  > (lines 22801-22924) are for slayers (Race 1) and vampires (Race 2)
+  > with every requirement 0 and neither gender flag, so the
+  > couple-ring gate below changes nothing against it. That data stops
+  > at class 69 (`ITEM_CLASS_OUSTERS_SUMMON_ITEM`) and predates the
+  > pets (classes 74-76): it has no pet class, and nothing in the tree
+  > says how the client's own `Item.inf` flags a pet. Four gates come
+  > before the server's check, in this order: a pet is usable while it
+  > lives, by any race and whatever its table, options or gender flags
+  > ask, and a dead one lends nothing; an item without the user's race
+  > flag is refused; a quest item (`IsQuestItem`) asks nothing and is
+  > usable by a slayer or vampire its gender allows and by any
+  > ousters; and a couple ring is usable by a slayer or a vampire
+  > whatever it asks, stats, level or gender. The first is the
+  > server's (the fix `3954a3b0`): `isUsableItem` lets any race use a
+  > pet item, `executePetItem` refuses a pet with no HP left (the
+  > client counts down the HP the server sends as the pet's
+  > durability) and a second-stage pet to an owner under quest level
+  > 40, which the client does not check, and the server does not read
+  > `PetItemInfo`'s `Race` column. The second is the client's own. The
+  > third is the server's time-limited gate for an item the timed-item
+  > register holds, which `IsQuestItem` counts (`isRealWearing` asks a
+  > time-limited item only its gender, and an ousters nothing), and
+  > the client's own only for an item flagged a quest item
+  > (`m_Quest`). The fourth is the server's: `Slayer` and
+  > `Vampire::isRealWearing` let a couple ring through
+  > (`isCoupleRing`) after their time-limited and premium-zone gates,
+  > before any requirement, and `Ousters::isRealWearing` has no such
+  > case (the fix `e5a331f7`).
   > Left over: the server's advancement-class check is not in de-core and the
   > client has none (the server refuses an item asking
   > `reqAdvancedLevel > 0` unless the wearer is advanced with a class
@@ -891,13 +915,25 @@ rounds settled* for the host rules). Test fixtures share
   > a player who does not pay may not use a unique item or one with
   > several options, whatever the race, nor, as a slayer or a vampire,
   > a couple ring (`Ousters::isRealWearing` has that clause commented
-  > out). A living pet is judged by the gear rule, the client's own:
-  > a pet's option (the pet enchant's, asking a level of 20 at most)
-  > raises a vampire's level requirement of 0, so a vampire under that
-  > level sees the pet drawn as unusable, where the server's
-  > `executePetItem` asks a pet only its HP and, for a second-stage
-  > pet, a quest level of 40, and the client summons it whatever its
-  > affect status; the owner may let a living pet ask nothing. Slice 5
+  > out). A living pet now asks nothing, as the server's
+  > `isUsableItem` asks nothing of a pet item. Before, the client
+  > judged it by the gear rule: a pet gets an option from the pet
+  > enchant, asking a level of 20 at most, which the vampire rule adds
+  > to a level of 0, so a vampire under that level saw a vampire-only
+  > pet drawn as unusable, and `02a57a4f` had briefly moved a pet made
+  > for all three races, as the seed's types 0-2 are, to that rule
+  > too, from the ousters rule its flags chose, which leaves a level
+  > of 0 alone. The server seed's pets (`PetItemInfo`) are the Gara
+  > Bezz, the Wolfdog Leash and the Wolverine Leash (types 0-2, Race
+  > 7) for all three races, the Radio Controller (3, Race 1) for
+  > slayers, the Stirge Bag (4, Race 2) for vampires and the Summon
+  > Pixie (5, Race 4) for ousters. The client's use request still asks
+  > the race: `UIMessageManager`'s `Execute_UI_ITEM_USE` and
+  > `Execute_UI_ITEM_USE_SUBINVENTORY` send a use only for an item
+  > flagged for the player's race, a pet included, so a player holding
+  > another race's pet sees it drawn usable and cannot summon it from
+  > the client, where the server would; the owner may let a pet
+  > through there too. Slice 5
   > is in (the same branch): a shop purchase is quoted in one place,
   > `MPriceManager::GetPurchasePrice`, which the buy check and the
   > shop tooltip ask, and it charges what the server's buy handler
