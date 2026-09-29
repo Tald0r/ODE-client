@@ -611,9 +611,9 @@ rounds settled* for the host rules). Test fixtures share
   > `MPetItem` never set its remaining experience or food type.
   > **Known, not fixed:** `CancelTrade` refunds money only — the offered
   > items keep their flag until the next trade start clears it, and a
-  > refused refund still answers true; `bMysterious` is a dead parameter
-  > `UIMessageManager` still computes; a star price for item type 0 is
-  > −20 stars.
+  > refused refund still answers true; a star price for item type 0 is
+  > −20 stars. (`GetItemPrice`'s dead `bMysterious` parameter, also
+  > listed here, went with the purchase quote of task 4.12's slice 5.)
   - Owner: the membership file, the CMake assertion, the include checker.
 
 - [x] **4.3 Containers:** `MItemManager`, `MGridItemManager`,

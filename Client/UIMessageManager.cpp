@@ -4953,7 +4953,7 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 						//-------------------------------------------------
 						case MShop::SHOP_NORMAL :
 						{
-							int price = number * (*g_pPriceManager).GetItemPrice(pItem, MPriceManager::NPC_TO_PC, pShopShelf->GetShelfType()==MShopShelf::SHELF_UNKNOWN);
+							int price = g_pPriceManager->GetPurchasePrice(pItem, number);
 							int money = (*g_pMoneyManager).GetMoney();
 
 							bBuyPossible = (price <= money);

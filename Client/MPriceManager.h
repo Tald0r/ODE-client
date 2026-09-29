@@ -57,9 +57,23 @@ class MPriceManager {
 		//-------------------------------------------------------		
 		// Get Item Price
 		//-------------------------------------------------------		
-		int			GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious=false);
+		int			GetItemPrice(MItem* pItem, TRADE_TYPE type);
 		void		GetItemPrice(MItem* pItem, STAR_ITEM_PRICE& price);
 		int			GetMysteriousPrice(MItem* pItem) const;
+
+		//-------------------------------------------------------
+		// A shop purchase: what buying count of pItem costs. The
+		// buy check and every buy price the shop shows ask here.
+		//-------------------------------------------------------
+		int			GetPurchasePrice(MItem* pItem, int count);
+
+		// The MarketCondSell of the packets that open the shop's racks
+		// (GCShopVersion, GCShopList, GCShopListMysterious): the
+		// castle's item tax ratio for this player, a percentage, or in
+		// GCShopVersion, when that ratio is 100, the NPC's own market
+		// condition. The client has always read it as the market
+		// condition it buys at, and still does.
+		void		SetShopTaxRatio(int ratio)			{ m_MarketCondSell = ratio; }
 
 		//-------------------------------------------------------
 		// The market conditions, buy and sell as the NPC sees them

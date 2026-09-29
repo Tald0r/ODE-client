@@ -121,10 +121,11 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 			pShop->SetCurrent( 0 );
 
 			//------------------------------------------------------
-			// 선반의 가격 비율 
+			// The NPC's buying rate, and the castle's tax ratio for this
+			// player (MPriceManager::SetShopTaxRatio)
 			//------------------------------------------------------
 			g_pPriceManager->SetMarketCondBuy( pPacket->getMarketCondBuy() );
-			g_pPriceManager->SetMarketCondSell( pPacket->getMarketCondSell() );			
+			g_pPriceManager->SetShopTaxRatio( pPacket->getMarketCondSell() );
 			
 			//------------------------------------------------------
 			// 상점에 선반 설정

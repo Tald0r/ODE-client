@@ -127,9 +127,9 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 				}
 			}
 
-			// 2004, 10, 25, sobeit add start - 세율 조절
-			g_pPriceManager->SetMarketCondSell( pPacket->getMarketCondSell() );
-			// 2004, 10, 25, sobeit add end
+			// The castle's tax ratio for this player, or the NPC's market
+			// condition when that ratio is 100 (MPriceManager::SetShopTaxRatio).
+			g_pPriceManager->SetShopTaxRatio( pPacket->getMarketCondSell() );
 			
 			//------------------------------------------------------
 			// 모든 shelf의 version이 같으면..

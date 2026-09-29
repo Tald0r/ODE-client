@@ -171,9 +171,8 @@ MPriceManager::~MPriceManager()
 // Get Item Price
 //-----------------------------------------------------------------------------
 int
-MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
+MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type)
 {
-	(void)bMysterious;
 	if (pItem==NULL)
 	{
 		return 0;
@@ -347,6 +346,18 @@ MPriceManager::GetItemPrice(MItem* pItem, TRADE_TYPE type, bool bMysterious)
 
 
 	return (int)finalPrice;
+}
+
+//-----------------------------------------------------------------------------
+// Get Purchase Price
+//-----------------------------------------------------------------------------
+// What buying count of the item from the shop costs: count times the
+// price of one.
+//-----------------------------------------------------------------------------
+int
+MPriceManager::GetPurchasePrice(MItem* pItem, int count)
+{
+	return count * GetItemPrice(pItem, NPC_TO_PC);
 }
 
 //-----------------------------------------------------------------------------
