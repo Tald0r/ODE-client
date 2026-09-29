@@ -201,7 +201,7 @@ Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defa
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
 measured on 2026-09-29, after the chat filter joined gamemodel with its tests and
 fixes (`docs/RESTRUCTURING.md` task 4.13; 1291 tests and 1,433,460 checks before
-it), the same on all four: **1328 tests, 1,434,183 checks,
+it), the same on all four: **1328 tests, 1,434,186 checks,
 0 failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
 13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on

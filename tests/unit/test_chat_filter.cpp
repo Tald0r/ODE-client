@@ -354,10 +354,15 @@ TEST(StringMap, AFileWithoutACountLoadsNothing)
 {
 	// The count was read into an uninitialised int, so a file shorter
 	// than four bytes looped over whatever the stack held.
-	const std::string files[] = { "", "\x05", "\x05\x00\x00" };
+	// Spelled with lengths: a literal's NUL would end the string.
+	const std::string files[] = { std::string(), std::string("\x05", 1), std::string("\x05\x00\x00", 3) };
 	for (const std::string& bytes : files)
 	{
 		WriteFile(kBinFile, bytes);
+		{
+			std::ifstream written(kBinFile, std::ios::binary | std::ios::ate);
+			CHECK_EQ((long long)bytes.size(), (long long)written.tellg());
+		}
 		MStringMap map;
 		map.Add("before");
 		std::ifstream in(kBinFile, std::ios::binary);
