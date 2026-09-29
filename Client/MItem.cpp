@@ -1210,12 +1210,38 @@ RequirementRaceOf(const MItem& item)
 }
 
 //----------------------------------------------------------------------
+// The item's gender requirement as the server numbers it
+// (decore::gender). The client's item table marks it with two flags
+// where the server keeps one value: neither flag is Both, bMaleOnly
+// alone Male and bFemaleOnly alone Female. An item with both flags
+// names both sexes; no server value says that, and the server's seed
+// has no item with two gender entries, so it is read as Both, which is
+// what the client did before it asked the server's rule: either sex
+// may use it.
+//----------------------------------------------------------------------
+static int
+GenderRequirementOf(const MItem& item)
+{
+	const bool bMaleOnly = item.IsGenderForMale();
+	const bool bFemaleOnly = item.IsGenderForFemale();
+	if (bMaleOnly && !bFemaleOnly)
+	{
+		return decore::gender::Male;
+	}
+	if (bFemaleOnly && !bMaleOnly)
+	{
+		return decore::gender::Female;
+	}
+	return decore::gender::Both;
+}
+
+//----------------------------------------------------------------------
 // What the item asks: its table's STR, DEX, INT, sum and level, raised
 // by each option's sum and level requirement in the option list's
 // order and capped, by the server's rule (decore::requiredStats, which
-// Slayer, Vampire and Ousters::isRealWearing call). A quest item asks
-// nothing: that is the client's own rule, which the server has no
-// counterpart for.
+// Slayer, Vampire and Ousters::isRealWearing call), and its gender. A
+// quest item asks nothing: that is the client's own rule, which the
+// server has no counterpart for.
 //----------------------------------------------------------------------
 static decore::EquipRequirement
 RequirementOf(const MItem& item)
@@ -1232,6 +1258,7 @@ RequirementOf(const MItem& item)
 	base.inte = info.GetRequireINT();
 	base.sum = info.GetRequireSUM();
 	base.level = info.GetRequireLevel();
+	base.gender = GenderRequirementOf(item);
 
 	const std::list<TYPE_ITEM_OPTION>& options = item.GetItemOptionList();
 	std::vector<int> optionReqSums;
@@ -1283,15 +1310,17 @@ MItem::GetRequireLevel() const
 // Is Usable By
 //----------------------------------------------------------------------
 // Whether `user` may use this item, which CheckAffectStatus turns into
-// the item's affect status:
+// the item's affect status. The requirement and the check are the
+// server's (decore::meetsRequirement over RequirementOf's answer): a
+// slayer needs the STR, DEX, INT, their sum and the gender, a vampire
+// the level and the gender, an ousters the four stats and the level.
+// Three gates before it are the client's own, and stay so:
 // - a pet whose life has run out lends nothing;
-// - an item not made for the user's race is refused;
-// - a slayer needs the item's STR, DEX, INT and their sum, a vampire its
-//   level, and both the item's gender; an ousters needs STR, DEX, INT,
-//   their sum and the level, and no gender. A requirement of 0 asks
-//   nothing;
-// - a quest item is usable whatever its requirements, by a slayer or a
-//   vampire the gender allows, and by any ousters.
+// - an item not made for the user's race is refused (the server
+//   refuses it elsewhere, before its wearing check);
+// - a quest item is usable whatever it asks, by a slayer or a vampire
+//   the gender allows and by any ousters (the server has no such rule).
+// The server also checks an advancement class, which this does not.
 //----------------------------------------------------------------------
 bool
 MItem::IsUsableBy(const MItemUser& user) const
@@ -1306,83 +1335,54 @@ MItem::IsUsableBy(const MItemUser& user) const
 		}
 	}
 
-	const bool genderAllows = IsGenderForAll()
-		|| (IsGenderForMale() && user.bMale)
-		|| (IsGenderForFemale() && !user.bMale);
-
+	decore::EquipRace race = decore::EquipRace::Slayer;
 	switch (user.race)
 	{
 	case RACE_SLAYER:
-	{
 		if (!IsSlayerItem())
 		{
 			return false;
 		}
-		if (genderAllows && IsQuestItem())
-		{
-			return true;
-		}
-
-		const int reqSTR = GetRequireSTR();
-		const int reqDEX = GetRequireDEX();
-		const int reqINT = GetRequireINT();
-		const int reqSUM = GetRequireSUM();
-		const int sum = user.str + user.dex + user.inte;
-
-		return genderAllows
-			&& (reqSTR == 0 || user.str >= reqSTR)
-			&& (reqDEX == 0 || user.dex >= reqDEX)
-			&& (reqINT == 0 || user.inte >= reqINT)
-			&& (reqSUM == 0 || sum >= reqSUM);
-	}
+		race = decore::EquipRace::Slayer;
+		break;
 
 	case RACE_VAMPIRE:
-	{
 		if (!IsVampireItem())
 		{
 			return false;
 		}
-		if (genderAllows && IsQuestItem())
-		{
-			return true;
-		}
-
-		const int reqLevel = GetRequireLevel();
-
-		return genderAllows
-			&& (reqLevel == 0 || static_cast<DWORD>(user.level) >= static_cast<DWORD>(reqLevel));
-	}
+		race = decore::EquipRace::Vampire;
+		break;
 
 	case RACE_OUSTERS:
-	{
 		if (!IsOustersItem())
 		{
 			return false;
 		}
-		if (IsQuestItem())
-		{
-			return true;
-		}
-
-		const int reqLevel = GetRequireLevel();
-		const int reqSTR = GetRequireSTR();
-		const int reqDEX = GetRequireDEX();
-		const int reqINT = GetRequireINT();
-		const int reqSUM = GetRequireSUM();
-		const int sum = user.str + user.dex + user.inte;
-
-		return (reqLevel == 0 || static_cast<DWORD>(user.level) >= static_cast<DWORD>(reqLevel))
-			&& (reqSTR == 0 || user.str >= reqSTR)
-			&& (reqDEX == 0 || user.dex >= reqDEX)
-			&& (reqINT == 0 || user.inte >= reqINT)
-			&& (reqSUM == 0 || sum >= reqSUM);
-	}
+		race = decore::EquipRace::Ousters;
+		break;
 
 	default:
 		// No creature has another race (MCreature::GetRace returns one of
 		// the three).
 		return false;
 	}
+
+	const int sex = user.bMale ? decore::sex::Male : decore::sex::Female;
+
+	if (IsQuestItem())
+	{
+		return race == decore::EquipRace::Ousters
+			|| decore::genderAllows(sex, GenderRequirementOf(*this));
+	}
+
+	decore::EquipStats current = {};
+	current.str = user.str;
+	current.dex = user.dex;
+	current.inte = user.inte;
+	current.level = user.level;
+	current.sex = sex;
+	return decore::meetsRequirement(race, RequirementOf(*this), current);
 }
 
 //----------------------------------------------------------------------

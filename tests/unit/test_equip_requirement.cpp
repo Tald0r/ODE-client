@@ -352,8 +352,10 @@ TEST(EquipRequirement, GenderRestrictsSlayersAndVampiresOnly)
 }
 
 // The client's item table marks a gender with two flags, where the
-// server keeps one value. An item with both flags set names both sexes,
-// so either may use it.
+// server keeps one value (decore::gender): neither is Both, one alone
+// is that sex. An item with both flags set names both sexes; no server
+// value says that, and it is read as Both, so either sex may use it, as
+// before the client asked the server's rule.
 TEST(EquipRequirement, BothGenderFlagsAllowEitherSex)
 {
 	EquipWorld world;
