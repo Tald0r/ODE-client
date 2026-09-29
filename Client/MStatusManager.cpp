@@ -350,7 +350,7 @@ MStatusManager::SetCharacterSelectSlot(const PCSlayerInfo& info)
 void
 MStatusManager::SetCharacterSelectSlot(const PCVampireInfo& info)
 {
-	SetCurrentWeaponDomain( SKILLDOMAIN_VAMPIRE, info.getExp() );
+	SetCurrentWeaponDomain( SKILLDOMAIN_VAMPIRE, info.getLevel() );
 	Set(info.getSTR(), info.getDEX(), info.getINT());
 }
 

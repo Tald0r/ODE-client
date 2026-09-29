@@ -246,7 +246,8 @@ TEST(StatusManager, SlayerSlotReadsTheWeaponDomainLevel)
 	CHECK_EQ(30, status.GetProtection());
 }
 
-TEST(StatusManager, VampireSlotReadsTheCharacter)
+// The slot's level is the vampire's level, 7, not its experience, 1234.
+TEST(StatusManager, VampireSlotReadsTheLevel)
 {
 	PCVampireInfo info;
 	info.setSTR(20);
@@ -257,11 +258,11 @@ TEST(StatusManager, VampireSlotReadsTheCharacter)
 
 	MStatusManager status;
 	status.SetCharacterSelectSlot(info);
-	CHECK_EQ(513, status.GetTOHIT());
-	CHECK_EQ(256, status.GetDefense());
-	CHECK_EQ(266, status.GetProtection());
-	CHECK_EQ(250, status.GetMinDAM());
-	CHECK_EQ(251, status.GetMaxDAM());
+	CHECK_EQ(22, status.GetTOHIT());		// vampire-tohit-level-7-truncates
+	CHECK_EQ(11, status.GetDefense());		// 20 / 2 + 7 / 5
+	CHECK_EQ(21, status.GetProtection());	// 20 + 7 / 5
+	CHECK_EQ(4, status.GetMinDAM());		// 20 / 6 + 7 / 5
+	CHECK_EQ(6, status.GetMaxDAM());		// 20 / 4 + 7 / 5
 }
 
 TEST(StatusManager, OustersSlotReadsTheLevel)
