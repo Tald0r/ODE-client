@@ -1,7 +1,9 @@
 # The reference Linux build environment for the client: what
 # tools/ci/verify-linux.sh and .github/workflows/linux.yml assume, in one
-# image, so a Windows machine with Docker can run the Linux build and
-# tests without a Linux install (docs/linux-macos-port-assessment-2026-09-07.md).
+# image, so a Windows machine or a Mac with Docker can run the Linux build
+# and tests without a Linux install (docs/linux-macos-port-assessment-2026-09-07.md).
+# On an arm64 host the image is aarch64, which has no warning baseline;
+# pass --platform linux/amd64 to build and run it as the x86_64 CI profile.
 #
 #   docker build -t darkeden-linux tools/linux
 #   docker run --rm -v "$PWD:/src" darkeden-linux tools/ci/verify-linux.sh linux

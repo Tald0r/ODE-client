@@ -72,8 +72,9 @@ three races wear and the shop, behind the `MItemHost` the executable installs,
 the price manager behind its `MPriceHost`, the skill core (the info
 table, the skill set, the domains and their tree; what the player can use
 right now stays executable-side), and the combat-stat preview
-(`MStatusManager`: the character-select to-hit, defense, protection,
-damage and attack speed) - with the user, config and
+(`MStatusManager`: the character-select to-hit, defense, protection
+and damage, and the attack speed `MPlayer::CalculateStatus` takes from
+it) - with the user, config and
 timed-item loaders it reads, and their string support, membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4 and 4.12),
@@ -98,6 +99,13 @@ one library all three link. Game logic compiled straight into the `DarkEden` exe
 including the packet *handlers* under `Client/PacketHandler/` — cannot be linked into
 a test binary. That is a structural limit, and it is the single biggest constraint on
 how work gets verified here.
+
+`decore` is a static library of its own: the server's shared rules
+(`third_party/decore`), a byte-identical copy that is resynced with
+`tools/decore/sync.pl` and never edited by hand, which `gamemodel` links
+(`third_party/decore/README.md`). Two ctests keep it honest: `decore_tests`
+asserts the shared parity vectors on this toolchain, and `decore_vendored`
+checks the copy against its manifest.
 
 `unit_tests` links `basic`, `SpriteLib`, `TextSystem`, `packetwire`, `gamemodel`
 and `dxlib`. The input pump reaches application state and text editors through
@@ -197,10 +205,11 @@ one that sees that class.
 `DarkEden` builds and links on both, and on Linux run headless
 (`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and
 exits cleanly on `SDL_QUIT`; login and beyond are unverified off Windows (the
-port assessment's area F). **The macOS numbers come from GitHub's arm64
-runner** (`.github/workflows/macos.yml`, invoked on master pushes or
-manually) and one Apple Silicon Mac (macOS 27.0, Apple Clang 21, the
-`macos` preset's 12 ctest suites green on 2026-09-27); nothing has been
+port assessment's area F). **The macOS figures come from GitHub's arm64 and Intel
+runners** (`.github/workflows/macos.yml`, invoked on master pushes or
+manually). One Apple Silicon Mac (macOS 27.0, Apple Clang 21) has also
+built every target and run the `macos` preset's 14 ctest tests green on
+2026-09-29, without recording the `unit_tests` totals; nothing has been
 watched on a Mac's display,
 and a `<SDL2/...>` include spelling breaks the Homebrew build - it is
 `<SDL.h>` everywhere (`basic/Platform.h` says why).
