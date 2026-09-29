@@ -1329,7 +1329,7 @@ MItem::GetRequireLevel() const
 // user's race's rule, also for an item made for several races): a
 // slayer needs the STR, DEX, INT, their sum and the gender, a vampire
 // the level and the gender, an ousters the four stats and the level.
-// Three gates come before it:
+// Four gates come before it:
 // - a pet whose life has run out lends nothing (the client's own);
 // - an item not made for the user's race is refused (the client's
 //   own; the server refuses it elsewhere, before its wearing check);
@@ -1338,11 +1338,17 @@ MItem::GetRequireLevel() const
 //   timed-item register holds, which IsQuestItem counts, this is the
 //   server's time-limited gate (isRealWearing: the gender for a slayer
 //   or a vampire, nothing for an ousters); for an item flagged a quest
-//   item (m_Quest) it is the client's own.
-// The server also checks an advancement class, before its time-limited
-// gate for a slayer or a vampire, which this does not; and in a premium
-// zone it asks a paying player for a unique item, one with several
-// options or a couple ring, which is the server's alone.
+//   item (m_Quest) it is the client's own;
+// - a couple ring is usable by a slayer or a vampire whatever it asks,
+//   stats, level or gender: the server's Slayer and
+//   Vampire::isRealWearing let one through (isCoupleRing) after their
+//   time-limited gate. Ousters::isRealWearing has no such case.
+// Two gates of the server's are not here. It checks an advancement
+// class, before its time-limited gate for a slayer or a vampire and
+// after it for an ousters. And in a premium zone, after the time-limited
+// gate, it refuses a player who does not pay a unique item or one with
+// several options, whatever the race, and a slayer or a vampire also a
+// couple ring (Ousters::isRealWearing has that clause commented out).
 //----------------------------------------------------------------------
 bool
 MItem::IsUsableBy(const MItemUser& user) const
@@ -1396,6 +1402,13 @@ MItem::IsUsableBy(const MItemUser& user) const
 	{
 		return race == decore::EquipRace::Ousters
 			|| decore::genderAllows(sex, GenderRequirementOf(*this));
+	}
+
+	if (race != decore::EquipRace::Ousters
+		&& (GetItemClass() == ITEM_CLASS_COUPLE_RING
+			|| GetItemClass() == ITEM_CLASS_VAMPIRE_COUPLE_RING))
+	{
+		return true;
 	}
 
 	decore::EquipStats current = {};

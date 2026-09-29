@@ -13,8 +13,8 @@
 // whether a character meets it names the equip.tsv row it takes its
 // numbers from. The tests of what de-core leaves to its caller name
 // none, since equip.tsv has no row for them: the gates before its rule
-// (a quest item, another race's item, a dead pet) and the reading of
-// an item with both of the client's gender flags set.
+// (a quest item, another race's item, a dead pet, a couple ring) and
+// the reading of an item with both of the client's gender flags set.
 //
 // The items are real MItem objects over a table row whose race flags,
 // requirement and gender these tests set, and an option table whose
@@ -59,6 +59,8 @@ struct EquipWorld : GameModelWorld
 	{
 		g_pItemTable->InitClass(ITEM_CLASS_SWORD, 1);
 		g_pItemTable->InitClass(ITEM_CLASS_PET_ITEM, 1);
+		g_pItemTable->InitClass(ITEM_CLASS_COUPLE_RING, 1);
+		g_pItemTable->InitClass(ITEM_CLASS_VAMPIRE_COUPLE_RING, 1);
 		for (int i = 0; i < kOptionRows; i++)
 		{
 			testfw::MutableRow(*g_pItemOptionTable, i).RequireSUM = kOptions[i].sum;
@@ -73,16 +75,34 @@ struct Gear : public MItem
 	ITEM_CLASS	GetItemClass() const	{ return ITEM_CLASS_SWORD; }
 };
 
-ITEMTABLE_INFO&	GearInfo()
+// A slayer's and a vampire's couple ring. MCoupleRing and
+// MVampireCoupleRing cannot be linked here (their UseGear is the
+// executable's), and add nothing to the rule but their class.
+struct CoupleRing : public MItem
 {
-	return testfw::MutableRow(*g_pItemTable, ITEM_CLASS_SWORD, 0);
+	ITEM_CLASS	GetItemClass() const	{ return ITEM_CLASS_COUPLE_RING; }
+};
+
+struct VampireCoupleRing : public MItem
+{
+	ITEM_CLASS	GetItemClass() const	{ return ITEM_CLASS_VAMPIRE_COUPLE_RING; }
+};
+
+ITEMTABLE_INFO&	RowOf(ITEM_CLASS itemClass)
+{
+	return testfw::MutableRow(*g_pItemTable, itemClass, 0);
 }
 
-// The gear row made for `raceFlags` (FLAG_RACE_*), asking str, dex,
-// int, their sum and a level, for either sex.
-void	SetGear(BYTE raceFlags, int str, int dex, int intel, int sum, int level)
+ITEMTABLE_INFO&	GearInfo()
 {
-	ITEMTABLE_INFO& info = GearInfo();
+	return RowOf(ITEM_CLASS_SWORD);
+}
+
+// The row of `itemClass` made for `raceFlags` (FLAG_RACE_*), asking
+// str, dex, int, their sum and a level, for either sex.
+void	SetRow(ITEM_CLASS itemClass, BYTE raceFlags, int str, int dex, int intel, int sum, int level)
+{
+	ITEMTABLE_INFO& info = RowOf(itemClass);
 	info.Race = raceFlags;
 	info.SetRequireSTR((BYTE)str);
 	info.SetRequireDEX((BYTE)dex);
@@ -91,6 +111,12 @@ void	SetGear(BYTE raceFlags, int str, int dex, int intel, int sum, int level)
 	info.SetRequireLevel((BYTE)level);
 	info.bMaleOnly = false;
 	info.bFemaleOnly = false;
+}
+
+// The gear row, as SetRow sets it.
+void	SetGear(BYTE raceFlags, int str, int dex, int intel, int sum, int level)
+{
+	SetRow(ITEM_CLASS_SWORD, raceFlags, str, dex, intel, sum, level);
 }
 
 MItemUser	User(Race race, int str, int dex, int intel, int level, bool bMale)
@@ -461,6 +487,47 @@ TEST(EquipRequirement, QuestItemIsUsableWhereTheGenderAllows)
 	SetGear(FLAG_RACE_OUSTERS, 100, 100, 100, 300, 100);
 	GearInfo().bFemaleOnly = true;
 	CHECK(item.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 1, true)));
+}
+
+// A slayer's or a vampire's couple ring is usable whatever its table
+// and its options ask, and whatever its gender: the server's Slayer and
+// Vampire::isRealWearing let one through (isCoupleRing) before they
+// compute a requirement. The gates before it still apply: another
+// race's ring is refused, and a quest item, which counts a
+// time-limited one, asks the gender first, as isRealWearing's
+// time-limited gate does. Ousters::isRealWearing has no such case; no
+// ousters couple ring exists, so its check is of a made-up row.
+TEST(EquipRequirement, ACoupleRingAsksASlayerOrAVampireNothing)
+{
+	EquipWorld world;
+
+	CoupleRing ring;
+	ring.AddItemOption(8);
+	SetRow(ITEM_CLASS_COUPLE_RING, FLAG_RACE_SLAYER, 100, 100, 100, 300, 0);
+	RowOf(ITEM_CLASS_COUPLE_RING).bMaleOnly = true;
+	CHECK(ring.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, false)));
+	CHECK(ring.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
+	CHECK(!ring.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 100, false)));
+
+	VampireCoupleRing vampireRing;
+	vampireRing.AddItemOption(8);
+	SetRow(ITEM_CLASS_VAMPIRE_COUPLE_RING, FLAG_RACE_VAMPIRE, 0, 0, 0, 0, 50);
+	RowOf(ITEM_CLASS_VAMPIRE_COUPLE_RING).bFemaleOnly = true;
+	CHECK(vampireRing.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 1, true)));
+	CHECK(vampireRing.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 1, false)));
+	CHECK(!vampireRing.IsUsableBy(User(RACE_SLAYER, 100, 100, 100, 0, false)));
+
+	ring.SetQuestFlag(true);
+	CHECK(!ring.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, false)));
+	CHECK(ring.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
+	ring.SetQuestFlag(false);
+
+	// 100/100/100/300 at level 100 raised by the option asks an ousters
+	// 120/120/120/310 at level 110.
+	SetRow(ITEM_CLASS_COUPLE_RING, FLAG_RACE_OUSTERS, 100, 100, 100, 300, 100);
+	CHECK(!ring.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 1, true)));
+	CHECK(!ring.IsUsableBy(User(RACE_OUSTERS, 120, 120, 120, 109, true)));
+	CHECK(ring.IsUsableBy(User(RACE_OUSTERS, 120, 120, 120, 110, true)));
 }
 
 // A pet whose life has run out lends nothing; a living one is judged
