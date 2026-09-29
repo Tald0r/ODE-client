@@ -82,6 +82,9 @@ namespace
 	{
 	public:
 		PacketID_t getPacketID() const { return 0; }
+#ifdef __DEBUG_OUTPUT__
+		std::string getPacketName() const { return "TestModifyInfo"; }
+#endif
 	};
 
 	struct Entry
