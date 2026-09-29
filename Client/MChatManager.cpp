@@ -713,7 +713,12 @@ MChatManager::AddMask(char* str, int percent) const
 			}
 			else
 			{
-				str += maskLen;
+				// Kept: step over the character's bytes, but not over the
+				// NUL of a line that ends in a lone lead byte.
+				for (int i=0; i<maskLen && *str != '\0'; i++)
+				{
+					str++;
+				}
 			}
 		}
 		else

@@ -34,6 +34,7 @@
 #include "MStringArray.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iterator>
@@ -866,5 +867,119 @@ TEST(ChatMask, ALongLineIsMaskedToItsEnd)
 			if (line[i] == 'a' || std::strchr("#&*%!$@", line[i]) == NULL)
 				allMasked = false;
 		CHECK(allMasked);
+	}
+}
+
+// The callers pass percents between 0 and 100 (GCSay 50 for a distant
+// speaker, the whisper and party handlers a computed one), so each
+// character is masked or kept at random. A byte with the high bit set
+// is a two-byte character's lead byte and is masked or kept together
+// with the byte after it. These tests hold for any rand() sequence;
+// srand only makes a failing run repeatable on one platform.
+namespace {
+
+const char* const	kMaskChars = "#&*%!$@";
+
+bool IsMaskChar(char c)
+{
+	return c != '\0' && std::strchr(kMaskChars, c) != NULL;
+}
+
+// Masks line (which ends in its NUL) in a buffer with sentinel bytes
+// after the NUL, and checks that only the line's own bytes changed:
+// each is kept or masked, spaces are kept, a lead byte and the byte
+// after it share their fate, and the NUL and the sentinels are intact.
+bool MaskStaysInTheLine(const MChatManager& chat, const std::string& line, int percent)
+{
+	const std::string	sentinel(16, 'z');
+	std::vector<char>	buffer(line.begin(), line.end());
+	buffer.push_back('\0');
+	buffer.insert(buffer.end(), sentinel.begin(), sentinel.end());
+	buffer.push_back('\0');
+
+	chat.AddMask(buffer.data(), percent);
+
+	bool ok = std::string(buffer.data() + line.size() + 1) == sentinel
+		&& buffer[line.size()] == '\0';
+	for (size_t i = 0; ok && i < line.size(); i++)
+	{
+		const char	original = line[i];
+		const char	now = buffer[i];
+		if (original == ' ')
+		{
+			ok = now == ' ';
+		}
+		else if ((original & 0x80) != 0)
+		{
+			const bool	masked = now != original;
+			ok = !masked || IsMaskChar(now);
+			if (ok && i + 1 < line.size())
+			{
+				i++;
+				ok = masked ? IsMaskChar(buffer[i]) : buffer[i] == line[i];
+			}
+		}
+		else
+		{
+			ok = now == original || IsMaskChar(now);
+		}
+	}
+	return ok;
+}
+
+} // namespace
+
+TEST(ChatMask, ALineEndingInALeadByteIsMaskedOnlyToItsEnd)
+{
+	MChatManager chat;
+
+	// A server line cut after a two-byte character's first byte (the
+	// callers copy into char[256], and a peer can send one). Kept, the
+	// lead byte stepped over the NUL and the mask ran on past the line.
+	const int	percents[] = { 1, 25, 50, 75, 99 };
+	for (int percent : percents)
+	{
+		for (unsigned int seed = 1; seed <= 64; seed++)
+		{
+			std::srand(seed);
+			CHECK(MaskStaysInTheLine(chat, "a\xB0", percent));
+			CHECK(MaskStaysInTheLine(chat, "\xB0", percent));
+			CHECK(MaskStaysInTheLine(chat, "ab " GA "\xB0", percent));
+		}
+	}
+
+	// The same line in a buffer that ends at its NUL, as the callers' full
+	// 255-byte line does: AddressSanitizer reports any read past it.
+	for (unsigned int seed = 1; seed <= 64; seed++)
+	{
+		std::srand(seed);
+		std::vector<char>	line = { 'a', '\xB0', '\0' };
+		chat.AddMask(line.data(), 50);
+		CHECK(line[2] == '\0');
+	}
+}
+
+TEST(ChatMask, EveryByteValueAtEveryMiddlePercentStaysInTheLine)
+{
+	MChatManager chat;
+
+	// Every byte value but NUL, then a lone lead byte at the end; once
+	// rising and once falling, so the two-byte characters pair up
+	// differently.
+	std::string	line;
+	std::string	falling;
+	for (int b = 1; b <= 255; b++)
+	{
+		line.push_back(static_cast<char>(b));
+		falling.push_back(static_cast<char>(256 - b));
+	}
+	line.push_back('\xB0');
+	falling.push_back('\xB0');
+
+	for (int percent = 1; percent <= 99; percent++)
+	{
+		std::srand(static_cast<unsigned int>(percent));
+		CHECK(MaskStaysInTheLine(chat, line, percent));
+		CHECK(MaskStaysInTheLine(chat, falling, percent));
 	}
 }
