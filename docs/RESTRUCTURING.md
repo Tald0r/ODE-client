@@ -1009,7 +1009,10 @@ rounds settled* for the host rules). Test fixtures share
   > ranges no vampire skill by its level (Rapid Gliding's, Bloody
   > Zenith's and Set Afire's ranges are its stats'). It ranges
   > Blunting, Tendril, Prominence, Teleport and Charging Attack by their
-  > formulas' Range, the minimum plus the slot's level / 10, which the
+  > formulas' Range (and Soul Rebirth by its own, 2 + level / 10 plus
+  > the passive skill's level / 10, which the client's own Soul Rebirth
+  > override does not follow: a left-over), the minimum plus the slot's
+  > level / 10, which the
   > step to level 30 gives for the span of 3 each has in the seed and
   > in the upstream `SkillInfo.inf`; `test_skill_range.cpp` checks the
   > step against those `decore::skillformula` formulas at levels 0 to
@@ -1070,7 +1073,9 @@ rounds settled* for the host rules). Test fixtures share
   >   `EffectWillOfLife` keeps the Damage of the level it was cast at.
   >   A level change alone does not skew it (`Function_MODIFY_LEVEL`
   >   calls no `CheckRegen`), so the prediction is the cast level's
-  >   unless another `CheckRegen` (an effect status added or removed, a
+  >   unless another `CheckRegen` (an effect status added, which
+  >   `MPlayer::AddEffectStatus` follows with one for every status; a
+  >   removal calls it only for Will of Life's own; a
   >   creature type change, `MODIFY_BASIC_DEX`, a rank bonus packet)
   >   follows a level change across a multiple of seven while the
   >   effect lasts (3 to 18 s); then it is off by 1 HP a tick until the
