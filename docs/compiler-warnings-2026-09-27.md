@@ -656,7 +656,11 @@ The deliberate changes:
   the `tm` itself, because `localtime_s` sets every field to -1 on
   failure.
 - **On Windows, the `_s` scanners** fail a `%s` conversion whose word would
-  have overflowed its buffer. The old call overflowed it.
+  have overflowed its buffer. The old call overflowed it. `CRT_BUFFER`
+  rejects a pointer at compile time (`715907f6`). Still open: nothing
+  catches a `%s`, `%c` or `%[` buffer passed with no `CRT_BUFFER` at all,
+  which on Windows reads the next argument as the capacity, and MSVC is
+  not given the `_Scanf_s_format_string_` annotation that would check it.
 - **The two `GetSystem()` bodies** no longer query the version. `Client.cpp`'s
   rejected only Windows 9x or a failed query, neither possible for an x64
   build, so it returns `TRUE`; its one call is inside a comment.
@@ -673,8 +677,6 @@ outcome.
 
 - **F155** lines 484, 494, 503: frame-pack `GetSize()` (unsigned short) is stored in the `BYTE` max-action arrays.
   - **Not a defect:** the arrays' only reader, `GetCreatureActionCountMax`, returns `BYTE`, and every consumer stores action counts as `BYTE`, so widening these three arrays would change nothing.
-- **C4244** lines 615, 1669: `static_cast<long>` on `DefWindowProc`'s result cleared the warning, but the defect it pointed at was the signature. `WindowProc` and `PatchLogWindowProc` returned `long`, 32 bits on x64, and were registered through a `(WNDPROC)` cast as procedures that return the 64-bit `LRESULT`, so a handle or pointer result (`WM_GETICON`, `WM_GETFONT`, `WM_GETOBJECT`) lost its upper half.
-  - **Fixed** after this cleanup: both are `LRESULT CALLBACK` with the `WNDPROC` signature, return `DefWindowProc`'s result unconverted, and are assigned to `lpfnWndProc` without a cast.
 
 #### `Client/MEffectGeneratorTable.cpp`
 
@@ -784,7 +786,8 @@ outcome.
 
 ## Found while fixing
 
-Fixing the entries above turned up these, which no entry listed.
+Fixing the entries above, and a later review of that work, turned up
+these, which no entry listed.
 
 Fixed:
 
@@ -804,6 +807,14 @@ Fixed:
   the server multiplies in double (`981d7fee`).
 - `GCWaitGuildList::getListNum()` returned a `BYTE` over a `WORD` count
   (`130fb6f9`, completing F167).
+- `Client.cpp`'s `WindowProc` and `PatchLogWindowProc` returned `long`,
+  32 bits on x64, and were registered through a `(WNDPROC)` cast as
+  procedures that return the 64-bit `LRESULT`, so a handle or pointer
+  result (`WM_GETICON`, `WM_GETFONT`, `WM_GETOBJECT`) lost its upper half.
+  The cleanup had cleared C4244 there with a `static_cast<long>` on
+  `DefWindowProc`'s result; a later review found the signature behind it.
+  Both now have the `WNDPROC` signature and are assigned without a cast
+  (`45ef1f57`).
 - `ValueList<T>::toString` did not compile under `__DEBUG_OUTPUT__`
   (`ec9d41bc`). No build defines the macro and no automated check compiles
   under it, so this class of break has no guard; it was found because new
@@ -860,13 +871,21 @@ Not fixed, for whoever takes them up:
     time-limited item it quotes 0. A single repair of any of them the
     server refuses, and the gear window does not ask for one. These are
     the server's to change.
-  - **A repair price for what the server will not repair.** `RepairPrice`
-    zeroes only the vampire portal, timed items and the blood bible sign,
-    while the server's `isRepairableItem` also refuses unique items, flag
-    items and a longer list of classes. The item description still prints
-    a repair price for a damaged unique item. The repair cursor turns unique,
-    quest, event and vampire amulet items away with a message before any
-    request goes out, and the server refuses them anyway.
+  - **A repair price for what the server will not repair.** Besides the
+    couple rings and the gear that wears nothing (above), `RepairPrice`
+    quotes 0 for the vampire portal, a timed item, the blood bible sign
+    and every class with no durability that holds no charges, which
+    covers the flag item (an event item). Of what the server's
+    `isRepairableItem` refuses, it still quotes a repair for a damaged
+    unique item of any class, and for a VampireAmulet. The item
+    description prints that price for a unique item; it prints none for
+    the amulet. The gear and inventory repair cursors turn unique,
+    quest, event and vampire amulet items away with a message, and send
+    a request only when the quote is above 0, so the only single repair
+    they send that the server refuses is for gear that wears nothing
+    but carries durability options (the next item). The motorcycle,
+    which the client also gives a durability, is never in the gear or
+    the inventory; it is repaired through its key.
   - **Durability options on gear that wears nothing.** The server scales
     the maximum of 1 by durability options as it scales any other, and
     truncates. With options totalling 200% or more, a Dermis, Fascia or
