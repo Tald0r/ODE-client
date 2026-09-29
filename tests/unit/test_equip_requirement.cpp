@@ -49,6 +49,7 @@ const OptionRow	kOptions[] = {
 	{ 5, 10 },		// 5
 	{ 0, 120 },		// 6
 	{ 0, 5 },		// 7
+	{ 10, 10 },		// 8
 };
 const int	kOptionRows = (int)(sizeof(kOptions) / sizeof(kOptions[0]));
 
@@ -323,6 +324,49 @@ TEST(EquipRequirement, TheCheckReadsTheRaisedRequirement)
 
 	CHECK(!item.IsUsableBy(User(RACE_SLAYER, 50, 40, 30, 0, true)));
 	CHECK(item.IsUsableBy(User(RACE_SLAYER, 60, 50, 40, 0, true)));
+}
+
+// An item made for several races is checked by the wearer's race's
+// rule, as the server's isRealWearing computes it, whichever race's
+// rule the item's flags would pick.
+TEST(EquipRequirement, AnItemForSeveralRacesIsCheckedByTheWearersRule)
+{
+	EquipWorld world;
+	Gear item;
+	item.AddItemOption(8);
+
+	// slayer-attr-old-cap-passed-by-1: 181/181/181/250 raised by an
+	// option of sum 10 asks a slayer 200/200/200/260, and an ousters
+	// 201/201/201/260, since its STR, DEX and INT are not capped
+	// (ousters-attrs-not-capped).
+	SetGear(FLAG_RACE_SLAYER | FLAG_RACE_OUSTERS, 181, 181, 181, 250, 0);
+	CHECK(item.IsUsableBy(User(RACE_SLAYER, 200, 200, 200, 0, true)));
+	CHECK(!item.IsUsableBy(User(RACE_SLAYER, 199, 200, 200, 0, true)));
+	CHECK(!item.IsUsableBy(User(RACE_OUSTERS, 200, 200, 200, 0, true)));
+	CHECK(item.IsUsableBy(User(RACE_OUSTERS, 201, 201, 201, 0, true)));
+
+	// The same row for a slayer and a vampire (the shape of the
+	// server's relics): a slayer still needs the raised 200, not the
+	// table's 181 that the vampire rule passes through
+	// (vampire-attrs-pass-through), and a vampire the level of 0 the
+	// option raises to 10 (vampire-zero-level-raised).
+	SetGear(FLAG_RACE_SLAYER | FLAG_RACE_VAMPIRE, 181, 181, 181, 250, 0);
+	CHECK(!item.IsUsableBy(User(RACE_SLAYER, 181, 181, 181, 0, true)));
+	CHECK(item.IsUsableBy(User(RACE_SLAYER, 200, 200, 200, 0, true)));
+	CHECK(!item.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 9, true)));
+	CHECK(item.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 10, true)));
+
+	// vampire-old-cap-passed: a level of 90 raised by 20 asks a vampire
+	// 100, and an ousters 110, since its level has no lower cap
+	// (ousters-no-old-level-cap).
+	Gear levelled;
+	levelled.AddItemOption(4);
+	levelled.AddItemOption(4);
+	SetGear(FLAG_RACE_VAMPIRE | FLAG_RACE_OUSTERS, 0, 0, 0, 0, 90);
+	CHECK(levelled.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 100, true)));
+	CHECK(!levelled.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 99, true)));
+	CHECK(!levelled.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 109, true)));
+	CHECK(levelled.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 110, true)));
 }
 
 // The slayer and vampire gender rows (slayer-male-wearer-female-item and

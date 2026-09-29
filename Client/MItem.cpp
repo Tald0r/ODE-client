@@ -1188,12 +1188,14 @@ MItem::GetItemOptionRequireSUM() const
 //----------------------------------------------------------------------
 // The requirement an item shows and checks
 //----------------------------------------------------------------------
-// Which race's rule an item's requirement follows. The item has no
-// wearer here, so its race flags choose: an ousters item takes the
-// ousters rule, then a vampire item the vampire's, and anything else
-// the slayer's. In the server's item tables a slayer item never asks a
-// level and a vampire item never asks STR, DEX or INT, so the fields a
-// rule passes through untouched are 0 on the items it is chosen for.
+// Which race's rule the requirement an item shows follows. The item
+// descriptions have no wearer, so the race flags choose: an ousters
+// item takes the ousters rule, then a vampire item the vampire's, and
+// anything else the slayer's. In the server's item tables a slayer item
+// never asks a level and a vampire item never asks STR, DEX or INT, so
+// the fields a rule passes through untouched are 0 on the items it is
+// chosen for. An item made for several races shows the first flag's
+// rule; IsUsableBy checks it by the wearer's.
 //----------------------------------------------------------------------
 static decore::EquipRace
 RequirementRaceOf(const MItem& item)
@@ -1244,10 +1246,12 @@ GenderRequirementOf(const MItem& item)
 // register holds, which IsQuestItem counts, that is the server's rule:
 // isRealWearing lets a time-limited item through before any stat or
 // level. For an item flagged a quest item (m_Quest) it is the client's
-// own.
+// own. `race` is whose rule applies: the wearer's when an item is
+// checked, as isRealWearing asks it, and RequirementRaceOf's when it is
+// shown.
 //----------------------------------------------------------------------
 static decore::EquipRequirement
-RequirementOf(const MItem& item)
+RequirementOf(const MItem& item, decore::EquipRace race)
 {
 	decore::EquipRequirement base = {};
 	if (item.IsQuestItem())
@@ -1275,8 +1279,15 @@ RequirementOf(const MItem& item)
 		optionReqLevels.push_back(optionInfo.RequireLevel);
 	}
 
-	return decore::requiredStats(RequirementRaceOf(item), base, optionReqSums.data(),
+	return decore::requiredStats(race, base, optionReqSums.data(),
 								 optionReqLevels.data(), static_cast<int>(optionReqSums.size()));
+}
+
+// The requirement an item shows, by its race flags' rule.
+static decore::EquipRequirement
+RequirementOf(const MItem& item)
+{
+	return RequirementOf(item, RequirementRaceOf(item));
 }
 
 int
@@ -1314,7 +1325,8 @@ MItem::GetRequireLevel() const
 //----------------------------------------------------------------------
 // Whether `user` may use this item, which CheckAffectStatus turns into
 // the item's affect status. The requirement and the check are the
-// server's (decore::meetsRequirement over RequirementOf's answer): a
+// server's (decore::meetsRequirement over RequirementOf's answer by the
+// user's race's rule, also for an item made for several races): a
 // slayer needs the STR, DEX, INT, their sum and the gender, a vampire
 // the level and the gender, an ousters the four stats and the level.
 // Three gates come before it:
@@ -1392,7 +1404,7 @@ MItem::IsUsableBy(const MItemUser& user) const
 	current.inte = user.inte;
 	current.level = user.level;
 	current.sex = sex;
-	return decore::meetsRequirement(race, RequirementOf(*this), current);
+	return decore::meetsRequirement(race, RequirementOf(*this, race), current);
 }
 
 //----------------------------------------------------------------------
