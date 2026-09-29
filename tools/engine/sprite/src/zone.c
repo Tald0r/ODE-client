@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "sprite_file.h"
 /* Debug logging */
 static int g_zone_debug = 0;
 static void zdbg(FILE* f, const char* fmt, ...) {
@@ -368,7 +369,7 @@ load_image_objects(FILE* f, Zone* zone) {
 Error* zone_load(const char* path, Zone* zone) {
     if (!path || !zone) return_err_code(ZONE_ERR_PARAM);
     
-    FILE* f = fopen(path, "rb");
+    FILE* f = sprite_open_file(path, "rb");
     if (!f) return_err_code(ZONE_ERR_IO);
     
     Error* err = zone_load_from_file(f, zone);
@@ -439,7 +440,7 @@ Error* zone_load_from_file(FILE* f, Zone* zone) {
 Error* zone_load_header(const char* path, ZoneHeader* header) {
     if (!path || !header) return_err_code(ZONE_ERR_PARAM);
     
-    FILE* f = fopen(path, "rb");
+    FILE* f = sprite_open_file(path, "rb");
     if (!f) return_err_code(ZONE_ERR_IO);
     
     Error* err = load_zone_header(f, header);

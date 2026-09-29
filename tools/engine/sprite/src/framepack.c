@@ -8,6 +8,7 @@
 #include "framepack.h"
 #include <stdlib.h>
 #include <string.h>
+#include "sprite_file.h"
 
 /* ============================================================================
  * CreatureFramePack Implementation
@@ -68,7 +69,7 @@ int creature_framepack_load(CreatureFramePack* pack, const char* filename)
 {
     if (pack == NULL || filename == NULL) return 0;
     
-    FILE* file = fopen(filename, "rb");
+    FILE* file = sprite_open_file(filename, "rb");
     if (file == NULL) {
         return 0;
     }
@@ -116,7 +117,7 @@ int creature_framepack_save(const CreatureFramePack* pack, const char* filename)
 {
     if (pack == NULL || filename == NULL) return 0;
     
-    FILE* file = fopen(filename, "wb");
+    FILE* file = sprite_open_file(filename, "wb");
     if (file == NULL) {
         return 0;
     }
@@ -152,7 +153,7 @@ void creature_framepack_info_to_file(const CreatureFramePack* pack, const char* 
 {
     if (pack == NULL || filename == NULL) return;
     
-    FILE* file = fopen(filename, "w");
+    FILE* file = sprite_open_file(filename, "w");
     if (file == NULL) return;
     
     fprintf(file, "=== CreatureFramePack Info ===\n");
@@ -241,7 +242,7 @@ int direction_framepack_load(DirectionFramePack* pack, const char* filename)
 {
     if (pack == NULL || filename == NULL) return 0;
     
-    FILE* file = fopen(filename, "rb");
+    FILE* file = sprite_open_file(filename, "rb");
     if (file == NULL) {
         return 0;
     }
@@ -328,7 +329,7 @@ int animation_framepack_load(AnimationFramePack* pack, const char* filename)
 {
     if (pack == NULL || filename == NULL) return 0;
     
-    FILE* file = fopen(filename, "rb");
+    FILE* file = sprite_open_file(filename, "rb");
     if (file == NULL) {
         return 0;
     }
@@ -408,7 +409,7 @@ int image_framepack_load(ImageFramePack* pack, const char* filename)
 {
     if (pack == NULL || filename == NULL) return 0;
     
-    FILE* file = fopen(filename, "rb");
+    FILE* file = sprite_open_file(filename, "rb");
     if (file == NULL) {
         return 0;
     }

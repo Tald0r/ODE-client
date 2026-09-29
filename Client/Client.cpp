@@ -2905,7 +2905,7 @@ ApplyPatch()
 					// _MAX_PATH plus the suffix below: g_CWD alone can be 259 bytes,
 					// and off Windows it is now the absolute data directory.
 					char logFile[_MAX_PATH + 32];
-					strncpy(logFile, g_pDebugMessage->GetFilename(), sizeof(logFile) - 1);
+					Basic::CopyBounded(logFile, g_pDebugMessage->GetFilename(), sizeof(logFile) - 1);
 					logFile[sizeof(logFile) - 1] = '\0';
 				
 					if (g_pDebugMessage!=NULL)
