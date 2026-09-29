@@ -9,8 +9,12 @@
 // wears. The server computes both with decore::requiredStats and
 // meetsRequirement (third_party/decore/domain/EquipRequirement.h),
 // pinned by the rows of third_party/decore/domain/vectors/equip.tsv,
-// which decore_tests asserts; each check here names the row it takes
-// its numbers from.
+// which decore_tests asserts. Each check of the requirement and of
+// whether a character meets it names the equip.tsv row it takes its
+// numbers from. The tests of what de-core leaves to its caller name
+// none, since equip.tsv has no row for them: the gates before its rule
+// (a quest item, another race's item, a dead pet) and the reading of
+// an item with both of the client's gender flags set.
 //
 // The items are real MItem objects over a table row whose race flags,
 // requirement and gender these tests set, and an option table whose
