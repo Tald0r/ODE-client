@@ -1324,11 +1324,12 @@ MItem::GetRequireLevel() const
 	else
 		maxValue = MAX_VAMPIRE_LEVEL;
 
-	// option에 따른 증가치
+	// what the options add
 	original += GetItemOptionRequireLevel();
 
+	// An ousters' level stops at one cap, whatever the table asks.
 	if( IsOustersItem() )
-		return original;
+		return min(original, MAX_OUSTERS_LEVEL);
 
 	return min(original, maxValue);
 	//return max(original, GetItemOptionRequireLevel());

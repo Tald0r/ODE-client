@@ -151,9 +151,9 @@ TEST(EquipRequirement, OustersGearAddsEachOptionToEveryNonZeroValue)
 	CHECK_EQ(60, item.GetRequireLevel());
 }
 
-// ousters-level-cap-passed: the server caps an ousters' level
-// requirement at 150 (90 + 70). The client today has no cap and shows
-// 160.
+// ousters-level-cap-passed: an ousters' level requirement stops at 150
+// (90 + 70), whatever the table's level; ousters-no-old-level-cap: it
+// has no lower cap (100 + 20).
 TEST(EquipRequirement, OustersLevelStopsAt150)
 {
 	EquipWorld world;
@@ -161,7 +161,13 @@ TEST(EquipRequirement, OustersLevelStopsAt150)
 	SetGear(FLAG_RACE_OUSTERS, 0, 0, 0, 0, 90);
 	item.AddItemOption(3);
 
-	CHECK_EQ(160, item.GetRequireLevel());
+	CHECK_EQ(150, item.GetRequireLevel());
+
+	SetGear(FLAG_RACE_OUSTERS, 0, 0, 0, 0, 100);
+	item.RemoveItemOption(3);
+	item.AddItemOption(4);
+	item.AddItemOption(4);
+	CHECK_EQ(120, item.GetRequireLevel());
 }
 
 // vampire-one-option: level 50 with one option of level 10 asks 60.
