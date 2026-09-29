@@ -14,6 +14,8 @@
 #include "Client/TempInformation.h"
 
 #include <cstdint>
+#include <cstring>
+#include <new>
 #include <vector>
 
 namespace
@@ -276,6 +278,29 @@ TEST(TempInformation, ConstructorStartsWithNoMode)
 	CHECK(info.StrValue1.empty());
 	CHECK(info.StrValue2.empty());
 	CHECK(info.StrValue3.empty());
+}
+
+TEST(TempInformation, ConstructorClearsEveryParkedValue)
+{
+	// GameInit allocates the register on the heap. A reply handler that
+	// reads a slot before any dialog wrote it must see a defined value:
+	// GCPartyInviteHandler's GC_PARTY_INVITE_ACCEPT looks up
+	// PartyInviter whether or not an invitation set it. Construct over
+	// poisoned storage so an unset member shows as the poison.
+	alignas(TempInformation) unsigned char storage[sizeof(TempInformation)];
+	std::memset(storage, 0xAB, sizeof(storage));
+	TempInformation* info = ::new (storage) TempInformation;
+
+	CHECK_EQ(TempInformation::MODE_NULL, info->GetMode());
+	CHECK_EQ((intptr_t)0, info->Value1);
+	CHECK_EQ((intptr_t)0, info->Value2);
+	CHECK_EQ((intptr_t)0, info->Value3);
+	CHECK_EQ((intptr_t)0, info->Value4);
+	CHECK_EQ(0, info->PartyInviter);
+	CHECK(info->pValue == NULL);
+	CHECK(info->TimeValue1 == MonotonicClock::TimePoint());
+
+	info->~TempInformation();
 }
 
 TEST(TempInformation, SetModeRoundTripsEveryMode)

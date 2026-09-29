@@ -18,6 +18,16 @@ TempInformation*		g_pTempInformation = NULL;
 TempInformation::TempInformation()
 {
 	Mode = MODE_NULL;
+
+	// A reply handler may read a slot before any dialog has written it
+	// (GC_PARTY_INVITE_ACCEPT looks up PartyInviter unconditionally), so
+	// every scalar slot starts defined: no value, no inviter, no pointer.
+	Value1 = 0;
+	Value2 = 0;
+	Value3 = 0;
+	Value4 = 0;
+	PartyInviter = 0;
+	pValue = NULL;
 }
 
 TempInformation::~TempInformation()
