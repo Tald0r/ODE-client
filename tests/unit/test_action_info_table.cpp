@@ -638,3 +638,34 @@ TEST(ActionInfoTable, LoadKeepsTheDefaultsOfFieldsPastACut)
 	CHECK_EQ((int)EFFECTSTATUS_NULL, info.EffectStatus());
 	CHECK_EQ(TRUE, info.Attack());
 }
+
+// A file that ends inside the casting action info or the effect status
+// leaves the field as it was. istream::read stores the bytes it got
+// before it sets failbit, so a read into a local seeded from the member
+// mixed the file's low bytes with the seed's high bytes: a status cut
+// after its low byte 0x05 took EFFECTSTATUS_NULL's high byte and read as
+// 0x0105, a real status the file never held.
+TEST(ActionInfoTable, LoadKeepsACastingActionFieldCutPartWay)
+{
+	for (size_t got = 1; got < 4; got++)
+	{
+		Bytes b;
+		AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_SELF, EFFECTSTATUS_NULL, 0 });
+		b.data.resize(kCastingActionInfo + got);
+
+		ActionInfoFlags info;
+		CHECK(!LoadOneRow(info, b));
+		CHECK_EQ((int)ACTIONINFO_NULL, (int)info.GetCastingActionInfo());
+	}
+}
+
+TEST(ActionInfoTable, LoadKeepsAnEffectStatusCutPartWay)
+{
+	Bytes b;
+	AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_SELF, 5, 0 });
+	b.data.resize(kEffectStatus + 1);	// the low byte, 0x05, only
+
+	ActionInfoFlags info;
+	CHECK(!LoadOneRow(info, b));
+	CHECK_EQ((int)EFFECTSTATUS_NULL, info.EffectStatus());
+}

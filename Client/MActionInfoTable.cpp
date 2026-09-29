@@ -401,10 +401,12 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 
 	m_bCastingEffectToSelf = ReadFlag(file, m_bCastingEffectToSelf);
 	// Four bytes on disk for a two-byte id. Read into the member, the
-	// upper two landed on m_bCastingAction and the padding after it.
-	std::uint32_t castingActionInfo = m_CastingActionInfo;
-	file.read((char*)&castingActionInfo, 4);
-	m_CastingActionInfo = (TYPE_ACTIONINFO)castingActionInfo;
+	// upper two landed on m_bCastingAction and the padding after it. A
+	// read cut part-way stores the bytes it got, so the field is kept
+	// unless all four arrived.
+	std::uint32_t castingActionInfo = 0;
+	if (file.read((char*)&castingActionInfo, 4))
+		m_CastingActionInfo = (TYPE_ACTIONINFO)castingActionInfo;
 	m_bCastingAction = ReadFlag(file, m_bCastingAction);
 
 	file.read((char*)&m_Range, 1);
@@ -433,10 +435,12 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 	file.read((char*)&m_ActionResultValue, 4);
 
 	// EFFECTSTATUS_NULL is the writer's "no status"; anything past it
-	// reads as that, for the same reason as the packet type.
-	WORD es = (WORD)m_EffectStatus;
-	file.read((char*)&es, 2);
-	m_EffectStatus = es <= EFFECTSTATUS_NULL ? (EFFECTSTATUS)es : EFFECTSTATUS_NULL;
+	// reads as that, for the same reason as the packet type. A read cut
+	// after one byte stores that byte alone, so the field is kept unless
+	// both arrived.
+	WORD es = 0;
+	if (file.read((char*)&es, 2))
+		m_EffectStatus = es <= EFFECTSTATUS_NULL ? (EFFECTSTATUS)es : EFFECTSTATUS_NULL;
 	m_bAttack = ReadFlag(file, m_bAttack != FALSE) ? TRUE : FALSE;
 	file.read((char*)&m_fSelectCreature, 1);
 
