@@ -614,6 +614,26 @@ TEST(ChatFilter, ALineAsLongAsTheCallersBuffersHoldsItsWords)
 	CHECK(Filters(chat, korean, koreanExpected));
 }
 
+TEST(ChatFilter, AnEnglishWordLateInALongLineIsMaskedNotCut)
+{
+	ChatWorld world;
+	MChatManager chat;
+	LoadWords(chat, kWords);
+
+	// Each masked letter takes the mask text's character at the letter's
+	// place among the line's letters. The text is 165 x's in a 256-byte
+	// array: letters 165 to 255 took a NUL, which cut the line there, and
+	// letters from 256 on read past the array.
+	CHECK(Filters(chat, std::string(200, 'a') + "darn", std::string(200, 'a') + "xxxx"));
+	// The callers' longest line: 255 bytes, the word in its last letters.
+	CHECK(Filters(chat, std::string(251, 'b') + "darn", std::string(251, 'b') + "xxxx"));
+	CHECK(Filters(chat, std::string(160, 'b') + "darn" + std::string(91, 'b'),
+		std::string(160, 'b') + "xxxx" + std::string(91, 'b')));
+	// Past the array: the word's letters are 256 to 259, then 400 to 403.
+	CHECK(Filters(chat, std::string(256, 'c') + " darn", std::string(256, 'c') + " xxxx"));
+	CHECK(Filters(chat, std::string(400, 'c') + " darn", std::string(400, 'c') + " xxxx"));
+}
+
 //----------------------------------------------------------------------
 // MChatManager: AddMask (the hallucination and distance garbling)
 //----------------------------------------------------------------------
@@ -642,5 +662,26 @@ TEST(ChatMask, ZeroPercentMasksEverythingButSpaces)
 			CHECK(line[i] == ' ');
 		else
 			CHECK(line[i] != original[i] && std::strchr("#&*%!$@", line[i]) != NULL);
+	}
+}
+
+TEST(ChatMask, ALongLineIsMaskedToItsEnd)
+{
+	MChatManager chat;
+
+	// Each masked byte takes the next character of a 165-character mask
+	// text in a 256-byte array, from a random start below 16: past the
+	// text a NUL cut the line, and past the array the read ran on.
+	for (int round = 0; round < 8; round++)
+	{
+		std::vector<char> line(300, 'a');
+		line.push_back('\0');
+		chat.AddMask(line.data(), 0);
+		CHECK_EQ(300, (int)std::strlen(line.data()));
+		bool allMasked = true;
+		for (int i = 0; i < 300; i++)
+			if (line[i] == 'a' || std::strchr("#&*%!$@", line[i]) == NULL)
+				allMasked = false;
+		CHECK(allMasked);
 	}
 }

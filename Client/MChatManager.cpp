@@ -25,6 +25,19 @@ char MChatManager::s_MaskString2[256] =
 		//".....................................................................................................................................................................";
 
 //----------------------------------------------------------------------
+// Mask Char
+//----------------------------------------------------------------------
+// The n-th character of a mask text, which repeats. The texts are
+// shorter than their 256-byte arrays (the rest is NULs), so indexing them
+// by n directly cut a long line with a NUL and then read past the array.
+//----------------------------------------------------------------------
+static char
+MaskChar(const char* mask, int n)
+{
+	return mask[ n % static_cast<int>(strlen(mask)) ];
+}
+
+//----------------------------------------------------------------------
 //
 // constructor / destructor
 // 
@@ -351,7 +364,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 			if ( isCurse[i] )
 			{
 				// a curse: mask its letter in the original string
-				str[ indexFiltered[i] ] = s_MaskString[ i ];
+				str[ indexFiltered[i] ] = MaskChar( s_MaskString, i );
 			}
 		}
 
@@ -517,7 +530,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 					i+= 7;
 					break;
 				default:
-					str[ indexFiltered[i] ] = s_MaskString[ i ];
+					str[ indexFiltered[i] ] = MaskChar( s_MaskString, i );
 					break;
 				}
 
@@ -626,10 +639,10 @@ MChatManager::RemoveCurseKorean(const char* strKor,
 //----------------------------------------------------------------------
 // Add Mask
 //----------------------------------------------------------------------
-// str의 군데군데에 percent의 확률로 mask를 씌운다.
-// 일단, s_MaskString2를 사용한다. - -;
-// percent는 0~100 
-// 0이면 다 마스크되고, 100이면 하나도 마스크되지 않는다.
+// Masks characters of str here and there, each kept with a chance of
+// percent, using s_MaskString2's characters.
+// percent is 0 to 100:
+// 0 masks everything, 100 masks nothing.
 //----------------------------------------------------------------------
 void
 MChatManager::AddMask(char* str, int percent) const
@@ -655,20 +668,20 @@ MChatManager::AddMask(char* str, int percent) const
 		int maskLen = 0;
 
 		//-------------------------------------------------------
-		// 공백인 경우는 무시한다.
+		// a space is kept
 		//-------------------------------------------------------
 		if (ch==' ')
 		{			
 		}
 		//-------------------------------------------------------
-		// 한글인 경우
+		// a Korean (two-byte) character
 		//-------------------------------------------------------
 		else if (ch & 0x80)
 		{
 			maskLen = 2;			
 		}
 		//-------------------------------------------------------
-		// 한 문자.
+		// a one-byte character
 		//-------------------------------------------------------
 		else 
 		{
@@ -676,11 +689,11 @@ MChatManager::AddMask(char* str, int percent) const
 		}		
 
 		//-------------------------------------------------------
-		// Mask할까?
+		// mask it?
 		//-------------------------------------------------------
 		if (maskLen!=0)
 		{
-			int bMask = (rand() & 0x3F) >= pro;	// 결정~
+			int bMask = (rand() & 0x3F) >= pro;	// decide
 
 			if (bMask)
 			{
@@ -688,7 +701,7 @@ MChatManager::AddMask(char* str, int percent) const
 				{
 					if (*str != '\0')
 					{			
-						*str = s_MaskString2[index++];
+						*str = MaskChar( s_MaskString2, index++ );
 						str++;
 					}					
 				}
