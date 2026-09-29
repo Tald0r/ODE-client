@@ -232,3 +232,20 @@ Client/MStringList.h
 Client/OrbitEffectPolicy.cpp
 Client/OrbitEffectPolicy.h
 Client/EffectSpriteTypeDef.h
+
+# The action and effect tables (task 4.1, late joiners): what each skill
+# or action shows (Action.inf), the effect sprite types and the per-action
+# frames (EffectSpriteType.inf, ActionEffectSpriteType.inf), the effect
+# status to sprite map (EffectStatus.inf) and the creature sprite ranges
+# (CreatureSprite.inf). Loaders and globals move unchanged; the creature
+# sprite header spells its sprite ids through the model's DrawTypeDef.h.
+Client/MActionInfoTable.cpp
+Client/MActionInfoTable.h
+Client/MActionResultDef.h
+Client/MEffectSpriteTypeTable.cpp
+Client/MEffectSpriteTypeTable.h
+Client/MEffectStatusTable.cpp
+Client/MEffectStatusTable.h
+Client/MEffectStatusDef.h
+Client/MCreatureSpriteTable.cpp
+Client/MCreatureSpriteTable.h

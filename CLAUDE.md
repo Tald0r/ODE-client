@@ -65,7 +65,9 @@ the output and hides all progress.
 ### What can be tested
 
 Only code compiled into a **static library**: `basic`, `SpriteLib`, `dxlib`,
-`gamemodel` (the pure data tables, the item table, the money manager, the item
+`gamemodel` (the pure data tables, the action and effect tables
+(`MActionInfoTable`, `MEffectSpriteTypeTable`, `MEffectStatusTable`,
+`MCreatureSpriteTable`), the item table, the money manager, the item
 core - `MItem`, with what an item requires and whether the player may
 use it (`MItem::IsUsableBy`, which `MCreature::CheckAffectStatus` asks),
 the gear families, the item managers, the containers
