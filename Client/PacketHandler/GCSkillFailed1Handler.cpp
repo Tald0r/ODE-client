@@ -90,7 +90,16 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 			}
 		}
 
-		// Will of Life's reuse time depends on the vampire's level.
+		// Will of Life's reuse time depends on the vampire's level. The
+		// server sets the skill's run time only when its WillOfLife
+		// handler ran and the time check passed; this packet also answers
+		// a cast the server refused before running the handler (a
+		// complete safe zone, Paralyze, Cause Critical Wounds, Explosion
+		// Water, Coma, the werewolf form, no skill slot, a skill it may
+		// not use) and one that failed the time check, all of which leave
+		// the run time alone. The client cannot tell them apart, so it
+		// waits the full reuse time after every failure: longer than the
+		// server may, never shorter.
 		if( skillID == SKILL_WILL_OF_LIFE )
 		{
 			if (auto* entry = g_pSkillInfoTable->GetMutable(skillID)) {

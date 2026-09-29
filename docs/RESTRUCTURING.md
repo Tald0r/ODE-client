@@ -984,17 +984,19 @@ rounds settled* for the host rules). Test fixtures share
   > the party size 0 included, and says it is valid for that formula
   > only. The skill description's HP cost and `MCreature::SetRegen`'s
   > bonus while the effect lasts take its Damage, which they already
-  > equalled (`5c0e7c7c`). The reuse time, which the cooldown bar
-  > (`C_VS_UI_SKILL::GetDelay`) and the two skill packet handlers
-  > (`GCSkillToSelfOK1`, `GCSkillFailed1`) computed as
-  > (3 + level / 10) * 2 s, is the server's run time, Delay * 100 ms =
-  > 6000 + 200 * level ms, so the skill no longer lights up to 1.8 s
-  > before the server accepts it; the three sites read one level, the
-  > character window's (the fix `75aa0285`). The skill bar's cost gate
-  > (`GetVampireConsumeMP`, which now takes the level) charges Will of
-  > Life that Damage, not the table's Mana (50 in the server's seed),
-  > which also corrects the skill tree's description (the fix
-  > `be8d8795`). `tests/unit/test_will_of_life.cpp` and
+  > equalled (`5c0e7c7c`; `SetRegen` at the current level, below). The
+  > reuse time, which the cooldown bar (`C_VS_UI_SKILL::GetDelay`) and
+  > the two skill packet handlers (`GCSkillToSelfOK1`, `GCSkillFailed1`)
+  > computed as (3 + level / 10) * 2 s, is the server's run time, Delay *
+  > 100 ms = 6000 + 200 * level ms, so the skill no longer lights up to
+  > 1.8 s before the server accepts it; the three sites read one level,
+  > the character window's (the fix `75aa0285`, whose message says the
+  > server sets the run time on success and on failure alike: it does so
+  > only when its handler ran and the time check passed, below). The
+  > skill bar's cost gate (`GetVampireConsumeMP`, which now takes the
+  > level) charges Will of Life that Damage, not the table's Mana (50 in
+  > the server's seed), which also corrects the skill tree's description
+  > (the fix `be8d8795`). `tests/unit/test_will_of_life.cpp` and
   > `test_vampire_skill_cost.cpp` check them against `skill_output.tsv`
   > rows. A slayer's skill range is `decore::skillRange`, through
   > `GetSkillRangeAtLevel`, which `MPlayer::GetActionInfoRange` asks
@@ -1033,13 +1035,33 @@ rounds settled* for the host rules). Test fixtures share
   >   an ousters), never the party's size, so no formula grants a party
   >   bonus on either side (the server's FIXES.md records it as "No
   >   party bonus is ever granted").
-  > - Will of Life's gate leaves out what the server's `hasEnoughMana`
-  >   and `decreaseMana` add (the gear's consume-MP ratio, the Wisdom of
-  >   Blood rank bonus) and enables the skill at cost <= HP where the
-  >   server wants HP > cost, as for the other skills; and a level-up
-  >   does not recompute the skill bar (`Function_MODIFY_LEVEL` calls no
+  > - Will of Life's gate leaves out the gear's consume-MP ratio, which
+  >   the server's `hasEnoughMana` adds, and enables the skill at
+  >   cost <= HP where the server wants HP > cost, as for the other
+  >   skills. The cost the tooltip and the skill tree show also leaves
+  >   out what `decreaseMana` applies to the HP it charges (the Wisdom of
+  >   Blood rank bonus's discount, then that ratio), so a vampire with
+  >   the rank bonus is shown more than it pays; the bonus does not
+  >   change whether the server allows the cast. A level-up does not
+  >   recompute the skill bar (`Function_MODIFY_LEVEL` calls no
   >   `CheckMP`), so the cost's step every seventh level waits for the
   >   next HP change.
+  > - The server sets Will of Life's run time only when `WillOfLife`'s
+  >   handler ran and its time check passed. `GCSkillFailed1` also
+  >   answers a cast `CGSkillToSelfHandler` refused before the handler
+  >   (a complete safe zone, Paralyze, Cause Critical Wounds, Explosion
+  >   Water, Coma, the werewolf form, no slot or a skill
+  >   `isAbleToUseSelfSkill` refuses) and the handler's own time-check
+  >   failure, neither of which touches the run time. The client cannot
+  >   tell them apart and waits the full reuse time after every
+  >   `GCSkillFailed1`, longer than the server, the safe direction; it
+  >   did so before this slice, with the shorter old time.
+  > - `MCreature::SetRegen` predicts Will of Life's bonus at the current
+  >   level, where the server's `EffectWillOfLife` keeps the Damage of
+  >   the level it was cast at, so a change of level across a multiple
+  >   of seven while the effect lasts (3 to 18 s) skews the prediction
+  >   by 1 HP a tick until the server's HP updates correct it. It did so
+  >   before this slice.
   > - The server checks most skills other than its four sliding and
   >   walking ones against the table's maximum range, not this rule, so
   >   the client's walking range for them errs short, the safe

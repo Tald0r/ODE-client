@@ -10126,7 +10126,10 @@ MCreature::SetRegen(int amount, DWORD delay)
 			amount += (*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetPoint();
 
 		// Will of Life adds the HP its cast costs (the server's
-		// EffectWillOfLife bonus).
+		// EffectWillOfLife bonus), at the current level; the server keeps
+		// the bonus of the level the skill was cast at, so a change of level
+		// while the effect lasts skews the prediction until the server's HP
+		// updates correct it.
 		if( HasEffectStatus( EFFECTSTATUS_WILL_OF_LIFE ) )
 			amount += GetWillOfLifeHP( (int)GetLEVEL() );
 	}
