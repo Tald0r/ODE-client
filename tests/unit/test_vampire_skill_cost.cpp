@@ -83,32 +83,22 @@ TEST(VampireSkillCost, ALevelZeroSkill)
 // The client charges all sixteen the table cost: for the first six that
 // is the server's charge, for the other ten what the client charged
 // before the discount.
+// The skill bar gates Bloody Warp by name (HasMagicBloodyWarp) and every
+// learned vampire skill on this cost.
 TEST(VampireSkillCost, SomeSkillsPayTheTableCost)
 {
 	const ACTIONINFO skills[] = {
+		// charged the table cost undiscounted
 		SKILL_EXTREME, SKILL_MEPHISTO, SKILL_POISON_MESH, SKILL_STONE_SKIN,
 		SKILL_VIOLENT_PHANTOM, SKILL_VAMPIRE_INNATE_DEADLY_CLAW,
-		MAGIC_HOWL, SKILL_TRANSFUSION, SKILL_WILL_OF_LIFE, SKILL_BLOOD_DRAIN,
-		MAGIC_EAT_CORPSE,
+		// charged a cost of their own
+		MAGIC_HOWL, SKILL_TRANSFUSION, SKILL_WILL_OF_LIFE,
+		// charged nothing
+		SKILL_BLOOD_DRAIN, MAGIC_EAT_CORPSE, MAGIC_BLOODY_WARP,
+		MAGIC_OPEN_CASKET, MAGIC_UN_BURROW, MAGIC_UN_INVISIBILITY,
+		MAGIC_UN_TRANSFORM,
 	};
-	for (ACTIONINFO id : skills)
-	{
-		CostTable cost(id);
-		CHECK_EQ(200, cost.table.GetVampireConsumeMP(id, 98));
-	}
-}
-
-// The handlers that charge nothing and were left out of the list at
-// first: the skill bar gates Bloody Warp on this cost (HasMagicBloodyWarp,
-// and the learned-skill loop gates every learned vampire skill), so each
-// keeps the table cost it had before the discount, as Blood Drain and Eat
-// Corpse do.
-TEST(VampireSkillCost, TheSkillsThatChargeNothingPayTheTableCost)
-{
-	const ACTIONINFO skills[] = {
-		MAGIC_BLOODY_WARP, MAGIC_OPEN_CASKET, MAGIC_UN_BURROW,
-		MAGIC_UN_INVISIBILITY, MAGIC_UN_TRANSFORM,
-	};
+	static_assert(sizeof(skills) / sizeof(skills[0]) == 16, "the sixteen skills");
 	for (ACTIONINFO id : skills)
 	{
 		CostTable cost(id);
