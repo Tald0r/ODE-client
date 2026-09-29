@@ -661,7 +661,8 @@ rounds settled* for the host rules). Test fixtures share
   > **Fixed test-first, in the library:** `IsQuestItem` tested the item's
   > own flag only when the timed-item register existed; the requirement
   > getters returned `BYTE` while the slayer ceiling is 295 (a level-150
-  > item looked easy to equip); `ITEMOPTION_INFO`, `SKILLINFO_NODE`
+  > item looked easy to equip; 295 was the client's own bug, and task
+  > 4.12's slice 4 makes it the server's 290); `ITEMOPTION_INFO`, `SKILLINFO_NODE`
   > (`m_SkillStep`, which `AddSkill` branches on) and the item table rows
   > had constructors that left fields unset; `CheckItemStatus` compared an
   > unsigned percentage against `int` thresholds read unchecked from the

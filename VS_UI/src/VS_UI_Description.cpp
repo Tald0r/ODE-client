@@ -1260,7 +1260,9 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 				// What the shop charges: the total the castle tax is taken
 				// on, and in brackets the price of one. The castle tax is
 				// taken once on the total, so the bracket times the count
-				// can differ from it (three at 18 each come to 56 at 110%).
+				// can differ from it: three potions at 17 are quoted 18
+				// each at 110%, so the bracket times the count is 54 where
+				// the total, taxed once on 51, is 56.
 				if(p_item->IsPileItem() && p_item->GetNumber() >= 1)
 				{
 					const unsigned TempPrice = g_pPriceManager->GetPurchasePrice(p_item, 1);
