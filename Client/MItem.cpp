@@ -1240,8 +1240,11 @@ GenderRequirementOf(const MItem& item)
 // by each option's sum and level requirement in the option list's
 // order and capped, by the server's rule (decore::requiredStats, which
 // Slayer, Vampire and Ousters::isRealWearing call), and its gender. A
-// quest item asks nothing: that is the client's own rule, which the
-// server has no counterpart for.
+// quest item (IsQuestItem) asks nothing. For an item the timed-item
+// register holds, which IsQuestItem counts, that is the server's rule:
+// isRealWearing lets a time-limited item through before any stat or
+// level. For an item flagged a quest item (m_Quest) it is the client's
+// own.
 //----------------------------------------------------------------------
 static decore::EquipRequirement
 RequirementOf(const MItem& item)
@@ -1314,13 +1317,20 @@ MItem::GetRequireLevel() const
 // server's (decore::meetsRequirement over RequirementOf's answer): a
 // slayer needs the STR, DEX, INT, their sum and the gender, a vampire
 // the level and the gender, an ousters the four stats and the level.
-// Three gates before it are the client's own, and stay so:
-// - a pet whose life has run out lends nothing;
-// - an item not made for the user's race is refused (the server
-//   refuses it elsewhere, before its wearing check);
-// - a quest item is usable whatever it asks, by a slayer or a vampire
-//   the gender allows and by any ousters (the server has no such rule).
-// The server also checks an advancement class, which this does not.
+// Three gates come before it:
+// - a pet whose life has run out lends nothing (the client's own);
+// - an item not made for the user's race is refused (the client's
+//   own; the server refuses it elsewhere, before its wearing check);
+// - a quest item (IsQuestItem) is usable whatever it asks, by a slayer
+//   or a vampire the gender allows and by any ousters. For an item the
+//   timed-item register holds, which IsQuestItem counts, this is the
+//   server's time-limited gate (isRealWearing: the gender for a slayer
+//   or a vampire, nothing for an ousters); for an item flagged a quest
+//   item (m_Quest) it is the client's own.
+// The server also checks an advancement class, before its time-limited
+// gate for a slayer or a vampire, which this does not; and in a premium
+// zone it asks a paying player for a unique item, one with several
+// options or a couple ring, which is the server's alone.
 //----------------------------------------------------------------------
 bool
 MItem::IsUsableBy(const MItemUser& user) const

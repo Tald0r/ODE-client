@@ -855,11 +855,16 @@ rounds settled* for the host rules). Test fixtures share
   > the two VS_UI game files are gone.
   > `tests/unit/test_equip_requirement.cpp` checks the requirement and
   > the check against `equip.tsv` rows (`2cef2abf`..`e0f27757`; the
-  > fixes `bd3072a0`, `78bf217c`, `50110b35`, `ec6601fa`). The client
-  > keeps three gates of its own, before the server's check: a quest
-  > item asks nothing and is usable by a slayer or vampire its gender
+  > fixes `bd3072a0`, `78bf217c`, `50110b35`, `ec6601fa`). Three
+  > gates come before the server's check: a quest item (`IsQuestItem`)
+  > asks nothing and is usable by a slayer or vampire its gender
   > allows and by any ousters, an item without the user's race flag is
-  > refused, and a pet whose life has run out lends nothing. Left over:
+  > refused, and a pet whose life has run out lends nothing. The last
+  > two are the client's own. The first is the server's time-limited
+  > gate for an item the timed-item register holds, which
+  > `IsQuestItem` counts (`isRealWearing` asks a time-limited item
+  > only its gender, and an ousters nothing), and the client's own
+  > only for an item flagged a quest item (`m_Quest`). Left over:
   > the server's advancement-class check is not in de-core and the
   > client has none (the server refuses an item asking
   > `reqAdvancedLevel > 0` unless the wearer is advanced with a class
@@ -870,8 +875,10 @@ rounds settled* for the host rules). Test fixtures share
   > class predicate. An item flagged for several races takes its
   > requirement from its first flag and is checked by the user's race,
   > where the server uses the wearer's race for both; the server's item
-  > tables have one race per class. The time-limited, premium-zone and
-  > pay, and couple-ring gates stay server-only. Slice 5 is in (the
+  > tables have one race per class. The premium-zone and pay gate (a
+  > unique item, one with several options, or a couple ring) stays
+  > server-only, and the server asks the advancement class of a slayer
+  > or vampire before its time-limited gate. Slice 5 is in (the
   > same branch): a shop purchase is quoted in one place,
   > `MPriceManager::GetPurchasePrice`, which the buy check and the
   > shop tooltip ask, and it charges what the server's buy handler

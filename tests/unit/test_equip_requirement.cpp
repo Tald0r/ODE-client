@@ -238,8 +238,9 @@ TEST(EquipRequirement, OptionsAddToTheLevelAtItsWidth)
 	CHECK_EQ(0, item.GetRequireLevel());
 }
 
-// The client's own rule, which the server has no counterpart for: a
-// quest item asks nothing.
+// An item flagged a quest item asks nothing: the client's own rule,
+// which the server has no counterpart for. (A time-limited item, which
+// IsQuestItem also counts, takes the server's time-limited gate.)
 TEST(EquipRequirement, QuestItemAsksNothing)
 {
 	EquipWorld world;
