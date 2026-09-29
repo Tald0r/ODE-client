@@ -107,18 +107,22 @@ MSkillInfoTable::UseEnglishNames()
 // options is a further host input on the server (hasEnoughMana), which
 // the client does not apply.
 //
-// The list below is every vampire skill whose server handler (an
+// Will of Life's server handler charges its formula's Damage at the
+// vampire's level `level` instead (GetWillOfLifeHP); no other skill's
+// cost reads the level.
+//
+// The list below is every other vampire skill whose server handler (an
 // execute(Vampire*) under src/server/gameserver/skill) never calls
 // decreaseConsumeMP; those skills keep the table cost. Extreme, Mephisto,
 // PoisonMesh, StoneSkin and, through SimpleTileMeleeSkill, ViolentPhantom
-// and Deadly Claw charge it undiscounted. Howl charges 10, Transfusion
-// 12% of the current HP and Will of Life its own output. Blood Drain, Eat
-// Corpse, Bloody Warp (which always fails), Open Casket, Unburrow,
-// Uninvisibility and Untransform charge nothing. The client showed the
-// table cost for those ten before and still does: the skill bar gates
-// Bloody Warp and every learned vampire skill on this cost. AttackMelee
-// also has a vampire handler that charges nothing, but it is the basic
-// attack, not a skill with a table cost.
+// and Deadly Claw charge it undiscounted. Howl charges 10 and
+// Transfusion 12% of the current HP. Blood Drain, Eat Corpse, Bloody
+// Warp (which always fails), Open Casket, Unburrow, Uninvisibility and
+// Untransform charge nothing. The client showed the table cost for those
+// nine before and still does: the skill bar gates Bloody Warp and every
+// learned vampire skill on this cost. AttackMelee also has a vampire
+// handler that charges nothing, but it is the basic attack, not a skill
+// with a table cost.
 //----------------------------------------------------------------------
 namespace {
 
@@ -130,7 +134,7 @@ static_assert(SKILL_BLOOD_DRAIN == 79 && MAGIC_UN_BURROW == 107 && MAGIC_UN_TRAN
 	&& MAGIC_OPEN_CASKET == 177 && MAGIC_BLOODY_WARP == 183
 	&& SKILL_POISON_MESH == 205 && SKILL_WILL_OF_LIFE == 207 && SKILL_STONE_SKIN == 274
 	&& SKILL_VIOLENT_PHANTOM == 328 && SKILL_VAMPIRE_INNATE_DEADLY_CLAW == 391,
-	"the vampire skills that keep the table cost are the server's");
+	"the vampire skills named above are the server's");
 
 bool	IsChargedTheTableCost(int id)
 {
@@ -144,7 +148,6 @@ bool	IsChargedTheTableCost(int id)
 		case SKILL_VAMPIRE_INNATE_DEADLY_CLAW :
 		case MAGIC_HOWL :
 		case SKILL_TRANSFUSION :
-		case SKILL_WILL_OF_LIFE :
 		case SKILL_BLOOD_DRAIN :
 		case MAGIC_EAT_CORPSE :
 		case MAGIC_BLOODY_WARP :
@@ -162,8 +165,13 @@ bool	IsChargedTheTableCost(int id)
 } // namespace
 
 int
-MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT) const
+MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT, int level) const
 {
+	if (id == SKILL_WILL_OF_LIFE)
+	{
+		return GetWillOfLifeHP(level);
+	}
+
 	const SKILLINFO_NODE& info = (*this)[id];
 
 	if (IsChargedTheTableCost(id))
