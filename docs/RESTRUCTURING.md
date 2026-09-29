@@ -620,8 +620,9 @@ rounds settled* for the host rules). Test fixtures share
   > with its loader: it writes the casting action info zero-extended to four
   > bytes, where it wrote the two-byte member followed by the castingAction
   > flag and a padding byte, so a regenerated `Action.inf` differs from an
-  > older one in those two bytes of each row; readers only ever kept the low
-  > 16 bits, and a test pins the saved bytes. A follow-up fix keeps the action
+  > older one in those two bytes only for a casting row (the flag set) or a
+  > row whose padding byte was not zero; readers only ever kept the low 16
+  > bits, and a test pins the saved bytes. A follow-up fix keeps the action
   > table's casting action info and effect status when the file ends part-way
   > into them: the first fix had assigned the local those bytes were read
   > into, a mix of file and seed bytes.
