@@ -7,8 +7,12 @@
 #else
 #include "../basic/Platform.h"
 #endif
+#include <algorithm>
 #include "MStatusManager.h"
 #include "SkillDef.h"
+#include "PCSlayerInfo.h"
+#include "PCVampireInfo.h"
+#include "PCOustersInfo.h"
 
 //----------------------------------------------------------------------
 // max값 정의
@@ -91,7 +95,7 @@ MStatusManager::GetTOHIT()
 		// 맨손
 		//---------------------------------------------------
 		case MAX_SKILLDOMAIN :
-			value = min(m_DEX/2, SLAYER_MAX_TOHIT);
+			value = (std::min)(m_DEX/2, SLAYER_MAX_TOHIT);
 		break;
 
 		//---------------------------------------------------
@@ -101,7 +105,7 @@ MStatusManager::GetTOHIT()
 		case SKILLDOMAIN_BLADE :
 		case SKILLDOMAIN_GUN :	
 			value = (int)(m_DEX/2 + m_DomainLevel*1.5);
-			value = min((int)value, SLAYER_MAX_TOHIT);
+			value = (std::min)((int)value, SLAYER_MAX_TOHIT);
 		break;		
 		
 		//---------------------------------------------------
@@ -110,7 +114,7 @@ MStatusManager::GetTOHIT()
 		case SKILLDOMAIN_HEAL :
 		case SKILLDOMAIN_ENCHANT :
 			value = (int)(m_DEX/2 + m_DomainLevel*1.5);
-			value = min((int)value, SLAYER_MAX_TOHIT);
+			value = (std::min)((int)value, SLAYER_MAX_TOHIT);
 		break;
 
 		//---------------------------------------------------
@@ -118,7 +122,7 @@ MStatusManager::GetTOHIT()
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS :
 			value = (int)(m_DEX/2 + m_DomainLevel);
-			value = min((int)value, OUSTERS_MAX_TOHIT);						
+			value = (std::min)((int)value, OUSTERS_MAX_TOHIT);						
 			break;
 			
 		//---------------------------------------------------
@@ -126,7 +130,7 @@ MStatusManager::GetTOHIT()
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :
 			value = (int)(m_DEX + m_DomainLevel/2.5);
-			value = min((int)value, VAMPIRE_MAX_TOHIT);						
+			value = (std::min)((int)value, VAMPIRE_MAX_TOHIT);						
 		break;
 
 	}
@@ -159,7 +163,7 @@ MStatusManager::GetDefense()
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS :
 			value = (int)(m_DEX/2 + m_DomainLevel/5);
-			value = min((int)value, OUSTERS_MAX_DEFENSE);						
+			value = (std::min)((int)value, OUSTERS_MAX_DEFENSE);						
 			break;
 			
 		//---------------------------------------------------
@@ -167,14 +171,14 @@ MStatusManager::GetDefense()
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :
 			value = (int)(m_DEX/2 + m_DomainLevel/5);
-			value = min((int)value, VAMPIRE_MAX_DEFENSE);						
+			value = (std::min)((int)value, VAMPIRE_MAX_DEFENSE);						
 		break;
 
 		//---------------------------------------------------
 		// 슬레이어
 		//---------------------------------------------------
 		default :
-			value = min(m_DEX/2, SLAYER_MAX_DEFENSE);
+			value = (std::min)(m_DEX/2, SLAYER_MAX_DEFENSE);
 	}
 
 	return value;
@@ -205,7 +209,7 @@ MStatusManager::GetProtection()
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS :
 			value = (int)(m_STR + m_DomainLevel/10);
-			value = min((int)value, OUSTERS_MAX_PROTECTION);						
+			value = (std::min)((int)value, OUSTERS_MAX_PROTECTION);						
 		break;
 			
 		//---------------------------------------------------
@@ -213,7 +217,7 @@ MStatusManager::GetProtection()
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :
 			value = (int)(m_STR + m_DomainLevel/5);
-			value = min((int)value, VAMPIRE_MAX_PROTECTION);						
+			value = (std::min)((int)value, VAMPIRE_MAX_PROTECTION);						
 		break;
 
 		//---------------------------------------------------
@@ -221,7 +225,7 @@ MStatusManager::GetProtection()
 		//---------------------------------------------------
 		default :	
 //			value = (int)(m_STR/15);
-			value = min(m_STR, SLAYER_MAX_PROTECTION);
+			value = (std::min)(m_STR, SLAYER_MAX_PROTECTION);
 		
 	}
 
@@ -256,16 +260,16 @@ MStatusManager::GetMinDAM()
 		// 아우스터즈
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS :
-			value = max(1, (int)(m_STR/10 + m_DomainLevel/10));
-			value = min((int)value, OUSTERS_MAX_DAMAGE);			
+			value = (std::max)(1, (int)(m_STR/10 + m_DomainLevel/10));
+			value = (std::min)((int)value, OUSTERS_MAX_DAMAGE);			
 			break;
 			
 		//---------------------------------------------------
 		// 뱀파이어
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :
-			value = max(1, (int)(m_STR/6 + m_DomainLevel/5));
-			value = min((int)value, VAMPIRE_MAX_DAMAGE);			
+			value = (std::max)(1, (int)(m_STR/6 + m_DomainLevel/5));
+			value = (std::min)((int)value, VAMPIRE_MAX_DAMAGE);			
 		break;
 
 		//---------------------------------------------------
@@ -280,7 +284,7 @@ MStatusManager::GetMinDAM()
 		//---------------------------------------------------
 		default :
 //			value = (int)(m_STR/15);
-			value = min(m_STR/15, SLAYER_MAX_DAMAGE);		
+			value = (std::min)(m_STR/15, SLAYER_MAX_DAMAGE);		
 
 
 	}
@@ -309,7 +313,7 @@ MStatusManager::GetMaxDAM()
 		//---------------------------------------------------
 		case MAX_SKILLDOMAIN :
 //			value = m_STR/10;
-			value = min(m_STR/10, SLAYER_MAX_DAMAGE);
+			value = (std::min)(m_STR/10, SLAYER_MAX_DAMAGE);
 		break;
 
 		//---------------------------------------------------
@@ -323,16 +327,16 @@ MStatusManager::GetMaxDAM()
 		// 아우스터즈
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS :			
-			value = max(1, m_STR/6 + m_DomainLevel/6);
-			value = min((int)value, OUSTERS_MAX_DAMAGE);
+			value = (std::max)(1, m_STR/6 + m_DomainLevel/6);
+			value = (std::min)((int)value, OUSTERS_MAX_DAMAGE);
 			break;
 			
 		//---------------------------------------------------
 		// 뱀파이어
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :			
-			value = max(1, m_STR/4 + m_DomainLevel/5);
-			value = min((int)value, VAMPIRE_MAX_DAMAGE);
+			value = (std::max)(1, m_STR/4 + m_DomainLevel/5);
+			value = (std::min)((int)value, VAMPIRE_MAX_DAMAGE);
 		break;
 
 		//---------------------------------------------------
@@ -340,7 +344,7 @@ MStatusManager::GetMaxDAM()
 		//---------------------------------------------------
 		default :
 //			value = (int)(m_STR / 5);
-			value = min(m_STR/10, SLAYER_MAX_DAMAGE);
+			value = (std::min)(m_STR/10, SLAYER_MAX_DAMAGE);
 
 	}
 
@@ -370,7 +374,7 @@ MStatusManager::GetAttackSpeed()
 		//---------------------------------------------------
 		case MAX_SKILLDOMAIN :
 //			value = m_STR/10;
-			value = min(m_STR/10, SLAYER_MAX_ATTACK_SPEED);
+			value = (std::min)(m_STR/10, SLAYER_MAX_ATTACK_SPEED);
 		break;
 
 		//---------------------------------------------------
@@ -378,7 +382,7 @@ MStatusManager::GetAttackSpeed()
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS:
 			value = (int)((m_DEX+m_DomainLevel)/10);
-			value = min((int)value, OUSTERS_MAX_ATTACK_SPEED);
+			value = (std::min)((int)value, OUSTERS_MAX_ATTACK_SPEED);
 			break;
 
 		//---------------------------------------------------
@@ -386,7 +390,7 @@ MStatusManager::GetAttackSpeed()
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :
 			value = (int)(m_DEX / 10 + 10);
-			value = min((int)value, VAMPIRE_MAX_ATTACK_SPEED);
+			value = (std::min)((int)value, VAMPIRE_MAX_ATTACK_SPEED);
 		break;
 
 		//---------------------------------------------------
@@ -395,7 +399,7 @@ MStatusManager::GetAttackSpeed()
 		case SKILLDOMAIN_HEAL :
 		case SKILLDOMAIN_ENCHANT :
 //			value = (int)(m_STR / 10);
-			value = min(m_STR/10, SLAYER_MAX_ATTACK_SPEED);
+			value = (std::min)(m_STR/10, SLAYER_MAX_ATTACK_SPEED);
 		break;
 
 		//---------------------------------------------------
@@ -403,7 +407,7 @@ MStatusManager::GetAttackSpeed()
 		//---------------------------------------------------
 		case SKILLDOMAIN_GUN :
 //			value = (int)(m_DEX/10 + m_DomainLevel/5);
-			value = min(m_DEX/10+m_DomainLevel/5, SLAYER_MAX_ATTACK_SPEED);
+			value = (std::min)(m_DEX/10+m_DomainLevel/5, SLAYER_MAX_ATTACK_SPEED);
 		break;
 
 		//---------------------------------------------------
@@ -411,7 +415,7 @@ MStatusManager::GetAttackSpeed()
 		//---------------------------------------------------
 		default :
 //			value = (int)(m_STR/10 + m_DomainLevel/5);
-			value = min(m_STR/10+m_DomainLevel/5, SLAYER_MAX_ATTACK_SPEED);
+			value = (std::min)(m_STR/10+m_DomainLevel/5, SLAYER_MAX_ATTACK_SPEED);
 		
 	}
 
@@ -440,3 +444,65 @@ MStatusManager::SetCurrentWeaponDomain(int domain, int level)
 	m_DomainLevel = level;
 }
 /****************** Add End by Sonic 2006.9.6 *******************/
+
+//--------------------------------------------------------------
+// The character-select slots (UI_SetCharacter). The character list
+// carries the base STR, DEX and INT; a slayer's weapon shape and the
+// six domain levels; a vampire's or ousters' level and experience.
+//--------------------------------------------------------------
+void
+MStatusManager::SetCharacterSelectSlot(const PCSlayerInfo& info)
+{
+	// Map WeaponType to SKILLDOMAIN
+	// WeaponType enum has 19 values (0-18), so array must have WEAPON_MAX elements
+	static const SKILLDOMAIN weaponDomain[WEAPON_MAX] =
+	{
+		MAX_SKILLDOMAIN,          // WEAPON_NONE (0)
+		SKILLDOMAIN_SWORD,        // WEAPON_SWORD (1)
+		SKILLDOMAIN_SWORD,        // WEAPON_SWORD1 (2)
+		SKILLDOMAIN_BLADE,        // WEAPON_BLADE (3)
+		SKILLDOMAIN_BLADE,        // WEAPON_BLADE1 (4)
+		SKILLDOMAIN_GUN,          // WEAPON_SR (5)
+		SKILLDOMAIN_GUN,          // WEAPON_SR1 (6)
+		SKILLDOMAIN_GUN,          // WEAPON_SR2 (7)
+		SKILLDOMAIN_GUN,          // WEAPON_SR3 (8)
+		SKILLDOMAIN_GUN,          // WEAPON_AR (9)
+		SKILLDOMAIN_GUN,          // WEAPON_AR1 (10)
+		SKILLDOMAIN_GUN,          // WEAPON_AR2 (11)
+		SKILLDOMAIN_GUN,          // WEAPON_AR3 (12)
+		SKILLDOMAIN_GUN,          // WEAPON_SG (13)
+		SKILLDOMAIN_GUN,          // WEAPON_SMG (14)
+		SKILLDOMAIN_ENCHANT,      // WEAPON_CROSS (15)
+		SKILLDOMAIN_ENCHANT,      // WEAPON_CROSS1 (16)
+		SKILLDOMAIN_HEAL,         // WEAPON_MACE (17)
+		SKILLDOMAIN_HEAL,         // WEAPON_MACE1 (18)
+	};
+
+	// Validate weapon type before accessing array
+	const WeaponType weaponType = info.getWeaponType();
+	if (weaponType >= 0 && weaponType < WEAPON_MAX)
+	{
+		SetCurrentWeaponDomain( weaponDomain[weaponType], 1 );
+	}
+	else
+	{
+		// Fallback to ETC domain if weapon type is invalid
+		SetCurrentWeaponDomain( SKILLDOMAIN_ETC, 1 );
+	}
+
+	Set(info.getSTR(), info.getDEX(), info.getINT());
+}
+
+void
+MStatusManager::SetCharacterSelectSlot(const PCVampireInfo& info)
+{
+	SetCurrentWeaponDomain( SKILLDOMAIN_VAMPIRE, info.getExp() );
+	Set(info.getSTR(), info.getDEX(), info.getINT());
+}
+
+void
+MStatusManager::SetCharacterSelectSlot(const PCOustersInfo& info)
+{
+	SetCurrentWeaponDomain( SKILLDOMAIN_OUSTERS, info.getLevel() );
+	Set(info.getSTR(), info.getDEX(), info.getINT());
+}

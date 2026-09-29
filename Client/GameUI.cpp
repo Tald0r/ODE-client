@@ -2148,45 +2148,8 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	slot.INT_EXP_REMAIN = pInfo->getINTExp();
 	slot.STATUS.clear();
 
-	// Map WeaponType to SKILLDOMAIN
-	// WeaponType enum has 19 values (0-18), so array must have WEAPON_MAX elements
-	SKILLDOMAIN weaponDomain[WEAPON_MAX] =
-	{
-		MAX_SKILLDOMAIN,          // WEAPON_NONE (0)
-		SKILLDOMAIN_SWORD,        // WEAPON_SWORD (1)
-		SKILLDOMAIN_SWORD,        // WEAPON_SWORD1 (2)
-		SKILLDOMAIN_BLADE,        // WEAPON_BLADE (3)
-		SKILLDOMAIN_BLADE,        // WEAPON_BLADE1 (4)
-		SKILLDOMAIN_GUN,          // WEAPON_SR (5)
-		SKILLDOMAIN_GUN,          // WEAPON_SR1 (6)
-		SKILLDOMAIN_GUN,          // WEAPON_SR2 (7)
-		SKILLDOMAIN_GUN,          // WEAPON_SR3 (8)
-		SKILLDOMAIN_GUN,          // WEAPON_AR (9)
-		SKILLDOMAIN_GUN,          // WEAPON_AR1 (10)
-		SKILLDOMAIN_GUN,          // WEAPON_AR2 (11)
-		SKILLDOMAIN_GUN,          // WEAPON_AR3 (12)
-		SKILLDOMAIN_GUN,          // WEAPON_SG (13)
-		SKILLDOMAIN_GUN,          // WEAPON_SMG (14)
-		SKILLDOMAIN_ENCHANT,      // WEAPON_CROSS (15)
-		SKILLDOMAIN_ENCHANT,      // WEAPON_CROSS1 (16)
-		SKILLDOMAIN_HEAL,         // WEAPON_MACE (17)
-		SKILLDOMAIN_HEAL,         // WEAPON_MACE1 (18)
-	};
-
-	// Validate weapon type before accessing array
-	WeaponType weaponType = pInfo->getWeaponType();
-	if (weaponType >= 0 && weaponType < WEAPON_MAX)
-	{
-		g_StatusManager.SetCurrentWeaponDomain( weaponDomain[weaponType], 1 );
-	}
-	else
-	{
-		// Fallback to ETC domain if weapon type is invalid
-		g_StatusManager.SetCurrentWeaponDomain( SKILLDOMAIN_ETC, 1 );
-	}
-
-	// status 값을 얻어낸다.
-	g_StatusManager.Set(pInfo->getSTR(), pInfo->getDEX(), pInfo->getINT());
+	// The derived combat stats the slot shows.
+	g_StatusManager.SetCharacterSelectSlot(*pInfo);
 
 	//slot.CC		= g_StatusManager.GetCC();
 	slot.DAM2	= g_StatusManager.GetMinDAM();
@@ -2505,10 +2468,8 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	
 	slot.STATUS.clear();
 
-	// status 값을 얻어낸다.
-	g_StatusManager.SetCurrentWeaponDomain( SKILLDOMAIN_VAMPIRE, pInfo->getExp() );
-
-	g_StatusManager.Set(pInfo->getSTR(), pInfo->getDEX(), pInfo->getINT());
+	// The derived combat stats the slot shows.
+	g_StatusManager.SetCharacterSelectSlot(*pInfo);
 
 	//slot.CC		= g_StatusManager.GetCC();
 	slot.DAM2	= g_StatusManager.GetMinDAM();
@@ -2637,10 +2598,8 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	
 	slot.STATUS.clear();
 
-	// status 값을 얻어낸다.
-	g_StatusManager.SetCurrentWeaponDomain( SKILLDOMAIN_OUSTERS, pInfo->getLevel() );
-
-	g_StatusManager.Set(pInfo->getSTR(), pInfo->getDEX(), pInfo->getINT());
+	// The derived combat stats the slot shows.
+	g_StatusManager.SetCharacterSelectSlot(*pInfo);
 
 	//slot.CC		= g_StatusManager.GetCC();
 	slot.DAM2	= g_StatusManager.GetMinDAM();
