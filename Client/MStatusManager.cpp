@@ -14,34 +14,12 @@
 #include "PCVampireInfo.h"
 #include "PCOustersInfo.h"
 
+#include "domain/Formulas.h"
+
 //----------------------------------------------------------------------
-// max값 정의
+// The client's own caps on the attack speed. The other stats take the
+// server's rules and caps, from decore.
 //----------------------------------------------------------------------
-#define SLAYER_MAX_HP            500
-#define SLAYER_MAX_MP            500
-#define SLAYER_MAX_TOHIT         500
-#define SLAYER_MAX_DEFENSE       500
-#define SLAYER_MAX_PROTECTION    500
-#define SLAYER_MAX_DAMAGE        500
-
-#define VAMPIRE_MAX_HP           1000
-#define VAMPIRE_MAX_TOHIT        1000
-#define VAMPIRE_MAX_DEFENSE		 1000
-#define VAMPIRE_MAX_PROTECTION   1000
-#define VAMPIRE_MAX_DAMAGE       1000
-
-#define OUSTERS_MAX_HP           1000
-#define OUSTERS_MAX_TOHIT        1000
-#define OUSTERS_MAX_DEFENSE		 1000
-#define OUSTERS_MAX_PROTECTION   1000
-#define OUSTERS_MAX_DAMAGE       1000
-
-#define MONSTER_MAX_HP          20000
-#define MONSTER_MAX_TOHIT        1000
-#define MONSTER_MAX_DEFENSE      1000
-#define MONSTER_MAX_PROTECTION   1000
-#define MONSTER_MAX_DAMAGE       1000
-
 #define SLAYER_MAX_ATTACK_SPEED   35
 #define VAMPIRE_MAX_ATTACK_SPEED  30
 #define OUSTERS_MAX_ATTACK_SPEED  35
@@ -75,283 +53,144 @@ MStatusManager::~MStatusManager()
 // member functions
 //
 //----------------------------------------------------------------------
+namespace {
+
+enum StatRace { STAT_SLAYER, STAT_VAMPIRE, STAT_OUSTERS };
+
+StatRace	RaceOf(int domain)
+{
+	switch (domain)
+	{
+		case SKILLDOMAIN_VAMPIRE :	return STAT_VAMPIRE;
+		case SKILLDOMAIN_OUSTERS :	return STAT_OUSTERS;
+		default :					return STAT_SLAYER;
+	}
+}
+
 //----------------------------------------------------------------------
-// Get ToHit
+// The weapon family a slayer's skill domain stands for, as the server's
+// AbilityBalance.cpp picks it from the item class: the cross is the heal
+// domain's weapon, the mace the enchant domain's, and the gun domain's
+// weapons are Arms. Bare hands (MAX_SKILLDOMAIN) are None; anything else
+// is a weapon of no family the rules know, Other.
 //----------------------------------------------------------------------
-//	Sword  Slayer : DEX + SwordDomainLevel/2
-//	Blade  Slayer : DEX + BladeDomainLevel/2
-//	Gun    Slayer : DEX + GunDomainLevel/2
-//	Cleric Slayer : DEX
-//	Vampire       : DEX + LEVEL/5
+decore::WeaponFamily	WeaponFamilyOf(int domain)
+{
+	switch (domain)
+	{
+		case SKILLDOMAIN_SWORD :	return decore::WeaponFamily::Sword;
+		case SKILLDOMAIN_BLADE :	return decore::WeaponFamily::Blade;
+		case SKILLDOMAIN_HEAL :		return decore::WeaponFamily::Cross;
+		case SKILLDOMAIN_ENCHANT :	return decore::WeaponFamily::Mace;
+		case SKILLDOMAIN_GUN :		return decore::WeaponFamily::Arms;
+		case MAX_SKILLDOMAIN :		return decore::WeaponFamily::None;
+		default :					return decore::WeaponFamily::Other;
+	}
+}
+
+//----------------------------------------------------------------------
+// The inputs as the server's toStatAttr gathers them. A slayer's level
+// is never read by its rules, and the character list does not carry
+// one; a vampire's or an ousters' has no weapon domain.
+//----------------------------------------------------------------------
+decore::StatAttr	StatAttrOf(int str, int dex, int intel, int domain, int domainLevel)
+{
+	decore::StatAttr a = {};
+	a.str = str;
+	a.dex = dex;
+	a.inte = intel;
+	if (RaceOf(domain) == STAT_SLAYER)
+	{
+		a.level = 0;
+		a.weapon = WeaponFamilyOf(domain);
+		const bool hasDomain = a.weapon != decore::WeaponFamily::None
+								&& a.weapon != decore::WeaponFamily::Other;
+		a.weaponDomainLevel = hasDomain ? domainLevel : 0;
+	}
+	else
+	{
+		a.level = domainLevel;
+		a.weapon = decore::WeaponFamily::None;
+		a.weaponDomainLevel = 0;
+	}
+	return a;
+}
+
+// The server's combat damage bonus (VariableManager) is a server
+// setting the client never sees; 0 is its default.
+const int	kCombatDamageBonus = 0;
+
+} // namespace
+
+//----------------------------------------------------------------------
+// To-hit, defense, protection and melee damage: the server's per-race
+// rules (decore::slayerToHit and the rest, Formulas.cpp), capped at the
+// server's 10000.
 //----------------------------------------------------------------------
 int 
 MStatusManager::GetTOHIT()
 {
-	int	value  = 0;
+	const decore::StatAttr a = StatAttrOf(m_STR, m_DEX, m_INT, m_Domain, m_DomainLevel);
 
-	switch (m_Domain)
+	switch (RaceOf(m_Domain))
 	{
-		//---------------------------------------------------
-		// 맨손
-		//---------------------------------------------------
-		case MAX_SKILLDOMAIN :
-			value = (std::min)(m_DEX/2, SLAYER_MAX_TOHIT);
-		break;
-
-		//---------------------------------------------------
-		// 검 / 도
-		//---------------------------------------------------
-		case SKILLDOMAIN_SWORD :
-		case SKILLDOMAIN_BLADE :
-		case SKILLDOMAIN_GUN :	
-			value = (int)(m_DEX/2 + m_DomainLevel*1.5);
-			value = (std::min)((int)value, SLAYER_MAX_TOHIT);
-		break;		
-		
-		//---------------------------------------------------
-		// 메이스 / 십자가
-		//---------------------------------------------------
-		case SKILLDOMAIN_HEAL :
-		case SKILLDOMAIN_ENCHANT :
-			value = (int)(m_DEX/2 + m_DomainLevel*1.5);
-			value = (std::min)((int)value, SLAYER_MAX_TOHIT);
-		break;
-
-		//---------------------------------------------------
-		// 아우스터즈
-		//---------------------------------------------------
-		case SKILLDOMAIN_OUSTERS :
-			value = (int)(m_DEX/2 + m_DomainLevel);
-			value = (std::min)((int)value, OUSTERS_MAX_TOHIT);						
-			break;
-			
-		//---------------------------------------------------
-		// 뱀파이어
-		//---------------------------------------------------
-		case SKILLDOMAIN_VAMPIRE :
-			value = (int)(m_DEX + m_DomainLevel/2.5);
-			value = (std::min)((int)value, VAMPIRE_MAX_TOHIT);						
-		break;
-
+		case STAT_VAMPIRE :	return decore::vampireToHit(a);
+		case STAT_OUSTERS :	return decore::oustersToHit(a);
+		default :			return decore::slayerToHit(a);
 	}
-
-	return value;
 }
 
-//----------------------------------------------------------------------
-// Get Defense
-//----------------------------------------------------------------------
-// Slayer  : STR/15*2
-// Vampire : DEX + LEVEL/5
-//----------------------------------------------------------------------
 int 
 MStatusManager::GetDefense()
 {
-	int	value  = 0;
+	const decore::StatAttr a = StatAttrOf(m_STR, m_DEX, m_INT, m_Domain, m_DomainLevel);
 
-	switch (m_Domain)
+	switch (RaceOf(m_Domain))
 	{
-		//---------------------------------------------------
-		// 맨손
-		//---------------------------------------------------
-//		case MAX_SKILLDOMAIN :
-//			value = m_DEX/2;
-//		break;
-
-		//---------------------------------------------------
-		// 아우스터즈
-		//---------------------------------------------------
-		case SKILLDOMAIN_OUSTERS :
-			value = (int)(m_DEX/2 + m_DomainLevel/5);
-			value = (std::min)((int)value, OUSTERS_MAX_DEFENSE);						
-			break;
-			
-		//---------------------------------------------------
-		// 뱀파이어
-		//---------------------------------------------------
-		case SKILLDOMAIN_VAMPIRE :
-			value = (int)(m_DEX/2 + m_DomainLevel/5);
-			value = (std::min)((int)value, VAMPIRE_MAX_DEFENSE);						
-		break;
-
-		//---------------------------------------------------
-		// 슬레이어
-		//---------------------------------------------------
-		default :
-			value = (std::min)(m_DEX/2, SLAYER_MAX_DEFENSE);
+		case STAT_VAMPIRE :	return decore::vampireDefense(a);
+		case STAT_OUSTERS :	return decore::oustersDefense(a);
+		default :			return decore::slayerDefense(a);
 	}
-
-	return value;
 }
 
-//----------------------------------------------------------------------
-// Get Protect
-//----------------------------------------------------------------------
-//	Slayer  : STR/15
-//	Vampire : STR/5 + LEVEL/5
-//----------------------------------------------------------------------
 int 
 MStatusManager::GetProtection()
 {
-	int	value  = 0;
+	const decore::StatAttr a = StatAttrOf(m_STR, m_DEX, m_INT, m_Domain, m_DomainLevel);
 
-	switch (m_Domain)
+	switch (RaceOf(m_Domain))
 	{
-		//---------------------------------------------------
-		// 맨손
-		//---------------------------------------------------
-		case MAX_SKILLDOMAIN :
-//			value = m_STR/15;
-		break;
-
-		//---------------------------------------------------
-		// 뱀파이어
-		//---------------------------------------------------
-		case SKILLDOMAIN_OUSTERS :
-			value = (int)(m_STR + m_DomainLevel/10);
-			value = (std::min)((int)value, OUSTERS_MAX_PROTECTION);						
-		break;
-			
-		//---------------------------------------------------
-		// 뱀파이어
-		//---------------------------------------------------
-		case SKILLDOMAIN_VAMPIRE :
-			value = (int)(m_STR + m_DomainLevel/5);
-			value = (std::min)((int)value, VAMPIRE_MAX_PROTECTION);						
-		break;
-
-		//---------------------------------------------------
-		// 슬레이어
-		//---------------------------------------------------
-		default :	
-//			value = (int)(m_STR/15);
-			value = (std::min)(m_STR, SLAYER_MAX_PROTECTION);
-		
+		case STAT_VAMPIRE :	return decore::vampireProtection(a);
+		case STAT_OUSTERS :	return decore::oustersProtection(a);
+		default :			return decore::slayerProtection(a);
 	}
-
-	return value;
 }
 
-
-//----------------------------------------------------------------------
-// Min Damage 계산
-//----------------------------------------------------------------------
-//	Sword  Slayer : STR/15
-//	Blade  Slayer : STR/15
-//	Gun    Slayer : 0
-//	Cleric Slayer : STR/15
-//	Vampire       : STR/10
-//----------------------------------------------------------------------
 int 
 MStatusManager::GetMinDAM()
 {
-	int	value  = 0;
+	const decore::StatAttr a = StatAttrOf(m_STR, m_DEX, m_INT, m_Domain, m_DomainLevel);
 
-	switch (m_Domain)
+	switch (RaceOf(m_Domain))
 	{
-		//---------------------------------------------------
-		// 맨손
-		//---------------------------------------------------
-		case MAX_SKILLDOMAIN :
-			value = 1;
-		break;
-
-		//---------------------------------------------------
-		// 아우스터즈
-		//---------------------------------------------------
-		case SKILLDOMAIN_OUSTERS :
-			value = (std::max)(1, (int)(m_STR/10 + m_DomainLevel/10));
-			value = (std::min)((int)value, OUSTERS_MAX_DAMAGE);			
-			break;
-			
-		//---------------------------------------------------
-		// 뱀파이어
-		//---------------------------------------------------
-		case SKILLDOMAIN_VAMPIRE :
-			value = (std::max)(1, (int)(m_STR/6 + m_DomainLevel/5));
-			value = (std::min)((int)value, VAMPIRE_MAX_DAMAGE);			
-		break;
-
-		//---------------------------------------------------
-		// 총
-		//---------------------------------------------------
-		case SKILLDOMAIN_GUN :			
-			value = 1;
-		break;
-
-		//---------------------------------------------------
-		// 검 / 도 / 십자가
-		//---------------------------------------------------
-		default :
-//			value = (int)(m_STR/15);
-			value = (std::min)(m_STR/15, SLAYER_MAX_DAMAGE);		
-
-
+		case STAT_VAMPIRE :	return decore::vampireMinDamage(a, kCombatDamageBonus);
+		case STAT_OUSTERS :	return decore::oustersMinDamage(a);
+		default :			return decore::slayerMinDamage(a, kCombatDamageBonus);
 	}
-
-	return value;
 }
 
-//----------------------------------------------------------------------
-// Max Damage 계산
-//----------------------------------------------------------------------
-//	Sword Slayer  : STR/5
-//	Blade Slayer  : STR/5
-//	Gun   Slayer  : 0
-//	Cleric Slayer : STR/5
-//	Vampire       : STR/5
-//----------------------------------------------------------------------
 int 
 MStatusManager::GetMaxDAM()
 {
-	int	value  = 0;
+	const decore::StatAttr a = StatAttrOf(m_STR, m_DEX, m_INT, m_Domain, m_DomainLevel);
 
-	switch (m_Domain)
+	switch (RaceOf(m_Domain))
 	{
-		//---------------------------------------------------
-		// 맨손
-		//---------------------------------------------------
-		case MAX_SKILLDOMAIN :
-//			value = m_STR/10;
-			value = (std::min)(m_STR/10, SLAYER_MAX_DAMAGE);
-		break;
-
-		//---------------------------------------------------
-		// 총
-		//---------------------------------------------------
-		case SKILLDOMAIN_GUN :			
-			value = 2;
-		break;
-		
-		//---------------------------------------------------
-		// 아우스터즈
-		//---------------------------------------------------
-		case SKILLDOMAIN_OUSTERS :			
-			value = (std::max)(1, m_STR/6 + m_DomainLevel/6);
-			value = (std::min)((int)value, OUSTERS_MAX_DAMAGE);
-			break;
-			
-		//---------------------------------------------------
-		// 뱀파이어
-		//---------------------------------------------------
-		case SKILLDOMAIN_VAMPIRE :			
-			value = (std::max)(1, m_STR/4 + m_DomainLevel/5);
-			value = (std::min)((int)value, VAMPIRE_MAX_DAMAGE);
-		break;
-
-		//---------------------------------------------------
-		// 검 / 도 / 십자가
-		//---------------------------------------------------
-		default :
-//			value = (int)(m_STR / 5);
-			value = (std::min)(m_STR/10, SLAYER_MAX_DAMAGE);
-
+		case STAT_VAMPIRE :	return decore::vampireMaxDamage(a, kCombatDamageBonus);
+		case STAT_OUSTERS :	return decore::oustersMaxDamage(a);
+		default :			return decore::slayerMaxDamage(a, kCombatDamageBonus);
 	}
-
-	return value;
 }
-
-
 
 //----------------------------------------------------------------------
 // Attack Speed

@@ -168,7 +168,8 @@ Client/SkillDef.cpp
 # The client's own combat-stat derivation (docs/RESTRUCTURING.md task
 # 4.12, slice 3): the character-select preview, with the inputs it takes
 # from the character list, and the attack speed MPlayer::CalculateStatus
-# takes from it.
+# takes from it. To-hit, defense, protection and damage are the server's
+# rules, from decore.
 Client/MStatusManager.cpp
 Client/MStatusManager.h
 
