@@ -342,7 +342,7 @@ public:
 	// get/set weapon
 	WeaponType getWeaponType () const
 	{ 
-		return weaponFromBits(m_Outlook.to_ulong());
+		return weaponFromBits(static_cast<DWORD>(m_Outlook.to_ulong()));
 	}
 	void setWeaponType (WeaponType weaponType) noexcept
 	{ 
