@@ -478,7 +478,9 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 		// replace the curses found. A replacement goes over the Korean
 		// bytes from the word's first on, as far as it reaches and
 		// there are Korean bytes: only the first index entries of
-		// indexFiltered are set.
+		// indexFiltered hold this pass's Korean bytes. The entries past
+		// them still hold the English pass's letter positions, or were
+		// never written.
 		//------------------------------------------------------------
 		
 		for (int i=0; i<index; i++)

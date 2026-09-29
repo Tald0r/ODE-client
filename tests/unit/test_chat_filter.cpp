@@ -631,8 +631,17 @@ TEST(ChatFilter, AKoreanWordEndingALineLeavesTheTextBeforeIt)
 	LoadWords(chat, kWords);
 
 	// The replacement's bytes past the word's last Korean byte have no
-	// Korean byte to go to; they were written wherever the unset rest of
-	// the index array pointed inside the line - here its first bytes.
+	// Korean byte to go to, and are dropped. The index array's entries
+	// past the Korean bytes still hold the English pass's letter
+	// positions, or were never written when the line has fewer English
+	// letters than Korean bytes. Before the fix the replacement ran on
+	// through them: over the line's last English letters in the first two
+	// cases below, on every platform and allocator ("abcdefou love y"),
+	// and in the others wherever the unwritten entries pointed (the line's
+	// first byte where new memory reads 0, nowhere under ASan, whose
+	// 0xbe fill makes them negative).
+	CHECK(Filters(chat, "abcdefgh " DA RA GA, "abcdefgh love y"));
+	CHECK(Filters(chat, "abcdefghij " GA NA DA RA, "abcdefghij I love y"));
 	CHECK(Filters(chat, "hi " DA RA GA, "hi love y"));
 	CHECK(Filters(chat, "hi " GA NA DA RA, "hi I love y"));
 	CHECK(Filters(chat, "abc " DA RA GA "!", "abc love y!"));

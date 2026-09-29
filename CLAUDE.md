@@ -204,7 +204,7 @@ to `OFF`, so a tree configured without it generates no test target at all. Basel
 measured on 2026-09-29, after the chat filter joined gamemodel with its tests and
 fixes (`docs/RESTRUCTURING.md` task 4.13, on top of the action and effect table
 move; 1327 tests and 1,434,061 checks before it), the same on all four at the
-same tree: **1366 tests, 1,436,009 checks, 0 failed** (`decore_tests`: 13
+same tree: **1366 tests, 1,436,011 checks, 0 failed** (`decore_tests`: 13
 tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
 13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
 an Apple Silicon Mac, and run in it; both scripts stop at the warning step,

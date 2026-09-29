@@ -1189,8 +1189,14 @@ rounds settled* for the host rules). Test fixtures share
   > both mask texts (165 characters in 256-byte arrays) were indexed by a
   > running count, so a word past the 165th letter, or an `AddMask` line
   > of about 150 bytes, was cut by a NUL and read past the array from 256
-  > on; a Korean replacement longer than the letters left wrote through
-  > the unset tail of its index array; an empty English word in the
+  > on; a Korean replacement longer than the Korean bytes left ran on
+  > through its index array's entries past them, which still held the
+  > English pass's letter positions (so "abcdefgh " and a three-syllable
+  > word came back "abcdefou love y" on every platform, ASan included)
+  > or, with fewer English letters than Korean bytes, were never written
+  > (the fix's commit named only this case, and called its test a
+  > regression guard under ASan; the review added the deterministic
+  > cases); an empty English word in the
   > binary list hung the filter; and the map loader stored an unset
   > pointer for an entry whose value is not its key, read its flag
   > straight into a `bool`, looped over an uninitialised count and
