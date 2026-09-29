@@ -211,6 +211,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 | `Client/MinTr.h` raw trace transport | the one remaining caller sends a fixed text message to the optional external Win32 trace window. Unused variadic and command formatting paths are retired. |
 | `PacketFunction.cpp` connect paths | Winsock + connection state machine. `RequestClientPlayerManager.cpp` was listed here until 2026-09-09; task 5.1's fifth slice put its seams behind `WireHost`, and task 5.2's eighth slice deleted it with the rest of the outbound peer side |
 | The executable halves of split classes: `MItemUse.cpp`, `MObjectScreen.cpp`, `MSkillAvailable.cpp`, `TextServiceScreen.cpp` | the packet/dialog/drawing side of a class whose core is in a library, by design |
+| `ModifyStatusManager.cpp` `Function_MODIFY_*` bodies | the player's reactions to a status change: each reaches `g_pPlayer`, the UI setters, the gear and inventory, `g_pGameMessage` or `g_pSkillAvailable`, and runs from `MPlayer::SetStatus`. The rules they apply are in libraries and tested there (a vampire's skill cost is `MSkillInfoTable::GetVampireConsumeMP` in `gamemodel`); the reactions use full builds and a regression guard. Added 2026-09-29 with the call that recomputes a vampire's skills on an INT change. |
 
 `UserOption` persistence is compiled once in `VS_UI/src/UserOption.cpp`.
 `user_option_tests` links that library object and exercises the real settings
