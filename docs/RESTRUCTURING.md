@@ -599,9 +599,10 @@ rounds settled* for the host rules). Test fixtures share
   > wallets carry none); `operator=` keeps the target's hook. The trade
   > manager's accept delay reads the clock `MItemHost` carries. The price
   > manager goes through **`MPriceHost`** (race, level, stat sums, the
-  > potion and gamble half-price events, the shop tax percentage carried
-  > unsigned as the server sends it); without a host a price carries no
-  > player, event or skill adjustment. Fixed test-first: `CanAddMoney`
+  > potion and gamble half-price events, and, until task 4.12's slice 5
+  > removed it, the shop tax percentage carried unsigned as the server
+  > sends it); without a host a price carries no player, event or skill
+  > adjustment. Fixed test-first: `CanAddMoney`
   > ignored the balance, so a wallet near the limit said yes and the
   > `AddMoney` after it said no, with the other side's money nowhere to
   > go; `MItem`'s constructor never set `m_bTrade`, the grid position or
