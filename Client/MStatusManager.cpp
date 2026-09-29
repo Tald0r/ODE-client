@@ -2,11 +2,7 @@
 // MStatusManager.cpp
 //----------------------------------------------------------------------
 
-#ifdef PLATFORM_WINDOWS
-#include <Windows.h>
-#else
 #include "../basic/Platform.h"
-#endif
 #include <algorithm>
 #include "MStatusManager.h"
 #include "SkillDef.h"
@@ -209,7 +205,7 @@ MStatusManager::GetAttackSpeed()
 	switch (m_Domain)
 	{
 		//---------------------------------------------------
-		// 맨손
+		// Bare hands
 		//---------------------------------------------------
 		case MAX_SKILLDOMAIN :
 //			value = m_STR/10;
@@ -217,7 +213,7 @@ MStatusManager::GetAttackSpeed()
 		break;
 
 		//---------------------------------------------------
-		// 아우스터즈
+		// Ousters
 		//---------------------------------------------------
 		case SKILLDOMAIN_OUSTERS:
 			value = (int)((m_DEX+m_DomainLevel)/10);
@@ -225,7 +221,7 @@ MStatusManager::GetAttackSpeed()
 			break;
 
 		//---------------------------------------------------
-		// 뱀파이어
+		// Vampire
 		//---------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE :
 			value = (int)(m_DEX / 10 + 10);
@@ -233,7 +229,7 @@ MStatusManager::GetAttackSpeed()
 		break;
 
 		//---------------------------------------------------
-		// 메이스 / 십자가
+		// Mace / cross
 		//---------------------------------------------------
 		case SKILLDOMAIN_HEAL :
 		case SKILLDOMAIN_ENCHANT :
@@ -242,7 +238,7 @@ MStatusManager::GetAttackSpeed()
 		break;
 
 		//---------------------------------------------------
-		// 총
+		// Gun
 		//---------------------------------------------------
 		case SKILLDOMAIN_GUN :
 //			value = (int)(m_DEX/10 + m_DomainLevel/5);
@@ -250,7 +246,7 @@ MStatusManager::GetAttackSpeed()
 		break;
 
 		//---------------------------------------------------
-		// 검 / 도 
+		// Sword / blade
 		//---------------------------------------------------
 		default :
 //			value = (int)(m_STR/10 + m_DomainLevel/5);
@@ -273,8 +269,8 @@ MStatusManager::Set(int str, int dex, int intel)
 
 
 //--------------------------------------------------------------
-// 현재 사용하는 무기의 domain level을 설정한다.
-// Vampire는 domain level을 설정한다.
+// Sets the skill domain of the weapon in use and its domain level; a
+// vampire or ousters passes its own domain and its level.
 //--------------------------------------------------------------
 void
 MStatusManager::SetCurrentWeaponDomain(int domain, int level)
