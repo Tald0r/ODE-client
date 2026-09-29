@@ -473,6 +473,21 @@ TEST(ChatFilter, LongerKoreanReplacementsAreCutAtTheEndOfTheLine)
 	CHECK(Filters(chat, GA NA DA RA, "I love y"));
 }
 
+TEST(ChatFilter, AKoreanWordEndingALineLeavesTheTextBeforeIt)
+{
+	ChatWorld world;
+	MChatManager chat;
+	LoadWords(chat, kWords);
+
+	// The replacement's bytes past the word's last Korean byte have no
+	// Korean byte to go to; they were written wherever the unset rest of
+	// the index array pointed inside the line - here its first bytes.
+	CHECK(Filters(chat, "hi " DA RA GA, "hi love y"));
+	CHECK(Filters(chat, "hi " GA NA DA RA, "hi I love y"));
+	CHECK(Filters(chat, "abc " DA RA GA "!", "abc love y!"));
+	CHECK(Filters(chat, "darn " DA RA GA, "xxxx love y"));
+}
+
 TEST(ChatFilter, LongerKoreanReplacementsRunOnOverTheNextCharacter)
 {
 	ChatWorld world;

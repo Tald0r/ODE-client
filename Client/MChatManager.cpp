@@ -473,7 +473,10 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	if (existCurseKor)
 	{
 		//------------------------------------------------------------
-		// replace the curses found.
+		// replace the curses found. A replacement goes over the Korean
+		// bytes from the word's first on, as far as it reaches and
+		// there are Korean bytes: only the first index entries of
+		// indexFiltered are set.
 		//------------------------------------------------------------
 		
 		for (int i=0; i<index; i++)
@@ -490,7 +493,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
@@ -501,7 +504,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
@@ -512,7 +515,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
@@ -523,7 +526,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
