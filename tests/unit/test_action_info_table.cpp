@@ -440,3 +440,201 @@ TEST(ActionInfoTable, LoadStopsAtAFileCutInsideTheNodeTable)
 	// The third row was never read.
 	CHECK(table[2].GetName() == NULL);
 }
+
+//======================================================================
+// Bytes the writer never emits.
+//
+// The loader read seven flags straight into bool storage (the row's
+// useRepeatFrame, castingEffectToSelf, castingAction and
+// ignoreFailDelay, the attack flag through a bool local, and each
+// node's delayNode and resultTime) and cast the packet-type byte and the
+// effect-status word to their enums unchecked. A bool holding 2 is
+// neither true nor false - Clang's -fsanitize=bool traps its load, and
+// Clang tests only the low bit where MSVC and GCC test for non-zero - and
+// an enum value outside the enumeration's range is undefined, which
+// -fsanitize=enum traps (ACTIONINFO_PACKET holds 0..15 and EFFECTSTATUS
+// 0..511). The contract: a non-zero flag byte reads as true and a zero
+// byte as false, and a packet type or effect status past the last
+// enumerator reads as the constructor's NONE / EFFECTSTATUS_NULL.
+//======================================================================
+namespace {
+
+unsigned char	StorageByte(const bool& b)
+{
+	unsigned char c = 0;
+	std::memcpy(&c, &b, 1);
+	return c;
+}
+
+// The row's flags are protected; the test reads their storage bytes.
+struct ActionInfoFlags : public MActionInfo
+{
+	unsigned char	UseRepeatFrame() const		{ return StorageByte(m_bUseRepeatFrame); }
+	unsigned char	CastingEffectToSelf() const	{ return StorageByte(m_bCastingEffectToSelf); }
+	unsigned char	CastingAction() const		{ return StorageByte(m_bCastingAction); }
+	unsigned char	IgnoreFailDelay() const		{ return StorageByte(m_bIgnoreFailDelay); }
+	BOOL		Attack() const			{ return m_bAttack; }
+	int		PacketType() const		{ int v = 0; std::memcpy(&v, &m_PacketType, sizeof(m_PacketType) < sizeof(v) ? sizeof(m_PacketType) : sizeof(v)); return v; }
+	int		EffectStatus() const		{ int v = 0; std::memcpy(&v, &m_EffectStatus, sizeof(m_EffectStatus) < sizeof(v) ? sizeof(m_EffectStatus) : sizeof(v)); return v; }
+};
+
+// Offsets into a row built by AppendRowHead (name "Bloody Nail").
+const size_t	kNameBytes		= 4 + 11;
+const size_t	kUseRepeatFrame		= kNameBytes + 1 + 2 + 2;
+const size_t	kCastingEffectToSelf	= kUseRepeatFrame + 1 + 3 * 20 + 2;
+const size_t	kCastingActionInfo	= kCastingEffectToSelf + 1;
+const size_t	kCastingAction		= kCastingActionInfo + 4;
+const size_t	kPacketType		= kCastingAction + 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 + 4;
+const size_t	kEffectStatus		= kPacketType + 1 + 2 + 4 + 2 + 4 + 2 + 4;
+const size_t	kAttack			= kEffectStatus + 2;
+// Without the action-step block: parent, mastery step, ignore fail delay.
+const size_t	kIgnoreFailDelay	= kAttack + 1 + 1 + 1 + 2 + 1;
+
+// Load one row, built without the action-step block, into a row object.
+bool	LoadOneRow(ActionInfoFlags& info, const Bytes& b)
+{
+	WriteScratch(b);
+	bool good = false;
+	{
+		std::ifstream in(kTempFile, std::ios::binary);
+		info.LoadFromFile(in);
+		good = in.good();
+	}
+	RemoveScratch();
+	return good;
+}
+
+} // namespace
+
+TEST(ActionInfoTable, LoadReadsANonZeroFlagByteAsTrue)
+{
+	for (unsigned char byte : { (unsigned char)2, (unsigned char)0x80, (unsigned char)0xFF })
+	{
+		Bytes b;
+		AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_SELF, EFFECTSTATUS_NULL, 1 });
+		AppendNode(b, 11, false, false);
+		b.data[kUseRepeatFrame] = byte;
+		b.data[kCastingEffectToSelf] = byte;
+		b.data[kCastingAction] = byte;
+		b.data[kAttack] = byte;
+		b.data[kIgnoreFailDelay] = byte;
+		b.data[b.data.size() - 2] = byte;	// the node's delayNode
+		b.data[b.data.size() - 1] = byte;	// the node's resultTime
+
+		ActionInfoFlags info;
+		CHECK(LoadOneRow(info, b));
+		CHECK_EQ(1, (int)info.UseRepeatFrame());
+		CHECK_EQ(1, (int)info.CastingEffectToSelf());
+		CHECK_EQ(1, (int)info.CastingAction());
+		CHECK_EQ(1, (int)info.IgnoreFailDelay());
+		CHECK_EQ(TRUE, info.Attack());
+		CHECK_EQ(1, info.GetSize());
+		const ACTION_INFO_NODE* node = info.GetMutable(0);
+		CHECK(node != nullptr);
+		if (node == nullptr)
+			continue;
+		CHECK_EQ(1, (int)StorageByte(node->bDelayNode));
+		CHECK_EQ(1, (int)StorageByte(node->bResultTime));
+	}
+}
+
+TEST(ActionInfoTable, LoadReadsAZeroFlagByteAsFalse)
+{
+	Bytes b;
+	AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_SELF, EFFECTSTATUS_NULL, 0 });
+	b.data[kUseRepeatFrame] = 0;
+	b.data[kCastingAction] = 0;
+	b.data[kIgnoreFailDelay] = 0;
+	b.data[kCastingEffectToSelf] = 0;
+
+	ActionInfoFlags info;
+	CHECK(LoadOneRow(info, b));
+	CHECK_EQ(0, (int)info.UseRepeatFrame());
+	CHECK_EQ(0, (int)info.CastingEffectToSelf());
+	CHECK_EQ(0, (int)info.CastingAction());
+	CHECK_EQ(0, (int)info.IgnoreFailDelay());
+	CHECK_EQ(FALSE, info.Attack());
+}
+
+TEST(ActionInfoTable, LoadReadsAPacketTypePastTheLastEnumeratorAsNone)
+{
+	// The last enumerator loads as itself; one past it (still inside the
+	// enum's range), the first byte outside the range and 0xFF read as NONE.
+	const int cases[][2] = {
+		{ ACTIONINFO_PACKET_ABSORB_SOUL, ACTIONINFO_PACKET_ABSORB_SOUL },
+		{ ACTIONINFO_PACKET_ABSORB_SOUL + 1, ACTIONINFO_PACKET_NONE },
+		{ 16, ACTIONINFO_PACKET_NONE },
+		{ 0xFF, ACTIONINFO_PACKET_NONE },
+	};
+	for (const auto& c : cases)
+	{
+		Bytes b;
+		AppendRowHead(b, RowSpec{ false, (BYTE)c[0], EFFECTSTATUS_NULL, 0 });
+
+		ActionInfoFlags info;
+		CHECK(LoadOneRow(info, b));
+		CHECK_EQ(c[1], info.PacketType());
+	}
+}
+
+TEST(ActionInfoTable, LoadReadsAnEffectStatusPastTheLastEnumeratorAsNull)
+{
+	// EFFECTSTATUS_NULL is the writer's "none" and loads as itself, as
+	// does every status below it; past it (500 is still inside the
+	// enum's range, 512 and 0xFFFF are not) reads as EFFECTSTATUS_NULL.
+	const int cases[][2] = {
+		{ 0, 0 },
+		{ EFFECTSTATUS_MAX - 1, EFFECTSTATUS_MAX - 1 },
+		{ EFFECTSTATUS_NULL, EFFECTSTATUS_NULL },
+		{ 500, EFFECTSTATUS_NULL },
+		{ 512, EFFECTSTATUS_NULL },
+		{ 0xFFFF, EFFECTSTATUS_NULL },
+	};
+	for (const auto& c : cases)
+	{
+		Bytes b;
+		AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_SELF, (WORD)c[0], 0 });
+
+		ActionInfoFlags info;
+		CHECK(LoadOneRow(info, b));
+		CHECK_EQ(c[1], info.EffectStatus());
+	}
+}
+
+// The casting action info is four bytes on disk and two in memory. The
+// loader read all four into the member, so the upper two landed on the
+// castingAction flag stored after it and on the padding behind that;
+// the flag's own byte overwrote them only when the file went on. A file
+// that ends after the field left the flag holding the field's third
+// byte.
+TEST(ActionInfoTable, LoadKeepsTheCastingActionFieldOutOfTheFlagAfterIt)
+{
+	Bytes b;
+	AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_SELF, EFFECTSTATUS_NULL, 0 });
+	b.data[kCastingActionInfo + 2] = 2;
+	b.data[kCastingActionInfo + 3] = 7;
+	b.data.resize(kCastingAction);		// the file ends after the field
+
+	ActionInfoFlags info;
+	CHECK(!LoadOneRow(info, b));
+	CHECK_EQ(301, (int)info.GetCastingActionInfo());
+	// The constructor's value: the flag's byte was never read.
+	CHECK_EQ(0, (int)info.CastingAction());
+}
+
+// A row cut before its packet type, effect status and attack flag reads
+// them as the constructor's values. Before the fix they came from
+// uninitialised locals, which a test can only catch by chance: this is a
+// regression guard.
+TEST(ActionInfoTable, LoadKeepsTheDefaultsOfFieldsPastACut)
+{
+	Bytes b;
+	AppendRowHead(b, RowSpec{ false, ACTIONINFO_PACKET_OTHER, 7, 0 });
+	b.data.resize(kPacketType);
+
+	ActionInfoFlags info;
+	CHECK(!LoadOneRow(info, b));
+	CHECK_EQ((int)ACTIONINFO_PACKET_NONE, info.PacketType());
+	CHECK_EQ((int)EFFECTSTATUS_NULL, info.EffectStatus());
+	CHECK_EQ(TRUE, info.Attack());
+}
