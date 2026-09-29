@@ -189,12 +189,14 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, the same on both: **1266 tests, 1,422,176 checks, 0
-failed**. Linux: `unit_tests` in the Docker image (`tools/ci/verify-linux.sh
-linux` and `linux-clang`, the same on both; the image's native arm64 on an
-Apple Silicon Mac).
-macOS: Apple Silicon, Apple Clang 21, `macos` preset, read with
-`build/defects/run-tests.sh unit_tests ''`. The Windows trees were not
+measured on 2026-09-29, the same on all four: **1268 tests, 1,422,199 checks, 0
+failed**. Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
+13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
+an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
+which has no `aarch64` baseline, after ctest passed, so the totals were read
+by running the binary. macOS: Apple Silicon, Apple Clang 21, `macos` preset,
+read with `build/defects/run-tests.sh unit_tests ''`, and the `macos-asan`
+preset's `unit_tests`, with no ASan or UBSan report. The Windows trees were not
 re-measured for this figure, and no CI run produced either number. A
 platform-conditional test can make the check totals differ by one between
 platforms; that is not a failure. The Linux
