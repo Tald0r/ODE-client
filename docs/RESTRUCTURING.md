@@ -598,6 +598,21 @@ rounds settled* for the host rules). Test fixtures share
   > sprite header naming the model's `DrawTypeDef.h` (the same typedefs as
   > SpriteLib's copy). 42, 49, 11 and 11 executable translation units
   > link against them, in that order (nm, 2026-09-29).
+  > `test_action_info_table.cpp` and `test_effect_tables.cpp` pin the five
+  > file layouts through the real loaders and writers: round trips, counts
+  > larger than the file refused, cuts that fail the stream. Crafted records
+  > then found four loader defects, fixed test-first: the action table read
+  > seven flags straight into `bool` storage and cast its packet-type byte
+  > and effect-status word to their enums unchecked (Clang's UBSan trapped
+  > the attack flag; a plain Clang build read a flag byte of 2 as false),
+  > and wrote its four-byte casting-action field over the flag after the
+  > two-byte member; the effect status table read its two flags the same
+  > way; the effect sprite table cast its draw type to `BLT_TYPE` unchecked
+  > and padded a short pair list with the last frame read; the creature
+  > sprite table read its four-byte file positions into half of a `long`
+  > that is eight bytes off Windows. Out-of-range enum values now read as
+  > the constructor's `NONE`/`EFFECTSTATUS_NULL`, or `BLT_EFFECT` for a
+  > draw type; what the writers emit loads unchanged.
   - Owner: the membership file, the CMake assertion, the include checker.
 
 - [x] **4.2 Money/price/trade logic:** `MMoneyManager`, `MTradeManager`

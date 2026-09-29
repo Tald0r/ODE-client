@@ -191,8 +191,8 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, the same on all four: **1269 tests, 1,422,207 checks, 0
-failed**. Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
+measured on 2026-09-29, the same on all four: **1302 tests, 1,422,793 checks, 0
+failed** (after the action and effect table loader tests). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
 13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
 an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
 which has no `aarch64` baseline, after ctest passed, so the totals were read
