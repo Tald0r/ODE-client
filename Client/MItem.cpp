@@ -1316,7 +1316,13 @@ MItem::GetRequireLevel() const
 	int original = (*g_pItemTable)[GetItemClass()][m_ItemType].GetRequireLevel();
 	int maxValue = 0;
 	
-	if(original == 0 || IsQuestItem() )
+	if( IsQuestItem() )
+		return 0;
+
+	// A vampire's options raise a level of 0 too; a slayer's or an
+	// ousters' level of 0 asks nothing, options or not.
+	const bool bVampireRule = IsVampireItem() && !IsOustersItem();
+	if( original == 0 && !bVampireRule )
 		return 0;
 
 	if( original <= 100 )

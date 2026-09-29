@@ -181,8 +181,9 @@ TEST(EquipRequirement, VampireGearAddsEachOptionLevel)
 	CHECK_EQ(60, item.GetRequireLevel());
 }
 
-// vampire-zero-level-raised: the server raises a vampire's table level
-// of 0 by its options (0 + 10). The client today shows no level.
+// vampire-zero-level-raised: a vampire's table level of 0 is raised by
+// its options (0 + 10), and by each of several, as in
+// vampire-zero-level-raised-by-several (here 0 + 10 + 10).
 TEST(EquipRequirement, VampireLevelZeroIsRaisedByTheOptions)
 {
 	EquipWorld world;
@@ -190,6 +191,25 @@ TEST(EquipRequirement, VampireLevelZeroIsRaisedByTheOptions)
 	SetGear(FLAG_RACE_VAMPIRE, 0, 0, 0, 0, 0);
 	item.AddItemOption(4);
 
+	CHECK_EQ(10, item.GetRequireLevel());
+
+	item.AddItemOption(4);
+	CHECK_EQ(20, item.GetRequireLevel());
+}
+
+// A slayer's and an ousters' table level of 0 is not raised, though
+// every option carries a level requirement (ousters-zero-level-not-
+// raised; a slayer's level is not its rule's at all).
+TEST(EquipRequirement, SlayerAndOustersLevelZeroStaysZero)
+{
+	EquipWorld world;
+	Gear item;
+	item.AddItemOption(5);
+
+	SetGear(FLAG_RACE_SLAYER, 50, 40, 30, 120, 0);
+	CHECK_EQ(0, item.GetRequireLevel());
+
+	SetGear(FLAG_RACE_OUSTERS, 50, 40, 30, 120, 0);
 	CHECK_EQ(0, item.GetRequireLevel());
 }
 
