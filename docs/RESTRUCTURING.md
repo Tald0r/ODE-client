@@ -797,7 +797,7 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slices 4-6). Slice 1 is in: `MPriceManager`'s
+  > **Status:** in progress (slice 5's client callers, slice 6). Slice 1 is in: `MPriceManager`'s
   > buy, sell and repair quotes and the gear maximum durability call
   > `decore`, the inputs the server never sends are `MPriceHost` entries
   > with documented defaults, and `unit_tests` checks the adapters against
@@ -835,7 +835,42 @@ rounds settled* for the host rules). Test fixtures share
   > Left on the host side: a vampire's skill is enabled at cost <= HP
   > where the server wants HP > cost, no race's cost applies the gear's
   > consume-MP ratio, and the character list's four-bit weapon field
-  > turns a mace into a sword. The copy is
+  > turns a mace into a sword. Slice 4 is in
+  > (`feat/shared-equip-and-tax`): an item's requirement, which the
+  > descriptions show (`MItem::GetRequireSTR/DEX/INT/SUM/Level`), is
+  > `decore::requiredStats` over the item table and each option's
+  > `RequireSUM` and `RequireLevel` in option order, by the rule of the
+  > item's race flag (ousters, then vampire, then slayer). Whether the
+  > player may use an item moved from `MCreature::CheckAffectStatus`
+  > into `MItem::IsUsableBy` (`gamemodel`), which asks
+  > `decore::meetsRequirement`. That brought the server's slayer cap of
+  > 290 (the client had 295), its ousters level cap of 150, a vampire
+  > table level of 0 raised by the options, and the 16- and 8-bit
+  > widths the options are added at. The client's two gender flags map
+  > to `decore::gender`: neither is Both, one alone is that sex, and
+  > both set is read as Both, since no server value names both sexes and
+  > the server's seed has no such item (no client item data was at
+  > hand to look in). `MItemLimits.h`'s caps and the unused copies in
+  > the two VS_UI game files are gone.
+  > `tests/unit/test_equip_requirement.cpp` checks the requirement and
+  > the check against `equip.tsv` rows (`2cef2abf`..`e0f27757`; the
+  > fixes `bd3072a0`, `78bf217c`, `50110b35`, `ec6601fa`). The client
+  > keeps three gates of its own, before the server's check: a quest
+  > item asks nothing and is usable by a slayer or vampire its gender
+  > allows and by any ousters, an item without the user's race flag is
+  > refused, and a pet whose life has run out lends nothing. Left over:
+  > the server's advancement-class check is not in de-core and the
+  > client has none (the server refuses an item asking
+  > `reqAdvancedLevel > 0` unless the wearer is advanced with a class
+  > level at least that, and refuses an advanced wearer a non-advanced
+  > weapon, coat, trousers or ousters boots), so the client shows such
+  > an item usable where the server refuses it; the owner chooses
+  > between a client-local check and a de-core function with a per-race
+  > class predicate. An item flagged for several races takes its
+  > requirement from its first flag and is checked by the user's race,
+  > where the server uses the wearer's race for both; the server's item
+  > tables have one race per class. The time-limited, premium-zone and
+  > pay, and couple-ring gates stay server-only. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
   > from server `73750a3c` (PR #281, the equip requirements:
   > `EquipRequirement` and `equip.tsv`; PR #282, the castle tax:

@@ -66,7 +66,9 @@ the output and hides all progress.
 
 Only code compiled into a **static library**: `basic`, `SpriteLib`, `dxlib`,
 `gamemodel` (the pure data tables, the item table, the money manager, the item
-core - `MItem`, the gear families, the item managers, the containers
+core - `MItem`, with what an item requires and whether the player may
+use it (`MItem::IsUsableBy`, which `MCreature::CheckAffectStatus` asks),
+the gear families, the item managers, the containers
 (inventory, storage, shop shelves), the trade manager over them, the gear the
 three races wear and the shop, behind the `MItemHost` the executable installs,
 the price manager behind its `MPriceHost`, the skill core (the info
