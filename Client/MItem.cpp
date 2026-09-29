@@ -1330,7 +1330,13 @@ MItem::GetRequireLevel() const
 // slayer needs the STR, DEX, INT, their sum and the gender, a vampire
 // the level and the gender, an ousters the four stats and the level.
 // Four gates come before it:
-// - a pet whose life has run out lends nothing (the client's own);
+// - a pet is usable while it lives, by any race and whatever its table,
+//   its options or its gender flags ask, and a dead one lends nothing.
+//   That is the server's: isUsableItem lets any race use a pet item,
+//   and executePetItem refuses only a pet with no HP left and a
+//   second-stage pet to an owner under quest level 40, which this does
+//   not check (MItemUser has no quest level); the server does not read
+//   PetItemInfo's Race column at all;
 // - an item not made for the user's race is refused (the client's
 //   own; the server refuses it elsewhere, before its wearing check);
 // - a quest item (IsQuestItem) is usable whatever it asks, by a slayer
@@ -1357,10 +1363,8 @@ MItem::IsUsableBy(const MItemUser& user) const
 	{
 		// The pet's durability is minutes of life, counted down from the
 		// moment it was set; at zero the pet is dead and lends no status.
-		if (static_cast<const MPetItem*>(this)->GetRemainingDurability() == 0)
-		{
-			return false;
-		}
+		// A living pet asks nothing, of any race.
+		return static_cast<const MPetItem*>(this)->GetRemainingDurability() != 0;
 	}
 
 	decore::EquipRace race = decore::EquipRace::Slayer;
