@@ -41,8 +41,8 @@
 // length. A stream shorter than two bytes gets only the first pass.
 //
 // Outcomes: a Throwable (the only type processCommand's caller,
-// UpdateSocketInput at GameMain.cpp:272, catches) is a rejected input
-// and returns 0. Anything else, a std::exception included, escapes this
+// UpdateSocketInput in Client/GameMain.cpp, catches) is a rejected
+// input and returns 0. Anything else, a std::exception included, escapes this
 // function, since in production it would escape the game loop and end
 // the client through std::terminate: libFuzzer and the replay driver
 // report it as a crash. A crash, a sanitizer report or an abort is a
