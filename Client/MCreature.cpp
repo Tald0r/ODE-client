@@ -39,6 +39,8 @@
 #include "RankBonusDef.h"
 #include "MTestDef.h"
 #include "MTimeItemManager.h"
+
+#include "domain/Formulas.h"
 #ifdef PLATFORM_WINDOWS
 #include "MinTr.h"
 #endif
@@ -10346,23 +10348,9 @@ MCreature::SetRegen(int amount, DWORD delay)
 { 
 	if(this == g_pPlayer && IsVampire() && g_pPlayer->GetCreatureType() != CREATURETYPE_BAT)
 	{
-		const int dex = g_pPlayer->GetBASIC_DEX();
-		if(dex < 51)
-			;
-		else if(dex > 50 && dex < 121)
-			amount += 1;
-		else if(dex > 120 && dex < 191)
-			amount += 2;
-		else if(dex > 190 && dex < 261)
-			amount += 3;
-		else if(dex > 260 && dex < 331)
-			amount += 4;
-		else if(dex > 330 && dex < 391)
-			amount +=5;
-		else if(dex > 390 && dex < 451)
-			amount +=6;
-		else if(dex > 450)
-			amount +=7;
+		// The server's HP regeneration bonus from the basic DEX
+		// (VampireStat.cpp), 1 from DEX 51 up to 7 from DEX 451.
+		amount += decore::vampireDexHPRegenBonus( (int)g_pPlayer->GetBASIC_DEX() );
 
 		if((*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetStatus() == RankBonusInfo::STATUS_LEARNED)
 			amount += (*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetPoint();
