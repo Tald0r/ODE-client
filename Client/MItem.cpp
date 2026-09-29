@@ -1330,15 +1330,19 @@ MItem::GetRequireLevel() const
 // slayer needs the STR, DEX, INT, their sum and the gender, a vampire
 // the level and the gender, an ousters the four stats and the level.
 // Four gates come before it:
-// - a pet is usable while it lives, by any race and whatever its table,
-//   its options or its gender flags ask, and a dead one lends nothing.
-//   That is the server's: isUsableItem lets any race use a pet item,
-//   and executePetItem refuses only a pet with no HP left and a
-//   second-stage pet to an owner under quest level 40, which this does
-//   not check (MItemUser has no quest level); the server does not read
-//   PetItemInfo's Race column at all;
 // - an item not made for the user's race is refused (the client's
-//   own; the server refuses it elsewhere, before its wearing check);
+//   own; the server refuses it elsewhere, before its wearing check).
+//   For a pet this is stricter than the server, which lets any race use
+//   a pet item (isUsableItem) and never reads PetItemInfo's Race column;
+//   it is kept so the affect status agrees with the client's use
+//   handlers (UIMessageManager's Execute_UI_ITEM_USE), which send a use
+//   request only for an item made for the player's race;
+// - a pet of the user's race is usable while it lives, whatever its
+//   table, its options or its gender flags ask, and a dead one lends
+//   nothing. That is the server's: executePetItem refuses a pet with no
+//   HP left and a second-stage pet to an owner under quest level 40,
+//   which this does not check (MItemUser has no quest level), and asks
+//   no wearing requirement;
 // - a quest item (IsQuestItem) is usable whatever it asks, by a slayer
 //   or a vampire the gender allows and by any ousters. For an item the
 //   timed-item register holds, which IsQuestItem counts, this is the
@@ -1359,14 +1363,6 @@ MItem::GetRequireLevel() const
 bool
 MItem::IsUsableBy(const MItemUser& user) const
 {
-	if (GetItemClass() == ITEM_CLASS_PET_ITEM)
-	{
-		// The pet's durability is minutes of life, counted down from the
-		// moment it was set; at zero the pet is dead and lends no status.
-		// A living pet asks nothing, of any race.
-		return static_cast<const MPetItem*>(this)->GetRemainingDurability() != 0;
-	}
-
 	decore::EquipRace race = decore::EquipRace::Slayer;
 	switch (user.race)
 	{
@@ -1398,6 +1394,14 @@ MItem::IsUsableBy(const MItemUser& user) const
 		// No creature has another race (MCreature::GetRace returns one of
 		// the three).
 		return false;
+	}
+
+	if (GetItemClass() == ITEM_CLASS_PET_ITEM)
+	{
+		// The pet's durability is minutes of life, counted down from the
+		// moment it was set; at zero the pet is dead and lends no status.
+		// A living pet asks nothing.
+		return static_cast<const MPetItem*>(this)->GetRemainingDurability() != 0;
 	}
 
 	const int sex = user.bMale ? decore::sex::Male : decore::sex::Female;

@@ -880,19 +880,22 @@ rounds settled* for the host rules). Test fixtures share
   > at class 69 (`ITEM_CLASS_OUSTERS_SUMMON_ITEM`) and predates the
   > pets (classes 74-76): it has no pet class, and nothing in the tree
   > says how the client's own `Item.inf` flags a pet. Four gates come
-  > before the server's check, in this order: a pet is usable while it
-  > lives, by any race and whatever its table, options or gender flags
-  > ask, and a dead one lends nothing; an item without the user's race
-  > flag is refused; a quest item (`IsQuestItem`) asks nothing and is
-  > usable by a slayer or vampire its gender allows and by any
-  > ousters; and a couple ring is usable by a slayer or a vampire
-  > whatever it asks, stats, level or gender. The first is the
-  > server's (the fix `3954a3b0`): `isUsableItem` lets any race use a
-  > pet item, `executePetItem` refuses a pet with no HP left (the
-  > client counts down the HP the server sends as the pet's
-  > durability) and a second-stage pet to an owner under quest level
-  > 40, which the client does not check, and the server does not read
-  > `PetItemInfo`'s `Race` column. The second is the client's own. The
+  > before the server's check, in this order: an item without the
+  > user's race flag is refused; a pet of the user's race is usable
+  > while it lives, whatever its table, options or gender flags ask,
+  > and a dead one lends nothing; a quest item (`IsQuestItem`) asks
+  > nothing and is usable by a slayer or vampire its gender allows and
+  > by any ousters; and a couple ring is usable by a slayer or a
+  > vampire whatever it asks, stats, level or gender. The first is the
+  > client's own, and for a pet it is stricter than the server, whose
+  > `isUsableItem` lets any race use a pet item and which never reads
+  > `PetItemInfo`'s `Race` column; it is kept so the affect status
+  > agrees with the client's use handlers (below). The second is the
+  > server's (the fixes `3954a3b0` and the race-gate order after it):
+  > `executePetItem` refuses a pet with no HP left (the client counts
+  > down the HP the server sends as the pet's durability) and a
+  > second-stage pet to an owner under quest level 40, which the
+  > client does not check, and asks no wearing requirement. The
   > third is the server's time-limited gate for an item the timed-item
   > register holds, which `IsQuestItem` counts (`isRealWearing` asks a
   > time-limited item only its gender, and an ousters nothing), and
@@ -915,8 +918,8 @@ rounds settled* for the host rules). Test fixtures share
   > a player who does not pay may not use a unique item or one with
   > several options, whatever the race, nor, as a slayer or a vampire,
   > a couple ring (`Ousters::isRealWearing` has that clause commented
-  > out). A living pet now asks nothing, as the server's
-  > `isUsableItem` asks nothing of a pet item. Before, the client
+  > out). A living pet of the player's race now asks nothing, as the
+  > server asks nothing of a pet item. Before, the client
   > judged it by the gear rule: a pet gets an option from the pet
   > enchant, asking a level of 20 at most, which the vampire rule adds
   > to a level of 0, so a vampire under that level saw a vampire-only
@@ -927,13 +930,13 @@ rounds settled* for the host rules). Test fixtures share
   > Bezz, the Wolfdog Leash and the Wolverine Leash (types 0-2, Race
   > 7) for all three races, the Radio Controller (3, Race 1) for
   > slayers, the Stirge Bag (4, Race 2) for vampires and the Summon
-  > Pixie (5, Race 4) for ousters. The client's use request still asks
-  > the race: `UIMessageManager`'s `Execute_UI_ITEM_USE` and
+  > Pixie (5, Race 4) for ousters. The client still asks a pet's race:
+  > `UIMessageManager`'s `Execute_UI_ITEM_USE` and
   > `Execute_UI_ITEM_USE_SUBINVENTORY` send a use only for an item
-  > flagged for the player's race, a pet included, so a player holding
-  > another race's pet sees it drawn usable and cannot summon it from
-  > the client, where the server would; the owner may let a pet
-  > through there too. Slice 5
+  > flagged for the player's race, a pet included, and `IsUsableBy`'s
+  > race gate agrees with them, so another race's pet is drawn unusable
+  > and cannot be summoned from the client, where the server would let
+  > it; letting a pet through both is the owner's call. Slice 5
   > is in (the same branch): a shop purchase is quoted in one place,
   > `MPriceManager::GetPurchasePrice`, which the buy check and the
   > shop tooltip ask, and it charges what the server's buy handler

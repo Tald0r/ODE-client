@@ -554,16 +554,17 @@ TEST(EquipRequirement, DeadPetIsNotUsable)
 	CHECK(pet.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
 }
 
-// A living pet is usable by any race, whatever its race flags, its
-// options and its gender flags ask. The server's isUsableItem lets any
-// race use a pet item, where it asks a couple ring's or a pupa's user
-// for its race, and executePetItem asks only the pet's HP and, for a
-// second-stage pet, the owner's quest level; the server does not read
-// PetItemInfo's Race column. Its seed's pets 0-2 are made for all three
-// races and pet 4, the Stirge Bag, for vampires only. An option from
-// the pet enchant asks a level of at most 20 (option row 9), which the
-// vampire rule would raise the pet's level of 0 to
-// (vampire-zero-level-raised's rule).
+// A living pet of the user's race is usable whatever its options and its
+// gender flags ask: the server's executePetItem asks only the pet's HP
+// and, for a second-stage pet, the owner's quest level. The race gate
+// stays the client's own: the server's isUsableItem lets any race use a
+// pet item, but the client's use handlers send a request only for an
+// item made for the player's race, and the affect status agrees with
+// them. The server seed's pets 0-2 are made for all three races and
+// pet 4, the Stirge Bag, for vampires only. An option from the pet
+// enchant asks a level of at most 20 (option row 9), which the vampire
+// rule would raise the pet's level of 0 to (vampire-zero-level-raised's
+// rule).
 TEST(EquipRequirement, ALivingPetAsksNothing)
 {
 	EquipWorld world;
@@ -576,12 +577,12 @@ TEST(EquipRequirement, ALivingPetAsksNothing)
 	CHECK(pet.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
 	CHECK(pet.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 1, true)));
 
-	// The Stirge Bag's row: its own race's low-level vampire, and the
-	// two races its flags leave out.
+	// The Stirge Bag's row: its own race's low-level vampire may use it;
+	// the two races its flags leave out are refused by the race gate.
 	SetRow(ITEM_CLASS_PET_ITEM, FLAG_RACE_VAMPIRE, 0, 0, 0, 0, 0);
 	CHECK(pet.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 5, true)));
-	CHECK(pet.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
-	CHECK(pet.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 1, true)));
+	CHECK(!pet.IsUsableBy(User(RACE_SLAYER, 0, 0, 0, 0, true)));
+	CHECK(!pet.IsUsableBy(User(RACE_OUSTERS, 0, 0, 0, 1, true)));
 
 	RowOf(ITEM_CLASS_PET_ITEM).bFemaleOnly = true;
 	CHECK(pet.IsUsableBy(User(RACE_VAMPIRE, 0, 0, 0, 5, true)));
