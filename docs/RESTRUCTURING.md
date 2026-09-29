@@ -1181,10 +1181,14 @@ rounds settled* for the host rules). Test fixtures share
   > did not move. `test_status_model.cpp` pins every slot, the 59 named
   > accessors, `ApplyStatus` (only slots that are not `MODIFY_NULL`,
   > through the virtual `SetStatus`) and every mode;
-  > `test_affect_modify_info.cpp` applies ModifyInfo bodies read from wire
-  > bytes and all 29 packet classes deriving from ModifyInfo, from their
-  > factories: both entry kinds and widths, every in-range type, wire
-  > order (shorts first), draining, and every out-of-range type byte.
+  > `test_affect_modify_info.cpp` reads ModifyInfo bodies from wire bytes
+  > into a stand-in ModifyInfo, and into a `GCModifyInformation` and a
+  > `GCOtherModifyInfo` from their factories, and pins both entry kinds
+  > and widths, every in-range type, wire order (shorts first), draining
+  > and every out-of-range type byte over them. Its sweep of all 29 packet
+  > classes deriving from ModifyInfo, each from its factory, reads no
+  > bytes: it adds one short (`MODIFY_CURRENT_HP`) and one long
+  > (`MODIFY_GOLD`) entry and checks only that both apply and drain.
   > **Fixed test-first:** `TempInformation`'s constructor set only `Mode`,
   > and `GCPartyInviteHandler`'s `GC_PARTY_INVITE_ACCEPT` looks up
   > `PartyInviter` whether or not an invitation (`UI_RunPartyRequest`,
