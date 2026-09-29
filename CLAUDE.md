@@ -189,9 +189,10 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, the same on both: **1243 tests, 1,422,087 checks, 0
-failed**. Linux: `unit_tests` in the x86_64 Docker image (`--platform
-linux/amd64` on an Apple Silicon Mac, `tools/ci/verify-linux.sh linux`).
+measured on 2026-09-29, the same on both: **1261 tests, 1,422,155 checks, 0
+failed**. Linux: `unit_tests` in the Docker image (`tools/ci/verify-linux.sh
+linux`; the image's native arm64 on an Apple Silicon Mac for this figure,
+the x86_64 one with `--platform linux/amd64` for the one before it).
 macOS: Apple Silicon, Apple Clang 21, `macos` preset, read with
 `build/defects/run-tests.sh unit_tests ''`. The Windows trees were not
 re-measured for this figure, and no CI run produced either number. A
