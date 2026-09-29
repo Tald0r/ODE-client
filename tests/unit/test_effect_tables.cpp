@@ -692,10 +692,11 @@ TEST(EffectSpriteTypeTable, LoadKeepsOnlyThePairsTheFileHolds)
 
 //======================================================================
 // CreatureSprite.inf: the two sprite-pack file positions are four bytes
-// on disk and a `long` in memory - four bytes on Windows, eight on
-// macOS and Linux. The loader read the four bytes into the long's first
-// half and left the second as it was (the constructor does not set it),
-// so off Windows a position read back as whatever the upper half held.
+// on disk and a `long` in memory - four bytes on Windows and wasm32,
+// eight on the LP64 targets, macOS and Linux. The loader read the four
+// bytes into the long's first half and left the second as it was (the
+// constructor does not set it), so on LP64 a position read back as
+// whatever the upper half held; this test fails only there.
 // The contract: the position is the file's signed 32-bit value on every
 // platform, as Windows has always read it.
 //======================================================================

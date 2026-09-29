@@ -237,8 +237,10 @@ Client/EffectSpriteTypeDef.h
 # or action shows (Action.inf), the effect sprite types and the per-action
 # frames (EffectSpriteType.inf, ActionEffectSpriteType.inf), the effect
 # status to sprite map (EffectStatus.inf) and the creature sprite ranges
-# (CreatureSprite.inf). Loaders and globals move unchanged; the creature
-# sprite header spells its sprite ids through the model's DrawTypeDef.h.
+# (CreatureSprite.inf). The move itself changed no loader or global; the
+# creature sprite header spells its sprite ids through the model's
+# DrawTypeDef.h. The loaders were fixed test-first after the move (see
+# docs/RESTRUCTURING.md task 4.1).
 Client/MActionInfoTable.cpp
 Client/MActionInfoTable.h
 Client/MActionResultDef.h

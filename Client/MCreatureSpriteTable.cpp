@@ -59,8 +59,9 @@ CREATURESPRITETABLE_INFO::LoadFromFile(std::ifstream& file)
 	file.read((char*)&FrameID, SIZE_FRAMEID);
 
 	// The positions are four bytes on disk and a long in memory, which
-	// is eight bytes off Windows: read the signed 32-bit value whole, so
-	// the upper half is its sign and not what the member held before.
+	// is eight bytes on LP64 targets (macOS, Linux) and four on Windows
+	// and wasm32: read the signed 32-bit value whole, so the upper half
+	// of an eight-byte long is its sign and not what the member held.
 	std::int32_t position = 0;
 	if (file.read((char*)&position, 4))
 		SpriteFilePosition = position;
