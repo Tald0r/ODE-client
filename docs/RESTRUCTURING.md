@@ -606,8 +606,9 @@ rounds settled* for the host rules). Test fixtures share
   > commits after the move: the action table read seven flags straight into
   > `bool` storage and cast its packet-type byte and effect-status word to
   > their enums unchecked (Clang's UBSan trapped the attack flag; a plain
-  > Clang build read a flag byte of 2 as false), and wrote its four-byte
-  > casting-action field over the flag after the two-byte member; the effect
+  > Clang build read a flag byte of 2 as false), and read its four-byte
+  > casting-action field into the two-byte member, over the castingAction
+  > flag stored after it; the effect
   > status table read its two flags the same way; the effect sprite table cast
   > its draw type to `BLT_TYPE` unchecked and padded a short pair list with
   > the last frame read; the creature sprite table read its four-byte file
@@ -615,7 +616,12 @@ rounds settled* for the host rules). Test fixtures share
   > macOS and Linux (Windows and the wasm32 web build, where `long` is four
   > bytes, already read it whole). Out-of-range enum values now read as the
   > constructor's `NONE`/`EFFECTSTATUS_NULL`, or `BLT_EFFECT` for a draw type;
-  > what the writers emit loads unchanged. A follow-up fix keeps the action
+  > what the writers emit loads unchanged. The action table's writer changed
+  > with its loader: it writes the casting action info zero-extended to four
+  > bytes, where it wrote the two-byte member followed by the castingAction
+  > flag and a padding byte, so a regenerated `Action.inf` differs from an
+  > older one in those two bytes of each row; readers only ever kept the low
+  > 16 bits, and a test pins the saved bytes. A follow-up fix keeps the action
   > table's casting action info and effect status when the file ends part-way
   > into them: the first fix had assigned the local those bytes were read
   > into, a mix of file and seed bytes.
