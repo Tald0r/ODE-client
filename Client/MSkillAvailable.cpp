@@ -39,12 +39,12 @@ bool	g_abSweeperBonusSkills[SWEEPER_BONUS_MAX] = { false, };
 //----------------------------------------------------------------------
 // Set Avaliable Skills
 //----------------------------------------------------------------------
-// 현재 사용 가능한 모든 skill들을 찾아서 추가한다.
+// Finds every skill that is usable right now and adds it.
 //
-// - 현재 들고 있는 무기를 보고
-//   SkillTree에서 적절한 domain을 모두 enable / 나머지는 disable
-// - inventory에서 skill에 관련된 기술을 찾는다.
-// - 기타.. skill ?
+// - From the weapon currently held, enables every matching domain in the
+//   SkillTree and disables the rest.
+// - Looks through the inventory for items that grant skills.
+// - Anything else that grants a skill.
 //----------------------------------------------------------------------
 void
 MSkillSet::SetAvailableSkills()
@@ -1206,8 +1206,8 @@ MSkillSet::SetAvailableVampireSkills()
 //----------------------------------------------------------------------
 // Check MP
 //----------------------------------------------------------------------
-// 선택된 skill들의 MP를 보고
-// 사용가능한지 아닌지를 체크한다.
+// Checks the MP cost of the selected skills to decide whether each one
+// is usable.
 //----------------------------------------------------------------------
 void
 MSkillSet::CheckMP()
