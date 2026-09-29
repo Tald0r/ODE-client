@@ -554,9 +554,21 @@ On Apple Silicon the image is arm64, so it is not the CI environment: plain
 `char` is unsigned there, and the warning profile differs. The configure, the
 build and every test pass, but the script's last step fails with `missing
 warning baseline for linux-aarch64`: `tools/ci/warning-baselines.json`
-records the x86_64 runner's warnings only. To run the CI profile exactly,
-build and run the image as x86_64 (`docker build --platform linux/amd64` and
-`docker run --platform linux/amd64`; emulated, so slower).
+records the x86_64 runner's warnings only. To get the
+x86_64 profile and its warning baseline, build and run the image as x86_64,
+with its own build volume so it does not reuse the arm64 CMake tree:
+
+```bash
+docker build --platform linux/amd64 -t darkeden-linux-amd64 tools/linux
+docker run --rm --platform linux/amd64 -v "$PWD:/src" -v darkeden-build-amd64:/src/build \
+    darkeden-linux-amd64 tools/ci/verify-linux.sh linux
+```
+
+This was run once on an Apple Silicon Mac (2026-09-29, Docker under OrbStack):
+the `linux` preset configured, built with `--clean-first`, passed its tests
+(1243 tests, 0 failed) and the x86_64 warning check, in under 30 minutes
+emulated. It is the x86_64 profile, not the CI runner itself: `linux.yml`
+runs on `ubuntu-24.04` directly, not in this image.
 
 ### Status of the Linux client
 
