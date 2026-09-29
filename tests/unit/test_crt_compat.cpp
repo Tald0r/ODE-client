@@ -3,11 +3,14 @@
 //----------------------------------------------------------------------
 //
 // basic/CrtCompat.h replaces C runtime calls MSVC deprecates with calls
-// that do the same thing. These tests pin that sameness on every
-// platform: the scanners parse like sscanf/fscanf (CRT_BUFFER supplies
-// the capacity MSVC's _s scanners need for %s), OpenFile reads and
-// writes like fopen, Tokenize splits like strtok, LocalTime agrees with
-// localtime and DuplicateString copies like strdup.
+// that do the same thing. These tests check the helpers' results on
+// every platform against known values rather than against the replaced
+// calls, which MSVC would warn about: the scanners parse numbers and
+// words (CRT_BUFFER supplies the capacity MSVC's _s scanners need for
+// %s), OpenFile writes a file that reads back, Tokenize splits as strtok
+// does, LocalTime fills a tm with calendar-range values (and zeroes it
+// when it cannot convert), DuplicateString copies, and GetEnvironment
+// reads back a variable the test sets.
 //
 //----------------------------------------------------------------------
 
@@ -152,15 +155,29 @@ TEST(CrtCompat, TimeTextHasCtimesShape)
 	CHECK(!text.empty() && text.back() == '\n');
 }
 
+// Sets its own variable, so the Windows _dupenv_s path (the copy into
+// the string and the free) runs as well as the unset case.
 TEST(CrtCompat, GetEnvironmentReadsSetAndUnsetVariables)
 {
 	CHECK(!Basic::GetEnvironment("DARKEDEN_CRT_COMPAT_SURELY_UNSET_VARIABLE").has_value());
-	const auto path = Basic::GetEnvironment("PATH");
+
+	const char* name = "DARKEDEN_CRT_COMPAT_SET_VARIABLE";
 #ifdef _WIN32
-	(void)path;
+	CHECK_EQ(0, _putenv_s(name, "crt-compat value"));
 #else
-	CHECK(path.has_value() && !path->empty());
+	CHECK_EQ(0, setenv(name, "crt-compat value", 1));
 #endif
+	const auto value = Basic::GetEnvironment(name);
+	CHECK(value.has_value() && *value == "crt-compat value");
+#ifdef _WIN32
+	_putenv_s(name, "");
+#else
+	unsetenv(name);
+#endif
+	CHECK(!Basic::GetEnvironment(name).has_value());
+
+	const auto path = Basic::GetEnvironment("PATH");
+	CHECK(path.has_value() && !path->empty());
 }
 
 TEST(CrtCompat, TemporaryFileIsReadableAndWritable)
