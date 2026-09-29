@@ -46,5 +46,7 @@ The price and durability differences from the server that remain after
 slices 1 and 2 are listed under "Shop prices" in
 `docs/compiler-warnings-2026-09-27.md` ("Found while fixing"). Those of
 the equip requirement (slice 4), such as the advancement-class check the
-server applies and de-core does not hold, are in `docs/RESTRUCTURING.md`
-task 4.12.
+server applies and de-core does not hold, and those of Will of Life and
+the slayer skill range (slice 6), such as the party size every caller
+passes as 0 and the skill data the client loads from `SkillInfo.inf`,
+are in `docs/RESTRUCTURING.md` task 4.12.

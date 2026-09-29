@@ -799,7 +799,10 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slice 6). Slice 1 is in: `MPriceManager`'s
+  > **Status:** the client halves of all six slices are in (slice 6 on
+  > `feat/shared-skill-rules`); the task stays open for what each slice
+  > leaves over below, which needs the owner's decisions (the plan's
+  > section 8) or the data export its section 7 names. Slice 1 is in: `MPriceManager`'s
   > buy, sell and repair quotes and the gear maximum durability call
   > `decore`, the inputs the server never sends are `MPriceHost` entries
   > with documented defaults, and `unit_tests` checks the adapters against
@@ -830,7 +833,8 @@ rounds settled* for the host rules). Test fixtures share
   > server handlers (`execute(Vampire*)` under
   > `src/server/gameserver/skill`) never call `decreaseConsumeMP`: six
   > charge the table cost undiscounted, three a cost of their own and
-  > seven nothing, and all sixteen keep the table cost (it lists them), and
+  > seven nothing; fifteen keep the table cost (it lists them), and Will
+  > of Life, one of the three, costs its own formula since slice 6, and
   > `MCreature::SetRegen` takes the DEX bonus from `decore`, which it
   > already equalled. `tests/unit/test_status_manager.cpp` and
   > `test_vampire_skill_cost.cpp` check them against `stats.tsv` rows.
@@ -972,7 +976,75 @@ rounds settled* for the host rules). Test fixtures share
   > description dialog prints `GetItemPrice(NPC_TO_PC)`, the item's
   > untaxed price at the sell dialog's market condition, not a
   > purchase quote, and the notice is still recorded as a zone event
-  > that nothing reads. The copy is
+  > that nothing reads. Slice 6 is in (`feat/shared-skill-rules`).
+  > Will of Life's numbers come from `decore::skillformula::WillOfLife`
+  > through one helper in the skill table (`MSkillInfoTable.cpp`,
+  > `GetWillOfLifeHP` and `GetWillOfLifeDelay`), which fills the input
+  > as the server's `SkillInput(Vampire*)` fills what that formula reads,
+  > the party size 0 included, and says it is valid for that formula
+  > only. The skill description's HP cost and `MCreature::SetRegen`'s
+  > bonus while the effect lasts take its Damage, which they already
+  > equalled (`5c0e7c7c`). The reuse time, which the cooldown bar
+  > (`C_VS_UI_SKILL::GetDelay`) and the two skill packet handlers
+  > (`GCSkillToSelfOK1`, `GCSkillFailed1`) computed as
+  > (3 + level / 10) * 2 s, is the server's run time, Delay * 100 ms =
+  > 6000 + 200 * level ms, so the skill no longer lights up to 1.8 s
+  > before the server accepts it; the three sites read one level, the
+  > character window's (the fix `75aa0285`). The skill bar's cost gate
+  > (`GetVampireConsumeMP`, which now takes the level) charges Will of
+  > Life that Damage, not the table's Mana (50 in the server's seed),
+  > which also corrects the skill tree's description (the fix
+  > `be8d8795`). `tests/unit/test_will_of_life.cpp` and
+  > `test_vampire_skill_cost.cpp` check them against `skill_output.tsv`
+  > rows. A slayer's skill range is `decore::skillRange`, through
+  > `GetSkillRangeAtLevel`, which `MPlayer::GetActionInfoRange` asks
+  > after its own paths (Head Shot's 3, the skills that take the
+  > weapon's range, and Rapid Gliding, Bloody Zenith and Soul Rebirth's
+  > formulas) and which moved into `gamemodel` for its test
+  > (`52d872e3`, `8d2b12b9`); a vampire's and an ousters' keep the
+  > client's integer step, to level 100 and to level 30, since the
+  > server ranges neither by a level. That was a refactor: the rule
+  > differs from the integer step only at a span of 50 or more (one
+  > lower at levels 29 and 58), with a maximum below the minimum, and
+  > past 255, and no slayer range in the data that could be checked
+  > reaches them. `tests/unit/test_skill_range.cpp` checks it against
+  > `skill_range.tsv` rows. The server's party experience pool and dark
+  > and light rule have no client copy to replace: the client computes
+  > no party experience and applies the dark and light levels the
+  > server sends. `MParty::IsMemberInSight` stays, though the plan's
+  > section 7 once listed it for deletion: it feeds
+  > `PARTY_INFO::bInSight`, which the RC HP update and the off-screen
+  > party arrow read. Left over:
+  > - The `SkillInfo.inf` the client ships is not in the repository.
+  >   What was checked for a slayer range the rule changes is the copy
+  >   the upstream tree carried (`fe130dd8`'s
+  >   `SkillTool/data/info/SkillInfo.inf`, 394 records, deleted in
+  >   `718016dd`), the server's `SkillBalance` seed (374 rows) and the
+  >   in-code overrides in `MSkillInfoTable.cpp`: 29 range pairs, whose
+  >   only maximum below the minimum is the vampires' Raising Dead and
+  >   Summon Servant. The ranges also drift as data: 25 of the seed's
+  >   rows differ from that copy, and the in-code overrides agree with
+  >   the seed where it holds the skill except Heter Chakram (4, the
+  >   seed 5; Throw Holy Water and the bombs are not in it; `8d2b12b9`'s
+  >   message says they all follow the seed). That is the plan's data
+  >   export task, not a rule.
+  > - Every client caller passes the party size 0 for a vampire (the
+  >   server passes 0 for a vampire or a monster and 1 for a slayer or
+  >   an ousters), never the party's size, so no formula grants a party
+  >   bonus on either side (the server's FIXES.md records it as "No
+  >   party bonus is ever granted").
+  > - Will of Life's gate leaves out what the server's `hasEnoughMana`
+  >   and `decreaseMana` add (the gear's consume-MP ratio, the Wisdom of
+  >   Blood rank bonus) and enables the skill at cost <= HP where the
+  >   server wants HP > cost, as for the other skills; and a level-up
+  >   does not recompute the skill bar (`Function_MODIFY_LEVEL` calls no
+  >   `CheckMP`), so the cost's step every seventh level waits for the
+  >   next HP change.
+  > - The server checks most skills other than its four sliding and
+  >   walking ones against the table's maximum range, not this rule, so
+  >   the client's walking range for them errs short, the safe
+  >   direction.
+  > The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
   > from server `831a8edc` (PR #283, the skill output formulas:
   > `SkillOutputFormulas`, whose party tables are read through the
@@ -985,15 +1057,15 @@ rounds settled* for the host rules). Test fixtures share
   > `applyCastleTax` and the `tax-*` rows of `price.tsv`, which
   > `decore_tests` asserts and `MPriceManager::GetPurchasePrice` calls;
   > and PR #280, PR #278, PR #277 and the review fixes in PR #279).
-  > `decore_tests` asserts both new files; no client code calls the new
-  > functions in this commit.
+  > `decore_tests` asserts both new files; the client calls
+  > `WillOfLife` and `skillRange` (slice 6, above).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
   > rows are recorded on the server; a row that fails here is a toolchain
   > difference to investigate, never a row to re-record. Every
-  > `ItemPriceInput` field is set by the caller (value-initialise with
-  > `= {}`), and each adapter `static_assert`s `decore::itemclass` against
+  > `ItemPriceInput` and `SkillInput` field is set by the caller
+  > (value-initialise with `= {}`), and each adapter `static_assert`s `decore::itemclass` against
   > its `ITEM_CLASS_*`.
   - Owner: `decore_vendored` (`sync.pl --verify-manifest`: hashes, no
     unlisted file, every vendored `.cpp` built), `decore_tests` (every vector
