@@ -1162,9 +1162,9 @@ rounds settled* for the host rules). Test fixtures share
     `decore-upstream` job in `linux.yml` (`sync.pl --check` against server
     master), and `arch_includes` rule DC1.
 
-- [x] **4.14 Status array and mode register:** `MStatus` and
-  `TempInformation` compile in `gamemodel`.
-  > **Status:** moved (2026-09-29). `MStatus` is the array of
+- [x] **4.14 Status array and mode register:** `MStatus`,
+  `TempInformation` and `AffectModifyInfo` compile in `gamemodel`.
+  > **Status:** done (2026-09-29). `MStatus` is the array of
   > `MAX_MODIFY` values every ModifyInfo packet writes: `MCreature`
   > derives from it and overrides `SetStatus`, and `MPlayer` overrides it
   > again, both bounding the index before they write. `TempInformation`
@@ -1173,8 +1173,37 @@ rounds settled* for the host rules). Test fixtures share
   > translation units). Both implementations and headers move unchanged:
   > neither reaches an executable symbol, and `MStatus`'s vtable is
   > emitted in its own object, so the class moves whole. R1 falls by two
-  > (449 to 447 Windows, 447 to 445 Ninja).
-  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1.
+  > (449 to 447 Windows, 447 to 445 Ninja). Then `AffectModifyInfo`, the
+  > function 28 handlers apply their packet's ModifyInfo through, left
+  > `PacketFunction.cpp` for `Client/AffectModifyInfo.cpp` with its body
+  > unchanged (its only reach was `DEBUG_ADD`, which `basic` provides);
+  > `PacketFunction.h` includes its header, so no handler changed, and R1
+  > did not move. `test_status_model.cpp` pins every slot, the 59 named
+  > accessors, `ApplyStatus` (only slots that are not `MODIFY_NULL`,
+  > through the virtual `SetStatus`) and every mode;
+  > `test_affect_modify_info.cpp` applies ModifyInfo bodies read from wire
+  > bytes and all 29 packet classes deriving from ModifyInfo, from their
+  > factories: both entry kinds and widths, every in-range type, wire
+  > order (shorts first), draining, and every out-of-range type byte.
+  > **Fixed test-first:** `TempInformation`'s constructor set only `Mode`,
+  > and `GCPartyInviteHandler`'s `GC_PARTY_INVITE_ACCEPT` looks up
+  > `PartyInviter` whether or not an invitation (`UI_RunPartyRequest`,
+  > `UI_RunPartyAsk`) wrote it; the value slots, the inviter and `pValue`
+  > now start at 0/NULL (the handler path was read, not reproduced).
+  > **Known, not fixed:** the base `MStatus::SetStatus`/`GetStatus` index
+  > the array unchecked, and `AffectModifyInfo` passes the wire type byte
+  > (0-255; `MAX_MODIFY` is 73) on unchecked. Applied to a bare `MStatus`
+  > a type past the array writes past it (a probe, not committed, aborted
+  > under the `macos-asan` preset). Not reachable today: all 28
+  > `AffectModifyInfo` calls pass `g_pPlayer` or a zone creature, both
+  > bounded by their overrides (`GCThrowItemOK1Handler`'s direct
+  > `SetStatus` with a wire index is inside a comment); every `GetStatus`
+  > call names a `MODIFY_*` constant; `ApplyStatus` stays in range; the
+  > only `new MStatus` is inside a comment in `Client.cpp`. The library
+  > function now accepts any `MStatus*`, so a future caller with a bare
+  > status would reach it; the tests pin where the bound lives.
+  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1,
+    `test_status_model.cpp` and `test_affect_modify_info.cpp`.
 
 ## Phase 5 — Long tail
 

@@ -201,9 +201,11 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, after the slayer weapon extension branch and the shared-rules
-slice 6 branch (with its action and effect table loader tests and fixes) were merged, the same on all four at the
-same tree: **1327 tests, 1,434,061 checks, 0 failed** (`decore_tests`: 13
+measured on 2026-09-29, after the status array, the mode register and
+`AffectModifyInfo` joined gamemodel with their tests and fix
+(`docs/RESTRUCTURING.md` task 4.14: 29 tests and 6,948 checks over the 1327
+tests and 1,434,061 checks before it), the same on all four at the
+same tree: **1356 tests, 1,441,009 checks, 0 failed** (`decore_tests`: 13
 tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
 13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
 an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
