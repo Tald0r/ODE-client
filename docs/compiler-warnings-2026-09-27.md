@@ -638,7 +638,9 @@ The deliberate changes:
   stream, because a short last chunk leaves it failed and a failed stream
   ignores `seekg`.
 - **`Basic::LocalTime`** leaves a zeroed `tm` where `localtime` returned
-  NULL, which `DebugLog`'s Windows timestamp then dereferenced.
+  NULL, which `DebugLog`'s Windows timestamp then dereferenced. It zeroes
+  the `tm` itself, because `localtime_s` sets every field to -1 on
+  failure.
 - **On Windows, the `_s` scanners** fail a `%s` conversion whose word would
   have overflowed its buffer. The old call overflowed it.
 - **The two `GetSystem()` bodies** no longer query the version. `Client.cpp`'s

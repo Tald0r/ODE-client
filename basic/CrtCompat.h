@@ -81,14 +81,19 @@ namespace Basic
 	}
 
 	// localtime, into caller storage instead of the runtime's shared buffer.
-	// False where localtime would have returned NULL.
+	// False where localtime would have returned NULL, and *pResult is then
+	// zeroed: localtime_s sets every field to -1 on failure and
+	// localtime_r leaves them unspecified.
 	inline bool LocalTime(const std::time_t* pTime, std::tm* pResult)
 	{
 #ifdef _WIN32
-		return localtime_s(pResult, pTime) == 0;
+		const bool converted = localtime_s(pResult, pTime) == 0;
 #else
-		return localtime_r(pTime, pResult) != nullptr;
+		const bool converted = localtime_r(pTime, pResult) != nullptr;
 #endif
+		if (!converted)
+			*pResult = std::tm{};
+		return converted;
 	}
 
 	// strtok with the position kept in *ppContext rather than in the

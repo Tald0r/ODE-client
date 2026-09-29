@@ -19,6 +19,7 @@
 #include <cstring>
 #include <ctime>
 #include <filesystem>
+#include <limits>
 #include <string>
 
 TEST(CrtCompat, ScanStringParsesNumbersAndWords)
@@ -80,6 +81,25 @@ TEST(CrtCompat, LocalTimeAgreesWithTheCalendar)
 	CHECK(result.tm_mon >= 0 && result.tm_mon <= 11);
 	CHECK(result.tm_mday >= 1 && result.tm_mday <= 31);
 	CHECK(result.tm_year >= 100);
+}
+
+// A time the runtime cannot convert leaves a zeroed tm, not the -1s
+// localtime_s writes or whatever localtime_r left.
+TEST(CrtCompat, LocalTimeZeroesTheResultWhenItCannotConvert)
+{
+	const std::time_t never = std::numeric_limits<std::time_t>::max();
+	std::tm result;
+	std::memset(&result, 0x7f, sizeof(result));
+	if (!Basic::LocalTime(&never, &result))
+	{
+		CHECK_EQ(0, result.tm_year);
+		CHECK_EQ(0, result.tm_mon);
+		CHECK_EQ(0, result.tm_mday);
+		CHECK_EQ(0, result.tm_hour);
+		CHECK_EQ(0, result.tm_min);
+		CHECK_EQ(0, result.tm_sec);
+		CHECK_EQ(0, result.tm_isdst);
+	}
 }
 
 TEST(CrtCompat, DuplicateStringCopies)
