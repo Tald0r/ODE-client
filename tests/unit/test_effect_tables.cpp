@@ -36,6 +36,7 @@
 #include "MCreatureSpriteTable.h"
 
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -569,4 +570,66 @@ TEST(CreatureSpriteTable, LoadStopsAtAFileCutInsideARecord)
 	CHECK_EQ(31, (int)table[1].FrameID);
 	// The constructor's type, since its byte was never read.
 	CHECK_EQ(0, (int)table[1].CreatureType);
+}
+
+//======================================================================
+// EffectStatus.inf: bytes the writer never emits.
+//
+// The two flags were read straight into bool storage, so a byte other
+// than 0 or 1 made a bool that is neither true nor false (Clang's
+// -fsanitize=bool traps its load). The contract: a non-zero byte reads
+// as true, and the flag's storage holds 1.
+//======================================================================
+namespace {
+
+unsigned char	StorageByte(const bool& b)
+{
+	unsigned char c = 0;
+	std::memcpy(&c, &b, 1);
+	return c;
+}
+
+} // namespace
+
+TEST(EffectStatusTable, LoadReadsANonZeroFlagByteAsTrue)
+{
+	Bytes b;
+	b.Int(3);
+	AppendEffectStatus(b, 2, 0x80, 400, ADDON_COAT);
+	AppendEffectStatus(b, 0xFF, 0, 401, ADDON_COAT);
+	AppendEffectStatus(b, 0, 1, 402, ADDON_COAT);
+	WriteScratch(b);
+
+	EFFECTSTATUS_TABLE table;
+	CHECK(LoadScratch(table));
+	RemoveScratch();
+
+	CHECK_EQ(3, table.GetSize());
+	CHECK_EQ(1, (int)StorageByte(table[0].bUseEffectSprite));
+	CHECK_EQ(1, (int)StorageByte(table[0].bAttachGround));
+	CHECK_EQ(1, (int)StorageByte(table[1].bUseEffectSprite));
+	CHECK_EQ(0, (int)StorageByte(table[1].bAttachGround));
+	CHECK_EQ(0, (int)StorageByte(table[2].bUseEffectSprite));
+	CHECK_EQ(1, (int)StorageByte(table[2].bAttachGround));
+	CHECK_EQ(402, (int)table[2].EffectSpriteType);
+}
+
+// A record cut before its colour part keeps the part it held: the part
+// used to be assigned from a local the failed read never wrote.
+// Uninitialised stack contents make this a regression guard.
+TEST(EffectStatusTable, LoadKeepsTheColourPartOfARecordCutBeforeIt)
+{
+	Bytes b;
+	b.Int(1);
+	AppendEffectStatus(b, 1, 0, 400, ADDON_COAT);
+	b.data.resize(4 + 6);			// the flags, the type and the colour
+
+	EFFECTSTATUS_TABLE table;
+	WriteScratch(b);
+	CHECK(!LoadScratch(table));
+	RemoveScratch();
+
+	CHECK_EQ(1, table.GetSize());
+	CHECK_EQ(0x7C00, (int)table[0].EffectColor);
+	CHECK_EQ((int)ADDON_NULL, (int)table[0].EffectColorPart);
 }
