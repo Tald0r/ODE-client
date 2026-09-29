@@ -106,6 +106,23 @@
       "inherits": "macos",
       "binaryDir": "${sourceDir}/build/presets/macos-asan",
       "cacheVariables": { "USE_ASAN": "ON", "USE_UBSAN": "ON" }
+    },
+    {
+      "name": "linux-fuzz",
+      "displayName": "Linux Clang with ASan, UBSan and the libFuzzer targets (needs the libclang-rt package)",
+      "inherits": "linux-clang",
+      "binaryDir": "${sourceDir}/build/presets/linux-fuzz",
+      "cacheVariables": { "USE_ASAN": "ON", "USE_UBSAN": "ON", "BUILD_FUZZERS": "ON" }
+    },
+    {
+      "name": "macos-fuzz",
+      "displayName": "macOS Apple Clang with ASan, UBSan and the libFuzzer targets, linking Homebrew llvm@21's libFuzzer",
+      "inherits": "macos-asan",
+      "binaryDir": "${sourceDir}/build/presets/macos-fuzz",
+      "cacheVariables": {
+        "BUILD_FUZZERS": "ON",
+        "DARKEDEN_LIBFUZZER_ARCHIVE": "/opt/homebrew/opt/llvm@21/lib/clang/21/lib/darwin/libclang_rt.fuzzer_osx.a"
+      }
     }
   ],
   "buildPresets": [
@@ -117,7 +134,9 @@
     { "name": "linux-asan", "configurePreset": "linux-asan" },
     { "name": "linux-clang", "configurePreset": "linux-clang" },
     { "name": "macos", "configurePreset": "macos" },
-    { "name": "macos-asan", "configurePreset": "macos-asan" }
+    { "name": "macos-asan", "configurePreset": "macos-asan" },
+    { "name": "linux-fuzz", "configurePreset": "linux-fuzz" },
+    { "name": "macos-fuzz", "configurePreset": "macos-fuzz" }
   ],
   "testPresets": [
     {
@@ -146,6 +165,8 @@
     { "name": "linux-asan", "inherits": "linux", "configurePreset": "linux-asan" },
     { "name": "linux-clang", "inherits": "linux", "configurePreset": "linux-clang" },
     { "name": "macos", "inherits": "linux", "configurePreset": "macos" },
-    { "name": "macos-asan", "inherits": "linux", "configurePreset": "macos-asan" }
+    { "name": "macos-asan", "inherits": "linux", "configurePreset": "macos-asan" },
+    { "name": "linux-fuzz", "inherits": "linux", "configurePreset": "linux-fuzz" },
+    { "name": "macos-fuzz", "inherits": "linux", "configurePreset": "macos-fuzz" }
   ]
 }

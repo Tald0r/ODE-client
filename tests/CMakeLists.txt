@@ -46,6 +46,8 @@ file(GLOB UNIT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unit/*
 add_executable(unit_tests
 	framework/test_main.cpp
 	support/platform_c_consumer.c
+	# Installs the preload fit check (support/packet_stream_preload.h)
+	support/packet_stream_access.cpp
 	${UNIT_TEST_SOURCES}
 )
 
@@ -292,4 +294,13 @@ if(PERL_EXECUTABLE)
 	)
 else()
 	message(STATUS "perl not found: the wire_inventory_fresh test is not registered")
+endif()
+
+#----------------------------------------------------------------------
+# Packet-read fuzzing (tests/fuzz/CMakeLists.txt): the replay ctest in
+# every native test tree, the libFuzzer targets under BUILD_FUZZERS.
+# Below the find_program(perl) above, which its corpus step needs.
+#----------------------------------------------------------------------
+if(NOT EMSCRIPTEN)
+	add_subdirectory(fuzz)
 endif()

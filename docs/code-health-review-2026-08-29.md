@@ -326,6 +326,42 @@ Defects of the same weight as the ten above, kept out of that table because they
 | The SDL shadow adapter trusts mutable row counts and narrows its raster stride | ASan reproduced a heap-buffer overflow when a changed row count reached `CShadowSprite::Blt` through the real surface adapter. The adapter now checks retained allocation spans and decoded width before allocation/drawing, rejects empty or unrepresentable geometry, and decodes with a `size_t` row stride. Tests cover first creation, dirty-cache replacement, empty/oversized geometry and valid 40,000-pixel rows. The existing black raster representation is preserved. | fixed on `fix/review-shadow-sprite-adapter`, 2026-09-22 |
 | Effect-shadow initialization depends on an unsupported index even though its records are readable | The installed `Effect.sspki` has an unrecognized wrapper and the raw index reader rejects it. `MTopView::InitSprites` now uses the existing checked eager pack path for this small resource, as the effect viewer already does, and propagates failure. An offline ASan run through the actual pack loader accepts all three installed records. The unit guard covers eager loading with a rejected companion index; the game-global call is a source/build regression guard. | fixed on `fix/review-shadow-sprite-adapter`, 2026-09-23 |
 | The character list's slayer outlook has four weapon bits for 19 weapons | `PCSlayerInfo`, the slayer record of `LCPCList`, packs the weapon into bits 11-14 of its outlook DWORD, with the shield at 15-16, while `WeaponType` runs to `WEAPON_MACE1` (18). `getWeaponType` masked four bits and `setWeaponType` wrote the value unmasked, so a mace's fifth bit fell into the shield field and read back as a sword; the server's live encoder clamped instead (a cross1 sent as a cross, a mace and mace1 as no weapon). The character-select slot therefore previewed a mace slayer's to-hit as bare hands or a sword's, and drew no mace. Found by reading on 2026-09-28 in the to-hit preview slice (`ad559efb`, "Found, not changed"). Fixed on the wire in both repos with an extension code at bits 17-18, past the shield, which a client that knows only four bits drops (server PR #285, `c3b563a8`); the outlook's other setters now cut their value to the field, which matters on the client, whose `HelmetType` and `ShieldType` run past their two-bit fields (`SHIELD4` would have landed on the code). `tests/unit/test_slayer_outlook.cpp` ports the server's outlook tests, `test_packet_goldens.cpp` pins the server's two `LCPCList` goldens, and `test_status_manager.cpp` the mace's preview. Left open: `GameUI.cpp`'s slot indexes its three-entry helmet, shield, face and hair tables with getters that return 0..3 and its four-entry coat and trouser tables with 0..7. The live server sends at most 2 and 3 there (its `Shape.cpp`), so only a server outside its own encoder reaches past them | fixed 2026-09-29 (`fix/slayer-weapon-bits`, `2e0f39c3`) |
+| `Execute_UI_MY_STORE_INFO` sends a `GCMyStoreInfo` whose store is `NULL` | the handler (`Client/UIMessageManager.cpp`) default-constructs the packet, whose `m_pInfo` starts `NULL`, calls `getStoreInfo()` and discards the result, then `sendPacket`s it; `getPacketSize()` and `write()` both dereference `m_pInfo`. **Latent: nothing posts `UI_MY_STORE_INFO`** - the message is registered and has no sender anywhere in `Client/` or `VS_UI/`. Found by reading on 2026-09-29 while checking the store-count fix below for other users of `StoreInfo` | open |
+
+### Found by fuzzing
+
+This review was static, and so were the passes after it, until a libFuzzer
+target over the client's receive path landed on 2026-09-29
+(`tests/fuzz/fuzz_client_stream.cpp`; CLAUDE.md, *Fuzzing the packet
+readers*, says how to run it). It feeds an encrypt code and a raw TCP stream
+through the gates of `ClientPlayer::processCommand` into the `read()` of every
+packet the client's factory registers, frame-bounded as in production, under
+ASan and UBSan. A survey
+probe on `deac9b56` found three crash inputs. The harness on
+`feat/packet-fuzzing` replayed them: two defects, and the third input was the
+first defect again. Its first run from the seed corpus found the first defect
+through a third packet. With both fixed, a 15-minute single-process run
+(macOS 27, Apple Clang 21, Homebrew llvm@21's libFuzzer; 482,712 inputs,
+coverage from 11,215 to 19,051 points) and a 10-minute run from its corpus
+with length control off, so inputs up to the 32 KB ring came early (99,849
+inputs, coverage to 19,491), found no crash, sanitizer report, timeout or
+out-of-memory, and reached the same five `Assert` sites below. A two-minute
+run of the `linux-fuzz` preset (Clang 18, arm64 Linux; 209,796 inputs) found
+nothing either. Every fixed
+input is a file under `tests/fuzz/regressions/client_stream`, which the
+`fuzz_replay_client_stream` ctest replays on every platform.
+
+What the target does not reach: the handlers under `Client/PacketHandler`,
+which are executable-side (a crash in `read()` is found; a crash in what a
+handler does with an accepted value is not); the UDP datagram path, which is
+the next target; and the `toString()` methods, compiled only under
+`__DEBUG_OUTPUT__`.
+
+| Defect | Symptom | Commit |
+|---|---|---|
+| `NicknameInfo::read` aborts the client on an unknown nickname type | its type switch ended in `default: assert(false);`, the libc assert, which aborts in every build without `NDEBUG`. The type is a wire byte in `GCModifyNickname`, `GCAddNickname`, `GCAddSlayer`, `GCAddVampire`, `GCAddOusters`, `GCNicknameList` and `GCUpdateInfo`, so one byte from a hostile or corrupt server ended any Debug client. The fuzzer found it through `GCModifyNickname` (types 0xff and 0xb3) and `GCAddNickname` (0x80). The default case throws `InvalidProtocolException`, as the server's copy of the class does. `getSize()` and `write()` keep the same assert, which no received value can reach any more. Pinned by `tests/unit/test_packet_fuzz_findings.cpp` and three regression inputs; before the fix, the unit test process aborted | fixed 2026-09-29 (`c705ea09`) |
+| `StoreInfo::read` writes past its 20-item vector | the item count is a wire byte, up to 255, and the loop read that many `StoreItemInfo` records into `m_Items`, which the constructor sizes to `MAX_ITEM_NUM` (20): a heap overflow of attacker-chosen length through `GCMyStoreInfo` or `GCOtherStoreInfo`, on the ordinary personal-shop path. ASan reported the write in `StoreItemInfo::read`. A count past `m_Items.size()` is refused before any item is read. The server's de-kernel copy has the identical loop, masked only because `GamePlayer::processCommand` skips the two store packets; a separate server change fixes it there. Pinned by `tests/unit/test_packet_fuzz_findings.cpp` and one regression input | fixed 2026-09-29 (`0c782d10`) |
+| `Assert`-only bounds that hostile input reaches | in its 15-minute run the fuzzer failed about a thousand `Assert`s (1,013) at five sites: `CGSMSSend::read`'s four length and count checks and `GCTimeLimitItemInfo::read`'s count check. In a build without `NDEBUG` an `Assert` throws, which the receive loop treats as a rejected packet; Release compiles them out, and then the values are accepted. Each one guards a growing container (a `std::list`, a `std::string`, a `std::map`), and the frame's size cap bounds what the loop can read, so none is a memory error; recorded as a class rather than fixed one by one. `CGSMSSend` is reached at all because `PacketFactoryManager` registers a factory for this client-to-server packet and `CPS_NORMAL` accepts every registered id, so the client parses it and only then refuses it for lack of a handler | open, not a memory error |
 
 ### Gear-addon follow-up from the packet-index pass
 
