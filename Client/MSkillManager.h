@@ -640,6 +640,16 @@ class MSkillInfoTable : public CTypeTable<SKILLINFO_NODE> {
 extern MSkillInfoTable*		g_pSkillInfoTable;
 
 //----------------------------------------------------------------------
+// Skill range
+//----------------------------------------------------------------------
+// The range, in tiles, of a skill whose table ranges are `minRange` and
+// `maxRange`, for a player of race `race` at the skill's proficiency
+// level `expLevel`: it grows from the minimum at level 0 to the maximum
+// at the top level, 100 for a slayer or a vampire and 30 for an ousters,
+// in proportion, in integer arithmetic truncated toward zero.
+int				GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel);
+
+//----------------------------------------------------------------------
 // Will of Life
 //----------------------------------------------------------------------
 // The HP one cast of Will of Life costs a vampire of level `level`,

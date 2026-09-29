@@ -183,6 +183,18 @@ MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT, int level) const
 }
 
 //----------------------------------------------------------------------
+// Skill range
+//----------------------------------------------------------------------
+int
+GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
+{
+	// A slayer or a vampire raises a skill to level 100, an ousters to 30.
+	const int maxLevel = (race == RACE_OUSTERS) ? 30 : 100;
+
+	return (int)(minRange + (maxRange - minRange) * expLevel / maxLevel);
+}
+
+//----------------------------------------------------------------------
 // Will of Life
 //----------------------------------------------------------------------
 namespace {

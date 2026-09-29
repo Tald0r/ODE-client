@@ -2891,7 +2891,7 @@ MPlayer::KeepTraceCreature()
 //----------------------------------------------------------------------
 // Get ActionInfo Range
 //----------------------------------------------------------------------
-// nActionInfo의 사용 가능 거리는?
+// How far away the player can use nActionInfo from, in tiles.
 //----------------------------------------------------------------------
 int		
 MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
@@ -2903,7 +2903,7 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 		nActionInfo = (*g_pActionInfoTable)[nActionInfo].GetParentActionInfo();
 
 	//-------------------------------------------------------------
-	// 기본 action의 적용을 받는가?
+	// Does it take the current weapon's range?
 	//-------------------------------------------------------------
 	if ((*g_pActionInfoTable)[nActionInfo].IsAffectCurrentWeaponRange())
 	{
@@ -2922,12 +2922,7 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 		return maxRange;
 #endif
 
-	int maxLevel = 100;	// 슬레이어는 스킬레벨을 100까지 올린다.
-	
-	if(IsOusters())
-		maxLevel = 30;	// 아우스터즈는 스킬레벨을 30까지 올린다.
-
-	// 특정 스킬에 대한 Range 계산
+	// The skills whose range the client computes its own way
 	
 	switch( nActionInfo )
 	{
@@ -2944,7 +2939,9 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 		break;
 	}
 	
-	return (int)(minRange + (maxRange - minRange) * skillLevel/maxLevel);
+	const Race race = IsSlayer() ? RACE_SLAYER : (IsOusters() ? RACE_OUSTERS : RACE_VAMPIRE);
+
+	return GetSkillRangeAtLevel(race, minRange, maxRange, skillLevel);
 
 }
 
