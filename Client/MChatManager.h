@@ -16,10 +16,27 @@
 #endif
 #include "MStringMap.h"
 
+//----------------------------------------------------------------------
+// MChatHost - what the chat filter needs from the executable
+// (docs/RESTRUCTURING.md task 4.13). The filter compiles into gamemodel,
+// which cannot see the player's options (UserOption lives in VS_UI), so
+// the executable installs this once at start-up (GameInit.cpp); a test
+// binary installs its own, or none.
+//----------------------------------------------------------------------
+struct MChatHost {
+	bool	(*FilteringCurse)() = nullptr;	// the player's "filter bad words" option (UserOption::FilteringCurse); without a host, or with this entry NULL, true: UserOption's default
+};
+
 class MChatManager {
 	public :
 		MChatManager();
 		~MChatManager();
+
+		//-------------------------------------------------------
+		// Host: installs the executable's services and returns the
+		// previous host; NULL removes it.
+		//-------------------------------------------------------
+		static const MChatHost*	SetHost(const MChatHost* pHost);
 
 		//-------------------------------------------------------
 		// Accept/Ignore Mode
@@ -82,6 +99,13 @@ class MChatManager {
 
 		static char			s_MaskString[256];
 		static char			s_MaskString2[256];
+
+	private :
+		// Whether the player filters bad words: the host's answer, re-read
+		// on every call, or true without one.
+		static bool			HostFilteringCurse();
+
+		static const MChatHost*	s_pHost;	// the executable's services, NULL in a test binary
 };
 
 extern MChatManager*		g_pChatManager;

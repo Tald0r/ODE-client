@@ -232,3 +232,12 @@ Client/MStringList.h
 Client/OrbitEffectPolicy.cpp
 Client/OrbitEffectPolicy.h
 Client/EffectSpriteTypeDef.h
+
+# The chat filter (task 4.13): the curse lists and ignored IDs
+# (MChatManager, over the MString map MStringMap) and the in-place
+# rewrite of chat lines and new-character names. The player's
+# "filter bad words" option comes through MChatHost.
+Client/MStringMap.cpp
+Client/MStringMap.h
+Client/MChatManager.cpp
+Client/MChatManager.h
