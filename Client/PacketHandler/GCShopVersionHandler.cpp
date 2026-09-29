@@ -23,7 +23,7 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 	
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
 	if (g_pZone==NULL)
 	{
@@ -31,62 +31,62 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The zone exists
 	//------------------------------------------------------
 	else
 	{
 		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
 
 		//------------------------------------------------------
-		// 그런 creature가 없는 경우
+		// No creature has that id
 		//------------------------------------------------------
 		if (pCreature==NULL)
 		{
 			DEBUG_ADD_FORMAT("[Error] There is no such Creature id=%d", pPacket->getObjectID());
 		}
 		//------------------------------------------------------
-		// NPC인 경우
+		// The creature is an NPC
 		//------------------------------------------------------
 		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
 		{
 			MNPC* pNPC = (MNPC*)pCreature;
 
 			//------------------------------------------------------
-			// NPC의 상점을 얻는다.
+			// The NPC's shop
 			//------------------------------------------------------
 			MShop* pShop = pNPC->GetShop();
 
 			if (pShop==NULL)
 			{
-				// 상점이 없는 경우 --> 생성.
+				// It has none yet: create it.
 				pShop = new MShop;
 				pShop->Init( MShopShelf::MAX_SHELF );
 				
-				// NPC에 상점 설정..
+				// and give it to the NPC
 				pNPC->SetShop( pShop );				
 			}
 
 			//------------------------------------------------------
-			// default로 normal 상점에 접근하게 한다.
+			// The normal rack is the one shown first.
 			//------------------------------------------------------
 			pShop->SetCurrent( 0 );
 
 			//------------------------------------------------------
-			// normal item 선반을 생성한다.
+			// Build the normal rack (and the mysterious one) from the shop templates.
 			//------------------------------------------------------
 			pNPC->CreateFixedShelf();
 			pNPC->CreateFixedShelf(true);	// mysterious -_-;
 
 
 			//------------------------------------------------------
-			// 각 shelf의 version 비교..
+			// Compare each rack's version with the server's.
 			//------------------------------------------------------
 			BOOL bSameAll = TRUE;
 			for (ShopRackType_t i=0; i<SHOP_RACK_TYPE_MAX; i++)
 			{
 				//------------------------------------------------------
-				// normal item인 경우는 체크할 필요없다. 
-				// --> client에 이미 정보가 있으므로
+				// Only the special rack is checked: the client builds
+				// the others itself from its own data.
 				//------------------------------------------------------
 				if (i!=SHOP_RACK_SPECIAL)
 				{
@@ -96,7 +96,7 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 				MShopShelf* pShopShelf = pShop->GetShelf( i );
 
 				//------------------------------------------------------
-				// 선반이 없는 경우 --> 생성
+				// No rack yet: create it
 				//------------------------------------------------------
 				if (pShopShelf==NULL)
 				{
@@ -111,14 +111,14 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 				unsigned int clientVersion = pShopShelf->GetVersion();
 
 				//------------------------------------------------------
-				// version이 다르면 item std::list를 요청한다.
+				// A different version: ask for the rack's items.
 				//------------------------------------------------------
 				if (serverVersion!=clientVersion)
 				{
-					// version이 다른 것이 있다고 체크
+					// Some rack is out of date
 					bSameAll = FALSE;
 
-						// item std::list 요청 packet
+						// The request for the rack's items
 						CGShopRequestList	_CGShopRequestList;
 						_CGShopRequestList.setObjectID( pNPC->GetID() );
 						_CGShopRequestList.setRackType( i );
@@ -132,22 +132,22 @@ void GCShopVersionHandler::execute ( GCShopVersion * pPacket , Player * pPlayer 
 			g_pPriceManager->SetShopTaxRatio( pPacket->getMarketCondSell() );
 			
 			//------------------------------------------------------
-			// 모든 shelf의 version이 같으면..
-			// 바로 상점을 띄운다.
+			// Every rack is up to date:
+			// open the shop now.
 			//------------------------------------------------------
 			if (bSameAll)
 			{
 				//------------------------------------------------------
-				// 정상적으로 된 경우
-				// --> 상점을 실행한다.
+				// Everything is in place:
+				// open the shop.
 				//------------------------------------------------------
 				UI_RunShop();
-				UI_SetShop( pShop );		// shop 설정				
+				UI_SetShop( pShop );		// the shop to show				
 			}
 			
 		}
 		//------------------------------------------------------
-		// NPC가 아닌 경우
+		// The creature is not an NPC
 		//------------------------------------------------------
 		else
 		{
