@@ -808,7 +808,7 @@ rounds settled* for the host rules). Test fixtures share
   > `dcd47512`, `bd801202`, `3f542250`). The named residuals are in
   > `docs/compiler-warnings-2026-09-27.md`, *Shop prices*. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
-  > from server `291bee79` (PR #277, which merges first).
+  > from server `9e9e8d97` (PR #277 and the review fixes in PR #279).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
   > `MANIFEST` and the README's commit line; a new vendored `.cpp` also goes
   > on the explicit list in `third_party/decore/CMakeLists.txt`. Its vector
