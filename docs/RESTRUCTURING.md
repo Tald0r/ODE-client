@@ -1125,7 +1125,7 @@ rounds settled* for the host rules). Test fixtures share
     `decore-upstream` job in `linux.yml` (`sync.pl --check` against server
     master), and `arch_includes` rule DC1.
 
-- [ ] **4.13 Chat filter:** `MStringMap` and `MChatManager` compile in
+- [x] **4.13 Chat filter:** `MStringMap` and `MChatManager` compile in
   `gamemodel`; `MChatHost` supplies the player's "filter bad words" option.
   > **Status:** moved (2026-09-29). `RemoveCurse` rewrites every server
   > chat line (`GCSay`, `GCWhisper`, `GCGlobalChat`, `GCGuildChat`,
@@ -1137,8 +1137,39 @@ rounds settled* for the host rules). Test fixtures share
   > default, on; the executable's adapter answers the same while
   > `g_pUserOption` is NULL (the old read dereferenced it unguarded; no
   > filter call is known to run then). `MStringMap` needed nothing.
-  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1 and the designated
-    installer in `GameInit.cpp`.
+  > `tests/unit/test_chat_filter.cpp` then pinned the map and the filter
+  > through the real loaders (English case, punctuation, word edges,
+  > adjacent and overlapping words; Korean words of one to four
+  > syllables in CP949; stray lead bytes, every byte value, 255-byte
+  > lines; `AddMask`), under ASan and Clang UBSan too, and six defects
+  > were fixed test-first: a repeated English word was masked only the
+  > first time, and the second match's marks landed on the wrong letters;
+  > both mask texts (165 characters in 256-byte arrays) were indexed by a
+  > running count, so a word past the 165th letter, or an `AddMask` line
+  > of about 150 bytes, was cut by a NUL and read past the array from 256
+  > on; a Korean replacement longer than the letters left wrote through
+  > the unset tail of its index array; an empty English word in the
+  > binary list hung the filter; and the map loader stored an unset
+  > pointer for an entry whose value is not its key, read its flag
+  > straight into a `bool`, looped over an uninitialised count and
+  > inserted a key it could not read.
+  > **Known, not fixed:** the Korean lists the game loads from its
+  > binary file pass through `MString::LoadFromFile`, which converts each
+  > word from CP949 to UTF-8, while the filter pairs bytes and looks the
+  > words up in two- to eight-byte windows, so the shipped Korean lists
+  > match no text, CP949 or UTF-8 (pinned by
+  > `KoreanWordsFromTheBinaryListAreConvertedAndMatchNothing`); fixing it
+  > needs a decision on the encoding chat is filtered in. A replacement
+  > longer than its word (the built-in English "love you" for three
+  > syllables, "I love you" for four; the shipped Korean ones are as long
+  > as the words) runs on over the next Korean character (pinned).
+  > `LoadFromFileCurse` has no caller; on an empty or blank file its
+  > first word is an uninitialised buffer. The new-character name checks
+  > (`Execute_UI_NEW_CHARACTER`, `Execute_UI_NEWCHARACTER_CHECK`) call
+  > `RemoveCurse` on both lists without `bForce`, so a player who turned
+  > the filter off is stopped by neither (read, not reproduced).
+  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1, the designated
+    installer in `GameInit.cpp` and `tests/unit/test_chat_filter.cpp`.
 
 ## Phase 5 — Long tail
 
