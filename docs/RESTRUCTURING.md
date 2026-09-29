@@ -856,31 +856,49 @@ rounds settled* for the host rules). Test fixtures share
   > the two VS_UI game files are gone.
   > `tests/unit/test_equip_requirement.cpp` checks the requirement and
   > the check against `equip.tsv` rows (`2cef2abf`..`e0f27757`; the
-  > fixes `bd3072a0`, `78bf217c`, `50110b35`, `ec6601fa`). Three
-  > gates come before the server's check: a quest item (`IsQuestItem`)
-  > asks nothing and is usable by a slayer or vampire its gender
-  > allows and by any ousters, an item without the user's race flag is
-  > refused, and a pet whose life has run out lends nothing. The last
-  > two are the client's own. The first is the server's time-limited
+  > fixes `bd3072a0`, `78bf217c`, `50110b35`, `ec6601fa`). The check
+  > takes the requirement by the rule of the user's race, as
+  > `isRealWearing` does, also for an item made for several races,
+  > whose description still shows its first flag's rule (the fix
+  > `02a57a4f`). The server's seed has such classes (the blood bibles
+  > and castle symbols for all three races, the relics for slayers and
+  > vampires), each asking a sum of 30 with no option, so no seed
+  > item's requirement moves. Four gates come before the server's
+  > check: a quest item (`IsQuestItem`) asks nothing and is usable by
+  > a slayer or vampire its gender allows and by any ousters, an item
+  > without the user's race flag is refused, a pet whose life has run
+  > out lends nothing, and a couple ring is usable by a slayer or a
+  > vampire whatever it asks, stats, level or gender. The second and
+  > third are the client's own. The first is the server's time-limited
   > gate for an item the timed-item register holds, which
   > `IsQuestItem` counts (`isRealWearing` asks a time-limited item
   > only its gender, and an ousters nothing), and the client's own
-  > only for an item flagged a quest item (`m_Quest`). Left over:
-  > the server's advancement-class check is not in de-core and the
+  > only for an item flagged a quest item (`m_Quest`). The fourth is
+  > the server's: `Slayer` and `Vampire::isRealWearing` let a couple
+  > ring through (`isCoupleRing`) after their time-limited and
+  > premium-zone gates, before any requirement, and
+  > `Ousters::isRealWearing` has no such case (the fix `e5a331f7`).
+  > Left over: the server's advancement-class check is not in de-core and the
   > client has none (the server refuses an item asking
   > `reqAdvancedLevel > 0` unless the wearer is advanced with a class
   > level at least that, and refuses an advanced wearer a non-advanced
   > weapon, coat, trousers or ousters boots), so the client shows such
   > an item usable where the server refuses it; the owner chooses
   > between a client-local check and a de-core function with a per-race
-  > class predicate. An item flagged for several races takes its
-  > requirement from its first flag and is checked by the user's race,
-  > where the server uses the wearer's race for both; the server's item
-  > tables have one race per class. The premium-zone and pay gate (a
-  > unique item, one with several options, or a couple ring) stays
-  > server-only, and the server asks the advancement class of a slayer
-  > or vampire before its time-limited gate. Slice 5 is in (the
-  > same branch): a shop purchase is quoted in one place,
+  > class predicate. The server asks the advancement class of a slayer
+  > or a vampire before its time-limited gate, and of an ousters after
+  > it. The premium-zone pay gate stays server-only: in a premium zone
+  > a player who does not pay may not use a unique item or one with
+  > several options, whatever the race, nor, as a slayer or a vampire,
+  > a couple ring (`Ousters::isRealWearing` has that clause commented
+  > out). A living pet is judged by the gear rule, the client's own:
+  > a pet's option (the pet enchant's, asking a level of 20 at most)
+  > raises a vampire's level requirement of 0, so a vampire under that
+  > level sees the pet drawn as unusable, where the server's
+  > `executePetItem` asks a pet only its HP and, for a second-stage
+  > pet, a quest level of 40, and the client summons it whatever its
+  > affect status; the owner may let a living pet ask nothing. Slice 5
+  > is in (the same branch): a shop purchase is quoted in one place,
   > `MPriceManager::GetPurchasePrice`, which the buy check and the
   > shop tooltip ask, and it charges what the server's buy handler
   > does: the item at a market condition of 100 times the count, or
