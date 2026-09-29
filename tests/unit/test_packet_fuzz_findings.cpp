@@ -72,12 +72,6 @@ bool	FramedReadIsRefused(Packet& packet, const std::vector<unsigned char>& frame
 	return bRefused;
 }
 
-bool	FramedReadIsRefused(Packet& packet, const std::vector<unsigned char>& frame)
-{
-	std::string why;
-	return FramedReadIsRefused(packet, frame, why);
-}
-
 // True when `why` contains `reason`.
 bool	RefusedFor(const std::string& why, const char* reason)
 {
@@ -130,6 +124,11 @@ TEST(PacketFuzzFindings, EveryNicknameTypeInRangeStillReads)
 // client_stream/GCModifyNickname-type-0xff.hex), byte for byte, without
 // the encrypt code byte before it and the 8 zero bytes after it: one
 // GCModifyNickname frame of 30 bytes whose nickname type is 0xff.
+// The check names the type refusal: in a build with NDEBUG (Release)
+// the unfixed code's assert compiles out, the parse stops after the
+// type byte, and the framed read refuses the 23 bytes left unread
+// ("packet parser did not consume declared body"), so a bare "refused"
+// would pass on the unfixed code there.
 TEST(PacketFuzzFindings, ModifyNicknameFrameWithTypeFfIsRefused)
 {
 	std::vector<unsigned char> frame = {
@@ -144,7 +143,9 @@ TEST(PacketFuzzFindings, ModifyNicknameFrameWithTypeFfIsRefused)
 	frame.resize(7 + 30, 0x00);
 
 	GCModifyNickname packet;
-	CHECK(FramedReadIsRefused(packet, frame));
+	std::string why;
+	CHECK(FramedReadIsRefused(packet, frame, why));
+	CHECK(RefusedFor(why, "nickname type out of range"));
 }
 
 //----------------------------------------------------------------------
