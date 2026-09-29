@@ -195,9 +195,9 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29, after the shared-rules slice 6 branch's gate fixes, the
-same on all four: **1278 tests, 1,422,437 checks, 0 failed** (`decore_tests`: 13
-tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
+measured on 2026-09-29 on the packet-read fuzzing branch merged with the
+shared-rules slice 6 branch, the same on all four: **1285 tests, 1,422,493
+checks, 0 failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
 13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
 an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
 which has no `aarch64` baseline, after ctest passed, so the totals were read
@@ -261,9 +261,12 @@ perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corp
 cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
   <repo>/build/presets/macos-fuzz/bin/fuzz_client_stream -max_total_time=600 \
-  -timeout=10 -rss_limit_mb=2048 -max_len=32769 -close_fd_mask=3 corpus
+  -timeout=10 -rss_limit_mb=2048 -max_len=32768 -close_fd_mask=3 corpus
 ```
 
+`-max_len=32768` is the longest input the harness reads: the code byte
+and a stream of at most 32767 bytes, one less than the 32768-byte input
+ring; a longer input returns without being read.
 Run it from a scratch directory: a failed `Assert` appends to
 `assertion_failed.log` in the working directory, and hostile input fails
 about a thousand in fifteen minutes. Apple Clang ships no libFuzzer, so
