@@ -230,8 +230,12 @@ and a `<SDL2/...>` include spelling breaks the Homebrew build - it is
 `tests/fuzz/fuzz_client_stream.cpp` is a libFuzzer target over the bytes a
 game server sends: `[encrypt code byte][stream]`, read frame by frame through
 the same gates as `ClientPlayer::processCommand` (its header lists them with
-their line numbers; keep the two in step). Every native test tree builds it
-with `tests/fuzz/replay_main.cpp` as `fuzz_replay_client_stream`, and the
+their line numbers; keep the two in step), once from the start of the input
+ring and once with the ring's wrap point in the middle of the stream. Only a
+`Throwable` is a rejected input, since that is all `UpdateSocketInput`
+catches; a `std::exception` from a reader is a crash, as in the client.
+Every native test tree builds it with `tests/fuzz/replay_main.cpp` as
+`fuzz_replay_client_stream`, and the
 ctest of that name replays two sets of inputs through it: the seed corpus, which the
 `fuzz_corpus_client_stream` setup step writes into the build tree with
 `tools/fuzz/golden2corpus.pl` (one seed per `GC` golden, plus an empty and a
@@ -258,9 +262,12 @@ Run it from a scratch directory: a failed `Assert` appends to
 about a thousand in fifteen minutes. Apple Clang ships no libFuzzer, so
 `macos-fuzz` compiles with Apple Clang and links Homebrew `llvm@21`'s
 `libclang_rt.fuzzer_osx.a` (`DARKEDEN_LIBFUZZER_ARCHIVE`); llvm@21's own
-ASan hangs at startup on macOS 27. With that hybrid, `-fork` reports an ASan
-container-overflow inside libFuzzer's own merge code, not in ours, so fuzz
-single-process on a Mac. `linux-fuzz` uses the distribution Clang and
+ASan hangs at startup on macOS 27. The preset names the Apple Silicon
+Homebrew path of `llvm@21`; on an Intel Mac (Homebrew under `/usr/local`)
+or with another LLVM version, configure stops with "does not exist" until
+you pass `-DDARKEDEN_LIBFUZZER_ARCHIVE=<path to libclang_rt.fuzzer_osx.a>`.
+With that hybrid, `-fork` reports an ASan container-overflow inside
+libFuzzer's own merge code, not in ours, so fuzz single-process on a Mac. `linux-fuzz` uses the distribution Clang and
 `-fsanitize=fuzzer`, which needs the `libclang-rt-18-dev` package; the
 `darkeden-linux` image does not carry it yet, and `apt-get install` of it in
 the container is enough (done on 2026-09-29: the target built, fuzzed for two
