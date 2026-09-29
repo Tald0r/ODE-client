@@ -378,7 +378,7 @@ class MItem : public MObject, public CAnimationFrame {
 		//---------------------------------------------------
 		// Requirements
 		//---------------------------------------------------
-		// int, not BYTE: the slayer ceiling is 295 and Ousters gear is uncapped,
+		// int, not BYTE: the slayer ceiling is 290 and Ousters gear is uncapped,
 		// so a byte return wrapped level-150 requirements (task 4.4 fix).
 		int					GetRequireSTR()	const;
 		int					GetRequireDEX()	const;

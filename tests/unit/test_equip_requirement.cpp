@@ -121,8 +121,7 @@ TEST(EquipRequirement, SlayerGearAddsTwiceEachOptionSum)
 }
 
 // slayer-attr-new-cap-passed-by-2: a table asking more than 200 may be
-// raised to the new cap, which the server puts at 290 (250 + 2 x 21 =
-// 292). The client today caps at 295 and shows 292.
+// raised to the new cap, 290 (250 + 2 x 21 = 292).
 TEST(EquipRequirement, SlayerGearAboveTheOldCapStopsAtTheNewCap)
 {
 	EquipWorld world;
@@ -130,9 +129,9 @@ TEST(EquipRequirement, SlayerGearAboveTheOldCapStopsAtTheNewCap)
 	SetGear(FLAG_RACE_SLAYER, 250, 250, 250, 350, 0);
 	item.AddItemOption(2);
 
-	CHECK_EQ(292, item.GetRequireSTR());
-	CHECK_EQ(292, item.GetRequireDEX());
-	CHECK_EQ(292, item.GetRequireINT());
+	CHECK_EQ(290, item.GetRequireSTR());
+	CHECK_EQ(290, item.GetRequireDEX());
+	CHECK_EQ(290, item.GetRequireINT());
 	CHECK_EQ(371, item.GetRequireSUM());
 }
 
