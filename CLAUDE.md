@@ -65,7 +65,9 @@ the output and hides all progress.
 ### What can be tested
 
 Only code compiled into a **static library**: `basic`, `SpriteLib`, `dxlib`,
-`gamemodel` (the pure data tables, the item table, the money manager, the item
+`gamemodel` (the pure data tables, the action and effect tables
+(`MActionInfoTable`, `MEffectSpriteTypeTable`, `MEffectStatusTable`,
+`MCreatureSpriteTable`), the item table, the money manager, the item
 core - `MItem`, with what an item requires and whether the player may
 use it (`MItem::IsUsableBy`, which `MCreature::CheckAffectStatus` asks),
 the gear families, the item managers, the containers
@@ -121,12 +123,15 @@ and `dxlib`. The input pump reaches application state and text editors through
 backend without game-global stubs. `ui_tests` links `VS_UI` for independently
 reachable widgets; `user_option_tests` also links it for key bindings.
 Packet tests construct real packets through the real
-factories and pin their bytes against `tests/golden/*.hex` — 138 of those files are
-also pinned by the server repo and 135 are byte-identical copies of its goldens
-(measured 2026-09-10; `CLLogin.code0.hex`, `GCGuildChat.code0.hex` and
-`GCAddItemToItemVerify.threeenchant.code0.hex` differ - the last one the server
-re-recorded with other fixture values on 2026-09-10 - and a slice that adds a
-shared golden moves these counts), so `diff -r` of the two golden directories
+factories and pin their bytes against `tests/golden/*.hex` — 144 of those files
+share a name with a server golden and 122 are byte-identical copies of it
+(measured 2026-09-29 against the server's `c1157eb1`, with the two `LCPCList`
+goldens). The other 22 differ: the server re-recorded `CGMove` and `GCMoveOK`
+(every code, and the framed one), `CGSay` and `CGWhisper` with stronger
+fixtures on 2026-09-16 (its `93883b4f`), and `CGBloodDrain`, `CGSkillToNamed`,
+`CLLogin`, `GCAddItemToItemVerify.threeenchant`, `GCGuildChat`, `GCSay` and
+`GCSystemMessage` hold other fixture values in the two repos. A slice that adds
+a shared golden moves these counts. `diff -r` of the two golden directories
 is the cross-repo wire check (`tests/unit/test_packet_goldens.cpp` has
 the recipe and the `UPDATE_GOLDENS=1` re-record rule).
 
@@ -195,11 +200,14 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29 on the packet-read fuzzing branch merged with the
-shared-rules slice 6 branch, the same on all four: **1285 tests, 1,422,493
-checks, 0 failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
-13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
-an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
+measured on 2026-09-29 on the packet-read fuzzing branch merged with master
+at `3941724d` (the slayer weapon extension and the action and effect table
+move): **1334 tests, 1,434,117 checks, 0 failed** on the `macos` preset; the
+sanitizer and Linux trees were not re-measured at this merge
+(`decore_tests`: 13 tests, 2009 checks on all four at the last measurement).
+Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
+`linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
+Silicon Mac, and run in it; both scripts stop at the warning step,
 which has no `aarch64` baseline, after ctest passed, so the totals were read
 by running the binary. Run from a git worktree,
 the container also needs the common git directory mounted and `GIT_DIR` and

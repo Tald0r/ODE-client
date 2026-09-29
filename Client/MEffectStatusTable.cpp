@@ -60,15 +60,23 @@ EFFECTSTATUS_NODE::SaveToFile(std::ofstream& file)
 void			
 EFFECTSTATUS_NODE::LoadFromFile(std::ifstream& file)
 {
-	file.read((char*)&bUseEffectSprite, 1);
-	file.read((char*)&bAttachGround, 1);
+	// The flags are bytes on disk and any non-zero byte is true: read
+	// straight into a bool's storage, every byte but 0 and 1 made an
+	// invalid bool. A failed read leaves a field as it was.
+	BYTE flag = bUseEffectSprite;
+	file.read((char*)&flag, 1);
+	bUseEffectSprite = flag != 0;
+	flag = bAttachGround;
+	file.read((char*)&flag, 1);
+	bAttachGround = flag != 0;
 
 	file.read((char*)&EffectSpriteType, SIZE_EFFECTSPRITETYPE);	
 	file.read((char*)&EffectColor, 2);
 
-	BYTE part;
-	file.read((char*)&part, 1);
-	EffectColorPart = (ADDON)part;
+	// One byte on disk; every byte is a value ADDON holds.
+	BYTE part = 0;
+	if (file.read((char*)&part, 1))
+		EffectColorPart = (ADDON)part;
 
 	file.read((char*)&ActionInfo, SIZE_ACTIONINFO);
 	file.read((char*)&OriginalActionInfo, SIZE_ACTIONINFO);

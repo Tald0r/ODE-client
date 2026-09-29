@@ -246,6 +246,26 @@ TEST(StatusManager, SlayerSlotReadsTheWeaponDomainLevel)
 	CHECK_EQ(30, status.GetProtection());
 }
 
+// The weapons past the character list's four-bit view reach the slot as
+// themselves, through the outlook's extension code: the cross1 in the
+// heal domain (55, to-hit 110) and the mace and mace1 in the enchant
+// domain (66, to-hit 28 + 99 = 127). Before the code, a mace's fifth bit
+// fell into the shield field and the slot previewed a sword at sword
+// level (77); a cross1 previewed bare hands (28).
+TEST(StatusManager, SlayerSlotReadsTheDomainOfAWeaponPastFifteen)
+{
+	MStatusManager status;
+
+	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_CROSS1));
+	CHECK_EQ(110, status.GetTOHIT());
+
+	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_MACE));
+	CHECK_EQ(127, status.GetTOHIT());
+
+	status.SetCharacterSelectSlot(SlayerSlot(WEAPON_MACE1));
+	CHECK_EQ(127, status.GetTOHIT());
+}
+
 // The slot's level is the vampire's level, 7, not its experience, 1234.
 TEST(StatusManager, VampireSlotReadsTheLevel)
 {

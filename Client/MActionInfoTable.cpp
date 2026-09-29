@@ -6,10 +6,29 @@
 #include "EffectSpriteTypeDef.h"
 #include "SkillDef.h"
 
+#include <cstdint>
+
 //----------------------------------------------------------------------
 // Global
 //----------------------------------------------------------------------
 MActionInfoTable*			g_pActionInfoTable = NULL;
+
+namespace {
+
+//----------------------------------------------------------------------
+// A flag byte of the file: any non-zero byte is true. Reading the byte
+// straight into a bool's storage made every byte but 0 and 1 an invalid
+// bool. A failed read leaves the flag as it was.
+//----------------------------------------------------------------------
+bool
+ReadFlag(std::ifstream& file, bool current)
+{
+	BYTE b = current;
+	file.read((char*)&b, 1);
+	return b != 0;
+}
+
+} // namespace
 
 
 //----------------------------------------------------------------------
@@ -96,8 +115,8 @@ ACTION_INFO_NODE::LoadFromFile(std::ifstream& file)
 	file.read((char*)&LinkCount, 2);
 	file.read((char*)&SoundID, SIZE_SOUNDID);
 	//file.read((char*)&Light, 1);
-	file.read((char*)&bDelayNode, 1);
-	file.read((char*)&bResultTime, 1);
+	bDelayNode = ReadFlag(file, bDelayNode);
+	bResultTime = ReadFlag(file, bResultTime);
 }
 
 
@@ -246,8 +265,8 @@ MActionInfo::SetChildMode()
 void			
 MActionInfo::SaveToFile(std::ofstream& file)
 {
-	// 임시로 계산.. - -;
-	// startframe이 늦은 만큼 delay도 줄어든다
+	// A temporary calculation (disabled):
+	// the delay shrinks by as much as the start frame is late
 	/*
 	if (m_StartFrame==0xFFFF)
 	{
@@ -289,7 +308,9 @@ MActionInfo::SaveToFile(std::ofstream& file)
 	file.write((const char*)&m_RepeatLimit, 2);	
 
 	file.write((const char*)&m_bCastingEffectToSelf, 1);
-	file.write((const char*)&m_CastingActionInfo, 4);
+	// four bytes on disk for a two-byte id: the upper half is zero
+	const std::uint32_t castingActionInfo = m_CastingActionInfo;
+	file.write((const char*)&castingActionInfo, 4);
 	file.write((const char*)&m_bCastingAction, 1);
 
 	file.write((const char*)&m_Range, 1);
@@ -309,7 +330,7 @@ MActionInfo::SaveToFile(std::ofstream& file)
 	file.write((const char*)&m_SoundID, SIZE_SOUNDID);
 	file.write((const char*)&m_MainNode, 4);
 	
-	// 결과 
+	// the result
 	file.write((const char*)&m_ActionResultID, SIZE_ACTIONRESULTID);
 	file.write((const char*)&m_ActionResultValue, 4);
 
@@ -348,7 +369,7 @@ MActionInfo::SaveToFile(std::ofstream& file)
 	if( m_bNonAdvancementClassSkill ) flag |= 0x2;
 	file.write( (const char*)&flag, sizeof( char ) );
 */	
-	// 각 단계에 대한 정보
+	// the information for each step
 	CTypeTable<ACTION_INFO_NODE>::SaveToFile(file);
 }
 
@@ -364,7 +385,7 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 	file.read((char*)&m_ActionEffectSpriteType, SIZE_EFFECTSPRITETYPE);
 	file.read((char*)&m_ActionEffectSpriteTypeFemale, SIZE_EFFECTSPRITETYPE);
 
-	file.read((char*)&m_bUseRepeatFrame, 1);
+	m_bUseRepeatFrame = ReadFlag(file, m_bUseRepeatFrame);
 
 	for (int i=0; i<3; i++)
 	{
@@ -378,9 +399,15 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 	}
 	file.read((char*)&m_RepeatLimit, 2);	
 
-	file.read((char*)&m_bCastingEffectToSelf, 1);
-	file.read((char*)&m_CastingActionInfo, 4);
-	file.read((char*)&m_bCastingAction, 1);
+	m_bCastingEffectToSelf = ReadFlag(file, m_bCastingEffectToSelf);
+	// Four bytes on disk for a two-byte id. Read into the member, the
+	// upper two landed on m_bCastingAction and the padding after it. A
+	// read cut part-way stores the bytes it got, so the field is kept
+	// unless all four arrived.
+	std::uint32_t castingActionInfo = 0;
+	if (file.read((char*)&castingActionInfo, 4))
+		m_CastingActionInfo = (TYPE_ACTIONINFO)castingActionInfo;
+	m_bCastingAction = ReadFlag(file, m_bCastingAction);
 
 	file.read((char*)&m_Range, 1);
 	file.read((char*)&m_fTarget, 1);
@@ -391,9 +418,11 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 	file.read((char*)&m_fOption, 1);
 	file.read((char*)&m_PlusActionInfo, 4);
 
-	BYTE pt;
+	// A packet type past the last enumerator reads as none: casting it
+	// to the enum would hold a value the enum may not represent.
+	BYTE pt = (BYTE)m_PacketType;
 	file.read((char*)&pt, 1);
-	m_PacketType = (ACTIONINFO_PACKET)pt;
+	m_PacketType = pt <= ACTIONINFO_PACKET_LAST ? (ACTIONINFO_PACKET)pt : ACTIONINFO_PACKET_NONE;
 
 
 	file.read((char*)&m_Delay, 2);
@@ -401,16 +430,18 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 	file.read((char*)&m_SoundID, SIZE_SOUNDID);
 	file.read((char*)&m_MainNode, 4);
 	
-	// 결과 
+	// the result
 	file.read((char*)&m_ActionResultID, SIZE_ACTIONRESULTID);
 	file.read((char*)&m_ActionResultValue, 4);
 
-	WORD es;
-	file.read((char*)&es, 2);
-	m_EffectStatus = (EFFECTSTATUS)es;
-	bool bAttack;
-	file.read((char*)&bAttack, 1);
-	m_bAttack = bAttack;
+	// EFFECTSTATUS_NULL is the writer's "no status"; anything past it
+	// reads as that, for the same reason as the packet type. A read cut
+	// after one byte stores that byte alone, so the field is kept unless
+	// both arrived.
+	WORD es = 0;
+	if (file.read((char*)&es, 2))
+		m_EffectStatus = es <= EFFECTSTATUS_NULL ? (EFFECTSTATUS)es : EFFECTSTATUS_NULL;
+	m_bAttack = ReadFlag(file, m_bAttack != FALSE) ? TRUE : FALSE;
 	file.read((char*)&m_fSelectCreature, 1);
 
 	char flag = 0;
@@ -430,14 +461,14 @@ MActionInfo::LoadFromFile(std::ifstream& file)
 	}
 	file.read((char*)&m_Parent, sizeof(TYPE_ACTIONINFO ) );
 	file.read((char*)&m_MasterySkillStep, 1 );
-	file.read((char*)&m_bIgnoreFailDelay, 1 );
+	m_bIgnoreFailDelay = ReadFlag(file, m_bIgnoreFailDelay);
 /*
 	file.read((char*)&flag, sizeof( char ) );
 
 	m_bAdvancementClassSkill = (flag & 0x1 ) != 0;
 	m_bNonAdvancementClassSkill = (flag & 0x2) != 0;
 */
-	// 각 단계에 대한 정보
+	// the information for each step
 	CTypeTable<ACTION_INFO_NODE>::LoadFromFile(file);
 }
 

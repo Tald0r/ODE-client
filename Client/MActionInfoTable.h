@@ -131,20 +131,24 @@
 #define	FLAG_ACTIONINFO_TARGET_ITEM			0x08	// Item에 사용
 
 //----------------------------------------------------------------------
-// packet 종류
+// The kind of packet an action sends
 //----------------------------------------------------------------------
 enum ACTIONINFO_PACKET {
 	ACTIONINFO_PACKET_NONE,
-	ACTIONINFO_PACKET_SELF,			// 본인에게 사용
-	ACTIONINFO_PACKET_OTHER,		// 타인에게 사용
-	ACTIONINFO_PACKET_ZONE,			// Zone에 사용
-	ACTIONINFO_PACKET_ITEM,			// Item에 사용
-	ACTIONINFO_PACKET_BLOOD_DRAIN,	// 흡협인 경우	
-	ACTIONINFO_PACKET_THROW_BOMB,	// 폭탄 던지는 경우
-	ACTIONINFO_PACKET_UNTRANSFORM,	// 변신 풀기
-	ACTIONINFO_PACKET_VISIBLE,		// invisible 풀기
-	ACTIONINFO_PACKET_ABSORB_SOUL,	// 흡영인 경우	
+	ACTIONINFO_PACKET_SELF,			// used on oneself
+	ACTIONINFO_PACKET_OTHER,		// used on another
+	ACTIONINFO_PACKET_ZONE,			// used on the zone
+	ACTIONINFO_PACKET_ITEM,			// used on an item
+	ACTIONINFO_PACKET_BLOOD_DRAIN,	// blood drain
+	ACTIONINFO_PACKET_THROW_BOMB,	// throwing a bomb
+	ACTIONINFO_PACKET_UNTRANSFORM,	// undoing a transformation
+	ACTIONINFO_PACKET_VISIBLE,		// undoing invisibility
+	ACTIONINFO_PACKET_ABSORB_SOUL,	// soul absorption
 };
+
+// The last enumerator: the loader reads a byte past it as NONE. Keep it
+// in step when an enumerator is added.
+const ACTIONINFO_PACKET	ACTIONINFO_PACKET_LAST = ACTIONINFO_PACKET_ABSORB_SOUL;
 
 //----------------------------------------------------------------------
 // 기술의 시작 위치에 대한 flag
