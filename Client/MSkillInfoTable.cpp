@@ -213,10 +213,13 @@ GetWillOfLifeHP(int level)
 	return WillOfLifeOutput(level).Damage;
 }
 
+// The formula's Delay is in tenths of a second: the server's handler sets
+// the skill slot's run time to it (RaceSkillSlot::setRunTime), and
+// refuses a cast before that time has passed (verifyRunTime).
 int
 GetWillOfLifeDelay(int level)
 {
-	return (3 + (level / 10)) * 2 * 1000;
+	return WillOfLifeOutput(level).Delay * 100;
 }
 
 //----------------------------------------------------------------------

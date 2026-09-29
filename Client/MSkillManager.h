@@ -648,7 +648,9 @@ extern MSkillInfoTable*		g_pSkillInfoTable;
 int				GetWillOfLifeHP(int level);
 
 // The time, in milliseconds, from a cast of Will of Life until a vampire
-// of level `level` may cast it again: (3 + level / 10) * 2 seconds.
+// of level `level` may cast it again: the server's run time, the
+// formula's Delay (2 * (30 + level) tenths of a second), 6 seconds and
+// 200 ms a level.
 int				GetWillOfLifeDelay(int level);
 
 
