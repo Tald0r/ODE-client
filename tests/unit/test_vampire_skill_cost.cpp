@@ -8,6 +8,14 @@
 // (VS_UI_Description.cpp) read. The table row holds the skill's consume
 // MP and level as the server's skill table has them (SkillInfo.inf).
 //
+// The server charges decreaseConsumeMP (SkillUtil.cpp), which is
+// decore::vampireSkillConsumeMP of those two and the vampire's current
+// INT: the more the INT, less 20, exceeds the skill's level, the larger
+// the discount. The checks below are rows of
+// third_party/decore/domain/vectors/stats.tsv, which decore_tests
+// asserts on every toolchain. Eleven skills' handlers do not charge it,
+// and those keep the table cost.
+//
 //----------------------------------------------------------------------
 
 #include "test_framework.h"
@@ -33,18 +41,44 @@ struct CostTable
 
 } // namespace
 
-TEST(VampireSkillCost, IsTheTableCost)
+// The row's level is its learn level (11), not the node's display
+// level (1, which would give the 95% discount at INT 32).
+TEST(VampireSkillCost, FallsAsTheIntPassesTheSkillLevel)
 {
 	CostTable cost(MAGIC_INVISIBILITY);
+	const ACTIONINFO id = MAGIC_INVISIBILITY;
 
-	CHECK_EQ(200, cost.table.GetVampireConsumeMP(MAGIC_INVISIBILITY, 20));
-	CHECK_EQ(200, cost.table.GetVampireConsumeMP(MAGIC_INVISIBILITY, 31));
-	CHECK_EQ(200, cost.table.GetVampireConsumeMP(MAGIC_INVISIBILITY, 32));
-	CHECK_EQ(200, cost.table.GetVampireConsumeMP(MAGIC_INVISIBILITY, 43));
-	CHECK_EQ(200, cost.table.GetVampireConsumeMP(MAGIC_INVISIBILITY, 98));
+	CHECK_EQ(200, cost.table.GetVampireConsumeMP(id, 20));
+	CHECK_EQ(200, cost.table.GetVampireConsumeMP(id, 31));		// consume-level-11-int-at-level
+	CHECK_EQ(180, cost.table.GetVampireConsumeMP(id, 32));		// consume-level-11-int-past-level
+	CHECK_EQ(150, cost.table.GetVampireConsumeMP(id, 37));		// consume-level-11-int-past-1.5x
+	CHECK_EQ(100, cost.table.GetVampireConsumeMP(id, 43));		// consume-level-11-int-past-2x
+	CHECK_EQ(80, cost.table.GetVampireConsumeMP(id, 54));		// consume-level-11-int-past-3x
+	CHECK_EQ(50, cost.table.GetVampireConsumeMP(id, 65));		// consume-level-11-int-past-4x
+	CHECK_EQ(30, cost.table.GetVampireConsumeMP(id, 76));		// consume-level-11-int-past-5x
+	CHECK_EQ(20, cost.table.GetVampireConsumeMP(id, 87));		// consume-level-11-int-past-6x
+	CHECK_EQ(10, cost.table.GetVampireConsumeMP(id, 98));		// consume-level-11-int-past-7x
+	CHECK_EQ(10, cost.table.GetVampireConsumeMP(id, 520));		// consume-level-11-int-far-past-7x
 }
 
-// Skills whose cost the server does not discount by INT.
+// consume-level-0-int-21-is-95pct: a level 0 skill is discounted by 95%
+// from INT 21.
+TEST(VampireSkillCost, ALevelZeroSkill)
+{
+	MSkillInfoTable table;
+	testfw::MutableRow(table, MAGIC_HIDE).SetMP(100);
+	testfw::MutableRow(table, MAGIC_HIDE).SetLearnLevel(0);
+
+	CHECK_EQ(100, table.GetVampireConsumeMP(MAGIC_HIDE, 20));	// consume-level-0-int-20
+	CHECK_EQ(5, table.GetVampireConsumeMP(MAGIC_HIDE, 21));
+}
+
+// Skills whose handler does not charge decreaseConsumeMP. Extreme,
+// Mephisto, PoisonMesh, StoneSkin, and ViolentPhantom and Deadly Claw
+// (through SimpleTileMeleeSkill) charge the table cost undiscounted.
+// Howl charges 10, Transfusion 12% of the current HP and Will of Life its
+// own output; Blood Drain and Eat Corpse no mana at all. The client shows
+// those five the table cost, as it did.
 TEST(VampireSkillCost, SomeSkillsPayTheTableCost)
 {
 	const ACTIONINFO skills[] = {

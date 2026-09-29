@@ -10,6 +10,8 @@
 #include "Client_PCH.h"
 #include "MSkillManager.h"
 
+#include "domain/Formulas.h"
+
 #ifndef __NEW_SKILL__
 	#define __NEW_SKILL__
 	//#undef  __NEW_SKILL__
@@ -98,12 +100,64 @@ MSkillInfoTable::UseEnglishNames()
 // Get Vampire Consume MP
 //----------------------------------------------------------------------
 // A vampire uses its HP as MP. This is what one use of skill `id` costs
-// it at its current INT.
+// it at its current INT: the server's decreaseConsumeMP (SkillUtil.cpp),
+// decore::vampireSkillConsumeMP of the skill's consume MP and level
+// from the skill table and the INT. The ratio of the gear's consume-MP
+// options is a further host input on the server (hasEnoughMana), which
+// the client does not apply.
+//
+// The handlers of these skills do not charge decreaseConsumeMP, so they
+// keep the table cost. Extreme, Mephisto, PoisonMesh, StoneSkin and,
+// through SimpleTileMeleeSkill, ViolentPhantom and Deadly Claw charge it
+// undiscounted. Howl charges 10, Transfusion 12% of the current HP and
+// Will of Life its own output; Blood Drain and Eat Corpse check no mana.
+// The client showed those five the table cost before and still does.
 //----------------------------------------------------------------------
-int
-MSkillInfoTable::GetVampireConsumeMP(int id, int /*currentINT*/) const
+namespace {
+
+// The server's skill types (src/Core/types/SkillTypes.h there) for the
+// skills above; the ids are the wire's, so they must agree.
+static_assert(SKILL_BLOOD_DRAIN == 79 && MAGIC_EAT_CORPSE == 111 && MAGIC_HOWL == 112
+	&& SKILL_MEPHISTO == 154 && SKILL_TRANSFUSION == 156 && SKILL_EXTREME == 157
+	&& SKILL_POISON_MESH == 205 && SKILL_WILL_OF_LIFE == 207 && SKILL_STONE_SKIN == 274
+	&& SKILL_VIOLENT_PHANTOM == 328 && SKILL_VAMPIRE_INNATE_DEADLY_CLAW == 391,
+	"the vampire skills that keep the table cost are the server's");
+
+bool	IsChargedTheTableCost(int id)
 {
-	return (*this)[id].GetMP();
+	switch (id)
+	{
+		case SKILL_EXTREME :
+		case SKILL_MEPHISTO :
+		case SKILL_POISON_MESH :
+		case SKILL_STONE_SKIN :
+		case SKILL_VIOLENT_PHANTOM :
+		case SKILL_VAMPIRE_INNATE_DEADLY_CLAW :
+		case MAGIC_HOWL :
+		case SKILL_TRANSFUSION :
+		case SKILL_WILL_OF_LIFE :
+		case SKILL_BLOOD_DRAIN :
+		case MAGIC_EAT_CORPSE :
+			return true;
+
+		default :
+			return false;
+	}
+}
+
+} // namespace
+
+int
+MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT) const
+{
+	const SKILLINFO_NODE& info = (*this)[id];
+
+	if (IsChargedTheTableCost(id))
+	{
+		return info.GetMP();
+	}
+
+	return decore::vampireSkillConsumeMP(info.GetMP(), info.GetLearnLevel(), currentINT);
 }
 
 //----------------------------------------------------------------------
