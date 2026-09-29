@@ -415,10 +415,12 @@ TEST(AffectModifyInfo, AppliesAGCOtherModifyInfoAfterItsObjectID)
 	CHECK_EQ(77u, status.GetStatus(MODIFY_GUILDID));
 }
 
-TEST(AffectModifyInfo, AppliesEveryPacketClassItsHandlersPass)
+TEST(AffectModifyInfo, AppliesEveryPacketClassDerivingFromModifyInfo)
 {
 	// The 29 packet classes that derive from ModifyInfo, each created by
-	// its own factory: every one is drained the same way.
+	// its own factory: every one is drained the same way. This covers the
+	// classes, not the handlers: 28 handlers pass their packet in, and
+	// GCMakeItemFail's handler ignores the ModifyInfo it carries.
 	std::vector<std::pair<std::string, std::unique_ptr<PacketFactory>>> factories;
 	factories.emplace_back("GCAttackArmsOK1", std::make_unique<GCAttackArmsOK1Factory>());
 	factories.emplace_back("GCAttackArmsOK2", std::make_unique<GCAttackArmsOK2Factory>());
