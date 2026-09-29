@@ -83,7 +83,6 @@ class MPriceManager {
 		// either. The ratio is no market condition, and the sell
 		// dialog's market condition (GCShopMarketCondition) is not it.
 		void		SetShopTaxRatio(int ratio)			{ m_ShopTaxRatio = ratio; }
-		int			GetShopTaxRatio() const				{ return m_ShopTaxRatio; }
 
 		//-------------------------------------------------------
 		// The market conditions, buy and sell as the NPC sees them
