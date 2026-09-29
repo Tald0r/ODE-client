@@ -659,6 +659,8 @@ outcome.
 
 - **F155** lines 484, 494, 503: frame-pack `GetSize()` (unsigned short) is stored in the `BYTE` max-action arrays.
   - **Not a defect:** the arrays' only reader, `GetCreatureActionCountMax`, returns `BYTE`, and every consumer stores action counts as `BYTE`, so widening these three arrays would change nothing.
+- **C4244** lines 615, 1669: `static_cast<long>` on `DefWindowProc`'s result cleared the warning, but the defect it pointed at was the signature. `WindowProc` and `PatchLogWindowProc` returned `long`, 32 bits on x64, and were registered through a `(WNDPROC)` cast as procedures that return the 64-bit `LRESULT`, so a handle or pointer result (`WM_GETICON`, `WM_GETFONT`, `WM_GETOBJECT`) lost its upper half.
+  - **Fixed** after this cleanup: both are `LRESULT CALLBACK` with the `WNDPROC` signature, return `DefWindowProc`'s result unconverted, and are assigned to `lpfnWndProc` without a cast.
 
 #### `Client/MEffectGeneratorTable.cpp`
 
