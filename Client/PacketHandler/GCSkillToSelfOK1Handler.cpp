@@ -29,7 +29,8 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 		
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The server has answered whether the skill the player was waiting on
+	// succeeded.
 	//------------------------------------------------------------------
 	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
@@ -56,8 +57,9 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	
 	if( skillID == MAGIC_UN_TRANSFORM)
 	{
-		// 아우스터즈는 summon sylph 에서 내릴떄 untransform 을 날려주는데 그에대한 검증으로 이게 날라온다-_-
-		// 고쳐야 하는데.. 일단 예외 처리로!
+		// An ousters sends untransform when it gets off a summoned sylph,
+		// and this arrives as the answer to that. It is handled here as
+		// an exception rather than fixed.
 		if(g_pPlayer->IsOusters())
 		{
 			g_pPlayer->SetWaitVerifyNULL();
@@ -84,10 +86,10 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	}
 
 	//------------------------------------------------------------
-	// Delay Frame 설정
+	// Set the delay frame
 	//------------------------------------------------------------
 	DWORD delayFrame = ConvertDurationToFrame( pPacket->getDuration() );
-	if(resultActionInfo == RESULT_SKILL_CONCEALMENT)				// 이펙트에 맞게 프레임을 적당히 조정해준다.
+	if(resultActionInfo == RESULT_SKILL_CONCEALMENT)				// round the frames to fit the effect's animation
 	{
 		int FrameSize = (*g_pActionInfoTable)[resultActionInfo][1].Count;
 		int RemainFrame = delayFrame % FrameSize;
@@ -102,7 +104,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 
 	g_pPlayer->SetEffectDelayFrame(resultActionInfo, delayFrame );
 
-	// 소울 체인의 경우 기술 썼을때가 아니라 OK됐을때 delay세팅
+	// Soul Chain's delay starts when it is confirmed, not when it is used.
 	if(skillID == SKILL_SOUL_CHAIN)
 	{
 		if (skillID < MIN_RESULT_ACTIONINFO)
@@ -115,7 +117,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	}
 
 	//------------------------------------------------------
-	// Player가 기술을 성공했을때 모습..
+	// How the player looks when the skill succeeds
 	//------------------------------------------------------
 	g_pPlayer->PacketSpecialActionResult( 
 					resultActionInfo,
@@ -125,21 +127,21 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	);
 
 	//------------------------------------------------------------------
-	// Player가 Skill을 성공시킨 경우에 날아오는 Packet이므로
-	// 결과를 반영시켜야 한다.
+	// This packet arrives when the player's skill succeeded, so its
+	// result is applied.
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Change the status values.
 	//------------------------------------------------------------------
 	AffectModifyInfo(g_pPlayer, pPacket);
 
 	//------------------------------------------------------------------
-	// effect status를 적용시킨다.
+	// Apply the effect status.
 	//------------------------------------------------------------------
 	if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 	{
 		//int esDelayFrame = ConvertDurationToFrame( g_pPlayer->GetDURATION() );
 
-		// effect를 붙인다.
+		// Attach the effect.
 		g_pPlayer->AddEffectStatus((EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), delayFrame);	
 		
 		g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
@@ -147,7 +149,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	else
 	{
 		//------------------------------------------------------
-		// EffectStatus가 있다면 붙인다.
+		// Attach the skill's effect status, if it has one.
 		//------------------------------------------------------
 		EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 
@@ -158,17 +160,18 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 		}
 	}
 
+	// Will of Life's reuse time depends on the vampire's level.
 	if(skillID == SKILL_WILL_OF_LIFE )
 	{
 		g_pPlayer->CheckRegen();
 		if (auto* entry = g_pSkillInfoTable->GetMutable(skillID)) {
-			entry->SetAvailableTime( (3 + (g_pPlayer->GetLEVEL() / 10)) * 2 * 1000 );
+			entry->SetAvailableTime( GetWillOfLifeDelay(UI_GetCharInfoLevel()) );
 		}
 	}
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows (setting it unconditionally is
+	// presumably cheaper than comparing first).
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );
@@ -177,13 +180,13 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	
 	//------------------------------------------------------
 	//
-	// skill에 결과가 있으면 적용 시킨다.
+	// Apply the skill's result, if it has one.
 	//
 	//------------------------------------------------------
 	MActionResultNode* pActionResultNode = CreateActionResultNode(g_pPlayer, skillID);
 
 	//------------------------------------------------------
-	// NULL이 아니면 실행
+	// Run it if there is one
 	//------------------------------------------------------
 	if (pActionResultNode!=NULL)
 	{

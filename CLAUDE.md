@@ -72,8 +72,10 @@ the gear families, the item managers, the containers
 (inventory, storage, shop shelves), the trade manager over them, the gear the
 three races wear and the shop, behind the `MItemHost` the executable installs,
 the price manager behind its `MPriceHost`, the skill core (the info
-table, the skill set, the domains and their tree; what the player can use
-right now stays executable-side), and the combat-stat preview
+table with a vampire's skill cost, Will of Life's cost and reuse time
+and a skill's range at its level, the skill set, the domains and their
+tree; what the player can use right now stays executable-side), and the
+combat-stat preview
 (`MStatusManager`: the character-select to-hit, defense, protection
 and damage, and the attack speed `MPlayer::CalculateStatus` takes from
 it) - with the user, config and
@@ -105,7 +107,11 @@ how work gets verified here.
 `decore` is a static library of its own: the server's shared rules
 (`third_party/decore`), a byte-identical copy that is resynced with
 `tools/decore/sync.pl` and never edited by hand, which `gamemodel` links
-(`third_party/decore/README.md`). Two ctests keep it honest: `decore_tests`
+(`third_party/decore/README.md`). It holds the item price, repair price
+and maximum durability, the grade policy, the per-race stat rules, the
+equip requirements, the castle tax, the per-skill output formulas
+(`SkillOutputFormulas`, of which the client calls Will of Life's) and a
+slayer skill's range (`docs/RESTRUCTURING.md` task 4.12). Two ctests keep it honest: `decore_tests`
 asserts the shared parity vectors on this toolchain, and `decore_vendored`
 checks the copy against its manifest.
 
@@ -189,12 +195,13 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29 after the packet-read fuzzing fixes, the same on all four:
-**1276 tests, 1,422,261 checks, 0 failed**. Linux: `unit_tests` built by
-`tools/ci/verify-linux.sh linux` (GCC 13.3) and `linux-clang` (Clang 18.1) in
-the Docker image, its native arm64 on an Apple Silicon Mac, and run in it; both
-scripts stop at the warning step, which has no `aarch64` baseline, after ctest
-passed, so the totals were read by running the binary. Run from a git worktree,
+measured on 2026-09-29, after the shared-rules slice 6 branch's gate fixes, the
+same on all four: **1278 tests, 1,422,437 checks, 0 failed** (`decore_tests`: 13
+tests, 2009 checks on the same four). Linux: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC
+13.3) and `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on
+an Apple Silicon Mac, and run in it; both scripts stop at the warning step,
+which has no `aarch64` baseline, after ctest passed, so the totals were read
+by running the binary. Run from a git worktree,
 the container also needs the common git directory mounted and `GIT_DIR` and
 `GIT_WORK_TREE` set, or `ratchets` and `source_encoding` fail on "not a git
 repository". macOS: Apple Silicon, Apple Clang 21, `macos` preset,

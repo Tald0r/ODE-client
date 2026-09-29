@@ -11,6 +11,8 @@ add_library(decore STATIC
 	domain/ItemDurability.cpp
 	domain/ItemGrade.cpp
 	domain/ItemPrice.cpp
+	domain/SkillOutputFormulas.cpp
+	domain/SkillRange.cpp
 )
 
 # Consumers include "domain/<Header>.h". The target's own include path is

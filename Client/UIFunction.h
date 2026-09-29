@@ -91,6 +91,9 @@ extern void		UI_SetCharInfoName(char* pName);
 extern void		UI_SetCharInfoCreatureType(enum Race eRace);
 extern void		UI_SetCharInfoSex(bool female);
 extern void		UI_SetCharInfoLevel(int value);
+// The level the character window shows: a vampire's or an ousters'
+// level, and 1 for a slayer, which has none.
+extern int		UI_GetCharInfoLevel();
 extern void		UI_SetCharInfoSTR(int value);
 extern void		UI_SetCharInfoDEX(int value);
 extern void		UI_SetCharInfoINT(int value);

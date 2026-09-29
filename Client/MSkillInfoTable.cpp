@@ -11,6 +11,8 @@
 #include "MSkillManager.h"
 
 #include "domain/Formulas.h"
+#include "domain/SkillOutputFormulas.h"
+#include "domain/SkillRange.h"
 
 #ifndef __NEW_SKILL__
 	#define __NEW_SKILL__
@@ -106,18 +108,22 @@ MSkillInfoTable::UseEnglishNames()
 // options is a further host input on the server (hasEnoughMana), which
 // the client does not apply.
 //
-// The list below is every vampire skill whose server handler (an
+// Will of Life's server handler charges its formula's Damage at the
+// vampire's level `level` instead (GetWillOfLifeHP); no other skill's
+// cost reads the level.
+//
+// The list below is every other vampire skill whose server handler (an
 // execute(Vampire*) under src/server/gameserver/skill) never calls
 // decreaseConsumeMP; those skills keep the table cost. Extreme, Mephisto,
 // PoisonMesh, StoneSkin and, through SimpleTileMeleeSkill, ViolentPhantom
-// and Deadly Claw charge it undiscounted. Howl charges 10, Transfusion
-// 12% of the current HP and Will of Life its own output. Blood Drain, Eat
-// Corpse, Bloody Warp (which always fails), Open Casket, Unburrow,
-// Uninvisibility and Untransform charge nothing. The client showed the
-// table cost for those ten before and still does: the skill bar gates
-// Bloody Warp and every learned vampire skill on this cost. AttackMelee
-// also has a vampire handler that charges nothing, but it is the basic
-// attack, not a skill with a table cost.
+// and Deadly Claw charge it undiscounted. Howl charges 10 and
+// Transfusion 12% of the current HP. Blood Drain, Eat Corpse, Bloody
+// Warp (which always fails), Open Casket, Unburrow, Uninvisibility and
+// Untransform charge nothing. The client showed the table cost for those
+// nine before and still does: the skill bar gates Bloody Warp and every
+// learned vampire skill on this cost. AttackMelee also has a vampire
+// handler that charges nothing, but it is the basic attack, not a skill
+// with a table cost.
 //----------------------------------------------------------------------
 namespace {
 
@@ -129,7 +135,7 @@ static_assert(SKILL_BLOOD_DRAIN == 79 && MAGIC_UN_BURROW == 107 && MAGIC_UN_TRAN
 	&& MAGIC_OPEN_CASKET == 177 && MAGIC_BLOODY_WARP == 183
 	&& SKILL_POISON_MESH == 205 && SKILL_WILL_OF_LIFE == 207 && SKILL_STONE_SKIN == 274
 	&& SKILL_VIOLENT_PHANTOM == 328 && SKILL_VAMPIRE_INNATE_DEADLY_CLAW == 391,
-	"the vampire skills that keep the table cost are the server's");
+	"the vampire skills named above are the server's");
 
 bool	IsChargedTheTableCost(int id)
 {
@@ -143,7 +149,6 @@ bool	IsChargedTheTableCost(int id)
 		case SKILL_VAMPIRE_INNATE_DEADLY_CLAW :
 		case MAGIC_HOWL :
 		case SKILL_TRANSFUSION :
-		case SKILL_WILL_OF_LIFE :
 		case SKILL_BLOOD_DRAIN :
 		case MAGIC_EAT_CORPSE :
 		case MAGIC_BLOODY_WARP :
@@ -161,8 +166,13 @@ bool	IsChargedTheTableCost(int id)
 } // namespace
 
 int
-MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT) const
+MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT, int level) const
 {
+	if (id == SKILL_WILL_OF_LIFE)
+	{
+		return GetWillOfLifeHP(level);
+	}
+
 	const SKILLINFO_NODE& info = (*this)[id];
 
 	if (IsChargedTheTableCost(id))
@@ -171,6 +181,82 @@ MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT) const
 	}
 
 	return decore::vampireSkillConsumeMP(info.GetMP(), info.GetLearnLevel(), currentINT);
+}
+
+//----------------------------------------------------------------------
+// Skill range
+//----------------------------------------------------------------------
+// A slayer's is the server's rule (decore::skillRange, which its
+// computeSkillRange calls for the four sliding and walking skills). A
+// vampire's and an ousters' keep the client's integer step. The server
+// ranges no vampire skill by its level. It ranges Blunting, Tendril,
+// Prominence, Teleport and Charging Attack by their formulas' Range
+// (decore::skillformula), the minimum plus level / 10, which the step
+// to level 30 gives for their span of 3 in the server's seed; a
+// different span would need those formulas here. Soul Rebirth is ranged
+// by its slot level on the server too (2 + level / 10, plus the passive
+// skill's level / 10), but the client ranges it by its own override,
+// which does not follow that formula (docs/RESTRUCTURING.md task 4.12).
+int
+GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
+{
+	if (race == RACE_SLAYER)
+	{
+		return decore::skillRange(minRange, maxRange, expLevel);
+	}
+
+	// A vampire's skill is scaled to level 100, an ousters' to 30.
+	const int maxLevel = (race == RACE_OUSTERS) ? 30 : 100;
+
+	return (int)(minRange + (maxRange - minRange) * expLevel / maxLevel);
+}
+
+//----------------------------------------------------------------------
+// Will of Life
+//----------------------------------------------------------------------
+namespace {
+
+// What the server's Will of Life formula gives a vampire of `level`.
+// The input is filled as the server's SkillInput(Vampire*)
+// (skill/SkillHandler.cpp) fills what decore::skillformula::WillOfLife
+// reads: SkillLevel is the vampire's level. The fields that constructor
+// sets to the same value for every vampire are set so too (DomainLevel
+// 0, TargetType TARGET_MAX, no gun, so GunClass::Other, and PartySize
+// 0, never the size of the vampire's party), and DomainGrade is -1, as
+// for every formula that does not read the grade. STR, DEX, INTE and
+// Range (the current stats and the advancement class level) are left 0,
+// because WillOfLife does not read them: this input is valid for
+// WillOfLife only, not for another skill's formula.
+decore::skillformula::SkillOutput	WillOfLifeOutput(int level)
+{
+	decore::skillformula::SkillInput in = {};
+	in.SkillLevel = level;
+	in.DomainLevel = 0;
+	in.DomainGrade = -1;
+	in.TargetType = decore::skillformula::SkillInput::TARGET_MAX;
+	in.Gun = decore::skillformula::GunClass::Other;
+	in.PartySize = 0;
+
+	decore::skillformula::SkillOutput out;
+	decore::skillformula::WillOfLife(in, out);
+	return out;
+}
+
+} // namespace
+
+int
+GetWillOfLifeHP(int level)
+{
+	return WillOfLifeOutput(level).Damage;
+}
+
+// The formula's Delay is in tenths of a second: the server's handler sets
+// the skill slot's run time to it (RaceSkillSlot::setRunTime), and
+// refuses a cast before that time has passed (verifyRunTime).
+int
+GetWillOfLifeDelay(int level)
+{
+	return WillOfLifeOutput(level).Delay * 100;
 }
 
 //----------------------------------------------------------------------
