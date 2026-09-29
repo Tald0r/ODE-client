@@ -18,7 +18,7 @@ void PCOustersInfo::read ( SocketInputStream & iStream )
 	__BEGIN_TRY
 
 	//--------------------------------------------------
-	// read vampire name
+	// read ousters name
 	//--------------------------------------------------
 	BYTE szName;
 
@@ -34,9 +34,15 @@ void PCOustersInfo::read ( SocketInputStream & iStream )
 
 	//--------------------------------------------------
 	// read slot
+	//
+	// Range-checked before it becomes a Slot: a byte past
+	// SLOT3 is no Slot value, and LCPCList::read stores this
+	// info at m_pPCInfos[getSlot()], an array of SLOT_MAX.
 	//--------------------------------------------------
 	BYTE slot;	
 	iStream.read( slot );
+	if ( slot >= SLOT_MAX )
+		throw InvalidProtocolException("pc slot out of range");
 	m_Slot = Slot(slot);
 
 	//--------------------------------------------------
@@ -65,9 +71,9 @@ void PCOustersInfo::read ( SocketInputStream & iStream )
 	BYTE shapeType;
 	iStream.read( shapeType );
 
-	// 1,2,3 bit 은 CoatType 이다
+	// Bits 1 to 3 are the CoatType
 	m_CoatType = (OustersCoatType)(shapeType & 7);
-	// 4 bit 은 ArmType 이다
+	// bit 4 is the ArmType
 	m_ArmType = (OustersArmType)(( shapeType >> 3 ) & 1);
 
 	//--------------------------------------------------
