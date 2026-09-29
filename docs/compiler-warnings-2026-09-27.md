@@ -44,11 +44,16 @@ down below; the exceptions are these deliberate changes:
   a `uint`, which truncates `npos` on 64-bit builds: whitespace-only lines
   threw and lines without a separator were accepted. Fixed test-first
   (`tests/unit/test_properties_parse.cpp`).
-- **Plain `char` holding `-1`** (`MTopView::m_FadeEnd`, the quest
-  inventory's cells, `SetFadeStart`'s `step`) is read through
-  `signed char`: identical where `char` is signed (Windows, macOS, x86-64
-  Linux, Emscripten) and now also correct on arm64 Linux, where `char` is
-  unsigned and the `-1` tests could never match.
+- **Plain `char` holding `-1`**: the quest inventory's cells are read
+  through `signed char`, identical where `char` is signed (Windows, macOS,
+  x86-64 Linux, Emscripten) and now also correct on arm64 Linux, where
+  `char` is unsigned and the `-1` tests could never match. The fade was
+  only half done by that change: the `m_FadeEnd == -1` test was cast, but
+  the direction (`start<end`, `m_FadeInc > 0`) and the end tests still
+  compared plain `char`, so on arm64 Linux the Gilles de Rais darkening
+  (`SetFadeStart(31, -1, 1, ...)`) counted up and ended after one step. The
+  fade's value, end and step and `SetFadeStart`'s parameters are now
+  `signed char`, so every comparison is signed on every ABI.
 - **Packet destructors** no longer wrap their bodies in
   `__BEGIN_TRY`/`__END_CATCH`: a destructor is `noexcept`, so the rethrow
   could only reach `std::terminate` (GCC's `-Wterminate`). The nine declared

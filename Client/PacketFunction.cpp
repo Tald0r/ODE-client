@@ -4826,7 +4826,7 @@ CheckItemForSkillIcon(const MItem* pItem)
 }
 
 
-void		SetFadeStart(char start, char end, char step, BYTE r, BYTE g, BYTE b,WORD delay)
+void		SetFadeStart(signed char start, signed char end, signed char step, BYTE r, BYTE g, BYTE b,WORD delay)
 {
 	g_pTopView->SetFadeStart(start, end, step, r, g, b, delay);
 }

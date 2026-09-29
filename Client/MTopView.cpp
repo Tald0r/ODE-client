@@ -6420,14 +6420,14 @@ MTopView::GetDirectionToPosition(int originX, int originY, int destX, int destY)
 //----------------------------------------------------------------------
 // Set Fade Start
 //----------------------------------------------------------------------
-// start부터 end까지 step씩..
-// (r,g,b)색깔로 Fade in 시킨다.
-// 0(원색)~31(없음)
+// Fades from start to end by step, towards the colour (r,g,b):
+// 0 is the full colour, 31 none. An end of -1 with a delay is the
+// Gilles de Rais darkening, which holds at 1 before it ends.
 //----------------------------------------------------------------------
 void			
-MTopView::SetFadeStart(char start, char end, char step, BYTE r, BYTE g, BYTE b, WORD delay)
+MTopView::SetFadeStart(signed char start, signed char end, signed char step, BYTE r, BYTE g, BYTE b, WORD delay)
 {	
-	step = static_cast<char>(abs(static_cast<signed char>(step)));
+	step = static_cast<signed char>(abs(step));
 
 	m_FadeValue	= start;
 	m_FadeEnd	= end;
@@ -6442,7 +6442,7 @@ MTopView::SetFadeStart(char start, char end, char step, BYTE r, BYTE g, BYTE b, 
 //----------------------------------------------------------------------
 // Draw Fade
 //----------------------------------------------------------------------
-// Fade In/Out 처리
+// Draws the fade and advances it
 //----------------------------------------------------------------------	
 void 
 MTopView::DrawFade()
@@ -6451,7 +6451,7 @@ MTopView::DrawFade()
 		return;
 
 	//--------------------------------------------------------
-	// Fade In/Out 시키는 중이면 출력..
+	// Draw while a fade is running
 	//--------------------------------------------------------
 	if (m_bFade)// || bEvent)
 	{
@@ -6473,10 +6473,10 @@ MTopView::DrawFade()
 		rect.bottom = g_GameRect.bottom;	
 
 //		//--------------------------------------------------------
-//		// 3D 가속의 경우
+//		// 3D acceleration
 //		//--------------------------------------------------------
 //
-//			// m_FadeColor로 화면을 덮는다.
+//			// Cover the screen with m_FadeColor.
 //			pixel |= m_FadeColor;
 //
 //			DrawBox3D(&rect, pixel);
@@ -6489,7 +6489,7 @@ MTopView::DrawFade()
 			m_pSurface->Lock();
 
 			//-------------------------------------------------
-			// 검정색이면.. 쉽게 된다~
+			// Black
 			//-------------------------------------------------
 			if (m_FadeColor==0)
 			{
@@ -6498,7 +6498,7 @@ MTopView::DrawFade()
 			// Fade is now handled via alpha blending
 			}
 			//-------------------------------------------------
-			// 아니면...
+			// Any other colour
 			//-------------------------------------------------
 			else
 			{
@@ -6509,16 +6509,16 @@ MTopView::DrawFade()
 		}
 
 		//------------------------------------------------
-		// 다음 fade값
+		// Next fade value
 		//------------------------------------------------
-		// 2004, 6, 21, sobeit add start - 질드레 연출 땜에 추가..
+		// 2004, 6, 21, sobeit add start - for the Gilles de Rais cutscene
 		if(m_delayFrame)
 		{
 			if(g_CurrentFrame - TempFadeFrame >= m_delayFrame)
 			{
-				if( static_cast<signed char>(m_FadeEnd) == -1 && 1 == m_FadeValue ) // 질드레 연출땜에 어두워 진담에 잠시 유지..^^;
+				if( m_FadeEnd == -1 && 1 == m_FadeValue ) // the Gilles de Rais darkening holds a while once dark
 				{
-					if(g_CurrentFrame - TempFadeFrame> 16*5) // 5초간 유지
+					if(g_CurrentFrame - TempFadeFrame> 16*5) // held for 5 seconds
 						m_bFade = false;
 				}
 				else
@@ -6529,7 +6529,7 @@ MTopView::DrawFade()
 			}
 		}
 		else
-		// 2004, 6, 21, sobeit add end - 질드레 연출 땜에 추가..
+		// 2004, 6, 21, sobeit add end - for the Gilles de Rais cutscene
 		// Advance only on logic ticks: Draw now also runs between ticks for
 		// 60 fps interpolation, and an unguarded step here would speed every
 		// fade up by the ratio of draws to ticks.
@@ -6537,9 +6537,9 @@ MTopView::DrawFade()
 			m_FadeValue += m_FadeInc;
 
 		//------------------------------------------------
-		// 끝인가?
+		// Is it over?
 		//------------------------------------------------
-		// 증가하고 있는 경우
+		// Counting up
 		if (m_FadeInc > 0)
 		{
 			if (m_FadeValue > m_FadeEnd || m_FadeValue > 31)
