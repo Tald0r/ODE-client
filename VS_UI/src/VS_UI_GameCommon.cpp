@@ -9534,7 +9534,7 @@ bool C_VS_UI_SKILL::IsEnableSkill(int id) const
 //-----------------------------------------------------------------------------
 // GetDelay
 //
-// Delay가 얼마나 남았나 %
+// How much of the skill's delay is left, in percent
 //-----------------------------------------------------------------------------
 //int C_VS_UI_SKILL::GetDelay(int id) const
 //{
@@ -9549,8 +9549,10 @@ int C_VS_UI_SKILL::GetDelay(int id) const
 	int DelayTime = (*g_pSkillInfoTable)[id].GetDelayTime();
 
 	
+	// Will of Life's reuse time is not the table's: it depends on the
+	// vampire's level, as the time its two packet handlers set does.
 	if( id == SKILL_WILL_OF_LIFE )
-		DelayTime = (3+ (g_char_slot_ingame.level/10))*2*1000;
+		DelayTime = GetWillOfLifeDelay(g_char_slot_ingame.level);
 		
 
 	return (*g_pSkillInfoTable)[id].GetAvailableTimeLeft()*100/DelayTime;
