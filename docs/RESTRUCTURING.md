@@ -797,7 +797,7 @@ rounds settled* for the host rules). Test fixtures share
   durability class table; (3) callers of the existing de-core functions (this
   repo only); (4) equip requirements; (5) the castle tax; (6)
   `SkillOutputFormulas` and the small rules.
-  > **Status:** in progress (slice 5's client callers, slice 6). Slice 1 is in: `MPriceManager`'s
+  > **Status:** in progress (slice 6). Slice 1 is in: `MPriceManager`'s
   > buy, sell and repair quotes and the gear maximum durability call
   > `decore`, the inputs the server never sends are `MPriceHost` entries
   > with documented defaults, and `unit_tests` checks the adapters against
@@ -870,12 +870,46 @@ rounds settled* for the host rules). Test fixtures share
   > requirement from its first flag and is checked by the user's race,
   > where the server uses the wearer's race for both; the server's item
   > tables have one race per class. The time-limited, premium-zone and
-  > pay, and couple-ring gates stay server-only. The copy is
+  > pay, and couple-ring gates stay server-only. Slice 5 is in (the
+  > same branch): a shop purchase is quoted in one place,
+  > `MPriceManager::GetPurchasePrice`, which the buy check and the
+  > shop tooltip ask, and it charges what the server's buy handler
+  > does: the item at a market condition of 100 times the count, or
+  > the mysterious rack's price once, then `decore::applyCastleTax`
+  > at the castle's ratio, in the server's unsigned 32-bit width. The
+  > ratio has its own state (`SetShopTaxRatio`, from `GCShopVersion`,
+  > `GCShopList` and `GCShopListMysterious`), apart from the market
+  > condition the sell dialog's `GCShopMarketCondition` sets, and the
+  > tax-change notice's percentage (`EVENTID_TAX_CHANGE`, the removed
+  > `MPriceHost::ShopTaxPercent`), which taxed every buy price a
+  > second time and was the mysterious rack's only tax, reaches no
+  > price (`5bc25d48`, the fix `5536db6e`).
+  > `tests/unit/test_price_manager.cpp` checks the server slice's
+  > worked table. Left over, all from the wire (the plan's open
+  > decision 7: a separate ratio field, at least 32 bits wide, with
+  > goldens re-recorded in both repos): the packets that open the
+  > shop carry the ratio where the NPC's market condition would be,
+  > so a purchase takes the item at a market condition of 100, every
+  > seed shop's, and a shop set to sell at another rate would be
+  > quoted wrong; `GCShopVersion` sends the NPC's market condition in
+  > the ratio's place when the ratio is 100, which the client takes
+  > as the ratio (no tax while that condition is 100); and the field
+  > is the 16-bit `MarketCond_t`, so a ratio outside -32768..32767,
+  > which only the GM command can set, wraps (40000 arrives as
+  > -25536 and is quoted untaxed where the server charges x400). The
+  > gamble's Blood Bible adjustment still differs (the server applies
+  > `getGamblePriceRatio`'s percentage, the client halves), and the
+  > server's own product of price and count can wrap in `Price_t`
+  > before the tax, which the client now reproduces. The item
+  > description dialog prints `GetItemPrice(NPC_TO_PC)`, the item's
+  > untaxed price at the sell dialog's market condition, not a
+  > purchase quote, and the notice is still recorded as a zone event
+  > that nothing reads. The copy is
   > in: `decore`, a static library linked `PUBLIC` by `gamemodel`, synced
   > from server `73750a3c` (PR #281, the equip requirements:
   > `EquipRequirement` and `equip.tsv`; PR #282, the castle tax:
   > `applyCastleTax` and the `tax-*` rows of `price.tsv`, which
-  > `decore_tests` asserts while no client caller uses the function yet;
+  > `decore_tests` asserts and `MPriceManager::GetPurchasePrice` calls;
   > before them PR #280, PR #278, PR #277 and the review fixes in PR
   > #279).
   > Never edit it: `perl tools/decore/sync.pl <server-root>` rewrites it,
