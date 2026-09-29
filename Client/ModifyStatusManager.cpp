@@ -661,13 +661,13 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 	UI_SetCharInfoINT( value );
 
 	//------------------------------------------
-	// 다른 값 바뀌는 것 계산
+	// Recheck what depends on INT
 	//------------------------------------------
 	switch(g_pPlayer->GetRace())
 	{
 		case RACE_SLAYER:
 			//------------------------------------------
-			// 사용가능한지 체크한다.
+			// Recheck which items can be used.
 			//------------------------------------------
 			g_pInventory->CheckAffectStatusAll();
 			g_pSlayerGear->CheckAffectStatusAll();
@@ -688,7 +688,7 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 	}
 
 	//------------------------------------------
-	// 바뀌는 수치 계산
+	// Recompute the derived values
 	//------------------------------------------
 	g_pPlayer->CalculateStatus();
 

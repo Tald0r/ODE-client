@@ -14,8 +14,10 @@ were written down rather than fixed. On 2026-09-28 each of the 178 was
 checked again against `c23806f4` and, for packets and game rules, against
 the server's code. 101 were real and are fixed, with a unit test wherever
 the code is in a library a test binary links. The other 77 were not defects,
-or the cleanup had already fixed them. Every entry below carries an ID,
-which the fix commits cite, and a line giving its outcome.
+or the cleanup had already fixed them. Every entry below carries an ID and
+a line giving its outcome, with the commits that fixed it. Only some of the
+fix commits cite an ID in their own message, so look an ID up in this file,
+not with `git log --grep`.
 [Found while fixing](#found-while-fixing) lists what that work turned up.
 
 ## How
@@ -30,8 +32,11 @@ anything still references, including inside `PLATFORM_WINDOWS`, `_DEBUG`,
 `__EMSCRIPTEN__`, `_LIB` and the debug-output branches, and the changed
 translation units were compiled before and after the change for Windows
 (MinGW, with and without `_DEBUG`), with `_DEBUG` and the unused debug
-macros defined, and for Emscripten, with no new errors. Each batch was
-fixed by one agent and reviewed by another.
+macros defined, and for Emscripten, with no new errors. Those compiles were
+run by a local script that is not in the tree: no CI job or ctest repeats
+them, and no build defines `__DEBUG_OUTPUT__` or `OUTPUT_DEBUG`, so nothing
+in CI compiles the code behind them. Each batch was fixed by one agent and reviewed by
+another.
 
 Where a warning pointed at a real defect, the defect was kept and written
 down below; the exceptions are these deliberate changes:
@@ -44,11 +49,16 @@ down below; the exceptions are these deliberate changes:
   a `uint`, which truncates `npos` on 64-bit builds: whitespace-only lines
   threw and lines without a separator were accepted. Fixed test-first
   (`tests/unit/test_properties_parse.cpp`).
-- **Plain `char` holding `-1`** (`MTopView::m_FadeEnd`, the quest
-  inventory's cells, `SetFadeStart`'s `step`) is read through
-  `signed char`: identical where `char` is signed (Windows, macOS, x86-64
-  Linux, Emscripten) and now also correct on arm64 Linux, where `char` is
-  unsigned and the `-1` tests could never match.
+- **Plain `char` holding `-1`**: the quest inventory's cells are read
+  through `signed char`, identical where `char` is signed (Windows, macOS,
+  x86-64 Linux, Emscripten) and now also correct on arm64 Linux, where
+  `char` is unsigned and the `-1` tests could never match. The fade was
+  only half done by that change: the `m_FadeEnd == -1` test was cast, but
+  the direction (`start<end`, `m_FadeInc > 0`) and the end tests still
+  compared plain `char`, so on arm64 Linux the Gilles de Rais darkening
+  (`SetFadeStart(31, -1, 1, ...)`) counted up and ended after one step. The
+  fade's value, end and step and `SetFadeStart`'s parameters are now
+  `signed char`, so every comparison is signed on every ABI.
 - **Packet destructors** no longer wrap their bodies in
   `__BEGIN_TRY`/`__END_CATCH`: a destructor is `noexcept`, so the rethrow
   could only reach `std::terminate` (GCC's `-Wterminate`). The nine declared
@@ -474,7 +484,7 @@ was needed.
 - **F112** line 12951: In C_VS_UI_INFO::ShowButtonWidget, `ss= ss = list.begin()+...` appears twice (vampire and ousters branches, original 12951 and 12969). It is a harmless typo that assigns twice; I rewrote it as one assignment with the same result.
   - **Not a defect:** assigning the same iterator twice has no side effect, so the single assignment gives the same result.
 - **F113** line 12960: In ShowButtonWidget, the vampire and ousters branches dereference `*ss` without the `list.size() >=` bounds check the slayer branch has. They also call GetSkillStatus on `(*g_pSkillManager)[m_skill_domain]` rather than on the SKILLDOMAIN_VAMPIRE/OUSTERS domain whose list they walk. I kept both as they are.
-  - **Fixed** in `81253b22`, `8cd6d728`: Pick the ousters grade3 text box row as the icon buttons do.
+  - **Fixed** in `81253b22`: Bound the grade3 skill lookups by the row they actually read.
 - **F114** line 14482: Not touched: SafeFormat::Format(sz_temp, "%d", (goal_exp - exp_remain)*100/max(1, goal_exp)) passes an __int64 to %d. It is not in my list and no compiler warned; noting it for SafeFormat review.
   - **Not a defect:** `SafeFormat` is not a varargs printf, since it stores the 64-bit argument with its size and prints `%d` through `%lld`, as `tests/unit/test_safe_format.cpp` covers.
 - **F115** line 14564: SkillInfoMouseControl, RACE_VAMPIRE: the unused local domain_level dereferenced g_pSkillManager one line before the if(g_pSkillManager && ...) null check. Deleting the unused local also removes that unguarded dereference, which would have been undefined behaviour if the pointer was null.
@@ -594,12 +604,15 @@ was needed.
 ## MSVC-only warnings
 
 After the cleanup above, the Windows Debug build still reported 1,106
-distinct warnings in project code (CI run 36356004472): MSVC `/W3`
+distinct source lines with a warning in project code (CI run 36356004472;
+1,197 warnings by the budget's count, which keeps one per line and column
+and is the unit of the 1,254 and 57 below): MSVC `/W3`
 diagnostics that GCC and Clang do not raise under `-Wall -Wextra`. They are
 cleared the same way, with the same differential compiles (Windows through
 MinGW, `_DEBUG`, the debug macros, Emscripten) and nothing suppressed:
 
-- **C4267/C4244** (942 sites), narrowing conversions: a `static_cast` to the
+- **C4267/C4244** (942 source lines, 1,018 by the budget's count), narrowing
+  conversions: a `static_cast` to the
   destination's declared type, which is the conversion MSVC already made.
   A compound assignment becomes `x = static_cast<T>(x + y)`. **C4312**
   (14) goes through `intptr_t`.
@@ -611,10 +624,12 @@ MinGW, `_DEBUG`, the debug macros, Emscripten) and nothing suppressed:
 - **C4273** (11) and the 15 **LNK4217** link warnings: `__EX` marked
   `dllimport` classes that are compiled into the executable using them. It
   is now empty, as it already was off Windows.
-- **C4005** (6), **C4116** (2), **C4477** (2): `DIK_Defines.h` `#undef`s
-  the six keys `dinput.h` also defines, `framepack.c` casts the element
-  pointer instead of naming a type inside the cast, and `sizeof` prints
-  with `%zu`.
+- **C4005** (6), **C4116** (2), **C4477** (2): `DIK_Defines.h` now defines
+  the DirectInput values themselves (`2b25be1b`), so a redefinition next to
+  `dinput.h` or `basic/InputCodes.h` is token-identical and silent; only
+  `DIK_PAUSE` and the NUMPAD aliases keep an `#undef`. `framepack.c` casts
+  the element pointer instead of naming a type inside the cast, and
+  `sizeof` prints with `%zu`.
 - **C4146** (1) was a defect and is fixed; see below.
 
 The Windows budgets fell from 1,254 to 57 distinct warnings in Debug, ASan
@@ -625,17 +640,27 @@ C4668.
 The deliberate changes:
 
 - **`SendFileInfo::SendBack`** handed the bytes a socket did not take back
-  to the file by seeking `-nBack`, a negated `DWORD`, so it seeked about
-  4 GB forward. Every later read then failed, and the peer never received
-  the rest of the profile file. The file reading moved into `basic`
+  to the file by seeking `-nBack`, a negated `DWORD`, which would seek about
+  4 GB forward, so every later read would fail and the peer would miss the
+  rest of the profile file. The defect was latent: `SendBack` runs only when
+  the socket took fewer bytes than were read, and
+  `SocketOutputStream::write` returns the whole count or throws, so no input
+  reaches that branch and the fix changes nothing at runtime today. The file
+  reading moved into `basic`
   (`Basic::FileChunkReader`) and was fixed test-first
   (`tests/unit/test_file_chunk_reader.cpp`). The fix also clears the
   stream, because a short last chunk leaves it failed and a failed stream
   ignores `seekg`.
 - **`Basic::LocalTime`** leaves a zeroed `tm` where `localtime` returned
-  NULL, which `DebugLog`'s Windows timestamp then dereferenced.
+  NULL, which `DebugLog`'s Windows timestamp then dereferenced. It zeroes
+  the `tm` itself, because `localtime_s` sets every field to -1 on
+  failure.
 - **On Windows, the `_s` scanners** fail a `%s` conversion whose word would
-  have overflowed its buffer. The old call overflowed it.
+  have overflowed its buffer. The old call overflowed it. `CRT_BUFFER`
+  rejects a pointer at compile time (`715907f6`). Still open: nothing
+  catches a `%s`, `%c` or `%[` buffer passed with no `CRT_BUFFER` at all,
+  which on Windows reads the next argument as the capacity, and MSVC is
+  not given the `_Scanf_s_format_string_` annotation that would check it.
 - **The two `GetSystem()` bodies** no longer query the version. `Client.cpp`'s
   rejected only Windows 9x or a failed query, neither possible for an x64
   build, so it returns `TRUE`; its one call is inside a comment.
@@ -681,7 +706,7 @@ outcome.
 #### `Client/MPriceManager.cpp`
 
 - **F161** line 236: `finalPrice * damaged` is computed in `float`, so prices above 2^24 lose precision, and the result is truncated rather than rounded.
-  - **Fixed** in `1f1e5bda`, `981d7fee`: Price graded gear with the server's unrounded grade factor.
+  - **Fixed** in `1f1e5bda`: Price worn and optioned items with the server's double arithmetic.
 
 #### `Client/MSector.cpp`
 
@@ -761,7 +786,8 @@ outcome.
 
 ## Found while fixing
 
-Fixing the entries above turned up these, which no entry listed.
+Fixing the entries above, and a later review of that work, turned up
+these, which no entry listed.
 
 Fixed:
 
@@ -781,8 +807,18 @@ Fixed:
   the server multiplies in double (`981d7fee`).
 - `GCWaitGuildList::getListNum()` returned a `BYTE` over a `WORD` count
   (`130fb6f9`, completing F167).
+- `Client.cpp`'s `WindowProc` and `PatchLogWindowProc` returned `long`,
+  32 bits on x64, and were registered through a `(WNDPROC)` cast as
+  procedures that return the 64-bit `LRESULT`, so a handle or pointer
+  result (`WM_GETICON`, `WM_GETFONT`, `WM_GETOBJECT`) lost its upper half.
+  The cleanup had cleared C4244 there with a `static_cast<long>` on
+  `DefWindowProc`'s result; a later review found the signature behind it.
+  Both now have the `WNDPROC` signature and are assigned without a cast
+  (`45ef1f57`).
 - `ValueList<T>::toString` did not compile under `__DEBUG_OUTPUT__`
-  (`ec9d41bc`).
+  (`ec9d41bc`). No build defines the macro and no automated check compiles
+  under it, so this class of break has no guard; it was found because new
+  includes pulled the header into a build.
 
 Not fixed, for whoever takes them up:
 
@@ -835,6 +871,21 @@ Not fixed, for whoever takes them up:
     time-limited item it quotes 0. A single repair of any of them the
     server refuses, and the gear window does not ask for one. These are
     the server's to change.
+  - **A repair price for what the server will not repair.** Besides the
+    couple rings and the gear that wears nothing (above), `RepairPrice`
+    quotes 0 for the vampire portal, a timed item, the blood bible sign
+    and every class with no durability that holds no charges, which
+    covers the flag item (an event item). Of what the server's
+    `isRepairableItem` refuses, it still quotes a repair for a damaged
+    unique item of any class, and for a VampireAmulet. The item
+    description prints that price for a unique item; it prints none for
+    the amulet. The gear and inventory repair cursors turn unique,
+    quest, event and vampire amulet items away with a message, and send
+    a request only when the quote is above 0, so the only single repair
+    they send that the server refuses is for gear that wears nothing
+    but carries durability options (the next item). The motorcycle,
+    which the client also gives a durability, is never in the gear or
+    the inventory; it is repaired through its key.
   - **Durability options on gear that wears nothing.** The server scales
     the maximum of 1 by durability options as it scales any other, and
     truncates. With options totalling 200% or more, a Dermis, Fascia or

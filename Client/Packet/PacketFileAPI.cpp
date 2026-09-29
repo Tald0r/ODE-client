@@ -14,12 +14,10 @@
 #include "Client_PCH.h"
 #include "PacketFileAPI.h"
 #include "PacketAssert.h"
-#include "DataPath.h"
 
 
 #if defined(__WINDOWS__) && __WINDOWS__
-#include <io.h>			// for _sopen_s()
-#include <share.h>		// for _SH_DENYNO
+#include <io.h>			// for _close()/_read()/_write()
 #include <fcntl.h>		// for _open()/_close()/_read()/_write()...
 #include <string.h>		// for memcpy()
 #elif defined(PLATFORM_POSIX)
@@ -30,130 +28,6 @@
 #include <sys/ioctl.h>	// for ioctl()
 #include <errno.h>		// for errno
 #endif
-
-
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-int FileAPI::open_ex ( const char * filename , int flags ) 
-{
-	__BEGIN_TRY
-
-#if defined(PLATFORM_POSIX)
-	// The game's spelling of the path, resolved to the disk's (basic/DataPath.h).
-	int fd = open(Basic::NormalizeDataPath(filename).c_str(),flags);
-#elif __WINDOWS__
-	int fd = -1;
-	_sopen_s(&fd, filename, flags, _SH_DENYNO, 0);
-#endif
-	if ( fd < 0 ) {
-
-#if defined(PLATFORM_POSIX)
-		switch ( errno ) {
-		case EEXIST : 
-			throw FileAlreadyExistException("pathname already exists and O_CREAT and O_EXCL were used.");
-		case ENOENT  : 
-			throw FileNotExistException("A directory component in pathname does not exist or is a dangling symbolic link.");
-		case EISDIR : 
-			throw Error("pathname refers to a directory and the access requested involved writing.");
-		case EACCES : 
-			throw FileNotOpenedException("The requested access to the file is not allowed, or one of the directories in pathname did not allow search (execute) permission, or the file did not exist yet and write access to the parent directory is not allowed.");
-		case ENAMETOOLONG : 
-			throw Error("pathname was too long.");
-		case ENOTDIR : 
-			throw Error("A component used as a directory in pathname is not, in fact, a  directory, or O_DIRECTORY was specified and pathname was not a directory.");
-		case ENXIO   : 
-			throw Error("O_NONBLOCK | O_WRONLY is set, the named file id a FIFO and no process has the file open for reading. Or, the file is a device special file and no corresponding device exists.");
-		case ENODEV  : 
-			throw Error("pathname refers to a device special file and no corresponding device exists.");
-		case EROFS   : 
-			throw Error("pathname refers to a file on a read-only filesystem and write access was requested.");
-		case ETXTBSY : 
-			throw Error("pathname refers to an executable image which is currently being executed and write access was requested.");
-		case EFAULT  : 
-			throw Error("pathname points outside your accessible address space.");
-		case ELOOP   : 
-			throw Error("Too many symbolic links were encountered in resolving pathname, or O_NOFOLLOW was specified but pathname was a symbolic link.");
-		case ENOSPC  : 
-			throw Error("pathname was to be created but the device containing pathname has no room for the new file.");
-		case ENOMEM  : 
-			throw Error("Insufficient kernel memory was available.");
-		case EMFILE  : 
-			throw Error("The process already has the maximum number of files open.");
-		case ENFILE  : 
-			throw Error("The limit on the total number of files open on the system has been reached.");
-		default :
-			throw UnknownError(strerror(errno),errno);
-		}//end of switch
-#elif __WINDOWS__
-	// ...
-#endif
-	}
-
-	return fd;
-
-	__END_CATCH
-}
-
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-int FileAPI::open_ex ( const char * filename , int flags , int mode ) 
-{
-	__BEGIN_TRY
-
-#if defined(PLATFORM_POSIX)
-	int fd = open(Basic::NormalizeDataPath(filename).c_str(),flags,mode);
-#elif __WINDOWS__
-	int fd = -1;
-	_sopen_s(&fd, filename, flags, _SH_DENYNO, mode);
-#endif
-
-	if ( fd < 0 ) {
-#if defined(PLATFORM_POSIX)
-		switch ( errno ) {
-		case EEXIST : 
-			throw FileAlreadyExistException("pathname already exists and O_CREAT and O_EXCL were used.");
-		case EISDIR : 
-			throw Error("pathname refers to a directory and the access requested involved writing.");
-		case EACCES : 
-			throw FileNotOpenedException("The requested access to the file is not allowed, or one of the directories in pathname did not allow search (execute) permission, or the file did not exist yet and write access to the parent directory is not allowed.");
-		case ENAMETOOLONG : 
-			throw Error("pathname was too long.");
-		case ENOENT  : 
-			throw Error("A directory component in pathname does not exist or is a dangling symbolic link.");
-		case ENOTDIR : 
-			throw Error("A component used as a directory in pathname is not, in fact, a  directory, or O_DIRECTORY was specified and pathname was not a directory.");
-		case ENXIO   : 
-			throw Error("O_NONBLOCK | O_WRONLY is set, the named file id a FIFO and no process has the file open for reading. Or, the file is a device special file and no corresponding device exists.");
-		case ENODEV  : 
-			throw Error("pathname refers to a device special file and no corresponding device exists.");
-		case EROFS   : 
-			throw Error("pathname refers to a file on a read-only filesystem and write access was requested.");
-		case ETXTBSY : 
-			throw Error("pathname refers to an executable image which is currently being executed and write access was requested.");
-		case EFAULT  : 
-			throw Error("pathname points outside your accessible address space.");
-		case ELOOP   : 
-			throw Error("Too many symbolic links were encountered in resolving pathname, or O_NOFOLLOW was specified but pathname was a symbolic link.");
-		case ENOSPC  : 
-			throw Error("pathname was to be created but the device containing pathname has no room for the new file.");
-		case ENOMEM  : 
-			throw Error("Insufficient kernel memory was available.");
-		case EMFILE  : 
-			throw Error("The process already has the maximum number of files open.");
-		case ENFILE  : 
-			throw Error("The limit on the total number of files open on the system has been reached.");
-		default :
-			throw UnknownError(strerror(errno),errno);
-		}//end of switch
-#elif __WINDOWS__
-	// ...
-#endif
-	}
-
-	return fd;
-
-	__END_CATCH
-}
 
 
 //////////////////////////////////////////////////////////////////////

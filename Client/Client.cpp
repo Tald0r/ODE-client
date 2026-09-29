@@ -602,9 +602,9 @@ UpdateProgressBar()
 //-----------------------------------------------------------------------------
 HWND		g_hPatchLogWnd = NULL;
 HWND		g_hPatchLogEdit = NULL;
-char*		g_pPatchLogBuffer = NULL;	// 얼마나 클지 몰라서리 global에 뒀다.
+char*		g_pPatchLogBuffer = NULL;	// global because its size is not known in advance
 
-long FAR PASCAL PatchLogWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK PatchLogWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
     {
@@ -612,7 +612,7 @@ long FAR PASCAL PatchLogWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
             PostQuitMessage(0);
         return 0L;
 	}
-	return static_cast<long>(DefWindowProc(hWnd, message, wParam, lParam));
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 bool
@@ -690,7 +690,7 @@ ShowPatchLogWindow()
 	WNDCLASS               wc;
 
 	wc.style			= CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc		= (WNDPROC)PatchLogWindowProc;
+	wc.lpfnWndProc		= PatchLogWindowProc;
 	wc.cbClsExtra		= 0;
 	wc.cbWndExtra		= 0;
 	wc.hInstance		= g_hInstance;
@@ -824,7 +824,7 @@ CheckDXVersion()
 // Name: WindowProc()
 // Desc: The Main Window Procedure
 //-----------------------------------------------------------------------------
-long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	//MINMAXINFO      *pMinMax;
 
@@ -839,24 +839,24 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 		//---------------------------------------------------------------
 		case MM_MCINOTIFY :
 		{
-			// Mid가 다 연주되었다는 말이다.
+			// A MIDI or video finished playing.
 			if (wParam==MCI_NOTIFY_SUCCESSFUL)
 			{
-				// Opening 동영상이 끝난 경우
+				// The opening video finished
 				if (g_pAvi!=NULL && (DWORD)lParam==g_pAvi->dwID) 
 				{ 
 					g_pAvi->bEndFlag=true; 
 					g_pAvi->Close(); 
 
-					// Login 화면으로...
+					// On to the login screen
 					SetMode( MODE_MAINMENU );
 				}				
-				// 음악 연주가 끝난 경우
+				// The music finished
 				else
 				{
 					/*
-					// 반복 연주 안한다.
-					if (g_pUserOption->PlayMusic)//g_Music.IsPause())	// 과연 필요할까.. - -;
+					// Do not repeat it.
+					if (g_pUserOption->PlayMusic)//g_Music.IsPause())	// is this needed at all?
 					{
 						if (g_pUserOption->PlayWaveMusic)
 						{
@@ -870,7 +870,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 					*/
 					//else
 					//{
-						// 반복해서 연주한다.
+						// Play it again.
 					//	g_Music.RePlay();
 					//}
 //					if(g_pMP3->IsLoop())
@@ -929,7 +929,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 			//WORD fActive = LOWORD(wParam);           // activation flag 
 			//BOOL fMinimized = (BOOL) HIWORD(wParam); // minimized flag 
 
-			// active됐고 minimized가 아닌 상태가 ActiveGame이당..
+			// ActiveGame means activated and not minimized
 			//BOOL bActive = (fActive==WA_ACTIVE) || (fActive==WA_CLICKACTIVE);
 			//				//&& !fMinimized;
 
@@ -949,7 +949,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 				// acquire
 				g_pSDLInput->SetAcquire(bActive);
 				
-				// 입력을 초기화한다.
+				// Reset the input.
 				g_pSDLInput->Clear();
 			}
 		}
@@ -1100,7 +1100,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 
 			if (g_Mode==MODE_OPENING)
 			{
-				// Opening을 끝낸다.
+				// End the opening.
 				if (wParam==VK_ESCAPE || wParam==VK_RETURN || wParam==VK_SPACE)
 				{	
 					if (g_pAvi!=NULL)
@@ -1155,7 +1155,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 				*/
 
 				//-----------------------------------------------
-				// Volume 조절
+				// Volume control
 				//-----------------------------------------------
 				/*
 				case VK_F5 :
@@ -1186,7 +1186,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 
 				//-----------------------------------------------
 				//
-				//				Debug Mode 용
+				//				Debug mode only
 				//
 				//-----------------------------------------------
 				#if defined(OUTPUT_DEBUG)
@@ -1203,14 +1203,14 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 					//	return 0L;	
 
 					//-----------------------------------------------
-					// 움직이는 방법 설정
+					// Movement mode
 					//-----------------------------------------------
 					/*
 					case VK_F2 :
 					{					
 						if (g_pPlayer->IsStop())
 						{
-							// 움직이는 형태 바꾸기
+							// Change how the player moves
 							//if (g_pPlayer->GetMoveDevice()==MCreature::MOVE_DEVICE_NULL)
 							//{
 							//	g_pPlayer->SetMoveDevice( MCreature::MOVE_DEVICE_MOTOR1 );
@@ -1235,7 +1235,7 @@ long FAR PASCAL WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 								g_pPlayer->SetCreatureType( type );
 							}
 
-							// 남자 Slayer
+							// Male slayer
 							if (g_pPlayer->GetCreatureType()==0)
 							{
 								g_pPlayer->RemoveAddon( ADDON_COAT );	
@@ -1275,7 +1275,7 @@ color
 							}
 							
 
-							// 번쩍~~
+							// Flash
 							g_pTopView->SetFadeStart(1, 31, 10,  31,0,0);
 						}							
 					}		
@@ -1294,7 +1294,7 @@ color
 							//g_pPlayer->SetAddonNULL(MCreatureWear::ADDON_SHOES); 
 						//else g_pPlayer->SetAddon(MCreatureWear::ADDON_SHOES, 2);					
 						
-						// 공격 모드 전환
+						// Switch the attack mode
 						if (g_pPlayer->IsAttackModeAggress())
 						{
 							g_pPlayer->SetAttackModePeace();
@@ -1354,14 +1354,14 @@ color
 						return 0L;
 
 					//-----------------------------------------------
-					// debug 메세지
+					// Debug messages
 					//-----------------------------------------------
 					case VK_F12 : 
 						g_bPutMessage = !g_bPutMessage;
 						return 0L;				
 					
 					//-----------------------------------------------
-					// Debug Message 청소~하기
+					// Clear the debug messages
 					//-----------------------------------------------
 					case VK_DELETE :
 						{
@@ -1458,7 +1458,7 @@ color
 							}
 							else
 							{
-								// 죽은 경우..
+								// Dead
 								g_pPlayer->SetDead();						
 							}
 						}
@@ -1469,7 +1469,7 @@ color
 					// [ TEST CODE ]
 					case '/' :
 					{
-						// 상태 변경
+						// Change the status
 						/*
 						int newHP = g_pPlayer->GetHP() - 5;
 						int newMP = g_pPlayer->GetMP() - 3;
@@ -1481,19 +1481,19 @@ color
 						pStatus->SetStatus(MODIFY_HP, newHP);
 						pStatus->SetStatus(MODIFY_MP, newMP);
 						
-						// UI변경					
+						// Update the UI					
 						gC_vs_ui.SetHP(newHP, 100);
 						gC_vs_ui.SetMP(newMP, 100);
 
-						// 결과에 HP가 변하도록 설정
+						// The result changes the HP
 						MActionResult *pResult = new MActionResult;					
 						pResult->Add( new MActionResultNodeChangeStatus(g_pPlayer->GetID(), pStatus) );
 
-						// 결과 Action 등록
+						// Register the result action
 						//g_pPlayer->PacketSpecialActionResult( SKILL_ATTACK_MELEE );
 						g_pPlayer->PacketSpecialActionResult( RESULT_VAMPIRE_DIE );
 
-						// 결과 내용 등록(effectID가 있어야 되는데..)
+						// Register the result (it should carry an effect id)
 						g_pPlayer->PacketAddActionResult(0, pResult);					
 						
 						
@@ -1511,14 +1511,14 @@ color
 					return 0L;
 					//*/
 
-					// 살짝 붉게 변하기
+					// Turn slightly red
 					case '6' :
 					{
 						g_pTopView->SetFadeStart(25, 31, 2, 31,0,0);					
 					}
 					break;
 
-					// 번개
+					// Lightning
 					case '7' :
 					{
 						SetLightning(rand()%4*500+500);					
@@ -1548,7 +1548,7 @@ color
 							
 							g_pPlayer->SetSpecialActionInfo( newActionInfo );
 
-							// player에 있는 action인 경우..
+							// An action the player has
 							if (newActionInfoAction <= maxPlayerAction)
 								break;
 						} while (1);					
@@ -1577,7 +1577,7 @@ color
 							
 							g_pPlayer->SetSpecialActionInfo( newActionInfo );
 
-							// player에 있는 action인 경우..
+							// An action the player has
 							if (newActionInfoAction <= maxPlayerAction)
 								break;
 						} while (1);
@@ -1612,7 +1612,7 @@ color
 			}
             return TRUE;
 		*/		
-		// `한글입력시 IME표시가 나오지 못하도록 한다.
+		// Keep the IME indicator from showing during Korean input.
 		//
 
 		//---------------------------------------------------------------
@@ -1666,7 +1666,7 @@ color
 		DEBUG_ADD("[WM_....]");
 	#endif
 
-    return static_cast<long>(DefWindowProc(hWnd, message, wParam, lParam));
+    return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 
@@ -1682,7 +1682,7 @@ InitApp(int nCmdShow)
 	WNDCLASS                    wc;
     // Set up and register window class
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-    wc.lpfnWndProc = (WNDPROC)WindowProc;
+    wc.lpfnWndProc = WindowProc;
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
     wc.hInstance = g_hInstance;
@@ -2905,7 +2905,7 @@ ApplyPatch()
 					// _MAX_PATH plus the suffix below: g_CWD alone can be 259 bytes,
 					// and off Windows it is now the absolute data directory.
 					char logFile[_MAX_PATH + 32];
-					strncpy(logFile, g_pDebugMessage->GetFilename(), sizeof(logFile) - 1);
+					Basic::CopyBounded(logFile, g_pDebugMessage->GetFilename(), sizeof(logFile) - 1);
 					logFile[sizeof(logFile) - 1] = '\0';
 				
 					if (g_pDebugMessage!=NULL)

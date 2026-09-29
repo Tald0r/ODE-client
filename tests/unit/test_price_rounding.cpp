@@ -245,8 +245,9 @@ TEST(PriceRounding, EveryQuoteInASweepMatchesTheServer)
 						}
 					}
 
-					// The server repairs only what has a durability.
-					if (max > 0)
+					// A maximum of 0 is in the sweep: the server's repair
+					// price gives an item that keeps no durability 1, and the
+					// client quotes the same through decore::repairPrice.
 					{
 						const int expected = RuleRepairPrice(kPrices[p], multipliers, cur, max);
 						const int repaired = prices.GetItemPrice(&item, MPriceManager::REPAIR);

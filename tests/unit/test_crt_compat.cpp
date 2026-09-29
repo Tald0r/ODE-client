@@ -3,11 +3,14 @@
 //----------------------------------------------------------------------
 //
 // basic/CrtCompat.h replaces C runtime calls MSVC deprecates with calls
-// that do the same thing. These tests pin that sameness on every
-// platform: the scanners parse like sscanf/fscanf (CRT_BUFFER supplies
-// the capacity MSVC's _s scanners need for %s), OpenFile reads and
-// writes like fopen, Tokenize splits like strtok, LocalTime agrees with
-// localtime and DuplicateString copies like strdup.
+// that do the same thing. These tests check the helpers' results on
+// every platform against known values rather than against the replaced
+// calls, which MSVC would warn about: the scanners parse numbers and
+// words (CRT_BUFFER supplies the capacity MSVC's _s scanners need for
+// %s), OpenFile writes a file that reads back, Tokenize splits as strtok
+// does, LocalTime fills a tm with calendar-range values (and zeroes it
+// when it cannot convert), DuplicateString copies, and GetEnvironment
+// reads back a variable the test sets.
 //
 //----------------------------------------------------------------------
 
@@ -19,6 +22,7 @@
 #include <cstring>
 #include <ctime>
 #include <filesystem>
+#include <limits>
 #include <string>
 
 TEST(CrtCompat, ScanStringParsesNumbersAndWords)
@@ -30,6 +34,29 @@ TEST(CrtCompat, ScanStringParsesNumbersAndWords)
 	CHECK_EQ(34, second);
 	CHECK(std::string("name") == std::string(word));
 	CHECK_EQ(0, Basic::ScanString("x", "%d", &first));
+}
+
+// CRT_BUFFER's halves take only a writable char array: the array itself,
+// and its length, which the Windows scanners receive as the capacity. A
+// pointer has no capacity to give, and a const array is no scan
+// destination, so neither compiles; the static_asserts hold that on
+// every platform, whichever branch CRT_BUFFER takes there.
+template<typename T>
+concept CrtArrayTakes = requires(T& buffer) { Basic::CrtArray(buffer); };
+template<typename T>
+concept CrtCapacityTakes = requires(T& buffer) { Basic::CrtCapacity(buffer); };
+static_assert(CrtArrayTakes<char[16]> && CrtCapacityTakes<char[16]>);
+static_assert(!CrtArrayTakes<char*> && !CrtCapacityTakes<char*>);
+static_assert(!CrtArrayTakes<const char[16]> && !CrtCapacityTakes<const char[16]>);
+
+TEST(CrtCompat, CrtBufferPassesTheArrayAndItsLength)
+{
+	char word[16] = {};
+	char ignore[256] = {};
+	CHECK(&Basic::CrtArray(word) == &word);
+	CHECK_EQ(16u, Basic::CrtCapacity(word));
+	CHECK_EQ(256u, Basic::CrtCapacity(ignore));
+	CHECK_EQ(static_cast<unsigned>(sizeof(ignore)), Basic::CrtCapacity(ignore));
 }
 
 TEST(CrtCompat, OpenFileWritesAndScanFileReadsBack)
@@ -82,6 +109,25 @@ TEST(CrtCompat, LocalTimeAgreesWithTheCalendar)
 	CHECK(result.tm_year >= 100);
 }
 
+// A time the runtime cannot convert leaves a zeroed tm, not the -1s
+// localtime_s writes or whatever localtime_r left.
+TEST(CrtCompat, LocalTimeZeroesTheResultWhenItCannotConvert)
+{
+	const std::time_t never = std::numeric_limits<std::time_t>::max();
+	std::tm result;
+	std::memset(&result, 0x7f, sizeof(result));
+	// Darwin's localtime_r returns NULL for it, glibc's fails with
+	// EOVERFLOW and the UCRT's localtime_s rejects any time past 3000.
+	CHECK(!Basic::LocalTime(&never, &result));
+	CHECK_EQ(0, result.tm_year);
+	CHECK_EQ(0, result.tm_mon);
+	CHECK_EQ(0, result.tm_mday);
+	CHECK_EQ(0, result.tm_hour);
+	CHECK_EQ(0, result.tm_min);
+	CHECK_EQ(0, result.tm_sec);
+	CHECK_EQ(0, result.tm_isdst);
+}
+
 TEST(CrtCompat, DuplicateStringCopies)
 {
 	const char* original = "SpritePack.spk";
@@ -119,15 +165,29 @@ TEST(CrtCompat, TimeTextHasCtimesShape)
 	CHECK(!text.empty() && text.back() == '\n');
 }
 
+// Sets its own variable, so the Windows _dupenv_s path (the copy into
+// the string and the free) runs as well as the unset case.
 TEST(CrtCompat, GetEnvironmentReadsSetAndUnsetVariables)
 {
 	CHECK(!Basic::GetEnvironment("DARKEDEN_CRT_COMPAT_SURELY_UNSET_VARIABLE").has_value());
-	const auto path = Basic::GetEnvironment("PATH");
+
+	const char* name = "DARKEDEN_CRT_COMPAT_SET_VARIABLE";
 #ifdef _WIN32
-	(void)path;
+	CHECK_EQ(0, _putenv_s(name, "crt-compat value"));
 #else
-	CHECK(path.has_value() && !path->empty());
+	CHECK_EQ(0, setenv(name, "crt-compat value", 1));
 #endif
+	const auto value = Basic::GetEnvironment(name);
+	CHECK(value.has_value() && *value == "crt-compat value");
+#ifdef _WIN32
+	_putenv_s(name, "");
+#else
+	unsetenv(name);
+#endif
+	CHECK(!Basic::GetEnvironment(name).has_value());
+
+	const auto path = Basic::GetEnvironment("PATH");
+	CHECK(path.has_value() && !path->empty());
 }
 
 TEST(CrtCompat, TemporaryFileIsReadableAndWritable)

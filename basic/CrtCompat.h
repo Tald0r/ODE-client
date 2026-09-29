@@ -3,17 +3,24 @@
 //----------------------------------------------------------------------
 //
 // Portable spellings of the C runtime calls MSVC deprecates (C4996) in
-// favour of its _s variants. Each helper does exactly what the call it
-// replaces does; on Windows it goes through the Windows CRT's equivalent
-// that is not deprecated (MSVC, clang-cl and MinGW-w64 all declare it),
-// elsewhere through the standard or POSIX call itself.
+// favour of its _s variants. Each helper does what the call it replaces
+// does, except where its comment says otherwise (the scanners below on
+// Windows, LocalTime on failure); on Windows it goes through the Windows
+// CRT's equivalent that is not deprecated (MSVC, clang-cl and MinGW-w64
+// all declare it), elsewhere through the standard or POSIX call itself.
 //
 // ScanString/ScanFile take the scanf formats the code already uses. The
 // Windows _s scanners need the capacity of every %s, %c and %[ destination
 // as an extra argument; pass such a buffer as CRT_BUFFER(buffer), which
-// appends sizeof(buffer) on Windows and nothing elsewhere. On valid input
-// the result is the same; a word longer than the buffer overflowed it
-// before and now fails that conversion on Windows instead.
+// appends the array's length on Windows and nothing elsewhere. On valid
+// input the result is the same; a word longer than the buffer overflowed
+// it before and now fails that conversion on Windows instead.
+//
+// CRT_BUFFER takes a writable char array only: a pointer has no capacity
+// to pass, and sizeof would give the pointer's size, so it fails to
+// compile on every platform (static_asserts in tests/unit/test_crt_compat.cpp
+// hold that). Nothing catches a %s buffer passed without CRT_BUFFER; on
+// Windows that reads the next argument as the capacity.
 //
 //----------------------------------------------------------------------
 
@@ -28,12 +35,31 @@
 #include <optional>
 #include <string>
 
+namespace Basic
+{
+	// CRT_BUFFER's halves. Both accept only a char array, so CRT_BUFFER
+	// rejects a pointer at compile time on every platform. CrtArray
+	// returns the array itself, which decays to the same pointer the bare
+	// name did; CrtCapacity is its length, which for char is its sizeof.
+	template<std::size_t N>
+	constexpr char (&CrtArray(char (&buffer)[N]) noexcept)[N]
+	{
+		return buffer;
+	}
+
+	template<std::size_t N>
+	constexpr unsigned CrtCapacity(char (&)[N]) noexcept
+	{
+		return static_cast<unsigned>(N);
+	}
+}
+
 #ifdef _WIN32
 	#include <share.h>
-	#define CRT_BUFFER(buffer) (buffer), static_cast<unsigned>(sizeof(buffer))
+	#define CRT_BUFFER(buffer) (buffer), Basic::CrtCapacity(buffer)
 	#define CRT_SCANF_FORMAT
 #else
-	#define CRT_BUFFER(buffer) (buffer)
+	#define CRT_BUFFER(buffer) (Basic::CrtArray(buffer))
 	#define CRT_SCANF_FORMAT __attribute__((format(scanf, 2, 3)))
 #endif
 
@@ -81,14 +107,19 @@ namespace Basic
 	}
 
 	// localtime, into caller storage instead of the runtime's shared buffer.
-	// False where localtime would have returned NULL.
+	// False where localtime would have returned NULL, and *pResult is then
+	// zeroed: localtime_s sets every field to -1 on failure and
+	// localtime_r leaves them unspecified.
 	inline bool LocalTime(const std::time_t* pTime, std::tm* pResult)
 	{
 #ifdef _WIN32
-		return localtime_s(pResult, pTime) == 0;
+		const bool converted = localtime_s(pResult, pTime) == 0;
 #else
-		return localtime_r(pTime, pResult) != nullptr;
+		const bool converted = localtime_r(pTime, pResult) != nullptr;
 #endif
+		if (!converted)
+			*pResult = std::tm{};
+		return converted;
 	}
 
 	// strtok with the position kept in *ppContext rather than in the

@@ -8,9 +8,12 @@ name: macOS build and tests
 # same things: configure, a full build including the DarkEden
 # executable, the required-test inventory, then ctest.
 #
-# No Mac is available to the maintainers, so this job is the port's only
-# Darwin compiler. Run it on master pushes or invoke workflow_dispatch
-# on a branch when needed. Pull requests do not trigger CI, to conserve
+# This job is the reference Darwin build, and the only Intel one: an Apple
+# Silicon Mac at a desk has also built and tested the tree, with a
+# different Apple Clang from the runner's, so the warning budget is
+# recorded from this job.
+# Run it on master pushes or invoke workflow_dispatch on a branch when
+# needed. Pull requests do not trigger CI, to conserve
 # GitHub Actions minutes.
 
 on:

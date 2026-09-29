@@ -541,7 +541,8 @@ ctest --test-dir build/presets/linux --output-on-failure
 Linux workflow (`.github/workflows/linux.yml`) does, with UBSan reports made
 fatal under `linux-asan`. On a Windows machine or a Mac with Docker
 (OrbStack, which this was verified with, or Docker Desktop),
-`tools/linux/Dockerfile` is the same environment as an image:
+`tools/linux/Dockerfile` is the same environment as an image (on an x86_64
+host; see below for Apple Silicon):
 
 ```bash
 docker build -t darkeden-linux tools/linux
@@ -549,10 +550,25 @@ docker run --rm -v "$PWD:/src" -v darkeden-build:/src/build darkeden-linux \
     tools/ci/verify-linux.sh linux
 ```
 
-On Apple Silicon the image is arm64. The configure, the build and every
-test pass there, but the script's last step fails with `missing warning
-baseline for linux-aarch64`: `tools/ci/warning-baselines.json` records the
-x86_64 runner's warnings only.
+On Apple Silicon the image is arm64, so it is not the CI environment: plain
+`char` is unsigned there, and the warning profile differs. The configure, the
+build and every test pass, but the script's last step fails with `missing
+warning baseline for linux-aarch64`: `tools/ci/warning-baselines.json`
+records the x86_64 runner's warnings only. To get the
+x86_64 profile and its warning baseline, build and run the image as x86_64,
+with its own build volume so it does not reuse the arm64 CMake tree:
+
+```bash
+docker build --platform linux/amd64 -t darkeden-linux-amd64 tools/linux
+docker run --rm --platform linux/amd64 -v "$PWD:/src" -v darkeden-build-amd64:/src/build \
+    darkeden-linux-amd64 tools/ci/verify-linux.sh linux
+```
+
+This was run once on an Apple Silicon Mac (2026-09-29, Docker under OrbStack):
+the `linux` preset configured, built with `--clean-first`, passed its tests
+(1243 tests, 0 failed) and the x86_64 warning check, in under 30 minutes
+emulated. It is the x86_64 profile, not the CI runner itself: `linux.yml`
+runs on `ubuntu-24.04` directly, not in this image.
 
 ### Status of the Linux client
 
@@ -580,7 +596,7 @@ Windows; none of that has been watched on a Linux display yet.
 The same tree, the same tests, Apple Clang. CI builds and tests it on
 GitHub's arm64 and Intel runners (`.github/workflows/macos.yml`, macOS 15),
 and it has been built and tested on an Apple Silicon Mac (macOS 27.0, Apple
-Clang 21, CMake 4.4: every target, all 12 ctest suites passing). Nothing has
+Clang 21, CMake 4.4: every target, all 14 ctest tests passing on 2026-09-29). Nothing has
 been watched on a Mac's display yet. Dependencies come from Homebrew, on
 Apple Silicon or Intel:
 
@@ -620,18 +636,28 @@ but the budget step reports the linker's deployment-target warnings above
 and a few more vendored-code diagnostics than the runner's Apple Clang.
 The executable is `build/presets/macos/bin/DarkEden`, run with the `Data/`
 tree beside it as on Linux. The macOS equivalent of the junctions and the
-copy in *Point the build at the data* is a pair of symbolic links:
+copy in *Point the build at the data* is two symbolic links and a one-time
+copy. These commands were written from the code, not run against the game
+data. `src` must be an absolute path: a relative one is resolved against
+`$dest`, and the link then points at nothing. `-sfn` replaces a link from an
+earlier run; plain `ln -s` on an existing link to a directory follows it and
+creates a link back to itself inside the game data.
 
 ```bash
 dest=build/presets/macos/bin
 src=/path/to/your/unpacked/darkeden
-ln -s "$src/Data"    "$dest/Data"
-ln -s "$src/UserSet" "$dest/UserSet"
+ln -sfn "$src/Data"    "$dest/Data"
+ln -sfn "$src/UserSet" "$dest/UserSet"
 cp -R tools/i18n/ui-text/Data/. "$src/Data/"  # the English UI text, once
+```
+
+Then launch it (the launcher arguments in *Launch* work the same way):
+
+```bash
 ./build/presets/macos/bin/DarkEden
 ```
 
-The launcher arguments in *Launch* work the same way. Launched from Finder or as a bundle
+Launched from Finder or as a bundle
 (`-DDARKEDEN_MACOS_BUNDLE=ON` builds `bin/DarkEden.app`), the client looks
 for `Data/Info/FileDef.inf` under its working directory, its executable's
 directory and the directory the bundle sits in, runs from the first that

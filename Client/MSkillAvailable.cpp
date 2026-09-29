@@ -39,12 +39,12 @@ bool	g_abSweeperBonusSkills[SWEEPER_BONUS_MAX] = { false, };
 //----------------------------------------------------------------------
 // Set Avaliable Skills
 //----------------------------------------------------------------------
-// 현재 사용 가능한 모든 skill들을 찾아서 추가한다.
+// Finds every skill that is usable right now and adds it.
 //
-// - 현재 들고 있는 무기를 보고
-//   SkillTree에서 적절한 domain을 모두 enable / 나머지는 disable
-// - inventory에서 skill에 관련된 기술을 찾는다.
-// - 기타.. skill ?
+// - From the weapon currently held, enables every matching domain in the
+//   SkillTree and disables the rest.
+// - Looks through the inventory for items that grant skills.
+// - Anything else that grants a skill.
 //----------------------------------------------------------------------
 void
 MSkillSet::SetAvailableSkills()
@@ -60,7 +60,7 @@ MSkillSet::SetAvailableSkills()
 	}
 
 	//--------------------------------------------------
-	// player의 현재 MP
+	// The player's current MP
 	//--------------------------------------------------
 	int playerMP;		
 	BYTE flag;
@@ -69,7 +69,7 @@ MSkillSet::SetAvailableSkills()
 	{
 		playerMP = g_pPlayer->GetMP();	
 
-		// EFFECTSTATUS_SACRIFICE 사용중이면 HP 1이 MP 2가 된다.
+		// Under EFFECTSTATUS_SACRIFICE each HP counts as 2 MP.
 		if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_SACRIFICE))
 		{
 			playerMP += (g_pPlayer->GetHP() << 1);
@@ -77,14 +77,14 @@ MSkillSet::SetAvailableSkills()
 	}
 	else
 	{
-		// vampire인 경우는 HP를 MP대신에 쓴다.
+		// A vampire spends HP instead of MP.
 		playerMP = g_pPlayer->GetHP();	
 	}
 
 	// What a vampire's skill costs takes its current INT (GetVampireConsumeMP).
 	const int playerINT = (int)g_pPlayer->GetINT();
 
-	// 모든 skill들을 지운다.
+	// Clear every skill.
 	clear();
 	
 	if( g_pZone != NULL && g_pZone->GetID() == 3001 )
@@ -93,7 +93,7 @@ MSkillSet::SetAvailableSkills()
 
 	//-----------------------------------------------------
 	//
-	//					slayer인 경우
+	//					Slayer
 	//
 	//-----------------------------------------------------
 	switch(g_pPlayer->GetRace())
@@ -105,7 +105,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				return;
 			}
-			// 2004, 9, 16, sobeit add start - 인스톨 터렛일때 스킬 정보 갱신
+			// 2004, 9, 16, sobeit add start - the skills while installed as a turret
 			if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 			{
 				insert(SKILLID_MAP::value_type( MAGIC_UN_TRANSFORM, SKILLID_NODE(MAGIC_UN_TRANSFORM, FLAG_SKILL_ENABLE) ));
@@ -116,19 +116,19 @@ MSkillSet::SetAvailableSkills()
 				insert(SKILLID_MAP::value_type( SKILL_VIVID_MAGAZINE, SKILLID_NODE(SKILL_VIVID_MAGAZINE, FLAG_SKILL_ENABLE) ));
 				return;
 			}
-			// 2004, 9, 16, sobeit add end - 인스톨 터렛일때 스킬 정보 갱신
+			// 2004, 9, 16, sobeit add end - the skills while installed as a turret
 			//-----------------------------------------------------
 			//
-			// Domain에 따른 enable 체크..
+			// Enable by domain
 			//
 			//-----------------------------------------------------
 			BYTE fDomain[MAX_SKILLDOMAIN];
 			
-			// 현재 들고 있는 item
+			// The item in hand
 			const MItem* pItem = (*g_pSlayerGear).GetItem( (MSlayerGear::GEAR_SLAYER)MSlayerGear::GEAR_SLAYER_RIGHTHAND );
 
 			//-----------------------------------------------------
-			// gun/sword/blade 만 체크하면 된다.
+			// Only gun, sword and blade depend on it.
 			//-----------------------------------------------------
 			fDomain[SKILLDOMAIN_GUN]	= 0;
 			fDomain[SKILLDOMAIN_BLADE]	= 0;
@@ -137,21 +137,21 @@ MSkillSet::SetAvailableSkills()
 			if (pItem!=NULL && pItem->IsAffectStatus())
 			{	
 				//-----------------------------------------------------
-				// 총이면.. 총만 enable
+				// A gun enables only the gun domain
 				//-----------------------------------------------------
 				if (pItem->IsGunItem())
 				{
 					fDomain[SKILLDOMAIN_GUN]	= FLAG_SKILL_ENABLE;
 				}
 				//-----------------------------------------------------
-				// sword이면 sword만 enable
+				// A sword enables only the sword domain
 				//-----------------------------------------------------
 				else if (pItem->GetItemClass()==ITEM_CLASS_SWORD)
 				{
 					fDomain[SKILLDOMAIN_SWORD]	= FLAG_SKILL_ENABLE;
 				}
 				//-----------------------------------------------------
-				// blade이면 blade만 enable
+				// A blade enables only the blade domain
 				//-----------------------------------------------------
 				else if (pItem->GetItemClass()==ITEM_CLASS_BLADE)
 				{
@@ -161,7 +161,7 @@ MSkillSet::SetAvailableSkills()
 			
 			//-----------------------------------------------------
 			//
-			// SkillTree 검색
+			// Walk the skill tree
 			//
 			//-----------------------------------------------------
 			//-----------------------------------------------------
@@ -176,7 +176,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				MSkillDomain::SKILLSTATUS	status	= bladeDomain.GetSkillStatus();
 
-				// 배웠으면..
+				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = bladeDomain.GetSkillID();
@@ -198,7 +198,7 @@ MSkillSet::SetAvailableSkills()
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 				}
 
-				// 다음
+				// Next
 				bladeDomain.Next();
 			}
 
@@ -214,7 +214,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				MSkillDomain::SKILLSTATUS	status	= swordDomain.GetSkillStatus();
 
-				// 배웠으면..
+				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = swordDomain.GetSkillID();
@@ -236,7 +236,7 @@ MSkillSet::SetAvailableSkills()
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 				}
 
-				// 다음
+				// Next
 				swordDomain.Next();
 			}
 
@@ -252,7 +252,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				MSkillDomain::SKILLSTATUS	status	= gunDomain.GetSkillStatus();
 				
-				// 배웠으면..
+				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = gunDomain.GetSkillID();
@@ -274,12 +274,12 @@ MSkillSet::SetAvailableSkills()
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 				}
 
-				// 다음
+				// Next
 				gunDomain.Next();
 			}
 
 			//-----------------------------------------------------
-			// Enchant - 그냥 모두 추가하면 된다.
+			// Enchant - add every learned skill.
 			//-----------------------------------------------------
 			auto* pEnchantDomain = g_pSkillManager->GetMutable(SKILLDOMAIN_ENCHANT);
 			if (pEnchantDomain == nullptr) return;
@@ -290,7 +290,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				MSkillDomain::SKILLSTATUS	status	= enchantDomain.GetSkillStatus();
 
-				// 배웠으면..
+				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = enchantDomain.GetSkillID();
@@ -307,13 +307,13 @@ MSkillSet::SetAvailableSkills()
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 				}
 
-				// 다음
+				// Next
 				enchantDomain.Next();
 			}
 
 			
 			//-----------------------------------------------------
-			// Heal - 그냥 모두 추가하면 된다.
+			// Heal - add every learned skill.
 			//-----------------------------------------------------
 			auto* pHealDomain = g_pSkillManager->GetMutable(SKILLDOMAIN_HEAL);
 			if (pHealDomain == nullptr) return;
@@ -324,7 +324,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				MSkillDomain::SKILLSTATUS	status	= healDomain.GetSkillStatus();
 
-				// 배웠으면..
+				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = healDomain.GetSkillID();
@@ -341,12 +341,12 @@ MSkillSet::SetAvailableSkills()
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 				}
 
-				// 다음
+				// Next
 				healDomain.Next();
 			}
 
 			//-----------------------------------------------------
-			// Etc - 그냥 모두 추가하면 된다.
+			// Etc - add every learned skill.
 			//-----------------------------------------------------
 			auto* pEtcDomain = g_pSkillManager->GetMutable(SKILLDOMAIN_ETC);
 			if (pEtcDomain == nullptr) return;
@@ -357,7 +357,7 @@ MSkillSet::SetAvailableSkills()
 			{
 				MSkillDomain::SKILLSTATUS	status	= etcDomain.GetSkillStatus();
 
-				// 배웠으면..
+				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = etcDomain.GetSkillID();
@@ -375,13 +375,13 @@ MSkillSet::SetAvailableSkills()
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 				}
 
-				// 다음
+				// Next
 				etcDomain.Next();
 			}
 
 			//-----------------------------------------------------
 			//
-			// Inventory 검색
+			// Search the inventory
 			//
 			//-----------------------------------------------------
 			BOOL bCheckHolyWater	= TRUE;
@@ -408,7 +408,7 @@ MSkillSet::SetAvailableSkills()
 
 				ITEM_CLASS itemClass = pItem->GetItemClass();
 
-			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 				if(itemClass == ITEM_CLASS_SUB_INVENTORY)
 				{
 					MSubInventory* pSubItem = (MSubInventory*)pItem;
@@ -455,7 +455,7 @@ MSkillSet::SetAvailableSkills()
 
 					insert(SKILLID_MAP::value_type( MAGIC_THROW_HOLY_WATER, SKILLID_NODE(MAGIC_THROW_HOLY_WATER, flag)) );				
 
-					// [도움말] 벨트의 아이템 사용
+					// [Help] using an item on the belt
 //					__BEGIN_HELP_EVENT
 //						ExecuteHelpEvent( HE_ITEM_APPEAR_HOLY_WATER );	
 //					__END_HELP_EVENT
@@ -463,7 +463,7 @@ MSkillSet::SetAvailableSkills()
 					bCheckHolyWater = FALSE;
 				}
 				//-----------------------------------------------------
-				// Bomb / Mine - 종류별로 따로 추가해야한다.
+				// Bomb / Mine - each kind is added separately.
 				//-----------------------------------------------------
 				else if (bCheckBombOrMine
 						&& (itemClass==ITEM_CLASS_BOMB
@@ -488,14 +488,14 @@ MSkillSet::SetAvailableSkills()
 
 					
 
-					// 폭탄/지뢰 마다 사용 가능한 아이콘을 추가한다.
+					// Add a usable icon for each bomb or mine.
 					if (find((ACTIONINFO)skillID)==end())
 					{
 						insert(SKILLID_MAP::value_type( (ACTIONINFO)skillID, SKILLID_NODE((ACTIONINFO)skillID, flag)) );
 					}
 				}
 				//-----------------------------------------------------
-				// 폭탄/지뢰 재료
+				// Bomb and mine materials
 				//-----------------------------------------------------
 				else if (bCheckBombOrMineMaterial
 							&& itemClass==ITEM_CLASS_BOMB_MATERIAL)
@@ -510,11 +510,11 @@ MSkillSet::SetAvailableSkills()
 					}
 				}
 				
-				// 다음
+				// Next
 				g_pInventory->Next();
 			}
 
-			// mouse에 있는 아이템도 체크한다.
+			// The item held by the mouse counts too.
 			MItem* pMouseItem = UI_GetMouseItem();
 
 			if (pMouseItem!=NULL)
@@ -529,7 +529,7 @@ MSkillSet::SetAvailableSkills()
 				bHasBombMaterial	= bHasBombMaterial || (itemClass==ITEM_CLASS_BOMB_MATERIAL && isBombMaterial);
 			}
 
-			// 지뢰 설치 기술을 배웠고 지뢰가 있다면 icon을 enable시킨다.
+			// Enable the icon if the mine-laying skill is learned and a mine is at hand.
 			if (bCheckInstallMine)
 			{
 				ACTIONINFO skillID = SKILL_INSTALL_MINE;
@@ -546,7 +546,7 @@ MSkillSet::SetAvailableSkills()
 				}
 			}
 
-			// 지뢰 생성 기술을 배웠고 지뢰 재료가 있다면 icon을 enable시킨다.
+			// Enable the icon if the mine-making skill is learned and mine material is at hand.
 			if (bCheckCreateMine)
 			{
 				ACTIONINFO skillID = SKILL_MAKE_MINE;
@@ -563,7 +563,7 @@ MSkillSet::SetAvailableSkills()
 				}
 			}
 
-			// 폭탄 생성 기술을 배웠고 폭탄 재료가 있다면 icon을 enable시킨다.
+			// Enable the icon if the bomb-making skill is learned and bomb material is at hand.
 			if (bCheckCreateBomb)
 			{
 				ACTIONINFO skillID = SKILL_MAKE_BOMB;
@@ -580,7 +580,7 @@ MSkillSet::SetAvailableSkills()
 				}
 			}
 
-			// 폭탄 던지기 기술을 배웠고 폭탄이 있다면 icon을 enable시킨다.
+			// Enable the icon if the bomb-throwing skill is learned and a bomb is at hand.
 			if (bCheckBomb)
 			{
 				ACTIONINFO skillID = SKILL_THROW_BOMB;
@@ -598,7 +598,7 @@ MSkillSet::SetAvailableSkills()
 			}
 
 			//-----------------------------------------------------
-			// Restore 임의로 추가
+			// Restore, added by hand
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasSkillRestore)
 			{
@@ -618,17 +618,17 @@ MSkillSet::SetAvailableSkills()
 
 	//-----------------------------------------------------
 	//
-	//					vampire인 경우
+	//					Vampire
 	//
 	//-----------------------------------------------------
 	case RACE_VAMPIRE:
 		{		
 			//-----------------------------------------------------
 			//
-			// SkillTree 검색
+			// Walk the skill tree
 			//
 			//-----------------------------------------------------
-			// [새기술3] 관 속에서는 기술 못 쓴다.
+			// [new skill 3] In a casket the only skill is opening it.
 			if (g_pPlayer->IsInCasket())
 			{
 				flag = FLAG_SKILL_ENABLE;
@@ -639,7 +639,7 @@ MSkillSet::SetAvailableSkills()
 				return;
 			}
 			
-			// 뱀파이어인 경우만 쓸 수 있다. --> 박쥐나 늑대에서는 사용못한다.
+			// Only in vampire form: not as a bat or a wolf.
 			if (g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE1
 				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE1
 				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE2
@@ -665,7 +665,7 @@ MSkillSet::SetAvailableSkills()
 				
 				vampireDomain.SetBegin();		
 
-			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 				MItem* pSubInventory = NULL;
 			#endif
 
@@ -673,12 +673,12 @@ MSkillSet::SetAvailableSkills()
 				{
 					MSkillDomain::SKILLSTATUS	status	= vampireDomain.GetSkillStatus();
 
-					// 배웠으면..
+					// Learned
 					if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 					{
 						ACTIONINFO id = vampireDomain.GetSkillID();
 
-						// 레어존에서는 인비저빌리티 못쓰게 한다...하드하드
+						// Invisibility is not allowed in the lair zones.
 						if (g_pSkillInfoTable->GetVampireConsumeMP(id, playerINT) > playerMP
 							|| (id == MAGIC_INVISIBILITY && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115)))
 						{
@@ -689,13 +689,13 @@ MSkillSet::SetAvailableSkills()
 							flag = FLAG_SKILL_ENABLE;					
 						}
 
-						// Item 사용하는거 체크
+						// Skills that need an item
 						switch (id)
 						{
 							case MAGIC_BLOODY_MARK :
 							{
 								MVampirePortalItemFinder finder(false);
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 								if (NULL == ((MItemManager*)g_pInventory)->FindItemAll( finder , pSubInventory))
 							#else
 								if (NULL == ((MItemManager*)g_pInventory)->FindItem( finder ))
@@ -710,7 +710,7 @@ MSkillSet::SetAvailableSkills()
 							{
 								// Keep the HP check above; a marked seal is also required.
 								MVampirePortalItemFinder finder(true);
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 								if (NULL == ((MItemManager*)g_pInventory)->FindItemAll( finder , pSubInventory ))
 							#else
 								if (NULL == ((MItemManager*)g_pInventory)->FindItem( finder ))
@@ -730,7 +730,7 @@ MSkillSet::SetAvailableSkills()
 
 							case MAGIC_TRANSFORM_TO_BAT :
 
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 								if (NULL == g_pInventory->FindItemAll( MItemClassTypeFinder(ITEM_CLASS_VAMPIRE_ETC , 1), pSubInventory ))
 							#else
 								if (NULL == g_pInventory->FindItem( ITEM_CLASS_VAMPIRE_ETC, 1 ))
@@ -759,14 +759,14 @@ MSkillSet::SetAvailableSkills()
 						insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 					}
 
-					// 다음
+					// Next
 					vampireDomain.Next();
 				}
 			}
 
 			//-----------------------------------------------------
 			//
-			// Inventory 검색
+			// Search the inventory
 			//
 			//-----------------------------------------------------
 			/*
@@ -803,21 +803,21 @@ MSkillSet::SetAvailableSkills()
 					}				
 				}
 
-				// 다음
+				// Next
 				g_pInventory->Next();
 			}
 			*/
 
 			//-----------------------------------------------------
 			//
-			// 기본 Skill
+			// Basic skills
 			//
 			//-----------------------------------------------------
-			// 흡혈 --> 늑대나 박쥐는 흡혈 못한다.
+			// Blood drain: a wolf or a bat cannot drain.
 			
 
 			//-----------------------------------------------------
-			// 불기둥 임의로 추가
+			// Ground attack (pillar of fire), added by hand
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicGroundAttack)
 			{
@@ -836,7 +836,7 @@ MSkillSet::SetAvailableSkills()
 			SetAvailableVampireSkills();
 
 			//-----------------------------------------------------
-			// 블러디 스네이크 임의로 추가
+			// Bloody snake, added by hand
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicBloodySnake)
 			{
@@ -853,7 +853,7 @@ MSkillSet::SetAvailableSkills()
 			}
 
 			//-----------------------------------------------------
-			// 블러디 워프 임의로 추가
+			// Bloody warp, added by hand
 			//-----------------------------------------------------
 			if (g_pUserInformation->HasMagicBloodyWarp)
 			{
@@ -875,7 +875,7 @@ MSkillSet::SetAvailableSkills()
 		{		
 			//-----------------------------------------------------
 			//
-			// SkillTree 검색
+			// Walk the skill tree
 			//
 			//-----------------------------------------------------
 			{
@@ -888,7 +888,7 @@ MSkillSet::SetAvailableSkills()
 				{
 					MSkillDomain::SKILLSTATUS	status	= oustersDomain.GetSkillStatus();
 
-					// 배웠으면..
+					// Learned
 					if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 					{
 						ACTIONINFO id = oustersDomain.GetSkillID();
@@ -905,7 +905,7 @@ MSkillSet::SetAvailableSkills()
 							}
 							else
 							{
-								// 현재 들고 있는 item
+								// The item in hand
 								const MItem* pItem = (*g_pOustersGear).GetItem( (MOustersGear::GEAR_OUSTERS)MOustersGear::GEAR_OUSTERS_RIGHTHAND );
 								
 								if(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_NO_DOMAIN || sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_WIND
@@ -936,7 +936,7 @@ MSkillSet::SetAvailableSkills()
 							}
 						}
 
-					#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+					#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 						if( id == SKILL_SUMMON_SYLPH )
 						{
 							MItem* pSubInventory = NULL;
@@ -954,17 +954,17 @@ MSkillSet::SetAvailableSkills()
 						insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
 					}
 
-					// 다음
+					// Next
 					oustersDomain.Next();
 				}
 			}
 
 			//-----------------------------------------------------
 			//
-			// 기본 Skill
+			// Basic skills
 			//
 			//-----------------------------------------------------
-//			// 흡혈 --> 늑대나 박쥐는 흡혈 못한다.
+//			// Blood drain: a wolf or a bat cannot drain.
 //			if (g_pPlayer->GetCreatureType()!=CREATURETYPE_BAT
 //				&& g_pPlayer->GetCreatureType()!=CREATURETYPE_WOLF)
 //			{
@@ -992,7 +992,7 @@ MSkillSet::SetAvailableSkills()
 
 	//-----------------------------------------------------
 	//
-	// 피의 성서 보너스 맘대로 추가-ㅅ-
+	// The Blood Bible bonuses, added by hand
 	//
 	//-----------------------------------------------------
 	int i;
@@ -1054,7 +1054,7 @@ MSkillSet::SetAvailableSkills()
 
 	//CheckMP();
 
-	// 스킬이 비었을때 호출되면 -_- 난리난다.
+	// ResetHotKey goes wrong when called with no skills.
 //	if( size() > 5 )
 //		gC_vs_ui.ResetHotKey();
 }
@@ -1074,7 +1074,7 @@ MSkillSet::SetAvailableVampireSkills()
 	{
 		playerMP = g_pPlayer->GetMP();	
 
-		// EFFECTSTATUS_SACRIFICE 사용중이면 HP 1이 MP 2가 된다.
+		// Under EFFECTSTATUS_SACRIFICE each HP counts as 2 MP.
 		if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_SACRIFICE))
 		{
 			playerMP += (g_pPlayer->GetHP() << 1);
@@ -1082,7 +1082,7 @@ MSkillSet::SetAvailableVampireSkills()
 	}
 	else
 	{
-		// vampire인 경우는 HP를 MP대신에 쓴다.
+		// A vampire spends HP instead of MP.
 		playerMP = g_pPlayer->GetHP();	
 	}
 
@@ -1107,7 +1107,7 @@ MSkillSet::SetAvailableVampireSkills()
 	
 	//-----------------------------------------------------
 	// 
-	// invisible인가?
+	// Invisible?
 	//
 	//-----------------------------------------------------
 	if (g_pPlayer->IsInvisible())
@@ -1131,7 +1131,7 @@ MSkillSet::SetAvailableVampireSkills()
 			}
 			insert(SKILLID_MAP::value_type( MAGIC_EAT_CORPSE, SKILLID_NODE(MAGIC_EAT_CORPSE, flag) ));
 			
-			// 짖기 - -;
+			// Howl
 			if( vampireDomain.GetSkillStatus( MAGIC_HOWL ) == MSkillDomain::SKILLSTATUS_LEARNED )
 			{
 				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_HOWL, playerINT) > playerMP)				
@@ -1176,7 +1176,7 @@ MSkillSet::SetAvailableVampireSkills()
 		
 	//-----------------------------------------------------
 	// 
-	// 변신 중인가?
+	// Transformed?
 	//
 	//-----------------------------------------------------
 	if (PlayerCreatureType!=CREATURETYPE_VAMPIRE_MALE1
@@ -1206,8 +1206,8 @@ MSkillSet::SetAvailableVampireSkills()
 //----------------------------------------------------------------------
 // Check MP
 //----------------------------------------------------------------------
-// 선택된 skill들의 MP를 보고
-// 사용가능한지 아닌지를 체크한다.
+// Checks the MP cost of the selected skills to decide whether each one
+// is usable.
 //----------------------------------------------------------------------
 void
 MSkillSet::CheckMP()

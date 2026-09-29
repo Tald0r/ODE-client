@@ -72,8 +72,9 @@ three races wear and the shop, behind the `MItemHost` the executable installs,
 the price manager behind its `MPriceHost`, the skill core (the info
 table, the skill set, the domains and their tree; what the player can use
 right now stays executable-side), and the combat-stat preview
-(`MStatusManager`: the character-select to-hit, defense, protection,
-damage and attack speed) - with the user, config and
+(`MStatusManager`: the character-select to-hit, defense, protection
+and damage, and the attack speed `MPlayer::CalculateStatus` takes from
+it) - with the user, config and
 timed-item loaders it reads, and their string support, membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4 and 4.12),
@@ -98,6 +99,13 @@ one library all three link. Game logic compiled straight into the `DarkEden` exe
 including the packet *handlers* under `Client/PacketHandler/` — cannot be linked into
 a test binary. That is a structural limit, and it is the single biggest constraint on
 how work gets verified here.
+
+`decore` is a static library of its own: the server's shared rules
+(`third_party/decore`), a byte-identical copy that is resynced with
+`tools/decore/sync.pl` and never edited by hand, which `gamemodel` links
+(`third_party/decore/README.md`). Two ctests keep it honest: `decore_tests`
+asserts the shared parity vectors on this toolchain, and `decore_vendored`
+checks the copy against its manifest.
 
 `unit_tests` links `basic`, `SpriteLib`, `TextSystem`, `packetwire`, `gamemodel`
 and `dxlib`. The input pump reaches application state and text editors through
@@ -178,15 +186,15 @@ cd build/tests && ctest -C Debug --output-on-failure
 ```
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
-to `OFF`, so a tree configured without it generates no test target at all. Current
-baseline: **676 tests, 297,478 checks, 0 failed** in both Windows trees, and
-**676 tests, 297,477 checks, 0 failed** on Linux (GCC, Clang, and GCC with
-`-DUSE_ASAN=ON -DUSE_UBSAN=ON`, where UBSan reports nothing) and on macOS
-(Apple Clang, with and without ASan and UBSan); the one-check
-difference is a platform-conditional test, not a failure. (The non-Windows
-figures were last *measured* at 617 / 294,466; the current ones are the
-Windows delta applied to them, which the Linux and macOS CI runs on the
-next merge confirm or correct.) The Linux
+to `OFF`, so a tree configured without it generates no test target at all. Baseline
+measured on 2026-09-29, the same on both: **1243 tests, 1,422,087 checks, 0
+failed**. Linux: `unit_tests` in the x86_64 Docker image (`--platform
+linux/amd64` on an Apple Silicon Mac, `tools/ci/verify-linux.sh linux`).
+macOS: Apple Silicon, Apple Clang 21, `macos` preset, read with
+`build/defects/run-tests.sh unit_tests ''`. The Windows trees were not
+re-measured for this figure, and no CI run produced either number. A
+platform-conditional test can make the check totals differ by one between
+platforms; that is not a failure. The Linux
 recipe is the `linux`, `linux-clang` and `linux-asan` presets in
 `CMakePresets.json`, the macOS one the `macos` and `macos-asan` presets.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to
@@ -197,10 +205,11 @@ one that sees that class.
 `DarkEden` builds and links on both, and on Linux run headless
 (`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and
 exits cleanly on `SDL_QUIT`; login and beyond are unverified off Windows (the
-port assessment's area F). **The macOS numbers come from GitHub's arm64
-runner** (`.github/workflows/macos.yml`, invoked on master pushes or
-manually) and one Apple Silicon Mac (macOS 27.0, Apple Clang 21, the
-`macos` preset's 12 ctest suites green on 2026-09-27); nothing has been
+port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`, arm64 and Intel
+runners, invoked on master pushes or manually) has not produced the totals
+above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21) built every target
+and ran the `macos` preset's 14 ctest tests green on 2026-09-29, and is where
+the macOS totals above were read; nothing has been
 watched on a Mac's display,
 and a `<SDL2/...>` include spelling breaks the Homebrew build - it is
 `<SDL.h>` everywhere (`basic/Platform.h` says why).

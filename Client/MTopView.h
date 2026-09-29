@@ -201,7 +201,7 @@ class MTopView : public MRequestMode {
 		//
 		//------------------------------------------------------
 		bool			IsFade() const			{ return m_bFade; }
-		void			SetFadeStart(char start, char end, char step, BYTE r=0, BYTE g=0, BYTE b=0, WORD delay = 0);
+		void			SetFadeStart(signed char start, signed char end, signed char step, BYTE r=0, BYTE g=0, BYTE b=0, WORD delay = 0);
 		void			SetFadeEnd() 			{ m_bFade = false; }
 		
 		//------------------------------------------------------
@@ -666,14 +666,16 @@ class MTopView : public MRequestMode {
 
 
 		//------------------------------------------------------
-		// Fade In/Out 관련
+		// Fade In/Out
 		//------------------------------------------------------		
-		char				m_FadeValue;	// 현재 fade값
-		char				m_FadeEnd;		// 끝 값
-		char				m_FadeInc;		// 변화값
-		bool				m_bFade;		// fade 중인가?
-		WORD				m_FadeColor;	// fade 색
-		WORD				m_delayFrame;	// 변화값을 바꿀 시점에 대한 프레임
+		// Signed on every ABI: the fade runs from 31 down to -1 as well as
+		// up, and a plain char would be unsigned on arm64 Linux.
+		signed char			m_FadeValue;	// current fade value
+		signed char			m_FadeEnd;		// the value the fade stops past
+		signed char			m_FadeInc;		// change per step
+		bool				m_bFade;		// whether a fade is running
+		WORD				m_FadeColor;	// fade colour
+		WORD				m_delayFrame;	// frames between steps (0: one step per logic tick)
 		
 		//------------------------------------------------------
 		// 현재 화면의 Tile을 저장해서 다음에 출력할때 이용한다.

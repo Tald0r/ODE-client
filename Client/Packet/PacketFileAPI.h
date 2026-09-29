@@ -29,13 +29,6 @@
 namespace FileAPI {
 
 //
-// exception version of open ()
-//
-int open_ex ( const char * filename , int flags );
-
-int open_ex ( const char * filename , int flags , int mode );
-
-//
 // exception version of close ()
 //
 void close_ex ( int fd );

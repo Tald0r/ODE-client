@@ -173,7 +173,7 @@ extern void		AddVampirePortal(
 						bool bStartFromMainNode = true
 				);
 
-extern void		SetFadeStart(char start, char end, char step, BYTE r = 0, BYTE g = 0, BYTE b = 0,WORD delay = 0);
+extern void		SetFadeStart(signed char start, signed char end, signed char step, BYTE r = 0, BYTE g = 0, BYTE b = 0,WORD delay = 0);
 extern void		SetFadeEnd();
 
 extern void		AddOustersElemental( MCreature *pOwnerCreature, int creatureType, int status );
