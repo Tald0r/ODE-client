@@ -488,10 +488,13 @@ private:
 	// ShieldType run past their two-bit fields here (to HELMET5 and
 	// SHIELD4, for the zone view's three-bit fields): unmasked, SHIELD4
 	// would land on the weapon extension code and HELMET4 on the jacket.
+	// The shifts are done in bitset's own unsigned long long: a 32-bit
+	// shift by a runtime count widened to 64 bits is what MSVC's C4334
+	// warns about.
 	void setOutlookField (SlayerBits first, DWORD mask, DWORD value) noexcept
 	{
-		m_Outlook &= ~std::bitset<SLAYER_BIT_MAX>(mask << first);
-		m_Outlook |= std::bitset<SLAYER_BIT_MAX>((value & mask) << first);
+		m_Outlook &= ~std::bitset<SLAYER_BIT_MAX>(static_cast<unsigned long long>(mask) << first);
+		m_Outlook |= std::bitset<SLAYER_BIT_MAX>(static_cast<unsigned long long>(value & mask) << first);
 	}
 
 	std::bitset<SLAYER_BIT_MAX> m_Outlook;		// slayer outlook
