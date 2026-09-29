@@ -529,6 +529,8 @@ TEST(CreatureSpriteTable, SaveThenLoadRoundTrips)
 
 	CHECK_EQ(1, loaded.GetSize());
 	CHECK_EQ(44, (int)loaded[0].FrameID);
+	CHECK(loaded[0].SpriteFilePosition == 0x1234L);
+	CHECK(loaded[0].SpriteShadowFilePosition == 0x5678L);
 	CHECK_EQ(1, (int)loaded[0].FirstSpriteID);
 	CHECK_EQ(2, (int)loaded[0].LastSpriteID);
 	CHECK_EQ(3, (int)loaded[0].FirstShadowSpriteID);
@@ -686,4 +688,38 @@ TEST(EffectSpriteTypeTable, LoadKeepsOnlyThePairsTheFileHolds)
 	CHECK_EQ(2, table.GetSize());
 	CHECK_EQ(200, (int)table[1].FrameID);
 	CHECK((Pairs(table[1]) == std::vector<int>{ 201 }));
+}
+
+//======================================================================
+// CreatureSprite.inf: the two sprite-pack file positions are four bytes
+// on disk and a `long` in memory - four bytes on Windows, eight on
+// macOS and Linux. The loader read the four bytes into the long's first
+// half and left the second as it was (the constructor does not set it),
+// so off Windows a position read back as whatever the upper half held.
+// The contract: the position is the file's signed 32-bit value on every
+// platform, as Windows has always read it.
+//======================================================================
+TEST(CreatureSpriteTable, LoadReadsTheFilePositionsAsSigned32BitValues)
+{
+	Bytes b;
+	AppendCreatureSprite(b, 30, FLAG_CREATURESPRITE_NPC_ALL);
+	b.data[2] = 0x78; b.data[3] = 0x56; b.data[4] = 0x34; b.data[5] = 0x12;
+	b.data[6] = 0xFF; b.data[7] = 0xFF; b.data[8] = 0xFF; b.data[9] = 0xFF;
+	WriteScratch(b);
+
+	CREATURESPRITETABLE_INFO info;
+	// What the row held before: every bit set, as a reused or never
+	// zeroed row may hold.
+	info.SpriteFilePosition = -1;
+	info.SpriteShadowFilePosition = 0x7FFFFFFF;
+	{
+		std::ifstream in(kTempFile, std::ios::binary);
+		info.LoadFromFile(in);
+		CHECK(in.good());
+	}
+	RemoveScratch();
+
+	CHECK(info.SpriteFilePosition == 0x12345678L);
+	CHECK(info.SpriteShadowFilePosition == -1L);
+	CHECK_EQ(30, (int)info.FrameID);
 }

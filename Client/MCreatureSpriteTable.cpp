@@ -4,6 +4,8 @@
 #include "Client_PCH.h"
 #include "MCreatureSpriteTable.h"
 
+#include <cstdint>
+
 //----------------------------------------------------------------------
 // Global
 //----------------------------------------------------------------------
@@ -55,8 +57,15 @@ void
 CREATURESPRITETABLE_INFO::LoadFromFile(std::ifstream& file)
 {
 	file.read((char*)&FrameID, SIZE_FRAMEID);
-	file.read((char*)&SpriteFilePosition, 4);
-	file.read((char*)&SpriteShadowFilePosition, 4);
+
+	// The positions are four bytes on disk and a long in memory, which
+	// is eight bytes off Windows: read the signed 32-bit value whole, so
+	// the upper half is its sign and not what the member held before.
+	std::int32_t position = 0;
+	if (file.read((char*)&position, 4))
+		SpriteFilePosition = position;
+	if (file.read((char*)&position, 4))
+		SpriteShadowFilePosition = position;
 	file.read((char*)&FirstSpriteID, SIZE_SPRITEID);
 	file.read((char*)&LastSpriteID, SIZE_SPRITEID);
 	file.read((char*)&FirstShadowSpriteID, SIZE_SPRITEID);
