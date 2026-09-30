@@ -88,10 +88,15 @@ eight packet handlers whose bodies reach only model state (the phone
 slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
 `GCRing`; the trade box `GCTradeMoney` and `GCTradeRemoveItem`;
 `GCSystemAvailabilities`; `GCMonsterKillQuestInfo`), which stay in
-`Client/PacketHandler` - with the user, config and timed-item loaders it
-reads, and their string support, membership in
+`Client/PacketHandler`, and `ApplySkillInfo`, the skill-model rebuild
+`GCSkillInfoHandler` runs on its packet (the handler keeps the sweeper
+bonus reset and `SetAvailableSkills`), and the duration conversions
+`ConvertDurationToFrame` and `ConvertDurationToMillisecond`; with the
+user, config and timed-item loaders gamemodel reads, and their string
+support; membership in
 `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14 and 4.15),
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15
+and 4.16),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -209,13 +214,18 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-30 on `fix/datagram-packet-type` merged with master at
-`34460343` (PR #297, the eight model-only packet handlers and their four
-fixes, 1449 tests and 1,457,614 checks): the datagram type-confusion,
-bug-report and empty-datagram fixes, the test that a refused datagram id
-creates no packet, and the datagram fuzz target's goldens, 14 tests and
-586 checks, identical in all four builds: **1463 tests, 1,458,200
-checks, 0 failed** (`decore_tests`: 13 tests, 2009 checks on the same
+measured on 2026-09-30 on the skill-info branch merged with master at
+`71159e1c`, so the tree holds both. From the branch
+(`docs/RESTRUCTURING.md` task 4.16): `ApplySkillInfo`, the rebuild
+`GCSkillInfoHandler` runs, on real packets of every race in
+`test_skill_info.cpp`, with the two fixes that followed (a skill type past
+the info table, a duration's milliseconds past the int range). From
+master: PR #298, the datagram type-confusion, bug-report and
+empty-datagram fixes, the test that a refused datagram id creates no
+packet, and the datagram fuzz target's goldens, with their 14 tests and
+586 checks. Master alone read 1463 tests and 1,458,200 checks; the merged
+tree reads **1483 tests, 1,458,777 checks, 0 failed**, identical in all
+four builds, this run (`decore_tests`: 13 tests, 2009 checks on the same
 four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
 `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple

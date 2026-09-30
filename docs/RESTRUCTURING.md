@@ -1403,6 +1403,135 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1, the
     exemption row, `test_model_handlers.cpp` and `test_money_manager.cpp`.
 
+- [x] **4.16 The skill-info rebuild:** `GCSkillInfoHandler`'s decision
+  compiles in `gamemodel` as `ApplySkillInfo`, with the two duration
+  conversions it reads.
+  > **Status:** extracted (2026-09-30). `GCSkillInfoHandler` rebuilds the
+  > player's skill model from the server's per-race domain lists: 55
+  > branches over the domains (`g_pSkillManager`), the per-skill state in
+  > `g_pSkillInfoTable` and five skill flags of `g_pUserInformation`, all
+  > in `gamemodel`. The shrink survey at `deac9b56` measured its reach
+  > into the executable as three symbols: `ConvertDurationToMillisecond`,
+  > a pure conversion in `PacketFunction.cpp`, and
+  > `MSkillSet::SetAvailableSkills` and `g_abSweeperBonusSkills`, both in
+  > `MSkillAvailable.cpp`, the executable half of the skill core. The
+  > pattern is shared-rules slice 4's for Will of Life
+  > (`WillOfLifeOutput`): a `gamemodel` function holds the decision, the
+  > caller keeps what reaches the executable. `Client/ApplySkillInfo.cpp`
+  > takes the real `GCSkillInfo` and holds the body from the five flag
+  > resets through the domain loop, unchanged but for its Korean
+  > comments, which are translated; the handler calls it, then clears
+  > the sweeper bonus skills and calls `SetAvailableSkills`, in the order
+  > it did before, and no longer includes `ClientDef.h` or
+  > `UserInformation.h`, which only the moved body used.
+  > `ConvertDurationToMillisecond` and `ConvertDurationToFrame` (which
+  > reads `g_pClientConfig->FPS`, also `gamemodel`'s) move unchanged into
+  > `Client/ConvertDuration.cpp`; `ClientDef.h` includes their header in
+  > place of its two declarations, so their callers compile unchanged:
+  > 42 live calls in 26 files (24 handlers, `PacketFunction.cpp` and the
+  > six in the moved body; another 19 mentions are in comments), and
+  > `ClientDef.h` was the only declaration any of them saw.
+  > `ConvertMillisecondToFrame`, their neighbour, reads the same frame
+  > rate and was left in `PacketFunction.cpp`: nothing in this task
+  > calls it. No include rule changed: M1 accepts the four new files
+  > (they include `Client_PCH.h`, the `Gpackets` header, listed model
+  > headers and `basic`'s `Platform.h`), and the checker reads 77
+  > members. R1 does not move (435 Ninja, measured): the handler and
+  > `PacketFunction.cpp` stay in the executable. What this buys is
+  > testability, not a smaller executable.
+  > `tests/unit/test_skill_info.cpp` then runs `ApplySkillInfo` on
+  > `GCSkillInfo` packets read from wire bytes into the packet the real
+  > factory creates (consumed exactly, at the packet's own size): bytes
+  > built from the packet types' widths as the server's `Slayer.cpp`,
+  > `Vampire.cpp` and `Ousters.cpp` write them, and the server's five
+  > goldens for the packet (its `origin/master` `7f833cef`, embedded as
+  > hex; no golden file was added here). Its fixture builds the info
+  > table, the domains and the usable-skill set over a small tree per
+  > domain, with a clock host so the delays can be read. It pins, per
+  > race, which skills each domain learns and offers next, the skills
+  > added to `g_pSkillAvailable`, the table's exp level, exp, reuse and
+  > remaining delay and enable, each domain's new-skill flag, the five
+  > user flags (Hallucination's case is commented out, so its flag stays
+  > false), the bomb and mine levels Throw Bomb and Install Mine pass
+  > on, the ETC-step skill tried in every domain (seven for a slayer or
+  > vampire, eight for an ousters), and the domain levels, which the
+  > packet does not carry and which survive it. The hostile values: a
+  > slayer domain past the domain table (8, 0x91, 0xB2, 0xFF) learns
+  > nothing, since the table's lookup answers nothing there, but still
+  > sets the skill's table entry and flag; exp levels up to 0xFFFF are
+  > stored as sent; a duplicate skill is learned once and its last
+  > state wins; empty lists learn nothing; a race byte past the three is
+  > refused by the read (`InvalidProtocolException`), and a packet built
+  > with one has its entries dropped unapplied.
+  > **Fixed test-first:** a skill type at or past the info table's size
+  > (`MIN_RESULT_ACTIONINFO`, 512, as constructed, until `LoadFromFile`
+  > resizes it to the count its data file declares; the fixture loads no
+  > file, so its table has 512 rows) was taken for a learn: the table
+  > answered its empty entry, the domain refused a skill it does not
+  > hold, and the new-skill flag the rebuild had set for the learn
+  > stayed up, so the skill window offered that domain's next skill;
+  > from 2048 the type is also past `ACTIONINFO`'s range of values
+  > (`MAX_ACTIONINFO` is 1191), and its load in `LearnSkill` stopped the
+  > `macos-asan` run. Such an entry is now skipped whole (`4e9b593d`).
+  > The server's skill types end at its `SKILL_MAX`, 397, so given a
+  > skill info file of at least 397 rows a live server does not send
+  > one; its goldens do. That condition is not checked.
+  > `LoadFromFileServerSkillInfo`, which runs after the resize, indexes
+  > the table by its own file's skill types unchecked, so an install
+  > that loads without writing past the table covers every type that
+  > file lists; whether it lists every type up to 396 is not
+  > established, and the repository holds neither file. With a shorter
+  > file, types from its size to 396 are now skipped where before they
+  > were tried, refused and left the domain's new-skill flag up; the
+  > skip also passes over the race's flag switch, so for a file of
+  > fewer than 185 rows the Restore (113), Ground Attack (179), Bloody
+  > Warp (183) and Bloody Snake (184) flags those types used to set
+  > from the wire are no longer set. The bomb and mine exp levels a
+  > learned throw or install passes on were already no-ops at such
+  > sizes (`BOMB_*` 413-417, `MINE_*` 419-423, past the table).
+  > Such an install cannot load cleanly anyway: the same
+  > `LoadFromFileServerSkillInfo` then writes fixed rows up to
+  > `BOMB_TWISTER` (418) without a check, so any table under 419 rows
+  > is overrun at every start-up, and the short-file effects above
+  > only matter to an install that already corrupts memory at load.
+  > `4e9b593d`'s message says the table holds 512 rows and that nothing
+  > the server sends changes; both hold only under that condition. And
+  > `ConvertDurationToMillisecond` multiplied in `int`: a wire turn (a
+  > `DWORD`) past `INT_MAX` arrives negative, and any duration past
+  > about 25 days overflowed (UBSan stopped the `macos-asan` run;
+  > the plain builds wrapped). It now multiplies as a `DWORD`, the value
+  > every build computed before (`27740e9f`); a remaining delay of
+  > `INT_MAX` milliseconds or more still goes on through
+  > `SetAvailableTime`'s `int` as negative, and the skill reads as
+  > usable at once (pinned).
+  > **Known, not fixed:** a learn the domain refuses leaves the
+  > new-skill flag the rebuild set for it. An ETC-step skill (Soul
+  > Chain, the one the three races share) is tried in every domain, so
+  > every domain whose tree lacks it is left offering a new skill; in
+  > play that depends on the trees `SkillInfo.inf` builds, which the
+  > repository does not hold, so whether it shows is not established. A
+  > duplicate does the same; the server sends each skill once (its slot
+  > map is keyed by skill type). The rebuild also never clears a flag
+  > an earlier packet set; only a learn does. Both are pinned in the
+  > tests as today's behaviour. A slayer entry may name the vampire or
+  > ousters domain and learns there; the server sends a slayer's domains
+  > 0 to 5 only. The exp level is stored unchecked; nothing in the
+  > rebuild indexes by it, and its readers in the executable and `VS_UI`
+  > were not audited for a level past 100. `ApplySkillInfo` casts each
+  > entry to the class the packet's race names; the read creates the
+  > entries from that race, so only a packet built in code can disagree.
+  > `ConvertDurationToFrame` still multiplies in `int` by the frame
+  > rate; the rebuild does not call it, and of its callers only the two
+  > that pass the player's `MODIFY_DURATION` status (a wire long value)
+  > can reach past `INT_MAX / FPS`; the others pass `WORD` durations,
+  > an effect's `WORD` times 10, or constants.
+  > `MSkillInfoTable::LoadFromFileServerSkillInfo` indexes the table by
+  > the file's skill type unchecked (a shipped data file, not the wire).
+  > The first fix's subject line is 74 characters, two past the limit;
+  > the commits are not rewritten.
+  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2,
+    `Client/ApplySkillInfo.h`'s contract and `test_skill_info.cpp`.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop
