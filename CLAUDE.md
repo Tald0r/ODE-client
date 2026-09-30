@@ -80,10 +80,12 @@ tree; what the player can use right now stays executable-side), and the
 combat-stat preview
 (`MStatusManager`: the character-select to-hit, defense, protection
 and damage, and the attack speed `MPlayer::CalculateStatus` takes from
-it) - with the user, config and
+it), and the creature status array (`MStatus`), with `AffectModifyInfo`,
+which applies a ModifyInfo packet to it, and the request/answer mode
+register (`TempInformation`) - with the user, config and
 timed-item loaders it reads, and their string support, membership in
 `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4 and 4.12),
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12 and 4.14),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -200,10 +202,12 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29 on the packet-read fuzzing branch merged with master
-at `3941724d` (the slayer weapon extension and the action and effect table
-move), the same on all four: **1334 tests, 1,434,118 checks, 0 failed**
-(`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests`
+measured on 2026-09-29 on the status model branch merged with master at
+`df3674bb` (the packet-read fuzzing merge, 1334 tests and 1,434,118 checks):
+the status array, the mode register and `AffectModifyInfo` joined gamemodel
+with their tests and fix (`docs/RESTRUCTURING.md` task 4.14, 29 tests and
+6,948 checks), the same on all four: **1363 tests, 1,441,066 checks, 0
+failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests`
 built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and `linux-clang` (Clang
 18.1) in the Docker image, its native arm64 on an Apple Silicon Mac, and run
 in it; both scripts stop at the warning step, which has no `aarch64`

@@ -252,3 +252,19 @@ Client/MEffectStatusTable.h
 Client/MEffectStatusDef.h
 Client/MCreatureSpriteTable.cpp
 Client/MCreatureSpriteTable.h
+
+# The creature status array every ModifyInfo packet writes (the creature
+# and player override its SetStatus) and the request/answer mode register
+# the dialogs and their reply handlers share. Both move unchanged; neither
+# reaches an executable symbol (task 4.14).
+Client/MStatus.cpp
+Client/MStatus.h
+Client/TempInformation.cpp
+Client/TempInformation.h
+
+# The one function every ModifyInfo packet goes through: it pops the
+# packet's short and long entries into a status array's SetStatus. Lifted
+# out of the executable's PacketFunction.cpp so it can be tested with
+# real packets (task 4.14).
+Client/AffectModifyInfo.cpp
+Client/AffectModifyInfo.h
