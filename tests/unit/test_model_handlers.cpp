@@ -785,3 +785,29 @@ TEST(ModelHandlers, MonsterKillQuestInfoWithNoEntriesChangesNothing)
 
 	CHECK_EQ((size_t)0, g_pQuestInfoManager->size());
 }
+
+//----------------------------------------------------------------------
+// The sprite type is the server's, and the creature table answers a
+// type it does not hold with an empty row, as it does for a row with
+// no name: the quest keeps an empty name.
+//----------------------------------------------------------------------
+TEST(ModelHandlers, MonsterKillQuestInfoKeepsAnEmptyNameForANamelessCreature)
+{
+	HandlerWorld world;
+
+	RunQuest({ { 601, 2, 7, 60 },						// in the table, no name
+			   { 602, (SpriteType_t)kCreatureTypes, 8, 70 },	// the first type past it
+			   { 603, 0xFFFF, 9, 80 } });					// the last the wire holds
+
+	CHECK_EQ((size_t)3, g_pQuestInfoManager->size());
+	for (QuestID_t id = 601; id <= 603; ++id)
+	{
+		QUEST_INFO* pInfo = g_pQuestInfoManager->GetInfo(id);
+		CHECK(pInfo != NULL);
+		if (pInfo == NULL)
+			continue;
+		CHECK_EQ(id - 594, pInfo->GetGoal());
+		CHECK_EQ((id - 595) * 10, pInfo->GetTimeLimit());
+		CHECK(QuestName(pInfo).empty());
+	}
+}
