@@ -103,7 +103,10 @@
 #include "Gpackets/GCExchangeBuy.h"
 #include "Gpackets/GCExchangeList.h"
 #include "Lpackets/LCPCList.h"
+#include "Rpackets/RCCharacterInfo.h"
 #include "Rpackets/RCPositionInfo.h"
+#include "Rpackets/RCSay.h"
+#include "Rpackets/RCStatusHP.h"
 
 #include "Datagram.h"
 
@@ -1506,7 +1509,9 @@ TEST(GCSkillInfo, OustersLoginFrameIncludesSkillLevelsAndPreservesNextPacket)
 // code, so the goldens pin the id, the size and the body and the test
 // pins the length separately; the pad byte's value is the fix that
 // follows this pin. CGPortCheck is what the client sends the login
-// server; RCPositionInfo is what it sends and receives from a peer.
+// server; the four RC packets are what it sends and receives from a
+// peer, and the only ids Datagram::read accepts. Their goldens also
+// seed the datagram fuzz target (tools/fuzz/golden2corpus.pl).
 //----------------------------------------------------------------------
 void	Fill(CGPortCheck& p)		{ p.setPCName("WirePin"); }
 void	Fill(RCPositionInfo& p)
@@ -1515,6 +1520,23 @@ void	Fill(RCPositionInfo& p)
 	p.setZoneID(0x8A9B);
 	p.setZoneX(0xC5);
 	p.setZoneY(0xD6);
+}
+void	Fill(RCCharacterInfo& p)
+{
+	p.setName("Nosferatu");
+	p.setGuildID(0x8A9B);
+}
+void	Fill(RCSay& p)
+{
+	p.setName("Nosferatu");
+	p.setMessage("Good evening");
+	p.setColor(0x00C5D6E7);
+}
+void	Fill(RCStatusHP& p)
+{
+	p.setName("Nosferatu");
+	p.setMaxHP(0x8A9B);
+	p.setCurrentHP(0x1C2D);
 }
 
 // The bytes Datagram::write put down: the header it writes and the
@@ -1543,6 +1565,30 @@ TEST(Datagram, RCPositionInfoFrameMatchesGolden)
 	Fill(packet);
 	Datagram datagram;
 	ExpectGolden("RCPositionInfo.datagram", 0, DatagramWritten(packet, datagram));
+}
+
+TEST(Datagram, RCCharacterInfoFrameMatchesGolden)
+{
+	RCCharacterInfo packet;
+	Fill(packet);
+	Datagram datagram;
+	ExpectGolden("RCCharacterInfo.datagram", 0, DatagramWritten(packet, datagram));
+}
+
+TEST(Datagram, RCSayFrameMatchesGolden)
+{
+	RCSay packet;
+	Fill(packet);
+	Datagram datagram;
+	ExpectGolden("RCSay.datagram", 0, DatagramWritten(packet, datagram));
+}
+
+TEST(Datagram, RCStatusHPFrameMatchesGolden)
+{
+	RCStatusHP packet;
+	Fill(packet);
+	Datagram datagram;
+	ExpectGolden("RCStatusHP.datagram", 0, DatagramWritten(packet, datagram));
 }
 
 //----------------------------------------------------------------------

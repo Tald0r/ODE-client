@@ -113,8 +113,22 @@ uint DatagramSocket::send ( Datagram * pDatagram )
 //
 // receive datagram from peer
 //
-// 만약에 이 클래스를 blocking 으로 사용한다면, (즉 select 기반으로)
-// 아마도 nReceived 가 0 이하인 경우는 없으리라고 판단된다.
+// Takes the next datagram off the socket, or returns NULL only when
+// none is waiting (or, on Windows, recvfrom() failed). It must never
+// block, since it runs on the game thread every Update(), and the
+// socket itself is a blocking one.
+//
+// A datagram with no bytes is returned as an empty Datagram, not as
+// NULL. Update() ends its tick on NULL, so an empty datagram returned
+// as NULL cost a whole 330 ms tick where any other refused datagram
+// costs one of the tick's MaxProcessPacket reads; an empty Datagram is
+// refused by Datagram::read like any other short one.
+//
+// POSIX asks recvfrom() itself, with MSG_DONTWAIT, rather than asking
+// FIONREAD first. On Linux FIONREAD on a UDP socket is the size of the
+// next datagram, so an empty datagram at the head of the queue read as
+// "nothing waiting" forever and hid every datagram behind it. Windows
+// still asks FIONREAD first, untested here.
 //
 //////////////////////////////////////////////////////////////////////
 Datagram * DatagramSocket::receive ()
@@ -126,7 +140,24 @@ Datagram * DatagramSocket::receive ()
 	SOCKADDR_IN SockAddr;
 	uint _szSOCKADDR_IN = szSOCKADDR_IN;
 
-	// 읽을게 있는지 체크한다.
+	int nReceived = -1;
+
+#if defined(PLATFORM_POSIX)
+	try
+	{
+		nReceived = SocketAPI::recvfrom_ex( m_SocketID , m_Buffer , DATAGRAM_SOCKET_BUFFER_LEN , MSG_DONTWAIT , (SOCKADDR*)&SockAddr , &_szSOCKADDR_IN );
+	}
+	catch ( NonBlockingIOException & )
+	{
+		// Nothing waiting.
+		return NULL;
+	}
+
+	#ifdef __METROTECH_TEST__
+		g_UDPTest.UDPPacketAvailable ++;
+	#endif
+#else
+	// Is there anything to read?
 	ulong available = SocketAPI::availablesocket_ex( m_SocketID );		
 	
 	if (available > 0)
@@ -137,22 +168,25 @@ Datagram * DatagramSocket::receive ()
 
 		DEBUG_ADD_FORMAT("[DatagramSocket] available=%d", available);
 
-		// 내부 버퍼에다가 복사해둔다.
-		int nReceived = SocketAPI::recvfrom_ex( m_SocketID , m_Buffer , DATAGRAM_SOCKET_BUFFER_LEN , 0 , (SOCKADDR*)&SockAddr , &_szSOCKADDR_IN );
+		// Copy it into the socket's own buffer.
+		nReceived = SocketAPI::recvfrom_ex( m_SocketID , m_Buffer , DATAGRAM_SOCKET_BUFFER_LEN , 0 , (SOCKADDR*)&SockAddr , &_szSOCKADDR_IN );
+	}
+#endif
 
-		if ( nReceived > 0 ) 
-		{
-			#ifdef __METROTECH_TEST__
-				g_UDPTest.UDPPacketReceive ++;
-			#endif
+	// An empty datagram (nReceived == 0) is still one taken off the
+	// socket; only a failed recvfrom() (-1, Windows) makes none.
+	if ( nReceived >= 0 ) 
+	{
+		#ifdef __METROTECH_TEST__
+			g_UDPTest.UDPPacketReceive ++;
+		#endif
 
-			DEBUG_ADD_FORMAT("[DatagramSocket] received=%d", nReceived);
+		DEBUG_ADD_FORMAT("[DatagramSocket] received=%d", nReceived);
 
-			pDatagram = new Datagram();
-			pDatagram->setData( m_Buffer , nReceived );
-			pDatagram->setAddress( &SockAddr );
-		}
-	}	
+		pDatagram = new Datagram();
+		pDatagram->setData( m_Buffer , nReceived );
+		pDatagram->setAddress( &SockAddr );
+	}
 
 	return pDatagram;
 
