@@ -2,13 +2,16 @@
 # Packet-read fuzz targets
 #----------------------------------------------------------------------
 #
-# Two libFuzzer targets over the bytes a server sends the client, one
-# per connection of the client's ClientPlayer; both read through
-# client_stream_reader.h, which says what they mirror:
+# Three libFuzzer targets over bytes the client receives. Two read what
+# a server sends, one per connection of the client's ClientPlayer, both
+# through client_stream_reader.h, which says what they mirror; the third
+# reads one UDP datagram from anyone who can reach the client's
+# peer-to-peer port, as ClientCommunicationManager::Update does:
 #
 #   client_stream        fuzz_client_stream.cpp, the game connection
 #   client_login_stream  fuzz_client_login_stream.cpp, the login
 #                        connection
+#   client_datagram      fuzz_client_datagram.cpp, the UDP socket
 #
 # Each is built two ways:
 #
@@ -46,7 +49,11 @@ set(FUZZ_SUPPORT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../support)
 # (found in tests/CMakeLists.txt); without it the check is skipped, not
 # passed.
 #
-#   darkeden_fuzz_target(<target> <source> <golden name regex>)
+#   darkeden_fuzz_target(<target> <source> <golden name regex> [DATAGRAM])
+#
+# DATAGRAM seeds the target from the .datagram. goldens, one raw
+# datagram per seed (golden2corpus.pl's --datagram mode); without it the
+# seeds are stream inputs built from the other goldens and the layout.
 #----------------------------------------------------------------------
 function(darkeden_fuzz_target target source name_regex)
 	add_executable(fuzz_replay_${target}
@@ -72,14 +79,25 @@ function(darkeden_fuzz_target target source name_regex)
 
 	if(PERL_EXECUTABLE)
 		set(corpus ${CMAKE_CURRENT_BINARY_DIR}/corpus/${target})
-		add_test(
-			NAME fuzz_corpus_${target}
-			COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/fuzz/golden2corpus.pl
-				${CMAKE_SOURCE_DIR}/tests/golden
-				${CMAKE_SOURCE_DIR}/tests/wire-layout.txt
-				${corpus}
-				${name_regex}
-		)
+		if(ARGV3 STREQUAL "DATAGRAM")
+			add_test(
+				NAME fuzz_corpus_${target}
+				COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/fuzz/golden2corpus.pl
+					--datagram
+					${CMAKE_SOURCE_DIR}/tests/golden
+					${corpus}
+					${name_regex}
+			)
+		else()
+			add_test(
+				NAME fuzz_corpus_${target}
+				COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/fuzz/golden2corpus.pl
+					${CMAKE_SOURCE_DIR}/tests/golden
+					${CMAKE_SOURCE_DIR}/tests/wire-layout.txt
+					${corpus}
+					${name_regex}
+			)
+		endif()
 		set_tests_properties(fuzz_corpus_${target} PROPERTIES
 			FIXTURES_SETUP fuzz_${target}_corpus)
 
@@ -98,5 +116,7 @@ function(darkeden_fuzz_target target source name_regex)
 endfunction()
 
 # The game connection: GC packets. The login connection: LC packets.
+# The UDP socket: the RC datagram packets.
 darkeden_fuzz_target(client_stream fuzz_client_stream.cpp ^GC)
 darkeden_fuzz_target(client_login_stream fuzz_client_login_stream.cpp ^LC)
+darkeden_fuzz_target(client_datagram fuzz_client_datagram.cpp ^RC DATAGRAM)

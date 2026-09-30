@@ -395,10 +395,44 @@ lose a list entry whose read throws.
 The `LC` handlers, which index the string table and the character-select
 arrays, are executable-side and not part of that sweep.
 
+A third target, `tests/fuzz/fuzz_client_datagram.cpp`, followed on
+2026-09-30 on `fix/datagram-packet-type`: one UDP datagram arriving at the
+client's peer-to-peer socket, which is bound on every interface from
+start-up and authenticates nothing, read through `Datagram::read` and the
+`CPS_CLIENT_COMMUNICATION_NORMAL` validator check as
+`ClientCommunicationManager::Update` reads it, stopping before dispatch. It
+came after its first defect: preparing it, reading `Datagram::read` found
+the type confusion recorded under *Found by reading* (any non-datagram id
+called `read(Datagram&)` past the end of its class's vtable), fixed test-first
+before the target existed. Its regressions directory holds that defect's
+inputs from four connections (`GCSay`, `LCLoginOK`, `CRRequest`,
+`RCRequestedFile` ids) and five other malformed datagrams (an id past
+`PACKET_MAX`, a size over the maximum, a missing and a doubled pad, a name
+length past the body). Replayed through `fuzz_replay_client_datagram` built
+on the unfixed `Datagram.cpp`, each of the four non-datagram ids ended the
+plain `macos` replay with a bus error (exit 138) and the `macos-asan` one
+with an ASan `global-buffer-overflow` past the class's vtable (exit 134);
+the other five replayed green there, as they do on the fix. Seeded with the
+four `RC` `.datagram.` goldens and an empty and a 16-byte zero body per id
+(12 seeds, `golden2corpus.pl --datagram`) plus those nine inputs, a
+16-minute single-process run on the fixed code (same toolchain; 6,031,610
+inputs, coverage from 1,101 to 1,127 points, the last new point at input
+1,406) and a 3-minute run from its corpus with length control off and
+`DE_FUZZ_ABORT_ON_ASSERT=1` (984,945 inputs, no new point) found no crash,
+sanitizer report, timeout or out-of-memory, and failed no `Assert`; neither
+printed the leak-detection notice. The target is small by construction:
+four readers of a name and a few scalars behind five gates, so its coverage
+is flat within the first second. One looseness it cannot see, found by
+reading and not changed: a datagram packet's `read()` is bounded by the
+datagram, not by the body its header declares, so a reader may consume the
+pad byte (an `RCSay` with an empty body reads its name length from it) and
+a reader that stops short of the declared body is not refused. Neither
+reaches memory outside the buffer, and the server's `Datagram` is the same.
+
 What the targets do not reach: the handlers under `Client/PacketHandler`,
 which are executable-side (a crash in `read()` is found; a crash in what a
-handler does with an accepted value is not); the UDP datagram path, which is
-the next target; and the `toString()` methods, which `ClientPlayer`'s
+handler does with an accepted value is not, the four `RC` handlers
+included); and the `toString()` methods, which `ClientPlayer`'s
 receive loop calls only in a `__DEBUG_OUTPUT__` build (most of them are
 compiled only under it; `PCOustersInfo::toString()` is not, see its row
 under *Found by reading*).

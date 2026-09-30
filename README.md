@@ -599,9 +599,10 @@ Windows; none of that has been watched on a Linux display yet.
 The same tree, the same tests, Apple Clang. CI builds and tests it on
 GitHub's arm64 and Intel runners (`.github/workflows/macos.yml`, macOS 15),
 and it has been built and tested on an Apple Silicon Mac (macOS 27.0, Apple
-Clang 21, CMake 4.4: every target, all 18 ctest tests passing on 2026-09-30,
-among them the two packet-read fuzz replay tests, `fuzz_replay_client_stream`
-and `fuzz_replay_client_login_stream`, and their corpus steps). Nothing has
+Clang 21, CMake 4.4: every target, all 20 ctest tests passing on 2026-09-30,
+among them the three packet-read fuzz replay tests, `fuzz_replay_client_stream`,
+`fuzz_replay_client_login_stream` and `fuzz_replay_client_datagram`, and their
+corpus steps). Nothing has
 been watched on a Mac's display yet. Dependencies come from Homebrew, on
 Apple Silicon or Intel:
 
