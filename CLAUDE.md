@@ -211,11 +211,11 @@ Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defa
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
 measured on 2026-09-30 on `fix/datagram-packet-type` merged with master at
 `34460343` (PR #297, the eight model-only packet handlers and their four
-fixes, 1449 tests and 1,457,614 checks): the datagram type-confusion and
-bug-report fixes and the datagram fuzz target's goldens. The merged tree
-reads **1460 tests, 1,458,172 checks, 0 failed** on the `macos` preset;
-the other three builds were not re-measured at the merge (`decore_tests`:
-13 tests, 2009 checks). Linux:
+fixes, 1449 tests and 1,457,614 checks): the datagram type-confusion,
+bug-report and empty-datagram fixes and the datagram fuzz target's
+goldens, 12 tests and 561 checks, identical in all four builds: **1461
+tests, 1,458,175 checks, 0 failed** (`decore_tests`: 13 tests, 2009
+checks on the same four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
 `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
 Silicon Mac, with the totals read by running `build/presets/<preset>/bin/unit_tests`
@@ -344,8 +344,9 @@ found by reading (the review's `LCServerList`/`LCWorldList` row).
 Run it from a scratch directory: a failed `Assert` appends to
 `assertion_failed.log` in the working directory. Hostile input to the game
 target fails about a thousand in fifteen minutes; the login target failed
-none in 25 minutes, the datagram target none in 19 (its readers hold no
-`Assert`). Apple Clang ships no libFuzzer, so
+none in 25 minutes. The datagram target failed none in 16 minutes run
+with `DE_FUZZ_ABORT_ON_ASSERT=1` (the `RC` readers hold no `Assert`;
+`Datagram::read` holds two). Apple Clang ships no libFuzzer, so
 `macos-fuzz` compiles with Apple Clang and links Homebrew `llvm@21`'s
 `libclang_rt.fuzzer_osx.a` (`DARKEDEN_LIBFUZZER_ARCHIVE`); llvm@21's own
 ASan hangs at startup on macOS 27. The preset names the Apple Silicon

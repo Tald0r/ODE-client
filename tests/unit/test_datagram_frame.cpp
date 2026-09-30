@@ -330,8 +330,10 @@ std::vector<unsigned char>	ZeroFrame(PacketFactoryManager& factories, PacketID_t
 	return Frame(id, std::vector<unsigned char>(maxSize < 16 ? maxSize : 16, 0x00));
 }
 
-// Every registered packet class that is not a DatagramPacket, one per
-// connection it arrives on.
+// Registered packet classes that are not DatagramPackets, from the
+// three connections they arrive on: one GC id (the game connection),
+// one LC id (the login connection), and every CR and RC class of the
+// request-server connection between clients.
 const PacketID_t	kNotDatagramIds[] = {
 	Packet::PACKET_GC_SAY,			// game server, TCP
 	Packet::PACKET_LC_LOGIN_OK,		// login server, TCP
