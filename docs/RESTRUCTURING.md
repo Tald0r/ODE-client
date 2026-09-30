@@ -1489,6 +1489,11 @@ rounds settled* for the host rules). Test fixtures share
   > from the wire are no longer set. The bomb and mine exp levels a
   > learned throw or install passes on were already no-ops at such
   > sizes (`BOMB_*` 413-417, `MINE_*` 419-423, past the table).
+  > Such an install cannot load cleanly anyway: the same
+  > `LoadFromFileServerSkillInfo` then writes fixed rows up to
+  > `BOMB_TWISTER` (418) without a check, so any table under 419 rows
+  > is overrun at every start-up, and the short-file effects above
+  > only matter to an install that already corrupts memory at load.
   > `4e9b593d`'s message says the table holds 512 rows and that nothing
   > the server sends changes; both hold only under that condition. And
   > `ConvertDurationToMillisecond` multiplied in `int`: a wire turn (a
