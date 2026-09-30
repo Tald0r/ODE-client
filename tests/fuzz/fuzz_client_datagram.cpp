@@ -18,9 +18,13 @@
 // Input: the datagram's bytes, as recvfrom() returned them - a 6-byte
 // header (id u16, body size u32, little-endian), the body, and the
 // one-byte pad both peers count in the length. No encrypt code: UDP is
-// not encrypted. An empty input is skipped, since recvfrom() returning
-// 0 makes no Datagram (DatagramSocket::receive), and so is one longer
-// than DATAGRAM_SOCKET_BUFFER_LEN, the most recvfrom() hands over.
+// not encrypted. An empty input is skipped: DatagramSocket::receive
+// takes an empty datagram off the socket and makes no Datagram of it,
+// so nothing reaches Datagram::read. (Until 2026-09-30 a Linux build
+// never took it off - FIONREAD there is the next datagram's size - and
+// every datagram behind it waited for good; see the review's row.) So
+// is one longer than DATAGRAM_SOCKET_BUFFER_LEN, the most recvfrom()
+// hands over.
 //
 // The path mirrors Update()'s, in order:
 //

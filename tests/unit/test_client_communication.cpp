@@ -21,6 +21,9 @@
 // control: the last datagram sent is a valid one, so when it has been
 // dispatched every datagram before it has been read.
 //
+// The same loop must also survive a datagram with no bytes, which on
+// Linux used to stop it for good (AnEmptyDatagramDoesNotStopTheReceiveLoop).
+//
 // Compiled with the packetwire defines (tests/CMakeLists.txt).
 //
 //----------------------------------------------------------------------
@@ -158,6 +161,49 @@ void	Send(DatagramSocket& sender, uint port, std::vector<char> bytes)
 	sender.send(&datagram);
 }
 
+// A datagram with no bytes at all. Datagram and DatagramSocket::send
+// have no way to say that, so it goes straight to sendto().
+void	SendEmpty(DatagramSocket& sender, uint port)
+{
+	struct sockaddr_in	to;
+	std::memset(&to, 0, sizeof(to));
+	to.sin_family		= AF_INET;
+	to.sin_addr.s_addr	= htonl(INADDR_LOOPBACK);
+	to.sin_port		= htons((unsigned short)port);
+#ifdef _WIN32
+	const int	len = (int)sizeof(to);
+#else
+	const socklen_t	len = (socklen_t)sizeof(to);
+#endif
+	sendto(sender.getSOCKET(), "", 0, 0, (struct sockaddr *)&to, len);
+}
+
+// A valid RCPositionInfo: a name of nine bytes, the zone id, x and y.
+std::vector<char>	PositionInfoFrame()
+{
+	std::vector<char> body;
+	body.push_back(9);
+	const char* name = "Nosferatu";
+	body.insert(body.end(), name, name + 9);
+	AppendLE(body, 0x8A9B, szZoneID);
+	body.push_back((char)0xC5);
+	body.push_back((char)0xD6);
+	return Frame(Packet::PACKET_RC_POSITION_INFO, (PacketSize_t)body.size(), body);
+}
+
+// Calls Update() until one packet has been dispatched, or for two
+// seconds: loopback delivers at once, but a slow machine gets time
+// before the datagram is called lost.
+void	UpdateUntilDispatched(ClientCommunicationManager& manager)
+{
+	for (int i = 0; i < 200 && s_Dispatched == 0; i++)
+	{
+		manager.Update();
+		if (s_Dispatched == 0)
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+}
+
 } // namespace
 
 // Three kinds of hostile datagram, each refused, and none of them may
@@ -195,24 +241,46 @@ TEST(ClientCommunicationManager, AHostileDatagramSendsNoBugReport)
 		Send(*pSender, s_Port, Frame(Packet::PACKET_RC_POSITION_INFO, overMax, std::vector<char>()));
 	Send(*pSender, s_Port, Frame(Packet::PACKET_GC_SAY, 4, std::vector<char>(4, 0)));
 
-	// RCPositionInfo: a name of nine bytes, the zone id, x and y.
-	std::vector<char> body;
-	body.push_back(9);
-	const char* name = "Nosferatu";
-	body.insert(body.end(), name, name + 9);
-	AppendLE(body, 0x8A9B, szZoneID);
-	body.push_back((char)0xC5);
-	body.push_back((char)0xD6);
-	Send(*pSender, s_Port, Frame(Packet::PACKET_RC_POSITION_INFO, (PacketSize_t)body.size(), body));
+	Send(*pSender, s_Port, PositionInfoFrame());
 
-	// Loopback delivers at once, but give it two seconds before calling
-	// the datagram lost.
-	for (int i = 0; i < 200 && s_Dispatched == 0; i++)
-	{
-		manager.Update();
-		if (s_Dispatched == 0)
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	}
+	UpdateUntilDispatched(manager);
+
+	CHECK_EQ(1, s_Dispatched);
+	CHECK_EQ(0, s_Asked);
+}
+
+// An empty datagram, then a valid RCPositionInfo, which must arrive.
+// DatagramSocket::receive used to call recvfrom() only when FIONREAD
+// reported bytes waiting. On Linux FIONREAD on a UDP socket is the size
+// of the next datagram, so an empty one at the head of the queue read
+// as "nothing waiting" on every tick, was never taken off, and hid
+// every datagram behind it until the process restarted: one datagram
+// from anyone stopped the client's UDP receive for good. On macOS
+// FIONREAD counts every queued byte, so there this passed before the
+// fix too.
+TEST(ClientCommunicationManager, AnEmptyDatagramDoesNotStopTheReceiveLoop)
+{
+	if (NetworkTransport::UsesWebSocket())
+		return;
+
+	EnsureSocketsInitialised();
+	EnsurePositionInfoHandlerRegistered();
+
+	TablesScope	tables;
+	HostScope	host;
+
+	s_Port = FreeUDPPort();
+	CHECK(s_Port != 0);
+	s_Asked = 0;
+	s_Dispatched = 0;
+
+	ClientCommunicationManager	manager;
+	std::unique_ptr<DatagramSocket>	pSender(new DatagramSocket());
+
+	SendEmpty(*pSender, s_Port);
+	Send(*pSender, s_Port, PositionInfoFrame());
+
+	UpdateUntilDispatched(manager);
 
 	CHECK_EQ(1, s_Dispatched);
 	CHECK_EQ(0, s_Asked);
