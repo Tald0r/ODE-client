@@ -235,7 +235,7 @@ port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`,
 arm64 and Intel runners, invoked on master pushes or manually) has not
 produced the totals above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21)
 built every target and ran the `macos` preset's 18 ctest tests green on
-2026-09-29 (the two fuzz replay tests and their corpus steps among them;
+2026-09-30 (the two fuzz replay tests and their corpus steps among them;
 `verify-linux.sh` and `verify-windows.ps1` require 15 of them by name,
 `fuzz_replay_client_login_stream` the latest), and is where the macOS
 totals above were read; nothing has been watched on a Mac's display, and a
