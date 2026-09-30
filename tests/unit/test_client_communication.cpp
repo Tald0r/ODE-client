@@ -67,10 +67,21 @@ int	HostMaxProcessPacket()		{ return 11; }
 uint	HostUDPPort()			{ return s_Port; }
 Player*	HostBugReportTarget()		{ s_Asked++; return NULL; }
 
+// Every member is named, as GCC's -Wmissing-field-initializers asks;
+// the NULL ones answer their documented defaults, and nothing here
+// asks them.
 const WireHost	s_Host = {
 	.MaxProcessPacket		= HostMaxProcessPacket,
+	.MaxRequestService		= NULL,
 	.ClientCommunicationUDPPort	= HostUDPPort,
 	.BugReportTarget		= HostBugReportTarget,
+	.EncryptZoneID			= NULL,
+	.EncryptServerID		= NULL,
+	.EncryptUsesEnglishSeed		= NULL,
+	.CurrentTime			= NULL,
+	.SendOtherRequest		= NULL,
+	.HasOtherRequest		= NULL,
+	.RemoveOtherRequest		= NULL,
 };
 
 struct HostScope
