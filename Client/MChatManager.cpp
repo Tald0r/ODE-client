@@ -117,7 +117,7 @@ MChatManager::LoadFromFile(const char* filename)
 //----------------------------------------------------------------------
 // Load From File Curse
 //----------------------------------------------------------------------
-// text file에서 욕 읽기
+// Reads the curses from a text file of words.
 //----------------------------------------------------------------------
 void				
 MChatManager::LoadFromFileCurse(const char* filename)
@@ -132,11 +132,26 @@ MChatManager::LoadFromFileCurse(const char* filename)
 	char str[256];
 
 	//-----------------------------------------------------
-	// text file에서 죽죽~~ 읽어들인다.
+	// Read the file word by word, up to the first read that
+	// fails. Testing eof() before reading ran one read past
+	// the last word of a file ending in whitespace, and what a
+	// failed read leaves in str is up to the stream library:
+	// MSVC's writes "", libc++'s and libstdc++'s leave str as
+	// it was - the last word, or in a blank file the
+	// uninitialised buffer. A NUL byte also fails MSVC's read
+	// without reaching eof(), which looped forever.
 	//-----------------------------------------------------
-	while (!file.eof())
+	while (file >> str)
 	{
-		file >> str;
+		//-----------------------------------------------------
+		// libc++ and libstdc++ read a NUL byte into the word, so
+		// a word that starts with one is empty. An empty word is
+		// no curse (RemoveCurse skips one), so it is not listed.
+		//-----------------------------------------------------
+		if (str[0]=='\0')
+		{
+			continue;
+		}
 
 		bool bEng = true;
 		bool bKor = true;
@@ -145,12 +160,12 @@ MChatManager::LoadFromFileCurse(const char* filename)
 		char ch;
 
 		//-----------------------------------------------------
-		// 단어가 영어인지 한글인지 판단한다.
+		// Is the word English or Korean?
 		//-----------------------------------------------------
 		while ((ch=*strTemp++))
 		{
 			//-----------------------------------------------------
-			// 한글인 경우
+			// Korean (a two-byte character)
 			//-----------------------------------------------------
 			if (ch & 0x80)
 			{
@@ -165,14 +180,14 @@ MChatManager::LoadFromFileCurse(const char* filename)
 				bEng = false;
 			}
 			//-----------------------------------------------------
-			// 영어인 경우
+			// English (a lower-case letter)
 			//-----------------------------------------------------
 			else if (ch>='a' && ch<='z')
 			{
 				bKor = false;
 			}
 			//-----------------------------------------------------
-			// 아니면 .. 버린다.
+			// Anything else: the word is dropped.
 			//-----------------------------------------------------
 			else				
 			{
@@ -184,19 +199,19 @@ MChatManager::LoadFromFileCurse(const char* filename)
 		}
 
 		//-----------------------------------------------------
-		// 영어..라고 판단된 경우
+		// An English word
 		//-----------------------------------------------------
 		if (bEng)
 		{
 			m_mapCurseEng.Add(str);
 		}
 		//-----------------------------------------------------
-		// 한글..이라고 판단된 경우
+		// A Korean word
 		//-----------------------------------------------------
 		else if (bKor)
 		{
 			//-----------------------------------------------------
-			// 한글 1,2,3,4자만 허용한다.
+			// Only words of one to four characters are listed.
 			//-----------------------------------------------------
 			switch (strlen(str))
 			{

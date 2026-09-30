@@ -846,6 +846,82 @@ TEST(ChatFilter, EnglishListsRoundTripThroughTheBinaryFile)
 }
 
 //----------------------------------------------------------------------
+// MChatManager: the word file
+//----------------------------------------------------------------------
+// What a word file loaded, read back through the binary file: the
+// English list, the four Korean lists and the IDs. The files here hold
+// English words only, since SaveToFile converts each entry to the
+// resource encoding and a CP949 word is not UTF-8.
+namespace {
+
+std::string	LoadedLists(const std::string& words)
+{
+	WriteFile(kWordFile, words);
+	MChatManager chat;
+	chat.LoadFromFileCurse(kWordFile);
+	chat.SaveToFile(kBinFile);
+
+	std::ifstream in(kBinFile, std::ios::binary);
+	return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+
+// Exactly darn and heck in the English list, every other list empty.
+std::string	DarnAndHeck()
+{
+	return DiskInt(2) + std::string(1, '\1') + DiskString("darn")
+		+ std::string(1, '\1') + DiskString("heck")
+		+ DiskInt(0) + DiskInt(0) + DiskInt(0) + DiskInt(0) + DiskInt(0);
+}
+
+} // namespace
+
+TEST(ChatFilter, AWordFileEndingInWhitespaceLoadsEachWordOnce)
+{
+	// The loader tested eof() before reading, so a file ending in
+	// whitespace ran one read past its last word. What that failed read
+	// leaves in the buffer is up to the stream library: MSVC's writes ""
+	// (the empty word the Windows jobs crashed on), libc++'s and
+	// libstdc++'s leave the last word, which was added twice and kept
+	// once. A regression guard off Windows.
+	ChatWorld world;
+
+	CHECK(LoadedLists("darn\nheck") == DarnAndHeck());
+	CHECK(LoadedLists("darn\nheck\n") == DarnAndHeck());
+	CHECK(LoadedLists("darn heck ") == DarnAndHeck());
+	CHECK(LoadedLists(" \tdarn\n\n heck \r\n\n\n") == DarnAndHeck());
+}
+
+TEST(ChatFilter, ABlankWordFileLoadsNothing)
+{
+	// The first read of an empty or blank file fails at once: MSVC's
+	// stream library leaves "" in the buffer, libc++'s and libstdc++'s
+	// leave the buffer as it was, uninitialised. A regression guard.
+	ChatWorld world;
+	const std::string nothing = DiskInt(0) + DiskInt(0) + DiskInt(0)
+		+ DiskInt(0) + DiskInt(0) + DiskInt(0);
+
+	CHECK(LoadedLists("") == nothing);
+	CHECK(LoadedLists(" ") == nothing);
+	CHECK(LoadedLists("\n\n\t \r\n") == nothing);
+}
+
+TEST(ChatFilter, AWordThatStartsWithANulByteIsNotLoaded)
+{
+	// libc++ and libstdc++ read a NUL byte into the word, so a word that
+	// starts with one is "" as a string, and it went into the English
+	// list. MSVC's stream library ends the read at a NUL with nothing
+	// read, a failed read, where the loader looped forever: it waited
+	// for eof(), which a failed read never reaches. The NUL word is the
+	// file's last here, because the two libraries differ on the words
+	// after one (MSVC's stops reading, the others read on).
+	ChatWorld world;
+
+	CHECK(LoadedLists(std::string("darn\nheck\n\0\n", 12)) == DarnAndHeck());
+	CHECK(LoadedLists(std::string("darn\nheck\n\0bother\n", 18)) == DarnAndHeck());
+	CHECK(LoadedLists(std::string("darn\nheck\n\0", 11)) == DarnAndHeck());
+}
+
+//----------------------------------------------------------------------
 // MChatManager: adversarial lines
 //----------------------------------------------------------------------
 TEST(ChatFilter, EveryByteValueIsSafe)
