@@ -284,12 +284,19 @@ the other kind, and it floors both the sites it finds (295) and the sites it
 resolves (283). `check_packet_indices.pl` (ctest `packet_indices`) is the index
 half of code-health priority 1: over `Client/Packet` and
 `Client/PacketHandler` it walks packet-derived values into subscripts —
-through locals, across lines, one hop — and reports **114**, 101 into a
-named, verified `CTypeTable` and a ceiling of **13** into a container that
-is not, all guarded today. Its range-checked list is a named allowlist that
+through locals, across lines, one hop — and reports **103**, 91 into a
+named, verified `CTypeTable` and a ceiling of **12** into a container that
+is not, all guarded today. It read 114 and 13 when this paragraph was
+written; `32cef4d2` took out the vampire addon lookup (113, 12), and
+`4fa24b9e` turned ten `CTypeTable` writes into `GetMutable(x)` calls,
+which answer NULL out of range and which the checker, reading `[]` only,
+no longer counts (103). Seven of the 12 are the phone-slot subscripts of
+the handlers task 4.15 moved into `gamemodel`; they stay in
+`Client/PacketHandler`, so the checker still reads them, and
+`test_model_handlers.cpp` runs every out-of-range slot byte past them. Its range-checked list is a named allowlist that
 fails closed (when introduced, `CMessageArray::operator[]` truncated rather
 than checked; it gained bounds checks on 2026-09-18, but the spelling of a
-dereference still cannot prove a container is checked); a fourteenth raw
+dereference still cannot prove a container is checked); a thirteenth raw
 subscript has to be read before the number moves.
 
 ---
@@ -1325,8 +1332,52 @@ rounds settled* for the host rules). Test fixtures share
   > check it has for every member. The exemption row for handler bodies
   > is amended to exclude the handlers the membership file lists. R1
   > falls by eight (445 to 437 Windows, 443 to 435 Ninja); R4 stays 0.
-  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1 and the
-    exemption row.
+  > `tests/unit/test_model_handlers.cpp` then runs each handler on a
+  > real packet: wire bytes built from the packet types' widths, read
+  > into the packet the real factory creates (consumed exactly, at the
+  > packet's own size), `execute()` with no `Player`, and the model
+  > state checked. It pins the phone slots (each slot stored or cleared
+  > with no neighbour touched, and slot bytes 3, 4, 127, 128 and 255
+  > changing nothing; `GCPhoneSay` over every byte 0-255), the trade
+  > money flow in both directions and on both sides with the OK
+  > cancellation and accept delay, the other side's item removal, the
+  > system switches, skill limit and open degree (the wire's degree less
+  > one, so 0 wraps to 255 and opens every zone), and the quest goals.
+  > Three defects were fixed test-first. `GCMonsterKillQuestInfo`
+  > assigned the creature table's name for the server's type to a
+  > `std::string`; for a type past the table or a nameless row that name
+  > is a NULL `MString`, and the client crashed in `strlen` (SEGV under
+  > both presets); the quest now keeps an empty name.
+  > `MMoneyManager::AddMoney`/`UseMoney` took the new balance in `int`,
+  > so two amounts within the limit could overflow it (UBSan halted);
+  > they now refuse a balance outside 0..limit first, and `CanUseMoney`
+  > refuses a negative amount, as `CanAddMoney` does. And
+  > `GCTradeMoney`'s two result codes moved the wallet and the trade box
+  > as two separate calls and ignored the first one's refusal, so a
+  > client whose wallets disagreed with the server's created or lost
+  > money; the server never moves part of a transfer
+  > (`decideMoneyIncrease`/`decideMoneyDecrease` in its
+  > `trade/TradeTableDecision.cpp`), and the handler now moves all or
+  > nothing. It also ignores an amount past `INT_MAX`, which no wallet
+  > holds and which its `int` ran backwards. Whether the wallets disagree
+  > in play is not established; both trade defects were found by reading
+  > and reproduced only in the test binary. `check_packet_indices.pl`
+  > still counts 103 subscripts, 12 raw: the seven phone-slot ones are
+  > guarded and now tested, but the checker reads the subscript, not the
+  > guard, and the files did not leave the directory it scans.
+  > **Known, not fixed:** `GCPhoneSay` formats a slot that never
+  > connected with `%s` over its NULL name (undefined; the three C
+  > libraries print "(null)", and the line goes nowhere, since its chat
+  > call is commented out). The other side's `INCREASE`/`DECREASE`
+  > still apply one box's refusal silently; no money is moved between
+  > two wallets there. The money fix's commit (`fdc1d7e4`) named a
+  > `UseMoney`/`AddMoney` pair in `UIMessageManager.cpp` as the same
+  > pattern left out of scope; that pair is inside a `/* */` block and
+  > never compiled. And the tests' commit (`b8e9258e`) announced two
+  > fixes to follow; three did, the wallet overflow being found while
+  > writing the trade money's.
+  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1, the
+    exemption row, `test_model_handlers.cpp` and `test_money_manager.cpp`.
 
 ## Phase 5 — Long tail
 

@@ -209,12 +209,13 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-30 on the chat filter branch merged with master at
-`28c86264` (PR #294, the status model), so the tree holds both the chat
-filter (`docs/RESTRUCTURING.md` task 4.13, its tests and fixes, the last two
-the empty-`MString` comparison and the word-file loader that the branch's
-first Windows CI run crashed on) and the status array, mode register and
-`AffectModifyInfo` (task 4.14): **1414 tests, 1,443,310 checks, 0 failed**,
+measured on 2026-09-30 on the model-handler branch (`docs/RESTRUCTURING.md`
+task 4.15: the eight packet handlers that reach only model state, run on
+real packets in `test_model_handlers.cpp`, and the three fixes that
+followed - the quest name, the wallet's int overflow and the trade
+money's all-or-nothing move), on top of master at `2b71e685` (the chat
+filter, task 4.13, and the status model, task 4.14, 1414 tests and
+1,443,310 checks there): **1443 tests, 1,449,037 checks, 0 failed**,
 identical in all four builds, this run (`decore_tests`: 13 tests, 2009
 checks, measured on macOS and in the Linux GCC and Clang images). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
@@ -403,9 +404,11 @@ Critical among them. In priority order:
      and `Client/PacketHandler`. It walks the *value*, not the spelling —
      `array[pPacket->getSlotID()]` has two live instances while
      `int slot = pPacket->getSlotID();` twenty lines above `array[slot]` has a
-     hundred. **114** packet-indexed subscripts, 101 of them into a named,
-     verified `CTypeTable` that range-checks itself, **13 into a container that
-     is not**, all guarded. A fourteenth fails the suite and has to be read.
+     hundred. **103** packet-indexed subscripts, 91 of them into a named,
+     verified `CTypeTable` that range-checks itself, **12 into a container that
+     is not**, all guarded. A thirteenth fails the suite and has to be read.
+     Seven of the 12 are in the phone handlers `gamemodel` compiles (task
+     4.15), and `test_model_handlers.cpp` runs every slot byte past them.
      It **fails closed**: a container it does not recognise counts as raw, so
      adding a name to its allowlist is a deliberate act. Its first version
      hardcoded the receiver name `pPacket` and so was blind to the 19 handlers
