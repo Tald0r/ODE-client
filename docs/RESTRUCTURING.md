@@ -1463,18 +1463,31 @@ rounds settled* for the host rules). Test fixtures share
   > state wins; empty lists learn nothing; a race byte past the three is
   > refused by the read (`InvalidProtocolException`), and a packet built
   > with one has its entries dropped unapplied.
-  > **Fixed test-first:** a skill type at or past the info table's 512
-  > rows was taken for a learn: the table answered its empty entry, the
-  > domain refused a skill it does not hold, and the new-skill flag the
-  > rebuild had set for the learn stayed up, so the skill window offered
-  > that domain's next skill; from 2048 the type is also past
-  > `ACTIONINFO`'s range of values (`MAX_ACTIONINFO` is 1191), and its
-  > load in `LearnSkill` stopped the `macos-asan` run. Such an entry is
-  > now skipped whole (`4e9b593d`). The server's skill types end at its
-  > `SKILL_MAX`, 397, so a live server does not send one; its goldens
-  > do. And `ConvertDurationToMillisecond` multiplied in `int`: a wire
-  > turn (a `DWORD`) past `INT_MAX` arrives negative, and any duration
-  > past about 25 days overflowed (UBSan stopped the `macos-asan` run;
+  > **Fixed test-first:** a skill type at or past the info table's size
+  > (`MIN_RESULT_ACTIONINFO`, 512, as constructed, until `LoadFromFile`
+  > resizes it to the count its data file declares; the fixture loads no
+  > file, so its table has 512 rows) was taken for a learn: the table
+  > answered its empty entry, the domain refused a skill it does not
+  > hold, and the new-skill flag the rebuild had set for the learn
+  > stayed up, so the skill window offered that domain's next skill;
+  > from 2048 the type is also past `ACTIONINFO`'s range of values
+  > (`MAX_ACTIONINFO` is 1191), and its load in `LearnSkill` stopped the
+  > `macos-asan` run. Such an entry is now skipped whole (`4e9b593d`).
+  > The server's skill types end at its `SKILL_MAX`, 397, so given a
+  > skill info file of at least 397 rows a live server does not send
+  > one; its goldens do. That condition is not checked.
+  > `LoadFromFileServerSkillInfo`, which runs after the resize, indexes
+  > the table by its own file's skill types unchecked, so an install
+  > that loads without writing past the table covers every type that
+  > file lists; whether it lists every type up to 396 is not
+  > established, and the repository holds neither file. With a shorter
+  > file, types from its size to 396 are now skipped where before they
+  > were tried, refused and left the domain's new-skill flag up.
+  > `4e9b593d`'s message says the table holds 512 rows and that nothing
+  > the server sends changes; both hold only under that condition. And
+  > `ConvertDurationToMillisecond` multiplied in `int`: a wire turn (a
+  > `DWORD`) past `INT_MAX` arrives negative, and any duration past
+  > about 25 days overflowed (UBSan stopped the `macos-asan` run;
   > the plain builds wrapped). It now multiplies as a `DWORD`, the value
   > every build computed before (`27740e9f`); a remaining delay of
   > `INT_MAX` milliseconds or more still goes on through

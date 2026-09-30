@@ -799,9 +799,11 @@ TEST(ApplySkillInfo, SkillTypePastTheInfoTableIsSkipped)
 {
 	SkillInfoWorld world;
 
-	// The table holds MIN_RESULT_ACTIONINFO skills; the server's skill
-	// types end below it (its SKILL_MAX is 397). 2048 and up are past
-	// ACTIONINFO's range of values too.
+	// The constructor sizes the table to MIN_RESULT_ACTIONINFO (512), and
+	// this fixture loads no data file, so that is its size here; in the
+	// game LoadFromFile resizes it to the count its data file declares.
+	// The server's skill types end at its SKILL_MAX, 397. 2048 and up are
+	// past ACTIONINFO's range of values too.
 	CHECK_EQ((int)MIN_RESULT_ACTIONINFO, g_pSkillInfoTable->GetSize());
 	const int kTypes[] = { MIN_RESULT_ACTIONINFO, MAX_ACTIONINFO, 2047, 2048, 0x92A3, 0xFFFF };
 	const int kCount = (int)(sizeof(kTypes) / sizeof(kTypes[0]));

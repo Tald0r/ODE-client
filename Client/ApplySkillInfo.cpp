@@ -11,11 +11,14 @@
 //----------------------------------------------------------------------
 // Is SkillInTable ( skillType )
 //----------------------------------------------------------------------
-// A wire skill type past the info table names no skill of this client;
-// the server's skill types all lie below it. Such an entry is skipped whole, before
-// its type is taken for an ACTIONINFO - 2048 and up are past the enum's
-// range of values - and before a learn it cannot pass leaves the
-// domain's new-skill flag set.
+// A wire skill type at or past the info table's size names no skill of
+// this client. The size is MIN_RESULT_ACTIONINFO (512) as constructed,
+// and LoadFromFile resizes the table to the count its data file
+// declares; given a skill info file of at least the server's SKILL_MAX
+// (397) rows, every type the server sends lies below it. Such an entry
+// is skipped whole, before its type is taken for an ACTIONINFO - 2048
+// and up are past the enum's range of values - and before a learn it
+// cannot pass leaves the domain's new-skill flag set.
 //----------------------------------------------------------------------
 static bool
 IsSkillInTable(int skillType)
