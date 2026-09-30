@@ -1210,7 +1210,14 @@ rounds settled* for the host rules). Test fixtures share
   > comparisons passed a NULL string (an empty `MString` keeps no
   > storage) to `strcmp`, so an empty key crashed `MStringMap` on every
   > platform, and with it `IsAcceptID("")` for a player with an ID on the
-  > list; a NULL string now compares as "". And `LoadFromFileCurse`
+  > list; a NULL string now compares as "". The chat handlers pass
+  > a wire-supplied name to `IsAcceptID`: `GCGuildChat`'s sender
+  > (`GCGuildChatHandler.cpp:43`), `GCWhisper`'s name
+  > (`GCWhisperHandler.cpp:50`), `GCSay`'s creature name
+  > (`GCSayHandler.cpp:76`), and `GCPartySay`, `GCGlobalChat`, `CRWhisper`,
+  > `RCSay` and `GCNPCSay` likewise, so an empty sender name from a server
+  > would have crashed the client: the fix is a live defensive fix. Found
+  > by reading, not seen in a game. And `LoadFromFileCurse`
   > tested `eof()` before each read instead of the read: MSVC's stream
   > library turns the failed read after a file's final newline into an
   > empty word, which is what reached the map; with libc++ and libstdc++
