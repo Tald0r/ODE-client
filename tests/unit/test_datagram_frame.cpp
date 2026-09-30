@@ -323,7 +323,8 @@ TEST(Datagram, ReadRefusesALengthThatDisagreesWithTheSizeField)
 namespace {
 
 // A frame for `id` whose zero-filled body the size and length gates
-// accept, so whatever refuses it is the id check.
+// accept, so what refuses it is the id check or, were that missing, the
+// conversion check (ARefusedIdCreatesNoPacket tells the two apart).
 std::vector<unsigned char>	ZeroFrame(PacketFactoryManager& factories, PacketID_t id)
 {
 	const PacketSize_t maxSize = factories.getPacketMaxSize(id);
@@ -358,6 +359,74 @@ TEST(Datagram, ReadRefusesAnIdThatIsNotADatagramPacket)
 		CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(ZeroFrame(tables.factories, id), NULL, &bLeftNull));
 		CHECK(bLeftNull);
 	}
+}
+
+// The refusal comes before any packet exists, not only before its
+// read: Datagram::read's conversion check refuses these ids too, after
+// createPacket, so the test above alone would pass with the id check
+// removed. Here each id's factory is one that counts what it creates,
+// wrapped around the real one, and a refused id must have created
+// nothing. RCPositionInfo, which is accepted, is the positive control:
+// its factory counts one. With the id check deleted from Datagram.cpp
+// this test counted 9 packets created for the 9 refused ids.
+namespace {
+
+int	s_Created = 0;
+
+class CountingFactory : public PacketFactory
+{
+public:
+	CountingFactory(PacketFactoryManager& real, PacketID_t id)
+	: m_Real(real), m_ID(id) {}
+
+	Packet*		createPacket()
+	{
+		s_Created++;
+		return m_Real.createPacket(m_ID);
+	}
+
+#ifdef __DEBUG_OUTPUT__
+	std::string	getPacketName() const { return m_Real.getPacketName(m_ID); }
+#endif
+
+	PacketID_t	getPacketID() const { return m_ID; }
+
+	PacketSize_t	getPacketMaxSize() const { return m_Real.getPacketMaxSize(m_ID); }
+
+private:
+	PacketFactoryManager&	m_Real;
+	PacketID_t		m_ID;
+};
+
+} // namespace
+
+TEST(Datagram, ARefusedIdCreatesNoPacket)
+{
+	PacketFactoryManager real;
+	real.init();
+
+	// Only the ids read below are registered; every other slot is empty.
+	PacketFactoryManager counting;
+	for (PacketID_t id : kNotDatagramIds)
+		counting.addFactory(new CountingFactory(real, id));
+	counting.addFactory(new CountingFactory(real, Packet::PACKET_RC_POSITION_INFO));
+	FactoryManagerScope factoriesScope(&counting);
+
+	PacketValidator validator;
+	validator.init();
+	ValidatorScope validatorScope(&validator);
+
+	s_Created = 0;
+	for (PacketID_t id : kNotDatagramIds)
+	{
+		bool bLeftNull = false;
+		CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(ZeroFrame(counting, id), NULL, &bLeftNull));
+		CHECK(bLeftNull);
+	}
+	CHECK_EQ(0, s_Created);
+
+	CHECK_EQ(READ_PACKET, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, PositionInfoBody())));
+	CHECK_EQ(1, s_Created);
 }
 
 // The four the client does accept still read: each written by its own

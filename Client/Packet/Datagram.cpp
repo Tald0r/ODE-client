@@ -142,8 +142,9 @@ void Datagram::read ( std::string & str , uint len )
 // DatagramPacket - past the end of its vtable. The conversion is
 // checked as well, so a set that admits a non-datagram id refuses it.
 //
-// On any throw pPacket is left NULL: the packet is owned here until
-// its read has succeeded, and only then handed to the caller.
+// pPacket must come in NULL (the entry Assert), and on any throw it is
+// still NULL: the packet is owned here until its read has succeeded,
+// and only then handed to the caller.
 //
 //////////////////////////////////////////////////////////////////////
 void Datagram::read ( DatagramPacket * & pPacket )
