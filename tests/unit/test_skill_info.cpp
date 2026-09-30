@@ -18,9 +18,11 @@
 // The wire bytes are built field by field from the packet types'
 // widths, little-endian, as the server writes them (its Slayer.cpp,
 // Vampire.cpp and Ousters.cpp send the three races' lists), and every
-// read must consume them exactly. Two tests start from the server's
-// own goldens for this packet (tests/golden/GCSkillInfo.*.hex in the
-// server repository, byte-identical here as hex strings).
+// read must consume them exactly. Three tests read the server's own
+// five goldens for this packet (tests/golden/GCSkillInfo.*.hex in the
+// server repository, byte-identical here as hex strings). The last
+// four tests pin the two fixes task 4.16 made: a skill type past the
+// info table is skipped, and a duration's milliseconds are a DWORD.
 //
 //----------------------------------------------------------------------
 
