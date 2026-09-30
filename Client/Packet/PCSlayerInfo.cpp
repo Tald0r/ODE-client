@@ -59,9 +59,11 @@ void PCSlayerInfo::read ( SocketInputStream & iStream )
 	// variable of the written size and converted to the enum
 	// afterwards (Slot, Sex, HairStyle ...).
 	//
-	// The slot is range-checked before the conversion: a byte
-	// past SLOT3 is no Slot value, and LCPCList::read stores
-	// this info at m_pPCInfos[getSlot()], an array of SLOT_MAX.
+	// The slot is range-checked before the conversion.
+	// LCPCList::read stores this info at m_pPCInfos[getSlot()],
+	// an array of SLOT_MAX entries: a byte of SLOT_MAX (3) is a
+	// valid enumerator that indexes one past it, and a byte
+	// past SLOT_MAX is no Slot value at all.
 	//--------------------------------------------------
 	BYTE slot;
 	iStream.read( slot );
