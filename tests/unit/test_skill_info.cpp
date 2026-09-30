@@ -862,3 +862,58 @@ TEST(ApplySkillInfo, ServerGoldensOfEachRaceLearnNothingTheClientDoesNotKnow)
 	CheckNoFlags();
 	CheckDomainLevelsUntouched();
 }
+
+//----------------------------------------------------------------------
+// Durations past the int range
+//----------------------------------------------------------------------
+// The wire's turns are DWORDs; ConvertDurationToMillisecond takes an
+// int, so one past INT_MAX arrives negative, and the milliseconds are a
+// DWORD. The product is taken modulo 2^32, as a DWORD.
+DWORD	Millis(DWORD turn)	{ return (DWORD)(turn * 100u); }
+
+TEST(ConvertDuration, MillisecondsPastTheIntRangeWrapAsADword)
+{
+	// The last in range, then the first past it, both ways.
+	CHECK_EQ(2147483600u, ConvertDurationToMillisecond(21474836));
+	CHECK_EQ(2147483700u, ConvertDurationToMillisecond(21474837));
+	CHECK_EQ(Millis(0xFFFFFF9Cu), ConvertDurationToMillisecond(-100));
+	CHECK_EQ(Millis(0xFEB851ECu), ConvertDurationToMillisecond(-21474836));
+	CHECK_EQ(Millis(0xFEB851EBu), ConvertDurationToMillisecond(-21474837));
+	CHECK_EQ(Millis(0x7FFFFFFFu), ConvertDurationToMillisecond(0x7FFFFFFF));
+	CHECK_EQ(Millis(0x80000000u), ConvertDurationToMillisecond((int)0x80000000u));
+	CHECK_EQ(Millis(0xFFFFFFFFu), ConvertDurationToMillisecond(-1));
+}
+
+TEST(ApplySkillInfo, TurnsPastTheIntRangeKeepTheirWrappedDelay)
+{
+	SkillInfoWorld world;
+
+	// The server golden's slayer turns, on a skill the client knows.
+	std::vector<SlayerDomain> domains(1);
+	domains[0].learnNew = false;
+	domains[0].domain = SKILL_DOMAIN_BLADE;
+	domains[0].skills.push_back(SlayerSkill{ SKILL_SINGLE_BLOW, 0, 0, 0x9AABBCCDu, 0x9EAFB0C1u, true });
+	Apply(SlayerBytes(domains));
+
+	CHECK(IsLearned(SKILLDOMAIN_BLADE, SKILL_SINGLE_BLOW));
+	CHECK_EQ(Millis(0x9AABBCCDu), Info(SKILL_SINGLE_BLOW).GetDelayTime());
+	// The remaining delay goes on as an int: past INT_MAX milliseconds
+	// it is negative, and the skill reads as usable now.
+	CHECK_EQ(true, (int)Millis(0x9EAFB0C1u) < 0);
+	CHECK_EQ(0u, Info(SKILL_SINGLE_BLOW).GetAvailableTimeLeft());
+
+	// The vampire's and the ousters' lists read the same turns.
+	std::vector<VampireSkill> vampire;
+	vampire.push_back(VampireSkill{ MAGIC_HIDE, 0xFFFFFFFFu, 0x80000000u });
+	Apply(VampireBytes(false, vampire));
+	CHECK(IsLearned(SKILLDOMAIN_VAMPIRE, MAGIC_HIDE));
+	CHECK_EQ(Millis(0xFFFFFFFFu), Info(MAGIC_HIDE).GetDelayTime());
+	CHECK_EQ(0u, Info(MAGIC_HIDE).GetAvailableTimeLeft());	// 0 ms
+
+	std::vector<OustersSkill> ousters;
+	ousters.push_back(OustersSkill{ SKILL_FLOURISH, 1, 0x7FFFFFFFu, 21474837u });
+	Apply(OustersBytes(false, ousters));
+	CHECK(IsLearned(SKILLDOMAIN_OUSTERS, SKILL_FLOURISH));
+	CHECK_EQ(Millis(0x7FFFFFFFu), Info(SKILL_FLOURISH).GetDelayTime());
+	CHECK_EQ(0u, Info(SKILL_FLOURISH).GetAvailableTimeLeft());
+}

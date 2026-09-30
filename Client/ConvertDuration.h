@@ -25,7 +25,8 @@ extern DWORD	ConvertDurationToFrame(int duration);
 //----------------------------------------------------------------------
 // ConvertDurationToMillisecond
 //----------------------------------------------------------------------
-// The duration in milliseconds: duration * 100.
+// The duration in milliseconds: duration * 100, taken as a DWORD, so
+// modulo 2^32 for a duration past INT_MAX / 100 or below 0.
 //----------------------------------------------------------------------
 extern DWORD	ConvertDurationToMillisecond(int duration);
 

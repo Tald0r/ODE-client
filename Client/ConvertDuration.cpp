@@ -26,5 +26,8 @@ ConvertDurationToMillisecond(int duration)
 {
 	// 1 --> 0.1 second
 	// 1 --> 100
-	return duration * 100;
+	// In DWORD arithmetic: a wire turn past INT_MAX arrives here
+	// negative, and the product of an int would overflow. Modulo 2^32,
+	// which is the value every build computed before.
+	return (DWORD)duration * 100;
 }
