@@ -15,8 +15,9 @@
 // The four phone handlers hold seven of the subscripts
 // tests/tools/check_packet_indices.pl counts as raw: a wire slot byte
 // into PCSUserName and OtherPCSNumber, each MAX_PCS_SLOT long. Every
-// slot byte past the arrays is run here, so a guard that went missing
-// would show as a changed neighbour, and under ASan as the access.
+// slot byte past the arrays (MAX_PCS_SLOT to 0xFF) is run past each of
+// them here, so a guard that went missing would show as a changed
+// neighbour, and under ASan as the access.
 //
 //----------------------------------------------------------------------
 
@@ -225,9 +226,6 @@ void	CheckSlotsFilledBut(int changed)
 	}
 }
 
-// The slot bytes past the arrays: the first one out and the largest.
-const int	kOutOfRangeSlots[] = { MAX_PCS_SLOT, MAX_PCS_SLOT + 1, 0x7F, 0x80, 0xFF };
-
 Wire	PhoneConnectedBytes(PhoneNumber_t number, int slot, const std::string& name)
 {
 	Wire w;
@@ -357,7 +355,7 @@ TEST(ModelHandlers, PhoneConnectedIgnoresASlotPastTheArrays)
 {
 	HandlerWorld world;
 
-	for (int slot : kOutOfRangeSlots)
+	for (int slot = MAX_PCS_SLOT; slot <= 0xFF; ++slot)
 	{
 		FillSlots();
 		std::unique_ptr<GCPhoneConnected> p = ReadPacket<GCPhoneConnectedFactory, GCPhoneConnected>(
@@ -397,7 +395,7 @@ TEST(ModelHandlers, RingIgnoresASlotPastTheArrays)
 {
 	HandlerWorld world;
 
-	for (int slot : kOutOfRangeSlots)
+	for (int slot = MAX_PCS_SLOT; slot <= 0xFF; ++slot)
 	{
 		FillSlots();
 		std::unique_ptr<GCRing> p = ReadPacket<GCRingFactory, GCRing>(PhoneConnectedBytes(99, slot, "Intruder"));
@@ -438,7 +436,7 @@ TEST(ModelHandlers, PhoneDisconnectedIgnoresASlotPastTheArrays)
 {
 	HandlerWorld world;
 
-	for (int slot : kOutOfRangeSlots)
+	for (int slot = MAX_PCS_SLOT; slot <= 0xFF; ++slot)
 	{
 		FillSlots();
 		Wire w;
@@ -770,7 +768,7 @@ TEST(ModelHandlers, SystemAvailabilitiesSetsTheSwitchesAndTheSkillLimit)
 	CHECK_EQ(false, g_pSystemAvailableManager->IsAvailableCTFSystem());
 	CHECK_EQ(30, (int)g_pSystemAvailableManager->GetLimitLearnSkillLevel());
 
-	// Every bit: every switch on; bits past the last switch are dropped.
+	// Every bit: every switch the manager exposes turns on.
 	RunSystem(0xFFFFFFFFu, 1, 0xFF);
 	CHECK(g_pSystemAvailableManager->IsAvailablePartySystem());
 	CHECK(g_pSystemAvailableManager->IsAvailableGambleSystem());
