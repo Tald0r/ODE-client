@@ -13,12 +13,10 @@
 #include "MSkillManager.h"
 
 //----------------------------------------------------------------------
-// When the client receives a GCSkillInfo packet from the game server,
-// it stores the packet's data in the client; once the data is loaded,
-// it sends the game server a CGReady packet.
-//
-// The skill model is rebuilt by gamemodel's ApplySkillInfo; what stays
-// here reaches the executable (MSkillAvailable.cpp).
+// Rebuilds the player's skill model from the packet (gamemodel's
+// ApplySkillInfo), then does the part that reaches the executable
+// (MSkillAvailable.cpp): it clears the sweeper bonus skills and asks
+// g_pSkillAvailable which skills can be used now. It sends nothing.
 //----------------------------------------------------------------------
 void GCSkillInfoHandler::execute ( GCSkillInfo * pPacket , Player * pPlayer )
 
