@@ -13,6 +13,8 @@
 #include "PCVampireInfo.h"
 #include "PCOustersInfo.h"
 
+#include <memory>
+
 //----------------------------------------------------------------------
 // constructor
 //----------------------------------------------------------------------
@@ -39,19 +41,36 @@ LCPCList::~LCPCList ()
 
 
 //----------------------------------------------------------------------
-// 입력스트림(버퍼)으로부터 데이타를 읽어서 패킷을 초기화한다.
+// Reads the SLOT_MAX PC type tags, then one PC info per character, each
+// stored in the slot its own slot byte names.
 //----------------------------------------------------------------------
+namespace {
+
+// Reads one Info and stores it in the slot it names. Info::read refuses
+// a slot byte of SLOT_MAX or more with InvalidProtocolException, so the
+// index is in range. The info is owned here until it is stored, so a
+// refused or short read frees it. A slot named twice keeps the later
+// info, as it always has, and frees the earlier one.
+template <class Info>
+void	ReadPCInfo ( SocketInputStream & iStream , PCInfo * pPCInfos[SLOT_MAX] )
+{
+	std::unique_ptr<Info> pInfo( new Info() );
+	pInfo->read( iStream );
+
+	const Slot slot = pInfo->getSlot();
+	delete pPCInfos[ slot ];
+	pPCInfos[ slot ] = pInfo.release();
+}
+
+} // namespace
+
 void LCPCList::read ( SocketInputStream & iStream )
 {
 	__BEGIN_TRY
 
 	//--------------------------------------------------
-	// PC 타입 정보를 받아온다.
-	//
-	// *OPTMIZATION*
-	//
-	// 나중에는 이 정보를 1 바이트에 넣어서 비트 연산을 하도록 한다.
-	//
+	// The PC type of each slot, one byte each: 'S', 'V'
+	// or 'O' for a character, '0' for an empty slot.
 	//--------------------------------------------------
 	char pcTypes[SLOT_MAX];
 
@@ -59,34 +78,22 @@ void LCPCList::read ( SocketInputStream & iStream )
 		iStream.read(pcTypes[i]);
 
 	//--------------------------------------------------
-	// PC 정보 본체를 읽는다.
+	// Then the PC info of each character, in tag order.
 	//--------------------------------------------------
 	for ( uint j = 0 ; j < SLOT_MAX ; j ++ ) {
 
 		switch ( pcTypes[j] ) {
 
 			case 'S' :
-				{
-					PCSlayerInfo * pPCSlayerInfo = new PCSlayerInfo();	
-					pPCSlayerInfo->read( iStream );
-					m_pPCInfos[ pPCSlayerInfo->getSlot() ] = pPCSlayerInfo;
-				}
+				ReadPCInfo<PCSlayerInfo>( iStream , m_pPCInfos );
 				break;
 
 			case 'V' :
-				{
-					PCVampireInfo * pPCVampireInfo = new PCVampireInfo();	
-					pPCVampireInfo->read( iStream );
-					m_pPCInfos[ pPCVampireInfo->getSlot() ] = pPCVampireInfo;
-				}
+				ReadPCInfo<PCVampireInfo>( iStream , m_pPCInfos );
 				break;
 
 			case 'O' :
-				{
-					PCOustersInfo * pPCOustersInfo = new PCOustersInfo();	
-					pPCOustersInfo->read( iStream );
-					m_pPCInfos[ pPCOustersInfo->getSlot() ] = pPCOustersInfo;
-				}
+				ReadPCInfo<PCOustersInfo>( iStream , m_pPCInfos );
 				break;
 				
 			case '0' :

@@ -2,13 +2,15 @@
 // test_packet_fuzz_findings.cpp
 //----------------------------------------------------------------------
 //
-// Parsers the client packet-read fuzz target (tests/fuzz/
-// fuzz_client_stream.cpp) crashed, each pinned with the bytes it
-// crashed on. The same inputs, as the fuzzer wrote them, replay in the
-// fuzz_replay_client_stream ctest from tests/fuzz/regressions/
-// client_stream; this file states the contract the fix established:
-// the hostile value is refused with InvalidProtocolException, the
-// exception every receive loop treats as a protocol violation.
+// Parsers the client packet-read fuzz targets (tests/fuzz/
+// fuzz_client_stream.cpp, the game connection, and
+// fuzz_client_login_stream.cpp, the login connection) crashed, each
+// pinned with the bytes it crashed on. The same inputs, as the fuzzer
+// wrote them, replay in the fuzz_replay_<target> ctests from
+// tests/fuzz/regressions/<target>; this file states the contract the
+// fix established: the hostile value is refused with
+// InvalidProtocolException, the exception every receive loop treats as
+// a protocol violation.
 //
 // Compiled with the packetwire defines (tests/CMakeLists.txt).
 //
@@ -27,7 +29,12 @@
 #include "Gpackets/GCModifyNickname.h"
 #include "Gpackets/GCMyStoreInfo.h"
 #include "Gpackets/GCOtherStoreInfo.h"
+#include "Lpackets/LCPCList.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -263,4 +270,195 @@ TEST(PacketFuzzFindings, OtherStoreInfoFrameWithCount21IsRefused)
 	std::string why;
 	CHECK(FramedReadIsRefused(packet, frame, why));
 	CHECK(RefusedFor(why, "store item count out of range"));
+}
+
+//----------------------------------------------------------------------
+// LCPCList::read stored each PC info at m_pPCInfos[getSlot()], and
+// PCSlayerInfo::read, PCVampireInfo::read and PCOustersInfo::read took
+// that slot from a wire byte (up to 255) and cast it to Slot unchecked.
+// A slot of 3 (SLOT_MAX) wrote the info's pointer one entry past the
+// three-entry array, inside the heap-allocated packet's neighbour; a
+// slot of 4 or more is no Slot value at all (Clang's UBSan stops at
+// getSlot()'s load) and wrote up to 2 KB past it. The login server
+// sends LCPCList after a login and after every character change.
+//----------------------------------------------------------------------
+namespace {
+
+// tests/golden/LCPCList.code0.hex, the list the server writes for three
+// characters: the type tags 'S', 'V' and 'O', then a PCSlayerInfo in
+// slot 0, a PCVampireInfo in slot 1 and a PCOustersInfo in slot 2.
+// Each info starts with its name's length and the name; the slot byte
+// follows the name.
+const char	kPCListGoldenHex[] =
+	"53564f0a476f6c64536c6179657200bdac9b8a81079207a3078bbfae9d8cc0af"
+	"9e8dc1b09f8e1b8a2c8b3d8c4e8dc2b1a08f8081828384859d7c0100118a228b"
+	"338c448d558e668f77908d0f476f6c6456616d706972654e616d6501bcad9e8f"
+	"008891999204aa9381079207a307bb94cc959697cbbaa998ccbbaa99dd9a9b0b"
+	"476f6c644f75737465727302bfae8d9c01119d229e339f44a00c81079207a307"
+	"55a166a277a388a4a5a6dac9b8a7dbcab9a8eea9ffaaab";
+
+std::vector<unsigned char>	FromHex(const char* hex)
+{
+	std::vector<unsigned char> bytes;
+	for (const char* p = hex; p[0] != '\0' && p[1] != '\0'; p += 2)
+	{
+		const char digits[3] = { p[0], p[1], '\0' };
+		bytes.push_back((unsigned char)std::strtoul(digits, NULL, 16));
+	}
+	return bytes;
+}
+
+std::vector<unsigned char>	PCListGolden()
+{
+	return FromHex(kPCListGoldenHex);
+}
+
+// The offset of the byte after `name` in the golden body: the info's
+// slot byte.
+std::size_t	SlotOffsetAfter(const std::vector<unsigned char>& body, const char* name)
+{
+	const std::size_t len = std::strlen(name);
+	const auto it = std::search(body.begin(), body.end(), name, name + len);
+	CHECK(it != body.end());
+	return (std::size_t)(it - body.begin()) + len;
+}
+
+std::size_t	SlayerSlot(const std::vector<unsigned char>& body)	{ return SlotOffsetAfter(body, "GoldSlayer"); }
+std::size_t	VampireSlot(const std::vector<unsigned char>& body)	{ return SlotOffsetAfter(body, "GoldVampireName"); }
+std::size_t	OustersSlot(const std::vector<unsigned char>& body)	{ return SlotOffsetAfter(body, "GoldOusters"); }
+
+// One LCPCList frame (id 446) around `body`, sequence 0.
+std::vector<unsigned char>	PCListFrame(const std::vector<unsigned char>& body)
+{
+	std::vector<unsigned char> frame = {
+		0xbe, 0x01,			// id 0x01be, LCPCList
+		(unsigned char)body.size(), (unsigned char)(body.size() >> 8), 0x00, 0x00,
+		0x00,				// sequence
+	};
+	frame.insert(frame.end(), body.begin(), body.end());
+	return frame;
+}
+
+// read()s the bytes from `begin` to `end` of the golden body into a
+// fresh Info. True when refused; `why` receives the message.
+template <class Info>
+bool	PCInfoReadIsRefused(const std::vector<unsigned char>& body, std::size_t begin,
+			    std::size_t end, std::string& why)
+{
+	const std::vector<unsigned char> bytes(body.begin() + begin, body.begin() + end);
+	FindingInFixture f(bytes);
+	Info info;
+	why.clear();
+	try {
+		info.read(f.m_Stream);
+	} catch (InvalidProtocolException& e) {
+		why = e.getMessage();
+		return true;
+	}
+	return false;
+}
+
+} // namespace
+
+// Each info's read, alone, refuses the slot byte: 3 is the first value
+// past the array, 0x7f and 0xff are not Slot values.
+TEST(PacketFuzzFindings, PCInfoSlotPastTheLastIsRefused)
+{
+	const unsigned char slots[] = { (unsigned char)SLOT_MAX, 0x7f, 0xff };
+	for (unsigned char slot : slots)
+	{
+		std::vector<unsigned char> body = PCListGolden();
+		const std::size_t vampireStart = VampireSlot(body) - 1 - std::strlen("GoldVampireName");
+		const std::size_t oustersStart = OustersSlot(body) - 1 - std::strlen("GoldOusters");
+		body[SlayerSlot(body)] = slot;
+		body[VampireSlot(body)] = slot;
+		body[OustersSlot(body)] = slot;
+
+		std::string why;
+		CHECK(PCInfoReadIsRefused<PCSlayerInfo>(body, 3, vampireStart, why));
+		CHECK(RefusedFor(why, "pc slot out of range"));
+		CHECK(PCInfoReadIsRefused<PCVampireInfo>(body, vampireStart, oustersStart, why));
+		CHECK(RefusedFor(why, "pc slot out of range"));
+		CHECK(PCInfoReadIsRefused<PCOustersInfo>(body, oustersStart, body.size(), why));
+		CHECK(RefusedFor(why, "pc slot out of range"));
+	}
+}
+
+// The fuzzer's input (tests/fuzz/regressions/client_login_stream/
+// LCPCList-slot-0xbc.hex) without its encrypt code byte, byte for
+// byte: one LCPCList frame of 183 bytes, a mutation of the golden list
+// whose Slayer is named "GoldSlaye\0" and has slot byte 188. On the
+// unfixed code the read stores the Slayer at m_pPCInfos[188], 1.5 KB
+// past the packet.
+TEST(PacketFuzzFindings, PCListFrameWithSlayerSlotBcIsRefused)
+{
+	const std::vector<unsigned char> frame = FromHex(
+		"be01b70000000053564f0a476f6c64536c61796500bc0100000000009207a3"
+		"078bbfae9d8cc0af9e8dc1b09f8e1b8a2c8b3d8c4e8dc2b1a08f808182838485"
+		"9d040500118a228b338c448d558e668f77908d0f476f6c6456616d706972654e"
+		"616d6501bcad9e8f008891999204aa9381079207a307bb94cc959697cbbaa998"
+		"ccbbaa99dd9a9b0b476f6c644f75737465727302bfae8d9c01119d229e339f44"
+		"a00c81079207a30755a166a277a388a4a5a6dac9b8a7dbcab9a8eea9ffaaab");
+	CHECK_EQ(7u + 183u, (unsigned int)frame.size());
+	CHECK_EQ(0xbc, (int)frame[7 + 3 + 1 + 10]);	// types, name length, name
+
+	LCPCList packet;
+	std::string why;
+	CHECK(FramedReadIsRefused(packet, frame, why));
+	CHECK(RefusedFor(why, "pc slot out of range"));
+}
+
+// Slot 3, a valid Slot enumerator and one entry past the array, in the
+// last info: the frame is otherwise the golden, so on the unfixed code
+// it reads to the end and only the stray pointer tells.
+TEST(PacketFuzzFindings, PCListFrameWithOustersSlot3IsRefused)
+{
+	std::vector<unsigned char> body = PCListGolden();
+	body[OustersSlot(body)] = (unsigned char)SLOT_MAX;
+
+	LCPCList packet;
+	std::string why;
+	CHECK(FramedReadIsRefused(packet, PCListFrame(body), why));
+	CHECK(RefusedFor(why, "pc slot out of range"));
+}
+
+// Slots 0 to 2 still read, in any order, each info landing in the slot
+// its byte names.
+TEST(PacketFuzzFindings, PCListSlotsInRangeStillRead)
+{
+	std::vector<unsigned char> body = PCListGolden();
+	body[SlayerSlot(body)] = (unsigned char)SLOT3;
+	body[VampireSlot(body)] = (unsigned char)SLOT1;
+	body[OustersSlot(body)] = (unsigned char)SLOT2;
+
+	LCPCList packet;
+	std::string why;
+	CHECK(!FramedReadIsRefused(packet, PCListFrame(body), why));
+	CHECK_EQ((int)PC_VAMPIRE, (int)packet.getPCInfo(SLOT1)->getPCType());
+	CHECK_EQ((int)PC_OUSTERS, (int)packet.getPCInfo(SLOT2)->getPCType());
+	CHECK_EQ((int)PC_SLAYER, (int)packet.getPCInfo(SLOT3)->getPCType());
+}
+
+// A slot named twice keeps the later info, as it always has, and the slot
+// no character names stays empty. This test cannot see whether the earlier
+// info is freed: no leak check runs in the unit suite, and this passed on
+// the unfixed code, which leaked it (ReadPCInfo now deletes it).
+TEST(PacketFuzzFindings, PCListSlotNamedTwiceKeepsTheLaterInfo)
+{
+	std::vector<unsigned char> body = PCListGolden();
+	body[SlayerSlot(body)] = (unsigned char)SLOT2;
+	body[VampireSlot(body)] = (unsigned char)SLOT2;
+
+	LCPCList packet;
+	std::string why;
+	CHECK(!FramedReadIsRefused(packet, PCListFrame(body), why));
+	CHECK_EQ((int)PC_VAMPIRE, (int)packet.getPCInfo(SLOT2)->getPCType());
+	CHECK_EQ((int)PC_OUSTERS, (int)packet.getPCInfo(SLOT3)->getPCType());
+	bool bEmpty = false;
+	try {
+		packet.getPCInfo(SLOT1);
+	} catch (NoSuchElementException&) {
+		bEmpty = true;
+	}
+	CHECK(bEmpty);
 }
