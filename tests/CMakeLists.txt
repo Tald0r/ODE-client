@@ -263,8 +263,10 @@ endif()
 # Ratchet R3 covers the lengths a server sends into a copy. This covers
 # the indices it sends into a subscript, and it walks the VALUE rather
 # than the spelling: the population is not `array[pPacket->getSlotID()]`
-# but a local assigned from it and used twenty lines later. Handlers are
-# executable-side, so this is the only kind of check they can have.
+# but a local assigned from it and used twenty lines later. Most
+# handlers are executable-side, so for them this is the only kind of
+# check they can have; the eight gamemodel lists are also run on real
+# packets in test_model_handlers.cpp.
 #
 # The repo root is passed so the script does not have to guess it from
 # its own location. Needs perl (found above); without it the check is

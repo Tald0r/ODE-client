@@ -1338,7 +1338,8 @@ rounds settled* for the host rules). Test fixtures share
   > packet's own size), `execute()` with no `Player`, and the model
   > state checked. It pins the phone slots (each slot stored or cleared
   > with no neighbour touched, and every slot byte from 3 to 255
-  > changing nothing; `GCPhoneSay` over every byte 0-255), the trade
+  > changing nothing; `GCPhoneSay` over every byte 0-255 with every
+  > slot named, and on a slot with no name), the trade
   > money flow in both directions and on both sides with the OK
   > cancellation and accept delay, the other side's item removal, the
   > system switches (every switch the manager exposes; it has no getter
@@ -1352,7 +1353,10 @@ rounds settled* for the host rules). Test fixtures share
   > `MMoneyManager::AddMoney`/`UseMoney` took the new balance in `int`,
   > so two amounts within the limit could overflow it (UBSan halted);
   > they now refuse a balance outside 0..limit first, and `CanUseMoney`
-  > refuses a negative amount, as `CanAddMoney` does. And
+  > refuses a negative amount, as `CanAddMoney` does, although
+  > `UseMoney` still accepts one that leaves the balance within
+  > 0..limit (no production code calls `CanUseMoney`; the header says
+  > so). And
   > `GCTradeMoney` ran an amount past `INT_MAX`, which no wallet holds
   > (the server's `MAX_MONEY` is two billion), through its `int`, so
   > every move ran backwards; such a packet now changes nothing. The
@@ -1375,10 +1379,14 @@ rounds settled* for the host rules). Test fixtures share
   > `check_packet_indices.pl` still counts 103 subscripts, 12 raw: the seven phone-slot ones are
   > guarded and now tested, but the checker reads the subscript, not the
   > guard, and the files did not leave the directory it scans.
-  > **Known, not fixed:** `GCPhoneSay` formats a slot that never
-  > connected with `%s` over its NULL name (undefined; the three C
-  > libraries print "(null)", and the line goes nowhere, since its chat
-  > call is commented out). The other side's `INCREASE`/`DECREASE`
+  > A fourth fix could not be test-first. `GCPhoneSay` formatted a
+  > slot that never connected, or was hung up, with `%s` over its NULL
+  > name. That is undefined, but every C library the project builds
+  > against prints "(null)", and the line goes nowhere, since its chat
+  > call is commented out. `782432c0` passes "" instead. Its test runs
+  > both empty-slot paths in every build, but it passed on the unfixed
+  > code too.
+  > **Known, not fixed:** the other side's `INCREASE`/`DECREASE`
   > still apply one box's refusal silently; no money is moved between
   > two wallets there. The money fix's commit (`fdc1d7e4`) named a
   > `UseMoney`/`AddMoney` pair in `UIMessageManager.cpp` as the same

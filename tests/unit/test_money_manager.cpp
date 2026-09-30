@@ -149,7 +149,9 @@ TEST(MoneyManager, CanUseMoneyRefusesANegativeAmountWithoutOverflow)
 	CHECK(!wallet.CanUseMoney(INT_MAX));
 	CHECK(wallet.CanUseMoney(1));
 
-	// CanUseMoney and UseMoney agree around the balance.
+	// For amounts that are not negative, CanUseMoney and UseMoney agree
+	// around the balance. A negative amount is where they part:
+	// CanUseMoney refuses it, and UseMoney accepts it as an add.
 	for (int amount = 0; amount <= 2; amount++)
 	{
 		MMoneyManager probe(wallet);
