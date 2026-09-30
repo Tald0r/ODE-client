@@ -90,10 +90,10 @@ slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
 `GCSystemAvailabilities`; `GCMonsterKillQuestInfo`), which stay in
 `Client/PacketHandler`, and `ApplySkillInfo`, the skill-model rebuild
 `GCSkillInfoHandler` runs on its packet (the handler keeps the sweeper
-bonus reset and `SetAvailableSkills`), with the duration conversions
-(`ConvertDurationToFrame`, `ConvertDurationToMillisecond`) -
-with the user, config and timed-item loaders it
-reads, and their string support, membership in
+bonus reset and `SetAvailableSkills`), and the duration conversions
+`ConvertDurationToFrame` and `ConvertDurationToMillisecond`; with the
+user, config and timed-item loaders gamemodel reads, and their string
+support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15
 and 4.16),
