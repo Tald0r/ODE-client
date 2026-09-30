@@ -214,17 +214,14 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-30 on the model-handler branch merged with master at
-`bdfce7e9`, so the tree holds both. From the branch
-(`docs/RESTRUCTURING.md` task 4.15): the eight packet handlers that
-reach only model state, run on real packets in `test_model_handlers.cpp`,
-and the four fixes that followed - the quest name, the wallet's int
-overflow, the trade money's results (each side applied as the server
-committed it) and the phone line's empty name. From master: PR #296, the
-login stream fuzz target and the `LCPCList` slot fix with its 5 tests and
-70 checks. Master alone read 1419 tests and 1,443,380 checks; the merged
-tree reads **1449 tests, 1,457,614 checks, 0 failed**, identical in all
-four builds, this run (`decore_tests`: 13 tests, 2009 checks on the same
+measured on 2026-09-30 on the skill-info branch (`docs/RESTRUCTURING.md`
+task 4.16) over master at `34460343`: `ApplySkillInfo`, the rebuild
+`GCSkillInfoHandler` runs, on real packets of every race in
+`test_skill_info.cpp`, with the two fixes that followed (a skill type past
+the info table, a duration's milliseconds past the int range). Master read
+1449 tests and 1,457,614 checks; the branch reads **1469 tests,
+1,458,191 checks, 0 failed**, identical in all four builds, this run
+(`decore_tests`: 13 tests, 2009 checks on the same
 four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
 `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
