@@ -76,14 +76,21 @@ class MString {
 		//----------------------------------------------------
 		// other operator
 		//----------------------------------------------------
-		bool		operator == (const char* str)		{ return strcmp(m_pString, str)==0; }
-		bool		operator == (const MString& str)	{ return strcmp(m_pString, str.m_pString)==0; }
-		bool		operator >	(const char* str)		{ return strcmp(m_pString, str)>0; }
-		bool		operator >	(const MString& str)	{ return strcmp(m_pString, str.m_pString)>0; }
-		bool		operator <	(const char* str)		{ return strcmp(m_pString, str)<0; }
-		bool		operator <	(const MString& str)	{ return strcmp(m_pString, str.m_pString)<0; }
-		bool		operator != (const char* str)		{ return strcmp(m_pString, str)!=0; }
-		bool		operator != (const MString& str)	{ return strcmp(m_pString, str.m_pString)!=0; }
+		// An empty MString keeps no storage (operator= leaves
+		// m_pString NULL), so every comparison reads a NULL string,
+		// on either side, as "": equal to an allocated "" and before
+		// every other string. Two non-NULL strings keep strcmp's
+		// order. MStringMap orders its keys with operator<, and
+		// strcmp on NULL crashed it on an empty key.
+		//----------------------------------------------------
+		bool		operator == (const char* str)		{ return Compare(m_pString, str)==0; }
+		bool		operator == (const MString& str)	{ return Compare(m_pString, str.m_pString)==0; }
+		bool		operator >	(const char* str)		{ return Compare(m_pString, str)>0; }
+		bool		operator >	(const MString& str)	{ return Compare(m_pString, str.m_pString)>0; }
+		bool		operator <	(const char* str)		{ return Compare(m_pString, str)<0; }
+		bool		operator <	(const MString& str)	{ return Compare(m_pString, str.m_pString)<0; }
+		bool		operator != (const char* str)		{ return Compare(m_pString, str)!=0; }
+		bool		operator != (const MString& str)	{ return Compare(m_pString, str.m_pString)!=0; }
 
 		//----------------------------------------------------
 		// File I/O: resource encoding on disk, UTF-8 in memory.
@@ -96,6 +103,13 @@ class MString {
 	protected :
 		size_t	m_Length;
 		char*	m_pString;
+
+	private :
+		// strcmp, with a NULL string on either side read as "".
+		static int	Compare(const char* left, const char* right)
+		{
+			return strcmp(left!=NULL ? left : "", right!=NULL ? right : "");
+		}
 };
 
 

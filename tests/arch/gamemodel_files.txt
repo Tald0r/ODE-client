@@ -253,6 +253,15 @@ Client/MEffectStatusDef.h
 Client/MCreatureSpriteTable.cpp
 Client/MCreatureSpriteTable.h
 
+# The chat filter (task 4.13): the curse lists and ignored IDs
+# (MChatManager, over the MString map MStringMap) and the in-place
+# rewrite of chat lines and new-character names. The player's
+# "filter bad words" option comes through MChatHost.
+Client/MStringMap.cpp
+Client/MStringMap.h
+Client/MChatManager.cpp
+Client/MChatManager.h
+
 # The creature status array every ModifyInfo packet writes (the creature
 # and player override its SetStatus) and the request/answer mode register
 # the dialogs and their reply handlers share. Both move unchanged; neither
