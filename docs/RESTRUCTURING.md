@@ -1355,8 +1355,8 @@ rounds settled* for the host rules). Test fixtures share
   > they now refuse a balance outside 0..limit first, and `CanUseMoney`
   > refuses a negative amount, as `CanAddMoney` does, although
   > `UseMoney` still accepts one that leaves the balance within
-  > 0..limit (no production code calls `CanUseMoney`; the header says
-  > so). And
+  > 0..limit (no production code calls `CanUseMoney`; only its tests
+  > do). And
   > `GCTradeMoney` ran an amount past `INT_MAX`, which no wallet holds
   > (the server's `MAX_MONEY` is two billion), through its `int`, so
   > every move ran backwards; such a packet now changes nothing. The
@@ -1392,9 +1392,10 @@ rounds settled* for the host rules). Test fixtures share
   > `UseMoney`/`AddMoney` pair in `UIMessageManager.cpp` as the same
   > pattern left out of scope; that pair is inside a `/* */` block and
   > never compiled. And the tests' commit (`b8e9258e`) announced two
-  > fixes to follow; three did, the wallet overflow being found while
-  > writing the trade money's. `83fd754b`'s subject and message say the
-  > all-or-nothing move is what the server does; it is not (see above).
+  > fixes to follow; four did: the wallet overflow was found while
+  > writing the trade money's tests, and the phone line's in review.
+  > `83fd754b`'s subject and message say the all-or-nothing move is
+  > what the server does; it is not (see above).
   > And `b8e9258e`'s message says the system test shows that bits past
   > the last switch are dropped; nothing in it can observe that.
   > These notes stand in for rewording the messages: the branch's
