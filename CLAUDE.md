@@ -303,6 +303,14 @@ cd /tmp/fz-login && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
 and a stream of at most 32767 bytes, one less than the 32768-byte input
 ring; a longer input returns without being read.
 
+The recipes set `detect_leaks=0`, so no run looks for leaks. libFuzzer's
+"disabled leak detection after every mutation" notice, which every
+login-target run past its first crash and a game-target run printed (logs
+checked 2026-09-30), says only that over a thousand inputs ended with more
+allocations than frees. It names no allocation and has not been traced to
+any, so it is neither a finding nor a clean bill: a leak in a reader is
+found by reading (the review's `LCServerList`/`LCWorldList` row).
+
 Run it from a scratch directory: a failed `Assert` appends to
 `assertion_failed.log` in the working directory. Hostile input to the game
 target fails about a thousand in fifteen minutes; the login target failed
