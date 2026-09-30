@@ -428,7 +428,7 @@ branch's review gate a third, 16-minute run set it from the start (961
 seconds, 4,472,735 inputs from the 53-file corpus the first two left, no
 new point, a binary built from this branch's `Datagram.cpp`, which the
 merge of master at `34460343` left unchanged): no crash, report or failed `Assert`, and
-no leak-detection notice. The four `RC` readers hold no `Assert`;
+no leak-detection notice. After the second fix to the empty-datagram row the target reads an empty input as well, and a 5-minute run of that harness with the flag set (301 seconds, 1,772,453 inputs from the 58-file corpus and the ten regressions, coverage 1,128 points from the start, one new unit) found nothing either. The four `RC` readers hold no `Assert`;
 `Datagram::read` holds two. The target is small by construction:
 four readers of a name and a few scalars behind five gates, so its coverage
 is flat within the first second. One looseness it cannot see, found by

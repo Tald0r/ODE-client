@@ -212,10 +212,11 @@ to `OFF`, so a tree configured without it generates no test target at all. Basel
 measured on 2026-09-30 on `fix/datagram-packet-type` merged with master at
 `34460343` (PR #297, the eight model-only packet handlers and their four
 fixes, 1449 tests and 1,457,614 checks): the datagram type-confusion,
-bug-report and empty-datagram fixes and the datagram fuzz target's
-goldens, 12 tests and 561 checks, identical in all four builds: **1461
-tests, 1,458,175 checks, 0 failed** (`decore_tests`: 13 tests, 2009
-checks on the same four). Linux:
+bug-report and empty-datagram fixes, the test that a refused datagram id
+creates no packet, and the datagram fuzz target's goldens, 14 tests and
+586 checks, identical in all four builds: **1463 tests, 1,458,200
+checks, 0 failed** (`decore_tests`: 13 tests, 2009 checks on the same
+four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
 `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
 Silicon Mac, with the totals read by running `build/presets/<preset>/bin/unit_tests`
