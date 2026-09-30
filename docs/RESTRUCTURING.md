@@ -1482,7 +1482,13 @@ rounds settled* for the host rules). Test fixtures share
   > file lists; whether it lists every type up to 396 is not
   > established, and the repository holds neither file. With a shorter
   > file, types from its size to 396 are now skipped where before they
-  > were tried, refused and left the domain's new-skill flag up.
+  > were tried, refused and left the domain's new-skill flag up; the
+  > skip also passes over the race's flag switch, so for a file of
+  > fewer than 185 rows the Restore (113), Ground Attack (179), Bloody
+  > Warp (183) and Bloody Snake (184) flags those types used to set
+  > from the wire are no longer set. The bomb and mine exp levels a
+  > learned throw or install passes on were already no-ops at such
+  > sizes (`BOMB_*` 413-417, `MINE_*` 419-423, past the table).
   > `4e9b593d`'s message says the table holds 512 rows and that nothing
   > the server sends changes; both hold only under that condition. And
   > `ConvertDurationToMillisecond` multiplied in `int`: a wire turn (a

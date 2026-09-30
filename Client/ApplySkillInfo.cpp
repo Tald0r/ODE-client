@@ -17,8 +17,11 @@
 // declares; given a skill info file of at least the server's SKILL_MAX
 // (397) rows, every type the server sends lies below it. Such an entry
 // is skipped whole, before its type is taken for an ACTIONINFO - 2048
-// and up are past the enum's range of values - and before a learn it
-// cannot pass leaves the domain's new-skill flag set.
+// and up are past the enum's range of values - before a learn it
+// cannot pass leaves the domain's new-skill flag set, and before the
+// race's flag switch reads it (with a table of fewer than 185 rows, a
+// Restore, Ground Attack, Bloody Warp or Bloody Snake entry past it
+// sets no flag).
 //----------------------------------------------------------------------
 static bool
 IsSkillInTable(int skillType)
