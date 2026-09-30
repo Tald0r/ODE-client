@@ -113,17 +113,22 @@ uint DatagramSocket::send ( Datagram * pDatagram )
 //
 // receive datagram from peer
 //
-// Takes the next datagram off the socket, or returns NULL when none is
-// waiting or the one taken had no bytes. It must never block, since it
-// runs on the game thread every Update(), and the socket itself is a
-// blocking one.
+// Takes the next datagram off the socket, or returns NULL only when
+// none is waiting (or, on Windows, recvfrom() failed). It must never
+// block, since it runs on the game thread every Update(), and the
+// socket itself is a blocking one.
+//
+// A datagram with no bytes is returned as an empty Datagram, not as
+// NULL. Update() ends its tick on NULL, so an empty datagram returned
+// as NULL cost a whole 330 ms tick where any other refused datagram
+// costs one of the tick's MaxProcessPacket reads; an empty Datagram is
+// refused by Datagram::read like any other short one.
 //
 // POSIX asks recvfrom() itself, with MSG_DONTWAIT, rather than asking
 // FIONREAD first. On Linux FIONREAD on a UDP socket is the size of the
 // next datagram, so an empty datagram at the head of the queue read as
-// "nothing waiting" forever and hid every datagram behind it. Taking
-// it off costs the caller one NULL, which ends that Update(), not the
-// socket. Windows still asks FIONREAD, unchanged and untested here.
+// "nothing waiting" forever and hid every datagram behind it. Windows
+// still asks FIONREAD first, untested here.
 //
 //////////////////////////////////////////////////////////////////////
 Datagram * DatagramSocket::receive ()
@@ -135,7 +140,7 @@ Datagram * DatagramSocket::receive ()
 	SOCKADDR_IN SockAddr;
 	uint _szSOCKADDR_IN = szSOCKADDR_IN;
 
-	int nReceived = 0;
+	int nReceived = -1;
 
 #if defined(PLATFORM_POSIX)
 	try
@@ -168,7 +173,9 @@ Datagram * DatagramSocket::receive ()
 	}
 #endif
 
-	if ( nReceived > 0 ) 
+	// An empty datagram (nReceived == 0) is still one taken off the
+	// socket; only a failed recvfrom() (-1, Windows) makes none.
+	if ( nReceived >= 0 ) 
 	{
 		#ifdef __METROTECH_TEST__
 			g_UDPTest.UDPPacketReceive ++;

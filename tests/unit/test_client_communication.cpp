@@ -22,7 +22,9 @@
 // dispatched every datagram before it has been read.
 //
 // The same loop must also survive a datagram with no bytes, which on
-// Linux used to stop it for good (AnEmptyDatagramDoesNotStopTheReceiveLoop).
+// Linux used to stop it for good (AnEmptyDatagramDoesNotStopTheReceiveLoop)
+// and then ended the Update() tick it was read in
+// (EmptyDatagramsDoNotEndTheUpdate).
 //
 // Compiled with the packetwire defines (tests/CMakeLists.txt).
 //
@@ -193,15 +195,19 @@ std::vector<char>	PositionInfoFrame()
 
 // Calls Update() until one packet has been dispatched, or for two
 // seconds: loopback delivers at once, but a slow machine gets time
-// before the datagram is called lost.
-void	UpdateUntilDispatched(ClientCommunicationManager& manager)
+// before the datagram is called lost. Returns how many Update() calls
+// it made.
+int	UpdateUntilDispatched(ClientCommunicationManager& manager)
 {
+	int updates = 0;
 	for (int i = 0; i < 200 && s_Dispatched == 0; i++)
 	{
 		manager.Update();
+		updates++;
 		if (s_Dispatched == 0)
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
+	return updates;
 }
 
 } // namespace
@@ -282,6 +288,48 @@ TEST(ClientCommunicationManager, AnEmptyDatagramDoesNotStopTheReceiveLoop)
 
 	UpdateUntilDispatched(manager);
 
+	CHECK_EQ(1, s_Dispatched);
+	CHECK_EQ(0, s_Asked);
+}
+
+// Five empty datagrams, then a valid RCPositionInfo, which must arrive
+// in the same Update() as the empties: an empty datagram costs one of
+// the tick's MaxProcessPacket reads, like any other refused datagram,
+// and does not end the tick. receive() used to return NULL for an
+// empty datagram it had taken off, the value that also means "nothing
+// waiting", and Update() stops the tick on NULL; so each empty cost a
+// whole 330 ms Update(), and a sender keeping about three empties a
+// second in the queue held every peer datagram behind them. The
+// datagrams are all queued before the first Update(), so any Update()
+// past the first is one an empty datagram ended.
+TEST(ClientCommunicationManager, EmptyDatagramsDoNotEndTheUpdate)
+{
+	if (NetworkTransport::UsesWebSocket())
+		return;
+
+	EnsureSocketsInitialised();
+	EnsurePositionInfoHandlerRegistered();
+
+	TablesScope	tables;
+	HostScope	host;
+
+	s_Port = FreeUDPPort();
+	CHECK(s_Port != 0);
+	s_Asked = 0;
+	s_Dispatched = 0;
+
+	ClientCommunicationManager	manager;
+	std::unique_ptr<DatagramSocket>	pSender(new DatagramSocket());
+
+	for (int i = 0; i < 5; i++)
+		SendEmpty(*pSender, s_Port);
+	Send(*pSender, s_Port, PositionInfoFrame());
+
+	// Loopback delivers at once; the wait only keeps a slow machine from
+	// having the last datagram still in flight at the first Update().
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	CHECK_EQ(1, UpdateUntilDispatched(manager));
 	CHECK_EQ(1, s_Dispatched);
 	CHECK_EQ(0, s_Asked);
 }

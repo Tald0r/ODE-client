@@ -18,13 +18,14 @@
 // Input: the datagram's bytes, as recvfrom() returned them - a 6-byte
 // header (id u16, body size u32, little-endian), the body, and the
 // one-byte pad both peers count in the length. No encrypt code: UDP is
-// not encrypted. An empty input is skipped: DatagramSocket::receive
-// takes an empty datagram off the socket and makes no Datagram of it,
-// so nothing reaches Datagram::read. (Until 2026-09-30 a Linux build
-// never took it off - FIONREAD there is the next datagram's size - and
-// every datagram behind it waited for good; see the review's row.) So
-// is one longer than DATAGRAM_SOCKET_BUFFER_LEN, the most recvfrom()
-// hands over.
+// not encrypted. An empty input is read too: DatagramSocket::receive
+// hands Update() an empty Datagram for a datagram with no bytes, and
+// Datagram::read refuses it. (Until 2026-09-30 a Linux build never
+// took an empty datagram off - FIONREAD there is the next datagram's
+// size - and every datagram behind it waited for good, and after that
+// receive() returned NULL for one, which ended the Update() tick; see
+// the review's row.) An input longer than DATAGRAM_SOCKET_BUFFER_LEN,
+// the most recvfrom() hands over, is skipped.
 //
 // The path mirrors Update()'s, in order:
 //
@@ -86,8 +87,14 @@ void	SetSender(Datagram& datagram)
 
 void	ReadDatagram(const std::uint8_t* data, std::size_t size)
 {
+	// setData refuses a NULL buffer, which libFuzzer may pass for an
+	// empty input; receive() always passes its own buffer.
+	char	empty = 0;
+	char*	bytes = size == 0 ? &empty
+				  : reinterpret_cast<char*>(const_cast<std::uint8_t*>(data));
+
 	Datagram datagram;
-	datagram.setData(reinterpret_cast<char*>(const_cast<std::uint8_t*>(data)), (uint)size);
+	datagram.setData(bytes, (uint)size);
 	SetSender(datagram);
 
 	DatagramPacket* pRead = NULL;
@@ -131,7 +138,7 @@ extern "C" int LLVMFuzzerInitialize(int*, char***)
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size)
 {
-	if (size == 0 || size > DATAGRAM_SOCKET_BUFFER_LEN)
+	if (size > DATAGRAM_SOCKET_BUFFER_LEN)
 		return 0;
 	ReadDatagram(data, size);
 	return 0;

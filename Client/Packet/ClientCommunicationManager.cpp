@@ -188,7 +188,9 @@ ClientCommunicationManager::Update()
 	
 		try
 		{
-			// Take the next datagram off the socket.
+			// Take the next datagram off the socket. NULL means nothing is
+			// waiting; an empty datagram comes back as an empty Datagram,
+			// which the read below refuses like any other short one.
 			pDatagram = m_pDatagramSocket->receive();
 
 			if (pDatagram==NULL)
