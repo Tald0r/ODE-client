@@ -10,7 +10,7 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCPhoneSay.h"
 #include "UserInformation.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 
 //////////////////////////////////////////////////////////////////////
 //

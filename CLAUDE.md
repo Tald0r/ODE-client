@@ -83,10 +83,15 @@ and damage, and the attack speed `MPlayer::CalculateStatus` takes from
 it), the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
 over `MStringMap`, behind its `MChatHost`), and the creature status array
 (`MStatus`), with `AffectModifyInfo`, which applies a ModifyInfo packet to
-it, and the request/answer mode register (`TempInformation`) - with the
-user, config and timed-item loaders it reads, and their string support,
-membership in `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13 and 4.14),
+it, and the request/answer mode register (`TempInformation`), and the
+eight packet handlers whose bodies reach only model state (the phone
+slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
+`GCRing`; the trade box `GCTradeMoney` and `GCTradeRemoveItem`;
+`GCSystemAvailabilities`; `GCMonsterKillQuestInfo`), which stay in
+`Client/PacketHandler` - with the user, config and timed-item loaders it
+reads, and their string support, membership in
+`tests/arch/gamemodel_files.txt` —
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14 and 4.15),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -105,7 +110,8 @@ include it. The checked formatter (`SafeFormat.h`, `docs/RESTRUCTURING.md`
 task 5.4) is in `basic` for the same reason — the call sites that need it are
 in the executable, in `VS_UI` and in the packet handlers, and `basic` is the
 one library all three link. Game logic compiled straight into the `DarkEden` executable —
-including the packet *handlers* under `Client/PacketHandler/` — cannot be linked into
+including the packet *handlers* under `Client/PacketHandler/`, all but the eight
+`gamemodel` lists — cannot be linked into
 a test binary. That is a structural limit, and it is the single biggest constraint on
 how work gets verified here.
 
@@ -370,7 +376,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
 |---|---|
 | `Client/` | game logic — `GameMain`, `MZone`, `MCreature`, `MPlayer`, `MItem`, `MSkill` |
 | `Client/Packet/` | the wire layer, compiled once as `packetwire`; `Gpackets/` is server → client |
-| `Client/PacketHandler/` | packet handlers, executable-side, bound to ids in `Client/PacketHandlerRegistry.cpp` |
+| `Client/PacketHandler/` | packet handlers, executable-side but for the eight `gamemodel` lists (task 4.15), all bound to ids in `Client/PacketHandlerRegistry.cpp` |
 | `Client/SpriteLib/` | sprite decode and blitting, SDL backend, the 555/565 variants |
 | `Client/DXLib/` | input, sound and music behind a DirectX-shaped interface, SDL underneath |
 | `Client/TextSystem/`, `TextLib/` | UTF-8 text rendering on SDL + freetype2 |

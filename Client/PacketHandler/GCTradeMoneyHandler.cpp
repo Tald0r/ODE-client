@@ -9,7 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeMoney.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 #include "MTradeManager.h"
 
 void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )

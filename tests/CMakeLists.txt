@@ -6,11 +6,12 @@ cmake_minimum_required(VERSION 3.21)
 #
 # Only code compiled into a static library can be linked into a test
 # binary. Today that means basic/, framelib/ (header-only templates),
-# SpriteLib/, DXLib/, TextSystem/, VS_UI and packetwire (the whole wire
+# SpriteLib/, DXLib/, TextSystem/, VS_UI, packetwire (the whole wire
 # layer: streams, info classes, every packet class and the factory
-# tables - docs/RESTRUCTURING.md task 2.4). Game logic that is compiled
-# straight into the DarkEden executable, including the packet handlers
-# under Client/PacketHandler, is not reachable from here.
+# tables - docs/RESTRUCTURING.md task 2.4) and gamemodel. Game logic that
+# is compiled straight into the DarkEden executable, including the packet
+# handlers under Client/PacketHandler, is not reachable from here; the
+# eight handlers gamemodel lists (task 4.15) are the exception.
 #
 #----------------------------------------------------------------------
 
