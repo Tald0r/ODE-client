@@ -6,11 +6,12 @@ cmake_minimum_required(VERSION 3.21)
 #
 # Only code compiled into a static library can be linked into a test
 # binary. Today that means basic/, framelib/ (header-only templates),
-# SpriteLib/, DXLib/, TextSystem/, VS_UI and packetwire (the whole wire
+# SpriteLib/, DXLib/, TextSystem/, VS_UI, packetwire (the whole wire
 # layer: streams, info classes, every packet class and the factory
-# tables - docs/RESTRUCTURING.md task 2.4). Game logic that is compiled
-# straight into the DarkEden executable, including the packet handlers
-# under Client/PacketHandler, is not reachable from here.
+# tables - docs/RESTRUCTURING.md task 2.4) and gamemodel. Game logic that
+# is compiled straight into the DarkEden executable, including the packet
+# handlers under Client/PacketHandler, is not reachable from here; the
+# eight handlers gamemodel lists (task 4.15) are the exception.
 #
 #----------------------------------------------------------------------
 
@@ -262,8 +263,10 @@ endif()
 # Ratchet R3 covers the lengths a server sends into a copy. This covers
 # the indices it sends into a subscript, and it walks the VALUE rather
 # than the spelling: the population is not `array[pPacket->getSlotID()]`
-# but a local assigned from it and used twenty lines later. Handlers are
-# executable-side, so this is the only kind of check they can have.
+# but a local assigned from it and used twenty lines later. Most
+# handlers are executable-side, so for them this is the only kind of
+# check they can have; the eight gamemodel lists are also run on real
+# packets in test_model_handlers.cpp.
 #
 # The repo root is passed so the script does not have to guess it from
 # its own location. Needs perl (found above); without it the check is

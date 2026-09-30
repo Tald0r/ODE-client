@@ -207,7 +207,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 | `MGuildMarkManager::LoadGuildMark` integration | binds the live guild mapper to the renderer's owned sprite cache; index and sprite decoding stay in the tested SpriteLib helpers. Publication and negative-cache guards use full builds and source/ownership review. |
 | `MCreature`, `MPlayer`, `MFakeCreature` movement and attached-effect orchestration; `PacketFunction::ExecuteActionInfoFromMainNode` | virtual character classes reach the live zone, UI, sprite tables and effect generators; action results transfer to `MEffectTarget` and execute through the same game objects. Bounds/queue/ownership guards stay here; extracting those classes would require the render/game-loop rewrite excluded above. Review regression guards use full builds and existing automated checks, without a runtime gate. |
 | `VS_UI/src/**` rendering and dialogs that still reach game globals | these paths use full builds and available automated checks; live verification is optional. `ui_tests` now links the real Button, EventButton, SkinManager, LineEditor, LineEditorVisual state/focus methods, InputFocusManager and the UI result receiver, so those independently reachable components require test-first fixes. `LineEditorVisual::Show` remains separate because it reaches the game's renderer. |
-| `Client/PacketHandler/*Handler.cpp` bodies | mutate `g_pZone`/creature state; the *parsers* they consume are in `packetwire` and testable, the mutations are not |
+| `Client/PacketHandler/*Handler.cpp` bodies, except the handlers `tests/arch/gamemodel_files.txt` lists | mutate `g_pZone`/creature state; the *parsers* they consume are in `packetwire` and testable, the mutations are not. The reason does not hold for a handler whose body reaches only model state: such a handler compiles in `gamemodel`, a test runs it on a real packet, and a fix to it is test-first (lib + test). Amended 2026-09-30 (task 4.15), when eight handlers moved in: the four phone-slot handlers (`g_pUserInformation`), the trade money and offer handlers (`g_pTradeManager`, `g_pMoneyManager`), `GCSystemAvailabilities` (`g_pSystemAvailableManager`) and `GCMonsterKillQuestInfo` (`g_pQuestInfoManager`, `g_pCreatureTable`). The row is keyed to the membership file so that a later handler move needs no further edit here. The rest of `Client/` is presumed movable until a task proves otherwise, and code has left this list by moving before: `RequestClientPlayerManager.cpp` from the connect-paths row (task 5.1). The other handlers stay exempt. |
 | `UIMessageManager::Execute_UI_CHAT_RETURN` | application chat callback reaches the current game mode, player, party/guild state, live socket, help events and dialogs. Its payload borrowing is source-audited with full builds; the queue that owns deferred text is independently tested in `ui_tests`. |
 | `Client/MinTr.h` raw trace transport | the one remaining caller sends a fixed text message to the optional external Win32 trace window. Unused variadic and command formatting paths are retired. |
 | `PacketFunction.cpp` connect paths | Winsock + connection state machine. `RequestClientPlayerManager.cpp` was listed here until 2026-09-09; task 5.1's fifth slice put its seams behind `WireHost`, and task 5.2's eighth slice deleted it with the rest of the outbound peer side |
@@ -249,7 +249,7 @@ every baseline move; the table below is the current reading.
 
 | # | Metric | Now | What it counts, and does not |
 |---|--------|---:|---|
-| R1 | Application translation units compiled directly into the `DarkEden` target | **445** | `ClCompile` entries in `DarkEden.vcxproj`, excluding CMake's generated `CMakeFiles/DarkEden.dir/cmake_pch.cxx`, read from the ctest run's own build dir; SKIP (never PASS) without a supported generated project. Both the Visual Studio configure stamp and Ninja's `build.ninja` must be newer than CMakeLists.txt and both library membership files. Ninja's baseline is **443**, since the non-Windows source list is two files shorter; Linux/macOS CI verifies that count. Baseline 1,044 on 2026-09-01; 484 after task 5.2's eighth slice. **482 on 2026-09-17:** the earlier deletion of `md5.cpp` had left the recorded 484 one too high (483 measured before this extraction); task 4.5 moves `RankBonusTable.cpp` into `gamemodel` (483 → 482). **478 later that day:** delete the four unused Direct3D texture/shadow cache translation units; their object declarations were commented out and the active sprite path never constructed them. **477 later still:** remove the unused Windows-only WinINet downloader; Ninja remains 475. It counts what still cannot be unit-tested. Recorded growths, each the executable side of a split: `PacketHandlerRegistry.cpp`, `GCExchangeBuyHandler.cpp`, `MItemUse.cpp`, `MObjectScreen.cpp`, `MSkillAvailable.cpp`, `TextServiceScreen.cpp`. **473 Windows / 471 Ninja later that day:** six map-record/header translation units move to `gamemodel`, while two new executable files retain screen geometry and live interaction actions; `ShowTimeChecker`'s pure constructor and I/O move to `ShowTimeData.cpp`. A further executable unit moved to `basic` with `CMessageArray` (2026-09-18). **470 Windows / 468 Ninja on 2026-09-21:** `UserOption.cpp` moves unchanged into `VS_UI`; its test links the same object as the game. **469 Windows / 467 Ninja:** the corrected `SXml.cpp` moves unchanged into `VS_UI`, replacing the older duplicate and allowing XML tests to link the production implementation. **468 Windows / 466 Ninja:** the help-message loader moves unchanged into `VS_UI` for real-library parser tests. **467 on 2026-09-21:** `CToken.cpp` joins `gamemodel` byte-identically so token and reset lifetimes can be tested. **466 Windows / 464 Ninja:** the empty handwritten `Client_PCH.cpp` is retired when CMake starts producing the private PCH. Generated PCH producers are excluded from both inventories; ordinary application `.cxx` and `.cc` files remain counted.  **465 Windows / 463 Ninja on 2026-09-24:** the inactive Client/DebugInfo.cpp implementation is removed.  **460 Windows / 458 Ninja on 2026-09-24:** five unchanged world metadata implementations join gamemodel. **456 Windows / 454 Ninja:** quest metadata joins gamemodel; profile and shrine file adapters join VS_UI. **455 Windows / 453 Ninja:** party membership joins gamemodel behind its live-creature host. **456 Windows / 454 Ninja:** the generated English NPC name table (`MNPCTableEnglish.cpp`) is a recorded growth; it writes an executable global. **454 Windows / 452 Ninja on 2026-09-28:** the NPC talk boxes (`TalkBox.cpp`, `MStringList.cpp`) join gamemodel so the menu-answer mapping can be tested. **453 Windows / 451 Ninja later that day:** `MStatusManager.cpp` joins gamemodel so the character-select stat preview can be tested (task 4.12, slice 3). **449 Windows / 447 Ninja on 2026-09-29:** the action and effect tables (`MActionInfoTable.cpp`, `MEffectSpriteTypeTable.cpp`, `MEffectStatusTable.cpp`, `MCreatureSpriteTable.cpp`) join gamemodel so their loaders can be tested (task 4.1); the move changed no loader, and later commits fixed the loaders test-first. **447 Windows / 445 Ninja on 2026-09-29:** the chat filter (`MStringMap.cpp`, `MChatManager.cpp`) joins gamemodel, its one option read behind `MChatHost`, so the curse filter can be tested (task 4.13). ****445 Windows / 443 Ninja on 2026-09-29, after merging both:** the creature status array (`MStatus.cpp`) and the request/answer mode register (`TempInformation.cpp`) join gamemodel unchanged so they can be tested (task 4.14); each branch removed two from 449/447, and the merged tree was measured, not added up. the creature status array (`MStatus.cpp`) and the request/answer mode register (`TempInformation.cpp`) join gamemodel unchanged so they can be tested (task 4.14). |
+| R1 | Application translation units compiled directly into the `DarkEden` target | **437** | `ClCompile` entries in `DarkEden.vcxproj`, excluding CMake's generated `CMakeFiles/DarkEden.dir/cmake_pch.cxx`, read from the ctest run's own build dir; SKIP (never PASS) without a supported generated project. Both the Visual Studio configure stamp and Ninja's `build.ninja` must be newer than CMakeLists.txt and both library membership files. Ninja's baseline is **435**, since the non-Windows source list is two files shorter; Linux/macOS CI verifies that count. Baseline 1,044 on 2026-09-01; 484 after task 5.2's eighth slice. **482 on 2026-09-17:** the earlier deletion of `md5.cpp` had left the recorded 484 one too high (483 measured before this extraction); task 4.5 moves `RankBonusTable.cpp` into `gamemodel` (483 → 482). **478 later that day:** delete the four unused Direct3D texture/shadow cache translation units; their object declarations were commented out and the active sprite path never constructed them. **477 later still:** remove the unused Windows-only WinINet downloader; Ninja remains 475. It counts what still cannot be unit-tested. Recorded growths, each the executable side of a split: `PacketHandlerRegistry.cpp`, `GCExchangeBuyHandler.cpp`, `MItemUse.cpp`, `MObjectScreen.cpp`, `MSkillAvailable.cpp`, `TextServiceScreen.cpp`. **473 Windows / 471 Ninja later that day:** six map-record/header translation units move to `gamemodel`, while two new executable files retain screen geometry and live interaction actions; `ShowTimeChecker`'s pure constructor and I/O move to `ShowTimeData.cpp`. A further executable unit moved to `basic` with `CMessageArray` (2026-09-18). **470 Windows / 468 Ninja on 2026-09-21:** `UserOption.cpp` moves unchanged into `VS_UI`; its test links the same object as the game. **469 Windows / 467 Ninja:** the corrected `SXml.cpp` moves unchanged into `VS_UI`, replacing the older duplicate and allowing XML tests to link the production implementation. **468 Windows / 466 Ninja:** the help-message loader moves unchanged into `VS_UI` for real-library parser tests. **467 on 2026-09-21:** `CToken.cpp` joins `gamemodel` byte-identically so token and reset lifetimes can be tested. **466 Windows / 464 Ninja:** the empty handwritten `Client_PCH.cpp` is retired when CMake starts producing the private PCH. Generated PCH producers are excluded from both inventories; ordinary application `.cxx` and `.cc` files remain counted.  **465 Windows / 463 Ninja on 2026-09-24:** the inactive Client/DebugInfo.cpp implementation is removed.  **460 Windows / 458 Ninja on 2026-09-24:** five unchanged world metadata implementations join gamemodel. **456 Windows / 454 Ninja:** quest metadata joins gamemodel; profile and shrine file adapters join VS_UI. **455 Windows / 453 Ninja:** party membership joins gamemodel behind its live-creature host. **456 Windows / 454 Ninja:** the generated English NPC name table (`MNPCTableEnglish.cpp`) is a recorded growth; it writes an executable global. **454 Windows / 452 Ninja on 2026-09-28:** the NPC talk boxes (`TalkBox.cpp`, `MStringList.cpp`) join gamemodel so the menu-answer mapping can be tested. **453 Windows / 451 Ninja later that day:** `MStatusManager.cpp` joins gamemodel so the character-select stat preview can be tested (task 4.12, slice 3). **449 Windows / 447 Ninja on 2026-09-29:** the action and effect tables (`MActionInfoTable.cpp`, `MEffectSpriteTypeTable.cpp`, `MEffectStatusTable.cpp`, `MCreatureSpriteTable.cpp`) join gamemodel so their loaders can be tested (task 4.1); the move changed no loader, and later commits fixed the loaders test-first. **447 Windows / 445 Ninja on 2026-09-29:** the chat filter (`MStringMap.cpp`, `MChatManager.cpp`) joins gamemodel, its one option read behind `MChatHost`, so the curse filter can be tested (task 4.13). **445 Windows / 443 Ninja on 2026-09-29, after merging both:** the creature status array (`MStatus.cpp`) and the request/answer mode register (`TempInformation.cpp`) join gamemodel unchanged so they can be tested (task 4.14); each branch removed two from 449/447, and the merged tree was measured, not added up. (The merge had left this entry's bold marker doubled and its first clause repeated; tidied 2026-09-30.) **437 Windows / 435 Ninja on 2026-09-30:** the eight packet handlers that reach only model state (`GCPhoneConnectedHandler.cpp`, `GCPhoneDisconnectedHandler.cpp`, `GCPhoneSayHandler.cpp`, `GCRingHandler.cpp`, `GCTradeMoneyHandler.cpp`, `GCTradeRemoveItemHandler.cpp`, `GCSystemAvailabilitiesHandler.cpp`, `GCMonsterKillQuestInfoHandler.cpp`) join gamemodel from `Client/PacketHandler` so a test can run them on real packets (task 4.15). |
 | R2 | Packet `.cpp` files still defining a packet-style `::execute(Player` | **0** | `grep -rlE '^void\s+\w+::execute\s*\(\s*Player' Client/Packet/{Gpackets,Cpackets,Lpackets,Rpackets,Upackets} --include='*.cpp' \| grep -v Handler \| wc -l`. Baseline 448. Holds the line since `Packet::execute` itself was deleted; the client twin of the server's R4. |
 | R3 | Live `sprintf`/`strcpy`/`strcat` lines under `Client/Packet` and `Client/PacketHandler` | **0** | Line-based; strips `//` tails before matching, so a commented-out call does not count. `\b` rejects the `w` in `wsprintf`, which R7 sees instead. Baseline 61 (a quarter of it commented-out code). Holds the line since the packet-tree copy pass (2026-09-04, PR #76). |
 | R4 | Library-compiled `.cpp` files referencing `g_p*` client globals no library file defines | **0** | Over the library dirs (minus CMake-excluded files) plus the `packetwire` and `gamemodel` membership files; comment lines excluded; the subtraction is library-wide, so a library file reading a global another library defines is not a seam. Blind to a library file calling an executable-side *function* (the link proofs cover that) and to a global not named `g_p*`. Baseline 83. **20 on 2026-09-18:** the editor uses the common TextService-backed printer, removing its direct `g_pLast`/`g_pBack` declarations. The printer still reaches game state; this is a reduction in direct references, not a claim that rendering is independent. **10 on 2026-09-21:** moving `UserOption` and `g_pUserOption` into `VS_UI` makes ten existing UI files resolve their only executable-owned global within the library; an ownership reclassification, not ten further file extractions. The text-mode scan now includes the NUL-bearing `VS_UI_GameCommon.cpp` on every platform: **11** is the corrected count; GNU grep previously omitted that file while BSD grep counted it.  **10 on 2026-09-24:** the duplicate inactive VS_UI/DebugInfo.cpp implementation is removed.  **5 on 2026-09-24:** zone, creature, NPC and guild metadata plus the game calendar belong to gamemodel, with real object/link tests; their implementation bytes are unchanged. **4 later that day:** CImm's unused sound-manager declaration is removed. **0 later that day:** party ownership and eight UI host callbacks remove the remaining live references; an inline comment naming the player global is translated without changing the scanner. This is not a claim that every UI object links independently. |
@@ -284,12 +284,19 @@ the other kind, and it floors both the sites it finds (295) and the sites it
 resolves (283). `check_packet_indices.pl` (ctest `packet_indices`) is the index
 half of code-health priority 1: over `Client/Packet` and
 `Client/PacketHandler` it walks packet-derived values into subscripts —
-through locals, across lines, one hop — and reports **114**, 101 into a
-named, verified `CTypeTable` and a ceiling of **13** into a container that
-is not, all guarded today. Its range-checked list is a named allowlist that
+through locals, across lines, one hop — and reports **103**, 91 into a
+named, verified `CTypeTable` and a ceiling of **12** into a container that
+is not, all guarded today. It read 114 and 13 when this paragraph was
+written; `32cef4d2` took out the vampire addon lookup (113, 12), and
+`4fa24b9e` turned ten `CTypeTable` writes into `GetMutable(x)` calls,
+which answer NULL out of range and which the checker, reading `[]` only,
+no longer counts (103). Seven of the 12 are the phone-slot subscripts of
+the handlers task 4.15 moved into `gamemodel`; they stay in
+`Client/PacketHandler`, so the checker still reads them, and
+`test_model_handlers.cpp` runs every out-of-range slot byte past them. Its range-checked list is a named allowlist that
 fails closed (when introduced, `CMessageArray::operator[]` truncated rather
 than checked; it gained bounds checks on 2026-09-18, but the spelling of a
-dereference still cannot prove a container is checked); a fourteenth raw
+dereference still cannot prove a container is checked); a thirteenth raw
 subscript has to be read before the number moves.
 
 ---
@@ -1295,6 +1302,106 @@ rounds settled* for the host rules). Test fixtures share
   > could lose its check with `unit_tests` still passing.
   - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1,
     `test_status_model.cpp` and `test_affect_modify_info.cpp`.
+
+- [x] **4.15 Model-reach packet handlers:** `GCPhoneConnectedHandler`,
+  `GCPhoneDisconnectedHandler`, `GCPhoneSayHandler`, `GCRingHandler`,
+  `GCTradeMoneyHandler`, `GCTradeRemoveItemHandler`,
+  `GCSystemAvailabilitiesHandler` and `GCMonsterKillQuestInfoHandler`
+  compile in `gamemodel`.
+  > **Status:** moved (2026-09-30). The shrink survey at `deac9b56`
+  > found these eight the only handlers that are link-clean and reach
+  > only model state: the phone slots of `g_pUserInformation`, the trade
+  > box (`g_pTradeManager`) and the wallet (`g_pMoneyManager`), the
+  > server's switches (`g_pSystemAvailableManager`) and the quest goals
+  > (`g_pQuestInfoManager`, reading `g_pCreatureTable`), every one
+  > defined in `gamemodel`. The files stay in `Client/PacketHandler`, so
+  > `check_packet_indices.pl`, which scans that directory, still reads
+  > the seven phone-slot subscripts they hold, and
+  > `PacketHandlerRegistry.cpp` binds them as before (the executable
+  > links `gamemodel`). Six included `ClientDef.h`, which pulls in
+  > `MPlayer.h`, `MZone.h` and `DebugInfo.h`, for nothing but the
+  > `DEBUG_ADD` macros; they include `basic`'s `DebugLog.h` instead,
+  > which is where `DebugInfo.h` takes those macros from, so the calls
+  > expand as before. The other two move unchanged. No include rule changed:
+  > the membership file, CMake's reader (`^Client/.*\.cpp$`), M0
+  > (`^Client/`), M1 (the eight include only `Client_PCH.h`, the
+  > `Gpackets` headers, listed model headers and `basic`), and R4's and
+  > R10's readers (`Client/[A-Za-z0-9_/]+\.cpp`) all accept a file under
+  > `Client/PacketHandler` already, and the executable's glob of that
+  > directory drops what the membership lists, with the case-mismatch
+  > check it has for every member. The exemption row for handler bodies
+  > is amended to exclude the handlers the membership file lists. R1
+  > falls by eight (445 to 437 Windows, 443 to 435 Ninja); R4 stays 0.
+  > `tests/unit/test_model_handlers.cpp` then runs each handler on a
+  > real packet: wire bytes built from the packet types' widths, read
+  > into the packet the real factory creates (consumed exactly, at the
+  > packet's own size), `execute()` with no `Player`, and the model
+  > state checked. It pins the phone slots (each slot stored or cleared
+  > with no neighbour touched, and every slot byte from 3 to 255
+  > changing nothing; `GCPhoneSay` over every byte 0-255 with every
+  > slot named, and on a slot with no name), the trade
+  > money flow in both directions and on both sides with the OK
+  > cancellation and accept delay, the other side's item removal, the
+  > system switches (every switch the manager exposes; it has no getter
+  > for the bits past them), skill limit and open degree (the wire's
+  > degree less one, so 0 wraps to 255 and opens every zone), and the quest goals.
+  > Three defects were fixed test-first. `GCMonsterKillQuestInfo`
+  > assigned the creature table's name for the server's type to a
+  > `std::string`; for a type past the table or a nameless row that name
+  > is a NULL `MString`, and the client crashed in `strlen` (SEGV under
+  > both presets); the quest now keeps an empty name.
+  > `MMoneyManager::AddMoney`/`UseMoney` took the new balance in `int`,
+  > so two amounts within the limit could overflow it (UBSan halted);
+  > they now refuse a balance outside 0..limit first, and `CanUseMoney`
+  > refuses a negative amount, as `CanAddMoney` does, although
+  > `UseMoney` still accepts one that leaves the balance within
+  > 0..limit (no production code calls `CanUseMoney`; only its tests
+  > do). And
+  > `GCTradeMoney` ran an amount past `INT_MAX`, which no wallet holds
+  > (the server's `MAX_MONEY` is two billion), through its `int`, so
+  > every move ran backwards; such a packet now changes nothing. The
+  > same commit (`83fd754b`) also made the two result codes move the
+  > wallet and the trade box all or nothing; review reverted that part.
+  > It rested on the premise that the server never moves part of a
+  > transfer. That
+  > premise misread the server: `decideMoneyIncrease` and
+  > `decideMoneyDecrease` (its `trade/TradeTableDecision.cpp`) reject a
+  > request before anything moves, and otherwise set the server's wallet
+  > and stake and only then send the result. A result therefore reports
+  > a committed move, and the server trims against the receiving
+  > player's purse plus the stake, not against the sender's box. When the client's wallet cannot follow, it
+  > already disagrees with the server's, and holding the box back made
+  > the box wrong too. `e9f1fe87` applies each side on its own and logs
+  > the side that cannot follow, which is the effect each side had
+  > before `83fd754b`, plus the log; its tests assert the server's side.
+  > Whether the wallets disagree in play is not established; the trade
+  > cases were found by reading and reproduced only in the test binary.
+  > `check_packet_indices.pl` still counts 103 subscripts, 12 raw: the seven phone-slot ones are
+  > guarded and now tested, but the checker reads the subscript, not the
+  > guard, and the files did not leave the directory it scans.
+  > A fourth fix could not be test-first. `GCPhoneSay` formatted a
+  > slot that never connected, or was hung up, with `%s` over its NULL
+  > name. That is undefined, but every C library the project builds
+  > against prints "(null)", and the line goes nowhere, since its chat
+  > call is commented out. `782432c0` passes "" instead. Its test runs
+  > both empty-slot paths in every build, but it passed on the unfixed
+  > code too.
+  > **Known, not fixed:** the other side's `INCREASE`/`DECREASE`
+  > still apply one box's refusal silently; no money is moved between
+  > two wallets there. The money fix's commit (`fdc1d7e4`) named a
+  > `UseMoney`/`AddMoney` pair in `UIMessageManager.cpp` as the same
+  > pattern left out of scope; that pair is inside a `/* */` block and
+  > never compiled. And the tests' commit (`b8e9258e`) announced two
+  > fixes to follow; four did: the wallet overflow was found while
+  > writing the trade money's tests, and the phone line's in review.
+  > `83fd754b`'s subject and message say the all-or-nothing move is
+  > what the server does; it is not (see above).
+  > And `b8e9258e`'s message says the system test shows that bits past
+  > the last switch are dropped; nothing in it can observe that.
+  > These notes stand in for rewording the messages: the branch's
+  > commits are not rewritten.
+  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1, the
+    exemption row, `test_model_handlers.cpp` and `test_money_manager.cpp`.
 
 ## Phase 5 — Long tail
 

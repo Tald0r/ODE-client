@@ -9,8 +9,37 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeMoney.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 #include "MTradeManager.h"
+
+#include <climits>
+
+namespace {
+
+//----------------------------------------------------------------------------
+// Applies a result the server has already committed. The server rejects a
+// move before it changes anything (decideMoneyIncrease and
+// decideMoneyDecrease in its trade/TradeTableDecision.cpp); otherwise it
+// sets both its wallet and its stake, and only then reports the amount. So
+// each side here follows the server on its own. A side that cannot follow
+// (its balance would leave 0..limit) disagrees with the server's already;
+// it keeps its value and the refusal is logged, and the other side still
+// follows, since holding it back would only make that side wrong too.
+//----------------------------------------------------------------------------
+void ApplyResult( MMoneyManager* pFrom, MMoneyManager* pTo, int money )
+{
+	if (!pFrom->UseMoney( money ))
+	{
+		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the source cannot give %d (has %d)", money, pFrom->GetMoney() );
+	}
+
+	if (!pTo->AddMoney( money ))
+	{
+		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the destination cannot take %d (has %d)", money, pTo->GetMoney() );
+	}
+}
+
+} // namespace
 
 void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 	 
@@ -21,7 +50,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 	
 	
 	//------------------------------------------------------------------------
-	// TradeManager가 생성되지 않은 경우 --> -_-;;
+	// No trade is open: nothing to change.
 	//------------------------------------------------------------------------
 	if (g_pTradeManager==NULL)
 	{
@@ -30,9 +59,19 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 		return;
 	}
 
-	//ObjectID_t getTargetObjectID() const throw() { return m_TargetObjectID; }
-	
-	int money = pPacket->getAmount();
+	//------------------------------------------------------------------------
+	// Gold_t is unsigned and no wallet holds more than two billion (the
+	// server's MAX_MONEY), so an amount past INT_MAX is not one the server
+	// moved. Narrowed to int it would turn negative and run every move
+	// below backwards; such a packet changes nothing.
+	//------------------------------------------------------------------------
+	if (pPacket->getAmount() > (Gold_t)INT_MAX)
+	{
+		DEBUG_ADD_FORMAT( "[PacketError-GCTradeMoneyHandler] amount out of range: %u", (unsigned int)pPacket->getAmount() );
+		return;
+	}
+
+	const int money = (int)pPacket->getAmount();
 
 	bool bRefuseAccept = false;
 	bool bNextAcceptTime = false;
@@ -40,7 +79,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 	switch (pPacket->getCode())
 	{
 		//---------------------------------------------------------------
-		// 상대방이 교환할 돈의 액수를 늘렸다.
+		// The other side added money to its offer.
 		//---------------------------------------------------------------
 		case GC_TRADE_MONEY_INCREASE :
 			g_pTradeManager->GetOtherMoneyManager()->AddMoney( money );
@@ -49,7 +88,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 		break;
 
 		//---------------------------------------------------------------
-		// 상대방이 교환할 돈의 액수를 줄였다.
+		// The other side took money back from its offer.
 		//---------------------------------------------------------------
 		case GC_TRADE_MONEY_DECREASE :
 			g_pTradeManager->GetOtherMoneyManager()->UseMoney( money );
@@ -59,28 +98,28 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 		break;
 		
 		//---------------------------------------------------------------
-		// [검증] 교환할 때 추가될 돈 
+		// [Result] The server moved this much of the player's money from
+		// the wallet into the trade box.
 		//---------------------------------------------------------------
 		case GC_TRADE_MONEY_INCREASE_RESULT :			
-			g_pMoneyManager->UseMoney( money );
-			g_pTradeManager->GetMyMoneyManager()->AddMoney( money );	
+			ApplyResult( g_pMoneyManager, g_pTradeManager->GetMyMoneyManager(), money );
 			
 			bRefuseAccept = true;
 		break;
 
 		//---------------------------------------------------------------
-		// [검증] 교환에서 빼낼 돈
+		// [Result] The server moved this much from the trade box back
+		// into the wallet.
 		//---------------------------------------------------------------
 		case GC_TRADE_MONEY_DECREASE_RESULT :			
-			g_pTradeManager->GetMyMoneyManager()->UseMoney( money );
-			g_pMoneyManager->AddMoney( money );	
+			ApplyResult( g_pTradeManager->GetMyMoneyManager(), g_pMoneyManager, money );
 
 			bRefuseAccept = true;
 		break;
 	}
 
 	//-----------------------------------------------------------
-	// 뭔가 바뀐다면... OK취소
+	// The trade changed: both OKs are cancelled.
 	//-----------------------------------------------------------
 	if (bRefuseAccept)
 	{

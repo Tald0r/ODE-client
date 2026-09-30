@@ -369,8 +369,9 @@ add_subdirectory(Client/framelib)
 # and the inbound peer connection manager, every packet class in every direction, and
 # the factory/validator tables (docs/RESTRUCTURING.md tasks 1.1, 2.4 and
 # 5.1). The packet handlers
-# live in Client/PacketHandler and compile into the executable; the
-# packet headers only declare them.
+# live in Client/PacketHandler and compile into the executable, except
+# the few that reach only model state, which gamemodel lists (task 4.15);
+# the packet headers only declare them.
 #
 # Membership is tests/arch/packetwire_files.txt, one repository-relative
 # path per line. Three readers, one file, so the target and the rules
@@ -909,7 +910,8 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		Client/Packet/*/*.cpp
 		# The packet handlers (task 2.4): executable-side, bound by
 		# Client/PacketHandlerRegistry.cpp; the wire classes they handle
-		# are in packetwire.
+		# are in packetwire. The handlers gamemodel lists (task 4.15) are
+		# removed from this list below with the other gamemodel members.
 		Client/PacketHandler/*.cpp
 		Client/SXml/*.cpp
 		Client/WinLib/*.cpp
