@@ -79,10 +79,19 @@ MMoneyManager::SetMoney(int money)
 //-----------------------------------------------------------------------------
 // Add Money
 //-----------------------------------------------------------------------------
+// The new balance is taken in 64 bits: two amounts within the limit can
+// pass INT_MAX, and an int that overflows is undefined, not a refusal. A
+// balance outside 0..limit is refused as SetMoney refuses it.
+//-----------------------------------------------------------------------------
 bool
 MMoneyManager::AddMoney(int money)
 {
-	return SetMoney( m_Money + money );
+	const std::int64_t balance = (std::int64_t)m_Money + money;
+	if (balance < 0 || balance > m_MoneyLimit)
+	{
+		return false;
+	}
+	return SetMoney( (int)balance );
 }
 
 //-----------------------------------------------------------------------------
@@ -91,7 +100,12 @@ MMoneyManager::AddMoney(int money)
 bool
 MMoneyManager::UseMoney(int money)
 {
-	return SetMoney( m_Money - money );
+	const std::int64_t balance = (std::int64_t)m_Money - money;
+	if (balance < 0 || balance > m_MoneyLimit)
+	{
+		return false;
+	}
+	return SetMoney( (int)balance );
 }
 
 //-----------------------------------------------------------------------------
@@ -118,14 +132,14 @@ MMoneyManager::CanAddMoney(int money)
 bool		
 MMoneyManager::CanUseMoney(int money)
 {
-	int left = m_Money - money;
-
-	if (left<0)
+	// As CanAddMoney: a negative amount is an add, not a use, and is
+	// refused; the rest is compared, not subtracted, so no amount can
+	// overflow the difference.
+	if (money < 0)
 	{
-		return false; 
+		return false;
 	}
-
-	return true;
+	return money <= m_Money;
 }
 
 //-----------------------------------------------------------------------------

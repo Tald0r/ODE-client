@@ -83,10 +83,15 @@ and damage, and the attack speed `MPlayer::CalculateStatus` takes from
 it), the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
 over `MStringMap`, behind its `MChatHost`), and the creature status array
 (`MStatus`), with `AffectModifyInfo`, which applies a ModifyInfo packet to
-it, and the request/answer mode register (`TempInformation`) - with the
-user, config and timed-item loaders it reads, and their string support,
-membership in `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13 and 4.14),
+it, and the request/answer mode register (`TempInformation`), and the
+eight packet handlers whose bodies reach only model state (the phone
+slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
+`GCRing`; the trade box `GCTradeMoney` and `GCTradeRemoveItem`;
+`GCSystemAvailabilities`; `GCMonsterKillQuestInfo`), which stay in
+`Client/PacketHandler` - with the user, config and timed-item loaders it
+reads, and their string support, membership in
+`tests/arch/gamemodel_files.txt` —
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14 and 4.15),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -105,7 +110,8 @@ include it. The checked formatter (`SafeFormat.h`, `docs/RESTRUCTURING.md`
 task 5.4) is in `basic` for the same reason — the call sites that need it are
 in the executable, in `VS_UI` and in the packet handlers, and `basic` is the
 one library all three link. Game logic compiled straight into the `DarkEden` executable —
-including the packet *handlers* under `Client/PacketHandler/` — cannot be linked into
+including the packet *handlers* under `Client/PacketHandler/`, all but the eight
+`gamemodel` lists — cannot be linked into
 a test binary. That is a structural limit, and it is the single biggest constraint on
 how work gets verified here.
 
@@ -203,11 +209,18 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-30 on `feat/fuzz-login-stream` merged with master at
-`2b71e685` (PR #295, the chat filter, 1414 tests and 1,443,310 checks): the
-login stream fuzz target and the `LCPCList` slot fix with its 5 tests and 70
-checks, identical in all four builds: **1419 tests, 1,443,380 checks, 0
-failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux:
+measured on 2026-09-30 on the model-handler branch merged with master at
+`bdfce7e9`, so the tree holds both. From the branch
+(`docs/RESTRUCTURING.md` task 4.15): the eight packet handlers that
+reach only model state, run on real packets in `test_model_handlers.cpp`,
+and the four fixes that followed - the quest name, the wallet's int
+overflow, the trade money's results (each side applied as the server
+committed it) and the phone line's empty name. From master: PR #296, the
+login stream fuzz target and the `LCPCList` slot fix with its 5 tests and
+70 checks. Master alone read 1419 tests and 1,443,380 checks; the merged
+tree reads **1449 tests, 1,457,614 checks, 0 failed**, identical in all
+four builds, this run (`decore_tests`: 13 tests, 2009 checks on the same
+four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
 `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
 Silicon Mac, with the totals read by running `build/presets/<preset>/bin/unit_tests`
@@ -402,7 +415,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
 |---|---|
 | `Client/` | game logic — `GameMain`, `MZone`, `MCreature`, `MPlayer`, `MItem`, `MSkill` |
 | `Client/Packet/` | the wire layer, compiled once as `packetwire`; `Gpackets/` is server → client |
-| `Client/PacketHandler/` | packet handlers, executable-side, bound to ids in `Client/PacketHandlerRegistry.cpp` |
+| `Client/PacketHandler/` | packet handlers, executable-side but for the eight `gamemodel` lists (task 4.15), all bound to ids in `Client/PacketHandlerRegistry.cpp` |
 | `Client/SpriteLib/` | sprite decode and blitting, SDL backend, the 555/565 variants |
 | `Client/DXLib/` | input, sound and music behind a DirectX-shaped interface, SDL underneath |
 | `Client/TextSystem/`, `TextLib/` | UTF-8 text rendering on SDL + freetype2 |
@@ -429,9 +442,12 @@ Critical among them. In priority order:
      and `Client/PacketHandler`. It walks the *value*, not the spelling —
      `array[pPacket->getSlotID()]` has two live instances while
      `int slot = pPacket->getSlotID();` twenty lines above `array[slot]` has a
-     hundred. **114** packet-indexed subscripts, 101 of them into a named,
-     verified `CTypeTable` that range-checks itself, **13 into a container that
-     is not**, all guarded. A fourteenth fails the suite and has to be read.
+     hundred. **103** packet-indexed subscripts, 91 of them into a named,
+     verified `CTypeTable` that range-checks itself, **12 into a container that
+     is not**, all guarded. A thirteenth fails the suite and has to be read.
+     Seven of the 12 are in the phone handlers `gamemodel` compiles (task
+     4.15), and `test_model_handlers.cpp` runs every out-of-range slot
+     byte (3 to 255) past each of them.
      It **fails closed**: a container it does not recognise counts as raw, so
      adding a name to its allowlist is a deliberate act. Its first version
      hardcoded the receiver name `pPacket` and so was blind to the 19 handlers

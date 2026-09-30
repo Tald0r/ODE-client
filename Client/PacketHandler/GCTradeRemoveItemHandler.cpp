@@ -10,7 +10,7 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeRemoveItem.h"
 #include "MTradeManager.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 
 void GCTradeRemoveItemHandler::execute ( GCTradeRemoveItem * pPacket , Player * pPlayer )
 	 
