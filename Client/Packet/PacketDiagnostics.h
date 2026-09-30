@@ -25,6 +25,13 @@
 //               a test captures the formatted text - but it is now an
 //               interception point rather than the delivery path.
 //
+//               Nothing in the wire layer calls it today. Its one
+//               caller was Datagram::read's size check, which stopped
+//               reporting on 2026-09-30: a datagram comes from whoever
+//               can reach the client's UDP port, and a report per
+//               datagram put one chat line on the player's own server
+//               connection per hostile datagram.
+//
 //////////////////////////////////////////////////////////////////////
 
 #ifndef __PACKET_DIAGNOSTICS_H__
