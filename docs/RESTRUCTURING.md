@@ -1205,6 +1205,17 @@ rounds settled* for the host rules). Test fixtures share
   > 0 and 100: a kept two-byte character stepped two bytes, so at any
   > percent in between (`GCSay` passes 50) a line that ends in a lone
   > lead byte stepped over its NUL and masked the memory after it.
+  > Two more were found by the branch's first Windows CI run (36639592150),
+  > where `unit_tests` crashed in both Windows jobs. `MString`'s
+  > comparisons passed a NULL string (an empty `MString` keeps no
+  > storage) to `strcmp`, so an empty key crashed `MStringMap` on every
+  > platform, and with it `IsAcceptID("")` for a player with an ID on the
+  > list; a NULL string now compares as "". And `LoadFromFileCurse`
+  > tested `eof()` before each read instead of the read: MSVC's stream
+  > library turns the failed read after a file's final newline into an
+  > empty word, which is what reached the map; with libc++ and libstdc++
+  > the last word was added twice and a blank file gave an uninitialised
+  > buffer; and by MSVC's source (not run) a NUL byte looped forever.
   > **Known, not fixed:** the Korean lists the game loads from its
   > binary file pass through `MString::LoadFromFile`, which converts each
   > word from CP949 to UTF-8, while the filter pairs bytes and looks the
@@ -1219,8 +1230,7 @@ rounds settled* for the host rules). Test fixtures share
   > gives the one-syllable one as a heart symbol, two bytes in CP949 but
   > three if the table goes through the same UTF-8 conversion as the
   > word lists.
-  > `LoadFromFileCurse` has no caller; on an empty or blank file its
-  > first word is an uninitialised buffer. The new-character name checks
+  > `LoadFromFileCurse` has no caller. The new-character name checks
   > (`Execute_UI_NEW_CHARACTER`, `Execute_UI_NEWCHARACTER_CHECK`) call
   > `RemoveCurse` on both lists without `bForce`, so a player who turned
   > the filter off is stopped by neither (read, not reproduced).

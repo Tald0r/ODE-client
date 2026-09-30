@@ -203,16 +203,20 @@ Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defa
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
 measured on 2026-09-29 on the chat filter branch merged with master at
 `df3674bb` (the packet-read fuzzing), with the chat filter in gamemodel with its
-tests and fixes (`docs/RESTRUCTURING.md` task 4.13): **1373 tests, 1,436,068 checks, 0 failed** (`decore_tests`: 13 tests, 2009
-checks, measured on macOS only, this run). The `unit_tests` figure was measured
-on this merged tree, in all four builds and identical in each: Linux GCC 13.3
-(`tools/ci/verify-linux.sh linux`) and Linux Clang 18.1 (`linux-clang`) in the
+tests and fixes (`docs/RESTRUCTURING.md` task 4.13), the last two of them the
+empty-`MString` comparison and the word-file loader that the branch's first
+Windows CI run crashed on: **1385 tests, 1,436,362 checks, 0 failed** (`decore_tests`: 13 tests, 2009
+checks, measured on macOS and in the Linux GCC image, this run). The `unit_tests` figure was measured
+on this tree in three builds and identical in each: Linux GCC 13.3
+(`tools/ci/verify-linux.sh linux`) in the
 Docker image, its native arm64 on an Apple Silicon Mac, with the totals read by
-running `unit_tests` in it (both scripts pass ctest, then stop at the warning
+running `unit_tests` in it (the script passes ctest, then stops at the warning
 step, which has no `aarch64` baseline); macOS Apple Clang 21, the `macos`
 preset, read with `build/defects/run-tests.sh unit_tests ''`; and the
 `macos-asan` preset under `ASAN_OPTIONS=detect_leaks=0` and
-`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. Run from a git
+`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. Linux Clang 18.1
+(`linux-clang`) was not re-run for it; it gave the figure before those two
+fixes, 1373 tests and 1,436,068 checks, identical to the other three. Run from a git
 worktree, the container also needs the common git directory mounted, at its
 host path or with `GIT_DIR` and `GIT_WORK_TREE` set, or `ratchets` and
 `source_encoding` fail on "not a git repository". The Windows trees were not
