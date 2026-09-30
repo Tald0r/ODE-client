@@ -207,7 +207,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 | `MGuildMarkManager::LoadGuildMark` integration | binds the live guild mapper to the renderer's owned sprite cache; index and sprite decoding stay in the tested SpriteLib helpers. Publication and negative-cache guards use full builds and source/ownership review. |
 | `MCreature`, `MPlayer`, `MFakeCreature` movement and attached-effect orchestration; `PacketFunction::ExecuteActionInfoFromMainNode` | virtual character classes reach the live zone, UI, sprite tables and effect generators; action results transfer to `MEffectTarget` and execute through the same game objects. Bounds/queue/ownership guards stay here; extracting those classes would require the render/game-loop rewrite excluded above. Review regression guards use full builds and existing automated checks, without a runtime gate. |
 | `VS_UI/src/**` rendering and dialogs that still reach game globals | these paths use full builds and available automated checks; live verification is optional. `ui_tests` now links the real Button, EventButton, SkinManager, LineEditor, LineEditorVisual state/focus methods, InputFocusManager and the UI result receiver, so those independently reachable components require test-first fixes. `LineEditorVisual::Show` remains separate because it reaches the game's renderer. |
-| `Client/PacketHandler/*Handler.cpp` bodies, except the handlers `tests/arch/gamemodel_files.txt` lists | mutate `g_pZone`/creature state; the *parsers* they consume are in `packetwire` and testable, the mutations are not. The reason does not hold for a handler whose body reaches only model state: such a handler compiles in `gamemodel`, a test runs it on a real packet, and a fix to it is test-first (lib + test). Amended 2026-09-30 (task 4.15), when eight handlers moved in: the four phone-slot handlers (`g_pUserInformation`), the trade money and offer handlers (`g_pTradeManager`, `g_pMoneyManager`), `GCSystemAvailabilities` (`g_pSystemAvailableManager`) and `GCMonsterKillQuestInfo` (`g_pQuestInfoManager`, `g_pCreatureTable`). Precedent: the row is keyed to the membership file, as the rule for the rest of `Client/` is ("presumed movable until a task proves otherwise"), and code has left this list by moving before: `RequestClientPlayerManager.cpp` from the connect-paths row (task 5.1), `UserOption` persistence into `VS_UI`. The other handlers stay exempt. |
+| `Client/PacketHandler/*Handler.cpp` bodies, except the handlers `tests/arch/gamemodel_files.txt` lists | mutate `g_pZone`/creature state; the *parsers* they consume are in `packetwire` and testable, the mutations are not. The reason does not hold for a handler whose body reaches only model state: such a handler compiles in `gamemodel`, a test runs it on a real packet, and a fix to it is test-first (lib + test). Amended 2026-09-30 (task 4.15), when eight handlers moved in: the four phone-slot handlers (`g_pUserInformation`), the trade money and offer handlers (`g_pTradeManager`, `g_pMoneyManager`), `GCSystemAvailabilities` (`g_pSystemAvailableManager`) and `GCMonsterKillQuestInfo` (`g_pQuestInfoManager`, `g_pCreatureTable`). The row is keyed to the membership file so that a later handler move needs no further edit here. The rest of `Client/` is presumed movable until a task proves otherwise, and code has left this list by moving before: `RequestClientPlayerManager.cpp` from the connect-paths row (task 5.1). The other handlers stay exempt. |
 | `UIMessageManager::Execute_UI_CHAT_RETURN` | application chat callback reaches the current game mode, player, party/guild state, live socket, help events and dialogs. Its payload borrowing is source-audited with full builds; the queue that owns deferred text is independently tested in `ui_tests`. |
 | `Client/MinTr.h` raw trace transport | the one remaining caller sends a fixed text message to the optional external Win32 trace window. Unused variadic and command formatting paths are retired. |
 | `PacketFunction.cpp` connect paths | Winsock + connection state machine. `RequestClientPlayerManager.cpp` was listed here until 2026-09-09; task 5.1's fifth slice put its seams behind `WireHost`, and task 5.2's eighth slice deleted it with the rest of the outbound peer side |
@@ -1337,12 +1337,13 @@ rounds settled* for the host rules). Test fixtures share
   > into the packet the real factory creates (consumed exactly, at the
   > packet's own size), `execute()` with no `Player`, and the model
   > state checked. It pins the phone slots (each slot stored or cleared
-  > with no neighbour touched, and slot bytes 3, 4, 127, 128 and 255
+  > with no neighbour touched, and every slot byte from 3 to 255
   > changing nothing; `GCPhoneSay` over every byte 0-255), the trade
   > money flow in both directions and on both sides with the OK
   > cancellation and accept delay, the other side's item removal, the
-  > system switches, skill limit and open degree (the wire's degree less
-  > one, so 0 wraps to 255 and opens every zone), and the quest goals.
+  > system switches (every switch the manager exposes; it has no getter
+  > for the bits past them), skill limit and open degree (the wire's
+  > degree less one, so 0 wraps to 255 and opens every zone), and the quest goals.
   > Three defects were fixed test-first. `GCMonsterKillQuestInfo`
   > assigned the creature table's name for the server's type to a
   > `std::string`; for a type past the table or a nameless row that name
@@ -1352,17 +1353,26 @@ rounds settled* for the host rules). Test fixtures share
   > so two amounts within the limit could overflow it (UBSan halted);
   > they now refuse a balance outside 0..limit first, and `CanUseMoney`
   > refuses a negative amount, as `CanAddMoney` does. And
-  > `GCTradeMoney`'s two result codes moved the wallet and the trade box
-  > as two separate calls and ignored the first one's refusal, so a
-  > client whose wallets disagreed with the server's created or lost
-  > money; the server never moves part of a transfer
-  > (`decideMoneyIncrease`/`decideMoneyDecrease` in its
-  > `trade/TradeTableDecision.cpp`), and the handler now moves all or
-  > nothing. It also ignores an amount past `INT_MAX`, which no wallet
-  > holds and which its `int` ran backwards. Whether the wallets disagree
-  > in play is not established; both trade defects were found by reading
-  > and reproduced only in the test binary. `check_packet_indices.pl`
-  > still counts 103 subscripts, 12 raw: the seven phone-slot ones are
+  > `GCTradeMoney` ran an amount past `INT_MAX`, which no wallet holds
+  > (the server's `MAX_MONEY` is two billion), through its `int`, so
+  > every move ran backwards; such a packet now changes nothing. The
+  > same commit (`83fd754b`) also made the two result codes move the
+  > wallet and the trade box all or nothing; review reverted that part.
+  > It rested on the premise that the server never moves part of a
+  > transfer. That
+  > premise misread the server: `decideMoneyIncrease` and
+  > `decideMoneyDecrease` (its `trade/TradeTableDecision.cpp`) reject a
+  > request before anything moves, and otherwise set the server's wallet
+  > and stake and only then send the result. A result therefore reports
+  > a committed move, and the server trims against the receiving
+  > player's purse plus the stake, not against the sender's box. When the client's wallet cannot follow, it
+  > already disagrees with the server's, and holding the box back made
+  > the box wrong too. `e9f1fe87` applies each side on its own and logs
+  > the side that cannot follow, which is the effect each side had
+  > before `83fd754b`, plus the log; its tests assert the server's side.
+  > Whether the wallets disagree in play is not established; the trade
+  > cases were found by reading and reproduced only in the test binary.
+  > `check_packet_indices.pl` still counts 103 subscripts, 12 raw: the seven phone-slot ones are
   > guarded and now tested, but the checker reads the subscript, not the
   > guard, and the files did not leave the directory it scans.
   > **Known, not fixed:** `GCPhoneSay` formats a slot that never
@@ -1375,7 +1385,12 @@ rounds settled* for the host rules). Test fixtures share
   > pattern left out of scope; that pair is inside a `/* */` block and
   > never compiled. And the tests' commit (`b8e9258e`) announced two
   > fixes to follow; three did, the wallet overflow being found while
-  > writing the trade money's.
+  > writing the trade money's. `83fd754b`'s subject and message say the
+  > all-or-nothing move is what the server does; it is not (see above).
+  > And `b8e9258e`'s message says the system test shows that bits past
+  > the last switch are dropped; nothing in it can observe that.
+  > These notes stand in for rewording the messages: the branch's
+  > commits are not rewritten.
   - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1, the
     exemption row, `test_model_handlers.cpp` and `test_money_manager.cpp`.
 

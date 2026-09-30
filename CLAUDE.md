@@ -213,9 +213,10 @@ measured on 2026-09-30 on the model-handler branch (`docs/RESTRUCTURING.md`
 task 4.15: the eight packet handlers that reach only model state, run on
 real packets in `test_model_handlers.cpp`, and the three fixes that
 followed - the quest name, the wallet's int overflow and the trade
-money's all-or-nothing move), on top of master at `2b71e685` (the chat
-filter, task 4.13, and the status model, task 4.14, 1414 tests and
-1,443,310 checks there): **1443 tests, 1,449,037 checks, 0 failed**,
+money's results, each side applied as the server committed it), on top
+of master at `2b71e685` (the chat filter, task 4.13, and the status
+model, task 4.14, 1414 tests and 1,443,310 checks there): **1443 tests,
+1,457,469 checks, 0 failed**,
 identical in all four builds, this run (`decore_tests`: 13 tests, 2009
 checks, measured on macOS and in the Linux GCC and Clang images). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
@@ -408,7 +409,8 @@ Critical among them. In priority order:
      verified `CTypeTable` that range-checks itself, **12 into a container that
      is not**, all guarded. A thirteenth fails the suite and has to be read.
      Seven of the 12 are in the phone handlers `gamemodel` compiles (task
-     4.15), and `test_model_handlers.cpp` runs every slot byte past them.
+     4.15), and `test_model_handlers.cpp` runs every out-of-range slot
+     byte (3 to 255) past each of them.
      It **fails closed**: a container it does not recognise counts as raw, so
      adding a name to its allowlist is a deliberate act. Its first version
      hardcoded the receiver name `pPacket` and so was blind to the 19 handlers
