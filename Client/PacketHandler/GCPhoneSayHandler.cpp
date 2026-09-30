@@ -14,7 +14,7 @@
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Runs when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCPhoneSayHandler::execute ( GCPhoneSay * pPacket , Player * pPlayer )
@@ -37,18 +37,22 @@ void GCPhoneSayHandler::execute ( GCPhoneSay * pPacket , Player * pPlayer )
 		return;
 	}
 
+	// A slot that never connected, or was hung up, has no name, and its
+	// MString gives NULL, which %s must not be handed.
+	const char* pName = g_pUserInformation->PCSUserName[ slot ].GetString();
+
 	char message[128];
 	snprintf(message, sizeof(message), "[%s] %s",
-						g_pUserInformation->PCSUserName[ slot ].GetString(), 
+						pName == NULL ? "" : pName,
 						pPacket->getMessage().c_str());
 
 	//--------------------------------------------------
-	// 욕 제거
+	// Remove curse words
 	//--------------------------------------------------
 	//g_pChatManager->RemoveCurse( message );
 
 	//------------------------------------------------------
-	// 특정 slot에 message를 추가시켜야 한다.
+	// The message should be added to the slot's chat.
 	//------------------------------------------------------
 	//UI_AddChatToHistory( message );
 

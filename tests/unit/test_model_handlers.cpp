@@ -454,8 +454,10 @@ TEST(ModelHandlers, PhoneDisconnectedIgnoresASlotPastTheArrays)
 // GCPhoneSay: reads the slot's name to build a line that goes nowhere
 // (its chat call is commented out), so it changes no model state; the
 // test is that no slot byte reaches past the name array or changes it.
+// Every slot holds a name here; PhoneSayOnAnEmptySlotChangesNothing
+// covers a slot that has none.
 //======================================================================
-TEST(ModelHandlers, PhoneSayChangesNoSlotForAnySlotByte)
+TEST(ModelHandlers, PhoneSayChangesNoFilledSlotForAnySlotByte)
 {
 	HandlerWorld world;
 
@@ -471,6 +473,64 @@ TEST(ModelHandlers, PhoneSayChangesNoSlotForAnySlotByte)
 		CHECK(p->getMessage() == std::string("hello"));
 		GCPhoneSayHandler::execute(p.get(), NULL);
 		CheckSlotsFilledBut(-1);
+	}
+}
+
+// A slot that never connected, or whose call was hung up, has no name:
+// its MString holds NULL. The handler used to pass that NULL to
+// snprintf's %s, which is undefined. Every libc this project builds
+// against prints "(null)" and the line is discarded, so the test
+// cannot tell the unguarded call from the guarded one; it runs the
+// empty-slot path in every build and checks the slot stays empty.
+namespace {
+
+void	PhoneSayOn(int slot)
+{
+	Wire w;
+	w.Put<SlotID_t>((SlotID_t)slot).Text("hello");
+	std::unique_ptr<GCPhoneSay> p = ReadPacket<GCPhoneSayFactory, GCPhoneSay>(w);
+	CHECK(p != NULL);
+	if (p == NULL)
+		return;
+	GCPhoneSayHandler::execute(p.get(), NULL);
+}
+
+} // namespace
+
+TEST(ModelHandlers, PhoneSayOnAnEmptySlotChangesNothing)
+{
+	// Never connected: a fresh UserInformation.
+	{
+		HandlerWorld world;
+		for (int slot = 0; slot < MAX_PCS_SLOT; ++slot)
+		{
+			CHECK(g_pUserInformation->PCSUserName[slot].GetString() == NULL);
+			PhoneSayOn(slot);
+			CHECK_EQ(0, g_pUserInformation->OtherPCSNumber[slot]);
+			CHECK(g_pUserInformation->PCSUserName[slot].GetString() == NULL);
+		}
+	}
+
+	// Hung up: connected, then disconnected, then a line arrives.
+	{
+		HandlerWorld world;
+		for (int slot = 0; slot < MAX_PCS_SLOT; ++slot)
+		{
+			FillSlots();
+			Wire w;
+			w.Put<PhoneNumber_t>(7000 + slot).Put<SlotID_t>((SlotID_t)slot);
+			std::unique_ptr<GCPhoneDisconnected> p = ReadPacket<GCPhoneDisconnectedFactory, GCPhoneDisconnected>(w);
+			CHECK(p != NULL);
+			if (p == NULL)
+				return;
+			GCPhoneDisconnectedHandler::execute(p.get(), NULL);
+			CHECK(g_pUserInformation->PCSUserName[slot].GetString() == NULL);
+
+			PhoneSayOn(slot);
+			CHECK_EQ(0, g_pUserInformation->OtherPCSNumber[slot]);
+			CHECK(g_pUserInformation->PCSUserName[slot].GetString() == NULL);
+			CheckSlotsFilledBut(slot);
+		}
 	}
 }
 
