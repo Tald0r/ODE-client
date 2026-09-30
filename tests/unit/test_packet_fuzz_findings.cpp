@@ -439,8 +439,10 @@ TEST(PacketFuzzFindings, PCListSlotsInRangeStillRead)
 	CHECK_EQ((int)PC_SLAYER, (int)packet.getPCInfo(SLOT3)->getPCType());
 }
 
-// A slot named twice keeps the later info, as it always has; the earlier
-// one is freed rather than leaked.
+// A slot named twice keeps the later info, as it always has, and the slot
+// no character names stays empty. This test cannot see whether the earlier
+// info is freed: no leak check runs in the unit suite, and this passed on
+// the unfixed code, which leaked it (ReadPCInfo now deletes it).
 TEST(PacketFuzzFindings, PCListSlotNamedTwiceKeepsTheLaterInfo)
 {
 	std::vector<unsigned char> body = PCListGolden();
