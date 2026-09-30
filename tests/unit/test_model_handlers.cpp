@@ -584,15 +584,15 @@ TEST(ModelHandlers, TradeMoneyWithoutATradeChangesNothing)
 }
 
 //----------------------------------------------------------------------
-// A result moves money all or nothing. The server refuses a move the
-// source cannot cover and trims one the destination cannot hold
-// (decideMoneyIncrease / decideMoneyDecrease in its
-// trade/TradeTableDecision.cpp), so it never moves part of one; when
-// this client's wallets cannot make the move the server reports, they
-// disagree with the server's, and moving one side only would create or
-// lose money on screen. Both OKs still clear: the server's table changed.
+// A result reports a move the server has already made. The server
+// rejects a move before it changes anything (decideMoneyIncrease and
+// decideMoneyDecrease in its trade/TradeTableDecision.cpp), and
+// otherwise sets its wallet and its stake, then sends the result. So
+// each side here follows the server on its own: when this client's
+// wallet cannot follow (it disagrees with the server's), the trade box
+// still does, and the other way round. Both OKs still clear.
 //----------------------------------------------------------------------
-TEST(ModelHandlers, TradeMoneyIncreaseResultMovesNothingTheWalletCannotCover)
+TEST(ModelHandlers, TradeMoneyIncreaseResultFillsTheBoxWhenTheWalletCannotCover)
 {
 	HandlerWorld world;
 	CHECK(g_pMoneyManager->SetMoney(100));
@@ -600,24 +600,24 @@ TEST(ModelHandlers, TradeMoneyIncreaseResultMovesNothingTheWalletCannotCover)
 
 	RunTradeMoney(500, GC_TRADE_MONEY_INCREASE_RESULT);
 
-	CHECK_EQ(100, g_pMoneyManager->GetMoney());
-	CHECK_EQ(0, MyBox()->GetMoney());
+	CHECK_EQ(500, MyBox()->GetMoney());				// the server's stake
+	CHECK_EQ(100, g_pMoneyManager->GetMoney());		// cannot go below 0
 	CHECK_EQ(false, g_pTradeManager->IsAcceptMyTrade());
 	CHECK_EQ(false, g_pTradeManager->IsAcceptOtherTrade());
 }
 
-TEST(ModelHandlers, TradeMoneyIncreaseResultMovesNothingTheBoxCannotHold)
+TEST(ModelHandlers, TradeMoneyIncreaseResultEmptiesTheWalletWhenTheBoxCannotHold)
 {
 	HandlerWorld world;
 	CHECK(MyBox()->SetMoney(MyBox()->GetMoneyLimit() - 500));
 
 	RunTradeMoney(1000, GC_TRADE_MONEY_INCREASE_RESULT);
 
-	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+	CHECK_EQ(0, g_pMoneyManager->GetMoney());		// the server's wallet lost 1000
 	CHECK_EQ(MyBox()->GetMoneyLimit() - 500, MyBox()->GetMoney());
 }
 
-TEST(ModelHandlers, TradeMoneyDecreaseResultMovesNothingTheBoxCannotCover)
+TEST(ModelHandlers, TradeMoneyDecreaseResultFillsTheWalletWhenTheBoxCannotCover)
 {
 	HandlerWorld world;
 	CHECK(MyBox()->SetMoney(100));
@@ -625,13 +625,13 @@ TEST(ModelHandlers, TradeMoneyDecreaseResultMovesNothingTheBoxCannotCover)
 
 	RunTradeMoney(500, GC_TRADE_MONEY_DECREASE_RESULT);
 
-	CHECK_EQ(100, MyBox()->GetMoney());
-	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+	CHECK_EQ(1500, g_pMoneyManager->GetMoney());	// the server's wallet gained 500
+	CHECK_EQ(100, MyBox()->GetMoney());				// cannot go below 0
 	CHECK_EQ(false, g_pTradeManager->IsAcceptMyTrade());
 	CHECK_EQ(false, g_pTradeManager->IsAcceptOtherTrade());
 }
 
-TEST(ModelHandlers, TradeMoneyDecreaseResultMovesNothingTheWalletCannotHold)
+TEST(ModelHandlers, TradeMoneyDecreaseResultEmptiesTheBoxWhenTheWalletCannotHold)
 {
 	HandlerWorld world;
 	g_pMoneyManager->SetMoneyLimit(1000);		// full at 1000
@@ -639,7 +639,7 @@ TEST(ModelHandlers, TradeMoneyDecreaseResultMovesNothingTheWalletCannotHold)
 
 	RunTradeMoney(100, GC_TRADE_MONEY_DECREASE_RESULT);
 
-	CHECK_EQ(100, MyBox()->GetMoney());
+	CHECK_EQ(0, MyBox()->GetMoney());				// the server's stake
 	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
 }
 

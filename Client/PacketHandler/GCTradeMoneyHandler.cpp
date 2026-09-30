@@ -17,24 +17,26 @@
 namespace {
 
 //----------------------------------------------------------------------------
-// Moves money from one wallet to another, all or nothing. The server
-// refuses a move its source cannot cover and trims one its destination
-// cannot hold (decideMoneyIncrease and decideMoneyDecrease in its
-// trade/TradeTableDecision.cpp), so it never moves part of one. When this
-// client's wallets cannot make the move the server reports, they disagree
-// with the server's; moving one side only would create or lose money on
-// screen, so both are left as they were.
+// Applies a result the server has already committed. The server rejects a
+// move before it changes anything (decideMoneyIncrease and
+// decideMoneyDecrease in its trade/TradeTableDecision.cpp); otherwise it
+// sets both its wallet and its stake, and only then reports the amount. So
+// each side here follows the server on its own. A side that cannot follow
+// (its balance would leave 0..limit) disagrees with the server's already;
+// it keeps its value and the refusal is logged, and the other side still
+// follows, since holding it back would only make that side wrong too.
 //----------------------------------------------------------------------------
-void MoveMoney( MMoneyManager* pFrom, MMoneyManager* pTo, int money )
+void ApplyResult( MMoneyManager* pFrom, MMoneyManager* pTo, int money )
 {
-	if (!pFrom->CanUseMoney( money ) || !pTo->CanAddMoney( money ))
+	if (!pFrom->UseMoney( money ))
 	{
-		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the wallets cannot move %d (%d -> %d)", money, pFrom->GetMoney(), pTo->GetMoney() );
-		return;
+		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the source cannot give %d (has %d)", money, pFrom->GetMoney() );
 	}
 
-	pFrom->UseMoney( money );
-	pTo->AddMoney( money );
+	if (!pTo->AddMoney( money ))
+	{
+		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the destination cannot take %d (has %d)", money, pTo->GetMoney() );
+	}
 }
 
 } // namespace
@@ -100,7 +102,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 		// the wallet into the trade box.
 		//---------------------------------------------------------------
 		case GC_TRADE_MONEY_INCREASE_RESULT :			
-			MoveMoney( g_pMoneyManager, g_pTradeManager->GetMyMoneyManager(), money );
+			ApplyResult( g_pMoneyManager, g_pTradeManager->GetMyMoneyManager(), money );
 			
 			bRefuseAccept = true;
 		break;
@@ -110,7 +112,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 		// into the wallet.
 		//---------------------------------------------------------------
 		case GC_TRADE_MONEY_DECREASE_RESULT :			
-			MoveMoney( g_pTradeManager->GetMyMoneyManager(), g_pMoneyManager, money );
+			ApplyResult( g_pTradeManager->GetMyMoneyManager(), g_pMoneyManager, money );
 
 			bRefuseAccept = true;
 		break;
