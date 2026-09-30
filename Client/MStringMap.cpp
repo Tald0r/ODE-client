@@ -293,49 +293,73 @@ MStringMap::SaveToFile(std::ofstream& file)
 void				
 MStringMap::LoadFromFile(std::ifstream& file)
 {	
-	int num;
+	//---------------------------------------------------
+	// the count; a file too short to hold one loads nothing
+	//---------------------------------------------------
+	int num = 0;
+
+	if (!file.read((char*)&num, 4))
+	{
+		return;
+	}
 
 	//---------------------------------------------------
-	// size 읽기
+	// each entry
 	//---------------------------------------------------
-	file.read((char*)&num, 4);
-
-	//---------------------------------------------------
-	// 각각의 string을 읽는다.
-	//---------------------------------------------------
-	bool bSame;
 	for (int i=0; i<num; i++)
 	{
 		//---------------------------------------------------
-		// key와 value가 같은지 아닌지 체크하기 
+		// whether the value is the key: read as a byte, any
+		// byte but 0 meaning it is (SaveToFile writes 0 or 1)
 		//---------------------------------------------------
-		file.read((char*)&bSame, 1);
+		char same = 0;
+
+		if (!file.read(&same, 1))
+		{
+			break;
+		}
 
 		MString* pKeyString		= new MString;
-		MString* pValueString;
+		MString* pValueString	= pKeyString;
 
 		pKeyString->LoadFromFile( file );
 		
 		//---------------------------------------------------
-		// key와 value가 같은 값인 경우..
+		// a value of its own: a second string
+		// (otherwise the value is the key: one string)
 		//---------------------------------------------------
-		if (bSame)
+		if (file && same==0)
 		{
-			pValueString = pKeyString;
-		}
-		//---------------------------------------------------
-		// 다른 값이면 하나 더 loading..
-		//---------------------------------------------------
-		else
-		{
-			MString* pValueString	= new MString;
+			pValueString	= new MString;
 
 			pValueString->LoadFromFile( file );			
 		}
 
 		//---------------------------------------------------
-		// map에 추가한다.
+		// An entry the file cuts short is dropped, with what
+		// was read of it, and the load stops there.
 		//---------------------------------------------------
-		insert( STRING_MAP::value_type( pKeyString, pValueString ) );
+		if (!file)
+		{
+			if (pValueString!=pKeyString)
+			{
+				delete pValueString;
+			}
+			delete pKeyString;
+			break;
+		}
+
+		//---------------------------------------------------
+		// add it to the map; a key already there keeps its
+		// first value
+		//---------------------------------------------------
+		if (!insert( STRING_MAP::value_type( pKeyString, pValueString ) ).second)
+		{
+			if (pValueString!=pKeyString)
+			{
+				delete pValueString;
+			}
+			delete pKeyString;
+		}
 	}
 }

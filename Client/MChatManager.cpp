@@ -6,13 +6,13 @@
 
 
 	#include "MGameStringTable.h"
-	#include "UserOption.h"
 
 
 //----------------------------------------------------------------------
 // Global
 //----------------------------------------------------------------------
 MChatManager*		g_pChatManager = NULL;
+const MChatHost*	MChatManager::s_pHost = NULL;
 
 //----------------------------------------------------------------------
 // Static
@@ -23,6 +23,19 @@ char MChatManager::s_MaskString[256] = //"^^; -_-; !_!; o_O; *_*; m_m; u_u; p_q;
 char MChatManager::s_MaskString2[256] = 
 		"#&*%!$#%&*@!%&$&#*&$@#*!%$&@#&*%!$#%&*@!%&$&#*&$@&#!%$*&%*#@#*!%$&@#&*%!$#%&*@!%&$&#*&$@#*!%$&@#&*!$#%&*@!%&$&#*&$@#*!%$&@#&*%!$#%&!$#%&*@!%&$&#*&$@#*!%$&@#&*%!$#%&*";
 		//".....................................................................................................................................................................";
+
+//----------------------------------------------------------------------
+// Mask Char
+//----------------------------------------------------------------------
+// The n-th character of a mask text, which repeats. The texts are
+// shorter than their 256-byte arrays (the rest is NULs), so indexing them
+// by n directly cut a long line with a NUL and then read past the array.
+//----------------------------------------------------------------------
+static char
+MaskChar(const char* mask, int n)
+{
+	return mask[ n % static_cast<int>(strlen(mask)) ];
+}
 
 //----------------------------------------------------------------------
 //
@@ -36,6 +49,28 @@ MChatManager::MChatManager()
 
 MChatManager::~MChatManager()
 {
+}
+
+//----------------------------------------------------------------------
+// Host
+//----------------------------------------------------------------------
+const MChatHost*
+MChatManager::SetHost(const MChatHost* pHost)
+{
+	const MChatHost* pPrevious = s_pHost;
+	s_pHost = pHost;
+	return pPrevious;
+}
+
+bool
+MChatManager::HostFilteringCurse()
+{
+	if (s_pHost==NULL || s_pHost->FilteringCurse==NULL)
+	{
+		return true;
+	}
+
+	return s_pHost->FilteringCurse();
 }
 
 //----------------------------------------------------------------------
@@ -82,7 +117,7 @@ MChatManager::LoadFromFile(const char* filename)
 //----------------------------------------------------------------------
 // Load From File Curse
 //----------------------------------------------------------------------
-// text file에서 욕 읽기
+// Reads the curses from a text file of words.
 //----------------------------------------------------------------------
 void				
 MChatManager::LoadFromFileCurse(const char* filename)
@@ -97,11 +132,26 @@ MChatManager::LoadFromFileCurse(const char* filename)
 	char str[256];
 
 	//-----------------------------------------------------
-	// text file에서 죽죽~~ 읽어들인다.
+	// Read the file word by word, up to the first read that
+	// fails. Testing eof() before reading ran one read past
+	// the last word of a file ending in whitespace, and what a
+	// failed read leaves in str is up to the stream library:
+	// MSVC's writes "", libc++'s and libstdc++'s leave str as
+	// it was - the last word, or in a blank file the
+	// uninitialised buffer. A NUL byte also fails MSVC's read
+	// without reaching eof(), which looped forever.
 	//-----------------------------------------------------
-	while (!file.eof())
+	while (file >> str)
 	{
-		file >> str;
+		//-----------------------------------------------------
+		// libc++ and libstdc++ read a NUL byte into the word, so
+		// a word that starts with one is empty. An empty word is
+		// no curse (RemoveCurse skips one), so it is not listed.
+		//-----------------------------------------------------
+		if (str[0]=='\0')
+		{
+			continue;
+		}
 
 		bool bEng = true;
 		bool bKor = true;
@@ -110,12 +160,12 @@ MChatManager::LoadFromFileCurse(const char* filename)
 		char ch;
 
 		//-----------------------------------------------------
-		// 단어가 영어인지 한글인지 판단한다.
+		// Is the word English or Korean?
 		//-----------------------------------------------------
 		while ((ch=*strTemp++))
 		{
 			//-----------------------------------------------------
-			// 한글인 경우
+			// Korean (a two-byte character)
 			//-----------------------------------------------------
 			if (ch & 0x80)
 			{
@@ -130,14 +180,14 @@ MChatManager::LoadFromFileCurse(const char* filename)
 				bEng = false;
 			}
 			//-----------------------------------------------------
-			// 영어인 경우
+			// English (a lower-case letter)
 			//-----------------------------------------------------
 			else if (ch>='a' && ch<='z')
 			{
 				bKor = false;
 			}
 			//-----------------------------------------------------
-			// 아니면 .. 버린다.
+			// Anything else: the word is dropped.
 			//-----------------------------------------------------
 			else				
 			{
@@ -149,19 +199,19 @@ MChatManager::LoadFromFileCurse(const char* filename)
 		}
 
 		//-----------------------------------------------------
-		// 영어..라고 판단된 경우
+		// An English word
 		//-----------------------------------------------------
 		if (bEng)
 		{
 			m_mapCurseEng.Add(str);
 		}
 		//-----------------------------------------------------
-		// 한글..이라고 판단된 경우
+		// A Korean word
 		//-----------------------------------------------------
 		else if (bKor)
 		{
 			//-----------------------------------------------------
-			// 한글 1,2,3,4자만 허용한다.
+			// Only words of one to four characters are listed.
 			//-----------------------------------------------------
 			switch (strlen(str))
 			{
@@ -182,7 +232,7 @@ MChatManager::LoadFromFileCurse(const char* filename)
 bool				
 MChatManager::RemoveCurse(char* str, bool bForce) const
 {
-		if ((!g_pUserOption->FilteringCurse && bForce == false) || str==NULL)
+		if ((!HostFilteringCurse() && bForce == false) || str==NULL)
 		{
 			return false;
 		}
@@ -199,17 +249,17 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	//	"#&*%!$#%&*@!%&$&#*&$@#*!%$&@#&*%!$#%&*@!%&$&#*&$@&#!%$*&%*#@#*!%$&@#&*%!$#%&*@!%&$&#*&$@#*!%$&@#&*%!$#%&*@!%&$&#*&$@#*!%$&@";
 
 	//------------------------------------------------------------
-	// 필요한 글자들만 걸러낸 string
+	// the string with only the letters that matter
 	//------------------------------------------------------------
 	char*	strFiltered = new char [len+1];		
 
 	//------------------------------------------------------------
-	// filter된 글자들의 원래 string에서의 index
+	// each filtered letter's index in the original string
 	//------------------------------------------------------------
 	int*	indexFiltered = new int [len+1];		
 
 	//------------------------------------------------------------
-	// 욕인지 아닌지 판단한다.
+	// whether each filtered letter is part of a curse
 	//------------------------------------------------------------
 	//bool*	isCurse = new bool [len+1];
 	BYTE*	isCurse = new BYTE [len+1];
@@ -217,57 +267,58 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 
 	//------------------------------------------------------------
 	//
-	//					영어욕 제거 
+	//					English curses
 	//
 	//------------------------------------------------------------
-	// 알파벳만 남기고... lower char으로..
-	// (!) string에서 욕을 찾는다.	
+	// Keep only the letters, lower-cased, and
+	// (!) look for the curses in that string.
 	//------------------------------------------------------------
 	// hi, hello! f.u.c.k!~~!
 	// --> hihellofuck
-	//	 원본 string의 index를 가져야지 다른 문자로 치환하기가 쉽다.
-	// 
-	// 같은 욕이 여러번 있을수도 있으니까.. strstr을 여러번해야한다.	
+	//	 Keeping each letter's index in the original string makes
+	//	 replacing it there easy.
+	//
+	// The same curse can occur more than once, so strstr runs repeatedly.
 	//------------------------------------------------------------
 	char*	strFilteredPtr = strFiltered;
 	int*	indexFilteredPtr = indexFiltered;
 	BYTE*	isCursePtr = isCurse;
 	
-	char*	strOrg = str;	// 체크를 위해서..
+	char*	strOrg = str;	// the cursor over the original
 	
 	char	ch;
 	const char toLower = 'a'-'A';
 
 	//------------------------------------------------------------
-	// 영어만 걸러내서 소문자로 바꾼다.
+	// Filter out the English letters, lower-cased.
 	//------------------------------------------------------------
 	i = 0;
 	index = 0;
 	while ((ch = *strOrg++))//, ch != '\0')
 	{
 		//----------------------------------------------
-		// 소문자인 경우 --> 그대로 쓴다.
+		// lower case --> kept as it is
 		//----------------------------------------------
 		if (ch >= 'a' && ch <= 'z')
 		{
 			*strFilteredPtr++	= ch;
 			*indexFilteredPtr++ = i;
-			*isCursePtr++		= false;	// 초기화			
+			*isCursePtr++		= false;	// not a curse yet
 			index++;
 		}		
 		//----------------------------------------------
-		// 대문자인 경우 --> 소문자로 바꾼다.
+		// upper case --> lower-cased
 		//----------------------------------------------
 		else if (ch >= 'A' && ch <= 'Z')
 		{
 			*strFilteredPtr++	= ch + toLower;
 			*indexFilteredPtr++ = i;
-			*isCursePtr++		= false;	// 초기화
+			*isCursePtr++		= false;	// not a curse yet
 			index++;
 		}
 		
 		//----------------------------------------------
-		// 다른 경우는 무시되는 문자이다.
+		// anything else is skipped
 		//----------------------------------------------
 
 		i++;
@@ -275,46 +326,47 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	*strFilteredPtr = '\0';
 	
 	//------------------------------------------------------------
-	// 영어가 있는 경우만 영어욕을 제거한다.
+	// English curses are looked for only when there are English letters.
 	//------------------------------------------------------------
 	if (index!=0)
 	{
 		MStringMap::const_iterator iString = m_mapCurseEng.begin();
 		
 		//------------------------------------------------------------
-		// 모든 욕들에 대해서 다 비교한다... strFiltered에 있는지..
+		// Look for every curse in strFiltered.
 		//------------------------------------------------------------
 		while (iString != m_mapCurseEng.end())
 		{
 			const MString* pString = iString->second;
 
-			if (pString!=NULL)
+			// An empty word would match everywhere without moving the
+			// search on; only the binary file can hold one.
+			if (pString!=NULL && pString->GetLength()!=0)
 			{
 				strFilteredPtr = strFiltered;
 
 				char* pFind = NULL;
 
 				//---------------------------------------------------
-				// strFiltered에서 욕을 찾는다.
+				// find the curse in strFiltered
 				//---------------------------------------------------
 				while ((pFind = strstr( strFilteredPtr, pString->GetString() )))
 				{					
 					int lenCurse = static_cast<int>(pString->GetLength());
 
 					//---------------------------------------------------
-					// 찾았으면.. 표시해둔다.
+					// found: mark its letters, counted from the start of
+					// strFiltered (not from where this search started, so
+					// a second occurrence is marked where it is)
 					//---------------------------------------------------
-					// 2004, 10, 26, sobeit modify start - 욕필터 수정
-					//memset( isCurse+(pFind-strFilteredPtr), true, lenCurse);
-					memset( isCurse+(pFind-strFilteredPtr), lenCurse, lenCurse);
-					// 2004, 10, 26, sobeit modify end - 욕필터 수정
+					memset( isCurse+(pFind-strFiltered), lenCurse, lenCurse);
 					
 					//---------------------------------------------------
-					// 다음에 검색할 위치를 지정한다.
+					// where the next search starts
 					//---------------------------------------------------
 					strFilteredPtr = pFind + lenCurse;
 
-					existCurseEng = true;	// 욕 있다.
+					existCurseEng = true;	// a curse was found
 				}
 			}
 
@@ -322,14 +374,14 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 		}
 
 		//------------------------------------------------------------
-		// 찾아낸 욕들에 mask를 씌운다.
+		// Mask the curses found.
 		//------------------------------------------------------------
 		for (int i=0; i<index; i++)
 		{
 			if ( isCurse[i] )
 			{
-				// 욕이면.. 원래 string 위치에 mask를 씌운다.
-				str[ indexFiltered[i] ] = s_MaskString[ i ];
+				// a curse: mask its letter in the original string
+				str[ indexFiltered[i] ] = MaskChar( s_MaskString, i );
 			}
 		}
 
@@ -337,69 +389,72 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 
 	
 	//------------------------------------------------------------
-	// 한글1자, 한글2자, 한글3자 ...  각각 따로..
-	// 공백이나 특수문자 skip하면 띄워쓰기도 제거된다.
-	// (1) 길이에 따라 나눠진 욕에서 string을 찾는다.
+	// Korean curses of one, two, three and four syllables, each
+	// length on its own. Spaces and symbols are skipped, so spacing
+	// a curse out does not hide it.
+	// (1) Look up each window of the string among the curses of
+	//     that length.
 	//------------------------------------------------------------
 	//     하이 뭐라고 우헤헤헤 안돼~~
 	// --> 하이뭐라고우헤헤헤안돼
-	//	 원본 string의 index를 가져야지 다른 문자로 치환하기가 쉽다.
+	//	 Keeping each byte's index in the original string makes
+	//	 replacing it there easy.
 	//
-	//1글자( 하, 이, 뭐, 라, 고, 우, 헤, 헤, 헤, 안, 돼 )
-	//2글자( 하이, 이뭐, 뭐라, 고우, 우헤, 헤헤, 헤헤, 헤안, 안돼 )
-	//3글자(하이뭐, 이뭐라, 뭐라고, 라고우, 고우헤, 우헤헤, 헤헤헤, 헤헤안, 헤안돼)
-	//4글자.... 등등
+	//1 syllable ( 하, 이, 뭐, 라, 고, 우, 헤, 헤, 헤, 안, 돼 )
+	//2 syllables( 하이, 이뭐, 뭐라, 고우, 우헤, 헤헤, 헤헤, 헤안, 안돼 )
+	//3 syllables(하이뭐, 이뭐라, 뭐라고, 라고우, 고우헤, 우헤헤, 헤헤헤, 헤헤안, 헤안돼)
+	//4 syllables.... and so on
 	//
-	// 비교회수 : O( stringLength * (log(1글자욕수) + ... + log(n글자욕수)) )
+	// Comparisons: O( stringLength * (log(1-syllable curses) + ... + log(n-syllable curses)) )
 	//
-	// 예상) 40자 * (log(1000개)+log(1000개)+log(1000개)) = 40*30 = 120
+	// e.g. 40 syllables * (log(1000)+log(1000)+log(1000)) = 40*30 = 1200
 	//
 	//------------------------------------------------------------
 	strFilteredPtr = strFiltered;
 	indexFilteredPtr = indexFiltered;
 	isCursePtr = isCurse;
 	
-	strOrg = str;	// 체크를 위해서..
+	strOrg = str;	// the cursor over the original
 	
 	//------------------------------------------------------------
-	// 한글만 걸러낸다.
+	// Filter out the Korean (two-byte) characters.
 	//------------------------------------------------------------
 	i = 0;
 	index = 0;
 	while ((ch = *strOrg++))//, ch != '\0')
 	{
 		//----------------------------------------------
-		// 한글인 경우..
+		// a Korean character's lead byte
 		//----------------------------------------------
 		if (ch & 0x80)
 		{
 			char chNext = *strOrg++;
 
 			//----------------------------------------------
-			// 2 byte이므로.. 다음 byte로 체크한다.
+			// two bytes, so the next byte must be there
 			//----------------------------------------------
 			if (chNext=='\0')
 			{
-				// 다음 한 byte가 없는 경우
+				// the string ends after the lead byte
 				break;
 			}
 			
 			//----------------------------------------------
-			// 정상적인 한글 한자(2bytes)가 있는 경우
+			// a whole two-byte character
 			//----------------------------------------------
 			*strFilteredPtr++	= ch;
 			*indexFilteredPtr++ = i++;
-			*isCursePtr++		= false;	// 초기화
+			*isCursePtr++		= false;	// not a curse yet
 
 			*strFilteredPtr++	= chNext;
 			*indexFilteredPtr++ = i;
-			*isCursePtr++		= false;	// 초기화
+			*isCursePtr++		= false;	// not a curse yet
 
 			index+=2;
 		}		
 	
 		//----------------------------------------------
-		// 다른 경우는 무시되는 문자이다.
+		// anything else is skipped
 		//----------------------------------------------
 
 		i++;
@@ -407,42 +462,47 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	*strFilteredPtr = '\0';
 
 	//------------------------------------------------------------
-	// 글자수에 따라서.. 한글욕을 제거한다.
+	// Look for the Korean curses, one length at a time.
 	//------------------------------------------------------------
 	if (RemoveCurseKorean(strFiltered, 2, m_mapCurseKor1, isCurse))
 	{
-		existCurseKor = true;	// 욕 있다.
+		existCurseKor = true;	// a curse was found
 	}
 
 	if (RemoveCurseKorean(strFiltered, 4, m_mapCurseKor2, isCurse))
 	{
-		existCurseKor = true;	// 욕 있다.
+		existCurseKor = true;	// a curse was found
 	}
 
 	if (RemoveCurseKorean(strFiltered, 6, m_mapCurseKor3, isCurse))
 	{
-		existCurseKor = true;	// 욕 있다.
+		existCurseKor = true;	// a curse was found
 	}
 
 	if (RemoveCurseKorean(strFiltered, 8, m_mapCurseKor4, isCurse))
 	{
-		existCurseKor = true;	// 욕 있다.
+		existCurseKor = true;	// a curse was found
 	}
 
 	//------------------------------------------------------------
-	// 한글 욕이 있다면..
+	// If there is a Korean curse,
 	//------------------------------------------------------------
 	if (existCurseKor)
 	{
 		//------------------------------------------------------------
-		// 찾아낸 욕들에 mask를 씌운다.
+		// replace the curses found. A replacement goes over the Korean
+		// bytes from the word's first on, as far as it reaches and
+		// there are Korean bytes: only the first index entries of
+		// indexFiltered hold this pass's Korean bytes. The entries past
+		// them still hold the English pass's letter positions, or were
+		// never written.
 		//------------------------------------------------------------
 		
 		for (int i=0; i<index; i++)
 		{
 			if ( isCurse[i] )
 			{
-				// 2004, 10, 26, sobeit modify start - 욕필터 수정
+				// 2004, 10, 26, sobeit modify start - curse filter change
 				
 				int j = 0;
 				switch(isCurse[i])
@@ -452,7 +512,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_1].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
@@ -463,7 +523,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_2].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
@@ -474,7 +534,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_3].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
@@ -485,18 +545,18 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 						char* pChangeString = (*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetString();
 						for(j = 0; static_cast<size_t>(j)<(*g_pGameStringTable)[UI_STRING_MESSAGE_REMOVE_CURSE_4].GetLength() ; j++)
 						{
-							if( (i+j) < len && indexFiltered[i+j] < len && indexFiltered[i+j]>-1)
+							if( (i+j) < index )
 								str[ indexFiltered[i+j] ] = pChangeString[j];
 						}
 					}
 					i+= 7;
 					break;
 				default:
-					str[ indexFiltered[i] ] = s_MaskString[ i ];
+					str[ indexFiltered[i] ] = MaskChar( s_MaskString, i );
 					break;
 				}
 
-				// 2004, 10, 26, sobeit modify end - 욕필터 수정
+				// 2004, 10, 26, sobeit modify end - curse filter change
 			}
 		}
 	}
@@ -506,7 +566,7 @@ MChatManager::RemoveCurse(char* str, bool bForce) const
 	delete [] isCurse;	
 
 	//------------------------------------------------------------
-	// 영어욕이나 한글욕이 있다면...
+	// Was there an English or a Korean curse?
 	//------------------------------------------------------------
 	if (existCurseEng || existCurseKor)
 	{
@@ -601,10 +661,10 @@ MChatManager::RemoveCurseKorean(const char* strKor,
 //----------------------------------------------------------------------
 // Add Mask
 //----------------------------------------------------------------------
-// str의 군데군데에 percent의 확률로 mask를 씌운다.
-// 일단, s_MaskString2를 사용한다. - -;
-// percent는 0~100 
-// 0이면 다 마스크되고, 100이면 하나도 마스크되지 않는다.
+// Masks characters of str here and there, each kept with a chance of
+// percent, using s_MaskString2's characters.
+// percent is 0 to 100:
+// 0 masks everything, 100 masks nothing.
 //----------------------------------------------------------------------
 void
 MChatManager::AddMask(char* str, int percent) const
@@ -630,20 +690,20 @@ MChatManager::AddMask(char* str, int percent) const
 		int maskLen = 0;
 
 		//-------------------------------------------------------
-		// 공백인 경우는 무시한다.
+		// a space is kept
 		//-------------------------------------------------------
 		if (ch==' ')
 		{			
 		}
 		//-------------------------------------------------------
-		// 한글인 경우
+		// a Korean (two-byte) character
 		//-------------------------------------------------------
 		else if (ch & 0x80)
 		{
 			maskLen = 2;			
 		}
 		//-------------------------------------------------------
-		// 한 문자.
+		// a one-byte character
 		//-------------------------------------------------------
 		else 
 		{
@@ -651,11 +711,11 @@ MChatManager::AddMask(char* str, int percent) const
 		}		
 
 		//-------------------------------------------------------
-		// Mask할까?
+		// mask it?
 		//-------------------------------------------------------
 		if (maskLen!=0)
 		{
-			int bMask = (rand() & 0x3F) >= pro;	// 결정~
+			int bMask = (rand() & 0x3F) >= pro;	// decide
 
 			if (bMask)
 			{
@@ -663,14 +723,19 @@ MChatManager::AddMask(char* str, int percent) const
 				{
 					if (*str != '\0')
 					{			
-						*str = s_MaskString2[index++];
+						*str = MaskChar( s_MaskString2, index++ );
 						str++;
 					}					
 				}
 			}
 			else
 			{
-				str += maskLen;
+				// Kept: step over the character's bytes, but not over the
+				// NUL of a line that ends in a lone lead byte.
+				for (int i=0; i<maskLen && *str != '\0'; i++)
+				{
+					str++;
+				}
 			}
 		}
 		else

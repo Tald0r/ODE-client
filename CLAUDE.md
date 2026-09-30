@@ -80,12 +80,13 @@ tree; what the player can use right now stays executable-side), and the
 combat-stat preview
 (`MStatusManager`: the character-select to-hit, defense, protection
 and damage, and the attack speed `MPlayer::CalculateStatus` takes from
-it), and the creature status array (`MStatus`), with `AffectModifyInfo`,
-which applies a ModifyInfo packet to it, and the request/answer mode
-register (`TempInformation`) - with the user, config and
-timed-item loaders it reads, and their string support, membership in
-`tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12 and 4.14),
+it), the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
+over `MStringMap`, behind its `MChatHost`), and the creature status array
+(`MStatus`), with `AffectModifyInfo`, which applies a ModifyInfo packet to
+it, and the request/answer mode register (`TempInformation`) - with the
+user, config and timed-item loaders it reads, and their string support,
+membership in `tests/arch/gamemodel_files.txt` —
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13 and 4.14),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -202,26 +203,28 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29 on the status model branch merged with master at
-`df3674bb` (the packet-read fuzzing merge, 1334 tests and 1,434,118 checks):
-the status array, the mode register and `AffectModifyInfo` joined gamemodel
-with their tests and fix (`docs/RESTRUCTURING.md` task 4.14, 29 tests and
-6,948 checks), the same on all four: **1363 tests, 1,441,066 checks, 0
-failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests`
-built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and `linux-clang` (Clang
-18.1) in the Docker image, its native arm64 on an Apple Silicon Mac, and run
-in it; both scripts stop at the warning step, which has no `aarch64`
-baseline, after ctest passed, so the totals were read by running the binary.
-Run from a git worktree, the container also needs the common git directory
-mounted, at its host path or with `GIT_DIR` and `GIT_WORK_TREE` set, or
-`ratchets` and `source_encoding` fail on "not a git repository". macOS:
-Apple Silicon, Apple Clang 21, the `macos` preset, read with
+measured on 2026-09-30 on the chat filter branch merged with master at
+`28c86264` (PR #294, the status model), so the tree holds both the chat
+filter (`docs/RESTRUCTURING.md` task 4.13, its tests and fixes, the last two
+the empty-`MString` comparison and the word-file loader that the branch's
+first Windows CI run crashed on) and the status array, mode register and
+`AffectModifyInfo` (task 4.14): **1414 tests, 1,443,310 checks, 0 failed**,
+identical in all four builds, this run (`decore_tests`: 13 tests, 2009
+checks, measured on macOS and in the Linux GCC and Clang images). Linux:
+`unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
+`linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
+Silicon Mac, with the totals read by running `build/presets/<preset>/bin/unit_tests`
+in it (the scripts stop at the warning step, which has no `aarch64`
+baseline). macOS: Apple Clang 21, the `macos` preset, read with
 `build/defects/run-tests.sh unit_tests ''`, and the `macos-asan` preset's
 `unit_tests` under `ASAN_OPTIONS=detect_leaks=0` and
-`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. The Windows
-trees were not re-measured for this figure, and no CI run produced either
-number. A platform-conditional test can make the check totals differ by one
-between platforms; that is not a failure. The Linux recipe is the `linux`,
+`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. Run from a git
+worktree, the container also needs the common git directory mounted, at its
+host path or with `GIT_DIR` and `GIT_WORK_TREE` set, or `ratchets` and
+`source_encoding` fail on "not a git repository". The Windows trees were not
+re-measured for this figure, and no CI run produced it. A
+platform-conditional test can make the check totals differ by one between
+platforms; that is not a failure. The Linux recipe is the `linux`,
 `linux-clang` and `linux-asan` presets in `CMakePresets.json`, the macOS one
 the `macos` and `macos-asan` presets.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to

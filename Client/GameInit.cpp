@@ -2669,6 +2669,7 @@ void ReleaseAllObjects()
 	// All game-owned items are gone. Do not call into UI globals from any
 	// subsequent static teardown; a later initialization installs the host again.
 	MItem::SetHost(nullptr);
+	MChatManager::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2946,6 +2947,20 @@ static const MPriceHost	s_PriceHost = {
 	.IsCreateTypeGame	= PriceIsCreateTypeGame,
 	.IsPayPlaying		= PriceIsPayPlaying,
 	.PotionPriceRatio	= PricePotionPriceRatio,
+};
+
+//-----------------------------------------------------------------------------
+// The chat filter's host (docs/RESTRUCTURING.md task 4.13): the player's
+// "filter bad words" option. Without options (before InitUserOption and
+// after they are released) the answer is the option's default, on.
+//-----------------------------------------------------------------------------
+static bool	ChatFilteringCurse()
+{
+	return g_pUserOption==NULL || g_pUserOption->FilteringCurse!=FALSE;
+}
+
+static const MChatHost	s_ChatHost = {
+	.FilteringCurse		= ChatFilteringCurse,
 };
 
 // Live creature actions used by the library-owned party roster.
@@ -3261,6 +3276,7 @@ InitGameObject()
 	MItem::SetHost(&s_ItemHost);
 	Wire::SetHost(&s_WireHost);
 	MPriceManager::SetHost(&s_PriceHost);
+	MChatManager::SetHost(&s_ChatHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 
