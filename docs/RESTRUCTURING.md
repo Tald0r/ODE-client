@@ -1403,6 +1403,45 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: `tests/arch/gamemodel_files.txt`, M0-M2, R1, the
     exemption row, `test_model_handlers.cpp` and `test_money_manager.cpp`.
 
+- [x] **4.16 The skill-info rebuild:** `GCSkillInfoHandler`'s decision
+  compiles in `gamemodel` as `ApplySkillInfo`, with the two duration
+  conversions it reads.
+  > **Status:** extracted (2026-09-30). `GCSkillInfoHandler` rebuilds the
+  > player's skill model from the server's per-race domain lists: 55
+  > branches over the domains (`g_pSkillManager`), the per-skill state in
+  > `g_pSkillInfoTable` and five skill flags of `g_pUserInformation`, all
+  > in `gamemodel`. The shrink survey at `deac9b56` measured its reach
+  > into the executable as three symbols: `ConvertDurationToMillisecond`,
+  > a pure conversion in `PacketFunction.cpp`, and
+  > `MSkillSet::SetAvailableSkills` and `g_abSweeperBonusSkills`, both in
+  > `MSkillAvailable.cpp`, the executable half of the skill core. The
+  > pattern is shared-rules slice 4's for Will of Life
+  > (`WillOfLifeOutput`): a `gamemodel` function holds the decision, the
+  > caller keeps what reaches the executable. `Client/ApplySkillInfo.cpp`
+  > takes the real `GCSkillInfo` and holds the body from the five flag
+  > resets through the domain loop, unchanged but for its Korean
+  > comments, which are translated; the handler calls it, then clears
+  > the sweeper bonus skills and calls `SetAvailableSkills`, in the order
+  > it did before, and no longer includes `ClientDef.h` or
+  > `UserInformation.h`, which only the moved body used.
+  > `ConvertDurationToMillisecond` and `ConvertDurationToFrame` (which
+  > reads `g_pClientConfig->FPS`, also `gamemodel`'s) move unchanged into
+  > `Client/ConvertDuration.cpp`; `ClientDef.h` includes their header in
+  > place of its two declarations, so their callers compile unchanged:
+  > 42 live calls in 26 files (24 handlers, `PacketFunction.cpp` and the
+  > six in the moved body; another 19 mentions are in comments), and
+  > `ClientDef.h` was the only declaration any of them saw.
+  > `ConvertMillisecondToFrame`, their neighbour, reads the same frame
+  > rate and was left in `PacketFunction.cpp`: nothing in this task
+  > calls it. No include rule changed: M1 accepts the four new files
+  > (they include `Client_PCH.h`, the `Gpackets` header, listed model
+  > headers and `basic`'s `Platform.h`), and the checker reads 77
+  > members. R1 does not move (435 Ninja, measured): the handler and
+  > `PacketFunction.cpp` stay in the executable. What this buys is
+  > testability, not a smaller executable.
+  - Owner: `tests/arch/gamemodel_files.txt`, M0-M2 and
+    `Client/ApplySkillInfo.h`'s contract.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop

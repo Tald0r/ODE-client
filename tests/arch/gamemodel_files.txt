@@ -296,3 +296,15 @@ Client/PacketHandler/GCTradeMoneyHandler.cpp
 Client/PacketHandler/GCTradeRemoveItemHandler.cpp
 Client/PacketHandler/GCSystemAvailabilitiesHandler.cpp
 Client/PacketHandler/GCMonsterKillQuestInfoHandler.cpp
+
+# The skill model's rebuild from a GCSkillInfo packet (task 4.16): which
+# skills each domain has learned, the per-skill state the wire carries
+# and the user's skill flags. Lifted out of GCSkillInfoHandler, which
+# stays executable-side for what it reaches there (the sweeper bonus
+# skills and MSkillSet::SetAvailableSkills, both MSkillAvailable.cpp),
+# with the two duration conversions it and the handlers read, which
+# ClientDef.h includes.
+Client/ApplySkillInfo.cpp
+Client/ApplySkillInfo.h
+Client/ConvertDuration.cpp
+Client/ConvertDuration.h

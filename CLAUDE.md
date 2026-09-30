@@ -88,10 +88,15 @@ eight packet handlers whose bodies reach only model state (the phone
 slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
 `GCRing`; the trade box `GCTradeMoney` and `GCTradeRemoveItem`;
 `GCSystemAvailabilities`; `GCMonsterKillQuestInfo`), which stay in
-`Client/PacketHandler` - with the user, config and timed-item loaders it
+`Client/PacketHandler`, and `ApplySkillInfo`, the skill-model rebuild
+`GCSkillInfoHandler` runs on its packet (the handler keeps the sweeper
+bonus reset and `SetAvailableSkills`), with the duration conversions
+(`ConvertDurationToFrame`, `ConvertDurationToMillisecond`) -
+with the user, config and timed-item loaders it
 reads, and their string support, membership in
 `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14 and 4.15),
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15
+and 4.16),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
