@@ -206,7 +206,10 @@ check () {
 # 447: the chat filter (MStringMap.cpp, MChatManager.cpp) joins gamemodel,
 # its option read behind MChatHost, so the curse filter can be tested
 # (task 4.13).
-R1_BASELINE=447
+# 445: the status array (MStatus.cpp) and the mode register
+# (TempInformation.cpp) join gamemodel unchanged so they can be tested
+# (task 4.14); measured on the tree with both moves.
+R1_BASELINE=445
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -250,7 +253,9 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 447: the four action and effect tables join gamemodel, as the MSVC
 	# baseline records.
 	# 445: the chat filter joins gamemodel, as the MSVC baseline records.
-	R1_NINJA_BASELINE=445
+	# 443: MStatus.cpp and TempInformation.cpp join gamemodel, as the MSVC
+	# baseline records.
+	R1_NINJA_BASELINE=443
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

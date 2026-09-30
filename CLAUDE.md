@@ -80,11 +80,13 @@ tree; what the player can use right now stays executable-side), and the
 combat-stat preview
 (`MStatusManager`: the character-select to-hit, defense, protection
 and damage, and the attack speed `MPlayer::CalculateStatus` takes from
-it), and the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
-over `MStringMap`, behind its `MChatHost`) - with the user, config and
-timed-item loaders it reads, and their string support, membership in
-`tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12 and 4.13),
+it), the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
+over `MStringMap`, behind its `MChatHost`), and the creature status array
+(`MStatus`), with `AffectModifyInfo`, which applies a ModifyInfo packet to
+it, and the request/answer mode register (`TempInformation`) - with the
+user, config and timed-item loaders it reads, and their string support,
+membership in `tests/arch/gamemodel_files.txt` —
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13 and 4.14),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -201,22 +203,22 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29 on the chat filter branch merged with master at
-`df3674bb` (the packet-read fuzzing), with the chat filter in gamemodel with its
-tests and fixes (`docs/RESTRUCTURING.md` task 4.13), the last two of them the
-empty-`MString` comparison and the word-file loader that the branch's first
-Windows CI run crashed on: **1385 tests, 1,436,362 checks, 0 failed** (`decore_tests`: 13 tests, 2009
-checks, measured on macOS and in the Linux GCC image, this run). The `unit_tests` figure was measured
-on this tree in three builds and identical in each: Linux GCC 13.3
-(`tools/ci/verify-linux.sh linux`) in the
-Docker image, its native arm64 on an Apple Silicon Mac, with the totals read by
-running `unit_tests` in it (the script passes ctest, then stops at the warning
-step, which has no `aarch64` baseline); macOS Apple Clang 21, the `macos`
-preset, read with `build/defects/run-tests.sh unit_tests ''`; and the
-`macos-asan` preset under `ASAN_OPTIONS=detect_leaks=0` and
-`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. Linux Clang 18.1
-(`linux-clang`) was not re-run for it; it gave the figure before those two
-fixes, 1373 tests and 1,436,068 checks, identical to the other three. Run from a git
+measured on 2026-09-30 on the chat filter branch merged with master at
+`28c86264` (PR #294, the status model), so the tree holds both the chat
+filter (`docs/RESTRUCTURING.md` task 4.13, its tests and fixes, the last two
+the empty-`MString` comparison and the word-file loader that the branch's
+first Windows CI run crashed on) and the status array, mode register and
+`AffectModifyInfo` (task 4.14): **1414 tests, 1,443,310 checks, 0 failed**,
+identical in all four builds, this run (`decore_tests`: 13 tests, 2009
+checks, measured on macOS and in the Linux GCC and Clang images). Linux:
+`unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
+`linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
+Silicon Mac, with the totals read by running `build/presets/<preset>/bin/unit_tests`
+in it (the scripts stop at the warning step, which has no `aarch64`
+baseline). macOS: Apple Clang 21, the `macos` preset, read with
+`build/defects/run-tests.sh unit_tests ''`, and the `macos-asan` preset's
+`unit_tests` under `ASAN_OPTIONS=detect_leaks=0` and
+`UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report. Run from a git
 worktree, the container also needs the common git directory mounted, at its
 host path or with `GIT_DIR` and `GIT_WORK_TREE` set, or `ratchets` and
 `source_encoding` fail on "not a git repository". The Windows trees were not
