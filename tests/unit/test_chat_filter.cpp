@@ -405,6 +405,65 @@ TEST(StringMap, ARepeatedKeyKeepsItsFirstValue)
 	std::remove(kBinFile);
 }
 
+TEST(StringMap, AnEmptyKeyIsAnOrdinaryKey)
+{
+	// MString("") keeps no storage, and the map compared that NULL string
+	// with the words already in it: the MSVC Debug build crashed here on
+	// an empty word from LoadFromFileCurse, and every build crashes on
+	// this Add (test_mstring_compare.cpp has the comparisons).
+	MStringMap map;
+	CHECK(map.Add("darn"));
+	CHECK(map.Add(""));
+	CHECK(map.Add("heck"));
+	CHECK_EQ(3, (int)map.size());
+
+	// The empty key sorts first and is its own value.
+	CHECK_EQ(0, (int)map.begin()->first->GetLength());
+	CHECK(map.begin()->first == map.begin()->second);
+
+	CHECK(map.Get("") != NULL);
+	CHECK_EQ(0, (int)map.Get("")->GetLength());
+	CHECK(map.Get(NULL) == map.Get(""));	// NULL text is read as ""
+	CHECK(StrEq(map.Get("darn"), "darn"));
+	CHECK(StrEq(map.Get("heck"), "heck"));
+
+	// A value for it, and back to itself.
+	CHECK(map.Add("", "value"));
+	CHECK_EQ(3, (int)map.size());
+	CHECK(StrEq(map.Get(""), "value"));
+	CHECK(map.Add(""));
+	CHECK_EQ(0, (int)map.Get("")->GetLength());
+
+	CHECK(map.Remove(""));
+	CHECK(!map.Remove(""));
+	CHECK(map.Get("") == NULL);
+	CHECK_EQ(2, (int)map.size());
+	CHECK(StrEq(map.Get("darn"), "darn"));
+}
+
+TEST(StringMap, AnEmptyKeyFromTheFileAndFromAddAreOneKey)
+{
+	// The binary file's empty record loads as an allocated "", Add("")
+	// makes a string with no storage; the map holds one of them.
+	WriteFile(kBinFile, DiskInt(2)
+		+ std::string(1, '\1') + DiskString("darn")
+		+ std::string(1, '\1') + DiskString(""));
+	MStringMap map;
+	{
+		std::ifstream in(kBinFile, std::ios::binary);
+		map.LoadFromFile(in);
+		CHECK(in.good());
+	}
+	std::remove(kBinFile);
+	CHECK_EQ(2, (int)map.size());
+
+	CHECK(map.Add(""));
+	CHECK_EQ(2, (int)map.size());
+	CHECK(map.Get("") != NULL);
+	CHECK(map.Get(NULL) == map.Get(""));
+	CHECK(StrEq(map.Get("darn"), "darn"));
+}
+
 //----------------------------------------------------------------------
 // MChatManager: the ignore list
 //----------------------------------------------------------------------
@@ -426,6 +485,31 @@ TEST(ChatManager, AcceptAndIgnoreModesReadTheIdList)
 	CHECK(!chat.IsAcceptID("pest"));
 	chat.ClearID();
 	chat.SetAcceptMode();
+	CHECK(chat.IsAcceptID("pest"));
+}
+
+TEST(ChatManager, AnEmptyNameIsLookedUpInTheIdList)
+{
+	// The chat handlers ask about the speaker's name (GCGuildChatHandler
+	// and GCWhisperHandler pass the packet's, GCSayHandler the
+	// creature's). An empty one was compared as a NULL string with the
+	// listed IDs, which crashes whenever the list holds an ID (found by
+	// reading the handlers, not seen in a game).
+	MChatManager chat;
+	CHECK(chat.AddID("pest"));
+
+	CHECK(chat.IsAcceptID(""));			// accept mode: not listed, heard
+	CHECK(chat.IsAcceptID(NULL));
+	CHECK(!chat.RemoveID(""));
+
+	chat.SetIgnoreMode();
+	CHECK(!chat.IsAcceptID(""));		// ignore mode: not listed, ignored
+	CHECK(chat.IsAcceptID("pest"));
+
+	CHECK(chat.AddID(""));
+	CHECK(chat.IsAcceptID(""));
+	CHECK(chat.RemoveID(""));
+	CHECK(!chat.IsAcceptID(""));
 	CHECK(chat.IsAcceptID("pest"));
 }
 
