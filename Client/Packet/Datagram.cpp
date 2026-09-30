@@ -14,6 +14,10 @@
 #include "DatagramPacket.h"
 #include "Packet.h"
 #include "PacketDiagnostics.h"
+#include "PacketValidator.h"
+#include "PlayerStatus.h"
+
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // constructor
@@ -120,20 +124,28 @@ void Datagram::read ( std::string & str , uint len )
 
 
 //////////////////////////////////////////////////////////////////////
-// 
-// Datagram 객체에서 Packet 객체를 끄집어낸다.
-// DatagramSocket 의 내부 버퍼의 크기만 충분히(?) 크다면,
-// peer에서 보낸 패킷이 잘려서 나올 가능성은 적다. 
-// 
-// (특히 우리 게임에서는 UDP가 로컬 랜상에서만 사용되기 때문에
-// 확률은 더 적다..)
-// 
-// *CAUTION*
-// 
-// 아래의 알고리즘은, (1) 같은 주소에서 날아온 2개의 서로 다른 패킷이
-// recvfrom()에서 각각 따로 리턴되어야 하며, (2) 하나의 패킷은 한꺼번에
-// 읽혀진다.. 라는 가정하에서만 의미가 있다.
-// 
+//
+// Rebuild the DatagramPacket this datagram carries.
+//
+// A datagram is one packet, whole: the header, the body its size field
+// declares and the one-byte pad both peers count in the length. That
+// holds only if (1) two packets from the same address come back from
+// separate recvfrom() calls and (2) a packet arrives in one piece,
+// which a large enough DatagramSocket buffer makes likely; a datagram
+// of any other length is refused below.
+//
+// Only an id the client accepts over UDP is created: the validator's
+// CPS_CLIENT_COMMUNICATION_NORMAL set, which is the four RC packets
+// that are DatagramPackets. The factory registers every packet the
+// client receives on any connection, and this path used to create
+// whatever the id named and C-cast it to DatagramPacket*, so a GC, LC
+// or CR id had read(Datagram&) called through an object that is not a
+// DatagramPacket - past the end of its vtable. The conversion is
+// checked as well, so a set that admits a non-datagram id refuses it.
+//
+// On any throw pPacket is left NULL: the packet is owned here until
+// its read has succeeded, and only then handed to the caller.
+//
 //////////////////////////////////////////////////////////////////////
 void Datagram::read ( DatagramPacket * & pPacket )
 {
@@ -152,11 +164,18 @@ void Datagram::read ( DatagramPacket * & pPacket )
 		cout << "DatagramPacket I  D : " << packetID;
 	#endif
 
-	// 패킷 아이디가 이상할 경우
+	// An id past the table.
 	if ( packetID >= Packet::PACKET_MAX )
 	{
-//		SendBugReport("DataGram Invalid packetID : %d/%d", packetID, Packet::PACKET_MAX );
 		throw InvalidProtocolException("invalid packet id(datagram)");
+	}
+
+	// An id the client does not accept over UDP, refused before a packet
+	// exists. With no validator installed nothing is accepted.
+	if ( g_pPacketValidator == NULL
+		|| !g_pPacketValidator->isValidPacketID( CPS_CLIENT_COMMUNICATION_NORMAL, packetID ) )
+	{
+		throw InvalidProtocolException("packet id not accepted over UDP");
 	}
 
 	#ifdef __DEBUG_OUTPUT__
@@ -167,32 +186,40 @@ void Datagram::read ( DatagramPacket * & pPacket )
 		cout << "DatagramPacket Size : " << packetSize << endl;
 	#endif
 
-	// 패킷 사이즈가 이상할 경우
+	// A size field over the packet's maximum.
 	if ( packetSize > g_pPacketFactoryManager->getPacketMaxSize(packetID) )
 	{
 		PacketDiagnostics::reportBug("too large PacketSize ID)%d %d/%d", packetID, packetSize, g_pPacketFactoryManager->getPacketMaxSize( packetID ) );
 		throw InvalidProtocolException("too large packet size(DataGram)");
 	}
 
-	// 데이터그램의 크기가 패킷의 크기보다 작을 경우
+	// A datagram shorter than the packet it declares.
 	if ( m_Length < szPacketHeader + packetSize )
 		throw Error("datagram shorter than the packet it declares: not read whole");
 
-	// 데이터그램의 크기가 패킷의 크기보다 클 경우
+	// A datagram longer than the packet it declares.
 	if ( m_Length > szPacketHeader + packetSize )
 		throw Error("datagram longer than the packet it declares: several read at once");
 
-	// 패킷을 생성한다.
-	pPacket = (DatagramPacket*)g_pPacketFactoryManager->createPacket( packetID );
+	// Create the packet, and hold it until it has read.
+	std::unique_ptr<Packet> pCreated( g_pPacketFactoryManager->createPacket( packetID ) );
 
-	Assert( pPacket != NULL );
+	Assert( pCreated != nullptr );
 
-	// 패킷을 초기화한다.
-	pPacket->read( *this );
+	DatagramPacket * pDatagramPacket = dynamic_cast<DatagramPacket*>( pCreated.get() );
 
-	// 패킷을 보낸 주소/포트를 저장한다.
-	pPacket->setHost( getHost() );
-	pPacket->setPort( getPort() );
+	if ( pDatagramPacket == NULL )
+		throw InvalidProtocolException("packet is not a datagram packet");
+
+	// Read the body into it.
+	pDatagramPacket->read( *this );
+
+	// Record the sender's address and port on the packet.
+	pDatagramPacket->setHost( getHost() );
+	pDatagramPacket->setPort( getPort() );
+
+	pCreated.release();
+	pPacket = pDatagramPacket;
 
 	__END_CATCH
 }

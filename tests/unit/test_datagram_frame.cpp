@@ -12,9 +12,10 @@
 // not here. Here the frame is built by hand, so the read side is
 // checked against the wire layout and not against the writer.
 //
-// The read path creates the packet through g_pPacketFactoryManager, so
-// these tests install a real manager for their duration, the way
-// test_player_base.cpp does.
+// The read path creates the packet through g_pPacketFactoryManager and
+// asks g_pPacketValidator which ids the client accepts over UDP, so
+// these tests install a real manager and validator for their duration,
+// the way test_player_base.cpp does.
 //
 // Compiled with the packetwire defines (tests/CMakeLists.txt).
 //
@@ -28,10 +29,17 @@
 #include "Exception.h"
 #include "Packet.h"
 #include "PacketFactoryManager.h"
+#include "PacketValidator.h"
+#include "PacketIDSet.h"
+#include "PlayerStatus.h"
 #include "Gpackets/GLIncomingConnectionError.h"
+#include "Rpackets/RCCharacterInfo.h"
 #include "Rpackets/RCPositionInfo.h"
+#include "Rpackets/RCSay.h"
+#include "Rpackets/RCStatusHP.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -54,6 +62,41 @@ public:
 
 private:
 	PacketFactoryManager* m_pPrevious;
+};
+
+class ValidatorScope
+{
+public:
+	explicit ValidatorScope(PacketValidator* pValidator)
+	: m_pPrevious(g_pPacketValidator)
+	{
+		g_pPacketValidator = pValidator;
+	}
+
+	~ValidatorScope()
+	{
+		g_pPacketValidator = m_pPrevious;
+	}
+
+private:
+	PacketValidator* m_pPrevious;
+};
+
+// The two tables GameInit.cpp builds before the UDP socket opens, each
+// installed as its global for one test.
+struct WireTables
+{
+	WireTables()
+	: factoriesScope(&factories), validatorScope(&validator)
+	{
+		factories.init();
+		validator.init();
+	}
+
+	PacketFactoryManager	factories;
+	PacketValidator		validator;
+	FactoryManagerScope	factoriesScope;
+	ValidatorScope		validatorScope;
 };
 
 // A datagram holding exactly `bytes`.
@@ -109,23 +152,32 @@ enum ReadOutcome
 };
 
 // Drive Datagram::read on `frame` and report how it ended. A packet
-// that came back is handed to the caller through `ppPacket`.
-ReadOutcome	ReadFrame(const std::vector<unsigned char>& frame, DatagramPacket** ppPacket = NULL)
+// that came back is handed to the caller through `ppPacket`. When the
+// read throws, `pbLeftNull` says whether it left the caller's pointer
+// NULL, as a refusal must: a packet handed back by a read that threw
+// is one the caller has to know to delete.
+ReadOutcome	ReadFrame(const std::vector<unsigned char>& frame, DatagramPacket** ppPacket = NULL,
+			  bool* pbLeftNull = NULL)
 {
 	Datagram datagram;
 	Load(datagram, frame);
 	DatagramPacket* pPacket = NULL;
+	ReadOutcome outcome = READ_PACKET;
 	try {
 		datagram.read(pPacket);
 	} catch (InvalidProtocolException&) {
-		delete pPacket;
-		return READ_INVALID_PROTOCOL;
+		outcome = READ_INVALID_PROTOCOL;
 	} catch (Error&) {
-		delete pPacket;
-		return READ_ERROR;
+		outcome = READ_ERROR;
 	} catch (Throwable&) {
+		outcome = READ_OTHER;
+	}
+	if (outcome != READ_PACKET)
+	{
+		if (pbLeftNull != NULL)
+			*pbLeftNull = (pPacket == NULL);
 		delete pPacket;
-		return READ_OTHER;
+		return outcome;
 	}
 	if (ppPacket != NULL)
 		*ppPacket = pPacket;
@@ -141,9 +193,7 @@ ReadOutcome	ReadFrame(const std::vector<unsigned char>& frame, DatagramPacket** 
 //----------------------------------------------------------------------
 TEST(Datagram, ReadRebuildsRCPositionInfoThroughTheFactory)
 {
-	PacketFactoryManager manager;
-	manager.init();
-	FactoryManagerScope scope(&manager);
+	WireTables tables;
 
 	const std::vector<unsigned char> frame =
 		Frame(Packet::PACKET_RC_POSITION_INFO, PositionInfoBody());
@@ -181,9 +231,7 @@ TEST(Datagram, ReadRebuildsRCPositionInfoThroughTheFactory)
 //----------------------------------------------------------------------
 TEST(Datagram, ReadRefusesAnIdAtOrPastPacketMax)
 {
-	PacketFactoryManager manager;
-	manager.init();
-	FactoryManagerScope scope(&manager);
+	WireTables tables;
 
 	const std::vector<unsigned char> body = PositionInfoBody();
 	CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(Frame((PacketID_t)Packet::PACKET_MAX, body)));
@@ -192,11 +240,9 @@ TEST(Datagram, ReadRefusesAnIdAtOrPastPacketMax)
 
 TEST(Datagram, ReadRefusesASizeFieldOverTheFactoryMaximum)
 {
-	PacketFactoryManager manager;
-	manager.init();
-	FactoryManagerScope scope(&manager);
+	WireTables tables;
 
-	const PacketSize_t maxSize = manager.getPacketMaxSize(Packet::PACKET_RC_POSITION_INFO);
+	const PacketSize_t maxSize = tables.factories.getPacketMaxSize(Packet::PACKET_RC_POSITION_INFO);
 	std::vector<unsigned char> body(maxSize + 1, 0x00);
 	body[0] = 0x00;	// an empty name, so the parser would not be the refuser
 	CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body)));
@@ -208,9 +254,7 @@ TEST(Datagram, ReadRefusesASizeFieldOverTheFactoryMaximum)
 // both are refused before any packet is created.
 TEST(Datagram, ReadRefusesALengthThatDisagreesWithTheSizeField)
 {
-	PacketFactoryManager manager;
-	manager.init();
-	FactoryManagerScope scope(&manager);
+	WireTables tables;
 
 	const std::vector<unsigned char> body = PositionInfoBody();
 	CHECK_EQ(READ_PACKET, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body, 0, 1)));
@@ -218,6 +262,196 @@ TEST(Datagram, ReadRefusesALengthThatDisagreesWithTheSizeField)
 	CHECK_EQ(READ_ERROR, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body, 0, 2)));
 	CHECK_EQ(READ_ERROR, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body, 1, 1)));
 	CHECK_EQ(READ_ERROR, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body, -1, 1)));
+}
+
+//----------------------------------------------------------------------
+// Only a datagram packet the client accepts over UDP is created
+//----------------------------------------------------------------------
+//
+// The factory registers every packet the client receives, whatever the
+// connection: GC and LC over TCP from the servers, CR and three of the
+// RC packets over the TCP request-server connection between clients,
+// and the four RC packets that are DatagramPackets over UDP. The read
+// path used to check only that the id was below PACKET_MAX, then
+// C-cast whatever the factory built to DatagramPacket* and call
+// read(Datagram&) through it: for any id but those four that is a
+// virtual call through an object that is not a DatagramPacket, which
+// runs whatever sits in that vtable slot. The UDP socket is bound on
+// INADDR_ANY from start-up, so anyone who can send the client a
+// datagram chose the id (code-health review, Found by reading).
+//----------------------------------------------------------------------
+namespace {
+
+// A frame for `id` whose zero-filled body the size and length gates
+// accept, so whatever refuses it is the id check.
+std::vector<unsigned char>	ZeroFrame(PacketFactoryManager& factories, PacketID_t id)
+{
+	const PacketSize_t maxSize = factories.getPacketMaxSize(id);
+	return Frame(id, std::vector<unsigned char>(maxSize < 16 ? maxSize : 16, 0x00));
+}
+
+// Every registered packet class that is not a DatagramPacket, one per
+// connection it arrives on.
+const PacketID_t	kNotDatagramIds[] = {
+	Packet::PACKET_GC_SAY,			// game server, TCP
+	Packet::PACKET_LC_LOGIN_OK,		// login server, TCP
+	Packet::PACKET_CR_CONNECT,		// request-server connection, TCP
+	Packet::PACKET_CR_DISCONNECT,
+	Packet::PACKET_CR_REQUEST,
+	Packet::PACKET_CR_WHISPER,
+	Packet::PACKET_RC_CONNECT_VERIFY,
+	Packet::PACKET_RC_REQUEST_VERIFY,
+	Packet::PACKET_RC_REQUESTED_FILE,
+};
+
+} // namespace
+
+TEST(Datagram, ReadRefusesAnIdThatIsNotADatagramPacket)
+{
+	WireTables tables;
+
+	for (PacketID_t id : kNotDatagramIds)
+	{
+		bool bLeftNull = false;
+		CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(ZeroFrame(tables.factories, id), NULL, &bLeftNull));
+		CHECK(bLeftNull);
+	}
+}
+
+// The four the client does accept still read: each written by its own
+// class, as the peer that sent it would, and read back.
+namespace {
+
+template <class PacketT>
+ReadOutcome	RoundTrip(const PacketT& packet)
+{
+	Datagram written;
+	written.write(&packet);
+	const unsigned char* data = (const unsigned char*)written.getData();
+	DatagramPacket* pPacket = NULL;
+	const ReadOutcome outcome =
+		ReadFrame(std::vector<unsigned char>(data, data + written.getLength()), &pPacket);
+	if (outcome == READ_PACKET)
+	{
+		CHECK(pPacket != NULL);
+		CHECK(dynamic_cast<PacketT*>(pPacket) != NULL);
+		CHECK_EQ((long long)packet.getPacketID(), (long long)pPacket->getPacketID());
+	}
+	delete pPacket;
+	return outcome;
+}
+
+} // namespace
+
+TEST(Datagram, ReadStillAcceptsTheFourPeerDatagramPackets)
+{
+	WireTables tables;
+
+	RCCharacterInfo characterInfo;
+	characterInfo.setName("Nosferatu");
+	characterInfo.setGuildID(0x1234);
+	CHECK_EQ(READ_PACKET, RoundTrip(characterInfo));
+
+	RCPositionInfo positionInfo;
+	positionInfo.setName("Nosferatu");
+	positionInfo.setZoneID(0x8A9B);
+	positionInfo.setZoneX(0xC5);
+	positionInfo.setZoneY(0xD6);
+	CHECK_EQ(READ_PACKET, RoundTrip(positionInfo));
+
+	RCSay say;
+	say.setName("Nosferatu");
+	say.setMessage("evening");
+	say.setColor(0x00FF8040);
+	CHECK_EQ(READ_PACKET, RoundTrip(say));
+
+	RCStatusHP statusHP;
+	statusHP.setName("Nosferatu");
+	statusHP.setMaxHP(0x0123);
+	statusHP.setCurrentHP(0x0045);
+	CHECK_EQ(READ_PACKET, RoundTrip(statusHP));
+}
+
+// The accepted set is the validator's CPS_CLIENT_COMMUNICATION_NORMAL
+// set, the one Update() checks. The other side of it is which classes
+// are DatagramPackets; they must agree, or the set admits an id whose
+// packet cannot be read from a datagram, or refuses one that can.
+TEST(Datagram, TheAcceptedIdsAreExactlyTheRegisteredDatagramPackets)
+{
+	WireTables tables;
+
+	int datagramPackets = 0;
+	for (uint id = 0; id < (uint)Packet::PACKET_MAX; id++)
+	{
+		Packet* pPacket = NULL;
+		try {
+			pPacket = tables.factories.createPacket((PacketID_t)id);
+		} catch (Throwable&) {
+			pPacket = NULL;		// no factory: nothing to create
+		}
+		const bool bDatagram = dynamic_cast<DatagramPacket*>(pPacket) != NULL;
+		delete pPacket;
+
+		const bool bAccepted =
+			tables.validator.isValidPacketID(CPS_CLIENT_COMMUNICATION_NORMAL, (PacketID_t)id);
+		if (bDatagram != bAccepted)
+			std::fprintf(stderr, "  packet id %u: DatagramPacket %d, accepted over UDP %d\n",
+				id, (int)bDatagram, (int)bAccepted);
+		CHECK_EQ(bDatagram, bAccepted);
+		if (bDatagram)
+			datagramPackets++;
+	}
+	CHECK_EQ(4, datagramPackets);
+}
+
+// The conversion is checked too, so a set that some day admits an id
+// whose class is not a DatagramPacket gets a refusal and not the
+// confusion back. Here the set is built to admit GCSay.
+TEST(Datagram, ASetThatAdmitsANonDatagramIdStillGetsNoPacket)
+{
+	PacketFactoryManager factories;
+	factories.init();
+	FactoryManagerScope factoriesScope(&factories);
+
+	PacketValidator validator;
+	PacketIDSet* pSet = new PacketIDSet(CPS_CLIENT_COMMUNICATION_NORMAL);
+	pSet->addPacketID(Packet::PACKET_GC_SAY);
+	validator.addPacketIDSet(CPS_CLIENT_COMMUNICATION_NORMAL, pSet);
+	ValidatorScope validatorScope(&validator);
+
+	bool bLeftNull = false;
+	CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(ZeroFrame(factories, Packet::PACKET_GC_SAY), NULL, &bLeftNull));
+	CHECK(bLeftNull);
+}
+
+// With no validator installed nothing is accepted: the check fails
+// closed rather than reading the id unchecked.
+TEST(Datagram, ReadWithNoValidatorRefusesEveryId)
+{
+	PacketFactoryManager factories;
+	factories.init();
+	FactoryManagerScope factoriesScope(&factories);
+	ValidatorScope validatorScope(NULL);
+
+	bool bLeftNull = false;
+	CHECK_EQ(READ_INVALID_PROTOCOL,
+		ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, PositionInfoBody()), NULL, &bLeftNull));
+	CHECK(bLeftNull);
+}
+
+// A packet whose own read throws is not handed back half-read: the
+// caller's pointer stays NULL and the packet is freed inside read().
+// Here the name's length byte claims nine bytes and the body holds one.
+TEST(Datagram, APacketWhoseReadThrowsIsNotHandedBack)
+{
+	WireTables tables;
+
+	std::vector<unsigned char> body;
+	body.push_back(9);
+	body.push_back('N');
+	bool bLeftNull = false;
+	CHECK_EQ(READ_OTHER, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body), NULL, &bLeftNull));
+	CHECK(bLeftNull);
 }
 
 //----------------------------------------------------------------------
