@@ -583,6 +583,107 @@ TEST(ModelHandlers, TradeMoneyWithoutATradeChangesNothing)
 	g_pTradeManager = pTrade;
 }
 
+//----------------------------------------------------------------------
+// A result moves money all or nothing. The server refuses a move the
+// source cannot cover and trims one the destination cannot hold
+// (decideMoneyIncrease / decideMoneyDecrease in its
+// trade/TradeTableDecision.cpp), so it never moves part of one; when
+// this client's wallets cannot make the move the server reports, they
+// disagree with the server's, and moving one side only would create or
+// lose money on screen. Both OKs still clear: the server's table changed.
+//----------------------------------------------------------------------
+TEST(ModelHandlers, TradeMoneyIncreaseResultMovesNothingTheWalletCannotCover)
+{
+	HandlerWorld world;
+	CHECK(g_pMoneyManager->SetMoney(100));
+	AcceptBoth();
+
+	RunTradeMoney(500, GC_TRADE_MONEY_INCREASE_RESULT);
+
+	CHECK_EQ(100, g_pMoneyManager->GetMoney());
+	CHECK_EQ(0, MyBox()->GetMoney());
+	CHECK_EQ(false, g_pTradeManager->IsAcceptMyTrade());
+	CHECK_EQ(false, g_pTradeManager->IsAcceptOtherTrade());
+}
+
+TEST(ModelHandlers, TradeMoneyIncreaseResultMovesNothingTheBoxCannotHold)
+{
+	HandlerWorld world;
+	CHECK(MyBox()->SetMoney(MyBox()->GetMoneyLimit() - 500));
+
+	RunTradeMoney(1000, GC_TRADE_MONEY_INCREASE_RESULT);
+
+	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+	CHECK_EQ(MyBox()->GetMoneyLimit() - 500, MyBox()->GetMoney());
+}
+
+TEST(ModelHandlers, TradeMoneyDecreaseResultMovesNothingTheBoxCannotCover)
+{
+	HandlerWorld world;
+	CHECK(MyBox()->SetMoney(100));
+	AcceptBoth();
+
+	RunTradeMoney(500, GC_TRADE_MONEY_DECREASE_RESULT);
+
+	CHECK_EQ(100, MyBox()->GetMoney());
+	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+	CHECK_EQ(false, g_pTradeManager->IsAcceptMyTrade());
+	CHECK_EQ(false, g_pTradeManager->IsAcceptOtherTrade());
+}
+
+TEST(ModelHandlers, TradeMoneyDecreaseResultMovesNothingTheWalletCannotHold)
+{
+	HandlerWorld world;
+	g_pMoneyManager->SetMoneyLimit(1000);		// full at 1000
+	CHECK(MyBox()->SetMoney(100));
+
+	RunTradeMoney(100, GC_TRADE_MONEY_DECREASE_RESULT);
+
+	CHECK_EQ(100, MyBox()->GetMoney());
+	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+}
+
+//----------------------------------------------------------------------
+// Gold_t is unsigned and no wallet holds more than two billion (the
+// server's MAX_MONEY), so an amount past INT_MAX is not one the server
+// moved; narrowed to the handler's int it turned negative and ran each
+// move backwards. Such a packet changes nothing, OKs included.
+//----------------------------------------------------------------------
+TEST(ModelHandlers, TradeMoneyPastTheIntRangeChangesNothing)
+{
+	HandlerWorld world;
+	const Gold_t	amounts[] = { 0x80000000u, 0x80000001u, 0xFFFFFFFEu, 0xFFFFFFFFu };
+
+	for (Gold_t amount : amounts)
+	{
+		for (BYTE code = GC_TRADE_MONEY_INCREASE; code <= GC_TRADE_MONEY_DECREASE_RESULT; ++code)
+		{
+			CHECK(OtherBox()->SetMoney(300));
+			CHECK(MyBox()->SetMoney(200));
+			CHECK(g_pMoneyManager->SetMoney(1000));
+			AcceptBoth();
+
+			RunTradeMoney(amount, code);
+
+			CHECK_EQ(300, OtherBox()->GetMoney());
+			CHECK_EQ(200, MyBox()->GetMoney());
+			CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+			CHECK(g_pTradeManager->IsAcceptMyTrade());
+			CHECK(g_pTradeManager->IsAcceptOtherTrade());
+		}
+	}
+
+	// INT_MAX itself is an int; the wallets refuse it as too much.
+	CHECK(OtherBox()->SetMoney(300));
+	RunTradeMoney(0x7FFFFFFFu, GC_TRADE_MONEY_INCREASE_RESULT);
+	RunTradeMoney(0x7FFFFFFFu, GC_TRADE_MONEY_DECREASE_RESULT);
+	RunTradeMoney(0x7FFFFFFFu, GC_TRADE_MONEY_INCREASE);
+	RunTradeMoney(0x7FFFFFFFu, GC_TRADE_MONEY_DECREASE);
+	CHECK_EQ(300, OtherBox()->GetMoney());
+	CHECK_EQ(200, MyBox()->GetMoney());
+	CHECK_EQ(1000, g_pMoneyManager->GetMoney());
+}
+
 //======================================================================
 // GCTradeRemoveItem: the other side takes an item off its offer
 //======================================================================
