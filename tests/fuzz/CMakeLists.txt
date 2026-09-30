@@ -16,8 +16,14 @@
 #                         native BUILD_TESTS tree and on every
 #                         compiler. The ctest of the same name runs
 #                         the seed corpus and the committed crash
-#                         regressions through it, so a fixed finding
-#                         cannot come back unnoticed.
+#                         regressions through it. A finding that
+#                         aborted (a libc assert, an escaping
+#                         std::exception) fails in every tree; one
+#                         that corrupted memory fails only where a
+#                         sanitizer sees it (an ASan tree, and Clang's
+#                         UBSan for an invalid enum load), and the
+#                         unit tests in test_packet_fuzz_findings.cpp
+#                         are what catch it everywhere.
 #   fuzz_<target>         the target with libFuzzer's main, only under
 #                         BUILD_FUZZERS (the linux-fuzz and macos-fuzz
 #                         presets; the top-level CMakeLists.txt checks

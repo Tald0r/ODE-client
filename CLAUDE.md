@@ -267,7 +267,13 @@ packets, plus an empty and a zero-filled frame per id: 536 `GC` seeds for
 `client_stream`, 32 `LC` seeds for `client_login_stream` today), and
 `tests/fuzz/regressions/<target>/*.hex`, one file per fixed crash in the
 goldens' hex style (`xxd -p crash-... | tr -d '\n'`), named after the packet
-and the value. A crash there is a finding that came back.
+and the value. A crash there is a finding that came back, but only a
+finding that aborted (a libc `assert`, an escaping `std::exception`)
+crashes in every tree. One that corrupted memory replays green in a tree
+without a sanitizer that sees it: on the unfixed code the `LCPCList` slot
+input replays green in the plain `macos` tree and stops at an invalid
+`Slot` load under Clang's UBSan. So each fix also carries a test in
+`tests/unit/test_packet_fuzz_findings.cpp`, which catches it in every tree.
 
 The fuzzer itself needs Clang with a libFuzzer runtime and ASan
 (`BUILD_FUZZERS`, off by default, refused on other compilers):
@@ -275,10 +281,21 @@ The fuzzer itself needs Clang with a libFuzzer runtime and ASan
 ```bash
 cmake --preset macos-fuzz        # or linux-fuzz
 cmake --build --preset macos-fuzz --target fuzz_client_stream fuzz_client_login_stream
-perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'  # '^LC' for the login target
+perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'
 cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
   <repo>/build/presets/macos-fuzz/bin/fuzz_client_stream -max_total_time=600 \
+  -timeout=10 -rss_limit_mb=2048 -max_len=32768 -close_fd_mask=3 corpus
+```
+
+The login target is the same run with its own seeds and binary, in its own
+scratch directory:
+
+```bash
+perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz-login/corpus '^LC'
+cd /tmp/fz-login && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+  UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+  <repo>/build/presets/macos-fuzz/bin/fuzz_client_login_stream -max_total_time=600 \
   -timeout=10 -rss_limit_mb=2048 -max_len=32768 -close_fd_mask=3 corpus
 ```
 
@@ -287,8 +304,9 @@ and a stream of at most 32767 bytes, one less than the 32768-byte input
 ring; a longer input returns without being read.
 
 Run it from a scratch directory: a failed `Assert` appends to
-`assertion_failed.log` in the working directory, and hostile input fails
-about a thousand in fifteen minutes. Apple Clang ships no libFuzzer, so
+`assertion_failed.log` in the working directory. Hostile input to the game
+target fails about a thousand in fifteen minutes; the login target failed
+none in 25 minutes. Apple Clang ships no libFuzzer, so
 `macos-fuzz` compiles with Apple Clang and links Homebrew `llvm@21`'s
 `libclang_rt.fuzzer_osx.a` (`DARKEDEN_LIBFUZZER_ARCHIVE`); llvm@21's own
 ASan hangs at startup on macOS 27. The preset names the Apple Silicon
