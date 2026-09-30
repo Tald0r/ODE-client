@@ -8,7 +8,7 @@
 #       <out-dir> <name-regex>
 #
 # Every seed is one input for a stream target (tests/fuzz/
-# fuzz_client_stream.cpp): the encrypt code byte, then the stream.
+# client_stream_reader.h): the encrypt code byte, then the stream.
 #
 #   golden-<base>   one per tests/golden/<Name>[.<variant>].code<N>.hex
 #                   whose packet name matches <name-regex>: chr(N), a

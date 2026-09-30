@@ -35,7 +35,6 @@ PCSlayerInfo::setShapeInfo(DWORD flag, Color_t color[SLAYER_COLOR_MAX])
 void PCSlayerInfo::read ( SocketInputStream & iStream ) 
 {
 	__BEGIN_TRY
-	try {
 
 	//--------------------------------------------------
 	// read slayer name
@@ -55,16 +54,21 @@ void PCSlayerInfo::read ( SocketInputStream & iStream )
 	//--------------------------------------------------
 	// read slot
 	//
-	// enum 변수들은 실제 크기와 스트림에 쓰여진 크기가
-	// 다른 경우가 대부분이므로, 쓰여진 크기와 같은 변수
-	// 를 사용해서 대신 읽어서 다시 enum 으로 변환해서
-	// 저장하도록 한다.
+	// An enum's size in memory mostly differs from the size
+	// written to the stream, so the field is read into a
+	// variable of the written size and converted to the enum
+	// afterwards (Slot, Sex, HairStyle ...).
 	//
-	// ex> Slot, Sex, HairStyle ...
-	//
+	// The slot is range-checked before the conversion.
+	// LCPCList::read stores this info at m_pPCInfos[getSlot()],
+	// an array of SLOT_MAX entries: a byte of SLOT_MAX (3) is a
+	// valid enumerator that indexes one past it, and a byte
+	// past SLOT_MAX is no Slot value at all.
 	//--------------------------------------------------
 	BYTE slot;
 	iStream.read( slot );
+	if ( slot >= SLOT_MAX )
+		throw InvalidProtocolException("pc slot out of range");
 	m_Slot = Slot(slot);
 
 	//--------------------------------------------------
@@ -128,11 +132,6 @@ void PCSlayerInfo::read ( SocketInputStream & iStream )
 	//--------------------------------------------------------------------------------
 	for (int i = 0 ; i < SLAYER_COLOR_MAX ; i ++ )
 		iStream.read( m_Colors[i] );
-
-
-	} catch( Throwable & t ) {
-		cout << t.toString().c_str() << endl;
-	}
 
 	iStream.read(m_AdvancementLevel);
 	__END_CATCH

@@ -43,9 +43,17 @@ void PCVampireInfo::read ( SocketInputStream & iStream )
 
 	//--------------------------------------------------
 	// read slot
+	//
+	// Range-checked before it becomes a Slot. LCPCList::read
+	// stores this info at m_pPCInfos[getSlot()], an array of
+	// SLOT_MAX entries: a byte of SLOT_MAX (3) is a valid
+	// enumerator that indexes one past it, and a byte past
+	// SLOT_MAX is no Slot value at all.
 	//--------------------------------------------------
 	BYTE slot;	
 	iStream.read( slot );
+	if ( slot >= SLOT_MAX )
+		throw InvalidProtocolException("pc slot out of range");
 	m_Slot = Slot(slot);
 
 	//--------------------------------------------------
