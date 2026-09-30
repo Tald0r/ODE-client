@@ -9,6 +9,21 @@
 #include "ConvertDuration.h"
 
 //----------------------------------------------------------------------
+// Is SkillInTable ( skillType )
+//----------------------------------------------------------------------
+// A wire skill type past the info table names no skill of this client;
+// the server's skill types all lie below it. Such an entry is skipped whole, before
+// its type is taken for an ACTIONINFO - 2048 and up are past the enum's
+// range of values - and before a learn it cannot pass leaves the
+// domain's new-skill flag set.
+//----------------------------------------------------------------------
+static bool
+IsSkillInTable(int skillType)
+{
+	return skillType >= 0 && skillType < g_pSkillInfoTable->GetSize();
+}
+
+//----------------------------------------------------------------------
 // Apply SkillInfo ( GCSkillInfo* )
 //----------------------------------------------------------------------
 void
@@ -66,6 +81,13 @@ ApplySkillInfo(GCSkillInfo* pPacket)
 						if (pInfo!=NULL)
 						{
 							int skillType	= pInfo->getSkillType();
+
+							if (!IsSkillInTable( skillType ))
+							{
+								delete pInfo;
+								continue;
+							}
+
 							int skillExp	= pInfo->getSkillExp();
 							int ExpLevel	= pInfo->getSkillExpLevel();
 							DWORD delayTime = ConvertDurationToMillisecond( pInfo->getSkillTurn() );
@@ -223,6 +245,13 @@ ApplySkillInfo(GCSkillInfo* pPacket)
 						if (pInfo!=NULL)
 						{
 							int skillType	= pInfo->getSkillType();
+
+							if (!IsSkillInTable( skillType ))
+							{
+								delete pInfo;
+								continue;
+							}
+
 							DWORD delayTime = ConvertDurationToMillisecond( pInfo->getSkillTurn() );
 							int currentDelay = ConvertDurationToMillisecond( pInfo->getCastingTime() );							
 							
@@ -336,6 +365,13 @@ ApplySkillInfo(GCSkillInfo* pPacket)
 							if (pInfo!=NULL)
 							{
 								int skillType	= pInfo->getSkillType();
+
+								if (!IsSkillInTable( skillType ))
+								{
+									delete pInfo;
+									continue;
+								}
+
 								DWORD delayTime = ConvertDurationToMillisecond( pInfo->getSkillTurn() );
 								int currentDelay = ConvertDurationToMillisecond( pInfo->getCastingTime() );							
 								int	expLevel	= pInfo->getExpLevel();

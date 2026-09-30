@@ -25,6 +25,8 @@ class GCSkillInfo;
 // packet and, for the packet's race, learns each skill it lists and
 // sets that skill's table entry from the wire.
 //
+// - A skill type at or past g_pSkillInfoTable's size is skipped: it is
+//   learned nowhere and changes no flag.
 // - A skill whose table step is SKILL_STEP_ETC is learned in every
 //   domain (the ousters list adds the ousters domain; the slayer and
 //   vampire lists do not); any other skill in the entry's domain: the

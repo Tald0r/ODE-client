@@ -792,3 +792,73 @@ TEST(ApplySkillInfo, RaceOutOfRangeOnABuiltPacketDropsItsEntries)
 	CheckNoFlags();
 	CheckNothingLearned();
 }
+
+TEST(ApplySkillInfo, SkillTypePastTheInfoTableIsSkipped)
+{
+	SkillInfoWorld world;
+
+	// The table holds MIN_RESULT_ACTIONINFO skills; the server's skill
+	// types end below it (its SKILL_MAX is 397). 2048 and up are past
+	// ACTIONINFO's range of values too.
+	CHECK_EQ((int)MIN_RESULT_ACTIONINFO, g_pSkillInfoTable->GetSize());
+	const int kTypes[] = { MIN_RESULT_ACTIONINFO, MAX_ACTIONINFO, 2047, 2048, 0x92A3, 0xFFFF };
+	const int kCount = (int)(sizeof(kTypes) / sizeof(kTypes[0]));
+
+	// A slayer entry of nothing but such skills leaves its domain as it
+	// was; the entry beside it still applies.
+	std::vector<SlayerDomain> domains(2);
+	domains[0].learnNew = false;
+	domains[0].domain = SKILL_DOMAIN_BLADE;
+	domains[0].skills.push_back(SlayerSkill{ SKILL_SINGLE_BLOW, 0, 5, 0, 0, true });
+	domains[1].learnNew = false;
+	domains[1].domain = SKILL_DOMAIN_SWORD;
+	for (int k = 0; k < kCount; ++k)
+		domains[1].skills.push_back(SlayerSkill{ kTypes[k], 1, 2, 30, 5, true });
+	Apply(SlayerBytes(domains));
+
+	CHECK(IsLearned(SKILLDOMAIN_BLADE, SKILL_SINGLE_BLOW));
+	CHECK_EQ(5, Info(SKILL_SINGLE_BLOW).GetExpLevel());
+	CHECK_EQ(1, LearnedTotal());
+	CHECK_EQ(1, (int)g_pSkillAvailable->size());
+	CHECK_EQ(false, Domain(SKILLDOMAIN_SWORD).HasNewSkill());
+	CHECK_EQ(false, Domain(SKILLDOMAIN_BLADE).HasNewSkill());
+
+	// The same for the vampire's and the ousters' one entry.
+	std::vector<VampireSkill> vampire;
+	for (int k = 0; k < kCount; ++k)
+		vampire.push_back(VampireSkill{ kTypes[k], 30, 5 });
+	Apply(VampireBytes(false, vampire));
+	CheckNothingLearned();
+
+	std::vector<OustersSkill> ousters;
+	for (int k = 0; k < kCount; ++k)
+		ousters.push_back(OustersSkill{ kTypes[k], 3, 30, 5 });
+	Apply(OustersBytes(false, ousters));
+	CheckNothingLearned();
+}
+
+TEST(ApplySkillInfo, ServerGoldensOfEachRaceLearnNothingTheClientDoesNotKnow)
+{
+	SkillInfoWorld world;
+
+	// The server's goldens (origin/master 7f833cef) hold fixture values
+	// in every field: skill types from 0x92A3 up, turns past INT_MAX.
+	// The slayer's two domains, 0x91 and 0xB2, are past the domain table.
+	Apply(Wire().Hex("0002019102a392c7b6a594a998cdbcab9ac1b0af9e01a493c8b6a594aa98cebcab9ac2b0af9e0000b201a392c7b6a594a998cdbcab9ac1b0af9e01"));
+	CheckNothingLearned();
+	CheckNoFlags();
+
+	// The ousters' entry offers no new skill; its skills leave the
+	// domain's flag down.
+	Apply(Wire().Hex("02010002c3b2c5b4e9d8c7b6eddccbbac4b3c6b4ead8c7b6eedccbba"));
+	CheckNothingLearned();
+
+	// The vampire's entry offers a new skill, which is all it applies.
+	Apply(Wire().Hex("01010102b3a2d7c6b5a4dbcab9a8b4a3d8c6b5a4dccab9a8"));
+	CHECK_EQ(0, LearnedTotal());
+	CHECK_EQ(0, (int)g_pSkillAvailable->size());
+	CHECK_EQ(true, Domain(SKILLDOMAIN_VAMPIRE).HasNewSkill());
+	CHECK_EQ(false, Domain(SKILLDOMAIN_OUSTERS).HasNewSkill());
+	CheckNoFlags();
+	CheckDomainLevelsUntouched();
+}
