@@ -15,6 +15,8 @@
 
 #include "MMoneyManager.h"
 
+#include <climits>
+
 namespace {
 
 int	g_HintCount = 0;
@@ -105,6 +107,54 @@ TEST(MoneyManager, CanUseMoneyAnswersForTheBalanceItWouldLeave)
 	CHECK(wallet.CanUseMoney(50));
 	CHECK(!wallet.CanUseMoney(51));
 	CHECK(wallet.CanUseMoney(0));
+}
+
+//----------------------------------------------------------------------
+// AddMoney and UseMoney took the new balance in int, and two amounts
+// within the two-billion limit can pass INT_MAX: a signed overflow is
+// undefined, not a refusal (UBSan halts on it). The amounts come from
+// the wire, as a Gold_t or a price narrowed to int, so a hostile or
+// wrong one reaches here. CanUseMoney subtracted the same way; like
+// CanAddMoney it now refuses a negative amount, which is an add.
+//----------------------------------------------------------------------
+TEST(MoneyManager, AddAndUseRefuseABalancePastTheIntRange)
+{
+	MMoneyManager wallet;			// limit two billion
+	CHECK(wallet.SetMoney(2000000000));
+
+	CHECK(!wallet.AddMoney(2000000000));
+	CHECK(!wallet.AddMoney(INT_MAX));
+	CHECK(!wallet.UseMoney(INT_MIN));
+	CHECK_EQ(2000000000, wallet.GetMoney());
+
+	CHECK(wallet.SetMoney(0));
+	CHECK(!wallet.AddMoney(INT_MIN));
+	CHECK(!wallet.UseMoney(INT_MAX));
+	CHECK(!wallet.UseMoney(INT_MIN));
+	CHECK_EQ(0, wallet.GetMoney());
+
+	// The edges that fit still move the balance.
+	CHECK(wallet.AddMoney(2000000000));
+	CHECK_EQ(2000000000, wallet.GetMoney());
+	CHECK(wallet.UseMoney(2000000000));
+	CHECK_EQ(0, wallet.GetMoney());
+}
+
+TEST(MoneyManager, CanUseMoneyRefusesANegativeAmountWithoutOverflow)
+{
+	MMoneyManager wallet;
+	CHECK(wallet.SetMoney(1));
+	CHECK(!wallet.CanUseMoney(-1));
+	CHECK(!wallet.CanUseMoney(INT_MIN));
+	CHECK(!wallet.CanUseMoney(INT_MAX));
+	CHECK(wallet.CanUseMoney(1));
+
+	// CanUseMoney and UseMoney agree around the balance.
+	for (int amount = 0; amount <= 2; amount++)
+	{
+		MMoneyManager probe(wallet);
+		CHECK_EQ(wallet.CanUseMoney(amount), probe.UseMoney(amount));
+	}
 }
 
 //----------------------------------------------------------------------

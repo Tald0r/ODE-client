@@ -26,7 +26,8 @@ class MMoneyManager {
 		bool		AddMoney(int money);
 		bool		UseMoney(int money);
 
-		// money만큼 돈을 add/use할 수 있나?
+		// Whether adding or using this amount would leave a balance
+		// within 0..limit; both refuse a negative amount.
 		bool		CanAddMoney(int money);
 		bool		CanUseMoney(int money);
 
