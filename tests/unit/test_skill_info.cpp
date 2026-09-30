@@ -658,7 +658,7 @@ TEST(ApplySkillInfo, SlayerDomainPastTheDomainTableLearnsNothing)
 
 	// The server sends a slayer's domains 0 to SKILL_DOMAIN_ETC; the
 	// domain table has MAX_SKILLDOMAIN rows, and past them the lookup
-	// answers nothing. A skill of the ETC step learns wherever it would.
+	// answers nothing.
 	const int kDomains[] = { MAX_SKILLDOMAIN, 0x91, 0xB2, 0xFF };
 	for (size_t k = 0; k < sizeof(kDomains) / sizeof(kDomains[0]); ++k)
 	{
@@ -873,7 +873,9 @@ TEST(ApplySkillInfo, ServerGoldensOfEachRaceLearnNothingTheClientDoesNotKnow)
 // The wire's turns are DWORDs; ConvertDurationToMillisecond takes an
 // int, so one past INT_MAX arrives negative, and the milliseconds are a
 // DWORD. The product is taken modulo 2^32, as a DWORD.
+namespace {
 DWORD	Millis(DWORD turn)	{ return (DWORD)(turn * 100u); }
+} // namespace
 
 TEST(ConvertDuration, MillisecondsPastTheIntRangeWrapAsADword)
 {
