@@ -203,11 +203,12 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-30 on `feat/fuzz-login-stream` merged with master at
-`2b71e685` (PR #295, the chat filter, 1414 tests and 1,443,310 checks): the
-login stream fuzz target and the `LCPCList` slot fix with its 5 tests and 70
-checks, identical in all four builds: **1419 tests, 1,443,380 checks, 0
-failed** (`decore_tests`: 13 tests, 2009 checks on the same four). Linux:
+measured on 2026-09-30 on `fix/datagram-packet-type` from master at
+`bdfce7e9` (PR #296, the login stream fuzz target, 1419 tests and 1,443,380
+checks): the datagram type-confusion and bug-report fixes and the datagram
+fuzz target's goldens, 11 tests and 558 checks, identical in all four
+builds: **1430 tests, 1,443,938 checks, 0 failed** (`decore_tests`: 13
+tests, 2009 checks on the same four). Linux:
 `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and
 `linux-clang` (Clang 18.1) in the Docker image, its native arm64 on an Apple
 Silicon Mac, with the totals read by running `build/presets/<preset>/bin/unit_tests`
