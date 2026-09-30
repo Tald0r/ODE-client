@@ -200,10 +200,10 @@ cd build/tests && ctest -C Debug --output-on-failure
 
 Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defaults
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
-measured on 2026-09-29 on the packet-read fuzzing branch merged with master
-at `3941724d` (the slayer weapon extension and the action and effect table
-move), the same on all four: **1334 tests, 1,434,118 checks, 0 failed**
-(`decore_tests`: 13 tests, 2009 checks on the same four). Linux: `unit_tests`
+measured on 2026-09-29 on `feat/fuzz-login-stream` (master at `deac9b56`
+plus the login stream fuzz target and the `LCPCList` slot fix), the same on
+all four: **1339 tests, 1,434,188 checks, 0 failed** (`decore_tests`: 13
+tests, 2009 checks on the same four). Linux: `unit_tests`
 built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and `linux-clang` (Clang
 18.1) in the Docker image, its native arm64 on an Apple Silicon Mac, and run
 in it; both scripts stop at the warning step, which has no `aarch64`
@@ -231,40 +231,48 @@ exits cleanly on `SDL_QUIT`; login and beyond are unverified off Windows (the
 port assessment's area F). **The macOS CI job** (`.github/workflows/macos.yml`,
 arm64 and Intel runners, invoked on master pushes or manually) has not
 produced the totals above. One Apple Silicon Mac (macOS 27.0, Apple Clang 21)
-built every target and ran the `macos` preset's 14 ctest tests green on
-2026-09-29 (16 since the fuzz replay test and its corpus step;
-`verify-linux.sh` and `verify-windows.ps1` require 14 of them by name,
-`fuzz_replay_client_stream` the latest), and is where the macOS totals above
-were read; nothing has been watched on a Mac's display, and a `<SDL2/...>`
-include spelling breaks the Homebrew build - it is `<SDL.h>` everywhere
-(`basic/Platform.h` says why).
+built every target and ran the `macos` preset's 18 ctest tests green on
+2026-09-29 (the two fuzz replay tests and their corpus steps among them;
+`verify-linux.sh` and `verify-windows.ps1` require 15 of them by name,
+`fuzz_replay_client_login_stream` the latest), and is where the macOS
+totals above were read; nothing has been watched on a Mac's display, and a
+`<SDL2/...>` include spelling breaks the Homebrew build - it is `<SDL.h>`
+everywhere (`basic/Platform.h` says why).
 
 ### Fuzzing the packet readers
 
-`tests/fuzz/fuzz_client_stream.cpp` is a libFuzzer target over the bytes a
-game server sends: `[encrypt code byte][stream]`, read frame by frame through
-the same gates as `ClientPlayer::processCommand` (its header lists them with
-their line numbers; keep the two in step), once from the start of the input
-ring and once with the ring's wrap point in the middle of the stream. Only a
-`Throwable` is a rejected input, since that is all `UpdateSocketInput`
-catches; a `std::exception` from a reader is a crash, as in the client.
-Every native test tree builds it with `tests/fuzz/replay_main.cpp` as
-`fuzz_replay_client_stream`, and the
-ctest of that name replays two sets of inputs through it: the seed corpus, which the
-`fuzz_corpus_client_stream` setup step writes into the build tree with
-`tools/fuzz/golden2corpus.pl` (one seed per `GC` golden, plus an empty and a
-zero-filled frame per `GC` id, 536 today), and
-`tests/fuzz/regressions/client_stream/*.hex`, one file per fixed crash in
-the goldens' hex style (`xxd -p crash-... | tr -d '\n'`), named after the
-packet and the value. A crash there is a finding that came back.
+Two libFuzzer targets read the bytes a server sends the client, one per
+connection of its one `ClientPlayer`: `tests/fuzz/fuzz_client_stream.cpp`,
+the game connection, with the player in `CPS_NORMAL` (every registered id
+accepted), and `tests/fuzz/fuzz_client_login_stream.cpp`, the login
+connection, which reads every input once in each of the seven statuses the
+player holds there (`CPS_AFTER_SENDING_CL_LOGIN` to
+`CPS_AFTER_SENDING_CL_SELECT_PC`), so a frame reaches a parser only when that
+status's validator set accepts its id, as in production. Both read through
+`tests/fuzz/client_stream_reader.h`: `[encrypt code byte][stream]`, read
+frame by frame through the same gates as `ClientPlayer::processCommand` (its
+header lists them with their line numbers; keep the two in step), once from
+the start of the input ring and once with the ring's wrap point in the middle
+of the stream. Only a `Throwable` is a rejected input, since that is all
+`UpdateSocketInput` catches; a `std::exception` from a reader is a crash, as
+in the client. Every native test tree builds each target with
+`tests/fuzz/replay_main.cpp` as `fuzz_replay_<target>`, and the ctest of
+that name replays two sets of inputs through it: the seed corpus, which the
+`fuzz_corpus_<target>` setup step writes into the build tree with
+`tools/fuzz/golden2corpus.pl` (one seed per golden of the connection's
+packets, plus an empty and a zero-filled frame per id: 536 `GC` seeds for
+`client_stream`, 32 `LC` seeds for `client_login_stream` today), and
+`tests/fuzz/regressions/<target>/*.hex`, one file per fixed crash in the
+goldens' hex style (`xxd -p crash-... | tr -d '\n'`), named after the packet
+and the value. A crash there is a finding that came back.
 
 The fuzzer itself needs Clang with a libFuzzer runtime and ASan
 (`BUILD_FUZZERS`, off by default, refused on other compilers):
 
 ```bash
 cmake --preset macos-fuzz        # or linux-fuzz
-cmake --build --preset macos-fuzz --target fuzz_client_stream
-perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'
+cmake --build --preset macos-fuzz --target fuzz_client_stream fuzz_client_login_stream
+perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'  # '^LC' for the login target
 cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
   <repo>/build/presets/macos-fuzz/bin/fuzz_client_stream -max_total_time=600 \
@@ -294,7 +302,8 @@ minutes without a finding, and `unit_tests` and the fuzz ctests passed under
 that preset's Clang ASan and UBSan). `-close_fd_mask=3` hides the
 crash's own message, so triage by replaying the file through the replay
 binary of an ASan tree:
-`build/presets/macos-asan/bin/fuzz_replay_client_stream crash-...`.
+`build/presets/macos-asan/bin/fuzz_replay_client_stream crash-...` (or
+`fuzz_replay_client_login_stream`).
 `DE_FUZZ_ABORT_ON_ASSERT=1` turns a failed `Assert` (an `AssertionError`,
 normally a rejected input) into a crash, to see which ones hostile input
 reaches. The findings so far are under *Found by fuzzing* in the review.
@@ -403,10 +412,11 @@ Critical among them. In priority order:
      review — including one that needs no hostile server at all.
    What remains unaudited is everything the two instruments do not model: a
    length or index that reaches memory by some third route. The packet-read
-   fuzz target (*Fuzzing the packet readers* above) is the first check that
-   does not model a route at all: it drives every `read()` with hostile bytes
-   under ASan and UBSan, and found a heap overflow in `StoreInfo::read` that
-   neither instrument counts. It stops at `read()`; handlers are not reached.
+   fuzz targets (*Fuzzing the packet readers* above) are the first check that
+   does not model a route at all: they drive every `read()` with hostile bytes
+   under ASan and UBSan, and found a heap overflow in `StoreInfo::read` and an
+   out-of-array store in `LCPCList::read` that neither instrument counts. They
+   stop at `read()`; handlers are not reached.
 2. Fixed-size buffers fed by variable-length server strings (the 21-byte chat rows
    are fixed; 128-byte stack buffers remain in other handlers), and format strings
    loaded from data files passed to sprintf (C19/C20/C22). That last one is
