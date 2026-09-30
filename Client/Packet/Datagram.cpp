@@ -13,7 +13,6 @@
 #include "PacketFactoryManager.h"
 #include "DatagramPacket.h"
 #include "Packet.h"
-#include "PacketDiagnostics.h"
 #include "PacketValidator.h"
 #include "PlayerStatus.h"
 
@@ -186,12 +185,11 @@ void Datagram::read ( DatagramPacket * & pPacket )
 		cout << "DatagramPacket Size : " << packetSize << endl;
 	#endif
 
-	// A size field over the packet's maximum.
+	// A size field over the packet's maximum. Refused without a bug
+	// report: a report is a chat line on the player's own server
+	// connection, and a datagram comes from whoever can reach the port.
 	if ( packetSize > g_pPacketFactoryManager->getPacketMaxSize(packetID) )
-	{
-		PacketDiagnostics::reportBug("too large PacketSize ID)%d %d/%d", packetID, packetSize, g_pPacketFactoryManager->getPacketMaxSize( packetID ) );
 		throw InvalidProtocolException("too large packet size(DataGram)");
-	}
 
 	// A datagram shorter than the packet it declares.
 	if ( m_Length < szPacketHeader + packetSize )

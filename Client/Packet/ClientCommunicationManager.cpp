@@ -162,6 +162,12 @@ void ClientCommunicationManager::sendPacket ( const std::string& host , uint por
 //--------------------------------------------------------------------------------
 // Update
 //--------------------------------------------------------------------------------
+// Reads at most MaxProcessPacket datagrams off the socket and dispatches each
+// packet the client accepts. The socket is bound on every interface and no
+// datagram is authenticated, so a refused datagram is logged and dropped and
+// nothing is sent: a bug report is a chat line on the player's own server
+// connection, which would give any sender one line to the server per datagram.
+//--------------------------------------------------------------------------------
 void
 ClientCommunicationManager::Update()
 {
@@ -182,7 +188,7 @@ ClientCommunicationManager::Update()
 	
 		try
 		{
-			// 데이터그램 객체를 끄집어낸다.
+			// Take the next datagram off the socket.
 			pDatagram = m_pDatagramSocket->receive();
 
 			if (pDatagram==NULL)
@@ -190,7 +196,8 @@ ClientCommunicationManager::Update()
 
 			DEBUG_ADD("[CCM-Update] something");
 			
-			// 데이터그램 패킷 객체를 끄집어낸다.
+			// Read its packet. Datagram::read refuses an id the client does
+			// not accept over UDP and leaves the pointer NULL on any throw.
 			pDatagram->read( pDatagramPacket );
 
 			#ifdef __METROTECH_TEST__
@@ -203,13 +210,14 @@ ClientCommunicationManager::Update()
 					DEBUG_ADD_FORMAT("[RECEIVE] %s", pDatagramPacket->toString().c_str());
 				#endif
 
-				// 걍 한번 체크..
+				// The same set Datagram::read checked, asked again here where
+				// the packet is about to run.
 				if ( !g_pPacketValidator->isValidPacketID( CPS_CLIENT_COMMUNICATION_NORMAL, pDatagramPacket->getPacketID() ))
 				{
 					throw InvalidProtocolException("invalid packet ORDER");
 				}			
 
-				// 끄집어낸 데이터그램 패킷 객체를 실행한다.
+				// Run the packet's handler.
 				DEBUG_ADD_FORMAT("[From] %s(%d)", pDatagramPacket->getHost().c_str(),
 													pDatagramPacket->getPort());
 
@@ -222,23 +230,17 @@ ClientCommunicationManager::Update()
 					g_UDPTest.UDPPacketExecute ++;
 				#endif
 
-				// 데이터그램 패킷 객체를 삭제한다.
+				// Free the packet.
 				delete pDatagramPacket;
 			}
 
-			// 데이터그램 객체를 삭제한다.
+			// Free the datagram.
 			delete pDatagram;
 			
 		}
 		catch ( Throwable & t )
 		{
-			// -_- it drops the connection anyway, so report it as a string.
-			// The exception text can embed packet derived data, so it is passed
-			// as an argument and never as the format string.
-			if( strstr( t.toString().c_str(), "InvalidProtocolException") != NULL )
-				if( strstr( t.toString().c_str(), "(datagram)" ) != NULL )
-					SendBugReport( "%s", t.toString().c_str() );
-
+			// Logged, never reported: see the banner above.
 			DEBUG_ADD( t.toString().c_str() );
 
 			if (pDatagramPacket!=NULL)

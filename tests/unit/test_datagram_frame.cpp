@@ -30,6 +30,7 @@
 #include "Packet.h"
 #include "PacketFactoryManager.h"
 #include "PacketValidator.h"
+#include "PacketDiagnostics.h"
 #include "PacketIDSet.h"
 #include "PlayerStatus.h"
 #include "Gpackets/GLIncomingConnectionError.h"
@@ -246,6 +247,45 @@ TEST(Datagram, ReadRefusesASizeFieldOverTheFactoryMaximum)
 	std::vector<unsigned char> body(maxSize + 1, 0x00);
 	body[0] = 0x00;	// an empty name, so the parser would not be the refuser
 	CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body)));
+}
+
+// The refusal is all there is: the size check used to send a bug
+// report first, through PacketDiagnostics to SendBugReport, which posts
+// a "*bug_report" chat line on the player's own server connection. A
+// datagram comes from whoever can reach the UDP port, so that was one
+// line to the server per hostile datagram, at the sender's pace.
+namespace {
+
+int	s_Reports = 0;
+
+void	CountReport(const char*)
+{
+	s_Reports++;
+}
+
+struct ReportHookScope
+{
+	ReportHookScope() : m_Previous(PacketDiagnostics::getBugReportHook())
+	{
+		s_Reports = 0;
+		PacketDiagnostics::setBugReportHook(&CountReport);
+	}
+	~ReportHookScope() { PacketDiagnostics::setBugReportHook(m_Previous); }
+
+	PacketDiagnostics::BugReportFn m_Previous;
+};
+
+} // namespace
+
+TEST(Datagram, ASizeFieldOverTheMaximumIsRefusedWithoutAReport)
+{
+	WireTables tables;
+	ReportHookScope hook;
+
+	const PacketSize_t maxSize = tables.factories.getPacketMaxSize(Packet::PACKET_RC_POSITION_INFO);
+	std::vector<unsigned char> body(maxSize + 1, 0x00);
+	CHECK_EQ(READ_INVALID_PROTOCOL, ReadFrame(Frame(Packet::PACKET_RC_POSITION_INFO, body)));
+	CHECK_EQ(0, s_Reports);
 }
 
 // Both peers count the datagram as szPacketHeader + size field: one
