@@ -1,47 +1,55 @@
 //----------------------------------------------------------------------
 // MMultipleFallingEffectGenerator.cpp
 //----------------------------------------------------------------------
-// 4개의 Effect가 공중에서 떨어진다.
+// Generate phases of four falling projectiles.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MMultipleFallingEffectGenerator.h"
 #include "MLinearEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
+#include "MViewDef.h"
 #include "SkillDef.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include <cstdlib>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MMultipleFallingEffectGenerator	g_StopZoneCrossEffectGenerator;
+const MMultipleFallingEffectHost* MMultipleFallingEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+const MMultipleFallingEffectHost* MMultipleFallingEffectGenerator::SetHost(const MMultipleFallingEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MMultipleFallingEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MMultipleFallingEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MMultipleFallingEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
-
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	MMultipleFallingEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	const TYPE_FRAMEID frameID = sprite.frameID;
+	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
 	bool bOK = false;
 
-	MLinearEffect*	pEffect;
 	int x, y, z;
 	int ez1 = egInfo.z1 - TILE_Y;
-	int zt = ez1;// + (TILE_Y<<1);	// 아래쪽에 떨어질 것들의 좌표
-
+	int zt = ez1; // Destination height below the supplied endpoint.
 
 	MEffectTarget*	pEffectTarget2;
-	
+
 	//---------------------------------------------
-	// Effect 생성
+	// Select the phase count and spread.
 	//---------------------------------------------
 	int numEffectPhase = 4;
 
@@ -70,20 +78,19 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		numEffectPhase = 25;
 	}
 
-
 	int ex[numEffect];
 	int ey[numEffect];
 	int ez[numEffect];
 
 	int dropCount = egInfo.count;
-	const int phaseUpper = 150;	// 한 단계에서 위로 더 올라가는 좌표 보정
+	const int phaseUpper = 150;	// Additional height per phase.
 	const int dropCountInc = phaseUpper / egInfo.step;
 
-	// numEffectPhase * numEffect 개의 effect를 생성한다.
+	// Each phase creates four projectiles.
 	for (int i=0; i<numEffectPhase; i++)
 	{
 		int n = 0;
-	
+
 		ex[n] = egInfo.x0 - rand()%randX - 24;
 		ey[n] = egInfo.y0 - rand()%randY;
 		ez[n] = baseZ + rand()%50;
@@ -112,27 +119,28 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			y = ey[j];
 			z = ez[j];
 
-			pEffect = new MLinearEffect(bltType);
-			
-			pEffect->SetFrameID( frameID, maxFrame );	
+			auto effect = std::make_unique<MLinearEffect>(bltType);
+			MLinearEffect* pEffect = effect.get();
 
-			// 발사 위치 Pixel좌표	
-			pEffect->SetPixelPosition( x, y, egInfo.z0+z );	
+			pEffect->SetFrameID( frameID, maxFrame );
 
-			// 방향 설정
+			// Begin at the sampled source pixel position.
+			pEffect->SetPixelPosition( x, y, egInfo.z0+z );
+
+			// Linear target selection computes the final facing.
 			pEffect->SetDirection( egInfo.direction );
-							
-			// 목표 위치 Pixel좌표
+
+			// All projectiles fall to the shared destination height.
 			pEffect->SetTarget( x, y, zt, egInfo.step );
 
-			// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
+			// Phase duration increases before submission.
 			pEffect->SetCount( dropCount, egInfo.linkCount );
 
-			// 위력
+			// Preserve power.
 			pEffect->SetPower(egInfo.power);
 
-			// Zone에 추가한다.
-			if (g_pZone->AddEffect( pEffect ))
+			// The queue consumes the effect even on rejection.
+			if (QueueEffect(std::move(effect)))
 			{
 				if (!bOK)
 				{
@@ -141,7 +149,7 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 				else
 				{
-					// 다음 Effect 생성 정보
+					// Later accepted shots receive independent target copies.
 					if (egInfo.pEffectTarget == NULL)
 					{
 						pEffect->SetLink( egInfo.nActionInfo, NULL );
@@ -156,8 +164,6 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			}
 		}
 	}
-
-
 
 	return bOK;
 }

@@ -524,3 +524,7 @@ Client/MFallingEffectGenerator.h
 # Rising projectile and firework pattern generation (4.57).
 Client/MRisingEffectGenerator.cpp
 Client/MRisingEffectGenerator.h
+
+# Multi-projectile falling patterns with consuming zone submission (4.58).
+Client/MMultipleFallingEffectGenerator.cpp
+Client/MMultipleFallingEffectGenerator.h
