@@ -1888,7 +1888,9 @@ rounds settled* for the host rules). Test fixtures share
   > the generator keeps creature lookup, step inheritance and pause selection.
   > `GameInit` initializes the cached positions after the shared math tables.
   > The first two paths repeat twice per 64 steps, and the small path once.
-  > R1 stays 414 Windows / 412 Ninja.
+  > Signed steps normalize into that cycle; unknown types have zero offset.
+  > Only the constructor's -1 step requests randomness. R1 stays 414 Windows /
+  > 412 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_effect_orbits.cpp`, using production paths and state.
 

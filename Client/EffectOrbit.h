@@ -15,9 +15,11 @@ public:
 	// Only -1 requests a random starting step; other steps use the cycle.
 	EffectOrbit(int type, int step = -1, const Random& random = {});
 
+	// Unknown types have no offset. Every stored step is in [0, StepCount).
 	const POINT& GetPosition() const;
 	int GetStep() const { return m_Step; }
-	void SetStep(int step) { m_Step = step; }
+	// SetStep(-1) wraps to the last step; only construction uses randomness.
+	void SetStep(int step);
 	bool IsRunning() const { return m_Running; }
 	void SetRunning(bool running) { m_Running = running; }
 	void NextStep();

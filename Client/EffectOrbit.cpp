@@ -3,6 +3,14 @@
 #include "MViewDef.h"
 #include <cstdlib>
 
+namespace {
+int NormalizeStep(int step)
+{
+	const int remainder = step % EffectOrbit::StepCount;
+	return remainder < 0 ? remainder + EffectOrbit::StepCount : remainder;
+}
+}
+
 POINT EffectOrbit::s_Positions[TypeCount][StepCount]{};
 
 void EffectOrbit::InitializePositions()
@@ -24,17 +32,24 @@ void EffectOrbit::InitializePositions()
 EffectOrbit::EffectOrbit(int type, int step, const Random& random) : m_Type(type)
 {
 	m_Step = step == -1 ? static_cast<int>((random ? random() : static_cast<unsigned>(std::rand())) % StepCount)
-		: step % StepCount;
+		: NormalizeStep(step);
 }
 
 const POINT& EffectOrbit::GetPosition() const
 {
+	static const POINT noOffset{};
+	if (m_Type < 0 || m_Type >= TypeCount) return noOffset;
 	return s_Positions[m_Type][m_Step];
+}
+
+void EffectOrbit::SetStep(int step)
+{
+	m_Step = NormalizeStep(step);
 }
 
 void EffectOrbit::NextStep()
 {
-	m_Step = (m_Step + 1) & 0x3f;
+	m_Step = (m_Step + 1) % StepCount;
 }
 
 void EffectOrbit::Update(bool effectActive)

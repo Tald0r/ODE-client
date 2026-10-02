@@ -219,3 +219,111 @@ TEST(EffectOrbits, AThrowingRandomSourcePropagatesItsFailure)
 	CHECK(threw);
 	CHECK_EQ(1, draws);
 }
+
+TEST(EffectOrbits, NegativeStartingStepsOtherThanTheSentinelWrapIntoTheCycle)
+{
+	struct Case { int step; int expected; };
+	const Case cases[]{{-2, 62}, {-63, 1}, {-64, 0}, {-65, 63},
+		{(std::numeric_limits<int>::min)(), 0}, {(std::numeric_limits<int>::min)() + 1, 1}};
+	unsigned draws = 0;
+	for (const auto& example : cases)
+	{
+		EffectOrbit orbit(0, example.step, [&] { ++draws; return 3u; });
+		CHECK_EQ(example.expected, orbit.GetStep());
+	}
+	CHECK_EQ(0, draws);
+}
+
+TEST(EffectOrbits, AssignedStepsNormalizeSignedAndOversizedValues)
+{
+	struct Case { int step; int expected; };
+	const Case cases[]{{-1, 63}, {-2, 62}, {-64, 0}, {-65, 63}, {64, 0}, {65, 1},
+		{(std::numeric_limits<int>::max)(), 63}, {(std::numeric_limits<int>::min)(), 0}};
+	EffectOrbit orbit(0, 0);
+	orbit.SetRunning(false);
+	for (const auto& example : cases)
+	{
+		orbit.SetStep(example.step);
+		CHECK_EQ(example.expected, orbit.GetStep());
+		CHECK(!orbit.IsRunning());
+	}
+}
+
+TEST(EffectOrbits, TheLargestAssignedStepCanAdvanceWithoutSignedOverflow)
+{
+	EffectOrbit orbit(0, 0);
+	orbit.SetStep((std::numeric_limits<int>::max)());
+	orbit.NextStep();
+	CHECK_EQ(0, orbit.GetStep());
+}
+
+TEST(EffectOrbits, UnknownTypesProduceNoPositionOffset)
+{
+	Paths paths;
+	for (int type : {-1, 3})
+	{
+		EffectOrbit orbit(type, 0);
+		Position(orbit, 0, 0);
+		orbit.Update(true);
+		CHECK_EQ(1, orbit.GetStep());
+		Position(orbit, 0, 0);
+	}
+}
+
+TEST(EffectOrbits, ExtremeUnknownTypesKeepTheZeroOffsetAcrossTheCycle)
+{
+	Paths paths;
+	for (int type : {(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)(), 65536})
+	{
+		EffectOrbit orbit(type, 0);
+		for (int step = 0; step < 64; ++step)
+		{
+			Position(orbit, 0, 0);
+			orbit.NextStep();
+		}
+	}
+}
+
+TEST(EffectOrbits, NormalizedNegativeStepsUseTheCorrespondingPositivePosition)
+{
+	Paths paths;
+	for (int type = 0; type < 3; ++type)
+	{
+		EffectOrbit orbit(type, -2), expected(type, 62);
+		Position(orbit, expected.GetPosition().x, expected.GetPosition().y);
+		orbit.SetStep(-1);
+		expected.SetStep(63);
+		Position(orbit, expected.GetPosition().x, expected.GetPosition().y);
+		orbit.NextStep();
+		expected.SetStep(0);
+		Position(orbit, expected.GetPosition().x, expected.GetPosition().y);
+	}
+}
+
+TEST(EffectOrbits, SettingTheSentinelDoesNotDrawRandomnessAgain)
+{
+	unsigned draws = 0;
+	EffectOrbit orbit(0, -1, [&] { ++draws; return 7u; });
+	orbit.SetStep(-1);
+	CHECK_EQ(63, orbit.GetStep());
+	CHECK_EQ(1, draws);
+	orbit.Update(true);
+	CHECK_EQ(0, orbit.GetStep());
+	CHECK_EQ(1, draws);
+}
+
+TEST(EffectOrbits, ReinitializingPathsKeepsCachedOffsetsAndReferencesStable)
+{
+	Paths paths;
+	std::array<POINT, 3 * 64> previous;
+	for (int type = 0; type < 3; ++type)
+		for (int step = 0; step < 64; ++step)
+			previous[type * 64 + step] = EffectOrbit(type, step).GetPosition();
+	EffectOrbit orbit(0, 4);
+	const POINT* address = &orbit.GetPosition();
+	EffectOrbit::InitializePositions();
+	CHECK(address == &orbit.GetPosition());
+	for (int type = 0; type < 3; ++type)
+		for (int step = 0; step < 64; ++step)
+			Position(EffectOrbit(type, step), previous[type * 64 + step].x, previous[type * 64 + step].y);
+}
