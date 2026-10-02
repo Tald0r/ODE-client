@@ -1972,7 +1972,10 @@ rounds settled* for the host rules). Test fixtures share
   > for alpha effects. Moving updates project pixels back onto sectors;
   > screen effects keep offsets relative to the shared screen basis without
   > changing sector coordinates. The host uses the view's existing bounds
-  > checks for missing frame lighting. Rendering stays executable-side.
+  > checks for missing frame lighting. Screen subtraction and projection use
+  > wide arithmetic; the final coordinate saturates at int bounds. Fractional
+  > offsets still truncate before adding the basis; NaN uses the basis and
+  > infinities saturate. Rendering stays executable-side.
   > R1 is 411 Windows / 409 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_moving_screen_effects.cpp`, using production effects.

@@ -36,8 +36,8 @@ class MScreenEffect : public MEffect {
 		//--------------------------------------------------------
 		// Get
 		//--------------------------------------------------------
-		int				GetScreenX()	{ return (int)m_PixelX + m_ScreenBasisX; }
-		int				GetScreenY()	{ return (int)m_PixelY + m_ScreenBasisY; }
+		int				GetScreenX();
+		int				GetScreenY();
 
 		//--------------------------------------------------------
 		// 한 번의 Update에 호출될 함수..

@@ -5,6 +5,24 @@
 #include "MEffect.h"
 #include "MScreenEffect.h"
 
+#include <cmath>
+#include <limits>
+
+namespace {
+int ScreenCoordinate(float offset, int basis)
+{
+	if (std::isnan(offset)) return basis;
+	// Truncate the offset first, as the original projection did. Keep the
+	// sum wide until after adding the basis so opposite signs can cancel.
+	const double coordinate = std::trunc(static_cast<double>(offset)) + basis;
+	if (coordinate >= (std::numeric_limits<int>::max)())
+		return (std::numeric_limits<int>::max)();
+	if (coordinate <= (std::numeric_limits<int>::min)())
+		return (std::numeric_limits<int>::min)();
+	return static_cast<int>(coordinate);
+}
+} // namespace
+
 //----------------------------------------------------------------------
 // static
 //----------------------------------------------------------------------
@@ -58,8 +76,18 @@ void
 MScreenEffect::SetScreenPosition(int x, int y)
 {
 	// 좌표 보정값을 저장한다.
-	m_PixelX = static_cast<float>(x - m_ScreenBasisX);
-	m_PixelY = static_cast<float>(y - m_ScreenBasisY);
+	m_PixelX = static_cast<float>(static_cast<double>(x) - m_ScreenBasisX);
+	m_PixelY = static_cast<float>(static_cast<double>(y) - m_ScreenBasisY);
+}
+
+int MScreenEffect::GetScreenX()
+{
+	return ScreenCoordinate(m_PixelX, m_ScreenBasisX);
+}
+
+int MScreenEffect::GetScreenY()
+{
+	return ScreenCoordinate(m_PixelY, m_ScreenBasisY);
 }
 
 //----------------------------------------------------------------------

@@ -93,9 +93,9 @@ void CheckLifecycle()
 template<class Effect>
 void CheckNonAlphaLighting()
 {
-	for (BYTE blt : {BLT_NORMAL, BLT_SHADOW, BLT_SCREEN})
+	for (const auto blt : {BLT_NORMAL, BLT_SHADOW, BLT_SCREEN})
 	{
-		Effect effect(blt);
+		Effect effect(static_cast<BYTE>(blt));
 		effect.SetFrameID(1, 2);
 		effect.SetCount(10);
 		effect.SetLight(19);
@@ -350,4 +350,76 @@ TEST(MovingScreenEffects, ScreenCoordinatesTruncateOffsetsBeforeAddingTheBasis)
 	effect.SetPixels(-2.75f, 2.75f, 0);
 	CHECK_EQ(98, effect.GetScreenX());
 	CHECK_EQ(-98, effect.GetScreenY());
+}
+
+TEST(MovingScreenEffects, ScreenPositionDifferenceCanSpanTheFullIntegerRange)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	MScreenEffect effect(BLT_EFFECT);
+	MScreenEffect::SetScreenBasis(low, high);
+	effect.SetScreenPosition(high, low);
+	MScreenEffect::SetScreenBasis(0, 0);
+	CHECK_EQ(high, effect.GetScreenX());
+	CHECK_EQ(low, effect.GetScreenY());
+}
+
+TEST(MovingScreenEffects, ScreenCoordinatesSaturateWhenTheBasisPushesThemOutOfRange)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	MScreenEffect effect(BLT_EFFECT);
+	effect.SetScreenPosition(100, -100);
+	MScreenEffect::SetScreenBasis(high, low);
+	CHECK_EQ(high, effect.GetScreenX());
+	CHECK_EQ(low, effect.GetScreenY());
+}
+
+TEST(MovingScreenEffects, MaximumIntegerPositionDoesNotConvertARoundedFloatOutOfRange)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	MScreenEffect effect(BLT_EFFECT);
+	effect.SetScreenPosition(high, low);
+	CHECK_EQ(high, effect.GetScreenX());
+	CHECK_EQ(low, effect.GetScreenY());
+}
+
+TEST(MovingScreenEffects, WideScreenOffsetsCanCancelAgainstTheBasis)
+{
+	World world;
+	PositionProbe<MScreenEffect> effect(BLT_EFFECT);
+	MScreenEffect::SetScreenBasis((std::numeric_limits<int>::min)(),
+		(std::numeric_limits<int>::max)());
+	effect.SetPixels(2147483648.0f, -2147483648.0f, 0);
+	CHECK_EQ(0, effect.GetScreenX());
+	CHECK_EQ(-1, effect.GetScreenY());
+}
+
+TEST(MovingScreenEffects, ScreenProjectionPreservesExactIntegerEndpoints)
+{
+	World world;
+	PositionProbe<MScreenEffect> effect(BLT_EFFECT);
+	effect.SetPixels(2147483520.0f, -2147483520.0f, 0);
+	MScreenEffect::SetScreenBasis(127, -128);
+	CHECK_EQ((std::numeric_limits<int>::max)(), effect.GetScreenX());
+	CHECK_EQ((std::numeric_limits<int>::min)(), effect.GetScreenY());
+}
+
+TEST(MovingScreenEffects, NonfiniteScreenOffsetsHaveBoundedResults)
+{
+	World world;
+	PositionProbe<MScreenEffect> effect(BLT_EFFECT);
+	MScreenEffect::SetScreenBasis(17, -23);
+	const float infinity = std::numeric_limits<float>::infinity();
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	effect.SetPixels(infinity, -infinity, 0);
+	CHECK_EQ((std::numeric_limits<int>::max)(), effect.GetScreenX());
+	CHECK_EQ((std::numeric_limits<int>::min)(), effect.GetScreenY());
+	effect.SetPixels(nan, nan, 0);
+	CHECK_EQ(17, effect.GetScreenX());
+	CHECK_EQ(-23, effect.GetScreenY());
 }
