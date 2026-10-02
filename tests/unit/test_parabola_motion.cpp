@@ -93,7 +93,7 @@ TEST(ParabolaMotion, SmokeCanObserveTheAdvancedPositionBeforeLandingSnapsIt)
 	flight.Advance(10);
 	flight.Advance(10);
 	// The legacy negative cosine rounds down, reaching below the target
-	// before the half-turn condition. The executable emits smoke here.
+	// before the half-turn condition. The calling effect emits smoke here.
 	At(flight, 30, 0, -1);
 	CHECK(flight.Finish(10));
 	At(flight, 40, 0, 0);

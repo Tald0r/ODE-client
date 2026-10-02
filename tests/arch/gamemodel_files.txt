@@ -492,3 +492,7 @@ Client/MChaseEffect.h
 # Complete homing effects sharing guidance lookup and model steering (4.50).
 Client/MHomingEffect.cpp
 Client/MHomingEffect.h
+
+# Complete parabolic effects with owned smoke and cannonade impact services (4.51).
+Client/MParabolaEffect.cpp
+Client/MParabolaEffect.h
