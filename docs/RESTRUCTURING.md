@@ -1602,11 +1602,14 @@ rounds settled* for the host rules). Test fixtures share
   > angles, turn direction and one-turn clipping are reachable without the
   > effect classes or a live view. The legacy `FCreateSines` startup contract
   > still requires one call because it scales the atan table in place. Tests
-  > initialize once and use the atan lookup's valid table indices and the
-  > steering helpers' existing coordinate/angle ranges. Initialization now
+  > initialize once and use the atan lookup's valid table indices. Initialization
   > scales both atan endpoints, correcting the northwest and southeast
   > diagonal targets; the regression tests reproduced the missing endpoint
-  > and the 22.5-degree error before the fix. R1 is 433 Windows / 431 Ninja.
+  > and the 22.5-degree error before the fix. Target-angle differences, sign
+  > comparisons and ratio products now use 64-bit arithmetic across the full
+  > integer coordinate span, retaining lookup quantization. The other angle
+  > helpers keep their existing ranges. R1 at the initial move was 433 Windows /
+  > 431 Ninja; the later arithmetic fix does not change membership.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_math_table.cpp`, linked against the production library.
 
