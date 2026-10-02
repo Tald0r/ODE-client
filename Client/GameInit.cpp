@@ -83,6 +83,8 @@
 #include "MGuidanceEffect.h"
 #include "MParabolaEffect.h"
 #include "MAttachEffect.h"
+#include "MScreenEffectManager.h"
+#include "MEffectGeneratorTable.h"
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
 #include "PacketFunction.h"
@@ -2617,6 +2619,7 @@ void ReleaseAllObjects()
 	MGuidanceEffect::SetHost(nullptr);
 	MParabolaEffect::SetHost(nullptr);
 	MAttachEffect::SetHost(nullptr);
+	MScreenEffectManager::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -3038,6 +3041,13 @@ static const MAttachEffectHost s_AttachEffectHost = {
 	.CreaturePosition = AttachCreaturePosition,
 };
 
+static const MScreenEffectManagerHost s_ScreenEffectManagerHost = {
+	.CurrentFrame = []() { return g_CurrentFrame; },
+	.GenerateNext = [](MEffect* effect) {
+		if (g_pEffectGeneratorTable) g_pEffectGeneratorTable->GenerateNext(effect);
+	},
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3365,6 +3375,7 @@ InitGameObject()
 	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
 	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
 	MAttachEffect::SetHost(&s_AttachEffectHost);
+	MScreenEffectManager::SetHost(&s_ScreenEffectManagerHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 
