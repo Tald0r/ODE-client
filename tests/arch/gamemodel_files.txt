@@ -451,3 +451,8 @@ Client/LinearEffectMotion.h
 # Homing angle progression and horizontal displacement (4.41).
 Client/HomingEffectSteering.cpp
 Client/HomingEffectSteering.h
+
+# Parabolic movement and arrival, with smoke between the two phases (4.42).
+Client/ParabolaEffectMotion.cpp
+Client/ParabolaEffectMotion.h
+Client/ParabolaStep.h
