@@ -338,3 +338,8 @@ Client/MRequestMode.h
 # effects (task 4.21). The initial move preserves both files byte-for-byte.
 Client/MathTable.cpp
 Client/MathTable.h
+
+# Dimension-specific login/reconnect configuration (task 4.22).
+# The unused MinTr include is the only seam removed in the initial move.
+Client/ServerInfoFileParser.cpp
+Client/ServerInfoFileParser.h

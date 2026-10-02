@@ -1,6 +1,5 @@
 #include "Client_PCH.h"
 #include "ServerInfoFileParser.h"
-#include "MinTr.h"
 #include <iostream>
 #include <fstream>
 
