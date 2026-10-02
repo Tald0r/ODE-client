@@ -10,7 +10,7 @@
  *
  * Architecture:
  * - Uses refactored EffectResourceContainer (no global state)
- * - Links directly to game code (MEffect, MLinearEffect, etc.)
+ * - Links the same MEffect model as the game and unit tests
  * - Standalone SDL2 rendering (minimal dependencies)
  */
 
@@ -21,6 +21,12 @@
 #include <SDL.h>
 #include <iostream>
 #include <cstring>
+
+// Preserve the viewer's frozen lifetime clock and unlit frame lookup.
+static const MEffectHost viewerEffectHost{
+    .CurrentFrame = []() -> DWORD { return 0; },
+    .Light = nullptr,
+};
 
 // Window configuration
 #define DEFAULT_WINDOW_WIDTH 800
@@ -42,11 +48,13 @@ public:
         , m_running(true)
         , m_frameCount(0)
         , m_showHelp(true)
+        , m_previousEffectHost(MEffect::SetHost(&viewerEffectHost))
     {
     }
 
     ~EffectViewer() {
         Cleanup();
+        MEffect::SetHost(m_previousEffectHost);
     }
 
     bool Initialize(const char* dataPath, int windowWidth, int windowHeight) {
@@ -908,6 +916,7 @@ private:
     bool m_running;
     int m_frameCount;
     bool m_showHelp;
+    const MEffectHost* m_previousEffectHost;
 };
 
 int main(int argc, char* argv[]) {

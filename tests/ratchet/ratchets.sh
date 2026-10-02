@@ -232,7 +232,8 @@ check () {
 # 416: ShowTimeChecker scheduling joins gamemodel with explicit time inputs (task 4.36).
 # 415: the help-string table joins gamemodel (task 4.37).
 # 414: interaction-object metadata joins gamemodel (task 4.38).
-R1_BASELINE=414
+# 413: base effect state joins gamemodel behind frame/light services (4.44).
+R1_BASELINE=413
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -298,7 +299,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 414: ShowTimeChecker scheduling joins gamemodel (task 4.36).
 	# 413: the help-string table joins gamemodel (task 4.37).
 	# 412: interaction-object metadata joins gamemodel (task 4.38).
-	R1_NINJA_BASELINE=412
+	# 411: base effect state joins gamemodel behind frame/light services (4.44).
+	R1_NINJA_BASELINE=411
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

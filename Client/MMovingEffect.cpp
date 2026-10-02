@@ -2,6 +2,7 @@
 // MMovingEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MEffect.h"
 #include "MMovingEffect.h"
 #include "MTopView.h"

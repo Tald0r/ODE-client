@@ -57,14 +57,17 @@ MEffect: Effect anchored to a Tile
 #include "MTypeDef.h"
 #include "MObject.h"
 #include "MEffectTarget.h"
-#include "EffectResourceContainer.h"
 #include "EffectTiming.h"
 
-#include <fstream>
+class EffectResourceContainer;
 
-
-
-extern DWORD	g_CurrentFrame;
+// Borrowed services installed by the executable. A missing clock means an
+// expired effect with no delay/wait; missing lighting returns zero.
+struct MEffectHost
+{
+	DWORD (*CurrentFrame)() = nullptr;
+	int (*Light)(BYTE bltType, TYPE_FRAMEID frameID, BYTE direction, BYTE frame) = nullptr;
+};
 
 
 class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
@@ -92,6 +95,7 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		MEffect(BYTE bltType);
 
 		virtual ~MEffect();
+		static const MEffectHost* SetHost(const MEffectHost* host);
 
 		//--------------------------------------------------------
 		// Resource container management (newly added)
@@ -126,7 +130,7 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		void			SetCount(DWORD last, DWORD linkCount=0xFFFF);
 		DWORD			GetEndFrame() const			{ return m_EndFrame; }
 		DWORD			GetEndLinkFrame() const		{ return m_EndLinkFrame; }
-		bool			IsEnd() const				{ return EffectTiming::IsEnd(g_CurrentFrame); }
+		bool			IsEnd() const;
 
 		
 		//--------------------------------------------------------
@@ -235,6 +239,11 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 
 		// Newly added: resource container (dependency injection)
 		EffectResourceContainer*	m_pResources;
+
+	private:
+		static const MEffectHost* s_pHost;
+		static bool ReadCurrentFrame(DWORD& frame);
+		static char ReadLight(BYTE bltType, TYPE_FRAMEID frameID, BYTE direction, BYTE frame);
 };
 
 //----------------------------------------------------------------------

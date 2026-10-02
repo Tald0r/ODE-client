@@ -2,6 +2,7 @@
 // MScreenEffectManager.cpp
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MScreenEffectManager.h"
 #include "MEffect.h"
 #include "MScreenEffect.h"

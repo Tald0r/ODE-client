@@ -2,6 +2,7 @@
 // MCreatureWear.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MCreatureWear.h"
 #include "MItem.h"
 #include "AddonDef.h"

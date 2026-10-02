@@ -100,7 +100,7 @@ extern	LONG g_TILESURFACE_HEIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 //end 
-//#include "Client.h"
+#include "Client.h"
 bool		GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint);
 
 // [새기술]

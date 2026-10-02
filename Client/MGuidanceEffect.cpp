@@ -2,6 +2,7 @@
 // MGuidanceEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MLinearEffect.h"
 #include "MGuidanceEffect.h"
 #include "MCreature.h"

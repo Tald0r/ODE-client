@@ -2,6 +2,7 @@
 // MHomingEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include <math.h>
 #include "MHomingEffect.h"
 #include "MCreature.h"
