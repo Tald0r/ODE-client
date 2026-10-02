@@ -19,6 +19,7 @@ public:
 private:
 	int m_RadCurrent = 0;
 	int m_RadStep = 0;
+	bool m_HalfTurnReached = false;
 };
 
 #endif

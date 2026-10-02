@@ -1928,7 +1928,10 @@ rounds settled* for the host rules). Test fixtures share
   > lifetime and drawing. Arrival requires strict XY proximity after half a
   > turn, or falling below the target height; it snaps every axis and clears
   > linear velocity. Zero speed and integer arc-step truncation retain their
-  > existing behavior. R1 stays 414 Windows / 412 Ninja.
+  > existing behavior. Arc phase stays within one turn while a separate flag
+  > keeps the arrival gate open. Fixed-point products use wide arithmetic;
+  > arc-step calculation bounds the quotient before integer conversion.
+  > R1 stays 414 Windows / 412 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`,
     `tests/unit/test_parabola_motion.cpp` and `tests/unit/test_parabola_step.cpp`,
     using production motion and shared math tables.

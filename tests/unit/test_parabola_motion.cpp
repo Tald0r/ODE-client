@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 
 namespace {
 struct Tables
@@ -288,4 +289,96 @@ TEST(ParabolaMotion, CopiesKeepIndependentArcAndTrajectoryState)
 	second.Advance(10);
 	At(first, 20, 0, 14);
 	At(second, 20, 0, 7);
+}
+
+TEST(ParabolaMotion, HighSpeedsPreserveRisingAndFallingArcOffsets)
+{
+	Tables tables;
+	for (WORD speed : {WORD{32768}, WORD{65535}})
+	{
+		Flight rising;
+		rising.Target(2048, 0, 0, 1); // zero arc step, cosine is +1
+		rising.Advance(speed);
+		At(rising, 1, 0, static_cast<float>(speed));
+		Flight falling;
+		falling.Target(0, 0, 0, 1); // one step to half a turn
+		falling.Advance(speed);
+		At(falling, 0, 0, -static_cast<float>(speed));
+	}
+}
+
+TEST(ParabolaMotion, HighSpeedAboveTheTargetDoesNotCauseAnEarlyLanding)
+{
+	Tables tables;
+	Flight flight;
+	flight.Target(2048, 0, 0, 1);
+	flight.Advance(65535);
+	CHECK(!flight.Finish(1));
+	At(flight, 1, 0, 65535);
+}
+
+TEST(ParabolaMotion, LongRunningArcsKeepTheArrivalGateOpen)
+{
+	Tables tables;
+	Flight flight;
+	flight.Target(0, 0, 0, 0);
+	const int moves = (std::numeric_limits<int>::max)() / MathTable::FPI + 1;
+	for (int move = 0; move < moves; ++move) flight.Advance(0);
+	CHECK(flight.Finish(1));
+	At(flight, 0, 0, 0);
+}
+
+TEST(ParabolaMotion, AnIntegerLimitTargetDoesNotOverflowPathLengthConversion)
+{
+	Tables tables;
+	Flight flight;
+	flight.Target((std::numeric_limits<int>::max)(), 0, 0, 1);
+	flight.Advance(1);
+	At(flight, 1, 0, 1);
+}
+
+TEST(ParabolaMotion, RetargetingReplacesTheVelocityAndRestartsTheArc)
+{
+	Tables tables;
+	Flight flight;
+	flight.Target(40, 0, 0, 10);
+	flight.Advance(10);
+	flight.Advance(10);
+	flight.Target(20, 40, 7, 10);
+	flight.Advance(10);
+	At(flight, 20, 10, 14);
+	CHECK(!flight.Finish(10));
+}
+
+TEST(ParabolaMotion, HighSpeedHeightKeepsItsRoundingThroughoutACycle)
+{
+	Tables tables;
+	Flight flight;
+	flight.Target(40, 0, 0, 10);
+	float height = 0;
+	for (int move = 1; move <= 8; ++move)
+	{
+		// Double arithmetic exactly represents these products. Floor is the
+		// independent oracle for the legacy signed fixed-point rounding.
+		height += static_cast<float>(std::floor(MathTable::FCos(move*256) * (65535 / 65536.0)));
+		flight.Advance(65535);
+		At(flight, move*10.0f, 0, height);
+	}
+}
+
+TEST(ParabolaMotion, IndivisibleArcStepsKeepTheirPhaseAfterWrapping)
+{
+	Tables tables;
+	Flight flight;
+	flight.Target(30, 0, 0, 10); // three moves, truncated to 341 angle units
+	float height = 0;
+	for (int move = 1; move <= 10; ++move)
+	{
+		height += static_cast<float>(std::floor(MathTable::FCos(move*341) * (10 / 65536.0)));
+		flight.Advance(10);
+		At(flight, move*10.0f, 0, height);
+	}
+	flight.x = 30; flight.z = 1000;
+	CHECK(flight.Finish(10));
+	At(flight, 30, 0, 0);
 }
