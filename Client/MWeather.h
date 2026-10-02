@@ -7,8 +7,17 @@
 #ifndef	__MWEATHER_H__
 #define	__MWEATHER_H__
 
+#include "../basic/Platform.h"
 #include "MTypeDef.h"
 #include "DrawTypeDef.h"
+
+// Borrowed services installed by GameInit. A missing player skips a new
+// weather start; missing or invalid viewport dimensions use 800 by 600.
+struct MWeatherHost {
+	bool (*ReadOrigin)(int& x, int& y) = nullptr; // player position in pixels
+	int (*Width)() = nullptr;
+	int (*Height)() = nullptr;
+};
 
 
 //----------------------------------------------------------------------
@@ -16,10 +25,12 @@
 //----------------------------------------------------------------------
 class MAP_EFFECT {
 	public :		
-		MAP_EFFECT() { m_Type = MAP_EFFECT_ARRIVE3; }
+		MAP_EFFECT()
+			: m_Type(MAP_EFFECT_NEW), m_SpriteID(0), m_X(0), m_Y(0),
+			  m_StepX(0), m_StepY(0), m_Count(0), m_maxCount(0) {}
 		~MAP_EFFECT() {}
 
-		void	Set(BYTE type, TYPE_SPRITEID sid, short x, short y, char sx, char sy, BYTE count)
+		void	Set(BYTE type, TYPE_SPRITEID sid, short x, short y, signed char sx, signed char sy, BYTE count)
 		{
 			m_Type		= type;
 			m_SpriteID	= sid;
@@ -61,8 +72,8 @@ class MAP_EFFECT {
 		//------------------------------------------------------------
 		// Set
 		//------------------------------------------------------------
-		void			SetSX(char sx)			{ m_StepX = sx; }
-		void			SetSY(char sy)			{ m_StepY = sy; }
+		void			SetSX(signed char sx)	{ m_StepX = sx; }
+		void			SetSY(signed char sy)	{ m_StepY = sy; }
 
 		//------------------------------------------------------------
 		// operator = 
@@ -88,7 +99,8 @@ class MAP_EFFECT {
 			MAP_EFFECT_ARRIVE3,
 			MAP_EFFECT_ARRIVE4,
 			MAP_EFFECT_ARRIVE5,
-			MAP_EFFECT_ARRIVE6
+			MAP_EFFECT_ARRIVE6,
+			MAP_EFFECT_NEW
 		};
 
 	protected :
@@ -100,7 +112,7 @@ class MAP_EFFECT {
 		short			m_X, m_Y; 
 
 		// 한 번에 움직이는 Pixel수
-		char			m_StepX, m_StepY;
+		signed char		m_StepX, m_StepY;
 
 		// 움직이는 회수 남은거..
 		BYTE			m_Count, m_maxCount;
@@ -112,6 +124,8 @@ class MAP_EFFECT {
 //----------------------------------------------------------------------
 class MWeather {
 	public :
+		static const MWeatherHost* SetHost(const MWeatherHost* host);
+
 		MWeather();
 		~MWeather();
 
@@ -129,7 +143,7 @@ class MWeather {
 		//-------------------------------
 		// 날씨 효과 중단하기.. (바로 중단되는건 아님)
 		//-------------------------------
-		void		Stop()					{ m_WeatherType = WEATHER_STOP; }
+		void		Stop()					{ m_WeatherType = m_nActiveMapEffect ? WEATHER_STOP : WEATHER_NULL; }
 
 		//-------------------------------
 		// 날씨 효과를 생성한다.
@@ -185,6 +199,12 @@ class MWeather {
 
 		// temp(?)
 		BYTE			m_MoreEffectCount;
+
+	private :
+		static bool HostOrigin(int& x, int& y);
+		static int HostWidth();
+		static int HostHeight();
+		static const MWeatherHost* s_pHost;
 };
 
 

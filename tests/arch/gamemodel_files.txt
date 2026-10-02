@@ -343,3 +343,9 @@ Client/MathTable.h
 # The unused MinTr include is the only seam removed in the initial move.
 Client/ServerInfoFileParser.cpp
 Client/ServerInfoFileParser.h
+
+# Weather particles and progression; the host supplies live origin/viewport
+# values while GameMain and MTopView retain sound, shadows and rendering.
+Client/MWeather.cpp
+Client/MWeather.h
+Client/MViewDef.h
