@@ -475,3 +475,93 @@ TEST(MultipleFallingEffectGenerator, AbsoluteFrameWrapAndMissingClockKeepBaseEff
 	const int start = effects.front()->GetPixelZ();
 	CHECK(!effects.front()->Update()); CHECK_EQ(start, effects.front()->GetPixelZ());
 }
+
+TEST(MultipleFallingEffectGenerator, DestinationBelowTheIntegerRangeClampsForEveryCopy)
+{
+	World world;
+	MMultipleFallingEffectGenerator generator;
+	const int bottom = (std::numeric_limits<int>::min)();
+	auto target = Target(); auto info = Info(); info.z1 = bottom; info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ(999, info.pEffectTarget->GetZ());
+	for (std::size_t i = 1; i < effects.size(); ++i)
+		CHECK_EQ(bottom, effects[i]->GetEffectTarget()->GetZ());
+}
+
+TEST(MultipleFallingEffectGenerator, ExtremeSourceCoordinatesAndHeightsStayBounded)
+{
+	World world;
+	MMultipleFallingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	const int bottom = (std::numeric_limits<int>::min)();
+	for (int source : {top, bottom})
+	{
+		submissions = 0;
+		auto info = Info(); info.x0 = info.y0 = source; info.z0 = top;
+		CHECK(generator.Generate(info));
+		for (std::size_t i = 0; i < effects.size(); ++i)
+		{
+			CHECK_EQ(top, effects[i]->GetPixelZ());
+			if ((source == top && i % 4 >= 2) || (source == bottom && i % 4 < 2))
+				CHECK_EQ(source, effects[i]->GetPixelX());
+			if ((source == top && i % 2 == 1) || (source == bottom && i % 2 == 0))
+				CHECK_EQ(source, effects[i]->GetPixelY());
+		}
+		effects.clear();
+	}
+}
+
+TEST(MultipleFallingEffectGenerator, ZeroSpeedKeepsConfiguredLifetimeAndStationaryAnimation)
+{
+	World world;
+	MMultipleFallingEffectGenerator generator;
+	auto target = Target(); auto info = Info(); info.step = 0; info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ(16, effects.size()); CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget);
+	for (auto& effect : effects)
+	{
+		const int start = effect->GetPixelZ();
+		CHECK_EQ(0, effect->GetStepPixel()); CHECK_EQ(129, effect->GetEndFrame());
+		CHECK_EQ(104, effect->GetEndLinkFrame());
+		CHECK(effect->Update()); CHECK_EQ(start, effect->GetPixelZ()); CHECK_EQ(1, effect->GetFrame());
+	}
+	effects.clear(); CHECK(removedTargets == std::vector<int>(16, 73));
+}
+
+TEST(MultipleFallingEffectGenerator, DestinationSubtractionPreservesRepresentableBoundaryValues)
+{
+	World world;
+	MMultipleFallingEffectGenerator generator;
+	const int bottom = (std::numeric_limits<int>::min)();
+	const int top = (std::numeric_limits<int>::max)();
+	struct Height { int supplied, expected; };
+	for (const Height height : {Height{bottom + 24, bottom}, {bottom + 25, bottom + 1},
+		{-1, -25}, {0, -24}, {top, top - 24}})
+	{
+		submissions = 0;
+		auto target = Target(); auto info = Info(); info.z1 = height.supplied; info.pEffectTarget = target.get();
+		CHECK(generator.Generate(info)); target.release();
+		CHECK_EQ(height.expected, effects[1]->GetEffectTarget()->GetZ());
+		effects.clear();
+	}
+}
+
+TEST(MultipleFallingEffectGenerator, ZeroSpeedAndDurationKeepEveryActionPatternExpired)
+{
+	World world;
+	MMultipleFallingEffectGenerator generator;
+	struct Pattern { TYPE_ACTIONINFO action; int count; };
+	for (const Pattern pattern : {Pattern{42, 16}, {SKILL_ACID_STORM_WIDE, 24},
+		{SKILL_POISON_STORM_WIDE, 24}, {SKILL_ICE_HAIL, 52}, {SKILL_WIDE_ICE_HAIL, 100}})
+	{
+		submissions = 0;
+		auto info = Info(pattern.action); info.step = 0; info.count = 0;
+		CHECK(generator.Generate(info)); CHECK_EQ(pattern.count, effects.size());
+		for (auto& effect : effects)
+		{
+			CHECK_EQ(99, effect->GetEndFrame()); CHECK_EQ(104, effect->GetEndLinkFrame());
+			CHECK_EQ(0, effect->GetStepPixel()); CHECK(!effect->Update());
+		}
+		effects.clear();
+	}
+}

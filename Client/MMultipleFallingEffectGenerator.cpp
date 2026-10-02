@@ -8,8 +8,22 @@
 #include "MLinearEffect.h"
 #include "MViewDef.h"
 #include "SkillDef.h"
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int OffsetCoordinate(int coordinate, int offset)
+{
+	const auto value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 const MMultipleFallingEffectHost* MMultipleFallingEffectGenerator::s_pHost = nullptr;
 
@@ -43,7 +57,7 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	bool bOK = false;
 
 	int x, y, z;
-	int ez1 = egInfo.z1 - TILE_Y;
+	int ez1 = OffsetCoordinate(egInfo.z1, -TILE_Y);
 	int zt = ez1; // Destination height below the supplied endpoint.
 
 	MEffectTarget*	pEffectTarget2;
@@ -84,30 +98,30 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 	int dropCount = egInfo.count;
 	const int phaseUpper = 150;	// Additional height per phase.
-	const int dropCountInc = phaseUpper / egInfo.step;
+	const int dropCountInc = egInfo.step == 0 ? 0 : phaseUpper / egInfo.step;
 
 	// Each phase creates four projectiles.
 	for (int i=0; i<numEffectPhase; i++)
 	{
 		int n = 0;
 
-		ex[n] = egInfo.x0 - rand()%randX - 24;
-		ey[n] = egInfo.y0 - rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, -(rand()%randX) - 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, -(rand()%randY));
 		ez[n] = baseZ + rand()%50;
 
 		n++;
-		ex[n] = egInfo.x0 - rand()%randX - 24;
-		ey[n] = egInfo.y0 + rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, -(rand()%randX) - 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, rand()%randY);
 		ez[n] = baseZ + rand()%50;
 
 		n++;
-		ex[n] = egInfo.x0 + rand()%randX + 24;
-		ey[n] = egInfo.y0 - rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, rand()%randX + 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, -(rand()%randY));
 		ez[n] = baseZ + rand()%50;
 
 		n++;
-		ex[n] = egInfo.x0 + rand()%randX + 24;
-		ey[n] = egInfo.y0 + rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, rand()%randX + 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, rand()%randY);
 		ez[n] = baseZ + rand()%50;
 
 		baseZ		+= phaseUpper;
@@ -125,7 +139,7 @@ MMultipleFallingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			pEffect->SetFrameID( frameID, maxFrame );
 
 			// Begin at the sampled source pixel position.
-			pEffect->SetPixelPosition( x, y, egInfo.z0+z );
+			pEffect->SetPixelPosition( x, y, OffsetCoordinate(egInfo.z0, z) );
 
 			// Linear target selection computes the final facing.
 			pEffect->SetDirection( egInfo.direction );

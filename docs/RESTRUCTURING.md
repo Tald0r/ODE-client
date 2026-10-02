@@ -2191,11 +2191,11 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_rising_effect_generator.cpp`.
 
-- [ ] **4.58 Multi-projectile falling generation:** `MMultipleFallingEffectGenerator`
+- [x] **4.58 Multi-projectile falling generation:** `MMultipleFallingEffectGenerator`
   creates storm and hail patterns in `gamemodel`, with sprite metadata and a
   consuming zone queue installed and cleared by GameInit.
-  > **Status:** in progress (extraction verified; zero-speed and coordinate
-  > boundary fixes remain).
+  > **Status:** done 2026-10-02; production patterns, ownership, seeded sampling
+  > and arithmetic boundaries covered by library tests.
   > Four shots form each phase, with action-specific spread and phase counts.
   > Each phase consumes twelve random draws before constructing its effects,
   > and increases the duration before submission. The first accepted effect
@@ -2203,6 +2203,9 @@ rounds settled* for the host rules). Test fixtures share
   > retargeted copies. All projectiles use the shared destination height.
   > Missing metadata rejects before construction; missing queues destroy
   > unlinked effects. Readers are guarded and re-read per operation.
+  > Coordinate offsets clamp after widened addition. Zero speed adds no phase
+  > duration, so effects retain their configured lifetime and animate in place.
+  > Float storage, random sampling and nonzero-speed duration rules remain.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_multiple_falling_effect_generator.cpp`.
 
