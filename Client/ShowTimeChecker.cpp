@@ -1,109 +1,29 @@
-//-----------------------------------------------------------------------------
-// ShowTimeChecker.cpp
-//-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "ShowTimeChecker.h"
-#include "Client_PCH.h"
-	#include "MGameTime.h"
+#include <cstdlib>
 
-extern MonotonicClock::TimePoint	g_FrameNow;
-
-//-----------------------------------------------------------------------------
-//
-// constructor / destructor
-//
-//-----------------------------------------------------------------------------
-
-
-
-
-//-----------------------------------------------------------------------------
-// Is Show Time
-//-----------------------------------------------------------------------------
-// MinDelay~MaxDelay사이..
-// StartHour~EndHour사이에 연주..
-//-----------------------------------------------------------------------------
-bool					
-ShowTimeChecker::IsShowTime() const
+bool ShowTimeChecker::IsShowTime(MonotonicClock::TimePoint now, std::optional<BYTE> hour) const
 {
-	if (IsShowHour())
-	{
-		//----------------------------------------------------------------
-		// 반복 출력이거나..
-		// 출력할 시간이 지났나?
-		//----------------------------------------------------------------
-		return Loop || g_FrameNow >= NextPlayTime;		
-	}
-
-	return false;		
+	return IsShowHour(hour) && (Loop || now >= NextPlayTime);
 }
 
-//-----------------------------------------------------------------------------
-// IsShowHour
-//-----------------------------------------------------------------------------
-// StartHour~EndHour사이가 아닌 경우..
-// false : x
-// true : 보여준다. 소리낸다.. 등등.
-//-----------------------------------------------------------------------------
-bool					
-ShowTimeChecker::IsShowHour() const
+bool ShowTimeChecker::IsShowHour(std::optional<BYTE> hour) const
 {
-	if (g_pGameTime!=NULL)
-	{
-		int hour = g_pGameTime->GetHour();
-
-		//----------------------------------------------------------------
-		// 시간대 체크
-		//----------------------------------------------------------------
-		if (StartHour <= EndHour)
-		{
-			// ......[Start]xxxxx[End]......
-			if (hour >= StartHour && hour <= EndHour)
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-
-		// xxxxx[End]......[Start]xxxxx
-		if (hour >= StartHour || hour <= EndHour)
-		{
-			return true;
-		}
-	}
-
-	return false;
+	if (!hour) return false;
+	if (StartHour <= EndHour) return *hour >= StartHour && *hour <= EndHour;
+	return *hour >= StartHour || *hour <= EndHour;
 }
 
-//-----------------------------------------------------------------------------
-// Set NextShowTime
-//-----------------------------------------------------------------------------
-// 다음에 출력할 시간을 결정한다.
-//-----------------------------------------------------------------------------
-void					
-ShowTimeChecker::SetNextShowTime()
+void ShowTimeChecker::SetNextShowTime(MonotonicClock::TimePoint now, const Random& random)
 {
-	DWORD delayGap = MaxDelay - MinDelay;
-
-	if (delayGap==0)
+	const DWORD delayGap = MaxDelay - MinDelay;
+	if (delayGap == 0)
 	{
-		NextPlayTime = g_FrameNow;
+		NextPlayTime = now;
 	}
 	else
 	{
-		NextPlayTime = g_FrameNow + MonotonicClock::Millis(MinDelay + rand()%delayGap);
+		const unsigned draw = random ? random() : static_cast<unsigned>(std::rand());
+		NextPlayTime = now + MonotonicClock::Millis(MinDelay + draw % delayGap);
 	}
 }
-
-
-//-----------------------------------------------------------------------------
-// Save To File
-//-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// Load From File
-//-----------------------------------------------------------------------------

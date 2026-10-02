@@ -82,6 +82,7 @@ Client/MShadowAnimationObject.h
 Client/MInteractionObject.cpp
 Client/MInteractionObject.h
 Client/ShowTimeData.cpp
+Client/ShowTimeChecker.cpp
 Client/ShowTimeChecker.h
 
 # Money (task 4.2; the price and trade managers wait for the item core)

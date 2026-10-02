@@ -12,6 +12,8 @@
 #endif
 
 #include <fstream>
+#include <functional>
+#include <optional>
 
 #include "MonotonicClock.h"
 
@@ -20,10 +22,16 @@ class ShowTimeChecker {
 		ShowTimeChecker();
 		~ShowTimeChecker();
 
-		bool			IsShowTime() const;		// 다 고려한 상황에서.. ShowTime인가?
-		bool			IsShowHour() const;		// startHour~EndHour와 관련..
+		// Missing game time suppresses playback, including loops. Hour ranges
+		// are inclusive and may cross midnight; hour bytes are not normalized.
+		bool			IsShowTime(MonotonicClock::TimePoint now, std::optional<BYTE> hour) const;
+		bool			IsShowHour(std::optional<BYTE> hour) const;
 
-		void			SetNextShowTime();
+		using Random = std::function<unsigned()>;
+		// Equal delay bounds retain the legacy immediate deadline without a
+		// random draw. Otherwise the upper bound is exclusive. An absent
+		// random source uses rand(); a throwing source leaves the deadline.
+		void			SetNextShowTime(MonotonicClock::TimePoint now, const Random& random = {});
 
 		//---------------------------------------------------------------
 		// File I/O
