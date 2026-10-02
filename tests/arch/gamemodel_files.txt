@@ -417,3 +417,10 @@ Client/MMusicTable.cpp
 Client/MMusicTable.h
 Client/MusicSelection.cpp
 Client/MusicSelection.h
+
+# Delayed sound timing and dispatch, consumed by MZone (task 4.34).
+# Frame timestamps and playback are supplied by the executable.
+Client/SoundNode.cpp
+Client/SoundNode.h
+Client/DelayedSoundQueue.cpp
+Client/DelayedSoundQueue.h

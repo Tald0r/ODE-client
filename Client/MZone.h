@@ -62,7 +62,7 @@ class CSpriteSetManager;
 #include "MHelicopterManager.h"
 #include "CPositionList.h"
 #include "ZoneFileHeader.h"
-#include "SoundNode.h"
+#include "DelayedSoundQueue.h"
 
 #include <fstream>
 
@@ -101,9 +101,6 @@ class MZone {
 
 		// Effect list
 		typedef std::map<TYPE_OBJECTID, MEffect*>		EFFECT_MAP;
-
-		// Sound list
-		typedef std::list<SOUND_NODE*>					SOUND_NODE_LIST;
 
 		// 2004, 8, 31, sobeit add start - WaitEffectList
 		// Wiait Effect list
@@ -293,7 +290,7 @@ class MZone {
 		//						 Item
 		//
 		//--------------------------------------------------------------
-		void		AddSound(SOUND_NODE* pNode);	// 소리 추가
+		void		AddSound(const SOUND_NODE& sound);
 		void		UpdateSound();					// 소리 출력
 
 
@@ -455,7 +452,7 @@ class MZone {
 		long					m_fpTile;
 		long					m_fpImageObject;
 
-		SOUND_NODE_LIST			m_listSoundNode;
+		DelayedSoundQueue		m_DelayedSounds;
 
 		// client에서만 돌아가는 서비스용 creature - -;;
 		CREATURE_MAP			m_mapFakeCreature;
@@ -475,5 +472,4 @@ class MZone {
 extern MZone*						g_pZone;
 
 #endif
-
 

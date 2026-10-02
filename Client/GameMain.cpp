@@ -4083,14 +4083,8 @@ SetLightning(DWORD delay)
 		g_pTopView->SetFadeStart(1, 31, 10, 31,31,31);
 	}
 
-	// 1초 안의 거리에 있으면.. THUNDER1
-	// 더 멀면 THUNDER2
-	TYPE_SOUNDID sid = (delay<=1000)? SOUND_WORLD_WEATHER_THUNDER_1 : SOUND_WORLD_WEATHER_THUNDER_2;
-
-	// sound를 기억해뒀다가 나중에 출력한다.
-	SOUND_NODE* pNode = new SOUND_NODE( sid, delay, g_pPlayer->GetX(), g_pPlayer->GetY() );
-
-	g_pZone->AddSound( pNode );
+	// Queue the thunder at this frame's player position and timestamp.
+	g_pZone->AddSound(MakeThunderSound(delay, g_pPlayer->GetX(), g_pPlayer->GetY(), g_FrameNow));
 }
 
 //---------------------------------------------------------------------------

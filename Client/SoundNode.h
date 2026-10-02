@@ -20,12 +20,15 @@ class SOUND_NODE {
 		//------------------------------------------------------
 		// delay시간 후에 sid를 play하게 한다는 의미.
 		//------------------------------------------------------
-		SOUND_NODE(TYPE_SOUNDID sid, DWORD delay, int x, int y)	{ Set(sid, delay, x,y); }
+		SOUND_NODE(TYPE_SOUNDID sid, DWORD delay, int x, int y, MonotonicClock::TimePoint now)
+		{
+			Set(sid, delay, x, y, now);
+		}
 
 		//------------------------------------------------------
 		// set
 		//------------------------------------------------------
-		void			Set(TYPE_SOUNDID sid, DWORD delay, int x, int y);
+		void			Set(TYPE_SOUNDID sid, DWORD delay, int x, int y, MonotonicClock::TimePoint now);
 
 		//------------------------------------------------------
 		// get
@@ -43,5 +46,9 @@ class SOUND_NODE {
 		int				m_X;
 		int				m_Y;
 };
+
+// Thunder uses the close sound at delays through one second, the distant
+// sound afterward. The caller supplies the player position and frame stamp.
+SOUND_NODE MakeThunderSound(DWORD delay, int x, int y, MonotonicClock::TimePoint now);
 
 #endif
