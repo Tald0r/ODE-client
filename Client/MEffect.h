@@ -211,6 +211,7 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		void			AffectPosition();
 		void			RefreshLight();
 		bool			IsBeforeFrame(DWORD deadline) const;
+		void			SetAttachedLifetime(DWORD last, DWORD linkCount);
 		// Cap at now + frames, without SetCount's minus-one convention.
 		void			LimitRemainingFrames(DWORD frames);
 

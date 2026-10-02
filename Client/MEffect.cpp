@@ -152,6 +152,13 @@ MEffect::SetCount(DWORD last, DWORD linkCount)
 	ReadCurrentFrame(now);
 	EffectTiming::SetCount(now, last, linkCount);
 }
+void MEffect::SetAttachedLifetime(DWORD last, DWORD linkCount)
+{
+	DWORD now;
+	ReadCurrentFrame(now);
+	EffectTiming::SetAttachedCount(now, last, linkCount);
+}
+
 //----------------------------------------------------------------------
 // Set Link
 //----------------------------------------------------------------------
