@@ -403,3 +403,8 @@ Client/MActionResultQueue.cpp
 Client/MActionResult.h
 Client/MEffectTarget.cpp
 Client/MEffectTarget.h
+
+# Portal records consumed by GameMain's zone-info loader (task 4.32).
+# The initial move preserves both existing files byte-for-byte.
+Client/MPortal.cpp
+Client/MPortal.h
