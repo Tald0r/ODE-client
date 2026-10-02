@@ -439,3 +439,7 @@ Client/MHelpDef.h
 # Interaction-object metadata records loaded by GameInitInfo (4.38).
 Client/MInteractionObjectTable.cpp
 Client/MInteractionObjectTable.h
+
+# Cached orbit paths, starting steps and effect update/pause state (4.39).
+Client/EffectOrbit.cpp
+Client/EffectOrbit.h
