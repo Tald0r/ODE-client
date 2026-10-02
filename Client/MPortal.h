@@ -92,6 +92,8 @@ class MPortal{
 		//-------------------------------------------------------
 		// File I/O
 		//-------------------------------------------------------
+		// A failed read preserves the record. Invalid destination counts fail
+		// before writing; only TYPE_MULTI_PORTAL stores an explicit byte count.
 		void		SaveToFile(std::ofstream& file);
 		void		LoadFromFile(std::ifstream& file);
 

@@ -49,19 +49,24 @@ MPortal::~MPortal()
 void	
 MPortal::SaveToFile(ofstream& file)
 {
-	file.write((const char*)&m_Type, 1);
-
-	BYTE size = static_cast<BYTE>(m_ZoneID.size());
-
-	if(m_Type == TYPE_MULTI_PORTAL)
+	// Only TYPE_MULTI_PORTAL carries a count; every other type has one ID.
+	if ((m_Type == TYPE_MULTI_PORTAL && m_ZoneID.size() > 255) ||
+		(m_Type != TYPE_MULTI_PORTAL && m_ZoneID.size() != 1))
 	{
-		file.write((const char*)&size, 1);	
+		file.setstate(std::ios::failbit);
+		return;
 	}
-
-	for(int i = 0; i < size; i++)
-		file.write((const char*)&m_ZoneID[i], 2);	
-
-	file.write((const char*)&m_Rect, SIZE_P_RECT);	
+	BYTE size = static_cast<BYTE>(m_ZoneID.size());
+	if (!file.write(reinterpret_cast<const char*>(&m_Type), 1)) return;
+	if (m_Type == TYPE_MULTI_PORTAL &&
+		!file.write(reinterpret_cast<const char*>(&size), 1)) return;
+	for (WORD id : m_ZoneID)
+	{
+		const BYTE encoded[]{static_cast<BYTE>(id), static_cast<BYTE>(id >> 8)};
+		if (!file.write(reinterpret_cast<const char*>(encoded), 2)) return;
+	}
+	static_assert(sizeof(P_RECT) == 4);
+	file.write(reinterpret_cast<const char*>(&m_Rect), SIZE_P_RECT);
 }
 		
 //----------------------------------------------------------------------
@@ -70,21 +75,23 @@ MPortal::SaveToFile(ofstream& file)
 void	
 MPortal::LoadFromFile(ifstream& file)
 {
-	file.read((char*)&m_Type, 1);
-	WORD z;
-
-	BYTE size;
-
-	if(m_Type == TYPE_MULTI_PORTAL)
-		file.read((char*)&size, 1);	
-	else size = 1;
-
-	m_ZoneID.clear();
-	for(int i = 0; i < size; i++)
+	BYTE type = 0;
+	BYTE size = 1;
+	if (!file.read(reinterpret_cast<char*>(&type), 1)) return;
+	if (type == TYPE_MULTI_PORTAL &&
+		!file.read(reinterpret_cast<char*>(&size), 1)) return;
+	std::vector<WORD> destinations;
+	destinations.reserve(size);
+	for (int i = 0; i < size; ++i)
 	{
-		file.read((char*)&z, 2);	
-		m_ZoneID.push_back(z);
+		BYTE encoded[2]{};
+		if (!file.read(reinterpret_cast<char*>(encoded), 2)) return;
+		destinations.push_back(static_cast<WORD>(encoded[0] | (WORD(encoded[1]) << 8)));
 	}
-
-	file.read((char*)&m_Rect, SIZE_P_RECT);	
+	P_RECT rect{};
+	static_assert(sizeof(P_RECT) == 4);
+	if (!file.read(reinterpret_cast<char*>(&rect), SIZE_P_RECT)) return;
+	m_ZoneID.swap(destinations);
+	m_Rect = rect;
+	m_Type = type;
 }

@@ -44,7 +44,7 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "AddonDef.h"
 #include "UIDialog.h"
 #include "MusicDef.h"
-#include "MPortal.h"
+#include "ZoneInfoData.h"
 #include "CServerInformation.h"
 #include "UserInformation.h"
 #include "TempInformation.h"
@@ -2749,15 +2749,12 @@ LoadZoneInfo(int n)
 		//------------------------------------------------
 		g_pTopView->LoadMinimap( pZoneInfo->MinimapFilename, &zoneInfo );	
 		*/
-		WORD width, height;
-		
-		zoneInfoFile.read((char*)&width, 2);
-		zoneInfoFile.read((char*)&height, 2);
+		ZoneInfoData zoneInfo;
 
 		//------------------------------------------------
-		// size 체크
+		// Parse the complete file before publishing anything to the zone or UI.
 		//------------------------------------------------
-		if (width==g_pZone->GetWidth() && height==g_pZone->GetHeight())
+		if (zoneInfo.LoadFromFile(zoneInfoFile, g_pZone->GetWidth(), g_pZone->GetHeight()))
 		{		
 			DEBUG_ADD("[Load Zone] Load PortalInfo");
 			
@@ -2765,18 +2762,14 @@ LoadZoneInfo(int n)
 			// 포탈 정보를 loading한다.
 			// 내부에서 해주는게 좋지만... 일단..
 			//------------------------------------------------
-			int numPortal;
-			
-			zoneInfoFile.read((char*)&numPortal, 4);
+			const int numPortal = static_cast<int>(zoneInfo.portals.size());
 
 			DEBUG_ADD_FORMAT("numPortal = %d", numPortal);
 
-			MPortal portal;
-			RECT rect;
-				
 			for (int i=0; i<numPortal; i++)
 			{
-				portal.LoadFromFile( zoneInfoFile );
+				const MPortal& portal = zoneInfo.portals[i];
+				const RECT rect = {portal.GetLeft(), portal.GetTop(), portal.GetRight(), portal.GetBottom()};
 
 				const std::vector<WORD>& zoneID = portal.GetZoneID();
 
@@ -2786,11 +2779,6 @@ LoadZoneInfo(int n)
 
 				for (int i=0; i<numZoneID; i++)
 				{
-					rect.left = portal.GetLeft();
-					rect.top = portal.GetTop();
-					rect.right = portal.GetRight(); 
-					rect.bottom = portal.GetBottom(); 
-
 					DEBUG_ADD_FORMAT("AddPortal. type=%d, zoneID=%d", portal.GetType(), zoneID[i]);
 					
 					g_pZone->AddPortal( portal.GetType(), zoneID[i], rect );
@@ -2819,13 +2807,9 @@ LoadZoneInfo(int n)
 			//------------------------------------------------
 			// 안전지대 정보
 			//------------------------------------------------
-			int numSafe;
-			
-			zoneInfoFile.read((char*)&numSafe, 4);
+			const int numSafe = static_cast<int>(zoneInfo.safetyZones.size());
 
 			DEBUG_ADD_FORMAT("numSafe = %d", numSafe);
-
-			B_RECT	rect2;
 
 			DEBUG_ADD_FORMAT("[g_pPlayer] %p", static_cast<const void*>(g_pPlayer));
 			//BYTE bSlayer = (g_pPlayer==NULL || g_pPlayer->IsSlayer());
@@ -2834,7 +2818,7 @@ LoadZoneInfo(int n)
 
 			for (int i=0; i<numSafe; i++)
 			{			
-				zoneInfoFile.read((char*)&rect2, SIZE_B_RECT);
+				const B_RECT& rect2 = zoneInfo.safetyZones[i];
 
 				RECT safeRect = 
 				{ 
@@ -3037,9 +3021,8 @@ LoadZoneInfo(int n)
 		}
 		else
 		{			
-			DEBUG_ADD_FORMAT("[Error] ZoneInfo Size Mismatch: (%d,%d) != (%d,%d)", 
-									g_pZone->GetWidth(), g_pZone->GetHeight(), 
-									width, height );				
+			DEBUG_ADD_FORMAT("[Error] Invalid ZoneInfo for zone ID=%d", n);
+			return FALSE;
 		}
 
 		
