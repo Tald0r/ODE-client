@@ -27,6 +27,15 @@ enum WAR_TYPE_ID // 안씀
 typedef			std::map<ZoneID_t, WarInfo*>			WarInfoMap;
 typedef			WarInfoMap::iterator			WarInfoMapItr;
 
+// GameInit supplies the live zone and UI/skill actions. Missing actions are
+// skipped; without a current zone, level-war presentation is skipped.
+struct MWarHost
+{
+	bool (*ReadZone)(ZoneID_t& id) = nullptr;
+	void (*RaceWarNotice)(DWORD startTime) = nullptr;
+	void (*RaceWarStarted)() = nullptr;
+	void (*RaceWarEnded)() = nullptr;
+};
 
 class MWarManager
 {
@@ -38,6 +47,7 @@ private :
 public :	
 	MWarManager();
 	~MWarManager();	
+	static const MWarHost* SetHost(const MWarHost* host);
 
 	//-------------------------------------------------------------------
 	// SetData
@@ -62,6 +72,13 @@ public :
 // 	bool			IsHolyLand(ZoneID_t id);					// 성이 아니라 아담의 성지 필드인가
 	
 	void			Update();	
+
+private:
+	static bool ReadZone(ZoneID_t& id);
+	static void RaceWarNotice(DWORD startTime);
+	static void RaceWarStarted();
+	static void RaceWarEnded();
+	static const MWarHost* s_pHost;
 };
 
 extern MWarManager	*g_pWarManager;

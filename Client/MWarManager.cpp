@@ -1,17 +1,40 @@
-﻿#include "Client_PCH.h"
-#include "MWarManager.h"
+﻿#include "MWarManager.h"
 #include "MZoneTable.h"
 #include "UserInformation.h"
-#include "UIFunction.h"
 #include "GuildWarInfo.h"
 #include "RaceWarInfo.h"
 #include "LevelWarInfo.h"
-#include "MZone.h"
-#include "MSkillManager.h"
-#include "RarFile.h"
-#include "Properties.h"
 
 MWarManager *g_pWarManager = NULL;
+
+const MWarHost* MWarManager::s_pHost = nullptr;
+
+const MWarHost* MWarManager::SetHost(const MWarHost* host)
+{
+	const MWarHost* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MWarManager::ReadZone(ZoneID_t& id)
+{
+	return s_pHost && s_pHost->ReadZone && s_pHost->ReadZone(id);
+}
+
+void MWarManager::RaceWarNotice(DWORD startTime)
+{
+	if (s_pHost && s_pHost->RaceWarNotice) s_pHost->RaceWarNotice(startTime);
+}
+
+void MWarManager::RaceWarStarted()
+{
+	if (s_pHost && s_pHost->RaceWarStarted) s_pHost->RaceWarStarted();
+}
+
+void MWarManager::RaceWarEnded()
+{
+	if (s_pHost && s_pHost->RaceWarEnded) s_pHost->RaceWarEnded();
+}
 
 
 MWarManager::MWarManager()
@@ -48,8 +71,7 @@ void			MWarManager::SetWar(WarInfo *info)
 	case WAR_RACE:
 		{
 			// 편지 보내쟈
-			UI_RunNotice(6, info->getStartTime());
-			UI_DeleteNotice(5);
+			RaceWarNotice(info->getStartTime());
 			
 			RaceWarInfo *pInfo = (RaceWarInfo *)info;
 
@@ -89,32 +111,7 @@ void			MWarManager::SetWar(WarInfo *info)
 					bUpdate = false;
 			}
 
-			if(g_pZone != NULL )
-			{
-				if(g_pZoneTable->Get(g_pZone->GetID())->HolyLand)
-				{
-					UI_RunBloodBibleStatus();
-					
-					//--------------------------------------------------
-					// 홀리랜드 보너스 RaceWar 시작할때 reset
-					//--------------------------------------------------
-					for(int i = 0; i < HOLYLAND_BONUS_MAX; i++)
-					{
-						g_abHolyLandBonusSkills[i] = false;
-					}
-					
-					//--------------------------------------------------
-					// 현재 사용 가능한 skill들을 다시 체크한다.
-					//--------------------------------------------------
-					g_pSkillAvailable->SetAvailableSkills();
-				}
-				else
-					UI_CloseBloodBibleStatus();
-			}
-			
-			// 2004, 10, 25, sobeit add start
-			UI_RunRangerChat();
-			// 2004, 10, 25, sobeit add end
+			RaceWarStarted();
 		}
 		break;
 
@@ -149,9 +146,11 @@ void			MWarManager::SetWar(WarInfo *info)
 	case WAR_LEVEL:
 		{
 			LevelWarInfo *pInfo = (LevelWarInfo *)info;
+			ZoneID_t zone;
+			if (!ReadZone(zone)) break;
 			
 			WAR_INFO inf;	
-			inf.zone_id = g_pZone->GetID();
+			inf.zone_id = zone;
 			inf.zone_name = g_pZoneTable->Get(inf.zone_id)->Name;
 			inf.left_time = MonotonicClock::NowInSeconds() + std::chrono::seconds((std::chrono::seconds::rep)pInfo->getRemainTime());
 			inf.war_type = pInfo->getWarType();
@@ -291,11 +290,7 @@ void			MWarManager::ClearRaceWar()
 //		g_pUserInformation->WarInfo.clear();
 	}
 
-	UI_SetBloodBibleStatusTimer(30);
-//	UI_CloseBloodBibleStatus();
-	// 2004, 10, 25, sobeit add start
-	UI_CloseRangerChat();
-	// 2004, 10, 25, sobeit add end
+	RaceWarEnded();
 }
 
 bool			MWarManager::IsExist(ZoneID_t id)
