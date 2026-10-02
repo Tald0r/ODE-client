@@ -2149,6 +2149,9 @@ rounds settled* for the host rules). Test fixtures share
   > generation queues the effect before transferring the target, retaining
   > screen-basis updates, item-size centering, frame narrowing, finite count,
   > independent link lifetime, zero direction and step, and input power.
+  > Centering widens before subtracting and multiplying, divides toward zero,
+  > then adds the cell origin and saturates to int. Screen-effect float storage
+  > and the executable's UI coordinate lookup retain their existing behavior.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_inventory_effect_generator.cpp`, using production effects
     and the owning screen manager.

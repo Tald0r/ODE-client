@@ -381,3 +381,64 @@ TEST(InventoryEffectGenerator, GridCoordinatesNarrowBeforeTheScreenPositionOverr
 	CHECK_EQ(175, world.manager.First()->GetScreenX());
 	CHECK_EQ(320, world.manager.First()->GetScreenY());
 }
+
+TEST(InventoryEffectGenerator, LargeFootprintMultiplicationKeepsExactCancellation)
+{
+	World world;
+	MStopInventoryEffectGenerator generator;
+	const int high = (std::numeric_limits<int>::max)();
+	placement = {{0, 0}, {-high, -high}, 3, 3, high, high};
+	CHECK(generator.Generate(Info()));
+	CHECK_EQ(0, world.manager.First()->GetScreenX());
+	CHECK_EQ(0, world.manager.First()->GetScreenY());
+}
+
+TEST(InventoryEffectGenerator, ExtremeDimensionsDoNotOverflowBeforeCentering)
+{
+	World world;
+	MStopInventoryEffectGenerator generator;
+	const int low = (std::numeric_limits<int>::min)();
+	placement = {{0, 0}, {0, 0}, low, low, 1, 1};
+	CHECK(generator.Generate(Info()));
+	CHECK_EQ(-1073741824, world.manager.First()->GetScreenX());
+	CHECK_EQ(-1073741824, world.manager.First()->GetScreenY());
+}
+
+TEST(InventoryEffectGenerator, AddingTheCenterOffsetSaturatesAtIntegerLimits)
+{
+	World world;
+	MStopInventoryEffectGenerator generator;
+	const int high = (std::numeric_limits<int>::max)();
+	const int low = (std::numeric_limits<int>::min)();
+	placement = {{0, 0}, {high, low}, 3, 3, 30, -30};
+	CHECK(generator.Generate(Info()));
+	CHECK_EQ(high, world.manager.First()->GetScreenX());
+	CHECK_EQ(low, world.manager.First()->GetScreenY());
+}
+
+TEST(InventoryEffectGenerator, NegativeHalfCellOffsetsStillTruncateTowardZero)
+{
+	World world;
+	MStopInventoryEffectGenerator generator;
+	placement = {{0, 0}, {10, 20}, 0, 0, 3, -3};
+	CHECK(generator.Generate(Info()));
+	CHECK_EQ(9, world.manager.First()->GetScreenX());
+	CHECK_EQ(21, world.manager.First()->GetScreenY());
+}
+
+TEST(InventoryEffectGenerator, FullIntegerDimensionsKeepTheWideProductRepresentable)
+{
+	World world;
+	MStopInventoryEffectGenerator generator;
+	const int high = (std::numeric_limits<int>::max)();
+	const int low = (std::numeric_limits<int>::min)();
+	for (int dimension : {low, high})
+		for (int pixels : {low, high})
+		{
+			placement = {{0, 0}, {0, 0}, dimension, dimension, pixels, pixels};
+			CHECK(generator.Generate(Info()));
+			const int expected = (dimension < 0) == (pixels < 0) ? high : low;
+			CHECK_EQ(expected, world.manager.First()->GetScreenX());
+			CHECK_EQ(expected, world.manager.First()->GetScreenY());
+		}
+}
