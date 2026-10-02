@@ -6,6 +6,7 @@ EffectTiming::EffectTiming()
 	m_EndFrame = 0;
 	m_EndLinkFrame = 0;
 	m_DelayFrame = 0;
+	m_dwWaitFrame = 0;
 }
 
 void EffectTiming::SetCount(DWORD now, DWORD duration, DWORD linkCount)

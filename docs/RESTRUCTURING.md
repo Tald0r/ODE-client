@@ -1943,8 +1943,9 @@ rounds settled* for the host rules). Test fixtures share
   > their existing deadline updates. `MAttachEffect` selects the attached
   > duration convention: only 0xFFFF becomes the maximum DWORD deadline.
   > Count deadlines retain the minus-one offset; delay/wait deadlines do not.
-  > Absolute unsigned comparisons and DWORD wrap remain. R1 stays 414 Windows /
-  > 412 Ninja.
+  > Absolute unsigned comparisons and DWORD wrap remain. All deadlines start
+  > at zero, including wait state; callers explicitly schedule a wait.
+  > R1 stays 414 Windows / 412 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_effect_timing.cpp`, using production timing state.
 

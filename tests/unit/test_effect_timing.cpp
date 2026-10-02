@@ -3,6 +3,8 @@
 
 #include <initializer_list>
 #include <limits>
+#include <cstring>
+#include <new>
 
 namespace {
 constexpr DWORD LastFrame = (std::numeric_limits<DWORD>::max)();
@@ -227,4 +229,54 @@ TEST(EffectTiming, CopiesHaveIndependentDeadlines)
 	CHECK(!first.IsEnd(200));
 	CHECK(first.IsDelayFrame(200));
 	CHECK(first.IsWaitFrame(200));
+}
+
+TEST(EffectTiming, FreshObjectsDoNotWaitOnPoisonedStorage)
+{
+	for (int pattern : {0x01, 0x55, 0xAA, 0xCC, 0xCD, 0xFF})
+	{
+		alignas(EffectTiming) unsigned char storage[sizeof(EffectTiming)];
+		std::memset(storage, pattern, sizeof(storage));
+		auto* timing = new (storage) EffectTiming;
+		CHECK(!timing->IsWaitFrame(0));
+		CHECK(!timing->IsWaitFrame(1));
+		timing->~EffectTiming();
+	}
+}
+
+TEST(EffectTiming, ReusedStorageDoesNotKeepAPreviousWaitDeadline)
+{
+	alignas(EffectTiming) unsigned char storage[sizeof(EffectTiming)];
+	auto* previous = new (storage) EffectTiming;
+	previous->SetWaitFrame(100, 100);
+	previous->~EffectTiming();
+	auto* fresh = new (storage) EffectTiming;
+	CHECK(!fresh->IsWaitFrame(0));
+	CHECK(!fresh->IsWaitFrame(100));
+	fresh->~EffectTiming();
+}
+
+TEST(EffectTiming, CountsAndDrawDelayDoNotActivateAnUnscheduledWait)
+{
+	EffectTiming timing;
+	timing.SetCount(100, 10);
+	timing.SetDelayFrame(100, 30);
+	CHECK(!timing.IsWaitFrame(0));
+	CHECK(!timing.IsWaitFrame(100));
+	timing.SetAttachedCount(200, 0xFFFF);
+	CHECK(!timing.IsWaitFrame(0));
+	CHECK(!timing.IsWaitFrame(200));
+	CHECK(!timing.IsWaitFrame(LastFrame));
+}
+
+TEST(EffectTiming, CopiesOfFreshTimingAcquireTheirWaitsIndependently)
+{
+	EffectTiming first;
+	EffectTiming second = first;
+	CHECK(!first.IsWaitFrame(0));
+	CHECK(!second.IsWaitFrame(0));
+	second.SetWaitFrame(100, 10);
+	CHECK(!first.IsWaitFrame(100));
+	CHECK(second.IsWaitFrame(100));
+	CHECK(!second.IsWaitFrame(110));
 }
