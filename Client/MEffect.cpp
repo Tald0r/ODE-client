@@ -42,10 +42,6 @@ MEffect::MEffect(BYTE bltType)
 
 	m_Light = 0;
 
-	m_EndFrame = 0;
-	m_EndLinkFrame = 0;
-	m_DelayFrame = 0;
-
 	m_bMulti = false;
 	m_bDrawSkip = false;
 
@@ -77,10 +73,6 @@ MEffect::MEffect(BYTE bltType, EffectResourceContainer* resources)
 	m_pEffectTarget = NULL;
 
 	m_Light = 0;
-
-	m_EndFrame = 0;
-	m_EndLinkFrame = 0;
-	m_DelayFrame = 0;
 
 	m_bMulti = false;
 	m_bDrawSkip = false;
@@ -118,16 +110,7 @@ MEffect::~MEffect()
 void			
 MEffect::SetCount(DWORD last, DWORD linkCount)
 { 
-	m_EndFrame = g_CurrentFrame + last - 1; 
-
-	if (linkCount==MAX_LINKCOUNT)
-	{
-		m_EndLinkFrame = m_EndFrame;
-	}
-	else
-	{
-		m_EndLinkFrame = g_CurrentFrame + linkCount - 1;
-	}
+	EffectTiming::SetCount(g_CurrentFrame, last, linkCount);
 }
 //----------------------------------------------------------------------
 // Set Link
@@ -260,31 +243,31 @@ MEffect::Update()
 	m_Light = g_pTopView->GetEffectLight((BLT_TYPE)m_BltType, m_FrameID, m_Direction, m_CurrentFrame);
 		
 	// 계속 Update해도 되는가?
-	return g_CurrentFrame < m_EndFrame;
+	return !EffectTiming::IsEnd(g_CurrentFrame);
 }
 
 void
 MEffect::SetDelayFrame(DWORD frame)
 {
-	m_DelayFrame = g_CurrentFrame + frame; 
+	EffectTiming::SetDelayFrame(g_CurrentFrame, frame);
 }
 
 bool
 MEffect::IsDelayFrame() const
 {
-	return g_CurrentFrame < m_DelayFrame;
+	return EffectTiming::IsDelayFrame(g_CurrentFrame);
 }
 
 void
 MEffect::SetWaitFrame(DWORD frame)
 {
-	m_dwWaitFrame = g_CurrentFrame + frame; 
+	EffectTiming::SetWaitFrame(g_CurrentFrame, frame);
 }
 
 bool
 MEffect::IsWaitFrame() const
 {
-	return g_CurrentFrame < m_dwWaitFrame;
+	return EffectTiming::IsWaitFrame(g_CurrentFrame);
 }
 
 //----------------------------------------------------------------------
