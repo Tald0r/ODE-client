@@ -1994,6 +1994,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_skip_effect.cpp`, using production skip effects.
 
+- [x] **4.47 Facing direction:** `SelectFacingDirection` holds the view's
+  eight-way slope classification in `gamemodel`.
+  > **Status:** done (this commit).
+  > `MTopView` delegates its existing static entry point; linear projectiles
+  > call the model function directly. Coincident points face down, and the
+  > existing asymmetric low/high slope cutoffs retain their float rounding.
+  > Rendering, creature actions and projectile lifetime stay executable-side.
+  > R1 stays 410 Windows / 408 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_direction_selection.cpp`, using production selection.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop

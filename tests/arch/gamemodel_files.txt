@@ -474,3 +474,7 @@ Client/MScreenEffect.h
 # Randomized draw skipping and early-expiry state (4.46).
 Client/MSkipEffect.cpp
 Client/MSkipEffect.h
+
+# Eight-way facing selection shared by the view and projectile targeting (4.47).
+Client/DirectionSelection.cpp
+Client/DirectionSelection.h
