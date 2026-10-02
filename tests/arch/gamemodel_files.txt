@@ -408,3 +408,5 @@ Client/MEffectTarget.h
 # The initial move preserves both existing files byte-for-byte.
 Client/MPortal.cpp
 Client/MPortal.h
+Client/ZoneInfoData.cpp
+Client/ZoneInfoData.h

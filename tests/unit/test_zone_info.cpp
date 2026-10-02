@@ -1,5 +1,6 @@
 #include "test_framework.h"
 #include "MPortal.h"
+#include "ZoneInfoData.h"
 
 #include <chrono>
 #include <cstdint>
@@ -59,6 +60,47 @@ void CheckRect(const MPortal& portal, int left, int top, int right, int bottom)
 	const auto rect = portal.GetRect();
 	CHECK_EQ(left, rect.left); CHECK_EQ(top, rect.top);
 	CHECK_EQ(right, rect.right); CHECK_EQ(bottom, rect.bottom);
+}
+
+Bytes InfoBytes()
+{
+	return {
+		0x23, 0x01, 0x34, 0x02, // 291 x 564
+		2, 0, 0, 0, // two portals
+		0, 61, 0, 1, 2, 3, 4,
+		3, 2, 0xff, 0xff, 0, 0, 9, 8, 7, 6,
+		2, 0, 0, 0, // two safety rectangles, including unknown flag bits
+		0x15, 11, 12, 13, 14,
+		0x80, 255, 254, 0, 1
+	};
+}
+
+bool LoadInfo(ZoneInfoData& info, const Bytes& bytes, int width = 291, int height = 564)
+{
+	ZoneInfoFile fixture(bytes);
+	std::ifstream input(fixture.path, std::ios::binary);
+	return info.LoadFromFile(input, width, height);
+}
+
+void CheckInfo(const ZoneInfoData& info)
+{
+	CHECK_EQ(291, info.width); CHECK_EQ(564, info.height);
+	CHECK_EQ(2, info.portals.size()); CHECK_EQ(2, info.safetyZones.size());
+	if (info.portals.size() != 2 || info.safetyZones.size() != 2) return;
+	CHECK_EQ(0, info.portals[0].GetType());
+	CHECK(info.portals[0].GetZoneID() == std::vector<WORD>({61}));
+	CheckRect(info.portals[0], 1, 2, 3, 4);
+	CHECK_EQ(3, info.portals[1].GetType());
+	CHECK(info.portals[1].GetZoneID() == std::vector<WORD>({65535, 0}));
+	CheckRect(info.portals[1], 9, 8, 7, 6);
+	const auto& first = info.safetyZones[0];
+	CHECK_EQ(0x15, first.flag);
+	CHECK_EQ(11, first.left); CHECK_EQ(12, first.top);
+	CHECK_EQ(13, first.right); CHECK_EQ(14, first.bottom);
+	const auto& second = info.safetyZones[1];
+	CHECK_EQ(0x80, second.flag);
+	CHECK_EQ(255, second.left); CHECK_EQ(254, second.top);
+	CHECK_EQ(0, second.right); CHECK_EQ(1, second.bottom);
 }
 }
 
@@ -265,4 +307,70 @@ TEST(ZoneInfo, MultiPortalSaveRejectsUnrepresentableCountsBeforeWriting)
 		output.close();
 		CHECK_EQ(0, std::filesystem::file_size(fixture.path));
 	}
+}
+
+TEST(ZoneInfo, CompleteFileDefaultsToEmptyState)
+{
+	ZoneInfoData info;
+	CHECK_EQ(0, info.width); CHECK_EQ(0, info.height);
+	CHECK(info.portals.empty()); CHECK(info.safetyZones.empty());
+}
+
+TEST(ZoneInfo, CompleteFileReadsPortalAndSafetyRecordsInOrder)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, CompleteFileAcceptsEmptyTablesAndFullWordDimensions)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, {255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0}, 65535, 65535));
+	CHECK_EQ(65535, info.width); CHECK_EQ(65535, info.height);
+	CHECK(info.portals.empty()); CHECK(info.safetyZones.empty());
+}
+
+TEST(ZoneInfo, CompleteFileCanReplacePopulatedTablesWithEmptyOnes)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	CHECK(LoadInfo(info, {1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1, 2));
+	CHECK_EQ(1, info.width); CHECK_EQ(2, info.height);
+	CHECK(info.portals.empty()); CHECK(info.safetyZones.empty());
+}
+
+TEST(ZoneInfo, CompleteFileDimensionsAreCheckedBeforeReadingTheTables)
+{
+	ZoneInfoFile fixture(InfoBytes());
+	std::ifstream input(fixture.path, std::ios::binary);
+	ZoneInfoData info;
+	CHECK(!info.LoadFromFile(input, 123, 456));
+	input.clear();
+	CHECK_EQ(4, input.tellg());
+}
+
+TEST(ZoneInfo, CompleteFileReadsFromTheCurrentPositionAndLeavesLegacyTrailer)
+{
+	auto bytes = InfoBytes();
+	bytes.insert(bytes.begin(), 0xee);
+	bytes.push_back(0xdd);
+	ZoneInfoFile fixture(bytes);
+	std::ifstream input(fixture.path, std::ios::binary);
+	input.seekg(1);
+	ZoneInfoData info;
+	CHECK(info.LoadFromFile(input, 291, 564));
+	CHECK_EQ(bytes.size() - 1, input.tellg());
+	CHECK_EQ(0xdd, input.get());
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, CompleteFileCopiesOwnTheirPortalAndSafetyRecords)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	auto copied = info;
+	info.portals.clear();
+	info.safetyZones.clear();
+	CheckInfo(copied);
 }

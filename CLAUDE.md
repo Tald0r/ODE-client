@@ -117,7 +117,7 @@ by `NPCShopHost`), and NPC dialogue lookup/substitution and its English
 overlay (`MNPCScriptTable`, `ApplyEnglishNPCScriptTable`), and deferred action
 result ownership (`MActionResultQueue`) and effect-target state (`MEffectTarget`,
 with player-roster removal supplied by `MEffectTargetHost`), and portal records
-(`MPortal`) consumed by the zone-info loader; with the
+and zone-info parsing (`MPortal`, `ZoneInfoData`) consumed by map changes; with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
