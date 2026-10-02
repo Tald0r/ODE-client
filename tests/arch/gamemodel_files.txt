@@ -317,3 +317,11 @@ Client/MEventQueue.h
 # Screen-fade progression; MTopView supplies frames and renders the value.
 Client/MScreenFade.cpp
 Client/MScreenFade.h
+
+# Login world/server metadata and the current selection (task 4.19).
+Client/CServerInformation.cpp
+Client/CServerInformation.h
+Client/CTypeMap2.h
+# Packet-driven world/server updates; handlers retain UI/mode transitions.
+Client/ApplyServerList.cpp
+Client/ApplyServerList.h

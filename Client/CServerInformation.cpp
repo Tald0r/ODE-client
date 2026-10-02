@@ -25,6 +25,7 @@ ServerGroup::ServerGroup()
 //
 //----------------------------------------------------------------------
 CServerInformation::CServerInformation()
+: m_ServerGroupID(0), m_ServerID(0), m_ServerGroupStatus(0), m_ServerStatus(0)
 {
 }
 
@@ -44,6 +45,7 @@ CServerInformation::Release()
 	m_ServerGroupID = 0;
 	m_ServerGroupStatus = 0;
 	m_ServerID = 0;
+	m_ServerStatus = 0;
 
 	// 이름을 지워준다.
 	m_ServerGroupName.Release();
