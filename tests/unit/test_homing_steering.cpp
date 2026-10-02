@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 
 namespace {
 // The legacy initializer scales atan entries in place. Initialize only when
@@ -217,4 +218,60 @@ TEST(HomingSteering, CopiesKeepIndependentAnglesAndTurnState)
 	Step(second.Advance(64), 0, -63);
 	CHECK_EQ(0, first.GetAngle());
 	CHECK_EQ(512, second.GetAngle());
+}
+
+TEST(HomingSteering, HighSpeedsKeepTheCorrectCardinalDisplacements)
+{
+	Tables tables;
+	for (WORD speed : {WORD{32767}, WORD{32768}, WORD{65534}, WORD{65535}})
+	{
+		HomingEffectSteering right(0, 0), up(90, 0), left(180, 0), down(270, 0);
+		Step(right.Advance(speed), speed, 0);
+		Step(up.Advance(speed), 0, -(speed - 1));
+		Step(left.Advance(speed), -speed, 0);
+		Step(down.Advance(speed), 0, speed);
+	}
+}
+
+TEST(HomingSteering, HighSpeedOffsetsRetainTheFixedPointRoundingAcrossAllHeadings)
+{
+	Tables tables;
+	for (WORD speed : {WORD{32768}, WORD{40000}, WORD{65535}})
+		for (int degrees = 0; degrees < 360; ++degrees)
+		{
+			HomingEffectSteering steering(degrees, 0);
+			const int angle = steering.GetAngle();
+			// Independent arithmetic oracle: a double exactly represents these
+			// products; floor matches the existing signed right-shift rounding.
+			const int x = static_cast<int>(std::floor(MathTable::FCos(angle) * (speed / 65536.0)));
+			const int y = -static_cast<int>(std::floor(MathTable::FSin(angle) * (speed / 65536.0)));
+			Step(steering.Advance(speed), x, y);
+		}
+}
+
+TEST(HomingSteering, OrdinarySpeedsKeepTheSameRoundingAcrossAllHeadings)
+{
+	Tables tables;
+	for (WORD speed : {WORD{0}, WORD{1}, WORD{2}, WORD{64}, WORD{32767}})
+		for (int degrees = 0; degrees < 360; ++degrees)
+		{
+			HomingEffectSteering steering(degrees, 0);
+			const int angle = steering.GetAngle();
+			const int x = static_cast<int>(std::floor(MathTable::FCos(angle) * (speed / 65536.0)));
+			const int y = -static_cast<int>(std::floor(MathTable::FSin(angle) * (speed / 65536.0)));
+			Step(steering.Advance(speed), x, y);
+		}
+}
+
+TEST(HomingSteering, HighSpeedTurnsKeepTheirAngleProgression)
+{
+	Tables tables;
+	HomingEffectSteering steering(0, 90);
+	Step(steering.Advance(65535), 0, -65534);
+	CHECK_EQ(512, steering.GetAngle());
+	Step(steering.Advance(65535), -65535, 0);
+	CHECK_EQ(1024, steering.GetAngle());
+	steering.StopTurning();
+	Step(steering.Advance(65535), -65535, 0);
+	CHECK_EQ(1024, steering.GetAngle());
 }

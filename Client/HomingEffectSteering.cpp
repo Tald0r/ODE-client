@@ -1,6 +1,7 @@
 #include "Client_PCH.h"
 #include "HomingEffectSteering.h"
 #include "MathTable.h"
+#include <cstdint>
 #include <cstdlib>
 
 HomingEffectSteering::HomingEffectSteering(int currentDegrees, int turnDegrees)
@@ -21,7 +22,7 @@ POINT HomingEffectSteering::Advance(WORD speed)
 	m_RadCurrent += m_RadStep;
 	m_RadCurrent &= MathTable::MAX_ANGLE_1;
 	return {
-		(MathTable::FCos(m_RadCurrent) * speed) >> 16,
-		-((MathTable::FSin(m_RadCurrent) * speed) >> 16)
+		static_cast<LONG>((static_cast<std::int64_t>(MathTable::FCos(m_RadCurrent)) * speed) >> 16),
+		static_cast<LONG>(-((static_cast<std::int64_t>(MathTable::FSin(m_RadCurrent)) * speed) >> 16))
 	};
 }

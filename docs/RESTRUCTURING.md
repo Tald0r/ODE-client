@@ -1914,8 +1914,9 @@ rounds settled* for the host rules). Test fixtures share
   > returned displacement. Target lookup, height, arrival, lifetime and drawing
   > remain in the executable. Halo attacks continue without retargeting.
   > MathTable initialization remains in GameInit. Legacy turning behavior,
-  > including alignment clearing the turn magnitude, is retained. R1 stays
-  > 414 Windows / 412 Ninja.
+  > including alignment clearing the turn magnitude, is retained. Horizontal
+  > fixed-point products use wide arithmetic for the full WORD speed range.
+  > R1 stays 414 Windows / 412 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_homing_steering.cpp`, using production steering and math.
 
