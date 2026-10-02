@@ -2175,12 +2175,14 @@ rounds settled* for the host rules). Test fixtures share
 - [ ] **4.57 Rising-effect generation:** `MRisingEffectGenerator` creates
   real linear projectiles and firework patterns in `gamemodel`, behind borrowed
   sprite metadata and a consuming zone queue installed and cleared by GameInit.
-  > **Status:** in progress (extraction verified; firework ownership reporting
-  > and boundary arithmetic fixes remain).
+  > **Status:** in progress (extraction and ownership verified; boundary
+  > arithmetic fixes remain).
   > Ordinary effects rise from the source by speed times duration. Volley and
   > dragon actions create three shots; storm creates four. Accepted shot index 1
   > owns the caller's original target, while other accepted shots copy it.
   > Queue acceptance precedes target attachment and target-coordinate updates.
+  > Firework success reports original-target transfer, or any accepted shot
+  > when no target was supplied; rejected originals remain with the caller.
   > Missing metadata rejects before construction; missing queue services destroy
   > each unlinked effect. Readers are guarded and re-read per operation.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and

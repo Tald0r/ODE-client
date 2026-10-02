@@ -39,6 +39,7 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	const TYPE_FRAMEID frameID = sprite.frameID;
 	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 	MEffectTarget* pTarget = egInfo.pEffectTarget;
+	bool generated = false;
 
 	if((egInfo.nActionInfo >= SKILL_FIRE_CRACKER_VOLLEY_1 &&
 		egInfo.nActionInfo <= SKILL_FIRE_CRACKER_WIDE_VOLLEY_4) ||
@@ -86,12 +87,14 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				if(pTarget == NULL )
 				{
 					pEffect->SetLink( egInfo.nActionInfo, NULL );
+					generated = true;
 				} else
 				{
 					if( i == 1 )
 					{
 						pEffect->SetLink( egInfo.nActionInfo, pTarget );
 						pTarget->Set( tx[i], egInfo.y0, tz[i], egInfo.creatureID );
+						generated = true;
 					} else
 					{
 						MEffectTarget *pEffectTarget = new MEffectTarget( *pTarget );
@@ -101,7 +104,7 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 			}
 		}
-		return true;
+		return generated;
 	}
 	else
 	if(egInfo.nActionInfo == SKILL_FIRE_CRACKER_STORM)
@@ -157,12 +160,14 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				if(pTarget == NULL )
 				{
 					pEffect->SetLink( egInfo.nActionInfo, NULL );
+					generated = true;
 				} else
 				{
 					if( i == 1 )
 					{
 						pEffect->SetLink( egInfo.nActionInfo, pTarget );
 						pTarget->Set( tx[i], egInfo.y0, tz[i], egInfo.creatureID );
+						generated = true;
 					} else
 					{
 						MEffectTarget *pEffectTarget = new MEffectTarget( *pTarget );
@@ -172,7 +177,7 @@ MRisingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 			}
 		}
-		return true;
+		return generated;
 	}
 	else
 	{

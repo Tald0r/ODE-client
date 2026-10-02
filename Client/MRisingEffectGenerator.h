@@ -33,7 +33,8 @@ class MRisingEffectGenerator : public MEffectGenerator {
 
 		TYPE_EFFECTGENERATORID		GetID()		{ return EFFECTGENERATORID_RISING; }
 
-		// Create the configured rising pattern.
+		// True means the caller target transferred, or (without a target)
+		// at least one shot was accepted.
 		bool	Generate( const EFFECTGENERATOR_INFO& egInfo );
 
 	private:

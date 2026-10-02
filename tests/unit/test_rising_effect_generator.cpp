@@ -3,6 +3,7 @@
 #include "MLinearEffect.h"
 #include "SkillDef.h"
 
+#include <bit>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -416,4 +417,113 @@ TEST(RisingEffectGenerator, FiniteCountsRetainTheirAbsoluteClockWrap)
 	CHECK(!effects.front()->Update());
 	frameNow = 0;
 	CHECK(effects.front()->Update()); CHECK_EQ(22, effects.front()->GetPixelZ());
+}
+
+TEST(RisingEffectGenerator, EveryPatternAcceptanceMaskReportsOriginalTargetTransfer)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	for (const auto action : {SKILL_FIRE_CRACKER_VOLLEY_1, SKILL_FIRE_CRACKER_STORM})
+	{
+		const int count = action == SKILL_FIRE_CRACKER_STORM ? 4 : 3;
+		for (unsigned mask = 0; mask < (1u << count); ++mask)
+		{
+			submissions = 0; nextLight = 7; acceptMask = mask;
+			slots.clear(); removedTargets.clear();
+			auto target = Target(); auto info = Info(action); info.pEffectTarget = target.get();
+			const bool transferred = generator.Generate(info);
+			const bool expected = (mask & 2u) != 0;
+			CHECK_EQ(expected, transferred);
+			CHECK_EQ(count, submissions);
+			CHECK_EQ(std::popcount(mask), effects.size());
+			int owners = 0;
+			for (const auto& effect : effects)
+				if (effect->GetEffectTarget() == target.get()) ++owners;
+			CHECK_EQ(expected ? 1 : 0, owners);
+			// Red-test cleanup follows actual ownership, even if the return value lies.
+			if (owners) target.release();
+			else CHECK_EQ(999, target->GetZ());
+			effects.clear(); target.reset();
+			CHECK_EQ(std::popcount(mask) + (expected ? 0 : 1), removedTargets.size());
+		}
+	}
+}
+
+TEST(RisingEffectGenerator, TargetlessPatternsReportWhetherAnyShotWasAccepted)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	for (const auto action : {SKILL_FIRE_CRACKER_VOLLEY_1, SKILL_FIRE_CRACKER_STORM})
+	{
+		const int count = action == SKILL_FIRE_CRACKER_STORM ? 4 : 3;
+		for (unsigned mask = 0; mask < (1u << count); ++mask)
+		{
+			submissions = 0; nextLight = 7; acceptMask = mask;
+			CHECK_EQ(mask != 0, generator.Generate(Info(action)));
+			CHECK_EQ(count, submissions);
+			CHECK_EQ(std::popcount(mask), effects.size());
+			effects.clear();
+		}
+	}
+}
+
+TEST(RisingEffectGenerator, LosingTheQueueBeforeIndexOneLeavesTheOriginalWithTheCaller)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const MRisingEffectHost disappearing{
+		.Sprite = host.Sprite,
+		.Queue = [](std::unique_ptr<MEffect> effect) {
+			const bool accepted = host.Queue(std::move(effect));
+			MRisingEffectGenerator::SetHost(nullptr);
+			return accepted;
+		},
+	};
+	MRisingEffectGenerator::SetHost(&disappearing);
+	auto target = Target(); auto info = Info(SKILL_FIRE_CRACKER_VOLLEY_1);
+	info.pEffectTarget = target.get();
+	CHECK(!generator.Generate(info));
+	CHECK_EQ(1, effects.size()); CHECK_EQ(1, submissions);
+	CHECK(effects.front()->GetEffectTarget() != target.get());
+	CHECK_EQ(999, target->GetZ());
+	effects.clear(); target.reset();
+	CHECK(removedTargets == std::vector<int>({73, 73}));
+}
+
+TEST(RisingEffectGenerator, LosingTheQueueAfterIndexOneRetainsItsCompletedTransfer)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const MRisingEffectHost disappearing{
+		.Sprite = host.Sprite,
+		.Queue = [](std::unique_ptr<MEffect> effect) {
+			const bool accepted = host.Queue(std::move(effect));
+			if (submissions == 2) MRisingEffectGenerator::SetHost(nullptr);
+			return accepted;
+		},
+	};
+	MRisingEffectGenerator::SetHost(&disappearing);
+	auto target = Target(); auto info = Info(SKILL_FIRE_CRACKER_STORM);
+	info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ(2, effects.size()); CHECK_EQ(2, submissions);
+	CHECK(effects[1]->GetEffectTarget() == info.pEffectTarget);
+	effects.clear();
+	CHECK(removedTargets == std::vector<int>({73, 73}));
+}
+
+TEST(RisingEffectGenerator, MissingPatternQueuesLeaveTargetsAvailableForCallerCleanup)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const MRisingEffectHost spriteOnly{.Sprite = host.Sprite};
+	MRisingEffectGenerator::SetHost(&spriteOnly);
+	for (const auto action : {SKILL_FIRE_CRACKER_VOLLEY_1, SKILL_FIRE_CRACKER_STORM})
+	{
+		auto target = Target(); auto info = Info(action); info.pEffectTarget = target.get();
+		const auto destroyed = removedTargets.size();
+		CHECK(!generator.Generate(info)); CHECK_EQ(destroyed, removedTargets.size());
+		CHECK_EQ(999, target->GetZ()); CHECK(target->GetResult() != nullptr);
+	}
+	CHECK(effects.empty()); CHECK_EQ(0, submissions);
 }
