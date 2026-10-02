@@ -99,11 +99,13 @@ draws and advances with the frame number), and the login world/server metadata
 and selection (`CServerInformation`, with `ApplyWorldList` and `ApplyServerList`
 consuming login packets; their handlers keep UI and mode changes), callback
 dispatch (`MFunctionManager`, inherited by status reactions and keyboard
-accelerators), and the player/view request mode (`MRequestMode`); with the
+accelerators), the player/view request mode (`MRequestMode`), and the fixed-point
+trigonometry and steering in `MathTable`, used by orbit, parabola and homing
+effects; with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
-4.16, 4.17, 4.18, 4.19 and 4.20),
+4.16, 4.17, 4.18, 4.19, 4.20 and 4.21),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

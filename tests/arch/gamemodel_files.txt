@@ -333,3 +333,8 @@ Client/MFunctionManager.cpp
 Client/MFunctionManager.h
 Client/MRequestMode.cpp
 Client/MRequestMode.h
+
+# Fixed-point trigonometry and steering used by orbit, parabola and homing
+# effects (task 4.21). The initial move preserves both files byte-for-byte.
+Client/MathTable.cpp
+Client/MathTable.h
