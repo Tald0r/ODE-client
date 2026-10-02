@@ -285,8 +285,14 @@ MEffect::RefreshLight()
 bool
 MEffect::IsEnd() const
 {
+	return !IsBeforeFrame(m_EndFrame);
+}
+
+bool
+MEffect::IsBeforeFrame(DWORD deadline) const
+{
 	DWORD now;
-	return !ReadCurrentFrame(now) || EffectTiming::IsEnd(now);
+	return ReadCurrentFrame(now) && now < deadline;
 }
 
 void
