@@ -2016,9 +2016,14 @@ rounds settled* for the host rules). Test fixtures share
   > extending an earlier deadline. Link deadlines stay independent. Clock
   > and lighting come from the base host; alpha light uses the view's existing
   > bounds checks. Absolute unsigned clock comparisons and wrap remain.
+  > Base pixel getters and sector projection saturate at integer bounds;
+  > NaN projects to zero. Target facing uses the same bounded base getters,
+  > preserving stored-position semantics when display getters are overridden.
+  > Float motion state and ordinary truncation remain unchanged.
   > R1 is 409 Windows / 407 Ninja.
-  - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
-    `tests/unit/test_linear_effect.cpp`, using production linear effects.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1,
+    `tests/unit/test_linear_effect.cpp` and `tests/unit/test_effect_base.cpp`,
+    using production linear and base effects.
 
 ## Phase 5 — Long tail
 

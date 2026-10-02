@@ -41,7 +41,7 @@ MLinearEffect::SetTarget(int x, int y, int z, WORD stepPixel)
 {
 	SetLinearTarget(m_PixelX, m_PixelY, m_PixelZ, x, y, z, stepPixel);
 	// 이동하는 방향 설정
-	m_Direction = SelectFacingDirection((int)m_PixelX, (int)m_PixelY, (int)m_TargetX, (int)m_TargetY);
+	m_Direction = SelectFacingDirection(MEffect::GetPixelX(), MEffect::GetPixelY(), m_TargetX, m_TargetY);
 	m_StepPixel = stepPixel;
 }
 

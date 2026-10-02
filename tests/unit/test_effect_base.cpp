@@ -570,3 +570,72 @@ TEST(EffectBase, OwningEffectsCannotBeImplicitlyCopied)
 	CHECK(!std::is_copy_constructible_v<MEffect>);
 	CHECK(!std::is_copy_assignable_v<MEffect>);
 }
+
+TEST(EffectBase, MaximumIntegerPixelsRemainRepresentableAfterFloatStorage)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	const int low = (std::numeric_limits<int>::min)();
+	MEffect effect(BLT_EFFECT);
+	effect.SetPixelPosition(high, high, high);
+	CHECK_EQ(high, effect.GetPixelX());
+	CHECK_EQ(high, effect.GetPixelY());
+	CHECK_EQ(high, effect.GetPixelZ());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(high / TILE_X), effect.GetX());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(high / TILE_Y), effect.GetY());
+	effect.SetPixelPosition(low, low, low);
+	CHECK_EQ(low, effect.GetPixelX());
+	CHECK_EQ(low, effect.GetPixelY());
+	CHECK_EQ(low, effect.GetPixelZ());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(low / TILE_X), effect.GetX());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(low / TILE_Y), effect.GetY());
+}
+
+TEST(EffectBase, OversizedAndInfinitePixelsSaturateBeforeProjection)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	const int low = (std::numeric_limits<int>::min)();
+	EffectProbe effect(BLT_EFFECT);
+	effect.SetSubpixel(std::numeric_limits<float>::infinity(),
+		-std::numeric_limits<float>::infinity(), (std::numeric_limits<float>::max)());
+	CHECK_EQ(high, effect.GetPixelX());
+	CHECK_EQ(low, effect.GetPixelY());
+	CHECK_EQ(high, effect.GetPixelZ());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(high / TILE_X), effect.GetX());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(low / TILE_Y), effect.GetY());
+	effect.SetSubpixel(-(std::numeric_limits<float>::max)(),
+		(std::numeric_limits<float>::max)(), -std::numeric_limits<float>::infinity());
+	CHECK_EQ(low, effect.GetPixelX());
+	CHECK_EQ(high, effect.GetPixelY());
+	CHECK_EQ(low, effect.GetPixelZ());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(low / TILE_X), effect.GetX());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(high / TILE_Y), effect.GetY());
+}
+
+TEST(EffectBase, UnorderedPixelsProjectToTheOrigin)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT);
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	effect.SetSubpixel(nan, nan, nan);
+	CHECK_EQ(0, effect.GetPixelX());
+	CHECK_EQ(0, effect.GetPixelY());
+	CHECK_EQ(0, effect.GetPixelZ());
+	CHECK_EQ(0, effect.GetX());
+	CHECK_EQ(0, effect.GetY());
+}
+
+TEST(EffectBase, PixelProjectionPreservesTheLargestInRangeFloatsAndHeightSetter)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT);
+	effect.SetSubpixel(2147483520.0f, -2147483520.0f, -0.75f);
+	CHECK_EQ(2147483520, effect.GetPixelX());
+	CHECK_EQ(-2147483520, effect.GetPixelY());
+	CHECK_EQ(0, effect.GetPixelZ());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(2147483520 / TILE_X), effect.GetX());
+	CHECK_EQ(static_cast<TYPE_SECTORPOSITION>(-2147483520 / TILE_Y), effect.GetY());
+	effect.SetZ((std::numeric_limits<int>::max)());
+	CHECK_EQ((std::numeric_limits<int>::max)(), effect.GetPixelZ());
+}

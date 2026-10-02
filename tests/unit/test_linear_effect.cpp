@@ -395,3 +395,38 @@ TEST(LinearEffect, LinkDelayAndWaitDeadlinesDoNotControlMovement)
 	CHECK(effect.IsSkipDraw());
 	CHECK_EQ(100, effect.GetEndLinkFrame());
 }
+
+TEST(LinearEffect, TargetFacingUsesBoundedStoredPixels)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT);
+	effect.SetPixels(std::numeric_limits<float>::infinity(),
+		-std::numeric_limits<float>::infinity(), 0);
+	effect.SetTarget(0, 0, 0, 1);
+	CHECK_EQ(DIRECTION_LEFTDOWN, effect.GetDirection());
+	effect.SetPixels((std::numeric_limits<float>::max)(), 0, 0);
+	effect.SetTarget(0, 0, 0, 1);
+	CHECK_EQ(DIRECTION_LEFT, effect.GetDirection());
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	effect.SetPixels(nan, nan, 0);
+	effect.SetTarget(100, 0, 0, 1);
+	CHECK_EQ(DIRECTION_RIGHT, effect.GetDirection());
+}
+
+TEST(LinearEffect, DisplayOffsetsDoNotChangeStoredPositionProjectionOrFacing)
+{
+	World world;
+	struct DisplayEffect : MLinearEffect
+	{
+		DisplayEffect() : MLinearEffect(BLT_EFFECT) {}
+		int GetPixelX() const override { return 1000; }
+		int GetPixelY() const override { return 1000; }
+	} effect;
+	effect.SetPixelPosition(0, 0, 0);
+	CHECK_EQ(1000, effect.GetPixelX());
+	CHECK_EQ(1000, effect.GetPixelY());
+	CHECK_EQ(0, effect.GetX());
+	CHECK_EQ(0, effect.GetY());
+	effect.SetTarget(0, 100, 0, 1);
+	CHECK_EQ(DIRECTION_DOWN, effect.GetDirection());
+}
