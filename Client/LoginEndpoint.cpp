@@ -1,62 +1,91 @@
 #include "LoginEndpoint.h"
+
+#include <cerrno>
+#include <cstdlib>
+#include <limits>
+
 #include "Properties.h"
 #include "ServerInfoFileParser.h"
-#include "SafeFormat.h"
-
-#include <cstdlib>
 
 namespace {
 
-template<class ReadString, class ReadInt>
-LoginEndpoint Select(ReadString readString, ReadInt readInt, const LoginEndpointOptions& options)
+template<class ReadString>
+std::string Optional(ReadString& readString, const std::string& key)
 {
-	int maxAddress = 1;
 	try {
-		maxAddress = std::atoi(readString("MaxLoginServerAddress").c_str());
+		return readString(key);
 	} catch (NoSuchElementException&) {
+		return {};
 	}
+}
 
-	const int index = options.attempt % maxAddress;
-	LoginEndpoint endpoint;
-	endpoint.port = readInt("LoginServerPort");
-	if (options.launcherPort == 0)
+unsigned int Number(const std::string& text, const char* key, unsigned int minimum, unsigned int maximum)
+{
+	char* end = nullptr;
+	errno = 0;
+	const long long value = std::strtoll(text.c_str(), &end, 10);
+	// Comparing against the full string also rejects embedded NULs. Retain
+	// strtol's existing acceptance of a leading plus sign and whitespace.
+	if (text.empty() || end == text.c_str() || end != text.c_str() + text.size()
+		|| errno == ERANGE || value < minimum || value > maximum)
+		throw ConnectException(std::string("Invalid ") + key);
+	return static_cast<unsigned int>(value);
+}
+
+template<class ReadString>
+unsigned int ConfiguredPort(ReadString& readString, const LoginEndpointOptions& options)
+{
+	const auto countText = Optional(readString, "LoginServerPortNum");
+	const unsigned int count = countText.empty() ? 0 : Number(countText, "LoginServerPortNum", 0, 65535);
+	if (count > 1)
 	{
-		std::string key = "LoginServerAddress";
-		if (index != 0)
+		const auto baseText = Optional(readString, "LoginServerBasePort");
+		if (!baseText.empty())
 		{
-			char number[10];
-			SafeFormat::Format(number, "%d", index);
-			key += number;
-		}
-		endpoint.address = readString(key);
-
-		try {
-			const int portCount = readInt("LoginServerPortNum");
-			if (portCount > 1)
-			{
-				endpoint.port = readInt("LoginServerBasePort")
-					+ (options.random ? options.random() : std::rand()) % portCount;
-			}
-		} catch (NoSuchElementException&) {
+			const unsigned int base = Number(baseText, "LoginServerBasePort", 1, 65535);
+			// Validate the entire interval before addition or drawing a value.
+			if (count > 65536u - base)
+				throw ConnectException("Login server port range exceeds 65535");
+			const int draw = options.random ? options.random() : std::rand();
+			if (draw < 0) throw ConnectException("Invalid login server random value");
+			return base + static_cast<unsigned int>(draw) % count;
 		}
 	}
-	else
-	{
-		endpoint.address = options.launcherAddress;
-		endpoint.port = options.launcherPort;
-	}
+	return Number(Optional(readString, "LoginServerPort"), "LoginServerPort", 1, 65535);
+}
 
+template<class ReadString>
+LoginEndpoint Select(ReadString readString, const LoginEndpointOptions& options)
+{
+	LoginEndpoint endpoint;
 	if (options.hostOverride && !options.hostOverride->empty())
 		endpoint.address = *options.hostOverride;
-	if (options.portOverride)
+	else if (options.launcherPort != 0)
+		endpoint.address = options.launcherAddress;
+	else
 	{
-		char* end = nullptr;
-		const long value = std::strtol(options.portOverride->c_str(), &end, 10);
-		if (options.portOverride->empty() || *end || value < 1 || value > 65535)
-			throw ConnectException("Invalid DARKEDEN_LOGIN_PORT");
-		endpoint.port = static_cast<unsigned int>(value);
+		const auto countText = Optional(readString, "MaxLoginServerAddress");
+		const unsigned int count = countText.empty() ? 1 : Number(countText,
+			"MaxLoginServerAddress", 1, (std::numeric_limits<int>::max)());
+		const auto index = options.attempt % count;
+		const auto key = index == 0 ? std::string("LoginServerAddress")
+			: "LoginServerAddress" + std::to_string(index);
+		endpoint.address = Optional(readString, key);
 	}
+
+	if (options.portOverride)
+		endpoint.port = Number(*options.portOverride, "DARKEDEN_LOGIN_PORT", 1, 65535);
+	else if (options.launcherPort != 0)
+	{
+		if (options.launcherPort > 65535) throw ConnectException("Invalid launcher login port");
+		endpoint.port = options.launcherPort;
+	}
+	else
+		endpoint.port = ConfiguredPort(readString, options);
+
 	if (endpoint.address.empty()) throw ConnectException("Login server address is empty");
+	if (endpoint.address.find('\0') != std::string::npos)
+		throw ConnectException("Login server address contains a NUL byte");
 	return endpoint;
 }
 
@@ -64,13 +93,11 @@ LoginEndpoint Select(ReadString readString, ReadInt readInt, const LoginEndpoint
 
 LoginEndpoint SelectLoginEndpoint(const Properties& config, const LoginEndpointOptions& options)
 {
-	return Select([&](const std::string& key) { return config.getProperty(key); },
-		[&](const std::string& key) { return config.getPropertyInt(key); }, options);
+	return Select([&](const std::string& key) { return config.getProperty(key); }, options);
 }
 
 LoginEndpoint SelectLoginEndpoint(ServerInfoFileParser& config, int dimension,
 	const LoginEndpointOptions& options)
 {
-	return Select([&](const std::string& key) { return config.getProperty(dimension, key); },
-		[&](const std::string& key) { return config.getPropertyInt(dimension, key); }, options);
+	return Select([&](const std::string& key) { return config.getProperty(dimension, key); }, options);
 }

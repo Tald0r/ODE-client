@@ -1942,7 +1942,7 @@ InitSocket()
 		// Address 골라서 접속하기
 		//---------------------------------------------------------
 		// 최근에 접속시도를 했던 서버 주소 번호..
-		static int previousTryServer = 0;
+		static std::uint64_t previousTryServer = 0;
 
 		{
 			try {
