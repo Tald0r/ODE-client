@@ -1815,14 +1815,18 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_music_selection.cpp`, using the production selector and
     music table with real resource-string encoding.
 
-- [ ] **4.34 Delayed sound scheduling:** sound records, thunder selection
+- [x] **4.34 Delayed sound scheduling:** sound records, thunder selection
   and `DelayedSoundQueue` compile in `gamemodel`.
-  > **Status:** in progress (callback lifetime checks).
+  > **Status:** done (2026-10-02).
   > `SetLightning` supplies the player position and frame timestamp.
   > `MZone` owns queued records as values and supplies playback during its
   > update, keeping ambient sounds and propeller logic. The one-second
   > thunder threshold, insertion order and strict deadline comparison are
-  > preserved; absent playback still consumes ready sounds. R1 is 417
+  > preserved; absent playback still consumes ready sounds. Each ready record
+  > is consumed before playback and remains readable through callbacks that
+  > append, clear, recursively update or throw. Callbacks must keep the queue
+  > alive. Normal dispatch scans the list once; callback mutations restart
+  > traversal. R1 is 417
   > Windows / 415 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_delayed_sounds.cpp`, using real records and queue dispatch.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SoundNode.h"
+#include <cstdint>
 #include <functional>
 #include <list>
 
@@ -19,8 +20,12 @@ public:
 	std::size_t GetSize() const { return m_Sounds.size(); }
 	// Preserve insertion order among ready sounds. An exact deadline waits
 	// until a later frame, matching the zone's strict time comparison.
+	// Consume each record before playback, even if it throws. Callbacks may
+	// append, clear or recursively update, but must keep the queue alive.
+	// The supplied record remains valid only for the duration of the callback.
 	void Update(MonotonicClock::TimePoint now, const Play& play);
 
 private:
 	std::list<SOUND_NODE> m_Sounds;
+	std::uint64_t m_Revision = 0;
 };

@@ -3,6 +3,7 @@
 #include "SoundDef.h"
 
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace {
@@ -200,4 +201,141 @@ TEST(DelayedSounds, ABackwardsFrameDoesNotPlayOrReschedulePendingSounds)
 	CHECK_EQ(0, played); CHECK_EQ(1, sounds.GetSize());
 	sounds.Update(Time(1101), play);
 	CHECK_EQ(1, played); CHECK_EQ(0, sounds.GetSize());
+}
+
+TEST(DelayedSounds, PlaybackSeesOnlyTheSoundsThatRemainPending)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2));
+	sounds.Update(Time(1001), [&](const SOUND_NODE& sound) {
+		CHECK_EQ(sound.GetSoundID() == 1 ? 1 : 0, sounds.GetSize());
+	});
+}
+
+TEST(DelayedSounds, ThrowingPlaybackConsumesItsRecordAndKeepsLaterSounds)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2)); sounds.Add(Sound(3, 1000));
+	bool threw = false;
+	try
+	{
+		sounds.Update(Time(1001), [](const SOUND_NODE&) { throw std::runtime_error("playback failed"); });
+	}
+	catch (const std::runtime_error&) { threw = true; }
+	CHECK(threw); CHECK_EQ(2, sounds.GetSize());
+	std::vector<TYPE_SOUNDID> played;
+	sounds.Update(Time(1001), [&](const SOUND_NODE& sound) { played.push_back(sound.GetSoundID()); });
+	CHECK(played == std::vector<TYPE_SOUNDID>({2}));
+	CHECK_EQ(1, sounds.GetSize());
+}
+
+TEST(DelayedSounds, PlaybackCanClearTheQueueWithoutInvalidatingItsRecord)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2));
+	int played = 0;
+	sounds.Update(Time(1001), [&](const SOUND_NODE& sound) {
+		++played;
+		sounds.Clear();
+		CHECK_EQ(1, sound.GetSoundID());
+		CHECK_EQ(11, sound.GetX()); CHECK_EQ(21, sound.GetY());
+	});
+	CHECK_EQ(1, played); CHECK_EQ(0, sounds.GetSize());
+}
+
+TEST(DelayedSounds, PlaybackCanReplaceTheQueueWithReadyAndFutureSounds)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2));
+	std::vector<TYPE_SOUNDID> played;
+	auto play = [&](const SOUND_NODE& sound) {
+		played.push_back(sound.GetSoundID());
+		if (sound.GetSoundID() == 1)
+		{
+			sounds.Clear();
+			sounds.Add(Sound(3)); sounds.Add(Sound(4, 100));
+			CHECK_EQ(1, sound.GetSoundID());
+		}
+	};
+	sounds.Update(Time(1001), play);
+	CHECK(played == std::vector<TYPE_SOUNDID>({1, 3})); CHECK_EQ(1, sounds.GetSize());
+	sounds.Update(Time(1101), play);
+	CHECK(played == std::vector<TYPE_SOUNDID>({1, 3, 4})); CHECK_EQ(0, sounds.GetSize());
+}
+
+TEST(DelayedSounds, RecursiveUpdatesDoNotReplayTheActiveRecord)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2)); sounds.Add(Sound(3));
+	std::vector<TYPE_SOUNDID> played;
+	DelayedSoundQueue::Play play;
+	bool recursed = false;
+	play = [&](const SOUND_NODE& sound) {
+		played.push_back(sound.GetSoundID());
+		if (!recursed)
+		{
+			recursed = true;
+			sounds.Update(Time(1001), play);
+			CHECK_EQ(1, sound.GetSoundID());
+		}
+	};
+	sounds.Update(Time(1001), play);
+	CHECK(played == std::vector<TYPE_SOUNDID>({1, 2, 3}));
+	CHECK_EQ(0, sounds.GetSize());
+}
+
+TEST(DelayedSounds, ARecursiveLaterFrameCanConsumeTheOuterUpdatesFutureSounds)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2, 100)); sounds.Add(Sound(3, 200));
+	std::vector<TYPE_SOUNDID> played;
+	DelayedSoundQueue::Play play;
+	play = [&](const SOUND_NODE& sound) {
+		played.push_back(sound.GetSoundID());
+		if (sound.GetSoundID() == 1) sounds.Update(Time(1300), play);
+	};
+	sounds.Update(Time(1001), play);
+	CHECK(played == std::vector<TYPE_SOUNDID>({1, 2, 3}));
+	CHECK_EQ(0, sounds.GetSize());
+}
+
+TEST(DelayedSounds, TheOuterUpdateRecoversAfterACaughtRecursivePlaybackException)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2)); sounds.Add(Sound(3));
+	std::vector<TYPE_SOUNDID> played;
+	DelayedSoundQueue::Play play;
+	bool caught = false;
+	play = [&](const SOUND_NODE& sound) {
+		played.push_back(sound.GetSoundID());
+		if (sound.GetSoundID() == 1)
+		{
+			try { sounds.Update(Time(1001), play); }
+			catch (const std::runtime_error&) { caught = true; }
+		}
+		else if (sound.GetSoundID() == 2) throw std::runtime_error("nested playback failed");
+	};
+	sounds.Update(Time(1001), play);
+	CHECK(caught);
+	CHECK(played == std::vector<TYPE_SOUNDID>({1, 2, 3}));
+	CHECK_EQ(0, sounds.GetSize());
+}
+
+TEST(DelayedSounds, SoundsAppendedBeforePlaybackThrowsRemainPendingInOrder)
+{
+	DelayedSoundQueue sounds;
+	sounds.Add(Sound(1)); sounds.Add(Sound(2));
+	bool caught = false;
+	try
+	{
+		sounds.Update(Time(1001), [&](const SOUND_NODE&) {
+			sounds.Add(Sound(3));
+			throw std::runtime_error("playback failed after appending");
+		});
+	}
+	catch (const std::runtime_error&) { caught = true; }
+	CHECK(caught); CHECK_EQ(2, sounds.GetSize());
+	std::vector<TYPE_SOUNDID> played;
+	sounds.Update(Time(1001), [&](const SOUND_NODE& sound) { played.push_back(sound.GetSoundID()); });
+	CHECK(played == std::vector<TYPE_SOUNDID>({2, 3})); CHECK_EQ(0, sounds.GetSize());
 }

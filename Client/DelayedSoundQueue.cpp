@@ -3,11 +3,13 @@
 void DelayedSoundQueue::Add(const SOUND_NODE& sound)
 {
 	m_Sounds.push_back(sound);
+	++m_Revision;
 }
 
 void DelayedSoundQueue::Clear()
 {
 	m_Sounds.clear();
+	++m_Revision;
 }
 
 void DelayedSoundQueue::Update(MonotonicClock::TimePoint now, const Play& play)
@@ -17,8 +19,13 @@ void DelayedSoundQueue::Update(MonotonicClock::TimePoint now, const Play& play)
 	{
 		if (sound->GetPlayTime() < now)
 		{
-			if (play) play(*sound);
+			const SOUND_NODE ready = *sound;
 			sound = m_Sounds.erase(sound);
+			const auto revision = ++m_Revision;
+			if (play) play(ready);
+			// Add, Clear and a nested Update may have changed the pending list.
+			// Restart only after such a change; normal playback stays one pass.
+			if (m_Revision != revision) sound = m_Sounds.begin();
 		}
 		else ++sound;
 	}
