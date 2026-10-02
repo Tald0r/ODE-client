@@ -223,7 +223,7 @@ MEffect::SetFrameID(TYPE_FRAMEID FrameID, BYTE max)
 	CAnimationFrame::SetFrameID(FrameID, max);
 
 	// EffectFrame의 밝기에 따라서 빛의 크기를 정한다.
-	m_Light = ReadLight(m_BltType, FrameID, m_Direction, 0);
+	RefreshLight();
 }
 
 //----------------------------------------------------------------------
@@ -270,10 +270,16 @@ MEffect::Update()
 	// Frame을 바꿔준다.
 	NextFrame();
 
-	m_Light = ReadLight(m_BltType, m_FrameID, m_Direction, m_CurrentFrame);
+	RefreshLight();
 		
 	// 계속 Update해도 되는가?
 	return !IsEnd();
+}
+
+void
+MEffect::RefreshLight()
+{
+	m_Light = ReadLight(m_BltType, m_FrameID, m_Direction, m_CurrentFrame);
 }
 
 bool
