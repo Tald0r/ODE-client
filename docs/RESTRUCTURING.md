@@ -2053,6 +2053,9 @@ rounds settled* for the host rules). Test fixtures share
   > horizontal arrival, snapping height before returning without projection,
   > animation or light. HALO attack keeps its turn and skips tracing and
   > arrival. Display facing is not automatically changed during flight.
+  > Height settling compares the magnitude of the step in either direction,
+  > so descent stops at its target. Steering reads bounded base coordinates,
+  > preserving stored-position semantics when display getters are overridden.
   > Lifetime, independent deadlines and unsigned clock comparisons remain;
   > missing clocks stop flight and missing light services return zero.
   > R1 is 406 Windows / 404 Ninja.

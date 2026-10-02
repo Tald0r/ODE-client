@@ -92,6 +92,7 @@ struct EffectProbe : MHomingEffect
 	int TargetZ() const { return m_TargetZ; }
 	float HeightStep() const { return m_StepZ; }
 	float Height() const { return m_PixelZ; }
+	void SetPixels(float x, float y) { m_PixelX = x; m_PixelY = y; }
 };
 
 void Initialize(MHomingEffect& effect)
@@ -547,4 +548,114 @@ TEST(HomingEffect, LinkDelayAndWaitDeadlinesDoNotControlFlight)
 	CHECK(effect.IsDelayFrame());
 	CHECK(effect.IsWaitFrame());
 	CHECK(effect.IsSkipDraw());
+}
+
+TEST(HomingEffect, DescendingHeightStopsAtItsTargetDuringContinuedFlight)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT, 0, 0);
+	Initialize(effect);
+	effect.SetPixelPosition(0, 0, 32);
+	effect.SetTarget(1000, 0, 16, 1);
+	effect.SetLink(SKILL_CLIENT_HALO_ATTACK, nullptr);
+	for (int step = 1; step <= 16; ++step)
+	{
+		CHECK(effect.Update());
+		CHECK_EQ(32 - step, effect.GetPixelZ());
+	}
+	CHECK(effect.HeightStep() == 0.0f);
+	CHECK(effect.Update());
+	CHECK_EQ(16, effect.GetPixelZ());
+	CHECK(effect.Update());
+	CHECK_EQ(16, effect.GetPixelZ());
+	CHECK_EQ(18, effect.GetPixelX());
+}
+
+TEST(HomingEffect, FractionalDescentStopsAtThePlaneWithoutOvershooting)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT, 0, 0);
+	Initialize(effect);
+	effect.SetPixelPosition(0, 0, 1);
+	effect.SetTarget(1000, 0, 0, 1);
+	effect.SetLink(SKILL_CLIENT_HALO_ATTACK, nullptr);
+	for (int step = 0; step < 16; ++step) CHECK(effect.Update());
+	CHECK(effect.Height() == 0.0f);
+	CHECK(effect.HeightStep() == 0.0f);
+	CHECK(effect.Update());
+	CHECK(effect.Height() == 0.0f);
+}
+
+TEST(HomingEffect, SteeringSafelyConvertsRoundedIntegerMaximumPixels)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	for (bool vertical : {false, true})
+	{
+		EffectProbe effect(BLT_EFFECT, 0, 13);
+		Initialize(effect);
+		effect.SetPixelPosition(vertical ? 0 : high, vertical ? high : 0, 0);
+		effect.SetTarget(0, 0, 0, 1);
+		CHECK_EQ(0, effect.TargetX());
+		CHECK_EQ(0, effect.TargetY());
+		CHECK_EQ(high, vertical ? effect.GetPixelY() : effect.GetPixelX());
+	}
+}
+
+TEST(HomingEffect, RetargetingFromAscentToDescentSettlesAtTheNewHeight)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT, 0, 0);
+	Initialize(effect);
+	effect.SetTarget(1000, 0, 16, 1);
+	effect.SetLink(SKILL_CLIENT_HALO_ATTACK, nullptr);
+	for (int step = 0; step < 4; ++step) CHECK(effect.Update());
+	CHECK_EQ(4, effect.GetPixelZ());
+	effect.SetTarget(1000, 0, -12, 1);
+	for (int step = 0; step < 16; ++step) CHECK(effect.Update());
+	CHECK_EQ(-12, effect.GetPixelZ());
+	CHECK(effect.HeightStep() == 0.0f);
+	CHECK(effect.Update());
+	CHECK_EQ(-12, effect.GetPixelZ());
+}
+
+TEST(HomingEffect, NonfiniteStoredPixelsUseTheBaseProjectionWhenTargeting)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	const int low = (std::numeric_limits<int>::min)();
+	const float infinity = std::numeric_limits<float>::infinity();
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	struct Example { float x, y; int targetX, targetY; };
+	for (const auto& e : {Example{infinity, -infinity, high, low},
+		{-infinity, infinity, low, high}, {nan, nan, 0, 0},
+		{(std::numeric_limits<float>::max)(), 0, high, 0}})
+	{
+		EffectProbe effect(BLT_EFFECT, 0, 13);
+		effect.SetPixels(e.x, e.y);
+		effect.SetTarget(e.targetX, e.targetY, 0, 1);
+		CHECK_EQ(e.targetX, effect.TargetX());
+		CHECK_EQ(e.targetY, effect.TargetY());
+		CHECK_EQ(e.targetX, effect.GetPixelX());
+		CHECK_EQ(e.targetY, effect.GetPixelY());
+	}
+}
+
+TEST(HomingEffect, DisplayOffsetsDoNotAlterStoredPositionSteering)
+{
+	World world;
+	struct DisplayEffect : MHomingEffect
+	{
+		DisplayEffect() : MHomingEffect(BLT_EFFECT, 90, 90) {}
+		int GetPixelX() const override { return 1000; }
+		int GetPixelY() const override { return 1000; }
+	} effect;
+	Initialize(effect);
+	effect.SetTarget(192, 0, 0, 64);
+	effect.SetLink(SKILL_CLIENT_HALO_ATTACK, nullptr);
+	CHECK(effect.Update());
+	CHECK_EQ(64, effect.MEffect::GetPixelX());
+	CHECK_EQ(0, effect.MEffect::GetPixelY());
+	CHECK_EQ(1000, effect.GetPixelX());
+	CHECK_EQ(1000, effect.GetPixelY());
 }

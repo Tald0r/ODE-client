@@ -66,7 +66,7 @@ MHomingEffect::TraceCreature()
 void
 MHomingEffect::CalculateAngle()
 {
-	m_Steering.TurnToward(static_cast<int>(m_PixelX), static_cast<int>(m_PixelY),
+	m_Steering.TurnToward(MEffect::GetPixelX(), MEffect::GetPixelY(),
 		m_TargetX, m_TargetY);
 }
 
@@ -170,7 +170,7 @@ MHomingEffect::Update()
 		m_PixelY += step.y;
 		m_PixelZ += m_StepZ;
 
-		if (fabs(m_PixelZ-m_TargetZ) < m_StepZ)
+		if (fabs(m_PixelZ-m_TargetZ) < fabs(m_StepZ))
 		{
 			m_PixelZ = static_cast<float>(m_TargetZ);
 			m_StepZ = 0;
