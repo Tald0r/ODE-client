@@ -298,3 +298,112 @@ TEST(SkipEffect, WrappedEndFramesRetainAbsoluteUnsignedComparison)
 	CHECK(!effect.Update());
 	CHECK_EQ(1, effect.GetFrame());
 }
+
+TEST(SkipEffect, AnUnscheduledEffectDoesNotUnderflowItsEarlyDeadline)
+{
+	World world;
+	MSkipEffect effect(BLT_EFFECT);
+	std::srand(321);
+	const int next = std::rand();
+	std::srand(321);
+	CHECK(!effect.Update());
+	CHECK_EQ(0, effect.GetFrame());
+	CHECK_EQ(0, effect.GetLight());
+	CHECK_EQ(next, std::rand());
+}
+
+TEST(SkipEffect, ShortLifetimesAtStartupAreAlreadyInsideTheEarlyCutoff)
+{
+	World world;
+	for (DWORD start = 0; start < 4; ++start)
+	{
+		frameNow = start;
+		for (DWORD count = 1; count <= 5; ++count)
+		{
+			MSkipEffect effect(BLT_EFFECT);
+			effect.SetCount(count);
+			CHECK(!effect.Update());
+			CHECK_EQ(0, effect.GetFrame());
+		}
+	}
+}
+
+TEST(SkipEffect, NonpositiveSkipValuesBecomeOne)
+{
+	World world;
+	MSkipEffect effect(BLT_EFFECT);
+	for (int divisor : {0, -1, (std::numeric_limits<int>::min)()})
+	{
+		effect.SetSkipValue(divisor);
+		CHECK_EQ(1, effect.GetSkipValue());
+	}
+}
+
+TEST(SkipEffect, ZeroSkipValueCanBeUpdatedWithoutDivisionByZero)
+{
+	World world;
+	MSkipEffect effect(BLT_EFFECT);
+	effect.SetCount(20);
+	effect.SetSkipValue(0);
+	CHECK(effect.Update());
+	CHECK(!effect.IsSkipDraw());
+	CHECK_EQ(1, effect.GetFrame());
+}
+
+TEST(SkipEffect, NegativeSkipValuesKeepFramesVisibleAndConsumeOneRandomValue)
+{
+	World world;
+	for (int divisor : {-1, (std::numeric_limits<int>::min)()})
+	{
+		MSkipEffect effect(BLT_EFFECT);
+		effect.SetCount(20);
+		effect.SetSkipValue(divisor);
+		effect.SetDrawSkip(true);
+		std::srand(123);
+		(void)std::rand();
+		const int following = std::rand();
+		std::srand(123);
+		CHECK(effect.Update());
+		CHECK(!effect.IsSkipDraw());
+		CHECK_EQ(following, std::rand());
+	}
+}
+
+TEST(SkipEffect, ShortLifetimesDoNotConsumeRandomnessOrRefreshLight)
+{
+	World world;
+	frameNow = 0;
+	MSkipEffect effect(BLT_EFFECT);
+	effect.SetCount(4);
+	std::srand(123);
+	const int next = std::rand();
+	std::srand(123);
+	lights.clear();
+	CHECK(!effect.Update());
+	CHECK_EQ(next, std::rand());
+	CHECK(lights.empty());
+}
+
+TEST(SkipEffect, TheFirstActiveDeadlineStillStopsAtItsExactCutoff)
+{
+	World world;
+	frameNow = 0;
+	MSkipEffect effect(BLT_EFFECT);
+	effect.SetCount(6);
+	CHECK_EQ(5, effect.GetEndFrame());
+	CHECK(effect.Update());
+	frameNow = 1;
+	CHECK(!effect.Update());
+	CHECK_EQ(1, effect.GetFrame());
+}
+
+TEST(SkipEffect, ZeroCountRetainsTheExistingUnsignedDeadlineConvention)
+{
+	World world;
+	frameNow = 0;
+	MSkipEffect effect(BLT_EFFECT);
+	effect.SetCount(0);
+	CHECK_EQ((std::numeric_limits<DWORD>::max)(), effect.GetEndFrame());
+	CHECK(effect.Update());
+	CHECK_EQ(1, effect.GetFrame());
+}

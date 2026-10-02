@@ -1985,6 +1985,8 @@ rounds settled* for the host rules). Test fixtures share
   > **Status:** done (this commit).
   > Active updates consume one value from the existing C random stream,
   > choose whether to draw, advance animation and refresh alpha lighting.
+  > Nonpositive skip intervals become one, keeping every frame visible. The
+  > early cutoff cannot underflow for unscheduled or short-lived effects.
   > The deadline remains four frames before the stored end frame; position
   > and link deadlines do not control progression. Missing clocks stop
   > updates; the lighting callback retains the view's bounds checks.

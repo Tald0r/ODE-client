@@ -35,7 +35,7 @@ MSkipEffect::~MSkipEffect()
 bool
 MSkipEffect::Update()
 {
-	if (IsBeforeFrame(m_EndFrame-4))
+	if (m_EndFrame >= 4 && IsBeforeFrame(m_EndFrame-4))
 	{
 		if((rand()%m_nSkipValue))
 			SetDrawSkip(true);
