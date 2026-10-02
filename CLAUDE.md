@@ -84,10 +84,11 @@ it), the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
 over `MStringMap`, behind its `MChatHost`), and the creature status array
 (`MStatus`), with `AffectModifyInfo`, which applies a ModifyInfo packet to
 it, and the request/answer mode register (`TempInformation`), and the
-eight packet handlers whose bodies reach only model state (the phone
+ten packet handlers whose bodies reach only model state (the phone
 slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
 `GCRing`; the trade box `GCTradeMoney` and `GCTradeRemoveItem`;
-`GCSystemAvailabilities`; `GCMonsterKillQuestInfo`), which stay in
+`GCSystemAvailabilities`; `GCMonsterKillQuestInfo`; the self-defense target
+roster's `GCAddInjuriousCreature` and `GCRemoveInjuriousCreature`), which stay in
 `Client/PacketHandler`, and `ApplySkillInfo`, the skill-model rebuild
 `GCSkillInfoHandler` runs on its packet (the handler keeps the sweeper
 bonus reset and `SetAvailableSkills`), and the duration conversions
@@ -104,11 +105,12 @@ trigonometry and steering in `MathTable`, used by orbit, parabola and homing
 effects, and dimension-specific login/reconnect configuration
 (`ServerInfoFileParser`), and weather particles and progression (`MWeather`,
 with player origin and viewport dimensions supplied by `MWeatherHost`), and
-login endpoint selection (`SelectLoginEndpoint`, before DNS/connection); with the
+login endpoint selection (`SelectLoginEndpoint`, before DNS/connection), and
+the self-defense target roster (`MJusticeAttackManager`); with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
-4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23 and 4.24),
+4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24 and 4.25),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -127,7 +129,7 @@ include it. The checked formatter (`SafeFormat.h`, `docs/RESTRUCTURING.md`
 task 5.4) is in `basic` for the same reason — the call sites that need it are
 in the executable, in `VS_UI` and in the packet handlers, and `basic` is the
 one library all three link. Game logic compiled straight into the `DarkEden` executable —
-including the packet *handlers* under `Client/PacketHandler/`, all but the eight
+including the packet *handlers* under `Client/PacketHandler/`, all but the ten
 `gamemodel` lists — cannot be linked into
 a test binary. That is a structural limit, and it is the single biggest constraint on
 how work gets verified here.
