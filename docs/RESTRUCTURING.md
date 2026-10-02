@@ -1700,8 +1700,12 @@ rounds settled* for the host rules). Test fixtures share
   > **Status:** done (2026-10-02). Both existing table implementations, headers
   > and globals move unchanged. `MCreature` delegates its selected indexes,
   > lookups and operator-prefix exception to the library, supplying each random
-  > draw and the live tables. Actual creature-name ownership, drawing and chat
-  > presentation remain executable-side. R1 is 425 Windows / 423 Ninja.
+  > draw and the live tables. Empty tables and negative samples select index
+  > zero safely; hallucination indexes retain the tables' full int range.
+  > Missing or empty operator prefixes keep names masked, and unnamed creatures
+  > or missing alias tables are handled without dereferencing null. Actual
+  > creature-name ownership, drawing and chat presentation remain executable-side.
+  > R1 is 425 Windows / 423 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_creature_names.cpp`, using the production tables and
     selection state.

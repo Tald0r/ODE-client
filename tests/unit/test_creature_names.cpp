@@ -299,3 +299,96 @@ TEST(CreatureNames, ImpossibleCountsAndStringLengthsAreRejected)
 		CHECK(levels[0].GetString() == nullptr);
 	}
 }
+
+TEST(CreatureNames, HallucinationSelectionRetainsTheFullTableIndex)
+{
+	MonsterNameTable names;
+	names.m_LastNames.Init(65538);
+	CHECK(names.m_LastNames.Set(1, "Wrapped"));
+	CHECK(names.m_LastNames.Set(65537, "Selected"));
+	CreatureNameSelection selection;
+	selection.SelectHallucinationName(names, 65537);
+	const MString prefix("GM");
+	CHECK(Is(selection.GetHallucinationName("Slayer", prefix, &names), "Selected"));
+}
+
+TEST(CreatureNames, EmptyOperatorPrefixesDoNotExposeActualNames)
+{
+	NameTables tables;
+	CreatureNameSelection selection;
+	selection.SelectHallucinationName(tables.monsters, 1);
+	MString prefix;
+	prefix.Init(0); // Readable empty storage also occurs in an empty resource row.
+	for (const char* name : {"Slayer", ""})
+		CHECK(Is(selection.GetHallucinationName(name, prefix, &tables.monsters), "Wraith"));
+	// A resource string can also carry a leading NUL in a nonzero byte count.
+	CHECK(Load(prefix, Bytes().Text(std::string(1, '\0'))));
+	CHECK(Is(selection.GetHallucinationName("", prefix, &tables.monsters), "Wraith"));
+}
+
+TEST(CreatureNames, NegativeRandomSamplesResetBothSelectionsToZero)
+{
+	NameTables tables;
+	CreatureNameSelection selection;
+	const MString prefix("GM");
+	for (int draw : {-1, -7, std::numeric_limits<int>::min()})
+	{
+		selection.SelectLevelName(tables.levels, 2);
+		selection.SelectHallucinationName(tables.monsters, 2);
+		selection.SelectLevelName(tables.levels, draw);
+		selection.SelectHallucinationName(tables.monsters, draw);
+		CHECK_EQ(0, selection.HasLevelName());
+		CHECK(Is(selection.GetLevelName(tables.levels), ""));
+		CHECK(Is(selection.GetHallucinationName("Slayer", prefix, &tables.monsters), "Shade"));
+	}
+}
+
+TEST(CreatureNames, EmptyLevelTableClearsThePreviousTitle)
+{
+	NameTables tables;
+	CreatureNameSelection selection;
+	selection.SelectLevelName(tables.levels, 2);
+	tables.levels.Release();
+	selection.SelectLevelName(tables.levels, 37);
+	CHECK_EQ(0, selection.HasLevelName());
+	CHECK(selection.GetLevelName(tables.levels) == nullptr);
+}
+
+TEST(CreatureNames, EmptyHallucinationTableUsesTheZeroSelectionOnReload)
+{
+	NameTables tables;
+	CreatureNameSelection selection;
+	selection.SelectHallucinationName(tables.monsters, 2);
+	tables.monsters.m_LastNames.Release();
+	selection.SelectHallucinationName(tables.monsters, 19);
+	const MString prefix("GM");
+	CHECK(selection.GetHallucinationName("Slayer", prefix, &tables.monsters) == nullptr);
+	CHECK(Load(tables.monsters, Bytes().Group({}).Group({}).Group({"First", "Second"})));
+	CHECK(Is(selection.GetHallucinationName("Slayer", prefix, &tables.monsters), "First"));
+}
+
+TEST(CreatureNames, MissingOperatorPrefixKeepsTheHallucinationName)
+{
+	NameTables tables;
+	CreatureNameSelection selection;
+	selection.SelectHallucinationName(tables.monsters, 2);
+	const MString missingPrefix;
+	CHECK(Is(selection.GetHallucinationName("Slayer", missingPrefix, &tables.monsters), "Specter"));
+}
+
+TEST(CreatureNames, AnUnnamedCreatureCanUseItsSelectedHallucinationName)
+{
+	NameTables tables;
+	CreatureNameSelection selection;
+	selection.SelectHallucinationName(tables.monsters, 1);
+	const MString prefix("GM");
+	CHECK(Is(selection.GetHallucinationName(nullptr, prefix, &tables.monsters), "Wraith"));
+}
+
+TEST(CreatureNames, MissingHallucinationTableDoesNotRevealTheActualName)
+{
+	CreatureNameSelection selection;
+	const MString prefix("GM");
+	CHECK(selection.GetHallucinationName("Slayer", prefix, nullptr) == nullptr);
+	CHECK(selection.GetHallucinationName(nullptr, prefix, nullptr) == nullptr);
+}

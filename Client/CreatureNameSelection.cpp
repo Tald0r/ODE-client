@@ -2,14 +2,23 @@
 #include "MonsterNameTable.h"
 #include <cstring>
 
+namespace {
+
+int SelectIndex(int size, int randomValue)
+{
+	return size > 0 && randomValue >= 0 ? randomValue % size : 0;
+}
+
+} // namespace
+
 void CreatureNameSelection::SelectLevelName(const MLevelNameTable& names, int randomValue)
 {
-	m_LevelName = randomValue % names.GetSize();
+	m_LevelName = SelectIndex(names.GetSize(), randomValue);
 }
 
 void CreatureNameSelection::SelectHallucinationName(const MonsterNameTable& names, int randomValue)
 {
-	m_HallucinationName = static_cast<std::uint16_t>(randomValue % names.GetLastNameSize());
+	m_HallucinationName = SelectIndex(names.GetLastNameSize(), randomValue);
 }
 
 const char* CreatureNameSelection::GetLevelName(const MLevelNameTable& names) const
@@ -20,7 +29,10 @@ const char* CreatureNameSelection::GetLevelName(const MLevelNameTable& names) co
 const char* CreatureNameSelection::GetHallucinationName(const char* actualName,
 	const MString& operatorPrefix, const MonsterNameTable* names) const
 {
-	if (std::strncmp(actualName, operatorPrefix.GetString(), operatorPrefix.GetLength()) == 0)
+	const char* prefix = operatorPrefix.GetString();
+	if (actualName != nullptr && prefix != nullptr && prefix[0] != '\0'
+		&& operatorPrefix.GetLength() != 0
+		&& std::strncmp(actualName, prefix, operatorPrefix.GetLength()) == 0)
 		return actualName;
-	return names->GetLastName(m_HallucinationName);
+	return names == nullptr ? nullptr : names->GetLastName(m_HallucinationName);
 }
