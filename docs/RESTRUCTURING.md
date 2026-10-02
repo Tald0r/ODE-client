@@ -1839,8 +1839,8 @@ rounds settled* for the host rules). Test fixtures share
   > Missing zone metadata or position skips random playback but advances its
   > timer. Empty sound lists retain the null-ID request and coordinate draws.
   > The scheduler uses the existing random sequence, strict deadlines,
-  > 10–14 second initial delay and 6–15 second recurring interval. R1 stays
-  > 417 Windows / 415 Ninja.
+  > 10–14 second initial delay and 6–15 second recurring interval. Random
+  > position offsets saturate at the int limits. R1 stays 417 Windows / 415 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_ambient_sounds.cpp`, using the production scheduler and
     zone records with explicit random draws.

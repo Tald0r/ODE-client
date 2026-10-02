@@ -37,6 +37,7 @@ public:
 	// A missing generator uses rand(). Missing metadata or position skips
 	// random playback but still schedules the next attempt. Empty sound lists
 	// retain the legacy SOUNDID_NULL request and its coordinate draws.
+	// Offsets saturate at the int coordinate limits.
 	AmbientSoundUpdate Update(MonotonicClock::TimePoint now, int zoneID,
 		const ZONETABLE_INFO* zone, std::optional<AmbientSoundPosition> player,
 		const Random& random = {});

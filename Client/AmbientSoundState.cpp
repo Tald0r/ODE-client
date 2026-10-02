@@ -1,7 +1,20 @@
 #include "AmbientSoundState.h"
 #include "MZoneTable.h"
 #include "SoundDef.h"
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
+
+namespace {
+int OffsetCoordinate(int position, int offset)
+{
+	const auto value = static_cast<std::int64_t>(position) + offset;
+	return static_cast<int>(std::clamp(value,
+		static_cast<std::int64_t>((std::numeric_limits<int>::min)()),
+		static_cast<std::int64_t>((std::numeric_limits<int>::max)())));
+}
+}
 
 unsigned AmbientSoundState::Draw(const Random& random)
 {
@@ -45,7 +58,8 @@ AmbientSoundUpdate AmbientSoundState::Update(MonotonicClock::TimePoint now, int 
 				const int xDistance = static_cast<int>(Draw(random) % 15) + 13;
 				const int ySign = Draw(random) % 2 ? 1 : -1;
 				const int yDistance = static_cast<int>(Draw(random) % 12) + 10;
-				actions.play = {id, false, player->x + xSign * xDistance, player->y + ySign * yDistance};
+				actions.play = {id, false, OffsetCoordinate(player->x, xSign * xDistance),
+					OffsetCoordinate(player->y, ySign * yDistance)};
 			}
 			next.m_NextSound = now + MonotonicClock::Millis(((Draw(random) % 10) + 6) * 1000);
 		}

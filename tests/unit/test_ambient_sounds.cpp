@@ -338,3 +338,51 @@ TEST(AmbientSoundMetadata, SuppliedDrawsSelectByOrdinalIncludingDuplicateAndNull
 	zone.SoundIDList = {43};
 	CHECK_EQ(43, zone.GetRandomSoundID());
 }
+
+TEST(AmbientSounds, PositiveOffsetsSaturateAtTheCoordinateLimit)
+{
+	const int high = (std::numeric_limits<int>::max)();
+	AmbientSoundState state;
+	ZONETABLE_INFO zone;
+	zone.SoundIDList = {41};
+	Draws draws{0, 1, 14, 1, 11, 9};
+	Playback(state.Update(Time(1000), 61, &zone, AmbientSoundPosition{high - 5, high}, draws.Random()),
+		41, false, high, high);
+	CHECK_EQ(16000, Deadline(state));
+}
+
+TEST(AmbientSounds, NegativeOffsetsSaturateAtTheCoordinateLimit)
+{
+	const int low = (std::numeric_limits<int>::min)();
+	AmbientSoundState state;
+	ZONETABLE_INFO zone;
+	zone.SoundIDList = {41};
+	Draws draws{0, 0, 14, 0, 11, 0};
+	Playback(state.Update(Time(1000), 61, &zone, AmbientSoundPosition{low, low + 5}, draws.Random()),
+		41, false, low, low);
+	CHECK_EQ(7000, Deadline(state));
+}
+
+TEST(AmbientSounds, InwardOffsetsAtTheCoordinateLimitsKeepTheirFullDistance)
+{
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	AmbientSoundState state;
+	ZONETABLE_INFO zone;
+	zone.SoundIDList = {41};
+	Draws draws{0, 1, 14, 0, 11, 0, 0, 0, 14, 1, 11, 0};
+	Playback(state.Update(Time(1000), 61, &zone, AmbientSoundPosition{low, high}, draws.Random()),
+		41, false, low + 27, high - 21);
+	Playback(state.Update(Time(7001), 61, &zone, AmbientSoundPosition{high, low}, draws.Random()),
+		41, false, high - 27, low + 21);
+}
+
+TEST(AmbientSounds, PropellerPlaybackPreservesExtremeCoordinatesWithoutOffsets)
+{
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	AmbientSoundState state;
+	Draws draws{};
+	Playback(state.Update(Time(1000), 2106, nullptr, AmbientSoundPosition{low, high}, draws.Random()),
+		SOUND_WORLD_PROPELLER, true, low, high);
+}
