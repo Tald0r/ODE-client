@@ -2752,7 +2752,7 @@ LoadZoneInfo(int n)
 		ZoneInfoData zoneInfo;
 
 		//------------------------------------------------
-		// size 체크
+		// Parse the complete file before publishing anything to the zone or UI.
 		//------------------------------------------------
 		if (zoneInfo.LoadFromFile(zoneInfoFile, g_pZone->GetWidth(), g_pZone->GetHeight()))
 		{		
@@ -2766,11 +2766,10 @@ LoadZoneInfo(int n)
 
 			DEBUG_ADD_FORMAT("numPortal = %d", numPortal);
 
-			RECT rect;
-				
 			for (int i=0; i<numPortal; i++)
 			{
 				const MPortal& portal = zoneInfo.portals[i];
+				const RECT rect = {portal.GetLeft(), portal.GetTop(), portal.GetRight(), portal.GetBottom()};
 
 				const std::vector<WORD>& zoneID = portal.GetZoneID();
 
@@ -2780,11 +2779,6 @@ LoadZoneInfo(int n)
 
 				for (int i=0; i<numZoneID; i++)
 				{
-					rect.left = portal.GetLeft();
-					rect.top = portal.GetTop();
-					rect.right = portal.GetRight(); 
-					rect.bottom = portal.GetBottom(); 
-
 					DEBUG_ADD_FORMAT("AddPortal. type=%d, zoneID=%d", portal.GetType(), zoneID[i]);
 					
 					g_pZone->AddPortal( portal.GetType(), zoneID[i], rect );
@@ -3027,9 +3021,8 @@ LoadZoneInfo(int n)
 		}
 		else
 		{			
-			DEBUG_ADD_FORMAT("[Error] ZoneInfo Size Mismatch: (%d,%d) != (%d,%d)", 
-									g_pZone->GetWidth(), g_pZone->GetHeight(), 
-									zoneInfo.width, zoneInfo.height );
+			DEBUG_ADD_FORMAT("[Error] Invalid ZoneInfo for zone ID=%d", n);
+			return FALSE;
 		}
 
 		

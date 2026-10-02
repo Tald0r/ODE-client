@@ -75,6 +75,12 @@ Bytes InfoBytes()
 	};
 }
 
+void AppendCount(Bytes& bytes, std::uint32_t count)
+{
+	for (unsigned shift = 0; shift < 32; shift += 8)
+		bytes.push_back(static_cast<unsigned char>(count >> shift));
+}
+
 bool LoadInfo(ZoneInfoData& info, const Bytes& bytes, int width = 291, int height = 564)
 {
 	ZoneInfoFile fixture(bytes);
@@ -373,4 +379,189 @@ TEST(ZoneInfo, CompleteFileCopiesOwnTheirPortalAndSafetyRecords)
 	info.portals.clear();
 	info.safetyZones.clear();
 	CheckInfo(copied);
+}
+
+TEST(ZoneInfo, EveryTruncatedCompleteFileIsRejectedAndPreservesPreviousState)
+{
+	const auto bytes = InfoBytes();
+	for (std::size_t size = 0; size < bytes.size(); ++size)
+	{
+		ZoneInfoData info;
+		CHECK(LoadInfo(info, bytes));
+		CHECK(!LoadInfo(info, Bytes(bytes.begin(), bytes.begin() + size)));
+		CheckInfo(info);
+	}
+}
+
+TEST(ZoneInfo, MismatchedDimensionsPreservePreviousCompleteFile)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	CHECK(!LoadInfo(info, {1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, NegativePortalCountsAreRejectedAndPreservePreviousState)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	CHECK(!LoadInfo(info, {0x23, 1, 0x34, 2, 255, 255, 255, 255, 0, 0, 0, 0}));
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, NegativeSafetyCountsAreRejectedAndPreservePreviousState)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	CHECK(!LoadInfo(info, {0x23, 1, 0x34, 2, 0, 0, 0, 0, 255, 255, 255, 255}));
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, ClosedCompleteFileInputIsRejectedAndPreservesPreviousState)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	std::ifstream input;
+	CHECK(!info.LoadFromFile(input, 291, 564));
+	CHECK(input.fail());
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, CompleteFileInputExceptionsPreservePreviousState)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, InfoBytes()));
+	auto bytes = InfoBytes();
+	bytes.resize(bytes.size() - 1);
+	ZoneInfoFile fixture(bytes);
+	std::ifstream input(fixture.path, std::ios::binary);
+	input.exceptions(std::ios::failbit | std::ios::badbit);
+	bool rejected = false;
+	try { info.LoadFromFile(input, 291, 564); }
+	catch (const std::ios_base::failure&) { rejected = true; }
+	CHECK(rejected);
+	CheckInfo(info);
+}
+
+TEST(ZoneInfo, ZeroDimensionsAreRejectedEvenWhenTheyMatchTheExpectedSize)
+{
+	ZoneInfoData info;
+	CHECK(!LoadInfo(info, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, 0));
+}
+
+TEST(ZoneInfo, FailedCompleteFileSetsTheStreamFailureState)
+{
+	ZoneInfoFile fixture({1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+	std::ifstream input(fixture.path, std::ios::binary);
+	ZoneInfoData info;
+	CHECK(!info.LoadFromFile(input, 291, 564));
+	CHECK(input.fail());
+}
+
+TEST(ZoneInfo, CompleteFileKeepsEachEmptyMultiPortalRectangle)
+{
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, {0x23, 1, 0x34, 2, 2, 0, 0, 0,
+		3, 0, 1, 2, 3, 4, 3, 0, 9, 8, 7, 6, 0, 0, 0, 0}));
+	CHECK_EQ(2, info.portals.size());
+	if (info.portals.size() != 2) return;
+	CHECK(info.portals[0].GetZoneID().empty());
+	CHECK(info.portals[1].GetZoneID().empty());
+	CheckRect(info.portals[0], 1, 2, 3, 4);
+	CheckRect(info.portals[1], 9, 8, 7, 6);
+}
+
+TEST(ZoneInfo, CompleteFileRecordBudgetsAreInclusiveForBothTables)
+{
+	Bytes bytes{0x23, 1, 0x34, 2};
+	AppendCount(bytes, ZoneInfoData::MaxRecords);
+	for (std::uint32_t i = 0; i < ZoneInfoData::MaxRecords; ++i)
+		bytes.insert(bytes.end(), {3, 0, 1, 2, 3, 4});
+	AppendCount(bytes, ZoneInfoData::MaxRecords);
+	for (std::uint32_t i = 0; i < ZoneInfoData::MaxRecords; ++i)
+		bytes.insert(bytes.end(), {0x10, 9, 8, 7, 6});
+	ZoneInfoData info;
+	CHECK(LoadInfo(info, bytes));
+	CHECK_EQ(ZoneInfoData::MaxRecords, info.portals.size());
+	CHECK_EQ(ZoneInfoData::MaxRecords, info.safetyZones.size());
+	if (info.portals.empty() || info.safetyZones.empty()) return;
+	CheckRect(info.portals.back(), 1, 2, 3, 4);
+	CHECK_EQ(0x10, info.safetyZones.back().flag);
+	CHECK_EQ(6, info.safetyZones.back().bottom);
+}
+
+TEST(ZoneInfo, HugeCompleteFileCountsFailBeforeReadingAnyRecord)
+{
+	for (std::uint32_t count : {ZoneInfoData::MaxRecords + 1, 0x7fffffffu, 0x80000000u, 0xffffffffu})
+		for (bool safety : {false, true})
+		{
+			Bytes bytes{0x23, 1, 0x34, 2};
+			if (safety) AppendCount(bytes, 0);
+			AppendCount(bytes, count);
+			bytes.resize(bytes.size() + 10, 0);
+			ZoneInfoFile fixture(bytes);
+			std::ifstream input(fixture.path, std::ios::binary);
+			ZoneInfoData info;
+			CHECK(LoadInfo(info, InfoBytes()));
+			CHECK(!info.LoadFromFile(input, 291, 564));
+			CHECK(input.fail());
+			input.clear();
+			CHECK_EQ(safety ? 12 : 8, input.tellg());
+			CheckInfo(info);
+		}
+}
+
+TEST(ZoneInfo, InBudgetCountsMustFitTheBytesRemainingInTheFile)
+{
+	for (bool safety : {false, true})
+	{
+		Bytes bytes{0x23, 1, 0x34, 2};
+		if (safety) AppendCount(bytes, 0);
+		AppendCount(bytes, 2);
+		if (safety) bytes.insert(bytes.end(), {1, 2, 3, 4, 5});
+		else bytes.insert(bytes.end(), {3, 0, 1, 2, 3, 4, 0, 0, 0, 0});
+		ZoneInfoFile fixture(bytes);
+		std::ifstream input(fixture.path, std::ios::binary);
+		ZoneInfoData info;
+		CHECK(!info.LoadFromFile(input, 291, 564));
+		CHECK(input.fail());
+		input.clear();
+		CHECK_EQ(safety ? 12 : 8, input.tellg());
+		CHECK(info.portals.empty()); CHECK(info.safetyZones.empty());
+	}
+}
+
+TEST(ZoneInfo, CompleteFileByteBudgetIncludesTheTrailerFromTheStartingPosition)
+{
+	for (std::size_t excess : {0, 1})
+	{
+		auto bytes = InfoBytes();
+		bytes.insert(bytes.begin(), 0xee);
+		ZoneInfoFile fixture(bytes);
+		{
+			std::ofstream output(fixture.path, std::ios::binary | std::ios::in);
+			output.seekp(static_cast<std::streamoff>(ZoneInfoData::MaxFileBytes + excess));
+			output.put(0);
+			CHECK(output.good());
+		}
+		std::ifstream input(fixture.path, std::ios::binary);
+		input.seekg(1);
+		ZoneInfoData info;
+		CHECK(LoadInfo(info, InfoBytes()));
+		CHECK_EQ(excess == 0, info.LoadFromFile(input, 291, 564));
+		CHECK_EQ(excess != 0, input.fail());
+		input.clear();
+		CHECK_EQ(excess == 0 ? bytes.size() : 1, input.tellg());
+		CheckInfo(info);
+	}
+}
+
+TEST(ZoneInfo, OutOfRangeExpectedDimensionsCannotMatchByNarrowing)
+{
+	for (int width : {-65245, 65827})
+	{
+		ZoneInfoData info;
+		CHECK(!LoadInfo(info, InfoBytes(), width, 564));
+		CHECK_EQ(0, info.width); CHECK_EQ(0, info.height);
+	}
 }

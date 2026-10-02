@@ -1783,15 +1783,21 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_effect_results.cpp`, using the production queue and targets,
     instrumented action nodes and the real zone table.
 
-- [ ] **4.32 Zone-info loading:** portal records and `ZoneInfoData` parsing
+- [x] **4.32 Zone-info loading:** portal records and `ZoneInfoData` parsing
   compile in `gamemodel`.
-  > **Status:** in progress (complete-file validation).
+  > **Status:** done (2026-10-02).
   > `MPortal` moves unchanged. `GameMain::LoadZoneInfo` consumes `ZoneInfoData`;
   > zone-sector updates, minimap publication and horn NPC creation stay in the
   > executable. Record loads preserve the previous portal on failure; saves
   > reject counts that the format cannot represent before writing. Only
   > `TYPE_MULTI_PORTAL` stores a count, including zero; all other type bytes
-  > carry one destination. R1 is 419 Windows / 417 Ninja.
+  > carry one destination. Complete-file loads validate positive matching
+  > dimensions, every read, remaining bytes and resource budgets (64 MiB from
+  > the current position, 65,536 records per table), then publish atomically.
+  > Failed loads preserve prior data. Opaque flags/types, empty multi-portals,
+  > rectangle coordinates and an unread legacy trailer are preserved. The
+  > live caller skips publication on failure and initializes each minimap
+  > rectangle even for a portal without destinations. R1 is 419 Windows / 417 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_zone_info.cpp`, using production portal records and the
     complete-file reader.
