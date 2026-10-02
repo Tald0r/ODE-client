@@ -63,17 +63,22 @@ MGuidanceEffect::SetTraceCreatureID(TYPE_OBJECTID id)
 // TraceCreature
 //----------------------------------------------------------------------
 bool
-MGuidanceEffect::TraceCreature()
+MGuidanceEffect::TraceCreaturePosition(int& x, int& y, int& z)
 {
-	int x, y, z;
-
-	// Creature가 사라졌을 경우..
 	if (!ReadCreaturePosition(m_CreatureID, x, y, z))
 	{
 		m_CreatureID = OBJECTID_NULL;
 		m_EndFrame = 0;
 		return false;
 	}
+	return true;
+}
+
+bool
+MGuidanceEffect::TraceCreature()
+{
+	int x, y, z;
+	if (!TraceCreaturePosition(x, y, z)) return false;
 
 	// 새로운 목적지 설정
 	MLinearEffect::SetTarget(x, y, z, m_StepPixel);

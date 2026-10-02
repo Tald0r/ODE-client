@@ -237,7 +237,8 @@ check () {
 # 410: randomized draw-skipping effects join gamemodel (4.46).
 # 409: complete linear effects join gamemodel (4.48).
 # 407: creature guidance and chase effects join gamemodel (4.49).
-R1_BASELINE=407
+# 406: complete homing effects join gamemodel (4.50).
+R1_BASELINE=406
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -308,7 +309,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 408: randomized draw-skipping effects join gamemodel (4.46).
 	# 407: complete linear effects join gamemodel (4.48).
 	# 405: creature guidance and chase effects join gamemodel (4.49).
-	R1_NINJA_BASELINE=405
+	# 404: complete homing effects join gamemodel (4.50).
+	R1_NINJA_BASELINE=404
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
