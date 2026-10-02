@@ -500,3 +500,7 @@ Client/MParabolaEffect.h
 # Attached-effect metadata, lifetimes and ordered creature lookup (4.52).
 Client/MAttachEffect.cpp
 Client/MAttachEffect.h
+
+# Complete orbiting attachments composing the model lifecycle and paths (4.53).
+Client/MAttachOrbitEffect.cpp
+Client/MAttachOrbitEffect.h
