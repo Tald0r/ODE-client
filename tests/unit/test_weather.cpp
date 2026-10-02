@@ -2,6 +2,13 @@
 #include "MWeather.h"
 
 #include <initializer_list>
+#include <cstring>
+#include <limits>
+#include <new>
+
+#ifdef WEATHER_EXPECT_UNSIGNED_CHAR
+static_assert(std::numeric_limits<char>::is_signed == !WEATHER_EXPECT_UNSIGNED_CHAR);
+#endif
 
 namespace {
 
@@ -33,9 +40,8 @@ struct HostScope {
 	~HostScope() { MWeather::SetHost(previous); }
 };
 
-// Seed a known phase to isolate progression from the legacy constructor's
-// partially initialized particles. The public start/resize contracts get
-// separate coverage, and constructor fixes follow the extraction.
+// Seed known phases to test transitions and inspect allocated particles
+// independently of the randomized initial lifetime.
 class WeatherProbe : public MWeather {
 public:
 	void Prepare(BYTE count, BYTE phase)
@@ -131,8 +137,6 @@ TEST(Weather, OriginsAreCapturedForEachNewWeatherKind)
 	weather.SetSpot(1);
 	CHECK_EQ(1, environment.originReads);
 	CHECK_EQ(120, weather.GetStartX());
-	// Reusing this initialized one-particle allocation is safe in the
-	// original implementation, even before the constructor follow-up.
 	weather.SetRain(1);
 	CHECK_EQ(500, weather.GetStartX());
 	CHECK_EQ(700, weather.GetStartY());
@@ -317,5 +321,179 @@ TEST(Weather, ZeroCountsDoNotChangeTheCurrentWeather)
 		CHECK_EQ(MWeather::WEATHER_SPOT, weather.GetWeatherType());
 		CHECK_EQ(1, weather.GetSize());
 		CHECK_EQ(count, weather[0].GetCount());
+	}
+}
+
+TEST(MapEffect, FreshParticlesAreInactiveEvenOverNonzeroStorage)
+{
+	alignas(MAP_EFFECT) unsigned char storage[sizeof(MAP_EFFECT)];
+	std::memset(storage, 0xcc, sizeof(storage));
+	auto* effect = new (storage) MAP_EFFECT;
+	CHECK(!effect->IsActive());
+	CHECK_EQ(0, effect->GetCount());
+	CHECK_EQ(0, effect->GetMaxCount());
+	CHECK_EQ(0, effect->GetSpriteID());
+	CheckPosition(*effect, 0, 0);
+	CHECK(!effect->Move());
+	CheckPosition(*effect, 0, 0);
+	effect->~MAP_EFFECT();
+}
+
+TEST(MapEffect, NegativeVelocitiesMoveLeftAndUpOnEitherCharABI)
+{
+	MAP_EFFECT effect;
+	effect.Set(MAP_EFFECT::MAP_EFFECT_FALL, 0, 100, 100, -3, -4, 2);
+	CHECK(effect.Move());
+	CheckPosition(effect, 97, 96);
+	effect.SetSX(-1);
+	effect.SetSY(-2);
+	CHECK(effect.Move());
+	CheckPosition(effect, 96, 94);
+	CHECK(!effect.Move());
+}
+
+TEST(Weather, FreshAndReleasedWeatherStaysIdleWhenStopped)
+{
+	alignas(MWeather) unsigned char storage[sizeof(MWeather)];
+	std::memset(storage, 0xcc, sizeof(storage));
+	auto* weather = new (storage) MWeather;
+	CHECK_EQ(0, weather->GetStartX());
+	CHECK_EQ(0, weather->GetStartY());
+	weather->Stop();
+	weather->Action();
+	CHECK(!weather->IsActive());
+	CHECK_EQ(0, weather->GetSize());
+	weather->Release();
+	CHECK(!weather->IsActive());
+	weather->~MWeather();
+}
+
+TEST(Weather, EveryWeatherKindStartsWithAFullyInitializedFallingParticle)
+{
+	HostScope scope;
+	environment.width = 1;
+	environment.height = 1;
+	for (BYTE kind : {MWeather::WEATHER_RAIN, MWeather::WEATHER_SNOW, MWeather::WEATHER_SPOT})
+	{
+		MWeather weather;
+		Start(weather, kind, 8);
+		CHECK_EQ(1, weather.GetSize());
+		CHECK_EQ(MAP_EFFECT::MAP_EFFECT_FALL, weather[0].GetType());
+		// The old constructor left coordinates indeterminate. The wrong
+		// initial phase proves the failure without inspecting those bytes.
+		if (weather[0].GetType() == MAP_EFFECT::MAP_EFFECT_FALL)
+			CheckPosition(weather[0], 0, 0);
+	}
+}
+
+TEST(Weather, ChangingKindResetsReusedParticlesBeforeGeneratingThem)
+{
+	HostScope scope;
+	MWeather weather;
+	weather.SetSpot(8);
+	for (BYTE kind : {MWeather::WEATHER_RAIN, MWeather::WEATHER_SNOW,
+		MWeather::WEATHER_SPOT, MWeather::WEATHER_RAIN})
+	{
+		Start(weather, kind, 8);
+		CHECK_EQ(1, weather.GetSize());
+		CHECK_EQ(MAP_EFFECT::MAP_EFFECT_FALL, weather[0].GetType());
+	}
+}
+
+TEST(Weather, NewlyActivatedRainAndSnowBeginFallingBeforeTheirLandingSequence)
+{
+	HostScope scope;
+	for (BYTE kind : {MWeather::WEATHER_RAIN, MWeather::WEATHER_SNOW})
+	{
+		WeatherProbe weather;
+		weather.Prepare(8, MAP_EFFECT::MAP_EFFECT_ARRIVE3);
+		Start(weather, kind, 8);
+		for (int frame = 0; frame < 3; ++frame) weather.Action();
+		CHECK_EQ(6, weather.GetSize());
+		for (BYTE i = 1; i < 6; ++i)
+		{
+			// A randomly chosen zero/one-frame fall may already be landing.
+			CHECK(weather[i].GetType() == MAP_EFFECT::MAP_EFFECT_FALL
+				|| weather[i].GetType() == MAP_EFFECT::MAP_EFFECT_ARRIVE1);
+		}
+	}
+}
+
+TEST(Weather, ResizingKeepsExistingParticlesAndOnlyRampsTheNewOnes)
+{
+	HostScope scope;
+	for (BYTE kind : {MWeather::WEATHER_RAIN, MWeather::WEATHER_SNOW, MWeather::WEATHER_SPOT})
+	{
+		WeatherProbe weather;
+		weather.Prepare(8, kind == MWeather::WEATHER_RAIN
+			? MAP_EFFECT::MAP_EFFECT_ARRIVE4 : MAP_EFFECT::MAP_EFFECT_ARRIVE6);
+		Start(weather, kind, 8);
+		for (int frame = 0; frame < 3; ++frame) weather.Action();
+		CHECK_EQ(6, weather.GetSize());
+		for (BYTE i = 0; i < 6; ++i)
+			weather.Particle(i).Set(MAP_EFFECT::MAP_EFFECT_FALL, i + 18,
+				100 + i, 200 + i, 1, 2, 60);
+		Start(weather, kind, 12);
+		CHECK_EQ(6, weather.GetSize());
+		for (BYTE i = 0; i < 6; ++i)
+		{
+			CHECK_EQ(i + 18, weather[i].GetSpriteID());
+			CHECK_EQ(60, weather[i].GetCount());
+			CheckPosition(weather[i], 100 + i, 200 + i);
+		}
+		weather.Action();
+		weather.Action();
+		CHECK_EQ(6, weather.GetSize());
+		weather.Action();
+		CHECK_EQ(11, weather.GetSize());
+		// Snow changes its horizontal velocity while falling, so compare
+		// the preserved lifetime/sprite instead of pinning random motion.
+		CHECK_EQ(57, weather[0].GetCount());
+		CHECK_EQ(18, weather[0].GetSpriteID());
+		Start(weather, kind, 4);
+		CHECK_EQ(4, weather.GetSize());
+		CHECK_EQ(57, weather[0].GetCount());
+		CHECK_EQ(18, weather[0].GetSpriteID());
+		CHECK_EQ(120, weather.GetStartX());
+		CHECK_EQ(240, weather.GetStartY());
+	}
+}
+
+TEST(Weather, StopDuringTheRampIgnoresUnpublishedParticles)
+{
+	HostScope scope;
+	WeatherProbe weather;
+	weather.SetSpot(8);
+	weather.Particle(0).Set(MAP_EFFECT::MAP_EFFECT_FALL, 18, 100, 100, 1, 2, 1);
+	for (BYTE i = 1; i < 8; ++i)
+		weather.Particle(i).Set(MAP_EFFECT::MAP_EFFECT_FALL, 18, 100, 100, 1, 2, 200);
+	CHECK_EQ(1, weather.GetSize());
+	weather.Stop();
+	weather.Action();
+	weather.Action();
+	CHECK(!weather.IsActive());
+	for (BYTE i = 1; i < 8; ++i)
+	{
+		CHECK_EQ(200, weather[i].GetCount());
+		CheckPosition(weather[i], 100, 100);
+	}
+}
+
+TEST(Weather, DensityRampReachesEveryUpperByteBoundaryWithoutWrapping)
+{
+	HostScope scope;
+	for (int count : {251, 252, 253, 254, 255})
+	{
+		MWeather weather;
+		weather.SetSpot(static_cast<BYTE>(count));
+		int previous = weather.GetSize();
+		for (int frame = 0; frame < 600; ++frame)
+		{
+			weather.Action();
+			CHECK(weather.GetSize() >= previous);
+			CHECK(weather.GetSize() <= count);
+			previous = weather.GetSize();
+		}
+		CHECK_EQ(count, weather.GetSize());
 	}
 }

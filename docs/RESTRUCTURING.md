@@ -1635,9 +1635,17 @@ rounds settled* for the host rules). Test fixtures share
   > replaces direct player/viewport reads. A missing player skips a new weather
   > start; absent or invalid dimensions use the existing 800-by-600 defaults.
   > Sound, shadows, weather selection and drawing stay executable-side.
+  > Follow-up tests reproduce uninitialized particles/origins, lost active
+  > counts on resize, premature landing phases, advancing unpublished slots
+  > while stopping, the BYTE density wrap and unsigned-char motion. Particles
+  > now start initialized in a distinct new phase; only published slots are
+  > generated/advanced, resizing preserves survivors and the ramp clamps before
+  > narrowing. Signed velocities work under either plain-char ABI.
   > R1 is 431 Windows / 429 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
-    `tests/unit/test_weather.cpp`, linked against the production library.
+    `tests/unit/test_weather.cpp`, linked against the production library, plus
+    `weather_signed_tests` / `weather_unsigned_tests` rebuilding that same
+    implementation under both char modes.
 
 ## Phase 5 — Long tail
 

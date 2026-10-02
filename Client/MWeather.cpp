@@ -48,10 +48,13 @@ int MWeather::HostHeight()
 //----------------------------------------------------------------------
 MWeather::MWeather()
 {
+	m_StartX			= 0;
+	m_StartY			= 0;
 	m_WeatherType		= WEATHER_NULL;
 	m_nMapEffect		= 0;
 	m_nActiveMapEffect	= 0;
 	m_pMapEffect		= NULL;
+	m_MoreEffectCount	= 0;
 }
 
 MWeather::~MWeather()
@@ -72,9 +75,13 @@ MWeather::~MWeather()
 void
 MWeather::Init(BYTE n)
 {
-	// 이미 잡혀있는 메모리와 같으면 return
-	if (n==m_nMapEffect) 
+	// A new weather kind may reuse the allocation, but never its old phases.
+	if (n==m_nMapEffect)
+	{
+		for (int i = 0; i < n; ++i)
+			m_pMapEffect[i] = MAP_EFFECT();
 		return;
+	}
 
 	// 일단 제거
 	Release();
@@ -90,16 +97,15 @@ MWeather::Init(BYTE n)
 void
 MWeather::Release()
 {
-	// 메모리에서 제거
-	if (m_pMapEffect != NULL)
-	{
-		delete [] m_pMapEffect;
-		m_nMapEffect = 0;
-		m_pMapEffect = NULL;
-		//m_nActiveMapEffect = 0;
-		m_nActiveMapEffect = 0;
-		m_WeatherType	= WEATHER_NULL;
-	}
+	// Reset state even when the allocation is already empty.
+	delete [] m_pMapEffect;
+	m_pMapEffect = NULL;
+	m_nMapEffect = 0;
+	m_nActiveMapEffect = 0;
+	m_WeatherType = WEATHER_NULL;
+	m_MoreEffectCount = 0;
+	m_StartX = 0;
+	m_StartY = 0;
 }
 
 //----------------------------------------------------------------------
@@ -159,7 +165,7 @@ MWeather::SetRain(BYTE number)
 		}
 
 		// 현재 메모리 제거
-		Release();
+		delete [] m_pMapEffect;
 
 		// 위에서 생성한 비를 설정..
 		m_WeatherType	= WEATHER_RAIN;	
@@ -254,7 +260,7 @@ MWeather::SetSnow(BYTE number)
 		}
 
 		// 현재 메모리 제거
-		Release();
+		delete [] m_pMapEffect;
 
 		// 위에서 생성한 눈을 설정..
 		m_WeatherType	= WEATHER_SNOW;	
@@ -283,7 +289,7 @@ MWeather::SetSnow(BYTE number)
 	// 증가 개수
 	m_nActiveMapEffect = 1;
 
-	for (int i=0; i<number; i++)
+	for (int i=0; i<m_nActiveMapEffect; i++)
 	{
 		GenerateSnow( i );
 	}
@@ -346,7 +352,7 @@ MWeather::SetSpot(BYTE number)
 		}
 		
 		// 현재 메모리 제거
-		Release();
+		delete [] m_pMapEffect;
 		
 		// 위에서 생성한 눈을 설정..
 		m_WeatherType	= WEATHER_SPOT;	
@@ -375,7 +381,7 @@ MWeather::SetSpot(BYTE number)
 	// 증가 개수
 	m_nActiveMapEffect = 1;
 	
-	for (int i=0; i<number; i++)
+	for (int i=0; i<m_nActiveMapEffect; i++)
 	{
 		GenerateSpot( i );
 	}
@@ -399,7 +405,8 @@ MWeather::GenerateRain(const BYTE& n)
 		//--------------------------------------------------------
 		// 도착한 비는 사라지고.. 다시 새로운 비를 생성..
 		//--------------------------------------------------------
-		case MAP_EFFECT::MAP_EFFECT_ARRIVE4 : 
+		case MAP_EFFECT::MAP_EFFECT_NEW :
+		case MAP_EFFECT::MAP_EFFECT_ARRIVE4 :
 		
 			type = rand() & 0x01;	// %2
 
@@ -477,7 +484,8 @@ MWeather::GenerateSnow(const BYTE& n)
 		//--------------------------------------------------------
 		// 도착한 눈은 사라지고.. 다시 새로운 눈을 생성..
 		//--------------------------------------------------------
-		case MAP_EFFECT::MAP_EFFECT_ARRIVE6 : 
+		case MAP_EFFECT::MAP_EFFECT_NEW :
+		case MAP_EFFECT::MAP_EFFECT_ARRIVE6 :
 		
 			type = rand() & 0x01; //%2;
 
@@ -675,7 +683,7 @@ MWeather::Action()
 	if (m_WeatherType == WEATHER_STOP)
 	{
 		int k=0;
-		for (int i=0; i<m_nMapEffect; i++)
+		for (int i=0; i<m_nActiveMapEffect; i++)
 		{
 			if (m_pMapEffect[i].Move())
 			{
@@ -687,9 +695,10 @@ MWeather::Action()
 			}
 		}
 
-		if (k==m_nMapEffect)
+		if (k==m_nActiveMapEffect)
 		{		
 			m_WeatherType = WEATHER_NULL;
+			m_nActiveMapEffect = 0;
 		}
 
 		return;
@@ -706,10 +715,9 @@ MWeather::Action()
 			// 
 			BYTE start = m_nActiveMapEffect;
 
-			m_nActiveMapEffect += 5;
-
-			if (m_nActiveMapEffect > m_nMapEffect)
-				m_nActiveMapEffect = m_nMapEffect;
+			// Clamp before narrowing: 251 + 5 must not wrap a BYTE to zero.
+			m_nActiveMapEffect = static_cast<BYTE>((std::min)(
+				static_cast<int>(m_nActiveMapEffect) + 5, static_cast<int>(m_nMapEffect)));
 
 			BYTE i;
 			

@@ -117,6 +117,31 @@ foreach(char_mode IN ITEMS signed unsigned)
 	add_test(NAME screen_fade_${char_mode}_tests COMMAND screen_fade_${char_mode}_tests)
 endforeach()
 
+# Weather movement uses negative velocities on both plain-char ABIs. Rebuild
+# the production source in each mode; ordinary unit_tests links gamemodel.
+foreach(char_mode IN ITEMS signed unsigned)
+	add_library(weather_${char_mode} STATIC ${CMAKE_SOURCE_DIR}/Client/MWeather.cpp)
+	target_include_directories(weather_${char_mode} PUBLIC ${CMAKE_SOURCE_DIR}/Client)
+	target_link_libraries(weather_${char_mode} PUBLIC basic)
+	add_executable(weather_${char_mode}_tests framework/test_main.cpp unit/test_weather.cpp)
+	target_link_libraries(weather_${char_mode}_tests PRIVATE test_framework weather_${char_mode})
+	if(char_mode STREQUAL "unsigned")
+		target_compile_definitions(weather_${char_mode}_tests PRIVATE WEATHER_EXPECT_UNSIGNED_CHAR=1)
+	else()
+		target_compile_definitions(weather_${char_mode}_tests PRIVATE WEATHER_EXPECT_UNSIGNED_CHAR=0)
+	endif()
+	foreach(weather_target IN ITEMS weather_${char_mode} weather_${char_mode}_tests)
+		if(MSVC)
+			if(char_mode STREQUAL "unsigned")
+				target_compile_options(${weather_target} PRIVATE /J)
+			endif()
+		else()
+			target_compile_options(${weather_target} PRIVATE -f${char_mode}-char)
+		endif()
+	endforeach()
+	add_test(NAME weather_${char_mode}_tests COMMAND weather_${char_mode}_tests)
+endforeach()
+
 #----------------------------------------------------------------------
 # decore_tests - the shared parity vectors of the vendored server rules
 # (third_party/decore/README.md), every row asserted against the copy
