@@ -1596,16 +1596,17 @@ rounds settled* for the host rules). Test fixtures share
     both real dispatch callers and callbacks that release or replace the table),
     and `tests/unit/test_request_mode.cpp`, all linking the production library.
 
-- [x] **4.21 Effect math:** `MathTable` compiles in `gamemodel` with unchanged
-  source and header bytes.
-  > **Status:** done (2026-10-02, model move). Fixed-point sine/cosine, target
+- [x] **4.21 Effect math:** `MathTable` compiles in `gamemodel`; the initial move
+  preserved source and header bytes before the separate endpoint fix.
+  > **Status:** done (2026-10-02). Fixed-point sine/cosine, target
   > angles, turn direction and one-turn clipping are reachable without the
   > effect classes or a live view. The legacy `FCreateSines` startup contract
   > still requires one call because it scales the atan table in place. Tests
   > initialize once and use the atan lookup's valid table indices and the
-  > steering helpers' existing coordinate/angle ranges. The unscaled final
-  > atan entry needs a separate test-first follow-up. R1 is 433 Windows /
-  > 431 Ninja.
+  > steering helpers' existing coordinate/angle ranges. Initialization now
+  > scales both atan endpoints, correcting the northwest and southeast
+  > diagonal targets; the regression tests reproduced the missing endpoint
+  > and the 22.5-degree error before the fix. R1 is 433 Windows / 431 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_math_table.cpp`, linked against the production library.
 

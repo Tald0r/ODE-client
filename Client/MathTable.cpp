@@ -898,7 +898,8 @@ void MathTable::FCreateSines()
 	}
 	*/
 
-	for (i=0; i<MAX_ANGLE; i++)
+	// The ratio table includes both endpoints, -1 and +1.
+	for (i=0; i<=MAX_ANGLE; i++)
 	{
 		FArcTanTab[i] = FArcTanTab[i] << 1;
 	}

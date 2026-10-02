@@ -100,14 +100,14 @@ TEST(MathTable, CardinalTargetsUseScreenCoordinatesAndCoincidentTargetsFaceRight
 	}
 }
 
-TEST(MathTable, NonDiagonalTargetsFollowEveryScreenOctant)
+TEST(MathTable, TargetAnglesFollowEveryScreenOctant)
 {
 	InitTables();
 	for (int dx = -24; dx <= 24; ++dx)
 	{
 		for (int dy = -24; dy <= 24; ++dy)
 		{
-			if (std::abs(dx) == std::abs(dy))
+			if (dx == 0 && dy == 0)
 				continue;
 			const int angle = MathTable::GetAngleToTarget(100, -200, 100 + dx, -200 + dy);
 			CHECK(angle >= 0 && angle < MathTable::MAX_ANGLE);
@@ -143,14 +143,41 @@ TEST(MathTable, ClipAngleCorrectsAnOvershootOfOneTurn)
 		CHECK_EQ(c.expected, MathTable::ClipAngle(c.input));
 }
 
-TEST(MathTable, InteriorArcTanSamplesApproximateRatiosFromMinusOneToOne)
+TEST(MathTable, ArcTanSamplesApproximateRatiosFromMinusOneToOne)
 {
 	InitTables();
-	for (int index = 0; index < MathTable::MAX_ANGLE; ++index)
+	for (int index = 0; index <= MathTable::MAX_ANGLE; ++index)
 	{
 		const double ratio = (index - MathTable::MAX_ANGLE_HALF)
 			/ static_cast<double>(MathTable::MAX_ANGLE_HALF);
 		const double expected = std::atan(ratio) * MathTable::MAX_ANGLE / (2.0 * std::numbers::pi);
 		CHECK(std::abs(MathTable::FArcTan(index) - expected) <= 2.0);
+	}
+}
+
+TEST(MathTable, ArcTanEndpointsUseTheSameAngleScale)
+{
+	InitTables();
+	CHECK_EQ(-MathTable::ANGLE_45, MathTable::FArcTan(0));
+	CHECK_EQ(0, MathTable::FArcTan(MathTable::MAX_ANGLE_HALF));
+	CHECK_EQ(MathTable::ANGLE_45, MathTable::FArcTan(MathTable::MAX_ANGLE));
+}
+
+TEST(MathTable, ExactDiagonalTargetsUseFortyFiveDegreeAngles)
+{
+	InitTables();
+	for (int origin : {-100000, 0, 100000})
+	{
+		for (int distance : {1, 7, 128, 4096})
+		{
+			CHECK_EQ(MathTable::ANGLE_45,
+				MathTable::GetAngleToTarget(origin, origin, origin + distance, origin - distance));
+			CHECK_EQ(MathTable::ANGLE_135,
+				MathTable::GetAngleToTarget(origin, origin, origin - distance, origin - distance));
+			CHECK_EQ(MathTable::ANGLE_225,
+				MathTable::GetAngleToTarget(origin, origin, origin - distance, origin + distance));
+			CHECK_EQ(MathTable::ANGLE_315,
+				MathTable::GetAngleToTarget(origin, origin, origin + distance, origin + distance));
+		}
 	}
 }
