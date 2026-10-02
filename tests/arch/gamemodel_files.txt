@@ -308,3 +308,8 @@ Client/ApplySkillInfo.cpp
 Client/ApplySkillInfo.h
 Client/ConvertDuration.cpp
 Client/ConvertDuration.h
+
+# Event records, flag queries and expiry; MEventManager keeps live image
+# ownership and installs rendering/player callbacks in the executable.
+Client/MEventQueue.cpp
+Client/MEventQueue.h

@@ -91,12 +91,14 @@ slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
 `Client/PacketHandler`, and `ApplySkillInfo`, the skill-model rebuild
 `GCSkillInfoHandler` runs on its packet (the handler keeps the sweeper
 bonus reset and `SetAvailableSkills`), and the duration conversions
-`ConvertDurationToFrame` and `ConvertDurationToMillisecond`; with the
-user, config and timed-item loaders gamemodel reads, and their string
-support; membership in
+`ConvertDurationToFrame` and `ConvertDurationToMillisecond`, and the event
+queue (`MEventQueue`, inherited by the executable's `MEventManager`, with
+gamma, effect and fade actions behind `MEventHost`; background images stay
+executable-side); with the user, config and timed-item loaders gamemodel
+reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15
-and 4.16),
+`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
+4.16 and 4.17),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

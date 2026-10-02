@@ -216,7 +216,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 | `Client/UIDialog.cpp` dialog popups (`PopupPCTalkDlg` and its siblings) | each builds a VS_UI dialog from `g_pCreatureTable`, `g_pPCTalkBox` and `gC_vs_ui`, so a fix has no logic left to move into a library and no harness to run in. Regression guards use full builds and a read of the function. Added 2026-09-29 for `7d16c726`. |
 | `PacketFunction.cpp` error popups and addon item tables (`PopupErrorMessage`, `InitPacketItemTable`) | the popups reach the live UI and message tables, and the tables store item templates the executable builds at start-up (`g_pPacketItemShoulder` and its siblings); neither has a harness. Precedent `0557a039`; also `10b1da62` and `6ebdc97c`. Added 2026-09-29. The connect paths in the row above are a separate case. |
 | `UIMessageManager.cpp` handlers other than `Execute_UI_CHAT_RETURN` (the other `Execute_UI_*` bodies) | each reaches the live storages, inventory, `g_pTempInformation`, the player and the socket, like the chat handler above; the class has no harness. Precedent `ace28baf`; also `dfaeda5b`. Added 2026-09-29. |
-| `MEventManager.cpp` (the screen-event queue behind `g_pEventManager`) | it holds live `CDirectDrawSurface` images and the frame clock, is read by `CGameUpdate` and `MTopView`, and no library contains it. `GetEventCountByFlag` and `IsEmptyEventByFlag` have no caller, so a fix to either cannot be observed (`d1baf52b`). It is a candidate to move into `gamemodel`; a task that does so removes this row. Added 2026-09-29. |
+| `MEventManager.cpp` background-image loading and live host adapter | owns the `CDirectDrawSurface` cache and supplies rendering/player callbacks. Event records, flag queries and expiry are inherited from `gamemodel`'s `MEventQueue` and require unit tests (task 4.17); only the image loader and callback bodies remain executable-side. |
 | `DebugKit.cpp` (`CDebugKit`) | a debug facility compiled into the executable and reached only under `DEBUG_INFO`, which no build defines; moving it into `gamemodel` would change the W2/M2 include rules. Precedent `6a46b721`. Added 2026-09-29. |
 | `tools/viewers/**` | developer tools outside the libraries and the game: a fix is checked by building the viewer and, where it has one, running its self-test (`d1c3d719`, `d54f7fed`). Added 2026-09-29. |
 
@@ -1531,6 +1531,22 @@ rounds settled* for the host rules). Test fixtures share
   > the commits are not rewritten.
   - Owner: `tests/arch/gamemodel_files.txt`, M0-M2,
     `Client/ApplySkillInfo.h`'s contract and `test_skill_info.cpp`.
+
+- [x] **4.17 Event queue:** `MEvent` and `MEventQueue` compile in `gamemodel`;
+  the executable's `MEventManager` inherits the queue and retains its images.
+  > **Status:** done (2026-10-02). Each queue borrows an `MEventHost` for
+  > gamma, player-effect queries and fade requests; the executable adapter
+  > installs a designated, static host in its constructor. The existing
+  > `MonotonicClock` seam drives timing tests. Missing callbacks skip rendering
+  > and retain effect events until their explicit expiry; the adapter uses
+  > the same lifetime rule when there is no player. Strict expiry, any-bit
+  > flag matching, ID ordering and gamma refresh behavior are preserved.
+  > The image cache still clears after the events at destruction. R1 stays
+  > 437 Windows / 435 Ninja: the executable's image/host translation unit
+  > remains, while the queue implementation is compiled only in the library.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_event_queue.cpp`, including compile-time checks that
+    the screen manager uses the tested library methods.
 
 ## Phase 5 — Long tail
 

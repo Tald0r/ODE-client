@@ -1,272 +1,35 @@
 //----------------------------------------------------------------------
-// MEventManager.cpp
+// MEventManager.cpp - live event services and background-image ownership.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MEventManager.h"
 #include "CJpeg.h"
 #include "DataPath.h"
-
-	#include "MPlayer.h"
-	#include "UtilityFunction.h"
-	#include "AppendPatchInfo.h"
-#include "DebugInfo.h"
+#include "MPlayer.h"
 #include "PacketFunction.h"
-//----------------------------------------------------------------------
-// global
-//----------------------------------------------------------------------
+
 MEventManager* g_pEventManager = NULL;
 
-MEvent::MEvent()
-{
-	eventID = EVENTID_NULL;
-	eventType = EVENTTYPE_NULL;
-	eventDelay = -1;
-	showTime = -1;
-	totalTime = -1;
-	eventFlag = 0;
-	parameter1 = 0;
-	parameter2 = 0;
-	parameter3 = 0;
-	parameter4 = 0;
+namespace {
+const MEventHost eventHost{
+	.SetAddGammaRamp = [](WORD red, WORD green, WORD blue) {
+		CSDLGraphics::SetAddGammaRamp(red, green, blue);
+	},
+	.HasEffectStatus = [](DWORD effect) {
+		// With no player, keep effect events until their explicit expiry.
+		return !g_pPlayer || g_pPlayer->HasEffectStatus(static_cast<EFFECTSTATUS>(effect));
+	},
+	.SetFadeStart = ::SetFadeStart,
+};
 }
 
-MEvent::~MEvent()
-{
-}
-
-DWORD
-MEvent::ElapsedMillis() const
-{
-	return (DWORD)(MonotonicClock::Now() - eventStartTickCount).count();
-}
-
-bool
-MEvent::IsShowTime() const
-{
-	if( showTime == -1 )
-		return true;
-
-	if( ElapsedMillis() % totalTime < static_cast<DWORD>(showTime) )
-		return true;
-
-	return false;
-}
-
-MEventManager::MEventManager()
+MEventManager::MEventManager() : MEventQueue(&eventHost)
 {
 }
 
 MEventManager::~MEventManager()
 {
 	RemoveAllEvent();
-}
-
-//--------------------------------------------------
-// 이벤트를 등록한다
-//--------------------------------------------------
-void	MEventManager::AddEvent(MEvent &event)
-{
-	event.eventStartTickCount = MonotonicClock::Now();
-	m_Events[event.eventID] = event;
-	if(event.eventFlag | EVENTFLAG_FADE_SCREEN)
-	{
-		const MEvent *tempEvent = GetEventByFlag(EVENTFLAG_FADE_SCREEN);
-		if(tempEvent != NULL)
-			CSDLGraphics::SetAddGammaRamp((tempEvent->parameter2 >> 16) & 0xff, (tempEvent->parameter2 >> 8) & 0xff, tempEvent->parameter2 & 0xff);
-	}
-}
-
-//--------------------------------------------------
-// 이벤트를 가져온다
-//--------------------------------------------------
-const MEvent*	MEventManager::GetEvent(EVENT_ID id)
-{
-//	return &m_Events[id];
-	EVENT_MAP::iterator itr = m_Events.find(id);
-
-	if(itr != m_Events.end())
-		return &itr->second;
-
-	return NULL;
-}
-
-//--------------------------------------------------
-// 이벤트가 있는가 본다
-//--------------------------------------------------
-bool	MEventManager::IsEvent(EVENT_ID id)
-{
-	return (GetEvent(id) != NULL);
-}
-
-//--------------------------------------------------
-// 이벤트를 지운다
-//--------------------------------------------------
-void	MEventManager::RemoveEvent(EVENT_ID id)
-{
-	DEBUG_ADD_FORMAT("[MEventManager] RemoveEvent : %d", id);
-	const MEvent *event = GetEvent(id);
-
-	if(event == NULL)
-	{
-		DEBUG_ADD("MEventManager] RemoveEvent event == NULL");
-		return;
-	}
-
-	// was (eventFlag | EVENTFLAG_FADE_SCREEN) != false, which is always true
-	bool bFadeScreen = true;
-
-	m_Events.erase(id);
-
-	if(bFadeScreen)
-	{
-		event = GetEventByFlag(EVENTFLAG_FADE_SCREEN);
-		if(event == NULL)
-			CSDLGraphics::SetAddGammaRamp();
-		else
-			CSDLGraphics::SetAddGammaRamp((event->parameter2 >> 16) & 0xff, (event->parameter2 >> 8) & 0xff, event->parameter2 & 0xff);
-	}
-	DEBUG_ADD("[MEventManager] RemoveEvent OK");
-}
-
-//--------------------------------------------------
-// 모든 이벤트를 지운다
-//--------------------------------------------------
-void	MEventManager::RemoveAllEvent()
-{ 
-	DEBUG_ADD_FORMAT("[MEventManager] RemoveAllEvent Count: %d", m_Events.size());
-	EVENT_MAP::iterator itr = m_Events.begin();
-
-	while(itr != m_Events.end())
-	{
-		EVENT_ID delete_id = itr->second.eventID;
-		DEBUG_ADD_FORMAT("[MEventManager] Call RemoveEvent(%d)", delete_id);
-		itr++;
-		RemoveEvent(delete_id);
-	}
-	DEBUG_ADD_FORMAT("[MEventManager] RemoveAllEvent OK");
-
-}
-//--------------------------------------------------
-// 타입별 이벤트를 지운다
-//--------------------------------------------------
-void	MEventManager::RemoveAllEventByType(EVENT_TYPE type)
-{
-	EVENT_MAP::iterator itr = m_Events.begin();
-
-	while(itr != m_Events.end())
-	{
-		if(itr->second.eventType == type)
-		{
-			EVENT_ID delete_id = itr->second.eventID;
-			itr++;
-			RemoveEvent(delete_id);
-		}
-		else
-			itr++;
-	}
-}
-
-//--------------------------------------------------
-// Flag별 개수
-//--------------------------------------------------
-int			MEventManager::GetEventCountByFlag(DWORD flag)
-{
-	EVENT_MAP::iterator itr = m_Events.begin();
-	int count = 0;
-
-	while(itr != m_Events.end())
-	{
-		if(itr->second.eventFlag & flag)
-		{
-			count++;
-		}
-
-		itr++;
-	}
-
-	return count;
-}
-
-//--------------------------------------------------
-// Flag로 empty검색
-//--------------------------------------------------
-bool			MEventManager::IsEmptyEventByFlag(DWORD flag)
-{
-	EVENT_MAP::iterator itr = m_Events.begin();
-
-	while(itr != m_Events.end())
-	{
-		if(itr->second.eventFlag & flag)
-		{
-			return false;
-		}
-
-		itr++;
-	}
-
-	return true;
-}
-
-//--------------------------------------------------
-// Flag로 GetEvent해온다
-//--------------------------------------------------
-const MEvent*	MEventManager::GetEventByFlag(DWORD flag, int count)
-{
-	EVENT_MAP::iterator itr = m_Events.begin();
-	int i = 0;
-
-	while(itr != m_Events.end())
-	{
-		if(itr->second.eventFlag & flag)
-		{
-			if(i == count)
-				return &itr->second;
-			i++;
-		}
-
-		itr++;
-	}
-
-	return NULL;
-}
-
-extern DWORD g_CurrentFrame;
-//--------------------------------------------------
-// Process
-//--------------------------------------------------
-void	MEventManager::ProcessEvent()
-{
-	EVENT_MAP::iterator itr = m_Events.begin();
-
-	while(itr != m_Events.end())
-	{
-		if(itr->second.eventDelay != -1)
-		{
-			if(itr->second.ElapsedMillis() > static_cast<DWORD>(itr->second.eventDelay))
-			{
-				EVENT_ID delete_id = itr->second.eventID;
-				itr++;
-				RemoveEvent(delete_id);
-				// 2004, 6, 21, sobeit add start - 질드레 연출 - 5초간 흔들렸으면 10초간 어두워짐
-				if(delete_id == EVENTID_GDR_PRESENT)
-					SetFadeStart(31, -1, 1, 0,0,0, 4);
-				// 2004, 6, 21, sobeit add end
-				continue;
-			}
-		}
-		if(itr->second.eventType == EVENTTYPE_EFFECT)
-		{
-			if(!g_pPlayer->HasEffectStatus((EFFECTSTATUS)itr->second.parameter1))
-			{
-				EVENT_ID delete_id = itr->second.eventID;
-				itr++;
-				RemoveEvent(delete_id);
-				continue;
-			}
-				
-		}
-		itr++;
-	}
 }
 
 bool MEventManager::AssertEventBackground(EVENTBACKGROUND_ID id)
