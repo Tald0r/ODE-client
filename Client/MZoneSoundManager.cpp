@@ -3,6 +3,7 @@
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MZoneSoundManager.h"
+#include "MGameTime.h"
 #include "UserOption.h"
 #include "CDirectSound.h"
 #include "MSoundTable.h"
@@ -400,7 +401,8 @@ MZoneSoundManager::UpdateSound()
 			//---------------------------------------------------------
 			if (pInfo!=NULL)
 			{
-				if (pInfo->IsShowTime())
+				const auto hour = g_pGameTime ? std::optional<BYTE>{g_pGameTime->GetHour()} : std::nullopt;
+				if (pInfo->IsShowTime(g_FrameNow, hour))
 				{
 					#ifdef OUTPUT_DEBUG_ZONESOUND_PROCESS
 						DEBUG_ADD("Get ZONESOUND_NODE");
@@ -437,12 +439,12 @@ MZoneSoundManager::UpdateSound()
 						DEBUG_ADD("Set NextPlayTime");
 					#endif
 
-					pInfo->SetNextShowTime();
+					pInfo->SetNextShowTime(g_FrameNow);
 				}
 				//---------------------------------------------------------
 				// 연주할 시간대가 아니면 소리를 멈춘다.
 				//---------------------------------------------------------
-				else if (!pInfo->IsShowHour())
+				else if (!pInfo->IsShowHour(hour))
 				{
 					#ifdef OUTPUT_DEBUG_ZONESOUND_PROCESS
 						DEBUG_ADD("[for stop]Get ZONESOUND_NODE");
