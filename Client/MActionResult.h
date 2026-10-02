@@ -708,13 +708,15 @@ typedef	std::list<MActionResultNode*>	ACTIONRESULTNODE_LIST;
 // 어떤 ActionInfo에 의해서 발생한 모든 결과를 
 // Server로부터 검증을 받은 후에.. 그것들을 다~ 저장하고 있는 class
 //
-// destructor에서 Execute해버리기 때문에
-// 실행할 필요가 없다면 Release해야한다.
+// Execute runs pending actions; Release and destruction discard them.
+// Callbacks may append, clear or recursively execute, but keep this queue alive.
 //----------------------------------------------------------------------
 class MActionResult {
 	public :
 		MActionResult();
 		~MActionResult();
+		MActionResult(const MActionResult&) = delete;
+		MActionResult& operator=(const MActionResult&) = delete;
 
 		//--------------------------------------------------------
 		// Release
@@ -724,6 +726,7 @@ class MActionResult {
 		//--------------------------------------------------------
 		// 결과 하나를 추가한다.
 		//--------------------------------------------------------
+		// Consumes a fresh node; ignores pointers already queued or active here.
 		void		Add(MActionResultNode* pNode);
 
 		//--------------------------------------------------------
@@ -740,7 +743,10 @@ class MActionResult {
 
 	protected :
 		ACTIONRESULTNODE_LIST		m_List;
+
+	private:
+		struct ActiveNode;
+		ActiveNode* m_pActive = nullptr;
 };
 
 #endif
-

@@ -7,6 +7,8 @@
 #include <functional>
 #include <memory>
 #include <set>
+#include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -30,6 +32,13 @@ struct Node : MActionResultNode
 		events.push_back(id);
 		if (onExecute) onExecute();
 	}
+};
+
+struct QueueProbe : MActionResult
+{
+	// A red duplicate-ownership test records the public size first, then
+	// removes the unexpected alias so its cleanup does not double-delete.
+	void DiscardUnexpectedAlias() { m_List.pop_back(); }
 };
 
 const MEffectTargetHost host{
@@ -394,4 +403,153 @@ TEST(EffectResults, PortalCopyConstructionKeepsDestinationAndCopiesOwnerText)
 	CHECK_EQ(220, copy.GetZoneY());
 	CHECK(std::strcmp(copy.GetOwnerName(), "First") == 0);
 	CHECK(copy.IsResultEmpty());
+}
+
+TEST(EffectResults, OwningQueuesCannotBeShallowCopied)
+{
+	CHECK(!std::is_copy_constructible_v<MActionResult>);
+	CHECK(!std::is_copy_assignable_v<MActionResult>);
+}
+
+TEST(EffectResults, ThrowingActionsReleaseTheCurrentNodeAndKeepPendingWork)
+{
+	World world;
+	MActionResult result;
+	auto* first = new Node(1);
+	first->onExecute = []() { throw std::runtime_error("action failed"); };
+	result.Add(first);
+	result.Add(new Node(2));
+	bool threw = false;
+	try { result.Execute(); }
+	catch (const std::runtime_error&) { threw = true; }
+	CHECK(threw);
+	CHECK_EQ(1, result.GetSize());
+	CHECK_EQ(1, allocated.size());
+	CHECK(events == std::vector<int>({1, -1}));
+	result.Execute();
+	CHECK(events == std::vector<int>({1, -1, 2, -2}));
+	CHECK(allocated.empty());
+}
+
+TEST(EffectResults, RecursiveExceptionsReleaseEachActiveNode)
+{
+	World world;
+	MActionResult result;
+	auto* first = new Node(1);
+	auto* second = new Node(2);
+	first->onExecute = [&]() { result.Execute(); };
+	second->onExecute = []() { throw std::runtime_error("nested action failed"); };
+	result.Add(first);
+	result.Add(second);
+	result.Add(new Node(3));
+	bool threw = false;
+	try { result.Execute(); }
+	catch (const std::runtime_error&) { threw = true; }
+	CHECK(threw);
+	CHECK_EQ(1, result.GetSize());
+	CHECK_EQ(1, allocated.size());
+	CHECK(events == std::vector<int>({1, 2, -2, -1}));
+	result.Execute();
+	CHECK(events == std::vector<int>({1, 2, -2, -1, 3, -3}));
+	CHECK(allocated.empty());
+}
+
+TEST(EffectResults, AddingAnAlreadyQueuedNodeDoesNotTransferItTwice)
+{
+	World world;
+	QueueProbe result;
+	auto* node = new Node(1);
+	result.Add(node);
+	result.Add(node);
+	CHECK_EQ(1, result.GetSize());
+	if (result.GetSize() > 1) result.DiscardUnexpectedAlias();
+	result.Execute();
+	CHECK(events == std::vector<int>({1, -1}));
+}
+
+TEST(EffectResults, ExecutingNodesCannotRequeueThemselves)
+{
+	World world;
+	QueueProbe result;
+	auto* node = new Node(1);
+	node->onExecute = [&]() {
+		result.Add(node);
+		CHECK(result.IsEmpty());
+		if (!result.IsEmpty()) result.DiscardUnexpectedAlias();
+	};
+	result.Add(node);
+	result.Execute();
+	CHECK(events == std::vector<int>({1, -1}));
+}
+
+TEST(EffectResults, NestedActionsCannotRequeueAnActiveAncestor)
+{
+	World world;
+	QueueProbe result;
+	auto* first = new Node(1);
+	auto* second = new Node(2);
+	first->onExecute = [&]() { result.Execute(); };
+	second->onExecute = [&]() {
+		result.Add(first);
+		CHECK(result.IsEmpty());
+		if (!result.IsEmpty()) result.DiscardUnexpectedAlias();
+	};
+	result.Add(first);
+	result.Add(second);
+	result.Execute();
+	CHECK(events == std::vector<int>({1, 2, -2, -1}));
+}
+
+TEST(EffectResults, ReentrantReleaseFromDestructionConsumesEachNodeOnce)
+{
+	World world;
+	MActionResult result;
+	auto* first = new Node(1);
+	first->onDestroy = [&]() { result.Release(); };
+	result.Add(first);
+	result.Add(new Node(2));
+	result.Release();
+	CHECK(result.IsEmpty());
+	CHECK(events == std::vector<int>({-1, -2}));
+}
+
+TEST(EffectResults, ADestructorCannotRequeueItsOwnNode)
+{
+	World world;
+	QueueProbe result;
+	auto* node = new Node(1);
+	node->onDestroy = [&]() {
+		result.Add(node);
+		CHECK(result.IsEmpty());
+		if (!result.IsEmpty()) result.DiscardUnexpectedAlias();
+	};
+	result.Add(node);
+	result.Execute();
+	CHECK(events == std::vector<int>({1, -1}));
+}
+
+TEST(EffectResults, QueueDestructionAlsoAllowsReentrantRelease)
+{
+	World world;
+	{
+		MActionResult result;
+		auto* first = new Node(1);
+		first->onDestroy = [&]() { result.Release(); };
+		result.Add(first);
+		result.Add(new Node(2));
+	}
+	CHECK(events == std::vector<int>({-1, -2}));
+}
+
+TEST(EffectResults, ReleaseDiscardsWorkAppendedByDestructors)
+{
+	World world;
+	MActionResult result;
+	auto* first = new Node(1);
+	first->onDestroy = [&]() { result.Add(new Node(3)); };
+	result.Add(first);
+	result.Add(new Node(2));
+	result.Release();
+	CHECK(events == std::vector<int>({-1, -2, -3}));
+	CHECK(result.IsEmpty());
 }

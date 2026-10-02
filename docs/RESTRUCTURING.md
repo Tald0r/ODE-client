@@ -1767,7 +1767,7 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.31 Deferred action results and effect targets:** result-queue
   ownership and `MEffectTarget` state compile in `gamemodel`.
-  > **Status:** in progress (ownership and target-state fixes).
+  > **Status:** in progress (target-state fixes).
   > The owning `MActionResult` methods are split unchanged into
   > `MActionResultQueue.cpp`; concrete node actions stay executable-side.
   > `MEffectTargetHost` supplies removal from the player's non-owning roster;

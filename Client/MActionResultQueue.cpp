@@ -1,97 +1,66 @@
 #include "Client_PCH.h"
 #include "MActionResult.h"
 
-//----------------------------------------------------------------------
-// 
-// MActionResult :: constructor/destructor
-//
-//----------------------------------------------------------------------
+#include <algorithm>
+#include <memory>
+
+// Track the entire recursive call chain without allocating. The raw identity
+// stays registered while unique_ptr destroys the node, so destructor callbacks
+// cannot transfer that same node back into the queue.
+struct MActionResult::ActiveNode
+{
+	MActionResult& queue;
+	ActiveNode* previous;
+	MActionResultNode* const node;
+	std::unique_ptr<MActionResultNode> owned;
+
+	ActiveNode(MActionResult& owner, MActionResultNode* value)
+		: queue(owner), previous(owner.m_pActive), node(value), owned(value)
+	{
+		queue.m_pActive = this;
+	}
+	~ActiveNode()
+	{
+		owned.reset();
+		queue.m_pActive = previous;
+	}
+};
+
 MActionResult::MActionResult()
 {
 }
 
 MActionResult::~MActionResult()
 {
-	ACTIONRESULTNODE_LIST::iterator	iNode = m_List.begin();
-
-	// 모든 node를 delete해준다.
-	while (iNode != m_List.end())
-	{
-		MActionResultNode* pResultNode = *iNode;
-		
-		// 결과 실행..
-		//pResultNode->Execute();
-
-		delete pResultNode;
-		
-		iNode++;
-	}
-
-	m_List.clear();
+	Release();
 }
 
-//----------------------------------------------------------------------
-//
-// member functions
-//
-//----------------------------------------------------------------------
-//----------------------------------------------------------------------
-// Release
-//----------------------------------------------------------------------
-void
-MActionResult::Release()
+void MActionResult::Release()
 {
-	ACTIONRESULTNODE_LIST::iterator	iNode = m_List.begin();
-
-	// 모든 node를 delete해준다.
-	while (iNode != m_List.end())
-	{
-		MActionResultNode* pResultNode = *iNode;
-		
-		delete pResultNode;
-		
-		iNode++;
-	}
-
-	m_List.clear();
-}
-
-//----------------------------------------------------------------------
-// Add : 결과 하나를 추가한다.
-//----------------------------------------------------------------------
-void		
-MActionResult::Add(MActionResultNode* pNode)
-{
-	if (pNode==NULL)
-		return;
-
-	// list에 추가
-	m_List.push_back( pNode );
-}
-
-//----------------------------------------------------------------------
-// ExecuteResult
-//----------------------------------------------------------------------
-// ActionInfo(Effect)에 따른 결과를 실행한다.
-//----------------------------------------------------------------------
-void
-MActionResult::Execute()
-{
-	//------------------------------------------------
-	// 모두~~ 처리한다.
-	//------------------------------------------------
 	while (!m_List.empty())
-	{	
-		MActionResultNode* pResultNode = m_List.front();
-		
+	{
+		ActiveNode current(*this, m_List.front());
 		m_List.pop_front();
-
-		if (pResultNode!=NULL)
-		{
-			pResultNode->Execute();
-
-			delete pResultNode;
-		}
 	}
 }
 
+void MActionResult::Add(MActionResultNode* node)
+{
+	if (!node || std::find(m_List.begin(), m_List.end(), node) != m_List.end()) return;
+	for (const auto* active = m_pActive; active; active = active->previous)
+		if (active->node == node) return;
+
+	ActiveNode incoming(*this, node);
+	m_List.push_back(node);
+	incoming.owned.release();
+}
+
+void MActionResult::Execute()
+{
+	while (!m_List.empty())
+	{
+		ActiveNode current(*this, m_List.front());
+		m_List.pop_front();
+		if (current.node) current.node->Execute();
+	}
+}
