@@ -56,10 +56,10 @@ class MAttachOrbitEffect : public MAttachEffect {
 		void SetOrbitRunning(bool running) { m_Orbit.SetRunning(running); }
 
 		//--------------------------------------------------------
-		// 좌표값 + Orbit보정값
+		// Stored position plus the orbit offset, bounded to int.
 		//--------------------------------------------------------
-		virtual int		GetPixelX() const	{ return (int)m_PixelX + m_Orbit.GetPosition().x; }
-		virtual int		GetPixelY() const	{ return (int)m_PixelY + m_Orbit.GetPosition().y; }
+		virtual int		GetPixelX() const;
+		virtual int		GetPixelY() const;
 
 		//--------------------------------------------------------
 		// Get Orbit X,Y

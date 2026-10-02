@@ -19,3 +19,13 @@ bool MAttachOrbitEffect::Update()
 	m_Orbit.Update(active);
 	return active;
 }
+
+int MAttachOrbitEffect::GetPixelX() const
+{
+	return PixelCoordinate(m_PixelX, m_Orbit.GetPosition().x);
+}
+
+int MAttachOrbitEffect::GetPixelY() const
+{
+	return PixelCoordinate(m_PixelY, m_Orbit.GetPosition().y);
+}

@@ -9,18 +9,17 @@
 #include <cmath>
 #include <limits>
 
-namespace {
-int PixelCoordinate(float pixel)
+int MEffect::PixelCoordinate(float pixel, int offset)
 {
-	const double coordinate = pixel;
-	if (std::isnan(coordinate)) return 0;
+	if (std::isnan(pixel)) return offset;
+	// Add the display offset before clamping so opposite signs can cancel.
+	const double coordinate = std::trunc(static_cast<double>(pixel)) + offset;
 	if (coordinate >= (std::numeric_limits<int>::max)())
 		return (std::numeric_limits<int>::max)();
 	if (coordinate <= (std::numeric_limits<int>::min)())
 		return (std::numeric_limits<int>::min)();
 	return static_cast<int>(coordinate);
 }
-} // namespace
 
 const MEffectHost* MEffect::s_pHost = nullptr;
 
