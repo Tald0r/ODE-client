@@ -24,6 +24,13 @@
 #include "MActionResult.h"
 #include "MString.h"
 
+// Borrowed service installed by GameInit. Without it, destruction skips
+// removal from the executable's non-owning player roster.
+struct MEffectTargetHost
+{
+	void (*RemoveFromPlayer)(BYTE id) = nullptr;
+};
+
 //----------------------------------------------------------------------
 // EFFECT_TARGET_NODE의 list (queue로 하면 좋겠지만.. 문제가.. - -;) 
 //----------------------------------------------------------------------
@@ -42,6 +49,7 @@ class MEffectTarget {
 		MEffectTarget(const MEffectTarget& target);
 		MEffectTarget(BYTE max);
 		virtual ~MEffectTarget();
+		static const MEffectTargetHost* SetHost(const MEffectTargetHost* host);
 
 		virtual EFFECT_TARGET_TYPE	GetEffectTargetType() const	{ return EFFECT_TARGET_NORMAL; }
 	
@@ -134,6 +142,10 @@ class MEffectTarget {
 		//-------------------------------------------------------		
 		BYTE			m_EffectID;
 		static BYTE		s_EffectID;
+
+	private:
+		static void RemoveFromPlayer(BYTE id);
+		static const MEffectTargetHost* s_pHost;
 };
 
 //----------------------------------------------------------------------

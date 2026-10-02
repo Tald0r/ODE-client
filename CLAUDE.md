@@ -114,12 +114,14 @@ war-state manager (`MWarManager`, with live zone/UI/skill actions supplied by
 `MWarHost`), and NPC fixed/mysterious shop stock (`BuildNPCShopShelf` and
 `MShopTemplateTable`, with item creation, gender and portal actions supplied
 by `NPCShopHost`), and NPC dialogue lookup/substitution and its English
-overlay (`MNPCScriptTable`, `ApplyEnglishNPCScriptTable`); with the
+overlay (`MNPCScriptTable`, `ApplyEnglishNPCScriptTable`), and deferred action
+result ownership (`MActionResultQueue`) and effect-target state (`MEffectTarget`,
+with player-roster removal supplied by `MEffectTargetHost`); with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
 4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25, 4.26, 4.27,
-4.28, 4.29 and 4.30),
+4.28, 4.29, 4.30 and 4.31),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

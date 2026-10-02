@@ -78,6 +78,7 @@
 #include "ProfileManager.h"
 #include "MGuildMarkManager.h"
 #include "MEventManager.h"
+#include "MEffectTarget.h"
 #include "RequestFileManager.h"
 #include "Packet/RequestServerPlayer.h"
 #include "RequestUserManager.h"
@@ -2603,6 +2604,7 @@ void ReleaseAllObjects()
 	MChatManager::SetHost(nullptr);
 	MWeather::SetHost(nullptr);
 	MWarManager::SetHost(nullptr);
+	MEffectTarget::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2945,6 +2947,12 @@ static const MWarHost s_WarHost = {
 	},
 };
 
+static const MEffectTargetHost s_EffectTargetHost = {
+	.RemoveFromPlayer = [](BYTE id) {
+		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
+	},
+};
+
 // Live creature actions used by the library-owned party roster.
 static bool PartyJoinByID(TYPE_OBJECTID id, MString& name)
 {
@@ -3261,6 +3269,7 @@ InitGameObject()
 	MChatManager::SetHost(&s_ChatHost);
 	MWeather::SetHost(&s_WeatherHost);
 	MWarManager::SetHost(&s_WarHost);
+	MEffectTarget::SetHost(&s_EffectTargetHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 

@@ -4,8 +4,21 @@
 #include "Client_PCH.h"
 #include "MEffectTarget.h"
 #include "MZoneTable.h"
-#include "MPlayer.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
+
+const MEffectTargetHost* MEffectTarget::s_pHost = nullptr;
+
+const MEffectTargetHost* MEffectTarget::SetHost(const MEffectTargetHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+void MEffectTarget::RemoveFromPlayer(BYTE id)
+{
+	if (s_pHost && s_pHost->RemoveFromPlayer) s_pHost->RemoveFromPlayer(id);
+}
 
 //----------------------------------------------------------------------
 // Static member
@@ -63,10 +76,7 @@ MEffectTarget::~MEffectTarget()
 	DEBUG_ADD("del res");
 
 	// 죽음의 코드 - -;
-	if (g_pPlayer!=NULL)
-	{
-		g_pPlayer->RemoveEffectTarget( m_EffectID );
-	}
+	RemoveFromPlayer(m_EffectID);
 
 	DEBUG_ADD("del ok");
 }

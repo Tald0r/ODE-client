@@ -395,3 +395,11 @@ Client/MNPCScriptTable.cpp
 Client/MNPCScriptTable.h
 Client/MNPCScriptTableEnglish.cpp
 Client/MNPCScriptTableEnglish.h
+
+# Deferred action-result ownership and effect-target state (task 4.31).
+# Concrete result actions remain executable-owned. Target destruction uses
+# MEffectTargetHost to remove an ID from the player's non-owning roster.
+Client/MActionResultQueue.cpp
+Client/MActionResult.h
+Client/MEffectTarget.cpp
+Client/MEffectTarget.h
