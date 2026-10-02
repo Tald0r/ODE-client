@@ -4,6 +4,7 @@
 #include "Client_PCH.h"
 #include "MFallingEffectGenerator.h"
 #include "MLinearEffect.h"
+#include <limits>
 #include <utility>
 
 const MFallingEffectHost* MFallingEffectGenerator::s_pHost = nullptr;
@@ -34,7 +35,9 @@ bool MFallingEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 	auto effect = std::make_unique<MLinearEffect>(sprite.bltType);
 	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
 	// Start above the destination; the source coordinates are not used.
-	effect->SetPixelPosition(egInfo.x1, egInfo.y1, egInfo.z1 + 300);
+	const int top = (std::numeric_limits<int>::max)();
+	const int startZ = egInfo.z1 > top - 300 ? top : egInfo.z1 + 300;
+	effect->SetPixelPosition(egInfo.x1, egInfo.y1, startZ);
 	effect->SetDirection(egInfo.direction);
 	// Linear target selection retains its own facing calculation.
 	effect->SetTarget(egInfo.x1, egInfo.y1, egInfo.z1, egInfo.step);

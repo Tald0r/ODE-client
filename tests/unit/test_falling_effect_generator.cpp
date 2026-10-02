@@ -415,3 +415,67 @@ TEST(FallingEffectGenerator, FiniteCountsRetainTheirAbsoluteClockWrap)
 	CHECK(effects.front()->Update());
 	CHECK_EQ(212, effects.front()->GetPixelZ());
 }
+
+TEST(FallingEffectGenerator, HeightAboveTheIntegerRangeClampsBeforeFloatStorage)
+{
+	World world;
+	MFallingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	for (int destination : {top, top - 1, top - 299})
+	{
+		auto info = Info(); info.z1 = destination;
+		CHECK(generator.Generate(info));
+		CHECK_EQ(top, effects.back()->GetPixelZ());
+		CHECK_EQ(96, effects.back()->GetPixelX());
+		CHECK_EQ(48, effects.back()->GetPixelY());
+	}
+}
+
+TEST(FallingEffectGenerator, SaturatedStartStillReachesANearbyRepresentableDestination)
+{
+	World world;
+	MFallingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	auto info = Info(); info.z1 = top - 127; info.step = 255;
+	CHECK(generator.Generate(info));
+	CHECK_EQ(top, effects.front()->GetPixelZ());
+	CHECK(!effects.front()->Update());
+	CHECK_EQ(top - 127, effects.front()->GetPixelZ());
+	CHECK_EQ(0, effects.front()->GetEndFrame());
+	CHECK_EQ(0, effects.front()->GetFrame());
+}
+
+TEST(FallingEffectGenerator, RepresentableHeightAdditionKeepsExistingFloatRounding)
+{
+	World world;
+	MFallingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	const int bottom = (std::numeric_limits<int>::min)();
+	struct Height { int destination, expected; };
+	for (const Height height : {Height{top - 300, top}, {top - 811, top - 511},
+		{bottom, bottom + 256}, {-300, 0}, {-1, 299}, {0, 300}, {1, 301}})
+	{
+		auto info = Info(); info.z1 = height.destination;
+		CHECK(generator.Generate(info));
+		CHECK_EQ(height.expected, effects.back()->GetPixelZ());
+	}
+}
+
+TEST(FallingEffectGenerator, SaturatedStartPreservesTargetOwnershipAndLinkTiming)
+{
+	World world;
+	MFallingEffectGenerator generator;
+	auto target = std::make_unique<Target>(1);
+	auto info = Info(); info.z1 = (std::numeric_limits<int>::max)();
+	info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info));
+	target.release();
+	CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget);
+	CHECK_EQ(149, effects.front()->GetEndFrame());
+	CHECK_EQ(104, effects.front()->GetEndLinkFrame());
+	CHECK(!effects.front()->Update());
+	CHECK_EQ(info.z1, effects.front()->GetPixelZ());
+	CHECK_EQ(104, effects.front()->GetEndLinkFrame());
+	effects.clear();
+	CHECK(destroyedTargets == std::vector<int>({1}));
+}

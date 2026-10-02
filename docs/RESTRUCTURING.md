@@ -2167,6 +2167,8 @@ rounds settled* for the host rules). Test fixtures share
   > exception; only acceptance transfers the caller's target. Missing metadata
   > rejects before construction; missing queue services destroy the unlinked
   > effect. Readers are guarded and re-read for each operation.
+  > A separate test-first fix clamps the starting height before adding 300
+  > would overflow; existing float storage and linear arrival tolerance remain.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_falling_effect_generator.cpp`.
 
