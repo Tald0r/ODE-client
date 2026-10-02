@@ -464,3 +464,9 @@ Client/EffectTiming.h
 # Base effect state, animation and target ownership behind a frame/light host (4.44).
 Client/MEffect.cpp
 Client/MEffect.h
+
+# Moving-effect lifecycle and screen-relative effects (4.45).
+Client/MMovingEffect.cpp
+Client/MMovingEffect.h
+Client/MScreenEffect.cpp
+Client/MScreenEffect.h

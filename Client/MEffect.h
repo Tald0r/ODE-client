@@ -209,6 +209,7 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 	protected :
 		// PixelPositon으로서 Sector좌표를 설정한다.
 		void			AffectPosition();
+		void			RefreshLight();
 
 
 
