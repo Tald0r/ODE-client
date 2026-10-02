@@ -9,13 +9,16 @@
 
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
 #include <iterator>
+#include <new>
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -540,4 +543,188 @@ TEST(NPCShop, MissingTemplateTablesClearExistingStockWithoutDereferencingNull)
 	CHECK_EQ(0, alive);
 	CHECK(!world.Shelf().IsEnable());
 	CheckTypes(world.Shelf(), {});
+}
+
+TEST(NPCShop, NewTemplateRowsInitializeEverySerializedField)
+{
+	alignas(MShopTemplate) unsigned char storage[sizeof(MShopTemplate)];
+	std::memset(storage, 0x7e, sizeof storage);
+	auto* row = new (storage) MShopTemplate;
+	CHECK_EQ(0, row->Type);
+	CHECK_EQ(0, row->Class);
+	CHECK_EQ(0, row->MinType);
+	CHECK_EQ(0, row->MaxType);
+	CHECK_EQ(0, row->MinOption);
+	CHECK_EQ(0, row->MaxOption);
+	row->~MShopTemplate();
+}
+
+TEST(NPCShop, TruncatedTemplateRowsLeaveThePreviousValuesIntact)
+{
+	const auto replacement = Bytes().Row(2, ITEM_CLASS_COAT, 20, 25, 7, 8);
+	for (std::size_t length = 0; length < replacement.data.size(); ++length)
+	{
+		MShopTemplate row;
+		CHECK(Load(row, Bytes().Row(0, ITEM_CLASS_SWORD, 1, 4, 2, 3)));
+		auto truncated = replacement;
+		truncated.data.resize(length);
+		CHECK(!Load(row, truncated));
+		CHECK_EQ(0, row.Type);
+		CHECK_EQ(ITEM_CLASS_SWORD, row.Class);
+		CHECK_EQ(1, row.MinType);
+		CHECK_EQ(4, row.MaxType);
+		CHECK_EQ(2, row.MinOption);
+		CHECK_EQ(3, row.MaxOption);
+	}
+}
+
+TEST(NPCShop, NegativeTemplateCountsFailAndClearPreviousRows)
+{
+	MShopTemplateTable table;
+	CHECK(Load(table, Bytes().U32(1).U32(4).Row(0, ITEM_CLASS_SWORD, 1, 2, 0, 0)));
+	CHECK(!Load(table, Bytes().U32(0xffffffffU)));
+	CHECK(table.empty());
+}
+
+TEST(NPCShop, IncompleteTemplateTablesNeverPublishPartialRows)
+{
+	const auto complete = Bytes().U32(2)
+		.U32(4).Row(0, ITEM_CLASS_SWORD, 1, 2, 0, 0)
+		.U32(9).Row(2, ITEM_CLASS_COAT, 3, 4, 1, 5);
+	// Start after the first complete key: even the old reader has a
+	// defined key and a bounded count while demonstrating partial publication.
+	for (std::size_t length = 8; length < complete.data.size(); ++length)
+	{
+		MShopTemplateTable table;
+		CHECK(Load(table, Bytes().U32(1).U32(90).Row(0, ITEM_CLASS_SWORD, 0, 0, 0, 0)));
+		auto truncated = complete;
+		truncated.data.resize(length);
+		CHECK(!Load(table, truncated));
+		CHECK(table.empty());
+	}
+}
+
+TEST(NPCShop, DuplicateTemplateKeysKeepTheFirstRowAndSaveInKeyOrder)
+{
+	MShopTemplateTable table;
+	CHECK(Load(table, Bytes().U32(3)
+		.U32(9).Row(0, ITEM_CLASS_SWORD, 1, 2, 0, 0)
+		.U32(9).Row(2, ITEM_CLASS_COAT, 3, 4, 5, 6)
+		.U32(4).Row(2, ITEM_CLASS_TROUSER, 8, 9, 1, 2)));
+	CHECK_EQ(2, table.size());
+	CHECK_EQ(ITEM_CLASS_SWORD, table.GetData(9)->Class);
+	CHECK_EQ(1, table.GetData(9)->MinType);
+	ShopFile saved({});
+	{
+		std::ofstream output(saved.path, std::ios::binary);
+		table.SaveToFile(output);
+		CHECK(output.good());
+	}
+	std::ifstream input(saved.path, std::ios::binary);
+	const std::vector<unsigned char> actual{std::istreambuf_iterator<char>(input), {}};
+	CHECK(actual == Bytes().U32(2)
+		.U32(4).Row(2, ITEM_CLASS_TROUSER, 8, 9, 1, 2)
+		.U32(9).Row(0, ITEM_CLASS_SWORD, 1, 2, 0, 0).data);
+}
+
+TEST(NPCShop, OwningTemplateTablesCannotBeShallowCopied)
+{
+	CHECK(!std::is_copy_constructible_v<MShopTemplateTable>);
+	CHECK(!std::is_copy_assignable_v<MShopTemplateTable>);
+}
+
+TEST(NPCShop, NullTemplateRowsAreRejectedBeforeWritingTheCount)
+{
+	MShopTemplateTable table;
+	CHECK(table.AddData(7, nullptr));
+	ShopFile saved({});
+	{
+		std::ofstream output(saved.path, std::ios::binary);
+		table.SaveToFile(output);
+		CHECK(output.fail());
+	}
+	CHECK_EQ(0, std::filesystem::file_size(saved.path));
+}
+
+TEST(NPCShop, ImpossibleCountsAndIncompletePrefixesFailBeforeAllocation)
+{
+	// Guards: running the legacy uninitialized/huge count loops would risk
+	// unbounded allocation, so the red phase uses bounded truncations instead.
+	const auto complete = Bytes().U32(1).U32(9).Row(0, ITEM_CLASS_SWORD, 0, 0, 0, 0);
+	for (std::size_t length = 0; length < 8; ++length)
+	{
+		MShopTemplateTable table;
+		CHECK(Load(table, complete));
+		auto truncated = complete;
+		truncated.data.resize(length);
+		CHECK(!Load(table, truncated));
+		CHECK(table.empty());
+	}
+	MShopTemplateTable table;
+	CHECK(!Load(table, Bytes().U32(0x7fffffffU)));
+	CHECK(table.empty());
+}
+
+TEST(NPCShop, EmptyTemplateFilesRoundTripAndClosedInputsClearOldRows)
+{
+	MShopTemplateTable table;
+	CHECK(Load(table, Bytes().U32(1).U32(7).Row(0, ITEM_CLASS_SWORD, 0, 0, 0, 0)));
+	CHECK(Load(table, Bytes().U32(0)));
+	CHECK(table.empty());
+	ShopFile saved({});
+	{
+		std::ofstream output(saved.path, std::ios::binary);
+		table.SaveToFile(output);
+		CHECK(output.good());
+	}
+	std::ifstream input(saved.path, std::ios::binary);
+	const std::vector<unsigned char> actual{std::istreambuf_iterator<char>(input), {}};
+	CHECK(actual == Bytes().U32(0).data);
+	CHECK(Load(table, Bytes().U32(1).U32(7).Row(0, ITEM_CLASS_SWORD, 0, 0, 0, 0)));
+	std::ifstream closed;
+	table.LoadFromFile(closed);
+	CHECK(closed.fail());
+	CHECK(table.empty());
+}
+
+TEST(NPCShop, TemplateReadsHonorTheCurrentPositionAndLeaveTrailingBytes)
+{
+	const auto bytes = Bytes().U8(0x55).U32(1).U32(19)
+		.Row(0, ITEM_CLASS_SWORD, 2, 3, 4, 5).U8(0x66);
+	ShopFile fixture(bytes);
+	std::ifstream input(fixture.path, std::ios::binary);
+	input.seekg(1);
+	MShopTemplateTable table;
+	table.LoadFromFile(input);
+	CHECK(input.good());
+	CHECK_EQ(1, table.size());
+	CHECK_EQ(4, table.GetData(19)->MinOption);
+	CHECK_EQ(0x66, input.get());
+}
+
+TEST(NPCShop, ThrowingReadFailuresPreserveRowsAndLeaveReloadsEmpty)
+{
+	MShopTemplate row;
+	CHECK(Load(row, Bytes().Row(0, ITEM_CLASS_SWORD, 1, 2, 3, 4)));
+	ShopFile shortRow(Bytes().U8(2));
+	std::ifstream input(shortRow.path, std::ios::binary);
+	input.exceptions(std::ios::failbit | std::ios::badbit);
+	bool threw = false;
+	try { row.LoadFromFile(input); }
+	catch (const std::ios::failure&) { threw = true; }
+	CHECK(threw);
+	CHECK_EQ(0, row.Type);
+	CHECK_EQ(1, row.MinType);
+	CHECK_EQ(4, row.MaxOption);
+
+	MShopTemplateTable table;
+	CHECK(Load(table, Bytes().U32(1).U32(7).Row(0, ITEM_CLASS_SWORD, 0, 0, 0, 0)));
+	ShopFile shortTable(Bytes().U32(2));
+	std::ifstream tableInput(shortTable.path, std::ios::binary);
+	tableInput.exceptions(std::ios::failbit | std::ios::badbit);
+	threw = false;
+	try { table.LoadFromFile(tableInput); }
+	catch (const std::ios::failure&) { threw = true; }
+	CHECK(threw);
+	CHECK(table.empty());
 }

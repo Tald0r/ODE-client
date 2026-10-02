@@ -1727,16 +1727,21 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_war_manager.cpp`, using the real manager, packet records,
     user information and zone table.
 
-- [ ] **4.29 NPC shop stock:** `MShopTemplateTable` and `BuildNPCShopShelf`
+- [x] **4.29 NPC shop stock:** `MShopTemplateTable` and `BuildNPCShopShelf`
   compile in `gamemodel`, making the fixed/mysterious shelf build used by
   shop packets testable outside the executable.
-  > **Status:** in progress (template-loader fixes).
+  > **Status:** done (2026-10-02).
   > The existing template implementation and header initially move unchanged.
   > `MNPC` retains shop creation and supplies item factories, live gender and
   > portal setters through `NPCShopHost`. The library builds shelves, selects
   > template ranges, initializes items and selects default portal destinations.
   > Missing callbacks create no items, use nonfemale selection, or skip portal
-  > writes. R1 is 423 Windows / 421 Ninja.
+  > writes. Stock stops at shelf capacity; rejected or unfinished items are
+  > released. Female pair selection stays within the template range, and invalid
+  > classes or absent tables produce no stock. Template reloads clear old rows
+  > and publish only complete input; duplicates keep the first row and the
+  > eleven-byte row layout is preserved. Saves reject null rows before writing
+  > to the supplied stream. R1 is 423 Windows / 421 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_npc_shop.cpp`, using the production builder, template table,
     shelves and item model with instrumented executable-service callbacks.

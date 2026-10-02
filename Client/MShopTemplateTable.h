@@ -8,6 +8,7 @@
 #define __MSHOPTEMPLATE_H__
 
 #include "CTypeMap.h"
+#include "Platform.h"
 
 //-----------------------------------------------------------------------------
 //		MShopTemplate
@@ -44,9 +45,14 @@ class MShopTemplate {
 class MShopTemplateTable : public CTypeMap<MShopTemplate> {
 	public :
 		MShopTemplateTable();
-		~MShopTemplateTable();
+		~MShopTemplateTable() override;
+		MShopTemplateTable(const MShopTemplateTable&) = delete;
+		MShopTemplateTable& operator=(const MShopTemplateTable&) = delete;
 
-	protected :
+		// Reloads clear old rows and publish only a complete table. Duplicate
+		// keys retain their first row, matching the legacy file reader.
+		void LoadFromFile(std::ifstream& file) override;
+		void SaveToFile(std::ofstream& file) override;
 
 };
 
