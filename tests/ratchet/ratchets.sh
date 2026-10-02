@@ -227,7 +227,8 @@ check () {
 # 421: NPC dialogue and its English overlay join gamemodel (4.30).
 # 420: effect-target state joins gamemodel with deferred result ownership (4.31).
 # 419: portal records join gamemodel (task 4.32).
-R1_BASELINE=419
+# 418: background-music metadata joins gamemodel with track selection (4.33).
+R1_BASELINE=418
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -288,7 +289,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 419: NPC dialogue and its English overlay join gamemodel (task 4.30).
 	# 418: effect-target state joins gamemodel (task 4.31).
 	# 417: portal records join gamemodel (task 4.32).
-	R1_NINJA_BASELINE=417
+	# 416: background-music metadata joins gamemodel (task 4.33).
+	R1_NINJA_BASELINE=416
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

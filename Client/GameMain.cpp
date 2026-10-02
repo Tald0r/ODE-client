@@ -44,6 +44,7 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "AddonDef.h"
 #include "UIDialog.h"
 #include "MusicDef.h"
+#include "MusicSelection.h"
 #include "ZoneInfoData.h"
 #include "CServerInformation.h"
 #include "UserInformation.h"
@@ -3878,102 +3879,14 @@ PlayMusicCurrentZone()
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_PLAY_SOUND))
 		return;
 	
-	const MUSIC_ID musicByTime[] = 
-	{
-		MUSIC_LIVE_OR_DEAD,
-		MUSIC_WINDMILL,
-		MUSIC_WINDMILL,
-		MUSIC_TREASURE,
-		MUSIC_MARCHING,
-		MUSIC_WHISPER,
-		MUSIC_HELL_KNIGHT,
-		MUSIC_LUNATIC,
-		MUSIC_SAY_AGAIN,
-		MUSIC_HIDE_AWAY,
-		MUSIC_HELL_KNIGHT,
-		MUSIC_HOLLOWEEN,		
-	};
-
-
-	
-	const MUSIC_ID musicByHolyLand[] =
-	{
-		MUSIC_HOLYLAND,
-		MUSIC_HOLYLAND_WAR,
-		MUSIC_OCTAVUS,
-		MUSIC_SEPTIMUS,
-		MUSIC_TERTIUS,
-		MUSIC_QUARTUS,
-	};
-
-	// 크리스마스 이벤트 날짜 체크
-//	SYSTEMTIME st;
-//	GetLocalTime( &st ); 
-	
-	// 크리스마스면 크리스마스 노래를 틀어준다.
-	int newMusicID;
-
-	// 안전지대인가?
-	int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-	ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( zoneID );	
-
-//	if (bSafetyZone 
-//		&& st.wMonth==12 && st.wDay>=17 && st.wDay<=25)
-//	{
-//		newMusicID = musicByTimeXmas[ (g_pGameTime->GetHour() / 2) % 12 ];
-//	}
-//	else
-	if( pZoneInfo!=NULL && pZoneInfo->HolyLand && g_pUserOption->PlayWaveMusic)
-	{
-		switch ( zoneID )
-		{
-		case 1201 :
-		case 1211 :
-		case 1212 :
-			newMusicID = musicByHolyLand[2];
-			break;
-		case 1202 :
-		case 1221 :
-		case 1222 :
-			newMusicID = musicByHolyLand[4];
-			break;
-		case 1203 :
-		case 1231 :
-		case 1232 :
-			newMusicID = musicByHolyLand[3];
-			break;
-		case 1204 :
-		case 1241 :
-		case 1242 :
-			newMusicID = musicByHolyLand[5];
-			break;
-		case 1205 :
-		case 1251 :
-		case 1252 :
-			newMusicID = musicByHolyLand[2];
-			break;
-		case 1206 :
-		case 1261 :
-		case 1262 :
-			newMusicID = musicByHolyLand[4];
-			break;
-		default :
-			if(g_pWarManager->IsExist( zoneID ) )
-				newMusicID = musicByHolyLand[1];
-			else
-				newMusicID = musicByHolyLand[0];
-			break;
-		}
-	} else 
-	{
-		newMusicID = musicByTime[ (g_pGameTime->GetHour() / 2) % 12 ];
-	}	
-	// 2004, 7, 6 sobeit add start - 질드레 레어 배경음 - bgm을 info에서 참조 하지 않는건지..
-	if(zoneID == 1410 || zoneID == 1411)
-		newMusicID = MUSIC_ILLUSIONS_WAY;
-	else if(zoneID == 1412 || zoneID == 1413)
-		newMusicID = MUSIC_GDR_LAIR;
-	// 2004, 7, 6 sobeit add start
+	const int zoneID = g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall;
+	const ZONETABLE_INFO* zoneInfo = g_pZoneTable->Get(zoneID);
+	const bool holyLand = zoneInfo != nullptr && zoneInfo->HolyLand;
+	const bool waveMusic = g_pUserOption->PlayWaveMusic;
+	const BYTE hour = g_pGameTime != nullptr ? g_pGameTime->GetHour() : 0;
+	const bool war = holyLand && waveMusic && g_pWarManager != nullptr
+		&& g_pWarManager->IsExist(zoneID);
+	const int newMusicID = SelectZoneMusic(zoneID, hour, holyLand, waveMusic, war);
 
 	if (g_Mode==MODE_GAME && g_pZone!=NULL && g_pUserOption->PlayMusic)
 	{
