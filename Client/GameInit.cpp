@@ -110,6 +110,7 @@
 #include <sstream>
 #include "ShrineInfoManager.h"
 #include "ServerInfoFileParser.h"
+#include "LoginEndpoint.h"
 
 //yckou
 #include "DebugKit.h"
@@ -1940,93 +1941,23 @@ InitSocket()
 		//---------------------------------------------------------
 		// Address 골라서 접속하기
 		//---------------------------------------------------------
-		int maxAddress = 1;
-
-		try {
-			if( g_pUserInformation->bKorean )
-				maxAddress = atoi(g_pConfigKorean->getProperty("MaxLoginServerAddress").c_str());
-			else
-				maxAddress = atoi( g_pConfigForeign->getProperty( g_Dimension, "MaxLoginServerAddress").c_str() );
-		} catch (NoSuchElementException&) {
-			//maxAddress = 1;
-		}
-
 		// 최근에 접속시도를 했던 서버 주소 번호..
-		static int previousTryServer = 0;
-		
-			
-		//for (int i=0; i<maxAddress; i++)
+		static std::uint64_t previousTryServer = 0;
+
 		{
-			// 여러 login 서버 중의 한 군데로 접속한다.
-			// 순서대로..
-			int i = previousTryServer % maxAddress;
-
-			try {				
-				std::string serverAddressString;
-				serverAddressString = "LoginServerAddress";
-				
-				// [Futec수정]
-				uint port;
-				if( g_pUserInformation->bKorean )
-					port = g_pConfigKorean->getPropertyInt("LoginServerPort");
-				else
-					port = g_pConfigForeign->getPropertyInt(g_Dimension, "LoginServerPort");
-
-
-				// 소켓을 생성하고 업데이트 서버에 연결한다.
-				std::string ServerAddress;				
-				if (g_FutecPort==0)
-				{				
-					if (i!=0)
-					{
-						char str[10];
-						SafeFormat::Format(str, "%d", i);
-						serverAddressString += str;
-					}
-					
-					if( g_pUserInformation->bKorean )
-						ServerAddress = g_pConfigKorean->getProperty(serverAddressString);
-					else
-						ServerAddress = g_pConfigForeign->getProperty( g_Dimension, serverAddressString);
-
-					// LoginServer의 port를 임의로 선택한다.
-					try {
-						int portNum;
-						if( g_pUserInformation->bKorean )
-							portNum = g_pConfigKorean->getPropertyInt("LoginServerPortNum");
-						else
-							portNum = g_pConfigForeign->getPropertyInt( g_Dimension, "LoginServerPortNum");
-						
-						// port 고르기
-						if (portNum>1)
-						{
-							if( g_pUserInformation->bKorean )
-								port = g_pConfigKorean->getPropertyInt("LoginServerBasePort") + rand()%portNum;
-							else
-								port = g_pConfigForeign->getPropertyInt( g_Dimension, "LoginServerBasePort") + rand()%portNum;
-						}
-					} catch (NoSuchElementException&) {
-					}
-				}
-				// Futec으로 접속
-				else
-				{
-					ServerAddress = g_FutecIP;
-					port = g_FutecPort;
-				}
-
-				// The launcher, or a developer, may point the client at another login server.
-				if (const auto host = NetworkTransport::ReadEnvironment("DARKEDEN_LOGIN_HOST")) {
-					if (!host->empty()) ServerAddress = *host;
-				}
-				if (const auto configuredPort = NetworkTransport::ReadEnvironment("DARKEDEN_LOGIN_PORT")) {
-					char* end = nullptr;
-					const long value = std::strtol(configuredPort->c_str(), &end, 10);
-					if (configuredPort->empty() || *end || value < 1 || value > 65535)
-						throw ConnectException("Invalid DARKEDEN_LOGIN_PORT");
-					port = static_cast<uint>(value);
-				}
-				if (ServerAddress.empty()) throw ConnectException("Login server address is empty");
+			try {
+				const LoginEndpointOptions options = {
+					.attempt = previousTryServer,
+					.launcherAddress = g_FutecIP,
+					.launcherPort = g_FutecPort,
+					.hostOverride = NetworkTransport::ReadEnvironment("DARKEDEN_LOGIN_HOST"),
+					.portOverride = NetworkTransport::ReadEnvironment("DARKEDEN_LOGIN_PORT"),
+				};
+				const auto endpoint = g_pUserInformation->bKorean
+					? SelectLoginEndpoint(*g_pConfigKorean, options)
+					: SelectLoginEndpoint(*g_pConfigForeign, g_Dimension, options);
+				std::string ServerAddress = endpoint.address;
+				const uint port = endpoint.port;
 				// Resolve a domain name here. Through a gateway the name is
 				// passed on unchanged; the gateway routes the advertised endpoint.
 				if (!NetworkTransport::UsesWebSocket() && (ServerAddress[0] < '0' || ServerAddress[0] > '9'))
@@ -2127,8 +2058,6 @@ InitSocket()
 				// 실패했으니까 다음 주소로..
 				previousTryServer ++;
 
-				// 마지막 주소인 경우에만 끝이다.
-				//if (i==maxAddress-1)
 				throw;
 			}
 		}

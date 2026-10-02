@@ -349,3 +349,8 @@ Client/ServerInfoFileParser.h
 Client/MWeather.cpp
 Client/MWeather.h
 Client/MViewDef.h
+
+# Login address rotation, randomized ports and launcher/environment overrides.
+# GameInit keeps DNS, connection attempts and UI transitions (task 4.24).
+Client/LoginEndpoint.cpp
+Client/LoginEndpoint.h

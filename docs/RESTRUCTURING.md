@@ -1647,6 +1647,25 @@ rounds settled* for the host rules). Test fixtures share
     `weather_signed_tests` / `weather_unsigned_tests` rebuilding that same
     implementation under both char modes.
 
+- [x] **4.24 Login endpoint selection:** `SelectLoginEndpoint` in `gamemodel`
+  owns address rotation, configured/randomized ports and launcher/environment
+  override precedence for both real configuration readers.
+  > **Status:** done (2026-10-02). `GameInit` supplies the current attempt and
+  > owned override values. The library draws randomness only when choosing a
+  > configured range; tests supply a deterministic draw. DNS, sockets, advancing
+  > attempts after connection failure and UI transitions remain executable-side.
+  > The initial extraction preserves the selection rules. The test-first
+  > follow-up validates complete decimal numbers and entire port ranges before
+  > modulo/addition, uses full-width retry indices and address suffixes, and
+  > applies override precedence before reading unused configuration. Missing
+  > optional counts/bases now share the same defaults across both readers.
+  > Effective malformed values report `ConnectException`; ports stay in
+  > 1–65535 and owned overrides reject embedded NUL bytes. R1 remains
+  > 431 Windows / 429 Ninja because `GameInit.cpp` still owns startup.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_login_endpoint.cpp`, linking both configuration readers
+    and the production selection implementation.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop
