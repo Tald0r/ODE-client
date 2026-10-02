@@ -60,6 +60,7 @@
 #endif
 
 #include "MViewDef.h"
+#include "MScreenFade.h"
 #include <fstream>
 #include <map>
 #include <queue>
@@ -200,9 +201,9 @@ class MTopView : public MRequestMode {
 		// Fade In/out
 		//
 		//------------------------------------------------------
-		bool			IsFade() const			{ return m_bFade; }
+		bool			IsFade() const			{ return m_Fade.IsActive(); }
 		void			SetFadeStart(signed char start, signed char end, signed char step, BYTE r=0, BYTE g=0, BYTE b=0, WORD delay = 0);
-		void			SetFadeEnd() 			{ m_bFade = false; }
+		void			SetFadeEnd() 			{ m_Fade.Stop(); }
 		
 		//------------------------------------------------------
 		//
@@ -668,14 +669,8 @@ class MTopView : public MRequestMode {
 		//------------------------------------------------------
 		// Fade In/Out
 		//------------------------------------------------------		
-		// Signed on every ABI: the fade runs from 31 down to -1 as well as
-		// up, and a plain char would be unsigned on arm64 Linux.
-		signed char			m_FadeValue;	// current fade value
-		signed char			m_FadeEnd;		// the value the fade stops past
-		signed char			m_FadeInc;		// change per step
-		bool				m_bFade;		// whether a fade is running
+		MScreenFade			m_Fade;
 		WORD				m_FadeColor;	// fade colour
-		WORD				m_delayFrame;	// frames between steps (0: one step per logic tick)
 		
 		//------------------------------------------------------
 		// 현재 화면의 Tile을 저장해서 다음에 출력할때 이용한다.
