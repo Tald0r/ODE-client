@@ -203,7 +203,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 |---|---|
 | `GameMain.cpp`, `GameInit.cpp`, `GameUI.cpp`, `Client.cpp`, `SDLMain.cpp` | process lifecycle, DLL whitelist, render loop and quest UI events; also where the hosts (`MItemHost`, `MPriceHost`, `WireHost`) are installed, which no test can prove - `WireHost`'s installer is designated-initialised since 2026-09-09, so a wrong slot there is a compile error, but a wrong *body* still is not |
 | `MZone` live sector allocation/application, rendering and visual-effect ownership / `TileRenderer` draw paths | map parsing is tested in `ZoneMapData`; application and effects reach live sectors, creature status, sprite tables and `MTopView`; drawing uses live surfaces. Viewer tools cover some drawing; ownership guards use full builds and source-path audits. |
-| `MTopView` draw calls and the per-frame state that only the draw calls read (`DrawFade`, `DrawItemBroken` and the other draw branches) | the view draws on the live surface and reads the frame clock (`g_CurrentFrame`, `g_bFrameChanged`), `g_pEventManager` and the player's gear globals; it is the render loop the goals keep executable-side. This does not exempt a rule that can be stated without those globals: such a rule moves into a library first and gets a test. Known open case: the fade stepping (`SetFadeStart`'s direction and `DrawFade`'s advance and end tests, a pure state machine over start, end, step and delay) has no automated guard, so its signed-char bug fixed on 2026-09-29 can return unnoticed; move it into a library (with a test that runs the 31 to -1 fade under both char signednesses) the next time `MTopView`'s fade is touched. Fixes to the draw calls use full builds; the MinGW and Emscripten compiles some fix commits cite are a local check that is not in the tree, and no CI job repeats them. |
+| `MTopView` draw calls and the per-frame state that only the draw calls read (`DrawItemBroken` and the other draw branches) | the view draws on the live surface and reads the frame clock (`g_CurrentFrame`, `g_bFrameChanged`), `g_pEventManager` and the player's gear globals; it is the render loop the goals keep executable-side. Rules that can be stated without those globals move into a library first and get a test. Fade direction, stepping, delay and stopping now belong to `gamemodel`'s `MScreenFade` (task 4.18), with the 31 to -1 transition tested under both char signednesses; `MTopView` keeps suppression, colour conversion and surface calls. Fixes to the draw calls use full builds; the MinGW and Emscripten compiles some fix commits cite are a local check that is not in the tree, and no CI job repeats them. |
 | `MGuildMarkManager::LoadGuildMark` integration | binds the live guild mapper to the renderer's owned sprite cache; index and sprite decoding stay in the tested SpriteLib helpers. Publication and negative-cache guards use full builds and source/ownership review. |
 | `MCreature`, `MPlayer`, `MFakeCreature` movement and attached-effect orchestration; `PacketFunction::ExecuteActionInfoFromMainNode` | virtual character classes reach the live zone, UI, sprite tables and effect generators; action results transfer to `MEffectTarget` and execute through the same game objects. Bounds/queue/ownership guards stay here; extracting those classes would require the render/game-loop rewrite excluded above. Review regression guards use full builds and existing automated checks, without a runtime gate. |
 | `VS_UI/src/**` rendering and dialogs that still reach game globals | these paths use full builds and available automated checks; live verification is optional. `ui_tests` now links the real Button, EventButton, SkinManager, LineEditor, LineEditorVisual state/focus methods, InputFocusManager and the UI result receiver, so those independently reachable components require test-first fixes. `LineEditorVisual::Show` remains separate because it reaches the game's renderer. |
@@ -1547,6 +1547,23 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_event_queue.cpp`, including compile-time checks that
     the screen manager uses the tested library methods.
+
+- [x] **4.18 Screen-fade progression:** `MScreenFade` compiles in `gamemodel`;
+  `MTopView` supplies the current frame and draws the current value before
+  advancing it.
+  > **Status:** done (2026-10-02). The model owns direction, value, endpoints,
+  > delay and the strict 80-frame cutscene hold. Zero-step death shading,
+  > logic-tick gating, one delayed step after skipped frames, wrapping frame
+  > subtraction and the delay phase retained across restarts are preserved.
+  > Fresh state is explicitly idle, and the frame stamp belongs to the view
+  > instead of a function static shared by every view. Its first active,
+  > unsuppressed draw starts that clock. Surface operations and event-based
+  > suppression stay in `MTopView`; R1 remains 437 Windows / 435 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, `test_screen_fade.cpp`
+    against the production library, and `screen_fade_signed_tests` /
+    `screen_fade_unsigned_tests`, which rebuild the same implementation
+    under both char modes. Both native CI verification scripts require
+    those tests to be registered.
 
 ## Phase 5 — Long tail
 

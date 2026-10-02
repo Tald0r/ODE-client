@@ -313,3 +313,7 @@ Client/ConvertDuration.h
 # ownership and installs rendering/player callbacks in the executable.
 Client/MEventQueue.cpp
 Client/MEventQueue.h
+
+# Screen-fade progression; MTopView supplies frames and renders the value.
+Client/MScreenFade.cpp
+Client/MScreenFade.h

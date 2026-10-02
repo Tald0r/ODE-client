@@ -87,6 +87,36 @@ set_source_files_properties(
 
 add_test(NAME unit_tests COMMAND unit_tests)
 
+# The fade's -1 endpoint must work with both plain-char ABIs. Ordinary
+# unit_tests uses gamemodel's object; these targets rebuild that same source
+# under each char mode so a regression in the implementation is exercised.
+foreach(char_mode IN ITEMS signed unsigned)
+	add_library(screen_fade_${char_mode} STATIC ${CMAKE_SOURCE_DIR}/Client/MScreenFade.cpp)
+	target_include_directories(screen_fade_${char_mode} PUBLIC ${CMAKE_SOURCE_DIR}/Client)
+	add_executable(screen_fade_${char_mode}_tests
+		framework/test_main.cpp
+		unit/test_screen_fade.cpp
+	)
+	target_link_libraries(screen_fade_${char_mode}_tests PRIVATE
+		test_framework screen_fade_${char_mode})
+	if(char_mode STREQUAL "unsigned")
+		target_compile_definitions(screen_fade_${char_mode}_tests PRIVATE SCREEN_FADE_EXPECT_UNSIGNED_CHAR=1)
+	else()
+		target_compile_definitions(screen_fade_${char_mode}_tests PRIVATE SCREEN_FADE_EXPECT_UNSIGNED_CHAR=0)
+	endif()
+	foreach(fade_target IN ITEMS screen_fade_${char_mode} screen_fade_${char_mode}_tests)
+		if(MSVC)
+			# MSVC's default is signed char; /J selects unsigned char.
+			if(char_mode STREQUAL "unsigned")
+				target_compile_options(${fade_target} PRIVATE /J)
+			endif()
+		else()
+			target_compile_options(${fade_target} PRIVATE -f${char_mode}-char)
+		endif()
+	endforeach()
+	add_test(NAME screen_fade_${char_mode}_tests COMMAND screen_fade_${char_mode}_tests)
+endforeach()
+
 #----------------------------------------------------------------------
 # decore_tests - the shared parity vectors of the vendored server rules
 # (third_party/decore/README.md), every row asserted against the copy

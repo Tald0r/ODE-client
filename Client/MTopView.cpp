@@ -6427,13 +6427,7 @@ MTopView::GetDirectionToPosition(int originX, int originY, int destX, int destY)
 void			
 MTopView::SetFadeStart(signed char start, signed char end, signed char step, BYTE r, BYTE g, BYTE b, WORD delay)
 {	
-	step = static_cast<signed char>(abs(step));
-
-	m_FadeValue	= start;
-	m_FadeEnd	= end;
-	m_FadeInc	= (start<end)? step : -step;
-	m_bFade		= true;
-	m_delayFrame = delay;
+	m_Fade.Start(start, end, step, delay);
 // SDL2: Unified path - always use SDL color format
 	m_FadeColor = CSDLGraphics::Color(r,g,b);
 }
@@ -6446,115 +6440,24 @@ MTopView::SetFadeStart(signed char start, signed char end, signed char step, BYT
 //----------------------------------------------------------------------	
 void 
 MTopView::DrawFade()
-{	
-	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_FADE_SCREEN))
+{
+	if (g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_FADE_SCREEN) || !m_Fade.IsActive())
 		return;
 
-	//--------------------------------------------------------
-	// Draw while a fade is running
-	//--------------------------------------------------------
-	if (m_bFade)// || bEvent)
-	{
-		static DWORD TempFadeFrame = g_CurrentFrame;
-//		if(bEvent)
-//		{
-//			const MEvent *event = g_pEventManager->GetEventByFlag(EVENTFLAG_FADE_SCREEN);
-//
-//			m_FadeValue = event->parameter1 >> 24;
-//			
-//
-//			int r = (event->parameter1 >> 16)&0xff, g = (event->parameter1 >> 8)&0xff, b = (event->parameter1)&0xff;
-//			
+	RECT rect;
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = g_GameRect.right;
+	rect.bottom = g_GameRect.bottom;
 
-		RECT rect;
-		rect.left =0;
-		rect.top = 0;
-		rect.right = g_GameRect.right;
-		rect.bottom = g_GameRect.bottom;	
+	m_pSurface->Lock();
+	// The SDL path only blits non-black fades, as before the extraction.
+	if (m_FadeColor != 0)
+		m_pSurface->BltColorAlpha(&rect, m_FadeColor, m_Fade.Value());
+	m_pSurface->Unlock();
 
-//		//--------------------------------------------------------
-//		// 3D acceleration
-//		//--------------------------------------------------------
-//
-//			// Cover the screen with m_FadeColor.
-//			pixel |= m_FadeColor;
-//
-//			DrawBox3D(&rect, pixel);
-//		}
-//		//--------------------------------------------------------
-//		// 2D
-//		//--------------------------------------------------------
-//		else
-		{
-			m_pSurface->Lock();
-
-			//-------------------------------------------------
-			// Black
-			//-------------------------------------------------
-			if (m_FadeColor==0)
-			{
-// SDL2: Gamma functions are handled differently
-			// GammaBox555/GammaBox565 were DirectDraw specific
-			// Fade is now handled via alpha blending
-			}
-			//-------------------------------------------------
-			// Any other colour
-			//-------------------------------------------------
-			else
-			{
-				m_pSurface->BltColorAlpha(&rect, m_FadeColor, m_FadeValue);
-			}
-
-			m_pSurface->Unlock();
-		}
-
-		//------------------------------------------------
-		// Next fade value
-		//------------------------------------------------
-		// 2004, 6, 21, sobeit add start - for the Gilles de Rais cutscene
-		if(m_delayFrame)
-		{
-			if(g_CurrentFrame - TempFadeFrame >= m_delayFrame)
-			{
-				if( m_FadeEnd == -1 && 1 == m_FadeValue ) // the Gilles de Rais darkening holds a while once dark
-				{
-					if(g_CurrentFrame - TempFadeFrame> 16*5) // held for 5 seconds
-						m_bFade = false;
-				}
-				else
-				{
-					TempFadeFrame = g_CurrentFrame;
-					m_FadeValue += m_FadeInc;
-				}
-			}
-		}
-		else
-		// 2004, 6, 21, sobeit add end - for the Gilles de Rais cutscene
-		// Advance only on logic ticks: Draw now also runs between ticks for
-		// 60 fps interpolation, and an unguarded step here would speed every
-		// fade up by the ratio of draws to ticks.
-		if (g_bFrameChanged)
-			m_FadeValue += m_FadeInc;
-
-		//------------------------------------------------
-		// Is it over?
-		//------------------------------------------------
-		// Counting up
-		if (m_FadeInc > 0)
-		{
-			if (m_FadeValue > m_FadeEnd || m_FadeValue > 31)
-			{
-				m_bFade = false;
-			}
-		}
-		else
-		{
-			if (m_FadeValue < m_FadeEnd || m_FadeValue < 1)
-			{
-				m_bFade = false;
-			}
-		}	
-	}	
+	// Draw the current shade before testing the next step and end boundary.
+	m_Fade.Advance(g_CurrentFrame, g_bFrameChanged);
 }
 //----------------------------------------------------------------------
 // 화면 좌표 (x,y)가 가리키는 위치를 선택하면 
