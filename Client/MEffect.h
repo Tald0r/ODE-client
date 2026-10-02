@@ -58,6 +58,7 @@ MEffect: Effect anchored to a Tile
 #include "MObject.h"
 #include "MEffectTarget.h"
 #include "EffectResourceContainer.h"
+#include "EffectTiming.h"
 
 #include <fstream>
 
@@ -66,7 +67,7 @@ MEffect: Effect anchored to a Tile
 extern DWORD	g_CurrentFrame;
 
 
-class MEffect : public MObject, public CAnimationFrame {
+class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 	
 	public :
 		enum EFFECT_TYPE 
@@ -125,7 +126,7 @@ class MEffect : public MObject, public CAnimationFrame {
 		void			SetCount(DWORD last, DWORD linkCount=0xFFFF);
 		DWORD			GetEndFrame() const			{ return m_EndFrame; }
 		DWORD			GetEndLinkFrame() const		{ return m_EndLinkFrame; }
-		bool			IsEnd() const				{ return g_CurrentFrame >= m_EndFrame; }
+		bool			IsEnd() const				{ return EffectTiming::IsEnd(g_CurrentFrame); }
 
 		
 		//--------------------------------------------------------
@@ -206,14 +207,8 @@ class MEffect : public MObject, public CAnimationFrame {
 
 
 	protected :
-		DWORD					m_DelayFrame;
-		
 		int	m_est;
 
-		// 끝나는 시간
-		DWORD					m_EndFrame;
-		DWORD					m_EndLinkFrame;	// 다음 link로 넘어가는 frame
-		
 		BYTE					m_Direction;	// 방향
 
 		// Effect의 밝기 
@@ -237,7 +232,6 @@ class MEffect : public MObject, public CAnimationFrame {
 		bool			m_bMulti;
 
 		bool			m_bDrawSkip;
-		DWORD			m_dwWaitFrame;
 
 		// Newly added: resource container (dependency injection)
 		EffectResourceContainer*	m_pResources;

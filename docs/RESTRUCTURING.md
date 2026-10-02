@@ -1936,6 +1936,19 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_parabola_motion.cpp` and `tests/unit/test_parabola_step.cpp`,
     using production motion and shared math tables.
 
+- [x] **4.43 Effect timing:** `EffectTiming` holds lifetime, link, draw-delay
+  and wait deadlines in `gamemodel`, with explicit current-frame inputs.
+  > **Status:** done (this commit).
+  > `MEffect` supplies the global frame to timing methods; derived effects keep
+  > their existing deadline updates. `MAttachEffect` selects the attached
+  > duration convention: only 0xFFFF becomes the maximum DWORD deadline.
+  > Count deadlines retain the minus-one offset; delay/wait deadlines do not.
+  > Absolute unsigned comparisons and DWORD wrap remain. All deadlines start
+  > at zero, including wait state; callers explicitly schedule a wait.
+  > R1 stays 414 Windows / 412 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_effect_timing.cpp`, using production timing state.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop

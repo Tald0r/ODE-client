@@ -865,6 +865,7 @@ target_include_directories(effect_viewer PRIVATE
 )
 
 target_link_libraries(effect_viewer PRIVATE
+	gamemodel # MEffect's shared timing state
 	SpriteLib
 	framelib
 	dxlib

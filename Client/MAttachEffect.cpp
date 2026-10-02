@@ -29,27 +29,11 @@ MAttachEffect::MAttachEffect(TYPE_EFFECTSPRITETYPE type, DWORD last, DWORD linkC
 	// EffectSprite 종류
 	m_EffectSpriteType	= type;
 	
-	// 끝나는 시간 = 현재 시간 + 지속 시간
-	// 2004, 12, 9, sobeit add start - 정말 무한?
-	if(last == 0xFFFF)
-		m_EndFrame			= 0xFFFFFFFF;
-	else
-	// 2004, 12, 9, sobeit add end
-		m_EndFrame			= g_CurrentFrame + last - 1;
+	EffectTiming::SetAttachedCount(g_CurrentFrame, last, linkCount);
 	
 	// 특별히 색깔 바뀌는 부위 없음...
 	// 전체가 바뀐다는걸 의미하기도 한다. - -;
 	m_bEffectColorPart = ADDON_NULL;
-
-	// linkCount
-	if (linkCount==MAX_LINKCOUNT)
-	{
-		m_EndLinkFrame = m_EndFrame;
-	}
-	else
-	{
-		m_EndLinkFrame = g_CurrentFrame + linkCount - 1;
-	}
 
 	//-------------------------------------------------------
 	// 제대로 된 type인 경우.. 아닌 경우는 색깔이거나 뭐..그렇다 - -;
