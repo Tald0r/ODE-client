@@ -443,3 +443,7 @@ Client/MInteractionObjectTable.h
 # Cached orbit paths, starting steps and effect update/pause state (4.39).
 Client/EffectOrbit.cpp
 Client/EffectOrbit.h
+
+# Shared linear trajectory state used by linear, guided and chase effects (4.40).
+Client/LinearEffectMotion.cpp
+Client/LinearEffectMotion.h

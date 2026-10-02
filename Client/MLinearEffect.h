@@ -6,8 +6,9 @@
 #define	__MLINEAREFFECT_H__
 
 #include "MMovingEffect.h"
+#include "LinearEffectMotion.h"
 
-class MLinearEffect : public MMovingEffect {
+class MLinearEffect : public MMovingEffect, protected LinearEffectMotion {
 	public :
 		MLinearEffect(BYTE bltType);
 		~MLinearEffect();
@@ -23,21 +24,6 @@ class MLinearEffect : public MMovingEffect {
 		// 한 번의 Update에 호출될 함수..
 		//--------------------------------------------------------
 		virtual bool		Update();
-	
-
-	protected :
-		// 목표 좌표
-		int			m_TargetX;
-		int			m_TargetY;
-		int			m_TargetZ;
-
-		// 한 번에 이동하는 pixel량
-		float		m_StepX;
-		float		m_StepY;
-		float		m_StepZ;		
-	
-		// 이동해야하는 전체 거리(pixel)
-		float		m_Len;	
 };
 
 #endif

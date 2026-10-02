@@ -1894,6 +1894,19 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_effect_orbits.cpp`, using production paths and state.
 
+- [x] **4.40 Linear-effect movement:** `LinearEffectMotion` holds target,
+  velocity and path length in `gamemodel`.
+  > **Status:** done (this commit).
+  > `MLinearEffect`, `MGuidanceEffect` and `MChaseEffect` share its advance and
+  > arrival operation. The executable supplies the current position and arrival
+  > distance, and keeps target lookup, direction, lifetime, animation and light.
+  > Arrival uses strict per-axis distances after moving, then snaps all axes and
+  > clears velocity. Zero speed retains the existing non-arrival behavior.
+  > Curved subclasses retain access to the trajectory state. R1 stays 414
+  > Windows / 412 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_linear_effect_motion.cpp`, using production motion state.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop
