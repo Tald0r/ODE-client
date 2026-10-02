@@ -27,6 +27,7 @@
 #include "UserOption.h"
 #include "MEffectGeneratorTable.h"
 #include "MZoneTable.h"
+#include "AmbientSoundState.h"
 #include "CMessageArray.h"
 #include "DebugInfo.h"
 #include "ServerInfo.h"
@@ -54,10 +55,7 @@
 //----------------------------------------------------------------------
 MZone*				g_pZone				= NULL;
 
-BOOL g_bPlayPropeller = FALSE;
-
 extern HWND					g_hWnd;
-extern MonotonicClock::TimePoint	g_ZoneRandomSoundTime;
 
 extern void		SendPositionInfoToParty();
 extern void		SendStatusInfoToParty();
@@ -5183,58 +5181,14 @@ MZone::UpdateSound()
 		PlaySound(sound.GetSoundID(), false, sound.GetX(), sound.GetY());
 	});
 
-	//----------------------------------------------------------------
-	// Zone에서 random으로 나는 소리
-	//----------------------------------------------------------------
-	//----------------------------------------------------------------
-	// 헬기장 소리..
-	// 하드코딩.. 우헤헤.. 나중에 빼야된다.
-	//----------------------------------------------------------------
-	int zoneID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
-			
-	if (zoneID==2106 || zoneID==2004 || zoneID==2014 || zoneID==2024)
-	{
-		if (!g_bPlayPropeller)// && g_CurrentTime > g_ZoneRandomSoundTime)
-		{
-			int x, y;
-			x = g_pPlayer->GetX();// + ((rand()%2)? 1 : -1) * (rand()%7 + 4);
-			y = g_pPlayer->GetY();// + ((rand()%2)? 1 : -1) * (rand()%6 + 2);
-
-			PlaySound( SOUND_WORLD_PROPELLER, true, x, y );
-			g_bPlayPropeller = TRUE;
-
-			//g_ZoneRandomSoundTime = 0x0FFFFFFF;		// -_-;;
-		}
-	}
-	else
-	{
-		if (g_bPlayPropeller)
-		{
-			StopSound( SOUND_WORLD_PROPELLER );
-
-			g_bPlayPropeller = FALSE;
-		}
-
-		if (g_FrameNow > g_ZoneRandomSoundTime)
-		{
-			ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( zoneID );
-
-			if (pZoneInfo!=NULL)
-			{
-				int soundID = pZoneInfo->GetRandomSoundID();			
-
-				int x, y;
-
-				x = g_pPlayer->GetX() + ((rand()%2)? 1 : -1) * (rand()%15 + 13);
-				y = g_pPlayer->GetY() + ((rand()%2)? 1 : -1) * (rand()%12 + 10);
-
-				PlaySound( soundID, false, x, y );
-			}
-			
-			// the next random sound in 6 to 15 seconds
-			g_ZoneRandomSoundTime = g_FrameNow + MonotonicClock::Millis(((rand()%10)+6)*1000);			
-		}
-	}
+	const int zoneID = g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall;
+	const ZONETABLE_INFO* zone = g_pZoneTable ? g_pZoneTable->Get(zoneID) : nullptr;
+	std::optional<AmbientSoundPosition> player;
+	if (g_pPlayer) player = {g_pPlayer->GetX(), g_pPlayer->GetY()};
+	const auto actions = g_ZoneAmbientSounds.Update(g_FrameNow, zoneID, zone, player);
+	if (actions.stop) StopSound(*actions.stop);
+	if (actions.play)
+		PlaySound(actions.play->id, actions.play->loop, actions.play->x, actions.play->y);
 }
 
 //----------------------------------------------------------------------

@@ -424,3 +424,8 @@ Client/SoundNode.cpp
 Client/SoundNode.h
 Client/DelayedSoundQueue.cpp
 Client/DelayedSoundQueue.h
+
+# Ambient sound timing, propeller transitions and randomized requests (4.35).
+# GameMain retains the shared state; MZone applies returned audio actions.
+Client/AmbientSoundState.cpp
+Client/AmbientSoundState.h
