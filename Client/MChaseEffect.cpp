@@ -3,9 +3,6 @@
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MChaseEffect.h"
-#include "MCreature.h"
-#include "MZone.h"
-#include "MTopView.h"
 
 //----------------------------------------------------------------------
 // 
@@ -68,7 +65,7 @@ MChaseEffect::Update()
 		
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		//--------------------------------

@@ -2,12 +2,22 @@
 // MGuidanceEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
-#include "MLinearEffect.h"
 #include "MGuidanceEffect.h"
-#include "MCreature.h"
-#include "MZone.h"
-#include "MTopView.h"
+
+const MGuidanceEffectHost* MGuidanceEffect::s_pHost = nullptr;
+
+const MGuidanceEffectHost* MGuidanceEffect::SetHost(const MGuidanceEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MGuidanceEffect::ReadCreaturePosition(TYPE_OBJECTID id, int& x, int& y, int& z)
+{
+	x = y = z = 0;
+	return s_pHost && s_pHost->CreaturePosition && s_pHost->CreaturePosition(id, x, y, z);
+}
 
 //----------------------------------------------------------------------
 // 
@@ -55,27 +65,18 @@ MGuidanceEffect::SetTraceCreatureID(TYPE_OBJECTID id)
 bool
 MGuidanceEffect::TraceCreature()
 {
-	MCreature* pCreature = g_pZone->GetCreature( m_CreatureID );
+	int x, y, z;
 
 	// Creature가 사라졌을 경우..
-	if (pCreature == NULL)
+	if (!ReadCreaturePosition(m_CreatureID, x, y, z))
 	{
 		m_CreatureID = OBJECTID_NULL;
 		m_EndFrame = 0;
 		return false;
 	}
 
-	// 현재의 좌표를 읽어온다.
-	POINT point;// = MTopView::MapToPixel(pCreature->GetX(), pCreature->GetY());
-	//point.x += pCreature->GetSX();
-	//point.y += pCreature->GetSY();	
-	point.x = pCreature->GetPixelX();
-	point.y = pCreature->GetPixelY();
-
 	// 새로운 목적지 설정
-	MLinearEffect::SetTarget( point.x, point.y, 
-								pCreature->GetZ(),
-								m_StepPixel);
+	MLinearEffect::SetTarget(x, y, z, m_StepPixel);
 
 	return true;
 }
@@ -86,7 +87,7 @@ MGuidanceEffect::TraceCreature()
 bool
 MGuidanceEffect::Update()
 {	
-	if (g_CurrentFrame < m_EndFrame)
+	if (!IsEnd())
 	{
 		if (!TraceCreature())
 			return false;
@@ -113,7 +114,7 @@ MGuidanceEffect::Update()
 
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		//--------------------------------
