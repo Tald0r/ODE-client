@@ -70,6 +70,7 @@ class ZONETABLE_INFO {
 		ZONETABLE_INFO();
 
 		TYPE_SOUNDID			GetRandomSoundID() const;
+		TYPE_SOUNDID			GetRandomSoundID(unsigned randomValue) const;
 
 		//-------------------------------------------------------
 		// File I/O

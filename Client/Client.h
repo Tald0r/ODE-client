@@ -152,7 +152,8 @@ extern bool					g_bZoneSmallLoadImage;
 extern MZone*				g_pZoneLarge;
 extern MZone*				g_pZoneSmall;
 extern bool					g_bZonePlayerInLarge;
-extern MonotonicClock::TimePoint	g_ZoneRandomSoundTime;
+class AmbientSoundState;
+extern AmbientSoundState g_ZoneAmbientSounds;
 
 // EffectManager
 extern MScreenEffectManager*	g_pInventoryEffectManager;

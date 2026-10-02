@@ -45,6 +45,7 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "UIDialog.h"
 #include "MusicDef.h"
 #include "MusicSelection.h"
+#include "AmbientSoundState.h"
 #include "ZoneInfoData.h"
 #include "CServerInformation.h"
 #include "UserInformation.h"
@@ -138,9 +139,6 @@ extern CSoundPartManager*	g_pSoundManager;
 extern bool g_bGoodFPS;
 
 
-// 헬기장 프로펠러 소리.. - -;
-extern BOOL g_bPlayPropeller;
-
 #ifdef OUTPUT_DEBUG
 	extern bool g_bSlideScreenShot;
 	extern bool g_bSaveSlideScreenShot;
@@ -191,7 +189,7 @@ bool				g_bZoneSmallLoadImage = false;
 MZone*				g_pZoneLarge = NULL;				
 MZone*				g_pZoneSmall = NULL;
 bool				g_bZonePlayerInLarge = true;
-MonotonicClock::TimePoint	g_ZoneRandomSoundTime;
+AmbientSoundState g_ZoneAmbientSounds;
 bool				g_bWatchMode = false;
 
 
@@ -888,7 +886,7 @@ SetMode(enum CLIENT_MODE mode)
 			// LCPCListHandler에서 하게 했다.
 			//UI_StartCharacterManager();				
 
-			g_ZoneRandomSoundTime = g_FrameNow;
+			g_ZoneAmbientSounds.SetNextSoundTime(g_FrameNow);
 
 			//------------------------------------------------------------
 			// server name 설정
@@ -1068,7 +1066,7 @@ SetMode(enum CLIENT_MODE mode)
 
 			DEBUG_ADD("[ SetMode ] UI FINISH");
 
-			g_ZoneRandomSoundTime = g_FrameNow;
+			g_ZoneAmbientSounds.SetNextSoundTime(g_FrameNow);
 
 			// Debug Message
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_UPDATEINFO");
@@ -1942,7 +1940,7 @@ LoadZone(int n)
 	if (g_pSoundManager!=NULL)
 	{
 		g_pSoundManager->Stop();		
-		g_bPlayPropeller = FALSE;
+		g_ZoneAmbientSounds.OnSoundsStopped();
 	}
 	g_SDLAudio.ReleaseDuplicateBuffer();
 
@@ -2580,7 +2578,7 @@ LoadZone(int n)
 	//------------------------------------------------
 	// Random SoundID 시간 설정
 	//------------------------------------------------
-	g_ZoneRandomSoundTime = g_FrameNow + MonotonicClock::Millis(((rand()%5)+10)*1000);	// 10 to 15 s from now
+	g_ZoneAmbientSounds.DelayAfterZoneLoad(g_FrameNow, static_cast<unsigned>(rand()));
 	
 	
 

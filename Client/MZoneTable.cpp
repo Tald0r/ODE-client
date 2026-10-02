@@ -62,24 +62,17 @@ ZONETABLE_INFO::ZONETABLE_INFO()
 TYPE_SOUNDID			
 ZONETABLE_INFO::GetRandomSoundID() const
 {
-	int numSound = static_cast<int>(SoundIDList.size());
+	if (SoundIDList.empty()) return SOUNDID_NULL;
+	return GetRandomSoundID(static_cast<unsigned>(rand()));
+}
 
-	if (numSound == 0)
-	{
-		return SOUNDID_NULL;
-	}
-
-	int select = rand()%numSound;
-	
-	SOUNDID_LIST::const_iterator	iID = SoundIDList.begin();
-
-	// select번째 id를 선택한다.
-	for (int i=0; i<select; i++)
-	{
-		iID++;
-	}
-
-	return *iID;
+TYPE_SOUNDID ZONETABLE_INFO::GetRandomSoundID(unsigned randomValue) const
+{
+	if (SoundIDList.empty()) return SOUNDID_NULL;
+	auto selected = randomValue % SoundIDList.size();
+	auto sound = SoundIDList.begin();
+	while (selected != 0) { ++sound; --selected; }
+	return *sound;
 }
 
 //----------------------------------------------------------------------
