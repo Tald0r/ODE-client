@@ -86,6 +86,7 @@
 #include "MScreenEffectManager.h"
 #include "MStopInventoryEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
+#include "MRisingEffectGenerator.h"
 #include "MInventory.h"
 #include "VS_UI_GameCommon.h"
 #include "MEffectGeneratorTable.h"
@@ -2626,6 +2627,7 @@ void ReleaseAllObjects()
 	MScreenEffectManager::SetHost(nullptr);
 	MStopInventoryEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
+	MRisingEffectGenerator::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -3099,6 +3101,23 @@ static const MFallingEffectHost s_FallingEffectHost = {
 	},
 };
 
+static const MRisingEffectHost s_RisingEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MRisingEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release());
+	},
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3429,6 +3448,7 @@ InitGameObject()
 	MScreenEffectManager::SetHost(&s_ScreenEffectManagerHost);
 	MStopInventoryEffectGenerator::SetHost(&s_InventoryEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
+	MRisingEffectGenerator::SetHost(&s_RisingEffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 

@@ -520,3 +520,7 @@ Client/MStopInventoryEffectGenerator.h
 # Falling projectile creation with consuming zone submission (4.56).
 Client/MFallingEffectGenerator.cpp
 Client/MFallingEffectGenerator.h
+
+# Rising projectile and firework pattern generation (4.57).
+Client/MRisingEffectGenerator.cpp
+Client/MRisingEffectGenerator.h
