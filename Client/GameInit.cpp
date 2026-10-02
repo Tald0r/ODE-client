@@ -2602,6 +2602,7 @@ void ReleaseAllObjects()
 	MItem::SetHost(nullptr);
 	MChatManager::SetHost(nullptr);
 	MWeather::SetHost(nullptr);
+	MWarManager::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2909,6 +2910,39 @@ static const MWeatherHost s_WeatherHost = {
 	.ReadOrigin = WeatherOrigin,
 	.Width = []() { return static_cast<int>(g_GameRect.right); },
 	.Height = []() { return static_cast<int>(g_GameRect.bottom); },
+};
+
+// War records and display rows live in gamemodel; the executable keeps
+// the live-zone query, dialogs, chat and skill refresh.
+static const MWarHost s_WarHost = {
+	.ReadZone = [](ZoneID_t& id) {
+		if (!g_pZone) return false;
+		id = g_pZone->GetID();
+		return true;
+	},
+	.RaceWarNotice = [](DWORD startTime) {
+		UI_RunNotice(6, startTime);
+		UI_DeleteNotice(5);
+	},
+	.RaceWarStarted = []() {
+		if (g_pZone != nullptr)
+		{
+			if (g_pZoneTable->Get(g_pZone->GetID())->HolyLand)
+			{
+				UI_RunBloodBibleStatus();
+				for (int i = 0; i < HOLYLAND_BONUS_MAX; ++i)
+					g_abHolyLandBonusSkills[i] = false;
+				g_pSkillAvailable->SetAvailableSkills();
+			}
+			else
+				UI_CloseBloodBibleStatus();
+		}
+		UI_RunRangerChat();
+	},
+	.RaceWarEnded = []() {
+		UI_SetBloodBibleStatusTimer(30);
+		UI_CloseRangerChat();
+	},
 };
 
 // Live creature actions used by the library-owned party roster.
@@ -3226,6 +3260,7 @@ InitGameObject()
 	MPriceManager::SetHost(&s_PriceHost);
 	MChatManager::SetHost(&s_ChatHost);
 	MWeather::SetHost(&s_WeatherHost);
+	MWarManager::SetHost(&s_WarHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 

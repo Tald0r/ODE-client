@@ -375,3 +375,8 @@ Client/MLevelNameTable.cpp
 Client/MLevelNameTable.h
 Client/CreatureNameSelection.cpp
 Client/CreatureNameSelection.h
+
+# War records and their display rows; live zone/UI/skill actions use MWarHost.
+# The manager is reached by GCWarList and the combat/zone queries (task 4.28).
+Client/MWarManager.cpp
+Client/MWarManager.h

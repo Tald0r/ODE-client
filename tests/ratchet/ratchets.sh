@@ -222,7 +222,8 @@ check () {
 # 428: self-defense membership and its two packet handlers join gamemodel (task 4.25).
 # 427: per-world character-selection settings join gamemodel unchanged (task 4.26).
 # 425: monster and level-name tables join gamemodel unchanged (task 4.27).
-R1_BASELINE=425
+# 424: war-state manager joins gamemodel behind live UI/zone services (4.28).
+R1_BASELINE=424
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -278,7 +279,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 426: self-defense membership and its two packet handlers join gamemodel (task 4.25).
 	# 425: per-world character-selection settings join gamemodel (task 4.26).
 	# 423: monster and level-name tables join gamemodel (task 4.27).
-	R1_NINJA_BASELINE=423
+	# 422: war-state manager joins gamemodel (task 4.28).
+	R1_NINJA_BASELINE=422
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

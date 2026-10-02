@@ -1,0 +1,576 @@
+#include "test_framework.h"
+#include "MWarManager.h"
+#include "GuildWarInfo.h"
+#include "RaceWarInfo.h"
+#include "LevelWarInfo.h"
+#include "MZoneTable.h"
+#include "UserInformation.h"
+#include "MonotonicClock.h"
+
+#include <initializer_list>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+namespace {
+
+struct Event { char kind; size_t rows; DWORD start; };
+std::vector<Event> events;
+unsigned long long now = 1234567;
+ZoneID_t currentZone = 71;
+bool hasZone = true;
+int zoneReads = 0;
+
+MonotonicClock::TimePoint Clock() { return MonotonicClock::FromMillis(now); }
+size_t Rows() { return g_pUserInformation ? g_pUserInformation->WarInfo.size() : 0; }
+
+const MWarHost host{
+	.ReadZone = [](ZoneID_t& id) {
+		++zoneReads;
+		id = currentZone;
+		return hasZone;
+	},
+	.RaceWarNotice = [](DWORD start) { events.push_back({'N', Rows(), start}); },
+	.RaceWarStarted = []() { events.push_back({'S', Rows(), 0}); },
+	.RaceWarEnded = []() { events.push_back({'E', Rows(), 0}); },
+};
+
+struct World
+{
+	UserInformation user;
+	CZoneTable zones;
+	UserInformation* previousUser = g_pUserInformation;
+	CZoneTable* previousZones = g_pZoneTable;
+	const MWarHost* previousHost;
+	MonotonicClock::ScopedTestSource clock{Clock};
+
+	explicit World(const MWarHost* installed = &host)
+		: previousHost(MWarManager::SetHost(installed))
+	{
+		g_pUserInformation = &user;
+		g_pZoneTable = &zones;
+		events.clear();
+		now = 1234567;
+		currentZone = 71;
+		hasZone = true;
+		zoneReads = 0;
+		for (int id : {71, 72, 73, 1201, 1202, 1203, 1204, 1205, 1206})
+		{
+			auto* zone = new ZONETABLE_INFO;
+			zone->ID = static_cast<TYPE_ZONEID>(id);
+			zone->Name = ("Zone " + std::to_string(id)).c_str();
+			CHECK(zones.Add(zone));
+		}
+	}
+	~World()
+	{
+		MWarManager::SetHost(previousHost);
+		g_pUserInformation = previousUser;
+		g_pZoneTable = previousZones;
+	}
+};
+
+template<class Base>
+struct TrackedWar : Base
+{
+	int& destroyed;
+	explicit TrackedWar(int& count) : destroyed(count)
+	{
+		this->setStartTime(456);
+		this->setRemainTime(120);
+	}
+	~TrackedWar() override { ++destroyed; }
+};
+
+GuildWarInfo* Guild(ZoneID_t zone, int& destroyed)
+{
+	auto* war = new TrackedWar<GuildWarInfo>(destroyed);
+	war->setCastleID(zone);
+	war->setAttackGuildName("Attackers");
+	war->setDefenseGuildName("Defenders");
+	war->addJoinGuild(17);
+	war->addJoinGuild(29);
+	return war;
+}
+
+RaceWarInfo* MakeRaceWar(std::initializer_list<ZoneID_t> ids, int& destroyed)
+{
+	auto* war = new TrackedWar<RaceWarInfo>(destroyed);
+	for (auto id : ids) war->addCastleID(id);
+	return war;
+}
+
+LevelWarInfo* MakeLevelWar(int& destroyed)
+{
+	auto* war = new TrackedWar<LevelWarInfo>(destroyed);
+	war->setLevel(80);
+	return war;
+}
+
+} // namespace
+
+TEST(WarManager, FreshManagerHasNoWars)
+{
+	World world;
+	MWarManager manager;
+	CHECK_EQ(0, manager.getSize());
+	CHECK(manager.getWarInfoList().empty());
+	for (ZoneID_t id : {0, 71, 1201, 1211, 1212, 65535})
+	{
+		CHECK(!manager.IsExist(id));
+		CHECK(manager.GetWarInfo(id) == nullptr);
+	}
+}
+
+TEST(WarManager, GuildWarRetainsItsPacketDataAndPublishesADisplayRow)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	auto* war = Guild(1201, destroyed);
+	manager.SetWar(war);
+	CHECK(manager.GetWarInfo(1201) == war);
+	CHECK_EQ(2, war->getJoinGuilds().getSize());
+	CHECK_EQ(1, manager.getSize());
+	CHECK_EQ(1, world.user.WarInfo.size());
+	const auto& row = world.user.WarInfo.at(0);
+	CHECK_EQ(1201, row.zone_id);
+	CHECK_EQ(WAR_GUILD, row.war_type);
+	CHECK(row.zone_name == "Zone 1201");
+	CHECK(row.attack_guild_name == "Attackers");
+	CHECK(row.defense_guild_name == "Defenders");
+	CHECK_EQ(1354, row.left_time.time_since_epoch().count());
+	CHECK(events.empty());
+	CHECK_EQ(0, zoneReads);
+}
+
+TEST(WarManager, RaceWarSharesOneRecordAcrossZonesAndOrdersNotifications)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	auto* war = MakeRaceWar({71, 72}, destroyed);
+	manager.SetWar(war);
+	CHECK(manager.GetWarInfo(71) == war);
+	CHECK(manager.GetWarInfo(72) == war);
+	CHECK_EQ(2, manager.getSize());
+	CHECK(war->getCastleIDs().IsEmpty());
+	CHECK_EQ(2, world.user.WarInfo.size());
+	for (const auto& row : world.user.WarInfo)
+	{
+		CHECK_EQ(WAR_RACE, row.war_type);
+		CHECK(row.zone_name == "Zone " + std::to_string(row.zone_id));
+		CHECK_EQ(1354, row.left_time.time_since_epoch().count());
+		CHECK(row.attack_guild_name.empty());
+	}
+	CHECK_EQ(2, events.size());
+	CHECK_EQ('N', events.at(0).kind);
+	CHECK_EQ(0, events.at(0).rows);
+	CHECK_EQ(456, events.at(0).start);
+	CHECK_EQ('S', events.at(1).kind);
+	CHECK_EQ(2, events.at(1).rows);
+}
+
+TEST(WarManager, CastleInteriorsResolveToAllSixCastleRecords)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	for (int castle = 1; castle <= 6; ++castle)
+	{
+		const auto id = static_cast<ZoneID_t>(1200 + castle);
+		auto* war = Guild(id, destroyed);
+		manager.SetWar(war);
+		for (int floor : {1, 2})
+		{
+			const auto interior = static_cast<ZoneID_t>(1200 + castle * 10 + floor);
+			CHECK(manager.IsExist(interior));
+			CHECK(manager.GetWarInfo(interior) == war);
+		}
+	}
+	CHECK_EQ(6, manager.getSize());
+	CHECK(!manager.IsExist(1271));
+	CHECK(manager.GetWarInfo(1213) == nullptr);
+}
+
+TEST(WarManager, ClearWarDeletesEachSharedRecordOnceAndClearsDisplayRows)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeRaceWar({71, 72}, destroyed));
+	manager.SetWar(Guild(1201, destroyed));
+	manager.ClearWar();
+	CHECK_EQ(2, destroyed);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+	manager.ClearWar();
+	CHECK_EQ(2, destroyed);
+}
+
+TEST(WarManager, DestructionClearsOwnedRecordsAndDisplayRows)
+{
+	World world;
+	int destroyed = 0;
+	{
+		MWarManager manager;
+		manager.SetWar(MakeRaceWar({71, 72, 73}, destroyed));
+		manager.SetWar(Guild(1202, destroyed));
+	}
+	CHECK_EQ(2, destroyed);
+	CHECK(world.user.WarInfo.empty());
+}
+
+TEST(WarManager, RemovingASingleZoneRaceWarClearsItsRow)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeRaceWar({71}, destroyed));
+	manager.RemoveWar(71);
+	CHECK_EQ(1, destroyed);
+	CHECK(!manager.IsExist(71));
+	CHECK(world.user.WarInfo.empty());
+	manager.RemoveWar(71);
+	CHECK_EQ(1, destroyed);
+}
+
+TEST(WarManager, GuildRefreshKeepsOneRowAndUpdatesItsDeadline)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	auto* war = Guild(1201, destroyed);
+	manager.SetWar(war);
+	now = 2000123;
+	war->setRemainTime(17);
+	manager.SetWar(war);
+	CHECK_EQ(1, manager.getSize());
+	CHECK_EQ(1, world.user.WarInfo.size());
+	CHECK_EQ(2017, world.user.WarInfo.at(0).left_time.time_since_epoch().count());
+	CHECK_EQ(0, destroyed);
+}
+
+TEST(WarManager, ClearingRaceWarsPreservesGuildsAndNotifiesAfterRows)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	auto* war = Guild(1201, destroyed);
+	manager.SetWar(war);
+	manager.ClearRaceWar();
+	CHECK(manager.GetWarInfo(1201) == war);
+	CHECK_EQ(1, world.user.WarInfo.size());
+	CHECK_EQ(0, destroyed);
+	CHECK_EQ(1, events.size());
+	CHECK_EQ('E', events.at(0).kind);
+	CHECK_EQ(1, events.at(0).rows);
+}
+
+TEST(WarManager, MissingAndEmptyHostsStillMaintainRaceWarState)
+{
+	const MWarHost empty;
+	for (const MWarHost* installed : {static_cast<const MWarHost*>(nullptr), &empty})
+	{
+		World world(installed);
+		int destroyed = 0;
+		MWarManager manager;
+		manager.SetWar(MakeRaceWar({71, 72}, destroyed));
+		CHECK_EQ(2, manager.getSize());
+		CHECK_EQ(2, world.user.WarInfo.size());
+		CHECK(events.empty());
+		manager.ClearWar();
+		CHECK_EQ(1, destroyed);
+	}
+}
+
+TEST(WarManager, NullWarDoesNotPublishOrNotify)
+{
+	World world;
+	MWarManager manager;
+	manager.SetWar(nullptr);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+	CHECK(events.empty());
+}
+
+TEST(WarManager, ReplacementReleasesAnUnreferencedGuildRecord)
+{
+	World world;
+	int destroyed = 0;
+	{
+		MWarManager manager;
+		manager.SetWar(Guild(1201, destroyed));
+		auto* replacement = Guild(1201, destroyed);
+		manager.SetWar(replacement);
+		CHECK_EQ(1, destroyed);
+		CHECK(manager.GetWarInfo(1201) == replacement);
+		CHECK_EQ(1, world.user.WarInfo.size());
+	}
+	CHECK_EQ(2, destroyed);
+}
+
+TEST(WarManager, ReplacementKeepsARaceRecordUntilItsLastZoneIsReplaced)
+{
+	World world;
+	int oldDestroyed = 0, newDestroyed = 0;
+	MWarManager manager;
+	auto* old = MakeRaceWar({71, 72}, oldDestroyed);
+	manager.SetWar(old);
+	auto* replacement = MakeRaceWar({71}, newDestroyed);
+	manager.SetWar(replacement);
+	CHECK_EQ(0, oldDestroyed);
+	CHECK(manager.GetWarInfo(72) == old);
+	CHECK(manager.GetWarInfo(71) == replacement);
+	replacement->addCastleID(72);
+	manager.SetWar(replacement);
+	CHECK_EQ(1, oldDestroyed);
+	CHECK_EQ(0, newDestroyed);
+	CHECK(manager.GetWarInfo(72) == replacement);
+	manager.ClearWar();
+	CHECK_EQ(1, oldDestroyed);
+	CHECK_EQ(1, newDestroyed);
+}
+
+TEST(WarManager, ClearRaceWarDeletesSharedRecordsOnceAndPreservesGuilds)
+{
+	World world;
+	int raceDestroyed = 0, guildDestroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeRaceWar({71, 72}, raceDestroyed));
+	manager.SetWar(MakeRaceWar({73}, raceDestroyed));
+	auto* guild = Guild(1201, guildDestroyed);
+	manager.SetWar(guild);
+	manager.ClearRaceWar();
+	CHECK_EQ(2, raceDestroyed);
+	CHECK_EQ(0, guildDestroyed);
+	CHECK_EQ(1, manager.getSize());
+	CHECK(manager.GetWarInfo(1201) == guild);
+	CHECK_EQ(1, world.user.WarInfo.size());
+	CHECK_EQ(WAR_GUILD, world.user.WarInfo.at(0).war_type);
+	CHECK_EQ('E', events.back().kind);
+	CHECK_EQ(1, events.back().rows);
+	manager.ClearRaceWar();
+	CHECK_EQ(2, raceDestroyed);
+}
+
+TEST(WarManager, RemoveWarDeletesGuildRecordsToo)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(Guild(1201, destroyed));
+	manager.RemoveWar(1201);
+	CHECK_EQ(1, destroyed);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+	manager.RemoveWar(1201);
+	CHECK_EQ(1, destroyed);
+}
+
+TEST(WarManager, EmptyRaceWarIsConsumedWithoutLeaking)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeRaceWar({}, destroyed));
+	CHECK_EQ(1, destroyed);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+}
+
+TEST(WarManager, UnsupportedRecordsAreConsumedWithoutPublishing)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	struct Unsupported : TrackedWar<RaceWarInfo> {
+		using TrackedWar::TrackedWar;
+		WarType_t getWarType() const override { return 255; }
+	};
+	manager.SetWar(new Unsupported(destroyed));
+	CHECK_EQ(1, destroyed);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+	CHECK(events.empty());
+}
+
+TEST(WarManager, LevelWarsUseTheCurrentZoneAndRefreshOneRow)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeLevelWar(destroyed));
+	CHECK_EQ(1, destroyed);
+	CHECK_EQ(1, zoneReads);
+	CHECK_EQ(0, manager.getSize());
+	CHECK_EQ(1, world.user.WarInfo.size());
+	CHECK_EQ(71, world.user.WarInfo.at(0).zone_id);
+	CHECK_EQ(WAR_LEVEL, world.user.WarInfo.at(0).war_type);
+	CHECK(world.user.WarInfo.at(0).zone_name == "Zone 71");
+	CHECK_EQ(1354, world.user.WarInfo.at(0).left_time.time_since_epoch().count());
+	now = 2000123;
+	manager.SetWar(MakeLevelWar(destroyed));
+	CHECK_EQ(2, destroyed);
+	CHECK_EQ(1, world.user.WarInfo.size());
+	CHECK_EQ(2120, world.user.WarInfo.at(0).left_time.time_since_epoch().count());
+	currentZone = 72;
+	manager.SetWar(MakeLevelWar(destroyed));
+	CHECK_EQ(3, destroyed);
+	CHECK_EQ(2, world.user.WarInfo.size());
+	CHECK(events.empty());
+}
+
+TEST(WarManager, LevelWarsWithoutACurrentZoneAreStillConsumed)
+{
+	const MWarHost empty;
+	for (const MWarHost* installed : {static_cast<const MWarHost*>(nullptr), &empty, &host})
+	{
+		World world(installed);
+		hasZone = false;
+		int destroyed = 0;
+		MWarManager manager;
+		manager.SetWar(MakeLevelWar(destroyed));
+		CHECK_EQ(1, destroyed);
+		CHECK_EQ(0, manager.getSize());
+		CHECK(world.user.WarInfo.empty());
+	}
+}
+
+TEST(WarManager, RaceRefreshFindsEveryExistingRowRegardlessOfPacketOrder)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeRaceWar({71, 72}, destroyed));
+	auto* refresh = MakeRaceWar({72, 71}, destroyed);
+	refresh->setRemainTime(9);
+	manager.SetWar(refresh);
+	CHECK_EQ(2, world.user.WarInfo.size());
+	for (const auto& row : world.user.WarInfo)
+		CHECK_EQ(1243, row.left_time.time_since_epoch().count());
+}
+
+TEST(WarManager, RemoveWarClearsAllDisplayTypesForTheZone)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(Guild(71, destroyed));
+	manager.SetWar(MakeRaceWar({71}, destroyed));
+	manager.SetWar(MakeLevelWar(destroyed));
+	CHECK_EQ(3, world.user.WarInfo.size());
+	manager.RemoveWar(71);
+	CHECK(world.user.WarInfo.empty());
+	CHECK_EQ(0, manager.getSize());
+	CHECK_EQ(3, destroyed);
+}
+
+TEST(WarManager, OwningManagersCannotBeCopiedOrMovedByShallowCopy)
+{
+	CHECK(!std::is_copy_constructible_v<MWarManager>);
+	CHECK(!std::is_copy_assignable_v<MWarManager>);
+	CHECK(!std::is_move_constructible_v<MWarManager>);
+	CHECK(!std::is_move_assignable_v<MWarManager>);
+}
+
+TEST(WarManager, ReaddingTheSameRaceRecordWithConsumedIdsKeepsItAlive)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	auto* war = MakeRaceWar({71}, destroyed);
+	manager.SetWar(war);
+	manager.SetWar(war);
+	CHECK_EQ(0, destroyed);
+	CHECK(manager.GetWarInfo(71) == war);
+	war->addCastleID(72);
+	manager.SetWar(war);
+	CHECK_EQ(2, manager.getSize());
+	CHECK(manager.GetWarInfo(72) == war);
+	manager.SetWar(war);
+	manager.ClearWar();
+	CHECK_EQ(1, destroyed);
+}
+
+TEST(WarManager, RemovingOneRaceZoneKeepsTheOtherZoneRecordAlive)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(MakeRaceWar({71, 72}, destroyed));
+	manager.RemoveWar(71);
+	CHECK_EQ(0, destroyed);
+	CHECK(!manager.IsExist(71));
+	auto* remaining = manager.GetWarInfo(72);
+	CHECK(remaining != nullptr);
+	if (remaining) CHECK_EQ(120, remaining->getRemainTime());
+	CHECK_EQ(1, world.user.WarInfo.size());
+	CHECK_EQ(72, world.user.WarInfo.at(0).zone_id);
+	manager.RemoveWar(72);
+	CHECK_EQ(1, destroyed);
+	CHECK(world.user.WarInfo.empty());
+}
+
+TEST(WarManager, MissingUserInformationStillTracksAndReleasesWars)
+{
+	World world;
+	g_pUserInformation = nullptr;
+	int destroyed = 0;
+	MWarManager manager;
+	manager.SetWar(Guild(1201, destroyed));
+	manager.SetWar(MakeRaceWar({71, 72}, destroyed));
+	manager.SetWar(MakeLevelWar(destroyed));
+	CHECK_EQ(1, destroyed);
+	CHECK_EQ(3, manager.getSize());
+	manager.RemoveWar(1201);
+	manager.ClearRaceWar();
+	CHECK_EQ(3, destroyed);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+}
+
+TEST(WarManager, MissingZoneMetadataUsesAnEmptyDisplayName)
+{
+	for (bool missingTable : {false, true})
+	{
+		World world;
+		world.zones.Release();
+		if (missingTable) g_pZoneTable = nullptr;
+		int destroyed = 0;
+		MWarManager manager;
+		manager.SetWar(Guild(1201, destroyed));
+		manager.SetWar(MakeRaceWar({71}, destroyed));
+		manager.SetWar(MakeLevelWar(destroyed));
+		CHECK_EQ(3, world.user.WarInfo.size());
+		for (const auto& row : world.user.WarInfo) CHECK(row.zone_name.empty());
+		manager.ClearWar();
+		CHECK_EQ(3, destroyed);
+	}
+}
+
+TEST(WarManager, InvalidRecordTypesCannotBeDowncastToAnotherWarFamily)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	struct WrongType : TrackedWar<RaceWarInfo> {
+		using TrackedWar::TrackedWar;
+		WarType_t getWarType() const override { return WAR_GUILD; }
+	};
+	manager.SetWar(new WrongType(destroyed));
+	CHECK_EQ(1, destroyed);
+	CHECK_EQ(0, manager.getSize());
+	CHECK(world.user.WarInfo.empty());
+}
+
+TEST(WarManager, MaximumRemainingSecondsDoNotWrapTheDeadline)
+{
+	World world;
+	int destroyed = 0;
+	MWarManager manager;
+	auto* war = Guild(1201, destroyed);
+	war->setRemainTime(0xffffffffU);
+	manager.SetWar(war);
+	CHECK_EQ(4294968529LL, world.user.WarInfo.at(0).left_time.time_since_epoch().count());
+}
