@@ -447,3 +447,7 @@ Client/EffectOrbit.h
 # Shared linear trajectory state used by linear, guided and chase effects (4.40).
 Client/LinearEffectMotion.cpp
 Client/LinearEffectMotion.h
+
+# Homing angle progression and horizontal displacement (4.41).
+Client/HomingEffectSteering.cpp
+Client/HomingEffectSteering.h
