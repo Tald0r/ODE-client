@@ -4,8 +4,78 @@
 
 #include "Client_PCH.h"
 #include "MNPCScriptTable.h"
+#include "TextEncoding.h"
+
+#include <limits>
+#include <memory>
 
 namespace {
+
+static_assert(sizeof(int) == 4 && sizeof(unsigned int) == 4);
+
+bool ReadCount(std::ifstream& file, int& count, std::streamoff minimumBytes)
+{
+	count = 0;
+	if (!file.read(reinterpret_cast<char*>(&count), 4) || count < 0)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	const std::streamoff start = file.tellg();
+	if (start < 0)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	file.seekg(0, std::ios::end);
+	const std::streamoff end = file.tellg();
+	if (!file.good() || end < start)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	file.seekg(start, std::ios::beg);
+	if (!file.good() || count > (end - start) / minimumBytes)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	return true;
+}
+
+bool ReadStrings(std::ifstream& file, NPC_SCRIPT::STRING_TABLE& strings)
+{
+	int count = 0;
+	if (!ReadCount(file, count, 4)) return false;
+	if (strings.GetSize() != count) strings.Init(count);
+	for (int index = 0; index < count; ++index)
+	{
+		strings.GetMutable(index)->LoadFromFile(file);
+		if (!file) return false;
+	}
+	return true;
+}
+
+bool CanSaveText(const MString& text)
+{
+	std::string encoded;
+	return TextEncoding::Convert(text.GetString(), text.GetLength(),
+		TextEncoding::Encoding::Utf8, TextEncoding::GetResourceEncoding(), encoded)
+		&& encoded.size() <= 65536u;
+}
+
+bool CanSaveStrings(const NPC_SCRIPT::STRING_TABLE& strings)
+{
+	for (int index = 0; index < strings.GetSize(); ++index)
+		if (!CanSaveText(strings[index])) return false;
+	return true;
+}
+
+bool CanSave(const NPC_SCRIPT& script)
+{
+	return CanSaveText(script.OwnerID) && CanSaveStrings(script.SubjectTable)
+		&& CanSaveStrings(script.ContentTable);
+}
 
 void ApplyParameters(const char* source, const HashMapScriptParameter& parameters,
 	std::string& output)
@@ -50,7 +120,11 @@ MNPCScriptTable*		g_pNPCScriptTable = NULL;
 void				
 NPC_SCRIPT::SaveToFile(std::ofstream& file)
 {
-	//file.write((const char*)&ScriptID, 4);
+	if (!CanSave(*this))
+	{
+		file.setstate(std::ios::failbit);
+		return;
+	}
 	OwnerID.SaveToFile( file );
 
 	SubjectTable.SaveToFile( file );
@@ -63,11 +137,10 @@ NPC_SCRIPT::SaveToFile(std::ofstream& file)
 void				
 NPC_SCRIPT::LoadFromFile(std::ifstream& file)
 {
-	//file.read((char*)&ScriptID, 4);
+	// The table loader owns this staging row until every group is complete.
 	OwnerID.LoadFromFile( file );
-
-	SubjectTable.LoadFromFile( file );
-	ContentTable.LoadFromFile( file );
+	if (!file || !ReadStrings(file, SubjectTable)) return;
+	ReadStrings(file, ContentTable);
 }
 
 
@@ -157,26 +230,25 @@ MNPCScriptTable::GetContent(int scriptID, int contentID) const
 void		
 MNPCScriptTable::SaveToFile(std::ofstream& file)
 {
-	TYPE_MAP::iterator iData = begin();
-
-	//-----------------------------------------------------
-	// 개수 저장
-	//-----------------------------------------------------
-	int infoSize = static_cast<int>(size());
-	file.write((const char*)&infoSize, 4);
-
-	//-----------------------------------------------------
-	// 각 info 저장
-	//-----------------------------------------------------
-	while (iData != end())
+	if (size() > static_cast<size_t>((std::numeric_limits<int>::max)()))
 	{
-		unsigned int	id		= (*iData).first;
-		NPC_SCRIPT*		pData	= (*iData).second;		
-
-		file.write((const char*)&id, 4);	// id 저장
-		pData->SaveToFile( file );			// NPC info 저장
-
-		iData ++;
+		file.setstate(std::ios::failbit);
+		return;
+	}
+	for (const auto& entry : *this)
+	{
+		if (!entry.second || !CanSave(*entry.second))
+		{
+			file.setstate(std::ios::failbit);
+			return;
+		}
+	}
+	const int count = static_cast<int>(size());
+	file.write(reinterpret_cast<const char*>(&count), 4);
+	for (const auto& entry : *this)
+	{
+		file.write(reinterpret_cast<const char*>(&entry.first), 4);
+		entry.second->SaveToFile(file);
 	}
 }
 		
@@ -186,36 +258,21 @@ MNPCScriptTable::SaveToFile(std::ofstream& file)
 void		
 MNPCScriptTable::LoadFromFile(std::ifstream& file)
 {
-	//-----------------------------------------------------
-	// 기존에 있던것 제거
-	//-----------------------------------------------------
 	Release();
-
-	//-----------------------------------------------------
-	// size 
-	//-----------------------------------------------------
-	int infoSize;
-	file.read((char*)&infoSize, 4);
-
-	//-----------------------------------------------------
-	// 각 info
-	//-----------------------------------------------------
-	unsigned int id;
-	for (int i=0; i<infoSize; i++)
-	{		
-		file.read((char*)&id, 4);
-		NPC_SCRIPT*	pData = new NPC_SCRIPT;
-
-		pData->LoadFromFile( file );
-
-		//-----------------------------------------------------
-		// map에 추가한다.
-		//-----------------------------------------------------
-		if (!AddData( id, pData ))
-		{
-			delete pData;
-		}
+	int count = 0;
+	// Key, owner length and both group counts cost at least sixteen bytes.
+	if (!ReadCount(file, count, 16)) return;
+	MNPCScriptTable loaded;
+	for (int index = 0; index < count; ++index)
+	{
+		unsigned int id = 0;
+		if (!file.read(reinterpret_cast<char*>(&id), 4)) return;
+		auto row = std::make_unique<NPC_SCRIPT>();
+		row->LoadFromFile(file);
+		if (!file) return;
+		if (loaded.AddData(id, row.get())) row.release();
 	}
+	swap(loaded);
 }
 
 void

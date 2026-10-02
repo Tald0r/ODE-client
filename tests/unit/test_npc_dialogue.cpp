@@ -13,6 +13,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -85,6 +86,18 @@ std::vector<unsigned char> Save(Table& table)
 	}
 	std::ifstream input(saved.path, std::ios::binary);
 	return {std::istreambuf_iterator<char>(input), {}};
+}
+
+template<class Table>
+void CheckRejectedSave(Table& table)
+{
+	DialogueFile saved({});
+	{
+		std::ofstream output(saved.path, std::ios::binary);
+		table.SaveToFile(output);
+		CHECK(output.fail());
+	}
+	CHECK_EQ(0, std::filesystem::file_size(saved.path));
 }
 
 bool Is(const char* actual, const char* expected)
@@ -388,4 +401,166 @@ TEST(NPCDialogue, ErasingAdjacentAndEmptyNameMarkersAlwaysAdvances)
 	empty.setValue("x");
 	world.table.GetContentParameter(1, 0, {{"", &empty}}, text);
 	CHECK(text == "xx");
+}
+
+TEST(NPCDialogue, NegativeCountsFailAndClearPreviousScripts)
+{
+	DialogueWorld world;
+	world.Add(1, "NPC", {"old"}, {"old reply"});
+	CHECK(!Load(world.table, Bytes().U32(0xffffffffU)));
+	CHECK(world.table.empty());
+}
+
+TEST(NPCDialogue, TruncatedTablesDoNotPublishPartialScripts)
+{
+	const auto complete = Bytes().U32(2)
+		.U32(7).Row("owner", {"first", "second"}, {"reply"})
+		.U32(9).Row("other", {"title"}, {"yes", "no"});
+	// The old reader has a defined first key and bounded count in every
+	// red case; unsafe partial/huge count prefixes are guarded separately.
+	for (std::size_t length = 8; length < complete.data.size(); ++length)
+	{
+		DialogueWorld world;
+		world.Add(1, "NPC", {"old"}, {"old reply"});
+		auto truncated = complete;
+		truncated.data.resize(length);
+		CHECK(!Load(world.table, truncated));
+		CHECK(world.table.empty());
+	}
+}
+
+TEST(NPCDialogue, InvalidNestedCountsLeaveTheTableEmpty)
+{
+	for (const auto& row : {Bytes().Text("owner").U32(0xffffffffU).U32(0),
+		Bytes().Text("owner").U32(0).U32(0xffffffffU)})
+	{
+		DialogueWorld world;
+		auto bytes = Bytes().U32(1).U32(7);
+		bytes.data.insert(bytes.data.end(), row.data.begin(), row.data.end());
+		CHECK(!Load(world.table, bytes));
+		CHECK(world.table.empty());
+	}
+}
+
+TEST(NPCDialogue, OwningDialogueRowsAndTablesCannotBeShallowCopied)
+{
+	CHECK(!std::is_copy_constructible_v<NPC_SCRIPT>);
+	CHECK(!std::is_copy_assignable_v<NPC_SCRIPT>);
+	CHECK(!std::is_copy_constructible_v<MNPCScriptTable>);
+	CHECK(!std::is_copy_assignable_v<MNPCScriptTable>);
+}
+
+TEST(NPCDialogue, UnencodableStringsAreRejectedBeforeAnyTableOrRowBytes)
+{
+	for (int field = 0; field < 3; ++field)
+	{
+		DialogueWorld world;
+		world.Add(1, "valid", {"before"}, {"after"});
+		auto& row = world.Add(7, field == 0 ? "😀" : "owner",
+			{field == 1 ? "😀" : "subject"}, {field == 2 ? "😀" : "reply"});
+		TextEncoding::SetResourceEncoding(TextEncoding::Encoding::Cp949);
+		CheckRejectedSave(world.table);
+		CheckRejectedSave(row);
+		CHECK_EQ(2, world.table.size());
+	}
+}
+
+TEST(NPCDialogue, OversizedStringsAreRejectedBeforeAnyTableBytes)
+{
+	const std::string tooLong(65537, 'x');
+	for (int field = 0; field < 3; ++field)
+	{
+		DialogueWorld world;
+		world.Add(7, field == 0 ? tooLong : "owner",
+			{field == 1 ? tooLong : "subject"}, {field == 2 ? tooLong : "reply"});
+		CheckRejectedSave(world.table);
+	}
+}
+
+TEST(NPCDialogue, NullRowsAreRejectedBeforeWritingTheTableCount)
+{
+	DialogueWorld world;
+	CHECK(world.table.AddData(7, nullptr));
+	CheckRejectedSave(world.table);
+}
+
+TEST(NPCDialogue, IncompleteAndImpossibleCountPrefixesFailBeforeAllocation)
+{
+	const auto complete = Bytes().U32(1).U32(7).Row("owner", {"subject"}, {"reply"});
+	for (std::size_t length = 0; length < 8; ++length)
+	{
+		DialogueWorld world;
+		world.Add(1, "old", {}, {});
+		auto truncated = complete;
+		truncated.data.resize(length);
+		CHECK(!Load(world.table, truncated));
+		CHECK(world.table.empty());
+	}
+	for (const auto& bytes : {Bytes().U32(0x7fffffffU),
+		Bytes().U32(1).U32(7).U32(0xffffffffU).U32(0).U32(0),
+		Bytes().U32(1).U32(7).Text("").U32(0x7fffffffU).U32(0)})
+	{
+		DialogueWorld world;
+		CHECK(!Load(world.table, bytes));
+		CHECK(world.table.empty());
+	}
+}
+
+TEST(NPCDialogue, ReadsStartAtTheCurrentOffsetAndLeaveTrailingData)
+{
+	auto bytes = Bytes().U32(0x11223344U).U32(1).U32(7).Row("NPC", {"hello"}, {"yes"});
+	bytes.data.push_back(0x66);
+	DialogueFile fixture(bytes);
+	std::ifstream input(fixture.path, std::ios::binary);
+	input.seekg(4);
+	DialogueWorld world;
+	world.table.LoadFromFile(input);
+	CHECK(input.good());
+	CHECK_EQ(1, world.table.size());
+	CHECK(Is(world.table.GetSubject(7, 0), "hello"));
+	CHECK_EQ(0x66, input.get());
+}
+
+TEST(NPCDialogue, ThrowingAndClosedInputFailuresClearOldScripts)
+{
+	DialogueWorld world;
+	world.Add(1, "old", {"old subject"}, {});
+	DialogueFile shortFile(Bytes().U32(1).U32(7));
+	std::ifstream input(shortFile.path, std::ios::binary);
+	input.exceptions(std::ios::failbit | std::ios::badbit);
+	bool threw = false;
+	try { world.table.LoadFromFile(input); }
+	catch (const std::ios::failure&) { threw = true; }
+	CHECK(threw);
+	CHECK(world.table.empty());
+	world.Add(1, "old", {}, {});
+	std::ifstream closed;
+	world.table.LoadFromFile(closed);
+	CHECK(closed.fail());
+	CHECK(world.table.empty());
+}
+
+TEST(NPCDialogue, MaximumEncodedStringLengthsRemainValid)
+{
+	DialogueWorld world;
+	const std::string maximum(65536, 'x');
+	world.Add(7, maximum, {maximum}, {maximum});
+	CHECK(Save(world.table) == Bytes().U32(1).U32(7).Row(maximum, {maximum}, {maximum}).data);
+	const auto bytes = Bytes().U32(1).U32(7).Row(maximum, {maximum}, {maximum});
+	CHECK(Load(world.table, bytes));
+	CHECK(Is(world.table.GetSubject(7, 0), maximum.c_str()));
+}
+
+TEST(NPCDialogue, SaveLimitsApplyToEncodedBytesRatherThanInternalUtf8)
+{
+	DialogueWorld world;
+	std::string utf8, cp949;
+	for (int index = 0; index < 22000; ++index)
+	{
+		utf8 += "가";
+		cp949 += "\xb0\xa1";
+	}
+	world.Add(7, "owner", {utf8}, {"reply"});
+	TextEncoding::SetResourceEncoding(TextEncoding::Encoding::Cp949);
+	CHECK(Save(world.table) == Bytes().U32(1).U32(7).Row("owner", {cp949}, {"reply"}).data);
 }

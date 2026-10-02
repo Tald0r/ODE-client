@@ -1746,14 +1746,20 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_npc_shop.cpp`, using the production builder, template table,
     shelves and item model with instrumented executable-service callbacks.
 
-- [ ] **4.30 NPC dialogue:** `MNPCScriptTable` and its generated English
+- [x] **4.30 NPC dialogue:** `MNPCScriptTable` and its generated English
   overlay compile in `gamemodel`, making dialogue lookup, parameter replacement
   and file loading testable outside the executable.
-  > **Status:** in progress (loader fixes).
+  > **Status:** done (2026-10-02).
   > After removing unused executable includes separately, all four files move
   > unchanged. Ask, variable-ask and say handlers retain UI and creature actions;
   > game initialization retains language selection. The generated English
   > overlay is still owned by `tools/i18n/npcscript.en.tsv` and its generator.
+  > Missing text clears substitution output; null parameters keep their marker.
+  > Keys retain map-order cascading but do not rescan their own inserted text.
+  > Table reloads clear prior rows and publish only complete input; all counts
+  > are bounded by remaining bytes. Saves validate every row's encoded strings
+  > before writing to the supplied stream. Binary layout and duplicate-key
+  > precedence are preserved; owning rows and tables cannot be shallow copied.
   > R1 is 421 Windows / 419 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_npc_dialogue.cpp`, using the production table, overlay,
