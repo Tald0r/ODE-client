@@ -1683,10 +1683,14 @@ rounds settled* for the host rules). Test fixtures share
 - [x] **4.26 Per-world character-selection settings:** `PCConfigTable` compiles
   in `gamemodel` so the saved slot, recent-account ordering and version-2 file
   format can be tested through the same implementation as the client.
-  > **Status:** done (2026-10-02). The implementation, header and owned global
-  > move unchanged. `GameMain` still selects the world/account, applies the
-  > remembered slot to the UI and chooses the settings file. R1 is
-  > 427 Windows / 425 Ninja.
+  > **Status:** done (2026-10-02). The initial move preserves the implementation,
+  > header and owned global. The library now validates record lengths, counts,
+  > names and slots, publishes only complete tables, and validates saved data
+  > before truncating an existing file. Recency saturates instead of wrapping;
+  > repeated ownership transfers at the same key are harmless. `GameMain` still
+  > selects the world/account, applies the remembered slot to the UI and chooses
+  > the settings file. The version-2 layout and twenty-account save limit are
+  > preserved. R1 is 427 Windows / 425 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_player_config.cpp`, linked against the production library.
 

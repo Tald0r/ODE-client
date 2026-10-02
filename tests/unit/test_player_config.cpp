@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -302,4 +303,279 @@ TEST(PlayerConfig, AbsentOrUnsupportedWorldFileClearsOldSettings)
 	Add(AddWorld(worlds, 1), "old", 0);
 	worlds.LoadFromFile((unsupported.path.string() + ".missing").c_str());
 	CHECK(worlds.empty());
+}
+
+TEST(PlayerConfig, InvalidSelectedSlotsPreserveTheSlotAndRecentCount)
+{
+	for (int slot : {-1, -256, 3, 255, std::numeric_limits<int>::max()})
+	{
+		PlayerConfig config;
+		CHECK(Load(config, Bytes().Byte(1).U32(9)));
+		config.SetLastSlot(slot);
+		CHECK_EQ(1, config.GetLastSlot());
+		CHECK_EQ(9, config.GetRecentCount());
+	}
+}
+
+TEST(PlayerConfig, InvalidStoredSlotsDoNotPublishARecord)
+{
+	for (int slot : {3, 127, 255})
+	{
+		PlayerConfig config;
+		CHECK(Load(config, Bytes().Byte(1).U32(9)));
+		CHECK(!Load(config, Bytes().Byte(static_cast<unsigned char>(slot)).U32(77)));
+		CHECK_EQ(1, config.GetLastSlot());
+		CHECK_EQ(9, config.GetRecentCount());
+	}
+}
+
+TEST(PlayerConfig, EveryTruncatedRecordPreservesPreviousValues)
+{
+	const auto complete = Bytes().Byte(2).U32(0xaabbccdd);
+	for (size_t end = 0; end < complete.data.size(); ++end)
+	{
+		PlayerConfig config;
+		CHECK(Load(config, Bytes().Byte(1).U32(9)));
+		auto partial = complete;
+		partial.data.resize(end);
+		CHECK(!Load(config, partial));
+		CHECK_EQ(1, config.GetLastSlot());
+		CHECK_EQ(9, config.GetRecentCount());
+	}
+}
+
+TEST(PlayerConfig, OldestRecentCountDoesNotWrapToMostRecent)
+{
+	PlayerConfig config;
+	CHECK(Load(config, Bytes().Byte(2).U32(0xffffffff)));
+	CHECK(Save(config) == Bytes().Byte(2).U32(0xffffffff).data);
+	CHECK_EQ(0xffffffff, config.GetRecentCount());
+}
+
+TEST(PlayerConfig, FailedRecordWritesDoNotAgeTheAccount)
+{
+	PlayerConfig config;
+	CHECK(Load(config, Bytes().Byte(1).U32(9)));
+	std::ofstream unopened;
+	config.SaveToFile(unopened);
+	CHECK(unopened.fail());
+	CHECK_EQ(9, config.GetRecentCount());
+}
+
+TEST(PlayerConfig, AccountReaderRejectsNegativeCounts)
+{
+	PlayerConfigTable table;
+	Add(table, "old", 1);
+	CHECK(!Load(table, Bytes().U32(0xffffffff)));
+	CHECK(table.empty());
+}
+
+TEST(PlayerConfig, AccountNamesCannotAliasAnEmbeddedNullPrefix)
+{
+	PlayerConfigTable table;
+	CHECK(!Load(table, Bytes().U32(1).Account(std::string("al\0ice", 6), 2, 3)));
+	CHECK(table.empty());
+}
+
+TEST(PlayerConfig, UnrepresentableNamesFailBeforeWritingOrAging)
+{
+	for (const auto& name : {std::string(), std::string(256, 'a'), std::string("a\0b", 3)})
+	{
+		PlayerConfigTable table;
+		auto* config = Add(table, "valid", 2, 5);
+		config->SetPlayerID(name);
+		ConfigFile fixture;
+		std::ofstream output(fixture.path, std::ios::binary);
+		table.SaveToFile(output);
+		CHECK(output.fail());
+		output.close();
+		CHECK(fixture.Read().empty());
+		CHECK_EQ(5, config->GetRecentCount());
+	}
+}
+
+TEST(PlayerConfig, WorldSaveValidatesNestedNamesBeforeTruncatingTheFile)
+{
+	WorldPlayerConfigTable worlds;
+	auto* valid = Add(AddWorld(worlds, 1), "valid", 0, 7);
+	auto* invalid = Add(AddWorld(worlds, 2), std::string(256, 'a'), 2, 9);
+	const auto original = Bytes().U32(2).U32(0);
+	ConfigFile fixture(original);
+	worlds.SaveToFile(fixture.path.string().c_str());
+	CHECK(fixture.Read() == original.data);
+	CHECK_EQ(7, valid->GetRecentCount());
+	CHECK_EQ(9, invalid->GetRecentCount());
+}
+
+TEST(PlayerConfig, WorldSaveRejectsAReservedWorldIdBeforeTruncatingTheFile)
+{
+	WorldPlayerConfigTable worlds;
+	Add(AddWorld(worlds, -1), "player", 0, 7);
+	const auto original = Bytes().U32(2).U32(0);
+	ConfigFile fixture(original);
+	worlds.SaveToFile(fixture.path.string().c_str());
+	CHECK(fixture.Read() == original.data);
+	CheckAccount(*worlds.GetPlayerConfigTable(-1), "player", 0, 7);
+}
+
+TEST(PlayerConfig, AllByteLengthNamesCanBeLoadedAndSaved)
+{
+	for (size_t length : {1, 19, 20, 21, 255})
+	{
+		const std::string name(length, 'x');
+		PlayerConfigTable table;
+		CHECK(Load(table, Bytes().U32(1).Account(name, 2, 3)));
+		CHECK_EQ(1, table.size());
+		CheckAccount(table, name.c_str(), 2, 3);
+		CHECK(Save(table) == Bytes().U32(1).Account(name, 2, 4).data);
+	}
+}
+
+TEST(PlayerConfig, EveryTruncatedAccountTableLeavesNoPartialSettings)
+{
+	const auto complete = Bytes().U32(2).Account("first", 1, 4).Account("second", 2, 7);
+	for (size_t end = 0; end < complete.data.size(); ++end)
+	{
+		PlayerConfigTable table;
+		Add(table, "old", 0);
+		auto partial = complete;
+		partial.data.resize(end);
+		CHECK(!Load(table, partial));
+		CHECK(table.empty());
+	}
+}
+
+TEST(PlayerConfig, AccountCountsMustFitTheRemainingBytes)
+{
+	for (std::uint32_t count : {2u, 0x7fffffffu, 0x80000000u})
+	{
+		PlayerConfigTable table;
+		CHECK(!Load(table, Bytes().U32(count).Byte(0)));
+		CHECK(table.empty());
+	}
+}
+
+TEST(PlayerConfig, EveryTruncatedWorldFileLeavesNoPartialSettings)
+{
+	const auto complete = Bytes().U32(2).U32(2)
+		.U32(1).U32(1).Account("first", 1, 4).U32(2).U32(1).Account("second", 2, 7);
+	for (size_t end = 0; end < complete.data.size(); ++end)
+	{
+		WorldPlayerConfigTable worlds;
+		Add(AddWorld(worlds, 9), "old", 0);
+		auto partial = complete;
+		partial.data.resize(end);
+		ConfigFile fixture(partial);
+		worlds.LoadFromFile(fixture.path.string().c_str());
+		CHECK(worlds.empty());
+	}
+}
+
+TEST(PlayerConfig, WorldCountsMustFitTheRemainingBytes)
+{
+	for (std::uint32_t count : {2u, 0x7fffffffu, 0x80000000u, 0xffffffffu})
+	{
+		WorldPlayerConfigTable worlds;
+		ConfigFile fixture(Bytes().U32(2).U32(count).U32(0xffffffff));
+		worlds.LoadFromFile(fixture.path.string().c_str());
+		CHECK(worlds.empty());
+	}
+}
+
+TEST(PlayerConfig, InvalidLaterWorldRecordsDiscardEarlierWorlds)
+{
+	for (const auto& bad : {Bytes().U32(1).Account("invalid", 3, 1),
+		Bytes().U32(1).Account(std::string("a\0b", 3), 1, 1)})
+	{
+		auto bytes = Bytes().U32(2).U32(2).U32(1).U32(1).Account("valid", 1, 1).U32(2);
+		bytes.data.insert(bytes.data.end(), bad.data.begin(), bad.data.end());
+		ConfigFile fixture(bytes);
+		WorldPlayerConfigTable worlds;
+		worlds.LoadFromFile(fixture.path.string().c_str());
+		CHECK(worlds.empty());
+	}
+}
+
+TEST(PlayerConfig, NullRowsDoNotCrashTheRecentAccountSort)
+{
+	PlayerConfigTable table;
+	for (int i = 0; i < 20; ++i)
+		Add(table, AccountName(i), 1, i);
+	table["null-a"] = nullptr;
+	table["null-b"] = nullptr;
+	PlayerConfigTable loaded;
+	CHECK(Load(loaded, Bytes{Save(table)}));
+	CHECK_EQ(20, loaded.size());
+	for (int i = 0; i < 20; ++i)
+		CheckAccount(loaded, AccountName(i).c_str(), 1, i + 1);
+}
+
+TEST(PlayerConfig, AddingTheSameAccountPointerAgainKeepsItAlive)
+{
+	PlayerConfigTable table;
+	auto* config = Add(table, "player", 2, 8);
+	table.AddPlayerConfig(config);
+	CHECK_EQ(1, table.size());
+	CHECK(table.GetPlayerConfig("player") == config);
+	CheckAccount(table, "player", 2, 8);
+}
+
+TEST(PlayerConfig, AddingTheSameWorldPointerAgainKeepsItAlive)
+{
+	WorldPlayerConfigTable worlds;
+	auto& table = AddWorld(worlds, 7);
+	Add(table, "player", 2, 8);
+	worlds.AddPlayerConfigTable(7, &table);
+	CHECK_EQ(1, worlds.size());
+	CHECK(worlds.GetPlayerConfigTable(7) == &table);
+	CheckAccount(*worlds.GetPlayerConfigTable(7), "player", 2, 8);
+}
+
+TEST(PlayerConfig, EmptyTablesRoundTripAndReplacePreviousSettings)
+{
+	PlayerConfigTable accounts;
+	CHECK(Save(accounts) == Bytes().U32(0).data);
+	Add(accounts, "old", 0);
+	CHECK(Load(accounts, Bytes().U32(0)));
+	CHECK(accounts.empty());
+	WorldPlayerConfigTable worlds;
+	ConfigFile fixture;
+	worlds.SaveToFile(fixture.path.string().c_str());
+	CHECK(fixture.Read() == Bytes().U32(2).U32(0).data);
+	Add(AddWorld(worlds, 1), "old", 0);
+	worlds.LoadFromFile(fixture.path.string().c_str());
+	CHECK(worlds.empty());
+}
+
+TEST(PlayerConfig, NullPlaceholdersKeepTheirLegacyEncodingAtBothLevels)
+{
+	WorldPlayerConfigTable worlds;
+	auto& accounts = AddWorld(worlds, 1);
+	accounts["absent"] = nullptr;
+	Add(accounts, "player", 2, 8);
+	worlds[2] = nullptr;
+	ConfigFile fixture;
+	worlds.SaveToFile(fixture.path.string().c_str());
+	CHECK(fixture.Read() == Bytes().U32(2).U32(2)
+		.U32(1).U32(2).Byte(0).Account("player", 2, 9).U32(0xffffffff).data);
+	WorldPlayerConfigTable loaded;
+	loaded.LoadFromFile(fixture.path.string().c_str());
+	CHECK_EQ(1, loaded.size());
+	const auto* table = loaded.GetPlayerConfigTable(1);
+	CHECK(table != nullptr);
+	if (table)
+	{
+		CHECK_EQ(1, table->size());
+		CheckAccount(*table, "player", 2, 9);
+	}
+}
+
+TEST(PlayerConfig, MissingSaveFilenameLeavesTheModelAlone)
+{
+	WorldPlayerConfigTable worlds;
+	auto& accounts = AddWorld(worlds, 1);
+	Add(accounts, "player", 1, 7);
+	worlds.SaveToFile(nullptr);
+	CHECK_EQ(1, worlds.size());
+	CheckAccount(accounts, "player", 1, 7);
 }
