@@ -2,7 +2,6 @@
 // MChaseEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include <math.h>
 #include "MChaseEffect.h"
 #include "MCreature.h"
 #include "MZone.h"
@@ -50,29 +49,8 @@ MChaseEffect::Update()
 		//--------------------------------
 		NextFrame();
 
-		//--------------------------------
-		// Pixel 좌표를 바꾼다.
-		//--------------------------------
-		// 각각의 방향에 대해서 Step만큼 이동해준다.
-		m_PixelX += m_StepX;
-		m_PixelY += m_StepY;
-		m_PixelZ += m_StepZ;
-
-		//------------------------------------------
-		// 다 움직인 경우를 생각해봐야 한다.
-		//------------------------------------------
-		if (fabs(m_PixelX-m_TargetX)<m_StepPixel &&
-			fabs(m_PixelY-m_TargetY)<m_StepPixel &&
-			fabs(m_PixelZ-m_TargetZ)<m_StepPixel)
+		if (AdvanceLinear(m_PixelX, m_PixelY, m_PixelZ, m_StepPixel))
 		{
-			m_PixelX = (float)m_TargetX;
-			m_PixelY = (float)m_TargetY;
-			m_PixelZ = (float)m_TargetZ;
-
-			m_StepX = 0;
-			m_StepY = 0;
-			m_StepZ = 0;
-
 			m_bChaseOver = true;
 
 			return true;

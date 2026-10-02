@@ -2,7 +2,6 @@
 // MLinearEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include <math.h>
 #include "MTopView.h"
 #include "MTypeDef.h"
 #include "MMovingEffect.h"
@@ -17,20 +16,7 @@
 MLinearEffect::MLinearEffect(BYTE bltType)
 : MMovingEffect(bltType)
 {
-	//m_ObjectType	= TYPE_EFFECT;
-	//m_EffectType	= EFFECT_LINEAR;
-
-	m_TargetX		= 0;
-	m_TargetY		= 0;
-	m_TargetZ		= 0;
-
-	// 한 번에 이동하는 pixel량
-	m_StepX			= 0;
-	m_StepY			= 0;
-	m_StepZ			= 0;
 	m_StepPixel		= 0;
-
-	m_Len			= 0;
 }
 
 MLinearEffect::~MLinearEffect()
@@ -53,45 +39,9 @@ MLinearEffect::~MLinearEffect()
 void
 MLinearEffect::SetTarget(int x, int y, int z, WORD stepPixel)
 {
-	//--------------------------------------------------
-	// 목표 위치 저장
-	//--------------------------------------------------
-	m_TargetX = x;
-	m_TargetY = y;
-	m_TargetZ = z;
-
-	//--------------------------------------------------
-	// 앞으로 움직여야할 pixel수를 계산한다.
-	//--------------------------------------------------
-	float	moveX = m_TargetX - m_PixelX,
-			moveY = m_TargetY - m_PixelY,
-			moveZ = m_TargetZ - m_PixelZ;
-
-
+	SetLinearTarget(m_PixelX, m_PixelY, m_PixelZ, x, y, z, stepPixel);
 	// 이동하는 방향 설정
 	m_Direction = MTopView::GetDirectionToPosition((int)m_PixelX, (int)m_PixelY, (int)m_TargetX, (int)m_TargetY);
-
-	//--------------------------------------------------
-	// 한번에 이동하는 pixel수
-	//--------------------------------------------------
-	// 이동해야하는 길이
-	m_Len = (float)sqrt(moveX*moveX + moveY*moveY + moveZ*moveZ);
-
-	if (m_Len==0)
-	{
-		m_StepX = 0;
-		m_StepY = 0;
-		m_StepZ = 0;
-	}
-	else
-	{
-		// 단위 길이로 만들어야 한다.
-		m_StepX = moveX/m_Len * stepPixel;
-		m_StepY = moveY/m_Len * stepPixel;
-		m_StepZ = moveZ/m_Len * stepPixel;
-	}
-
-
 	m_StepPixel = stepPixel;
 }
 
@@ -114,29 +64,8 @@ MLinearEffect::Update()
 	// 계속 Update해도 되는가?
 	if (g_CurrentFrame < m_EndFrame)
 	{
-		//--------------------------------
-		// Pixel 좌표를 바꾼다.
-		//--------------------------------
-		// 각각의 방향에 대해서 Step만큼 이동해준다.
-		m_PixelX += m_StepX;
-		m_PixelY += m_StepY;
-		m_PixelZ += m_StepZ;
-
-		//------------------------------------------
-		// 다 움직인 경우를 생각해봐야 한다.
-		//------------------------------------------
-		if (fabs(m_PixelX-m_TargetX)<m_StepPixel &&
-			fabs(m_PixelY-m_TargetY)<m_StepPixel &&
-			fabs(m_PixelZ-m_TargetZ)<m_StepPixel)
+		if (AdvanceLinear(m_PixelX, m_PixelY, m_PixelZ, m_StepPixel))
 		{
-			m_PixelX = (float)m_TargetX;
-			m_PixelY = (float)m_TargetY;
-			m_PixelZ = (float)m_TargetZ;
-
-			m_StepX = 0;
-			m_StepY = 0;
-			m_StepZ = 0;
-
 			//------------------------------------------
 			// 더 움직일 필요가 없는 경우이다.			
 			//------------------------------------------
