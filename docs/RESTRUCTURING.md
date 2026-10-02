@@ -1784,10 +1784,13 @@ rounds settled* for the host rules). Test fixtures share
     instrumented action nodes and the real zone table.
 
 - [ ] **4.32 Zone-info loading:** portal records compile in `gamemodel`.
-  > **Status:** in progress (checked records and complete-file parsing).
+  > **Status:** in progress (complete-file parsing).
   > `MPortal` moves unchanged. `GameMain::LoadZoneInfo` is the live caller;
   > zone-sector updates, minimap publication and horn NPC creation stay in the
-  > executable. R1 is 419 Windows / 417 Ninja.
+  > executable. Record loads preserve the previous portal on failure; saves
+  > reject counts that the format cannot represent before writing. Only
+  > `TYPE_MULTI_PORTAL` stores a count, including zero; all other type bytes
+  > carry one destination. R1 is 419 Windows / 417 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_zone_info.cpp`, using production portal records.
 

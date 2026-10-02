@@ -185,3 +185,84 @@ TEST(ZoneInfo, PortalStreamsStartAtTheCurrentPositionAndLeaveTheTrailer)
 	CheckRect(second, 9, 8, 7, 6);
 	CHECK_EQ(0xdd, input.get());
 }
+
+TEST(ZoneInfo, EveryTruncatedSinglePortalPreservesThePreviousRecord)
+{
+	const Bytes encoded{0, 61, 0, 9, 8, 7, 6};
+	for (std::size_t size = 0; size < encoded.size(); ++size)
+	{
+		MPortal portal({100, 200}, 1, 2, 3, 4, MPortal::TYPE_MULTI_PORTAL);
+		CHECK(!Load(portal, Bytes(encoded.begin(), encoded.begin() + size)));
+		CHECK_EQ(MPortal::TYPE_MULTI_PORTAL, portal.GetType());
+		CHECK(portal.GetZoneID() == std::vector<WORD>({100, 200}));
+		CheckRect(portal, 1, 2, 3, 4);
+	}
+}
+
+TEST(ZoneInfo, EveryTruncatedMultiPortalPreservesThePreviousRecord)
+{
+	const Bytes encoded{3, 2, 61, 0, 62, 0, 9, 8, 7, 6};
+	for (std::size_t size = 0; size < encoded.size(); ++size)
+	{
+		MPortal portal({100}, 1, 2, 3, 4, MPortal::TYPE_GUILD_PORTAL);
+		CHECK(!Load(portal, Bytes(encoded.begin(), encoded.begin() + size)));
+		CHECK_EQ(MPortal::TYPE_GUILD_PORTAL, portal.GetType());
+		CHECK(portal.GetZoneID() == std::vector<WORD>({100}));
+		CheckRect(portal, 1, 2, 3, 4);
+	}
+}
+
+TEST(ZoneInfo, ClosedPortalInputPreservesThePreviousRecord)
+{
+	MPortal portal({100}, 1, 2, 3, 4, MPortal::TYPE_GUILD_PORTAL);
+	std::ifstream input;
+	portal.LoadFromFile(input);
+	CHECK(input.fail());
+	CHECK_EQ(MPortal::TYPE_GUILD_PORTAL, portal.GetType());
+	CHECK(portal.GetZoneID() == std::vector<WORD>({100}));
+	CheckRect(portal, 1, 2, 3, 4);
+}
+
+TEST(ZoneInfo, PortalInputExceptionsPreserveThePreviousRecord)
+{
+	ZoneInfoFile fixture({3, 2, 61, 0, 62});
+	std::ifstream input(fixture.path, std::ios::binary);
+	input.exceptions(std::ios::failbit | std::ios::badbit);
+	MPortal portal({100}, 1, 2, 3, 4, MPortal::TYPE_GUILD_PORTAL);
+	bool rejected = false;
+	try { portal.LoadFromFile(input); }
+	catch (const std::ios_base::failure&) { rejected = true; }
+	CHECK(rejected);
+	CHECK_EQ(MPortal::TYPE_GUILD_PORTAL, portal.GetType());
+	CHECK(portal.GetZoneID() == std::vector<WORD>({100}));
+	CheckRect(portal, 1, 2, 3, 4);
+}
+
+TEST(ZoneInfo, SinglePortalSaveRejectsMissingOrExtraDestinationsBeforeWriting)
+{
+	for (int type : {0, 4, 255})
+		for (const std::vector<WORD>& destinations : {std::vector<WORD>{}, {61, 62}})
+		{
+			MPortal portal(destinations, 1, 2, 3, 4, static_cast<BYTE>(type));
+			ZoneInfoFile fixture({});
+			std::ofstream output(fixture.path, std::ios::binary);
+			portal.SaveToFile(output);
+			CHECK(output.fail());
+			output.close();
+			CHECK_EQ(0, std::filesystem::file_size(fixture.path));
+		}
+}
+
+TEST(ZoneInfo, MultiPortalSaveRejectsUnrepresentableCountsBeforeWriting)
+{
+	for (std::size_t count : {256, 257, 511})
+	{
+		MPortal portal(std::vector<WORD>(count, 61), 1, 2, 3, 4, MPortal::TYPE_MULTI_PORTAL);
+		ZoneInfoFile fixture({});
+		std::ofstream output(fixture.path, std::ios::binary);
+		portal.SaveToFile(output);
+		CHECK(output.fail());
+		output.close();
+		CHECK_EQ(0, std::filesystem::file_size(fixture.path));
+	}
+}
