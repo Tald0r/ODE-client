@@ -20,6 +20,8 @@ class MEffectManager {
 	public :
 		MEffectManager();
 		virtual ~MEffectManager();
+		MEffectManager(const MEffectManager&) = delete;
+		MEffectManager& operator=(const MEffectManager&) = delete;
 
 		//------------------------------------------------------
 		// Release
@@ -29,6 +31,7 @@ class MEffectManager {
 		//------------------------------------------------------
 		// Add
 		//------------------------------------------------------
+		// Own each pointer once; null and already owned pointers are no-ops.
 		virtual void		AddEffect(MEffect* pEffect);
 
 		//------------------------------------------------------

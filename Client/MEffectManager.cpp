@@ -4,6 +4,7 @@
 #include "Client_PCH.h"
 #include "MEffectManager.h"
 #include "MEffect.h"
+#include <algorithm>
 
 //-----------------------------------------------------------------------------
 //
@@ -51,9 +52,10 @@ MEffectManager::Release()
 void		
 MEffectManager::AddEffect(MEffect* pEffect)
 {
-	if (pEffect != NULL)
+	if (pEffect != NULL &&
+		std::find(m_listEffect.begin(), m_listEffect.end(), pEffect) == m_listEffect.end())
 	{
-		// list에 추가
+		// Take ownership once, keeping new effects at the front.
 		m_listEffect.push_front( pEffect );
 	}
 }

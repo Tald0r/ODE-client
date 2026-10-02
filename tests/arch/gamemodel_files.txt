@@ -504,3 +504,9 @@ Client/MAttachEffect.h
 # Complete orbiting attachments composing the model lifecycle and paths (4.53).
 Client/MAttachOrbitEffect.cpp
 Client/MAttachOrbitEffect.h
+
+# Effect ownership and inventory/screen effect lifecycle (4.54).
+Client/MEffectManager.cpp
+Client/MEffectManager.h
+Client/MScreenEffectManager.cpp
+Client/MScreenEffectManager.h

@@ -241,7 +241,8 @@ check () {
 # 405: complete parabolic effects join gamemodel (4.51).
 # 404: attached effects join gamemodel (4.52).
 # 403: complete orbiting attachments join gamemodel (4.53).
-R1_BASELINE=403
+# 401: effect ownership and screen lifecycle managers join gamemodel (4.54).
+R1_BASELINE=401
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -316,7 +317,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 403: complete parabolic effects join gamemodel (4.51).
 	# 402: attached effects join gamemodel (4.52).
 	# 401: complete orbiting attachments join gamemodel (4.53).
-	R1_NINJA_BASELINE=401
+	# 399: effect ownership and screen lifecycle managers join gamemodel (4.54).
+	R1_NINJA_BASELINE=399
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
