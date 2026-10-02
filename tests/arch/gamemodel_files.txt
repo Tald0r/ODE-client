@@ -325,3 +325,11 @@ Client/CTypeMap2.h
 # Packet-driven world/server updates; handlers retain UI/mode transitions.
 Client/ApplyServerList.cpp
 Client/ApplyServerList.h
+
+# Callback dispatch used by status reactions and UI accelerators, and the
+# request mode shared by player/view interaction code (task 4.20).
+# Both implementations and headers move unchanged.
+Client/MFunctionManager.cpp
+Client/MFunctionManager.h
+Client/MRequestMode.cpp
+Client/MRequestMode.h
