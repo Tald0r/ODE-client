@@ -5,6 +5,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -435,4 +436,56 @@ TEST(ScreenEffectManager, RealScreenEffectsAnimateAndExpireThroughTheManager)
 	manager.Update();
 	CHECK_EQ(0, manager.GetSize());
 	CHECK(events == std::vector<Event>({{'G', 1}, {'T', 1}}));
+}
+
+TEST(ScreenEffectManager, AddingAnOwnedPointerAgainDoesNotDuplicateOwnershipOrUpdates)
+{
+	World world;
+	struct Manager : MScreenEffectManager
+	{
+		void RemoveExtraAliasesForCleanup()
+		{
+			while (m_listEffect.size() > 1) m_listEffect.pop_front();
+		}
+	} manager;
+	auto* effect = new Effect(1);
+	manager.AddEffect(effect);
+	manager.AddEffect(effect);
+	CHECK_EQ(1, manager.GetSize());
+	manager.Update();
+	CHECK(events == std::vector<Event>({{'U', 1}}));
+	// Keep the failing version safe to destroy after observing duplicate entries.
+	manager.RemoveExtraAliasesForCleanup();
+	events.clear();
+	manager.Release();
+	CHECK(events == std::vector<Event>({{'D', 1}}));
+}
+
+TEST(ScreenEffectManager, OwningManagersCannotBeShallowCopiedOrMovedThroughCopying)
+{
+	CHECK(!std::is_copy_constructible_v<MScreenEffectManager>);
+	CHECK(!std::is_copy_assignable_v<MScreenEffectManager>);
+	CHECK(!std::is_move_constructible_v<MScreenEffectManager>);
+	CHECK(!std::is_move_assignable_v<MScreenEffectManager>);
+	CHECK(!std::is_copy_assignable_v<MEffectManager>);
+}
+
+TEST(ScreenEffectManager, ReaddingAMiddleEntryPreservesOrderAndItsOwnedTarget)
+{
+	World world;
+	MScreenEffectManager manager;
+	manager.AddEffect(new Effect(1));
+	auto* middle = new Effect(2);
+	Link(*middle);
+	auto* target = middle->GetEffectTarget();
+	manager.AddEffect(middle);
+	manager.AddEffect(new Effect(3));
+	manager.AddEffect(middle);
+	CHECK_EQ(3, manager.GetSize());
+	CHECK(middle->GetEffectTarget() == target);
+	manager.Update();
+	CHECK(events == std::vector<Event>({{'U', 3}, {'U', 2}, {'U', 1}}));
+	events.clear();
+	manager.Release();
+	CHECK(events == std::vector<Event>({{'D', 3}, {'D', 2}, {'T', 2}, {'D', 1}}));
 }

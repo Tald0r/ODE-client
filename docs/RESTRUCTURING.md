@@ -2123,8 +2123,9 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_effect_orbits.cpp`, using production effects and paths.
 
 - [x] **4.54 Screen-effect ownership and lifecycle:** `MEffectManager` and
-  `MScreenEffectManager` compile in `gamemodel`. The base owns effects;
-  the screen manager updates them and requests linked-effect generation
+  `MScreenEffectManager` compile in `gamemodel`. The base owns each effect
+  pointer once and cannot be copied; repeated insertion is a no-op.
+  The screen manager updates them and requests linked-effect generation
   through `MScreenEffectManagerHost`, installed and cleared by GameInit.
   > **Status:** done (2026-10-02). New effects enter at the front. Update
   > visits only the effects present on entry, leaving generated effects
