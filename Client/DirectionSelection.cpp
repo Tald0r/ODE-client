@@ -1,14 +1,17 @@
 #include "DirectionSelection.h"
 #include "MViewDef.h"
 
+#include <cstdint>
+
 BYTE
 SelectFacingDirection(int originX, int originY, int destX, int destY)
 {
-	int	stepX = destX - originX,
-		stepY = destY - originY;
+	const std::int64_t stepX = static_cast<std::int64_t>(destX) - originX;
+	const std::int64_t stepY = static_cast<std::int64_t>(destY) - originY;
 
 	// 0일 때 check
-	float	k	= (stepX==0)? 0 : (float)(stepY) / stepX;	// 기울기
+	const float k = stepX == 0 ? 0.0f
+		: static_cast<float>(stepY) / static_cast<float>(stepX);
 
 
 	//--------------------------------------------------

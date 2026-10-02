@@ -2000,6 +2000,8 @@ rounds settled* for the host rules). Test fixtures share
   > `MTopView` delegates its existing static entry point; linear projectiles
   > call the model function directly. Coincident points face down, and the
   > existing asymmetric low/high slope cutoffs retain their float rounding.
+  > Coordinate differences use wide integers before float conversion so a
+  > long displacement cannot overflow into the wrong direction.
   > Rendering, creature actions and projectile lifetime stay executable-side.
   > R1 stays 410 Windows / 408 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
