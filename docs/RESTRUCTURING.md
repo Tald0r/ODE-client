@@ -1881,6 +1881,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_interaction_metadata.cpp`, using production records.
 
+- [x] **4.39 Orbit-effect movement:** `EffectOrbit` holds cached paths and
+  progression in `gamemodel`.
+  > **Status:** done (this commit).
+  > `MAttachOrbitEffect` supplies effect activity and applies pixel offsets;
+  > the generator keeps creature lookup, step inheritance and pause selection.
+  > `GameInit` initializes the cached positions after the shared math tables.
+  > The first two paths repeat twice per 64 steps, and the small path once.
+  > R1 stays 414 Windows / 412 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_effect_orbits.cpp`, using production paths and state.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop

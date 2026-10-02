@@ -49,7 +49,7 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 		MAttachEffect* pOldEffect = *(pCreature->GetAttachEffectIterator());
 		if( pOldEffect != NULL && pOldEffect->GetEffectType() == MEffect::EFFECT_ATTACH_ORBIT )
 		{
-			effectPosition = static_cast<MAttachOrbitEffect*>(pOldEffect)->m_OrbitStep;
+			effectPosition = static_cast<MAttachOrbitEffect*>(pOldEffect)->GetOrbitStep();
 		}
 	}
 	if( ClearsBeforeAttach(egInfo.effectSpriteType) )
@@ -78,11 +78,11 @@ MAttachCreatureOrbitEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInf
 
 	// 위력
 	pEffect->SetPower(egInfo.power);
-	pEffect->m_OrbitStep = effectPosition;
+	pEffect->SetOrbitStep(effectPosition);
 	if(egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL_ATTACK 
 		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL_HEAL)
 	{
-		pEffect->m_bRun = false;
+		pEffect->SetOrbitRunning(false);
 	}
 
 

@@ -30,8 +30,9 @@
 #endif
 
 // 이 값 바꿔줄때 NextOrbitStep()도 고려해야 한다.
-#define	MAX_EFFECT_ORBIT_TYPE		3
-#define	MAX_EFFECT_ORBIT_STEP		64
+#include "EffectOrbit.h"
+#define	MAX_EFFECT_ORBIT_TYPE		EffectOrbit::TypeCount
+#define	MAX_EFFECT_ORBIT_STEP		EffectOrbit::StepCount
 
 #include "MAttachEffect.h"
 
@@ -49,32 +50,29 @@ class MAttachOrbitEffect : public MAttachEffect {
 		//--------------------------------------------------------
 		virtual bool			Update();
 
-		//void					NextOrbitStep()		{ m_OrbitStep = ++m_OrbitStep % MAX_EFFECT_ORBIT_STEP; }
-		void					NextOrbitStep()		{ m_OrbitStep = (m_OrbitStep + 1) & 0x0000003F; }
+		void NextOrbitStep() { m_Orbit.NextStep(); }
+		int GetOrbitStep() const { return m_Orbit.GetStep(); }
+		void SetOrbitStep(int step) { m_Orbit.SetStep(step); }
+		void SetOrbitRunning(bool running) { m_Orbit.SetRunning(running); }
 
 		//--------------------------------------------------------
 		// 좌표값 + Orbit보정값
 		//--------------------------------------------------------
-		virtual int		GetPixelX() const	{ return (int)m_PixelX + s_OrbitPosition[m_Type][m_OrbitStep].x; }
-		virtual int		GetPixelY() const	{ return (int)m_PixelY + s_OrbitPosition[m_Type][m_OrbitStep].y; }
+		virtual int		GetPixelX() const	{ return (int)m_PixelX + m_Orbit.GetPosition().x; }
+		virtual int		GetPixelY() const	{ return (int)m_PixelY + m_Orbit.GetPosition().y; }
 
 		//--------------------------------------------------------
 		// Get Orbit X,Y
 		//--------------------------------------------------------
-		const POINT&	GetOrbitPosition() const	{ return s_OrbitPosition[m_Type][m_OrbitStep]; }
+		const POINT&	GetOrbitPosition() const	{ return m_Orbit.GetPosition(); }
 		
 		//--------------------------------------------------------
 		// Init OrbitPosition
 		//--------------------------------------------------------
 		static void		InitOrbitPosition();
 	
-	public :
-		bool					m_bRun;
-		int						m_OrbitStep;		// 몇번째 궤도 좌표인가?
-		int						m_Type;
-
-		// 보정 좌표
-		static POINT			s_OrbitPosition[MAX_EFFECT_ORBIT_TYPE][MAX_EFFECT_ORBIT_STEP];		
+	private :
+		EffectOrbit m_Orbit;
 };
 
 // list정의

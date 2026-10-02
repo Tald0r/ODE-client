@@ -126,13 +126,14 @@ playback supplied by the executable), and ambient sound decisions
 and show-time hour windows and scheduling (`ShowTimeChecker`, with explicit
 frame, game-hour and random-source inputs), and help strings with display
 tracking (`MHelpStringTable`), and interaction-object metadata
-(`INTERACTIONOBJECTTABLE_INFO`);
+(`INTERACTIONOBJECTTABLE_INFO`), and orbit-effect paths and progression
+(`EffectOrbit`, with drawing and effect lifetime kept in the executable);
 with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
 4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25, 4.26, 4.27,
-4.28, 4.29, 4.30, 4.31, 4.32, 4.33, 4.34, 4.35, 4.36, 4.37 and 4.38),
+4.28, 4.29, 4.30, 4.31, 4.32, 4.33, 4.34, 4.35, 4.36, 4.37, 4.38 and 4.39),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
