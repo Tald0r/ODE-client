@@ -134,7 +134,7 @@ TEST(CreatureNames, RealLibraryTablesKeepTheirThreeNameGroupsDistinct)
 TEST(CreatureNames, TableLookupsRejectNegativeAndPastEndIndexes)
 {
 	NameTables tables;
-	for (int index : {-1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()})
+	for (int index : {-1, (std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()})
 	{
 		CHECK(tables.monsters.GetFirstName(index) == nullptr);
 		CHECK(tables.monsters.GetMiddleName(index) == nullptr);
@@ -187,7 +187,7 @@ TEST(CreatureNames, RandomTitleSelectionUpdatesTheLegacyIndexQuery)
 	struct Example { int draw; int index; const char* name; };
 	for (const auto& example : {Example{0, 0, ""}, Example{1, 1, "Young"},
 		Example{2, 2, "Veteran"}, Example{3, 0, ""}, Example{8, 2, "Veteran"},
-		Example{std::numeric_limits<int>::max(), 1, "Young"}})
+		Example{(std::numeric_limits<int>::max)(), 1, "Young"}})
 	{
 		selection.SelectLevelName(tables.levels, example.draw);
 		CHECK_EQ(example.index, selection.HasLevelName());
@@ -331,7 +331,7 @@ TEST(CreatureNames, NegativeRandomSamplesResetBothSelectionsToZero)
 	NameTables tables;
 	CreatureNameSelection selection;
 	const MString prefix("GM");
-	for (int draw : {-1, -7, std::numeric_limits<int>::min()})
+	for (int draw : {-1, -7, (std::numeric_limits<int>::min)()})
 	{
 		selection.SelectLevelName(tables.levels, 2);
 		selection.SelectHallucinationName(tables.monsters, 2);

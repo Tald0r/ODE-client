@@ -307,7 +307,7 @@ TEST(PlayerConfig, AbsentOrUnsupportedWorldFileClearsOldSettings)
 
 TEST(PlayerConfig, InvalidSelectedSlotsPreserveTheSlotAndRecentCount)
 {
-	for (int slot : {-1, -256, 3, 255, std::numeric_limits<int>::max()})
+	for (int slot : {-1, -256, 3, 255, (std::numeric_limits<int>::max)()})
 	{
 		PlayerConfig config;
 		CHECK(Load(config, Bytes().Byte(1).U32(9)));
