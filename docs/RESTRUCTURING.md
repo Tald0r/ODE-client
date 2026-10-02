@@ -1959,7 +1959,9 @@ rounds settled* for the host rules). Test fixtures share
   > The effect viewer links the production object and supplies its existing
   > frozen clock, replacing game-global stubs; its vptr sanitizer suppression
   > is removed. Rendering and concrete effect actions remain executable-side.
-  > R1 is 413 Windows / 411 Ninja.
+  > Both constructors initialize metadata; relinking the owned target updates
+  > its action without deleting it. Copy operations are disabled because an
+  > effect owns its target. R1 is 413 Windows / 411 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_effect_base.cpp`, using production effects and targets.
 

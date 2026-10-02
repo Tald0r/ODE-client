@@ -142,6 +142,12 @@ MEffect::SetCount(DWORD last, DWORD linkCount)
 void			
 MEffect::SetLink(TYPE_ACTIONINFO nActionInfo, MEffectTarget* pEffectTarget)
 {
+	if (m_pEffectTarget == pEffectTarget)
+	{
+		m_nActionInfo = nActionInfo;
+		return;
+	}
+
 	#ifdef OUTPUT_DEBUG
 		if (pEffectTarget==NULL)
 		{

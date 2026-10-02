@@ -95,6 +95,8 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		MEffect(BYTE bltType);
 
 		virtual ~MEffect();
+		MEffect(const MEffect&) = delete;
+		MEffect& operator=(const MEffect&) = delete;
 		static const MEffectHost* SetHost(const MEffectHost* host);
 
 		//--------------------------------------------------------
@@ -211,7 +213,7 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 
 
 	protected :
-		int	m_est;
+		int	m_est = 0;
 
 		BYTE					m_Direction;	// 방향
 
@@ -224,10 +226,10 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		float			m_PixelZ;
 		WORD			m_StepPixel;
 
-		BYTE			m_Power;
+		BYTE			m_Power = 0;
 
 		// 다음 Effect로의 연결을 위한 정보
-		TYPE_ACTIONINFO			m_nActionInfo;
+		TYPE_ACTIONINFO			m_nActionInfo = ACTIONINFO_NULL;
 		MEffectTarget*			m_pEffectTarget;
 
 		static TYPE_OBJECTID	s_ID;			// ID발급을 위한...

@@ -2,7 +2,10 @@
 #include "MEffect.h"
 #include "MViewDef.h"
 
+#include <cstring>
 #include <limits>
+#include <new>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -495,4 +498,75 @@ TEST(EffectBase, LinkSizeReportsCurrentPhaseUntilTheTargetEnds)
 	CHECK_EQ(0, effect.GetLinkSize());
 	CHECK(effect.GetEffectTarget() == target);
 	CHECK_EQ(0, destroyed);
+}
+
+TEST(EffectBase, DefaultConstructorInitializesMetadataInPoisonedStorage)
+{
+	World world;
+	alignas(MEffect) unsigned char storage[sizeof(MEffect)];
+	for (int pattern : {0x00, 0x55, 0xaa, 0xcc, 0xcd, 0xff})
+	{
+		std::memset(storage, pattern, sizeof(storage));
+		auto* effect = new (storage) MEffect(BLT_EFFECT);
+		CHECK_EQ(0, effect->GetEst());
+		CHECK_EQ(0, effect->GetPower());
+		CHECK_EQ(ACTIONINFO_NULL, effect->GetActionInfo());
+		effect->~MEffect();
+	}
+}
+
+TEST(EffectBase, ResourceConstructorInitializesMetadataInPoisonedStorage)
+{
+	World world;
+	alignas(MEffect) unsigned char storage[sizeof(MEffect)];
+	for (int pattern : {0x00, 0x55, 0xaa, 0xcc, 0xcd, 0xff})
+	{
+		std::memset(storage, pattern, sizeof(storage));
+		auto* effect = new (storage) MEffect(BLT_EFFECT, nullptr);
+		CHECK_EQ(0, effect->GetEst());
+		CHECK_EQ(0, effect->GetPower());
+		CHECK_EQ(ACTIONINFO_NULL, effect->GetActionInfo());
+		effect->~MEffect();
+	}
+}
+
+TEST(EffectBase, ReusingObjectStorageDoesNotInheritPreviousMetadata)
+{
+	World world;
+	alignas(MEffect) unsigned char storage[sizeof(MEffect)];
+	auto* previous = new (storage) MEffect(BLT_EFFECT);
+	previous->SetEst(123);
+	previous->SetPower(255);
+	previous->SetLink(456, nullptr);
+	previous->~MEffect();
+	auto* effect = new (storage) MEffect(BLT_NORMAL, nullptr);
+	CHECK_EQ(0, effect->GetEst());
+	CHECK_EQ(0, effect->GetPower());
+	CHECK_EQ(ACTIONINFO_NULL, effect->GetActionInfo());
+	effect->~MEffect();
+}
+
+TEST(EffectBase, RelinkingTheOwnedTargetUpdatesActionWithoutDeletingTheTarget)
+{
+	World world;
+	int destroyed = 0;
+	{
+		MEffect effect(BLT_EFFECT);
+		auto* target = new Target(destroyed);
+		effect.SetLink(123, target);
+		effect.SetLink(456, target);
+		CHECK_EQ(0, destroyed);
+		CHECK_EQ(456, effect.GetActionInfo());
+		CHECK(effect.GetEffectTarget() == target);
+		// The pre-fix implementation deletes target. Discard its dangling
+		// alias so the failed ownership assertion does not double-delete.
+		if (destroyed != 0) effect.SetEffectTargetNULL();
+	}
+	CHECK_EQ(1, destroyed);
+}
+
+TEST(EffectBase, OwningEffectsCannotBeImplicitlyCopied)
+{
+	CHECK(!std::is_copy_constructible_v<MEffect>);
+	CHECK(!std::is_copy_assignable_v<MEffect>);
 }
