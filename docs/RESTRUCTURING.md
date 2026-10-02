@@ -2080,6 +2080,8 @@ rounds settled* for the host rules). Test fixtures share
   > only into the zone's owning `AddEffect`. Its wait argument of ten selects
   > the wait list without setting a wait deadline. Missing views or missing/
   > short sprite tables skip smoke; a missing zone releases queued smoke.
+  > Smoke copies bounded base pixel coordinates: large values saturate, NaN
+  > maps to zero and derived display offsets do not affect its stored position.
   > Absolute unsigned deadlines, target-tile conversion and ordinary motion
   > remain. R1 is 405 Windows / 403 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1,

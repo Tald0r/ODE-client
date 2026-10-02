@@ -583,3 +583,66 @@ TEST(ParabolaEffect, ExpiryAndSmokeLifetimeKeepUnsignedClockWrap)
 	frameNow = 1;
 	CHECK(!effect.Update());
 }
+
+TEST(ParabolaEffect, SmokePreservesMaximumIntegerPixelsAfterFloatStorage)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	MParabolaEffect effect(BLT_EFFECT);
+	effect.SetPixelPosition(high, high, high);
+	effect.MakeCannonadeSmoke();
+	CHECK_EQ(1, queued.size());
+	CHECK_EQ(high, queued[0].effect->GetPixelX());
+	CHECK_EQ(high, queued[0].effect->GetPixelY());
+	CHECK_EQ(high, queued[0].effect->GetPixelZ());
+}
+
+TEST(ParabolaEffect, SmokeBoundsNonfiniteCoordinatesBeforeCopyingThem)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT);
+	effect.SetPixels(std::numeric_limits<float>::infinity(),
+		-std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN());
+	effect.MakeCannonadeSmoke();
+	CHECK_EQ(1, queued.size());
+	CHECK_EQ((std::numeric_limits<int>::max)(), queued[0].effect->GetPixelX());
+	CHECK_EQ((std::numeric_limits<int>::min)(), queued[0].effect->GetPixelY());
+	CHECK_EQ(0, queued[0].effect->GetPixelZ());
+}
+
+TEST(ParabolaEffect, SmokePreservesOrdinaryFractionalTruncationAndMinimumPixels)
+{
+	World world;
+	EffectProbe effect(BLT_EFFECT);
+	effect.SetPixels(-12.75f, 31.75f, -0.75f);
+	effect.MakeCannonadeSmoke();
+	CHECK_EQ(-12, queued[0].effect->GetPixelX());
+	CHECK_EQ(31, queued[0].effect->GetPixelY());
+	CHECK_EQ(0, queued[0].effect->GetPixelZ());
+	const int low = (std::numeric_limits<int>::min)();
+	effect.SetPixelPosition(low, low, low);
+	effect.MakeCannonadeSmoke();
+	CHECK_EQ(low, queued[1].effect->GetPixelX());
+	CHECK_EQ(low, queued[1].effect->GetPixelY());
+	CHECK_EQ(low, queued[1].effect->GetPixelZ());
+}
+
+TEST(ParabolaEffect, SmokeUsesStoredCoordinatesWhenDisplayGettersAreOverridden)
+{
+	World world;
+	struct DisplayEffect : MParabolaEffect
+	{
+		DisplayEffect() : MParabolaEffect(BLT_EFFECT) {}
+		int GetPixelX() const override { return 1000; }
+		int GetPixelY() const override { return 2000; }
+		int GetPixelZ() const override { return 3000; }
+	} effect;
+	effect.SetPixelPosition(12, 34, 56);
+	effect.MakeCannonadeSmoke();
+	CHECK_EQ(1000, effect.GetPixelX());
+	CHECK_EQ(2000, effect.GetPixelY());
+	CHECK_EQ(3000, effect.GetPixelZ());
+	CHECK_EQ(12, queued[0].effect->GetPixelX());
+	CHECK_EQ(34, queued[0].effect->GetPixelY());
+	CHECK_EQ(56, queued[0].effect->GetPixelZ());
+}

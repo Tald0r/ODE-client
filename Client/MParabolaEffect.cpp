@@ -76,8 +76,8 @@ MParabolaEffect::MakeCannonadeSmoke()
 	if (!ReadSmokeSprite(sprite)) return;
 	auto effect = std::make_unique<MEffect>(sprite.bltType);
 	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
-	effect->SetPixelPosition(static_cast<int>(m_PixelX), static_cast<int>(m_PixelY), static_cast<int>(m_PixelZ));
-	effect->SetZ(static_cast<int>(m_PixelZ));
+	effect->SetPixelPosition(MEffect::GetPixelX(), MEffect::GetPixelY(), MEffect::GetPixelZ());
+	effect->SetZ(MEffect::GetPixelZ());
 	effect->SetCount(9);
 	effect->SetDirection(GetDirection());
 	effect->SetMulti(true);
