@@ -361,3 +361,8 @@ Client/MViewDef.h
 # GameInit keeps DNS, connection attempts and UI transitions (task 4.24).
 Client/LoginEndpoint.cpp
 Client/LoginEndpoint.h
+
+# Per-world account settings and last character selection (task 4.26).
+# The initial move preserves both implementation and header byte-for-byte.
+Client/PCConfigTable.cpp
+Client/PCConfigTable.h

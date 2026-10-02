@@ -1,36 +1,88 @@
 //----------------------------------------------------------------------
-// PCConfigTable.cpp
+// Per-world account settings and the last selected character slot.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "PCConfigTable.h"
-#include <vector>
+
 #include <algorithm>
+#include <limits>
+#include <memory>
+#include <vector>
 
-const int PLAYER_CONFIG_VERSION	= 2;
+namespace {
 
-#define LIMIT_PLAYER_CONFIG		20
+constexpr int PLAYER_CONFIG_VERSION = 2;
+constexpr size_t LIMIT_PLAYER_CONFIG = 20;
+static_assert(sizeof(int) == 4 && sizeof(DWORD) == 4 && sizeof(BYTE) == 1);
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-WorldPlayerConfigTable*		g_pWorldPlayerConfigTable = NULL;
+// Even a placeholder consumes bytes. Bound counts before allocating or
+// iterating, and restore the stream to the first record afterwards.
+bool ReadCount(std::ifstream& file, int& count, std::streamoff minimumBytes)
+{
+	count = 0;
+	if (!file.read(reinterpret_cast<char*>(&count), 4) || count < 0)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	const std::streamoff current = file.tellg();
+	if (current < 0)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	file.seekg(0, std::ios::end);
+	const std::streamoff end = file.tellg();
+	if (!file.good() || end < current)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	file.seekg(current, std::ios::beg);
+	if (!file.good() || count > (end - current) / minimumBytes)
+	{
+		file.setstate(std::ios::failbit);
+		return false;
+	}
+	return true;
+}
 
-//----------------------------------------------------------------------
-// PlayerConfigSort
-//----------------------------------------------------------------------
-class PlayerConfigSort {
-	public :
-		bool operator () (PlayerConfig *pLeft, PlayerConfig *pRight) const
-		{
-			return pLeft->GetRecentCount() < pRight->GetRecentCount();
-		}
-};
+std::vector<PlayerConfig*> SavedAccounts(const PlayerConfigTable& table)
+{
+	std::vector<PlayerConfig*> accounts;
+	accounts.reserve(table.size());
+	for (const auto& entry : table)
+		accounts.push_back(entry.second);
+	if (accounts.size() > LIMIT_PLAYER_CONFIG)
+	{
+		// Map order breaks ties as before. Null placeholders rank after accounts.
+		std::stable_sort(accounts.begin(), accounts.end(), [](const auto* left, const auto* right) {
+			if (left == nullptr) return false;
+			if (right == nullptr) return true;
+			return left->GetRecentCount() < right->GetRecentCount();
+		});
+		accounts.resize(LIMIT_PLAYER_CONFIG);
+	}
+	return accounts;
+}
 
-//----------------------------------------------------------------------
-//
-//							PlayerConfig
-//
-//----------------------------------------------------------------------
+bool CanSave(const std::vector<PlayerConfig*>& accounts)
+{
+	for (const auto* config : accounts)
+	{
+		if (config == nullptr) continue;
+		const auto& name = config->GetPlayerID();
+		if (name.empty() || name.size() > 255 || name.find('\0') != std::string::npos
+			|| config->GetLastSlot() < 0 || config->GetLastSlot() >= 3)
+			return false;
+	}
+	return true;
+}
+
+} // namespace
+
+WorldPlayerConfigTable* g_pWorldPlayerConfigTable = NULL;
+
 PlayerConfig::PlayerConfig()
 {
 	m_LastSlot = 0;
@@ -41,52 +93,39 @@ PlayerConfig::~PlayerConfig()
 {
 }
 
-//----------------------------------------------------------------------
-// Set LastSlot
-//----------------------------------------------------------------------
-void		
-PlayerConfig::SetLastSlot(int slot)
-{ 
-	if (slot < 3)	//MAX_SLOT
-	{
-		m_LastSlot = slot; 
-	}
-
-	// 최근에 사용된 것이다.
+void PlayerConfig::SetLastSlot(int slot)
+{
+	if (slot < 0 || slot >= 3)
+		return;
+	m_LastSlot = static_cast<BYTE>(slot);
 	m_RecentCount = 0;
 }
 
-//----------------------------------------------------------------------
-// Save To File
-//----------------------------------------------------------------------
-void		
-PlayerConfig::SaveToFile(std::ofstream& file)
+void PlayerConfig::SaveToFile(std::ofstream& file)
 {
-	// save할때마다 RecentCount를 1씩 증가시킨다.
-	// SetLastSlot(접속할때)을 하지 않고.. save만 하게 되면
-	// 결국 RecentCount가 가장 큰 애가.. 제일~~ 오래전에 접속한애가 된다.
-	m_RecentCount ++;
-
-	file.write((const char*)&m_LastSlot, 1);
-	file.write((const char*)&m_RecentCount, 4);
+	// An old account must never wrap around and become the most recent one.
+	const DWORD recent = m_RecentCount == (std::numeric_limits<DWORD>::max)()
+		? m_RecentCount : m_RecentCount + 1;
+	file.write(reinterpret_cast<const char*>(&m_LastSlot), 1);
+	file.write(reinterpret_cast<const char*>(&recent), 4);
+	if (file.good())
+		m_RecentCount = recent;
 }
 
-//----------------------------------------------------------------------
-// Load From File
-//----------------------------------------------------------------------
-void		
-PlayerConfig::LoadFromFile(std::ifstream& file)
+void PlayerConfig::LoadFromFile(std::ifstream& file)
 {
-	file.read((char*)&m_LastSlot, 1);
-	file.read((char*)&m_RecentCount, 4);
+	BYTE slot = 0;
+	DWORD recent = 0;
+	if (!file.read(reinterpret_cast<char*>(&slot), 1)
+		|| !file.read(reinterpret_cast<char*>(&recent), 4) || slot >= 3)
+	{
+		file.setstate(std::ios::failbit);
+		return;
+	}
+	m_LastSlot = slot;
+	m_RecentCount = recent;
 }
 
-
-//----------------------------------------------------------------------
-//
-//						PlayerConfigTable
-//
-//----------------------------------------------------------------------
 PlayerConfigTable::PlayerConfigTable()
 {
 }
@@ -96,224 +135,97 @@ PlayerConfigTable::~PlayerConfigTable()
 	Release();
 }
 
-//----------------------------------------------------------------------
-// Release
-//----------------------------------------------------------------------
-void				
-PlayerConfigTable::Release()
+void PlayerConfigTable::Release()
 {
-	iterator iConfig = begin();
-
-	while (iConfig != end())
-	{
-		PlayerConfig* pConfig = iConfig->second;
-
-		if (pConfig!=NULL)
-		{
-			delete pConfig;
-		}
-
-		iConfig ++;
-	}
-
+	for (auto& entry : *this)
+		delete entry.second;
 	clear();
 }
 
-//----------------------------------------------------------------------
-// Add PlayerConfigTable
-//----------------------------------------------------------------------
-void				
-PlayerConfigTable::AddPlayerConfig(PlayerConfig* pConfig)
+void PlayerConfigTable::AddPlayerConfig(PlayerConfig* pConfig)
 {
-	if (pConfig==NULL
-		|| pConfig->GetPlayerID().length()==0)
-	{
+	if (pConfig == NULL || pConfig->GetPlayerID().empty())
 		return;
-	}
-
-	const std::string& playerID = pConfig->GetPlayerID();
-
-	iterator iConfig = find( playerID );
-
-	// 이미 있으면 지운다.
-	if (iConfig != end())
+	const auto found = find(pConfig->GetPlayerID());
+	if (found != end())
 	{
-		PlayerConfig* pConfig = iConfig->second;
-
-		if (pConfig!=NULL)
-		{
-			delete pConfig;
-		}
+		if (found->second == pConfig)
+			return;
+		delete found->second;
+		found->second = pConfig;
 	}
-
-	(*this)[playerID] = pConfig;
-}
-
-//----------------------------------------------------------------------
-// Get PlayerConfigTable
-//----------------------------------------------------------------------
-PlayerConfig*		
-PlayerConfigTable::GetPlayerConfig(const char* pPlayerID) const
-{
-	if (pPlayerID==NULL)
-	{
-		return NULL;
-	}
-
-	const_iterator iConfig = find( std::string(pPlayerID) );
-
-	if (iConfig != end())
-	{
-		return iConfig->second;
-	}
-
-	return NULL;
-}
-
-//----------------------------------------------------------------------
-// Save To File
-//----------------------------------------------------------------------
-void		
-PlayerConfigTable::SaveToFile(std::ofstream& file)
-{
-	int num = static_cast<int>(size());
-
-	//---------------------------------------------------------------
-	// 개수 제한에 걸리는 경우
-	//---------------------------------------------------------------
-	if (num > LIMIT_PLAYER_CONFIG)
-	{
-		num = LIMIT_PLAYER_CONFIG;
-
-		// 개수
-		file.write((const char*)&num, 4);
-
-		// vector로 만들어서 저장할것만 뽑아야 한다.
-		std::vector<PlayerConfig*> playerConfigs;
-		
-		playerConfigs.reserve( size() );	// 전체 개수만큼
-
-		const_iterator iConfig = begin();
-
-		// map --> vector
-		while (iConfig != end())
-		{
-			playerConfigs.push_back( iConfig->second );
-			iConfig ++;
-		}
-
-		// sort. 최근에것들이 앞으로 온다.
-		std::stable_sort( playerConfigs.begin(), playerConfigs.end(), PlayerConfigSort() );
-
-		BYTE len;
-
-		// num개만 저장한다.
-		for (int i=0; i<num; i++)
-		{
-			PlayerConfig* pConfig = playerConfigs[i];
-
-			if (pConfig!=NULL)
-			{
-				const std::string& playerID = pConfig->GetPlayerID();
-
-				// PlayerID
-				len = static_cast<BYTE>(playerID.length());
-				file.write((const char*)&len, 1);			
-				file.write((const char*)playerID.c_str(), len);
-
-				// PlayerConfig
-				pConfig->SaveToFile( file );
-			}
-			else
-			{
-				// NULL인 경우는.. PlayerID 길이 0으로.
-				len = 0;
-				file.write((const char*)&len, 1);
-			}
-		}
-	}
-	//---------------------------------------------------------------
-	// 전부 저장하는 경우
-	//---------------------------------------------------------------
 	else
 	{
-		// 개수
-		file.write((const char*)&num, 4);
-
-		// 다 저장..
-		const_iterator iConfig = begin();
-
-		BYTE len;
-
-		while (iConfig != end())
-		{
-			PlayerConfig* pConfig = iConfig->second;
-
-			if (pConfig!=NULL)
-			{
-				const std::string& playerID = pConfig->GetPlayerID();
-
-				// PlayerID
-				len = static_cast<BYTE>(playerID.length());
-				file.write((const char*)&len, 1);			
-				file.write((const char*)playerID.c_str(), len);
-
-				// PlayerConfig
-				pConfig->SaveToFile( file );
-			}
-			else
-			{
-				// NULL인 경우는.. PlayerID 길이 0으로.
-				len = 0;
-				file.write((const char*)&len, 1);
-			}
-
-			iConfig ++;
-		}
+		emplace(pConfig->GetPlayerID(), pConfig);
 	}
-
 }
 
-//----------------------------------------------------------------------
-// Load From File
-//----------------------------------------------------------------------
-void		
-PlayerConfigTable::LoadFromFile(std::ifstream& file)
+PlayerConfig* PlayerConfigTable::GetPlayerConfig(const char* pPlayerID) const
+{
+	if (pPlayerID == NULL)
+		return NULL;
+	const auto found = find(pPlayerID);
+	return found == end() ? NULL : found->second;
+}
+
+void PlayerConfigTable::SaveToFile(std::ofstream& file)
+{
+	const auto accounts = SavedAccounts(*this);
+	if (!CanSave(accounts))
+	{
+		file.setstate(std::ios::failbit);
+		return;
+	}
+	const int count = static_cast<int>(accounts.size());
+	file.write(reinterpret_cast<const char*>(&count), 4);
+	for (auto* config : accounts)
+	{
+		if (!file.good()) return;
+		if (config == NULL)
+		{
+			const BYTE length = 0;
+			file.write(reinterpret_cast<const char*>(&length), 1);
+			continue;
+		}
+		const auto& name = config->GetPlayerID();
+		const BYTE length = static_cast<BYTE>(name.size());
+		file.write(reinterpret_cast<const char*>(&length), 1);
+		file.write(name.data(), static_cast<std::streamsize>(name.size()));
+		config->SaveToFile(file);
+	}
+}
+
+void PlayerConfigTable::LoadFromFile(std::ifstream& file)
 {
 	Release();
-
-	int num;
-
-	// 개수
-	file.read((char*)&num, 4);
-
-	BYTE len;
-	char str[20];			
-
-	for (int i=0; i<num; i++)
+	int count = 0;
+	if (!ReadCount(file, count, 1))
+		return;
+	PlayerConfigTable parsed;
+	for (int i = 0; i < count; ++i)
 	{
-		file.read((char*)&len, 1);		// 이름 길이
-
-		if (len != 0)
+		BYTE length = 0;
+		if (!file.read(reinterpret_cast<char*>(&length), 1))
+			return;
+		if (length == 0)
+			continue;
+		std::string name(length, '\0');
+		if (!file.read(name.data(), length) || name.find('\0') != std::string::npos)
 		{
-			file.read((char*)str, len);
-			str[len] = '\0';
-
-			PlayerConfig* pConfig = new PlayerConfig;
-			pConfig->LoadFromFile( file );
-			pConfig->SetPlayerID( str );		// pConfig 내부에서도 하도록 바꿔야한다.
-
-			AddPlayerConfig( pConfig );
+			file.setstate(std::ios::failbit);
+			return;
 		}
+		auto config = std::make_unique<PlayerConfig>();
+		config->LoadFromFile(file);
+		if (!file.good()) return;
+		config->SetPlayerID(name);
+		parsed.AddPlayerConfig(config.get());
+		config.release();
 	}
+	// Publish only a complete table. Any failed read destroys the staged rows.
+	swap(parsed);
 }
 
-
-//----------------------------------------------------------------------
-//
-//						World PlayerConfigTable
-//
-//----------------------------------------------------------------------
 WorldPlayerConfigTable::WorldPlayerConfigTable()
 {
 }
@@ -323,159 +235,88 @@ WorldPlayerConfigTable::~WorldPlayerConfigTable()
 	Release();
 }
 
-//----------------------------------------------------------------------
-// Release
-//----------------------------------------------------------------------
-void				
-WorldPlayerConfigTable::Release()
+void WorldPlayerConfigTable::Release()
 {
-	iterator iTable = begin();
-
-	while (iTable != end())
-	{
-		PlayerConfigTable* pTable = iTable->second;
-
-		if (pTable!=NULL)
-		{
-			delete pTable;
-		}
-
-		iTable ++;
-	}
-
+	for (auto& entry : *this)
+		delete entry.second;
 	clear();
 }
 
-//----------------------------------------------------------------------
-// Add PlayerConfigTable
-//----------------------------------------------------------------------
-void				
-WorldPlayerConfigTable::AddPlayerConfigTable(int worldID, PlayerConfigTable* pTable)
+void WorldPlayerConfigTable::AddPlayerConfigTable(int worldID, PlayerConfigTable* pTable)
 {
-	if (pTable==NULL)
-	{
+	if (pTable == NULL)
 		return;
-	}
-
-	iterator iTable = find( worldID );
-
-	// 이미 있으면 지운다.
-	if (iTable != end())
+	const auto found = find(worldID);
+	if (found != end())
 	{
-		PlayerConfigTable* pTable = iTable->second;
-
-		if (pTable!=NULL)
-		{
-			delete pTable;
-		}
+		if (found->second == pTable)
+			return;
+		delete found->second;
+		found->second = pTable;
 	}
-
-	(*this)[worldID] = pTable;
+	else
+	{
+		emplace(worldID, pTable);
+	}
 }
 
-//----------------------------------------------------------------------
-// Get PlayerConfigTable
-//----------------------------------------------------------------------
-PlayerConfigTable*	
-WorldPlayerConfigTable::GetPlayerConfigTable(int worldID) const
+PlayerConfigTable* WorldPlayerConfigTable::GetPlayerConfigTable(int worldID) const
 {
-	const_iterator iTable = find( worldID );
-
-	if (iTable != end())
-	{
-		return iTable->second;
-	}
-
-	return NULL;
+	const auto found = find(worldID);
+	return found == end() ? NULL : found->second;
 }
 
-//----------------------------------------------------------------------
-// Save To File
-//----------------------------------------------------------------------
-void		
-WorldPlayerConfigTable::SaveToFile(const char* pFilename)
+void WorldPlayerConfigTable::SaveToFile(const char* pFilename)
 {
-	std::ofstream file(pFilename, ios::binary | ios::trunc);
-
-	if (file.is_open())
+	if (pFilename == NULL || size() > static_cast<size_t>((std::numeric_limits<int>::max)()))
+		return;
+	// Validate nested records before opening (and truncating) the existing file.
+	for (const auto& [worldID, table] : *this)
 	{
-		file.write((const char*)&PLAYER_CONFIG_VERSION, 4);
-
-		int num = static_cast<int>(size());
-
-		// 개수
-		file.write((const char*)&num, 4);
-
-		// 다 저장..
-		const_iterator iConfig = begin();
-
-		while (iConfig != end())
-		{
-			PlayerConfigTable* pTable = iConfig->second;
-
-			if (pTable!=NULL)
-			{
-				int worldID = iConfig->first;			
-				file.write((const char*)&worldID, 4);
-
-				pTable->SaveToFile( file );
-			}
-			else
-			{
-				int worldID = -1;
-				file.write((const char*)&worldID, 4);
-			}
-
-			iConfig ++;
-		}
-
-		file.close();
+		if (table != NULL && (worldID == -1 || !CanSave(SavedAccounts(*table))))
+			return;
+	}
+	std::ofstream file(pFilename, std::ios::binary | std::ios::trunc);
+	if (!file.is_open()) return;
+	file.write(reinterpret_cast<const char*>(&PLAYER_CONFIG_VERSION), 4);
+	const int count = static_cast<int>(size());
+	file.write(reinterpret_cast<const char*>(&count), 4);
+	for (const auto& [worldID, table] : *this)
+	{
+		if (!file.good()) return;
+		const int storedID = table == NULL ? -1 : worldID;
+		file.write(reinterpret_cast<const char*>(&storedID), 4);
+		if (table != NULL)
+			table->SaveToFile(file);
 	}
 }
 
-//----------------------------------------------------------------------
-// Load From File
-//----------------------------------------------------------------------
-void		
-WorldPlayerConfigTable::LoadFromFile(const char* pFilename)
+void WorldPlayerConfigTable::LoadFromFile(const char* pFilename)
 {
 	Release();
-
-	if (pFilename==NULL)
-	{
+	if (pFilename == NULL)
 		return;
-	}
-
-	std::ifstream file(pFilename, ios::binary);
-
-	if (file.is_open())
+	std::ifstream file(pFilename, std::ios::binary);
+	if (!file.is_open()) return;
+	int version = 0;
+	if (!file.read(reinterpret_cast<char*>(&version), 4) || version != PLAYER_CONFIG_VERSION)
+		return;
+	int count = 0;
+	if (!ReadCount(file, count, 4))
+		return;
+	WorldPlayerConfigTable parsed;
+	for (int i = 0; i < count; ++i)
 	{
-		int version;
-		file.read((char*)&version, 4);
-
-		if (version==PLAYER_CONFIG_VERSION)
-		{
-			int num;
-
-			// 개수
-			file.read((char*)&num, 4);
-
-			int worldID;
-
-			for (int i=0; i<num; i++)
-			{
-				file.read((char*)&worldID, 4);
-
-				if (worldID != -1)
-				{
-					PlayerConfigTable* pTable = new PlayerConfigTable;
-					pTable->LoadFromFile( file );
-
-					AddPlayerConfigTable( worldID, pTable );
-				}
-			}
-		}
-
-		file.close();
+		int worldID = 0;
+		if (!file.read(reinterpret_cast<char*>(&worldID), 4))
+			return;
+		if (worldID == -1)
+			continue;
+		auto table = std::make_unique<PlayerConfigTable>();
+		table->LoadFromFile(file);
+		if (!file.good()) return;
+		parsed.AddPlayerConfigTable(worldID, table.get());
+		table.release();
 	}
+	swap(parsed);
 }
