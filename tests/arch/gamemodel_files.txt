@@ -488,3 +488,7 @@ Client/MGuidanceEffect.cpp
 Client/MGuidanceEffect.h
 Client/MChaseEffect.cpp
 Client/MChaseEffect.h
+
+# Complete homing effects sharing guidance lookup and model steering (4.50).
+Client/MHomingEffect.cpp
+Client/MHomingEffect.h

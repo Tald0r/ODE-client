@@ -2,13 +2,9 @@
 // MHomingEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
 #include <math.h>
 #include "MHomingEffect.h"
-#include "MCreature.h"
 #include "MathTable.h"
-#include "MZone.h"
-#include "MTopView.h"
 #include "SkillDef.h"
 //----------------------------------------------------------------------
 // 
@@ -55,20 +51,12 @@ MHomingEffect::SetTarget(int x, int y, int z, WORD speed)
 bool
 MHomingEffect::TraceCreature()
 {
-	MCreature* pCreature = g_pZone->GetCreature( m_CreatureID );
+	int x, y, z;
+	if (!TraceCreaturePosition(x, y, z)) return false;
 
-	// Creature가 사라졌을 경우..
-	if (pCreature == NULL)
-	{
-		m_CreatureID = OBJECTID_NULL;
-		m_EndFrame = 0;
-		return false;
-	}
+	m_TargetX = x;
+	m_TargetY = y;
 
-	// 현재의 좌표를 읽어온다.
-	m_TargetX = pCreature->GetPixelX();
-	m_TargetY = pCreature->GetPixelY();
-	
 	return true;
 }
 
@@ -163,7 +151,7 @@ MHomingEffect::SetDirectionByAngle()
 bool
 MHomingEffect::Update()
 {	
-	if (g_CurrentFrame < m_EndFrame)
+	if (!IsEnd())
 	{
 		if (GetActionInfo() != SKILL_CLIENT_HALO_ATTACK )
 		{ 
@@ -233,7 +221,7 @@ MHomingEffect::Update()
 
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		//--------------------------------

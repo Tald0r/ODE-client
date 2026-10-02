@@ -35,6 +35,8 @@ class MGuidanceEffect : public MLinearEffect {
 
 	protected :
 		virtual bool		TraceCreature();		// 추적 좌표 설정
+		// Resolve this trace id; a missing target clears its id and lifetime.
+		bool TraceCreaturePosition(int& x, int& y, int& z);
 
 	protected :
 		TYPE_OBJECTID	m_CreatureID;
