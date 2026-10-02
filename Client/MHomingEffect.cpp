@@ -16,11 +16,8 @@
 //----------------------------------------------------------------------
 
 MHomingEffect::MHomingEffect(BYTE bltType, int currentAngle, int turnAngle)
-: MGuidanceEffect(bltType)
+: MGuidanceEffect(bltType), m_Steering(currentAngle, turnAngle)
 {		
-	m_RadCurrent = MathTable::GetAngle360( currentAngle );		// 현재 이동하는 방향각도
-
-	m_RadStep = MathTable::GetAngle360( turnAngle );			// 매 turn마다 달라지는 radian값
 }
 
 MHomingEffect::~MHomingEffect()
@@ -80,15 +77,8 @@ MHomingEffect::TraceCreature()
 void
 MHomingEffect::CalculateAngle()
 {
-	//--------------------------------------------------
-	// 현재 방향에서 목표의 방향을 향한 
-	// 각도 변환값(m_RadStep)을 알아낸다.
-	//--------------------------------------------------
-	int targetAngle = MathTable::GetAngleToTarget(static_cast<int>(m_PixelX), static_cast<int>(m_PixelY), m_TargetX, m_TargetY);
-
-	int dir = MathTable::GetAngleDir( m_RadCurrent, targetAngle );
-
-	m_RadStep = dir * abs(m_RadStep);		// +-speed	
+	m_Steering.TurnToward(static_cast<int>(m_PixelX), static_cast<int>(m_PixelY),
+		m_TargetX, m_TargetY);
 }
 
 //----------------------------------------------------------------------
@@ -97,15 +87,16 @@ MHomingEffect::CalculateAngle()
 void
 MHomingEffect::SetDirectionByAngle()
 {
-	if (m_RadCurrent < MathTable::ANGLE_180)
+	const int angle = m_Steering.GetAngle();
+	if (angle < MathTable::ANGLE_180)
 	{
-		if (m_RadCurrent < MathTable::ANGLE_90)
+		if (angle < MathTable::ANGLE_90)
 		{
-			if (m_RadCurrent < MathTable::ANGLE_30)
+			if (angle < MathTable::ANGLE_30)
 			{
 				m_Direction = DIRECTION_RIGHT;
 			}
-			else if (m_RadCurrent < MathTable::ANGLE_60)
+			else if (angle < MathTable::ANGLE_60)
 			{
 				m_Direction = DIRECTION_RIGHTUP;
 			}
@@ -116,11 +107,11 @@ MHomingEffect::SetDirectionByAngle()
 		}
 		else
 		{
-			if (m_RadCurrent < MathTable::ANGLE_120)
+			if (angle < MathTable::ANGLE_120)
 			{
 				m_Direction = DIRECTION_UP;
 			}
-			else if (m_RadCurrent < MathTable::ANGLE_150)
+			else if (angle < MathTable::ANGLE_150)
 			{
 				m_Direction = DIRECTION_LEFTUP;
 			}
@@ -132,13 +123,13 @@ MHomingEffect::SetDirectionByAngle()
 	}
 	else
 	{
-		if (m_RadCurrent < MathTable::ANGLE_270)
+		if (angle < MathTable::ANGLE_270)
 		{
-			if (m_RadCurrent < MathTable::ANGLE_210)
+			if (angle < MathTable::ANGLE_210)
 			{
 				m_Direction = DIRECTION_LEFT;
 			}
-			else if (m_RadCurrent < MathTable::ANGLE_240)
+			else if (angle < MathTable::ANGLE_240)
 			{
 				m_Direction = DIRECTION_LEFTDOWN;
 			}
@@ -149,11 +140,11 @@ MHomingEffect::SetDirectionByAngle()
 		}
 		else
 		{
-			if (m_RadCurrent < MathTable::ANGLE_300)
+			if (angle < MathTable::ANGLE_300)
 			{
 				m_Direction = DIRECTION_DOWN;
 			}
-			else if (m_RadCurrent < MathTable::ANGLE_330)
+			else if (angle < MathTable::ANGLE_330)
 			{
 				m_Direction = DIRECTION_RIGHTDOWN;
 			}
@@ -181,17 +172,13 @@ MHomingEffect::Update()
 			CalculateAngle();
 		}
 
-		
-
 		//--------------------------------
 		// Pixel 좌표를 바꾼다.
 		//--------------------------------
 		// 각각의 방향에 대해서 Step만큼 이동해준다.
-		m_RadCurrent += m_RadStep;
-		m_RadCurrent &= MathTable::MAX_ANGLE_1;		
-		
-		m_PixelX += ((MathTable::FCos(m_RadCurrent)*m_StepPixel)>>16);
-		m_PixelY -= ((MathTable::FSin(m_RadCurrent)*m_StepPixel)>>16);
+		const POINT step = m_Steering.Advance(m_StepPixel);
+		m_PixelX += step.x;
+		m_PixelY += step.y;
 		m_PixelZ += m_StepZ;
 
 		if (fabs(m_PixelZ-m_TargetZ) < m_StepZ)
@@ -216,7 +203,7 @@ MHomingEffect::Update()
 			m_StepY = 0;
 			m_StepZ = 0;
 
-			m_RadStep = 0;
+			m_Steering.StopTurning();
 
 			//------------------------------------------
 			// 더 움직일 필요가 없는 경우이다.			

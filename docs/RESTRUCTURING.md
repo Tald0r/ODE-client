@@ -1907,6 +1907,18 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_linear_effect_motion.cpp`, using production motion state.
 
+- [x] **4.41 Homing-effect steering:** `HomingEffectSteering` holds turn state
+  and calculates horizontal displacement in `gamemodel`.
+  > **Status:** done (this commit).
+  > `MHomingEffect` supplies integer coordinates and speed, and applies the
+  > returned displacement. Target lookup, height, arrival, lifetime and drawing
+  > remain in the executable. Halo attacks continue without retargeting.
+  > MathTable initialization remains in GameInit. Legacy turning behavior,
+  > including alignment clearing the turn magnitude, is retained. R1 stays
+  > 414 Windows / 412 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
+    `tests/unit/test_homing_steering.cpp`, using production steering and math.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop

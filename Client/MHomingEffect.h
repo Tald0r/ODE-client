@@ -18,6 +18,7 @@
 
 #include "MGuidanceEffect.h"
 #include "MTypeDef.h"
+#include "HomingEffectSteering.h"
 
 class MHomingEffect : public MGuidanceEffect {
 	public :
@@ -43,9 +44,8 @@ class MHomingEffect : public MGuidanceEffect {
 		void			SetDirectionByAngle();
 		virtual bool	TraceCreature();
 	
-	protected :	
-		int			m_RadCurrent;	// 현재 이동하는 방향각도
-		int			m_RadStep;		// 매 turn마다 달라지는 radian값
+	private :
+		HomingEffectSteering m_Steering;
 };
 
 #endif
