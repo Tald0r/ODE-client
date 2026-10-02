@@ -161,9 +161,9 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		// Get Functions
 		//--------------------------------------------------------
 		char			GetLight() const	{ return m_Light; }
-		virtual int		GetPixelX() const	{ return (int)m_PixelX; }
-		virtual int		GetPixelY() const	{ return (int)m_PixelY; }
-		virtual int		GetPixelZ() const	{ return (int)m_PixelZ; }
+		virtual int		GetPixelX() const;
+		virtual int		GetPixelY() const;
+		virtual int		GetPixelZ() const;
 
 		//--------------------------------------------------------
 		// Power
@@ -211,6 +211,8 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		void			AffectPosition();
 		void			RefreshLight();
 		bool			IsBeforeFrame(DWORD deadline) const;
+		// Cap at now + frames, without SetCount's minus-one convention.
+		void			LimitRemainingFrames(DWORD frames);
 
 
 

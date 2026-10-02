@@ -3,7 +3,7 @@
 
 #include "Platform.h"
 
-// The executable owns the current position and speed. Retargeting calculates
+// The calling effect owns the current position and speed. Retargeting calculates
 // a fixed velocity; advancing uses the caller's current arrival distance.
 // Effect subclasses retain access to the trajectory for their curved paths.
 class LinearEffectMotion

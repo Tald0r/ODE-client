@@ -6,6 +6,22 @@
 #include "MViewDef.h"
 #include "DebugLog.h"
 
+#include <cmath>
+#include <limits>
+
+namespace {
+int PixelCoordinate(float pixel)
+{
+	const double coordinate = pixel;
+	if (std::isnan(coordinate)) return 0;
+	if (coordinate >= (std::numeric_limits<int>::max)())
+		return (std::numeric_limits<int>::max)();
+	if (coordinate <= (std::numeric_limits<int>::min)())
+		return (std::numeric_limits<int>::min)();
+	return static_cast<int>(coordinate);
+}
+} // namespace
+
 const MEffectHost* MEffect::s_pHost = nullptr;
 
 const MEffectHost* MEffect::SetHost(const MEffectHost* host)
@@ -200,6 +216,10 @@ MEffect::SetPixelPosition(int x, int y, int z)
 
 //----------------------------------------------------------------------
 // Affect Position
+int MEffect::GetPixelX() const { return PixelCoordinate(m_PixelX); }
+int MEffect::GetPixelY() const { return PixelCoordinate(m_PixelY); }
+int MEffect::GetPixelZ() const { return PixelCoordinate(m_PixelZ); }
+
 //----------------------------------------------------------------------
 // PixelPositon으로서 Sector좌표를 설정한다.
 //----------------------------------------------------------------------
@@ -207,8 +227,8 @@ void
 MEffect::AffectPosition()
 {
 	// Pixel좌표를 Sector좌표로 바꾼다.
-	m_X = static_cast<int>(m_PixelX) / TILE_X;
-	m_Y = static_cast<int>(m_PixelY) / TILE_Y;
+	m_X = PixelCoordinate(m_PixelX) / TILE_X;
+	m_Y = PixelCoordinate(m_PixelY) / TILE_Y;
 }
 
 
@@ -293,6 +313,19 @@ MEffect::IsBeforeFrame(DWORD deadline) const
 {
 	DWORD now;
 	return ReadCurrentFrame(now) && now < deadline;
+}
+
+void
+MEffect::LimitRemainingFrames(DWORD frames)
+{
+	DWORD now;
+	if (!ReadCurrentFrame(now))
+	{
+		m_EndFrame = 0;
+		return;
+	}
+	const DWORD latest = now + frames;
+	if (m_EndFrame > latest) m_EndFrame = latest;
 }
 
 void

@@ -2,8 +2,6 @@
 // MLinearEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
-#include "MTopView.h"
 #include "MTypeDef.h"
 #include "MMovingEffect.h"
 #include "MLinearEffect.h"
@@ -43,7 +41,7 @@ MLinearEffect::SetTarget(int x, int y, int z, WORD stepPixel)
 {
 	SetLinearTarget(m_PixelX, m_PixelY, m_PixelZ, x, y, z, stepPixel);
 	// 이동하는 방향 설정
-	m_Direction = SelectFacingDirection((int)m_PixelX, (int)m_PixelY, (int)m_TargetX, (int)m_TargetY);
+	m_Direction = SelectFacingDirection(MEffect::GetPixelX(), MEffect::GetPixelY(), m_TargetX, m_TargetY);
 	m_StepPixel = stepPixel;
 }
 
@@ -64,7 +62,7 @@ bool
 MLinearEffect::Update()
 {
 	// 계속 Update해도 되는가?
-	if (g_CurrentFrame < m_EndFrame)
+	if (!IsEnd())
 	{
 		if (AdvanceLinear(m_PixelX, m_PixelY, m_PixelZ, m_StepPixel))
 		{
@@ -74,8 +72,7 @@ MLinearEffect::Update()
 			// 2004, 12, 30, sobeit add start
 			if(GetActionInfo() == SKILL_HALO) // 0.5초간 최종 위치에 대기
 			{
-				if(m_EndFrame>g_CurrentFrame+8)
-					m_EndFrame = g_CurrentFrame+8;
+				LimitRemainingFrames(8);
 			}
 			else
 			// 2004, 12, 30, sobeit add end
@@ -97,7 +94,7 @@ MLinearEffect::Update()
 
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		//--------------------------------
