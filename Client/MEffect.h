@@ -210,6 +210,7 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		// PixelPositon으로서 Sector좌표를 설정한다.
 		void			AffectPosition();
 		void			RefreshLight();
+		bool			IsBeforeFrame(DWORD deadline) const;
 
 
 

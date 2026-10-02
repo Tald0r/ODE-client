@@ -470,3 +470,7 @@ Client/MMovingEffect.cpp
 Client/MMovingEffect.h
 Client/MScreenEffect.cpp
 Client/MScreenEffect.h
+
+# Randomized draw skipping and early-expiry state (4.46).
+Client/MSkipEffect.cpp
+Client/MSkipEffect.h

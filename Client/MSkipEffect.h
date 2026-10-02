@@ -9,7 +9,7 @@ class MSkipEffect : public MEffect {
 		MSkipEffect(BYTE bltType);
 		~MSkipEffect();
 		
-		void SetSkipValue(int n) { m_nSkipValue = n; }
+		void SetSkipValue(int n) { m_nSkipValue = n < 1 ? 1 : n; }
 		int  GetSkipValue() { return m_nSkipValue; }
 		
 		//--------------------------------------------------------

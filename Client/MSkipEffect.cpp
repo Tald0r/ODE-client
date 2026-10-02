@@ -1,12 +1,9 @@
 //----------------------------------------------------------------------
-// MMovingEffect.cpp
+// MSkipEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
 #include "MEffect.h"
-#include "MathTable.h"
 #include "MSkipEffect.h"
-#include "MTopView.h"
 
 //----------------------------------------------------------------------
 //
@@ -38,7 +35,7 @@ MSkipEffect::~MSkipEffect()
 bool
 MSkipEffect::Update()
 {
-	if (g_CurrentFrame < m_EndFrame-4)
+	if (m_EndFrame >= 4 && IsBeforeFrame(m_EndFrame-4))
 	{
 		if((rand()%m_nSkipValue))
 			SetDrawSkip(true);
@@ -49,7 +46,7 @@ MSkipEffect::Update()
 	
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		return true;
