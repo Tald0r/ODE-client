@@ -580,21 +580,8 @@ MZone::ReleaseObject()
 	//---------------------------------
 	// Sound 제거
 	//---------------------------------
-	DEBUG_ADD_FORMAT("MZone::ReleaseSound. size=%d", m_listSoundNode.size());
-	
-	SOUND_NODE_LIST::iterator iSound = m_listSoundNode.begin();
-
-	while (iSound != m_listSoundNode.end())
-	{
-		SOUND_NODE*	pNode = *iSound;
-
-		// 지운다.
-		delete pNode;
-		
-		iSound++;			
-	}
-
-	m_listSoundNode.clear();
+	DEBUG_ADD_FORMAT("MZone::ReleaseSound. size=%d", m_DelayedSounds.GetSize());
+	m_DelayedSounds.Clear();
 
 	// 2004, 11, 29, sobeit add start
 	//-----------------------------------------------
@@ -5179,9 +5166,9 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 // 어느 시점에 출력할 Sound를 저장해둔다.
 //----------------------------------------------------------------------
 void
-MZone::AddSound(SOUND_NODE* pNode)
+MZone::AddSound(const SOUND_NODE& sound)
 {
-	m_listSoundNode.push_back( pNode );
+	m_DelayedSounds.Add(sound);
 }
 
 //----------------------------------------------------------------------
@@ -5192,36 +5179,9 @@ MZone::AddSound(SOUND_NODE* pNode)
 void
 MZone::UpdateSound()
 {
-	SOUND_NODE_LIST::iterator iSound = m_listSoundNode.begin();
-
-	while (iSound != m_listSoundNode.end())
-	{
-		SOUND_NODE*	pNode = *iSound;
-
-		//-------------------------------------------------
-		// 소리를 출력할 시간이 지났으면.. PlaySound
-		//-------------------------------------------------
-		if (pNode->GetPlayTime() < g_FrameNow)
-		{
-			// 한번만 소리를 낸다.
-			PlaySound( pNode->GetSoundID(), false, pNode->GetX(), pNode->GetY() );
-
-			// 지운다.
-			delete pNode;
-
-			// 잠시 기억해뒀다가 지운다.
-			SOUND_NODE_LIST::iterator iTemp = iSound;
-			iSound++;
-			m_listSoundNode.erase( iTemp );
-		}
-		//-------------------------------------------------
-		// 아닌 경우.. 다음 소리 체크..
-		//-------------------------------------------------
-		else
-		{
-			iSound++;
-		}	
-	}
+	m_DelayedSounds.Update(g_FrameNow, [](const SOUND_NODE& sound) {
+		PlaySound(sound.GetSoundID(), false, sound.GetX(), sound.GetY());
+	});
 
 	//----------------------------------------------------------------
 	// Zone에서 random으로 나는 소리
