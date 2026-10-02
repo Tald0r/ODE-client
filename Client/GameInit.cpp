@@ -84,6 +84,9 @@
 #include "MParabolaEffect.h"
 #include "MAttachEffect.h"
 #include "MScreenEffectManager.h"
+#include "MStopInventoryEffectGenerator.h"
+#include "MInventory.h"
+#include "VS_UI_GameCommon.h"
 #include "MEffectGeneratorTable.h"
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
@@ -2620,6 +2623,7 @@ void ReleaseAllObjects()
 	MParabolaEffect::SetHost(nullptr);
 	MAttachEffect::SetHost(nullptr);
 	MScreenEffectManager::SetHost(nullptr);
+	MStopInventoryEffectGenerator::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -3048,6 +3052,34 @@ static const MScreenEffectManagerHost s_ScreenEffectManagerHost = {
 	},
 };
 
+static const MInventoryEffectHost s_InventoryEffectHost = {
+	.Placement = [](int x, int y, MInventoryEffectPlacement& placement) {
+		if (!g_pInventory) return false;
+		placement.basis = UI_GetInventoryPosition();
+		placement.cell = UI_GetInventoryGridPosition(x, y);
+		placement.cellWidth = C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_X;
+		placement.cellHeight = C_VS_UI_INVENTORY::GRID_UNIT_PIXEL_Y;
+		const MItem* item = g_pInventory->GetItem(x, y);
+		if (item)
+		{
+			placement.itemWidth = item->GetGridWidth();
+			placement.itemHeight = item->GetGridHeight();
+		}
+		return true;
+	},
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MInventoryEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Manager = []() { return g_pInventoryEffectManager; },
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3376,6 +3408,7 @@ InitGameObject()
 	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
 	MAttachEffect::SetHost(&s_AttachEffectHost);
 	MScreenEffectManager::SetHost(&s_ScreenEffectManagerHost);
+	MStopInventoryEffectGenerator::SetHost(&s_InventoryEffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 

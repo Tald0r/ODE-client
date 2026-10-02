@@ -510,3 +510,9 @@ Client/MEffectManager.cpp
 Client/MEffectManager.h
 Client/MScreenEffectManager.cpp
 Client/MScreenEffectManager.h
+
+# Inventory screen-effect creation behind sprite and layout snapshots (4.55).
+Client/MEffectGenerator.h
+Client/MEffectGeneratorDef.h
+Client/MStopInventoryEffectGenerator.cpp
+Client/MStopInventoryEffectGenerator.h
