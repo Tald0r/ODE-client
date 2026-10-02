@@ -24,26 +24,17 @@ std::string			ServerInfoFileParser::getProperty(int dimension, std::string key)
 	int dim=0;
 	
 	std::string ukey = key;
-	char sztemp[2048];
 	ukey += ":";
 		
-	while( !file.eof() )
+	// A failed open or read need not set eofbit. Read complete lines and
+	// stop on any stream failure, including files removed between lookups.
+	std::string line;
+	while( std::getline(file, line) )
 	{
-		std::string line;
-		memset(sztemp,0,2048);
-		file.getline( sztemp, 2048 );
-			
-		line = sztemp;
-		while(1)
-		{
-			int pos = static_cast<int>(line.find(" "));
-			if(pos != -1)
-			{
-				line.erase( pos, 1 );
-			}
-			else
-				break;
-		}
+		// Windows text streams consume CRLF; normalize it on other hosts too.
+		if (!line.empty() && line.back() == '\r')
+			line.pop_back();
+		std::erase(line, ' ');
 
 		if( line.empty() || line.c_str()[0] == '#')
 			continue;

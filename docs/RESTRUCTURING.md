@@ -1617,6 +1617,11 @@ rounds settled* for the host rules). Test fixtures share
   > integer conversion and reopening configuration files can be tested through
   > the same implementation used by non-Korean login and reconnect. Socket
   > setup and configuration ownership remain in their executable callers.
+  > The follow-up reader fix terminates on failed opens/reads, consumes long
+  > lines without truncation and normalizes CRLF on every host. Space removal
+  > is linear for the now-unbounded lines. Dimension/key rules and the legacy
+  > integer conversion remain unchanged; required-property and integer-range
+  > validation are outside this parser.
   > R1 is 432 Windows / 430 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_server_info_parser.cpp`, linked against the real library.

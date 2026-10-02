@@ -4,6 +4,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <string>
 
 namespace {
@@ -133,4 +134,83 @@ TEST(ServerInfoParser, EachLookupReopensItsOwnFile)
 	first.Write("@\nKey:replacement\n@\n");
 	CHECK(firstParser.getProperty(0, "Key") == "replacement");
 	CHECK(secondParser.getProperty(0, "Key") == "second");
+}
+
+TEST(ServerInfoParser, ValuesAroundAndBeyondTheOldLineLimitAreComplete)
+{
+	TempServerInfo file("");
+	ServerInfoFileParser parser(file.path.string());
+	// "Key:" adds four bytes to each line; exercise both sides of the old
+	// 2047-byte payload limit as well as substantially longer records.
+	for (int size : {2042, 2043, 2044, 2048, 4096, 8192})
+	{
+		const std::string value(size, 'v');
+		file.Write("@\nKey:" + value + "\n@\n");
+		CHECK(parser.getProperty(0, "Key") == value);
+	}
+}
+
+TEST(ServerInfoParser, LFAndCRLFHaveTheSamePropertyValues)
+{
+	TempServerInfo file("");
+	ServerInfoFileParser parser(file.path.string());
+	for (const std::string& newline : {std::string("\n"), std::string("\r\n")})
+	{
+		file.Write(" # comment" + newline + "@ first" + newline
+			+ "LoginServerAddress:first.example" + newline
+			+ "Empty:   " + newline + "@" + newline + "@ second" + newline
+			+ "LoginServerAddress:second.example" + newline
+			+ "LoginServerPort:9999" + newline
+			+ "LoginServerCheckPort:9998");
+		CHECK(parser.getProperty(0, "LoginServerAddress") == "first.example");
+		CHECK(parser.getProperty(0, "Empty").empty());
+		CHECK_EQ(-1, parser.getPropertyInt(0, "Empty"));
+		CHECK(parser.getProperty(1, "LoginServerAddress") == "second.example");
+		CHECK_EQ(9999, parser.getPropertyInt(1, "LoginServerPort"));
+		CHECK_EQ(9998, parser.getPropertyInt(1, "LoginServerCheckPort"));
+		CHECK(parser.getProperty(1, "Missing").empty());
+	}
+}
+
+TEST(ServerInfoParser, ReadsPastLongCommentsAndUnrelatedRecords)
+{
+	TempServerInfo file("@\n#" + std::string(8192, 'c') + "\n"
+		+ "Unrelated:" + std::string(8192, 'v') + "\n"
+		+ std::string(8192, ' ') + "\nKey:found\n@\n@\nKey:next\n@\n");
+	ServerInfoFileParser parser(file.path.string());
+	CHECK(parser.getProperty(0, "Key") == "found");
+	CHECK(parser.getProperty(1, "Key") == "next");
+	CHECK(parser.getProperty(0, "Missing").empty());
+}
+
+TEST(ServerInfoParser, MissingAndRemovedFilesReturnNoValueAndCanBeRecreated)
+{
+	TempServerInfo file("");
+	CHECK(std::filesystem::remove(file.path));
+	ServerInfoFileParser parser(file.path.string());
+	CHECK(parser.getProperty(0, "Key").empty());
+	CHECK_EQ(-1, parser.getPropertyInt(0, "Key"));
+	file.Write("@\nKey:42\n@\n");
+	CHECK(parser.getProperty(0, "Key") == "42");
+	CHECK_EQ(42, parser.getPropertyInt(0, "Key"));
+	CHECK(std::filesystem::remove(file.path));
+	CHECK(parser.getProperty(0, "Key").empty());
+	CHECK_EQ(-1, parser.getPropertyInt(0, "Key"));
+}
+
+TEST(ServerInfoParser, LongKeysMatchWithoutTruncation)
+{
+	const std::string key(4096, 'k');
+	TempServerInfo file("@\n" + key + ":value\n@\n");
+	ServerInfoFileParser parser(file.path.string());
+	CHECK(parser.getProperty(0, key) == "value");
+	CHECK(parser.getProperty(0, key + "Extra").empty());
+}
+
+TEST(ServerInfoParser, LongFinalRecordsDoNotPreventMissingKeyLookups)
+{
+	TempServerInfo file("@\nUnrelated:" + std::string(8192, 'v'));
+	ServerInfoFileParser parser(file.path.string());
+	CHECK(parser.getProperty(0, "Missing").empty());
+	CHECK_EQ(-1, parser.getPropertyInt(0, "Missing"));
 }
