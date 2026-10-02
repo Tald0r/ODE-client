@@ -4,10 +4,21 @@
 #include "Client_PCH.h"
 #include "MNPC.h"
 #include "MNPCTable.h"
-#include "DebugLog.h"
 #include "MShopTemplateTable.h"
 #include "MShopShelf.h"
 #include "MPlayer.h"
+#include "NPCShopBuilder.h"
+
+namespace {
+const NPCShopHost shopHost{
+	.CreateItem = MItem::NewItem,
+	.IsFemale = []() { return g_pPlayer && g_pPlayer->IsFemale(); },
+	.SetPortalDestination = [](MItem& item, int zone,
+		TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		static_cast<MVampirePortalItem&>(item).SetZone(zone, x, y);
+	},
+};
+}
 
 //----------------------------------------------------------------------
 // 
@@ -81,198 +92,7 @@ MNPC::CreateFixedShelf(bool bMysterious)
 		m_pShop = pShop;
 	}
 
-	MShopShelf::SHELF_TYPE shelfType;
-
-	if (bMysterious)
-	{
-		shelfType = MShopShelf::SHELF_UNKNOWN;
-	}
-	else
-	{
-		shelfType = MShopShelf::SHELF_FIXED;
-	}
-
-	//-----------------------------------------------------------
-	// NPC정보가 있는가?
-	//-----------------------------------------------------------
-	if (pInfo==NULL)
-	{
-		// 없으면... 그냥 빈 상점 생성
-		MShopShelf* pShopShelf = MShopShelf::NewShelf( shelfType );
-
-		pShop->SetShelf( shelfType, pShopShelf );	
-
-		return false;
-	}
-
-	//-----------------------------------------------------------
-	// Normal Item 선반을 얻는다.
-	//-----------------------------------------------------------
-	MShopShelf* pShopShelf = pShop->GetShelf( shelfType );
-
-	//-----------------------------------------------------------
-	// 없으면 생성한다.
-	//-----------------------------------------------------------
-	if (pShopShelf==NULL)
-	{
-		// normal shelf를 생성한다.
-		pShopShelf = MShopShelf::NewShelf( shelfType );
-
-		pShop->SetShelf( shelfType, pShopShelf );	
-	}
-	else
-	{
-		pShopShelf->Release();
-	}
-
-	bool bEnable = false;
-
-	//-----------------------------------------------------------
-	// NPC가 가진 ShopTemplate ID들을 얻어서 처리한다.
-	//-----------------------------------------------------------
-	//
-	// Item정보들을 이용해서 pShopShelf에 Item을 추가하면 된다.
-	//
-	//-----------------------------------------------------------
-	NPC_INFO::SHOPTEMPLATEID_LIST::iterator iID = pInfo->ListShopTemplateID.begin();
-
-	while (iID != pInfo->ListShopTemplateID.end())
-	{
-		unsigned int id = *iID;
-
-		//-----------------------------------------------------------
-		// id의 ShopTemplate을 찾는다.
-		//-----------------------------------------------------------
-		MShopTemplate* pShopTemplate = (*g_pShopTemplateTable).GetData( id );
-
-		if (pShopTemplate!=NULL)
-		{
-			//-----------------------------------------------------------
-			// Normal Item인 경우만 처리한다.
-			//-----------------------------------------------------------
-			if ((MShopShelf::SHELF_TYPE)pShopTemplate->Type == shelfType)
-			{	
-				int minType	= pShopTemplate->MinType;	
-				int	maxType	= pShopTemplate->MaxType;
-
-				//-----------------------------------------------------------
-				// min~max Type의 item들을 생성한다. (min, max포함)
-				//-----------------------------------------------------------
-				for (int type=minType; type<=maxType; type++)
-				{
-					// create the item
-					ITEM_CLASS itemClass = (ITEM_CLASS)pShopTemplate->Class;
-					MItem* pItem = MItem::NewItem( itemClass );
-
-					if (pItem == NULL)
-					{
-						DEBUG_ADD_FORMAT("[Error] Shop template: invalid item class %d", itemClass);
-						continue;
-					}
-
-					bEnable = true;
-
-					if(bMysterious && g_pPlayer->IsFemale() && 
-						(
-							itemClass == ITEM_CLASS_COAT ||
-							itemClass == ITEM_CLASS_TROUSER ||
-							itemClass == ITEM_CLASS_VAMPIRE_COAT
-						)
-					)
-						type++;
-
-					pItem->SetItemType( type );
-					pItem->SetGrade( 4 );
-					if(bMysterious)
-						pItem->UnSetIdentified();
-
-					// durability max
-					pItem->SetCurrentDurability( pItem->GetMaxDurability() );
-
-					//-----------------------------------------------------------
-					// Charge된 item인 경우 --> 꽉 채운다.
-					//-----------------------------------------------------------
-					if (pItem->IsChargeItem())
-					{
-						pItem->SetNumber( pItem->GetMaxNumber() );
-					}
-
-					//-----------------------------------------------------------
-					// vampire portal인 경우 default값 설정
-					//-----------------------------------------------------------
-					if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
-					{
-						switch(type)
-						{
-						case 3:
-						case 4:
-						case 5:
-							{
-								MVampirePortalItem* pPortalItem = (MVampirePortalItem*)pItem;
-								
-								// 바토리 마을
-								pPortalItem->SetZone( 1003, 50, 70 );
-								
-							}
-							break;
-
-						case 6:
-						case 7:
-						case 8:
-							{
-								MVampirePortalItem* pPortalItem = (MVampirePortalItem*)pItem;
-								
-								// 테페즈 마을
-								pPortalItem->SetZone( 1007, 62, 65 );
-								
-							}
-							break;
-							
-						case 9:
-						case 10:
-						case 11:
-							{
-								MVampirePortalItem* pPortalItem = (MVampirePortalItem*)pItem;
-								
-								// 페로나 마을
-								pPortalItem->SetZone( 61, 102, 220 );
-								
-							}
-							break;
-						}
-					}
-
-
-					// pItem->SetItemOption( 0 ); // default로 0이므로 할 필요 없다.
-	
-					// 무시  - -;;				
-					// item option
-					//pShopTemplate->MinOption;
-					//pShopTemplate->MaxOption;
-
-					//------------------------------------------------------
-					// 생성된 item을 shelf에 추가한다.
-					//------------------------------------------------------
-					// 순서대로 추가시키면 된다.
-					//------------------------------------------------------
-					pShopShelf->AddItem( pItem );
-				}				
-			}
-		}
-
-
-		iID++;
-	}
-
-//	if(bMysterious)
-	{
-		if(bEnable)
-			pShopShelf->SetEnable();
-		else
-			pShopShelf->SetDisable();
-	}
-
-	return TRUE;
+	return BuildNPCShopShelf(*pShop, pInfo, g_pShopTemplateTable, bMysterious, shopHost);
 }
 
 //-----------------------------------------------------------------------------
