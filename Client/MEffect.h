@@ -207,7 +207,9 @@ class MEffect : public MObject, public CAnimationFrame, protected EffectTiming {
 		void			SetDrawSkip(bool bSkip)		{ m_bDrawSkip = bSkip;}
 		// 2004, 9, 30, sobeit add end
 	protected :
-		// PixelPositon으로서 Sector좌표를 설정한다.
+		// Truncate stored pixels before adding a display offset, then saturate.
+		static int		PixelCoordinate(float pixel, int offset = 0);
+		// Project the stored pixel position into sector coordinates.
 		void			AffectPosition();
 		void			RefreshLight();
 		bool			IsBeforeFrame(DWORD deadline) const;

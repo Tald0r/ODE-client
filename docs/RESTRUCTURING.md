@@ -2110,13 +2110,13 @@ rounds settled* for the host rules). Test fixtures share
 
 - [x] **4.53 Orbiting-attachment lifecycle:** `MAttachOrbitEffect` compiles in
   `gamemodel` and combines the attached lifecycle with `EffectOrbit` paths.
-  > **Status:** done (2026-10-02). Both production files join unchanged.
-  > The base effect animates and refreshes light before an active, running
-  > orbit advances. Pausing the orbit keeps attachment animation active;
+  > **Status:** done (2026-10-02). The base effect animates and refreshes
+  > light before an active, running orbit advances. Pausing the orbit keeps attachment animation active;
   > expiry stops both. Explicit step advancement ignores those gates. Display
-  > coordinates add the orbit to the stored base position, leaving sector
-  > coordinates and height unchanged. Creature owners refresh attachment
-  > positions explicitly. Random starting steps, signed step normalization,
+  > coordinates truncate the stored base position, add the orbit in wide
+  > arithmetic, then saturate to int; NaN uses zero as its base. Opposite
+  > signs can cancel before saturation. Sector coordinates and height stay
+  > unchanged. Creature owners refresh attachment positions explicitly. Random starting steps, signed step normalization,
   > unknown-type fallback and cached path references belong to `EffectOrbit`.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1,
     `tests/unit/test_attach_orbit_effect.cpp` and

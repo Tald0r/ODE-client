@@ -375,3 +375,78 @@ TEST(AttachOrbitEffect, FractionalBaseCoordinatesTruncateBeforeAddingTheOrbit)
 	CHECK_EQ(-68, effect.GetPixelX());
 	CHECK_EQ(-34, effect.GetPixelY());
 }
+
+TEST(AttachOrbitEffect, DisplayCoordinatesSaturateAfterAddingTheOrbit)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	EffectProbe effect(17, 10, 0, 20);
+	effect.SetPixels(static_cast<float>(low), static_cast<float>(low));
+	CHECK_EQ(low, effect.GetPixelX());
+	CHECK_EQ(low, effect.GetPixelY());
+	effect.SetOrbitStep(4);
+	effect.SetPixels(static_cast<float>(high), static_cast<float>(high));
+	CHECK_EQ(high, effect.GetPixelX());
+	CHECK_EQ(high, effect.GetPixelY());
+}
+
+TEST(AttachOrbitEffect, OppositeOffsetsCanBringARoundedBoundaryBackIntoRange)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	EffectProbe effect(17, 10, 0, 16);
+	// INT_MAX rounds to 2^31 in the float position; subtract before clamping.
+	effect.SetPixels(static_cast<float>(high), static_cast<float>(high));
+	CHECK_EQ(high - 95, effect.GetPixelX());
+	effect.SetOrbitStep(24);
+	CHECK_EQ(high - 47, effect.GetPixelY());
+}
+
+TEST(AttachOrbitEffect, NonfiniteBaseCoordinatesHaveBoundedDisplayResults)
+{
+	World world;
+	const float inf = std::numeric_limits<float>::infinity();
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	EffectProbe effect(17, 10, 0, 4);
+	effect.SetPixels(inf, -inf);
+	CHECK_EQ((std::numeric_limits<int>::max)(), effect.GetPixelX());
+	CHECK_EQ((std::numeric_limits<int>::min)(), effect.GetPixelY());
+	effect.SetPixels(nan, nan);
+	CHECK_EQ(67, effect.GetPixelX());
+	CHECK_EQ(33, effect.GetPixelY());
+}
+
+TEST(AttachOrbitEffect, PublicPositionInputUsesTheSameBoundedDisplayProjection)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	const int low = (std::numeric_limits<int>::min)();
+	MAttachOrbitEffect effect(17, 10, 0, 4);
+	effect.SetPixelPosition(high, low, 12);
+	CHECK_EQ(high, effect.GetPixelX());
+	CHECK_EQ(low + 33, effect.GetPixelY());
+	CHECK_EQ(high, effect.MEffect::GetPixelX());
+	CHECK_EQ(low, effect.MEffect::GetPixelY());
+	CHECK_EQ(12, effect.GetPixelZ());
+	effect.SetOrbitStep(20);
+	CHECK_EQ(high - 67, effect.GetPixelX());
+	CHECK_EQ(low, effect.GetPixelY());
+}
+
+TEST(AttachOrbitEffect, RepresentableNearLimitSumsKeepTheirExactOffsets)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	EffectProbe effect(17, 10, 0, 0);
+	// The preceding float below 2^31 leaves room for the entire orbit width.
+	effect.SetPixels(2147483520.0f, static_cast<float>(low));
+	CHECK_EQ(2147483616, effect.GetPixelX());
+	effect.SetOrbitStep(8);
+	CHECK_EQ(low + 47, effect.GetPixelY());
+	effect.SetPixels(static_cast<float>(low), 2147483520.0f);
+	effect.SetOrbitStep(0);
+	CHECK_EQ(low + 96, effect.GetPixelX());
+	effect.SetOrbitStep(8);
+	CHECK_EQ(2147483567, effect.GetPixelY());
+}
