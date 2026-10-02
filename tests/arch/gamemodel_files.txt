@@ -435,3 +435,7 @@ Client/AmbientSoundState.h
 Client/MHelpStringTable.cpp
 Client/MHelpStringTable.h
 Client/MHelpDef.h
+
+# Interaction-object metadata records loaded by GameInitInfo (4.38).
+Client/MInteractionObjectTable.cpp
+Client/MInteractionObjectTable.h
