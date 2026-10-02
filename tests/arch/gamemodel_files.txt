@@ -322,3 +322,6 @@ Client/MScreenFade.h
 Client/CServerInformation.cpp
 Client/CServerInformation.h
 Client/CTypeMap2.h
+# Packet-driven world/server updates; handlers retain UI/mode transitions.
+Client/ApplyServerList.cpp
+Client/ApplyServerList.h

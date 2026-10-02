@@ -207,7 +207,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 | `MGuildMarkManager::LoadGuildMark` integration | binds the live guild mapper to the renderer's owned sprite cache; index and sprite decoding stay in the tested SpriteLib helpers. Publication and negative-cache guards use full builds and source/ownership review. |
 | `MCreature`, `MPlayer`, `MFakeCreature` movement and attached-effect orchestration; `PacketFunction::ExecuteActionInfoFromMainNode` | virtual character classes reach the live zone, UI, sprite tables and effect generators; action results transfer to `MEffectTarget` and execute through the same game objects. Bounds/queue/ownership guards stay here; extracting those classes would require the render/game-loop rewrite excluded above. Review regression guards use full builds and existing automated checks, without a runtime gate. |
 | `VS_UI/src/**` rendering and dialogs that still reach game globals | these paths use full builds and available automated checks; live verification is optional. `ui_tests` now links the real Button, EventButton, SkinManager, LineEditor, LineEditorVisual state/focus methods, InputFocusManager and the UI result receiver, so those independently reachable components require test-first fixes. `LineEditorVisual::Show` remains separate because it reaches the game's renderer. |
-| `Client/PacketHandler/*Handler.cpp` bodies, except the handlers `tests/arch/gamemodel_files.txt` lists | mutate `g_pZone`/creature state; the *parsers* they consume are in `packetwire` and testable, the mutations are not. The reason does not hold for a handler whose body reaches only model state: such a handler compiles in `gamemodel`, a test runs it on a real packet, and a fix to it is test-first (lib + test). Amended 2026-09-30 (task 4.15), when eight handlers moved in: the four phone-slot handlers (`g_pUserInformation`), the trade money and offer handlers (`g_pTradeManager`, `g_pMoneyManager`), `GCSystemAvailabilities` (`g_pSystemAvailableManager`) and `GCMonsterKillQuestInfo` (`g_pQuestInfoManager`, `g_pCreatureTable`). The row is keyed to the membership file so that a later handler move needs no further edit here. The rest of `Client/` is presumed movable until a task proves otherwise, and code has left this list by moving before: `RequestClientPlayerManager.cpp` from the connect-paths row (task 5.1). The other handlers stay exempt. |
+| `Client/PacketHandler/*Handler.cpp` bodies, except the handlers `tests/arch/gamemodel_files.txt` lists | mutate `g_pZone`/creature state; the *parsers* they consume are in `packetwire` and testable, the mutations are not. The reason does not hold for a handler whose body reaches only model state: such a handler compiles in `gamemodel`, a test runs it on a real packet, and a fix to it is test-first (lib + test). Amended 2026-09-30 (task 4.15), when eight handlers moved in: the four phone-slot handlers (`g_pUserInformation`), the trade money and offer handlers (`g_pTradeManager`, `g_pMoneyManager`), `GCSystemAvailabilities` (`g_pSystemAvailableManager`) and `GCMonsterKillQuestInfo` (`g_pQuestInfoManager`, `g_pCreatureTable`). The row is keyed to the membership file so that a later handler move needs no further edit here. The rest of `Client/` is presumed movable until a task proves otherwise, and code has left this list by moving before: `RequestClientPlayerManager.cpp` from the connect-paths row (task 5.1). The login world/server list rebuilds now run in `gamemodel` through `ApplyWorldList` and `ApplyServerList` (task 4.19); their handlers retain global model creation, UI refreshes and mode transitions. Those integrations and the other handlers stay exempt. |
 | `UIMessageManager::Execute_UI_CHAT_RETURN` | application chat callback reaches the current game mode, player, party/guild state, live socket, help events and dialogs. Its payload borrowing is source-audited with full builds; the queue that owns deferred text is independently tested in `ui_tests`. |
 | `Client/MinTr.h` raw trace transport | the one remaining caller sends a fixed text message to the optional external Win32 trace window. Unused variadic and command formatting paths are retired. |
 | `PacketFunction.cpp` connect paths | Winsock + connection state machine. `RequestClientPlayerManager.cpp` was listed here until 2026-09-09; task 5.1's fifth slice put its seams behind `WireHost`, and task 5.2's eighth slice deleted it with the rest of the outbound peer side |
@@ -1566,17 +1566,21 @@ rounds settled* for the host rules). Test fixtures share
     those tests to be registered.
 
 - [x] **4.19 Login server selection:** `CServerInformation`, its world/server
-  records and owning `CTypeMap2` template belong to `gamemodel`.
-  > **Status:** done (2026-10-02, model move). The implementation and headers
-  > move unchanged. Selection copies names and statuses from the selected
-  > records; unsuccessful selections retain their existing behavior. The
-  > packet handlers still populate the model and update the UI. The separate
-  > test-first follow-up initializes every selection field and clears server
-  > status on release. The fresh-state test uses nonzero storage so the old
-  > constructor fails deterministically.
+  records, owning `CTypeMap2` template and the login-list updates belong to
+  `gamemodel`.
+  > **Status:** done (2026-10-02). The model moved unchanged before a separate
+  > test-first fix initialized every selection field and cleared server status
+  > on release. `ApplyWorldList` replaces worlds and their servers;
+  > `ApplyServerList` updates the selected world's servers, retaining unlisted
+  > records. Both consume packet records and preserve the requested-ID and
+  > first-row fallback rules, including duplicate and zero IDs. A missing
+  > selected world leaves the server packet untouched. The handlers retain
+  > global model creation, UI refreshes and mode transitions; an empty accepted
+  > server list still reaches the UI. R1 is 436 Windows / 434 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
-    `tests/unit/test_server_information.cpp`, linked against the same library
-    object as the executable.
+    `tests/unit/test_server_information.cpp` (including fresh state over nonzero
+    storage), and `tests/unit/test_server_lists.cpp` over factory-created packets
+    read from wire bytes. Both link the same library objects as the executable.
 
 ## Phase 5 — Long tail
 

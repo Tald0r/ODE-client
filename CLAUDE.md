@@ -96,8 +96,9 @@ queue (`MEventQueue`, inherited by the executable's `MEventManager`, with
 gamma, effect and fade actions behind `MEventHost`; background images stay
 executable-side), and screen-fade progression (`MScreenFade`, which `MTopView`
 draws and advances with the frame number), and the login world/server metadata
-and selection (`CServerInformation`); with the user, config and timed-item
-loaders gamemodel reads, and their string support; membership in
+and selection (`CServerInformation`, with `ApplyWorldList` and `ApplyServerList`
+consuming login packets; their handlers keep UI and mode changes); with the
+user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
 4.16, 4.17, 4.18 and 4.19),
