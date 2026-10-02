@@ -5,8 +5,30 @@
 #include "Client_PCH.h"
 #include "MNPCScriptTable.h"
 
-#define		SCRIPT_MARK_START	"%("
-#define		SCRIPT_MARK_END		")"
+namespace {
+
+void ApplyParameters(const char* source, const HashMapScriptParameter& parameters,
+	std::string& output)
+{
+	output = source ? source : "";
+	for (const auto& entry : parameters)
+	{
+		if (!entry.second) continue;
+		const std::string key = "%(" + entry.first + ")";
+		const std::string value = entry.second->getValue();
+		std::string::size_type position = 0;
+		while ((position = output.find(key, position)) != std::string::npos)
+		{
+			output.replace(position, key.size(), value);
+			// Do not revisit placeholders inserted by this key. Later keys
+			// still run in map order, preserving the existing cascading rule.
+			position += value.size();
+		}
+	}
+}
+
+} // namespace
+
 //---------------------------------------------------------------------------
 // global
 //---------------------------------------------------------------------------
@@ -197,101 +219,13 @@ MNPCScriptTable::LoadFromFile(std::ifstream& file)
 }
 
 void
-MNPCScriptTable::GetContentParameter(int scriptID, int contentID,HashMapScriptParameter para,std::string& str)
+MNPCScriptTable::GetContentParameter(int scriptID, int contentID, HashMapScriptParameter para, std::string& str)
 {
-	str = GetContent(scriptID, contentID);	
-
-	if(str.empty())
-		return;
-	
-	
-/*	-_- 중복 검색 안되도록 맨든건데..ㅡ.ㅜ
-	while(1)
-	{
-		str_s = str.find(SCRIPT_MARK_START,str_s);
-		if(str_s == -1)
-			break;
-		
-		str_e = str.find(SCRIPT_MARK_END,str_s);
-		if(str_e == -1)
-			break;
-		
-		std::string scriptName;
-		memset(temp,0,sizeof(temp));
-		memcpy(temp,str.c_str()+str_s+2,str_e-(str_s+2));
-		scriptName = temp;
-
-		// ScriptName 과 Parameter 와 비교한다.
-
-		if(para.find(scriptName) != para.end())
-		{
-			str.replace(str.begin()+str_s, str.begin()+str_e,para[scriptName]->getValue().begin(),para[scriptName]->getValue().end());		
-		} 
-	}*/
-
-	int i=0;
-	HashMapScriptParameter::const_iterator itr = para.begin();
-
-	while(itr != para.end())
-	{
-		std::string key;
-		key = "%(";
-		key+= (*itr).first;
-		key+= ")";
-
-		while((i=static_cast<int>(str.find(key))) != -1)
-			str.replace(str.begin()+i,str.begin()+i+key.size(),(*itr).second->getValue());
-		itr++;
-	}
+	ApplyParameters(GetContent(scriptID, contentID), para, str);
 }
 
 void
-MNPCScriptTable::GetSubjectParameter(int scriptID, int subjectID,HashMapScriptParameter para,std::string &str)
+MNPCScriptTable::GetSubjectParameter(int scriptID, int subjectID, HashMapScriptParameter para, std::string& str)
 {
-	str = GetSubject(scriptID, subjectID);	
-
-	if(str.empty())
-		return;
-	
-	/* 중복검색 안되도록 맨든건데..ㅡ.ㅜ
-	int str_s = 0;
-	int str_e = 0;
-	char temp[512];
-
-	while(1)
-	{
-		str_s = str.find(SCRIPT_MARK_START,str_s);
-		if(str_s == -1)
-			break;
-		
-		str_e = str.find(SCRIPT_MARK_END,str_s);
-		if(str_e == -1)
-			break;
-		
-		std::string scriptName;
-		memset(temp,0,sizeof(temp));
-		memcpy(temp,str.c_str()+str_s+2,str_e-(str_s+2));
-		scriptName = temp;
-
-		// ScriptName 과 Parameter 와 비교한다.
-
-//		if(scriptName == para->getName())
-		if(para.find(scriptName) != para.end())
-			str.replace(str.begin()+str_s, str.begin()+str_e,para[scriptName]->getValue().begin(),para[scriptName]->getValue().end());				
-	}*/
-
-	int i=0;
-	HashMapScriptParameter::const_iterator itr = para.begin();
-
-	while(itr != para.end())
-	{
-		std::string key;
-		key = "%(";
-		key+= (*itr).first;
-		key+= ")";
-
-		while((i=static_cast<int>(str.find(key))) != -1)
-			str.replace(str.begin()+i,str.begin()+i+key.size(),(*itr).second->getValue());
-		itr++;
-	}
+	ApplyParameters(GetSubject(scriptID, subjectID), para, str);
 }

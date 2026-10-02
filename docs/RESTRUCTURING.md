@@ -1749,7 +1749,7 @@ rounds settled* for the host rules). Test fixtures share
 - [ ] **4.30 NPC dialogue:** `MNPCScriptTable` and its generated English
   overlay compile in `gamemodel`, making dialogue lookup, parameter replacement
   and file loading testable outside the executable.
-  > **Status:** in progress (lookup/substitution and loader fixes).
+  > **Status:** in progress (loader fixes).
   > After removing unused executable includes separately, all four files move
   > unchanged. Ask, variable-ask and say handlers retain UI and creature actions;
   > game initialization retains language selection. The generated English

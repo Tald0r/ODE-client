@@ -73,6 +73,8 @@ class MNPCScriptTable : public CTypeMap2<NPC_SCRIPT> {
 		const char*	GetContent(int scriptID, int contentID) const;
 
 		// 해당 스크립트 아이디에 파라미터값을 replace 한다.
+		// Missing text clears str; null parameters leave their markers intact.
+		// Keys run in map order, without rescanning a key's own replacement.
 		void GetContentParameter(int scriptID, int contentID,HashMapScriptParameter para,std::string &str);
 		void GetSubjectParameter(int scriptID, int subjectID,HashMapScriptParameter para,std::string &str);
 };

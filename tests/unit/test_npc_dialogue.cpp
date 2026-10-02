@@ -329,3 +329,63 @@ TEST(NPCDialogue, AllThreeStringGroupsUseTheDeclaredResourceCodec)
 	CHECK(Is(world.table.GetContent(7, 0), "다"));
 	CHECK(Save(world.table) == bytes.data);
 }
+
+TEST(NPCDialogue, MissingAndUnallocatedStringsClearParameterOutput)
+{
+	DialogueWorld world;
+	world.Add(1, "NPC", {""}, {""});
+	for (int id : {404, 1})
+	{
+		for (int slot : {-1, 0, 1})
+		{
+			std::string text = "previous";
+			world.table.GetSubjectParameter(id, slot, {}, text);
+			CHECK(text.empty());
+			text = "previous";
+			world.table.GetContentParameter(id, slot, {}, text);
+			CHECK(text.empty());
+		}
+	}
+}
+
+TEST(NPCDialogue, NullParametersLeaveTheirMarkersUnchanged)
+{
+	DialogueWorld world;
+	world.Add(1, "NPC", {"%(Missing) %(Name)"}, {"%(Name) %(Missing)"});
+	ScriptParameter name;
+	name.setValue("Alice");
+	HashMapScriptParameter parameters{{"Missing", nullptr}, {"Name", &name}};
+	std::string text;
+	world.table.GetSubjectParameter(1, 0, parameters, text);
+	CHECK(text == "%(Missing) Alice");
+	world.table.GetContentParameter(1, 0, parameters, text);
+	CHECK(text == "Alice %(Missing)");
+}
+
+TEST(NPCDialogue, ReplacementsContainingTheirOwnKeyFinishWithoutRescanning)
+{
+	DialogueWorld world;
+	world.Add(1, "NPC", {"%(Name)/%(Name)"}, {"%(Name)!"});
+	ScriptParameter name;
+	name.setValue("%(Name)");
+	std::string text;
+	world.table.GetSubjectParameter(1, 0, {{"Name", &name}}, text);
+	CHECK(text == "%(Name)/%(Name)");
+	name.setValue("[%(Name)]");
+	world.table.GetContentParameter(1, 0, {{"Name", &name}}, text);
+	CHECK(text == "[%(Name)]!");
+}
+
+TEST(NPCDialogue, ErasingAdjacentAndEmptyNameMarkersAlwaysAdvances)
+{
+	DialogueWorld world;
+	world.Add(1, "NPC", {"%(Name)%(Name)end"}, {"%()%()"});
+	ScriptParameter empty;
+	empty.setValue("");
+	std::string text;
+	world.table.GetSubjectParameter(1, 0, {{"Name", &empty}}, text);
+	CHECK(text == "end");
+	empty.setValue("x");
+	world.table.GetContentParameter(1, 0, {{"", &empty}}, text);
+	CHECK(text == "xx");
+}
