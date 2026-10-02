@@ -213,7 +213,9 @@ check () {
 # slots, the trade money and offer, the system switches and the
 # monster-kill quest goals) join gamemodel from Client/PacketHandler so a
 # test can run them on real packets (task 4.15).
-R1_BASELINE=437
+# 436: CServerInformation joins gamemodel unchanged so login selection
+# and its owning world/server maps can be tested (task 4.19).
+R1_BASELINE=436
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -261,7 +263,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# baseline records.
 	# 435: the eight model-reach packet handlers join gamemodel, as the
 	# MSVC baseline records.
-	R1_NINJA_BASELINE=435
+	# 434: CServerInformation joins gamemodel, as the MSVC baseline records.
+	R1_NINJA_BASELINE=434
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
