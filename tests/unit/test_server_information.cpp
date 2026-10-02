@@ -1,6 +1,8 @@
 #include "test_framework.h"
 #include "CServerInformation.h"
 
+#include <cstring>
+#include <new>
 #include <string>
 
 namespace {
@@ -23,18 +25,38 @@ void AddServer(ServerGroup& world, unsigned int id, const char* name, int status
 	CHECK(world.AddData(id, server));
 }
 
-// The move preserves the old constructor and Release behavior. Initialize
-// the selected fields explicitly here; fresh/reset state gets separate tests.
-struct Selection : CServerInformation
-{
-	Selection()
-	{
-		Release();
-		SetServerStatus(0);
-	}
-};
-
 } // namespace
+
+TEST(ServerInformation, FreshSelectionStartsEmptyEvenOverNonzeroStorage)
+{
+	alignas(CServerInformation) unsigned char storage[sizeof(CServerInformation)];
+	std::memset(storage, 0xcc, sizeof(storage));
+	auto* selection = new (storage) CServerInformation;
+	CHECK(selection->empty());
+	CHECK_EQ(0, selection->GetServerGroupID());
+	CHECK_EQ(0, selection->GetServerGroupStatus());
+	CHECK_EQ(0, selection->GetServerID());
+	CHECK_EQ(0, selection->GetServerStatus());
+	CHECK(selection->GetServerGroupName() == nullptr);
+	CHECK(selection->GetServerName() == nullptr);
+	CHECK(!selection->SetServerID(7));
+	CHECK(!selection->SetServerGroupID(7));
+	selection->~CServerInformation();
+}
+
+TEST(ServerInformation, ReleaseAlsoClearsTheSelectedServerStatus)
+{
+	CServerInformation selection;
+	auto* world = AddWorld(selection, 12, "World", 3);
+	AddServer(*world, 7, "Server", 6);
+	CHECK(selection.SetServerGroupID(12));
+	CHECK(selection.SetServerID(7));
+	CHECK_EQ(6, selection.GetServerStatus());
+	selection.Release();
+	CHECK_EQ(0, selection.GetServerStatus());
+	selection.Release();
+	CHECK_EQ(0, selection.GetServerStatus());
+}
 
 TEST(ServerInformation, EmptyRowsStartWithNoNameAndZeroStatus)
 {
@@ -49,7 +71,7 @@ TEST(ServerInformation, EmptyRowsStartWithNoNameAndZeroStatus)
 
 TEST(ServerInformation, SelectingWorldCopiesItsMetadata)
 {
-	Selection selection;
+	CServerInformation selection;
 	auto* world = AddWorld(selection, 17, "World seventeen", 3);
 	CHECK(selection.SetServerGroupID(17));
 	CHECK_EQ(17, selection.GetServerGroupID());
@@ -67,7 +89,7 @@ TEST(ServerInformation, SelectingWorldCopiesItsMetadata)
 
 TEST(ServerInformation, ServerSelectionUsesTheSelectedWorld)
 {
-	Selection selection;
+	CServerInformation selection;
 	auto* first = AddWorld(selection, 12, "First world", 1);
 	auto* second = AddWorld(selection, 23, "Second world", 2);
 	AddServer(*first, 7, "First server", 4);
@@ -93,7 +115,7 @@ TEST(ServerInformation, ServerSelectionUsesTheSelectedWorld)
 
 TEST(ServerInformation, MissingWorldClearsItsNameAndRetainsThePreviousSelection)
 {
-	Selection selection;
+	CServerInformation selection;
 	auto* world = AddWorld(selection, 12, "World", 3);
 	AddServer(*world, 7, "Server", 4);
 	CHECK(selection.SetServerGroupID(12));
@@ -110,7 +132,7 @@ TEST(ServerInformation, MissingWorldClearsItsNameAndRetainsThePreviousSelection)
 
 TEST(ServerInformation, MissingServerOrWorldLeavesTheSelectedServerAlone)
 {
-	Selection selection;
+	CServerInformation selection;
 	auto* world = AddWorld(selection, 12, "World", 3);
 	AddServer(*world, 7, "Server", 4);
 	CHECK(selection.SetServerGroupID(12));
@@ -129,7 +151,7 @@ TEST(ServerInformation, MissingServerOrWorldLeavesTheSelectedServerAlone)
 
 TEST(ServerInformation, ReleaseClearsOwnedWorldsServersAndNamesAndAllowsReuse)
 {
-	Selection selection;
+	CServerInformation selection;
 	auto* first = AddWorld(selection, 12, "First", 3);
 	auto* second = AddWorld(selection, 23, "Second", 4);
 	AddServer(*first, 7, "One", 1);

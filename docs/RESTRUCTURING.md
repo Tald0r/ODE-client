@@ -1570,9 +1570,10 @@ rounds settled* for the host rules). Test fixtures share
   > **Status:** done (2026-10-02, model move). The implementation and headers
   > move unchanged. Selection copies names and statuses from the selected
   > records; unsuccessful selections retain their existing behavior. The
-  > packet handlers still populate the model and update the UI. Constructor
-  > initialization and the server status left by `Release` need a separate
-  > test-first follow-up.
+  > packet handlers still populate the model and update the UI. The separate
+  > test-first follow-up initializes every selection field and clears server
+  > status on release. The fresh-state test uses nonzero storage so the old
+  > constructor fails deterministically.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_server_information.cpp`, linked against the same library
     object as the executable.
