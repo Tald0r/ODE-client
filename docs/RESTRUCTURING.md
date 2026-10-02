@@ -1920,6 +1920,19 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_homing_steering.cpp`, using production steering and math.
 
+- [x] **4.42 Parabolic-effect movement:** `ParabolaEffectMotion` holds arc
+  progression and applies movement and arrival over `LinearEffectMotion`.
+  > **Status:** done (this commit).
+  > `MParabolaEffect` supplies the current position and speed, emits cannonade
+  > smoke after advancing but before snapping, and retains impact actions,
+  > lifetime and drawing. Arrival requires strict XY proximity after half a
+  > turn, or falling below the target height; it snaps every axis and clears
+  > linear velocity. Zero speed and integer arc-step truncation retain their
+  > existing behavior. R1 stays 414 Windows / 412 Ninja.
+  - Owner: M0-M2, `tests/arch/gamemodel_files.txt`,
+    `tests/unit/test_parabola_motion.cpp` and `tests/unit/test_parabola_step.cpp`,
+    using production motion and shared math tables.
+
 ## Phase 5 — Long tail
 
 - [x] **5.1 Split the debug facilities** so `DebugInfo.h`/`MinTr.h` stop

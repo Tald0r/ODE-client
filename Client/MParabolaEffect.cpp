@@ -2,12 +2,9 @@
 // MParabolaEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include <math.h>
 #include "MTopView.h"
 #include "MLinearEffect.h"
 #include "MParabolaEffect.h"
-#include "MathTable.h"
-#include "ParabolaStep.h"
 #include "EffectSpriteTypeDef.h"
 #include "MEffectSpriteTypeTable.h"
 #include "PacketFunction.h"
@@ -21,10 +18,6 @@
 MParabolaEffect::MParabolaEffect(BYTE bltType)
 : MLinearEffect(bltType)
 {
-	//m_EffectType	= EFFECT_PARABOLA;
-
-	m_RadCurrent = 0;
-	m_RadStep = 0;
 	m_TargetTileX = 0;
 	m_TargetTileY = 0;
 }
@@ -51,8 +44,7 @@ MParabolaEffect::SetTarget(int x, int y, int z, WORD speed)
 	//--------------------------------------------------
 	// Grenade는 매 순간마다 Z축의 높이가 달라진다.
 	//--------------------------------------------------
-	m_RadStep = ParabolaRadStep(m_Len, speed);
-	m_RadCurrent = 0;
+	m_Motion.Reset(*this, speed);
 }
 void
 MParabolaEffect::MakeCannonadeSmoke()
@@ -90,40 +82,15 @@ MParabolaEffect::Update()
 {	
 	if (g_CurrentFrame < m_EndFrame)
 	{
-		//--------------------------------
-		// Pixel 좌표를 바꾼다.
-		//--------------------------------
-		// 각각의 방향에 대해서 Step만큼 이동해준다.
-		m_PixelX += m_StepX;
-		m_PixelY += m_StepY;
-		m_PixelZ += m_StepZ;
+		m_Motion.Advance(*this, m_PixelX, m_PixelY, m_PixelZ, m_StepPixel);
 
-		m_RadCurrent += m_RadStep;			// 현재 Radian값 변화
-
-		m_PixelZ += ((MathTable::FCos(m_RadCurrent)*m_StepPixel)>>16);	// Z좌표 변화
-
-		
 		if(GetActionInfo() == SKILL_CANNONADE)
 			MakeCannonadeSmoke();
 		//------------------------------------------
 		// 다 움직인 경우를 생각해봐야 한다.
 		//------------------------------------------
-		if ((fabs(m_PixelX-m_TargetX)<m_StepPixel &&
-			fabs(m_PixelY-m_TargetY)<m_StepPixel &&
-			//fabs(m_PixelZ-m_TargetZ)<m_StepPixel &&
-			m_RadCurrent >= MathTable::FPI)			
-			|| m_PixelZ < m_TargetZ	// 바닥에 떨어진 경우.
-			
-			)
+		if (m_Motion.FinishStep(*this, m_PixelX, m_PixelY, m_PixelZ, m_StepPixel))
 		{
-			m_PixelX = (float)m_TargetX;
-			m_PixelY = (float)m_TargetY;
-			m_PixelZ = (float)m_TargetZ;
-
-			m_StepX = 0;
-			m_StepY = 0;
-			m_StepZ = 0;
-
 			//------------------------------------------
 			// 더 움직일 필요가 없는 경우이다.			
 			//------------------------------------------

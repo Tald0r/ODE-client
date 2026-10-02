@@ -8,6 +8,7 @@
 // Effect subclasses retain access to the trajectory for their curved paths.
 class LinearEffectMotion
 {
+	friend class ParabolaEffectMotion;
 public:
 	void SetLinearTarget(float pixelX, float pixelY, float pixelZ,
 		int targetX, int targetY, int targetZ, WORD stepPixel);

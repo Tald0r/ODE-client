@@ -9,6 +9,7 @@
 
 
 #include "MLinearEffect.h"
+#include "ParabolaEffectMotion.h"
 
 #define	PI	3.14159265
 
@@ -33,10 +34,10 @@ class MParabolaEffect : public MLinearEffect {
 		void				MakeCannonadeSmoke();
 		void				SetTargetTile(int x, int y) {	m_TargetTileX = x; m_TargetTileY = y;	}
 	protected :	
-		int			m_RadCurrent;	// 현재 radian값
-		int			m_RadStep;		// 매 turn마다 달라지는 radian값
 		TYPE_SECTORPOSITION m_TargetTileX;
 		TYPE_SECTORPOSITION m_TargetTileY;
+	private:
+		ParabolaEffectMotion m_Motion;
 };
 
 
