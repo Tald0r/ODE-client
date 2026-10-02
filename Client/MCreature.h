@@ -15,6 +15,7 @@
 #define	__MCREATURE_H__
 
 #include "MTypeDef.h"
+#include "CreatureNameSelection.h"
 #include "MonotonicClock.h"
 #include "MObject.h"
 #include "MAttachEffect.h"
@@ -484,7 +485,7 @@ class MCreature : public MObject, public MStatus {
 		// Level Name
 		//------------------------------------------------------
 		void				SetLevelName(int ln);
-		BOOL				HasLevelName() const		{ return m_LevelName; }
+		BOOL				HasLevelName() const		{ return m_NameSelection.HasLevelName(); }
 		const char*			GetLevelName() const;
 
 		//------------------------------------------------------
@@ -965,8 +966,8 @@ class MCreature : public MObject, public MStatus {
 		TYPE_ACTIONINFO			m_DelayActionInfo;
 		DWORD					m_EffectDelayFrame;
 
-		// LevelName
-		int						m_LevelName;
+		// Level title and hallucination-name selection.
+		CreatureNameSelection	m_NameSelection;
 
 		// 길드
 		int						m_GuildNumber;
@@ -1138,7 +1139,6 @@ class MCreature : public MObject, public MStatus {
 		WORD					m_HalluColorBody;
 		BYTE					m_HalluAction;
 		BYTE					m_HalluFrame;
-		WORD					m_HalluName;	// 일단 임시로...
 		short					m_DelayLastAction;					// 해당 액션을 한 후에 일반 액션으로 돌아올때 딜레이
 		//add by viva
 		BYTE					m_DirectionMoved;	// 이동한 방향	

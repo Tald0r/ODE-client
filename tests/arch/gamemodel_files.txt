@@ -366,3 +366,12 @@ Client/LoginEndpoint.h
 # The initial move preserves both implementation and header byte-for-byte.
 Client/PCConfigTable.cpp
 Client/PCConfigTable.h
+
+# Creature naming tables and per-creature title/hallucination selection (4.27).
+# Both existing tables move byte-for-byte; MCreature supplies live inputs.
+Client/MonsterNameTable.cpp
+Client/MonsterNameTable.h
+Client/MLevelNameTable.cpp
+Client/MLevelNameTable.h
+Client/CreatureNameSelection.cpp
+Client/CreatureNameSelection.h
