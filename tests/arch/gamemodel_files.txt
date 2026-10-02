@@ -482,3 +482,9 @@ Client/DirectionSelection.h
 # Complete linear effects, including arrival, HALO lifetime and animation (4.48).
 Client/MLinearEffect.cpp
 Client/MLinearEffect.h
+
+# Creature-guided and persistent chase effects behind a position lookup (4.49).
+Client/MGuidanceEffect.cpp
+Client/MGuidanceEffect.h
+Client/MChaseEffect.cpp
+Client/MChaseEffect.h

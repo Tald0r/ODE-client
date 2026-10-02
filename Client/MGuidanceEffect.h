@@ -8,10 +8,17 @@
 #include "MLinearEffect.h"
 #include "MTypeDef.h"
 
+// Borrowed live-creature lookup. A missing host/entry or creature stops tracing.
+struct MGuidanceEffectHost
+{
+	bool (*CreaturePosition)(TYPE_OBJECTID id, int& x, int& y, int& z) = nullptr;
+};
+
 class MGuidanceEffect : public MLinearEffect {
 	public :
 		MGuidanceEffect(BYTE bltType);
 		~MGuidanceEffect();
+		static const MGuidanceEffectHost* SetHost(const MGuidanceEffectHost* host);
 		
 		virtual EFFECT_TYPE		GetEffectType()	const	{ return EFFECT_GUIDANCE; }
 
@@ -31,6 +38,10 @@ class MGuidanceEffect : public MLinearEffect {
 
 	protected :
 		TYPE_OBJECTID	m_CreatureID;
+
+	private :
+		static bool ReadCreaturePosition(TYPE_OBJECTID id, int& x, int& y, int& z);
+		static const MGuidanceEffectHost* s_pHost;
 };
 
 #endif

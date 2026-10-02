@@ -80,6 +80,7 @@
 #include "MEventManager.h"
 #include "MEffectTarget.h"
 #include "MEffect.h"
+#include "MGuidanceEffect.h"
 #include "RequestFileManager.h"
 #include "Packet/RequestServerPlayer.h"
 #include "RequestUserManager.h"
@@ -2607,6 +2608,7 @@ void ReleaseAllObjects()
 	MWarManager::SetHost(nullptr);
 	MEffectTarget::SetHost(nullptr);
 	MEffect::SetHost(nullptr);
+	MGuidanceEffect::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2958,6 +2960,18 @@ static const MEffectHost s_EffectHost = {
 	},
 };
 
+static const MGuidanceEffectHost s_GuidanceEffectHost = {
+	.CreaturePosition = [](TYPE_OBJECTID id, int& x, int& y, int& z) {
+		if (!g_pZone) return false;
+		const MCreature* creature = g_pZone->GetCreature(id);
+		if (!creature) return false;
+		x = creature->GetPixelX();
+		y = creature->GetPixelY();
+		z = creature->GetZ();
+		return true;
+	},
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3282,6 +3296,7 @@ InitGameObject()
 	MWarManager::SetHost(&s_WarHost);
 	MEffectTarget::SetHost(&s_EffectTargetHost);
 	MEffect::SetHost(&s_EffectHost);
+	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 
