@@ -181,3 +181,73 @@ TEST(MathTable, ExactDiagonalTargetsUseFortyFiveDegreeAngles)
 		}
 	}
 }
+
+TEST(MathTable, CardinalTargetsPreserveDirectionAcrossTheFullIntegerSpan)
+{
+	InitTables();
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	CHECK_EQ(MathTable::ANGLE_0, MathTable::GetAngleToTarget(low, 0, high, 0));
+	CHECK_EQ(MathTable::ANGLE_180, MathTable::GetAngleToTarget(high, 0, low, 0));
+	CHECK_EQ(MathTable::ANGLE_270, MathTable::GetAngleToTarget(0, low, 0, high));
+	CHECK_EQ(MathTable::ANGLE_90, MathTable::GetAngleToTarget(0, high, 0, low));
+}
+
+TEST(MathTable, DiagonalTargetsPreserveQuadrantsAcrossTheFullIntegerSpan)
+{
+	InitTables();
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	CHECK_EQ(MathTable::ANGLE_45, MathTable::GetAngleToTarget(low, high, high, low));
+	CHECK_EQ(MathTable::ANGLE_135, MathTable::GetAngleToTarget(high, high, low, low));
+	CHECK_EQ(MathTable::ANGLE_225, MathTable::GetAngleToTarget(high, low, low, high));
+	CHECK_EQ(MathTable::ANGLE_315, MathTable::GetAngleToTarget(low, low, high, high));
+}
+
+TEST(MathTable, LargeTargetVectorsKeepTheirAnglesWhenScaled)
+{
+	InitTables();
+	struct Offset { int x, y; };
+	for (const auto& v : {Offset{6, 5}, {5, 6}, {-6, 5}, {-5, 6},
+		{6, -5}, {5, -6}, {-6, -5}, {-5, -6},
+		{6, 6}, {6, -6}, {-6, 6}, {-6, -6}})
+	{
+		CHECK_EQ(MathTable::GetAngleToTarget(0, 0, v.x, v.y),
+			MathTable::GetAngleToTarget(0, 0, v.x * 500000, v.y * 500000));
+	}
+}
+
+TEST(MathTable, BoundaryTargetsFollowEveryScreenOctant)
+{
+	InitTables();
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	const int coordinates[] = {low, low + 1, -3000000, -1, 0, 1, 3000000, high - 1, high};
+	for (int x : coordinates)
+	{
+		for (int y : coordinates)
+		{
+			if (x == 0 && y == 0) continue;
+			const int angle = MathTable::GetAngleToTarget(0, 0, x, y);
+			CHECK(angle >= 0 && angle < MathTable::MAX_ANGLE);
+			CHECK(AngleDifference(angle, TargetAngle(x, y)) <= 3.0);
+		}
+	}
+}
+
+TEST(MathTable, TranslatingSmallVectorsNearIntegerLimitsKeepsQuantization)
+{
+	InitTables();
+	const int low = (std::numeric_limits<int>::min)();
+	const int high = (std::numeric_limits<int>::max)();
+	struct Offset { int x, y; };
+	for (int origin : {low + 64, high - 64})
+	{
+		for (const auto& v : {Offset{6, 5}, {5, 6}, {-6, 5}, {-5, 6},
+			{6, -5}, {-5, -6}, {0, 0}, {-1, 0}})
+		{
+			CHECK_EQ(MathTable::GetAngleToTarget(0, 0, v.x, v.y),
+				MathTable::GetAngleToTarget(origin, origin, origin + v.x, origin + v.y));
+		}
+	}
+}

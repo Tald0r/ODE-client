@@ -4,6 +4,7 @@
 #include "Client_PCH.h"
 #include <math.h>
 #include "MathTable.h"
+#include <cstdint>
 
 int MathTable::FSinTab[MAX_ANGLE];
 int MathTable::FCosTab[MAX_ANGLE];
@@ -911,8 +912,8 @@ void MathTable::FCreateSines()
 int MathTable::GetAngleToTarget(int nX, int nY, int nTargetX, int nTargetY)
 {
 	int nAngle;
-	int cx = nTargetX - nX;
-	int cy = nTargetY - nY;
+	const std::int64_t cx = static_cast<std::int64_t>(nTargetX) - nX;
+	const std::int64_t cy = static_cast<std::int64_t>(nTargetY) - nY;
 
 	if ( cx == 0 ) {
 		if ( cy > 0 ) return ANGLE_270;
