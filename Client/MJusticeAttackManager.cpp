@@ -3,14 +3,11 @@
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MJusticeAttackManager.h"
-#include "ClientConfig.h"
 
 //----------------------------------------------------------------------
 // Global
 //----------------------------------------------------------------------
 MJusticeAttackManager* g_pJusticeAttackManager = NULL;
-
-extern MonotonicClock::TimePoint g_FrameNow;
 
 //----------------------------------------------------------------------
 //
@@ -45,11 +42,7 @@ MJusticeAttackManager::Release()
 void		
 MJusticeAttackManager::AddCreature(const char* pName)
 {
-	std::string name = pName;
-
-	// 이미 있거나 없거나 관계없이 시간을 설정해주면 된다.
-	// 시간의 의미는 없지만.. ㅡ.ㅡ;
-	m_Creatures[name] = g_FrameNow;
+	m_Creatures.insert(std::string(pName));
 }
 
 //----------------------------------------------------------------------
@@ -58,11 +51,11 @@ MJusticeAttackManager::AddCreature(const char* pName)
 bool		
 MJusticeAttackManager::RemoveCreature(const char* pName)
 {
-	TIME_MAP::iterator iTime = m_Creatures.find( std::string(pName) );
+	auto iName = m_Creatures.find( std::string(pName) );
 
-	if (iTime != m_Creatures.end())
+	if (iName != m_Creatures.end())
 	{
-		m_Creatures.erase( iTime );
+		m_Creatures.erase( iName );
 
 		return true;
 	}
@@ -76,9 +69,9 @@ MJusticeAttackManager::RemoveCreature(const char* pName)
 bool
 MJusticeAttackManager::HasCreature(const char* pName) const
 {
-	TIME_MAP::const_iterator iTime = m_Creatures.find( std::string(pName) );
+	auto iName = m_Creatures.find( std::string(pName) );
 
-	if (iTime != m_Creatures.end())
+	if (iName != m_Creatures.end())
 	{
 		return true;
 	}

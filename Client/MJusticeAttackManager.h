@@ -1,9 +1,8 @@
 //----------------------------------------------------------------------
 // MJusticeAttackManager.h
 //----------------------------------------------------------------------
-// 내가 정당방위로 공격할 수 있는 애덜이다.
-//
-// 서버에서 Add/Remove packet을 날려주기 때문에.. 걍... 냠냠..
+// Creatures the player may attack in self-defense.
+// Membership is controlled by the server's add/remove packets.
 //----------------------------------------------------------------------
 
 #ifndef __MJUSTICE_ATTACK_MANAGER_H__
@@ -13,15 +12,10 @@
 #pragma warning(disable:4786)
 #endif
 
-#include <map>
+#include <set>
 #include <string>
-#include "MonotonicClock.h"
 
 class MJusticeAttackManager {
-	public :
-		// <이름, 최초의시간>		시간은 의미없지 싶은데.. 걍..
-		typedef std::map<std::string, MonotonicClock::TimePoint>	TIME_MAP;
-
 	public :
 		MJusticeAttackManager();
 		~MJusticeAttackManager();
@@ -33,11 +27,10 @@ class MJusticeAttackManager {
 		bool		HasCreature(const char* pName) const;
 
 	private :
-		TIME_MAP	m_Creatures;		// 나를 때린 애들이당.. 나쁜 애들~
+		std::set<std::string>	m_Creatures;
 };
 
 extern MJusticeAttackManager* g_pJusticeAttackManager;
 
 
 #endif
-

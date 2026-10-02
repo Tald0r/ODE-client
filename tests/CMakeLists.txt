@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.21)
 # tables - docs/RESTRUCTURING.md task 2.4) and gamemodel. Game logic that
 # is compiled straight into the DarkEden executable, including the packet
 # handlers under Client/PacketHandler, is not reachable from here; the
-# eight handlers gamemodel lists (task 4.15) are the exception.
+# ten handlers gamemodel lists (tasks 4.15 and 4.25) are the exception.
 #
 #----------------------------------------------------------------------
 

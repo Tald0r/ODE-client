@@ -286,8 +286,7 @@ Client/AffectModifyInfo.h
 # monster-kill quest goals (GCMonsterKillQuestInfo). They stay in
 # Client/PacketHandler, where check_packet_indices.pl reads them, and
 # PacketHandlerRegistry.cpp still binds them; their classes are declared
-# in the packetwire headers, so no header is listed. Every other handler
-# stays executable-side.
+# in the packetwire headers, so no header is listed.
 Client/PacketHandler/GCPhoneConnectedHandler.cpp
 Client/PacketHandler/GCPhoneDisconnectedHandler.cpp
 Client/PacketHandler/GCPhoneSayHandler.cpp
@@ -296,6 +295,14 @@ Client/PacketHandler/GCTradeMoneyHandler.cpp
 Client/PacketHandler/GCTradeRemoveItemHandler.cpp
 Client/PacketHandler/GCSystemAvailabilitiesHandler.cpp
 Client/PacketHandler/GCMonsterKillQuestInfoHandler.cpp
+
+# The self-defense target roster and its add/remove handlers (task 4.25).
+# Unobserved timestamps are removed; membership has no clock dependency.
+# The handlers keep their executable registry bindings and wire classes.
+Client/MJusticeAttackManager.cpp
+Client/MJusticeAttackManager.h
+Client/PacketHandler/GCAddInjuriousCreatureHandler.cpp
+Client/PacketHandler/GCRemoveInjuriousCreatureHandler.cpp
 
 # The skill model's rebuild from a GCSkillInfo packet (task 4.16): which
 # skills each domain has learned, the per-skill state the wire carries
