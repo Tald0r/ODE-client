@@ -496,3 +496,7 @@ Client/MHomingEffect.h
 # Complete parabolic effects with owned smoke and cannonade impact services (4.51).
 Client/MParabolaEffect.cpp
 Client/MParabolaEffect.h
+
+# Attached-effect metadata, lifetimes and ordered creature lookup (4.52).
+Client/MAttachEffect.cpp
+Client/MAttachEffect.h

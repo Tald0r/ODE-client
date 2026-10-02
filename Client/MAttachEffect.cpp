@@ -2,13 +2,41 @@
 // MAttachEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
-#include <math.h>
-#include "MMovingEffect.h"
 #include "MAttachEffect.h"
-#include "MTopView.h"
-#include "MEffectSpriteTypeTable.h"
 #include "DebugLog.h"
+
+const MAttachEffectHost* MAttachEffect::s_pHost = nullptr;
+
+const MAttachEffectHost* MAttachEffect::SetHost(const MAttachEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+MAttachEffect::Sprite MAttachEffect::ReadSprite(TYPE_EFFECTSPRITETYPE type)
+{
+	Sprite sprite;
+	sprite.available = s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite.info);
+	return sprite;
+}
+
+bool MAttachEffect::FindCreature(TYPE_OBJECTID id, MAttachCreaturePosition& position)
+{
+	position = {};
+	if (s_pHost && s_pHost->LiveCreature && s_pHost->LiveCreature(id, position)) return true;
+	position = {};
+	if (s_pHost && s_pHost->FakeCreature && s_pHost->FakeCreature(id, position)) return true;
+	position = {};
+	return s_pHost && s_pHost->CorpseCreature && s_pHost->CorpseCreature(id, position);
+}
+
+bool MAttachEffect::ReadCreature(const MCreature* creature, MAttachCreaturePosition& position)
+{
+	position = {};
+	return creature && s_pHost && s_pHost->CreaturePosition &&
+		s_pHost->CreaturePosition(creature, position);
+}
 
 //----------------------------------------------------------------------
 // 
@@ -17,46 +45,39 @@
 //----------------------------------------------------------------------
 
 MAttachEffect::MAttachEffect(TYPE_EFFECTSPRITETYPE type, DWORD last, DWORD linkCount)
-: MMovingEffect( (type < g_pEffectSpriteTypeTable->GetSize()? (*g_pEffectSpriteTypeTable)[type].BltType : BLT_EFFECT) )
+: MAttachEffect(type, last, linkCount, ReadSprite(type))
 {
-	// class종류
-	//m_EffectType	= EFFECT_ATTACH;
+}
 
-	// 따라가는 Creature ID
+MAttachEffect::MAttachEffect(TYPE_EFFECTSPRITETYPE type, DWORD last, DWORD linkCount, const Sprite& sprite)
+: MMovingEffect(sprite.available ? sprite.info.bltType : static_cast<BYTE>(BLT_EFFECT))
+{
 	m_CreatureID	= OBJECTID_NULL;
 
 	m_bEffectSprite = true;
 
-	// EffectSprite 종류
 	m_EffectSpriteType	= type;
 	
-	EffectTiming::SetAttachedCount(g_CurrentFrame, last, linkCount);
+	SetAttachedLifetime(last, linkCount);
 	
-	// 특별히 색깔 바뀌는 부위 없음...
-	// 전체가 바뀐다는걸 의미하기도 한다. - -;
+	// ADDON_NULL applies a color change to the whole creature.
 	m_bEffectColorPart = ADDON_NULL;
 
-	//-------------------------------------------------------
-	// 제대로 된 type인 경우.. 아닌 경우는 색깔이거나 뭐..그렇다 - -;
-	//-------------------------------------------------------
-	if (type < g_pEffectSpriteTypeTable->GetSize())
+	// Unknown sprite types retain the default frame and no light.
+	if (sprite.available)
 	{
-		TYPE_FRAMEID	frameID = (*g_pEffectSpriteTypeTable)[type].FrameID;
-		BYTE			maxFrame;
+		TYPE_FRAMEID frameID = sprite.info.frameID;
+		BYTE maxFrame = static_cast<BYTE>(sprite.info.maxFrames);
 
-		// BLT_NORMAL
-		BLT_TYPE bltType = (*g_pEffectSpriteTypeTable)[type].BltType;
-		maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-
-        LOG_INFO("[EFFECT CREATE] type=%d, FrameID=%d, BltType=%d, maxFrame=%d",
-            type, frameID, (int)bltType, (int)maxFrame);
+		LOG_INFO("[EFFECT CREATE] type=%d, FrameID=%d, BltType=%d, maxFrame=%d",
+			type, frameID, (int)sprite.info.bltType, (int)maxFrame);
 
 		SetFrameID( frameID, maxFrame );
 
-		// default로 Effect의 밝기를 지정한다.
+		// Alpha effects refresh their default light after SetFrameID.
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 		else
 		{
@@ -81,73 +102,43 @@ MAttachEffect::~MAttachEffect()
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
-// Move
-//----------------------------------------------------------------------
-// 매 순간마다 StepX~Z가 달라진다.
+// Resolve an attachment by object ID
 //----------------------------------------------------------------------
 void				
 MAttachEffect::SetAttachCreatureID(TYPE_OBJECTID id)
 { 
-	MCreature* pCreature = g_pZone->GetCreature( id );
-
-	if (pCreature==NULL)
+	MAttachCreaturePosition position;
+	if (!FindCreature(id, position))
 	{
-		pCreature = g_pZone->GetFakeCreature( id );
-
-		if (pCreature==NULL)
-		{
-			MItem* pItem = g_pZone->GetItem( id );
-
-			if (pItem!=NULL
-				&& pItem->GetItemClass()==ITEM_CLASS_CORPSE)
-			{
-				pCreature = ((MCorpse*)pItem)->GetCreature();
-			}			
-		}
+		m_EndFrame = 0;
+		return;
 	}
-
-	SetAttachCreature( pCreature );
+	ApplyPosition(position);
 }
 
 //----------------------------------------------------------------------
-// TraceCreature
+// Apply the supplied creature position
 //----------------------------------------------------------------------
 bool
 MAttachEffect::SetAttachCreature(MCreature* pCreature)
 {	
-	// Creature가 사라졌을 경우..
-	if (pCreature == NULL)
+	MAttachCreaturePosition position;
+	if (!ReadCreature(pCreature, position))
 	{
 		m_EndFrame = 0;
-		return false;	
+		return false;
 	}
-
-	m_CreatureID = pCreature->GetID(); 
-
-	// 현재의 좌표를 읽어온다.
-	POINT point;// = MTopView::MapToPixel(pCreature->GetX(), pCreature->GetY());
-	//point.x += pCreature->GetSX();
-	//point.y += pCreature->GetSY();
-	point.x = pCreature->GetPixelX();
-	point.y = pCreature->GetPixelY();
-
-	// 새로운 좌표 설정	
-	m_PixelX = static_cast<float>(point.x);
-	m_PixelY = static_cast<float>(point.y);
-	m_PixelZ = pCreature->GetZ();
-
-	//--------------------------------
-	// Sector 좌표를 맞춘다.
-	//--------------------------------
-	AffectPosition();
-
-	// 좌표
-	//#ifdef	OUTPUT_DEBUG
-	//	sprintf(g_pDebugMessage->GetCurrent(), "Set AttachEffect : Type=%d, Light=%d, (%d, %d)", pEffect->GetFrameID(), m_Light, m_X, m_Y);	
-	//	g_pDebugMessage->Next();
-	//#endif
-
+	ApplyPosition(position);
 	return true;
+}
+
+void MAttachEffect::ApplyPosition(const MAttachCreaturePosition& position)
+{
+	m_CreatureID = position.id;
+	m_PixelX = static_cast<float>(position.x);
+	m_PixelY = static_cast<float>(position.y);
+	m_PixelZ = static_cast<float>(position.z);
+	AffectPosition();
 }
 
 //----------------------------------------------------------------------
@@ -156,25 +147,17 @@ MAttachEffect::SetAttachCreature(MCreature* pCreature)
 bool
 MAttachEffect::Update()
 {	
-	if (g_CurrentFrame < m_EndFrame)
+	if (!IsEnd())
 	{	
-		// Frame을 바꿔준다.
 		NextFrame();
-
-		// Counter를 하나 줄인다.
-		//m_Count--;
 
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		return true;
 	}
-
-	// 캐릭터 좌표에 붙는다. 
-	// 다음 Effect로 연결하기 위해서..좌표를 설정한다.
-	//AttachCreature();
 
 	return false;
 }

@@ -82,6 +82,7 @@
 #include "MEffect.h"
 #include "MGuidanceEffect.h"
 #include "MParabolaEffect.h"
+#include "MAttachEffect.h"
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
 #include "PacketFunction.h"
@@ -2615,6 +2616,7 @@ void ReleaseAllObjects()
 	MEffect::SetHost(nullptr);
 	MGuidanceEffect::SetHost(nullptr);
 	MParabolaEffect::SetHost(nullptr);
+	MAttachEffect::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2999,6 +3001,43 @@ static const MParabolaEffectHost s_ParabolaEffectHost = {
 	},
 };
 
+static bool AttachCreaturePosition(const MCreature* creature, MAttachCreaturePosition& position)
+{
+	if (!creature) return false;
+	position.id = creature->GetID();
+	position.x = creature->GetPixelX();
+	position.y = creature->GetPixelY();
+	position.z = creature->GetZ();
+	return true;
+}
+
+static const MAttachEffectHost s_AttachEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MAttachEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize())
+			return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.LiveCreature = [](TYPE_OBJECTID id, MAttachCreaturePosition& position) {
+		return g_pZone && AttachCreaturePosition(g_pZone->GetCreature(id), position);
+	},
+	.FakeCreature = [](TYPE_OBJECTID id, MAttachCreaturePosition& position) {
+		return g_pZone && AttachCreaturePosition(g_pZone->GetFakeCreature(id), position);
+	},
+	.CorpseCreature = [](TYPE_OBJECTID id, MAttachCreaturePosition& position) {
+		if (!g_pZone) return false;
+		const MItem* item = g_pZone->GetItem(id);
+		return item && item->GetItemClass() == ITEM_CLASS_CORPSE &&
+			AttachCreaturePosition(static_cast<const MCorpse*>(item)->GetCreature(), position);
+	},
+	.CreaturePosition = AttachCreaturePosition,
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3325,6 +3364,7 @@ InitGameObject()
 	MEffect::SetHost(&s_EffectHost);
 	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
 	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
+	MAttachEffect::SetHost(&s_AttachEffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 
