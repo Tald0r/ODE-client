@@ -7,8 +7,17 @@
 #ifndef	__MWEATHER_H__
 #define	__MWEATHER_H__
 
+#include "../basic/Platform.h"
 #include "MTypeDef.h"
 #include "DrawTypeDef.h"
+
+// Borrowed services installed by GameInit. A missing player skips a new
+// weather start; missing or invalid viewport dimensions use 800 by 600.
+struct MWeatherHost {
+	bool (*ReadOrigin)(int& x, int& y) = nullptr; // player position in pixels
+	int (*Width)() = nullptr;
+	int (*Height)() = nullptr;
+};
 
 
 //----------------------------------------------------------------------
@@ -112,6 +121,8 @@ class MAP_EFFECT {
 //----------------------------------------------------------------------
 class MWeather {
 	public :
+		static const MWeatherHost* SetHost(const MWeatherHost* host);
+
 		MWeather();
 		~MWeather();
 
@@ -185,6 +196,12 @@ class MWeather {
 
 		// temp(?)
 		BYTE			m_MoreEffectCount;
+
+	private :
+		static bool HostOrigin(int& x, int& y);
+		static int HostWidth();
+		static int HostHeight();
+		static const MWeatherHost* s_pHost;
 };
 
 

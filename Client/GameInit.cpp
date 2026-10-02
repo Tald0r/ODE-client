@@ -46,6 +46,8 @@
 #include "MMoneyManager.h"
 #include "MPriceManager.h"
 #include "MChatManager.h"
+#include "MWeather.h"
+#include "MViewDef.h"
 #include "MTradeManager.h"
 #include "UIMessageManager.h"
 #include "MStorage.h"
@@ -2670,6 +2672,7 @@ void ReleaseAllObjects()
 	// subsequent static teardown; a later initialization installs the host again.
 	MItem::SetHost(nullptr);
 	MChatManager::SetHost(nullptr);
+	MWeather::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2961,6 +2964,22 @@ static bool	ChatFilteringCurse()
 
 static const MChatHost	s_ChatHost = {
 	.FilteringCurse		= ChatFilteringCurse,
+};
+
+// Particle simulation uses pixels and viewport bounds without owning a player
+// or renderer. Read both from live state each time the library asks.
+static bool WeatherOrigin(int& x, int& y)
+{
+	if (!g_pPlayer) return false;
+	x = g_pPlayer->GetX() * TILE_X;
+	y = g_pPlayer->GetY() * TILE_Y;
+	return true;
+}
+
+static const MWeatherHost s_WeatherHost = {
+	.ReadOrigin = WeatherOrigin,
+	.Width = []() { return static_cast<int>(g_GameRect.right); },
+	.Height = []() { return static_cast<int>(g_GameRect.bottom); },
 };
 
 // Live creature actions used by the library-owned party roster.
@@ -3277,6 +3296,7 @@ InitGameObject()
 	Wire::SetHost(&s_WireHost);
 	MPriceManager::SetHost(&s_PriceHost);
 	MChatManager::SetHost(&s_ChatHost);
+	MWeather::SetHost(&s_WeatherHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 

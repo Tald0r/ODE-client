@@ -218,7 +218,8 @@ check () {
 # 434: MFunctionManager and MRequestMode join gamemodel unchanged (task 4.20).
 # 433: MathTable joins gamemodel unchanged (task 4.21).
 # 432: ServerInfoFileParser joins gamemodel after dropping MinTr (task 4.22).
-R1_BASELINE=432
+# 431: MWeather joins gamemodel behind its origin/viewport host (task 4.23).
+R1_BASELINE=431
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -270,7 +271,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 432: callback dispatch and request modes join gamemodel (task 4.20).
 	# 431: effect math joins gamemodel (task 4.21).
 	# 430: dimension-specific server configuration joins gamemodel (task 4.22).
-	R1_NINJA_BASELINE=430
+	# 429: weather simulation joins gamemodel (task 4.23).
+	R1_NINJA_BASELINE=429
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
