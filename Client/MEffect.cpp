@@ -296,6 +296,19 @@ MEffect::IsBeforeFrame(DWORD deadline) const
 }
 
 void
+MEffect::LimitRemainingFrames(DWORD frames)
+{
+	DWORD now;
+	if (!ReadCurrentFrame(now))
+	{
+		m_EndFrame = 0;
+		return;
+	}
+	const DWORD latest = now + frames;
+	if (m_EndFrame > latest) m_EndFrame = latest;
+}
+
+void
 MEffect::SetDelayFrame(DWORD frame)
 {
 	DWORD now;

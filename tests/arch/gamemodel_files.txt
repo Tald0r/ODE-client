@@ -478,3 +478,7 @@ Client/MSkipEffect.h
 # Eight-way facing selection shared by the view and projectile targeting (4.47).
 Client/DirectionSelection.cpp
 Client/DirectionSelection.h
+
+# Complete linear effects, including arrival, HALO lifetime and animation (4.48).
+Client/MLinearEffect.cpp
+Client/MLinearEffect.h
