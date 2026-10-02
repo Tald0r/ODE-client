@@ -2172,11 +2172,11 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_falling_effect_generator.cpp`.
 
-- [ ] **4.57 Rising-effect generation:** `MRisingEffectGenerator` creates
+- [x] **4.57 Rising-effect generation:** `MRisingEffectGenerator` creates
   real linear projectiles and firework patterns in `gamemodel`, behind borrowed
   sprite metadata and a consuming zone queue installed and cleared by GameInit.
-  > **Status:** in progress (extraction and ownership verified; boundary
-  > arithmetic fixes remain).
+  > **Status:** done 2026-10-02; production patterns, target ownership and
+  > boundary arithmetic covered by library tests.
   > Ordinary effects rise from the source by speed times duration. Volley and
   > dragon actions create three shots; storm creates four. Accepted shot index 1
   > owns the caller's original target, while other accepted shots copy it.
@@ -2185,6 +2185,9 @@ rounds settled* for the host rules). Test fixtures share
   > when no target was supplied; rejected originals remain with the caller.
   > Missing metadata rejects before construction; missing queue services destroy
   > each unlinked effect. Readers are guarded and re-read per operation.
+  > Destination offsets clamp to the integer range. Side-speed calculations
+  > retain the existing truncation points with widened integer intermediates;
+  > zero duration gives side shots zero speed. Float storage remains unchanged.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_rising_effect_generator.cpp`.
 

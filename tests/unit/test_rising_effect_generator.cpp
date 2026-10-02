@@ -527,3 +527,136 @@ TEST(RisingEffectGenerator, MissingPatternQueuesLeaveTargetsAvailableForCallerCl
 	}
 	CHECK(effects.empty()); CHECK_EQ(0, submissions);
 }
+
+TEST(RisingEffectGenerator, OrdinaryAscentBoundsTheDestinationHeight)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	auto info = Info(); info.z0 = top - 127; info.step = 255; info.count = 2;
+	CHECK(generator.Generate(info));
+	CHECK_EQ(top - 127, effects.front()->GetPixelZ());
+	CHECK(!effects.front()->Update());
+	CHECK_EQ(top, effects.front()->GetPixelZ());
+	CHECK_EQ(0, effects.front()->GetEndFrame()); CHECK_EQ(0, effects.front()->GetFrame());
+}
+
+TEST(RisingEffectGenerator, VolleyBoundsBothHorizontalEdgesAndTheDestinationHeight)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	const int bottom = (std::numeric_limits<int>::min)();
+	for (int source : {top, bottom})
+	{
+		submissions = 0;
+		auto target = Target(); auto info = Info(SKILL_FIRE_CRACKER_VOLLEY_1);
+		info.x0 = source; info.z0 = top; info.pEffectTarget = target.get();
+		CHECK(generator.Generate(info)); target.release();
+		CHECK_EQ(3, effects.size());
+		const int x[] = {source == top ? top : bottom + 92, source,
+			source == top ? top - 92 : bottom};
+		for (int i = 0; i < 3; ++i)
+		{
+			CHECK_EQ(x[i], effects[i]->GetEffectTarget()->GetX());
+			CHECK_EQ(top, effects[i]->GetEffectTarget()->GetZ());
+		}
+		effects.clear();
+	}
+}
+
+TEST(RisingEffectGenerator, StormBoundsInnerAndOuterEndpoints)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)();
+	const int bottom = (std::numeric_limits<int>::min)();
+	for (int source : {top, bottom})
+	{
+		submissions = 0;
+		auto target = Target(); auto info = Info(SKILL_FIRE_CRACKER_STORM);
+		info.step = 9; info.count = 31; info.x0 = source; info.z0 = top;
+		info.pEffectTarget = target.get();
+		CHECK(generator.Generate(info)); target.release();
+		CHECK_EQ(4, effects.size());
+		const int x[] = {source == top ? top : bottom + 48,
+			source == top ? top : bottom + 139,
+			source == top ? top - 139 : bottom,
+			source == top ? top - 48 : bottom};
+		for (int i = 0; i < 4; ++i)
+		{
+			CHECK_EQ(x[i], effects[i]->GetEffectTarget()->GetX());
+			CHECK_EQ(top, effects[i]->GetEffectTarget()->GetZ());
+		}
+		effects.clear();
+	}
+}
+
+TEST(RisingEffectGenerator, LongFireworksKeepFiniteSideSpeedsAndRise)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	for (const auto action : {SKILL_FIRE_CRACKER_VOLLEY_1, SKILL_FIRE_CRACKER_STORM})
+	{
+		submissions = 0;
+		auto target = Target(); auto info = Info(action);
+		info.step = 255; info.count = (std::numeric_limits<WORD>::max)();
+		info.z0 = 0; info.pEffectTarget = target.get();
+		CHECK(generator.Generate(info)); target.release();
+		for (auto& effect : effects)
+		{
+			CHECK(effect->GetStepPixel() >= 254 && effect->GetStepPixel() <= 255);
+			CHECK(effect->GetEffectTarget()->GetZ() > 14000000);
+			CHECK(effect->Update()); CHECK(effect->GetPixelZ() > 200);
+		}
+		effects.clear();
+	}
+}
+
+TEST(RisingEffectGenerator, ZeroDurationFireworksExpireWithoutUndefinedSideSpeeds)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	for (const auto action : {SKILL_FIRE_CRACKER_VOLLEY_1, SKILL_FIRE_CRACKER_STORM})
+	{
+		submissions = 0;
+		auto info = Info(action); info.count = 0;
+		CHECK(generator.Generate(info));
+		for (std::size_t i = 0; i < effects.size(); ++i)
+		{
+			CHECK_EQ(action == SKILL_FIRE_CRACKER_VOLLEY_1 && i == 1 ? 10 : 0,
+				effects[i]->GetStepPixel());
+			CHECK_EQ(99, effects[i]->GetEndFrame());
+			CHECK(!effects[i]->Update()); CHECK_EQ(12, effects[i]->GetPixelZ());
+		}
+		effects.clear();
+	}
+}
+
+TEST(RisingEffectGenerator, ShortFireworksRetainTheirTruncatedSideSpeed)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	for (const auto action : {SKILL_FIRE_CRACKER_VOLLEY_1, SKILL_FIRE_CRACKER_STORM})
+	{
+		submissions = 0;
+		auto info = Info(action); info.step = 1; info.count = 1;
+		CHECK(generator.Generate(info));
+		for (std::size_t i = 0; i < effects.size(); ++i)
+			CHECK_EQ(action == SKILL_FIRE_CRACKER_VOLLEY_1 && i == 1 ? 1 : 0,
+				effects[i]->GetStepPixel());
+		effects.clear();
+	}
+}
+
+TEST(RisingEffectGenerator, AscentFromTheLowerLimitPreservesFloatRoundingAndArrival)
+{
+	World world;
+	MRisingEffectGenerator generator;
+	const int bottom = (std::numeric_limits<int>::min)();
+	auto info = Info(); info.z0 = bottom; info.step = 255; info.count = 2;
+	CHECK(generator.Generate(info));
+	CHECK(effects.front()->Update()); CHECK_EQ(bottom + 256, effects.front()->GetPixelZ());
+	CHECK(!effects.front()->Update()); CHECK_EQ(bottom + 512, effects.front()->GetPixelZ());
+	CHECK_EQ(104, effects.front()->GetEndLinkFrame());
+}
