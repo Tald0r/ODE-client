@@ -22,6 +22,7 @@ class MJusticeAttackManager {
 
 		void		Release();
 		
+		// Null names are ignored and never match an entry.
 		void		AddCreature(const char* pName);
 		bool		RemoveCreature(const char* pName);
 		bool		HasCreature(const char* pName) const;

@@ -42,6 +42,9 @@ MJusticeAttackManager::Release()
 void		
 MJusticeAttackManager::AddCreature(const char* pName)
 {
+	if (pName == NULL)
+		return;
+
 	m_Creatures.insert(std::string(pName));
 }
 
@@ -51,6 +54,9 @@ MJusticeAttackManager::AddCreature(const char* pName)
 bool		
 MJusticeAttackManager::RemoveCreature(const char* pName)
 {
+	if (pName == NULL)
+		return false;
+
 	auto iName = m_Creatures.find( std::string(pName) );
 
 	if (iName != m_Creatures.end())
@@ -69,6 +75,9 @@ MJusticeAttackManager::RemoveCreature(const char* pName)
 bool
 MJusticeAttackManager::HasCreature(const char* pName) const
 {
+	if (pName == NULL)
+		return false;
+
 	auto iName = m_Creatures.find( std::string(pName) );
 
 	if (iName != m_Creatures.end())

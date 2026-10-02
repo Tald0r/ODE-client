@@ -218,3 +218,34 @@ TEST(JusticeAttack, PacketsCanRepopulateTheRosterAfterReset)
 	CHECK(!fixture.roster.HasCreature("Slayer"));
 	CHECK(!fixture.roster.HasCreature("Vampire"));
 }
+
+// MCreature::GetName() may be null before a name is assigned. Null is
+// distinct from the empty string the existing C-string API can store.
+TEST(JusticeAttack, NullNameIsNeverATarget)
+{
+	MJusticeAttackManager roster;
+	roster.AddCreature("");
+	roster.AddCreature("Slayer");
+	CHECK(!roster.HasCreature(nullptr));
+	CHECK(roster.HasCreature(""));
+	CHECK(roster.HasCreature("Slayer"));
+}
+
+TEST(JusticeAttack, NullNameCannotRemoveEntries)
+{
+	MJusticeAttackManager roster;
+	roster.AddCreature("");
+	roster.AddCreature("Slayer");
+	CHECK(!roster.RemoveCreature(nullptr));
+	CHECK(roster.HasCreature(""));
+	CHECK(roster.HasCreature("Slayer"));
+}
+
+TEST(JusticeAttack, NullNameCannotBeAdded)
+{
+	MJusticeAttackManager roster;
+	roster.AddCreature("Slayer");
+	roster.AddCreature(nullptr);
+	CHECK(!roster.HasCreature(""));
+	CHECK(roster.HasCreature("Slayer"));
+}

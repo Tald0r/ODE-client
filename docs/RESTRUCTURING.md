@@ -1673,8 +1673,9 @@ rounds settled* for the host rules). Test fixtures share
   > without a frame clock, player or view. Unobserved per-name timestamps and
   > an unused config include are removed; the remove handler includes the
   > library logger directly. The manager still owns its global, and the
-  > executable retains allocation, reset and teardown. R1 is
-  > 428 Windows / 426 Ninja.
+  > executable retains allocation, reset and teardown. Null names from an
+  > unnamed creature are ignored and never match an entry; empty-string
+  > behavior is preserved. R1 is 428 Windows / 426 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_justice_attack.cpp`, linking the production manager and
     running both handlers on packets read through their real factories.
