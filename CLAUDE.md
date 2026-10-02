@@ -107,11 +107,13 @@ effects, and dimension-specific login/reconnect configuration
 with player origin and viewport dimensions supplied by `MWeatherHost`), and
 login endpoint selection (`SelectLoginEndpoint`, before DNS/connection), and
 the self-defense target roster (`MJusticeAttackManager`), and per-world
-character-selection settings (`PCConfigTable`); with the
+character-selection settings (`PCConfigTable`), and creature name tables and
+selection (`CreatureNameSelection`, used by `MCreature` for titles and
+hallucination names, including the operator-prefix exception); with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
-4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25 and 4.26),
+4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25, 4.26 and 4.27),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

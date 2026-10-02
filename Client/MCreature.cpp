@@ -766,8 +766,6 @@ MCreature::MCreature()
 	SetStatus( MODIFY_MAX_HP, 100 );
 	SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 
-	m_LevelName = 0;
-
 	m_GuildNumber = -1;
 	m_nUnionGuildID = 0;
 
@@ -818,8 +816,7 @@ MCreature::MCreature()
 	m_bPlayerParty = false;
 
 	m_bHallu = false;
-//	m_HalluName = 0;
-	m_HalluName = rand()%g_pMonsterNameTable->GetLastNameSize();
+	m_NameSelection.SelectHallucinationName(*g_pMonsterNameTable, rand());
 
 	m_RegenDelayTime = 0;
 	m_RegenNextTime = MonotonicClock::TimePoint();
@@ -3037,12 +3034,7 @@ void
 MCreature::SetLevelName(int ln)
 {
 	(void)ln;
-	// slayer이면 기술 레벨에 따라서...
-
-	// vampire이면 레벨에 따라서?
-
-	// 
-	m_LevelName = rand() % g_pLevelNameTable->GetSize();
+	m_NameSelection.SelectLevelName(*g_pLevelNameTable, rand());
 }
 
 //----------------------------------------------------------------------
@@ -3051,7 +3043,7 @@ MCreature::SetLevelName(int ln)
 const char*			
 MCreature::GetLevelName() const
 {
-	return (*g_pLevelNameTable)[m_LevelName].GetString();
+	return m_NameSelection.GetLevelName(*g_pLevelNameTable);
 }
 
 //----------------------------------------------------------------------
@@ -10031,8 +10023,6 @@ MCreature::SetHalluCreature(TYPE_CREATURETYPE type)
 	// 색깔 - 몹인 경우만.. 설정해준다.
 	m_HalluColorBody	= (*g_pCreatureTable)[m_CreatureType].ColorSet;
 
-//	m_HalluName = rand()%g_pMonsterNameTable->GetLastNameSize();
-
 	m_bHallu = true;
 }
 
@@ -10104,10 +10094,8 @@ MCreature::DetermineHalluActionFrame()
 const char*			
 MCreature::GetHalluName() const
 { 
-	if( strncmp( GetName(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetString(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetLength() ) == 0 )
-//		strstr(GetName(), "운영자") != NULL)
-		return GetName();
-	return g_pMonsterNameTable->GetLastName(m_HalluName);
+	return m_NameSelection.GetHallucinationName(GetName(),
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME], g_pMonsterNameTable);
 }
 
 //----------------------------------------------------------------------
