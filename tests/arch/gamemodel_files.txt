@@ -430,3 +430,8 @@ Client/DelayedSoundQueue.h
 # GameMain retains the shared state; MZone applies returned audio actions.
 Client/AmbientSoundState.cpp
 Client/AmbientSoundState.h
+
+# Help strings and per-entry display tracking (4.37).
+Client/MHelpStringTable.cpp
+Client/MHelpStringTable.h
+Client/MHelpDef.h

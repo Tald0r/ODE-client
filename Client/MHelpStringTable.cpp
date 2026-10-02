@@ -1,86 +1,62 @@
-//---------------------------------------------------------------------------
-// MHelpStringTable.cpp
-//---------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MHelpStringTable.h"
+#include <algorithm>
+#include <utility>
 
-//---------------------------------------------------------------------------
-// Global
-//---------------------------------------------------------------------------
-MHelpStringTable*	g_pHelpStringTable = NULL;
+MHelpStringTable* g_pHelpStringTable = NULL;
 
-//---------------------------------------------------------------------------
-//
-// constructor / destructor
-//
-//---------------------------------------------------------------------------
-MHelpStringTable::MHelpStringTable()
+MHelpStringTable::MHelpStringTable() = default;
+MHelpStringTable::~MHelpStringTable() = default;
+
+void MHelpStringTable::Swap(MHelpStringTable& other) noexcept
 {
+	std::swap(m_Size, other.m_Size);
+	std::swap(m_pTypeInfo, other.m_pTypeInfo);
+	m_Displayed.swap(other.m_Displayed);
 }
 
-MHelpStringTable::~MHelpStringTable()
+void MHelpStringTable::Init(int size)
 {
-}
-
-//---------------------------------------------------------------------------
-//
-// member functions
-//
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-// Init
-//---------------------------------------------------------------------------
-void		
-MHelpStringTable::Init( int size )
-{
-	MStringArray::Init( size );
-
-	m_Displayed.Init( size );
-
-	ClearDisplayed();
-}
-
-//---------------------------------------------------------------------------
-// Clear Displayed
-//---------------------------------------------------------------------------
-void		
-MHelpStringTable::ClearDisplayed()
-{
-	for (int i=0; i<m_Displayed.GetSize(); i++)
+	// Preserve the existing nonpositive-size reset: keep the text, clear flags.
+	if (size <= 0)
 	{
-		m_Displayed.Set(i, false);
+		ClearDisplayed();
+		return;
 	}
+	MHelpStringTable next;
+	next.MStringArray::Init(size);
+	next.m_Displayed.assign(static_cast<std::size_t>(size), false);
+	Swap(next);
 }
 
-//---------------------------------------------------------------------------
-// Load From File
-//---------------------------------------------------------------------------
-void			
-MHelpStringTable::LoadFromFile(std::ifstream& file)
+void MHelpStringTable::Release()
 {
-	MStringArray::LoadFromFile( file );
-
-	m_Displayed.Init( m_Size );
-
-	ClearDisplayed();
+	MStringArray::Release();
+	m_Displayed.clear();
 }
 
-//---------------------------------------------------------------------------
-// operator []
-//---------------------------------------------------------------------------
-const MString&
-MHelpStringTable::operator [] (int type)		
+void MHelpStringTable::ClearDisplayed()
 {
-	m_Displayed.Set(type, true);
+	std::fill(m_Displayed.begin(), m_Displayed.end(), false);
+}
+
+void MHelpStringTable::LoadFromFile(std::ifstream& file)
+{
+	MHelpStringTable next;
+	next.MStringArray::LoadFromFile(file);
+	if (!file.good()) return;
+	next.m_Displayed.assign(static_cast<std::size_t>(next.m_Size), false);
+	Swap(next);
+}
+
+const MString& MHelpStringTable::operator[](int type)
+{
+	if (type >= 0 && type < m_Size && static_cast<std::size_t>(type) < m_Displayed.size())
+		m_Displayed[type] = true;
 	return MStringArray::Get(type);
 }
 
-//---------------------------------------------------------------------------
-// get
-//---------------------------------------------------------------------------
-const MString&
-MHelpStringTable::Get(int type)				
-{ 
-	m_Displayed.Set(type, true);
-	return MStringArray::Get(type);
+const MString& MHelpStringTable::Get(int type)
+{
+	return (*this)[type];
 }
