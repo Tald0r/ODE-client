@@ -388,3 +388,10 @@ Client/MShopTemplate.cpp
 Client/MShopTemplateTable.h
 Client/NPCShopBuilder.cpp
 Client/NPCShopBuilder.h
+
+# NPC dialogue lookup/substitution and its generated English overlay (4.30).
+# All four files move unchanged after removing unused executable includes.
+Client/MNPCScriptTable.cpp
+Client/MNPCScriptTable.h
+Client/MNPCScriptTableEnglish.cpp
+Client/MNPCScriptTableEnglish.h

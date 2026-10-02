@@ -41,7 +41,10 @@ typedef std::map<std::string,ScriptParameter*>			HashMapScriptParameter;
 //---------------------------------------------------------------------------
 class NPC_SCRIPT {
 	public :
-		typedef CTypeTable<MString>		STRING_TABLE;		
+		typedef CTypeTable<MString>		STRING_TABLE;
+		NPC_SCRIPT() = default;
+		NPC_SCRIPT(const NPC_SCRIPT&) = delete;
+		NPC_SCRIPT& operator=(const NPC_SCRIPT&) = delete;
 
 	public :		// public public ㅋㅋ~~
 		MString				OwnerID;
@@ -62,7 +65,12 @@ class NPC_SCRIPT {
 //---------------------------------------------------------------------------
 class MNPCScriptTable : public CTypeMap2<NPC_SCRIPT> {
 	public :
+		MNPCScriptTable() = default;
+		MNPCScriptTable(const MNPCScriptTable&) = delete;
+		MNPCScriptTable& operator=(const MNPCScriptTable&) = delete;
 
+		// Saves validate all text before writing to the supplied stream.
+		// Reloads clear old scripts and publish only complete tables.
 		void		SaveToFile(std::ofstream& file);
 		void		LoadFromFile(std::ifstream& file);
 
@@ -73,6 +81,8 @@ class MNPCScriptTable : public CTypeMap2<NPC_SCRIPT> {
 		const char*	GetContent(int scriptID, int contentID) const;
 
 		// 해당 스크립트 아이디에 파라미터값을 replace 한다.
+		// Missing text clears str; null parameters leave their markers intact.
+		// Keys run in map order, without rescanning a key's own replacement.
 		void GetContentParameter(int scriptID, int contentID,HashMapScriptParameter para,std::string &str);
 		void GetSubjectParameter(int scriptID, int subjectID,HashMapScriptParameter para,std::string &str);
 };
