@@ -1,10 +1,12 @@
 #include "test_framework.h"
 #include "MInteractionObjectTable.h"
 
+#include <array>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -158,4 +160,126 @@ TEST(InteractionMetadata, AZeroCountClearsAnExistingTable)
 	CHECK(Load(table, {0, 0, 0, 0}));
 	CHECK_EQ(0, table.GetSize());
 	CHECK(Save(table) == Bytes({0, 0, 0, 0}));
+}
+
+TEST(InteractionMetadata, DirectConstructionInitializesEveryField)
+{
+	alignas(Info) std::array<unsigned char, sizeof(Info)> storage;
+	storage.fill(0xff);
+	auto* info = ::new (storage.data()) Info;
+	CheckRecord(*info, 0, 0, 0, 0);
+	info->~Info();
+}
+
+TEST(InteractionMetadata, SavingDoesNotExposeObjectPaddingInTheSoundSlot)
+{
+	alignas(Info) std::array<unsigned char, sizeof(Info)> storage;
+	storage.fill(0xa5);
+	auto* info = ::new (storage.data()) Info;
+	info->Type = 0xfe; info->FrameID = 0x1234;
+	info->Property = 0x12345678; info->SoundID = 0xabcd;
+	CHECK(Save(*info) == record);
+	info->~Info();
+}
+
+TEST(InteractionMetadata, SavingCanonicalizesLegacySoundPaddingWithoutChangingTheId)
+{
+	Bytes bytes = record;
+	bytes[9] = 0x55; bytes[10] = 0xaa;
+	Info info{};
+	CHECK(Load(info, bytes));
+	CHECK_EQ(0xabcd, info.SoundID);
+	CHECK(Save(info) == record);
+}
+
+TEST(InteractionMetadata, EveryTruncatedRecordPreservesAllPreviousFields)
+{
+	for (std::size_t size = 0; size < record.size(); ++size)
+	{
+		Info info{};
+		info.Type = 3; info.FrameID = 4; info.Property = -5; info.SoundID = 6;
+		CHECK(!Load(info, Bytes(record.begin(), record.begin() + size)));
+		CheckRecord(info, 3, 4, -5, 6);
+	}
+}
+
+TEST(InteractionMetadata, ThrowingReadsPreserveAllPreviousFields)
+{
+	for (std::size_t size : {1u, 3u, 7u, 9u, 10u})
+	{
+		Info info{};
+		info.Type = 3; info.FrameID = 4; info.Property = -5; info.SoundID = 6;
+		MetadataFile fixture(Bytes(record.begin(), record.begin() + size));
+		std::ifstream input(fixture.path, std::ios::binary);
+		input.exceptions(std::ios::failbit | std::ios::badbit);
+		bool threw = false;
+		try { info.LoadFromFile(input); }
+		catch (const std::ios_base::failure&) { threw = true; }
+		CHECK(threw);
+		CheckRecord(info, 3, 4, -5, 6);
+	}
+}
+
+TEST(InteractionMetadata, EveryPropertyBitIsSavedWithoutSignOrPaddingChanges)
+{
+	struct Case { int property; Bytes bytes; };
+	const Case cases[]{
+		{0, {0, 0, 0, 0}}, {1, {1, 0, 0, 0}}, {-1, {255, 255, 255, 255}},
+		{2147483647, {255, 255, 255, 127}}, {(-2147483647 - 1), {0, 0, 0, 128}}
+	};
+	for (const auto& example : cases)
+	{
+		Info info{};
+		info.Type = 0xfe; info.FrameID = 0x1234;
+		info.Property = example.property; info.SoundID = 0xabcd;
+		Bytes expected = record;
+		for (std::size_t i = 0; i < 4; ++i) expected[3 + i] = example.bytes[i];
+		CHECK(Save(info) == expected);
+		Info reloaded{};
+		CHECK(Load(reloaded, expected));
+		CheckRecord(reloaded, 0xfe, 0x1234, example.property, 0xabcd);
+	}
+}
+
+TEST(InteractionMetadata, ClosedAndPrefailedStreamsKeepTheExistingRecord)
+{
+	Info info{};
+	CHECK(Load(info, record));
+	std::ifstream closed;
+	info.LoadFromFile(closed);
+	CHECK(closed.fail());
+	CheckRecord(info, 0xfe, 0x1234, 0x12345678, 0xabcd);
+	MetadataFile fixture(Bytes(11, 0));
+	std::ifstream failed(fixture.path, std::ios::binary);
+	failed.setstate(std::ios::failbit);
+	info.LoadFromFile(failed);
+	CHECK(failed.fail());
+	CheckRecord(info, 0xfe, 0x1234, 0x12345678, 0xabcd);
+}
+
+TEST(InteractionMetadata, ACompleteReloadAfterFailureReplacesEveryField)
+{
+	Info info{};
+	CHECK(Load(info, record));
+	CHECK(!Load(info, {0, 0, 0, 0}));
+	CheckRecord(info, 0xfe, 0x1234, 0x12345678, 0xabcd);
+	CHECK(Load(info, Bytes(11, 0)));
+	CheckRecord(info, 0, 0, 0, 0);
+}
+
+TEST(InteractionMetadata, AFailedSaveReportsStreamFailureWithoutChangingFields)
+{
+	Info info{};
+	CHECK(Load(info, record));
+	std::ofstream closed;
+	info.SaveToFile(closed);
+	CHECK(closed.fail());
+	CheckRecord(info, 0xfe, 0x1234, 0x12345678, 0xabcd);
+	std::ofstream throwing;
+	throwing.exceptions(std::ios::failbit | std::ios::badbit);
+	bool threw = false;
+	try { info.SaveToFile(throwing); }
+	catch (const std::ios_base::failure&) { threw = true; }
+	CHECK(threw);
+	CheckRecord(info, 0xfe, 0x1234, 0x12345678, 0xabcd);
 }

@@ -1873,8 +1873,11 @@ rounds settled* for the host rules). Test fixtures share
 - [x] **4.38 Interaction-object metadata:** `MInteractionObjectTable` joins
   `gamemodel` with the existing record and table interfaces.
   > **Status:** done (this commit).
-  > `GameInitInfo` retains loading the metadata file. R1 is 414 Windows /
-  > 412 Ninja.
+  > `GameInitInfo` retains loading the metadata file. Records initialize all
+  > fields and publish only complete reads. Their eleven-byte little-endian
+  > format keeps the legacy four-byte sound slot: the low word is the ID and
+  > the upper word, historically object padding, is ignored on read and zero
+  > on save. Generic table reload semantics remain. R1 is 414 Windows / 412 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_interaction_metadata.cpp`, using production records.
 

@@ -30,15 +30,18 @@
 //----------------------------------------------------------------------
 class INTERACTIONOBJECTTABLE_INFO {
 	public :
-		BYTE					Type;			// InteractionObject Type
-		TYPE_FRAMEID			FrameID;		// FrameID		
-		int						Property;		// 속성
-		TYPE_SOUNDID			SoundID;		// 상태를 변경했을 때의 SoundID
+		BYTE					Type = 0;		// InteractionObject Type
+		TYPE_FRAMEID			FrameID = 0;	// FrameID
+		int						Property = 0;	// 속성
+		TYPE_SOUNDID			SoundID = 0;	// 상태를 변경했을 때의 SoundID
 
 	public :
 		//-------------------------------------------------------
 		// File I/O
 		//-------------------------------------------------------
+		// Eleven bytes, little-endian. The legacy sound slot is four bytes:
+		// read its low word and write its upper word as zero, never padding.
+		// An incomplete read leaves the previous record intact.
 		void			SaveToFile(std::ofstream& file);		
 		void			LoadFromFile(std::ifstream& file);
 		
