@@ -2,14 +2,36 @@
 // MParabolaEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
-#include "MTopView.h"
-#include "MLinearEffect.h"
 #include "MParabolaEffect.h"
-#include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "PacketFunction.h"
 #include "SkillDef.h"
+#include <utility>
+
+const MParabolaEffectHost* MParabolaEffect::s_pHost = nullptr;
+
+const MParabolaEffectHost* MParabolaEffect::SetHost(const MParabolaEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MParabolaEffect::ReadSmokeSprite(MParabolaSmokeSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->SmokeSprite && s_pHost->SmokeSprite(sprite);
+}
+
+void MParabolaEffect::QueueSmoke(std::unique_ptr<MEffect> smoke, DWORD waitCount)
+{
+	if (s_pHost && s_pHost->QueueSmoke)
+		s_pHost->QueueSmoke(std::move(smoke), waitCount);
+}
+
+void MParabolaEffect::CannonadeImpact(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_pHost && s_pHost->CannonadeImpact) s_pHost->CannonadeImpact(x, y);
+}
+
 //----------------------------------------------------------------------
 // 
 // constructor/destructor
@@ -50,27 +72,16 @@ MParabolaEffect::SetTarget(int x, int y, int z, WORD speed)
 void
 MParabolaEffect::MakeCannonadeSmoke()
 {
-	MEffect*	pEffect;
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_CANNONADE_SMOKE].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_CANNONADE_SMOKE].FrameID;
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	pEffect = new MEffect(bltType);
-			
-	pEffect->SetFrameID( frameID, maxFrame );	
-
-	pEffect->SetPixelPosition( static_cast<int>(m_PixelX), static_cast<int>(m_PixelY), static_cast<int>(m_PixelZ));
-	pEffect->SetZ(static_cast<int>(m_PixelZ));			
-//	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-	pEffect->SetCount( 9 );			// 지속되는 Frame
-			
-	// 방향 설정
-	pEffect->SetDirection( GetDirection());
-	pEffect->SetMulti(true);
-	g_pZone->AddEffect( pEffect,10);
-	return;
+	MParabolaSmokeSprite sprite;
+	if (!ReadSmokeSprite(sprite)) return;
+	auto effect = std::make_unique<MEffect>(sprite.bltType);
+	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+	effect->SetPixelPosition(static_cast<int>(m_PixelX), static_cast<int>(m_PixelY), static_cast<int>(m_PixelZ));
+	effect->SetZ(static_cast<int>(m_PixelZ));
+	effect->SetCount(9);
+	effect->SetDirection(GetDirection());
+	effect->SetMulti(true);
+	QueueSmoke(std::move(effect), 10);
 }
 
 //----------------------------------------------------------------------
@@ -81,7 +92,7 @@ MParabolaEffect::MakeCannonadeSmoke()
 bool
 MParabolaEffect::Update()
 {	
-	if (g_CurrentFrame < m_EndFrame)
+	if (!IsEnd())
 	{
 		m_Motion.Advance(*this, m_PixelX, m_PixelY, m_PixelZ, m_StepPixel);
 
@@ -100,8 +111,7 @@ MParabolaEffect::Update()
 		//	if(GetFrameID() == EFFECTSPRITETYPE_CANNONADE_BALL)
 			if(GetActionInfo() == SKILL_CANNONADE)
 			{
-				ExecuteActionInfoFromMainNode(RESULT_SKILL_GUN_SHOT_GUIDANCE_BOMB,m_TargetTileX, m_TargetTileY, 0,0,	0,	
-						m_TargetTileX, m_TargetTileY, 0, 1000, NULL, false);		
+				CannonadeImpact(m_TargetTileX, m_TargetTileY);
 
 			}
 			return false;
@@ -119,7 +129,7 @@ MParabolaEffect::Update()
 
 		if (m_BltType == BLT_EFFECT)
 		{
-			m_Light = g_pTopView->m_EffectAlphaFPK[m_FrameID][m_Direction][m_CurrentFrame].GetLight();
+			RefreshLight();
 		}
 
 		//--------------------------------

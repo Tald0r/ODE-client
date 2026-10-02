@@ -81,6 +81,11 @@
 #include "MEffectTarget.h"
 #include "MEffect.h"
 #include "MGuidanceEffect.h"
+#include "MParabolaEffect.h"
+#include "MEffectSpriteTypeTable.h"
+#include "EffectSpriteTypeDef.h"
+#include "PacketFunction.h"
+#include "SkillDef.h"
 #include "RequestFileManager.h"
 #include "Packet/RequestServerPlayer.h"
 #include "RequestUserManager.h"
@@ -2609,6 +2614,7 @@ void ReleaseAllObjects()
 	MEffectTarget::SetHost(nullptr);
 	MEffect::SetHost(nullptr);
 	MGuidanceEffect::SetHost(nullptr);
+	MParabolaEffect::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2972,6 +2978,27 @@ static const MGuidanceEffectHost s_GuidanceEffectHost = {
 	},
 };
 
+static const MParabolaEffectHost s_ParabolaEffectHost = {
+	.SmokeSprite = [](MParabolaSmokeSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			g_pEffectSpriteTypeTable->GetSize() <= EFFECTSPRITETYPE_CANNONADE_SMOKE)
+			return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_CANNONADE_SMOKE];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.QueueSmoke = [](std::unique_ptr<MEffect> smoke, DWORD waitCount) {
+		if (g_pZone) g_pZone->AddEffect(smoke.release(), waitCount);
+	},
+	.CannonadeImpact = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		ExecuteActionInfoFromMainNode(RESULT_SKILL_GUN_SHOT_GUIDANCE_BOMB,
+			x, y, 0, 0, 0, x, y, 0, 1000, nullptr, false);
+	},
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3297,6 +3324,7 @@ InitGameObject()
 	MEffectTarget::SetHost(&s_EffectTargetHost);
 	MEffect::SetHost(&s_EffectHost);
 	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
+	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 
