@@ -2,6 +2,7 @@
 // MLinearEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MTopView.h"
 #include "MTypeDef.h"
 #include "MMovingEffect.h"

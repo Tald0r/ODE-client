@@ -2,6 +2,7 @@
 // MAttachEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include <math.h>
 #include "MMovingEffect.h"
 #include "MAttachEffect.h"

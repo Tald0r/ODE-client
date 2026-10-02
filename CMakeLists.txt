@@ -845,18 +845,12 @@ endif()
 add_executable(effect_viewer
 	tools/viewers/effect_viewer/main.cpp
 	tools/viewers/effect_viewer/EffectSpriteTypeTable.cpp
-	tools/viewers/effect_viewer/stubs.cpp
-	Client/MObject.cpp
 	Client/EffectResourceContainer.cpp
-	Client/MEffect.cpp
 )
 
 target_include_directories(effect_viewer PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/Client
-	# The Client/*.cpp game sources this tool compiles resolve wire
-	# vocabulary headers (RaceType.h via MCreature.h) from Client/Packet,
-	# the same include path they compile with in the DarkEden target.
 	${CMAKE_CURRENT_SOURCE_DIR}/Client/Packet
 	${CMAKE_CURRENT_SOURCE_DIR}/Client/SpriteLib
 	${CMAKE_CURRENT_SOURCE_DIR}/Client/DXLib
@@ -865,7 +859,7 @@ target_include_directories(effect_viewer PRIVATE
 )
 
 target_link_libraries(effect_viewer PRIVATE
-	gamemodel # MEffect's shared timing state
+	gamemodel # The same effect implementation as the game and unit tests
 	SpriteLib
 	framelib
 	dxlib
@@ -876,18 +870,6 @@ target_link_libraries(effect_viewer PRIVATE
 # See sprite_viewer above for why this is needed on Windows.
 if(WIN32)
 	target_link_libraries(effect_viewer PRIVATE SDL2::SDL2main)
-endif()
-
-# This tool compiles Client/MEffect.cpp, which calls MEffectTarget through
-# its vtable, and stubs the rest of the game in stubs.cpp; the class's
-# key function is in Client/MEffectTarget.cpp, which reaches MPlayer and
-# the zone table, so the tool never links its typeinfo. That is fine
-# until UBSan's vptr check asks for the typeinfo at every virtual call
-# and the link fails. The vptr check is off for this one tool under the
-# sanitizer presets; the game and the libraries keep it.
-if(USE_UBSAN AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-	target_compile_options(effect_viewer PRIVATE -fno-sanitize=vptr)
-	target_link_options(effect_viewer PRIVATE -fno-sanitize=vptr)
 endif()
 
 set_target_properties(effect_viewer PROPERTIES

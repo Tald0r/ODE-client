@@ -2,6 +2,7 @@
 // MScreenEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MEffect.h"
 #include "MScreenEffect.h"
 #include "MTopView.h"

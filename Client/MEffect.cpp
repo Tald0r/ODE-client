@@ -3,9 +3,31 @@
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include <fstream>
-#include "DebugInfo.h"
+#include "MViewDef.h"
+#include "DebugLog.h"
+
+const MEffectHost* MEffect::s_pHost = nullptr;
+
+const MEffectHost* MEffect::SetHost(const MEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MEffect::ReadCurrentFrame(DWORD& frame)
+{
+	frame = 0;
+	if (!s_pHost || !s_pHost->CurrentFrame) return false;
+	frame = s_pHost->CurrentFrame();
+	return true;
+}
+
+char MEffect::ReadLight(BYTE bltType, TYPE_FRAMEID frameID, BYTE direction, BYTE frame)
+{
+	return s_pHost && s_pHost->Light
+		? static_cast<char>(s_pHost->Light(bltType, frameID, direction, frame)) : 0;
+}
 
 //----------------------------------------------------------------------
 // Init Static Members
@@ -110,7 +132,9 @@ MEffect::~MEffect()
 void			
 MEffect::SetCount(DWORD last, DWORD linkCount)
 { 
-	EffectTiming::SetCount(g_CurrentFrame, last, linkCount);
+	DWORD now;
+	ReadCurrentFrame(now);
+	EffectTiming::SetCount(now, last, linkCount);
 }
 //----------------------------------------------------------------------
 // Set Link
@@ -118,6 +142,12 @@ MEffect::SetCount(DWORD last, DWORD linkCount)
 void			
 MEffect::SetLink(TYPE_ACTIONINFO nActionInfo, MEffectTarget* pEffectTarget)
 {
+	if (m_pEffectTarget == pEffectTarget)
+	{
+		m_nActionInfo = nActionInfo;
+		return;
+	}
+
 	#ifdef OUTPUT_DEBUG
 		if (pEffectTarget==NULL)
 		{
@@ -177,8 +207,8 @@ void
 MEffect::AffectPosition()
 {
 	// Pixel좌표를 Sector좌표로 바꾼다.
-	m_X = MTopView::PixelToMapX( static_cast<int>(m_PixelX) );
-	m_Y = MTopView::PixelToMapY( static_cast<int>(m_PixelY) );
+	m_X = static_cast<int>(m_PixelX) / TILE_X;
+	m_Y = static_cast<int>(m_PixelY) / TILE_Y;
 }
 
 
@@ -193,7 +223,7 @@ MEffect::SetFrameID(TYPE_FRAMEID FrameID, BYTE max)
 	CAnimationFrame::SetFrameID(FrameID, max);
 
 	// EffectFrame의 밝기에 따라서 빛의 크기를 정한다.
-	m_Light = g_pTopView->GetEffectLight((BLT_TYPE)m_BltType, FrameID, m_Direction, 0);
+	m_Light = ReadLight(m_BltType, FrameID, m_Direction, 0);
 }
 
 //----------------------------------------------------------------------
@@ -205,8 +235,8 @@ MEffect::SetPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	m_X = x; 
 	m_Y = y; 
 	
-	m_PixelX = static_cast<float>(MTopView::MapToPixelX(x)); 
-	m_PixelY = static_cast<float>(MTopView::MapToPixelY(y));
+	m_PixelX = static_cast<float>(x * TILE_X);
+	m_PixelY = static_cast<float>(y * TILE_Y);
 }
 
 //----------------------------------------------------------------------
@@ -216,7 +246,7 @@ void
 MEffect::SetX(TYPE_SECTORPOSITION x)
 { 
 	m_X = x; 
-	m_PixelX = static_cast<float>(MTopView::MapToPixelX(x)); 
+	m_PixelX = static_cast<float>(x * TILE_X);
 }
 
 //----------------------------------------------------------------------
@@ -226,7 +256,7 @@ void
 MEffect::SetY(TYPE_SECTORPOSITION y)
 { 
 	m_Y = y; 
-	m_PixelY = static_cast<float>(MTopView::MapToPixelY(y)); 
+	m_PixelY = static_cast<float>(y * TILE_Y);
 }
 
 //----------------------------------------------------------------------
@@ -240,34 +270,47 @@ MEffect::Update()
 	// Frame을 바꿔준다.
 	NextFrame();
 
-	m_Light = g_pTopView->GetEffectLight((BLT_TYPE)m_BltType, m_FrameID, m_Direction, m_CurrentFrame);
+	m_Light = ReadLight(m_BltType, m_FrameID, m_Direction, m_CurrentFrame);
 		
 	// 계속 Update해도 되는가?
-	return !EffectTiming::IsEnd(g_CurrentFrame);
+	return !IsEnd();
+}
+
+bool
+MEffect::IsEnd() const
+{
+	DWORD now;
+	return !ReadCurrentFrame(now) || EffectTiming::IsEnd(now);
 }
 
 void
 MEffect::SetDelayFrame(DWORD frame)
 {
-	EffectTiming::SetDelayFrame(g_CurrentFrame, frame);
+	DWORD now;
+	ReadCurrentFrame(now);
+	EffectTiming::SetDelayFrame(now, frame);
 }
 
 bool
 MEffect::IsDelayFrame() const
 {
-	return EffectTiming::IsDelayFrame(g_CurrentFrame);
+	DWORD now;
+	return ReadCurrentFrame(now) && EffectTiming::IsDelayFrame(now);
 }
 
 void
 MEffect::SetWaitFrame(DWORD frame)
 {
-	EffectTiming::SetWaitFrame(g_CurrentFrame, frame);
+	DWORD now;
+	ReadCurrentFrame(now);
+	EffectTiming::SetWaitFrame(now, frame);
 }
 
 bool
 MEffect::IsWaitFrame() const
 {
-	return EffectTiming::IsWaitFrame(g_CurrentFrame);
+	DWORD now;
+	return ReadCurrentFrame(now) && EffectTiming::IsWaitFrame(now);
 }
 
 //----------------------------------------------------------------------

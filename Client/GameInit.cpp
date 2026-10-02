@@ -79,6 +79,7 @@
 #include "MGuildMarkManager.h"
 #include "MEventManager.h"
 #include "MEffectTarget.h"
+#include "MEffect.h"
 #include "RequestFileManager.h"
 #include "Packet/RequestServerPlayer.h"
 #include "RequestUserManager.h"
@@ -2605,6 +2606,7 @@ void ReleaseAllObjects()
 	MWeather::SetHost(nullptr);
 	MWarManager::SetHost(nullptr);
 	MEffectTarget::SetHost(nullptr);
+	MEffect::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 
@@ -2947,6 +2949,15 @@ static const MWarHost s_WarHost = {
 	},
 };
 
+static const MEffectHost s_EffectHost = {
+	.CurrentFrame = []() { return g_CurrentFrame; },
+	.Light = [](BYTE bltType, TYPE_FRAMEID frameID, BYTE direction, BYTE frame) {
+		return g_pTopView
+			? g_pTopView->GetEffectLight(static_cast<BLT_TYPE>(bltType), frameID, direction, frame)
+			: 0;
+	},
+};
+
 static const MEffectTargetHost s_EffectTargetHost = {
 	.RemoveFromPlayer = [](BYTE id) {
 		if (g_pPlayer) g_pPlayer->RemoveEffectTarget(id);
@@ -3270,6 +3281,7 @@ InitGameObject()
 	MWeather::SetHost(&s_WeatherHost);
 	MWarManager::SetHost(&s_WarHost);
 	MEffectTarget::SetHost(&s_EffectTargetHost);
+	MEffect::SetHost(&s_EffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 

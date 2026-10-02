@@ -2,6 +2,7 @@
 // MParabolaEffect.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
+#include "Client.h"
 #include "MTopView.h"
 #include "MLinearEffect.h"
 #include "MParabolaEffect.h"

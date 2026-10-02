@@ -460,3 +460,7 @@ Client/ParabolaStep.h
 # Effect lifetime, link, draw-delay and wait deadlines with explicit clocks (4.43).
 Client/EffectTiming.cpp
 Client/EffectTiming.h
+
+# Base effect state, animation and target ownership behind a frame/light host (4.44).
+Client/MEffect.cpp
+Client/MEffect.h
