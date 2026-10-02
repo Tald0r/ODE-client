@@ -61,17 +61,19 @@ MEffectTarget::MEffectTarget(BYTE max)
 	m_bResultTime = false;
 
 	m_DelayFrame	= 0;
+	m_X = m_Y = m_Z = 0;
+	m_ID = OBJECTID_NULL;
+	m_ServerID = OBJECTID_NULL;
 }
 
 MEffectTarget::~MEffectTarget() 
 { 
 	DEBUG_ADD_FORMAT("delete EffectTarget. id=%d", (int)m_EffectID);
 
-	if (m_pResult!=NULL) 
-	{
-		delete m_pResult; 
-		m_pResult = NULL;
-	}
+	m_bDestroying = true;
+	auto* result = m_pResult;
+	m_pResult = nullptr;
+	delete result;
 
 	DEBUG_ADD("del res");
 
@@ -87,12 +89,15 @@ MEffectTarget::~MEffectTarget()
 void			
 MEffectTarget::SetResult(MActionResult* pResult)
 { 
-	if (m_pResult != NULL)
+	if (m_pResult == pResult) return;
+	if (m_bDestroying)
 	{
-		delete m_pResult; 
+		delete pResult;
+		return;
 	}
-
+	auto* previous = m_pResult;
 	m_pResult = pResult;
+	delete previous;
 }
 		
 //----------------------------------------------------------------------
@@ -144,7 +149,7 @@ MPortalEffectTarget::~MPortalEffectTarget()
 void	
 MPortalEffectTarget::operator = (const MEffectTarget& target)
 {
-	(MEffectTarget)*this = target;
+	MEffectTarget::operator=(target);
 
 	if (target.GetEffectTargetType()==EFFECT_TARGET_PORTAL)
 	{

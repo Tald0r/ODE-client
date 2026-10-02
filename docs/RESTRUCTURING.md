@@ -1765,14 +1765,20 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_npc_dialogue.cpp`, using the production table, overlay,
     resource-string codec and packet parameters.
 
-- [ ] **4.31 Deferred action results and effect targets:** result-queue
+- [x] **4.31 Deferred action results and effect targets:** result-queue
   ownership and `MEffectTarget` state compile in `gamemodel`.
-  > **Status:** in progress (target-state fixes).
+  > **Status:** done (2026-10-02).
   > The owning `MActionResult` methods are split unchanged into
   > `MActionResultQueue.cpp`; concrete node actions stay executable-side.
   > `MEffectTargetHost` supplies removal from the player's non-owning roster;
   > missing services skip removal. Portal names use the library's real zone
-  > table. R1 is 420 Windows / 418 Ninja.
+  > table. Queued and active nodes have unique ownership through recursive
+  > execution, destruction and exceptions. Duplicate pointers are ignored and
+  > owning queues cannot be shallow copied. Targets initialize coordinates and
+  > object IDs, stop at their final phase and update portal base state without
+  > constructing a temporary that unregisters the target. Result replacement
+  > publishes new ownership before callbacks; destruction clears the result
+  > and discards any new result offered by callbacks. R1 is 420 Windows / 418 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_effect_results.cpp`, using the production queue and targets,
     instrumented action nodes and the real zone table.

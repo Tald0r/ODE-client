@@ -83,7 +83,7 @@ class MEffectTarget {
 		//-------------------------------------------------------
 		// 진행중인 단계
 		//-------------------------------------------------------
-		void			NextPhase()				{ m_CurrentPhase++; }
+		void			NextPhase()				{ if (m_CurrentPhase < m_MaxPhase) ++m_CurrentPhase; }
 		bool			IsEnd() const			{ return m_CurrentPhase>=m_MaxPhase; }
 		
 		// 결과를 출력해줘야 하는 시간이 지났다는 의미..
@@ -108,6 +108,8 @@ class MEffectTarget {
 		bool			IsResultEmpty() const					{ return m_pResult==NULL; }
 		bool			IsExistResult() const					{ return m_pResult!=NULL; }
 		MActionResult*	GetResult() const						{ return m_pResult; }
+		// Consumes a new result; the currently owned pointer is a no-op.
+		// Results offered during target destruction are discarded immediately.
 		void			SetResult(MActionResult* pResult);
 		void			SetResultNULL()							{ m_pResult = NULL; }
 		//TYPE_ACTIONINFO	GetResultActionInfo() const					{ return m_nResultActionInfo; }
@@ -144,6 +146,7 @@ class MEffectTarget {
 		static BYTE		s_EffectID;
 
 	private:
+		bool m_bDestroying = false;
 		static void RemoveFromPlayer(BYTE id);
 		static const MEffectTargetHost* s_pHost;
 };

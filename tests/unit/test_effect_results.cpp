@@ -6,6 +6,7 @@
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <new>
 #include <set>
 #include <stdexcept>
 #include <type_traits>
@@ -552,4 +553,186 @@ TEST(EffectResults, ReleaseDiscardsWorkAppendedByDestructors)
 	result.Release();
 	CHECK(events == std::vector<int>({-1, -2, -3}));
 	CHECK(result.IsEmpty());
+}
+
+TEST(EffectResults, NewTargetsInitializeCoordinatesAndObjectIds)
+{
+	World world;
+	alignas(MEffectTarget) unsigned char storage[sizeof(MEffectTarget)];
+	std::memset(storage, 0x7e, sizeof storage);
+	auto* target = new (storage) MEffectTarget(3);
+	CHECK_EQ(0, target->GetX());
+	CHECK_EQ(0, target->GetY());
+	CHECK_EQ(0, target->GetZ());
+	CHECK_EQ(OBJECTID_NULL, target->GetID());
+	CHECK_EQ(OBJECTID_NULL, target->GetServerID());
+	target->~MEffectTarget();
+}
+
+TEST(EffectResults, CompletedPhasesCannotAdvancePastTheEndOrWrap)
+{
+	World world;
+	for (BYTE maximum : {0, 1, 254, 255})
+	{
+		MEffectTarget target(maximum);
+		for (int step = 0; step < 600; ++step) target.NextPhase();
+		CHECK_EQ(maximum, target.GetCurrentPhase());
+		CHECK(target.IsEnd());
+	}
+}
+
+TEST(EffectResults, PortalAssignmentUpdatesBaseStateWithoutUnregisteringTheTarget)
+{
+	World world;
+	MPortalEffectTarget source(3), destination(7);
+	Initialize(source);
+	Initialize(destination);
+	source.SetOwnerName("Source");
+	source.SetPortal(61, 102, 220);
+	destination.Set(88, 99, 111, 333);
+	destination.SetServerID(555);
+	destination.SetDelayFrame(444);
+	destination.NextPhase();
+	destination.SetOwnerName("Destination");
+	destination.SetPortal(1003, 50, 70);
+	auto* result = Result(1);
+	destination.SetResult(result);
+	destination.SetResultTime();
+	MEffectTarget::SetHost(&host);
+	MEffectTarget& view = destination;
+	view = source;
+	CHECK_EQ(3, destination.GetMaxPhase());
+	CHECK_EQ(1, destination.GetCurrentPhase());
+	CHECK_EQ(-12, destination.GetX());
+	CHECK_EQ(34, destination.GetY());
+	CHECK_EQ(56, destination.GetZ());
+	CHECK_EQ(789, destination.GetID());
+	CHECK_EQ(912, destination.GetServerID());
+	CHECK_EQ(45, destination.GetDelayFrame());
+	CHECK_EQ(1, destination.GetEffectID());
+	CHECK(destination.IsResultTime());
+	CHECK(destination.GetResult() == result);
+	CHECK_EQ(61, destination.GetZoneID());
+	CHECK_EQ(102, destination.GetZoneX());
+	CHECK_EQ(220, destination.GetZoneY());
+	CHECK(std::strcmp(destination.GetOwnerName(), "Source") == 0);
+	CHECK(events.empty());
+}
+
+TEST(EffectResults, AssigningANormalTargetPreservesExistingPortalMetadata)
+{
+	World world;
+	MEffectTarget source(3);
+	MPortalEffectTarget destination(7);
+	Initialize(source);
+	Initialize(destination);
+	destination.Set(88, 99, 111, 333);
+	destination.SetOwnerName("Retained");
+	destination.SetPortal(1003, 50, 70);
+	MEffectTarget& view = destination;
+	view = source;
+	CHECK_EQ(3, destination.GetMaxPhase());
+	CHECK_EQ(-12, destination.GetX());
+	CHECK_EQ(789, destination.GetID());
+	CHECK_EQ(1003, destination.GetZoneID());
+	CHECK_EQ(50, destination.GetZoneX());
+	CHECK_EQ(70, destination.GetZoneY());
+	CHECK(std::strcmp(destination.GetOwnerName(), "Retained") == 0);
+}
+
+TEST(EffectResults, PortalSelfAssignmentPreservesThePlayerRegistrationAndResult)
+{
+	World world;
+	MPortalEffectTarget target(3);
+	Initialize(target);
+	target.SetOwnerName("Owner");
+	target.SetPortal(61, 102, 220);
+	auto* result = Result(1);
+	target.SetResult(result);
+	MEffectTarget::SetHost(&host);
+	MEffectTarget& view = target;
+	view = target;
+	CHECK(events.empty());
+	CHECK(target.GetResult() == result);
+	CHECK_EQ(1, allocated.size());
+	CHECK(std::strcmp(target.GetOwnerName(), "Owner") == 0);
+}
+
+TEST(EffectResults, ReassigningTheSameResultDoesNotDestroyIt)
+{
+	World world;
+	MEffectTarget target(1);
+	auto* result = Result(1);
+	target.SetResult(result);
+	target.SetResult(result);
+	CHECK(events.empty());
+	CHECK_EQ(1, allocated.size());
+	CHECK(target.GetResult() == result);
+	// The old setter has already deleted this queue. Drop its dangling alias
+	// after observing the failure rather than double-delete during cleanup.
+	if (allocated.empty()) target.SetResultNULL();
+}
+
+TEST(EffectResults, ResultReplacementIsPublishedBeforeOldNodeDestruction)
+{
+	World world;
+	MEffectTarget target(1);
+	auto first = std::make_unique<MActionResult>();
+	auto* node = new Node(1);
+	auto* replacement = Result(2);
+	node->onDestroy = [&]() { CHECK(target.GetResult() == replacement); };
+	first->Add(node);
+	target.SetResult(first.release());
+	target.SetResult(replacement);
+	CHECK(target.GetResult() == replacement);
+	CHECK(events == std::vector<int>({-1}));
+}
+
+TEST(EffectResults, TargetDestructionClearsItsResultBeforeNodeCallbacks)
+{
+	World world;
+	{
+		MEffectTarget target(1);
+		auto result = std::make_unique<MActionResult>();
+		auto* node = new Node(1);
+		node->onDestroy = [&]() { CHECK(target.GetResult() == nullptr); };
+		result->Add(node);
+		target.SetResult(result.release());
+	}
+	CHECK(events == std::vector<int>({-1}));
+}
+
+TEST(EffectResults, ReentrantResultReplacementKeepsTheLatestPublishedQueue)
+{
+	World world;
+	MEffectTarget target(1);
+	auto first = std::make_unique<MActionResult>();
+	auto* node = new Node(1);
+	auto* replacement = Result(2);
+	auto* latest = Result(3);
+	node->onDestroy = [&]() { target.SetResult(latest); };
+	first->Add(node);
+	target.SetResult(first.release());
+	target.SetResult(replacement);
+	CHECK(target.GetResult() == latest);
+	CHECK(events == std::vector<int>({-1, -2}));
+	CHECK_EQ(1, allocated.size());
+}
+
+TEST(EffectResults, TargetDestructionDiscardsResultsOfferedByNodeCallbacks)
+{
+	World world;
+	MEffectTarget::SetHost(&host);
+	{
+		MEffectTarget target(1);
+		auto result = std::make_unique<MActionResult>();
+		auto* node = new Node(1);
+		node->onDestroy = [&]() {
+			target.SetResult(Result(2));
+			CHECK(target.GetResult() == nullptr);
+		};
+		result->Add(node);
+		target.SetResult(result.release());
+	}
+	CHECK(events == std::vector<int>({-1, -2, 1000}));
 }
