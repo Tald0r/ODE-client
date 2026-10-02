@@ -410,3 +410,10 @@ Client/MPortal.cpp
 Client/MPortal.h
 Client/ZoneInfoData.cpp
 Client/ZoneInfoData.h
+
+# Background-music metadata and zone/time track selection (task 4.33).
+# The existing table files move unchanged; playback stays executable-side.
+Client/MMusicTable.cpp
+Client/MMusicTable.h
+Client/MusicSelection.cpp
+Client/MusicSelection.h
