@@ -5,11 +5,6 @@
 #include "Client_PCH.h"
 #include "MNPCScriptTable.h"
 
-#include "DebugInfo.h"
-#include "Packet.h"
-//#include "ScriptParameter.h"
-
-
 #define		SCRIPT_MARK_START	"%("
 #define		SCRIPT_MARK_END		")"
 //---------------------------------------------------------------------------
