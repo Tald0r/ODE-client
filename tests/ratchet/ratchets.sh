@@ -216,7 +216,8 @@ check () {
 # 436: CServerInformation joins gamemodel unchanged so login selection
 # and its owning world/server maps can be tested (task 4.19).
 # 434: MFunctionManager and MRequestMode join gamemodel unchanged (task 4.20).
-R1_BASELINE=434
+# 433: MathTable joins gamemodel unchanged (task 4.21).
+R1_BASELINE=433
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -266,7 +267,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# MSVC baseline records.
 	# 434: CServerInformation joins gamemodel, as the MSVC baseline records.
 	# 432: callback dispatch and request modes join gamemodel (task 4.20).
-	R1_NINJA_BASELINE=432
+	# 431: effect math joins gamemodel (task 4.21).
+	R1_NINJA_BASELINE=431
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
