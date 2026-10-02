@@ -1730,7 +1730,7 @@ rounds settled* for the host rules). Test fixtures share
 - [ ] **4.29 NPC shop stock:** `MShopTemplateTable` and `BuildNPCShopShelf`
   compile in `gamemodel`, making the fixed/mysterious shelf build used by
   shop packets testable outside the executable.
-  > **Status:** in progress (stock ownership/range and template-loader fixes).
+  > **Status:** in progress (template-loader fixes).
   > The existing template implementation and header initially move unchanged.
   > `MNPC` retains shop creation and supplies item factories, live gender and
   > portal setters through `NPCShopHost`. The library builds shelves, selects

@@ -19,7 +19,8 @@ struct NPCShopHost
 };
 
 // The caller owns the initialized shop; its shelf owns the generated items.
-// Returns whether NPC metadata exists, including an NPC with no stock.
+// Returns false when NPC metadata or the requested shelf slot is missing.
+// A missing template table produces an empty, disabled shelf.
 bool BuildNPCShopShelf(MShop& shop, const NPC_INFO* npc,
 	MShopTemplateTable* templates, bool mysterious, const NPCShopHost& host);
 

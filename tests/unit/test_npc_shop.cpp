@@ -13,6 +13,7 @@
 #include <fstream>
 #include <initializer_list>
 #include <iterator>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -20,6 +21,7 @@
 namespace {
 
 int alive = 0, destroyed = 0, genderReads = 0;
+std::set<MItem*> allocatedItems;
 bool female = false, refuseItems = false;
 std::vector<ITEM_CLASS> requestedClasses;
 struct Destination { MItem* item; int type, zone, x, y, grade, number; };
@@ -28,8 +30,8 @@ std::vector<Destination> destinations;
 template<class Base>
 struct Tracked : Base
 {
-	Tracked() { ++alive; }
-	~Tracked() override { --alive; ++destroyed; }
+	Tracked() { allocatedItems.insert(this); ++alive; }
+	~Tracked() override { allocatedItems.erase(this); --alive; ++destroyed; }
 };
 
 // Potion/portal use actions are executable-only. The callback supplies a
@@ -106,6 +108,9 @@ struct ShopWorld : GameModelWorld
 	{
 		shop.Release();
 		CHECK_EQ(0, alive);
+		// Keep a failing ownership regression from leaking its orphaned items
+		// into later cases; the checks above and in the test observe the leak.
+		while (!allocatedItems.empty()) delete *allocatedItems.begin();
 		g_pShopTemplateTable = previous;
 	}
 	MShopTemplate& Add(unsigned int id, BYTE shelf, int itemClass, WORD first, WORD last)
@@ -426,4 +431,113 @@ TEST(NPCShop, MissingGenderAndPortalCallbacksUseTheirDefaultBehavior)
 	CheckTypes(world.Shelf(true), {0, 1, 2, 3, 3});
 	CHECK_EQ(0, genderReads);
 	CHECK(destinations.empty());
+}
+
+TEST(NPCShop, FullShelvesStopCreationAcrossTemplateBoundaries)
+{
+	ShopWorld world;
+	world.Add(1, MShopShelf::SHELF_FIXED, ITEM_CLASS_SWORD, 0, 14);
+	world.Add(2, MShopShelf::SHELF_FIXED, ITEM_CLASS_SWORD, 20, 30);
+	CHECK(world.Build());
+	CHECK_EQ(SHOP_SHELF_SLOT, requestedClasses.size());
+	CHECK_EQ(SHOP_SHELF_SLOT, alive);
+	for (unsigned int slot = 0; slot < SHOP_SHELF_SLOT; ++slot)
+	{
+		const auto* item = world.Shelf().GetItem(slot);
+		CHECK(item != nullptr);
+		if (item) CHECK_EQ(slot < 15 ? slot : slot + 5, item->GetItemType());
+	}
+	world.shop.Release();
+	CHECK_EQ(0, alive);
+	CHECK_EQ(SHOP_SHELF_SLOT, destroyed);
+}
+
+TEST(NPCShop, FemalePairSelectionCannotCrossTheTemplateEnd)
+{
+	for (WORD first : {0, 1})
+	{
+		ShopWorld world;
+		female = true;
+		world.Add(1, MShopShelf::SHELF_UNKNOWN, ITEM_CLASS_COAT, first, static_cast<WORD>(first + 2));
+		CHECK(world.Build(true));
+		CheckTypes(world.Shelf(true), {first + 1});
+		CHECK_EQ(1, alive);
+		CHECK(world.Shelf(true).IsEnable());
+	}
+}
+
+TEST(NPCShop, AnUnpairedLastFemaleTypeLeavesNoStockEnabled)
+{
+	ShopWorld world;
+	female = true;
+	world.Add(1, MShopShelf::SHELF_UNKNOWN, ITEM_CLASS_VAMPIRE_COAT, 65535, 65535);
+	CHECK(world.Build(true));
+	CheckTypes(world.Shelf(true), {});
+	CHECK_EQ(0, alive);
+	CHECK(!world.Shelf(true).IsEnable());
+}
+
+TEST(NPCShop, ShopsWithoutTheRequestedShelfSlotRejectTheBuild)
+{
+	for (unsigned int size : {0U, 1U})
+	{
+		ShopWorld world;
+		world.shop.Init(size);
+		world.Add(1, MShopShelf::SHELF_UNKNOWN, ITEM_CLASS_SWORD, 0, 0);
+		CHECK(!world.Build(true));
+		CHECK(requestedClasses.empty());
+		CHECK(world.shop.GetShelf(MShopShelf::SHELF_UNKNOWN) == nullptr);
+		CHECK_EQ(0, alive);
+	}
+}
+
+TEST(NPCShop, ThrowingPortalActionsDoNotLeakTheUnpublishedItem)
+{
+	ShopWorld world;
+	world.Add(1, MShopShelf::SHELF_FIXED, ITEM_CLASS_VAMPIRE_PORTAL_ITEM, 3, 3);
+	const NPCShopHost throwing{
+		.CreateItem = CreateItem,
+		.SetPortalDestination = [](MItem&, int, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION) {
+			throw std::runtime_error("portal callback failed");
+		},
+	};
+	bool threw = false;
+	try { world.Build(false, throwing); }
+	catch (const std::runtime_error&) { threw = true; }
+	CHECK(threw);
+	CHECK_EQ(0, alive);
+	CHECK_EQ(1, destroyed);
+	CheckTypes(world.Shelf(), {});
+}
+
+TEST(NPCShop, UnsupportedShelfTypesNeverReachTheItemFactory)
+{
+	ShopWorld world;
+	world.Add(1, 255, ITEM_CLASS_SWORD, 0, 0);
+	CHECK(world.Build());
+	CHECK(world.Build(true));
+	CHECK(requestedClasses.empty());
+}
+
+TEST(NPCShop, InvalidItemClassesAreRejectedBeforeCallingTheFactory)
+{
+	for (int itemClass : {static_cast<int>(MAX_ITEM_CLASS), -1, 1000000})
+	{
+		ShopWorld world;
+		world.Add(1, MShopShelf::SHELF_FIXED, itemClass, 0, 0);
+		CHECK(world.Build());
+		CHECK(requestedClasses.empty());
+		CHECK(!world.Shelf().IsEnable());
+	}
+}
+
+TEST(NPCShop, MissingTemplateTablesClearExistingStockWithoutDereferencingNull)
+{
+	ShopWorld world;
+	world.Add(1, MShopShelf::SHELF_FIXED, ITEM_CLASS_SWORD, 0, 1);
+	CHECK(world.Build());
+	CHECK(BuildNPCShopShelf(world.shop, &world.npc, nullptr, false, host));
+	CHECK_EQ(0, alive);
+	CHECK(!world.Shelf().IsEnable());
+	CheckTypes(world.Shelf(), {});
 }

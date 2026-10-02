@@ -5,46 +5,56 @@
 #include "MNPCTable.h"
 #include "DebugLog.h"
 
+#include <memory>
+
 bool BuildNPCShopShelf(MShop& shop, const NPC_INFO* npc,
 	MShopTemplateTable* templates, bool mysterious, const NPCShopHost& host)
 {
 	const auto shelfType = mysterious ? MShopShelf::SHELF_UNKNOWN : MShopShelf::SHELF_FIXED;
+	if (static_cast<unsigned int>(shelfType) >= shop.GetSize()) return false;
 	if (!npc)
 	{
-		shop.SetShelf(shelfType, MShopShelf::NewShelf(shelfType));
+		std::unique_ptr<MShopShelf> empty(MShopShelf::NewShelf(shelfType));
+		if (shop.SetShelf(shelfType, empty.get())) empty.release();
 		return false;
 	}
 
 	MShopShelf* shelf = shop.GetShelf(shelfType);
 	if (!shelf)
 	{
-		shelf = MShopShelf::NewShelf(shelfType);
-		shop.SetShelf(shelfType, shelf);
+		std::unique_ptr<MShopShelf> created(MShopShelf::NewShelf(shelfType));
+		if (!shop.SetShelf(shelfType, created.get())) return false;
+		shelf = created.release();
 	}
 	else
 		shelf->Release();
 
-	bool enabled = false;
+	int stock = 0;
 	for (const auto id : npc->ListShopTemplateID)
 	{
-		const auto* definition = templates->GetData(id);
-		if (!definition || static_cast<MShopShelf::SHELF_TYPE>(definition->Type) != shelfType)
+		if (stock == SHOP_SHELF_SLOT) break;
+		const auto* definition = templates ? templates->GetData(id) : nullptr;
+		if (!definition || definition->Type != shelfType
+			|| definition->Class < 0 || definition->Class >= MAX_ITEM_CLASS)
 			continue;
 
-		for (int type = definition->MinType; type <= definition->MaxType; ++type)
+		for (int type = definition->MinType;
+			type <= definition->MaxType && stock < SHOP_SHELF_SLOT; ++type)
 		{
 			const auto itemClass = static_cast<ITEM_CLASS>(definition->Class);
-			MItem* item = host.CreateItem ? host.CreateItem(itemClass) : nullptr;
+			std::unique_ptr<MItem> item(host.CreateItem ? host.CreateItem(itemClass) : nullptr);
 			if (!item)
 			{
 				DEBUG_ADD_FORMAT("[Error] Shop template: invalid item class %d", itemClass);
 				continue;
 			}
-			enabled = true;
 			if (mysterious && host.IsFemale && host.IsFemale()
 				&& (itemClass == ITEM_CLASS_COAT || itemClass == ITEM_CLASS_TROUSER
 					|| itemClass == ITEM_CLASS_VAMPIRE_COAT))
+			{
 				++type;
+				if (type > definition->MaxType) break;
+			}
 
 			item->SetItemType(type);
 			item->SetGrade(4);
@@ -68,10 +78,14 @@ bool BuildNPCShopShelf(MShop& shop, const NPC_INFO* npc,
 					break;
 				}
 			}
-			shelf->AddItem(item);
+			if (shelf->AddItem(item.get()))
+			{
+				item.release();
+				++stock;
+			}
 		}
 	}
-	if (enabled) shelf->SetEnable();
+	if (stock != 0) shelf->SetEnable();
 	else shelf->SetDisable();
 	return true;
 }
