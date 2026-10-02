@@ -380,3 +380,11 @@ Client/CreatureNameSelection.h
 # The manager is reached by GCWarList and the combat/zone queries (task 4.28).
 Client/MWarManager.cpp
 Client/MWarManager.h
+
+# NPC fixed/mysterious shop stock and its template table (task 4.29).
+# Item creation, live gender and portal actions use NPCShopHost.
+# The existing template implementation and header initially move unchanged.
+Client/MShopTemplate.cpp
+Client/MShopTemplateTable.h
+Client/NPCShopBuilder.cpp
+Client/NPCShopBuilder.h
