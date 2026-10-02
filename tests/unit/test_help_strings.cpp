@@ -9,10 +9,13 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace {
 using Bytes = std::vector<unsigned char>;
+static_assert(!std::is_copy_constructible_v<MHelpStringTable>);
+static_assert(!std::is_copy_assignable_v<MHelpStringTable>);
 
 struct Encoding
 {
@@ -249,4 +252,134 @@ TEST(HelpStrings, Utf8AndLegacyKoreanFilesUseTheResourceCodec)
 		CHECK(Is(table[0], "가"));
 		CHECK(Save(table) == bytes);
 	}
+}
+
+TEST(HelpStrings, EveryTruncatedReloadPreservesTextAndDisplayHistory)
+{
+	Encoding encoding;
+	const auto replacement = Strings({"new first", "new second", "new third"});
+	for (std::size_t size = 0; size < replacement.size(); ++size)
+	{
+		MHelpStringTable table;
+		CHECK(Load(table, Strings({"old first", "old second"})));
+		table.Get(1);
+		CHECK(!Load(table, Bytes(replacement.begin(), replacement.begin() + size)));
+		CHECK_EQ(2, table.GetSize());
+		CHECK(!Displayed(table, 0)); CHECK(Displayed(table, 1));
+		CHECK(Is(table.GetInternalPointer()[0], "old first"));
+		if (table.GetSize() > 1) CHECK(Is(table.GetInternalPointer()[1], "old second"));
+	}
+}
+
+TEST(HelpStrings, StreamExceptionsPreserveTextAndDisplayHistory)
+{
+	Encoding encoding;
+	MHelpStringTable table;
+	CHECK(Load(table, Strings({"old first", "old second"})));
+	table.Get(1);
+	auto bytes = Strings({"new first", "new second", "new third"});
+	bytes.pop_back();
+	HelpFile fixture(bytes);
+	std::ifstream input(fixture.path, std::ios::binary);
+	input.exceptions(std::ios::failbit | std::ios::badbit);
+	bool threw = false;
+	try { table.LoadFromFile(input); }
+	catch (const std::ios_base::failure&) { threw = true; }
+	CHECK(threw);
+	CHECK_EQ(2, table.GetSize());
+	CHECK(!Displayed(table, 0)); CHECK(Displayed(table, 1));
+	CHECK(Is(table.GetInternalPointer()[0], "old first"));
+	CHECK(Is(table.GetInternalPointer()[1], "old second"));
+}
+
+TEST(HelpStrings, EmptyReloadsCannotMarkEntriesThatNoLongerExist)
+{
+	Encoding encoding;
+	MHelpStringTable table;
+	CHECK(Load(table, Strings({"old"})));
+	table.Get(0);
+	CHECK(Load(table, Strings({})));
+	CHECK(table.Get(0).GetString() == nullptr);
+	CHECK(!Displayed(table, 0));
+}
+
+TEST(HelpStrings, ReleaseMakesAllDisplayedEntriesAndLookupsAbsent)
+{
+	MHelpStringTable table;
+	table.Init(2);
+	table.Get(0); table.Get(1);
+	table.Release();
+	CHECK_EQ(0, table.GetSize());
+	CHECK(!Displayed(table, 0)); CHECK(!Displayed(table, 1));
+	CHECK(table.Get(0).GetString() == nullptr);
+	CHECK(table[1].GetString() == nullptr);
+	CHECK(!Displayed(table, 0)); CHECK(!Displayed(table, 1));
+}
+
+TEST(HelpStrings, InvalidCountsPreserveTextAndDisplayHistory)
+{
+	Encoding encoding;
+	for (unsigned count : {0xffffffffu, 0x7fffffffu, 3u})
+	{
+		MHelpStringTable table;
+		CHECK(Load(table, Strings({"old"})));
+		table.Get(0);
+		Bytes bytes;
+		Number(bytes, count);
+		CHECK(!Load(table, bytes));
+		CHECK_EQ(1, table.GetSize());
+		CHECK(Displayed(table, 0));
+		CHECK(Is(table.GetInternalPointer()[0], "old"));
+	}
+}
+
+TEST(HelpStrings, PrefailedAndClosedStreamsDoNotResetDisplayHistory)
+{
+	Encoding encoding;
+	MHelpStringTable table;
+	CHECK(Load(table, Strings({"old"})));
+	table.Get(0);
+	std::ifstream closed;
+	table.LoadFromFile(closed);
+	CHECK(closed.fail());
+	CHECK_EQ(1, table.GetSize());
+	CHECK(Displayed(table, 0));
+	HelpFile fixture(Strings({"replacement"}));
+	std::ifstream failed(fixture.path, std::ios::binary);
+	failed.setstate(std::ios::failbit);
+	table.LoadFromFile(failed);
+	CHECK(failed.fail());
+	CHECK_EQ(1, table.GetSize());
+	CHECK(Displayed(table, 0));
+	CHECK(Is(table.GetInternalPointer()[0], "old"));
+}
+
+TEST(HelpStrings, AValidReloadAfterAFailurePublishesFreshTextAndHistory)
+{
+	Encoding encoding;
+	MHelpStringTable table;
+	CHECK(Load(table, Strings({"old"})));
+	table.Get(0);
+	CHECK(!Load(table, {1, 0, 0, 0, 8, 0, 0, 0, 'a'}));
+	CHECK(Displayed(table, 0));
+	CHECK(Load(table, Strings({"new first", "new second"})));
+	CHECK_EQ(2, table.GetSize());
+	CHECK(!Displayed(table, 0)); CHECK(!Displayed(table, 1));
+	CHECK(Is(table.Get(0), "new first"));
+	CHECK(Is(table.Get(1), "new second"));
+}
+
+TEST(HelpStrings, ReleasingThroughTheBaseCannotExposeStaleDisplayEntries)
+{
+	MHelpStringTable table;
+	table.Init(1);
+	table.Get(0);
+	MStringArray& base = table;
+	base.Release();
+	CHECK_EQ(0, table.GetSize());
+	CHECK(!Displayed(table, 0));
+	CHECK(table.Get(0).GetString() == nullptr);
+	CHECK(!Displayed(table, 0));
+	table.Init(1);
+	CHECK(!Displayed(table, 0));
 }

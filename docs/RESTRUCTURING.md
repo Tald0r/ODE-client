@@ -1864,7 +1864,9 @@ rounds settled* for the host rules). Test fixtures share
   > **Status:** done (this commit).
   > `GameInitInfo` retains loading and the help displayer retains message
   > presentation. The table owns help text and the flags set by its two
-  > lookup methods. R1 is 415 Windows / 413 Ninja.
+  > lookup methods. Reloads publish text and fresh display history together;
+  > failed input preserves both. Empty loads and release leave no displayed
+  > entries. Copying the owning table is disabled. R1 is 415 Windows / 413 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_help_strings.cpp`, using the production table and files.
 
