@@ -1710,16 +1710,19 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_creature_names.cpp`, using the production tables and
     selection state.
 
-- [ ] **4.28 War state:** `MWarManager` compiles in `gamemodel`, keeping
+- [x] **4.28 War state:** `MWarManager` compiles in `gamemodel`, keeping
   war records transferred by packets, castle lookup aliases and display-row deadlines
   testable without the main executable.
-  > **Status:** in progress (ownership and repeated-row regression fixes).
+  > **Status:** done (2026-10-02).
   > `MWarHost` supplies the current zone and race-war UI notifications;
   > `GameInit` retains dialogs, chat and skill refresh. Missing actions are
   > skipped, and a missing current zone skips level-war presentation. The
-  > initial extraction preserves the existing map ownership and row updates;
-  > shared-record deletion, replacement and race-war clearing need regression
-  > fixes. R1 is 424 Windows / 422 Ninja.
+  > manager consumes incoming records, releases shared records only after their
+  > last zone is removed or replaced, and releases level/empty/rejected records.
+  > Repeated updates refresh one display row per zone and war type; removals
+  > clear all matching rows. Missing user information skips row publication,
+  > and missing zone metadata gives an empty row name. Castle lookup aliases
+  > and existing-row metadata are preserved. R1 is 424 Windows / 422 Ninja.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt` and
     `tests/unit/test_war_manager.cpp`, using the real manager, packet records,
     user information and zone table.

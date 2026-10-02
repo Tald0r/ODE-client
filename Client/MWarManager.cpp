@@ -4,9 +4,11 @@
 #include "GuildWarInfo.h"
 #include "RaceWarInfo.h"
 #include "LevelWarInfo.h"
+#include <algorithm>
+#include <memory>
+#include <set>
 
-MWarManager *g_pWarManager = NULL;
-
+MWarManager* g_pWarManager = nullptr;
 const MWarHost* MWarManager::s_pHost = nullptr;
 
 const MWarHost* MWarManager::SetHost(const MWarHost* host)
@@ -36,323 +38,169 @@ void MWarManager::RaceWarEnded()
 	if (s_pHost && s_pHost->RaceWarEnded) s_pHost->RaceWarEnded();
 }
 
-
-MWarManager::MWarManager()
-{
-//	// 아담의 성지 존 아이디.
-//	// 아담의 성지에서는 다른 성 4개의 정보가 같이 적용된다.
-//	// 그러므로 WarInfo 를 얻어올때 아담의 성지 존 아이디를 체크하여 4개를 같이 넘겨주어야 한다.
-//	// 좀 HardCoding 틱하지만... -_-
-//
-//	HolyLandZone.clear();
-//
-//	HolyLandZone.push_back( 71 );
-//	HolyLandZone.push_back( 72 );
-//	HolyLandZone.push_back( 73 );
-	m_WarInfo.clear();	
-}
-
+MWarManager::MWarManager() = default;
 
 MWarManager::~MWarManager()
 {
 	ClearWar();
 }
 
-// WarList 를 등록해준다. 기존에 있으면 left_time 만 Update 해준다.
-void			MWarManager::SetWar(WarInfo *info)
+bool MWarManager::Owns(const WarInfo* info) const
 {
-	if(info == NULL)
+	return std::any_of(m_WarInfo.begin(), m_WarInfo.end(),
+		[info](const auto& entry) { return entry.second == info; });
+}
+
+void MWarManager::ReleaseUnreferenced(WarInfo* info)
+{
+	if (info && !Owns(info)) delete info;
+}
+
+void MWarManager::Store(ZoneID_t id, WarInfo* info)
+{
+	auto [entry, inserted] = m_WarInfo.try_emplace(id, info);
+	if (!inserted)
+	{
+		WarInfo* previous = entry->second;
+		entry->second = info;
+		ReleaseUnreferenced(previous);
+	}
+}
+
+void MWarManager::UpdateRow(ZoneID_t id, const WarInfo& info)
+{
+	if (!g_pUserInformation) return;
+	auto& rows = g_pUserInformation->WarInfo;
+	const auto deadline = MonotonicClock::NowInSeconds()
+		+ std::chrono::seconds(static_cast<std::chrono::seconds::rep>(info.getRemainTime()));
+	const auto existing = std::find_if(rows.begin(), rows.end(), [&](const WAR_INFO& row) {
+		return row.zone_id == id && row.war_type == info.getWarType();
+	});
+	if (existing != rows.end())
+	{
+		existing->left_time = deadline;
 		return;
+	}
 
-	std::vector<WAR_INFO>::iterator itr = g_pUserInformation->WarInfo.begin();
+	WAR_INFO row{};
+	row.zone_id = id;
+	row.war_type = info.getWarType();
+	row.left_time = deadline;
+	const auto* zone = g_pZoneTable ? g_pZoneTable->Get(id) : nullptr;
+	const char* name = zone ? zone->Name.GetString() : nullptr;
+	if (name) row.zone_name = name;
+	if (const auto* guild = dynamic_cast<const GuildWarInfo*>(&info))
+	{
+		row.attack_guild_name = guild->getAttackGuildName();
+		row.defense_guild_name = guild->getDefenseGuildName();
+	}
+	rows.push_back(std::move(row));
+}
 
-	switch(info->getWarType())	// 종족전
+void MWarManager::SetWar(WarInfo* info)
+{
+	if (!info) return;
+	// The packet relinquishes ownership before calling us. Keep an unregistered
+	// record owned even if it has no zones, only supplies a row, or is rejected.
+	std::unique_ptr<WarInfo> incoming(Owns(info) ? nullptr : info);
+	switch (info->getWarType())
 	{
 	case WAR_RACE:
 		{
-			// 편지 보내쟈
-			RaceWarNotice(info->getStartTime());
-			
-			RaceWarInfo *pInfo = (RaceWarInfo *)info;
-
-			RaceWarInfo::ZoneIDList& IDList = pInfo->getCastleIDs();
-
-			bool bUpdate = false;
-			while(!IDList.IsEmpty())
+			auto* race = dynamic_cast<RaceWarInfo*>(info);
+			if (!race) return;
+			RaceWarNotice(race->getStartTime());
+			auto& ids = race->getCastleIDs();
+			while (!ids.IsEmpty())
 			{
-				ZoneID_t id = IDList.popValue();
-
-				m_WarInfo[id] = pInfo;
-
-				while(itr != g_pUserInformation->WarInfo.end())
-				{
-					if(itr->zone_id == id && itr->war_type == WAR_RACE)		// 기존에 있으면 업데이트!
-					{
-						itr->left_time = MonotonicClock::NowInSeconds() + std::chrono::seconds((std::chrono::seconds::rep)pInfo->getRemainTime());
-						bUpdate = true;
-						break;
-					}
-					itr++;
-				}
-
-				if(bUpdate == false)
-				{
-					WAR_INFO inf;	
-					inf.left_time = MonotonicClock::NowInSeconds() + std::chrono::seconds((std::chrono::seconds::rep)pInfo->getRemainTime());
-					inf.zone_id = id;
-					inf.zone_name = g_pZoneTable->Get(id)->Name;
-					inf.war_type = pInfo->getWarType();
-			
-					g_pUserInformation->WarInfo.push_back(inf);
-
-					itr = g_pUserInformation->WarInfo.begin();
-				}
-				else
-					bUpdate = false;
+				const ZoneID_t id = ids.popValue();
+				Store(id, race);
+				incoming.release();
+				UpdateRow(id, *race);
 			}
-
 			RaceWarStarted();
 		}
 		break;
-
 	case WAR_GUILD:
 		{
-			GuildWarInfo *pInfo = (GuildWarInfo *)info;
-
-			m_WarInfo[pInfo->getCastleID()] = pInfo;
-		
-			while(itr != g_pUserInformation->WarInfo.end())
-			{
-				if(itr->zone_id == pInfo->getCastleID() && itr->war_type == WAR_GUILD)		// 기존에 있으면 업데이트!
-				{
-					itr->left_time = MonotonicClock::NowInSeconds() + std::chrono::seconds((std::chrono::seconds::rep)pInfo->getRemainTime());
-					return;
-				}
-				itr++;
-			}
-
-			WAR_INFO inf;	
-			inf.left_time = MonotonicClock::NowInSeconds() + std::chrono::seconds((std::chrono::seconds::rep)pInfo->getRemainTime());
-			inf.zone_id = pInfo->getCastleID();
-			inf.zone_name = g_pZoneTable->Get(pInfo->getCastleID())->Name;
-			inf.war_type = pInfo->getWarType();
-			inf.attack_guild_name = pInfo->getAttackGuildName();
-			inf.defense_guild_name = pInfo->getDefenseGuildName();
-
-			g_pUserInformation->WarInfo.push_back(inf);
+			auto* guild = dynamic_cast<GuildWarInfo*>(info);
+			if (!guild) return;
+			Store(guild->getCastleID(), guild);
+			incoming.release();
+			UpdateRow(guild->getCastleID(), *guild);
 		}
 		break;
-
 	case WAR_LEVEL:
 		{
-			LevelWarInfo *pInfo = (LevelWarInfo *)info;
-			ZoneID_t zone;
-			if (!ReadZone(zone)) break;
-			
-			WAR_INFO inf;	
-			inf.zone_id = zone;
-			inf.zone_name = g_pZoneTable->Get(inf.zone_id)->Name;
-			inf.left_time = MonotonicClock::NowInSeconds() + std::chrono::seconds((std::chrono::seconds::rep)pInfo->getRemainTime());
-			inf.war_type = pInfo->getWarType();
-			
-			g_pUserInformation->WarInfo.push_back(inf);
+			auto* level = dynamic_cast<LevelWarInfo*>(info);
+			ZoneID_t zone = 0;
+			if (level && ReadZone(zone)) UpdateRow(zone, *level);
 		}
 		break;
-	}
-	
-}
-
-
-// 해당 존의 전쟁 정보를 지워준다.
-void			MWarManager::RemoveWar(ZoneID_t id)
-{
-	WarInfoMapItr	itr = m_WarInfo.find(id);
-	
-	if(itr != m_WarInfo.end())
-	{
-		RaceWarInfo *pInfo = dynamic_cast<RaceWarInfo*>(itr->second);
-		if( pInfo != NULL )
-		{
-			delete pInfo;
-			pInfo = NULL;
-		}
-
-		m_WarInfo.erase(itr);
-	}
-
-	std::vector<WAR_INFO>::iterator itrv = g_pUserInformation->WarInfo.begin();
-
-	while(itrv != g_pUserInformation->WarInfo.end() )
-	{
-		if( itrv->zone_id == id)
-		{
-			g_pUserInformation->WarInfo.erase(itrv);
-			break;
-		}
-		itrv++;
+	default:
+		break;
 	}
 }
 
-WarInfo*		MWarManager::GetWarInfo(ZoneID_t id)
+void MWarManager::RemoveWar(ZoneID_t id)
 {
-	switch(id)
+	const auto entry = m_WarInfo.find(id);
+	if (entry != m_WarInfo.end())
 	{
-	case 1211:
-	case 1212:
-		id = 1201;
-		break;
-
-	case 1221:
-	case 1222:
-		id = 1202;
-		break;
-
-	case 1231:
-	case 1232:
-		id = 1203;
-		break;
-
-	case 1241:
-	case 1242:
-		id = 1204;
-		break;
-
-	case 1251 :
-	case 1252 :
-		id = 1205;
-		break;
-
-	case 1261 :
-	case 1262 :
-		id = 1206;
-		break;
-
+		WarInfo* removed = entry->second;
+		m_WarInfo.erase(entry);
+		ReleaseUnreferenced(removed);
 	}
-
-	WarInfoMapItr	itr = m_WarInfo.find(id);
-
-	if(itr != m_WarInfo.end())
-		return (*itr).second;
-
-	return NULL;
+	if (g_pUserInformation)
+		std::erase_if(g_pUserInformation->WarInfo,
+			[id](const WAR_INFO& row) { return row.zone_id == id; });
 }
 
-void			MWarManager::ClearWar()
+WarInfo* MWarManager::GetWarInfo(ZoneID_t id)
 {
-	WarInfoMapItr	itr = m_WarInfo.begin();
-	std::map<WarInfo*, bool>		deleteHistory;
-
-	while( itr != m_WarInfo.end() )
+	switch (id)
 	{
-		WarInfo *pInfo = itr->second;
-		
-		if( pInfo != NULL && deleteHistory[pInfo] == false )
-		{
-			deleteHistory[pInfo] = true;
-			delete pInfo;			
-		}		
-		
-		itr++;
+	case 1211: case 1212: id = 1201; break;
+	case 1221: case 1222: id = 1202; break;
+	case 1231: case 1232: id = 1203; break;
+	case 1241: case 1242: id = 1204; break;
+	case 1251: case 1252: id = 1205; break;
+	case 1261: case 1262: id = 1206; break;
 	}
+	const auto entry = m_WarInfo.find(id);
+	return entry == m_WarInfo.end() ? nullptr : entry->second;
+}
+
+void MWarManager::ClearWar()
+{
+	std::set<WarInfo*> records;
+	for (const auto& entry : m_WarInfo) records.insert(entry.second);
 	m_WarInfo.clear();
-	if(g_pUserInformation != NULL)
-		g_pUserInformation->WarInfo.clear();
+	for (auto* record : records) delete record;
+	if (g_pUserInformation) g_pUserInformation->WarInfo.clear();
 }
 
-void			MWarManager::ClearRaceWar()
+void MWarManager::ClearRaceWar()
 {
-	WarInfoMapItr	itr = m_WarInfo.begin();
-
-	while( itr != m_WarInfo.end() )
+	std::set<WarInfo*> records;
+	for (auto entry = m_WarInfo.begin(); entry != m_WarInfo.end(); )
 	{
-		if( (*itr).second != NULL && (*itr).second->getWarType() == WAR_RACE)
+		if (entry->second->getWarType() == WAR_RACE)
 		{
-			WarInfoMapItr deleteItr = itr;
-			itr++;
-
-			m_WarInfo.erase(deleteItr);
+			records.insert(entry->second);
+			entry = m_WarInfo.erase(entry);
 		}
 		else
-			itr++;
+			++entry;
 	}
-//	m_WarInfo.clear();
-
-	std::vector<WAR_INFO>::iterator itr2 = g_pUserInformation->WarInfo.begin();
-	while( itr2 != g_pUserInformation->WarInfo.end())
-	{
-		if(itr2->war_type == WAR_RACE)
-		{
-			g_pUserInformation->WarInfo.erase(itr2);
-			itr2 = g_pUserInformation->WarInfo.begin();
-		}
-		else
-			itr2++;
-//		g_pUserInformation->WarInfo.clear();
-	}
-
+	for (auto* record : records) delete record;
+	if (g_pUserInformation)
+		std::erase_if(g_pUserInformation->WarInfo,
+			[](const WAR_INFO& row) { return row.war_type == WAR_RACE; });
 	RaceWarEnded();
 }
 
-bool			MWarManager::IsExist(ZoneID_t id)
+bool MWarManager::IsExist(ZoneID_t id)
 {
-	switch(id)
-	{
-	case 1211:
-	case 1212:
-		id = 1201;
-		break;
-
-	case 1221:
-	case 1222:
-		id = 1202;
-		break;
-
-	case 1231:
-	case 1232:
-		id = 1203;
-		break;
-
-	case 1241:
-	case 1242:
-		id = 1204;
-		break;
-
-	case 1251 :
-	case 1252 :
-		id = 1205;
-		break;
-
-	case 1261 :
-	case 1262 :
-		id = 1206;
-		break;
-
-	}
-
-	WarInfoMapItr	itr = m_WarInfo.find(id);
-
-	if(itr == m_WarInfo.end())
-	{
-//		if(!m_WarInfo.empty())
-//			return IsHolyLand( id );
-//
-		return false;
-	}
-
-	return true;
+	return GetWarInfo(id) != nullptr;
 }
-
-//// 아담의 성지 필드맵인가?
-//bool			MWarManager::IsHolyLand(ZoneID_t id)
-//{
-//	list<ZoneID_t>::const_iterator itr = HolyLandZone.begin();
-//	
-//	while(itr != HolyLandZone.end() )
-//	{
-//		if( *itr == id )
-//			return true;
-//		itr++;
-//	}	
-//
-//	return false;
-//}

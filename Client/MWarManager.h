@@ -27,8 +27,8 @@ enum WAR_TYPE_ID // 안씀
 typedef			std::map<ZoneID_t, WarInfo*>			WarInfoMap;
 typedef			WarInfoMap::iterator			WarInfoMapItr;
 
-// GameInit supplies the live zone and UI/skill actions. Missing actions are
-// skipped; without a current zone, level-war presentation is skipped.
+// Borrowed services installed by GameInit. Missing actions are skipped;
+// without a current zone, level-war presentation is skipped.
 struct MWarHost
 {
 	bool (*ReadZone)(ZoneID_t& id) = nullptr;
@@ -47,12 +47,16 @@ private :
 public :	
 	MWarManager();
 	~MWarManager();	
+	MWarManager(const MWarManager&) = delete;
+	MWarManager& operator=(const MWarManager&) = delete;
 	static const MWarHost* SetHost(const MWarHost* host);
 
 	//-------------------------------------------------------------------
 	// SetData
 	//-------------------------------------------------------------------
-	void			SetWar(WarInfo *info);						// WarList Add
+	// Consumes a packet record. Shared zone entries keep it alive until the
+	// last entry is removed; re-registering an already owned pointer is safe.
+	void			SetWar(WarInfo *info);
 	void			RemoveWar(ZoneID_t id);						// WarList Remove
 	
 	void			ClearWar();									// Clear
@@ -74,6 +78,10 @@ public :
 	void			Update();	
 
 private:
+	bool Owns(const WarInfo* info) const;
+	void ReleaseUnreferenced(WarInfo* info);
+	void Store(ZoneID_t id, WarInfo* info);
+	static void UpdateRow(ZoneID_t id, const WarInfo& info);
 	static bool ReadZone(ZoneID_t& id);
 	static void RaceWarNotice(DWORD startTime);
 	static void RaceWarStarted();
