@@ -24,6 +24,25 @@ int PixelToTileY(int pixel) { return pixel / TILE_Y; }
 int TileToPixelX(int tile) { return TileToPixel(tile, TILE_X); }
 int TileToPixelY(int tile) { return TileToPixel(tile, TILE_Y); }
 
+POINT DirectionOffset(int direction)
+{
+	POINT pt = { 0, 0 };
+
+	switch (direction)
+	{
+		case DIRECTION_LEFTDOWN		: pt.x=-1;	pt.y=1;	break;
+		case DIRECTION_RIGHTUP		: pt.x=1;	pt.y=-1;	break;
+		case DIRECTION_LEFTUP		: pt.x=-1;	pt.y=-1;	break;
+		case DIRECTION_RIGHTDOWN	: pt.x=1;	pt.y=1;	break;
+		case DIRECTION_LEFT			: pt.x=-1;			break;
+		case DIRECTION_DOWN			: pt.y=1;	break;
+		case DIRECTION_UP			: pt.y=-1;	break;
+		case DIRECTION_RIGHT		: pt.x=1;			break;
+	}
+
+	return pt;
+}
+
 void Step(TYPE_SECTORPOSITION& x, TYPE_SECTORPOSITION& y, BYTE direction)
 {
 	switch (direction)

@@ -534,3 +534,9 @@ Client/WorldTileGeometry.cpp
 Client/WorldTileGeometry.h
 Client/MAttackZoneEffectGenerator.cpp
 Client/MAttackZoneEffectGenerator.h
+
+# Parabolic zone projectiles, bombs and cannonade construction (4.60).
+Client/MAttackZoneParabolaEffectGenerator.cpp
+Client/MAttackZoneParabolaEffectGenerator.h
+Client/MAttackZoneBombEffectGenerator.cpp
+Client/MAttackZoneBombEffectGenerator.h

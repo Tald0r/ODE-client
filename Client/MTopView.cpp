@@ -18374,21 +18374,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 POINT
 MTopView::GetChangeValueToDirection(int direction)
 {
-	POINT pt = { 0, 0 };
-
-	switch (direction)
-	{
-		case DIRECTION_LEFTDOWN		: pt.x=-1;	pt.y=1;	break;
-		case DIRECTION_RIGHTUP		: pt.x=1;	pt.y=-1;	break;
-		case DIRECTION_LEFTUP		: pt.x=-1;	pt.y=-1;	break;
-		case DIRECTION_RIGHTDOWN	: pt.x=1;	pt.y=1;	break;
-		case DIRECTION_LEFT			: pt.x=-1;			break;
-		case DIRECTION_DOWN			: pt.y=1;	break;
-		case DIRECTION_UP			: pt.y=-1;	break;
-		case DIRECTION_RIGHT		: pt.x=1;			break;	
-	}
-
-	return pt;
+	return WorldTileGeometry::DirectionOffset(direction);
 }
 
 
