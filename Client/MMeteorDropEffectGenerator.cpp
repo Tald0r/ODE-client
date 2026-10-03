@@ -1,85 +1,64 @@
-//----------------------------------------------------------------------
 // MMeteorDropEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MMeteorDropEffectGenerator.h"
 #include "MLinearEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-#include "MEventManager.h"
+#include "MEventQueue.h"
+#include <limits>
+#include <utility>
 
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+const MMeteorDropEffectHost* MMeteorDropEffectGenerator::s_pHost = nullptr;
 
-
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MFallingEffectGenerator	g_FallingEffectGenerator;
-
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MMeteorDropEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+const MMeteorDropEffectHost* MMeteorDropEffectGenerator::SetHost(const MMeteorDropEffectHost* host)
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+bool MMeteorDropEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
 
-	MLinearEffect*	pEffect;
-	int x, z;
-	//---------------------------------------------
-	// Effect 생성 - Left Up
-	//---------------------------------------------
-	x = 100;
-	z = 400;
-	pEffect = new MLinearEffect(bltType);
+bool MMeteorDropEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
-	pEffect->SetFrameID( frameID, maxFrame );	
+void MMeteorDropEffectGenerator::AddEvent(MEvent& event)
+{
+	if (s_pHost && s_pHost->AddEvent) s_pHost->AddEvent(event);
+}
 
-	// 발사 위치 Pixel좌표	(목표위치에서 z만큼 위에)
-	// 근데 0으로 할건지. 1로 할건지.. 정할 수 있는 flag가 필요하당..
-	// generator를 딴걸 만들든지... 
+bool MMeteorDropEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
+{
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
 
-	//pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z1+z );	
-	pEffect->SetPixelPosition( egInfo.x1+x, egInfo.y1, egInfo.z1+z );	
+	auto effect = std::make_unique<MLinearEffect>(sprite.bltType);
+	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+	// The meteor starts to the right of and above its destination.
+	const int top = (std::numeric_limits<int>::max)();
+	const int startX = egInfo.x1 > top - 100 ? top : egInfo.x1 + 100;
+	const int startZ = egInfo.z1 > top - 400 ? top : egInfo.z1 + 400;
+	effect->SetPixelPosition(startX, egInfo.y1, startZ);
+	effect->SetDirection(egInfo.direction);
+	// Target selection retains its calculated facing, overriding the input.
+	effect->SetTarget(egInfo.x1, egInfo.y1, egInfo.z1, egInfo.step);
+	effect->SetCount(egInfo.count, egInfo.linkCount);
+	effect->SetPower(egInfo.power);
 
-	// 방향 설정
-	pEffect->SetDirection( egInfo.direction );
-					
-	// 목표 위치 Pixel좌표 (목표위치)
-	pEffect->SetTarget( egInfo.x1, egInfo.y1, egInfo.z1, egInfo.step );
+	MLinearEffect* queued = effect.get();
+	if (!QueueEffect(std::move(effect))) return false;
+	queued->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
 
-	// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );
-
-	// 위력
-	pEffect->SetPower(egInfo.power);
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	// Zone에 추가한다.
-	if (g_pZone->AddEffect( pEffect ))
-	{
-		// 다음 Effect 생성 정보
-		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
-		MEvent event;
-		event.eventID = EVENTID_METEOR;
-		event.eventType = EVENTTYPE_ZONE;
-		event.eventDelay = 1000;
-		event.eventFlag = EVENTFLAG_FADE_SCREEN;// | EVENTFLAG_ONLY_EVENT_BACKGROUND;
-		event.parameter2 = 30 << 16;
-//		event.parameter4 = EVENTBACKGROUNDID_COSMOS;
-		g_pEventManager->AddEvent(event);
-
-		return true;	
-	}
-
-	return false;
-
+	MEvent event;
+	event.eventID = EVENTID_METEOR;
+	event.eventType = EVENTTYPE_ZONE;
+	event.eventDelay = 1000;
+	event.eventFlag = EVENTFLAG_FADE_SCREEN;
+	event.parameter2 = 30 << 16;
+	AddEvent(event);
+	return true;
 }
