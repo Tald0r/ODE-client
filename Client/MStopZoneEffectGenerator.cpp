@@ -213,7 +213,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 					}
 				}
 
-				if (repeatFrame)
+				if (repeatFrame && maxFrame > 0)
 				{
 					int num = rand() % maxFrame;
 
@@ -295,7 +295,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			// 반복되는 frame이면..
 			// 시작 frame을 다르게 한다.
 			//---------------------------------------------
-			if (repeatFrame)
+			if (repeatFrame && maxFrame > 0)
 			{
 				int num = rand() % maxFrame;
 

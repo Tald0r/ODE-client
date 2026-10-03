@@ -572,3 +572,48 @@ TEST(StoppedZoneEffectGenerator, QueueRemovalAfterOriginalAcceptanceKeepsTheRepo
 	if (effects.front()->GetEffectTarget() == target.get()) target.release();
 	CHECK_EQ(1, submissions); effects.clear(); CHECK(removedTargets == std::vector<int>({73}));
 }
+
+TEST(StoppedZoneEffectGenerator, NonpositiveAnimationCountsSkipRandomStartSelection)
+{
+	World world;
+	sprite.repeatFrame = true;
+	const MStopZoneEffectHost seeded{
+		.Sprite = host.Sprite, .MaxFrames = host.MaxFrames,
+		.Queue = [](std::unique_ptr<MEffect> effect) {
+			// Reset per submission to bound the old remainder-by-zero path on ARM.
+			// The following sample also detects unwanted random consumption.
+			std::srand(1); return host.Queue(std::move(effect));
+		},
+	};
+	MStopZoneEffectGenerator::SetHost(&seeded);
+	std::srand(1); const int next = std::rand();
+	for (const int count : {0, -1})
+		for (const TYPE_ACTIONINFO action : {static_cast<TYPE_ACTIONINFO>(42),
+			static_cast<TYPE_ACTIONINFO>(RESULT_SKILL_STONE_AUGER),
+			static_cast<TYPE_ACTIONINFO>(RESULT_STEP_SKILL_STONE_AUGER_2),
+			static_cast<TYPE_ACTIONINFO>(RESULT_STEP_SKILL_STONE_AUGER_3)})
+		{
+			ClearEffects(); maxFrames = count;
+			CHECK(world.generator.Generate(Info(action))); CHECK_EQ(next, std::rand());
+			CHECK_EQ(action == 42 ? 1 : 5, effects.size());
+			for (const auto& effect : effects)
+			{
+				CHECK_EQ(0, effect->GetFrame()); CHECK_EQ(static_cast<BYTE>(count), effect->GetMaxFrame());
+				CHECK_EQ(129, effect->GetEndFrame()); CHECK_EQ(104, effect->GetEndLinkFrame());
+			}
+		}
+}
+
+TEST(StoppedZoneEffectGenerator, SingleFrameAnimationsStillConsumeOneSamplePerAcceptedEffect)
+{
+	World world;
+	sprite.repeatFrame = true; maxFrames = 1;
+	for (const TYPE_ACTIONINFO action : {static_cast<TYPE_ACTIONINFO>(42), static_cast<TYPE_ACTIONINFO>(RESULT_SKILL_STONE_AUGER)})
+	{
+		ClearEffects(); const int count = action == 42 ? 1 : 5;
+		std::srand(4); for (int i = 0; i < count; ++i) std::rand();
+		const int next = std::rand(); std::srand(4);
+		CHECK(world.generator.Generate(Info(action))); CHECK_EQ(next, std::rand());
+		for (const auto& effect : effects) { CHECK_EQ(0, effect->GetFrame()); CHECK_EQ(1, effect->GetMaxFrame()); }
+	}
+}
