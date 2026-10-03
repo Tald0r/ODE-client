@@ -5,8 +5,22 @@
 #include "MViewDef.h"
 #include "SkillDef.h"
 #include "MEventQueue.h"
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int OffsetCoordinate(int coordinate, int offset)
+{
+	const std::int64_t value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 const MStopMultipleEffectHost* MStopZoneMultipleEffectGenerator::s_pHost = nullptr;
 
@@ -79,20 +93,20 @@ MStopZoneMultipleEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	{
 		int n = 0;
 
-		ex[n] = egInfo.x0 - rand()%randX - 24;
-		ey[n] = egInfo.y0 - rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, -(rand()%randX) - 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, -(rand()%randY));
 
 		n++;
-		ex[n] = egInfo.x0 - rand()%randX - 24;
-		ey[n] = egInfo.y0 + rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, -(rand()%randX) - 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, rand()%randY);
 
 		n++;
-		ex[n] = egInfo.x0 + rand()%randX + 24;
-		ey[n] = egInfo.y0 - rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, rand()%randX + 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, -(rand()%randY));
 
 		n++;
-		ex[n] = egInfo.x0 + rand()%randX + 24;
-		ey[n] = egInfo.y0 + rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, rand()%randX + 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, rand()%randY);
 
 		for (int j=0; j<numEffect; j++)
 		{

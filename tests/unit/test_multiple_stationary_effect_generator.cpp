@@ -490,3 +490,107 @@ TEST(MultipleStationaryEffectGenerator, MissingBaseServicesKeepStaggeredCountsAn
 	CHECK_EQ(4, effects.back()->GetEndLinkFrame()); CHECK_EQ(0, effects.front()->GetLight());
 	CHECK(!effects.front()->Update()); CHECK(!effects.back()->IsDelayFrame());
 }
+
+TEST(MultipleStationaryEffectGenerator, PositiveRandomizedCoordinatesSaturateBeforeTargetCopies)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	struct Case { TYPE_ACTIONINFO action; int count, rangeX, rangeY; };
+	for (const Case c : {Case{42, 16, 48, 50}, {SKILL_ACID_STORM_WIDE, 24, 96, 100}, {SKILL_POISON_STORM_WIDE, 24, 96, 100}})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.nActionInfo = c.action; info.x0 = info.y0 = high; info.pEffectTarget = target.get();
+		const auto draws = RandomDraws(487, static_cast<size_t>(2 * c.count + 1));
+		CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(c.count, effects.size()); CHECK_EQ(draws.back(), std::rand());
+		CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY());
+		for (size_t i = 1; i < effects.size(); ++i)
+		{
+			const int x = i % 4 < 2 ? high - draws[2 * i] % c.rangeX - 24 : high;
+			const int y = i % 2 == 0 ? high - draws[2 * i + 1] % c.rangeY : high;
+			CHECK_EQ(x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(y, effects[i]->GetEffectTarget()->GetY());
+		}
+	}
+}
+
+TEST(MultipleStationaryEffectGenerator, NegativeRandomizedCoordinatesSaturateBeforeTargetCopies)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	struct Case { TYPE_ACTIONINFO action; int count, rangeX, rangeY; };
+	for (const Case c : {Case{42, 16, 48, 50}, {SKILL_ACID_STORM_WIDE, 24, 96, 100}, {SKILL_POISON_STORM_WIDE, 24, 96, 100}})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.nActionInfo = c.action; info.x0 = info.y0 = low; info.pEffectTarget = target.get();
+		const auto draws = RandomDraws(509, static_cast<size_t>(2 * c.count + 1));
+		CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(c.count, effects.size()); CHECK_EQ(draws.back(), std::rand());
+		CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY());
+		for (size_t i = 1; i < effects.size(); ++i)
+		{
+			const int x = i % 4 < 2 ? low : low + draws[2 * i] % c.rangeX + 24;
+			const int y = i % 2 == 0 ? low : low + draws[2 * i + 1] % c.rangeY;
+			CHECK_EQ(x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(y, effects[i]->GetEffectTarget()->GetY());
+		}
+	}
+}
+
+TEST(MultipleStationaryEffectGenerator, FixedHorizontalOffsetsCannotOverflowAfterRepresentableRandomSums)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const bool upper : {false, true})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.x0 = upper ? high - 47 : low + 47; info.pEffectTarget = target.get();
+		const auto draws = RandomDraws(547, 33); CHECK(world.generator.Generate(info)); target.release();
+		for (size_t i = 1; i < effects.size(); ++i)
+		{
+			const int amount = draws[2 * i] % 48; const bool left = i % 4 < 2;
+			const int expected = upper ? (left ? high - 71 - amount : (amount > 23 ? high : high - 23 + amount)) :
+				(left ? (amount > 23 ? low : low + 23 - amount) : low + 71 + amount);
+			CHECK_EQ(expected, effects[i]->GetEffectTarget()->GetX());
+		}
+	}
+}
+
+TEST(MultipleStationaryEffectGenerator, TargetlessExtremePositionsStayNearTheirSource)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const bool upper : {false, true})
+	{
+		ClearEffects(); auto info = Info(); info.x0 = info.y0 = upper ? high : low; info.nActionInfo = SKILL_ACID_STORM_WIDE;
+		const auto draws = RandomDraws(571, 49); CHECK(world.generator.Generate(info)); CHECK_EQ(24, effects.size()); CHECK_EQ(draws[48], std::rand());
+		for (const auto& effect : effects)
+		{
+			// Float storage may round by one spacing unit near the integer limit.
+			CHECK(upper ? effect->GetPixelX() >= high - 256 : effect->GetPixelX() <= low + 256);
+			CHECK(upper ? effect->GetPixelY() >= high - 256 : effect->GetPixelY() <= low + 256);
+			CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(SKILL_ACID_STORM_WIDE, effect->GetActionInfo());
+		}
+	}
+}
+
+TEST(MultipleStationaryEffectGenerator, RepresentableRandomizedCoordinatesRemainExactNearLimits)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.x0 = high - 120; info.y0 = low + 100; info.nActionInfo = SKILL_ACID_STORM_WIDE; info.pEffectTarget = target.get();
+	const auto draws = RandomDraws(599, 49); CHECK(world.generator.Generate(info)); target.release();
+	for (size_t i = 1; i < effects.size(); ++i)
+	{
+		const int x = i % 4 < 2 ? high - 144 - draws[2 * i] % 96 : high - 96 + draws[2 * i] % 96;
+		const int y = i % 2 == 0 ? low + 100 - draws[2 * i + 1] % 100 : low + 100 + draws[2 * i + 1] % 100;
+		CHECK_EQ(x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(MultipleStationaryEffectGenerator, ExtremePositionsKeepRejectedAndLateOriginalTargetsUntouched)
+{
+	World world;
+	for (const bool accepted : {false, true})
+	{
+		ClearEffects(); rejectBefore = 15; acceptQueue = accepted;
+		auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+		info.x0 = (std::numeric_limits<int>::max)(); info.y0 = (std::numeric_limits<int>::min)();
+		CHECK_EQ(accepted, world.generator.Generate(info)); CHECK_EQ(16, submissions); CHECK_EQ(accepted ? 1 : 0, effects.size());
+		CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY()); CHECK_EQ(999, target->GetZ()); CHECK_EQ(456, target->GetID());
+		if (accepted) { CHECK(effects.front()->GetEffectTarget() == target.get()); target.release(); }
+	}
+}

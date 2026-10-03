@@ -2365,14 +2365,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_wall_effect_generator.cpp`.
 
-- [ ] **4.69 Multiple stationary generation:** `MStopZoneMultipleEffectGenerator`
+- [x] **4.69 Multiple stationary generation:** `MStopZoneMultipleEffectGenerator`
   emits staggered groups of four randomized pixel effects from `gamemodel`.
-  > **Status:** in progress (extraction verified; randomized-coordinate fix pending).
+  > **Status:** done (this commit).
   > Borrowed sprite metadata, an optional shake event and consuming submission
   > replace executable globals. Ordinary calls emit four phases; wide acid and
   > poison storms emit six with wider offsets. Each phase draws every position
   > before submission. Delays advance for every attempt; the first accepted
   > effect owns the original target and later copies use generated pixels.
+  > Generated pixel sums widen before saturating at integer limits, including
+  > the fixed horizontal offsets. R1 is 383 Windows / 381 Ninja, measured in
+  > both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_multiple_stationary_effect_generator.cpp`.
 
