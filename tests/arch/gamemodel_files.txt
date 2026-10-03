@@ -586,3 +586,7 @@ Client/MStopZoneMultipleEffectGenerator.h
 # Four randomized zone quadrants with first-slot target ownership (4.70).
 Client/MStopZoneRandomEffectGenerator.cpp
 Client/MStopZoneRandomEffectGenerator.h
+
+# Selectable stationary effects with darkness phases and repeat starts (4.71).
+Client/MStopZoneSelectableEffectGenerator.cpp
+Client/MStopZoneSelectableEffectGenerator.h
