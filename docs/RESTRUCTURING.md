@@ -2352,14 +2352,16 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_rectangle_effect_generator.cpp`.
 
-- [ ] **4.68 Complete wall generation:** `MStopZoneWallEffectGenerator` creates
+- [x] **4.68 Complete wall generation:** `MStopZoneWallEffectGenerator` creates
   stationary walls around destination tiles from `gamemodel`.
-  > **Status:** in progress (extraction and direction guard verified; coordinate fix pending).
+  > **Status:** done (this commit).
   > Borrowed sprite metadata and consuming submission replace executable
   > globals. The full directional sequence includes its middle tile. The first
   > accepted effect takes the original target; copies advance from destination
   > pixels on every iteration, including rejected submissions.
   > Invalid direction bytes reject before table access or effect construction.
+  > Target accumulators use 64-bit arithmetic and saturate only when assigning
+  > copied coordinates. R1 is 384 Windows / 382 Ninja, measured in both local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_wall_effect_generator.cpp`.
 

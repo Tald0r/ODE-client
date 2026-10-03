@@ -4,7 +4,20 @@
 #include "MEffect.h"
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int TargetCoordinate(std::int64_t value)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 // Direction rows contain start X/Y offsets and per-tile X/Y increments.
 const int g_WallDirValue[8][4] = {
@@ -63,7 +76,7 @@ MStopZoneWallEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
-	int x = egInfo.x1,
+	std::int64_t x = egInfo.x1,
 		y = egInfo.y1;
 
 	for (int i=0; i<egInfo.step; i++)
@@ -101,7 +114,7 @@ MStopZoneWallEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			{
 				MEffectTarget* pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 				pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-				pEffectTarget2->Set( x, y, egInfo.z0, egInfo.creatureID );
+				pEffectTarget2->Set( TargetCoordinate(x), TargetCoordinate(y), egInfo.z0, egInfo.creatureID );
 			}
 		}
 

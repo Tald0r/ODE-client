@@ -461,3 +461,100 @@ TEST(WallEffectGenerator, EveryInvalidDirectionRejectsAtAllLengthBoundaries)
 		}
 	}
 }
+
+TEST(WallEffectGenerator, PositiveCopiedTargetDisplacementsSaturateAtTheUpperLimit)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.x1 = info.y1 = high; info.direction = DIRECTION_LEFTDOWN; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(5, effects.size());
+	CHECK_EQ(777, effects.front()->GetEffectTarget()->GetX()); CHECK_EQ(888, effects.front()->GetEffectTarget()->GetY());
+	for (size_t i = 1; i < effects.size(); ++i)
+	{
+		CHECK_EQ(high, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(high, effects[i]->GetEffectTarget()->GetY());
+		CHECK_EQ(17, effects[i]->GetEffectTarget()->GetZ()); CHECK_EQ(123, effects[i]->GetEffectTarget()->GetID());
+	}
+}
+
+TEST(WallEffectGenerator, NegativeCopiedTargetDisplacementsSaturateAtTheLowerLimit)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	for (const bool negativeX : {true, false})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+		info.x1 = negativeX ? low : 1000; info.y1 = negativeX ? 1000 : low;
+		info.direction = negativeX ? DIRECTION_RIGHTDOWN : DIRECTION_LEFTUP;
+		CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(5, effects.size());
+		const Point xTargets[] = {{777, 888}, {low, 1024}, {low, 1048}, {low, 1072}, {low, 1096}};
+		const Point yTargets[] = {{777, 888}, {1048, low}, {1096, low}, {1144, low}, {1192, low}};
+		for (size_t i = 0; i < effects.size(); ++i)
+		{
+			const Point expected = negativeX ? xTargets[i] : yTargets[i];
+			CHECK_EQ(expected.x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected.y, effects[i]->GetEffectTarget()->GetY());
+		}
+	}
+}
+
+TEST(WallEffectGenerator, WideOffsetsKeepAdvancingAfterARejectedSubmission)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	rejectBefore = 1;
+	auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.x1 = high - 60; info.y1 = low + 10;
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(4, effects.size());
+	CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget); CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY());
+	const int expectedY[] = {888, low + 58, low + 82, low + 106};
+	for (size_t i = 1; i < effects.size(); ++i)
+	{
+		CHECK_EQ(high, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expectedY[i], effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(WallEffectGenerator, MaximumLengthKeepsTheWholeDisplacementBeforeClamping)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.step = 255;
+	info.direction = DIRECTION_LEFTUP; info.x1 = high - 6000; info.y1 = low + 3000;
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(255, effects.size());
+	for (const size_t slot : {125u, 126u, 127u, 254u})
+	{
+		CHECK_EQ(high, effects[slot]->GetEffectTarget()->GetX()); CHECK_EQ(low, effects[slot]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(WallEffectGenerator, RepresentableLastTargetsRemainExactAtBothCoordinateLimits)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const bool negativeX : {false, true})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+		info.x1 = negativeX ? low + 192 : high - 192; info.y1 = high - 96;
+		info.direction = negativeX ? DIRECTION_RIGHTDOWN : DIRECTION_LEFTDOWN;
+		CHECK(world.generator.Generate(info)); target.release();
+		CHECK_EQ(negativeX ? low + 144 : high - 144, effects[1]->GetEffectTarget()->GetX()); CHECK_EQ(high - 72, effects[1]->GetEffectTarget()->GetY());
+		CHECK_EQ(negativeX ? low + 48 : high - 48, effects[3]->GetEffectTarget()->GetX()); CHECK_EQ(high - 24, effects[3]->GetEffectTarget()->GetY());
+		CHECK_EQ(negativeX ? low : high, effects.back()->GetEffectTarget()->GetX()); CHECK_EQ(high, effects.back()->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(WallEffectGenerator, ExtremeCoordinatesRemainSafeWithoutCopiedTargets)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const bool negativeX : {false, true})
+	{
+		for (const BYTE step : {static_cast<BYTE>(0), static_cast<BYTE>(1), static_cast<BYTE>(2), static_cast<BYTE>(255)})
+		{
+			for (const bool accepted : {false, true})
+			{
+				ClearEffects(); acceptQueue = accepted; auto info = Info(); info.step = step; info.x1 = negativeX ? low : high; info.y1 = high;
+				info.direction = negativeX ? DIRECTION_RIGHTDOWN : DIRECTION_LEFTDOWN;
+				CHECK_EQ(accepted && step != 0, world.generator.Generate(info)); CHECK_EQ(step, submissions);
+				for (const auto& effect : effects) { CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(42, effect->GetActionInfo()); }
+			}
+		}
+	}
+}
