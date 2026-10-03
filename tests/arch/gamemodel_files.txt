@@ -614,3 +614,7 @@ Client/MAttackCreatureParabolaEffectGenerator.h
 # Wide ripple rows and center-only target ownership (4.77).
 Client/MRippleZoneWideEffectGenerator.cpp
 Client/MRippleZoneWideEffectGenerator.h
+
+# Bloody Breaker phase patterns, sprite cycling and center target ownership (4.78).
+Client/MBloodyBreakerEffectGenerator.cpp
+Client/MBloodyBreakerEffectGenerator.h
