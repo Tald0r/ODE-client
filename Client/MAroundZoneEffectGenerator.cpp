@@ -4,7 +4,10 @@
 #include "MEffect.h"
 #include "EffectSpriteTypeDef.h"
 #include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <utility>
 
 const MAroundZoneEffectHost* MAroundZoneEffectGenerator::s_pHost = nullptr;
@@ -25,6 +28,12 @@ bool MAroundZoneEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MAroundZ
 bool MAroundZoneEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect, DWORD delay)
 {
 	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect), delay);
+}
+
+int MAroundZoneEffectGenerator::OffsetCoordinate(int coordinate, int offset)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(static_cast<std::int64_t>(coordinate) + offset,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
 }
 
 bool
@@ -62,23 +71,23 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			switch(egInfo.step%4)
 			{
 			case 0:
-				pixelPoint.x = pixelPoint.x - rand()%(TILE_X<<1) - 24;
-				pixelPoint.y = pixelPoint.y - rand()%(TILE_Y<<1) - 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, -(rand()%(TILE_X<<1)) - 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, -(rand()%(TILE_Y<<1)) - 24);
 				break;
 
 			case 1:
-				pixelPoint.x = pixelPoint.x - rand()%(TILE_X<<1) - 24;
-				pixelPoint.y = pixelPoint.y + rand()%(TILE_Y<<1) + 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, -(rand()%(TILE_X<<1)) - 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, +(rand()%(TILE_Y<<1)) + 24);
 				break;
 
 			case 2:
-				pixelPoint.x = pixelPoint.x + rand()%(TILE_X<<1) + 24;
-				pixelPoint.y = pixelPoint.y - rand()%(TILE_Y<<1) - 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, +(rand()%(TILE_X<<1)) + 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, -(rand()%(TILE_Y<<1)) - 24);
 				break;
 
 			case 3:
-				pixelPoint.x = pixelPoint.x + rand()%(TILE_X<<1) + 24;
-				pixelPoint.y = pixelPoint.y + rand()%(TILE_Y<<1) + 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, +(rand()%(TILE_X<<1)) + 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, +(rand()%(TILE_Y<<1)) + 24);
 				break;
 
 			}
@@ -102,20 +111,20 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				break;
 			}
 
-			pixelPoint.x += (rand()%(TILE_X<<1)) - TILE_X;
-			pixelPoint.y += (rand()%(TILE_Y<<1)) - TILE_Y;
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, (rand()%(TILE_X<<1)) - TILE_X);
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, (rand()%(TILE_Y<<1)) - TILE_Y);
 		}
 		else if (est==EFFECTSPRITETYPE_MOLE_SHOT_1 )
 		{
 			est = EFFECTSPRITETYPE_MOLE_SHOT_1+(rand()%5);
-			pixelPoint.x += (rand()%(TILE_X<<1)) - TILE_X;
-			pixelPoint.y += (rand()%(TILE_Y<<1)) - TILE_Y;
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, (rand()%(TILE_X<<1)) - TILE_X);
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, (rand()%(TILE_Y<<1)) - TILE_Y);
 		}
 		else if( est == EFFECTSPRITETYPE_INSTALL_TURRET_SCRAP1)
 		{
 			est = EFFECTSPRITETYPE_INSTALL_TURRET_SCRAP1+(rand()%5);
-			pixelPoint.x += (rand()%(TILE_X<<1));
-			pixelPoint.y += (rand()%(TILE_Y<<1));
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, rand()%(TILE_X<<1));
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, rand()%(TILE_Y<<1));
 		}
 		else if(est == EFFECTSPRITETYPE_SPIT_STREAM)
 		{
@@ -133,8 +142,8 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				case DIRECTION_UP			:				DirY = -1;	break;
 				case DIRECTION_RIGHT		: DirX = +1;				break;
 			}
-			pixelPoint.x += ((((TempCount+1)*(24))*DirX));
-			pixelPoint.y += ((((TempCount+1)*(24))*DirY));
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, (TempCount + 1) * 24 * DirX);
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, (TempCount + 1) * 24 * DirY);
 			dwWaitCount = (TempCount);
 		}
 		else if(est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW)

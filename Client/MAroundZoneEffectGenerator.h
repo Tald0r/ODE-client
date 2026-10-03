@@ -33,6 +33,7 @@ class MAroundZoneEffectGenerator : public MEffectGenerator {
 	private:
 		static bool ReadSprite(TYPE_EFFECTSPRITETYPE type, MAroundZoneEffectSprite& sprite);
 		static bool QueueEffect(std::unique_ptr<MEffect> effect, DWORD delay);
+		static int OffsetCoordinate(int coordinate, int offset);
 		static const MAroundZoneEffectHost* s_pHost;
 };
 

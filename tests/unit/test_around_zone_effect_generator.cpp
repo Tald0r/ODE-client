@@ -492,3 +492,92 @@ TEST(AroundZoneEffectGenerator, MissingBaseServicesKeepZeroBasedDeadlinesAndInac
 		CHECK(!effects[i]->IsWaitFrame()); CHECK(!effects[i]->IsDelayFrame()); CHECK(!effects[i]->Update()); CHECK_EQ(1, effects[i]->GetFrame());
 	}
 }
+
+TEST(AroundZoneEffectGenerator, FireQuadrantsSaturateOutwardCoordinatesAtIntegerLimits)
+{
+	World world;
+	for (int quadrant = 0; quadrant < 4; ++quadrant)
+	{
+		ClearEffects(); auto info = Info(EFFECTSPRITETYPE_POWER_OF_LAND_FIRE_2); info.step = static_cast<BYTE>(quadrant);
+		info.x1 = quadrant < 2 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)();
+		info.y1 = quadrant % 2 == 0 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)();
+		std::srand(151); CHECK(world.generator.Generate(info)); CHECK_EQ(info.x1, effects.front()->GetPixelX()); CHECK_EQ(info.y1, effects.front()->GetPixelY());
+	}
+}
+
+TEST(AroundZoneEffectGenerator, FireFixedOffsetsCannotOverflowAfterRepresentableRandomOffsets)
+{
+	World world;
+	for (int quadrant = 0; quadrant < 4; ++quadrant)
+	{
+		ClearEffects(); const auto draws = RandomDraws(157, 4); auto info = Info(EFFECTSPRITETYPE_POWER_OF_LAND_FIRE_2); info.step = static_cast<BYTE>(quadrant);
+		const int xLimit = quadrant < 2 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)();
+		const int yLimit = quadrant % 2 == 0 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)();
+		info.x1 = xLimit + (quadrant < 2 ? 1 : -1) * (draws[1] % 96 + 10);
+		info.y1 = yLimit + (quadrant % 2 == 0 ? 1 : -1) * (draws[2] % 48 + 10);
+		CHECK(world.generator.Generate(info)); CHECK_EQ(xLimit, effects.front()->GetPixelX()); CHECK_EQ(yLimit, effects.front()->GetPixelY()); CHECK_EQ(draws[3], std::rand());
+	}
+}
+
+TEST(AroundZoneEffectGenerator, CenteredDustAndMoleOffsetsSaturateAtBothIntegerLimits)
+{
+	World world;
+	for (const int type : {EFFECTSPRITETYPE_GUN_DUST_1, EFFECTSPRITETYPE_MOLE_SHOT_1})
+	{
+		for (int sign : {-1, 1})
+		{
+			ClearEffects(); const int variants = type == EFFECTSPRITETYPE_GUN_DUST_1 ? 3 : 5;
+			const unsigned seed = SeedWhere([variants, sign](const auto& draws) { return draws[1] % variants != 0 && (sign < 0 ? (draws[2] % 96 < 48 && draws[3] % 48 < 24) : (draws[2] % 96 > 48 && draws[3] % 48 > 24)); });
+			std::srand(seed); auto info = Info(static_cast<TYPE_EFFECTSPRITETYPE>(type)); info.x1 = info.y1 = sign < 0 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)();
+			CHECK(world.generator.Generate(info)); CHECK_EQ(info.x1, effects.front()->GetPixelX()); CHECK_EQ(info.y1, effects.front()->GetPixelY());
+		}
+	}
+}
+
+TEST(AroundZoneEffectGenerator, PositiveTurretOffsetsSaturateWithoutChangingLaterResetPositions)
+{
+	World world;
+	const unsigned seed = SeedWhere([](const auto& draws) { return draws[0] % 5 != 0 && draws[1] % 96 != 0 && draws[2] % 48 != 0; });
+	std::srand(seed); auto info = Info(EFFECTSPRITETYPE_INSTALL_TURRET_SCRAP1); info.x1 = info.y1 = (std::numeric_limits<int>::max)();
+	CHECK(world.generator.Generate(info)); CHECK_EQ(5, effects.size());
+	for (const auto& effect : effects) { CHECK_EQ(info.x1, effect->GetPixelX()); CHECK_EQ(info.y1, effect->GetPixelY()); }
+}
+
+TEST(AroundZoneEffectGenerator, EveryStreamDirectionSaturatesEachOutwardSourceOffset)
+{
+	World world;
+	struct Delta { int x, y; }; const std::array<Delta, 8> directions{{{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}}};
+	for (int direction = 0; direction < 8; ++direction)
+	{
+		ClearEffects(); auto info = Info(EFFECTSPRITETYPE_SPIT_STREAM); info.direction = static_cast<BYTE>(direction);
+		info.x0 = directions[direction].x == 0 ? 23 : (directions[direction].x < 0 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)());
+		info.y0 = directions[direction].y == 0 ? 47 : (directions[direction].y < 0 ? (std::numeric_limits<int>::min)() : (std::numeric_limits<int>::max)());
+		CHECK(world.generator.Generate(info)); CHECK_EQ(6, effects.size());
+		for (size_t i = 0; i < effects.size(); ++i) { CHECK_EQ(info.x0, effects[i]->GetPixelX()); CHECK_EQ(info.y0, effects[i]->GetPixelY()); CHECK_EQ(i, acceptedDelays[i]); }
+	}
+}
+
+TEST(AroundZoneEffectGenerator, InwardFireOffsetsRemainNearTheirOriginalCoordinateLimits)
+{
+	World world;
+	for (int quadrant = 0; quadrant < 4; ++quadrant)
+	{
+		ClearEffects(); auto info = Info(EFFECTSPRITETYPE_POWER_OF_LAND_FIRE_2); info.step = static_cast<BYTE>(quadrant);
+		info.x1 = quadrant < 2 ? (std::numeric_limits<int>::max)() : (std::numeric_limits<int>::min)();
+		info.y1 = quadrant % 2 == 0 ? (std::numeric_limits<int>::max)() : (std::numeric_limits<int>::min)();
+		std::srand(163); CHECK(world.generator.Generate(info));
+		CHECK(quadrant < 2 ? effects.front()->GetPixelX() >= info.x1 - 256 : effects.front()->GetPixelX() <= info.x1 + 256);
+		CHECK(quadrant % 2 == 0 ? effects.front()->GetPixelY() >= info.y1 - 256 : effects.front()->GetPixelY() <= info.y1 + 256);
+	}
+}
+
+TEST(AroundZoneEffectGenerator, ExtremeDelayedEffectsPreserveLateOriginalAndFullCopiedDestinations)
+{
+	World world;
+	acceptance = 40; auto target = Target(); auto info = Info(EFFECTSPRITETYPE_SPIT_STREAM); info.pEffectTarget = target.get();
+	info.x0 = info.y1 = (std::numeric_limits<int>::max)(); info.y0 = info.x1 = info.z1 = (std::numeric_limits<int>::min)();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(2, effects.size()); CHECK(acceptedDelays == std::vector<DWORD>({3, 5}));
+	CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget); CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY()); CHECK_EQ(999, info.pEffectTarget->GetZ());
+	const auto* copy = effects.back()->GetEffectTarget(); CHECK(copy != info.pEffectTarget); CHECK_EQ(info.x1, copy->GetX()); CHECK_EQ(info.y1, copy->GetY()); CHECK_EQ(info.z1, copy->GetZ());
+	for (const auto& effect : effects) { CHECK_EQ(info.x0, effect->GetPixelX()); CHECK_EQ(info.y0, effect->GetPixelY()); CHECK_EQ(17, effect->GetPixelZ()); }
+}
