@@ -90,6 +90,8 @@
 #include "MStopZoneXEffectGenerator.h"
 #include "MStopZoneRhombusEffectGenerator.h"
 #include "MStopZoneEmptyCrossEffectGenerator.h"
+#include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
+#include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
 #include "MAttackZoneEffectGenerator.h"
 #include "MAttackZoneParabolaEffectGenerator.h"
@@ -2640,6 +2642,8 @@ void ReleaseAllObjects()
 	MStopZoneXEffectGenerator::SetHost(nullptr);
 	MStopZoneRhombusEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyCrossEffectGenerator::SetHost(nullptr);
+	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
+	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
 	MAttackZoneEffectGenerator::SetHost(nullptr);
 	MAttackZoneBombEffectGenerator::SetHost(nullptr);
@@ -3104,6 +3108,23 @@ static const MInventoryEffectHost s_InventoryEffectHost = {
 
 static const MFallingEffectHost s_FallingEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MFallingEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release());
+	},
+};
+
+static const MEmptyWallEffectHost s_EmptyWallEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MEmptyWallEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
 			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
 			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
@@ -3602,6 +3623,8 @@ InitGameObject()
 	MStopZoneXEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneRhombusEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneEmptyCrossEffectGenerator::SetHost(&s_FixedZoneEffectHost);
+	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
+	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
 	MAttackZoneEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
 	MAttackZoneBombEffectGenerator::SetHost(&s_ZoneBombEffectHost);
