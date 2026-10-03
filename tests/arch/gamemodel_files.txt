@@ -618,3 +618,7 @@ Client/MRippleZoneWideEffectGenerator.h
 # Bloody Breaker phase patterns, sprite cycling and center target ownership (4.78).
 Client/MBloodyBreakerEffectGenerator.cpp
 Client/MBloodyBreakerEffectGenerator.h
+
+# Bloody Wall directional rows, sprite cycling and copied target ownership (4.79).
+Client/MBloodyWallEffectGenerator.cpp
+Client/MBloodyWallEffectGenerator.h
