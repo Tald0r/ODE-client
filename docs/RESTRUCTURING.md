@@ -2245,12 +2245,14 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.61 Stationary zone-effect generation:** `MStopZoneEffectGenerator`
   selects variants and creates stationary effects in `gamemodel`.
-  > **Status:** in progress (extraction verified; ownership and zero-frame fixes pending).
+  > **Status:** in progress (extraction and ownership verified; zero-frame fix pending).
   > Sprite selection precedes meteor event submission; final frame-count lookup
   > follows it. Shared geometry retains sector narrowing. Firework/pet positions
   > and multi-effect exceptions, sword-wave facing adjustments, random variant
   > and animation selection, and stone-auger cross ordering retain their rules.
   > Missing metadata rejects and consuming queues release unlinked effects.
+  > Stone-auger success reports transfer of the original target to slot zero;
+  > without a target, it reports any accepted effect. Other slots own copies.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_stopped_zone_effect_generator.cpp`.
 

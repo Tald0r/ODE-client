@@ -178,6 +178,8 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x1));
 		sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y1));
 
+		bool targetTransferred = false;
+		bool anyAccepted = false;
 		for(int i=0;static_cast<size_t>(i)<sizeof(pt)/sizeof(POINT);i++)
 		{
 			auto effect = std::make_unique<MEffect>(bltType);
@@ -196,10 +198,14 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 			if (QueueEffect(std::move(effect)))
 			{
+				anyAccepted = true;
 				if( egInfo.pEffectTarget != NULL )
 				{
 					if( i == 0 )
+					{
 						pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget);
+						targetTransferred = true;
+					}
 					else
 					{
 						MEffectTarget *pTarget = new MEffectTarget(*egInfo.pEffectTarget);
@@ -218,7 +224,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 			}
 		}
-		return true;
+		return egInfo.pEffectTarget ? targetTransferred : anyAccepted;
 
 	} else
 	{

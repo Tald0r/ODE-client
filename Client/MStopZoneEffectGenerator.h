@@ -33,6 +33,8 @@ class MStopZoneEffectGenerator : public MEffectGenerator {
 		~MStopZoneEffectGenerator() {}
 		static const MStopZoneEffectHost* SetHost(const MStopZoneEffectHost* host);
 		TYPE_EFFECTGENERATORID GetID() { return EFFECTGENERATORID_STOP_ZONE; }
+		// Success reports transfer of the original target, or any accepted effect
+		// when no target is supplied. Other accepted stone-auger effects own copies.
 		bool Generate(const EFFECTGENERATOR_INFO& egInfo);
 
 	private:

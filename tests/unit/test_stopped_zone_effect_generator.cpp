@@ -503,3 +503,72 @@ TEST(StoppedZoneEffectGenerator, CountsRemainFiniteAndLinkTimingIsIndependent)
 	CHECK(world.generator.Generate(info)); CHECK_EQ(1, effects.back()->GetEndFrame()); CHECK(!effects.back()->Update());
 	frameNow = 0; CHECK(effects.back()->Update()); CHECK_EQ(2, effects.back()->GetFrame());
 }
+
+TEST(StoppedZoneEffectGenerator, StoneAugerReturnReportsOriginalOwnershipForEveryAcceptanceMask)
+{
+	World world;
+	for (int mask = 0; mask < 32; ++mask)
+	{
+		ClearEffects(); acceptanceMask = mask;
+		auto target = Target(); auto info = Info(RESULT_SKILL_STONE_AUGER); info.pEffectTarget = target.get();
+		CHECK_EQ((mask & 1) != 0, world.generator.Generate(info)); CHECK_EQ(5, submissions);
+		bool ownsOriginal = false;
+		for (const auto& effect : effects) ownsOriginal |= effect->GetEffectTarget() == target.get();
+		CHECK_EQ((mask & 1) != 0, ownsOriginal);
+		// Red-run cleanup follows actual ownership rather than the reported result.
+		if (ownsOriginal) target.release();
+		else CHECK_EQ(777, target->GetX());
+	}
+}
+
+TEST(StoppedZoneEffectGenerator, TargetlessStoneAugerReportsWhetherAnyEffectWasAccepted)
+{
+	World world;
+	for (int mask = 0; mask < 32; ++mask)
+	{
+		ClearEffects(); acceptanceMask = mask;
+		CHECK_EQ(mask != 0, world.generator.Generate(Info(RESULT_SKILL_STONE_AUGER)));
+		CHECK_EQ(5, submissions); CHECK_EQ(mask == 0, effects.empty());
+	}
+}
+
+TEST(StoppedZoneEffectGenerator, MissingQueueCannotClaimStoneAugerTargetOwnership)
+{
+	World world;
+	const MStopZoneEffectHost metadataOnly{.Sprite = host.Sprite, .MaxFrames = host.MaxFrames};
+	MStopZoneEffectGenerator::SetHost(&metadataOnly);
+	auto target = Target(); auto info = Info(RESULT_SKILL_STONE_AUGER); info.pEffectTarget = target.get();
+	CHECK(!world.generator.Generate(info)); CHECK(effects.empty()); CHECK(removedTargets.empty()); CHECK_EQ(0, submissions);
+	CHECK_EQ(777, target->GetX());
+}
+
+TEST(StoppedZoneEffectGenerator, QueueRemovalBeforeOriginalAcceptanceRetainsCallerOwnership)
+{
+	World world;
+	const MStopZoneEffectHost changing{
+		.Sprite = host.Sprite, .MaxFrames = host.MaxFrames,
+		.Queue = [](std::unique_ptr<MEffect>) {
+			++submissions; MStopZoneEffectGenerator::SetHost(nullptr); return false;
+		},
+	};
+	MStopZoneEffectGenerator::SetHost(&changing);
+	auto target = Target(); auto info = Info(RESULT_SKILL_STONE_AUGER); info.pEffectTarget = target.get();
+	CHECK(!world.generator.Generate(info)); CHECK_EQ(1, submissions); CHECK(effects.empty()); CHECK(removedTargets.empty());
+}
+
+TEST(StoppedZoneEffectGenerator, QueueRemovalAfterOriginalAcceptanceKeepsTheReportedTransfer)
+{
+	World world;
+	const MStopZoneEffectHost changing{
+		.Sprite = host.Sprite, .MaxFrames = host.MaxFrames,
+		.Queue = [](std::unique_ptr<MEffect> effect) {
+			const bool accepted = host.Queue(std::move(effect)); MStopZoneEffectGenerator::SetHost(nullptr); return accepted;
+		},
+	};
+	MStopZoneEffectGenerator::SetHost(&changing);
+	auto target = Target(); auto info = Info(RESULT_SKILL_STONE_AUGER); info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); CHECK_EQ(1, effects.size());
+	CHECK(effects.front()->GetEffectTarget() == target.get());
+	if (effects.front()->GetEffectTarget() == target.get()) target.release();
+	CHECK_EQ(1, submissions); effects.clear(); CHECK(removedTargets == std::vector<int>({73}));
+}
