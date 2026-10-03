@@ -108,7 +108,7 @@ bool MBloodyWallEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 		}
 
 		// Randomize the starting animation only for retained repeating effects.
-		if (bAdd && repeatFrame)
+		if (bAdd && repeatFrame && maxFrame > 0)
 		{
 			const int num = std::rand() % maxFrame;
 			for (int nf = 0; nf < num; ++nf) pEffect->NextFrame();

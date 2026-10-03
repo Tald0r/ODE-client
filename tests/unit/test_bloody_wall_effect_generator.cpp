@@ -478,3 +478,57 @@ TEST(BloodyWallEffectGenerator, InvalidDirectionsKeepInitialVariantRandomnessAnd
 		CHECK(calls == (available ? std::vector<int>{1, 2} : std::vector<int>{1})); CHECK_EQ(0, submissions);
 	}
 }
+
+TEST(BloodyWallEffectGenerator, EmptyRepeatingAnimationKeepsFrameZeroWithoutDrawingRandomness)
+{
+	World world; sprite.repeatFrame = true; maxFrames = 0; acceptance = 1; auto target = Target(); auto* original = target.get();
+	std::srand(1); const int next = std::rand(); std::srand(1);
+	CHECK(Generate(world, Info(), target)); CHECK_EQ(next, std::rand()); CHECK_EQ(5, submissions); CHECK_EQ(1, effects.size());
+	CHECK_EQ(0, effects.front()->GetFrame()); CHECK_EQ(0, effects.front()->GetMaxFrame()); CHECK_EQ(7, effects.front()->GetLight());
+	CHECK(effects.front()->GetEffectTarget() == original); CheckTarget(*original);
+}
+
+TEST(BloodyWallEffectGenerator, NonpositiveFrameCountsKeepAcceptanceCopiesAndByteNarrowing)
+{
+	World world; sprite.repeatFrame = true;
+	for (const int frames : {0, -1, -3, (std::numeric_limits<int>::min)()}) for (const int mask : {0, 10, 31})
+	{
+		ClearEffects(); maxFrames = frames; acceptance = mask; auto target = Target(); auto* original = target.get();
+		std::srand(7); const int next = std::rand(); std::srand(7); CHECK_EQ(mask != 0, Generate(world, Info(), target)); CHECK_EQ(next, std::rand());
+		CHECK_EQ(5, submissions); CHECK_EQ(6, frameRequests.size()); CheckTarget(*original);
+		for (size_t i = 0; i < effects.size(); ++i)
+		{
+			CHECK_EQ(0, effects[i]->GetFrame()); CHECK_EQ(static_cast<BYTE>(frames), effects[i]->GetMaxFrame());
+			CHECK_EQ(i == 0, effects[i]->GetEffectTarget() == original);
+			if (i) CheckCopy(*effects[i]->GetEffectTarget(), 900, 800 + (slots[i] - 2) * 24);
+		}
+	}
+}
+
+TEST(BloodyWallEffectGenerator, RefreshedFrameLengthsControlOnlyTheirOwnRandomSelections)
+{
+	World world; sprite.repeatFrame = true;
+	const MBloodyWallEffectHost changing{
+		.Sprite = host.Sprite,
+		.MaxFrames = [](BYTE blt, TYPE_FRAMEID id, int& count) {
+			const bool available = host.MaxFrames(blt, id, count); count = submissions % 2 == 0 ? 0 : 7; return available;
+		},
+		.Queue = host.Queue,
+	};
+	MBloodyWallEffectGenerator::SetHost(&changing); std::srand(23); const int first = std::rand() % 7, second = std::rand() % 7, next = std::rand(); std::srand(23);
+	auto target = Target(); CHECK(Generate(world, Info(), target)); CHECK_EQ(next, std::rand());
+	CHECK_EQ(0, effects[0]->GetFrame()); CHECK_EQ(first, effects[1]->GetFrame()); CHECK_EQ(0, effects[2]->GetFrame()); CHECK_EQ(second, effects[3]->GetFrame()); CHECK_EQ(0, effects[4]->GetFrame());
+	CHECK_EQ(6, frameRequests.size());
+}
+
+TEST(BloodyWallEffectGenerator, PositiveFrameLengthsRetainRandomDrawsAndByteAnimationWrapping)
+{
+	World world; sprite.repeatFrame = true;
+	for (const int frames : {1, 3, 255, 256, 258})
+	{
+		ClearEffects(); maxFrames = frames; std::vector<int> expected; std::srand(47); const int cycle = static_cast<BYTE>(frames) == 0 ? 256 : static_cast<BYTE>(frames);
+		for (int i = 0; i < 5; ++i) expected.push_back((std::rand() % frames) % cycle);
+		const int next = std::rand(); std::srand(47); CHECK(world.generator.Generate(Info())); CHECK_EQ(next, std::rand());
+		for (size_t i = 0; i < effects.size(); ++i) { CHECK_EQ(expected[i], effects[i]->GetFrame()); CHECK_EQ(static_cast<BYTE>(frames), effects[i]->GetMaxFrame()); CHECK_EQ(7, effects[i]->GetLight()); }
+	}
+}
