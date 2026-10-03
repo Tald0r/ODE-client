@@ -4,158 +4,175 @@
 #include "Client_PCH.h"
 #include "MAttackZoneEffectGenerator.h"
 #include "MLinearEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
+#include "WorldTileGeometry.h"
+#include "DirectionSelection.h"
+#include "MViewDef.h"
 #include "EffectSpriteTypeDef.h"
-#include <math.h>
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
 #include "SkillDef.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <limits>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttackZoneEffectGenerator	g_AttackZoneEffectGenerator;
+namespace {
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+int ClampCoordinate(std::int64_t value)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
+
+const MZoneAttackEffectHost* MAttackZoneEffectGenerator::s_pHost = nullptr;
+
+const MZoneAttackEffectHost* MAttackZoneEffectGenerator::SetHost(const MZoneAttackEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MAttackZoneEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MZoneAttackEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MAttackZoneEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MAttackZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
 	int est = egInfo.effectSpriteType;
-	
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
 
-	MLinearEffect* pEffect = new MLinearEffect(bltType);	
-	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	MZoneAttackEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	auto effect = std::make_unique<MLinearEffect>(sprite.bltType);
+	MLinearEffect* pEffect = effect.get();
+	const TYPE_FRAMEID frameID = sprite.frameID;
+	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
-	// 시작 좌표
+	// Source pixel position.
 	int sx = egInfo.x0;
 	int sy = egInfo.y0;
 	int sz = egInfo.z0;
 
-	// 목표 좌표
-	int tx = egInfo.x1; 
+	// Destination pixel position.
+	int tx = egInfo.x1;
 	int ty = egInfo.y1;
 	int tz = egInfo.z1;
 
 	if(egInfo.nActionInfo == SKILL_HALO)
 	{
-		if(NULL != g_pTopView)
+		int sTileX = WorldTileGeometry::PixelToTileX(sx);
+		int sTileY = WorldTileGeometry::PixelToTileY(sy);
+		int eTileX = WorldTileGeometry::PixelToTileX(tx);
+		int eTileY = WorldTileGeometry::PixelToTileY(ty);
+
+		int TempDir = SelectFacingDirection(sTileX, sTileY, eTileX, eTileY);
+		switch (TempDir)
 		{
-			int sTileX = g_pTopView->PixelToMapX(sx);
-			int sTileY = g_pTopView->PixelToMapY(sy);
-			int eTileX = g_pTopView->PixelToMapX(tx);
-			int eTileY = g_pTopView->PixelToMapY(ty);
-
-			int TempDir = g_pTopView->GetDirectionToPosition(sTileX, sTileY, eTileX, eTileY);
-			switch (TempDir)
-			{
-				case DIRECTION_LEFTDOWN		: eTileX-=3;	eTileY+=3;	break;
-				case DIRECTION_RIGHTUP		: eTileX+=3;	eTileY-=3;	break;
-				case DIRECTION_LEFTUP		: eTileX-=3;	eTileY-=3;	break;
-				case DIRECTION_RIGHTDOWN	: eTileX+=3;	eTileY+=3;	break;
-				case DIRECTION_LEFT			: eTileX-=3;				break;
-				case DIRECTION_DOWN			:			eTileY+=3;	break;
-				case DIRECTION_UP			:			eTileY-=3;	break;
-				case DIRECTION_RIGHT		: eTileX+=3;				break;
-			}
-			pEffect->SetMulti(true);
-
-			tx = g_pTopView->MapToPixelX(eTileX);
-			ty = g_pTopView->MapToPixelY(eTileY);
+			case DIRECTION_LEFTDOWN		: eTileX-=3;	eTileY+=3;	break;
+			case DIRECTION_RIGHTUP		: eTileX+=3;	eTileY-=3;	break;
+			case DIRECTION_LEFTUP		: eTileX-=3;	eTileY-=3;	break;
+			case DIRECTION_RIGHTDOWN	: eTileX+=3;	eTileY+=3;	break;
+			case DIRECTION_LEFT			: eTileX-=3;				break;
+			case DIRECTION_DOWN			:			eTileY+=3;	break;
+			case DIRECTION_UP			:			eTileY-=3;	break;
+			case DIRECTION_RIGHT		: eTileX+=3;				break;
 		}
+		pEffect->SetMulti(true);
+
+		tx = WorldTileGeometry::TileToPixelX(eTileX);
+		ty = WorldTileGeometry::TileToPixelY(eTileY);
 	}
 	//------------------------------------------------------------
-	// 하드코딩.. ㅋㅋ
+	// Wind-divider range adjustment.
 	//------------------------------------------------------------
 	if (est==EFFECTSPRITETYPE_WIND_DIVIDER_1
 		|| est==EFFECTSPRITETYPE_WIND_DIVIDER_2
 		|| est==EFFECTSPRITETYPE_WIND_DIVIDER_3)
 	{
-		// 목표까지가는게 아니라.. 일정한 pixel수 만큼 가야한다?
+		// Travel a distance determined by speed and duration.
 		int movePixel = egInfo.step * egInfo.count;
 
-		int cx = sx-tx;
-		int cy = sy-ty;
+		std::int64_t cx = static_cast<std::int64_t>(sx) - tx;
+		std::int64_t cy = static_cast<std::int64_t>(sy) - ty;
 
 		if (cx==0 || cy==0)
 		{
 			//---------------------------------------------
-			// pixel좌표를 Map의 좌표로 바꿔준다.
+			// Convert the source to sector coordinates.
 			//---------------------------------------------
 			TYPE_SECTORPOSITION	sX, sY;
-			sX = g_pTopView->PixelToMapX( sx );
-			sY = g_pTopView->PixelToMapY( sy );
+			sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(sx));
+			sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(sy));
 
 			//---------------------------------------------
-			// 나가는 방향으로 다음 좌표를 정한다.	
+			// Step one sector in the supplied direction.
 			//---------------------------------------------
 			TYPE_SECTORPOSITION x=sX, y=sY;
-			MCreature::GetPositionToDirection(x,y, egInfo.direction);
+			WorldTileGeometry::Step(x,y, egInfo.direction);
 
 			//---------------------------------------------
-			// (x,y)를 다시 pixel좌표로 바꾼다.
+			// Convert the selected sector back to pixels.
 			//---------------------------------------------
-			tx = g_pTopView->MapToPixelX( x );
-			ty = g_pTopView->MapToPixelY( y );
+			tx = WorldTileGeometry::TileToPixelX( x );
+			ty = WorldTileGeometry::TileToPixelY( y );
 
-			// 다시 계산..
-			cx = sx - tx;
-			cy = sy - ty;
+			// Recompute the displacement.
+			cx = static_cast<std::int64_t>(sx) - tx;
+			cy = static_cast<std::int64_t>(sy) - ty;
 		}
 
-		int currentPixel = static_cast<int>(sqrt(cx*cx + cy*cy));
-
-		//float basis = ((cx==0)? 0 : (float)cy / (float)cx);
+		// Differences can span the full int range; their squared sum can even
+		// exceed int64. Keep the floored length and integer division afterward.
+		const auto currentPixel = static_cast<std::int64_t>(std::sqrt(
+			static_cast<double>(cx) * cx + static_cast<double>(cy) * cy));
 
 		if (currentPixel==0)
-		{			
+		{
 		}
 		else
 		{
-			tx = sx - (cx * movePixel / currentPixel);
-			ty = sy - (cy * movePixel / currentPixel);
+			tx = ClampCoordinate(sx - (cx * movePixel / currentPixel));
+			ty = ClampCoordinate(sy - (cy * movePixel / currentPixel));
 
 			MEffectTarget* pTarget = egInfo.pEffectTarget;
 			if (pTarget!=NULL)
 			{
-				int tx2 = sx - (cx * movePixel);
-				int ty2 = sy - (cy * movePixel);
+				// Preserve the distinct, unnormalized link offset before queuing.
+				int tx2 = ClampCoordinate(sx - (cx * movePixel));
+				int ty2 = ClampCoordinate(sy - (cy * movePixel));
 
 				pTarget->Set(tx2, ty2, tz, pTarget->GetID());
 			}
 		}
 	}
 
+	pEffect->SetFrameID( frameID, maxFrame );
 
+	// Configure the source position.
+	pEffect->SetPixelPosition( sx, sy, sz );
 
-	pEffect->SetFrameID( frameID, maxFrame );		// 0번 Effect, Max 3 Frame					
+	// Select the linear target.
+	pEffect->SetTarget( tx, ty, tz, egInfo.step );
 
-	// 발사 위치 Pixel좌표	
-	pEffect->SetPixelPosition( sx, sy, sz );	
+	// The supplied facing overrides linear target selection.
+	pEffect->SetDirection( egInfo.direction );
 
-	// 목표 위치 Pixel좌표
-	pEffect->SetTarget( tx, ty, tz, egInfo.step );	
-
-	// 방향 설정
-	pEffect->SetDirection( egInfo.direction );					
-	
-	// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
+	// Keep finite lifetime and independent link timing.
 	pEffect->SetCount( egInfo.count, egInfo.linkCount );
 
-	// 위력
+	// Preserve power.
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	if (g_pZone->AddEffect( pEffect ))
+	if (QueueEffect(std::move(effect)))
 	{
 		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 

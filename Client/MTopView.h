@@ -60,6 +60,7 @@
 #endif
 
 #include "MViewDef.h"
+#include "WorldTileGeometry.h"
 #include "MScreenFade.h"
 #include <fstream>
 #include <map>
@@ -210,13 +211,13 @@ class MTopView : public MRequestMode {
 		// 좌표 변환		
 		//
 		//------------------------------------------------------
-		static POINT	PixelToMap(const int& Xp, const int& Yp)	{ POINT p; p.x=Xp/TILE_X; p.y=Yp/TILE_Y; return p; }//{ POINT p; p.x=Xp>>6; p.y=Yp>>5; return p; }
-		static POINT	MapToPixel(const int& Xm, const int& Ym)	{ POINT p; p.x=Xm*TILE_X; p.y=Ym*TILE_Y; return p; }//{ POINT p; p.x=Xm<<6; p.y=Ym<<5; return p; }
+		static POINT	PixelToMap(const int& Xp, const int& Yp)	{ POINT p; p.x=WorldTileGeometry::PixelToTileX(Xp); p.y=WorldTileGeometry::PixelToTileY(Yp); return p; }//{ POINT p; p.x=Xp>>6; p.y=Yp>>5; return p; }
+		static POINT	MapToPixel(const int& Xm, const int& Ym)	{ POINT p; p.x=WorldTileGeometry::TileToPixelX(Xm); p.y=WorldTileGeometry::TileToPixelY(Ym); return p; }//{ POINT p; p.x=Xm<<6; p.y=Ym<<5; return p; }
 
-		static int		PixelToMapX(const int& Xp)		{ return (Xp/TILE_X); }
-		static int		PixelToMapY(const int& Yp)		{ return (Yp/TILE_Y); }
-		static int		MapToPixelX(const int& Xm)		{ return (Xm*TILE_X); }	
-		static int		MapToPixelY(const int& Ym)		{ return (Ym*TILE_Y); }
+		static int		PixelToMapX(const int& Xp)		{ return WorldTileGeometry::PixelToTileX(Xp); }
+		static int		PixelToMapY(const int& Yp)		{ return WorldTileGeometry::PixelToTileY(Yp); }
+		static int		MapToPixelX(const int& Xm)		{ return WorldTileGeometry::TileToPixelX(Xm); }
+		static int		MapToPixelY(const int& Ym)		{ return WorldTileGeometry::TileToPixelY(Ym); }
 
 		static BYTE		GetDirectionToPosition(int originX, int originY, int destX, int destY);
 		static POINT	GetChangeValueToDirection(int direction);
