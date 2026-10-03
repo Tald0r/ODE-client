@@ -100,6 +100,7 @@
 #include "MAroundZoneEffectGenerator.h"
 #include "MFollowPathEffectGenerator.h"
 #include "MMeteorDropEffectGenerator.h"
+#include "MAttackCreatureParabolaEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2662,6 +2663,7 @@ void ReleaseAllObjects()
 	MAroundZoneEffectGenerator::SetHost(nullptr);
 	MFollowPathEffectGenerator::SetHost(nullptr);
 	MMeteorDropEffectGenerator::SetHost(nullptr);
+	MAttackCreatureParabolaEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3260,6 +3262,30 @@ static const MMeteorDropEffectHost s_MeteorDropEffectHost = {
 	},
 };
 
+static const MCreatureParabolaEffectHost s_CreatureParabolaEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MCreatureParabolaEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		return true;
+	},
+	.Creature = [](TYPE_OBJECTID id, MCreatureParabolaPosition& position) {
+		if (!g_pZone) return false;
+		const MCreature* creature = g_pZone->GetCreature(id);
+		if (!creature) return false;
+		position = {creature->GetX(), creature->GetY(), creature->GetZ()};
+		return true;
+	},
+	.MaxFrames = [](BYTE blt, TYPE_FRAMEID frameID, int& count) {
+		if (!g_pTopView) return false;
+		count = g_pTopView->GetMaxEffectFrame(static_cast<BLT_TYPE>(blt), frameID);
+		return true;
+	},
+	.Queue = s_FixedZoneEffectHost.Queue,
+};
+
 static const MRectZoneEffectHost s_RectZoneEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MRectZoneEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
@@ -3785,6 +3811,7 @@ InitGameObject()
 	MAroundZoneEffectGenerator::SetHost(&s_AroundZoneEffectHost);
 	MFollowPathEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MMeteorDropEffectGenerator::SetHost(&s_MeteorDropEffectHost);
+	MAttackCreatureParabolaEffectGenerator::SetHost(&s_CreatureParabolaEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
