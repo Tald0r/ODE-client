@@ -1,46 +1,67 @@
-//----------------------------------------------------------------------
 // MStopZoneMultipleEffectGenerator.cpp
-//----------------------------------------------------------------------
-// 4개의 Effect가 공중에서 떨어진다.
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MStopZoneMultipleEffectGenerator.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
+#include "MEffect.h"
+#include "MViewDef.h"
 #include "SkillDef.h"
-#include "MEventManager.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include "MEventQueue.h"
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MMultipleFallingEffectGenerator	g_StopZoneCrossEffectGenerator;
+namespace {
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+int OffsetCoordinate(int coordinate, int offset)
+{
+	const std::int64_t value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
+
+const MStopMultipleEffectHost* MStopZoneMultipleEffectGenerator::s_pHost = nullptr;
+
+const MStopMultipleEffectHost* MStopZoneMultipleEffectGenerator::SetHost(const MStopMultipleEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MStopZoneMultipleEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MStopMultipleEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+void MStopZoneMultipleEffectGenerator::AddEvent(MEvent& event)
+{
+	if (s_pHost && s_pHost->AddEvent) s_pHost->AddEvent(event);
+}
+
+bool MStopZoneMultipleEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MStopZoneMultipleEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
-
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	MStopMultipleEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	const TYPE_FRAMEID frameID = sprite.frameID;
+	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
 	bool bOK = false;
 
-	MEffect*	pEffect;
 	int x, y;
 
-
 	MEffectTarget*	pEffectTarget2;
-	
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
+
 	int numEffectPhase = 4;
 
 	int randY = 50;
@@ -60,64 +81,59 @@ MStopZoneMultipleEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	event.eventDelay = 2300;
 	event.eventFlag = EVENTFLAG_SHAKE_SCREEN;
 	event.parameter3 = 1;
-	g_pEventManager->AddEvent(event);
+	AddEvent(event);
 
 	int ex[numEffect];
 	int ey[numEffect];
 
 	int effectCount = 0;
 
-	// numEffectPhase * numEffect 개의 effect를 생성한다.
+	// Draw all four positions before submitting any effect in the phase.
 	for (int i=0; i<numEffectPhase; i++)
 	{
 		int n = 0;
-	
-		ex[n] = egInfo.x0 - rand()%randX - 24;
-		ey[n] = egInfo.y0 - rand()%randY;
+
+		ex[n] = OffsetCoordinate(egInfo.x0, -(rand()%randX) - 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, -(rand()%randY));
 
 		n++;
-		ex[n] = egInfo.x0 - rand()%randX - 24;
-		ey[n] = egInfo.y0 + rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, -(rand()%randX) - 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, rand()%randY);
 
 		n++;
-		ex[n] = egInfo.x0 + rand()%randX + 24;
-		ey[n] = egInfo.y0 - rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, rand()%randX + 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, -(rand()%randY));
 
 		n++;
-		ex[n] = egInfo.x0 + rand()%randX + 24;
-		ey[n] = egInfo.y0 + rand()%randY;
+		ex[n] = OffsetCoordinate(egInfo.x0, rand()%randX + 24);
+		ey[n] = OffsetCoordinate(egInfo.y0, rand()%randY);
 
 		for (int j=0; j<numEffect; j++)
 		{
 			x = ex[j];
 			y = ey[j];
 
-			pEffect = new MEffect(bltType);
+			auto effect = std::make_unique<MEffect>(bltType);
+			MEffect* pEffect = effect.get();
 			pEffect->SetDelayFrame(effectCount);
-			
-			pEffect->SetFrameID( frameID, maxFrame );	
 
-			// 발사 위치 Pixel좌표	
-			pEffect->SetPixelPosition( x, y, egInfo.z0 );	
+			pEffect->SetFrameID( frameID, maxFrame );
 
-			// 방향 설정
+			pEffect->SetPixelPosition( x, y, egInfo.z0 );
+
 			pEffect->SetDirection( egInfo.direction );
-							
-//			// 목표 위치 Pixel좌표
-//			pEffect->SetTarget( x, y, zt, egInfo.step );
 
-			// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
 			pEffect->SetCount( egInfo.count+effectCount, egInfo.linkCount );
 			pEffect->SetMulti( true );
-			
+
+			// Stagger every attempt, even when the queue rejects it.
 			effectCount += 2;
 
-			// 위력
 			pEffect->SetPower(egInfo.power);
 
-			// Zone에 추가한다.
-			if (g_pZone->AddEffect( pEffect ))
+			if (QueueEffect(std::move(effect)))
 			{
+				// The first accepted effect takes the original target.
 				if (!bOK)
 				{
 					pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
@@ -125,7 +141,6 @@ MStopZoneMultipleEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 				else
 				{
-					// 다음 Effect 생성 정보
 					if (egInfo.pEffectTarget == NULL)
 					{
 						pEffect->SetLink( egInfo.nActionInfo, NULL );
@@ -140,8 +155,6 @@ MStopZoneMultipleEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			}
 		}
 	}
-
-
 
 	return bOK;
 }
