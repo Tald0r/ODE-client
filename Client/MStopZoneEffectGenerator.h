@@ -1,27 +1,48 @@
 //----------------------------------------------------------------------
 // MStopZoneEffectGenerator.h
 //----------------------------------------------------------------------
-// Zone의 한 지점에서  생성
-//----------------------------------------------------------------------
-
-#ifndef	__MSTOPZONEEFFECTGENERATOR_H__
-#define	__MSTOPZONEEFFECTGENERATOR_H__
+#ifndef __MSTOPZONEEFFECTGENERATOR_H__
+#define __MSTOPZONEEFFECTGENERATOR_H__
 
 #include "MEffectGenerator.h"
+#include <memory>
 
-class MStopZoneEffectGenerator : public MEffectGenerator {
-	public :
-		MStopZoneEffectGenerator() {}
-		~MStopZoneEffectGenerator() {}
+class MEvent;
 
-		TYPE_EFFECTGENERATORID		GetID()		{ return EFFECTGENERATORID_STOP_ZONE; }
-
-		// Effect생성
-		bool	Generate( const EFFECTGENERATOR_INFO& egInfo );
+struct MStopZoneEffectSprite
+{
+	BYTE bltType = 0;
+	TYPE_FRAMEID frameID = 0;
+	bool repeatFrame = false;
 };
 
-//
-//extern MStopZoneEffectGenerator	g_StopZoneEffectGenerator;
+// Borrowed services. Sprite selection precedes the optional meteor event;
+// MaxFrames resolves the final frame ID afterward. Queue consumes every
+// effect and returns true only if it retains the submitted effect alive.
+struct MStopZoneEffectHost
+{
+	bool (*Sprite)(TYPE_EFFECTSPRITETYPE type, MStopZoneEffectSprite& sprite) = nullptr;
+	bool (*MaxFrames)(BYTE blt, TYPE_FRAMEID frameID, int& count) = nullptr;
+	void (*AddEvent)(MEvent& event) = nullptr;
+	bool (*Queue)(std::unique_ptr<MEffect> effect) = nullptr;
+};
+
+class MStopZoneEffectGenerator : public MEffectGenerator {
+	public:
+		MStopZoneEffectGenerator() {}
+		~MStopZoneEffectGenerator() {}
+		static const MStopZoneEffectHost* SetHost(const MStopZoneEffectHost* host);
+		TYPE_EFFECTGENERATORID GetID() { return EFFECTGENERATORID_STOP_ZONE; }
+		// Success reports transfer of the original target, or any accepted effect
+		// when no target is supplied. Other accepted stone-auger effects own copies.
+		bool Generate(const EFFECTGENERATOR_INFO& egInfo);
+
+	private:
+		static bool ReadSprite(TYPE_EFFECTSPRITETYPE type, MStopZoneEffectSprite& sprite);
+		static bool ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count);
+		static void AddEvent(MEvent& event);
+		static bool QueueEffect(std::unique_ptr<MEffect> effect);
+		static const MStopZoneEffectHost* s_pHost;
+};
 
 #endif
-

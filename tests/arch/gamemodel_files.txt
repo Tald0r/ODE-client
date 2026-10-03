@@ -540,3 +540,7 @@ Client/MAttackZoneParabolaEffectGenerator.cpp
 Client/MAttackZoneParabolaEffectGenerator.h
 Client/MAttackZoneBombEffectGenerator.cpp
 Client/MAttackZoneBombEffectGenerator.h
+
+# Stationary zone effects, variants and stone-auger pattern generation (4.61).
+Client/MStopZoneEffectGenerator.cpp
+Client/MStopZoneEffectGenerator.h
