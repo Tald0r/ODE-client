@@ -4,68 +4,60 @@
 #include "Client_PCH.h"
 #include "MAttackZoneBombEffectGenerator.h"
 #include "MParabolaEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttackZoneBombEffectGenerator	g_AttackZoneParabolaEffectGenerator;
+namespace {
 
-
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MAttackZoneBombEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+int OffsetCoordinate(int coordinate, int offset)
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	const auto value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
 
-	MParabolaEffect* pEffect = new MParabolaEffect(bltType);	
-	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	
-	pEffect->SetFrameID( frameID, maxFrame );		// 0번 Effect, Max 3 Frame					
+} // namespace
 
-	
-	// 방향으로 바뀌는 값
-	// 그 방향으로 한 타일 더 안 간다. - -;
-	//POINT cxy = MTopView::GetChangeValueToDirection( egInfo.direction );
+const MZoneBombEffectHost* MAttackZoneBombEffectGenerator::s_pHost = nullptr;
 
-	int tx = egInfo.x1; // + cxy.x * TILE_X;
-	int ty = egInfo.y1; // + cxy.y * TILE_Y;
+const MZoneBombEffectHost* MAttackZoneBombEffectGenerator::SetHost(const MZoneBombEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-	// 발사 위치 Pixel좌표	
-	//pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0+TILE_Y );	
-	pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0+(TILE_Y<<1) );	
+bool MAttackZoneBombEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MZoneBombEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
 
-	// 방향 설정
-	pEffect->SetDirection( egInfo.direction );
-					
-	// 목표 위치 Pixel좌표
-	pEffect->SetTarget( tx, ty, egInfo.z1, egInfo.step );	
+bool MAttackZoneBombEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
-	// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );
+bool MAttackZoneBombEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
+{
+	MZoneBombEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	auto effect = std::make_unique<MParabolaEffect>(sprite.bltType);
+	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
 
-	// 위력
-	pEffect->SetPower(egInfo.power);
+	// Bombs start two tiles higher and keep the requested destination unchanged.
+	effect->SetPixelPosition(egInfo.x0, egInfo.y0, OffsetCoordinate(egInfo.z0, TILE_Y << 1));
+	// Target selection overrides the supplied facing, as before.
+	effect->SetDirection(egInfo.direction);
+	effect->SetTarget(egInfo.x1, egInfo.y1, egInfo.z1, egInfo.step);
+	effect->SetCount(egInfo.count, egInfo.linkCount);
+	effect->SetPower(egInfo.power);
 
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	if (g_pZone->AddEffect( pEffect ))
-	{
-		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
-		return true;
-	}
-
-	return false;
-
+	MParabolaEffect* submitted = effect.get();
+	if (!QueueEffect(std::move(effect))) return false;
+	submitted->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
+	return true;
 }

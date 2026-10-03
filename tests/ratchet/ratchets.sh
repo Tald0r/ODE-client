@@ -247,7 +247,8 @@ check () {
 # 398: rising effect generation joins gamemodel (4.57).
 # 397: multi-projectile falling generation joins gamemodel (4.58).
 # 396: zone-attack effect generation joins gamemodel (4.59).
-R1_BASELINE=396
+# 394: parabolic zone and bomb generators join gamemodel (4.60).
+R1_BASELINE=394
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -328,7 +329,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 396: rising effect generation joins gamemodel (4.57).
 	# 395: multi-projectile falling generation joins gamemodel (4.58).
 	# 394: zone-attack effect generation joins gamemodel (4.59).
-	R1_NINJA_BASELINE=394
+	# 392: parabolic zone and bomb generators join gamemodel (4.60).
+	R1_NINJA_BASELINE=392
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

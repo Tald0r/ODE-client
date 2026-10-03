@@ -11,6 +11,9 @@ int PixelToTileY(int pixel);
 int TileToPixelX(int tile);
 int TileToPixelY(int tile);
 
+// One-tile delta in the selected direction; unknown integers yield (0, 0).
+POINT DirectionOffset(int direction);
+
 // The sector type retains its unsigned wrap at the map-coordinate boundary.
 // An unknown direction leaves both coordinates unchanged.
 void Step(TYPE_SECTORPOSITION& x, TYPE_SECTORPOSITION& y, BYTE direction);

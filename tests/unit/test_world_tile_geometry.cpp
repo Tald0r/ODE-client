@@ -92,3 +92,25 @@ TEST(WorldTileGeometry, LastRepresentableTileOriginsRemainExact)
 	CHECK_EQ(2147483640, WorldTileGeometry::TileToPixelY(89478485));
 	CHECK_EQ(-2147483640, WorldTileGeometry::TileToPixelY(-89478485));
 }
+
+TEST(WorldTileGeometry, DirectionOffsetsMatchAllEightSectorSteps)
+{
+	struct Case { int direction, x, y; };
+	for (const Case c : {Case{DIRECTION_LEFTDOWN, -1, 1}, {DIRECTION_RIGHTUP, 1, -1},
+		{DIRECTION_LEFTUP, -1, -1}, {DIRECTION_RIGHTDOWN, 1, 1}, {DIRECTION_LEFT, -1, 0},
+		{DIRECTION_DOWN, 0, 1}, {DIRECTION_UP, 0, -1}, {DIRECTION_RIGHT, 1, 0}})
+	{
+		const auto offset = WorldTileGeometry::DirectionOffset(c.direction);
+		CHECK_EQ(c.x, offset.x); CHECK_EQ(c.y, offset.y);
+	}
+}
+
+TEST(WorldTileGeometry, UnknownDirectionOffsetsDoNotNarrowIntoValidDirections)
+{
+	for (const int direction : {-1, 8, 255, 256, 512,
+		(std::numeric_limits<int>::max)(), (std::numeric_limits<int>::min)()})
+	{
+		const auto offset = WorldTileGeometry::DirectionOffset(direction);
+		CHECK_EQ(0, offset.x); CHECK_EQ(0, offset.y);
+	}
+}

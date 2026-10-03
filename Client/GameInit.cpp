@@ -87,6 +87,8 @@
 #include "MStopInventoryEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
 #include "MAttackZoneEffectGenerator.h"
+#include "MAttackZoneParabolaEffectGenerator.h"
+#include "MAttackZoneBombEffectGenerator.h"
 #include "MMultipleFallingEffectGenerator.h"
 #include "MRisingEffectGenerator.h"
 #include "MInventory.h"
@@ -2630,6 +2632,8 @@ void ReleaseAllObjects()
 	MStopInventoryEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
 	MAttackZoneEffectGenerator::SetHost(nullptr);
+	MAttackZoneBombEffectGenerator::SetHost(nullptr);
+	MAttackZoneParabolaEffectGenerator::SetHost(nullptr);
 	MMultipleFallingEffectGenerator::SetHost(nullptr);
 	MRisingEffectGenerator::SetHost(nullptr);
 	MParty::SetHost(nullptr);
@@ -3105,6 +3109,40 @@ static const MFallingEffectHost s_FallingEffectHost = {
 	},
 };
 
+static const MZoneParabolaEffectHost s_ZoneParabolaEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MZoneParabolaEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release());
+	},
+};
+
+static const MZoneBombEffectHost s_ZoneBombEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MZoneBombEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release());
+	},
+};
+
 static const MZoneAttackEffectHost s_ZoneAttackEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MZoneAttackEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
@@ -3487,6 +3525,8 @@ InitGameObject()
 	MStopInventoryEffectGenerator::SetHost(&s_InventoryEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
 	MAttackZoneEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
+	MAttackZoneBombEffectGenerator::SetHost(&s_ZoneBombEffectHost);
+	MAttackZoneParabolaEffectGenerator::SetHost(&s_ZoneParabolaEffectHost);
 	MMultipleFallingEffectGenerator::SetHost(&s_MultipleFallingEffectHost);
 	MRisingEffectGenerator::SetHost(&s_RisingEffectHost);
 	MParty::SetHost(&s_PartyHost);
