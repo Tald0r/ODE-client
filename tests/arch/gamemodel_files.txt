@@ -559,3 +559,10 @@ Client/MStopZoneRhombusEffectGenerator.h
 # Empty-cross generation with source-pixel targets on later arms (4.64).
 Client/MStopZoneEmptyCrossEffectGenerator.cpp
 Client/MStopZoneEmptyCrossEffectGenerator.h
+
+# Horizontal and vertical empty-wall patterns with consuming submission (4.65).
+Client/MEmptyWallEffectHost.h
+Client/MStopZoneEmptyHorizontalEffectGenerator.cpp
+Client/MStopZoneEmptyHorizontalWallEffectGenerator.h
+Client/MStopZoneEmptyVerticalWallEffectGenerator.cpp
+Client/MStopZoneEmptyVerticalEffectGenerator.h
