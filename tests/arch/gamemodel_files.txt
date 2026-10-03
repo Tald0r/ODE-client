@@ -578,3 +578,7 @@ Client/MStopZoneRectEffectGenerator.h
 # Complete stationary walls with consuming submission (4.68).
 Client/MStopZoneWallEffectGenerator.cpp
 Client/MStopZoneWallEffectGenerator.h
+
+# Staggered groups of randomized stationary effects and their shake event (4.69).
+Client/MStopZoneMultipleEffectGenerator.cpp
+Client/MStopZoneMultipleEffectGenerator.h
