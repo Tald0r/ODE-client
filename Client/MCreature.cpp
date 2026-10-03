@@ -7,6 +7,7 @@
 #include "MCreature.h"
 #include "ClientDef.h"
 #include "MTopView.h"
+#include "WorldTileGeometry.h"
 #include "MActionInfoTable.h"
 #include "MEffectGeneratorTable.h"
 #include "MCreatureTable.h"
@@ -3150,22 +3151,12 @@ MCreature::MovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 }
 
 //----------------------------------------------------------------------
-// (x,y)에서 방향으로 이동한 위치를 얻는다.
+// Step the supplied sector position in the selected direction.
 //----------------------------------------------------------------------
 void
 MCreature::GetPositionToDirection(TYPE_SECTORPOSITION &x, TYPE_SECTORPOSITION &y, BYTE direction)
 {
-	switch (direction)
-	{
-		case DIRECTION_LEFTDOWN		: x--;	y++;	break;
-		case DIRECTION_RIGHTUP		: x++;	y--;	break;
-		case DIRECTION_LEFTUP		: x--;	y--;	break;
-		case DIRECTION_RIGHTDOWN	: x++;	y++;	break;
-		case DIRECTION_LEFT			: x--;			break;
-		case DIRECTION_DOWN			:		y++;	break;
-		case DIRECTION_UP			:		y--;	break;
-		case DIRECTION_RIGHT		: x++;			break;
-	}
+	WorldTileGeometry::Step(x, y, direction);
 }
 
 //----------------------------------------------------------------------

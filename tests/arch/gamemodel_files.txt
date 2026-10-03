@@ -528,3 +528,9 @@ Client/MRisingEffectGenerator.h
 # Multi-projectile falling patterns with consuming zone submission (4.58).
 Client/MMultipleFallingEffectGenerator.cpp
 Client/MMultipleFallingEffectGenerator.h
+
+# Zone-attack projectiles and shared world/tile geometry (4.59).
+Client/WorldTileGeometry.cpp
+Client/WorldTileGeometry.h
+Client/MAttackZoneEffectGenerator.cpp
+Client/MAttackZoneEffectGenerator.h
