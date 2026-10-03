@@ -418,3 +418,30 @@ TEST(BloodyBreakerEffectGenerator, DeadlinesRetainFiniteSentinelsClockWrapAndMis
 	ClearEffects(); target = Target(); MEffect::SetHost(nullptr); CHECK(Generate(world, Info(), target));
 	for (const auto& effect : effects) { CHECK_EQ(29, effect->GetEndFrame()); CHECK_EQ(4, effect->GetEndLinkFrame()); CHECK_EQ(0, effect->GetLight()); CHECK(!effect->Update()); }
 }
+
+TEST(BloodyBreakerEffectGenerator, DirectionPastTheEightPatternsRejectsBeforeConstruction)
+{
+	World world; auto target = Target(1); auto* original = target.get(); auto info = Info(); info.direction = 8;
+	CHECK(!Generate(world, info, target)); CHECK_EQ(0, submissions); CHECK(effects.empty());
+	CHECK(calls == std::vector<int>({1, 2})); CheckTarget(*original, 1);
+}
+
+TEST(BloodyBreakerEffectGenerator, EveryInvalidDirectionRejectsForValidInvalidAndMissingPhases)
+{
+	World world;
+	for (int direction = 8; direction < 256; ++direction) for (const int phase : {-1, 0, 1, 6, 255})
+	{
+		ClearEffects(); auto target = phase < 0 ? std::unique_ptr<MEffectTarget>{} : Target(static_cast<BYTE>(phase));
+		auto info = Info(); info.direction = static_cast<BYTE>(direction); CHECK(!Generate(world, info, target));
+		CHECK_EQ(0, submissions); CHECK(effects.empty()); CHECK(calls == std::vector<int>({1, 2}));
+		if (target) CheckTarget(*target, static_cast<BYTE>(phase));
+	}
+}
+
+TEST(BloodyBreakerEffectGenerator, InvalidDirectionsStillResolveSpriteAndAnimationMetadataFirst)
+{
+	World world; auto info = Info(); info.direction = 255; auto target = Target();
+	spriteAvailable = false; CHECK(!Generate(world, info, target)); CHECK(calls == std::vector<int>{1});
+	ClearEffects(); spriteAvailable = true; framesAvailable = false; CHECK(!Generate(world, info, target)); CHECK(calls == std::vector<int>({1, 2}));
+	ClearEffects(); framesAvailable = true; CHECK(!Generate(world, info, target)); CHECK(calls == std::vector<int>({1, 2})); CheckTarget(*target);
+}

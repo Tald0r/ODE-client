@@ -2483,11 +2483,12 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.78 Bloody Breaker generation:** `MBloodyBreakerEffectGenerator`
   creates phase-driven directional rows of stationary effects from `gamemodel`.
-  > **Status:** in progress (direction bounds and center-rejection result remain).
+  > **Status:** in progress (center-rejection result remains).
   > Borrowed sprite and animation services preserve per-attempt refresh and the
   > original blit type across Bloody Wall variants. Consuming submission links
   > only an accepted center to the unchanged original target; sides stay targetless.
   > Missing services stop with any earlier target transfer preserved.
+  > Invalid directions reject after initial metadata, before pattern indexing.
   > R1 is 374 Windows / 372 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_bloody_breaker_effect_generator.cpp`.

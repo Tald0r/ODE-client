@@ -6,6 +6,7 @@
 #include "MEffect.h"
 #include "EffectSpriteTypeDef.h"
 #include "WorldTileGeometry.h"
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -66,6 +67,8 @@ void	MakeMap(BYTE dic, std::vector<tempBreaker> &v_cp, int p)
     mask[7].x = -1;
     mask[7].y = -1;	
     
+	if (dic >= std::size(mask)) return;
+
 	for ( int i = 1; i <= 6; i++ )
 	{
 		int x = 0;
