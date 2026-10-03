@@ -598,3 +598,7 @@ Client/MSpreadOutEffectGenerator.h
 # Around-zone variants, staggered submission and target ownership (4.73).
 Client/MAroundZoneEffectGenerator.cpp
 Client/MAroundZoneEffectGenerator.h
+
+# Phase-driven linear effects over the shared Wild Typhoon path cache (4.74).
+Client/MFollowPathEffectGenerator.cpp
+Client/MFollowPathEffectGenerator.h

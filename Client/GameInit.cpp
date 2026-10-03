@@ -98,6 +98,7 @@
 #include "MStopZoneSelectableEffectGenerator.h"
 #include "MSpreadOutEffectGenerator.h"
 #include "MAroundZoneEffectGenerator.h"
+#include "MFollowPathEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2658,6 +2659,7 @@ void ReleaseAllObjects()
 	MStopZoneSelectableEffectGenerator::SetHost(nullptr);
 	MSpreadOutEffectGenerator::SetHost(nullptr);
 	MAroundZoneEffectGenerator::SetHost(nullptr);
+	MFollowPathEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3771,6 +3773,7 @@ InitGameObject()
 	MStopZoneSelectableEffectGenerator::SetHost(&s_SelectableZoneEffectHost);
 	MSpreadOutEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MAroundZoneEffectGenerator::SetHost(&s_AroundZoneEffectHost);
+	MFollowPathEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
