@@ -5,21 +5,44 @@
 #include "DebugLog.h"
 #include "MStopZoneEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
+#include "WorldTileGeometry.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "MEventManager.h"
+#include "MEventQueue.h"
 #include "SkillDef.h"
+#include <cstdlib>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MStopZoneEffectGenerator	g_StopZoneEffectGenerator;
+const MStopZoneEffectHost* MStopZoneEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+const MStopZoneEffectHost* MStopZoneEffectGenerator::SetHost(const MStopZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MStopZoneEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MStopZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MStopZoneEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count)
+{
+	count = 0;
+	return s_pHost && s_pHost->MaxFrames && s_pHost->MaxFrames(blt, frameID, count);
+}
+
+void MStopZoneEffectGenerator::AddEvent(MEvent& event)
+{
+	if (s_pHost && s_pHost->AddEvent) s_pHost->AddEvent(event);
+}
+
+bool MStopZoneEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
@@ -81,15 +104,11 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		est = EFFECTSPRITETYPE_INFINITY_THUNDERBOLT_CENTER + rand()%3;
 	}
 
-	if (est >= g_pEffectSpriteTypeTable->GetSize())
-	{
-		return false;
-	}
-
-	
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	bool			repeatFrame	= (*g_pEffectSpriteTypeTable)[est].RepeatFrame;
+	MStopZoneEffectSprite sprite;
+	if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	TYPE_FRAMEID frameID = sprite.frameID;
+	const bool repeatFrame = sprite.repeatFrame;
 
 	if (newFrameID != FRAMEID_NULL)
 	{
@@ -115,7 +134,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		direction = (direction + 1) % 8;
 	}
 
-	
+
 	//-----------------------------------------------------------
 	// 메테오를 위한 임시(-_-;) 코드..
 	//-----------------------------------------------------------
@@ -127,26 +146,27 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		event.eventDelay = 63;
 		event.eventFlag = EVENTFLAG_SHAKE_SCREEN;
 		event.parameter3 = 3;
-		g_pEventManager->AddEvent(event);
+		AddEvent(event);
 	}
 
 	//---------------------------------------------
 	// pixel좌표를 Map의 좌표로 바꿔준다.
 	//---------------------------------------------
 	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
+	sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	int maxFrame;
+	if (!ReadMaxFrames(bltType, frameID, maxFrame)) return false;
 
 	// Zone에 추가한다.
-	
-	if( egInfo.nActionInfo == RESULT_SKILL_STONE_AUGER || 
+
+	if( egInfo.nActionInfo == RESULT_SKILL_STONE_AUGER ||
 		egInfo.nActionInfo == RESULT_STEP_SKILL_STONE_AUGER_2 ||
 		egInfo.nActionInfo == RESULT_STEP_SKILL_STONE_AUGER_3 )
 	{
 		// 십자 모양으로.
-		POINT pt[] = 
+		POINT pt[] =
 		{
 			{ 0, 1 },
 			{ 1, 0 },
@@ -155,16 +175,15 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			{ -1, 0 }
 		};
 
-		sX = g_pTopView->PixelToMapX(egInfo.x1);
-		sY = g_pTopView->PixelToMapY(egInfo.y1);
+		sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x1));
+		sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y1));
 
 		for(int i=0;static_cast<size_t>(i)<sizeof(pt)/sizeof(POINT);i++)
 		{
-			MEffect* pEffect;
+			auto effect = std::make_unique<MEffect>(bltType);
+			MEffect* pEffect = effect.get();
 
-			pEffect = new MEffect( bltType );
-
-			pEffect->SetFrameID( frameID, maxFrame );
+			pEffect->SetFrameID(frameID, static_cast<BYTE>(maxFrame));
 
 			pEffect->SetPosition(static_cast<TYPE_SECTORPOSITION>(sX+ pt[i].x), static_cast<TYPE_SECTORPOSITION>(sY+pt[i].y) );
 			pEffect->SetZ( egInfo.z0 );
@@ -175,7 +194,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			pEffect->SetPower( egInfo.power);
 			pEffect->SetMulti( true );
 
-			if( g_pZone->AddEffect( pEffect ) )
+			if (QueueEffect(std::move(effect)))
 			{
 				if( egInfo.pEffectTarget != NULL )
 				{
@@ -191,28 +210,25 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				if (repeatFrame)
 				{
 					int num = rand() % maxFrame;
-					
+
 					for (int nf=0; nf<num; nf++)
 					{
 						pEffect->NextFrame();
 					}
-				}	
+				}
 			}
 		}
 		return true;
-		
+
 	} else
 	{
-			MEffect*	pEffect;
-			//---------------------------------------------
-			// Effect 생성
-			//---------------------------------------------
-			pEffect = new MEffect(bltType);
+			auto effect = std::make_unique<MEffect>(bltType);
+			MEffect* pEffect = effect.get();
 
 			// Debug: Log effect creation
 			DEBUG_ADD_FORMAT("StopZoneEffect: Created pEffect=%p, bltType=%d", pEffect, bltType);
 
-			pEffect->SetFrameID( frameID, maxFrame );
+			pEffect->SetFrameID(frameID, static_cast<BYTE>(maxFrame));
 
 			// Debug: Verify effect state before AddEffect
 			#ifdef __SANITIZE_ADDRESS__
@@ -221,7 +237,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				TYPE_FRAMEID testFrameID = pEffect->GetFrameID();
 				DEBUG_ADD_FORMAT("StopZoneEffect: pEffect=%p FrameID=%d before AddEffect", pEffect, testFrameID);
 			}
-			#endif	
+			#endif
 			if((est == EFFECTSPRITETYPE_FIRE_CRACKER_1 ||
 				est == EFFECTSPRITETYPE_FIRE_CRACKER_2 ||
 				est == EFFECTSPRITETYPE_FIRE_CRACKER_3 ) ||
@@ -230,20 +246,20 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				)
 				pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0 );
 			else
-				pEffect->SetPosition(sX, sY);		// Sector 좌표		
-			pEffect->SetZ(egInfo.z0);			
+				pEffect->SetPosition(sX, sY);		// Sector 좌표
+			pEffect->SetZ(egInfo.z0);
 			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
 			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-			
+
 			// 방향 설정
 			pEffect->SetDirection( direction );
-			
+
 			// 위력
 			pEffect->SetPower(egInfo.power);
-			
+
 			// 빛의 밝기
 			//pEffect->SetLight( light );
-			
+
 			// 중복 가능한가
 			if(
 				(est == EFFECTSPRITETYPE_FIRE_CRACKER_1 ||
@@ -254,7 +270,7 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW_SHADOW ||
 				est == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_GROUND ||
 				est == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_WAVE||
-				est == EFFECTSPRITETYPE_NEW_PLASMA_ROCKET_LAUNCHER_BLOW 
+				est == EFFECTSPRITETYPE_NEW_PLASMA_ROCKET_LAUNCHER_BLOW
 //				|| est == EFFECTSPRITETYPE_ACID_ERUPTION_1
 //				|| est == EFFECTSPRITETYPE_ACID_ERUPTION_2
 //				|| est == EFFECTSPRITETYPE_ACID_ERUPTION_3
@@ -262,13 +278,13 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 //				|| est == EFFECTSPRITETYPE_ACID_ERUPTION_5
 				)
 				pEffect->SetMulti(true);
-		bool bAdd = g_pZone->AddEffect( pEffect );
+		bool bAdd = QueueEffect(std::move(effect));
 
 		if (bAdd)
 		{
 			// 다음 Effect 생성 정보
 			pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-		
+
 			//---------------------------------------------
 			// 반복되는 frame이면..
 			// 시작 frame을 다르게 한다.
@@ -276,12 +292,12 @@ MStopZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			if (repeatFrame)
 			{
 				int num = rand() % maxFrame;
-				
+
 				for (int nf=0; nf<num; nf++)
 				{
 					pEffect->NextFrame();
 				}
-			}	
+			}
 		}
 		return bAdd;
 	}
