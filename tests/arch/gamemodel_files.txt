@@ -582,3 +582,7 @@ Client/MStopZoneWallEffectGenerator.h
 # Staggered groups of randomized stationary effects and their shake event (4.69).
 Client/MStopZoneMultipleEffectGenerator.cpp
 Client/MStopZoneMultipleEffectGenerator.h
+
+# Four randomized zone quadrants with first-slot target ownership (4.70).
+Client/MStopZoneRandomEffectGenerator.cpp
+Client/MStopZoneRandomEffectGenerator.h
