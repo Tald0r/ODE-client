@@ -99,6 +99,7 @@
 #include "MSpreadOutEffectGenerator.h"
 #include "MAroundZoneEffectGenerator.h"
 #include "MFollowPathEffectGenerator.h"
+#include "MMeteorDropEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2660,6 +2661,7 @@ void ReleaseAllObjects()
 	MSpreadOutEffectGenerator::SetHost(nullptr);
 	MAroundZoneEffectGenerator::SetHost(nullptr);
 	MFollowPathEffectGenerator::SetHost(nullptr);
+	MMeteorDropEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3250,6 +3252,14 @@ static const MFixedZoneEffectHost s_FixedZoneEffectHost = {
 	},
 };
 
+static const MMeteorDropEffectHost s_MeteorDropEffectHost = {
+	.Sprite = s_FixedZoneEffectHost.Sprite,
+	.Queue = s_FixedZoneEffectHost.Queue,
+	.AddEvent = [](MEvent& event) {
+		if (g_pEventManager) g_pEventManager->AddEvent(event);
+	},
+};
+
 static const MRectZoneEffectHost s_RectZoneEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MRectZoneEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
@@ -3774,6 +3784,7 @@ InitGameObject()
 	MSpreadOutEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MAroundZoneEffectGenerator::SetHost(&s_AroundZoneEffectHost);
 	MFollowPathEffectGenerator::SetHost(&s_FixedZoneEffectHost);
+	MMeteorDropEffectGenerator::SetHost(&s_MeteorDropEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);

@@ -602,3 +602,7 @@ Client/MAroundZoneEffectGenerator.h
 # Phase-driven linear effects over the shared Wild Typhoon path cache (4.74).
 Client/MFollowPathEffectGenerator.cpp
 Client/MFollowPathEffectGenerator.h
+
+# Falling meteor and acceptance-triggered fade event (4.75).
+Client/MMeteorDropEffectGenerator.cpp
+Client/MMeteorDropEffectGenerator.h
