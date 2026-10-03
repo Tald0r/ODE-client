@@ -1,26 +1,41 @@
-//----------------------------------------------------------------------
 // MAroundZoneEffectGenerator.cpp
-//----------------------------------------------------------------------
-// Tile과 맞붙은 Effect들을 생성한다.
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MAroundZoneEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
+#include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAroundZoneEffectGenerator	g_StopZoneEffectGenerator;
+const MAroundZoneEffectHost* MAroundZoneEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+const MAroundZoneEffectHost* MAroundZoneEffectGenerator::SetHost(const MAroundZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MAroundZoneEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MAroundZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MAroundZoneEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect, DWORD delay)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect), delay);
+}
+
+int MAroundZoneEffectGenerator::OffsetCoordinate(int coordinate, int offset)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(static_cast<std::int64_t>(coordinate) + offset,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
 bool
 MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
@@ -28,22 +43,8 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 	MEffectTarget* pTarget = egInfo.pEffectTarget;
 
+	// The chosen variant persists between attempts; positions reset each time.
 	int est = egInfo.effectSpriteType;
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
-	/*
-	int	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
-
-	//---------------------------------------------
-	// Map좌표를 다시 pixel좌표로 바꾼다.
-	//---------------------------------------------
-	POINT pixelPoint;
-	pixelPoint = g_pTopView->MapToPixel(sX, sY);
-	*/
-	// 2001.10.6
 
 	int num = 0;
 	int dwWaitCount = 0;
@@ -57,7 +58,7 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		num = 3;
 	else
 		num = rand()%2 + 2;
-	
+
 	for (int TempCount=0; TempCount<num; TempCount++)
 	{
 		dwWaitCount = 0;
@@ -70,33 +71,29 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			switch(egInfo.step%4)
 			{
 			case 0:
-				pixelPoint.x = pixelPoint.x - rand()%(TILE_X<<1) - 24;
-				pixelPoint.y = pixelPoint.y - rand()%(TILE_Y<<1) - 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, -(rand()%(TILE_X<<1)) - 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, -(rand()%(TILE_Y<<1)) - 24);
 				break;
 
 			case 1:
-				pixelPoint.x = pixelPoint.x - rand()%(TILE_X<<1) - 24;
-				pixelPoint.y = pixelPoint.y + rand()%(TILE_Y<<1) + 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, -(rand()%(TILE_X<<1)) - 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, +(rand()%(TILE_Y<<1)) + 24);
 				break;
 
 			case 2:
-				pixelPoint.x = pixelPoint.x + rand()%(TILE_X<<1) + 24;
-				pixelPoint.y = pixelPoint.y - rand()%(TILE_Y<<1) - 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, +(rand()%(TILE_X<<1)) + 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, -(rand()%(TILE_Y<<1)) - 24);
 				break;
 
 			case 3:
-				pixelPoint.x = pixelPoint.x + rand()%(TILE_X<<1) + 24;
-				pixelPoint.y = pixelPoint.y + rand()%(TILE_Y<<1) + 24;
+				pixelPoint.x = OffsetCoordinate(pixelPoint.x, +(rand()%(TILE_X<<1)) + 24);
+				pixelPoint.y = OffsetCoordinate(pixelPoint.y, +(rand()%(TILE_Y<<1)) + 24);
 				break;
 
 			}
 
 		}
-		
-		//----------------------------------------------------------------
-		// 바닥에 튀는 먼지..
-		//----------------------------------------------------------------
-		///*
+
 		else if (est==EFFECTSPRITETYPE_GUN_DUST_1)
 		{
 			switch (rand()%3)
@@ -104,7 +101,7 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				case 0 :
 					est = EFFECTSPRITETYPE_GUN_DUST_1;
 				break;
-			
+
 				case 1 :
 					est = EFFECTSPRITETYPE_GUN_DUST_2;
 				break;
@@ -114,22 +111,20 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				break;
 			}
 
-			//pixelPoint.x += (rand()%24) - (24>>1);
-			//pixelPoint.y += (rand()%24) - (24>>1);
-			pixelPoint.x += (rand()%(TILE_X<<1)) - TILE_X;
-			pixelPoint.y += (rand()%(TILE_Y<<1)) - TILE_Y;
-		} 
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, (rand()%(TILE_X<<1)) - TILE_X);
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, (rand()%(TILE_Y<<1)) - TILE_Y);
+		}
 		else if (est==EFFECTSPRITETYPE_MOLE_SHOT_1 )
 		{
 			est = EFFECTSPRITETYPE_MOLE_SHOT_1+(rand()%5);
-			pixelPoint.x += (rand()%(TILE_X<<1)) - TILE_X;
-			pixelPoint.y += (rand()%(TILE_Y<<1)) - TILE_Y;
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, (rand()%(TILE_X<<1)) - TILE_X);
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, (rand()%(TILE_Y<<1)) - TILE_Y);
 		}
 		else if( est == EFFECTSPRITETYPE_INSTALL_TURRET_SCRAP1)
 		{
 			est = EFFECTSPRITETYPE_INSTALL_TURRET_SCRAP1+(rand()%5);
-			pixelPoint.x += (rand()%(TILE_X<<1))/* - TILE_X*/;
-			pixelPoint.y += (rand()%(TILE_Y<<1))/* - TILE_Y*/;
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, rand()%(TILE_X<<1));
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, rand()%(TILE_Y<<1));
 		}
 		else if(est == EFFECTSPRITETYPE_SPIT_STREAM)
 		{
@@ -147,45 +142,34 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				case DIRECTION_UP			:				DirY = -1;	break;
 				case DIRECTION_RIGHT		: DirX = +1;				break;
 			}
-//			pixelPoint.x += ((((TempCount)*(24))*DirX)+1);
-//			pixelPoint.y += ((((TempCount)*(24))*DirY)+1);
-			pixelPoint.x += ((((TempCount+1)*(24))*DirX));
-			pixelPoint.y += ((((TempCount+1)*(24))*DirY));
+			pixelPoint.x = OffsetCoordinate(pixelPoint.x, (TempCount + 1) * 24 * DirX);
+			pixelPoint.y = OffsetCoordinate(pixelPoint.y, (TempCount + 1) * 24 * DirY);
 			dwWaitCount = (TempCount);
 		}
 		else if(est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW)
 		{
-			pixelPoint.x = egInfo.x0; 
+			pixelPoint.x = egInfo.x0;
 			pixelPoint.y = egInfo.y0;
 		}
-		
-		//*/
 
-		BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-		TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
+		MAroundZoneEffectSprite sprite;
+		if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) continue;
+		const BYTE bltType = sprite.bltType;
+		const TYPE_FRAMEID frameID = sprite.frameID;
+		const int maxFrame = sprite.maxFrames;
 
-		//---------------------------------------------
-		// MaxFrame의 값을 알아온다.
-		//---------------------------------------------
-		int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-		
+		auto effect = std::make_unique<MEffect>(bltType);
+		MEffect* pEffect = effect.get();
 
-		MEffect*	pEffect;
-		//---------------------------------------------
-		// Effect 생성
-		//---------------------------------------------
-		pEffect = new MEffect(bltType);
+		pEffect->SetFrameID( frameID, static_cast<BYTE>(maxFrame) );
 
-		pEffect->SetFrameID( frameID, maxFrame );	
+		pEffect->SetPixelPosition(pixelPoint.x, pixelPoint.y, egInfo.z0);
 
-		pEffect->SetPixelPosition(pixelPoint.x, pixelPoint.y, egInfo.z0);		// pixel좌표		
+		pEffect->SetStepPixel(egInfo.step);
 
-		pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
+		pEffect->SetCount( maxFrame, egInfo.linkCount );
 
-		pEffect->SetCount( maxFrame, egInfo.linkCount );			// 지속되는 Frame
-
-		// 방향 설정
-		if(est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW) 
+		if(est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW)
 		{
 			pEffect->SetMulti(true);
 			pEffect->SetDirection((egInfo.direction + (TempCount-1) + 8)%8);
@@ -193,24 +177,19 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		else
 			pEffect->SetDirection( egInfo.direction );
 
-		// 위력
 		pEffect->SetPower(egInfo.power);
-		
-		// 빛의 밝기
-		//pEffect->SetLight( light );
-		
+
 		if(dwWaitCount)
 		{
 			pEffect->SetWaitFrame(dwWaitCount);
-			pEffect->SetCount( dwWaitCount+maxFrame, egInfo.linkCount );
+			pEffect->SetCount(static_cast<DWORD>(dwWaitCount) + static_cast<DWORD>(maxFrame), egInfo.linkCount);
 			pEffect->SetMulti(true);
 		}
-		// Zone에 추가한다.
-		if (g_pZone->AddEffect( pEffect, dwWaitCount))
+		// The first accepted effect takes the original; later copies use the destination.
+		if (QueueEffect(std::move(effect), static_cast<DWORD>(dwWaitCount)))
 		{
 			if (!bOK)
 			{
-				// 다음 Effect 생성 정보
 				pEffect->SetLink( egInfo.nActionInfo, pTarget );
 
 				bOK = true;
@@ -230,6 +209,6 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			}
 		}
 	}
-	
+
 	return bOK;
 }
