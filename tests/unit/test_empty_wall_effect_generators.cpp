@@ -565,3 +565,37 @@ TEST(EmptyWallEffectGenerators, MissingBaseServicesRetainCountsAndInactiveFallba
 		CHECK_EQ(4, effects.front()->GetEndLinkFrame()); CHECK_EQ(0, effects.front()->GetLight()); CHECK(!effects.front()->Update());
 	}
 }
+
+TEST(EmptyWallEffectGenerators, HorizontalRejectsTheFirstDirectionPastItsTable)
+{
+	World world;
+	acceptQueue = false; auto target = Target(); auto info = Info(); info.direction = 8; info.step = 2; info.pEffectTarget = target.get();
+	CHECK(!world.horizontal.Generate(info)); CHECK_EQ(0, submissions); CHECK(calls == std::vector<int>({1}));
+	CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY()); CHECK(effects.empty());
+}
+
+TEST(EmptyWallEffectGenerators, VerticalRejectsTheFirstDirectionPastItsTable)
+{
+	World world;
+	acceptQueue = false; auto target = Target(); auto info = Info(); info.direction = 8; info.step = 2; info.pEffectTarget = target.get();
+	CHECK(!world.vertical.Generate(info)); CHECK_EQ(0, submissions); CHECK(calls == std::vector<int>({1}));
+	CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY()); CHECK(effects.empty());
+}
+
+TEST(EmptyWallEffectGenerators, EveryInvalidDirectionRejectsAtAllPatternLengthBoundaries)
+{
+	World world;
+	for (const auto& pattern : world.patterns)
+	{
+		for (int direction = 8; direction <= 255; ++direction)
+		{
+			for (const BYTE step : {static_cast<BYTE>(0), static_cast<BYTE>(1), static_cast<BYTE>(2), static_cast<BYTE>(255)})
+			{
+				ClearEffects(); auto target = Target(); auto info = Info(); info.direction = static_cast<BYTE>(direction);
+				info.step = step; info.pEffectTarget = target.get();
+				CHECK(!pattern.generator->Generate(info)); CHECK_EQ(0, submissions); CHECK(effects.empty());
+				CHECK(calls == std::vector<int>({1})); CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY());
+			}
+		}
+	}
+}

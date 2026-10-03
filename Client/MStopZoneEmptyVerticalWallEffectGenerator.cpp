@@ -67,6 +67,7 @@ MStopZoneEmptyVerticalWallEffectGenerator::Generate( const EFFECTGENERATOR_INFO&
 	}
 
 	int lookDirection = egInfo.direction;
+	if (lookDirection >= 8) return false;
 
 	int stepMulti = (egInfo.step>>1);
 	int sX = sX1 + g_WallVerticalDirValue[lookDirection][0] * stepMulti;

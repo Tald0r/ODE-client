@@ -2308,14 +2308,16 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.65 Empty-wall generation:** the horizontal and vertical empty-wall
   generators construct their complete patterns in `gamemodel`.
-  > **Status:** extraction verified; direction and coordinate fixes pending.
+  > **Status:** direction bounds verified; coordinate fix pending.
   > Borrowed metadata and consuming submission replace executable globals.
   > Direction tables, skipped middle index, mine source-tile placement and
   > ordinary destination-tile placement remain. The first accepted effect
   > takes the original target. Later copies follow destination-pixel increments,
   > including rejected and skipped iterations. Neither pattern randomizes frames.
-  > Twenty-seven production tests pass in full plain and strict ASan/UBSan
-  > suites. Removing either object from a copied archive breaks the unit link.
+  > Directions 8–255 now reject before table access. Two tests reproduced four
+  > failed checks; ASan confirmed a horizontal-table buffer overread. All invalid
+  > direction bytes are covered at four step-count boundaries. Thirty production
+  > tests pass in full plain and strict ASan/UBSan suites. Removing either object from a copied archive breaks the unit link.
   > R1 is 387 Windows / 385 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_empty_wall_effect_generators.cpp`, using production effects.
