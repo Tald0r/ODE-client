@@ -6,7 +6,21 @@
 #include "MEffect.h"
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int OffsetTargetCoordinate(int coordinate, int offset)
+{
+	const std::int64_t value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 const MFixedZoneEffectHost* MStopZoneEmptyCrossEffectGenerator::s_pHost = nullptr;
 
@@ -91,7 +105,7 @@ MStopZoneEmptyCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo
 		{
 			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-			pEffectTarget2->Set( egInfo.x0+TILE_X, egInfo.y0, egInfo.z0, egInfo.creatureID );
+			pEffectTarget2->Set( OffsetTargetCoordinate(egInfo.x0, TILE_X), egInfo.y0, egInfo.z0, egInfo.creatureID );
 		}
 	}
 
@@ -119,7 +133,7 @@ MStopZoneEmptyCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo
 		{
 			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-			pEffectTarget2->Set( egInfo.x0, egInfo.y0-TILE_Y, egInfo.z0, egInfo.creatureID );
+			pEffectTarget2->Set( egInfo.x0, OffsetTargetCoordinate(egInfo.y0, -TILE_Y), egInfo.z0, egInfo.creatureID );
 		}
 	}
 
@@ -147,7 +161,7 @@ MStopZoneEmptyCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo
 		{
 			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-			pEffectTarget2->Set( egInfo.x0, egInfo.y0+TILE_Y, egInfo.z0, egInfo.creatureID );
+			pEffectTarget2->Set( egInfo.x0, OffsetTargetCoordinate(egInfo.y0, TILE_Y), egInfo.z0, egInfo.creatureID );
 		}
 	}
 

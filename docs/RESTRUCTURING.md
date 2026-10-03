@@ -2290,15 +2290,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_fixed_zone_effect_patterns.cpp`, using production effects.
 
-- [ ] **4.64 Empty-cross generation:** `MStopZoneEmptyCrossEffectGenerator`
+- [x] **4.64 Empty-cross generation:** `MStopZoneEmptyCrossEffectGenerator`
   creates the four arms without a center in `gamemodel`.
-  > **Status:** extraction verified; copied-target arithmetic fix pending.
+  > **Status:** done (this commit).
   > The fixed-pattern host supplies sprite metadata and consuming submission.
   > Tile order, unsigned sector wrap and slot-zero ownership remain. Later
   > accepted arms own copies aimed one tile from the original source pixels,
   > keeping the sub-tile remainder; they use source Z and supplied creature ID.
-  > The result reports slot zero even without a target. Twenty-four production
-  > tests pass in full plain and strict ASan/UBSan suites. Removing the object
+  > The result reports slot zero even without a target. Copied target offsets
+  > now widen and clamp after three tests reproduced five failed checks and
+  > UBSan reported overflow at all three sites. Thirty production tests pass
+  > in full plain and strict ASan/UBSan suites. Removing the object
   > from a copied archive breaks the actual unit link.
   > R1 is 389 Windows / 387 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and

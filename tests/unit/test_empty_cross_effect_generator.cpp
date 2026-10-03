@@ -411,3 +411,78 @@ TEST(EmptyCrossEffectGenerator, MissingBaseServicesRetainCountsAndInactiveFallba
 	CHECK(world.generator.Generate(Info())); CHECK_EQ(29, effects.front()->GetEndFrame());
 	CHECK_EQ(4, effects.front()->GetEndLinkFrame()); CHECK_EQ(0, effects.front()->GetLight()); CHECK(!effects.front()->Update());
 }
+
+TEST(EmptyCrossEffectGenerator, PositiveSourceOffsetsSaturateAtTheUpperCoordinateLimit)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.x0 = info.y0 = high; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(4, effects.size());
+	const Point expected[] = {{777, 888}, {high, high}, {high, high - 24}, {high, high}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		const auto* linked = effects[i]->GetEffectTarget();
+		CHECK_EQ(expected[i].x, linked->GetX()); CHECK_EQ(expected[i].y, linked->GetY());
+		CHECK_EQ(i == 0 ? 999 : 17, linked->GetZ()); CHECK_EQ(i == 0 ? 456 : 123, linked->GetID());
+	}
+}
+
+TEST(EmptyCrossEffectGenerator, NegativeSourceOffsetSaturatesAtTheLowerCoordinateLimit)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	auto target = Target(); auto info = Info(); info.x0 = info.y0 = low; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(4, effects.size());
+	const Point expected[] = {{777, 888}, {low + 48, low}, {low, low}, {low, low + 24}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(EmptyCrossEffectGenerator, CopiesAreBoundedWhenTheCallerKeepsTheOriginalTarget)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	acceptanceMask = 14; auto target = Target(); auto info = Info(); info.x0 = high; info.y0 = low; info.pEffectTarget = target.get();
+	CHECK(!world.generator.Generate(info)); CHECK_EQ(3, effects.size()); CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY());
+	target.reset();
+	const Point expected[] = {{high, low}, {high, low}, {high, low + 24}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+		CHECK_EQ(17, effects[i]->GetEffectTarget()->GetZ()); CHECK_EQ(123, effects[i]->GetEffectTarget()->GetID());
+	}
+}
+
+TEST(EmptyCrossEffectGenerator, RepresentableBoundaryOffsetsRemainExact)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const int sourceY : {low + 24, high - 24})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.x0 = high - 48; info.y0 = sourceY; info.pEffectTarget = target.get();
+		CHECK(world.generator.Generate(info)); target.release();
+		CHECK_EQ(777, effects[0]->GetEffectTarget()->GetX()); CHECK_EQ(888, effects[0]->GetEffectTarget()->GetY());
+		CHECK_EQ(high, effects[1]->GetEffectTarget()->GetX()); CHECK_EQ(sourceY, effects[1]->GetEffectTarget()->GetY());
+		CHECK_EQ(high - 48, effects[2]->GetEffectTarget()->GetX()); CHECK_EQ(sourceY - 24, effects[2]->GetEffectTarget()->GetY());
+		CHECK_EQ(high - 48, effects[3]->GetEffectTarget()->GetX()); CHECK_EQ(sourceY + 24, effects[3]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(EmptyCrossEffectGenerator, RejectedExtremeSourcesLeaveTheOriginalUnchanged)
+{
+	World world;
+	acceptanceMask = 0; auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+	info.x0 = (std::numeric_limits<int>::max)(); info.y0 = (std::numeric_limits<int>::min)();
+	CHECK(!world.generator.Generate(info)); CHECK_EQ(4, submissions); CHECK(effects.empty()); CHECK(removedTargets.empty());
+	CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY()); CHECK_EQ(999, target->GetZ()); CHECK_EQ(456, target->GetID());
+}
+
+TEST(EmptyCrossEffectGenerator, TargetlessExtremeSourcesDoNotCreateCopies)
+{
+	World world;
+	auto info = Info(); info.x0 = (std::numeric_limits<int>::max)(); info.y0 = (std::numeric_limits<int>::min)();
+	CHECK(world.generator.Generate(info)); CHECK_EQ(4, effects.size());
+	for (const auto& effect : effects) { CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(42, effect->GetActionInfo()); }
+}
