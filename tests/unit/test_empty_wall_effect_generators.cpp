@@ -599,3 +599,123 @@ TEST(EmptyWallEffectGenerators, EveryInvalidDirectionRejectsAtAllPatternLengthBo
 		}
 	}
 }
+
+TEST(EmptyWallEffectGenerators, PositiveTargetDisplacementsSaturateAtTheUpperLimit)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	for (const auto& pattern : world.patterns)
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.x1 = info.y1 = high; info.pEffectTarget = target.get();
+		info.direction = pattern.horizontal ? DIRECTION_LEFTDOWN : DIRECTION_RIGHTDOWN;
+		CHECK(pattern.generator->Generate(info)); target.release(); CHECK_EQ(4, effects.size());
+		CHECK_EQ(777, effects.front()->GetEffectTarget()->GetX()); CHECK_EQ(888, effects.front()->GetEffectTarget()->GetY());
+		for (size_t i = 1; i < effects.size(); ++i)
+		{
+			CHECK_EQ(high, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(high, effects[i]->GetEffectTarget()->GetY());
+			CHECK_EQ(17, effects[i]->GetEffectTarget()->GetZ()); CHECK_EQ(123, effects[i]->GetEffectTarget()->GetID());
+		}
+	}
+}
+
+TEST(EmptyWallEffectGenerators, NegativeTargetDisplacementsSaturateAtTheLowerLimit)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	for (const auto& pattern : world.patterns)
+	{
+		for (const bool negativeX : {true, false})
+		{
+			ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+			info.x1 = negativeX ? low : 1000; info.y1 = negativeX ? 1000 : low;
+			info.direction = negativeX ? (pattern.horizontal ? DIRECTION_RIGHTDOWN : DIRECTION_RIGHTUP) :
+				(pattern.horizontal ? DIRECTION_LEFTUP : DIRECTION_LEFTDOWN);
+			CHECK(pattern.generator->Generate(info)); target.release(); CHECK_EQ(4, effects.size());
+			const Point xTargets[] = {{777, 888}, {low, 1024}, {low, 1072}, {low, 1096}};
+			const Point yTargets[] = {{777, 888}, {1048, low}, {1144, low}, {1192, low}};
+			for (size_t i = 0; i < effects.size(); ++i)
+			{
+				const Point expected = negativeX ? xTargets[i] : yTargets[i];
+				CHECK_EQ(expected.x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected.y, effects[i]->GetEffectTarget()->GetY());
+			}
+		}
+	}
+}
+
+TEST(EmptyWallEffectGenerators, WideTargetOffsetsAdvanceAcrossRejectionsAndTheGap)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	rejectBefore = 1;
+	for (const auto& pattern : world.patterns)
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.nActionInfo = MINE_ANKLE_KILLER;
+		info.x1 = pattern.horizontal ? high - 100 : low + 100; info.y1 = pattern.horizontal ? low + 10 : high - 10;
+		CHECK(pattern.generator->Generate(info)); target.release(); CHECK_EQ(3, effects.size());
+		CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget); CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY());
+		CHECK_EQ(pattern.horizontal ? high : low, effects[1]->GetEffectTarget()->GetX());
+		CHECK_EQ(pattern.horizontal ? low + 82 : high, effects[1]->GetEffectTarget()->GetY());
+		CHECK_EQ(pattern.horizontal ? high : low, effects[2]->GetEffectTarget()->GetX());
+		CHECK_EQ(pattern.horizontal ? low + 106 : high, effects[2]->GetEffectTarget()->GetY());
+		CHECK(attempted == (pattern.horizontal ? std::vector<Point>({{3, 3}, {4, 4}, {6, 6}, {7, 7}}) :
+			std::vector<Point>({{7, 3}, {6, 4}, {4, 6}, {3, 7}})));
+	}
+}
+
+TEST(EmptyWallEffectGenerators, MaximumLengthClampsTheFullPixelDisplacement)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const auto& pattern : world.patterns)
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+		info.direction = DIRECTION_LEFTDOWN; info.step = 255; info.x1 = high - 6000; info.y1 = low + 3000;
+		CHECK(pattern.generator->Generate(info)); target.release(); CHECK_EQ(254, effects.size());
+		CHECK_EQ(high, effects[125]->GetEffectTarget()->GetX()); CHECK_EQ(high, effects[126]->GetEffectTarget()->GetX());
+		CHECK_EQ(high, effects[127]->GetEffectTarget()->GetX()); CHECK_EQ(high, effects.back()->GetEffectTarget()->GetX());
+		CHECK_EQ(pattern.horizontal ? low + 6000 : low, effects[125]->GetEffectTarget()->GetY());
+		CHECK_EQ(pattern.horizontal ? low + 6072 : low, effects[127]->GetEffectTarget()->GetY());
+		CHECK_EQ(pattern.horizontal ? low + 9096 : low, effects.back()->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(EmptyWallEffectGenerators, RepresentableLastTargetsRemainExactAtBothCoordinateLimits)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const auto& pattern : world.patterns)
+	{
+		for (const bool negativeX : {false, true})
+		{
+			ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+			info.x1 = negativeX ? low + 192 : high - 192; info.y1 = high - 96;
+			info.direction = negativeX ? (pattern.horizontal ? DIRECTION_RIGHTDOWN : DIRECTION_RIGHTUP) :
+				(pattern.horizontal ? DIRECTION_LEFTDOWN : DIRECTION_RIGHTDOWN);
+			CHECK(pattern.generator->Generate(info)); target.release();
+			CHECK_EQ(negativeX ? low + 144 : high - 144, effects[1]->GetEffectTarget()->GetX());
+			CHECK_EQ(high - 72, effects[1]->GetEffectTarget()->GetY());
+			CHECK_EQ(negativeX ? low + 48 : high - 48, effects[2]->GetEffectTarget()->GetX());
+			CHECK_EQ(high - 24, effects[2]->GetEffectTarget()->GetY());
+			CHECK_EQ(negativeX ? low : high, effects[3]->GetEffectTarget()->GetX()); CHECK_EQ(high, effects[3]->GetEffectTarget()->GetY());
+		}
+	}
+}
+
+TEST(EmptyWallEffectGenerators, ExtremeCoordinatesAreSafeWhenNoEffectTakesATarget)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	for (const auto& pattern : world.patterns)
+	{
+		for (const BYTE step : {static_cast<BYTE>(0), static_cast<BYTE>(1), static_cast<BYTE>(2), static_cast<BYTE>(255)})
+		{
+			for (const bool accepted : {false, true})
+			{
+				ClearEffects(); acceptQueue = accepted; auto info = Info(); info.step = step; info.x1 = info.y1 = high;
+				info.direction = pattern.horizontal ? DIRECTION_LEFTDOWN : DIRECTION_RIGHTDOWN;
+				CHECK_EQ(accepted && step > 1, pattern.generator->Generate(info)); CHECK_EQ(step > 1 ? step - 1 : 0, submissions);
+				for (const auto& effect : effects) { CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(42, effect->GetActionInfo()); }
+			}
+		}
+	}
+}

@@ -2306,9 +2306,9 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_empty_cross_effect_generator.cpp`, using production effects.
 
-- [ ] **4.65 Empty-wall generation:** the horizontal and vertical empty-wall
+- [x] **4.65 Empty-wall generation:** the horizontal and vertical empty-wall
   generators construct their complete patterns in `gamemodel`.
-  > **Status:** direction bounds verified; coordinate fix pending.
+  > **Status:** done (this commit).
   > Borrowed metadata and consuming submission replace executable globals.
   > Direction tables, skipped middle index, mine source-tile placement and
   > ordinary destination-tile placement remain. The first accepted effect
@@ -2316,8 +2316,10 @@ rounds settled* for the host rules). Test fixtures share
   > including rejected and skipped iterations. Neither pattern randomizes frames.
   > Directions 8–255 now reject before table access. Two tests reproduced four
   > failed checks; ASan confirmed a horizontal-table buffer overread. All invalid
-  > direction bytes are covered at four step-count boundaries. Thirty production
-  > tests pass in full plain and strict ASan/UBSan suites. Removing either object from a copied archive breaks the unit link.
+  > direction bytes are covered at four step-count boundaries. Destination-pixel
+  > accumulators now use wide arithmetic and clamp copied coordinates; four
+  > tests reproduced 38 failed checks and UBSan reported all four overflow sites.
+  > Thirty-six production tests pass in full plain and strict ASan/UBSan suites. Removing either object from a copied archive breaks the unit link.
   > R1 is 387 Windows / 385 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_empty_wall_effect_generators.cpp`, using production effects.

@@ -7,7 +7,20 @@
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
 #include "SkillDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int BoundTargetCoordinate(std::int64_t coordinate)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(coordinate,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 const MEmptyWallEffectHost* MStopZoneEmptyHorizontalWallEffectGenerator::s_pHost = nullptr;
 
@@ -78,7 +91,7 @@ MStopZoneEmptyHorizontalWallEffectGenerator::Generate( const EFFECTGENERATOR_INF
 	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
 	// Copied targets start at the destination pixels and advance on every iteration.
-	int x = egInfo.x1,
+	std::int64_t x = egInfo.x1,
 		y = egInfo.y1;
 
 	for (int i=0; i<egInfo.step; i++)
@@ -118,7 +131,7 @@ MStopZoneEmptyHorizontalWallEffectGenerator::Generate( const EFFECTGENERATOR_INF
 				{
 					MEffectTarget* pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 					pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-					pEffectTarget2->Set( x, y, egInfo.z0, egInfo.creatureID );
+					pEffectTarget2->Set( BoundTargetCoordinate(x), BoundTargetCoordinate(y), egInfo.z0, egInfo.creatureID );
 				}
 			}
 		}
