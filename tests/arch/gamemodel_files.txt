@@ -610,3 +610,7 @@ Client/MMeteorDropEffectGenerator.h
 # Parabolic attacks toward sampled creature positions (4.76).
 Client/MAttackCreatureParabolaEffectGenerator.cpp
 Client/MAttackCreatureParabolaEffectGenerator.h
+
+# Wide ripple rows and center-only target ownership (4.77).
+Client/MRippleZoneWideEffectGenerator.cpp
+Client/MRippleZoneWideEffectGenerator.h

@@ -1,65 +1,69 @@
-//----------------------------------------------------------------------
 // MRippleZoneWideEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MRippleZoneWideEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MCreature.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include "WorldTileGeometry.h"
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MRippleZoneWideEffectGenerator	g_RippleZoneWideEffectGenerator;
+const MWideRippleEffectHost* MRippleZoneWideEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+const MWideRippleEffectHost* MRippleZoneWideEffectGenerator::SetHost(const MWideRippleEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MRippleZoneWideEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MRippleZoneWideEffectGenerator::ReadBounds(MWideRippleEffectBounds& bounds)
+{
+	bounds = {};
+	return s_pHost && s_pHost->Bounds && s_pHost->Bounds(bounds);
+}
+
+bool MRippleZoneWideEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
 	bool bOK = false;
 
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	const TYPE_FRAMEID frameID = sprite.frameID;
 
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
 	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
+	sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
-	MEffect*	pEffect;
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
 	int i;
 	int n=(egInfo.power<<1) - 1;
 
-	// 일단 한 칸 움직인다.
 	TYPE_SECTORPOSITION x=sX, y=sY;
 	int cX, cY;
-	MCreature::GetPositionToDirection(x,y, egInfo.direction);
-	
-	// 방향에 따라서 확장될 좌표를 달리한다.
+	WorldTileGeometry::Step(x, y, egInfo.direction);
+
 	switch (egInfo.direction)
 	{
-		case DIRECTION_LEFT : case DIRECTION_RIGHT :			
+		case DIRECTION_LEFT : case DIRECTION_RIGHT :
 			y = y-(egInfo.power-1);
 			cX	= 0;
-			cY	= 1;			
+			cY	= 1;
 		break;
 
 		case DIRECTION_UP : case DIRECTION_DOWN :
-			x = x-(egInfo.power-1);			
+			x = x-(egInfo.power-1);
 			cX	= 1;
 			cY	= 0;
 		break;
@@ -68,53 +72,51 @@ MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			x = x-(egInfo.power-1);
 			y = y+(egInfo.power-1);
 			cX	= 1;
-			cY	= -1;			
+			cY	= -1;
 		break;
 
 		case DIRECTION_LEFTDOWN : case DIRECTION_RIGHTUP :
 			x = x-(egInfo.power-1);
 			y = y-(egInfo.power-1);
 			cX	= 1;
-			cY	= 1;			
+			cY	= 1;
 		break;
+
+		default:
+			return false;
 	}
 
-	// Effec생성
-	for (i=0; i<n; i++)
+	// Clipped candidates still advance through the original row indices.
+	for (i = 0; i < n; ++i, x += cX, y += cY)
 	{
-		// Zone의 영역을 벗어나는 경우..
-		if (x>=g_pZone->GetWidth() || y>=g_pZone->GetHeight())
+		MWideRippleEffectBounds bounds;
+		if (!ReadBounds(bounds)) return bOK;
+		if (x >= bounds.width || y >= bounds.height)
 			continue;
 
-		pEffect = new MEffect(bltType);
+		auto effect = std::make_unique<MEffect>(bltType);
+		MEffect* pEffect = effect.get();
 
-		pEffect->SetFrameID( frameID, maxFrame );	
+		pEffect->SetFrameID( frameID, maxFrame );
 
-		// 다음 좌표를 정한다.			
-		pEffect->SetPosition(x, y);		// Sector 좌표		
-		
-		// 방향 설정
+		pEffect->SetPosition(x, y);
+
 		pEffect->SetDirection( egInfo.direction );
 
-		pEffect->SetZ(egInfo.z0);			
-		pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+		pEffect->SetZ(egInfo.z0);
+		pEffect->SetStepPixel(egInfo.step);
+		pEffect->SetCount( egInfo.count, egInfo.linkCount );
 
-		// 위력
-		pEffect->SetPower(egInfo.power+1);
+		pEffect->SetPower(static_cast<BYTE>(egInfo.power + 1));
 
-		// 빛의 밝기
-		//pEffect->SetLight( light );
-
-		// Zone에 추가한다.
-		bool bAdd = g_pZone->AddEffect( pEffect );
+		bool bAdd = QueueEffect(std::move(effect));
 
 		if (bAdd)
 		{
 			if (i==(egInfo.power-1))
 			{
 				bOK = true;
-					
+
 				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 			}
 			else
@@ -123,12 +125,7 @@ MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			}
 		}
 
-
-		// 다음 좌표
-		x += cX;
-		y += cY;
 	}
-
 
 	return bOK;
 }
