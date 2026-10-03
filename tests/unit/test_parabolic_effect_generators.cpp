@@ -482,3 +482,96 @@ TEST(ParabolicEffectGenerators, CountsRetainTheirAbsoluteClockWrap)
 		frameNow = 0; CHECK(effects.back()->Update()); CHECK_EQ(1, effects.back()->GetFrame());
 	}
 }
+
+TEST(ParabolicEffectGenerators, RaisedSourcesClampBeforeFloatStorage)
+{
+	World world;
+	const int top = (std::numeric_limits<int>::max)();
+	for (auto* generator : world.Generators())
+		for (const int source : {top, top - 1, top - 47})
+		{
+			auto info = Info(); info.z0 = source;
+			CHECK(generator->Generate(info)); CHECK_EQ(top, effects.back()->GetPixelZ());
+		}
+}
+
+TEST(ParabolicEffectGenerators, ExtendedEndpointsClampAtEveryPixelBoundary)
+{
+	World world;
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Case { int sx, sy, tx, ty; BYTE direction; };
+	for (const Case c : {Case{top - 255, 0, top, 0, DIRECTION_RIGHT},
+		{bottom + 256, 0, bottom, 0, DIRECTION_LEFT}, {0, top - 255, 0, top, DIRECTION_DOWN},
+		{0, bottom + 256, 0, bottom, DIRECTION_UP}, {top - 255, top - 255, top, top, DIRECTION_RIGHTDOWN},
+		{bottom + 256, bottom + 256, bottom, bottom, DIRECTION_LEFTUP}})
+	{
+		auto info = Info(); info.x0 = c.sx; info.y0 = c.sy; info.x1 = c.tx; info.y1 = c.ty;
+		info.direction = c.direction; info.step = 255;
+		CHECK(world.parabola.Generate(info)); CHECK(!effects.back()->Update());
+		CHECK_EQ(c.tx, effects.back()->GetPixelX()); CHECK_EQ(c.ty, effects.back()->GetPixelY());
+		CHECK_EQ(48, effects.back()->GetPixelZ()); CHECK_EQ(104, effects.back()->GetEndLinkFrame());
+	}
+}
+
+TEST(ParabolicEffectGenerators, LiftedParabolaTargetHeightClampsToTheIntegerRange)
+{
+	World world;
+	const int top = (std::numeric_limits<int>::max)();
+	for (const int height : {top, top - 1, top - 23})
+	{
+		auto info = Info(); info.x1 = 0; info.direction = 255; info.z1 = height; info.step = 255;
+		CHECK(world.parabola.Generate(info)); CHECK(!effects.back()->Update());
+		CHECK_EQ(top, effects.back()->GetPixelZ()); CHECK_EQ(0, effects.back()->GetEndFrame());
+	}
+}
+
+TEST(ParabolicEffectGenerators, SaturatedCannonadeEndpointKeepsTheOriginalImpactTile)
+{
+	World world;
+	const int top = (std::numeric_limits<int>::max)();
+	auto info = Info(); info.x0 = info.y0 = top - 255; info.x1 = info.y1 = info.z1 = top;
+	info.z0 = 7; info.direction = DIRECTION_RIGHTDOWN; info.step = 255; info.nActionInfo = SKILL_CANNONADE;
+	auto target = Target(); info.pEffectTarget = target.get();
+	CHECK(world.parabola.Generate(info)); target.release(); CHECK_EQ(7, effects.front()->GetPixelZ());
+	CHECK(!effects.front()->Update()); CHECK_EQ(top, effects.front()->GetPixelX());
+	CHECK_EQ(top, effects.front()->GetPixelY()); CHECK_EQ(top, effects.front()->GetPixelZ());
+	CHECK(impacts == std::vector<Impact>({{43690, 21845}})); CHECK_EQ(1, smoke.size());
+	CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget); CHECK_EQ(777, info.pEffectTarget->GetX());
+	effects.clear(); CHECK(removedTargets == std::vector<int>({73}));
+}
+
+TEST(ParabolicEffectGenerators, RepresentableSourceLiftsRetainFloatRounding)
+{
+	World world;
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Case { int source, expected; };
+	for (auto* generator : world.Generators())
+		for (const Case c : {Case{top - 48, top}, {top - 175, top - 127}, {bottom, bottom},
+			{-48, 0}, {-49, -1}, {-1, 47}})
+		{
+			auto info = Info(); info.z0 = c.source;
+			CHECK(generator->Generate(info)); CHECK_EQ(c.expected, effects.back()->GetPixelZ());
+		}
+}
+
+TEST(ParabolicEffectGenerators, CannonadeSourceHeightRemainsUnliftedAtIntegerLimits)
+{
+	World world;
+	for (const int source : {(std::numeric_limits<int>::max)(), (std::numeric_limits<int>::min)(), -48, 0, 48})
+	{
+		auto info = Info(); info.nActionInfo = SKILL_CANNONADE; info.z0 = source;
+		CHECK(world.parabola.Generate(info)); CHECK_EQ(source, effects.back()->GetPixelZ());
+	}
+}
+
+TEST(ParabolicEffectGenerators, BombDestinationHeightRemainsUnliftedAtIntegerLimits)
+{
+	World world;
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Case { int source, target; };
+	for (const Case c : {Case{top - 175, top}, {bottom + 80, bottom}})
+	{
+		auto info = Info(); info.x1 = 0; info.z0 = c.source; info.z1 = c.target; info.step = 255;
+		CHECK(world.bomb.Generate(info)); CHECK(!effects.back()->Update()); CHECK_EQ(c.target, effects.back()->GetPixelZ());
+	}
+}

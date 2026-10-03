@@ -2227,15 +2227,18 @@ rounds settled* for the host rules). Test fixtures share
     `tests/unit/test_world_tile_geometry.cpp` and
     `tests/unit/test_zone_attack_effect_generator.cpp`.
 
-- [ ] **4.60 Parabolic projectile generation:** `MAttackZoneParabolaEffectGenerator`
+- [x] **4.60 Parabolic projectile generation:** `MAttackZoneParabolaEffectGenerator`
   and `MAttackZoneBombEffectGenerator` create real parabolic effects in `gamemodel`.
-  > **Status:** in progress (extraction verified; coordinate arithmetic fix pending).
+  > **Status:** done (this commit).
   > Borrowed sprite metadata resolves before construction; consuming queues
   > transfer target ownership only on acceptance. Parabola effects
   > extend one tile in the supplied direction, then target selection sets facing.
   > Cannonade keeps its source height and original impact tile; other shots
   > start two tiles higher. Bomb destinations retain their requested coordinates.
   > MTopView delegates directional offsets to the shared WorldTileGeometry.
+  > Source/target height lifts and directional endpoint offsets clamp after
+  > widened addition. Float storage, cannonade source height and impact-tile
+  > narrowing, and unlifted bomb destinations retain their existing behavior.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1,
     `tests/unit/test_world_tile_geometry.cpp` and
     `tests/unit/test_parabolic_effect_generators.cpp`.
