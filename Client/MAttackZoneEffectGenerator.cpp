@@ -9,8 +9,21 @@
 #include "MViewDef.h"
 #include "EffectSpriteTypeDef.h"
 #include "SkillDef.h"
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int ClampCoordinate(std::int64_t value)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 const MZoneAttackEffectHost* MAttackZoneEffectGenerator::s_pHost = nullptr;
 
@@ -88,8 +101,8 @@ MAttackZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		// Travel a distance determined by speed and duration.
 		int movePixel = egInfo.step * egInfo.count;
 
-		int cx = sx-tx;
-		int cy = sy-ty;
+		std::int64_t cx = static_cast<std::int64_t>(sx) - tx;
+		std::int64_t cy = static_cast<std::int64_t>(sy) - ty;
 
 		if (cx==0 || cy==0)
 		{
@@ -113,25 +126,29 @@ MAttackZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			ty = WorldTileGeometry::TileToPixelY( y );
 
 			// Recompute the displacement.
-			cx = sx - tx;
-			cy = sy - ty;
+			cx = static_cast<std::int64_t>(sx) - tx;
+			cy = static_cast<std::int64_t>(sy) - ty;
 		}
 
-		int currentPixel = static_cast<int>(sqrt(cx*cx + cy*cy));
+		// Differences can span the full int range; their squared sum can even
+		// exceed int64. Keep the floored length and integer division afterward.
+		const auto currentPixel = static_cast<std::int64_t>(std::sqrt(
+			static_cast<double>(cx) * cx + static_cast<double>(cy) * cy));
 
 		if (currentPixel==0)
 		{
 		}
 		else
 		{
-			tx = sx - (cx * movePixel / currentPixel);
-			ty = sy - (cy * movePixel / currentPixel);
+			tx = ClampCoordinate(sx - (cx * movePixel / currentPixel));
+			ty = ClampCoordinate(sy - (cy * movePixel / currentPixel));
 
 			MEffectTarget* pTarget = egInfo.pEffectTarget;
 			if (pTarget!=NULL)
 			{
-				int tx2 = sx - (cx * movePixel);
-				int ty2 = sy - (cy * movePixel);
+				// Preserve the distinct, unnormalized link offset before queuing.
+				int tx2 = ClampCoordinate(sx - (cx * movePixel));
+				int ty2 = ClampCoordinate(sy - (cy * movePixel));
 
 				pTarget->Set(tx2, ty2, tz, pTarget->GetID());
 			}

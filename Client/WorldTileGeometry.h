@@ -7,6 +7,7 @@ namespace WorldTileGeometry {
 
 int PixelToTileX(int pixel);
 int PixelToTileY(int pixel);
+// Tile origins outside the pixel-coordinate range saturate at its endpoints.
 int TileToPixelX(int tile);
 int TileToPixelY(int tile);
 

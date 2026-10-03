@@ -2209,10 +2209,10 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_multiple_falling_effect_generator.cpp`.
 
-- [ ] **4.59 Zone-attack generation and tile geometry:** `MAttackZoneEffectGenerator`
+- [x] **4.59 Zone-attack generation and tile geometry:** `MAttackZoneEffectGenerator`
   creates real linear projectiles in `gamemodel`. `WorldTileGeometry` supplies
   the same conversions and sector stepping used by MTopView and MCreature.
-  > **Status:** in progress (extraction verified; coordinate arithmetic fix pending).
+  > **Status:** done (this commit).
   > Sprite metadata resolves before construction; the executable adapter
   > requires a table and view. HALO extends three tiles in the selected facing;
   > wind-divider fallback retains unsigned sector narrowing and one-tile stepping.
@@ -2220,6 +2220,9 @@ rounds settled* for the host rules). Test fixtures share
   > retain their unnormalized offset and update before queue submission.
   > Missing metadata rejects; missing queues destroy unlinked effects. The
   > consuming queue takes each new effect, and acceptance transfers the target.
+  > Tile origins and wind endpoints clamp after widened arithmetic. Wind distance
+  > retains a floored length and integer division; linked targets keep their
+  > distinct unnormalized calculation. Existing float position storage remains.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1,
     `tests/unit/test_world_tile_geometry.cpp` and
     `tests/unit/test_zone_attack_effect_generator.cpp`.

@@ -75,3 +75,20 @@ TEST(WorldTileGeometry, UnknownDirectionBytesLeaveBothCoordinatesUntouched)
 		CHECK_EQ(123, x); CHECK_EQ(456, y);
 	}
 }
+
+TEST(WorldTileGeometry, UnrepresentableTileOriginsClampToThePixelRange)
+{
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	for (const int tile : {44739243, top}) CHECK_EQ(top, WorldTileGeometry::TileToPixelX(tile));
+	for (const int tile : {-44739243, bottom}) CHECK_EQ(bottom, WorldTileGeometry::TileToPixelX(tile));
+	for (const int tile : {89478486, top}) CHECK_EQ(top, WorldTileGeometry::TileToPixelY(tile));
+	for (const int tile : {-89478486, bottom}) CHECK_EQ(bottom, WorldTileGeometry::TileToPixelY(tile));
+}
+
+TEST(WorldTileGeometry, LastRepresentableTileOriginsRemainExact)
+{
+	CHECK_EQ(2147483616, WorldTileGeometry::TileToPixelX(44739242));
+	CHECK_EQ(-2147483616, WorldTileGeometry::TileToPixelX(-44739242));
+	CHECK_EQ(2147483640, WorldTileGeometry::TileToPixelY(89478485));
+	CHECK_EQ(-2147483640, WorldTileGeometry::TileToPixelY(-89478485));
+}

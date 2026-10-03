@@ -2,12 +2,27 @@
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+
 namespace WorldTileGeometry {
+
+namespace {
+
+int TileToPixel(int tile, int scale)
+{
+	const auto pixel = static_cast<std::int64_t>(tile) * scale;
+	return static_cast<int>(std::clamp<std::int64_t>(pixel,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 int PixelToTileX(int pixel) { return pixel / TILE_X; }
 int PixelToTileY(int pixel) { return pixel / TILE_Y; }
-int TileToPixelX(int tile) { return tile * TILE_X; }
-int TileToPixelY(int tile) { return tile * TILE_Y; }
+int TileToPixelX(int tile) { return TileToPixel(tile, TILE_X); }
+int TileToPixelY(int tile) { return TileToPixel(tile, TILE_Y); }
 
 void Step(TYPE_SECTORPOSITION& x, TYPE_SECTORPOSITION& y, BYTE direction)
 {

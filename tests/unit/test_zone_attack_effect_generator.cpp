@@ -457,3 +457,120 @@ TEST(ZoneAttackEffectGenerator, CountsRetainTheirAbsoluteClockWrap)
 	frameNow = 0;
 	CHECK(effects.front()->Update()); CHECK_EQ(126, effects.front()->GetPixelX()); CHECK_EQ(88, effects.front()->GetPixelY());
 }
+
+TEST(ZoneAttackEffectGenerator, HaloExtensionClampsAtEachPixelBoundary)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Case { int sx, sy, tx, ty; };
+	for (const Case c : {Case{top - 255, 48, top, 48}, {bottom + 256, 48, bottom, 48},
+		{96, top - 255, 96, top}, {96, bottom + 256, 96, bottom}})
+	{
+		auto info = Info(); info.nActionInfo = SKILL_HALO; info.step = 255;
+		info.x0 = c.sx; info.y0 = c.sy; info.x1 = c.tx; info.y1 = c.ty;
+		CHECK(generator.Generate(info)); auto& effect = *effects.back();
+		CHECK(effect.Update()); CHECK_EQ(c.tx, effect.GetPixelX()); CHECK_EQ(c.ty, effect.GetPixelY());
+		CHECK(effect.IsMulti()); CHECK_EQ(108, effect.GetEndFrame()); CHECK_EQ(104, effect.GetEndLinkFrame());
+	}
+}
+
+TEST(ZoneAttackEffectGenerator, WindDisplacementCanCrossTheEntireIntegerRange)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Case { int source, destination, linkedY, endX; };
+	for (const Case c : {Case{bottom, top, 510, bottom + 512}, {top, bottom, -510, top - 511}})
+	{
+		auto target = Target(); auto info = Info(); info.effectSpriteType = EFFECTSPRITETYPE_WIND_DIVIDER_1;
+		info.x0 = c.source; info.x1 = c.destination; info.y0 = 0; info.y1 = c.linkedY > 0 ? 1 : -1;
+		info.step = 255; info.count = 2; info.pEffectTarget = target.get();
+		CHECK(generator.Generate(info)); target.release();
+		CHECK_EQ(c.destination, info.pEffectTarget->GetX()); CHECK_EQ(c.linkedY, info.pEffectTarget->GetY());
+		CHECK_EQ(456, info.pEffectTarget->GetID());
+		CHECK(effects.back()->Update()); CHECK(!effects.back()->Update());
+		// The real effect retains float position storage at the integer edges.
+		CHECK_EQ(c.endX, effects.back()->GetPixelX()); CHECK_EQ(0, effects.back()->GetPixelY());
+		effects.clear();
+	}
+}
+
+TEST(ZoneAttackEffectGenerator, WindDistanceSquaresCanExceedTheIntegerRange)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	auto target = Target(); auto info = Info(); info.effectSpriteType = EFFECTSPRITETYPE_WIND_DIVIDER_2;
+	info.x0 = info.y0 = 0; info.x1 = 30000; info.y1 = 40000;
+	info.step = 255; info.count = 100; info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ(765000000, info.pEffectTarget->GetX()); CHECK_EQ(1020000000, info.pEffectTarget->GetY());
+	CHECK(effects.front()->Update()); CHECK_EQ(153, effects.front()->GetPixelX()); CHECK_EQ(204, effects.front()->GetPixelY());
+	bool arrived = false;
+	for (int i = 0; i < 100; ++i) if (!effects.front()->Update()) { arrived = true; break; }
+	CHECK(arrived); CHECK_EQ(15300, effects.front()->GetPixelX()); CHECK_EQ(20400, effects.front()->GetPixelY());
+}
+
+TEST(ZoneAttackEffectGenerator, MaximumWindRangeBoundsTheLinkAndPreservesTheProjectileDistance)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	auto target = Target(); auto info = Info(); info.effectSpriteType = EFFECTSPRITETYPE_WIND_DIVIDER_3;
+	info.step = 255; info.count = 65535; info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ((std::numeric_limits<int>::max)(), info.pEffectTarget->GetX());
+	CHECK_EQ((std::numeric_limits<int>::max)(), info.pEffectTarget->GetY());
+	CHECK_EQ(65634, effects.front()->GetEndFrame()); CHECK_EQ(104, effects.front()->GetEndLinkFrame());
+	CHECK(effects.front()->Update()); CHECK_EQ(249, effects.front()->GetPixelX()); CHECK_EQ(252, effects.front()->GetPixelY());
+	bool arrived = false;
+	for (int i = 0; i < 65535; ++i) if (!effects.front()->Update()) { arrived = true; break; }
+	CHECK(arrived); CHECK_EQ(10026951, effects.front()->GetPixelX()); CHECK_EQ(13369188, effects.front()->GetPixelY());
+	CHECK_EQ(104, effects.front()->GetEndLinkFrame());
+}
+
+TEST(ZoneAttackEffectGenerator, WindProjectedEndpointsClampWithoutChangingTheLinkedTargetRule)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Case { int source, destination, targetY, linkedY, endY; };
+	for (const Case c : {Case{top - 127, top, 1, 510, 4}, {bottom + 128, bottom, -1, -510, -3}})
+	{
+		auto target = Target(); auto info = Info(); info.effectSpriteType = EFFECTSPRITETYPE_WIND_DIVIDER_1;
+		info.x0 = c.source; info.x1 = c.destination; info.y0 = 0; info.y1 = c.targetY;
+		info.step = 255; info.count = 2; info.pEffectTarget = target.get();
+		CHECK(generator.Generate(info)); target.release();
+		CHECK_EQ(c.destination, info.pEffectTarget->GetX()); CHECK_EQ(c.linkedY, info.pEffectTarget->GetY());
+		CHECK(!effects.back()->Update()); CHECK_EQ(c.destination, effects.back()->GetPixelX());
+		CHECK_EQ(c.endY, effects.back()->GetPixelY()); effects.clear();
+	}
+}
+
+TEST(ZoneAttackEffectGenerator, WindFallbackKeepsUnsignedSectorWrapWithLargeDistances)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	auto target = Target(); auto info = Info(); info.effectSpriteType = EFFECTSPRITETYPE_WIND_DIVIDER_1;
+	info.x0 = info.y0 = info.x1 = 0; info.y1 = 1; info.direction = DIRECTION_LEFTUP;
+	info.step = 10; info.count = 5; info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ(157284000, info.pEffectTarget->GetX()); CHECK_EQ(78642000, info.pEffectTarget->GetY());
+	bool arrived = false;
+	for (int i = 0; i < 8; ++i) if (!effects.back()->Update()) { arrived = true; break; }
+	CHECK(arrived); CHECK_EQ(44, effects.back()->GetPixelX()); CHECK_EQ(22, effects.back()->GetPixelY());
+	CHECK_EQ(DIRECTION_LEFTUP, effects.back()->GetDirection());
+}
+
+TEST(ZoneAttackEffectGenerator, NegativeWindSourceRetainsSectorNarrowingBeforeStepping)
+{
+	World world;
+	MAttackZoneEffectGenerator generator;
+	auto target = Target(); auto info = Info(); info.effectSpriteType = EFFECTSPRITETYPE_WIND_DIVIDER_1;
+	info.x0 = info.x1 = -48; info.y0 = -24; info.y1 = 1; info.direction = DIRECTION_RIGHTDOWN;
+	info.step = 10; info.count = 5; info.pEffectTarget = target.get();
+	CHECK(generator.Generate(info)); target.release();
+	CHECK_EQ(2352, info.pEffectTarget->GetX()); CHECK_EQ(1176, info.pEffectTarget->GetY());
+	bool arrived = false;
+	for (int i = 0; i < 8; ++i) if (!effects.back()->Update()) { arrived = true; break; }
+	CHECK(arrived); CHECK_EQ(-3, effects.back()->GetPixelX()); CHECK_EQ(-2, effects.back()->GetPixelY());
+}
