@@ -1,83 +1,70 @@
-//----------------------------------------------------------------------
 // MSpreadOutEffectGenerator.cpp
-//----------------------------------------------------------------------
-// (일단은) 8방향으로 뻗어가는 Effect
-//
-// step씩 count번 움직인다.
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MSpreadOutEffectGenerator.h"
 #include "MLinearEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
+#include "WorldTileGeometry.h"
+#include <cmath>
+#include <utility>
 
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+const MFixedZoneEffectHost* MSpreadOutEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MSpreadOutEffectGenerator	g_SpreadOutEffectGenerator;
+const MFixedZoneEffectHost* MSpreadOutEffectGenerator::SetHost(const MFixedZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+bool MSpreadOutEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MSpreadOutEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
 	bool bOK = false;
 
-	int est = egInfo.effectSpriteType;
-
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);		
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	const TYPE_FRAMEID frameID = sprite.frameID;
+	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
 	MEffectTarget* pTarget = egInfo.pEffectTarget;
 
-	// 시작 좌표
 	int sx = egInfo.x0;
 	int sy = egInfo.y0;
-	int sz = 0;//egInfo.z0;
+	int sz = 0;
 
 	int cx, cy;
-	int tx, ty, tz=sz;	// 목표 좌표
-	
+	int tx, ty, tz=sz;
 
 	MLinearEffect*	pEffect;
-		
-	//------------------------------------------------------------
-	// 목표까지가는게 아니라.. 일정한 pixel수 만큼 가야한다?
-	//------------------------------------------------------------
-	// 한 단계 이동..
+
+	// Emit one trajectory for each direction, starting from source pixels at z=0.
 	for (int d=0; d<8; d++)
 	{
-		int movePixel = egInfo.step;// * egInfo.count;
-	
-		//---------------------------------------------
-		// pixel좌표를 Map의 좌표로 바꿔준다.
-		//---------------------------------------------
+		int movePixel = egInfo.step;
+
 		TYPE_SECTORPOSITION	sX, sY;
-		sX = g_pTopView->PixelToMapX( sx );
-		sY = g_pTopView->PixelToMapY( sy );
+		sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(sx));
+		sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(sy));
 
-		//---------------------------------------------
-		// 나가는 방향으로 다음 좌표를 정한다.	
-		//---------------------------------------------
 		TYPE_SECTORPOSITION x=sX, y=sY;
-		MCreature::GetPositionToDirection(x,y, d);
+		WorldTileGeometry::Step(x, y, static_cast<BYTE>(d));
 
-		//---------------------------------------------
-		// (x,y)를 다시 pixel좌표로 바꾼다.
-		//---------------------------------------------
-		tx = g_pTopView->MapToPixelX( x );
-		ty = g_pTopView->MapToPixelY( y );
+		tx = WorldTileGeometry::TileToPixelX(x);
+		ty = WorldTileGeometry::TileToPixelY(y);
 
 		cx = sx - tx;
-		cy = sy - ty;		
+		cy = sy - ty;
 
 		int currentPixel = static_cast<int>(sqrt(cx*cx + cy*cy));
 
@@ -87,67 +74,49 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		else
 		{
 			movePixel = static_cast<int>((float)movePixel * (1.0f - fabs((float)cy / (float)(2.0f*currentPixel))));
-		
-			/*
-			if (pTarget!=NULL && pTarget->GetCurrentPhase()==1)
-			{
-				movePixel *= 3;
-			}
-			*/
 
 			int movePixelStep = movePixel * egInfo.count;
-			
+
 			tx = sx - (cx * movePixelStep / currentPixel);
 			ty = sy - (cy * movePixelStep / currentPixel);
 		}
 
-		//---------------------------------------------
-		// Effect 생성
-		//---------------------------------------------
-		pEffect = new MLinearEffect(bltType);
+		auto effect = std::make_unique<MLinearEffect>(bltType);
+		pEffect = effect.get();
 
-
-		pEffect->SetFrameID( frameID, maxFrame );	
+		pEffect->SetFrameID( frameID, maxFrame );
 
 		pEffect->SetPixelPosition( sx, sy, sz );
 		pEffect->SetTarget( tx, ty, tz, egInfo.step );
 
-		pEffect->SetStepPixel( egInfo.step );		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+		pEffect->SetStepPixel( egInfo.step );
+		pEffect->SetCount( egInfo.count, egInfo.linkCount );
 
-		// 방향 설정
 		pEffect->SetDirection( d );
 
-		// 위력
 		pEffect->SetPower(egInfo.power);
 
-		// 빛의 밝기
-		//pEffect->SetLight( light );
-
-		// Zone에 추가한다.
+		// Slot zero alone owns the original target and determines the result.
 		if (d==0)
 		{
-			bOK = g_pZone->AddEffect( pEffect );
+			bOK = QueueEffect(std::move(effect));
 
-			
 			if (bOK)
 			{
-				// 다음 Effect 생성 정보
 				if (pTarget == NULL)
 				{
 					pEffect->SetLink( egInfo.nActionInfo, NULL );
 				}
 				else
 				{
-					// 다음 Effect 생성 정보
-					pEffect->SetLink( egInfo.nActionInfo, pTarget );			
+					pEffect->SetLink( egInfo.nActionInfo, pTarget );
 					pTarget->Set( tx, ty, tz, egInfo.creatureID );
 				}
-			}			
+			}
 		}
 		else
 		{
-			if (g_pZone->AddEffect( pEffect ))
+			if (QueueEffect(std::move(effect)))
 			{
 				if (pTarget==NULL)
 				{
@@ -159,10 +128,9 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 					pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
 					pEffectTarget2->Set( tx, ty, tz, egInfo.creatureID );
 				}
-			}			
+			}
 		}
 	}
-
 
 	return bOK;
 }
