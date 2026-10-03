@@ -89,6 +89,7 @@
 #include "MStopZoneCrossEffectGenerator.h"
 #include "MStopZoneXEffectGenerator.h"
 #include "MStopZoneRhombusEffectGenerator.h"
+#include "MStopZoneEmptyCrossEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
 #include "MAttackZoneEffectGenerator.h"
 #include "MAttackZoneParabolaEffectGenerator.h"
@@ -2638,6 +2639,7 @@ void ReleaseAllObjects()
 	MStopZoneCrossEffectGenerator::SetHost(nullptr);
 	MStopZoneXEffectGenerator::SetHost(nullptr);
 	MStopZoneRhombusEffectGenerator::SetHost(nullptr);
+	MStopZoneEmptyCrossEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
 	MAttackZoneEffectGenerator::SetHost(nullptr);
 	MAttackZoneBombEffectGenerator::SetHost(nullptr);
@@ -3599,6 +3601,7 @@ InitGameObject()
 	MStopZoneCrossEffectGenerator::SetHost(&s_CrossZoneEffectHost);
 	MStopZoneXEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneRhombusEffectGenerator::SetHost(&s_FixedZoneEffectHost);
+	MStopZoneEmptyCrossEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
 	MAttackZoneEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
 	MAttackZoneBombEffectGenerator::SetHost(&s_ZoneBombEffectHost);
