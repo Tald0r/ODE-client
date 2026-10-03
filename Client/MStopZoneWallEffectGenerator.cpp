@@ -52,6 +52,7 @@ MStopZoneWallEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	const int sY1 = WorldTileGeometry::PixelToTileY(egInfo.y1);
 
 	int lookDirection = egInfo.direction;
+	if (lookDirection >= 8) return false;
 
 	// Include every tile; even counts start half a step-count before the destination.
 	int stepMulti = (egInfo.step>>1);

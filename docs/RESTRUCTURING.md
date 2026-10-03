@@ -2354,11 +2354,12 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.68 Complete wall generation:** `MStopZoneWallEffectGenerator` creates
   stationary walls around destination tiles from `gamemodel`.
-  > **Status:** in progress (extraction verified; direction and coordinate fixes pending).
+  > **Status:** in progress (extraction and direction guard verified; coordinate fix pending).
   > Borrowed sprite metadata and consuming submission replace executable
   > globals. The full directional sequence includes its middle tile. The first
   > accepted effect takes the original target; copies advance from destination
   > pixels on every iteration, including rejected submissions.
+  > Invalid direction bytes reject before table access or effect construction.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_wall_effect_generator.cpp`.
 
