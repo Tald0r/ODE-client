@@ -566,3 +566,7 @@ Client/MStopZoneEmptyHorizontalEffectGenerator.cpp
 Client/MStopZoneEmptyHorizontalWallEffectGenerator.h
 Client/MStopZoneEmptyVerticalWallEffectGenerator.cpp
 Client/MStopZoneEmptyVerticalEffectGenerator.h
+
+# Clipped rectangular effects with the center omitted (4.66).
+Client/MStopZoneEmptyRectEffectGenerator.cpp
+Client/MStopZoneEmptyRectEffectGenerator.h
