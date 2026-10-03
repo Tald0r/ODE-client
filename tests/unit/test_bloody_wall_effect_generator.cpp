@@ -449,3 +449,32 @@ TEST(BloodyWallEffectGenerator, DeadlinesRetainFiniteSentinelsClockWrapAndMissin
 	ClearEffects(); target = Target(); MEffect::SetHost(nullptr); CHECK(Generate(world, Info(), target));
 	for (const auto& effect : effects) { CHECK_EQ(29, effect->GetEndFrame()); CHECK_EQ(4, effect->GetEndLinkFrame()); CHECK_EQ(0, effect->GetLight()); CHECK(!effect->Update()); }
 }
+
+TEST(BloodyWallEffectGenerator, DirectionPastTheEightRowsRejectsBeforeConstruction)
+{
+	World world; auto target = Target(); auto* original = target.get(); auto info = Info(); info.direction = 8;
+	CHECK(!Generate(world, info, target)); CHECK_EQ(0, submissions); CHECK(effects.empty());
+	CHECK(calls == std::vector<int>({1, 2})); CheckTarget(*original);
+}
+
+TEST(BloodyWallEffectGenerator, EveryInvalidDirectionRejectsWithAndWithoutATarget)
+{
+	World world;
+	for (int direction = 8; direction < 256; ++direction) for (const bool linked : {false, true})
+	{
+		ClearEffects(); auto target = linked ? Target() : std::unique_ptr<MEffectTarget>{}; auto info = Info(); info.direction = static_cast<BYTE>(direction);
+		CHECK(!Generate(world, info, target)); CHECK_EQ(0, submissions); CHECK(effects.empty()); CHECK(calls == std::vector<int>({1, 2}));
+		if (target) CheckTarget(*target);
+	}
+}
+
+TEST(BloodyWallEffectGenerator, InvalidDirectionsKeepInitialVariantRandomnessAndMetadataOrdering)
+{
+	World world; sprite.repeatFrame = true; auto info = Info(); info.direction = 255; info.effectSpriteType = EFFECTSPRITETYPE_BLOODY_WALL_3;
+	for (const bool available : {false, true})
+	{
+		ClearEffects(); spriteAvailable = available; std::srand(11); const int variant = std::rand() % 3, next = std::rand(); std::srand(11);
+		CHECK(!world.generator.Generate(info)); CHECK_EQ(next, std::rand()); CHECK_EQ(EFFECTSPRITETYPE_BLOODY_WALL_1 + variant, spriteRequests.front());
+		CHECK(calls == (available ? std::vector<int>{1, 2} : std::vector<int>{1})); CHECK_EQ(0, submissions);
+	}
+}

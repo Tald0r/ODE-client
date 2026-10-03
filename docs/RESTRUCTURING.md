@@ -2496,11 +2496,12 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.79 Bloody Wall generation:** `MBloodyWallEffectGenerator` creates
   five directional stationary effects and linked target copies from `gamemodel`.
-  > **Status:** in progress (direction bounds, empty animation and pixel offsets remain).
+  > **Status:** in progress (empty animation and pixel offsets remain).
   > Borrowed metadata preserves initial blit/repeat policy and per-attempt refresh.
   > Consuming submission gives the first accepted effect the unchanged original
   > target; later accepted effects own copies at destination-relative pixels.
   > Missing services preserve earlier acceptance. Source tiles wrap as before.
+  > Invalid directions reject after initial metadata and before pattern indexing.
   > R1 is 373 Windows / 371 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_bloody_wall_effect_generator.cpp`.

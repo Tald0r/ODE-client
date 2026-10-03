@@ -6,6 +6,7 @@
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
 #include <cstdlib>
+#include <iterator>
 #include <utility>
 
 const MBloodyWallEffectHost* MBloodyWallEffectGenerator::s_pHost = nullptr;
@@ -68,6 +69,7 @@ bool MBloodyWallEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 	const int z = egInfo.z0;
 	int maxFrame;
 	if (!ReadMaxFrames(bltType, frameID, maxFrame)) return false;
+	if (lookDirection >= static_cast<int>(std::size(dirValue))) return false;
 
 	for (int i = 0; i < 5; ++i)
 	{
