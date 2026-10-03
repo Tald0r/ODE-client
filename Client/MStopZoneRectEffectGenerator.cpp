@@ -1,41 +1,59 @@
-//----------------------------------------------------------------------
 // MStopZoneRectEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MStopZoneRectEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
+#include "WorldTileGeometry.h"
+#include "MViewDef.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
 #include "SkillDef.h"
+#include <cstdlib>
+#include <utility>
 
-//#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+const MRectZoneEffectHost* MStopZoneRectEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MStopZoneRectEffectGenerator	g_StopZoneRectEffectGenerator;
+const MRectZoneEffectHost* MStopZoneRectEffectGenerator::SetHost(const MRectZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+bool MStopZoneRectEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MRectZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MStopZoneRectEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count)
+{
+	count = 0;
+	return s_pHost && s_pHost->MaxFrames && s_pHost->MaxFrames(blt, frameID, count);
+}
+
+bool MStopZoneRectEffectGenerator::ReadBounds(MRectZoneEffectBounds& bounds)
+{
+	bounds = {};
+	return s_pHost && s_pHost->Bounds && s_pHost->Bounds(bounds);
+}
+
+bool MStopZoneRectEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect, DWORD delay)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect), delay);
+}
+
 bool
 MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
 	bool bOK = false;
 	bool bAdd;
 
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	MRectZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	TYPE_FRAMEID frameID = sprite.frameID;
 	BYTE			power = egInfo.power;
 
-	//-----------------------------------------------------------
-	// 다크니스의 경우 다양하게 찍어주기...
-	// 임시 땜빵 코드.. 케케~
-	//-----------------------------------------------------------
+	// Darkness follows the resolved frame ID, including the previous phase.
 	BOOL bDarkness = FALSE, bGrayDarkness = FALSE, bSharpHail = FALSE;
 	if ((frameID>=EFFECTSPRITETYPE_DARKNESS_1_1
 		&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5) ||
@@ -60,19 +78,6 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			{
 				frameID = EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 + rand()%5;
 			}
-			/*
-			else if (frameID>=EFFECTSPRITETYPE_DARKNESS_2_1
-				&& frameID<=EFFECTSPRITETYPE_DARKNESS_2_5)
-			{
-				frameID = EFFECTSPRITETYPE_DARKNESS_2_1 + rand()%5;
-			}
-			
-			else if (frameID>=EFFECTSPRITETYPE_DARKNESS_3_1
-				&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5)
-			{
-				frameID = EFFECTSPRITETYPE_DARKNESS_3_1 + rand()%5;
-			}
-			*/
 		}
 
 		if( frameID >= EFFECTSPRITETYPE_DARKNESS_1_1 &&
@@ -80,7 +85,6 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			bDarkness = TRUE;
 		else
 			bGrayDarkness = TRUE;
-//		int kkk = RESULT_MAGIC_DARKNESS_WIDE, kkk2 = RESULT_MAGIC_DARKNESS;
 		if(egInfo.nActionInfo == RESULT_MAGIC_DARKNESS_WIDE ||
 			egInfo.nActionInfo == RESULT_SKILL_WIDE_GRAY_DARKNESS )
 			power = 2;
@@ -91,103 +95,79 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		power = 2;
 	}
 
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
 	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
+	sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	int frameCount;
+	if (!ReadMaxFrames(bltType, frameID, frameCount)) return false;
+	const BYTE maxFrame = static_cast<BYTE>(frameCount);
 
-	MEffect*	pEffect;
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	pEffect = new MEffect(bltType);
+	// Submit the center before reading zone bounds.
+	auto effect = std::make_unique<MEffect>(bltType);
+	MEffect* pEffect = effect.get();
 
-	pEffect->SetFrameID( frameID, maxFrame );	
+	pEffect->SetFrameID( frameID, maxFrame );
 
-	pEffect->SetPosition(sX, sY);		// Sector 좌표		
-	pEffect->SetZ(egInfo.z0);			
-	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-	pEffect->SetCount( egInfo.count , egInfo.linkCount );			// 지속되는 Frame
+	pEffect->SetPosition(sX, sY);
+	pEffect->SetZ(egInfo.z0);
+	pEffect->SetStepPixel(egInfo.step);
+	pEffect->SetCount( egInfo.count , egInfo.linkCount );
 
-	// 방향 설정
 	pEffect->SetDirection( egInfo.direction );
 
-	// 위력
 	pEffect->SetPower(power);
 
-	// 빛의 밝기
-	//pEffect->SetLight( light );
+	bAdd = QueueEffect(std::move(effect), 0);
 
-	// Zone에 추가한다.
-	bAdd = g_pZone->AddEffect( pEffect );
-
-	// 다음 Effect 생성 정보
 	if (bAdd)
 	{
 		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 
 		bOK = true;
-	}	
-	
-//	int sX1 = sX-power;
-//	int sY1 = sY-power;
-//	int sX2 = sX+power;
-//	int sY2 = sY+power;
+	}
 
+	// These actions change surrounding power only, after center submission.
 	if(egInfo.nActionInfo == SKILL_WIDE_ICE_FIELD)
 	{
 		power = 2;
-//		sX1 = sX-2;
-//		sY1 = sY-2;
-//		sX2 = sX+2;
-//		sY2 = sY+2;
 	}
 	else if(egInfo.nActionInfo == SKILL_LAND_MINE_EXPLOSION)
 	{
 		power = 3;
-//		sX1 = sX-3;
-//		sY1 = sY-3;
-//		sX2 = sX+3;
-//		sY2 = sY+3;
 
 	}
+
+	MRectZoneEffectBounds bounds;
+	if (!ReadBounds(bounds)) return bOK;
 
 	int sX1 = sX-power;
 	int sY1 = sY-power;
 	int sX2 = sX+power;
 	int sY2 = sY+power;
 
-	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
-	//------------------------------------------------------
-	if (sX1 < 0) 
-	{					
-		sX1 = 0;	
+	if (sX1 < 0)
+	{
+		sX1 = 0;
 	}
 
-	if (sX2 >= g_pZone->GetWidth())
+	if (sX2 >= bounds.width)
 	{
-		sX2 = g_pZone->GetWidth()-1;
+		sX2 = bounds.width-1;
 	}
 
 	if (sY1 < 0)
 	{
-		sY1 = 0;	
+		sY1 = 0;
 	}
 
-	if (sY2 >= g_pZone->GetHeight())
+	if (sY2 >= bounds.height)
 	{
-		sY2 = g_pZone->GetHeight()-1;
+		sY2 = bounds.height-1;
 	}
 
-
-	// Tile마다 하나씩 생성
 	MEffectTarget*	pEffectTarget2;
-	
+
 	DWORD TempDelay = 0;
 	int x, y;
 	for (y=sY1; y<=sY2; y++)
@@ -198,13 +178,11 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				continue;
 
 			TempDelay = 0;
-			//--------------------------------------------------------------
-			// Darkness인 경우 - 임시 코드.. - -;;
-			//--------------------------------------------------------------
+			// Surrounding darkness/hail tiles draw fresh variants before any delay.
 			if (bDarkness)
 			{
 				frameID = EFFECTSPRITETYPE_DARKNESS_1_1 + rand()%5;
-			} 
+			}
 			else if( bGrayDarkness )
 			{
 				frameID = EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 + rand()%5;
@@ -213,38 +191,33 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			{
 				frameID = EFFECTSPRITETYPE_SHARP_HAIL_DROP_1 + rand()%3;
 			}
-			
-			pEffect = new MEffect(bltType);
-	
-			pEffect->SetFrameID( frameID, maxFrame );	
 
-			pEffect->SetPosition(x, y);		// Sector 좌표	
-			pEffect->SetZ(egInfo.z0);			
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.	
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+			effect = std::make_unique<MEffect>(bltType);
+			pEffect = effect.get();
 
-			// 방향 설정
+			pEffect->SetFrameID( frameID, maxFrame );
+
+			pEffect->SetPosition(x, y);
+			pEffect->SetZ(egInfo.z0);
+			pEffect->SetStepPixel(egInfo.step);
+			pEffect->SetCount( egInfo.count, egInfo.linkCount );
+
 			pEffect->SetDirection( egInfo.direction );
 
-			// 위력
 			pEffect->SetPower(power);
-
-			// 빛의 밝기
-			//pEffect->SetLight( light );
 
 			 if(egInfo.nActionInfo == SKILL_LAND_MINE_EXPLOSION || bSharpHail )
 			 {
 				TempDelay = rand()%16;
 				pEffect->SetWaitFrame(TempDelay);
-				pEffect->SetCount( egInfo.count + TempDelay, egInfo.linkCount );			// 지속되는 Frame
+				pEffect->SetCount( egInfo.count + TempDelay, egInfo.linkCount );
 
 			 }
-			// Zone에 추가한다.
-			bAdd = g_pZone->AddEffect( pEffect, TempDelay);
+			bAdd = QueueEffect(std::move(effect), TempDelay);
 
 			if (bAdd)
 			{
-				// parameter로 받은 effectTarget을 설정해야 하는 경우
+				// The first accepted effect takes the original target.
 				if (!bOK)
 				{
 					pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
@@ -253,7 +226,6 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 				else
 				{
-					// 다음 Effect 생성 정보
 					if (egInfo.pEffectTarget == NULL)
 					{
 						pEffect->SetLink( egInfo.nActionInfo, NULL );
@@ -262,27 +234,14 @@ MStopZoneRectEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 					{
 						pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 						pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-						pEffectTarget2->Set( egInfo.x1+TILE_X*(x-sX1-1), 
-												egInfo.y1+TILE_Y*(y-sY1-1), 
-												egInfo.z0, 
+						pEffectTarget2->Set( egInfo.x1+TILE_X*(x-sX1-1),
+												egInfo.y1+TILE_Y*(y-sY1-1),
+												egInfo.z0,
 												egInfo.creatureID );
 					}
 				}
 			}
 
-			/*
-			if (bAdd)
-			{
-				int num = rand() % maxFrame;
-				
-				for (int nf=0; nf<num; nf++)
-				{
-					pEffect->NextFrame();
-				}
-			}
-			*/
-
-			//bOK = bOK || bAdd;
 		}
 	}
 
