@@ -574,3 +574,7 @@ Client/MStopZoneEmptyRectEffectGenerator.h
 # Filled rectangles with darkness variants and delayed surrounding effects (4.67).
 Client/MStopZoneRectEffectGenerator.cpp
 Client/MStopZoneRectEffectGenerator.h
+
+# Complete stationary walls with consuming submission (4.68).
+Client/MStopZoneWallEffectGenerator.cpp
+Client/MStopZoneWallEffectGenerator.h
