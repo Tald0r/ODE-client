@@ -3,7 +3,10 @@
 #include "MSpreadOutEffectGenerator.h"
 #include "MLinearEffect.h"
 #include "WorldTileGeometry.h"
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <utility>
 
 const MFixedZoneEffectHost* MSpreadOutEffectGenerator::s_pHost = nullptr;
@@ -43,7 +46,6 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int sy = egInfo.y0;
 	int sz = 0;
 
-	int cx, cy;
 	int tx, ty, tz=sz;
 
 	MLinearEffect*	pEffect;
@@ -63,10 +65,11 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		tx = WorldTileGeometry::TileToPixelX(x);
 		ty = WorldTileGeometry::TileToPixelY(y);
 
-		cx = sx - tx;
-		cy = sy - ty;
-
-		int currentPixel = static_cast<int>(sqrt(cx*cx + cy*cy));
+		// Wrapped sector neighbors can be far from the original pixel source.
+		const auto cx = static_cast<std::int64_t>(sx) - tx;
+		const auto cy = static_cast<std::int64_t>(sy) - ty;
+		const auto currentPixel = static_cast<std::int64_t>(std::sqrt(
+			static_cast<double>(cx) * cx + static_cast<double>(cy) * cy));
 
 		if (currentPixel==0)
 		{
@@ -75,10 +78,12 @@ MSpreadOutEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		{
 			movePixel = static_cast<int>((float)movePixel * (1.0f - fabs((float)cy / (float)(2.0f*currentPixel))));
 
-			int movePixelStep = movePixel * egInfo.count;
+			const auto movePixelStep = static_cast<std::int64_t>(movePixel) * egInfo.count;
 
-			tx = sx - (cx * movePixelStep / currentPixel);
-			ty = sy - (cy * movePixelStep / currentPixel);
+			tx = static_cast<int>(std::clamp<std::int64_t>(sx - cx * movePixelStep / currentPixel,
+				(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+			ty = static_cast<int>(std::clamp<std::int64_t>(sy - cy * movePixelStep / currentPixel,
+				(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
 		}
 
 		auto effect = std::make_unique<MLinearEffect>(bltType);

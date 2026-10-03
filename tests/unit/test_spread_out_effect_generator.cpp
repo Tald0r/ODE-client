@@ -4,6 +4,7 @@
 #include "MLinearEffect.h"
 
 #include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <memory>
@@ -333,4 +334,99 @@ TEST(SpreadOutEffectGenerator, WrappedClockAndMissingBaseServicesKeepTheirFallba
 	for (const auto& effect : effects) { CHECK_EQ(27, effect->GetEndFrame()); CHECK_EQ(2, effect->GetEndLinkFrame()); CHECK(effect->IsEnd()); }
 	ClearEffects(); MEffect::SetHost(nullptr); CHECK(world.generator.Generate(Info()));
 	for (const auto& effect : effects) { CHECK_EQ(29, effect->GetEndFrame()); CHECK_EQ(4, effect->GetEndLinkFrame()); CHECK_EQ(0, effect->GetLight()); CHECK(!effect->Update()); CHECK_EQ(0, effect->GetFrame()); }
+}
+
+TEST(SpreadOutEffectGenerator, ZeroSourceDestinationsFollowWrappedNeighborTilesWithoutOverflow)
+{
+	World world;
+	const std::array<Point, 8> expected{{{300, 0}, {270, 0}, {0, 150}, {190, 95}, {300, 0}, {0, 150}, {0, 150}, {187, 93}}};
+	auto target = Target(); auto info = Info(); info.x0 = info.y0 = 0; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		const auto* linked = effects[i]->GetEffectTarget(); CHECK_EQ(expected[i].x, linked->GetX()); CHECK_EQ(expected[i].y, linked->GetY());
+		CHECK_EQ(0, linked->GetZ()); CHECK_EQ(123, linked->GetID());
+	}
+}
+
+TEST(SpreadOutEffectGenerator, NegativeFractionalSourcesKeepTruncationAndWrappedDestinations)
+{
+	World world;
+	const std::array<Point, 8> expected{{{269, -1}, {269, -1}, {5, 149}, {186, 94}, {269, 4}, {-1, 149}, {-1, 149}, {186, 92}}};
+	auto target = Target(); auto info = Info(); info.x0 = info.y0 = -1; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(SpreadOutEffectGenerator, ExtremeSourcesKeepDestinationsWithinTheirRequestedTravel)
+{
+	World world;
+	for (const int x : {(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()})
+	{
+		for (const int y : {(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()})
+		{
+			ClearEffects(); auto target = Target(); auto info = Info(); info.x0 = x; info.y0 = y; info.step = 255; info.count = 65535; info.pEffectTarget = target.get();
+			CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+			for (const auto& effect : effects)
+			{
+				const auto* linked = effect->GetEffectTarget();
+				const auto dx = (static_cast<std::int64_t>(linked->GetX()) - x) * (x < 0 ? 1 : -1);
+				const auto dy = (static_cast<std::int64_t>(linked->GetY()) - y) * (y < 0 ? 1 : -1);
+				// The wrapped neighbors are near zero. Every direction travels inward,
+				// about 7.6 million pixels per axis at this maximum count and speed.
+				CHECK(dx >= 7000000 && dx <= 8000000); CHECK(dy >= 7000000 && dy <= 8000000);
+				CHECK_EQ(0, linked->GetZ()); CHECK_EQ(123, linked->GetID());
+			}
+		}
+	}
+}
+
+TEST(SpreadOutEffectGenerator, RepresentableFractionalSourceKeepsTheOriginalIntegerScaling)
+{
+	World world;
+	const std::array<Point, 8> expected{{{-9, 91}, {-5, 184}, {85, 247}, {450, 228}, {492, 45}, {374, -12}, {181, 0}, {71, 37}}};
+	auto target = Target(); auto info = Info(); info.x0 = 261; info.y0 = 130; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release();
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(SpreadOutEffectGenerator, SourcesPastSectorPeriodsKeepTheirOriginalPixelsForTrajectoryScaling)
+{
+	World world;
+	auto target = Target(); auto info = Info(); info.x0 = 3145968; info.y0 = 1572984; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release();
+	for (const auto& effect : effects)
+	{
+		CHECK_EQ(3145968, effect->GetPixelX()); CHECK_EQ(1572984, effect->GetPixelY());
+		CHECK_EQ(3145781, effect->GetEffectTarget()->GetX()); CHECK_EQ(1572891, effect->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(SpreadOutEffectGenerator, WrappedDestinationsAlsoDriveTargetlessLinearMotion)
+{
+	World world;
+	auto info = Info(); info.x0 = info.y0 = 0; CHECK(world.generator.Generate(info));
+	CHECK(effects[DIRECTION_LEFT]->Update()); CHECK_EQ(10, effects[DIRECTION_LEFT]->GetPixelX()); CHECK_EQ(0, effects[DIRECTION_LEFT]->GetPixelY());
+	CHECK(effects[DIRECTION_UP]->Update()); CHECK_EQ(0, effects[DIRECTION_UP]->GetPixelX()); CHECK_EQ(10, effects[DIRECTION_UP]->GetPixelY());
+	CHECK(effects[DIRECTION_LEFTUP]->Update()); CHECK_EQ(8, effects[DIRECTION_LEFTUP]->GetPixelX()); CHECK_EQ(4, effects[DIRECTION_LEFTUP]->GetPixelY());
+	for (const auto& effect : effects) CHECK(effect->GetEffectTarget() == nullptr);
+}
+
+TEST(SpreadOutEffectGenerator, ExtremeRejectionKeepsCallerCoordinatesWhileCopiesUseComputedDestinations)
+{
+	World world;
+	acceptance = 254; auto target = Target(); auto info = Info(); info.x0 = (std::numeric_limits<int>::min)(); info.y0 = (std::numeric_limits<int>::max)();
+	info.step = 255; info.count = 65535; info.pEffectTarget = target.get(); CHECK(!world.generator.Generate(info)); CHECK_EQ(7, effects.size());
+	CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY()); CHECK_EQ(999, target->GetZ()); CHECK_EQ(456, target->GetID()); CHECK(target->IsExistResult());
+	for (const auto& effect : effects)
+	{
+		CHECK(effect->GetEffectTarget() != target.get()); CHECK(effect->GetEffectTarget()->GetX() < -2139000000);
+		CHECK(effect->GetEffectTarget()->GetY() > 2139000000); CHECK_EQ(0, effect->GetEffectTarget()->GetZ());
+	}
 }

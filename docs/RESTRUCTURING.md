@@ -2404,14 +2404,16 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_selectable_stationary_effect_generator.cpp`.
 
-- [ ] **4.72 Spread-out generation:** `MSpreadOutEffectGenerator` creates
+- [x] **4.72 Spread-out generation:** `MSpreadOutEffectGenerator` creates
   eight linear trajectories from `gamemodel`.
-  > **Status:** in progress (coordinate arithmetic limits still need tests and fixes).
+  > **Status:** done (this commit).
   > The fixed-pattern host provides borrowed sprite metadata and consuming
   > submission through an independent installer. Each numbered direction steps
   > one unsigned source tile before computing its scaled pixel destination.
   > Slot zero alone takes the original target and determines the result; later
   > accepted slots get copies, and every accepted target uses its destination.
+  > Coordinate differences, distance and travel calculations widen before
+  > converting destinations back to bounded integers; speed rounding is retained.
   > R1 is 380 Windows / 378 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_spread_out_effect_generator.cpp`.
