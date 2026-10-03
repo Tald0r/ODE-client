@@ -406,3 +406,54 @@ TEST(WideRippleEffectGenerator, InvalidDirectionStillLooksUpSpriteMetadataFirst)
 	CHECK(!world.generator.Generate(info)); CHECK_EQ(17, requestedSprite); CHECK(calls == std::vector<int>{1}); CHECK_EQ(0, boundsCalls);
 	ClearEffects(); spriteAvailable = true; CHECK(!world.generator.Generate(info)); CHECK(calls == std::vector<int>{1}); CHECK_EQ(0, boundsCalls);
 }
+
+TEST(WideRippleEffectGenerator, LeadingClippedPositionsDoNotSuppressTheRemainingRow)
+{
+	World world;
+	struct Row { int x, y; BYTE direction; TYPE_SECTORPOSITION height; std::vector<Point> points; std::vector<int> slots; };
+	for (const Row& row : {Row{240, 24, DIRECTION_LEFT, 20, {{4, 0}, {4, 1}, {4, 2}, {4, 3}}, {1, 2, 3, 4}},
+		{48, 120, DIRECTION_UP, 20, {{0, 4}, {1, 4}, {2, 4}, {3, 4}}, {1, 2, 3, 4}},
+		{240, 408, DIRECTION_LEFTUP, 18, {{3, 17}, {4, 16}, {5, 15}, {6, 14}}, {1, 2, 3, 4}},
+		{240, 24, DIRECTION_RIGHTUP, 20, {{6, 0}, {7, 1}, {8, 2}}, {2, 3, 4}}})
+	{
+		ClearEffects(); bounds.height = row.height; auto target = Target(); auto info = Info(); info.x0 = row.x; info.y0 = row.y;
+		info.direction = row.direction; info.pEffectTarget = target.get(); const bool accepted = world.generator.Generate(info); CHECK(accepted);
+		if (accepted) target.release();
+		CHECK(Positions() == row.points); CHECK_EQ(row.points.size(), submissions); CHECK_EQ(5, boundsCalls); CHECK(slots == row.slots);
+		for (size_t i = 0; i < effects.size(); ++i) CHECK_EQ(slots[i] == 2, effects[i]->GetEffectTarget() == info.pEffectTarget);
+		CheckTarget(*info.pEffectTarget);
+	}
+}
+
+TEST(WideRippleEffectGenerator, ClippedRowWithRejectedCenterLeavesItsSidesAndCallerTargetAlive)
+{
+	World world; acceptance = 27; auto target = Target(); auto info = Info(); info.y0 = 24; info.pEffectTarget = target.get();
+	CHECK(!world.generator.Generate(info)); CHECK(Positions() == std::vector<Point>({{4, 0}, {4, 2}, {4, 3}}));
+	CHECK_EQ(4, submissions); CHECK(slots == std::vector<int>({1, 3, 4})); CHECK_EQ(5, boundsCalls); CheckTarget(*target); CHECK(removedTargets.empty());
+	for (const auto& effect : effects) CHECK(effect->GetEffectTarget() == nullptr);
+}
+
+TEST(WideRippleEffectGenerator, MaximumPowerRetainsItsCenterInEveryRowDirection)
+{
+	World world; bounds = {65535, 65535};
+	const std::array<Point, 8> centers{{{499, 500}, {499, 501}, {500, 501}, {501, 501}, {501, 500}, {501, 499}, {500, 499}, {499, 499}}};
+	for (int direction = 0; direction < 8; ++direction)
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.x0 = 24000; info.y0 = 12000; info.power = 255;
+		info.direction = static_cast<BYTE>(direction); info.pEffectTarget = target.get(); CHECK(world.generator.Generate(info)); target.release();
+		CHECK_EQ(509, effects.size()); CHECK_EQ(509, boundsCalls); CHECK_EQ(centers[direction].x, effects[254]->GetX()); CHECK_EQ(centers[direction].y, effects[254]->GetY());
+		for (size_t i = 0; i < effects.size(); ++i) { CHECK_EQ(i == 254, effects[i]->GetEffectTarget() == info.pEffectTarget); CHECK_EQ(0, effects[i]->GetPower()); }
+	}
+}
+
+TEST(WideRippleEffectGenerator, RefreshedBoundsApplyToTheNextCandidateAfterClipping)
+{
+	World world; const MWideRippleEffectHost reopening{
+		.Sprite = host.Sprite,
+		.Bounds = [](MWideRippleEffectBounds& result) { const bool available = host.Bounds(result); if (boundsCalls == 1) result.height = 0; return available; },
+		.Queue = host.Queue,
+	};
+	MRippleZoneWideEffectGenerator::SetHost(&reopening); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK(Positions() == std::vector<Point>({{4, 4}, {4, 5}, {4, 6}, {4, 7}}));
+	CHECK(slots == std::vector<int>({1, 2, 3, 4})); CHECK(effects[1]->GetEffectTarget() == info.pEffectTarget); CheckTarget(*info.pEffectTarget);
+}

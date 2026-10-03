@@ -86,7 +86,8 @@ MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			return false;
 	}
 
-	for (i=0; i<n; i++)
+	// Clipped candidates still advance through the original row indices.
+	for (i = 0; i < n; ++i, x += cX, y += cY)
 	{
 		MWideRippleEffectBounds bounds;
 		if (!ReadBounds(bounds)) return bOK;
@@ -124,8 +125,6 @@ MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			}
 		}
 
-		x += cX;
-		y += cY;
 	}
 
 	return bOK;
