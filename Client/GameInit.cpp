@@ -101,6 +101,7 @@
 #include "MFollowPathEffectGenerator.h"
 #include "MMeteorDropEffectGenerator.h"
 #include "MAttackCreatureParabolaEffectGenerator.h"
+#include "MRippleZoneWideEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2664,6 +2665,7 @@ void ReleaseAllObjects()
 	MFollowPathEffectGenerator::SetHost(nullptr);
 	MMeteorDropEffectGenerator::SetHost(nullptr);
 	MAttackCreatureParabolaEffectGenerator::SetHost(nullptr);
+	MRippleZoneWideEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3286,6 +3288,16 @@ static const MCreatureParabolaEffectHost s_CreatureParabolaEffectHost = {
 	.Queue = s_FixedZoneEffectHost.Queue,
 };
 
+static const MWideRippleEffectHost s_WideRippleEffectHost = {
+	.Sprite = s_FixedZoneEffectHost.Sprite,
+	.Bounds = [](MWideRippleEffectBounds& bounds) {
+		if (!g_pZone) return false;
+		bounds = {g_pZone->GetWidth(), g_pZone->GetHeight()};
+		return true;
+	},
+	.Queue = s_FixedZoneEffectHost.Queue,
+};
+
 static const MRectZoneEffectHost s_RectZoneEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MRectZoneEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
@@ -3812,6 +3824,7 @@ InitGameObject()
 	MFollowPathEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MMeteorDropEffectGenerator::SetHost(&s_MeteorDropEffectHost);
 	MAttackCreatureParabolaEffectGenerator::SetHost(&s_CreatureParabolaEffectHost);
+	MRippleZoneWideEffectGenerator::SetHost(&s_WideRippleEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
