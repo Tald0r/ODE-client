@@ -4,6 +4,7 @@
 #include "MLinearEffect.h"
 #include "SkillDef.h"
 #include "WorldTileGeometry.h"
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -162,6 +163,7 @@ MFollowPathEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		MakePathWildTyphoon();
 
 	BYTE Dir = egInfo.direction;
+	if (Dir >= std::size(FollowPath)) return false;
 
 	if( static_cast<size_t>(currentPhase-2) >= FollowPath[Dir].size() || currentPhase < 0 )
 		return false;

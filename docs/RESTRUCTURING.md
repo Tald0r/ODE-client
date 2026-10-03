@@ -2432,13 +2432,14 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_around_zone_effect_generator.cpp`.
 
-- [ ] **4.74 Follow-path generation:** `MFollowPathEffectGenerator` creates
+- [x] **4.74 Follow-path generation:** `MFollowPathEffectGenerator` creates
   phase-selected linear effects from `gamemodel`.
-  > **Status:** in progress (direction bounds review remains).
+  > **Status:** done (this commit).
   > The fixed-pattern host supplies borrowed metadata and consuming submission
   > through an independent installer. Wild Typhoon rebuilds the shared paths;
   > other actions reuse the current cache. Source tiles narrow before signed
   > offsets, and acceptance alone transfers and retargets the original target.
+  > Invalid directions reject after metadata and cache work, before indexing.
   > R1 is 378 Windows / 376 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_follow_path_effect_generator.cpp`.

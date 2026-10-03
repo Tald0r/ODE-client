@@ -432,3 +432,37 @@ TEST(FollowPathEffectGenerator, ZeroStepKeepsTheEffectAtItsOriginUntilItsDeadlin
 	auto& effect = *effects.front(); CHECK(effect.Update()); CHECK_EQ(240, effect.GetPixelX()); CHECK_EQ(120, effect.GetPixelY()); CHECK_EQ(17, effect.GetPixelZ());
 	frameNow = 129; CHECK(!effect.Update()); CHECK_EQ(1, effect.GetFrame()); CHECK_EQ(120, effect.GetPixelY());
 }
+
+TEST(FollowPathEffectGenerator, DirectionPastThePathArrayRejectsWithoutTakingTheTarget)
+{
+	World world; auto target = Target(); auto info = Info(); info.direction = 8;
+	CHECK(!Generate(world, info, target)); CHECK_EQ(0, submissions); CHECK(effects.empty());
+	if (target) CheckUnchanged(*target);
+	CHECK(calls == std::vector<int>{1}); CheckPaths();
+}
+
+TEST(FollowPathEffectGenerator, EveryInvalidDirectionRejectsForAllTargetStates)
+{
+	World world;
+	for (int direction = 8; direction < 256; ++direction)
+	{
+		for (const int phase : {-1, 0, 2, 255})
+		{
+			ClearEffects(); auto target = phase < 0 ? std::unique_ptr<MEffectTarget>{} : Target(static_cast<BYTE>(phase));
+			auto info = Info(); info.direction = static_cast<BYTE>(direction); CHECK(!Generate(world, info, target));
+			CHECK_EQ(0, submissions); CHECK(effects.empty()); CHECK(calls == std::vector<int>{1});
+			if (target) { CheckUnchanged(*target); CHECK_EQ(phase, target->GetCurrentPhase()); }
+		}
+	}
+}
+
+TEST(FollowPathEffectGenerator, InvalidDirectionKeepsMetadataAndCacheOrdering)
+{
+	World world; auto info = Info(); info.direction = 255; auto target = Target();
+	spriteAvailable = false; CHECK(!Generate(world, info, target)); for (const auto& path : FollowPath) CHECK(path.empty());
+	spriteAvailable = true; CHECK(!Generate(world, info, target)); CheckPaths();
+	for (auto& path : FollowPath) path.assign(1, POINT{91, 92});
+	info.nActionInfo = 42; CHECK(!Generate(world, info, target));
+	for (const auto& path : FollowPath) { CHECK_EQ(1, path.size()); CHECK_EQ(91, path.front().x); CHECK_EQ(92, path.front().y); }
+	CHECK_EQ(0, submissions); CheckUnchanged(*target);
+}
