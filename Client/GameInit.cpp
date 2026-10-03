@@ -91,6 +91,7 @@
 #include "MStopZoneRhombusEffectGenerator.h"
 #include "MStopZoneEmptyCrossEffectGenerator.h"
 #include "MStopZoneEmptyRectEffectGenerator.h"
+#include "MStopZoneRectEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2644,6 +2645,7 @@ void ReleaseAllObjects()
 	MStopZoneRhombusEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyCrossEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyRectEffectGenerator::SetHost(nullptr);
+	MStopZoneRectEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3159,6 +3161,32 @@ static const MFixedZoneEffectHost s_FixedZoneEffectHost = {
 	},
 };
 
+static const MRectZoneEffectHost s_RectZoneEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MRectZoneEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		return true;
+	},
+	.MaxFrames = [](BYTE blt, TYPE_FRAMEID frameID, int& count) {
+		if (!g_pTopView) return false;
+		count = g_pTopView->GetMaxEffectFrame(static_cast<BLT_TYPE>(blt), frameID);
+		return true;
+	},
+	.Bounds = [](MRectZoneEffectBounds& bounds) {
+		if (!g_pZone) return false;
+		bounds.width = g_pZone->GetWidth();
+		bounds.height = g_pZone->GetHeight();
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect, DWORD delay) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release(), delay);
+	},
+};
+
 static const MEmptyRectEffectHost s_EmptyRectEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MEmptyRectEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
@@ -3649,6 +3677,7 @@ InitGameObject()
 	MStopZoneRhombusEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneEmptyCrossEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneEmptyRectEffectGenerator::SetHost(&s_EmptyRectEffectHost);
+	MStopZoneRectEffectGenerator::SetHost(&s_RectZoneEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
