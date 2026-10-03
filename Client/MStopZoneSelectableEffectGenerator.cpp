@@ -1,39 +1,50 @@
-//----------------------------------------------------------------------
 // MStopZoneSelectableEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MStopZoneSelectableEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
+#include "WorldTileGeometry.h"
+#include <cstdlib>
+#include <utility>
 
-//#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+const MSelectableZoneEffectHost* MStopZoneSelectableEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MStopZoneSelectableEffectGenerator	g_StopZoneEffectGenerator;
+const MSelectableZoneEffectHost* MStopZoneSelectableEffectGenerator::SetHost(const MSelectableZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+bool MStopZoneSelectableEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MSelectableZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MStopZoneSelectableEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count)
+{
+	count = 0;
+	return s_pHost && s_pHost->MaxFrames && s_pHost->MaxFrames(blt, frameID, count);
+}
+
+bool MStopZoneSelectableEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MStopZoneSelectableEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
-	bool			repeatFrame	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].RepeatFrame;
+	MSelectableZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	TYPE_FRAMEID frameID = sprite.frameID;
+	const bool repeatFrame = sprite.repeatFrame;
 
 	int direction = egInfo.direction;
 
-	//-----------------------------------------------------------
-	// 다크니스의 경우 다양하게 찍어주기...
-	// 임시 땜빵 코드.. 케케~
-	//-----------------------------------------------------------
+	// Darkness variants follow the resolved frame ID, including a previous phase.
 	if ((frameID>=EFFECTSPRITETYPE_DARKNESS_1_1
 		&& frameID<=EFFECTSPRITETYPE_DARKNESS_3_5) ||
 		(frameID >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 &&
@@ -80,78 +91,60 @@ MStopZoneSelectableEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo
 		}
 	}
 
-	//-----------------------------------------------------------
-	// Sword Wave를 위한 임시(-_-;) 코드..
-	//-----------------------------------------------------------
+	// Sword-wave frames rotate the supplied direction.
 	if (frameID==EFFECTSPRITETYPE_SWORD_WAVE_1)
 	{
-		direction = (direction + 1) % 8;	// +1
+		direction = (direction + 1) % 8;
 	}
 	else if (frameID==EFFECTSPRITETYPE_SWORD_WAVE_2)
 	{
-		direction = (direction + 6) % 8;	// + 8 - 2
+		direction = (direction + 6) % 8;
 	}
 	else if (frameID==EFFECTSPRITETYPE_SWORD_WAVE_3)
 	{
 		direction = (direction + 1) % 8;
 	}
-	
 
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
 	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
+	sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	int maxFrame;
+	if (!ReadMaxFrames(bltType, frameID, maxFrame)) return false;
 
-	MEffect*	pEffect;
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	pEffect = new MSelectableEffect(bltType);
+	auto effect = std::make_unique<MSelectableEffect>(bltType);
+	MEffect* pEffect = effect.get();
 
-	pEffect->SetFrameID( frameID, maxFrame );	
+	pEffect->SetFrameID( frameID, static_cast<BYTE>(maxFrame) );
 
-	pEffect->SetPosition(sX, sY);		// Sector 좌표		
-	pEffect->SetZ(egInfo.z0);			
-	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+	pEffect->SetPosition(sX, sY);
+	pEffect->SetZ(egInfo.z0);
+	pEffect->SetStepPixel(egInfo.step);
+	pEffect->SetCount( egInfo.count, egInfo.linkCount );
 
-	// 방향 설정
 	pEffect->SetDirection( direction );
 
-	// 위력
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
-	//pEffect->SetLight( light );
+	bool bAdd = QueueEffect(std::move(effect));
 
-	// Zone에 추가한다.
-	bool bAdd = g_pZone->AddEffect( pEffect );
-
-	//---------------------------------------------
-	// 반복되는 frame이면..
-	// 시작 frame을 다르게 한다.
-	//---------------------------------------------
+	// Link first; accepted repeating effects then consume an animation-start draw.
 	if (bAdd)
 	{
-		// 다음 Effect 생성 정보
 		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-		
+
 		if (repeatFrame)
 		{
-			if (maxFrame!=0) 
+			if (maxFrame!=0)
 			{
 				int num = rand() % maxFrame;
-				
+
 				for (int nf=0; nf<num; nf++)
 				{
 					pEffect->NextFrame();
 				}
 			}
-		}		
+		}
 	}
 
 	return bAdd;

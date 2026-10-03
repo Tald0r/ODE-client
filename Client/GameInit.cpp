@@ -95,6 +95,7 @@
 #include "MStopZoneWallEffectGenerator.h"
 #include "MStopZoneMultipleEffectGenerator.h"
 #include "MStopZoneRandomEffectGenerator.h"
+#include "MStopZoneSelectableEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2652,6 +2653,7 @@ void ReleaseAllObjects()
 	MStopZoneWallEffectGenerator::SetHost(nullptr);
 	MStopZoneMultipleEffectGenerator::SetHost(nullptr);
 	MStopZoneRandomEffectGenerator::SetHost(nullptr);
+	MStopZoneSelectableEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3179,6 +3181,27 @@ static const MEmptyWallEffectHost s_EmptyWallEffectHost = {
 		sprite.bltType = static_cast<BYTE>(info.BltType);
 		sprite.frameID = info.FrameID;
 		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release());
+	},
+};
+
+static const MSelectableZoneEffectHost s_SelectableZoneEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MSelectableZoneEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.repeatFrame = info.RepeatFrame;
+		return true;
+	},
+	.MaxFrames = [](BYTE blt, TYPE_FRAMEID frameID, int& count) {
+		if (!g_pTopView) return false;
+		count = g_pTopView->GetMaxEffectFrame(static_cast<BLT_TYPE>(blt), frameID);
 		return true;
 	},
 	.Queue = [](std::unique_ptr<MEffect> effect) {
@@ -3724,6 +3747,7 @@ InitGameObject()
 	MStopZoneWallEffectGenerator::SetHost(&s_StopWallEffectHost);
 	MStopZoneMultipleEffectGenerator::SetHost(&s_StopMultipleEffectHost);
 	MStopZoneRandomEffectGenerator::SetHost(&s_FixedZoneEffectHost);
+	MStopZoneSelectableEffectGenerator::SetHost(&s_SelectableZoneEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
