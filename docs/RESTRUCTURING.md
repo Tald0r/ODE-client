@@ -2324,14 +2324,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_empty_wall_effect_generators.cpp`, using production effects.
 
-- [ ] **4.66 Empty-rectangle generation:** `MStopZoneEmptyRectEffectGenerator`
+- [x] **4.66 Empty-rectangle generation:** `MStopZoneEmptyRectEffectGenerator`
   fills a clipped square except for its center in `gamemodel`.
-  > **Status:** in progress (extraction verified; copied-target arithmetic fix pending).
+  > **Status:** done (this commit).
   > Borrowed sprite metadata and bounds resolve before effect construction;
   > consuming submission replaces zone globals. Row order, source tile narrowing,
   > clipping and power remain. The first accepted effect owns the original
   > target; later copies use offsets anchored at the clipped lower bounds.
   > Animation starts at frame zero without consuming randomness.
+  > Copied-target pixel additions widen before saturating at the integer limits;
+  > clipping and the original target are unchanged. R1 is 386 Windows / 384 Ninja,
+  > measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_empty_rectangle_effect_generator.cpp`.
 

@@ -506,3 +506,109 @@ TEST(EmptyRectangleEffectGenerator, MissingBaseServicesRetainCountsAndInactiveFa
 	CHECK(world.generator.Generate(Info())); CHECK_EQ(29, effects.front()->GetEndFrame());
 	CHECK_EQ(4, effects.front()->GetEndLinkFrame()); CHECK_EQ(0, effects.front()->GetLight()); CHECK(!effects.front()->Update());
 }
+
+TEST(EmptyRectangleEffectGenerator, CopiedTargetsSaturatePositivePixelOverflow)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.x1 = high - 7; info.y1 = high - 3;
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+	const Point expected[] = {{777, 888}, {high - 7, high - 27}, {high, high - 27}, {high - 55, high - 3},
+		{high, high - 3}, {high - 55, high}, {high - 7, high}, {high, high}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(EmptyRectangleEffectGenerator, CopiedTargetsSaturateNegativePixelOverflow)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.x1 = low + 7; info.y1 = low + 3;
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+	const Point expected[] = {{777, 888}, {low + 7, low}, {low + 55, low}, {low, low + 3},
+		{low + 55, low + 3}, {low, low + 27}, {low + 7, low + 27}, {low + 55, low + 27}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(EmptyRectangleEffectGenerator, ClippedCopiedTargetsSaturateWithoutMovingTheirAnchor)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+	info.x0 = info.y0 = 0; info.power = 2; info.x1 = high; info.y1 = low;
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+	const Point expected[] = {{777, 888}, {high, low}, {high - 48, low}, {high, low},
+		{high, low}, {high - 48, low + 24}, {high, low + 24}, {high, low + 24}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(EmptyRectangleEffectGenerator, MaximumRadiusSaturatesOnlyTheCopiedTargetCoordinates)
+{
+	World world;
+	MEffect::SetHost(nullptr); zoneBounds = {600, 600};
+	const MEmptyRectEffectHost endpoints{
+		.Sprite = host.Sprite, .Bounds = host.Bounds,
+		.Queue = [](std::unique_ptr<MEffect> effect) {
+			const int slot = submissions++;
+			if (slot != 0 && slot != 261119) return false;
+			effects.push_back(std::move(effect)); return true;
+		},
+	};
+	MStopZoneEmptyRectEffectGenerator::SetHost(&endpoints);
+	const int high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+	info.x0 = 300 * 48; info.y0 = 300 * 24; info.power = 255; info.x1 = high - 20000; info.y1 = high - 12000;
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(261120, submissions); CHECK_EQ(2, effects.size());
+	CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget);
+	CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY());
+	CHECK_EQ(555, effects.back()->GetX()); CHECK_EQ(555, effects.back()->GetY());
+	CHECK_EQ(high, effects.back()->GetEffectTarget()->GetX()); CHECK_EQ(high, effects.back()->GetEffectTarget()->GetY());
+	CHECK_EQ(17, effects.back()->GetEffectTarget()->GetZ()); CHECK_EQ(123, effects.back()->GetEffectTarget()->GetID());
+}
+
+TEST(EmptyRectangleEffectGenerator, RepresentableOffsetsStillReachBothIntegerEndpoints)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const Point base : {Point{low + 48, low + 24}, {high - 48, high - 24}})
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.x1 = base.x; info.y1 = base.y;
+		CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(8, effects.size());
+		const Point expected[] = {{777, 888}, {base.x, base.y - 24}, {base.x + 48, base.y - 24}, {base.x - 48, base.y},
+			{base.x + 48, base.y}, {base.x - 48, base.y + 24}, {base.x, base.y + 24}, {base.x + 48, base.y + 24}};
+		for (size_t i = 0; i < effects.size(); ++i)
+		{
+			CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+		}
+	}
+}
+
+TEST(EmptyRectangleEffectGenerator, ExtremeDestinationsLeaveALateOriginalAndRejectedTargetsUntouched)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	for (const bool accepted : {false, true})
+	{
+		ClearEffects(); rejectBefore = 7; acceptQueue = accepted;
+		auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); info.x1 = high; info.y1 = low;
+		CHECK_EQ(accepted, world.generator.Generate(info)); CHECK_EQ(8, submissions); CHECK_EQ(accepted ? 1 : 0, effects.size());
+		CHECK_EQ(777, target->GetX()); CHECK_EQ(888, target->GetY()); CHECK_EQ(999, target->GetZ()); CHECK_EQ(456, target->GetID());
+		if (accepted) { CHECK(effects.front()->GetEffectTarget() == target.get()); target.release(); }
+	}
+}
+
+TEST(EmptyRectangleEffectGenerator, TargetlessEffectsDoNotApplyExtremeDestinationOffsets)
+{
+	World world;
+	auto info = Info(); info.x1 = (std::numeric_limits<int>::max)(); info.y1 = (std::numeric_limits<int>::min)();
+	CHECK(world.generator.Generate(info)); CHECK_EQ(8, effects.size());
+	for (const auto& effect : effects) { CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(42, effect->GetActionInfo()); }
+}
