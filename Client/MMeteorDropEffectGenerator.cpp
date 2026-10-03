@@ -3,6 +3,7 @@
 #include "MMeteorDropEffectGenerator.h"
 #include "MLinearEffect.h"
 #include "MEventQueue.h"
+#include <limits>
 #include <utility>
 
 const MMeteorDropEffectHost* MMeteorDropEffectGenerator::s_pHost = nullptr;
@@ -38,7 +39,10 @@ bool MMeteorDropEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 	auto effect = std::make_unique<MLinearEffect>(sprite.bltType);
 	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
 	// The meteor starts to the right of and above its destination.
-	effect->SetPixelPosition(egInfo.x1 + 100, egInfo.y1, egInfo.z1 + 400);
+	const int top = (std::numeric_limits<int>::max)();
+	const int startX = egInfo.x1 > top - 100 ? top : egInfo.x1 + 100;
+	const int startZ = egInfo.z1 > top - 400 ? top : egInfo.z1 + 400;
+	effect->SetPixelPosition(startX, egInfo.y1, startZ);
 	effect->SetDirection(egInfo.direction);
 	// Target selection retains its calculated facing, overriding the input.
 	effect->SetTarget(egInfo.x1, egInfo.y1, egInfo.z1, egInfo.step);

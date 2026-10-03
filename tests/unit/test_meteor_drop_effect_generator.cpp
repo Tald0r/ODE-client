@@ -361,3 +361,54 @@ TEST(MeteorDropEffectGenerator, EventLifetimeCrossesTheLegacyMillisecondWrap)
 	timeNow = MonotonicClock::FromMillis(0x1000003E6ull); eventQueue->ProcessEvent(); CHECK(eventQueue->IsEvent(EVENTID_METEOR));
 	timeNow = MonotonicClock::FromMillis(0x1000003E7ull); eventQueue->ProcessEvent(); CHECK(eventQueue->IsEmptyEvent());
 }
+
+TEST(MeteorDropEffectGenerator, HorizontalLaunchOffsetSaturatesAtTheIntegerLimit)
+{
+	World world; const int top = (std::numeric_limits<int>::max)();
+	for (const int destination : {top, top - 1, top - 99})
+	{
+		ClearEffects(); auto info = Info(); info.x1 = destination; CHECK(world.generator.Generate(info));
+		CHECK_EQ(top, effects.front()->GetPixelX()); CHECK_EQ(48, effects.front()->GetPixelY()); CHECK_EQ(412, effects.front()->GetPixelZ());
+	}
+}
+
+TEST(MeteorDropEffectGenerator, VerticalLaunchOffsetSaturatesAtTheIntegerLimit)
+{
+	World world; const int top = (std::numeric_limits<int>::max)();
+	for (const int destination : {top, top - 1, top - 399})
+	{
+		ClearEffects(); auto info = Info(); info.z1 = destination; CHECK(world.generator.Generate(info));
+		CHECK_EQ(top, effects.front()->GetPixelZ()); CHECK_EQ(196, effects.front()->GetPixelX()); CHECK_EQ(48, effects.front()->GetPixelY());
+	}
+}
+
+TEST(MeteorDropEffectGenerator, RepresentableOffsetsKeepTheirExistingFloatRounding)
+{
+	World world; const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Position { int x, z, expectedX, expectedZ; };
+	for (const Position point : {Position{top - 100, top - 400, top, top}, {top - 611, top - 911, top - 511, top - 511},
+		{bottom, bottom, bottom + 128, bottom + 384}, {-100, -400, 0, 0}, {-1, -1, 99, 399}, {0, 0, 100, 400}})
+	{
+		ClearEffects(); auto info = Info(); info.x1 = point.x; info.z1 = point.z; CHECK(world.generator.Generate(info));
+		CHECK_EQ(point.expectedX, effects.front()->GetPixelX()); CHECK_EQ(point.expectedZ, effects.front()->GetPixelZ());
+	}
+}
+
+TEST(MeteorDropEffectGenerator, SaturatedLaunchStillArrivesAndRetainsTheOriginalTargetAndFade)
+{
+	World world; const int top = (std::numeric_limits<int>::max)(); auto target = Target(); auto info = Info();
+	info.x1 = top; info.z1 = top - 127; info.step = 255; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); auto& effect = *effects.front(); CHECK(effect.GetEffectTarget() == info.pEffectTarget);
+	CHECK_EQ(top, effect.GetPixelX()); CHECK_EQ(top, effect.GetPixelZ()); CheckTarget(*info.pEffectTarget);
+	CHECK(!effect.Update()); CHECK_EQ(top, effect.GetPixelX()); CHECK_EQ(top - 127, effect.GetPixelZ()); CHECK_EQ(0, effect.GetFrame());
+	CHECK_EQ(0, effect.GetEndFrame()); CHECK_EQ(104, effect.GetEndLinkFrame()); CHECK_EQ(1, events.size()); CHECK(eventQueue->IsEvent(EVENTID_METEOR));
+	ClearEffects(); CHECK(removedTargets == std::vector<int>{73});
+}
+
+TEST(MeteorDropEffectGenerator, RejectedExtremeLaunchKeepsTheCallerTargetAndSkipsTheFade)
+{
+	World world; acceptEffect = false; auto target = Target(); auto info = Info();
+	info.x1 = info.z1 = (std::numeric_limits<int>::max)(); info.pEffectTarget = target.get();
+	CHECK(!world.generator.Generate(info)); CHECK_EQ(1, submissions); CHECK(effects.empty()); CHECK(events.empty()); CheckTarget(*target);
+	CHECK(removedTargets.empty());
+}

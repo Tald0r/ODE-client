@@ -2444,14 +2444,15 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_follow_path_effect_generator.cpp`.
 
-- [ ] **4.75 Meteor-drop generation:** `MMeteorDropEffectGenerator` creates
+- [x] **4.75 Meteor-drop generation:** `MMeteorDropEffectGenerator` creates
   falling projectiles and their fade events from `gamemodel`.
-  > **Status:** in progress (launch-coordinate bounds review remains).
+  > **Status:** done (this commit).
   > Borrowed sprite metadata, consuming effect submission and event submission
   > are installed by the executable. Acceptance transfers the original target
   > before scheduling the one-second red fade. Missing event services skip the
-  > fade while retaining the accepted effect. R1 is 377 Windows / 375 Ninja,
-  > measured in both generated local trees.
+  > fade while retaining the accepted effect. Launch offsets saturate before
+  > integer overflow, retaining float position storage and original destinations.
+  > R1 is 377 Windows / 375 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_meteor_drop_effect_generator.cpp`.
 
