@@ -2481,12 +2481,13 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_wide_ripple_effect_generator.cpp`.
 
-- [ ] **4.78 Bloody Breaker generation:** `MBloodyBreakerEffectGenerator`
+- [x] **4.78 Bloody Breaker generation:** `MBloodyBreakerEffectGenerator`
   creates phase-driven directional rows of stationary effects from `gamemodel`.
-  > **Status:** in progress (center-rejection result remains).
+  > **Status:** done (this commit).
   > Borrowed sprite and animation services preserve per-attempt refresh and the
   > original blit type across Bloody Wall variants. Consuming submission links
-  > only an accepted center to the unchanged original target; sides stay targetless.
+  > only an accepted center to the unchanged original target and reports that
+  > transfer as success; rejected centers leave caller ownership. Sides stay targetless.
   > Missing services stop with any earlier target transfer preserved.
   > Invalid directions reject after initial metadata, before pattern indexing.
   > R1 is 374 Windows / 372 Ninja, measured in both generated local trees.

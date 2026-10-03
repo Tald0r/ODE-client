@@ -175,7 +175,7 @@ TEST(BloodyBreakerEffectGenerator, EveryAcceptanceMaskKeepsSidesIndependentAndOn
 	for (int mask = 0; mask < 32; ++mask)
 	{
 		ClearEffects(); acceptance = mask; auto target = Target(); auto* original = target.get();
-		const bool result = Generate(world, Info(), target); if (mask & 1) CHECK(result);
+		CHECK_EQ((mask & 1) != 0, Generate(world, Info(), target));
 		CHECK_EQ(5, submissions); CheckTarget(*original); CHECK_EQ((mask & 1) == 0, target != nullptr);
 		for (size_t i = 0; i < effects.size(); ++i)
 		{
@@ -258,7 +258,7 @@ TEST(BloodyBreakerEffectGenerator, MissingMetadataRejectsBeforeConstructionOrTar
 TEST(BloodyBreakerEffectGenerator, MissingQueueDiscardsEffectsAndKeepsTheOriginalWithItsCaller)
 {
 	World world; const MBloodyBreakerEffectHost noQueue{.Sprite = host.Sprite, .MaxFrames = host.MaxFrames}; MBloodyBreakerEffectGenerator::SetHost(&noQueue);
-	auto target = Target(); Generate(world, Info(), target); CHECK(target != nullptr); CHECK(effects.empty()); CHECK_EQ(0, submissions); CheckTarget(*target);
+	auto target = Target(); CHECK(!Generate(world, Info(), target)); CHECK(target != nullptr); CHECK(effects.empty()); CHECK_EQ(0, submissions); CheckTarget(*target);
 	std::vector<int> expected{1, 2}; for (int i = 0; i < 5; ++i) expected.insert(expected.end(), {3, 4, 1, 2}); CHECK(calls == expected);
 }
 
@@ -345,7 +345,7 @@ TEST(BloodyBreakerEffectGenerator, RejectedSubmissionConsumesItsMarkersWithoutTa
 		.Sprite = host.Sprite, .MaxFrames = host.MaxFrames,
 		.Queue = [](std::unique_ptr<MEffect> effect) { effect->SetLink(42, Target(4, 94).release()); return false; },
 	};
-	MBloodyBreakerEffectGenerator::SetHost(&rejecting); auto target = Target(); Generate(world, Info(), target);
+	MBloodyBreakerEffectGenerator::SetHost(&rejecting); auto target = Target(); CHECK(!Generate(world, Info(), target));
 	CHECK(removedTargets == std::vector<int>(5, 94)); CheckTarget(*target); CHECK_EQ(6, frameRequests.size());
 }
 
@@ -444,4 +444,47 @@ TEST(BloodyBreakerEffectGenerator, InvalidDirectionsStillResolveSpriteAndAnimati
 	spriteAvailable = false; CHECK(!Generate(world, info, target)); CHECK(calls == std::vector<int>{1});
 	ClearEffects(); spriteAvailable = true; framesAvailable = false; CHECK(!Generate(world, info, target)); CHECK(calls == std::vector<int>({1, 2}));
 	ClearEffects(); framesAvailable = true; CHECK(!Generate(world, info, target)); CHECK(calls == std::vector<int>({1, 2})); CheckTarget(*target);
+}
+
+TEST(BloodyBreakerEffectGenerator, RejectedRowReportsThatTheCallerStillOwnsTheTarget)
+{
+	World world; acceptance = 0; auto target = Target();
+	CHECK(!Generate(world, Info(), target)); CHECK_EQ(5, submissions); CHECK(effects.empty()); CHECK_EQ(6, frameRequests.size());
+	CHECK(target != nullptr); CheckTarget(*target); CHECK(removedTargets.empty()); target.reset(); CHECK(removedTargets == std::vector<int>{73});
+}
+
+TEST(BloodyBreakerEffectGenerator, AcceptedSidesCannotReportAnUntransferredCenterTarget)
+{
+	World world; acceptance = 30; auto target = Target();
+	CHECK(!Generate(world, Info(), target)); CHECK_EQ(5, submissions); CHECK_EQ(4, effects.size());
+	for (const auto& effect : effects) { CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(42, effect->GetActionInfo()); }
+	CheckTarget(*target); target.reset(); CHECK(removedTargets == std::vector<int>{73}); ClearEffects(); CHECK(removedTargets == std::vector<int>{73});
+}
+
+TEST(BloodyBreakerEffectGenerator, EveryPhaseAndAcceptanceMaskReportsOnlyOriginalTargetTransfer)
+{
+	World world; constexpr int lengths[6] = {1, 3, 3, 5, 5, 5};
+	for (BYTE phase = 1; phase <= 6; ++phase) for (int mask = 0; mask < (1 << lengths[phase - 1]); ++mask)
+	{
+		ClearEffects(); acceptance = mask; auto target = Target(phase); auto* original = target.get();
+		CHECK_EQ((mask & 1) != 0, Generate(world, Info(), target)); CHECK_EQ(lengths[phase - 1], submissions);
+		CHECK_EQ((mask & 1) == 0, target != nullptr); CheckTarget(*original, phase);
+		for (size_t i = 0; i < effects.size(); ++i)
+		{
+			CHECK_EQ(slots[i] == 0, effects[i]->GetEffectTarget() == original);
+			if (slots[i] != 0) CHECK(effects[i]->GetEffectTarget() == nullptr);
+		}
+	}
+}
+
+TEST(BloodyBreakerEffectGenerator, RejectedCenterIsNotRetriedOrTransferredToAnotherSide)
+{
+	World world; acceptance = 30; auto target = Target();
+	for (int attempt = 0; attempt < 2; ++attempt)
+	{
+		ClearEffects(); CHECK(!Generate(world, Info(), target)); CHECK_EQ(5, submissions); CHECK_EQ(4, effects.size());
+		CHECK(slots == std::vector<int>({1, 2, 3, 4})); CHECK(removedTargets.empty()); CheckTarget(*target);
+	}
+	ClearEffects(); acceptance = 1; CHECK(Generate(world, Info(), target)); CHECK_EQ(1, effects.size()); CHECK(target == nullptr);
+	ClearEffects(); CHECK(removedTargets == std::vector<int>{73});
 }

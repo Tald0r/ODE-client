@@ -194,5 +194,5 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		if (!ReadMaxFrames(bltType, frameID, maxFrame)) return targetTransferred;
 	}
 	
-	return true;
+	return targetTransferred;
 }

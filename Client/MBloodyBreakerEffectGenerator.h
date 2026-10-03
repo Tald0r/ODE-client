@@ -27,6 +27,7 @@ class MBloodyBreakerEffectGenerator : public MEffectGenerator {
 		~MBloodyBreakerEffectGenerator() {}
 		static const MBloodyBreakerEffectHost* SetHost(const MBloodyBreakerEffectHost* host);
 		TYPE_EFFECTGENERATORID GetID() { return EFFECTGENERATORID_BLOODY_BREAKER; }
+		// Success means the accepted center owns the original target.
 		bool Generate(const EFFECTGENERATOR_INFO& egInfo);
 
 	private:
