@@ -532,3 +532,68 @@ TEST(BloodyWallEffectGenerator, PositiveFrameLengthsRetainRandomDrawsAndByteAnim
 		for (size_t i = 0; i < effects.size(); ++i) { CHECK_EQ(expected[i], effects[i]->GetFrame()); CHECK_EQ(static_cast<BYTE>(frames), effects[i]->GetMaxFrame()); CHECK_EQ(7, effects[i]->GetLight()); }
 	}
 }
+
+TEST(BloodyWallEffectGenerator, PositiveDestinationOffsetsSaturateCopiedTargetsAtTheIntegerMaximum)
+{
+	World world; const int high = (std::numeric_limits<int>::max)();
+	const int xs[4] = {high - 48, high, high, high}, ys[4] = {high - 24, high, high, high};
+	for (const BYTE direction : {static_cast<BYTE>(DIRECTION_LEFT), static_cast<BYTE>(DIRECTION_DOWN)})
+	{
+		ClearEffects(); auto target = Target(); auto* original = target.get(); auto info = Info(); info.direction = direction; info.x1 = info.y1 = high;
+		CHECK(Generate(world, info, target)); CheckTarget(*original); CHECK_EQ(5, effects.size());
+		for (size_t i = 1; i < effects.size(); ++i) CheckCopy(*effects[i]->GetEffectTarget(), direction == DIRECTION_DOWN ? xs[i - 1] : high, direction == DIRECTION_LEFT ? ys[i - 1] : high);
+	}
+}
+
+TEST(BloodyWallEffectGenerator, NegativeDestinationOffsetsSaturateCopiedTargetsAtTheIntegerMinimum)
+{
+	World world; const int low = (std::numeric_limits<int>::min)();
+	const int xs[4] = {low, low, low + 48, low + 96}, ys[4] = {low, low, low + 24, low + 48};
+	for (const BYTE direction : {static_cast<BYTE>(DIRECTION_LEFT), static_cast<BYTE>(DIRECTION_DOWN)})
+	{
+		ClearEffects(); auto target = Target(); auto* original = target.get(); auto info = Info(); info.direction = direction; info.x1 = info.y1 = low;
+		CHECK(Generate(world, info, target)); CheckTarget(*original); CHECK_EQ(5, effects.size());
+		for (size_t i = 1; i < effects.size(); ++i) CheckCopy(*effects[i]->GetEffectTarget(), direction == DIRECTION_DOWN ? xs[i - 1] : low, direction == DIRECTION_LEFT ? ys[i - 1] : low);
+	}
+}
+
+TEST(BloodyWallEffectGenerator, RepresentableDestinationOffsetsKeepExactIntegerCoordinates)
+{
+	World world; const int x = (std::numeric_limits<int>::max)() - 96, y = (std::numeric_limits<int>::min)() + 48;
+	for (int direction = 0; direction < 8; ++direction)
+	{
+		ClearEffects(); auto target = Target(); auto info = Info(); info.direction = static_cast<BYTE>(direction); info.x1 = x; info.y1 = y;
+		CHECK(Generate(world, info, target));
+		for (size_t i = 1; i < effects.size(); ++i) CheckCopy(*effects[i]->GetEffectTarget(), x + (rows[direction][i].x - 5) * 48, y + (rows[direction][i].y - 5) * 24);
+	}
+}
+
+TEST(BloodyWallEffectGenerator, ExtremeDestinationsAreSafeEvenWhenNoTargetCopyIsNeeded)
+{
+	World world;
+	for (const int destination : {(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()})
+		for (int direction = 0; direction < 8; ++direction) for (const int mask : {0, 1, 31}) for (const bool linked : {false, true})
+	{
+		if (linked && mask == 31) continue;
+		ClearEffects(); acceptance = mask; auto target = linked ? Target() : std::unique_ptr<MEffectTarget>{}; auto* original = target.get();
+		auto info = Info(); info.x1 = info.y1 = destination; info.direction = static_cast<BYTE>(direction);
+		CHECK_EQ(mask != 0, Generate(world, info, target)); CHECK_EQ(5, submissions);
+		if (original) CheckTarget(*original);
+		for (size_t i = 0; i < effects.size(); ++i)
+		{
+			CHECK_EQ(rows[direction][slots[i]].x, effects[i]->GetX()); CHECK_EQ(rows[direction][slots[i]].y, effects[i]->GetY());
+			CHECK(effects[i]->GetEffectTarget() == original);
+		}
+	}
+}
+
+TEST(BloodyWallEffectGenerator, DeferredFirstAcceptanceKeepsTheOriginalAndSaturatesLaterCopies)
+{
+	World world; const int high = (std::numeric_limits<int>::max)(), low = (std::numeric_limits<int>::min)();
+	for (const int mask : {2, 10, 24, 26})
+	{
+		ClearEffects(); acceptance = mask; auto target = Target(); auto* original = target.get(); auto info = Info(); info.direction = DIRECTION_LEFTDOWN; info.x1 = high; info.y1 = low;
+		CHECK(Generate(world, info, target)); CHECK(effects.front()->GetEffectTarget() == original); CheckTarget(*original);
+		for (size_t i = 1; i < effects.size(); ++i) CheckCopy(*effects[i]->GetEffectTarget(), high, low + 24);
+	}
+}

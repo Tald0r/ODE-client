@@ -35,6 +35,7 @@ class MBloodyWallEffectGenerator : public MEffectGenerator {
 		static bool ReadSprite(TYPE_EFFECTSPRITETYPE type, MBloodyWallEffectSprite& sprite);
 		static bool ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count);
 		static bool QueueEffect(std::unique_ptr<MEffect> effect);
+		static int OffsetCoordinate(int coordinate, int offset);
 		static const MBloodyWallEffectHost* s_pHost;
 };
 

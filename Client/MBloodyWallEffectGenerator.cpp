@@ -5,8 +5,11 @@
 #include "EffectSpriteTypeDef.h"
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <iterator>
+#include <limits>
 #include <utility>
 
 const MBloodyWallEffectHost* MBloodyWallEffectGenerator::s_pHost = nullptr;
@@ -33,6 +36,12 @@ bool MBloodyWallEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, i
 bool MBloodyWallEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
 {
 	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
+int MBloodyWallEffectGenerator::OffsetCoordinate(int coordinate, int offset)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(static_cast<std::int64_t>(coordinate) + offset,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
 }
 
 bool MBloodyWallEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
@@ -75,8 +84,8 @@ bool MBloodyWallEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 	{
 		const int sX = tX + dirValue[lookDirection][i].x;
 		const int sY = tY + dirValue[lookDirection][i].y;
-		const int sx = tx + dirValue[lookDirection][i].x * TILE_X;
-		const int sy = ty + dirValue[lookDirection][i].y * TILE_Y;
+		const int sx = OffsetCoordinate(tx, static_cast<int>(dirValue[lookDirection][i].x) * TILE_X);
+		const int sy = OffsetCoordinate(ty, static_cast<int>(dirValue[lookDirection][i].y) * TILE_Y);
 		auto effect = std::make_unique<MEffect>(bltType);
 		MEffect* pEffect = effect.get();
 		pEffect->SetFrameID(frameID, static_cast<BYTE>(maxFrame));
