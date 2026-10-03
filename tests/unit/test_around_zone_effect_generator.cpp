@@ -581,3 +581,34 @@ TEST(AroundZoneEffectGenerator, ExtremeDelayedEffectsPreserveLateOriginalAndFull
 	const auto* copy = effects.back()->GetEffectTarget(); CHECK(copy != info.pEffectTarget); CHECK_EQ(info.x1, copy->GetX()); CHECK_EQ(info.y1, copy->GetY()); CHECK_EQ(info.z1, copy->GetZ());
 	for (const auto& effect : effects) { CHECK_EQ(info.x0, effect->GetPixelX()); CHECK_EQ(info.y0, effect->GetPixelY()); CHECK_EQ(17, effect->GetPixelZ()); }
 }
+
+TEST(AroundZoneEffectGenerator, MaximumFrameCountAddsStreamDelayUsingUnsignedFrameArithmetic)
+{
+	World world;
+	sprite.maxFrames = (std::numeric_limits<int>::max)(); auto info = Info(EFFECTSPRITETYPE_SPIT_STREAM); info.linkCount = MAX_LINKCOUNT;
+	CHECK(world.generator.Generate(info)); CHECK_EQ(6, effects.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		const DWORD deadline = static_cast<DWORD>(sprite.maxFrames) + 99u + static_cast<DWORD>(i);
+		CHECK_EQ(deadline, effects[i]->GetEndFrame()); CHECK_EQ(deadline, effects[i]->GetEndLinkFrame()); CHECK_EQ(255, effects[i]->GetMaxFrame());
+		CHECK_EQ(i, acceptedDelays[i]); CHECK(!effects[i]->IsEnd());
+	}
+}
+
+TEST(AroundZoneEffectGenerator, ExtremeFrameCountsRetainUnsignedWrappingAndIndependentLinkCounts)
+{
+	World world;
+	for (const int count : {(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()})
+	{
+		for (const DWORD now : {0u, 0xFFFFFFFEu})
+		{
+			ClearEffects(); frameNow = now; sprite.maxFrames = count; CHECK(world.generator.Generate(Info(EFFECTSPRITETYPE_SPIT_STREAM)));
+			for (size_t i = 0; i < effects.size(); ++i)
+			{
+				const DWORD deadline = now + static_cast<DWORD>(count) + static_cast<DWORD>(i) - 1u;
+				CHECK_EQ(deadline, effects[i]->GetEndFrame()); CHECK_EQ(static_cast<DWORD>(now + 4u), effects[i]->GetEndLinkFrame());
+				CHECK_EQ(static_cast<BYTE>(count), effects[i]->GetMaxFrame()); CHECK_EQ(now >= deadline, effects[i]->IsEnd());
+			}
+		}
+	}
+}

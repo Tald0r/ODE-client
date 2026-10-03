@@ -182,7 +182,7 @@ MAroundZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		if(dwWaitCount)
 		{
 			pEffect->SetWaitFrame(dwWaitCount);
-			pEffect->SetCount( dwWaitCount+maxFrame, egInfo.linkCount );
+			pEffect->SetCount(static_cast<DWORD>(dwWaitCount) + static_cast<DWORD>(maxFrame), egInfo.linkCount);
 			pEffect->SetMulti(true);
 		}
 		// The first accepted effect takes the original; later copies use the destination.

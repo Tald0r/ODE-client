@@ -2418,15 +2418,16 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_spread_out_effect_generator.cpp`.
 
-- [ ] **4.73 Around-zone generation:** `MAroundZoneEffectGenerator` creates
+- [x] **4.73 Around-zone generation:** `MAroundZoneEffectGenerator` creates
   stationary variants and staggered stream effects from `gamemodel`.
-  > **Status:** in progress (delayed-count arithmetic still needs a fix).
+  > **Status:** done (this commit).
   > Borrowed metadata is resolved after each attempt's selection. Selected
   > variants persist between attempts while positions reset. Submission consumes
   > effects with their wait count; first acceptance takes the original target,
   > and later copies use destination coordinates. Missing metadata skips an
   > attempt without discarding an earlier acceptance result. Pixel offsets widen
-  > before saturating, including complete fire offsets. R1 is
+  > before saturating, including complete fire offsets. Stream durations add
+  > their wait count in unsigned frame arithmetic. R1 is
   > 379 Windows / 377 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_around_zone_effect_generator.cpp`.
