@@ -2338,15 +2338,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_empty_rectangle_effect_generator.cpp`.
 
-- [ ] **4.67 Full-rectangle generation:** `MStopZoneRectEffectGenerator` submits
+- [x] **4.67 Full-rectangle generation:** `MStopZoneRectEffectGenerator` submits
   its center and clipped surrounding square from `gamemodel`.
-  > **Status:** in progress (extraction verified; copied-target arithmetic fix pending).
+  > **Status:** done (this commit).
   > Borrowed sprite and frame metadata resolve before construction. Bounds
   > follow center submission; the consuming queue carries each tile's delay.
   > Darkness phases, randomized variants, hail and explosion delays retain
   > their ordering. Ice-field and mine radius overrides occur after the center.
   > The first accepted effect takes the original target; later copies use
   > offsets from the clipped lower bounds.
+  > Copied pixel sums widen before saturating at integer limits. R1 is
+  > 385 Windows / 383 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_rectangle_effect_generator.cpp`.
 
