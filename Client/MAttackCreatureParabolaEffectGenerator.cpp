@@ -4,6 +4,7 @@
 #include "MParabolaEffect.h"
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
+#include <limits>
 #include <utility>
 
 const MCreatureParabolaEffectHost* MAttackCreatureParabolaEffectGenerator::s_pHost = nullptr;
@@ -53,7 +54,9 @@ bool MAttackCreatureParabolaEffectGenerator::Generate(const EFFECTGENERATOR_INFO
 	int maxFrame;
 	if (!ReadMaxFrames(sprite.bltType, sprite.frameID, maxFrame)) return false;
 	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(maxFrame));
-	effect->SetPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0 + TILE_Y);
+	const int top = (std::numeric_limits<int>::max)();
+	const int startZ = egInfo.z0 > top - TILE_Y ? top : egInfo.z0 + TILE_Y;
+	effect->SetPixelPosition(egInfo.x0, egInfo.y0, startZ);
 	// Target selection retains its calculated facing, overriding the input.
 	effect->SetDirection(egInfo.direction);
 	effect->SetTarget(cx, cy, cz, egInfo.step);

@@ -2456,14 +2456,15 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_meteor_drop_effect_generator.cpp`.
 
-- [ ] **4.76 Creature parabola generation:** `MAttackCreatureParabolaEffectGenerator`
+- [x] **4.76 Creature parabola generation:** `MAttackCreatureParabolaEffectGenerator`
   creates projectiles toward sampled creature positions from `gamemodel`.
-  > **Status:** in progress (source-height bounds review remains).
+  > **Status:** done (this commit).
   > Borrowed services resolve sprite metadata, creature tile/height and then
   > animation length, preserving their order. Submission consumes the effect;
   > acceptance alone transfers the original target without changing its state.
-  > The executable retains live creature lookup. R1 is 376 Windows / 374 Ninja,
-  > measured in both generated local trees.
+  > The executable retains live creature lookup. Source-height offsets saturate
+  > before integer overflow; creature heights keep their signed short range.
+  > R1 is 376 Windows / 374 Ninja, measured in both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_creature_parabola_effect_generator.cpp`.
 

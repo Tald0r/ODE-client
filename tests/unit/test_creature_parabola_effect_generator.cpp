@@ -385,3 +385,36 @@ TEST(CreatureParabolaEffectGenerator, ClockWrapAndMissingBaseServicesKeepExistin
 	ClearEffects(); MEffect::SetHost(nullptr); CHECK(world.generator.Generate(Info())); CHECK_EQ(29, effects.front()->GetEndFrame());
 	CHECK_EQ(4, effects.front()->GetEndLinkFrame()); CHECK_EQ(0, effects.front()->GetLight()); CHECK(!effects.front()->Update()); CHECK_EQ(24, effects.front()->GetPixelZ());
 }
+
+TEST(CreatureParabolaEffectGenerator, SourceHeightOffsetSaturatesBeforeIntegerOverflow)
+{
+	World world; const int top = (std::numeric_limits<int>::max)();
+	for (const int height : {top, top - 1, top - 23})
+	{
+		ClearEffects(); auto info = Info(); info.z0 = height; CHECK(world.generator.Generate(info));
+		CHECK_EQ(top, effects.front()->GetPixelZ()); CHECK_EQ(0, effects.front()->GetPixelX()); CHECK_EQ(0, effects.front()->GetPixelY());
+	}
+}
+
+TEST(CreatureParabolaEffectGenerator, RepresentableSourceHeightsRetainFloatPositionRounding)
+{
+	World world; const int top = (std::numeric_limits<int>::max)(), bottom = (std::numeric_limits<int>::min)();
+	struct Height { int source, expected; };
+	for (const Height height : {Height{top - 24, top}, {top - 535, top - 511}, {bottom, bottom}, {-24, 0}, {-1, 23}, {0, 24}})
+	{
+		ClearEffects(); auto info = Info(); info.z0 = height.source; CHECK(world.generator.Generate(info)); CHECK_EQ(height.expected, effects.front()->GetPixelZ());
+	}
+}
+
+TEST(CreatureParabolaEffectGenerator, ExtremeLaunchStillHonorsRejectionAndOriginalTargetOwnership)
+{
+	World world;
+	for (const bool accepted : {false, true})
+	{
+		ClearEffects(); acceptEffect = accepted; auto target = Target(); auto info = Info(); info.z0 = (std::numeric_limits<int>::max)(); info.pEffectTarget = target.get();
+		CHECK_EQ(accepted, world.generator.Generate(info)); CHECK_EQ(1, submissions);
+		if (accepted) { target.release(); CHECK(effects.front()->GetEffectTarget() == info.pEffectTarget); CHECK_EQ(129, effects.front()->GetEndFrame()); CHECK_EQ(104, effects.front()->GetEndLinkFrame()); }
+		else CHECK(effects.empty());
+		CheckTarget(*info.pEffectTarget);
+	}
+}
