@@ -1,4 +1,4 @@
-// Borrowed services for the fixed X and rhombus zone-effect patterns.
+// Borrowed services for fixed zone-effect patterns.
 #ifndef MFIXEDZONEEFFECTHOST_H
 #define MFIXEDZONEEFFECTHOST_H
 

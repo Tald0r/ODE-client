@@ -555,3 +555,7 @@ Client/MStopZoneXEffectGenerator.cpp
 Client/MStopZoneXEffectGenerator.h
 Client/MStopZoneRhombusEffectGenerator.cpp
 Client/MStopZoneRhombusEffectGenerator.h
+
+# Empty-cross generation with source-pixel targets on later arms (4.64).
+Client/MStopZoneEmptyCrossEffectGenerator.cpp
+Client/MStopZoneEmptyCrossEffectGenerator.h

@@ -251,7 +251,8 @@ check () {
 # 393: stationary zone generation joins gamemodel (4.61).
 # 392: cross-shaped zone generation joins gamemodel (4.62).
 # 390: fixed X and rhombus generation joins gamemodel (4.63).
-R1_BASELINE=390
+# 389: empty-cross generation joins gamemodel (4.64).
+R1_BASELINE=389
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -336,7 +337,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 391: stationary zone generation joins gamemodel (4.61).
 	# 390: cross-shaped zone generation joins gamemodel (4.62).
 	# 388: fixed X and rhombus generation joins gamemodel (4.63).
-	R1_NINJA_BASELINE=388
+	# 387: empty-cross generation joins gamemodel (4.64).
+	R1_NINJA_BASELINE=387
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
