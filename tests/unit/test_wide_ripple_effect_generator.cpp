@@ -376,3 +376,33 @@ TEST(WideRippleEffectGenerator, DeadlinesRetainFiniteSentinelsClockWrapAndMissin
 	ClearEffects(); MEffect::SetHost(nullptr); CHECK(world.generator.Generate(Info()));
 	for (const auto& effect : effects) { CHECK_EQ(29, effect->GetEndFrame()); CHECK_EQ(4, effect->GetEndLinkFrame()); CHECK_EQ(0, effect->GetLight()); CHECK(!effect->Update()); }
 }
+
+TEST(WideRippleEffectGenerator, DirectionOutsideTheEightRowsRejectsBeforeBoundsOrConstruction)
+{
+	World world; auto target = Target(); auto info = Info(); info.direction = 8; info.pEffectTarget = target.get();
+	const bool accepted = world.generator.Generate(info); CHECK(!accepted); if (accepted) target.release();
+	CHECK_EQ(0, boundsCalls); CHECK_EQ(0, submissions); CHECK(effects.empty()); CHECK(calls == std::vector<int>{1});
+	CheckTarget(*info.pEffectTarget);
+}
+
+TEST(WideRippleEffectGenerator, EveryInvalidDirectionRejectsForEmptyAndFullRowsWithEitherTargetState)
+{
+	World world;
+	for (int direction = 8; direction < 256; ++direction) for (const BYTE power : {static_cast<BYTE>(0), static_cast<BYTE>(1), static_cast<BYTE>(255)})
+	{
+		for (const bool linked : {false, true})
+		{
+			ClearEffects(); auto target = linked ? Target() : std::unique_ptr<MEffectTarget>{}; auto info = Info();
+			info.direction = static_cast<BYTE>(direction); info.power = power; info.pEffectTarget = target.get();
+			CHECK(!world.generator.Generate(info)); CHECK_EQ(0, boundsCalls); CHECK_EQ(0, submissions); CHECK(effects.empty()); CHECK(calls == std::vector<int>{1});
+			if (target) CheckTarget(*target);
+		}
+	}
+}
+
+TEST(WideRippleEffectGenerator, InvalidDirectionStillLooksUpSpriteMetadataFirst)
+{
+	World world; auto info = Info(); info.direction = 255; spriteAvailable = false;
+	CHECK(!world.generator.Generate(info)); CHECK_EQ(17, requestedSprite); CHECK(calls == std::vector<int>{1}); CHECK_EQ(0, boundsCalls);
+	ClearEffects(); spriteAvailable = true; CHECK(!world.generator.Generate(info)); CHECK(calls == std::vector<int>{1}); CHECK_EQ(0, boundsCalls);
+}

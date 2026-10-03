@@ -81,6 +81,9 @@ MRippleZoneWideEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			cX	= 1;
 			cY	= 1;
 		break;
+
+		default:
+			return false;
 	}
 
 	for (i=0; i<n; i++)

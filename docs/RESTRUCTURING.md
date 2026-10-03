@@ -2470,12 +2470,13 @@ rounds settled* for the host rules). Test fixtures share
 
 - [ ] **4.77 Wide ripple generation:** `MRippleZoneWideEffectGenerator` creates
   widening rows of stationary effects from `gamemodel`.
-  > **Status:** in progress (direction and clipped-row advancement review remains).
+  > **Status:** in progress (clipped-row advancement review remains).
   > Borrowed sprite metadata, refreshed per-candidate bounds and consuming
   > submission preserve unsigned tile steps and power growth. Center acceptance
   > alone transfers the unchanged original target and determines success; side
-  > effects have no target. R1 is 375 Windows / 373 Ninja, measured in both
-  > generated local trees.
+  > effects have no target. Invalid directions reject after sprite lookup and
+  > before bounds or construction. R1 is 375 Windows / 373 Ninja, measured in
+  > both generated local trees.
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_wide_ripple_effect_generator.cpp`.
 
