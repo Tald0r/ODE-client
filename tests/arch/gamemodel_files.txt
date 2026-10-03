@@ -606,3 +606,7 @@ Client/MFollowPathEffectGenerator.h
 # Falling meteor and acceptance-triggered fade event (4.75).
 Client/MMeteorDropEffectGenerator.cpp
 Client/MMeteorDropEffectGenerator.h
+
+# Parabolic attacks toward sampled creature positions (4.76).
+Client/MAttackCreatureParabolaEffectGenerator.cpp
+Client/MAttackCreatureParabolaEffectGenerator.h

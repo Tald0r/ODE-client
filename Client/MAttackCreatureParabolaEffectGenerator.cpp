@@ -1,78 +1,67 @@
-//----------------------------------------------------------------------
 // MAttackCreatureParabolaEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MAttackCreatureParabolaEffectGenerator.h"
 #include "MParabolaEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include "WorldTileGeometry.h"
+#include "MViewDef.h"
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttackCreatureParabolaEffectGenerator	g_AttackCreatureParabolaEffectGenerator;
+const MCreatureParabolaEffectHost* MAttackCreatureParabolaEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MAttackCreatureParabolaEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+const MCreatureParabolaEffectHost* MAttackCreatureParabolaEffectGenerator::SetHost(const MCreatureParabolaEffectHost* host)
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-	// creature의 좌표
-	int cx, cy, cz;	
+bool MAttackCreatureParabolaEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MCreatureParabolaEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
 
-	// 목표 위치 Pixel좌표
-	MCreature* pCreature = g_pZone->GetCreature( egInfo.creatureID );
+bool MAttackCreatureParabolaEffectGenerator::ReadCreature(TYPE_OBJECTID id, MCreatureParabolaPosition& position)
+{
+	position = {};
+	return s_pHost && s_pHost->Creature && s_pHost->Creature(id, position);
+}
 
-	if (pCreature == NULL)
-	{
-		return false;
-	}
-	
-	// Creture의 좌표로 목표좌표를 설정한다.
-	cx = g_pTopView->MapToPixelX( pCreature->GetX() );
-	cy = g_pTopView->MapToPixelY( pCreature->GetY() );
-	cz = pCreature->GetZ() + TILE_Y;	// 한 타일정도 위로 빼준다.
+bool MAttackCreatureParabolaEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count)
+{
+	count = 0;
+	return s_pHost && s_pHost->MaxFrames && s_pHost->MaxFrames(blt, frameID, count);
+}
 
-	// 포물선 Effect생성
-	MParabolaEffect* pEffect = new MParabolaEffect(bltType);	
-	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	
-	pEffect->SetFrameID( frameID, maxFrame );
+bool MAttackCreatureParabolaEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
-	// 발사 위치 Pixel좌표	- 한 타일정도 위로 빼준다.
-	pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0+TILE_Y );	
-					
-	// 방향 설정
-	pEffect->SetDirection( egInfo.direction );
+bool MAttackCreatureParabolaEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
+{
+	MCreatureParabolaEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	MCreatureParabolaPosition creature;
+	if (!ReadCreature(egInfo.creatureID, creature)) return false;
 
-	// 목표 위치 Pixel좌표
-	pEffect->SetTarget( cx,cy,cz, egInfo.step );
+	// Sample the creature's tile position before looking up animation length.
+	const int cx = WorldTileGeometry::TileToPixelX(creature.x);
+	const int cy = WorldTileGeometry::TileToPixelY(creature.y);
+	const int cz = creature.z + TILE_Y;
+	auto effect = std::make_unique<MParabolaEffect>(sprite.bltType);
+	int maxFrame;
+	if (!ReadMaxFrames(sprite.bltType, sprite.frameID, maxFrame)) return false;
+	effect->SetFrameID(sprite.frameID, static_cast<BYTE>(maxFrame));
+	effect->SetPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0 + TILE_Y);
+	// Target selection retains its calculated facing, overriding the input.
+	effect->SetDirection(egInfo.direction);
+	effect->SetTarget(cx, cy, cz, egInfo.step);
+	effect->SetCount(egInfo.count, egInfo.linkCount);
+	effect->SetPower(egInfo.power);
 
-	// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );
-
-	// 위력
-	pEffect->SetPower(egInfo.power);
-	
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	if (g_pZone->AddEffect( pEffect ))
-	{
-		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
-		return true;
-	}
-
-	return false;
-
+	MParabolaEffect* queued = effect.get();
+	if (!QueueEffect(std::move(effect))) return false;
+	queued->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
+	return true;
 }
