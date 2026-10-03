@@ -4,12 +4,37 @@
 #include "Client_PCH.h"
 #include "MBloodyBreakerEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
+#include "WorldTileGeometry.h"
+#include <iterator>
+#include <utility>
+#include <vector>
 
-#include "DebugInfo.h"
+const MBloodyBreakerEffectHost* MBloodyBreakerEffectGenerator::s_pHost = nullptr;
+
+const MBloodyBreakerEffectHost* MBloodyBreakerEffectGenerator::SetHost(const MBloodyBreakerEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MBloodyBreakerEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MBloodyBreakerEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MBloodyBreakerEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count)
+{
+	count = 0;
+	return s_pHost && s_pHost->MaxFrames && s_pHost->MaxFrames(blt, frameID, count);
+}
+
+bool MBloodyBreakerEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
 char bloody_breaker_map[8][13][13] = { { {0, } } };
 
@@ -42,6 +67,8 @@ void	MakeMap(BYTE dic, std::vector<tempBreaker> &v_cp, int p)
     mask[7].x = -1;
     mask[7].y = -1;	
     
+	if (dic >= std::size(mask)) return;
+
 	for ( int i = 1; i <= 6; i++ )
 	{
 		int x = 0;
@@ -91,11 +118,12 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
 	int est = egInfo.effectSpriteType;
 	
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);	
-		
-	//int currentPhase = (egInfo.pEffectTarget==NULL? lastPhase +1 : egInfo.pEffectTarget->GetCurrentPhase());
+	MBloodyBreakerEffectSprite sprite;
+	if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	TYPE_FRAMEID frameID = sprite.frameID;
+	int maxFrame;
+	if (!ReadMaxFrames(bltType, frameID, maxFrame)) return false;
 
 	int currentPhase = egInfo.pEffectTarget != NULL ?egInfo.pEffectTarget->GetCurrentPhase() : -1;
 
@@ -108,15 +136,17 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		return false;
 
 	TYPE_SECTORPOSITION	tX, tY;
-	tX = g_pTopView->PixelToMapX(egInfo.x0);
-	tY = g_pTopView->PixelToMapY(egInfo.y0);
+	tX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	tY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
+	bool targetTransferred = false;
 
 	
 	for(int i=0;static_cast<size_t>(i)<v_cp.size();i++)
 	{
-		MEffect *pEffect = new MEffect (bltType);
+		auto effect = std::make_unique<MEffect>(bltType);
+		MEffect* pEffect = effect.get();
 
-		pEffect->SetFrameID( frameID, maxFrame );
+		pEffect->SetFrameID( frameID, static_cast<BYTE>(maxFrame) );
 		int tempy =0, tempx =0;
 		if(currentPhase != -1)
 		{
@@ -129,7 +159,8 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			if(currentDirection == 5 || currentDirection == 4 || currentDirection == 3)
 				tempx-=(currentPhase-1);
 		}
-		pEffect->SetPosition(v_cp[i].x+tX+tempx,v_cp[i].y+tY+tempy);
+		pEffect->SetPosition(static_cast<TYPE_SECTORPOSITION>(v_cp[i].x+tX+tempx),
+			static_cast<TYPE_SECTORPOSITION>(v_cp[i].y+tY+tempy));
 		pEffect->SetZ(egInfo.z0);
 		pEffect->SetStepPixel(egInfo.step);
 		pEffect->SetCount(egInfo.count, egInfo.linkCount);
@@ -137,11 +168,12 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		pEffect->SetPower(egInfo.power);
 		pEffect->SetMulti( true );
 
-		if(g_pZone->AddEffect( pEffect ))
+		if(QueueEffect(std::move(effect)))
 		{
 			if(v_cp[i].center == 1 && egInfo.pEffectTarget != NULL) 
 			{			
 				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
+				targetTransferred = true;
 				
 			} else
 			{
@@ -156,9 +188,11 @@ MBloodyBreakerEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				est = EFFECTSPRITETYPE_BLOODY_WALL_1;
 			}
 		}
-		frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-		maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);	
+		// Refresh after every attempt, including the last, retaining the initial blit type.
+		if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) return targetTransferred;
+		frameID = sprite.frameID;
+		if (!ReadMaxFrames(bltType, frameID, maxFrame)) return targetTransferred;
 	}
 	
-	return true;
+	return targetTransferred;
 }

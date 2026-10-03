@@ -102,6 +102,8 @@
 #include "MMeteorDropEffectGenerator.h"
 #include "MAttackCreatureParabolaEffectGenerator.h"
 #include "MRippleZoneWideEffectGenerator.h"
+#include "MBloodyBreakerEffectGenerator.h"
+#include "MBloodyWallEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2666,6 +2668,8 @@ void ReleaseAllObjects()
 	MMeteorDropEffectGenerator::SetHost(nullptr);
 	MAttackCreatureParabolaEffectGenerator::SetHost(nullptr);
 	MRippleZoneWideEffectGenerator::SetHost(nullptr);
+	MBloodyBreakerEffectGenerator::SetHost(nullptr);
+	MBloodyWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3288,6 +3292,33 @@ static const MCreatureParabolaEffectHost s_CreatureParabolaEffectHost = {
 	.Queue = s_FixedZoneEffectHost.Queue,
 };
 
+static const MBloodyBreakerEffectHost s_BloodyBreakerEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MBloodyBreakerEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		return true;
+	},
+	.MaxFrames = s_CreatureParabolaEffectHost.MaxFrames,
+	.Queue = s_FixedZoneEffectHost.Queue,
+};
+
+static const MBloodyWallEffectHost s_BloodyWallEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MBloodyWallEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.repeatFrame = info.RepeatFrame;
+		return true;
+	},
+	.MaxFrames = s_CreatureParabolaEffectHost.MaxFrames,
+	.Queue = s_FixedZoneEffectHost.Queue,
+};
+
 static const MWideRippleEffectHost s_WideRippleEffectHost = {
 	.Sprite = s_FixedZoneEffectHost.Sprite,
 	.Bounds = [](MWideRippleEffectBounds& bounds) {
@@ -3825,6 +3856,8 @@ InitGameObject()
 	MMeteorDropEffectGenerator::SetHost(&s_MeteorDropEffectHost);
 	MAttackCreatureParabolaEffectGenerator::SetHost(&s_CreatureParabolaEffectHost);
 	MRippleZoneWideEffectGenerator::SetHost(&s_WideRippleEffectHost);
+	MBloodyBreakerEffectGenerator::SetHost(&s_BloodyBreakerEffectHost);
+	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);

@@ -1,81 +1,65 @@
-//----------------------------------------------------------------------
 // MBloodyWallEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MBloodyWallEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
+#include "WorldTileGeometry.h"
+#include "MViewDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <limits>
+#include <utility>
 
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+const MBloodyWallEffectHost* MBloodyWallEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MBloodyWallEffectGenerator	g_BloodyWallEffectGenerator;
+const MBloodyWallEffectHost* MBloodyWallEffectGenerator::SetHost(const MBloodyWallEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MBloodyWallEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+bool MBloodyWallEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MBloodyWallEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MBloodyWallEffectGenerator::ReadMaxFrames(BYTE blt, TYPE_FRAMEID frameID, int& count)
+{
+	count = 0;
+	return s_pHost && s_pHost->MaxFrames && s_pHost->MaxFrames(blt, frameID, count);
+}
+
+bool MBloodyWallEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
+int MBloodyWallEffectGenerator::OffsetCoordinate(int coordinate, int offset)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(static_cast<std::int64_t>(coordinate) + offset,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+bool MBloodyWallEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 {
 	bool bOK = false;
-
 	int est = egInfo.effectSpriteType;
 
-	// 하드 하드~
-	if (est>=EFFECTSPRITETYPE_BLOODY_WALL_1
-		&& est<=EFFECTSPRITETYPE_BLOODY_WALL_3)
-	{
-		est = EFFECTSPRITETYPE_BLOODY_WALL_1 + rand()%3;
-	}
+	// Start Bloody Wall variants at a random member of the three-frame family.
+	if (est >= EFFECTSPRITETYPE_BLOODY_WALL_1 && est <= EFFECTSPRITETYPE_BLOODY_WALL_3)
+		est = EFFECTSPRITETYPE_BLOODY_WALL_1 + std::rand() % 3;
 
-
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	bool			repeatFrame	= (*g_pEffectSpriteTypeTable)[est].RepeatFrame;
-
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
-	int	tx, ty;
-	
-	tx = egInfo.x1;
-	ty = egInfo.y1;
-
-	// (sX0, sY0)에서 (sX1, sY1)을 바라보는 방향을 얻어낸다.
-	int lookDirection = egInfo.direction;//MTopView::GetDirectionToPosition(sX0, sY0, sX1, sY1);
-
-	//---------------------------------------------
-	// 방향에 따라서... { 시작보정X, 시작보정Y, 변화pixelX, 변화pixelY }
-	//---------------------------------------------
-	// 5개 출력
-	/*
-	const int dirValue[8][4] = { 
-		{		0,	-12*2,		0,		12 },		// left에서 up
-		{	-24*2,	-12*2,		24,		12 },		// leftdown
-		{	-24*2,		0,		24,		0 },		// down
-		{	24*2,	-12*2,		-24,	12 },		// rightdown
-		{		0,	-24*2,		0,		24 },		// right
-		{	-24*2,	-12*2,		24,		12 },		// rightup
-		{	-24*2,		0,		24,		0 },		// up
-		{	-24*2,	12*2,		24,		-12 }		// leftup
-	};	
-
-	//---------------------------------------------
-	// 시작 값
-	//---------------------------------------------
-	int sx = tx + dirValue[lookDirection][0];
-	int sy = ty + dirValue[lookDirection][1];
-	int cx = dirValue[lookDirection][2];
-	int cy = dirValue[lookDirection][3];
-	int z  = egInfo.z0;
-	*/
+	MBloodyWallEffectSprite sprite;
+	if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	TYPE_FRAMEID frameID = sprite.frameID;
+	const bool repeatFrame = sprite.repeatFrame;
+	const int tx = egInfo.x1, ty = egInfo.y1;
+	const int lookDirection = egInfo.direction;
 
 	const POINT dirValue[8][5] =
 	{
@@ -89,104 +73,64 @@ MBloodyWallEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		{ { 1, -1 }, { 0, -1 }, { 0, 0 }, { -1, 0 }, { -1, 1 } },	// leftup
 	};
 
-	TYPE_SECTORPOSITION	tX, tY;
-	tX = g_pTopView->PixelToMapX(egInfo.x0);
-	tY = g_pTopView->PixelToMapY(egInfo.y0);
+	const TYPE_SECTORPOSITION tX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	const TYPE_SECTORPOSITION tY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
+	const int z = egInfo.z0;
+	int maxFrame;
+	if (!ReadMaxFrames(bltType, frameID, maxFrame)) return false;
+	if (lookDirection >= static_cast<int>(std::size(dirValue))) return false;
 
-	int sX, sY;
-	int sx, sy;
-	int z  = egInfo.z0;
-
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);	
-
-	MEffect*	pEffect;
-	
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	for (int i=0; i<5; i++)
-	{		
-		sX = tX + dirValue[lookDirection][i].x;
-		sY = tY + dirValue[lookDirection][i].y;
-		sx = tx + dirValue[lookDirection][i].x * TILE_X;
-		sy = ty + dirValue[lookDirection][i].y * TILE_Y;
-
-		pEffect = new MEffect(bltType);
-		
-		pEffect->SetFrameID( frameID, maxFrame );	
-
-		//pEffect->SetPixelPosition(sx, sy, z);		// Sector 좌표		
-		pEffect->SetPosition( sX, sY );
-		pEffect->SetZ( z );			
-		pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-		pEffect->SetCount( egInfo.count , egInfo.linkCount );			// 지속되는 Frame
-
-		// 방향 설정
-		pEffect->SetDirection( egInfo.direction );
-
-		// 위력
+	for (int i = 0; i < 5; ++i)
+	{
+		const int sX = tX + dirValue[lookDirection][i].x;
+		const int sY = tY + dirValue[lookDirection][i].y;
+		const int sx = OffsetCoordinate(tx, static_cast<int>(dirValue[lookDirection][i].x) * TILE_X);
+		const int sy = OffsetCoordinate(ty, static_cast<int>(dirValue[lookDirection][i].y) * TILE_Y);
+		auto effect = std::make_unique<MEffect>(bltType);
+		MEffect* pEffect = effect.get();
+		pEffect->SetFrameID(frameID, static_cast<BYTE>(maxFrame));
+		pEffect->SetPosition(static_cast<TYPE_SECTORPOSITION>(sX), static_cast<TYPE_SECTORPOSITION>(sY));
+		pEffect->SetZ(z);
+		pEffect->SetStepPixel(egInfo.step);
+		pEffect->SetCount(egInfo.count, egInfo.linkCount);
+		pEffect->SetDirection(egInfo.direction);
 		pEffect->SetPower(egInfo.power);
 
-		// Zone에 추가한다.
-		bool bAdd = g_pZone->AddEffect( pEffect );
-
+		const bool bAdd = QueueEffect(std::move(effect));
 		if (bAdd)
 		{
-			// 처음으로 추가된 effect에 대해서 link설정
 			if (!bOK)
 			{
-				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
+				pEffect->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
 				bOK = true;
 			}
-		
-			// 처음으로 추가된거는 아니지만 제대로 들어간 경우
+			else if (egInfo.pEffectTarget == nullptr)
+			{
+				pEffect->SetLink(egInfo.nActionInfo, nullptr);
+			}
 			else
 			{
-				// 다음 Effect 생성 정보
-				if (egInfo.pEffectTarget == NULL)
-				{
-					pEffect->SetLink( egInfo.nActionInfo, NULL );
-				}
-				else
-				{
-					MEffectTarget* pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
-					pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-					pEffectTarget2->Set( sx, sy, z, egInfo.creatureID );
-				}			
+				auto* copy = new MEffectTarget(*egInfo.pEffectTarget);
+				pEffect->SetLink(egInfo.nActionInfo, copy);
+				copy->Set(sx, sy, z, egInfo.creatureID);
 			}
 		}
 
-		//---------------------------------------------
-		// 반복되는 frame이면..
-		// 시작 frame을 다르게 한다.
-		//---------------------------------------------
-		if (bAdd && repeatFrame)
+		// Randomize the starting animation only for retained repeating effects.
+		if (bAdd && repeatFrame && maxFrame > 0)
 		{
-			int num = rand() % maxFrame;
-			
-			for (int nf=0; nf<num; nf++)
-			{
-				pEffect->NextFrame();
-			}
+			const int num = std::rand() % maxFrame;
+			for (int nf = 0; nf < num; ++nf) pEffect->NextFrame();
 		}
 
-		//
-		//sx += cx;
-		//sy += cy;
-
-		// 다음 그림
-		if (est>=EFFECTSPRITETYPE_BLOODY_WALL_1
-			&& est<=EFFECTSPRITETYPE_BLOODY_WALL_3)
+		if (est >= EFFECTSPRITETYPE_BLOODY_WALL_1 && est <= EFFECTSPRITETYPE_BLOODY_WALL_3)
 		{
-			if (++est > EFFECTSPRITETYPE_BLOODY_WALL_3)
-			{
-				est = EFFECTSPRITETYPE_BLOODY_WALL_1;
-			}
+			if (++est > EFFECTSPRITETYPE_BLOODY_WALL_3) est = EFFECTSPRITETYPE_BLOODY_WALL_1;
 		}
-		frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-		maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);	
+		// Refresh after every attempt, including the last, using the original blit type.
+		if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) return bOK;
+		frameID = sprite.frameID;
+		if (!ReadMaxFrames(bltType, frameID, maxFrame)) return bOK;
 	}
-
 	return bOK;
 }
