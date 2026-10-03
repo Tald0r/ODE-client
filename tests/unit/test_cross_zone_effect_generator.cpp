@@ -499,3 +499,94 @@ TEST(CrossZoneEffectGenerator, MissingBaseServicesRetainCountsAndInactiveFallbac
 	CHECK(world.generator.Generate(Info())); CHECK_EQ(29, effects.front()->GetEndFrame());
 	CHECK_EQ(4, effects.front()->GetEndLinkFrame()); CHECK_EQ(0, effects.front()->GetLight()); CHECK(!effects.front()->Update());
 }
+
+TEST(CrossZoneEffectGenerator, CopiedTargetOffsetsSaturateAtTheUpperCoordinateLimit)
+{
+	World world;
+	const int high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.x1 = info.y1 = high; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release();
+	const Point expected[] = {{777, 888}, {high, high - 24}, {high, high}, {high - 48, high}, {high, high},
+		{high, high}, {high, high}, {high, high}, {high, high}};
+	CHECK_EQ(9, effects.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		const auto* linked = effects[i]->GetEffectTarget();
+		CHECK_EQ(expected[i].x, linked->GetX()); CHECK_EQ(expected[i].y, linked->GetY());
+		CHECK_EQ(i == 0 ? 999 : 17, linked->GetZ()); CHECK_EQ(i == 0 ? 456 : 123, linked->GetID());
+	}
+}
+
+TEST(CrossZoneEffectGenerator, CopiedTargetOffsetsSaturateAtTheLowerCoordinateLimit)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	auto target = Target(); auto info = Info(); info.x1 = info.y1 = low; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release();
+	const Point expected[] = {{777, 888}, {low + 48, low}, {low + 48, low}, {low, low + 24}, {low, low + 24},
+		{low + 96, low + 24}, {low + 144, low + 24}, {low + 48, low + 48}, {low + 48, low + 72}};
+	CHECK_EQ(9, effects.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(CrossZoneEffectGenerator, ClippedTargetsSaturateWhileRetainingTheLowerBoundAnchor)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)();
+	auto target = Target(); auto info = Info(); info.x0 = info.y0 = 0; info.x1 = info.y1 = low; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release();
+	const Point expected[] = {{777, 888}, {low, low}, {low + 48, low}, {low, low}, {low, low + 24}};
+	CHECK_EQ(5, effects.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(CrossZoneEffectGenerator, MaximumRadiusOffsetsAreBoundedWithoutChangingTheCross)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	zoneBounds = {600, 600}; auto target = Target(); auto info = Info(); info.power = 255;
+	info.x0 = 300 * 48; info.y0 = 300 * 24; info.x1 = high - 100; info.y1 = low + 10; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release(); CHECK_EQ(1021, effects.size());
+	CHECK_EQ(777, effects.front()->GetEffectTarget()->GetX()); CHECK_EQ(888, effects.front()->GetEffectTarget()->GetY());
+	CHECK_EQ(high, effects[1]->GetEffectTarget()->GetX()); CHECK_EQ(low, effects[1]->GetEffectTarget()->GetY());
+	CHECK_EQ(high, effects.back()->GetEffectTarget()->GetX()); CHECK_EQ(low + 12226, effects.back()->GetEffectTarget()->GetY());
+	CHECK((attempted.front() == Point{300, 300})); CHECK((attempted.back() == Point{300, 555}));
+}
+
+TEST(CrossZoneEffectGenerator, RepresentableBoundaryOffsetsRemainExact)
+{
+	World world;
+	const int low = (std::numeric_limits<int>::min)(), high = (std::numeric_limits<int>::max)();
+	auto target = Target(); auto info = Info(); info.x1 = high - 144; info.y1 = low + 24; info.pEffectTarget = target.get();
+	CHECK(world.generator.Generate(info)); target.release();
+	const Point expected[] = {{777, 888}, {high - 96, low}, {high - 96, low + 24}, {high - 192, low + 48},
+		{high - 144, low + 48}, {high - 48, low + 48}, {high, low + 48}, {high - 96, low + 72}, {high - 96, low + 96}};
+	for (size_t i = 0; i < effects.size(); ++i)
+	{
+		CHECK_EQ(expected[i].x, effects[i]->GetEffectTarget()->GetX()); CHECK_EQ(expected[i].y, effects[i]->GetEffectTarget()->GetY());
+	}
+}
+
+TEST(CrossZoneEffectGenerator, FirstAcceptedArmKeepsItsOriginalTargetAtExtremeDestinations)
+{
+	World world;
+	rejectBefore = 8; auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
+	info.x1 = (std::numeric_limits<int>::max)(); info.y1 = (std::numeric_limits<int>::min)();
+	CHECK(world.generator.Generate(info)); CHECK_EQ(1, effects.size()); CHECK(effects.front()->GetEffectTarget() == target.get());
+	target.release(); CHECK_EQ(777, info.pEffectTarget->GetX()); CHECK_EQ(888, info.pEffectTarget->GetY());
+	CHECK_EQ(999, info.pEffectTarget->GetZ()); CHECK_EQ(456, info.pEffectTarget->GetID());
+}
+
+TEST(CrossZoneEffectGenerator, TargetlessEffectsIgnoreExtremeDestinations)
+{
+	World world;
+	auto info = Info(); info.x1 = (std::numeric_limits<int>::max)(); info.y1 = (std::numeric_limits<int>::min)();
+	CHECK(world.generator.Generate(info)); CHECK(attempted == defaultPoints);
+	for (const auto& effect : effects) { CHECK(effect->GetEffectTarget() == nullptr); CHECK_EQ(42, effect->GetActionInfo()); }
+}

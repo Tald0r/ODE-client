@@ -2258,15 +2258,17 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: M0-M2, `tests/arch/gamemodel_files.txt`, R1 and
     `tests/unit/test_stopped_zone_effect_generator.cpp`.
 
-- [ ] **4.62 Cross-shaped zone-effect generation:** `MStopZoneCrossEffectGenerator`
+- [x] **4.62 Cross-shaped zone-effect generation:** `MStopZoneCrossEffectGenerator`
   creates the center and clipped cross arms in `gamemodel`.
-  > **Status:** extraction verified; copied-target arithmetic fix pending.
+  > **Status:** done (this commit).
   > Sprite metadata resolves before construction; zone bounds are read after
   > center submission. The first accepted effect takes the original target;
   > later accepted effects own copies, offset from the clipped lower bounds.
   > SAND_CROSS fixes the arm radius and power at three while retaining input
   > power on the center. Missing metadata rejects, missing bounds stop the
-  > remaining arms, and consuming queues release unlinked effects. Thirty
+  > remaining arms, and consuming queues release unlinked effects. Copied
+  > target coordinate additions now widen and clamp after four tests reproduced
+  > 21 failed checks and UBSan reported both signed-overflow sites. Thirty-seven
   > production tests pass in full plain and strict ASan/UBSan suites. Removing
   > the generator object from a copied archive breaks the actual unit link.
   > R1 is 392 Windows / 390 Ninja, measured in both generated local trees.

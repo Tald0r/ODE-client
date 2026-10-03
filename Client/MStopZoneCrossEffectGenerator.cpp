@@ -7,7 +7,21 @@
 #include "WorldTileGeometry.h"
 #include "MViewDef.h"
 #include "SkillDef.h"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <utility>
+
+namespace {
+
+int OffsetTargetCoordinate(int coordinate, int offset)
+{
+	const std::int64_t value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
 
 const MCrossZoneEffectHost* MStopZoneCrossEffectGenerator::s_pHost = nullptr;
 
@@ -168,8 +182,8 @@ MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 					{
 						pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 						pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-						pEffectTarget2->Set( egInfo.x1+TILE_X*(x-sX1-1),
-												egInfo.y1+TILE_Y*(y-sY1-1),
+						pEffectTarget2->Set( OffsetTargetCoordinate(egInfo.x1, TILE_X*(x-sX1-1)),
+												OffsetTargetCoordinate(egInfo.y1, TILE_Y*(y-sY1-1)),
 												egInfo.z0,
 												egInfo.creatureID );
 					}
