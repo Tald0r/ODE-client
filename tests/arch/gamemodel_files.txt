@@ -594,3 +594,7 @@ Client/MStopZoneSelectableEffectGenerator.h
 # Eight-direction spread trajectories and target ownership (4.72).
 Client/MSpreadOutEffectGenerator.cpp
 Client/MSpreadOutEffectGenerator.h
+
+# Around-zone variants, staggered submission and target ownership (4.73).
+Client/MAroundZoneEffectGenerator.cpp
+Client/MAroundZoneEffectGenerator.h
