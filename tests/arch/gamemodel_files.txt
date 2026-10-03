@@ -548,3 +548,10 @@ Client/MStopZoneEffectGenerator.h
 # Cross-shaped zone effects with clipped arms and consuming submission (4.62).
 Client/MStopZoneCrossEffectGenerator.cpp
 Client/MStopZoneCrossEffectGenerator.h
+
+# Fixed X and rhombus zone-effect patterns with consuming submission (4.63).
+Client/MFixedZoneEffectHost.h
+Client/MStopZoneXEffectGenerator.cpp
+Client/MStopZoneXEffectGenerator.h
+Client/MStopZoneRhombusEffectGenerator.cpp
+Client/MStopZoneRhombusEffectGenerator.h
