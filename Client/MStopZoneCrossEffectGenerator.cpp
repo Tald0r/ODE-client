@@ -4,79 +4,105 @@
 #include "Client_PCH.h"
 #include "MStopZoneCrossEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
+#include "WorldTileGeometry.h"
+#include "MViewDef.h"
 #include "SkillDef.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MStopZoneCrossEffectGenerator	g_StopZoneCrossEffectGenerator;
+namespace {
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
+int OffsetTargetCoordinate(int coordinate, int offset)
+{
+	const std::int64_t value = static_cast<std::int64_t>(coordinate) + offset;
+	return static_cast<int>(std::clamp<std::int64_t>(value,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+} // namespace
+
+const MCrossZoneEffectHost* MStopZoneCrossEffectGenerator::s_pHost = nullptr;
+
+const MCrossZoneEffectHost* MStopZoneCrossEffectGenerator::SetHost(const MCrossZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MStopZoneCrossEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MCrossZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MStopZoneCrossEffectGenerator::ReadBounds(MCrossZoneEffectBounds& bounds)
+{
+	bounds = {};
+	return s_pHost && s_pHost->Bounds && s_pHost->Bounds(bounds);
+}
+
+bool MStopZoneCrossEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
 bool
 MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	// bOK is only written once an AddEffect has succeeded, and AddEffect
-	// fails on any of its early returns - a duplicate frame ID, an
-	// out-of-zone position, a ground effect already on the tile - so the
-	// caller sees this value even when nothing was ever added.
+	// Success means at least one effect was accepted. The first takes the
+	// caller target, so success also reports its ownership transfer.
 	bool bOK = false, bAdd = false;
 
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	MCrossZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	const BYTE bltType = sprite.bltType;
+	const TYPE_FRAMEID frameID = sprite.frameID;
 	BYTE			power = egInfo.power;
 
 	if(egInfo.nActionInfo == SAND_CROSS)
 		power = 3;
 
 	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
+	// Convert pixel coordinates to map tiles.
 	//---------------------------------------------
 	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
+	sX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	sY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	const BYTE maxFrame = static_cast<BYTE>(sprite.maxFrames);
 
-	MEffect*	pEffect;
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	pEffect = new MEffect(bltType);
+	auto effect = std::make_unique<MEffect>(bltType);
+	MEffect* pEffect = effect.get();
 
-	pEffect->SetFrameID( frameID, maxFrame );	
+	pEffect->SetFrameID( frameID, maxFrame );
 
-	pEffect->SetPosition(sX, sY);		// Sector 좌표		
-	pEffect->SetZ(egInfo.z0);			
-	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+	pEffect->SetPosition(sX, sY);		// Tile coordinates
+	pEffect->SetZ(egInfo.z0);
+	pEffect->SetStepPixel(egInfo.step);		// Retain the step for the next effect.
+	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// Lifetime in frames
 
-	// 방향 설정
+	// Direction
 	pEffect->SetDirection( egInfo.direction );
 
-	// 위력
+	// Power
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	// Zone에 추가한다.
-	bAdd = g_pZone->AddEffect( pEffect );
+	// Submit to the zone.
+	bAdd = QueueEffect(std::move(effect));
 
 	if (bAdd)
 	{
-		// 다음 Effect 생성 정보
-		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );	
+		// Link the next effect.
+		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 
 		bOK = true;
-	}	
+	}
+
+	MCrossZoneEffectBounds bounds;
+	if (!ReadBounds(bounds)) return bOK;
 
 	int sX1 = sX-power;
 	int sY1 = sY-power;
@@ -84,32 +110,31 @@ MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int sY2 = sY+power;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Clip the arms to the zone bounds.
 	//------------------------------------------------------
-	if (sX1 < 0) 
-	{					
-		sX1 = 0;	
+	if (sX1 < 0)
+	{
+		sX1 = 0;
 	}
 
-	if (sX2 >= g_pZone->GetWidth())
+	if (sX2 >= bounds.width)
 	{
-		sX2 = g_pZone->GetWidth()-1;
+		sX2 = bounds.width-1;
 	}
 
 	if (sY1 < 0)
 	{
-		sY1 = 0;	
+		sY1 = 0;
 	}
 
-	if (sY2 >= g_pZone->GetHeight())
+	if (sY2 >= bounds.height)
 	{
-		sY2 = g_pZone->GetHeight()-1;
+		sY2 = bounds.height-1;
 	}
 
-
-	// Tile마다 하나씩 생성
+	// Generate one effect per cross tile.
 	MEffectTarget*	pEffectTarget2;
-	
+
 	int x, y;
 	for (y=sY1; y<=sY2; y++)
 	{
@@ -118,33 +143,28 @@ MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			if ((x==sX && y==sY) || !(x == sX || y == sY))
 				continue;
 
+			effect = std::make_unique<MEffect>(bltType);
+			pEffect = effect.get();
 
-			pEffect = new MEffect(bltType);
-	
-		
+			pEffect->SetFrameID( frameID, maxFrame );
 
-			pEffect->SetFrameID( frameID, maxFrame );	
+			pEffect->SetPosition(x, y);		// Tile coordinates
+			pEffect->SetZ(egInfo.z0);
+			pEffect->SetStepPixel(egInfo.step);		// Retain the step for the next effect.
+			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// Lifetime in frames
 
-			pEffect->SetPosition(x, y);		// Sector 좌표	
-			pEffect->SetZ(egInfo.z0);			
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.	
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-
-			// 방향 설정
+			// Direction
 			pEffect->SetDirection( egInfo.direction );
 
-			// 위력
+			// Power
 			pEffect->SetPower(power);
 
-			// 빛의 밝기
-			//pEffect->SetLight( light );
-
-			// Zone에 추가한다.
-			bAdd = g_pZone->AddEffect( pEffect );
+			// Submit to the zone.
+			bAdd = QueueEffect(std::move(effect));
 
 			if (bAdd)
 			{
-				// parameter로 받은 effectTarget을 설정해야 하는 경우
+				// The first accepted effect takes the original target.
 				if (!bOK)
 				{
 					pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
@@ -153,7 +173,7 @@ MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				}
 				else
 				{
-					// 다음 Effect 생성 정보
+					// Link the next effect.
 					if (egInfo.pEffectTarget == NULL)
 					{
 						pEffect->SetLink( egInfo.nActionInfo, NULL );
@@ -162,185 +182,16 @@ MStopZoneCrossEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 					{
 						pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
 						pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-						pEffectTarget2->Set( egInfo.x1+TILE_X*(x-sX1-1), 
-												egInfo.y1+TILE_Y*(y-sY1-1), 
-												egInfo.z0, 
+						pEffectTarget2->Set( OffsetTargetCoordinate(egInfo.x1, TILE_X*(x-sX1-1)),
+												OffsetTargetCoordinate(egInfo.y1, TILE_Y*(y-sY1-1)),
+												egInfo.z0,
 												egInfo.creatureID );
 					}
 				}
 			}
 
-			/*
-			if (bAdd)
-			{
-				int num = rand() % maxFrame;
-				
-				for (int nf=0; nf<num; nf++)
-				{
-					pEffect->NextFrame();
-				}
-			}
-			*/
-
-			//bOK = bOK || bAdd;
 		}
 	}
-
-//	// Test 4 
-//	MEffectTarget*	pEffectTarget2;
-//	//---------------------------------------------
-//	// Effect 생성
-//	//---------------------------------------------
-//	pEffect = new MEffect(bltType);
-//	
-//	
-//	pEffect->SetFrameID( frameID, maxFrame );	
-//
-//	pEffect->SetPosition(sX-1, sY);		// Sector 좌표	
-//	pEffect->SetZ(egInfo.z0);			
-//	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.	
-//	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-//
-//	// 방향 설정
-//	pEffect->SetDirection( egInfo.direction );
-//
-//	// 위력
-//	pEffect->SetPower(egInfo.power);
-//
-//	// 빛의 밝기
-//	//pEffect->SetLight( light );
-//
-//	// Zone에 추가한다.
-//	if (g_pZone->AddEffect( pEffect ))
-//	{
-//		// 다음 Effect 생성 정보
-//		if (egInfo.pEffectTarget == NULL)
-//		{
-//			pEffect->SetLink( egInfo.nActionInfo, NULL );
-//		}
-//		else
-//		{
-//			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
-//			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-//			pEffectTarget2->Set( egInfo.x0-TILE_X, egInfo.y0, egInfo.z0, egInfo.creatureID );
-//		}
-//	}
-//
-//
-//	//---------------------------------------------
-//	// Effect 생성
-//	//---------------------------------------------
-//	pEffect = new MEffect(bltType);
-//
-//
-//	pEffect->SetFrameID( frameID, maxFrame );	
-//
-//	pEffect->SetPosition(sX+1, sY);		// Sector 좌표						
-//	pEffect->SetZ(egInfo.z0);			
-//	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.	
-//	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-//
-//	// 방향 설정
-//	pEffect->SetDirection( egInfo.direction );
-//
-//	// 위력
-//	pEffect->SetPower(egInfo.power);
-//
-//	// 빛의 밝기
-//	//pEffect->SetLight( light );
-//
-//	// Zone에 추가한다.
-//	if (g_pZone->AddEffect( pEffect ))
-//	{
-//		// 다음 Effect 생성 정보
-//		if (egInfo.pEffectTarget == NULL)
-//		{
-//			pEffect->SetLink( egInfo.nActionInfo, NULL );
-//		}
-//		else
-//		{
-//			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
-//			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-//			pEffectTarget2->Set( egInfo.x0+TILE_X, egInfo.y0, egInfo.z0, egInfo.creatureID );
-//		}
-//	}
-//
-//	//---------------------------------------------
-//	// Effect 생성
-//	//---------------------------------------------
-//	pEffect = new MEffect(bltType);
-//
-//
-//	pEffect->SetFrameID( frameID, maxFrame );	
-//
-//	pEffect->SetPosition(sX, sY-1);		// Sector 좌표						
-//	pEffect->SetZ(egInfo.z0);			
-//	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.	
-//	pEffect->SetCount( egInfo.count , egInfo.linkCount );			// 지속되는 Frame
-//
-//	// 방향 설정
-//	pEffect->SetDirection( egInfo.direction );
-//
-//	// 위력
-//	pEffect->SetPower(egInfo.power);
-//
-//	// 빛의 밝기
-//	//pEffect->SetLight( light );
-//
-//	// Zone에 추가한다.
-//	if (g_pZone->AddEffect( pEffect ))
-//	{
-//		// 다음 Effect 생성 정보
-//		if (egInfo.pEffectTarget == NULL)
-//		{
-//			pEffect->SetLink( egInfo.nActionInfo, NULL );
-//		}
-//		else
-//		{
-//			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
-//			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-//			pEffectTarget2->Set( egInfo.x0, egInfo.y0-TILE_Y, egInfo.z0, egInfo.creatureID );
-//		}
-//	}
-//
-//	//---------------------------------------------
-//	// Effect 생성
-//	//---------------------------------------------
-//	pEffect = new MEffect(bltType);
-//
-//	pEffect->SetFrameID( frameID, maxFrame );	
-//
-//	pEffect->SetPosition(sX, sY+1);		// Sector 좌표						
-//	pEffect->SetZ(egInfo.z0);			
-//	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.	
-//	pEffect->SetCount( egInfo.count , egInfo.linkCount );			// 지속되는 Frame
-//
-//	// 방향 설정
-//	pEffect->SetDirection( egInfo.direction );
-//
-//	// 위력
-//	pEffect->SetPower(egInfo.power);
-//
-//	// 빛의 밝기
-//	//pEffect->SetLight( light );
-//
-//	// Zone에 추가한다.
-//	if (g_pZone->AddEffect( pEffect ))
-//	{		
-//		// 다음 Effect 생성 정보
-//		if (egInfo.pEffectTarget == NULL)
-//		{
-//			pEffect->SetLink( egInfo.nActionInfo, NULL );
-//		}
-//		else
-//		{
-//			pEffectTarget2 = new MEffectTarget(*egInfo.pEffectTarget);
-//			pEffect->SetLink( egInfo.nActionInfo, pEffectTarget2 );
-//			pEffectTarget2->Set( egInfo.x0, egInfo.y0+TILE_Y, egInfo.z0, egInfo.creatureID );
-//		}
-//	}
-	//*/
-
 
 	return bOK;
 }

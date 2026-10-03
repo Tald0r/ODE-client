@@ -86,6 +86,7 @@
 #include "MScreenEffectManager.h"
 #include "MStopInventoryEffectGenerator.h"
 #include "MStopZoneEffectGenerator.h"
+#include "MStopZoneCrossEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
 #include "MAttackZoneEffectGenerator.h"
 #include "MAttackZoneParabolaEffectGenerator.h"
@@ -2632,6 +2633,7 @@ void ReleaseAllObjects()
 	MScreenEffectManager::SetHost(nullptr);
 	MStopInventoryEffectGenerator::SetHost(nullptr);
 	MStopZoneEffectGenerator::SetHost(nullptr);
+	MStopZoneCrossEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
 	MAttackZoneEffectGenerator::SetHost(nullptr);
 	MAttackZoneBombEffectGenerator::SetHost(nullptr);
@@ -3111,6 +3113,29 @@ static const MFallingEffectHost s_FallingEffectHost = {
 	},
 };
 
+static const MCrossZoneEffectHost s_CrossZoneEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MCrossZoneEffectSprite& sprite) {
+		if (!g_pEffectSpriteTypeTable || !g_pTopView ||
+			!g_pEffectSpriteTypeTable->GetInternalPointer() ||
+			type >= g_pEffectSpriteTypeTable->GetSize()) return false;
+		const auto& info = (*g_pEffectSpriteTypeTable)[type];
+		sprite.bltType = static_cast<BYTE>(info.BltType);
+		sprite.frameID = info.FrameID;
+		sprite.maxFrames = g_pTopView->GetMaxEffectFrame(info.BltType, info.FrameID);
+		return true;
+	},
+	.Bounds = [](MCrossZoneEffectBounds& bounds) {
+		if (!g_pZone) return false;
+		bounds.width = g_pZone->GetWidth();
+		bounds.height = g_pZone->GetHeight();
+		return true;
+	},
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		// AddEffect consumes the pointer even when it rejects or throws.
+		return g_pZone && g_pZone->AddEffect(effect.release());
+	},
+};
+
 static const MStopZoneEffectHost s_StopZoneEffectHost = {
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MStopZoneEffectSprite& sprite) {
 		if (!g_pEffectSpriteTypeTable || !g_pEffectSpriteTypeTable->GetInternalPointer() ||
@@ -3550,6 +3575,7 @@ InitGameObject()
 	MScreenEffectManager::SetHost(&s_ScreenEffectManagerHost);
 	MStopInventoryEffectGenerator::SetHost(&s_InventoryEffectHost);
 	MStopZoneEffectGenerator::SetHost(&s_StopZoneEffectHost);
+	MStopZoneCrossEffectGenerator::SetHost(&s_CrossZoneEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
 	MAttackZoneEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
 	MAttackZoneBombEffectGenerator::SetHost(&s_ZoneBombEffectHost);

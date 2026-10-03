@@ -544,3 +544,7 @@ Client/MAttackZoneBombEffectGenerator.h
 # Stationary zone effects, variants and stone-auger pattern generation (4.61).
 Client/MStopZoneEffectGenerator.cpp
 Client/MStopZoneEffectGenerator.h
+
+# Cross-shaped zone effects with clipped arms and consuming submission (4.62).
+Client/MStopZoneCrossEffectGenerator.cpp
+Client/MStopZoneCrossEffectGenerator.h
