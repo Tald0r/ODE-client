@@ -94,6 +94,7 @@
 #include "MStopZoneRectEffectGenerator.h"
 #include "MStopZoneWallEffectGenerator.h"
 #include "MStopZoneMultipleEffectGenerator.h"
+#include "MStopZoneRandomEffectGenerator.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2650,6 +2651,7 @@ void ReleaseAllObjects()
 	MStopZoneRectEffectGenerator::SetHost(nullptr);
 	MStopZoneWallEffectGenerator::SetHost(nullptr);
 	MStopZoneMultipleEffectGenerator::SetHost(nullptr);
+	MStopZoneRandomEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3721,6 +3723,7 @@ InitGameObject()
 	MStopZoneRectEffectGenerator::SetHost(&s_RectZoneEffectHost);
 	MStopZoneWallEffectGenerator::SetHost(&s_StopWallEffectHost);
 	MStopZoneMultipleEffectGenerator::SetHost(&s_StopMultipleEffectHost);
+	MStopZoneRandomEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
