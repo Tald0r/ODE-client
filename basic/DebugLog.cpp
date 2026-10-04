@@ -101,9 +101,10 @@ static void get_timestamp(char *buffer, size_t size) {
 			 timebuf.millitm);
 #else
 	struct timeval tv;
-	struct tm *tm_info;
 	gettimeofday(&tv, NULL);
-	tm_info = localtime(&tv.tv_sec);
+	std::tm tm_value = {};
+	Basic::LocalTime(&tv.tv_sec, &tm_value);
+	const std::tm *tm_info = &tm_value;
 	snprintf(buffer, size, "%04d-%02d-%02d %02d:%02d:%02d.%03ld",
 			 tm_info->tm_year + 1900,
 			 tm_info->tm_mon + 1,
