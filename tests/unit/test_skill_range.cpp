@@ -31,8 +31,8 @@
 // level / 10, so the client's step gives the server's range; the checks
 // below call those formulas. A span other than 3 for one of them would
 // not. Soul Rebirth is a sixth, ranged by its slot level on the server
-// (2 + level / 10, plus the passive skill's level / 10); the client
-// ranges it by its own override instead, so it is not checked here.
+// (2 + level / 10, plus the passive skill's level / 10). Its separate
+// GetSoulRebirthRange helper is covered by test_soul_rebirth_range.cpp.
 //
 //----------------------------------------------------------------------
 

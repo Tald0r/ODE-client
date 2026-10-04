@@ -193,10 +193,8 @@ MSkillInfoTable::GetVampireConsumeMP(int id, int currentINT, int level) const
 // Prominence, Teleport and Charging Attack by their formulas' Range
 // (decore::skillformula), the minimum plus level / 10, which the step
 // to level 30 gives for their span of 3 in the server's seed; a
-// different span would need those formulas here. Soul Rebirth is ranged
-// by its slot level on the server too (2 + level / 10, plus the passive
-// skill's level / 10), but the client ranges it by its own override,
-// which does not follow that formula (docs/RESTRUCTURING.md task 4.12).
+// different span would need those formulas here. Soul Rebirth uses its
+// formula and mastery bonus through GetSoulRebirthRange below.
 int
 GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
 {
@@ -209,6 +207,18 @@ GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
 	const int maxLevel = (race == RACE_OUSTERS) ? 30 : 100;
 
 	return (int)(minRange + (maxRange - minRange) * expLevel / maxLevel);
+}
+
+int
+GetSoulRebirthRange(int skillLevel, int masteryLevel)
+{
+	// Only the active slot level affects Soul Rebirth's formula Range.
+	decore::skillformula::SkillInput input{};
+	input.SkillLevel = skillLevel;
+	decore::skillformula::SkillOutput output;
+	decore::skillformula::SoulRebirth(input, output);
+	// The server adds the passive bonus after computing the active range.
+	return output.Range + masteryLevel / 10;
 }
 
 //----------------------------------------------------------------------

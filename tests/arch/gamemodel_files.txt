@@ -159,7 +159,8 @@ Client/MShop.h
 # of skills a character may use, and the domains and the tree over them.
 # The half that asks what the player can use right now is the
 # executable's MSkillAvailable.cpp; the delays run on the item host's
-# clock. SkillDef.h, the enumerations, is listed with the fame table
+# clock. MSkillInfoTable.cpp also owns Soul Rebirth range arithmetic;
+# MPlayer retains the live skill-table reads. SkillDef.h is listed with the fame table
 # above, which already needed its SKILLDOMAIN enum.
 Client/MSkillManager.cpp
 Client/MSkillManager.h
