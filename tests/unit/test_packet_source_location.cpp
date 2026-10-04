@@ -265,10 +265,11 @@ TEST(PacketSourceLocation, AssertCompatibilityOverloadRecordsWhatItIsGiven)
 // ClientPlayer.cpp's packet-skip notice
 //----------------------------------------------------------------------
 
-// The live site is unreachable from a test binary, so the old spelling
-// and the new one are written side by side into the file sink; the two
-// lines must match but for the number each names for itself.
-TEST(PacketSourceLocation, PacketSkipLineIsWhatTheMacroProduced)
+// The live site is unreachable from a test binary, so the warning macro
+// and the explicit site are written side by side into the file sink.
+// Warnings remain visible at the default INFO threshold; the two lines
+// must match but for the number each names for itself.
+TEST(PacketSourceLocation, PacketSkipWarningPreservesTheMacroCallSite)
 {
 	static const char* const	sz_format =
 		"[PacketSkip] So many Packets. MaxProcessPacket:%d, CurrentPacket:%d, File:%s, Line:%d";
@@ -282,14 +283,14 @@ TEST(PacketSourceLocation, PacketSkipLineIsWhatTheMacroProduced)
 	log_set_file_output(log_path.string().c_str());
 	log_set_level(LOG_LEVEL_INFO);
 
-	// Exactly what ClientPlayer.cpp held before the conversion.
+	// The equivalent warning macro captures the same caller information.
 	const int n_macro_line = __LINE__ + 1;
-	DEBUG_ADD_FORMAT(sz_format, 30, 31, __FILE__, __LINE__);
+	DEBUG_ADD_FORMAT_WAR(sz_format, 30, 31, __FILE__, __LINE__);
 
 	// Exactly what it holds now.
 	const int n_site_line = __LINE__ + 1;
 	const LogSite site;
-	log_write_at(site, LOG_LEVEL_INFO, sz_format, 30, 31, site.file, site.line);
+	log_write_at(site, LOG_LEVEL_WARN, sz_format, 30, 31, site.file, site.line);
 
 	log_set_file_output(NULL);
 	log_set_console_output(true);
@@ -302,7 +303,7 @@ TEST(PacketSourceLocation, PacketSkipLineIsWhatTheMacroProduced)
 
 		while (std::getline(file, line))
 		{
-			// Everything after the timestamp: "[INFO ] [file:line] message".
+			// Everything after the timestamp: "[WARN ] [file:line] message".
 			const std::string::size_type n_cut = line.find("] ");
 			lines.push_back(n_cut == std::string::npos ? line : line.substr(n_cut + 2));
 		}
@@ -316,12 +317,12 @@ TEST(PacketSourceLocation, PacketSkipLineIsWhatTheMacroProduced)
 		// DebugLog prints the basename in the header and whatever it was
 		// handed in the body.
 		const std::string	expected_macro =
-			"[INFO ] [test_packet_source_location.cpp:" + std::to_string(n_macro_line)
+			"[WARN ] [test_packet_source_location.cpp:" + std::to_string(n_macro_line)
 			+ "] [PacketSkip] So many Packets. MaxProcessPacket:30, CurrentPacket:31, File:"
 			+ __FILE__ + ", Line:" + std::to_string(n_macro_line);
 
 		const std::string	expected_site =
-			"[INFO ] [test_packet_source_location.cpp:" + std::to_string(n_site_line)
+			"[WARN ] [test_packet_source_location.cpp:" + std::to_string(n_site_line)
 			+ "] [PacketSkip] So many Packets. MaxProcessPacket:30, CurrentPacket:31, File:"
 			+ __FILE__ + ", Line:" + std::to_string(n_site_line);
 
