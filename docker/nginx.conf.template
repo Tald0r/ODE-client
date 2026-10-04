@@ -1,9 +1,17 @@
 # Rendered by the nginx image's entrypoint with GATEWAY_UPSTREAM substituted
 # (NGINX_ENVSUBST_FILTER keeps nginx's own $variables intact).
+# Successful asset loads and cache revalidations are routine traffic. Keep
+# other responses, including failed requests and WebSocket upgrades (101).
+map $status $loggable {
+    ~^[23]  0;
+    default 1;
+}
+
 server {
     listen 80;
     server_name _;
     root /usr/share/nginx/html;
+    access_log /var/log/nginx/access.log combined if=$loggable;
 
     # The client's WebSocket, same origin as the page. The gateway gets the
     # page's Origin header unchanged and this proxy's address as its peer;

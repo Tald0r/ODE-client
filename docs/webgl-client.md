@@ -174,6 +174,15 @@ the pack produced by `package-assets.py` at `/usr/share/nginx/html/assets`.
 (default `/game`), `DARKEDEN_LOGIN_HOST` and `DARKEDEN_LOGIN_PORT`;
 `GATEWAY_UPSTREAM` (default `odk-server:8080`) is where nginx forwards `/game`.
 
+The container omits HTTP 2xx and 3xx responses from nginx's access log to avoid
+logging every successful asset request and cache revalidation. Other responses,
+including 4xx/5xx failures and WebSocket upgrades (101), remain in the access log;
+nginx logs a WebSocket request when its connection closes. Error logging is
+unchanged. To temporarily log all requests, copy `docker/nginx.conf.template`,
+remove `if=$loggable` from its `access_log` directive, and bind-mount that copy at
+`/etc/nginx/templates/default.conf.template:ro` when recreating the container.
+Restore the original template after troubleshooting.
+
 `docker/docker-compose.yml` runs it as `odk-web` next to the server repository's
 stack: it joins that stack's network (`ODK_NETWORK`, default `docker_odk-network`),
 mounts `DARKEDEN_ASSETS` (default `../build/web/assets`) and publishes
