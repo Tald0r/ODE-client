@@ -21,7 +21,7 @@
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential clang cmake ninja-build git perl ca-certificates \
+    build-essential clang libclang-rt-18-dev cmake ninja-build git perl ca-certificates \
     libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-mixer-dev \
     libjpeg-dev libfreetype-dev libssl-dev \
     fonts-dejavu-core fonts-noto-cjk \
