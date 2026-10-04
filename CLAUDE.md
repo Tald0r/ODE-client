@@ -7,6 +7,10 @@ roughly 2000-2010, ported from Win32 + DirectX to SDL2. C++20, CMake, MSVC.
 running the game, troubleshooting. **Link to it rather than restating it.** This file
 is the working brief for an agent in this repo.
 
+The [client knowledge map](docs/knowledge/index.md) links source-backed entry points
+for architecture, verification, protocol and browser flows; this brief remains the
+working instructions.
+
 ## Build
 
 CI runs only on pushes to `master` and manual `workflow_dispatch` invocations.

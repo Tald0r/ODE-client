@@ -1,5 +1,7 @@
 # opendarkeden-client
 
+[Client knowledge map](docs/knowledge/index.md): architecture, verification, protocol, and browser flow entry points.
+
 ## Build on Windows (from scratch)
 
 The current build is **CMake + SDL2 + Visual Studio 2022**. The old DirectX code
