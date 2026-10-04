@@ -66,7 +66,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] No Shelf.. type=%d", ShelfType);
+			DEBUG_ADD_FORMAT_ERR("[Error] No Shelf.. type=%d", ShelfType);
 		}
 
 		//--------------------------------------------------------------
@@ -76,7 +76,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 
 		if (pItem == NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] GCShopBuyOK: invalid item class %d", pPacket->getItemClass());
+			DEBUG_ADD_FORMAT_ERR("[Error] GCShopBuyOK: invalid item class %d", pPacket->getItemClass());
 			return;
 		}
 
@@ -112,7 +112,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 				//------------------------------------------------
 				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber() )
 				{
-					DEBUG_ADD_FORMAT("[Error] Cannot Add. MaxNum exceed=%d", total);
+					DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add. MaxNum exceed=%d", total);
 				}
 				//------------------------------------------------
 				// 정상적으로 쌓여질 수 있는 경우					
@@ -134,7 +134,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 			}
 			else
 			{
-				DEBUG_ADD("[Error] Cannot Add. No match item");
+				DEBUG_ADD_ERR("[Error] Cannot Add. No match item");
 			}
 		}
 
@@ -151,7 +151,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] Cannot Add to Inventory(%d,%d)", x,y);
+			DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add to Inventory(%d,%d)", x,y);
 			
 			// 추가가 안되는 경우 지워야 한다.
 			delete pItem;
@@ -171,7 +171,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 				//--------------------------------------------------------------
 				if (!g_pMoneyManager->SetMoney( pPacket->getPrice() ))
 				{
-					DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
+					DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
 				}
 			break;
 
@@ -201,7 +201,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 							// 별이 없는 경우 - -;
 							if (pStarItem==NULL)
 							{
-								DEBUG_ADD("[Error] Not Enough Star -_-");
+								DEBUG_ADD_ERR("[Error] Not Enough Star -_-");
 								break;
 							}
 
@@ -227,7 +227,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 								}
 								else
 								{
-									DEBUG_ADD_FORMAT("[Error] Can't remove star(%d, %d)", pStarItem->GetGridX(), pStarItem->GetGridY());
+									DEBUG_ADD_FORMAT_ERR("[Error] Can't remove star(%d, %d)", pStarItem->GetGridX(), pStarItem->GetGridY());
 								}
 							}
 						}
@@ -257,7 +257,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Buy? -_-; No Temp Information!");
+		DEBUG_ADD_ERR("[Error] Buy? -_-; No Temp Information!");
 	}
 
 

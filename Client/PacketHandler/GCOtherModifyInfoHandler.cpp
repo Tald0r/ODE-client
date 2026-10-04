@@ -23,7 +23,7 @@ void GCOtherModifyInfoHandler::execute ( GCOtherModifyInfo * pPacket , Player * 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
@@ -35,7 +35,7 @@ void GCOtherModifyInfoHandler::execute ( GCOtherModifyInfo * pPacket , Player * 
 
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] the Creature is Not Exist. id=%d", pPacket->getObjectID());			
+			DEBUG_ADD_FORMAT_ERR("[Error] the Creature is Not Exist. id=%d", pPacket->getObjectID());
 		}
 		else
 		{

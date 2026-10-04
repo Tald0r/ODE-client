@@ -30,7 +30,7 @@ void GCShopMarketConditionHandler::execute ( GCShopMarketCondition * pPacket , P
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -44,7 +44,7 @@ void GCShopMarketConditionHandler::execute ( GCShopMarketCondition * pPacket , P
 		//------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature id=%d", pPacket->getObjectID());
 		}
 		//------------------------------------------------------
 		// NPC인 경우
@@ -88,7 +88,7 @@ void GCShopMarketConditionHandler::execute ( GCShopMarketCondition * pPacket , P
 		//------------------------------------------------------
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
 		}
 	}
 

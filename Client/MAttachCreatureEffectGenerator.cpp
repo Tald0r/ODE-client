@@ -134,7 +134,7 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 	if (pEffect == NULL)
 	{
-		DEBUG_ADD("can't CreateAttachEffect");
+		DEBUG_ADD_WAR("can't CreateAttachEffect");
 		return false;
 	}
 	

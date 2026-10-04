@@ -45,7 +45,7 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 		g_pTempInformation->SetMode( TempInformation::MODE_NULL);
 	}		
 	else
-		DEBUG_ADD("[ERROR] TempInformationMode");
+		DEBUG_ADD_ERR("[ERROR] TempInformationMode");
 
 
 	switch(pPacket->getCode())

@@ -30,12 +30,12 @@ void ApplyResult( MMoneyManager* pFrom, MMoneyManager* pTo, int money )
 {
 	if (!pFrom->UseMoney( money ))
 	{
-		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the source cannot give %d (has %d)", money, pFrom->GetMoney() );
+		DEBUG_ADD_FORMAT_ERR( "[Error] GCTradeMoney: the source cannot give %d (has %d)", money, pFrom->GetMoney() );
 	}
 
 	if (!pTo->AddMoney( money ))
 	{
-		DEBUG_ADD_FORMAT( "[Error] GCTradeMoney: the destination cannot take %d (has %d)", money, pTo->GetMoney() );
+		DEBUG_ADD_FORMAT_ERR( "[Error] GCTradeMoney: the destination cannot take %d (has %d)", money, pTo->GetMoney() );
 	}
 }
 
@@ -54,7 +54,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 	//------------------------------------------------------------------------
 	if (g_pTradeManager==NULL)
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 		
 		return;
 	}
@@ -67,7 +67,7 @@ void GCTradeMoneyHandler::execute ( GCTradeMoney * pPacket , Player * pPlayer )
 	//------------------------------------------------------------------------
 	if (pPacket->getAmount() > (Gold_t)INT_MAX)
 	{
-		DEBUG_ADD_FORMAT( "[PacketError-GCTradeMoneyHandler] amount out of range: %u", (unsigned int)pPacket->getAmount() );
+		DEBUG_ADD_FORMAT_WAR( "[PacketError-GCTradeMoneyHandler] amount out of range: %u", (unsigned int)pPacket->getAmount() );
 		return;
 	}
 

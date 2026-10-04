@@ -323,7 +323,7 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 					}
 					else
 					{
-						DEBUG_ADD_FORMAT("[Error] FileSizeLeft = %d", pFileInfo->GetFileSizeLeft());
+						DEBUG_ADD_FORMAT_ERR("[Error] FileSizeLeft = %d", pFileInfo->GetFileSizeLeft());
 					}
 				}			
 			}

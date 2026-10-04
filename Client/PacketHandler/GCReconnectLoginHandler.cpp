@@ -59,7 +59,7 @@ void GCReconnectLoginHandler::execute ( GCReconnectLogin * pPacket , Player * pP
 
 	// 연결이 이루어지면, 바로 CLReconnectLogin 패킷을 전송한다.
 	// 이전에 Select 한 PC의 타입과 이름을 클라이언트 플레이어 객체에 저장해둔다.
-	DEBUG_ADD_FORMAT("Sending CLReconnectLogin with Key(%ld)", 	pPacket->getKey());
+	DEBUG_ADD("Sending CLReconnectLogin");
 		
 	//add by viva	
 	CGConnectSetKey cgConnectSetKey;

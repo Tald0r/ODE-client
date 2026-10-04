@@ -565,7 +565,7 @@ MGuildMarkManager::MergeGuildMark(const char* pSPKFilenameOrg,
 
 		if (errorCode)
 		{
-			DEBUG_ADD_FORMAT("[Error] GuildMarkPatch Terrible! code=%d", errorCode); 
+			DEBUG_ADD_FORMAT_ERR("[Error] GuildMarkPatch Terrible! code=%d", errorCode);
 		}
 
 		//-----------------------------------------------------------------------------

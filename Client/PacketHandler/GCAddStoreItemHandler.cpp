@@ -59,7 +59,7 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 
 							if (pItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] GCAddStoreItem: invalid item class %d", pPacket->getItem().getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] GCAddStoreItem: invalid item class %d", pPacket->getItem().getItemClass());
 								return;
 							}
 
@@ -147,7 +147,7 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 
 											if (pSubItem == NULL)
 											{
-												DEBUG_ADD_FORMAT("[Error] GCAddStoreItem: invalid sub item class %d", pItemInfo->getItemClass());
+												DEBUG_ADD_FORMAT_ERR("[Error] GCAddStoreItem: invalid sub item class %d", pItemInfo->getItemClass());
 												iItem++;
 												continue;
 											}
@@ -192,7 +192,7 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 
 											if (pSubItem == NULL)
 											{
-												DEBUG_ADD_FORMAT("[Error] GCAddStoreItem: invalid sub item class %d", pItemInfo->getItemClass());
+												DEBUG_ADD_FORMAT_ERR("[Error] GCAddStoreItem: invalid sub item class %d", pItemInfo->getItemClass());
 												iItem++;
 												continue;
 											}
@@ -215,7 +215,7 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 								}
 								else
 								{
-									DEBUG_ADD_FORMAT("[Error] This item can't have subitems. itemClass=%d", (int)pItem->GetItemClass());
+									DEBUG_ADD_FORMAT_ERR("[Error] This item can't have subitems. itemClass=%d", (int)pItem->GetItemClass());
 								}
 							}
 							

@@ -5992,7 +5992,7 @@ MPlayer::ActionMove()
 				#ifdef OUTPUT_DEBUG
 					if (m_CreatureType >= g_pCreatureTable->GetSize())
 					{
-						DEBUG_ADD_FORMAT("[Error] CreatureType is exceed MAX. id=%d, type=%d", m_ID, m_CreatureType);
+						DEBUG_ADD_FORMAT_ERR("[Error] CreatureType is exceed MAX. id=%d, type=%d", m_ID, m_CreatureType);
 						
 						SetStop();
 
@@ -6014,7 +6014,7 @@ MPlayer::ActionMove()
 				}
 				else
 				{					
-					DEBUG_ADD_FORMAT("[Error] What is MoveType of this Player??? id=%d", m_ID);							
+					DEBUG_ADD_FORMAT_ERR("[Error] What is MoveType of this Player??? id=%d", m_ID);
 					
 					SetStop();
 
@@ -6272,7 +6272,7 @@ MPlayer::ActionMove()
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] What is MoveType of this Creature??? id=%d", m_ID);					
+					DEBUG_ADD_FORMAT_ERR("[Error] What is MoveType of this Creature??? id=%d", m_ID);
 					SetStop();					
 					return;
 				}
@@ -7212,7 +7212,7 @@ MPlayer::ActionToSendPacket()
 								}
 								else
 								{
-									DEBUG_ADD_FORMAT("[Error] Cannot Remove Item to use Skill. id=%d", pUsingItem->GetID());
+									DEBUG_ADD_FORMAT_ERR("[Error] Cannot Remove Item to use Skill. id=%d", pUsingItem->GetID());
 								}
 
 								//-------------------------------------------------
@@ -7300,7 +7300,7 @@ MPlayer::ActionToSendPacket()
 								}
 								else
 								{
-									DEBUG_ADD_FORMAT("[Error] Cannot Remove Item to use Skill. id=%d", pUsingItem->GetID());
+									DEBUG_ADD_FORMAT_ERR("[Error] Cannot Remove Item to use Skill. id=%d", pUsingItem->GetID());
 								}
 
 								//-------------------------------------------------
@@ -8036,7 +8036,7 @@ MPlayer::SetAction(BYTE action)
 				// slayer인 경우
 				if (action >= GetActionMax())
 				{
-					DEBUG_ADD_FORMAT("[Error] Slayer's Action exceed MAX : id=%d, action=%d", m_ID, action);
+					DEBUG_ADD_FORMAT_ERR("[Error] Slayer's Action exceed MAX : id=%d, action=%d", m_ID, action);
 					
 					return;
 				}
@@ -8045,7 +8045,7 @@ MPlayer::SetAction(BYTE action)
 			{
 				if (action >= GetActionMax())
 				{
-					DEBUG_ADD_FORMAT("[Error] Vampire's Action exceed MAX : id=%d, action=%d", m_ID, action);
+					DEBUG_ADD_FORMAT_ERR("[Error] Vampire's Action exceed MAX : id=%d, action=%d", m_ID, action);
 					
 					return;
 				}
@@ -8054,7 +8054,7 @@ MPlayer::SetAction(BYTE action)
 			{
 				if (action >= GetActionMax())
 				{
-					DEBUG_ADD_FORMAT("[Error] Ousters's Action exceed MAX : id=%d, action=%d", m_ID, action);
+					DEBUG_ADD_FORMAT_ERR("[Error] Ousters's Action exceed MAX : id=%d, action=%d", m_ID, action);
 					
 					return;
 				}
@@ -8063,7 +8063,7 @@ MPlayer::SetAction(BYTE action)
 			{
 				if (action >= GetActionMax())
 				{
-					DEBUG_ADD_FORMAT("[Error] NPC's Action exceed MAX : id=%d, action=%d", m_ID, action);
+					DEBUG_ADD_FORMAT_ERR("[Error] NPC's Action exceed MAX : id=%d, action=%d", m_ID, action);
 					
 					return;
 				}
@@ -8071,7 +8071,7 @@ MPlayer::SetAction(BYTE action)
 			else
 			{
 				// - -;;
-				DEBUG_ADD("[Error] What is this Creature????");
+				DEBUG_ADD_ERR("[Error] What is this Creature????");
 				
 				return;
 			}
@@ -11983,7 +11983,7 @@ MPlayer::RideMotorcycle(MMotorcycle* pMotorcycle)
 {
 	if (pMotorcycle==NULL)
 	{
-		DEBUG_ADD("[Error] Player::Motorcycle to ride is NULL");
+		DEBUG_ADD_ERR("[Error] Player::Motorcycle to ride is NULL");
 		
 		return;
 	}
@@ -12242,7 +12242,7 @@ MPlayer::SetStatus(DWORD n, DWORD value)
 { 
 	if (n >= MODIFY_MAX)
 	{
-		DEBUG_ADD_FORMAT("[Error] Modify Part is Wrong : part=%d, value=%d", n, value);
+		DEBUG_ADD_FORMAT_ERR("[Error] Modify Part is Wrong : part=%d, value=%d", n, value);
 		
 		return;
 	}

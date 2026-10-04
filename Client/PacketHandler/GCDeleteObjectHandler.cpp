@@ -30,7 +30,7 @@ void GCDeleteObjectHandler::execute ( GCDeleteObject * pPacket , Player * pPlaye
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
@@ -72,7 +72,7 @@ void GCDeleteObjectHandler::execute ( GCDeleteObject * pPacket , Player * pPlaye
 		//------------------------------------------------------
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] Can't Remove Object. ID=%d", objectID);
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't Remove Object. ID=%d", objectID);
 		}
 	}
 

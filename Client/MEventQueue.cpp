@@ -113,7 +113,7 @@ void	MEventQueue::RemoveEvent(EVENT_ID id)
 
 	if(event == NULL)
 	{
-		DEBUG_ADD("MEventManager] RemoveEvent event == NULL");
+		DEBUG_ADD_WAR("MEventManager] RemoveEvent event == NULL");
 		return;
 	}
 

@@ -96,7 +96,7 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 				// 뭐지..
 				delete pItem;
 
-				DEBUG_ADD_FORMAT("[Error] Can't Add Item to Storage. slot=%d", index);
+				DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. slot=%d", index);
 			}
 
 			itr ++;

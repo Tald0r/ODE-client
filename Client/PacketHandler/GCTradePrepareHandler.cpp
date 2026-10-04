@@ -136,7 +136,7 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] No Such Creature. id=%d", targetID);
+					DEBUG_ADD_FORMAT_ERR("[Error] No Such Creature. id=%d", targetID);
 				}
 			}
 		}

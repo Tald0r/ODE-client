@@ -66,8 +66,7 @@ void LCReconnectHandler::execute ( LCReconnect * pPacket , Player * pPlayer )
 
 	// 연결이 이루어지면, 바로 CGConnect 패킷을 전송한다.
 	// 이전에 Select 한 PC의 타입과 이름을 클라이언트 플레이어 객체에 저장해둔다.
-	DEBUG_ADD_FORMAT("Sending CGConnect with Key(%ld)", 
-												pPacket->getKey());
+	DEBUG_ADD("Sending CGConnect");
 
 	//add by viva	
 	CGConnectSetKey cgConnectSetKey;

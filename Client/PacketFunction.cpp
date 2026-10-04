@@ -721,7 +721,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	//-------------------------------------------------------------
 	if (npcID >= g_pCreatureTable->GetSize())
 	{
-		DEBUG_ADD_FORMAT("[Error] SetAddonToSlayerNPC: npcID exceed Max = %d/%d", npcID, g_pCreatureTable->GetSize());
+		DEBUG_ADD_FORMAT_ERR("[Error] SetAddonToSlayerNPC: npcID exceed Max = %d/%d", npcID, g_pCreatureTable->GetSize());
 		
 		return;
 	}
@@ -733,7 +733,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 
 	if (pInfo==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] SetAddonToSlayerNPC: ItemWearInfo is NULL. cType=%d", npcID);
+		DEBUG_ADD_FORMAT_ERR("[Error] SetAddonToSlayerNPC: ItemWearInfo is NULL. cType=%d", npcID);
 		
 		return;
 	}
@@ -1116,7 +1116,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 	if (pItem == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] AddItemToZone: invalid item class %d", pPacket->getItemClass());
+		DEBUG_ADD_FORMAT_ERR("[Error] AddItemToZone: invalid item class %d", pPacket->getItemClass());
 		return NULL;
 	}
 
@@ -1227,7 +1227,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 				if (pSubItemInfo==NULL)
 				{
-					DEBUG_ADD("[Error] Sub Item is NULL");
+					DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 				}
 				else
 				{
@@ -1244,7 +1244,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 					if (pSubItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+						DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 						delete pSubItemInfo;
 						continue;
 					}
@@ -1276,7 +1276,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				
 				if (pSubItemInfo==NULL)
 				{
-					DEBUG_ADD("[Error] Sub Item is NULL");
+					DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 				}
 				else
 				{
@@ -1293,7 +1293,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 					if (pSubItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+						DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 						delete pSubItemInfo;
 						continue;
 					}
@@ -1316,7 +1316,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
+			DEBUG_ADD_FORMAT_WAR("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
 		}
 	}
 
@@ -1328,7 +1328,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 		//------------------------------------------------	
 		// Zone에 추가되지 않은 경우
 		//------------------------------------------------	
-		DEBUG_ADD_FORMAT("[Can't Add Item] ID=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
+		DEBUG_ADD_FORMAT_WAR("[Can't Add Item] ID=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 		
 		// 이전에 있던걸 제거한다.
 		TYPE_OBJECTID oldID = g_pZone->GetItemID( pItem->GetX(), pItem->GetY() );
@@ -1352,7 +1352,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					// 다시 추가한다.
 					if (!g_pZone->AddItem( pItem, bDropping ))
 					{
-						DEBUG_ADD("[Can't Re-Add Item]");
+						DEBUG_ADD_WAR("[Can't Re-Add Item]");
 						
 						// memory 제거
 						delete pItem;
@@ -1360,7 +1360,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Can't Remove Old Item] id=%d", oldID);
+					DEBUG_ADD_FORMAT_WAR("[Can't Remove Old Item] id=%d", oldID);
 					
 					// memory 제거
 					delete pItem;
@@ -1371,7 +1371,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 			//------------------------------------------------	
 			else
 			{
-				DEBUG_ADD_FORMAT("[Error] Already Exist Same Item");
+				DEBUG_ADD_FORMAT_ERR("[Error] Already Exist Same Item");
 				
 				delete pItem;
 			}
@@ -1389,7 +1389,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				// 다시 추가한다.
 				if (!g_pZone->AddItem( pItem, bDropping ))
 				{
-					DEBUG_ADD("[Can't Re-Add Item2]");
+					DEBUG_ADD_WAR("[Can't Re-Add Item2]");
 					
 					// memory 제거
 					delete pItem;
@@ -1397,7 +1397,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 			}
 			else
 			{
-				DEBUG_ADD_FORMAT("[Can't Remove Old Item2] id=%d", pPacket->getObjectID());
+				DEBUG_ADD_FORMAT_WAR("[Can't Remove Old Item2] id=%d", pPacket->getObjectID());
 				
 				// memory 제거
 				delete pItem;
@@ -1586,7 +1586,7 @@ ExecuteActionInfoFromMainNode(
 
 	if (g_pActionInfoTable == NULL || nActionInfo >= g_pActionInfoTable->GetSize())
 	{
-		DEBUG_ADD_FORMAT("[ExecuteActionInfoFromMainNode] skill type error %d", nActionInfo );
+		DEBUG_ADD_FORMAT_WAR("[ExecuteActionInfoFromMainNode] skill type error %d", nActionInfo );
 		delete pActionResult;
 		return;
 	}
@@ -1776,7 +1776,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 
 			if (pItem == NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] invalid item class %d", pSlotInfo->getItemClass());
+				DEBUG_ADD_FORMAT_ERR("[Error] invalid item class %d", pSlotInfo->getItemClass());
 				delete pSlotInfo;
 				continue;
 			}
@@ -1863,7 +1863,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 
 						if (pSubItemInfo==NULL)
 						{
-							DEBUG_ADD("[Error] Sub Item is NULL");
+							DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 						}
 						else
 						{
@@ -1880,7 +1880,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 
 							if (pSubItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 								delete pSubItemInfo;
 								continue;
 							}
@@ -1913,7 +1913,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 						
 						if (pSubItemInfo==NULL)
 						{
-							DEBUG_ADD("[Error] Sub Item is NULL");
+							DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 						}
 						else
 						{
@@ -1930,7 +1930,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 
 							if (pSubItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 								delete pSubItemInfo;
 								continue;
 							}
@@ -1953,7 +1953,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
+					DEBUG_ADD_FORMAT_WAR("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
 				}
 			}
 
@@ -1976,7 +1976,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 			else
 			{
 				// item을 inventory에 추가할 수 없는 경우
-				DEBUG_ADD_FORMAT("[Error] Can't Add Item to Inventory. id=%d, cl=%d, tp=%d, xy=(%d,%d)", 					
+				DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Inventory. id=%d, cl=%d, tp=%d, xy=(%d,%d)",
 												(int)pItem->GetID(),
 												(int)pItem->GetItemClass(),
 												(int)pItem->GetItemType(),
@@ -2063,7 +2063,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 
 			if (pItem == NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] invalid item class %d", pSlotInfo->getItemClass());
+				DEBUG_ADD_FORMAT_ERR("[Error] invalid item class %d", pSlotInfo->getItemClass());
 				delete pSlotInfo;
 				continue;
 			}
@@ -2158,7 +2158,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 
 						if (pSubItemInfo==NULL)
 						{
-							DEBUG_ADD("[Error] Sub Item is NULL");
+							DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 						}
 						else
 						{
@@ -2175,7 +2175,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 
 							if (pSubItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 								delete pSubItemInfo;
 								continue;
 							}
@@ -2208,7 +2208,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 
 						if (pSubItemInfo==NULL)
 						{
-							DEBUG_ADD("[Error] Sub Item is NULL");
+							DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 						}
 						else
 						{
@@ -2225,7 +2225,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 
 							if (pSubItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 								delete pSubItemInfo;
 								continue;
 							}
@@ -2248,7 +2248,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
+					DEBUG_ADD_FORMAT_WAR("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
 				}
 			}
 
@@ -2286,7 +2286,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			if (!bAdd)		
 			{
 				// item을 Gear에 추가할 수 없는 경우
-				DEBUG_ADD_FORMAT("[Error] Can't Add Item to Gear. id=%d, cl=%d, tp=%d, slot=%d", 
+				DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Gear. id=%d, cl=%d, tp=%d, slot=%d",
 												(int)pItem->GetID(),
 												(int)pItem->GetItemClass(),
 												(int)pItem->GetItemType(),
@@ -2445,7 +2445,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 
 			if (pItem == NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] invalid item class %d", pSlotInfo->getItemClass());
+				DEBUG_ADD_FORMAT_ERR("[Error] invalid item class %d", pSlotInfo->getItemClass());
 				delete pSlotInfo;
 				continue;
 			}
@@ -2529,7 +2529,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 
 						if (pSubItemInfo==NULL)
 						{
-							DEBUG_ADD("[Error] Sub Item is NULL");
+							DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 						}
 						else
 						{
@@ -2546,7 +2546,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 
 							if (pSubItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 								delete pSubItemInfo;
 								continue;
 							}
@@ -2579,7 +2579,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 						
 						if (pSubItemInfo==NULL)
 						{
-							DEBUG_ADD("[Error] Sub Item is NULL");
+							DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 						}
 						else
 						{
@@ -2597,7 +2597,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 
 							if (pSubItem == NULL)
 							{
-								DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+								DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 								delete pSubItemInfo;
 								continue;
 							}
@@ -2620,7 +2620,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
+					DEBUG_ADD_FORMAT_WAR("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
 				}
 			}
 
@@ -4172,7 +4172,7 @@ UseItemOK()
 		// 2004, 9, 13, sobeit add end - 퀘스트 인벤 아이템 사용 했다
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
+			DEBUG_ADD_FORMAT_ERR("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
 
 			return false;
 		}
@@ -4183,7 +4183,7 @@ UseItemOK()
 	//----------------------------------------------------
 	else
 	{
-		DEBUG_ADD("[Error] No Item in CheckBuffer");
+		DEBUG_ADD_ERR("[Error] No Item in CheckBuffer");
 		
 		return false;
 	}
@@ -4439,7 +4439,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
-		DEBUG_ADD("[Error] CrossCounter. Creature NULL or Not WearCreature");
+		DEBUG_ADD_ERR("[Error] CrossCounter. Creature NULL or Not WearCreature");
 		
 		return;
 	}
@@ -4499,7 +4499,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 
 	if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 	{
-		DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
+		DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skillID);
 		return;
 	}
 
@@ -4550,7 +4550,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
-		DEBUG_ADD("[Error] ShadowDancing. Creature NULL or Not WearCreature");
+		DEBUG_ADD_ERR("[Error] ShadowDancing. Creature NULL or Not WearCreature");
 		
 		return;
 	}
@@ -4616,7 +4616,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 
 		if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
-			DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
+			DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skillID);
 			return;
 		}
 
@@ -4786,7 +4786,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
-		DEBUG_ADD("[Error] ShadowDancing. Creature NULL or Not WearCreature");
+		DEBUG_ADD_ERR("[Error] ShadowDancing. Creature NULL or Not WearCreature");
 		
 		return;
 	}
@@ -4868,7 +4868,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 
 		if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
-			DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
+			DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skillID);
 			return;
 		}
 
@@ -4946,7 +4946,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
-		DEBUG_ADD("[Error] ShadowDancing. Creature NULL or Not WearCreature");
+		DEBUG_ADD_ERR("[Error] ShadowDancing. Creature NULL or Not WearCreature");
 		
 		return;
 	}
@@ -5008,7 +5008,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		
 		if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
-			DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
+			DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skillID);
 			return;
 		}
 		
@@ -6352,7 +6352,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 
 		if (pItem == NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] invalid item class %d", pSlotInfo->getItemClass());
+			DEBUG_ADD_FORMAT_ERR("[Error] invalid item class %d", pSlotInfo->getItemClass());
 			delete pSlotInfo;
 			continue;
 		}
@@ -6439,7 +6439,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 
 					if (pSubItemInfo==NULL)
 					{
-						DEBUG_ADD("[Error] Sub Item is NULL");
+						DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 					}
 					else
 					{
@@ -6456,7 +6456,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 
 						if (pSubItem == NULL)
 						{
-							DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+							DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 							delete pSubItemInfo;
 							continue;
 						}
@@ -6489,7 +6489,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 					
 					if (pSubItemInfo==NULL)
 					{
-						DEBUG_ADD("[Error] Sub Item is NULL");
+						DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 					}
 					else
 					{
@@ -6506,7 +6506,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 
 						if (pSubItem == NULL)
 						{
-							DEBUG_ADD_FORMAT("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
+							DEBUG_ADD_FORMAT_ERR("[Error] invalid sub item class %d", pSubItemInfo->getItemClass());
 							delete pSubItemInfo;
 							continue;
 						}
@@ -6529,7 +6529,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 			}
 			else
 			{
-				DEBUG_ADD_FORMAT("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
+				DEBUG_ADD_FORMAT_WAR("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
 			}
 		}
 
@@ -6549,7 +6549,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 		if(false == UI_AddItemToSubInventory(pItem, pItem->GetGridX(), pItem->GetGridY()))
 		{
 			// item을 inventory에 추가할 수 없는 경우
-			DEBUG_ADD_FORMAT("[Error] Can't Add Item to Inventory. id=%d, cl=%d, tp=%d, xy=(%d,%d)", 					
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Inventory. id=%d, cl=%d, tp=%d, xy=(%d,%d)",
 											(int)pItem->GetID(),
 											(int)pItem->GetItemClass(),
 											(int)pItem->GetItemType(),

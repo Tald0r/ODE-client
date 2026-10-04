@@ -31,7 +31,7 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 		|| g_pParty==NULL
 		|| g_pGameMessage==NULL)
 	{
-		DEBUG_ADD("GCPartyInviteHandler Failed");
+		DEBUG_ADD_WAR("GCPartyInviteHandler Failed");
 		return;
 	}
 

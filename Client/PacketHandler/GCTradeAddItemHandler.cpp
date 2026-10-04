@@ -25,7 +25,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 	//------------------------------------------------------------------------
 	if (g_pTradeManager==NULL)
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 		
 		return;
 	}
@@ -37,7 +37,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 
 	if (pItem == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] GCTradeAddItem: invalid item class %d", pPacket->getItemClass());
+		DEBUG_ADD_FORMAT_ERR("[Error] GCTradeAddItem: invalid item class %d", pPacket->getItemClass());
 		return;
 	}
 
@@ -120,7 +120,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 
 				if (pSubItemInfo==NULL)
 				{
-					DEBUG_ADD("[Error] Sub Item is NULL");
+					DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 				}
 				else
 				{
@@ -131,7 +131,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 
 					if (pSubItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCTradeAddItem: invalid sub item class %d", pSubItemInfo->getItemClass());
+						DEBUG_ADD_FORMAT_ERR("[Error] GCTradeAddItem: invalid sub item class %d", pSubItemInfo->getItemClass());
 						delete pSubItemInfo;
 						continue;
 					}
@@ -163,7 +163,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 				
 				if (pSubItemInfo==NULL)
 				{
-					DEBUG_ADD("[Error] Sub Item is NULL");
+					DEBUG_ADD_ERR("[Error] Sub Item is NULL");
 				}
 				else
 				{
@@ -174,7 +174,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 
 					if (pSubItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCTradeAddItem: invalid sub item class %d", pSubItemInfo->getItemClass());
+						DEBUG_ADD_FORMAT_ERR("[Error] GCTradeAddItem: invalid sub item class %d", pSubItemInfo->getItemClass());
 						delete pSubItemInfo;
 						continue;
 					}
@@ -197,7 +197,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
+			DEBUG_ADD_FORMAT_WAR("This Item can't have Sub item : class=%d", (int)pItem->GetItemClass());
 		}
 	}
 
@@ -211,7 +211,7 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 	//------------------------------------------------------------------------
 	if (!g_pTradeManager->GetOtherInventory()->AddItem( pItem, gridX, gridY ))
 	{
-		DEBUG_ADD_FORMAT("[Error] Can't add item to OtherInventory:id=%d (%d, %d)", pItem->GetID(), gridX, gridY);
+		DEBUG_ADD_FORMAT_ERR("[Error] Can't add item to OtherInventory:id=%d (%d, %d)", pItem->GetID(), gridX, gridY);
 		
 		delete pItem;
 	}

@@ -25,7 +25,7 @@ void GCTradeRemoveItemHandler::execute ( GCTradeRemoveItem * pPacket , Player * 
 	//------------------------------------------------------------------------
 	if (g_pTradeManager==NULL)
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 		
 		return;
 	}
@@ -41,7 +41,7 @@ void GCTradeRemoveItemHandler::execute ( GCTradeRemoveItem * pPacket , Player * 
 	//------------------------------------------------------------------------
 	if (pItem==NULL)
 	{
-		DEBUG_ADD_FORMAT( "[Error] There is no such item. id=%d", itemID );
+		DEBUG_ADD_FORMAT_ERR( "[Error] There is no such item. id=%d", itemID );
 	}
 	//------------------------------------------------------------------------
 	// 있으면 그냥 지우면 된다.

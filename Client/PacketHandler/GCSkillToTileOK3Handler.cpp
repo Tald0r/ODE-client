@@ -26,7 +26,7 @@ void GCSkillToTileOK3Handler::execute ( GCSkillToTileOK3 * pPacket , Player * pP
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -76,7 +76,7 @@ void GCSkillToTileOK3Handler::execute ( GCSkillToTileOK3 * pPacket , Player * pP
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature id=%d", pPacket->getObjectID());
 		}
 	}
 

@@ -35,7 +35,7 @@ void GCAddInstalledMineToZoneHandler::execute ( GCAddInstalledMineToZone * pPack
 	if (pItem==NULL)
 	{
 		// 머지
-		DEBUG_ADD("[Error] Can't Installed Mine");
+		DEBUG_ADD_ERR("[Error] Can't Installed Mine");
 	}
 	else if (pItem->GetItemClass()==ITEM_CLASS_MINE)
 	{
@@ -43,7 +43,7 @@ void GCAddInstalledMineToZoneHandler::execute ( GCAddInstalledMineToZone * pPack
 	}
 	else
 	{
-		DEBUG_ADD("[Error] This is not Mine(-_-;)");
+		DEBUG_ADD_ERR("[Error] This is not Mine(-_-;)");
 	}
 
 

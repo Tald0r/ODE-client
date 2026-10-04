@@ -380,7 +380,7 @@ MCompareManager::Compare(HELP_COMPARE message)
 {
 	if (m_CompareFunction[message]==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] NO CompareFunction. msg=%d", (int)message);
+		DEBUG_ADD_FORMAT_ERR("[Error] NO CompareFunction. msg=%d", (int)message);
 	}
 	else
 	{

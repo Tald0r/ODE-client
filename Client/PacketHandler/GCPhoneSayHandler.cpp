@@ -33,7 +33,7 @@ void GCPhoneSayHandler::execute ( GCPhoneSay * pPacket , Player * pPlayer )
 	// whatever pointer was there.
 	if (slot < 0 || slot >= MAX_PCS_SLOT)
 	{
-		DEBUG_ADD_FORMAT("[PacketError-GCPhoneSayHandler] slot out of range: %d", slot);
+		DEBUG_ADD_FORMAT_WAR("[PacketError-GCPhoneSayHandler] slot out of range: %d", slot);
 		return;
 	}
 

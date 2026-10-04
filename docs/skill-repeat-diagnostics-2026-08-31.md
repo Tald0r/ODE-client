@@ -371,11 +371,12 @@ Recorded so the next person does not re-walk these:
 
 ## Keeping this
 
-Decision (2026-08-31, after resolution): the instrumentation stays. The lines
-are `LOG_LEVEL_INFO`, and `log_init` (`DebugLog.cpp`) sets the runtime level to
-`LOG_LEVEL_ERROR` outside `_DEBUG`, so Release builds filter them at the first
-branch inside `log_write` — no log output, negligible cost, and any future
-repeat regression names itself in the first Debug-build log:
+Decision (2026-08-31, after resolution): the instrumentation stays. These
+routine diagnostics now use `LOG_LEVEL_DEBUG`; the client defaults to INFO
+in every build. Set `DARKEDEN_TRACE=1` before starting the client to collect
+them when investigating another repeat regression (see the README's
+[logging instructions](../README.md#troubleshooting)). Filtered debug macros
+skip both formatting and argument evaluation:
 
 - entries-per-commit ≈ 1.3 is healthy; sustained > 2 is a regression;
 - `abort=SKILLSET` with a large `left=` is the cooldown family (check what the

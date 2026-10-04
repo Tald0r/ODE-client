@@ -29,7 +29,7 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -137,7 +137,7 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] Mine Type is Wrong. type = %d", pPacket->getItemType());
+			DEBUG_ADD_FORMAT_ERR("[Error] Mine Type is Wrong. type = %d", pPacket->getItemType());
 		}
 
 		//------------------------------------------------------------------

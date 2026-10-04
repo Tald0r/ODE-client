@@ -35,7 +35,7 @@ void GCMoveHandler::execute ( GCMove * pPacket , Player * pPlayer )
 		if (g_pZone==NULL)
 		{
 			// message
-			DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+			DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		}
 		//------------------------------------------------------
 		// 정상.. 
@@ -50,7 +50,7 @@ void GCMoveHandler::execute ( GCMove * pPacket , Player * pPlayer )
 			if (pCreature==NULL)
 			{
 				// message
-				DEBUG_ADD("[Error] Not Exist");			 
+				DEBUG_ADD_ERR("[Error] Not Exist");
 				
 					/*
 				pCreature = new MCreature;

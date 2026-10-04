@@ -33,7 +33,7 @@ void GCThrowItemOK1Handler::execute ( GCThrowItemOK1 * pPacket , Player * pPlaye
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	//------------------------------------------------------------------
@@ -70,7 +70,7 @@ void GCThrowItemOK1Handler::execute ( GCThrowItemOK1 * pPacket , Player * pPlaye
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 

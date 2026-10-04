@@ -31,7 +31,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// The zone exists
@@ -65,7 +65,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 			ShopRackType_t shopType = pPacket->getShopType();
 			DEBUG_ADD_FORMAT("[GCShopListHandler::execute] OK [1.0]  %d\n", shopType);
 			if (shopType >= MShopShelf::MAX_SHELF) {
-				DEBUG_ADD("[GCShopListHandler::execute] SHELF_TYPE Wrong!");
+				DEBUG_ADD_WAR("[GCShopListHandler::execute] SHELF_TYPE Wrong!");
 				return;
 			}
 
@@ -101,7 +101,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 
 					if (pItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCShopList: invalid item class %d", (int)item.itemClass);
+						DEBUG_ADD_FORMAT_ERR("[Error] GCShopList: invalid item class %d", (int)item.itemClass);
 						continue;
 					}
 
@@ -183,7 +183,7 @@ void GCShopListHandler::execute ( GCShopList * pPacket , Player * pPlayer )
 		//------------------------------------------------------
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
 		}
 	}
 //	__BEGIN_HELP_EVENT

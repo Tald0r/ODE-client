@@ -27,7 +27,7 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -44,7 +44,7 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 
 			if (skillID < 0)
 			{
-				DEBUG_ADD_FORMAT("[Error] no match skillType. itemType=%d", pPacket->getItemType());
+				DEBUG_ADD_FORMAT_ERR("[Error] no match skillType. itemType=%d", pPacket->getItemType());
 				return;
 			}
 
@@ -56,7 +56,7 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 
 				if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
-					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", useSkillID);
+					DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", useSkillID);
 					return;
 				}
 			}

@@ -33,7 +33,7 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -48,7 +48,7 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 
 			if (size==0)
 			{
-				DEBUG_ADD_FORMAT("[Error] No Answer String.. ScriptID=%d", (int)pPacket->getScriptID());			
+				DEBUG_ADD_FORMAT_ERR("[Error] No Answer String.. ScriptID=%d", (int)pPacket->getScriptID());
 			}
 			else
 			{
@@ -110,7 +110,7 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 		}
 		else
 		{
-			DEBUG_ADD("[Error] WaitVerifyMode is Not WAIT_VERIFY_NPC_ASK");
+			DEBUG_ADD_ERR("[Error] WaitVerifyMode is Not WAIT_VERIFY_NPC_ASK");
 		}
 	}
 

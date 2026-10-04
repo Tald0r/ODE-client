@@ -31,7 +31,7 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -58,7 +58,7 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature. id=%d", pPacket->getObjectID());
 		}
 		else
 		{	
@@ -91,7 +91,7 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Failed to Remove EffectStatus %d", effectStatus);
+					DEBUG_ADD_FORMAT_ERR("[Error] Failed to Remove EffectStatus %d", effectStatus);
 				}
 				if( g_pPlayer->GetID() == pCreature->GetID() ) // -_- 내 자신이면
 				{

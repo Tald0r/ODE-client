@@ -38,7 +38,7 @@ void GCMakeItemOKHandler::execute ( GCMakeItemOK * pPacket , Player * pPlayer )
 	}
 	else
 	{
-		DEBUG_ADD( "[Error] Temp Mode is Not MODE_SKILL_MAKE_ITEM" );
+		DEBUG_ADD_ERR( "[Error] Temp Mode is Not MODE_SKILL_MAKE_ITEM" );
 		
 		// 어쨋든... 날아온 packet은 처리하게 한다.
 	}
@@ -73,7 +73,7 @@ void GCMakeItemOKHandler::execute ( GCMakeItemOK * pPacket , Player * pPlayer )
 
 	if (pItem == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] GCMakeItemOK: invalid item class %d", pPacket->getItemClass());
+		DEBUG_ADD_FORMAT_ERR("[Error] GCMakeItemOK: invalid item class %d", pPacket->getItemClass());
 		return;
 	}
 

@@ -53,12 +53,12 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 			}
 			else
 			{
-				DEBUG_ADD("[Error] PickupPart item Wrong");
+				DEBUG_ADD_ERR("[Error] PickupPart item Wrong");
 			}
 		}
 		else
 		{
-			DEBUG_ADD("[Error] PickupPart item NULL");
+			DEBUG_ADD_ERR("[Error] PickupPart item NULL");
 		}
 	}
 
@@ -69,7 +69,7 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 
 	if (pItem == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] GCCreateItem: invalid item class %d", pPacket->getItemClass());
+		DEBUG_ADD_FORMAT_ERR("[Error] GCCreateItem: invalid item class %d", pPacket->getItemClass());
 		return;
 	}
 
@@ -179,7 +179,7 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT("[Error] Cannot Create Item to inventory: id=%d, tp=%d, xy=(%d,%d)", (int)pItem->GetID(), (int)pItem->GetItemType(), (int)pPacket->getInvenX(), (int)pPacket->getInvenY());
+		DEBUG_ADD_FORMAT_ERR("[Error] Cannot Create Item to inventory: id=%d, tp=%d, xy=(%d,%d)", (int)pItem->GetID(), (int)pItem->GetItemType(), (int)pPacket->getInvenX(), (int)pPacket->getInvenY());
 		
 		delete pItem;
 	}

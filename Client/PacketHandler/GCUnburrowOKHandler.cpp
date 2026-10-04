@@ -43,7 +43,7 @@ void GCUnburrowOKHandler::execute ( GCUnburrowOK * pPacket , Player * pPlayer )
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	//-----------------------------------------------------------------

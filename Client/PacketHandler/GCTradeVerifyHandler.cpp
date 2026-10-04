@@ -34,7 +34,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 	//------------------------------------------------------------------------
 	if (g_pTradeManager==NULL)
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 		
 		return;
 	}
@@ -111,7 +111,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] TempMode is Wrong..");
+				DEBUG_ADD_ERR( "[Error] TempMode is Wrong..");
 			}
 		break;
 
@@ -357,7 +357,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			//----------------------------------------------------------------
 			else
 			{
-				DEBUG_ADD( "[Error] TempMode is Wrong..");
+				DEBUG_ADD_ERR( "[Error] TempMode is Wrong..");
 			}
 		break;
 
@@ -390,7 +390,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] TempMode is Wrong..");
+				DEBUG_ADD_ERR( "[Error] TempMode is Wrong..");
 			}
 		break;
 
@@ -417,7 +417,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] TempMode is Wrong..");
+				DEBUG_ADD_ERR( "[Error] TempMode is Wrong..");
 			}
 		break;
 
@@ -484,7 +484,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] TempMode is Not MODE_TRADE_VERIFY_DROP_TO_INVENTORY");
+				DEBUG_ADD_ERR( "[Error] TempMode is Not MODE_TRADE_VERIFY_DROP_TO_INVENTORY");
 			}
 		break;
 
@@ -504,7 +504,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] TempMode is Not MODE_TRADE_VERIFY_PICKUP_FROM_INVENTORY");
+				DEBUG_ADD_ERR( "[Error] TempMode is Not MODE_TRADE_VERIFY_PICKUP_FROM_INVENTORY");
 			}
 		break;
 	}

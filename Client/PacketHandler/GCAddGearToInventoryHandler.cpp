@@ -38,7 +38,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 				//----------------------------------------------------------------------
 				if (pItem==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Item does not exist in SlayerGear! slot=%d", (int)pPacket->getSlotID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Item does not exist in SlayerGear! slot=%d", (int)pPacket->getSlotID());
 				}
 				//----------------------------------------------------------------------
 				// item이 있는 경우 --> Gear에서 제거해서 Inventory에 추가한다.
@@ -51,7 +51,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 					if (!g_pInventory->AddItem( pRemovedItem, pPacket->getInvenX(), pPacket->getInvenY() ))
 					{
 						// 추가 실패한 경우
-						DEBUG_ADD_FORMAT("[Error] Cannot Add Item to Inventory(%d,%d), slot=%d", (int)pPacket->getInvenX(), (int)pPacket->getInvenY(), (int)pPacket->getSlotID());
+						DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add Item to Inventory(%d,%d), slot=%d", (int)pPacket->getInvenX(), (int)pPacket->getInvenY(), (int)pPacket->getSlotID());
 					}
 				}
 			}
@@ -66,7 +66,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 				//----------------------------------------------------------------------
 				if (pItem==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Item does not exist in VampireGear! slot=%d", (int)pPacket->getSlotID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Item does not exist in VampireGear! slot=%d", (int)pPacket->getSlotID());
 				}
 				//----------------------------------------------------------------------
 				// item이 있는 경우 --> Gear에서 제거해서 Inventory에 추가한다.
@@ -79,7 +79,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 					if (!g_pInventory->AddItem( pRemovedItem, pPacket->getInvenX(), pPacket->getInvenY() ))
 					{
 						// 추가 실패한 경우
-						DEBUG_ADD_FORMAT("[Error] Cannot Add Item to Inventory(%d,%d), slot=%d", (int)pPacket->getInvenX(), (int)pPacket->getInvenY(), (int)pPacket->getSlotID());
+						DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add Item to Inventory(%d,%d), slot=%d", (int)pPacket->getInvenX(), (int)pPacket->getInvenY(), (int)pPacket->getSlotID());
 					}
 				}
 			}
@@ -94,7 +94,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 				//----------------------------------------------------------------------
 				if (pItem==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Item does not exist in OustersGear! slot=%d", (int)pPacket->getSlotID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Item does not exist in OustersGear! slot=%d", (int)pPacket->getSlotID());
 				}
 				//----------------------------------------------------------------------
 				// item이 있는 경우 --> Gear에서 제거해서 Inventory에 추가한다.
@@ -107,7 +107,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 					if (!g_pInventory->AddItem( pRemovedItem, pPacket->getInvenX(), pPacket->getInvenY() ))
 					{
 						// 추가 실패한 경우
-						DEBUG_ADD_FORMAT("[Error] Cannot Add Item to Inventory(%d,%d), slot=%d", (int)pPacket->getInvenX(), (int)pPacket->getInvenY(), (int)pPacket->getSlotID());
+						DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add Item to Inventory(%d,%d), slot=%d", (int)pPacket->getInvenX(), (int)pPacket->getInvenY(), (int)pPacket->getSlotID());
 					}
 				}
 			}

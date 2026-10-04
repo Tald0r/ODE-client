@@ -50,7 +50,7 @@ void GCDeleteEffectFromTileHandler::execute ( GCDeleteEffectFromTile * pPacket ,
 	{		
 		if (!g_pZone->RemoveTileEffect( pPacket->getX(), pPacket->getY(), (int)pPacket->getEffectID(), pPacket->getObjectID() ))
 		{
-			DEBUG_ADD("[Error] Can't Remove Effect From Tile");
+			DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile");
 		} else
 		{
 //			_MinTrace("success delete effect\n");
@@ -58,7 +58,7 @@ void GCDeleteEffectFromTileHandler::execute ( GCDeleteEffectFromTile * pPacket ,
 	}
 	else
 	{
-		DEBUG_ADD("[Error] g_pZone is NULL");
+		DEBUG_ADD_ERR("[Error] g_pZone is NULL");
 	}
 	
 

@@ -1943,7 +1943,7 @@ MFakeCreature::ActionMovePet()
 				#ifdef OUTPUT_DEBUG
 					if (m_CreatureType >= g_pCreatureTable->GetSize())
 					{
-						DEBUG_ADD_FORMAT("[Error] CreatureType is exceed MAX. id=%d, type=%d", m_ID, m_CreatureType);
+						DEBUG_ADD_FORMAT_ERR("[Error] CreatureType is exceed MAX. id=%d, type=%d", m_ID, m_CreatureType);
 						
 						SetStop();
 
@@ -1965,7 +1965,7 @@ MFakeCreature::ActionMovePet()
 				}
 				else
 				{					
-					DEBUG_ADD_FORMAT("[Error] What is MoveType of this Player??? id=%d", m_ID);							
+					DEBUG_ADD_FORMAT_ERR("[Error] What is MoveType of this Player??? id=%d", m_ID);
 					
 					SetStop();
 
@@ -2094,7 +2094,7 @@ MFakeCreature::ActionMovePet()
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] What is MoveType of this Creature??? id=%d", m_ID);					
+					DEBUG_ADD_FORMAT_ERR("[Error] What is MoveType of this Creature??? id=%d", m_ID);
 					SetStop();					
 					return;
 				}

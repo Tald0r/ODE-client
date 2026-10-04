@@ -29,7 +29,7 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 		return;
 	}	
@@ -81,7 +81,7 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	//
 	if (static_cast<DWORD>(skilltype) >= g_pActionInfoTable->GetMinResultActionInfo())
 	{
-		DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skilltype);
+		DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skilltype);
 		return;
 	}
 	

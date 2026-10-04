@@ -30,7 +30,7 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 		|| g_pParty==NULL
 		|| g_pGameMessage==NULL)
 	{
-		DEBUG_ADD("GCPartyLeaveHandler Failed");
+		DEBUG_ADD_WAR("GCPartyLeaveHandler Failed");
 		return;
 	}
 

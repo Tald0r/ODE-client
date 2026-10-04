@@ -17,7 +17,7 @@ void LCServerListHandler::execute(LCServerList* pPacket, Player* pPlayer)
 
 	if (g_pServerInformation == NULL)
 	{
-		DEBUG_ADD("[Error] g_pServerInformation is NULL");
+		DEBUG_ADD_ERR("[Error] g_pServerInformation is NULL");
 		return;
 	}
 

@@ -61,7 +61,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 
 					if (pItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCStashList: invalid item class %d", (int)item.itemClass);
+						DEBUG_ADD_FORMAT_ERR("[Error] GCStashList: invalid item class %d", (int)item.itemClass);
 						continue;
 					}
 
@@ -151,7 +151,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 
 									if (pSubItem == NULL)
 									{
-										DEBUG_ADD_FORMAT("[Error] GCStashList: invalid sub item class %d", pItemInfo->getItemClass());
+										DEBUG_ADD_FORMAT_ERR("[Error] GCStashList: invalid sub item class %d", pItemInfo->getItemClass());
 										iItem++;
 										continue;
 									}
@@ -168,7 +168,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 										delete pSubItem;
 
 										// pItemInfo carries the same class; pSubItem is already freed here.
-										DEBUG_ADD_FORMAT("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
+										DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
 									}
 								}
 
@@ -198,7 +198,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 
 									if (pSubItem == NULL)
 									{
-										DEBUG_ADD_FORMAT("[Error] GCStashList: invalid sub item class %d", pItemInfo->getItemClass());
+										DEBUG_ADD_FORMAT_ERR("[Error] GCStashList: invalid sub item class %d", pItemInfo->getItemClass());
 										iItem++;
 										continue;
 									}
@@ -215,7 +215,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 										delete pSubItem;
 
 										// pItemInfo carries the same class; pSubItem is already freed here.
-										DEBUG_ADD_FORMAT("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
+										DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
 									}
 								}
 
@@ -224,7 +224,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 						}
 						else
 						{
-							DEBUG_ADD_FORMAT("[Error] This item can't have subitems. itemClass=%d", (int)pItem->GetItemClass());
+							DEBUG_ADD_FORMAT_ERR("[Error] This item can't have subitems. itemClass=%d", (int)pItem->GetItemClass());
 						}
 					}
 
@@ -236,7 +236,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 						// 뭐지..
 						delete pItem;
 
-						DEBUG_ADD_FORMAT("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
+						DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
 					}
 				}
 			}

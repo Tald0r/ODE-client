@@ -1858,7 +1858,7 @@ MTopView::InitSprites()
 	m_pTileRenderer = new TileRenderer();
 	if (m_pTileRenderer == NULL)
 	{
-		DEBUG_ADD("ERROR: Failed to create TileRenderer!");
+		DEBUG_ADD_ERR("ERROR: Failed to create TileRenderer!");
 		return false;
 	}
 	DEBUG_ADD("TileRenderer instance created");
@@ -1875,7 +1875,7 @@ MTopView::InitSprites()
 		if (!m_pTileRenderer->Init(m_pTileSurface, &m_TileSPK))
 		{
 			printf("[InitSprites] ERROR: Failed to initialize TileRenderer!\n");
-			DEBUG_ADD("ERROR: Failed to initialize TileRenderer!");
+			DEBUG_ADD_ERR("ERROR: Failed to initialize TileRenderer!");
 			delete m_pTileRenderer;
 			m_pTileRenderer = NULL;
 			return false;
@@ -4996,7 +4996,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 {
 	if (spriteType<0 || spriteType >= (*g_pCreatureSpriteTable).GetSize())
 	{
-		DEBUG_ADD_FORMAT("[Error] Wrong SpriteType=%d", spriteType);
+		DEBUG_ADD_FORMAT_ERR("[Error] Wrong SpriteType=%d", spriteType);
 
 		return;
 	}
@@ -11141,7 +11141,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		{
 			if (g_pDebugMessage)
 			{
-				DEBUG_ADD_FORMAT("[Error]SX,SY-DrawZone:Player=(%d, %d), s(%d,%d)", g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY());
+				DEBUG_ADD_FORMAT_ERR("[Error]SX,SY-DrawZone:Player=(%d, %d), s(%d,%d)", g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY());
 			}
 		}
 	#endif
@@ -13934,7 +13934,7 @@ MTopView::DrawTileSurface()
 		{
 			if (g_pDebugMessage)
 			{
-				DEBUG_ADD_FORMAT("[Error]SX,SY-DrawTileSurface:Player=(%d, %d), s(%d,%d)", g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY());
+				DEBUG_ADD_FORMAT_ERR("[Error]SX,SY-DrawTileSurface:Player=(%d, %d), s(%d,%d)", g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY());
 			}		
 		}
 	#endif
@@ -14634,12 +14634,12 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		//#ifdef OUTPUT_DEBUG
 			if (dropFrameID >= m_ItemDropFPK.GetSize())
 			{
-				DEBUG_ADD_FORMAT("[Error] DrawDropItem:item exceed Max : id=%d, itemFrame=%d", pItem->GetID(), dropFrameID);
+				DEBUG_ADD_FORMAT_ERR("[Error] DrawDropItem:item exceed Max : id=%d, itemFrame=%d", pItem->GetID(), dropFrameID);
 				return;
 			}
 			else if (frame >= m_ItemDropFPK[dropFrameID].GetSize())
 			{
-				DEBUG_ADD_FORMAT("[Error] DrawDropItem:frame exceed Max : id=%d, itemFrame=%d, Frame=%d", pItem->GetID(), dropFrameID, frame);
+				DEBUG_ADD_FORMAT_ERR("[Error] DrawDropItem:frame exceed Max : id=%d, itemFrame=%d, Frame=%d", pItem->GetID(), dropFrameID, frame);
 				return;
 			}
 		//#endif
@@ -14658,7 +14658,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		#ifdef OUTPUT_DEBUG
 			if (Frame.GetSpriteID() >= m_ItemDropISPK.GetSize())
 			{
-				DEBUG_ADD_FORMAT("[Error] DrawDropItem:sprite exceed Max : id=%d, spriteid=%d", pItem->GetID(), Frame.GetSpriteID());
+				DEBUG_ADD_FORMAT_ERR("[Error] DrawDropItem:sprite exceed Max : id=%d, spriteid=%d", pItem->GetID(), Frame.GetSpriteID());
 				return;
 			}			
 		#endif
@@ -14689,7 +14689,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		//#ifdef OUTPUT_DEBUG
 			if (tileFrameID >= m_ItemTileFPK.GetSize())
 			{
-				DEBUG_ADD_FORMAT("[Error] DrawItem:frame exceed Max : id=%d, frame=%d", pItem->GetID(), tileFrameID);
+				DEBUG_ADD_FORMAT_ERR("[Error] DrawItem:frame exceed Max : id=%d, frame=%d", pItem->GetID(), tileFrameID);
 				return;
 			}			
 		//#endif
@@ -14711,7 +14711,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		#ifdef OUTPUT_DEBUG
 			if (Frame.GetSpriteID() >= m_ItemTileISPK.GetSize())
 			{
-				DEBUG_ADD_FORMAT("[Error] DrawItem:sprite exceed Max : id=%d, spriteid=%d", pItem->GetID(), Frame.GetSpriteID());
+				DEBUG_ADD_FORMAT_ERR("[Error] DrawItem:sprite exceed Max : id=%d, spriteid=%d", pItem->GetID(), Frame.GetSpriteID());
 				return;
 			}			
 		#endif
@@ -17172,7 +17172,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 			// Boundary check
 			if (frameID >= m_EffectNormalFPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-				DEBUG_ADD_FORMAT("DrawEffect(BLT_NORMAL): Invalid frameID=%d", frameID);
+				DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_NORMAL): Invalid frameID=%d", frameID);
 #endif
 				pEffect->ClearScreenRect();
 				break;
@@ -17186,7 +17186,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				// Boundary check for sprite
 				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectNormalSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-					DEBUG_ADD_FORMAT("DrawEffect(BLT_NORMAL): Invalid spriteID=%d", spriteID);
+					DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_NORMAL): Invalid spriteID=%d", spriteID);
 #endif
 					pEffect->ClearScreenRect();
 					break;
@@ -17234,7 +17234,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 			// Boundary check
 			if (frameID >= m_EffectAlphaFPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-				DEBUG_ADD_FORMAT("DrawEffect(BLT_EFFECT): Invalid frameID=%d", frameID);
+				DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_EFFECT): Invalid frameID=%d", frameID);
 #endif
 				break;
 			}
@@ -17247,7 +17247,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				// Boundary check for palette
 				if (frameID >= m_EffectAlphaPPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-					DEBUG_ADD_FORMAT("DrawEffect(BLT_EFFECT): Invalid palette frameID=%d", frameID);
+					DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_EFFECT): Invalid palette frameID=%d", frameID);
 #endif
 					break;
 				}
@@ -17255,7 +17255,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				// Boundary check for sprite
 				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectAlphaSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-					DEBUG_ADD_FORMAT("DrawEffect(BLT_EFFECT): Invalid spriteID=%d", spriteID);
+					DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_EFFECT): Invalid spriteID=%d", spriteID);
 #endif
 					break;
 				}
@@ -17348,7 +17348,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 			// Boundary check
 			if (frameID >= m_EffectScreenFPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-				DEBUG_ADD_FORMAT("DrawEffect(BLT_SCREEN): Invalid frameID=%d", frameID);
+				DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_SCREEN): Invalid frameID=%d", frameID);
 #endif
 				break;
 			}
@@ -17361,7 +17361,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				// Boundary check for palette
 				if (frameID >= m_EffectScreenPPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-					DEBUG_ADD_FORMAT("DrawEffect(BLT_SCREEN): Invalid palette frameID=%d", frameID);
+					DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_SCREEN): Invalid palette frameID=%d", frameID);
 #endif
 					break;
 				}
@@ -17369,7 +17369,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				// Boundary check for sprite
 				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectScreenSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-					DEBUG_ADD_FORMAT("DrawEffect(BLT_SCREEN): Invalid spriteID=%d", spriteID);
+					DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_SCREEN): Invalid spriteID=%d", spriteID);
 #endif
 					break;
 				}
@@ -17467,7 +17467,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 			// Boundary check
 			if (frameID >= m_EffectShadowFPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-				DEBUG_ADD_FORMAT("DrawEffect(BLT_SHADOW): Invalid frameID=%d", frameID);
+				DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_SHADOW): Invalid frameID=%d", frameID);
 #endif
 				break;
 			}
@@ -17480,7 +17480,7 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 				// Boundary check for sprite
 				if (spriteID < 0 || static_cast<DWORD>(spriteID) >= m_EffectShadowSPK.GetSize()) {
 #ifdef OUTPUT_DEBUG
-					DEBUG_ADD_FORMAT("DrawEffect(BLT_SHADOW): Invalid spriteID=%d", spriteID);
+					DEBUG_ADD_FORMAT_WAR("DrawEffect(BLT_SHADOW): Invalid spriteID=%d", spriteID);
 #endif
 					break;
 				}

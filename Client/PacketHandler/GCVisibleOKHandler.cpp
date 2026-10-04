@@ -31,7 +31,7 @@ void GCVisibleOKHandler::execute ( GCVisibleOK * pPacket , Player * pPlayer )
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	g_pPlayer->SetVisible();

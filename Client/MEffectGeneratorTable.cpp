@@ -348,7 +348,7 @@ MEffectGeneratorTable::Generate(
 			pEffectTarget = NULL;
 
 			#ifdef OUTPUT_DEBUG_EFFECT_GENERATOR
-				DEBUG_ADD_FORMAT("[Error] EGT-Generate id=%d, ai=%d, target=%p", info.EffectGeneratorID, nActionInfo, static_cast<const void*>(pEffectTarget));
+				DEBUG_ADD_FORMAT_ERR("[Error] EGT-Generate id=%d, ai=%d, target=%p", info.EffectGeneratorID, nActionInfo, static_cast<const void*>(pEffectTarget));
 			#endif	
 			
 			return;
@@ -655,7 +655,7 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 		|| m_pEffectGenerator[ info.EffectGeneratorID ]==NULL)
 	{
 		#ifdef OUTPUT_DEBUG_EFFECT_GENERATOR
-			DEBUG_ADD_FORMAT("[Error] EGT-Generate id=%d, target=%p", info.EffectGeneratorID, static_cast<const void*>(pEffectTarget));
+			DEBUG_ADD_FORMAT_ERR("[Error] EGT-Generate id=%d, target=%p", info.EffectGeneratorID, static_cast<const void*>(pEffectTarget));
 		#endif	
 
 		// 목표 완료시킨다.

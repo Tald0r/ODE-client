@@ -36,7 +36,7 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 		|| g_pTempInformation==NULL
 		|| g_pZone==NULL)
 	{
-		DEBUG_ADD("GCPartyJoinedHandler Failed");
+		DEBUG_ADD_WAR("GCPartyJoinedHandler Failed");
 		return;
 	}
 

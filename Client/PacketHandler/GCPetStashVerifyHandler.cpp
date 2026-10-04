@@ -47,13 +47,13 @@ void GCPetStashVerifyHandler::execute ( GCPetStashVerify * pPacket , Player * pP
 						}
 						else
 						{
-							DEBUG_ADD("@Stash - Get Keep PetItem Inventory AddItem Failed");
+							DEBUG_ADD_WAR("@Stash - Get Keep PetItem Inventory AddItem Failed");
 						}
 					}
 				}
 				else
 				{
-					DEBUG_ADD("@Stash - Keep PetItem Storage RemoveItem Failed");
+					DEBUG_ADD_WAR("@Stash - Keep PetItem Storage RemoveItem Failed");
 				}
 			}
 			else if(g_pTempInformation->GetMode() == TempInformation::MODE_PETITEM_MOVETO_PETSTORAGE)
@@ -70,13 +70,13 @@ void GCPetStashVerifyHandler::execute ( GCPetStashVerify * pPacket , Player * pP
 						}
 						else
 						{
-							DEBUG_ADD("@Stash - Get Keep PetItem Storage SetItem Failed");
+							DEBUG_ADD_WAR("@Stash - Get Keep PetItem Storage SetItem Failed");
 						}
 					}
 				}
 				else
 				{
-					DEBUG_ADD("@Stash - Get Keep PetItem Inventory RemoveItem Failed");
+					DEBUG_ADD_WAR("@Stash - Get Keep PetItem Inventory RemoveItem Failed");
 				}
 			}
 			break;

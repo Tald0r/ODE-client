@@ -9,7 +9,7 @@
 // - Log levels: DEBUG/INFO/WARN/ERROR/NONE
 // - Configurable output: console/file/memory array
 // - Thread-safe (using CRITICAL_SECTION)
-// - Conditional compilation: DEBUG logs removed in Release builds
+// - Optional DEBUG logging with argument evaluation skipped when filtered
 //-----------------------------------------------------------------------------
 
 #ifndef __DEBUG_LOG_H__
@@ -37,12 +37,15 @@ typedef enum {
 // Public Interface
 //-----------------------------------------------------------------------------
 
-// Initialization and cleanup
+// Initialization and cleanup require a quiescent lifecycle: initialize before
+// starting logging threads, and join them before cleanup. Configuration and log
+// calls may run concurrently while the logger is initialized.
 void log_init(void);
 void log_cleanup(void);
 
 // Configuration
 void log_set_level(LogLevel level);
+bool log_is_enabled(LogLevel level);
 void log_set_console_output(bool enable);
 void log_set_file_output(const char *path);
 void log_set_array_output(bool enable);
@@ -53,7 +56,10 @@ void log_set_array_output(bool enable);
 
 
 #define LOG_DEBUG(fmt, ...) \
-	log_write(LOG_LEVEL_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+	do { \
+		if (log_is_enabled(LOG_LEVEL_DEBUG)) \
+			log_write(LOG_LEVEL_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__); \
+	} while (0)
 
 #define LOG_INFO(fmt, ...) \
 	log_write(LOG_LEVEL_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
@@ -68,10 +74,10 @@ void log_set_array_output(bool enable);
 // Backward Compatibility - Map old DEBUG_ADD macros to new system
 //-----------------------------------------------------------------------------
 
-#define DEBUG_ADD(msg)			LOG_INFO("%s", msg)
+#define DEBUG_ADD(msg)			LOG_DEBUG("%s", msg)
 #define DEBUG_ADD_ERR(msg)		LOG_ERROR("%s", msg)
 #define DEBUG_ADD_WAR(msg)		LOG_WARN("%s", msg)
-#define DEBUG_ADD_FORMAT(fmt, ...)	LOG_INFO(fmt, ##__VA_ARGS__)
+#define DEBUG_ADD_FORMAT(fmt, ...)	LOG_DEBUG(fmt, ##__VA_ARGS__)
 #define DEBUG_ADD_FORMAT_ERR(fmt, ...)	LOG_ERROR(fmt, ##__VA_ARGS__)
 #define DEBUG_ADD_FORMAT_WAR(fmt, ...)	LOG_WARN(fmt, ##__VA_ARGS__)
 
@@ -134,8 +140,9 @@ void log_write(LogLevel level, const char* file, int line, const char* format, A
 // Test seam
 //-----------------------------------------------------------------------------
 //
-// Reports the site of every log call, from either entry point, BEFORE the
-// level filter - so a test can observe what was recorded without initialising
+// Reports the site of each log_write call, from either entry point, BEFORE the
+// sink level filter. Filtered LOG_DEBUG macros skip the call and its arguments.
+// A test can observe direct calls without initialising
 // the logging system, moving the level or redirecting the output. The
 // observer is NULL in every shipped build and nothing else about logging
 // changes; tests/unit/test_source_location_diagnostics.cpp is the only user.

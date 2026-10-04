@@ -23,7 +23,7 @@ void GCEnterVampirePortalHandler::execute ( GCEnterVampirePortal * pPacket , Pla
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
@@ -54,7 +54,7 @@ void GCEnterVampirePortalHandler::execute ( GCEnterVampirePortal * pPacket , Pla
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature. id=%d", creatureID);
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature. id=%d", creatureID);
 		}
 	}
 

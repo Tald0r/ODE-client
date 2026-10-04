@@ -69,7 +69,7 @@ MAttachEffect::MAttachEffect(TYPE_EFFECTSPRITETYPE type, DWORD last, DWORD linkC
 		TYPE_FRAMEID frameID = sprite.info.frameID;
 		BYTE maxFrame = static_cast<BYTE>(sprite.info.maxFrames);
 
-		LOG_INFO("[EFFECT CREATE] type=%d, FrameID=%d, BltType=%d, maxFrame=%d",
+		LOG_DEBUG("[EFFECT CREATE] type=%d, FrameID=%d, BltType=%d, maxFrame=%d",
 			type, frameID, (int)sprite.info.bltType, (int)maxFrame);
 
 		SetFrameID( frameID, maxFrame );

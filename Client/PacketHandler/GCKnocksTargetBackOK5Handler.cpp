@@ -28,7 +28,7 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 		return;
 	}	
@@ -60,7 +60,7 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 
 	if( skillType >= g_pActionInfoTable->GetSize() )
 	{
-		DEBUG_ADD_FORMAT("[GCKnocksTargetBackOK5] SkillType Error %d", skillType );
+		DEBUG_ADD_FORMAT_WAR("[GCKnocksTargetBackOK5] SkillType Error %d", skillType );
 		return;
 	}
 

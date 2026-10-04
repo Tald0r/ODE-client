@@ -24,7 +24,7 @@ void GCPartyErrorHandler::execute (GCPartyError * pPacket , Player * pPlayer)
 		|| g_pPlayer==NULL
 		|| g_pTempInformation==NULL)
 	{
-		DEBUG_ADD("GCPartyErrorHandler Failed");
+		DEBUG_ADD_WAR("GCPartyErrorHandler Failed");
 		return;
 	}
 
@@ -116,7 +116,7 @@ void GCPartyErrorHandler::execute (GCPartyError * pPacket , Player * pPlayer)
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] Server is Not Party Mode");
+					DEBUG_ADD_ERR("[Error] Server is Not Party Mode");
 				}
 			#endif
 		break;	
@@ -130,7 +130,7 @@ void GCPartyErrorHandler::execute (GCPartyError * pPacket , Player * pPlayer)
 			#ifdef OUTPUT_DEBUG			
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] GC_PARTY_ERROR_NO_AUTHORITY");
+					DEBUG_ADD("Party request refused: no authority");
 				}
 			#endif
 		break;
@@ -145,7 +145,7 @@ void GCPartyErrorHandler::execute (GCPartyError * pPacket , Player * pPlayer)
 			#ifdef OUTPUT_DEBUG			
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] GC_PARTY_ERROR_UNKNOWN");
+					DEBUG_ADD_ERR("[Error] GC_PARTY_ERROR_UNKNOWN");
 				}
 			#endif
 		break;

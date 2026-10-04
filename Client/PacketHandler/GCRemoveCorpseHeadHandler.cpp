@@ -29,7 +29,7 @@ void GCRemoveCorpseHeadHandler::execute ( GCRemoveCorpseHead * pPacket , Player 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -57,7 +57,7 @@ void GCRemoveCorpseHeadHandler::execute ( GCRemoveCorpseHead * pPacket , Player 
 			if (pItem==NULL)
 			{
 				// 그런 아이템은 없다.
-				DEBUG_ADD("[Error] There is no such Item ID");
+				DEBUG_ADD_ERR("[Error] There is no such Item ID");
 			}
 			//---------------------------------------------------------
 			// 시체가 있으면 머리를 없앤다.
@@ -71,7 +71,7 @@ void GCRemoveCorpseHeadHandler::execute ( GCRemoveCorpseHead * pPacket , Player 
 			else
 			{
 				// 아이템은 있는데 시체가 아닌 경우
-				DEBUG_ADD_FORMAT("[Error] It's not Corpse. id=%d", objectID);
+				DEBUG_ADD_FORMAT_ERR("[Error] It's not Corpse. id=%d", objectID);
 			}
 		}
 		//---------------------------------------------------------

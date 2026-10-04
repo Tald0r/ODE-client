@@ -54,7 +54,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 	//---------------------------------------------
 	if (pItem==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] Pickup Item : no item! [ID=%d]", pPacket->getObjectID());
+		DEBUG_ADD_FORMAT_ERR("[Error] Pickup Item : no item! [ID=%d]", pPacket->getObjectID());
 		
 		return;
 	}
@@ -145,7 +145,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					// inventory에 추가됐을 경우만 zone에서 지워준다.
 					if (g_pZone==NULL)
 					{					
-						DEBUG_ADD("[Error] Zone is not Init!");
+						DEBUG_ADD_ERR("[Error] Zone is not Init!");
 					}
 					else
 					{
@@ -163,7 +163,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 				else
 				{
 					// 들어갈 자리가 있었는데 없어진 경우..
-					DEBUG_ADD_FORMAT("[Error] Pickup Item ID no fit position! ID=%d, xy=(%d, %d)", pItem->GetID(), pItem->GetGridX(), pItem->GetGridY());
+					DEBUG_ADD_FORMAT_ERR("[Error] Pickup Item ID no fit position! ID=%d, xy=(%d, %d)", pItem->GetID(), pItem->GetGridX(), pItem->GetGridY());
 				}
 			}
 			//------------------------------------------------------------------------
@@ -186,7 +186,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					int total = pOldItem->GetNumber() + pItem->GetNumber();
 					if ( static_cast<TYPE_ITEM_NUMBER>(total) > pOldItem->GetMaxNumber() )
 					{
-						DEBUG_ADD_FORMAT("[Error] Exceed Item Pile Limit : %d/%d", total, pOldItem->GetMaxNumber());
+						DEBUG_ADD_FORMAT_ERR("[Error] Exceed Item Pile Limit : %d/%d", total, pOldItem->GetMaxNumber());
 						
 						// max까지만 추가한다고 가정한다.
 						total = pItem->GetMaxNumber();
@@ -208,7 +208,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 				//--------------------------------------------------------
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Cannot Pile Items : inv_item_id=%d, zone_item_id=%d", pItem->GetID(), pOldItem->GetID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Cannot Pile Items : inv_item_id=%d, zone_item_id=%d", pItem->GetID(), pOldItem->GetID());
 				}
 			}
 		}
@@ -223,7 +223,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 
 			if (g_pZone==NULL)
 			{
-				DEBUG_ADD("[Error] Zone is not Init!");
+				DEBUG_ADD_ERR("[Error] Zone is not Init!");
 			}
 			else
 			{				
@@ -253,7 +253,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 				
 				if (g_pZone==NULL)		// 걍 폼이다 - -;
 				{
-					DEBUG_ADD("[Error] Zone is not Init!");	// 콩가루~
+					DEBUG_ADD_ERR("[Error] Zone is not Init!");	// 콩가루~
 				}
 				else 
 				{	
@@ -296,12 +296,12 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 							{
 								if( !pQuickSlot->AddItem( pItem, slot %3) )
 								{
-									DEBUG_ADD_FORMAT("[Error] can't add to quickslot. ousters id=%d, slot=%d", pItem->GetID(), slot);
+									DEBUG_ADD_FORMAT_ERR("[Error] can't add to quickslot. ousters id=%d, slot=%d", pItem->GetID(), slot);
 								}
 							}else
 							if (!g_pQuickSlot->AddItem( pItem, slot ))
 							{
-								DEBUG_ADD_FORMAT("[Error] can't add to quickslot. id=%d, slot=%d", pItem->GetID(), slot);
+								DEBUG_ADD_FORMAT_ERR("[Error] can't add to quickslot. id=%d, slot=%d", pItem->GetID(), slot);
 							}
 
 							bSendPacket = true;
@@ -357,7 +357,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 		else
 		{
 			// 뭐지??
-			DEBUG_ADD_FORMAT("[Error] ItemCheckBuffer is not Pickup Status [ID=%d]", pItem->GetID());
+			DEBUG_ADD_FORMAT_ERR("[Error] ItemCheckBuffer is not Pickup Status [ID=%d]", pItem->GetID());
 		}
 
 		//------------------------------------------------------------------
@@ -497,7 +497,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 	//---------------------------------------------
 	else
 	{
-		DEBUG_ADD_FORMAT("[Error] Pickup Item ID conflict (%d != %d)", pItem->GetID(), pPacket->getObjectID());
+		DEBUG_ADD_FORMAT_ERR("[Error] Pickup Item ID conflict (%d != %d)", pItem->GetID(), pPacket->getObjectID());
 	}
 
 //	__BEGIN_HELP_EVENT

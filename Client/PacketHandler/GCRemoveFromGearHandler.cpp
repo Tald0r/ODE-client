@@ -41,7 +41,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 		
 		if (pRemovedItem==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] No Removed Item in Slot=%d", slotID);
+			DEBUG_ADD_FORMAT_ERR("[Error] No Removed Item in Slot=%d", slotID);
 		}
 		else
 		{
@@ -131,7 +131,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 					else
 					{
 						const MCreatureWear::ADDON_INFO& addonInfo = g_pPlayer->GetAddonInfo( addonSlotID );
-						DEBUG_ADD_FORMAT("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);						
+						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);
 					}				
 				#else
 					g_pPlayer->RemoveAddon( addonSlotID );
@@ -158,7 +158,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 		if (pRemovedItem==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] No Removed Item in Slot=%d", slotID);
+			DEBUG_ADD_FORMAT_ERR("[Error] No Removed Item in Slot=%d", slotID);
 		}
 		else
 		{
@@ -222,7 +222,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 					else
 					{
 						const MCreatureWear::ADDON_INFO& addonInfo = g_pPlayer->GetAddonInfo( addonSlotID );
-						DEBUG_ADD_FORMAT("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);						
+						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);
 					}				
 				#else
 					g_pPlayer->RemoveAddon( addonSlotID );
@@ -246,7 +246,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 		if (pRemovedItem==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] No Removed Item in Slot=%d", slotID);
+			DEBUG_ADD_FORMAT_ERR("[Error] No Removed Item in Slot=%d", slotID);
 		}
 		else
 		{
@@ -334,7 +334,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 					else
 					{
 						const MCreatureWear::ADDON_INFO& addonInfo = g_pPlayer->GetAddonInfo( addonSlotID );
-						DEBUG_ADD_FORMAT("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);						
+						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);
 					}				
 				#else
 					g_pPlayer->RemoveAddon( addonSlotID );

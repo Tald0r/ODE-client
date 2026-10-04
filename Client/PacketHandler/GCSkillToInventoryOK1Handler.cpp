@@ -313,14 +313,14 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 			//----------------------------------------------------
 			else
 			{
-				DEBUG_ADD_FORMAT("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
+				DEBUG_ADD_FORMAT_ERR("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
 			}
 		}
 		
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	int skillID = pPacket->getSkillType();
@@ -403,7 +403,7 @@ PacketSkillToMakeItem(MItem* pItem,
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] No Removed Item from Inventory=(%d, %d)", x, y);
+			DEBUG_ADD_FORMAT_ERR("[Error] No Removed Item from Inventory=(%d, %d)", x, y);
 		}
 	}
 	//----------------------------------------------------
@@ -426,7 +426,7 @@ PacketSkillToMakeItem(MItem* pItem,
 
 		if (pResultItem == NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] PacketSkillToMakeItem: invalid item class %d", itemClass);
+			DEBUG_ADD_FORMAT_ERR("[Error] PacketSkillToMakeItem: invalid item class %d", itemClass);
 			return NULL;
 		}
 
@@ -437,7 +437,7 @@ PacketSkillToMakeItem(MItem* pItem,
 
 		if (!g_pInventory->AddItem( pResultItem, targetX, targetY ))
 		{
-			DEBUG_ADD_FORMAT("[Error] Cannot Add pResultItem to Inventory=(%d, %d)", targetX, targetY);
+			DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add pResultItem to Inventory=(%d, %d)", targetX, targetY);
 			
 			delete pResultItem;
 		}
@@ -463,7 +463,7 @@ PacketSkillToMakeItem(MItem* pItem,
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] Wrong Item. tcls=%d, ttype=%d, tid=%d, type=%d, id=%d", 
+			DEBUG_ADD_FORMAT_ERR("[Error] Wrong Item. tcls=%d, ttype=%d, tid=%d, type=%d, id=%d",
 											pTargetItem->GetItemClass(), 
 											pTargetItem->GetItemType(), 
 											pTargetItem->GetID(),

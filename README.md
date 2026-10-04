@@ -294,6 +294,21 @@ gitignored. Always regenerate locally.
 
 ### Troubleshooting
 
+**Diagnostic logging**
+
+The client keeps informational messages, warnings and errors visible by default
+in every build. Rendering, input and packet breadcrumbs use DEBUG and are quiet
+unless requested. For detailed native diagnostics, set `DARKEDEN_TRACE=1` before
+starting the client (PowerShell: `$env:DARKEDEN_TRACE = '1'`; Linux/macOS:
+`DARKEDEN_TRACE=1 ./DarkEden`). Unset it afterwards. Only the exact value `1`
+enables tracing; this does not change assertions or other build checks.
+
+Logs go to stderr. Windows Debug builds also write `DarkEden-debug.log` beside
+the executable, replacing it on each launch. Startup logging omits launch
+arguments, and reconnect diagnostics omit authentication keys. Generic packet
+traces report metadata rather than packet bodies. Trace logs can still contain
+player names and game activity, so review them before sharing.
+
 **`The Windows SDK version 10.0.xxxxx.0 was not found`** or
 **`The referenced project <some other path>\ZERO_CHECK.vcxproj does not exist`**
 

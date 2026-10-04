@@ -42,7 +42,7 @@ void GCUnionOfferListHandler::execute ( GCUnionOfferList * pPacket , Player * pP
 			SafeFormat::Format(sztemp, GetGameString(UI_STRING_MESSAGE_TOTAL_UNION_DEPORT_MSG), offerlist->getGuildName().c_str() );
 		else
 		{
-			DEBUG_ADD("[GCUnionOfferListHandler] - SingleGuildUnionOffer guild type error");
+			DEBUG_ADD_WAR("[GCUnionOfferListHandler] - SingleGuildUnionOffer guild type error");
 			return;
 		}
 		

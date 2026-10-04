@@ -25,7 +25,7 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 	if (g_pZone==NULL
 		|| g_pPlayer==NULL)
 	{
-		DEBUG_ADD("[Error] g_pZone or g_pPlayer NULL");
+		DEBUG_ADD_ERR("[Error] g_pZone or g_pPlayer NULL");
 
 		return;
 	}
@@ -57,7 +57,7 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 		break;
 
 		default :
-			DEBUG_ADD("[Error] wrong PC Type");
+			DEBUG_ADD_ERR("[Error] wrong PC Type");
 		return;
 	}
 

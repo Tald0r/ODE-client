@@ -36,7 +36,7 @@ void GCDeleteInventoryItemHandler::execute ( GCDeleteInventoryItem * pPacket , P
 
 		if (pItem==NULL)
 		{
-			DEBUG_ADD_FORMAT( "[Error] Can't remove Item. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR( "[Error] Can't remove Item. id=%d", pPacket->getObjectID());
 		}		
 	}
 

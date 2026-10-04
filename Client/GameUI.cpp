@@ -829,7 +829,7 @@ UI_RunExchangeAsk(TYPE_OBJECTID otherID)
 	MCreature* pCreature = g_pZone->GetCreature( otherID );
 	if(pCreature == NULL)
 	{
-		DEBUG_ADD_FORMAT( "[Error] UI_RunExchangeAsk - There is no such Creature. id=%d", otherID);
+		DEBUG_ADD_FORMAT_ERR( "[Error] UI_RunExchangeAsk - There is no such Creature. id=%d", otherID);
 		return;
 	}
 	if(pCreature->CurPernalShop() != 1)
@@ -849,7 +849,7 @@ UI_RunExchangeAsk(TYPE_OBJECTID otherID)
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT( "[Error] UI_RunExchangeAsk - Failed , pCreature is using persnal shop.");
+		DEBUG_ADD("Trade unavailable while the other player is using a personal shop");
 	}
 }
 
@@ -945,7 +945,7 @@ UI_RunExchange(TYPE_OBJECTID otherID)
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT( "[Error] There is no such Creature. id=%d", otherID);
+		DEBUG_ADD_FORMAT_ERR( "[Error] There is no such Creature. id=%d", otherID);
 	}
 	
 }
@@ -3253,7 +3253,7 @@ UI_RunPartyRequest(TYPE_OBJECTID otherID)
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT( "[Error] There is no such Creature. id=%d", otherID);
+		DEBUG_ADD_FORMAT_ERR( "[Error] There is no such Creature. id=%d", otherID);
 	}	
 }
 
@@ -3299,7 +3299,7 @@ UI_RunPartyAsk(TYPE_OBJECTID otherID)
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT( "[Error] There is no such Creature. id=%d", otherID);
+			DEBUG_ADD_FORMAT_ERR( "[Error] There is no such Creature. id=%d", otherID);
 		}
 	}
 }
@@ -3651,7 +3651,7 @@ void	UI_RunOtherInfo(MCreature *pCreature)
 
 	if(pCreature == NULL)
 	{
-		DEBUG_ADD("[UI_RunOtherInfo] pCreature == NULL");
+		DEBUG_ADD_WAR("[UI_RunOtherInfo] pCreature == NULL");
 		return;
 	}
 
@@ -3660,7 +3660,7 @@ void	UI_RunOtherInfo(MCreature *pCreature)
 	if(pCreature->GetName() != NULL)
 		info.PLAYER_NAME = pCreature->GetName();
 	else
-		DEBUG_ADD("[UI_RunOtherInfo] Name == NULL");
+		DEBUG_ADD_WAR("[UI_RunOtherInfo] Name == NULL");
 
 //	GUILD_INFO *guildInfo = g_pGuildInfoMapper->Get(pCreature->GetGuildNumber());
 
@@ -4257,7 +4257,7 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 
 		if (pItem == NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] UI item list: invalid item class %d", pInfo->itemClass);
+			DEBUG_ADD_FORMAT_ERR("[Error] UI item list: invalid item class %d", pInfo->itemClass);
 			delete pInfo;
 			continue;
 		}
@@ -4704,7 +4704,7 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 	MailTemplate::Data mail;
 	if (!MailTemplate::Parse(std::string_view(packFile.GetFilePointer(), packFile.GetRemainingSize()),
 		g_GameRect.right, g_GameRect.bottom, mail)) {
-		DEBUG_ADD_FORMAT("[Notice] Invalid mail template: %s", FileName.c_str());
+		DEBUG_ADD_FORMAT_WAR("[Notice] Invalid mail template: %s", FileName.c_str());
 		return;
 	}
 	const SIZE windowSize = {mail.width, mail.height};

@@ -31,7 +31,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -42,7 +42,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature. id=%d", pPacket->getObjectID());
 		}
 		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
 		{
@@ -52,7 +52,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 
 			if (pShop==NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] the Creature has NO Shop. creatureID=%d", pPacket->getObjectID());
+				DEBUG_ADD_FORMAT_ERR("[Error] the Creature has NO Shop. creatureID=%d", pPacket->getObjectID());
 			}
 			else
 			{
@@ -60,7 +60,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 
 				if (pShopShelf==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] There is no such Shelf. type=%d", (int)pPacket->getShopType());
+					DEBUG_ADD_FORMAT_ERR("[Error] There is no such Shelf. type=%d", (int)pPacket->getShopType());
 				}
 				else
 				{
@@ -88,7 +88,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] the Creature is not NPC. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] the Creature is not NPC. id=%d", pPacket->getObjectID());
 		}
 	}
 

@@ -33,7 +33,7 @@ void GCAttackMeleeOK1Handler::execute ( GCAttackMeleeOK1 * pPacket , Player * pP
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	//------------------------------------------------------------------
@@ -47,7 +47,7 @@ void GCAttackMeleeOK1Handler::execute ( GCAttackMeleeOK1 * pPacket , Player * pP
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 
 	//------------------------------------------------------

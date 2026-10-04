@@ -94,7 +94,7 @@ ClientPlayer::~ClientPlayer () noexcept(false)
 
 void ClientPlayer::setPlayerStatus ( PlayerStatus playerStatus ) { 
 	m_PlayerStatus = playerStatus; 
-	DEBUG_ADD_FORMAT_ERR("[ClientPlayer::setPlayerStatus] %d", playerStatus);
+	DEBUG_ADD_FORMAT("[ClientPlayer::setPlayerStatus] %d", playerStatus);
 }
 
 
@@ -197,7 +197,7 @@ void ClientPlayer::processCommand ()
 						//---------------------------------------------------------------
 						if (getPlayerStatus()==CPS_WAITING_FOR_GC_RECONNECT_LOGIN)
 						{
-							DEBUG_ADD_ERR("[PacketError] ignore Packet when RECONNECT");
+							DEBUG_ADD("Ignoring packet during reconnect");
 
 							// 읽어내고 execute는 하지 않는다.
 							bExecute = FALSE;
@@ -210,7 +210,7 @@ void ClientPlayer::processCommand ()
 						//---------------------------------------------------------------
 						else
 						{
-							DEBUG_ADD_FORMAT("[PacketError] invalid packet ORDER %d", getPlayerStatus());
+							DEBUG_ADD_FORMAT_ERR("[PacketError] invalid packet ORDER %d", getPlayerStatus());
 							throw InvalidProtocolException("invalid packet ORDER");
 						}				
 					}
@@ -242,7 +242,7 @@ void ClientPlayer::processCommand ()
 				// 최적화시 break 를 사용하면 된다. (여기서는 일단 exception을 쓸 것이다.)
 				if ( m_pInputStream->length() < szPacketHeader + packetSize )
 				{
-					DEBUG_ADD_FORMAT_ERR("[PacketError] InsufficientDataException: %d/%d", m_pInputStream->length(), szPacketHeader + packetSize);
+					DEBUG_ADD_FORMAT("Waiting for complete packet: %d/%d", m_pInputStream->length(), szPacketHeader + packetSize);
 		
 					throw InsufficientDataException();
 				}
@@ -263,7 +263,8 @@ void ClientPlayer::processCommand ()
 				if (bExecute)
 				{
 					#ifdef __DEBUG_OUTPUT__
-						DEBUG_ADD(pPacket->toString().c_str());
+						DEBUG_ADD_FORMAT("[Receive] packet id=%u size=%u",
+							static_cast<unsigned>(packetID), static_cast<unsigned>(packetSize));
 					#endif
 
 //					_MinTrace("Incomming Packet ID : %d\n",pPacket->getPacketID());
@@ -298,7 +299,7 @@ void ClientPlayer::processCommand ()
 				if (++processedPacket > maxProcessPacket)
 				{
 					const LogSite site;
-					log_write_at(site, LOG_LEVEL_INFO, "[PacketSkip] So many Packets. MaxProcessPacket:%d, CurrentPacket:%d, File:%s, Line:%d",maxProcessPacket,processedPacket, site.file,site.line);
+					log_write_at(site, LOG_LEVEL_WARN, "[PacketSkip] So many Packets. MaxProcessPacket:%d, CurrentPacket:%d, File:%s, Line:%d",maxProcessPacket,processedPacket, site.file,site.line);
 					//DEBUG_ADD_FORMAT_WAR(szBuf);
 
 					break;

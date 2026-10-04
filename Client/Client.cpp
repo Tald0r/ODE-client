@@ -3814,7 +3814,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 #ifndef OUTPUT_DEBUG
 			if (!ReleaseMutex( hMutex ))
 			{
-				DEBUG_ADD_FORMAT("Failed to release mutex : %d", GetLastError()); 
+				DEBUG_ADD_FORMAT_ERR("Failed to release mutex : %d", GetLastError());
 			}
 #endif
 
@@ -4040,7 +4040,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 				if (g_pDebugMessage!=NULL)
 				{
 					//MessageBox(0,"Error [g_pDebugMessage!=NULL]","Error",MBOK);
-					DEBUG_ADD("Wrong Commandline --> Run Updater.exe"); 
+					DEBUG_ADD_ERR("Wrong Commandline --> Run Updater.exe");
 					DEBUG_ADD("--------------- Delete DebugMessageArray --------------");		
 					delete g_pDebugMessage;	
 					g_pDebugMessage = NULL;
@@ -4449,20 +4449,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 			
 				g_Dimension = RealServerInfo.WorldID;
 
-#ifdef OUTPUT_DEBUG
-				char szBuf[1024];
-				snprintf(szBuf, sizeof(szBuf), "mode = %d, id = %d,world = %s,key = %s", g_pUserInformation->IsAutoLogIn,
-																		
-
-	g_Dimension,
-																		
-
-	g_pUserInformation->UserID.GetString(),
-																		
-
-	g_pUserInformation->AutoLogInKeyValue.GetString());
-				DEBUG_ADD(szBuf);
-#endif
+				DEBUG_ADD("Auto-login configured");
 			}			
 			
 		

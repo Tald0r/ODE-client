@@ -27,7 +27,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] GCAddOusterCorpseHandler. Zone 이 NULL 이예요.");
+		DEBUG_ADD_ERR("[Error] GCAddOusterCorpseHandler. Zone 이 NULL 이예요.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -127,7 +127,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 						// 다시 추가한다.
 						if (!g_pZone->AddItem( pCorpse ))
 						{
-							DEBUG_ADD_FORMAT("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", oi.getObjectID(), oi.getX(), oi.getY());
+							DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", oi.getObjectID(), oi.getX(), oi.getY());
 							
 							delete pCorpse;
 						}
@@ -135,7 +135,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 					else
 					{
 						// 이미 있는 item을 제거할 수 없는 경우
-						DEBUG_ADD_FORMAT("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, oi.getX(), oi.getY());
+						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, oi.getX(), oi.getY());
 						
 						delete pCorpse;
 					}	
@@ -148,7 +148,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 			//---------------------------------------------------------
 			else
 			{
-				DEBUG_ADD_FORMAT("[Error] Already Exist Another Item : class=%d type=%d", (int)pItem->GetItemClass(), (int)pItem->GetItemType());
+				DEBUG_ADD_FORMAT_ERR("[Error] Already Exist Another Item : class=%d type=%d", (int)pItem->GetItemClass(), (int)pItem->GetItemType());
 				
 				if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 				{

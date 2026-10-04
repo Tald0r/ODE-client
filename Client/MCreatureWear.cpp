@@ -150,7 +150,7 @@ MCreatureWear::SetAddonColorSet1(int Addon, WORD colorSet)
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT("[Error] Exceed Maximum ColorSet. addon=%d, set=%d", Addon, colorSet);		
+		DEBUG_ADD_FORMAT_ERR("[Error] Exceed Maximum ColorSet. addon=%d, set=%d", Addon, colorSet);
 	}
 }
 
@@ -183,7 +183,7 @@ MCreatureWear::SetAddonColorSet2(int Addon, WORD colorSet)
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT("[Error] Exceed Maximum ColorSet. addon=%d, set=%d", Addon, colorSet);
+		DEBUG_ADD_FORMAT_ERR("[Error] Exceed Maximum ColorSet. addon=%d, set=%d", Addon, colorSet);
 	}
 }
 
@@ -218,7 +218,7 @@ MCreatureWear::NewItemFromAddonInfo(int Addon)
 
 	if (pItem == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] NewItemFromAddonInfo: invalid item class %d", addon.ItemClass);
+		DEBUG_ADD_FORMAT_ERR("[Error] NewItemFromAddonInfo: invalid item class %d", addon.ItemClass);
 		return NULL;
 	}
 
@@ -314,7 +314,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 	
 	if (pItem==NULL)
 	{
-		DEBUG_ADD("The Item is NULL");
+		DEBUG_ADD_WAR("The Item is NULL");
 		
 		return false;
 	}
@@ -350,7 +350,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 			//-------------------------------------------------
 			if (pItem->GetAddonSlot()==ADDON_NULL)
 			{			
-				DEBUG_ADD_FORMAT("[Error] Item doesn't have Addon Slot. id=%d, class=%d, type=%d", 
+				DEBUG_ADD_FORMAT_ERR("[Error] Item doesn't have Addon Slot. id=%d, class=%d, type=%d",
 														pItem->GetID(), (int)pItem->GetItemClass(), (int)pItem->GetItemType());
 				
 			}
@@ -468,7 +468,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 				//-------------------------------------------------					
 				if (fid == FRAMEID_NULL && IsSlayer())
 				{					
-					DEBUG_ADD_FORMAT("[Error] Item doesn't have FrameID. id=%d, class=%d, type=%d", 
+					DEBUG_ADD_FORMAT_ERR("[Error] Item doesn't have FrameID. id=%d, class=%d, type=%d",
 										pItem->GetID(), (int)pItem->GetItemClass(), (int)pItem->GetItemType());					
 				}
 				//-------------------------------------------------					
@@ -586,7 +586,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 		}			
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] Item is Not Addon Item. id=%d, class=%d, type=%d", 
+			DEBUG_ADD_FORMAT_ERR("[Error] Item is Not Addon Item. id=%d, class=%d, type=%d",
 									pItem->GetID(), (int)pItem->GetItemClass(), (int)pItem->GetItemType());			
 		}
 
@@ -643,7 +643,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 	// 정지한 상태가 아닌 경우
 	//
 	//-------------------------------------------------
-	DEBUG_ADD_FORMAT("[Error] Not STAND action. id=%d, action=%d", m_ID, m_Action);
+	DEBUG_ADD_FORMAT_ERR("[Error] Not STAND action. id=%d, action=%d", m_ID, m_Action);
 	
 	// 다음에 정지할 때, 복장을 바꾸도록 한다..
 	// 그래야 되는데.. 귀찮다. - -;;
@@ -663,7 +663,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 
 	if (pItem==NULL)
 	{
-		DEBUG_ADD("The Item is NULL");
+		DEBUG_ADD_WAR("The Item is NULL");
 		
 		return false;
 	}
@@ -736,7 +736,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 			//-------------------------------------------------
 			if (add == ADDON_NULL)
 			{				
-				DEBUG_ADD_FORMAT("[Error] Item doesn't have Addon Slot. id=%d, class=%d, type=%d", 
+				DEBUG_ADD_FORMAT_ERR("[Error] Item doesn't have Addon Slot. id=%d, class=%d, type=%d",
 													pItem->GetID(), (int)pItem->GetItemClass(), (int)pItem->GetItemType());				
 			}
 			else
@@ -916,7 +916,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 	// 정지한 상태가 아닌 경우
 	//
 	//-------------------------------------------------
-	DEBUG_ADD_FORMAT("[Error] Not STAND action. id=%d, action=%d", m_ID, m_Action);
+	DEBUG_ADD_FORMAT_ERR("[Error] Not STAND action. id=%d, action=%d", m_ID, m_Action);
 	
 	// 다음에 정지할 때, 복장을 바꾸도록 한다..
 	// 그래야 되는데.. 귀찮다. - -;;
@@ -1032,7 +1032,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 	
 	if (status>=g_pEffectStatusTable->GetSize())
 	{
-		DEBUG_ADD_FORMAT("[Error]EffectStatus exceed Max : %d", (int)status);
+		DEBUG_ADD_FORMAT_ERR("[Error]EffectStatus exceed Max : %d", (int)status);
 		
 		return false;
 	}

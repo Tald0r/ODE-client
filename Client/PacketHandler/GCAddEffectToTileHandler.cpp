@@ -84,7 +84,7 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 	}
 	else
 	{
-		DEBUG_ADD_FORMAT("[Error] No ActionInfo with EffectStatusID=%d", pPacket->getEffectID());
+		DEBUG_ADD_FORMAT_ERR("[Error] No ActionInfo with EffectStatusID=%d", pPacket->getEffectID());
 	}
 	
 	switch( EffectStatusType )
