@@ -2935,7 +2935,7 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 		break;	
 	
 	case SKILL_SOUL_REBIRTH:
-		return min(5, 2+(*g_pSkillInfoTable)[SKILL_SOUL_REBIRTH_MASTERY].GetExpLevel()/10);
+		return GetSoulRebirthRange(skillLevel, (*g_pSkillInfoTable)[SKILL_SOUL_REBIRTH_MASTERY].GetExpLevel());
 		break;
 	}
 	

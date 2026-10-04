@@ -651,6 +651,9 @@ extern MSkillInfoTable*		g_pSkillInfoTable;
 // client's integer step, truncated toward zero.
 int				GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel);
 
+// Soul Rebirth range in tiles. An unlearned mastery has level zero.
+int				GetSoulRebirthRange(int skillLevel, int masteryLevel);
+
 //----------------------------------------------------------------------
 // Will of Life
 //----------------------------------------------------------------------

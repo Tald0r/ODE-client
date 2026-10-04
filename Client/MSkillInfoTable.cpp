@@ -211,6 +211,13 @@ GetSkillRangeAtLevel(Race race, int minRange, int maxRange, int expLevel)
 	return (int)(minRange + (maxRange - minRange) * expLevel / maxLevel);
 }
 
+int
+GetSoulRebirthRange(int skillLevel, int masteryLevel)
+{
+	(void)skillLevel;
+	return min(5, 2 + masteryLevel / 10);
+}
+
 //----------------------------------------------------------------------
 // Will of Life
 //----------------------------------------------------------------------
