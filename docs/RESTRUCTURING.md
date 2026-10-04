@@ -1057,15 +1057,19 @@ rounds settled* for the host rules). Test fixtures share
   > ranges no vampire skill by its level (Rapid Gliding's, Bloody
   > Zenith's and Set Afire's ranges are its stats'). It ranges
   > Blunting, Tendril, Prominence, Teleport and Charging Attack by their
-  > formulas' Range (and Soul Rebirth by its own, 2 + level / 10 plus
-  > the passive skill's level / 10, which the client's own Soul Rebirth
-  > override does not follow: a left-over), the minimum plus the slot's
-  > level / 10, which the
+  > formulas' Range, the minimum plus the slot's level / 10, which the
   > step to level 30 gives for the span of 3 each has in the seed and
   > in the upstream `SkillInfo.inf`; `test_skill_range.cpp` checks the
   > step against those `decore::skillformula` formulas at levels 0 to
   > 30 (`8d2b12b9`'s message says the ousters' step has no server
-  > counterpart). The slayer change was a refactor: the rule
+  > counterpart). Soul Rebirth uses its server formula plus mastery:
+  > 2 + active skill level / 10 + mastery level / 10, with no combined cap.
+  > `GetSoulRebirthRange` in `gamemodel` owns the calculation; `MPlayer`
+  > reads both live skill levels. Test: `test_soul_rebirth_range.cpp` covers
+  > ten-level boundaries and all active/mastery level pairs from 0 to 30
+  > against the server formula and mastery bonus. Vendored formulas and
+  > packet bytes are unchanged.
+  > The slayer change was a refactor: the rule
   > differs from the integer step only at a span of 50 or more (one
   > lower at levels 29 and 58), with a maximum below the minimum, and
   > past 255, and no slayer range in the data that could be checked
