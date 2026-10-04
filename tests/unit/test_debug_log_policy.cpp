@@ -2,7 +2,7 @@
 
 #include "DebugLog.h"
 #include "CrtCompat.h"
-#include "CLLogin.h"
+#include "Cpackets/CLLogin.h"
 #include "Player.h"
 #include "Socket.h"
 #include "SocketImpl.h"
