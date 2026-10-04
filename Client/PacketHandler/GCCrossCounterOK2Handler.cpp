@@ -37,7 +37,7 @@ void GCCrossCounterOK2Handler::execute ( GCCrossCounterOK2 * pPacket , Player * 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 

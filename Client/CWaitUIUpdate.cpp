@@ -109,7 +109,7 @@ CWaitUIUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 			if (is_control_key) {
 				static int keydown_debug_count = 0;
 				if (keydown_debug_count < 10) {
-					printf("  DXKeyboardEvent: Sending WM_KEYDOWN, vk_key=%u (DIK=%lu)\n", vk_key, (unsigned long)key);
+					DEBUG_ADD_FORMAT("DXKeyboardEvent: Sending WM_KEYDOWN, vk_key=%u (DIK=%lu)", vk_key, (unsigned long)key);
 					keydown_debug_count++;
 				}
 				gC_vs_ui.KeyboardControl(WM_KEYDOWN, vk_key, 0);

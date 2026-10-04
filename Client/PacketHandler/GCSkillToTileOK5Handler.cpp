@@ -28,7 +28,7 @@ void GCSkillToTileOK5Handler::execute ( GCSkillToTileOK5 * pPacket , Player * pP
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -45,7 +45,7 @@ void GCSkillToTileOK5Handler::execute ( GCSkillToTileOK5 * pPacket , Player * pP
 
 			if( g_pActionInfoTable->GetSize() <= skillID )
 			{
-				DEBUG_ADD_FORMAT("[Error] Exceed SkillType %d",skillID);
+				DEBUG_ADD_FORMAT_ERR("[Error] Exceed SkillType %d",skillID);
 				SendBugReport("[Error:GCSTTOK5H] Exceed SkillType %d", skillID );
 				return;
 			}
@@ -71,7 +71,7 @@ void GCSkillToTileOK5Handler::execute ( GCSkillToTileOK5 * pPacket , Player * pP
 
 				if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
-					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", useSkillID);
+					DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", useSkillID);
 					return;
 				}
 			}

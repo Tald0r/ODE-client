@@ -128,7 +128,7 @@ void RequestServerPlayer::processCommand ()
 				// 패킷 아이디가 이상하면 프로토콜 에러로 간주한다.
 				if ( packetID >= Packet::PACKET_MAX )
 				{
-					DEBUG_ADD_FORMAT("[PacketError-RequestServerPlayer::processCommand] exceed MAX=%d. packetID=%d", Packet::PACKET_MAX, packetID);		
+					DEBUG_ADD_FORMAT_ERR("[PacketError-RequestServerPlayer::processCommand] exceed MAX=%d. packetID=%d", Packet::PACKET_MAX, packetID);
 					
 					SendBugReport("RSP,Exceed PacketID:%d",packetID);
 					
@@ -136,7 +136,8 @@ void RequestServerPlayer::processCommand ()
 				}
 
 				#ifdef __DEBUG_OUTPUT__
-					DEBUG_ADD_FORMAT("[RECEIVE] [ID=%d] InputStream(%s)", m_pInputStream->toString().c_str() );
+					DEBUG_ADD_FORMAT("[Receive] packet id=%u buffered=%u",
+						static_cast<unsigned>(packetID), m_pInputStream->length());
 					DEBUG_ADD_FORMAT("[RECEIVE] [ID=%d] %s", packetID, g_pPacketFactoryManager->getPacketName(packetID).c_str());
 				#endif
 				
@@ -144,7 +145,6 @@ void RequestServerPlayer::processCommand ()
 
 				if ( ! g_pPacketValidator->isValidPacketID( getPlayerStatus() , packetID ) )
 				{
-					DEBUG_ADD("[PacketError] invalid packet ORDER");
 
 					//---------------------------------------------------------------
 					// Logout해서 캐릭터 선택화면으로 가는 경우
@@ -162,6 +162,7 @@ void RequestServerPlayer::processCommand ()
 					//---------------------------------------------------------------
 					else
 					{
+						DEBUG_ADD_FORMAT_ERR("[PacketError] invalid packet ORDER %d", getPlayerStatus());
 						throw InvalidProtocolException("invalid packet ORDER");
 					}				
 				}
@@ -169,7 +170,7 @@ void RequestServerPlayer::processCommand ()
 				// 패킷 크기가 너무 크면 프로토콜 에러로 간주한다.
 				if ( packetSize > g_pPacketFactoryManager->getPacketMaxSize( packetID ) )
 				{
-					DEBUG_ADD_FORMAT("[PacketError] too large packet SIZE: %d/%d", (int)packetSize, (int)g_pPacketFactoryManager->getPacketMaxSize( packetID ));		
+					DEBUG_ADD_FORMAT_ERR("[PacketError] too large packet SIZE: %d/%d", (int)packetSize, (int)g_pPacketFactoryManager->getPacketMaxSize( packetID ));
 					throw InvalidProtocolException("too large packet SIZE");
 				}
 				
@@ -177,7 +178,7 @@ void RequestServerPlayer::processCommand ()
 				// 최적화시 break 를 사용하면 된다. (여기서는 일단 exception을 쓸 것이다.)
 				if ( m_pInputStream->length() < szPacketHeader + packetSize )
 				{
-					DEBUG_ADD_FORMAT("[PacketError] InsufficientDataException: %d/%d", m_pInputStream->length(), szPacketHeader + packetSize);
+					DEBUG_ADD_FORMAT("Waiting for complete packet: %d/%d", m_pInputStream->length(), szPacketHeader + packetSize);
 		
 					throw InsufficientDataException();
 				}
@@ -201,7 +202,8 @@ void RequestServerPlayer::processCommand ()
 				if (bExecute)
 				{
 					#ifdef __DEBUG_OUTPUT__
-						DEBUG_ADD(pPacket->toString().c_str());
+						DEBUG_ADD_FORMAT("[Receive] packet id=%u size=%u",
+							static_cast<unsigned>(packetID), static_cast<unsigned>(packetSize));
 					#endif
 
 					// Dispatch table (RESTRUCTURING.md tasks 2.1-2.4); an
@@ -223,7 +225,7 @@ void RequestServerPlayer::processCommand ()
 				//---------------------------------------------------------
 				if (++processedPacket > maxProcessPacket)
 				{
-					DEBUG_ADD_FORMAT("[PacketSkip] So many Packets. at RequestServerPlayer");
+					DEBUG_ADD_FORMAT_WAR("[PacketSkip] So many Packets. at RequestServerPlayer");
 
 					break;
 				}			

@@ -422,7 +422,7 @@ MZone::ReleaseObject()
 					{
 						if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 						{
-							DEBUG_ADD_FORMAT("Can't RemoveCreatureWhenRelease! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,serverX,serverY);
+							DEBUG_ADD_FORMAT_WAR("Can't RemoveCreatureWhenRelease! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,serverX,serverY);
 						}
 					}
 
@@ -1157,7 +1157,7 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 
 		if (!m_ppSector[ys][xs].RemoveCreature(id))
 		{	
-			DEBUG_ADD_FORMAT("Can't Remove! [Ground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);			
+			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Ground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
 	}
 
@@ -1166,7 +1166,7 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	//------------------------------------------------
 	if (!m_ppSector[yn][xn].AddGroundCreature( pCreature ))
 	{
-		DEBUG_ADD_FORMAT("Can't Add GroundCreature! ID=%d (%d,%d)", pCreature->GetID(), xn,yn);			
+		DEBUG_ADD_FORMAT_WAR("Can't Add GroundCreature! ID=%d (%d,%d)", pCreature->GetID(), xn,yn);
 	}
 
 	
@@ -1320,7 +1320,7 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 
 		if (!m_ppSector[ys][xs].RemoveCreature(id))
 		{	
-			DEBUG_ADD_FORMAT("Can't Remove! [Flying] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);			
+			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Flying] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
 	}
 
@@ -1329,7 +1329,7 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	//------------------------------------------------
 	if (!m_ppSector[yn][xn].AddFlyingCreature( pCreature ))
 	{
-		DEBUG_ADD_FORMAT("Can't Add FlyingCreature! ID=%d (%d,%d)", pCreature->GetID(), xn,yn);			
+		DEBUG_ADD_FORMAT_WAR("Can't Add FlyingCreature! ID=%d (%d,%d)", pCreature->GetID(), xn,yn);
 	}
 
 	/*
@@ -1474,7 +1474,7 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 
 		if (!m_ppSector[ys][xs].RemoveCreature(id))
 		{	
-			DEBUG_ADD_FORMAT("Can't Remove! [Underground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);			
+			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Underground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
 	}
 
@@ -1483,7 +1483,7 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 	//------------------------------------------------
 	if (!m_ppSector[yn][xn].AddUndergroundCreature( pCreature ))
 	{
-		DEBUG_ADD_FORMAT("Can't Add UndergroundCreature! ID=%d (%d,%d)", pCreature->GetID(), xn,yn);			
+		DEBUG_ADD_FORMAT_WAR("Can't Add UndergroundCreature! ID=%d (%d,%d)", pCreature->GetID(), xn,yn);
 	}
 
 	/*
@@ -1939,7 +1939,7 @@ MZone::UpdateAllCreature()
 					{
 						if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 						{
-							DEBUG_ADD_FORMAT("Can't RemoveCreature! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,serverX,serverY);
+							DEBUG_ADD_FORMAT_WAR("Can't RemoveCreature! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,serverX,serverY);
 
 							removed = false;
 						}
@@ -2200,7 +2200,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 			if (!m_ppSector[serverY][serverX].RemoveCreature(id))
 			{	
 				removed = false;
-				DEBUG_ADD_FORMAT("Can't RemoveCreatureToCorpse! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), sX,sY,serverX,serverY);
+				DEBUG_ADD_FORMAT_WAR("Can't RemoveCreatureToCorpse! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), sX,sY,serverX,serverY);
 			}			
 		}
 		
@@ -2240,7 +2240,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	#ifdef OUTPUT_DEBUG
 		if (!removed)
 		{			
-			DEBUG_ADD_FORMAT("[Create Corpse] Can't Remove Creature from Sector: %d, (%d,%d)", id, sX, sY);
+			DEBUG_ADD_FORMAT_WAR("[Create Corpse] Can't Remove Creature from Sector: %d, (%d,%d)", id, sX, sY);
 		}
 	#endif
 	
@@ -2282,7 +2282,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 		#ifdef OUTPUT_DEBUG
 			if (!bRemove)
 			{
-					DEBUG_ADD_FORMAT("Can't Remove Old Item");
+					DEBUG_ADD_FORMAT_WAR("Can't Remove Old Item");
 			}
 		#endif
 	}
@@ -2294,7 +2294,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 		if (!AddItem( pCorpse ))
 		{
 			// 음.. 불가능한 경우라고 할 수 있다. - -;
-			DEBUG_ADD_FORMAT("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
 		
 			delete pCorpse;
 
@@ -2465,7 +2465,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 				{
 					if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 					{
-						DEBUG_ADD_FORMAT("Can't RemoveCreature! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,cX,cY);
+						DEBUG_ADD_FORMAT_WAR("Can't RemoveCreature! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,cX,cY);
 
 						removed = false;
 					}
@@ -2677,7 +2677,7 @@ MZone::AddCreature(MCreature* pCreature)
 	if (pCreature->GetX()==SECTORPOSITION_NULL
 		|| pCreature->GetY()==SECTORPOSITION_NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] Position Not Set");
+		DEBUG_ADD_FORMAT_ERR("[Error] Position Not Set");
 
 		return false;
 	}
@@ -2772,7 +2772,7 @@ MZone::AddCreature(MCreature* pCreature)
 
 			if (pSector==NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] AddCreature: position (%d, %d) is outside the zone (%d x %d)", x, y, (int)m_Width, (int)m_Height);
+				DEBUG_ADD_FORMAT_ERR("[Error] AddCreature: position (%d, %d) is outside the zone (%d x %d)", x, y, (int)m_Width, (int)m_Height);
 
 				return false;
 			}
@@ -2820,7 +2820,7 @@ MZone::AddCreature(MCreature* pCreature)
 				// reported as added.
 				//----------------------------------------
 				default :
-					DEBUG_ADD_FORMAT("[Error] AddCreature: move type %d has no sector", (int)pCreature->GetMoveType());
+					DEBUG_ADD_FORMAT_ERR("[Error] AddCreature: move type %d has no sector", (int)pCreature->GetMoveType());
 				break;
 			}
 		}
@@ -2834,7 +2834,7 @@ MZone::AddCreature(MCreature* pCreature)
 			return true;
 		}		
 
-		DEBUG_ADD_FORMAT("[Error] AddCreature Failed!");
+		DEBUG_ADD_FORMAT_ERR("[Error] AddCreature Failed!");
 
 		return false;
 	}
@@ -2965,7 +2965,7 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 	{
 		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{
-			DEBUG_ADD_FORMAT("Can't RemoveCreature! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,serverX,serverY);
+			DEBUG_ADD_FORMAT_WAR("Can't RemoveCreature! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), x,y,serverX,serverY);
 
 			removed = false;
 		}
@@ -3386,7 +3386,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 
 		if (pSector==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] AddItem: position (%d, %d) is outside the zone (%d x %d)", (int)pItem->GetX(), (int)pItem->GetY(), (int)m_Width, (int)m_Height);
+			DEBUG_ADD_FORMAT_ERR("[Error] AddItem: position (%d, %d) is outside the zone (%d x %d)", (int)pItem->GetX(), (int)pItem->GetY(), (int)m_Width, (int)m_Height);
 
 			return false;
 		}
@@ -3498,7 +3498,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 			return true;
 		}
 
-		DEBUG_ADD_FORMAT("[Error] Already Exist Item id=%d, xy(%d,%d), cl=%d, ty=%d",
+		DEBUG_ADD_FORMAT_ERR("[Error] Already Exist Item id=%d, xy(%d,%d), cl=%d, ty=%d",
 								pItem->GetID(), 
 								pItem->GetX(), pItem->GetY(), 
 								(int)pItem->GetItemClass(), 
@@ -3566,7 +3566,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 						
 			if (!g_pZone->RemoveTileEffect( sector_x,sector_y,   (TYPE_EFFECTSPRITETYPE)(EFFECTSPRITETYPE_ARMEGA_TILE + pItem->GetItemType()) ) )
 			{
-				DEBUG_ADD("[Error] Can't Remove Effect From Tile (ARMEGA_TILE HardCoding)");
+				DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (ARMEGA_TILE HardCoding)");
 			}
 		}
 		
@@ -3577,7 +3577,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 			{
 				if (!g_pZone->RemoveTileEffect( sector_x,sector_y,   (TYPE_EFFECTSPRITETYPE)(EFFECTSPRITETYPE_DRAGON_EYE)) )
 				{
-					DEBUG_ADD("[Error] Can't Remove Effect From Tile (ITEM_CLASS_WAR_ITEM)");
+					DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (ITEM_CLASS_WAR_ITEM)");
 				}
 			}
 		}
@@ -3598,7 +3598,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 				if(TempItemType >5 ) TempItemType = 0;
 			if (!g_pZone->RemoveTileEffect( sector_x,sector_y,  (TYPE_EFFECTSPRITETYPE)(TempEffetType[TempItemType]) ) )
 			{
-				DEBUG_ADD("[Error] Can't Remove Effect From Tile (AMBER_OF_GUARD_TILE HardCoding)");
+				DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (AMBER_OF_GUARD_TILE HardCoding)");
 			}
 		}
 		
@@ -3606,7 +3606,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 		{
 			if (!g_pZone->RemoveTileEffect( sector_x,sector_y,   (TYPE_EFFECTSPRITETYPE)EFFECTSPRITETYPE_DROP_BLOOD_BIBLE) )
 			{
-				DEBUG_ADD("[Error] Can't Remove Effect From Tile (DropBloodBible HardCoding)");
+				DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (DropBloodBible HardCoding)");
 			}
 		}
 
@@ -3678,7 +3678,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 						
 			if (!g_pZone->RemoveTileEffect( sector_x,sector_y,   (TYPE_EFFECTSPRITETYPE)(EFFECTSPRITETYPE_ARMEGA_TILE + pItem->GetItemType() )) )
 			{
-				DEBUG_ADD("[Error] Can't Remove Effect From Tile (ARMEGA_TILE HardCoding)");
+				DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (ARMEGA_TILE HardCoding)");
 			}
 		}
 		
@@ -3689,7 +3689,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 			{
 				if (!g_pZone->RemoveTileEffect( sector_x,sector_y,   (TYPE_EFFECTSPRITETYPE)(EFFECTSPRITETYPE_DRAGON_EYE)) )
 				{
-					DEBUG_ADD("[Error] Can't Remove Effect From Tile (ITEM_CLASS_WAR_ITEM)");
+					DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (ITEM_CLASS_WAR_ITEM)");
 				}
 			}
 		}
@@ -3711,7 +3711,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 			if(TempItemType >5 ) TempItemType = 0;
 			if (!g_pZone->RemoveTileEffect( sector_x,sector_y,  (TYPE_EFFECTSPRITETYPE)(TempEffetType[TempItemType] )) )
 			{
-				DEBUG_ADD("[Error] Can't Remove Effect From Tile (AMBER_OF_GUARD_TILE HardCoding)");
+				DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (AMBER_OF_GUARD_TILE HardCoding)");
 			}
 		}
 		
@@ -3719,7 +3719,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 		{
 			if (!g_pZone->RemoveTileEffect( sector_x,sector_y,   (TYPE_EFFECTSPRITETYPE)EFFECTSPRITETYPE_DROP_BLOOD_BIBLE) )
 			{
-				DEBUG_ADD("[Error] Can't Remove Effect From Tile (DropBloodBible HardCoding)");
+				DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile (DropBloodBible HardCoding)");
 			}
 		}
 	}
@@ -4197,7 +4197,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 {
 	if (effectStatus >= g_pEffectStatusTable->GetSize())
 	{
-		DEBUG_ADD_FORMAT("[Error]EffectStatus is NULL or Over: %d", effectStatus);
+		DEBUG_ADD_FORMAT_ERR("[Error]EffectStatus is NULL or Over: %d", effectStatus);
 
 		return false;
 	}
@@ -4234,7 +4234,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 				iGroundEffect++;
 			}
 			
-			DEBUG_ADD("EffectSpriteType of EffectStatus is NULL");
+			DEBUG_ADD_WAR("EffectSpriteType of EffectStatus is NULL");
 			
 			return bDelete;
 		}
@@ -4280,7 +4280,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 				iGroundEffect++;
 			}
 
-			DEBUG_ADD("EffectSpriteType of EffectStatus is NULL");
+			DEBUG_ADD_WAR("EffectSpriteType of EffectStatus is NULL");
 
 			return bDelete;
 		}
@@ -4341,7 +4341,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 	(void)serverID;
 	if (type==EFFECTSPRITETYPE_NULL)
 	{
-		DEBUG_ADD("[Error]EffectSpriteType of EffectStatus is NULL");
+		DEBUG_ADD_ERR("[Error]EffectSpriteType of EffectStatus is NULL");
 
 		return false;
 	}
@@ -4350,7 +4350,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 
 	if (frameID==FRAMEID_NULL)
 	{
-		DEBUG_ADD("[Error]FrameID of EffectSpriteType is NULL");
+		DEBUG_ADD_ERR("[Error]FrameID of EffectSpriteType is NULL");
 
 		return false;
 	}
@@ -4465,7 +4465,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 		}
 	}
 
-	DEBUG_ADD("EffectSpriteType of EffectStatus is NULL");
+	DEBUG_ADD_WAR("EffectSpriteType of EffectStatus is NULL");
 	
 	return false;
 }
@@ -5407,7 +5407,7 @@ MZone::AddHelicopter(TYPE_OBJECTID creatureID, int x0, int y0)
 	if (!pHelicopter->SetChaseCreature( creatureID, x0, y0 )
 		|| !m_HelicopterManager.AddHelicopter( pHelicopter ))
 	{
-		DEBUG_ADD("Can't Add Helicopter");
+		DEBUG_ADD_WAR("Can't Add Helicopter");
 
 		delete pHelicopter;
 

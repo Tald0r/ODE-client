@@ -38,14 +38,14 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	int skillID = pPacket->getSkillType();
 
 	if( g_pActionInfoTable->GetSize() <= skillID )
 	{
-		DEBUG_ADD_FORMAT("[Error] Exceed SkillType %d",skillID);
+		DEBUG_ADD_FORMAT_ERR("[Error] Exceed SkillType %d",skillID);
 		SendBugReport("[ErrorGCSTSOK1H] Exceed SkillType %d", skillID );
 		return;
 	}

@@ -35,7 +35,7 @@ void ApplyWorldList(CServerInformation& selection, LCWorldList& packet)
 		}
 		else
 		{
-			DEBUG_ADD("[Error] ServerGroupInfo is NULL");
+			DEBUG_ADD_ERR("[Error] ServerGroupInfo is NULL");
 		}
 	}
 
@@ -48,7 +48,7 @@ bool ApplyServerList(CServerInformation& selection, LCServerList& packet)
 	ServerGroup* world = selection.GetData(groupID);
 	if (world == nullptr)
 	{
-		DEBUG_ADD_FORMAT("[Error] ServerGroup(%d) is NULL", groupID);
+		DEBUG_ADD_FORMAT_ERR("[Error] ServerGroup(%d) is NULL", groupID);
 		return false;
 	}
 
@@ -79,7 +79,7 @@ bool ApplyServerList(CServerInformation& selection, LCServerList& packet)
 		}
 		else
 		{
-			DEBUG_ADD("[Error] ServerGroupInfo is NULL");
+			DEBUG_ADD_ERR("[Error] ServerGroupInfo is NULL");
 		}
 	}
 

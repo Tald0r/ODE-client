@@ -36,7 +36,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 	//--------------------------------------------------------
 	if (pItem==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] Can't new Item ID=%d, Type=%d", pPacket->getItemClass(), pPacket->getItemType());
+		DEBUG_ADD_FORMAT_ERR("[Error] Can't new Item ID=%d, Type=%d", pPacket->getItemClass(), pPacket->getItemType());
 		
 		return;
 	}
@@ -57,7 +57,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -72,7 +72,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 		if (pCreature==NULL)
 		{
 			// message
-			DEBUG_ADD_FORMAT("[Error] Not Exist Creature. ID=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] Not Exist Creature. ID=%d", pPacket->getObjectID());
 		}
 		//--------------------------------------------------
 		// 존재하는 Creature인 경우
@@ -92,7 +92,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Can't Addon Item. ID=%d, Class=%d, Type=%d", pPacket->getObjectID(), pItem->GetItemClass(), pItem->GetItemType());
+					DEBUG_ADD_FORMAT_ERR("[Error] Can't Addon Item. ID=%d, Class=%d, Type=%d", pPacket->getObjectID(), pItem->GetItemClass(), pItem->GetItemType());
 				}				
 			#else
 				pCreatureWear->SetAddonItem( pItem );
@@ -106,7 +106,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 		//--------------------------------------------------
 		else 
 		{
-			DEBUG_ADD_FORMAT("[Error] Creature is Not CreatureWear. ID=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] Creature is Not CreatureWear. ID=%d", pPacket->getObjectID());
 		}
 	}	
 

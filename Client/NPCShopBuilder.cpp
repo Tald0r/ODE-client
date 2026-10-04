@@ -45,7 +45,7 @@ bool BuildNPCShopShelf(MShop& shop, const NPC_INFO* npc,
 			std::unique_ptr<MItem> item(host.CreateItem ? host.CreateItem(itemClass) : nullptr);
 			if (!item)
 			{
-				DEBUG_ADD_FORMAT("[Error] Shop template: invalid item class %d", itemClass);
+				DEBUG_ADD_FORMAT_ERR("[Error] Shop template: invalid item class %d", itemClass);
 				continue;
 			}
 			if (mysterious && host.IsFemale && host.IsFemale()

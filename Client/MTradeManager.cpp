@@ -410,7 +410,7 @@ MTradeManager::Trade()
 		|| m_pOtherMoney==NULL)
 	{
 		#ifdef OUTPUT_DEBUG
-			DEBUG_ADD_FORMAT("[Error] Trade Failed! %d %d %d %d %d %d"
+			DEBUG_ADD_FORMAT_ERR("[Error] Trade Failed! %d %d %d %d %d %d"
 								,!m_bAcceptMyTrade
 								,!m_bAcceptOtherTrade
 								,m_pMyInventory==NULL
@@ -430,7 +430,7 @@ MTradeManager::Trade()
 	//---------------------------------------------------------------
 	if (!CanTrade())
 	{
-		DEBUG_ADD("[Error] Can't Trade");			
+		DEBUG_ADD_ERR("[Error] Can't Trade");
 		
 		return false;
 	}
@@ -468,7 +468,7 @@ MTradeManager::Trade()
 			else
 			{
 				// 콩가루~~
-				DEBUG_ADD("[Error] Remove Error");				
+				DEBUG_ADD_ERR("[Error] Remove Error");
 			}
 
 		}				

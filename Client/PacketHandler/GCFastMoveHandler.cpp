@@ -47,7 +47,7 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 		}
 		else
 		{
-			DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+			DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 		}
 
 		pCreature = g_pPlayer;
@@ -60,7 +60,7 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 	if (pCreature == NULL)
 	{
 		// 캐릭터 없다.
-		DEBUG_ADD_FORMAT("[Error] There is no such Creature. id=%d", objectID);
+		DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature. id=%d", objectID);
 	}
 	// Creature있을 때.. 		
 	else

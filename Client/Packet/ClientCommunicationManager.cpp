@@ -82,7 +82,7 @@ void ClientCommunicationManager::sendDatagram ( Datagram * pDatagram )
 	// has to tolerate its absence.
 	if (m_pDatagramSocket == NULL)
 	{
-		DEBUG_ADD("[Error] ClientCommunicationManager-sendDatagram-no UDP socket");
+		DEBUG_ADD_WAR("[Error] ClientCommunicationManager-sendDatagram-no UDP socket");
 		return;
 	}
 
@@ -109,7 +109,7 @@ void ClientCommunicationManager::sendPacket ( const std::string& host , uint por
 
 	if (host.size()==0)
 	{
-		DEBUG_ADD("[Error] ClientCommunicationManager-sendPacket-host NULL");
+		DEBUG_ADD_WAR("[Error] ClientCommunicationManager-sendPacket-host NULL");
 		return;
 	}
 
@@ -117,7 +117,7 @@ void ClientCommunicationManager::sendPacket ( const std::string& host , uint por
 	// dropped rather than dereferencing NULL.
 	if (m_pDatagramSocket == NULL)
 	{
-		DEBUG_ADD("[Error] ClientCommunicationManager-sendPacket-no UDP socket");
+		DEBUG_ADD_WAR("[Error] ClientCommunicationManager-sendPacket-no UDP socket");
 		return;
 	}
 
@@ -141,7 +141,7 @@ void ClientCommunicationManager::sendPacket ( const std::string& host , uint por
 
 		#ifdef __DEBUG_OUTPUT__
 			DEBUG_ADD_FORMAT("[To] %s(%d)", host.c_str(), port);
-			DEBUG_ADD_FORMAT("[Send] %s", pPacket->toString().c_str());
+			DEBUG_ADD_FORMAT("[Send] datagram id=%u", static_cast<unsigned>(pPacket->getPacketID()));
 		#endif
 
     } catch ( Throwable & t ) {
@@ -152,7 +152,7 @@ void ClientCommunicationManager::sendPacket ( const std::string& host , uint por
 			if( strstr( t.toString().c_str(), "(datagram)" ) != NULL )
 				SendBugReport( "%s", t.toString().c_str() );
 
-        DEBUG_ADD( t.toString().c_str() );
+        DEBUG_ADD_WAR( t.toString().c_str() );
     }
 
     __END_DEBUG
@@ -209,7 +209,7 @@ ClientCommunicationManager::Update()
 			if (pDatagramPacket!=NULL)
 			{
 				#ifdef __DEBUG_OUTPUT__
-					DEBUG_ADD_FORMAT("[RECEIVE] %s", pDatagramPacket->toString().c_str());
+					DEBUG_ADD_FORMAT("[Receive] datagram id=%u", static_cast<unsigned>(pDatagramPacket->getPacketID()));
 				#endif
 
 				// The same set Datagram::read checked, asked again here where
@@ -243,7 +243,7 @@ ClientCommunicationManager::Update()
 		catch ( Throwable & t )
 		{
 			// Logged, never reported: see the banner above.
-			DEBUG_ADD( t.toString().c_str() );
+			DEBUG_ADD_WAR( t.toString().c_str() );
 
 			if (pDatagramPacket!=NULL)
 				delete pDatagramPacket;

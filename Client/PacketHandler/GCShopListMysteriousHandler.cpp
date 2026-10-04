@@ -29,7 +29,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// The zone exists
@@ -43,7 +43,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 		//------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature id=%d", pPacket->getObjectID());
 		}
 		//------------------------------------------------------
 		// The creature is an NPC
@@ -58,7 +58,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 			MShopShelf* pShelf = MShopShelf::NewShelf( pPacket->getShopType() );
 			if (pShelf == NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] GCShopListMysterious: invalid shelf type %d", (int)pPacket->getShopType());
+				DEBUG_ADD_FORMAT_ERR("[Error] GCShopListMysterious: invalid shelf type %d", (int)pPacket->getShopType());
 				return;
 			}
 			
@@ -78,7 +78,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 
 					if (pItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCShopListMysterious: invalid item class %d", (int)item.itemClass);
+						DEBUG_ADD_FORMAT_ERR("[Error] GCShopListMysterious: invalid item class %d", (int)item.itemClass);
 						continue;
 					}
 
@@ -145,7 +145,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 		//------------------------------------------------------
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
 		}
 	}
 

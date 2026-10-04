@@ -116,7 +116,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 			}
 			else
 			{
-				DEBUG_ADD("[Error] Item is NULL");
+				DEBUG_ADD_ERR("[Error] Item is NULL");
 			}
 
 			//--------------------------------------------------------------
@@ -124,12 +124,12 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 			//--------------------------------------------------------------
 			if (!g_pMoneyManager->SetMoney( pPacket->getPrice() ))
 			{
-				DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
+				DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
 			}
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] Different ID. Packet(%d)!=ClientTemp(%d)", pPacket->getItemObjectID(), pItem->GetID());
+			DEBUG_ADD_FORMAT_ERR("[Error] Different ID. Packet(%d)!=ClientTemp(%d)", pPacket->getItemObjectID(), pItem->GetID());
 		}
 
 		// mode를 없앤다.
@@ -181,7 +181,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 		//--------------------------------------------------------------
 		if (!g_pMoneyManager->SetMoney( pPacket->getPrice() ))
 		{
-			DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
 		}
 
 		// mode를 없앤다.
@@ -197,7 +197,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 	//--------------------------------------------------------------
 	else
 	{
-		DEBUG_ADD("[Error] Sell? -_-; No Temp Information!");
+		DEBUG_ADD_ERR("[Error] Sell? -_-; No Temp Information!");
 	}
 
 	__END_CATCH

@@ -379,7 +379,7 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 							}
 							else
 							{
-								DEBUG_ADD("[Error] Mode is Not SKILL_LEARN");								
+								DEBUG_ADD_ERR("[Error] Mode is Not SKILL_LEARN");
 							}
 						}
 					}
@@ -408,7 +408,7 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 								g_pTempInformation->SetMode( TempInformation::MODE_NULL );
 							} else
 							{
-								DEBUG_ADD("[Error] Mode is Not SELECT_QUEST");
+								DEBUG_ADD_ERR("[Error] Mode is Not SELECT_QUEST");
 							}
 						}
 					}
@@ -458,7 +458,7 @@ UIDialog::ProcessPCTalkDlg(C_VS_UI_DIALOG * pDlg, id_t id)
 							}
 							else
 							{
-								DEBUG_ADD("[Error] Mode is Not SKILL_LEARN");								
+								DEBUG_ADD_ERR("[Error] Mode is Not SKILL_LEARN");
 							}
 						}
 					}

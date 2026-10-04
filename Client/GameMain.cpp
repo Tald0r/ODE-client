@@ -371,7 +371,7 @@ UpdateSocketOutput()
 		}
 
 		DEBUG_ADD_ERR("[Error] UpdateSocketInput");
-		DEBUG_ADD(t.toString().c_str());
+		DEBUG_ADD_ERR(t.toString().c_str());
 		
 		//InitFail("Server와의 접속이 끊어졌습니다.");
 		SetMode( MODE_MAINMENU );
@@ -1929,7 +1929,7 @@ LoadZone(int n)
 
 	if (pZoneInfo==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] Wrong Zone ID=%d", n);	
+		DEBUG_ADD_FORMAT_ERR("[Error] Wrong Zone ID=%d", n);
 		
 		return FALSE;
 	}
@@ -2715,7 +2715,7 @@ LoadZoneInfo(int n)
 
 	if (pZoneInfo==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] Wrong Zone ID=%d", n);	
+		DEBUG_ADD_FORMAT_ERR("[Error] Wrong Zone ID=%d", n);
 		
 		return FALSE;
 	}
@@ -3020,7 +3020,7 @@ LoadZoneInfo(int n)
 		}
 		else
 		{			
-			DEBUG_ADD_FORMAT("[Error] Invalid ZoneInfo for zone ID=%d", n);
+			DEBUG_ADD_FORMAT_ERR("[Error] Invalid ZoneInfo for zone ID=%d", n);
 			return FALSE;
 		}
 
@@ -3030,7 +3030,7 @@ LoadZoneInfo(int n)
 	}
 	else
 	{		
-		DEBUG_ADD("[Load Zone] ZoneInfo File OpenError");
+		DEBUG_ADD_ERR("[Load Zone] ZoneInfo File OpenError");
 	}
 
 	DEBUG_ADD("[Load Zone] OK");
@@ -3443,7 +3443,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 			//-----------------------------------------------------------
 			if (pBuffer==NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
+				DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
 			}
 			else
 			//-----------------------------------------------------------
@@ -3628,7 +3628,7 @@ PlaySound(TYPE_SOUNDID soundID)
 		//-----------------------------------------------------------
 		if (pBuffer==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
+			DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
 		}
 		//-----------------------------------------------------------
 		// Load에 성공 했으면...
@@ -3751,7 +3751,7 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 		//-----------------------------------------------------------
 		if (pBuffer==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
+			DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
 		}
 		//-----------------------------------------------------------
 		// Load에 성공 했으면...
@@ -5421,7 +5421,7 @@ GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& 
 
 	if (pResultItem == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] GetMakeItemFitPosition: invalid item class %d", itemClass);
+		DEBUG_ADD_FORMAT_ERR("[Error] GetMakeItemFitPosition: invalid item class %d", itemClass);
 		return false;
 	}
 

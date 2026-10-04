@@ -43,7 +43,7 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	//------------------------------------------------------
@@ -52,7 +52,7 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -121,7 +121,7 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 		//------------------------------------------------------
 		if (g_pCurrentMagazine==NULL)
 		{
-			DEBUG_ADD("[Error] Current Magazine Not Exist!");			
+			DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
 		}
 		else
 		{

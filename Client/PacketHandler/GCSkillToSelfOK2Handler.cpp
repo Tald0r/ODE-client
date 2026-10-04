@@ -27,7 +27,7 @@ void GCSkillToSelfOK2Handler::execute ( GCSkillToSelfOK2 * pPacket , Player * pP
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -55,7 +55,7 @@ void GCSkillToSelfOK2Handler::execute ( GCSkillToSelfOK2 * pPacket , Player * pP
 			
 			if( g_pActionInfoTable->GetSize() <= skillID )
 			{
-				DEBUG_ADD_FORMAT("[Error] Exceed SkillType %d",skillID);
+				DEBUG_ADD_FORMAT_ERR("[Error] Exceed SkillType %d",skillID);
 				SendBugReport("[Error:GCSTSOK2H] Exceed SkillType %d", skillID );
 
 				return;

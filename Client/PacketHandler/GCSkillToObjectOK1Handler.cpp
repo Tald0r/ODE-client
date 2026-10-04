@@ -37,7 +37,7 @@ void GCSkillToObjectOK1Handler::execute ( GCSkillToObjectOK1 * pPacket , Player 
 	}
 	else
 	{
-		DEBUG_ADD("[Error] Player is not WaitVerifySkillSuccess");
+		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
 	//------------------------------------------------------------------
@@ -61,7 +61,7 @@ void GCSkillToObjectOK1Handler::execute ( GCSkillToObjectOK1 * pPacket , Player 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -101,7 +101,7 @@ void GCSkillToObjectOK1Handler::execute ( GCSkillToObjectOK1 * pPacket , Player 
 			
 			if( g_pActionInfoTable->GetSize() <= skillID )
 			{
-				DEBUG_ADD_FORMAT("[Error] Exceed SkillType %d",skillID);
+				DEBUG_ADD_FORMAT_ERR("[Error] Exceed SkillType %d",skillID);
 				
 				SendBugReport("[Error:GCSTOOK1H] Exceed SkillType %d", skillID );
 				return;
@@ -128,7 +128,7 @@ void GCSkillToObjectOK1Handler::execute ( GCSkillToObjectOK1 * pPacket , Player 
 
 				if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
-					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
+					DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skillID);
 					return;
 				}
 			}

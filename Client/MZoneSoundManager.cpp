@@ -168,7 +168,7 @@ ZONESOUND_NODE::Play(int x, int y, bool bLoop)
 				//-----------------------------------------------------------
 				if (pBuffer==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Failed to Load WAV. id=%d, fn=%s", m_SoundID, pFilename );
+					DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", m_SoundID, pFilename );
 
 					return;
 				}

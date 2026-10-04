@@ -216,7 +216,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 					//--------------------------------------------------------------
 					if (!g_pMoneyManager->SetMoney( value ))
 					{
-						DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
+						DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
 					}
 
 					DEBUG_ADD("RepairAll OK");
@@ -267,7 +267,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 						//--------------------------------------------------------------
 						if (!g_pMoneyManager->SetMoney( value ))
 						{
-							DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
+							DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
 						}
 					}
 					//else
@@ -277,7 +277,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Item is NULL");
+					DEBUG_ADD_FORMAT_ERR("[Error] Item is NULL");
 				}
 
 				// mode를 없앤다.
@@ -288,7 +288,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD("[Error] Repair? -_-; No Temp Information!");
+				DEBUG_ADD_ERR("[Error] Repair? -_-; No Temp Information!");
 			}
 		break;
 
@@ -397,7 +397,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 						//--------------------------------------------------------------
 						if (!g_pMoneyManager->SetMoney( value ))
 						{
-							DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
+							DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
 						}
 					}
 					//else
@@ -407,7 +407,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				}
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Item is NULL");
+					DEBUG_ADD_FORMAT_ERR("[Error] Item is NULL");
 				}
 
 				// mode를 없앤다.
@@ -418,7 +418,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 			}
 			else
 			{
-				DEBUG_ADD("[Error] Silvering? -_-; No Temp Information!");
+				DEBUG_ADD_ERR("[Error] Silvering? -_-; No Temp Information!");
 			}
 		break;
 
@@ -524,7 +524,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 			//--------------------------------------------------------------
 			if (!g_pMoneyManager->SetMoney( value ))
 			{
-				DEBUG_ADD_FORMAT("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
+				DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), value);
 			}
 
 			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_DONATION_OK].GetString() );
@@ -558,7 +558,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				// 별이 없는 경우 - -;
 				if (pBallItem==NULL)
 				{
-					DEBUG_ADD("[Error] Not Enough Ball -_-");
+					DEBUG_ADD_ERR("[Error] Not Enough Ball -_-");
 					break;
 				}
 				
@@ -584,7 +584,7 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 					}
 					else
 					{
-						DEBUG_ADD_FORMAT("[Error] Can't remove ball(%d, %d)", pBallItem->GetGridX(), pBallItem->GetGridY());
+						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove ball(%d, %d)", pBallItem->GetGridX(), pBallItem->GetGridY());
 					}
 				}
 			}

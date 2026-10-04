@@ -1280,7 +1280,7 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 	
 	if (status>=g_pEffectStatusTable->GetSize())
 	{
-		DEBUG_ADD_FORMAT("[Error]EffectStatus exceed Max : %d", (int)status);
+		DEBUG_ADD_FORMAT_ERR("[Error]EffectStatus exceed Max : %d", (int)status);
 		
 		return false;
 	}
@@ -2384,7 +2384,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 
 		if (type>=g_pEffectSpriteTypeTable->GetSize())//EFFECTSPRITETYPE_NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error]EffectSpriteType of EffectStatus exceed Max : %d", (int)type);
+			DEBUG_ADD_FORMAT_ERR("[Error]EffectSpriteType of EffectStatus exceed Max : %d", (int)type);
 			
 			return false;
 		}
@@ -2409,7 +2409,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 
 		if (frameID==FRAMEID_NULL)
 		{
-			DEBUG_ADD("[Error]FrameID of EffectSpriteType is NULL");
+			DEBUG_ADD_ERR("[Error]FrameID of EffectSpriteType is NULL");
 			
 			return false;
 		}
@@ -2585,7 +2585,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 
 		if (colorSet>=MAX_COLORSET)
 		{
-			DEBUG_ADD_FORMAT("[Error]EffectColor of EffectStatus exceed Max : ", (int)colorSet);
+			DEBUG_ADD_FORMAT_ERR("[Error]EffectColor of EffectStatus exceed Max : ", (int)colorSet);
 			
 			return false;
 		}
@@ -3335,7 +3335,7 @@ MCreature::CreateAttachEffect(TYPE_EFFECTSPRITETYPE type,
 
 		if (type>=g_pEffectSpriteTypeTable->GetSize())//EFFECTSPRITETYPE_NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error]EffectSpriteType of EffectStatus exceed Max : ", (int)type);
+			DEBUG_ADD_FORMAT_ERR("[Error]EffectSpriteType of EffectStatus exceed Max : ", (int)type);
 			
 			return NULL;
 		}
@@ -3350,7 +3350,7 @@ MCreature::CreateAttachEffect(TYPE_EFFECTSPRITETYPE type,
 
 			if (type>=g_pEffectSpriteTypeTable->GetSize())//EFFECTSPRITETYPE_NULL)
 			{
-				DEBUG_ADD_FORMAT("[Error]EffectSpriteType of EffectStatus exceed Max : ", (int)type);
+				DEBUG_ADD_FORMAT_ERR("[Error]EffectSpriteType of EffectStatus exceed Max : ", (int)type);
 				
 				return NULL;
 			}
@@ -3512,7 +3512,7 @@ MCreature::CreateAttachEffect(TYPE_EFFECTSPRITETYPE type,
 
 	if (frameID==FRAMEID_NULL)
 	{
-		DEBUG_ADD("[Error]FrameID of EffectSpriteType is NULL");
+		DEBUG_ADD_ERR("[Error]FrameID of EffectSpriteType is NULL");
 		
 		return NULL;
 	}
@@ -5570,7 +5570,7 @@ MCreature::ActionMove()
 
 					if (m_DirectionMove >= 8)
 					{
-						DEBUG_ADD_FORMAT("[Error] Direction exceed MAX : dir=%d", (int)m_DirectionMove);
+						DEBUG_ADD_FORMAT_ERR("[Error] Direction exceed MAX : dir=%d", (int)m_DirectionMove);
 						return;
 					}
 				#endif
@@ -5647,7 +5647,7 @@ MCreature::ActionMove()
 					#ifdef OUTPUT_DEBUG
 						if (m_CreatureType >= g_pCreatureTable->GetSize())
 						{
-							DEBUG_ADD_FORMAT("[Error] CreatureType is exceed MAX. id=%d, type=%d", m_ID, m_CreatureType);
+							DEBUG_ADD_FORMAT_ERR("[Error] CreatureType is exceed MAX. id=%d, type=%d", m_ID, m_CreatureType);
 
 							SetStop();
 
@@ -5669,7 +5669,7 @@ MCreature::ActionMove()
 					}
 					else
 					{
-						DEBUG_ADD_FORMAT("[Error] What is MoveType of this Creature??? id=%d", m_ID);
+						DEBUG_ADD_FORMAT_ERR("[Error] What is MoveType of this Creature??? id=%d", m_ID);
 						
 						SetStop();
 
@@ -5836,7 +5836,7 @@ MCreature::ActionMove()
 				} 
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] MoveTimes Error. MCreature.cpp Lines:%d",__LINE__);
+					DEBUG_ADD_FORMAT_ERR("[Error] MoveTimes Error. MCreature.cpp Lines:%d",__LINE__);
 					return;
 				}
 

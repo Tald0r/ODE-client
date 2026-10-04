@@ -39,7 +39,7 @@ void GCLearnSkillReadyHandler::execute ( GCLearnSkillReady * pPacket , Player * 
 	// its end, then hand the garbage to the string table as an id.
 	if (domainType < 0 || domainType >= MAX_SKILLDOMAIN)
 	{
-		DEBUG_ADD_FORMAT("[PacketError-GCLearnSkillReadyHandler] domain out of range: %d", domainType);
+		DEBUG_ADD_FORMAT_WAR("[PacketError-GCLearnSkillReadyHandler] domain out of range: %d", domainType);
 		return;
 	}
 

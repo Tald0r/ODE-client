@@ -32,7 +32,7 @@ void GCPhoneDisconnectedHandler::execute ( GCPhoneDisconnected * pPacket , Playe
 	// end of the array.
 	if (slot < 0 || slot >= MAX_PCS_SLOT)
 	{
-		DEBUG_ADD_FORMAT("[PacketError-GCPhoneDisconnectedHandler] slot out of range: %d", slot);
+		DEBUG_ADD_FORMAT_WAR("[PacketError-GCPhoneDisconnectedHandler] slot out of range: %d", slot);
 		return;
 	}
 

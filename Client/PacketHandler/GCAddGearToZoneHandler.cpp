@@ -36,7 +36,7 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 				//----------------------------------------------------------------------
 				if (pItem==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Item does not exist in SlayerGear! slot=%d", (int)pPacket->getSlotID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Item does not exist in SlayerGear! slot=%d", (int)pPacket->getSlotID());
 				}
 				//----------------------------------------------------------------------
 				// item이 있는 경우 --> Gear에서 제거해서 Zone에 추가한다.
@@ -47,7 +47,7 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 					
 					if (g_pZone==NULL)
 					{
-						DEBUG_ADD("[Error] Zone is Not Init!");
+						DEBUG_ADD_ERR("[Error] Zone is Not Init!");
 						
 						delete pItem;
 					}
@@ -69,7 +69,7 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 				//----------------------------------------------------------------------
 				if (pItem==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Item does not exist in VampireGear! slot=%d", (int)pPacket->getSlotID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Item does not exist in VampireGear! slot=%d", (int)pPacket->getSlotID());
 				}
 				//----------------------------------------------------------------------
 				// item이 있는 경우 --> Gear에서 제거해서 Zone에 추가한다.
@@ -80,7 +80,7 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 					
 					if (g_pZone==NULL)
 					{
-						DEBUG_ADD("[Error] Zone is Not Init!");
+						DEBUG_ADD_ERR("[Error] Zone is Not Init!");
 						
 						delete pItem;
 					}
@@ -103,7 +103,7 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 				//----------------------------------------------------------------------
 				if (pItem==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] Item does not exist in OustersGear! slot=%d", (int)pPacket->getSlotID());
+					DEBUG_ADD_FORMAT_ERR("[Error] Item does not exist in OustersGear! slot=%d", (int)pPacket->getSlotID());
 				}
 				//----------------------------------------------------------------------
 				// item이 있는 경우 --> Gear에서 제거해서 Zone에 추가한다.
@@ -114,7 +114,7 @@ void GCAddGearToZoneHandler::execute ( GCAddGearToZone * pPacket , Player * pPla
 					
 					if (g_pZone==NULL)
 					{
-						DEBUG_ADD("[Error] Zone is Not Init!");
+						DEBUG_ADD_ERR("[Error] Zone is Not Init!");
 						
 						delete pItem;
 					}

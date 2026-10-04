@@ -1522,8 +1522,7 @@ InitGame()
 	//---------------------------------------------------------------------
 	log_init();
 
-	// Always enable console output and INFO level logging
-	// This ensures DEBUG_ADD macros and panic messages are visible
+	// Keep console diagnostics available; log_init selects the verbosity.
 	log_set_console_output(true);
 
 	// Debug builds also write the same lines to a file beside the executable.
@@ -1531,13 +1530,6 @@ InitGame()
 	// stderr console is easy to lose; the file is overwritten on every launch.
 #ifdef _DEBUG
 	log_set_file_output("DarkEden-debug.log");
-#endif
-
-// Conditional compilation: Remove DEBUG logs in Release builds
-#ifdef _DEBUG
-	log_set_level(LOG_LEVEL_DEBUG);
-#else
-	log_set_level(LOG_LEVEL_INFO);
 #endif
 
 	g_pFileDef = new Properties;
@@ -2120,7 +2112,7 @@ InitSocket()
 	} catch ( Throwable & t ) {	
 		//MessageBox( g_hWnd, t.toString().c_str(), NULL, MB_OK );
 		//InitFail(t.toString().c_str());
-		DEBUG_ADD(t.toString().c_str());
+		DEBUG_ADD_ERR(t.toString().c_str());
 
 		if (pSocket!=NULL)
 		{

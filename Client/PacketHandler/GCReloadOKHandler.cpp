@@ -32,7 +32,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 	//------------------------------------------------------------------
 	if (g_pPlayer->IsVampire())
 	{
-		DEBUG_ADD("[Error] Player is Vampire. No Effect!");
+		DEBUG_ADD_ERR("[Error] Player is Vampire. No Effect!");
 
 		return;
 	}
@@ -145,7 +145,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 				//----------------------------------------------------
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
+					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
 					
 					// inventory에서 제거
 					g_pInventory->RemoveItem( pItem->GetID() );
@@ -161,7 +161,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 			//----------------------------------------------------
 			else
 			{
-				DEBUG_ADD_FORMAT("[Error] Item is Not Magazine: the ItemClass=%d", (int)pItem->GetItemClass());
+				DEBUG_ADD_FORMAT_ERR("[Error] Item is Not Magazine: the ItemClass=%d", (int)pItem->GetItemClass());
 			}
 		}
 		//----------------------------------------------------
@@ -248,7 +248,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 				//----------------------------------------------------
 				else
 				{
-					DEBUG_ADD_FORMAT("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
+					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
 					
 					// QuickSlot에서 제거
 					g_pQuickSlot->RemoveItem( pItem->GetID() );
@@ -261,7 +261,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 			//----------------------------------------------------
 			else
 			{
-				DEBUG_ADD_FORMAT("[Error] Item is Not Magazine: the ItemClass=%d", (int)pItem->GetItemClass());
+				DEBUG_ADD_FORMAT_ERR("[Error] Item is Not Magazine: the ItemClass=%d", (int)pItem->GetItemClass());
 			}
 		}
 		//----------------------------------------------------
@@ -269,7 +269,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 		//----------------------------------------------------
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
+			DEBUG_ADD_FORMAT_ERR("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
 			
 			return;
 		}
@@ -283,7 +283,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 	//----------------------------------------------------
 	else
 	{
-		DEBUG_ADD("[Error] No Item in CheckBuffer");
+		DEBUG_ADD_ERR("[Error] No Item in CheckBuffer");
 		
 		return;
 	}

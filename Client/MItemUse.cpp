@@ -252,7 +252,7 @@ MItem::NewItem(ITEM_CLASS itemClass)
 	if (itemClass < 0 || itemClass >= MAX_ITEM_CLASS
 		|| s_NewItemClassTable[itemClass] == NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] MItem::NewItem: invalid item class %d", itemClass);
+		DEBUG_ADD_FORMAT_ERR("[Error] MItem::NewItem: invalid item class %d", itemClass);
 		return NULL;
 	}
 

@@ -71,7 +71,7 @@ void GCUseBonusPointOKHandler::execute ( GCUseBonusPointOK * pPacket , Player * 
 		}
 		else
 		{
-			DEBUG_ADD("[Error] Minus BonusPoint");
+			DEBUG_ADD_ERR("[Error] Minus BonusPoint");
 		}
 	}
 

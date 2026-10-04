@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	// mutable buffer.
 	std::string commandLine = (argc > 1 && argv[1] != NULL) ? argv[1] : "";
 
-	fprintf(stderr, "Dark Eden (SDL2) starting, command line: \"%s\"\n", commandLine.c_str());
+	fprintf(stderr, "Dark Eden (SDL2) starting\n");
 
 	// The subsystems initialise what they use (SpriteLib the video, dxlib
 	// the audio, TextSystem the fonts); this only fails early and loudly

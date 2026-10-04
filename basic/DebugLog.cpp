@@ -7,6 +7,7 @@
 
 #include "DebugLog.h"
 #include "CrtCompat.h"
+#include <atomic>
 #include <string.h>
 #include <time.h>
 #include "Platform.h"
@@ -26,7 +27,7 @@
 // Configuration
 //-----------------------------------------------------------------------------
 typedef struct {
-	LogLevel level;
+	std::atomic<LogLevel> level;
 	bool output_to_console;
 	bool output_to_file;
 	bool output_to_array;
@@ -43,11 +44,10 @@ static LogConfig g_config = {
 	NULL				// File handle
 };
 
-static bool g_initialized = false;
+static std::atomic<bool> g_initialized{false};
 
-// Test seam (see DebugLog.h). NULL in every shipped build, and read without
-// the lock for the same reason the level below is: it is only ever installed
-// by a single-threaded test binary.
+// Test seam (see DebugLog.h). NULL in every shipped build; observers are
+// installed only while the single-threaded test binary is quiescent.
 static LogSiteObserver g_site_observer = NULL;
 
 //-----------------------------------------------------------------------------
@@ -120,33 +120,34 @@ static void get_timestamp(char *buffer, size_t size) {
 //-----------------------------------------------------------------------------
 
 void log_init(void) {
-	if (g_initialized) {
+	if (g_initialized.load(std::memory_order_acquire)) {
 		return;	// Already initialized
 	}
 
-	// Initialize lock FIRST
+	const auto trace = Basic::GetEnvironment("DARKEDEN_TRACE");
+
+	// Initialize the lock before publishing the logger.
 	InitializeCriticalSection(&g_log_lock);
 
-	// Set default level based on build type
-#ifdef _DEBUG
-	g_config.level = LOG_LEVEL_INFO;
-#else
-	g_config.level = LOG_LEVEL_ERROR;	// Production: only errors
-#endif
+	// Keep warnings and significant information visible in every build.
+	// Detailed diagnostics require an explicit opt-in before startup.
+	const LogLevel initialLevel = trace && *trace == "1"
+		? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO;
+	g_config.level.store(initialLevel, std::memory_order_relaxed);
 
-	g_initialized = true;
+	g_initialized.store(true, std::memory_order_release);
 
 	// Log initialization message directly to stderr (avoiding lock)
 	fprintf(stderr, "[DEBUG LOG] Logging system initialized (level: %s)\n",
-			g_config.level == LOG_LEVEL_DEBUG ? "DEBUG" :
-			g_config.level == LOG_LEVEL_INFO ? "INFO" :
-			g_config.level == LOG_LEVEL_WARN ? "WARN" :
-			g_config.level == LOG_LEVEL_ERROR ? "ERROR" : "NONE");
+			initialLevel == LOG_LEVEL_DEBUG ? "DEBUG" :
+			initialLevel == LOG_LEVEL_INFO ? "INFO" :
+			initialLevel == LOG_LEVEL_WARN ? "WARN" :
+			initialLevel == LOG_LEVEL_ERROR ? "ERROR" : "NONE");
 	fflush(stderr);
 }
 
 void log_cleanup(void) {
-	if (!g_initialized) {
+	if (!g_initialized.load(std::memory_order_acquire)) {
 		return;
 	}
 
@@ -163,12 +164,18 @@ void log_cleanup(void) {
 	// Cleanup lock
 	DeleteCriticalSection(&g_log_lock);
 
-	g_initialized = false;
+	g_initialized.store(false, std::memory_order_release);
+}
+
+bool log_is_enabled(LogLevel level) {
+	return g_initialized.load(std::memory_order_acquire)
+		&& level >= g_config.level.load(std::memory_order_relaxed)
+		&& level < LOG_LEVEL_NONE;
 }
 
 void log_set_level(LogLevel level) {
 	EnterCriticalSection(&g_log_lock);
-	g_config.level = level;
+	g_config.level.store(level, std::memory_order_relaxed);
 	LeaveCriticalSection(&g_log_lock);
 }
 
@@ -237,8 +244,8 @@ void log_write_args(const LogSite& site, LogLevel level, const char* fmt,
 		g_site_observer(site, level);
 	}
 
-	// Fast path: level filtering (no lock needed)
-	if (level < g_config.level || !g_initialized) {
+	// Atomic filtering stays safe while another thread changes verbosity.
+	if (!log_is_enabled(level)) {
 		return;
 	}
 

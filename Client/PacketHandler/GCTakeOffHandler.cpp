@@ -31,7 +31,7 @@ void GCTakeOffHandler::execute ( GCTakeOff * pPacket , Player * pPlayer )
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -45,7 +45,7 @@ void GCTakeOffHandler::execute ( GCTakeOff * pPacket , Player * pPlayer )
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] Not Exist Creature. ID=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] Not Exist Creature. ID=%d", pPacket->getObjectID());
 		}
 		//--------------------------------------------------
 		// 존재하는 Creature인 경우
@@ -66,7 +66,7 @@ void GCTakeOffHandler::execute ( GCTakeOff * pPacket , Player * pPlayer )
 				else
 				{
 					const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(pPacket->getSlotID());
-					DEBUG_ADD_FORMAT("[Error] RemoveAddon. ID=%d, Slot=%d, AddonFrameID=%d", pPacket->getObjectID(), (int)pPacket->getSlotID(), addonInfo.FrameID);					
+					DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. ID=%d, Slot=%d, AddonFrameID=%d", pPacket->getObjectID(), (int)pPacket->getSlotID(), addonInfo.FrameID);
 				}				
 			#else
 				pCreatureWear->RemoveAddon( pPacket->getSlotID() );
@@ -78,7 +78,7 @@ void GCTakeOffHandler::execute ( GCTakeOff * pPacket , Player * pPlayer )
 		//--------------------------------------------------
 		else 
 		{
-			DEBUG_ADD_FORMAT("[Error] Creature is Not CreatureWear. ID=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] Creature is Not CreatureWear. ID=%d", pPacket->getObjectID());
 		}
 	}
 	

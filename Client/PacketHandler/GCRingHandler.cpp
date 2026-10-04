@@ -36,7 +36,7 @@ void GCRingHandler::execute ( GCRing * pPacket , Player * pPlayer )
 	// Unbounded on the wire; see the guard in GCPhoneConnectedHandler.
 	if (slot < 0 || slot >= MAX_PCS_SLOT)
 	{
-		DEBUG_ADD_FORMAT("[PacketError-GCRingHandler] slot out of range: %d", slot);
+		DEBUG_ADD_FORMAT_WAR("[PacketError-GCRingHandler] slot out of range: %d", slot);
 		return;
 	}
 

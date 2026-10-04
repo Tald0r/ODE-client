@@ -35,7 +35,7 @@ void GCPhoneConnectedHandler::execute ( GCPhoneConnected * pPacket , Player * pP
 	// same two arrays from the same unbounded field.
 	if (slot < 0 || slot >= MAX_PCS_SLOT)
 	{
-		DEBUG_ADD_FORMAT("[PacketError-GCPhoneConnectedHandler] slot out of range: %d", slot);
+		DEBUG_ADD_FORMAT_WAR("[PacketError-GCPhoneConnectedHandler] slot out of range: %d", slot);
 		return;
 	}
 

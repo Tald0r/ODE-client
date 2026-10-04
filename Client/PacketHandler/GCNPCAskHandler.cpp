@@ -34,7 +34,7 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 		|| g_pUIDialog==NULL
 		|| g_pPCTalkBox==NULL)
 	{
-		DEBUG_ADD("[Error] Some Object is NULL");
+		DEBUG_ADD_ERR("[Error] Some Object is NULL");
 		return;
 	}
 
@@ -120,7 +120,7 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 	}
 	else
 	{
-		DEBUG_ADD("[Error] WaitVerifyMode is Not WAIT_VERIFY_NPC_ASK");
+		DEBUG_ADD_ERR("[Error] WaitVerifyMode is Not WAIT_VERIFY_NPC_ASK");
 	}
 
 	

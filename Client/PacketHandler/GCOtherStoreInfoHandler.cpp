@@ -96,7 +96,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 
 					if (pItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCOtherStoreInfo: invalid item class %d", item.getItemClass());
+						DEBUG_ADD_FORMAT_ERR("[Error] GCOtherStoreInfo: invalid item class %d", item.getItemClass());
 						continue;
 					}
 
@@ -185,7 +185,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 
 									if (pSubItem == NULL)
 									{
-										DEBUG_ADD_FORMAT("[Error] GCOtherStoreInfo: invalid sub item class %d", pItemInfo->getItemClass());
+										DEBUG_ADD_FORMAT_ERR("[Error] GCOtherStoreInfo: invalid sub item class %d", pItemInfo->getItemClass());
 										iItem++;
 										continue;
 									}
@@ -200,7 +200,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 										delete pSubItem;
 
 										// pItemInfo carries the same class; pSubItem is already freed here.
-										DEBUG_ADD_FORMAT("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
+										DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
 									}
 								}
 
@@ -231,7 +231,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 
 									if (pSubItem == NULL)
 									{
-										DEBUG_ADD_FORMAT("[Error] GCOtherStoreInfo: invalid sub item class %d", pItemInfo->getItemClass());
+										DEBUG_ADD_FORMAT_ERR("[Error] GCOtherStoreInfo: invalid sub item class %d", pItemInfo->getItemClass());
 										iItem++;
 										continue;
 									}
@@ -246,7 +246,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 										delete pSubItem;
 
 										// pItemInfo carries the same class; pSubItem is already freed here.
-										DEBUG_ADD_FORMAT("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
+										DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Belt. rack=%d, slot=%d, class=%d, belt-slot=%d", rack, index, (int)pItemInfo->getItemClass(), (int)pItemInfo->getSlotID());
 									}
 								}
 
@@ -255,7 +255,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 						}
 						else
 						{
-							DEBUG_ADD_FORMAT("[Error] This item can't have subitems. itemClass=%d", (int)pItem->GetItemClass());
+							DEBUG_ADD_FORMAT_ERR("[Error] This item can't have subitems. itemClass=%d", (int)pItem->GetItemClass());
 						}
 					}
 					
@@ -267,7 +267,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 						// 뭐지..
 						delete pItem;
 						
-						DEBUG_ADD_FORMAT("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
+						DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
 					}
 			//		}
 				}

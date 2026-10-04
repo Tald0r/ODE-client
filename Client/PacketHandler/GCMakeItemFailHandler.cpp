@@ -38,7 +38,7 @@ void GCMakeItemFailHandler::execute ( GCMakeItemFail * pPacket , Player * pPlaye
 	}
 	else
 	{
-		DEBUG_ADD( "[Error] Temp Mode is Not MODE_SKILL_MAKE_ITEM" );
+		DEBUG_ADD_ERR( "[Error] Temp Mode is Not MODE_SKILL_MAKE_ITEM" );
 	}
 
 

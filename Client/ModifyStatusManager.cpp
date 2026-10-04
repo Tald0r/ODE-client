@@ -439,7 +439,7 @@ ModifyStatusManager::Function_MODIFY_DURABILITY(void* pVoid)
 	#ifdef	OUTPUT_DEBUG
 		if (!bModified)
 		{
-			DEBUG_ADD_FORMAT("[Error] Can't Modify Durability. slot=%d, value=%d", (int)slotID, (int)durability);	
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't Modify Durability. slot=%d, value=%d", (int)slotID, (int)durability);
 		}
 	#endif
 }

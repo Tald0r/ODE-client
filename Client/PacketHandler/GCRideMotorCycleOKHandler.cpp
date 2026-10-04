@@ -29,7 +29,7 @@ void GCRideMotorCycleOKHandler::execute ( GCRideMotorCycleOK * pPacket , Player 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -71,7 +71,7 @@ void GCRideMotorCycleOKHandler::execute ( GCRideMotorCycleOK * pPacket , Player 
 			}
 			else
 			{
-				DEBUG_ADD_FORMAT("[Error] id=%d is Not Motorcycle", pPacket->getObjectID());			
+				DEBUG_ADD_FORMAT_ERR("[Error] id=%d is Not Motorcycle", pPacket->getObjectID());
 			}
 		}
 	}

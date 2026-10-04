@@ -421,10 +421,8 @@ SanitizeGameStringTable()
 		g_pGameStringTable->Set(i, "(removed unsafe string)");
 		nRemoved++;
 
-		// Logged at the error level, not a warning: log_init drops the
-		// level to LOG_LEVEL_ERROR in Release, so a warning here would be
-		// silent in exactly the build where a false positive - a UI string
-		// replaced by the placeholder - is hardest to explain.
+		// Replacing an unsafe UI string is a data error, so keep its
+		// diagnostic visible at the error level.
 		DEBUG_ADD_FORMAT_ERR("[StringTable] entry %d holds an unsafe format string - replaced", i);
 	}
 

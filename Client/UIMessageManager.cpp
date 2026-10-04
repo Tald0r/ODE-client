@@ -1101,14 +1101,14 @@ UIMessageManager::Execute(DWORD message, intptr_t left, intptr_t right, void* vo
 			)
 		)
 	{
-		DEBUG_ADD("[Error] UI message. game object pointer NULL");
+		DEBUG_ADD_ERR("[Error] UI message. game object pointer NULL");
 
 		return;
 	}
 		
 	if (m_UIMessageFunction[message]==NULL)
 	{
-		DEBUG_ADD_FORMAT("[Error] NO UI_MessageFunction. msg=%d", message);
+		DEBUG_ADD_FORMAT_ERR("[Error] NO UI_MessageFunction. msg=%d", message);
 	}
 	else
 	{
@@ -1293,7 +1293,7 @@ RegisterNewUser(LOGIN* pLogin)
 		const int passwordLength = static_cast<int>(strlen(pLogin->sz_password));
 		char strTemp[128];
 
-		DEBUG_ADD_FORMAT("[RegisterNewUser] id='%s' idLength=%d passwordLength=%d", pLogin->sz_id, idLength, passwordLength);
+		DEBUG_ADD("[RegisterNewUser] registration requested");
 
 		//--------------------------------------------------
 		// ID: length, then ASCII letters/digits/underscore only.
@@ -1357,7 +1357,7 @@ RegisterNewUser(LOGIN* pLogin)
 
 	if (bOK && !InitSocket())
 	{
-		DEBUG_ADD("[RegisterNewUser] Can't init Socket");
+		DEBUG_ADD_ERR("[RegisterNewUser] Can't init Socket");
 		bOK = false;
 	}
 
@@ -1726,10 +1726,10 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 					if (!InitSocket())
 					{
 						//InitFail("[Error] Can't init Socket");
-						DEBUG_ADD("[Execute_UI_LOGIN] Can't init Socket");
+						DEBUG_ADD_ERR("[Execute_UI_LOGIN] Can't init Socket");
 						DeleteNewArray(login->sz_id);
 						DeleteNewArray(login->sz_password);
-						DEBUG_ADD("[Execute_UI_LOGIN] Can't init Socket2");
+						DEBUG_ADD_ERR("[Execute_UI_LOGIN] Can't init Socket2");
 						return;
 					} 
 
@@ -2860,7 +2860,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 									for (auto& command : commands)
 										Execute_UI_CHAT_RETURN(left, right, command.data());
 								} else {
-									DEBUG_ADD("[Master Command] Rejected missing, malformed, cyclic or excessive command files.");
+									DEBUG_ADD_WAR("[Master Command] Rejected missing, malformed, cyclic or excessive command files.");
 								}
 								// This is a local macro selector; only its validated leaf commands dispatch.
 								break;
@@ -3406,7 +3406,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_CLIENT(intptr_t left, intptr_t right, 
 		//-----------------------------------------------------------------
 		else
 		{
-			DEBUG_ADD( "[Error] There is another item in ItemCheckBuffer or Mouse NULL");
+			DEBUG_ADD_ERR( "[Error] There is another item in ItemCheckBuffer or Mouse NULL");
 		}
 	}
 	else
@@ -3668,7 +3668,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_INVENTORY(intptr_t left, intptr_t righ
 	//-----------------------------------------------------------------
 	else
 	{
-		DEBUG_ADD( "[Error] There is another item in ItemCheckBuffer or Mouse NULL");		
+		DEBUG_ADD_ERR( "[Error] There is another item in ItemCheckBuffer or Mouse NULL");
 
 		if(!g_pPlayer->IsItemCheckBufferNULL())
 			DEBUG_ADD_FORMAT("[ITEMDROP] !g_pPlayer->IsItemCheckBufferNULL() %d", g_pPlayer->GetItemCheckBufferStatus());
@@ -3739,7 +3739,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 	//---------------------------------------------------
 	if (g_pPlayer->IsSlayer() ? g_pQuickSlot == NULL : pQuickSlot == NULL)
 	{
-		DEBUG_ADD("[Error] UI_ITEM_DROP_TO_QUICKSLOT without a quick slot");
+		DEBUG_ADD_ERR("[Error] UI_ITEM_DROP_TO_QUICKSLOT without a quick slot");
 		return;
 	}
 
@@ -3757,7 +3757,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 	//---------------------------------------------------
 	if (pMouseItem == NULL)
 	{
-		DEBUG_ADD("[Error] UI_ITEM_DROP_TO_QUICKSLOT with no item on the mouse");
+		DEBUG_ADD_ERR("[Error] UI_ITEM_DROP_TO_QUICKSLOT with no item on the mouse");
 		return;
 	}
 
@@ -3832,7 +3832,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 		//---------------------------------------------------
 		else
 		{						
-			DEBUG_ADD_FORMAT("[Error] Can't add item to quickslot, already exist slot=%d", left);
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't add item to quickslot, already exist slot=%d", left);
 		}
 	}
 	//-----------------------------------------------------------------
@@ -3840,7 +3840,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_QUICKSLOT(intptr_t left, intptr_t righ
 	//-----------------------------------------------------------------
 	else
 	{
-		DEBUG_ADD( "[Error] There is another item in ItemCheckBuffer");
+		DEBUG_ADD_ERR( "[Error] There is another item in ItemCheckBuffer");
 	}
 }
 
@@ -4005,7 +4005,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] Mouse Item is NULL" );
+				DEBUG_ADD_ERR( "[Error] Mouse Item is NULL" );
 			}
 		}
 		//-----------------------------------------------------------------
@@ -4013,7 +4013,7 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 		//-----------------------------------------------------------------
 		else
 		{
-			DEBUG_ADD( "[Error] There is another item in ItemCheckBuffer");
+			DEBUG_ADD_ERR( "[Error] There is another item in ItemCheckBuffer");
 		}
 	}
 	else
@@ -4498,12 +4498,12 @@ UIMessageManager::Execute_UI_ITEM_USE_QUICKSLOT(intptr_t left, intptr_t right, v
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no item in slot=%d", left);
+			DEBUG_ADD_FORMAT("No usable item in slot=%d", left);
 		}
 	}
 	else
 	{
-		DEBUG_ADD("[Error] There is no QuickSlot");
+		DEBUG_ADD("Quickslot use ignored: no quickslot available");
 	}
 
 }
@@ -4536,13 +4536,13 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_INVENTORY(intptr_t left, intptr_t 
 
 	if (pMouseItem==NULL)
 	{
-		DEBUG_ADD("[Error] Mouse Item is NULL");
+		DEBUG_ADD_ERR("[Error] Mouse Item is NULL");
 		return;
 	}
 
 	if (pItem==NULL)
 	{
-		DEBUG_ADD("[Error] InvenItem is NULL");
+		DEBUG_ADD_ERR("[Error] InvenItem is NULL");
 		return;
 	}
 	// add by Coffee 2006.11.4  修正任务物品不能叠加
@@ -5056,19 +5056,19 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 				else
 				{
 					// No item in that shelf slot
-					DEBUG_ADD_FORMAT("[Error] There is NO Item in index=%d", index);
+					DEBUG_ADD_FORMAT_ERR("[Error] There is NO Item in index=%d", index);
 				}
 			}
 			else
 			{
 				// The shop has no current shelf
-				DEBUG_ADD_FORMAT("[Error] There is NO Shelf type=%d", (int)pShop->GetCurrent());
+				DEBUG_ADD_FORMAT_ERR("[Error] There is NO Shelf type=%d", (int)pShop->GetCurrent());
 			}
 		}
 		else
 		{
 			// No shop
-			DEBUG_ADD_FORMAT("[Error] There is NO Shop. npc id=%d", npcID);
+			DEBUG_ADD_FORMAT_ERR("[Error] There is NO Shop. npc id=%d", npcID);
 		}
 	}
 }
@@ -5168,7 +5168,7 @@ UIMessageManager::Execute_UI_SELL_ITEM(intptr_t left, intptr_t right, void* void
 		}
 		else
 		{
-			DEBUG_ADD("[Error] Item Is NULL");
+			DEBUG_ADD_ERR("[Error] Item Is NULL");
 		}
 	}
 }
@@ -5599,7 +5599,7 @@ UIMessageManager::Execute_UI_DROP_MONEY(intptr_t left, intptr_t right, void* voi
 		}
 		else
 		{
-			DEBUG_ADD("[Error] MoneyManager is NULL");
+			DEBUG_ADD_ERR("[Error] MoneyManager is NULL");
 		}
 	}
 }
@@ -6354,7 +6354,7 @@ UIMessageManager::Execute_UI_STORAGE_BUY(intptr_t left, intptr_t right, void* vo
 		}
 		else
 		{
-			DEBUG_ADD("[Error] Mode is Not MODE_STORAGE_BUY");
+			DEBUG_ADD_ERR("[Error] Mode is Not MODE_STORAGE_BUY");
 		}
 
 		// 사는 경우는.. 결과 packet을 받을때까지
@@ -6589,7 +6589,7 @@ UIMessageManager::Execute_UI_DEPOSIT_MONEY(intptr_t left, intptr_t right, void* 
 		}
 		else
 		{
-			DEBUG_ADD("[Error] MoneyManager or Storage is NULL");
+			DEBUG_ADD_ERR("[Error] MoneyManager or Storage is NULL");
 		}
 	}
 }
@@ -6636,7 +6636,7 @@ UIMessageManager::Execute_UI_WITHDRAW_MONEY(intptr_t left, intptr_t right, void*
 		}
 		else
 		{
-			DEBUG_ADD("[Error] MoneyManager or Storage is NULL");
+			DEBUG_ADD_ERR("[Error] MoneyManager or Storage is NULL");
 		}
 	}
 }
@@ -6782,7 +6782,7 @@ UIMessageManager::Execute_UI_EXCHANGE_MONEY(intptr_t left, intptr_t right, void*
 	}
 	else
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 	}
 
 
@@ -7029,7 +7029,7 @@ UIMessageManager::Execute_UI_ITEM_SELECT_EXCHANGE(intptr_t left, intptr_t right,
 	}
 	else
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 	}
 }
 
@@ -7087,7 +7087,10 @@ UIMessageManager::Execute_UI_OK_EXCHANGE(intptr_t left, intptr_t right, void* vo
 	}
 	else
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL or NotAcceptTime");
+		if (g_pTradeManager == NULL)
+			DEBUG_ADD_WAR("Trade acceptance requested without a trade manager");
+		else
+			DEBUG_ADD("Trade acceptance is not ready");
 	}
 }
 
@@ -7130,7 +7133,7 @@ UIMessageManager::Execute_UI_CANCEL_EXCHANGE(intptr_t left, intptr_t right, void
 			}
 			else
 			{
-				DEBUG_ADD( "[Error] Mode is not MODE_NULL");
+				DEBUG_ADD_ERR( "[Error] Mode is not MODE_NULL");
 			}
 		}
 		//---------------------------------------------------------------
@@ -7148,7 +7151,7 @@ UIMessageManager::Execute_UI_CANCEL_EXCHANGE(intptr_t left, intptr_t right, void
 	}	
 	else
 	{
-		DEBUG_ADD( "[Error] TradeManager is NULL");
+		DEBUG_ADD_ERR( "[Error] TradeManager is NULL");
 	}
 
 	//---------------------------------------------------------------
@@ -7206,7 +7209,7 @@ UIMessageManager::Execute_UI_CLOSE_EXCHANGE(intptr_t left, intptr_t right, void*
 		}
 		else
 		{
-			DEBUG_ADD( "[Error] Mode is not MODE_NULL");
+			DEBUG_ADD_ERR( "[Error] Mode is not MODE_NULL");
 		}
 	}
 	//---------------------------------------------------------------
@@ -7753,7 +7756,7 @@ UIMessageManager::Execute_UI_CLOSE_OPTION(intptr_t left, intptr_t right, void* v
 	(void)right;
 	(void)void_ptr;
 	if (!GetDisplaySettings().Save())
-		DEBUG_ADD("[Error] Could not save UserSet/Display.ini");
+		DEBUG_ADD_ERR("[Error] Could not save UserSet/Display.ini");
 	DEBUG_ADD("[UI] Execute_UI_CLOSE_TITLE_OPTION");
 
 //	if (g_Mode!=MODE_MAINMENU)
@@ -9368,13 +9371,13 @@ UIMessageManager::Execute_UI_ENCHANT_ACCEPT(intptr_t left, intptr_t right, void*
 
 	if (pMouseItem==NULL)
 	{
-		DEBUG_ADD("[Error] Mouse Item is NULL");
+		DEBUG_ADD_ERR("[Error] Mouse Item is NULL");
 		return;
 	}
 
 	if (pItem==NULL)
 	{
-		DEBUG_ADD("[Error] InvenItem is NULL");
+		DEBUG_ADD_ERR("[Error] InvenItem is NULL");
 		return;
 	}
 
@@ -9733,12 +9736,12 @@ UIMessageManager::Execute_UI_ITEM_USE_GEAR(intptr_t left, intptr_t right, void* 
 		}
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no item in slot=%d", left);
+			DEBUG_ADD_FORMAT("No usable item in slot=%d", left);
 		}
 	}
 	else
 	{
-		DEBUG_ADD("[Error] There is no Gear");
+		DEBUG_ADD_ERR("[Error] There is no Gear");
 	}
 
 }
@@ -9899,12 +9902,12 @@ UIMessageManager::Execute_UI_TRANS_ITEM_ACCEPT(intptr_t left, intptr_t right, vo
 
 	if (pMouseItem==NULL)
 	{
-		DEBUG_ADD("[Error] Mouse Item is NULL");
+		DEBUG_ADD_ERR("[Error] Mouse Item is NULL");
 		return;
 	}
 	if (pItem==NULL)
 	{
-		DEBUG_ADD("[Error] InvenItem is NULL");
+		DEBUG_ADD_ERR("[Error] InvenItem is NULL");
 		return;
 	}
 	TYPE_OBJECTID mouseItemID = ((pMouseItem==NULL)?OBJECTID_NULL : pMouseItem->GetID());
@@ -11750,7 +11753,7 @@ UIMessageManager::Execute_UI_SWAPADVANCEMENTITEM(intptr_t left, intptr_t right, 
 		}
 		else
 		{
-			DEBUG_ADD("[Error] Item Is NULL");
+			DEBUG_ADD_ERR("[Error] Item Is NULL");
 		}
 	}
 }
@@ -11933,7 +11936,7 @@ UIMessageManager::Execute_UI_REQUEST_EVENT_ITEM(intptr_t left, intptr_t right, v
 		//-----------------------------------------------------------------
 		else
 		{
-			DEBUG_ADD( "[Error] There is another item in ItemCheckBuffer or Mouse NULL");		
+			DEBUG_ADD_ERR( "[Error] There is another item in ItemCheckBuffer or Mouse NULL");
 
 			if(!g_pPlayer->IsItemCheckBufferNULL())
 				DEBUG_ADD_FORMAT("[ITEMDROP] !g_pPlayer->IsItemCheckBufferNULL() %d", g_pPlayer->GetItemCheckBufferStatus());

@@ -31,7 +31,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 
 	if (g_pPlayer==NULL)
 	{
-		DEBUG_ADD("[Error] g_pPlayer is NULL");
+		DEBUG_ADD_ERR("[Error] g_pPlayer is NULL");
 	}
 	else
 	{

@@ -33,7 +33,7 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -44,7 +44,7 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 
 		if( g_pActionInfoTable->GetSize() <= skillID )
 		{
-			DEBUG_ADD_FORMAT("[Error] Exceed SkillType %d",skillID);
+			DEBUG_ADD_FORMAT_ERR("[Error] Exceed SkillType %d",skillID);
 			SendBugReport("[Error:GCSTOOK5H] Exceed SkillType %d", skillID );
 			return;
 		}
@@ -97,7 +97,7 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 
 				if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
-					DEBUG_ADD_FORMAT("[Error] SkillType Error = %d", skillID);
+					DEBUG_ADD_FORMAT_ERR("[Error] SkillType Error = %d", skillID);
 					return;
 				}
 			}

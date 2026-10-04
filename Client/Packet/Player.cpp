@@ -240,7 +240,8 @@ void Player::sendPacket ( Packet * pPacket )
 	__BEGIN_TRY
 
 	#ifdef __DEBUG_OUTPUT__
-		DEBUG_ADD_FORMAT("[Send] %s", pPacket->toString().c_str() );							
+		DEBUG_ADD_FORMAT("[Send] packet id=%u size=%u",
+			static_cast<unsigned>(pPacket->getPacketID()), static_cast<unsigned>(pPacket->getPacketSize()));
 	#endif
 
 	m_pOutputStream->write( pPacket );

@@ -29,7 +29,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 	if (g_pZone==NULL)
 	{
 		// message
-		DEBUG_ADD("[Error] Zone is Not Init.. yet.");			
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
 	// 정상.. 
@@ -43,7 +43,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 		//------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			DEBUG_ADD_FORMAT("[Error] There is no such Creature id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature id=%d", pPacket->getObjectID());
 		}
 		//------------------------------------------------------
 		// NPC인 경우
@@ -70,7 +70,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 
 				if (pShopShelf==NULL)
 				{
-					DEBUG_ADD_FORMAT("[Error] There is no Shelf type=%d", (int)pPacket->getShopType());
+					DEBUG_ADD_FORMAT_ERR("[Error] There is no Shelf type=%d", (int)pPacket->getShopType());
 				}
 				else
 				{
@@ -81,7 +81,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 
 					if (pItem == NULL)
 					{
-						DEBUG_ADD_FORMAT("[Error] GCShopBought: invalid item class %d", pPacket->getItemClass());
+						DEBUG_ADD_FORMAT_ERR("[Error] GCShopBought: invalid item class %d", pPacket->getItemClass());
 						return;
 					}
 
@@ -99,7 +99,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 					// 생성된 item을 shop에 추가
 					if (!pShopShelf->SetItem( pPacket->getShopIndex(), pItem ))
 					{
-						DEBUG_ADD("[Error] Cannot Add Item to ShopShelf");
+						DEBUG_ADD_ERR("[Error] Cannot Add Item to ShopShelf");
 						
 						delete pItem;
 					}
@@ -112,7 +112,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 		//------------------------------------------------------
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
+			DEBUG_ADD_FORMAT_ERR("[Error] The Creature is Not NPC. id=%d", pPacket->getObjectID());
 		}
 	}
 	

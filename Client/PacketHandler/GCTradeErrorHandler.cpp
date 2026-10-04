@@ -125,7 +125,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] Server is Not Trade Mode");
+					DEBUG_ADD_ERR("[Error] Server is Not Trade Mode");
 				}
 			#endif
 		break;
@@ -137,7 +137,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] There is no such item to Add");
+					DEBUG_ADD_ERR("[Error] There is no such item to Add");
 				}
 			#endif
 		break;
@@ -149,7 +149,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] There is no such item to Remove");
+					DEBUG_ADD_ERR("[Error] There is no such item to Remove");
 				}
 			#endif
 		break;
@@ -161,7 +161,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] GC_TRADE_ERROR_CODE_INCREASE_MONEY");
+					DEBUG_ADD_ERR("[Error] GC_TRADE_ERROR_CODE_INCREASE_MONEY");
 				}
 			#endif
 		break;
@@ -173,7 +173,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] GC_TRADE_ERROR_CODE_DECREASE_MONEY");
+					DEBUG_ADD_ERR("[Error] GC_TRADE_ERROR_CODE_DECREASE_MONEY");
 				}
 			#endif
 		break;
@@ -188,7 +188,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG			
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] GC_TRADE_ERROR_CODE_NOT_ENOUGH_SPACE");
+					DEBUG_ADD("Trade refused: insufficient inventory space");
 				}
 			#endif
 		break;
@@ -203,7 +203,7 @@ void GCTradeErrorHandler::execute ( GCTradeError * pPacket , Player * pPlayer )
 			#ifdef OUTPUT_DEBUG			
 				if (g_pDebugMessage)
 				{
-					DEBUG_ADD("[Error] GC_TRADE_ERROR_CODE_UNKNOWN");
+					DEBUG_ADD_ERR("[Error] GC_TRADE_ERROR_CODE_UNKNOWN");
 				}
 			#endif
 		break;

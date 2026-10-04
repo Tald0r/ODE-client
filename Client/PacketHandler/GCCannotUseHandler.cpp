@@ -158,7 +158,7 @@ void GCCannotUseHandler::execute ( GCCannotUse * pPacket , Player * pPlayer )
 		// 2004, 12, 13, sobeit add end
 		else
 		{
-			DEBUG_ADD_FORMAT("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
+			DEBUG_ADD_FORMAT_ERR("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
 		}
 
 	}
@@ -167,7 +167,7 @@ void GCCannotUseHandler::execute ( GCCannotUse * pPacket , Player * pPlayer )
 	//----------------------------------------------------
 	else
 	{
-		DEBUG_ADD("[Error] No Item in CheckBuffer");
+		DEBUG_ADD_ERR("[Error] No Item in CheckBuffer");
 	}
 	
 

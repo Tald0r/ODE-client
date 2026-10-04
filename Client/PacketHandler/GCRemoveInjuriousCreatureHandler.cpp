@@ -21,7 +21,7 @@ void GCRemoveInjuriousCreatureHandler::execute (GCRemoveInjuriousCreature* pPack
 	{
 		if (!g_pJusticeAttackManager->RemoveCreature( pPacket->getName().c_str() ))
 		{
-			DEBUG_ADD_FORMAT("[Error] Can't remove InjuriousCreature : %s", pPacket->getName().c_str() );
+			DEBUG_ADD_FORMAT_ERR("[Error] Can't remove InjuriousCreature : %s", pPacket->getName().c_str() );
 		}
 	}
 
