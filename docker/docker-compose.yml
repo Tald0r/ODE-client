@@ -35,6 +35,11 @@ services:
     volumes:
       - ${DARKEDEN_ASSETS:-../build/web/assets}:/usr/share/nginx/html/assets:ro
     restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - odk-network
 

@@ -183,6 +183,11 @@ remove `if=$loggable` from its `access_log` directive, and bind-mount that copy 
 `/etc/nginx/templates/default.conf.template:ro` when recreating the container.
 Restore the original template after troubleshooting.
 
+The Compose service uses Docker's `local` log driver with three 10 MB files to
+bound local retention. `docker logs` and collectors using Docker's API continue
+to work; retention in a remote log store is configured separately. Recreate the
+container when changing these options.
+
 `docker/docker-compose.yml` runs it as `odk-web` next to the server repository's
 stack: it joins that stack's network (`ODK_NETWORK`, default `docker_odk-network`),
 mounts `DARKEDEN_ASSETS` (default `../build/web/assets`) and publishes
