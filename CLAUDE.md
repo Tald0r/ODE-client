@@ -410,12 +410,12 @@ or with another LLVM version, configure stops with "does not exist" until
 you pass `-DDARKEDEN_LIBFUZZER_ARCHIVE=<path to libclang_rt.fuzzer_osx.a>`.
 With that hybrid, `-fork` reports an ASan container-overflow inside
 libFuzzer's own merge code, not in ours, so fuzz single-process on a Mac.
-`linux-fuzz` uses the distribution Clang and `-fsanitize=fuzzer`, which
-needs the `libclang-rt-18-dev` package; the
-`darkeden-linux` image does not carry it yet, and `apt-get install` of it in
-the container is enough (done on 2026-09-29: the target built, fuzzed for two
+`linux-fuzz` uses the distribution Clang and `-fsanitize=fuzzer`. The
+`darkeden-linux` image includes the required `libclang-rt-18-dev` package;
+rebuild the image if an older copy reports missing sanitizer or libFuzzer
+archives. Installing it was verified on 2026-09-29: the target built, fuzzed for two
 minutes without a finding, and `unit_tests` and the fuzz ctests passed under
-that preset's Clang ASan and UBSan). `-close_fd_mask=3` hides the
+that preset's Clang ASan and UBSan. `-close_fd_mask=3` hides the
 crash's own message, so triage by replaying the file through the replay
 binary of an ASan tree:
 `build/presets/macos-asan/bin/fuzz_replay_client_stream crash-...` (or
