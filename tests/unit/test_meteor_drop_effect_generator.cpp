@@ -19,7 +19,7 @@ MFixedZoneEffectSprite sprite;
 bool spriteAvailable, acceptEffect;
 int requestedSprite, submissions;
 std::vector<int> calls, removedTargets;
-std::vector<std::array<WORD, 3>> gamma;
+std::vector<std::array<WORD, 3>> gammaRamps;
 std::vector<std::unique_ptr<MEffect>> effects;
 std::vector<MEvent> events;
 std::unique_ptr<MEventQueue> eventQueue;
@@ -29,7 +29,7 @@ const MEffectHost effectHost{
 };
 const MEffectTargetHost targetHost{.RemoveFromPlayer = [](BYTE id) { removedTargets.push_back(id); }};
 const MEventHost eventHost{
-	.SetAddGammaRamp = [](WORD red, WORD green, WORD blue) { calls.push_back(6); gamma.push_back({red, green, blue}); },
+	.SetAddGammaRamp = [](WORD red, WORD green, WORD blue) { calls.push_back(6); gammaRamps.push_back({red, green, blue}); },
 };
 const MMeteorDropEffectHost host{
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& result) {
@@ -58,7 +58,7 @@ struct World
 	{
 		frameNow = 100; timeNow = MonotonicClock::FromMillis(1500); sprite = {BLT_EFFECT, 12, 3}; spriteAvailable = acceptEffect = true;
 		requestedSprite = -1; submissions = 0; eventQueue = std::make_unique<MEventQueue>(&eventHost);
-		effects.clear(); events.clear(); calls.clear(); removedTargets.clear(); gamma.clear();
+		effects.clear(); events.clear(); calls.clear(); removedTargets.clear(); gammaRamps.clear();
 	}
 	~World()
 	{
@@ -91,7 +91,7 @@ void CheckTarget(const MEffectTarget& target)
 
 void ClearEffects()
 {
-	effects.clear(); eventQueue->RemoveAllEvent(); calls.clear(); events.clear(); gamma.clear(); submissions = 0;
+	effects.clear(); eventQueue->RemoveAllEvent(); calls.clear(); events.clear(); gammaRamps.clear(); submissions = 0;
 }
 
 int NextRandom(unsigned seed)
@@ -111,7 +111,7 @@ TEST(MeteorDropEffectGenerator, ConfiguresARealLinearMeteorAndSchedulesTheFadeAf
 	CHECK_EQ(4, effect.GetX()); CHECK_EQ(2, effect.GetY()); CHECK_EQ(DIRECTION_LEFT, effect.GetDirection()); CHECK_EQ(100, effect.GetStepPixel());
 	CHECK_EQ(77, effect.GetPower()); CHECK_EQ(149, effect.GetEndFrame()); CHECK_EQ(104, effect.GetEndLinkFrame()); CHECK_EQ(42, effect.GetActionInfo());
 	CHECK(effect.GetEffectTarget() == nullptr); CHECK(!effect.IsMulti()); CHECK(!effect.IsDelayFrame());
-	CHECK(gamma == (std::vector<std::array<WORD, 3>>{{30, 0, 0}}));
+	CHECK(gammaRamps == (std::vector<std::array<WORD, 3>>{{30, 0, 0}}));
 }
 
 TEST(MeteorDropEffectGenerator, EventHasOneSecondLifetimeAndOnlyTheRedFadeFlag)
@@ -123,7 +123,7 @@ TEST(MeteorDropEffectGenerator, EventHasOneSecondLifetimeAndOnlyTheRedFadeFlag)
 	CHECK_EQ(-1, event.showTime); CHECK_EQ(-1, event.totalTime); CHECK(event.eventStartTickCount == timeNow);
 	timeNow = MonotonicClock::FromMillis(2500); eventQueue->ProcessEvent(); CHECK(eventQueue->IsEvent(EVENTID_METEOR));
 	timeNow = MonotonicClock::FromMillis(2501); eventQueue->ProcessEvent(); CHECK(eventQueue->IsEmptyEvent());
-	CHECK(gamma == (std::vector<std::array<WORD, 3>>{{30, 0, 0}, {0, 0, 0}})); CHECK_EQ(1, effects.size());
+	CHECK(gammaRamps == (std::vector<std::array<WORD, 3>>{{30, 0, 0}, {0, 0, 0}})); CHECK_EQ(1, effects.size());
 }
 
 TEST(MeteorDropEffectGenerator, RepeatedMeteorsReplaceTheFadeAndRestartItsClock)
@@ -199,7 +199,7 @@ TEST(MeteorDropEffectGenerator, EventCallbackObservesTheAlreadyLinkedOriginalTar
 TEST(MeteorDropEffectGenerator, RejectedSubmissionLeavesTheCallerTargetAndSchedulesNoEvent)
 {
 	World world; acceptEffect = false; auto target = Target(); auto info = Info(); info.pEffectTarget = target.get();
-	CHECK(!world.generator.Generate(info)); CHECK_EQ(1, submissions); CHECK(effects.empty()); CHECK(events.empty()); CHECK(gamma.empty()); CheckTarget(*target);
+	CHECK(!world.generator.Generate(info)); CHECK_EQ(1, submissions); CHECK(effects.empty()); CHECK(events.empty()); CHECK(gammaRamps.empty()); CheckTarget(*target);
 	CHECK(removedTargets.empty()); CHECK(calls == std::vector<int>({1, 2, 3, 4}));
 }
 
