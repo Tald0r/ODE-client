@@ -4389,6 +4389,15 @@ UpdateDisconnected()
 	g_pUIDialog->ClosePCTalkDlg();
 
 	DEBUG_ADD("UpdateDisconnected : Close All Dialog OK");
+
+#ifdef __EMSCRIPTEN__
+	// The caller has restored the title screen. Let its ordinary frame loop
+	// draw and dismiss this dialog: a synchronous input wait prevents the
+	// browser from delivering the keyboard/mouse events needed to close it.
+	g_pUIDialog->PopupFreeMessageDlg(
+		(*g_pGameStringTable)[UI_STRING_MESSAGE_CANNOT_CONNECT_SERVER].GetString());
+	return;
+#endif
 	
 
 	//--------------------------------------------------
