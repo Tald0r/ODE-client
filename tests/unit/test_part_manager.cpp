@@ -15,7 +15,7 @@
 #include "test_framework.h"
 
 #include "basic/Platform.h"
-#include "Client/CPartManager.h"
+#include "CPartManager.h"
 
 namespace {
 

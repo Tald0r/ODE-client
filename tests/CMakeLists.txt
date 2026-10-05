@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.21)
 # tables - docs/RESTRUCTURING.md task 2.4) and gamemodel. Game logic that
 # is compiled straight into the DarkEden executable, including the packet
 # handlers under Client/PacketHandler, is not reachable from here; the
-# ten handlers gamemodel lists (tasks 4.15 and 4.25) are the exception.
+# handlers listed in gamemodel membership are the exception.
 #
 #----------------------------------------------------------------------
 
@@ -51,6 +51,11 @@ add_executable(unit_tests
 	support/packet_stream_access.cpp
 	${UNIT_TEST_SOURCES}
 )
+
+get_target_property(_test_has_sdl_mixer dxlib DARKEDEN_HAS_SDL_MIXER)
+if(_test_has_sdl_mixer)
+	target_compile_definitions(unit_tests PRIVATE DARKEDEN_TEST_HAVE_SDL_MIXER=1)
+endif()
 
 target_link_libraries(unit_tests PRIVATE
 	test_framework

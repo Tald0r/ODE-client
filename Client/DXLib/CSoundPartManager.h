@@ -14,7 +14,7 @@
    forward-declares LPDIRECTSOUNDBUFFER on non-Windows (it expects the real
    header to supply it on Windows), so declare the opaque pointer type here
    directly for all platforms instead. */
-#include "../basic/Platform.h"
+#include "../../basic/Platform.h"
 
 #ifndef LPDIRECTSOUNDBUFFER
 typedef struct IDirectSoundBuffer* LPDIRECTSOUNDBUFFER;

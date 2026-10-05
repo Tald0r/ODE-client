@@ -5379,6 +5379,7 @@ void	AddOustersElemental( MCreature *pOwnerCreature, int creatureType, int statu
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
 		delete pFakeCreature;
+		return;
 	}
 
 	pFakeCreature->SetZone(g_pZone);

@@ -1,7 +1,6 @@
 //-----------------------------------------------------------------------------
 // CSoundPartManager.cpp
 //-----------------------------------------------------------------------------
-#include "Client_PCH.h"
 #include "CSoundPartManager.h"
 #include "CDirectSound.h"
 

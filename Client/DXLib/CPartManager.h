@@ -73,10 +73,10 @@
 #ifdef PLATFORM_WINDOWS
 #include <Windows.h>
 #else
-#include "../basic/Platform.h"
+#include "../../basic/Platform.h"
 #endif
 #include <list>
-#include "DebugInfo.h"
+#include "DebugLog.h"
 
 template <class IndexType, class PartIndexType, class DataType>
 class CPartManager {

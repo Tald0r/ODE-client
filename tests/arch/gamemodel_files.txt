@@ -650,3 +650,9 @@ Client/RankBonusHandlerHost.h
 # Inventory effect targets own any result before synchronous generation.
 Client/InventoryEffectTarget.cpp
 Client/InventoryEffectTarget.h
+
+# Crash-report records and named profiler state/output.
+Client/MCrashReportManager.cpp
+Client/MCrashReportManager.h
+Client/Profiler.cpp
+Client/Profiler.h

@@ -46,6 +46,10 @@ endif()
 
 # DXLib source files
 set(DXLIB_SOURCES
+	# Cached sound buffers and caller-owned music files.
+	CSoundPartManager.cpp
+	COGGSTREAM.cpp
+
 	# Platform backend
 	DXLibBackendSDL.cpp
 	DXInputHost.cpp
@@ -88,6 +92,7 @@ endif()
 
 # Create library
 add_library(dxlib STATIC ${DXLIB_SOURCES})
+set_property(TARGET dxlib PROPERTY DARKEDEN_HAS_SDL_MIXER ${HAVE_SDL2_MIXER})
 
 if(USE_SDL_BACKEND OR NOT WIN32)
 	target_compile_definitions(dxlib PUBLIC DXLIB_USE_SDL_BACKEND)
@@ -143,6 +148,9 @@ install(TARGETS dxlib
 
 # Install headers
 install(FILES
+	CSoundPartManager.h
+	COGGSTREAM.h
+	CPartManager.h
 	DXLibBackend.h
 	DXLib.h
 	CDirectInput.h

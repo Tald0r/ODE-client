@@ -1,6 +1,6 @@
 #include "COGGSTREAM.h"
-#include "DXLib/DXLibBackend.h"
-#include "basic/AudioTypes.h"
+#include "DXLibBackend.h"
+#include "AudioTypes.h"
 
 #include <stdlib.h>
 

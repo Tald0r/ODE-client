@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 #include <fstream>
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #include "MonotonicClock.h"
 
 
