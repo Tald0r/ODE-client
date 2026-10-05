@@ -3,6 +3,7 @@
 #include "COGGSTREAM.h"
 #include "CDirectSound.h"
 #include "DXLibBackend.h"
+#include "CrtCompat.h"
 
 #include <SDL.h>
 #ifdef DARKEDEN_TEST_HAVE_SDL_MIXER
@@ -83,7 +84,7 @@ struct AudioWorld
 	}
 	bool LoadMusic(COGGSTREAM& stream)
 	{
-		FILE* file = std::fopen(path.string().c_str(), "rb");
+		FILE* file = Basic::OpenFile(path.string().c_str(), "rb");
 		CHECK(file != nullptr);
 		if (!file) return false;
 		const bool loaded = stream.streamLoad(file, nullptr);
