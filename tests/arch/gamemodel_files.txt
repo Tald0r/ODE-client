@@ -678,3 +678,7 @@ Client/MAttachZoneSelectableEffectGenerator.cpp
 Client/MAttachZoneSelectableEffectGenerator.h
 Client/MAttackZoneRectEffectGenerator.cpp
 Client/MAttackZoneRectEffectGenerator.h
+
+# Complete skip-draw generator and ordered ground patterns.
+Client/MSkipEffectGenerator.cpp
+Client/MSkipEffectGenerator.h

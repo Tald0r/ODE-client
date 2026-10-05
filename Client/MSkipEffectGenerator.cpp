@@ -1,147 +1,78 @@
- //----------------------------------------------------------------------
-// MSkipEffectGenerator.cpp
-//----------------------------------------------------------------------
-// Tile과 맞붙은 깜빡이는 Effect들을 생성한다.
-//----------------------------------------------------------------------
+// Generate blinking effects aligned with the ground tiles.
 #include "Client_PCH.h"
 #include "MSkipEffectGenerator.h"
 #include "MSkipEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
+#include "WorldTileGeometry.h"
+#include <optional>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttachZoneEffectGenerator	g_StopZoneEffectGenerator;
+const MFixedZoneEffectHost* MSkipEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MSkipEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+const MFixedZoneEffectHost* MSkipEffectGenerator::SetHost(const MFixedZoneEffectHost* host)
 {
-	int est = egInfo.effectSpriteType;
-	
-	POINT pixelPoint = { egInfo.x0, egInfo.y0 };
-	
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	
-	//---------------------------------------------
-	// MaxFrame의 값을 알아온다.
-	//---------------------------------------------
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	
-	// 으흑흑..ㅡ.ㅜ
-	if( egInfo.temp1 == 0 )				// UseActionGrade
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MSkipEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MSkipEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
+bool MSkipEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
+{
+	const int grade = egInfo.temp1;
+	if (grade > 3) return false;
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+
+	// Preserve the ordered line, cross and square patterns. Grade zero uses
+	// the supplied pixel coordinates without snapping them to a tile.
+	static constexpr int offsets[4][9][2] = {
+		{{0,0}},
+		{{-1,0},{0,0},{1,0}},
+		{{-1,0},{0,-1},{1,0},{0,1},{0,0}},
+		{{-1,-1},{-1,0},{-1,1},{0,-1},{0,0},{0,1},{1,-1},{1,0},{1,1}},
+	};
+	static constexpr int counts[] = {1,3,5,9};
+	const int tx = WorldTileGeometry::PixelToTileX(egInfo.x0);
+	const int ty = WorldTileGeometry::PixelToTileY(egInfo.y0);
+
+	// Capture visual state before transferring the original. A later queue
+	// call can retire an earlier effect, including its target and result.
+	std::optional<MEffectTarget> continuation;
+	if (grade != 0 && egInfo.pEffectTarget) continuation.emplace(*egInfo.pEffectTarget);
+	bool accepted = false;
+	for (int i = 0; i < counts[grade]; ++i)
 	{
-		MEffect*	pEffect;
-		//---------------------------------------------
-		// Effect 생성
-		//---------------------------------------------
-		pEffect = new MSkipEffect(bltType);
-		
-		pEffect->SetFrameID( frameID, maxFrame );	
-		
-		pEffect->SetPixelPosition(pixelPoint.x, pixelPoint.y, egInfo.z0);		// pixel좌표		
-		
-		pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-		
-		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-		
-		// 방향 설정
-		pEffect->SetDirection( egInfo.direction );
-		
-		// 위력
-		pEffect->SetPower(egInfo.power);
-		
-		// 빛의 밝기
-		//pEffect->SetLight( light );
-		
-		
-		// Ground Effect로..
-		// Zone에 추가한다.
-		if (g_pZone->AddGroundEffect( pEffect ))
-		{
-			// 다음 Effect 생성 정보
-			pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-			
-			return true;
-		}
-	} else
-	{
-		// ActionGrade 를 사용한다.
-		std::vector<POINT> effectlist;
-		POINT pt = g_pTopView->PixelToMap( pixelPoint.x, pixelPoint.y );
-		
-		if( egInfo.temp1 == 1 )
-		{
-			for( int i=-1;i<=1;i++)
-			{
-				POINT point = pt;
-				point.x += i;
-				effectlist.push_back( point );
-			}
-		} 
-		else if( egInfo.temp1 == 2 )
-		{
-			for( int i=-1;i<=1;i++)
-			{
-				if( i == 0)
-					continue;
-				POINT point = pt;
-				point.x += i;				
-				effectlist.push_back( point );
-				point.x -= i;
-				point.y += i;
-				effectlist.push_back( point );
-			}
-			effectlist.push_back( pt );
-		} 
-		else if( egInfo.temp1 == 3 )
-		{
-			for(int i=-1;i<=1;i++)
-			{
-				for(int j=-1;j<=1;j++)
-				{
-					POINT point = pt;
-					point.x += i;
-					point.y += j;
-					effectlist.push_back( point );
-				}
-			}
-		}		
-		for(int i=0;static_cast<size_t>(i)<effectlist.size();i++)
-		{
-			MEffect*	pEffect;
-			pEffect = new MSkipEffect(bltType);
-			
-			pEffect->SetFrameID( frameID, maxFrame );				
-			pEffect->SetPixelPosition(g_pTopView->MapToPixelX( effectlist[i].x), g_pTopView->MapToPixelY(effectlist[i].y), egInfo.z0);		// pixel좌표
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-			pEffect->SetDirection( egInfo.direction );			
-			pEffect->SetPower(egInfo.power);			
-			if (g_pZone->AddGroundEffect( pEffect ) && i == 0)
-			{
-				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );				
-			}  else
-			{
-				MEffectTarget *pTarget = egInfo.pEffectTarget;
-				
-				if( pTarget != NULL )
-				{
-					MEffectTarget *pEffectTarget = new MEffectTarget( *pTarget );
-					pEffect->SetLink( egInfo.nActionInfo, pEffectTarget );						
-				}
-			}
-		}
-		//		egInfo.temp1= 0;
-		return true;
+		auto effect = std::make_unique<MSkipEffect>(sprite.bltType);
+		MEffect* retained = effect.get();
+		effect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+		// Pixel-to-tile division leaves room for +/-1; tile-to-pixel conversion
+		// saturates at the int endpoints for the outermost patterns.
+		const int x = grade == 0 ? egInfo.x0 : WorldTileGeometry::TileToPixelX(tx + offsets[grade][i][0]);
+		const int y = grade == 0 ? egInfo.y0 : WorldTileGeometry::TileToPixelY(ty + offsets[grade][i][1]);
+		effect->SetPixelPosition(x, y, egInfo.z0);
+		effect->SetStepPixel(egInfo.step);
+		effect->SetCount(egInfo.count, egInfo.linkCount);
+		effect->SetDirection(egInfo.direction);
+		effect->SetPower(egInfo.power);
+
+		// Allocate before submission so exceptions leave no retained, unlinked
+		// continuation. Both objects stay locally owned on queue rejection.
+		std::unique_ptr<MEffectTarget> copy;
+		if (accepted && continuation) copy = std::make_unique<MEffectTarget>(*continuation);
+		if (!QueueEffect(std::move(effect))) continue;
+		if (!accepted) retained->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
+		else if (copy) retained->SetLink(egInfo.nActionInfo, copy.release());
+		accepted = true;
 	}
-	return false;	
+	return accepted;
 }

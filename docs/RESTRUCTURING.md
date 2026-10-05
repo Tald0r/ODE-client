@@ -2625,7 +2625,19 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, `RegenZoneStatusHost.h`, designated installation/reset
     and `test_regen_zone_status_handler.cpp` using the real production handler.
 
-### Remaining R1 work after tasks 4.80-4.88
+- [ ] **4.89 Skip-draw ground patterns:** move the complete
+  `MSkipEffectGenerator` into `gamemodel`, using the existing ground queue and
+  `WorldTileGeometry` conversions.
+  > **Status:** in progress (full build and sanitizer verification).
+  > Line, cross and square order are preserved. Only retained effects receive
+  > links; the first retained effect takes the original target and later
+  > effects own independent visual continuations. Complete rejection and
+  > unsupported grades return false. Pending effects and copies are owned
+  > through rejection and exceptions; snapshots survive earlier-effect removal.
+  - Owner: membership, R1, designated `GameInit.cpp` installation/reset and
+    `test_skip_effect_generator.cpp`, with real effects and all acceptance masks.
+
+### Remaining R1 work after tasks 4.80-4.89
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
@@ -2649,8 +2661,12 @@ their original stack bases after those parent PRs closed. Recovery PR #381
 brings the complete `88b4f3af` tree into `master` without implementation changes.
 Merge #381 first, then retarget #382 to `master` before merging it. Both PRs
 remain unmerged. #382 passes all 24 local Debug and Clang ASan/UBSan CTest
-checks and the negative production-object link check; remaining CI results
-are linked in that draft PR. Zero remains unfinished.
+checks and the negative production-object link check. Its Windows and Linux
+CI runs have now passed; exact revisions and results are linked in that PR.
+Zero remains unfinished.
+
+Task 4.89 reduces the Linux inventory to 342 executable sources, with the
+corresponding Windows baseline at 344; its verification record is separate.
 
 Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted
@@ -2660,7 +2676,7 @@ coupled implementations. Each slice needs production-object link evidence and
 contract tests, not merely a new static-library wrapper.
 
 Further source-audit candidates include skill-progression and quest-presentation
-handlers, `MSkipEffectGenerator` and the remaining creature-attack generators.
+handlers and the remaining creature-attack generators.
 Their extraction needs independent ownership and packet-contract tests before
 any suspected defect is treated as reproduced.
 

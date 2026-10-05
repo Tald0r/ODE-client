@@ -109,6 +109,7 @@
 #include "MAttachZoneAroundEffectGenerator.h"
 #include "MAttachZoneSelectableEffectGenerator.h"
 #include "MAttackZoneRectEffectGenerator.h"
+#include "MSkipEffectGenerator.h"
 #include "RankBonusHandlerHost.h"
 #include "RegenZoneStatusHost.h"
 #include "BonusSkillHost.h"
@@ -2676,6 +2677,7 @@ void ReleaseAllObjects()
 	MAttachZoneAroundEffectGenerator::SetHost(nullptr);
 	MAttachZoneSelectableEffectGenerator::SetHost(nullptr);
 	MAttackZoneRectEffectGenerator::SetHost(nullptr);
+	MSkipEffectGenerator::SetHost(nullptr);
 	RankBonusHandlers::SetHost(nullptr);
 	RegenZoneStatus::SetHost(nullptr);
 	BonusSkills::SetHost(nullptr);
@@ -3948,6 +3950,7 @@ InitGameObject()
 	MAttachZoneAroundEffectGenerator::SetHost(&s_AroundGroundEffectHost);
 	MAttachZoneSelectableEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	MAttackZoneRectEffectGenerator::SetHost(&s_GroundPatternEffectHost);
+	MSkipEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
 	RegenZoneStatus::SetHost(&s_RegenZoneStatusHost);
 	BonusSkills::SetHost(&s_BonusSkillHost);
