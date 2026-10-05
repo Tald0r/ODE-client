@@ -52,6 +52,11 @@ bool ApplyServerList(CServerInformation& selection, LCServerList& packet)
 		return false;
 	}
 
+	// Login replies contain a complete snapshot for the selected world.
+	// Keep its object and metadata while removing servers no longer advertised.
+	world->Release();
+	selection.ClearServerSelection();
+
 	const int currentID = packet.getCurrentServerGroupID();
 	const int count = packet.getListNum();
 	int firstID = 0;

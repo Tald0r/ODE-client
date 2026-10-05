@@ -119,6 +119,35 @@ TEST(LoginListHandlers, ReplacingWorldsDiscardsOldServersBeforePublication)
 	CHECK(calls == std::vector<int>({1, 2}));
 }
 
+TEST(LoginListHandlers, ServerSnapshotsRemoveOmittedServersAndClearAnEmptySelection)
+{
+	World world;
+	Worlds(5, {{5, "World", 4}, {9, "Other world", 2}});
+	auto* selectedWorld = g_pServerInformation->GetData(5);
+	auto* otherWorld = g_pServerInformation->GetData(9);
+	auto* otherServer = new SERVER_INFO;
+	otherServer->ServerName = "Untouched";
+	otherWorld->AddData(77, otherServer);
+	Servers(7, {{7, "Removed later", 1}, {8, "Retained later", 2}});
+	expectedServer = 8;
+	Servers(8, {{8, "Current", 3}});
+	CHECK(g_pServerInformation->GetData(5) == selectedWorld);
+	CHECK(selectedWorld->GetData(7) == nullptr);
+	CHECK_EQ(1, selectedWorld->size());
+	CHECK_EQ(3, g_pServerInformation->GetServerStatus());
+	expectedServer = 0;
+	Servers(8, {});
+	CHECK(selectedWorld->empty());
+	CHECK_EQ(0, g_pServerInformation->GetServerID());
+	CHECK_EQ(0, g_pServerInformation->GetServerStatus());
+	CHECK(g_pServerInformation->GetServerName() == nullptr);
+	CHECK_EQ(5, g_pServerInformation->GetServerGroupID());
+	CHECK_EQ(4, g_pServerInformation->GetServerGroupStatus());
+	CHECK(std::string(g_pServerInformation->GetServerGroupName()) == "World");
+	CHECK(otherWorld->GetData(77) == otherServer);
+	CHECK(std::string(otherServer->ServerName.GetString()) == "Untouched");
+}
+
 TEST(LoginListHandlers, ServerListWithoutASelectedWorldKeepsPacketAndSkipsPublication)
 {
 	World world;

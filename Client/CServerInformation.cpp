@@ -77,6 +77,13 @@ CServerInformation::SetServerGroupID(unsigned int id)
 	return true;
 }
 
+void CServerInformation::ClearServerSelection()
+{
+	m_ServerID = 0;
+	m_ServerStatus = 0;
+	m_ServerName.Release();
+}
+
 //----------------------------------------------------------------------
 // Set ServerID
 //----------------------------------------------------------------------

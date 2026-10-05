@@ -88,16 +88,18 @@ it), the chat filter (`MChatManager`'s curse lists and `RemoveCurse`,
 over `MStringMap`, behind its `MChatHost`), and the creature status array
 (`MStatus`), with `AffectModifyInfo`, which applies a ModifyInfo packet to
 it, and the request/answer mode register (`TempInformation`), and the
-twelve packet handlers whose bodies reach model state and named host services (the phone
+seventeen packet handlers whose bodies reach model state and named host services (the phone
 slots `GCPhoneConnected`, `GCPhoneDisconnected`, `GCPhoneSay` and
 `GCRing`; the trade box `GCTradeMoney` and `GCTradeRemoveItem`;
 `GCSystemAvailabilities`; `GCMonsterKillQuestInfo`; the self-defense target
 roster's `GCAddInjuriousCreature` and `GCRemoveInjuriousCreature`; rank-bonus state
 `GCRankBonusInfo` and `GCSelectRankBonusOK`, with live regeneration behind
-`RankBonusHandlers::Host`), which stay in
+`RankBonusHandlers::Host`; bonus eligibility and skill snapshots
+`GCHolyLandBonusInfo`, `GCSweeperBonusInfo` and `GCSkillInfo`; login lists
+`LCWorldList` and `LCServerList`, behind designated player/UI hosts), which stay in
 `Client/PacketHandler`, and `ApplySkillInfo`, the skill-model rebuild
-`GCSkillInfoHandler` runs on its packet (the handler keeps the sweeper
-bonus reset and `SetAvailableSkills`), and the duration conversions
+`GCSkillInfoHandler` runs on its packet (the handler clears model-owned
+sweeper bonuses and requests the live availability refresh through `BonusSkillHost`), and the duration conversions
 `ConvertDurationToFrame` and `ConvertDurationToMillisecond`, and the event
 queue (`MEventQueue`, inherited by the executable's `MEventManager`, with
 gamma, effect and fade actions behind `MEventHost`; background images stay
@@ -135,7 +137,9 @@ tracking (`MHelpStringTable`), peer endpoint records (`RequestUserManager`),
 zone/sector sound metadata (`MZoneSound`, `SectorSoundInfo`), the English NPC
 name overlay (`MNPCTableEnglish`), and complete wave/ripple generators
 (`MBloodyWaveEffectGenerator`, `MRippleZoneEffectGenerator`) with frame, bounds
-and queue services supplied by designated hosts, and interaction-object metadata
+and queue services supplied by designated hosts, ground ring/selectable/rectangle
+generators with consuming ground queues, crash-report records and named profiling
+state, and interaction-object metadata
 (`INTERACTIONOBJECTTABLE_INFO`), and orbit-effect paths and progression
 (`EffectOrbit`, with drawing and effect lifetime kept in the executable),
 and linear trajectory state (`LinearEffectMotion`, shared by linear, guided
@@ -150,7 +154,7 @@ user, config and timed-item loaders gamemodel reads, and their string support; m
 `docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
 4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25, 4.26, 4.27,
 4.28, 4.29, 4.30, 4.31, 4.32, 4.33, 4.34, 4.35, 4.36, 4.37, 4.38, 4.39,
-4.40, 4.41, 4.42, 4.43 and the follow-up extractions through 4.82),
+4.40, 4.41, 4.42, 4.43 and the follow-up extractions through 4.87),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -169,7 +173,7 @@ include it. The checked formatter (`SafeFormat.h`, `docs/RESTRUCTURING.md`
 task 5.4) is in `basic` for the same reason — the call sites that need it are
 in the executable, in `VS_UI` and in the packet handlers, and `basic` is the
 one library all three link. Game logic compiled straight into the `DarkEden` executable —
-including the packet *handlers* under `Client/PacketHandler/`, all but the twelve
+including the packet *handlers* under `Client/PacketHandler/`, all but the seventeen
 `gamemodel` lists — cannot be linked into
 a test binary. That is a structural limit, and it is the single biggest constraint on
 how work gets verified here.
@@ -498,7 +502,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
 |---|---|
 | `Client/` | game logic — `GameMain`, `MZone`, `MCreature`, `MPlayer`, `MItem`, `MSkill` |
 | `Client/Packet/` | the wire layer, compiled once as `packetwire`; `Gpackets/` is server → client |
-| `Client/PacketHandler/` | packet handlers, executable-side except for the twelve listed in `gamemodel` membership (tasks 4.15, 4.25 and 4.82), all bound to ids in `Client/PacketHandlerRegistry.cpp` |
+| `Client/PacketHandler/` | packet handlers, executable-side except for the seventeen listed in `gamemodel` membership (tasks 4.15, 4.25, 4.82 and 4.84), all bound to ids in `Client/PacketHandlerRegistry.cpp` |
 | `Client/SpriteLib/` | sprite decode and blitting, SDL backend, the 555/565 variants |
 | `Client/DXLib/` | input, sound and music behind a DirectX-shaped interface, SDL underneath |
 | `Client/TextSystem/`, `TextLib/` | UTF-8 text rendering on SDL + freetype2 |

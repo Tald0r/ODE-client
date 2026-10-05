@@ -10,7 +10,8 @@ class LCServerList;
 // record's world. Duplicate IDs update the same record in packet order.
 void ApplyWorldList(CServerInformation& selection, LCWorldList& packet);
 
-// Update servers within the selected world, retaining unlisted servers.
+// Replace servers within the selected world, preserving that world and all
+// other worlds. An empty list clears the selected server ID/name/status.
 // Select the requested nonzero server if listed, otherwise the first record's
 // server. Return false only when the selected world is missing, in which case
 // neither the model nor the packet is changed. True includes an empty list,

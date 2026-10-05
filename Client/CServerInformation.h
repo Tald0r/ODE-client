@@ -96,6 +96,9 @@ class CServerInformation : public CTypeMap2<ServerGroup> {
 
 		void			Release();
 
+		// Forget the selected server without changing any world or server records.
+		void			ClearServerSelection();
+
 		//-------------------------------------------------------------
 		// 현재의 server에 대한 정보
 		//-------------------------------------------------------------
