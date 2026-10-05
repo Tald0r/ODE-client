@@ -84,7 +84,7 @@ bool MAttachZoneAroundEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egIn
 		for (int x = -1; x <= 1; ++x)
 		{
 			if (x == 0 && y == 0) continue;
-			const BYTE direction = static_cast<BYTE>(y == -1 ? 6 - x : y == 0 ? std::max(0, x) * 4 : x + 2);
+			const BYTE direction = static_cast<BYTE>(y == -1 ? 6 - x : y == 0 ? (std::max)(0, x) * 4 : x + 2);
 			auto effect = std::make_unique<MEffect>(sprite.bltType);
 			MEffect* pEffect = effect.get();
 			pEffect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
