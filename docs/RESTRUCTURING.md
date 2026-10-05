@@ -2617,7 +2617,7 @@ rounds settled* for the host rules). Test fixtures share
 
 - [x] **4.88 Regen-zone ownership packet application:** move the complete
   `GCRegenZoneStatusHandler` into `gamemodel` beside its existing tower model.
-  > **Status:** done (2026-10-05; this extraction).
+  > **Status:** done (2026-10-05; PR #382, implementation `3e620117`).
   > `RegenZoneStatus::Host` borrows the current UI-owned table per packet;
   > `GameInit.cpp` installs and resets the designated callback. Missing services
   > skip updates. Eight wire ownership bytes and the fixed race ownership of
@@ -2643,6 +2643,14 @@ categories, not independent modules. Windows retains two additional sources.
 Task 4.88 further reduces the Linux inventory to 343 sources (262 handlers),
 with the corresponding Windows baseline at 345. The earlier CI links above
 cover tasks 4.80-4.87, not this later extraction; its PR records verification.
+
+Stack handoff (2026-10-05): #372 reached `master`, but #373-#379 merged into
+their original stack bases after those parent PRs closed. Recovery PR #381
+brings the complete `88b4f3af` tree into `master` without implementation changes.
+Merge #381 first, then retarget #382 to `master` before merging it. Both PRs
+remain unmerged. #382 passes all 24 local Debug and Clang ASan/UBSan CTest
+checks and the negative production-object link check; remaining CI results
+are linked in that draft PR. Zero remains unfinished.
 
 Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted
