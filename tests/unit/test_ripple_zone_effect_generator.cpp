@@ -147,6 +147,7 @@ namespace {
 int destroyedRippleMarkers;
 struct RippleMarker : MEffectTarget
 {
+	using MEffectTarget::operator=;
 	RippleMarker() : MEffectTarget(1) {}
 	~RippleMarker() override { ++destroyedRippleMarkers; }
 };

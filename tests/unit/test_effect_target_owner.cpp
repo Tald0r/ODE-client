@@ -14,6 +14,7 @@ std::unique_ptr<MEffectTargetOwner> callbackOwner;
 
 struct Target : MEffectTarget
 {
+	using MEffectTarget::operator=;
 	Target() : MEffectTarget(4) { NextPhase(); }
 	~Target() override { ++destroyedTargets; }
 };

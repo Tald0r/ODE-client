@@ -194,6 +194,7 @@ namespace {
 int destroyedWaveMarkers;
 struct WaveMarker : MEffectTarget
 {
+	using MEffectTarget::operator=;
 	WaveMarker() : MEffectTarget(1) {}
 	~WaveMarker() override { ++destroyedWaveMarkers; }
 };
