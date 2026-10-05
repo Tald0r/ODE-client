@@ -104,6 +104,7 @@
 #include "MRippleZoneWideEffectGenerator.h"
 #include "MBloodyBreakerEffectGenerator.h"
 #include "MBloodyWallEffectGenerator.h"
+#include "RankBonusHandlerHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2662,6 +2663,7 @@ void ReleaseAllObjects()
 	MRippleZoneWideEffectGenerator::SetHost(nullptr);
 	MBloodyBreakerEffectGenerator::SetHost(nullptr);
 	MBloodyWallEffectGenerator::SetHost(nullptr);
+	RankBonusHandlers::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3311,6 +3313,12 @@ static const MBloodyWallEffectHost s_BloodyWallEffectHost = {
 	.Queue = s_FixedZoneEffectHost.Queue,
 };
 
+static const RankBonusHandlers::Host s_RankBonusHandlerHost = {
+	.CheckRegen = [] {
+		if (g_pPlayer) g_pPlayer->CheckRegen();
+	},
+};
+
 static const MWideRippleEffectHost s_WideRippleEffectHost = {
 	.Sprite = s_FixedZoneEffectHost.Sprite,
 	.Bounds = [](MWideRippleEffectBounds& bounds) {
@@ -3850,6 +3858,7 @@ InitGameObject()
 	MRippleZoneWideEffectGenerator::SetHost(&s_WideRippleEffectHost);
 	MBloodyBreakerEffectGenerator::SetHost(&s_BloodyBreakerEffectHost);
 	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);
+	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);

@@ -12,7 +12,7 @@
 #include "RankBonusTable.h"
 #include "TempInformation.h"
 #include "RankBonusDef.h"
-#include "MPlayer.h"
+#include "RankBonusHandlerHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,10 +23,11 @@ void GCSelectRankBonusOKHandler::execute ( GCSelectRankBonusOK * pGCSelectRankBo
 	(void)pPlayer;
 
 	g_pTempInformation->SetMode(TempInformation::MODE_NULL);
-	const int type = pGCSelectRankBonusOK->getRankBonusType();
+	const DWORD wireType = pGCSelectRankBonusOK->getRankBonusType();
 
-	if(type < g_pRankBonusTable->GetSize())
+	if(wireType < static_cast<DWORD>(g_pRankBonusTable->GetSize()))
 	{
+		const int type = static_cast<int>(wireType);
 		if (auto* entry = g_pRankBonusTable->GetMutable(type)) {
 			entry->SetStatus(RankBonusInfo::STATUS_LEARNED);
 		}
@@ -45,8 +46,8 @@ void GCSelectRankBonusOKHandler::execute ( GCSelectRankBonusOK * pGCSelectRankBo
 			}
 	}
 
-	if(type == RANK_BONUS_URANUS_BLESS)
-		g_pPlayer->CheckRegen();
+	if(wireType == RANK_BONUS_URANUS_BLESS)
+		RankBonusHandlers::CheckRegen();
 		
 	__END_CATCH
 }

@@ -635,3 +635,8 @@ Client/SectorSoundInfo.h
 # English NPC overlay; its target table is already owned by gamemodel.
 Client/MNPCTableEnglish.cpp
 Client/MNPCTableEnglish.h
+
+# Rank-bonus packet application; player regeneration stays in the host.
+Client/PacketHandler/GCRankBonusInfoHandler.cpp
+Client/PacketHandler/GCSelectRankBonusOKHandler.cpp
+Client/RankBonusHandlerHost.h

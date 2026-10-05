@@ -10,7 +10,26 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCRankBonusInfo.h"
 #include "RankBonusTable.h"
-#include "MPlayer.h"
+#include "RankBonusHandlerHost.h"
+
+namespace RankBonusHandlers {
+namespace {
+const Host* s_Host = nullptr;
+}
+
+const Host* SetHost(const Host* host)
+{
+	const Host* previous = s_Host;
+	s_Host = host;
+	return previous;
+}
+
+void CheckRegen()
+{
+	if (s_Host != nullptr && s_Host->CheckRegen != nullptr)
+		s_Host->CheckRegen();
+}
+}
 
 void GCRankBonusInfoHandler::execute ( GCRankBonusInfo * pPacket , Player * pPlayer )
 	 
@@ -48,7 +67,7 @@ void GCRankBonusInfoHandler::execute ( GCRankBonusInfo * pPacket , Player * pPla
 		}
 	}
 
-	g_pPlayer->CheckRegen();
+	RankBonusHandlers::CheckRegen();
 
 	__END_CATCH
 }
