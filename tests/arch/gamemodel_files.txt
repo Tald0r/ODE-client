@@ -682,3 +682,8 @@ Client/MAttackZoneRectEffectGenerator.h
 # Complete skip-draw generator and ordered ground patterns.
 Client/MSkipEffectGenerator.cpp
 Client/MSkipEffectGenerator.h
+
+# Skill downgrade replies and their presentation service.
+Client/SkillDowngradeHost.h
+Client/PacketHandler/GCDownSkillOKHandler.cpp
+Client/PacketHandler/GCDownSkillFailedHandler.cpp

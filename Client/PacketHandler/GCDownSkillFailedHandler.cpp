@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCDownSkillFailed.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "SkillDowngradeHost.h"
 #include "MGameStringTable.h"
 
 #define DOMAIN_DIFFER 0
@@ -34,28 +33,28 @@ void GCDownSkillFailedHandler::execute ( GCDownSkillFailed * pGCDownSkillFailed 
 	//	case DOMAIN_DIFFER :
 	//		break;
 		case NOT_OUSTERS :
-			UI_PopupMessage( STRING_MESSAGE_NOT_OUSTERS );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_NOT_OUSTERS );
 			break;
 		case TOO_LOW :
-			UI_PopupMessage( STRING_MESSAGE_TOO_LOW_SKILL_LEVEL );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_TOO_LOW_SKILL_LEVEL );
 			break;
 		case TOO_HIGH :
-			UI_PopupMessage( STRING_MESSAGE_TOO_HIGH_SKILL_LEVEL );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_TOO_HIGH_SKILL_LEVEL );
 			break;
 		case NOT_ENOUGH_MONEY :
-			UI_PopupMessage( STRING_MESSAGE_NOT_ENOUGH_MONEY_FOR_DOWN_SKILL );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_NOT_ENOUGH_MONEY_FOR_DOWN_SKILL );
 			break;
 		case INVALID_SKILL :
-			UI_PopupMessage( STRING_MESSAGE_INVALID_SKILL );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_INVALID_SKILL );
 			break;
 		case HAVE_NOT_SKILL :
-			UI_PopupMessage( STRING_MESSAGE_NOT_LEARNED_SKILL );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_NOT_LEARNED_SKILL );
 			break;
 		case CANNOT_DROP_SKILL :
-			UI_PopupMessage( STRING_MESSAGE_CANNOT_SKILLTREE_DELETE );
+			SkillDowngrade::PopupMessage( STRING_MESSAGE_CANNOT_SKILLTREE_DELETE );
 			break;
 		default :
-			UI_PopupMessage( STRING_ERROR_ETC_ERROR );
+			SkillDowngrade::PopupMessage( STRING_ERROR_ETC_ERROR );
 			break;
 	}
 

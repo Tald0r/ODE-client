@@ -2637,7 +2637,19 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, designated `GameInit.cpp` installation/reset and
     `test_skip_effect_generator.cpp`, with real effects and all acceptance masks.
 
-### Remaining R1 work after tasks 4.80-4.89
+- [ ] **4.90 Skill downgrade replies:** move `GCDownSkillOKHandler` and
+  `GCDownSkillFailedHandler` into `gamemodel` behind the popup-only
+  `SkillDowngrade::Host` installed and reset by `GameInit.cpp`.
+  > **Status:** in progress (full verification and publication).
+  > Success replies require an allocated skill row with a positive level.
+  > Repeated replies at zero and invalid IDs preserve state without announcing
+  > success. Valid decrements retain existing `CanDelete` and domain-membership
+  > policy; a missing manager skips only optional relearning. All failure-byte
+  > message mappings remain unchanged. Missing presentation skips only the popup.
+  - Owner: membership, R1, designated host installation/reset and
+    `test_skill_downgrade_handlers.cpp`, including the reproduced decrement bug.
+
+### Remaining R1 work after tasks 4.80-4.90
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
@@ -2667,9 +2679,14 @@ Zero remains unfinished.
 
 Task 4.89 reduces the Linux inventory to 342 executable sources, with the
 corresponding Windows baseline at 344. All 24 local Clang Debug and ASan/UBSan
-CTest checks pass (3,345 unit tests), as do Linux CI and Windows ASan. PR #383
-records the production-object link proof and the remaining Windows job; it
+CTest checks pass (3,345 unit tests), as do Linux and Windows CI. PR #383
+records the production-object link proof and exact verified revisions; it
 depends on #382 and must be retargeted to `master` after that parent lands.
+
+Task 4.90 further reduces R1 to 340 Linux / 342 Windows. Before its guard was
+applied, tests against the extracted original arithmetic observed zero becoming
+negative and invalid IDs displaying success; Clang UBSan stopped on `INT_MIN - 1`.
+The new tests cover these replies and the valid relearning sequence.
 
 Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted

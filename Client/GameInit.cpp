@@ -113,6 +113,7 @@
 #include "RankBonusHandlerHost.h"
 #include "RegenZoneStatusHost.h"
 #include "BonusSkillHost.h"
+#include "SkillDowngradeHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2681,6 +2682,7 @@ void ReleaseAllObjects()
 	RankBonusHandlers::SetHost(nullptr);
 	RegenZoneStatus::SetHost(nullptr);
 	BonusSkills::SetHost(nullptr);
+	SkillDowngrade::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3375,6 +3377,10 @@ static const MAroundGroundEffectHost s_AroundGroundEffectHost = {
 	.AddEvent = s_MeteorDropEffectHost.AddEvent,
 };
 
+static const SkillDowngrade::Host s_SkillDowngradeHost = {
+	.PopupMessage = [](int gameStringID) { UI_PopupMessage(gameStringID); },
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -3954,6 +3960,7 @@ InitGameObject()
 	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
 	RegenZoneStatus::SetHost(&s_RegenZoneStatusHost);
 	BonusSkills::SetHost(&s_BonusSkillHost);
+	SkillDowngrade::SetHost(&s_SkillDowngradeHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
