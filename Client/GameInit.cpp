@@ -107,6 +107,8 @@
 #include "MBloodyWaveEffectGenerator.h"
 #include "MRippleZoneEffectGenerator.h"
 #include "RankBonusHandlerHost.h"
+#include "BonusSkillHost.h"
+#include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2668,6 +2670,8 @@ void ReleaseAllObjects()
 	MBloodyWaveEffectGenerator::SetHost(nullptr);
 	MRippleZoneEffectGenerator::SetHost(nullptr);
 	RankBonusHandlers::SetHost(nullptr);
+	BonusSkills::SetHost(nullptr);
+	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3348,6 +3352,27 @@ static const MRippleZoneEffectHost s_RippleZoneEffectHost = {
 	},
 };
 
+static const BonusSkills::Host s_BonusSkillHost = {
+	.ReadPlayer = [](BonusSkills::PlayerState& state) {
+		if (!g_pPlayer || !g_pSkillAvailable) return false;
+		state.race = g_pPlayer->GetRace();
+		state.level = g_pPlayer->GetLEVEL();
+		state.statSum = static_cast<std::int64_t>(g_char_slot_ingame.STR_PURE)
+			+ g_char_slot_ingame.DEX_PURE + g_char_slot_ingame.INT_PURE;
+		return true;
+	},
+	.RefreshAvailableSkills = [] {
+		if (g_pSkillAvailable) g_pSkillAvailable->SetAvailableSkills();
+	},
+};
+
+static const LoginLists::Host s_LoginListHost = {
+	.PublishWorlds = [] { UI_SetWorldList(); },
+	.SelectWorldMode = [] { SetMode(MODE_WAIT_SELECT_WORLD); },
+	.PublishServers = [] { UI_SetServerList(); },
+	.SelectServerMode = [] { SetMode(MODE_WAIT_SELECT_SERVER); },
+};
+
 static const RankBonusHandlers::Host s_RankBonusHandlerHost = {
 	.CheckRegen = [] {
 		if (g_pPlayer) g_pPlayer->CheckRegen();
@@ -3896,6 +3921,8 @@ InitGameObject()
 	MBloodyWaveEffectGenerator::SetHost(&s_BloodyWaveEffectHost);
 	MRippleZoneEffectGenerator::SetHost(&s_RippleZoneEffectHost);
 	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
+	BonusSkills::SetHost(&s_BonusSkillHost);
+	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);

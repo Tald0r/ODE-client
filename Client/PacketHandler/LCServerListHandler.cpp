@@ -7,8 +7,8 @@
 #include "Lpackets/LCServerList.h"
 #include "ApplyServerList.h"
 #include "CServerInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "LoginListHost.h"
+#include "DebugLog.h"
 
 void LCServerListHandler::execute(LCServerList* pPacket, Player* pPlayer)
 {
@@ -23,8 +23,7 @@ void LCServerListHandler::execute(LCServerList* pPacket, Player* pPlayer)
 
 	if (ApplyServerList(*g_pServerInformation, *pPacket))
 	{
-		UI_SetServerList();
-		SetMode(MODE_WAIT_SELECT_SERVER);
+		LoginLists::ServerListApplied();
 	}
 
 	__END_CATCH

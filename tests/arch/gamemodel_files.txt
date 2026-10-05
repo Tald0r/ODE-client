@@ -656,3 +656,13 @@ Client/MCrashReportManager.cpp
 Client/MCrashReportManager.h
 Client/Profiler.cpp
 Client/Profiler.h
+
+# Bonus eligibility and login-list packet application, with live player/UI services.
+Client/BonusSkillHost.cpp
+Client/BonusSkillHost.h
+Client/LoginListHost.h
+Client/PacketHandler/GCHolyLandBonusInfoHandler.cpp
+Client/PacketHandler/GCSweeperBonusInfoHandler.cpp
+Client/PacketHandler/GCSkillInfoHandler.cpp
+Client/PacketHandler/LCWorldListHandler.cpp
+Client/PacketHandler/LCServerListHandler.cpp
