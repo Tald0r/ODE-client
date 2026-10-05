@@ -59,8 +59,10 @@ class MEffectTarget {
 		//-------------------------------------------------------
 		// Instance ID
 		//-------------------------------------------------------
-		void		NewEffectID()			{ m_EffectID = s_EffectID++; }
+		void		NewEffectID()			{ m_EffectID = s_EffectID++; m_bRemovePlayerRegistration = true; }
 		BYTE		GetEffectID() const		{ return m_EffectID; }
+		// Continuation copies share the effect ID but never own its player entry.
+		void		RemovePlayerRegistration();
 
 		//-------------------------------------------------------
 		// Set
@@ -155,6 +157,7 @@ class MEffectTarget {
 		// Ownership bookkeeping is never copied by construction or assignment.
 		MEffectTargetOwner* m_pPendingOwner = nullptr;
 		bool m_bDestroying = false;
+		bool m_bRemovePlayerRegistration = true;
 		static void RemoveFromPlayer(BYTE id);
 		static const MEffectTargetHost* s_pHost;
 };

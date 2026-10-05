@@ -20,6 +20,11 @@ void MEffectTarget::RemoveFromPlayer(BYTE id)
 	if (s_pHost && s_pHost->RemoveFromPlayer) s_pHost->RemoveFromPlayer(id);
 }
 
+void MEffectTarget::RemovePlayerRegistration()
+{
+	if (m_bRemovePlayerRegistration) RemoveFromPlayer(m_EffectID);
+}
+
 void MEffectTarget::ReleasePendingOwner() noexcept
 {
 	if (m_pPendingOwner != nullptr)
@@ -67,9 +72,10 @@ MEffectTarget::MEffectTarget(const MEffectTarget& target)
 
 	*this = target;
 
-	// 객체 ID를 할당한다.
-	//m_InstanceID = s_InstanceID++;
+	// Preserve the shared ID used to correlate this visual continuation.
 	m_EffectID = target.m_EffectID;
+	// Only the original is tracked by the player; visual branches share its ID.
+	m_bRemovePlayerRegistration = false;
 	
 	m_ServerID = OBJECTID_NULL;
 
@@ -108,8 +114,8 @@ MEffectTarget::~MEffectTarget()
 
 	DEBUG_ADD("del res");
 
-	// 죽음의 코드 - -;
-	RemoveFromPlayer(m_EffectID);
+	// Visual copies must not remove the original target from the player roster.
+	RemovePlayerRegistration();
 
 	DEBUG_ADD("del ok");
 }

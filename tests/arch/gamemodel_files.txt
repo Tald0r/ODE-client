@@ -666,3 +666,11 @@ Client/PacketHandler/GCSweeperBonusInfoHandler.cpp
 Client/PacketHandler/GCSkillInfoHandler.cpp
 Client/PacketHandler/LCWorldListHandler.cpp
 Client/PacketHandler/LCServerListHandler.cpp
+
+# Ground patterns, selectable ground effects and radial projectiles.
+Client/MAttachZoneAroundEffectGenerator.cpp
+Client/MAttachZoneAroundEffectGenerator.h
+Client/MAttachZoneSelectableEffectGenerator.cpp
+Client/MAttachZoneSelectableEffectGenerator.h
+Client/MAttackZoneRectEffectGenerator.cpp
+Client/MAttackZoneRectEffectGenerator.h

@@ -106,6 +106,9 @@
 #include "MBloodyWallEffectGenerator.h"
 #include "MBloodyWaveEffectGenerator.h"
 #include "MRippleZoneEffectGenerator.h"
+#include "MAttachZoneAroundEffectGenerator.h"
+#include "MAttachZoneSelectableEffectGenerator.h"
+#include "MAttackZoneRectEffectGenerator.h"
 #include "RankBonusHandlerHost.h"
 #include "BonusSkillHost.h"
 #include "LoginListHost.h"
@@ -2669,6 +2672,9 @@ void ReleaseAllObjects()
 	MBloodyWallEffectGenerator::SetHost(nullptr);
 	MBloodyWaveEffectGenerator::SetHost(nullptr);
 	MRippleZoneEffectGenerator::SetHost(nullptr);
+	MAttachZoneAroundEffectGenerator::SetHost(nullptr);
+	MAttachZoneSelectableEffectGenerator::SetHost(nullptr);
+	MAttackZoneRectEffectGenerator::SetHost(nullptr);
 	RankBonusHandlers::SetHost(nullptr);
 	BonusSkills::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
@@ -3352,6 +3358,19 @@ static const MRippleZoneEffectHost s_RippleZoneEffectHost = {
 	},
 };
 
+static const MFixedZoneEffectHost s_GroundPatternEffectHost = {
+	.Sprite = s_FixedZoneEffectHost.Sprite,
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		return s_RippleZoneEffectHost.Queue(std::move(effect), true);
+	},
+};
+
+static const MAroundGroundEffectHost s_AroundGroundEffectHost = {
+	.Sprite = s_GroundPatternEffectHost.Sprite,
+	.Queue = s_GroundPatternEffectHost.Queue,
+	.AddEvent = s_MeteorDropEffectHost.AddEvent,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -3920,6 +3939,9 @@ InitGameObject()
 	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);
 	MBloodyWaveEffectGenerator::SetHost(&s_BloodyWaveEffectHost);
 	MRippleZoneEffectGenerator::SetHost(&s_RippleZoneEffectHost);
+	MAttachZoneAroundEffectGenerator::SetHost(&s_AroundGroundEffectHost);
+	MAttachZoneSelectableEffectGenerator::SetHost(&s_GroundPatternEffectHost);
+	MAttackZoneRectEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
 	BonusSkills::SetHost(&s_BonusSkillHost);
 	LoginLists::SetHost(&s_LoginListHost);

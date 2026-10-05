@@ -93,6 +93,28 @@ std::vector<int> RandomDraws(unsigned seed, size_t count)
 
 } // namespace
 
+namespace {
+struct CopyResultMarker : MActionResultNode
+{
+	int& destroyed;
+	explicit CopyResultMarker(int& count) : destroyed(count) {}
+	~CopyResultMarker() override { ++destroyed; }
+	void Execute() override {}
+};
+void ClearEffectsCheckingCopyDestruction(const MEffectTarget* original, int expectedCopies)
+{
+	int destroyed = 0;
+	for (const auto& effect : effects)
+	{
+		auto* target = effect->GetEffectTarget();
+		if (target == original) continue;
+		CHECK(target != nullptr); CHECK(!target->IsExistResult());
+		auto result = std::make_unique<MActionResult>(); result->Add(new CopyResultMarker(destroyed)); target->SetResult(result.release());
+	}
+	effects.clear(); CHECK_EQ(expectedCopies, destroyed);
+}
+}
+
 TEST(RandomZoneEffectGenerator, ConfiguresFourRealEffectsInQuadrantOrder)
 {
 	World world;
@@ -165,7 +187,7 @@ TEST(RandomZoneEffectGenerator, LaterCopiesSurviveAfterARejectedFirstSlotLeavesT
 	{
 		CHECK_EQ(777, effect->GetEffectTarget()->GetX()); CHECK_EQ(888, effect->GetEffectTarget()->GetY()); CHECK(!effect->GetEffectTarget()->IsExistResult());
 	}
-	ClearEffects(); CHECK(removedTargets == std::vector<int>(4, 73));
+	ClearEffectsCheckingCopyDestruction(nullptr, 3); CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(RandomZoneEffectGenerator, CopiesKeepPhaseAndMetadataWithoutRetargeting)
@@ -381,8 +403,8 @@ TEST(RandomZoneEffectGenerator, ExceptionAfterARejectedFirstSlotKeepsCallerAndCo
 	try { world.generator.Generate(info); } catch (const std::runtime_error&) { threw = true; }
 	CHECK(threw); CHECK_EQ(1, effects.size()); CHECK_EQ(draws[6], std::rand()); CHECK(target->IsExistResult());
 	if (!effects.empty()) { CHECK(effects.front()->GetEffectTarget() != target.get()); CHECK_EQ(777, effects.front()->GetEffectTarget()->GetX()); }
-	CHECK(removedTargets == std::vector<int>{94}); ClearEffects(); CHECK(removedTargets == std::vector<int>({94, 73}));
-	target.reset(); CHECK(removedTargets == std::vector<int>({94, 73, 73}));
+	CHECK(removedTargets == std::vector<int>{94}); ClearEffectsCheckingCopyDestruction(target.get(), 1); CHECK(removedTargets == std::vector<int>{94});
+	target.reset(); CHECK(removedTargets == std::vector<int>({94, 73}));
 }
 
 TEST(RandomZoneEffectGenerator, FrameCountsNarrowWithoutRandomAnimationStarts)

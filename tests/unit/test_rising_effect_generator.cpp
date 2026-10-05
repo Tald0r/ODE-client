@@ -88,6 +88,28 @@ std::unique_ptr<MEffectTarget> Target()
 
 } // namespace
 
+namespace {
+struct CopyResultMarker : MActionResultNode
+{
+	int& destroyed;
+	explicit CopyResultMarker(int& count) : destroyed(count) {}
+	~CopyResultMarker() override { ++destroyed; }
+	void Execute() override {}
+};
+void ClearEffectsCheckingCopyDestruction(const MEffectTarget* original, int expectedCopies)
+{
+	int destroyed = 0;
+	for (const auto& effect : effects)
+	{
+		auto* target = effect->GetEffectTarget();
+		if (target == original) continue;
+		CHECK(target != nullptr); CHECK(!target->IsExistResult());
+		auto result = std::make_unique<MActionResult>(); result->Add(new CopyResultMarker(destroyed)); target->SetResult(result.release());
+	}
+	effects.clear(); CHECK_EQ(expectedCopies, destroyed);
+}
+}
+
 TEST(RisingEffectGenerator, OrdinaryShotUsesSourceCoordinatesAndConfiguredLifetime)
 {
 	World world;
@@ -176,8 +198,8 @@ TEST(RisingEffectGenerator, VolleyCreatesOrderedSideShotsAndACentralOriginalTarg
 	}
 	CHECK(effects[0]->GetEffectTarget() != effects[2]->GetEffectTarget());
 	CHECK(calls == std::vector<int>({1, 2, 3, 4, 2, 3, 4, 2, 3, 4}));
-	effects.clear();
-	CHECK(removedTargets == std::vector<int>({73, 73, 73}));
+	ClearEffectsCheckingCopyDestruction(info.pEffectTarget, 2);
+	CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(RisingEffectGenerator, VolleySideProjectilesTravelTowardTheirOwnTargets)
@@ -211,8 +233,8 @@ TEST(RisingEffectGenerator, StormRetainsTenAndThirtyDegreeOrderAndUsesIndexOneFo
 		CHECK_EQ(i < 2 ? DIRECTION_RIGHT : DIRECTION_LEFT, effects[i]->GetDirection());
 		CHECK_EQ(info.nActionInfo, effects[i]->GetActionInfo());
 	}
-	effects.clear();
-	CHECK(removedTargets == std::vector<int>({73, 73, 73, 73}));
+	ClearEffectsCheckingCopyDestruction(info.pEffectTarget, 3);
+	CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(RisingEffectGenerator, DragonAndEveryVolleyActionSelectThreeShots)
@@ -443,8 +465,8 @@ TEST(RisingEffectGenerator, EveryPatternAcceptanceMaskReportsOriginalTargetTrans
 			// Red-test cleanup follows actual ownership, even if the return value lies.
 			if (owners) target.release();
 			else CHECK_EQ(999, target->GetZ());
-			effects.clear(); target.reset();
-			CHECK_EQ(std::popcount(mask) + (expected ? 0 : 1), removedTargets.size());
+			ClearEffectsCheckingCopyDestruction(info.pEffectTarget, std::popcount(mask) - owners); target.reset();
+			CHECK(removedTargets == std::vector<int>{73});
 		}
 	}
 }
@@ -486,8 +508,8 @@ TEST(RisingEffectGenerator, LosingTheQueueBeforeIndexOneLeavesTheOriginalWithThe
 	CHECK_EQ(1, effects.size()); CHECK_EQ(1, submissions);
 	CHECK(effects.front()->GetEffectTarget() != target.get());
 	CHECK_EQ(999, target->GetZ());
-	effects.clear(); target.reset();
-	CHECK(removedTargets == std::vector<int>({73, 73}));
+	ClearEffectsCheckingCopyDestruction(target.get(), 1); target.reset();
+	CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(RisingEffectGenerator, LosingTheQueueAfterIndexOneRetainsItsCompletedTransfer)
@@ -508,8 +530,8 @@ TEST(RisingEffectGenerator, LosingTheQueueAfterIndexOneRetainsItsCompletedTransf
 	CHECK(generator.Generate(info)); target.release();
 	CHECK_EQ(2, effects.size()); CHECK_EQ(2, submissions);
 	CHECK(effects[1]->GetEffectTarget() == info.pEffectTarget);
-	effects.clear();
-	CHECK(removedTargets == std::vector<int>({73, 73}));
+	ClearEffectsCheckingCopyDestruction(info.pEffectTarget, 1);
+	CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(RisingEffectGenerator, MissingPatternQueuesLeaveTargetsAvailableForCallerCleanup)

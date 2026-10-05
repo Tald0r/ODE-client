@@ -1,111 +1,67 @@
-//----------------------------------------------------------------------
 // MAttachZoneSelectableEffectGenerator.cpp
-//----------------------------------------------------------------------
-// Tile과 맞붙은 Effect들을 생성한다.
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MAttachZoneSelectableEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttachZoneSelectableEffectGenerator	g_StopZoneEffectGenerator;
+const MFixedZoneEffectHost* MAttachZoneSelectableEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MAttachZoneSelectableEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+const MFixedZoneEffectHost* MAttachZoneSelectableEffectGenerator::SetHost(const MFixedZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+bool MAttachZoneSelectableEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
+
+bool MAttachZoneSelectableEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
+int MAttachZoneSelectableEffectGenerator::OffsetCoordinate(int coordinate, int offset)
+{
+	return static_cast<int>(std::clamp<std::int64_t>(static_cast<std::int64_t>(coordinate) + offset,
+		(std::numeric_limits<int>::min)(), (std::numeric_limits<int>::max)()));
+}
+
+bool MAttachZoneSelectableEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
 {
 	int est = egInfo.effectSpriteType;
-	
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
-	/*
-	int	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
-
-	//---------------------------------------------
-	// Map좌표를 다시 pixel좌표로 바꾼다.
-	//---------------------------------------------
-	POINT pixelPoint;
-	pixelPoint = g_pTopView->MapToPixel(sX, sY);
-	*/
-	// 2001.10.6
-	POINT pixelPoint = { egInfo.x0, egInfo.y0 };
-
-	
-	//----------------------------------------------------------------
-	// 바닥에 떨어지는 피 종류 랜덤하게.. 하드 코딩.. 에휴~
-	//----------------------------------------------------------------
-	if (est==EFFECTSPRITETYPE_BLOOD_GROUND_2_1)
+	int x = egInfo.x0, y = egInfo.y0;
+	if (est == EFFECTSPRITETYPE_BLOOD_GROUND_2_1)
 	{
-		est = EFFECTSPRITETYPE_BLOOD_GROUND_2_1 + rand()%4;
-
-		pixelPoint.x += (rand()%24) - (24>>1);
-		pixelPoint.y += (rand()%24) - (24>>1);
+		est += std::rand() % 4;
+		x = OffsetCoordinate(x, std::rand() % 24 - 12);
+		y = OffsetCoordinate(y, std::rand() % 24 - 12);
 	}
-	else if (est==EFFECTSPRITETYPE_BLOOD_GROUND_1_1)
+	else if (est == EFFECTSPRITETYPE_BLOOD_GROUND_1_1)
 	{
-		est = EFFECTSPRITETYPE_BLOOD_GROUND_1_1 + rand()%5;
-
-		pixelPoint.x += (rand()%24) - (24>>1);
-		pixelPoint.y += (rand()%24) - (24>>1);
+		est += std::rand() % 5;
+		x = OffsetCoordinate(x, std::rand() % 24 - 12);
+		y = OffsetCoordinate(y, std::rand() % 24 - 12);
 	}
-
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-
-
-
-	//---------------------------------------------
-	// MaxFrame의 값을 알아온다.
-	//---------------------------------------------
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-
-	MEffect*	pEffect;
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	pEffect = new MSelectableEffect(bltType);
-
-	
-	pEffect->SetFrameID( frameID, maxFrame );	
-
-	pEffect->SetPixelPosition(pixelPoint.x, pixelPoint.y, egInfo.z0);		// pixel좌표		
-
-	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-
-	// 방향 설정
-	pEffect->SetDirection( egInfo.direction );
-
-	// 위력
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite)) return false;
+	auto effect = std::make_unique<MSelectableEffect>(sprite.bltType);
+	MEffect* pEffect = effect.get();
+	pEffect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+	pEffect->SetPixelPosition(x, y, egInfo.z0);
+	pEffect->SetStepPixel(egInfo.step);
+	pEffect->SetCount(egInfo.count, egInfo.linkCount);
+	pEffect->SetDirection(egInfo.direction);
 	pEffect->SetPower(egInfo.power);
-
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	
-	// Ground Effect로..
-	// Zone에 추가한다.
-	if (g_pZone->AddGroundEffect( pEffect ))
-	{
-		// 다음 Effect 생성 정보
-		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
-		return true;
-	}
-
-	return false;
+	if (!QueueEffect(std::move(effect))) return false;
+	pEffect->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
+	return true;
 }

@@ -268,8 +268,8 @@ check () {
 # 374: Bloody Breaker generation joins gamemodel (4.78).
 # 373: Bloody Wall generation joins gamemodel (4.79).
 # 365: peer/sound/NPC metadata, wave/ripple generators and rank handlers join gamemodel (4.80-4.82).
-# Cumulative next batch: bonus-login5.
-R1_BASELINE=349
+# Cumulative next batch: ground3-and-registration.
+R1_BASELINE=346
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -372,7 +372,7 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 371: Bloody Wall generation joins gamemodel (4.79).
 	# 363: the same eight cross-platform members leave the executable (4.80-4.82).
 	# Same cumulative cross-platform source changes.
-	R1_NINJA_BASELINE=347
+	R1_NINJA_BASELINE=344
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
