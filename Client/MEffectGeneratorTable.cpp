@@ -199,6 +199,7 @@ MEffectGeneratorTable::Generate(
 	MEffectTarget* pEffectTarget,
 	BYTE temp1, BYTE temp2)
 {	
+	MEffectTargetOwner targetOwner(pEffectTarget);
 	#ifdef OUTPUT_DEBUG_EFFECT_GENERATOR
 		DEBUG_ADD_FORMAT("EGT-Generate. ai=%d, target=%p", nActionInfo, static_cast<const void*>(pEffectTarget));
 	#endif
@@ -547,6 +548,7 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 	//							이번 loop에서 delete되어야 한다.
 	//------------------------------------------------------------
 	pEffect->SetEffectTargetNULL();
+	MEffectTargetOwner targetOwner(pEffectTarget);
 
 	//------------------------------------------------------------
 	// 목표가 없으면..

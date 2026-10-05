@@ -104,6 +104,8 @@
 #include "MRippleZoneWideEffectGenerator.h"
 #include "MBloodyBreakerEffectGenerator.h"
 #include "MBloodyWallEffectGenerator.h"
+#include "MBloodyWaveEffectGenerator.h"
+#include "MRippleZoneEffectGenerator.h"
 #include "RankBonusHandlerHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2663,6 +2665,8 @@ void ReleaseAllObjects()
 	MRippleZoneWideEffectGenerator::SetHost(nullptr);
 	MBloodyBreakerEffectGenerator::SetHost(nullptr);
 	MBloodyWallEffectGenerator::SetHost(nullptr);
+	MBloodyWaveEffectGenerator::SetHost(nullptr);
+	MRippleZoneEffectGenerator::SetHost(nullptr);
 	RankBonusHandlers::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3313,6 +3317,37 @@ static const MBloodyWallEffectHost s_BloodyWallEffectHost = {
 	.Queue = s_FixedZoneEffectHost.Queue,
 };
 
+static const MBloodyWaveEffectHost s_BloodyWaveEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MBloodyWaveEffectSprite& sprite) {
+		MBloodyWallEffectSprite metadata;
+		if (!s_BloodyWallEffectHost.Sprite(type, metadata)) return false;
+		sprite = {metadata.bltType, metadata.frameID, metadata.repeatFrame};
+		return true;
+	},
+	.MaxFrames = s_CreatureParabolaEffectHost.MaxFrames,
+	.Queue = s_FixedZoneEffectHost.Queue,
+};
+
+static const MRippleZoneEffectHost s_RippleZoneEffectHost = {
+	.Bounds = [](TYPE_SECTORPOSITION& width, TYPE_SECTORPOSITION& height) {
+		if (!g_pZone) return false;
+		width = g_pZone->GetWidth();
+		height = g_pZone->GetHeight();
+		return true;
+	},
+	.Sprite = s_FixedZoneEffectHost.Sprite,
+	.Queue = [](std::unique_ptr<MEffect> effect, bool ground) {
+		if (!g_pZone) return false;
+		if (!ground) return g_pZone->AddEffect(effect.release());
+		// AddGroundEffect borrows the pointer and may report success without
+		// retaining it. Keep ownership through rejection and allocation failure.
+		g_pZone->AddGroundEffect(effect.get());
+		if (g_pZone->GetGroundEffect(effect->GetID()) != effect.get()) return false;
+		effect.release();
+		return true;
+	},
+};
+
 static const RankBonusHandlers::Host s_RankBonusHandlerHost = {
 	.CheckRegen = [] {
 		if (g_pPlayer) g_pPlayer->CheckRegen();
@@ -3858,6 +3893,8 @@ InitGameObject()
 	MRippleZoneWideEffectGenerator::SetHost(&s_WideRippleEffectHost);
 	MBloodyBreakerEffectGenerator::SetHost(&s_BloodyBreakerEffectHost);
 	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);
+	MBloodyWaveEffectGenerator::SetHost(&s_BloodyWaveEffectHost);
+	MRippleZoneEffectGenerator::SetHost(&s_RippleZoneEffectHost);
 	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

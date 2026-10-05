@@ -166,6 +166,7 @@ MEffect::SetLink(TYPE_ACTIONINFO nActionInfo, MEffectTarget* pEffectTarget)
 {
 	if (m_pEffectTarget == pEffectTarget)
 	{
+		if (pEffectTarget != nullptr) pEffectTarget->ReleasePendingOwner();
 		m_nActionInfo = nActionInfo;
 		return;
 	}
@@ -191,6 +192,7 @@ MEffect::SetLink(TYPE_ACTIONINFO nActionInfo, MEffectTarget* pEffectTarget)
 
 	m_nActionInfo	= nActionInfo;
 	m_pEffectTarget	= pEffectTarget;
+	if (pEffectTarget != nullptr) pEffectTarget->ReleasePendingOwner();
 }
 
 //----------------------------------------------------------------------

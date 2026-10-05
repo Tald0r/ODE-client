@@ -20,6 +20,37 @@ void MEffectTarget::RemoveFromPlayer(BYTE id)
 	if (s_pHost && s_pHost->RemoveFromPlayer) s_pHost->RemoveFromPlayer(id);
 }
 
+void MEffectTarget::ReleasePendingOwner() noexcept
+{
+	if (m_pPendingOwner != nullptr)
+	{
+		m_pPendingOwner->m_pTarget = nullptr;
+		m_pPendingOwner = nullptr;
+	}
+}
+
+MEffectTargetOwner::MEffectTargetOwner(MEffectTarget* target) noexcept
+	: m_pTarget(nullptr)
+{
+	if (target != nullptr && !target->m_bDestroying)
+	{
+		target->ReleasePendingOwner();
+		m_pTarget = target;
+		target->m_pPendingOwner = this;
+	}
+}
+
+MEffectTargetOwner::~MEffectTargetOwner()
+{
+	if (m_pTarget != nullptr)
+	{
+		auto* target = m_pTarget;
+		// Disarm before invoking target/result destructors and host callbacks.
+		target->ReleasePendingOwner();
+		delete target;
+	}
+}
+
 //----------------------------------------------------------------------
 // Static member
 //----------------------------------------------------------------------
@@ -68,9 +99,9 @@ MEffectTarget::MEffectTarget(BYTE max)
 
 MEffectTarget::~MEffectTarget() 
 { 
-	DEBUG_ADD_FORMAT("delete EffectTarget. id=%d", (int)m_EffectID);
-
 	m_bDestroying = true;
+	ReleasePendingOwner();
+	DEBUG_ADD_FORMAT("delete EffectTarget. id=%d", (int)m_EffectID);
 	auto* result = m_pResult;
 	m_pResult = nullptr;
 	delete result;

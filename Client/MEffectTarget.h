@@ -31,6 +31,9 @@ struct MEffectTargetHost
 	void (*RemoveFromPlayer)(BYTE id) = nullptr;
 };
 
+class MEffect;
+class MEffectTargetOwner;
+
 //----------------------------------------------------------------------
 // EFFECT_TARGET_NODE의 list (queue로 하면 좋겠지만.. 문제가.. - -;) 
 //----------------------------------------------------------------------
@@ -146,9 +149,32 @@ class MEffectTarget {
 		static BYTE		s_EffectID;
 
 	private:
+		friend class MEffect;
+		friend class MEffectTargetOwner;
+		void ReleasePendingOwner() noexcept;
+		// Ownership bookkeeping is never copied by construction or assignment.
+		MEffectTargetOwner* m_pPendingOwner = nullptr;
 		bool m_bDestroying = false;
 		static void RemoveFromPlayer(BYTE id);
 		static const MEffectTargetHost* s_pHost;
+};
+
+// Owns a target between generation entry and MEffect::SetLink. Explicit
+// target destruction and successful linking disarm the guard. A nested owner
+// takes responsibility from the previous owner; copying/moving a guard is invalid.
+class MEffectTargetOwner
+{
+public:
+	explicit MEffectTargetOwner(MEffectTarget* target) noexcept;
+	~MEffectTargetOwner();
+	MEffectTargetOwner(const MEffectTargetOwner&) = delete;
+	MEffectTargetOwner& operator=(const MEffectTargetOwner&) = delete;
+	MEffectTargetOwner(MEffectTargetOwner&&) = delete;
+	MEffectTargetOwner& operator=(MEffectTargetOwner&&) = delete;
+
+private:
+	friend class MEffectTarget;
+	MEffectTarget* m_pTarget;
 };
 
 //----------------------------------------------------------------------

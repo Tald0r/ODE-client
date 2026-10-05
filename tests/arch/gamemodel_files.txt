@@ -636,7 +636,17 @@ Client/SectorSoundInfo.h
 Client/MNPCTableEnglish.cpp
 Client/MNPCTableEnglish.h
 
+# Wave and ripple generation, with live queue and frame services behind hosts.
+Client/MBloodyWaveEffectGenerator.cpp
+Client/MBloodyWaveEffectGenerator.h
+Client/MRippleZoneEffectGenerator.cpp
+Client/MRippleZoneEffectGenerator.h
+
 # Rank-bonus packet application; player regeneration stays in the host.
 Client/PacketHandler/GCRankBonusInfoHandler.cpp
 Client/PacketHandler/GCSelectRankBonusOKHandler.cpp
 Client/RankBonusHandlerHost.h
+
+# Inventory effect targets own any result before synchronous generation.
+Client/InventoryEffectTarget.cpp
+Client/InventoryEffectTarget.h

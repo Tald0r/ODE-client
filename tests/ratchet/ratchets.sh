@@ -267,8 +267,8 @@ check () {
 # 375: wide ripple generation joins gamemodel (4.77).
 # 374: Bloody Breaker generation joins gamemodel (4.78).
 # 373: Bloody Wall generation joins gamemodel (4.79).
-# 367: metadata and rank handlers join gamemodel (4.80, 4.82).
-R1_BASELINE=367
+# 365: peer/sound/NPC metadata, wave/ripple generators and rank handlers join gamemodel (4.80-4.82).
+R1_BASELINE=365
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -369,8 +369,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 373: wide ripple generation joins gamemodel (4.77).
 	# 372: Bloody Breaker generation joins gamemodel (4.78).
 	# 371: Bloody Wall generation joins gamemodel (4.79).
-	# 365: the same cross-platform members leave the executable.
-	R1_NINJA_BASELINE=365
+	# 363: the same eight cross-platform members leave the executable (4.80-4.82).
+	R1_NINJA_BASELINE=363
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
