@@ -94,8 +94,9 @@ TEST(RegenZoneStatusHandler, EmptyShortAndFullTablesApplyOnlyAllocatedRows)
 		for (int i = 0; i < count; ++i)
 		{
 			const auto& row = f.table[i];
-			const int expected = i < 8 ? statuses[i]
-				: i < 12 ? (i % 2 ? RACE_VAMPIRE : RACE_SLAYER) : RACE_OUSTERS;
+			int expected = RACE_OUSTERS;
+			if (i < 8) expected = statuses[i];
+			else if (i < 12) expected = i % 2 ? RACE_VAMPIRE : RACE_SLAYER;
 			CHECK_EQ(expected, row.owner);
 			CHECK_EQ(i, row.num);
 			CHECK_EQ(71 + i % 3, row.zoneID);
