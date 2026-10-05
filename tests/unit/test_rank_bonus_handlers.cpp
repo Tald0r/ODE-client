@@ -189,7 +189,7 @@ TEST(RankBonusHandlers, ListPreservesWireOrderAndIgnoresOutOfRangeTypes)
 {
 	Fixture f;
 	f.LoadLevels({1, 1, 1, 2});
-	ApplyList({0, 4, std::numeric_limits<DWORD>::max(), 2, 3});
+	ApplyList({0, 4, (std::numeric_limits<DWORD>::max)(), 2, 3});
 	CHECK_EQ(RankBonusInfo::STATUS_CANNOT_LEARN, f.table[0].GetStatus());
 	CHECK_EQ(RankBonusInfo::STATUS_CANNOT_LEARN, f.table[1].GetStatus());
 	CHECK_EQ(RankBonusInfo::STATUS_LEARNED, f.table[2].GetStatus());
@@ -249,7 +249,7 @@ TEST(RankBonusHandlers, OutOfRangeSelectionStillClearsTheRequest)
 	Fixture f;
 	f.table.Init(2);
 	f.Fill(RankBonusInfo::STATUS_LEARNED);
-	for (DWORD type : {DWORD(2), DWORD(std::numeric_limits<int>::max())})
+	for (DWORD type : {DWORD(2), DWORD((std::numeric_limits<int>::max)())})
 	{
 		f.temporary.SetMode(TempInformation::MODE_SKILL_LEARN);
 		Select(type);
@@ -304,8 +304,8 @@ TEST(RankBonusHandlers, InvalidUnsignedSelectionPreservesEveryStatus)
 {
 	Fixture f;
 	f.table.Init(2);
-	const DWORD signedMaximum = static_cast<DWORD>(std::numeric_limits<int>::max());
-	const DWORD unsignedMaximum = std::numeric_limits<DWORD>::max();
+	const DWORD signedMaximum = static_cast<DWORD>((std::numeric_limits<int>::max)());
+	const DWORD unsignedMaximum = (std::numeric_limits<DWORD>::max)();
 	for (DWORD type : {DWORD(2), signedMaximum, signedMaximum + DWORD(1),
 		signedMaximum + DWORD(2), unsignedMaximum - DWORD(1), unsignedMaximum})
 	{
