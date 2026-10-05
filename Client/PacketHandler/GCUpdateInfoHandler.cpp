@@ -35,7 +35,6 @@
 #include "ClientPlayer.h"
 #include "UIFunction.h"
 #include "MGuildInfoMapper.h"
-#include "CSystemInfo.h"
 
 
 	#include "ClientPlayer.h"
@@ -961,17 +960,6 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 //		fclose(fp);
 //	}
 
-/*
-	FILE *fp=fopen("fs.his","rt");
-	if( fp == NULL )
-	{
-		fp = fopen("fs.his","wt");
-		fprintf(fp,"!@#");
-		CSystemInfo SystemInfo;
-		SendBugReport("SystemInfo : %d %d CPU : %dMhz",g_bEnable3DHAL, g_dwVideoMemory,SystemInfo.GetCpuClock());
-	}
-	fclose(fp);
-*/
 //	ExecuteHelpEvent( HELP_EVENT_INTERFACE );
 
 
