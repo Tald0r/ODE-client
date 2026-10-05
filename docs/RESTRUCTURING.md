@@ -2637,10 +2637,10 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, designated `GameInit.cpp` installation/reset and
     `test_skip_effect_generator.cpp`, with real effects and all acceptance masks.
 
-- [ ] **4.90 Skill downgrade replies:** move `GCDownSkillOKHandler` and
+- [x] **4.90 Skill downgrade replies:** move `GCDownSkillOKHandler` and
   `GCDownSkillFailedHandler` into `gamemodel` behind the popup-only
   `SkillDowngrade::Host` installed and reset by `GameInit.cpp`.
-  > **Status:** in progress (full verification and publication).
+  > **Status:** done (2026-10-05; PR #384, implementation `cf76fca8`).
   > Success replies require an allocated skill row with a positive level.
   > Repeated replies at zero and invalid IDs preserve state without announcing
   > success. Valid decrements retain existing `CanDelete` and domain-membership
@@ -2687,6 +2687,13 @@ Task 4.90 further reduces R1 to 340 Linux / 342 Windows. Before its guard was
 applied, tests against the extracted original arithmetic observed zero becoming
 negative and invalid IDs displaying success; Clang UBSan stopped on `INT_MIN - 1`.
 The new tests cover these replies and the valid relearning sequence.
+All 24 local Clang Debug and ASan/UBSan CTest checks pass, including 3,354 unit
+tests. Removing either handler object independently breaks the test link.
+PR #384 records those results and the pending platform CI; it remains draft.
+The complete dependency order is #381, #382, #383, #384. After each parent
+lands in `master`, retarget its child to `master` before merging that child.
+No PR was merged by the agent. Task-owned build trees and scratch files are
+removed at handoff; the pre-existing `build/presets/linux` cache is preserved.
 
 Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted
