@@ -1,64 +1,72 @@
-﻿//----------------------------------------------------------------------
-// MAttachZoneEffectGenerator.cpp
-//----------------------------------------------------------------------
-// Tile과 맞붙은 Effect들을 생성한다.
-//----------------------------------------------------------------------
+// MAttachZoneAroundEffectGenerator.cpp
 #include "Client_PCH.h"
 #include "MAttachZoneAroundEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
+#include "MEventQueue.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "MEventManager.h"
+#include "WorldTileGeometry.h"
+#include <algorithm>
+#include <utility>
 
-bool
-MAttachZoneAroundEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+const MAroundGroundEffectHost* MAttachZoneAroundEffectGenerator::s_pHost = nullptr;
+
+const MAroundGroundEffectHost* MAttachZoneAroundEffectGenerator::SetHost(const MAroundGroundEffectHost* host)
 {
-	int est = egInfo.effectSpriteType;
-	//POINT pixelPoint = { egInfo.x0, egInfo.y0 };
-	TYPE_SECTORPOSITION tX,tY;
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	tX = g_pTopView->PixelToMapX( egInfo.x1 );
-	tY = g_pTopView->PixelToMapY( egInfo.y1 );
+bool MAttachZoneAroundEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
 
-	// 2004, 11, 3, sobeit add start
-	if(est == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_GROUND)
+bool MAttachZoneAroundEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
+void MAttachZoneAroundEffectGenerator::AddEvent(MEvent& event)
+{
+	if (s_pHost && s_pHost->AddEvent) s_pHost->AddEvent(event);
+}
+
+bool MAttachZoneAroundEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
+{
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	bool accepted = false;
+	const TYPE_SECTORPOSITION tX = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x1));
+	const TYPE_SECTORPOSITION tY = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y1));
+
+	if (egInfo.effectSpriteType == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_GROUND)
 	{
-		int TempX[8][2] = { {0,0},	{0,7},	{-7,7},	{-7,0},	{0,0},	{-7,0},	{-7,7},	{0,7} };
-		int TempY[8][2] = { {-7,7},	{-7,0},	{0,0},	{0,-7},	{-7,7},	{0,7},	{0,0},	{7,0} };
-		
-		for(int i = 0; i<3; i++)
+		if (egInfo.direction >= 8) return false;
+		const int offsetX[8][2] = {{0,0},{0,7},{-7,7},{-7,0},{0,0},{-7,0},{-7,7},{0,7}};
+		const int offsetY[8][2] = {{-7,7},{-7,0},{0,0},{0,-7},{-7,7},{0,7},{0,0},{7,0}};
+		for (int i = 0; i < 3; ++i)
 		{
-			MEffect*		pEffect;
-			pEffect = new MEffect(bltType);
-			pEffect->SetFrameID( frameID, maxFrame );
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-			if(i>0)
-				pEffect->SetPosition( tX + TempX[egInfo.direction][i-1], tY + TempY[egInfo.direction][i-1]);
+			auto effect = std::make_unique<MEffect>(sprite.bltType);
+			MEffect* pEffect = effect.get();
+			pEffect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+			pEffect->SetStepPixel(egInfo.step);
+			if (i > 0)
+				pEffect->SetPosition(static_cast<TYPE_SECTORPOSITION>(tX + offsetX[egInfo.direction][i - 1]),
+					static_cast<TYPE_SECTORPOSITION>(tY + offsetY[egInfo.direction][i - 1]));
 			else
-				pEffect->SetPosition( tX, tY );
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );
-			pEffect->SetDirection( egInfo.direction );
-			pEffect->SetPower( egInfo.power );
-			
-			if (g_pZone->AddGroundEffect( pEffect ) && i == 0)
+				pEffect->SetPosition(tX, tY);
+			pEffect->SetCount(egInfo.count, egInfo.linkCount);
+			pEffect->SetDirection(egInfo.direction);
+			pEffect->SetPower(egInfo.power);
+			if (QueueEffect(std::move(effect)))
 			{
-				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );				
-			}  else
-			{
-//				pEffect->SetLink( egInfo.nActionInfo, NULL );	
-				MEffectTarget *pTarget = egInfo.pEffectTarget;
-				
-				if( pTarget != NULL )
-				{
-					MEffectTarget *pEffectTarget = new MEffectTarget( *pTarget );
-					pEffect->SetLink( egInfo.nActionInfo, pEffectTarget );						
-				}
+				if (!accepted)
+					pEffect->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
+				else if (egInfo.pEffectTarget != nullptr)
+					pEffect->SetLink(egInfo.nActionInfo, new MEffectTarget(*egInfo.pEffectTarget));
+				accepted = true;
 			}
 		}
 		MEvent event;
@@ -67,45 +75,34 @@ MAttachZoneAroundEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		event.eventDelay = 500;
 		event.eventFlag = EVENTFLAG_SHAKE_SCREEN;
 		event.parameter3 = 3;
-		g_pEventManager->AddEvent(event);
-	
-		return true;
+		AddEvent(event);
+		return accepted;
 	}
-	// 2004, 11, 3, sobeit add end
-	
-	for(int y=-1;y<=1;y++)
+
+	for (int y = -1; y <= 1; ++y)
 	{
-		for(int x=-1;x<=1;x++)
+		for (int x = -1; x <= 1; ++x)
 		{
-			if( x == 0 && y == 0 )
-				continue;
-
-			MEffect*		pEffect;
-			BYTE Direction;
-			if( y == -1)
-				Direction = 6-x;
-			else
-			if( y == 0)
-				Direction = max(0,x) * 4;
-			else
-				Direction = x+2;
-
-			pEffect = new MEffect(bltType);
-			pEffect->SetFrameID( frameID, maxFrame );
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-			pEffect->SetPosition( tX + x, tY + y );
-//			pEffect->SetPixelPosition( egInfo.x0 + x * 24 , egInfo.y0 + y * 12 , egInfo.z0);
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );
-			pEffect->SetDirection( Direction );
-			pEffect->SetPower( egInfo.power );
-			
-			if( g_pZone->AddGroundEffect( pEffect ) )
+			if (x == 0 && y == 0) continue;
+			const BYTE direction = static_cast<BYTE>(y == -1 ? 6 - x : y == 0 ? (std::max)(0, x) * 4 : x + 2);
+			auto effect = std::make_unique<MEffect>(sprite.bltType);
+			MEffect* pEffect = effect.get();
+			pEffect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+			pEffect->SetStepPixel(egInfo.step);
+			pEffect->SetPosition(static_cast<TYPE_SECTORPOSITION>(tX + x), static_cast<TYPE_SECTORPOSITION>(tY + y));
+			pEffect->SetCount(egInfo.count, egInfo.linkCount);
+			pEffect->SetDirection(direction);
+			pEffect->SetPower(egInfo.power);
+			if (QueueEffect(std::move(effect)))
 			{
-				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
+				// The first retained effect owns the original; other branches need
+				// independent continuation targets, never aliases of the same owner.
+				MEffectTarget* target = egInfo.pEffectTarget;
+				if (accepted && target != nullptr) target = new MEffectTarget(*target);
+				pEffect->SetLink(egInfo.nActionInfo, target);
+				accepted = true;
 			}
 		}
 	}
-		
-	return false;	
+	return accepted;
 }
-

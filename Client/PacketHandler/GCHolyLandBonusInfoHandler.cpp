@@ -1,57 +1,30 @@
-//////////////////////////////////////////////////////////////////////
-//
-// Filename    : GCHolyLandBonusInfoHandler.cpp
-// Written By  : 
-//
-//////////////////////////////////////////////////////////////////////
+// Apply the complete ordered list of Blood Bible owners to the skill model.
 #include "Client_PCH.h"
-// include files
 #include "Gpackets/GCHolyLandBonusInfo.h"
-#include "ClientDef.h"
+#include "BonusSkillHost.h"
 #include "MSkillManager.h"
 
-//////////////////////////////////////////////////////////////////////
-//
-//////////////////////////////////////////////////////////////////////
-void GCHolyLandBonusInfoHandler::execute ( GCHolyLandBonusInfo * pPacket , Player * pPlayer )
+#include <algorithm>
+#include <array>
+#include <memory>
 
+void GCHolyLandBonusInfoHandler::execute(GCHolyLandBonusInfo* packet, Player* source)
 {
 	__BEGIN_TRY
-	(void)pPlayer;
-	
-	if(g_pPlayer == NULL || g_pSkillAvailable == NULL)
-		return;
+	(void)source;
+	BonusSkills::PlayerState player;
+	if (!BonusSkills::ReadPlayer(player)) return;
 
-	BloodBibleBonusInfo *pInfo = pPacket->popFrontBloodBibleBonusInfoList();
-	
-	int i = 0;
-	while(pInfo != NULL)
+	std::array<bool, HOLYLAND_BONUS_MAX> next{};
+	size_t index = 0;
+	while (auto* row = packet->popFrontBloodBibleBonusInfoList())
 	{
-		if(g_pPlayer->GetRace() == pInfo->getRace())
-//		if(g_pPlayer->IsSlayer() && pInfo->getRace() == RACE_SLAYER
-//			|| g_pPlayer->IsVampire() && pInfo->getRace() == RACE_VAMPIRE
-//			|| g_pPlayer->IsOusters() && pInfo->getRace() == RACE_OUSTERS
-//			)
-		{
-			g_abHolyLandBonusSkills[i] = true;
-		}
-		else
-		{
-			// 스킬 리스트에서 빼준다?		순서 틀리면 바보 된다
-			g_abHolyLandBonusSkills[i] = false;
-		}
-		
-		delete pInfo;
-
-		pInfo = pPacket->popFrontBloodBibleBonusInfoList();
-		i++;
+		std::unique_ptr<BloodBibleBonusInfo> owned(row);
+		// Live framing caps this list at twelve. Keep direct callers bounded too.
+		if (index < next.size()) next[index] = player.race == row->getRace();
+		++index;
 	}
-
-	//--------------------------------------------------
-	// 현재 사용 가능한 skill들을 다시 체크한다.
-	//--------------------------------------------------
-	g_pSkillAvailable->SetAvailableSkills();
-
-
+	std::copy(next.begin(), next.end(), g_abHolyLandBonusSkills);
+	BonusSkills::RefreshAvailableSkills();
 	__END_CATCH
 }

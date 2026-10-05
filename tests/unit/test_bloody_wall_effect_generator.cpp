@@ -124,6 +124,28 @@ void CheckCopy(const MEffectTarget& target, int x, int y, int z = 17)
 
 } // namespace
 
+namespace {
+struct CopyResultMarker : MActionResultNode
+{
+	int& destroyed;
+	explicit CopyResultMarker(int& count) : destroyed(count) {}
+	~CopyResultMarker() override { ++destroyed; }
+	void Execute() override {}
+};
+void ClearEffectsCheckingCopyDestruction(const MEffectTarget* original, int expectedCopies)
+{
+	int destroyed = 0;
+	for (const auto& effect : effects)
+	{
+		auto* target = effect->GetEffectTarget();
+		if (target == original) continue;
+		CHECK(target != nullptr); CHECK(!target->IsExistResult());
+		auto result = std::make_unique<MActionResult>(); result->Add(new CopyResultMarker(destroyed)); target->SetResult(result.release());
+	}
+	effects.clear(); CHECK_EQ(expectedCopies, destroyed);
+}
+}
+
 TEST(BloodyWallEffectGenerator, ConfiguresFiveRealEffectsAndRefreshesMetadataAfterTheFinalAttempt)
 {
 	World world; CHECK_EQ(EFFECTGENERATORID_BLOODY_WALL, world.generator.GetID()); auto target = Target(); auto* original = target.get();
@@ -139,7 +161,7 @@ TEST(BloodyWallEffectGenerator, ConfiguresFiveRealEffectsAndRefreshesMetadataAft
 		CHECK_EQ(42, effect.GetActionInfo()); CHECK(!effect.IsMulti()); CHECK(!effect.IsDelayFrame()); CHECK_EQ(i == 0, effect.GetEffectTarget() == original);
 		if (i != 0) CheckCopy(*effect.GetEffectTarget(), 900, 800 + (static_cast<int>(i) - 2) * 24);
 	}
-	CheckTarget(*original); ClearEffects(); CHECK(removedTargets == std::vector<int>(5, 73));
+	CheckTarget(*original); ClearEffectsCheckingCopyDestruction(original, 4); CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(BloodyWallEffectGenerator, AllEightDirectionsKeepTheirLiteralOrderAndDestinationRelativeCopies)

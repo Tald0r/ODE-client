@@ -1,93 +1,65 @@
-//----------------------------------------------------------------------
 // MRippleZoneEffectGenerator.cpp
-//----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MRippleZoneEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MCreature.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include "WorldTileGeometry.h"
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MRippleZoneEffectGenerator	g_RippleZoneEffectGenerator;
+const MRippleZoneEffectHost* MRippleZoneEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Generate
-//----------------------------------------------------------------------
-bool
-MRippleZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
+const MRippleZoneEffectHost* MRippleZoneEffectGenerator::SetHost(const MRippleZoneEffectHost* host)
 {
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
-	TYPE_SECTORPOSITION	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
 
-	// 다음 좌표를 정한다.	
-	TYPE_SECTORPOSITION x=sX, y=sY;
-	MCreature::GetPositionToDirection(x,y, egInfo.direction);
+bool MRippleZoneEffectGenerator::ReadBounds(TYPE_SECTORPOSITION& width, TYPE_SECTORPOSITION& height)
+{
+	width = height = 0;
+	return s_pHost && s_pHost->Bounds && s_pHost->Bounds(width, height);
+}
 
-	// Zone의 영역을 벗어나는 경우..
-	if (x>=g_pZone->GetWidth() || y>=g_pZone->GetHeight())
-			return false;
+bool MRippleZoneEffectGenerator::ReadSprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return s_pHost && s_pHost->Sprite && s_pHost->Sprite(type, sprite);
+}
 
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+bool MRippleZoneEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect, bool ground)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect), ground);
+}
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+bool MRippleZoneEffectGenerator::Generate(const EFFECTGENERATOR_INFO& egInfo)
+{
+	TYPE_SECTORPOSITION x = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileX(egInfo.x0));
+	TYPE_SECTORPOSITION y = static_cast<TYPE_SECTORPOSITION>(WorldTileGeometry::PixelToTileY(egInfo.y0));
+	WorldTileGeometry::Step(x, y, egInfo.direction);
 
-	MEffect*	pEffect;
-	//---------------------------------------------
-	// Effect 생성
-	//---------------------------------------------
-	pEffect = new MEffect(bltType);
+	TYPE_SECTORPOSITION width, height;
+	if (!ReadBounds(width, height) || x >= width || y >= height) return false;
 
-	pEffect->SetFrameID( frameID, maxFrame );	
-
-	pEffect->SetPosition(x, y);		// Sector 좌표		
-	
-	// 방향 설정
-	pEffect->SetDirection( egInfo.direction );
-
-	pEffect->SetZ(egInfo.z0);			
-	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
-
-	// 위력
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite(egInfo.effectSpriteType, sprite)) return false;
+	auto effect = std::make_unique<MEffect>(sprite.bltType);
+	MEffect* pEffect = effect.get();
+	pEffect->SetFrameID(sprite.frameID, static_cast<BYTE>(sprite.maxFrames));
+	pEffect->SetPosition(x, y);
+	pEffect->SetDirection(egInfo.direction);
+	pEffect->SetZ(egInfo.z0);
+	pEffect->SetStepPixel(egInfo.step);
+	pEffect->SetCount(egInfo.count, egInfo.linkCount);
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-
-	// Zone에 추가한다.
-
-	// 그림에 따라서... 바닥에 추가하기도 한다. 역쉬 하드코딩 ㅋㅋ..
-	if (egInfo.effectSpriteType==EFFECTSPRITETYPE_EARTHQUAKE_1
-		|| egInfo.effectSpriteType==EFFECTSPRITETYPE_EARTHQUAKE_2
-		|| egInfo.effectSpriteType==EFFECTSPRITETYPE_EARTHQUAKE_3
-		|| egInfo.effectSpriteType==EFFECTSPRITETYPE_POWER_OF_LAND_STONE_1
-		|| egInfo.effectSpriteType==EFFECTSPRITETYPE_POWER_OF_LAND_STONE_2
-		|| egInfo.effectSpriteType==EFFECTSPRITETYPE_POWER_OF_LAND_STONE_3
-		)
-	{
-		return g_pZone->AddGroundEffect( pEffect );
-	}		
-		
-	if (g_pZone->AddEffect( pEffect ))
-	{
-		// 다음 Effect 생성 정보
-		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
-		return true;
-	}
-
-	return false;
+	const bool ground = egInfo.effectSpriteType == EFFECTSPRITETYPE_EARTHQUAKE_1
+		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_EARTHQUAKE_2
+		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_EARTHQUAKE_3
+		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_POWER_OF_LAND_STONE_1
+		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_POWER_OF_LAND_STONE_2
+		|| egInfo.effectSpriteType == EFFECTSPRITETYPE_POWER_OF_LAND_STONE_3;
+	const bool accepted = QueueEffect(std::move(effect), ground);
+	if (accepted) pEffect->SetLink(egInfo.nActionInfo, egInfo.pEffectTarget);
+	return accepted;
 }

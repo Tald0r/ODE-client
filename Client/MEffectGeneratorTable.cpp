@@ -199,6 +199,7 @@ MEffectGeneratorTable::Generate(
 	MEffectTarget* pEffectTarget,
 	BYTE temp1, BYTE temp2)
 {	
+	MEffectTargetOwner targetOwner(pEffectTarget);
 	#ifdef OUTPUT_DEBUG_EFFECT_GENERATOR
 		DEBUG_ADD_FORMAT("EGT-Generate. ai=%d, target=%p", nActionInfo, static_cast<const void*>(pEffectTarget));
 	#endif
@@ -473,7 +474,7 @@ MEffectGeneratorTable::Generate(
 		// Player의 진행중이던 EffectTarget은 끝났다고 설정한다.
 		// 왜 하필 Player인가?
 		// 다른 캐릭터도 이 함수(Generate)를 쓴다.
-		g_pPlayer->RemoveEffectTarget( pEffectTarget->GetEffectID() );
+		pEffectTarget->RemovePlayerRegistration();
 
 		//if (!bGenerated)
 		//{
@@ -547,6 +548,7 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 	//							이번 loop에서 delete되어야 한다.
 	//------------------------------------------------------------
 	pEffect->SetEffectTargetNULL();
+	MEffectTargetOwner targetOwner(pEffectTarget);
 
 	//------------------------------------------------------------
 	// 목표가 없으면..
@@ -594,7 +596,7 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 		#endif
 		
 		// Player의 진행중이던 EffectTarget은 끝났다고 설정한다.
-		g_pPlayer->RemoveEffectTarget( pEffectTarget->GetEffectID() );
+		pEffectTarget->RemovePlayerRegistration();
 
 		#ifdef OUTPUT_DEBUG_EFFECT_GENERATOR
 			DEBUG_ADD("delete EffectTarget0");
@@ -790,7 +792,7 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 		#endif
 		
 		// Player의 진행중이던 EffectTarget은 끝났다고 설정한다.
-		g_pPlayer->RemoveEffectTarget( pEffectTarget->GetEffectID() );
+		pEffectTarget->RemovePlayerRegistration();
 
 		//delete pEffectTarget;
 		//pEffect->SetEffectTargetNULL();

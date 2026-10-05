@@ -83,6 +83,28 @@ int NextRandom(unsigned seed)
 
 } // namespace
 
+namespace {
+
+struct CopyResultMarker : MActionResultNode
+{
+	int& destroyed;
+	explicit CopyResultMarker(int& count) : destroyed(count) {}
+	~CopyResultMarker() override { ++destroyed; }
+	void Execute() override {}
+};
+void ClearEffectsCheckingCopyDestruction(size_t firstCopy = 1)
+{
+	int destroyed = 0;
+	const auto expected = effects.size() - firstCopy;
+	for (size_t i = firstCopy; i < effects.size(); ++i)
+	{
+		auto* target = effects[i]->GetEffectTarget(); CHECK(target != nullptr); CHECK(!target->IsExistResult());
+		auto result = std::make_unique<MActionResult>(); result->Add(new CopyResultMarker(destroyed)); target->SetResult(result.release());
+	}
+	effects.clear(); CHECK_EQ(expected, static_cast<size_t>(destroyed));
+}
+}
+
 TEST(SpreadOutEffectGenerator, ConfiguresEightRealLinearEffectsInNumberedDirectionOrder)
 {
 	World world;
@@ -158,7 +180,7 @@ TEST(SpreadOutEffectGenerator, RejectedDirectionZeroLeavesIndependentCopiesAfter
 	acceptance = 254; auto target = Target(); auto info = Info(); info.pEffectTarget = target.get(); CHECK(!world.generator.Generate(info));
 	CHECK_EQ(7, effects.size()); CHECK(removedTargets.empty()); target.reset(); CHECK(removedTargets == std::vector<int>{73});
 	for (size_t i = 0; i < effects.size(); ++i) { CHECK_EQ(destinations[i + 1].x, effects[i]->GetEffectTarget()->GetX()); CHECK(!effects[i]->GetEffectTarget()->IsExistResult()); }
-	ClearEffects(); CHECK(removedTargets == std::vector<int>(8, 73));
+	ClearEffectsCheckingCopyDestruction(0); CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(SpreadOutEffectGenerator, ZeroStepOrCountStillEmitsEightEffectsTargetingTheSource)

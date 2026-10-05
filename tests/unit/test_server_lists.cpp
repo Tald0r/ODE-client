@@ -155,22 +155,19 @@ TEST(ServerLists, EmptyWorldListClearsTheEntireSelection)
 	CHECK(selection.GetServerName() == nullptr);
 }
 
-TEST(ServerLists, ServerListUpdatesSelectedWorldAndRetainsUnlistedServers)
+TEST(ServerLists, ServerListReplacesServersWithinTheSelectedWorld)
 {
 	CServerInformation selection;
 	SeedSelection(selection);
 	ServerGroup* world = selection.GetData(12);
-	SERVER_INFO* retained = world->GetData(8);
-	SERVER_INFO* updated = world->GetData(7);
 	auto packet = Servers(9, {{7, "Updated", 255}, {9, "Selected", 2}});
 	CHECK(ApplyServerList(selection, *packet));
 	CHECK_EQ(0, packet->getListNum());
 	packet.reset();
-	CHECK_EQ(3, world->size());
-	CHECK(world->GetData(7) == updated);
-	CHECK(world->GetData(8) == retained);
+	CHECK_EQ(2, world->size());
+	CHECK(selection.GetData(12) == world);
+	CHECK(world->GetData(8) == nullptr);
 	CheckServer(*world, 7, "Updated", 255);
-	CheckServer(*world, 8, "Retained server", 6);
 	CheckServer(*world, 9, "Selected", 2);
 	CHECK(selection.GetData(23)->empty());
 	CHECK_EQ(12, selection.GetServerGroupID());
@@ -204,38 +201,39 @@ TEST(ServerLists, DuplicateServersKeepTheLastMetadataAndFirstFallbackID)
 	auto packet = Servers(99, {{42, "Earlier", 1}, {9, "Other", 2}, {42, "Later", 3}});
 	CHECK(ApplyServerList(selection, *packet));
 	CHECK_EQ(0, packet->getListNum());
-	CHECK_EQ(4, selection.GetData(12)->size());
+	CHECK_EQ(2, selection.GetData(12)->size());
 	CheckServer(*selection.GetData(12), 42, "Later", 3);
 	CHECK_EQ(42, selection.GetServerID());
 	CHECK_EQ(3, selection.GetServerStatus());
 	CHECK(std::string(selection.GetServerName()) == "Later");
 }
 
-TEST(ServerLists, EmptyServerListIsAcceptedAndRetainsThePreviousServer)
+TEST(ServerLists, EmptyServerListIsAcceptedAndClearsThePreviousServer)
 {
 	CServerInformation selection;
 	SeedSelection(selection);
 	auto packet = Servers(99, {});
 	CHECK(ApplyServerList(selection, *packet));
 	CHECK_EQ(0, packet->getListNum());
-	CHECK_EQ(2, selection.GetData(12)->size());
-	CHECK_EQ(7, selection.GetServerID());
-	CHECK_EQ(5, selection.GetServerStatus());
-	CHECK(std::string(selection.GetServerName()) == "Old server");
+	CHECK_EQ(0, selection.GetData(12)->size());
+	CHECK_EQ(0, selection.GetServerID());
+	CHECK_EQ(0, selection.GetServerStatus());
+	CHECK(selection.GetServerName() == nullptr);
 }
 
-TEST(ServerLists, EmptyServerListStillSelectsAnExistingZeroID)
+TEST(ServerLists, EmptyServerListClearsAnExistingZeroID)
 {
 	CServerInformation selection;
 	SeedSelection(selection);
 	auto zero = Servers(0, {{0, "Zero server", 4}});
 	CHECK(ApplyServerList(selection, *zero));
-	CHECK(selection.SetServerID(7));
+	CHECK(selection.SetServerID(0));
 	auto packet = Servers(7, {});
 	CHECK(ApplyServerList(selection, *packet));
 	CHECK_EQ(0, selection.GetServerID());
-	CHECK_EQ(4, selection.GetServerStatus());
-	CHECK(std::string(selection.GetServerName()) == "Zero server");
+	CHECK_EQ(0, selection.GetServerStatus());
+	CHECK(selection.GetServerName() == nullptr);
+	CHECK(selection.GetData(12)->empty());
 }
 
 TEST(ServerLists, MissingSelectedWorldLeavesPacketAndSelectionUntouched)

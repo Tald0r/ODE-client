@@ -83,6 +83,28 @@ template<class Predicate> unsigned SeedWhere(Predicate predicate)
 
 } // namespace
 
+namespace {
+
+struct CopyResultMarker : MActionResultNode
+{
+	int& destroyed;
+	explicit CopyResultMarker(int& count) : destroyed(count) {}
+	~CopyResultMarker() override { ++destroyed; }
+	void Execute() override {}
+};
+void ClearEffectsCheckingCopyDestruction(size_t firstCopy = 1)
+{
+	int destroyed = 0;
+	const auto expected = effects.size() - firstCopy;
+	for (size_t i = firstCopy; i < effects.size(); ++i)
+	{
+		auto* target = effects[i]->GetEffectTarget(); CHECK(target != nullptr); CHECK(!target->IsExistResult());
+		auto result = std::make_unique<MActionResult>(); result->Add(new CopyResultMarker(destroyed)); target->SetResult(result.release());
+	}
+	effects.clear(); CHECK_EQ(expected, static_cast<size_t>(destroyed));
+}
+}
+
 TEST(AroundZoneEffectGenerator, OrdinaryCallsConfigureTwoOrThreeRealEffectsAtTheDestination)
 {
 	World world;
@@ -243,7 +265,7 @@ TEST(AroundZoneEffectGenerator, CopiesPreservePhaseMetadataWhileTargetingDestina
 		CHECK_EQ(i == 0 ? 777 : 900, linked->GetX()); CHECK_EQ(i == 0 ? 888 : 800, linked->GetY()); CHECK_EQ(i == 0 ? 999 : 99, linked->GetZ());
 		for (size_t j = 0; j < i; ++j) CHECK(linked != effects[j]->GetEffectTarget());
 	}
-	ClearEffects(); CHECK(removedTargets == std::vector<int>(3, 73));
+	ClearEffectsCheckingCopyDestruction(); CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(AroundZoneEffectGenerator, RejectedStreamAttemptsStillAdvanceWaitingAndLifetime)

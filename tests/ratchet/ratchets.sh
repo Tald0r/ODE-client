@@ -267,8 +267,12 @@ check () {
 # 375: wide ripple generation joins gamemodel (4.77).
 # 374: Bloody Breaker generation joins gamemodel (4.78).
 # 373: Bloody Wall generation joins gamemodel (4.79).
-# 369: peer/sound/NPC metadata joins gamemodel (4.80).
-R1_BASELINE=369
+# 365: peer/sound/NPC metadata, wave/ripple generators and rank handlers join gamemodel (4.80-4.82).
+# 346: twelve live extractions and seven retired sources (4.83-4.87).
+# 345: regen-zone ownership handler joins its existing gamemodel table (4.88).
+# 344: skip-draw ground generator joins gamemodel (4.89).
+# 342: skill downgrade success/failure handlers join gamemodel (4.90).
+R1_BASELINE=342
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -369,8 +373,12 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 373: wide ripple generation joins gamemodel (4.77).
 	# 372: Bloody Breaker generation joins gamemodel (4.78).
 	# 371: Bloody Wall generation joins gamemodel (4.79).
-	# 367: the same cross-platform members leave the executable.
-	R1_NINJA_BASELINE=367
+	# 363: the same eight cross-platform members leave the executable (4.80-4.82).
+	# 344: the same twelve extractions and seven source deletions.
+	# 343: regen-zone ownership handler joins gamemodel (4.88).
+	# 342: skip-draw ground generator joins gamemodel (4.89).
+	# 340: skill downgrade success/failure handlers join gamemodel (4.90).
+	R1_NINJA_BASELINE=340
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

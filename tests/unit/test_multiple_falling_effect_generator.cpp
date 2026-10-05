@@ -98,6 +98,28 @@ void CheckSpread(const MEffect& effect, int slot, int width, int height)
 
 } // namespace
 
+namespace {
+
+struct CopyResultMarker : MActionResultNode
+{
+	int& destroyed;
+	explicit CopyResultMarker(int& count) : destroyed(count) {}
+	~CopyResultMarker() override { ++destroyed; }
+	void Execute() override {}
+};
+void ClearEffectsCheckingCopyDestruction(size_t firstCopy = 1)
+{
+	int destroyed = 0;
+	const auto expected = effects.size() - firstCopy;
+	for (size_t i = firstCopy; i < effects.size(); ++i)
+	{
+		auto* target = effects[i]->GetEffectTarget(); CHECK(target != nullptr); CHECK(!target->IsExistResult());
+		auto result = std::make_unique<MActionResult>(); result->Add(new CopyResultMarker(destroyed)); target->SetResult(result.release());
+	}
+	effects.clear(); CHECK_EQ(expected, static_cast<size_t>(destroyed));
+}
+}
+
 TEST(MultipleFallingEffectGenerator, DefaultPatternConfiguresFourPhasesOfRealLinearEffects)
 {
 	World world;
@@ -168,8 +190,8 @@ TEST(MultipleFallingEffectGenerator, FirstAcceptedTargetStaysUnchangedAndLaterTa
 		CHECK(linked->GetResult() == nullptr);
 		for (std::size_t j = 0; j < i; ++j) CHECK(linked != effects[j]->GetEffectTarget());
 	}
-	effects.clear();
-	CHECK(removedTargets == std::vector<int>(16, 73));
+	ClearEffectsCheckingCopyDestruction();
+	CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(MultipleFallingEffectGenerator, EverySlotCanBecomeTheFirstAcceptedOwner)
@@ -283,7 +305,7 @@ TEST(MultipleFallingEffectGenerator, RejectionBeforeTheFirstOwnerDoesNotChangeLa
 		CHECK_EQ(effects[i]->GetPixelY(), linked->GetY());
 		CHECK_EQ(76, linked->GetZ()); CHECK_EQ(123, linked->GetID());
 	}
-	effects.clear(); CHECK(removedTargets == std::vector<int>(11, 73));
+	ClearEffectsCheckingCopyDestruction(); CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(MultipleFallingEffectGenerator, SamplingConsumesTwelveRandomValuesForEveryPhaseEvenOnRejection)
@@ -525,7 +547,7 @@ TEST(MultipleFallingEffectGenerator, ZeroSpeedKeepsConfiguredLifetimeAndStationa
 		CHECK_EQ(104, effect->GetEndLinkFrame());
 		CHECK(effect->Update()); CHECK_EQ(start, effect->GetPixelZ()); CHECK_EQ(1, effect->GetFrame());
 	}
-	effects.clear(); CHECK(removedTargets == std::vector<int>(16, 73));
+	ClearEffectsCheckingCopyDestruction(); CHECK(removedTargets == std::vector<int>{73});
 }
 
 TEST(MultipleFallingEffectGenerator, DestinationSubtractionPreservesRepresentableBoundaryValues)

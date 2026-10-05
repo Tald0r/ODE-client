@@ -30,13 +30,6 @@ extern MItem* UI_GetMouseItem();
 extern bool IsBombMaterial(const MItem* pItem);
 
 //----------------------------------------------------------------------
-// The war bonuses the server grants, read by the skill check below and
-// by the handlers that set them.
-//----------------------------------------------------------------------
-bool	g_abHolyLandBonusSkills[HOLYLAND_BONUS_MAX] = { false, };
-bool	g_abSweeperBonusSkills[SWEEPER_BONUS_MAX] = { false, };
-
-//----------------------------------------------------------------------
 // Set Avaliable Skills
 //----------------------------------------------------------------------
 // Finds every skill that is usable right now and adds it.

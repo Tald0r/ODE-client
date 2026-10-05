@@ -635,3 +635,55 @@ Client/SectorSoundInfo.h
 # English NPC overlay; its target table is already owned by gamemodel.
 Client/MNPCTableEnglish.cpp
 Client/MNPCTableEnglish.h
+
+# Wave and ripple generation, with live queue and frame services behind hosts.
+Client/MBloodyWaveEffectGenerator.cpp
+Client/MBloodyWaveEffectGenerator.h
+Client/MRippleZoneEffectGenerator.cpp
+Client/MRippleZoneEffectGenerator.h
+
+# Rank-bonus packet application; player regeneration stays in the host.
+Client/PacketHandler/GCRankBonusInfoHandler.cpp
+Client/PacketHandler/GCSelectRankBonusOKHandler.cpp
+Client/RankBonusHandlerHost.h
+
+# Regeneration-zone ownership; the host borrows the current UI-owned table.
+Client/PacketHandler/GCRegenZoneStatusHandler.cpp
+Client/RegenZoneStatusHost.h
+
+# Inventory effect targets own any result before synchronous generation.
+Client/InventoryEffectTarget.cpp
+Client/InventoryEffectTarget.h
+
+# Crash-report records and named profiler state/output.
+Client/MCrashReportManager.cpp
+Client/MCrashReportManager.h
+Client/Profiler.cpp
+Client/Profiler.h
+
+# Bonus eligibility and login-list packet application, with live player/UI services.
+Client/BonusSkillHost.cpp
+Client/BonusSkillHost.h
+Client/LoginListHost.h
+Client/PacketHandler/GCHolyLandBonusInfoHandler.cpp
+Client/PacketHandler/GCSweeperBonusInfoHandler.cpp
+Client/PacketHandler/GCSkillInfoHandler.cpp
+Client/PacketHandler/LCWorldListHandler.cpp
+Client/PacketHandler/LCServerListHandler.cpp
+
+# Ground patterns, selectable ground effects and radial projectiles.
+Client/MAttachZoneAroundEffectGenerator.cpp
+Client/MAttachZoneAroundEffectGenerator.h
+Client/MAttachZoneSelectableEffectGenerator.cpp
+Client/MAttachZoneSelectableEffectGenerator.h
+Client/MAttackZoneRectEffectGenerator.cpp
+Client/MAttackZoneRectEffectGenerator.h
+
+# Complete skip-draw generator and ordered ground patterns.
+Client/MSkipEffectGenerator.cpp
+Client/MSkipEffectGenerator.h
+
+# Skill downgrade replies and their presentation service.
+Client/SkillDowngradeHost.h
+Client/PacketHandler/GCDownSkillOKHandler.cpp
+Client/PacketHandler/GCDownSkillFailedHandler.cpp

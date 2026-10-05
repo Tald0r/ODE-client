@@ -4,9 +4,9 @@
 // Rebuilds the player's skill model from a GCSkillInfo packet: the skill
 // domains (g_pSkillManager), the per-skill state in g_pSkillInfoTable
 // and the skill flags of g_pUserInformation. GCSkillInfoHandler calls it
-// and then does what reaches the executable: it clears the sweeper
-// bonus skills and asks g_pSkillAvailable which skills can be used now.
-// Kept apart from the handler so that it can be tested on real packets.
+// and then clears model-owned sweeper bonuses before requesting a live
+// availability refresh through BonusSkills::Host. Both this operation and
+// the complete handler are tested with real packets.
 //----------------------------------------------------------------------
 
 #ifndef __APPLYSKILLINFO_H__

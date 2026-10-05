@@ -5,6 +5,8 @@
 #include "ClientFunction.h"
 #include "SkillDef.h"
 #include "MItemOptionTable.h"
+#include "InventoryEffectTarget.h"
+#include <utility>
 
 // Forward declarations (common to all builds)
 extern RECT g_GameRect;
@@ -96,155 +98,64 @@ DrawBloodBibleEffect_InGear(int X, int Y)
 }
 // 2004, 11, 22, sobeit add end
 //---------------------------------------------------------------------------
-// Add New_Inventory_Effect
-//---------------------------------------------------------------------------
-// 화면좌표(x,y)
+// Add an inventory effect at the item's grid position.
 //---------------------------------------------------------------------------
 void
 AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO ai, DWORD delayFrame, DWORD value)
 {
-	
-		DEBUG_ADD("AddNewInventoryEffect");
+	DEBUG_ADD("AddNewInventoryEffect");
+	if (ai >= g_pActionInfoTable->GetSize()) return;
 
-		//---------------------------------------------------------
-		// 기술 설정이 잘못된 경우
-		//---------------------------------------------------------
-		if (ai>=g_pActionInfoTable->GetSize())
+	const MItem* item = g_pInventory->GetItemToModify(id);
+	if (item == nullptr || !(*g_pActionInfoTable)[ai].IsTargetItem())
+	{
+		DEBUG_ADD("No such item or Not Target Item");
+		return;
+	}
+
+	const int x = item->GetGridX();
+	const int y = item->GetGridY();
+	const auto phases = (*g_pActionInfoTable)[ai].GetSize();
+	if (phases == 0) return;
+
+	std::unique_ptr<MActionResultNode> action;
+	switch (ai)
+	{
+		case MAGIC_ENCHANT_OPTION_PLUS:
+			if (g_pInventory->GetItem(id) != nullptr)
+				action = std::make_unique<MActionResultNodeChangeItemOptionInInventory>(id, value);
+			break;
+
+		case MAGIC_ENCHANT_OPTION_NULL:
 		{
-			return;
-		}
-
-		// item의 grid 좌표
-		int x, y;
-
-		const MItem* pItem = g_pInventory->GetItemToModify( id );
-		/*
-		for (int i=0; i<8; i++)
-		{
-			const MItem* pCheckItem = g_pInventory->GetItem(i, 0);
-
-			if (pCheckItem!=NULL)
+			MItem* inventoryItem = g_pInventory->GetItem(id);
+			if (inventoryItem != nullptr)
 			{
-				if (pCheckItem->GetID()==id)
+				if (inventoryItem->GetItemClass() != ITEM_CLASS_PET_ITEM)
+					action = std::make_unique<MActionResultNodeChangeItemOptionInInventory>(id, value);
+				else if (g_pPlayer->IsItemCheckBufferItemToItem())
 				{
-					x = pCheckItem->GetGridX();
-					y = pCheckItem->GetGridY();			
-
-					break;
+					MItem* mouseItem = g_pPlayer->GetItemCheckBuffer();
+					g_pPlayer->ClearItemCheckBuffer();
+					delete mouseItem;
 				}
 			}
+			break;
 		}
-		*/
+		case MAGIC_ENCHANT_REMOVE_ITEM:
+			action = std::make_unique<MActionResultNodeRemoveItemInInventory>(id);
+			break;
+		case MAGIC_TRANS_ITEM_OK:
+			action = std::make_unique<MActionResultNodeChangeItemGenderInInventory>(id);
+			break;
+	}
 
-		//---------------------------------------------------------
-		// item이 없는 경우
-		//---------------------------------------------------------
-		if (pItem==NULL || !(*g_pActionInfoTable)[ai].IsTargetItem())
-		{
-			DEBUG_ADD("No such item or Not Target Item");
-			return;
-		}
+	// Generate consumes the target and can execute its result or delete it
+	// immediately. Finish result construction before that ownership transfer.
+	auto target = PrepareInventoryEffectTarget(static_cast<BYTE>(phases), x, y, id, delayFrame, std::move(action));
+	g_pEffectGeneratorTable->Generate(x, y, 0, 0, 1, ai, target.release());
 
-		x = pItem->GetGridX();
-		y = pItem->GetGridY();
-
-		//---------------------------------------------------------
-		// 기술의 연결 동작?들이 있는 경우에만...
-		//---------------------------------------------------------
-		if ((*g_pActionInfoTable)[ai].GetSize()!=0)
-		{
-			MEffectTarget* pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[ai].GetSize() );
-
-			pEffectTarget->Set( x, y, 0, id );
-
-			pEffectTarget->SetDelayFrame( delayFrame );
-
-			//--------------------------------------------------------
-			//
-			//                   Effect생성		
-			//
-			//--------------------------------------------------------
-			g_pEffectGeneratorTable->Generate(
-					x,y,0,		// 시작 위치
-					0, 			// 방향
-					1,			// power
-					ai,			//	ActionInfoTable종류,
-					pEffectTarget		// 목표 정보
-			);
-
-			//------------------------------------------------------
-			// 결과 생성
-			//------------------------------------------------------
-			MActionResult* pResult = new MActionResult;
-			MActionResultNode* pActionResultNode = NULL;
-
-			switch(ai)
-			{
-			case MAGIC_ENCHANT_OPTION_PLUS:
-				{
-					MItem* pInvenItem = g_pInventory->GetItem(id);
-
-					if(pInvenItem != NULL)
-					{
-						pActionResultNode = new MActionResultNodeChangeItemOptionInInventory(id, value);
-					}
-				}
-				break;
-
-			case MAGIC_ENCHANT_OPTION_NULL:
-				{
-					MItem* pInvenItem = g_pInventory->GetItem(id);
-
-					// 대상 아이템이 펫아이템인경우는 처리 안함
-					if(pInvenItem != NULL)
-					{
-						if(pInvenItem->GetItemClass() != ITEM_CLASS_PET_ITEM)
-						{
-							pActionResultNode = new MActionResultNodeChangeItemOptionInInventory(id, value);
-						}
-						else
-						{
-							if(g_pPlayer->IsItemCheckBufferItemToItem())
-							{
-								MItem *pMouseItem = g_pPlayer->GetItemCheckBuffer();
-
-								g_pPlayer->ClearItemCheckBuffer();
-
-								if(pMouseItem != NULL)
-									delete pMouseItem;
-							}
-						}
-					}
-
-				}
-				break;
-
-			case MAGIC_ENCHANT_REMOVE_ITEM:
-				pActionResultNode = new MActionResultNodeRemoveItemInInventory(id);
-				break;
-			case MAGIC_TRANS_ITEM_OK :
-				pActionResultNode = new MActionResultNodeChangeItemGenderInInventory( id );
-				break;
-			}
-
-			if (pActionResultNode!=NULL)
-			{
-				pResult->Add( pActionResultNode );
-				pEffectTarget->SetResult(pResult);
-			}
-
-			DEBUG_ADD_FORMAT("[AddNewInventoryEffect] ai=%d, item id=%d", ai, id);
-		}
-		//---------------------------------------------------------
-		// 기술의 연결 동작이 없는 경우
-		//---------------------------------------------------------
-		else
-		{
-			//------------------------------------------------------------
-			// 결과를 처리해야하는 시점인가? - 당연하다고 본다 *_*;
-			//------------------------------------------------------------				
-			// 음.. 결과는 어딨지.. - -;;
-		}
+	DEBUG_ADD_FORMAT("[AddNewInventoryEffect] ai=%d, item id=%d", ai, id);
 }
 
 

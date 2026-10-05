@@ -1,129 +1,46 @@
-//////////////////////////////////////////////////////////////////////
-//
-// Filename    : GCSweeperBonusInfoHandler.cpp
-// Written By  : 
-//
-//////////////////////////////////////////////////////////////////////
-
-// include files
+// Apply the complete ordered list of level-war owners to the skill model.
 #include "Client_PCH.h"
 #include "Gpackets/GCSweeperBonusInfo.h"
-#include "ClientDef.h"
+#include "BonusSkillHost.h"
 #include "MSkillManager.h"
-#include "VS_UI.h" 
 
+#include <algorithm>
+#include <array>
+#include <memory>
 
-//////////////////////////////////////////////////////////////////////
-//
-//////////////////////////////////////////////////////////////////////
-
-void GCSweeperBonusInfoHandler::execute ( GCSweeperBonusInfo * pPacket , Player * pPlayer )
-	 
-
+namespace {
+bool Eligible(const BonusSkills::PlayerState& player, size_t index)
 {
-	(void)pPlayer;
-	if( g_pPlayer == NULL || g_pSkillAvailable == NULL )
-		return;
-	
-	SweeperBonusInfo *pInfo = pPacket->popFrontSweeperBonusInfoList();
-
-	int i=0;
-
-	while( pInfo != NULL )
-	{
-		if( g_pPlayer->GetRace() == pInfo->getRace() )
-		{			
-			switch( g_pPlayer->GetRace() )
-			{
-			case RACE_SLAYER :
-				{
-					int allstatsum = g_char_slot_ingame.STR_PURE + g_char_slot_ingame.DEX_PURE + g_char_slot_ingame.INT_PURE;
-					
-					switch( i )
-					{
-					case 0 :
-					case 1 :
-					case 2 :
-						if( allstatsum >= 1 && allstatsum <= 150 )
-							g_abSweeperBonusSkills[i] = true;							
-						break;
-
-					case 3 :
-					case 4 :
-					case 5 :
-						if( allstatsum >= 151 && allstatsum <= 210 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-
-					case 6 :
-					case 7 :
-					case 8 :
-						if( allstatsum >= 211 && allstatsum <= 260 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-
-					case 9 :
-					case 10 :
-					case 11 :
-						if (allstatsum >= 261 && allstatsum <= 300 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-					}
-				}
-				break;
-			
-			case RACE_VAMPIRE :
-			case RACE_OUSTERS :
-				{
-					int myLevel = g_pPlayer->GetLEVEL();
-					
-					switch( i )
-					{
-					case 0 :
-					case 1 :
-					case 2 :
-						if( myLevel >= 1 && myLevel <= 30 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-
-					case 3 :
-					case 4 :
-					case 5 :
-						if( myLevel >= 31 && myLevel <= 50 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-
-					case 6 :
-					case 7 :
-					case 8 :
-						if( myLevel >= 51 && myLevel <= 70 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-
-					case 9 :
-					case 10 :
-					case 11 :
-						if( myLevel >= 71 && myLevel <= 90 )
-							g_abSweeperBonusSkills[i] = true;
-						break;
-					}
-				}
-				break;	
-			
-			default :
-				g_abSweeperBonusSkills[i] = false;
-				break;
-			}			
-		}
-		else
-			g_abSweeperBonusSkills[i] = false;
-		
-		delete pInfo;
-
-		pInfo = pPacket->popFrontSweeperBonusInfoList();		
-		i++;
-	}
-
-	g_pSkillAvailable->SetAvailableSkills();
+	// Each bracket grants three consecutive bonus skills.
+	const int slayerMinimum[] = {1, 151, 211, 261};
+	const int slayerMaximum[] = {150, 210, 260, 300};
+	const int otherMinimum[] = {1, 31, 51, 71};
+	const int otherMaximum[] = {30, 50, 70, 90};
+	const size_t bracket = index / 3;
+	if (bracket >= 4) return false;
+	if (player.race == RACE_SLAYER)
+		return player.statSum >= slayerMinimum[bracket] && player.statSum <= slayerMaximum[bracket];
+	if (player.race == RACE_VAMPIRE || player.race == RACE_OUSTERS)
+		return player.level >= otherMinimum[bracket] && player.level <= otherMaximum[bracket];
+	return false;
+}
 }
 
+void GCSweeperBonusInfoHandler::execute(GCSweeperBonusInfo* packet, Player* source)
+{
+	(void)source;
+	BonusSkills::PlayerState player;
+	if (!BonusSkills::ReadPlayer(player)) return;
+
+	std::array<bool, SWEEPER_BONUS_MAX> next{};
+	size_t index = 0;
+	while (auto* row = packet->popFrontSweeperBonusInfoList())
+	{
+		std::unique_ptr<SweeperBonusInfo> owned(row);
+		// Live framing caps this list at twelve. Keep direct callers bounded too.
+		if (index < next.size()) next[index] = player.race == row->getRace() && Eligible(player, index);
+		++index;
+	}
+	std::copy(next.begin(), next.end(), g_abSweeperBonusSkills);
+	BonusSkills::RefreshAvailableSkills();
+}

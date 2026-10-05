@@ -7,8 +7,32 @@
 #include "Lpackets/LCWorldList.h"
 #include "ApplyServerList.h"
 #include "CServerInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "LoginListHost.h"
+
+namespace LoginLists {
+namespace {
+const Host* s_Host = nullptr;
+}
+
+const Host* SetHost(const Host* host)
+{
+	const auto* previous = s_Host;
+	s_Host = host;
+	return previous;
+}
+
+void WorldListApplied()
+{
+	if (s_Host && s_Host->PublishWorlds) s_Host->PublishWorlds();
+	if (s_Host && s_Host->SelectWorldMode) s_Host->SelectWorldMode();
+}
+
+void ServerListApplied()
+{
+	if (s_Host && s_Host->PublishServers) s_Host->PublishServers();
+	if (s_Host && s_Host->SelectServerMode) s_Host->SelectServerMode();
+}
+}
 
 void LCWorldListHandler::execute(LCWorldList* pPacket, Player* pPlayer)
 {
@@ -20,8 +44,7 @@ void LCWorldListHandler::execute(LCWorldList* pPacket, Player* pPlayer)
 
 	ApplyWorldList(*g_pServerInformation, *pPacket);
 
-	UI_SetWorldList();
-	SetMode(MODE_WAIT_SELECT_WORLD);
+	LoginLists::WorldListApplied();
 
 	__END_CATCH
 }

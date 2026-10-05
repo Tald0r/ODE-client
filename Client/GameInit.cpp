@@ -104,6 +104,17 @@
 #include "MRippleZoneWideEffectGenerator.h"
 #include "MBloodyBreakerEffectGenerator.h"
 #include "MBloodyWallEffectGenerator.h"
+#include "MBloodyWaveEffectGenerator.h"
+#include "MRippleZoneEffectGenerator.h"
+#include "MAttachZoneAroundEffectGenerator.h"
+#include "MAttachZoneSelectableEffectGenerator.h"
+#include "MAttackZoneRectEffectGenerator.h"
+#include "MSkipEffectGenerator.h"
+#include "RankBonusHandlerHost.h"
+#include "RegenZoneStatusHost.h"
+#include "BonusSkillHost.h"
+#include "SkillDowngradeHost.h"
+#include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
@@ -2662,6 +2673,17 @@ void ReleaseAllObjects()
 	MRippleZoneWideEffectGenerator::SetHost(nullptr);
 	MBloodyBreakerEffectGenerator::SetHost(nullptr);
 	MBloodyWallEffectGenerator::SetHost(nullptr);
+	MBloodyWaveEffectGenerator::SetHost(nullptr);
+	MRippleZoneEffectGenerator::SetHost(nullptr);
+	MAttachZoneAroundEffectGenerator::SetHost(nullptr);
+	MAttachZoneSelectableEffectGenerator::SetHost(nullptr);
+	MAttackZoneRectEffectGenerator::SetHost(nullptr);
+	MSkipEffectGenerator::SetHost(nullptr);
+	RankBonusHandlers::SetHost(nullptr);
+	RegenZoneStatus::SetHost(nullptr);
+	BonusSkills::SetHost(nullptr);
+	SkillDowngrade::SetHost(nullptr);
+	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
@@ -3311,6 +3333,85 @@ static const MBloodyWallEffectHost s_BloodyWallEffectHost = {
 	.Queue = s_FixedZoneEffectHost.Queue,
 };
 
+static const MBloodyWaveEffectHost s_BloodyWaveEffectHost = {
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MBloodyWaveEffectSprite& sprite) {
+		MBloodyWallEffectSprite metadata;
+		if (!s_BloodyWallEffectHost.Sprite(type, metadata)) return false;
+		sprite = {metadata.bltType, metadata.frameID, metadata.repeatFrame};
+		return true;
+	},
+	.MaxFrames = s_CreatureParabolaEffectHost.MaxFrames,
+	.Queue = s_FixedZoneEffectHost.Queue,
+};
+
+static const MRippleZoneEffectHost s_RippleZoneEffectHost = {
+	.Bounds = [](TYPE_SECTORPOSITION& width, TYPE_SECTORPOSITION& height) {
+		if (!g_pZone) return false;
+		width = g_pZone->GetWidth();
+		height = g_pZone->GetHeight();
+		return true;
+	},
+	.Sprite = s_FixedZoneEffectHost.Sprite,
+	.Queue = [](std::unique_ptr<MEffect> effect, bool ground) {
+		if (!g_pZone) return false;
+		if (!ground) return g_pZone->AddEffect(effect.release());
+		// AddGroundEffect borrows the pointer and may report success without
+		// retaining it. Keep ownership through rejection and allocation failure.
+		g_pZone->AddGroundEffect(effect.get());
+		if (g_pZone->GetGroundEffect(effect->GetID()) != effect.get()) return false;
+		effect.release();
+		return true;
+	},
+};
+
+static const MFixedZoneEffectHost s_GroundPatternEffectHost = {
+	.Sprite = s_FixedZoneEffectHost.Sprite,
+	.Queue = [](std::unique_ptr<MEffect> effect) {
+		return s_RippleZoneEffectHost.Queue(std::move(effect), true);
+	},
+};
+
+static const MAroundGroundEffectHost s_AroundGroundEffectHost = {
+	.Sprite = s_GroundPatternEffectHost.Sprite,
+	.Queue = s_GroundPatternEffectHost.Queue,
+	.AddEvent = s_MeteorDropEffectHost.AddEvent,
+};
+
+static const SkillDowngrade::Host s_SkillDowngradeHost = {
+	.PopupMessage = [](int gameStringID) { UI_PopupMessage(gameStringID); },
+};
+
+static const BonusSkills::Host s_BonusSkillHost = {
+	.ReadPlayer = [](BonusSkills::PlayerState& state) {
+		if (!g_pPlayer || !g_pSkillAvailable) return false;
+		state.race = g_pPlayer->GetRace();
+		state.level = g_pPlayer->GetLEVEL();
+		state.statSum = static_cast<std::int64_t>(g_char_slot_ingame.STR_PURE)
+			+ g_char_slot_ingame.DEX_PURE + g_char_slot_ingame.INT_PURE;
+		return true;
+	},
+	.RefreshAvailableSkills = [] {
+		if (g_pSkillAvailable) g_pSkillAvailable->SetAvailableSkills();
+	},
+};
+
+static const LoginLists::Host s_LoginListHost = {
+	.PublishWorlds = [] { UI_SetWorldList(); },
+	.SelectWorldMode = [] { SetMode(MODE_WAIT_SELECT_WORLD); },
+	.PublishServers = [] { UI_SetServerList(); },
+	.SelectServerMode = [] { SetMode(MODE_WAIT_SELECT_SERVER); },
+};
+
+static const RankBonusHandlers::Host s_RankBonusHandlerHost = {
+	.CheckRegen = [] {
+		if (g_pPlayer) g_pPlayer->CheckRegen();
+	},
+};
+
+static const RegenZoneStatus::Host s_RegenZoneStatusHost = {
+	.Table = [] { return g_pRegenTowerInfoManager; },
+};
+
 static const MWideRippleEffectHost s_WideRippleEffectHost = {
 	.Sprite = s_FixedZoneEffectHost.Sprite,
 	.Bounds = [](MWideRippleEffectBounds& bounds) {
@@ -3850,6 +3951,17 @@ InitGameObject()
 	MRippleZoneWideEffectGenerator::SetHost(&s_WideRippleEffectHost);
 	MBloodyBreakerEffectGenerator::SetHost(&s_BloodyBreakerEffectHost);
 	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);
+	MBloodyWaveEffectGenerator::SetHost(&s_BloodyWaveEffectHost);
+	MRippleZoneEffectGenerator::SetHost(&s_RippleZoneEffectHost);
+	MAttachZoneAroundEffectGenerator::SetHost(&s_AroundGroundEffectHost);
+	MAttachZoneSelectableEffectGenerator::SetHost(&s_GroundPatternEffectHost);
+	MAttackZoneRectEffectGenerator::SetHost(&s_GroundPatternEffectHost);
+	MSkipEffectGenerator::SetHost(&s_GroundPatternEffectHost);
+	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
+	RegenZoneStatus::SetHost(&s_RegenZoneStatusHost);
+	BonusSkills::SetHost(&s_BonusSkillHost);
+	SkillDowngrade::SetHost(&s_SkillDowngradeHost);
+	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);

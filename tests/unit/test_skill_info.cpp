@@ -11,9 +11,9 @@
 // which skills each domain holds as learned, what the info table
 // carries for them, which domains say a new skill can be learned, the
 // domain levels, the skills usable now (g_pSkillAvailable, the set the
-// learns add to) and the five flags. The handler's own tail - clearing
-// the sweeper bonus skills and MSkillSet::SetAvailableSkills - is
-// executable-side and not run.
+// learns add to) and the five flags. test_bonus_skill_handlers.cpp covers
+// the complete handler, including sweeper reset and the host callback for
+// live availability refresh.
 //
 // The wire bytes are built field by field from the packet types'
 // widths, little-endian, as the server writes them (its Slayer.cpp,
