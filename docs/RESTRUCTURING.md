@@ -2625,10 +2625,10 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, `RegenZoneStatusHost.h`, designated installation/reset
     and `test_regen_zone_status_handler.cpp` using the real production handler.
 
-- [ ] **4.89 Skip-draw ground patterns:** move the complete
+- [x] **4.89 Skip-draw ground patterns:** move the complete
   `MSkipEffectGenerator` into `gamemodel`, using the existing ground queue and
   `WorldTileGeometry` conversions.
-  > **Status:** in progress (full build and sanitizer verification).
+  > **Status:** done (2026-10-05; PR #383, implementation `2467cc9f`).
   > Line, cross and square order are preserved. Only retained effects receive
   > links; the first retained effect takes the original target and later
   > effects own independent visual continuations. Complete rejection and
@@ -2666,7 +2666,10 @@ CI runs have now passed; exact revisions and results are linked in that PR.
 Zero remains unfinished.
 
 Task 4.89 reduces the Linux inventory to 342 executable sources, with the
-corresponding Windows baseline at 344; its verification record is separate.
+corresponding Windows baseline at 344. All 24 local Clang Debug and ASan/UBSan
+CTest checks pass (3,345 unit tests), as do Linux CI and Windows ASan. PR #383
+records the production-object link proof and the remaining Windows job; it
+depends on #382 and must be retargeted to `master` after that parent lands.
 
 Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted
