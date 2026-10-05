@@ -110,6 +110,7 @@
 #include "MAttachZoneSelectableEffectGenerator.h"
 #include "MAttackZoneRectEffectGenerator.h"
 #include "RankBonusHandlerHost.h"
+#include "RegenZoneStatusHost.h"
 #include "BonusSkillHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
@@ -2676,6 +2677,7 @@ void ReleaseAllObjects()
 	MAttachZoneSelectableEffectGenerator::SetHost(nullptr);
 	MAttackZoneRectEffectGenerator::SetHost(nullptr);
 	RankBonusHandlers::SetHost(nullptr);
+	RegenZoneStatus::SetHost(nullptr);
 	BonusSkills::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
@@ -3398,6 +3400,10 @@ static const RankBonusHandlers::Host s_RankBonusHandlerHost = {
 	},
 };
 
+static const RegenZoneStatus::Host s_RegenZoneStatusHost = {
+	.Table = [] { return g_pRegenTowerInfoManager; },
+};
+
 static const MWideRippleEffectHost s_WideRippleEffectHost = {
 	.Sprite = s_FixedZoneEffectHost.Sprite,
 	.Bounds = [](MWideRippleEffectBounds& bounds) {
@@ -3943,6 +3949,7 @@ InitGameObject()
 	MAttachZoneSelectableEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	MAttackZoneRectEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	RankBonusHandlers::SetHost(&s_RankBonusHandlerHost);
+	RegenZoneStatus::SetHost(&s_RegenZoneStatusHost);
 	BonusSkills::SetHost(&s_BonusSkillHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

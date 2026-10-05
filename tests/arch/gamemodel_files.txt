@@ -647,6 +647,10 @@ Client/PacketHandler/GCRankBonusInfoHandler.cpp
 Client/PacketHandler/GCSelectRankBonusOKHandler.cpp
 Client/RankBonusHandlerHost.h
 
+# Regeneration-zone ownership; the host borrows the current UI-owned table.
+Client/PacketHandler/GCRegenZoneStatusHandler.cpp
+Client/RegenZoneStatusHost.h
+
 # Inventory effect targets own any result before synchronous generation.
 Client/InventoryEffectTarget.cpp
 Client/InventoryEffectTarget.h

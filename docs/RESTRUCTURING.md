@@ -2615,7 +2615,17 @@ rounds settled* for the host rules). Test fixtures share
   > rule; the files themselves are gone, with no new exclusions.
   - Owner: generated target inventory, full executable link and R1.
 
-### Remaining R1 work after tasks 4.80-4.87
+- [x] **4.88 Regen-zone ownership packet application:** move the complete
+  `GCRegenZoneStatusHandler` into `gamemodel` beside its existing tower model.
+  > **Status:** done (2026-10-05; this extraction).
+  > `RegenZoneStatus::Host` borrows the current UI-owned table per packet;
+  > `GameInit.cpp` installs and resets the designated callback. Missing services
+  > skip updates. Eight wire ownership bytes and the fixed race ownership of
+  > later rows retain their existing behavior, including unknown-byte values.
+  - Owner: membership, R1, `RegenZoneStatusHost.h`, designated installation/reset
+    and `test_regen_zone_status_handler.cpp` using the real production handler.
+
+### Remaining R1 work after tasks 4.80-4.88
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
@@ -2630,8 +2640,11 @@ A fresh Linux Ninja inventory contains 344 executable sources: 263 packet
 handlers, 13 other effect-named files and 68 other files. These are inventory
 categories, not independent modules. Windows retains two additional sources.
 
-Continue with reviewable boundaries: `GCRegenZoneStatusHandler` updates the
-existing UI-owned regen-tower model; the remaining generators need their actual
+Task 4.88 further reduces the Linux inventory to 343 sources (262 handlers),
+with the corresponding Windows baseline at 345. The earlier CI links above
+cover tasks 4.80-4.87, not this later extraction; its PR records verification.
+
+Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted
 player/creature and world state before they can run without the executable.
 `MPlayer`, `MCreature`, `MZone`, `MTopView` and `UIMessageManager` remain major
@@ -2642,6 +2655,11 @@ Further source-audit candidates include skill-progression and quest-presentation
 handlers, `MSkipEffectGenerator` and the remaining creature-attack generators.
 Their extraction needs independent ownership and packet-contract tests before
 any suspected defect is treated as reproduced.
+
+Follow-up from 4.88's source review: `GCRegenZoneStatus::read` appends on repeated
+decoding into one packet object. Production currently creates fresh packets;
+reuse would retain old ownership bytes. This extraction leaves wire code
+unchanged and tests consecutive replies with distinct decoded packet objects.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This
