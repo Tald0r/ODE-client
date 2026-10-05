@@ -15,6 +15,7 @@
 #pragma warning(disable:4786)
 #endif
 
+#include <cstddef>
 #include <map>
 
 //----------------------------------------------------------------------

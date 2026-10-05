@@ -623,3 +623,15 @@ Client/MBloodyBreakerEffectGenerator.h
 # Bloody Wall directional rows, sprite cycling and copied target ownership (4.79).
 Client/MBloodyWallEffectGenerator.cpp
 Client/MBloodyWallEffectGenerator.h
+
+# Peer endpoint address book and sound metadata, independently linked by tests.
+Client/RequestUserManager.cpp
+Client/RequestUserManager.h
+Client/MZoneSound.cpp
+Client/MZoneSound.h
+Client/SectorSoundInfo.cpp
+Client/SectorSoundInfo.h
+
+# English NPC overlay; its target table is already owned by gamemodel.
+Client/MNPCTableEnglish.cpp
+Client/MNPCTableEnglish.h
