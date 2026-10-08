@@ -10,7 +10,9 @@ test -x "$binary"
 package=build/packages/darkeden-client-linux-x64
 rm -rf "$package" "$package.tar.gz"
 mkdir -p "$package/licenses/unrar"
-cp "$binary" "$package/DarkEden"
+# The Debug build's DWARF is over 90% of the file; dropping it from the
+# copy leaves the tested code and its symbols as they are.
+strip --strip-debug -o "$package/DarkEden" "$binary"
 chmod 755 "$package/DarkEden"
 cp build/presets/linux/_deps/ixwebsocket-src/LICENSE.txt "$package/licenses/ixwebsocket.txt"
 cp third_party/xbrz/License.txt "$package/licenses/xbrz.txt"
@@ -29,8 +31,8 @@ cat > "$package/README.txt" <<'EOF'
 DarkEden client - experimental Linux x64 CI build
 
 Built and tested on GitHub Actions (Ubuntu 24.04, GCC) using the linux Debug
-preset, without sanitizers. Target: Ubuntu 24.04 x86_64. Other distributions
-have not been validated.
+preset, without sanitizers; debug info is stripped from this copy.
+Target: Ubuntu 24.04 x86_64. Other distributions have not been validated.
 
 On Ubuntu 24.04, install runtime libraries and fonts:
 sudo apt-get update
