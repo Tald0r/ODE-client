@@ -17,6 +17,8 @@ mkdir -p "$package"
 cp "$binary" "$package/DarkEden"
 chmod 755 "$package/DarkEden"
 mkdir -p "$package/licenses/unrar"
+cp build/presets/macos/_deps/ixwebsocket-src/LICENSE.txt "$package/licenses/ixwebsocket.txt"
+cp third_party/xbrz/License.txt "$package/licenses/xbrz.txt"
 cp third_party/unrar/license.txt third_party/unrar/acknow.txt \
     third_party/unrar/README.md "$package/licenses/unrar/"
 

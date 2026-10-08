@@ -68,6 +68,19 @@ jobs:
         if: matrix.preset == 'windows-asan'
         run: ./tools/ci/verify-windows.ps1 -ConfigurePreset windows-asan -BuildPresets windows-asan
 
+      - name: Package the tested Windows executable
+        if: matrix.preset == 'windows'
+        run: ./tools/windows/package-ci.ps1
+
+      - name: Upload the Windows client
+        if: matrix.preset == 'windows'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: darkeden-client-windows-x64
+          retention-days: 30
+          if-no-files-found: error
+          path: build/packages/darkeden-client-windows-x64.zip
+
       - name: Upload build and test diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
