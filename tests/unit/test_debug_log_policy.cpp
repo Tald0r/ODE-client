@@ -177,7 +177,7 @@ TEST(DebugLogPolicy, ConcurrentLevelChangesPreserveCompleteWarningRecords)
 	const auto wait = [&] {
 		while (!start.load(std::memory_order_acquire)) std::this_thread::yield();
 	};
-	std::jthread levels([&] {
+	std::thread levels([&] {
 		wait();
 		for (int i = 0; i < 3000; ++i)
 			log_set_level(i % 2 == 0 ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO);
@@ -190,8 +190,8 @@ TEST(DebugLogPolicy, ConcurrentLevelChangesPreserveCompleteWarningRecords)
 			LOG_WARN("warning-worker=%d step=%d", worker, step);
 		}
 	};
-	std::jthread first(write, 1);
-	std::jthread second(write, 2);
+	std::thread first(write, 1);
+	std::thread second(write, 2);
 	start.store(true, std::memory_order_release);
 	first.join();
 	second.join();
