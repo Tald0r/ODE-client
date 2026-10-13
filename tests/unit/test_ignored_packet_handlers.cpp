@@ -5,6 +5,8 @@
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
 #include "Datagram.h"
+#include "InventoryInfo.h"
+#include "Gpackets/GCAuthKey.h"
 #include "Gpackets/GCCastingSkill.h"
 #include "Gpackets/GCDisconnect.h"
 #include "Gpackets/GCPhoneConnectionFailed.h"
@@ -12,6 +14,7 @@
 #include "Gpackets/GCRequestFailed.h"
 #include "Gpackets/GCRequestedIP.h"
 #include "Gpackets/GCShowMessageBox.h"
+#include "Gpackets/GCSubInventoryInfo.h"
 #include "Gpackets/GLIncomingConnectionError.h"
 #include "Gpackets/GLIncomingConnectionOK.h"
 #include "Lpackets/LCVersionCheckOK.h"
@@ -115,6 +118,30 @@ TEST(IgnoredPacketHandlers, GameServerRepliesLeaveTheirPacketUnchanged)
 	box.setMessage("notice");
 	GCShowMessageBoxHandler::execute(&box, nullptr);
 	CHECK(box.getMessage() == "notice");
+
+	// GCAuthKey has no setter, so its key is written here.
+	{
+		Socket out((EnsureSocketsInitialised(), new SocketImpl()));
+		SocketOutputStream encoded(&out);
+		encoded.write(static_cast<DWORD>(0x5EED1234));
+		const std::vector<unsigned char> bytes = SocketOutputStreamTestAccess::Bytes(encoded);
+		Socket in((EnsureSocketsInitialised(), new SocketImpl()));
+		SocketInputStream stream(&in, 1024);
+		SocketInputStreamTestAccess::Preload(stream, bytes.data(), static_cast<unsigned int>(bytes.size()));
+		GCAuthKey key;
+		key.read(stream);
+		CHECK(stream.isEmpty());
+		GCAuthKeyHandler::execute(&key, nullptr);
+		CHECK(Encode(key) == bytes);
+	}
+
+	GCSubInventoryInfo sub;
+	InventoryInfo* inventory = new InventoryInfo;
+	inventory->setWidth(3);
+	inventory->setHeight(2);
+	sub.setInventoryInfo(inventory);
+	sub.setObjectID(9001);
+	CheckIgnored(sub, [](GCSubInventoryInfo* p) { GCSubInventoryInfoHandler::execute(p, nullptr); });
 }
 
 TEST(IgnoredPacketHandlers, LoginAndUpdatePacketsLeaveTheirPacketUnchanged)
