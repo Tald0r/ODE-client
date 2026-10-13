@@ -8,8 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShowWaitGuildInfo.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GuildPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -20,7 +19,7 @@ void GCShowWaitGuildInfoHandler::execute ( GCShowWaitGuildInfo * pPacket , Playe
 	__BEGIN_TRY
 	(void)pPlayer;
 	
-		UI_ShowWaitGuildInfo(pPacket);
+		GuildPresentation::ShowWaitGuildInfo(pPacket);
 
 	__END_CATCH
 }

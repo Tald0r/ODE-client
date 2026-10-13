@@ -114,6 +114,7 @@
 #include "RegenZoneStatusHost.h"
 #include "BonusSkillHost.h"
 #include "SkillDowngradeHost.h"
+#include "GuildPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2683,6 +2684,7 @@ void ReleaseAllObjects()
 	RegenZoneStatus::SetHost(nullptr);
 	BonusSkills::SetHost(nullptr);
 	SkillDowngrade::SetHost(nullptr);
+	GuildPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3381,6 +3383,25 @@ static const SkillDowngrade::Host s_SkillDowngradeHost = {
 	.PopupMessage = [](int gameStringID) { UI_PopupMessage(gameStringID); },
 };
 
+static const GuildPresentation::Host s_GuildPresentationHost = {
+	.AddChatToHistory = [](const char* message, const char* sender, int chatType, std::uint32_t color) {
+		UI_AddChatToHistory(message, sender, chatType, color);
+	},
+	.PopupMessage = [](int gameStringID) { UI_PopupMessage(gameStringID); },
+	.SetGuildName = [](int guildID, const std::string& guildName) {
+		std::string name = guildName;
+		UI_SetGuildName(static_cast<WORD>(guildID), name);
+	},
+	.ShowGuildJoin = [](std::uint32_t joinFee, int rank, const char* date, const char* guildName, int guildID) {
+		UI_ShowGuildJoin(joinFee, rank, date, guildName, guildID);
+	},
+	.ShowGuildInfo = UI_ShowGuildInfo,
+	.ShowGuildMemberInfo = UI_ShowGuildMemberInfo,
+	.ShowGuildMemberList = UI_ShowGuildMemberList,
+	.ShowUnionGuildMemberInfo = UI_ShowUnionGuildMemberInfo,
+	.ShowWaitGuildInfo = UI_ShowWaitGuildInfo,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -3961,6 +3982,7 @@ InitGameObject()
 	RegenZoneStatus::SetHost(&s_RegenZoneStatusHost);
 	BonusSkills::SetHost(&s_BonusSkillHost);
 	SkillDowngrade::SetHost(&s_SkillDowngradeHost);
+	GuildPresentation::SetHost(&s_GuildPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

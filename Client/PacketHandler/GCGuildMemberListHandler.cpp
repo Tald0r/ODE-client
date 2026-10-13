@@ -8,8 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGuildMemberList.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GuildPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
@@ -19,7 +18,7 @@ void GCGuildMemberListHandler::execute ( GCGuildMemberList * pPacket , Player * 
 	__BEGIN_TRY
 	(void)pPlayer;
 	
-	UI_ShowGuildMemberList(pPacket);
+	GuildPresentation::ShowGuildMemberList(pPacket);
 
 	__END_CATCH
 }

@@ -702,3 +702,16 @@ Client/PacketHandler/GLIncomingConnectionOKHandler.cpp
 Client/PacketHandler/LCVersionCheckOKHandler.cpp
 Client/PacketHandler/LGIncomingConnectionHandler.cpp
 Client/PacketHandler/UCRequestLoginModeHandler.cpp
+
+# Guild and union replies and their presentation service.
+Client/GuildPresentationHost.cpp
+Client/GuildPresentationHost.h
+Client/PacketHandler/GCGuildChatHandler.cpp
+Client/PacketHandler/GCGuildMemberListHandler.cpp
+Client/PacketHandler/GCGuildResponseHandler.cpp
+Client/PacketHandler/GCOtherGuildNameHandler.cpp
+Client/PacketHandler/GCShowGuildInfoHandler.cpp
+Client/PacketHandler/GCShowGuildJoinHandler.cpp
+Client/PacketHandler/GCShowGuildMemberInfoHandler.cpp
+Client/PacketHandler/GCShowUnionInfoHandler.cpp
+Client/PacketHandler/GCShowWaitGuildInfoHandler.cpp
