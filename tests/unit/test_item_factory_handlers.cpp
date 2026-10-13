@@ -180,6 +180,11 @@ TEST(ItemFactory, NewItemRangeChecksTheClassThenAsksTheInstalledFactory)
 	made.clear();
 	CHECK(MItem::NewItem(MAX_ITEM_CLASS) == nullptr);
 	CHECK(MItem::NewItem(ITEM_CLASS_NULL) == nullptr);
+	// Callers cast the wire's class byte to ITEM_CLASS before the check, so
+	// every byte, and a negative int, has to be a value the enum can hold.
+	CHECK(MItem::NewItem(static_cast<ITEM_CLASS>(200)) == nullptr);
+	CHECK(MItem::NewItem(static_cast<ITEM_CLASS>(255)) == nullptr);
+	CHECK(MItem::NewItem(static_cast<ITEM_CLASS>(-1)) == nullptr);
 	CHECK(made.empty());
 	// Without a factory nothing is made.
 	MItem::SetHost(nullptr);
