@@ -12,7 +12,6 @@
 #include "MStorage.h"
 #include "PCItemInfo.h"
 #include "DebugLog.h"
-#include "MGameStringTable.h"
 
 
 //////////////////////////////////////////////////////////////////////

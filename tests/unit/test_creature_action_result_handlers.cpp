@@ -101,7 +101,7 @@ CreatureState::Host CreatureHost()
 	};
 	host.SetStop = [](MCreature* p) { calls.push_back(Who(p) + ".stop"); };
 	host.IsNPC = IsNPC;
-	// Only an NPC has a shop: the adapter casts to MNPC.
+	// The handler asks only an NPC for its shop.
 	host.GetShop = [](MCreature* p) {
 		CHECK(IsNPC(p));
 		return Fake(p).shop;

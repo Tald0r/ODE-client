@@ -2926,7 +2926,8 @@ static MMagazine*	EmptyMagazineFor(MItem* pGun)
 	return pMagazine;
 }
 
-// A gun a reply builds (the trade box's offer) loaded with that many rounds.
+// A gun a reply builds (the trade box's offer, an item added to a
+// personal store) loaded with that many rounds.
 static bool	LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)
 {
 	MMagazine* pMagazine = EmptyMagazineFor( pGun );

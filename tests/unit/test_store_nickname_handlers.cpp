@@ -26,6 +26,7 @@ namespace {
 std::vector<std::string> calls;
 int inventoryMode = 1;
 int alive = 0;
+bool loadable = true;
 
 VsUiPresentation::Host UiHost()
 {
@@ -51,6 +52,11 @@ struct Belt : MBelt
 	Belt() { alive++; }
 	~Belt() { alive--; }
 };
+struct ArmsBand : MOustersArmsBand
+{
+	ArmsBand() { alive++; }
+	~ArmsBand() { alive--; }
+};
 
 MItem* Factory(ITEM_CLASS itemClass)
 {
@@ -58,6 +64,7 @@ MItem* Factory(ITEM_CLASS itemClass)
 	{
 		case ITEM_CLASS_SWORD: case ITEM_CLASS_SR: case ITEM_CLASS_POTION: return new Ware(itemClass);
 		case ITEM_CLASS_BELT: return new Belt;
+		case ITEM_CLASS_OUSTERS_ARMSBAND: return new ArmsBand;
 		default: return nullptr;
 	}
 }
@@ -67,7 +74,7 @@ MItemHost FactoryHost()
 	host.NewItem = Factory;
 	host.LoadGun = [](MItem* pGun, TYPE_ITEM_NUMBER rounds) {
 		calls.push_back("load|" + std::to_string(pGun->GetID()) + "|" + std::to_string(rounds));
-		return true;
+		return loadable;
 	};
 	return host;
 }
@@ -81,6 +88,7 @@ struct World : GameModelWorld
 	{
 		const struct { ITEM_CLASS itemClass; int pockets; } rows[] = {
 			{ITEM_CLASS_SWORD, 0}, {ITEM_CLASS_SR, 0}, {ITEM_CLASS_POTION, 0}, {ITEM_CLASS_BELT, 2},
+			{ITEM_CLASS_OUSTERS_ARMSBAND, 2},
 		};
 		for (const auto& row : rows)
 		{
@@ -95,6 +103,7 @@ struct World : GameModelWorld
 		calls.clear();
 		inventoryMode = 1;
 		alive = 0;
+		loadable = true;
 	}
 	~World()
 	{
@@ -134,7 +143,7 @@ void ReceiveAdd(ObjectID_t owner, ObjectID_t id, BYTE itemClass, std::vector<Sub
 	item.setSilver(5);
 	item.setGrade(3);
 	item.setEnchantLevel(1);
-	item.setItemNum(1);
+	item.setItemNum(4);
 	item.setPrice(1500);
 	for (SubItemInfo* pocket : pockets) item.addListElement(pocket);
 	GCAddStoreItem packet;
@@ -174,6 +183,8 @@ TEST(StoreNicknameHandlers, NicknamesGoToTheUIObjectsList)
 	list.getAddresses().push_back(new NicknameInfo);
 	GCNicknameListHandler::execute(&list, nullptr);
 	CHECK(calls == std::vector<std::string>({"addnick|Lantern", "setnicks|2"}));
+	// The packet does not free its entries (a follow-up in the doc).
+	for (NicknameInfo* info : list.getAddresses()) delete info;
 }
 
 TEST(StoreNicknameHandlers, AnItemAddedToTheOpenStoreFillsTheFirstFreeSlotFromThePacket)
@@ -196,19 +207,34 @@ TEST(StoreNicknameHandlers, AnItemAddedToTheOpenStoreFillsTheFirstFreeSlotFromTh
 	ReceiveAdd(55, 901, ITEM_CLASS_SWORD);
 	CHECK(g_pStorage2->GetItem(1) != nullptr && g_pStorage2->GetItem(1)->GetID() == 901);
 
-	// A gun is loaded with one round, as a new magazine starts, and keeps
-	// no silver.
+	// A gun is loaded with one round, as a new magazine starts, whatever
+	// number the packet carries, and keeps no silver.
 	ReceiveAdd(55, 902, ITEM_CLASS_SR);
 	CHECK(calls == std::vector<std::string>{"load|902|1"});
 	CHECK(g_pStorage2->GetItem(2) != nullptr && g_pStorage2->GetItem(2)->GetSilver() == 0);
 
-	// Another owner's store, a closed store or an unknown class adds nothing.
+	// Another owner's store, an unknown class, a closed store (even for an
+	// owner of 0) or no store adds nothing.
 	ReceiveAdd(56, 903, ITEM_CLASS_SWORD);
 	ReceiveAdd(55, 904, ITEM_CLASS_HELM);
 	g_pStorage2->SetCuropenid(0);
-	ReceiveAdd(55, 905, ITEM_CLASS_SWORD);
+	ReceiveAdd(0, 905, ITEM_CLASS_SWORD);
 	CHECK(g_pStorage2->GetItem(3) == nullptr);
+	MStorage* store = g_pStorage2;
+	g_pStorage2 = nullptr;
+	ReceiveAdd(55, 906, ITEM_CLASS_SWORD);
+	g_pStorage2 = store;
 	CHECK_EQ(3, alive);
+}
+
+TEST(StoreNicknameHandlers, AGunWithoutAMagazineIsStoredUnloaded)
+{
+	World world;
+	loadable = false;
+	ReceiveAdd(55, 902, ITEM_CLASS_SR);
+	CHECK(calls == std::vector<std::string>{"load|902|1"});
+	CHECK(g_pStorage2->GetItem(0) != nullptr && g_pStorage2->GetItem(0)->GetID() == 902);
+	CHECK_EQ(1, alive);
 }
 
 TEST(StoreNicknameHandlers, AStoredBeltKeepsThePocketsThatFit)
@@ -217,9 +243,22 @@ TEST(StoreNicknameHandlers, AStoredBeltKeepsThePocketsThatFit)
 	ReceiveAdd(55, 910, ITEM_CLASS_BELT, {Pocket(911, ITEM_CLASS_POTION, 1), Pocket(912, ITEM_CLASS_POTION, 5),
 		Pocket(913, ITEM_CLASS_HELM, 0)});
 	const MBelt* belt = dynamic_cast<const MBelt*>(g_pStorage2->GetItem(0));
-	CHECK(belt != nullptr && belt->GetItem(1) != nullptr && belt->GetItem(1)->GetID() == 911);
+	const MItem* pocket = belt != nullptr ? belt->GetItem(1) : nullptr;
+	CHECK(pocket != nullptr && pocket->GetID() == 911 && pocket->GetItemType() == 1 && pocket->GetNumber() == 3);
 	CHECK(belt != nullptr && belt->GetItem(0) == nullptr);
 	// The belt and its one pocket; the pocket past the belt is freed.
+	CHECK_EQ(2, alive);
+}
+
+TEST(StoreNicknameHandlers, AStoredArmsBandKeepsThePocketsThatFit)
+{
+	World world;
+	ReceiveAdd(55, 920, ITEM_CLASS_OUSTERS_ARMSBAND, {Pocket(921, ITEM_CLASS_POTION, 0), Pocket(922, ITEM_CLASS_POTION, 9),
+		Pocket(923, ITEM_CLASS_HELM, 1)});
+	const MOustersArmsBand* band = dynamic_cast<const MOustersArmsBand*>(g_pStorage2->GetItem(0));
+	const MItem* pocket = band != nullptr ? band->GetItem(0) : nullptr;
+	CHECK(pocket != nullptr && pocket->GetID() == 921 && pocket->GetItemType() == 1 && pocket->GetNumber() == 3);
+	CHECK(band != nullptr && band->GetItem(1) == nullptr);
 	CHECK_EQ(2, alive);
 }
 
@@ -234,15 +273,35 @@ TEST(StoreNicknameHandlers, ASoldItemLeavesTheStoreOnlyWhileTheStoreViewIsOpen)
 	inventoryMode = 2;
 	ReceiveRemove(56, 0);
 	CHECK(g_pStorage2->GetItem(0) == item);
-	ReceiveRemove(55, 0);
-	CHECK(g_pStorage2->GetItem(0) == nullptr);
-	// The handler drops the removed item without freeing it (pre-existing).
-	delete item;
-	inventoryMode = 1;
+	// The packet's slot, and only that one, is emptied.
 	ReceiveAdd(55, 901, ITEM_CLASS_SWORD);
+	const MItem* second = g_pStorage2->GetItem(1);
+	ReceiveRemove(55, 1);
+	CHECK(g_pStorage2->GetItem(0) == item);
+	CHECK(g_pStorage2->GetItem(1) == nullptr);
 	ReceiveRemove(55, 0);
 	CHECK(g_pStorage2->GetItem(0) == nullptr);
-	CHECK_EQ(1, alive);
+	// The handler drops the removed items without freeing them (a
+	// follow-up in the doc).
+	delete item;
+	delete second;
+	// Mode 1 is the store view too; a closed store, even for an owner of
+	// 0, or no store removes nothing.
+	inventoryMode = 1;
+	ReceiveAdd(55, 902, ITEM_CLASS_SWORD);
+	const MItem* third = g_pStorage2->GetItem(0);
+	g_pStorage2->SetCuropenid(0);
+	ReceiveRemove(0, 0);
+	MStorage* store = g_pStorage2;
+	g_pStorage2 = nullptr;
+	ReceiveRemove(55, 0);
+	g_pStorage2 = store;
+	CHECK(g_pStorage2->GetItem(0) == third);
+	g_pStorage2->SetCuropenid(55);
+	ReceiveRemove(55, 0);
+	CHECK(g_pStorage2->GetItem(0) == nullptr);
+	delete third;
+	CHECK_EQ(0, alive);
 }
 
 TEST(StoreNicknameHandlers, MissingHostsAndEntriesSkipTheUIAndCloseTheStoreView)
