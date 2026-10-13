@@ -116,6 +116,7 @@
 #include "SkillDowngradeHost.h"
 #include "GuildPresentationHost.h"
 #include "CommunicationPresentationHost.h"
+#include "QuestWarPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2687,6 +2688,7 @@ void ReleaseAllObjects()
 	SkillDowngrade::SetHost(nullptr);
 	GuildPresentation::SetHost(nullptr);
 	CommunicationPresentation::SetHost(nullptr);
+	QuestWarPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3425,6 +3427,14 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.RunFriendDelete = UI_RunFriendDelete,
 };
 
+static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
+	.RunQuestStatus = UI_RunQuestStatus,
+	.RunQuestList = UI_RunQuestList,
+	.RunWarList = UI_RunWarList,
+	.SetCTFStatus = UI_SetCTFStatus,
+	.SetBloodBibleStatus = UI_SetBloodBibleStatus,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4007,6 +4017,7 @@ InitGameObject()
 	SkillDowngrade::SetHost(&s_SkillDowngradeHost);
 	GuildPresentation::SetHost(&s_GuildPresentationHost);
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
+	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

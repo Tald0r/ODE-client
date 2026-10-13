@@ -10,10 +10,8 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCQuestStatus.h"
 #include "MGameStringTable.h"
-#include "MEventManager.h"
-#include "DebugInfo.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "QuestWarPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -26,7 +24,7 @@ void GCQuestStatusHandler::execute ( GCQuestStatus * pGCMonsterKillQuestStatus ,
 
 	DEBUG_ADD("[GCQuestStatusHandler] execute");
 
-	UI_RunQuestStatus( pGCMonsterKillQuestStatus );
+	QuestWarPresentation::RunQuestStatus( pGCMonsterKillQuestStatus );
 
 //	MEvent event;
 //
