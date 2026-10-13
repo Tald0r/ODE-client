@@ -39,6 +39,7 @@ namespace {
 std::vector<std::string> calls;
 Race playerRace = RACE_SLAYER;
 bool ghost = false;
+bool op = false;
 bool hasPlayer = true;
 int playerHandle = 0;
 MStatus status;
@@ -57,6 +58,7 @@ const PlayerState::Host player = []() {
 	host.Status = []() { return &status; };
 	host.GetRace = []() { return playerRace; };
 	host.HasEffectStatus = [](EFFECTSTATUS effect) { return ghost && effect == EFFECTSTATUS_GHOST; };
+	host.IsOperator = []() { return op; };
 	return host;
 }();
 
@@ -99,6 +101,7 @@ struct World : GameModelWorld
 		calls.clear();
 		playerRace = RACE_SLAYER;
 		ghost = false;
+		op = false;
 		hasPlayer = true;
 		status.SetStatus(MODIFY_CURRENT_INT, 0);
 		std::srand(1);
@@ -235,7 +238,10 @@ TEST(PeerWhisperHandler, EachMessageIsFilteredShownAndTheSenderBecomesTheTarget)
 	Receive(peer, "Nyx", {{kCursing, 9}, {"hello", 4}});
 	CHECK(calls == std::vector<std::string>({"Nyx|2|9|" + world.Filtered(kCursing), "Nyx|2|4|hello"}));
 	CHECK(world.Target() == "Nyx ");
+	// A new sender's address is the connection's.
 	CHECK(world.users.HasRequestUser("Nyx"));
+	if (world.users.HasRequestUser("Nyx"))
+		CHECK(world.users.GetUserInfo("Nyx")->IP == peer.getSocket()->getHost().c_str());
 	CHECK(world.Notice().empty());
 	CHECK(peer.Sent().empty());
 }
@@ -269,6 +275,11 @@ TEST(PeerWhisperHandler, AWhisperForAnotherCharacterWorldOrModeIsAnsweredFailed)
 	Refused("Lantern", 3);
 	g_pChatManager = &world.chat;
 	g_pUserInformation = nullptr;
+	Refused("Lantern", 3);
+	UserInformation unnamed;
+	unnamed.WorldID = 3;
+	CHECK(unnamed.CharacterID.GetString() == nullptr);
+	g_pUserInformation = &unnamed;
 	Refused("Lantern", 3);
 	g_pUserInformation = &world.user;
 	CHECK(calls.empty());
@@ -314,6 +325,14 @@ TEST(PeerWhisperHandler, AMasterOrGhostPlayerSeesTheWhisperWhole)
 	CHECK(calls == std::vector<std::string>(2, "Nyx|2|7|" + kCursing));
 }
 
+TEST(PeerWhisperHandler, AnOperatorPlayerStillHasAPeersCursesFiltered)
+{
+	World world;
+	op = true;
+	Receive("Nyx", kCursing);
+	CHECK(calls == std::vector<std::string>{"Nyx|2|7|" + world.Filtered(kCursing)});
+}
+
 TEST(PeerWhisperHandler, AnotherRacesWhisperIsMaskedLessTheMoreINTThePlayerHas)
 {
 	World world;
@@ -348,12 +367,16 @@ TEST(PeerWhisperHandler, AnyINTTheServerSetsReadsAsTheCap)
 	const std::string line = LongLine();
 	status.SetStatus(MODIFY_CURRENT_INT, 0xFFFFFFFFu);
 	Receive("Nyx", line, RACE_VAMPIRE);
+	// Unclamped, 2^31 times 100 wrapped to 0 in the old unsigned arithmetic
+	// and read at 25%.
+	status.SetStatus(MODIFY_CURRENT_INT, 0x80000000u);
+	Receive("Nyx", line, RACE_VAMPIRE);
 	// A vampire divides INT by 300 where a slayer divides by 150, so its
 	// player reaches the cap only at 150 INT: a clamp below about 100
 	// would show.
 	playerRace = RACE_VAMPIRE;
 	Receive("Nyx", line, RACE_SLAYER);
-	CHECK_EQ(2u, calls.size());
+	CHECK_EQ(3u, calls.size());
 #ifndef _DEBUG
 	for (const std::string& call : calls)
 	{

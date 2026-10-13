@@ -121,8 +121,10 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 
 				//--------------------------------------------------
 				// Curses are filtered unless an operator said it or the
-				// player is one: operators' words show whole, and operators
-				// see everything. A ghost sees everything too.
+				// player is a master: operators' words show whole, and
+				// masters see everything. A ghost sees everything too.
+				// (Unlike GCWhisperHandler, an operator player is not
+				// exempt.)
 				//--------------------------------------------------
 				if (!bMasterWords && !g_pUserInformation->IsMaster 
 					&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST ))

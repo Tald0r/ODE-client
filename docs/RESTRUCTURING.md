@@ -3521,13 +3521,16 @@ rounds settled* for the host rules). Test fixtures share
   > character, in this world, while in or entering the game, records the
   > sender's address; if the player accepts the sender, each message is
   > shown as a whisper and the sender becomes the whisper target, filtered
-  > and masked as `GCWhisperHandler` does (4.113). Any other whisper is
+  > and masked as `GCWhisperHandler` does (4.113), except that an operator
+  > player is not exempt from the filter. Any other whisper is
   > answered "whisper failed". It reached the executable for the player
   > (`g_pPlayer`, now `PlayerState::Creature`, `HasEffectStatus`,
   > `GetRace` and `Status`) and the chat history (`UI_AddChatToHistory`,
   > now `CommunicationPresentation::AddChatToHistory`). The race mask
   > reads INT as 4.113's does, clamped at 300 before the int arithmetic;
-  > up to 300 the percent is unchanged. A `__METROTECH_TEST__` line no
+  > the percent is unchanged until INT 42,949,673, where the old unsigned
+  > product wrapped (and read anywhere from 25% to 75%). A
+  > `__METROTECH_TEST__` line no
   > build compiles and two commented-out blocks are dropped. R1 is 200
   > Windows / 198 Ninja.
   - Owner: membership, R1 and `test_peer_whisper_handler.cpp` (each
