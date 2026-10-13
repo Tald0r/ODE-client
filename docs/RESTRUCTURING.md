@@ -1764,7 +1764,10 @@ rounds settled* for the host rules). Test fixtures share
   > Missing text clears substitution output; null parameters keep their marker.
   > Keys retain map-order cascading but do not rescan their own inserted text.
   > Table reloads clear prior rows and publish only complete input; all counts
-  > are bounded by remaining bytes. Saves validate every row's encoded strings
+  > are bounded by remaining bytes. A table also ends where fewer bytes remain
+  > than a row header: the shipped `NPCScript.inf` declares more scripts than it
+  > holds and ends in a 4-byte remnant, and treating that tail as truncation
+  > discarded every NPC's dialogue (fixed 2026-10-12). Saves validate every row's encoded strings
   > before writing to the supplied stream. Binary layout and duplicate-key
   > precedence are preserved; owning rows and tables cannot be shallow copied.
   > R1 is 421 Windows / 419 Ninja.

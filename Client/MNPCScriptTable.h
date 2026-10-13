@@ -70,7 +70,8 @@ class MNPCScriptTable : public CTypeMap2<NPC_SCRIPT> {
 		MNPCScriptTable& operator=(const MNPCScriptTable&) = delete;
 
 		// Saves validate all text before writing to the supplied stream.
-		// Reloads clear old scripts and publish only complete tables.
+		// Reloads clear old scripts and publish only complete tables. A table
+		// ends at its count or at a tail too short for a row (the shipped file's).
 		void		SaveToFile(std::ofstream& file);
 		void		LoadFromFile(std::ifstream& file);
 

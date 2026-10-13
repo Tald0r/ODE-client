@@ -411,11 +411,11 @@ TEST(NPCDialogue, NegativeCountsFailAndClearPreviousScripts)
 	CHECK(world.table.empty());
 }
 
-TEST(NPCDialogue, TruncatedTablesDoNotPublishPartialScripts)
+TEST(NPCDialogue, TruncatedRowsDoNotPublishPartialScripts)
 {
-	const auto complete = Bytes().U32(2)
-		.U32(7).Row("owner", {"first", "second"}, {"reply"})
-		.U32(9).Row("other", {"title"}, {"yes", "no"});
+	const auto first = Bytes().U32(2).U32(7).Row("owner", {"first", "second"}, {"reply"});
+	auto complete = first;
+	complete.U32(9).Row("other", {"title"}, {"yes", "no"});
 	// The old reader has a defined first key and bounded count in every
 	// red case; unsafe partial/huge count prefixes are guarded separately.
 	for (std::size_t length = 8; length < complete.data.size(); ++length)
@@ -424,9 +424,31 @@ TEST(NPCDialogue, TruncatedTablesDoNotPublishPartialScripts)
 		world.Add(1, "NPC", {"old"}, {"old reply"});
 		auto truncated = complete;
 		truncated.data.resize(length);
-		CHECK(!Load(world.table, truncated));
-		CHECK(world.table.empty());
+		// Less than a row header after whole rows is the shipped file's remnant.
+		const bool remnant = length >= first.data.size() && length - first.data.size() < 16;
+		CHECK_EQ(remnant, Load(world.table, truncated));
+		CHECK_EQ(remnant ? 1u : 0u, world.table.size());
 	}
+}
+
+TEST(NPCDialogue, ShippedTablesEndAtTheirRemnantBeforeTheDeclaredCount)
+{
+	// NPCScript.inf declares more scripts than it holds and ends in four bytes
+	// that are not a row (tools/i18n/npcscript_dump.pl); every NPC lost its
+	// dialogue when that tail discarded the whole table.
+	const auto bytes = Bytes().U32(3)
+		.U32(7).Row("owner", {"hello"}, {"yes", "no"})
+		.U32(9).Row("other", {"title"}, {})
+		.U32(0);
+	DialogueWorld world;
+	world.Add(1, "NPC", {"old"}, {"old reply"});
+	CHECK(Load(world.table, bytes));
+	CHECK_EQ(2, world.table.size());
+	CHECK(world.table.GetData(1) == nullptr);
+	CHECK(Is(world.table.GetSubject(7, 0), "hello"));
+	CHECK_EQ(2, world.table.GetContentSize(7));
+	CHECK(Is(world.table.GetContent(7, 1), "no"));
+	CHECK(Is(world.table.GetSubject(9, 0), "title"));
 }
 
 TEST(NPCDialogue, InvalidNestedCountsLeaveTheTableEmpty)
