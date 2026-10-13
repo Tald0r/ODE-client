@@ -9,7 +9,6 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCVersionCheckOK.h"
-#include "ClientDef.h"
 
 
 //----------------------------------------------------------------------
