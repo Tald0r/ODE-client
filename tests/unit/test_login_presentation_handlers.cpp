@@ -38,6 +38,15 @@ bool selectingCharacter = false;
 std::string Text(const char* text) { return text ? text : "(null)"; }
 std::string Message(int id) { return "popup|" + std::string((*g_pGameStringTable)[id].GetString()); }
 
+// The character screen reads the slot's user information when a character
+// is presented, so the slot must already hold its name, race and face.
+std::string Presented(const char* kind, int slot, const std::string& name, Race race, int face)
+{
+	const UserInformation& user = *g_pUserInformation;
+	const bool filled = Text(user.Character[slot].GetString()) == name && user.Race[slot] == race && user.FaceStyleSlot[slot] == face;
+	return std::string(kind) + "|" + std::to_string(slot) + "|" + name + (filled ? "" : "|unfilled");
+}
+
 const DialogPresentation::Host dialog{
 	.PopupFreeMessageDlg = [](const char* message) { calls.push_back("popup|" + Text(message)); },
 };
@@ -48,9 +57,11 @@ const LoginPresentation::Host host{
 	.AlreadyExistIDMessage = []() { calls.push_back("idtaken"); },
 	.NoAlreadyExistIDMessage = []() { calls.push_back("idfree"); },
 	.StartCharacterManager = []() { calls.push_back("charmanager"); },
-	.SetSlayerCharacter = [](int slot, PCSlayerInfo* p) { calls.push_back("slayer|" + std::to_string(slot) + "|" + p->getName()); },
-	.SetVampireCharacter = [](int slot, PCVampireInfo* p) { calls.push_back("vampire|" + std::to_string(slot) + "|" + p->getName()); },
-	.SetOustersCharacter = [](int slot, PCOustersInfo* p) { calls.push_back("ousters|" + std::to_string(slot) + "|" + p->getName()); },
+	.SetSlayerCharacter = [](int slot, PCSlayerInfo* p) {
+		calls.push_back(Presented("slayer", slot, p->getName(), RACE_SLAYER, static_cast<int>(p->getHairStyle())));
+	},
+	.SetVampireCharacter = [](int slot, PCVampireInfo* p) { calls.push_back(Presented("vampire", slot, p->getName(), RACE_VAMPIRE, 0)); },
+	.SetOustersCharacter = [](int slot, PCOustersInfo* p) { calls.push_back(Presented("ousters", slot, p->getName(), RACE_OUSTERS, 0)); },
 	.RunAskGoBilingPage = [](int n) { calls.push_back("billing|" + std::to_string(n)); },
 	.PopupExitMessageDlg = [](const char* message) { calls.push_back("exitpopup|" + Text(message)); },
 	.Sleep = [](std::uint32_t milliseconds) { calls.push_back("sleep|" + std::to_string(milliseconds)); },
@@ -121,7 +132,8 @@ void Decode(PacketType& packet, const PacketType& original)
 
 void ReceiveIDQuery(bool taken)
 {
-	// The reply has no setters: a five-letter ID, then whether it is taken.
+	// Built from bytes to pin the layout: the ID's length, the ID, then
+	// whether it is taken.
 	LCQueryResultPlayerID packet;
 	Preloaded(packet, {5, 'K', 'a', 'r', 'i', 'n', static_cast<unsigned char>(taken ? 1 : 0)});
 	CHECK_EQ(taken, packet.isExist());

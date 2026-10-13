@@ -2809,7 +2809,7 @@ rounds settled* for the host rules). Test fixtures share
   > **Status:** done (2026-10-13). Each `UI_X` call becomes the entry of the
   > same name, and `UI_SetCharacter`'s three overloads become
   > `SetSlayerCharacter`, `SetVampireCharacter` and `SetOustersCharacter`.
-  > Login modes follow 4.19's `LoginLists` precedent, one entry per
+  > Login modes follow 4.84's `LoginLists` precedent, one entry per
   > decision: `EnterSelectPCMode` is `SetMode(MODE_WAIT_SELECTPC)`,
   > `QueueWaitPCListMode` and `QueueLoginWrongMode` set `g_ModeNext`, and
   > `IsSelectPCMode` asks whether `g_Mode` is `MODE_WAIT_SELECTPC` (false
@@ -2976,6 +2976,25 @@ Follow-ups from 4.98, all older than the move:
   unguarded.
 - `GCShopBuyFailHandler` ignores its code and amount: every "not enough
   star" code shows "not in stock".
+
+Follow-ups from 4.99, all older than the move:
+- `LCCreatePCOKHandler` and `LCDeletePCOKHandler` use the
+  `dynamic_cast<ClientPlayer*>` of their player unchecked.
+- `LCPCListHandler` leaves an empty slot's name, race and face style in
+  `g_pUserInformation`, so a deleted character's name stays in its slot;
+  the delete and select paths in `UIMessageManager.cpp` read the slot by
+  index and are safe only while the UI never offers an emptied slot. The
+  test pins this as today's behaviour, not as intended. `UserInformation`'s
+  slot arrays are a literal `[3]` while the loop runs to `SLOT_MAX`
+  (equal today; nothing ties them).
+- Each refusal in `LCSelectPCErrorHandler` stalls the frame loop for a
+  second, which on the web build blocks the browser's main thread; the
+  `Sleep` entry's adapter is where a fix would go.
+  `SELECT_PC_CANNOT_PLAY_BY_ATTR` shows the non-PK login message rather
+  than its own string.
+- `LCQueryResultCharacterNameHandler` uses `g_pUserInformation` unguarded,
+  and once `WhisperID` is released an empty name during selection compares
+  equal to it and is answered.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This
