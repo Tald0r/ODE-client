@@ -886,8 +886,12 @@ Client/PacketHandler/LCRegisterPlayerErrorHandler.cpp
 # and player hosts.
 Client/PacketHandler/GCWhisperHandler.cpp
 
-# A kick warning queued as a timed logout, through the world-event host.
+# A kick warning queued as a timed logout, through the world-event and player
+# hosts.
 Client/PacketHandler/GCKickMessageHandler.cpp
 
 # A made item, over the dialog and player hosts.
 Client/PacketHandler/GCMakeItemOKHandler.cpp
+
+# The pet stash, built into the storage and shown through the dialog host.
+Client/PacketHandler/GCPetStashListHandler.cpp

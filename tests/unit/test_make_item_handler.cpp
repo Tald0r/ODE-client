@@ -114,7 +114,7 @@ void Receive(BYTE itemClass, CoordInven_t x, CoordInven_t y)
 	original.setItemType(2);
 	original.setOptionType({7});
 	original.setDurability(60);
-	original.setItemNum(1);
+	original.setItemNum(3);
 	original.setX(x);
 	original.setY(y);
 	original.addShortData(MODIFY_CURRENT_HP, 55);
@@ -141,7 +141,7 @@ TEST(MakeItemHandler, AMadeItemRecountsTheStacksGoesWhereThePacketSaysAndChanges
 		CHECK_EQ(2, static_cast<long long>(made->GetItemType()));
 		CHECK(made->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({7}));
 		CHECK_EQ(60, static_cast<long long>(made->GetCurrentDurability()));
-		CHECK_EQ(1, static_cast<long long>(made->GetNumber()));
+		CHECK_EQ(3, static_cast<long long>(made->GetNumber()));
 	}
 	CHECK_EQ(55, static_cast<int>(status.GetHP()));
 	CHECK_EQ(2, alive);
@@ -150,9 +150,11 @@ TEST(MakeItemHandler, AMadeItemRecountsTheStacksGoesWhereThePacketSaysAndChanges
 TEST(MakeItemHandler, WithoutTheSkillWaitingNothingIsLetGoButThePacketIsApplied)
 {
 	World world;
-	world.temp.SetMode(TempInformation::MODE_NULL);
+	// Another request's mode stays.
+	world.temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
 	Receive(ITEM_CLASS_SWORD, 2, 1);
 	CHECK(calls.empty());
+	CHECK_EQ(static_cast<int>(TempInformation::MODE_PARTY_REQUEST), static_cast<int>(world.temp.GetMode()));
 	CHECK(world.inventory.GetItem(2, 1) != nullptr);
 	CHECK_EQ(4, static_cast<int>(world.stack->GetNumber()));
 	CHECK_EQ(55, static_cast<int>(status.GetHP()));

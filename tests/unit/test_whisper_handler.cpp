@@ -268,11 +268,15 @@ TEST(WhisperHandler, AnyINTTheServerSetsReadsAsTheCap)
 	// 300 reads at the 75% cap, the largest included.
 	status.SetStatus(MODIFY_CURRENT_INT, 0xFFFFFFFFu);
 	Receive("Vanda", line, RACE_VAMPIRE);
-	CHECK_EQ(1u, calls.size());
+	// A vampire divides INT by 300 where a slayer divides by 150, so its
+	// player reaches the cap only at 150 INT: a lower clamp would show.
+	playerRace = RACE_VAMPIRE;
+	Receive("Vanda", line, RACE_SLAYER);
+	CHECK_EQ(2u, calls.size());
 #ifndef _DEBUG
-	if (calls.size() == 1)
+	for (const std::string& call : calls)
 	{
-		const int sharp = Masked(Shown(calls[0]), line);
+		const int sharp = Masked(Shown(call), line);
 		CHECK(sharp > 15 && sharp < 50);
 	}
 #endif

@@ -297,7 +297,8 @@ check () {
 # 220: the whisper reply joins gamemodel (4.113).
 # 219: the kick-warning reply joins gamemodel (4.114).
 # 218: the made-item reply joins gamemodel (4.115).
-R1_BASELINE=218
+# 217: the pet-stash reply joins gamemodel (4.116).
+R1_BASELINE=217
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -428,7 +429,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 218: the whisper reply joins gamemodel (4.113).
 	# 217: the kick-warning reply joins gamemodel (4.114).
 	# 216: the made-item reply joins gamemodel (4.115).
-	R1_NINJA_BASELINE=216
+	# 215: the pet-stash reply joins gamemodel (4.116).
+	R1_NINJA_BASELINE=215
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

@@ -3502,6 +3502,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.UnlockItemTrade = UI_UnlockItemTrade,
 	.RemoveItemFromItemShop = [](std::uint32_t id) { UI_RemoveItemFromItemShop(id); },
 	.IsRunningSwapAdvancementItem = UI_IsRunningSwapAdvancementItem,
+	.RunPetStorage = UI_RunPetStorage,
+	.SetPetStorage = UI_SetPetStorage,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
