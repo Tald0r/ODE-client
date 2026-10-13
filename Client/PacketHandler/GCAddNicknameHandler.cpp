@@ -9,7 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddNickname.h"
-#include "VS_UI.h"
+#include "VsUiPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCAddNicknameHandler::execute ( GCAddNickname * pGCAddNickname , Player * pPlayer )
@@ -19,7 +19,7 @@ void GCAddNicknameHandler::execute ( GCAddNickname * pGCAddNickname , Player * p
 	(void)pPlayer;
 		
 
-		gC_vs_ui.AddNickNameList((void*)&pGCAddNickname->getNicknameInfo());
+		VsUiPresentation::AddNickNameList(&pGCAddNickname->getNicknameInfo());
 	//cout << pGCAddNickname->toString() << endl;
 	
 /*#elif __WINDOWS__*/

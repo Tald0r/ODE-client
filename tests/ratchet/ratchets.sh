@@ -288,7 +288,8 @@ check () {
 # 244: guild-list, guild-membership and character-error replies join gamemodel (4.104).
 # 238: the client mode and message logs join gamemodel, and six replies that read them (4.105).
 # 232: six skill and damage results on zone creatures and the player join gamemodel (4.106).
-R1_BASELINE=232
+# 228: personal-store and nickname replies join gamemodel (4.107).
+R1_BASELINE=228
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -410,7 +411,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 242: guild-list, guild-membership and character-error replies join gamemodel (4.104).
 	# 236: the client mode and message logs join gamemodel, and six replies that read them (4.105).
 	# 230: six skill and damage results on zone creatures and the player join gamemodel (4.106).
-	R1_NINJA_BASELINE=230
+	# 226: personal-store and nickname replies join gamemodel (4.107).
+	R1_NINJA_BASELINE=226
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

@@ -848,3 +848,11 @@ Client/PacketHandler/GCKnocksTargetBackOK4Handler.cpp
 Client/PacketHandler/GCShopBoughtHandler.cpp
 Client/PacketHandler/GCSkillToInventoryOK2Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK4Handler.cpp
+
+# Personal-store and nickname replies over the UI object's services.
+Client/VsUiPresentationHost.cpp
+Client/VsUiPresentationHost.h
+Client/PacketHandler/GCAddNicknameHandler.cpp
+Client/PacketHandler/GCAddStoreItemHandler.cpp
+Client/PacketHandler/GCNicknameListHandler.cpp
+Client/PacketHandler/GCRemoveStoreItemHandler.cpp

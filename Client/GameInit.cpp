@@ -125,6 +125,7 @@
 #include "ZoneStateHost.h"
 #include "MNPC.h"
 #include "WorldEventsHost.h"
+#include "VsUiPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2706,6 +2707,7 @@ void ReleaseAllObjects()
 	ZoneState::SetHost(nullptr);
 	CreatureState::SetHost(nullptr);
 	WorldEvents::SetHost(nullptr);
+	VsUiPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3596,6 +3598,12 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.RequestDisconnect = RequestDisconnect,
 };
 
+static const VsUiPresentation::Host s_VsUiPresentationHost = {
+	.InventoryMode = []() { return gC_vs_ui.inventory_mode; },
+	.AddNickNameList = [](NicknameInfo* pInfo) { gC_vs_ui.AddNickNameList(static_cast<void*>(pInfo)); },
+	.SetNickNameList = [](std::vector<NicknameInfo*>* pList) { gC_vs_ui.SetNickNameList(static_cast<void*>(pList)); },
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4187,6 +4195,7 @@ InitGameObject()
 	ZoneState::SetHost(&s_ZoneStateHost);
 	CreatureState::SetHost(&s_CreatureStateHost);
 	WorldEvents::SetHost(&s_WorldEventsHost);
+	VsUiPresentation::SetHost(&s_VsUiPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
