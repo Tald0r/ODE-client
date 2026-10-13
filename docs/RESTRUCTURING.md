@@ -2696,7 +2696,7 @@ rounds settled* for the host rules). Test fixtures share
   `GCAddressListVerifyHandler` and `GCWhisperFailedHandler` into `gamemodel`
   behind the presentation-only `CommunicationPresentation::Host` installed
   and reset by `GameInit.cpp`.
-  > **Status:** done (2026-10-13). As in 4.92, each `UI_*` call becomes the
+  > **Status:** done (2026-10-13; PR #391). As in 4.92, each `UI_*` call becomes the
   > host entry of the same name; `GCSMSAddressListHandler` also drops an unused
   > `PacketFunction.h` include. The friend reply keeps its command switch
   > (`GC_ADD_FRIEND_ERROR`, `GC_NO_ONLINE` and request commands present
@@ -2704,8 +2704,9 @@ rounds settled* for the host rules). Test fixtures share
   > unconditional reset of `TempInformation`'s mode. R1 is 316 Windows / 314
   > Ninja.
   - Owner: membership, R1, designated host installation/reset and
-    `test_communication_presentation_handlers.cpp` (decoded packets for every
-    command and code; missing hosts, empty entries and host replacement).
+    `test_communication_presentation_handlers.cpp` (every friend command and
+    address-book code, on decoded packets, with the request reset after each;
+    missing hosts, empty entries and host replacement).
 
 ### Remaining R1 work after tasks 4.80-4.93
 
@@ -2792,10 +2793,24 @@ packet with `popFrontGuildMemberInfoList` and never deletes it, so each
 member of each `GCGuildMemberList` leaks; the packet's destructor frees only
 what is still listed.
 
-Follow-ups from 4.93, both in the wire layer and older than the move:
-`GCSMSAddressList`'s destructor never frees the `AddressUnit`s its `read`
-allocates, so every decoded address leaks, and `GCFriendChatting::read`
-prints debug lines to standard output on every packet.
+Follow-ups from 4.93, all older than the move:
+- `GCSMSAddressList::read` allocates its `AddressUnit`s and its destructor
+  frees none, because the executable's SMS list adopts them:
+  `C_VS_UI_SMS_LIST::SetSMSList` keeps the raw pointers (read through its own
+  same-layout `AddressUnit`) and frees one only in `DeleteList`. Closing the
+  list and replacing it drop the rest without deleting, so they leak in the
+  UI. Freeing them in the packet's destructor would leave the list dangling;
+  settle ownership first. `DeleteList` also deletes the last unit it visited
+  when the id is not found, which stays listed.
+- `GCWhisperFailedHandler` sends its message to chat line 5, commented
+  "info"; since `CLD_UNION` was inserted (2004) line 5 is the union line and
+  info is 6, so whisper failures show among union chat.
+- `GCAddressListVerifyHandler` resets `TempInformation`'s mode after every
+  code, but sending an SMS sets no mode, so a send reply clears whatever
+  request the player started in between; it also uses `g_pTempInformation`
+  unguarded.
+- `GCFriendChatting::read` prints debug lines to standard output on every
+  packet.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

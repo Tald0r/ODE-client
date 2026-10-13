@@ -159,7 +159,7 @@ void RunEveryHandler(World& world)
 
 } // namespace
 
-TEST(CommunicationPresentationHandlers, AFailedWhisperIsReportedInWhiteOnTheWhisperChannel)
+TEST(CommunicationPresentationHandlers, AFailedWhisperIsReportedInWhiteOnChatLineFive)
 {
 	World world;
 	GCWhisperFailed packet;
@@ -187,7 +187,7 @@ TEST(CommunicationPresentationHandlers, AnAddressListIsPresentedOnlyWhenItHasEnt
 	GCSMSAddressListHandler::execute(&packet, nullptr);
 	CHECK_EQ(1u, calls.size());
 	CHECK(!calls.empty() && calls[0] == "smslist|2|7,slayer,Friend,0101234567|8,vampire,Rival,0107654321");
-	// The packet's destructor does not free the units its reader allocated.
+	// The executable's SMS list adopts these units; the recording host does not.
 	for (AddressUnit* unit : packet.getAddresses()) delete unit;
 	packet.getAddresses().clear();
 }
@@ -219,8 +219,12 @@ TEST(CommunicationPresentationHandlers, FailuresShowTheServerErrorOrTheirOwnMess
 	for (int i = 0; i < 3; ++i)
 	{
 		calls.clear();
+		AskToAdd(world);
 		ReceiveVerify(codes[i], 0);
+		CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+		AskToDelete(world, 3);
 		ReceiveVerify(codes[i], GCAddressListVerify::SMS_SEND_FAIL_NOT_ENOUGH_CHARGE);
+		CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 		CHECK_EQ(2u, calls.size());
 		CHECK(calls.size() == 2 && calls[0] == "popup|" + std::to_string(messages[i]));
 		CHECK(calls.size() == 2 && calls[1] == "smserror|" + std::to_string(GCAddressListVerify::SMS_SEND_FAIL_NOT_ENOUGH_CHARGE));
@@ -230,8 +234,12 @@ TEST(CommunicationPresentationHandlers, FailuresShowTheServerErrorOrTheirOwnMess
 TEST(CommunicationPresentationHandlers, SendAndChargeRepliesUpdateTheChargeAndUnknownCodesOnlyClearTheRequest)
 {
 	World world;
+	AskToAdd(world);
 	ReceiveVerify(GCAddressListVerify::SMS_SEND_OK, 12);
+	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+	AskToDelete(world, 3);
 	ReceiveVerify(GCAddressListVerify::SMS_CHARGE_OK, 30);
+	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	AskToAdd(world);
 	ReceiveVerify(GCAddressListVerify::ADDRESS_LIST_VERIFY_MAX, 1);
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);

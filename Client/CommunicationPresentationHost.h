@@ -7,8 +7,9 @@ class GCFriendChatting;
 namespace CommunicationPresentation {
 
 // Friend, SMS address-book and whisper replies only present what they
-// receive. A missing service skips that presentation; a packet or list is
-// borrowed for the duration of the call.
+// receive. A missing service skips that presentation. A packet is borrowed
+// for the call, but SetSMSList's list holds the packet's AddressUnits, which
+// the executable's SMS list keeps after the call.
 struct Host
 {
 	void (*AddChatToHistory)(const char* message, const char* sender, int chatType, std::uint32_t color) = nullptr;
