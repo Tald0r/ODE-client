@@ -20,8 +20,9 @@ namespace VsUiPresentation {
 // entry that has no quest window behind it leaks them, as the game did.
 // ModifyQuestManagerInfo hands a quest's new status to the quest window,
 // which keeps it when it answers true (except for a quest with no XML
-// element, which leaks it); false (or no entry) leaves it with the caller. ChangeCustomNaming shows a custom nickname in the naming
-// window, and CloseNamingChange closes it.
+// element, which leaks it); false (or no entry) leaves it with the caller.
+// ChangeCustomNaming shows a custom nickname in the naming window, and
+// CloseNamingChange closes it.
 struct Host
 {
 	int (*InventoryMode)() = nullptr;

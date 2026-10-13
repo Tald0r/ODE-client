@@ -940,3 +940,6 @@ Client/PacketHandler/RCPositionInfoHandler.cpp
 # nProtect auth key and the test sub-inventory.
 Client/PacketHandler/GCAuthKeyHandler.cpp
 Client/PacketHandler/GCSubInventoryInfoHandler.cpp
+
+# A whisper from another client, over the player and communication hosts.
+Client/PacketHandler/CRWhisperHandler.cpp

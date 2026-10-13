@@ -9,20 +9,24 @@
 // include files
 #include "Client_PCH.h"
 #include "Rpackets/CRWhisper.h"
-#include "ClientDef.h"
-#include "UserInformation.h"
+#include "CMessageArray.h"
+#include "DebugLog.h"
+#include "ClientMode.h"
+#include "CommunicationPresentationHost.h"
+#include "GameMessages.h"
 #include "MChatManager.h"
+#include "MGameStringTable.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
 #include "RequestServerPlayer.h"
 #include "RequestUserManager.h"
 #include "Rpackets/RCRequestVerify.h"
-#include "UIFunction.h"
-#include "MGameStringTable.h"
+#include "UserInformation.h"
 
-extern CMessageArray*		g_pNoticeMessage;
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Runs when another client whispers to this one over a peer connection.
 //
 //////////////////////////////////////////////////////////////////////
 void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
@@ -34,24 +38,24 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 	RequestServerPlayer* pRequestServerPlayer = dynamic_cast<RequestServerPlayer*>( pPlayer );
 		
 	//-------------------------------------------------------------------
-	// 나한테 오는게 맞는지 확인한다.
+	// Is it really for this character?
 	//-------------------------------------------------------------------
-	if ((g_Mode!=MODE_GAME						// 게임 중이 아니거나
-		&& g_Mode!=MODE_WAIT_UPDATEINFO			// 로딩 중이 아니거나..
-		&& g_Mode!=MODE_WAIT_SETPOSITION)		// 좌표 기다리는 경우
-		|| g_pPlayer==NULL
+	if ((g_Mode!=MODE_GAME						// not in the game,
+		&& g_Mode!=MODE_WAIT_UPDATEINFO			// not loading,
+		&& g_Mode!=MODE_WAIT_SETPOSITION)		// not waiting for the position
+		|| PlayerState::Creature()==NULL
 		|| g_pChatManager==NULL
 		|| g_pUserInformation==NULL 
 		|| g_pUserInformation->CharacterID.GetString()==NULL
 		|| pPacket->getTargetName() != g_pUserInformation->CharacterID.GetString()
 		|| pPacket->getWorldID() != g_pUserInformation->WorldID)
 	{		
-		// 아니면 ...
+		// If not, say the whisper failed
 		RCRequestVerify _RCRequestVerify;
 		_RCRequestVerify.setCode( REQUEST_VERIFY_WHISPER_FAILED );
 		pRequestServerPlayer->sendPacket( &_RCRequestVerify );
 
-		// 보내고
+		// and send that.
 		try {
 			pRequestServerPlayer->processOutput();
 		} catch (Throwable& t)	{
@@ -61,9 +65,8 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 	else
 	{
 		//-------------------------------------------------------------------
-		// 귓말 보낸 애의 IP를 기억해두자.
+		// Remember the sender's address.
 		//-------------------------------------------------------------------
-		// 사용자 정보 다시 설정
 
 		if (!g_pRequestUserManager->HasRequestUser(pPacket->getName().c_str()))
 		{
@@ -74,7 +77,7 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 			g_pRequestUserManager->AddRequestUser( pPacket->getName().c_str(), strIP.c_str() );
 		}
 
-		// IP, Port 다시 설정.
+		// Refresh the IP and port.
 		//RequestUserInfo* pUserInfo = g_pRequestUserManager->GetUserInfo( pPacket->getName().c_str() );
 
 		//if (pUserInfo!=NULL)
@@ -103,7 +106,7 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 			|| g_pChatManager->IsAcceptID( strName ))
 		{
 			//--------------------------------------------------
-			// message가 여러개일 수 있당..
+			// There can be several messages.
 			//--------------------------------------------------
 			for (int i=0; i<numMessage; i++)
 			{
@@ -117,58 +120,49 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 				snprintf(str, sizeof(str), "%s", pString->msg.c_str());
 
 				//--------------------------------------------------
-				// 욕 제거
-				// 운영자가 한 말도 아니고 나도 운영자가 아니면 filter한다.
-				// --> 운영자의 말은 다 보이고 운영자는 다 본다.
+				// Curses are filtered unless an operator said it or the
+				// player is one: operators' words show whole, and operators
+				// see everything. A ghost sees everything too.
 				//--------------------------------------------------
 				if (!bMasterWords && !g_pUserInformation->IsMaster 
-					&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-#ifdef __METROTECH_TEST__
-				&& !g_bLight
-#endif
-					)
+					&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST ))
 				{
 					g_pChatManager->RemoveCurse( str, true );
 
 					#ifndef _DEBUG
 						//--------------------------------------------------
-						// 종족이 다른 경우
+						// Another race's words are partly masked; the more
+						// INT the player has, the more can be read.
 						//--------------------------------------------------
 						Race race = (Race)pPacket->getRace();
-						if (g_pPlayer->GetRace() != race)
+						if (PlayerState::GetRace() != race)
 						{
-							// INT는 150까지이므로..  
-							int percent = min(75, 25+g_pPlayer->GetINT()*100/(min(2, g_pPlayer->GetRace()+1)*150));
+							// INT goes up to 150, and any INT from 300 reads at the
+							// cap, so a larger one is clamped there before the int
+							// arithmetic, as GCWhisperHandler does.
+							MStatus* pStatus = PlayerState::Status();
+							const int playerINT = pStatus != NULL ? static_cast<int>(min(pStatus->GetINT(), static_cast<DWORD>(300))) : 0;
+							int percent = min(75, 25+playerINT*100/(min(2, PlayerState::GetRace()+1)*150));
 							g_pChatManager->AddMask(str, percent);
 						}
-//						else if (g_pPlayer->IsVampire() && !bVampireSay)
-//						{
-//							// INT는 300까지이므로..  
-//							int percent = min(75, 25+g_pPlayer->GetINT()*100/300);
-//							g_pChatManager->AddMask(str, percent);
-//						}
 					#endif
 				}
 
 				//sprintf(str, "<%s> %s", pPacket->getName().c_str(), pPacket->getMessage().c_str());
 				// whisper = 2
-				UI_AddChatToHistory( str, strName, 2, pString->color );
+				CommunicationPresentation::AddChatToHistory( str, strName, 2, pString->color );
 				
 				if ( bMasterWords )
 				{
-					// 운영자일경우 시스템 메시지로도 찍어준다.
+					// An operator's words also go to the notice log.
 					g_pNoticeMessage->AddSafeFormat("%s>%s",strName,str);
 				}
 
-				// 귓속말 대상 설정 ID+' '
+				// The sender becomes the whisper target: ID+' '
 				char strWhisperID[128];
 				snprintf(strWhisperID, sizeof(strWhisperID), "%s ", pPacket->getName().c_str());
 				g_pUserInformation->WhisperID = strWhisperID;
 
-				// [도움말] 귓속말 받을 때
-//				__BEGIN_HELP_EVENT
-//					ExecuteHelpEvent( HE_CHAT_WHISPERED );	
-//				__END_HELP_EVENT
 
 
 				delete pString;
@@ -177,7 +171,7 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 	}
 
 	//-------------------------------------------------------------------
-	// 끊는다.
+	// Close the peer connection.
 	//-------------------------------------------------------------------
 	throw DisconnectException("Disconnect after Whisper");
 	/*
