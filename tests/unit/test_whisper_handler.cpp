@@ -269,7 +269,8 @@ TEST(WhisperHandler, AnyINTTheServerSetsReadsAsTheCap)
 	status.SetStatus(MODIFY_CURRENT_INT, 0xFFFFFFFFu);
 	Receive("Vanda", line, RACE_VAMPIRE);
 	// A vampire divides INT by 300 where a slayer divides by 150, so its
-	// player reaches the cap only at 150 INT: a lower clamp would show.
+	// player reaches the cap only at 150 INT: a clamp below about 100
+	// would show (one between that and 150 reads too close to tell).
 	playerRace = RACE_VAMPIRE;
 	Receive("Vanda", line, RACE_SLAYER);
 	CHECK_EQ(2u, calls.size());

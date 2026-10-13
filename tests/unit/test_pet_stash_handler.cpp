@@ -135,8 +135,10 @@ GCPetStashList Decoded(std::vector<Stashed>& pets)
 		pet->info.write(stream);
 		std::vector<unsigned char> info = SocketOutputStreamTestAccess::Bytes(stream);
 		const std::vector<unsigned char> id = Wire(pet->itemID);
+		// A PET_NONE writes only its type, and no ID.
 		CHECK(info.size() >= id.size());
-		std::copy(id.begin(), id.end(), info.end() - id.size());
+		if (info.size() >= id.size())
+			std::copy(id.begin(), id.end(), info.end() - id.size());
 		bytes.insert(bytes.end(), info.begin(), info.end());
 		const std::vector<unsigned char> days = Wire(pet->keepDays);
 		bytes.insert(bytes.end(), days.begin(), days.end());
@@ -161,7 +163,8 @@ void Free(GCPetStashList& packet)
 	}
 }
 
-PetInfo Info(PetType_t type, PetLevel_t level, PetExp_t exp, OptionType_t option, bool clever)
+// Each ability on its own, so a swapped one shows.
+PetInfo Info(PetType_t type, PetLevel_t level, PetExp_t exp, OptionType_t option, bool gamble, bool cutHead, bool attack)
 {
 	PetInfo info;
 	info.setPetType(type);
@@ -173,9 +176,9 @@ PetInfo Info(PetType_t type, PetLevel_t level, PetExp_t exp, OptionType_t option
 	info.setPetAttrLevel(6);
 	info.setPetOption(option);
 	info.setFoodType(9);
-	info.setGamble(clever ? 1 : 0);
-	info.setCutHead(clever ? 1 : 0);
-	info.setAttack(clever ? 0 : 1);
+	info.setGamble(gamble ? 1 : 0);
+	info.setCutHead(cutHead ? 1 : 0);
+	info.setAttack(attack ? 1 : 0);
 	return info;
 }
 
@@ -194,7 +197,7 @@ TEST(PetStashHandler, EachStashedPetBecomesAPetItemInItsSlotThenTheWindowOpens)
 	// The old storage, and the pet it holds, go (a new storage can reuse
 	// the old one's address, so the pet is what tells them apart).
 	CHECK(g_pStorage->SetItem(5, new Pet));
-	Receive({{0, Info(1, 2, 50, 11, true), 900, 3}, {3, Info(2, 3, 100, 0, false), 901, 8}});
+	Receive({{0, Info(1, 2, 50, 11, true, false, true), 900, 3}, {3, Info(2, 3, 100, 0, false, true, false), 901, 8}});
 	CHECK(g_pStorage->GetItem(5) == nullptr);
 	CHECK(calls == std::vector<std::string>({"run", "show|stash"}));
 	const MPetItem* first = dynamic_cast<const MPetItem*>(g_pStorage->GetItem(0));
@@ -210,7 +213,7 @@ TEST(PetStashHandler, EachStashedPetBecomesAPetItemInItsSlotThenTheWindowOpens)
 		CHECK_EQ(9, static_cast<long long>(first->GetPetFoodType()));
 		// Level 2 accumulates 300; 50 is earned.
 		CHECK_EQ(250, static_cast<long long>(first->GetPetExpRemain()));
-		CHECK(first->IsCanGamble() && first->IsCanCutHead() && !first->IsCanAttack());
+		CHECK(first->IsCanGamble() && !first->IsCanCutHead() && first->IsCanAttack());
 		CHECK(first->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({11}));
 		CHECK_EQ(3, static_cast<long long>(first->GetPetKeepedDay()));
 	}
@@ -220,7 +223,7 @@ TEST(PetStashHandler, EachStashedPetBecomesAPetItemInItsSlotThenTheWindowOpens)
 	{
 		CHECK_EQ(901, static_cast<long long>(fourth->GetID()));
 		CHECK_EQ(500, static_cast<long long>(fourth->GetPetExpRemain()));
-		CHECK(!fourth->IsCanGamble() && !fourth->IsCanCutHead() && fourth->IsCanAttack());
+		CHECK(!fourth->IsCanGamble() && fourth->IsCanCutHead() && !fourth->IsCanAttack());
 		// No option is no option.
 		CHECK(fourth->GetItemOptionList().empty());
 		CHECK_EQ(8, static_cast<long long>(fourth->GetPetKeepedDay()));
@@ -243,11 +246,11 @@ TEST(PetStashHandler, AFactoryThatMakesNoPetItemSkipsTheSlot)
 {
 	World world;
 	plainItem = true;
-	Receive({{0, Info(1, 2, 50, 0, true), 900, 3}});
+	Receive({{0, Info(1, 2, 50, 0, true, true, true), 900, 3}});
 	CHECK(g_pStorage->GetItem(0) == nullptr);
 	CHECK_EQ(0, alive);
 	MItem::SetHost(nullptr);
-	Receive({{0, Info(1, 2, 50, 0, true), 900, 3}});
+	Receive({{0, Info(1, 2, 50, 0, true, true, true), 900, 3}});
 	CHECK(g_pStorage->GetItem(0) == nullptr);
 }
 
@@ -255,10 +258,10 @@ TEST(PetStashHandler, MissingServicesStillBuildTheStash)
 {
 	World world;
 	DialogPresentation::SetHost(nullptr);
-	Receive({{0, Info(1, 2, 50, 0, true), 900, 3}});
+	Receive({{0, Info(1, 2, 50, 0, true, true, true), 900, 3}});
 	const DialogPresentation::Host empty{};
 	DialogPresentation::SetHost(&empty);
-	Receive({{1, Info(1, 2, 50, 0, true), 902, 3}});
+	Receive({{1, Info(1, 2, 50, 0, true, true, true), 902, 3}});
 	CHECK(calls.empty());
 	CHECK(g_pStorage->GetItem(1) != nullptr);
 }

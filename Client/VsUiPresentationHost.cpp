@@ -38,4 +38,16 @@ void AddMailContents(int tabID, std::uint32_t id, const char* contents)
 	if (s_Host && s_Host->AddMailContents) s_Host->AddMailContents(tabID, id, contents);
 }
 
+void PushGQuestExecuteElement(std::uint32_t questID, std::uint8_t condition, std::uint16_t index)
+{
+	if (s_Host && s_Host->PushGQuestExecuteElement) s_Host->PushGQuestExecuteElement(questID, condition, index);
+}
+
+bool UpdateQuestItemInfo(std::vector<MItem*>& items)
+{
+	if (!s_Host || !s_Host->UpdateQuestItemInfo) return false;
+	s_Host->UpdateQuestItemInfo(items);
+	return true;
+}
+
 }

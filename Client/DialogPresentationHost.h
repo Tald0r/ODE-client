@@ -10,7 +10,8 @@ namespace DialogPresentation {
 // what they receive. A missing service skips that presentation, and a
 // missing swap query answers that no advancement-item swap is running.
 // RunPetStorage opens the pet storage window, SetPetStorage shows a
-// storage in it (borrowed for the call: the window copies what it shows).
+// storage in it. The window keeps the pointer and draws from it every
+// frame, so the storage must outlive it (the handler's is g_pStorage).
 // EmptyMove replays the mouse position once, so the UI under it refreshes.
 struct Host
 {

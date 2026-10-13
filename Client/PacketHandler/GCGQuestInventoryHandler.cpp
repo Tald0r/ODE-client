@@ -9,8 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGQuestInventory.h"
-#include "Client.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
+#include "MItem.h"
+#include "VsUiPresentationHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCGQuestInventoryHandler::execute ( GCGQuestInventory * pGCGQuestInventory , Player * pPlayer )
@@ -22,15 +24,15 @@ void GCGQuestInventoryHandler::execute ( GCGQuestInventory * pGCGQuestInventory 
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Otherwise
 	//------------------------------------------------------
 	else
 	{
@@ -42,17 +44,27 @@ void GCGQuestInventoryHandler::execute ( GCGQuestInventory * pGCGQuestInventory 
 		{
 			ItemType_t TempType = TempItemList[i];
 
-			MItem* pItem;
-			pItem = MItem::NewItem( ITEM_CLASS_GQUEST_ITEM );
+			// The game's factory always makes a quest item; without one (a
+			// test binary) the type is skipped.
+			MItem* pItem = MItem::NewItem( ITEM_CLASS_GQUEST_ITEM );
+			if (pItem == NULL)
+			{
+				DEBUG_ADD_ERR("[Error] GCGQuestInventory: no quest item");
+				continue;
+			}
 			pItem->SetItemType( TempType );
 			pItem->SetCurrentDurability( 1 );	
 			QuestItemList.push_back(pItem);
 		}
-		gC_vs_ui.UpdateQuestItemInfo(QuestItemList); 
-
-	// 아이템 리스트 받아서 아이템을 생성한후 UI에 넘겨주자..
-	// 나중에 퀘스트 아이템 추가 되믄 작업하자
-	//gC_vs_ui.UpdateQuestItemInfo(아이템 리스트)
+		// The quest window keeps the items; with no one to take them they
+		// are freed here.
+		if (!VsUiPresentation::UpdateQuestItemInfo(QuestItemList))
+		{
+			for (MItem* pItem : QuestItemList)
+			{
+				delete pItem;
+			}
+		}
 
 
 

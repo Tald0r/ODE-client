@@ -904,3 +904,7 @@ Client/PacketHandler/GCSystemMessageHandler.cpp
 # hosts.
 Client/PacketHandler/GCSelectRankBonusFailedHandler.cpp
 Client/PacketHandler/GCUnionOfferListHandler.cpp
+
+# A quest's element and its items, over the zone and UI-object hosts.
+Client/PacketHandler/GCExecuteElementHandler.cpp
+Client/PacketHandler/GCGQuestInventoryHandler.cpp
