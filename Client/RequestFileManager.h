@@ -83,7 +83,7 @@ class SendFileInfo
 //---------------------------------------------------------------------------
 // RequestSendInfo
 //---------------------------------------------------------------------------
-// A file another player asked this client for
+// The files one player asked this client for, in the order they go out
 //---------------------------------------------------------------------------
 class RequestSendInfo
 {

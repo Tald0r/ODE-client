@@ -3109,7 +3109,8 @@ rounds settled* for the host rules). Test fixtures share
 - [x] **4.109 The peer file-send queue:** move `RequestFileManager.cpp`
   into `gamemodel`.
   > **Status:** done (2026-10-13). `RequestFileManager` keeps the files
-  > other players asked this client for (a profile picture, a guild mark)
+  > other players asked this client for (a player's profile picture and its
+  > index, which `CRRequestHandler` queues)
   > and sends them over each player's peer connection, which
   > `RequestServerPlayer::processCommand` pumps through the wire host's
   > `SendOtherRequest`. It reached nothing of the executable's: the
@@ -3119,7 +3120,8 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, and `test_request_file_manager.cpp`, over a
     real peer connected over loopback whose far end decodes what arrives
     (each file is announced by an `RCRequestedFile` with its name, type
-    and size, by a call that answers false, then sent in 4K chunks by
+    (the index, then the picture, as `CRRequestHandler` queues them) and
+    size, by a call that answers false, then sent in 4K chunks by
     calls that answer true; a whole-chunk read is not yet the end, the
     empty read after it is; after the last file, `RCRequestVerify`
     (`PROFILE_DONE`) and the request is forgotten; a file that cannot be

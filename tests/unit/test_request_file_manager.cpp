@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------
 // test_request_file_manager.cpp
 //----------------------------------------------------------------------
-// Files another player asked this client for (a profile picture, a guild
-// mark) go out over that player's peer connection, one at a time: an
+// Files another player asked this client for (a profile picture and its
+// index, as CRRequestHandler queues them) go out over that player's peer connection, one at a time: an
 // RCRequestedFile announcing the file and its size, the file's bytes in
 // 4K chunks, and, after the last file, RCRequestVerify(PROFILE_DONE).
 // The peer is real and connected over loopback; what its far end
@@ -15,6 +15,7 @@
 #include "ServerSocket.h"
 #include "Socket.h"
 #include "SocketAPI.h"
+#include "SocketImpl.h"
 #include "SocketInputStream.h"
 #include "Rpackets/RCRequestedFile.h"
 #include "Rpackets/RCRequestVerify.h"
@@ -64,7 +65,10 @@ std::vector<char> Bytes(size_t size, int seed)
 struct World
 {
 	bool sockets = (EnsureSocketsInitialised(), true);
-	std::filesystem::path dir = std::filesystem::temp_directory_path() / "de_request_file_manager";
+	// A directory of this run's own, so runs sharing a temp directory
+	// cannot remove each other's files.
+	std::filesystem::path dir = std::filesystem::temp_directory_path() / ("de_request_file_manager_"
+		+ std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
 	ServerSocket listener{0};
 	std::unique_ptr<Socket> client;
 	RequestServerPlayer* peer = nullptr;
@@ -128,6 +132,7 @@ struct World
 		std::vector<unsigned char> bytes;
 		for (int quiet = 0; quiet < 20; )
 		{
+			peer->processOutput();
 			const uint n = client->available();
 			if (n == 0)
 			{
@@ -159,7 +164,7 @@ void ReadFrame(SocketInputStream& stream, PacketType& packet)
 	CHECK_EQ(static_cast<long long>(size), static_cast<long long>(packet.getPacketSize()));
 }
 
-void ExpectAnnounced(SocketInputStream& stream, const std::string& path, DWORD size)
+void ExpectAnnounced(SocketInputStream& stream, REQUEST_FILE_TYPE type, const std::string& path, DWORD size)
 {
 	RCRequestedFile announced;
 	ReadFrame(stream, announced);
@@ -167,7 +172,7 @@ void ExpectAnnounced(SocketInputStream& stream, const std::string& path, DWORD s
 	std::unique_ptr<RCRequestedFileInfo> info(announced.popInfo());
 	CHECK(info != nullptr);
 	if (info == nullptr) return;
-	CHECK_EQ(static_cast<long long>(REQUEST_FILE_PROFILE), static_cast<long long>(info->getRequestFileType()));
+	CHECK_EQ(static_cast<long long>(type), static_cast<long long>(info->getRequestFileType()));
 	CHECK_EQ(0, static_cast<long long>(info->getVersion()));
 	CHECK(info->getFilename() == path);
 	CHECK_EQ(static_cast<long long>(size), static_cast<long long>(info->getFileSize()));
@@ -205,13 +210,14 @@ TEST(RequestFileManager, RequestedFilesGoOutAnnouncedInChunksThenDone)
 	World world;
 	// A chunk and a byte short of another, then exactly one chunk: a read
 	// of a whole chunk is not yet the end, the empty read after it is.
-	const std::vector<char> picture = Bytes(8191, 1);
-	const std::vector<char> mark = Bytes(4096, 2);
+	const std::vector<char> index = Bytes(8191, 1);
+	const std::vector<char> picture = Bytes(4096, 2);
+	const std::string indexPath = world.File("index.bin", index);
 	const std::string picturePath = world.File("picture.bin", picture);
-	const std::string markPath = world.File("mark.bin", mark);
 	RequestSendInfo* request = new RequestSendInfo("Nyx");
+	// The index, then the picture, as CRRequestHandler queues them.
+	request->AddSendFileInfo(new SendFileInfo(indexPath.c_str(), REQUEST_FILE_PROFILE_INDEX));
 	request->AddSendFileInfo(new SendFileInfo(picturePath.c_str(), REQUEST_FILE_PROFILE));
-	request->AddSendFileInfo(new SendFileInfo(markPath.c_str(), REQUEST_FILE_PROFILE));
 	CHECK(world.manager.AddOtherRequest(request));
 	CHECK(world.manager.HasOtherRequest("Nyx"));
 
@@ -222,10 +228,10 @@ TEST(RequestFileManager, RequestedFilesGoOutAnnouncedInChunksThenDone)
 	CHECK(!world.manager.HasOtherRequest("Nyx"));
 
 	Decoder decoder(world.Received());
-	ExpectAnnounced(decoder.stream, picturePath, 8191);
+	ExpectAnnounced(decoder.stream, REQUEST_FILE_PROFILE_INDEX, indexPath, 8191);
+	ExpectBytes(decoder.stream, index);
+	ExpectAnnounced(decoder.stream, REQUEST_FILE_PROFILE, picturePath, 4096);
 	ExpectBytes(decoder.stream, picture);
-	ExpectAnnounced(decoder.stream, markPath, 4096);
-	ExpectBytes(decoder.stream, mark);
 	ExpectDone(decoder.stream);
 	CHECK(decoder.stream.isEmpty());
 }
@@ -241,7 +247,7 @@ TEST(RequestFileManager, AFileThatCannotBeOpenedIsAnnouncedEmptyAndTheRequestSti
 	CHECK(!world.manager.HasOtherRequest("Nyx"));
 
 	Decoder decoder(world.Received());
-	ExpectAnnounced(decoder.stream, missing, 0);
+	ExpectAnnounced(decoder.stream, REQUEST_FILE_PROFILE, missing, 0);
 	ExpectDone(decoder.stream);
 	CHECK(decoder.stream.isEmpty());
 }
@@ -261,7 +267,7 @@ TEST(RequestFileManager, OneRequestPerPlayerAndARemovedOrUnknownOneSendsNothing)
 	CHECK(!world.manager.AddOtherRequest(second));
 	world.SendAll();
 	Decoder sent(world.Received());
-	ExpectAnnounced(sent.stream, picturePath, 100);
+	ExpectAnnounced(sent.stream, REQUEST_FILE_PROFILE, picturePath, 100);
 
 	// A removed request, or a player who asked for nothing, sends nothing.
 	RequestSendInfo* again = new RequestSendInfo("Nyx");
