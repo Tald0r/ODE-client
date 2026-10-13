@@ -1,6 +1,6 @@
 #include "Client_PCH.h"
 #include "MImageObject.h"
-#include "MTopView.h"
+#include "WorldTileGeometry.h"
 
 bool
 MImageObject::IsWallTransPosition(int sX, int sY) const
@@ -8,12 +8,12 @@ MImageObject::IsWallTransPosition(int sX, int sY) const
 		switch (m_X)
 		{
 			//-------------------------------------------------------------
-			// 오른쪽으로 가면서 아래로 내려가는 벽
+			// A wall that runs down to the right
 			//-------------------------------------------------------------
 			case WALL_RIGHTDOWN :
 			{
-				// imageObject의 sector X좌표
-				int objectSX = MTopView::PixelToMapX( m_PixelX );
+				// The image object's sector X
+				int objectSX = WorldTileGeometry::PixelToTileX( m_PixelX );
 		
 				// x - y
 				int value = objectSX - (int)m_Viewpoint;			
@@ -28,12 +28,12 @@ MImageObject::IsWallTransPosition(int sX, int sY) const
 			break;
 
 			//-------------------------------------------------------------
-			// 오른쪽으로 가면서 위로 올라가는 벽
+			// A wall that runs up to the right
 			//-------------------------------------------------------------
 			case WALL_RIGHTUP :
 			{
-				// imageObject의 sector X좌표
-				int objectSX = MTopView::PixelToMapX( m_PixelX );
+				// The image object's sector X
+				int objectSX = WorldTileGeometry::PixelToTileX( m_PixelX );
 				
 				// x + y
 				int value = objectSX + (int)m_Viewpoint;			

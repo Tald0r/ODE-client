@@ -856,3 +856,9 @@ Client/PacketHandler/GCAddNicknameHandler.cpp
 Client/PacketHandler/GCAddStoreItemHandler.cpp
 Client/PacketHandler/GCNicknameListHandler.cpp
 Client/PacketHandler/GCRemoveStoreItemHandler.cpp
+
+# A wall's see-through test over the tile geometry, and the peer
+# disconnect request over the peer manager.
+Client/MImageObjectScreen.cpp
+Client/RequestFunction.cpp
+Client/RequestFunction.h
