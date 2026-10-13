@@ -156,8 +156,7 @@ char				g_CWD[_MAX_PATH];
 int					g_Dimension = 0;
 DWORD				g_TimerNPMON = 0;
 
-// FPS
-MonotonicClock::TimePoint	g_FrameNow;
+// FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
 DWORD				g_CurrentFrame		= 0;		// frame수
 
 int					g_FrameCount		= 0;

@@ -866,3 +866,10 @@ Client/RequestFunction.h
 # The files other players asked this client for, sent over their peer connections.
 Client/RequestFileManager.cpp
 Client/RequestFileManager.h
+
+# The frame clock the main loop stamps, and the help display that
+# throttles help messages by it.
+Client/FrameClock.cpp
+Client/FrameClock.h
+Client/MHelpDisplayer.cpp
+Client/MHelpDisplayer.h
