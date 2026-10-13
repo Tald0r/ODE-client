@@ -302,7 +302,12 @@ TEST(ActionResultNodes, BloodyZenithMarksItsUserAndBlitzSlidingLandsOnTheUser)
 	Run(MActionResultNodeActionInfo(SKILL_BLITZ_SLIDING_ATTACK, 1002, 1001, 3, 4, 5));
 	CHECK(calls == std::vector<std::string>({"Ogre.delay|" + N(SKILL_BLITZ_SLIDING_ATTACK + kMin) + "|5",
 		"Vanda.result|" + N(SKILL_BLITZ_SLIDING_ATTACK + kMin) + "|1001|3|4"}));
-	// Without its user, Blitz Sliding only delays the target.
+	// Without its user, Bloody Zenith only lands on the target, and Blitz
+	// Sliding only delays it.
+	calls.clear();
+	Run(MActionResultNodeActionInfo(MAGIC_BLOODY_ZENITH, 4242, 1001, 1, 2, 5));
+	CHECK(calls == std::vector<std::string>({"Ogre.delay|" + N(MAGIC_BLOODY_ZENITH + kMin) + "|5",
+		"Ogre.result|" + N(MAGIC_BLOODY_ZENITH + kMin) + "|1001|1|2"}));
 	calls.clear();
 	Run(MActionResultNodeActionInfo(SKILL_BLITZ_SLIDING_ATTACK, 4242, 1001, 3, 4, 5));
 	CHECK(calls == std::vector<std::string>{"Ogre.delay|" + N(SKILL_BLITZ_SLIDING_ATTACK + kMin) + "|5"});
@@ -366,9 +371,10 @@ TEST(ActionResultNodes, AStatusChangeAppliesToThePlayerOnly)
 	Run(MActionResultNodeChangeStatus(7, Changed(30)));
 	CHECK_EQ(30, static_cast<long long>(playerStatus.GetStatus(MODIFY_CURRENT_HP)));
 	CHECK_EQ(50, static_cast<long long>(playerStatus.GetStatus(MODIFY_MAX_HP)));
+	// A change without a status does nothing.
+	Run(MActionResultNodeChangeStatus(7, nullptr));
 	self = nullptr;
 	Run(MActionResultNodeChangeStatus(7, Changed(40)));
-	Run(MActionResultNodeChangeStatus(7, nullptr));
 	CHECK_EQ(30, static_cast<long long>(playerStatus.GetStatus(MODIFY_CURRENT_HP)));
 }
 
@@ -523,6 +529,10 @@ TEST(ActionResultNodes, AnOptionChangeChangesAddsOrUpgradesOptions)
 	Run(MActionResultNodeChangeItemOptionInInventory(501, (((5u << 8) | 6u) << 16) | 1u));
 	CHECK(sword->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({6, 1}));
 	CHECK(calls.empty());
+	// An empty low word is skipped, not added as option 0.
+	Run(MActionResultNodeChangeItemOptionInInventory(501, ((6u << 8) | 7u) << 16));
+	CHECK(sword->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({7, 1}));
+	CHECK(calls.empty());
 	CHECK_EQ(1, alive);
 }
 
@@ -557,8 +567,22 @@ TEST(ActionResultNodes, TheHeldItemDecidesAPetsOrAnItemsChange)
 	world.Hold(ITEM_CLASS_EVENT_STAR, 23);
 	Run(MActionResultNodeChangeItemOptionInInventory(602, 6));
 	CHECK_EQ(6, sword->GetGrade());
+	// The mixing range ends at 18; past it the value is an option change.
+	sword->AddItemOption(2);
+	world.Hold(ITEM_CLASS_MIXING_ITEM, 18);
+	Run(MActionResultNodeChangeItemOptionInInventory(602, 0));
+	CHECK(sword->GetItemOptionList().empty());
+	world.Hold(ITEM_CLASS_MIXING_ITEM, 19);
+	Run(MActionResultNodeChangeItemOptionInInventory(602, 3));
+	CHECK(sword->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({3}));
+	// On a pet, a mixing clear comes before the enchants.
+	world.Hold(ITEM_CLASS_MIXING_ITEM, 9);
+	Run(MActionResultNodeChangeItemOptionInInventory(601, 77));
+	CHECK(pet->GetItemOptionList().empty());
+	CHECK_EQ(95, static_cast<long long>(pet->GetCurrentDurability()));
 	CHECK(calls == std::vector<std::string>({"player.clearheld", kFanfare, "player.clearheld", kFanfare,
 		"player.clearheld", kFanfare, "player.clearheld", kFanfare, "player.clearheld", kFanfare,
+		"player.clearheld", kFanfare, "player.clearheld", kFanfare, "player.clearheld",
 		"player.clearheld", kFanfare}));
 	CHECK_EQ(2, alive);
 }

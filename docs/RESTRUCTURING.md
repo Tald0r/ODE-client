@@ -3713,8 +3713,8 @@ the nickname-verify reply; 131 remain. Task 4.126 reduces it to 201 Linux /
 reduces it to 199 Linux / 201 Windows with the auth-key and sub-inventory
 replies; 126 remain. Task 4.128 reduces it to 198 Linux / 200 Windows
 with the peer whisper; 125 remain. Task 4.129 reduces it to 197 Linux /
-199 Windows with the action-result nodes, which about 27 of the remaining
-skill-reply handlers construct. Task 4.130 reduces it to 193 Linux /
+199 Windows with the action-result nodes, which 34 of the remaining
+skill-reply handlers construct (31 after 4.130). Task 4.130 reduces it to 193 Linux /
 195 Windows with four special-action skill replies; 121 handlers remain.
 
 Continue with reviewable boundaries: the remaining generators need their actual
