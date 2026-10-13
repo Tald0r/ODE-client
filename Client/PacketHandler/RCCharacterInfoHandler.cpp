@@ -15,10 +15,6 @@
 #include "ClientMode.h"
 #include "GameMessages.h"
 
-#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
-	extern CMessageArray*		g_pGameMessage;
-#endif
-
 //----------------------------------------------------------------------
 // 
 // RCCharacterInfoHander::execute()

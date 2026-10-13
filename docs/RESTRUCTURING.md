@@ -3265,6 +3265,23 @@ Follow-ups from 4.104, all older than the move:
   name is stored as NULL for later readers. `PopupErrorMessage` uses
   `g_pUIDialog` and `g_pGameStringTable` unguarded.
 
+Follow-ups from 4.105, all older than the move:
+- **Master-name spoofing.** Both chat replies treat any sender whose name
+  starts with the master's prefix ("GM") as the master: past the ignore
+  list and the curse filter. `RCSay` comes from an unauthenticated UDP
+  peer, so any peer can do it at will.
+- **Party-record spoofing.** `RCCharacterInfo` and `RCStatusHP` rewrite a
+  named party member's address, port, guild or hit points from any
+  datagram that names it; nothing authenticates the sender.
+- Both refuse to run when `g_pGameMessage` is NULL although they use it
+  only under `OUTPUT_DEBUG`, which nothing defines.
+  `GCLearnSkillReadyHandler` uses `g_pSkillManager`, `g_pGameMessage` and
+  `g_pGameStringTable` unguarded.
+- With the mode now `gamemodel`'s, the login host's mode-only entries
+  (`QueueWaitPCListMode`, `QueueLoginWrongMode`, `IsSelectPCMode`,
+  `QueueWaitSelectPCMode`) could give way to the globals; whether they stay
+  as seams is a decision.
+
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This
 slice adds no exemptions or changes to R1's denominator. Decide the entry-point

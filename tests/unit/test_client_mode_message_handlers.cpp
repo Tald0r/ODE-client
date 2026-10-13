@@ -73,6 +73,7 @@ struct World : GameModelWorld
 	RequestUserManager* oldUsers = g_pRequestUserManager;
 	MChatManager filter;
 	MChatManager* oldFilter = g_pChatManager;
+	const MChatHost* oldFilterHost = MChatManager::SetHost(nullptr);
 	const CommunicationPresentation::Host* oldChat = CommunicationPresentation::SetHost(&chat);
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	World()
@@ -101,6 +102,7 @@ struct World : GameModelWorld
 	{
 		PlayerState::SetHost(oldPlayer);
 		CommunicationPresentation::SetHost(oldChat);
+		MChatManager::SetHost(oldFilterHost);
 		g_pChatManager = oldFilter;
 		g_pRequestUserManager = oldUsers;
 		g_pParty = oldParty;
@@ -249,6 +251,7 @@ TEST(ClientModeMessageHandlers, APeerIsAcceptedOnlyInGameAndOnlyWhenItAsksForThi
 		Peer early;
 		CHECK(Disconnects([&] { ReceiveConnect(&early, "Lantern", "Nyx"); }));
 		CHECK(early.Sent() == Verify(RC_CONNECT_REJECT));
+		CHECK(early.getName().empty());
 	}
 
 	// Without a peer connection or a message log nothing is answered.
@@ -305,6 +308,15 @@ TEST(ClientModeMessageHandlers, APeersAddressAndGuildAreRecordedWhileInOrEnterin
 	g_pParty = nullptr;
 	RCCharacterInfoHandler::execute(&early);
 	CHECK(world.users.GetUserInfo("Nyx")->IP == "10.0.0.9");
+	g_pParty = &world.party;
+	g_pGameMessage = nullptr;
+	RCCharacterInfoHandler::execute(&early);
+	CHECK(world.users.GetUserInfo("Nyx")->IP == "10.0.0.9");
+	CHECK_EQ(static_cast<int>(guild), static_cast<int>(nyx->guildID));
+	g_pGameMessage = &world.gameLog;
+	g_pRequestUserManager = nullptr;
+	RCCharacterInfoHandler::execute(&early);
+	CHECK_EQ(static_cast<int>(guild), static_cast<int>(nyx->guildID));
 }
 
 TEST(ClientModeMessageHandlers, APeersHitPointsAreRecordedOnlyWhileItIsOutOfSight)
@@ -312,65 +324,99 @@ TEST(ClientModeMessageHandlers, APeersHitPointsAreRecordedOnlyWhileItIsOutOfSigh
 	World world;
 	world.users.AddRequestUser("Nyx", "10.0.0.1");
 	PARTY_INFO* nyx = world.Member("Nyx", "10.0.0.1");
-	RCStatusHP status;
-	status.setName("Nyx");
-	status.setHost("10.0.0.7");
-	status.setPort(9003);
-	status.setCurrentHP(40);
-	status.setMaxHP(90);
-	RCStatusHPHandler::execute(&status);
-	CHECK_EQ(40, static_cast<int>(nyx->HP));
-	CHECK_EQ(90, static_cast<int>(nyx->MaxHP));
-	CHECK(world.users.GetUserInfo("Nyx")->IP == "10.0.0.7");
+	PARTY_INFO* vanda = world.Member("Vanda", "10.0.0.2");
+	auto Status = [](const char* name, const char* host, HP_t hp, HP_t maxHP) {
+		RCStatusHP status;
+		status.setName(name);
+		status.setHost(host);
+		status.setPort(9003);
+		status.setCurrentHP(hp);
+		status.setMaxHP(maxHP);
+		RCStatusHPHandler::execute(&status);
+	};
+	const CLIENT_MODE inGame[] = {MODE_GAME, MODE_WAIT_UPDATEINFO, MODE_WAIT_SETPOSITION};
+	HP_t hp = 40;
+	for (CLIENT_MODE mode : inGame)
+	{
+		g_Mode = mode;
+		Status("Nyx", "10.0.0.7", ++hp, 90);
+		CHECK_EQ(static_cast<int>(hp), static_cast<int>(nyx->HP));
+		CHECK_EQ(90, static_cast<int>(nyx->MaxHP));
+		CHECK(world.users.GetUserInfo("Nyx")->IP == "10.0.0.7");
+	}
+
+	// With no name the member is found by address.
+	Status("", "10.0.0.2", 12, 34);
+	CHECK_EQ(12, static_cast<int>(vanda->HP));
+	CHECK_EQ(34, static_cast<int>(vanda->MaxHP));
 
 	// In sight, the creature's own status is the truth: the record stays.
 	nyx->bInSight = true;
-	status.setCurrentHP(10);
-	RCStatusHPHandler::execute(&status);
-	CHECK_EQ(40, static_cast<int>(nyx->HP));
+	Status("Nyx", "10.0.0.7", 10, 90);
+	CHECK_EQ(static_cast<int>(hp), static_cast<int>(nyx->HP));
 
-	// Outside the game nothing is recorded.
+	// Outside the game, or without the log or the peer records, nothing is
+	// recorded, the address included.
 	nyx->bInSight = false;
 	g_Mode = MODE_LOGIN_WRONG;
-	RCStatusHPHandler::execute(&status);
-	CHECK_EQ(40, static_cast<int>(nyx->HP));
+	Status("Nyx", "10.0.0.8", 5, 90);
+	g_Mode = MODE_GAME;
+	g_pGameMessage = nullptr;
+	Status("Nyx", "10.0.0.8", 5, 90);
+	g_pGameMessage = &world.gameLog;
+	g_pRequestUserManager = nullptr;
+	Status("Nyx", "10.0.0.8", 5, 90);
+	CHECK_EQ(static_cast<int>(hp), static_cast<int>(nyx->HP));
+	CHECK(world.users.GetUserInfo("Nyx")->IP == "10.0.0.7");
 }
+
+// Both chat replies take the same rules, so each case runs through both.
+using Say = void (*)(const char* name, const char* message);
+const struct { const char* name; Say say; std::uint32_t color; } kSays[] = {
+	{"party", ReceivePartySay, 0x00FF00}, {"peer", ReceivePeerSay, 0x0000FF},
+};
 
 TEST(ClientModeMessageHandlers, PartyAndPeerChatIsFilteredAndShownOnlyInGameFromAcceptedNames)
 {
-	World world;
-	ReceivePartySay("Nyx", "darn it");
-	ReceivePeerSay("Nyx", "darn again");
-	CHECK(calls == std::vector<std::string>({"chat|xxxx it|Nyx|3|" + N(0x00FF00), "chat|xxxx again|Nyx|3|" + N(0x0000FF)}));
+	for (const auto& say : kSays)
+	{
+		World world;
+		const std::string color = N(say.color);
+		const CLIENT_MODE inGame[] = {MODE_GAME, MODE_WAIT_UPDATEINFO, MODE_WAIT_SETPOSITION};
+		for (CLIENT_MODE mode : inGame)
+		{
+			g_Mode = mode;
+			say.say("Nyx", "darn it");
+		}
+		CHECK(calls == std::vector<std::string>(3, "chat|xxxx it|Nyx|3|" + color));
 
-	// A ghost, a game master or the master's own words are not filtered.
-	calls.clear();
-	ghost = true;
-	ReceivePartySay("Nyx", "darn");
-	ghost = false;
-	g_pUserInformation->IsMaster = TRUE;
-	ReceivePeerSay("Nyx", "darn");
-	g_pUserInformation->IsMaster = FALSE;
-	ReceivePartySay("GM Rook", "darn");
-	CHECK(calls == std::vector<std::string>({"chat|darn|Nyx|3|" + N(0x00FF00), "chat|darn|Nyx|3|" + N(0x0000FF),
-		"chat|darn|GM Rook|3|" + N(0x00FF00)}));
+		// A ghost, a game master or the master's own words are not filtered.
+		calls.clear();
+		ghost = true;
+		say.say("Nyx", "darn");
+		ghost = false;
+		g_pUserInformation->IsMaster = TRUE;
+		say.say("Nyx", "darn");
+		g_pUserInformation->IsMaster = FALSE;
+		say.say("GM Rook", "darn");
+		CHECK(calls == std::vector<std::string>({"chat|darn|Nyx|3|" + color, "chat|darn|Nyx|3|" + color,
+			"chat|darn|GM Rook|3|" + color}));
 
-	// A refused name is dropped unless it is the master's; outside the game,
-	// or without a chat filter, nothing is shown.
-	calls.clear();
-	world.filter.AddID("Nyx");
-	world.filter.AddID("GM Rook");
-	ReceivePartySay("Nyx", "hello");
-	ReceivePeerSay("Nyx", "hello");
-	ReceivePartySay("GM Rook", "hello");
-	world.filter.RemoveID("Nyx");
-	g_Mode = MODE_MAINMENU;
-	ReceivePartySay("Nyx", "hello");
-	ReceivePeerSay("Nyx", "hello");
-	g_Mode = MODE_WAIT_SETPOSITION;
-	g_pChatManager = nullptr;
-	ReceivePartySay("Nyx", "hello");
-	CHECK(calls == std::vector<std::string>{"chat|hello|GM Rook|3|" + N(0x00FF00)});
+		// A refused name is dropped unless it is the master's; outside the
+		// game, or without a chat filter, nothing is shown.
+		calls.clear();
+		world.filter.AddID("Nyx");
+		world.filter.AddID("GM Rook");
+		say.say("Nyx", "hello");
+		say.say("GM Rook", "hello");
+		world.filter.RemoveID("Nyx");
+		g_Mode = MODE_MAINMENU;
+		say.say("Nyx", "hello");
+		g_Mode = MODE_WAIT_SETPOSITION;
+		g_pChatManager = nullptr;
+		say.say("Nyx", "hello");
+		CHECK(calls == std::vector<std::string>{"chat|hello|GM Rook|3|" + color});
+	}
 }
 
 TEST(ClientModeMessageHandlers, MissingHostsAndEntriesSkipOnlyTheServices)

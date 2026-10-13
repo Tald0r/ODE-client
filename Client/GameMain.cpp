@@ -216,8 +216,6 @@ bool				g_bNewDraw = false;			// 화면을 다시 그렸는가? (커서 제외)
 bool				g_bSmoothCursor = false;	// 부드러운(?) cursor를 출력할 수 있나?
 bool				g_bNetStatusGood = true;		// 네트웍 상태가 좋은가?
 
-
-
 // socket
 ClientPlayer*		g_pSocket = NULL;
 
