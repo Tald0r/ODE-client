@@ -2976,9 +2976,10 @@ rounds settled* for the host rules). Test fixtures share
     `test_guild_pc_error_handlers.cpp` (a guild list ends a pending NPC
     question before it is presented and leaves any other wait; a
     membership change records the guild name and grade, then the player's
-    guild number, then presents it with the name already recorded; a
-    refused creation or deletion shows its error code, then queues the
-    return to selection; missing hosts and entries).
+    guild number, then presents it, with the name and grade recorded before
+    either service is called; a refused creation or deletion shows its error
+    code (any byte), then queues the return to selection; missing hosts and
+    entries).
 
 ### Remaining R1 work after tasks 4.80-4.104
 
@@ -3214,6 +3215,21 @@ Follow-ups from 4.103:
 - `PacketFunction.cpp` repeats the unchecked belt-pocket `AddItem` that
   4.103's fix made `GCTradeAddItemHandler` check, so a refused pocket item
   leaks there on each packet.
+
+Follow-ups from 4.104, all older than the move:
+- `ErrorID` has no fixed underlying type and holds 0-31, so a wire error
+  byte of 32 or more cast to it is undefined. The two moved replies now
+  pass the byte as the host's `int`; `LCLoginErrorHandler` and
+  `PopupErrorMessage`'s adapter still cast it (the class `ITEM_CLASS` had
+  until 4.103's fix).
+- `UI_ShowActiveGuildList` and `UI_ShowWaitGuildList` pop every
+  `GuildInfo` off the packet and never free it (4.92's member-list leak),
+  and both packets' `read` leak the current `GuildInfo` if its `read`
+  throws and append without clearing first.
+- `GCModifyGuildMemberInfoHandler` uses `g_pUserInformation` unguarded;
+  `UserInformation` leaves `GuildGrade` uninitialised, and an empty guild
+  name is stored as NULL for later readers. `PopupErrorMessage` uses
+  `g_pUIDialog` and `g_pGameStringTable` unguarded.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

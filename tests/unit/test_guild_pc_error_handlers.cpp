@@ -30,13 +30,20 @@ const void* lastList = nullptr;
 
 std::string N(long long value) { return std::to_string(value); }
 
+// The user information's guild as it stands when a service is called.
+std::string Recorded()
+{
+	const char* name = g_pUserInformation->GuildName.GetString();
+	return std::string(name ? name : "(none)") + "/" + N(g_pUserInformation->GuildGrade);
+}
+
 GuildPresentation::Host GuildHost()
 {
 	GuildPresentation::Host host{};
 	host.ShowActiveGuildList = [](GCActiveGuildList* p) { lastList = p; calls.push_back("activelist"); };
 	host.ShowWaitGuildList = [](GCWaitGuildList* p) { lastList = p; calls.push_back("waitlist"); };
 	host.SetGuild = [](std::uint16_t guildID, std::uint8_t rank, const std::string& name) {
-		calls.push_back("setguild|" + N(guildID) + "|" + N(rank) + "|" + name + "|" + g_pUserInformation->GuildName.GetString());
+		calls.push_back("setguild|" + N(guildID) + "|" + N(rank) + "|" + name + "|" + Recorded());
 	};
 	return host;
 }
@@ -45,7 +52,7 @@ const GuildPresentation::Host guild = GuildHost();
 const PlayerState::Host player{
 	.GetWaitVerify = []() { calls.push_back("wait?"); return waitVerify; },
 	.SetWaitVerifyNULL = []() { calls.push_back("clearwait"); waitVerify = PlayerState::WAIT_VERIFY_NULL; },
-	.SetGuildNumber = [](int guildNumber) { calls.push_back("guildnumber|" + N(guildNumber)); },
+	.SetGuildNumber = [](int guildNumber) { calls.push_back("guildnumber|" + N(guildNumber) + "|" + Recorded()); },
 };
 
 LoginPresentation::Host LoginHost()
@@ -120,7 +127,7 @@ void RunEveryHandler()
 	GCActiveGuildListHandler::execute(&active, nullptr);
 	GCWaitGuildList waiting;
 	GCWaitGuildListHandler::execute(&waiting, nullptr);
-	ReceiveMembership(42, 3, "Wolves");
+	ReceiveMembership(0x1234, 3, "Wolves");
 	ReceiveError<LCCreatePCError>(ALREADY_REGISTER_ID, LCCreatePCErrorHandler::execute);
 	ReceiveError<LCDeletePCError>(NOT_FOUND_PLAYER, LCDeletePCErrorHandler::execute);
 }
@@ -152,11 +159,14 @@ TEST(GuildAndCharacterErrorHandlers, AGuildListEndsAPendingNPCQuestionThenIsPres
 TEST(GuildAndCharacterErrorHandlers, AMembershipChangeRecordsTheGuildBeforePresentingIt)
 {
 	World world;
-	ReceiveMembership(42, 3, "Wolves");
-	CHECK(std::string(g_pUserInformation->GuildName.GetString()) == "Wolves");
-	CHECK_EQ(3, static_cast<int>(g_pUserInformation->GuildGrade));
-	// The user information already names the guild when it is presented.
-	CHECK(calls == std::vector<std::string>({"guildnumber|42", "setguild|42|3|Wolves|Wolves"}));
+	g_pUserInformation->GuildGrade = 9;
+	// A guild ID wider than a byte, so a narrowing on the way would show.
+	ReceiveMembership(0x1234, 3, "Wolves");
+	CHECK(Recorded() == "Wolves/3");
+	// The user information already holds the guild's name and grade when the
+	// player's guild number is set and when the guild is presented.
+	CHECK(calls == std::vector<std::string>({"guildnumber|" + N(0x1234) + "|Wolves/3",
+		"setguild|" + N(0x1234) + "|3|Wolves|Wolves/3"}));
 }
 
 TEST(GuildAndCharacterErrorHandlers, ARefusedCharacterShowsItsErrorThenReturnsToSelection)
@@ -164,8 +174,11 @@ TEST(GuildAndCharacterErrorHandlers, ARefusedCharacterShowsItsErrorThenReturnsTo
 	World world;
 	ReceiveError<LCCreatePCError>(ALREADY_REGISTER_ID, LCCreatePCErrorHandler::execute);
 	ReceiveError<LCDeletePCError>(NOT_FOUND_PLAYER, LCDeletePCErrorHandler::execute);
+	// Any byte the server sends reaches the service as that number.
+	ReceiveError<LCCreatePCError>(200, LCCreatePCErrorHandler::execute);
+	ReceiveError<LCDeletePCError>(255, LCDeletePCErrorHandler::execute);
 	CHECK(calls == std::vector<std::string>({"error|" + N(ALREADY_REGISTER_ID), "queueselectpc",
-		"error|" + N(NOT_FOUND_PLAYER), "queueselectpc"}));
+		"error|" + N(NOT_FOUND_PLAYER), "queueselectpc", "error|200", "queueselectpc", "error|255", "queueselectpc"}));
 }
 
 TEST(GuildAndCharacterErrorHandlers, MissingHostsAndEntriesSkipOnlyTheServices)
@@ -177,7 +190,7 @@ TEST(GuildAndCharacterErrorHandlers, MissingHostsAndEntriesSkipOnlyTheServices)
 	RunEveryHandler();
 	CHECK(calls.empty());
 	// The user information is still updated.
-	CHECK(std::string(g_pUserInformation->GuildName.GetString()) == "Wolves");
+	CHECK(Recorded() == "Wolves/3");
 	const GuildPresentation::Host emptyGuild{};
 	const PlayerState::Host emptyPlayer{};
 	const LoginPresentation::Host emptyLogin{};

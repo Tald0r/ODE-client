@@ -11,7 +11,6 @@
 #include "Lpackets/LCCreatePCError.h"
 #include "LoginPresentationHost.h"
 
-
 //----------------------------------------------------------------------
 // 
 //----------------------------------------------------------------------
@@ -27,7 +26,7 @@ void LCCreatePCErrorHandler::execute ( LCCreatePCError * pPacket , Player * pPla
 
 	//UI_NewCharacterCreateFailed( 0 );
 
-	LoginPresentation::PopupErrorMessage( (ErrorID)pPacket->getErrorID() );
+	LoginPresentation::PopupErrorMessage( pPacket->getErrorID() );
 
 
 	LoginPresentation::QueueWaitSelectPCMode();
