@@ -8,8 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShowUnionInfo.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GuildPresentationHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -21,7 +20,7 @@ void GCShowUnionInfoHandler::execute ( GCShowUnionInfo * pPacket , Player * pPla
 	__BEGIN_TRY //__BEGIN_DEBUG_EX
 	(void)pPlayer;
 	
-	UI_ShowUnionGuildMemberInfo(pPacket);
+	GuildPresentation::ShowUnionGuildMemberInfo(pPacket);
 
 	__END_CATCH //__END_CATCH
 }
