@@ -3657,6 +3657,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetFakeDie = [](MCreature* pCreature) { pCreature->SetFakeDie(); },
 	.GetDirection = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetDirection()); },
 	.RemoveHead = [](MCreature* pCreature) { pCreature->RemoveHead(); },
+	.SetDirection = [](MCreature* pCreature, int direction) { pCreature->SetDirection(static_cast<BYTE>(direction)); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

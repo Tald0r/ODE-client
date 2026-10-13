@@ -116,6 +116,7 @@ struct Host
 	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
 	int (*GetDirection)(MCreature* pCreature) = nullptr;
 	void (*RemoveHead)(MCreature* pCreature) = nullptr;
+	void (*SetDirection)(MCreature* pCreature, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -182,5 +183,6 @@ void SetFakeDie(MCreature* pCreature);
 // 0 without a host.
 int GetDirection(MCreature* pCreature);
 void RemoveHead(MCreature* pCreature);
+void SetDirection(MCreature* pCreature, int direction);
 
 }

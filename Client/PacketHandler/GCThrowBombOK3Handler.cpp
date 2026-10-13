@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCThrowBombOK3.h"
-#include "ClientDef.h"
-#include "PacketFunction2.h"
+#include "DebugLog.h"
+#include "ExplosiveActions.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -22,22 +25,22 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 
-		// Creature가 Tile에 뭔가를?...
+		// The creature uses something on a tile.
 		if (pCreature != NULL)
 		{			
 			int skillID = GetBombActionInfo( pPacket->getItemType() );//pPacket->getSkillType();	
@@ -52,7 +55,7 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 
 			if ((*g_pActionInfoTable)[skillID].IsAffectCurrentWeaponAction())
 			{
-				useSkillID = pCreature->GetBasicActionInfo();
+				useSkillID = CreatureState::GetBasicActionInfo(pCreature);
 
 				if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
@@ -61,13 +64,13 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 				}
 			}
 
-			// 결과 생성
+			// Make the result.
 			MActionResult* pResult = new MActionResult;
 		
-			// 의미없다.
+			// (meaningless)
 			DWORD delayFrame = 16;//ConvertDurationToFrame( pPacket->getDuration() );
 
-			int targetID = pCreature->GetID();
+			int targetID = CreatureState::GetID(pCreature);
 			if ((*g_pActionInfoTable)[skillID].GetActionResultID()==ACTIONRESULTNODE_ACTIONINFO)
 			{
 				targetID = OBJECTID_NULL;
@@ -75,7 +78,7 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 
 			pResult->Add( new MActionResultNodeActionInfo( 
 											skillID,
-											pCreature->GetID(), 
+											CreatureState::GetID(pCreature), 
 											targetID,	//pCreature->GetID(), 
 											pPacket->getX(),
 											pPacket->getY(),
@@ -94,17 +97,17 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 				//					delayFrame ) );
 				//------------------------------------------------------
 				//
-				// skill에 결과가 있으면 적용 시킨다.
+				// Apply the skill's own result, if it has one.
 				//
 				//------------------------------------------------------
 				int targetID = pPacket->popCListElement();
 
-				MCreature* pTargetCreature = g_pZone->GetCreature( targetID );
+				MCreature* pTargetCreature = ZoneState::GetCreature( targetID );
 
 				if (pTargetCreature!=NULL)
 				{
 					//------------------------------------------------------
-					// EffectStatus가 있다면 붙인다.
+					// Add the effect status, if any.
 					//------------------------------------------------------
 					EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 							
@@ -118,15 +121,15 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 					switch ((*g_pActionInfoTable)[skillID].GetActionResultID())
 					{
 						//------------------------------------------------------
-						// 다른 ActionInfo 실행
+						// Run another action.
 						//------------------------------------------------------
 						case ACTIONRESULTNODE_ACTIONINFO :
 							pActionResultNode =  new MActionResultNodeActionInfo( 
 																useSkillID,	//(*g_pActionInfoTable)[skillID].GetActionResultValue(),
-																pCreature->GetID(), 
+																CreatureState::GetID(pCreature), 
 																targetID, 
-																pTargetCreature->GetX(),
-																pTargetCreature->GetY(),
+																CreatureState::GetX(pTargetCreature),
+																CreatureState::GetY(pTargetCreature),
 																delayFrame);
 						break;
 
@@ -138,7 +141,7 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 					}
 
 					//------------------------------------------------------
-					// NULL이 아니면 같이 적용
+					// Apply it too, if there is one.
 					//------------------------------------------------------
 					if (pActionResultNode!=NULL)
 					{
@@ -148,23 +151,22 @@ void GCThrowBombOK3Handler::execute ( GCThrowBombOK3 * pPacket , Player * pPlaye
 			}
 
 			//------------------------------------------------------
-			// 방향 보기
+			// Face the cell.
 			//------------------------------------------------------
-			pCreature->SetDirectionToPosition(pPacket->getX(), pPacket->getY());
+			CreatureState::SetDirectionToPosition(pCreature, pPacket->getX(), pPacket->getY());
 			
 			//------------------------------------------------------
-			// range를 direction에 적용시키는 경우
+			// The range is used as the direction.
 			//------------------------------------------------------
-			pCreature->SetDirection( pPacket->getDir() );
+			CreatureState::SetDirection(pCreature, pPacket->getDir() );
 
 			//------------------------------------------------------
-			// 행동하는 모습 설정
+			// Set how it acts.
 			//------------------------------------------------------
 			//Duration_t	m_Duration;
-			pCreature->PacketSpecialActionToSector(
-								skillID, 
+			CreatureState::PacketSpecialActionToSector(pCreature, skillID, 
 								pPacket->getX(), pPacket->getY(),
-								pResult		// 결과
+								pResult		// result
 			);		
 
 		

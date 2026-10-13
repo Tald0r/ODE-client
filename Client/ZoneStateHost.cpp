@@ -357,4 +357,9 @@ void RemoveHead(MCreature* pCreature)
 	if (s_Host && s_Host->RemoveHead) s_Host->RemoveHead(pCreature);
 }
 
+void SetDirection(MCreature* pCreature, int direction)
+{
+	if (s_Host && s_Host->SetDirection) s_Host->SetDirection(pCreature, direction);
+}
+
 }

@@ -996,3 +996,12 @@ Client/PacketHandler/GCCrossCounterOK3Handler.cpp
 # or lying in its corpse.
 Client/PacketHandler/GCAddEffectHandler.cpp
 Client/PacketHandler/GCRemoveCorpseHeadHandler.cpp
+
+# The mine and bomb action lookups, and the bomb replies over them: the
+# player's bomb, one thrown by another creature at the player's side, and
+# one between creatures.
+Client/ExplosiveActions.cpp
+Client/ExplosiveActions.h
+Client/PacketHandler/GCThrowBombOK1Handler.cpp
+Client/PacketHandler/GCThrowBombOK2Handler.cpp
+Client/PacketHandler/GCThrowBombOK3Handler.cpp

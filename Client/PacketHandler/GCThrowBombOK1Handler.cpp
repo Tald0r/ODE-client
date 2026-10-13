@@ -9,8 +9,13 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCThrowBombOK1.h"
-#include "ClientDef.h"
-#include "PacketFunction2.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "ExplosiveActions.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -19,15 +24,22 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 		
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -36,30 +48,31 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 
 
 	//------------------------------------------------------------------
-	// Player가 Skill을 성공시킨 경우에 날아오는 Packet이므로
-	// 결과를 반영시켜야 한다.
+	// The player's skill succeeded, so
+	// its result is applied.
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
@@ -75,7 +88,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 		
 		if ((*g_pActionInfoTable)[skillID].IsAffectCurrentWeaponAction())
 		{
-			useSkillID = g_pPlayer->GetBasicActionInfo();
+			useSkillID = CreatureState::GetBasicActionInfo(pPlayerCreature);
 
 			if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 			{
@@ -84,7 +97,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 			}
 		}
 			
-		// 의미없다.
+		// (meaningless)
 		int delayFrame = 16;//ConvertDurationToFrame( pPacket->getDuration() );
 
 		int size = pPacket->getCListNum();
@@ -93,12 +106,12 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 
 			
 		//------------------------------------------------------
-		// Player가 기술을 성공했을때 모습..
+		// The player's skill succeeded.
 		//------------------------------------------------------
 		//int resultActionInfo = skillID + (*g_pActionInfoTable).GetMinResultActionInfo();
 		//g_pPlayer->PacketSpecialActionResult( resultActionInfo );
 
-		int targetID = g_pPlayer->GetID();
+		int targetID = PlayerState::GetID();
 		if ((*g_pActionInfoTable)[skillID].GetActionResultID()==ACTIONRESULTNODE_ACTIONINFO)
 		{
 			targetID = OBJECTID_NULL;
@@ -106,7 +119,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 
 		pResult->Add( new MActionResultNodeActionInfo( 
 											skillID,
-											g_pPlayer->GetID(), 
+											PlayerState::GetID(), 
 											targetID, 
 											pPacket->getX(),
 											pPacket->getY(),
@@ -115,17 +128,17 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 
 		if (size!=0)
 		{
-			// 결과를 당하는 각각의 creature에 대해서 결과 표현
+			// The result on each creature it lands on.
 			for (int i=0; i<size; i++)
 			{
 				int targetID = pPacket->popCListElement();
-				MCreature* pCreature = g_pZone->GetCreature( targetID );
+				MCreature* pCreature = ZoneState::GetCreature( targetID );
 
-				// Creature에게 Damage? 입힘
+				// The creature is hit.
 				if (pCreature != NULL)
 				{
 					//------------------------------------------------------
-					// EffectStatus가 있다면 붙인다.
+					// Add the effect status, if any.
 					//------------------------------------------------------
 					EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 					
@@ -134,10 +147,10 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 						pResult->Add( new MActionResultNodeAddEffectStatus( targetID, es, delayFrame ) );
 					}
 
-					// 결과 바로 표현
+					// Show the result at once.
 					//pCreature->PacketSpecialActionResult( pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo());
 			
-					// 기술의 결과를 표현하는 resultNode를 생성한다.
+					// The node that shows the skill's result.
 					//pResult->Add( new MActionResultNodeActionInfo( 
 					//							g_pPlayer->GetID(), 
 					//							pCreature->GetID(), 
@@ -147,7 +160,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 					
 					//------------------------------------------------------
 					//
-					// skill에 결과가 있으면 적용 시킨다.
+					// Apply the skill's own result, if it has one.
 					//
 					//------------------------------------------------------
 					MActionResultNode* pActionResultNode = NULL;
@@ -155,20 +168,20 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 					switch ((*g_pActionInfoTable)[skillID].GetActionResultID())
 					{
 						//------------------------------------------------------
-						// 다른 ActionInfo 실행
+						// Run another action.
 						//------------------------------------------------------
 						case ACTIONRESULTNODE_ACTIONINFO :
 							pActionResultNode =  new MActionResultNodeActionInfo( 
 																useSkillID,//(*g_pActionInfoTable)[skillID].GetActionResultValue(),
-																g_pPlayer->GetID(), 
-																pCreature->GetID(), 
-																pCreature->GetX(), 
-																pCreature->GetY(), 
+																PlayerState::GetID(), 
+																CreatureState::GetID(pCreature), 
+																CreatureState::GetX(pCreature), 
+																CreatureState::GetY(pCreature), 
 																delayFrame);
 						break;
 
 						//------------------------------------------------------
-						// Burrow 등등..
+						// Burrow and the like.
 						//------------------------------------------------------
 						default :
 							pActionResultNode = CreateActionResultNode(pCreature, useSkillID);
@@ -176,7 +189,7 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 					}
 
 					//------------------------------------------------------
-					// NULL이 아니면 같이 적용
+					// Apply it too, if there is one.
 					//------------------------------------------------------
 					if (pActionResultNode!=NULL)
 					{
@@ -187,15 +200,15 @@ void GCThrowBombOK1Handler::execute ( GCThrowBombOK1 * pPacket , Player * pPlaye
 		}			
 		
 		//------------------------------------------------------
-		// range를 direction에 적용시키는 경우
+		// The range is used as the direction.
 		//------------------------------------------------------
 		//if ((*g_pActionInfoTable)[skillID].IsOptionRangeToDirection())
 		{
 		//	g_pPlayer->SetDirection( pPacket->getDir() );	
 		}		
 	
-		// Player의 현재 진행 중인 기술의 결과로 추가시킨다.		
-		g_pPlayer->PacketAddActionResult( 0, pResult );
+		// Add it to the player's current skill as its result.		
+		PlayerState::PacketAddActionResult( 0, pResult );
 
 	}
 
