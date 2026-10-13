@@ -117,6 +117,7 @@
 #include "GuildPresentationHost.h"
 #include "CommunicationPresentationHost.h"
 #include "QuestWarPresentationHost.h"
+#include "TradePresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2689,6 +2690,7 @@ void ReleaseAllObjects()
 	GuildPresentation::SetHost(nullptr);
 	CommunicationPresentation::SetHost(nullptr);
 	QuestWarPresentation::SetHost(nullptr);
+	TradePresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3435,6 +3437,15 @@ static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
 	.SetBloodBibleStatus = UI_SetBloodBibleStatus,
 };
 
+static const TradePresentation::Host s_TradePresentationHost = {
+	.IsRunningExchange = []() { return UI_IsRunningExchange() != FALSE; },
+	.CloseExchange = UI_CloseExchange,
+	.CloseExchangeAsk = UI_CloseExchangeAsk,
+	.CloseExchangeCancel = UI_CloseExchangeCancel,
+	.UnlockItem = UI_UnlockItem,
+	.RunItemShop = UI_RunItemShop,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4018,6 +4029,7 @@ InitGameObject()
 	GuildPresentation::SetHost(&s_GuildPresentationHost);
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
+	TradePresentation::SetHost(&s_TradePresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

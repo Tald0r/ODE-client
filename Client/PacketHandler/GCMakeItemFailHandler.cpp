@@ -10,8 +10,8 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCMakeItemFail.h"
 #include "TempInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "TradePresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ void GCMakeItemFailHandler::execute ( GCMakeItemFail * pPacket , Player * pPlaye
 		//g_pTempInformation->Value2 = itemType;
 
 		// 못 움직이게 했던거 풀기
-		UI_UnlockItem();
+		TradePresentation::UnlockItem();
 	}
 	else
 	{

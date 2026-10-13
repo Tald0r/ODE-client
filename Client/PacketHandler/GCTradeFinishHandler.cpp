@@ -9,11 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeFinish.h"
-#include "ClientDef.h"
 #include "TempInformation.h"
 #include "MTradeManager.h"
-#include "UIFunction.h"
-#include "UIFunction.h"
+#include "TradePresentationHost.h"
 
 void GCTradeFinishHandler::execute ( GCTradeFinish * pPacket , Player * pPlayer )
 	 
@@ -57,16 +55,16 @@ void GCTradeFinishHandler::execute ( GCTradeFinish * pPacket , Player * pPlayer 
 				g_pTradeManager->CancelTrade();
 			}
 
-			if (UI_IsRunningExchange())
+			if (TradePresentation::IsRunningExchange())
 			{
-				UI_CloseExchange();
+				TradePresentation::CloseExchange();
 			}
 			//else 
 			{
 				if (g_pTempInformation->GetMode() == TempInformation::MODE_TRADE_REQUEST)
 				{
-					UI_CloseExchangeCancel();
-					UI_CloseExchangeAsk();					
+					TradePresentation::CloseExchangeCancel();
+					TradePresentation::CloseExchangeAsk();					
 				}				
 			}
 
