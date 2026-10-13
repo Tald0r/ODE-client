@@ -37,6 +37,7 @@ RequestServerPlayerManager::RequestServerPlayerManager()
 	m_pServerSocket		= NULL;
 	m_hRequestThread	= NULL;
 	m_bThreadRunning	= false;
+	m_bUpdating			= false;
 
 	InitializeCriticalSection(&m_Lock);
 }
@@ -154,6 +155,17 @@ RequestServerPlayerManager::Disconnect(const char* pName)
 {
 	Lock();
 
+	// A peer's own CRDisconnect asks for this from inside Update(), while
+	// that peer's processCommand() is still reading its packets; freeing it
+	// here freed the object the dispatch returns into. Update() drops it
+	// once its loop is done.
+	if (m_bUpdating)
+	{
+		m_PendingDisconnects.push_back(pName);
+		Unlock();
+		return;
+	}
+
 
 	RequestServerPlayer_LIST::iterator iPlayer = m_listRequestServerPlayer.begin();
 		
@@ -234,6 +246,7 @@ RequestServerPlayerManager::Update()
 		return;
 	}
 
+	m_bUpdating = true;
 	try {
 
 		RequestServerPlayer_LIST::iterator iPlayer = m_listRequestServerPlayer.begin();
@@ -282,6 +295,16 @@ RequestServerPlayerManager::Update()
 
 	} catch (Throwable&t) {
 		DEBUG_ADD_ERR( t.toString().c_str() );
+	}
+
+	m_bUpdating = false;
+
+	// The disconnects the dispatch asked for, now that no peer is mid-read.
+	std::vector<std::string> pending;
+	pending.swap(m_PendingDisconnects);
+	for (const std::string& name : pending)
+	{
+		Disconnect(name.c_str());
 	}
 
 	Unlock();

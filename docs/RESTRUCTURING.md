@@ -3218,14 +3218,19 @@ Follow-ups from 4.101, all older than the move:
   is unguarded.
 
 Follow-ups from 4.102, all older than the move:
-- **A peer can make the client free the connection it is reading from.**
-  `CR_DISCONNECT` is accepted from a peer (`CPS_REQUEST_SERVER_NORMAL`), and
-  `RequestDisconnect` reaches `RequestServerPlayerManager::Disconnect`,
-  which deletes the player of that name. A peer naming itself deletes the
-  `RequestServerPlayer` whose `processCommand()` is dispatching the packet,
-  which then reads its freed input stream, and `Update()` goes on to call
-  `processOutput()` on it and advance an erased iterator. Traced, not run;
-  reachable from any peer.
+- **Fixed: a peer could make the client free the connection it was
+  reading from.** `CR_DISCONNECT` is accepted from a connected peer
+  (`CPS_REQUEST_SERVER_NORMAL`, after `CRConnect` named this character in
+  game), and its handler asks `RequestDisconnect` to drop the sender by the
+  sender's own name. `RequestServerPlayerManager::Disconnect` deleted that
+  `RequestServerPlayer` while its `processCommand()` was still dispatching:
+  the dispatch then wrote and read the freed object, and `Update()` called
+  `processOutput()` on it and advanced an erased iterator. A disconnect
+  asked for during `Update()` is now queued and carried out after the
+  loop; outside `Update()` it is immediate, as before.
+  `test_peer_self_disconnect.cpp` drives two real loopback peers through
+  the real factory, validator and handler; before the fix the ASan tree
+  reported the heap-use-after-free and the plain tree crashed.
 - `SetBloodBibleSlot` indexes `g_abHolyLandBonusSkills` (12 entries) with
   the wire's unchecked item type, follows a sign list whose length
   `BloodBibleSignInfo::read` never bounds, and uses `g_pPlayer` unguarded.
