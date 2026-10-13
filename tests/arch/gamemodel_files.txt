@@ -687,3 +687,18 @@ Client/MSkipEffectGenerator.h
 Client/SkillDowngradeHost.h
 Client/PacketHandler/GCDownSkillOKHandler.cpp
 Client/PacketHandler/GCDownSkillFailedHandler.cpp
+
+# Handlers that accept and ignore their packet in every shipped build.
+Client/PacketHandler/CURequestLoginModeHandler.cpp
+Client/PacketHandler/GCCastingSkillHandler.cpp
+Client/PacketHandler/GCDisconnectHandler.cpp
+Client/PacketHandler/GCPhoneConnectionFailedHandler.cpp
+Client/PacketHandler/GCReconnectHandler.cpp
+Client/PacketHandler/GCRequestFailedHandler.cpp
+Client/PacketHandler/GCRequestedIPHandler.cpp
+Client/PacketHandler/GCShowMessageBoxHandler.cpp
+Client/PacketHandler/GLIncomingConnectionErrorHandler.cpp
+Client/PacketHandler/GLIncomingConnectionOKHandler.cpp
+Client/PacketHandler/LCVersionCheckOKHandler.cpp
+Client/PacketHandler/LGIncomingConnectionHandler.cpp
+Client/PacketHandler/UCRequestLoginModeHandler.cpp
