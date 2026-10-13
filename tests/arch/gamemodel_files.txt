@@ -828,3 +828,15 @@ Client/PacketHandler/GCModifyGuildMemberInfoHandler.cpp
 Client/PacketHandler/GCWaitGuildListHandler.cpp
 Client/PacketHandler/LCCreatePCErrorHandler.cpp
 Client/PacketHandler/LCDeletePCErrorHandler.cpp
+
+# The client mode and the message logs' pointers, owned by gamemodel so the replies that read them can be tested.
+Client/ClientMode.cpp
+Client/ClientMode.h
+Client/GameMessages.cpp
+Client/GameMessages.h
+Client/PacketHandler/CRConnectHandler.cpp
+Client/PacketHandler/GCLearnSkillReadyHandler.cpp
+Client/PacketHandler/GCPartySayHandler.cpp
+Client/PacketHandler/RCCharacterInfoHandler.cpp
+Client/PacketHandler/RCSayHandler.cpp
+Client/PacketHandler/RCStatusHPHandler.cpp

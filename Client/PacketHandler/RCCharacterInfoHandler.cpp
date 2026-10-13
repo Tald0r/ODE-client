@@ -11,7 +11,9 @@
 #include "Rpackets/RCCharacterInfo.h"
 #include "MParty.h"
 #include "RequestUserManager.h"
-#include "ClientDef.h"
+#include "CMessageArray.h"
+#include "ClientMode.h"
+#include "GameMessages.h"
 
 #if defined(_DEBUG) && defined(OUTPUT_DEBUG)
 	extern CMessageArray*		g_pGameMessage;

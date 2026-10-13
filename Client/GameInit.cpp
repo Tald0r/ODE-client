@@ -3536,6 +3536,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
 	.SetGuildNumber = [](int guildNumber) { g_pPlayer->SetGuildNumber(guildNumber); },
+	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

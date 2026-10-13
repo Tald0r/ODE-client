@@ -9,10 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Rpackets/RCSay.h"
-#include "ClientDef.h"
+#include "ClientMode.h"
+#include "CommunicationPresentationHost.h"
+#include "PlayerStateHost.h"
 #include "UserInformation.h"
 #include "MChatManager.h"
-#include "UIFunction.h"
 #include "MGameStringTable.h"
 
 //----------------------------------------------------------------------
@@ -56,7 +57,7 @@ void RCSayHandler::execute ( RCSay * pPacket )
 			// --> 운영자의 말은 다 보이고 운영자는 다 본다.
 			//--------------------------------------------------
 			if (!bMasterWords && !g_pUserInformation->IsMaster 
-				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+				&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 				&& !g_bLight
 #endif
@@ -64,32 +65,11 @@ void RCSayHandler::execute ( RCSay * pPacket )
 			{
 				g_pChatManager->RemoveCurse( str );
 
-				/*
-				// RCSay에는 mask를 씌우지 않는다.
-				#ifndef _DEBUG
-					//--------------------------------------------------
-					// 종족이 다른 경우
-					//--------------------------------------------------
-					bool bVampireSay = pPacket->getRace();
-					if (g_pPlayer->IsSlayer() && bVampireSay)
-					{
-						// INT는 150까지이므로..  
-						int percent = min(75, 25+g_pPlayer->GetINT()*100/150);
-						g_pChatManager->AddMask(str, percent);
-					}
-					else if (g_pPlayer->IsVampire() && !bVampireSay)
-					{
-						// INT는 300까지이므로..  
-						int percent = min(75, 25+g_pPlayer->GetINT()*100/300);
-						g_pChatManager->AddMask(str, percent);
-					}
-				#endif
-				*/
 			}
 
 			//sprintf(str, "<%s> %s", pPacket->getName().c_str(), pPacket->getMessage().c_str());
 			// party = 3
-			UI_AddChatToHistory( str, strName, 3, pPacket->getColor() );
+			CommunicationPresentation::AddChatToHistory( str, strName, 3, pPacket->getColor() );
 
 			// 귓속말 대상 설정 ID+' '
 			//char strWhisperID[128];

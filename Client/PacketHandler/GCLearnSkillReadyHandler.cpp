@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCLearnSkillReady.h"
-#include "ClientDef.h"
+#include "CMessageArray.h"
+#include "DebugLog.h"
+#include "GameMessages.h"
 #include "MSkillManager.h"
 #include "SkillDef.h"
 #include "MGameStringTable.h"
