@@ -53,4 +53,14 @@ void EmptyMove()
 	if (s_Host && s_Host->EmptyMove) s_Host->EmptyMove();
 }
 
+void RunStorage()
+{
+	if (s_Host && s_Host->RunStorage) s_Host->RunStorage();
+}
+
+void SetStorage(MStorage* pStorage)
+{
+	if (s_Host && s_Host->SetStorage) s_Host->SetStorage(pStorage);
+}
+
 }

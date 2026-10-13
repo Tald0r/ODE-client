@@ -7,11 +7,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCStashList.h"
-#include "ClientDef.h"
-#include "MStorage.h"
-#include "UIDialog.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "MGameStringTable.h"
-#include "UIFunction.h"
+#include "MItem.h"
+#include "MStorage.h"
 
 void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 	 
@@ -24,12 +24,12 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 	int stashNum = pPacket->getStashNum();
 
 	//------------------------------------------------------------
-	// 보관함이 있는가?
+	// Is there a stash?
 	//------------------------------------------------------------
 	if (stashNum>0)
 	{
 		//------------------------------------------------------------
-		// 기존에걸 지우고 다시 생성한다.
+		// The old stash goes, and a new one is made.
 		//------------------------------------------------------------
 		if (g_pStorage!=NULL)
 		{
@@ -39,12 +39,12 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 		g_pStorage = new MStorage;
 
 		
-		g_pStorage->Init( stashNum ); //STASH_RACK_MAX );	// 쩝.. 3개일까??
+		g_pStorage->Init( stashNum );
 
 		for (int rack=0; rack<stashNum; rack++)
 		{
 			//------------------------------------------------------------
-			// 접근하는 Storage를 지정한다.
+			// The rack each item goes on.
 			//------------------------------------------------------------
 			g_pStorage->SetCurrent( rack );
 
@@ -72,42 +72,21 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 					pItem->SetCurrentDurability( item.durability );
 
 					//------------------------------------------
-					// 개수
+					// The count
 					//------------------------------------------
-					// 총인 경우
+					// A gun
 					//------------------------------------------
 					if (pItem->IsGunItem())
 					{
-						MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-
-						// 의미 없음 - -;
-						pMagazine->SetID( 0 );
-
-						// 이거는 총에 맞춰서 해줘야된다.
-						for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
+						// A fresh magazine of the gun's type holding the stashed count;
+						// without one the gun is stashed unloaded.
+						if (!MItem::LoadGun( pItem, item.num ))
 						{
-							pMagazine->SetItemType(	j );
-
-							if (pMagazine->IsInsertToItem( pItem ))
-							{
-								break;
-							}
+							DEBUG_ADD_ERR("[Error] GCStashList: no magazine for the gun");
 						}
-
-						// 의미 없음
-						pMagazine->ClearItemOption();
-					
-						// 탄창 개수
-						pMagazine->SetNumber( item.num );
-
-						//------------------------------------
-						// 탄창 설정
-						//------------------------------------
-						MGunItem* pGunItem = (MGunItem*)pItem;
-						pGunItem->SetMagazine( pMagazine );
 					}		
 					//------------------------------------------
-					// 총이 아닌 경우
+					// Anything else
 					//------------------------------------------
 					else
 					{
@@ -119,13 +98,13 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 					pItem->SetEnchantLevel( item.enchantLevel );
 
 					//------------------------------------------------------------
-					// Sub Item이 있으면 생성한다.
+					// Make the pockets' items.
 					//------------------------------------------------------------
 					int subNum = pPacket->getSubItemCount(rack, index);
 					if (subNum!=0)
 					{
 						//------------------------------------------------------------
-						// Belt인 경우
+						// A belt
 						//------------------------------------------------------------
 						if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 						{
@@ -136,7 +115,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 							std::list<SubItemInfo*>::const_iterator iItem = listSubItem.begin();
 
 							//------------------------------------------------------------
-							// 각각의 sub item을 설정한다.
+							// Set up each pocket's item.
 							//------------------------------------------------------------
 							while (iItem != listSubItem.end())
 							{
@@ -183,7 +162,7 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 							std::list<SubItemInfo*>::const_iterator iItem = listSubItem.begin();
 
 							//------------------------------------------------------------
-							// 각각의 sub item을 설정한다.
+							// Set up each pocket's item.
 							//------------------------------------------------------------
 							while (iItem != listSubItem.end())
 							{
@@ -229,11 +208,11 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 					}
 
 					//------------------------------------------------------------
-					// Storage에 item 설정
+					// Put the item in its slot
 					//------------------------------------------------------------
 					if (!g_pStorage->SetItem( index, pItem ))
 					{
-						// 뭐지..
+						// The slot refused it.
 						delete pItem;
 
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
@@ -243,22 +222,22 @@ void GCStashListHandler::execute ( GCStashList * pPacket , Player * pPlayer )
 		}
 		
 		//------------------------------------------------------------
-		// 돈 설정
+		// The stashed money
 		//------------------------------------------------------------
 		g_pStorage->GetMoneyManager()->SetMoney( pPacket->getStashGold() );
 
 		//------------------------------------------------------------
-		// 보관함을 띄운다.
+		// Open the stash window.
 		//------------------------------------------------------------
-		UI_RunStorage();
-		UI_SetStorage(g_pStorage);
+		DialogPresentation::RunStorage();
+		DialogPresentation::SetStorage(g_pStorage);
 	}
 	//------------------------------------------------------------
-	// 보관함이 없는 경우
+	// No stash
 	//------------------------------------------------------------
 	else
 	{
-		g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_NO_STORAGE].GetString());
+		DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_NO_STORAGE].GetString());
 	}
 		
 

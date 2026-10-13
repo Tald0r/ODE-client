@@ -3511,6 +3511,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RunPetStorage = UI_RunPetStorage,
 	.SetPetStorage = UI_SetPetStorage,
 	.EmptyMove = []() { gbl_global_empty_move = true; },
+	.RunStorage = UI_RunStorage,
+	.SetStorage = UI_SetStorage,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
