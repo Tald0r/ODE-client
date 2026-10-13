@@ -980,3 +980,8 @@ Client/PacketHandler/GCKnocksTargetBackOK1Handler.cpp
 Client/PacketHandler/GCThrowItemOK1Handler.cpp
 Client/PacketHandler/GCAttackArmsOK2Handler.cpp
 Client/PacketHandler/GCAttackMeleeOK2Handler.cpp
+
+# Skills used on oneself or at a cell, over the result-node factory and the
+# effect generator's main node.
+Client/PacketHandler/GCSkillToSelfOK2Handler.cpp
+Client/PacketHandler/GCSkillToSelfOK3Handler.cpp

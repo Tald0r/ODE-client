@@ -9,8 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToSelfOK2.h"
-#include "ClientDef.h"
-#include "PacketFunction2.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "Packet/WireHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -22,33 +26,33 @@ void GCSkillToSelfOK2Handler::execute ( GCSkillToSelfOK2 * pPacket , Player * pP
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 
 		//------------------------------------------------------
 		//
-		// Creature가 기술 사용 
+		// The creature uses the skill. 
 		//
 		//------------------------------------------------------
 		if (pCreature != NULL)
 		{	
 			// [ TEST CODE ]
 			//
-			// 결과를 생성&저장해서 보내야 한다.
+			// Make the result and hand it over.
 			//
-			// 누가(Player)가 스스로에게 SKill을 사용한 경우..
+			// Someone used the skill on itself.
 			// [ TEST CODE ]
 
 			int skillID = pPacket->getSkillType();
@@ -70,33 +74,33 @@ void GCSkillToSelfOK2Handler::execute ( GCSkillToSelfOK2 * pPacket , Player * pP
 
 			pResult->Add( new MActionResultNodeActionInfo( 
 									skillID, 
-									pCreature->GetID(), 
-									pCreature->GetID(), 
-									pCreature->GetX(),
-									pCreature->GetY(),
+									CreatureState::GetID(pCreature), 
+									CreatureState::GetID(pCreature), 
+									CreatureState::GetX(pCreature),
+									CreatureState::GetY(pCreature),
 									delayFrame ) );
 
 			//------------------------------------------------------
-			// EffectStatus가 있다면 붙인다.
+			// Add the effect status, if any.
 			//------------------------------------------------------
 			EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 			
 			if (es!=EFFECTSTATUS_NULL)
 			{
-				pResult->Add( new MActionResultNodeAddEffectStatus( pCreature->GetID(), 
+				pResult->Add( new MActionResultNodeAddEffectStatus( CreatureState::GetID(pCreature), 
 																		es, 
 																		delayFrame ) );
 			}
 
 			//------------------------------------------------------
 			//
-			// skill에 결과가 있으면 같이 적용 시킨다.
+			// Apply the skill's own result too, if it has one.
 			//
 			//------------------------------------------------------
 			MActionResultNode* pActionResultNode = CreateActionResultNode(pCreature, skillID);
 
 			//------------------------------------------------------
-			// NULL이 아니면 같이 적용
+			// Apply it too, if there is one.
 			//------------------------------------------------------
 			if (pActionResultNode!=NULL)
 			{
@@ -104,9 +108,8 @@ void GCSkillToSelfOK2Handler::execute ( GCSkillToSelfOK2 * pPacket , Player * pP
 			}
 
 			//Duration_t	m_Duration;
-			pCreature->PacketSpecialActionToSelf( 
-									pPacket->getSkillType(),
-									pResult	// 결과
+			CreatureState::PacketSpecialActionToSelf(pCreature, pPacket->getSkillType(),
+									pResult	// result
 				);
 		}
 	

@@ -9,7 +9,13 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToSelfOK3.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "Packet/WireHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -22,15 +28,15 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
@@ -39,7 +45,7 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 
 		//------------------------------------------------------
 		//
-		// 어느 지점에서 기술 사용이 된다.
+		// The skill is used at a cell.
 		//
 		//------------------------------------------------------			
 
@@ -63,7 +69,7 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 		MActionResult* pResult = NULL;
 
 		//------------------------------------------------------
-		// EffectStatus가 있다면 붙인다.
+		// Add the effect status, if any.
 		//------------------------------------------------------
 		EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 		
@@ -87,7 +93,7 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 
 		//------------------------------------------------------
 		//
-		// skill에 결과가 있으면 같이 적용 시킨다.
+		// Apply the skill's own result too, if it has one.
 		//
 		//------------------------------------------------------
 		/*
@@ -104,7 +110,7 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 		*/
 
 		//------------------------------------------------------
-		// NULL이 아니면 같이 적용
+		// Apply it too, if there is one.
 		//------------------------------------------------------
 		/*
 		if (pActionResultNode!=NULL)
@@ -116,26 +122,26 @@ void GCSkillToSelfOK3Handler::execute ( GCSkillToSelfOK3 * pPacket , Player * pP
 		//Duration_t	m_Duration;
 		//pCreature->PacketSpecialActionToSelf( 
 		//						pPacket->getSkillType(),
-		//						pResult	// 결과
+		//						pResult	// result
 		//	);
 
 		//------------------------------------------------------
-		// 사용 위치만 있는 경우...
+		// Only the cell is known.
 		//------------------------------------------------------
-		ExecuteActionInfoFromMainNode(
+		WorldEvents::ExecuteActionInfoFromMainNode(
 			static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),
 		
-			pPacket->getX(), pPacket->getY(), 0, // 기술 사용하는 사람(?) 
-			0,														// 사용 방향
+			pPacket->getX(), pPacket->getY(), 0, // the user (?) 
+			0,														// direction
 			
-			OBJECTID_NULL,												// 목표에 대한 정보
+			OBJECTID_NULL,												// the target
 			pPacket->getX(), pPacket->getY(), 0, 
 			
-			delayFrame,													// 기술의 (남은) 지속 시간		
+			delayFrame,													// the skill's (remaining) duration		
 			
 			NULL,
 
-			false);			// 기술 첨부터 시작한다.
+			false);			// start the skill from its beginning
 	}
 
 

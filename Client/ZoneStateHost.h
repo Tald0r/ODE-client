@@ -106,6 +106,8 @@ struct Host
 	void (*ClearStopBloodDrain)(MCreature* pCreature) = nullptr;
 	// The action the creature attacks with by default (its weapon's).
 	TYPE_ACTIONINFO (*GetBasicActionInfo)(MCreature* pCreature) = nullptr;
+	bool (*RemoveEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
+	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -167,5 +169,7 @@ void SetDrainCreatureID(MCreature* pCreature, TYPE_OBJECTID id);
 void ClearStopBloodDrain(MCreature* pCreature);
 // ACTIONINFO_NULL without a host.
 TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature);
+bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
+void SetFakeDie(MCreature* pCreature);
 
 }

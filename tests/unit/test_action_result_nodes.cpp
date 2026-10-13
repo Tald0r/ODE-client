@@ -136,6 +136,12 @@ const CreatureState::Host creature = []() {
 	host.AddCasket = [](MCreature* p, int casketType) { Record(p, "casket|" + N(casketType)); };
 	host.RemoveCasket = [](MCreature* p) { Record(p, "uncasket"); };
 	host.SetBloodyZenith = [](MCreature* p, int delay) { Record(p, "zenith|" + N(delay)); };
+	host.GetID = [](MCreature* p) { return Fake(p).id; };
+	host.RemoveEffectStatus = [](MCreature* p, EFFECTSTATUS status) {
+		Record(p, "unstatus|" + N(status));
+		return true;
+	};
+	host.SetFakeDie = [](MCreature* p) { Record(p, "fakedie"); };
 	return host;
 }();
 
@@ -641,5 +647,52 @@ TEST(ActionResultNodes, MissingServicesSkipTheirPart)
 	calls.clear();
 	Run(MActionResultNodeActionInfo(SKILL_DOUBLE_IMPACT, 1002, 1001, 1, 2, 0));
 	Run(MActionResultNodeCreatureDie(1001));
+	CHECK(calls.empty());
+}
+
+TEST(ActionResultNodes, TheFactoryMakesTheNodeTheSkillsResultKindNames)
+{
+	World world;
+	const struct { TYPE_ACTIONRESULTID kind; std::vector<std::string> made; std::vector<std::string> ran; } rows[] = {
+		{ACTIONRESULTNODE_CREATURE_BURROW, {}, {"Ogre.burrow"}},
+		{ACTIONRESULTNODE_CREATURE_INVISIBLE, {}, {"Ogre.invisible"}},
+		{ACTIONRESULTNODE_CREATURE_VISIBLE, {"Ogre.unstatus|" + N(EFFECTSTATUS_INVISIBILITY), "Ogre.unstatus|" + N(EFFECTSTATUS_SNIPPING_MODE)}, {"Ogre.visible"}},
+		{ACTIONRESULTNODE_CREATURE_SNIPPING, {}, {"Ogre.effect|" + N(EFFECTSTATUS_SNIPPING_MODE) + "|65535", "Ogre.invisible"}},
+		{ACTIONRESULTNODE_CREATURE_TURNING, {}, {"Ogre.turn|16"}},
+		{ACTIONRESULTNODE_SUMMON_CASKET, {}, {"Ogre.stop", "Ogre.move|0|0", "Ogre.casket|0"}},
+		{ACTIONRESULTNODE_FAKE_DIE, {"Ogre.fakedie"}, {}},
+		{ACTIONRESULTNODE_EVENT, {}, {}},
+	};
+	for (const auto& row : rows)
+	{
+		testfw::MutableRow(world.actions, SKILL_DOUBLE_IMPACT).SetActionResult(row.kind);
+		calls.clear();
+		MActionResultNode* pNode = CreateActionResultNode(Handle(world.ogre), SKILL_DOUBLE_IMPACT);
+		CHECK(pNode != nullptr);
+		if (pNode == nullptr) continue;
+		CHECK_EQ(static_cast<int>(row.kind), static_cast<int>(pNode->GetType()));
+		CHECK(calls == row.made);
+		calls.clear();
+		pNode->Execute();
+		CHECK(calls == row.ran);
+		delete pNode;
+	}
+}
+
+TEST(ActionResultNodes, TheFactoryMakesNothingForOtherKindsOrAnUngradedTyphoon)
+{
+	World world;
+	for (TYPE_ACTIONRESULTID kind : {ACTIONRESULTNODE_NULL, ACTIONRESULTNODE_ACTIONINFO, ACTIONRESULTNODE_CHANGE_POSITION})
+	{
+		testfw::MutableRow(world.actions, SKILL_DOUBLE_IMPACT).SetActionResult(kind);
+		CHECK(CreateActionResultNode(Handle(world.ogre), SKILL_DOUBLE_IMPACT) == nullptr);
+	}
+	// Typhoon turns its target only at grade 1.
+	testfw::MutableRow(world.actions, SKILL_TYPHOON).SetActionResult(ACTIONRESULTNODE_CREATURE_TURNING);
+	CHECK(CreateActionResultNode(Handle(world.ogre), SKILL_TYPHOON, 0) == nullptr);
+	CHECK(CreateActionResultNode(Handle(world.ogre), SKILL_TYPHOON, 2) == nullptr);
+	MActionResultNode* pNode = CreateActionResultNode(Handle(world.ogre), SKILL_TYPHOON, 1);
+	CHECK(pNode != nullptr && pNode->GetType() == ACTIONRESULTNODE_CREATURE_TURNING);
+	delete pNode;
 	CHECK(calls.empty());
 }

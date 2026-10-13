@@ -1,5 +1,6 @@
 #include "Client_PCH.h"
 #include "WorldEventsHost.h"
+#include "MActionResult.h"
 
 namespace WorldEvents {
 namespace {
@@ -66,6 +67,14 @@ void PlayMusicCurrentZone()
 void PlaySound(TYPE_SOUNDID soundID)
 {
 	if (s_Host && s_Host->PlaySound) s_Host->PlaySound(soundID);
+}
+
+void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode, int sX, int sY)
+{
+	if (s_Host && s_Host->ExecuteActionInfoFromMainNode)
+		s_Host->ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
+	else
+		delete pResult;
 }
 
 }

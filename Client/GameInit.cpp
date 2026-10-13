@@ -3648,6 +3648,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetDrainCreatureID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetDrainCreatureID(id); },
 	.ClearStopBloodDrain = [](MCreature* pCreature) { pCreature->ClearStopBloodDrain(); },
 	.GetBasicActionInfo = [](MCreature* pCreature) { return pCreature->GetBasicActionInfo(); },
+	.RemoveEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->RemoveEffectStatus(status); },
+	.SetFakeDie = [](MCreature* pCreature) { pCreature->SetFakeDie(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3665,6 +3667,9 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.RemoveEvent = [](int eventID) { if (g_pEventManager != NULL) g_pEventManager->RemoveEvent(static_cast<EVENT_ID>(eventID)); },
 	.PlayMusicCurrentZone = PlayMusicCurrentZone,
 	.PlaySound = [](TYPE_SOUNDID soundID) { PlaySound(soundID); },
+	.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode, int sX, int sY) {
+		ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
+	},
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
