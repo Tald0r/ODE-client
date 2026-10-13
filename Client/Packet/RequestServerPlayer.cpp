@@ -256,7 +256,7 @@ void RequestServerPlayer::disconnect ( bool bDisconnected )
 	__BEGIN_TRY
 
 	
-	// file요청중이던거 있으면 제거한다.
+	// Drop any file request this peer had running.
 	// The NULL test the host replaces was on the manager itself: with no
 	// manager there is nothing registered, which is what HasOtherRequest
 	// answers without a host.
@@ -267,18 +267,22 @@ void RequestServerPlayer::disconnect ( bool bDisconnected )
 
 	if ( bDisconnected == UNDISCONNECTED ) {
 
-		// 클라이언트에게 GCDisconnect 패킷을 전송한다.
-		//GCDisconnect gcDisconnect;
-		//sendPacket( gcDisconnect );
-
-		// 출력 버퍼에 남아있는 데이타를 전송한다.
-		m_pOutputStream->flush();
+		// Send what is left in the output buffer. A connection that is
+		// already reset or closed refuses it; that output is given up and
+		// the peer is still closed and ended below, so every caller (the
+		// manager's drop, Update()'s drop of a failed peer, the accept
+		// thread's refusal) frees it instead of meeting a second throw.
+		try {
+			m_pOutputStream->flush();
+		} catch (Throwable& t) {
+			DEBUG_ADD_ERR(t.toString().c_str());
+		}
 	}
 
-	// 소켓 연결을 닫는다.
+	// Close the connection.
 	m_pSocket->close();
 
-	// 플레이어의 상태를 로그아웃으로 만든다.
+	// The player is logged out.
 	//cout<< "PlayerStatus : " << (int)m_PlayerStatus << endl;
 	// 2001.10.5 주석처리 ..으흠..
 	//Assert( m_PlayerStatus != CPS_END_SESSION );

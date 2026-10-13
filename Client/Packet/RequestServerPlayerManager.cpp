@@ -173,21 +173,14 @@ RequestServerPlayerManager::Disconnect(const char* pName)
 	{
 		RequestServerPlayer* pPlayer = *iPlayer;
 
-		// Drop the player of that name. It leaves the list, and the lock is
-		// released, before anything that can throw: a flush the reset
-		// connection refuses is given up and the socket closed without it,
-		// rather than leaving the peer listed and the lock held.
+		// Drop the player of that name. It leaves the list, and this call's
+		// hold on the lock is released, before it is disconnected and freed.
 		if (pPlayer->getName()==pName)
 		{
 			m_listRequestServerPlayer.erase( iPlayer );
 			Unlock();
 
-			try {
-				pPlayer->disconnect(UNDISCONNECTED);
-			} catch (Throwable& t) {
-				DEBUG_ADD_ERR(t.toString().c_str());
-				pPlayer->disconnect(DISCONNECTED);
-			}
+			pPlayer->disconnect(UNDISCONNECTED);
 			delete pPlayer;
 			return;
 		}

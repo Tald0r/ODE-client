@@ -67,10 +67,24 @@ struct Manager : RequestServerPlayerManager
 };
 
 std::vector<std::string> asked;
+// Whether the handler's request first breaks the sender's connection with
+// output still queued, so dropping it must survive a refused flush.
+bool breakSender = false;
+
+// Output queued on a peer whose socket is then closed: its flush is refused.
+void Break(RequestServerPlayer* pPeer)
+{
+	CRDisconnect queued;
+	pPeer->sendPacket(&queued);
+	pPeer->getSocket()->close();
+}
 
 const WorldEvents::Host events{
 	.RequestDisconnect = [](const char* pName) {
 		asked.push_back(pName);
+		if (breakSender)
+			if (RequestServerPlayer* pPeer = static_cast<Manager*>(g_pRequestServerPlayerManager)->Find(pName))
+				Break(pPeer);
 		// What the executable's RequestDisconnect does with it.
 		if (g_pRequestServerPlayerManager != NULL)
 			g_pRequestServerPlayerManager->Disconnect(pName);
@@ -113,11 +127,12 @@ struct World
 		g_pRequestServerPlayerManager = &manager;
 		listener.setNonBlocking(true);
 		asked.clear();
+		breakSender = false;
 	}
 	~World()
 	{
 		// Whatever peers remain end their sessions before the manager frees them.
-		for (const char* name : {"Nyx", "Vanda"})
+		for (const char* name : {"Nyx", "Vanda", "Late"})
 			if (RequestServerPlayer* pPlayer = manager.Find(name))
 				pPlayer->setPlayerStatus(CPS_END_SESSION);
 		WorldEvents::SetHost(oldEvents);
@@ -197,4 +212,52 @@ TEST(PeerSelfDisconnect, ADisconnectOutsideAnUpdateDropsThePeerAtOnce)
 	CHECK(world.manager.Find("Vanda") == nullptr);
 	world.manager.Disconnect("Nobody");
 	CHECK_EQ(1, world.manager.GetSize());
+}
+
+TEST(PeerSelfDisconnect, APeerWhoseConnectionBrokeWithOutputQueuedIsDroppedAndTheRestServed)
+{
+	World world;
+	world.Connect("Vanda");
+	Socket* nyx = world.Connect("Nyx");
+	Break(world.manager.Find("Vanda"));
+
+	// Vanda heads the list. Dropping her must not abort the loop, or Nyx,
+	// behind her, is never served again.
+	CRDisconnect disconnect;
+	Send(nyx, disconnect);
+	for (int i = 0; i < 200 && world.manager.GetSize() != 0; i++)
+	{
+		world.manager.Update();
+		if (world.manager.GetSize() != 0)
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	CHECK(world.manager.Find("Vanda") == nullptr);
+	CHECK(asked == std::vector<std::string>{"Nyx"});
+	CHECK_EQ(0, world.manager.GetSize());
+}
+
+TEST(PeerSelfDisconnect, ADroppedPeerWhoseFlushIsRefusedIsStillFreed)
+{
+	World world;
+	world.Connect("Nyx");
+	world.Connect("Vanda");
+
+	// From outside an update.
+	Break(world.manager.Find("Vanda"));
+	world.manager.Disconnect("Vanda");
+	CHECK(world.manager.Find("Vanda") == nullptr);
+
+	// Deferred from the sender's own request, broken first.
+	breakSender = true;
+	Socket* late = world.Connect("Late");
+	CRDisconnect disconnect;
+	Send(late, disconnect);
+	for (int i = 0; i < 200 && world.manager.Find("Late") != nullptr; i++)
+	{
+		world.manager.Update();
+		if (world.manager.Find("Late") != nullptr)
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	CHECK(world.manager.Find("Late") == nullptr);
+	CHECK(world.manager.Find("Nyx") != nullptr);
 }

@@ -3229,13 +3229,16 @@ Follow-ups from 4.102, all older than the move:
   the dispatch then wrote and read the freed object, and `Update()` called
   `processOutput()` on it and advanced an erased iterator. A disconnect
   asked for during `Update()` is now queued and carried out after the
-  loop; outside `Update()` it is immediate, as before. A disconnect whose
-  flush the connection refuses now closes the socket without it, after the
-  peer has left the list and the lock is released, and the queued drops each
-  catch their own failure, so neither escapes `Update()` (a regression guard:
-  provoking a refused flush needs a reset connection with unsent bytes, and
-  the socket layer does not suppress `SIGPIPE`, so a test would kill the
-  test process on POSIX; the request server runs on Windows).
+  loop; outside `Update()` it is immediate, as before. A peer's own
+  `disconnect()` gives up output a reset or closed connection refuses and
+  still closes and ends the session, so neither the deferred drop nor
+  `Update()`'s drop of a failed peer can throw a second time: before, a
+  broken peer with output queued stayed listed at the head of the loop and
+  starved every peer behind it, and the deferred drop could escape
+  `Update()`. A dropped peer leaves the list, and the drop's hold on the
+  lock is released, before it is disconnected, and the queued drops each
+  catch their own failure. The same test file breaks peers with output
+  queued (a closed socket refuses the flush) and shows each case.
   `test_peer_self_disconnect.cpp` drives two real loopback peers through
   the real factory, validator and handler; before the fix the ASan tree
   reported the heap-use-after-free and the plain tree crashed.
