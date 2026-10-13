@@ -2660,19 +2660,19 @@ rounds settled* for the host rules). Test fixtures share
   `GCRequestedIP`, `GCShowMessageBox`, `GLIncomingConnectionError`,
   `GLIncomingConnectionOK`, `LCVersionCheckOK`, `LGIncomingConnection` and
   `UCRequestLoginMode`.
-  > **Status:** done (2026-10-13). After a separate commit drops an unused
-  > `ClientDef.h` include from three of them, the files move byte for byte and
-  > need no host. `GCAuthKeyHandler` (includes the executable's `Client.h` for a dead
-  > `__NPROTECT__` call) and `GCSubInventoryInfoHandler` (a dead
-  > `__TEST_SUB_INVENTORY__` block names `g_pZone`/`g_pPlayer`, which R4
-  > counts) stay until those blocks are retired. Open, not fixed here:
-  > `GCShowMessageBox::read`/`write` throw "too long Message size" for every
-  > non-empty message, so the client can neither send nor receive the packet;
-  > the server encodes a 1-255 byte string and never sends it. R1 is 329
-  > Windows / 327 Ninja.
+  > **Status:** done (2026-10-13; PR #389). After a separate commit drops an
+  > unused `ClientDef.h` include from three of them, the files move byte for
+  > byte and need no host. `GCAuthKeyHandler` (includes the executable's
+  > `Client.h` for a dead `__NPROTECT__` call) and `GCSubInventoryInfoHandler`
+  > (a dead `__TEST_SUB_INVENTORY__` block names `g_pZone`/`g_pPlayer`, which
+  > R4 counts) stay until those blocks are retired. The three `GL`/`LG`
+  > handlers are server-to-server datagrams the client's datagram validator
+  > never accepts. R1 is 329 Windows / 327 Ninja.
   - Owner: membership, R1 and `test_ignored_packet_handlers.cpp`, which runs
-    every handler on a decoded packet and requires it unchanged; removing the
-    thirteen files from the membership breaks the test link on each.
+    every handler and requires its packet unchanged, decoding it first where
+    the client can (all but `GCShowMessageBox` and `UCRequestLoginMode`);
+    removing the thirteen files from the membership breaks the test link on
+    each.
 
 ### Remaining R1 work after tasks 4.80-4.91
 
@@ -2739,6 +2739,14 @@ Follow-up from 4.88's source review: `GCRegenZoneStatus::read` appends on repeat
 decoding into one packet object. Production currently creates fresh packets;
 reuse would retain old ownership bytes. This extraction leaves wire code
 unchanged and tests consecutive replies with distinct decoded packet objects.
+
+Follow-up from 4.91: `GCShowMessageBox::read` and `write` throw "too long
+Message size" for every non-empty message (an unconditional `else throw`),
+and `write` never writes the length byte. The server reads and writes a
+1-255 byte string and sends the packet nowhere, so nothing reaches it today;
+if a server did send it, the client's reader would throw and
+`UpdateSocketInput` would report the error and drop the player to the main
+menu. A fix needs both halves to match the server's encoding.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

@@ -117,7 +117,7 @@ TEST(IgnoredPacketHandlers, GameServerRepliesLeaveTheirPacketUnchanged)
 	CHECK(box.getMessage() == "notice");
 }
 
-TEST(IgnoredPacketHandlers, LoginAndUpdateRepliesLeaveTheirPacketUnchanged)
+TEST(IgnoredPacketHandlers, LoginAndUpdatePacketsLeaveTheirPacketUnchanged)
 {
 	CheckIgnored(LCVersionCheckOK(), [](LCVersionCheckOK* p) { LCVersionCheckOKHandler::execute(p, nullptr); });
 	CheckIgnored(CURequestLoginMode(),
@@ -130,6 +130,8 @@ TEST(IgnoredPacketHandlers, LoginAndUpdateRepliesLeaveTheirPacketUnchanged)
 	CHECK_EQ(1, mode.getLoginMode());
 }
 
+// Server-to-server datagrams: the client's datagram validator never accepts
+// them, so these handlers are registered but unreachable.
 TEST(IgnoredPacketHandlers, ServerToServerConnectionPacketsLeaveTheirPacketUnchanged)
 {
 	GLIncomingConnectionError error;
