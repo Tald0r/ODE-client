@@ -9,7 +9,6 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackArmsOK4.h"
-#include "ConvertDuration.h"
 #include "DebugLog.h"
 #include "ZoneStateHost.h"
 #include "MActionInfoTable.h"

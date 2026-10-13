@@ -1,14 +1,12 @@
 #include "test_framework.h"
 #include "gamemodel_world.h"
 #include "packet_stream_access.h"
-#include "type_table_access.h"
 #include "ZoneStateHost.h"
 #include "PlayerStateHost.h"
 #include "ConvertDuration.h"
 #include "MActionInfoTable.h"
 #include "MShop.h"
 #include "MShopShelf.h"
-#include "MStatus.h"
 #include "SkillDef.h"
 #include "Socket.h"
 #include "SocketImpl.h"
@@ -43,7 +41,14 @@ struct FakeCreature
 };
 
 MCreature* Handle(FakeCreature& creature) { return reinterpret_cast<MCreature*>(&creature); }
-FakeCreature& Fake(MCreature* pCreature) { return *reinterpret_cast<FakeCreature*>(pCreature); }
+// A handler that passes on a creature it never found fails here, not later.
+FakeCreature& Fake(MCreature* pCreature)
+{
+	static FakeCreature none;
+	CHECK(pCreature != nullptr);
+	return pCreature == nullptr ? none : *reinterpret_cast<FakeCreature*>(pCreature);
+}
+bool IsNPC(MCreature* p) { return Fake(p).shop != nullptr || Fake(p).name == "Shopless"; }
 std::string N(long long value) { return std::to_string(value); }
 std::string Who(MCreature* pCreature) { return Fake(pCreature).name; }
 
@@ -95,8 +100,12 @@ CreatureState::Host CreatureHost()
 		calls.push_back(Who(p) + ".serverpos|" + N(x) + "|" + N(y));
 	};
 	host.SetStop = [](MCreature* p) { calls.push_back(Who(p) + ".stop"); };
-	host.IsNPC = [](MCreature* p) { return Fake(p).shop != nullptr || Fake(p).name == "Shopless"; };
-	host.GetShop = [](MCreature* p) { return Fake(p).shop; };
+	host.IsNPC = IsNPC;
+	// Only an NPC has a shop: the adapter casts to MNPC.
+	host.GetShop = [](MCreature* p) {
+		CHECK(IsNPC(p));
+		return Fake(p).shop;
+	};
 	return host;
 }
 const CreatureState::Host creature = CreatureHost();
@@ -242,11 +251,11 @@ void ReceiveDamage(ObjectID_t target)
 	GCGetDamageHandler::execute(&packet, nullptr);
 }
 
-void ReceiveBought(ObjectID_t npc, ShopRackType_t shelf, BYTE index, int itemClass)
+void ReceiveBought(ObjectID_t npc, ShopRackType_t shelf, BYTE index, int itemClass, ShopVersion_t version = 5)
 {
 	GCShopBought original;
 	original.setObjectID(npc);
-	original.setShopVersion(5);
+	original.setShopVersion(version);
 	original.setShopType(shelf);
 	original.setShopIndex(index);
 	original.setItemObjectID(800);
@@ -266,11 +275,17 @@ void ReceiveBought(ObjectID_t npc, ShopRackType_t shelf, BYTE index, int itemCla
 TEST(CreatureActionResults, ArmsSkillsLandAsTheirOwnResultOrTheGunsDefault)
 {
 	World world;
-	ReceiveArmsOK4(1001, SKILL_JABBING_VEIN);
+	for (SkillType_t skill : {SKILL_JABBING_VEIN, SKILL_MOLE_SHOT, SKILL_TRIDENT, SKILL_QUICK_FIRE,
+		SKILL_ULTIMATE_BLOW, SKILL_HARPOON_BOMB})
+	{
+		calls.clear();
+		ReceiveArmsOK4(1001, skill);
+		CHECK(calls == std::vector<std::string>{Result("Ogre", skill + kMinResult, world.ogre)});
+	}
+	calls.clear();
 	ReceiveArmsOK4(1001, SKILL_ATTACK_MELEE);
 	ReceiveArmsOK4(4242, SKILL_JABBING_VEIN);
-	CHECK(calls == std::vector<std::string>({Result("Ogre", SKILL_JABBING_VEIN + kMinResult, world.ogre),
-		Result("Ogre", RESULT_SKILL_ATTACK_GUN_SR, world.ogre)}));
+	CHECK(calls == std::vector<std::string>{Result("Ogre", RESULT_SKILL_ATTACK_GUN_SR, world.ogre)});
 	calls.clear();
 	zoneExists = false;
 	ReceiveArmsOK4(1001, SKILL_JABBING_VEIN);
@@ -281,6 +296,12 @@ TEST(CreatureActionResults, ASkillOnAnObjectDelaysLandsAddsItsEffectAndMayTurnIt
 {
 	World world;
 	const std::uint32_t frames = ConvertDurationToFrame(50);
+	// A skill without an effect or steps only lands, and only Dragon Tornado
+	// turns its target.
+	ReceiveToObjectOK4(1002, SKILL_JABBING_VEIN, 2);
+	CHECK(calls == std::vector<std::string>({"Vanda.delay|" + N(SKILL_JABBING_VEIN) + "|" + N(frames),
+		Result("Vanda", SKILL_JABBING_VEIN + kMinResult, world.vanda)}));
+	calls.clear();
 	world.actions.GetMutable(SKILL_DRAGON_TORNADO)->SetEffectStatus(EFFECTSTATUS_HAS_SLAYER_RELIC);
 	ReceiveToObjectOK4(1002, SKILL_DRAGON_TORNADO, 0);
 	CHECK(calls == std::vector<std::string>({"Vanda.delay|" + N(SKILL_DRAGON_TORNADO) + "|" + N(frames),
@@ -298,6 +319,11 @@ TEST(CreatureActionResults, ASkillOnAnObjectDelaysLandsAddsItsEffectAndMayTurnIt
 	CHECK(calls == std::vector<std::string>({"Vanda.delay|" + N(SKILL_JABBING_VEIN) + "|" + N(frames),
 		Result("Vanda", SKILL_DRAGON_TORNADO + kMinResult, world.vanda),
 		"Vanda.effect|" + N(EFFECTSTATUS_HAS_SLAYER_RELIC) + "|" + N(frames), "Vanda.turning|16"}));
+	// Grade 0 takes no step: the skill lands as itself.
+	calls.clear();
+	ReceiveToObjectOK4(1002, SKILL_JABBING_VEIN, 0);
+	CHECK(calls == std::vector<std::string>({"Vanda.delay|" + N(SKILL_JABBING_VEIN) + "|" + N(frames),
+		Result("Vanda", SKILL_JABBING_VEIN + kMinResult, world.vanda)}));
 
 	// A skill past the table, an unknown target or no zone changes nothing.
 	calls.clear();
@@ -359,16 +385,38 @@ TEST(CreatureActionResults, AnItemBoughtFromAnNPCFillsItsShelfSlot)
 	}
 	CHECK_EQ(5, shelf->GetVersion());
 
-	// A creature that is no NPC, an NPC without a shop, a missing shelf, a
-	// class the factory cannot make or a slot past the shelf changes nothing
-	// and keeps nothing alive.
-	ReceiveBought(1001, MShopShelf::SHELF_FIXED, 5, ITEM_CLASS_SWORD);
-	ReceiveBought(1004, MShopShelf::SHELF_FIXED, 5, ITEM_CLASS_SWORD);
-	ReceiveBought(1003, MShopShelf::SHELF_SPECIAL, 5, ITEM_CLASS_SWORD);
-	ReceiveBought(1003, MShopShelf::SHELF_FIXED, 5, ITEM_CLASS_HELM);
-	ReceiveBought(1003, MShopShelf::SHELF_FIXED, 200, ITEM_CLASS_SWORD);
+	// A creature that is no NPC, an NPC without a shop, a missing shelf or a
+	// class the factory cannot make changes neither the slot nor the
+	// shelf's version, and keeps nothing alive.
+	ReceiveBought(1001, MShopShelf::SHELF_FIXED, 5, ITEM_CLASS_SWORD, 9);
+	ReceiveBought(1004, MShopShelf::SHELF_FIXED, 5, ITEM_CLASS_SWORD, 9);
+	ReceiveBought(1003, MShopShelf::SHELF_SPECIAL, 5, ITEM_CLASS_SWORD, 9);
+	ReceiveBought(1003, MShopShelf::SHELF_FIXED, 5, ITEM_CLASS_HELM, 9);
 	CHECK(shelf->GetItem(5) == nullptr);
+	CHECK_EQ(5, shelf->GetVersion());
+	// A slot past the shelf keeps no item (it still takes the version: a
+	// follow-up in the doc).
+	ReceiveBought(1003, MShopShelf::SHELF_FIXED, 200, ITEM_CLASS_SWORD);
 	CHECK_EQ(1, alive);
+}
+
+TEST(CreatureActionResults, WithoutAZoneOrATargetNoCreatureIsTouched)
+{
+	World world;
+	// GetCreature fails its check if asked without a zone, and every
+	// creature entry fails its check if handed no creature.
+	zoneExists = false;
+	ReceiveArmsOK4(1001, SKILL_JABBING_VEIN);
+	ReceiveToObjectOK4(1002, SKILL_JABBING_VEIN, 0);
+	ReceiveToInventoryOK2(1001, SKILL_JABBING_VEIN);
+	ReceiveKnockBack(1001, SKILL_JABBING_VEIN);
+	ReceiveDamage(1002);
+	ReceiveBought(1003, MShopShelf::SHELF_FIXED, 4, ITEM_CLASS_SWORD);
+	zoneExists = true;
+	ReceiveKnockBack(4242, SKILL_JABBING_VEIN);
+	ReceiveBought(4242, MShopShelf::SHELF_FIXED, 4, ITEM_CLASS_SWORD);
+	CHECK(calls.empty());
+	CHECK_EQ(0, alive);
 }
 
 TEST(CreatureActionResults, MissingEntriesSkipTheCreatureAndThePlayer)
@@ -387,6 +435,7 @@ TEST(CreatureActionResults, MissingEntriesSkipTheCreatureAndThePlayer)
 	ReceiveToInventoryOK2(1001, SKILL_JABBING_VEIN);
 	ReceiveKnockBack(1001, SKILL_JABBING_VEIN);
 	ReceiveDamage(1002);
+	ReceiveDamage(7);
 	ReceiveBought(1003, MShopShelf::SHELF_FIXED, 4, ITEM_CLASS_SWORD);
 	CHECK(calls.empty());
 	CHECK_EQ(0, alive);

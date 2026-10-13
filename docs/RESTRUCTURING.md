@@ -3027,9 +3027,11 @@ rounds settled* for the host rules). Test fixtures share
   > entries; `PacketSpecialActionResult` is virtual and `MPlayer` overrides
   > it, so the call reaches the player's override as before. The action
   > table, the shop and its shelves are already `gamemodel`'s.
-  > `GCSkillToObjectOK4Handler` takes `SendBugReport` from `WireHost.h`
-  > instead of the executable's `PacketFunction2.h`. R1 is 232 Windows /
-  > 230 Ninja.
+  > `GCSkillToObjectOK4Handler` drops the unused `PacketFunction2.h`;
+  > `SendBugReport`, which reached it through `ClientDef.h`, comes from
+  > `Packet/WireHost.h` directly. The `GetShop` adapter answers no shop for
+  > a creature that is not an NPC instead of casting it. R1 is 232 Windows
+  > / 230 Ninja.
   - Owner: membership, R1, the new entries and adapters, and
     `test_creature_action_result_handlers.cpp` (arms skills land as their
     own result or the gun's default; a skill on an object delays, lands
@@ -3040,8 +3042,14 @@ rounds settled* for the host rules). Test fixtures share
     lands where it moved; damage on the player even without a zone, or
     on the named creature; an item bought from an NPC fills its shelf
     slot with the packet's fields, and nothing for a non-NPC, a shopless
-    NPC, a missing shelf, an unknown class or a slot past the shelf;
-    missing entries).
+    NPC, a missing shelf or an unknown class, the shelf's version kept,
+    and no item for a slot past the shelf; every arms skill; a skill
+    without effect or steps only lands, grade 0 takes no step, and only
+    Dragon Tornado turns; without a zone or a target no creature is
+    looked up or touched; missing entries).
+  - Follow-up: `GCShopBought` sets the shelf's version before
+    `MShopShelf::SetItem` refuses a slot past the shelf (20 or more), so
+    the shelf reads as current without the item, as before the move.
 
 ### Remaining R1 work after tasks 4.80-4.106
 
@@ -3268,7 +3276,8 @@ Follow-ups from 4.102, all older than the move:
   connection refuses, and logs a close the system refuses, and still ends
   the session, so `Update()`'s drop of a failed peer no longer throws a
   second time. Before, also on master, a broken peer with output queued
-  stayed listed at the head of the loop and starved every peer behind it.
+  stayed listed, aborted every later update at its turn and starved every
+  peer behind it.
   `test_peer_self_disconnect.cpp` drives real loopback peers through the
   real factory, validator and handler; before the fix the ASan tree
   reported the heap-use-after-free and the plain tree crashed. It also

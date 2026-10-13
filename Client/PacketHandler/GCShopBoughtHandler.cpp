@@ -50,7 +50,6 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 		//------------------------------------------------------
 		else if (CreatureState::IsNPC(pCreature))
 		{
-			
 			MShop* pShop = CreatureState::GetShop(pCreature);
 
 			if (pShop==NULL)

@@ -3577,7 +3577,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.AddEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame) { return pCreature->AddEffectStatus(status, delayFrame); },
 	.SetTurning = [](MCreature* pCreature, std::uint16_t count) { pCreature->SetTurning(count); },
 	.IsNPC = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_NPC; },
-	.GetShop = [](MCreature* pCreature) { return static_cast<MNPC*>(pCreature)->GetShop(); },
+	// Only an NPC has a shop; another creature answers none rather than be cast.
+	.GetShop = [](MCreature* pCreature) -> MShop* {
+		return pCreature->GetClassType() == MCreature::CLASS_NPC ? static_cast<MNPC*>(pCreature)->GetShop() : NULL;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
