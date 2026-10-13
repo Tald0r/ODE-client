@@ -1,5 +1,6 @@
 #include "Client_PCH.h"
 #include "ZoneStateHost.h"
+#include "MActionResult.h"
 #include "MStatus.h"
 
 namespace ZoneState {
@@ -291,6 +292,39 @@ void RemoveCasket(MCreature* pCreature)
 void SetBloodyZenith(MCreature* pCreature, int delay)
 {
 	if (s_Host && s_Host->SetBloodyZenith) s_Host->SetBloodyZenith(pCreature, delay);
+}
+
+void PacketSpecialActionToSector(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, MActionResult* pResult)
+{
+	if (s_Host && s_Host->PacketSpecialActionToSector) s_Host->PacketSpecialActionToSector(pCreature, actionInfo, sX, sY, pResult);
+	else delete pResult;
+}
+
+void PacketSpecialActionToOther(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_OBJECTID id, MActionResult* pResult)
+{
+	if (s_Host && s_Host->PacketSpecialActionToOther) s_Host->PacketSpecialActionToOther(pCreature, actionInfo, id, pResult);
+	else delete pResult;
+}
+
+void PacketSpecialActionToNobody(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->PacketSpecialActionToNobody) s_Host->PacketSpecialActionToNobody(pCreature, actionInfo, x, y);
+}
+
+void PacketSpecialActionToSelf(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, MActionResult* pResult)
+{
+	if (s_Host && s_Host->PacketSpecialActionToSelf) s_Host->PacketSpecialActionToSelf(pCreature, actionInfo, pResult);
+	else delete pResult;
+}
+
+void SetDrainCreatureID(MCreature* pCreature, TYPE_OBJECTID id)
+{
+	if (s_Host && s_Host->SetDrainCreatureID) s_Host->SetDrainCreatureID(pCreature, id);
+}
+
+void ClearStopBloodDrain(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ClearStopBloodDrain) s_Host->ClearStopBloodDrain(pCreature);
 }
 
 }

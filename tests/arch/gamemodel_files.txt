@@ -950,3 +950,10 @@ Client/PacketHandler/CRWhisperHandler.cpp
 Client/MActionResult.cpp
 Client/MorphState.cpp
 Client/MorphState.h
+
+# Skill replies that hand a creature its special action and result queue:
+# a knock-back, a skill on a tile, holy water, and a blood drain.
+Client/PacketHandler/GCKnocksTargetBackOK5Handler.cpp
+Client/PacketHandler/GCSkillToTileOK3Handler.cpp
+Client/PacketHandler/GCThrowItemOK3Handler.cpp
+Client/PacketHandler/GCBloodDrainOK3Handler.cpp

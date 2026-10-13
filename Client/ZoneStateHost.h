@@ -4,6 +4,7 @@
 #include "MTypeDef.h"
 #include "MEffectStatusDef.h"
 
+class MActionResult;
 class MCreature;
 class MShop;
 class MStatus;
@@ -95,6 +96,14 @@ struct Host
 	void (*AddCasket)(MCreature* pCreature, int casketType) = nullptr;
 	void (*RemoveCasket)(MCreature* pCreature) = nullptr;
 	void (*SetBloodyZenith)(MCreature* pCreature, int delay) = nullptr;
+	// The special actions take the result queue, as the members do; the
+	// forwarders free it when there is no entry to take it.
+	void (*PacketSpecialActionToSector)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, MActionResult* pResult) = nullptr;
+	void (*PacketSpecialActionToOther)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_OBJECTID id, MActionResult* pResult) = nullptr;
+	void (*PacketSpecialActionToNobody)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*PacketSpecialActionToSelf)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, MActionResult* pResult) = nullptr;
+	void (*SetDrainCreatureID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
+	void (*ClearStopBloodDrain)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -147,5 +156,12 @@ bool IsInCasket(MCreature* pCreature);
 void AddCasket(MCreature* pCreature, int casketType);
 void RemoveCasket(MCreature* pCreature);
 void SetBloodyZenith(MCreature* pCreature, int delay);
+// Each takes pResult, which may be NULL.
+void PacketSpecialActionToSector(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, MActionResult* pResult);
+void PacketSpecialActionToOther(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_OBJECTID id, MActionResult* pResult);
+void PacketSpecialActionToNobody(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void PacketSpecialActionToSelf(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, MActionResult* pResult);
+void SetDrainCreatureID(MCreature* pCreature, TYPE_OBJECTID id);
+void ClearStopBloodDrain(MCreature* pCreature);
 
 }

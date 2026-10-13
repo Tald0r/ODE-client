@@ -3625,6 +3625,20 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.AddCasket = [](MCreature* pCreature, int casketType) { pCreature->AddCasket(casketType); },
 	.RemoveCasket = [](MCreature* pCreature) { pCreature->RemoveCasket(); },
 	.SetBloodyZenith = [](MCreature* pCreature, int delay) { pCreature->SetBloodyZenith(delay); },
+	.PacketSpecialActionToSector = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, MActionResult* pResult) {
+		pCreature->PacketSpecialActionToSector(actionInfo, sX, sY, pResult);
+	},
+	.PacketSpecialActionToOther = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_OBJECTID id, MActionResult* pResult) {
+		pCreature->PacketSpecialActionToOther(actionInfo, id, pResult);
+	},
+	.PacketSpecialActionToNobody = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		pCreature->PacketSpecialActionToNobody(actionInfo, x, y);
+	},
+	.PacketSpecialActionToSelf = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, MActionResult* pResult) {
+		pCreature->PacketSpecialActionToSelf(actionInfo, pResult);
+	},
+	.SetDrainCreatureID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetDrainCreatureID(id); },
+	.ClearStopBloodDrain = [](MCreature* pCreature) { pCreature->ClearStopBloodDrain(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

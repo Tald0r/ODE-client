@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCBloodDrainOK3.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -23,34 +26,34 @@ void GCBloodDrainOK3Handler::execute ( GCBloodDrainOK3 * pPacket , Player * pPla
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pUserCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-		MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );		
+		MCreature* pUserCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+		MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );		
 
-		// Creature에게 Damage 입힘
+		// The creature is hit.
 		if (pUserCreature != NULL && pTargetCreature != NULL)
 		{
-			// TargetCreature에게 UserCreature가 흡혈하구 있다구 알려준다.
-			pTargetCreature->SetDrainCreatureID( pPacket->getObjectID() );
+			// Tell the target who drains its blood.
+			CreatureState::SetDrainCreatureID(pTargetCreature, pPacket->getObjectID() );
 
-			pUserCreature->ClearStopBloodDrain();
+			CreatureState::ClearStopBloodDrain(pUserCreature);
 
 			// [ TEST CODE ]
 			//
-			// 결과를 생성&저장해서 보내야 한다.
+			// Make the result and hand it over.
 			//
-			// 누군가(target)가 누군가가 사용한 SKill을 맞은 경우..
+			// The target is hit by the user's skill.
 			// [ TEST CODE ]
 			MActionResult* pResult = new MActionResult;
 
@@ -60,23 +63,22 @@ void GCBloodDrainOK3Handler::execute ( GCBloodDrainOK3 * pPacket , Player * pPla
 											SKILL_BLOOD_DRAIN,
 											pPacket->getObjectID(), 
 											pPacket->getTargetObjectID(), 
-											pTargetCreature->GetX(),
-											pTargetCreature->GetY()
+											CreatureState::GetX(pTargetCreature),
+											CreatureState::GetY(pTargetCreature)
 											 ) );
 
-			// 서로 바라보기
-			pUserCreature->SetDirectionToPosition(pTargetCreature->GetX(), pTargetCreature->GetY());
-			//pTargetCreature->SetDirectionToPosition(pUserCreature->GetX(), pUserCreature->GetY());
+			// The user faces the target.
+			CreatureState::SetDirectionToPosition(pUserCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature));
+			//CreatureState::SetDirectionToPosition(pTargetCreature, CreatureState::GetX(pUserCreature), CreatureState::GetY(pUserCreature));
 
 			//Duration_t	m_Duration;
-			pUserCreature->PacketSpecialActionToOther(
-								SKILL_BLOOD_DRAIN,
+			CreatureState::PacketSpecialActionToOther(pUserCreature, SKILL_BLOOD_DRAIN,
 								pPacket->getTargetObjectID(),
-								pResult			// 결과
+								pResult			// result
 			);		
 
-			int delayFrame = 691200;	// 12시간*60분*60초*16frame = 12*60*60*16;
-			pTargetCreature->AddEffectStatus( EFFECTSTATUS_BLOOD_DRAIN, delayFrame );
+			int delayFrame = 691200;	// 12 hours of 16 frames a second: 12*60*60*16
+			CreatureState::AddEffectStatus(pTargetCreature, EFFECTSTATUS_BLOOD_DRAIN, delayFrame );
 		}
 	}	
 

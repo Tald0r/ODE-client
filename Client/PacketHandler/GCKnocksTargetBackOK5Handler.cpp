@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCKnocksTargetBackOK5.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,9 +26,9 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 	// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -34,14 +37,14 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 	}	
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The target creature.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-	MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+	MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 	
 	if (pCreature==NULL)
 	{
-		// 그런 creature가 없을 경우
+		// No such creature.
 		DEBUG_ADD_FORMAT("There's no such creature : ID=%d, Skill=%d", pPacket->getObjectID(), pPacket->getSkillType());				
 		
 		return;
@@ -49,14 +52,14 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 
 	if (pTargetCreature==NULL)
 	{
-		// 그런 creature가 없을 경우
+		// No such creature.
 		DEBUG_ADD_FORMAT("There's no such creature : TargetID=%d, Skill=%d", pPacket->getTargetObjectID(), pPacket->getSkillType());
 		
 		return;
 	}
 
 
-	int skillType = pPacket->getSkillType();	//pCreature->GetBasicActionInfo()	
+	int skillType = pPacket->getSkillType();	//CreatureState::GetBasicActionInfo(pCreature)	
 
 	if( skillType >= g_pActionInfoTable->GetSize() )
 	{
@@ -65,53 +68,52 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 	}
 
 	//------------------------------------------------------
-	// 물러나는방향(direction)적용..
+	// The direction it is knocked back in.
 	//------------------------------------------------------	
 	unsigned short x = pPacket->getX();
 	unsigned short y = pPacket->getY();
 
-	// 이동한 후의 좌표가 온다.
+	// The packet carries the cell after the move.
 	//MCreature::GetPositionToDirection(x, y, pPacket->getDir());
 
 	//------------------------------------------------------
-	// 결과(다른 캐릭터가 맞는 모습)를 설정한다.
+	// The result: the other character being hit.
 	//------------------------------------------------------
 	MActionResult* pResult = new MActionResult;
 	pResult->Add( new MActionResultNodeActionInfo( 
-								skillType, // 총 공격									
+								skillType, // gun attack									
 								pPacket->getObjectID(), 
 								pPacket->getTargetObjectID(),
-								pTargetCreature->GetX(),
-								pTargetCreature->GetY()
+								CreatureState::GetX(pTargetCreature),
+								CreatureState::GetY(pTargetCreature)
 								 ) 
 				);
 
-	// target object의 좌표가 바뀜
+	// the target moves
 	pResult->Add( new MActionResultNodeChangePosition( 
 								pPacket->getTargetObjectID(),
 								x, y)
 				);
 								
 	//------------------------------------------------------
-	// 행동하는 Creature가 TargetCreature를 바라보도록 한다.
+	// The acting creature faces its target.
 	//------------------------------------------------------
-	pCreature->SetDirectionToPosition( pTargetCreature->GetX(), pTargetCreature->GetY() );
+	CreatureState::SetDirectionToPosition(pCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature) );
 
 	//------------------------------------------------------
-	// Creature가 행동을 취하도록 한다.
+	// The creature acts.
 	//------------------------------------------------------
-	pCreature->PacketSpecialActionToOther(
-					// 총 공격
-					skillType	, 
+	CreatureState::PacketSpecialActionToOther(pCreature,
+					skillType	, // gun attack
 					pPacket->getTargetObjectID(), 
 					pResult
 	);
 
 	//------------------------------------------------------
-	// 동기화 문제 때문에..
-	// 서버 위치는 바로 지정한다.
+	// To stay in sync,
+	// the server cell is set at once.
 	//------------------------------------------------------
-	pTargetCreature->SetServerPosition( x, y );
+	CreatureState::SetServerPosition(pTargetCreature, x, y );
 
 
 	__END_CATCH
