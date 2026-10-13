@@ -401,11 +401,11 @@ bool ContainsIgnoreCase(const char* haystack, const char* needle) {
 	return false;
 }
 
-//检测非法进程 yckou
+// Detects cheat tools by their window titles (yckou).
 bool CheckInvalidProcess()
 {
 #ifdef PLATFORM_WINDOWS
-	//以下这段检测非法进程 (Windows-specific anti-cheat check)
+	// Windows-specific anti-cheat check.
 	if (g_bCheckHack)
 	{
 		HWND hCurrentWindow;
@@ -413,7 +413,12 @@ bool CheckInvalidProcess()
 		hCurrentWindow = GetWindow(g_hWnd,GW_HWNDFIRST);
 		while (hCurrentWindow != NULL)
 		{
-			if (GetWindowText(hCurrentWindow, szText, 255)>0)
+			// No outside cheat tool owns the game's own windows, and for those
+			// GetWindowText sends WM_GETTEXT instead of reading the stored title.
+			DWORD processID = 0;
+			GetWindowThreadProcessId(hCurrentWindow, &processID);
+			if (processID != GetCurrentProcessId()
+				&& GetWindowText(hCurrentWindow, szText, 255)>0)
 			{
 				int iLen = static_cast<int>(strlen(szText));
 				for (int j=0;j<iLen;j++)
@@ -433,10 +438,7 @@ bool CheckInvalidProcess()
 						!ContainsIgnoreCase(szText, "苟潼"))
 					{
 						g_bCheckHack = false;
-//						MessageBox(g_hWnd,"您使用了不合适的外挂程序,将与服务器断开连接!",NULL,MB_OK);
-//						ExecuteLogout();
-//						abort();
-						// client를 update해야한다.
+						// The client has to be updated.
 						g_bNeedUpdate = TRUE;
 						SetMode(MODE_QUIT);
 						g_ModeNext = MODE_QUIT;
