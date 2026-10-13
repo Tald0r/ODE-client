@@ -181,4 +181,6 @@ extern void		SendCrashReport();
 extern BOOL GetMacAddressFromNetBIOS(LPBYTE lpMacAddress);
 
 extern void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo);
+class PetInfo;
+extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
 #endif

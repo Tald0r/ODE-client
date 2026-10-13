@@ -8,10 +8,7 @@
 // include 
 #include "Client_PCH.h"
 #include "Gpackets/GCPetInfo.h"
-#include "MFakeCreature.h"
-#include "PacketFunction.h"
-
-extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
+#include "WorldEventsHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -22,7 +19,7 @@ void GCPetInfoHandler::execute ( GCPetInfo * pPacket , Player * pPlayer )
 	__BEGIN_TRY
 	(void)pPlayer;
 	
-	SetPetInfo(pPacket->getPetInfo(), pPacket->getObjectID());
+	WorldEvents::SetPetInfo(pPacket->getPetInfo(), pPacket->getObjectID());
 
 	__END_CATCH
 }

@@ -123,6 +123,7 @@
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
+#include "WorldEventsHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -138,6 +139,7 @@
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
 #include "PacketFunction.h"
+#include "RequestFunction.h"
 #include "SkillDef.h"
 #include "RequestFileManager.h"
 #include "Packet/RequestServerPlayer.h"
@@ -2702,6 +2704,7 @@ void ReleaseAllObjects()
 	PlayerState::SetHost(nullptr);
 	ZoneState::SetHost(nullptr);
 	CreatureState::SetHost(nullptr);
+	WorldEvents::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3538,6 +3541,19 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.KnockBackPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { return pCreature->KnockBackPosition(sX, sY); },
 };
 
+static const WorldEvents::Host s_WorldEventsHost = {
+	.AddItemToZone = [](GCAddItemToZone* pPacket, bool bDropping) { return AddItemToZone(pPacket, bDropping ? TRUE : FALSE); },
+	.AddVampirePortal = [](int serverID, const char* ownerName, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint32_t delayFrame,
+		int zoneID, TYPE_SECTORPOSITION zoneX, TYPE_SECTORPOSITION zoneY, bool bStartFromMainNode) {
+		AddVampirePortal(serverID, ownerName, sX, sY, delayFrame, zoneID, zoneX, zoneY, bStartFromMainNode);
+	},
+	.SetBloodBibleSlot = SetBloodBibleSlot,
+	.SetWeather = SetWeather,
+	.SetLightning = [](std::uint32_t delay) { SetLightning(delay); },
+	.SetPetInfo = SetPetInfo,
+	.RequestDisconnect = RequestDisconnect,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4128,6 +4144,7 @@ InitGameObject()
 	PlayerState::SetHost(&s_PlayerStateHost);
 	ZoneState::SetHost(&s_ZoneStateHost);
 	CreatureState::SetHost(&s_CreatureStateHost);
+	WorldEvents::SetHost(&s_WorldEventsHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

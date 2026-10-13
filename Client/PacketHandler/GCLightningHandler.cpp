@@ -11,7 +11,7 @@
 
 	#include "ClientPlayer.h"
 
-#include "ClientDef.h"
+#include "WorldEventsHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ void GCLightningHandler::execute ( GCLightning * pPacket , Player * pPlayer )
 	// server : 10 = 1초
 	// client : 1000 = 1초
 	// 그래서.. *100.. 음하하..
-	SetLightning( pPacket->getDelay()*100 );
+	WorldEvents::SetLightning( pPacket->getDelay()*100 );
 
 
 	__END_CATCH

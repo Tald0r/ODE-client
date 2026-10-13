@@ -10,7 +10,7 @@
 #include "Client_PCH.h"
 #include "Rpackets/CRDisconnect.h"
 #include "RequestServerPlayer.h"
-#include "RequestFunction.h"
+#include "WorldEventsHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -26,7 +26,7 @@ void CRDisconnectHandler::execute ( CRDisconnect * pPacket , Player * pPlayer )
 	if (pRequestServerPlayer!=NULL)
 	{
 		// 접속된 사용자를 접속해제 시킨다.
-		RequestDisconnect( pRequestServerPlayer->getName().c_str() );
+		WorldEvents::RequestDisconnect( pRequestServerPlayer->getName().c_str() );
 	}
 
 
