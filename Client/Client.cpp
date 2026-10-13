@@ -199,7 +199,6 @@ DWORD g_dwSeqNumG = 0;
 //end
 WORD g_wAuthKeyMap = 0x5154;
 
-//void SizeOfObjects();
 //#define				__WEB_BROWSER__
 IWebBrowser2*			g_pWebBrowser = NULL; 
 // [Futec수정]
@@ -676,9 +675,6 @@ ReadPatchLogFromFile()
 
 void OutPutClassSize()
 {
-//#ifdef __DEBUG_OUTPUT__
-//	SizeOfObjects();
-//#endif
 }
 
 void
