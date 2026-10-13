@@ -53,6 +53,7 @@ struct Host
 	void (*SetServerPosition)(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
 	void (*PacketMoveOK)(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) = nullptr;
 	void (*PacketMoveNO)() = nullptr;
+	void (*SetGuildNumber)(int guildNumber) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -73,5 +74,6 @@ void SetVisible();
 void SetServerPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 void PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction);
 void PacketMoveNO();
+void SetGuildNumber(int guildNumber);
 
 }

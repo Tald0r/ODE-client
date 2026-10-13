@@ -9,9 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCCreatePCError.h"
-#include "ClientDef.h"
+#include "LoginPresentationHost.h"
 
-extern void		PopupErrorMessage(ErrorID errorID);
 
 //----------------------------------------------------------------------
 // 
@@ -28,10 +27,10 @@ void LCCreatePCErrorHandler::execute ( LCCreatePCError * pPacket , Player * pPla
 
 	//UI_NewCharacterCreateFailed( 0 );
 
-	PopupErrorMessage( (ErrorID)pPacket->getErrorID() );
+	LoginPresentation::PopupErrorMessage( (ErrorID)pPacket->getErrorID() );
 
 
-	g_ModeNext = MODE_WAIT_SELECTPC;
+	LoginPresentation::QueueWaitSelectPCMode();
 
 		
 	__END_CATCH

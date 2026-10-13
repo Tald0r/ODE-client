@@ -9,9 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCDeletePCError.h"
-#include "ClientDef.h"
+#include "LoginPresentationHost.h"
 
-extern void		PopupErrorMessage(ErrorID errorID);
 
 //----------------------------------------------------------------------
 // 캐릭터의 삭제가 실패했다는 뜻이다.
@@ -29,9 +28,9 @@ void LCDeletePCErrorHandler::execute ( LCDeletePCError * pPacket , Player * pPla
 	
 	//UI_DeleteCharacterFailed();
 
-	PopupErrorMessage( (ErrorID)pPacket->getErrorID() );
+	LoginPresentation::PopupErrorMessage( (ErrorID)pPacket->getErrorID() );
 
-	g_ModeNext = MODE_WAIT_SELECTPC;
+	LoginPresentation::QueueWaitSelectPCMode();
 
 		
 	__END_CATCH

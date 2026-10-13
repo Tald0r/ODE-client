@@ -58,4 +58,19 @@ void ShowWaitGuildInfo(GCShowWaitGuildInfo* pPacket)
 	if (s_Host && s_Host->ShowWaitGuildInfo) s_Host->ShowWaitGuildInfo(pPacket);
 }
 
+void ShowActiveGuildList(GCActiveGuildList* pPacket)
+{
+	if (s_Host && s_Host->ShowActiveGuildList) s_Host->ShowActiveGuildList(pPacket);
+}
+
+void ShowWaitGuildList(GCWaitGuildList* pPacket)
+{
+	if (s_Host && s_Host->ShowWaitGuildList) s_Host->ShowWaitGuildList(pPacket);
+}
+
+void SetGuild(std::uint16_t guildID, std::uint8_t rank, const std::string& guildName)
+{
+	if (s_Host && s_Host->SetGuild) s_Host->SetGuild(guildID, rank, guildName);
+}
+
 }

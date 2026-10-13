@@ -2942,6 +2942,8 @@ void	UsePotionFromInventory(MItem* pPotion);
 void	UsePetFromInventory(MItem* pPet);
 // The item class table MItem::NewItem creates through (MItemUse.cpp).
 MItem*	NewItemOfClass(ITEM_CLASS itemClass);
+// The popup for a login error code (PacketFunction.cpp).
+void	PopupErrorMessage(ErrorID errorID);
 
 static const MItemHost	s_ItemHost = {
 	.pCurrentFrame			= &g_CurrentFrame,
@@ -3437,6 +3439,9 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 	.ShowGuildMemberList = UI_ShowGuildMemberList,
 	.ShowUnionGuildMemberInfo = UI_ShowUnionGuildMemberInfo,
 	.ShowWaitGuildInfo = UI_ShowWaitGuildInfo,
+	.ShowActiveGuildList = UI_ShowActiveGuildList,
+	.ShowWaitGuildList = UI_ShowWaitGuildList,
+	.SetGuild = [](std::uint16_t guildID, std::uint8_t rank, const std::string& guildName) { UI_SetGuild(guildID, rank, guildName); },
 };
 
 static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
@@ -3509,6 +3514,8 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.QueueWaitPCListMode = [] { g_ModeNext = MODE_WAIT_PCLIST; },
 	.QueueLoginWrongMode = [] { g_ModeNext = MODE_LOGIN_WRONG; },
 	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
+	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
+	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
@@ -3528,6 +3535,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetServerPosition = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { g_pPlayer->SetServerPosition(sX, sY); },
 	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
+	.SetGuildNumber = [](int guildNumber) { g_pPlayer->SetGuildNumber(guildNumber); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

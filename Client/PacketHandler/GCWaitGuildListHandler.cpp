@@ -8,8 +8,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCWaitGuildList.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "GuildPresentationHost.h"
+#include "PlayerStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
@@ -22,14 +23,14 @@ void GCWaitGuildListHandler::execute ( GCWaitGuildList * pPacket , Player * pPla
 	//------------------------------------------------------
 	// 검증
 	//------------------------------------------------------
-	if ( g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_NPC_ASK )
+	if ( PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_NPC_ASK )
 	{
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 
 		DEBUG_ADD("[Verified] NPC Ask Answer OK");
 	}
 
-	UI_ShowWaitGuildList(pPacket);
+	GuildPresentation::ShowWaitGuildList(pPacket);
 
 	__END_CATCH
 }

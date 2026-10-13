@@ -821,3 +821,10 @@ Client/PacketHandler/GCPetInfoHandler.cpp
 
 # The trade box's new-item reply, creating items through MItem::NewItem's factory.
 Client/PacketHandler/GCTradeAddItemHandler.cpp
+
+# Guild-list, guild-membership and character-error replies over the guild, player and login services.
+Client/PacketHandler/GCActiveGuildListHandler.cpp
+Client/PacketHandler/GCModifyGuildMemberInfoHandler.cpp
+Client/PacketHandler/GCWaitGuildListHandler.cpp
+Client/PacketHandler/LCCreatePCErrorHandler.cpp
+Client/PacketHandler/LCDeletePCErrorHandler.cpp

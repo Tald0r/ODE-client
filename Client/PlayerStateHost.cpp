@@ -93,4 +93,9 @@ void PacketMoveNO()
 	if (s_Host && s_Host->PacketMoveNO) s_Host->PacketMoveNO();
 }
 
+void SetGuildNumber(int guildNumber)
+{
+	if (s_Host && s_Host->SetGuildNumber) s_Host->SetGuildNumber(guildNumber);
+}
+
 }

@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <string>
 
+class GCActiveGuildList;
 class GCGuildMemberList;
 class GCShowGuildInfo;
 class GCShowGuildMemberInfo;
 class GCShowUnionInfo;
 class GCShowWaitGuildInfo;
+class GCWaitGuildList;
 
 namespace GuildPresentation {
 
@@ -24,6 +26,9 @@ struct Host
 	void (*ShowGuildMemberList)(GCGuildMemberList* pPacket) = nullptr;
 	void (*ShowUnionGuildMemberInfo)(GCShowUnionInfo* pPacket) = nullptr;
 	void (*ShowWaitGuildInfo)(GCShowWaitGuildInfo* pPacket) = nullptr;
+	void (*ShowActiveGuildList)(GCActiveGuildList* pPacket) = nullptr;
+	void (*ShowWaitGuildList)(GCWaitGuildList* pPacket) = nullptr;
+	void (*SetGuild)(std::uint16_t guildID, std::uint8_t rank, const std::string& guildName) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -37,5 +42,8 @@ void ShowGuildMemberInfo(GCShowGuildMemberInfo* pPacket);
 void ShowGuildMemberList(GCGuildMemberList* pPacket);
 void ShowUnionGuildMemberInfo(GCShowUnionInfo* pPacket);
 void ShowWaitGuildInfo(GCShowWaitGuildInfo* pPacket);
+void ShowActiveGuildList(GCActiveGuildList* pPacket);
+void ShowWaitGuildList(GCWaitGuildList* pPacket);
+void SetGuild(std::uint16_t guildID, std::uint8_t rank, const std::string& guildName);
 
 }

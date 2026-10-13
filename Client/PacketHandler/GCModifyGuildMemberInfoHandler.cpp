@@ -9,8 +9,8 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCModifyGuildMemberInfo.h"
 #include "UserInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GuildPresentationHost.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -25,9 +25,9 @@ void GCModifyGuildMemberInfoHandler::execute ( GCModifyGuildMemberInfo * pPacket
 	
 	g_pUserInformation->GuildName = pPacket->getGuildName().c_str();
 	g_pUserInformation->GuildGrade = pPacket->getGuildMemberRank();
-	g_pPlayer->SetGuildNumber(pPacket->getGuildID());
+	PlayerState::SetGuildNumber(pPacket->getGuildID());
 
-	UI_SetGuild(pPacket->getGuildID(), pPacket->getGuildMemberRank(), pPacket->getGuildName());
+	GuildPresentation::SetGuild(pPacket->getGuildID(), pPacket->getGuildMemberRank(), pPacket->getGuildName());
 
 	__END_CATCH
 }
