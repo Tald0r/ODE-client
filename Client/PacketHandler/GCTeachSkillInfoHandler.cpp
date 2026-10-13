@@ -10,8 +10,7 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCTeachSkillInfo.h"
 #include "TempInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GameInfoPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -29,7 +28,7 @@ void GCTeachSkillInfoHandler::execute ( GCTeachSkillInfo * pPacket , Player * pP
 	//pPacket->getObjectID();
 	
 	// Skill을 배우기 위해서 SkillTree를 띄운다.
-	UI_RunSkillTree( (int)pPacket->getDomainType(), 100 );//pPacket->getMaxLevel() );
+	GameInfoPresentation::RunSkillTree( (int)pPacket->getDomainType(), 100 );//pPacket->getMaxLevel() );
 	
 	// 임시로 정보 저장
 	g_pTempInformation->SetMode(TempInformation::MODE_SKILL_LEARN);

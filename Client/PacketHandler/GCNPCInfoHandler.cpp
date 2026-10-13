@@ -15,8 +15,7 @@
 	#include "PCSlayerInfo2.h"
 	#include "PCVampireInfo2.h"
 	#include "Cpackets/CGReady.h"
-	#include "ClientDef.h"
-	#include "UIFunction.h"
+	#include "GameInfoPresentationHost.h"
 
 
 //----------------------------------------------------------------------
@@ -33,7 +32,7 @@ void GCNPCInfoHandler::execute ( GCNPCInfo * pPacket , Player * pPlayer )
 	
 	// NPC 정보만 날라온다-_-;
 	
-	UI_ClearNPC();
+	GameInfoPresentation::ClearNPC();
 	
 	while(1)
 	{
@@ -50,7 +49,7 @@ void GCNPCInfoHandler::execute ( GCNPCInfo * pPacket , Player * pPlayer )
 		int x = pInfo->getX();
 		int y = pInfo->getY();
 
-		UI_SetNPCInfo( pName, npcID, x, y );
+		GameInfoPresentation::SetNPCInfo( pName, npcID, x, y );
 
 		delete pInfo;
 	}

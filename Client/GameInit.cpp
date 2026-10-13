@@ -118,6 +118,7 @@
 #include "CommunicationPresentationHost.h"
 #include "QuestWarPresentationHost.h"
 #include "TradePresentationHost.h"
+#include "GameInfoPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2691,6 +2692,7 @@ void ReleaseAllObjects()
 	CommunicationPresentation::SetHost(nullptr);
 	QuestWarPresentation::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
+	GameInfoPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3446,6 +3448,14 @@ static const TradePresentation::Host s_TradePresentationHost = {
 	.RunItemShop = UI_RunItemShop,
 };
 
+static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
+	.ClearNPC = UI_ClearNPC,
+	.SetNPCInfo = UI_SetNPCInfo,
+	.RunSkillTree = UI_RunSkillTree,
+	.MiniGameScores = UI_MiniGameScores,
+	.RunImageNotice = [](const char* name, std::uint32_t id) { UI_RunImageNotice(name, id); },
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4030,6 +4040,7 @@ InitGameObject()
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);
+	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
