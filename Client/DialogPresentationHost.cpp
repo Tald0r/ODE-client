@@ -38,4 +38,19 @@ bool IsRunningSwapAdvancementItem()
 	return s_Host && s_Host->IsRunningSwapAdvancementItem && s_Host->IsRunningSwapAdvancementItem();
 }
 
+void RunPetStorage()
+{
+	if (s_Host && s_Host->RunPetStorage) s_Host->RunPetStorage();
+}
+
+void SetPetStorage(MStorage* pStorage)
+{
+	if (s_Host && s_Host->SetPetStorage) s_Host->SetPetStorage(pStorage);
+}
+
+void EmptyMove()
+{
+	if (s_Host && s_Host->EmptyMove) s_Host->EmptyMove();
+}
+
 }

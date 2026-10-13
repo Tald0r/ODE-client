@@ -10,8 +10,9 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCExecuteElement.h"
 
-#include "Client.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
+#include "VsUiPresentationHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCExecuteElementHandler::execute ( GCExecuteElement * pGCExecuteElement , Player * pPlayer )
@@ -23,23 +24,23 @@ void GCExecuteElementHandler::execute ( GCExecuteElement * pGCExecuteElement , P
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Otherwise
 	//------------------------------------------------------
 	else
 	{
 #ifdef __DEBUG_OUTPUT__
 		DEBUG_ADD_FORMAT("[GCExecuteElementHandler] QuestID=%d, bCondition=%d, index = %d", pGCExecuteElement->getQuestID(), pGCExecuteElement->getCondition(), pGCExecuteElement->getIndex());
 #endif
-		gC_vs_ui.PushGQuestExcuteElement(pGCExecuteElement->getQuestID(), pGCExecuteElement->getCondition(), pGCExecuteElement->getIndex());
+		VsUiPresentation::PushGQuestExecuteElement(pGCExecuteElement->getQuestID(), pGCExecuteElement->getCondition(), pGCExecuteElement->getIndex());
 
 	}
 	

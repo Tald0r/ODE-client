@@ -7,12 +7,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCPetStashList.h"
-#include "ClientDef.h"
-#include "MStorage.h"
-#include "UIDialog.h"
-#include "MGameStringTable.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "ExperienceTable.h"
+#include "MItem.h"
+#include "MStorage.h"
 void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlayer )
 
 {
@@ -22,7 +21,7 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 	__BEGIN_DEBUG
 	
 		//------------------------------------------------------------
-		// 기존에걸 지우고 다시 생성한다.
+		// The old stash goes, and a new one is made.
 		//------------------------------------------------------------
 		if (g_pStorage!=NULL) 
 		{
@@ -32,10 +31,10 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 		g_pStorage = new MStorage;
 
 		
-		g_pStorage->Init( 1 ); //STASH_RACK_MAX );	// 쩝.. 3개일까??
+		g_pStorage->Init( 1 );
 
 		//------------------------------------------------------------
-		// 접근하는 Storage를 지정한다.
+		// The rack the stash is shown on.
 		//------------------------------------------------------------
 		g_pStorage->SetCurrent( 0 );
 
@@ -63,8 +62,18 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 				index ++;
 				continue;
 			}
-			MPetItem *pItem = NULL;
-			pItem = dynamic_cast<MPetItem *>(MItem::NewItem( ITEM_CLASS_PET_ITEM ));
+			// The factory makes an MPetItem for this class; anything else
+			// (none, in a test binary without a factory) skips the slot.
+			MItem* pNewItem = MItem::NewItem( ITEM_CLASS_PET_ITEM );
+			MPetItem *pItem = dynamic_cast<MPetItem *>(pNewItem);
+			if (pItem == NULL)
+			{
+				delete pNewItem;
+				DEBUG_ADD_FORMAT_ERR("[Error] GCPetStashList: no pet item for slot %d", index);
+				itr ++;
+				index ++;
+				continue;
+			}
 			pItem->SetItemType( pPetInfo->getPetType() );
 			pItem->SetCurrentDurability( pPetInfo->getPetHP() );
 			pItem->SetEnchantLevel( pPetInfo->getPetAttr() );
@@ -89,11 +98,11 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 			
 			pItem->SetPetKeepedDay(petStashItemInfo->KeepDays);
 			//------------------------------------------------------------
-			// Storage에 item 설정
+			// Put the pet in its slot
 			//------------------------------------------------------------
 			if (!g_pStorage->SetItem( index, pItem ))
 			{
-				// 뭐지..
+				// The slot refused it.
 				delete pItem;
 
 				DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. slot=%d", index);
@@ -104,10 +113,10 @@ void GCPetStashListHandler::execute ( GCPetStashList * pPacket , Player * pPlaye
 		}
 
 		//------------------------------------------------------------
-		// 보관함을 띄운다.
+		// Open the pet storage window.
 		//------------------------------------------------------------
-		UI_RunPetStorage();
-		UI_SetPetStorage(g_pStorage);
+		DialogPresentation::RunPetStorage();
+		DialogPresentation::SetPetStorage(g_pStorage);
 
 	__END_DEBUG
 //	__END_DEBUG_EX 

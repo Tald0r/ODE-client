@@ -886,8 +886,25 @@ Client/PacketHandler/LCRegisterPlayerErrorHandler.cpp
 # and player hosts.
 Client/PacketHandler/GCWhisperHandler.cpp
 
-# A kick warning queued as a timed logout, through the world-event host.
+# A kick warning queued as a timed logout, through the world-event and player
+# hosts.
 Client/PacketHandler/GCKickMessageHandler.cpp
 
 # A made item, over the dialog and player hosts.
 Client/PacketHandler/GCMakeItemOKHandler.cpp
+
+# The pet stash, built into the storage and shown through the dialog host.
+Client/PacketHandler/GCPetStashListHandler.cpp
+
+# System messages, filtered by the player's options and kept free of repeats,
+# over the communication host.
+Client/PacketHandler/GCSystemMessageHandler.cpp
+
+# A refused rank bonus and the guild-union offers, over the dialog and UI-object
+# hosts.
+Client/PacketHandler/GCSelectRankBonusFailedHandler.cpp
+Client/PacketHandler/GCUnionOfferListHandler.cpp
+
+# A quest's element and its items, over the zone and UI-object hosts.
+Client/PacketHandler/GCExecuteElementHandler.cpp
+Client/PacketHandler/GCGQuestInventoryHandler.cpp

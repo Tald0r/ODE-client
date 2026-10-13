@@ -9,7 +9,9 @@ namespace CommunicationPresentation {
 // Friend, SMS address-book and whisper replies only present what they
 // receive. A missing service skips that presentation. A packet is borrowed
 // for the call, but SetSMSList's list holds the packet's AddressUnits, which
-// the executable's SMS list keeps after the call.
+// the executable's SMS list keeps after the call. The Hide* queries are
+// the player's options to hide holy-land, master-lair and war system
+// messages; a missing query hides nothing.
 struct Host
 {
 	void (*AddChatToHistory)(const char* message, const char* sender, int chatType, std::uint32_t color) = nullptr;
@@ -28,6 +30,10 @@ struct Host
 	void (*RunFriendExist)(GCFriendChatting* pPacket) = nullptr;
 	void (*RunFriendBlack)(GCFriendChatting* pPacket) = nullptr;
 	void (*RunFriendDelete)(GCFriendChatting* pPacket) = nullptr;
+	void (*SetRangerChatString)(const char* message) = nullptr;
+	bool (*HideHolyLandMessages)() = nullptr;
+	bool (*HideLairMessages)() = nullptr;
+	bool (*HideWarMessages)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -48,5 +54,9 @@ void RunFriendOK(GCFriendChatting* pPacket);
 void RunFriendExist(GCFriendChatting* pPacket);
 void RunFriendBlack(GCFriendChatting* pPacket);
 void RunFriendDelete(GCFriendChatting* pPacket);
+void SetRangerChatString(const char* message);
+bool HideHolyLandMessages();
+bool HideLairMessages();
+bool HideWarMessages();
 
 }

@@ -10,8 +10,8 @@
 #include "Gpackets/GCUnionOfferList.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
-#include "VS_UI.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
+#include "VsUiPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
@@ -30,9 +30,6 @@ void GCUnionOfferListHandler::execute ( GCUnionOfferList * pPacket , Player * pP
 	{
 		Assert( *itr != NULL );
 		SingleGuildUnionOffer* offerlist = (*itr);
-		SIZE windowSize;
-		windowSize.cx = 500; 
-		windowSize.cy = 250;
 		char sztemp[2048];
 		memset(sztemp,0,2048); 
 
@@ -46,8 +43,9 @@ void GCUnionOfferListHandler::execute ( GCUnionOfferList * pPacket , Player * pP
 			return;
 		}
 		
-		gC_vs_ui.AddMail(0, 9, windowSize, offerlist->getGuildMaster().c_str() , sztemp , offerlist->getDate(), 0, offerlist->getGuildID(), offerlist->getGuildType());
-		gC_vs_ui.AddMailContents(0, 9, sztemp ); 
+		// A 500 by 250 letter on the guild-union mail tab (0), as kind 9.
+		VsUiPresentation::AddMail(0, 9, 500, 250, offerlist->getGuildMaster().c_str() , sztemp , offerlist->getDate(), false, offerlist->getGuildID(), offerlist->getGuildType());
+		VsUiPresentation::AddMailContents(0, 9, sztemp ); 
 
 		itr++;
 	}
