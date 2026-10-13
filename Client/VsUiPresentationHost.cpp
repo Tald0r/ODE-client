@@ -50,4 +50,9 @@ bool UpdateQuestItemInfo(std::vector<MItem*>& items)
 	return true;
 }
 
+bool ModifyQuestManagerInfo(UI_GQuestInfo* pInfo, int type)
+{
+	return s_Host && s_Host->ModifyQuestManagerInfo ? s_Host->ModifyQuestManagerInfo(pInfo, type) : false;
+}
+
 }

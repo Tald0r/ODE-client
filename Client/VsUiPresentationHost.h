@@ -5,6 +5,7 @@
 
 class MItem;
 class NicknameInfo;
+struct UI_GQuestInfo;
 
 namespace VsUiPresentation {
 
@@ -16,6 +17,9 @@ namespace VsUiPresentation {
 // PushGQuestExecuteElement runs a quest's element; UpdateQuestItemInfo
 // hands the quest items over to the quest window, which keeps them, and
 // answers false when there was no one to take them (the caller frees them).
+// ModifyQuestManagerInfo hands a quest's new status to the quest window,
+// which keeps it when it answers true; false (or no entry) leaves it with
+// the caller.
 struct Host
 {
 	int (*InventoryMode)() = nullptr;
@@ -25,6 +29,7 @@ struct Host
 	void (*AddMailContents)(int tabID, std::uint32_t id, const char* contents) = nullptr;
 	void (*PushGQuestExecuteElement)(std::uint32_t questID, std::uint8_t condition, std::uint16_t index) = nullptr;
 	void (*UpdateQuestItemInfo)(std::vector<MItem*>& items) = nullptr;
+	bool (*ModifyQuestManagerInfo)(UI_GQuestInfo* pInfo, int type) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -36,5 +41,6 @@ void AddMail(int tabID, std::uint32_t id, int width, int height, const char* sen
 void AddMailContents(int tabID, std::uint32_t id, const char* contents);
 void PushGQuestExecuteElement(std::uint32_t questID, std::uint8_t condition, std::uint16_t index);
 bool UpdateQuestItemInfo(std::vector<MItem*>& items);
+bool ModifyQuestManagerInfo(UI_GQuestInfo* pInfo, int type);
 
 }

@@ -908,3 +908,6 @@ Client/PacketHandler/GCUnionOfferListHandler.cpp
 # A quest's element and its items, over the zone and UI-object hosts.
 Client/PacketHandler/GCExecuteElementHandler.cpp
 Client/PacketHandler/GCGQuestInventoryHandler.cpp
+
+# A quest's new status, handed to the quest window through the UI-object host.
+Client/PacketHandler/GCGQuestStatusModifyHandler.cpp

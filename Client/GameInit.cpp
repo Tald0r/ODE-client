@@ -3624,6 +3624,7 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.AddMailContents = [](int tabID, std::uint32_t id, const char* contents) { gC_vs_ui.AddMailContents(tabID, id, contents); },
 	.PushGQuestExecuteElement = [](std::uint32_t questID, std::uint8_t condition, std::uint16_t index) { gC_vs_ui.PushGQuestExcuteElement(questID, condition, index); },
 	.UpdateQuestItemInfo = [](std::vector<MItem*>& items) { gC_vs_ui.UpdateQuestItemInfo(items); },
+	.ModifyQuestManagerInfo = [](UI_GQuestInfo* pInfo, int type) { return gC_vs_ui.ModifyQuestManagerInfo(static_cast<void*>(pInfo), type); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {
