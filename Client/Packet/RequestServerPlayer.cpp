@@ -268,10 +268,9 @@ void RequestServerPlayer::disconnect ( bool bDisconnected )
 	if ( bDisconnected == UNDISCONNECTED ) {
 
 		// Send what is left in the output buffer. A connection that is
-		// already reset or closed refuses it; that output is given up and
-		// the peer is still closed and ended below, so every caller (the
-		// manager's drop, Update()'s drop of a failed peer, the accept
-		// thread's refusal) frees it instead of meeting a second throw.
+		// already reset or closed refuses it; that output is given up, so
+		// the peer is still closed and ended below and its caller (the
+		// manager's drop, or Update()'s drop of a failed peer) frees it.
 		try {
 			m_pOutputStream->flush();
 		} catch (Throwable& t) {
@@ -279,12 +278,18 @@ void RequestServerPlayer::disconnect ( bool bDisconnected )
 		}
 	}
 
-	// Close the connection.
-	m_pSocket->close();
+	// Close the connection. The socket forgets its descriptor before the
+	// system call, so a close the system refuses is only logged: the
+	// session must still end for the caller to free the peer.
+	try {
+		m_pSocket->close();
+	} catch (Throwable& t) {
+		DEBUG_ADD_ERR(t.toString().c_str());
+	}
 
 	// The player is logged out.
 	//cout<< "PlayerStatus : " << (int)m_PlayerStatus << endl;
-	// 2001.10.5 주석처리 ..으흠..
+	// Commented out on 2001-10-05.
 	//Assert( m_PlayerStatus != CPS_END_SESSION );
 	m_PlayerStatus = CPS_END_SESSION;
 

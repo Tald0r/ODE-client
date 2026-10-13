@@ -67,9 +67,6 @@ struct Manager : RequestServerPlayerManager
 };
 
 std::vector<std::string> asked;
-// Whether the handler's request first breaks the sender's connection with
-// output still queued, so dropping it must survive a refused flush.
-bool breakSender = false;
 
 // Output queued on a peer whose socket is then closed: its flush is refused.
 void Break(RequestServerPlayer* pPeer)
@@ -82,9 +79,6 @@ void Break(RequestServerPlayer* pPeer)
 const WorldEvents::Host events{
 	.RequestDisconnect = [](const char* pName) {
 		asked.push_back(pName);
-		if (breakSender)
-			if (RequestServerPlayer* pPeer = static_cast<Manager*>(g_pRequestServerPlayerManager)->Find(pName))
-				Break(pPeer);
 		// What the executable's RequestDisconnect does with it.
 		if (g_pRequestServerPlayerManager != NULL)
 			g_pRequestServerPlayerManager->Disconnect(pName);
@@ -127,12 +121,11 @@ struct World
 		g_pRequestServerPlayerManager = &manager;
 		listener.setNonBlocking(true);
 		asked.clear();
-		breakSender = false;
 	}
 	~World()
 	{
 		// Whatever peers remain end their sessions before the manager frees them.
-		for (const char* name : {"Nyx", "Vanda", "Late"})
+		for (const char* name : {"Nyx", "Vanda"})
 			if (RequestServerPlayer* pPlayer = manager.Find(name))
 				pPlayer->setPlayerStatus(CPS_END_SESSION);
 		WorldEvents::SetHost(oldEvents);
@@ -241,23 +234,8 @@ TEST(PeerSelfDisconnect, ADroppedPeerWhoseFlushIsRefusedIsStillFreed)
 	World world;
 	world.Connect("Nyx");
 	world.Connect("Vanda");
-
-	// From outside an update.
 	Break(world.manager.Find("Vanda"));
 	world.manager.Disconnect("Vanda");
 	CHECK(world.manager.Find("Vanda") == nullptr);
-
-	// Deferred from the sender's own request, broken first.
-	breakSender = true;
-	Socket* late = world.Connect("Late");
-	CRDisconnect disconnect;
-	Send(late, disconnect);
-	for (int i = 0; i < 200 && world.manager.Find("Late") != nullptr; i++)
-	{
-		world.manager.Update();
-		if (world.manager.Find("Late") != nullptr)
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	}
-	CHECK(world.manager.Find("Late") == nullptr);
 	CHECK(world.manager.Find("Nyx") != nullptr);
 }

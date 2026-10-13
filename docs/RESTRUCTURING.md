@@ -3229,19 +3229,22 @@ Follow-ups from 4.102, all older than the move:
   the dispatch then wrote and read the freed object, and `Update()` called
   `processOutput()` on it and advanced an erased iterator. A disconnect
   asked for during `Update()` is now queued and carried out after the
-  loop; outside `Update()` it is immediate, as before. A peer's own
-  `disconnect()` gives up output a reset or closed connection refuses and
-  still closes and ends the session, so neither the deferred drop nor
-  `Update()`'s drop of a failed peer can throw a second time: before, a
-  broken peer with output queued stayed listed at the head of the loop and
-  starved every peer behind it, and the deferred drop could escape
-  `Update()`. A dropped peer leaves the list, and the drop's hold on the
-  lock is released, before it is disconnected, and the queued drops each
-  catch their own failure. The same test file breaks peers with output
-  queued (a closed socket refuses the flush) and shows each case.
-  `test_peer_self_disconnect.cpp` drives two real loopback peers through
-  the real factory, validator and handler; before the fix the ASan tree
-  reported the heap-use-after-free and the plain tree crashed.
+  loop; outside `Update()` it is immediate, as before, and `Disconnect()`
+  takes the peer out of the list and releases its hold on the lock before
+  disconnecting it. The queued drops each catch their own failure. A
+  peer's own `disconnect()` now gives up output a reset or closed
+  connection refuses, and logs a close the system refuses, and still ends
+  the session, so `Update()`'s drop of a failed peer no longer throws a
+  second time. Before, also on master, a broken peer with output queued
+  stayed listed at the head of the loop and starved every peer behind it.
+  `test_peer_self_disconnect.cpp` drives real loopback peers through the
+  real factory, validator and handler; before the fix the ASan tree
+  reported the heap-use-after-free and the plain tree crashed. It also
+  breaks peers with output queued (a closed socket refuses the flush): a
+  broken peer at the head of the list is dropped and the peer behind it is
+  still served, and dropping a broken peer outside an update frees it. A
+  refused close (EINTR or EIO) is not reproduced; its guard is a
+  regression guard.
 - `SetBloodBibleSlot` indexes `g_abHolyLandBonusSkills` (12 entries) with
   the wire's unchecked item type, follows a sign list whose length
   `BloodBibleSignInfo::read` never bounds, and uses `g_pPlayer` unguarded.
