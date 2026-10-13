@@ -115,6 +115,7 @@
 #include "BonusSkillHost.h"
 #include "SkillDowngradeHost.h"
 #include "GuildPresentationHost.h"
+#include "CommunicationPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2685,6 +2686,7 @@ void ReleaseAllObjects()
 	BonusSkills::SetHost(nullptr);
 	SkillDowngrade::SetHost(nullptr);
 	GuildPresentation::SetHost(nullptr);
+	CommunicationPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3402,6 +3404,27 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 	.ShowWaitGuildInfo = UI_ShowWaitGuildInfo,
 };
 
+static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
+	.AddChatToHistory = [](const char* message, const char* sender, int chatType, std::uint32_t color) {
+		UI_AddChatToHistory(message, sender, chatType, color);
+	},
+	.PopupMessage = UI_PopupMessage,
+	.SetSMSList = UI_SetSMSList,
+	.AddSMSList = [](std::uint32_t element, char* name, char* id, char* num) { UI_AddSMSList(element, name, id, num); },
+	.DeleteSMSList = [](std::uint32_t id) { UI_DeleteSMSList(id); },
+	.SMS_Set_Charge = UI_SMS_Set_Charge,
+	.SMS_ERROR = [](std::uint32_t parameter) { UI_SMS_ERROR(parameter); },
+	.FriendChatting_UpdateFriendList = UI_FriendChatting_UpdateFriendList,
+	.FriendChatting_Message = UI_FriendChatting_Message,
+	.RunFriendRequest = UI_RunFriendRequest,
+	.RunFriendRefuse = UI_RunFriendRefuse,
+	.RunFriendWait = UI_RunFriendWait,
+	.RunFriendOK = UI_RunFriendOK,
+	.RunFriendExist = UI_RunFriendExist,
+	.RunFriendBlack = UI_RunFriendBlack,
+	.RunFriendDelete = UI_RunFriendDelete,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -3983,6 +4006,7 @@ InitGameObject()
 	BonusSkills::SetHost(&s_BonusSkillHost);
 	SkillDowngrade::SetHost(&s_SkillDowngradeHost);
 	GuildPresentation::SetHost(&s_GuildPresentationHost);
+	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

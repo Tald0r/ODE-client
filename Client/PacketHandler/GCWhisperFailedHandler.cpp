@@ -10,8 +10,7 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCWhisperFailed.h"
 #include "MGameStringTable.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "CommunicationPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -24,7 +23,7 @@ void GCWhisperFailedHandler::execute ( GCWhisperFailed * pPacket , Player * pPla
 
 
 	// info = 5
-	UI_AddChatToHistory( (*g_pGameStringTable)[STRING_MESSAGE_WHISPER_FAILED].GetString(), NULL, 5, RGB(255, 255, 255) );
+	CommunicationPresentation::AddChatToHistory( (*g_pGameStringTable)[STRING_MESSAGE_WHISPER_FAILED].GetString(), NULL, 5, RGB(255, 255, 255) );
 
 	__END_CATCH
 }
