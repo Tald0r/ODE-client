@@ -9,11 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopSold.h"
-#include "ClientDef.h"
-#include "MNPC.h"
+#include "DebugLog.h"
+#include "MItem.h"
 #include "MShop.h"
 #include "MShopShelf.h"
-#include "UIFunction.h"
+#include "ZoneStateHost.h"
 
 
 void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
@@ -26,29 +26,28 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 	
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Otherwise
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature==NULL)
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature. id=%d", pPacket->getObjectID());
 		}
-		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
+		else if (CreatureState::IsNPC(pCreature))
 		{
-			MNPC* pNPC = (MNPC*)pCreature;
 
-			MShop* pShop = pNPC->GetShop();
+			MShop* pShop = CreatureState::GetShop(pCreature);
 
 			if (pShop==NULL)
 			{
@@ -65,7 +64,7 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 				else
 				{
 					//------------------------------------------------------
-					// Normal shelf가 아닌 경우에만 delete한다.
+					// Only the special shelf loses the sold item.
 					//------------------------------------------------------
 					if (pPacket->getShopType()==SHOP_RACK_SPECIAL)
 					{
@@ -73,15 +72,13 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 
 						if (pRemovedItem!=NULL)
 						{
-							// item정보 제거
-							UI_RemoveDescriptor( (void*)pRemovedItem );
-
-							// 팔린 아이템 제거
+							// Remove the sold item. Deleting it also drops its UI
+							// descriptor, through MItemHost::ItemDestroyed.
 							delete pRemovedItem;
 						}
 					}
 
-					// 새로운 버전 설정
+					// the shelf's new version
 					pShopShelf->SetVersion( pPacket->getShopVersion() );									
 				}
 			}

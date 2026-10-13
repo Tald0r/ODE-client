@@ -915,3 +915,6 @@ Client/PacketHandler/GCGQuestStatusModifyHandler.cpp
 # A member leaving or expelled from the party, over the zone, player and
 # communication hosts.
 Client/PacketHandler/GCPartyLeaveHandler.cpp
+
+# An item an NPC sold, off its special shelf, over the zone and creature hosts.
+Client/PacketHandler/GCShopSoldHandler.cpp
