@@ -36,13 +36,17 @@ struct Potion : MItem
 	ITEM_CLASS GetItemClass() const override { return ITEM_CLASS_POTION; }
 	bool IsQuickItem() const override { return true; }
 };
-// A gun; the factory makes no magazine for it.
-struct Gun : MGunItem
+// A gun as the handler sees one; loading it is the executable's (LoadGun).
+struct Gun : MItem
 {
 	Gun() { alive++; }
 	~Gun() { alive--; }
 	ITEM_CLASS GetItemClass() const override { return ITEM_CLASS_SR; }
+	bool IsGunItem() const override { return true; }
 };
+
+std::vector<std::string> loaded;
+bool loadable = true;
 struct Belt : MBelt
 {
 	Belt() { alive++; }
@@ -72,6 +76,10 @@ MItemHost FactoryHost()
 {
 	MItemHost host{};
 	host.NewItem = Factory;
+	host.LoadGun = [](MItem* pGun, TYPE_ITEM_NUMBER rounds) {
+		loaded.push_back(std::to_string(pGun->GetID()) + "|" + std::to_string(rounds));
+		return loadable;
+	};
 	return host;
 }
 const MItemHost withFactory = FactoryHost();
@@ -107,6 +115,8 @@ struct World : GameModelWorld
 		MItem::SetHost(&withFactory);
 		made.clear();
 		alive = 0;
+		loaded.clear();
+		loadable = true;
 	}
 	~World()
 	{
@@ -294,15 +304,26 @@ TEST(ItemFactory, AnOfferedBeltOrArmsBandArrivesWithItsPocketsFilled)
 	CHECK(world.trade.GetOtherInventory()->GetItem(0, 0) != nullptr);
 }
 
-TEST(ItemFactory, AnOfferedGunWithoutAMagazineFromTheFactoryIsStillAdded)
+TEST(ItemFactory, AnOfferedGunIsLoadedWithItsRoundsOrArrivesUnloaded)
 {
 	World world;
 	Accept(world.trade);
 	Receive(Offer(900, ITEM_CLASS_SR, 0, 1));
-	MGunItem* gun = dynamic_cast<MGunItem*>(world.trade.GetOtherInventory()->GetItem(0, 1));
-	CHECK(gun != nullptr && gun->GetID() == 900);
-	CHECK(gun != nullptr && gun->GetMagazine() == nullptr);
-	CHECK(made == std::vector<int>({ITEM_CLASS_SR, ITEM_CLASS_MAGAZINE}));
+	CHECK(loaded == std::vector<std::string>{"900|4"});
+	CHECK(world.trade.GetOtherInventory()->GetItem(0, 1) != nullptr);
 	CHECK(!world.trade.IsAcceptMyTrade());
 	CHECK(!world.trade.IsAcceptOtherTrade());
+
+	// Without a magazine, or without the loading service, the gun is still
+	// offered, unloaded.
+	loadable = false;
+	Receive(Offer(901, ITEM_CLASS_SR, 1, 1));
+	CHECK(world.trade.GetOtherInventory()->GetItem(1, 1) != nullptr);
+	MItemHost noLoader{};
+	noLoader.NewItem = Factory;
+	MItem::SetHost(&noLoader);
+	Receive(Offer(902, ITEM_CLASS_SR, 2, 1));
+	CHECK(world.trade.GetOtherInventory()->GetItem(2, 1) != nullptr);
+	CHECK(loaded == std::vector<std::string>({"900|4", "901|4"}));
+	CHECK(made == std::vector<int>({ITEM_CLASS_SR, ITEM_CLASS_SR, ITEM_CLASS_SR}));
 }

@@ -2923,6 +2923,19 @@ static MMagazine*	EmptyMagazineFor(MItem* pGun)
 	return pMagazine;
 }
 
+// A gun a reply builds (the trade box's offer) loaded with that many rounds.
+static bool	LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)
+{
+	MMagazine* pMagazine = EmptyMagazineFor( pGun );
+	if (pMagazine==NULL)
+	{
+		return false;
+	}
+	pMagazine->SetNumber( rounds );
+	((MGunItem*)pGun)->SetMagazine( pMagazine );
+	return true;
+}
+
 // MUsePotionItem::UseInventory's and MPetItem::UseInventory's bodies
 // (MItemUse.cpp); the members are the library's.
 void	UsePotionFromInventory(MItem* pPotion);
@@ -2944,6 +2957,7 @@ static const MItemHost	s_ItemHost = {
 	.UsePetFromInventory	= UsePetFromInventory,
 	.ItemDestroyed			= [](MItem* item) noexcept { UI_RemoveDescriptor(item); },
 	.NewItem				= NewItemOfClass,
+	.LoadGun				= LoadGun,
 };
 
 //-----------------------------------------------------------------------------

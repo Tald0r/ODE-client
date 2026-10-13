@@ -58,42 +58,13 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 	//------------------------------------------------------------------------
 	if (pItem->IsGunItem())
 	{
-		MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-		if (pMagazine == NULL)
+		// Loaded with a fresh magazine of its type holding the offered
+		// rounds; without one the gun arrives unloaded.
+		if (!MItem::LoadGun( pItem, pPacket->getItemNum() ))
 		{
-			// No magazine from the factory: the gun arrives unloaded.
 			DEBUG_ADD_ERR("[Error] GCTradeAddItem: no magazine for the gun");
 		}
-		else
-		{
-
-			// The magazine's own ID is never used.
-			pMagazine->SetID( 0 );
-
-			// The magazine type has to match the gun.
-			for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
-			{
-				pMagazine->SetItemType(	j );
-
-				if (pMagazine->IsInsertToItem( pItem ))
-				{
-					break;
-				}
-			}
-
-			// Options mean nothing on a magazine.
-			pMagazine->ClearItemOption();
-	
-			// The rounds it holds.
-			pMagazine->SetNumber( pPacket->getItemNum() );
-
-			//------------------------------------
-			// Load it into the gun.
-			//------------------------------------
-			MGunItem* pGunItem = (MGunItem*)pItem;
-			pGunItem->SetMagazine( pMagazine );
-		}
-	}		
+	}
 	//------------------------------------------------------------------------
 	// 총이 아닌 경우
 	//------------------------------------------------------------------------
