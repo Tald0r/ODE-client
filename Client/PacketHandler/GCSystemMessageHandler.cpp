@@ -8,14 +8,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSystemMessage.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "CMessageArray.h"
+#include "CommunicationPresentationHost.h"
+#include "GameMessages.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
-#include "Client.h"
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Runs when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPlayer )
@@ -28,28 +28,28 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 	static std::string previous1;
 	switch(pPacket->getType())
 	{ 
-		case SYSTEM_MESSAGE_HOLY_LAND :		// 아담의 성지 관련
-			if(g_pUserOption->DoNotShowHolyLandMsg)
+		case SYSTEM_MESSAGE_HOLY_LAND :		// about Adam's holy land
+			if(CommunicationPresentation::HideHolyLandMessages())
 				return;
 			break;
 
 		case SYSTEM_MESSAGE_NORMAL:
 			break;
 
-		case SYSTEM_MESSAGE_OPERATOR:	// 운영자 말씀
+		case SYSTEM_MESSAGE_OPERATOR:	// an operator's words
 			break;
 	
-		case SYSTEM_MESSAGE_MASTER_LAIR:	// 마스터 레어 관련
-			if(g_pUserOption->DoNotShowLairMsg)
+		case SYSTEM_MESSAGE_MASTER_LAIR:	// about a master's lair
+			if(CommunicationPresentation::HideLairMessages())
 				return;
 			break;
 
-		case SYSTEM_MESSAGE_COMBAT:		// 전쟁 관련
-			if(g_pUserOption->DoNotShowWarMsg)
+		case SYSTEM_MESSAGE_COMBAT:		// about a war
+			if(CommunicationPresentation::HideWarMessages())
 				return;
 			break;
 	
-		case SYSTEM_MESSAGE_INFO: 		// 특정한 정보 관련
+		case SYSTEM_MESSAGE_INFO: 		// some particular information
 			break;
 			
 		case SYSTEM_MESSAGE_RANGER_CHAT:
@@ -59,7 +59,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 				std::string rangerMessage = pPacket->getMessage();
 				if (!rangerMessage.empty())
 				{
-					UI_SetRangerChatString((char*)rangerMessage.c_str());
+					CommunicationPresentation::SetRangerChatString(rangerMessage.c_str());
 				}
 			}
 			return;
@@ -72,38 +72,9 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 
 				if (!playerMessage.empty())
 				{
-// 				if (strcmp(previous1, message)==0)
-// 				{
-// 					BOOL bExist = FALSE;
-// 
-// 					//--------------------------------------------------------------------
-// 					// 이미 있는 메세지인지 검사한다.
-// 					//--------------------------------------------------------------------
-// 					for (int i=0; i<g_pPlayerMessage->GetSize(); i++)
-// 					{
-// 						if (strcmp((*g_pPlayerMessage)[i], message)==0)
-// 						{
-// 							bExist = TRUE;
-// 						}
-// 					}
-// 
-// 					//--------------------------------------------------------------------
-// 					// 없는거면 추가한다.		
-// 					//--------------------------------------------------------------------
-// 					if (!bExist)
-// 					{
-// 						g_pPlayerMessage->Add( message );
-// 					}
-// 				}
-// 				//--------------------------------------------------------------------
-// 				// 새로운 메세지이면 추가한다.
-// 				//--------------------------------------------------------------------
-// 				else
-// 				{
 					g_pPlayerMessage->Add( playerMessage.c_str() );
 
 					previous1 = playerMessage;
-//				}
 				}
 			}
 			return;
@@ -121,7 +92,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 	std::string messageStr = pPacket->getMessage();
 	const char* message = messageStr.c_str();
 
-	// add by Coffee 2007-8-2 藤속溝固斤口혐깎
+	// add by Coffee 2007-8-2: mark a system message as one
 		char *pMsg = NULL;
 		if (message!=NULL && pPacket->getType() != SYSTEM_MESSAGE_PLAYER )
 		{
@@ -142,7 +113,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 			pMsg = new char[msgSize];
 			SafeFormat::Format(pMsg, msgSize, GetGameString(UI_STRING_MESSAGE_SYSTEM), message);
 			pPacket->setMessage(pMsg);
-			SAFE_DELETE_ARRAY( pMsg );
+			delete [] pMsg;
 		}
 		// Update message pointer after potential setMessage()
 		messageStr = pPacket->getMessage();
@@ -156,7 +127,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 		BOOL bExist = FALSE;
 
 		//--------------------------------------------------------------------
-		// 이미 있는 메세지인지 검사한다.
+		// Is the message already shown?
 		//--------------------------------------------------------------------
 		for (int i=0; i<g_pSystemMessage->GetSize(); i++)
 		{
@@ -167,7 +138,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 		}
 
 		//--------------------------------------------------------------------
-		// 없는거면 추가한다.		
+		// If not, add it.
 		//--------------------------------------------------------------------
 		if (!bExist)
 		{
@@ -175,7 +146,7 @@ void GCSystemMessageHandler::execute ( GCSystemMessage * pPacket , Player * pPla
 		}
 	}
 	//--------------------------------------------------------------------
-	// 새로운 메세지이면 추가한다.
+	// A new message is added.
 	//--------------------------------------------------------------------
 	else
 	{

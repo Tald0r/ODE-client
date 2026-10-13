@@ -3469,6 +3469,10 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.RunFriendExist = UI_RunFriendExist,
 	.RunFriendBlack = UI_RunFriendBlack,
 	.RunFriendDelete = UI_RunFriendDelete,
+	.SetRangerChatString = [](const char* message) { UI_SetRangerChatString(const_cast<char*>(message)); },
+	.HideHolyLandMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowHolyLandMsg; },
+	.HideLairMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowLairMsg; },
+	.HideWarMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowWarMsg; },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {

@@ -93,4 +93,24 @@ void RunFriendDelete(GCFriendChatting* pPacket)
 	if (s_Host && s_Host->RunFriendDelete) s_Host->RunFriendDelete(pPacket);
 }
 
+void SetRangerChatString(const char* message)
+{
+	if (s_Host && s_Host->SetRangerChatString) s_Host->SetRangerChatString(message);
+}
+
+bool HideHolyLandMessages()
+{
+	return s_Host && s_Host->HideHolyLandMessages ? s_Host->HideHolyLandMessages() : false;
+}
+
+bool HideLairMessages()
+{
+	return s_Host && s_Host->HideLairMessages ? s_Host->HideLairMessages() : false;
+}
+
+bool HideWarMessages()
+{
+	return s_Host && s_Host->HideWarMessages ? s_Host->HideWarMessages() : false;
+}
+
 }

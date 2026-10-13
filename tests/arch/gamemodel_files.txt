@@ -895,3 +895,7 @@ Client/PacketHandler/GCMakeItemOKHandler.cpp
 
 # The pet stash, built into the storage and shown through the dialog host.
 Client/PacketHandler/GCPetStashListHandler.cpp
+
+# System messages, filtered by the player's options and kept free of repeats,
+# over the communication host.
+Client/PacketHandler/GCSystemMessageHandler.cpp
