@@ -862,3 +862,7 @@ Client/PacketHandler/GCRemoveStoreItemHandler.cpp
 Client/MImageObjectScreen.cpp
 Client/RequestFunction.cpp
 Client/RequestFunction.h
+
+# The files other players asked this client for, sent over their peer connections.
+Client/RequestFileManager.cpp
+Client/RequestFileManager.h
