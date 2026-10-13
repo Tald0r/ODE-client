@@ -26,6 +26,8 @@
 #include "../../basic/Platform.h"
 #endif
 #include <list>
+#include <string>
+#include <vector>
 #include "RequestServerPlayer.h"
 #include "ServerSocket.h"
 
@@ -96,6 +98,12 @@ class RequestServerPlayerManager {
 
 		CRITICAL_SECTION		m_Lock;
 		RequestServerPlayer_LIST		m_listRequestServerPlayer;
+
+		// Disconnect() asked for while Update() dispatches: the peer may be
+		// the one whose packets are being read, so it is dropped once the
+		// dispatch has returned.
+		bool					m_bUpdating;
+		std::vector<std::string>	m_PendingDisconnects;
 };
 
 extern RequestServerPlayerManager*	g_pRequestServerPlayerManager;

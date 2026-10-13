@@ -94,6 +94,15 @@ struct MItemHost {
 	void			(*UsePetFromInventory)(MItem* pPet);		// MPetItem::UseInventory's body, for the same reason: MPetItem's constructor and its life countdown are in MItem.cpp (the clocks work), so its vtable is emitted in the library and the use it names has to resolve here. NULL in a test binary: the use is a no-op.
 	// Identity-only notification: derived members have already been destroyed.
 	void			(*ItemDestroyed)(MItem* pItem) noexcept = nullptr;
+	// The executable's item factory: a new item of the class, or NULL for a
+	// class with no constructor there. MItem::NewItem range-checks the class
+	// first. NULL in a test binary that installs none: nothing is created.
+	MItem*			(*NewItem)(ITEM_CLASS itemClass) = nullptr;
+	// Loads a gun with a fresh magazine of its type holding that many rounds;
+	// false when no magazine could be made. Executable-side because a
+	// magazine's vtable is (its use bodies send packets), and GCC's UBSan
+	// checks every use of an MMagazine against that vtable's typeinfo.
+	bool			(*LoadGun)(MItem* pGun, TYPE_ITEM_NUMBER rounds) = nullptr;
 };
 
 //----------------------------------------------------------------------
@@ -471,6 +480,7 @@ class MItem : public MObject, public CAnimationFrame {
 		static void				ResetQuickItemSlot()			{ if (s_pHost!=NULL && s_pHost->ResetQuickItemSlot!=NULL) s_pHost->ResetQuickItemSlot(); }
 		static void				RepairHint()					{ if (s_pHost!=NULL && s_pHost->RepairHint!=NULL) s_pHost->RepairHint(); }
 		static MMagazine*		EmptyMagazineFor(MItem* pGun)	{ return s_pHost!=NULL && s_pHost->EmptyMagazineFor!=NULL ? s_pHost->EmptyMagazineFor(pGun) : NULL; }
+		static bool				LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)	{ return s_pHost!=NULL && s_pHost->LoadGun!=NULL && s_pHost->LoadGun(pGun, rounds); }
 		// The executable's frame stamp; NULL without a host, or with one that carries none.
 		static const MonotonicClock::TimePoint*	Clock()	{ return s_pHost!=NULL ? s_pHost->pCurrentTime : NULL; }
 		BOOL		IsDropping() const		{ return m_bDropping; }

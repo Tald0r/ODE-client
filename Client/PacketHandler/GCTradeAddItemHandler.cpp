@@ -9,7 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeAddItem.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 #include "MTradeManager.h"
 #include "MItem.h"
 
@@ -58,34 +58,13 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 	//------------------------------------------------------------------------
 	if (pItem->IsGunItem())
 	{
-		MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-
-		// 의미 없음 - -;
-		pMagazine->SetID( 0 );
-
-		// 이거는 총에 맞춰서 해줘야된다.
-		for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
+		// Loaded with a fresh magazine of its type holding the offered
+		// rounds; without one the gun arrives unloaded.
+		if (!MItem::LoadGun( pItem, pPacket->getItemNum() ))
 		{
-			pMagazine->SetItemType(	j );
-
-			if (pMagazine->IsInsertToItem( pItem ))
-			{
-				break;
-			}
+			DEBUG_ADD_ERR("[Error] GCTradeAddItem: no magazine for the gun");
 		}
-
-		// 의미 없음
-		pMagazine->ClearItemOption();
-	
-		// 탄창 개수
-		pMagazine->SetNumber( pPacket->getItemNum() );
-
-		//------------------------------------
-		// 탄창 설정
-		//------------------------------------
-		MGunItem* pGunItem = (MGunItem*)pItem;
-		pGunItem->SetMagazine( pMagazine );
-	}		
+	}
 	//------------------------------------------------------------------------
 	// 총이 아닌 경우
 	//------------------------------------------------------------------------
@@ -146,7 +125,12 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 					//------------------------------------------
 					// Belt의 정해진 slot에 item을 추가시킨다.
 					//------------------------------------------
-					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+					if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+					{
+						// A slot past the pockets, or an item that is not a pocket item.
+						DEBUG_ADD_FORMAT_ERR("[Error] GCTradeAddItem: pocket %d refused item %d", (int)pSubItemInfo->getSlotID(), (int)pSubItemInfo->getObjectID());
+						delete pSubItem;
+					}
 
 					delete pSubItemInfo;
 				}
@@ -189,7 +173,12 @@ void GCTradeAddItemHandler::execute ( GCTradeAddItem * pPacket , Player * pPlaye
 					//------------------------------------------
 					// Belt의 정해진 slot에 item을 추가시킨다.
 					//------------------------------------------
-					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+					if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+					{
+						// A slot past the pockets, or an item that is not a pocket item.
+						DEBUG_ADD_FORMAT_ERR("[Error] GCTradeAddItem: pocket %d refused item %d", (int)pSubItemInfo->getSlotID(), (int)pSubItemInfo->getObjectID());
+						delete pSubItem;
+					}
 					
 					delete pSubItemInfo;
 				}

@@ -53,36 +53,7 @@ extern CMessageArray*				g_pGameMessage;
 
 extern CMessageArray*				g_pHelpMessage;
 
-//-----------------------------------------------------------------------------
-// client mode
-//-----------------------------------------------------------------------------
-enum	CLIENT_MODE
-{
-	MODE_NULL = 0,
-	MODE_OPENING,
-	MODE_MAINMENU,
-	MODE_CHANGE_OPTION,	// 3d가속 <--> 2d
-	MODE_NEWUSER,
-	MODE_CREATECHARACTER,
-	MODE_WAIT_CREATEPCOK,
-	MODE_WAIT_DELETEPCOK,
-	MODE_SELECTCHARACTER,
-	MODE_WAIT_LOGINOK,
-	MODE_WAIT_WORLD_LIST,
-	MODE_WAIT_SELECT_WORLD,
-	MODE_WAIT_SERVER_LIST,
-	MODE_WAIT_SELECT_SERVER,
-	MODE_LOGIN_WRONG,
-	MODE_WAIT_PCLIST,
-	MODE_WAIT_SELECTPC,
-	MODE_WAIT_RECONNECT,
-	MODE_WAIT_UPDATEINFO,
-	MODE_WAIT_SETPOSITION,		
-	MODE_WAIT_REGISTERPLAYEROK,
-	MODE_WAIT_RECONNECT_LOGIN,	// logout하고 자동 재접속
-	MODE_GAME,
-	MODE_QUIT
-};	
+#include "ClientMode.h"	
 
 //-----------------------------------------------------------------------------
 // update type

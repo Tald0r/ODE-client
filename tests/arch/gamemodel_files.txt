@@ -818,3 +818,25 @@ Client/PacketHandler/GCBloodBibleSignInfoHandler.cpp
 Client/PacketHandler/GCChangeWeatherHandler.cpp
 Client/PacketHandler/GCLightningHandler.cpp
 Client/PacketHandler/GCPetInfoHandler.cpp
+
+# The trade box's new-item reply, creating items through MItem::NewItem's factory.
+Client/PacketHandler/GCTradeAddItemHandler.cpp
+
+# Guild-list, guild-membership and character-error replies over the guild, player and login services.
+Client/PacketHandler/GCActiveGuildListHandler.cpp
+Client/PacketHandler/GCModifyGuildMemberInfoHandler.cpp
+Client/PacketHandler/GCWaitGuildListHandler.cpp
+Client/PacketHandler/LCCreatePCErrorHandler.cpp
+Client/PacketHandler/LCDeletePCErrorHandler.cpp
+
+# The client mode and the message logs' pointers, owned by gamemodel so the replies that read them can be tested.
+Client/ClientMode.cpp
+Client/ClientMode.h
+Client/GameMessages.cpp
+Client/GameMessages.h
+Client/PacketHandler/CRConnectHandler.cpp
+Client/PacketHandler/GCLearnSkillReadyHandler.cpp
+Client/PacketHandler/GCPartySayHandler.cpp
+Client/PacketHandler/RCCharacterInfoHandler.cpp
+Client/PacketHandler/RCSayHandler.cpp
+Client/PacketHandler/RCStatusHPHandler.cpp

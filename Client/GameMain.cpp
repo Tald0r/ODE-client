@@ -216,13 +216,6 @@ bool				g_bNewDraw = false;			// 화면을 다시 그렸는가? (커서 제외)
 bool				g_bSmoothCursor = false;	// 부드러운(?) cursor를 출력할 수 있나?
 bool				g_bNetStatusGood = true;		// 네트웍 상태가 좋은가?
 
-CMessageArray*		g_pSystemMessage = NULL;
-CMessageArray*		g_pPlayerMessage = NULL;
-CMessageArray*		g_pNoticeMessage = NULL;
-CMessageArray*		g_pGameMessage = NULL;
-
-CMessageArray*		g_pHelpMessage = NULL;
-
 // socket
 ClientPlayer*		g_pSocket = NULL;
 
@@ -241,11 +234,8 @@ bool				g_bHAL			= true;
 bool				g_bMusicSW		= true;
 extern int			g_MorphCreatureType;
 
-//--------------------------------------------
-// 현재의 Client Mode에 대한 설정..
-//--------------------------------------------
-enum CLIENT_MODE	g_Mode = MODE_NULL;
-enum CLIENT_MODE	g_ModeNext = MODE_NULL;
+// g_Mode and g_ModeNext are gamemodel's (ClientMode.cpp); the message
+// logs' pointers too (GameMessages.cpp).
 
 CWinUpdate*				g_pUpdate = NULL;
 

@@ -37,6 +37,7 @@ RequestServerPlayerManager::RequestServerPlayerManager()
 	m_pServerSocket		= NULL;
 	m_hRequestThread	= NULL;
 	m_bThreadRunning	= false;
+	m_bUpdating			= false;
 
 	InitializeCriticalSection(&m_Lock);
 }
@@ -154,6 +155,17 @@ RequestServerPlayerManager::Disconnect(const char* pName)
 {
 	Lock();
 
+	// A peer's own CRDisconnect asks for this from inside Update(), while
+	// that peer's processCommand() is still reading its packets; freeing it
+	// here freed the object the dispatch returns into. Update() drops it
+	// once its loop is done.
+	if (m_bUpdating)
+	{
+		m_PendingDisconnects.push_back(pName);
+		Unlock();
+		return;
+	}
+
 
 	RequestServerPlayer_LIST::iterator iPlayer = m_listRequestServerPlayer.begin();
 		
@@ -161,15 +173,15 @@ RequestServerPlayerManager::Disconnect(const char* pName)
 	{
 		RequestServerPlayer* pPlayer = *iPlayer;
 
-		// 같은 이름의 player의 접속을 해제시킨다.
+		// Drop the player of that name. It leaves the list, and this call's
+		// hold on the lock is released, before it is disconnected and freed.
 		if (pPlayer->getName()==pName)
 		{
+			m_listRequestServerPlayer.erase( iPlayer );
+			Unlock();
+
 			pPlayer->disconnect(UNDISCONNECTED);
 			delete pPlayer;
-
-			m_listRequestServerPlayer.erase( iPlayer );
-
-			Unlock();
 			return;
 		}
 		
@@ -234,6 +246,7 @@ RequestServerPlayerManager::Update()
 		return;
 	}
 
+	m_bUpdating = true;
 	try {
 
 		RequestServerPlayer_LIST::iterator iPlayer = m_listRequestServerPlayer.begin();
@@ -282,6 +295,22 @@ RequestServerPlayerManager::Update()
 
 	} catch (Throwable&t) {
 		DEBUG_ADD_ERR( t.toString().c_str() );
+	}
+
+	m_bUpdating = false;
+
+	// The disconnects the dispatch asked for, now that no peer is mid-read.
+	std::vector<std::string> pending;
+	pending.swap(m_PendingDisconnects);
+	for (const std::string& name : pending)
+	{
+		// Outside the loop's own catches: one failure must not escape
+		// Update() or keep the rest from being dropped.
+		try {
+			Disconnect(name.c_str());
+		} catch (Throwable& t) {
+			DEBUG_ADD_ERR(t.toString().c_str());
+		}
 	}
 
 	Unlock();

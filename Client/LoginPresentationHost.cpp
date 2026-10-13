@@ -88,4 +88,14 @@ bool IsSelectPCMode()
 	return s_Host && s_Host->IsSelectPCMode && s_Host->IsSelectPCMode();
 }
 
+void PopupErrorMessage(int errorID)
+{
+	if (s_Host && s_Host->PopupErrorMessage) s_Host->PopupErrorMessage(errorID);
+}
+
+void QueueWaitSelectPCMode()
+{
+	if (s_Host && s_Host->QueueWaitSelectPCMode) s_Host->QueueWaitSelectPCMode();
+}
+
 }

@@ -93,4 +93,14 @@ void PacketMoveNO()
 	if (s_Host && s_Host->PacketMoveNO) s_Host->PacketMoveNO();
 }
 
+void SetGuildNumber(int guildNumber)
+{
+	if (s_Host && s_Host->SetGuildNumber) s_Host->SetGuildNumber(guildNumber);
+}
+
+bool HasEffectStatus(EFFECTSTATUS status)
+{
+	return s_Host && s_Host->HasEffectStatus ? s_Host->HasEffectStatus(status) : false;
+}
+
 }

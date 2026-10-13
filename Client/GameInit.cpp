@@ -2923,10 +2923,27 @@ static MMagazine*	EmptyMagazineFor(MItem* pGun)
 	return pMagazine;
 }
 
+// A gun a reply builds (the trade box's offer) loaded with that many rounds.
+static bool	LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)
+{
+	MMagazine* pMagazine = EmptyMagazineFor( pGun );
+	if (pMagazine==NULL)
+	{
+		return false;
+	}
+	pMagazine->SetNumber( rounds );
+	((MGunItem*)pGun)->SetMagazine( pMagazine );
+	return true;
+}
+
 // MUsePotionItem::UseInventory's and MPetItem::UseInventory's bodies
 // (MItemUse.cpp); the members are the library's.
 void	UsePotionFromInventory(MItem* pPotion);
 void	UsePetFromInventory(MItem* pPet);
+// The item class table MItem::NewItem creates through (MItemUse.cpp).
+MItem*	NewItemOfClass(ITEM_CLASS itemClass);
+// The popup for a login error code (PacketFunction.cpp).
+void	PopupErrorMessage(ErrorID errorID);
 
 static const MItemHost	s_ItemHost = {
 	.pCurrentFrame			= &g_CurrentFrame,
@@ -2941,6 +2958,8 @@ static const MItemHost	s_ItemHost = {
 	.UsePotionFromInventory	= UsePotionFromInventory,
 	.UsePetFromInventory	= UsePetFromInventory,
 	.ItemDestroyed			= [](MItem* item) noexcept { UI_RemoveDescriptor(item); },
+	.NewItem				= NewItemOfClass,
+	.LoadGun				= LoadGun,
 };
 
 //-----------------------------------------------------------------------------
@@ -3420,6 +3439,9 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 	.ShowGuildMemberList = UI_ShowGuildMemberList,
 	.ShowUnionGuildMemberInfo = UI_ShowUnionGuildMemberInfo,
 	.ShowWaitGuildInfo = UI_ShowWaitGuildInfo,
+	.ShowActiveGuildList = UI_ShowActiveGuildList,
+	.ShowWaitGuildList = UI_ShowWaitGuildList,
+	.SetGuild = [](std::uint16_t guildID, std::uint8_t rank, const std::string& guildName) { UI_SetGuild(guildID, rank, guildName); },
 };
 
 static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
@@ -3492,6 +3514,8 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.QueueWaitPCListMode = [] { g_ModeNext = MODE_WAIT_PCLIST; },
 	.QueueLoginWrongMode = [] { g_ModeNext = MODE_LOGIN_WRONG; },
 	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
+	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
+	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
@@ -3511,6 +3535,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetServerPosition = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { g_pPlayer->SetServerPosition(sX, sY); },
 	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
+	.SetGuildNumber = [](int guildNumber) { g_pPlayer->SetGuildNumber(guildNumber); },
+	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

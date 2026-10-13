@@ -9,15 +9,13 @@
 // include files
 #include "Client_PCH.h"
 #include "Rpackets/CRConnect.h"
-#include "ClientDef.h"
+#include "CMessageArray.h"
+#include "ClientMode.h"
+#include "GameMessages.h"
 #include "UserInformation.h"
 #include "RequestServerPlayer.h"
 #include "Rpackets/RCConnectVerify.h"
 
-
-#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
-	extern CMessageArray*		g_pGameMessage;
-#endif
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

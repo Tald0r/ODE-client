@@ -2,12 +2,14 @@
 #define __ITEMCLASSDEF_H__
 
 //------------------------------------------------------
-// Item class 설정.
+// Item classes.
 //------------------------------------------------------
-// (!) 이거 바뀌면 
-//     s_NewItemClassTable의 순서도 바꿔야 한다.!
+// (!) Change these and s_NewItemClassTable's order must change too.
+// The underlying type is fixed so that a class byte from the wire, cast
+// to ITEM_CLASS before MItem::NewItem range-checks it, is a value the
+// enum holds; without it only 0-127 would be.
 //------------------------------------------------------
-enum ITEM_CLASS
+enum ITEM_CLASS : int
 {
 	ITEM_CLASS_MOTORCYCLE,			// 0
 	ITEM_CLASS_POTION,				// 1

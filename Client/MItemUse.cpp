@@ -237,27 +237,26 @@ MItem*	MVampireShoes::NewItem()	{ return new MVampireShoes; }
 */
 
 //----------------------------------------------------------------------
-// New Item
+// The item factory
 //----------------------------------------------------------------------
-// itemClass에 맞는 class의 객체를 생성해서(new) 넘겨준다.
+// MItem::NewItem (MItem.cpp) range-checks the class and calls this through
+// MItemHost::NewItem, which GameInit.cpp installs: a new object of the
+// class itemClass names. The range check repeats here because the table
+// is indexed with it; the NULL-entry check is cheap defence in depth
+// should a future edit leave a table slot unfilled.
 //----------------------------------------------------------------------
 MItem*
-MItem::NewItem(ITEM_CLASS itemClass)
+NewItemOfClass(ITEM_CLASS itemClass)
 {
-	// itemClass reaches here straight from network packets, so it has to be
-	// validated before indexing the function-pointer table — an out-of-range
-	// value would read a code pointer past the table and call through it.
-	// The NULL-entry check is cheap defence in depth should a future edit
-	// leave a table slot unfilled. Every caller must handle a NULL return.
 	if (itemClass < 0 || itemClass >= MAX_ITEM_CLASS
-		|| s_NewItemClassTable[itemClass] == NULL)
+		|| MItem::s_NewItemClassTable[itemClass] == NULL)
 	{
-		DEBUG_ADD_FORMAT_ERR("[Error] MItem::NewItem: invalid item class %d", itemClass);
+		DEBUG_ADD_FORMAT_ERR("[Error] NewItemOfClass: no constructor for item class %d", itemClass);
 		return NULL;
 	}
 
-	return (MItem*)(*s_NewItemClassTable[itemClass])();
-};
+	return (MItem*)(*MItem::s_NewItemClassTable[itemClass])();
+}
 
 
 //----------------------------------------------------------------------
