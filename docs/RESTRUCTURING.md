@@ -3820,8 +3820,8 @@ replies; 126 remain. Task 4.128 reduces it to 198 Linux / 200 Windows
 with the peer whisper; 125 remain. Task 4.129 reduces it to 197 Linux /
 199 Windows with the action-result nodes, which 32 of the remaining
 skill-reply handlers construct in live code (29 after 4.130, 27 after
-4.131 and 25 after 4.132; counting nodes inside `/* */` blocks too gives
-34 and 31). Task 4.130 reduces it to 193 Linux /
+4.131, 25 after 4.132, 19 after 4.133 and 18 after 4.134; counting nodes
+inside `/* */` blocks too gives 34 and 31). Task 4.130 reduces it to 193 Linux /
 195 Windows with four special-action skill replies; 121 handlers remain.
 Task 4.131 reduces it to 189 Linux / 191 Windows with four basic-action
 attack and skill replies; 117 remain. Task 4.132 reduces it to 185 Linux /

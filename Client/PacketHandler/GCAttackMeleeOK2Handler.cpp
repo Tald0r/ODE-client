@@ -14,7 +14,6 @@
 #include "MActionResult.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
-#include "MActionInfoTable.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -25,12 +24,6 @@ void GCAttackMeleeOK2Handler::execute ( GCAttackMeleeOK2 * pPacket , Player * pP
 	__BEGIN_TRY
 	(void)pPlayer;
 
-	// The player; without one there is nothing to do.
-	MCreature* const pPlayerCreature = PlayerState::Creature();
-	if (pPlayerCreature == NULL)
-	{
-		return;
-	}
 		
 
 	// message
@@ -45,6 +38,12 @@ void GCAttackMeleeOK2Handler::execute ( GCAttackMeleeOK2 * pPacket , Player * pP
 		
 		return;
 	}	
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 
 	//------------------------------------------------------
 	// The creatures involved.

@@ -14,7 +14,6 @@
 #include "MActionResult.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
-#include "MActionInfoTable.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////

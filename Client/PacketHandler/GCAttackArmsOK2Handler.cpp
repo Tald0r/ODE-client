@@ -25,12 +25,6 @@ void GCAttackArmsOK2Handler::execute ( GCAttackArmsOK2 * pPacket , Player * pPla
 	__BEGIN_TRY
 	(void)pPlayer;
 
-	// The player; without one there is nothing to do.
-	MCreature* const pPlayerCreature = PlayerState::Creature();
-	if (pPlayerCreature == NULL)
-	{
-		return;
-	}
 		
 
 	// message
@@ -45,6 +39,12 @@ void GCAttackArmsOK2Handler::execute ( GCAttackArmsOK2 * pPacket , Player * pPla
 		
 		return;
 	}	
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 
 	//------------------------------------------------------
 	// The creatures involved.

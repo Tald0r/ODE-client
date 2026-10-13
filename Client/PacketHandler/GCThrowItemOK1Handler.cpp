@@ -9,7 +9,6 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCThrowItemOK1.h"
-#include "ConvertDuration.h"
 #include "DebugLog.h"
 #include "MActionResult.h"
 #include "PlayerStateHost.h"
@@ -96,9 +95,6 @@ void GCThrowItemOK1Handler::execute ( GCThrowItemOK1 * pPacket , Player * pPlaye
 							);	
 
 			
-			// [ TEST CODE ] 
-			// Show the damage of the hit.			
-
 			// Add it to the player's current skill as its result.
 			//g_pPlayer->PacketAddActionResult( pPacket->getCEffectID(), pResult );		
 			PlayerState::PacketAddActionResult(0, pResult );		

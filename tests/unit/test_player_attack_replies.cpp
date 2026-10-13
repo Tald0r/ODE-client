@@ -297,37 +297,59 @@ TEST(PlayerAttackReplies, AMissedShotOrNoTargetOnlySpendsBullets)
 TEST(PlayerAttackReplies, ThePlayersBlowHitsWithItsBasicAction)
 {
 	World world;
+	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
 	ReceiveBlow(1001);
-	CHECK(calls == Then({"player.add|0"}, OgreHit(SKILL_ATTACK_GUN_SR)));
+	CHECK(calls == Then({"verified", "player.add|0"}, OgreHit(SKILL_ATTACK_GUN_SR)));
 	CHECK_EQ(44, World::HP());
+	// Without the target or a zone, only the status changes.
 	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveBlow(4242);
+	CHECK_EQ(44, World::HP());
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	zoneExists = false;
 	ReceiveBlow(1001);
+	CHECK_EQ(44, World::HP());
 	CHECK(calls.empty());
 }
 
 TEST(PlayerAttackReplies, ThePlayersKnockBackMovesTheCreature)
 {
 	World world;
+	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
 	ReceiveKnockBack(1001, 14, 15);
-	CHECK(calls == std::vector<std::string>({"player.add|0", "Ogre.release", "Ogre.move|14|15", "Ogre.server|14|15",
+	CHECK(calls == std::vector<std::string>({"verified", "player.add|0", "Ogre.release", "Ogre.move|14|15", "Ogre.server|14|15",
 		"Ogre.server|14|15", "magazine|9"}));
 	CHECK_EQ(33, World::HP());
+	// A miss or a missing target only spends bullets and changes the status.
 	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveKnockBack(1001, 14, 15, false);
+	CHECK_EQ(33, World::HP());
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveKnockBack(4242, 14, 15);
+	CHECK_EQ(33, World::HP());
 	CHECK(calls == std::vector<std::string>({"magazine|9", "magazine|9"}));
+	// Without a zone even the bullets stay; the status still changes.
+	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
+	zoneExists = false;
+	ReceiveKnockBack(1001, 14, 15);
+	CHECK(calls.empty());
+	CHECK_EQ(33, World::HP());
 }
 
 TEST(PlayerAttackReplies, ThePlayersHolyWaterHits)
 {
 	World world;
+	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
 	ReceiveThrow(1001);
-	CHECK(calls == Then({"player.add|0"}, OgreHit(MAGIC_THROW_HOLY_WATER)));
+	CHECK(calls == Then({"verified", "player.add|0"}, OgreHit(MAGIC_THROW_HOLY_WATER)));
 	CHECK_EQ(10, World::HP());
 	calls.clear();
 	ReceiveThrow(4242);
+	zoneExists = false;
+	ReceiveThrow(1001);
 	CHECK(calls.empty());
 }
 
@@ -348,8 +370,10 @@ TEST(PlayerAttackReplies, ACreaturesShotFacesThePlayerAndHitsIt)
 		CHECK(calls == std::vector<std::string>{"Self.result|" + N(skill + kMin) + "|7|30|31"});
 	}
 	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveShotAtPlayer(4242, SKILL_DOUBLE_IMPACT);
 	CHECK(calls == std::vector<std::string>{"Self.result|" + N(RESULT_SKILL_ATTACK_GUN_AR) + "|7|30|31"});
+	CHECK_EQ(66, World::HP());
 }
 
 TEST(PlayerAttackReplies, ACreaturesBlowFacesThePlayerAndHitsIt)
@@ -359,8 +383,10 @@ TEST(PlayerAttackReplies, ACreaturesBlowFacesThePlayerAndHitsIt)
 	CHECK(calls == Then({"Ogre.face|30|31", "Ogre.other|" + N(SKILL_ATTACK_GUN_SG) + "|7"}, PlayerHit(SKILL_ATTACK_GUN_SG)));
 	CHECK_EQ(77, World::HP());
 	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveBlowAtPlayer(4242);
 	CHECK(calls == std::vector<std::string>{"Self.result|" + N(RESULT_SKILL_ATTACK_MELEE) + "|7|30|31"});
+	CHECK_EQ(77, World::HP());
 }
 
 TEST(PlayerAttackReplies, ACreaturesAttackWithoutAZoneChangesNothing)

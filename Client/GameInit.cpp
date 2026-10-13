@@ -3569,6 +3569,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	},
 	.SetCurrentMagazineNumber = [](int number) {
 		if (g_pCurrentMagazine != NULL) g_pCurrentMagazine->SetNumber(static_cast<TYPE_ITEM_NUMBER>(number));
+		else DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
 	},
 };
 
