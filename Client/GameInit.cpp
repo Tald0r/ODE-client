@@ -119,6 +119,7 @@
 #include "QuestWarPresentationHost.h"
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
+#include "DialogPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2693,6 +2694,7 @@ void ReleaseAllObjects()
 	QuestWarPresentation::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
+	DialogPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3456,6 +3458,14 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.RunImageNotice = [](const char* name, std::uint32_t id) { UI_RunImageNotice(name, id); },
 };
 
+static const DialogPresentation::Host s_DialogPresentationHost = {
+	.PopupFreeMessageDlg = [](const char* message) { g_pUIDialog->PopupFreeMessageDlg(message); },
+	.UnlockItem = UI_UnlockItem,
+	.UnlockItemTrade = UI_UnlockItemTrade,
+	.RemoveItemFromItemShop = [](std::uint32_t id) { UI_RemoveItemFromItemShop(id); },
+	.IsRunningSwapAdvancementItem = UI_IsRunningSwapAdvancementItem,
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4041,6 +4051,7 @@ InitGameObject()
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
+	DialogPresentation::SetHost(&s_DialogPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

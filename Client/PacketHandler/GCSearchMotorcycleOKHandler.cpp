@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSearchMotorcycleOK.h"
-#include "ClientDef.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "MZoneTable.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
@@ -28,7 +27,7 @@ void GCSearchMotorcycleOKHandler::execute ( GCSearchMotorcycleOK * pPacket , Pla
 
 	if (pZoneInfo==NULL)
 	{
-		g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_FIND_MOTOR_NO_WHERE].GetString());
+		DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_FIND_MOTOR_NO_WHERE].GetString());
 	}
 	else
 	{
@@ -39,7 +38,7 @@ void GCSearchMotorcycleOKHandler::execute ( GCSearchMotorcycleOK * pPacket , Pla
 						pPacket->getX(),
 						pPacket->getY());
 
-		g_pUIDialog->PopupFreeMessageDlg( str );
+		DialogPresentation::PopupFreeMessageDlg( str );
 	}
 
 

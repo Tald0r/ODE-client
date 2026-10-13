@@ -9,11 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopSellFail.h"
-#include "ClientDef.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "TempInformation.h"
 #include "MGameStringTable.h"
-#include "UIFunction.h"
 
 void GCShopSellFailHandler::execute ( GCShopSellFail * pPacket , Player * pPlayer )
 	 
@@ -28,14 +26,14 @@ void GCShopSellFailHandler::execute ( GCShopSellFail * pPacket , Player * pPlaye
 	g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 	// 거래를 다시 활성화한다.
-	UI_UnlockItemTrade();
+	DialogPresentation::UnlockItemTrade();
 
 	// 2005, 1, 3, sobeit add start - 이궁 대충. TempInformation에 모드 추가 해야 하지만.. 
-	if(UI_IsRunningSwapAdvancementItem())
-		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[UI_STRING_MESSAGE_SWAP_ADVANCEMENT_ITEM_ERROR].GetString() );
+	if(DialogPresentation::IsRunningSwapAdvancementItem())
+		DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[UI_STRING_MESSAGE_SWAP_ADVANCEMENT_ITEM_ERROR].GetString() );
 	else
 	// 2005, 1, 3, sobeit add end
-		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CANNOT_SELL].GetString() );
+		DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CANNOT_SELL].GetString() );
 
 
 	__END_CATCH

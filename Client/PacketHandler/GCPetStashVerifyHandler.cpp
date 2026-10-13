@@ -12,10 +12,9 @@
 #include "Gpackets/GCPetStashVerify.h"
 
 	#include "ClientPlayer.h"
-	#include "ClientDef.h"
-	#include "UIFunction.h"
 	#include "TempInformation.h"
-	#include "UIDialog.h"
+	#include "DebugLog.h"
+	#include "DialogPresentationHost.h"
 	#include "MGameStringTable.h"
 	#include "MStorage.h"
 	#include "MInventory.h"
@@ -81,24 +80,24 @@ void GCPetStashVerifyHandler::execute ( GCPetStashVerify * pPacket , Player * pP
 			}
 			break;
 		case GCPetStashVerify::PET_STASH_NOT_ENOUGH_MONEY:
-			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_WAR_NOT_ENOUGH_MONEY].GetString() );
+			DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_WAR_NOT_ENOUGH_MONEY].GetString() );
 			
 			break;
 		case GCPetStashVerify::PET_STASH_NO_INVENTORY_SPACE:
-			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_INVENTORY_FULL_MONSTER_KILL_QUEST].GetString() );
+			DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_INVENTORY_FULL_MONSTER_KILL_QUEST].GetString() );
 			
 			break;
 		case GCPetStashVerify::PET_STASH_RACK_IS_NOT_EMPTY:	// 해당 위치에 이미 다른 펫 아이템이 있습니다.
-			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_EXIST_ITEM_ALREADY].GetString() );
+			DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_EXIST_ITEM_ALREADY].GetString() );
 			
 			break;
 		case GCPetStashVerify::PET_STASH_RACK_IS_EMPTY:// 찾으려고 한 위치에 아이템이 없습니다.
-			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_BUY_NO_ITEM].GetString() );
+			DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_BUY_NO_ITEM].GetString() );
 			
 			break;
 	}
 	g_pTempInformation->SetMode(TempInformation::MODE_NULL);
-	UI_UnlockItem();
+	DialogPresentation::UnlockItem();
 
 	__END_DEBUG
 //	__END_DEBUG_EX 
