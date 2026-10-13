@@ -60,13 +60,12 @@ void GCGQuestStatusModifyHandler::execute ( GCGQuestStatusModify * pGCGQuestStat
  
 		if(false == VsUiPresentation::ModifyQuestManagerInfo(UI_Info, pGCGQuestStatusModify->getType()-2))
 		{ 
-			std::vector<UI_GMissionInfo*>::iterator subitr1 = UI_Info->vMissionList.begin();
-
-			while(subitr1 != UI_Info->vMissionList.end())
+			// Nobody kept the record: free its missions, then the record. (The
+			// loop here erased each mission and went on with the erased
+			// iterator, which a checked build aborts on.)
+			for (UI_GMissionInfo* pMission : UI_Info->vMissionList)
 			{
-				UI_GMissionInfo *TempMission1 = (*subitr1);
-				UI_Info->vMissionList.erase(subitr1);
-				delete TempMission1;
+				delete pMission;
 			}
 			delete UI_Info;
 		}
