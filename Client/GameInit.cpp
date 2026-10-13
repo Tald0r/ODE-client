@@ -3502,7 +3502,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.StopRecoveryMP = []() { g_pPlayer->StopRecoveryMP(); },
 	.SetVisible = []() { g_pPlayer->SetVisible(); },
 	.SetServerPosition = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { g_pPlayer->SetServerPosition(sX, sY); },
-	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
+	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
 };
 

@@ -78,7 +78,7 @@ void SetServerPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	if (s_Host && s_Host->SetServerPosition) s_Host->SetServerPosition(sX, sY);
 }
 
-void PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction)
+void PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction)
 {
 	if (s_Host && s_Host->PacketMoveOK) s_Host->PacketMoveOK(sX, sY, direction);
 }

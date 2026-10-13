@@ -50,7 +50,7 @@ struct Host
 	void (*StopRecoveryMP)() = nullptr;
 	void (*SetVisible)() = nullptr;
 	void (*SetServerPosition)(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
-	void (*PacketMoveOK)(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction) = nullptr;
+	void (*PacketMoveOK)(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) = nullptr;
 	void (*PacketMoveNO)() = nullptr;
 };
 
@@ -69,7 +69,7 @@ void StopRecoveryHP();
 void StopRecoveryMP();
 void SetVisible();
 void SetServerPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
-void PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction);
+void PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction);
 void PacketMoveNO();
 
 }

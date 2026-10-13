@@ -2851,7 +2851,8 @@ rounds settled* for the host rules). Test fixtures share
   > into its scope (`using enum`), so `MPlayer::WAIT_VERIFY_X` still names
   > the same values everywhere. Without a host the queries answer as for no
   > player (no status or gear, nothing awaited, a slayer, false) and actions
-  > are skipped; the handlers that dereferenced `g_pPlayer` unguarded
+  > are skipped, though the slayer answer still lets the gear reply move a
+  > slayer's gear; the handlers that dereferenced `g_pPlayer` unguarded
   > dereference `Status()` and `GetGear()` the same way. `ClientDef.h` gives
   > way to the host and library headers, `GCMoveOKHandler` drops an unused
   > `VS_UI.h`, and `GCUseBonusPointOKHandler` loses a commented-out block
@@ -3033,6 +3034,26 @@ Follow-ups from 4.99, all older than the move:
 - `LCQueryResultCharacterNameHandler` uses `g_pUserInformation` unguarded,
   and once `WhisperID` is released an empty name during selection compares
   equal to it and is answered.
+
+Follow-ups from 4.100, all older than the move:
+- `GCModifyInformationHandler` casts the wire's effect status to
+  `EFFECTSTATUS` unchecked. On MSVC that enum is a signed `int`, so a value
+  of 2^31 or more turns negative, passes `MCreature::AddEffectStatus`'s
+  `status >= GetSize()` check and writes before `m_bEffectStatus`; GCC and
+  Clang give the enum an unsigned type and reject it. Several skill
+  handlers still in the executable share the cast. Now that the handler is
+  in `gamemodel`, a range check can be written test-first. Separately,
+  `MPlayer::AddEffectStatus` updates the UI and regeneration even when
+  `MCreature` refused the status.
+- `GCAddGearToInventoryHandler` leaks the item it took off the gear when
+  the inventory refuses it, and the client's view then differs from the
+  server's.
+- The null-player guards are uneven: the HP replies check for a player,
+  while the MP end, status, bonus-point and time-limit replies dereference
+  the status array or gear unchecked. `GCMoveOKHandler` uses its
+  `dynamic_cast<ClientPlayer*>` unchecked.
+- `MPlayer::GetGear` C-casts each race's gear to `MPlayerGear*`, correct
+  only because each gear class has a single base at offset 0.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

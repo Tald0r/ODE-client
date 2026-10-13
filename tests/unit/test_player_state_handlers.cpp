@@ -46,8 +46,9 @@ PlayerState::WAIT_VERIFY waitVerify = PlayerState::WAIT_VERIFY_NULL;
 Race race = RACE_SLAYER;
 MItemManager* gear = nullptr;
 
-// The player's status array, recording every change made through it. It
-// starts as MCreature's constructor leaves a creature: no effect status.
+// The player's status array, recording every change made through it. Its
+// effect status starts empty, as MCreature's constructor sets it; the other
+// values keep MStatus's MODIFY_NULL.
 struct RecordingStatus : MStatus
 {
 	RecordingStatus() { MStatus::SetStatus(MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL); }
@@ -82,7 +83,7 @@ const PlayerState::Host host{
 	.SetServerPosition = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) {
 		calls.push_back("serverpos|" + std::to_string(sX) + "|" + std::to_string(sY));
 	},
-	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction) {
+	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) {
 		calls.push_back("moveok|" + std::to_string(sX) + "|" + std::to_string(sY) + "|" + std::to_string(direction));
 	},
 	.PacketMoveNO = []() { calls.push_back("moveno"); },
@@ -379,6 +380,13 @@ TEST(PlayerStateHandlers, AnAcceptedBonusPointClearsItsRequestAndSpendsOnePoint)
 	CHECK(world.temp.GetMode() == TempInformation::MODE_SHOP_BUY);
 	CHECK(calls == std::vector<std::string>{Status(MODIFY_CURRENT_STR, 41)});
 
+	// The last point is spent too.
+	world.status.SetStatus(MODIFY_BONUS_POINT, 1);
+	calls.clear();
+	world.temp.SetMode(TempInformation::MODE_BONUSPOINT_USE);
+	Receive();
+	CHECK(calls == std::vector<std::string>({Status(MODIFY_CURRENT_STR, 41), Status(MODIFY_BONUS_POINT, 0)}));
+
 	// No point left to spend: the request clears, the count stays at zero.
 	calls.clear();
 	world.status.SetStatus(MODIFY_BONUS_POINT, 0);
@@ -430,25 +438,35 @@ TEST(PlayerStateHandlers, GearTakenOffGoesFromTheRacesGearToTheNamedInventoryCel
 TEST(PlayerStateHandlers, TimeLimitsAreRecordedAndWornItemsReappliedAsAddons)
 {
 	World world;
-	Helm* helm = new Helm(77);
+	// The player is a vampire: only the vampire's gear is the player's.
+	VampireCoat* coat = new VampireCoat(77);
+	Helm* helm = new Helm(88);
+	CHECK(world.vampireGear.AddItem(coat, MVampireGear::GEAR_VAMPIRE_COAT));
 	CHECK(world.slayerGear.AddItem(helm, MSlayerGear::GEAR_SLAYER_HELM));
+	gear = &world.vampireGear;
+	coat->UnSetAffectStatus();
+	helm->UnSetAffectStatus();
 	GCTimeLimitItemInfo packet;
 	packet.addTimeLimit(77, 3600);
 	packet.addTimeLimit(88, 60);
+	packet.addTimeLimit(99, 30);
 	GCTimeLimitItemInfoHandler::execute(&packet, nullptr);
 	CHECK(g_pTimeItemManager->IsExist(77));
 	CHECK(g_pTimeItemManager->IsExist(88));
+	CHECK(g_pTimeItemManager->IsExist(99));
 	CHECK(calls == std::vector<std::string>{"addon|77"});
+	CHECK(coat->IsAffectStatus());
+	CHECK(!helm->IsAffectStatus());
 	CHECK(packet.m_TimeLimitItemInfos.empty());
 
 	// Without the time-item manager nothing is read or recorded.
 	calls.clear();
 	MTimeItemManager* manager = g_pTimeItemManager;
 	g_pTimeItemManager = nullptr;
-	packet.addTimeLimit(99, 60);
+	packet.addTimeLimit(66, 60);
 	GCTimeLimitItemInfoHandler::execute(&packet, nullptr);
 	g_pTimeItemManager = manager;
-	CHECK(!g_pTimeItemManager->IsExist(99));
+	CHECK(!g_pTimeItemManager->IsExist(66));
 	CHECK_EQ(1u, packet.m_TimeLimitItemInfos.size());
 	CHECK(calls.empty());
 }
