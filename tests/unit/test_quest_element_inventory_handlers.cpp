@@ -52,9 +52,9 @@ const VsUiPresentation::Host ui = []() {
 	host.PushGQuestExecuteElement = [](std::uint32_t questID, std::uint8_t condition, std::uint16_t index) {
 		calls.push_back("element|" + N(questID) + "|" + N(condition) + "|" + N(index));
 	};
-	host.UpdateQuestItemInfo = [](std::vector<MItem*>& items) {
+	host.UpdateQuestItemInfo = [](std::vector<MItem*>& handed) {
 		std::string call = "items";
-		for (MItem* item : items)
+		for (MItem* item : handed)
 		{
 			call += "|" + N(item->GetItemType()) + "/" + N(item->GetCurrentDurability());
 			kept.push_back(item);

@@ -113,4 +113,9 @@ bool IsOperator()
 	return s_Host && s_Host->IsOperator ? s_Host->IsOperator() : false;
 }
 
+int GetSight()
+{
+	return s_Host && s_Host->GetSight ? s_Host->GetSight() : 0;
+}
+
 }

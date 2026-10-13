@@ -197,7 +197,7 @@ TEST(PetStashHandler, EachStashedPetBecomesAPetItemInItsSlotThenTheWindowOpens)
 	// The old storage, and the pet it holds, go (a new storage can reuse
 	// the old one's address, so the pet is what tells them apart).
 	CHECK(g_pStorage->SetItem(5, new Pet));
-	Receive({{0, Info(1, 2, 50, 11, true, false, true), 900, 3}, {3, Info(2, 3, 100, 0, false, true, false), 901, 8}});
+	Receive({{0, Info(1, 2, 50, 11, true, false, true), 900, 3}, {3, Info(2, 3, 100, 0, false, true, true), 901, 8}});
 	CHECK(g_pStorage->GetItem(5) == nullptr);
 	CHECK(calls == std::vector<std::string>({"run", "show|stash"}));
 	const MPetItem* first = dynamic_cast<const MPetItem*>(g_pStorage->GetItem(0));
@@ -223,7 +223,7 @@ TEST(PetStashHandler, EachStashedPetBecomesAPetItemInItsSlotThenTheWindowOpens)
 	{
 		CHECK_EQ(901, static_cast<long long>(fourth->GetID()));
 		CHECK_EQ(500, static_cast<long long>(fourth->GetPetExpRemain()));
-		CHECK(!fourth->IsCanGamble() && fourth->IsCanCutHead() && !fourth->IsCanAttack());
+		CHECK(!fourth->IsCanGamble() && fourth->IsCanCutHead() && fourth->IsCanAttack());
 		// No option is no option.
 		CHECK(fourth->GetItemOptionList().empty());
 		CHECK_EQ(8, static_cast<long long>(fourth->GetPetKeepedDay()));

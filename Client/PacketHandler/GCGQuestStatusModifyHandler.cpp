@@ -9,8 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGQuestStatusModify.h"
-#include "Client.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
+#include "VsUiPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCGQuestStatusModifyHandler::execute ( GCGQuestStatusModify * pGCGQuestStatusModify , Player * pPlayer )
@@ -58,17 +58,16 @@ void GCGQuestStatusModifyHandler::execute ( GCGQuestStatusModify * pGCGQuestStat
 			subitr++;
 		}
  
-		if(false == gC_vs_ui.ModifyQuestManagerInfo((void*)UI_Info, pGCGQuestStatusModify->getType()-2))
+		if(false == VsUiPresentation::ModifyQuestManagerInfo(UI_Info, pGCGQuestStatusModify->getType()-2))
 		{ 
-			std::vector<UI_GMissionInfo*>::iterator subitr1 = UI_Info->vMissionList.begin();
-
-			while(subitr1 != UI_Info->vMissionList.end())
+			// Nobody kept the record: free its missions, then the record. (The
+			// loop here erased each mission and went on with the erased
+			// iterator, which a checked build aborts on.)
+			for (UI_GMissionInfo* pMission : UI_Info->vMissionList)
 			{
-				UI_GMissionInfo *TempMission1 = (*subitr1);
-				UI_Info->vMissionList.erase(subitr1);
-				SAFE_DELETE(TempMission1);
+				delete pMission;
 			}
-			SAFE_DELETE(UI_Info);
+			delete UI_Info;
 		}
 	}
 

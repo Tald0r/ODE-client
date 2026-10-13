@@ -126,13 +126,47 @@ TEST(SystemMessageHandler, AHiddenKindIsDroppedAndAShownOneAdded)
 	Receive(SYSTEM_MESSAGE_MASTER_LAIR, "lair shown");
 	Receive(SYSTEM_MESSAGE_COMBAT, "war shown");
 	CHECK(world.System() == std::vector<std::string>({System("holy shown"), System("lair shown"), System("war shown")}));
-	// Each option hides its own kind only.
-	World other;
-	hideLair = true;
-	Receive(SYSTEM_MESSAGE_HOLY_LAND, "holy kept");
-	Receive(SYSTEM_MESSAGE_COMBAT, "war kept");
-	Receive(SYSTEM_MESSAGE_MASTER_LAIR, "lair dropped");
-	CHECK(other.System() == std::vector<std::string>({System("holy kept"), System("war kept")}));
+}
+
+// Each option hides its own kind only.
+void OnlyOneHidden(bool& hide, SystemMessageType hidden, SystemMessageType a, SystemMessageType b, const char* tag)
+{
+	World world;
+	hide = true;
+	const std::string prefix = tag;
+	Receive(hidden, prefix + " dropped");
+	Receive(a, prefix + " kept a");
+	Receive(b, prefix + " kept b");
+	CHECK(world.System() == std::vector<std::string>({System(prefix + " kept a"), System(prefix + " kept b")}));
+}
+
+TEST(SystemMessageHandler, EachOptionHidesItsOwnKindOnly)
+{
+	OnlyOneHidden(hideHolyLand, SYSTEM_MESSAGE_HOLY_LAND, SYSTEM_MESSAGE_MASTER_LAIR, SYSTEM_MESSAGE_COMBAT, "holy-only");
+	OnlyOneHidden(hideLair, SYSTEM_MESSAGE_MASTER_LAIR, SYSTEM_MESSAGE_HOLY_LAND, SYSTEM_MESSAGE_COMBAT, "lair-only");
+	OnlyOneHidden(hideWar, SYSTEM_MESSAGE_COMBAT, SYSTEM_MESSAGE_HOLY_LAND, SYSTEM_MESSAGE_MASTER_LAIR, "war-only");
+}
+
+TEST(SystemMessageHandler, ARepeatThatOtherMessagesPushedOutIsAddedAgain)
+{
+	World world;
+	Receive(SYSTEM_MESSAGE_NORMAL, "pushed out");
+	// Other parts of the client write to the same log.
+	for (int i = 0; i < 3; i++) world.systemLog.Add("from elsewhere");
+	Receive(SYSTEM_MESSAGE_NORMAL, "pushed out");
+	CHECK(world.System().back() == System("pushed out"));
+}
+
+TEST(SystemMessageHandler, AnyOtherKindIsShownAndAnEmptyHostHidesNothing)
+{
+	World world;
+	const CommunicationPresentation::Host empty{};
+	CommunicationPresentation::SetHost(&empty);
+	Receive(static_cast<SystemMessageType>(SYSTEM_MESSAGE_PLAYER + 1), "unnamed kind");
+	Receive(SYSTEM_MESSAGE_COMBAT, "war with an empty host");
+	Receive(SYSTEM_MESSAGE_RANGER_CHAT, "ranger with an empty host");
+	CHECK(world.System() == std::vector<std::string>({System("unnamed kind"), System("war with an empty host")}));
+	CHECK(calls.empty());
 }
 
 TEST(SystemMessageHandler, ARepeatIsAddedOnlyOnceItHasLeftTheLog)

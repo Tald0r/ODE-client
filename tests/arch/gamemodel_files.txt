@@ -908,3 +908,35 @@ Client/PacketHandler/GCUnionOfferListHandler.cpp
 # A quest's element and its items, over the zone and UI-object hosts.
 Client/PacketHandler/GCExecuteElementHandler.cpp
 Client/PacketHandler/GCGQuestInventoryHandler.cpp
+
+# A quest's new status, handed to the quest window through the UI-object host.
+Client/PacketHandler/GCGQuestStatusModifyHandler.cpp
+
+# A member leaving or expelled from the party, over the zone, player and
+# communication hosts.
+Client/PacketHandler/GCPartyLeaveHandler.cpp
+
+# An item an NPC sold, off its special shelf, over the zone and creature hosts.
+Client/PacketHandler/GCShopSoldHandler.cpp
+
+# A refused party request, over the player, dialog and communication hosts.
+Client/PacketHandler/GCPartyErrorHandler.cpp
+
+# The stash, built into the storage and shown through the dialog host.
+Client/PacketHandler/GCStashListHandler.cpp
+
+# A nickname change answered, over the communication and UI-object hosts.
+Client/PacketHandler/GCNicknameVerifyHandler.cpp
+
+# The current zone's flags the zone loading sets, and the replies that read
+# them: the war list, and a party member's position from the server or a peer.
+Client/ZoneFlags.cpp
+Client/ZoneFlags.h
+Client/PacketHandler/GCWarListHandler.cpp
+Client/PacketHandler/GCPartyPositionHandler.cpp
+Client/PacketHandler/RCPositionInfoHandler.cpp
+
+# Two replies whose whole body was a block no build compiles: the
+# nProtect auth key and the test sub-inventory.
+Client/PacketHandler/GCAuthKeyHandler.cpp
+Client/PacketHandler/GCSubInventoryInfoHandler.cpp

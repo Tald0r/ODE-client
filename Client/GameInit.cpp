@@ -3473,6 +3473,8 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.HideHolyLandMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowHolyLandMsg; },
 	.HideLairMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowLairMsg; },
 	.HideWarMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowWarMsg; },
+	.CloseParty = UI_CloseParty,
+	.ClosePartyCancel = UI_ClosePartyCancel,
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3509,6 +3511,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RunPetStorage = UI_RunPetStorage,
 	.SetPetStorage = UI_SetPetStorage,
 	.EmptyMove = []() { gbl_global_empty_move = true; },
+	.RunStorage = UI_RunStorage,
+	.SetStorage = UI_SetStorage,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3553,6 +3557,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
 	.Creature = []() -> MCreature* { return g_pPlayer; },
 	.IsOperator = []() { return g_pPlayer != NULL && g_pPlayer->IsOperator(); },
+	.GetSight = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->GetSight()) : 0; },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3562,6 +3567,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.AddHelicopter = [](TYPE_OBJECTID creatureID, int x0, int y0) { return g_pZone->AddHelicopter(creatureID, x0, y0); },
 	.RemoveHelicopter = [](TYPE_OBJECTID creatureID) { g_pZone->RemoveHelicopter(creatureID); },
 	.AddCorpseFromCreature = [](TYPE_OBJECTID id) { return g_pZone->AddCorpseFromCreature(id); },
+	.GetID = []() { return g_pZone != NULL ? static_cast<int>(g_pZone->GetID()) : ZONEID_NULL; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3609,6 +3615,8 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SetPetInfo = SetPetInfo,
 	.RequestDisconnect = RequestDisconnect,
 	.AddEvent = [](MEvent& event) { if (g_pEventManager != NULL) g_pEventManager->AddEvent(event); },
+	.RemoveEvent = [](int eventID) { if (g_pEventManager != NULL) g_pEventManager->RemoveEvent(static_cast<EVENT_ID>(eventID)); },
+	.PlayMusicCurrentZone = PlayMusicCurrentZone,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
@@ -3624,6 +3632,9 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.AddMailContents = [](int tabID, std::uint32_t id, const char* contents) { gC_vs_ui.AddMailContents(tabID, id, contents); },
 	.PushGQuestExecuteElement = [](std::uint32_t questID, std::uint8_t condition, std::uint16_t index) { gC_vs_ui.PushGQuestExcuteElement(questID, condition, index); },
 	.UpdateQuestItemInfo = [](std::vector<MItem*>& items) { gC_vs_ui.UpdateQuestItemInfo(items); },
+	.ModifyQuestManagerInfo = [](UI_GQuestInfo* pInfo, int type) { return gC_vs_ui.ModifyQuestManagerInfo(static_cast<void*>(pInfo), type); },
+	.ChangeCustomNaming = [](int id, const char* name) { gC_vs_ui.Change_Custom_Naming(id, const_cast<char*>(name)); },
+	.CloseNamingChange = []() { gC_vs_ui.CloseNamingChange(); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

@@ -10,12 +10,10 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCNicknameVerify.h"
 
-	#include "ClientPlayer.h"
-#include "ClientDef.h"
+#include "CommunicationPresentationHost.h"
 #include "MGameStringTable.h"
-#include "UIFunction.h"
 #include "TempInformation.h"
-#include "VS_UI.h"
+#include "VsUiPresentationHost.h"
 
 
 //--------------------------------------------------------------------------------
@@ -31,49 +29,34 @@ void GCNicknameVerifyHandler::execute ( GCNicknameVerify * pPacket , Player * pP
 	switch(pPacket->getCode())
 	{
 		case NICKNAME_MODIFY_FAIL_NO_ITEM:
-			UI_PopupMessage( STRING_MESSAGE_CANNOT_BUY_NO_ITEM );
+			CommunicationPresentation::PopupMessage( STRING_MESSAGE_CANNOT_BUY_NO_ITEM );
 			break;
 		case NICKNAME_MODIFY_OK:
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_NICKNAME_CHANGE_CUSTOM)
 			{
-				// value1 = 이름, value2 = item type
-				if(g_pTempInformation->Value2 != 0)
-				{ 
-					//UseItemOK();
-					switch(g_pTempInformation->Value2)
-					{
-					case 22: // 닉네임 수정
-						gC_vs_ui.Change_Custom_Naming(0, (char*)g_pTempInformation->StrValue1.c_str());
-						break;
-					case 23: // 펫 닉네임 수정 - gc_modify nickname 에서 수정 되겠지..
-						break;
-					case 24: // 유저 닉네임 추가 - 서버에서 리스트날라오기로 했음
-						break;
-					case 25: // 닉네임 수정 (시간제)
-						gC_vs_ui.Change_Custom_Naming(0, (char*)g_pTempInformation->StrValue1.c_str());
-						break;
-					}
-					
-				//	gC_vs_ui.SetChangeableNickName(false);
-				}
-				else // 울버린 네임 고치기- gc_modify nickname 에서 수정 되겠지..
+				// StrValue1 = the name, Value2 = the item type used
+				switch(g_pTempInformation->Value2)
 				{
-				//	gC_vs_ui.SetChangeablePetNickName(false);
+				case 22: // a nickname change
+				case 25: // a nickname change (timed)
+					VsUiPresentation::ChangeCustomNaming(0, g_pTempInformation->StrValue1.c_str());
+					break;
+				// 23, a pet's nickname, and 0, a pet's name, change through
+				// GCModifyNickname; 24, a nickname added, through the list the
+				// server sends.
 				}
-				gC_vs_ui.CloseNamingChange();
-				UI_PopupMessage( UI_STRING_MESSAGE_NICKNAME_CHANGE_OK );
+				VsUiPresentation::CloseNamingChange();
+				CommunicationPresentation::PopupMessage( UI_STRING_MESSAGE_NICKNAME_CHANGE_OK );
 			}
 			break;
 		case NICKNAME_SELECT_FAIL_NO_SUCH:
-			UI_PopupMessage( UI_STRING_MESSAGE_SMS_FAIL_NO_SUCH_EID );
+			CommunicationPresentation::PopupMessage( UI_STRING_MESSAGE_SMS_FAIL_NO_SUCH_EID );
 			break;
 		case NICKNAME_SELECT_OK:
-//			g_pTempInformation->SetMode(TempInformation::MODE_NICKNAME_CHANGE_CUSTOM);
-//			g_pTempInformation->Value1 = left;
-			UI_PopupMessage( UI_STRING_MESSAGE_NICKNAME_CHANGE_OK );
+			CommunicationPresentation::PopupMessage( UI_STRING_MESSAGE_NICKNAME_CHANGE_OK );
 			break;
 		case NICKNAME_SELECT_FAIL_FORCED:
-			UI_PopupMessage( UI_STRING_MESSAGE_NICKNAME_SELECT_FAIL_FORCED);
+			CommunicationPresentation::PopupMessage( UI_STRING_MESSAGE_NICKNAME_SELECT_FAIL_FORCED);
 			break;
 	}
 

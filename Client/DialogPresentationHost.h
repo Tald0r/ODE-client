@@ -13,6 +13,8 @@ namespace DialogPresentation {
 // storage in it. The window keeps the pointer and draws from it every
 // frame, so the storage must outlive it (the handler's is g_pStorage).
 // EmptyMove replays the mouse position once, so the UI under it refreshes.
+// RunStorage and SetStorage do for the stash window what the pet ones do
+// for the pet storage window, which also keeps the storage's pointer.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -23,6 +25,8 @@ struct Host
 	void (*RunPetStorage)() = nullptr;
 	void (*SetPetStorage)(MStorage* pStorage) = nullptr;
 	void (*EmptyMove)() = nullptr;
+	void (*RunStorage)() = nullptr;
+	void (*SetStorage)(MStorage* pStorage) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -35,5 +39,7 @@ bool IsRunningSwapAdvancementItem();
 void RunPetStorage();
 void SetPetStorage(MStorage* pStorage);
 void EmptyMove();
+void RunStorage();
+void SetStorage(MStorage* pStorage);
 
 }

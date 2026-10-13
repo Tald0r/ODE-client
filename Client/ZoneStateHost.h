@@ -25,6 +25,8 @@ struct Host
 	bool (*AddHelicopter)(TYPE_OBJECTID creatureID, int x0, int y0) = nullptr;
 	void (*RemoveHelicopter)(TYPE_OBJECTID creatureID) = nullptr;
 	bool (*AddCorpseFromCreature)(TYPE_OBJECTID id) = nullptr;
+	// The zone's ID; asked only when the zone exists.
+	int (*GetID)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -35,6 +37,8 @@ bool RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effect
 bool AddHelicopter(TYPE_OBJECTID creatureID, int x0, int y0);
 void RemoveHelicopter(TYPE_OBJECTID creatureID);
 bool AddCorpseFromCreature(TYPE_OBJECTID id);
+// ZONEID_NULL without a host.
+int GetID();
 
 }
 

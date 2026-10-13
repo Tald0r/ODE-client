@@ -59,6 +59,8 @@ struct Host
 	MCreature* (*Creature)() = nullptr;
 	// Whether the player is an operator (a game master's character).
 	bool (*IsOperator)() = nullptr;
+	// How far the player sees, in cells.
+	int (*GetSight)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -85,5 +87,7 @@ bool HasEffectStatus(EFFECTSTATUS status);
 MCreature* Creature();
 // False without a player.
 bool IsOperator();
+// 0 without a player.
+int GetSight();
 
 }
