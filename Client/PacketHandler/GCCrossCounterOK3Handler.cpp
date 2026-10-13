@@ -9,8 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCCrossCounterOK3.h"
-#include "ClientDef.h"
-#include "MFakeCreature.h"
+#include "DebugLog.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,22 +24,22 @@ void GCCrossCounterOK3Handler::execute ( GCCrossCounterOK3 * pPacket , Player * 
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pUserCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-		MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+		MCreature* pUserCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+		MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 
-		SkillCrossCounter( pUserCreature, pTargetCreature, pPacket->getSkillType() );
+		WorldEvents::SkillCrossCounter( pUserCreature, pTargetCreature, pPacket->getSkillType() );
 	}	
 
 

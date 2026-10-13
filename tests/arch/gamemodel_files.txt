@@ -985,3 +985,9 @@ Client/PacketHandler/GCAttackMeleeOK2Handler.cpp
 # effect generator's main node.
 Client/PacketHandler/GCSkillToSelfOK2Handler.cpp
 Client/PacketHandler/GCSkillToSelfOK3Handler.cpp
+
+# Cross counters: the player's, one against the player, and between two
+# creatures, shown through the world-event host.
+Client/PacketHandler/GCCrossCounterOK1Handler.cpp
+Client/PacketHandler/GCCrossCounterOK2Handler.cpp
+Client/PacketHandler/GCCrossCounterOK3Handler.cpp
