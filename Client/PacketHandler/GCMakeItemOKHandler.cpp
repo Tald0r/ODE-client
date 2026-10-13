@@ -9,10 +9,13 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMakeItemOK.h"
-#include "ClientDef.h"
-#include "TempInformation.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "MInventory.h"
-#include "UIFunction.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "TempInformation.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -25,7 +28,7 @@ void GCMakeItemOKHandler::execute ( GCMakeItemOK * pPacket , Player * pPlayer )
 
 
 	//------------------------------------------------------------------
-	// Temp Mode 체크
+	// Check the temp mode
 	//------------------------------------------------------------------
 	if (g_pTempInformation->GetMode() == TempInformation::MODE_SKILL_MAKE_ITEM)
 	{
@@ -33,14 +36,14 @@ void GCMakeItemOKHandler::execute ( GCMakeItemOK * pPacket , Player * pPlayer )
 		//g_pTempInformation->Value1 = itemClass;
 		//g_pTempInformation->Value2 = itemType;
 
-		// 못 움직이게 했던거 풀기
-		UI_UnlockItem();
+		// Let go of the items locked for the skill
+		DialogPresentation::UnlockItem();
 	}
 	else
 	{
 		DEBUG_ADD_ERR( "[Error] Temp Mode is Not MODE_SKILL_MAKE_ITEM" );
 		
-		// 어쨋든... 날아온 packet은 처리하게 한다.
+		// The packet is applied anyway.
 	}
 		
 
@@ -98,9 +101,13 @@ void GCMakeItemOKHandler::execute ( GCMakeItemOK * pPacket , Player * pPlayer )
 	// ModifyInfo
 	//
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Change the player's status.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	MStatus* pStatus = PlayerState::Status();
+	if (pStatus != NULL)
+	{
+		AffectModifyInfo(pStatus, pPacket);
+	}
 
 
 	__END_CATCH
