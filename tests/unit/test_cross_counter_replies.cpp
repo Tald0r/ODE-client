@@ -155,8 +155,8 @@ TEST(CrossCounterReplies, ThePlayersCounterStrikesTheCreatureAndAnswersTheWait)
 {
 	World world;
 	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
-	ReceivePlayersCounter(1001, SKILL_CROSS_COUNTER);
-	CHECK(calls == std::vector<std::string>({"verified", "counter|Self>Ogre|" + kSkill}));
+	ReceivePlayersCounter(1001, SKILL_DOUBLE_IMPACT);
+	CHECK(calls == std::vector<std::string>({"verified", "counter|Self>Ogre|" + std::to_string(SKILL_DOUBLE_IMPACT)}));
 	CHECK_EQ(55, World::HP());
 	// A creature not in the zone is passed on as none; without a zone
 	// nothing is shown, and the status still changes.
@@ -172,8 +172,8 @@ TEST(CrossCounterReplies, ThePlayersCounterStrikesTheCreatureAndAnswersTheWait)
 TEST(CrossCounterReplies, ACreaturesCounterStrikesThePlayer)
 {
 	World world;
-	ReceiveCounterAtPlayer(1002, SKILL_CROSS_COUNTER);
-	CHECK(calls == std::vector<std::string>{"counter|Vanda>Self|" + kSkill});
+	ReceiveCounterAtPlayer(1002, SKILL_ATTACK_MELEE);
+	CHECK(calls == std::vector<std::string>{"counter|Vanda>Self|" + std::to_string(SKILL_ATTACK_MELEE)});
 	CHECK_EQ(44, World::HP());
 	calls.clear();
 	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);

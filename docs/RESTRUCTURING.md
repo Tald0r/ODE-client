@@ -3728,7 +3728,8 @@ rounds settled* for the host rules). Test fixtures share
   > counters a creature (answering the wait for the skill), a creature's
   > counters the player, or one creature's counters another; the
   > player's two also carry its status, and a missing creature is passed
-  > on as none, as before. The handlers no longer include
+  > on as none, as before; without a player, the player's two do
+  > nothing. The handlers no longer include
   > `MFakeCreature.h`. R1 is 176 Windows / 174 Ninja.
   - Owner: membership, R1, the new entry and its adapter, and
     `test_cross_counter_replies.cpp` (each counter's user and target, the
@@ -3743,8 +3744,8 @@ rounds settled* for the host rules). Test fixtures share
   > duration, except doom, critical wounds and a third back stab; a siege
   > laser is hidden from attacking players, and a trying status flashes
   > the regen tower's bead. A creature standing, or lying in its corpse,
-  > loses its head. The corpse (`MCorpse`, the executable's) is a new
-  > `ZoneState::GetCorpseCreature`, which checks the item is a corpse as
+  > loses its head. The corpse lookup (`MCorpse` is the executable's) is a
+  > new `ZoneState::GetCorpseCreature`, which checks the item is a corpse as
   > both replies did; a corpse with no creature is now skipped where
   > `GCRemoveCorpseHead` dereferenced it, and the two error logs for no
   > item and a non-corpse item are one. `CreatureState` gains

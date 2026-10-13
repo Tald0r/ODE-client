@@ -28,8 +28,8 @@ struct Host
 	bool (*AddCorpseFromCreature)(TYPE_OBJECTID id) = nullptr;
 	// The zone's ID; asked only when the zone exists.
 	int (*GetID)() = nullptr;
-	// The creature lying in the corpse item with this ID; NULL for no item
-	// or one that is not a corpse.
+	// The creature lying in the corpse item with this ID; NULL for no item,
+	// one that is not a corpse, or a corpse with no creature.
 	MCreature* (*GetCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
 };
 
@@ -114,7 +114,9 @@ struct Host
 	bool (*RemoveEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
 	// Marks the creature as faking its death.
 	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
+	// The direction the creature faces now; 0 without a host.
 	int (*GetDirection)(MCreature* pCreature) = nullptr;
+	// Takes the creature's head off, if it can lose it.
 	void (*RemoveHead)(MCreature* pCreature) = nullptr;
 	void (*SetDirection)(MCreature* pCreature, int direction) = nullptr;
 };

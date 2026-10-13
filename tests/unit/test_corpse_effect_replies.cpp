@@ -99,12 +99,13 @@ const PlayerState::Host player = []() {
 const WorldEvents::Host events = []() {
 	WorldEvents::Host host{};
 	host.PlaySound = [](TYPE_SOUNDID soundID) { calls.push_back("sound|" + N(soundID)); };
-	host.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int, int direction,
-		TYPE_OBJECTID targetID, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION, int, std::uint32_t delayFrame,
-		MActionResult* pResult, bool bStartFromMainNode, int, int) {
+	host.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction,
+		TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame,
+		MActionResult* pResult, bool bStartFromMainNode, int sX, int sY) {
 		CHECK(pResult == nullptr);
+		CHECK(startZ == 0 && targetZ == 0 && sX == 0 && sY == 0);
 		calls.push_back("action|" + N(actionInfo) + "|" + N(startX) + "," + N(startY) + "|dir " + N(direction) + "|" + N(targetID)
-			+ "|" + N(delayFrame) + (bStartFromMainNode ? "|main" : "|resume"));
+			+ "@" + N(targetX) + "," + N(targetY) + "|" + N(delayFrame) + (bStartFromMainNode ? "|main" : "|resume"));
 	};
 	return host;
 }();
@@ -234,10 +235,16 @@ TEST(CorpseEffectReplies, SixStatusesStartTheirActionFromTheCreature)
 		calls.clear();
 		world.Row(row.status).ActionInfo = SKILL_DOUBLE_IMPACT;
 		ReceiveEffect(1001, row.status);
-		std::vector<std::string> expected = {"action|" + N(SKILL_DOUBLE_IMPACT) + "|10,11|dir 3|1001|" + N(row.delay) + (row.fromMain ? "|main" : "|resume")};
+		std::vector<std::string> expected = {"action|" + N(SKILL_DOUBLE_IMPACT) + "|10,11|dir 3|1001@10,11|" + N(row.delay) + (row.fromMain ? "|main" : "|resume")};
 		if (row.added) expected.push_back(Effect("Ogre", row.status));
 		CHECK(calls == expected);
 	}
+	// On a corpse, the action starts from the creature lying in it, by its
+	// own ID, cell and direction.
+	calls.clear();
+	ReceiveEffect(9001, EFFECTSTATUS_TRAPPED);
+	CHECK(calls == std::vector<std::string>({"action|" + N(SKILL_DOUBLE_IMPACT) + "|20,21|dir 5|5001@20,21|" + N(ConvertDurationToFrame(50)) + "|resume",
+		Effect("Lying", EFFECTSTATUS_TRAPPED)}));
 	// Without an action in the table, only the status is added.
 	calls.clear();
 	world.Row(EFFECTSTATUS_TRAPPED).ActionInfo = ACTIONINFO_NULL;
@@ -277,8 +284,13 @@ TEST(CorpseEffectReplies, ATryingStatusFlashesTheRegenTowerBead)
 		calls.clear();
 		ReceiveEffect(1001, status);
 		CHECK(calls == std::vector<std::string>({Effect("Ogre", status),
-			"action|" + N(REGEN_TOWER_FLASH_BEAD) + "|10,11|dir " + N(DIRECTION_DOWN) + "|1001|7|main"}));
+			"action|" + N(REGEN_TOWER_FLASH_BEAD) + "|10,11|dir " + N(DIRECTION_DOWN) + "|1001@10,11|7|main"}));
 	}
+	// The bead flashes over the creature lying in a corpse too.
+	calls.clear();
+	ReceiveEffect(9001, EFFECTSTATUS_SLAYER_TRYING_1);
+	CHECK(calls == std::vector<std::string>({Effect("Lying", EFFECTSTATUS_SLAYER_TRYING_1),
+		"action|" + N(REGEN_TOWER_FLASH_BEAD) + "|20,21|dir " + N(DIRECTION_DOWN) + "|5001@20,21|7|main"}));
 }
 
 TEST(CorpseEffectReplies, AStandingOrLyingCreatureLosesItsHead)

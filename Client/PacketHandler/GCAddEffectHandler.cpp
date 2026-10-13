@@ -11,10 +11,10 @@
 #include "Gpackets/GCAddEffect.h"
 #include "ConvertDuration.h"
 #include "DebugLog.h"
-#include "WorldEventsHost.h"
-#include "PlayerStateHost.h"
-#include "ZoneStateHost.h"
 #include "MEffectStatusTable.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "MEffectStatusDef.h"
 #include "SkillDef.h"
 
