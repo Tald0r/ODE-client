@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCNPCSayDynamic.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MChatManager.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -27,7 +28,7 @@ void GCNPCSayDynamicHandler::execute ( GCNPCSayDynamic * pPacket , Player * pPla
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -40,7 +41,7 @@ void GCNPCSayDynamicHandler::execute ( GCNPCSayDynamic * pPacket , Player * pPla
 		//---------------------------------------------------------------
 		// 캐릭터 머리 위에 채팅을 띄운다.
 		//---------------------------------------------------------------
-		MCreature*	pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature*	pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature==NULL)
 		{
@@ -51,20 +52,20 @@ void GCNPCSayDynamicHandler::execute ( GCNPCSayDynamic * pPacket , Player * pPla
 			//-------------------------------------------------
 			// 정상적인 대화
 			//-------------------------------------------------
-			if (g_pChatManager->IsAcceptID( pCreature->GetName() ))
+			if (g_pChatManager->IsAcceptID( CreatureState::GetName(pCreature) ))
 			{
 				// 채팅~~
 				char str[256];
 				snprintf(str, sizeof(str), "%s", pPacket->getMessage().c_str());				
 				
-				pCreature->SetChatString( str );
+				CreatureState::SetChatString(pCreature, str );
 			}
 			//-------------------------------------------------
 			// 대화 거부로 설정되어 있다면 출력안한다.
 			//-------------------------------------------------
 			else
 			{
-				pCreature->SetChatString( "......" );
+				CreatureState::SetChatString(pCreature, "......" );
 			}
 
 			// history에 추가

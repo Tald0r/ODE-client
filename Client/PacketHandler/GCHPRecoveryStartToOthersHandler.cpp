@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCHPRecoveryStartToOthers.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -20,15 +21,15 @@ void GCHPRecoveryStartToOthersHandler::execute ( GCHPRecoveryStartToOthers * pPa
 	(void)pPlayer;
 
 
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature!=NULL)
 		{
 			DWORD delay = ConvertDurationToMillisecond( pPacket->getDelay() );
 
-			pCreature->SetRecoveryHP( pPacket->getQuantity(),
+			CreatureState::SetRecoveryHP(pCreature, pPacket->getQuantity(),
 										pPacket->getPeriod(),
 										delay );
 		}

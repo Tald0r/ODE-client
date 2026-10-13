@@ -8,8 +8,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCModifyNickname.h"
-#include "ClientDef.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MGameStringTable.h"
 //////////////////////////////////////////////////////////////////////
 //
@@ -23,14 +23,14 @@ void GCModifyNicknameHandler::execute ( GCModifyNickname * pPacket , Player * pP
 
 		int CreatureID = pPacket->getObjectID();
 		
-		if (g_pZone==NULL)
+		if (!ZoneState::Exists())
 		{
 			// message
 			DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 			return;
 		}
 		
-		MCreature* pCreature = g_pZone->GetCreature(CreatureID);
+		MCreature* pCreature = ZoneState::GetCreature(CreatureID);
 
 		if (pCreature != NULL)
 		{
@@ -55,7 +55,7 @@ void GCModifyNicknameHandler::execute ( GCModifyNickname * pPacket , Player * pP
 				szNickName = (*g_pNickNameStringTable)[TempIndex].GetString();
 			}
 
-			pCreature->SetNickName(TempNick.getNicknameType(), (char*)szNickName);
+			CreatureState::SetNickName(pCreature, TempNick.getNicknameType(), (char*)szNickName);
 //			if(pCreature->GetID() == g_pPlayer->GetID())
 //			{
 //				g_char_slot_ingame.m_NickNameType = TempNick.getNicknameType();

@@ -9,9 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCDeleteEffectFromTile.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
-#include "MinTr.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -46,9 +46,9 @@ void GCDeleteEffectFromTileHandler::execute ( GCDeleteEffectFromTile * pPacket ,
 //	}	
 
 //	_MinTrace("Incomming GCDeleteEffectFromTileHandler\n");
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{		
-		if (!g_pZone->RemoveTileEffect( pPacket->getX(), pPacket->getY(), (int)pPacket->getEffectID(), pPacket->getObjectID() ))
+		if (!ZoneState::RemoveTileEffect( pPacket->getX(), pPacket->getY(), (int)pPacket->getEffectID(), pPacket->getObjectID() ))
 		{
 			DEBUG_ADD_ERR("[Error] Can't Remove Effect From Tile");
 		} else
@@ -58,7 +58,7 @@ void GCDeleteEffectFromTileHandler::execute ( GCDeleteEffectFromTile * pPacket ,
 	}
 	else
 	{
-		DEBUG_ADD_ERR("[Error] g_pZone is NULL");
+		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	
 

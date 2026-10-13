@@ -9,7 +9,8 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCMove.h"
 #include "Player.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 	#include "Cpackets/CGMove.h"
 	#include "ClientPlayer.h"
@@ -24,60 +25,44 @@ void GCMoveHandler::execute ( GCMove * pPacket , Player * pPlayer )
 	(void)pPlayer;
 		
 
-		// ID가 getObjectID()인 Creature를 움직여준다.
-		// 없으면 Zone에 새로 추가
-		// 있으면 움직임..
+		// Move the creature whose ID is getObjectID(). One that is not in the
+		// zone is only reported.
 
 		//------------------------------------------------------
-		// Zone이 아직 생성되지 않은 경우
+		// The zone is not created yet.
 		//------------------------------------------------------
 
-		if (g_pZone==NULL)
+		if (!ZoneState::Exists())
 		{
 			// message
 			DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		}
 		//------------------------------------------------------
-		// 정상.. 
+		// Normal case.
 		//------------------------------------------------------
 		else
 		{
-			MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+			MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 			//--------------------------------------------------
-			// 새로운 Creature이면 추가
+			// Not in the zone.
 			//--------------------------------------------------
 			if (pCreature==NULL)
 			{
 				// message
 				DEBUG_ADD_ERR("[Error] Not Exist");
 				
-					/*
-				pCreature = new MCreature;
-				pCreature->SetZone( g_pZone );
-
-				pCreature->SetCreatureType( 0 );
-				pCreature->SetGroundCreature();
-				pCreature->SetID(pPacket->getObjectID());
-				//pCreature->SetAction(ACTION_MOVE);
-				pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-				pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-				pCreature->SetDirection(pPacket->getDir());
-				pCreature->SetAction( ACTION_STAND );
-
-				g_pZone->AddCreature( pCreature );			
-				*/
 //				_MinTrace("afsaf");
 //				_MinTrace("[GCMove] Not Exist Creature. (MyX:%d,MyY:%d,CreatureID:%d,MoveX:%d,MoveY:%d,Direction:%d)\n",
 //					g_pPlayer->GetX(), g_pPlayer->GetY(), pPacket->getObjectID(), pPacket->getX(), pPacket->getY(),
 //					pPacket->getDir() );
 			}
 			//--------------------------------------------------
-			// 이미 존재하는 Creature이면 이동
+			// In the zone: move it.
 			//--------------------------------------------------
 			else
 			{
-				pCreature->PacketMove(pPacket->getX(), pPacket->getY(), pPacket->getDir());		
+				CreatureState::PacketMove(pCreature, pPacket->getX(), pPacket->getY(), pPacket->getDir());		
 			}
 		}
 	
