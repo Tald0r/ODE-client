@@ -55,4 +55,14 @@ bool ModifyQuestManagerInfo(UI_GQuestInfo* pInfo, int type)
 	return s_Host && s_Host->ModifyQuestManagerInfo ? s_Host->ModifyQuestManagerInfo(pInfo, type) : false;
 }
 
+void ChangeCustomNaming(int id, const char* name)
+{
+	if (s_Host && s_Host->ChangeCustomNaming) s_Host->ChangeCustomNaming(id, name);
+}
+
+void CloseNamingChange()
+{
+	if (s_Host && s_Host->CloseNamingChange) s_Host->CloseNamingChange();
+}
+
 }

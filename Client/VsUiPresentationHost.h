@@ -20,7 +20,8 @@ namespace VsUiPresentation {
 // entry that has no quest window behind it leaks them, as the game did.
 // ModifyQuestManagerInfo hands a quest's new status to the quest window,
 // which keeps it when it answers true; false (or no entry) leaves it with
-// the caller.
+// the caller. ChangeCustomNaming shows a custom nickname in the naming
+// window, and CloseNamingChange closes it.
 struct Host
 {
 	int (*InventoryMode)() = nullptr;
@@ -31,6 +32,8 @@ struct Host
 	void (*PushGQuestExecuteElement)(std::uint32_t questID, std::uint8_t condition, std::uint16_t index) = nullptr;
 	void (*UpdateQuestItemInfo)(std::vector<MItem*>& items) = nullptr;
 	bool (*ModifyQuestManagerInfo)(UI_GQuestInfo* pInfo, int type) = nullptr;
+	void (*ChangeCustomNaming)(int id, const char* name) = nullptr;
+	void (*CloseNamingChange)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -43,5 +46,7 @@ void AddMailContents(int tabID, std::uint32_t id, const char* contents);
 void PushGQuestExecuteElement(std::uint32_t questID, std::uint8_t condition, std::uint16_t index);
 bool UpdateQuestItemInfo(std::vector<MItem*>& items);
 bool ModifyQuestManagerInfo(UI_GQuestInfo* pInfo, int type);
+void ChangeCustomNaming(int id, const char* name);
+void CloseNamingChange();
 
 }

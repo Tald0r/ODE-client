@@ -924,3 +924,6 @@ Client/PacketHandler/GCPartyErrorHandler.cpp
 
 # The stash, built into the storage and shown through the dialog host.
 Client/PacketHandler/GCStashListHandler.cpp
+
+# A nickname change answered, over the communication and UI-object hosts.
+Client/PacketHandler/GCNicknameVerifyHandler.cpp
