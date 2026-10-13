@@ -120,6 +120,7 @@
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
+#include "LoginPresentationHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2695,6 +2696,7 @@ void ReleaseAllObjects()
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
+	LoginPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3466,6 +3468,24 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsRunningSwapAdvancementItem = UI_IsRunningSwapAdvancementItem,
 };
 
+static const LoginPresentation::Host s_LoginPresentationHost = {
+	.NewCharacterCreateOk = UI_NewCharacterCreateOk,
+	.DeleteCharacterOK = UI_DeleteCharacterOK,
+	.AlreadyExistIDMessage = UI_AlreadyExistIDMessage,
+	.NoAlreadyExistIDMessage = UI_NoAlreadyExistIDMessage,
+	.StartCharacterManager = UI_StartCharacterManager,
+	.SetSlayerCharacter = [](int slot, PCSlayerInfo* pInfo) { UI_SetCharacter(slot, pInfo); },
+	.SetVampireCharacter = [](int slot, PCVampireInfo* pInfo) { UI_SetCharacter(slot, pInfo); },
+	.SetOustersCharacter = [](int slot, PCOustersInfo* pInfo) { UI_SetCharacter(slot, pInfo); },
+	.RunAskGoBilingPage = UI_RunAskGoBilingPage,
+	.PopupExitMessageDlg = [](const char* message) { g_pUIDialog->PopupFreeMessageDlg(message, -1, -1, UI_DIALOG_OK, true); },
+	.Sleep = [](std::uint32_t milliseconds) { Sleep(milliseconds); },
+	.EnterSelectPCMode = [] { SetMode(MODE_WAIT_SELECTPC); },
+	.QueueWaitPCListMode = [] { g_ModeNext = MODE_WAIT_PCLIST; },
+	.QueueLoginWrongMode = [] { g_ModeNext = MODE_LOGIN_WRONG; },
+	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4052,6 +4072,7 @@ InitGameObject()
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);
+	LoginPresentation::SetHost(&s_LoginPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

@@ -13,8 +13,7 @@
 	#include "ClientPlayer.h"
 	#include "Cpackets/CLGetPCList.h"
 
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "LoginPresentationHost.h"
 
 //--------------------------------------------------------------------------------
 //
@@ -33,7 +32,7 @@ void LCDeletePCOKHandler::execute ( LCDeletePCOK * pPacket , Player * pPlayer )
 	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
 
 	// The delete succeeded.
-	UI_DeleteCharacterOK();
+	LoginPresentation::DeleteCharacterOK();
 
 	// Ask for the PC list again.
 	CLGetPCList clGetPCList;
@@ -42,7 +41,7 @@ void LCDeletePCOKHandler::execute ( LCDeletePCOK * pPacket , Player * pPlayer )
 	pClientPlayer->setPlayerStatus( CPS_AFTER_SENDING_CL_GET_PC_LIST );
 
 	// Wait for the PC list.
-	g_ModeNext = MODE_WAIT_PCLIST;
+	LoginPresentation::QueueWaitPCListMode();
 
 
 	__END_CATCH
