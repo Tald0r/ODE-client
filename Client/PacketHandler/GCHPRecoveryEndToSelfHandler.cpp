@@ -7,7 +7,8 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCHPRecoveryEndToSelf.h"
-#include "ClientDef.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -20,11 +21,11 @@ void GCHPRecoveryEndToSelfHandler::execute ( GCHPRecoveryEndToSelf * pPacket , P
 
 
 
-	if (g_pPlayer!=NULL)
+	if (PlayerState::Status()!=NULL)
 	{
-		g_pPlayer->StopRecoveryHP();
+		PlayerState::StopRecoveryHP();
 
-		g_pPlayer->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+		PlayerState::Status()->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
 	}	
 
 

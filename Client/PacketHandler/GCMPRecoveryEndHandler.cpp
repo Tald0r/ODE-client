@@ -8,7 +8,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMPRecoveryEnd.h"
-#include "ClientDef.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -21,9 +22,9 @@ void GCMPRecoveryEndHandler::execute ( GCMPRecoveryEnd * pPacket , Player * pPla
 
 
 
-	g_pPlayer->StopRecoveryMP();
+	PlayerState::StopRecoveryMP();
 
-	g_pPlayer->SetStatus( MODIFY_CURRENT_MP, pPacket->getCurrentMP() );
+	PlayerState::Status()->SetStatus( MODIFY_CURRENT_MP, pPacket->getCurrentMP() );
 
 
 	__END_CATCH

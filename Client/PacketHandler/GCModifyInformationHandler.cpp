@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCModifyInformation.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "ConvertDuration.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -25,19 +28,19 @@ void GCModifyInformationHandler::execute ( GCModifyInformation * pPacket, Player
 	//------------------------------------------------------------------
 	// 상태값을 바꾼다.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	AffectModifyInfo(PlayerState::Status(), pPacket);
 
 	//------------------------------------------------------------------
 	// effect status를 적용시킨다.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
+	if (PlayerState::Status()->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 	{
-		int esDelayFrame = ConvertDurationToFrame( g_pPlayer->GetDURATION() );
+		int esDelayFrame = ConvertDurationToFrame( PlayerState::Status()->GetDURATION() );
 
 		// effect를 붙인다.
-		g_pPlayer->AddEffectStatus((EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), esDelayFrame);	
+		PlayerState::AddEffectStatus((EFFECTSTATUS)PlayerState::Status()->GetEFFECT_STAT(), esDelayFrame);	
 		
-		g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
+		PlayerState::Status()->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 	}
 
 	//------------------------------------------------------------------

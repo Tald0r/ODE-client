@@ -8,7 +8,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddGearToInventory.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
 #include "MSlayerGear.h"
 #include "MVampireGear.h"
 #include "MOustersGear.h"
@@ -27,7 +28,7 @@ void GCAddGearToInventoryHandler::execute ( GCAddGearToInventory * pPacket , Pla
 	//----------------------------------------------------------------------
 	// Slayer인 경우	
 	//----------------------------------------------------------------------
-	switch(g_pPlayer->GetRace())
+	switch(PlayerState::GetRace())
 	{
 		case RACE_SLAYER:
 			{
