@@ -13,6 +13,21 @@ namespace {
 
 static_assert(sizeof(int) == 4 && sizeof(unsigned int) == 4);
 
+// Bytes after the read position; -1, with failbit set, when the stream cannot say.
+std::streamoff Remaining(std::ifstream& file)
+{
+	const std::streamoff start = file.tellg();
+	if (start >= 0)
+	{
+		file.seekg(0, std::ios::end);
+		const std::streamoff end = file.tellg();
+		file.seekg(start, std::ios::beg);
+		if (file.good() && end >= start) return end - start;
+	}
+	file.setstate(std::ios::failbit);
+	return -1;
+}
+
 bool ReadCount(std::ifstream& file, int& count, std::streamoff minimumBytes)
 {
 	count = 0;
@@ -21,21 +36,8 @@ bool ReadCount(std::ifstream& file, int& count, std::streamoff minimumBytes)
 		file.setstate(std::ios::failbit);
 		return false;
 	}
-	const std::streamoff start = file.tellg();
-	if (start < 0)
-	{
-		file.setstate(std::ios::failbit);
-		return false;
-	}
-	file.seekg(0, std::ios::end);
-	const std::streamoff end = file.tellg();
-	if (!file.good() || end < start)
-	{
-		file.setstate(std::ios::failbit);
-		return false;
-	}
-	file.seekg(start, std::ios::beg);
-	if (!file.good() || count > (end - start) / minimumBytes)
+	const std::streamoff remaining = Remaining(file);
+	if (remaining < 0 || count > remaining / minimumBytes)
 	{
 		file.setstate(std::ios::failbit);
 		return false;
@@ -260,11 +262,24 @@ MNPCScriptTable::LoadFromFile(std::ifstream& file)
 {
 	Release();
 	int count = 0;
-	// Key, owner length and both group counts cost at least sixteen bytes.
-	if (!ReadCount(file, count, 16)) return;
+	// The count only caps the rows: the shipped NPCScript.inf declares more
+	// scripts than it holds and ends in a 4-byte remnant, so the table also
+	// ends where no row header (key, owner length, both group counts) fits.
+	if (!file.read(reinterpret_cast<char*>(&count), 4) || count < 0)
+	{
+		file.setstate(std::ios::failbit);
+		return;
+	}
 	MNPCScriptTable loaded;
 	for (int index = 0; index < count; ++index)
 	{
+		const std::streamoff remaining = Remaining(file);
+		if (remaining < 0) return;
+		if (remaining < 16)
+		{
+			file.seekg(remaining, std::ios::cur);
+			break;
+		}
 		unsigned int id = 0;
 		if (!file.read(reinterpret_cast<char*>(&id), 4)) return;
 		auto row = std::make_unique<NPC_SCRIPT>();
