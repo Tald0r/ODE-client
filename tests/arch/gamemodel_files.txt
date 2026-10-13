@@ -881,3 +881,7 @@ Client/PacketHandler/GCAddInstalledMineToZoneHandler.cpp
 # (with the update flag the client mode now owns).
 Client/PacketHandler/LCLoginErrorHandler.cpp
 Client/PacketHandler/LCRegisterPlayerErrorHandler.cpp
+
+# A whisper, filtered and masked for the player, over the communication
+# and player hosts.
+Client/PacketHandler/GCWhisperHandler.cpp

@@ -14,7 +14,6 @@
 #include "LoginPresentationHost.h"
 #include "MGameStringTable.h"
 
-extern BOOL		g_bNeedUpdate;
 
 //--------------------------------------------------------------------------------
 //

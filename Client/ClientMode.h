@@ -36,5 +36,5 @@ extern enum CLIENT_MODE		g_Mode;
 extern enum CLIENT_MODE		g_ModeNext;
 
 // Whether the client is quitting to be updated (it is set with MODE_QUIT);
-// login replies then leave the mode and the screen alone. A BOOL.
+// login replies then show nothing. A BOOL.
 extern int					g_bNeedUpdate;

@@ -108,4 +108,9 @@ MCreature* Creature()
 	return s_Host && s_Host->Creature ? s_Host->Creature() : nullptr;
 }
 
+bool IsOperator()
+{
+	return s_Host && s_Host->IsOperator ? s_Host->IsOperator() : false;
+}
+
 }

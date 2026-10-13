@@ -57,6 +57,8 @@ struct Host
 	void (*SetGuildNumber)(int guildNumber) = nullptr;
 	bool (*HasEffectStatus)(EFFECTSTATUS status) = nullptr;
 	MCreature* (*Creature)() = nullptr;
+	// Whether the player is an operator (a game master's character).
+	bool (*IsOperator)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -81,5 +83,7 @@ void SetGuildNumber(int guildNumber);
 bool HasEffectStatus(EFFECTSTATUS status);
 // The player as a creature, for CreatureState's entries; NULL without a player.
 MCreature* Creature();
+// False without a player.
+bool IsOperator();
 
 }

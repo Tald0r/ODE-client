@@ -294,7 +294,8 @@ check () {
 # 224: the help display joins gamemodel, over the frame clock it now owns (4.110).
 # 223: the installed-mine reply joins gamemodel (4.111).
 # 221: the login and registration error replies join gamemodel (4.112).
-R1_BASELINE=221
+# 220: the whisper reply joins gamemodel (4.113).
+R1_BASELINE=220
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -422,7 +423,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 222: the help display joins gamemodel, over the frame clock it now owns (4.110).
 	# 221: the installed-mine reply joins gamemodel (4.111).
 	# 219: the login and registration error replies join gamemodel (4.112).
-	R1_NINJA_BASELINE=219
+	# 218: the whisper reply joins gamemodel (4.113).
+	R1_NINJA_BASELINE=218
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

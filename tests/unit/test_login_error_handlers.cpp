@@ -11,6 +11,7 @@
 #include "Types/PlayerTypes.h"
 #include "Lpackets/LCLoginError.h"
 #include "Lpackets/LCRegisterPlayerError.h"
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -135,7 +136,10 @@ TEST(LoginErrorHandlers, ARefusedRegistrationShowsTheMessageForItsError)
 		CHECK_EQ(static_cast<int>(MODE_LOGIN_WRONG), static_cast<int>(g_ModeNext));
 	}
 	// The messages are distinct, so a wrong mapping shows.
-	CHECK(Message(STRING_ERROR_EMPTY_ID) != Message(STRING_ERROR_EMPTY_NAME));
+	for (size_t i = 0; i < std::size(rows); i++)
+		for (size_t j = 0; j < std::size(rows); j++)
+			if (rows[i].stringID != rows[j].stringID)
+				CHECK(Message(rows[i].stringID) != Message(rows[j].stringID));
 }
 
 TEST(LoginErrorHandlers, AClientQuittingToBeUpdatedShowsNoRegistrationMessageButStillLeaves)
@@ -150,14 +154,17 @@ TEST(LoginErrorHandlers, AClientQuittingToBeUpdatedShowsNoRegistrationMessageBut
 TEST(LoginErrorHandlers, MissingServicesSkipTheMessagesNotTheMode)
 {
 	World world;
-	LoginPresentation::SetHost(nullptr);
-	ReceiveLoginError(ALREADY_CONNECTED);
-	CHECK_EQ(static_cast<int>(MODE_LOGIN_WRONG), static_cast<int>(g_ModeNext));
-	g_ModeNext = MODE_WAIT_REGISTERPLAYEROK;
 	const LoginPresentation::Host empty{};
-	CHECK(LoginPresentation::SetHost(&empty) == nullptr);
-	ReceiveRegisterError(EMPTY_ID);
-	CHECK_EQ(static_cast<int>(MODE_LOGIN_WRONG), static_cast<int>(g_ModeNext));
+	for (const LoginPresentation::Host* host : {static_cast<const LoginPresentation::Host*>(nullptr), &empty})
+	{
+		LoginPresentation::SetHost(host);
+		g_ModeNext = MODE_WAIT_LOGINOK;
+		ReceiveLoginError(ALREADY_CONNECTED);
+		CHECK_EQ(static_cast<int>(MODE_LOGIN_WRONG), static_cast<int>(g_ModeNext));
+		g_ModeNext = MODE_WAIT_REGISTERPLAYEROK;
+		ReceiveRegisterError(EMPTY_ID);
+		CHECK_EQ(static_cast<int>(MODE_LOGIN_WRONG), static_cast<int>(g_ModeNext));
+	}
 	CHECK(calls.empty());
 	CHECK(LoginPresentation::SetHost(&login) == &empty);
 }

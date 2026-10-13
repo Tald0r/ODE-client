@@ -3545,6 +3545,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetGuildNumber = [](int guildNumber) { g_pPlayer->SetGuildNumber(guildNumber); },
 	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
 	.Creature = []() -> MCreature* { return g_pPlayer; },
+	.IsOperator = []() { return g_pPlayer != NULL && g_pPlayer->IsOperator(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
