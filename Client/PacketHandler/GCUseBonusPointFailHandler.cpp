@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCUseBonusPointFail.h"
-#include "ClientDef.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "TempInformation.h"
 #include "MGameStringTable.h"
 
@@ -29,7 +28,7 @@ void GCUseBonusPointFailHandler::execute ( GCUseBonusPointFail* pPacket , Player
 	//------------------------------------------------------------
 	g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-	g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_USE_BONUS_POINT].GetString());
+	DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_USE_BONUS_POINT].GetString());
 
 
 	__END_CATCH

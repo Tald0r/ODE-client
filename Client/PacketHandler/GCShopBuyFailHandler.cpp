@@ -9,11 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopBuyFail.h"
-#include "ClientDef.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "TempInformation.h"
 #include "MGameStringTable.h"
-#include "UIFunction.h"
 
 void GCShopBuyFailHandler::execute ( GCShopBuyFail * pPacket , Player * pPlayer )
 	 
@@ -27,7 +25,7 @@ void GCShopBuyFailHandler::execute ( GCShopBuyFail * pPacket , Player * pPlayer 
 	g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 	// 거래를 다시 활성화한다.
-	UI_UnlockItemTrade();
+	DialogPresentation::UnlockItemTrade();
 
 	switch (pPacket->getCode())
 	{
@@ -39,7 +37,7 @@ void GCShopBuyFailHandler::execute ( GCShopBuyFail * pPacket , Player * pPlayer 
 			//pPacket->getAmount()	// 부족한 개수
 	
 		default :
-			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CANNOT_BUY_NO_ITEM].GetString() );
+			DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CANNOT_BUY_NO_ITEM].GetString() );
 	}
 
 

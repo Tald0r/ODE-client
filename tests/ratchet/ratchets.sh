@@ -279,7 +279,8 @@ check () {
 # 308: trade, crafting and item-mall reply handlers join gamemodel (4.95).
 # 305: three sources that compile to nothing are retired (4.96).
 # 301: NPC map, skill teaching, mini-game and prize-notice handlers join gamemodel (4.97).
-R1_BASELINE=301
+# 292: nine message-box and item-release reply handlers join gamemodel (4.98).
+R1_BASELINE=292
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -392,7 +393,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 306: trade, crafting and item-mall reply handlers join gamemodel (4.95).
 	# 303: three sources that compile to nothing are retired (4.96).
 	# 299: NPC map, skill teaching, mini-game and prize-notice handlers join gamemodel (4.97).
-	R1_NINJA_BASELINE=299
+	# 290: nine message-box and item-release reply handlers join gamemodel (4.98).
+	R1_NINJA_BASELINE=290
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

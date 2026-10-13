@@ -747,3 +747,16 @@ Client/PacketHandler/GCMiniGameScoresHandler.cpp
 Client/PacketHandler/GCNPCInfoHandler.cpp
 Client/PacketHandler/GCNotifyWinHandler.cpp
 Client/PacketHandler/GCTeachSkillInfoHandler.cpp
+
+# Replies that end in a message box or release a locked item, and their presentation service.
+Client/DialogPresentationHost.cpp
+Client/DialogPresentationHost.h
+Client/PacketHandler/GCLearnSkillFailedHandler.cpp
+Client/PacketHandler/GCPetStashVerifyHandler.cpp
+Client/PacketHandler/GCSearchMotorcycleFailHandler.cpp
+Client/PacketHandler/GCSearchMotorcycleOKHandler.cpp
+Client/PacketHandler/GCShopBuyFailHandler.cpp
+Client/PacketHandler/GCShopSellFailHandler.cpp
+Client/PacketHandler/GCTakeOutFailHandler.cpp
+Client/PacketHandler/GCTakeOutOKHandler.cpp
+Client/PacketHandler/GCUseBonusPointFailHandler.cpp

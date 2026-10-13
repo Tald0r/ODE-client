@@ -9,10 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTakeOutOK.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "MGameStringTable.h"
 
-extern void UI_RemoveItemFromItemShop( DWORD id );
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -22,9 +21,9 @@ void GCTakeOutOKHandler::execute ( GCTakeOutOK * pGCTakeOutOK , Player * pPlayer
 	__BEGIN_TRY
 	(void)pPlayer;
 
-	g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_TAKE_OUT_OK].GetString() );
+	DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_TAKE_OUT_OK].GetString() );
 
-	UI_RemoveItemFromItemShop( pGCTakeOutOK->getObjectID() );
+	DialogPresentation::RemoveItemFromItemShop( pGCTakeOutOK->getObjectID() );
 		
 	__END_CATCH
 }
