@@ -3581,6 +3581,10 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.RemoveHelicopter = [](TYPE_OBJECTID creatureID) { g_pZone->RemoveHelicopter(creatureID); },
 	.AddCorpseFromCreature = [](TYPE_OBJECTID id) { return g_pZone->AddCorpseFromCreature(id); },
 	.GetID = []() { return g_pZone != NULL ? static_cast<int>(g_pZone->GetID()) : ZONEID_NULL; },
+	.GetCorpseCreature = [](TYPE_OBJECTID itemID) -> MCreature* {
+		MItem* pItem = g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL;
+		return pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE ? static_cast<MCorpse*>(pItem)->GetCreature() : NULL;
+	},
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3651,6 +3655,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetBasicActionInfo = [](MCreature* pCreature) { return pCreature->GetBasicActionInfo(); },
 	.RemoveEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->RemoveEffectStatus(status); },
 	.SetFakeDie = [](MCreature* pCreature) { pCreature->SetFakeDie(); },
+	.GetDirection = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetDirection()); },
+	.RemoveHead = [](MCreature* pCreature) { pCreature->RemoveHead(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

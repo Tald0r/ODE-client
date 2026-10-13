@@ -28,6 +28,9 @@ struct Host
 	bool (*AddCorpseFromCreature)(TYPE_OBJECTID id) = nullptr;
 	// The zone's ID; asked only when the zone exists.
 	int (*GetID)() = nullptr;
+	// The creature lying in the corpse item with this ID; NULL for no item
+	// or one that is not a corpse.
+	MCreature* (*GetCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -40,6 +43,7 @@ void RemoveHelicopter(TYPE_OBJECTID creatureID);
 bool AddCorpseFromCreature(TYPE_OBJECTID id);
 // ZONEID_NULL without a host.
 int GetID();
+MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
 
 }
 
@@ -108,6 +112,8 @@ struct Host
 	TYPE_ACTIONINFO (*GetBasicActionInfo)(MCreature* pCreature) = nullptr;
 	bool (*RemoveEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
 	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
+	int (*GetDirection)(MCreature* pCreature) = nullptr;
+	void (*RemoveHead)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -171,5 +177,8 @@ void ClearStopBloodDrain(MCreature* pCreature);
 TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature);
 bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
 void SetFakeDie(MCreature* pCreature);
+// 0 without a host.
+int GetDirection(MCreature* pCreature);
+void RemoveHead(MCreature* pCreature);
 
 }

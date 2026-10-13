@@ -991,3 +991,8 @@ Client/PacketHandler/GCSkillToSelfOK3Handler.cpp
 Client/PacketHandler/GCCrossCounterOK1Handler.cpp
 Client/PacketHandler/GCCrossCounterOK2Handler.cpp
 Client/PacketHandler/GCCrossCounterOK3Handler.cpp
+
+# An effect status added to a creature, or the head taken from one, standing
+# or lying in its corpse.
+Client/PacketHandler/GCAddEffectHandler.cpp
+Client/PacketHandler/GCRemoveCorpseHeadHandler.cpp

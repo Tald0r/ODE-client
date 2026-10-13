@@ -50,6 +50,11 @@ int GetID()
 	return s_Host && s_Host->GetID ? s_Host->GetID() : ZONEID_NULL;
 }
 
+MCreature* GetCorpseCreature(TYPE_OBJECTID itemID)
+{
+	return s_Host && s_Host->GetCorpseCreature ? s_Host->GetCorpseCreature(itemID) : nullptr;
+}
+
 }
 
 namespace CreatureState {
@@ -340,6 +345,16 @@ bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status)
 void SetFakeDie(MCreature* pCreature)
 {
 	if (s_Host && s_Host->SetFakeDie) s_Host->SetFakeDie(pCreature);
+}
+
+int GetDirection(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetDirection ? s_Host->GetDirection(pCreature) : 0;
+}
+
+void RemoveHead(MCreature* pCreature)
+{
+	if (s_Host && s_Host->RemoveHead) s_Host->RemoveHead(pCreature);
 }
 
 }
