@@ -312,7 +312,8 @@ check () {
 # 201: the auth-key and sub-inventory replies, their dead blocks retired,
 # join gamemodel (4.127).
 # 200: the peer whisper joins gamemodel (4.128).
-R1_BASELINE=200
+# 199: the action-result nodes join gamemodel (4.129).
+R1_BASELINE=199
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -458,7 +459,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 199: the auth-key and sub-inventory replies, their dead blocks retired,
 	# join gamemodel (4.127).
 	# 198: the peer whisper joins gamemodel (4.128).
-	R1_NINJA_BASELINE=198
+	# 197: the action-result nodes join gamemodel (4.129).
+	R1_NINJA_BASELINE=197
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

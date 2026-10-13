@@ -22,7 +22,8 @@ namespace VsUiPresentation {
 // which keeps it when it answers true (except for a quest with no XML
 // element, which leaks it); false (or no entry) leaves it with the caller.
 // ChangeCustomNaming shows a custom nickname in the naming window, and
-// CloseNamingChange closes it.
+// CloseNamingChange closes it. SelectSkill and UnselectSkill set the
+// skill in hand.
 struct Host
 {
 	int (*InventoryMode)() = nullptr;
@@ -35,6 +36,8 @@ struct Host
 	bool (*ModifyQuestManagerInfo)(UI_GQuestInfo* pInfo, int type) = nullptr;
 	void (*ChangeCustomNaming)(int id, const char* name) = nullptr;
 	void (*CloseNamingChange)() = nullptr;
+	void (*SelectSkill)(int skillID) = nullptr;
+	void (*UnselectSkill)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -49,5 +52,7 @@ bool UpdateQuestItemInfo(std::vector<MItem*>& items);
 bool ModifyQuestManagerInfo(UI_GQuestInfo* pInfo, int type);
 void ChangeCustomNaming(int id, const char* name);
 void CloseNamingChange();
+void SelectSkill(int skillID);
+void UnselectSkill();
 
 }

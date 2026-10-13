@@ -79,8 +79,8 @@ CreatureState::Host CreatureHost()
 	host.SetEffectDelayFrame = [](MCreature* p, TYPE_ACTIONINFO ai, std::uint32_t frames) {
 		calls.push_back(Who(p) + ".delay|" + N(ai) + "|" + N(frames));
 	};
-	host.PacketSpecialActionResult = [](MCreature* p, TYPE_ACTIONINFO ai, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) {
-		calls.push_back(Who(p) + ".result|" + N(ai) + "|" + N(id) + "|" + N(sX) + "|" + N(sY));
+	host.PacketSpecialActionResult = [](MCreature* p, TYPE_ACTIONINFO ai, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade) {
+		calls.push_back(Who(p) + ".result|" + N(ai) + "|" + N(id) + "|" + N(sX) + "|" + N(sY) + (grade != 0 ? "|g" + N(grade) : ""));
 	};
 	host.PacketSpecialActionToInventoryItem = [](MCreature* p, TYPE_ACTIONINFO ai) {
 		calls.push_back(Who(p) + ".inventory|" + N(ai));

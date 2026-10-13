@@ -35,6 +35,7 @@
 #include "ClientPlayer.h"
 #include "UIFunction.h"
 #include "MGuildInfoMapper.h"
+#include "MorphState.h"
 
 
 	#include "ClientPlayer.h"
@@ -66,7 +67,7 @@ extern WORD				g_MyBatColorSet;
 
 
 DWORD	g_PreviousCreatureType = -1;
-int		g_MorphCreatureType = 0;
+// g_MorphCreatureType is MorphState.cpp's.
 
 //----------------------------------------------------------------------
 // 클라이언트가 게임 서버로부터 GCUpdateInfo 패킷을 받게 되면,

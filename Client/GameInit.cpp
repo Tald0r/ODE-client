@@ -3558,6 +3558,10 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.Creature = []() -> MCreature* { return g_pPlayer; },
 	.IsOperator = []() { return g_pPlayer != NULL && g_pPlayer->IsOperator(); },
 	.GetSight = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->GetSight()) : 0; },
+	.SetUndergroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetUndergroundCreature(); },
+	.IsItemCheckBufferItemToItem = []() { return g_pPlayer != NULL && g_pPlayer->IsItemCheckBufferItemToItem(); },
+	.GetItemCheckBuffer = []() -> MItem* { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBuffer() : NULL; },
+	.ClearItemCheckBuffer = []() { if (g_pPlayer != NULL) g_pPlayer->ClearItemCheckBuffer(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3590,8 +3594,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetX = [](MCreature* pCreature) { return pCreature->GetX(); },
 	.GetY = [](MCreature* pCreature) { return pCreature->GetY(); },
 	.SetEffectDelayFrame = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames) { pCreature->SetEffectDelayFrame(actionInfo, frames); },
-	.PacketSpecialActionResult = [](MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) {
-		pCreature->PacketSpecialActionResult(resultActionInfo, id, sX, sY);
+	.PacketSpecialActionResult = [](MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade) {
+		pCreature->PacketSpecialActionResult(resultActionInfo, id, sX, sY, grade);
 	},
 	.PacketSpecialActionToInventoryItem = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo) { pCreature->PacketSpecialActionToInventoryItem(actionInfo); },
 	.AddEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame) { return pCreature->AddEffectStatus(status, delayFrame); },
@@ -3601,6 +3605,26 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetShop = [](MCreature* pCreature) -> MShop* {
 		return pCreature->GetClassType() == MCreature::CLASS_NPC ? static_cast<MNPC*>(pCreature)->GetShop() : NULL;
 	},
+	.ReleaseMoveBuffer = [](MCreature* pCreature) { pCreature->ReleaseMoveBuffer(); },
+	.SetVisible = [](MCreature* pCreature) { pCreature->SetVisible(); },
+	.SetInvisible = [](MCreature* pCreature) { pCreature->SetInvisible(); },
+	.IsUndergroundCreature = [](MCreature* pCreature) { return pCreature->IsUndergroundCreature(); },
+	.SetUndergroundCreature = [](MCreature* pCreature) { pCreature->SetUndergroundCreature(); },
+	.SetFlyingCreature = [](MCreature* pCreature) { pCreature->SetFlyingCreature(); },
+	.SetGroundCreature = [](MCreature* pCreature) { pCreature->SetGroundCreature(); },
+	.SetCreatureType = [](MCreature* pCreature, int creatureType) { pCreature->SetCreatureType(static_cast<TYPE_CREATURETYPE>(creatureType)); },
+	.IsMale = [](MCreature* pCreature) { return pCreature->IsMale(); },
+	.SetMale = [](MCreature* pCreature, bool bMale) { pCreature->SetMale(bMale); },
+	.GetBodyColor1 = [](MCreature* pCreature) { return static_cast<std::uint16_t>(pCreature->GetBodyColor1()); },
+	.GetBodyColor2 = [](MCreature* pCreature) { return static_cast<std::uint16_t>(pCreature->GetBodyColor2()); },
+	.SetBodyColor1 = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBodyColor1(colorSet); },
+	.SetBodyColor2 = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBodyColor2(colorSet); },
+	.GetServerX = [](MCreature* pCreature) { return pCreature->GetServerX(); },
+	.GetServerY = [](MCreature* pCreature) { return pCreature->GetServerY(); },
+	.IsInCasket = [](MCreature* pCreature) { return pCreature->IsInCasket(); },
+	.AddCasket = [](MCreature* pCreature, int casketType) { pCreature->AddCasket(casketType); },
+	.RemoveCasket = [](MCreature* pCreature) { pCreature->RemoveCasket(); },
+	.SetBloodyZenith = [](MCreature* pCreature, int delay) { pCreature->SetBloodyZenith(delay); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3617,6 +3641,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.AddEvent = [](MEvent& event) { if (g_pEventManager != NULL) g_pEventManager->AddEvent(event); },
 	.RemoveEvent = [](int eventID) { if (g_pEventManager != NULL) g_pEventManager->RemoveEvent(static_cast<EVENT_ID>(eventID)); },
 	.PlayMusicCurrentZone = PlayMusicCurrentZone,
+	.PlaySound = [](TYPE_SOUNDID soundID) { PlaySound(soundID); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
@@ -3635,6 +3660,8 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.ModifyQuestManagerInfo = [](UI_GQuestInfo* pInfo, int type) { return gC_vs_ui.ModifyQuestManagerInfo(static_cast<void*>(pInfo), type); },
 	.ChangeCustomNaming = [](int id, const char* name) { gC_vs_ui.Change_Custom_Naming(id, const_cast<char*>(name)); },
 	.CloseNamingChange = []() { gC_vs_ui.CloseNamingChange(); },
+	.SelectSkill = [](int skillID) { gC_vs_ui.SelectSkill(skillID); },
+	.UnselectSkill = []() { gC_vs_ui.UnselectSkill(); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

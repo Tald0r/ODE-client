@@ -15,7 +15,7 @@ namespace WorldEvents {
 // an item or portal appearing in the zone, the blood bible slots, the
 // weather and lightning, a pet's details, a peer asking to disconnect, and
 // an event for the event manager to run (a timed logout, say) or to drop,
-// and the current zone's music played again.
+// the current zone's music played again, and a sound played.
 // A missing host or entry adds no item (NULL) and skips the rest.
 struct Host
 {
@@ -29,6 +29,7 @@ struct Host
 	void (*AddEvent)(MEvent& event) = nullptr;
 	void (*RemoveEvent)(int eventID) = nullptr;
 	void (*PlayMusicCurrentZone)() = nullptr;
+	void (*PlaySound)(TYPE_SOUNDID soundID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -43,5 +44,6 @@ void RequestDisconnect(const char* pName);
 void AddEvent(MEvent& event);
 void RemoveEvent(int eventID);
 void PlayMusicCurrentZone();
+void PlaySound(TYPE_SOUNDID soundID);
 
 }

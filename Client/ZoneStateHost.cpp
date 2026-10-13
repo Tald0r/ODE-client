@@ -163,9 +163,9 @@ void SetEffectDelayFrame(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::
 	if (s_Host && s_Host->SetEffectDelayFrame) s_Host->SetEffectDelayFrame(pCreature, actionInfo, frames);
 }
 
-void PacketSpecialActionResult(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
+void PacketSpecialActionResult(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade)
 {
-	if (s_Host && s_Host->PacketSpecialActionResult) s_Host->PacketSpecialActionResult(pCreature, resultActionInfo, id, sX, sY);
+	if (s_Host && s_Host->PacketSpecialActionResult) s_Host->PacketSpecialActionResult(pCreature, resultActionInfo, id, sX, sY, grade);
 }
 
 void PacketSpecialActionToInventoryItem(MCreature* pCreature, TYPE_ACTIONINFO actionInfo)
@@ -191,6 +191,106 @@ bool IsNPC(MCreature* pCreature)
 MShop* GetShop(MCreature* pCreature)
 {
 	return s_Host && s_Host->GetShop ? s_Host->GetShop(pCreature) : nullptr;
+}
+
+void ReleaseMoveBuffer(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ReleaseMoveBuffer) s_Host->ReleaseMoveBuffer(pCreature);
+}
+
+void SetVisible(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetVisible) s_Host->SetVisible(pCreature);
+}
+
+void SetInvisible(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetInvisible) s_Host->SetInvisible(pCreature);
+}
+
+bool IsUndergroundCreature(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsUndergroundCreature ? s_Host->IsUndergroundCreature(pCreature) : false;
+}
+
+void SetUndergroundCreature(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetUndergroundCreature) s_Host->SetUndergroundCreature(pCreature);
+}
+
+void SetFlyingCreature(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetFlyingCreature) s_Host->SetFlyingCreature(pCreature);
+}
+
+void SetGroundCreature(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetGroundCreature) s_Host->SetGroundCreature(pCreature);
+}
+
+void SetCreatureType(MCreature* pCreature, int creatureType)
+{
+	if (s_Host && s_Host->SetCreatureType) s_Host->SetCreatureType(pCreature, creatureType);
+}
+
+bool IsMale(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsMale ? s_Host->IsMale(pCreature) : false;
+}
+
+void SetMale(MCreature* pCreature, bool bMale)
+{
+	if (s_Host && s_Host->SetMale) s_Host->SetMale(pCreature, bMale);
+}
+
+std::uint16_t GetBodyColor1(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetBodyColor1 ? s_Host->GetBodyColor1(pCreature) : 0;
+}
+
+std::uint16_t GetBodyColor2(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetBodyColor2 ? s_Host->GetBodyColor2(pCreature) : 0;
+}
+
+void SetBodyColor1(MCreature* pCreature, std::uint16_t colorSet)
+{
+	if (s_Host && s_Host->SetBodyColor1) s_Host->SetBodyColor1(pCreature, colorSet);
+}
+
+void SetBodyColor2(MCreature* pCreature, std::uint16_t colorSet)
+{
+	if (s_Host && s_Host->SetBodyColor2) s_Host->SetBodyColor2(pCreature, colorSet);
+}
+
+TYPE_SECTORPOSITION GetServerX(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetServerX ? s_Host->GetServerX(pCreature) : 0;
+}
+
+TYPE_SECTORPOSITION GetServerY(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetServerY ? s_Host->GetServerY(pCreature) : 0;
+}
+
+bool IsInCasket(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsInCasket ? s_Host->IsInCasket(pCreature) : false;
+}
+
+void AddCasket(MCreature* pCreature, int casketType)
+{
+	if (s_Host && s_Host->AddCasket) s_Host->AddCasket(pCreature, casketType);
+}
+
+void RemoveCasket(MCreature* pCreature)
+{
+	if (s_Host && s_Host->RemoveCasket) s_Host->RemoveCasket(pCreature);
+}
+
+void SetBloodyZenith(MCreature* pCreature, int delay)
+{
+	if (s_Host && s_Host->SetBloodyZenith) s_Host->SetBloodyZenith(pCreature, delay);
 }
 
 }

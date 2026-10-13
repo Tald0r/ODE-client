@@ -118,4 +118,24 @@ int GetSight()
 	return s_Host && s_Host->GetSight ? s_Host->GetSight() : 0;
 }
 
+void SetUndergroundCreature()
+{
+	if (s_Host && s_Host->SetUndergroundCreature) s_Host->SetUndergroundCreature();
+}
+
+bool IsItemCheckBufferItemToItem()
+{
+	return s_Host && s_Host->IsItemCheckBufferItemToItem ? s_Host->IsItemCheckBufferItemToItem() : false;
+}
+
+MItem* GetItemCheckBuffer()
+{
+	return s_Host && s_Host->GetItemCheckBuffer ? s_Host->GetItemCheckBuffer() : nullptr;
+}
+
+void ClearItemCheckBuffer()
+{
+	if (s_Host && s_Host->ClearItemCheckBuffer) s_Host->ClearItemCheckBuffer();
+}
+
 }

@@ -65,12 +65,36 @@ struct Host
 	TYPE_SECTORPOSITION (*GetX)(MCreature* pCreature) = nullptr;
 	TYPE_SECTORPOSITION (*GetY)(MCreature* pCreature) = nullptr;
 	void (*SetEffectDelayFrame)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames) = nullptr;
-	void (*PacketSpecialActionResult)(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
+	void (*PacketSpecialActionResult)(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade) = nullptr;
 	void (*PacketSpecialActionToInventoryItem)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo) = nullptr;
 	bool (*AddEffectStatus)(MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame) = nullptr;
 	void (*SetTurning)(MCreature* pCreature, std::uint16_t count) = nullptr;
 	bool (*IsNPC)(MCreature* pCreature) = nullptr;
 	MShop* (*GetShop)(MCreature* pCreature) = nullptr;
+	// The creature's own visibility, movement kind, type, body colors,
+	// casket and Bloody Zenith. MPlayer hides SetUndergroundCreature,
+	// SetFlyingCreature and SetGroundCreature, so these reach
+	// MCreature's, as any call through an MCreature* did.
+	void (*ReleaseMoveBuffer)(MCreature* pCreature) = nullptr;
+	void (*SetVisible)(MCreature* pCreature) = nullptr;
+	void (*SetInvisible)(MCreature* pCreature) = nullptr;
+	bool (*IsUndergroundCreature)(MCreature* pCreature) = nullptr;
+	void (*SetUndergroundCreature)(MCreature* pCreature) = nullptr;
+	void (*SetFlyingCreature)(MCreature* pCreature) = nullptr;
+	void (*SetGroundCreature)(MCreature* pCreature) = nullptr;
+	void (*SetCreatureType)(MCreature* pCreature, int creatureType) = nullptr;
+	bool (*IsMale)(MCreature* pCreature) = nullptr;
+	void (*SetMale)(MCreature* pCreature, bool bMale) = nullptr;
+	std::uint16_t (*GetBodyColor1)(MCreature* pCreature) = nullptr;
+	std::uint16_t (*GetBodyColor2)(MCreature* pCreature) = nullptr;
+	void (*SetBodyColor1)(MCreature* pCreature, std::uint16_t colorSet) = nullptr;
+	void (*SetBodyColor2)(MCreature* pCreature, std::uint16_t colorSet) = nullptr;
+	TYPE_SECTORPOSITION (*GetServerX)(MCreature* pCreature) = nullptr;
+	TYPE_SECTORPOSITION (*GetServerY)(MCreature* pCreature) = nullptr;
+	bool (*IsInCasket)(MCreature* pCreature) = nullptr;
+	void (*AddCasket)(MCreature* pCreature, int casketType) = nullptr;
+	void (*RemoveCasket)(MCreature* pCreature) = nullptr;
+	void (*SetBloodyZenith)(MCreature* pCreature, int delay) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -96,11 +120,32 @@ void SetStatus(MCreature* pCreature, std::uint32_t n, std::uint32_t value);
 TYPE_SECTORPOSITION GetX(MCreature* pCreature);
 TYPE_SECTORPOSITION GetY(MCreature* pCreature);
 void SetEffectDelayFrame(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames);
-void PacketSpecialActionResult(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
+// grade is the skill's step, for a skill that has steps.
+void PacketSpecialActionResult(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade = 0);
 void PacketSpecialActionToInventoryItem(MCreature* pCreature, TYPE_ACTIONINFO actionInfo);
 bool AddEffectStatus(MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame);
 void SetTurning(MCreature* pCreature, std::uint16_t count);
 bool IsNPC(MCreature* pCreature);
 MShop* GetShop(MCreature* pCreature);
+void ReleaseMoveBuffer(MCreature* pCreature);
+void SetVisible(MCreature* pCreature);
+void SetInvisible(MCreature* pCreature);
+bool IsUndergroundCreature(MCreature* pCreature);
+void SetUndergroundCreature(MCreature* pCreature);
+void SetFlyingCreature(MCreature* pCreature);
+void SetGroundCreature(MCreature* pCreature);
+void SetCreatureType(MCreature* pCreature, int creatureType);
+bool IsMale(MCreature* pCreature);
+void SetMale(MCreature* pCreature, bool bMale);
+std::uint16_t GetBodyColor1(MCreature* pCreature);
+std::uint16_t GetBodyColor2(MCreature* pCreature);
+void SetBodyColor1(MCreature* pCreature, std::uint16_t colorSet);
+void SetBodyColor2(MCreature* pCreature, std::uint16_t colorSet);
+TYPE_SECTORPOSITION GetServerX(MCreature* pCreature);
+TYPE_SECTORPOSITION GetServerY(MCreature* pCreature);
+bool IsInCasket(MCreature* pCreature);
+void AddCasket(MCreature* pCreature, int casketType);
+void RemoveCasket(MCreature* pCreature);
+void SetBloodyZenith(MCreature* pCreature, int delay);
 
 }

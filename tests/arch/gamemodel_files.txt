@@ -943,3 +943,10 @@ Client/PacketHandler/GCSubInventoryInfoHandler.cpp
 
 # A whisper from another client, over the player and communication hosts.
 Client/PacketHandler/CRWhisperHandler.cpp
+
+# The action-result nodes the server's skill replies queue, over the zone,
+# creature, player, world-event and UI-object hosts, and the morph type
+# their creature-type change clears.
+Client/MActionResult.cpp
+Client/MorphState.cpp
+Client/MorphState.h

@@ -63,4 +63,9 @@ void PlayMusicCurrentZone()
 	if (s_Host && s_Host->PlayMusicCurrentZone) s_Host->PlayMusicCurrentZone();
 }
 
+void PlaySound(TYPE_SOUNDID soundID)
+{
+	if (s_Host && s_Host->PlaySound) s_Host->PlaySound(soundID);
+}
+
 }
