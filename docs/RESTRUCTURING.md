@@ -2879,9 +2879,12 @@ rounds settled* for the host rules). Test fixtures share
   > **Status:** done (2026-10-13). `MCreature` stays the executable's: the
   > zone's `GetCreature` hands out the pointer, the replies pass it back to
   > `CreatureState` and never dereference it, so `pCreature->X(...)` is
-  > `CreatureState::X(pCreature, ...)` and a creature's status array is
+  > `CreatureState::X(pCreature, ...)`; a creature's status array is
   > `CreatureState::Status(pCreature)` (an `MStatus*`, through which
-  > `SetStatus` still dispatches to the creature's override). `g_pZone->X`
+  > `SetStatus` still dispatches to the creature's override), and
+  > `pCreature->SetStatus(...)` is the library helper
+  > `CreatureState::SetStatus(pCreature, ...)`, which skips a creature with
+  > no status rather than dereferencing NULL. `g_pZone->X`
   > is `ZoneState::X`, `g_pZone==NULL` and `!=NULL` are `!ZoneState::Exists()`
   > and `ZoneState::Exists()`, and the knock-back's `g_pPlayer->GetID()` is
   > a new `PlayerState::GetID`. Without a host there is no zone and no
@@ -3088,6 +3091,15 @@ Follow-ups from 4.100, all older than the move:
   `dynamic_cast<ClientPlayer*>` unchecked.
 - `MPlayer::GetGear` C-casts each race's gear to `MPlayerGear*`, correct
   only because each gear class has a single base at offset 0.
+
+Follow-ups from 4.101, all older than the move:
+- `GCKnockBackHandler` has no zone check: with `g_pZone` NULL the zone
+  adapter dereferences it, and the player's ID is read unguarded too.
+- `GCModifyNicknameHandler` falls back to index 0 of an empty nickname
+  table, whose out-of-range dummy row has a NULL string, and assigns that
+  to the creature's `std::string` nickname (undefined behaviour; a loaded
+  row with a NULL string does the same). `g_pNickNameStringTable` itself
+  is unguarded.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

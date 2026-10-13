@@ -46,10 +46,10 @@ struct Host
 	void (*SetDead)(MCreature* pCreature) = nullptr;
 	void (*StopRecoveryHP)(MCreature* pCreature) = nullptr;
 	void (*SetRecoveryHP)(MCreature* pCreature, int amount, int times, std::uint32_t delay) = nullptr;
-	void (*SetNickName)(MCreature* pCreature, BYTE type, char* szNickName) = nullptr;
+	void (*SetNickName)(MCreature* pCreature, std::uint8_t type, char* szNickName) = nullptr;
 	void (*SetChatString)(MCreature* pCreature, const char* str) = nullptr;
-	void (*PacketMove)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction) = nullptr;
-	void (*PacketAttackNormal)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction) = nullptr;
+	void (*PacketMove)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) = nullptr;
+	void (*PacketAttackNormal)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) = nullptr;
 	void (*SetDirectionToPosition)(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
 	void (*SetStop)(MCreature* pCreature) = nullptr;
 	bool (*MovePosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
@@ -66,14 +66,16 @@ bool IsAlive(MCreature* pCreature);
 void SetDead(MCreature* pCreature);
 void StopRecoveryHP(MCreature* pCreature);
 void SetRecoveryHP(MCreature* pCreature, int amount, int times, std::uint32_t delay);
-void SetNickName(MCreature* pCreature, BYTE type, char* szNickName);
+void SetNickName(MCreature* pCreature, std::uint8_t type, char* szNickName);
 void SetChatString(MCreature* pCreature, const char* str);
-void PacketMove(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction);
-void PacketAttackNormal(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction);
+void PacketMove(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction);
+void PacketAttackNormal(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction);
 void SetDirectionToPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 void SetStop(MCreature* pCreature);
 bool MovePosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetServerPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 bool KnockBackPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
+// Sets one value in the creature's status array; skipped without a status.
+void SetStatus(MCreature* pCreature, std::uint32_t n, std::uint32_t value);
 
 }

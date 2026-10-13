@@ -1,5 +1,6 @@
 #include "Client_PCH.h"
 #include "ZoneStateHost.h"
+#include "MStatus.h"
 
 namespace ZoneState {
 namespace {
@@ -92,7 +93,7 @@ void SetRecoveryHP(MCreature* pCreature, int amount, int times, std::uint32_t de
 	if (s_Host && s_Host->SetRecoveryHP) s_Host->SetRecoveryHP(pCreature, amount, times, delay);
 }
 
-void SetNickName(MCreature* pCreature, BYTE type, char* szNickName)
+void SetNickName(MCreature* pCreature, std::uint8_t type, char* szNickName)
 {
 	if (s_Host && s_Host->SetNickName) s_Host->SetNickName(pCreature, type, szNickName);
 }
@@ -102,12 +103,12 @@ void SetChatString(MCreature* pCreature, const char* str)
 	if (s_Host && s_Host->SetChatString) s_Host->SetChatString(pCreature, str);
 }
 
-void PacketMove(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction)
+void PacketMove(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction)
 {
 	if (s_Host && s_Host->PacketMove) s_Host->PacketMove(pCreature, x, y, direction);
 }
 
-void PacketAttackNormal(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction)
+void PacketAttackNormal(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction)
 {
 	if (s_Host && s_Host->PacketAttackNormal) s_Host->PacketAttackNormal(pCreature, x, y, direction);
 }
@@ -135,6 +136,11 @@ void SetServerPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTOR
 bool KnockBackPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 {
 	return s_Host && s_Host->KnockBackPosition ? s_Host->KnockBackPosition(pCreature, sX, sY) : false;
+}
+
+void SetStatus(MCreature* pCreature, std::uint32_t n, std::uint32_t value)
+{
+	if (MStatus* pStatus = Status(pCreature)) pStatus->SetStatus(n, value);
 }
 
 }

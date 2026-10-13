@@ -60,6 +60,9 @@ TYPE_OBJECTID playerID = 0;
 const ZoneState::Host zone{
 	.Exists = []() { return zoneExists; },
 	.GetCreature = [](TYPE_OBJECTID id) -> MCreature* {
+		// The executable's adapter reads g_pZone, so asking without a zone
+		// would dereference NULL there.
+		CHECK(zoneExists);
 		auto found = creatures.find(id);
 		return found == creatures.end() ? nullptr : Handle(*found->second);
 	},
@@ -85,14 +88,14 @@ const CreatureState::Host creature{
 	.SetRecoveryHP = [](MCreature* p, int amount, int times, std::uint32_t delay) {
 		calls.push_back(Who(p) + ".hprecovery|" + N(amount) + "|" + N(times) + "|" + N(delay));
 	},
-	.SetNickName = [](MCreature* p, BYTE type, char* szNickName) {
+	.SetNickName = [](MCreature* p, std::uint8_t type, char* szNickName) {
 		calls.push_back(Who(p) + ".nickname|" + N(type) + "|" + (szNickName ? szNickName : "(null)"));
 	},
 	.SetChatString = [](MCreature* p, const char* str) { calls.push_back(Who(p) + ".says|" + (str ? str : "(null)")); },
-	.PacketMove = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction) {
+	.PacketMove = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) {
 		calls.push_back(Who(p) + ".move|" + N(x) + "|" + N(y) + "|" + N(direction));
 	},
-	.PacketAttackNormal = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction) {
+	.PacketAttackNormal = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) {
 		calls.push_back(Who(p) + ".attack|" + N(x) + "|" + N(y) + "|" + N(direction));
 	},
 	.SetDirectionToPosition = [](MCreature* p, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) {
@@ -389,12 +392,14 @@ TEST(ZoneCreatureHandlers, ANicknameIsTheCustomTextOrTheIndexedTitleFallingBackT
 	ReceiveNickname(1002, NicknameInfo::NICK_CUSTOM, 0, "Lantern");
 	ReceiveNickname(1002, NicknameInfo::NICK_CUSTOM_FORCED, 0, "Warden");
 	ReceiveNickname(1002, NicknameInfo::NICK_QUEST, 1, "");
+	ReceiveNickname(1002, NicknameInfo::NICK_FORCED, 2, "");
 	ReceiveNickname(1002, NicknameInfo::NICK_BUILT_IN, 3, "");
 	ReceiveNickname(4242, NicknameInfo::NICK_CUSTOM, 0, "Nobody");
 	CHECK(calls == std::vector<std::string>({
 		"Vanda.nickname|" + N(NicknameInfo::NICK_CUSTOM) + "|Lantern",
 		"Vanda.nickname|" + N(NicknameInfo::NICK_CUSTOM_FORCED) + "|Warden",
 		"Vanda.nickname|" + N(NicknameInfo::NICK_QUEST) + "|Slayer of Ogres",
+		"Vanda.nickname|" + N(NicknameInfo::NICK_FORCED) + "|Night Walker",
 		"Vanda.nickname|" + N(NicknameInfo::NICK_BUILT_IN) + "|Novice"}));
 }
 
@@ -406,6 +411,20 @@ TEST(ZoneCreatureHandlers, MovesAndAttacksAreHandedToTheCreatureFacingItsTarget)
 	ReceiveMove(4242, 1, 1, 1);
 	ReceiveAttack(4242, 1, 1, 1);
 	CHECK(calls == std::vector<std::string>({"Vanda.move|3|4|2", "Ogre.face|5|6", "Ogre.attack|5|6|1"}));
+}
+
+TEST(ZoneCreatureHandlers, WithoutAZoneNoCreatureIsLookedUp)
+{
+	World world;
+	zoneExists = false;
+	ReceiveDied(1001);
+	ReceiveNickname(1002, NicknameInfo::NICK_CUSTOM, 0, "Lantern");
+	ReceiveMove(1002, 3, 4, 2);
+	ReceiveAttack(1001, 5, 6, 1);
+	ReceiveSay(1002, 1);
+	ReceiveSayDynamic(1002, "Fine weather.");
+	CHECK(calls.empty());
+	CHECK(world.ogre.alive);
 }
 
 TEST(ZoneCreatureHandlers, NPCsSpeakTheirScriptOrMessageUnlessTheirNameIsRefused)
@@ -461,17 +480,18 @@ TEST(ZoneCreatureHandlers, MissingHostsAndEntriesMeanNoZoneAndNoCreature)
 	CHECK(!CreatureState::IsAlive(ogre));
 	CHECK(!CreatureState::MovePosition(ogre, 1, 2));
 	CHECK(!CreatureState::KnockBackPosition(ogre, 1, 2));
+	CreatureState::SetStatus(ogre, MODIFY_CURRENT_HP, 5);
+	CHECK(world.ogre.status.GetStatus(MODIFY_CURRENT_HP) == static_cast<DWORD>(MODIFY_NULL));
 	calls.clear();
-	ReceiveTileEffectRemoval();
-	ReceiveHelicopter(1001, 0);
-	ReceiveDied(1001);
-	ReceiveRecoveryStart(1002);
-	ReceiveNickname(1002, NicknameInfo::NICK_CUSTOM, 0, "Lantern");
-	ReceiveMove(1002, 3, 4, 2);
-	ReceiveAttack(1002, 5, 6, 1);
-	ReceiveSayDynamic(1002, "Hello");
+	RunEveryHandler();
 	CHECK(world.ogre.alive);
+	CHECK(world.vanda.status.GetStatus(MODIFY_CURRENT_HP) == static_cast<DWORD>(MODIFY_NULL));
 	CHECK(calls == std::vector<std::string>({"removetileeffect|12|13|77|5005", "addhelicopter|1001|0|0", "corpse|1001"}));
+
+	// The player's ID without a player service is 0.
+	const PlayerState::Host* playerHost = PlayerState::SetHost(nullptr);
+	CHECK_EQ(0, static_cast<long long>(PlayerState::GetID()));
+	PlayerState::SetHost(playerHost);
 
 	CHECK(CreatureState::SetHost(&creature) == &empty);
 	calls.clear();

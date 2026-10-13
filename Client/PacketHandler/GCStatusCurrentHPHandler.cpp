@@ -9,7 +9,6 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCStatusCurrentHP.h"
 #include "DebugLog.h"
-#include "MStatus.h"
 #include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -47,7 +46,7 @@ void GCStatusCurrentHPHandler::execute ( GCStatusCurrentHP * pPacket , Player * 
 		}
 		else
 		{		
-			CreatureState::Status(pCreature)->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			CreatureState::SetStatus(pCreature, MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
 		}
 	}
 
