@@ -715,3 +715,11 @@ Client/PacketHandler/GCShowGuildJoinHandler.cpp
 Client/PacketHandler/GCShowGuildMemberInfoHandler.cpp
 Client/PacketHandler/GCShowUnionInfoHandler.cpp
 Client/PacketHandler/GCShowWaitGuildInfoHandler.cpp
+
+# Friend, SMS address-book and whisper-failure replies and their presentation service.
+Client/CommunicationPresentationHost.cpp
+Client/CommunicationPresentationHost.h
+Client/PacketHandler/GCAddressListVerifyHandler.cpp
+Client/PacketHandler/GCFriendChattingHandler.cpp
+Client/PacketHandler/GCSMSAddressListHandler.cpp
+Client/PacketHandler/GCWhisperFailedHandler.cpp

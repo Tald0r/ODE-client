@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCFriendChatting.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "CommunicationPresentationHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -30,47 +29,47 @@ void GCFriendChattingHandler::execute ( GCFriendChatting * pPacket , Player * pP
 	{
 	case GC_UPDATE:
 		{
-			UI_FriendChatting_UpdateFriendList(pPacket);
+			CommunicationPresentation::FriendChatting_UpdateFriendList(pPacket);
 			break;
 		}
 	case GC_MESSAGE:
 		{
-			UI_FriendChatting_Message(pPacket);
+			CommunicationPresentation::FriendChatting_Message(pPacket);
 			break;
 		}
 	case GC_ADD_FRIEND_REQUEST:
 		{
-			UI_RunFriendRequest(pPacket);
+			CommunicationPresentation::RunFriendRequest(pPacket);
 			break;
 		}
 	case GC_ADD_FRIEND_REFUSE:
 		{
-			UI_RunFriendRefuse(pPacket);
+			CommunicationPresentation::RunFriendRefuse(pPacket);
 			break;
 		}
 	case GC_ADD_FRIEND_WAIT:
 		{
-			UI_RunFriendWait(pPacket);
+			CommunicationPresentation::RunFriendWait(pPacket);
 			break;
 		}
 	case GC_ADD_FRIEND_OK:
 		{
-			UI_RunFriendOK(pPacket);
+			CommunicationPresentation::RunFriendOK(pPacket);
 			break;
 		}
 	case GC_ADD_FRIEND_EXIST:
 		{
-			UI_RunFriendExist(pPacket);
+			CommunicationPresentation::RunFriendExist(pPacket);
 			break;
 		}
 	case GC_ADD_FRIEND_BLACK:
 		{
-			UI_RunFriendBlack(pPacket);
+			CommunicationPresentation::RunFriendBlack(pPacket);
 			break;
 		}
 	case GC_FRIEND_DELETE:
 		{
-			UI_RunFriendDelete(pPacket);
+			CommunicationPresentation::RunFriendDelete(pPacket);
 			break;
 		}
 	default:

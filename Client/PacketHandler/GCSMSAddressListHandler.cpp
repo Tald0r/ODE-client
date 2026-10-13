@@ -10,9 +10,7 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCSMSAddressList.h"
 
-#include "ClientDef.h"
-#include "PacketFunction.h"
-#include "UIFunction.h"
+#include "CommunicationPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCSMSAddressListHandler::execute ( GCSMSAddressList * pGCSMSAddressList , Player * pPlayer )
@@ -25,7 +23,7 @@ void GCSMSAddressListHandler::execute ( GCSMSAddressList * pGCSMSAddressList , P
 		std::vector<AddressUnit*> TempList = pGCSMSAddressList->getAddresses();
 		if(TempList.size())
 		{
-			UI_SetSMSList((void*)&TempList);
+			CommunicationPresentation::SetSMSList((void*)&TempList);
 		}
 	
 

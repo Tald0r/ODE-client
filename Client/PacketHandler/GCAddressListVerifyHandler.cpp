@@ -11,9 +11,8 @@
 
 	#include "ClientPlayer.h"
 
-#include "ClientDef.h"
 #include "TempInformation.h"
-#include "UIFunction.h"
+#include "CommunicationPresentationHost.h"
 #include "MGameStringTable.h"
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -32,39 +31,39 @@ void GCAddressListVerifyHandler::execute ( GCAddressListVerify * pPacket , Playe
 	{
 	case GCAddressListVerify::ADDRESS_LIST_ADD_OK:
 		if (g_pTempInformation->GetMode()==TempInformation::MODE_SMS_ADD_ADDRESS)
-			UI_AddSMSList(pPacket->getParameter(),
+			CommunicationPresentation::AddSMSList(pPacket->getParameter(),
 						  (char*)g_pTempInformation->StrValue1.c_str(),
 						  (char*)g_pTempInformation->StrValue2.c_str(),
 						  (char*)g_pTempInformation->StrValue3.c_str());
 		break;
 	case GCAddressListVerify::ADDRESS_LIST_DELETE_OK:
 		if (g_pTempInformation->GetMode()==TempInformation::MODE_SMS_DELETE_ADDRESS)
-			UI_DeleteSMSList(static_cast<DWORD>(g_pTempInformation->Value1)); 
+			CommunicationPresentation::DeleteSMSList(static_cast<DWORD>(g_pTempInformation->Value1)); 
 		break;
 	case GCAddressListVerify::ADDRESS_LIST_ADD_FAIL:
 		if(pPacket->getParameter())
-			UI_SMS_ERROR(pPacket->getParameter());
+			CommunicationPresentation::SMS_ERROR(pPacket->getParameter());
 		else
-			UI_PopupMessage(UI_STRING_MESSAGE_SMS_ADD_FAIL);
+			CommunicationPresentation::PopupMessage(UI_STRING_MESSAGE_SMS_ADD_FAIL);
 		break;
 	case GCAddressListVerify::ADDRESS_LIST_DELETE_FAIL:
 		if(pPacket->getParameter())
-			UI_SMS_ERROR(pPacket->getParameter());
+			CommunicationPresentation::SMS_ERROR(pPacket->getParameter());
 		else
-			UI_PopupMessage(UI_STRING_MESSAGE_SMS_DELETE_FAIL);
+			CommunicationPresentation::PopupMessage(UI_STRING_MESSAGE_SMS_DELETE_FAIL);
 		break;
 	case GCAddressListVerify::SMS_SEND_OK:
-		UI_SMS_Set_Charge(pPacket->getParameter());
-		UI_PopupMessage(UI_STRING_MESSAGE_SMS_SEND_OK);
+		CommunicationPresentation::SMS_Set_Charge(pPacket->getParameter());
+		CommunicationPresentation::PopupMessage(UI_STRING_MESSAGE_SMS_SEND_OK);
 		break;
 	case GCAddressListVerify::SMS_SEND_FAIL:
 		if(pPacket->getParameter())
-			UI_SMS_ERROR(pPacket->getParameter());
+			CommunicationPresentation::SMS_ERROR(pPacket->getParameter());
 		else
-			UI_PopupMessage(UI_STRING_MESSAGE_SMS_SEND_FAIL);
+			CommunicationPresentation::PopupMessage(UI_STRING_MESSAGE_SMS_SEND_FAIL);
 		break;
 	case GCAddressListVerify::SMS_CHARGE_OK: 
-		UI_SMS_Set_Charge(pPacket->getParameter());
+		CommunicationPresentation::SMS_Set_Charge(pPacket->getParameter());
 		break;
 	};
 
