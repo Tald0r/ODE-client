@@ -119,11 +119,17 @@ void RunEveryHandler()
 {
 	ReceiveChat(0, "Vlad", "Night", "hello");
 	ReceiveResponse(OK);
+	// Neither packet initialises its scalar fields, so every one is set.
 	GCOtherGuildName name;
+	name.setObjectID(1);
+	name.setGuildID(2);
 	name.setGuildName("Night");
 	GCOtherGuildNameHandler::execute(&name, nullptr);
 	GCShowGuildJoin join;
+	join.setGuildID(2);
 	join.setGuildName("Night");
+	join.setGuildMemberRank(0);
+	join.setJoinFee(0);
 	GCShowGuildJoinHandler::execute(&join, nullptr);
 	GCShowGuildInfo info;
 	GCShowGuildMemberInfo memberInfo;
