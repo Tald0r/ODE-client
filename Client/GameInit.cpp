@@ -3508,6 +3508,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsRunningSwapAdvancementItem = UI_IsRunningSwapAdvancementItem,
 	.RunPetStorage = UI_RunPetStorage,
 	.SetPetStorage = UI_SetPetStorage,
+	.EmptyMove = []() { gbl_global_empty_move = true; },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3614,6 +3615,13 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.InventoryMode = []() { return gC_vs_ui.inventory_mode; },
 	.AddNickNameList = [](NicknameInfo* pInfo) { gC_vs_ui.AddNickNameList(static_cast<void*>(pInfo)); },
 	.SetNickNameList = [](std::vector<NicknameInfo*>* pList) { gC_vs_ui.SetNickNameList(static_cast<void*>(pList)); },
+	.AddMail = [](int tabID, std::uint32_t id, int width, int height, const char* sender, const char* title, std::uint32_t date, bool open, int guildID, int guildType) {
+		SIZE windowSize;
+		windowSize.cx = width;
+		windowSize.cy = height;
+		gC_vs_ui.AddMail(tabID, id, windowSize, sender, title, date, open, guildID, guildType);
+	},
+	.AddMailContents = [](int tabID, std::uint32_t id, const char* contents) { gC_vs_ui.AddMailContents(tabID, id, contents); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

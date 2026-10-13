@@ -11,6 +11,7 @@ namespace DialogPresentation {
 // missing swap query answers that no advancement-item swap is running.
 // RunPetStorage opens the pet storage window, SetPetStorage shows a
 // storage in it (borrowed for the call: the window copies what it shows).
+// EmptyMove replays the mouse position once, so the UI under it refreshes.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -20,6 +21,7 @@ struct Host
 	bool (*IsRunningSwapAdvancementItem)() = nullptr;
 	void (*RunPetStorage)() = nullptr;
 	void (*SetPetStorage)(MStorage* pStorage) = nullptr;
+	void (*EmptyMove)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -31,5 +33,6 @@ void RemoveItemFromItemShop(std::uint32_t id);
 bool IsRunningSwapAdvancementItem();
 void RunPetStorage();
 void SetPetStorage(MStorage* pStorage);
+void EmptyMove();
 
 }

@@ -9,12 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSelectRankBonusFailed.h"
-#include "ClientDef.h"
+#include "DialogPresentationHost.h"
 #include "MGameStringTable.h"
 #include "TempInformation.h"
-#include "UIDialog.h"
-
-extern bool gbl_global_empty_move;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCSelectRankBonusFailedHandler::execute ( GCSelectRankBonusFailed * pGCSelectRankBonusFailed , Player * pPlayer )
@@ -25,8 +22,8 @@ void GCSelectRankBonusFailedHandler::execute ( GCSelectRankBonusFailed * pGCSele
 	(void)pPlayer;
 
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
-		g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_SKILL_NOT_SUPPORT].GetString());
-		gbl_global_empty_move = true;
+		DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_SKILL_NOT_SUPPORT].GetString());
+		DialogPresentation::EmptyMove();
 		
 	__END_CATCH
 }

@@ -899,3 +899,8 @@ Client/PacketHandler/GCPetStashListHandler.cpp
 # System messages, filtered by the player's options and kept free of repeats,
 # over the communication host.
 Client/PacketHandler/GCSystemMessageHandler.cpp
+
+# A refused rank bonus and the guild-union offers, over the dialog and UI-object
+# hosts.
+Client/PacketHandler/GCSelectRankBonusFailedHandler.cpp
+Client/PacketHandler/GCUnionOfferListHandler.cpp
