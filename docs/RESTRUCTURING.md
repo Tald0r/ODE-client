@@ -2713,11 +2713,11 @@ rounds settled* for the host rules). Test fixtures share
   `GCFlagWarStatusHandler` and `GCBloodBibleStatusHandler` into `gamemodel`
   behind the presentation-only `QuestWarPresentation::Host` installed and
   reset by `GameInit.cpp`.
-  > **Status:** done (2026-10-13). As in 4.92, each `UI_*` call becomes the
-  > host entry of the same name, and all five entries take the UI functions
-  > directly; unused `MEventManager.h`, `DebugInfo.h` and `ClientDef.h`
-  > includes go, and the two handlers that log include `DebugLog.h`, which
-  > `DebugInfo.h` forwarded. The quest list still opens the quest-selection
+  > **Status:** done (2026-10-13; PR #392). As in 4.92, each `UI_*` call
+  > becomes the host entry of the same name, and all five entries take the UI functions
+  > directly; the `MEventManager.h`, `DebugInfo.h` and `ClientDef.h` includes
+  > go, and the two handlers that log include `DebugLog.h`, which defines the
+  > `DEBUG_ADD` those headers brought in. The quest list still opens the quest-selection
   > request (with `g_pTempInformation` unguarded, as before) after presenting,
   > with or without a host; the flag-war reply still ignores 14400 seconds
   > (four hours) or more. R1 is 311 Windows / 309 Ninja.
@@ -2831,6 +2831,14 @@ Follow-ups from 4.93, all older than the move:
   unguarded.
 - `GCFriendChatting::read` prints debug lines to standard output on every
   packet.
+
+Follow-up from 4.94, older than the move: `GCSelectQuestIDHandler` opens the
+quest-selection request (`MODE_SELECT_QUEST`) even when `UI_RunQuestList`
+returns without a dialog (an empty list, or no quest manager). Nothing then
+clears it, so requests that need an idle register, such as trading, stay
+blocked until something else resets it; it also overwrites any request
+already pending. `UI_SetBloodBibleStatus` leaves `status.status`
+uninitialised for storage or race values it does not handle.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

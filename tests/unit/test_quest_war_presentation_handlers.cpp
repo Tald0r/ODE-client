@@ -20,7 +20,7 @@
 // Quest and war status replies present what they receive through
 // QuestWarPresentation::Host. The quest list also opens the quest
 // selection request, and the flag-war reply turns its remaining seconds
-// into an end time and ignores more than three hours.
+// into an end time and ignores four hours or more.
 namespace {
 
 std::vector<std::string> calls;
@@ -122,7 +122,8 @@ TEST(QuestWarPresentationHandlers, TheQuestListOpensTheSelectionRequestAfterPres
 	CHECK_EQ(static_cast<int>(TempInformation::MODE_NULL), modeAtQuestList);
 	CHECK(world.temp.GetMode() == TempInformation::MODE_SELECT_QUEST);
 
-	world.temp.SetMode(TempInformation::MODE_NULL);
+	// The request is opened whatever was pending, and without a host too.
+	world.temp.SetMode(TempInformation::MODE_SHOP_BUY);
 	QuestWarPresentation::SetHost(nullptr);
 	GCSelectQuestIDHandler::execute(&list, nullptr);
 	CHECK(world.temp.GetMode() == TempInformation::MODE_SELECT_QUEST);
@@ -140,7 +141,7 @@ TEST(QuestWarPresentationHandlers, FlagWarStatusEndsAfterTheRemainingSeconds)
 	CHECK(ctfEnd <= after + std::chrono::seconds(600));
 }
 
-TEST(QuestWarPresentationHandlers, FlagWarStatusIgnoresMoreThanThreeHours)
+TEST(QuestWarPresentationHandlers, FlagWarStatusIgnoresFourHoursOrMore)
 {
 	World world;
 	ReceiveFlagWar(14399, 1, 0, 0);
