@@ -262,13 +262,17 @@ MNPCScriptTable::LoadFromFile(std::ifstream& file)
 {
 	Release();
 	int count = 0;
-	// Key, owner length and both group counts cost at least sixteen bytes.
-	if (!ReadCount(file, count, 16)) return;
+	// The count only caps the rows: the shipped NPCScript.inf declares more
+	// scripts than it holds and ends in a 4-byte remnant, so the table also
+	// ends where no row header (key, owner length, both group counts) fits.
+	if (!file.read(reinterpret_cast<char*>(&count), 4) || count < 0)
+	{
+		file.setstate(std::ios::failbit);
+		return;
+	}
 	MNPCScriptTable loaded;
 	for (int index = 0; index < count; ++index)
 	{
-		// The shipped NPCScript.inf declares more scripts than it holds and ends
-		// in a 4-byte remnant, so the table also ends where no row header fits.
 		const std::streamoff remaining = Remaining(file);
 		if (remaining < 0) return;
 		if (remaining < 16)

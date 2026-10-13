@@ -424,19 +424,23 @@ TEST(NPCDialogue, TruncatedRowsDoNotPublishPartialScripts)
 		world.Add(1, "NPC", {"old"}, {"old reply"});
 		auto truncated = complete;
 		truncated.data.resize(length);
-		// Less than a row header after whole rows is the shipped file's remnant.
-		const bool remnant = length >= first.data.size() && length - first.data.size() < 16;
+		// Less than a row header after the count or a whole row is the
+		// shipped file's remnant.
+		const bool whole = length >= first.data.size();
+		const bool remnant = length - (whole ? first.data.size() : 4) < 16;
 		CHECK_EQ(remnant, Load(world.table, truncated));
-		CHECK_EQ(remnant ? 1u : 0u, world.table.size());
+		CHECK_EQ(remnant && whole ? 1u : 0u, world.table.size());
+		if (remnant && whole) CHECK(Is(world.table.GetSubject(7, 1), "second"));
 	}
 }
 
 TEST(NPCDialogue, ShippedTablesEndAtTheirRemnantBeforeTheDeclaredCount)
 {
-	// NPCScript.inf declares more scripts than it holds and ends in four bytes
-	// that are not a row (tools/i18n/npcscript_dump.pl); every NPC lost its
-	// dialogue when that tail discarded the whole table.
-	const auto bytes = Bytes().U32(3)
+	// NPCScript.inf declares more scripts than it holds, by an unrecorded
+	// margin, and ends in four bytes that are not a row
+	// (tools/i18n/npcscript_dump.pl); every NPC lost its dialogue when that
+	// tail discarded the whole table.
+	const auto bytes = Bytes().U32(0x7fffffffU)
 		.U32(7).Row("owner", {"hello"}, {"yes", "no"})
 		.U32(9).Row("other", {"title"}, {})
 		.U32(0);
@@ -509,7 +513,7 @@ TEST(NPCDialogue, NullRowsAreRejectedBeforeWritingTheTableCount)
 TEST(NPCDialogue, IncompleteAndImpossibleCountPrefixesFailBeforeAllocation)
 {
 	const auto complete = Bytes().U32(1).U32(7).Row("owner", {"subject"}, {"reply"});
-	for (std::size_t length = 0; length < 8; ++length)
+	for (std::size_t length = 0; length < 4; ++length)
 	{
 		DialogueWorld world;
 		world.Add(1, "old", {}, {});
@@ -518,8 +522,7 @@ TEST(NPCDialogue, IncompleteAndImpossibleCountPrefixesFailBeforeAllocation)
 		CHECK(!Load(world.table, truncated));
 		CHECK(world.table.empty());
 	}
-	for (const auto& bytes : {Bytes().U32(0x7fffffffU),
-		Bytes().U32(1).U32(7).U32(0xffffffffU).U32(0).U32(0),
+	for (const auto& bytes : {Bytes().U32(1).U32(7).U32(0xffffffffU).U32(0).U32(0),
 		Bytes().U32(1).U32(7).Text("").U32(0x7fffffffU).U32(0)})
 	{
 		DialogueWorld world;
@@ -547,7 +550,7 @@ TEST(NPCDialogue, ThrowingAndClosedInputFailuresClearOldScripts)
 {
 	DialogueWorld world;
 	world.Add(1, "old", {"old subject"}, {});
-	DialogueFile shortFile(Bytes().U32(1).U32(7));
+	DialogueFile shortFile(Bytes().U32(1).U32(7).Text("owner").U32(1));
 	std::ifstream input(shortFile.path, std::ios::binary);
 	input.exceptions(std::ios::failbit | std::ios::badbit);
 	bool threw = false;
