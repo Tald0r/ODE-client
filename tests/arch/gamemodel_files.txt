@@ -771,3 +771,23 @@ Client/PacketHandler/LCQueryResultCharacterNameHandler.cpp
 Client/PacketHandler/LCQueryResultPlayerIDHandler.cpp
 Client/PacketHandler/LCSelectPCErrorHandler.cpp
 Client/PacketHandler/LCVersionCheckErrorHandler.cpp
+
+# Replies about the client's own player: verification, recovery, status, gear and movement, and its state service.
+Client/PlayerStateHost.cpp
+Client/PlayerStateHost.h
+Client/PacketHandler/GCAddGearToInventoryHandler.cpp
+Client/PacketHandler/GCGetOffMotorCycleFailedHandler.cpp
+Client/PacketHandler/GCHPRecoveryEndToSelfHandler.cpp
+Client/PacketHandler/GCHPRecoveryStartToSelfHandler.cpp
+Client/PacketHandler/GCMPRecoveryEndHandler.cpp
+Client/PacketHandler/GCMPRecoveryStartHandler.cpp
+Client/PacketHandler/GCModifyInformationHandler.cpp
+Client/PacketHandler/GCMoveErrorHandler.cpp
+Client/PacketHandler/GCMoveOKHandler.cpp
+Client/PacketHandler/GCRideMotorCycleFailedHandler.cpp
+Client/PacketHandler/GCTimeLimitItemInfoHandler.cpp
+Client/PacketHandler/GCUnburrowFailHandler.cpp
+Client/PacketHandler/GCUntransformFailHandler.cpp
+Client/PacketHandler/GCUseBonusPointOKHandler.cpp
+Client/PacketHandler/GCVisibleFailHandler.cpp
+Client/PacketHandler/GCVisibleOKHandler.cpp

@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMPRecoveryStart.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,11 +24,11 @@ void GCMPRecoveryStartHandler::execute ( GCMPRecoveryStart * pPacket , Player * 
 	// item 사용 검증
 	//UseItemOK();
 
-	if (g_pPlayer!=NULL)
+	if (PlayerState::Status()!=NULL)
 	{
 		DWORD delay = ConvertDurationToMillisecond( pPacket->getDelay() );
 	
-		g_pPlayer->SetRecoveryMP( pPacket->getQuantity(),
+		PlayerState::SetRecoveryMP( pPacket->getQuantity(),
 									pPacket->getPeriod(),
 									delay );
 	}	

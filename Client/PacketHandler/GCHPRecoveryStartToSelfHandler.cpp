@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCHPRecoveryStartToSelf.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,11 +24,11 @@ void GCHPRecoveryStartToSelfHandler::execute ( GCHPRecoveryStartToSelf * pPacket
 	// item 사용 검증
 	//UseItemOK();
 
-	if (g_pPlayer!=NULL)
+	if (PlayerState::Status()!=NULL)
 	{
 		DWORD delay = ConvertDurationToMillisecond( pPacket->getDelay() );
 	
-		g_pPlayer->SetRecoveryHP( pPacket->getQuantity(),
+		PlayerState::SetRecoveryHP( pPacket->getQuantity(),
 									pPacket->getPeriod(),
 									delay );
 	}	

@@ -9,7 +9,8 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCVisibleOK.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -25,16 +26,16 @@ void GCVisibleOKHandler::execute ( GCVisibleOK * pPacket , Player * pPlayer )
 	//------------------------------------------------------------------
 	// Player가 기다리던 skill의 성공유무를 검증받았다.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
 		DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 	}
 
-	g_pPlayer->SetVisible();
+	PlayerState::SetVisible();
 
 
 	__END_CATCH

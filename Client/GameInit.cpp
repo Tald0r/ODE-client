@@ -121,6 +121,7 @@
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
 #include "LoginPresentationHost.h"
+#include "PlayerStateHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2697,6 +2698,7 @@ void ReleaseAllObjects()
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
 	LoginPresentation::SetHost(nullptr);
+	PlayerState::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3486,6 +3488,24 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
 };
 
+static const PlayerState::Host s_PlayerStateHost = {
+	.Status = []() -> MStatus* { return g_pPlayer; },
+	.GetWaitVerify = []() { return g_pPlayer->GetWaitVerify(); },
+	.SetWaitVerifyNULL = []() { g_pPlayer->SetWaitVerifyNULL(); },
+	.GetRace = []() { return g_pPlayer->GetRace(); },
+	.GetGear = []() -> MItemManager* { return g_pPlayer->GetGear(); },
+	.SetAddonItem = [](MItem* pItem) { return g_pPlayer->SetAddonItem(pItem); },
+	.AddEffectStatus = [](EFFECTSTATUS status, std::uint32_t delayFrame) { return g_pPlayer->AddEffectStatus(status, delayFrame); },
+	.SetRecoveryHP = [](int amount, int times, std::uint32_t delay) { g_pPlayer->SetRecoveryHP(amount, times, delay); },
+	.SetRecoveryMP = [](int amount, int times, std::uint32_t delay) { g_pPlayer->SetRecoveryMP(amount, times, delay); },
+	.StopRecoveryHP = []() { g_pPlayer->StopRecoveryHP(); },
+	.StopRecoveryMP = []() { g_pPlayer->StopRecoveryMP(); },
+	.SetVisible = []() { g_pPlayer->SetVisible(); },
+	.SetServerPosition = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { g_pPlayer->SetServerPosition(sX, sY); },
+	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
+	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
+};
+
 static const BonusSkills::Host s_BonusSkillHost = {
 	.ReadPlayer = [](BonusSkills::PlayerState& state) {
 		if (!g_pPlayer || !g_pSkillAvailable) return false;
@@ -4073,6 +4093,7 @@ InitGameObject()
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);
 	LoginPresentation::SetHost(&s_LoginPresentationHost);
+	PlayerState::SetHost(&s_PlayerStateHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

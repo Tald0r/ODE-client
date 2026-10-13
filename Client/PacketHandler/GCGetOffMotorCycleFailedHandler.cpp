@@ -9,7 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGetOffMotorCycleFailed.h"
-#include "ClientDef.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ void GCGetOffMotorCycleFailedHandler::execute ( GCGetOffMotorCycleFailed * pPack
 	//------------------------------------------
 	// 어쨋든 간에.. 검증이 되었다고 본다.
 	//------------------------------------------
-	g_pPlayer->SetWaitVerifyNULL();
+	PlayerState::SetWaitVerifyNULL();
 
 
 	__END_CATCH

@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMoveOK.h"
-#include "ClientDef.h"
-#include "VS_UI.h"
+#include "PlayerStateHost.h"
 
 
 	#include "ClientPlayer.h"
@@ -35,7 +34,7 @@ void GCMoveOKHandler::execute ( GCMoveOK * pPacket , Player * pPlayer )
 	//--------------------------------------------------
 	// 검증된 Tile에 대한 이동
 	//--------------------------------------------------
-	g_pPlayer->PacketMoveOK(pPacket->getX(), pPacket->getY(), pPacket->getDir());
+	PlayerState::PacketMoveOK(pPacket->getX(), pPacket->getY(), pPacket->getDir());
 
 
 	__END_CATCH

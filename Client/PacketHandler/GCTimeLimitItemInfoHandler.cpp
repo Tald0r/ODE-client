@@ -13,7 +13,9 @@
 #include "MSlayerGear.h"
 #include "MVampireGear.h"
 #include "MOustersGear.h"
-#include "MPlayer.h"
+#include "MItem.h"
+#include "MItemManager.h"
+#include "PlayerStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -31,7 +33,7 @@ void GCTimeLimitItemInfoHandler::execute ( GCTimeLimitItemInfo * pPacket , Playe
 		
 		//MPlayerGear* pGear;
 		
-		MItemManager* pGear = g_pPlayer->GetGear();
+		MItemManager* pGear = PlayerState::GetGear();
 
 		while( Itr != endItr )
 		{
@@ -40,7 +42,7 @@ void GCTimeLimitItemInfoHandler::execute ( GCTimeLimitItemInfo * pPacket , Playe
 			if(pItem != NULL)
 			{
 				pItem->SetAffectStatus();			
-				g_pPlayer->SetAddonItem( pItem );
+				PlayerState::SetAddonItem( pItem );
 			}
 			
 			Itr++;

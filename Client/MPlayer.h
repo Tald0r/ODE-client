@@ -50,6 +50,7 @@ extern MOustersGear*	g_pOustersGear;
 #include "MonotonicClock.h"
 #include "MEffectTarget.h"
 #include "MRequestMode.h"
+#include "PlayerStateHost.h"
 
 extern MonotonicClock::TimePoint	g_FrameNow;
 
@@ -218,23 +219,9 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 			ITEM_CHECK_BUFFER_USE_FROM_GQUEST_INVENTORY,
 		};
 
-		// server에서 검증받기..
-		enum WAIT_VERIFY
-		{
-			WAIT_VERIFY_NULL,
-			WAIT_VERIFY_MOTORCYCLE_GETON,
-			WAIT_VERIFY_MOTORCYCLE_GETOFF,
-			WAIT_VERIFY_SKILL_SUCCESS,
-			WAIT_VERIFY_ITEM_USE,
-			WAIT_VERIFY_NPC_ASK,
-			WAIT_VERIFY_TRADE,
-			WAIT_VERIFY_PARTY,
-			WAIT_VERIFY_PARTY_LEAVE,
-			WAIT_VERIFY_RESURRECT,
-			WAIT_VERIFY_LOVE_CHAIN,
-			WAIT_VERIFY_LOGOUT,
-			WAIT_VERIFY_SYLPH_SUMMON_GETOFF,
-		};
+		// What the player waits for the server to verify (PlayerStateHost.h).
+		using WAIT_VERIFY = PlayerState::WAIT_VERIFY;
+		using enum PlayerState::WAIT_VERIFY;
 
 	public :
 		MPlayer();

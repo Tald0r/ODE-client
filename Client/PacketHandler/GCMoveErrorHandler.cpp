@@ -9,7 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMoveError.h"
-#include "ClientDef.h"
+#include "PlayerStateHost.h"
 
 	#include "ClientPlayer.h"
 
@@ -34,10 +34,10 @@ void GCMoveErrorHandler::execute ( GCMoveError * pPacket , Player * pPlayer )
 
 	// 서버 좌표 설정
 	// 2001.10.8 제거
-	g_pPlayer->SetServerPosition( pPacket->getX(), pPacket->getY() );
+	PlayerState::SetServerPosition( pPacket->getX(), pPacket->getY() );
 
 	// MoveOK message가 하나 안 날아온다는걸 알 수 있다.
-	g_pPlayer->PacketMoveNO();
+	PlayerState::PacketMoveNO();
 	
 
 
