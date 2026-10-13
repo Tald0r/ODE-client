@@ -723,3 +723,12 @@ Client/PacketHandler/GCAddressListVerifyHandler.cpp
 Client/PacketHandler/GCFriendChattingHandler.cpp
 Client/PacketHandler/GCSMSAddressListHandler.cpp
 Client/PacketHandler/GCWhisperFailedHandler.cpp
+
+# Quest and war status replies and their presentation service.
+Client/QuestWarPresentationHost.cpp
+Client/QuestWarPresentationHost.h
+Client/PacketHandler/GCBloodBibleStatusHandler.cpp
+Client/PacketHandler/GCFlagWarStatusHandler.cpp
+Client/PacketHandler/GCQuestStatusHandler.cpp
+Client/PacketHandler/GCSelectQuestIDHandler.cpp
+Client/PacketHandler/GCWarScheduleListHandler.cpp

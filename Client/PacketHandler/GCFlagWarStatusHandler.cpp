@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCFlagWarStatus.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "QuestWarPresentationHost.h"
 #include "MonotonicClock.h"
 
 #include <chrono>
@@ -34,6 +33,6 @@ void GCFlagWarStatusHandler::execute ( GCFlagWarStatus * pGCFlagWarStatus , Play
 	if( timeRemain/60/60 > 3 )
 		return;
 
-	UI_SetCTFStatus( endTime, flag_s, flag_v, flag_o );
+	QuestWarPresentation::SetCTFStatus( endTime, flag_s, flag_v, flag_o );
 	
 }

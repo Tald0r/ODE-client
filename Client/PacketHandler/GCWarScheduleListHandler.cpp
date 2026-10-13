@@ -8,8 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCWarScheduleList.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "QuestWarPresentationHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -22,7 +21,7 @@ void GCWarScheduleListHandler::execute ( GCWarScheduleList * pPacket , Player * 
 	(void)pPlayer;
 	
 	
-	UI_RunWarList(pPacket);
+	QuestWarPresentation::RunWarList(pPacket);
 
 
 	__END_CATCH

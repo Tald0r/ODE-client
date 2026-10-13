@@ -10,9 +10,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSelectQuestID.h"
-#include "ClientDef.h"
 #include "TempInformation.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "QuestWarPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -27,7 +27,7 @@ void GCSelectQuestIDHandler::execute ( GCSelectQuestID * pPacket , Player * pPla
 	
 	
 	DEBUG_ADD("[GCSelectQuestIDHandler] Execute");
-	UI_RunQuestList( pPacket );
+	QuestWarPresentation::RunQuestList( pPacket );
 	
 	g_pTempInformation->SetMode( TempInformation::MODE_SELECT_QUEST );	
 	

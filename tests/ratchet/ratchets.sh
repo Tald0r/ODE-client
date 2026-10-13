@@ -275,7 +275,8 @@ check () {
 # 329: thirteen handlers that ignore their packet join gamemodel (4.91).
 # 320: nine guild and union reply handlers join gamemodel (4.92).
 # 316: friend, SMS and whisper-failure reply handlers join gamemodel (4.93).
-R1_BASELINE=316
+# 311: quest and war status reply handlers join gamemodel (4.94).
+R1_BASELINE=311
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -384,7 +385,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 327: thirteen handlers that ignore their packet join gamemodel (4.91).
 	# 318: nine guild and union reply handlers join gamemodel (4.92).
 	# 314: friend, SMS and whisper-failure reply handlers join gamemodel (4.93).
-	R1_NINJA_BASELINE=314
+	# 309: quest and war status reply handlers join gamemodel (4.94).
+	R1_NINJA_BASELINE=309
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

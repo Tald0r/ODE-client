@@ -7,8 +7,7 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCBloodBibleStatus.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "QuestWarPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -22,7 +21,7 @@ void GCBloodBibleStatusHandler::execute ( GCBloodBibleStatus * pPacket , Player 
 	(void)pPlayer;
 	
 	//cout << pPacket->toString() << endl;
-	UI_SetBloodBibleStatus(pPacket);
+	QuestWarPresentation::SetBloodBibleStatus(pPacket);
 
 	__END_CATCH
 }
