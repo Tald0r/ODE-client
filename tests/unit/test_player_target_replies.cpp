@@ -295,11 +295,14 @@ TEST(PlayerTargetReplies, AKnockBackMovesStopsAndHitsThePlayer)
 	CHECK(calls == std::vector<std::string>({"verified", "Ogre.face|30|31", "Ogre.other|" + N(SKILL_DOUBLE_IMPACT) + "|7", "(no result)",
 		"Self.server|14|15", "Self.move|14|15", "Self.stop", "Self.result|" + hit + "|1001|10|11"}));
 	CHECK_EQ(33, World::HP());
-	// Without the attacker the player is still knocked back.
+	// Without the attacker the player is still knocked back, and the status
+	// still changes.
 	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveKnockBack(4242, SKILL_DOUBLE_IMPACT, 16, 17);
 	CHECK(calls == std::vector<std::string>({"Self.server|16|17", "Self.move|16|17", "Self.stop",
 		"Self.result|" + hit + "|" + N(OBJECTID_NULL) + "|16|17"}));
+	CHECK_EQ(33, World::HP());
 }
 
 TEST(PlayerTargetReplies, AKnockBackWithoutAZoneOrSkillOnlyAnswersTheWait)
@@ -321,10 +324,15 @@ TEST(PlayerTargetReplies, HolyWaterThrownAtThePlayerHitsIt)
 	ReceiveThrowOK2(1001);
 	CHECK(calls == Then({"Ogre.face|30|31", "Ogre.other|" + N(MAGIC_THROW_HOLY_WATER) + "|7"}, PlayerHit(MAGIC_THROW_HOLY_WATER)));
 	CHECK_EQ(22, World::HP());
+	// Without the thrower, or without a zone, only the status changes.
 	calls.clear();
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	ReceiveThrowOK2(4242);
+	CHECK_EQ(22, World::HP());
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	zoneExists = false;
 	ReceiveThrowOK2(1001);
+	CHECK_EQ(22, World::HP());
 	CHECK(calls.empty());
 }
 

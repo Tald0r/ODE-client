@@ -24,7 +24,7 @@ void GCThrowItemOK2Handler::execute ( GCThrowItemOK2 * pPacket , Player * pPlaye
 	__BEGIN_TRY
 	(void)pPlayer;
 
-	// The player; without one there is nothing to do (the game crashed here).
+	// The player; without one there is nothing to do.
 	MCreature* const pPlayerCreature = PlayerState::Creature();
 	if (pPlayerCreature == NULL)
 	{

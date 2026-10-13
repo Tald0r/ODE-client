@@ -12,7 +12,6 @@
 #include "AffectModifyInfo.h"
 #include "DebugLog.h"
 #include "MActionInfoTable.h"
-#include "MActionResult.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
 
@@ -24,7 +23,7 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 	__BEGIN_TRY
 	(void)pPlayer;
 
-	// The player; without one there is nothing to do (the game crashed here).
+	// The player; without one there is nothing to do.
 	MCreature* const pPlayerCreature = PlayerState::Creature();
 	if (pPlayerCreature == NULL)
 	{
@@ -122,7 +121,7 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 
 		//------------------------------------------------------
 		// To stay in sync,
-		// Show the result at once.
+		// show the result at once.
 		//------------------------------------------------------
 		// Apply it at once.
 		CreatureState::SetServerPosition(pPlayerCreature, x, y );		

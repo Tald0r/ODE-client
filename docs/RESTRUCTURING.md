@@ -3651,7 +3651,8 @@ rounds settled* for the host rules). Test fixtures share
   > `CreatureState` on that handle (the overridden `SetServerPosition`,
   > `SetStop`, `PacketSpecialActionResult` and `AddEffectStatus` dispatch
   > virtually, as the member calls did). Without a player nothing
-  > happens, where the game dereferenced a NULL player. Commented-out
+  > happens; the game dereferenced the NULL player on every path but
+  > holy water's with no thrower and an empty status. Commented-out
   > blocks that named `g_pPlayer` go; the Korean comments are translated.
   > R1 is 187 Windows / 185 Ninja.
   - Owner: membership, R1, and `test_player_target_replies.cpp` (the

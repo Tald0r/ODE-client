@@ -23,7 +23,7 @@ void GCBloodDrainOK1Handler::execute ( GCBloodDrainOK1 * pPacket , Player * pPla
 	__BEGIN_TRY
 	(void)pPlayer;
 
-	// The player; without one there is nothing to do (the game crashed here).
+	// The player; without one there is nothing to do.
 	MCreature* const pPlayerCreature = PlayerState::Creature();
 	if (pPlayerCreature == NULL)
 	{

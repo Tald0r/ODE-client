@@ -303,6 +303,8 @@ TEST(SpecialActionReplies, AThrowOrDrainNeedsAZoneAndBothCreatures)
 	CHECK(calls.empty());
 }
 
+namespace {
+
 // A node that counts its own destruction, to see a queue freed.
 int freed = 0;
 struct CountedNode : MActionResultNode
@@ -317,6 +319,8 @@ MActionResult* CountedQueue()
 	pResult->Add(new CountedNode);
 	return pResult;
 }
+
+} // namespace
 
 TEST(SpecialActionReplies, AQueueNoEntryTakesIsFreed)
 {
