@@ -3500,11 +3500,13 @@ rounds settled* for the host rules). Test fixtures share
   of task 4.91, and move both into `gamemodel`.
   > **Status:** done (2026-10-13). Each body was one block no build
   > compiles. `GCAuthKeyHandler`'s called `Set_Auth`, nProtect's, under
-  > `__NPROTECT__`, which only `Client.cpp` defines (for itself), and
-  > which nothing defines any more since the SDL port removed nProtect;
-  > its `Client.h` include served that call. `GCSubInventoryInfoHandler`'s
-  > ran the test sub-inventory under `__TEST_SUB_INVENTORY__`, which no
-  > build defines, and named `g_pZone` and `g_pPlayer`. Both handlers
+  > `__NPROTECT__`, which only `Client.cpp` defines (for itself);
+  > `Set_Auth` itself is defined nowhere since the SDL port removed
+  > nProtect, and the handler's `Client.h` include served that call.
+  > `GCSubInventoryInfoHandler`'s ran the test sub-inventory under
+  > `__TEST_SUB_INVENTORY__`, which no CMake build defines (only the
+  > orphan `Client/SpriteLib/SpriteLib.vcxproj`, which nothing builds,
+  > names it), and named `g_pZone` and `g_pPlayer`. Both handlers
   > now accept their packet and do nothing, as they did. The rest of the
   > sub-inventory feature's dead blocks elsewhere stay. R1 is 201 Windows /
   > 199 Ninja.
