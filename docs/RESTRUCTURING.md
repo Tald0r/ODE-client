@@ -1223,7 +1223,7 @@ rounds settled* for the host rules). Test fixtures share
   > platform, and with it `IsAcceptID("")` for a player with an ID on the
   > list; a NULL string now compares as "". The chat handlers pass
   > a wire-supplied name to `IsAcceptID`: `GCGuildChat`'s sender
-  > (`GCGuildChatHandler.cpp:43`), `GCWhisper`'s name
+  > (`GCGuildChatHandler.cpp:42`), `GCWhisper`'s name
   > (`GCWhisperHandler.cpp:50`), `GCSay`'s creature name
   > (`GCSayHandler.cpp:76`), and `GCPartySay`, `GCGlobalChat`, `CRWhisper`,
   > `RCSay` and `GCNPCSay` likewise, so an empty sender name from a server
@@ -2681,14 +2681,15 @@ rounds settled* for the host rules). Test fixtures share
   `GCShowUnionInfoHandler` and `GCShowWaitGuildInfoHandler` into `gamemodel`
   behind the presentation-only `GuildPresentation::Host` installed and reset
   by `GameInit.cpp`.
-  > **Status:** done (2026-10-13). Each `UI_*` call becomes the host entry of
-  > the same name; nothing else in the handlers changes. Guild chat keeps its
+  > **Status:** done (2026-10-13; PR #390). Each `UI_*` call becomes the host
+  > entry of the same name; nothing else in the handlers changes. Guild chat keeps its
   > chat-manager ID filter and curse masking, and the union reply its
   > twelve-code message map. Missing presentation skips only the call.
   > R1 is 320 Windows / 318 Ninja.
   - Owner: membership, R1, designated host installation/reset and
     `test_guild_presentation_handlers.cpp` (decoded chat, response, name and
-    join packets; pass-through identity for the five information packets).
+    join packets; pass-through identity for the five information packets;
+    missing hosts, empty entries and host replacement).
 
 ### Remaining R1 work after tasks 4.80-4.92
 
@@ -2765,6 +2766,14 @@ and `write` never writes the length byte. The server reads and writes a
 if a server did send it, the client's reader would throw and
 `UpdateSocketInput` would report the error and drop the player to the main
 menu. A fix needs both halves to match the server's encoding.
+
+Follow-ups from 4.92's review, both older than the move: `GCGuildChatHandler`
+uses `g_pChatManager` without a null check (the game creates it in
+`InitInfomation` before any packet; `CRWhisperHandler` checks it), and the
+executable's `UI_ShowGuildMemberList` pops every `GuildMemberInfo` off the
+packet with `popFrontGuildMemberInfoList` and never deletes it, so each
+member of each `GCGuildMemberList` leaks; the packet's destructor frees only
+what is still listed.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

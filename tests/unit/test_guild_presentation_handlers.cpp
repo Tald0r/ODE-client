@@ -114,6 +114,29 @@ void ReceiveResponse(WORD code)
 	GCGuildResponseHandler::execute(&packet, nullptr);
 }
 
+// One reply of each kind, so every host entry is asked for once.
+void RunEveryHandler()
+{
+	ReceiveChat(0, "Vlad", "Night", "hello");
+	ReceiveResponse(OK);
+	GCOtherGuildName name;
+	name.setGuildName("Night");
+	GCOtherGuildNameHandler::execute(&name, nullptr);
+	GCShowGuildJoin join;
+	join.setGuildName("Night");
+	GCShowGuildJoinHandler::execute(&join, nullptr);
+	GCShowGuildInfo info;
+	GCShowGuildMemberInfo memberInfo;
+	GCGuildMemberList memberList;
+	GCShowUnionInfo unionInfo;
+	GCShowWaitGuildInfo waitInfo;
+	GCShowGuildInfoHandler::execute(&info, nullptr);
+	GCShowGuildMemberInfoHandler::execute(&memberInfo, nullptr);
+	GCGuildMemberListHandler::execute(&memberList, nullptr);
+	GCShowUnionInfoHandler::execute(&unionInfo, nullptr);
+	GCShowWaitGuildInfoHandler::execute(&waitInfo, nullptr);
+}
+
 } // namespace
 
 TEST(GuildPresentationHandlers, GuildAndUnionChatReachTheirHistoryChannels)
@@ -235,9 +258,22 @@ TEST(GuildPresentationHandlers, AMissingHostSkipsPresentationOnly)
 {
 	World world;
 	GuildPresentation::SetHost(nullptr);
-	ReceiveChat(0, "Vlad", "Night", "unheard");
-	ReceiveResponse(OK);
-	GCShowGuildInfo info;
-	GCShowGuildInfoHandler::execute(&info, nullptr);
+	RunEveryHandler();
 	CHECK(calls.empty());
+	GuildPresentation::SetHost(&host);
+	RunEveryHandler();
+	CHECK_EQ(9u, calls.size());
+}
+
+TEST(GuildPresentationHandlers, EmptyEntriesSkipAndEachCallReadsTheCurrentHost)
+{
+	World world;
+	const GuildPresentation::Host empty{};
+	CHECK(GuildPresentation::SetHost(&empty) == &host);
+	RunEveryHandler();
+	CHECK(calls.empty());
+	CHECK(GuildPresentation::SetHost(&host) == &empty);
+	ReceiveResponse(NOT_ENOUGH_SLOT);
+	CHECK_EQ(1u, calls.size());
+	CHECK(!calls.empty() && calls[0] == "popup|" + std::to_string(UI_STRING_MESSAGE_UNION_ERROR_NO_SLOT));
 }
