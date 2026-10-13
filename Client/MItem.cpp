@@ -23,6 +23,7 @@
 #include "MTimeItemManager.h"
 #include "MGameStringTable.h"
 #include "MItemLimits.h"
+#include "DebugLog.h"
 #include "Packet/Types/CreatureTypes.h"
 #include "Packet/Types/ItemTypes.h"
 
@@ -166,6 +167,28 @@ int		MItem::s_DropHeight[MAX_DROP_COUNT] =
 // them, and a test binary never does.
 //----------------------------------------------------------------------
 const MItemHost*	MItem::s_pHost = NULL;
+
+//----------------------------------------------------------------------
+// New Item
+//----------------------------------------------------------------------
+// A new item of itemClass from the executable's factory (MItemHost::NewItem).
+// itemClass reaches here straight from network packets, so it is
+// range-checked before the factory indexes its constructor table with it.
+// Every caller must handle a NULL return: an invalid class, no factory, or
+// a class the factory cannot make.
+//----------------------------------------------------------------------
+MItem*
+MItem::NewItem(ITEM_CLASS itemClass)
+{
+	if (itemClass < 0 || itemClass >= MAX_ITEM_CLASS)
+	{
+		DEBUG_ADD_FORMAT_ERR("[Error] MItem::NewItem: invalid item class %d", itemClass);
+		return NULL;
+	}
+	if (s_pHost == NULL || s_pHost->NewItem == NULL)
+		return NULL;
+	return s_pHost->NewItem(itemClass);
+}
 
 //----------------------------------------------------------------------
 //

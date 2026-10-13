@@ -2927,6 +2927,8 @@ static MMagazine*	EmptyMagazineFor(MItem* pGun)
 // (MItemUse.cpp); the members are the library's.
 void	UsePotionFromInventory(MItem* pPotion);
 void	UsePetFromInventory(MItem* pPet);
+// The item class table MItem::NewItem creates through (MItemUse.cpp).
+MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 
 static const MItemHost	s_ItemHost = {
 	.pCurrentFrame			= &g_CurrentFrame,
@@ -2941,6 +2943,7 @@ static const MItemHost	s_ItemHost = {
 	.UsePotionFromInventory	= UsePotionFromInventory,
 	.UsePetFromInventory	= UsePetFromInventory,
 	.ItemDestroyed			= [](MItem* item) noexcept { UI_RemoveDescriptor(item); },
+	.NewItem				= NewItemOfClass,
 };
 
 //-----------------------------------------------------------------------------

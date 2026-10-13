@@ -818,3 +818,6 @@ Client/PacketHandler/GCBloodBibleSignInfoHandler.cpp
 Client/PacketHandler/GCChangeWeatherHandler.cpp
 Client/PacketHandler/GCLightningHandler.cpp
 Client/PacketHandler/GCPetInfoHandler.cpp
+
+# The trade box's new-item reply, creating items through MItem::NewItem's factory.
+Client/PacketHandler/GCTradeAddItemHandler.cpp

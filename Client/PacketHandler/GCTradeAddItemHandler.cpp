@@ -9,7 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeAddItem.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 #include "MTradeManager.h"
 #include "MItem.h"
 

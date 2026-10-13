@@ -94,6 +94,10 @@ struct MItemHost {
 	void			(*UsePetFromInventory)(MItem* pPet);		// MPetItem::UseInventory's body, for the same reason: MPetItem's constructor and its life countdown are in MItem.cpp (the clocks work), so its vtable is emitted in the library and the use it names has to resolve here. NULL in a test binary: the use is a no-op.
 	// Identity-only notification: derived members have already been destroyed.
 	void			(*ItemDestroyed)(MItem* pItem) noexcept = nullptr;
+	// The executable's item factory: a new item of the class, or NULL for a
+	// class with no constructor there. MItem::NewItem range-checks the class
+	// first. NULL in a test binary that installs none: nothing is created.
+	MItem*			(*NewItem)(ITEM_CLASS itemClass) = nullptr;
 };
 
 //----------------------------------------------------------------------
