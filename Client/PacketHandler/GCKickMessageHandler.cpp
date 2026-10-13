@@ -10,13 +10,14 @@
 #include "Gpackets/GCKickMessage.h"
 
 	#include "MGameStringTable.h"
-	#include "MEventManager.h"
-	#include "ClientDef.h"
+	#include "MEventQueue.h"
+	#include "PlayerStateHost.h"
+	#include "WorldEventsHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Runs when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCKickMessageHandler::execute ( GCKickMessage * pPacket , Player * pPlayer )
@@ -37,7 +38,7 @@ void GCKickMessageHandler::execute ( GCKickMessage * pPacket , Player * pPlayer 
 			event.m_StringsID.push_back(STRING_MESSAGE_LOGOUT_BY_PAYTIME);
 			event.m_StringsID.push_back(STRING_MESSAGE_LOGOUT_AFTER_SECOND);
 						
-			g_pEventManager->AddEvent(event);
+			WorldEvents::AddEvent(event);
 		}
 		break;
 	case KICK_MESSAGE_EXPIRE_FREEPLAY :
@@ -47,13 +48,13 @@ void GCKickMessageHandler::execute ( GCKickMessage * pPacket , Player * pPlayer 
 			event.eventDelay = int( pPacket->getSeconds() * 1000 );
 			event.eventFlag = EVENTFLAG_SHOW_DELAY_STRING;
 			event.eventType = EVENTTYPE_ZONE;
-			if(g_pPlayer->IsSlayer())
+			if(PlayerState::GetRace() == RACE_SLAYER)
 				event.m_StringsID.push_back(STRING_MESSAGE_LOGOUT_BY_FREEPLAY_LEVEL);
 			else
 				event.m_StringsID.push_back(STRING_MESSAGE_LOGOUT_BY_LEVEL);
 			event.m_StringsID.push_back(STRING_MESSAGE_LOGOUT_AFTER_SECOND);
 
-			g_pEventManager->AddEvent(event);
+			WorldEvents::AddEvent(event);
 		}
 		break;
 	}		

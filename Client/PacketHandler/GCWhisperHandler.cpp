@@ -71,9 +71,11 @@ void GCWhisperHandler::execute ( GCWhisper * pPacket , Player * pPlayer )
 				Race race = (Race)pPacket->getRace();
 				if (PlayerState::GetRace() != race)
 				{
-					// INT goes up to 150.
+					// INT goes up to 150, and any INT from 300 reads at the cap,
+					// so a larger one the server sends is clamped there before
+					// the int arithmetic.
 					MStatus* pStatus = PlayerState::Status();
-					const int playerINT = pStatus != NULL ? static_cast<int>(pStatus->GetINT()) : 0;
+					const int playerINT = pStatus != NULL ? static_cast<int>(min(pStatus->GetINT(), static_cast<DWORD>(300))) : 0;
 					int percent = min(75, 25+playerINT*100/(min(2, PlayerState::GetRace()+1)*150));
 					
 					g_pChatManager->AddMask(str, percent);

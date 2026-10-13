@@ -5,6 +5,7 @@
 
 class BloodBibleSignInfo;
 class GCAddItemToZone;
+class MEvent;
 class MItem;
 class PetInfo;
 
@@ -12,7 +13,8 @@ namespace WorldEvents {
 
 // What a reply hands on to the executable's world and connections whole:
 // an item or portal appearing in the zone, the blood bible slots, the
-// weather and lightning, a pet's details, and a peer asking to disconnect.
+// weather and lightning, a pet's details, a peer asking to disconnect, and
+// an event for the event manager to run (a timed logout, say).
 // A missing host or entry adds no item (NULL) and skips the rest.
 struct Host
 {
@@ -23,6 +25,7 @@ struct Host
 	void (*SetLightning)(std::uint32_t delay) = nullptr;
 	void (*SetPetInfo)(PetInfo* pPetInfo, TYPE_OBJECTID objectID) = nullptr;
 	void (*RequestDisconnect)(const char* pName) = nullptr;
+	void (*AddEvent)(MEvent& event) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -34,5 +37,6 @@ void SetWeather(int weather, int level);
 void SetLightning(std::uint32_t delay);
 void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
 void RequestDisconnect(const char* pName);
+void AddEvent(MEvent& event);
 
 }

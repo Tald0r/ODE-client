@@ -885,3 +885,6 @@ Client/PacketHandler/LCRegisterPlayerErrorHandler.cpp
 # A whisper, filtered and masked for the player, over the communication
 # and player hosts.
 Client/PacketHandler/GCWhisperHandler.cpp
+
+# A kick warning queued as a timed logout, through the world-event host.
+Client/PacketHandler/GCKickMessageHandler.cpp

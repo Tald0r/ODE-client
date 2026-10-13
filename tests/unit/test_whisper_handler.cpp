@@ -182,8 +182,29 @@ TEST(WhisperHandler, AWhisperFromSomeoneIgnoredIsDropped)
 	World world;
 	world.chat.AddID("Vanda");
 	Receive("Vanda", kCursing);
+	// "GM" only marks an operator at the start of the name.
+	world.chat.AddID("NyxGM");
+	Receive("NyxGM", kCursing);
 	CHECK(calls.empty());
 	CHECK(world.Target() == "(none)");
+}
+
+TEST(WhisperHandler, CursesAreFilteredEvenWhenThePlayerTurnedTheFilterOff)
+{
+	World world;
+	const MChatHost unfiltered{.FilteringCurse = []() { return false; }};
+	const MChatHost* oldChatHost = MChatManager::SetHost(&unfiltered);
+	Receive("Vanda", kCursing);
+	MChatManager::SetHost(oldChatHost);
+	CHECK(calls == std::vector<std::string>{"Vanda|2|7|" + world.Filtered(kCursing)});
+}
+
+TEST(WhisperHandler, ATenCharacterNameIsShownWhole)
+{
+	World world;
+	Receive("Vandalorne", "hello");
+	CHECK(calls == std::vector<std::string>{"Vandalorne|2|7|hello"});
+	CHECK(world.Target() == "Vandalorne ");
 }
 
 TEST(WhisperHandler, AnOperatorsWhisperShowsWholeEvenIgnoredAndGoesToTheNotices)
@@ -239,12 +260,32 @@ TEST(WhisperHandler, AnotherRacesWhisperIsMaskedLessTheMoreINTThePlayerHas)
 #endif
 }
 
+TEST(WhisperHandler, AnyINTTheServerSetsReadsAsTheCap)
+{
+	World world;
+	const std::string line = LongLine();
+	// AffectModifyInfo stores whatever INT the server sends; every INT from
+	// 300 reads at the 75% cap, the largest included.
+	status.SetStatus(MODIFY_CURRENT_INT, 0xFFFFFFFFu);
+	Receive("Vanda", line, RACE_VAMPIRE);
+	CHECK_EQ(1u, calls.size());
+#ifndef _DEBUG
+	if (calls.size() == 1)
+	{
+		const int sharp = Masked(Shown(calls[0]), line);
+		CHECK(sharp > 15 && sharp < 50);
+	}
+#endif
+}
+
 TEST(WhisperHandler, MissingServicesStillSetTheTarget)
 {
 	World world;
 	CommunicationPresentation::SetHost(nullptr);
 	PlayerState::SetHost(nullptr);
 	Receive("Vanda", kCursing);
+	// Another race's whisper without a player reads with no INT.
+	Receive("Vanda", kCursing, RACE_VAMPIRE);
 	CHECK(calls.empty());
 	CHECK(world.Target() == "Vanda ");
 }

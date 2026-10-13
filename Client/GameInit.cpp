@@ -3601,6 +3601,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SetLightning = [](std::uint32_t delay) { SetLightning(delay); },
 	.SetPetInfo = SetPetInfo,
 	.RequestDisconnect = RequestDisconnect,
+	.AddEvent = [](MEvent& event) { if (g_pEventManager != NULL) g_pEventManager->AddEvent(event); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
