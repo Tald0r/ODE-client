@@ -12,7 +12,6 @@
 #include "DebugLog.h"
 #include "MActionResult.h"
 #include "ZoneStateHost.h"
-#include "MActionInfoTable.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////

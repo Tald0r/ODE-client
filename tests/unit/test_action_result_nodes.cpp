@@ -567,7 +567,11 @@ TEST(ActionResultNodes, TheHeldItemDecidesAPetsOrAnItemsChange)
 	world.Hold(ITEM_CLASS_EVENT_STAR, 23);
 	Run(MActionResultNodeChangeItemOptionInInventory(602, 6));
 	CHECK_EQ(6, sword->GetGrade());
-	// The mixing range ends at 18; past it the value is an option change.
+	// The mixing range is 9 to 18; outside it the value is an option change.
+	world.Hold(ITEM_CLASS_MIXING_ITEM, 8);
+	Run(MActionResultNodeChangeItemOptionInInventory(602, 4));
+	CHECK(sword->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({4}));
+	sword->ClearItemOption();
 	sword->AddItemOption(2);
 	world.Hold(ITEM_CLASS_MIXING_ITEM, 18);
 	Run(MActionResultNodeChangeItemOptionInInventory(602, 0));
@@ -582,7 +586,7 @@ TEST(ActionResultNodes, TheHeldItemDecidesAPetsOrAnItemsChange)
 	CHECK_EQ(95, static_cast<long long>(pet->GetCurrentDurability()));
 	CHECK(calls == std::vector<std::string>({"player.clearheld", kFanfare, "player.clearheld", kFanfare,
 		"player.clearheld", kFanfare, "player.clearheld", kFanfare, "player.clearheld", kFanfare,
-		"player.clearheld", kFanfare, "player.clearheld", kFanfare, "player.clearheld",
+		"player.clearheld", kFanfare, "player.clearheld", "player.clearheld", kFanfare, "player.clearheld",
 		"player.clearheld", kFanfare}));
 	CHECK_EQ(2, alive);
 }

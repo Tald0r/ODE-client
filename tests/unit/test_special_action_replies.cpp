@@ -303,7 +303,43 @@ TEST(SpecialActionReplies, AThrowOrDrainNeedsAZoneAndBothCreatures)
 	CHECK(calls.empty());
 }
 
-TEST(SpecialActionReplies, WithoutTheCreatureServiceNothingIsDoneAndTheQueuesAreFreed)
+// A node that counts its own destruction, to see a queue freed.
+int freed = 0;
+struct CountedNode : MActionResultNode
+{
+	~CountedNode() override { freed++; }
+	void Execute() override {}
+};
+
+MActionResult* CountedQueue()
+{
+	MActionResult* pResult = new MActionResult;
+	pResult->Add(new CountedNode);
+	return pResult;
+}
+
+TEST(SpecialActionReplies, AQueueNoEntryTakesIsFreed)
+{
+	World world;
+	FakeCreature& ogre = world.ogre;
+	freed = 0;
+	// Without a host, and with a host that lacks the entries.
+	const CreatureState::Host empty{};
+	for (const CreatureState::Host* host : {static_cast<const CreatureState::Host*>(nullptr), &empty})
+	{
+		CreatureState::SetHost(host);
+		CreatureState::PacketSpecialActionToSector(Handle(ogre), SKILL_DOUBLE_IMPACT, 1, 2, CountedQueue());
+		CreatureState::PacketSpecialActionToOther(Handle(ogre), SKILL_DOUBLE_IMPACT, 1002, CountedQueue());
+		CreatureState::PacketSpecialActionToSelf(Handle(ogre), SKILL_DOUBLE_IMPACT, CountedQueue());
+		CreatureState::PacketSpecialActionToNobody(Handle(ogre), SKILL_DOUBLE_IMPACT, 1, 2);
+		// No queue at all is fine too.
+		CreatureState::PacketSpecialActionToOther(Handle(ogre), SKILL_DOUBLE_IMPACT, 1002, nullptr);
+	}
+	CHECK_EQ(6, freed);
+	CHECK(calls.empty());
+}
+
+TEST(SpecialActionReplies, WithoutTheCreatureServiceNothingIsDone)
 {
 	World world;
 	CreatureState::SetHost(nullptr);

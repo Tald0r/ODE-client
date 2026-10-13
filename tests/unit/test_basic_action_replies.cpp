@@ -4,7 +4,6 @@
 #include "type_table_access.h"
 #include "MActionInfoTable.h"
 #include "MActionResult.h"
-#include "PlayerStateHost.h"
 #include "SkillDef.h"
 #include "ZoneStateHost.h"
 #include "Socket.h"
@@ -95,17 +94,9 @@ const CreatureState::Host creature = []() {
 	return host;
 }();
 
-FakeCreature self{7, "Self", 0, 0};
-
-const PlayerState::Host player = []() {
-	PlayerState::Host host{};
-	host.Creature = []() { return Handle(self); };
-	host.GetID = []() { return self.id; };
-	return host;
-}();
-
 constexpr TYPE_ACTIONINFO kMin = MIN_RESULT_ACTIONINFO;
-constexpr TYPE_ACTIONINFO kGun = SKILL_ATTACK_GUN_AR;
+// The attacker's basic action, apart from any constant the replies name.
+constexpr TYPE_ACTIONINFO kGun = SKILL_ATTACK_GUN_SR;
 const std::initializer_list<TYPE_ACTIONINFO> kOwnGunSkills = {SKILL_JABBING_VEIN, SKILL_MOLE_SHOT, SKILL_TRIDENT,
 	SKILL_QUICK_FIRE, SKILL_ULTIMATE_BLOW, SKILL_HARPOON_BOMB};
 
@@ -116,7 +107,6 @@ struct World : GameModelWorld
 	MActionInfoTable* oldActions = g_pActionInfoTable;
 	const ZoneState::Host* oldZone = ZoneState::SetHost(&zone);
 	const CreatureState::Host* oldCreature = CreatureState::SetHost(&creature);
-	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	World()
 	{
 		ogre = {1001, "Ogre", 10, 11, SKILL_ATTACK_MELEE};
@@ -130,7 +120,6 @@ struct World : GameModelWorld
 	}
 	~World()
 	{
-		PlayerState::SetHost(oldPlayer);
 		CreatureState::SetHost(oldCreature);
 		ZoneState::SetHost(oldZone);
 		g_pActionInfoTable = oldActions;
@@ -249,6 +238,19 @@ TEST(BasicActionReplies, AGunAtATargetHitsItWithTheWeaponOrOneOfSixSkills)
 TEST(BasicActionReplies, AGunAtATargetWithOnlyOneOfThemHereShowsThatOne)
 {
 	World world;
+	// Every own-action skill on each side: only the target is hit by the
+	// skill's own result; only the attacker fires four of them as
+	// themselves and Quick Fire and Harpoon Bomb as its weapon.
+	for (TYPE_ACTIONINFO skill : kOwnGunSkills)
+	{
+		calls.clear();
+		ReceiveGunAtTarget(4242, 1001, skill);
+		ReceiveGunAtTarget(1002, 4242, skill);
+		const bool asWeapon = skill == SKILL_QUICK_FIRE || skill == SKILL_HARPOON_BOMB;
+		CHECK(calls == std::vector<std::string>({"Ogre.result|" + N(skill + kMin) + "|1001|10|11",
+			"Vanda.nobody|" + N(asWeapon ? kGun : skill) + "|20|21"}));
+	}
+	calls.clear();
 	// Only the target: hit by the skill, or by a rifle.
 	ReceiveGunAtTarget(4242, 1001, SKILL_TRIDENT);
 	ReceiveGunAtTarget(4242, 1001, SKILL_DOUBLE_IMPACT);
@@ -271,14 +273,13 @@ TEST(BasicActionReplies, AGunAtATargetWithOnlyOneOfThemHereShowsThatOne)
 TEST(BasicActionReplies, AMeleeBlowUsesTheAttackersBasicAction)
 {
 	World world;
-	world.vanda.basic = SKILL_ATTACK_MELEE;
 	ReceiveMelee(1002, 1001);
-	CHECK(calls == Then({"Vanda.face|10|11", "Vanda.other|" + N(SKILL_ATTACK_MELEE) + "|1001"}, Hit(SKILL_ATTACK_MELEE)));
+	CHECK(calls == Then({"Vanda.face|10|11", "Vanda.other|" + N(kGun) + "|1001"}, Hit(kGun)));
 	calls.clear();
 	ReceiveMelee(4242, 1001);
 	ReceiveMelee(1002, 4242);
 	CHECK(calls == std::vector<std::string>({"Ogre.result|" + N(RESULT_SKILL_ATTACK_MELEE) + "|1001|10|11",
-		"Vanda.nobody|" + N(SKILL_ATTACK_MELEE) + "|20|21"}));
+		"Vanda.nobody|" + N(kGun) + "|20|21"}));
 	calls.clear();
 	ReceiveMelee(4242, 4243);
 	zoneExists = false;
@@ -313,6 +314,19 @@ TEST(BasicActionReplies, AWeaponSkillUsesTheBasicActionUnlessItIsAResult)
 	world.vanda.basic = kMin;
 	ReceiveObjectSkill(1002, SKILL_DOUBLE_IMPACT, 40, 41);
 	CHECK(calls.empty());
+}
+
+TEST(BasicActionReplies, WithoutTheBasicActionEntryAWeaponSkillDoesNothing)
+{
+	World world;
+	testfw::MutableRow(world.actions, SKILL_DOUBLE_IMPACT).SetAffectCurrentWeaponAction();
+	CreatureState::Host partial = creature;
+	partial.GetBasicActionInfo = nullptr;
+	CreatureState::SetHost(&partial);
+	// The basic action reads as ACTIONINFO_NULL, which is past the results.
+	ReceiveObjectSkill(1002, SKILL_DOUBLE_IMPACT, 40, 41);
+	CHECK(calls.empty());
+	CreatureState::SetHost(&creature);
 }
 
 TEST(BasicActionReplies, AnObjectSkillNeedsAZoneItsUserAndASkillInTheTable)

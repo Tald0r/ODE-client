@@ -10,7 +10,6 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCThrowItemOK3.h"
 #include "DebugLog.h"
-#include "MActionInfoTable.h"
 #include "MActionResult.h"
 #include "ZoneStateHost.h"
 #include "SkillDef.h"
@@ -68,7 +67,7 @@ void GCThrowItemOK3Handler::execute ( GCThrowItemOK3 * pPacket , Player * pPlaye
 
 			// The user faces the target.
 			CreatureState::SetDirectionToPosition(pUserCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature));
-			//CreatureState::SetDirectionToPosition(pTargetCreature, CreatureState::GetX(pUserCreature), CreatureState::GetY(pUserCreature));
+			//pTargetCreature->SetDirectionToPosition(pUserCreature->GetX(), pUserCreature->GetY());
 
 			//Duration_t	m_Duration;
 			CreatureState::PacketSpecialActionToOther(pUserCreature, skillType,
