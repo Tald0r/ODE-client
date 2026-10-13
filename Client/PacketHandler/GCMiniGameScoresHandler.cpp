@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMiniGameScores.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GameInfoPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -18,5 +17,5 @@ void GCMiniGameScoresHandler::execute ( GCMiniGameScores * pGCMiniGameScores , P
 
 {	
 	(void)pPlayer;
-	UI_MiniGameScores( pGCMiniGameScores );
+	GameInfoPresentation::MiniGameScores( pGCMiniGameScores );
 }

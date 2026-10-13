@@ -10,8 +10,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCNotifyWin.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "GameInfoPresentationHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -25,7 +24,7 @@ void GCNotifyWinHandler::execute ( GCNotifyWin * pPacket , Player * pPlayer )
 	(void)pPlayer;
 	
 	//cout << pPacket->toString() << endl;
-	UI_RunImageNotice( pPacket->getName().c_str(), pPacket->getGiftID() );
+	GameInfoPresentation::RunImageNotice( pPacket->getName().c_str(), pPacket->getGiftID() );
 
 	__END_CATCH
 }

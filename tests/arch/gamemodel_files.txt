@@ -739,3 +739,11 @@ Client/TradePresentationHost.h
 Client/PacketHandler/GCGoodsListHandler.cpp
 Client/PacketHandler/GCMakeItemFailHandler.cpp
 Client/PacketHandler/GCTradeFinishHandler.cpp
+
+# NPC map, skill teaching, mini-game and prize-notice replies and their presentation service.
+Client/GameInfoPresentationHost.cpp
+Client/GameInfoPresentationHost.h
+Client/PacketHandler/GCMiniGameScoresHandler.cpp
+Client/PacketHandler/GCNPCInfoHandler.cpp
+Client/PacketHandler/GCNotifyWinHandler.cpp
+Client/PacketHandler/GCTeachSkillInfoHandler.cpp
