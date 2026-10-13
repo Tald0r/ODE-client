@@ -9,7 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCKnocksTargetBackOK2.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -18,15 +23,22 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do (the game crashed here).
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -34,9 +46,9 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 	}
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -45,7 +57,7 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 	}	
 
 
-	int skillType = pPacket->getSkillType();	//pCreature->GetBasicActionInfo(),	// 기본 공격 == 총!? 	
+	int skillType = pPacket->getSkillType();	//pCreature->GetBasicActionInfo(),	// the basic attack, a gun? 	
 	
 	if( skillType >= g_pActionInfoTable->GetSize() )
 	{
@@ -54,30 +66,29 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 	}
 	
 	//------------------------------------------------------
-	// 물러나는방향(direction)적용..
+	// The direction it is knocked back in.
 	//------------------------------------------------------
 	unsigned short x = pPacket->getX();
 	unsigned short y = pPacket->getY();
 		
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The creatures involved.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 	
 	if (pCreature==NULL)
 	{
-		// 그런 creature가 없을 경우
+		// No such creature.
 		DEBUG_ADD_FORMAT("There's no such creature : ID=%d, Skill=%d", pPacket->getObjectID(), pPacket->getSkillType());
 		
-		// 바로 적용
-		g_pPlayer->SetServerPosition( x, y );		
-		g_pPlayer->MovePosition( x, y );
-		g_pPlayer->SetStop();
+		// Apply it at once.
+		CreatureState::SetServerPosition(pPlayerCreature, x, y );		
+		CreatureState::MovePosition(pPlayerCreature, x, y );
+		CreatureState::SetStop(pPlayerCreature);
 
-		// 결과 바로 표현
-		g_pPlayer->PacketSpecialActionResult( 
-							static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
+		// Show the result at once.
+		CreatureState::PacketSpecialActionResult(pPlayerCreature, static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
 							OBJECTID_NULL,
 							x,
 							y
@@ -85,71 +96,56 @@ void GCKnocksTargetBackOK2Handler::execute ( GCKnocksTargetBackOK2 * pPacket , P
 	}
 	else
 	{	
-		// 이동한 후의 좌표가 온다.
+		// The packet carries the cell after the move.
 		//MCreature::GetPositionToDirection(x, y, pPacket->getDir());
 
 
 		//------------------------------------------------------
-		// 행동하는 Creature가 player를 바라보도록 한다.
+		// The acting creature faces the player.
 		//------------------------------------------------------
-		pCreature->SetDirectionToPosition( g_pPlayer->GetX(), g_pPlayer->GetY() );
+		CreatureState::SetDirectionToPosition(pCreature, CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature) );
 
 		//------------------------------------------------------
-		// 결과 설정
+		// The result
 		//------------------------------------------------------
-		// Creature가 Player를 공격하는 모습
+		// The creature attacks the player.
 		//g_pPlayer->PacketSpecialActionResult( SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo() );
 
-		/*
-		MActionResult* pResult = new MActionResult;
-		pResult->Add( new MActionResultNodeActionInfo( 
-									skillType,		// 기본 공격 == 총!? 
-									pPacket->getObjectID(), 
-									g_pPlayer->GetID(), 
-									g_pPlayer->GetX(),
-									g_pPlayer->GetY()
-						) 
-					);
-
-		// Player의 좌표가 바뀌는 결과
-		pResult->Add( new MActionResultNodeChangePosition( g_pPlayer->GetID(), x, y) );
-		*/
 
 		//------------------------------------------------------
-		// Creature가 행동을 취하도록 한다.
+		// The creature acts.
 		//------------------------------------------------------
-		pCreature->PacketSpecialActionToOther(
-						skillType,
-						g_pPlayer->GetID(), 
+		CreatureState::PacketSpecialActionToOther(pCreature, skillType,
+						PlayerState::GetID(), 
 						NULL	//pResult
 		);
 
 		//------------------------------------------------------
-		// 동기화 문제 때문에..
-		// 결과를 바로 표현한다.
+		// To stay in sync,
+		// Show the result at once.
 		//------------------------------------------------------
-		// 바로 적용
-		g_pPlayer->SetServerPosition( x, y );		
-		g_pPlayer->MovePosition( x, y );
-		g_pPlayer->SetStop();
+		// Apply it at once.
+		CreatureState::SetServerPosition(pPlayerCreature, x, y );		
+		CreatureState::MovePosition(pPlayerCreature, x, y );
+		CreatureState::SetStop(pPlayerCreature);
 
-		// 결과 바로 표현
-		g_pPlayer->PacketSpecialActionResult( 
-							static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
-							pCreature->GetID(),
-							pCreature->GetX(),
-							pCreature->GetY()
+		// Show the result at once.
+		CreatureState::PacketSpecialActionResult(pPlayerCreature, static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
+							CreatureState::GetID(pCreature),
+							CreatureState::GetX(pCreature),
+							CreatureState::GetY(pCreature)
 		);
 	}
 
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

@@ -964,3 +964,10 @@ Client/PacketHandler/GCAttackArmsOK3Handler.cpp
 Client/PacketHandler/GCAttackArmsOK5Handler.cpp
 Client/PacketHandler/GCAttackMeleeOK3Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK3Handler.cpp
+
+# Skill replies between the player and a creature: the player drains a
+# creature or is drained, is knocked back, or is hit by holy water.
+Client/PacketHandler/GCBloodDrainOK1Handler.cpp
+Client/PacketHandler/GCBloodDrainOK2Handler.cpp
+Client/PacketHandler/GCKnocksTargetBackOK2Handler.cpp
+Client/PacketHandler/GCThrowItemOK2Handler.cpp
