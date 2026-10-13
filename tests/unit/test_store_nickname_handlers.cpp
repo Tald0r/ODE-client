@@ -176,7 +176,9 @@ TEST(StoreNicknameHandlers, NicknamesGoToTheUIObjectsList)
 {
 	World world;
 	GCAddNickname add;
-	add.getNicknameInfo().setNickname("Lantern");
+	// A std::string: NicknameInfo also has setNickname(char*), which GCC
+	// picks for a literal and warns about (-Wwrite-strings).
+	add.getNicknameInfo().setNickname(std::string("Lantern"));
 	GCAddNicknameHandler::execute(&add, nullptr);
 	GCNicknameList list;
 	list.getAddresses().push_back(new NicknameInfo);
