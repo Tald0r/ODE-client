@@ -175,7 +175,7 @@ void StampFrameClock()
 // minimize | anotherWnd click--> !ActiveGame
 BOOL				g_bActiveApp			= FALSE; // Is application active?
 BOOL				g_bActiveGame			= FALSE; // Is Game Active?
-BOOL				g_bNeedUpdate			= FALSE; // update해야되나?
+// g_bNeedUpdate, whether the client is quitting to be updated, is ClientMode.cpp's.
 
 DWORD				g_double_click_time = 0;
 

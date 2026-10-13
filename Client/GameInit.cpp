@@ -126,6 +126,7 @@
 #include "MNPC.h"
 #include "WorldEventsHost.h"
 #include "VsUiPresentationHost.h"
+#include "VS_UI_Message.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -3521,6 +3522,7 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
 	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
 	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
+	.ShowMessage = g_ShowMessage,
 };
 
 static const PlayerState::Host s_PlayerStateHost = {

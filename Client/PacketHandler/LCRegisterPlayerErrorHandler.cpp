@@ -9,9 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCRegisterPlayerError.h"
-#include "ClientDef.h"
+#include "ClientMode.h"
+#include "DebugLog.h"
+#include "LoginPresentationHost.h"
 #include "MGameStringTable.h"
-#include "VS_UI_Message.h"
 
 extern BOOL		g_bNeedUpdate;
 
@@ -49,7 +50,7 @@ void LCRegisterPlayerErrorHandler::execute ( LCRegisterPlayerError * pPacket , P
 		}
 
 		// VS_UI dialog: UIDialog's popup draws no text on the login screen.
-		g_ShowMessage( (*g_pGameStringTable)[stringID].GetString() );
+		LoginPresentation::ShowMessage( (*g_pGameStringTable)[stringID].GetString() );
 	}
 
 	// Back to the login window.

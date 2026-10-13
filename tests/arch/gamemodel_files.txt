@@ -876,3 +876,8 @@ Client/MHelpDisplayer.h
 
 # A mine installed in the zone, through the world-event and item hosts.
 Client/PacketHandler/GCAddInstalledMineToZoneHandler.cpp
+
+# Login and registration errors, over the login host and the client mode
+# (with the update flag the client mode now owns).
+Client/PacketHandler/LCLoginErrorHandler.cpp
+Client/PacketHandler/LCRegisterPlayerErrorHandler.cpp

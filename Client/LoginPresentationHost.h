@@ -32,6 +32,7 @@ struct Host
 	bool (*IsSelectPCMode)() = nullptr;
 	void (*PopupErrorMessage)(int errorID) = nullptr;
 	void (*QueueWaitSelectPCMode)() = nullptr;
+	void (*ShowMessage)(const char* message) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -53,5 +54,6 @@ void QueueLoginWrongMode();
 bool IsSelectPCMode();
 void PopupErrorMessage(int errorID);
 void QueueWaitSelectPCMode();
+void ShowMessage(const char* message);
 
 }

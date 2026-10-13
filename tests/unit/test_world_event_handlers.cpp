@@ -142,7 +142,7 @@ void ReceiveLightning(BYTE delay)
 	GCLightningHandler::execute(&packet, nullptr);
 }
 
-// Every handler once: seven calls with a host.
+// Every handler once: eight calls with a host.
 void RunEveryHandler()
 {
 	Peer peer;
@@ -164,6 +164,9 @@ void RunEveryHandler()
 	petInfo.setObjectID(55);
 	petInfo.setPetInfo(&pet);
 	GCPetInfoHandler::execute(&petInfo, nullptr);
+	GCAddInstalledMineToZone mine;
+	mine.setObjectID(78);
+	GCAddInstalledMineToZoneHandler::execute(&mine, nullptr);
 }
 
 } // namespace
@@ -194,6 +197,8 @@ TEST(WorldEventHandlers, ANewItemIsAddedToTheZoneWithoutADrop)
 TEST(WorldEventHandlers, AnInstalledMineIsAddedWithoutADropAndMarkedInstalled)
 {
 	World world;
+	// Outlives the items, whose destructors read the installed item host.
+	const MItemHost unmarking{};
 	Ware mine(ITEM_CLASS_MINE, 78);
 	Ware sword(ITEM_CLASS_SWORD, 79);
 	GCAddInstalledMineToZone packet;
@@ -212,12 +217,15 @@ TEST(WorldEventHandlers, AnInstalledMineIsAddedWithoutADropAndMarkedInstalled)
 	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
 	CHECK(calls == std::vector<std::string>({"additem|79|0", "additem|79|0"}));
 
-	// Without an item service the mine is added and left as it is.
+	// Without an item service, or with one that cannot mark a mine, the
+	// mine is added and left as it is.
 	calls.clear();
 	MItem::SetHost(nullptr);
 	added = &mine;
 	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
-	CHECK(calls == std::vector<std::string>{"additem|79|0"});
+	MItem::SetHost(&unmarking);
+	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
+	CHECK(calls == std::vector<std::string>({"additem|79|0", "additem|79|0"}));
 }
 
 TEST(WorldEventHandlers, AVampirePortalCarriesItsOwnerPlaceTargetAndFrameDuration)
@@ -265,5 +273,5 @@ TEST(WorldEventHandlers, MissingHostsAndEntriesSkipEverything)
 	CHECK(calls.empty());
 	CHECK(WorldEvents::SetHost(&host) == &empty);
 	RunEveryHandler();
-	CHECK_EQ(7u, calls.size());
+	CHECK_EQ(8u, calls.size());
 }
