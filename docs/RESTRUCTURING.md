@@ -2731,17 +2731,18 @@ rounds settled* for the host rules). Test fixtures share
   `GCTradeFinishHandler`, `GCMakeItemFailHandler` and `GCGoodsListHandler`
   into `gamemodel` behind the presentation-only `TradePresentation::Host`
   installed and reset by `GameInit.cpp`.
-  > **Status:** done (2026-10-13). As in 4.92, each `UI_*` call becomes the
-  > host entry of the same name; `IsRunningExchange` answers that no exchange
+  > **Status:** done (2026-10-13; PR #393). As in 4.92, each `UI_*` call
+  > becomes the host entry of the same name; `IsRunningExchange` answers that no exchange
   > window is open when no host is installed, so a rejection then closes
   > nothing. The trade reply keeps driving the trade manager (accept,
   > reconsider, execute, and on a rejection returning the offered money)
   > with or without a host; `GCMakeItemFailHandler` includes `DebugLog.h`
-  > for the `DEBUG_ADD_ERR` the executable headers brought in. R1 is 308
-  > Windows / 306 Ninja.
+  > for the `DEBUG_ADD_ERR` the executable headers brought in. Both handlers
+  > still use `g_pTempInformation` unguarded. R1 is 308 Windows / 306 Ninja.
   - Owner: membership, R1, designated host installation/reset and
     `test_trade_presentation_handlers.cpp` (decoded trade replies against a
-    real trade manager; the rejection's money and window order; the crafting
+    real trade manager, executed and refused trades; the refund before the
+    close, which ends the request as the real one does; the crafting
     request check and reset order; missing hosts, empty entries and host
     replacement).
 
@@ -2859,6 +2860,14 @@ clears it, so requests that need an idle register, such as trading, stay
 blocked until something else resets it; it also overwrites any request
 already pending. `UI_SetBloodBibleStatus` leaves `status.status`
 uninitialised for storage or race values it does not handle.
+
+Follow-ups from 4.95, older than the move: crafting overwrites any pending
+request with `MODE_SKILL_MAKE_ITEM` and locks the item, and the reply
+unlocks it only if that mode is still set, so anything that changes the
+mode meanwhile (`UI_RunItemShop`, which clears any pending request, the
+address-book reset, the quest list) leaves the item locked. If the purse
+is too full to take the offer back, `CancelTrade` leaves it in the trade
+box and `UI_CloseExchange` then deletes the trade manager with it.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This

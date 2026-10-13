@@ -26,12 +26,18 @@ namespace {
 std::vector<std::string> calls;
 bool exchangeOpen = false;
 int modeAtUnlock = -1;
+long long purseAtClose = -1;
 
 std::string Address(const void* pointer) { return std::to_string(reinterpret_cast<std::uintptr_t>(pointer)); }
 
 const TradePresentation::Host host{
 	.IsRunningExchange = []() { calls.push_back("running?"); return exchangeOpen; },
-	.CloseExchange = []() { calls.push_back("close"); },
+	// As UI_CloseExchange does, closing the exchange ends any trade request.
+	.CloseExchange = []() {
+		purseAtClose = g_pMoneyManager ? g_pMoneyManager->GetMoney() : -1;
+		if (g_pTempInformation) g_pTempInformation->SetMode(TempInformation::MODE_NULL);
+		calls.push_back("close");
+	},
 	.CloseExchangeAsk = []() { calls.push_back("closeask"); },
 	.CloseExchangeCancel = []() { calls.push_back("closecancel"); },
 	.UnlockItem = []() {
@@ -61,6 +67,7 @@ struct World : GameModelWorld
 		calls.clear();
 		exchangeOpen = false;
 		modeAtUnlock = -1;
+		purseAtClose = -1;
 	}
 	~World()
 	{
@@ -96,10 +103,12 @@ void ReceiveMakeItemFail()
 	GCMakeItemFailHandler::execute(&packet, nullptr);
 }
 
-// One reply for each of the six host entries.
+// Every host entry is asked for at least once: seven calls with a host.
 void RunEveryHandler(World& world)
 {
 	exchangeOpen = true;
+	ReceiveTradeFinish(GC_TRADE_FINISH_REJECT);
+	exchangeOpen = false;
 	world.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
 	ReceiveTradeFinish(GC_TRADE_FINISH_REJECT);
 	world.temp.SetMode(TempInformation::MODE_SKILL_MAKE_ITEM);
@@ -118,31 +127,55 @@ TEST(TradePresentationHandlers, AcceptReconsiderAndExecuteDriveOnlyTheTradeManag
 	ReceiveTradeFinish(GC_TRADE_FINISH_RECONSIDER);
 	CHECK(!g_pTradeManager->IsAcceptOtherTrade());
 
+	// Executing trades: the other side's offer reaches the purse.
+	g_pTradeManager->GetOtherMoneyManager()->SetMoney(200);
 	g_pTradeManager->AcceptMyTrade();
 	ReceiveTradeFinish(GC_TRADE_FINISH_ACCEPT);
 	ReceiveTradeFinish(GC_TRADE_FINISH_EXECUTE);
+	CHECK_EQ(1200, static_cast<long long>(g_pMoneyManager->GetMoney()));
+	CHECK_EQ(0, static_cast<long long>(g_pTradeManager->GetOtherMoneyManager()->GetMoney()));
+	CHECK(!g_pTradeManager->IsAcceptMyTrade());
+	CHECK(!g_pTradeManager->IsAcceptOtherTrade());
+
+	// A trade the purse cannot take fails, and both acceptances still end.
+	const int full = g_pMoneyManager->GetMoney() + g_pMoneyManager->GetMaxAddMoney();
+	g_pMoneyManager->SetMoney(full);
+	g_pTradeManager->GetOtherMoneyManager()->SetMoney(200);
+	g_pTradeManager->AcceptMyTrade();
+	ReceiveTradeFinish(GC_TRADE_FINISH_ACCEPT);
+	ReceiveTradeFinish(GC_TRADE_FINISH_EXECUTE);
+	CHECK_EQ(full, static_cast<long long>(g_pMoneyManager->GetMoney()));
+	CHECK_EQ(200, static_cast<long long>(g_pTradeManager->GetOtherMoneyManager()->GetMoney()));
 	CHECK(!g_pTradeManager->IsAcceptMyTrade());
 	CHECK(!g_pTradeManager->IsAcceptOtherTrade());
 	CHECK(calls.empty());
 }
 
-TEST(TradePresentationHandlers, ARejectionReturnsTheOfferAndClosesWhatIsOpen)
+TEST(TradePresentationHandlers, ARejectionReturnsTheOfferBeforeClosingTheExchange)
 {
 	World world;
 	g_pTradeManager->GetMyMoneyManager()->SetMoney(300);
 	exchangeOpen = true;
 	world.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
 	ReceiveTradeFinish(GC_TRADE_FINISH_REJECT);
-	CHECK_EQ(1300, static_cast<long long>(g_pMoneyManager->GetMoney()));
+	CHECK_EQ(1300, purseAtClose);
 	CHECK_EQ(0, static_cast<long long>(g_pTradeManager->GetMyMoneyManager()->GetMoney()));
-	CHECK_EQ(4u, calls.size());
-	CHECK(calls.size() == 4 && calls[0] == "running?" && calls[1] == "close"
-		&& calls[2] == "closecancel" && calls[3] == "closeask");
-	// The rejection leaves the trade request for its dialog to clear.
+	// The close ended the request, so its windows are not closed again.
+	CHECK_EQ(2u, calls.size());
+	CHECK(calls.size() == 2 && calls[0] == "running?" && calls[1] == "close");
+}
+
+TEST(TradePresentationHandlers, ARejectionOfAPendingRequestClosesItsWindows)
+{
+	World world;
+	world.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
+	ReceiveTradeFinish(GC_TRADE_FINISH_REJECT);
+	CHECK_EQ(3u, calls.size());
+	CHECK(calls.size() == 3 && calls[0] == "running?" && calls[1] == "closecancel" && calls[2] == "closeask");
+	// The windows' own close functions end the request, not the handler.
 	CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_REQUEST);
 
 	calls.clear();
-	exchangeOpen = false;
 	world.temp.SetMode(TempInformation::MODE_NULL);
 	ReceiveTradeFinish(GC_TRADE_FINISH_REJECT);
 	CHECK_EQ(1u, calls.size());
@@ -194,6 +227,7 @@ TEST(TradePresentationHandlers, MissingHostsAndEntriesSkipPresentationOnly)
 	World world;
 	TradePresentation::SetHost(nullptr);
 	g_pTradeManager->GetMyMoneyManager()->SetMoney(50);
+	CHECK(!TradePresentation::IsRunningExchange());
 	RunEveryHandler(world);
 	CHECK(calls.empty());
 	CHECK_EQ(1050, static_cast<long long>(g_pMoneyManager->GetMoney()));
@@ -202,7 +236,8 @@ TEST(TradePresentationHandlers, MissingHostsAndEntriesSkipPresentationOnly)
 	CHECK(TradePresentation::SetHost(&empty) == nullptr);
 	RunEveryHandler(world);
 	CHECK(calls.empty());
+	CHECK(!TradePresentation::IsRunningExchange());
 	CHECK(TradePresentation::SetHost(&host) == &empty);
 	RunEveryHandler(world);
-	CHECK_EQ(6u, calls.size());
+	CHECK_EQ(7u, calls.size());
 }
