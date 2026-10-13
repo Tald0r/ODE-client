@@ -918,3 +918,6 @@ Client/PacketHandler/GCPartyLeaveHandler.cpp
 
 # An item an NPC sold, off its special shelf, over the zone and creature hosts.
 Client/PacketHandler/GCShopSoldHandler.cpp
+
+# A refused party request, over the player, dialog and communication hosts.
+Client/PacketHandler/GCPartyErrorHandler.cpp

@@ -35,6 +35,7 @@ struct Host
 	bool (*HideLairMessages)() = nullptr;
 	bool (*HideWarMessages)() = nullptr;
 	void (*CloseParty)() = nullptr;
+	void (*ClosePartyCancel)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -60,5 +61,6 @@ bool HideHolyLandMessages();
 bool HideLairMessages();
 bool HideWarMessages();
 void CloseParty();
+void ClosePartyCancel();
 
 }

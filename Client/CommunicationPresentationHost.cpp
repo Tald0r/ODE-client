@@ -118,4 +118,9 @@ void CloseParty()
 	if (s_Host && s_Host->CloseParty) s_Host->CloseParty();
 }
 
+void ClosePartyCancel()
+{
+	if (s_Host && s_Host->ClosePartyCancel) s_Host->ClosePartyCancel();
+}
+
 }
