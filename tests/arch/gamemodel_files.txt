@@ -807,3 +807,14 @@ Client/PacketHandler/GCMoveHandler.cpp
 Client/PacketHandler/GCNPCSayHandler.cpp
 Client/PacketHandler/GCNPCSayDynamicHandler.cpp
 Client/PacketHandler/GCStatusCurrentHPHandler.cpp
+
+# Replies handed on whole to the executable's world and connections, and that service.
+Client/WorldEventsHost.cpp
+Client/WorldEventsHost.h
+Client/PacketHandler/CRDisconnectHandler.cpp
+Client/PacketHandler/GCAddNewItemToZoneHandler.cpp
+Client/PacketHandler/GCAddVampirePortalHandler.cpp
+Client/PacketHandler/GCBloodBibleSignInfoHandler.cpp
+Client/PacketHandler/GCChangeWeatherHandler.cpp
+Client/PacketHandler/GCLightningHandler.cpp
+Client/PacketHandler/GCPetInfoHandler.cpp

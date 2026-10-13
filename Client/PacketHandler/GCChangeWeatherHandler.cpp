@@ -11,7 +11,7 @@
 
 	#include "ClientPlayer.h"
 
-#include "ClientDef.h"
+#include "WorldEventsHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ void GCChangeWeatherHandler::execute ( GCChangeWeather * pPacket , Player * pPla
 		
 
 	
-	SetWeather( pPacket->getWeather(), pPacket->getWeatherLevel() );	
+	WorldEvents::SetWeather( pPacket->getWeather(), pPacket->getWeatherLevel() );	
 
 
 	__END_CATCH

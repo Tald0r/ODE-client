@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddNewItemToZone.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "WorldEventsHost.h"
 #include "MItem.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -32,7 +33,7 @@ void GCAddNewItemToZoneHandler::execute ( GCAddNewItemToZone * pPacket , Player 
 	#endif
 	
 	// dropping = FALSE
-	AddItemToZone( (GCAddItemToZone*) pPacket, FALSE );	
+	WorldEvents::AddItemToZone( (GCAddItemToZone*) pPacket, FALSE );	
 	
 
 	__END_CATCH

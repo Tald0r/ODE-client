@@ -7,7 +7,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "Client_PCH.h"
 #include "Gpackets/GCAddVampirePortal.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "WorldEventsHost.h"
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -37,7 +38,7 @@ void GCAddVampirePortalHandler::execute ( GCAddVampirePortal * pPacket , Player 
 	// 오래된거면 mainNode부터 실행해야되지..
 	bool bStartFromMainNode = (pPacket->getCreateFlag()==0);
 
-	AddVampirePortal( serverID, 
+	WorldEvents::AddVampirePortal( serverID, 
 						ownerName, 
 						sX, sY,	
 						delayFrame,	
