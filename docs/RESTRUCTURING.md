@@ -3131,6 +3131,30 @@ Follow-ups from 4.101, all older than the move:
   row with a NULL string does the same). `g_pNickNameStringTable` itself
   is unguarded.
 
+Follow-ups from 4.102, all older than the move:
+- **A peer can make the client free the connection it is reading from.**
+  `CR_DISCONNECT` is accepted from a peer (`CPS_REQUEST_SERVER_NORMAL`), and
+  `RequestDisconnect` reaches `RequestServerPlayerManager::Disconnect`,
+  which deletes the player of that name. A peer naming itself deletes the
+  `RequestServerPlayer` whose `processCommand()` is dispatching the packet,
+  which then reads its freed input stream, and `Update()` goes on to call
+  `processOutput()` on it and advance an erased iterator. Traced, not run;
+  reachable from any peer.
+- `SetBloodBibleSlot` indexes `g_abHolyLandBonusSkills` (12 entries) with
+  the wire's unchecked item type, follows a sign list whose length
+  `BloodBibleSignInfo::read` never bounds, and uses `g_pPlayer` unguarded.
+  `GCBloodBibleSignInfo` leaves `m_pInfo` uninitialised until `read`, never
+  frees the info `read` allocates, and `BloodBibleSignInfo` leaves
+  `m_ListSize` uninitialised for `write`.
+- `GCPetInfo` never frees the `PetInfo` its `read` allocates; `SetPetInfo`
+  uses `g_pZone` unguarded.
+- `GCChangeWeather::read` casts any byte to `Weather` (values 0-4, no fixed
+  underlying type), undefined from 8 up; `SetWeather` does not bound the
+  level. `SetLightning` uses `g_pZone` and `g_pPlayer` unguarded.
+- `GCAddInstalledMineToZoneHandler` stays in the executable: its mine
+  branch needs an `MMine`. A host entry that marks a mine installed on the
+  executable side would let it move.
+
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This
 slice adds no exemptions or changes to R1's denominator. Decide the entry-point

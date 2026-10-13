@@ -84,11 +84,15 @@ struct LoginConnection : ClientPlayer
 	~LoginConnection() { setPlayerStatus(CPS_END_SESSION); }
 };
 
+// An owner name longer than std::string's inline buffer, so a pointer into
+// a dead temporary would read freed heap that ASan reports.
+const char* const kOwner = "Nyx of the Long Night Hall";
+
 void ReceivePortal(BYTE createFlag)
 {
 	GCAddVampirePortal original;
 	original.setObjectID(9001);
-	original.setOwnerID("Nyx");
+	original.setOwnerID(kOwner);
 	original.setX(31);
 	original.setY(32);
 	original.setDuration(600);
@@ -174,8 +178,10 @@ TEST(WorldEventHandlers, AVampirePortalCarriesItsOwnerPlaceTargetAndFrameDuratio
 	World world;
 	ReceivePortal(0);
 	ReceivePortal(1);
-	const std::string common = "portal|9001|Nyx|31|32|" + N(ConvertDurationToFrame(600)) + "|1201|140|150|";
-	CHECK(calls == std::vector<std::string>({common + "1", common + "0"}));
+	ReceivePortal(2);
+	const std::string common = "portal|9001|" + std::string(kOwner) + "|31|32|" + N(ConvertDurationToFrame(600)) + "|1201|140|150|";
+	// Only create flag 0 starts the portal from its main node.
+	CHECK(calls == std::vector<std::string>({common + "1", common + "0", common + "0"}));
 	CHECK(ConvertDurationToFrame(600) != 600);
 }
 
