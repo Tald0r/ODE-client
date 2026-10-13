@@ -3219,15 +3219,23 @@ Follow-ups from 4.101, all older than the move:
 
 Follow-ups from 4.102, all older than the move:
 - **Fixed: a peer could make the client free the connection it was
-  reading from.** `CR_DISCONNECT` is accepted from a connected peer
-  (`CPS_REQUEST_SERVER_NORMAL`, after `CRConnect` named this character in
-  game), and its handler asks `RequestDisconnect` to drop the sender by the
-  sender's own name. `RequestServerPlayerManager::Disconnect` deleted that
+  reading from.** `CR_DISCONNECT` is accepted from a peer in
+  `CPS_REQUEST_SERVER_NORMAL`, which any peer that reaches the port gets:
+  through `CRConnect` naming this character in game, or with no check at
+  all through a guild-mark `CRRequest`, which names the peer by its address.
+  The handler asks `RequestDisconnect` to drop the sender by the sender's
+  own name. `RequestServerPlayerManager::Disconnect` deleted that
   `RequestServerPlayer` while its `processCommand()` was still dispatching:
   the dispatch then wrote and read the freed object, and `Update()` called
   `processOutput()` on it and advanced an erased iterator. A disconnect
   asked for during `Update()` is now queued and carried out after the
-  loop; outside `Update()` it is immediate, as before.
+  loop; outside `Update()` it is immediate, as before. A disconnect whose
+  flush the connection refuses now closes the socket without it, after the
+  peer has left the list and the lock is released, and the queued drops each
+  catch their own failure, so neither escapes `Update()` (a regression guard:
+  provoking a refused flush needs a reset connection with unsent bytes, and
+  the socket layer does not suppress `SIGPIPE`, so a test would kill the
+  test process on POSIX; the request server runs on Windows).
   `test_peer_self_disconnect.cpp` drives two real loopback peers through
   the real factory, validator and handler; before the fix the ASan tree
   reported the heap-use-after-free and the plain tree crashed.

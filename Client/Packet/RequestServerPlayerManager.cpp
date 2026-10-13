@@ -173,15 +173,22 @@ RequestServerPlayerManager::Disconnect(const char* pName)
 	{
 		RequestServerPlayer* pPlayer = *iPlayer;
 
-		// 같은 이름의 player의 접속을 해제시킨다.
+		// Drop the player of that name. It leaves the list, and the lock is
+		// released, before anything that can throw: a flush the reset
+		// connection refuses is given up and the socket closed without it,
+		// rather than leaving the peer listed and the lock held.
 		if (pPlayer->getName()==pName)
 		{
-			pPlayer->disconnect(UNDISCONNECTED);
-			delete pPlayer;
-
 			m_listRequestServerPlayer.erase( iPlayer );
-
 			Unlock();
+
+			try {
+				pPlayer->disconnect(UNDISCONNECTED);
+			} catch (Throwable& t) {
+				DEBUG_ADD_ERR(t.toString().c_str());
+				pPlayer->disconnect(DISCONNECTED);
+			}
+			delete pPlayer;
 			return;
 		}
 		
@@ -304,7 +311,13 @@ RequestServerPlayerManager::Update()
 	pending.swap(m_PendingDisconnects);
 	for (const std::string& name : pending)
 	{
-		Disconnect(name.c_str());
+		// Outside the loop's own catches: one failure must not escape
+		// Update() or keep the rest from being dropped.
+		try {
+			Disconnect(name.c_str());
+		} catch (Throwable& t) {
+			DEBUG_ADD_ERR(t.toString().c_str());
+		}
 	}
 
 	Unlock();
