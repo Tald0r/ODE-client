@@ -3557,6 +3557,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
 	.Creature = []() -> MCreature* { return g_pPlayer; },
 	.IsOperator = []() { return g_pPlayer != NULL && g_pPlayer->IsOperator(); },
+	.GetSight = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->GetSight()) : 0; },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3566,6 +3567,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.AddHelicopter = [](TYPE_OBJECTID creatureID, int x0, int y0) { return g_pZone->AddHelicopter(creatureID, x0, y0); },
 	.RemoveHelicopter = [](TYPE_OBJECTID creatureID) { g_pZone->RemoveHelicopter(creatureID); },
 	.AddCorpseFromCreature = [](TYPE_OBJECTID id) { return g_pZone->AddCorpseFromCreature(id); },
+	.GetID = []() { return g_pZone != NULL ? static_cast<int>(g_pZone->GetID()) : ZONEID_NULL; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3613,6 +3615,8 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SetPetInfo = SetPetInfo,
 	.RequestDisconnect = RequestDisconnect,
 	.AddEvent = [](MEvent& event) { if (g_pEventManager != NULL) g_pEventManager->AddEvent(event); },
+	.RemoveEvent = [](int eventID) { if (g_pEventManager != NULL) g_pEventManager->RemoveEvent(static_cast<EVENT_ID>(eventID)); },
+	.PlayMusicCurrentZone = PlayMusicCurrentZone,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

@@ -9,17 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Rpackets/RCPositionInfo.h"
+#include "CMessageArray.h"
+#include "ClientMode.h"
+#include "GameMessages.h"
 #include "MParty.h"
+#include "PlayerStateHost.h"
 #include "RequestUserManager.h"
-#include "ClientDef.h"
-
-#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
-	extern CMessageArray*		g_pGameMessage;
-#endif
-
-extern int					g_nZoneLarge;
-extern int					g_nZoneSmall;
-extern bool					g_bZonePlayerInLarge;
+#include "ZoneFlags.h"
+#include "ZoneStateHost.h"
 
 
 //----------------------------------------------------------------------
@@ -34,15 +31,15 @@ void RCPositionInfoHandler::execute ( RCPositionInfo * pPacket )
 
 	//g_pClientCommunicationManager->sendPacket( pPacket->getHost() , pPacket->getPort() , &glIncomingConnectionOK );
 	if ((g_Mode==MODE_GAME
-			|| g_Mode==MODE_WAIT_UPDATEINFO			// 로딩 중이 아니거나..
-			|| g_Mode==MODE_WAIT_SETPOSITION		// 좌표 기다리는 경우
+			|| g_Mode==MODE_WAIT_UPDATEINFO			// not loading
+			|| g_Mode==MODE_WAIT_SETPOSITION		// waiting for the position
 			)
-		&& g_pPlayer!=NULL
+		&& PlayerState::Creature()!=NULL
 		&& g_pParty!=NULL
 		&& g_pGameMessage!=NULL
 		&& g_pRequestUserManager!=NULL)
 	{
-		// 정보 다시 설정
+		// Refresh the peer's address.
 		RequestUserInfo* pUserInfo = g_pRequestUserManager->GetUserInfo( pPacket->getName().c_str() );
 
 		if (pUserInfo!=NULL)
@@ -53,7 +50,7 @@ void RCPositionInfoHandler::execute ( RCPositionInfo * pPacket )
 
 		PARTY_INFO*	pInfo = NULL;
 
-		// 이름이 없는 경우엔 IP로 찾아본다.
+		// No name: find the member by address.
 		if (pPacket->getName().size()==0)
 		{
 			pInfo = g_pParty->GetMemberInfoByIP( pPacket->getHost().c_str() );
@@ -63,7 +60,7 @@ void RCPositionInfoHandler::execute ( RCPositionInfo * pPacket )
 			pInfo = g_pParty->GetMemberInfo( pPacket->getName().c_str() );
 		}
 			
-		// 좌표를 수정해준다.
+		// Update the member's position.
 		if (pInfo!=NULL)
 		{
 			pInfo->zoneID = pPacket->getZoneID();
@@ -72,9 +69,10 @@ void RCPositionInfoHandler::execute ( RCPositionInfo * pPacket )
 
 			const int currentZoneID = (g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall);
 
+			MCreature* const pPlayerCreature = PlayerState::Creature();
 			pInfo->bInSight = MParty::IsMemberInSight(pInfo->zoneID, pInfo->zoneX, pInfo->zoneY,
-												currentZoneID, g_pPlayer->GetX(), g_pPlayer->GetY(),
-												g_pPlayer->GetSight());
+												currentZoneID, CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature),
+												PlayerState::GetSight());
 			
 			#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
 				if (g_pGameMessage!=NULL)

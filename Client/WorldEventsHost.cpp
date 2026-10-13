@@ -53,4 +53,14 @@ void AddEvent(MEvent& event)
 	if (s_Host && s_Host->AddEvent) s_Host->AddEvent(event);
 }
 
+void RemoveEvent(int eventID)
+{
+	if (s_Host && s_Host->RemoveEvent) s_Host->RemoveEvent(eventID);
+}
+
+void PlayMusicCurrentZone()
+{
+	if (s_Host && s_Host->PlayMusicCurrentZone) s_Host->PlayMusicCurrentZone();
+}
+
 }

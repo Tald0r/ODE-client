@@ -8,13 +8,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCWarList.h"
+#include "MEventQueue.h"
 #include "MWarManager.h"
-#include "MZone.h"
-#include "MEventManager.h"
-
-
-void PlayMusicCurrentZone();
-extern bool g_bZoneSafe;
+#include "WorldEventsHost.h"
+#include "ZoneFlags.h"
+#include "ZoneStateHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -26,7 +24,7 @@ void GCWarListHandler::execute ( GCWarList * pPacket , Player * pPlayer )
 	__BEGIN_TRY 
 	(void)pPlayer;
 	
-	if(g_pWarManager == NULL || g_pZone == NULL)
+	if(g_pWarManager == NULL || !ZoneState::Exists())
 		return;
 
 	while(1)
@@ -37,21 +35,17 @@ void GCWarListHandler::execute ( GCWarList * pPacket , Player * pPlayer )
 			break;
 
 		g_pWarManager->SetWar(info);
-		
-		
 	}	
 	
-	// 현재 존도 있는지 검색해야 한다.		
-	WarInfo *pInfo = g_pWarManager->GetWarInfo(g_pZone->GetID());
+	// A race war in the current zone makes it unsafe.
+	WarInfo *pInfo = g_pWarManager->GetWarInfo(static_cast<ZoneID_t>(ZoneState::GetID()));
 	if(pInfo != NULL && pInfo->getWarType() == WAR_RACE)
 	{
 		g_bZoneSafe = false;
 	}
 	
-	PlayMusicCurrentZone();
-	g_pEventManager->RemoveEvent( EVENTID_WAR_EFFECT );
-
-
+	WorldEvents::PlayMusicCurrentZone();
+	WorldEvents::RemoveEvent( EVENTID_WAR_EFFECT );
 
 	__END_CATCH
 }

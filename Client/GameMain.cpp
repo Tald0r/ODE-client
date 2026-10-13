@@ -92,6 +92,7 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "SoundSetting.h"
 
 #include "SXml.h"
+#include "ZoneFlags.h"
 
 //add by zdj 2005.5.17
 extern void	ExecuteLogout();
@@ -180,15 +181,12 @@ int					g_UpdateDelay		= 0;
 // Zone
 WORD				g_ZoneCreatureColorSet = 0xFFFF;
 WORD				g_MyBatColorSet = 0xFFFF;
-bool				g_bZoneSafe = false;
 bool				g_bHolyLand = false;
-int					g_nZoneLarge = ZONEID_NULL;
-int					g_nZoneSmall = ZONEID_NULL;
 bool				g_bZoneLargeLoadImage = false;
 bool				g_bZoneSmallLoadImage = false;
 MZone*				g_pZoneLarge = NULL;				
 MZone*				g_pZoneSmall = NULL;
-bool				g_bZonePlayerInLarge = true;
+// g_bZoneSafe, g_nZoneLarge, g_nZoneSmall and g_bZonePlayerInLarge are ZoneFlags.cpp's.
 AmbientSoundState g_ZoneAmbientSounds;
 bool				g_bWatchMode = false;
 

@@ -927,3 +927,11 @@ Client/PacketHandler/GCStashListHandler.cpp
 
 # A nickname change answered, over the communication and UI-object hosts.
 Client/PacketHandler/GCNicknameVerifyHandler.cpp
+
+# The current zone's flags the zone loading sets, and the replies that read
+# them: the war list, and a party member's position from the server or a peer.
+Client/ZoneFlags.cpp
+Client/ZoneFlags.h
+Client/PacketHandler/GCWarListHandler.cpp
+Client/PacketHandler/GCPartyPositionHandler.cpp
+Client/PacketHandler/RCPositionInfoHandler.cpp

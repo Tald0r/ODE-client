@@ -44,6 +44,11 @@ bool AddCorpseFromCreature(TYPE_OBJECTID id)
 	return s_Host && s_Host->AddCorpseFromCreature ? s_Host->AddCorpseFromCreature(id) : false;
 }
 
+int GetID()
+{
+	return s_Host && s_Host->GetID ? s_Host->GetID() : ZONEID_NULL;
+}
+
 }
 
 namespace CreatureState {

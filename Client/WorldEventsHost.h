@@ -14,7 +14,8 @@ namespace WorldEvents {
 // What a reply hands on to the executable's world and connections whole:
 // an item or portal appearing in the zone, the blood bible slots, the
 // weather and lightning, a pet's details, a peer asking to disconnect, and
-// an event for the event manager to run (a timed logout, say).
+// an event for the event manager to run (a timed logout, say) or to drop,
+// and the current zone's music played again.
 // A missing host or entry adds no item (NULL) and skips the rest.
 struct Host
 {
@@ -26,6 +27,8 @@ struct Host
 	void (*SetPetInfo)(PetInfo* pPetInfo, TYPE_OBJECTID objectID) = nullptr;
 	void (*RequestDisconnect)(const char* pName) = nullptr;
 	void (*AddEvent)(MEvent& event) = nullptr;
+	void (*RemoveEvent)(int eventID) = nullptr;
+	void (*PlayMusicCurrentZone)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -38,5 +41,7 @@ void SetLightning(std::uint32_t delay);
 void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
 void RequestDisconnect(const char* pName);
 void AddEvent(MEvent& event);
+void RemoveEvent(int eventID);
+void PlayMusicCurrentZone();
 
 }

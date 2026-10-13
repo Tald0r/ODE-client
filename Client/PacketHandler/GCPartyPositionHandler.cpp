@@ -8,18 +8,15 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCPartyPosition.h"
-#include "Player.h"
+#include "CMessageArray.h"
+#include "ClientMode.h"
+#include "GameMessages.h"
 #include "MParty.h"
+#include "PlayerStateHost.h"
 #include "RequestUserManager.h"
-#include "ClientDef.h"
+#include "ZoneFlags.h"
+#include "ZoneStateHost.h"
 
-#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
-	extern CMessageArray*		g_pGameMessage;
-#endif
-
-extern int					g_nZoneLarge;
-extern int					g_nZoneSmall;
-extern bool					g_bZonePlayerInLarge;
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
 void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPlayer )
@@ -29,24 +26,24 @@ void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPla
 	(void)pPlayer;
 		
 	if ((g_Mode==MODE_GAME
-			|| g_Mode==MODE_WAIT_UPDATEINFO			// 로딩 중이 아니거나..
-			|| g_Mode==MODE_WAIT_SETPOSITION		// 좌표 기다리는 경우
+			|| g_Mode==MODE_WAIT_UPDATEINFO			// not loading
+			|| g_Mode==MODE_WAIT_SETPOSITION		// waiting for the position
 			)
-		&& g_pPlayer!=NULL
+		&& PlayerState::Creature()!=NULL
 		&& g_pParty!=NULL
 		&& g_pGameMessage!=NULL
 		&& g_pRequestUserManager!=NULL)
 	{
 		PARTY_INFO*	pInfo = NULL;
 
-		// 이름이 없는 경우엔 리턴
+		// No name: nothing to find.
 		if (pPacket->getName().size()==0)
 		{
 			return;
 		}
 		pInfo = g_pParty->GetMemberInfo( pPacket->getName().c_str() );
 			
-		// 좌표를 수정해준다.
+		// Update the member's position.
 		if (pInfo!=NULL)
 		{
 			pInfo->zoneID = pPacket->getZoneID();
@@ -57,9 +54,10 @@ void GCPartyPositionHandler::execute ( GCPartyPosition * pPacket , Player * pPla
 
 			const int currentZoneID = (g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall);
 
+			MCreature* const pPlayerCreature = PlayerState::Creature();
 			pInfo->bInSight = MParty::IsMemberInSight(pInfo->zoneID, pInfo->zoneX, pInfo->zoneY,
-												currentZoneID, g_pPlayer->GetX(), g_pPlayer->GetY(),
-												g_pPlayer->GetSight());
+												currentZoneID, CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature),
+												PlayerState::GetSight());
 			
 			#if defined(_DEBUG) && defined(OUTPUT_DEBUG)
 				if (g_pGameMessage!=NULL)
