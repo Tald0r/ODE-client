@@ -3562,6 +3562,14 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.IsItemCheckBufferItemToItem = []() { return g_pPlayer != NULL && g_pPlayer->IsItemCheckBufferItemToItem(); },
 	.GetItemCheckBuffer = []() -> MItem* { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBuffer() : NULL; },
 	.ClearItemCheckBuffer = []() { if (g_pPlayer != NULL) g_pPlayer->ClearItemCheckBuffer(); },
+	.PacketAddActionResult = [](std::uint16_t effectID, MActionResult* pResult) {
+		if (g_pPlayer != NULL) return g_pPlayer->PacketAddActionResult(effectID, pResult);
+		delete pResult;
+		return false;
+	},
+	.SetCurrentMagazineNumber = [](int number) {
+		if (g_pCurrentMagazine != NULL) g_pCurrentMagazine->SetNumber(static_cast<TYPE_ITEM_NUMBER>(number));
+	},
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

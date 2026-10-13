@@ -1,5 +1,6 @@
 #include "Client_PCH.h"
 #include "PlayerStateHost.h"
+#include "MActionResult.h"
 
 namespace PlayerState {
 namespace {
@@ -136,6 +137,18 @@ MItem* GetItemCheckBuffer()
 void ClearItemCheckBuffer()
 {
 	if (s_Host && s_Host->ClearItemCheckBuffer) s_Host->ClearItemCheckBuffer();
+}
+
+bool PacketAddActionResult(std::uint16_t effectID, MActionResult* pResult)
+{
+	if (s_Host && s_Host->PacketAddActionResult) return s_Host->PacketAddActionResult(effectID, pResult);
+	delete pResult;
+	return false;
+}
+
+void SetCurrentMagazineNumber(int number)
+{
+	if (s_Host && s_Host->SetCurrentMagazineNumber) s_Host->SetCurrentMagazineNumber(number);
 }
 
 }
