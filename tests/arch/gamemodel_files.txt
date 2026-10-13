@@ -732,3 +732,10 @@ Client/PacketHandler/GCFlagWarStatusHandler.cpp
 Client/PacketHandler/GCQuestStatusHandler.cpp
 Client/PacketHandler/GCSelectQuestIDHandler.cpp
 Client/PacketHandler/GCWarScheduleListHandler.cpp
+
+# Trade, crafting and item-mall replies and their presentation service.
+Client/TradePresentationHost.cpp
+Client/TradePresentationHost.h
+Client/PacketHandler/GCGoodsListHandler.cpp
+Client/PacketHandler/GCMakeItemFailHandler.cpp
+Client/PacketHandler/GCTradeFinishHandler.cpp
