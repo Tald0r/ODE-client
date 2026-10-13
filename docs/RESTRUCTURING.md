@@ -2764,13 +2764,14 @@ rounds settled* for the host rules). Test fixtures share
   `GCMiniGameScoresHandler` and `GCNotifyWinHandler` into `gamemodel` behind
   the presentation-only `GameInfoPresentation::Host` installed and reset by
   `GameInit.cpp`.
-  > **Status:** done (2026-10-13). As in 4.92, each `UI_*` call becomes the
-  > host entry of the same name; four entries take the UI functions directly
+  > **Status:** done (2026-10-13; PR #395). As in 4.92, each `UI_*` call becomes
+  > the host entry of the same name; four entries take the UI functions directly
   > and the notice's DWORD gift id goes through a lambda. The NPC reply still
   > clears the list and then presents and frees each NPC it decoded, with or
   > without a host; skill teaching still opens the skill-learn request (the
   > domain and the fixed level cap 100, not the packet's target level) after
-  > presenting. R1 is 301 Windows / 299 Ninja.
+  > presenting, with `g_pTempInformation` unguarded as before. R1 is 301
+  > Windows / 299 Ninja.
   - Owner: membership, R1, designated host installation/reset and
     `test_game_info_presentation_handlers.cpp` (decoded NPC, teacher and
     notice packets; NPCs freed; request order and values; missing hosts,

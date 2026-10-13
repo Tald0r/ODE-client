@@ -112,11 +112,13 @@ void ReceiveNotice()
 	GCNotifyWinHandler::execute(&packet, nullptr);
 }
 
-// One reply for each of the five host entries; six calls with a host.
+// One reply for each of the five host entries; six calls with a host. The
+// NPCs are popped and freed whatever is presented.
 void RunEveryHandler()
 {
 	GCNPCInfo npcs;
 	ReceiveNPCs(npcs);
+	CHECK(npcs.popNPCInfo() == nullptr);
 	ReceiveSkillTeacher(2);
 	GCMiniGameScores scores;
 	GCMiniGameScoresHandler::execute(&scores, nullptr);
