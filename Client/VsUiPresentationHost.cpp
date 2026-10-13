@@ -65,4 +65,14 @@ void CloseNamingChange()
 	if (s_Host && s_Host->CloseNamingChange) s_Host->CloseNamingChange();
 }
 
+void SelectSkill(int skillID)
+{
+	if (s_Host && s_Host->SelectSkill) s_Host->SelectSkill(skillID);
+}
+
+void UnselectSkill()
+{
+	if (s_Host && s_Host->UnselectSkill) s_Host->UnselectSkill();
+}
+
 }

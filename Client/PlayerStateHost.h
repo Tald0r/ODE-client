@@ -61,6 +61,13 @@ struct Host
 	bool (*IsOperator)() = nullptr;
 	// How far the player sees, in cells.
 	int (*GetSight)() = nullptr;
+	// MPlayer's own burrowing, which hides the creature's.
+	void (*SetUndergroundCreature)() = nullptr;
+	// The item held while the server checks its use, and whether it is
+	// being used on another item.
+	bool (*IsItemCheckBufferItemToItem)() = nullptr;
+	MItem* (*GetItemCheckBuffer)() = nullptr;
+	void (*ClearItemCheckBuffer)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -89,5 +96,10 @@ MCreature* Creature();
 bool IsOperator();
 // 0 without a player.
 int GetSight();
+void SetUndergroundCreature();
+bool IsItemCheckBufferItemToItem();
+// NULL without a player.
+MItem* GetItemCheckBuffer();
+void ClearItemCheckBuffer();
 
 }

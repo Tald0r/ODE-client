@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToObjectOK3.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "Packet/WireHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -22,21 +25,21 @@ void GCSkillToObjectOK3Handler::execute ( GCSkillToObjectOK3 * pPacket , Player 
 
 	
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pUserCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pUserCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 		
-		// Creature에게 Damage 입힘
+		// The creature is hit.
 		if (pUserCreature != NULL)
 		{
 			int skillID = pPacket->getSkillType();
@@ -49,10 +52,10 @@ void GCSkillToObjectOK3Handler::execute ( GCSkillToObjectOK3 * pPacket , Player 
 			}
 
 
-			// 현재 무기의 적용을 받는 기술이면..
+			// A skill that follows the current weapon.
 			if ((*g_pActionInfoTable)[skillID].IsAffectCurrentWeaponAction())
 			{
-				skillID = pUserCreature->GetBasicActionInfo();
+				skillID = CreatureState::GetBasicActionInfo(pUserCreature);
 
 				if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
@@ -63,12 +66,11 @@ void GCSkillToObjectOK3Handler::execute ( GCSkillToObjectOK3 * pPacket , Player 
 			if( (*g_pActionInfoTable)[skillID].IsUseActionStep() && pPacket->getGrade() > 0)
 				skillID = (*g_pActionInfoTable)[skillID].GetActionStep( pPacket->getGrade() - 1);
 	
-			// 서로 바라보기
-			pUserCreature->SetDirectionToPosition(pPacket->getTargetX(), pPacket->getTargetY());
+			// The user faces the target.
+			CreatureState::SetDirectionToPosition(pUserCreature, pPacket->getTargetX(), pPacket->getTargetY());
 			
-			// 그 방향으로 기술 사용하는 모습만 보여주기..
-			pUserCreature->PacketSpecialActionToNobody(
-								skillID, 
+			// Only show the skill used in that direction.
+			CreatureState::PacketSpecialActionToNobody(pUserCreature, skillID, 
 								pPacket->getTargetX(),
 								pPacket->getTargetY()
 			);		

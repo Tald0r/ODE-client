@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToTileOK3.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "Packet/WireHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -21,22 +24,22 @@ void GCSkillToTileOK3Handler::execute ( GCSkillToTileOK3 * pPacket , Player * pP
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 
-		// Creature가 Tile에 뭔가를?...
+		// The creature uses something on a tile.
 		if (pCreature != NULL)
 		{	
 			int skillID = pPacket->getSkillType();
@@ -61,18 +64,17 @@ void GCSkillToTileOK3Handler::execute ( GCSkillToTileOK3 * pPacket , Player * pP
 									skillID : (*g_pActionInfoTable)[skillID].GetActionStep( pPacket->getGrade() - 1);
 
 			//------------------------------------------------------
-			// Creature가 행동하는 모습
+			// The creature acts.
 			//------------------------------------------------------
 			//Duration_t	m_Duration;
-			pCreature->PacketSpecialActionToSector(
-								skillID, 
+			CreatureState::PacketSpecialActionToSector(pCreature, skillID, 
 								pPacket->getX(), 
 								pPacket->getY(),
-								NULL		// 결과
+								NULL		// result
 			);		
 
-			// 방향 보기
-			pCreature->SetDirectionToPosition(pPacket->getX(), pPacket->getY());		
+			// Face the cell.
+			CreatureState::SetDirectionToPosition(pCreature, pPacket->getX(), pPacket->getY());		
 		}
 		else
 		{

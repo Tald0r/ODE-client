@@ -36,6 +36,7 @@ namespace {
 
 std::vector<std::string> calls;
 bool zoneExists = true;
+int zoneID = 71;
 bool hasPlayer = true;
 int playerHandle = 0;
 
@@ -47,7 +48,7 @@ const ZoneState::Host zone = []() {
 	host.Exists = []() { return zoneExists; };
 	host.GetID = []() {
 		CHECK(zoneExists);
-		return 71;
+		return zoneID;
 	};
 	return host;
 }();
@@ -113,6 +114,7 @@ struct World : GameModelWorld
 		g_bZonePlayerInLarge = true;
 		calls.clear();
 		zoneExists = true;
+		zoneID = 71;
 		hasPlayer = true;
 	}
 	~World()
@@ -226,6 +228,17 @@ TEST(WarListHandler, ARaceWarInTheCurrentZoneMakesItUnsafe)
 	CHECK(world.wars.IsExist(71) && world.wars.IsExist(72) && world.wars.IsExist(73));
 	CHECK(!g_bZoneSafe);
 	CHECK(calls == kAfterWars);
+}
+
+TEST(WarListHandler, TheCurrentZoneIsTheOneTheZoneServiceNames)
+{
+	World world;
+	// The zone service, not the large-zone flag, says where the player is.
+	zoneID = 73;
+	ReceiveWars({RaceWar({71})});
+	CHECK(g_bZoneSafe);
+	ReceiveWars({RaceWar({73})});
+	CHECK(!g_bZoneSafe);
 }
 
 TEST(WarListHandler, AnotherWarOrOneElsewhereKeepsTheZoneSafe)
@@ -347,7 +360,7 @@ TEST(PeerPositionHandler, APeersAddressAndPositionAreStoredByNameOrAddress)
 	CHECK(vanda->bInSight);
 }
 
-TEST(PeerPositionHandler, NothingChangesOutOfTheGameOrWithoutAPlayer)
+TEST(PeerPositionHandler, NothingChangesOutOfTheGameOrWithoutAPlayerPartyLogOrRoster)
 {
 	World world;
 	PARTY_INFO* nyx = world.Member("Nyx", "10.0.0.1");
@@ -358,6 +371,23 @@ TEST(PeerPositionHandler, NothingChangesOutOfTheGameOrWithoutAPlayer)
 	ReceivePeerPosition("Nyx", "10.0.0.7", 71, 110, 99);
 	hasPlayer = true;
 	ReceivePeerPosition("Vanda", "10.0.0.7", 71, 110, 99);
+	g_pGameMessage = nullptr;
+	ReceivePeerPosition("Nyx", "10.0.0.7", 71, 110, 99);
+	g_pGameMessage = &world.gameLog;
+	g_pRequestUserManager = nullptr;
+	ReceivePeerPosition("Nyx", "10.0.0.7", 71, 110, 99);
+	g_pRequestUserManager = &world.users;
+	g_pParty = nullptr;
+	ReceivePeerPosition("Nyx", "10.0.0.7", 71, 110, 99);
+	g_pParty = &world.party;
 	CHECK_EQ(0, static_cast<int>(nyx->zoneID));
 	CHECK(!nyx->bInSight);
+	// While loading or waiting for the position, it is stored.
+	for (CLIENT_MODE mode : {MODE_WAIT_UPDATEINFO, MODE_WAIT_SETPOSITION})
+	{
+		g_Mode = mode;
+		nyx->zoneID = 0;
+		ReceivePeerPosition("Nyx", "10.0.0.7", 71, 110, 99);
+		CHECK_EQ(71, static_cast<int>(nyx->zoneID));
+	}
 }

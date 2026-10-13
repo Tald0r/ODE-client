@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCThrowItemOK3.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -25,29 +28,29 @@ void GCThrowItemOK3Handler::execute ( GCThrowItemOK3 * pPacket , Player * pPlaye
 	int skillType = MAGIC_THROW_HOLY_WATER;
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pUserCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-		MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );		
+		MCreature* pUserCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+		MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );		
 
-		// Creature에게 Damage 입힘
+		// The creature is hit.
 		if (pUserCreature != NULL && pTargetCreature != NULL)
 		{
 			// [ TEST CODE ]
 			//
-			// 결과를 생성&저장해서 보내야 한다.
+			// Make the result and hand it over.
 			//
-			// 누군가(target)가 누군가가 사용한 SKill을 맞은 경우..
+			// The target is hit by the user's skill.
 			// [ TEST CODE ]
 			MActionResult* pResult = new MActionResult;
 
@@ -57,21 +60,20 @@ void GCThrowItemOK3Handler::execute ( GCThrowItemOK3 * pPacket , Player * pPlaye
 										skillType,//pPacket->getSkillType(), 
 										pPacket->getObjectID(), 
 										pPacket->getTargetObjectID(), 
-										pTargetCreature->GetX(),
-										pTargetCreature->GetY()
+										CreatureState::GetX(pTargetCreature),
+										CreatureState::GetY(pTargetCreature)
 									)
 						);
 										//delayFrame ) );
 
-			// 서로 바라보기
-			pUserCreature->SetDirectionToPosition(pTargetCreature->GetX(), pTargetCreature->GetY());
-			//pTargetCreature->SetDirectionToPosition(pUserCreature->GetX(), pUserCreature->GetY());
+			// The user faces the target.
+			CreatureState::SetDirectionToPosition(pUserCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature));
+			//CreatureState::SetDirectionToPosition(pTargetCreature, CreatureState::GetX(pUserCreature), CreatureState::GetY(pUserCreature));
 
 			//Duration_t	m_Duration;
-			pUserCreature->PacketSpecialActionToOther(
-								skillType,
+			CreatureState::PacketSpecialActionToOther(pUserCreature, skillType,
 								pPacket->getTargetObjectID(),
-								pResult			// 결과
+								pResult			// result
 			);		
 		}
 	}		

@@ -940,3 +940,27 @@ Client/PacketHandler/RCPositionInfoHandler.cpp
 # nProtect auth key and the test sub-inventory.
 Client/PacketHandler/GCAuthKeyHandler.cpp
 Client/PacketHandler/GCSubInventoryInfoHandler.cpp
+
+# A whisper from another client, over the player and communication hosts.
+Client/PacketHandler/CRWhisperHandler.cpp
+
+# The action-result nodes the server's skill replies queue, over the zone,
+# creature, player, world-event and UI-object hosts, and the morph type
+# their creature-type change clears.
+Client/MActionResult.cpp
+Client/MorphState.cpp
+Client/MorphState.h
+
+# Skill replies that hand a creature its special action and result queue:
+# a knock-back, a skill on a tile, holy water, and a blood drain.
+Client/PacketHandler/GCKnocksTargetBackOK5Handler.cpp
+Client/PacketHandler/GCSkillToTileOK3Handler.cpp
+Client/PacketHandler/GCThrowItemOK3Handler.cpp
+Client/PacketHandler/GCBloodDrainOK3Handler.cpp
+
+# Attack and skill replies that fall back on a creature's basic action:
+# guns at a cell or a target, melee, and a skill aimed at an object.
+Client/PacketHandler/GCAttackArmsOK3Handler.cpp
+Client/PacketHandler/GCAttackArmsOK5Handler.cpp
+Client/PacketHandler/GCAttackMeleeOK3Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK3Handler.cpp
