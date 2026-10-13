@@ -36,6 +36,13 @@ struct Potion : MItem
 	ITEM_CLASS GetItemClass() const override { return ITEM_CLASS_POTION; }
 	bool IsQuickItem() const override { return true; }
 };
+// A gun; the factory makes no magazine for it.
+struct Gun : MGunItem
+{
+	Gun() { alive++; }
+	~Gun() { alive--; }
+	ITEM_CLASS GetItemClass() const override { return ITEM_CLASS_SR; }
+};
 struct Belt : MBelt
 {
 	Belt() { alive++; }
@@ -53,6 +60,7 @@ MItem* Factory(ITEM_CLASS itemClass)
 	switch (itemClass)
 	{
 		case ITEM_CLASS_SWORD: return new Sword;
+		case ITEM_CLASS_SR: return new Gun;
 		case ITEM_CLASS_POTION: return new Potion;
 		case ITEM_CLASS_BELT: return new Belt;
 		case ITEM_CLASS_OUSTERS_ARMSBAND: return new ArmsBand;
@@ -80,6 +88,7 @@ struct World : GameModelWorld
 	{
 		const struct { ITEM_CLASS itemClass; int pockets; } rows[] = {
 			{ITEM_CLASS_SWORD, 0}, {ITEM_CLASS_POTION, 0}, {ITEM_CLASS_BELT, 3}, {ITEM_CLASS_OUSTERS_ARMSBAND, 2},
+			{ITEM_CLASS_SR, 0}, {ITEM_CLASS_MAGAZINE, 0},
 		};
 		for (const auto& row : rows)
 		{
@@ -246,27 +255,32 @@ TEST(ItemFactory, AnOfferOfAnUnknownClassOrWithoutATradeChangesNothing)
 TEST(ItemFactory, AnOfferedBeltOrArmsBandArrivesWithItsPocketsFilled)
 {
 	World world;
+	// Pockets are listed out of slot order, so each must go to its own slot.
 	GCTradeAddItem belt = Offer(600, ITEM_CLASS_BELT, 1, 1);
-	belt.setListNum(3);
-	belt.addListElement(Pocket(601, ITEM_CLASS_POTION, 1, 9, 0));
+	belt.setListNum(4);
+	belt.addListElement(Pocket(601, ITEM_CLASS_POTION, 1, 9, 2));
 	belt.addListElement(Pocket(602, ITEM_CLASS_HELM, 0, 1, 1));	// no such class: skipped
-	belt.addListElement(Pocket(603, ITEM_CLASS_POTION, 2, 5, 2));
+	belt.addListElement(Pocket(603, ITEM_CLASS_POTION, 2, 5, 0));
+	belt.addListElement(Pocket(604, ITEM_CLASS_POTION, 0, 1, 7));	// past the three pockets: freed
 	Receive(belt);
 	MBelt* received = dynamic_cast<MBelt*>(world.trade.GetOtherInventory()->GetItem(1, 1));
 	CHECK(received != nullptr);
 	if (received != nullptr)
 	{
-		const MItem* first = received->GetItem(0);
-		const MItem* third = received->GetItem(2);
-		CHECK(first != nullptr && first->GetID() == 601 && first->GetItemType() == 1 && first->GetNumber() == 9);
+		const MItem* inThird = received->GetItem(2);
+		const MItem* inFirst = received->GetItem(0);
+		CHECK(inThird != nullptr && inThird->GetID() == 601 && inThird->GetItemType() == 1 && inThird->GetNumber() == 9);
 		CHECK(received->GetItem(1) == nullptr);
-		CHECK(third != nullptr && third->GetID() == 603 && third->GetItemType() == 2 && third->GetNumber() == 5);
+		CHECK(inFirst != nullptr && inFirst->GetID() == 603 && inFirst->GetItemType() == 2 && inFirst->GetNumber() == 5);
 	}
+	// The belt and its two pockets; the refused pocket item is not kept alive.
+	CHECK_EQ(3, alive);
 
 	GCTradeAddItem band = Offer(700, ITEM_CLASS_OUSTERS_ARMSBAND, 3, 3);
 	band.setListNum(1);
 	band.addListElement(Pocket(701, ITEM_CLASS_POTION, 0, 2, 1));
 	Receive(band);
+	CHECK_EQ(5, alive);
 	MOustersArmsBand* armsBand = dynamic_cast<MOustersArmsBand*>(world.trade.GetOtherInventory()->GetItem(3, 3));
 	CHECK(armsBand != nullptr && armsBand->GetItem(1) != nullptr && armsBand->GetItem(1)->GetID() == 701);
 
@@ -278,4 +292,17 @@ TEST(ItemFactory, AnOfferedBeltOrArmsBandArrivesWithItsPocketsFilled)
 	Receive(sword);
 	CHECK(made == std::vector<int>{ITEM_CLASS_SWORD});
 	CHECK(world.trade.GetOtherInventory()->GetItem(0, 0) != nullptr);
+}
+
+TEST(ItemFactory, AnOfferedGunWithoutAMagazineFromTheFactoryIsStillAdded)
+{
+	World world;
+	Accept(world.trade);
+	Receive(Offer(900, ITEM_CLASS_SR, 0, 1));
+	MGunItem* gun = dynamic_cast<MGunItem*>(world.trade.GetOtherInventory()->GetItem(0, 1));
+	CHECK(gun != nullptr && gun->GetID() == 900);
+	CHECK(gun != nullptr && gun->GetMagazine() == nullptr);
+	CHECK(made == std::vector<int>({ITEM_CLASS_SR, ITEM_CLASS_MAGAZINE}));
+	CHECK(!world.trade.IsAcceptMyTrade());
+	CHECK(!world.trade.IsAcceptOtherTrade());
 }

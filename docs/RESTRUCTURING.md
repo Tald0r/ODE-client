@@ -2942,8 +2942,9 @@ rounds settled* for the host rules). Test fixtures share
   > classes' vtables reference the executable) as `NewItemOfClass`, which
   > keeps its own range and empty-slot checks and is installed by
   > `GameInit.cpp` in `s_ItemHost`. The symbol `MItem::NewItem` now
-  > resolves in the library for the 28 executable objects that call it, so
-  > it no longer holds any of them back. `GCTradeAddItemHandler`, blocked by
+  > resolves in the library for the 28 objects that called it from the
+  > executable (27 still there, plus the handler below), so it no longer
+  > holds any of them back. `GCTradeAddItemHandler`, blocked by
   > nothing else, joins `gamemodel` with `DebugLog.h` for the `ClientDef.h`
   > it drops. R1 is 249 Windows / 247 Ninja.
   - Owner: membership, R1, `s_ItemHost`'s factory slot and
@@ -3180,6 +3181,15 @@ Follow-ups from 4.102, all older than the move:
 - `GCAddInstalledMineToZoneHandler` stays in the executable: its mine
   branch needs an `MMine`. A host entry that marks a mine installed on the
   executable side would let it move.
+
+Follow-ups from 4.103:
+- An offer of a class the factory cannot make returns before either
+  acceptance is withdrawn, so both sides stay accepted although the other
+  side's offer changed; the test pins this as today's behaviour, and a
+  change is a decision about the trade, not a refactor.
+- `PacketFunction.cpp` repeats the unchecked belt-pocket `AddItem` that
+  4.103's fix made `GCTradeAddItemHandler` check, so a refused pocket item
+  leaks there on each packet.
 
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This
