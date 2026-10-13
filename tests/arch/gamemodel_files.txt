@@ -840,3 +840,11 @@ Client/PacketHandler/GCPartySayHandler.cpp
 Client/PacketHandler/RCCharacterInfoHandler.cpp
 Client/PacketHandler/RCSayHandler.cpp
 Client/PacketHandler/RCStatusHPHandler.cpp
+
+# Skill and damage results on zone creatures and the player, over the creature service.
+Client/PacketHandler/GCAttackArmsOK4Handler.cpp
+Client/PacketHandler/GCGetDamageHandler.cpp
+Client/PacketHandler/GCKnocksTargetBackOK4Handler.cpp
+Client/PacketHandler/GCShopBoughtHandler.cpp
+Client/PacketHandler/GCSkillToInventoryOK2Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK4Handler.cpp

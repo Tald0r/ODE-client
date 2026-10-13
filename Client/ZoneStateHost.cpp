@@ -143,4 +143,49 @@ void SetStatus(MCreature* pCreature, std::uint32_t n, std::uint32_t value)
 	if (MStatus* pStatus = Status(pCreature)) pStatus->SetStatus(n, value);
 }
 
+TYPE_SECTORPOSITION GetX(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetX ? s_Host->GetX(pCreature) : 0;
+}
+
+TYPE_SECTORPOSITION GetY(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetY ? s_Host->GetY(pCreature) : 0;
+}
+
+void SetEffectDelayFrame(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames)
+{
+	if (s_Host && s_Host->SetEffectDelayFrame) s_Host->SetEffectDelayFrame(pCreature, actionInfo, frames);
+}
+
+void PacketSpecialActionResult(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
+{
+	if (s_Host && s_Host->PacketSpecialActionResult) s_Host->PacketSpecialActionResult(pCreature, resultActionInfo, id, sX, sY);
+}
+
+void PacketSpecialActionToInventoryItem(MCreature* pCreature, TYPE_ACTIONINFO actionInfo)
+{
+	if (s_Host && s_Host->PacketSpecialActionToInventoryItem) s_Host->PacketSpecialActionToInventoryItem(pCreature, actionInfo);
+}
+
+bool AddEffectStatus(MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame)
+{
+	return s_Host && s_Host->AddEffectStatus ? s_Host->AddEffectStatus(pCreature, status, delayFrame) : false;
+}
+
+void SetTurning(MCreature* pCreature, std::uint16_t count)
+{
+	if (s_Host && s_Host->SetTurning) s_Host->SetTurning(pCreature, count);
+}
+
+bool IsNPC(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsNPC ? s_Host->IsNPC(pCreature) : false;
+}
+
+MShop* GetShop(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetShop ? s_Host->GetShop(pCreature) : nullptr;
+}
+
 }

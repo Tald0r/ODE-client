@@ -5,6 +5,7 @@
 #include "MEffectStatusDef.h"
 #include "RaceType.h"
 
+class MCreature;
 class MItem;
 class MItemManager;
 class MStatus;
@@ -55,6 +56,7 @@ struct Host
 	void (*PacketMoveNO)() = nullptr;
 	void (*SetGuildNumber)(int guildNumber) = nullptr;
 	bool (*HasEffectStatus)(EFFECTSTATUS status) = nullptr;
+	MCreature* (*Creature)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -77,5 +79,7 @@ void PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t d
 void PacketMoveNO();
 void SetGuildNumber(int guildNumber);
 bool HasEffectStatus(EFFECTSTATUS status);
+// The player as a creature, for CreatureState's entries; NULL without a player.
+MCreature* Creature();
 
 }

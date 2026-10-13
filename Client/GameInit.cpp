@@ -123,6 +123,7 @@
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
+#include "MNPC.h"
 #include "WorldEventsHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
@@ -3537,6 +3538,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
 	.SetGuildNumber = [](int guildNumber) { g_pPlayer->SetGuildNumber(guildNumber); },
 	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
+	.Creature = []() -> MCreature* { return g_pPlayer; },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3565,6 +3567,17 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.MovePosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return pCreature->MovePosition(x, y); },
 	.SetServerPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { pCreature->SetServerPosition(sX, sY); },
 	.KnockBackPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { return pCreature->KnockBackPosition(sX, sY); },
+	.GetX = [](MCreature* pCreature) { return pCreature->GetX(); },
+	.GetY = [](MCreature* pCreature) { return pCreature->GetY(); },
+	.SetEffectDelayFrame = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames) { pCreature->SetEffectDelayFrame(actionInfo, frames); },
+	.PacketSpecialActionResult = [](MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) {
+		pCreature->PacketSpecialActionResult(resultActionInfo, id, sX, sY);
+	},
+	.PacketSpecialActionToInventoryItem = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo) { pCreature->PacketSpecialActionToInventoryItem(actionInfo); },
+	.AddEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame) { return pCreature->AddEffectStatus(status, delayFrame); },
+	.SetTurning = [](MCreature* pCreature, std::uint16_t count) { pCreature->SetTurning(count); },
+	.IsNPC = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_NPC; },
+	.GetShop = [](MCreature* pCreature) { return static_cast<MNPC*>(pCreature)->GetShop(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

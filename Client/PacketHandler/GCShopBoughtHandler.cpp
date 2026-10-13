@@ -9,8 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopBought.h"
-#include "ClientDef.h"
-#include "MNPC.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MShop.h"
 #include "MShopShelf.h"
 
@@ -26,7 +26,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -36,7 +36,7 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//------------------------------------------------------
 		// 그런 creature가 없는 경우
@@ -48,11 +48,10 @@ void GCShopBoughtHandler::execute ( GCShopBought * pPacket , Player * pPlayer )
 		//------------------------------------------------------
 		// NPC인 경우
 		//------------------------------------------------------
-		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
+		else if (CreatureState::IsNPC(pCreature))
 		{
-			MNPC* pNPC = (MNPC*)pCreature;
-
-			MShop* pShop = pNPC->GetShop();
+			
+			MShop* pShop = CreatureState::GetShop(pCreature);
 
 			if (pShop==NULL)
 			{

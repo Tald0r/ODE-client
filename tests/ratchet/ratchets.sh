@@ -287,7 +287,8 @@ check () {
 # 249: MItem::NewItem joins gamemodel over an installed factory, and the trade box's new-item reply with it (4.103).
 # 244: guild-list, guild-membership and character-error replies join gamemodel (4.104).
 # 238: the client mode and message logs join gamemodel, and six replies that read them (4.105).
-R1_BASELINE=238
+# 232: six skill and damage results on zone creatures and the player join gamemodel (4.106).
+R1_BASELINE=232
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -408,7 +409,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 247: MItem::NewItem joins gamemodel over an installed factory, and the trade box's new-item reply with it (4.103).
 	# 242: guild-list, guild-membership and character-error replies join gamemodel (4.104).
 	# 236: the client mode and message logs join gamemodel, and six replies that read them (4.105).
-	R1_NINJA_BASELINE=236
+	# 230: six skill and damage results on zone creatures and the player join gamemodel (4.106).
+	R1_NINJA_BASELINE=230
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

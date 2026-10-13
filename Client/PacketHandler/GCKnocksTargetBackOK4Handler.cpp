@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCKnocksTargetBackOK4.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -24,7 +26,7 @@ void GCKnocksTargetBackOK4Handler::execute ( GCKnocksTargetBackOK4 * pPacket , P
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -34,7 +36,7 @@ void GCKnocksTargetBackOK4Handler::execute ( GCKnocksTargetBackOK4 * pPacket , P
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 
 		// Creature가 knockback당함
 		if (pCreature != NULL)
@@ -47,16 +49,16 @@ void GCKnocksTargetBackOK4Handler::execute ( GCKnocksTargetBackOK4 * pPacket , P
 			//MCreature::GetPositionToDirection(x, y, pPacket->getDir());
 
 			// Creature의 좌표를 바로 바꾼다.
-			pCreature->MovePosition( x, y );
-			pCreature->SetServerPosition( x, y );
-			pCreature->SetStop();
+			CreatureState::MovePosition(pCreature, x, y );
+			CreatureState::SetServerPosition(pCreature, x, y );
+			CreatureState::SetStop(pCreature);
 
 			// 결과 바로 표현
-			pCreature->PacketSpecialActionResult( 
+			CreatureState::PacketSpecialActionResult(pCreature, 
 								static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),
-								pCreature->GetID(),
-								pCreature->GetX(),
-								pCreature->GetY()
+								CreatureState::GetID(pCreature),
+								CreatureState::GetX(pCreature),
+								CreatureState::GetY(pCreature)
 			);			
 		}
 	}

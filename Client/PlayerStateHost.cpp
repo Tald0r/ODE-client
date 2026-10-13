@@ -103,4 +103,9 @@ bool HasEffectStatus(EFFECTSTATUS status)
 	return s_Host && s_Host->HasEffectStatus ? s_Host->HasEffectStatus(status) : false;
 }
 
+MCreature* Creature()
+{
+	return s_Host && s_Host->Creature ? s_Host->Creature() : nullptr;
+}
+
 }
