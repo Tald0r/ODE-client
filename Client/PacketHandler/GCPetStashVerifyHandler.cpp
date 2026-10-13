@@ -12,9 +12,9 @@
 #include "Gpackets/GCPetStashVerify.h"
 
 	#include "ClientPlayer.h"
-			#include "TempInformation.h"
+	#include "TempInformation.h"
 	#include "DebugLog.h"
-#include "DialogPresentationHost.h"
+	#include "DialogPresentationHost.h"
 	#include "MGameStringTable.h"
 	#include "MStorage.h"
 	#include "MInventory.h"

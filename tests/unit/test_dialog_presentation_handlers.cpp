@@ -22,6 +22,7 @@
 #include "Gpackets/GCUseBonusPointFail.h"
 #include <cstdint>
 #include <cstdlib>
+#include <initializer_list>
 #include <set>
 #include <string>
 #include <vector>
@@ -33,17 +34,32 @@
 namespace {
 
 std::vector<std::string> calls;
+// The request register's mode when each call was made, beside it in calls.
+std::vector<int> modes;
 bool swapRunning = false;
 
 std::string Text(const char* text) { return text ? text : "(null)"; }
 std::string Message(int id) { return "popup|" + std::string((*g_pGameStringTable)[id].GetString()); }
 
+void Record(const std::string& call)
+{
+	calls.push_back(call);
+	modes.push_back(static_cast<int>(g_pTempInformation->GetMode()));
+}
+
+std::vector<int> Modes(std::initializer_list<TempInformation::TEMP_MODE> list)
+{
+	std::vector<int> out;
+	for (TempInformation::TEMP_MODE mode : list) out.push_back(static_cast<int>(mode));
+	return out;
+}
+
 const DialogPresentation::Host host{
-	.PopupFreeMessageDlg = [](const char* message) { calls.push_back("popup|" + Text(message)); },
-	.UnlockItem = []() { calls.push_back("unlock"); },
-	.UnlockItemTrade = []() { calls.push_back("unlocktrade"); },
-	.RemoveItemFromItemShop = [](std::uint32_t id) { calls.push_back("removeshopitem|" + std::to_string(id)); },
-	.IsRunningSwapAdvancementItem = []() { calls.push_back("swap?"); return swapRunning; },
+	.PopupFreeMessageDlg = [](const char* message) { Record("popup|" + Text(message)); },
+	.UnlockItem = []() { Record("unlock"); },
+	.UnlockItemTrade = []() { Record("unlocktrade"); },
+	.RemoveItemFromItemShop = [](std::uint32_t id) { Record("removeshopitem|" + std::to_string(id)); },
+	.IsRunningSwapAdvancementItem = []() { Record("swap?"); return swapRunning; },
 };
 
 struct World : GameModelWorld
@@ -71,6 +87,7 @@ struct World : GameModelWorld
 		g_pStorage = new MStorage;
 		g_pStorage->Init(1);
 		calls.clear();
+		modes.clear();
 		swapRunning = false;
 	}
 	~World()
@@ -172,11 +189,14 @@ TEST(DialogPresentationHandlers, ASkillLearnFailureClearsTheRequestAndNamesItsRe
 	for (const auto& c : cases)
 	{
 		calls.clear();
+		modes.clear();
 		world.temp.SetMode(TempInformation::MODE_SKILL_LEARN);
 		ReceiveLearnSkillFailed(c.desc);
 		CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 		CHECK_EQ(1u, calls.size());
 		CHECK(!calls.empty() && calls[0] == Message(c.message));
+		// The request is cleared before the reason is shown.
+		CHECK(modes == Modes({TempInformation::MODE_NULL}));
 	}
 }
 
@@ -203,9 +223,7 @@ TEST(DialogPresentationHandlers, AFoundMotorcycleNamesItsZoneAndPositionWhenTheZ
 	ReceiveMotorcycleFound(13);
 	ReceiveMotorcycleFound(14);
 	CHECK_EQ(2u, calls.size());
-	CHECK(calls.size() == 2 && calls[0].find("Eslania") != std::string::npos);
-	CHECK(calls.size() == 2 && calls[0].find("81") != std::string::npos);
-	CHECK(calls.size() == 2 && calls[0].find("42") != std::string::npos);
+	CHECK(calls.size() == 2 && calls[0] == "popup|It is in Eslania at (81, 42).");
 	CHECK(calls.size() == 2 && calls[1] == Message(STRING_MESSAGE_FIND_MOTOR_NO_WHERE));
 }
 
@@ -239,6 +257,7 @@ TEST(DialogPresentationHandlers, BonusPointAndShopFailuresClearTheRequestAndUnlo
 	GCShopSellFailHandler::execute(&sell, nullptr);
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	swapRunning = true;
+	world.temp.SetMode(TempInformation::MODE_SHOP_SELL);
 	GCShopSellFailHandler::execute(&sell, nullptr);
 
 	const std::vector<std::string> expected = {
@@ -249,6 +268,8 @@ TEST(DialogPresentationHandlers, BonusPointAndShopFailuresClearTheRequestAndUnlo
 		"unlocktrade", "swap?", Message(UI_STRING_MESSAGE_SWAP_ADVANCEMENT_ITEM_ERROR),
 	};
 	CHECK(calls == expected);
+	// Each request is cleared before anything is unlocked or shown.
+	CHECK(modes == std::vector<int>(expected.size(), static_cast<int>(TempInformation::MODE_NULL)));
 }
 
 TEST(DialogPresentationHandlers, PetStashFailuresNameTheirReasonThenClearAndUnlock)
@@ -263,17 +284,22 @@ TEST(DialogPresentationHandlers, PetStashFailuresNameTheirReasonThenClearAndUnlo
 	for (const auto& c : cases)
 	{
 		calls.clear();
+		modes.clear();
 		world.temp.SetMode(TempInformation::MODE_PETITEM_MOVETO_INVENTORY);
 		ReceivePetStash(c.code);
 		CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 		CHECK_EQ(2u, calls.size());
 		CHECK(calls.size() == 2 && calls[0] == Message(c.message) && calls[1] == "unlock");
+		// The reason is shown while the request is pending; it is cleared before the unlock.
+		CHECK(modes == Modes({TempInformation::MODE_PETITEM_MOVETO_INVENTORY, TempInformation::MODE_NULL}));
 	}
 	calls.clear();
+	modes.clear();
 	world.temp.SetMode(TempInformation::MODE_PETITEM_MOVETO_INVENTORY);
 	ReceivePetStash(GCPetStashVerify::PET_STASH_RACK_IS_EMPTY + 1);
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	CHECK(calls == std::vector<std::string>{"unlock"});
+	CHECK(modes == Modes({TempInformation::MODE_NULL}));
 }
 
 TEST(DialogPresentationHandlers, AConfirmedPetStashMovesThePetTheRequestAsked)
@@ -306,13 +332,19 @@ TEST(DialogPresentationHandlers, AConfirmedPetStashMovesThePetTheRequestAsked)
 	CHECK(g_pInventory->GetItem(2, 1) == nullptr);
 	CHECK(g_pStorage->GetItem(5) == carried);
 
-	// Any other request moves nothing.
+	// Any other request moves nothing, from either container.
+	MPetItem* blocker = new MPetItem;
+	blocker->SetID(503);
+	CHECK(g_pInventory->AddItem(blocker, 2, 1));
 	world.temp.SetMode(TempInformation::MODE_SHOP_BUY);
 	world.temp.Value1 = 5;
 	world.temp.pValue = carried;
 	ReceivePetStash(GCPetStashVerify::PET_STASH_OK);
 	CHECK(g_pStorage->GetItem(5) == carried);
+	CHECK(g_pInventory->GetItem(2, 1) == blocker);
+	CHECK(g_pInventory->GetItem(static_cast<TYPE_OBJECTID>(501)) == stored);
 	CHECK(calls == std::vector<std::string>({"unlock", "unlock", "unlock"}));
+	CHECK(modes == std::vector<int>(3, static_cast<int>(TempInformation::MODE_NULL)));
 }
 
 TEST(DialogPresentationHandlers, MissingHostsAndEntriesSkipPresentationOnly)

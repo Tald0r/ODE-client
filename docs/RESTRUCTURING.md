@@ -2927,6 +2927,24 @@ address-book reset, the quest list) leaves the item locked. If the purse
 is too full to take the offer back, `CancelTrade` leaves it in the trade
 box and `UI_CloseExchange` then deletes the trade manager with it.
 
+Follow-ups from 4.98, all older than the move:
+- `GCPetStashVerifyHandler` removes `pItem` from one container but inserts
+  the request's `pValue` into the other. A null `pValue` drops the removed
+  pet (leaked, gone from the client); a `GCPetStashList` arriving between
+  request and reply rebuilds `g_pStorage`, leaving `pValue` dangling while
+  `SetPetKeepedDay` and `AddItem` write through it; a failed `AddItem` or
+  `SetItem` leaks the removed item with only a log line. `MStorage::SetItem`
+  deletes a slot's occupant, so a confirmation for a slot that is not empty
+  destroys that item. `MPlayer::ChangeToSlayer` and `ChangeToVampire` delete
+  `g_pStorage` without clearing a pending `MODE_PETITEM_*` request, which a
+  later `PET_STASH_OK` then dereferences.
+- `GCLearnSkillFailed`, `GCUseBonusPointFail`, `GCShopBuyFail` and
+  `GCShopSellFail` clear whatever request is pending, related or not (the
+  class of 4.93's address-book reset), all with `g_pTempInformation`
+  unguarded.
+- `GCShopBuyFailHandler` ignores its code and amount: every "not enough
+  star" code shows "not in stock".
+
 Literal zero also requires an explicit bootstrap design: `SDLMain.cpp` and
 `Client.cpp` provide platform entry points and are currently counted. This
 slice adds no exemptions or changes to R1's denominator. Decide the entry-point
