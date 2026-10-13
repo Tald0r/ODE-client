@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCCreatePCOK.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "LoginPresentationHost.h"
 
 	#include "ClientPlayer.h"
 	#include "Cpackets/CLGetPCList.h"
@@ -27,7 +26,7 @@ void LCCreatePCOKHandler::execute ( LCCreatePCOK * pPacket , Player * pPlayer )
 
 	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
 
-	UI_NewCharacterCreateOk();
+	LoginPresentation::NewCharacterCreateOk();
 
 	// 다시 PC LIST 를 받아와야 한다.
 	CLGetPCList clGetPCList;

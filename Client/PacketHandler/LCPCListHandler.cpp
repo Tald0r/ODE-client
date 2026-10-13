@@ -9,8 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCPCList.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "LoginPresentationHost.h"
 #include "MStorage.h"
 
 	#include "ClientPlayer.h"
@@ -276,7 +275,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 	//------------------------------------------------------------
 	// Characer 선택 창을 띄워야 한다.
 	//------------------------------------------------------------
-	UI_StartCharacterManager();				
+	LoginPresentation::StartCharacterManager();				
 			
 
 	for (int i=0; i<SLOT_MAX; i++)
@@ -303,7 +302,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 					g_pUserInformation->Race[i]	= RACE_SLAYER;
 					g_pUserInformation->FaceStyleSlot[i] = pPCSlayerInfo->getHairStyle();
 
-					UI_SetCharacter( i, pPCSlayerInfo );		
+					LoginPresentation::SetSlayerCharacter( i, pPCSlayerInfo );		
 				}
 				break;
 
@@ -324,7 +323,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 					g_pUserInformation->Race[i]	= RACE_VAMPIRE;
 					g_pUserInformation->FaceStyleSlot[i] = 0;//pPCVampireInfo->
 
-					UI_SetCharacter( i, pPCVampireInfo );
+					LoginPresentation::SetVampireCharacter( i, pPCVampireInfo );
 				}
 				break;
 
@@ -345,7 +344,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 					g_pUserInformation->Race[i]	= RACE_OUSTERS;
 					g_pUserInformation->FaceStyleSlot[i] = 0;//pPCVampireInfo->
 					
-					UI_SetCharacter( i, pPCOustersInfo );
+					LoginPresentation::SetOustersCharacter( i, pPCOustersInfo );
 				}
 				break;
 			}
@@ -366,7 +365,7 @@ void LCPCListHandler::execute ( LCPCList * pPacket , Player * pPlayer )
 			
 
 	// 다음은 
-	SetMode( MODE_WAIT_SELECTPC );
+	LoginPresentation::EnterSelectPCMode();
 	
 
 		

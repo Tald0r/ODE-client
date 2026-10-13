@@ -9,10 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCQueryResultCharacterName.h"
-#include "ClientDef.h"
 #include "UserInformation.h"
 #include "MGameStringTable.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
+#include "LoginPresentationHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -24,16 +24,16 @@ void LCQueryResultCharacterNameHandler::execute ( LCQueryResultCharacterName * p
 
 	// 캐릭 생성중이고
 	// 캐릭터 아이디 맞는 경우..
-	if (g_Mode==MODE_WAIT_SELECTPC
+	if (LoginPresentation::IsSelectPCMode()
 		&& g_pUserInformation->WhisperID==pPacket->getCharacterName().c_str())
 	{
 		if (pPacket->isExist())
 		{
-			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_ERROR_ALREADY_REGISTER_ID].GetString() );
+			DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_ERROR_ALREADY_REGISTER_ID].GetString() );
 		}
 		else
 		{
-			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CAN_REGISTER_NAME].GetString() );
+			DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_CAN_REGISTER_NAME].GetString() );
 		}
 
 		g_pUserInformation->WhisperID.Release();

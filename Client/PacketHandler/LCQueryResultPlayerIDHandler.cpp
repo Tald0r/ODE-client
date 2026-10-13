@@ -9,9 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "Lpackets/LCQueryResultPlayerID.h"
-#include "ClientDef.h"
-#include "UIDialog.h"
-#include "UIFunction.h"
+#include "LoginPresentationHost.h"
 
 	#include "ClientPlayer.h"
 	#include "Cpackets/CLQueryPlayerID.h"
@@ -136,12 +134,12 @@ void LCQueryResultPlayerIDHandler::execute ( LCQueryResultPlayerID * pPacket , P
 	if (pPacket->isExist())
 	{
 		//g_UIDialog.PopupFreeMessageDlg("이미 사용중인 ID입니다.");
-		UI_AlreadyExistIDMessage();
+		LoginPresentation::AlreadyExistIDMessage();
 	}
 	else
 	{
 		//g_UIDialog.PopupFreeMessageDlg("등록할 수 있는 ID입니다.");
-		UI_NoAlreadyExistIDMessage();
+		LoginPresentation::NoAlreadyExistIDMessage();
 	}
 
 		

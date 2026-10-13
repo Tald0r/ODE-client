@@ -760,3 +760,14 @@ Client/PacketHandler/GCShopSellFailHandler.cpp
 Client/PacketHandler/GCTakeOutFailHandler.cpp
 Client/PacketHandler/GCTakeOutOKHandler.cpp
 Client/PacketHandler/GCUseBonusPointFailHandler.cpp
+
+# Login-server replies about characters, IDs and versions, and their presentation and mode service.
+Client/LoginPresentationHost.cpp
+Client/LoginPresentationHost.h
+Client/PacketHandler/LCCreatePCOKHandler.cpp
+Client/PacketHandler/LCDeletePCOKHandler.cpp
+Client/PacketHandler/LCPCListHandler.cpp
+Client/PacketHandler/LCQueryResultCharacterNameHandler.cpp
+Client/PacketHandler/LCQueryResultPlayerIDHandler.cpp
+Client/PacketHandler/LCSelectPCErrorHandler.cpp
+Client/PacketHandler/LCVersionCheckErrorHandler.cpp
