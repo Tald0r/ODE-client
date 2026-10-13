@@ -693,6 +693,11 @@ TEST(ActionResultNodes, TheFactoryMakesNothingForOtherKindsOrAnUngradedTyphoon)
 	CHECK(CreateActionResultNode(Handle(world.ogre), SKILL_TYPHOON, 2) == nullptr);
 	MActionResultNode* pNode = CreateActionResultNode(Handle(world.ogre), SKILL_TYPHOON, 1);
 	CHECK(pNode != nullptr && pNode->GetType() == ACTIONRESULTNODE_CREATURE_TURNING);
-	delete pNode;
 	CHECK(calls.empty());
+	if (pNode != nullptr)
+	{
+		pNode->Execute();
+		CHECK(calls == std::vector<std::string>{"Ogre.turn|16"});
+	}
+	delete pNode;
 }

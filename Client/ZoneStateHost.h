@@ -110,7 +110,9 @@ struct Host
 	void (*ClearStopBloodDrain)(MCreature* pCreature) = nullptr;
 	// The action the creature attacks with by default (its weapon's).
 	TYPE_ACTIONINFO (*GetBasicActionInfo)(MCreature* pCreature) = nullptr;
+	// Whether the creature had the status; false without a host.
 	bool (*RemoveEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
+	// Marks the creature as faking its death.
 	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
 	int (*GetDirection)(MCreature* pCreature) = nullptr;
 	void (*RemoveHead)(MCreature* pCreature) = nullptr;

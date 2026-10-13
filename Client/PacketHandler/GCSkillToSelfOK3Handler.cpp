@@ -12,7 +12,6 @@
 #include "ConvertDuration.h"
 #include "DebugLog.h"
 #include "MActionInfoTable.h"
-#include "MActionResult.h"
 #include "Packet/WireHost.h"
 #include "WorldEventsHost.h"
 #include "ZoneStateHost.h"
