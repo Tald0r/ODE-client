@@ -115,7 +115,7 @@ TEST(QuestStatusHandler, ARefusedRecordOrOneWithNoWindowIsFreed)
 	VsUiPresentation::SetHost(&empty);
 	Receive(4, 4005, QuestStatusInfo::DOING, {Mission(1, 1, 1, "a", 1), Mission(1, 2, 1, "b", 1)});
 	CHECK_EQ(2u, calls.size());
-	// Nothing was kept; ASan sees whether the refused records were freed
-	// once each.
+	// Nothing was kept. ASan sees a refused record freed twice; one never
+	// freed only LeakSanitizer (the Linux ASan job) sees.
 	CHECK(kept.empty());
 }

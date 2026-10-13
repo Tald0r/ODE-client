@@ -26,10 +26,18 @@
 namespace {
 
 std::vector<std::string> calls;
+// The members the party let go of: their creatures leave it in the zone.
+std::vector<std::string> leaves;
 bool zoneExists = true;
 bool hasPlayer = true;
 PlayerState::WAIT_VERIFY waitVerify = PlayerState::WAIT_VERIFY_NULL;
 int playerHandle = 0;
+
+const MPartyHost partyHost = []() {
+	MPartyHost host{};
+	host.LeaveByName = [](const char* name) { leaves.push_back(name); };
+	return host;
+}();
 
 const ZoneState::Host zone = []() {
 	ZoneState::Host host{};
@@ -59,6 +67,7 @@ struct World : GameModelWorld
 	MParty* oldParty = g_pParty;
 	UserInformation* oldUser = g_pUserInformation;
 	CMessageArray* oldLog = g_pGameMessage;
+	const MPartyHost* oldPartyHost = MParty::SetHost(&partyHost);
 	const ZoneState::Host* oldZone = ZoneState::SetHost(&zone);
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	const CommunicationPresentation::Host* oldCommunication = CommunicationPresentation::SetHost(&communication);
@@ -77,6 +86,7 @@ struct World : GameModelWorld
 		g_pUserInformation = &user;
 		g_pGameMessage = &log;
 		calls.clear();
+		leaves.clear();
 		zoneExists = true;
 		hasPlayer = true;
 		waitVerify = PlayerState::WAIT_VERIFY_NULL;
@@ -86,6 +96,7 @@ struct World : GameModelWorld
 		CommunicationPresentation::SetHost(oldCommunication);
 		PlayerState::SetHost(oldPlayer);
 		ZoneState::SetHost(oldZone);
+		MParty::SetHost(oldPartyHost);
 		g_pGameMessage = oldLog;
 		g_pUserInformation = oldUser;
 		g_pParty = oldParty;
@@ -129,6 +140,7 @@ TEST(PartyLeaveHandler, MembersLeavingEmptyThePartyThenItIsDisbanded)
 	CHECK_EQ(0, world.party.GetSize());
 	CHECK(world.Log() == std::vector<std::string>({"Vanda left the party.", "Nyx left the party.", "The party was disbanded."}));
 	CHECK(calls == std::vector<std::string>{"close"});
+	CHECK(leaves == std::vector<std::string>({"Vanda", "Nyx"}));
 }
 
 TEST(PartyLeaveHandler, SomeoneNotInThePartyLeavingChangesNothing)
@@ -146,6 +158,8 @@ TEST(PartyLeaveHandler, LeavingMyselfEndsThePartyAndClosesItsWindow)
 	CHECK_EQ(0, world.party.GetSize());
 	CHECK(world.Log() == std::vector<std::string>{"You left the party."});
 	CHECK(calls == std::vector<std::string>{"close"});
+	// Every member's creature leaves the party.
+	CHECK(leaves == std::vector<std::string>({"Vanda", "Nyx"}));
 }
 
 TEST(PartyLeaveHandler, ExpellingIsWordedForWhoExpelledWhom)
@@ -180,6 +194,7 @@ TEST(PartyLeaveHandler, BeingExpelledEndsThePartyAndDisbandsIt)
 	CHECK_EQ(0, world.party.GetSize());
 	CHECK(world.Log() == std::vector<std::string>({"You were kicked out by Vanda.", "The party was disbanded."}));
 	CHECK(calls == std::vector<std::string>{"close"});
+	CHECK(leaves == std::vector<std::string>({"Vanda", "Nyx"}));
 }
 
 TEST(PartyLeaveHandler, ALeaveThisPlayerAskedForIsAnswered)

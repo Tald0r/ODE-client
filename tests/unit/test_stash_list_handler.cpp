@@ -213,10 +213,10 @@ TEST(StashListHandler, ABeltOrArmsBandKeepsThePocketsThatFit)
 		{0, 2, 930, ITEM_CLASS_SWORD, 1, {{931, ITEM_CLASS_POTION, 0}}}}, 0);
 	const MBelt* belt = dynamic_cast<const MBelt*>(World::At(0, 0));
 	const MItem* beltPocket = belt != nullptr ? belt->GetItem(1) : nullptr;
-	CHECK(beltPocket != nullptr && beltPocket->GetID() == 911 && beltPocket->GetNumber() == 5);
+	CHECK(beltPocket != nullptr && beltPocket->GetID() == 911 && beltPocket->GetItemType() == 1 && beltPocket->GetNumber() == 5);
 	const MOustersArmsBand* band = dynamic_cast<const MOustersArmsBand*>(World::At(0, 1));
 	const MItem* bandPocket = band != nullptr ? band->GetItem(0) : nullptr;
-	CHECK(bandPocket != nullptr && bandPocket->GetID() == 921);
+	CHECK(bandPocket != nullptr && bandPocket->GetID() == 921 && bandPocket->GetItemType() == 1 && bandPocket->GetNumber() == 5);
 	// The belt, its pocket, the band, its pocket and the sword: the pockets
 	// that did not fit, and the sword's, are not kept.
 	CHECK_EQ(5, alive);

@@ -3357,6 +3357,9 @@ rounds settled* for the host rules). Test fixtures share
     window, is freed, which ASan watches).
   - Follow-up: `GCGQuestStatusModify` never frees the status its `read`
     allocates, and its constructor leaves that pointer uninitialised.
+  - Follow-up: the quest window's `SetQuestManagerInfo` answers true for a
+    quest with no XML element without keeping the record, which then
+    leaks; the reply cannot tell.
 
 - [x] **4.121 The party-leave reply:** move `GCPartyLeaveHandler` into
   `gamemodel`.
@@ -3406,8 +3409,10 @@ rounds settled* for the host rules). Test fixtures share
   > `DialogPresentation::PopupFreeMessageDlg`) and the party "cancel?"
   > box (`UI_ClosePartyCancel`, now a new
   > `CommunicationPresentation::ClosePartyCancel`). The dialog's
-  > existence check goes with `g_pUIDialog`: without the dialog service
-  > the messages are skipped and the request still ends. The debug-only
+  > existence check goes with `g_pUIDialog`: without a dialog host the
+  > messages are skipped and the request still ends. The installed
+  > adapter reads `g_pUIDialog` unguarded, which is safe: it exists from
+  > start-up, before any connection, until shutdown. The debug-only
   > logs keep their `OUTPUT_DEBUG` guard without naming
   > `g_pDebugMessage`. R1 is 208 Windows / 206 Ninja.
   - Owner: membership, R1, the new entry and its adapter, and
