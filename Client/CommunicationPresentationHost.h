@@ -34,6 +34,7 @@ struct Host
 	bool (*HideHolyLandMessages)() = nullptr;
 	bool (*HideLairMessages)() = nullptr;
 	bool (*HideWarMessages)() = nullptr;
+	void (*CloseParty)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -58,5 +59,6 @@ void SetRangerChatString(const char* message);
 bool HideHolyLandMessages();
 bool HideLairMessages();
 bool HideWarMessages();
+void CloseParty();
 
 }

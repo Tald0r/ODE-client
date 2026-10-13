@@ -302,7 +302,8 @@ check () {
 # 214: the refused rank bonus and the guild-union offers join gamemodel (4.118).
 # 212: the quest element and quest item replies join gamemodel (4.119).
 # 211: the quest-status reply joins gamemodel (4.120).
-R1_BASELINE=211
+# 210: the party-leave reply joins gamemodel (4.121).
+R1_BASELINE=210
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -438,7 +439,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 212: the refused rank bonus and the guild-union offers join gamemodel (4.118).
 	# 210: the quest element and quest item replies join gamemodel (4.119).
 	# 209: the quest-status reply joins gamemodel (4.120).
-	R1_NINJA_BASELINE=209
+	# 208: the party-leave reply joins gamemodel (4.121).
+	R1_NINJA_BASELINE=208
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

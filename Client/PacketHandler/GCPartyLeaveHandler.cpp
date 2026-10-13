@@ -9,10 +9,13 @@
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
 #include "MParty.h"
-#include "UIDialog.h"
 #include "UserInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "CMessageArray.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
+#include "GameMessages.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 
 extern CMessageArray*		g_pGameMessage;
 
@@ -24,8 +27,8 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 	(void)pPlayer;
 	
 
-	if (g_pZone==NULL
-		|| g_pPlayer==NULL
+	if (!ZoneState::Exists()
+		|| PlayerState::Creature()==NULL
 		|| g_pUserInformation==NULL
 		|| g_pParty==NULL
 		|| g_pGameMessage==NULL)
@@ -50,33 +53,33 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 	bool bRemovePartyCheck = false;
 	
 	//-------------------------------------------------------------------
-	// 검증 확인
+	// The leave this client asked for is answered
 	//-------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY_LEAVE)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_PARTY_LEAVE)
 	{
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 
 	//-------------------------------------------------------------------
-	// 누가 스스로 나간 경우
+	// Someone left on their own
 	//-------------------------------------------------------------------
 	if (pExpeller==NULL || pExpeller[0]=='\0')
 	{
 		//----------------------------------------------------------
-		// 내가 나간 경우
+		// I left
 		//----------------------------------------------------------
 		if (g_pUserInformation->CharacterID==pExpellee)
 		{
 			g_pParty->UnSetPlayerParty();
-			g_pParty->Release();	// 나의 party가 해체되는 것이당..			
+			g_pParty->Release();	// my party is gone			
 
 			g_pGameMessage->Add( (*g_pGameStringTable)[STRING_MESSAGE_REMOVE_PARTY_MYSELF].GetString() );
 			//g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_REMOVE_PARTY_MYSELF].GetString() );
 
-			UI_CloseParty();
+			CommunicationPresentation::CloseParty();
 		}
 		//----------------------------------------------------------
-		// 누가 나간 경우
+		// someone else left
 		//----------------------------------------------------------
 		else if (g_pParty->RemoveMember( pExpellee ))
 		{
@@ -90,12 +93,12 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 		}
 	}
 	//-------------------------------------------------------------------
-	// 누가 누구를 쫓아낸 경우
+	// Someone expelled someone
 	//-------------------------------------------------------------------
 	else
 	{
 		//-------------------------------------------------------------------
-		// 내가 pExpellee를 쫓아냈다.
+		// I expelled pExpellee
 		//-------------------------------------------------------------------
 		if (g_pUserInformation->CharacterID==pExpeller)
 		{		
@@ -111,12 +114,12 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 			bRemovePartyCheck = true;
 		}
 		//-------------------------------------------------------------------
-		// 내가 pExpeller에게 쫓겨났다.
+		// pExpeller expelled me
 		//-------------------------------------------------------------------
 		else if (g_pUserInformation->CharacterID==pExpellee)
 		{
 			g_pParty->UnSetPlayerParty();
-			g_pParty->Release();	// 나의 party가 해체되는 것이당..			
+			g_pParty->Release();	// my party is gone			
 
 			SafeFormat::Format(str, GetGameString(STRING_MESSAGE_KICKED_FROM_PARTY), 
 						pExpeller);		
@@ -127,7 +130,7 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 			bRemovePartyCheck = true;
 		}
 		//-------------------------------------------------------------------
-		// pExpeller가 pExpeller를 쫓아냈다.
+		// pExpeller expelled pExpellee
 		//-------------------------------------------------------------------
 		else if (g_pParty->RemoveMember( pExpellee ))
 		{
@@ -141,13 +144,13 @@ void GCPartyLeaveHandler::execute (GCPartyLeave * pPacket , Player * pPlayer)
 
 	
 	//--------------------------------------------------
-	// 파티 해체인가?
+	// Is the party over?
 	//--------------------------------------------------
 	if (bRemovePartyCheck && g_pParty->GetSize()==0)
 	{		
-		UI_CloseParty();
+		CommunicationPresentation::CloseParty();
 
-		// 메시지만 출력해주면 되겠지..
+		// the message is enough
 		//g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_REMOVE_PARTY].GetString() );		
 		g_pGameMessage->Add( (*g_pGameStringTable)[STRING_MESSAGE_REMOVE_PARTY].GetString() );
 	}

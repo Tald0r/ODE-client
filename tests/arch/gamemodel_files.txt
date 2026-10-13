@@ -911,3 +911,7 @@ Client/PacketHandler/GCGQuestInventoryHandler.cpp
 
 # A quest's new status, handed to the quest window through the UI-object host.
 Client/PacketHandler/GCGQuestStatusModifyHandler.cpp
+
+# A member leaving or expelled from the party, over the zone, player and
+# communication hosts.
+Client/PacketHandler/GCPartyLeaveHandler.cpp

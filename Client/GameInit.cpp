@@ -3473,6 +3473,7 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.HideHolyLandMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowHolyLandMsg; },
 	.HideLairMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowLairMsg; },
 	.HideWarMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowWarMsg; },
+	.CloseParty = UI_CloseParty,
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {

@@ -16,7 +16,8 @@ namespace VsUiPresentation {
 // AddMailContents gives a letter its text; both skip without the entry.
 // PushGQuestExecuteElement runs a quest's element; UpdateQuestItemInfo
 // hands the quest items over to the quest window, which keeps them, and
-// answers false when there was no one to take them (the caller frees them).
+// answers false when no host entry took them (the caller frees them); an
+// entry that has no quest window behind it leaks them, as the game did.
 // ModifyQuestManagerInfo hands a quest's new status to the quest window,
 // which keeps it when it answers true; false (or no entry) leaves it with
 // the caller.

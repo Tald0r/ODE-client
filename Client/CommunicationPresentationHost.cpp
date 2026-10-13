@@ -113,4 +113,9 @@ bool HideWarMessages()
 	return s_Host && s_Host->HideWarMessages ? s_Host->HideWarMessages() : false;
 }
 
+void CloseParty()
+{
+	if (s_Host && s_Host->CloseParty) s_Host->CloseParty();
+}
+
 }
