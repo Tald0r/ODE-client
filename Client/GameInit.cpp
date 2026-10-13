@@ -3639,6 +3639,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	},
 	.SetDrainCreatureID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetDrainCreatureID(id); },
 	.ClearStopBloodDrain = [](MCreature* pCreature) { pCreature->ClearStopBloodDrain(); },
+	.GetBasicActionInfo = [](MCreature* pCreature) { return pCreature->GetBasicActionInfo(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

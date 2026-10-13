@@ -957,3 +957,10 @@ Client/PacketHandler/GCKnocksTargetBackOK5Handler.cpp
 Client/PacketHandler/GCSkillToTileOK3Handler.cpp
 Client/PacketHandler/GCThrowItemOK3Handler.cpp
 Client/PacketHandler/GCBloodDrainOK3Handler.cpp
+
+# Attack and skill replies that fall back on a creature's basic action:
+# guns at a cell or a target, melee, and a skill aimed at an object.
+Client/PacketHandler/GCAttackArmsOK3Handler.cpp
+Client/PacketHandler/GCAttackArmsOK5Handler.cpp
+Client/PacketHandler/GCAttackMeleeOK3Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK3Handler.cpp

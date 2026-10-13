@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackArmsOK5.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "ZoneStateHost.h"
 #include "MActionInfoTable.h"
 #include "MSlayerGear.h"
 #include "SkillDef.h"
@@ -26,9 +28,9 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 			// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -37,10 +39,10 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 	}	
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The creatures involved.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-	MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+	MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 	
 	if (pCreature==NULL && pTargetCreature==NULL)
 	{
@@ -48,7 +50,7 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 	}
 
 	//------------------------------------------------------
-	// 맞는 사람만 있는 경우는 맞는 동작만 보여주면 된다.
+	// Only the target is here: show it being hit.
 	//------------------------------------------------------
 	if (pCreature==NULL)
 	{
@@ -59,26 +61,24 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 					pPacket->getSkillType() == SKILL_TRIDENT || pPacket->getSkillType() == SKILL_QUICK_FIRE ||
 					pPacket->getSkillType() == SKILL_ULTIMATE_BLOW || pPacket->getSkillType() == SKILL_HARPOON_BOMB)
 		{
-			pTargetCreature->PacketSpecialActionResult( 
-					static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType()+g_pActionInfoTable->GetMinResultActionInfo()),
-					pTargetCreature->GetID(),
-					pTargetCreature->GetX(),
-					pTargetCreature->GetY()
+			CreatureState::PacketSpecialActionResult(pTargetCreature, static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType()+g_pActionInfoTable->GetMinResultActionInfo()),
+					CreatureState::GetID(pTargetCreature),
+					CreatureState::GetX(pTargetCreature),
+					CreatureState::GetY(pTargetCreature)
 			);
 		} else
 		{
-			pTargetCreature->PacketSpecialActionResult( 
-					RESULT_SKILL_ATTACK_GUN_AR,				//pPacket->getSkillType()+g_ActionInfoTable.GetMinResultActionInfo()
-					pTargetCreature->GetID(),
-					pTargetCreature->GetX(),
-					pTargetCreature->GetY()
+			CreatureState::PacketSpecialActionResult(pTargetCreature, RESULT_SKILL_ATTACK_GUN_AR,				//pPacket->getSkillType()+g_ActionInfoTable.GetMinResultActionInfo()
+					CreatureState::GetID(pTargetCreature),
+					CreatureState::GetX(pTargetCreature),
+					CreatureState::GetY(pTargetCreature)
 			);
 		}
 		
 		return;
 	}
 	//------------------------------------------------------
-	// 때리는 사람만 있는 경우는 때리는 동작만 보여준다.
+	// Only the attacker is here: show it attacking.
 	//------------------------------------------------------
 	else if (pTargetCreature==NULL)
 	{
@@ -88,20 +88,18 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 		if( pPacket->getSkillType() == SKILL_JABBING_VEIN || pPacket->getSkillType() == SKILL_MOLE_SHOT ||
 					pPacket->getSkillType() == SKILL_TRIDENT || pPacket->getSkillType() == SKILL_ULTIMATE_BLOW)
 		{
-			pCreature->PacketSpecialActionToNobody(
-							pPacket->getSkillType(), 
-							pCreature->GetX(),
-							pCreature->GetY()						
+			CreatureState::PacketSpecialActionToNobody(pCreature, pPacket->getSkillType(), 
+							CreatureState::GetX(pCreature),
+							CreatureState::GetY(pCreature)						
 			);
 		} else
 		{
 			//------------------------------------------------------
-			// Creature가 행동을 취하도록 한다.
+			// The creature acts.
 			//------------------------------------------------------
-			pCreature->PacketSpecialActionToNobody(
-							pCreature->GetBasicActionInfo(), 
-							pCreature->GetX(),
-							pCreature->GetY()						
+			CreatureState::PacketSpecialActionToNobody(pCreature, CreatureState::GetBasicActionInfo(pCreature), 
+							CreatureState::GetX(pCreature),
+							CreatureState::GetY(pCreature)						
 			);
 		}
 		
@@ -110,7 +108,7 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 
 
 	//------------------------------------------------------
-	// 결과(다른 캐릭터가 맞는 모습)를 설정한다.
+	// The result: the other character being hit.
 	//------------------------------------------------------
 	MActionResult* pResult = NULL;
 
@@ -127,46 +125,44 @@ void GCAttackArmsOK5Handler::execute ( GCAttackArmsOK5 * pPacket , Player * pPla
 										actionInfo,
 										pPacket->getObjectID(), 
 										pPacket->getTargetObjectID(), 
-										pTargetCreature->GetX(),
-										pTargetCreature->GetY()								
+										CreatureState::GetX(pTargetCreature),
+										CreatureState::GetY(pTargetCreature)								
 								 ) 
 						);
 		} else
 		{
 			pResult->Add( new MActionResultNodeActionInfo( 
-										pCreature->GetBasicActionInfo(),	// 총 공격
+										CreatureState::GetBasicActionInfo(pCreature),	// gun attack
 										pPacket->getObjectID(), 
 										pPacket->getTargetObjectID(), 
-										pTargetCreature->GetX(),
-										pTargetCreature->GetY()								
+										CreatureState::GetX(pTargetCreature),
+										CreatureState::GetY(pTargetCreature)								
 								 ) 
 						);
 		}
 	}
 
 	//------------------------------------------------------
-	// 행동하는 Creature가 TargetCreature를 바라보도록 한다.
+	// The acting creature faces its target.
 	//------------------------------------------------------
-	pCreature->SetDirectionToPosition( pTargetCreature->GetX(), pTargetCreature->GetY() );
+	CreatureState::SetDirectionToPosition(pCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature) );
 
 	//------------------------------------------------------
-	// Creature가 행동을 취하도록 한다.
+	// The creature acts.
 	//------------------------------------------------------
 
 	if( actionInfo == SKILL_JABBING_VEIN || actionInfo == SKILL_MOLE_SHOT || actionInfo == SKILL_TRIDENT ||
 		actionInfo == SKILL_QUICK_FIRE || actionInfo == SKILL_ULTIMATE_BLOW || pPacket->getSkillType() == SKILL_HARPOON_BOMB)
 	{
-		pCreature->PacketSpecialActionToOther(
-						// 총 공격
+		CreatureState::PacketSpecialActionToOther(pCreature, // gun attack
 						actionInfo,
 						pPacket->getTargetObjectID(), 
 						pResult
 		);
 	} else
 	{
-		pCreature->PacketSpecialActionToOther(
-						// 총 공격
-						pCreature->GetBasicActionInfo()	, 
+		CreatureState::PacketSpecialActionToOther(pCreature, // gun attack
+						CreatureState::GetBasicActionInfo(pCreature)	, 
 						pPacket->getTargetObjectID(), 
 						pResult
 		);

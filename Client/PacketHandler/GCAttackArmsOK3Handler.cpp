@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackArmsOK3.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MActionInfoTable.h"
 #include "MSlayerGear.h"
 #include "SkillDef.h"
@@ -26,9 +27,9 @@ void GCAttackArmsOK3Handler::execute ( GCAttackArmsOK3 * pPacket , Player * pPla
 			// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -37,40 +38,38 @@ void GCAttackArmsOK3Handler::execute ( GCAttackArmsOK3 * pPacket , Player * pPla
 	}	
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The creatures involved.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 	
 	if (pCreature==NULL)
 	{
-		// 그런 creature가 없을 경우
+		// No such creature.
 		DEBUG_ADD_FORMAT("There's no such creature : ID=%d, Skill=%d", pPacket->getObjectID(), pPacket->getSkillType());				
 		
 		return;
 	}
 
 	//------------------------------------------------------
-	// 행동하는 Creature가 TargetCreature를 바라보도록 한다.
+	// The acting creature faces its target.
 	//------------------------------------------------------
-	pCreature->SetDirectionToPosition( pPacket->getTargetX(), pPacket->getTargetY() );
+	CreatureState::SetDirectionToPosition(pCreature, pPacket->getTargetX(), pPacket->getTargetY() );
 
 	//------------------------------------------------------
-	// Creature가 행동을 취하도록 한다.
-	// 상대가 zone에 없는 경우이다.
+	// The creature acts.
+	// The target is not in the zone.
 	//------------------------------------------------------
 	if( pPacket->getSkillType() == SKILL_JABBING_VEIN || pPacket->getSkillType() == SKILL_MOLE_SHOT ||
 					pPacket->getSkillType() == SKILL_TRIDENT || pPacket->getSkillType() == SKILL_QUICK_FIRE ||
 					pPacket->getSkillType() == SKILL_ULTIMATE_BLOW || pPacket->getSkillType() == SKILL_HARPOON_BOMB)
 	{
-		pCreature->PacketSpecialActionToNobody(
-						pPacket->getSkillType()	,	// 총 공격
+		CreatureState::PacketSpecialActionToNobody(pCreature, pPacket->getSkillType()	,	// gun attack
 						pPacket->getTargetX(),
 						pPacket->getTargetY()						
 		);
 	} else
 	{
-		pCreature->PacketSpecialActionToNobody(
-						pCreature->GetBasicActionInfo()	,	// 총 공격
+		CreatureState::PacketSpecialActionToNobody(pCreature, CreatureState::GetBasicActionInfo(pCreature)	,	// gun attack
 						pPacket->getTargetX(),
 						pPacket->getTargetY()						
 		);

@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackMeleeOK3.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "ZoneStateHost.h"
 #include "MActionInfoTable.h"
 #include "SkillDef.h"
 
@@ -25,9 +27,9 @@ void GCAttackMeleeOK3Handler::execute ( GCAttackMeleeOK3 * pPacket , Player * pP
 	// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -36,10 +38,10 @@ void GCAttackMeleeOK3Handler::execute ( GCAttackMeleeOK3 * pPacket , Player * pP
 	}	
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The creatures involved.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-	MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+	MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 	
 	if (pCreature==NULL && pTargetCreature==NULL)
 	{
@@ -47,24 +49,23 @@ void GCAttackMeleeOK3Handler::execute ( GCAttackMeleeOK3 * pPacket , Player * pP
 	}
 
 	//------------------------------------------------------
-	// 맞는 사람만 있는 경우는 맞는 동작만 보여주면 된다.
+	// Only the target is here: show it being hit.
 	//------------------------------------------------------
 	if (pCreature==NULL)
 	{
 		
 		DEBUG_ADD_FORMAT("There's no such creature : ID=%d, Skill=%d", pPacket->getObjectID(), SKILL_ATTACK_MELEE);
 
-		pTargetCreature->PacketSpecialActionResult( 
-				RESULT_SKILL_ATTACK_MELEE,				//pPacket->getSkillType()+g_ActionInfoTable.GetMinResultActionInfo()
-				pTargetCreature->GetID(),
-				pTargetCreature->GetX(),
-				pTargetCreature->GetY()
+		CreatureState::PacketSpecialActionResult(pTargetCreature, RESULT_SKILL_ATTACK_MELEE,				//pPacket->getSkillType()+g_ActionInfoTable.GetMinResultActionInfo()
+				CreatureState::GetID(pTargetCreature),
+				CreatureState::GetX(pTargetCreature),
+				CreatureState::GetY(pTargetCreature)
 		);
 		
 		return;
 	}
 	//------------------------------------------------------
-	// 때리는 사람만 있는 경우는 때리는 동작만 보여준다.
+	// Only the attacker is here: show it attacking.
 	//------------------------------------------------------
 	else if (pTargetCreature==NULL)
 	{
@@ -72,45 +73,43 @@ void GCAttackMeleeOK3Handler::execute ( GCAttackMeleeOK3 * pPacket , Player * pP
 		DEBUG_ADD_FORMAT("There's no such creature : TargetID=%d, Skill=%d", pPacket->getTargetObjectID(), SKILL_ATTACK_MELEE);
 
 		//------------------------------------------------------
-		// Creature가 행동을 취하도록 한다.
+		// The creature acts.
 		//------------------------------------------------------
-		pCreature->PacketSpecialActionToNobody(
-						pCreature->GetBasicActionInfo(), 
-						pCreature->GetX(),
-						pCreature->GetY()						
+		CreatureState::PacketSpecialActionToNobody(pCreature, CreatureState::GetBasicActionInfo(pCreature), 
+						CreatureState::GetX(pCreature),
+						CreatureState::GetY(pCreature)						
 		);
 
-		// PacketSpecialActionToNobody에다가 MActionResult를 추가해서
-		// 피가 튀는걸 보여주는 것도 괜찮을 것이당..
-		// 근데, targetCreature가 없기 때문에..
-		// 정확한 좌표를 서버에서 받아오는게 먼저일까... 으흠~~		
+		// A result added to PacketSpecialActionToNobody could show
+		// blood spattering too,
+		// but without the target creature
+		// the server would first have to send its exact cell.		
 		
 		return;
 	}
 
 	//------------------------------------------------------
-	// 결과(다른 캐릭터가 맞는 모습)를 설정한다.
+	// The result: the other character being hit.
 	//------------------------------------------------------
 	MActionResult* pResult = new MActionResult;
 	pResult->Add( new MActionResultNodeActionInfo( 
-								pCreature->GetBasicActionInfo(),
+								CreatureState::GetBasicActionInfo(pCreature),
 								pPacket->getObjectID(), 
 								pPacket->getTargetObjectID(), 
-								pTargetCreature->GetX(),
-								pTargetCreature->GetY()
+								CreatureState::GetX(pTargetCreature),
+								CreatureState::GetY(pTargetCreature)
 								 ) 
 				);
 
 	//------------------------------------------------------
-	// 행동하는 Creature가 TargetCreature를 바라보도록 한다.
+	// The acting creature faces its target.
 	//------------------------------------------------------
-	pCreature->SetDirectionToPosition( pTargetCreature->GetX(), pTargetCreature->GetY() );
+	CreatureState::SetDirectionToPosition(pCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature) );
 
 	//------------------------------------------------------
-	// Creature가 행동을 취하도록 한다.
+	// The creature acts.
 	//------------------------------------------------------
-	pCreature->PacketSpecialActionToOther(
-					pCreature->GetBasicActionInfo(), 
+	CreatureState::PacketSpecialActionToOther(pCreature, CreatureState::GetBasicActionInfo(pCreature), 
 					pPacket->getTargetObjectID(), 
 					pResult
 	);

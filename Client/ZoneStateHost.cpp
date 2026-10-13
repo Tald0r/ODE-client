@@ -327,4 +327,9 @@ void ClearStopBloodDrain(MCreature* pCreature)
 	if (s_Host && s_Host->ClearStopBloodDrain) s_Host->ClearStopBloodDrain(pCreature);
 }
 
+TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetBasicActionInfo ? s_Host->GetBasicActionInfo(pCreature) : ACTIONINFO_NULL;
+}
+
 }

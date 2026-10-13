@@ -104,6 +104,8 @@ struct Host
 	void (*PacketSpecialActionToSelf)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, MActionResult* pResult) = nullptr;
 	void (*SetDrainCreatureID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
 	void (*ClearStopBloodDrain)(MCreature* pCreature) = nullptr;
+	// The action the creature attacks with by default (its weapon's).
+	TYPE_ACTIONINFO (*GetBasicActionInfo)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -163,5 +165,7 @@ void PacketSpecialActionToNobody(MCreature* pCreature, TYPE_ACTIONINFO actionInf
 void PacketSpecialActionToSelf(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, MActionResult* pResult);
 void SetDrainCreatureID(MCreature* pCreature, TYPE_OBJECTID id);
 void ClearStopBloodDrain(MCreature* pCreature);
+// ACTIONINFO_NULL without a host.
+TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature);
 
 }

@@ -37,7 +37,7 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 	}	
 
 	//------------------------------------------------------
-	// The target creature.
+	// The creatures involved.
 	//------------------------------------------------------
 	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 	MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
