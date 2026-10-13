@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttack.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -25,7 +26,7 @@ void GCAttackHandler::execute ( GCAttack * pPacket , Player * pPlayer )
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -35,14 +36,14 @@ void GCAttackHandler::execute ( GCAttack * pPacket , Player * pPlayer )
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature != NULL)
 		{
 			// 방향 바라보기
-			pCreature->SetDirectionToPosition(pPacket->getX(), pPacket->getY());
+			CreatureState::SetDirectionToPosition(pCreature, pPacket->getX(), pPacket->getY());
 
-			pCreature->PacketAttackNormal(	pPacket->getX(),
+			CreatureState::PacketAttackNormal(pCreature, pPacket->getX(),
 											pPacket->getY(),
 											pPacket->getDir());
 		}

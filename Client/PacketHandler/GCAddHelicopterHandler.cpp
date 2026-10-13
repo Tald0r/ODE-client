@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "Client_PCH.h"
 #include "Gpackets/GCAddHelicopter.h"
-#include "ClientDef.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -17,17 +17,17 @@ void GCAddHelicopterHandler::execute ( GCAddHelicopter * pPacket , Player * pPla
 		
 
 
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{
 		TYPE_OBJECTID creatureID = pPacket->getObjectID();
 
 		if (pPacket->getCode()==0)
 		{
-			g_pZone->AddHelicopter( creatureID, 0, 0 );		
+			ZoneState::AddHelicopter( creatureID, 0, 0 );		
 		}
 		else
 		{
-			g_pZone->RemoveHelicopter( creatureID );
+			ZoneState::RemoveHelicopter( creatureID );
 		}
 	}
 

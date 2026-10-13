@@ -7,7 +7,7 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCHPRecoveryEndToOthers.h"
-#include "ClientDef.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -19,15 +19,15 @@ void GCHPRecoveryEndToOthersHandler::execute ( GCHPRecoveryEndToOthers * pPacket
 		
 
 
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature!=NULL)
 		{
-			pCreature->StopRecoveryHP();
+			CreatureState::StopRecoveryHP(pCreature);
 
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			CreatureState::SetStatus(pCreature, MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
 		}
 	}
 

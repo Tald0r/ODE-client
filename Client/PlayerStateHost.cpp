@@ -18,6 +18,11 @@ MStatus* Status()
 	return s_Host && s_Host->Status ? s_Host->Status() : nullptr;
 }
 
+TYPE_OBJECTID GetID()
+{
+	return s_Host && s_Host->GetID ? s_Host->GetID() : 0;
+}
+
 WAIT_VERIFY GetWaitVerify()
 {
 	return s_Host && s_Host->GetWaitVerify ? s_Host->GetWaitVerify() : WAIT_VERIFY_NULL;

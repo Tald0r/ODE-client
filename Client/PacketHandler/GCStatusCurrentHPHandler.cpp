@@ -8,7 +8,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCStatusCurrentHP.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,7 +24,7 @@ void GCStatusCurrentHPHandler::execute ( GCStatusCurrentHP * pPacket , Player * 
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -34,7 +35,7 @@ void GCStatusCurrentHPHandler::execute ( GCStatusCurrentHP * pPacket , Player * 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		//--------------------------------------------------
 		// 없으면.. - -;
@@ -45,7 +46,7 @@ void GCStatusCurrentHPHandler::execute ( GCStatusCurrentHP * pPacket , Player * 
 		}
 		else
 		{		
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			CreatureState::SetStatus(pCreature, MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
 		}
 	}
 

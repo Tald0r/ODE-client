@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCNPCSay.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MChatManager.h"
 #include "MNPCScriptTable.h"
 
@@ -29,7 +30,7 @@ void GCNPCSayHandler::execute ( GCNPCSay * pPacket , Player * pPlayer )
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -42,7 +43,7 @@ void GCNPCSayHandler::execute ( GCNPCSay * pPacket , Player * pPlayer )
 		//---------------------------------------------------------------
 		// 캐릭터 머리 위에 채팅을 띄운다.
 		//---------------------------------------------------------------
-		MCreature*	pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature*	pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature==NULL)
 		{
@@ -53,7 +54,7 @@ void GCNPCSayHandler::execute ( GCNPCSay * pPacket , Player * pPlayer )
 			//-------------------------------------------------
 			// 정상적인 대화
 			//-------------------------------------------------
-			if (g_pChatManager->IsAcceptID( pCreature->GetName() ))
+			if (g_pChatManager->IsAcceptID( CreatureState::GetName(pCreature) ))
 			{
 				int scriptID = pPacket->getScriptID();
 				int subjectID = pPacket->getSubjectID();
@@ -62,7 +63,7 @@ void GCNPCSayHandler::execute ( GCNPCSay * pPacket , Player * pPlayer )
 
 				if (pString!=NULL)
 				{
-					pCreature->SetChatString( pString );
+					CreatureState::SetChatString(pCreature, pString );
 				}
 			}
 			//-------------------------------------------------
@@ -70,7 +71,7 @@ void GCNPCSayHandler::execute ( GCNPCSay * pPacket , Player * pPlayer )
 			//-------------------------------------------------
 			else
 			{
-				pCreature->SetChatString( "......" );
+				CreatureState::SetChatString(pCreature, "......" );
 			}
 
 			// history에 추가

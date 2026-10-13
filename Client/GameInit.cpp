@@ -122,6 +122,7 @@
 #include "DialogPresentationHost.h"
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2699,6 +2700,8 @@ void ReleaseAllObjects()
 	DialogPresentation::SetHost(nullptr);
 	LoginPresentation::SetHost(nullptr);
 	PlayerState::SetHost(nullptr);
+	ZoneState::SetHost(nullptr);
+	CreatureState::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -3490,6 +3493,7 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 
 static const PlayerState::Host s_PlayerStateHost = {
 	.Status = []() -> MStatus* { return g_pPlayer; },
+	.GetID = []() { return g_pPlayer->GetID(); },
 	.GetWaitVerify = []() { return g_pPlayer->GetWaitVerify(); },
 	.SetWaitVerifyNULL = []() { g_pPlayer->SetWaitVerifyNULL(); },
 	.GetRace = []() { return g_pPlayer->GetRace(); },
@@ -3504,6 +3508,34 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetServerPosition = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { g_pPlayer->SetServerPosition(sX, sY); },
 	.PacketMoveOK = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t direction) { g_pPlayer->PacketMoveOK(sX, sY, direction); },
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
+};
+
+static const ZoneState::Host s_ZoneStateHost = {
+	.Exists = []() { return g_pZone != NULL; },
+	.GetCreature = [](TYPE_OBJECTID id) { return g_pZone->GetCreature(id); },
+	.RemoveTileEffect = [](TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effectStatus, int serverID) { return g_pZone->RemoveTileEffect(sX, sY, effectStatus, serverID); },
+	.AddHelicopter = [](TYPE_OBJECTID creatureID, int x0, int y0) { return g_pZone->AddHelicopter(creatureID, x0, y0); },
+	.RemoveHelicopter = [](TYPE_OBJECTID creatureID) { g_pZone->RemoveHelicopter(creatureID); },
+	.AddCorpseFromCreature = [](TYPE_OBJECTID id) { return g_pZone->AddCorpseFromCreature(id); },
+};
+
+static const CreatureState::Host s_CreatureStateHost = {
+	.Status = [](MCreature* pCreature) -> MStatus* { return pCreature; },
+	.GetID = [](MCreature* pCreature) { return pCreature->GetID(); },
+	.GetName = [](MCreature* pCreature) { return pCreature->GetName(); },
+	.IsAlive = [](MCreature* pCreature) { return pCreature->IsAlive(); },
+	.SetDead = [](MCreature* pCreature) { pCreature->SetDead(); },
+	.StopRecoveryHP = [](MCreature* pCreature) { pCreature->StopRecoveryHP(); },
+	.SetRecoveryHP = [](MCreature* pCreature, int amount, int times, std::uint32_t delay) { pCreature->SetRecoveryHP(amount, times, delay); },
+	.SetNickName = [](MCreature* pCreature, std::uint8_t type, char* szNickName) { pCreature->SetNickName(type, szNickName); },
+	.SetChatString = [](MCreature* pCreature, const char* str) { pCreature->SetChatString(str); },
+	.PacketMove = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) { pCreature->PacketMove(x, y, direction); },
+	.PacketAttackNormal = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) { pCreature->PacketAttackNormal(x, y, direction); },
+	.SetDirectionToPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { pCreature->SetDirectionToPosition(sX, sY); },
+	.SetStop = [](MCreature* pCreature) { pCreature->SetStop(); },
+	.MovePosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return pCreature->MovePosition(x, y); },
+	.SetServerPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { pCreature->SetServerPosition(sX, sY); },
+	.KnockBackPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { return pCreature->KnockBackPosition(sX, sY); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {
@@ -4094,6 +4126,8 @@ InitGameObject()
 	DialogPresentation::SetHost(&s_DialogPresentationHost);
 	LoginPresentation::SetHost(&s_LoginPresentationHost);
 	PlayerState::SetHost(&s_PlayerStateHost);
+	ZoneState::SetHost(&s_ZoneStateHost);
+	CreatureState::SetHost(&s_CreatureStateHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

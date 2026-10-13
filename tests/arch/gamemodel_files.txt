@@ -791,3 +791,19 @@ Client/PacketHandler/GCUntransformFailHandler.cpp
 Client/PacketHandler/GCUseBonusPointOKHandler.cpp
 Client/PacketHandler/GCVisibleFailHandler.cpp
 Client/PacketHandler/GCVisibleOKHandler.cpp
+
+# Replies about the zone and the creatures in it, and their zone and creature services.
+Client/ZoneStateHost.cpp
+Client/ZoneStateHost.h
+Client/PacketHandler/GCAddHelicopterHandler.cpp
+Client/PacketHandler/GCAttackHandler.cpp
+Client/PacketHandler/GCCreatureDiedHandler.cpp
+Client/PacketHandler/GCDeleteEffectFromTileHandler.cpp
+Client/PacketHandler/GCHPRecoveryEndToOthersHandler.cpp
+Client/PacketHandler/GCHPRecoveryStartToOthersHandler.cpp
+Client/PacketHandler/GCKnockBackHandler.cpp
+Client/PacketHandler/GCModifyNicknameHandler.cpp
+Client/PacketHandler/GCMoveHandler.cpp
+Client/PacketHandler/GCNPCSayHandler.cpp
+Client/PacketHandler/GCNPCSayDynamicHandler.cpp
+Client/PacketHandler/GCStatusCurrentHPHandler.cpp

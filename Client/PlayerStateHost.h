@@ -33,11 +33,12 @@ enum WAIT_VERIFY
 // The client's own player, which replies about it read and change through
 // this host. Status is the player as its status array (MStatus, whose
 // SetStatus the player overrides); NULL when there is no player. A missing
-// host or entry means no player: no status, nothing awaited, a slayer
+// host or entry means no player: no status, ID 0, nothing awaited, a slayer
 // wearing nothing, false from every action, and actions skipped.
 struct Host
 {
 	MStatus* (*Status)() = nullptr;
+	TYPE_OBJECTID (*GetID)() = nullptr;
 	WAIT_VERIFY (*GetWaitVerify)() = nullptr;
 	void (*SetWaitVerifyNULL)() = nullptr;
 	Race (*GetRace)() = nullptr;
@@ -57,6 +58,7 @@ struct Host
 // Borrowed until replaced. Every call reads the current host again.
 const Host* SetHost(const Host* host);
 MStatus* Status();
+TYPE_OBJECTID GetID();
 WAIT_VERIFY GetWaitVerify();
 void SetWaitVerifyNULL();
 Race GetRace();

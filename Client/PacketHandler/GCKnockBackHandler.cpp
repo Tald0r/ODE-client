@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCKnockBack.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -27,21 +29,21 @@ void GCKnockBackHandler::execute ( GCKnockBack * pPacket , Player * pPlayer )
 	int nx = pPacket->getTargetX();
 	int ny = pPacket->getTargetY();	
 	
-	MCreature* pCreature = g_pZone->GetCreature( objectID );
+	MCreature* pCreature = ZoneState::GetCreature( objectID );
 
 	if (pCreature!=NULL)
 	{
 		// 일반 creature인 경우는 시작좌표를 일단 설정해준다.
-		if (pCreature->GetID()!=g_pPlayer->GetID())
+		if (CreatureState::GetID(pCreature)!=PlayerState::GetID())
 		{
-			pCreature->SetStop();		
+			CreatureState::SetStop(pCreature);		
 			
-			pCreature->MovePosition( ox, oy );
-			pCreature->SetServerPosition( ox, oy );
+			CreatureState::MovePosition(pCreature, ox, oy );
+			CreatureState::SetServerPosition(pCreature, ox, oy );
 		}
 
 		// (nx, ny)로 KnockBack된다.
-		pCreature->KnockBackPosition( nx, ny );
+		CreatureState::KnockBackPosition(pCreature, nx, ny );
 	}
 	else
 	{

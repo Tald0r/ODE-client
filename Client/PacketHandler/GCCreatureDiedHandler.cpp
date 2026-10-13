@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCCreatureDied.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -28,7 +29,7 @@ void GCCreatureDiedHandler::execute ( GCCreatureDied * pPacket , Player * pPlaye
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -40,7 +41,7 @@ void GCCreatureDiedHandler::execute ( GCCreatureDied * pPacket , Player * pPlaye
 	{
 		int creatureID = pPacket->getObjectID();
 
-		MCreature* pCreature = g_pZone->GetCreature(creatureID);
+		MCreature* pCreature = ZoneState::GetCreature(creatureID);
 
 		//--------------------------------------------------
 		// 새로운 Creature이면 추가
@@ -57,16 +58,16 @@ void GCCreatureDiedHandler::execute ( GCCreatureDied * pPacket , Player * pPlaye
 			//---------------------------------------------------------
 			//pCreature->SetDead();
 
-			if (pCreature->IsAlive())
+			if (CreatureState::IsAlive(pCreature))
 			{
-				pCreature->SetDead();
+				CreatureState::SetDead(pCreature);
 			}
 			else
 			{
 			//	pCreature->SetCorpse();
 			}
 
-			g_pZone->AddCorpseFromCreature( creatureID );
+			ZoneState::AddCorpseFromCreature( creatureID );
 		}
 	}
 
