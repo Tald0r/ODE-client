@@ -10,12 +10,8 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCAddStoreItem.h"
 #include "MStorage.h"
-#include "MPlayer.h"
 #include "PCItemInfo.h"
-#include "DebugInfo.h"
-#include "UIDialog.h"
-#include "MGameStringTable.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -77,35 +73,13 @@ void GCAddStoreItemHandler::execute ( GCAddStoreItem * pPacket , Player * pPlaye
 							//------------------------------------------
 							if (pItem->IsGunItem())
 							{
-								MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-								
-								// 의미 없음 - -;
-								pMagazine->SetID( 0 );
-								
-								// 이거는 총에 맞춰서 해줘야된다.
-								for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
+								// A fresh magazine of the gun's type with one round, as a new
+								// magazine starts; without one the gun is stored unloaded.
+								if (!MItem::LoadGun( pItem, 1 ))
 								{
-									pMagazine->SetItemType(	j );
-									
-									if (pMagazine->IsInsertToItem( pItem ))
-									{
-										break;
-									}
+									DEBUG_ADD_ERR("[Error] GCAddStoreItem: no magazine for the gun");
 								}
-								
-								// 의미 없음
-								pMagazine->ClearItemOption();
-								
-								
-								//------------------------------------
-								// 탄창 설정
-								//------------------------------------
-								MGunItem* pGunItem = (MGunItem*)pItem;
-								pGunItem->SetMagazine( pMagazine );
 							}		
-							//------------------------------------------
-							// 총이 아닌 경우
-							//------------------------------------------
 							else
 							{
 								pItem->SetSilver( pPacket->getItem().getSilver() );

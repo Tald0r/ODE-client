@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGetDamage.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "MActionInfoTable.h"
 #include "SkillDef.h"
 
@@ -26,13 +28,13 @@ void GCGetDamageHandler::execute ( GCGetDamage * pGCGetDamage , Player * pPlayer
 	//------------------------------------------------------
 	// Player가 Damage를 받았으면..
 	//------------------------------------------------------
-	if (pGCGetDamage->getObjectID()==g_pPlayer->GetID())
+	if (pGCGetDamage->getObjectID()==PlayerState::GetID())
 	{
-		g_pPlayer->PacketSpecialActionResult( 
+		CreatureState::PacketSpecialActionResult( PlayerState::Creature(),
 					static_cast<TYPE_ACTIONINFO>(SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo()),
-					g_pPlayer->GetID(),
-					g_pPlayer->GetX(),
-					g_pPlayer->GetY()
+					PlayerState::GetID(),
+					CreatureState::GetX(PlayerState::Creature()),
+					CreatureState::GetY(PlayerState::Creature())
 			);
 	}
 	else
@@ -40,7 +42,7 @@ void GCGetDamageHandler::execute ( GCGetDamage * pGCGetDamage , Player * pPlayer
 		//------------------------------------------------------
 		// Zone이 아직 생성되지 않은 경우
 		//------------------------------------------------------
-		if (g_pZone==NULL)
+		if (!ZoneState::Exists())
 		{
 			// message
 			DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -50,17 +52,17 @@ void GCGetDamageHandler::execute ( GCGetDamage * pGCGetDamage , Player * pPlayer
 		//------------------------------------------------------
 		else
 		{
-			MCreature* pCreature = g_pZone->GetCreature( pGCGetDamage->getObjectID() );
+			MCreature* pCreature = ZoneState::GetCreature( pGCGetDamage->getObjectID() );
 
 			// Creature에게 Damage 입힘
 			if (pCreature != NULL)
 			{
 				// SKILL_ATTACK_MELEE에 대한 결과를 표현해준다.
-				pCreature->PacketSpecialActionResult( 
+				CreatureState::PacketSpecialActionResult(pCreature, 
 								static_cast<TYPE_ACTIONINFO>(SKILL_ATTACK_MELEE + (*g_pActionInfoTable).GetMinResultActionInfo()),
-								pCreature->GetID(),
-								pCreature->GetX(),
-								pCreature->GetY()
+								CreatureState::GetID(pCreature),
+								CreatureState::GetX(pCreature),
+								CreatureState::GetY(pCreature)
 				);
 				
 			}

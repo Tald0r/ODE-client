@@ -8,7 +8,9 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCAddInstalledMineToZone.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MItem.h"
+#include "WorldEventsHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -30,16 +32,16 @@ void GCAddInstalledMineToZoneHandler::execute ( GCAddInstalledMineToZone * pPack
 	*/
 	
 	// 
-	MItem* pItem = AddItemToZone( (GCAddItemToZone*) pPacket, FALSE );	
+	MItem* pItem = WorldEvents::AddItemToZone( pPacket, false );
 
 	if (pItem==NULL)
 	{
-		// 머지
+		// No item was added to the zone.
 		DEBUG_ADD_ERR("[Error] Can't Installed Mine");
 	}
 	else if (pItem->GetItemClass()==ITEM_CLASS_MINE)
 	{
-		((MMine*)pItem)->SetInstalled();
+		MItem::SetMineInstalled( pItem );
 	}
 	else
 	{

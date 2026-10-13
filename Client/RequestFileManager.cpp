@@ -4,16 +4,12 @@
 #include "Client_PCH.h"
 #include "RequestFileManager.h"
 #include "RequestServerPlayer.h"
-#include "ProfileManager.h"
 #include "DataPath.h"
 
 #include "Packet/Rpackets/RCRequestedFile.h"
 #include "Packet/Rpackets/RCRequestVerify.h"
 
-#include "ServerInfo.h"
-#include "DebugInfo.h"
-#include "MTypeDef.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
 
 //---------------------------------------------------------------------------
 // Global
@@ -49,7 +45,7 @@ RequestSendInfo::MakeRCRequestedFilePacket(RCRequestedFile& packet) const
 {
 	std::list<SendFileInfo*>::const_iterator iInfo = m_FileInfos.begin();
 
-	// 하나만 넣어둔다.
+	// Only the first file is announced.
 	//while (iInfo != m_FileInfos.end())
 	if (iInfo != m_FileInfos.end())
 	{
@@ -230,8 +226,8 @@ RequestFileManager::HasOtherRequest(const std::string& name) const
 //---------------------------------------------------------------------------
 // Send OtherRequest
 //---------------------------------------------------------------------------
-// return값이 true이면 화일을 보내는 중이라는 의미이다.
-// RequestServerPlayer의 processCommand를 처리할 필요가 없다.
+// True means a file is being sent, so the
+// RequestServerPlayer need not process its commands.
 //---------------------------------------------------------------------------
 bool			
 RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlayer* pRequestServerPlayer)
@@ -252,7 +248,7 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 		switch (pFileInfo->GetMode())
 		{
 			//------------------------------------------------------------------
-			// 화일 보내기 전에
+			// Before the file is sent
 			//------------------------------------------------------------------
 			case REQUEST_FILE_MODE_BEFORE :
 			{
@@ -274,7 +270,7 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 			return false;
 
 			//------------------------------------------------------------------
-			// 화일 보내는 중
+			// While the file is sent
 			//------------------------------------------------------------------
 			case REQUEST_FILE_MODE_SEND :
 			{
@@ -288,13 +284,13 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 
 					if (nSent!=nRead)
 					{
-						// 엽기일까.. - -;
+						// Not all of it went out; read the rest again.
 						// socketInputStream
 						pFileInfo->SendBack( nRead - nSent );
 					}
 				}
 
-				if (nRead < MAX_BUFFER)	// 다 읽은 경우
+				if (nRead < MAX_BUFFER)	// the file is read to its end
 				{
 					if (pFileInfo->GetFileSizeLeft()==0)
 					{
@@ -304,13 +300,13 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 
 						if (pInfo->IsEnd())
 						{
-							// 다 보냈다~..
+							// Every file is sent.
 							RCRequestVerify rcRequestVerify;
 							rcRequestVerify.setCode( REQUEST_VERIFY_PROFILE_DONE );
 
 							pRequestServerPlayer->sendPacket( &rcRequestVerify );
 
-							// 정보 제거
+							// Forget the request.
 							delete pInfo;
 							m_OtherRequests.erase( iOther );
 						}
@@ -318,7 +314,7 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 						{
 							//pFileInfo = pInfo->GetFront();
 
-							// 덜 보냈으면 다음꺼 또 보낸다.							
+							// Files remain: the next call announces the next one.							
 						}
 					}
 					else
@@ -330,7 +326,7 @@ RequestFileManager::SendOtherRequest(const std::string& name, RequestServerPlaye
 			return true;
 			
 			//------------------------------------------------------------------
-			// 화일 보내고 나서
+			// After the file is sent
 			//------------------------------------------------------------------
 			case REQUEST_FILE_MODE_AFTER :
 			return false;

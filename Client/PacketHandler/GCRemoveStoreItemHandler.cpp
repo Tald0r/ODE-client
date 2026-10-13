@@ -10,8 +10,7 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCRemoveStoreItem.h"
 #include "MStorage.h"
-#include "MPlayer.h"
-#include "VS_UI.h"
+#include "VsUiPresentationHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -27,7 +26,7 @@ void GCRemoveStoreItemHandler::execute ( GCRemoveStoreItem * pPacket , Player * 
 	//__BEGIN_DEBUG_EX
 	
  
-	if(gC_vs_ui.inventory_mode == 1 || gC_vs_ui.inventory_mode == 2)
+	if(VsUiPresentation::InventoryMode() == 1 || VsUiPresentation::InventoryMode() == 2)
 	{
 		
 		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=0)

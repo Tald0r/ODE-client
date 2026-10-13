@@ -123,7 +123,10 @@
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
+#include "MNPC.h"
 #include "WorldEventsHost.h"
+#include "VsUiPresentationHost.h"
+#include "VS_UI_Message.h"
 #include "LoginListHost.h"
 #include "MStopZoneEmptyHorizontalWallEffectGenerator.h"
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
@@ -2705,6 +2708,7 @@ void ReleaseAllObjects()
 	ZoneState::SetHost(nullptr);
 	CreatureState::SetHost(nullptr);
 	WorldEvents::SetHost(nullptr);
+	VsUiPresentation::SetHost(nullptr);
 	LoginLists::SetHost(nullptr);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(nullptr);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
@@ -2923,7 +2927,8 @@ static MMagazine*	EmptyMagazineFor(MItem* pGun)
 	return pMagazine;
 }
 
-// A gun a reply builds (the trade box's offer) loaded with that many rounds.
+// A gun a reply builds (the trade box's offer, an item added to a
+// personal store) loaded with that many rounds.
 static bool	LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)
 {
 	MMagazine* pMagazine = EmptyMagazineFor( pGun );
@@ -2960,6 +2965,7 @@ static const MItemHost	s_ItemHost = {
 	.ItemDestroyed			= [](MItem* item) noexcept { UI_RemoveDescriptor(item); },
 	.NewItem				= NewItemOfClass,
 	.LoadGun				= LoadGun,
+	.SetMineInstalled		= [](MItem* pMine) { static_cast<MMine*>(pMine)->SetInstalled(); },
 };
 
 //-----------------------------------------------------------------------------
@@ -3516,6 +3522,7 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
 	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
 	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
+	.ShowMessage = g_ShowMessage,
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
@@ -3537,6 +3544,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.PacketMoveNO = []() { g_pPlayer->PacketMoveNO(); },
 	.SetGuildNumber = [](int guildNumber) { g_pPlayer->SetGuildNumber(guildNumber); },
 	.HasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
+	.Creature = []() -> MCreature* { return g_pPlayer; },
+	.IsOperator = []() { return g_pPlayer != NULL && g_pPlayer->IsOperator(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3565,6 +3574,20 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.MovePosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return pCreature->MovePosition(x, y); },
 	.SetServerPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { pCreature->SetServerPosition(sX, sY); },
 	.KnockBackPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { return pCreature->KnockBackPosition(sX, sY); },
+	.GetX = [](MCreature* pCreature) { return pCreature->GetX(); },
+	.GetY = [](MCreature* pCreature) { return pCreature->GetY(); },
+	.SetEffectDelayFrame = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames) { pCreature->SetEffectDelayFrame(actionInfo, frames); },
+	.PacketSpecialActionResult = [](MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) {
+		pCreature->PacketSpecialActionResult(resultActionInfo, id, sX, sY);
+	},
+	.PacketSpecialActionToInventoryItem = [](MCreature* pCreature, TYPE_ACTIONINFO actionInfo) { pCreature->PacketSpecialActionToInventoryItem(actionInfo); },
+	.AddEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame) { return pCreature->AddEffectStatus(status, delayFrame); },
+	.SetTurning = [](MCreature* pCreature, std::uint16_t count) { pCreature->SetTurning(count); },
+	.IsNPC = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_NPC; },
+	// Only an NPC has a shop; another creature answers none rather than be cast.
+	.GetShop = [](MCreature* pCreature) -> MShop* {
+		return pCreature->GetClassType() == MCreature::CLASS_NPC ? static_cast<MNPC*>(pCreature)->GetShop() : NULL;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3578,6 +3601,13 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SetLightning = [](std::uint32_t delay) { SetLightning(delay); },
 	.SetPetInfo = SetPetInfo,
 	.RequestDisconnect = RequestDisconnect,
+	.AddEvent = [](MEvent& event) { if (g_pEventManager != NULL) g_pEventManager->AddEvent(event); },
+};
+
+static const VsUiPresentation::Host s_VsUiPresentationHost = {
+	.InventoryMode = []() { return gC_vs_ui.inventory_mode; },
+	.AddNickNameList = [](NicknameInfo* pInfo) { gC_vs_ui.AddNickNameList(static_cast<void*>(pInfo)); },
+	.SetNickNameList = [](std::vector<NicknameInfo*>* pList) { gC_vs_ui.SetNickNameList(static_cast<void*>(pList)); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {
@@ -4171,6 +4201,7 @@ InitGameObject()
 	ZoneState::SetHost(&s_ZoneStateHost);
 	CreatureState::SetHost(&s_CreatureStateHost);
 	WorldEvents::SetHost(&s_WorldEventsHost);
+	VsUiPresentation::SetHost(&s_VsUiPresentationHost);
 	LoginLists::SetHost(&s_LoginListHost);
 	MStopZoneEmptyHorizontalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);

@@ -11,6 +11,7 @@
 #include "SocketImpl.h"
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
+#include "Gpackets/GCAddInstalledMineToZone.h"
 #include "Gpackets/GCAddNewItemToZone.h"
 #include "Gpackets/GCAddVampirePortal.h"
 #include "Gpackets/GCBloodBibleSignInfo.h"
@@ -28,6 +29,8 @@ namespace {
 
 std::vector<std::string> calls;
 const void* lastPointer = nullptr;
+// What the zone answers it added.
+MItem* added = nullptr;
 
 std::string N(long long value) { return std::to_string(value); }
 
@@ -35,7 +38,7 @@ const WorldEvents::Host host{
 	.AddItemToZone = [](GCAddItemToZone* pPacket, bool bDropping) -> MItem* {
 		lastPointer = pPacket;
 		calls.push_back("additem|" + N(pPacket->getObjectID()) + "|" + N(bDropping));
-		return nullptr;
+		return added;
 	},
 	.AddVampirePortal = [](int serverID, const char* ownerName, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY,
 		std::uint32_t delayFrame, int zoneID, TYPE_SECTORPOSITION zoneX, TYPE_SECTORPOSITION zoneY, bool bStartFromMainNode) {
@@ -49,12 +52,27 @@ const WorldEvents::Host host{
 	.RequestDisconnect = [](const char* pName) { calls.push_back("disconnect|" + std::string(pName ? pName : "(null)")); },
 };
 
+struct Ware : MItem
+{
+	ITEM_CLASS m_Class;
+	Ware(ITEM_CLASS itemClass, TYPE_OBJECTID id) : m_Class(itemClass) { SetID(id); }
+	ITEM_CLASS GetItemClass() const override { return m_Class; }
+};
+
+MItemHost ItemHost()
+{
+	MItemHost items{};
+	items.SetMineInstalled = [](MItem* pMine) { calls.push_back("installed|" + N(pMine->GetID())); };
+	return items;
+}
+const MItemHost items = ItemHost();
+
 // The frame conversion reads the client configuration GameModelWorld makes.
 struct World : GameModelWorld
 {
 	const WorldEvents::Host* oldHost = WorldEvents::SetHost(&host);
-	World() { calls.clear(); lastPointer = nullptr; }
-	~World() { WorldEvents::SetHost(oldHost); }
+	World() { calls.clear(); lastPointer = nullptr; added = nullptr; MItem::SetHost(&items); }
+	~World() { MItem::SetHost(nullptr); WorldEvents::SetHost(oldHost); }
 };
 
 template<class PacketType>
@@ -124,7 +142,7 @@ void ReceiveLightning(BYTE delay)
 	GCLightningHandler::execute(&packet, nullptr);
 }
 
-// Every handler once: seven calls with a host.
+// Every handler once: eight calls with a host.
 void RunEveryHandler()
 {
 	Peer peer;
@@ -146,6 +164,9 @@ void RunEveryHandler()
 	petInfo.setObjectID(55);
 	petInfo.setPetInfo(&pet);
 	GCPetInfoHandler::execute(&petInfo, nullptr);
+	GCAddInstalledMineToZone mine;
+	mine.setObjectID(78);
+	GCAddInstalledMineToZoneHandler::execute(&mine, nullptr);
 }
 
 } // namespace
@@ -171,6 +192,40 @@ TEST(WorldEventHandlers, ANewItemIsAddedToTheZoneWithoutADrop)
 	GCAddNewItemToZoneHandler::execute(&packet, nullptr);
 	CHECK(calls == std::vector<std::string>{"additem|77|0"});
 	CHECK(lastPointer == static_cast<GCAddItemToZone*>(&packet));
+}
+
+TEST(WorldEventHandlers, AnInstalledMineIsAddedWithoutADropAndMarkedInstalled)
+{
+	World world;
+	// Outlives the items, whose destructors read the installed item host.
+	const MItemHost unmarking{};
+	Ware mine(ITEM_CLASS_MINE, 78);
+	Ware sword(ITEM_CLASS_SWORD, 79);
+	GCAddInstalledMineToZone packet;
+	packet.setObjectID(78);
+	added = &mine;
+	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
+	CHECK(calls == std::vector<std::string>({"additem|78|0", "installed|78"}));
+	CHECK(lastPointer == static_cast<GCAddItemToZone*>(&packet));
+
+	// Anything but a mine, or nothing added, is left as it is.
+	calls.clear();
+	packet.setObjectID(79);
+	added = &sword;
+	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
+	added = nullptr;
+	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
+	CHECK(calls == std::vector<std::string>({"additem|79|0", "additem|79|0"}));
+
+	// Without an item service, or with one that cannot mark a mine, the
+	// mine is added and left as it is.
+	calls.clear();
+	MItem::SetHost(nullptr);
+	added = &mine;
+	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
+	MItem::SetHost(&unmarking);
+	GCAddInstalledMineToZoneHandler::execute(&packet, nullptr);
+	CHECK(calls == std::vector<std::string>({"additem|79|0", "additem|79|0"}));
 }
 
 TEST(WorldEventHandlers, AVampirePortalCarriesItsOwnerPlaceTargetAndFrameDuration)
@@ -218,5 +273,5 @@ TEST(WorldEventHandlers, MissingHostsAndEntriesSkipEverything)
 	CHECK(calls.empty());
 	CHECK(WorldEvents::SetHost(&host) == &empty);
 	RunEveryHandler();
-	CHECK_EQ(7u, calls.size());
+	CHECK_EQ(8u, calls.size());
 }

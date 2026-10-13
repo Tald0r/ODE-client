@@ -840,3 +840,54 @@ Client/PacketHandler/GCPartySayHandler.cpp
 Client/PacketHandler/RCCharacterInfoHandler.cpp
 Client/PacketHandler/RCSayHandler.cpp
 Client/PacketHandler/RCStatusHPHandler.cpp
+
+# Skill and damage results on zone creatures and the player, over the creature service.
+Client/PacketHandler/GCAttackArmsOK4Handler.cpp
+Client/PacketHandler/GCGetDamageHandler.cpp
+Client/PacketHandler/GCKnocksTargetBackOK4Handler.cpp
+Client/PacketHandler/GCShopBoughtHandler.cpp
+Client/PacketHandler/GCSkillToInventoryOK2Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK4Handler.cpp
+
+# Personal-store and nickname replies over the UI object's services.
+Client/VsUiPresentationHost.cpp
+Client/VsUiPresentationHost.h
+Client/PacketHandler/GCAddNicknameHandler.cpp
+Client/PacketHandler/GCAddStoreItemHandler.cpp
+Client/PacketHandler/GCNicknameListHandler.cpp
+Client/PacketHandler/GCRemoveStoreItemHandler.cpp
+
+# A wall's see-through test over the tile geometry, and the peer
+# disconnect request over the peer manager.
+Client/MImageObjectScreen.cpp
+Client/RequestFunction.cpp
+Client/RequestFunction.h
+
+# The files other players asked this client for, sent over their peer connections.
+Client/RequestFileManager.cpp
+Client/RequestFileManager.h
+
+# The frame clock the main loop stamps, and the help display that
+# throttles help messages by it.
+Client/FrameClock.cpp
+Client/FrameClock.h
+Client/MHelpDisplayer.cpp
+Client/MHelpDisplayer.h
+
+# A mine installed in the zone, through the world-event and item hosts.
+Client/PacketHandler/GCAddInstalledMineToZoneHandler.cpp
+
+# Login and registration errors, over the login host and the client mode
+# (with the update flag the client mode now owns).
+Client/PacketHandler/LCLoginErrorHandler.cpp
+Client/PacketHandler/LCRegisterPlayerErrorHandler.cpp
+
+# A whisper, filtered and masked for the player, over the communication
+# and player hosts.
+Client/PacketHandler/GCWhisperHandler.cpp
+
+# A kick warning queued as a timed logout, through the world-event host.
+Client/PacketHandler/GCKickMessageHandler.cpp
+
+# A made item, over the dialog and player hosts.
+Client/PacketHandler/GCMakeItemOKHandler.cpp

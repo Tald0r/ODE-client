@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToObjectOK4.h"
-#include "ClientDef.h"
-#include "PacketFunction2.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "ZoneStateHost.h"
+#include "Packet/WireHost.h"
 #include "SkillDef.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -25,7 +28,7 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -47,7 +50,7 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 		if( (*g_pActionInfoTable)[skillID].IsUseActionStep() && pPacket->getGrade() > 0)
 			skillID = (*g_pActionInfoTable)[skillID].GetActionStep( pPacket->getGrade() - 1);
 		
-		MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );		
+		MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );		
 
 		// TargetCreature에게 결과 표현
 		if (pTargetCreature != NULL)
@@ -56,14 +59,14 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 			DWORD delayFrame = ConvertDurationToFrame( pPacket->getDuration() );
 
 			// effect delay설정
-			pTargetCreature->SetEffectDelayFrame( pPacket->getSkillType(), delayFrame );
+			CreatureState::SetEffectDelayFrame(pTargetCreature, pPacket->getSkillType(), delayFrame );
 
 			// 바로 결과 표현
-			pTargetCreature->PacketSpecialActionResult( 
+			CreatureState::PacketSpecialActionResult(pTargetCreature, 
 										static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()), 
-										pTargetCreature->GetID(),
-										pTargetCreature->GetX(),
-										pTargetCreature->GetY()
+										CreatureState::GetID(pTargetCreature),
+										CreatureState::GetX(pTargetCreature),
+										CreatureState::GetY(pTargetCreature)
 			);
 
 			//------------------------------------------------------
@@ -73,12 +76,12 @@ void GCSkillToObjectOK4Handler::execute ( GCSkillToObjectOK4 * pPacket , Player 
 			
 			if (es!=EFFECTSTATUS_NULL)
 			{
-				pTargetCreature->AddEffectStatus( es, delayFrame );
+				CreatureState::AddEffectStatus(pTargetCreature, es, delayFrame );
 			}
 
 			if(skillID == SKILL_DRAGON_TORNADO)
 			{
-				pTargetCreature->SetTurning( 16 );
+				CreatureState::SetTurning(pTargetCreature, 16 );
 			}
 		}
 	}	

@@ -16,6 +16,7 @@
 #include "PacketValidator.h"
 #include "RequestServerPlayer.h"
 #include "RequestServerPlayerManager.h"
+#include "RequestFunction.h"
 #include "ServerSocket.h"
 #include "Socket.h"
 #include "SocketAPI.h"
@@ -79,9 +80,8 @@ void Break(RequestServerPlayer* pPeer)
 const WorldEvents::Host events{
 	.RequestDisconnect = [](const char* pName) {
 		asked.push_back(pName);
-		// What the executable's RequestDisconnect does with it.
-		if (g_pRequestServerPlayerManager != NULL)
-			g_pRequestServerPlayerManager->Disconnect(pName);
+		// The executable's adapter is RequestDisconnect itself.
+		::RequestDisconnect(pName);
 	},
 };
 
@@ -193,6 +193,20 @@ TEST(PeerSelfDisconnect, APeerAskingToDisconnectItselfIsDroppedAfterItsDispatch)
 	// Later updates go on with the remaining peer.
 	world.manager.Update();
 	CHECK_EQ(1, world.manager.GetSize());
+}
+
+TEST(PeerSelfDisconnect, RequestDisconnectDropsTheNamedPeerOfTheInstalledManager)
+{
+	World world;
+	world.Connect("Nyx");
+	world.Connect("Vanda");
+	::RequestDisconnect("Vanda");
+	CHECK(world.manager.Find("Vanda") == nullptr);
+	CHECK(world.manager.Find("Nyx") != nullptr);
+	// Without a manager there is nobody to drop.
+	g_pRequestServerPlayerManager = NULL;
+	::RequestDisconnect("Nyx");
+	CHECK(world.manager.Find("Nyx") != nullptr);
 }
 
 TEST(PeerSelfDisconnect, ADisconnectOutsideAnUpdateDropsThePeerAtOnce)

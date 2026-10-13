@@ -48,4 +48,9 @@ void RequestDisconnect(const char* pName)
 	if (s_Host && s_Host->RequestDisconnect) s_Host->RequestDisconnect(pName);
 }
 
+void AddEvent(MEvent& event)
+{
+	if (s_Host && s_Host->AddEvent) s_Host->AddEvent(event);
+}
+
 }

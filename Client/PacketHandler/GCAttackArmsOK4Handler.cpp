@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackArmsOK4.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MActionInfoTable.h"
 #include "MSlayerGear.h"
 #include "SkillDef.h"
@@ -28,7 +29,7 @@ void GCAttackArmsOK4Handler::execute ( GCAttackArmsOK4 * pPacket , Player * pPla
 	//------------------------------------------------------
 	// Zone이 아직 생성되지 않은 경우
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -39,7 +40,7 @@ void GCAttackArmsOK4Handler::execute ( GCAttackArmsOK4 * pPacket , Player * pPla
 	//------------------------------------------------------
 	// 대상이 되는 creature를 얻는다.
 	//------------------------------------------------------
-	MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+	MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 	
 	if (pTargetCreature==NULL)
 	{
@@ -57,20 +58,20 @@ void GCAttackArmsOK4Handler::execute ( GCAttackArmsOK4 * pPacket , Player * pPla
 					pPacket->getSkillType() == SKILL_TRIDENT || pPacket->getSkillType() == SKILL_QUICK_FIRE ||
 					pPacket->getSkillType() == SKILL_ULTIMATE_BLOW || pPacket->getSkillType() == SKILL_HARPOON_BOMB)
 	{
-		pTargetCreature->PacketSpecialActionResult( 
+		CreatureState::PacketSpecialActionResult(pTargetCreature, 
 					static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType()+g_pActionInfoTable->GetMinResultActionInfo()),
-					pTargetCreature->GetID(),
-					pTargetCreature->GetX(),
-					pTargetCreature->GetY()
+					CreatureState::GetID(pTargetCreature),
+					CreatureState::GetX(pTargetCreature),
+					CreatureState::GetY(pTargetCreature)
 		);
 	}
 	else
 	{
-		pTargetCreature->PacketSpecialActionResult( 
+		CreatureState::PacketSpecialActionResult(pTargetCreature, 
 					RESULT_SKILL_ATTACK_GUN_SR,				//pPacket->getSkillType()+g_ActionInfoTable.GetMinResultActionInfo()
-					pTargetCreature->GetID(),
-					pTargetCreature->GetX(),
-					pTargetCreature->GetY()
+					CreatureState::GetID(pTargetCreature),
+					CreatureState::GetX(pTargetCreature),
+					CreatureState::GetY(pTargetCreature)
 		);
 	}
 

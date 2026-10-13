@@ -249,7 +249,7 @@ every baseline move; the table below is the current reading.
 
 | # | Metric | Now | What it counts, and does not |
 |---|--------|---:|---|
-| R1 | Application translation units compiled directly into the `DarkEden` target | **238** | `ClCompile` entries in `DarkEden.vcxproj`, excluding CMake's generated `CMakeFiles/DarkEden.dir/cmake_pch.cxx`, read from the ctest run's own build dir; SKIP (never PASS) without a supported generated project. Both the Visual Studio configure stamp and Ninja's `build.ninja` must be newer than CMakeLists.txt and both library membership files. Ninja's baseline is **236**, since the non-Windows source list is two files shorter; Linux/macOS CI verifies that count. Baseline 1,044 on 2026-09-01; 484 after task 5.2's eighth slice. **482 on 2026-09-17:** the earlier deletion of `md5.cpp` had left the recorded 484 one too high (483 measured before this extraction); task 4.5 moves `RankBonusTable.cpp` into `gamemodel` (483 → 482). **478 later that day:** delete the four unused Direct3D texture/shadow cache translation units; their object declarations were commented out and the active sprite path never constructed them. **477 later still:** remove the unused Windows-only WinINet downloader; Ninja remains 475. It counts what still cannot be unit-tested. Recorded growths, each the executable side of a split: `PacketHandlerRegistry.cpp`, `GCExchangeBuyHandler.cpp`, `MItemUse.cpp`, `MObjectScreen.cpp`, `MSkillAvailable.cpp`, `TextServiceScreen.cpp`. **473 Windows / 471 Ninja later that day:** six map-record/header translation units move to `gamemodel`, while two new executable files retain screen geometry and live interaction actions; `ShowTimeChecker`'s pure constructor and I/O move to `ShowTimeData.cpp`. A further executable unit moved to `basic` with `CMessageArray` (2026-09-18). **470 Windows / 468 Ninja on 2026-09-21:** `UserOption.cpp` moves unchanged into `VS_UI`; its test links the same object as the game. **469 Windows / 467 Ninja:** the corrected `SXml.cpp` moves unchanged into `VS_UI`, replacing the older duplicate and allowing XML tests to link the production implementation. **468 Windows / 466 Ninja:** the help-message loader moves unchanged into `VS_UI` for real-library parser tests. **467 on 2026-09-21:** `CToken.cpp` joins `gamemodel` byte-identically so token and reset lifetimes can be tested. **466 Windows / 464 Ninja:** the empty handwritten `Client_PCH.cpp` is retired when CMake starts producing the private PCH. Generated PCH producers are excluded from both inventories; ordinary application `.cxx` and `.cc` files remain counted.  **465 Windows / 463 Ninja on 2026-09-24:** the inactive Client/DebugInfo.cpp implementation is removed.  **460 Windows / 458 Ninja on 2026-09-24:** five unchanged world metadata implementations join gamemodel. **456 Windows / 454 Ninja:** quest metadata joins gamemodel; profile and shrine file adapters join VS_UI. **455 Windows / 453 Ninja:** party membership joins gamemodel behind its live-creature host. **456 Windows / 454 Ninja:** the generated English NPC name table (`MNPCTableEnglish.cpp`) is a recorded growth; it writes an executable global. **454 Windows / 452 Ninja on 2026-09-28:** the NPC talk boxes (`TalkBox.cpp`, `MStringList.cpp`) join gamemodel so the menu-answer mapping can be tested. **453 Windows / 451 Ninja later that day:** `MStatusManager.cpp` joins gamemodel so the character-select stat preview can be tested (task 4.12, slice 3). **449 Windows / 447 Ninja on 2026-09-29:** the action and effect tables (`MActionInfoTable.cpp`, `MEffectSpriteTypeTable.cpp`, `MEffectStatusTable.cpp`, `MCreatureSpriteTable.cpp`) join gamemodel so their loaders can be tested (task 4.1); the move changed no loader, and later commits fixed the loaders test-first. **447 Windows / 445 Ninja on 2026-09-29:** the chat filter (`MStringMap.cpp`, `MChatManager.cpp`) joins gamemodel, its one option read behind `MChatHost`, so the curse filter can be tested (task 4.13). **445 Windows / 443 Ninja on 2026-09-29, after merging both:** the creature status array (`MStatus.cpp`) and the request/answer mode register (`TempInformation.cpp`) join gamemodel unchanged so they can be tested (task 4.14); each branch removed two from 449/447, and the merged tree was measured, not added up. (The merge had left this entry's bold marker doubled and its first clause repeated; tidied 2026-09-30.) **437 Windows / 435 Ninja on 2026-09-30:** the eight packet handlers that reach only model state (`GCPhoneConnectedHandler.cpp`, `GCPhoneDisconnectedHandler.cpp`, `GCPhoneSayHandler.cpp`, `GCRingHandler.cpp`, `GCTradeMoneyHandler.cpp`, `GCTradeRemoveItemHandler.cpp`, `GCSystemAvailabilitiesHandler.cpp`, `GCMonsterKillQuestInfoHandler.cpp`) join gamemodel from `Client/PacketHandler` so a test can run them on real packets (task 4.15). **436 Windows / 434 Ninja on 2026-10-02:** `CServerInformation.cpp` joins `gamemodel` unchanged so login world/server selection can be tested (task 4.19). **434 Windows / 432 Ninja later that day:** `MFunctionManager.cpp` and `MRequestMode.cpp` join `gamemodel` unchanged so callback dispatch and player/view request state can be tested (task 4.20). **433 Windows / 431 Ninja later that day:** `MathTable.cpp` joins `gamemodel` unchanged so effect trigonometry and steering can be tested (task 4.21). **432 Windows / 430 Ninja later that day:** `ServerInfoFileParser.cpp` joins `gamemodel` after removing its unused `MinTr.h` include, so dimension-specific login and reconnect configuration can be tested (task 4.22). **431 Windows / 429 Ninja later that day:** `MWeather.cpp` joins `gamemodel` behind player-origin and viewport callbacks (task 4.23). **428 Windows / 426 Ninja later that day:** `MJusticeAttackManager.cpp` and its add/remove packet handlers join `gamemodel` after dropping unobserved timestamps (task 4.25). **427 Windows / 425 Ninja later that day:** `PCConfigTable.cpp` joins `gamemodel` unchanged so saved character slots and per-world account settings can be tested (task 4.26). **425 Windows / 423 Ninja later that day:** `MonsterNameTable.cpp` and `MLevelNameTable.cpp` join `gamemodel` unchanged, with the title/hallucination selection state extracted from `MCreature` (task 4.27). **424 Windows / 422 Ninja later that day:** `MWarManager.cpp` joins `gamemodel` with live zone and UI actions behind `MWarHost` (task 4.28). **423 Windows / 421 Ninja later that day:** `MShopTemplate.cpp` joins `gamemodel` unchanged, with the NPC shelf-building rules extracted behind `NPCShopHost` (task 4.29). **421 Windows / 419 Ninja later that day:** NPC dialogue (`MNPCScriptTable.cpp`) and its English overlay join `gamemodel` unchanged after a separate unused-include cleanup (task 4.30). **420 Windows / 418 Ninja later that day:** effect-target state (`MEffectTarget.cpp`) joins `gamemodel` behind its player-roster removal host, alongside the extracted deferred-result queue (task 4.31). **419 later still:** portal records join `gamemodel` (task 4.32; Ninja 417). **418 later still:** music metadata joins `gamemodel` with track selection (task 4.33; Ninja 416). **417 later still:** delayed sound records join `gamemodel` with queue scheduling (task 4.34; Ninja 415). **416 later still:** show-time scheduling joins `gamemodel` (task 4.36; Ninja 414). **415 later still:** the help-string table joins `gamemodel` (task 4.37; Ninja 413). **414 later still:** interaction-object metadata joins `gamemodel` (task 4.38; Ninja 412). **413 Windows / 411 Ninja:** base effect state joins `gamemodel` behind frame/light services (task 4.44). **411 Windows / 409 Ninja:** moving and screen effects join `gamemodel` (task 4.45). **410 Windows / 408 Ninja:** randomized draw-skipping effects join `gamemodel` (task 4.46). **409 Windows / 407 Ninja:** complete linear effects join `gamemodel` (task 4.48). **407 Windows / 405 Ninja:** creature-guided and chase effects join `gamemodel` (task 4.49). **406 Windows / 404 Ninja:** complete homing effects join `gamemodel` (task 4.50). **405 Windows / 403 Ninja:** complete parabolic effects join `gamemodel` (task 4.51). **404 Windows / 402 Ninja:** attached effects join `gamemodel` (task 4.52). **403 Windows / 401 Ninja:** complete orbiting attachments join `gamemodel` (task 4.53). **401 Windows / 399 Ninja:** effect ownership and screen-effect managers join `gamemodel` (task 4.54). **400 Windows / 398 Ninja:** inventory screen-effect generation joins `gamemodel` (task 4.55). **399 Windows / 397 Ninja:** falling projectile generation joins `gamemodel` (task 4.56). **398 Windows / 396 Ninja:** rising projectile generation joins `gamemodel` (task 4.57). **397 Windows / 395 Ninja:** multi-projectile falling generation joins `gamemodel` (task 4.58). **396 Windows / 394 Ninja:** zone-attack generation joins `gamemodel` (task 4.59). **394 Windows / 392 Ninja:** parabolic zone and bomb generation join `gamemodel` (task 4.60). **393 Windows / 391 Ninja:** stationary zone generation joins `gamemodel` (task 4.61). **392 Windows / 390 Ninja:** cross-shaped zone generation joins `gamemodel` (task 4.62). **390 Windows / 388 Ninja:** fixed X and rhombus generation joins `gamemodel` (task 4.63). **389 Windows / 387 Ninja:** empty-cross generation joins `gamemodel` (task 4.64). **387 Windows / 385 Ninja:** horizontal and vertical empty-wall generation joins `gamemodel` (task 4.65). **386 Windows / 384 Ninja:** empty-rectangle generation joins `gamemodel` (task 4.66). **385 Windows / 383 Ninja:** full-rectangle generation joins `gamemodel` (task 4.67). **384 Windows / 382 Ninja:** complete wall generation joins `gamemodel` (task 4.68). **383 Windows / 381 Ninja:** multiple stationary generation joins `gamemodel` (task 4.69). **382 Windows / 380 Ninja:** random-zone generation joins `gamemodel` (task 4.70). **381 Windows / 379 Ninja:** selectable stationary generation joins `gamemodel` (task 4.71). **380 Windows / 378 Ninja:** spread-out generation joins `gamemodel` (task 4.72). **379 Windows / 377 Ninja:** around-zone generation joins `gamemodel` (task 4.73). **378 Windows / 376 Ninja:** follow-path generation joins `gamemodel` (task 4.74). **377 Windows / 375 Ninja:** meteor-drop generation joins `gamemodel` (task 4.75). **376 Windows / 374 Ninja:** creature parabola generation joins `gamemodel` (task 4.76). **375 Windows / 373 Ninja:** wide ripple generation joins `gamemodel` (task 4.77). **374 Windows / 372 Ninja:** Bloody Breaker generation joins `gamemodel` (task 4.78). **373 Windows / 371 Ninja:** Bloody Wall generation joins `gamemodel` (task 4.79).  **365 Windows / 363 Ninja (tasks 4.80-4.82):** eight further sources join gamemodel; Ninja is measured from a fresh Linux configure. Both counts were subsequently verified by Windows and Linux CI at `68b1e2c7`. **346 Windows / 344 Ninja (tasks 4.83-4.87):** twelve more live sources join tested libraries and seven unused or empty sources are retired. Windows and Ninja counts are verified by fresh CI-generated targets; Debug, Release and sanitizer checks pass. **342 Windows / 340 Ninja (tasks 4.88-4.90):** the regen-zone, skip-draw and skill-downgrade slices. **329 Windows / 327 Ninja (task 4.91):** thirteen handlers that ignore their packet join gamemodel unchanged. **320 Windows / 318 Ninja (task 4.92):** nine guild and union reply handlers join gamemodel behind `GuildPresentation::Host`. **316 Windows / 314 Ninja (task 4.93):** friend, SMS address-book and whisper-failure reply handlers join gamemodel behind `CommunicationPresentation::Host`. **311 Windows / 309 Ninja (task 4.94):** quest and war status reply handlers join gamemodel behind `QuestWarPresentation::Host`. **308 Windows / 306 Ninja (task 4.95):** trade, crafting and item-mall reply handlers join gamemodel behind `TradePresentation::Host`. **305 Windows / 303 Ninja (task 4.96):** three sources whose whole body is behind a macro no build defines are retired. **301 Windows / 299 Ninja (task 4.97):** NPC map, skill teaching, mini-game and prize-notice reply handlers join gamemodel behind `GameInfoPresentation::Host`. **292 Windows / 290 Ninja (task 4.98):** nine message-box and item-release reply handlers join gamemodel behind `DialogPresentation::Host`. **285 Windows / 283 Ninja (task 4.99):** seven login-server character, ID and version reply handlers join gamemodel behind `LoginPresentation::Host`. **269 Windows / 267 Ninja (task 4.100):** sixteen replies about the client's own player join gamemodel behind `PlayerState::Host`. **257 Windows / 255 Ninja (task 4.101):** twelve replies about the zone and its creatures join gamemodel behind `ZoneState::Host` and `CreatureState::Host`. **250 Windows / 248 Ninja (task 4.102):** seven replies handed on whole to the world and connections join gamemodel behind `WorldEvents::Host`. **249 Windows / 247 Ninja (task 4.103):** `MItem::NewItem` joins gamemodel over the factory the executable installs, and the trade box's new-item reply with it. **244 Windows / 242 Ninja (task 4.104):** guild-list, guild-membership and character-error replies join gamemodel over the guild, player and login hosts. **238 Windows / 236 Ninja (task 4.105):** the client mode and the message logs' pointers join gamemodel, and six replies that read them. |
+| R1 | Application translation units compiled directly into the `DarkEden` target | **218** | `ClCompile` entries in `DarkEden.vcxproj`, excluding CMake's generated `CMakeFiles/DarkEden.dir/cmake_pch.cxx`, read from the ctest run's own build dir; SKIP (never PASS) without a supported generated project. Both the Visual Studio configure stamp and Ninja's `build.ninja` must be newer than CMakeLists.txt and both library membership files. Ninja's baseline is **216**, since the non-Windows source list is two files shorter; Linux/macOS CI verifies that count. Baseline 1,044 on 2026-09-01; 484 after task 5.2's eighth slice. **482 on 2026-09-17:** the earlier deletion of `md5.cpp` had left the recorded 484 one too high (483 measured before this extraction); task 4.5 moves `RankBonusTable.cpp` into `gamemodel` (483 → 482). **478 later that day:** delete the four unused Direct3D texture/shadow cache translation units; their object declarations were commented out and the active sprite path never constructed them. **477 later still:** remove the unused Windows-only WinINet downloader; Ninja remains 475. It counts what still cannot be unit-tested. Recorded growths, each the executable side of a split: `PacketHandlerRegistry.cpp`, `GCExchangeBuyHandler.cpp`, `MItemUse.cpp`, `MObjectScreen.cpp`, `MSkillAvailable.cpp`, `TextServiceScreen.cpp`. **473 Windows / 471 Ninja later that day:** six map-record/header translation units move to `gamemodel`, while two new executable files retain screen geometry and live interaction actions; `ShowTimeChecker`'s pure constructor and I/O move to `ShowTimeData.cpp`. A further executable unit moved to `basic` with `CMessageArray` (2026-09-18). **470 Windows / 468 Ninja on 2026-09-21:** `UserOption.cpp` moves unchanged into `VS_UI`; its test links the same object as the game. **469 Windows / 467 Ninja:** the corrected `SXml.cpp` moves unchanged into `VS_UI`, replacing the older duplicate and allowing XML tests to link the production implementation. **468 Windows / 466 Ninja:** the help-message loader moves unchanged into `VS_UI` for real-library parser tests. **467 on 2026-09-21:** `CToken.cpp` joins `gamemodel` byte-identically so token and reset lifetimes can be tested. **466 Windows / 464 Ninja:** the empty handwritten `Client_PCH.cpp` is retired when CMake starts producing the private PCH. Generated PCH producers are excluded from both inventories; ordinary application `.cxx` and `.cc` files remain counted.  **465 Windows / 463 Ninja on 2026-09-24:** the inactive Client/DebugInfo.cpp implementation is removed.  **460 Windows / 458 Ninja on 2026-09-24:** five unchanged world metadata implementations join gamemodel. **456 Windows / 454 Ninja:** quest metadata joins gamemodel; profile and shrine file adapters join VS_UI. **455 Windows / 453 Ninja:** party membership joins gamemodel behind its live-creature host. **456 Windows / 454 Ninja:** the generated English NPC name table (`MNPCTableEnglish.cpp`) is a recorded growth; it writes an executable global. **454 Windows / 452 Ninja on 2026-09-28:** the NPC talk boxes (`TalkBox.cpp`, `MStringList.cpp`) join gamemodel so the menu-answer mapping can be tested. **453 Windows / 451 Ninja later that day:** `MStatusManager.cpp` joins gamemodel so the character-select stat preview can be tested (task 4.12, slice 3). **449 Windows / 447 Ninja on 2026-09-29:** the action and effect tables (`MActionInfoTable.cpp`, `MEffectSpriteTypeTable.cpp`, `MEffectStatusTable.cpp`, `MCreatureSpriteTable.cpp`) join gamemodel so their loaders can be tested (task 4.1); the move changed no loader, and later commits fixed the loaders test-first. **447 Windows / 445 Ninja on 2026-09-29:** the chat filter (`MStringMap.cpp`, `MChatManager.cpp`) joins gamemodel, its one option read behind `MChatHost`, so the curse filter can be tested (task 4.13). **445 Windows / 443 Ninja on 2026-09-29, after merging both:** the creature status array (`MStatus.cpp`) and the request/answer mode register (`TempInformation.cpp`) join gamemodel unchanged so they can be tested (task 4.14); each branch removed two from 449/447, and the merged tree was measured, not added up. (The merge had left this entry's bold marker doubled and its first clause repeated; tidied 2026-09-30.) **437 Windows / 435 Ninja on 2026-09-30:** the eight packet handlers that reach only model state (`GCPhoneConnectedHandler.cpp`, `GCPhoneDisconnectedHandler.cpp`, `GCPhoneSayHandler.cpp`, `GCRingHandler.cpp`, `GCTradeMoneyHandler.cpp`, `GCTradeRemoveItemHandler.cpp`, `GCSystemAvailabilitiesHandler.cpp`, `GCMonsterKillQuestInfoHandler.cpp`) join gamemodel from `Client/PacketHandler` so a test can run them on real packets (task 4.15). **436 Windows / 434 Ninja on 2026-10-02:** `CServerInformation.cpp` joins `gamemodel` unchanged so login world/server selection can be tested (task 4.19). **434 Windows / 432 Ninja later that day:** `MFunctionManager.cpp` and `MRequestMode.cpp` join `gamemodel` unchanged so callback dispatch and player/view request state can be tested (task 4.20). **433 Windows / 431 Ninja later that day:** `MathTable.cpp` joins `gamemodel` unchanged so effect trigonometry and steering can be tested (task 4.21). **432 Windows / 430 Ninja later that day:** `ServerInfoFileParser.cpp` joins `gamemodel` after removing its unused `MinTr.h` include, so dimension-specific login and reconnect configuration can be tested (task 4.22). **431 Windows / 429 Ninja later that day:** `MWeather.cpp` joins `gamemodel` behind player-origin and viewport callbacks (task 4.23). **428 Windows / 426 Ninja later that day:** `MJusticeAttackManager.cpp` and its add/remove packet handlers join `gamemodel` after dropping unobserved timestamps (task 4.25). **427 Windows / 425 Ninja later that day:** `PCConfigTable.cpp` joins `gamemodel` unchanged so saved character slots and per-world account settings can be tested (task 4.26). **425 Windows / 423 Ninja later that day:** `MonsterNameTable.cpp` and `MLevelNameTable.cpp` join `gamemodel` unchanged, with the title/hallucination selection state extracted from `MCreature` (task 4.27). **424 Windows / 422 Ninja later that day:** `MWarManager.cpp` joins `gamemodel` with live zone and UI actions behind `MWarHost` (task 4.28). **423 Windows / 421 Ninja later that day:** `MShopTemplate.cpp` joins `gamemodel` unchanged, with the NPC shelf-building rules extracted behind `NPCShopHost` (task 4.29). **421 Windows / 419 Ninja later that day:** NPC dialogue (`MNPCScriptTable.cpp`) and its English overlay join `gamemodel` unchanged after a separate unused-include cleanup (task 4.30). **420 Windows / 418 Ninja later that day:** effect-target state (`MEffectTarget.cpp`) joins `gamemodel` behind its player-roster removal host, alongside the extracted deferred-result queue (task 4.31). **419 later still:** portal records join `gamemodel` (task 4.32; Ninja 417). **418 later still:** music metadata joins `gamemodel` with track selection (task 4.33; Ninja 416). **417 later still:** delayed sound records join `gamemodel` with queue scheduling (task 4.34; Ninja 415). **416 later still:** show-time scheduling joins `gamemodel` (task 4.36; Ninja 414). **415 later still:** the help-string table joins `gamemodel` (task 4.37; Ninja 413). **414 later still:** interaction-object metadata joins `gamemodel` (task 4.38; Ninja 412). **413 Windows / 411 Ninja:** base effect state joins `gamemodel` behind frame/light services (task 4.44). **411 Windows / 409 Ninja:** moving and screen effects join `gamemodel` (task 4.45). **410 Windows / 408 Ninja:** randomized draw-skipping effects join `gamemodel` (task 4.46). **409 Windows / 407 Ninja:** complete linear effects join `gamemodel` (task 4.48). **407 Windows / 405 Ninja:** creature-guided and chase effects join `gamemodel` (task 4.49). **406 Windows / 404 Ninja:** complete homing effects join `gamemodel` (task 4.50). **405 Windows / 403 Ninja:** complete parabolic effects join `gamemodel` (task 4.51). **404 Windows / 402 Ninja:** attached effects join `gamemodel` (task 4.52). **403 Windows / 401 Ninja:** complete orbiting attachments join `gamemodel` (task 4.53). **401 Windows / 399 Ninja:** effect ownership and screen-effect managers join `gamemodel` (task 4.54). **400 Windows / 398 Ninja:** inventory screen-effect generation joins `gamemodel` (task 4.55). **399 Windows / 397 Ninja:** falling projectile generation joins `gamemodel` (task 4.56). **398 Windows / 396 Ninja:** rising projectile generation joins `gamemodel` (task 4.57). **397 Windows / 395 Ninja:** multi-projectile falling generation joins `gamemodel` (task 4.58). **396 Windows / 394 Ninja:** zone-attack generation joins `gamemodel` (task 4.59). **394 Windows / 392 Ninja:** parabolic zone and bomb generation join `gamemodel` (task 4.60). **393 Windows / 391 Ninja:** stationary zone generation joins `gamemodel` (task 4.61). **392 Windows / 390 Ninja:** cross-shaped zone generation joins `gamemodel` (task 4.62). **390 Windows / 388 Ninja:** fixed X and rhombus generation joins `gamemodel` (task 4.63). **389 Windows / 387 Ninja:** empty-cross generation joins `gamemodel` (task 4.64). **387 Windows / 385 Ninja:** horizontal and vertical empty-wall generation joins `gamemodel` (task 4.65). **386 Windows / 384 Ninja:** empty-rectangle generation joins `gamemodel` (task 4.66). **385 Windows / 383 Ninja:** full-rectangle generation joins `gamemodel` (task 4.67). **384 Windows / 382 Ninja:** complete wall generation joins `gamemodel` (task 4.68). **383 Windows / 381 Ninja:** multiple stationary generation joins `gamemodel` (task 4.69). **382 Windows / 380 Ninja:** random-zone generation joins `gamemodel` (task 4.70). **381 Windows / 379 Ninja:** selectable stationary generation joins `gamemodel` (task 4.71). **380 Windows / 378 Ninja:** spread-out generation joins `gamemodel` (task 4.72). **379 Windows / 377 Ninja:** around-zone generation joins `gamemodel` (task 4.73). **378 Windows / 376 Ninja:** follow-path generation joins `gamemodel` (task 4.74). **377 Windows / 375 Ninja:** meteor-drop generation joins `gamemodel` (task 4.75). **376 Windows / 374 Ninja:** creature parabola generation joins `gamemodel` (task 4.76). **375 Windows / 373 Ninja:** wide ripple generation joins `gamemodel` (task 4.77). **374 Windows / 372 Ninja:** Bloody Breaker generation joins `gamemodel` (task 4.78). **373 Windows / 371 Ninja:** Bloody Wall generation joins `gamemodel` (task 4.79).  **365 Windows / 363 Ninja (tasks 4.80-4.82):** eight further sources join gamemodel; Ninja is measured from a fresh Linux configure. Both counts were subsequently verified by Windows and Linux CI at `68b1e2c7`. **346 Windows / 344 Ninja (tasks 4.83-4.87):** twelve more live sources join tested libraries and seven unused or empty sources are retired. Windows and Ninja counts are verified by fresh CI-generated targets; Debug, Release and sanitizer checks pass. **342 Windows / 340 Ninja (tasks 4.88-4.90):** the regen-zone, skip-draw and skill-downgrade slices. **329 Windows / 327 Ninja (task 4.91):** thirteen handlers that ignore their packet join gamemodel unchanged. **320 Windows / 318 Ninja (task 4.92):** nine guild and union reply handlers join gamemodel behind `GuildPresentation::Host`. **316 Windows / 314 Ninja (task 4.93):** friend, SMS address-book and whisper-failure reply handlers join gamemodel behind `CommunicationPresentation::Host`. **311 Windows / 309 Ninja (task 4.94):** quest and war status reply handlers join gamemodel behind `QuestWarPresentation::Host`. **308 Windows / 306 Ninja (task 4.95):** trade, crafting and item-mall reply handlers join gamemodel behind `TradePresentation::Host`. **305 Windows / 303 Ninja (task 4.96):** three sources whose whole body is behind a macro no build defines are retired. **301 Windows / 299 Ninja (task 4.97):** NPC map, skill teaching, mini-game and prize-notice reply handlers join gamemodel behind `GameInfoPresentation::Host`. **292 Windows / 290 Ninja (task 4.98):** nine message-box and item-release reply handlers join gamemodel behind `DialogPresentation::Host`. **285 Windows / 283 Ninja (task 4.99):** seven login-server character, ID and version reply handlers join gamemodel behind `LoginPresentation::Host`. **269 Windows / 267 Ninja (task 4.100):** sixteen replies about the client's own player join gamemodel behind `PlayerState::Host`. **257 Windows / 255 Ninja (task 4.101):** twelve replies about the zone and its creatures join gamemodel behind `ZoneState::Host` and `CreatureState::Host`. **250 Windows / 248 Ninja (task 4.102):** seven replies handed on whole to the world and connections join gamemodel behind `WorldEvents::Host`. **249 Windows / 247 Ninja (task 4.103):** `MItem::NewItem` joins gamemodel over the factory the executable installs, and the trade box's new-item reply with it. **244 Windows / 242 Ninja (task 4.104):** guild-list, guild-membership and character-error replies join gamemodel over the guild, player and login hosts. **238 Windows / 236 Ninja (task 4.105):** the client mode and the message logs' pointers join gamemodel, and six replies that read them. **232 Windows / 230 Ninja (task 4.106):** six skill and damage results on zone creatures and the player join gamemodel over the creature service. **228 Windows / 226 Ninja (task 4.107):** the personal-store and nickname replies join gamemodel over the UI object's host. **226 Windows / 224 Ninja (task 4.108):** the wall see-through test and the peer disconnect request join gamemodel. **225 Windows / 223 Ninja (task 4.109):** the peer file-send queue joins gamemodel. **224 Windows / 222 Ninja (task 4.110):** the help display joins gamemodel over the frame clock, whose definition it now owns. **223 Windows / 221 Ninja (task 4.111):** the installed-mine reply joins gamemodel over the world-event and item hosts. **221 Windows / 219 Ninja (task 4.112):** the login and registration error replies join gamemodel, with the update flag the client mode now owns. **220 Windows / 218 Ninja (task 4.113):** the whisper reply joins gamemodel over the communication and player hosts. **219 Windows / 217 Ninja (task 4.114):** the kick-warning reply joins gamemodel over the world-event host's new event entry. **218 Windows / 216 Ninja (task 4.115):** the made-item reply joins gamemodel over the dialog and player hosts. |
 | R2 | Packet `.cpp` files still defining a packet-style `::execute(Player` | **0** | `grep -rlE '^void\s+\w+::execute\s*\(\s*Player' Client/Packet/{Gpackets,Cpackets,Lpackets,Rpackets,Upackets} --include='*.cpp' \| grep -v Handler \| wc -l`. Baseline 448. Holds the line since `Packet::execute` itself was deleted; the client twin of the server's R4. |
 | R3 | Live `sprintf`/`strcpy`/`strcat` lines under `Client/Packet` and `Client/PacketHandler` | **0** | Line-based; strips `//` tails before matching, so a commented-out call does not count. `\b` rejects the `w` in `wsprintf`, which R7 sees instead. Baseline 61 (a quarter of it commented-out code). Holds the line since the packet-tree copy pass (2026-09-04, PR #76). |
 | R4 | Library-compiled `.cpp` files referencing `g_p*` client globals no library file defines | **0** | Over the library dirs (minus CMake-excluded files) plus the `packetwire` and `gamemodel` membership files; comment lines excluded; the subtraction is library-wide, so a library file reading a global another library defines is not a seam. Blind to a library file calling an executable-side *function* (the link proofs cover that) and to a global not named `g_p*`. Baseline 83. **20 on 2026-09-18:** the editor uses the common TextService-backed printer, removing its direct `g_pLast`/`g_pBack` declarations. The printer still reaches game state; this is a reduction in direct references, not a claim that rendering is independent. **10 on 2026-09-21:** moving `UserOption` and `g_pUserOption` into `VS_UI` makes ten existing UI files resolve their only executable-owned global within the library; an ownership reclassification, not ten further file extractions. The text-mode scan now includes the NUL-bearing `VS_UI_GameCommon.cpp` on every platform: **11** is the corrected count; GNU grep previously omitted that file while BSD grep counted it.  **10 on 2026-09-24:** the duplicate inactive VS_UI/DebugInfo.cpp implementation is removed.  **5 on 2026-09-24:** zone, creature, NPC and guild metadata plus the game calendar belong to gamemodel, with real object/link tests; their implementation bytes are unchanged. **4 later that day:** CImm's unused sound-manager declaration is removed. **0 later that day:** party ownership and eight UI host callbacks remove the remaining live references; an inline comment naming the player global is translated without changing the scanner. This is not a claim that every UI object links independently. |
@@ -3012,7 +3012,242 @@ rounds settled* for the host rules). Test fixtures share
     unfiltered for a ghost, a game master or the master's words; missing
     hosts and entries).
 
-### Remaining R1 work after tasks 4.80-4.105
+- [x] **4.106 Skill and damage results on zone creatures and the player:**
+  move `GCAttackArmsOK4Handler`, `GCSkillToObjectOK4Handler`,
+  `GCSkillToInventoryOK2Handler`, `GCKnocksTargetBackOK4Handler`,
+  `GCShopBoughtHandler` and `GCGetDamageHandler` into `gamemodel` over
+  4.101's creature service.
+  > **Status:** done (2026-10-13). `CreatureState::Host` gains `GetX`,
+  > `GetY`, `SetEffectDelayFrame`, `PacketSpecialActionResult`,
+  > `PacketSpecialActionToInventoryItem`, `AddEffectStatus`, `SetTurning`,
+  > `IsNPC` and `GetShop` (an NPC's shop, asked only of an NPC; the adapter
+  > casts to `MNPC`, which stays the executable's), and
+  > `PlayerState::Host` gains `Creature`, the player as an opaque
+  > `MCreature*`, so `GCGetDamage`'s player half calls the same creature
+  > entries; `PacketSpecialActionResult` is virtual and `MPlayer` overrides
+  > it, so the call reaches the player's override as before. The action
+  > table, the shop and its shelves are already `gamemodel`'s.
+  > `GCSkillToObjectOK4Handler` drops the unused `PacketFunction2.h`;
+  > `SendBugReport`, which reached it through `ClientDef.h`, comes from
+  > `Packet/WireHost.h` directly. The `GetShop` adapter answers no shop for
+  > a creature that is not an NPC instead of casting it. R1 is 232 Windows
+  > / 230 Ninja.
+  - Owner: membership, R1, the new entries and adapters, and
+    `test_creature_action_result_handlers.cpp` (arms skills land as their
+    own result or the gun's default; a skill on an object delays, lands
+    as its result (the graded step when the skill has steps), adds its
+    effect for its converted duration and turns the target for Dragon
+    Tornado; past the table, an unknown target or no zone, nothing; an
+    inventory skill delays then acts; a knock-back moves, stops, then
+    lands where it moved; damage on the player even without a zone, or
+    on the named creature; an item bought from an NPC fills its shelf
+    slot with the packet's fields, and nothing for a non-NPC, a shopless
+    NPC, a missing shelf or an unknown class, the shelf's version kept,
+    and no item for a slot past the shelf; every arms skill; a skill
+    without effect or steps only lands, grade 0 takes no step, and only
+    Dragon Tornado turns; without a zone no creature is looked up, and
+    without a target none is touched; missing entries).
+  - Follow-up: `GCShopBought` sets the shelf's version before
+    `MShopShelf::SetItem` refuses a slot past the shelf (20 or more), so
+    the shelf reads as current without the item, as before the move.
+- [x] **4.107 The personal store and nickname replies:** move
+  `GCAddStoreItemHandler`, `GCRemoveStoreItemHandler`,
+  `GCAddNicknameHandler` and `GCNicknameListHandler` into `gamemodel`.
+  > **Status:** done (2026-10-13). A new `VsUiPresentation::Host` hands
+  > the four replies what they read of the UI object (`gC_vs_ui`): which
+  > inventory view is open, and its nickname list, filled through
+  > `AddNickNameList` and `SetNickNameList`. A missing host or entry
+  > answers inventory mode 0 (the store view closed) and skips the lists.
+  > The store itself (`g_pStorage2`) is already `gamemodel`'s. A gun added
+  > to the store is loaded through `MItem::LoadGun` (4.103) with one round,
+  > as the magazine `MItem::NewItem` made started, instead of building the
+  > magazine and touching `MMagazine`/`MGunItem` in the handler; a gun no
+  > magazine can be made for is stored unloaded with a log line rather
+  > than dereferencing a null magazine (the factory always makes one
+  > today). R1 is 228 Windows / 226 Ninja.
+  - Owner: membership, R1, the new host and its adapter, and
+    `test_store_nickname_handlers.cpp` (an item added to the open store
+    fills its first free slot with the packet's fields and price; a gun
+    is loaded with one round whatever number the packet carries, or
+    stored unloaded when it cannot be; a belt or an arms band keeps the
+    pockets that fit, with their type and number, and frees the rest;
+    another owner's store, a closed store (even for an owner of 0), no
+    store or an unknown class adds nothing; a sold item leaves the
+    packet's slot, and only that one, only while the store view is open
+    (modes 1 and 2) and only from its owner's open store; nicknames reach
+    the UI's list; a missing host or entry skips the UI and keeps the
+    store view closed).
+  - Follow-ups, all as before the move:
+    - `GCRemoveStoreItem` drops the item `MStorage::RemoveItem` hands
+      back without freeing it; the store view may still point at it, so
+      freeing it needs that view's ownership read first.
+    - `GCNicknameList` never frees the entries its `read` allocates.
+    - `MStorage` leaves its open-store id uninitialised until a store
+      opens (`GCMyStoreInfo` sets it only for a non-zero player), and
+      both store replies compare against it.
+    - `GCAddStoreItem` takes the first free slot rather than the
+      packet's index, which `GCMyStoreInfo` and `GCRemoveStoreItem`
+      use; ignores `isItemExist`, so an empty entry still makes an item
+      of class 0; and ignores the item number, so a stack reads as 1.
+- [x] **4.108 The wall see-through test and the peer disconnect request:**
+  move `MImageObjectScreen.cpp` and `RequestFunction.cpp` into `gamemodel`.
+  > **Status:** done (2026-10-13). `MImageObject::IsWallTransPosition`
+  > stayed in the executable only for `MTopView::PixelToMapX`, which is
+  > `WorldTileGeometry::PixelToTileX`; it now calls that directly.
+  > `RequestDisconnect`, which `GameInit.cpp` installs as the world-event
+  > host's entry, drops the named peer through the peer manager, which is
+  > `packetwire`'s; it logs through `DebugLog.h` instead of the
+  > executable's `DebugInfo.h`. R1 is 226 Windows / 224 Ninja.
+  - Owner: membership, R1, and `test_wall_transparency.cpp` (a wall
+    running down to the right hides the cells past its diagonal, one
+    running up to the right the cells short of it, both measured from the
+    wall's pixel X in whole tiles less or plus its viewpoint; anything not
+    a wall hides every cell), with `test_peer_self_disconnect.cpp`, whose
+    world-event host now calls the real `RequestDisconnect` (the named
+    peer of the installed manager is dropped; without a manager nothing
+    is).
+- [x] **4.109 The peer file-send queue:** move `RequestFileManager.cpp`
+  into `gamemodel`.
+  > **Status:** done (2026-10-13). `RequestFileManager` keeps the files
+  > other players asked this client for (a player's profile picture and its
+  > index, which `CRRequestHandler` queues)
+  > and sends them over each player's peer connection, which
+  > `RequestServerPlayer::processCommand` pumps through the wire host's
+  > `SendOtherRequest`. It reached nothing of the executable's: the
+  > profile, server-info, type and UI headers it included were unused, and
+  > it logs through `DebugLog.h` instead of `DebugInfo.h`. Its Korean
+  > comments are translated. R1 is 225 Windows / 223 Ninja.
+  - Owner: membership, R1, and `test_request_file_manager.cpp`, over a
+    real peer connected over loopback whose far end decodes what arrives
+    (each file is announced by an `RCRequestedFile` with its name, type
+    (the index, then the picture, as `CRRequestHandler` queues them) and
+    size, by a call that answers false, then sent in 4K chunks by
+    calls that answer true; a whole-chunk read is not yet the end, the
+    empty read after it is; after the last file, `RCRequestVerify`
+    (`PROFILE_DONE`) and the request is forgotten; a file that cannot be
+    opened is announced empty and the request still ends; one request
+    per player, a second refused; a removed or unknown request sends
+    nothing).
+  - Follow-up: `CRRequestHandler`, which builds the requests, stays in
+    the executable for the profile manager.
+
+- [x] **4.110 The frame clock and the help display:** move `g_FrameNow`'s
+  definition into a new `FrameClock.cpp` and `MHelpDisplayer.cpp` into
+  `gamemodel`.
+  > **Status:** done (2026-10-13). `g_FrameNow`, the time the current
+  > frame began, which the main loop stamps once per frame, was defined
+  > in `Client.cpp`; it is now `FrameClock.cpp`'s, declared in
+  > `FrameClock.h`, as 4.105 did for the client mode. The main loop still
+  > stamps it (and so do the start of a packet wait and the zone load), and every
+  > executable reader keeps its declaration (15 executable sources read
+  > it). `MHelpDisplayer`, which shows a help
+  > message unless the last one is still up, reached nothing else of the
+  > executable's: the help table and the help log are `gamemodel`'s. Its
+  > Korean comments are translated. R1 is 224 Windows / 222 Ninja.
+  - Owner: membership, R1, and `test_help_displayer.cpp`, which sets the
+    frame clock (a help is shown and keeps the next back for 10 seconds,
+    the window's last moment included, and a help dropped meanwhile
+    stays unshown; a help already shown is skipped, without holding the
+    next back, until the display history is cleared; a help past the
+    table is ignored and holds nothing back).
+
+- [x] **4.111 The installed-mine reply:** move
+  `GCAddInstalledMineToZoneHandler` into `gamemodel`.
+  > **Status:** done (2026-10-13). The reply adds a mine to the zone
+  > through `WorldEvents::AddItemToZone` (4.102), without a drop, and
+  > marks it installed through a new `MItemHost::SetMineInstalled`, as
+  > 4.103 did for loading a gun: a mine's vtable is the executable's, so
+  > `MMine` is touched only in `GameInit.cpp`'s adapter. The packet is a
+  > `GCAddItemToZone`, so the cast the handler made is an implicit
+  > upcast now. R1 is 223 Windows / 221 Ninja.
+  - Owner: membership, R1, the new entry and its adapter, and
+    `test_world_event_handlers.cpp` (a mine is added without a drop and
+    marked installed; anything but a mine, or nothing added, is left as
+    it is; without an item service, or with one that cannot mark a mine,
+    the mine is added and left as it is; the mine reply is in the
+    missing-host sweep).
+
+- [x] **4.112 The login and registration error replies:** move
+  `LCLoginErrorHandler` and `LCRegisterPlayerErrorHandler` into `gamemodel`.
+  > **Status:** done (2026-10-13). Both read `g_bNeedUpdate`, whether the
+  > client is quitting to be updated, which was defined in `Client.cpp`;
+  > it is now `ClientMode.cpp`'s, beside the client mode (4.105). The
+  > login error pops its error through `LoginPresentation::PopupErrorMessage`
+  > (4.104); the registration error shows its message through a new
+  > `LoginPresentation::ShowMessage` entry (`g_ShowMessage`). A dead,
+  > commented-out branch naming `g_pUIDialog` leaves the login error with
+  > it. R1 is 221 Windows / 219 Ninja.
+  - Owner: membership, R1, the new entry and its adapter, and
+    `test_login_error_handlers.cpp` (a refused login shows its error,
+    any byte passed on whole, and goes back to the login; a client
+    quitting to be updated shows nothing and keeps its mode; a refused
+    registration shows the message for each of its eight errors, the
+    general one for any other, and goes back to the login, even while
+    quitting to be updated, when it shows nothing; missing services skip
+    the messages, not the mode).
+
+- [x] **4.113 The whisper reply:** move `GCWhisperHandler` into `gamemodel`.
+  > **Status:** done (2026-10-13). A whisper reached the executable for
+  > the chat history (`UI_AddChatToHistory`, now
+  > `CommunicationPresentation::AddChatToHistory`) and for the player:
+  > whether it is an operator (a new `PlayerState::IsOperator`, which is
+  > `MCreature::IsOperator`, the same three creature types the handler
+  > listed), a ghost, its race and its INT (through `PlayerState::Status`,
+  > the player as its `MStatus`; clamped at 300, where every INT already
+  > reads at the cap, before the int arithmetic, since the server can set
+  > any INT). The chat filter, the user information,
+  > the notice log and the string table are already `gamemodel`'s. A
+  > dead `__METROTECH_TEST__` clause and commented-out code naming
+  > `g_pPlayer` leave with it, and its Korean comments are translated.
+  > R1 is 220 Windows / 218 Ninja.
+  - Owner: membership, R1, the new entry and its adapter, and
+    `test_whisper_handler.cpp` over a real chat filter with a curse list
+    (an accepted whisper shows filtered as a whisper and makes the sender
+    the target; an ignored sender's is dropped; an operator's shows
+    whole even when ignored and goes to the notices; an operator, master
+    or ghost player sees it whole; another race's is masked, measured
+    over 114 letters, heavily with no INT and lightly with 150, and not
+    at all in a debug build; missing services still set the target).
+  - Follow-up: a race byte past the `Race` values is cast to the enum
+    and compared, as before the move.
+
+- [x] **4.114 The kick-warning reply:** move `GCKickMessageHandler` into
+  `gamemodel`.
+  > **Status:** done (2026-10-13). A kick warning queues a zone event
+  > that logs the player out after the packet's seconds. It reached the
+  > executable's event manager (`g_pEventManager`, an `MEventQueue`) and
+  > asked whether the player is a slayer. It now queues through a new
+  > `WorldEvents::AddEvent` entry, whose adapter adds to the event manager
+  > when there is one, and asks `PlayerState::GetRace` (a slayer is
+  > exactly `RACE_SLAYER`). `MEvent` is `gamemodel`'s. R1 is 219 Windows /
+  > 217 Ninja.
+  - Owner: membership, R1, the new entry and its adapter, and
+    `test_kick_message_handler.cpp` (an ended pay time queues the
+    logout after the packet's seconds, with its reason and the
+    countdown; an ended free play is worded for a slayer's level, or
+    another race's; any other kind, or no world service, queues
+    nothing).
+
+- [x] **4.115 The made-item reply:** move `GCMakeItemOKHandler` into
+  `gamemodel`.
+  > **Status:** done (2026-10-13). An item made with a skill reached the
+  > executable to let go of the items locked for the skill
+  > (`UI_UnlockItem`, now `DialogPresentation::UnlockItem`) and to change
+  > the player's status (`AffectModifyInfo(g_pPlayer, ...)`, now over
+  > `PlayerState::Status`, the player as its `MStatus`, whose `SetStatus`
+  > the player overrides). The temp-mode register, the inventory and the
+  > item factory are already `gamemodel`'s. R1 is 218 Windows / 216
+  > Ninja.
+  - Owner: membership, R1, and `test_make_item_handler.cpp` (the items
+    locked for the skill are let go only when the skill was waiting for
+    it, and the mode clears; the used stacks are recounted, an unknown
+    ID skipped; the made item goes where the packet says with its
+    fields, or is freed if it does not fit; the status changes; missing
+    services skip the unlock and the status).
+  - Follow-up: an item class the factory cannot make returns before the
+    status change, so that change is lost, as before the move.
+
+### Remaining R1 work after tasks 4.80-4.115
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
@@ -3081,7 +3316,20 @@ new-item reply; 170 remain. Task 4.104 reduces it to 242 Linux / 244 Windows
 with the guild-list, guild-membership and character-error replies; 165 remain.
 Task 4.105 moves the client mode and the message logs' pointers into
 `gamemodel`, for 236 Linux / 238 Windows with six replies that read them; 159
-remain.
+remain. Task 4.106 reduces it to 230 Linux / 232 Windows with six skill and
+damage results on zone creatures and the player; 153 remain. Task 4.107
+reduces it to 226 Linux / 228 Windows with the personal-store and nickname
+replies; 149 remain. Task 4.108 reduces it to 224 Linux / 226 Windows with
+the wall see-through test and the peer disconnect request. Task 4.109
+reduces it to 223 Linux / 225 Windows with the peer file-send queue, and
+task 4.110 to 222 Linux / 224 Windows with the help display over the frame
+clock. Task 4.111 reduces it to 221 Linux / 223 Windows with the
+installed-mine reply; 148 handlers remain. Task 4.112 reduces it to 219
+Linux / 221 Windows with the login and registration error replies; 146
+remain. Task 4.113 reduces it to 218 Linux / 220 Windows with the whisper
+reply; 145 remain. Task 4.114 reduces it to 217 Linux / 219 Windows with
+the kick-warning reply; 144 remain. Task 4.115 reduces it to 216 Linux /
+218 Windows with the made-item reply; 143 remain.
 
 Continue with reviewable boundaries: the remaining generators need their actual
 creature/world services identified; larger handler groups need extracted
@@ -3236,7 +3484,8 @@ Follow-ups from 4.102, all older than the move:
   connection refuses, and logs a close the system refuses, and still ends
   the session, so `Update()`'s drop of a failed peer no longer throws a
   second time. Before, also on master, a broken peer with output queued
-  stayed listed at the head of the loop and starved every peer behind it.
+  stayed listed, aborted every later update at its turn and starved every
+  peer behind it.
   `test_peer_self_disconnect.cpp` drives real loopback peers through the
   real factory, validator and handler; before the fix the ASan tree
   reported the heap-use-after-free and the plain tree crashed. It also
@@ -3256,9 +3505,9 @@ Follow-ups from 4.102, all older than the move:
 - `GCChangeWeather::read` casts any byte to `Weather` (values 0-4, no fixed
   underlying type), undefined from 8 up; `SetWeather` does not bound the
   level. `SetLightning` uses `g_pZone` and `g_pPlayer` unguarded.
-- `GCAddInstalledMineToZoneHandler` stays in the executable: its mine
-  branch needs an `MMine`. A host entry that marks a mine installed on the
-  executable side would let it move.
+- `GCAddInstalledMineToZoneHandler` stayed in the executable for its mine
+  branch, which needs an `MMine`; 4.111 moves it over an item-host entry
+  that marks a mine installed on the executable side.
 
 Follow-ups from 4.103:
 - An offer of a class the factory cannot make returns before either

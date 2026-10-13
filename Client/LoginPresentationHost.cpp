@@ -98,4 +98,9 @@ void QueueWaitSelectPCMode()
 	if (s_Host && s_Host->QueueWaitSelectPCMode) s_Host->QueueWaitSelectPCMode();
 }
 
+void ShowMessage(const char* message)
+{
+	if (s_Host && s_Host->ShowMessage) s_Host->ShowMessage(message);
+}
+
 }

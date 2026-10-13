@@ -49,16 +49,16 @@ enum REQUEST_FILE_MODE
 //---------------------------------------------------------------------------
 // SendFileInfo
 //---------------------------------------------------------------------------
-// 남이 나에게 요청한 것
+// A file another player asked this client for
 //---------------------------------------------------------------------------
 class SendFileInfo
 {
 	private :
 		REQUEST_FILE_MODE		m_Mode;
 
-		// 보내기 전에
-		std::string				m_Filename;		// 보내주는 file이름		
-		REQUEST_FILE_TYPE		m_FileType;		// 어떤 file인가?
+		// before it is sent
+		std::string				m_Filename;		// the file's name, as sent		
+		REQUEST_FILE_TYPE		m_FileType;		// what kind of file
 		
 		// while sending
 		Basic::FileChunkReader	m_File;			// m_Filename, opened
@@ -69,7 +69,7 @@ class SendFileInfo
 
 		void		StartSend();
 		bool		IsSendMode() const	{ return m_Mode==REQUEST_FILE_MODE_SEND; }
-		DWORD		Send(char* pBuffer);		// Get()이 더 어울리는데.. - -;
+		DWORD		Send(char* pBuffer);		// reads the next chunk
 		void		SendBack(DWORD nBack);
 		void		EndSend();
 
@@ -83,12 +83,12 @@ class SendFileInfo
 //---------------------------------------------------------------------------
 // RequestSendInfo
 //---------------------------------------------------------------------------
-// 남이 나에게 요청한 것
+// The files one player asked this client for, in the order they go out
 //---------------------------------------------------------------------------
 class RequestSendInfo
 {
 	private :
-		std::string				m_RequestUser;	// 내가 file을 보내줄 사람
+		std::string				m_RequestUser;	// who the files go to
 
 		std::list<SendFileInfo*>	m_FileInfos;
 
@@ -115,7 +115,7 @@ class RequestSendInfo
 class RequestFileManager {
 	public :
 		//-----------------------------------------------------------------
-		// 다른 사람이 요청한 것 : < 요청한사람, 다른 사람이 요청한file정보 >
+		// Other players' requests: < who asked, the files they asked for >
 		//-----------------------------------------------------------------
 		typedef std::map<std::string, RequestSendInfo*>			REQUEST_SEND_MAP;
 
@@ -134,7 +134,7 @@ class RequestFileManager {
 		// eighth slice), and the empty Update() with it.
 		//--------------------------------------------------------------
 		//--------------------------------------------------------------
-		// OtherRequest - 다른 사람이 요청한 file처리
+		// OtherRequest - sending the files other players asked for
 		//--------------------------------------------------------------
 		bool			AddOtherRequest(RequestSendInfo* pInfo);
 		bool			RemoveOtherRequest(const std::string& name);
@@ -142,7 +142,7 @@ class RequestFileManager {
 		bool			SendOtherRequest(const std::string& name, RequestServerPlayer* pRequestServerPlayer);
 
 	protected :
-		REQUEST_SEND_MAP		m_OtherRequests;	// 다른 사람이 요청한 file들
+		REQUEST_SEND_MAP		m_OtherRequests;	// the files other players asked for
 };
 
 extern RequestFileManager* g_pRequestFileManager;

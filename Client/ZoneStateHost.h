@@ -2,14 +2,17 @@
 
 #include <cstdint>
 #include "MTypeDef.h"
+#include "MEffectStatusDef.h"
 
 class MCreature;
+class MShop;
 class MStatus;
 
 // The zone the player is in, and the creatures in it, as the replies about
 // them read and change them. MCreature stays the executable's: replies hold
 // the pointer GetCreature returns and pass it back to CreatureState, never
-// dereferencing it. Status is the creature as its status array (MStatus).
+// dereferencing it. Status is the creature as its status array (MStatus);
+// GetShop is an NPC's shop, asked only of a creature IsNPC says is one.
 // A missing host or entry means no zone and no creature: queries answer
 // false, NULL, 0 or an empty name, and actions are skipped.
 namespace ZoneState {
@@ -55,6 +58,15 @@ struct Host
 	bool (*MovePosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetServerPosition)(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
 	bool (*KnockBackPosition)(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
+	TYPE_SECTORPOSITION (*GetX)(MCreature* pCreature) = nullptr;
+	TYPE_SECTORPOSITION (*GetY)(MCreature* pCreature) = nullptr;
+	void (*SetEffectDelayFrame)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames) = nullptr;
+	void (*PacketSpecialActionResult)(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
+	void (*PacketSpecialActionToInventoryItem)(MCreature* pCreature, TYPE_ACTIONINFO actionInfo) = nullptr;
+	bool (*AddEffectStatus)(MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame) = nullptr;
+	void (*SetTurning)(MCreature* pCreature, std::uint16_t count) = nullptr;
+	bool (*IsNPC)(MCreature* pCreature) = nullptr;
+	MShop* (*GetShop)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -77,5 +89,14 @@ void SetServerPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTOR
 bool KnockBackPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 // Sets one value in the creature's status array; skipped without a status.
 void SetStatus(MCreature* pCreature, std::uint32_t n, std::uint32_t value);
+TYPE_SECTORPOSITION GetX(MCreature* pCreature);
+TYPE_SECTORPOSITION GetY(MCreature* pCreature);
+void SetEffectDelayFrame(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, std::uint32_t frames);
+void PacketSpecialActionResult(MCreature* pCreature, TYPE_ACTIONINFO resultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
+void PacketSpecialActionToInventoryItem(MCreature* pCreature, TYPE_ACTIONINFO actionInfo);
+bool AddEffectStatus(MCreature* pCreature, EFFECTSTATUS status, std::uint32_t delayFrame);
+void SetTurning(MCreature* pCreature, std::uint16_t count);
+bool IsNPC(MCreature* pCreature);
+MShop* GetShop(MCreature* pCreature);
 
 }

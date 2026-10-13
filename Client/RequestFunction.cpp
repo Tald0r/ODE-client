@@ -4,7 +4,7 @@
 
 #include "Client_PCH.h"
 #include "RequestServerPlayerManager.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
 
 //--------------------------------------------------------------------------------
 // Request Disconnect
