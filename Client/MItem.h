@@ -103,6 +103,9 @@ struct MItemHost {
 	// magazine's vtable is (its use bodies send packets), and GCC's UBSan
 	// checks every use of an MMagazine against that vtable's typeinfo.
 	bool			(*LoadGun)(MItem* pGun, TYPE_ITEM_NUMBER rounds) = nullptr;
+	// Marks a mine (an item of ITEM_CLASS_MINE) installed in the ground.
+	// Executable-side for the same reason: a mine's vtable is.
+	void			(*SetMineInstalled)(MItem* pMine) = nullptr;
 };
 
 //----------------------------------------------------------------------
@@ -481,6 +484,7 @@ class MItem : public MObject, public CAnimationFrame {
 		static void				RepairHint()					{ if (s_pHost!=NULL && s_pHost->RepairHint!=NULL) s_pHost->RepairHint(); }
 		static MMagazine*		EmptyMagazineFor(MItem* pGun)	{ return s_pHost!=NULL && s_pHost->EmptyMagazineFor!=NULL ? s_pHost->EmptyMagazineFor(pGun) : NULL; }
 		static bool				LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)	{ return s_pHost!=NULL && s_pHost->LoadGun!=NULL && s_pHost->LoadGun(pGun, rounds); }
+		static void				SetMineInstalled(MItem* pMine)	{ if (s_pHost!=NULL && s_pHost->SetMineInstalled!=NULL) s_pHost->SetMineInstalled(pMine); }
 		// The executable's frame stamp; NULL without a host, or with one that carries none.
 		static const MonotonicClock::TimePoint*	Clock()	{ return s_pHost!=NULL ? s_pHost->pCurrentTime : NULL; }
 		BOOL		IsDropping() const		{ return m_bDropping; }

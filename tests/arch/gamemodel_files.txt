@@ -873,3 +873,6 @@ Client/FrameClock.cpp
 Client/FrameClock.h
 Client/MHelpDisplayer.cpp
 Client/MHelpDisplayer.h
+
+# A mine installed in the zone, through the world-event and item hosts.
+Client/PacketHandler/GCAddInstalledMineToZoneHandler.cpp

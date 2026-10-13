@@ -2964,6 +2964,7 @@ static const MItemHost	s_ItemHost = {
 	.ItemDestroyed			= [](MItem* item) noexcept { UI_RemoveDescriptor(item); },
 	.NewItem				= NewItemOfClass,
 	.LoadGun				= LoadGun,
+	.SetMineInstalled		= [](MItem* pMine) { static_cast<MMine*>(pMine)->SetInstalled(); },
 };
 
 //-----------------------------------------------------------------------------
