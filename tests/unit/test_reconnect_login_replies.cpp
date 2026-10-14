@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #endif
+#include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <memory>
@@ -38,12 +39,16 @@
 namespace {
 
 std::vector<std::string> calls;
+// The connection a reply runs on, to see what a flush finds queued.
+struct GamePlayer;
+GamePlayer* current = nullptr;
+std::size_t Queued();
 
 std::string N(long long value) { return std::to_string(value); }
 
 const LoginPresentation::Host login = []() {
 	LoginPresentation::Host host{};
-	host.FlushSocketOutput = []() { calls.push_back("flushed"); };
+	host.FlushSocketOutput = []() { calls.push_back("flushed|" + N(static_cast<long long>(Queued()))); };
 	host.Sleep = [](std::uint32_t ms) { calls.push_back("sleep|" + N(ms)); };
 	host.EnterWaitPCListMode = []() { calls.push_back("wait pc list"); };
 	return host;
@@ -80,6 +85,7 @@ struct GamePlayer : ClientPlayer
 	~GamePlayer() { setPlayerStatus(CPS_END_SESSION); }
 	std::vector<unsigned char> Sent() const { return SocketOutputStreamTestAccess::Bytes(*m_pOutputStream); }
 };
+std::size_t Queued() { return current != nullptr ? current->Sent().size() : 0; }
 
 // The packets as one stream sends them: each header carries the
 // stream's running sequence number.
@@ -108,7 +114,9 @@ void Receive(GamePlayer& player, uint port, DWORD key)
 	packet.setLoginServerIP("127.0.0.1");
 	packet.setLoginServerPort(port);
 	packet.setKey(key);
+	current = &player;
 	GCReconnectLoginHandler::execute(&packet, &player);
+	current = nullptr;
 }
 
 } // namespace
@@ -126,13 +134,25 @@ TEST(ReconnectLoginReplies, TheLoginServerIsReachedAndAskedForTheCharacters)
 		g_pUserInformation->IsAutoLogIn = autoLogin;
 		GamePlayer player;
 		Receive(player, port, 0x12345678);
-		CHECK(calls == (std::vector<std::string>{"flushed", "sleep|500", "wait pc list"}));
+		// The key packet is flushed alone, before the reconnect login.
+		CGConnectSetKey keyAlone;
+		keyAlone.setEncryptKey(0);
+		keyAlone.setHashKey(0);
+		CHECK(calls == (std::vector<std::string>{"flushed|" + N(static_cast<long long>(Encoded({&keyAlone}).size())), "sleep|500",
+			"wait pc list"}));
+#ifndef _WIN32
+		// Non-blocking, or the main loop would stall on it (Windows cannot
+		// say).
+		CHECK(player.getSocket()->isNonBlocking());
+#endif
 		CHECK(player.getPlayerStatus() == CPS_AFTER_SENDING_CL_GET_PC_LIST);
 		// The key packet, then the reconnect login with the packet's key.
 		CLReconnectLogin expected;
 		expected.setKey(0x12345678);
 		expected.SetLoginMode(autoLogin);
 		CGConnectSetKey key;
+		key.setEncryptKey(0);
+		key.setHashKey(0);
 		const std::vector<unsigned char> keyOnly = Encoded({&key});
 		const std::vector<unsigned char> both = Encoded({&key, &expected});
 		const std::vector<unsigned char> sent = player.Sent();
@@ -168,10 +188,12 @@ TEST(ReconnectLoginReplies, AnUnreachableLoginServerThrowsAndNothingFollows)
 	bool bThrew = false;
 	try {
 		Receive(player, port, 1);
-	} catch (Throwable&) {
+	} catch (Error&) {
 		bThrew = true;
 	}
+	// A refused connect throws Error, after the old connection closed.
 	CHECK(bThrew);
+	CHECK(player.getPlayerStatus() == CPS_END_SESSION);
 	CHECK(calls.empty());
 	CHECK(player.Sent().empty());
 }

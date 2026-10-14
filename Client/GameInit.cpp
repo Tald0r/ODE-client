@@ -3596,9 +3596,6 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
 };
 
-// Sends what the game connection has waiting (GameMain.cpp).
-bool UpdateSocketOutput();
-
 static const LoginPresentation::Host s_LoginPresentationHost = {
 	.NewCharacterCreateOk = UI_NewCharacterCreateOk,
 	.DeleteCharacterOK = UI_DeleteCharacterOK,

@@ -21,8 +21,9 @@
 // of a larger stack a new magazine of the same type and options is made
 // and the stack is one fewer. The player's status is calculated again.
 // Without a gun in the right hand the magazine is spent all the same:
-// the last one is freed, and of a stack only the new one. An item that is no magazine only clears the
-// buffer; another buffer status only sounds.
+// the last one is freed, and of a stack only the new one. An item that
+// is no magazine only clears the buffer; another buffer status only
+// sounds.
 namespace {
 
 std::vector<std::string> calls;

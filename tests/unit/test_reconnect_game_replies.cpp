@@ -267,6 +267,10 @@ TEST(ReconnectGameReplies, TheGameServerIsReachedAndTheLoginServerToldOverUDP)
 		"flushed|" + N(static_cast<long long>(allBytes)), "wait update info"}));
 	CHECK(player.getPlayerStatus() == CPS_AFTER_SENDING_CG_CONNECT);
 	CheckConnect(player, 0x0BADF00D, kMacAddress);
+#ifndef _WIN32
+	// Non-blocking, or the main loop would stall on it (Windows cannot say).
+	CHECK(player.getSocket()->isNonBlocking());
+#endif
 	if (!NetworkTransport::UsesWebSocket())
 	{
 		// The Korean config's check port hears of the character.

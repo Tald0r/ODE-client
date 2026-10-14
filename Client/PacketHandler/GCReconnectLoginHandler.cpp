@@ -20,8 +20,9 @@
 	#include "Cpackets/CGConnectSetKey.h"
 	//end
 //--------------------------------------------------------------------------------
-// As soon as the login server sends the game server's address, port and key,
-// connect to the game server and send the CGConnect packet carrying the key.
+// The game server sends the player back to the login server: reconnect to
+// it and send the CLReconnectLogin packet carrying the key. (Upstream's
+// comment, copied from LCReconnect's, spoke of the game server.)
 //--------------------------------------------------------------------------------
 void GCReconnectLoginHandler::execute ( GCReconnectLogin * pPacket , Player * pPlayer )
 
