@@ -107,6 +107,7 @@ const CreatureState::Host creature = []() {
 	host.SetBodyColor1 = [](MCreature* p, std::uint16_t set) { Record(p, "skin|" + N(set)); };
 	host.SetBodyColor2 = [](MCreature* p, std::uint16_t set) { Record(p, "coat|" + N(set)); };
 	host.SetEffectDelayFrame = [](MCreature* p, TYPE_ACTIONINFO ai, std::uint32_t frames) { Record(p, "delay|" + N(ai) + "|" + N(frames)); };
+	host.SetBloodyZenith = [](MCreature* p, int delay) { Record(p, "zenith|" + N(delay)); };
 	host.PacketSpecialActionResult = [](MCreature* p, TYPE_ACTIONINFO ai, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade) {
 		Record(p, "result|" + N(ai) + "|" + N(id) + "|" + N(sX) + "|" + N(sY) + "|" + N(grade));
 	};
@@ -203,13 +204,14 @@ struct World : GameModelWorld
 		creatures.clear();
 	}
 	MActionInfo& Row(TYPE_ACTIONINFO action) { return testfw::MutableRow(actions, action); }
-	// Puts on a coat; a quest coat draws in the quest colour.
-	void WearCoat()
+	// Puts on a coat: a quest coat draws in the quest colour, a plain one
+	// in the option table's first row's.
+	void WearCoat(bool quest = true)
 	{
 		Coat* coat = new Coat;
 		coat->SetID(12);
 		coat->SetCurrentDurability(100);
-		coat->SetQuestFlag();
+		coat->SetQuestFlag(quest);
 		CHECK(vampireGear.AddItem(coat, MVampireGear::GEAR_VAMPIRE_COAT));
 	}
 	static long long HP() { return static_cast<long long>(playerStatus.GetStatus(MODIFY_CURRENT_HP)); }
@@ -376,4 +378,35 @@ TEST(UntransformReplies, AWerewolfTakesBackItsSkinAndCoatColours)
 	world.WearCoat();
 	ReceiveUntransform();
 	CHECK(calls == Join({{Untransform(), "becomes|7|61"}, Stands(), {"Self.skin|211", "Self.coat|" + N(QUEST_ITEM_COLOR)}}));
+}
+
+TEST(UntransformReplies, APlainCoatGivesAWerewolfItsOptionColour)
+{
+	World world;
+	me.type = CREATURETYPE_WER_WOLF;
+	testfw::MutableRow(*g_pItemOptionTable, 0).ColorSet = 333;
+	world.WearCoat(false);
+	ReceiveUntransform();
+	CHECK(calls == Join({{Untransform(), "becomes|7|61"}, Stands(), {"Self.skin|211", "Self.coat|333"}}));
+}
+
+TEST(UntransformReplies, AnUnseenSkillsNodeHasNoUser)
+{
+	World world;
+	// Bloody Zenith's record would show the node's user; there is none.
+	ReceiveUnseenSkill(MAGIC_BLOODY_ZENITH);
+	CHECK(calls == Join({{Start(MAGIC_BLOODY_ZENITH)}, HitsThePlayer(MAGIC_BLOODY_ZENITH)}));
+}
+
+TEST(UntransformReplies, WithoutHostsAPlayerIsAPlainTypeOfNoRankAndKeepsStill)
+{
+	World world;
+	CreatureState::SetHost(nullptr);
+	PlayerState::SetHost(nullptr);
+	CHECK_EQ(0, CreatureState::GetCreatureType(Handle(me)));
+	// 3 is MCreature's own starting rank: not an operator (0).
+	CHECK_EQ(3, CreatureState::GetCompetence(Handle(me)));
+	CreatureState::SetCurrentDirection(Handle(me), 5);
+	PlayerState::SetDelay(1000);
+	CHECK(calls.empty());
 }
