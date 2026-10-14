@@ -15,11 +15,12 @@
 #include "Packet.h"
 #include "PacketFactory.h"
 
-enum CR_REQUEST_CODE
+// One byte on the wire: the fixed type holds any byte a peer sends.
+enum CR_REQUEST_CODE : BYTE
 {
 	CR_REQUEST_NULL,
 
-	// 조만간 구현 예정.. 과연.. - -;
+	// To be implemented soon.. if ever.. - -;
 	CR_REQUEST_FILE_GUILD_MARK,
 	CR_REQUEST_FILE_PROFILE,
 };

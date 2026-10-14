@@ -8,6 +8,7 @@
 #include "UserInformation.h"
 #include "Socket.h"
 #include "SocketImpl.h"
+#include "SocketInputStream.h"
 #include "SocketOutputStream.h"
 #include "Rpackets/CRRequest.h"
 #include "Rpackets/RCRequestVerify.h"
@@ -110,6 +111,23 @@ std::vector<unsigned char> Verify(REQUEST_VERIFY code)
 	SocketOutputStream encoded(&out);
 	encoded.write(&verify);
 	return SocketOutputStreamTestAccess::Bytes(encoded);
+}
+
+// A request read off the wire with a code byte no request has.
+void ReceiveCode(Peer& peer, BYTE code)
+{
+	Socket out((EnsureSocketsInitialised(), new SocketImpl()));
+	SocketOutputStream encoded(&out);
+	encoded.write(code);
+	encoded.write(static_cast<BYTE>(0));
+	const std::vector<unsigned char> bytes = SocketOutputStreamTestAccess::Bytes(encoded);
+	Socket in((EnsureSocketsInitialised(), new SocketImpl()));
+	SocketInputStream stream(&in, 1024);
+	SocketInputStreamTestAccess::Preload(stream, bytes.data(), static_cast<unsigned int>(bytes.size()));
+	CRRequest packet;
+	packet.read(stream);
+	CHECK(stream.isEmpty());
+	CRRequestHandler::execute(&packet, &peer);
 }
 
 } // namespace
@@ -228,4 +246,19 @@ TEST(PeerRequestReplies, WithoutTheGameStateNothingIsDone)
 	CHECK(CommunicationPresentation::GetProfileFilename("Lantern") == nullptr);
 	CHECK(!Receive(peer, CR_REQUEST_FILE_GUILD_MARK, ""));
 	CHECK(peer.getPlayerStatus() == before);
+}
+
+TEST(PeerRequestReplies, ACodeNoRequestHasDoesNothing)
+{
+	World world;
+	Peer peer;
+	peer.setName("Nyx");
+	const PlayerStatus before = peer.getPlayerStatus();
+	const REQUEST_CLIENT_MODE mode = peer.getRequestMode();
+	// The code is one byte on the wire; three codes are known.
+	ReceiveCode(peer, 7);
+	ReceiveCode(peer, 255);
+	CHECK(peer.getPlayerStatus() == before && peer.getRequestMode() == mode);
+	CHECK(peer.Sent().empty());
+	CHECK(asked.empty());
 }

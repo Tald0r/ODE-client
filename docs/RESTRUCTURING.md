@@ -4494,11 +4494,14 @@ rounds settled* for the host rules). Test fixtures share
   > someone else's, it answers why not and the session ends. Asked for
   > the guild mark, the connection switches to sending it. Without the
   > user information, the request managers or the UI's profiles (new
-  > `HasProfiles`) nothing is done. R1 is 114 Windows / 112 Ninja.
+  > `HasProfiles`) nothing is done. Once moved, `CR_REQUEST_CODE` took
+  > `BYTE` as its fixed type: the request's code is a byte a peer sends,
+  > and a code past the three known ones loaded an invalid enum value,
+  > where Clang's UBSan stopped. R1 is 114 Windows / 112 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_peer_request_replies.cpp` (the profile queued, a request
     queued already, no profile, someone else's, the guild mark, no
-    request, a nameless and a named peer, each guard, no host).
+    request, a code no request has, a nameless and a named peer, each guard, no host).
 
 ### Remaining R1 work after tasks 4.80-4.164
 
