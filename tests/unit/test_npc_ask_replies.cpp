@@ -132,7 +132,8 @@ struct World : GameModelWorld
 	std::vector<std::string> Answers() const
 	{
 		std::vector<std::string> answers;
-		for (const MString* pString : talkBox) answers.push_back(pString->GetString());
+		// An empty MString holds NULL.
+		for (const MString* pString : talkBox) answers.push_back(pString->GetString() != nullptr ? pString->GetString() : "<null>");
 		return answers;
 	}
 	// The talk box as the question left it: subject, NPC, type and script.
@@ -190,6 +191,25 @@ void AskVariable(TYPE_OBJECTID npc, int scriptID)
 	packet.read(stream);
 	CHECK(stream.isEmpty());
 	GCNPCAskVariableHandler::execute(&packet, nullptr);
+}
+
+std::vector<unsigned char> Encoded(const Packet& packet)
+{
+	Socket out((EnsureSocketsInitialised(), new SocketImpl()));
+	SocketOutputStream encoded(&out);
+	packet.write(encoded);
+	return SocketOutputStreamTestAccess::Bytes(encoded);
+}
+
+template<class PacketType>
+void Decode(PacketType& packet, const PacketType& original)
+{
+	const std::vector<unsigned char> bytes = Encoded(original);
+	Socket in((EnsureSocketsInitialised(), new SocketImpl()));
+	SocketInputStream stream(&in, 1024);
+	SocketInputStreamTestAccess::Preload(stream, bytes.data(), static_cast<unsigned int>(bytes.size()));
+	packet.read(stream);
+	CHECK(stream.isEmpty());
 }
 
 } // namespace
@@ -340,6 +360,26 @@ TEST(NPCAskReplies, AWholeQuestionKeepsEachAnswerWithItsText)
 	AskDynamic(1003, "Where to?", {"North", "South", "East"});
 	CHECK(calls == std::vector<std::string>({"verified", "talk box shown"}));
 	// The refused second answer goes with its text, not the third's.
+	CHECK(world.Answers() == std::vector<std::string>({"North", "East"}));
+	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 2}));
+}
+
+TEST(NPCAskReplies, AnEmptyAnswerKeepsItsPlace)
+{
+	World world;
+	GCNPCAskDynamic original;
+	original.setObjectID(1003);
+	original.setScriptID(77);
+	original.setSubject("Where to?");
+	for (const char* answer : {"North", "", "East"}) original.addContent(answer);
+	GCNPCAskDynamic packet;
+	Decode(packet, original);
+	// Read back, it says what was sent: three answers, the second empty.
+	CHECK(Encoded(packet) == Encoded(original));
+	CHECK_EQ(3, static_cast<int>(packet.getContentsCount()));
+	// The empty answer is left out, as a refused one is, and the others
+	// keep their indices.
+	GCNPCAskDynamicHandler::execute(&packet, nullptr);
 	CHECK(world.Answers() == std::vector<std::string>({"North", "East"}));
 	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 2}));
 }

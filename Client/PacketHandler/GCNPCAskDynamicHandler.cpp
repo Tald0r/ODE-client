@@ -97,9 +97,10 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 					{
 						// Into the PC talk box.
 						// Every answer leaves the packet, so a refused one takes its
-						// text with it.
+						// text with it. An empty one is left out like a refused one:
+						// the talk box would hand the dialog a NULL menu string.
 						const std::string answer = pPacket->popContent();
-						if( g_pSystemAvailableManager->ScriptFiltering( pPacket->getScriptID(), i ) )
+						if( !answer.empty() && g_pSystemAvailableManager->ScriptFiltering( pPacket->getScriptID(), i ) )
 						{
 							g_pPCTalkBox->AddString( answer.c_str() );
 							g_pPCTalkBox->m_AnswerIDMap.push_back( i );
