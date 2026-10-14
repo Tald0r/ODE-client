@@ -79,6 +79,17 @@ struct Host
 	// direction and health in place. A sacrifice (793, 795) is wounded.
 	void (*AddRaceSlayerMonster)(GCAddMonster* pPacket) = nullptr;
 	void (*AddRaceOustersMonster)(GCAddMonster* pPacket) = nullptr;
+	// Skills shown with copies or summoned creatures, the user striking the
+	// target: Shadow Dancing's and Illendue's fading copies (Illendue's
+	// copy using skillID), Blaze Walk's strikes at its grade, the plasma
+	// rocket launcher's rocket, and the wild wolf running at the target
+	// (to eat it, when it is a corpse). Either creature may be NULL; then
+	// nothing is shown.
+	void (*SkillShadowDancing)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
+	void (*SkillIllendue)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
+	void (*SkillBlazeWalk)(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) = nullptr;
+	void (*AddRocketLauncher)(MCreature* pUser, MCreature* pTarget) = nullptr;
+	void (*AddWildWolf)(MCreature* pUser, MCreature* pTarget, bool bEatCorpse) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -104,6 +115,11 @@ void AddGDREffect(int effect, bool bAppearBossMonster);
 void ComeFromPortal(MCreature* pCreature);
 void AddRaceSlayerMonster(GCAddMonster* pPacket);
 void AddRaceOustersMonster(GCAddMonster* pPacket);
+void SkillShadowDancing(MCreature* pUser, MCreature* pTarget, int skillID);
+void SkillIllendue(MCreature* pUser, MCreature* pTarget, int skillID);
+void SkillBlazeWalk(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade);
+void AddRocketLauncher(MCreature* pUser, MCreature* pTarget);
+void AddWildWolf(MCreature* pUser, MCreature* pTarget, bool bEatCorpse);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.

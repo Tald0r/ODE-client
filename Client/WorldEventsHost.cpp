@@ -119,6 +119,31 @@ void AddRaceOustersMonster(GCAddMonster* pPacket)
 	if (s_Host && s_Host->AddRaceOustersMonster) s_Host->AddRaceOustersMonster(pPacket);
 }
 
+void SkillShadowDancing(MCreature* pUser, MCreature* pTarget, int skillID)
+{
+	if (s_Host && s_Host->SkillShadowDancing) s_Host->SkillShadowDancing(pUser, pTarget, skillID);
+}
+
+void SkillIllendue(MCreature* pUser, MCreature* pTarget, int skillID)
+{
+	if (s_Host && s_Host->SkillIllendue) s_Host->SkillIllendue(pUser, pTarget, skillID);
+}
+
+void SkillBlazeWalk(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade)
+{
+	if (s_Host && s_Host->SkillBlazeWalk) s_Host->SkillBlazeWalk(pUser, pTarget, skillID, grade);
+}
+
+void AddRocketLauncher(MCreature* pUser, MCreature* pTarget)
+{
+	if (s_Host && s_Host->AddRocketLauncher) s_Host->AddRocketLauncher(pUser, pTarget);
+}
+
+void AddWildWolf(MCreature* pUser, MCreature* pTarget, bool bEatCorpse)
+{
+	if (s_Host && s_Host->AddWildWolf) s_Host->AddWildWolf(pUser, pTarget, bEatCorpse);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

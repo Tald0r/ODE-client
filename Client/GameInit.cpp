@@ -3457,6 +3457,9 @@ extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 extern void Add_GDR_Effect(int nEffect, bool bAppearBossMonster);
 extern void Add_Race_SlayerMonster(GCAddMonster * pPacket);
 extern void Add_Race_OustersMonster(GCAddMonster * pPacket);
+extern void SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID);
+extern void Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature);
+extern void Add_Wild_Wolf(MCreature* UserCreature, MCreature* TargetCreature, bool IsEatCorpse);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
 extern void SendPositionInfoToParty();
@@ -3853,6 +3856,11 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.ComeFromPortal = ComeFromPortal,
 	.AddRaceSlayerMonster = Add_Race_SlayerMonster,
 	.AddRaceOustersMonster = Add_Race_OustersMonster,
+	.SkillShadowDancing = SkillShadowDancing,
+	.SkillIllendue = SkillIllendue,
+	.SkillBlazeWalk = [](MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) { SkillBlazeWalk(pUser, pTarget, skillID, grade); },
+	.AddRocketLauncher = Add_RocketRuncher,
+	.AddWildWolf = Add_Wild_Wolf,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
