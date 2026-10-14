@@ -114,9 +114,12 @@ void Receive(GamePlayer& player, uint port, DWORD key)
 	packet.setLoginServerIP("127.0.0.1");
 	packet.setLoginServerPort(port);
 	packet.setKey(key);
-	current = &player;
+	struct Running
+	{
+		explicit Running(GamePlayer* pPlayer) { current = pPlayer; }
+		~Running() { current = nullptr; }
+	} running(&player);
 	GCReconnectLoginHandler::execute(&packet, &player);
-	current = nullptr;
 }
 
 } // namespace
