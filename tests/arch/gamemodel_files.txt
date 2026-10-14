@@ -964,3 +964,24 @@ Client/PacketHandler/GCAttackArmsOK3Handler.cpp
 Client/PacketHandler/GCAttackArmsOK5Handler.cpp
 Client/PacketHandler/GCAttackMeleeOK3Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK3Handler.cpp
+
+# Skill replies between the player and a creature: the player drains a
+# creature or is drained, is knocked back, or is hit by holy water.
+Client/PacketHandler/GCBloodDrainOK1Handler.cpp
+Client/PacketHandler/GCBloodDrainOK2Handler.cpp
+Client/PacketHandler/GCKnocksTargetBackOK2Handler.cpp
+Client/PacketHandler/GCThrowItemOK2Handler.cpp
+
+# Attack and skill replies about the player's own attack (handed to its
+# current action) or a creature's attack on the player.
+Client/PacketHandler/GCAttackArmsOK1Handler.cpp
+Client/PacketHandler/GCAttackMeleeOK1Handler.cpp
+Client/PacketHandler/GCKnocksTargetBackOK1Handler.cpp
+Client/PacketHandler/GCThrowItemOK1Handler.cpp
+Client/PacketHandler/GCAttackArmsOK2Handler.cpp
+Client/PacketHandler/GCAttackMeleeOK2Handler.cpp
+
+# Skills used on oneself or at a cell, over the result-node factory and the
+# effect generator's main node.
+Client/PacketHandler/GCSkillToSelfOK2Handler.cpp
+Client/PacketHandler/GCSkillToSelfOK3Handler.cpp

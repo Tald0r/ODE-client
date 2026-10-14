@@ -15,7 +15,7 @@ class MStatus;
 // dereferencing it. Status is the creature as its status array (MStatus);
 // GetShop is an NPC's shop, asked only of a creature IsNPC says is one.
 // A missing host or entry means no zone and no creature: queries answer
-// false, NULL, 0 or an empty name, and actions are skipped.
+// false, NULL, 0, ACTIONINFO_NULL or an empty name, and actions are skipped.
 namespace ZoneState {
 
 struct Host
@@ -106,6 +106,8 @@ struct Host
 	void (*ClearStopBloodDrain)(MCreature* pCreature) = nullptr;
 	// The action the creature attacks with by default (its weapon's).
 	TYPE_ACTIONINFO (*GetBasicActionInfo)(MCreature* pCreature) = nullptr;
+	bool (*RemoveEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
+	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -158,7 +160,7 @@ bool IsInCasket(MCreature* pCreature);
 void AddCasket(MCreature* pCreature, int casketType);
 void RemoveCasket(MCreature* pCreature);
 void SetBloodyZenith(MCreature* pCreature, int delay);
-// Each takes pResult, which may be NULL.
+// ToSector, ToOther and ToSelf each take pResult, which may be NULL.
 void PacketSpecialActionToSector(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, MActionResult* pResult);
 void PacketSpecialActionToOther(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_OBJECTID id, MActionResult* pResult);
 void PacketSpecialActionToNobody(MCreature* pCreature, TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
@@ -167,5 +169,7 @@ void SetDrainCreatureID(MCreature* pCreature, TYPE_OBJECTID id);
 void ClearStopBloodDrain(MCreature* pCreature);
 // ACTIONINFO_NULL without a host.
 TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature);
+bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
+void SetFakeDie(MCreature* pCreature);
 
 }

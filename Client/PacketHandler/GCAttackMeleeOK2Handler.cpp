@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackMeleeOK2.h"
-#include "ClientDef.h"
-#include "MActionInfoTable.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -20,80 +23,86 @@ void GCAttackMeleeOK2Handler::execute ( GCAttackMeleeOK2 * pPacket , Player * pP
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
 		
 
 	// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 		return;
 	}	
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The creatures involved.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 	if (pCreature==NULL)
 	{
-		// 그런 creature가 없을 경우
+		// No such creature.
 		DEBUG_ADD_FORMAT("There's no such creature : ID=%d", pPacket->getObjectID());				
 		
 		//------------------------------------------------------------------
-		// 바로 맞는 모습
+		// Hit at once.
 		//------------------------------------------------------------------
-		g_pPlayer->PacketSpecialActionResult( 
-								RESULT_SKILL_ATTACK_MELEE,//pCreature->GetBasicActionInfo(),
-								g_pPlayer->GetID(), 
-								g_pPlayer->GetX(),
-								g_pPlayer->GetY()
+		CreatureState::PacketSpecialActionResult(pPlayerCreature, RESULT_SKILL_ATTACK_MELEE,//pCreature->GetBasicActionInfo(),
+								PlayerState::GetID(), 
+								CreatureState::GetX(pPlayerCreature),
+								CreatureState::GetY(pPlayerCreature)
 					);
 	}
 	else
 	{
 		//------------------------------------------------------
-		// 행동하는 Creature가 TargetCreature를 바라보도록 한다.
+		// The acting creature faces its target.
 		//------------------------------------------------------
-		pCreature->SetDirectionToPosition( g_pPlayer->GetX(), g_pPlayer->GetY() );
+		CreatureState::SetDirectionToPosition(pCreature, CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature) );
 
 		//------------------------------------------------------
-		// Creature가 Player를 공격하는 모습
+		// The creature attacks the player.
 		//------------------------------------------------------
 		//g_pPlayer->PacketSpecialActionResult( SKILL_ATTACK_MELEE + g_ActionInfoTable.GetMinResultActionInfo() );
 		MActionResult* pResult = new MActionResult;
 		pResult->Add( new MActionResultNodeActionInfo( 
-									pCreature->GetBasicActionInfo(),
+									CreatureState::GetBasicActionInfo(pCreature),
 									pPacket->getObjectID(), 
-									g_pPlayer->GetID(), 
-									g_pPlayer->GetX(),
-									g_pPlayer->GetY()
+									PlayerState::GetID(), 
+									CreatureState::GetX(pPlayerCreature),
+									CreatureState::GetY(pPlayerCreature)
 						)	 
 					);
 
 		//------------------------------------------------------
-		// Creature가 행동을 취하도록 한다.
+		// The creature acts.
 		//------------------------------------------------------
-		pCreature->PacketSpecialActionToOther(
-						pCreature->GetBasicActionInfo(), 
-						g_pPlayer->GetID(), 
+		CreatureState::PacketSpecialActionToOther(pCreature, CreatureState::GetBasicActionInfo(pCreature), 
+						PlayerState::GetID(), 
 						pResult
 		);
 	}
 
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

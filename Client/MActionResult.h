@@ -749,4 +749,14 @@ class MActionResult {
 		ActiveNode* m_pActive = nullptr;
 };
 
+class MCreature;
+
+//----------------------------------------------------------------------
+// The result node pCreature's skill leaves, by the skill's result kind
+// in the action table (a Typhoon only at grade 1); NULL when it leaves
+// none. A visible result also clears the creature's invisibility and
+// snipping, and a fake death marks it faking.
+//----------------------------------------------------------------------
+MActionResultNode*	CreateActionResultNode(MCreature* pCreature, int skillID, BYTE grade = 0);
+
 #endif

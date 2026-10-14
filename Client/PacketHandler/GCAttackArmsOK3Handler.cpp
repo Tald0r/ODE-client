@@ -11,7 +11,6 @@
 #include "Gpackets/GCAttackArmsOK3.h"
 #include "DebugLog.h"
 #include "ZoneStateHost.h"
-#include "MActionInfoTable.h"
 #include "MSlayerGear.h"
 #include "SkillDef.h"
 

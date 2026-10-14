@@ -901,3 +901,106 @@ MActionResultNodeChangeItemGenderInInventory::Execute()
 	g_pInventory->CheckAffectStatus( pInvenItem );
 	WorldEvents::PlaySound(SOUND_EVENT_FANFARE);
 }
+
+//----------------------------------------------------------------------
+// CreateActionResultNode
+//----------------------------------------------------------------------
+MActionResultNode*
+CreateActionResultNode(MCreature* pCreature, int skillID, BYTE grade)
+{
+	//------------------------------------------------------
+	//
+	// The result node the skill leaves, if any.
+	//
+	//------------------------------------------------------
+	MActionResultNode* pActionResultNode = NULL;
+
+	switch ((*g_pActionInfoTable)[skillID].GetActionResultID())
+	{
+		//------------------------------------------------------
+		// Burrow
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_CREATURE_BURROW :
+			DEBUG_ADD("[ACTIONRESULTNODE_CREATURE_BURROW]");
+			
+			pActionResultNode = new MActionResultNodeCreatureBurrow(CreatureState::GetID(pCreature));
+		break;
+
+		//------------------------------------------------------
+		// Invisible
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_CREATURE_INVISIBLE :
+			DEBUG_ADD("[ACTIONRESULTNODE_CREATURE_INVISIBLE]");
+			
+			pActionResultNode = new MActionResultNodeCreatureInvisible(CreatureState::GetID(pCreature));
+		break;		
+
+		//------------------------------------------------------
+		// Visible
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_CREATURE_VISIBLE :
+			DEBUG_ADD("[ACTIONRESULTNODE_CREATURE_VISIBLE]");
+			
+			pActionResultNode = new MActionResultNodeCreatureVisible(CreatureState::GetID(pCreature));
+
+			CreatureState::RemoveEffectStatus(pCreature, EFFECTSTATUS_INVISIBILITY );
+			CreatureState::RemoveEffectStatus(pCreature, EFFECTSTATUS_SNIPPING_MODE );
+		break;
+
+		//------------------------------------------------------
+		// Snipping
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_CREATURE_SNIPPING :			
+			DEBUG_ADD("[ACTIONRESULTNODE_CREATURE_SNIPPING]");
+			
+			pActionResultNode = new MActionResultNodeCreatureSnipping(CreatureState::GetID(pCreature));						
+		break;
+
+		//------------------------------------------------------
+		// Turning
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_CREATURE_TURNING :			
+			DEBUG_ADD("[ACTIONRESULTNODE_CREATURE_TURNING]");
+
+			if( skillID == SKILL_TYPHOON )
+			{
+				if( grade == 1 )
+					pActionResultNode = new MActionResultNodeCreatureTurning(CreatureState::GetID(pCreature), 16);
+			}
+			else
+				pActionResultNode = new MActionResultNodeCreatureTurning(CreatureState::GetID(pCreature), 16);
+		break;
+
+		//------------------------------------------------------
+		// Casket
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_SUMMON_CASKET :			
+			DEBUG_ADD("[ACTIONRESULTNODE_SUMMON_CASKET]");
+			
+			pActionResultNode = new MActionResultNodeSummonCasket(CreatureState::GetID(pCreature), 0);
+		break;
+
+		//------------------------------------------------------
+		// FakeDie
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_FAKE_DIE:
+			DEBUG_ADD("[ACTIONRESULTNODE_FAKE_DIE]");
+			
+			pActionResultNode = new MActionResultNodeFakeDie(CreatureState::GetID(pCreature));
+			CreatureState::SetFakeDie(pCreature);
+		break;
+
+		//------------------------------------------------------
+		// EVENT
+		//------------------------------------------------------
+		case ACTIONRESULTNODE_EVENT:
+			DEBUG_ADD("[ACTIONRESULTNODE_EVENT]");
+			
+			pActionResultNode = new MActionResultNodeEvent(skillID);
+		break;
+
+	}
+
+
+	return pActionResultNode;
+}

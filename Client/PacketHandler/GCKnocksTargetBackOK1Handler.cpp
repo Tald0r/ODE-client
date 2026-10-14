@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCKnocksTargetBackOK1.h"
-#include "ClientDef.h"
-#include "MSlayerGear.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -20,15 +23,22 @@ void GCKnocksTargetBackOK1Handler::execute ( GCKnocksTargetBackOK1 * pPacket , P
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -36,33 +46,33 @@ void GCKnocksTargetBackOK1Handler::execute ( GCKnocksTargetBackOK1 * pPacket , P
 	}
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//------------------------------------------------------
-		// 맞은 경우만 맞은 동작은 보인다.
+		// Only a hit shows being hit.
 		//------------------------------------------------------
 		if (pPacket->getSkillSuccess())
 		{
-			// Creature에게 Damage 입힘
+			// The creature is hit.
 			if (pCreature != NULL)
 			{			
 				unsigned short x = pPacket->getX();
 				unsigned short y = pPacket->getY();
 
-				// 물러나는방향(direction)적용..
-				// 이동한 후의 좌표가 온다.
+				// The direction it is knocked back in.
+				// The packet carries the cell after the move.
 				//MCreature::GetPositionToDirection(x, y, pPacket->getDir());
 
 				MActionResult* pResult = new MActionResult;
@@ -74,48 +84,42 @@ void GCKnocksTargetBackOK1Handler::execute ( GCKnocksTargetBackOK1 * pPacket , P
 
 			
 
-				// Creature의 좌표를 바로 바꾼다.
+				// Move the creature's cell at once.
 				//pCreature->SetPosition( x, y );
 				//pCreature->SetServerPosition( x, y );
 				//pCreature->SetStop();
 
-				// 결과 바로 표현
+				// Show the result at once.
 				//pCreature->PacketSpecialActionResult( 
 				//					RESULT_SKILL_KNOCKS_TARGET_BACK//pPacket->getSkillType() + g_ActionInfoTable.GetMinResultActionInfo()
 				//);			
 
-				g_pPlayer->PacketAddActionResult( 0 , pResult);
+				PlayerState::PacketAddActionResult(0 , pResult);
 
 				//------------------------------------------------------
-				// 동기화 문제 때문에..
-				// 서버 위치는 바로 지정한다.
+				// To stay in sync,
+				// the server cell is set at once.
 				//------------------------------------------------------
-				pCreature->SetServerPosition( x, y );
+				CreatureState::SetServerPosition(pCreature, x, y );
 			}
 		}
 		
 		//------------------------------------------------------
-		// 총알 빼준다.
+		// Spend the bullets.
 		//------------------------------------------------------
-		if (g_pCurrentMagazine==NULL)
-		{
-			DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
-		}
-		else
-		{
-			g_pCurrentMagazine->SetNumber( pPacket->getBullet() );
-		}
+		PlayerState::SetCurrentMagazineNumber( pPacket->getBullet() );
 	}
 
 	
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

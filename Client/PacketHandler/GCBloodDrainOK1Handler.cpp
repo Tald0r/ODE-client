@@ -8,7 +8,11 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCBloodDrainOK1.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -18,15 +22,22 @@ void GCBloodDrainOK1Handler::execute ( GCBloodDrainOK1 * pPacket , Player * pPla
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -34,53 +45,53 @@ void GCBloodDrainOK1Handler::execute ( GCBloodDrainOK1 * pPacket , Player * pPla
 	}
 
 	//------------------------------------------------------------------
-	// Player가 Skill을 성공시킨 경우에 날아오는 Packet이므로
-	// 결과를 반영시켜야 한다.
+	// The player's skill succeeded, so
+	// its result is applied.
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
-		// Creature에게 Damage 입힘
+		// The creature is hit.
 		if (pCreature != NULL)
 		{	
-			// Creature에게 내가 흡혈하고 있다고 알려준다
-			pCreature->SetDrainCreatureID( g_pPlayer->GetID() );
+			// Tell the creature the player drains its blood.
+			CreatureState::SetDrainCreatureID(pCreature, PlayerState::GetID() );
 
-			// 결과 바로 표현
-			pCreature->PacketSpecialActionResult( 
-					static_cast<TYPE_ACTIONINFO>(SKILL_BLOOD_DRAIN + (*g_pActionInfoTable).GetMinResultActionInfo()),
-					pCreature->GetID(),
-					pCreature->GetX(),
-					pCreature->GetY()
+			// Show the result at once.
+			CreatureState::PacketSpecialActionResult(pCreature, static_cast<TYPE_ACTIONINFO>(SKILL_BLOOD_DRAIN + (*g_pActionInfoTable).GetMinResultActionInfo()),
+					CreatureState::GetID(pCreature),
+					CreatureState::GetX(pCreature),
+					CreatureState::GetY(pCreature)
 			);	
 
-			int delayFrame = 691200;	// 12시간*60분*60초*16frame = 12*60*60*16;
-			pCreature->AddEffectStatus( EFFECTSTATUS_BLOOD_DRAIN, delayFrame );	
+			int delayFrame = 691200;	// 12 hours of 16 frames a second: 12*60*60*16
+			CreatureState::AddEffectStatus(pCreature, EFFECTSTATUS_BLOOD_DRAIN, delayFrame );	
 			
-//			// 2004, 6, 9 sobeit add start - 테스트, 흡혈 성공 메세지 온담에 동작하게..-_-
+//			// 2004-06-09: a test, acting after the drain-success message
 //			if(g_pPlayer->IsVampire())
 //			{
 //				g_pPlayer->SetDirectionToPosition(pCreature->GetX(), pCreature->GetY());
@@ -91,7 +102,7 @@ void GCBloodDrainOK1Handler::execute ( GCBloodDrainOK1 * pPacket , Player * pPla
 		}
 	}
 	
-	g_pPlayer->ClearStopBloodDrain();
+	CreatureState::ClearStopBloodDrain(pPlayerCreature);
 
 
 	__END_CATCH

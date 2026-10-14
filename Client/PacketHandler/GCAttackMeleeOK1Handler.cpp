@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackMeleeOK1.h"
-#include "ClientDef.h"
-#include "MActionInfoTable.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -20,16 +23,23 @@ void GCAttackMeleeOK1Handler::execute ( GCAttackMeleeOK1 * pPacket , Player * pP
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 	
 	// message
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -37,55 +47,47 @@ void GCAttackMeleeOK1Handler::execute ( GCAttackMeleeOK1 * pPacket , Player * pP
 	}
 
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
-		// Creature에게 Damage 입힘
+		// The creature is hit.
 		if (pCreature != NULL)
 		{
-			// SKILL_ATTACK_MELEE에 대한 결과를 표현해준다.
-			/*
-			// 바로 맞는 모습
-			pCreature->PacketSpecialActionResult( 
-								g_pPlayer->GetBasicActionInfo() + g_ActionInfoTable.GetMinResultActionInfo(),
-								pCreature->GetID(),
-								pCreature->GetX(),
-								pCreature->GetY()
-								);
-				*/
-			// action이 끝나고 맞는 동작
+			// Show the result of the melee attack.
+			// Hit when the action ends.
 			if (pCreature!=NULL)
 			{
 				MActionResult* pResult = new MActionResult;
 			
 				pResult->Add( new MActionResultNodeActionInfo( 
-											g_pPlayer->GetBasicActionInfo(),
-											g_pPlayer->GetID(), 
-											pCreature->GetID(), 
-											pCreature->GetX(),
-											pCreature->GetY()
+											CreatureState::GetBasicActionInfo(pPlayerCreature),
+											PlayerState::GetID(), 
+											CreatureState::GetID(pCreature), 
+											CreatureState::GetX(pCreature),
+											CreatureState::GetY(pCreature)
 											 ) 
 							);
 
 				//g_pPlayer->PacketAddActionResult( effectID, pResult );
-				g_pPlayer->PacketAddActionResult( 0, pResult );
+				PlayerState::PacketAddActionResult(0, pResult );
 			}
 		}
 	}	

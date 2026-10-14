@@ -59,7 +59,7 @@ void GCKnocksTargetBackOK5Handler::execute ( GCKnocksTargetBackOK5 * pPacket , P
 	}
 
 
-	int skillType = pPacket->getSkillType();	//CreatureState::GetBasicActionInfo(pCreature)	
+	int skillType = pPacket->getSkillType();	//pCreature->GetBasicActionInfo()	
 
 	if( skillType >= g_pActionInfoTable->GetSize() )
 	{

@@ -9,9 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAttackArmsOK1.h"
-#include "ClientDef.h"
-#include "MActionInfoTable.h"
-#include "MSlayerGear.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -21,25 +23,33 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 	
 	// message
 
 	//------------------------------------------------------------------
-	// Player가 Skill을 성공시킨 경우에 날아오는 Packet이므로
-	// 결과를 반영시켜야 한다.
+	// The player's skill succeeded, so
+	// its result is applied.
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -47,42 +57,28 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 	}
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
-		// Creature에게 Damage 입힘
-		/*
-		if (pCreature != NULL)
-		{
-			// 바로 맞는 동작
-			// SKILL_ATTACK_GUN1~4?에 대한 결과를 표현해준다.
-			pCreature->PacketSpecialActionResult( 
-				g_pPlayer->GetBasicActionInfo() + g_ActionInfoTable.GetMinResultActionInfo(),
-				g_pPlayer->GetID(),
-				g_pPlayer->GetX(),
-				g_pPlayer->GetY()
-			);
-			
-		}
-		*/
+		// The creature is hit.
 
 		//------------------------------------------------------
-		// 맞은 경우만 맞은 동작은 보인다.
+		// Only a hit shows being hit.
 		//------------------------------------------------------
 		if (pPacket->getSkillSuccess())
 		{
-			// action이 끝나고 맞는 동작
+			// Hit when the action ends.
 			if (pCreature!=NULL)
 			{
 				MActionResult* pResult = new MActionResult;
@@ -93,40 +89,33 @@ void GCAttackArmsOK1Handler::execute ( GCAttackArmsOK1 * pPacket , Player * pPla
 				{
 					pResult->Add( new MActionResultNodeActionInfo( 
 												pPacket->getSkillType(),
-												g_pPlayer->GetID(), 
-												pCreature->GetID(), 
-												pCreature->GetX(),
-												pCreature->GetY()
+												PlayerState::GetID(), 
+												CreatureState::GetID(pCreature), 
+												CreatureState::GetX(pCreature),
+												CreatureState::GetY(pCreature)
 												 ) 
 								);
 				} else
 				{			
 					pResult->Add( new MActionResultNodeActionInfo( 
-												g_pPlayer->GetBasicActionInfo(),
-												g_pPlayer->GetID(), 
-												pCreature->GetID(), 
-												pCreature->GetX(),
-												pCreature->GetY()
+												CreatureState::GetBasicActionInfo(pPlayerCreature),
+												PlayerState::GetID(), 
+												CreatureState::GetID(pCreature), 
+												CreatureState::GetX(pCreature),
+												CreatureState::GetY(pCreature)
 												 ) 
 								);
 				}
 
 				//g_pPlayer->PacketAddActionResult( effectID, pResult );
-				g_pPlayer->PacketAddActionResult( 0, pResult );
+				PlayerState::PacketAddActionResult(0, pResult );
 			}
 		}
 					
 		//------------------------------------------------------
-		// 총알 빼준다.
+		// Spend the bullets.
 		//------------------------------------------------------
-		if (g_pCurrentMagazine==NULL)
-		{
-			DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
-		}
-		else
-		{
-			g_pCurrentMagazine->SetNumber( pPacket->getBullet() );
-		}
+		PlayerState::SetCurrentMagazineNumber( pPacket->getBullet() );
 
 	}	
 		

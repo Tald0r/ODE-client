@@ -5,6 +5,7 @@
 #include "MEffectStatusDef.h"
 #include "RaceType.h"
 
+class MActionResult;
 class MCreature;
 class MItem;
 class MItemManager;
@@ -68,6 +69,12 @@ struct Host
 	bool (*IsItemCheckBufferItemToItem)() = nullptr;
 	MItem* (*GetItemCheckBuffer)() = nullptr;
 	void (*ClearItemCheckBuffer)() = nullptr;
+	// Hands the player's current action its result queue, which the player
+	// keeps for the action or runs and frees at once.
+	bool (*PacketAddActionResult)(std::uint16_t effectID, MActionResult* pResult) = nullptr;
+	// The bullets left in the gun's current magazine, if it has one. The
+	// magazine (MMagazine) keeps its vtable in the executable.
+	void (*SetCurrentMagazineNumber)(int number) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -101,5 +108,8 @@ bool IsItemCheckBufferItemToItem();
 // NULL without a player.
 MItem* GetItemCheckBuffer();
 void ClearItemCheckBuffer();
+// Takes pResult; without an entry it is freed unrun, and the answer is false.
+bool PacketAddActionResult(std::uint16_t effectID, MActionResult* pResult);
+void SetCurrentMagazineNumber(int number);
 
 }

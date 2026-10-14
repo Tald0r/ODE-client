@@ -332,4 +332,14 @@ TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature)
 	return s_Host && s_Host->GetBasicActionInfo ? s_Host->GetBasicActionInfo(pCreature) : ACTIONINFO_NULL;
 }
 
+bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status)
+{
+	return s_Host && s_Host->RemoveEffectStatus ? s_Host->RemoveEffectStatus(pCreature, status) : false;
+}
+
+void SetFakeDie(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetFakeDie) s_Host->SetFakeDie(pCreature);
+}
+
 }
