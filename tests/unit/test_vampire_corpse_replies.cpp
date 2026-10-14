@@ -22,8 +22,9 @@
 // named, in its guild, with its attack speed, alignment and skin and coat
 // colours; a corpse item of the same ID at the cell holds it (owning it)
 // and the packet's treasure count, and is laid in the zone, after the
-// item in its cell if the zone refuses it first. A corpse already there
-// takes the treasure count; another item, nothing. A creature the zone
+// item in its cell if the zone refuses it first, or freed with its
+// creature if it still cannot be laid. A corpse already there takes the
+// treasure count; another item, nothing. A creature the zone
 // knows dies where it is: it takes the advancement, the type when it
 // differs (walking), the cell, direction, health, speed, alignment and
 // guild, stops and dies unless dead already, and takes the treasure
@@ -198,10 +199,11 @@ struct World : GameModelWorld
 		zoneTakesItems = 1;
 		itemInTheCell = OBJECTID_NULL;
 		removesItem = true;
+		// The laid corpses read their creatures as they are freed.
+		laid.clear();
 		made.clear();
 		zoneCreatures.clear();
 		zoneItems.clear();
-		laid.clear();
 		known.id = 1003;
 		known.type = 61;
 		zoneCreatures[known.id] = &known;
@@ -359,6 +361,11 @@ TEST(VampireCorpseReplies, AKnownCreatureDiesWhereItIs)
 	CHECK(calls == std::vector<std::string>({Advancement("1003"), "moves|1003|30,31", "server at|1003|30,31", "turns|1003|5",
 		"faces|1003|5", "status|1003|" + N(MODIFY_CURRENT_HP) + "|0", "speed|1003|10", "status|1003|" + N(MODIFY_ALIGNMENT) + "|100",
 		"guild|1003|7", "holds|1003|3"}));
+	// One now a bat takes the bat's type but walks, as the known branch
+	// always has.
+	calls.clear();
+	Receive(1003, {MALE, SHAPE_BAT});
+	CHECK(calls.size() > 2 && calls[1] == "type|1003|" + N(CREATURETYPE_BAT) && calls[2] == "walks|1003");
 	// An operator of another type takes the operator's type.
 	calls.clear();
 	Receive(1003, {MALE, SHAPE_NORMAL, 0});

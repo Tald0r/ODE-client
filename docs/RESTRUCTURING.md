@@ -4957,8 +4957,8 @@ rounds settled* for the host rules). Test fixtures share
   > rank in place, its type, name and dress kept. A creature that is no
   > NPC by its type shows whether its personal shop is open, and an open
   > one shows the shop's sign (or the default message, as the string
-  > table holds it) to a slayer player in
-  > the chat colour. The slayer then takes the packet's effect statuses,
+  > table holds it) to a slayer player in the chat colour. The slayer
+  > then takes the packet's effect statuses,
   > its pet and its nickname. Without a player no sign is shown (the old
   > code dereferenced `g_pPlayer`). An unused `AddonDef.h` include, an
   > executable header, is gone. R1 is 90 Windows / 88 Ninja.
