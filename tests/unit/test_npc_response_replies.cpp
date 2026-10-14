@@ -176,6 +176,10 @@ struct World : GameModelWorld
 	World()
 	{
 		InitGameStringTable();
+		// Many English texts are shared; each id gets its own, so a
+		// popup of the wrong id shows.
+		for (int id = 0; id < g_pGameStringTable->GetSize(); id++)
+			g_pGameStringTable->Set(id, ("#" + N(id)).c_str());
 		calls.clear();
 		waitVerify = PlayerState::WAIT_VERIFY_NULL;
 		race = RACE_SLAYER;
@@ -457,6 +461,7 @@ TEST(NPCResponseReplies, ARepairMendsTheItemAndSetsTheMoney)
 	Ware* pItem = new Ware(ITEM_CLASS_COAT, 2001);
 	pItem->SetCurrentDurability(10);
 	world.inventory.AddItem(pItem, 0, 0);
+	world.money.SetMoney(1000);
 	world.temp.SetMode(TempInformation::MODE_SHOP_REPAIR);
 	world.temp.pValue = pItem;
 	world.temp.Value1 = TRUE;
@@ -470,6 +475,7 @@ TEST(NPCResponseReplies, ARepairMendsTheItemAndSetsTheMoney)
 	Ware* pCharge = new Ware(ITEM_CLASS_SLAYER_PORTAL_ITEM, 2002);
 	pCharge->m_Charge = true;
 	pCharge->SetNumber(1);
+	pCharge->SetCurrentDurability(10);
 	world.inventory.AddItem(pCharge, 1, 0);
 	MSkillSet available;
 	MSkillSet* oldAvailable = g_pSkillAvailable;
@@ -479,7 +485,7 @@ TEST(NPCResponseReplies, ARepairMendsTheItemAndSetsTheMoney)
 	world.Receive(NPC_RESPONSE_REPAIR_OK, 800);
 	g_pSkillAvailable = oldAvailable;
 	CHECK(calls == (std::vector<std::string>{"skills refreshed", "sound|" + N(kInventorySound + ITEM_CLASS_SLAYER_PORTAL_ITEM), "trade unlocked"}));
-	CHECK(pCharge->GetNumber() == 5 && world.money.GetMoney() == 800);
+	CHECK(pCharge->GetNumber() == 5 && pCharge->GetCurrentDurability() == 10 && world.money.GetMoney() == 800);
 	// Not repairing: nothing.
 	calls.clear();
 	world.Receive(NPC_RESPONSE_REPAIR_OK, 700);
@@ -489,17 +495,68 @@ TEST(NPCResponseReplies, ARepairMendsTheItemAndSetsTheMoney)
 TEST(NPCResponseReplies, RepairingAllMendsTheGear)
 {
 	World world;
-	Ware* pSword = world.Wearing(ITEM_CLASS_SWORD, 2001, MSlayerGear::GEAR_SLAYER_RIGHTHAND);
-	Ware* pCoat = world.Wearing(ITEM_CLASS_COAT, 2002, MSlayerGear::GEAR_SLAYER_COAT);
+	// An empty gear: the money, no sound.
+	world.money.SetMoney(1000);
 	world.temp.SetMode(TempInformation::MODE_SHOP_REPAIR);
 	world.temp.pValue = nullptr;
 	world.temp.Value1 = FALSE;
 	world.temp.Value2 = TRUE;
+	world.Receive(NPC_RESPONSE_REPAIR_OK, 700);
+	CHECK(calls == std::vector<std::string>{"trade unlocked"});
+	CHECK(world.money.GetMoney() == 700);
+	Ware* pSword = world.Wearing(ITEM_CLASS_SWORD, 2001, MSlayerGear::GEAR_SLAYER_RIGHTHAND);
+	Ware* pCoat = world.Wearing(ITEM_CLASS_COAT, 2002, MSlayerGear::GEAR_SLAYER_COAT);
+	world.gear.CheckItemStatusAll();
+	CHECK(world.gear.HasBrokenItem());
+	calls.clear();
+	world.temp.SetMode(TempInformation::MODE_SHOP_REPAIR);
 	world.Receive(NPC_RESPONSE_REPAIR_OK, 600);
 	CHECK(pSword->GetCurrentDurability() == 100 && pCoat->GetCurrentDurability() == 100);
+	CHECK(!world.gear.HasBrokenItem());
 	CHECK(world.money.GetMoney() == 600);
-	CHECK(calls.size() == 2 && calls[0].rfind("sound|", 0) == 0 && calls[1] == "trade unlocked");
+	// The sound is the last item's: the gear walks its items by ID, and
+	// the coat's is the higher.
+	CHECK(calls == (std::vector<std::string>{"sound|" + N(kInventorySound + ITEM_CLASS_COAT), "trade unlocked"}));
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+}
+
+TEST(NPCResponseReplies, RepairingOneWornItemChecksTheGear)
+{
+	World world;
+	Ware* pSword = world.Wearing(ITEM_CLASS_SWORD, 2001, MSlayerGear::GEAR_SLAYER_RIGHTHAND);
+	Ware* pCoat = world.Wearing(ITEM_CLASS_COAT, 2002, MSlayerGear::GEAR_SLAYER_COAT);
+	world.gear.CheckItemStatusAll();
+	world.money.SetMoney(1000);
+	world.temp.SetMode(TempInformation::MODE_SHOP_REPAIR);
+	world.temp.pValue = pSword;
+	world.temp.Value1 = FALSE;
+	world.temp.Value2 = TRUE;
+	world.Receive(NPC_RESPONSE_REPAIR_OK, 650);
+	CHECK(pSword->GetCurrentDurability() == 100 && pCoat->GetCurrentDurability() == 10);
+	CHECK(world.gear.GetItemStatus(MSlayerGear::GEAR_SLAYER_RIGHTHAND) == MPlayerGear::ITEM_STATUS_OK);
+	CHECK(world.gear.GetItemStatus(MSlayerGear::GEAR_SLAYER_COAT) != MPlayerGear::ITEM_STATUS_OK);
+	CHECK(world.money.GetMoney() == 650);
+	CHECK(calls == (std::vector<std::string>{"sound|" + N(kInventorySound + ITEM_CLASS_SWORD), "trade unlocked"}));
+}
+
+TEST(NPCResponseReplies, ARepairOfNoItemOnlyUnlocksTheTrade)
+{
+	World world;
+	Ware* pSword = world.Wearing(ITEM_CLASS_SWORD, 2001, MSlayerGear::GEAR_SLAYER_RIGHTHAND);
+	world.money.SetMoney(1000);
+	// No item, from the inventory or not from the gear: neither one nor all.
+	for (const auto& [inInventory, inGear] : {std::pair<BOOL, BOOL>{TRUE, TRUE}, std::pair<BOOL, BOOL>{TRUE, FALSE}, std::pair<BOOL, BOOL>{FALSE, FALSE}})
+	{
+		calls.clear();
+		world.temp.SetMode(TempInformation::MODE_SHOP_REPAIR);
+		world.temp.pValue = nullptr;
+		world.temp.Value1 = inInventory;
+		world.temp.Value2 = inGear;
+		world.Receive(NPC_RESPONSE_REPAIR_OK, 600);
+		CHECK(calls == std::vector<std::string>{"trade unlocked"});
+		CHECK(pSword->GetCurrentDurability() == 10 && world.money.GetMoney() == 1000);
+		CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+	}
 }
 
 TEST(NPCResponseReplies, FailedRepairsAndSilveringsUnlockTheTrade)
@@ -548,6 +605,13 @@ TEST(NPCResponseReplies, ASilverCoatingFillsTheSilverAndTheWeaponsDamage)
 	world.Receive(NPC_RESPONSE_SILVER_COATING_OK, 300);
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("silver damage", 0) == 0; }));
 	CHECK(pOther->GetSilver() == 300);
+	// No item: only the trade unlocks.
+	calls.clear();
+	world.temp.SetMode(TempInformation::MODE_SHOP_SILVERING);
+	world.temp.pValue = nullptr;
+	world.Receive(NPC_RESPONSE_SILVER_COATING_OK, 250);
+	CHECK(calls == std::vector<std::string>{"trade unlocked"});
+	CHECK(world.money.GetMoney() == 300 && world.temp.GetMode() == TempInformation::MODE_NULL);
 	// Not silvering: nothing.
 	calls.clear();
 	world.Receive(NPC_RESPONSE_SILVER_COATING_OK, 200);
@@ -590,6 +654,7 @@ TEST(NPCResponseReplies, HealingSoundsByRaceAndDonationsSetTheMoney)
 	world.Receive(NPC_RESPONSE_HEAL);
 	CHECK(calls == (std::vector<std::string>{"sound|" + N(SOUND_ITEM_USE_HPOTION), "sound|" + N(SOUND_OUSTERS_PUPA)}));
 	calls.clear();
+	world.money.SetMoney(1000);
 	world.Receive(NPC_RESPONSE_DONATION_OK, 250);
 	CHECK(calls == std::vector<std::string>{Popup(STRING_MESSAGE_DONATION_OK)});
 	CHECK(world.money.GetMoney() == 250);
@@ -700,6 +765,10 @@ TEST(NPCResponseReplies, QuestsAnswerByTheirReason)
 		world.Receive(NPC_RESPONSE_QUEST, static_cast<unsigned>(reason));
 		CHECK(calls == expected);
 	}
+	// An unknown reason: nothing.
+	calls.clear();
+	world.Receive(NPC_RESPONSE_QUEST, 99);
+	CHECK(calls.empty());
 }
 
 TEST(NPCResponseReplies, TheLotteryTheGnomesAndTheEventMessages)
@@ -729,4 +798,8 @@ TEST(NPCResponseReplies, TheLotteryTheGnomesAndTheEventMessages)
 		world.Receive(NPC_RESPONSE_SHOW_COMMON_MESSAGE_DIALOG, static_cast<unsigned>(value));
 		CHECK(calls == std::vector<std::string>{call});
 	}
+	// An unknown message: nothing.
+	calls.clear();
+	world.Receive(NPC_RESPONSE_SHOW_COMMON_MESSAGE_DIALOG, 99);
+	CHECK(calls.empty());
 }

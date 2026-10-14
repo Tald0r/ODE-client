@@ -5416,9 +5416,9 @@ rounds settled* for the host rules). Test fixtures share
   > A new `NPCPresentation` host (`NPCPresentationHost.h`, 22 entries)
   > carries the windows and popups. `DialogPresentation` gains
   > `ClosePCTalkDlg` and `UnSetLockInputPCTalk`, and `PlayerState`
-  > gains `SetWaitVerify`. The 104 trailing comments that only quoted
-  > each popup's Korean message (the string table holds those texts)
-  > are dropped. The other Korean comments are translated, and a dead
+  > gains `SetWaitVerify`. The 104 trailing Korean comments, which
+  > quoted each popup's message (the string table holds those texts)
+  > or named the window or code, are dropped. The other Korean comments are translated, and a dead
   > `/* */` block naming `g_pPlayer` is removed. R1 is 75 Windows / 73
   > Ninja.
   - Owner: membership, R1, and `test_npc_response_replies.cpp`. Its

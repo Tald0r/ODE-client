@@ -148,6 +148,8 @@ TEST(ReconnectLoginReplies, TheLoginServerIsReachedAndAskedForTheCharacters)
 		// say).
 		CHECK(player.getSocket()->isNonBlocking());
 #endif
+		// No linger time (setLinger(0) is the fresh socket's own default).
+		CHECK(player.getSocket()->getLinger() == 0);
 		CHECK(player.getPlayerStatus() == CPS_AFTER_SENDING_CL_GET_PC_LIST);
 		// The key packet, then the reconnect login with the packet's key.
 		CLReconnectLogin expected;
