@@ -4,6 +4,7 @@
 #include "CMessageArray.h"
 #include "GameMessages.h"
 #include "GuildWarInfo.h"
+#include "RaceWarInfo.h"
 #include "MEventQueue.h"
 #include "MGameStringTable.h"
 #include "MItem.h"
@@ -24,9 +25,10 @@
 // The server's event notices. They queue and remove timed events (the tax,
 // the master's combat, a kick-out, ground attacks, the premium half price,
 // the flag war's items, Gilles de Rais's ending, the race war's effect),
-// write the system and notice logs, end wars (a war over in the zone the
-// player is in restores its safety), and show notice windows, popups and
-// a few game windows. A login sets the head price, sends the crash report
+// write the system and notice logs, end wars (while the player's zone is
+// at war, any war's end reads its safety back from the zone table; a race
+// war's end clears the race wars only), and show notice windows, popups
+// and a few game windows. A login sets the head price, sends the crash report
 // and warns of premium days running out; the crown's price is set.
 namespace {
 
@@ -207,33 +209,53 @@ TEST(NoticeEventReplies, ThePremiumHalfPriceIsAnnouncedByRace)
 		Text(STRING_MESSAGE_EVENT_PREMIUM_HALF_VAMPIRE_END)}));
 }
 
-TEST(NoticeEventReplies, AWarOverInThePlayersZoneRestoresItsSafety)
+TEST(NoticeEventReplies, AWarOverWhileThePlayersZoneIsAtWarReadsItsSafety)
 {
 	World world;
-	int destroyed = 0;
-	GuildWarInfo* pWar = new GuildWarInfo;
-	pWar->setCastleID(60);
-	world.wars.SetWar(pWar);
-	(void)destroyed;
+	ZONETABLE_INFO* pOther = new ZONETABLE_INFO;
+	pOther->ID = 61;
+	pOther->Safety = true;
+	CHECK(world.zones.Add(pOther));
+	auto war = [&](ZoneID_t zone) {
+		GuildWarInfo* pWar = new GuildWarInfo;
+		pWar->setCastleID(zone);
+		world.wars.SetWar(pWar);
+	};
+	// The player's zone (60, safe by its row) at war, and its war ends.
+	war(60);
 	Receive(NOTICE_EVENT_WAR_OVER, 60);
-	CHECK(g_bZoneSafe);
-	CHECK(!world.wars.IsExist(60));
-	// Another zone's war: the safety stays.
-	g_bZoneSafe = false;
-	pWar = new GuildWarInfo;
-	pWar->setCastleID(61);
-	world.wars.SetWar(pWar);
+	CHECK(g_bZoneSafe && !world.wars.IsExist(60));
+	// Another war ends while the player's zone is at war: the player's
+	// zone's safety is read, here unsafe, not the ended war's zone's.
+	world.zones.Get(60)->Safety = false;
+	g_bZoneSafe = true;
+	war(60);
+	war(61);
 	Receive(NOTICE_EVENT_WAR_OVER, 61);
-	CHECK(!g_bZoneSafe && !world.wars.IsExist(61));
-	// A level war over ends the war of the player's zone.
-	pWar = new GuildWarInfo;
-	pWar->setCastleID(60);
-	world.wars.SetWar(pWar);
+	CHECK(!g_bZoneSafe && world.wars.IsExist(60) && !world.wars.IsExist(61));
+	// The player's zone at peace: the safety stays.
+	g_bZoneSafe = true;
+	war(61);
 	Receive(NOTICE_EVENT_LEVEL_WAR_OVER);
+	Receive(NOTICE_EVENT_WAR_OVER, 61);
+	CHECK(g_bZoneSafe && !world.wars.IsExist(61));
+	// A level war over ended the war of the player's zone.
 	CHECK(!world.wars.IsExist(60));
-	// A race war over clears the race wars and closes the race war notice.
+}
+
+TEST(NoticeEventReplies, ARaceWarOverClearsTheRaceWarsOnly)
+{
+	World world;
+	RaceWarInfo* pRace = new RaceWarInfo;
+	pRace->addCastleID(62);
+	world.wars.SetWar(pRace);
+	GuildWarInfo* pGuild = new GuildWarInfo;
+	pGuild->setCastleID(61);
+	world.wars.SetWar(pGuild);
 	Receive(NOTICE_EVENT_RACE_WAR_OVER);
+	CHECK(!world.wars.IsExist(62) && world.wars.IsExist(61));
 	CHECK(calls == std::vector<std::string>{"notice gone|6"});
+	// Without a war manager the notice still closes.
 	g_pWarManager = nullptr;
 	Receive(NOTICE_EVENT_RACE_WAR_OVER);
 	CHECK(calls == (std::vector<std::string>{"notice gone|6", "notice gone|6"}));
@@ -248,6 +270,7 @@ TEST(NoticeEventReplies, WindowsAndPopupsAreShown)
 	Receive(NOTICE_EVENT_RESULT_LOTTERY, 0);
 	Receive(NOTICE_EVENT_RUN_HORN);
 	Receive(NOTICE_EVENT_MASTER_LAIR_OPEN, (30u << 16) | 1104);
+	Receive(NOTICE_EVENT_MASTER_LAIR_CLOSED, (0u << 16) | 1104);
 	Receive(NOTICE_EVENT_MASTER_LAIR_COUNT, (5u << 16) | 1105);
 	Receive(NOTICE_EVENT_MINI_GAME, 3);
 	Receive(NOTICE_EVENT_START_QUEST_ENDING);
@@ -255,7 +278,7 @@ TEST(NoticeEventReplies, WindowsAndPopupsAreShown)
 	Receive(NOTICE_EVENT_HOLYDAY, 0);
 	Receive(NOTICE_EVENT_MEET_GRANDMA);
 	Receive(NOTICE_EVENT_MEET_FISHSHOP_MASTER);
-	CHECK(calls == (std::vector<std::string>{"welcome", "lottery|won", "lottery|lost", "horn|1007", "lair|0|30|1104",
+	CHECK(calls == (std::vector<std::string>{"welcome", "lottery|won", "lottery|lost", "horn|1007", "lair|0|30|1104", "lair|1|0|1104",
 		"lair|" + N(NOTICE_EVENT_MASTER_LAIR_COUNT - NOTICE_EVENT_MASTER_LAIR_OPEN) + "|5|1105", "minigame|3", "quest ending", "flags|on",
 		"flags|off"}));
 	calls.clear();
@@ -299,7 +322,7 @@ TEST(NoticeEventReplies, TheFlagWarIsAnnounced)
 	// The winner's race is the parameter's high word, the ousters' past
 	// it; its flags the low word.
 	char winner[512];
-	for (unsigned high : {1u, 7u})
+	for (unsigned high : {0u, 1u, 7u})
 	{
 		Receive(NOTICE_EVENT_FLAG_WAR_FINISH, (high << 16) | (high + 2));
 		CHECK(calls == (std::vector<std::string>{Event(EVENTID_POUR_ITEM, EVENTTYPE_ZONE, EVENTFLAG_SHOW_DELAY_STRING, 180000, MEvent().parameter1,
@@ -308,7 +331,7 @@ TEST(NoticeEventReplies, TheFlagWarIsAnnounced)
 	}
 	Receive(NOTICE_EVENT_FLAG_POURED_ITEM);
 	std::vector<std::string> said = {Text(STRING_MESSAGE_EVENT_FLAG_WAR_READY), Text(STRING_MESSAGE_EVENT_FLAG_WAR_START)};
-	for (const auto& [raceString, flags] : {std::pair<int, int>{STRING_MESSAGE_VAMPIRE, 3}, {STRING_MESSAGE_OUSTERS, 9}})
+	for (const auto& [raceString, flags] : {std::pair<int, int>{STRING_MESSAGE_SLAYER, 2}, {STRING_MESSAGE_VAMPIRE, 3}, {STRING_MESSAGE_OUSTERS, 9}})
 	{
 		SafeFormat::Format(winner, GetGameString(STRING_MESSAGE_EVENT_FLAG_WAR_WINNER), Text(raceString).c_str(), flags);
 		said.insert(said.end(), {Text(STRING_MESSAGE_EVENT_FLAG_WAR_FINISH), winner, Text(STRING_MESSAGE_EVENT_FLAG_WILL_POUR_ITEM_AFTER_3MIN)});
@@ -327,22 +350,22 @@ TEST(NoticeEventReplies, ALoginSetsTheHeadPriceAndWarnsOfPremiumDays)
 	CHECK_EQ(250, g_pUserInformation->HeadPrice);
 	CHECK(Lines(world.noticeLog) == (std::vector<std::string>{Text(STRING_MESSAGE_EXPIRE_PREMIUM_SERVICE_MESSAGE_1),
 		Text(STRING_MESSAGE_EXPIRE_PREMIUM_SERVICE_MESSAGE_2), Text(STRING_MESSAGE_EXPIRE_PREMIUM_SERVICE_MESSAGE_3)}));
-	// Six days, none counted (0xFFFE) or none left below zero: no warning.
-	for (int days : {6, 0xFFFE, -1})
+	// Zero and five days are warned of; six, none counted (0xFFFE) or
+	// fewer than none are not.
+	for (const auto& [days, warned] : {std::pair<int, bool>{0, true}, {5, true}, {6, false}, {0xFFFE, false}, {-1, false}})
 	{
-		World quiet;
+		world.noticeLog.Init(16, 512);
 		g_LeftPremiumDays = days;
 		Receive(NOTICE_EVENT_LOGIN_JUST_NOW, 1);
-		CHECK(Lines(quiet.noticeLog).empty());
+		CHECK(Lines(world.noticeLog).size() == (warned ? 3u : 0u));
 	}
-	// Zero and five days are warned of.
-	for (int days : {0, 5})
-	{
-		World warned;
-		g_LeftPremiumDays = days;
-		Receive(NOTICE_EVENT_LOGIN_JUST_NOW, 1);
-		CHECK(Lines(warned.noticeLog).size() == 3);
-	}
+	// Without the notice log nothing is warned of, and the rest happens.
+	calls.clear();
+	g_pNoticeMessage = nullptr;
+	g_LeftPremiumDays = 3;
+	Receive(NOTICE_EVENT_LOGIN_JUST_NOW, 7);
+	CHECK(calls == std::vector<std::string>{"crash report"});
+	CHECK_EQ(7, g_pUserInformation->HeadPrice);
 }
 
 TEST(NoticeEventReplies, MedalsAndTheCrownsPriceAreLogged)

@@ -115,7 +115,8 @@ void GCNoticeEventHandler::execute ( GCNoticeEvent * pPacket , Player * pPlayer 
 	case NOTICE_EVENT_WAR_OVER :					// the war ends
 		if( g_pWarManager->IsExist( ZoneState::GetID()) )
 		{
-			// if this zone is off the war list, set the safe zone again.
+			// while the player's zone is at war, read its safety again (upstream's
+			// comment said 'off the war list', the opposite of the check)
 			g_bZoneSafe = g_pZoneTable->Get(ZoneState::GetID())->Safety;
 		}
 		g_pWarManager->RemoveWar(pPacket->getParameter());

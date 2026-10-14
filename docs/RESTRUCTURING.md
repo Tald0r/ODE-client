@@ -5292,9 +5292,10 @@ rounds settled* for the host rules). Test fixtures share
   >   Rais's ending and the race war's effect.
   > - **Logs.** They write the system and notice logs, which are
   >   gamemodel's (`GameMessages`).
-  > - **Wars.** They end wars through gamemodel's war manager. A war
-  >   that ends in the player's zone restores the zone's safety from the
-  >   zone table.
+  > - **Wars.** They end wars through gamemodel's war manager. While the
+  >   player's zone is at war, any war's end reads the player's zone's
+  >   safety back from the zone table. A race war's end clears the race
+  >   wars only.
   > - **Windows.** They show notice windows, popups and a few game
   >   windows.
   > - **Login and prices.** A login sets the head price, sends the crash
@@ -5314,7 +5315,10 @@ rounds settled* for the host rules). Test fixtures share
     the crown's price, read back through `GetItemPrice`; the eight
     present boxes; and no hosts. One mutant survives, and it is
     equivalent: the uncounted-days check is redundant, since 0xFFFE is
-    never five days or fewer.
+    never five days or fewer. Without a zone, `ZoneState::GetID`
+    answers `ZONEID_NULL` (0xFFFF) where the old code dereferenced
+    `g_pZone`. The horn then shows for zone 0xFFFF and the war checks
+    find no war, instead of crashing.
 
 - [x] **4.194 A gun reloaded:** move `GCReloadOKHandler` into
   `gamemodel`.

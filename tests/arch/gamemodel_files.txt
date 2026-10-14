@@ -727,6 +727,7 @@ Client/PacketHandler/GCWhisperFailedHandler.cpp
 # Quest and war status replies and their presentation service.
 Client/QuestWarPresentationHost.cpp
 Client/QuestWarPresentationHost.h
+# The event notices and their presentation service.
 Client/NoticePresentationHost.cpp
 Client/NoticePresentationHost.h
 Client/PacketHandler/GCNoticeEventHandler.cpp
