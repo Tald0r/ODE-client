@@ -4785,14 +4785,16 @@ rounds settled* for the host rules). Test fixtures share
   > it (new `WorldEvents::ComeFromPortal`) over a bloody tunnel, unless
   > its type shows itself otherwise. In a siege, a trap marked hidden is
   > not shown to an attacker at all; without a player it is shown (the
-  > old code dereferenced `g_pPlayer`). R1 is 99 Windows / 97 Ninja.
+  > old code dereferenced `g_pPlayer`). Once moved, the hidden mark's
+  > check stopped casting the list's 16-bit statuses to `EFFECTSTATUS`,
+  > as 4.174's did. R1 is 99 Windows / 97 Ninja.
   - Owner: membership, R1, the four entries and adapters, and
     `test_add_monster_replies.cpp` (a new monster and one refused, a known
     one of the same type and of another, each race shape, each type's own
     effects, the portal with and without them, a flag other than 1, a
     hidden trap for each attacker and trap type, the mark alone, a
     defender, a non-trap above and below the traps, the mark as a
-    duration, no player, no zone, no hosts).
+    duration, a status past the enum, no player, no zone, no hosts).
 
 ### Remaining R1 work after tasks 4.80-4.175
 

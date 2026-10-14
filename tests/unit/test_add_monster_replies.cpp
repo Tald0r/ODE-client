@@ -396,3 +396,13 @@ TEST(AddMonsterReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1005);
 	CHECK(calls.empty());
 }
+
+TEST(AddMonsterReplies, AnEffectPastTheEffectStatusesIsNoHiddenMark)
+{
+	World world;
+	playerEffects = {EFFECTSTATUS_SIEGE_ATTACKER_1};
+	// The list's statuses are 16 bits on the wire; the effect statuses'
+	// enum holds 0 to 511.
+	Receive(1005, 741, 0, {{600, 20}, {65535, 20}});
+	CHECK_EQ(1u, made.size());
+}

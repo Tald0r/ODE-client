@@ -86,7 +86,8 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 					{
 						if(bCheck)
 						{
-							EFFECTSTATUS	status		= (EFFECTSTATUS)*itr;
+							// Not cast to EFFECTSTATUS: the wire's 16 bits run past the enum's range.
+							const int	status		= *itr;
 							
 							if(status == EFFECTSTATUS_HIDE_TO_ATTACKER)
 							{
