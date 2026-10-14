@@ -160,6 +160,11 @@ void SetPlayer()
 	if (s_Host && s_Host->SetPlayer) s_Host->SetPlayer();
 }
 
+void PickupItem(TYPE_OBJECTID id)
+{
+	if (s_Host && s_Host->PickupItem) s_Host->PickupItem(id);
+}
+
 }
 
 namespace CreatureState {

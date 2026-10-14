@@ -2966,6 +2966,10 @@ static const MItemHost	s_ItemHost = {
 	.NewItem				= NewItemOfClass,
 	.LoadGun				= LoadGun,
 	.SetMineInstalled		= [](MItem* pMine) { static_cast<MMine*>(pMine)->SetInstalled(); },
+	.IsPortalMarked			= [](const MItem* pPortal) {
+		return pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM
+			&& static_cast<const MVampirePortalItem*>(pPortal)->IsMarked();
+	},
 };
 
 //-----------------------------------------------------------------------------
@@ -3652,6 +3656,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetGearInfo = [](GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo) { SetGearInfo(pGearInfo, pBloodBibleInfo); },
 	.SetInventoryInfo = SetInventoryInfo,
 	.SetExtraInfo = SetExtraInfo,
+	.CheckAffectStatus = [](MItem* pItem) { g_pPlayer->CheckAffectStatus(pItem); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3713,6 +3718,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 		g_pZone->SetPlayer();
 		g_pPlayer->SetZone( g_pZone );
 	},
+	.PickupItem = [](TYPE_OBJECTID id) { g_pZone->PickupItem(id); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {

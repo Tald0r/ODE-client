@@ -1197,3 +1197,5 @@ Client/MGuildType.h
 Client/PacketHandler/GCTradePrepareHandler.cpp
 # The player transforming between a slayer and a vampire.
 Client/PacketHandler/GCMorph1Handler.cpp
+# An item picked up from the ground, as the server confirms it.
+Client/PacketHandler/GCDeleteandPickUpOKHandler.cpp

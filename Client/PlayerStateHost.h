@@ -184,6 +184,9 @@ struct Host
 	void (*SetGearInfo)(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo) = nullptr;
 	void (*SetInventoryInfo)(InventoryInfo* pInventoryInfo) = nullptr;
 	void (*SetExtraInfo)(ExtraInfo* pExtraInfo) = nullptr;
+	// Lets the player's statuses react to an item it now has (a weapon
+	// it can or cannot use, say).
+	void (*CheckAffectStatus)(MItem* pItem) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -244,5 +247,6 @@ void SetPCOustersInfo(PCOustersInfo2* pInfo);
 void SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo);
 void SetInventoryInfo(InventoryInfo* pInventoryInfo);
 void SetExtraInfo(ExtraInfo* pExtraInfo);
+void CheckAffectStatus(MItem* pItem);
 
 }

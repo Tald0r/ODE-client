@@ -266,4 +266,9 @@ void SetExtraInfo(ExtraInfo* pExtraInfo)
 	if (s_Host && s_Host->SetExtraInfo) s_Host->SetExtraInfo(pExtraInfo);
 }
 
+void CheckAffectStatus(MItem* pItem)
+{
+	if (s_Host && s_Host->CheckAffectStatus) s_Host->CheckAffectStatus(pItem);
+}
+
 }
