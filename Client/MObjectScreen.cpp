@@ -1,11 +1,11 @@
 ﻿//----------------------------------------------------------------------
-// MObjectScreen.cpp - MObject's screen rectangles, executable side
+// MObjectScreen.cpp - MObject's screen rectangles
 //----------------------------------------------------------------------
 // Split from MObject.cpp when the object base moved into gamemodel
-// (docs/RESTRUCTURING.md task 4.4): these two members read the draw
-// interpolation state the game update owns (g_bInterpolateDraw, the
-// camera gaps), so they compile here, into the executable, while the
-// constructor and the file round trip stay in the library.
+// (docs/RESTRUCTURING.md task 4.4), because these two members read the
+// draw interpolation state the game update kept. Since task 4.204 that
+// state (g_bInterpolateDraw, the camera gaps) is defined here, in
+// gamemodel, and the game update (CGameUpdate.cpp) sets it.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MObject.h"
@@ -24,9 +24,22 @@
 // to zero, matching the pinned on-screen position. Outside the draw phase
 // (g_bInterpolateDraw false) both gaps read as zero and this is a no-op.
 //----------------------------------------------------------------------
-extern bool		g_bInterpolateDraw;
-extern int		g_DrawCamGapX;
-extern int		g_DrawCamGapY;
+// The world draw interpolates positions between ticks; the game loop
+// (CGameUpdate.cpp) turns g_bInterpolateDraw on around it, so all game
+// logic keeps reading exact tick positions.
+bool	g_bInterpolateDraw = false;
+
+// The camera-interpolation bias passed into the last MTopView::Draw (the
+// camGap values in UpdateDraw). Picking code (GetSelectedObject and
+// friends, creature screen rects) adds it back so that everything the
+// per-tick input logic hit-tests lives in exact tick space, matching
+// pre-interpolation behaviour - only the *drawing* is interpolated.
+// Without this, a tick whose pick lands between the interpolated and
+// exact positions misses the target, and one missed pick drops the
+// held-button attack repeat (ProcessInputRButtonDown: pObject == NULL ->
+// UnSetRepeatAction).
+int		g_DrawCamGapX = 0;
+int		g_DrawCamGapY = 0;
 
 //----------------------------------------------------------------------
 // Add ScreenRect

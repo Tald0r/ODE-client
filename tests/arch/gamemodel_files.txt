@@ -83,6 +83,9 @@ Client/MInteractionObject.cpp
 Client/MInteractionObject.h
 Client/CUsingColorSetTable.cpp
 Client/CUsingColorSetTable.h
+Client/PackFileManager.cpp
+Client/PackFileManager.h
+Client/MObjectScreen.cpp
 Client/ShowTimeData.cpp
 Client/ShowTimeChecker.cpp
 Client/ShowTimeChecker.h
