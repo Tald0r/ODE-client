@@ -43,6 +43,11 @@ bool Is(const RECT& rect, int left, int top, int right, int bottom)
 
 } // namespace
 
+TEST(ObjectScreenRect, TheGameStartsNotInterpolatingWithNoCameraGap)
+{
+	CHECK(!g_bInterpolateDraw && g_DrawCamGapX == 0 && g_DrawCamGapY == 0);
+}
+
 TEST(ObjectScreenRect, ARectIsSetAsGivenWhenNotInterpolating)
 {
 	Interpolation off(false, 7, 9);
@@ -103,9 +108,10 @@ TEST(ObjectScreenRect, AnAddedRectIsMovedBackWhileInterpolating)
 		object.SetScreenRect(&first);
 	}
 	Interpolation on(true, 10, 20);
-	// Moved back by 11 and 22: (39, 58)-(51, 72) grows the right and bottom.
-	RECT added = {50, 80, 62, 94};
+	// Moved back by 11 and 22: (4, 3)-(51, 72) grows every side, which
+	// unmoved it would not (15 and 25 are inside).
+	RECT added = {15, 25, 62, 94};
 	object.AddScreenRect(&added);
-	CHECK(Is(object.GetScreenRect(), 10, 20, 51, 72));
-	CHECK(Is(added, 50, 80, 62, 94));
+	CHECK(Is(object.GetScreenRect(), 4, 3, 51, 72));
+	CHECK(Is(added, 15, 25, 62, 94));
 }

@@ -102,3 +102,38 @@ TEST(PackFileInfo, ARecordLoadsExactlyItsNamesBytes)
 	CHECK(second.GetID() == 2 && third.GetID() == 3);
 	CHECK(third.GetFilename().empty());
 }
+
+TEST(PackFileInfo, ARecordsNameIsItsLengthInBytesWhateverTheyHold)
+{
+	// Written by hand: a 5-byte name holding a zero, then a 1-byte name.
+	// The zero must not end the name, nor the bytes after it be lost.
+	TempFile file;
+	{
+		std::ofstream out(file.path, std::ios::binary);
+		const unsigned char bytes[] = {1, 0, 0, 0, 5, 'a', 'b', 0, 'c', 'd', 9, 0, 0, 0,
+			2, 0, 0, 0, 1, 'z', 8, 0, 0, 0};
+		out.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+	}
+	std::ifstream in(file.path, std::ios::binary);
+	PackFileInfo first, second;
+	first.LoadFromFile(in);
+	second.LoadFromFile(in);
+	CHECK(first.GetFilename() == std::string("ab\0cd", 5));
+	CHECK(first.GetFilePosition() == 9);
+	CHECK(second.GetFilename() == "z" && second.GetFilePosition() == 8);
+}
+
+TEST(PackFileInfo, ANameOver255BytesIsSavedAsItsLengthsLowByte)
+{
+	// The length is one byte: a 300-byte name saves as its first 44 bytes
+	// (300 % 256), as the format allows no more.
+	PackFileInfo info(1, std::string(300, 'x').c_str());
+	TempFile file;
+	{
+		std::ofstream out(file.path, std::ios::binary);
+		info.SaveToFile(out);
+	}
+	const std::vector<unsigned char> bytes = file.Bytes();
+	CHECK_EQ(4u + 1u + 44u + 4u, bytes.size());
+	CHECK(bytes.size() > 4 && bytes[4] == 44);
+}

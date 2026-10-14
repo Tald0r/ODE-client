@@ -768,7 +768,8 @@ rounds settled* for the host rules). Test fixtures share
 - [x] **4.6 Map-file loading (code-health follow-up):** the header and five
   scenery record classes, with pure show-time data, are in `gamemodel`.
   > **Status:** implemented 2026-09-18. `MImageObjectScreen.cpp` retains
-  > screen geometry; `MInteractionObjectAction.cpp` kept the door/trap/switch actions (never called, retired in 4.203);
+  > screen geometry; `MInteractionObjectAction.cpp` kept the
+  > door/trap/switch actions (never called, retired in 4.203);
   > `ShowTimeChecker.cpp` retains scheduling. `ZoneMapData` now owns parsing
   > and validates the complete map before live sectors are replaced. Its
   > budgets bound input bytes, dimensions, sectors, objects and positions.
@@ -5700,10 +5701,13 @@ rounds settled* for the host rules). Test fixtures share
     writes each set's own flag, and a saved node loads back as it was.
     Only a commented-out tool path saves.
   - Fixed later (4.204's PR): `LoadFromFile` read the count into an
-    uninitialised int. A file cut short before its count left that
-    garbage, so the skip loop could make up to 2^31 failed reads at
-    start-up, or a garbage 495 loaded failed reads as flags. It now
-    returns false when the count cannot be read.
+    uninitialised int. A file cut short before its count filled only
+    the bytes it had and left the rest garbage. The skip loop could then
+    make up to 2^31 failed reads at start-up. A count that came out as
+    495 returned true with the flags unchanged, since failed reads store
+    nothing. It now returns false when the count cannot be read. (A file
+    cut short inside the flags still returns true with the unread flags
+    unchanged; the table's loader stops on the bad stream.)
 
 - [x] **4.204 The pack-file record and the objects' screen rects:** move
   `PackFileManager.cpp` (`PackFileInfo`) and `MObjectScreen.cpp` into
@@ -5733,7 +5737,12 @@ rounds settled* for the host rules). Test fixtures share
   - Fixed after the move: `PackFileInfo::LoadFromFile` read the name's
     bytes into an unterminated stack buffer and built the name from
     it, so a name loaded after a longer one kept the longer one's tail
-    (or ran past the buffer). It now takes exactly the name's bytes.
+    (or ran past the buffer). It now takes exactly the name's bytes. No
+    shipped path loads one today: the wave pack's index load is
+    commented out in `GameInit.cpp`, and it looks records up by ID.
+  - Found, not fixed: a name over 255 bytes saves as its length's low
+    byte and that many bytes, since the format holds one length byte.
+    Only tools save.
 
 - [x] **4.205 The video stub, the update base and the work-queue node
   base:** move `CAvi.cpp`, `WinLib/CWinUpdate.cpp` and `MWorkNode.cpp`
