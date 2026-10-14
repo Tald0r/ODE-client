@@ -154,6 +154,10 @@ struct Host
 	void (*UseSkillCardOK)(int cardType) = nullptr;
 	// Tells the party what the player is, where, and how it fares.
 	void (*SendInfoToParty)() = nullptr;
+	// Whether the player is following a creature (to attack or talk to
+	// it); TraceNULL stops it. False without a host.
+	bool (*IsTraceCreature)() = nullptr;
+	void (*TraceNULL)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -202,5 +206,7 @@ void CalculateStatus();
 void UseItemOK();
 void UseSkillCardOK(int cardType);
 void SendInfoToParty();
+bool IsTraceCreature();
+void TraceNULL();
 
 }

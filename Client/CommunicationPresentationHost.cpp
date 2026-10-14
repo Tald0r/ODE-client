@@ -158,4 +158,9 @@ const char* GetProfileFilename(const char* name)
 	return s_Host && s_Host->GetProfileFilename ? s_Host->GetProfileFilename(name) : nullptr;
 }
 
+std::uint32_t GetChattingColor()
+{
+	return s_Host && s_Host->GetChattingColor ? s_Host->GetChattingColor() : 0xFFFFFFu;
+}
+
 }

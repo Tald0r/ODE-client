@@ -206,4 +206,14 @@ void SendInfoToParty()
 	if (s_Host && s_Host->SendInfoToParty) s_Host->SendInfoToParty();
 }
 
+bool IsTraceCreature()
+{
+	return s_Host && s_Host->IsTraceCreature && s_Host->IsTraceCreature();
+}
+
+void TraceNULL()
+{
+	if (s_Host && s_Host->TraceNULL) s_Host->TraceNULL();
+}
+
 }

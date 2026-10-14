@@ -13,6 +13,8 @@
 //----------------------------------------------------------------------
 
 #include "test_framework.h"
+#include <cstring>
+#include <new>
 #include "type_table_access.h"
 
 #include "gamemodel_world.h"
@@ -377,4 +379,16 @@ TEST(ShopShelf, FillsTheFirstEmptySlotAndReplacesByDeleting)
 
 	shelf.Release();
 	CHECK_EQ(0, s_Alive);
+}
+
+TEST(Storage, ANewStorageBelongsToNobody)
+{
+	// Built over junk, as a reused heap block would be: the creature whose
+	// shop it shows starts as nobody (0), which the personal shop replies
+	// test before closing a shop's window.
+	alignas(MStorage) unsigned char memory[sizeof(MStorage)];
+	std::memset(memory, 0xAB, sizeof(memory));
+	MStorage* pStorage = new (memory) MStorage;
+	CHECK_EQ(0u, static_cast<unsigned>(pStorage->GetCuropenid()));
+	pStorage->~MStorage();
 }

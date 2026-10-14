@@ -8,11 +8,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCCreateItem.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "MInventory.h"
-#include "UIFunction.h"
-#include "VS_UI_GameCommon.h"
-extern int g_C2G;
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "VsUiPresentationHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -21,35 +22,40 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	if (PlayerState::Creature() == NULL)
+	{
+		return;
+	}
 		
 
 	MItem* pItem;
 
 	
 	//---------------------------------------------------------------------
-	// inventory에서 item몇개를 드는 경우..
+	// picking up some of an inventory item..
 	//---------------------------------------------------------------------
-	if (g_pPlayer->IsItemCheckBufferPickupSomeFromInventory())
+	if (PlayerState::GetItemCheckBufferStatus() == PlayerState::ITEM_CHECK_BUFFER_PICKUP_SOME_FROM_INVENTORY)
 	{
-		MItem* pItem = g_pPlayer->GetItemCheckBuffer();
-		g_pPlayer->ClearItemCheckBuffer();		
+		MItem* pItem = PlayerState::GetItemCheckBuffer();
+		PlayerState::ClearItemCheckBuffer();		
 
 		if (pItem!=NULL)
 		{
-			// 들어야 하는 item의 개수는
-			// ( 원래 개수 - 바닥에 남은 개수 ) 이다.
+			// the number to pick up is
+			// ( the number there was - the number left behind ).
 			int numPickup = pItem->GetNumber() - pPacket->getItemNum();
 
-			// inventory에서 제거한다.
-			MItem* pRemovedItem = g_pInventory->RemoveItem( pItem->GetGridX(), pItem->GetGridY() );
-
-			if (pRemovedItem==pItem)
+			// Take it out of the inventory, if it is where the inventory has it
+			// (another item may be in its cell: that one stays).
+			if (g_pInventory->GetItem( pItem->GetGridX(), pItem->GetGridY() )==pItem
+				&& g_pInventory->RemoveItem( pItem->GetGridX(), pItem->GetGridY() )==pItem)
 			{
-				// 개수를 다시 설정해준다.
+				// Set its number again.
 				pItem->SetNumber( numPickup );
 
-				// mouse에 든다.
-				UI_PickUpItem( pItem );
+				// Onto the mouse.
+				DialogPresentation::PickUpItem( pItem );
 			}
 			else
 			{
@@ -86,42 +92,19 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 	pItem->SetEnchantLevel( pPacket->getEnchantLevel() );
 
 	//------------------------------------------
-	// 개수
+	// the number
 	//------------------------------------------
-	// 총인 경우
+	// a gun
 	//------------------------------------------
 	if (pItem->IsGunItem())
 	{
-		MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-
-		// 의미 없음 - -;
-		pMagazine->SetID( 0 );
-
-		// 이거는 총에 맞춰서 해줘야된다.
-		for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
-		{
-			pMagazine->SetItemType(	j );
-
-			if (pMagazine->IsInsertToItem( pItem ))
-			{
-				break;
-			}
-		}
-
-		// 의미 없음
-		pMagazine->ClearItemOption();
-	
-		// 탄창 개수
-		pMagazine->SetNumber( pPacket->getItemNum() );
-
-		//------------------------------------
-		// 탄창 설정
-		//------------------------------------
-		MGunItem* pGunItem = (MGunItem*)pItem;
-		pGunItem->SetMagazine( pMagazine );
-	}		
+		// An empty magazine of the type the gun takes, holding the item's
+		// number of rounds: the loop upstream ran here, which the
+		// executable's LoadGun runs.
+		MItem::LoadGun( pItem, pPacket->getItemNum() );
+	}
 	//------------------------------------------
-	// 총이 아닌 경우
+	// not a gun
 	//------------------------------------------
 	else
 	{
@@ -129,11 +112,11 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 		//pItem->SetSilver( item.silver );
 	}
 
-	// 크리스마스 트리 합체
+	// the Christmas tree put together
 	if(pItem->GetItemClass() == ITEM_CLASS_EVENT_TREE && (pItem->GetItemType() == 12
 		|| pItem->GetItemType() == 25 || pItem->GetItemType() == 41))
 	{
-		if(g_pPlayer->GetItemCheckBufferStatus() == MPlayer::ITEM_CHECK_BUFFER_TREE_MERGE)
+		if(PlayerState::GetItemCheckBufferStatus() == PlayerState::ITEM_CHECK_BUFFER_TREE_MERGE)
 		{
 			for(int y = 0; y < 4; y++)
 			{
@@ -151,7 +134,7 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 					}
 				}
 			}
-			g_pPlayer->ClearItemCheckBuffer();
+			PlayerState::ClearItemCheckBuffer();
 		}
 		else
 		{
@@ -160,22 +143,15 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 	}
 
 	//---------------------------------------------------------------------
-	// inventory에 추가한다.
+	// Add it to the inventory.
 	//---------------------------------------------------------------------
 	if (g_pInventory->AddItem( pItem, pPacket->getInvenX(), pPacket->getInvenY() ))
 	{
-		if( g_C2G > 0 )
+		if( VsUiPresentation::IsCreatingToGear() )
 		{
-			C_VS_UI_INVENTORY::AutoMove( pPacket->getInvenX(), pPacket->getInvenY() );
-			gpC_base->DispatchMessage();
-			gpC_base->DispatchMessage();
-			gpC_base->DispatchMessage();
-			gpC_base->DispatchMessage();
-			gpC_base->DispatchMessage();
-			gpC_base->DispatchMessage();
-			g_C2G--;
+			VsUiPresentation::MoveCreatedToGear( pPacket->getInvenX(), pPacket->getInvenY() );
 		}
-		// 제대로 추가된 경우..
+		// Added properly..
 	}
 	else
 	{

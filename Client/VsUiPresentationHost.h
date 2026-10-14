@@ -4,6 +4,7 @@
 #include <vector>
 
 class MItem;
+class MStorage;
 class NicknameInfo;
 struct UI_GQuestInfo;
 
@@ -55,6 +56,25 @@ struct Host
 	void (*RunQuestManager)() = nullptr;
 	bool (*SetQuestManagerInfo)(UI_GQuestInfo* pInfo) = nullptr;
 	void (*ReleaseQuestXML)() = nullptr;
+	// The personal shop window. Its mode says why a shop's contents come
+	// (1 the player opening its own shop to stock it, 2 opening it for
+	// sale, 3 closing it; 0 otherwise); SetPersnalShop shows a storage's
+	// items, borrowed. SetInventoryMode switches the inventory to one
+	// beside a shop (2). Without a host the window is not running, its
+	// mode is 0, and the rest is skipped.
+	int (*GetPersnalShoptoUI)() = nullptr;
+	void (*SetPersnalShoptoUI)(int mode) = nullptr;
+	bool (*IsRunningPersnalShop)() = nullptr;
+	void (*RunPersnalShop)() = nullptr;
+	void (*ClosePersnalShop)() = nullptr;
+	void (*SetPersnalShop)(MStorage* pStorage) = nullptr;
+	void (*SetInventoryMode)(int mode) = nullptr;
+	// An operator's "*C2G on" puts each item it then creates ("*create") on
+	// at once: IsCreatingToGear says one is pending, and MoveCreatedToGear
+	// moves the item at the inventory cell to the gear (one fewer pending).
+	// Nothing is pending without a host.
+	bool (*IsCreatingToGear)() = nullptr;
+	void (*MoveCreatedToGear)(int x, int y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -79,5 +99,14 @@ void CloseQuestManager();
 void RunQuestManager();
 bool SetQuestManagerInfo(UI_GQuestInfo* pInfo);
 void ReleaseQuestXML();
+int GetPersnalShoptoUI();
+void SetPersnalShoptoUI(int mode);
+bool IsRunningPersnalShop();
+void RunPersnalShop();
+void ClosePersnalShop();
+void SetPersnalShop(MStorage* pStorage);
+void SetInventoryMode(int mode);
+bool IsCreatingToGear();
+void MoveCreatedToGear(int x, int y);
 
 }

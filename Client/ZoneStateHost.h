@@ -67,6 +67,13 @@ struct Host
 	void (*SetGroundElemental)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// A new plain creature of the zone, not in it yet; the caller owns it.
+	// NULL without a host. AddCreature puts it in (false when one with its
+	// ID is there, and the caller still owns it); DeleteCreature deletes
+	// one the zone did not take.
+	MCreature* (*NewCreature)() = nullptr;
+	bool (*AddCreature)(MCreature* pCreature) = nullptr;
+	void (*DeleteCreature)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -94,6 +101,9 @@ void DeleteFakeCreature(MCreature* pFakeCreature);
 void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+MCreature* NewCreature();
+bool AddCreature(MCreature* pCreature);
+void DeleteCreature(MCreature* pCreature);
 
 }
 
@@ -245,13 +255,31 @@ struct Host
 	// A fake creature runs a fast move to the cell (the afterimage of a
 	// fast-moving creature); another creature is left alone.
 	void (*SetFakeFastMove)(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
-	// A fake creature's (a pet's) turret. SetTurretDelay is its recoil: it
-	// is drawn pulled back by twice that many pixels, one less each frame.
-	// SetTurretFinalDirection is the direction it turns towards, on the
-	// turret's own 32-step scale; GCPetUseSkill hands it an 8-way
-	// direction, as upstream did. Another creature is left alone.
+	// A fake creature's (a pet's) turret. SetTurretDelay is a Centauro
+	// turret's (types 702-704) recoil: it is drawn pulled back by twice that
+	// many pixels, one less each frame. SetTurretFinalDirection is the
+	// direction such a turret turns towards when its owner, or the owner's
+	// last target, is not in the zone (otherwise it turns to that target;
+	// 0xFF, unset, turns it towards the way the creature faces), on the
+	// turret's own 32-step scale.
+	// GCPetUseSkill hands it an 8-way direction, as upstream did. Another
+	// creature is left alone.
 	void (*SetTurretDelay)(MCreature* pFakeCreature, int delay) = nullptr;
 	void (*SetTurretFinalDirection)(MCreature* pFakeCreature, int direction) = nullptr;
+	// A creature's personal shop: whether it is open (CurPernalShop; 0
+	// without a host), the sign over it in a colour, and the message kept
+	// for it. ClearChatString takes the sign (and any chat) away.
+	void (*SetPersnalShop)(MCreature* pCreature, int open) = nullptr;
+	int (*CurPernalShop)(MCreature* pCreature) = nullptr;
+	void (*SetPersnalString)(MCreature* pCreature, const char* sign, std::uint32_t color) = nullptr;
+	void (*ClearChatString)(MCreature* pCreature) = nullptr;
+	void (*SetPersnalShopMessage)(MCreature* pCreature, const char* message) = nullptr;
+	// A new creature's identity and place: its name, ID, cell and guild
+	// (-1 for none).
+	void (*SetName)(MCreature* pCreature, const char* name) = nullptr;
+	void (*SetID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
+	void (*SetPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*SetGuildNumber)(MCreature* pCreature, int guild) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -355,5 +383,14 @@ void SetInstallTurretCount(MCreature* pCreature, int count);
 void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetTurretDelay(MCreature* pFakeCreature, int delay);
 void SetTurretFinalDirection(MCreature* pFakeCreature, int direction);
+void SetPersnalShop(MCreature* pCreature, int open);
+int CurPernalShop(MCreature* pCreature);
+void SetPersnalString(MCreature* pCreature, const char* sign, std::uint32_t color);
+void ClearChatString(MCreature* pCreature);
+void SetPersnalShopMessage(MCreature* pCreature, const char* message);
+void SetName(MCreature* pCreature, const char* name);
+void SetID(MCreature* pCreature, TYPE_OBJECTID id);
+void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetGuildNumber(MCreature* pCreature, int guild);
 
 }

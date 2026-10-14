@@ -3452,6 +3452,7 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 
 // Defined in PacketFunction.cpp and MPlayer.cpp without a header.
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
+extern int g_C2G;	// UIMessageManager.cpp's: the operator's create-to-gear count
 extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
@@ -3489,6 +3490,7 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.GetFaceStyle = UI_GetFaceStyle,
 	.HasProfiles = []() { return g_pProfileManager != NULL; },
 	.GetProfileFilename = [](const char* name) { return g_pProfileManager->GetFilename(name); },
+	.GetChattingColor = []() { return static_cast<std::uint32_t>(g_pUserOption->ChattingColor); },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3545,6 +3547,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.SetShop = UI_SetShop,
 	.RunShop = UI_RunShop,
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
+	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
+	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3625,6 +3629,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 		SendPositionInfoToParty();
 		SendStatusInfoToParty();
 	},
+	.IsTraceCreature = []() { return g_pPlayer->IsTraceCreature() != FALSE; },
+	.TraceNULL = []() { g_pPlayer->TraceNULL(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3657,6 +3663,13 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.SetFuryOfGnome = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
 		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetFuryOfGnome();
 	},
+	.NewCreature = []() -> MCreature* {
+		MCreature* pCreature = new MCreature;
+		pCreature->SetZone( g_pZone );
+		return pCreature;
+	},
+	.AddCreature = [](MCreature* pCreature) { return g_pZone != NULL && g_pZone->AddCreature(pCreature); },
+	.DeleteCreature = [](MCreature* pCreature) { delete pCreature; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3785,6 +3798,15 @@ static const CreatureState::Host s_CreatureStateHost = {
 		if (pFakeCreature->GetClassType() == MCreature::CLASS_FAKE)
 			static_cast<MFakeCreature*>(pFakeCreature)->SetTurretFinalDirection(static_cast<BYTE>(direction));
 	},
+	.SetPersnalShop = [](MCreature* pCreature, int open) { pCreature->SetPersnalShop(open); },
+	.CurPernalShop = [](MCreature* pCreature) { return pCreature->CurPernalShop(); },
+	.SetPersnalString = [](MCreature* pCreature, const char* sign, std::uint32_t color) { pCreature->SetPersnalString(sign, static_cast<COLORREF>(color)); },
+	.ClearChatString = [](MCreature* pCreature) { pCreature->ClearChatString(); },
+	.SetPersnalShopMessage = [](MCreature* pCreature, const char* message) { pCreature->SetPersnalShopMessage(message); },
+	.SetName = [](MCreature* pCreature, const char* name) { pCreature->SetName(name); },
+	.SetID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetID(id); },
+	.SetPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pCreature->SetPosition(x, y); },
+	.SetGuildNumber = [](MCreature* pCreature, int guild) { pCreature->SetGuildNumber(guild); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3813,6 +3835,9 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
 	.MoveIntoPortal = MoveIntoPortal,
 	.SetDragonTornado = [](int effectStatus, std::uint32_t objectID, int x, int y) { SetDragonTorando(effectStatus, objectID, x, y); },
+	.AddNewInventoryEffect = [](TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) {
+		AddNewInventoryEffect(id, actionInfo, delayFrame, value);
+	},
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
@@ -3841,6 +3866,22 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.RunQuestManager = []() { gC_vs_ui.RunQuestManager(); },
 	.SetQuestManagerInfo = [](UI_GQuestInfo* pInfo) { return gC_vs_ui.SetQuestManagerInfo(static_cast<void*>(pInfo)); },
 	.ReleaseQuestXML = []() { gC_vs_ui.ReleaseQuestXML(); },
+	.GetPersnalShoptoUI = []() { return gC_vs_ui.GetPersnalShoptoUI(); },
+	.SetPersnalShoptoUI = [](int mode) { gC_vs_ui.SetPersnalShoptoUI(mode); },
+	.IsRunningPersnalShop = []() { return gC_vs_ui.IsRunningPersnalShop(); },
+	.RunPersnalShop = []() { gC_vs_ui.RunPersnalShop(); },
+	.ClosePersnalShop = []() { gC_vs_ui.ClosePersnalShop(); },
+	.SetPersnalShop = [](MStorage* pStorage) { gC_vs_ui.SetPersnalShop(pStorage); },
+	.SetInventoryMode = [](int mode) { gC_vs_ui.setinventory_mode(mode); },
+	.IsCreatingToGear = []() { return g_C2G > 0; },
+	.MoveCreatedToGear = [](int x, int y) {
+		C_VS_UI_INVENTORY::AutoMove( x, y );
+		for (int i = 0; i < 6; i++)
+		{
+			gpC_base->DispatchMessage();
+		}
+		g_C2G--;
+	},
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

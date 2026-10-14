@@ -53,6 +53,12 @@ struct Host
 	void (*SetShop)(MShop* pShop) = nullptr;
 	void (*RunShop)() = nullptr;
 	bool (*IsLockInput)() = nullptr;
+	// The mixing forge's two items made one (parameter, the server's): the
+	// host gives the first the mix's option and grade, and takes the second
+	// out of the inventory and frees it. OkRemoveOption shows an option
+	// taken off an item, which stays the inventory's.
+	void (*OkMixingForge)(std::uint32_t parameter, MItem* pItem, MItem* pItem2) = nullptr;
+	void (*OkRemoveOption)(std::uint32_t parameter, MItem* pItem) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -80,5 +86,7 @@ void CloseRequestResurrectWindow();
 void SetShop(MShop* pShop);
 void RunShop();
 bool IsLockInput();
+void OkMixingForge(std::uint32_t parameter, MItem* pItem, MItem* pItem2);
+void OkRemoveOption(std::uint32_t parameter, MItem* pItem);
 
 }

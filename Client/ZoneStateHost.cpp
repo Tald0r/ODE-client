@@ -115,6 +115,21 @@ void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	if (s_Host && s_Host->SetFuryOfGnome) s_Host->SetFuryOfGnome(x, y);
 }
 
+MCreature* NewCreature()
+{
+	return s_Host && s_Host->NewCreature ? s_Host->NewCreature() : nullptr;
+}
+
+bool AddCreature(MCreature* pCreature)
+{
+	return s_Host && s_Host->AddCreature && s_Host->AddCreature(pCreature);
+}
+
+void DeleteCreature(MCreature* pCreature)
+{
+	if (s_Host && s_Host->DeleteCreature) s_Host->DeleteCreature(pCreature);
+}
+
 }
 
 namespace CreatureState {
@@ -580,6 +595,51 @@ void SetTurretDelay(MCreature* pFakeCreature, int delay)
 void SetTurretFinalDirection(MCreature* pFakeCreature, int direction)
 {
 	if (s_Host && s_Host->SetTurretFinalDirection) s_Host->SetTurretFinalDirection(pFakeCreature, direction);
+}
+
+void SetPersnalShop(MCreature* pCreature, int open)
+{
+	if (s_Host && s_Host->SetPersnalShop) s_Host->SetPersnalShop(pCreature, open);
+}
+
+int CurPernalShop(MCreature* pCreature)
+{
+	return s_Host && s_Host->CurPernalShop ? s_Host->CurPernalShop(pCreature) : 0;
+}
+
+void SetPersnalString(MCreature* pCreature, const char* sign, std::uint32_t color)
+{
+	if (s_Host && s_Host->SetPersnalString) s_Host->SetPersnalString(pCreature, sign, color);
+}
+
+void ClearChatString(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ClearChatString) s_Host->ClearChatString(pCreature);
+}
+
+void SetPersnalShopMessage(MCreature* pCreature, const char* message)
+{
+	if (s_Host && s_Host->SetPersnalShopMessage) s_Host->SetPersnalShopMessage(pCreature, message);
+}
+
+void SetName(MCreature* pCreature, const char* name)
+{
+	if (s_Host && s_Host->SetName) s_Host->SetName(pCreature, name);
+}
+
+void SetID(MCreature* pCreature, TYPE_OBJECTID id)
+{
+	if (s_Host && s_Host->SetID) s_Host->SetID(pCreature, id);
+}
+
+void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetPosition) s_Host->SetPosition(pCreature, x, y);
+}
+
+void SetGuildNumber(MCreature* pCreature, int guild)
+{
+	if (s_Host && s_Host->SetGuildNumber) s_Host->SetGuildNumber(pCreature, guild);
 }
 
 }

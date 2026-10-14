@@ -8,17 +8,16 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCAddItemToItemVerify.h"
-#include "ClientDef.h"
-#include "TempInformation.h"
-#include "MInventory.h"
-#include "UIDialog.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "MGameStringTable.h"
-#include "ClientFunction.h"
+#include "MInventory.h"
+#include "PlayerStateHost.h"
 #include "SkillDef.h"
-#include "MinTr.h"
-#include "UIFunction.h"
-
-	#include "ClientPlayer.h"
+#include "TempInformation.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -52,73 +51,85 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 	{
 		case ADD_ITEM_TO_ITEM_VERIFY_ERROR:
 			// ui error dialog
-			UI_PopupMessage( STRING_ERROR_ETC_ERROR );
-			UI_UnlockItem();
-			g_pPlayer->ClearItemCheckBuffer();
+			CommunicationPresentation::PopupMessage( STRING_ERROR_ETC_ERROR );
+			DialogPresentation::UnlockItem();
+			PlayerState::ClearItemCheckBuffer();
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_IMPOSSIBLE:
 			// ui error dialog
-			UI_PopupMessage( STRING_MESSAGE_ITEM_TO_ITEM_IMPOSIBLE );
-			UI_UnlockItem();
-			g_pPlayer->ClearItemCheckBuffer();
+			CommunicationPresentation::PopupMessage( STRING_MESSAGE_ITEM_TO_ITEM_IMPOSIBLE );
+			DialogPresentation::UnlockItem();
+			PlayerState::ClearItemCheckBuffer();
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL_CRASH:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			//----------------------------------------------------
-			// 기술 사용 시도 동작
+			// the skill's attempt
 			//----------------------------------------------------
-			AddNewInventoryEffect( pInventoryItem->GetID(),
+			WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 				MAGIC_ENCHANT_REMOVE_ITEM,
-				0
+				0, 0
 				);
-			// 사운드??
-			PlaySound(SOUND_XMAS_STAR);
-			UI_DropItem();
+			// a sound??
+			WorldEvents::PlaySound(SOUND_XMAS_STAR);
+			DialogPresentation::DropItem();
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL_DECREASE:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				
 				//----------------------------------------------------
-				// 기술 사용 시도 동작
+				// the skill's attempt
 				//----------------------------------------------------
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 					MAGIC_ENCHANT_OPTION_NULL,
 					0, OptionType
 					);
 				
-				// 사운드??
-				PlaySound(SOUND_XMAS_STAR);
-				UI_DropItem();
+				// a sound??
+				WorldEvents::PlaySound(SOUND_XMAS_STAR);
+				DialogPresentation::DropItem();
 			}
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				//----------------------------------------------------
-				// 기술 사용 시도 동작
+				// the skill's attempt
 				//----------------------------------------------------
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 					MAGIC_ENCHANT_OPTION_PLUS,
 					0, OptionType
 					);
 
 
 //				pInventoryItem->SetItemOption(OptionType);
-				UI_DropItem();
+				DialogPresentation::DropItem();
 
 			}
 			break;
 			// add  by sonic 2006.11.3  三属性
 		case ADD_ITEM_TO_ITEM_VERIFY_THREE_ENCHANT_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				DWORD OptionType2= pPacket->getParameter2();
 				//----------------------------------------------------
-				// 기술 사용 시도 동작
+				// the skill's attempt
 				//----------------------------------------------------
 				TYPE_ITEM_OPTION Option1;
 				TYPE_ITEM_OPTION Option2;
@@ -141,34 +152,37 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 					pInventoryItem->ChangeItemOption(oldOption2,Option2);
 				if (Option3!=0)
 					pInventoryItem->ChangeItemOption(oldOption3,Option3);
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 					MAGIC_ENCHANT_OPTION_PLUS,
 					0, OptionType
 					);
 
 
 //				pInventoryItem->SetItemOption(OptionType);
-				UI_DropItem();
+				DialogPresentation::DropItem();
 
 			}
 			break;
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_IMPOSSIBLE_NO_PREMIUM:
-			if(g_pPlayer->IsSlayer())
-				UI_PopupMessage( STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_SLAYER );
+			if(PlayerState::Creature() != NULL && CreatureState::IsSlayer(PlayerState::Creature()))
+				CommunicationPresentation::PopupMessage( STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_SLAYER );
 			else
-				UI_PopupMessage( STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_VAMPIRE );
-			UI_UnlockItem();
-			g_pPlayer->ClearItemCheckBuffer();
+				CommunicationPresentation::PopupMessage( STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_VAMPIRE );
+			DialogPresentation::UnlockItem();
+			PlayerState::ClearItemCheckBuffer();
 			break;
-		case ADD_ITEM_TO_ITEM_VERIFY_TRANS_OK :				// 성전환 성공
+		case ADD_ITEM_TO_ITEM_VERIFY_TRANS_OK :				// the sex change worked
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
-				AddNewInventoryEffect( pInventoryItem->GetID() ,
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID() ,
 					MAGIC_TRANS_ITEM_OK,
 					0, 0 );
-				UI_DropItem();
+				DialogPresentation::DropItem();
 			}
 			break;
-		case ADD_ITEM_TO_ITEM_VERIFY_TRANS_IMPOSSIBLE :		// 성전환 실패
+		case ADD_ITEM_TO_ITEM_VERIFY_TRANS_IMPOSSIBLE :		// the sex change failed
 			{
 			}
 			break;
@@ -177,7 +191,7 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 				if( pItem[0] == NULL || pItem[1] == NULL )
 					return;
 								
-				UI_OkMixingForge( pPacket->getParameter(), pItem[0], pItem[1] );
+				DialogPresentation::OkMixingForge( pPacket->getParameter(), pItem[0], pItem[1] );
 				
 				g_pTempInformation->SetMode( TempInformation::MODE_NULL );
 				g_pTempInformation->Value1 = 0;
@@ -191,22 +205,25 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			if( pInventoryItem == NULL )
 				return;
 
-			UI_OkRemoveOption( pPacket->getParameter(), pInventoryItem );
-			UI_DropItem();
-			g_pPlayer->ClearItemCheckBuffer();
+			DialogPresentation::OkRemoveOption( pPacket->getParameter(), pInventoryItem );
+			DialogPresentation::DropItem();
+			PlayerState::ClearItemCheckBuffer();
 			break;
 		case ADD_ITEM_TO_ITEM_VERIFY_MIXING_FAILED_SAME_OPTION_GROUP :
-			UI_PopupMessage( STRING_MESSAGE_MIXING_FORGE_FAILED_SAME_OPTION_GROUP );
+			CommunicationPresentation::PopupMessage( STRING_MESSAGE_MIXING_FORGE_FAILED_SAME_OPTION_GROUP );
 			break;
 			
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
-				AddNewInventoryEffect( pInventoryItem->GetID() ,
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID() ,
 					MAGIC_UNKOWN1,
 					0, 0 );
-				UI_DropItem();
-				UI_UnlockItem();
-				g_pPlayer->ClearItemCheckBuffer();
+				DialogPresentation::DropItem();
+				DialogPresentation::UnlockItem();
+				PlayerState::ClearItemCheckBuffer();
 			}
 			break;
 
@@ -216,28 +233,31 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 				return;
 
 				DWORD OptionType = pPacket->getParameter();
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 					MAGIC_ENCHANT_OPTION_PLUS,
 					0, OptionType
 					);
 				
 	//			pInventoryItem->SetCurrentDurability(pPacket->getParameter());
-				UI_DropItem();
-	//			g_pPlayer->ClearItemCheckBuffer();
+				DialogPresentation::DropItem();
+	//			PlayerState::ClearItemCheckBuffer();
 			}
 			break;
 		case ADD_ITEM_TO_ITEM_VERIFY_CLEAR_OPTION_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 				MAGIC_ENCHANT_OPTION_NULL,
 				0, OptionType
 				);
-				PlaySound(SOUND_XMAS_STAR);
+				WorldEvents::PlaySound(SOUND_XMAS_STAR);
 //				pInventoryItem->RemoveItemOption(g_pTempInformation->Value3);
 
-				UI_DropItem();
-				UI_PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
+				DialogPresentation::DropItem();
+				CommunicationPresentation::PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
 			}
 			break;
 
@@ -247,37 +267,43 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 		// parameter this case used to read as a new item type was never
 		// on the wire (task 2.5 triage, docs/RESTRUCTURING.md).
 		case ADD_ITEM_TO_ITEM_VERIFY_UP_GRADE_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD grade = pPacket->getParameter();
 				pInventoryItem->SetGrade( grade );
 
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 				MAGIC_ENCHANT_OPTION_PLUS,
 				0, 0
 				);
-				PlaySound(SOUND_XMAS_STAR);
+				WorldEvents::PlaySound(SOUND_XMAS_STAR);
 //				pInventoryItem->RemoveItemOption(g_pTempInformation->Value3);
 
-				UI_DropItem();
-				UI_PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
+				DialogPresentation::DropItem();
+				CommunicationPresentation::PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
 			}
 			break;
 
 		// add by svi 2009-07-15 增加删除属性确认
 		
 		case ADD_ITEM_TO_ITEM_REMOVE_OPTION_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 
 				pInventoryItem->RemoveItemOption( static_cast<TYPE_ITEM_OPTION>(OptionType) );
 				
-				AddNewInventoryEffect( pInventoryItem->GetID(),
+				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
 				MAGIC_ENCHANT_OPTION_PLUS,
 				0, 0
 				);
-				PlaySound(SOUND_XMAS_STAR);
-				UI_DropItem();
-				UI_PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
+				WorldEvents::PlaySound(SOUND_XMAS_STAR);
+				DialogPresentation::DropItem();
+				CommunicationPresentation::PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
 			}
 			break;
 

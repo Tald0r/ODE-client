@@ -10,19 +10,28 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCMyStoreInfo.h"
 #include "MStorage.h"
-#include "MPlayer.h"
 #include "PCItemInfo.h"
-#include "DebugInfo.h"
-#include "UIDialog.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
 #include "MGameStringTable.h"
-#include "VS_UI.h"
-#include "UserOption.h"
-#include "ClientConfig.h"
+#include "MInventory.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "VsUiPresentationHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// The method run when the client receives the message from the server.
 //
 //////////////////////////////////////////////////////////////////////
+// MCreature::IsNPC: whether the creature table's row for its type is an
+// NPC's.
+static bool IsNPCType(MCreature* pCreature)
+{
+	return (*g_pCreatureTable)[CreatureState::GetCreatureType(pCreature)].IsNPC();
+}
+
 void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer )
 
 {
@@ -30,39 +39,45 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 		__BEGIN_TRY 
 		(void)pPlayer;
 
-		if(g_pPlayer->IsTraceCreature() == TRUE)
-			g_pPlayer->TraceNULL();
+		MCreature* const pPlayerCreature = PlayerState::Creature();
+		if (pPlayerCreature == NULL)
+		{
+			return;
+		}
 
-		if(g_pPlayer->IsNPC() == false)
-			g_pPlayer->SetPersnalShop(pPacket->getStoreInfo()->isOpen());
+		if(PlayerState::IsTraceCreature())
+			PlayerState::TraceNULL();
 
-		if(pPacket->getStoreInfo()->isOpen()) // 상점이 열러 있을떄만 
+		if(IsNPCType(pPlayerCreature) == false)
+			CreatureState::SetPersnalShop(pPlayerCreature, pPacket->getStoreInfo()->isOpen());
+
+		if(pPacket->getStoreInfo()->isOpen()) // only when the shop is open 
 		{
 			if(!pPacket->getStoreInfo()->getSign().empty()) 
-				g_pPlayer->SetPersnalString((char*)pPacket->getStoreInfo()->getSign().c_str(),g_pUserOption->ChattingColor);
+				CreatureState::SetPersnalString(pPlayerCreature, pPacket->getStoreInfo()->getSign().c_str(), CommunicationPresentation::GetChattingColor());
 			else
-				g_pPlayer->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+				CreatureState::SetPersnalString(pPlayerCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor());
 		}
  
-		if(gC_vs_ui.GetPersnalShoptoUI() == 3) //상점 닫기
+		if(VsUiPresentation::GetPersnalShoptoUI() == 3) // closing the shop
 		{
-			g_pPlayer->ClearChatString();
-			gC_vs_ui.SetPersnalShoptoUI(0);
-			gC_vs_ui.ClosePersnalShop(); 
+			CreatureState::ClearChatString(pPlayerCreature);
+			VsUiPresentation::SetPersnalShoptoUI(0);
+			VsUiPresentation::ClosePersnalShop(); 
 
 			if (g_pStorage2!=NULL)
 			{
 				delete g_pStorage2;
 				g_pStorage2 = NULL;
 			}
-			gC_vs_ui.SetPersnalShop( NULL );
+			VsUiPresentation::SetPersnalShop( NULL );
 			
 			return;
 		}
-		if(gC_vs_ui.GetPersnalShoptoUI() == 2) //상점 열기일경우에 리턴한다.
+		if(VsUiPresentation::GetPersnalShoptoUI() == 2) // return when opening the shop.
 		{ 
-			gC_vs_ui.SetPersnalShoptoUI(0);
-			gC_vs_ui.ClosePersnalShop(); 
+			VsUiPresentation::SetPersnalShoptoUI(0);
+			VsUiPresentation::ClosePersnalShop(); 
 			return;
 		}
 
@@ -73,11 +88,11 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 		}
 	
 		g_pStorage2 = new MStorage;
-		g_pStorage2->Init( 1 ); //STASH_RACK_MAX );	// 쩝.. 3개일까?? 
+		g_pStorage2->Init( 1 ); //STASH_RACK_MAX );	// hm.. 3 of them?? 
 		g_pStorage2->SetCurrent( 0 );
 
-		if(g_pPlayer->GetID() != 0)
-			g_pStorage2->SetCuropenid(g_pPlayer->GetID());
+		if(PlayerState::GetID() != 0)
+			g_pStorage2->SetCuropenid(PlayerState::GetID());
 
 
 			
@@ -85,12 +100,12 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 		MItem * p_Newitem = NULL;
 		  
 		if(strlen(pPacket->getStoreInfo()->getSign().c_str())>0)
-			g_pPlayer->SetPersnalShopMessage(pPacket->getStoreInfo()->getSign().c_str());
+			CreatureState::SetPersnalShopMessage(pPlayerCreature, pPacket->getStoreInfo()->getSign().c_str());
 //			set->SetPersnalShopMessage(pPacket->getStoreInfo()->getSign().c_str());
 		for (int rack=0; rack<1; rack++)
 		{	 
 			//------------------------------------------------------------
-			// 접근하는 Storage를 지정한다.
+			// Set the storage being accessed.
 			//------------------------------------------------------------
 			//int numitem = pPacket->getStoreInfo().getItems().size();
 			int numitem = static_cast<int>(pPacket->getStoreInfo()->getItems().size());
@@ -140,40 +155,19 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 						g_pInventory->Next();
 					}
 					//------------------------------------------
-					// 개수
+					// the number
 					//------------------------------------------
-					// 총인 경우
+					// a gun
 					//------------------------------------------
 					if (pItem->IsGunItem())
 					{
-						MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-
-						// 의미 없음 - -;
-						pMagazine->SetID( 0 );
-
-						// 이거는 총에 맞춰서 해줘야된다.
-						for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
-						{
-							pMagazine->SetItemType(	j );
-
-							if (pMagazine->IsInsertToItem( pItem ))
-							{
-								break;
-							}
-						}
-
-						// 의미 없음
-						pMagazine->ClearItemOption();
-					
-
-						//------------------------------------
-						// 탄창 설정
-						//------------------------------------
-						MGunItem* pGunItem = (MGunItem*)pItem;
-						pGunItem->SetMagazine( pMagazine );
+						// An empty magazine of the type the gun takes, with the one
+						// round a new pile holds: the loop upstream ran here, which
+						// the executable's LoadGun runs.
+						MItem::LoadGun( pItem, 1 );
 					}		
 					//------------------------------------------
-					// 총이 아닌 경우
+					// not a gun
 					//------------------------------------------
 					else
 					{
@@ -184,7 +178,7 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 					pItem->SetEnchantLevel( item.getEnchantLevel() );
 
 					//------------------------------------------------------------
-					// Sub Item이 있으면 생성한다.
+					// Make the sub items, if any.
 					//------------------------------------------------------------
 
 					int subNum =item.getListNum();
@@ -192,7 +186,7 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 					if (subNum!=0)
 					{
 						//------------------------------------------------------------
-						// Belt인 경우
+						// a belt
 						//------------------------------------------------------------
 						if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 						{
@@ -201,7 +195,7 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 							std::list<SubItemInfo*>::const_iterator iItem = listSubItem.begin();
 
 							//------------------------------------------------------------
-							// 각각의 sub item을 설정한다.
+							// Set each sub item.
 							//------------------------------------------------------------
 							while (iItem != listSubItem.end())
 							{
@@ -247,7 +241,7 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 							std::list<SubItemInfo*>::const_iterator iItem = listSubItem.begin();
 
 							//------------------------------------------------------------
-							// 각각의 sub item을 설정한다.
+							// Set each sub item.
 							//------------------------------------------------------------
 							while (iItem != listSubItem.end())
 							{
@@ -291,11 +285,11 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 					}
 					 
 					//------------------------------------------------------------
-					// Storage에 item 설정
+					// Put the item in the storage
 					//------------------------------------------------------------
 					if (!g_pStorage2->SetItem( index, pItem ))
 					{
-						// 뭐지.. 
+						// what's this.. 
 						delete pItem;
 						
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
@@ -305,16 +299,16 @@ void GCMyStoreInfoHandler::execute ( GCMyStoreInfo * pPacket , Player * pPlayer 
 			}
 		}
 		 
-		if(gC_vs_ui.GetPersnalShoptoUI() == 1)
+		if(VsUiPresentation::GetPersnalShoptoUI() == 1)
 		{
-			gC_vs_ui.RunPersnalShop();
-			gC_vs_ui.SetPersnalShop( g_pStorage2 ); 		
+			VsUiPresentation::RunPersnalShop();
+			VsUiPresentation::SetPersnalShop( g_pStorage2 ); 		
 			return; 
 		}
-		if(gC_vs_ui.IsRunningPersnalShop()== false && g_pPlayer->CurPernalShop() == false && pPacket->getOpenUI()!=0)
+		if(VsUiPresentation::IsRunningPersnalShop()== false && CreatureState::CurPernalShop(pPlayerCreature) == false && pPacket->getOpenUI()!=0)
 		{
-			gC_vs_ui.RunPersnalShop();
-			gC_vs_ui.SetPersnalShop( g_pStorage2 ); 		
+			VsUiPresentation::RunPersnalShop();
+			VsUiPresentation::SetPersnalShop( g_pStorage2 ); 		
 		}
 	__END_CATCH
 }

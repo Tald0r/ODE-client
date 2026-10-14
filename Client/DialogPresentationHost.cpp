@@ -128,4 +128,14 @@ bool IsLockInput()
 	return s_Host && s_Host->IsLockInput ? s_Host->IsLockInput() : false;
 }
 
+void OkMixingForge(std::uint32_t parameter, MItem* pItem, MItem* pItem2)
+{
+	if (s_Host && s_Host->OkMixingForge) s_Host->OkMixingForge(parameter, pItem, pItem2);
+}
+
+void OkRemoveOption(std::uint32_t parameter, MItem* pItem)
+{
+	if (s_Host && s_Host->OkRemoveOption) s_Host->OkRemoveOption(parameter, pItem);
+}
+
 }
