@@ -3771,7 +3771,9 @@ rounds settled* for the host rules). Test fixtures share
   > player's current action; another creature's is thrown from its user
   > facing the cell (a new `CreatureState::SetDirection`), or starts at
   > the cell without the user; the player's pending effect status rides on
-  > a bomb near the player. R1 is 171 Windows / 169 Ninja.
+  > a bomb near the player. Without a player, the player's bomb and a
+  > bomb near the player do nothing, where they dereferenced the player.
+  > R1 is 171 Windows / 169 Ninja.
   - Owner: membership, R1, the new entry and its adapter, and
     `test_bomb_replies.cpp` (the lookups at and past their ends; the
     player's bomb with an effect status and a factory node, with an

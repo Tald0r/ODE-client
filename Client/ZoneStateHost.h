@@ -119,6 +119,8 @@ struct Host
 	int (*GetDirection)(MCreature* pCreature) = nullptr;
 	// Takes the creature's head off, if it can lose it.
 	void (*RemoveHead)(MCreature* pCreature) = nullptr;
+	// Turns the creature to a direction (the one it turns to, not the one
+	// GetDirection reads until it has turned).
 	void (*SetDirection)(MCreature* pCreature, int direction) = nullptr;
 	// Fades the creature back in soon after a fade-out.
 	void (*SetVisibleSoon)(MCreature* pCreature) = nullptr;

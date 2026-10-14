@@ -270,7 +270,7 @@ void GCThrowBombOK2Handler::execute ( GCThrowBombOK2 * pPacket , Player * pPlaye
 				DEBUG_ADD("C-OK");
 
 				//------------------------------------------------------
-				// Face the player.
+				// Face the cell.
 				//------------------------------------------------------
 				CreatureState::SetDirectionToPosition(pCreature, pPacket->getX(), pPacket->getY());		
 

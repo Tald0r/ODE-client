@@ -30,8 +30,8 @@
 // on the creature, or the factory's node). The player's bomb answers the
 // wait and goes to the player's current action; another creature's bomb
 // is thrown from its user facing the cell, or, without the user, starts at
-// the cell; the player's pending effect status rides along on a bomb the
-// player is caught in. The test hosts run every handed-over queue at once.
+// the cell; the player's pending effect status rides along on any bomb
+// near the player. The test hosts run every handed-over queue at once.
 namespace {
 
 std::vector<std::string> calls;
@@ -127,11 +127,12 @@ const CreatureState::Host creature = []() {
 
 const WorldEvents::Host events = []() {
 	WorldEvents::Host host{};
-	host.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int, int direction,
-		TYPE_OBJECTID targetID, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION, int, std::uint32_t delayFrame,
-		MActionResult* pResult, bool bStartFromMainNode, int, int) {
+	host.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction,
+		TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame,
+		MActionResult* pResult, bool bStartFromMainNode, int sX, int sY) {
+		CHECK(startZ == 0 && targetZ == 0 && sX == 0 && sY == 0);
 		calls.push_back("cell|" + N(actionInfo) + "|" + N(startX) + "," + N(startY) + "|dir " + N(direction) + "|" + N(targetID)
-			+ "|" + N(delayFrame) + (bStartFromMainNode ? "|main" : "|resume"));
+			+ "@" + N(targetX) + "," + N(targetY) + "|" + N(delayFrame) + (bStartFromMainNode ? "|main" : "|resume"));
 		Land(pResult);
 	};
 	return host;
@@ -331,7 +332,7 @@ TEST(BombReplies, WithoutItsUserACreaturesBombStartsAtTheCell)
 	World world;
 	world.Row(BOMB_ACER).SetActionResult(ACTIONRESULTNODE_ACTIONINFO);
 	ReceiveBombNearPlayer(4242, kAcer, {1001});
-	CHECK(calls == Then({"cell|" + N(BOMB_ACER) + "|40,41|dir 2|" + N(OBJECTID_NULL) + "|16|resume"},
+	CHECK(calls == Then({"cell|" + N(BOMB_ACER) + "|40,41|dir 2|" + N(OBJECTID_NULL) + "@40,41|16|resume"},
 		{Hit("Ogre", BOMB_ACER, 1001, 10, 11)}));
 	// Between creatures, nothing is shown without the user.
 	calls.clear();
@@ -339,7 +340,7 @@ TEST(BombReplies, WithoutItsUserACreaturesBombStartsAtTheCell)
 	CHECK(calls.empty());
 }
 
-TEST(BombReplies, ThePlayersPendingEffectRidesOnABombItIsCaughtIn)
+TEST(BombReplies, ThePlayersPendingEffectRidesOnABombNearThePlayer)
 {
 	World world;
 	playerStatus.SetStatus(MODIFY_EFFECT_STAT, EFFECTSTATUS_CURSE_PARALYSIS);
@@ -347,6 +348,56 @@ TEST(BombReplies, ThePlayersPendingEffectRidesOnABombItIsCaughtIn)
 	CHECK(calls == Then({"Vanda.face|40|41", "Vanda.dir|2", "Vanda.sector|" + N(BOMB_ACER) + "|40|41",
 		"Self.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|16", Hit("Vanda", BOMB_ACER, 1002, 40, 41)}, {}));
 	CHECK_EQ(static_cast<long long>(EFFECTSTATUS_NULL), static_cast<long long>(playerStatus.GetStatus(MODIFY_EFFECT_STAT)));
+}
+
+TEST(BombReplies, ACreaturesBombWhoseResultIsAnActionHitsNobodyAtTheCellAndActsOnEachCreature)
+{
+	World world;
+	world.Row(BOMB_ACER).SetActionResult(ACTIONRESULTNODE_ACTIONINFO);
+	const std::vector<std::string> thrown = {"Vanda.face|40|41", "Vanda.dir|2", "Vanda.sector|" + N(BOMB_ACER) + "|40|41"};
+	ReceiveBombNearPlayer(1002, kAcer, {1001});
+	CHECK(calls == Then(thrown, {Hit("Ogre", BOMB_ACER, 1001, 10, 11)}));
+	calls.clear();
+	ReceiveBomb(1002, kAcer, {1001});
+	CHECK(calls == Then(thrown, {Hit("Ogre", BOMB_ACER, 1001, 10, 11)}));
+}
+
+TEST(BombReplies, AWeaponBombActsAsItsThrowersBasicAction)
+{
+	World world;
+	world.Row(BOMB_ACER).SetAffectCurrentWeaponAction();
+	world.Row(BOMB_ACER).SetActionResult(ACTIONRESULTNODE_ACTIONINFO);
+	const std::vector<std::string> thrown = {"Vanda.face|40|41", "Vanda.dir|2", "Vanda.sector|" + N(BOMB_ACER) + "|40|41"};
+	ReceiveBombNearPlayer(1002, kAcer, {1001});
+	CHECK(calls == Then(thrown, {Hit("Ogre", SKILL_ATTACK_GUN_SG, 1001, 10, 11)}));
+	calls.clear();
+	ReceiveBomb(1002, kAcer, {1001});
+	CHECK(calls == Then(thrown, {Hit("Ogre", SKILL_ATTACK_GUN_SG, 1001, 10, 11)}));
+	// Without its user, the bomb acts as itself.
+	calls.clear();
+	ReceiveBombNearPlayer(4242, kAcer, {1001});
+	CHECK(calls == Then({"cell|" + N(BOMB_ACER) + "|40,41|dir 2|" + N(OBJECTID_NULL) + "@40,41|16|resume"},
+		{Hit("Ogre", BOMB_ACER, 1001, 10, 11)}));
+	// A thrower whose basic action is a result shows nothing.
+	calls.clear();
+	world.vanda.basic = kMin;
+	ReceiveBombNearPlayer(1002, kAcer, {1001});
+	ReceiveBomb(1002, kAcer, {1001});
+	CHECK(calls.empty());
+}
+
+TEST(BombReplies, AWeaponBombHitsItsCellAsItselfAndEachCreatureAsTheWeapon)
+{
+	World world;
+	world.Row(BOMB_ACER).SetAffectCurrentWeaponAction();
+	world.Row(SKILL_ATTACK_GUN_SR).SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
+	world.Row(SKILL_ATTACK_GUN_SG).SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
+	ReceivePlayersBomb(kAcer, {1001});
+	CHECK(calls == Then({"player.add|0", Hit("Self", BOMB_ACER, 7, 40, 41)}, {"Ogre.burrow"}));
+	calls.clear();
+	ReceiveBomb(1002, kAcer, {1001});
+	CHECK(calls == Then({"Vanda.face|40|41", "Vanda.dir|2", "Vanda.sector|" + N(BOMB_ACER) + "|40|41", Hit("Vanda", BOMB_ACER, 1002, 40, 41)},
+		{"Ogre.burrow"}));
 }
 
 TEST(BombReplies, TheGuards)
