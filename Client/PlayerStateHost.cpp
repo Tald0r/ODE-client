@@ -221,4 +221,49 @@ bool IsRepeatAction()
 	return s_Host && s_Host->IsRepeatAction && s_Host->IsRepeatAction();
 }
 
+void ChangeToSlayer()
+{
+	if (s_Host && s_Host->ChangeToSlayer) s_Host->ChangeToSlayer();
+}
+
+void ChangeToVampire()
+{
+	if (s_Host && s_Host->ChangeToVampire) s_Host->ChangeToVampire();
+}
+
+void SetBasicAttack(TYPE_ACTIONINFO actionInfo, int distance)
+{
+	if (s_Host && s_Host->SetBasicAttack) s_Host->SetBasicAttack(actionInfo, distance);
+}
+
+void SetPCSlayerInfo(PCSlayerInfo2* pInfo)
+{
+	if (s_Host && s_Host->SetPCSlayerInfo) s_Host->SetPCSlayerInfo(pInfo);
+}
+
+void SetPCVampireInfo(PCVampireInfo2* pInfo)
+{
+	if (s_Host && s_Host->SetPCVampireInfo) s_Host->SetPCVampireInfo(pInfo);
+}
+
+void SetPCOustersInfo(PCOustersInfo2* pInfo)
+{
+	if (s_Host && s_Host->SetPCOustersInfo) s_Host->SetPCOustersInfo(pInfo);
+}
+
+void SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
+{
+	if (s_Host && s_Host->SetGearInfo) s_Host->SetGearInfo(pGearInfo, pBloodBibleInfo);
+}
+
+void SetInventoryInfo(InventoryInfo* pInventoryInfo)
+{
+	if (s_Host && s_Host->SetInventoryInfo) s_Host->SetInventoryInfo(pInventoryInfo);
+}
+
+void SetExtraInfo(ExtraInfo* pExtraInfo)
+{
+	if (s_Host && s_Host->SetExtraInfo) s_Host->SetExtraInfo(pExtraInfo);
+}
+
 }

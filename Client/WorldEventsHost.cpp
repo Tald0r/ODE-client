@@ -165,4 +165,9 @@ void SkillToSector(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECT
 		delete pResult;
 }
 
+void MuteSound(bool bMute)
+{
+	if (s_Host && s_Host->MuteSound) s_Host->MuteSound(bMute);
+}
+
 }

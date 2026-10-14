@@ -5,11 +5,18 @@
 #include "MEffectStatusDef.h"
 #include "RaceType.h"
 
+class BloodBibleSignInfo;
+class ExtraInfo;
+class GearInfo;
+class InventoryInfo;
 class MActionResult;
 class MCreature;
 class MItem;
 class MItemManager;
 class MStatus;
+class PCOustersInfo2;
+class PCSlayerInfo2;
+class PCVampireInfo2;
 
 namespace PlayerState {
 
@@ -161,6 +168,22 @@ struct Host
 	// Whether the player is repeating an action (attacking or using a
 	// skill again and again); false without a host.
 	bool (*IsRepeatAction)() = nullptr;
+	// Turns the player into a slayer or a vampire (its body, its gear
+	// and what it can do).
+	void (*ChangeToSlayer)() = nullptr;
+	void (*ChangeToVampire)() = nullptr;
+	// The player's basic attack: its action and its reach in cells.
+	void (*SetBasicAttack)(TYPE_ACTIONINFO actionInfo, int distance) = nullptr;
+	// Takes the player's details from a slayer's, a vampire's or an
+	// ouster's info: its look, its stats and what it carries in the UI.
+	void (*SetPCSlayerInfo)(PCSlayerInfo2* pInfo) = nullptr;
+	void (*SetPCVampireInfo)(PCVampireInfo2* pInfo) = nullptr;
+	void (*SetPCOustersInfo)(PCOustersInfo2* pInfo) = nullptr;
+	// Fills the player's gear (and its blood bible signs, if given), its
+	// inventory, and the item held at the mouse from the infos.
+	void (*SetGearInfo)(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo) = nullptr;
+	void (*SetInventoryInfo)(InventoryInfo* pInventoryInfo) = nullptr;
+	void (*SetExtraInfo)(ExtraInfo* pExtraInfo) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -212,5 +235,14 @@ void SendInfoToParty();
 bool IsTraceCreature();
 void TraceNULL();
 bool IsRepeatAction();
+void ChangeToSlayer();
+void ChangeToVampire();
+void SetBasicAttack(TYPE_ACTIONINFO actionInfo, int distance);
+void SetPCSlayerInfo(PCSlayerInfo2* pInfo);
+void SetPCVampireInfo(PCVampireInfo2* pInfo);
+void SetPCOustersInfo(PCOustersInfo2* pInfo);
+void SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo);
+void SetInventoryInfo(InventoryInfo* pInventoryInfo);
+void SetExtraInfo(ExtraInfo* pExtraInfo);
 
 }

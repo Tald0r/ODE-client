@@ -155,6 +155,11 @@ MCreature* NewNPC()
 	return s_Host && s_Host->NewNPC ? s_Host->NewNPC() : NULL;
 }
 
+void SetPlayer()
+{
+	if (s_Host && s_Host->SetPlayer) s_Host->SetPlayer();
+}
+
 }
 
 namespace CreatureState {

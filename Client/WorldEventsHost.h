@@ -107,6 +107,8 @@ struct Host
 	void (*SkillBlazeWalk)(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) = nullptr;
 	void (*AddRocketLauncher)(MCreature* pUser, MCreature* pTarget) = nullptr;
 	void (*AddWildWolf)(MCreature* pUser, MCreature* pTarget, bool bEatCorpse) = nullptr;
+	// Silences every sound, or lets it play again.
+	void (*MuteSound)(bool bMute) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -137,6 +139,7 @@ void SkillIllendue(MCreature* pUser, MCreature* pTarget, int skillID);
 void SkillBlazeWalk(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade);
 void AddRocketLauncher(MCreature* pUser, MCreature* pTarget);
 void AddWildWolf(MCreature* pUser, MCreature* pTarget, bool bEatCorpse);
+void MuteSound(bool bMute);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.

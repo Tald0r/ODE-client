@@ -8,10 +8,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMorph1.h"
-#include "ClientDef.h"
-#include "CDirectSound.h"
+#include "DebugLog.h"
 #include "MQuickSlot.h"
+#include "PCOustersInfo2.h"
+#include "PlayerStateHost.h"
+#include "RaceType.h"
 #include "SkillDef.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -22,35 +26,36 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 	(void)pPlayer;
 		
 
-	if (g_pZone==NULL
-		|| g_pPlayer==NULL)
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (!ZoneState::Exists()
+		|| pPlayerCreature==NULL)
 	{
-		DEBUG_ADD_ERR("[Error] g_pZone or g_pPlayer NULL");
+		DEBUG_ADD_ERR("[Error] No zone or no player");
 
 		return;
 	}
 
 	//-----------------------------------------------------------
-	// Sound를 출력하지 않는다.
+	// Play no sound.
 	//-----------------------------------------------------------
-	g_SDLAudio.SetMute();
+	WorldEvents::MuteSound( true );
 
 	//-----------------------------------------------------------
-	// ID가 다르면.. ID를 바꿔야 한다.
+	// A different ID.. the ID must change.
 	//-----------------------------------------------------------
 	int objectID;
 	
 	switch (pPacket->getPCInfo2()->getPCType())
 	{
 		//--------------------------------------------------
-		// Slayer인 경우
+		// A slayer
 		//--------------------------------------------------
 		case PC_SLAYER :		
 			objectID = ((PCSlayerInfo2*)pPacket->getPCInfo2())->getObjectID();
 		break;
 
 		//--------------------------------------------------
-		// Vampire인 경우
+		// A vampire
 		//--------------------------------------------------
 		case PC_VAMPIRE :
 			objectID = ((PCVampireInfo2*)pPacket->getPCInfo2())->getObjectID();			
@@ -61,52 +66,51 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 		return;
 	}
 
-	if (g_pPlayer->GetID()!=static_cast<TYPE_OBJECTID>(objectID))
+	if (PlayerState::GetID()!=static_cast<TYPE_OBJECTID>(objectID))
 	{
-		// Zone에 들어있는거도 바꾼다.
-		g_pZone->RemoveCreature( g_pPlayer->GetID() );
+		// Change the one in the zone too.
+		ZoneState::RemoveCreature( PlayerState::GetID() );
 
-		// 새로운 ID
-		g_pPlayer->SetID( objectID );
+		// the new ID
+		CreatureState::SetID( pPlayerCreature, objectID );
 
-		g_pZone->SetPlayer();
-		g_pPlayer->SetZone(g_pZone);
+		ZoneState::SetPlayer();
 	}
 
 	//--------------------------------------------------
 	//
-	//			 Player 변신
+	//			 The player transforms
 	//
 	//--------------------------------------------------
-	if (g_pPlayer->IsSlayer())
+	if (PlayerState::GetRace()==RACE_SLAYER)
 	{
-		g_pPlayer->ChangeToVampire();
+		PlayerState::ChangeToVampire();
 
-		// 임시로
-		g_pPlayer->SetGuildNumber( 2 );
+		// for now
+		PlayerState::SetGuildNumber( 2 );
 	}
 	else
 	{
-		g_pPlayer->ChangeToSlayer();
+		PlayerState::ChangeToSlayer();
 
-		// 임시로
-		g_pPlayer->SetGuildNumber( -1 );
+		// for now
+		PlayerState::SetGuildNumber( -1 );
 	}
 
 
 	//--------------------------------------------------
-	// 특수 기술 설정
+	// set the special skill
 	//--------------------------------------------------
 	//g_pPlayer->SetSpecialActionInfo( MAGIC_LIGHT );
 
 	//--------------------------------------------------
-	// 공격 모드 설정
+	// set the attack mode
 	//--------------------------------------------------
 //	g_pPlayer->SetAttackModeNormal();
 
 
 	//--------------------------------------------------
-	// QuickSlot을 없앤다. 필요한가? - -;
+	// Drop the quick slot. Needed? - -;
 	//--------------------------------------------------	
 	g_pQuickSlot = NULL;
 	g_pArmsBand1 = NULL;
@@ -114,9 +118,9 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 
 			
 	//--------------------------------------------------
-	//		복장 초기화
+	//		Reset the gear
 	//--------------------------------------------------
-	// 필요 없을 듯..
+	// probably not needed..
 	//--------------------------------------------------
 	DEBUG_ADD( "Remove All Addon" );
 	
@@ -125,62 +129,61 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 	//	g_pPlayer->RemoveAddon((enum ADDON)i);
 	//}			
 
-	g_pPlayer->SetBasicActionInfo( SKILL_ATTACK_MELEE );
-	g_pPlayer->SetBasicAttackDistance( 1 );
+	PlayerState::SetBasicAttack( SKILL_ATTACK_MELEE, 1 );
 		
 
 	//--------------------------------------------------
 	//
-	//			 player의 정보를 설정한다.
+	//			 Set the player's details.
 	//
 	//--------------------------------------------------		
 	switch (pPacket->getPCInfo2()->getPCType())
 	{
 		//--------------------------------------------------
-		// Slayer인 경우
+		// A slayer
 		//--------------------------------------------------
 		case PC_SLAYER :
 		{
-			SetPCSlayerInfo( (PCSlayerInfo2*)pPacket->getPCInfo2() );
+			PlayerState::SetPCSlayerInfo( (PCSlayerInfo2*)pPacket->getPCInfo2() );
 		}
 		break;
 
 		//--------------------------------------------------
-		// Vampire인 경우
+		// A vampire
 		//--------------------------------------------------
 		case PC_VAMPIRE :
 		{
-			SetPCVampireInfo( (PCVampireInfo2*)pPacket->getPCInfo2() );
+			PlayerState::SetPCVampireInfo( (PCVampireInfo2*)pPacket->getPCInfo2() );
 		}
 		break;
 
 		//--------------------------------------------------
-		// Ousters인 경우
+		// An ouster
 		//--------------------------------------------------
 		case PC_OUSTERS :
 		{
-			SetPCOustersInfo( (PCOustersInfo2*)pPacket->getPCInfo2() );
+			PlayerState::SetPCOustersInfo( (PCOustersInfo2*)pPacket->getPCInfo2() );
 		}
 		break;
 	}
 
 	//--------------------------------------------------
-	//	 Gear의 정보를 저장한다.
+	//	 Store the gear's details.
 	//--------------------------------------------------
-	SetGearInfo( pPacket->getGearInfo() );
+	PlayerState::SetGearInfo( pPacket->getGearInfo(), NULL );
 
-	// 계산을 다시해준다.
-	g_pPlayer->CalculateStatus();
-
-	//--------------------------------------------------
-	//	Inventory 초기화
-	//--------------------------------------------------
-	SetInventoryInfo( pPacket->getInventoryInfo() );
+	// Calculate again.
+	PlayerState::CalculateStatus();
 
 	//--------------------------------------------------
-	// 기타 Item 정보 == Mouse에 붙어 있는 item
+	//	Reset the inventory
 	//--------------------------------------------------
-	SetExtraInfo( pPacket->getExtraInfo() );
+	PlayerState::SetInventoryInfo( pPacket->getInventoryInfo() );
+
+	//--------------------------------------------------
+	// Other item details == the item held at the mouse
+	//--------------------------------------------------
+	PlayerState::SetExtraInfo( pPacket->getExtraInfo() );
 	
 
 	//--------------------------------------------------
@@ -189,9 +192,9 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 
 
 	//-----------------------------------------------------------
-	// Sound를 출력할 수 있게 한다.
+	// Let sound play again.
 	//-----------------------------------------------------------
-	g_SDLAudio.UnSetMute();
+	WorldEvents::MuteSound( false );
 
 
 
