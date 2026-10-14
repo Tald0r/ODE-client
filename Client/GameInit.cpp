@@ -109,6 +109,8 @@
 #include "MBloodyWallEffectGenerator.h"
 #include "MBloodyWaveEffectGenerator.h"
 #include "MRippleZoneEffectGenerator.h"
+#include "MRippleZonePixelEffectGenerator.h"
+#include "MAttachZoneEffectGenerator.h"
 #include "MAttachZoneAroundEffectGenerator.h"
 #include "MAttachZoneSelectableEffectGenerator.h"
 #include "MAttackZoneRectEffectGenerator.h"
@@ -2699,6 +2701,8 @@ void ReleaseAllObjects()
 	MBloodyWallEffectGenerator::SetHost(nullptr);
 	MBloodyWaveEffectGenerator::SetHost(nullptr);
 	MRippleZoneEffectGenerator::SetHost(nullptr);
+	MRippleZonePixelEffectGenerator::SetHost(nullptr);
+	MAttachZoneEffectGenerator::SetHost(nullptr);
 	MAttachZoneAroundEffectGenerator::SetHost(nullptr);
 	MAttachZoneSelectableEffectGenerator::SetHost(nullptr);
 	MAttackZoneRectEffectGenerator::SetHost(nullptr);
@@ -4714,6 +4718,8 @@ InitGameObject()
 	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);
 	MBloodyWaveEffectGenerator::SetHost(&s_BloodyWaveEffectHost);
 	MRippleZoneEffectGenerator::SetHost(&s_RippleZoneEffectHost);
+	MRippleZonePixelEffectGenerator::SetHost(&s_RippleZoneEffectHost);
+	MAttachZoneEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	MAttachZoneAroundEffectGenerator::SetHost(&s_AroundGroundEffectHost);
 	MAttachZoneSelectableEffectGenerator::SetHost(&s_GroundPatternEffectHost);
 	MAttackZoneRectEffectGenerator::SetHost(&s_GroundPatternEffectHost);
