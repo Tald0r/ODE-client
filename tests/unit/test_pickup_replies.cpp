@@ -52,6 +52,10 @@ namespace {
 std::vector<std::string> calls;
 bool zoneExists = true;
 Race race = RACE_SLAYER;
+// The player's creature an ouster: its race says ousters for any tribe
+// but a slayer's or a vampire's, an NPC's too.
+bool ousters = false;
+int me;
 MItem* bufferItem = nullptr;
 PlayerState::ITEM_CHECK_BUFFER bufferStatus = PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY;
 // What lies on the ground, the zone's; the mouse only borrows its item.
@@ -94,6 +98,7 @@ const PlayerState::Host player = []() {
 	host.GetItemCheckBufferStatus = []() { return bufferStatus; };
 	host.ClearItemCheckBuffer = []() { calls.push_back("cleared"); bufferItem = nullptr; };
 	host.GetRace = []() { return race; };
+	host.Creature = []() { return reinterpret_cast<MCreature*>(&me); };
 	host.CheckAffectStatus = [](MItem* pItem) { calls.push_back("affect|" + N(pItem->GetID())); };
 	return host;
 }();
@@ -114,6 +119,12 @@ const ZoneState::Host zone = []() {
 		calls.push_back("zone removes|" + N(id));
 		return ground.erase(id) == 1;
 	};
+	return host;
+}();
+
+const CreatureState::Host creature = []() {
+	CreatureState::Host host{};
+	host.IsOusters = [](MCreature* p) { return p == reinterpret_cast<MCreature*>(&me) && ousters; };
 	return host;
 }();
 
@@ -191,6 +202,7 @@ struct World : GameModelWorld
 	MOustersArmsBand* oldBand2 = g_pArmsBand2;
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	const ZoneState::Host* oldZone = ZoneState::SetHost(&zone);
+	const CreatureState::Host* oldCreature = CreatureState::SetHost(&creature);
 	const DialogPresentation::Host* oldDialog = DialogPresentation::SetHost(&dialog);
 	const WorldEvents::Host* oldEvents = WorldEvents::SetHost(&events);
 	const GameInfoPresentation::Host* oldInfo = GameInfoPresentation::SetHost(&info);
@@ -200,6 +212,7 @@ struct World : GameModelWorld
 		calls.clear();
 		zoneExists = true;
 		race = RACE_SLAYER;
+		ousters = false;
 		bufferItem = nullptr;
 		mouse = nullptr;
 		ground.clear();
@@ -234,6 +247,7 @@ struct World : GameModelWorld
 		GameInfoPresentation::SetHost(oldInfo);
 		WorldEvents::SetHost(oldEvents);
 		DialogPresentation::SetHost(oldDialog);
+		CreatureState::SetHost(oldCreature);
 		ZoneState::SetHost(oldZone);
 		PlayerState::SetHost(oldPlayer);
 		g_pArmsBand2 = oldBand2;
@@ -475,6 +489,7 @@ TEST(PickupReplies, AnItemGoesIntoTheOustersArmsBand)
 {
 	World world;
 	race = RACE_OUSTERS;
+	ousters = true;
 	g_pQuickSlot = nullptr;
 	g_pArmsBand1 = &world.band1;
 	g_pArmsBand2 = &world.band2;
@@ -493,16 +508,29 @@ TEST(PickupReplies, AnItemGoesIntoTheOustersArmsBand)
 	CHECK(world.band2.GetItem(0) == pItem);
 	// A slayer without a belt does not use an ouster's bands.
 	race = RACE_SLAYER;
+	ousters = false;
 	world.WaitingForTheQuickSlot(1);
 	MItem* pSlayers = Picking(new Ware(ITEM_CLASS_POTION, 2010, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
 	world.Receive(2010);
 	CHECK(mouse == pSlayers && world.band1.GetItem(2) == nullptr);
 	delete mouse;
 	mouse = nullptr;
+	// A player whose race reads ousters but whose creature is no ouster
+	// (an NPC's tribe) does not use the bands either.
+	race = RACE_OUSTERS;
+	ousters = false;
+	world.WaitingForTheQuickSlot(1);
+	MItem* pNot = Picking(new Ware(ITEM_CLASS_POTION, 2011, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	world.Receive(2011);
+	CHECK(mouse == pNot && world.band1.GetItem(1) != pNot);
+	delete mouse;
+	mouse = nullptr;
+	ousters = true;
 	// Without bands, or a slayer without a belt: on the mouse, untold.
 	for (Race who : {RACE_OUSTERS, RACE_SLAYER})
 	{
 		race = who;
+		ousters = who == RACE_OUSTERS;
 		g_pArmsBand1 = nullptr;
 		g_pArmsBand2 = nullptr;
 		world.WaitingForTheQuickSlot(1);

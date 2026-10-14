@@ -5236,6 +5236,13 @@ rounds settled* for the host rules). Test fixtures share
     1, 3 and 4; a slayer without a belt; the trade register's wait; a
     slayer's skills (disabled and enabled bomb and mine uses); and a
     vampire's (only skills it has).
+  - Fixed after the move: the quick-slot path asked
+    `PlayerState::GetRace()==RACE_OUSTERS` where the old code asked
+    `IsOusters()`. `GetRace` answers ousters for any tribe that is not a
+    slayer's or a vampire's, an NPC's too. It now asks
+    `CreatureState::IsOusters` of the player, as `GCAddOusters` does,
+    and the test has a player whose race reads ousters but whose
+    creature is not one.
 
 - [x] **4.192 A skill used on an inventory item:** move
   `GCSkillToInventoryOK1Handler` into `gamemodel`.
