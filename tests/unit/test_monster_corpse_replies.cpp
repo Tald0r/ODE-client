@@ -26,8 +26,10 @@
 // creature the zone knows dies where it is: it takes the type if it
 // changed, moves to the cell, takes the direction, loses its health,
 // stops and dies unless dead already, and takes the treasure count, guild
-// 1, its killer and its head. The first time the player is the killer
-// the kill's help shows (once a run). Without a zone nothing happens.
+// 1 and its killer, and loses its head when the packet says so. The first
+// time the player is the killer the kill's help shows (once a run). A
+// corpse the zone will not take is freed with its creature, which nothing
+// touches after. Without a zone nothing happens.
 namespace {
 
 std::vector<std::string> calls;
@@ -211,10 +213,11 @@ struct World : GameModelWorld
 		removesItem = true;
 		hasPlayer = true;
 		me.id = 7;
+		// The laid corpses read their creatures as they are freed.
+		laid.clear();
 		made.clear();
 		zoneCreatures.clear();
 		zoneItems.clear();
-		laid.clear();
 		known.id = 1003;
 		known.type = 50;
 		zoneCreatures[known.id] = &known;
@@ -315,6 +318,12 @@ TEST(MonsterCorpseReplies, ACorpseTheZoneRefusesIsLaidAfterTheItemInItsCell)
 	Receive(1005);
 	CHECK(calls == Then(Made("1005"), {"zone lays|1005|still", "item at|30,31", "removes item|2002", "zone lays|1005|still"}));
 	CHECK(zoneItems.count(1005) == 1);
+	// A Christmas tree laid that way still shows its name.
+	calls.clear();
+	zoneTakesItems = 0;
+	Receive(1006, {482});
+	CHECK(calls == Then(Made("1006", 482), {"zone lays|1006|still", "item at|30,31", "removes item|2002", "zone lays|1006|still",
+		"has|1006|" + N(EFFECTSTATUS_CLIENTONLY_XMAS_TREE) + "|65535", "says|1006|Grub|16777215"}));
 }
 
 TEST(MonsterCorpseReplies, AChristmasTreeShowsItsName)
@@ -355,8 +364,11 @@ TEST(MonsterCorpseReplies, ThePlayersFirstKillShowsTheHelpOnce)
 {
 	World world;
 	// Without a player the killer is nobody's.
+	// The kill's help is a function static: it shows once a run, so this is
+	// the only test whose player kills.
 	hasPlayer = false;
 	Receive(1005, {50, 7});
+	Receive(1003, {50, 7});
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("help|", 0) == 0; }));
 	hasPlayer = true;
 	calls.clear();

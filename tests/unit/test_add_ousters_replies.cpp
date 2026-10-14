@@ -23,10 +23,10 @@
 // rank, attack speed, guild and union, standing, and added to the zone
 // (or dropped if the zone refuses it); one the zone knows takes the type,
 // advancement, guild, union, cell, direction, standing, colours, aura,
-// health, alignment, rank and speed in place, its name kept. A creature that is no NPC by its type
-// shows whether its personal shop is open, and an open one shows the
-// shop's sign (or the default message) to an ouster player in the chat
-// colour. The ouster then takes the packet's effect statuses, is dressed
+// health, alignment, rank and speed in place, its name kept. A creature
+// that is no NPC by its type shows whether its personal shop is open, and
+// an open one shows the shop's sign (or the default message) to an ouster
+// player in the chat colour. The ouster then takes the packet's effect statuses, is dressed
 // as the packet describes (any creature it lands on: the host dresses
 // only one that wears gear), and takes its pet and its nickname. Without
 // a zone nothing happens.

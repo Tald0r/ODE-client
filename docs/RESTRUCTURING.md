@@ -4956,8 +4956,8 @@ rounds settled* for the host rules). Test fixtures share
   > walking, cell, direction, standing, skin, aura, health, alignment and
   > rank in place, its type, name and dress kept. A creature that is no
   > NPC by its type shows whether its personal shop is open, and an open
-  > one shows the shop's sign (or the
-  > default message, as the string table holds it) to a slayer player in
+  > one shows the shop's sign (or the default message, as the string
+  > table holds it) to a slayer player in
   > the chat colour. The slayer then takes the packet's effect statuses,
   > its pet and its nickname. Without a player no sign is shown (the old
   > code dereferenced `g_pPlayer`). An unused `AddonDef.h` include, an
@@ -5018,11 +5018,16 @@ rounds settled* for the host rules). Test fixtures share
   > (new `CreatureState::IsDead` and `SetItemCount`). The first time the
   > player is the killer the kill's help shows (once a run, a function
   > static as before); without a player it does not (the old code
-  > dereferenced `g_pPlayer`). R1 is 88 Windows / 86 Ninja.
+  > dereferenced `g_pPlayer`). Once moved, a corpse the zone refused
+  > twice, or whose cell's item would not go, is freed with its creature
+  > and the creature left alone: the old code then read the freed
+  > creature's type, and for a Christmas tree wrote to it. R1 is 88
+  > Windows / 86 Ninja.
   - Owner: membership, R1, the six entries and adapters, and
     `test_monster_corpse_replies.cpp` (the ignored types and their
     edges, a new corpse with and without its head, one laid after the
-    item in its cell, the Christmas tree and 650, an item already
+    item in its cell (a Christmas tree too), one freed when the zone
+    will not take it, the Christmas tree and 650, an item already
     there, a known creature alive and dead, the player's first kill, no
     player, no zone, no hosts, no corpse, no status array).
 

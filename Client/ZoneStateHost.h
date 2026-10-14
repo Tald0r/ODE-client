@@ -87,7 +87,8 @@ struct Host
 	// The ID of the item lying in the cell; OBJECTID_NULL for none.
 	TYPE_OBJECTID (*GetItemID)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	// A new corpse item holding the creature, which it owns from then on:
-	// freeing the corpse frees the creature. NULL without a host.
+	// freeing the corpse frees the creature. NULL without a host or an item
+	// factory; the caller then still owns the creature.
 	MItem* (*NewCorpse)(MCreature* pCreature) = nullptr;
 };
 
