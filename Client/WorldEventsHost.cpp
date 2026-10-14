@@ -99,6 +99,26 @@ void SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFra
 	if (s_Host && s_Host->SetEffectInfo) s_Host->SetEffectInfo(pCreature, pEffectInfo, delayedFrame);
 }
 
+void AddGDREffect(int effect, bool bAppearBossMonster)
+{
+	if (s_Host && s_Host->AddGDREffect) s_Host->AddGDREffect(effect, bAppearBossMonster);
+}
+
+void ComeFromPortal(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ComeFromPortal) s_Host->ComeFromPortal(pCreature);
+}
+
+void AddRaceSlayerMonster(GCAddMonster* pPacket)
+{
+	if (s_Host && s_Host->AddRaceSlayerMonster) s_Host->AddRaceSlayerMonster(pPacket);
+}
+
+void AddRaceOustersMonster(GCAddMonster* pPacket)
+{
+	if (s_Host && s_Host->AddRaceOustersMonster) s_Host->AddRaceOustersMonster(pPacket);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

@@ -6,6 +6,7 @@
 class BloodBibleSignInfo;
 class EffectInfo;
 class GCAddItemToZone;
+class GCAddMonster;
 class MActionResult;
 class MCreature;
 class MEvent;
@@ -64,6 +65,16 @@ struct Host
 	// delayedFrame frames (the pairs of status and duration EffectInfo
 	// holds); pEffectInfo is borrowed and may be NULL.
 	void (*SetEffectInfo)(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) = nullptr;
+	// Gilles de Rais's map effect (1 or 2), shown as the boss appears.
+	void (*AddGDREffect)(int effect, bool bAppearBossMonster) = nullptr;
+	// The creature comes up out of a portal (its body cut from the top).
+	void (*ComeFromPortal)(MCreature* pCreature) = nullptr;
+	// A monster in a slayer's or an ouster's shape. One the zone does not
+	// know yet is made from the packet as a creature dressed for that race
+	// and added to the zone; one it knows takes the packet's cell,
+	// direction and health in place. A sacrifice (793, 795) is wounded.
+	void (*AddRaceSlayerMonster)(GCAddMonster* pPacket) = nullptr;
+	void (*AddRaceOustersMonster)(GCAddMonster* pPacket) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -85,6 +96,10 @@ void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);
 void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value);
 void SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame);
+void AddGDREffect(int effect, bool bAppearBossMonster);
+void ComeFromPortal(MCreature* pCreature);
+void AddRaceSlayerMonster(GCAddMonster* pPacket);
+void AddRaceOustersMonster(GCAddMonster* pPacket);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.

@@ -1157,3 +1157,6 @@ Client/PacketHandler/GCAddWolfHandler.cpp
 # A monster out of a burrow, or out of a transformation.
 Client/PacketHandler/GCAddMonsterFromBurrowingHandler.cpp
 Client/PacketHandler/GCAddMonsterFromTransformationHandler.cpp
+
+# A monster appearing.
+Client/PacketHandler/GCAddMonsterHandler.cpp

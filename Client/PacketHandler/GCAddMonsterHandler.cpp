@@ -9,12 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddMonster.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
 #include "SkillDef.h"
-#include "PacketFunction.h"
-extern void Add_GDR_Effect(int nEffect, bool bAppearBossMonster);
-extern void Add_Race_SlayerMonster(GCAddMonster * pPacket);
-extern void Add_Race_OustersMonster(GCAddMonster * pPacket);
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
@@ -28,16 +30,16 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 
 	//AfxMessageBox( pPacket->toString().c_str() );
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
@@ -51,20 +53,20 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 
 		//AfxMessageBox( pPacket->toString().c_str() );
 		WORD wMonsterType = pPacket->getMonsterType();
-		// 각종족모습의 몬스터(뱀파이어 모습 몬스터는 따로 처리 안해도 되네..ㅎㅎ)
+		// A monster in another race's shape (one in a vampire's shape needs nothing of its own)
 
 		if(wMonsterType == 735 || wMonsterType == 793 || wMonsterType == 796 || wMonsterType == 797)
 		{
-			Add_Race_SlayerMonster(pPacket);
+			WorldEvents::AddRaceSlayerMonster(pPacket);
 			
 			return;
 		}
 		else if(wMonsterType == 737 || wMonsterType == 795 || wMonsterType == 800)
 		{
-			Add_Race_OustersMonster(pPacket);
+			WorldEvents::AddRaceOustersMonster(pPacket);
 			return;
 		}
-		// 2004, 9, 1, sobeit add start - 공성전시 트랩일 경우 공격측에서는 보이지 않는다.
+		// 2004, 9, 1, sobeit add start - in a siege, a trap is not shown to the attackers.
 		else if( wMonsterType == 738 ||
 			wMonsterType == 739 ||
 			wMonsterType == 740 ||
@@ -88,11 +90,11 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 							
 							if(status == EFFECTSTATUS_HIDE_TO_ATTACKER)
 							{
-								if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_1) || 
-									g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_2) || 
-									g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_3) || 
-									g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_4) || 
-									g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_5) )
+								if(PlayerState::Creature() != NULL && (PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_1) || 
+									PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_2) || 
+									PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_3) || 
+									PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_4) || 
+									PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_5)) )
 									return;
 							}
 						}
@@ -104,142 +106,150 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 
 			}
 		}
-		// 2004, 9, 1, sobeit add end - 공성전시 트랩일 경우 공격측에서는 보이지 않는다.
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		// 2004, 9, 1, sobeit add end - in a siege, a trap is not shown to the attackers.
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreature;
-
-			pCreature->SetZone( g_pZone );
+			pCreature = ZoneState::NewCreature();
+			if (pCreature == NULL)
+			{
+				return;
+			}
 
 			//pCreature->SetCreatureType( 0 );
-			pCreature->SetCreatureType( pPacket->getMonsterType() );
-			pCreature->SetGroundCreature();
-			pCreature->SetID(pPacket->getObjectID());
+			CreatureState::SetCreatureType( pCreature, pPacket->getMonsterType() );
+			CreatureState::SetGroundCreature( pCreature );
+			CreatureState::SetID( pCreature, pPacket->getObjectID() );
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
 			// [ TEST CODE ]
-			// 이름 설정
+			// set the name
 			//char str[20];
 			//sprintf(str, "ID=%d", pCreature->GetID());
 			//pCreature->SetName( (*g_pCreatureTable)[pPacket->getMonsterType()].Name.GetString() );
-			pCreature->SetName( pPacket->getMonsterName().c_str() );
+			CreatureState::SetName( pCreature, pPacket->getMonsterName().c_str() );
 	
-			// 임시로..
-			pCreature->SetGuildNumber( 1 );
+			// for now..
+			CreatureState::SetGuildNumber( pCreature, 1 );
 
-			// 이름
+			// the name
 			//pCreature->SetName( pPacket->getName().toString().c_str() );
 
-			// 색깔 정보			
+			// the colour information			
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 				pCreature = NULL;
 			}
 			else
 			{			
 				//------------------------------------------------------------
-				// Load되지 않았으면 load한다.
+				// Load it if it is not loaded.
 				//------------------------------------------------------------
 //				LoadCreatureType( pPacket->getMonsterType() );			
 			}
 		}
 		else
 		{
-			if (pCreature->GetCreatureType()!=pPacket->getMonsterType())
+			if (CreatureState::GetCreatureType( pCreature )!=pPacket->getMonsterType())
 			{
-				pCreature->SetCreatureType(pPacket->getMonsterType());
+				CreatureState::SetCreatureType( pCreature, pPacket->getMonsterType());
 			}
 
-			pCreature->SetGroundCreature();
+			CreatureState::SetGroundCreature( pCreature );
 			
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->MovePosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
-			// 임시로..
-			pCreature->SetGuildNumber( 1 );
+			// for now..
+			CreatureState::SetGuildNumber( pCreature, 1 );
 		}
 
 		if (pCreature!=NULL)
 		{
 			//--------------------------------------------------
-			// Effect 붙이기..
+			// Attach the effects..
 			//--------------------------------------------------
 			bool bShowComeFromPotal = true;
-			SetEffectInfo( pCreature, pPacket->getEffectInfo() );
-			// 2004, 6, 25, sobeit add start - 질드레 관련 맵 효과 
-			switch(pCreature->GetCreatureType())
+			WorldEvents::SetEffectInfo( pCreature, pPacket->getEffectInfo(), 0 );
+			// 2004, 6, 25, sobeit add start - Gilles de Rais's map effects
+			switch(CreatureState::GetCreatureType( pCreature ))
 			{
-				case 724: // 뱀파이어 소환체 1
-					Add_GDR_Effect(1, true);
+				case 724: // a vampire summoning, 1
+					WorldEvents::AddGDREffect(1, true);
 					break;
-				case 725: // // 뱀파이어 소환체 2
-					Add_GDR_Effect(2, true);
+				case 725: // a vampire summoning, 2
+					WorldEvents::AddGDREffect(2, true);
 					break;
-				case 739: // 트랩 - 랜드 마인
-					ExecuteActionInfoFromMainNode(SKILL_CLIENT_LAND_MINE_LIGHT,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	pCreature->GetID(),	
-								pCreature->GetX(), pCreature->GetY(), 0, 0xffff, NULL, false);			
+				case 739: // a trap - land mine
+					WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_LAND_MINE_LIGHT,CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,CreatureState::GetDirection( pCreature ),	CreatureState::GetID( pCreature ),	
+								CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 0xffff, NULL, false, 0, 0);			
 					break;
-				case 738: // 트랩 - 플레져 스테이션
-					ExecuteActionInfoFromMainNode(SKILL_CLIENT_PLEASUER_STATION_LIGHT,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	pCreature->GetID(),	
-								pCreature->GetX(), pCreature->GetY(), 0, 0xffff, NULL, false);			
+				case 738: // a trap - pleasure station
+					WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_PLEASUER_STATION_LIGHT,CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,CreatureState::GetDirection( pCreature ),	CreatureState::GetID( pCreature ),	
+								CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 0xffff, NULL, false, 0, 0);			
 					break;
 				case 753:
 					bShowComeFromPotal = false;
-					pCreature->SetAction(ACTION_VAMPIRE_DRAIN);  
+					CreatureState::SetAction( pCreature, ACTION_VAMPIRE_DRAIN);  
 					break;
-				case 765: // 그레이트 러피언 몸에 붙는 이펙트
-					ExecuteActionInfoFromMainNode(SKILL_CLIENT_GREAT_RUFFIAN_BODY,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	pCreature->GetID(),	
-								pCreature->GetX(), pCreature->GetY(), 0, 0xffff, NULL, false);			
+				case 765: // the effect on the Great Ruffian's body
+					WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GREAT_RUFFIAN_BODY,CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,CreatureState::GetDirection( pCreature ),	CreatureState::GetID( pCreature ),	
+								CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 0xffff, NULL, false, 0, 0);			
 					break;
 				case 768: // miga
 					bShowComeFromPotal = false;
-					pCreature->AddEffectStatus((EFFECTSTATUS)(EFFECTSTATUS_SUMMON_MIGA_FIRE), 0xFFFF);
+					CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_SUMMON_MIGA_FIRE, 0xFFFF );
 					break;
-				case 786: // 장교
-					pCreature->AddEffectStatus((EFFECTSTATUS)(EFFECTSTATUS_GRAND_MASTER_VAMPIRE), 0xFFFF);
+				case 786: // an officer
+					CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_GRAND_MASTER_VAMPIRE, 0xFFFF );
 					break;
 				case 788: // 
 					bShowComeFromPotal = false;
-					pCreature->AddEffectStatus((EFFECTSTATUS)(EFFECTSTATUS_DRAGON_TORNADO), 0xFFFF);
+					CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_DRAGON_TORNADO, 0xFFFF );
 					break;
 				case 789:
 					bShowComeFromPotal = false;
-					pCreature->AddEffectStatus((EFFECTSTATUS)(EFFECTSTATUS_DRAGON_TORNADO_CHILD), 0xFFFF);
+					CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_DRAGON_TORNADO_CHILD, 0xFFFF );
 					break;
 				case 793:
 				case 794:
-				case 795: // 제물들
+				case 795: // the sacrifices
 					bShowComeFromPotal = false;
-					pCreature->AddEffectStatus(EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS, 0xffff);
-					ExecuteActionInfoFromMainNode(RESULT_MAGIC_CAUSE_CRITICAL_WOUNDS,pCreature->GetX(), pCreature->GetY(), 0,2,	pCreature->GetID(),	
-							pCreature->GetX(), pCreature->GetY(), 0, 0xffff, NULL, false);			
+					CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS, 0xffff );
+					WorldEvents::ExecuteActionInfoFromMainNode(RESULT_MAGIC_CAUSE_CRITICAL_WOUNDS,CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,2,	CreatureState::GetID( pCreature ),	
+							CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 0xffff, NULL, false, 0, 0);			
 					break;
 			
 			}
-			// 2004, 6, 25, sobeit add end - 질드레 관련 
+			// 2004, 6, 25, sobeit add end - Gilles de Rais
 			//--------------------------------------------------
-			// 정상일 경우에는 0, 포탈을 통했을 경우에는 1
+			// 0 normally, 1 through a portal
 			//--------------------------------------------------
 			if (pPacket->getFromFlag()==1 && bShowComeFromPotal)
 			{
@@ -249,15 +259,15 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 //				}
 //				else
 //				{
-					ComeFromPortal( pCreature );
+					WorldEvents::ComeFromPortal( pCreature );
 					
-					// 바닥 이펙트 붙이기
-					int x			= pCreature->GetX();
-					int y			= pCreature->GetY();
+					// the effect on the ground
+					int x			= CreatureState::GetX( pCreature );
+					int y			= CreatureState::GetY( pCreature );
 					int delayFrame	= ConvertDurationToFrame( 18 );
 					
-					ExecuteActionInfoFromMainNode(
-						RESULT_MAGIC_BLOODY_TUNNEL,		// 값 자체가 RESULT_ACTIONINFO이다.
+					WorldEvents::ExecuteActionInfoFromMainNode(
+						RESULT_MAGIC_BLOODY_TUNNEL,		// the value itself is a RESULT_ACTIONINFO.
 						
 						x, y, 0,
 						DIRECTION_DOWN,
@@ -267,7 +277,8 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 						
 						delayFrame,	
 						
-						NULL
+						NULL,
+						true, 0, 0
 						);
 //				}
 			}
@@ -276,7 +287,7 @@ void GCAddMonsterHandler::execute ( GCAddMonster * pPacket , Player * pPlayer )
 		}
 	}
 	
-	// [도움말] 몹이 나타날때
+	// [Help] when a monster appears
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_CREATURE_APPEAR_MONSTER );
 //	__END_HELP_EVENT

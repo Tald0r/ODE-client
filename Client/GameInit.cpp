@@ -3454,6 +3454,9 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
 extern int g_C2G;	// UIMessageManager.cpp's: the operator's create-to-gear count
 extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
+extern void Add_GDR_Effect(int nEffect, bool bAppearBossMonster);
+extern void Add_Race_SlayerMonster(GCAddMonster * pPacket);
+extern void Add_Race_OustersMonster(GCAddMonster * pPacket);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
 extern void SendPositionInfoToParty();
@@ -3846,6 +3849,10 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		AddNewInventoryEffect(id, actionInfo, delayFrame, value);
 	},
 	.SetEffectInfo = [](MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) { SetEffectInfo(pCreature, pEffectInfo, delayedFrame); },
+	.AddGDREffect = Add_GDR_Effect,
+	.ComeFromPortal = ComeFromPortal,
+	.AddRaceSlayerMonster = Add_Race_SlayerMonster,
+	.AddRaceOustersMonster = Add_Race_OustersMonster,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
