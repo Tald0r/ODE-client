@@ -46,9 +46,10 @@ struct Host
 	void (*RefreshPointExchange)() = nullptr;
 	// The quest window, rebuilt from a full quest list: it is closed if it
 	// runs, opened (loading its quest XML), given each quest, and the XML
-	// released. SetQuestManagerInfo keeps a record it takes and answers
-	// false for one it refuses, which stays the caller's; without a host
-	// it refuses every record.
+	// released. SetQuestManagerInfo keeps a record when it answers true
+	// (except for a quest with no XML element, which leaks it, as
+	// ModifyQuestManagerInfo does); false (no game window, or no host or
+	// entry) leaves it with the caller.
 	bool (*IsRunningQuestManager)() = nullptr;
 	void (*CloseQuestManager)() = nullptr;
 	void (*RunQuestManager)() = nullptr;

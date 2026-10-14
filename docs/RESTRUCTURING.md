@@ -4558,8 +4558,10 @@ rounds settled* for the host rules). Test fixtures share
   > condition, index, status and arguments, untimed) handed to the window
   > in the list's order (new `SetQuestManagerInfo`); and the XML is
   > released (new `ReleaseQuestXML`). The window keeps a record it takes;
-  > one it refuses, or one with no window to go to, is freed. R1 is 111
-  > Windows / 109 Ninja.
+  > one it refuses, or one with no window to go to, is freed. The game's
+  > quest window takes every record but keeps only one whose quest has
+  > an XML element, so the rest leak, as `GCGQuestStatusModify`'s do; the
+  > move does not change that. R1 is 111 Windows / 109 Ninja.
   - Owner: membership, R1, the five entries and adapters, and
     `test_quest_list_replies.cpp` (two quests in order, a running window
     closed first, refused records with and without missions, no host or

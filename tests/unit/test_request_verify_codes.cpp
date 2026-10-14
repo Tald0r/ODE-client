@@ -9,10 +9,11 @@
 #include <type_traits>
 #include <vector>
 
-// The two answers a peer's server side writes. The client has no reply for
-// either, but its game connection reads any packet id in the normal
-// status before it looks for a reply, so the code byte the server sends
-// lands in the packet: every byte has to be a value of its enum.
+// The two answers a peer's server side writes, and the request a peer
+// sends. The client has no reply for the answers, but its game connection
+// reads any packet id in the normal status before it looks for a reply,
+// so the code byte the server sends lands in the packet: every byte has
+// to be a value of its enum.
 namespace {
 
 // The fixed types are what makes every byte a value; a plain enum's values
