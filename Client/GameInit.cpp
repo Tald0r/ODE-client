@@ -3547,6 +3547,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.SetShop = UI_SetShop,
 	.RunShop = UI_RunShop,
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
+	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
+	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3822,6 +3824,9 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
 	.MoveIntoPortal = MoveIntoPortal,
 	.SetDragonTornado = [](int effectStatus, std::uint32_t objectID, int x, int y) { SetDragonTorando(effectStatus, objectID, x, y); },
+	.AddNewInventoryEffect = [](TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) {
+		AddNewInventoryEffect(id, actionInfo, delayFrame, value);
+	},
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

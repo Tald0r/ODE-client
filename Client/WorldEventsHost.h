@@ -51,6 +51,9 @@ struct Host
 	void (*MoveIntoPortal)(MCreature* pCreature) = nullptr;
 	// A dragon tornado (or its child) of the object at the cell.
 	void (*SetDragonTornado)(int effectStatus, std::uint32_t objectID, int x, int y) = nullptr;
+	// The effect an inventory item shows (an enchant's sparkle, say), after
+	// delayFrame frames; value is the action's own (an option, say).
+	void (*AddNewInventoryEffect)(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -70,6 +73,7 @@ void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);
+void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.

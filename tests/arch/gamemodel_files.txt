@@ -1143,3 +1143,6 @@ Client/PacketHandler/GCOtherStoreInfoHandler.cpp
 
 # An item created in the inventory.
 Client/PacketHandler/GCCreateItemHandler.cpp
+
+# The server's verdict on an item put on an item (enchant, mix, remove an option).
+Client/PacketHandler/GCAddItemToItemVerifyHandler.cpp

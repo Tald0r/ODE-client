@@ -89,6 +89,11 @@ void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y)
 	if (s_Host && s_Host->SetDragonTornado) s_Host->SetDragonTornado(effectStatus, objectID, x, y);
 }
 
+void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value)
+{
+	if (s_Host && s_Host->AddNewInventoryEffect) s_Host->AddNewInventoryEffect(id, actionInfo, delayFrame, value);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);
