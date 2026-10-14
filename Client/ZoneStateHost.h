@@ -5,6 +5,7 @@
 #include "MEffectStatusDef.h"
 
 class MActionResult;
+class MAttachEffect;
 class MCreature;
 class MItem;
 class MPetItem;
@@ -357,6 +358,16 @@ struct Host
 	// Attaches a lasting effect of the sprite type to the creature (one of
 	// 0xFFFF frames, linked to no action), facing as the creature does.
 	void (*AttachLastingEffect)(MCreature* pCreature, int effectSpriteType) = nullptr;
+	// Creates an effect of the sprite type attached to the creature, for
+	// the frames given and linked after the link frames, on the ground or
+	// not, of the effect type (an MEffect::EFFECT_TYPE); none when the
+	// creature cannot take it.
+	MAttachEffect* (*CreateAttachEffect)(MCreature* pCreature, int effectSpriteType, std::uint32_t delayFrame, std::uint32_t linkDelayFrame, bool bGroundEffect, int effectType) = nullptr;
+	// Whether any effect is attached to the creature, the first attached
+	// (only when one is), and clearing them all.
+	bool (*IsExistAttachEffect)(MCreature* pCreature) = nullptr;
+	MAttachEffect* (*FirstAttachEffect)(MCreature* pCreature) = nullptr;
+	void (*ClearAttachEffect)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -484,5 +495,9 @@ void SetItemCount(MCreature* pCreature, int count);
 void SetNPCID(MCreature* pCreature, int npcID);
 void SetAddonToNPC(MCreature* pCreature, int npcID);
 void AttachLastingEffect(MCreature* pCreature, int effectSpriteType);
+MAttachEffect* CreateAttachEffect(MCreature* pCreature, int effectSpriteType, std::uint32_t delayFrame, std::uint32_t linkDelayFrame, bool bGroundEffect, int effectType);
+bool IsExistAttachEffect(MCreature* pCreature);
+MAttachEffect* FirstAttachEffect(MCreature* pCreature);
+void ClearAttachEffect(MCreature* pCreature);
 
 }

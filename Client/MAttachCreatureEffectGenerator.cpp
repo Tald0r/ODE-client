@@ -4,15 +4,15 @@
 #include "Client_PCH.h"
 #include "MAttachCreatureEffectGenerator.h"
 #include "MAttachEffect.h"
-#include "MCreature.h"
-#include "MZone.h"
+#include "ZoneStateHost.h"
 #include "MEffectSpriteTypeTable.h"
 #include "MItem.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #include "EffectSpriteTypeDef.h"
-#include "MPlayer.h"
 #include "SkillDef.h"
-#include "MTopView.h"
+#include "WorldTileGeometry.h"
+#include <algorithm>
+#include <cstdlib>
 
 //----------------------------------------------------------------------
 // Global
@@ -28,7 +28,7 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int direction = egInfo.direction;
 
 	//-----------------------------------------------------------
-	// Sword Wave를 위한 임시(-_-;) 코드..
+	// temporary (-_-;) code for Sword Wave..
 	//-----------------------------------------------------------
 	/*
 	if (frameID==EFFECTSPRITETYPE_SWORD_WAVE_1)
@@ -44,16 +44,16 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	}
 
 
-	MCreature* pCreature = g_pZone->GetCreature( egInfo.creatureID );
+	MCreature* pCreature = ZoneState::GetCreature( egInfo.creatureID );
 
-	// Creature가 사라졌을 경우..
+	// the creature is gone..
 	if (pCreature == NULL)
 	{	
-		pCreature = g_pZone->GetFakeCreature( egInfo.creatureID );
+		pCreature = ZoneState::GetFakeCreature( egInfo.creatureID );
 
 		if (pCreature==NULL)
 		{
-			MItem* pItem = g_pZone->GetItem( egInfo.creatureID );
+			MItem* pItem = ZoneState::GetItem( egInfo.creatureID );
 
 			if (pItem==NULL)
 			{
@@ -61,10 +61,8 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 				return false;
 			}
 
-			if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
-			{
-				pCreature = ((MCorpse*)pItem)->GetCreature();
-			}
+			// The creature lying in a corpse; none for another item.
+			pCreature = ZoneState::GetCorpseCreature( egInfo.creatureID );
 		}
 	}
 	TYPE_EFFECTSPRITETYPE EffectType = egInfo.effectSpriteType;
@@ -72,35 +70,35 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	switch( EffectType )
 	{
 	case EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3 :
-		if( pCreature != NULL && ( pCreature->GetCreatureType() == 104 ||
-			(pCreature->GetCreatureType() >= 111 && pCreature->GetCreatureType() <= 119) ||
-			pCreature->GetCreatureType() == 358 ||
-			pCreature->GetCreatureType() == 359 ||
-			pCreature->GetCreatureType() == 467 ||
-			pCreature->GetCreatureType() == 582 ) )
+		if( pCreature != NULL && ( CreatureState::GetCreatureType( pCreature ) == 104 ||
+			(CreatureState::GetCreatureType( pCreature ) >= 111 && CreatureState::GetCreatureType( pCreature ) <= 119) ||
+			CreatureState::GetCreatureType( pCreature ) == 358 ||
+			CreatureState::GetCreatureType( pCreature ) == 359 ||
+			CreatureState::GetCreatureType( pCreature ) == 467 ||
+			CreatureState::GetCreatureType( pCreature ) == 582 ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_FRONT_GOLEMER;
-		else if( pCreature != NULL && (pCreature->GetCreatureType() == 106 ||
-			(pCreature->GetCreatureType() >= 129 && pCreature->GetCreatureType() <= 137) ) )
+		else if( pCreature != NULL && (CreatureState::GetCreatureType( pCreature ) == 106 ||
+			(CreatureState::GetCreatureType( pCreature ) >= 129 && CreatureState::GetCreatureType( pCreature ) <= 137) ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_FRONT_ALCAN;
 		
 		break;
 	case EFFECTSPRITETYPE_JABBING_VEIN_REAR_3 :
-		if( pCreature != NULL && ( pCreature->GetCreatureType() == 104 ||
-			(pCreature->GetCreatureType() >= 111 && pCreature->GetCreatureType() <= 119) ||
-			pCreature->GetCreatureType() == 358 ||
-			pCreature->GetCreatureType() == 359 ||
-			pCreature->GetCreatureType() == 467 ||
-			pCreature->GetCreatureType() == 582 ) )
+		if( pCreature != NULL && ( CreatureState::GetCreatureType( pCreature ) == 104 ||
+			(CreatureState::GetCreatureType( pCreature ) >= 111 && CreatureState::GetCreatureType( pCreature ) <= 119) ||
+			CreatureState::GetCreatureType( pCreature ) == 358 ||
+			CreatureState::GetCreatureType( pCreature ) == 359 ||
+			CreatureState::GetCreatureType( pCreature ) == 467 ||
+			CreatureState::GetCreatureType( pCreature ) == 582 ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_REAR_GOLEMER;
-		else if( pCreature != NULL && (pCreature->GetCreatureType() == 106 ||
-			(pCreature->GetCreatureType() >= 129 && pCreature->GetCreatureType() <= 137) ) )
+		else if( pCreature != NULL && (CreatureState::GetCreatureType( pCreature ) == 106 ||
+			(CreatureState::GetCreatureType( pCreature ) >= 129 && CreatureState::GetCreatureType( pCreature ) <= 137) ) )
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_REAR_ALCAN;
 		break;
 	case EFFECTSPRITETYPE_TRIDENT_BOMB_1 :
 		EffectType = EFFECTSPRITETYPE_TRIDENT_BOMB_1 + (rand()%10);
 		break;
 	case EFFECTSPRITETYPE_PIERCING_FRONT :
-		// ToT 방향은..ㅡ.ㅜ 반대~
+		// ToT the direction is.. -.- reversed~
 		direction = (direction+4)%8;
 		break;
 	case EFFECTSPRITETYPE_QUICK_FIRE_BOMB_1 :
@@ -112,25 +110,25 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		
 	case EFFECTSPRITETYPE_DISTANCE_BLITZ_12:
 		{
-			int sx = g_pTopView->PixelToMapX(egInfo.x0);
-			int sy = g_pTopView->PixelToMapY(egInfo.y0);
-			int dx = g_pTopView->PixelToMapX(egInfo.x1);
-			int dy = g_pTopView->PixelToMapY(egInfo.y1);
-			EffectType += min(6, max(2, max(abs(dx-sx), abs(dy-sy))))-2;
+			int sx = WorldTileGeometry::PixelToTileX(egInfo.x0);
+			int sy = WorldTileGeometry::PixelToTileY(egInfo.y0);
+			int dx = WorldTileGeometry::PixelToTileX(egInfo.x1);
+			int dy = WorldTileGeometry::PixelToTileY(egInfo.y1);
+			EffectType += (std::min)(6, (std::max)(2, (std::max)(std::abs(dx-sx), std::abs(dy-sy))))-2;
 		}
 		break;
 	}
 
-	if(pCreature!= NULL && pCreature->GetCreatureType() == 185 &&
+	if(pCreature!= NULL && CreatureState::GetCreatureType( pCreature ) == 185 &&
 		EffectType >=EFFECTSPRITETYPE_JABBING_VEIN_FRONT_1 && EffectType <= EFFECTSPRITETYPE_JABBING_VEIN_FRONT_BAT)
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_FRONT_BAT;
 
-	if(pCreature!= NULL && pCreature->GetCreatureType() == 185 &&
+	if(pCreature!= NULL && CreatureState::GetCreatureType( pCreature ) == 185 &&
 		EffectType >=EFFECTSPRITETYPE_JABBING_VEIN_REAR_1 && EffectType <= EFFECTSPRITETYPE_JABBING_VEIN_REAR_BAT)
 			EffectType = EFFECTSPRITETYPE_JABBING_VEIN_REAR_BAT;
 	
-	// Creature에게 붙이는 Effect를 생성해서 pointer를 넘겨받는다.
-	MAttachEffect* pEffect = pCreature->CreateAttachEffect( EffectType, egInfo.count, egInfo.linkCount );
+	// create the effect attached to the creature and take its pointer.
+	MAttachEffect* pEffect = CreatureState::CreateAttachEffect( pCreature, EffectType, egInfo.count, egInfo.linkCount, false, MEffect::EFFECT_ATTACH );
 
 	if (pEffect == NULL)
 	{
@@ -141,13 +139,13 @@ MAttachCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 	pEffect->SetZ( plusZ );
 
-	// 붙어야 하는 캐릭터
+	// the character it attaches to
 	//pEffect->SetAttachCreatureID( creatureID );		
 
-	// 위력
+	// power
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
+	// light brightness
 	//pEffect->SetLight( light );
 	pEffect->SetDirection( direction );
 	

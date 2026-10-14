@@ -4034,6 +4034,13 @@ static const CreatureState::Host s_CreatureStateHost = {
 			pEffect->SetAttachCreatureID( pCreature->GetID() );
 		}
 	},
+	.CreateAttachEffect = [](MCreature* pCreature, int effectSpriteType, std::uint32_t delayFrame, std::uint32_t linkDelayFrame, bool bGroundEffect, int effectType) {
+		return pCreature->CreateAttachEffect( static_cast<TYPE_EFFECTSPRITETYPE>(effectSpriteType), delayFrame, linkDelayFrame,
+			bGroundEffect ? TRUE : FALSE, static_cast<MEffect::EFFECT_TYPE>(effectType) );
+	},
+	.IsExistAttachEffect = [](MCreature* pCreature) { return pCreature->IsExistAttachEffect(); },
+	.FirstAttachEffect = [](MCreature* pCreature) { return *(pCreature->GetAttachEffectIterator()); },
+	.ClearAttachEffect = [](MCreature* pCreature) { pCreature->ClearAttachEffect(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

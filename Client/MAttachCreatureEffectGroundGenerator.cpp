@@ -4,8 +4,7 @@
 #include "Client_PCH.h"
 #include "MAttachCreatureEffectGroundGenerator.h"
 #include "MAttachEffect.h"
-#include "MCreature.h"
-#include "MZone.h"
+#include "ZoneStateHost.h"
 #include "EffectSpriteTypeDef.h"
 #include "MEffectSpriteTypeTable.h"
 
@@ -25,7 +24,7 @@ MAttachCreatureEffectGroundGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 	int direction = egInfo.direction;
 
 	//-----------------------------------------------------------
-	// Sword Wave를 위한 임시(-_-;) 코드..
+	// temporary (-_-;) code for Sword Wave..
 	//-----------------------------------------------------------
 	if (est==EFFECTSPRITETYPE_SWORD_WAVE_1)
 	{
@@ -33,12 +32,12 @@ MAttachCreatureEffectGroundGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 	}
 	
 
-	MCreature* pCreature = g_pZone->GetCreature( egInfo.creatureID );
+	MCreature* pCreature = ZoneState::GetCreature( egInfo.creatureID );
 
-	// Creature가 사라졌을 경우..
+	// the creature is gone..
 	if (pCreature == NULL)
 	{	
-		pCreature = g_pZone->GetFakeCreature( egInfo.creatureID );
+		pCreature = ZoneState::GetFakeCreature( egInfo.creatureID );
 
 		if (pCreature==NULL)
 		{
@@ -46,12 +45,13 @@ MAttachCreatureEffectGroundGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 		}
 	}
 
-	// Creature에게 붙이는 Effect를 생성해서 pointer를 넘겨받는다.
-	MAttachEffect* pEffect = pCreature->CreateAttachEffect( 
+	// create the effect attached to the creature and take its pointer.
+	MAttachEffect* pEffect = CreatureState::CreateAttachEffect( pCreature,
 											egInfo.effectSpriteType, 
 											egInfo.count, 
 											egInfo.linkCount, 
-											TRUE );	// 바닥에 붙이는 것이다.
+											true,	// attached to the ground.
+											MEffect::EFFECT_ATTACH );
 
 	if (pEffect == NULL)
 	{
@@ -63,13 +63,13 @@ MAttachCreatureEffectGroundGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 
 	pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 
-	// 붙어야 하는 캐릭터
+	// the character it attaches to
 	//pEffect->SetAttachCreatureID( creatureID );		
 
-	// 위력
+	// power
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
+	// light brightness
 	//pEffect->SetLight( light );
 	
 	return true;
