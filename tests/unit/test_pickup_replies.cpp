@@ -522,7 +522,7 @@ TEST(PickupReplies, AnItemGoesIntoTheOustersArmsBand)
 	world.WaitingForTheQuickSlot(1);
 	MItem* pNot = Picking(new Ware(ITEM_CLASS_POTION, 2011, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
 	world.Receive(2011);
-	CHECK(mouse == pNot && world.band1.GetItem(1) != pNot);
+	CHECK(mouse == pNot && world.band1.GetItem(1) != nullptr && world.band1.GetItem(1)->GetNumber() == 1);
 	delete mouse;
 	mouse = nullptr;
 	ousters = true;

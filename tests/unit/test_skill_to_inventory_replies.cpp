@@ -17,6 +17,7 @@
 #include "ZoneFlags.h"
 #include "ZoneStateHost.h"
 #include "Gpackets/GCSkillToInventoryOK1.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -114,7 +115,7 @@ const WorldEvents::Host events = []() {
 	WorldEvents::Host host{};
 	host.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO ai, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int sZ, int direction,
 		TYPE_OBJECTID targetID, TYPE_SECTORPOSITION tX, TYPE_SECTORPOSITION tY, int tZ, std::uint32_t delayFrame, MActionResult* pResult,
-		bool bStartFromMainNode, int, int) {
+		bool bStartFromMainNode, int mainX, int mainY) {
 		std::string nodes;
 		for (auto it = pResult->GetIterator(); pResult->GetSize() > 0 && nodes.empty(); )
 		{
@@ -122,7 +123,8 @@ const WorldEvents::Host events = []() {
 			nodes = (*it)->IsNodeChangeCreatureType() ? "|becomes|" + N(pNode->m_TargetID) + "|" + N(pNode->m_CreatureType) : "|other";
 		}
 		calls.push_back("action|" + N(ai) + "|" + N(sX) + "," + N(sY) + "," + N(sZ) + "|" + N(direction) + "|" + N(targetID) + "|" + N(tX) + ","
-			+ N(tY) + "," + N(tZ) + "|" + N(delayFrame) + (bStartFromMainNode ? "|main" : "|start") + nodes + "|" + N(pResult->GetSize()));
+			+ N(tY) + "," + N(tZ) + "|" + N(delayFrame) + (bStartFromMainNode ? "|main" : "|start") + "|" + N(mainX) + "," + N(mainY) + nodes + "|"
+			+ N(pResult->GetSize()));
 		delete pResult;
 	};
 	host.AddNewInventoryEffect = [](TYPE_OBJECTID id, TYPE_ACTIONINFO ai, std::uint32_t delayFrame, std::uint32_t value) {
@@ -164,6 +166,7 @@ struct World : GameModelWorld
 		calls.clear();
 		hasPlayer = true;
 		bufferItem = nullptr;
+		bufferStatus = PlayerState::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY;
 		playerStatus = MStatus();
 		playerStatus.SetStatus(MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL);
 		g_pClientConfig->FPS = 10;
@@ -308,13 +311,49 @@ TEST(SkillToInventoryReplies, AMadeItemForItsOwnCellReplacesTheWholeStack)
 	CHECK_EQ(1, world.inventory.GetItemNum());
 }
 
+TEST(SkillToInventoryReplies, OnlyTheSourcesOwnCellReplacesTheStack)
+{
+	World world;
+	// The same column, another row: only one is taken.
+	MItem* pSource = world.Using(ITEM_CLASS_BOMB_MATERIAL, 2001, 5, 1, 0);
+	Receive(SKILL_MAKE_BOMB);
+	CHECK_EQ(4, static_cast<int>(pSource->GetNumber()));
+	CHECK(world.inventory.GetItem(1, 0) == pSource);
+	// The same row, another column.
+	bufferItem = pSource;
+	bufferStatus = PlayerState::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY;
+	Made made;
+	made.x = 2;
+	made.y = 0;
+	made.id = 3002;
+	Receive(SKILL_MAKE_BOMB, made);
+	CHECK_EQ(3, static_cast<int>(pSource->GetNumber()));
+}
+
+TEST(SkillToInventoryReplies, AMadeItemTheInventoryRefusesIsDropped)
+{
+	World world;
+	MItem* pSource = world.Using(ITEM_CLASS_BOMB_MATERIAL, 2001, 5);
+	Made made;
+	made.x = 9;
+	made.y = 9;
+	Receive(SKILL_MAKE_BOMB, made);
+	// The source's item shows the effect; nothing is left of the made one.
+	CHECK(calls == (std::vector<std::string>{"verified", "cleared", "made|" + N(ITEM_CLASS_BOMB), Shows(2001, SKILL_MAKE_BOMB, 32),
+		Tail(SKILL_MAKE_BOMB)}));
+	CHECK_EQ(4, static_cast<int>(pSource->GetNumber()));
+	CHECK_EQ(1, world.inventory.GetItemNum());
+}
+
 TEST(SkillToInventoryReplies, AnotherItemAtTheCellTakesNothing)
 {
 	World world;
 	MItem* pSource = world.Using(ITEM_CLASS_BOMB_MATERIAL, 2001, 5);
-	for (const Made& made : {Made{3002}, Made{3001, 3}})
+	// Another ID, another type, another class.
+	for (const auto& [made, thereClass] : {std::pair<Made, ITEM_CLASS>{Made{3002}, ITEM_CLASS_BOMB}, {Made{3001, 3}, ITEM_CLASS_BOMB},
+		{Made{}, ITEM_CLASS_MINE}})
 	{
-		Ware* pThere = new Ware(ITEM_CLASS_BOMB, 3001, 2);
+		Ware* pThere = new Ware(thereClass, 3001, 2);
 		CHECK(world.inventory.AddItem(pThere, 1, 1));
 		calls.clear();
 		bufferItem = pSource;
@@ -325,7 +364,7 @@ TEST(SkillToInventoryReplies, AnotherItemAtTheCellTakesNothing)
 		CHECK_EQ(1, static_cast<int>(pThere->GetNumber()));
 		delete world.inventory.RemoveItem(pThere->GetID());
 	}
-	CHECK_EQ(3, static_cast<int>(pSource->GetNumber()));
+	CHECK_EQ(2, static_cast<int>(pSource->GetNumber()));
 }
 
 TEST(SkillToInventoryReplies, AMineTunnelOrTransformationUsesTheItem)
@@ -379,7 +418,7 @@ TEST(SkillToInventoryReplies, ATransformationChangesThePlayersType)
 		world.Using(ITEM_CLASS_VAMPIRE_ETC, 2001, 1);
 		Receive(skill);
 		CHECK(calls == (std::vector<std::string>{"verified", "cleared", "buffer|2001|" + N(PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY), "used",
-			"action|" + N(result.first) + "|30,31,0|2|" + N(OBJECTID_NULL) + "|30,31,0|0|start|becomes|7|" + N(result.second) + "|1",
+			"action|" + N(result.first) + "|30,31,0|2|" + N(OBJECTID_NULL) + "|30,31,0|0|start|0,0|becomes|7|" + N(result.second) + "|1",
 			"player delay|1000", "skills refreshed", Shows(2001, skill, 32), Tail(skill)}));
 		CHECK_EQ(result.second, g_MorphCreatureType);
 		delete world.inventory.RemoveItem(TYPE_OBJECTID(2001));
@@ -427,6 +466,19 @@ TEST(SkillToInventoryReplies, ThePacketsOrTheSkillsEffectStatusIsPutOn)
 	PlayerState::SetHost(&noStatus);
 	Receive(SKILL_MAKE_BOMB, made);
 	CHECK(calls == (std::vector<std::string>{"verified", Tail(SKILL_MAKE_BOMB), "effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|20"}));
+}
+
+TEST(SkillToInventoryReplies, TheDurationIsConvertedAndThePacketsStatusWins)
+{
+	World world;
+	// At 16 frames a second the duration of 20 is 32 frames.
+	g_pClientConfig->FPS = 16;
+	testfw::MutableRow(world.actions, SKILL_MAKE_BOMB).SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
+	Made made;
+	made.effectStat = EFFECTSTATUS_INSTALL_TURRET;
+	Receive(SKILL_MAKE_BOMB, made);
+	CHECK(calls == (std::vector<std::string>{"verified", "delay|" + N(SKILL_MAKE_BOMB + kMin) + "|32",
+		"effect|" + N(EFFECTSTATUS_INSTALL_TURRET) + "|32"}));
 }
 
 TEST(SkillToInventoryReplies, WithoutAPlayerNothingHappens)
