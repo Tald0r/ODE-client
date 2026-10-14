@@ -63,20 +63,31 @@ struct Host
 	void (*AddNewInventoryEffect)(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) = nullptr;
 	// The effect statuses a packet lists for a creature (the pairs of
 	// status and duration EffectInfo holds): each is put on it for its
-	// duration less delayedFrame, the frames already spent loading, and one
-	// with no time left is skipped. A coma also makes the creature a
-	// corpse; a trap's, Back Stab 3's, the ice of soul stone's and the
-	// ground elemental centre's start their action. The host empties the
-	// list, so read it first; pEffectInfo may be NULL.
+	// duration in frames (a blood drain's ten times longer) less
+	// delayedFrame, the frames already spent loading, and one with no time
+	// left is skipped. A coma also makes the creature a corpse; a trap's,
+	// Back Stab 3's, the ice of soul stone's and the ground elemental
+	// centre's start their action, and take that action's own duration (a
+	// trap's converted to frames twice). The host empties the list, though
+	// getListNum() still counts it, so read it first; pEffectInfo may be
+	// NULL.
 	void (*SetEffectInfo)(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) = nullptr;
-	// Gilles de Rais's map effect (1 or 2), shown as the boss appears.
+	// Gilles de Rais's map effect, in his hard zone (1413) only: the smoke
+	// over the upper (1) or lower (2) half, cleared as the boss appears
+	// (bAppearBossMonster) or left standing (on loading the map, or when
+	// the boss dies). It asks the player's cell too.
 	void (*AddGDREffect)(int effect, bool bAppearBossMonster) = nullptr;
-	// The creature comes up out of a portal (its body cut from the top).
+	// The creature comes up out of a portal: its body is drawn rising from
+	// the ground, under an effect at its cell (the wolverine summon for
+	// types 693 to 697, the Great Ruffian coming alive for 765, the bloody
+	// tunnel otherwise).
 	void (*ComeFromPortal)(MCreature* pCreature) = nullptr;
-	// A monster in a slayer's or an ouster's shape. One the zone does not
-	// know yet is made from the packet as a creature dressed for that race
-	// and added to the zone; one it knows takes the packet's cell,
-	// direction and health in place. A sacrifice (793, 795) is wounded.
+	// A monster in a slayer's or an ouster's shape, made from the packet as
+	// a creature of that race and added to the zone, or, when the zone
+	// knows it, set at the packet's cell and health in place. One made, and
+	// a known ouster, faces down (2) whatever the packet says. 797 becomes
+	// a female slayer; ouster 800 is dressed in a coat and chakram. A
+	// sacrifice (793, 795) is wounded.
 	void (*AddRaceSlayerMonster)(GCAddMonster* pPacket) = nullptr;
 	void (*AddRaceOustersMonster)(GCAddMonster* pPacket) = nullptr;
 	// Skills shown with copies or summoned creatures, the user striking the

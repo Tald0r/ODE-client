@@ -253,10 +253,10 @@ std::vector<std::string> Made(const std::string& id, int type)
 std::vector<std::string> After(int type, int fromFlag = 0)
 {
 	Receive(1005, type, fromFlag);
-	const std::vector<std::string> made = Made("1005", type);
-	if (calls.size() < made.size() || !std::equal(made.begin(), made.end(), calls.begin()))
+	const std::vector<std::string> expected = Made("1005", type);
+	if (calls.size() < expected.size() || !std::equal(expected.begin(), expected.end(), calls.begin()))
 		return {"made otherwise"};
-	std::vector<std::string> rest(calls.begin() + static_cast<long>(made.size()), calls.end());
+	std::vector<std::string> rest(calls.begin() + static_cast<long>(expected.size()), calls.end());
 	calls.clear();
 	zoneCreatures.erase(1005);
 	return rest;
@@ -314,7 +314,7 @@ TEST(AddMonsterReplies, ItsTypeAddsItsOwnEffects)
 	CHECK(After(786) == std::vector<std::string>({"has|1005|" + N(EFFECTSTATUS_GRAND_MASTER_VAMPIRE) + "|65535"}));
 	CHECK(After(788) == std::vector<std::string>({"has|1005|" + N(EFFECTSTATUS_DRAGON_TORNADO) + "|65535"}));
 	CHECK(After(789) == std::vector<std::string>({"has|1005|" + N(EFFECTSTATUS_DRAGON_TORNADO_CHILD) + "|65535"}));
-	// A sacrifice is wounded, its effect facing down-left (2).
+	// A sacrifice is wounded, its effect facing down (2).
 	CHECK(After(794) == std::vector<std::string>({"has|1005|" + N(EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS) + "|65535",
 		"effect|" + N(RESULT_MAGIC_CAUSE_CRITICAL_WOUNDS) + "|30,31|dir 2|1005@30,31|65535|side"}));
 	CHECK(After(740).empty() && After(50).empty());
@@ -379,9 +379,19 @@ TEST(AddMonsterReplies, WithoutAZoneOrTheHostsNothingHappens)
 	ZoneState::SetHost(&cannotMake);
 	Receive(1005, 50, 1);
 	CHECK(calls.empty());
+	// A creature host without the status array: no health is set, new or
+	// known.
+	ZoneState::SetHost(&zone);
+	CreatureState::Host noStatus = creature;
+	noStatus.Status = nullptr;
+	CreatureState::SetHost(&noStatus);
+	Receive(1003);
+	Receive(1006);
+	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
+	CHECK(std::count(calls.begin(), calls.end(), "guild|1003|1") == 1 && std::count(calls.begin(), calls.end(), "zone takes|1006") == 1);
+	calls.clear();
 	// Without the creature's host a made creature is still added, its
 	// health unset, and comes out of the portal at the cell it reports.
-	ZoneState::SetHost(&zone);
 	CreatureState::SetHost(nullptr);
 	Receive(1005, 50, 1);
 	CHECK(calls == std::vector<std::string>({"new creature", "zone takes|new", "effects|new|1|0", "from portal|new",
