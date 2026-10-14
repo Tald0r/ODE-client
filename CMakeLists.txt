@@ -900,12 +900,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		Client/WinLib/*.cpp
 	)
 
-	# Add additional source files
-	list(APPEND CLIENT_MAIN_SOURCES
-		# Globals.cpp - the globals and print helpers the game needs
-		Client/Globals.cpp
-	)
-
 	# The eight files this list used to remove one by one - the port-era
 	# exclusion graveyard (GlobalVariables, MissingGlobals, GameHelpers,
 	# GameFunctions, GamePacketFunctions, ActionFunctions and a stale
