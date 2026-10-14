@@ -4309,10 +4309,10 @@ rounds settled* for the host rules). Test fixtures share
   > (`RankBonusHandlers::CheckRegen`) and waits as long as its level says
   > (`GameInfoPresentation::GetCharInfoLevel`). An ouster's untransform
   > ends there (the answer to getting off a sylph), and so does a
-  > turret's (new `CreatureState::HasEffectStatus`). Without a player it
+  > turret's (`PlayerState::HasEffectStatus`). Without a player it
   > does nothing, where it dereferenced the player. R1 is 127 Windows /
   > 125 Ninja.
-  - Owner: membership, R1, the two entries and adapters, and
+  - Owner: membership, R1, the entry and adapter, and
     `test_own_skill_replies.cpp` (a success waited on and not, the
     packet's effect status, a graded skill, a skill past the table, an
     ouster's and a turret's untransform, Eternity by race, Concealment's

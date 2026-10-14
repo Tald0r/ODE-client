@@ -53,7 +53,7 @@ const CreatureState::Host creature = []() {
 const DialogPresentation::Host dialog = []() {
 	DialogPresentation::Host host{};
 	// The rates are set by the time the inventory opens.
-	host.OpenInventoryToSell = []() { calls.push_back("inventory to sell|" + std::to_string(g_pPriceManager->GetMarketCondBuy())); };
+	host.OpenInventoryToSell = []() { calls.push_back("inventory to sell|" + std::to_string(g_pPriceManager->GetMarketCondBuy()) + "/" + std::to_string(g_pPriceManager->GetMarketCondSell())); };
 	return host;
 }();
 
@@ -98,7 +98,7 @@ TEST(MarketConditionReplies, AnNPCWithoutAShopGetsOneAndTheRatesAreSet)
 {
 	World world;
 	Receive(1003, 40, 90);
-	CHECK(calls == std::vector<std::string>({"shop given", "inventory to sell|40"}));
+	CHECK(calls == std::vector<std::string>({"shop given", "inventory to sell|40/90"}));
 	CHECK(merchant.shop != nullptr);
 	if (merchant.shop) CHECK_EQ(static_cast<int>(MShopShelf::MAX_SHELF), static_cast<int>(merchant.shop->GetSize()));
 	CHECK_EQ(40, world.prices.GetMarketCondBuy());
@@ -107,7 +107,7 @@ TEST(MarketConditionReplies, AnNPCWithoutAShopGetsOneAndTheRatesAreSet)
 	calls.clear();
 	MShop* pShop = merchant.shop;
 	Receive(1003, 30, 80);
-	CHECK(calls == std::vector<std::string>{"inventory to sell|30"});
+	CHECK(calls == std::vector<std::string>{"inventory to sell|30/80"});
 	CHECK(merchant.shop == pShop);
 	CHECK_EQ(30, world.prices.GetMarketCondBuy());
 	CHECK_EQ(80, world.prices.GetMarketCondSell());
@@ -135,7 +135,7 @@ TEST(MarketConditionReplies, AShopNobodyTakesIsNotKept)
 	noShops.SetShop = nullptr;
 	CreatureState::SetHost(&noShops);
 	Receive(1003, 40, 90);
-	CHECK(calls == std::vector<std::string>{"inventory to sell|40"});
+	CHECK(calls == std::vector<std::string>{"inventory to sell|40/90"});
 	CHECK(merchant.shop == nullptr);
 	CHECK(!CreatureState::SetShop(Handle(merchant), nullptr));
 	// Without a dialog host the inventory is not opened.

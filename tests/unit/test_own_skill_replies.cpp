@@ -57,6 +57,7 @@ const PlayerState::Host player = []() {
 	host.GetWaitVerify = []() { return waitVerify; };
 	host.SetWaitVerifyNULL = []() { calls.push_back("verified"); waitVerify = PlayerState::WAIT_VERIFY_NULL; };
 	host.Status = []() { return &playerStatus; };
+	host.HasEffectStatus = [](EFFECTSTATUS status) { return turret && status == EFFECTSTATUS_INSTALL_TURRET; };
 	return host;
 }();
 
@@ -64,7 +65,6 @@ const CreatureState::Host creature = []() {
 	CreatureState::Host host{};
 	host.IsOusters = [](MCreature*) { return ousters; };
 	host.IsSlayer = [](MCreature*) { return slayer; };
-	host.HasEffectStatus = [](MCreature*, EFFECTSTATUS status) { return turret && status == EFFECTSTATUS_INSTALL_TURRET; };
 	host.GetID = [](MCreature* p) { return reinterpret_cast<FakeCreature*>(p)->id; };
 	host.GetX = [](MCreature* p) { return reinterpret_cast<FakeCreature*>(p)->x; };
 	host.GetY = [](MCreature* p) { return reinterpret_cast<FakeCreature*>(p)->y; };
@@ -219,6 +219,16 @@ TEST(OwnSkillReplies, TheEffectStatusThePacketNamesComesFirst)
 	CHECK(playerStatus.GetEFFECT_STAT() == EFFECTSTATUS_NULL);
 }
 
+TEST(OwnSkillReplies, TheDurationIsConvertedToFrames)
+{
+	World world;
+	// At the client's 16 frames a second, 5 seconds are 80 frames.
+	g_pClientConfig->FPS = 16;
+	testfw::MutableRow(world.actions, SKILL_DOUBLE_IMPACT).SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
+	Receive(SKILL_DOUBLE_IMPACT, 50);
+	CHECK(calls == Plus(Plus({"verified"}, Shown(SKILL_DOUBLE_IMPACT, 80)), {"effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|80"}));
+}
+
 TEST(OwnSkillReplies, AGradedSkillActsAsItsStep)
 {
 	World world;
@@ -233,6 +243,11 @@ TEST(OwnSkillReplies, AGradedSkillActsAsItsStep)
 	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
 	Receive(SKILL_DOUBLE_IMPACT, 20, 0);
 	CHECK(calls == Plus({"verified"}, Shown(SKILL_DOUBLE_IMPACT, 20)));
+	// A grade on a skill without steps changes nothing.
+	calls.clear();
+	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
+	Receive(SKILL_SINGLE_BLOW, 20, 2);
+	CHECK(calls == Plus(Plus({"verified"}, Shown(SKILL_SINGLE_BLOW, 20)), {"effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|20"}));
 }
 
 TEST(OwnSkillReplies, ASkillPastTheTableOnlyEndsTheWait)
@@ -309,6 +324,15 @@ TEST(OwnSkillReplies, SoulChainsDelayStartsNow)
 	pChain->SetAvailableTime();
 	Receive(SKILL_SOUL_CHAIN, 20);
 	CHECK_EQ(3000, static_cast<long long>(pChain->GetAvailableTimeLeft()));
+	// Another skill's delay does not start on its success.
+	SKILLINFO_NODE* pOther = world.skills.GetMutable(SKILL_DOUBLE_IMPACT);
+	CHECK(pOther != nullptr);
+	if (pOther == nullptr) return;
+	pOther->SetDelayTime(3000);
+	pOther->SetAvailableTime();
+	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
+	Receive(SKILL_DOUBLE_IMPACT, 20);
+	CHECK_EQ(0, static_cast<long long>(pOther->GetAvailableTimeLeft()));
 }
 
 TEST(OwnSkillReplies, WillOfLifeChecksRegenerationAndWaitsByLevel)
@@ -330,10 +354,8 @@ TEST(OwnSkillReplies, WithoutAPlayerNothingHappens)
 	Receive(SKILL_DOUBLE_IMPACT, 20, 0, 120);
 	CHECK(calls.empty());
 	CHECK(waitVerify == PlayerState::WAIT_VERIFY_SKILL_SUCCESS);
-	// Without the hosts the window and the effect status are left alone.
+	// Without a host the window is left alone.
 	DialogPresentation::SetHost(nullptr);
 	DialogPresentation::CloseRequestResurrectWindow();
-	CreatureState::SetHost(nullptr);
-	CHECK(!CreatureState::HasEffectStatus(Handle(), EFFECTSTATUS_INSTALL_TURRET));
 	CHECK(calls.empty());
 }

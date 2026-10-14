@@ -185,8 +185,6 @@ struct Host
 	// so never pass its current one); false (the caller keeps the shop) for
 	// a creature that is not an NPC.
 	bool (*SetShop)(MCreature* pCreature, MShop* pShop) = nullptr;
-	// Whether the creature carries the effect status now.
-	bool (*HasEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
 	// Fills an NPC's shop with its fixed shelf, or its mysterious one, from
 	// the shop templates; nothing for a creature that is not an NPC.
 	void (*CreateFixedShelf)(MCreature* pCreature, bool mysterious) = nullptr;
@@ -278,7 +276,6 @@ void SetStopAbsorbSoul(MCreature* pCreature);
 bool IsVampire(MCreature* pCreature);
 // false without a host: the caller keeps the shop.
 bool SetShop(MCreature* pCreature, MShop* pShop);
-bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
 void CreateFixedShelf(MCreature* pCreature, bool mysterious);
 
 }

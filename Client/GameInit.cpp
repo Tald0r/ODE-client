@@ -3716,7 +3716,6 @@ static const CreatureState::Host s_CreatureStateHost = {
 		static_cast<MNPC*>(pCreature)->SetShop(pShop);
 		return true;
 	},
-	.HasEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->HasEffectStatus(status); },
 	.CreateFixedShelf = [](MCreature* pCreature, bool mysterious) {
 		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->CreateFixedShelf(mysterious);
 	},

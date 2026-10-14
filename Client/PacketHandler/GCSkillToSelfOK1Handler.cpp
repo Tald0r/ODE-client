@@ -81,7 +81,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 			PlayerState::SetWaitVerifyNULL();
 			return;
 		}
-		else if(CreatureState::HasEffectStatus(pPlayerCreature, EFFECTSTATUS_INSTALL_TURRET))
+		else if(PlayerState::HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 		{
 			return;
 			//resultActionInfo = RESULT_SKILL_INSTALL_TURRET;
