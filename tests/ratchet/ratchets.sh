@@ -336,7 +336,8 @@ check () {
 # 139: the cannot-use reply joins gamemodel (4.150).
 # 136: the three NPC question replies join gamemodel (4.151).
 # 135: the blood bible list joins gamemodel (4.152).
-R1_BASELINE=135
+# 133: the storage price and other-creature status replies join gamemodel (4.153).
+R1_BASELINE=133
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -506,7 +507,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 137: the cannot-use reply joins gamemodel (4.150).
 	# 134: the three NPC question replies join gamemodel (4.151).
 	# 133: the blood bible list joins gamemodel (4.152).
-	R1_NINJA_BASELINE=133
+	# 131: the storage price and other-creature status replies join gamemodel (4.153).
+	R1_NINJA_BASELINE=131
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

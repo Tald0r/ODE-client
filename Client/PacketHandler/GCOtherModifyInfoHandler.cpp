@@ -6,8 +6,12 @@
 
 #include "Client_PCH.h"
 #include "Gpackets/GCOtherModifyInfo.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "GameInfoPresentationHost.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
+#include <cstring>
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -18,20 +22,20 @@ void GCOtherModifyInfoHandler::execute ( GCOtherModifyInfo * pPacket , Player * 
 	(void)pPlayer;
 		
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		if (pCreature==NULL)
 		{
@@ -39,12 +43,20 @@ void GCOtherModifyInfoHandler::execute ( GCOtherModifyInfo * pPacket , Player * 
 		}
 		else
 		{
-			AffectModifyInfo( pCreature, pPacket );
-
-			if(pCreature->GetName() != NULL && UI_GetOtherInfoName() != NULL && strcmp(pCreature->GetName(), UI_GetOtherInfoName()) == 0)
+			MStatus* pStatus = CreatureState::Status( pCreature );
+			if (pStatus != NULL)
 			{
-				if( pCreature->GetRace() == g_pPlayer->GetRace())//pCreature->IsSlayer() && g_pPlayer->IsSlayer() || pCreature->IsVampire() && g_pPlayer->IsVampire() || pCreature->IsOusters() && g_pPlayer->IsOusters()  ))
-					UI_RunOtherInfo(pCreature);
+				AffectModifyInfo( pStatus, pPacket );
+			}
+
+			const char* pName = CreatureState::GetName( pCreature );
+			const char* pOtherInfoName = GameInfoPresentation::GetOtherInfoName();
+			if(pName != NULL && pOtherInfoName != NULL && strcmp(pName, pOtherInfoName) == 0)
+			{
+				// The other-info window shows only the player's own race.
+				if( PlayerState::Creature() != NULL
+					&& CreatureState::GetRace(pCreature) == PlayerState::GetRace())
+					GameInfoPresentation::RunOtherInfo(pCreature);
 			}
 		}
 	}

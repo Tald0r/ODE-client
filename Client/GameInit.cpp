@@ -3502,6 +3502,8 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.RunImageNotice = [](const char* name, std::uint32_t id) { UI_RunImageNotice(name, id); },
 	.GetCharInfoLevel = UI_GetCharInfoLevel,
 	.SetDelayEternity = UI_SetDelayEternity,
+	.GetOtherInfoName = UI_GetOtherInfoName,
+	.RunOtherInfo = [](MCreature* pCreature) { UI_RunOtherInfo(pCreature); },
 };
 
 static const DialogPresentation::Host s_DialogPresentationHost = {
@@ -3521,6 +3523,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.UnlockGear = UI_UnlockGear,
 	.CloseMixingForge = UI_CloseMixingForge,
 	.PopupPCTalkDlg = []() { g_pUIDialog->PopupPCTalkDlg(); },
+	.ShowPCTalkDlg = []() { g_pUIDialog->ShowPCTalkDlg(); },
+	.RunStorageBuy = UI_RunStorageBuy,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
