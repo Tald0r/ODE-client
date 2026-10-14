@@ -1079,3 +1079,6 @@ Client/PacketHandler/GCCannotUseHandler.cpp
 Client/PacketHandler/GCNPCAskHandler.cpp
 Client/PacketHandler/GCNPCAskDynamicHandler.cpp
 Client/PacketHandler/GCNPCAskVariableHandler.cpp
+
+# The blood bibles the player may rent, as an NPC's question.
+Client/PacketHandler/GCBloodBibleListHandler.cpp
