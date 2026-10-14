@@ -10,19 +10,29 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCOtherStoreInfo.h"
 #include "MStorage.h"
-#include "MPlayer.h"
 #include "PCItemInfo.h"
-#include "DebugInfo.h"
-#include "UIDialog.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
 #include "MGameStringTable.h"
-#include "VS_UI.h"
-#include "UserOption.h"
+#include "MInventory.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "VsUiPresentationHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// The method run when the client receives the message from the server.
 //
 //////////////////////////////////////////////////////////////////////
+// MCreature::IsNPC: whether the creature table's row for its type is an
+// NPC's.
+static bool IsNPCType(MCreature* pCreature)
+{
+	return (*g_pCreatureTable)[CreatureState::GetCreatureType(pCreature)].IsNPC();
+}
+
 void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pPlayer )
 
 {
@@ -33,43 +43,43 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 
 
 
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 		if(pCreature == NULL)
 			return; 
-		if(pCreature->IsNPC() == false)
-			pCreature->SetPersnalShop(pPacket->getStoreInfo()->isOpen());
+		if(IsNPCType(pCreature) == false)
+			CreatureState::SetPersnalShop(pCreature, pPacket->getStoreInfo()->isOpen());
 		
-		if(pCreature->CurPernalShop() == 1 && pCreature->IsNPC() == false)
+		if(CreatureState::CurPernalShop(pCreature) == 1 && IsNPCType(pCreature) == false)
 		{
 			if(!pPacket->getStoreInfo()->getSign().empty())
-				pCreature->SetPersnalString((char*)pPacket->getStoreInfo()->getSign().c_str(),g_pUserOption->ChattingColor);
+				CreatureState::SetPersnalString(pCreature, pPacket->getStoreInfo()->getSign().c_str(), CommunicationPresentation::GetChattingColor());
 			else
-				pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+				CreatureState::SetPersnalString(pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor());
 		}
 
 		if(g_pStorage2 != NULL && g_pStorage2->GetCuropenid() !=0)
 		{
 			if(false == pPacket->getStoreInfo()->isOpen() && g_pStorage2->GetCuropenid() == pPacket->getObjectID())
 			{
-				if(gC_vs_ui.IsRunningPersnalShop())
-					gC_vs_ui.ClosePersnalShop();
+				if(VsUiPresentation::IsRunningPersnalShop())
+					VsUiPresentation::ClosePersnalShop();
 				return;
 			}
 		}
 
-		if(strlen(pPacket->getStoreInfo()->getSign().c_str())>0 && pCreature->IsNPC() == false)
-			pCreature->SetPersnalShopMessage(pPacket->getStoreInfo()->getSign().c_str());
+		if(strlen(pPacket->getStoreInfo()->getSign().c_str())>0 && IsNPCType(pCreature) == false)
+			CreatureState::SetPersnalShopMessage(pCreature, pPacket->getStoreInfo()->getSign().c_str());
 
-		if(false == pPacket->isRequested()) // 내가 선택해서 상점이 열리는 경우가 아니고 그냥 열렸다고 알림 일때
+		if(false == pPacket->isRequested()) // not the player opening the shop by choice, only news that it opened
 			return;
 
 
-		// 내가 선택해서 개인상점이 열리는 경우 아래쪽 처리
+		// the player chose to open the personal shop: handled below
 		if (g_pStorage2!=NULL) 
 			delete g_pStorage2;
 
 		g_pStorage2 = new MStorage;
-		g_pStorage2->Init( 1 ); //STASH_RACK_MAX );	// 쩝.. 3개일까?? 
+		g_pStorage2->Init( 1 ); //STASH_RACK_MAX );	// hm.. 3 of them?? 
 		g_pStorage2->SetCurrent( 0 );
 		pPacket->getStoreInfo()->getSign();
 		g_pStorage2->SetCuropenid(pPacket->getObjectID());
@@ -77,7 +87,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 		for (int rack=0; rack<1; rack++)
 		{
 			//------------------------------------------------------------
-			// 접근하는 Storage를 지정한다.
+			// Set the storage being accessed.
 			//------------------------------------------------------------
 			//int numitem = pPacket->getStoreInfo().getItems().size();
 			int numitem = static_cast<int>(pPacket->getStoreInfo()->getItems().size());
@@ -109,40 +119,19 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 					pItem->SetNumber(pPacket->getStoreInfo()->getStoreItemInfo(index).getItemNum());
 					
 					//------------------------------------------
-					// 개수
+					// the number
 					//------------------------------------------
-					// 총인 경우
+					// a gun
 					//------------------------------------------
 					if (pItem->IsGunItem())
 					{
-						MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-
-						// 의미 없음 - -;
-						pMagazine->SetID( 0 );
-
-						// 이거는 총에 맞춰서 해줘야된다.
-						for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
-						{
-							pMagazine->SetItemType(	j );
-
-							if (pMagazine->IsInsertToItem( pItem ))
-							{
-								break;
-							}
-						}
-
-						// 의미 없음
-						pMagazine->ClearItemOption();
-					
-
-						//------------------------------------
-						// 탄창 설정
-						//------------------------------------
-						MGunItem* pGunItem = (MGunItem*)pItem;
-						pGunItem->SetMagazine( pMagazine );
+						// An empty magazine of the type the gun takes, with the one
+						// round a new pile holds: the loop upstream ran here, which
+						// the executable's LoadGun runs.
+						MItem::LoadGun( pItem, 1 );
 					}		
 					//------------------------------------------
-					// 총이 아닌 경우
+					// not a gun
 					//------------------------------------------
 					else
 					{
@@ -153,7 +142,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 					pItem->SetEnchantLevel( item.getEnchantLevel() );
 
 					//------------------------------------------------------------
-					// Sub Item이 있으면 생성한다.
+					// Make the sub items, if any.
 					//------------------------------------------------------------
 
 					int subNum =item.getListNum();
@@ -161,7 +150,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 					if (subNum!=0)
 					{
 						//------------------------------------------------------------
-						// Belt인 경우
+						// a belt
 						//------------------------------------------------------------
 						if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 						{
@@ -170,7 +159,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 							std::list<SubItemInfo*>::const_iterator iItem = listSubItem.begin();
 
 							//------------------------------------------------------------
-							// 각각의 sub item을 설정한다.
+							// Set each sub item.
 							//------------------------------------------------------------
 							while (iItem != listSubItem.end())
 							{
@@ -216,7 +205,7 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 							std::list<SubItemInfo*>::const_iterator iItem = listSubItem.begin();
 
 							//------------------------------------------------------------
-							// 각각의 sub item을 설정한다.
+							// Set each sub item.
 							//------------------------------------------------------------
 							while (iItem != listSubItem.end())
 							{
@@ -260,11 +249,11 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 					}
 					
 					//------------------------------------------------------------
-					// Storage에 item 설정
+					// Put the item in the storage
 					//------------------------------------------------------------
 					if (!g_pStorage2->SetItem( index, pItem ))
 					{
-						// 뭐지..
+						// what's this..
 						delete pItem;
 						
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Storage. rack=%d, slot=%d", rack, index);
@@ -274,10 +263,10 @@ void GCOtherStoreInfoHandler::execute ( GCOtherStoreInfo * pPacket , Player * pP
 			}
 		}
 		
-		gC_vs_ui.setinventory_mode(2);
-		gC_vs_ui.RunPersnalShop();
-		gC_vs_ui.setinventory_mode(2);
-		gC_vs_ui.SetPersnalShop( g_pStorage2 ); 		
+		VsUiPresentation::SetInventoryMode(2);
+		VsUiPresentation::RunPersnalShop();
+		VsUiPresentation::SetInventoryMode(2);
+		VsUiPresentation::SetPersnalShop( g_pStorage2 ); 		
 			 
 
 

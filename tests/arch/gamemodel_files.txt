@@ -1136,3 +1136,7 @@ Client/PacketHandler/GCPetUseSkillHandler.cpp
 
 # An effect added to a tile.
 Client/PacketHandler/GCAddEffectToTileHandler.cpp
+
+# A personal shop's contents: the player's own, and another creature's.
+Client/PacketHandler/GCMyStoreInfoHandler.cpp
+Client/PacketHandler/GCOtherStoreInfoHandler.cpp

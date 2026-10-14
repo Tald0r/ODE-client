@@ -582,4 +582,29 @@ void SetTurretFinalDirection(MCreature* pFakeCreature, int direction)
 	if (s_Host && s_Host->SetTurretFinalDirection) s_Host->SetTurretFinalDirection(pFakeCreature, direction);
 }
 
+void SetPersnalShop(MCreature* pCreature, int open)
+{
+	if (s_Host && s_Host->SetPersnalShop) s_Host->SetPersnalShop(pCreature, open);
+}
+
+int CurPernalShop(MCreature* pCreature)
+{
+	return s_Host && s_Host->CurPernalShop ? s_Host->CurPernalShop(pCreature) : 0;
+}
+
+void SetPersnalString(MCreature* pCreature, const char* sign, std::uint32_t color)
+{
+	if (s_Host && s_Host->SetPersnalString) s_Host->SetPersnalString(pCreature, sign, color);
+}
+
+void ClearChatString(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ClearChatString) s_Host->ClearChatString(pCreature);
+}
+
+void SetPersnalShopMessage(MCreature* pCreature, const char* message)
+{
+	if (s_Host && s_Host->SetPersnalShopMessage) s_Host->SetPersnalShopMessage(pCreature, message);
+}
+
 }

@@ -252,6 +252,14 @@ struct Host
 	// direction, as upstream did. Another creature is left alone.
 	void (*SetTurretDelay)(MCreature* pFakeCreature, int delay) = nullptr;
 	void (*SetTurretFinalDirection)(MCreature* pFakeCreature, int direction) = nullptr;
+	// A creature's personal shop: whether it is open (CurPernalShop; 0
+	// without a host), the sign over it in a colour, and the message kept
+	// for it. ClearChatString takes the sign (and any chat) away.
+	void (*SetPersnalShop)(MCreature* pCreature, int open) = nullptr;
+	int (*CurPernalShop)(MCreature* pCreature) = nullptr;
+	void (*SetPersnalString)(MCreature* pCreature, const char* sign, std::uint32_t color) = nullptr;
+	void (*ClearChatString)(MCreature* pCreature) = nullptr;
+	void (*SetPersnalShopMessage)(MCreature* pCreature, const char* message) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -355,5 +363,10 @@ void SetInstallTurretCount(MCreature* pCreature, int count);
 void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetTurretDelay(MCreature* pFakeCreature, int delay);
 void SetTurretFinalDirection(MCreature* pFakeCreature, int direction);
+void SetPersnalShop(MCreature* pCreature, int open);
+int CurPernalShop(MCreature* pCreature);
+void SetPersnalString(MCreature* pCreature, const char* sign, std::uint32_t color);
+void ClearChatString(MCreature* pCreature);
+void SetPersnalShopMessage(MCreature* pCreature, const char* message);
 
 }

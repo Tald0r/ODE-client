@@ -55,6 +55,8 @@ struct Host
 	bool (*HasProfiles)() = nullptr;
 	// The file of a character's profile; NULL for none.
 	const char* (*GetProfileFilename)(const char* name) = nullptr;
+	// The player's chat colour option; white without a host.
+	std::uint32_t (*GetChattingColor)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -88,5 +90,6 @@ void RunParty();
 int GetFaceStyle(bool male, int hairStyle);
 bool HasProfiles();
 const char* GetProfileFilename(const char* name);
+std::uint32_t GetChattingColor();
 
 }

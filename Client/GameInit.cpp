@@ -3489,6 +3489,7 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.GetFaceStyle = UI_GetFaceStyle,
 	.HasProfiles = []() { return g_pProfileManager != NULL; },
 	.GetProfileFilename = [](const char* name) { return g_pProfileManager->GetFilename(name); },
+	.GetChattingColor = []() { return static_cast<std::uint32_t>(g_pUserOption->ChattingColor); },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3625,6 +3626,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 		SendPositionInfoToParty();
 		SendStatusInfoToParty();
 	},
+	.IsTraceCreature = []() { return g_pPlayer->IsTraceCreature() != FALSE; },
+	.TraceNULL = []() { g_pPlayer->TraceNULL(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3785,6 +3788,11 @@ static const CreatureState::Host s_CreatureStateHost = {
 		if (pFakeCreature->GetClassType() == MCreature::CLASS_FAKE)
 			static_cast<MFakeCreature*>(pFakeCreature)->SetTurretFinalDirection(static_cast<BYTE>(direction));
 	},
+	.SetPersnalShop = [](MCreature* pCreature, int open) { pCreature->SetPersnalShop(open); },
+	.CurPernalShop = [](MCreature* pCreature) { return pCreature->CurPernalShop(); },
+	.SetPersnalString = [](MCreature* pCreature, const char* sign, std::uint32_t color) { pCreature->SetPersnalString(sign, static_cast<COLORREF>(color)); },
+	.ClearChatString = [](MCreature* pCreature) { pCreature->ClearChatString(); },
+	.SetPersnalShopMessage = [](MCreature* pCreature, const char* message) { pCreature->SetPersnalShopMessage(message); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3841,6 +3849,13 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.RunQuestManager = []() { gC_vs_ui.RunQuestManager(); },
 	.SetQuestManagerInfo = [](UI_GQuestInfo* pInfo) { return gC_vs_ui.SetQuestManagerInfo(static_cast<void*>(pInfo)); },
 	.ReleaseQuestXML = []() { gC_vs_ui.ReleaseQuestXML(); },
+	.GetPersnalShoptoUI = []() { return gC_vs_ui.GetPersnalShoptoUI(); },
+	.SetPersnalShoptoUI = [](int mode) { gC_vs_ui.SetPersnalShoptoUI(mode); },
+	.IsRunningPersnalShop = []() { return gC_vs_ui.IsRunningPersnalShop(); },
+	.RunPersnalShop = []() { gC_vs_ui.RunPersnalShop(); },
+	.ClosePersnalShop = []() { gC_vs_ui.ClosePersnalShop(); },
+	.SetPersnalShop = [](MStorage* pStorage) { gC_vs_ui.SetPersnalShop(pStorage); },
+	.SetInventoryMode = [](int mode) { gC_vs_ui.setinventory_mode(mode); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

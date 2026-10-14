@@ -116,4 +116,40 @@ void ReleaseQuestXML()
 	if (s_Host && s_Host->ReleaseQuestXML) s_Host->ReleaseQuestXML();
 }
 
+
+int GetPersnalShoptoUI()
+{
+	return s_Host && s_Host->GetPersnalShoptoUI ? s_Host->GetPersnalShoptoUI() : 0;
+}
+
+void SetPersnalShoptoUI(int mode)
+{
+	if (s_Host && s_Host->SetPersnalShoptoUI) s_Host->SetPersnalShoptoUI(mode);
+}
+
+bool IsRunningPersnalShop()
+{
+	return s_Host && s_Host->IsRunningPersnalShop && s_Host->IsRunningPersnalShop();
+}
+
+void RunPersnalShop()
+{
+	if (s_Host && s_Host->RunPersnalShop) s_Host->RunPersnalShop();
+}
+
+void ClosePersnalShop()
+{
+	if (s_Host && s_Host->ClosePersnalShop) s_Host->ClosePersnalShop();
+}
+
+void SetPersnalShop(MStorage* pStorage)
+{
+	if (s_Host && s_Host->SetPersnalShop) s_Host->SetPersnalShop(pStorage);
+}
+
+void SetInventoryMode(int mode)
+{
+	if (s_Host && s_Host->SetInventoryMode) s_Host->SetInventoryMode(mode);
+}
+
 }
