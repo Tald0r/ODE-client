@@ -936,9 +936,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		endif()
 	endforeach()
 
-	# CAvi.cpp, the stubbed MCI video player, was retired with the opening
-	# mode, its only user (docs/RESTRUCTURING.md task 4.210).
-
 	# The custom MP3/Huffman decoder (mp3/huffman/reader/header/synfilt/
 	# subdecoder/soundbuf/BIT_RES, once duplicated between Client/ and
 	# Client/DXLib/) was deleted 2026-08-31: no CMakeLists ever compiled the

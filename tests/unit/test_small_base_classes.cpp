@@ -8,8 +8,7 @@
 #include <vector>
 
 // Two small classes the game builds on:
-// - CWinUpdate, the base of the game's update loops (opening, waiting,
-//   game), does nothing itself; its subclasses override Init and Update.
+// - CWinUpdate, the base of the game's update loops (waiting, game), does nothing itself; its subclasses override Init and Update.
 // - MWorkNode, a job for the loading thread: of type 0 at first and not
 //   running; its type can be set and asked for, and Stop marks it stopped.
 namespace {

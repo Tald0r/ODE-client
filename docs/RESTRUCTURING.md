@@ -5894,9 +5894,14 @@ rounds settled* for the host rules). Test fixtures share
   >   out.
   > - `g_Mode` starts at `MODE_NULL`.
   > - Every other `SetMode` argument is another literal mode or
-  >   `g_ModeNext`, which is only ever assigned `MODE_NULL`,
-  >   `MODE_QUIT` or `MODE_WAIT_PCLIST`.
-  > - Nothing casts a number to `CLIENT_MODE`.
+  >   `g_ModeNext`. `g_ModeNext` is assigned only `MODE_NULL`,
+  >   `MODE_QUIT`, `MODE_WAIT_PCLIST`, `MODE_LOGIN_WRONG` and
+  >   `MODE_WAIT_SELECTPC` (corrected after review: the first account
+  >   listed only three).
+  > - The direct writes to `g_Mode` outside `SetMode` are literals too:
+  >   `MODE_MAINMENU`, `MODE_CHANGE_OPTION`, `MODE_WAIT_UPDATEINFO`.
+  > - Nothing casts a number to `CLIENT_MODE`, takes `g_Mode`'s address
+  >   or does arithmetic on it.
   >
   > So the mode's case in `SetMode` and `COpeningUpdate`'s `Init`,
   > `PlayMPG` and `Update` never ran. `g_pAvi`, which only `PlayMPG`
@@ -5910,9 +5915,10 @@ rounds settled* for the host rules). Test fixtures share
   > `g_pAvi`. With them goes `CAVI`, the stubbed MCI player that joined
   > gamemodel in 4.205, now without a user, together with its test.
   >
-  > **What stays:** `SetMode` keeps an empty `MODE_OPENING` case, since
-  > its switch has no default and `-Wswitch` would flag the enum value.
-  > The enum keeps the value.
+  > **What stays:** the enum keeps the value, so no mode renumbers. (The
+  > retirement first kept an empty `MODE_OPENING` case in `SetMode` on
+  > the belief that its switch had no default. It has one, and the
+  > follow-up dropped the case.)
   >
   > R1 is 53 Windows / 51 Ninja.
   - Owner: R1. Retired code, so no test. The argument is above, and
@@ -5933,7 +5939,9 @@ rounds settled* for the host rules). Test fixtures share
   >   without a renderer. Otherwise it finishes the sprite rendering,
   >   clears, draws a valid back buffer (letterboxed by
   >   `spritectl_present_surface`) and presents.
-  > - **Callers:** all 13 keep calling `Flip()` unchanged.
+  > - **Callers:** all 11 live callers keep calling `Flip()` unchanged.
+  >   Five more calls sit in `/* */` comments; the first account said
+  >   13.
   >
   > R1 is 52 Windows / 50 Ninja.
   - Owner: R1, and `test_frame_present.cpp`. Its 4 tests, the last two
@@ -5952,6 +5960,11 @@ rounds settled* for the host rules). Test fixtures share
     - `spritectl_finish_rendering`: no GPU path in the tests, and the
       present finishes first anyway.
     - `SDL_RenderPresent`: a no-op on a surface renderer.
+    - The `backBuffer` validity guard: `spritectl_present_surface`
+      rejects a null surface on the software path. On the GPU path,
+      dropping it would checkpoint every modified surface on each
+      title-loading flip.
+    - (The follow-up pins that `Flip` asks the source, once a flip.)
 
 - [x] **4.212 The append patch:** move `AppendPatchInfo.cpp` into
   `gamemodel` behind `AppendPatchHost`.
@@ -6217,15 +6230,15 @@ the opening's loop. Task 4.211 reduces it to 50 Linux / 52 Windows with
 the frame present. Task 4.212 reduces it to 49 Linux / 51 Windows with
 the append patch.
 
-Continue with reviewable boundaries: the remaining generators need their actual
-creature/world services identified; larger handler groups need extracted
-player/creature and world state before they can run without the executable.
-`MPlayer`, `MCreature`, `MZone`, `MTopView` and `UIMessageManager` remain major
-coupled implementations. Each slice needs production-object link evidence and
-contract tests, not merely a new static-library wrapper.
-
-Further source-audit candidates include skill-progression and quest-presentation
-handlers and the remaining creature-attack generators.
+Continue with reviewable boundaries. The packet handlers (4.198) and the
+effect generators (4.202) are all in gamemodel. What remains:
+- small sources that touch a few executable globals, behind a host;
+- dead code to retire, with the argument that it is dead;
+- the coupled cores: `MPlayer`, `MCreature`, `MZone`, `MTopView`,
+  `UIMessageManager`, `GameMain`, `GameInit` and `Client`. They need their
+  state extracted before they can run without the executable.
+Each slice needs production-object link evidence and contract tests, not
+merely a new static-library wrapper.
 Their extraction needs independent ownership and packet-contract tests before
 any suspected defect is treated as reproduced.
 
