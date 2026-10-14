@@ -1003,14 +1003,14 @@ Client/PacketHandler/GCRemoveCorpseHeadHandler.cpp
 # one between creatures.
 Client/ExplosiveActions.cpp
 Client/ExplosiveActions.h
+Client/PacketHandler/GCThrowBombOK1Handler.cpp
+Client/PacketHandler/GCThrowBombOK2Handler.cpp
+Client/PacketHandler/GCThrowBombOK3Handler.cpp
 
 # A vampire's creature type for its shape and coat, and an ouster's, lifted
 # out of the executable's PacketFunction.cpp (4.179).
 Client/CreatureTypeSelection.cpp
 Client/CreatureTypeSelection.h
-Client/PacketHandler/GCThrowBombOK1Handler.cpp
-Client/PacketHandler/GCThrowBombOK2Handler.cpp
-Client/PacketHandler/GCThrowBombOK3Handler.cpp
 
 # The player unburrowing, effect statuses removed from a creature, and a
 # creature's shape changed by an addon item.
@@ -1175,3 +1175,10 @@ Client/PacketHandler/GCSkillToObjectOK5Handler.cpp
 # A creature turning into a slayer, or a vampire, in sight.
 Client/PacketHandler/GCMorphSlayer2Handler.cpp
 Client/PacketHandler/GCMorphVampire2Handler.cpp
+
+# A vampire out of a burrow, or out of a transformation.
+Client/PacketHandler/GCAddVampireFromBurrowingHandler.cpp
+Client/PacketHandler/GCAddVampireFromTransformationHandler.cpp
+
+# A vampire appearing.
+Client/PacketHandler/GCAddVampireHandler.cpp

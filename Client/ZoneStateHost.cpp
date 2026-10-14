@@ -672,4 +672,19 @@ void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo)
 	if (s_Host && s_Host->SetAddonToSlayer3) s_Host->SetAddonToSlayer3(pCreature, pInfo);
 }
 
+void SetCompetence(MCreature* pCreature, int competence)
+{
+	if (s_Host && s_Host->SetCompetence) s_Host->SetCompetence(pCreature, competence);
+}
+
+void SetMasterEffectType(MCreature* pCreature, int type)
+{
+	if (s_Host && s_Host->SetMasterEffectType) s_Host->SetMasterEffectType(pCreature, type);
+}
+
+void SetUnionGuildID(MCreature* pCreature, int unionID)
+{
+	if (s_Host && s_Host->SetUnionGuildID) s_Host->SetUnionGuildID(pCreature, unionID);
+}
+
 }

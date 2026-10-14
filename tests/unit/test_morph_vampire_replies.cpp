@@ -124,10 +124,10 @@ struct World : GameModelWorld
 		zoneCreatures.clear();
 		known.id = 1003;
 		zoneCreatures[known.id] = &known;
-		// Coat 1 dresses a man as frame 61 and a woman as 62.
-		g_pItemTable->InitClass(ITEM_CLASS_VAMPIRE_COAT, 2);
-		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 1).AddonMaleFrameID = 61;
-		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 1).AddonFemaleFrameID = 62;
+		// Coat 3 dresses a man as frame 61 and a woman as 62.
+		g_pItemTable->InitClass(ITEM_CLASS_VAMPIRE_COAT, 4);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 3).AddonMaleFrameID = 61;
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 3).AddonFemaleFrameID = 62;
 	}
 	~World()
 	{
@@ -150,7 +150,7 @@ void Receive(ObjectID_t id, Sex sex = MALE, Shape_t shape = SHAPE_NORMAL)
 	info.setSex(sex);
 	info.setBatColor(11);
 	info.setSkinColor(12);
-	info.setCoatType(1);
+	info.setCoatType(3);
 	info.setCoatColor(14, MAIN_COLOR);
 	info.setCoatColor(15, SUB_COLOR);
 	info.setMasterEffectColor(0);
@@ -159,7 +159,7 @@ void Receive(ObjectID_t id, Sex sex = MALE, Shape_t shape = SHAPE_NORMAL)
 	info.setAttackSpeed(10);
 	info.setAlignment(100);
 	info.setShape(shape);
-	info.setCompetence(3);
+	info.setCompetence(9);
 	info.setGuildID(0);
 	info.setUnionID(0);
 	info.setRank(1);
@@ -186,12 +186,12 @@ std::vector<std::string> Then(std::vector<std::string> first, const std::vector<
 TEST(MorphVampireReplies, AVampiresCreatureTypeFollowsItsShapeAndCoat)
 {
 	World world;
-	CHECK_EQ(61, GetVampireCreatureType(SHAPE_NORMAL, true, 1));
-	CHECK_EQ(62, GetVampireCreatureType(SHAPE_NORMAL, false, 1));
-	CHECK_EQ(static_cast<int>(CREATURETYPE_BAT), GetVampireCreatureType(SHAPE_BAT, true, 1));
-	CHECK_EQ(static_cast<int>(CREATURETYPE_WOLF), GetVampireCreatureType(SHAPE_WOLF, false, 1));
-	CHECK_EQ(static_cast<int>(CREATURETYPE_WER_WOLF), GetVampireCreatureType(SHAPE_WERWOLF, true, 1));
-	CHECK_EQ(static_cast<int>(SHAPE_MAX), GetVampireCreatureType(SHAPE_MAX, true, 1));
+	CHECK_EQ(61, GetVampireCreatureType(SHAPE_NORMAL, true, 3));
+	CHECK_EQ(62, GetVampireCreatureType(SHAPE_NORMAL, false, 3));
+	CHECK_EQ(static_cast<int>(CREATURETYPE_BAT), GetVampireCreatureType(SHAPE_BAT, true, 3));
+	CHECK_EQ(static_cast<int>(CREATURETYPE_WOLF), GetVampireCreatureType(SHAPE_WOLF, false, 3));
+	CHECK_EQ(static_cast<int>(CREATURETYPE_WER_WOLF), GetVampireCreatureType(SHAPE_WERWOLF, true, 3));
+	CHECK_EQ(static_cast<int>(SHAPE_MAX), GetVampireCreatureType(SHAPE_MAX, true, 3));
 	// A coat past the table reads the table's default row.
 	CHECK_EQ(static_cast<int>(FRAMEID_NULL), GetVampireCreatureType(SHAPE_NORMAL, true, 7));
 	CHECK_EQ(static_cast<int>(CREATURETYPE_OUSTERS), GetOustersCreatureType(0));
@@ -251,6 +251,11 @@ TEST(MorphVampireReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1003);
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
 	CHECK(std::count(calls.begin(), calls.end(), "zone takes|1006") == 1 && std::count(calls.begin(), calls.end(), "speed|1003|10") == 1);
+	// A new woman and a known man in their own shape take their sex's frame.
+	calls.clear();
+	Receive(1008, FEMALE);
+	Receive(1003);
+	CHECK(std::count(calls.begin(), calls.end(), "type|new|62") == 1 && std::count(calls.begin(), calls.end(), "type|1003|61") == 1);
 	// Without the creature host, a made one is still added.
 	calls.clear();
 	CreatureState::SetHost(nullptr);

@@ -3825,6 +3825,9 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetAddonToSlayer3 = [](MCreature* pCreature, const PCSlayerInfo3* pInfo) {
 		if (pCreature->IsWear()) SetAddonToSlayer(static_cast<MCreatureWear*>(pCreature), pInfo);
 	},
+	.SetCompetence = [](MCreature* pCreature, int competence) { pCreature->SetCompetence(static_cast<BYTE>(competence)); },
+	.SetMasterEffectType = [](MCreature* pCreature, int type) { pCreature->SetMasterEffectType(static_cast<BYTE>(type)); },
+	.SetUnionGuildID = [](MCreature* pCreature, int unionID) { pCreature->SetUnionGuildID(unionID); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

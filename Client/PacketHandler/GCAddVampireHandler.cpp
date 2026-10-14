@@ -9,11 +9,15 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddVampire.h"
-#include "ClientDef.h"
+#include "CommunicationPresentationHost.h"
+#include "CreatureTypeSelection.h"
+#include "DebugLog.h"
 #include "MCreatureTable.h"
-#include "MTestDef.h"
 #include "MGameStringTable.h"
-extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
+#include "MStatus.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
@@ -24,37 +28,42 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 		
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal.. 
 	//------------------------------------------------------
 	else
 	{
 		const PCVampireInfo3 & vi = pPacket->getVampireInfo ();
 
-		MCreature* pCreature = g_pZone->GetCreature(vi.getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(vi.getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreatureWear;
-			
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
-			pCreature->SetZone( g_pZone );
+			pCreature = ZoneState::NewCreatureWear();
+			if (pCreature == NULL)
+			{
+				return;
+			}
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
+			}
 
-			pCreature->SetName( vi.getName().c_str() );
+			CreatureState::SetName( pCreature, vi.getName().c_str() );
 
 			//--------------------------------------------------
-			// CreatureType 설정
+			// Set the CreatureType
 			//--------------------------------------------------
 			Shape_t shape	= vi.getShape();
 			bool bMale		= vi.getSex()==MALE;
@@ -62,108 +71,114 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 
 			if (vi.getCompetence()==0)
 			{
-				pCreature->SetCompetence( 0 );
-				pCreature->SetCreatureType( CREATURETYPE_VAMPIRE_OPERATOR );
-				pCreature->SetMale( bMale );
+				CreatureState::SetCompetence( pCreature, 0 );
+				CreatureState::SetCreatureType( pCreature, CREATURETYPE_VAMPIRE_OPERATOR );
+				CreatureState::SetMale( pCreature, bMale );
 			}
 			else
 			{
-				pCreature->SetCreatureType( GetVampireCreatureType( shape, bMale, coatType ) );
+				CreatureState::SetCreatureType( pCreature, GetVampireCreatureType( shape, bMale, coatType ) );
 			}
 
-			pCreature->SetMale( bMale );
+			CreatureState::SetMale( pCreature, bMale );
 
-			if (pCreature->GetCreatureType()==CREATURETYPE_BAT)
+			if (CreatureState::GetCreatureType( pCreature )==CREATURETYPE_BAT)
 			{
-				pCreature->SetFlyingCreature();
+				CreatureState::SetFlyingCreature( pCreature );
 			}
 			else
 			{
-				pCreature->SetGroundCreature();
+				CreatureState::SetGroundCreature( pCreature );
 			}
 
-			pCreature->SetID(vi.getObjectID());
+			CreatureState::SetID( pCreature, vi.getObjectID() );
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( vi.getX(), vi.getY() );
-			pCreature->SetServerPosition( vi.getX(), vi.getY() );
-			pCreature->SetDirection( vi.getDir() );
-			pCreature->SetCurrentDirection( vi.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetDirection( pCreature, vi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, vi.getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
  
-			// 색깔
+			// colours
 			
-			if( pCreature->GetCreatureType() == CREATURETYPE_WER_WOLF )
+			if( CreatureState::GetCreatureType( pCreature ) == CREATURETYPE_WER_WOLF )
 			{
-				pCreature->SetBodyColor1( vi.getCoatColor() );
-				pCreature->SetBodyColor2( vi.getCoatColor() );
+				CreatureState::SetBodyColor1( pCreature, vi.getCoatColor() );
+				CreatureState::SetBodyColor2( pCreature, vi.getCoatColor() );
 			} else
 			{
-				pCreature->SetBodyColor1( vi.getSkinColor() );
-				pCreature->SetBodyColor2( vi.getCoatColor() );
+				CreatureState::SetBodyColor1( pCreature, vi.getSkinColor() );
+				CreatureState::SetBodyColor2( pCreature, vi.getCoatColor() );
 			}
 			// add by sonic 2006.10.29
-			pCreature->SetMasterEffectType( vi.getMasterEffectColor() );
+			CreatureState::SetMasterEffectType( pCreature, vi.getMasterEffectColor() );
 			// 2006.10.29 sonic add end
 			//--------------------------------------------------
 			// [ TEST CODE ]
 			//--------------------------------------------------
-			// 옷 색깔 설정하기
+			// set the coat's colour
 			//--------------------------------------------------
 			/*
 			if (pCreature->IsMale())
 			{
-				pCreature->SetBodyColor2( 91 );
+				CreatureState::SetBodyColor2( pCreature, 91 );
 			}
 			else
 			{
-				pCreature->SetBodyColor2( 38 );
+				CreatureState::SetBodyColor2( pCreature, 38 );
 			}
 			*/
 
-			pCreature->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
-			pCreature->SetStatus( MODIFY_RANK, vi.getRank() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+				pStatus->SetStatus( MODIFY_RANK, vi.getRank() );
+			}
 
 			//vi.getName()
-			// 색상 정보
+			// colour information
 
-			pCreature->SetWeaponSpeed( vi.getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, vi.getAttackSpeed() );
 			
-			// 임시로
-			pCreature->SetGuildNumber( vi.getGuildID() );
-			pCreature->SetUnionGuildID( vi.getUnionID() );
+			// for now
+			CreatureState::SetGuildNumber( pCreature, vi.getGuildID() );
+			CreatureState::SetUnionGuildID( pCreature, vi.getUnionID() );
 			if( vi.getBatColor() != 0 )
-				pCreature->SetBatColor( vi.getBatColor() );
+				CreatureState::SetBatColor( pCreature, vi.getBatColor() );
 			else
-				pCreature->SetBatColor( 0xFFFF );
+				CreatureState::SetBatColor( pCreature, 0xFFFF );
 			
-			if(pCreature->IsNPC() == false)
-				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
-			if(pPacket->getStoreOutlook().isOpen()&& g_pPlayer->IsVampire()== true && pCreature->IsNPC() == false)
+			if((*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
+				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsVampire( PlayerState::Creature() )== true && (*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
-					pCreature->SetPersnalString((char*)pPacket->getStoreOutlook().getSign().c_str(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, GetGameString(UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE), CommunicationPresentation::GetChattingColor() );
 			}
 			
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 				pCreature = NULL;
 			}
 
 		}
 		//--------------------------------------------------
-		// 이미 있는 Creature인 경우
+		// A creature already there
 		//--------------------------------------------------
 		else
 		{
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
+			}
 			//--------------------------------------------------
-			// CreatureType 설정
+			// Set the CreatureType
 			//--------------------------------------------------
 			Shape_t shape	= vi.getShape();
 			bool bMale		= vi.getSex()==MALE;
@@ -171,87 +186,90 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 
 			if (vi.getCompetence()==0)
 			{
-				pCreature->SetCompetence( 0 );
-				pCreature->SetCreatureType( CREATURETYPE_VAMPIRE_OPERATOR );
-				pCreature->SetMale( bMale );
+				CreatureState::SetCompetence( pCreature, 0 );
+				CreatureState::SetCreatureType( pCreature, CREATURETYPE_VAMPIRE_OPERATOR );
+				CreatureState::SetMale( pCreature, bMale );
 			}
 			else
 			{
-				pCreature->SetCreatureType( GetVampireCreatureType( shape, bMale, coatType ) );
+				CreatureState::SetCreatureType( pCreature, GetVampireCreatureType( shape, bMale, coatType ) );
 			}
 
-			pCreature->SetMale( bMale );
+			CreatureState::SetMale( pCreature, bMale );
 
-			if (pCreature->GetCreatureType()==CREATURETYPE_BAT)
+			if (CreatureState::GetCreatureType( pCreature )==CREATURETYPE_BAT)
 			{
-				pCreature->SetFlyingCreature();
+				CreatureState::SetFlyingCreature( pCreature );
 			}
 			else
 			{
-				pCreature->SetGroundCreature();
+				CreatureState::SetGroundCreature( pCreature );
 			}
 			//pCreature->SetGroundCreature();
 
-			// 임시로
-			pCreature->SetGuildNumber( vi.getGuildID() );
-			pCreature->SetUnionGuildID( vi.getUnionID() );
+			// for now
+			CreatureState::SetGuildNumber( pCreature, vi.getGuildID() );
+			CreatureState::SetUnionGuildID( pCreature, vi.getUnionID() );
 			
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->MovePosition( vi.getX(), vi.getY() );
-			pCreature->SetServerPosition( vi.getX(), vi.getY() );			
-			pCreature->SetDirection( vi.getDir() );
-			pCreature->SetCurrentDirection( vi.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::MovePosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );			
+			CreatureState::SetDirection( pCreature, vi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, vi.getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			// 색깔
-			if( pCreature->GetCreatureType() == CREATURETYPE_WER_WOLF )
+			// colours
+			if( CreatureState::GetCreatureType( pCreature ) == CREATURETYPE_WER_WOLF )
 			{
-				pCreature->SetBodyColor1( vi.getCoatColor() );
-				pCreature->SetBodyColor2( vi.getCoatColor() );
+				CreatureState::SetBodyColor1( pCreature, vi.getCoatColor() );
+				CreatureState::SetBodyColor2( pCreature, vi.getCoatColor() );
 			} else
 			{
-				pCreature->SetBodyColor1( vi.getSkinColor() );
-				pCreature->SetBodyColor2( vi.getCoatColor() );
+				CreatureState::SetBodyColor1( pCreature, vi.getSkinColor() );
+				CreatureState::SetBodyColor2( pCreature, vi.getCoatColor() );
 			}
 
 			// add by sonic 2006.10.29
-			pCreature->SetMasterEffectType( vi.getMasterEffectColor() );
+			CreatureState::SetMasterEffectType( pCreature, vi.getMasterEffectColor() );
 			// end
 			//--------------------------------------------------
 			// [ TEST CODE ]
 			//--------------------------------------------------
-			// 옷 색깔 설정하기
+			// set the coat's colour
 			//--------------------------------------------------
 			/*
 			if (pCreature->IsMale())
 			{
-				pCreature->SetBodyColor2( 91 );
+				CreatureState::SetBodyColor2( pCreature, 91 );
 			}
 			else
 			{
-				pCreature->SetBodyColor2( 38 );
+				CreatureState::SetBodyColor2( pCreature, 38 );
 			}
 			*/
 
-			pCreature->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
-			pCreature->SetStatus( MODIFY_RANK, vi.getRank() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+				pStatus->SetStatus( MODIFY_RANK, vi.getRank() );
+			}
 			
-			pCreature->SetWeaponSpeed( vi.getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, vi.getAttackSpeed() );
 			if( vi.getBatColor() != 0 )
-				pCreature->SetBatColor( vi.getBatColor() );
+				CreatureState::SetBatColor( pCreature, vi.getBatColor() );
 			else
-				pCreature->SetBatColor( 0xFFFF );
-			if(pCreature->IsNPC() == false)
-				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
+				CreatureState::SetBatColor( pCreature, 0xFFFF );
+			if((*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
+				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
 			
-			if(pPacket->getStoreOutlook().isOpen()&& g_pPlayer->IsVampire()== true && pCreature->IsNPC() == false)
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsVampire( PlayerState::Creature() )== true && (*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
-					pCreature->SetPersnalString((char*)pPacket->getStoreOutlook().getSign().c_str(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, GetGameString(UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE), CommunicationPresentation::GetChattingColor() );
 			}
 
 			
@@ -260,43 +278,43 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 		if (pCreature!=NULL)
 		{
 			//--------------------------------------------------
-			// Effect 붙이기..
+			// Attach the effects..
 			//--------------------------------------------------
-			SetEffectInfo( pCreature, pPacket->getEffectInfo() );
+			WorldEvents::SetEffectInfo( pCreature, pPacket->getEffectInfo(), 0 );
 			
 			//--------------------------------------------------
-			// 정상일 경우에는 0, 포탈을 통했을 경우에는 1
+			// 0 normally, 1 through a portal
 			//--------------------------------------------------
 			if (pPacket->getFromFlag()==1)
 			{
-				ComeFromPortal( pCreature );
+				WorldEvents::ComeFromPortal( pCreature );
 			}
 			
-			// 펫 처리
+			// the pet
 			if(pPacket->getPetInfo() != NULL)
-				SetPetInfo(pPacket->getPetInfo(), pCreature->GetID());
+				WorldEvents::SetPetInfo(pPacket->getPetInfo(), CreatureState::GetID( pCreature ));
 			NicknameInfo* _tempNick = pPacket->getNicknameInfo();
 			if(_tempNick != NULL)
 			{
-				// 커스텀 닉네임 일때
+				// a custom nickname
 				if(_tempNick->getNicknameType() == NicknameInfo::NICK_CUSTOM_FORCED ||
 				   _tempNick->getNicknameType() == NicknameInfo::NICK_CUSTOM)
 				{
-					pCreature->SetNickName(_tempNick->getNicknameType(), (char*)_tempNick->getNickname().c_str());
+					CreatureState::SetNickName( pCreature, _tempNick->getNicknameType(), (char*)_tempNick->getNickname().c_str());
 					
 				}
-				else // 닉네임 인덱스가 있을 때
+				else // a nickname by its index
 				{
 					int TempIndex = _tempNick->getNicknameIndex();
 					if(TempIndex >= g_pNickNameStringTable->GetSize())
 						TempIndex = 0;
-					pCreature->SetNickName(_tempNick->getNicknameType(), (char*)(*g_pNickNameStringTable)[TempIndex].GetString());
+					CreatureState::SetNickName( pCreature, _tempNick->getNicknameType(), (char*)(*g_pNickNameStringTable)[TempIndex].GetString());
 				}
 			}
 		}
 	}
 
-	// [도움말] Vampire가 나타날때
+	// [Help] when a vampire appears
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_CREATURE_APPEAR_VAMPIRE );
 //	__END_HELP_EVENT
