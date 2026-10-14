@@ -18,7 +18,6 @@
 #include "PlayerStateHost.h"
 #include "WorldEventsHost.h"
 
-#define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -122,28 +121,27 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 				//----------------------------------------------------
 				// a gun in the right hand
 				//----------------------------------------------------
-				if (pRightHandItem!=NULL)
+				if (pRightHandItem!=NULL && pRightHandItem->IsGunItem())
 				{
-					if (pRightHandItem->IsGunItem())
-					{
-						// load the magazine as the current one, freeing the one it held
-						MItem::ReloadGun( const_cast<MItem*>(pRightHandItem), pMagazineItem );
-					}									
+					// load the magazine as the current one, freeing the one it held
+					MItem::ReloadGun( const_cast<MItem*>(pRightHandItem), pMagazineItem );
 				}
 				//----------------------------------------------------
-				// not a gun --> an error..
+				// no gun in the right hand --> an error.. the magazine
+				// is spent all the same: the last one has left its
+				// container, and of a stack only the new one goes.
 				//----------------------------------------------------
 				else
 				{
-					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
-					
-					// remove it from the inventory
-					g_pInventory->RemoveItem( pItem->GetID() );
+					DEBUG_ADD_ERR("[Error] Player not Use GUN");
 
-					// forget the item's description - any use? - -;
-					DialogPresentation::RemoveDescriptor( (void*)pItem );
+					if (pMagazineItem == pItem)
+					{
+						// forget the item's description - any use? - -;
+						DialogPresentation::RemoveDescriptor( (void*)pItem );
+					}
 
-					delete pItem;
+					delete pMagazineItem;
 				}
 			}
 			//----------------------------------------------------
@@ -212,25 +210,27 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 				//----------------------------------------------------
 				// a gun in the right hand
 				//----------------------------------------------------
-				if (pRightHandItem!=NULL)
+				if (pRightHandItem!=NULL && pRightHandItem->IsGunItem())
 				{
-					if (pRightHandItem->IsGunItem())
-					{
-						// load the magazine as the current one, freeing the one it held
-						MItem::ReloadGun( const_cast<MItem*>(pRightHandItem), pMagazineItem );
-					}									
+					// load the magazine as the current one, freeing the one it held
+					MItem::ReloadGun( const_cast<MItem*>(pRightHandItem), pMagazineItem );
 				}
 				//----------------------------------------------------
-				// not a gun --> an error..
+				// no gun in the right hand --> an error.. the magazine
+				// is spent all the same: the last one has left its
+				// container, and of a stack only the new one goes.
 				//----------------------------------------------------
 				else
 				{
-					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
-					
-					// remove it from the quick slot
-					g_pQuickSlot->RemoveItem( pItem->GetID() );
+					DEBUG_ADD_ERR("[Error] Player not Use GUN");
 
-					SAFE_DELETE( pItem );					
+					if (pMagazineItem == pItem)
+					{
+						// forget the item's description - any use? - -;
+						DialogPresentation::RemoveDescriptor( (void*)pItem );
+					}
+
+					delete pMagazineItem;
 				}
 			}
 			//----------------------------------------------------

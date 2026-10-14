@@ -6,6 +6,7 @@
 #include "MItemTable.h"
 #include "MQuickSlot.h"
 #include "MSlayerGear.h"
+#include "DialogPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "WorldEventsHost.h"
 #include "Gpackets/GCReloadOK.h"
@@ -20,8 +21,10 @@
 // holding the packet's bullets: the last one leaves its container, and
 // of a larger stack a new magazine of the same type and options is made
 // and the stack is one fewer. The player's status is calculated again.
-// An item that is no magazine only clears the buffer; another buffer
-// status only sounds.
+// Without a gun in the right hand the magazine is spent all the same:
+// the last one is dropped (its description forgotten), and of a stack
+// only the new one. An item that is no magazine only clears the
+// buffer; another buffer status only sounds.
 namespace {
 
 std::vector<std::string> calls;
@@ -73,6 +76,12 @@ const PlayerState::Host player = []() {
 	return host;
 }();
 
+const DialogPresentation::Host dialog = []() {
+	DialogPresentation::Host host{};
+	host.RemoveDescriptor = [](void* pItem) { calls.push_back("description gone|" + N(static_cast<MItem*>(pItem)->GetID())); };
+	return host;
+}();
+
 const WorldEvents::Host events = []() {
 	WorldEvents::Host host{};
 	host.PlaySound = [](TYPE_SOUNDID soundID) { calls.push_back("sound|" + N(soundID)); };
@@ -91,6 +100,7 @@ struct World : GameModelWorld
 	MSlayerGear* oldGear = g_pSlayerGear;
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	const WorldEvents::Host* oldEvents = WorldEvents::SetHost(&events);
+	const DialogPresentation::Host* oldDialog = DialogPresentation::SetHost(&dialog);
 	World()
 	{
 		calls.clear();
@@ -118,6 +128,7 @@ struct World : GameModelWorld
 	~World()
 	{
 		MItem::SetHost(nullptr);
+		DialogPresentation::SetHost(oldDialog);
 		WorldEvents::SetHost(oldEvents);
 		PlayerState::SetHost(oldPlayer);
 		g_pSlayerGear = oldGear;
@@ -234,4 +245,29 @@ TEST(ReloadReplies, AVampireAnEmptyBufferOrAnotherStatusReloadsNothing)
 	bufferItem = nullptr;
 	Receive(30);
 	CHECK(calls.empty());
+}
+
+TEST(ReloadReplies, WithoutAGunTheSpentMagazineIsDropped)
+{
+	// No gun in the right hand, or another item there.
+	for (bool sword : {false, true})
+	{
+		for (bool quickSlot : {false, true})
+		{
+			World world;
+			if (sword) world.Holding(new Ware(ITEM_CLASS_SWORD, 1002));
+			// The last one: out of its container, its description forgotten.
+			Ware* pLast = world.Magazines(1, quickSlot);
+			(void)pLast;
+			Receive(30);
+			CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "description gone|2001", "calculated"}));
+			CHECK((quickSlot ? world.belt.GetItem(1) : world.inventory.GetItem(0, 0)) == nullptr && loaded.empty());
+			// A stack keeps the rest.
+			calls.clear();
+			Ware* pStack = world.Magazines(3, quickSlot);
+			Receive(30);
+			CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "made|" + N(ITEM_CLASS_MAGAZINE), "calculated"}));
+			CHECK((quickSlot ? world.belt.GetItem(1) : world.inventory.GetItem(0, 0)) == pStack && pStack->GetNumber() == 2 && loaded.empty());
+		}
+	}
 }

@@ -5335,6 +5335,15 @@ rounds settled* for the host rules). Test fixtures share
     last magazine and a stack (of two and of three) in the inventory and
     the quick slot, an item that is no magazine, a vampire, another
     buffer status, and an empty buffer.
+  - Fixed after the move: a reload without a gun in the right hand.
+    With the hand empty, the old branch logged through the NULL item
+    and crashed. With another item there, the spent magazine leaked, and
+    its unreachable cleanup would have freed a whole stack's remaining
+    magazines. Now the spent magazine is dropped either way. The last
+    one has already left its container, so its description is forgotten
+    and it is freed; of a stack only the new magazine goes. The test
+    covers both hands, both containers, and the last magazine and a
+    stack.
 
 ### Remaining R1 work after tasks 4.80-4.194
 
