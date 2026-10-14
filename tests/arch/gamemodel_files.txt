@@ -1040,3 +1040,9 @@ Client/PacketHandler/GCUntransformOKHandler.cpp
 # whole zone, each masked for another race.
 Client/PacketHandler/GCSayHandler.cpp
 Client/PacketHandler/GCGlobalChatHandler.cpp
+
+# A skill learned, an item the server would not take, and a broken piece
+# of gear coming off the player.
+Client/PacketHandler/GCLearnSkillOKHandler.cpp
+Client/PacketHandler/GCCannotAddHandler.cpp
+Client/PacketHandler/GCRemoveFromGearHandler.cpp

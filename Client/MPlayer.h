@@ -167,57 +167,9 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 			ATTACK_MODE_GUILD,		// 우리 길드만 우리편
 		};
 
-		enum ITEM_CHECK_BUFFER
-		{
-			ITEM_CHECK_BUFFER_NULL = 0,
-
-			// item줍기
-			ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY,
-			ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE,
-			ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT,
-			ITEM_CHECK_BUFFER_PICKUP_MONEY,
-
-			// item 사용 
-			ITEM_CHECK_BUFFER_USE_FROM_INVENTORY,
-			ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT,
-			
-			// item을 다른 item에 추가
-			ITEM_CHECK_BUFFER_INSERT_FROM_INVENTORY,	
-			ITEM_CHECK_BUFFER_INSERT_FROM_GEAR,	
-			ITEM_CHECK_BUFFER_INSERT_FROM_QUICKSLOT,			
-			
-			ITEM_CHECK_BUFFER_DROP_TO_INVENTORY,
-			ITEM_CHECK_BUFFER_PICKUP_FROM_INVENTORY,
-
-			ITEM_CHECK_BUFFER_PICKUP_SOME_FROM_INVENTORY,	// 아이템 몇개만 들기
-
-			// trade할 때
-			ITEM_CHECK_BUFFER_TRADE_ADD,
-			ITEM_CHECK_BUFFER_TRADE_REMOVE,
-
-			// item에 기술 사용
-			ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY,
-
-			// item으로 기술 사용
-			ITEM_CHECK_BUFFER_SKILL_FROM_ITEM,
-
-			// mouse에서 zone으로 버린다.
-			ITEM_CHECK_BUFFER_DROP_TO_ZONE,			
-
-			ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE,			
-
-			// item을 다른 아이템에 더하기
-			ITEM_CHECK_BUFFER_ITEM_TO_ITEM,
-
-			// 트리 합체
-			ITEM_CHECK_BUFFER_TREE_MERGE,
-			ITEM_CHECK_BUFFER_USE_FROM_GEAR,
-			
-			ITEM_CHECK_BUFFER_USE_MIXING_ITEM,
-			ITEM_CHECK_BUFFER_DROP_TO_CREATURE,			
-			
-			ITEM_CHECK_BUFFER_USE_FROM_GQUEST_INVENTORY,
-		};
+		// What an item waiting on the server is for (PlayerStateHost.h).
+		using ITEM_CHECK_BUFFER = PlayerState::ITEM_CHECK_BUFFER;
+		using enum PlayerState::ITEM_CHECK_BUFFER;
 
 		// What the player waits for the server to verify (PlayerStateHost.h).
 		using WAIT_VERIFY = PlayerState::WAIT_VERIFY;
@@ -507,9 +459,9 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 		bool	IsItemCheckBufferNULL()				{ return m_pItemCheckBuffer==NULL; }
 
 	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
-		void	SetItemCheckBuffer(MItem* pItem, enum ITEM_CHECK_BUFFER status, TYPE_OBJECTID SubItem = OBJECTID_NULL);
+		void	SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status, TYPE_OBJECTID SubItem = OBJECTID_NULL);
 	#else
-		void	SetItemCheckBuffer(MItem* pItem, enum ITEM_CHECK_BUFFER status);
+		void	SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status);
 	#endif
 		
 		void	ClearItemCheckBuffer();		// 제거
@@ -517,7 +469,7 @@ class MPlayer : public MCreatureWear, public MRequestMode {
 	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
 		TYPE_OBJECTID	GetItemIDCheckBufferSubInventory() const	{ return m_dwSubItemIDCheckBuffer; }
 	#endif
-		enum ITEM_CHECK_BUFFER	GetItemCheckBufferStatus() const	{ return m_ItemCheckBufferStatus; }
+		ITEM_CHECK_BUFFER	GetItemCheckBufferStatus() const	{ return m_ItemCheckBufferStatus; }
 
 		// 괜히 만들어본 함수들 - -;
 		bool	IsItemCheckBufferPickupToInventory() const		{ return m_ItemCheckBufferStatus==ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY; }

@@ -3513,6 +3513,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.EmptyMove = []() { gbl_global_empty_move = true; },
 	.RunStorage = UI_RunStorage,
 	.SetStorage = UI_SetStorage,
+	.PickUpItem = UI_PickUpItem,
+	.RemoveDescriptor = [](const void* pItem) { UI_RemoveDescriptor(const_cast<void*>(pItem)); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3574,6 +3576,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
 	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
 	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
+	.GetItemCheckBufferStatus = []() { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBufferStatus() : PlayerState::ITEM_CHECK_BUFFER_NULL; },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
