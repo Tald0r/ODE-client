@@ -117,6 +117,7 @@
 #include "GuildPresentationHost.h"
 #include "CommunicationPresentationHost.h"
 #include "QuestWarPresentationHost.h"
+#include "NoticePresentationHost.h"
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
@@ -2700,6 +2701,7 @@ void ReleaseAllObjects()
 	GuildPresentation::SetHost(nullptr);
 	CommunicationPresentation::SetHost(nullptr);
 	QuestWarPresentation::SetHost(nullptr);
+	NoticePresentation::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
@@ -3505,6 +3507,27 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.HasProfiles = []() { return g_pProfileManager != NULL; },
 	.GetProfileFilename = [](const char* name) { return g_pProfileManager->GetFilename(name); },
 	.GetChattingColor = []() { return static_cast<std::uint32_t>(g_pUserOption->ChattingColor); },
+};
+
+extern bool g_bEventQuestEnding;
+extern void SetFlagTo( bool bTae );
+
+static const NoticePresentation::Host s_NoticePresentationHost = {
+	.RunNotice = [](std::uint32_t kind, std::uint32_t parameter) { UI_RunNotice(kind, parameter); },
+	.DeleteNotice = [](std::uint32_t kind) { UI_DeleteNotice(kind); },
+	.RunWelcomeMessage = UI_RunWelcomeMessage,
+	.LotteryResult = UI_LotteryResult,
+	.RunHorn = UI_RunHorn,
+	.MasterLairMessage = [](std::uint8_t type, short value, std::uint16_t zoneID) { UI_MasterLairMessage(type, value, zoneID); },
+	.PopupMessage = UI_PopupMessage,
+	.PopupText = [](const char* text, bool bLarge) {
+		gC_vs_ui.RunPopupMessage(text, bLarge ? C_VS_UI_POPUP_MESSAGE::POPUP_LARGE : C_VS_UI_POPUP_MESSAGE::POPUP_NORMAL);
+	},
+	.RunMinigame = UI_RunMinigame,
+	.CloseCTFStatusWindow = UI_CloseCTFStatusWindow,
+	.SendCrashReport = SendCrashReport,
+	.SetFlagTo = SetFlagTo,
+	.StartQuestEnding = []() { g_bEventQuestEnding = true; },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -4566,6 +4589,7 @@ InitGameObject()
 	GuildPresentation::SetHost(&s_GuildPresentationHost);
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
+	NoticePresentation::SetHost(&s_NoticePresentationHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);
