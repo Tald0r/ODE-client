@@ -610,16 +610,21 @@ Client/MMeteorDropEffectGenerator.h
 
 # Parabolic attacks toward sampled creature positions (4.76).
 Client/MAttackCreatureParabolaEffectGenerator.cpp
-Client/MAttachCreatureEffectGenerator.cpp
-Client/MAttachCreatureEffectGroundGenerator.cpp
-Client/MAttachCreatureOrbitEffectGenerator.cpp
-Client/MAttackCreatureEffectGenerator.cpp
-Client/MAttackCreatureHomingEffectGenerator.cpp
 Client/MAttackCreatureParabolaEffectGenerator.h
+
+# Effects attached to a creature: plain, on the ground, orbiting (4.199).
+Client/MAttachCreatureEffectGenerator.cpp
 Client/MAttachCreatureEffectGenerator.h
+Client/MAttachCreatureEffectGroundGenerator.cpp
 Client/MAttachCreatureEffectGroundGenerator.h
+Client/MAttachCreatureOrbitEffectGenerator.cpp
 Client/MAttachCreatureOrbitEffectGenerator.h
+
+# Guided and homing attacks on a creature, over the parabola's services
+# (4.200).
+Client/MAttackCreatureEffectGenerator.cpp
 Client/MAttackCreatureEffectGenerator.h
+Client/MAttackCreatureHomingEffectGenerator.cpp
 Client/MAttackCreatureHomingEffectGenerator.h
 
 # Wide ripple rows and center-only target ownership (4.77).

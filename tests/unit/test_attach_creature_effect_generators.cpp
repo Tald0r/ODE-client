@@ -4,6 +4,7 @@
 #include "MAttachCreatureOrbitEffectGenerator.h"
 #include "EffectSpriteTypeDef.h"
 #include "MAttachOrbitEffect.h"
+#include "MEffectTarget.h"
 #include "MathTable.h"
 #include "OrbitEffectPolicy.h"
 #include "SkillDef.h"
@@ -77,6 +78,17 @@ const MAttachEffectHost attachHost{
 	.LiveCreature = [](TYPE_OBJECTID id, MAttachCreaturePosition& position) { position = {id, 96, 48, 12}; return true; },
 };
 
+std::vector<int> removedTargets;
+const MEffectTargetHost targetHost{.RemoveFromPlayer = [](BYTE id) { removedTargets.push_back(id); }};
+
+// A target an effect will own once it is linked.
+MEffectTarget* NewTarget()
+{
+	auto* pTarget = new MEffectTarget(3);
+	pTarget->Set(777, 888, 999, 456);
+	return pTarget;
+}
+
 const ZoneState::Host zone = []() {
 	ZoneState::Host host{};
 	host.GetCreature = [](TYPE_OBJECTID id) { auto it = zoneCreatures.find(id); return it == zoneCreatures.end() ? nullptr : it->second; };
@@ -100,7 +112,11 @@ const CreatureState::Host creature = []() {
 		return pEffect;
 	};
 	host.IsExistAttachEffect = [](MCreature* p) { return !attached[p].empty(); };
-	host.FirstAttachEffect = [](MCreature* p) { return attached[p].front(); };
+	// Asked only of a creature that has an effect; none otherwise.
+	host.FirstAttachEffect = [](MCreature* p) -> MAttachEffect* {
+		calls.push_back("first|" + Who(p));
+		return attached[p].empty() ? nullptr : attached[p].front();
+	};
 	host.ClearAttachEffect = [](MCreature* p) { calls.push_back("clear|" + Who(p)); attached[p].clear(); };
 	return host;
 }();
@@ -110,6 +126,7 @@ struct World
 	Tables tables;
 	const MEffectHost* oldEffect = MEffect::SetHost(&effectHost);
 	const MAttachEffectHost* oldAttach = MAttachEffect::SetHost(&attachHost);
+	const MEffectTargetHost* oldTargetHost = MEffectTarget::SetHost(&targetHost);
 	const ZoneState::Host* oldZone = ZoneState::SetHost(&zone);
 	const CreatureState::Host* oldCreature = CreatureState::SetHost(&creature);
 	MAttachCreatureEffectGroundGenerator ground;
@@ -132,10 +149,11 @@ struct World
 	{
 		CreatureState::SetHost(oldCreature);
 		ZoneState::SetHost(oldZone);
-		MAttachEffect::SetHost(oldAttach);
-		MEffect::SetHost(oldEffect);
 		attached.clear();
 		created.clear();
+		MEffectTarget::SetHost(oldTargetHost);
+		MAttachEffect::SetHost(oldAttach);
+		MEffect::SetHost(oldEffect);
 	}
 };
 
@@ -185,9 +203,12 @@ TEST(AttachCreatureEffectGenerators, TheGroundOneLaysTheEffectUnderTheZonesOrAFa
 {
 	World world;
 	CHECK_EQ(EFFECTGENERATORID_ATTACH_CREATURE_GROUND, world.ground.GetID());
-	CHECK(world.ground.Generate(Info()));
+	EFFECTGENERATOR_INFO info = Info();
+	info.pEffectTarget = NewTarget();
+	CHECK(world.ground.Generate(info));
 	CHECK(calls == std::vector<std::string>{Created(pA, 17, true, MEffect::EFFECT_ATTACH)});
 	CheckEffect(*created.back(), 17, 3);
+	CHECK(created.back()->GetEffectTarget() == info.pEffectTarget);
 	calls.clear();
 	CHECK(world.ground.Generate(Info(2001)));
 	CHECK(calls == std::vector<std::string>{Created(pB, 17, true, MEffect::EFFECT_ATTACH)});
@@ -214,10 +235,13 @@ TEST(AttachCreatureEffectGenerators, TheOrbitOnePicksItsStepAtRandomOrFromTheEle
 	std::srand(seed);
 	const int step = RandomIndex(std::rand(), MAX_EFFECT_ORBIT_STEP);
 	std::srand(seed);
-	CHECK(world.orbit.Generate(Info()));
+	EFFECTGENERATOR_INFO info = Info();
+	info.pEffectTarget = NewTarget();
+	CHECK(world.orbit.Generate(info));
 	CHECK(calls == std::vector<std::string>{Created(pA, 17, false, MEffect::EFFECT_ATTACH_ORBIT)});
 	MAttachOrbitEffect& first = static_cast<MAttachOrbitEffect&>(*created.back());
 	CheckEffect(first, 17, 3);
+	CHECK(first.GetEffectTarget() == info.pEffectTarget);
 	CHECK_EQ(step, first.GetOrbitStep());
 	// A summoned elemental follows the orbit effect already on the creature.
 	first.SetOrbitStep(5);
@@ -235,6 +259,17 @@ TEST(AttachCreatureEffectGenerators, TheOrbitOnePicksItsStepAtRandomOrFromTheEle
 	std::srand(otherSeed);
 	CHECK(world.orbit.Generate(Info(2001, EFFECTSPRITETYPE_SUMMON_FIRE_ELEMENTAL)));
 	CHECK_EQ(other, static_cast<MAttachOrbitEffect&>(*created.back()).GetOrbitStep());
+	// An elemental on a creature with nothing attached: at random, with
+	// nothing asked of its effects.
+	attached[pB].clear();
+	calls.clear();
+	const unsigned bareSeed = SeedFor(-1);
+	std::srand(bareSeed);
+	const int bare = RandomIndex(std::rand(), MAX_EFFECT_ORBIT_STEP);
+	std::srand(bareSeed);
+	CHECK(world.orbit.Generate(Info(2001, EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL)));
+	CHECK_EQ(bare, static_cast<MAttachOrbitEffect&>(*created.back()).GetOrbitStep());
+	CHECK(calls == std::vector<std::string>{Created(pB, EFFECTSPRITETYPE_SUMMON_WATER_ELEMENTAL, false, MEffect::EFFECT_ATTACH_ORBIT)});
 	// Another sprite type ignores the step on the creature.
 	const unsigned thirdSeed = SeedFor(5);
 	std::srand(thirdSeed);
@@ -254,7 +289,7 @@ TEST(AttachCreatureEffectGenerators, AnElementalsAttackOrHealClearsTheCreatureAn
 		calls.clear();
 		attached[pA] = {created.front().get()};
 		CHECK(world.orbit.Generate(Info(1001, type)));
-		CHECK(calls == (std::vector<std::string>{"clear|A", Created(pA, type, false, MEffect::EFFECT_ATTACH_ORBIT)}));
+		CHECK(calls == (std::vector<std::string>{"first|A", "clear|A", Created(pA, type, false, MEffect::EFFECT_ATTACH_ORBIT)}));
 		MAttachOrbitEffect& effect = static_cast<MAttachOrbitEffect&>(*created.back());
 		// The step is the last one's, and the orbit holds still.
 		CHECK_EQ(6, effect.GetOrbitStep());
@@ -279,7 +314,10 @@ TEST(AttachCreatureEffectGenerators, ThePlainOneFindsTheCreatureInTheZoneAFakeOr
 {
 	World world;
 	CHECK_EQ(EFFECTGENERATORID_ATTACH_CREATURE, world.plain.GetID());
-	CHECK(world.plain.Generate(Info()));
+	EFFECTGENERATOR_INFO info = Info();
+	info.pEffectTarget = NewTarget();
+	CHECK(world.plain.Generate(info));
+	CHECK(created.back()->GetEffectTarget() == info.pEffectTarget);
 	CHECK(world.plain.Generate(Info(2001)));
 	items = {{3001, reinterpret_cast<MItem*>(&itemDummy)}};
 	corpses = {{3001, pInCorpse}};
@@ -324,6 +362,8 @@ TEST(AttachCreatureEffectGenerators, JabbingVeinFitsGolemersAlcansAndBats)
 		{106, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_ALCAN, EFFECTSPRITETYPE_JABBING_VEIN_REAR_ALCAN},
 		{129, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_ALCAN, EFFECTSPRITETYPE_JABBING_VEIN_REAR_ALCAN},
 		{137, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_ALCAN, EFFECTSPRITETYPE_JABBING_VEIN_REAR_ALCAN},
+		{103, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3, EFFECTSPRITETYPE_JABBING_VEIN_REAR_3},
+		{583, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3, EFFECTSPRITETYPE_JABBING_VEIN_REAR_3},
 		{110, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3, EFFECTSPRITETYPE_JABBING_VEIN_REAR_3},
 		{120, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3, EFFECTSPRITETYPE_JABBING_VEIN_REAR_3},
 		{128, EFFECTSPRITETYPE_JABBING_VEIN_FRONT_3, EFFECTSPRITETYPE_JABBING_VEIN_REAR_3},
@@ -391,7 +431,7 @@ TEST(AttachCreatureEffectGenerators, DistanceBlitzCountsTheTilesCovered)
 	World world;
 	// From 0 to 6 tiles, along X or Y: 2 tiles or fewer is the first
 	// frame, 6 or more the fifth.
-	const struct { int dx, dy, frame; } cases[] = {{0, 0, 0}, {2, 0, 0}, {3, 0, 1}, {0, 4, 2}, {5, 1, 3}, {6, 0, 4}, {9, 9, 4}};
+	const struct { int dx, dy, frame; } cases[] = {{0, 0, 0}, {2, 0, 0}, {3, 0, 1}, {0, 4, 2}, {0, -4, 2}, {5, 1, 3}, {6, 0, 4}, {9, 9, 4}};
 	for (const auto& c : cases)
 	{
 		EFFECTGENERATOR_INFO info = Info(1001, EFFECTSPRITETYPE_DISTANCE_BLITZ_12);
