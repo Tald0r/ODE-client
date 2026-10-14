@@ -122,8 +122,14 @@ bool
 USINGCOLORSET_NODE::LoadFromFile(ifstream& file)
 {
 	// read the count
-	int size;
+	int size = 0;
 	file.read((char*)&size, 4);
+
+	// A file cut short has no count to go by.
+	if (!file)
+	{
+		return false;
+	}
 
 	// a count other than the current colorsets'..
 	// still read them from the file.

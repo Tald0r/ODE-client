@@ -5699,6 +5699,11 @@ rounds settled* for the host rules). Test fixtures share
     every set (the address of the array, not of each element). It now
     writes each set's own flag, and a saved node loads back as it was.
     Only a commented-out tool path saves.
+  - Fixed later (4.204's PR): `LoadFromFile` read the count into an
+    uninitialised int. A file cut short before its count left that
+    garbage, so the skip loop could make up to 2^31 failed reads at
+    start-up, or a garbage 495 loaded failed reads as flags. It now
+    returns false when the count cannot be read.
 
 - [x] **4.204 The pack-file record and the objects' screen rects:** move
   `PackFileManager.cpp` (`PackFileInfo`) and `MObjectScreen.cpp` into

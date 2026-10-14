@@ -145,3 +145,16 @@ TEST(UsingColorSetTable, ANodeLoadsOnlyItsOwnCount)
 	}
 	for (int i = 0; i < MAX_COLORSET; i++) CHECK(node.Is(i) == (i % 3 == 0));
 }
+
+TEST(UsingColorSetTable, AFileCutShortBeforeItsCountLoadsNothing)
+{
+	// Half of a count of 495: read without the check, it would be taken
+	// for a whole one.
+	TempFile file;
+	file.Write({0xEF, 0x01});
+	Probe node;
+	node.Enable(5);
+	std::ifstream in(file.path, std::ios::binary);
+	CHECK(!node.LoadFromFile(in));
+	CHECK(node.Enabled() == std::vector<int>{5});
+}
