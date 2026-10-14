@@ -34,7 +34,7 @@ namespace {
 
 constexpr int kTableSize = MAX_EFFECTSPRITETYPE;
 DWORD frameNow;
-int acceptLimit;
+int acceptLimit, refuseFirst, offered;
 struct Queued
 {
 	std::unique_ptr<MEffect> effect;
@@ -62,6 +62,8 @@ bool Sprite(TYPE_EFFECTSPRITETYPE type, MFixedZoneEffectSprite& sprite)
 }
 bool Keep(std::unique_ptr<MEffect> effect, bool ground)
 {
+	// Refuses the first few offered, and any past the limit.
+	if (++offered <= refuseFirst) return false;
 	if (static_cast<int>(queued.size()) >= acceptLimit) return false;
 	queued.push_back({std::move(effect), ground});
 	return true;
@@ -109,6 +111,7 @@ struct World : GameModelWorld
 	{
 		frameNow = 100;
 		acceptLimit = 99;
+		refuseFirst = offered = 0;
 		queued.clear();
 		events.clear();
 		removedTargets.clear();
@@ -146,10 +149,11 @@ EFFECTGENERATOR_INFO Info(int spriteType, BYTE grade = 0)
 	info.linkCount = 5;
 	info.power = 77;
 	info.temp1 = grade;
+	info.z1 = 9;	// never used: a ripple lies at height 0
 	return info;
 }
 
-void CheckEffect(MEffect& effect, int type, int x, int y, int z)
+void CheckEffect(MEffect& effect, int type, int x, int y, int z, BYTE direction = DIRECTION_RIGHT)
 {
 	CHECK_EQ(BLT_EFFECT, effect.GetBltType());
 	CHECK_EQ(type, effect.GetFrameID());
@@ -160,11 +164,14 @@ void CheckEffect(MEffect& effect, int type, int x, int y, int z)
 	CHECK_EQ(20, effect.GetStepPixel());
 	CHECK_EQ(frameNow + 30 - 1, effect.GetEndFrame());
 	CHECK_EQ(frameNow + 5 - 1, effect.GetEndLinkFrame());
-	CHECK_EQ(DIRECTION_RIGHT, effect.GetDirection());
+	CHECK_EQ(direction, effect.GetDirection());
 	CHECK_EQ(77, effect.GetPower());
 }
 
-std::unique_ptr<MEffectTarget> Target(int phases = 0)
+std::unique_ptr<MEffectTarget> Target(int phases = 0);
+bool GroundOnce(int spriteType);
+
+std::unique_ptr<MEffectTarget> Target(int phases)
 {
 	auto target = std::make_unique<MEffectTarget>(3);
 	for (int i = 0; i < phases; i++) target->NextPhase();
@@ -180,12 +187,13 @@ TEST(GroundEffectGenerators, AnAttachZoneEffectLiesAtItsPoint)
 	CHECK_EQ(EFFECTGENERATORID_ATTACH_ZONE, world.attach.GetID());
 	auto target = Target();
 	EFFECTGENERATOR_INFO info = Info(500);
+	info.direction = DIRECTION_LEFTUP;
 	info.pEffectTarget = target.get();
 	CHECK(world.attach.Generate(info));
 	target.release();
 	CHECK_EQ(1, queued.size());
-	CHECK(queued[0].ground);
-	CheckEffect(Effect(0), 500, 480, 240, 7);
+	CHECK(queued.at(0).ground);
+	CheckEffect(Effect(0), 500, 480, 240, 7, DIRECTION_LEFTUP);
 	CHECK(Effect(0).GetEffectTarget() == info.pEffectTarget);
 	CHECK_EQ(42, Effect(0).GetActionInfo());
 	CHECK(events.empty());
@@ -263,11 +271,38 @@ TEST(GroundEffectGenerators, TheActionsGradeLaysARowACrossOrASquare)
 			CheckEffect(Effect(i), 500, WorldTileGeometry::TileToPixelX(tiles[i].first), WorldTileGeometry::TileToPixelY(tiles[i].second), 7);
 			CHECK_EQ(42, Effect(i).GetActionInfo());
 			if (i == 0) CHECK(Effect(i).GetEffectTarget() == info.pEffectTarget);
-			else CHECK(Effect(i).GetEffectTarget() != nullptr && Effect(i).GetEffectTarget() != info.pEffectTarget);
+			else
+			{
+				MEffectTarget* pCopy = Effect(i).GetEffectTarget();
+				CHECK(pCopy != nullptr && pCopy != info.pEffectTarget);
+				CHECK(pCopy != nullptr && pCopy->GetX() == 1 && pCopy->GetY() == 2 && pCopy->GetID() == 456);
+			}
 		}
 	}
-	// Refused ones are gone; the kept ones are linked, the first to a copy
-	// when the first was refused. Always true.
+	// The first refused: the kept ones follow copies, and the target the
+	// caller passed is followed by none (it leaks; still true).
+	queued.clear();
+	refuseFirst = 1;
+	offered = 0;
+	auto unlinked = Target();
+	EFFECTGENERATOR_INFO firstRefused = Info(500, 1);
+	firstRefused.pEffectTarget = unlinked.get();
+	CHECK(world.attach.Generate(firstRefused));
+	CHECK_EQ(2, queued.size());
+	CHECK(queued.size() == 2 && Effect(0).GetEffectTarget() != nullptr && Effect(0).GetEffectTarget() != firstRefused.pEffectTarget);
+	refuseFirst = 0;
+	// A magic zone's grade lays round its shifted point: (454, 226) is
+	// tile (9, 9).
+	queued.clear();
+	CHECK(world.attach.Generate(Info(EFFECTSPRITETYPE_QUEST_MAGIC_ZONE, 1)));
+	CHECK_EQ(3, queued.size());
+	for (size_t i = 0; i < queued.size(); i++)
+		CHECK_EQ(WorldTileGeometry::TileToPixelX(8 + static_cast<int>(i)), Effect(i).GetPixelX());
+	// An unknown grade lays nothing, and is still true.
+	queued.clear();
+	CHECK(world.attach.Generate(Info(500, 4)));
+	CHECK(queued.empty());
+	// Refused ones are gone; only the kept ones are linked. Always true.
 	queued.clear();
 	acceptLimit = 1;
 	auto target = Target();
@@ -300,9 +335,21 @@ TEST(GroundEffectGenerators, MercyGroundLaysItsNineParts)
 	{
 		CHECK(queued[i].ground);
 		CheckEffect(Effect(i), EFFECTSPRITETYPE_MERCY_GROUND_1 + static_cast<int>(i), 480, 240, 7);
+		CHECK_EQ(42, Effect(i).GetActionInfo());
 		if (i == 0) CHECK(Effect(i).GetEffectTarget() == info.pEffectTarget);
 		else CHECK(Effect(i).GetEffectTarget() != nullptr && Effect(i).GetEffectTarget() != info.pEffectTarget);
 	}
+	// The zone keeping four: those four are linked, the rest are gone.
+	queued.clear();
+	acceptLimit = 4;
+	auto four = Target();
+	EFFECTGENERATOR_INFO fourInfo = Info(EFFECTSPRITETYPE_MERCY_GROUND_1);
+	fourInfo.pEffectTarget = four.get();
+	CHECK(world.attach.Generate(fourInfo));
+	four.release();
+	CHECK_EQ(4, queued.size());
+	CHECK(queued.size() == 4 && Effect(0).GetEffectTarget() == fourInfo.pEffectTarget && Effect(3).GetEffectTarget() != nullptr);
+	acceptLimit = 99;
 	// A part whose sprite is refused is skipped, the rest laid in their own
 	// frames; always true.
 	queued.clear();
@@ -320,12 +367,13 @@ TEST(GroundEffectGenerators, APlainRippleLiesAtTheTargetAndAimsTheTargetThere)
 	CHECK_EQ(EFFECTGENERATORID_RIPPLE_ZONE_PIXEL, world.ripple.GetID());
 	auto target = Target();
 	EFFECTGENERATOR_INFO info = Info(500);
+	info.direction = DIRECTION_UP;
 	info.pEffectTarget = target.get();
 	CHECK(world.ripple.Generate(info));
 	target.release();
 	CHECK_EQ(1, queued.size());
-	CHECK(!queued[0].ground);
-	CheckEffect(Effect(0), 500, 576, 288, 0);
+	CHECK(!queued.at(0).ground);
+	CheckEffect(Effect(0), 500, 576, 288, 0, DIRECTION_UP);
 	MEffectTarget* pTarget = Effect(0).GetEffectTarget();
 	CHECK(pTarget == info.pEffectTarget);
 	CHECK(pTarget->GetX() == 576 && pTarget->GetY() == 288 && pTarget->GetZ() == 0 && pTarget->GetID() == 456);
@@ -340,45 +388,74 @@ TEST(GroundEffectGenerators, APlainRippleLiesAtTheTargetAndAimsTheTargetThere)
 	CHECK(queued.empty());
 }
 
-TEST(GroundEffectGenerators, AnEarthquakeStepsOnTheGroundFasterAtTheFirstPhase)
+namespace {
+
+// Seeds from 1 on until a draw of rand() % 3 has given each value (some
+// libraries' first draws barely vary between small seeds); each seed's
+// frame is checked by `check`.
+template <typename Check>
+void ForEachFrame(Check check)
 {
-	World world;
-	for (unsigned seed : {3u, 4u, 5u})
+	bool seen[3] = {};
+	for (unsigned seed = 1; seed <= 400 && !(seen[0] && seen[1] && seen[2]); seed++)
 	{
 		std::srand(seed);
 		const int frame = std::rand() % 3;
+		seen[frame] = true;
 		std::srand(seed);
+		check(frame);
+	}
+	CHECK(seen[0] && seen[1] && seen[2]);
+}
+
+} // namespace
+
+TEST(GroundEffectGenerators, AnEarthquakeStepsOnTheGroundFasterAtTheFirstPhase)
+{
+	World world;
+	ForEachFrame([](int frame) {
 		queued.clear();
-		CHECK(world.ripple.Generate(Info(EFFECTSPRITETYPE_EARTHQUAKE_1)));
+		CHECK(GroundOnce(EFFECTSPRITETYPE_EARTHQUAKE_1));
+		CHECK_EQ(1, queued.size());
+		if (queued.empty()) return;
 		CHECK(queued[0].ground);
 		CheckEffect(Effect(0), EFFECTSPRITETYPE_EARTHQUAKE_1 + frame, 493, 246, 0);
-	}
-	// At the target's first phase, three steps; the target goes twice as far.
+	});
+	// Before the target's first phase, one step; the target twice as far.
+	queued.clear();
+	auto early = Target(0);
+	EFFECTGENERATOR_INFO before = Info(EFFECTSPRITETYPE_EARTHQUAKE_1);
+	before.pEffectTarget = early.get();
+	CHECK(world.ripple.Generate(before));
+	early.release();
+	CHECK(queued.size() == 1 && Effect(0).GetPixelX() == 493 && Effect(0).GetPixelY() == 246);
+	CHECK(before.pEffectTarget->GetX() == 506 && before.pEffectTarget->GetY() == 253 && before.pEffectTarget->GetZ() == 0);
+	// At its first phase, three steps.
 	queued.clear();
 	auto target = Target(1);
 	EFFECTGENERATOR_INFO info = Info(EFFECTSPRITETYPE_EARTHQUAKE_1);
 	info.pEffectTarget = target.get();
 	CHECK(world.ripple.Generate(info));
 	target.release();
-	CHECK(Effect(0).GetPixelX() == 520 && Effect(0).GetPixelY() == 260);
+	CHECK(queued.size() == 1 && Effect(0).GetPixelX() == 520 && Effect(0).GetPixelY() == 260);
 	CHECK(info.pEffectTarget->GetX() == 560 && info.pEffectTarget->GetY() == 280);
-	// Straight down: the step heads a tile on in the direction instead.
-	queued.clear();
-	EFFECTGENERATOR_INFO down = Info(EFFECTSPRITETYPE_EARTHQUAKE_1);
-	down.x1 = 480;
-	down.y1 = 300;
-	CHECK(world.ripple.Generate(down));
-	CHECK(Effect(0).GetPixelX() == 500 && Effect(0).GetPixelY() == 240);
+	// Straight down or straight across: the step heads a tile on from the
+	// start in the direction instead.
+	for (const auto& [x1, y1] : {std::pair<int, int>{480, 300}, std::pair<int, int>{360, 240}})
+	{
+		queued.clear();
+		EFFECTGENERATOR_INFO straight = Info(EFFECTSPRITETYPE_EARTHQUAKE_1);
+		straight.x1 = x1;
+		straight.y1 = y1;
+		CHECK(world.ripple.Generate(straight));
+		CHECK(queued.size() == 1 && Effect(0).GetPixelX() == 500 && Effect(0).GetPixelY() == 240);
+	}
 }
 
 TEST(GroundEffectGenerators, PowerOfLandsStonesKeepTheirLineAndTheTarget)
 {
 	World world;
-	for (unsigned seed : {3u, 4u, 5u})
-	{
-		std::srand(seed);
-		const int frame = std::rand() % 3;
-		std::srand(seed);
+	ForEachFrame([&world](int frame) {
 		queued.clear();
 		auto target = Target(1);
 		EFFECTGENERATOR_INFO info = Info(EFFECTSPRITETYPE_POWER_OF_LAND_STONE_1);
@@ -387,11 +464,13 @@ TEST(GroundEffectGenerators, PowerOfLandsStonesKeepTheirLineAndTheTarget)
 		info.pEffectTarget = target.get();
 		CHECK(world.ripple.Generate(info));
 		target.release();
+		CHECK_EQ(1, queued.size());
+		if (queued.empty()) return;
 		CHECK(queued[0].ground);
 		CheckEffect(Effect(0), EFFECTSPRITETYPE_POWER_OF_LAND_STONE_2 + frame, 480, 250, 0);
 		// The target stays where it was.
 		CHECK(info.pEffectTarget->GetX() == 1 && info.pEffectTarget->GetY() == 2);
-	}
+	});
 }
 
 TEST(GroundEffectGenerators, ATransfusionFlowsTowardTheCreatureUnlessItIsThere)
@@ -404,25 +483,39 @@ TEST(GroundEffectGenerators, ATransfusionFlowsTowardTheCreatureUnlessItIsThere)
 		g_pUserInformation->GoreLevel = gore;
 		for (int type : {EFFECTSPRITETYPE_TRANSFUSION_1, EFFECTSPRITETYPE_GREEN_TRANSFUSION_1})
 		{
-			std::srand(7);
-			const int frame = std::rand() % 3;
-			std::srand(7);
-			queued.clear();
-			EFFECTGENERATOR_INFO info = Info(type);
-			info.x1 = 600;
-			info.y1 = 200;
-			CHECK(world.ripple.Generate(info));
-			CHECK(queued[0].ground);
-			CheckEffect(Effect(0), (gore ? EFFECTSPRITETYPE_TRANSFUSION_1 : EFFECTSPRITETYPE_GREEN_TRANSFUSION_1) + frame, 495, 235, 0);
+			ForEachFrame([&world, gore, type](int frame) {
+				queued.clear();
+				// At the target's first phase, still one step.
+				auto target = Target(1);
+				EFFECTGENERATOR_INFO info = Info(type);
+				info.x1 = 600;
+				info.y1 = 200;
+				info.pEffectTarget = target.get();
+				CHECK(world.ripple.Generate(info));
+				target.release();
+				CHECK_EQ(1, queued.size());
+				if (queued.empty()) return;
+				CHECK(queued[0].ground);
+				CheckEffect(Effect(0), (gore ? EFFECTSPRITETYPE_TRANSFUSION_1 : EFFECTSPRITETYPE_GREEN_TRANSFUSION_1) + frame, 495, 235, 0);
+			});
 		}
 	}
-	// Already at the creature: none.
-	queued.clear();
-	EFFECTGENERATOR_INFO there = Info(EFFECTSPRITETYPE_TRANSFUSION_1);
-	there.x0 = 570;
-	there.y0 = 185;
-	CHECK(!world.ripple.Generate(there));
-	CHECK(queued.empty());
+	// Already at the creature (their 24-pixel squares touch or overlap,
+	// the effect's taken from half a square in): none.
+	const struct { int x0, y0; bool at; } edges[] = {
+		{552, 192, true}, {551, 192, false},	// the creature's left at the effect's right
+		{588, 192, true}, {589, 192, false},	// its right at the effect's left
+		{576, 168, true}, {576, 167, false},	// its top at the effect's bottom
+		{576, 204, true}, {576, 205, false}};	// its bottom at the effect's top
+	for (const auto& e : edges)
+	{
+		queued.clear();
+		EFFECTGENERATOR_INFO near = Info(EFFECTSPRITETYPE_TRANSFUSION_1);
+		near.x0 = e.x0;
+		near.y0 = e.y0;
+		CHECK(world.ripple.Generate(near) == !e.at);
+		CHECK_EQ(e.at ? 0u : 1u, queued.size());
+	}
 	// No creature: the target's position is taken for its tile.
 	creatures.clear();
 	EFFECTGENERATOR_INFO missing = Info(EFFECTSPRITETYPE_TRANSFUSION_1);
@@ -432,3 +525,11 @@ TEST(GroundEffectGenerators, ATransfusionFlowsTowardTheCreatureUnlessItIsThere)
 	missing.x1 = 20;
 	CHECK(world.ripple.Generate(missing));
 }
+
+namespace {
+bool GroundOnce(int spriteType)
+{
+	MRippleZonePixelEffectGenerator ripple;
+	return ripple.Generate(Info(spriteType));
+}
+} // namespace

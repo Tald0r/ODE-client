@@ -5587,7 +5587,9 @@ rounds settled* for the host rules). Test fixtures share
   > - The screen shake goes through `WorldEvents::AddEvent`.
   > - A later fire whose sprite is past the table is now skipped. The
   >   old code read the table's range-checked default row for it and
-  >   still laid a fire. Only a start in no known direction can give one.
+  >   still laid a fire. A later fire is always one of the 32 fires, so
+  >   only a table loaded shorter than that (or a missing view) refuses
+  >   one.
   >
   > The Korean comments are translated. R1 is 67 Windows / 65 Ninja.
   - Owner: membership, R1, and `test_fire_effect_generators.cpp`. It
@@ -5645,6 +5647,17 @@ rounds settled* for the host rules). Test fixtures share
   >   ground effect used to leak. The host now frees it, and the
   >   generator links only effects the zone keeps. (The grade branch
   >   used to link a copy of the target to a refused, leaked effect.)
+  > - `AddGroundEffect` returns true even when it refuses (Mercy or
+  >   Magic Elusion already on the tile, an ice field on the regen
+  >   tower). The plain attach branch and a ground pixel ripple
+  >   therefore always returned true. The host checks that the zone kept
+  >   the effect, so both now return false on a refusal. The effect
+  >   generator table then plays no skill sound, runs the target's
+  >   result at once and deletes the target. Before, the target rode
+  >   the leaked effect, and its result ran only if it was already due.
+  >   Recasting Magic Elusion on the same tile is now silent.
+  > - A sprite past the table makes no effect. Before, the table's
+  >   range-checked default row still drew one.
   >
   > The dead comments naming `g_pTopView` are dropped (R4 counts them),
   > and the Korean comments are translated. R1 is 65 Windows / 63
@@ -5652,9 +5665,10 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, and `test_ground_effect_generators.cpp`,
     which pins the hand-computed pixel steps.
   - Found, not fixed: the attach-zone generator returns true from the
-    grade and Mercy Ground branches even when the zone keeps nothing.
-    The caller then neither deletes the target nor hands it on, so it
-    leaks.
+    grade and Mercy Ground branches when the zone keeps nothing, or
+    refuses only the first tile or part, or when Mercy part 1's sprite
+    is refused. The original target then goes to no effect, and the
+    caller neither deletes it nor hands it on, so it leaks.
 
 - [x] **4.203 The unused door actions and the colour-set table:** retire
   `MInteractionObjectAction.cpp`, and move `CUsingColorSetTable` into
