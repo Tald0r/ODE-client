@@ -60,6 +60,13 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 			else
 			{
 				DEBUG_ADD_ERR("[Error] PickupPart item Wrong");
+
+				// Another item was in its cell: it goes back where it was.
+				if (pRemovedItem!=NULL
+					&& !g_pInventory->AddItem( pRemovedItem, pRemovedItem->GetGridX(), pRemovedItem->GetGridY() ))
+				{
+					delete pRemovedItem;
+				}
 			}
 		}
 		else

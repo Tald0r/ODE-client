@@ -207,17 +207,20 @@ TEST(CreatedItemReplies, PickingUpPartOfAStackPutsThatPartInHand)
 	CHECK(calls == std::vector<std::string>({"buffer cleared", "in hand|400 x7"}));
 	CHECK(At(world.inventory, 2, 2) == N(ITEM_CLASS_SWORD) + "#501 type 0 x3 dur 300 grade 4 +2 opt 2");
 	delete pStack;
-	// The part in hand is not where the inventory has it: not picked up.
+	// The part in hand is not where the inventory has it (another item is
+	// in its cell): not picked up, and the other item stays.
 	calls.clear();
 	Sword* pElsewhere = new Sword;
 	pElsewhere->SetID(402);
 	pElsewhere->SetNumber(10);
+	pElsewhere->SetGridXY(6, 0);
 	world.Put<Sword>(401, 0, 6, 0, 10);
 	bufferStatus = PlayerState::ITEM_CHECK_BUFFER_PICKUP_SOME_FROM_INVENTORY;
 	pBuffered = pElsewhere;
 	Receive(ITEM_CLASS_SWORD, 503, 0, 7, 0, 3);
 	CHECK(calls == std::vector<std::string>{"buffer cleared"});
 	CHECK_EQ(10, pElsewhere->GetNumber());
+	CHECK(At(world.inventory, 6, 0) == N(ITEM_CLASS_SWORD) + "#401 type 0 x10 dur 0 grade -1 +0 opt 0");
 	delete pElsewhere;
 	// Nothing in hand, or another buffer: the item is only created.
 	calls.clear();
