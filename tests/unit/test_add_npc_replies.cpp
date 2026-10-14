@@ -126,6 +126,8 @@ const int SLAYER_SPRITE = 301;		// a slayer's sprite not marked an NPC's
 const int OUSTERS_NPC = 302;
 const int VAMPIRE_NPC = 303;
 const int BATHORY = 217;
+const int NAMELESS = 304;			// in the table, never named
+const int PAST_THE_TABLE = 900;
 
 struct World : GameModelWorld
 {
@@ -164,6 +166,7 @@ struct World : GameModelWorld
 		creatureTypes.Init(700);
 		const std::pair<int, int> spriteOf[] = {{SLAYER_NPC, 1}, {SLAYER_SPRITE, 2}, {OUSTERS_NPC, 3}, {VAMPIRE_NPC, 4}, {BATHORY, 4},
 			{638, 3}, {657, 3}, {639, 3}, {654, 3}};
+		testfw::MutableRow(creatureTypes, NAMELESS).SpriteTypes.Init(1);
 		for (const auto& [npcID, sprite] : spriteOf)
 		{
 			CREATURETABLE_INFO& row = testfw::MutableRow(creatureTypes, npcID);
@@ -303,6 +306,18 @@ TEST(AddNPCReplies, AnNPCTheZoneRefusesIsDeleted)
 	calls.clear();
 	Receive(1006, 638);
 	CHECK(calls.back() == "deleted|1006");
+}
+
+TEST(AddNPCReplies, AnNPCWithoutATableNameIsNamedEmpty)
+{
+	World world;
+	// The table's name converts to NULL for both, and the game's SetName
+	// reads it.
+	Receive(1005, NAMELESS);
+	CHECK(calls == Then(Made("1005", NAMELESS, GUILDID_BATHORY, ""), {"dressed|1005|304"}));
+	calls.clear();
+	Receive(1006, PAST_THE_TABLE);
+	CHECK(calls == Then(Made("1006", PAST_THE_TABLE, GUILDID_BATHORY, ""), {"dressed|1006|900"}));
 }
 
 TEST(AddNPCReplies, AKnownNPCWalksToTheCellAndStands)

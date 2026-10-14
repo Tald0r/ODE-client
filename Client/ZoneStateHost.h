@@ -297,8 +297,8 @@ struct Host
 	void (*SetPersnalString)(MCreature* pCreature, const char* sign, std::uint32_t color) = nullptr;
 	void (*ClearChatString)(MCreature* pCreature) = nullptr;
 	void (*SetPersnalShopMessage)(MCreature* pCreature, const char* message) = nullptr;
-	// A new creature's identity and place: its name, ID, cell and guild
-	// (-1 for none).
+	// A new creature's identity and place: its name (never NULL: SetName
+	// passes a NULL one as empty), ID, cell and guild (-1 for none).
 	void (*SetName)(MCreature* pCreature, const char* name) = nullptr;
 	void (*SetID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
 	void (*SetPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
