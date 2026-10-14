@@ -157,6 +157,13 @@ TEST(TextServiceRenderText, DrawsTheDefaultStyleInWhiteAtThePoint)
     }
     CHECK(white);
     CHECK(!beforePoint);
+
+    // Another text at another point, the same way.
+    drawn.FillSurface(0);
+    expected.FillSurface(0);
+    TextSystem::TextService::RenderText(&drawn, 7, 31, "Ok go");
+    service.DrawLine(target, "Ok go", 7, 31, 0, style);
+    CHECK(Pixels(drawn) == Pixels(expected));
 }
 
 TEST(TextServiceRenderText, NeedsASurfaceWithABackend)

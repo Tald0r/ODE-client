@@ -222,6 +222,8 @@ extern bool				g_bHAL;
 extern bool				g_bMusicSW;
 
 extern CWinUpdate*				g_pUpdate;
+class CWaitPacketUpdate;
+extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;	// GameInit.cpp's
 
 
 

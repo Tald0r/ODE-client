@@ -6710,7 +6710,8 @@ boundary before claiming that the whole client has reached zero.
   > **Status:** done (2026-09-03, PR #65). `TextService::RenderText` — a
   > compatibility shim for `SDL_RenderText` that draws through `g_pLast`
   > — is defined in `Client/TextServiceScreen.cpp`, which the executable
-  > compiles; `TextService` has no virtuals, so the split costs no
+  > compiles (until task 4.208, which gave it the surface as a parameter
+  > and folded it into TextSystem); `TextService` has no virtuals, so the split costs no
   > vtable. A split rather than a host, because the thing behind this
   > seam is the drawing surface itself: a host would move the reach, not
   > remove it. **`tests/stubs/` is gone**; `tests/CMakeLists.txt` says

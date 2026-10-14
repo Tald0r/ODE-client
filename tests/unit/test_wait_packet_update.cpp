@@ -73,6 +73,11 @@ TEST(WaitPacketUpdate, ItGivesUpOnlyPastTheDelay)
 	wait.Update();
 	CHECK(calls == mainMenu + "disconnected;in;out;");
 
+	// Giving up does not move the limit: still past it, it gives up again.
+	calls.clear();
+	wait.Update();
+	CHECK(calls == mainMenu + "disconnected;in;out;");
+
 	// A new delay counts from the new stamp.
 	calls.clear();
 	wait.SetDelay(1000);
@@ -104,4 +109,11 @@ TEST(WaitPacketUpdate, AQueuedModeIsEnteredInsteadOfWriting)
 	calls.clear();
 	wait.Update();
 	CHECK(calls == "in;out;");
+
+	// Whichever mode is queued.
+	calls.clear();
+	g_ModeNext = MODE_WAIT_PCLIST;
+	wait.Update();
+	CHECK(calls == "in;mode" + std::to_string(static_cast<int>(MODE_WAIT_PCLIST)) + ";");
+	CHECK(g_ModeNext == MODE_NULL);
 }
