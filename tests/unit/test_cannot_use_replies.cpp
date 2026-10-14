@@ -226,6 +226,8 @@ TEST(CannotUseReplies, AnItemUsedFromTheInventorySaysWhyWhereItHasAReason)
 		{ITEM_CLASS_DYE_POTION, 49, 1, {}},
 		{ITEM_CLASS_POTION, 27, 0, {}},
 		{ITEM_CLASS_POTION, 48, 1, {}}};
+	// An item mixing under way is left alone.
+	world.temp.SetMode(TempInformation::MODE_ITEM_MIXING);
 	for (const auto& c : cases)
 	{
 		calls.clear();
@@ -235,6 +237,7 @@ TEST(CannotUseReplies, AnItemUsedFromTheInventorySaysWhyWhereItHasAReason)
 		std::vector<std::string> expected = c.says;
 		expected.push_back("buffer cleared");
 		CHECK(calls == expected);
+		CHECK(world.temp.GetMode() == TempInformation::MODE_ITEM_MIXING);
 	}
 }
 

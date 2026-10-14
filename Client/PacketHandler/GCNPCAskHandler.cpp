@@ -15,7 +15,6 @@
 #include "TalkBox.h"
 #include "DialogPresentationHost.h"
 #include "MNPCScriptTable.h"
-#include "TempInformation.h"
 #include "SystemAvailabilities.h"
 
 //////////////////////////////////////////////////////////////////////

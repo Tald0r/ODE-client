@@ -94,7 +94,12 @@ struct World : GameModelWorld
 		g_pPCTalkBox = &talkBox;
 		g_pSystemAvailableManager = &availabilities;
 		Script(77, {"Hello, %(name)"}, {"Go to %(place)", "Wait", "Leave"});
-		// What an earlier question left.
+		Stale();
+	}
+	// What an earlier question left.
+	void Stale()
+	{
+		talkBox.Release();
 		talkBox.SetType(PCTalkBox::SELECT_QUEST);
 		talkBox.AddString("stale");
 		talkBox.m_AnswerIDMap = {9};
@@ -248,16 +253,22 @@ TEST(NPCAskReplies, FourNPCsNeedNoCreatureAndAreTheirOwnType)
 	Ask(1003, 77, 635);
 	world.Shows("Hello, %(name)", 1003, 635, 77);
 	CHECK(calls == std::vector<std::string>({"verified", "talk box shown", "verified", "talk box shown", "verified", "talk box shown"}));
-	// Their neighbours do need one.
+	// Their neighbours do need one, and take its type.
 	calls.clear();
-	World fresh;
+	world.Stale();
 	for (int npcID : {633, 638})
 	{
 		waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
 		Ask(4242, 77, npcID);
 	}
 	CHECK(calls == std::vector<std::string>({"verified", "verified"}));
-	CHECK(fresh.Untouched());
+	CHECK(world.Untouched());
+	for (int npcID : {633, 638})
+	{
+		waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
+		Ask(1003, 77, npcID);
+		world.Shows("Hello, %(name)", 1003, 250, 77);
+	}
 }
 
 TEST(NPCAskReplies, AQuestionNobodyWaitsOnOrThatCannotBeShownIsIgnored)
@@ -315,12 +326,13 @@ TEST(NPCAskReplies, AWholeQuestionFillsTheTalkBox)
 	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 1}));
 	// No answer, or an NPC not in the zone: only the wait ends.
 	calls.clear();
-	World fresh;
+	world.Stale();
+	waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
 	AskDynamic(1003, "Where to?", {});
 	waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
 	AskDynamic(4242, "Where to?", {"North"});
 	CHECK(calls == std::vector<std::string>({"verified", "verified"}));
-	CHECK(fresh.Untouched());
+	CHECK(world.Untouched());
 }
 
 TEST(NPCAskReplies, AQuestionWithVariablesFillsThemIn)

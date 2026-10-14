@@ -31,6 +31,7 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 	// The player; without one there is nothing to do.
 	if (PlayerState::Creature() == NULL)
 	{
+		DEBUG_ADD_ERR("[Error] Player is NULL");
 		return;
 	}
 	

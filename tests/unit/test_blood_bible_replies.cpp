@@ -111,9 +111,10 @@ TEST(BloodBibleReplies, ABibleWithoutAStringIsOfferedWithEmptyText)
 	Receive({5000});
 	CHECK(world.Lines() == std::vector<std::string>({"5000 Borrow the  seal. ()", "999" + Text(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE)}));
 	// None at all: only the way out.
-	World fresh;
+	world.talkBox.Release();
+	world.talkBox.AddString("stale");
 	Receive({});
-	CHECK(fresh.Lines() == std::vector<std::string>{"999" + Text(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE)});
+	CHECK(world.Lines() == std::vector<std::string>{"999" + Text(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE)});
 }
 
 TEST(BloodBibleReplies, WithoutAPlayerZoneOrTalkBoxNothingHappens)
