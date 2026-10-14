@@ -5681,9 +5681,10 @@ rounds settled* for the host rules). Test fixtures share
   > both include. The Korean comments in the touched files are
   > translated. R1 is 63 Windows / 61 Ninja.
   - Owner: membership, R1, and `test_using_color_set_table.cpp`.
-  - Found: `SaveToFile` writes the first set's flag for every set (the
-    address of the array, not of each element). It is fixed in the next
-    commit. Only a commented-out tool path saves.
+  - Fixed after the move: `SaveToFile` wrote the first set's flag for
+    every set (the address of the array, not of each element). It now
+    writes each set's own flag, and a saved node loads back as it was.
+    Only a commented-out tool path saves.
 
 ### Remaining R1 work after tasks 4.80-4.203
 

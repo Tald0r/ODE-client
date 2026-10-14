@@ -111,7 +111,7 @@ USINGCOLORSET_NODE::SaveToFile(ofstream& file)
 	// save the enable flags
 	for (int i=0; i<MAX_COLORSET; i++)
 	{
-		file.write((const char*)&m_bEnable, 1);
+		file.write((const char*)&m_bEnable[i], 1);
 	}
 }
 

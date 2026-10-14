@@ -105,9 +105,15 @@ TEST(UsingColorSetTable, ANodeIsSavedAsItsCountAndOneByteASet)
 	const std::vector<unsigned char> bytes = file.Bytes();
 	CHECK_EQ(4u + MAX_COLORSET, bytes.size());
 	CHECK(std::vector<unsigned char>(bytes.begin(), bytes.begin() + 4) == Count(MAX_COLORSET));
-	// Every byte is the first set's flag (the address of the array, not
-	// of each element, is written).
-	for (size_t i = 4; i < bytes.size(); i++) CHECK_EQ(1, bytes[i]);
+	// Each set's own flag.
+	for (int i = 0; i < MAX_COLORSET; i++) CHECK_EQ(i == 0 || i == 7 ? 1 : 0, bytes[4 + i]);
+	// And it loads back as it was.
+	Probe loaded;
+	{
+		std::ifstream in(file.path, std::ios::binary);
+		CHECK(loaded.LoadFromFile(in));
+	}
+	CHECK(loaded.Enabled() == (std::vector<int>{0, 7}));
 }
 
 TEST(UsingColorSetTable, ANodeLoadsOnlyItsOwnCount)
