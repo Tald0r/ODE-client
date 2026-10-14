@@ -181,8 +181,9 @@ struct Host
 	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
 	// The creature table's vampire flag of its type.
 	bool (*IsVampire)(MCreature* pCreature) = nullptr;
-	// Gives an NPC the shop, which it then owns; false (the caller keeps
-	// the shop) for a creature that is not an NPC.
+	// Gives an NPC the shop, which it then owns (MNPC frees the shop it had,
+	// so never pass its current one); false (the caller keeps the shop) for
+	// a creature that is not an NPC.
 	bool (*SetShop)(MCreature* pCreature, MShop* pShop) = nullptr;
 	// Whether the creature carries the effect status now.
 	bool (*HasEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;

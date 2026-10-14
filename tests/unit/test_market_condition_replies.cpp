@@ -52,7 +52,8 @@ const CreatureState::Host creature = []() {
 
 const DialogPresentation::Host dialog = []() {
 	DialogPresentation::Host host{};
-	host.OpenInventoryToSell = []() { calls.push_back("inventory to sell"); };
+	// The rates are set by the time the inventory opens.
+	host.OpenInventoryToSell = []() { calls.push_back("inventory to sell|" + std::to_string(g_pPriceManager->GetMarketCondBuy())); };
 	return host;
 }();
 
@@ -97,7 +98,7 @@ TEST(MarketConditionReplies, AnNPCWithoutAShopGetsOneAndTheRatesAreSet)
 {
 	World world;
 	Receive(1003, 40, 90);
-	CHECK(calls == std::vector<std::string>({"shop given", "inventory to sell"}));
+	CHECK(calls == std::vector<std::string>({"shop given", "inventory to sell|40"}));
 	CHECK(merchant.shop != nullptr);
 	if (merchant.shop) CHECK_EQ(static_cast<int>(MShopShelf::MAX_SHELF), static_cast<int>(merchant.shop->GetSize()));
 	CHECK_EQ(40, world.prices.GetMarketCondBuy());
@@ -106,7 +107,7 @@ TEST(MarketConditionReplies, AnNPCWithoutAShopGetsOneAndTheRatesAreSet)
 	calls.clear();
 	MShop* pShop = merchant.shop;
 	Receive(1003, 30, 80);
-	CHECK(calls == std::vector<std::string>{"inventory to sell"});
+	CHECK(calls == std::vector<std::string>{"inventory to sell|30"});
 	CHECK(merchant.shop == pShop);
 	CHECK_EQ(30, world.prices.GetMarketCondBuy());
 	CHECK_EQ(80, world.prices.GetMarketCondSell());
@@ -125,7 +126,7 @@ TEST(MarketConditionReplies, AnythingButAnNPCInTheZoneIsIgnored)
 	CHECK_EQ(100, world.prices.GetMarketCondSell());
 }
 
-TEST(MarketConditionReplies, AShopNobodyTakesIsFreed)
+TEST(MarketConditionReplies, AShopNobodyTakesIsNotKept)
 {
 	World world;
 	// An NPC host that cannot hand the shop over: the reply frees it (ASan
@@ -134,7 +135,7 @@ TEST(MarketConditionReplies, AShopNobodyTakesIsFreed)
 	noShops.SetShop = nullptr;
 	CreatureState::SetHost(&noShops);
 	Receive(1003, 40, 90);
-	CHECK(calls == std::vector<std::string>{"inventory to sell"});
+	CHECK(calls == std::vector<std::string>{"inventory to sell|40"});
 	CHECK(merchant.shop == nullptr);
 	CHECK(!CreatureState::SetShop(Handle(merchant), nullptr));
 	// Without a dialog host the inventory is not opened.

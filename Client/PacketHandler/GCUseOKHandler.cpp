@@ -65,13 +65,6 @@ void GCUseSkillCardOKHandler::execute ( GCUseSkillCardOK * pPacket , Player * pP
 	PlayerState::UseSkillCardOK(pPacket->getCardType());
 
 	//------------------------------------------------------------------
-	//
-	//						Change the status values.
-	//
-	//------------------------------------------------------------------
-
-
-	//------------------------------------------------------------------
 	// Change what the UI shows.
 	// Isn't this faster than comparing.. hm.. - -;
 	//------------------------------------------------------------------

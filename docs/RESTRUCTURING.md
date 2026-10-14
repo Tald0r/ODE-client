@@ -4269,9 +4269,10 @@ rounds settled* for the host rules). Test fixtures share
   > R1 is 129 Windows / 127 Ninja.
   - Owner: membership, R1, the four entries and adapters, and
     `test_wearing_use_replies.cpp` (each bit pattern for a slayer, the
-    weapon's bit alone, a vampire's and an ouster's slots, no player;
-    an item use with and without the player's status, a skill card,
-    no host).
+    weapon's bit alone and while it still counts, no weapon, a vampire's
+    and an ouster's slots past an empty one, the bibles of every race,
+    no player; an item use with and without the player's status, spent
+    before the status changes, a skill card, no host).
 
 - [x] **4.156 A shop's market condition:** move
   `GCShopMarketConditionHandler` into `gamemodel`.
