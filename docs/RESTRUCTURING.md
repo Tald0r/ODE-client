@@ -4040,7 +4040,9 @@ rounds settled* for the host rules). Test fixtures share
   > item's destroy hook does (4.144's reasoning); `SAFE_DELETE`, the
   > executable's macro, is written out. Found by reading and kept, as
   > upstream's: the storage search sets the first page on every pass,
-  > and the sale reads the inventory cell without checking it. R1 is
+  > and the sale reads the inventory cell without checking it. A star
+  > shop priced a purchase that did not fit after freeing it; a fix that
+  > follows (moved, then fixed) prices it first. R1 is
   > 144 Windows / 142 Ninja.
   - Owner: membership, R1, the new file and entry, and
     `test_shop_replies.cpp` (each icon item for each race; the purchase

@@ -140,6 +140,11 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 			}
 		}
 
+		// A star shop's price, taken now: the item is freed below when it
+		// does not fit, and the server has charged for it either way.
+		STAR_ITEM_PRICE starPrice;
+		g_pPriceManager->GetItemPrice( pItem, starPrice );
+
 		//--------------------------------------------------------------
 		// Add the item to the inventory.
 		//--------------------------------------------------------------
@@ -182,12 +187,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 			//--------------------------------------------------------------
 			case MShop::SHOP_EVENT_STAR :
 				// Remove that many from the inventory.
-				if (pItem!=NULL)
 				{
-					STAR_ITEM_PRICE starPrice;
-
-					g_pPriceManager->GetItemPrice( pItem, starPrice );
-
 					int remainNum = starPrice.number;
 
 					if (starPrice.type!=-1 && starPrice.number!=0)

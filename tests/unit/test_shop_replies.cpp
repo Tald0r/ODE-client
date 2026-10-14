@@ -354,6 +354,22 @@ TEST(ShopReplies, AStarShopTakesTheStarsTheItemCosts)
 	CHECK_EQ(1000, world.money.GetMoney());
 }
 
+TEST(ShopReplies, AStarShopTakesTheStarsEvenWhenThePurchaseDoesNotFit)
+{
+	World world;
+	world.shop.SetShopType(MShop::SHOP_EVENT_STAR);
+	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 61, 0, 15), 0, 0));
+	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 62, 0, 10), 1, 0));
+	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_SWORD, 41), 5, 5));
+	// The server has charged for it, so the stars go though the cell is
+	// full; the item was priced after it was freed.
+	world.Buying(MShopShelf::SHELF_FIXED, 0, 5, 5);
+	ReceiveBought(ITEM_CLASS_SWORD, 501, 2, 1, {1});
+	CHECK(calls == std::vector<std::string>({"freed|501", "freed|61", "unlocked"}));
+	CHECK(world.At(0, 0) == nullptr);
+	CHECK_EQ(5, static_cast<int>(world.At(1, 0)->GetNumber()));
+}
+
 TEST(ShopReplies, APurchaseNotWaitedForChangesNothing)
 {
 	World world;
