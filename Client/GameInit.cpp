@@ -2976,6 +2976,12 @@ static const MItemHost	s_ItemHost = {
 		if (pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
 			static_cast<MVampirePortalItem*>(pPortal)->SetZone(zoneID, x, y);
 	},
+	.ReloadGun				= [](MItem* pGun, MItem* pMagazine) {
+		MMagazine* pNew = static_cast<MMagazine*>(pMagazine);
+		MMagazine* pOld = static_cast<MGunItem*>(pGun)->SetMagazine( pNew );
+		g_pCurrentMagazine = pNew;
+		delete pOld;
+	},
 };
 
 //-----------------------------------------------------------------------------
@@ -3588,6 +3594,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
+	.RemoveDescriptor = [](void* pItem) { UI_RemoveDescriptor(pItem); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {

@@ -1204,3 +1204,5 @@ Client/PacketHandler/GCMorph1Handler.cpp
 Client/PacketHandler/GCDeleteandPickUpOKHandler.cpp
 # A skill used on an inventory item, as the server confirms it.
 Client/PacketHandler/GCSkillToInventoryOK1Handler.cpp
+# A gun reloaded, as the server confirms it.
+Client/PacketHandler/GCReloadOKHandler.cpp

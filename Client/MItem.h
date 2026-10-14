@@ -113,6 +113,10 @@ struct MItemHost {
 	// Marks a vampire's portal item with the zone and cell its tunnel opens
 	// to. Executable-side for the same reason.
 	void			(*MarkPortal)(MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// Puts the magazine (an item of ITEM_CLASS_MAGAZINE) in the gun, as the
+	// player's current magazine, freeing the one the gun held. Executable-
+	// side because a magazine's vtable is.
+	void			(*ReloadGun)(MItem* pGun, MItem* pMagazine) = nullptr;
 };
 
 //----------------------------------------------------------------------
@@ -494,6 +498,7 @@ class MItem : public MObject, public CAnimationFrame {
 		static void				SetMineInstalled(MItem* pMine)	{ if (s_pHost!=NULL && s_pHost->SetMineInstalled!=NULL) s_pHost->SetMineInstalled(pMine); }
 		static bool				IsPortalMarked(const MItem* pPortal)	{ return s_pHost!=NULL && s_pHost->IsPortalMarked!=NULL && s_pHost->IsPortalMarked(pPortal); }
 		static void				MarkPortal(MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)	{ if (s_pHost!=NULL && s_pHost->MarkPortal!=NULL) s_pHost->MarkPortal(pPortal, zoneID, x, y); }
+		static void				ReloadGun(MItem* pGun, MItem* pMagazine)	{ if (s_pHost!=NULL && s_pHost->ReloadGun!=NULL) s_pHost->ReloadGun(pGun, pMagazine); }
 		// The executable's frame stamp; NULL without a host, or with one that carries none.
 		static const MonotonicClock::TimePoint*	Clock()	{ return s_pHost!=NULL ? s_pHost->pCurrentTime : NULL; }
 		BOOL		IsDropping() const		{ return m_bDropping; }

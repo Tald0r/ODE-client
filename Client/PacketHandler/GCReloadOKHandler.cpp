@@ -9,11 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCReloadOK.h"
-#include "ClientDef.h"
-#include "MSlayerGear.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "MInventory.h"
+#include "MItem.h"
 #include "MQuickSlot.h"
-#include "UIFunction.h"
+#include "MSlayerGear.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
 
 #define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
 
@@ -28,136 +31,123 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 	// message
 
 	//------------------------------------------------------------------
-	// Slayer인 경우만 적용되는 packet이다.
+	// A packet for a slayer only.
 	//------------------------------------------------------------------
-	if (g_pPlayer->IsVampire())
+	if (PlayerState::GetRace()==RACE_VAMPIRE)
 	{
 		DEBUG_ADD_ERR("[Error] Player is Vampire. No Effect!");
 
 		return;
 	}
 
-	// 음.. cut & paste의 걸작.. - -;;
+	// hmm.. a cut & paste masterpiece.. - -;;
 
 	//------------------------------------------------------------------
 	//
-	//				Item Check Buffer 확인
+	//				Check the item check buffer
 	//
 	//------------------------------------------------------------------	
-	MItem* pItem = g_pPlayer->GetItemCheckBuffer();
+	MItem* pItem = PlayerState::GetItemCheckBuffer();
 
 	//----------------------------------------------------
-	// Check Buffer에 item이 있는 경우
+	// An item in the check buffer
 	//----------------------------------------------------
 	if (pItem!=NULL)
 	{
-		PlaySound( pItem->GetUseSoundID() );
+		WorldEvents::PlaySound( pItem->GetUseSoundID() );
 
-		MPlayer::ITEM_CHECK_BUFFER status =	g_pPlayer->GetItemCheckBufferStatus();
+		PlayerState::ITEM_CHECK_BUFFER status =	PlayerState::GetItemCheckBufferStatus();
 
 		//----------------------------------------------------
-		// Inventory에서 사용
+		// used from the inventory
 		//----------------------------------------------------
-		if (status==MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY)			
+		if (status==PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY)
 		{
-			// Item Check Buffer를 지운다.
-			g_pPlayer->ClearItemCheckBuffer();
+			// Clear the item check buffer.
+			PlayerState::ClearItemCheckBuffer();
 
 			//----------------------------------------------------
 			// MAGAZINE
 			//----------------------------------------------------
 			if (pItem->GetItemClass()==ITEM_CLASS_MAGAZINE)
 			{
-				MMagazine* pMagazineItem;
+				MItem* pMagazineItem;
 
 				//-------------------------------------------------
-				// 개수 체크를 해야한다.
+				// the number must be checked.
 				//-------------------------------------------------
 				if (pItem->GetNumber()>1)
 				{
-					// 아직 개수가 더 남아 있는 경우,
-					// 개수를 하나 줄여준다.
+					// more of them left,
+					// one fewer.
 					pItem->SetNumber( pItem->GetNumber() - 1 );
 
 					//-------------------------------------------------
-					// 새로운 탄창을 생성해서 총에 추가해야 한다.
+					// make a new magazine for the gun.
 					//-------------------------------------------------
-					pMagazineItem = (MMagazine*)MItem::NewItem( ITEM_CLASS_MAGAZINE );
+					pMagazineItem = MItem::NewItem( ITEM_CLASS_MAGAZINE );
 
-					pMagazineItem->SetID( 0 );	// 임의의 ID.. 사용하지 않을 듯.. 
+					pMagazineItem->SetID( 0 );	// any ID.. probably unused..
 					pMagazineItem->SetItemType( pItem->GetItemType() );
 					pMagazineItem->SetItemOptionList( pItem->GetItemOptionList() );
 				}
 				//-------------------------------------------------
-				// 다 사용한 경우 --> 제거한다.
+				// all used --> remove it.
 				//-------------------------------------------------
 				else
 				{
-					// inventory에서 제거
+					// remove it from the inventory
 					g_pInventory->RemoveItem( pItem->GetID() );
 
-					// memory에서 제거하면 안된다 --> 총에 들어가므로..
+					// not freed --> it goes in the gun..
 					//delete pItem;	
 					
-					pMagazineItem = (MMagazine*)pItem;
+					pMagazineItem = pItem;
 				}
 
 				
 				//----------------------------------------------------
-				// 총알 개수를 다시 설정한다.
+				// set the number of bullets again.
 				//----------------------------------------------------
 				// Magazine.GetNumber()
 				//
-				// 탄창으로 있을 때는 탄창 쌓인 개수
-				// 총에 들어 있을 때 Number는 총알의 개수.
+				// as a magazine, the number of magazines piled
+				// in a gun, Number is the number of bullets.
 				//----------------------------------------------------
 				pMagazineItem->SetNumber( pPacket->getBulletNum() );
 
-				// Slayer인 경우만 가능하다.
+				// a slayer only.
 				const MItem* pRightHandItem = g_pSlayerGear->GetItem( (MSlayerGear::GEAR_SLAYER)MSlayerGear::GEAR_SLAYER_RIGHTHAND );
 
 				//----------------------------------------------------
-				// 오른손에 총을 들고 있는 경우이면
+				// a gun in the right hand
 				//----------------------------------------------------
 				if (pRightHandItem!=NULL)
 				{
 					if (pRightHandItem->IsGunItem())
 					{
-						MGunItem* pGunItem = (MGunItem*)pRightHandItem;
-
-						// 탄창 장착
-						MMagazine* pOldMagazine = pGunItem->SetMagazine( pMagazineItem );
-
-						// 현재의 탄창 설정
-						g_pCurrentMagazine = pMagazineItem;
-
-						// 기존에 있던 탄창이 있으면 제거한다.
-						if (pOldMagazine!=NULL)
-						{
-							DEBUG_ADD("Delete Old Magazine");
-							
-							delete pOldMagazine;
-						}
+						// load the magazine as the current one, freeing the one it held
+						MItem::ReloadGun( const_cast<MItem*>(pRightHandItem), pMagazineItem );
 					}									
 				}
 				//----------------------------------------------------
-				// 총이 아닌 경우 --> Error당..
+				// not a gun --> an error..
 				//----------------------------------------------------
 				else
 				{
 					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
 					
-					// inventory에서 제거
+					// remove it from the inventory
 					g_pInventory->RemoveItem( pItem->GetID() );
 
-					// item정보 제거 - 의미잇을까 - -;
-					UI_RemoveDescriptor( (void*)pItem );
+					// forget the item's description - any use? - -;
+					DialogPresentation::RemoveDescriptor( (void*)pItem );
 
 					delete pItem;
 				}
 			}
 			//----------------------------------------------------
-			// 탄창이 아니면 에러다.
+			// not a magazine is an error.
 			//----------------------------------------------------
 			else
 			{
@@ -165,99 +155,86 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 			}
 		}
 		//----------------------------------------------------
-		// QuickSlot에서 사용
+		// used from the quick slot
 		//----------------------------------------------------
-		else if (status==MPlayer::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT)
+		else if (status==PlayerState::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT)
 		{
-			// Item Check Buffer를 지운다.
-			g_pPlayer->ClearItemCheckBuffer();
+			// Clear the item check buffer.
+			PlayerState::ClearItemCheckBuffer();
 
 			//----------------------------------------------------
 			// MAGAZINE
 			//----------------------------------------------------
 			if (pItem->GetItemClass()==ITEM_CLASS_MAGAZINE)
 			{
-				MMagazine* pMagazineItem;
+				MItem* pMagazineItem;
 
 				//-------------------------------------------------
-				// 개수 체크를 해야한다.
+				// the number must be checked.
 				//-------------------------------------------------
 				if (pItem->GetNumber()>1)
 				{
-					// 아직 개수가 더 남아 있는 경우,
-					// 개수를 하나 줄여준다.
+					// more of them left,
+					// one fewer.
 					pItem->SetNumber( pItem->GetNumber() - 1 );
 
 					//-------------------------------------------------
-					// 새로운 탄창을 생성해서 총에 추가해야 한다.
+					// make a new magazine for the gun.
 					//-------------------------------------------------
-					pMagazineItem = (MMagazine*)MItem::NewItem( ITEM_CLASS_MAGAZINE );
+					pMagazineItem = MItem::NewItem( ITEM_CLASS_MAGAZINE );
 
-					pMagazineItem->SetID( 0 );	// 임의의 ID.. 사용하지 않을 듯.. 
+					pMagazineItem->SetID( 0 );	// any ID.. probably unused..
 					pMagazineItem->SetItemType( pItem->GetItemType() );
 					pMagazineItem->SetItemOptionList( pItem->GetItemOptionList() );					
 				}
 				//-------------------------------------------------
-				// 다 사용한 경우 --> 제거한다.
+				// all used --> remove it.
 				//-------------------------------------------------
 				else
 				{
-					// QuickSlot에서 제거
+					// remove it from the quick slot
 					g_pQuickSlot->RemoveItem( pItem->GetID() );
 
-					// memory에서 제거하면 안된다 --> 총에 들어가므로..
+					// not freed --> it goes in the gun..
 					//delete pItem;	
 					
-					pMagazineItem = (MMagazine*)pItem;
+					pMagazineItem = pItem;
 				}
 
 				//----------------------------------------------------
-				// 총알 개수를 다시 설정한다.
+				// set the number of bullets again.
 				//----------------------------------------------------
 				pMagazineItem->SetNumber( pPacket->getBulletNum() );
 
-				// Slayer인 경우만 가능하다.
+				// a slayer only.
 				const MItem* pRightHandItem = g_pSlayerGear->GetItem( (MSlayerGear::GEAR_SLAYER)MSlayerGear::GEAR_SLAYER_RIGHTHAND );
 
 				//----------------------------------------------------
-				// 오른손에 총을 들고 있는 경우이면
+				// a gun in the right hand
 				//----------------------------------------------------
 				if (pRightHandItem!=NULL)
 				{
 					if (pRightHandItem->IsGunItem())
 					{
-						MGunItem* pGunItem = (MGunItem*)pRightHandItem;
-
-						// 탄창 장착
-						MMagazine* pOldMagazine = pGunItem->SetMagazine( pMagazineItem );
-
-						// 현재의 탄창 설정
-						g_pCurrentMagazine = pMagazineItem;
-
-						// 기존에 있던 탄창이 있으면 제거한다.
-						if (pOldMagazine!=NULL)
-						{
-							DEBUG_ADD("Delete Old Magazine");
-							
-							delete pOldMagazine;
-						}
+						// load the magazine as the current one, freeing the one it held
+						MItem::ReloadGun( const_cast<MItem*>(pRightHandItem), pMagazineItem );
 					}									
 				}
 				//----------------------------------------------------
-				// 총이 아닌 경우 --> Error당..
+				// not a gun --> an error..
 				//----------------------------------------------------
 				else
 				{
 					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d", (int)pRightHandItem->GetItemClass());
 					
-					// QuickSlot에서 제거
+					// remove it from the quick slot
 					g_pQuickSlot->RemoveItem( pItem->GetID() );
 
 					SAFE_DELETE( pItem );					
 				}
 			}
 			//----------------------------------------------------
-			// 탄창이 아니면 에러다.
+			// not a magazine is an error.
 			//----------------------------------------------------
 			else
 			{
@@ -265,7 +242,7 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 			}
 		}
 		//----------------------------------------------------
-		// 다른 상태??
+		// another status??
 		//----------------------------------------------------
 		else
 		{
@@ -274,12 +251,12 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 			return;
 		}
 
-		// 은총알 때문에... 데미지 등등.. 다시 계산..
-		g_pPlayer->CalculateStatus();
+		// for silver bullets... damage and so on.. calculate again..
+		PlayerState::CalculateStatus();
 
 	}
 	//----------------------------------------------------
-	// item이 없는 경우.. - -;;
+	// no item.. - -;;
 	//----------------------------------------------------
 	else
 	{
