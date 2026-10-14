@@ -5156,8 +5156,8 @@ rounds settled* for the host rules). Test fixtures share
   > `TradePresentation::RunExchange` and `RunExchangeAsk`. Without the
   > player or the trade register the reply does nothing. The old code
   > dereferenced the player first thing, and the register on the paths
-  > that read it; its refusal and plain asking ran without the
-  > register. The game creates the register at start-up and frees it at
+  > that read it; its refusal, and its plain asking when the player
+  > waited on no trade, ran without the register. The game creates the register at start-up and frees it at
   > shutdown. Facing the one asking needs a zone, which the old code
   > read unchecked. R1 is 83 Windows / 81 Ninja.
   - Owner: membership, R1, and `test_trade_prepare_replies.cpp`. It

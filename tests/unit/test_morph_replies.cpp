@@ -175,6 +175,17 @@ TEST(MorphReplies, AnythingElseBecomesASlayer)
 	CHECK(calls == Then({"muted", "to slayer", "guild|-1"}, Equipped("slayer info|7")));
 }
 
+TEST(MorphReplies, ThePlayersRaceDecidesTheTurnNotTheInfos)
+{
+	World world;
+	Receive<PCSlayerInfo2>(7);
+	CHECK(calls == Then({"muted", "to vampire", "guild|2"}, Equipped("slayer info|7")));
+	calls.clear();
+	race = RACE_VAMPIRE;
+	Receive<PCVampireInfo2>(7);
+	CHECK(calls == Then({"muted", "to slayer", "guild|-1"}, Equipped("vampire info|7")));
+}
+
 TEST(MorphReplies, ANewIDMovesThePlayerInTheZone)
 {
 	World world;
@@ -207,7 +218,8 @@ TEST(MorphReplies, WithoutAZoneOrAPlayerNothingHappens)
 	Receive<PCVampireInfo2>(8);
 	CHECK(calls.empty());
 	CHECK(!world.Unequipped());
-	// Without the hosts the reply still lets go of the quick slot.
+	// Without the player's and the events' hosts the reply still lets go
+	// of the quick slot.
 	hasPlayer = true;
 	PlayerState::Host bare{};
 	bare.Creature = player.Creature;
