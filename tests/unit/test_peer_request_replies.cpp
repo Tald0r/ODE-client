@@ -1,6 +1,7 @@
 #include "test_framework.h"
 #include "gamemodel_world.h"
 #include "packet_stream_access.h"
+#include "ClientPlayer.h"
 #include "CommunicationPresentationHost.h"
 #include "RequestFileManager.h"
 #include "RequestServerPlayer.h"
@@ -45,6 +46,14 @@ struct Peer : RequestServerPlayer
 	explicit Peer(const std::string& host = "")
 		: RequestServerPlayer(new Socket((EnsureSocketsInitialised(), host.empty() ? new SocketImpl() : new SocketImpl(host, 9999)))) {}
 	~Peer() { setPlayerStatus(CPS_END_SESSION); }
+	std::vector<unsigned char> Sent() const { return SocketOutputStreamTestAccess::Bytes(*m_pOutputStream); }
+};
+
+// The game server's connection, which reads any packet id it is sent.
+struct GameConnection : ClientPlayer
+{
+	GameConnection() : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl()))) {}
+	~GameConnection() { setPlayerStatus(CPS_END_SESSION); }
 	std::vector<unsigned char> Sent() const { return SocketOutputStreamTestAccess::Bytes(*m_pOutputStream); }
 };
 
@@ -261,4 +270,31 @@ TEST(PeerRequestReplies, ACodeNoRequestHasDoesNothing)
 	CHECK(peer.getPlayerStatus() == before && peer.getRequestMode() == mode);
 	CHECK(peer.Sent().empty());
 	CHECK(asked.empty());
+}
+
+TEST(PeerRequestReplies, TheGameServerSendingARequestIsIgnored)
+{
+	World world;
+	GameConnection server;
+	const PlayerStatus before = server.getPlayerStatus();
+	CRRequest packet;
+	packet.setCode(CR_REQUEST_FILE_PROFILE);
+	packet.setRequestName("Lantern");
+	CRRequestHandler::execute(&packet, &server);
+	CHECK(server.getPlayerStatus() == before);
+	CHECK(server.Sent().empty());
+	CHECK(asked.empty());
+}
+
+TEST(PeerRequestReplies, BeforeACharacterIsChosenNoProfileIsTheirs)
+{
+	World world;
+	world.user.CharacterID = "";
+	Peer peer;
+	peer.setName("Nyx");
+	CHECK(Receive(peer, CR_REQUEST_FILE_PROFILE, ""));
+	CHECK(peer.Sent() == Verify(REQUEST_VERIFY_PROFILE_WRONG_USER));
+	CHECK(peer.getPlayerStatus() == CPS_END_SESSION);
+	CHECK(asked.empty());
+	CHECK(world.files.Of("Nyx") == nullptr);
 }
