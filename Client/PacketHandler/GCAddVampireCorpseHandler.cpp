@@ -8,8 +8,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddVampireCorpse.h"
-#include "ClientDef.h"
+#include "CreatureTypeSelection.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
 #include "MItem.h"
+#include "MStatus.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -21,40 +25,40 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 		
 
 
-	// Creature를 생성해서 MCorpse에 추가해서 Zone에 넣는다.
+	// Make the creature, put it in a corpse, and add that to the zone.
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{		
 		const PCVampireInfo3 & vi = pPacket->getVampireInfo();
 
 		//----------------------------------------	
-		// 이미 있는 Creature인가?
+		// Is the creature already there?
 		//----------------------------------------	
-		MCreature* pCreature = g_pZone->GetCreatureOnly( vi.getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreatureOnly( vi.getObjectID() );
 		
 		//---------------------------------------------------------
 		//
-		//					Zone에 없는 경우
+		//					Not in the zone
 		//
 		//---------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			// 이미 시체가 있나?
-			MItem* pItem = g_pZone->GetItem( vi.getObjectID() );
+			// Is there a corpse already?
+			MItem* pItem = ZoneState::GetItem( vi.getObjectID() );
 
 			//---------------------------------------------------------
 			//
-			// 새로운 시체를 생성
+			// Make a new corpse
 			//
 			//---------------------------------------------------------
 			if (pItem==NULL)
@@ -65,19 +69,24 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 
 				//----------------------------------------	
 				//
-				// 죽은 Creature를 생성한다.
+				// Make the dead creature.
 				//
 				//----------------------------------------	
 				DEBUG_ADD("New VampireCorpse");
 				
-				MCreatureWear*	pDeadCreature = new MCreatureWear;
-				pDeadCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
-
-				pDeadCreature->SetZone( g_pZone );
+				MCreature*	pDeadCreature = ZoneState::NewCreatureWear();
+				if (pDeadCreature == NULL)
+				{
+					return;
+				}
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
+				}
 				
-				// creatureType이 Vamp남자면 2, Vamp여자면 3
+				// creatureType: 2 for a male vampire, 3 for a female one
 				//--------------------------------------------------
-				// CreatureType 설정
+				// Set the CreatureType
 				//--------------------------------------------------
 				Shape_t shape	= vi.getShape();
 				bool bMale		= vi.getSex()==MALE;
@@ -85,97 +94,108 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 
 				if (vi.getCompetence()==0)
 				{
-					pDeadCreature->SetCompetence( 0 );
-					pDeadCreature->SetCreatureType( CREATURETYPE_VAMPIRE_OPERATOR );
-					pDeadCreature->SetMale( bMale );
+					CreatureState::SetCompetence( pDeadCreature, 0 );
+					CreatureState::SetCreatureType( pDeadCreature, CREATURETYPE_VAMPIRE_OPERATOR );
+					CreatureState::SetMale( pDeadCreature, bMale );
 				}
 				else
 				{
-					pDeadCreature->SetCreatureType( GetVampireCreatureType( shape, bMale, coatType ) );
+					CreatureState::SetCreatureType( pDeadCreature, GetVampireCreatureType( shape, bMale, coatType ) );
 				}
 
-				pDeadCreature->SetMale( bMale );				
+				CreatureState::SetMale( pDeadCreature, bMale );
 				
-				// 별 의미 없지만
-				if (pDeadCreature->GetCreatureType()==CREATURETYPE_BAT)
+				// it means little, but
+				if (CreatureState::GetCreatureType( pDeadCreature )==CREATURETYPE_BAT)
 				{
-					pDeadCreature->SetFlyingCreature();
+					CreatureState::SetFlyingCreature( pDeadCreature );
 				}
 				else
 				{
-					pDeadCreature->SetGroundCreature();
+					CreatureState::SetGroundCreature( pDeadCreature );
 				}
 
-				pDeadCreature->SetID( vi.getObjectID() );
-				pDeadCreature->SetPosition( vi.getX(), vi.getY() );
-				pDeadCreature->SetServerPosition( vi.getX(), vi.getY() );
-				pDeadCreature->SetDirection( vi.getDir() );
-				pDeadCreature->SetCurrentDirection( vi.getDir() );
+				CreatureState::SetID( pDeadCreature, vi.getObjectID() );
+				CreatureState::SetPosition( pDeadCreature, vi.getX(), vi.getY() );
+				CreatureState::SetServerPosition( pDeadCreature, vi.getX(), vi.getY() );
+				CreatureState::SetDirection( pDeadCreature, vi.getDir() );
+				CreatureState::SetCurrentDirection( pDeadCreature, vi.getDir() );
 
-				pDeadCreature->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
-				pDeadCreature->SetStatus( MODIFY_CURRENT_HP, 0 );
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
+					pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
+				}
 				
-				// 시체로 바꾼다.
-				pDeadCreature->SetCorpse();
-				pDeadCreature->SetName( vi.getName().c_str() );
+				// Turn it into a corpse.
+				CreatureState::SetCorpse( pDeadCreature );
+				CreatureState::SetName( pDeadCreature, vi.getName().c_str() );
 
-				// 임시로
-				pDeadCreature->SetGuildNumber( vi.getGuildID() );
+				// for now
+				CreatureState::SetGuildNumber( pDeadCreature, vi.getGuildID() );
 
-				pDeadCreature->SetWeaponSpeed( vi.getAttackSpeed() );
-				pDeadCreature->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+				CreatureState::SetWeaponSpeed( pDeadCreature, vi.getAttackSpeed() );
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+				}
 
-				// 색깔
-				pDeadCreature->SetBodyColor1( vi.getSkinColor() );
-				pDeadCreature->SetBodyColor2( vi.getCoatColor() );
+				// colours
+				CreatureState::SetBodyColor1( pDeadCreature, vi.getSkinColor() );
+				CreatureState::SetBodyColor2( pDeadCreature, vi.getCoatColor() );
 				
 
 				//--------------------------------------------------
 				// [ TEST CODE ]
 				//--------------------------------------------------
-				// 옷 색깔 설정하기
+				// set the coat's colour
 				//--------------------------------------------------
 				/*
 				if (pDeadCreature->IsMale())
 				{
-					pDeadCreature->SetBodyColor2( 91 );
+					CreatureState::SetBodyColor2( pDeadCreature, 91 );
 				}
 				else
 				{
-					pDeadCreature->SetBodyColor2( 38 );
+					CreatureState::SetBodyColor2( pDeadCreature, 38 );
 				}
 				*/
 
 				//----------------------------------------	
 				//
-				// 시체item을 생성한다.
+				// Make the corpse item.
 				//
 				//----------------------------------------	
-				MCorpse* pCorpse = (MCorpse*)MItem::NewItem( ITEM_CLASS_CORPSE );
+				// The corpse owns the creature from here on.
+				MItem* pCorpse = ZoneState::NewCorpse( pDeadCreature );
+				if (pCorpse == NULL)
+				{
+					ZoneState::DeleteCreature( pDeadCreature );
+					return;
+				}
 				pCorpse->SetID( vi.getObjectID() );
 				pCorpse->SetItemType( 0 );
-				pCorpse->SetCreature( pDeadCreature );
 				pCorpse->SetPosition( vi.getX(), vi.getY() );		
 
 				pCorpse->SetNumber( pPacket->getTreasureCount() );
 
 				//----------------------------------------
-				// Zone에 Item추가
+				// Add the item to the zone
 				//----------------------------------------
-				if (!g_pZone->AddItem( pCorpse ))
+				if (!ZoneState::AddItem( pCorpse, false ))
 				{
 					//---------------------------------------------------------
-					// 추가가 안된 경우
-					// 이미 있는 Item을 제거하고 다시 추가한다.
+					// When it could not be added
+					// Remove the item there and add it again.
 					//---------------------------------------------------------
-					TYPE_OBJECTID oldItemID = g_pZone->GetItemID( vi.getX(), vi.getY() );
+					TYPE_OBJECTID oldItemID = ZoneState::GetItemID( vi.getX(), vi.getY() );
 
 					DEBUG_ADD_FORMAT("Remove old Item id=%d", oldItemID);
 						
-					if (g_pZone->RemoveItem( oldItemID ))				
+					if (ZoneState::RemoveItem( oldItemID ))
 					{
-						// 다시 추가한다.
-						if (!g_pZone->AddItem( pCorpse ))
+						// Add it again.
+						if (!ZoneState::AddItem( pCorpse, false ))
 						{
 							DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", vi.getObjectID(), vi.getX(), vi.getY());
 							
@@ -184,7 +204,7 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 					}
 					else
 					{
-						// 이미 있는 item을 제거할 수 없는 경우
+						// When the item there cannot be removed
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, vi.getX(), vi.getY());
 						
 						delete pCorpse;
@@ -193,7 +213,7 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 			}
 			//---------------------------------------------------------
 			//
-			// 이미 시체가 있는 경우 
+			// A corpse already there
 			//
 			//---------------------------------------------------------
 			else
@@ -203,8 +223,8 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 				if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 				{
 					//---------------------------------------------------------					
-					// 시체가 이미 있는 경우
-					// 시체에 들어있는 Item 개수 설정
+					// The corpse is already there
+					// the number of items in the corpse
 					//---------------------------------------------------------
 					pItem->SetNumber( pPacket->getTreasureCount() );
 				}
@@ -216,14 +236,17 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 		}
 		//---------------------------------------------------------
 		//
-		//				Zone에 이미 있는 경우
+		//				Already in the zone
 		//
 		//---------------------------------------------------------		
 		else
 		{
 			const PCVampireInfo3 & vi = pPacket->getVampireInfo();
 
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
+			}
 
 			Shape_t shape	= vi.getShape();
 			bool bMale		= vi.getSex()==MALE;
@@ -231,46 +254,52 @@ void GCAddVampireCorpseHandler::execute ( GCAddVampireCorpse * pPacket , Player 
 
 			int creatureType = GetVampireCreatureType( shape, bMale, coatType );
 
-			if (pCreature->GetCreatureType()!=creatureType)
+			if (CreatureState::GetCreatureType( pCreature )!=creatureType)
 			{
 				if (vi.getCompetence()==0)
 				{
-					pCreature->SetCompetence( 0 );
-					pCreature->SetCreatureType( CREATURETYPE_VAMPIRE_OPERATOR );
-					pCreature->SetMale( bMale );
+					CreatureState::SetCompetence( pCreature, 0 );
+					CreatureState::SetCreatureType( pCreature, CREATURETYPE_VAMPIRE_OPERATOR );
+					CreatureState::SetMale( pCreature, bMale );
 				}
 				else
 				{
-					pCreature->SetCreatureType(creatureType);
+					CreatureState::SetCreatureType( pCreature, creatureType);
 				}
 
-				pCreature->SetGroundCreature();
+				CreatureState::SetGroundCreature( pCreature );
 			}
 
-			pCreature->MovePosition( vi.getX(), vi.getY() );
-			pCreature->SetServerPosition( vi.getX(), vi.getY() );
-			pCreature->SetDirection( vi.getDir() );
-			pCreature->SetCurrentDirection( vi.getDir() );
+			CreatureState::MovePosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetDirection( pCreature, vi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, vi.getDir() );
 
 		//	pCreature->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, 0 );
-
-			pCreature->SetWeaponSpeed( vi.getAttackSpeed() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
-
-			// 임시로
-			pCreature->SetGuildNumber( vi.getGuildID() );
-
-			//---------------------------------------------------------
-			// Creature를 죽여야 한다.
-			//---------------------------------------------------------
-			if (!pCreature->IsDead())
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
 			{
-				pCreature->SetStop();			
-				pCreature->SetDead();		
+				pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
 			}
 
-			pCreature->SetItemCount( pPacket->getTreasureCount() );
+			CreatureState::SetWeaponSpeed( pCreature, vi.getAttackSpeed() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+			}
+
+			// for now
+			CreatureState::SetGuildNumber( pCreature, vi.getGuildID() );
+
+			//---------------------------------------------------------
+			// The creature must die.
+			//---------------------------------------------------------
+			if (!CreatureState::IsDead( pCreature ))
+			{
+				CreatureState::SetStop( pCreature );
+				CreatureState::SetDead( pCreature );
+			}
+
+			CreatureState::SetItemCount( pCreature, pPacket->getTreasureCount() );
 		}
 	}
 

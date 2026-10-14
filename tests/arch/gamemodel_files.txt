@@ -1185,5 +1185,6 @@ Client/PacketHandler/GCAddVampireHandler.cpp
 Client/PacketHandler/GCAddSlayerHandler.cpp
 Client/PacketHandler/GCAddOustersHandler.cpp
 
-# A monster's corpse appearing.
+# A monster's or a vampire's corpse appearing.
 Client/PacketHandler/GCAddMonsterCorpseHandler.cpp
+Client/PacketHandler/GCAddVampireCorpseHandler.cpp
