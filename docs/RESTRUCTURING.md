@@ -4608,11 +4608,16 @@ rounds settled* for the host rules). Test fixtures share
   > - a halo strikes its creature from the tile, facing it
   >   (`SelectFacingDirection`, which `MTopView`'s static was; the
   >   `g_pTopView` check went, as the view outlives every zone).
-  > The three short effect calls relied on `bStartFromMainNode`'s
-  > default, `true`; they now pass it. Once moved, the reply stopped
-  > casting the wire's 16-bit effect ID to `EFFECTSTATUS`, whose values
-  > end at 511: an ID past that now shows nothing, where Clang's UBSan
-  > stopped at the enum load. R1 is 109 Windows / 107 Ninja.
+  > The four effect calls that stopped at `NULL` relied on
+  > `bStartFromMainNode`'s default, `true`; they now pass it, and the
+  > halo's passes `sX`/`sY` too. Once moved, the reply stopped casting
+  > the wire's 16-bit effect ID to `EFFECTSTATUS`, whose values end at
+  > 511: an ID past that now shows nothing, where Clang's UBSan stopped
+  > at the enum load. `GCAddEffectHandler` had the same cast before its
+  > own range check, and now checks first. Recorded, not fixed: the three
+  > ground marks write `MZone::GetSector(x, y)`, which does not check the
+  > wire's cell against the zone's size, as the old code did not. R1 is
+  > 109 Windows / 107 Ninja.
   - Owner: membership, R1, the four entries and adapters, and
     `test_tile_effect_replies.cpp` (a skill and none, the trying, luck
     and misfortune, the three ground marks with and without a zone, a

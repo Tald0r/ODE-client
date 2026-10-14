@@ -59,7 +59,7 @@ const ZoneState::Host zone = []() {
 
 const CreatureState::Host creature = []() {
 	CreatureState::Host host{};
-	host.IsSlayer = [](MCreature*) { return playerIsSlayer; };
+	host.IsSlayer = [](MCreature* p) { CHECK(p != nullptr); return playerIsSlayer; };
 	host.GetID = [](MCreature* p) { return Fake(p).id; };
 	host.GetX = [](MCreature* p) { return Fake(p).x; };
 	host.GetY = [](MCreature* p) { return Fake(p).y; };
@@ -196,6 +196,8 @@ TEST(TileEffectReplies, ATrapShowsOnlyToASlayer)
 	calls.clear();
 	playerIsSlayer = false;
 	Receive(EFFECTSTATUS_TRAP_INSTALLED);
+	// No player at all, even with slayers about: hidden, never asked.
+	playerIsSlayer = true;
 	hasPlayer = false;
 	Receive(EFFECTSTATUS_TRAP_INSTALLED);
 	CHECK(calls.empty());
