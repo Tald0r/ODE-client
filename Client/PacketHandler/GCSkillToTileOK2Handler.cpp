@@ -87,9 +87,13 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			// 2004, 9, 9, sobeit add start
 			if(skillID == SKILL_BURNING_SOUL_LAUNCH)
 			{
-				int TempskillID = SKILL_CLIENT_BURNING_SOL_1+pPacket->getGrade();
-				WorldEvents::ExecuteActionInfoFromMainNode(TempskillID,CreatureState::GetX(pCreature), CreatureState::GetY(pCreature), 0,CreatureState::GetDirection(pCreature), CreatureState::GetID(pCreature)	,	
-					pPacket->getX(), pPacket->getY(), 0, ConvertDurationToFrame( pPacket->getDuration() ), NULL, false);
+				// The launch starts from its caster; without one there is none.
+				if (pCreature != NULL)
+				{
+					int TempskillID = SKILL_CLIENT_BURNING_SOL_1+pPacket->getGrade();
+					WorldEvents::ExecuteActionInfoFromMainNode(TempskillID,CreatureState::GetX(pCreature), CreatureState::GetY(pCreature), 0,CreatureState::GetDirection(pCreature), CreatureState::GetID(pCreature)	,	
+						pPacket->getX(), pPacket->getY(), 0, ConvertDurationToFrame( pPacket->getDuration() ), NULL, false);
+				}
 			//	return;
 			}
 			else if(skillID == SKILL_ROTTEN_APPLE)

@@ -489,6 +489,15 @@ TEST(SkillTileReplies, ACreaturesBurningSoulLaunchesFromItAndARottenAppleFallsAt
 	}
 }
 
+TEST(SkillTileReplies, ABurningSoulLaunchWithoutItsCasterStartsAtTheCellAlone)
+{
+	World world;
+	// The launch effect starts from its caster; without one only the skill
+	// itself starts at the cell. It read the missing caster before.
+	ReceiveNearPlayer(4242, SKILL_BURNING_SOUL_LAUNCH, {1001}, 2);
+	CHECK(calls == std::vector<std::string>{AtCell(SKILL_BURNING_SOUL_LAUNCH, 40, 41, 0, OBJECTID_NULL)});
+}
+
 TEST(SkillTileReplies, ACreaturesSkillNearThePlayerGuards)
 {
 	World world;
