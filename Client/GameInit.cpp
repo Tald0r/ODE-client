@@ -3571,6 +3571,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 		if (g_pCurrentMagazine != NULL) g_pCurrentMagazine->SetNumber(static_cast<TYPE_ITEM_NUMBER>(number));
 		else DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
 	},
+	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3658,6 +3659,12 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetDirection = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetDirection()); },
 	.RemoveHead = [](MCreature* pCreature) { pCreature->RemoveHead(); },
 	.SetDirection = [](MCreature* pCreature, int direction) { pCreature->SetDirection(static_cast<BYTE>(direction)); },
+	.SetVisibleSoon = [](MCreature* pCreature) { pCreature->SetVisibleSoon(); },
+	.IsWear = [](MCreature* pCreature) { return pCreature->IsWear() != FALSE; },
+	.SetAddonItem = [](MCreature* pCreature, MItem* pItem) {
+		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->SetAddonItem(pItem);
+	},
+	.SetWeaponSpeed = [](MCreature* pCreature, int speed) { pCreature->SetWeaponSpeed(speed); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

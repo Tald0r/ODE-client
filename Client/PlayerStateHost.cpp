@@ -151,4 +151,9 @@ void SetCurrentMagazineNumber(int number)
 	if (s_Host && s_Host->SetCurrentMagazineNumber) s_Host->SetCurrentMagazineNumber(number);
 }
 
+void SetGroundCreature()
+{
+	if (s_Host && s_Host->SetGroundCreature) s_Host->SetGroundCreature();
+}
+
 }

@@ -6,6 +6,7 @@
 
 class MActionResult;
 class MCreature;
+class MItem;
 class MShop;
 class MStatus;
 
@@ -119,6 +120,14 @@ struct Host
 	// Takes the creature's head off, if it can lose it.
 	void (*RemoveHead)(MCreature* pCreature) = nullptr;
 	void (*SetDirection)(MCreature* pCreature, int direction) = nullptr;
+	// Fades the creature back in soon after a fade-out.
+	void (*SetVisibleSoon)(MCreature* pCreature) = nullptr;
+	// Whether the creature wears gear (MCreatureWear); only a wearing
+	// creature takes an addon item or a weapon speed.
+	bool (*IsWear)(MCreature* pCreature) = nullptr;
+	// Puts on a copy of the item; the caller keeps pItem.
+	bool (*SetAddonItem)(MCreature* pCreature, MItem* pItem) = nullptr;
+	void (*SetWeaponSpeed)(MCreature* pCreature, int speed) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -186,5 +195,9 @@ void SetFakeDie(MCreature* pCreature);
 int GetDirection(MCreature* pCreature);
 void RemoveHead(MCreature* pCreature);
 void SetDirection(MCreature* pCreature, int direction);
+void SetVisibleSoon(MCreature* pCreature);
+bool IsWear(MCreature* pCreature);
+bool SetAddonItem(MCreature* pCreature, MItem* pItem);
+void SetWeaponSpeed(MCreature* pCreature, int speed);
 
 }

@@ -362,4 +362,24 @@ void SetDirection(MCreature* pCreature, int direction)
 	if (s_Host && s_Host->SetDirection) s_Host->SetDirection(pCreature, direction);
 }
 
+void SetVisibleSoon(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetVisibleSoon) s_Host->SetVisibleSoon(pCreature);
+}
+
+bool IsWear(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsWear ? s_Host->IsWear(pCreature) : false;
+}
+
+bool SetAddonItem(MCreature* pCreature, MItem* pItem)
+{
+	return s_Host && s_Host->SetAddonItem ? s_Host->SetAddonItem(pCreature, pItem) : false;
+}
+
+void SetWeaponSpeed(MCreature* pCreature, int speed)
+{
+	if (s_Host && s_Host->SetWeaponSpeed) s_Host->SetWeaponSpeed(pCreature, speed);
+}
+
 }

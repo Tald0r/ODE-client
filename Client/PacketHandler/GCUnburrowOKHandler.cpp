@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCUnburrowOK.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //--------------------------------------------------------------------------------
@@ -19,27 +22,23 @@ void GCUnburrowOKHandler::execute ( GCUnburrowOK * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
-	/*
-	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
-
-	// 다음 좌표를 플레이어에 지정해 놓는다.
-	pClientPlayer->setX( pPacket->getX() );
-	pClientPlayer->setY( pPacket->getY() );
-	pClientPlayer->setDir( pPacket->getDir() );
-
-	cout << "Unburrow OK to (" << (int)pPacket->getX() << "," << (int)pPacket->getY() << ","
-		<< Dir2String[pPacket->getDir()] << ")" << endl;
-	*/
 
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -47,34 +46,34 @@ void GCUnburrowOKHandler::execute ( GCUnburrowOK * pPacket , Player * pPlayer )
 	}
 
 	//-----------------------------------------------------------------
-	// 위치 설정
+	// The position.
 	//-----------------------------------------------------------------
-	g_pPlayer->SetServerPosition( pPacket->getX(), pPacket->getY() );	
-	g_pPlayer->MovePosition( pPacket->getX(), pPacket->getY() );
-	g_pPlayer->SetDirection( pPacket->getDir() );
+	CreatureState::SetServerPosition(pPlayerCreature, pPacket->getX(), pPacket->getY() );	
+	CreatureState::MovePosition(pPlayerCreature, pPacket->getX(), pPacket->getY() );
+	CreatureState::SetDirection(pPlayerCreature, pPacket->getDir() );
 
 	//-----------------------------------------------------------------
-	// 지상으로 나온다.
+	// Come up above ground.
 	//-----------------------------------------------------------------
-	g_pPlayer->SetGroundCreature();
+	PlayerState::SetGroundCreature();
 
 	//--------------------------------------------------
-	// Burrow에서 빠져나오는 Effect == Burrowing하는 Effect
+	// The effect of coming out of a burrow is the burrowing effect.
 	//--------------------------------------------------		
-	ExecuteActionInfoFromMainNode(
-		RESULT_MAGIC_HIDE,										// 사용 기술 번호
+	WorldEvents::ExecuteActionInfoFromMainNode(
+		RESULT_MAGIC_HIDE,										// the skill used
 	
-		g_pPlayer->GetX(), g_pPlayer->GetY(), 0,
-		g_pPlayer->GetDirection(),														// 사용 방향
+		CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature), 0,
+		CreatureState::GetDirection(pPlayerCreature),														// direction
 		
-		OBJECTID_NULL,												// 목표에 대한 정보
-		g_pPlayer->GetX(), g_pPlayer->GetY(), 0, 
+		OBJECTID_NULL,												// the target
+		CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature), 0, 
 		
-		0,													// 기술의 (남은) 지속 시간		
+		0,													// the skill's (remaining) duration		
 		
 		NULL,
 		
-		false);			// 기술 첨부터 시작한다.
+		false);			// start the skill from its beginning
 
 
 	__END_CATCH

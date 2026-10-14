@@ -75,6 +75,8 @@ struct Host
 	// The bullets left in the gun's current magazine, if it has one. The
 	// magazine (MMagazine) keeps its vtable in the executable.
 	void (*SetCurrentMagazineNumber)(int number) = nullptr;
+	// MPlayer's own landing, which hides the creature's.
+	void (*SetGroundCreature)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -111,5 +113,6 @@ void ClearItemCheckBuffer();
 // Takes pResult; without an entry it is freed unrun, and the answer is false.
 bool PacketAddActionResult(std::uint16_t effectID, MActionResult* pResult);
 void SetCurrentMagazineNumber(int number);
+void SetGroundCreature();
 
 }

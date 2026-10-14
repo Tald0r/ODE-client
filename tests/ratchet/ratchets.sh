@@ -321,7 +321,8 @@ check () {
 # 176: the three cross-counter replies join gamemodel (4.135).
 # 174: the add-effect and corpse-head replies join gamemodel (4.136).
 # 171: the three bomb replies join gamemodel with the mine and bomb lookups (4.137).
-R1_BASELINE=171
+# 168: the unburrow, remove-effect and change-shape replies join gamemodel (4.138).
+R1_BASELINE=168
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -476,7 +477,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 174: the three cross-counter replies join gamemodel (4.135).
 	# 172: the add-effect and corpse-head replies join gamemodel (4.136).
 	# 169: the three bomb replies join gamemodel with the mine and bomb lookups (4.137).
-	R1_NINJA_BASELINE=169
+	# 166: the unburrow, remove-effect and change-shape replies join gamemodel (4.138).
+	R1_NINJA_BASELINE=166
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

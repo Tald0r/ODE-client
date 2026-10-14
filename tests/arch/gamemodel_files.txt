@@ -1005,3 +1005,9 @@ Client/ExplosiveActions.h
 Client/PacketHandler/GCThrowBombOK1Handler.cpp
 Client/PacketHandler/GCThrowBombOK2Handler.cpp
 Client/PacketHandler/GCThrowBombOK3Handler.cpp
+
+# The player unburrowing, effect statuses removed from a creature, and a
+# creature's shape changed by an addon item.
+Client/PacketHandler/GCUnburrowOKHandler.cpp
+Client/PacketHandler/GCRemoveEffectHandler.cpp
+Client/PacketHandler/GCChangeShapeHandler.cpp
