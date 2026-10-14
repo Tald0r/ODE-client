@@ -22,8 +22,9 @@
 // loses its quick slot and arms bands, attacks with its bare hands at a
 // reach of one cell, and takes its details, gear, inventory and the item
 // at the mouse from the packet, its status calculated between the gear
-// and the inventory; then sound plays again. Without a zone or a player
-// nothing happens.
+// and the inventory; then sound plays again. An ouster's info, or any
+// other the reply does not take, is refused with the sound left as it
+// was. Without a zone or a player nothing happens.
 namespace {
 
 std::vector<std::string> calls;
@@ -186,12 +187,12 @@ TEST(MorphReplies, ANewIDMovesThePlayerInTheZone)
 	CHECK(calls == Then({"muted", "zone removes|8", "id|9", "zone takes the player", "to slayer", "guild|-1"}, Equipped("slayer info|9")));
 }
 
-TEST(MorphReplies, AnOustersInfoIsRefusedWithSoundPlayingAgain)
+TEST(MorphReplies, AnOustersInfoIsRefusedLeavingTheSoundAlone)
 {
 	World world;
 	race = RACE_OUSTERS;
 	Receive<PCOustersInfo2>(8);
-	CHECK(calls == std::vector<std::string>({"muted", "unmuted"}));
+	CHECK(calls.empty());
 	CHECK(!world.Unequipped());
 	CHECK_EQ(7u, myID);
 }

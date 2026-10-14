@@ -5192,11 +5192,15 @@ rounds settled* for the host rules). Test fixtures share
     turning, a vampire and an ouster turning, a new ID, no zone, no
     player, and no hosts.
   - Fixed after the move: an ouster's info (or any type but a slayer's
-    or a vampire's) left the client silent for good. The reply muted
-    sound, refused the type, and returned without letting sound play
-    again. It now unmutes before it returns. `test_morph_replies.cpp`
-    sends an ouster's info and expects sound back, with the player
-    otherwise untouched.
+    or a vampire's) left the client silent until something else
+    unmuted it (the window coming back to the front, the sound option,
+    a later transformation or `GCUpdateInfo`). The reply muted sound,
+    refused the type, and returned without letting sound play again.
+    The first fix unmuted on that return, which also unmuted a client
+    muted for being in the background. The reply now mutes only once it
+    takes the type, so a refused one leaves the sound as it was.
+    `test_morph_replies.cpp` sends an ouster's info and expects no call
+    at all, with the player untouched.
 
 - [x] **4.191 An item picked up:** move `GCDeleteandPickUpOKHandler`
   into `gamemodel`.

@@ -36,11 +36,6 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 	}
 
 	//-----------------------------------------------------------
-	// Play no sound.
-	//-----------------------------------------------------------
-	WorldEvents::MuteSound( true );
-
-	//-----------------------------------------------------------
 	// A different ID.. the ID must change.
 	//-----------------------------------------------------------
 	int objectID;
@@ -63,10 +58,14 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 
 		default :
 			DEBUG_ADD_ERR("[Error] wrong PC Type");
-			// Sound was muted above: let it play again.
-			WorldEvents::MuteSound( false );
 		return;
 	}
+
+	//-----------------------------------------------------------
+	// Play no sound, once the type is one the reply takes: a refused
+	// one leaves the sound as it was (muted in the background, say).
+	//-----------------------------------------------------------
+	WorldEvents::MuteSound( true );
 
 	if (PlayerState::GetID()!=static_cast<TYPE_OBJECTID>(objectID))
 	{
