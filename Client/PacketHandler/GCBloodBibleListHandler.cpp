@@ -18,7 +18,6 @@
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
 #include "TalkBox.h"
-#include "SystemAvailabilities.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
 #include "TempInformation.h"

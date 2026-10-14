@@ -108,8 +108,11 @@ TEST(BloodBibleReplies, TheListOffersEachBibleAndAWayOut)
 TEST(BloodBibleReplies, ABibleWithoutAStringIsOfferedWithEmptyText)
 {
 	World world;
-	Receive({5000});
-	CHECK(world.Lines() == std::vector<std::string>({"5000 Borrow the  seal. ()", "999" + Text(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE)}));
+	// Its name and bonus empty in the table.
+	g_pGameStringTable->Set(UI_STRING_MESSAGE_BLOOD_BIBLE_ARMEGA + 3, "");
+	g_pGameStringTable->Set(STRING_MESSAGE_BLOOD_BIBLE_BONUS_ARMEGA + 3, "");
+	Receive({3});
+	CHECK(world.Lines() == std::vector<std::string>({"  3 Borrow the  seal. ()", "999" + Text(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE)}));
 	// None at all: only the way out.
 	world.talkBox.Release();
 	world.talkBox.AddString("stale");

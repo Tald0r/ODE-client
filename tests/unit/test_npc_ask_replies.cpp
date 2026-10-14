@@ -26,9 +26,9 @@
 // (with its index), then popped up. The question comes from the NPC's
 // script (GCNPCAsk; four NPC IDs need no creature in the zone and are
 // their own creature type), whole in the packet (GCNPCAskDynamic, with
-// at least one answer), or from the script with variables filled in
-// (GCNPCAskVariable). A question from an NPC that is not in the zone
-// only ends the wait.
+// at least one answer counted), or from the script with variables filled
+// in (GCNPCAskVariable). An empty answer is left out like a refused one.
+// A question from an NPC that is not in the zone only ends the wait.
 namespace {
 
 std::vector<std::string> calls;
@@ -265,9 +265,11 @@ TEST(NPCAskReplies, FourNPCsNeedNoCreatureAndAreTheirOwnType)
 	CHECK(world.Untouched());
 	for (int npcID : {633, 638})
 	{
+		world.Stale();
 		waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
 		Ask(1003, 77, npcID);
 		world.Shows("Hello, %(name)", 1003, 250, 77);
+		CHECK(!world.Untouched());
 	}
 }
 

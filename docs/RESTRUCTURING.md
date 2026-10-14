@@ -4162,7 +4162,7 @@ rounds settled* for the host rules). Test fixtures share
   > The question comes from the NPC's script (`GCNPCAsk`; NPC IDs
   > 634-637 need no creature in the zone and are their own creature
   > type), whole in the packet (`GCNPCAskDynamic`, with at least one
-  > answer), or from the script with its variables filled in
+  > answer counted), or from the script with its variables filled in
   > (`GCNPCAskVariable`). A question from an NPC not in the zone only
   > ends the wait. The scripted and variable questions no longer require
   > the UI dialog to exist (a missing dialog host skips the popup; the
@@ -4172,7 +4172,14 @@ rounds settled* for the host rules). Test fixtures share
   > reading: a whole question took an answer out of the packet only when
   > the availabilities allowed it, so after a refused answer every later
   > one showed the text before it; moved as it was, then fixed (the next
-  > commit). R1 is 136 Windows / 134 Ninja.
+  > commit). The review then found that the packet's read counted every
+  > answer but kept only the non-empty ones, so the handler popped an
+  > empty list (undefined behaviour) and later answers shifted; the read
+  > now keeps an empty answer in its place (38aa7cfc, in 4.152's PR).
+  > No question shows an empty answer: each leaves it out like a refused
+  > one, since an empty MString holds NULL and the talk-box dialog hands
+  > its menu each line's string as it is (445a9109). R1 is 136 Windows /
+  > 134 Ninja.
   - Owner: membership, R1, the entry and adapter, and
     `test_npc_ask_replies.cpp` (each question with and without a refused
     answer, the four creatureless NPCs and their neighbours, no answer,
@@ -4188,8 +4195,13 @@ rounds settled* for the host rules). Test fixtures share
   > `DialogPresentation::PopupPCTalkDlg`, and the next answer is a
   > skill-learning one. It no longer requires the UI dialog to exist (a
   > missing dialog host skips the popup, as in 4.151). Without a player,
-  > the zone or the talk box it does nothing, as before. R1 is 135
-  > Windows / 133 Ninja.
+  > the zone or the talk box it does nothing, as before. Its subject and
+  > way-out strings are read through `GetGameString`, which now answers
+  > "" for an empty entry as well as for one past the table (445a9109).
+  > Still open, in executable code: `UIDialog` reads a list line's first
+  > three characters as its id, so a way-out string that is empty leaves
+  > an empty, NULL menu name, and an id of four digits would be misread
+  > (the server sends small ids). R1 is 135 Windows / 133 Ninja.
   - Owner: membership, R1, and `test_blood_bible_replies.cpp` (two
     bibles, one without strings, none; each guard; no dialog host).
 
