@@ -15,13 +15,14 @@
 #include "Packet.h"
 #include "PacketFactory.h"
 
-enum REQUEST_VERIFY
+// One byte on the wire: the fixed type holds any byte the server sends.
+enum REQUEST_VERIFY : BYTE
 {
 	REQUEST_VERIFY_NULL,
 	REQUEST_VERIFY_WHISPER_FAILED,
-	REQUEST_VERIFY_PROFILE_NOT_EXIST,		// profile이 아예 없는 경우
-	REQUEST_VERIFY_PROFILE_WRONG_USER,		// 잘못된 사용자에게 요청한 경우
-	REQUEST_VERIFY_PROFILE_DONE,			// profile 다 보냈다.
+	REQUEST_VERIFY_PROFILE_NOT_EXIST,		// there is no profile at all
+	REQUEST_VERIFY_PROFILE_WRONG_USER,		// asked of the wrong user
+	REQUEST_VERIFY_PROFILE_DONE,			// the profile is all sent.
 };
 
 //////////////////////////////////////////////////////////////////////

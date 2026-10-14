@@ -23,13 +23,14 @@
 // RemoveEffectrmation, SkillToObjectOK 등에 실려서 날아간다.
 //
 //////////////////////////////////////////////////////////////////////
-enum RC_CONNECT_VERIFY_CODE
+// One byte on the wire: the fixed type holds any byte the server sends.
+enum RC_CONNECT_VERIFY_CODE : BYTE
 {
-	RC_CONNECT_NULL,			// 잘못된 값
+	RC_CONNECT_NULL,			// not a value
 
-	RC_CONNECT_OK,				// 허용
-	RC_CONNECT_REJECT,			// 거부 - -; 
-	RC_CONNECT_WRONG,			// 잘못된 접속(RequestServerName이 다르다던가..)
+	RC_CONNECT_OK,				// allowed
+	RC_CONNECT_REJECT,			// refused - -; 
+	RC_CONNECT_WRONG,			// a wrong connection (the RequestServerName differs, say..)
 };
 
 class RCConnectVerify : public Packet
