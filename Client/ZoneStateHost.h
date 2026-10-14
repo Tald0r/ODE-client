@@ -50,6 +50,16 @@ MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
 
 namespace CreatureState {
 
+// How a creature moves. MCreature brings these into its own scope, so
+// MCreature::MOVE_DEVICE_X names the same values.
+enum MOVE_DEVICE
+{
+	MOVE_DEVICE_WALK,			// on foot
+	MOVE_DEVICE_RIDE,			// a motorcycle
+	MOVE_DEVICE_SUMMON_SYLPH,	// riding a summoned sylph
+	MOVE_DEVICE_MAX
+};
+
 struct Host
 {
 	MStatus* (*Status)(MCreature* pCreature) = nullptr;
@@ -130,6 +140,10 @@ struct Host
 	// Puts on a copy of the item; the caller keeps pItem.
 	bool (*SetAddonItem)(MCreature* pCreature, MItem* pItem) = nullptr;
 	void (*SetWeaponSpeed)(MCreature* pCreature, int speed) = nullptr;
+	// Takes off the addon in that slot; false for a creature not wearing
+	// gear or a slot with nothing in it.
+	bool (*RemoveAddon)(MCreature* pCreature, int addon) = nullptr;
+	void (*SetMoveDevice)(MCreature* pCreature, MOVE_DEVICE device) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -201,5 +215,7 @@ void SetVisibleSoon(MCreature* pCreature);
 bool IsWear(MCreature* pCreature);
 bool SetAddonItem(MCreature* pCreature, MItem* pItem);
 void SetWeaponSpeed(MCreature* pCreature, int speed);
+bool RemoveAddon(MCreature* pCreature, int addon);
+void SetMoveDevice(MCreature* pCreature, MOVE_DEVICE device);
 
 }

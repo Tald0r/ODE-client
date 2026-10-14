@@ -3666,6 +3666,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->SetAddonItem(pItem);
 	},
 	.SetWeaponSpeed = [](MCreature* pCreature, int speed) { pCreature->SetWeaponSpeed(speed); },
+	.RemoveAddon = [](MCreature* pCreature, int addon) {
+		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->RemoveAddon(addon);
+	},
+	.SetMoveDevice = [](MCreature* pCreature, CreatureState::MOVE_DEVICE device) { pCreature->SetMoveDevice(device); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3690,6 +3694,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SkillToSector = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult) {
 		SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
 	},
+	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

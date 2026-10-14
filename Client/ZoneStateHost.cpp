@@ -382,4 +382,14 @@ void SetWeaponSpeed(MCreature* pCreature, int speed)
 	if (s_Host && s_Host->SetWeaponSpeed) s_Host->SetWeaponSpeed(pCreature, speed);
 }
 
+bool RemoveAddon(MCreature* pCreature, int addon)
+{
+	return s_Host && s_Host->RemoveAddon ? s_Host->RemoveAddon(pCreature, addon) : false;
+}
+
+void SetMoveDevice(MCreature* pCreature, MOVE_DEVICE device)
+{
+	if (s_Host && s_Host->SetMoveDevice) s_Host->SetMoveDevice(pCreature, device);
+}
+
 }

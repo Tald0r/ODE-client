@@ -41,6 +41,8 @@ struct Host
 	// The skill's effect starting at a cell with nobody casting it (a mine
 	// going off, an unseen caster's skill), carrying the result queue.
 	void (*SkillToSector)(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult) = nullptr;
+	// A sound heard from a cell (the listener's distance sets its volume).
+	void (*PlaySoundAt)(TYPE_SOUNDID soundID, bool repeat, int x, int y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -56,6 +58,7 @@ void AddEvent(MEvent& event);
 void RemoveEvent(int eventID);
 void PlayMusicCurrentZone();
 void PlaySound(TYPE_SOUNDID soundID);
+void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.

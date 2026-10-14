@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGetOffMotorCycleOK.h"
-#include "ClientDef.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SoundDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -18,30 +20,36 @@ void GCGetOffMotorCycleOKHandler::execute ( GCGetOffMotorCycleOK * pPacket, Play
 
 {
 	__BEGIN_TRY
+
 	(void)pPacket;
 	(void)pPlayer;
-		
 
-	
-	//------------------------------------------
-	// 오토바이 그림을 없애준다.
-	//------------------------------------------
-	g_pPlayer->RemoveAddon( ADDON_MOTOR );
-
-	//------------------------------------------
-	// 움직이는 방법 바꿈
-	//------------------------------------------
-	g_pPlayer->SetMoveDevice( MCreature::MOVE_DEVICE_WALK );
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 
 	//------------------------------------------
-	// 어쨋든 간에.. 검증이 되었다고 본다.
+	// The motorcycle is no longer drawn.
 	//------------------------------------------
-	g_pPlayer->SetWaitVerifyNULL();
+	CreatureState::RemoveAddon(pPlayerCreature, ADDON_MOTOR );
 
 	//------------------------------------------
-	// 내리는 소리 출력
+	// The player walks now.
 	//------------------------------------------
-	PlaySound( SOUND_WORLD_BIKE_STOP );
+	CreatureState::SetMoveDevice(pPlayerCreature, CreatureState::MOVE_DEVICE_WALK );
+
+	//------------------------------------------
+	// Either way, take it as verified.
+	//------------------------------------------
+	PlayerState::SetWaitVerifyNULL();
+
+	//------------------------------------------
+	// The sound of getting off.
+	//------------------------------------------
+	WorldEvents::PlaySound( SOUND_WORLD_BIKE_STOP );
 
 
 	__END_CATCH

@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGetOffMotorCycle.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SoundDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -23,46 +26,48 @@ void GCGetOffMotorCycleHandler::execute ( GCGetOffMotorCycle * pPacket , Player 
 
 	
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//
-	// Creature가 오토바이를 장착해제 한다.
+	// The creature gets off its motorcycle.
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature!=NULL)
 		{
-			// 장착가능한 creature인 경우
-			if (pCreature->IsWear())
+			// A creature that can wear gear.
+			if (CreatureState::IsWear(pCreature))
 			{
-				MCreatureWear* pCreatureWear = (MCreatureWear*)pCreature;
-			
 				//------------------------------------------
-				// 오토바이 그림을 없애준다.
+				// The motorcycle is no longer drawn.
 				//------------------------------------------
-				pCreatureWear->RemoveAddon( ADDON_MOTOR );
+				CreatureState::RemoveAddon( pCreature, ADDON_MOTOR );
 
 				//------------------------------------------
-				// 움직이는 방법 바꿈
+				// It walks now.
 				//------------------------------------------
-				pCreatureWear->SetMoveDevice( MCreature::MOVE_DEVICE_WALK );
+				CreatureState::SetMoveDevice( pCreature, CreatureState::MOVE_DEVICE_WALK );
 
 				//------------------------------------------
-				// 내리는 소리 출력
+				// The sound of getting off, heard where the
+				// player stands.
 				//------------------------------------------
-				PlaySound( SOUND_WORLD_BIKE_STOP,
-							false,
-							g_pPlayer->GetX(),
-							g_pPlayer->GetY());
+				if (MCreature* const pPlayerCreature = PlayerState::Creature())
+				{
+					WorldEvents::PlaySoundAt( SOUND_WORLD_BIKE_STOP,
+								false,
+								CreatureState::GetX(pPlayerCreature),
+								CreatureState::GetY(pPlayerCreature));
+				}
 			}
 			else
 			{

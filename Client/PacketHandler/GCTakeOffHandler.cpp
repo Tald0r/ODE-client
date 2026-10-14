@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTakeOff.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -22,59 +23,56 @@ void GCTakeOffHandler::execute ( GCTakeOff * pPacket , Player * pPlayer )
 
 	//------------------------------------------------------
 	//
-	//  Creature의 Addon을 제거한다.
+	//  The creature takes the addon off.
 	//
 	//------------------------------------------------------
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//--------------------------------------------------
-		// Creature가 없는 경우
+		// No creature.
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] Not Exist Creature. ID=%d", pPacket->getObjectID());
 		}
 		//--------------------------------------------------
-		// 존재하는 Creature인 경우
-		// 복장이 있는 creature이면 --> Addon제거
+		// The creature is here;
+		// a wearing creature takes the addon off.
 		//--------------------------------------------------
-		else if (pCreature->IsWear())
+		else if (CreatureState::IsWear(pCreature))
 		{
-			MCreatureWear* pCreatureWear = (MCreatureWear*)pCreature;
-			
-			// 캐릭터를 정지시킨다.
-			pCreatureWear->SetStop();
+			// Stop the creature.
+			CreatureState::SetStop(pCreature);
 
 			#ifdef	OUTPUT_DEBUG				
-				if (pCreatureWear->RemoveAddon( pPacket->getSlotID() ))
+				if (CreatureState::RemoveAddon( pCreature, pPacket->getSlotID() ))
 				{
 					DEBUG_ADD_FORMAT("[OK] RemoveAddon. ID=%d, Slot=%d", pPacket->getObjectID(), (int)pPacket->getSlotID());
 				}
 				else
 				{
-					const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(pPacket->getSlotID());
-					DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. ID=%d, Slot=%d, AddonFrameID=%d", pPacket->getObjectID(), (int)pPacket->getSlotID(), addonInfo.FrameID);
+					DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. ID=%d, Slot=%d", pPacket->getObjectID(), (int)pPacket->getSlotID());
 				}				
 			#else
-				pCreatureWear->RemoveAddon( pPacket->getSlotID() );
+				CreatureState::RemoveAddon( pCreature, pPacket->getSlotID() );
 			#endif
 		}
 			
 		//--------------------------------------------------
-		// 옷을 입을 수 없는 Creature인 경우
+		// A creature that cannot wear clothes.
 		//--------------------------------------------------
 		else 
 		{

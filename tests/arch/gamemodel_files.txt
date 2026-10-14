@@ -1024,3 +1024,9 @@ Client/PacketHandler/GCSkillToTileOK6Handler.cpp
 Client/PacketHandler/GCMineExplosionOK1Handler.cpp
 Client/PacketHandler/GCMineExplosionOK2Handler.cpp
 Client/PacketHandler/GCSkillToTileOK4Handler.cpp
+
+# A creature taking an addon off, and getting off its motorcycle (the
+# player's own answer among them).
+Client/PacketHandler/GCTakeOffHandler.cpp
+Client/PacketHandler/GCGetOffMotorCycleHandler.cpp
+Client/PacketHandler/GCGetOffMotorCycleOKHandler.cpp
