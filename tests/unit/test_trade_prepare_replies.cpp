@@ -249,6 +249,12 @@ TEST(TradePrepareReplies, CancellingClosesTheExchangeOrTheAsking)
 	Receive(&world.connection, 1003, GC_TRADE_PREPARE_CODE_CANCEL);
 	CHECK(calls == std::vector<std::string>{"exchange closed"});
 	CHECK(world.temp.GetMode() == TempInformation::MODE_PARTY_REQUEST);
+	// The exchange open and the player in the request mode: both.
+	calls.clear();
+	world.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
+	Receive(&world.connection, 1003, GC_TRADE_PREPARE_CODE_CANCEL);
+	CHECK(calls == std::vector<std::string>{"exchange closed"});
+	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	CHECK(world.connection.Sent().empty());
 }
 
@@ -260,6 +266,11 @@ TEST(TradePrepareReplies, AcceptingOpensTheExchange)
 	CHECK(calls == std::vector<std::string>{"exchange with 1003"});
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	CHECK(waitVerify == PlayerState::WAIT_VERIFY_TRADE);
+	// The exchange is with the one the packet names, whoever was asked.
+	calls.clear();
+	world.Asking(1003);
+	Receive(&world.connection, 1004, GC_TRADE_PREPARE_CODE_ACCEPT);
+	CHECK(calls == std::vector<std::string>{"exchange with 1004"});
 	// Not asking anyone: nothing.
 	calls.clear();
 	Receive(&world.connection, 1003, GC_TRADE_PREPARE_CODE_ACCEPT);

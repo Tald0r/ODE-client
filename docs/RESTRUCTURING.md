@@ -5154,9 +5154,12 @@ rounds settled* for the host rules). Test fixtures share
   > busy, the player's wait ends, the windows close and the player is
   > told why. Opening the exchange and asking go through the new
   > `TradePresentation::RunExchange` and `RunExchangeAsk`. Without the
-  > player or the trade register the reply does nothing; the old code
-  > dereferenced both. Facing the one asking needs a zone, which the
-  > old code read unchecked. R1 is 83 Windows / 81 Ninja.
+  > player or the trade register the reply does nothing. The old code
+  > dereferenced the player first thing, and the register on the paths
+  > that read it; its refusal and plain asking ran without the
+  > register. The game creates the register at start-up and frees it at
+  > shutdown. Facing the one asking needs a zone, which the old code
+  > read unchecked. R1 is 83 Windows / 81 Ninja.
   - Owner: membership, R1, and `test_trade_prepare_replies.cpp`. It
     covers being asked by the one the player asked, by another while
     asking, and otherwise (by one the zone does not know, or without a
