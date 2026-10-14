@@ -156,4 +156,9 @@ void SetGroundCreature()
 	if (s_Host && s_Host->SetGroundCreature) s_Host->SetGroundCreature();
 }
 
+void SetTempSelectPos(int x, int y)
+{
+	if (s_Host && s_Host->SetTempSelectPos) s_Host->SetTempSelectPos(x, y);
+}
+
 }

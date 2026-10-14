@@ -1011,3 +1011,10 @@ Client/PacketHandler/GCThrowBombOK3Handler.cpp
 Client/PacketHandler/GCUnburrowOKHandler.cpp
 Client/PacketHandler/GCRemoveEffectHandler.cpp
 Client/PacketHandler/GCChangeShapeHandler.cpp
+
+# A skill cast at a cell: by the player, by another creature near the
+# player or elsewhere, and without its user near the player.
+Client/PacketHandler/GCSkillToTileOK1Handler.cpp
+Client/PacketHandler/GCSkillToTileOK2Handler.cpp
+Client/PacketHandler/GCSkillToTileOK5Handler.cpp
+Client/PacketHandler/GCSkillToTileOK6Handler.cpp

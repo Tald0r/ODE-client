@@ -3572,6 +3572,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 		else DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
 	},
 	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
+	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
