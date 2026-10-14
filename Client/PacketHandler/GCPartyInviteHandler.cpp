@@ -59,7 +59,7 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_REQUEST :
 			//----------------------------------------------------------------------
-			// I already invited someone else
+			// I already invited someone (upstream said 'trade')
 			//----------------------------------------------------------------------
 			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_PARTY
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_PARTY_REQUEST)

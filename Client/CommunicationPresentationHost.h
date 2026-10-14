@@ -36,9 +36,11 @@ struct Host
 	bool (*HideWarMessages)() = nullptr;
 	void (*CloseParty)() = nullptr;
 	void (*ClosePartyCancel)() = nullptr;
-	// The party invitation's windows: the one asking whether to join
-	// (RunPartyRequest opens it for the inviter), the one asking whether
-	// to invite, and the one the inviter waits in.
+	// The party invitation's windows. RunPartyRequest shows the timed
+	// invitation button for the inviter (clicking it asks whether to
+	// join), and ClosePartyRequest takes it away; ClosePartyAsk closes the
+	// asking window, and its executable side also clears a party wait.
+	// ClosePartyCancel, above, closes the window the inviter waits in.
 	void (*ClosePartyAsk)() = nullptr;
 	void (*ClosePartyRequest)() = nullptr;
 	void (*RunPartyRequest)(std::uint32_t inviterID) = nullptr;

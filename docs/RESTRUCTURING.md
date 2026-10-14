@@ -4387,15 +4387,23 @@ rounds settled* for the host rules). Test fixtures share
   > why. A party formed is announced in the game messages with the
   > inviter's name. The reply no longer requires the UI dialog to exist
   > (a missing dialog host skips the message and counts input as
-  > unlocked), and reads its refusal text through `GetGameString`. R1 is
-  > 120 Windows / 118 Ninja.
+  > unlocked; the installed adapters read `g_pUIDialog` unguarded, which
+  > is safe, since it exists from start-up until shutdown), and reads its
+  > refusal text through `GetGameString`. Found by reading and kept: the
+  > announcement names `PartyInviter`, which only being asked to join
+  > sets, so a party formed from the player's own invitation names
+  > whoever last asked the player, or no one; and, in executable code,
+  > `UI_ClosePartyCancel` compares `IsWaitVerify()` (a BOOL) with
+  > `WAIT_VERIFY_PARTY`, so it never clears the party wait. R1 is 120
+  > Windows / 118 Ninja.
   - Owner: membership, R1, the five entries and adapters, and
     `test_party_invite_replies.cpp` (an invitation from the invited one,
-    from another while inviting, asked or refused for each reason; a
-    cancel in and out of the request mode; an acceptance waited on and
-    not, an inviter gone; each refusal waited on and not; another party
-    and the player's own; nobody, an unknown code; each guard; no
-    hosts).
+    from another while inviting, asked or refused for each reason, asked
+    in the request mode without the wait; a cancel in and out of the
+    request mode; an acceptance waited on and not, in another mode, an
+    inviter gone or none; each refusal waited on, one not, one waited on
+    in no mode; another party for the packet's target and the player's
+    own; nobody, an unknown code; each guard; no hosts).
 
 - [x] **4.161 The party joined:** move `GCPartyJoinedHandler` into
   `gamemodel`.

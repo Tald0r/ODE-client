@@ -20,6 +20,7 @@
 #include "ZoneStateHost.h"
 #include "Cpackets/CGPartyInvite.h"
 #include "Gpackets/GCPartyInvite.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -162,13 +163,14 @@ struct World : GameModelWorld
 		g_pParty = oldParty;
 		g_pTempInformation = oldTemp;
 	}
-	// The player invited this one and waits for the answer.
+	// The player invited this one and waits for the answer. Inviting
+	// does not set PartyInviter: only being asked (UI_RunPartyRequest)
+	// does, so the tests set it where a reply announces a join.
 	void Inviting(TYPE_OBJECTID id)
 	{
 		waitVerify = PlayerState::WAIT_VERIFY_PARTY;
 		temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
 		temp.Value1 = id;
-		temp.PartyInviter = id;
 	}
 	std::vector<std::string> Said()
 	{
@@ -202,6 +204,7 @@ TEST(PartyInviteReplies, BeingInvitedByTheOneThePlayerInvitedFormsTheParty)
 {
 	World world;
 	world.Inviting(1003);
+	world.temp.PartyInviter = 1003;
 	Receive(&world.connection, 1003, GC_PARTY_INVITE_REQUEST);
 	CHECK(calls == std::vector<std::string>({"cancel? closed", kHelp}));
 	CHECK(world.connection.Sent() == Answer(1003, CG_PARTY_INVITE_ACCEPT));
@@ -210,6 +213,15 @@ TEST(PartyInviteReplies, BeingInvitedByTheOneThePlayerInvitedFormsTheParty)
 	CHECK(waitVerify == PlayerState::WAIT_VERIFY_PARTY);
 	CHECK(Joined("Ruth").find("Ruth") != std::string::npos);
 	CHECK(world.Said() == std::vector<std::string>{Joined("Ruth")});
+	// In the request mode but not waiting on the party: asked, not joined.
+	calls.clear();
+	waitVerify = PlayerState::WAIT_VERIFY_NULL;
+	world.temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
+	world.temp.Value1 = 1003;
+	GamePlayer asked;
+	Receive(&asked, 1003, GC_PARTY_INVITE_REQUEST);
+	CHECK(calls == std::vector<std::string>{"join 1003?"});
+	CHECK(asked.Sent().empty());
 }
 
 TEST(PartyInviteReplies, BeingInvitedWhileInvitingSomeoneElseIsBusy)
@@ -236,7 +248,7 @@ TEST(PartyInviteReplies, AnInvitationIsAskedAboutOrRefused)
 		Receive(&connection, 1003, GC_PARTY_INVITE_REQUEST);
 		CHECK(calls.empty());
 		CHECK(connection.Sent() == Answer(1003, CG_PARTY_INVITE_REJECT));
-		if (!calls.empty() || connection.Sent() != Answer(1003, CG_PARTY_INVITE_REJECT)) calls.push_back(why);
+		(void)why;
 	};
 	waitVerify = PlayerState::WAIT_VERIFY_TRADE;
 	refuses("waiting");
@@ -280,6 +292,7 @@ TEST(PartyInviteReplies, TheInvitedAcceptingFormsTheParty)
 {
 	World world;
 	world.Inviting(1003);
+	world.temp.PartyInviter = 1003;
 	Receive(&world.connection, 1003, GC_PARTY_INVITE_ACCEPT);
 	CHECK(calls == std::vector<std::string>({"cancel? closed", kHelp}));
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
@@ -292,11 +305,24 @@ TEST(PartyInviteReplies, TheInvitedAcceptingFormsTheParty)
 	Receive(&world.connection, 1003, GC_PARTY_INVITE_ACCEPT);
 	CHECK(calls == std::vector<std::string>({"cancel? closed", kHelp}));
 	CHECK(world.temp.GetMode() == TempInformation::MODE_PARTY_REQUEST);
+	// Waiting on the party, but in another mode: the mode stays.
+	calls.clear();
+	waitVerify = PlayerState::WAIT_VERIFY_PARTY;
+	world.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
+	Receive(&world.connection, 1003, GC_PARTY_INVITE_ACCEPT);
+	CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_REQUEST);
 	// An inviter no longer in the zone is not announced.
 	calls.clear();
 	world.temp.PartyInviter = 4242;
 	Receive(&world.connection, 1003, GC_PARTY_INVITE_ACCEPT);
-	CHECK_EQ(2, static_cast<int>(world.Said().size()));
+	CHECK_EQ(3, static_cast<int>(world.Said().size()));
+	// Found by reading and kept: the announcement names whoever last asked
+	// the player to join, so the player's own invitation, accepted with
+	// nobody having asked, names no one.
+	calls.clear();
+	world.temp.PartyInviter = 0;
+	Receive(&world.connection, 1003, GC_PARTY_INVITE_ACCEPT);
+	CHECK_EQ(3, static_cast<int>(world.Said().size()));
 }
 
 TEST(PartyInviteReplies, ARefusalEndsTheWaitAndSaysWhy)
@@ -314,6 +340,15 @@ TEST(PartyInviteReplies, ARefusalEndsTheWaitAndSaysWhy)
 		CHECK(calls == std::vector<std::string>({"verified", "cancel? closed", "ask closed", "request closed", "message|" + Text(r.text)}));
 		CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	}
+	// Waiting on the party in no mode (as after an acceptance): the wait
+	// stays.
+	calls.clear();
+	waitVerify = PlayerState::WAIT_VERIFY_PARTY;
+	world.temp.SetMode(TempInformation::MODE_NULL);
+	Receive(&world.connection, 1003, GC_PARTY_INVITE_REJECT);
+	CHECK(waitVerify == PlayerState::WAIT_VERIFY_PARTY);
+	CHECK(std::find(calls.begin(), calls.end(), "verified") == calls.end());
+	waitVerify = PlayerState::WAIT_VERIFY_NULL;
 	// Not waiting on it: the windows close and it is said, the mode stays.
 	calls.clear();
 	world.temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
@@ -330,6 +365,11 @@ TEST(PartyInviteReplies, AnotherPartyIsSaidUnlessItIsThePlayers)
 	Receive(&world.connection, 1003, GC_PARTY_INVITE_ANOTHER_PARTY);
 	CHECK(calls == std::vector<std::string>({"verified", "cancel? closed", "ask closed", "request closed",
 		"message|" + Text(STRING_MESSAGE_IN_ANOTHER_PARTY)}));
+	// The one asked about is the packet's, not the one the player invited.
+	calls.clear();
+	world.Inviting(1004);
+	Receive(&world.connection, 1003, GC_PARTY_INVITE_ANOTHER_PARTY);
+	CHECK(calls.back() == "message|" + Text(STRING_MESSAGE_IN_ANOTHER_PARTY));
 	// The player's own party member: closed without a word.
 	calls.clear();
 	world.Inviting(1004);
