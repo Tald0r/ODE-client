@@ -102,6 +102,8 @@
 #include "MFollowPathEffectGenerator.h"
 #include "MMeteorDropEffectGenerator.h"
 #include "MAttackCreatureParabolaEffectGenerator.h"
+#include "MAttackCreatureEffectGenerator.h"
+#include "MAttackCreatureHomingEffectGenerator.h"
 #include "MRippleZoneWideEffectGenerator.h"
 #include "MBloodyBreakerEffectGenerator.h"
 #include "MBloodyWallEffectGenerator.h"
@@ -2688,6 +2690,8 @@ void ReleaseAllObjects()
 	MFollowPathEffectGenerator::SetHost(nullptr);
 	MMeteorDropEffectGenerator::SetHost(nullptr);
 	MAttackCreatureParabolaEffectGenerator::SetHost(nullptr);
+	MAttackCreatureEffectGenerator::SetHost(nullptr);
+	MAttackCreatureHomingEffectGenerator::SetHost(nullptr);
 	MRippleZoneWideEffectGenerator::SetHost(nullptr);
 	MBloodyBreakerEffectGenerator::SetHost(nullptr);
 	MBloodyWallEffectGenerator::SetHost(nullptr);
@@ -4034,6 +4038,13 @@ static const CreatureState::Host s_CreatureStateHost = {
 			pEffect->SetAttachCreatureID( pCreature->GetID() );
 		}
 	},
+	.CreateAttachEffect = [](MCreature* pCreature, int effectSpriteType, std::uint32_t delayFrame, std::uint32_t linkDelayFrame, bool bGroundEffect, int effectType) {
+		return pCreature->CreateAttachEffect( static_cast<TYPE_EFFECTSPRITETYPE>(effectSpriteType), delayFrame, linkDelayFrame,
+			bGroundEffect ? TRUE : FALSE, static_cast<MEffect::EFFECT_TYPE>(effectType) );
+	},
+	.IsExistAttachEffect = [](MCreature* pCreature) { return pCreature->IsExistAttachEffect(); },
+	.FirstAttachEffect = [](MCreature* pCreature) { return *(pCreature->GetAttachEffectIterator()); },
+	.ClearAttachEffect = [](MCreature* pCreature) { pCreature->ClearAttachEffect(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -4692,6 +4703,8 @@ InitGameObject()
 	MFollowPathEffectGenerator::SetHost(&s_FixedZoneEffectHost);
 	MMeteorDropEffectGenerator::SetHost(&s_MeteorDropEffectHost);
 	MAttackCreatureParabolaEffectGenerator::SetHost(&s_CreatureParabolaEffectHost);
+	MAttackCreatureEffectGenerator::SetHost(&s_CreatureParabolaEffectHost);
+	MAttackCreatureHomingEffectGenerator::SetHost(&s_CreatureParabolaEffectHost);
 	MRippleZoneWideEffectGenerator::SetHost(&s_WideRippleEffectHost);
 	MBloodyBreakerEffectGenerator::SetHost(&s_BloodyBreakerEffectHost);
 	MBloodyWallEffectGenerator::SetHost(&s_BloodyWallEffectHost);

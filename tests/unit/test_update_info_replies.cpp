@@ -73,6 +73,11 @@ Race interfaceRace = RACE_SLAYER;
 bool preloadsMonsters = false;
 bool hasLargeZone = false;
 const GCUpdateInfo* pReceiving = nullptr;
+// Markers for the arms bands and the quick slot the gear sets.
+int bandMarker1, bandMarker2, beltMarker;
+MOustersArmsBand* const pBand1 = reinterpret_cast<MOustersArmsBand*>(&bandMarker1);
+MOustersArmsBand* const pBand2 = reinterpret_cast<MOustersArmsBand*>(&bandMarker2);
+MBelt* const pGearBelt = reinterpret_cast<MBelt*>(&beltMarker);
 constexpr int kSpecialAction = 33;
 constexpr std::uint32_t kFrames = 5;
 
@@ -82,6 +87,14 @@ std::string Who(MCreature* p)
 	return p == reinterpret_cast<MCreature*>(&oldMe) ? "old" : p == reinterpret_cast<MCreature*>(&newMe) ? "new" : "other";
 }
 std::string Same(const void* p, const void* expected) { return p == expected ? "packet's" : "other"; }
+// A PC's record as it is stored: the previous creature type it reads, and
+// the player's own guild name, which the guild names' reset must not wipe.
+std::string Stored(const char* race, const void* p)
+{
+	std::string guild = "Own";
+	g_pGuildInfoMapper->SetGuildName(9, guild);
+	return std::string(race) + " info|" + Same(p, pReceiving->getPCInfo()) + "|previous " + N(static_cast<int>(g_PreviousCreatureType));
+}
 std::string Types(const COrderedList<int>& types)
 {
 	std::string text;
@@ -97,15 +110,20 @@ const PlayerState::Host player = []() {
 	host.GetSpecialActionInfo = []() { return kSpecialAction; };
 	host.Recreate = []() { calls.push_back("recreate"); pPlayerNow = reinterpret_cast<MCreature*>(&newMe); };
 	host.SetBasicAttack = [](TYPE_ACTIONINFO actionInfo, int distance) { calls.push_back("basic attack|" + N(actionInfo) + "|" + N(distance)); };
-	host.SetPCSlayerInfo = [](PCSlayerInfo2* p) { calls.push_back("slayer info|" + Same(p, pReceiving->getPCInfo())); };
-	host.SetPCVampireInfo = [](PCVampireInfo2* p) { calls.push_back("vampire info|" + Same(p, pReceiving->getPCInfo())); };
-	host.SetPCOustersInfo = [](PCOustersInfo2* p) { calls.push_back("ousters info|" + Same(p, pReceiving->getPCInfo())); };
+	host.SetPCSlayerInfo = [](PCSlayerInfo2* p) { calls.push_back(Stored("slayer", p)); };
+	host.SetPCVampireInfo = [](PCVampireInfo2* p) { calls.push_back(Stored("vampire", p)); };
+	host.SetPCOustersInfo = [](PCOustersInfo2* p) { calls.push_back(Stored("ousters", p)); };
 	host.SetSpecialActionInfo = [](int actionInfo) { calls.push_back("special action|" + N(actionInfo)); };
 	host.SetAttackModeNormal = []() { calls.push_back("attack mode normal"); };
 	host.SetTimeLightSight = [](int sight) { calls.push_back("light|" + N(sight)); };
+	// The gear, once the quick slots are cleared, sets them again.
 	host.SetGearInfo = [](GearInfo* pGear, BloodBibleSignInfo* pBible) {
+		const bool cleared = g_pQuickSlot == nullptr && g_pArmsBand1 == nullptr && g_pArmsBand2 == nullptr;
 		calls.push_back("gear|" + Same(pGear, pReceiving->getGearInfo()) + "|"
-			+ Same(pBible, const_cast<GCUpdateInfo*>(pReceiving)->getBloodBibleSignInfo()));
+			+ Same(pBible, const_cast<GCUpdateInfo*>(pReceiving)->getBloodBibleSignInfo()) + (cleared ? "|slots cleared" : "|slots kept"));
+		g_pQuickSlot = pGearBelt;
+		g_pArmsBand1 = pBand1;
+		g_pArmsBand2 = pBand2;
 	};
 	host.CalculateStatus = []() { calls.push_back("calculate"); };
 	host.SetInventoryInfo = [](InventoryInfo* p) { calls.push_back("inventory|" + Same(p, pReceiving->getInventoryInfo())); };
@@ -168,8 +186,10 @@ const ZoneLoading::Host loading = []() {
 	host.LoadAllAddonSprites = []() { calls.push_back("addon sprites|mode " + N(g_Mode)); };
 	host.InterfaceRace = []() { return interfaceRace; };
 	host.ChangeInterfaceRace = [](Race race) { calls.push_back("interface|" + N(race)); };
+	// The skill tree is rebuilt over the table already reset.
 	host.InitSkillTree = []() {
-		calls.push_back("skill tree|previous " + N(static_cast<int>(g_PreviousCreatureType)) + "|morph " + N(g_MorphCreatureType));
+		calls.push_back("skill tree|previous " + N(static_cast<int>(g_PreviousCreatureType)) + "|morph " + N(g_MorphCreatureType)
+			+ "|exp " + N((*g_pSkillInfoTable)[SKILL_ATTACK_MELEE].GetSkillExp()));
 	};
 	host.SetSMSCharge = [](int charge) { calls.push_back("sms|" + N(charge)); };
 	host.SetPowerjjangPoint = [](int point) { calls.push_back("powerjjang|" + N(point)); };
@@ -190,7 +210,12 @@ const ZoneLoading::Host loading = []() {
 	host.MillisecondsToFrames = [](std::uint32_t) { calls.push_back("to frames"); return kFrames; };
 	host.AdvanceFrame = [](int frames) { calls.push_back("advance|" + N(frames)); };
 	host.SetMyBatColorSet = [](std::uint16_t colorSet) { calls.push_back("bat colour|" + N(colorSet)); };
-	host.ShowPlayerHP = []() { calls.push_back("hp shown"); };
+	// Showing the HP logs a line, which the messages' clearing that follows
+	// must take too.
+	host.ShowPlayerHP = []() {
+		calls.push_back("hp shown");
+		for (CMessageArray* pLog : {g_pSystemMessage, g_pGameMessage, g_pNoticeMessage}) pLog->Add("hp");
+	};
 	host.EnterWaitSetPositionMode = []() { calls.push_back("wait set position"); };
 	return host;
 }();
@@ -350,6 +375,10 @@ struct World : GameModelWorld
 	CMessageArray* oldNotice = g_pNoticeMessage;
 	MStorage* oldStorage = g_pStorage;
 	MBelt* oldQuickSlot = g_pQuickSlot;
+	MOustersArmsBand* oldBand1 = g_pArmsBand1;
+	MOustersArmsBand* oldBand2 = g_pArmsBand2;
+	DWORD oldPrevious = g_PreviousCreatureType;
+	MonotonicClock::TimePoint oldFrameNow = g_FrameNow;
 	CLIENT_MODE oldMode = g_Mode;
 	int oldMorph = g_MorphCreatureType;
 	bool oldInLarge = g_bZonePlayerInLarge;
@@ -406,8 +435,8 @@ struct World : GameModelWorld
 		g_pNoticeMessage = &noticeLog;
 		g_pStorage = nullptr;
 		g_pQuickSlot = &belt;
-		g_pArmsBand1 = nullptr;
-		g_pArmsBand2 = nullptr;
+		g_pArmsBand1 = reinterpret_cast<MOustersArmsBand*>(&belt);
+		g_pArmsBand2 = reinterpret_cast<MOustersArmsBand*>(&belt);
 	}
 	~World()
 	{
@@ -422,6 +451,10 @@ struct World : GameModelWorld
 		delete g_pStorage;
 		g_pStorage = oldStorage;
 		g_pQuickSlot = oldQuickSlot;
+		g_pArmsBand1 = oldBand1;
+		g_pArmsBand2 = oldBand2;
+		g_PreviousCreatureType = oldPrevious;
+		g_FrameNow = oldFrameNow;
 		g_nZoneLarge = oldLarge;
 		g_bZonePlayerInLarge = oldInLarge;
 		g_MorphCreatureType = oldMorph;
@@ -478,10 +511,10 @@ TEST(UpdateInfoReplies, ASlayersUpdateRunsInOrder)
 		"zone remove|7", "recreate"};
 	for (int addon = 0; addon < ADDON_MAX; addon++) expected.push_back("addon|new|" + N(addon));
 	const std::vector<std::string> rest = {
-		"basic attack|" + N(SKILL_ATTACK_MELEE) + "|1", "skill tree|previous 2|morph 0", "slayer info|packet's", "sms|11",
+		"basic attack|" + N(SKILL_ATTACK_MELEE) + "|1", "skill tree|previous 2|morph 0|exp 0", "slayer info|packet's|previous -1", "sms|11",
 		"nick|new|" + N(NicknameInfo::NICK_NONE) + "|", "union|new|44", "powerjjang|55", "special action|" + N(kSpecialAction),
 		"attack mode normal", "windows closed", "progress start|21", "progress|0", "top view", "progress|15", "weather|" + N(WEATHER_CLEAR) + "|2",
-		"dark|3", "light|7", "gear|packet's|packet's", "calculate", "inventory|packet's", "extra|packet's", "progress|17", "skills refreshed",
+		"dark|3", "light|7", "gear|packet's|packet's|slots cleared", "calculate", "inventory|packet's", "extra|packet's", "progress|17", "skills refreshed",
 		"sprite types|", "progress|70", "xy|30|40", "load zone|21", "encrypt", "stamp clock", "to frames", "advance|5", "bat colour|65535",
 		"effects|new|packet's|0|5", "progress|100", "progress|100", "progress end", "mute|off", "hp shown", "wait set position"};
 	expected.insert(expected.end(), rest.begin(), rest.end());
@@ -491,8 +524,10 @@ TEST(UpdateInfoReplies, ASlayersUpdateRunsInOrder)
 	CHECK(world.server.GetServerGroupStatus() == 2);
 	CHECK(g_pUserInformation->IsNonPK && g_pUserInformation->dwUnionID == 44 && g_pUserInformation->bUnionGrade == 3);
 	CHECK(g_PreviousCreatureType == static_cast<DWORD>(-1));
-	// Quick slots, talk box and messages are cleared.
-	CHECK(g_pQuickSlot == nullptr && g_pArmsBand1 == nullptr && g_pArmsBand2 == nullptr);
+	// The quick slots are the gear's; the player's own guild name stays.
+	CHECK(g_pQuickSlot == pGearBelt && g_pArmsBand1 == pBand1 && g_pArmsBand2 == pBand2);
+	CHECK(world.guilds.IsExistGuildName(9));
+	// The talk box and the messages are cleared.
 	CHECK(world.talkBox.empty());
 	CHECK(World::Lines(world.systemLog).empty() && World::Lines(world.gameLog).empty() && World::Lines(world.noticeLog).empty());
 }
@@ -501,10 +536,25 @@ TEST(UpdateInfoReplies, WithoutAPlayerNoneLeavesTheZoneAndNoSpecialActionIsKept)
 {
 	World world;
 	pPlayerNow = nullptr;
+	// A morph without a player is left until the skill tree is rebuilt;
+	// the previous type is none from the start.
+	g_PreviousCreatureType = CREATURETYPE_BAT;
+	g_MorphCreatureType = CREATURETYPE_WOLF;
 	world.Receive(Update{});
 	CHECK(!Has("zone remove|7"));
 	CHECK(Has("recreate") && Has("special action|" + N(ACTIONINFO_NULL)));
-	CHECK(Has("skill tree|previous -1|morph 0"));
+	CHECK(Has("skill tree|previous -1|morph " + N(CREATURETYPE_WOLF) + "|exp 0"));
+	CHECK(g_MorphCreatureType == 0);
+}
+
+TEST(UpdateInfoReplies, ThePlayerMayLeaveNonPK)
+{
+	World world;
+	g_pUserInformation->IsNonPK = true;
+	Update update;
+	update.nonPK = 0;
+	world.Receive(update);
+	CHECK(!g_pUserInformation->IsNonPK);
 }
 
 TEST(UpdateInfoReplies, AMorphsCreatureTypeIsForgotten)
@@ -514,7 +564,7 @@ TEST(UpdateInfoReplies, AMorphsCreatureTypeIsForgotten)
 	world.Receive(Update{});
 	// The previous type is the morph's (not the player's) as the skill
 	// tree is reset, and none after.
-	CHECK(Has("skill tree|previous " + N(CREATURETYPE_WOLF) + "|morph 0"));
+	CHECK(Has("skill tree|previous " + N(CREATURETYPE_WOLF) + "|morph 0|exp 0"));
 	CHECK(g_MorphCreatureType == 0 && g_PreviousCreatureType == static_cast<DWORD>(-1));
 }
 
@@ -522,9 +572,12 @@ TEST(UpdateInfoReplies, TheLastTransformIsThePreviousCreatureType)
 {
 	World world;
 	Update update;
+	update.pcType = 'V';
 	update.effects = {{EFFECTSTATUS_TRANSFORM_TO_WOLF, 1}, {EFFECTSTATUS_TRANSFORM_TO_BAT, 1}, {EFFECTSTATUS_TRANSFORM_TO_WERWOLF, 1}};
 	world.Receive(update);
 	CHECK(g_PreviousCreatureType == CREATURETYPE_WER_WOLF);
+	// The vampire's record is stored knowing it.
+	CHECK(Has("vampire info|packet's|previous " + N(CREATURETYPE_WER_WOLF)));
 	// The packet's own effects reach the player whole.
 	CHECK(Has("effects|new|packet's|3|5"));
 	for (EffectID_t last : {EffectID_t(EFFECTSTATUS_TRANSFORM_TO_WOLF), EffectID_t(EFFECTSTATUS_TRANSFORM_TO_BAT)})
@@ -543,6 +596,7 @@ TEST(UpdateInfoReplies, TheSkillTableAndTheGuildNamesAreReset)
 	std::string name = "Wolves";
 	world.guilds.SetGuildName(5, name);
 	world.Receive(Update{});
+	CHECK(Has("skill tree|previous 2|morph 0|exp 0"));
 	CHECK(world.skillTable[SKILL_ATTACK_MELEE].GetSkillExp() == 0);
 	CHECK(!world.guilds.IsExistGuildName(5));
 }
@@ -551,7 +605,8 @@ TEST(UpdateInfoReplies, TheRaceSetsItsInfoAndTheInterface)
 {
 	World world;
 	const std::pair<char, std::pair<std::string, Race>> races[] = {
-		{'S', {"slayer info|packet's", RACE_SLAYER}}, {'V', {"vampire info|packet's", RACE_VAMPIRE}}, {'O', {"ousters info|packet's", RACE_OUSTERS}}};
+		{'S', {"slayer info|packet's|previous -1", RACE_SLAYER}}, {'V', {"vampire info|packet's|previous -1", RACE_VAMPIRE}},
+		{'O', {"ousters info|packet's|previous -1", RACE_OUSTERS}}};
 	for (const auto& [type, expected] : races)
 	{
 		for (Race shown : {RACE_SLAYER, RACE_VAMPIRE, RACE_OUSTERS})

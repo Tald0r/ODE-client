@@ -612,6 +612,21 @@ Client/MMeteorDropEffectGenerator.h
 Client/MAttackCreatureParabolaEffectGenerator.cpp
 Client/MAttackCreatureParabolaEffectGenerator.h
 
+# Effects attached to a creature: plain, on the ground, orbiting (4.199).
+Client/MAttachCreatureEffectGenerator.cpp
+Client/MAttachCreatureEffectGenerator.h
+Client/MAttachCreatureEffectGroundGenerator.cpp
+Client/MAttachCreatureEffectGroundGenerator.h
+Client/MAttachCreatureOrbitEffectGenerator.cpp
+Client/MAttachCreatureOrbitEffectGenerator.h
+
+# Guided and homing attacks on a creature, over the parabola's services
+# (4.200).
+Client/MAttackCreatureEffectGenerator.cpp
+Client/MAttackCreatureEffectGenerator.h
+Client/MAttackCreatureHomingEffectGenerator.cpp
+Client/MAttackCreatureHomingEffectGenerator.h
+
 # Wide ripple rows and center-only target ownership (4.77).
 Client/MRippleZoneWideEffectGenerator.cpp
 Client/MRippleZoneWideEffectGenerator.h
@@ -732,11 +747,12 @@ Client/NoticePresentationHost.cpp
 Client/NoticePresentationHost.h
 # An NPC's answers and the windows they open.
 Client/NPCPresentationHost.cpp
-Client/ZoneLoadingHost.cpp
 Client/NPCPresentationHost.h
+Client/PacketHandler/GCNPCResponseHandler.cpp
+# The player's update on entering a zone, and the zone loading it drives.
+Client/ZoneLoadingHost.cpp
 Client/ZoneLoadingHost.h
 Client/COrderedList.h
-Client/PacketHandler/GCNPCResponseHandler.cpp
 Client/PacketHandler/GCUpdateInfoHandler.cpp
 Client/PacketHandler/GCNoticeEventHandler.cpp
 Client/PacketHandler/GCBloodBibleStatusHandler.cpp

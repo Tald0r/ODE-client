@@ -755,4 +755,24 @@ void AttachLastingEffect(MCreature* pCreature, int effectSpriteType)
 	if (s_Host && s_Host->AttachLastingEffect) s_Host->AttachLastingEffect(pCreature, effectSpriteType);
 }
 
+MAttachEffect* CreateAttachEffect(MCreature* pCreature, int effectSpriteType, std::uint32_t delayFrame, std::uint32_t linkDelayFrame, bool bGroundEffect, int effectType)
+{
+	return s_Host && s_Host->CreateAttachEffect ? s_Host->CreateAttachEffect(pCreature, effectSpriteType, delayFrame, linkDelayFrame, bGroundEffect, effectType) : nullptr;
+}
+
+bool IsExistAttachEffect(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsExistAttachEffect && s_Host->IsExistAttachEffect(pCreature);
+}
+
+MAttachEffect* FirstAttachEffect(MCreature* pCreature)
+{
+	return s_Host && s_Host->FirstAttachEffect ? s_Host->FirstAttachEffect(pCreature) : nullptr;
+}
+
+void ClearAttachEffect(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ClearAttachEffect) s_Host->ClearAttachEffect(pCreature);
+}
+
 }

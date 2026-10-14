@@ -4,19 +4,26 @@
 #include "Client_PCH.h"
 #include "MAttackCreatureHomingEffectGenerator.h"
 #include "MHomingEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "MathTable.h"
-#include "DebugInfo.h"
+#include "MViewDef.h"
 #include "SkillDef.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include "WorldTileGeometry.h"
+#include <cstdlib>
+#include <utility>
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttackCreatureHomingEffectGenerator	g_AttackCreatureHomingEffectGenerator;
+const MCreatureParabolaEffectHost* MAttackCreatureHomingEffectGenerator::s_pHost = nullptr;
+
+const MCreatureParabolaEffectHost* MAttackCreatureHomingEffectGenerator::SetHost(const MCreatureParabolaEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+// Consumes the effect; true only when the zone keeps it.
+bool MAttackCreatureHomingEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
 //----------------------------------------------------------------------
 // Generate
@@ -24,19 +31,24 @@
 bool
 MAttackCreatureHomingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
-
-	// creature의 좌표
-	int cx, cy, cz;	
-
-	// 목표 위치 Pixel좌표
-	MCreature* pCreature = g_pZone->GetCreature( egInfo.creatureID );
-
-	if (pCreature == NULL)
+	MCreatureParabolaEffectSprite sprite;
+	if (s_pHost == NULL || s_pHost->Sprite == NULL || !s_pHost->Sprite( egInfo.effectSpriteType, sprite ))
 	{
 		return false;
 	}
+	BLT_TYPE		bltType = static_cast<BLT_TYPE>(sprite.bltType);
+	TYPE_FRAMEID	frameID	= sprite.frameID;
+
+	// the creature's position
+	int cx, cy, cz;	
+
+	// the target position in pixels
+	MCreatureParabolaPosition creature;
+	if (s_pHost->Creature == NULL || !s_pHost->Creature( egInfo.creatureID, creature ))
+	{
+		return false;
+	}
+
 	int currentAngle, stepAngle;
 
 	const int angles[] =
@@ -51,10 +63,10 @@ MAttackCreatureHomingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 		135
 	};
 
-	// 시작 각도
+	// the starting angle
 	currentAngle = angles[egInfo.direction];
 
-	// 꺽는 각도
+	// the turning angle
 	stepAngle = 13;
 
 	int fixZPos = TILE_Y;
@@ -62,7 +74,6 @@ MAttackCreatureHomingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 	int TempDir = egInfo.direction;
 	if(egInfo.nActionInfo == SKILL_CLIENT_HALO_ATTACK)
 	{
-	//	fixZPos = 0;
 		stepAngle = 30;
 		if(egInfo.direction == 2 || egInfo.direction == 6 )
 		{
@@ -76,46 +87,45 @@ MAttackCreatureHomingEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egIn
 		currentAngle = angles[TempDir];
 	}
 
-	// 포물선 Effect생성
+	int maxFrame;
+	if (s_pHost->MaxFrames == NULL || !s_pHost->MaxFrames( sprite.bltType, frameID, maxFrame ))
+	{
+		return false;
+	}
 
+	// create the homing effect
 	MHomingEffect* pEffect = new MHomingEffect(bltType, currentAngle, stepAngle);	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+
 	pEffect->SetFrameID( frameID, maxFrame );
 
+	cx = WorldTileGeometry::TileToPixelX( creature.x );
+	cy = WorldTileGeometry::TileToPixelY( creature.y );
+	cz = creature.z + fixZPos;	// raised about a tile.
 
-	
-	cx = g_pTopView->MapToPixelX( pCreature->GetX() );
-	cy = g_pTopView->MapToPixelY( pCreature->GetY() );
-	cz = pCreature->GetZ() + fixZPos;	// 한 타일정도 위로 빼준다.
-
-
-	// 발사 위치 Pixel좌표	- 한 타일정도 위로 빼준다.
+	// the launch position in pixels - raised about a tile.
 	pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0+fixZPos );	
-					
-	// 방향 설정
+
+	// the direction
 	pEffect->SetDirection( egInfo.direction );
+
 	pEffect->SetTraceCreatureID( egInfo.creatureID );	
 
-	// 목표 위치 Pixel좌표
+	// the target position in pixels
 	pEffect->SetTarget( cx,cy,cz, egInfo.step );
 
-	// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
+	// the frames it lasts (with a target it hardly matters - -;)
 	pEffect->SetCount( TempEndFrame, egInfo.linkCount );
 
-	// 위력
+	// power
 	pEffect->SetPower(egInfo.power);
-	
-	pEffect->SetMulti(true);
-	// 빛의 밝기
-	//pEffect->SetLight( light );
 
-	if (g_pZone->AddEffect( pEffect ))
+	pEffect->SetMulti(true);
+
+	if (QueueEffect( std::unique_ptr<MEffect>(pEffect) ))
 	{
 		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
 		return true;
 	}
 
 	return false;
-
 }
