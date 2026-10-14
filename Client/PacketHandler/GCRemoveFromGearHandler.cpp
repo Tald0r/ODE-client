@@ -9,13 +9,17 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCRemoveFromGear.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "MSlayerGear.h"
 #include "MVampireGear.h"
 #include "MOustersGear.h"
 #include "MGameStringTable.h"
 #include "MItemOptionTable.h"
-#include "UIFunction.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -24,15 +28,22 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 	
 
 	int slotID = pPacket->getSlotID();
 
 	//----------------------------------------------------------------------
-	// Slayer인 경우
+	// A slayer.
 	//----------------------------------------------------------------------
-	switch(g_pPlayer->GetRace())
+	switch(PlayerState::GetRace())
 	{
 	case RACE_SLAYER:
 	{
@@ -46,7 +57,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 		else
 		{
 			//----------------------------------------------------------
-			// game message 출력
+			// Say so in the game messages.
 			//----------------------------------------------------------
 
 			if(pRemovedItem->GetItemClass() != ITEM_CLASS_COUPLE_RING && pRemovedItem->GetItemClass() != ITEM_CLASS_VAMPIRE_COUPLE_RING)
@@ -81,21 +92,21 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 			
 			int addonSlot[] = 
 			{
-				ADDON_HELM,			//GEAR_SLAYER_HELM = 0,			// 모자
-					ADDON_NULL,			//GEAR_SLAYER_NECKLACE,			// 목걸이
-					ADDON_COAT,			//GEAR_SLAYER_COAT,				// 상의
-					ADDON_LEFTHAND,		//GEAR_SLAYER_LEFTHAND,			// 왼손
-					ADDON_RIGHTHAND,	//GEAR_SLAYER_RIGHTHAND,			// 오른손
-					ADDON_NULL,			//GEAR_SLAYER_GLOVE,				// 장갑
-					ADDON_NULL,			//GEAR_SLAYER_BELT,				// 혁대
-					ADDON_TROUSER,		//GEAR_SLAYER_TROUSER,			// 하의			
-					ADDON_NULL,			//GEAR_SLAYER_BRACELET1,			// 팔찌1
-					ADDON_NULL,			//GEAR_SLAYER_BRACELET2,			// 팔찌2
-					ADDON_NULL,			//GEAR_SLAYER_RING1,				// 반지1
-					ADDON_NULL,			//GEAR_SLAYER_RING2,				// 반지2
-					ADDON_NULL,			//GEAR_SLAYER_RING3,				// 반지3
-					ADDON_NULL,			//GEAR_SLAYER_RING4,				// 반지4
-					ADDON_NULL,			//GEAR_SLAYER_SHOES,				// 신발
+				ADDON_HELM,			//GEAR_SLAYER_HELM = 0,			// hat
+					ADDON_NULL,			//GEAR_SLAYER_NECKLACE,			// necklace
+					ADDON_COAT,			//GEAR_SLAYER_COAT,				// top
+					ADDON_LEFTHAND,		//GEAR_SLAYER_LEFTHAND,			// left hand
+					ADDON_RIGHTHAND,	//GEAR_SLAYER_RIGHTHAND,			// right hand
+					ADDON_NULL,			//GEAR_SLAYER_GLOVE,				// gloves
+					ADDON_NULL,			//GEAR_SLAYER_BELT,				// belt
+					ADDON_TROUSER,		//GEAR_SLAYER_TROUSER,			// trousers			
+					ADDON_NULL,			//GEAR_SLAYER_BRACELET1,			// bracelet 1
+					ADDON_NULL,			//GEAR_SLAYER_BRACELET2,			// bracelet 2
+					ADDON_NULL,			//GEAR_SLAYER_RING1,				// ring 1
+					ADDON_NULL,			//GEAR_SLAYER_RING2,				// ring 2
+					ADDON_NULL,			//GEAR_SLAYER_RING3,				// ring 3
+					ADDON_NULL,			//GEAR_SLAYER_RING4,				// ring 4
+					ADDON_NULL,			//GEAR_SLAYER_SHOES,				// shoes
 			};
 		
 			// RemoveItem has already cleared both aliases of a two-hand item.
@@ -104,7 +115,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 				slotID = MSlayerGear::GEAR_SLAYER_RIGHTHAND;
 
 			//----------------------------------------------------------
-			// 복장을 바꿔준다.
+			// Change the clothes drawn.
 			//----------------------------------------------------------
 			// addonSlot maps a gear slot to the visual addon it drives,
 			// but slotID ranges over ALL of them: RemoveItem above
@@ -121,28 +132,24 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 			if (addonSlotID != ADDON_NULL)
 			{
-				g_pPlayer->SetStop();
+				CreatureState::SetStop(pPlayerCreature);
 
 				#ifdef	OUTPUT_DEBUG				
-					if (g_pPlayer->RemoveAddon( addonSlotID ))
+					if (CreatureState::RemoveAddon(pPlayerCreature, addonSlotID ))
 					{
 						DEBUG_ADD_FORMAT("[OK] RemoveAddon. Slot=%d", addonSlotID);
 					}
 					else
 					{
-						const MCreatureWear::ADDON_INFO& addonInfo = g_pPlayer->GetAddonInfo( addonSlotID );
-						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);
+						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d", addonSlotID);
 					}				
 				#else
-					g_pPlayer->RemoveAddon( addonSlotID );
+					CreatureState::RemoveAddon(pPlayerCreature, addonSlotID );
 				#endif
 			}
 
-			// item정보 제거
-			UI_RemoveDescriptor( (void*)pRemovedItem );
-
 			//----------------------------------------------------------
-			// item을 없앤다.
+			// Free the item.
 			//----------------------------------------------------------
 			delete pRemovedItem;
 		}
@@ -151,7 +158,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 	case RACE_VAMPIRE:
 	//----------------------------------------------------------------------
-	// Vampire인 경우
+	// A vampire.
 	//----------------------------------------------------------------------
 	{
 		MItem* pRemovedItem = g_pVampireGear->RemoveItem( slotID );
@@ -163,7 +170,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 		else
 		{
 			//----------------------------------------------------------
-			// game message 출력
+			// Say so in the game messages.
 			//----------------------------------------------------------
 			if(pRemovedItem->GetItemClass() != ITEM_CLASS_COUPLE_RING && pRemovedItem->GetItemClass() != ITEM_CLASS_VAMPIRE_COUPLE_RING)
 			{
@@ -199,7 +206,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 				slotID = MVampireGear::GEAR_VAMPIRE_RIGHTHAND;
 
 			//----------------------------------------------------------
-			// 복장을 바꿔준다.
+			// Change the clothes drawn.
 			//----------------------------------------------------------
 			// Vampire coats and hands are the slots with visual addons.
 			int addonSlotID = ADDON_NULL;
@@ -212,28 +219,24 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 			if (addonSlotID != ADDON_NULL)
 			{
-				g_pPlayer->SetStop();
+				CreatureState::SetStop(pPlayerCreature);
 
 				#ifdef	OUTPUT_DEBUG				
-					if (g_pPlayer->RemoveAddon( addonSlotID ))
+					if (CreatureState::RemoveAddon(pPlayerCreature, addonSlotID ))
 					{
 						DEBUG_ADD_FORMAT("[OK] RemoveAddon. Slot=%d", addonSlotID);
 					}
 					else
 					{
-						const MCreatureWear::ADDON_INFO& addonInfo = g_pPlayer->GetAddonInfo( addonSlotID );
-						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);
+						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d", addonSlotID);
 					}				
 				#else
-					g_pPlayer->RemoveAddon( addonSlotID );
+					CreatureState::RemoveAddon(pPlayerCreature, addonSlotID );
 				#endif
 			}
 
-			// item정보 제거
-			UI_RemoveDescriptor( (void*)pRemovedItem );
-
 			//----------------------------------------------------------
-			// item을 없앤다.
+			// Free the item.
 			//----------------------------------------------------------
 			delete pRemovedItem;
 		}
@@ -251,7 +254,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 		else
 		{
 			//----------------------------------------------------------
-			// game message 출력
+			// Say so in the game messages.
 			//----------------------------------------------------------
 			if(1)
 			{
@@ -283,22 +286,22 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 			int addonSlot[] = 
 			{
-				ADDON_NULL,			//GEAR_OUSTERS_CIRCLET,			// 서클릿
-				ADDON_COAT,			//GEAR_OUSTERS_COAT,				// 옷
-				ADDON_LEFTHAND,		//GEAR_OUSTERS_LEFTHAND,			// 왼손
-				ADDON_RIGHTHAND,	//GEAR_OUSTERS_RIGHTHAND,			// 오른손
-				ADDON_TROUSER,			//GEAR_OUSTERS_BOOTS,				// 신발
-				ADDON_NULL,			//GEAR_OUSTERS_ARMSBAND1,			// 암스밴드1
-				ADDON_NULL,			//GEAR_OUSTERS_ARMSBAND2,			// 암스밴드2
-				ADDON_NULL,			//GEAR_OUSTERS_RING1,				// 링1
-				ADDON_NULL,			//GEAR_OUSTERS_RING2,				// 링2
-				ADDON_NULL,			//GEAR_OUSTERS_NECKLACE1,			// 목걸이1
-				ADDON_NULL,			//GEAR_OUSTERS_NECKLACE2,			// 목걸이2
-				ADDON_NULL,			//GEAR_OUSTERS_NECKLACE3,			// 목걸이3
-				ADDON_NULL,			//GEAR_OUSTERS_STONE1,			// 정령석1
-				ADDON_NULL,			//GEAR_OUSTERS_STONE2,			// 정령석2
-				ADDON_NULL,			//GEAR_OUSTERS_STONE3,			// 정령석3
-				ADDON_NULL,			//GEAR_OUSTERS_STONE4,			// 정령석4
+				ADDON_NULL,			//GEAR_OUSTERS_CIRCLET,			// circlet
+				ADDON_COAT,			//GEAR_OUSTERS_COAT,				// clothes
+				ADDON_LEFTHAND,		//GEAR_OUSTERS_LEFTHAND,			// left hand
+				ADDON_RIGHTHAND,	//GEAR_OUSTERS_RIGHTHAND,			// right hand
+				ADDON_TROUSER,			//GEAR_OUSTERS_BOOTS,				// shoes
+				ADDON_NULL,			//GEAR_OUSTERS_ARMSBAND1,			// armsband 1
+				ADDON_NULL,			//GEAR_OUSTERS_ARMSBAND2,			// armsband 2
+				ADDON_NULL,			//GEAR_OUSTERS_RING1,				// ring 1
+				ADDON_NULL,			//GEAR_OUSTERS_RING2,				// ring 2
+				ADDON_NULL,			//GEAR_OUSTERS_NECKLACE1,			// necklace 1
+				ADDON_NULL,			//GEAR_OUSTERS_NECKLACE2,			// necklace 2
+				ADDON_NULL,			//GEAR_OUSTERS_NECKLACE3,			// necklace 3
+				ADDON_NULL,			//GEAR_OUSTERS_STONE1,			// spirit stone 1
+				ADDON_NULL,			//GEAR_OUSTERS_STONE2,			// spirit stone 2
+				ADDON_NULL,			//GEAR_OUSTERS_STONE3,			// spirit stone 3
+				ADDON_NULL,			//GEAR_OUSTERS_STONE4,			// spirit stone 4
 			};
 
 			// RemoveItem has already cleared both aliases of a two-hand item.
@@ -307,7 +310,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 				slotID = MOustersGear::GEAR_OUSTERS_RIGHTHAND;
 
 			//----------------------------------------------------------
-			// 복장을 바꿔준다.
+			// Change the clothes drawn.
 			//----------------------------------------------------------
 			// addonSlot maps a gear slot to the visual addon it drives,
 			// but slotID ranges over ALL of them: RemoveItem above
@@ -324,28 +327,24 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 
 			if (addonSlotID != ADDON_NULL)
 			{
-				g_pPlayer->SetStop();
+				CreatureState::SetStop(pPlayerCreature);
 
 				#ifdef	OUTPUT_DEBUG				
-					if (g_pPlayer->RemoveAddon( addonSlotID ))
+					if (CreatureState::RemoveAddon(pPlayerCreature, addonSlotID ))
 					{
 						DEBUG_ADD_FORMAT("[OK] RemoveAddon. Slot=%d", addonSlotID);
 					}
 					else
 					{
-						const MCreatureWear::ADDON_INFO& addonInfo = g_pPlayer->GetAddonInfo( addonSlotID );
-						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d, AddonFrameID=%d", addonSlotID, addonInfo.FrameID);
+						DEBUG_ADD_FORMAT_ERR("[Error] RemoveAddon. Slot=%d", addonSlotID);
 					}				
 				#else
-					g_pPlayer->RemoveAddon( addonSlotID );
+					CreatureState::RemoveAddon(pPlayerCreature, addonSlotID );
 				#endif
 			}
 
-			// item정보 제거
-			UI_RemoveDescriptor( (void*)pRemovedItem );
-
 			//----------------------------------------------------------
-			// item을 없앤다.
+			// Free the item.
 			//----------------------------------------------------------
 			delete pRemovedItem;
 		}
@@ -355,7 +354,7 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 		break;
 	}
 
-//	// [도움말] 아이템이 부서진 경우
+//	// [Help] when an item breaks
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_ITEM_BROKEN );
 //	__END_HELP_EVENT

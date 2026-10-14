@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCRideMotorCycleOK.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "MItem.h"
 #include "SoundDef.h"
 
@@ -20,54 +23,61 @@ void GCRideMotorCycleOKHandler::execute ( GCRideMotorCycleOK * pPacket , Player 
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MItem* pItem = g_pZone->GetItem( pPacket->getObjectID() );
+		MItem* pItem = ZoneState::GetItem( pPacket->getObjectID() );
 
 		//------------------------------------------					
-		// pItem은 오토바이여야 한다.
-		// player에 장비 시킨다.
+		// pItem must be a motorcycle.
+		// The player puts it on.
 		//------------------------------------------					
 		if (pItem != NULL)
 		{
 			if (pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 			{
 				//------------------------------------------					
-				// 오토바이 addon 붙임.
+				// the motorcycle addon goes on.
 				//------------------------------------------					
-				g_pPlayer->SetAddonItem( pItem );
+				CreatureState::SetAddonItem(pPlayerCreature, pItem );
 				
 				//------------------------------------------
-				// 움직이는 방법 바꿈
+				// It rides now.
 				//------------------------------------------					
 				//g_pPlayer->SetMoveDevice( MCreature::MOVE_DEVICE_RIDE );
 
 				//------------------------------------------
-				// Server에 접속된 경우가 아니면..
-				// 바로 mouse에 item이 붙는다.
+				// When not connected to a server,
+				// the item goes straight onto the mouse.
 				//------------------------------------------
 				//PlaySound( pItem->GetTileSoundID(),
 				//			false,
 				//			g_pPlayer->GetX(), g_pPlayer->GetY());
 
 				//gC_vs_ui.PickUpItem(pItem);
-				g_pZone->RemoveItem( pItem->GetID() );
+				ZoneState::RemoveItem( pItem->GetID() );
 
-				PlaySound( SOUND_WORLD_BIKE_GO );
+				WorldEvents::PlaySound( SOUND_WORLD_BIKE_GO );
 			}
 			else
 			{
@@ -77,11 +87,11 @@ void GCRideMotorCycleOKHandler::execute ( GCRideMotorCycleOK * pPacket , Player 
 	}
 	
 	//------------------------------------------
-	// 어쨋든 간에.. 검증이 되었다고 본다.
+	// Either way, take it as verified.
 	//------------------------------------------
-	g_pPlayer->SetWaitVerifyNULL();
+	PlayerState::SetWaitVerifyNULL();
 
-	// [도움말] 오토바이 탄 경우
+	// [Help] on riding a motorcycle
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_ITEM_RIDE_MOTORCYCLE );
 //	__END_HELP_EVENT

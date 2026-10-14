@@ -13,6 +13,60 @@ class MStatus;
 
 namespace PlayerState {
 
+// What an item waiting on the server is for. MPlayer brings these into
+// its own scope, so MPlayer::ITEM_CHECK_BUFFER_X names the same values.
+enum ITEM_CHECK_BUFFER
+{
+	ITEM_CHECK_BUFFER_NULL = 0,
+
+	// picking an item up
+	ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY,
+	ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE,
+	ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT,
+	ITEM_CHECK_BUFFER_PICKUP_MONEY,
+
+	// using an item
+	ITEM_CHECK_BUFFER_USE_FROM_INVENTORY,
+	ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT,
+
+	// putting an item into another
+	ITEM_CHECK_BUFFER_INSERT_FROM_INVENTORY,
+	ITEM_CHECK_BUFFER_INSERT_FROM_GEAR,
+	ITEM_CHECK_BUFFER_INSERT_FROM_QUICKSLOT,
+
+	ITEM_CHECK_BUFFER_DROP_TO_INVENTORY,
+	ITEM_CHECK_BUFFER_PICKUP_FROM_INVENTORY,
+
+	ITEM_CHECK_BUFFER_PICKUP_SOME_FROM_INVENTORY,	// picking up only some of a stack
+
+	// trading
+	ITEM_CHECK_BUFFER_TRADE_ADD,
+	ITEM_CHECK_BUFFER_TRADE_REMOVE,
+
+	// a skill on an item
+	ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY,
+
+	// a skill from an item
+	ITEM_CHECK_BUFFER_SKILL_FROM_ITEM,
+
+	// dropped from the mouse to the zone
+	ITEM_CHECK_BUFFER_DROP_TO_ZONE,
+
+	ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE,
+
+	// adding an item to another
+	ITEM_CHECK_BUFFER_ITEM_TO_ITEM,
+
+	// merging trees
+	ITEM_CHECK_BUFFER_TREE_MERGE,
+	ITEM_CHECK_BUFFER_USE_FROM_GEAR,
+
+	ITEM_CHECK_BUFFER_USE_MIXING_ITEM,
+	ITEM_CHECK_BUFFER_DROP_TO_CREATURE,
+
+	ITEM_CHECK_BUFFER_USE_FROM_GQUEST_INVENTORY,
+};
+
 // What the player is waiting for the server to verify. MPlayer brings these
 // into its own scope, so MPlayer::WAIT_VERIFY_X names the same values.
 enum WAIT_VERIFY
@@ -83,6 +137,10 @@ struct Host
 	// The player acts again only after this many milliseconds (MPlayer's
 	// own delay; MCreature has none).
 	void (*SetDelay)(std::uint32_t milliseconds) = nullptr;
+	// What the item waiting on the server is for; NULL without a player.
+	ITEM_CHECK_BUFFER (*GetItemCheckBufferStatus)() = nullptr;
+	// Soul Chain failed: the player cannot trace its target.
+	void (*SetCannotTrace)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -122,5 +180,7 @@ void SetCurrentMagazineNumber(int number);
 void SetGroundCreature();
 void SetTempSelectPos(int x, int y);
 void SetDelay(std::uint32_t milliseconds);
+ITEM_CHECK_BUFFER GetItemCheckBufferStatus();
+void SetCannotTrace();
 
 }

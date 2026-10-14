@@ -1035,3 +1035,24 @@ Client/PacketHandler/GCGetOffMotorCycleOKHandler.cpp
 # turning back into a vampire.
 Client/PacketHandler/GCSkillToObjectOK6Handler.cpp
 Client/PacketHandler/GCUntransformOKHandler.cpp
+
+# A creature's words over its head and in the history, and a shout to the
+# whole zone, each masked for another race.
+Client/PacketHandler/GCSayHandler.cpp
+Client/PacketHandler/GCGlobalChatHandler.cpp
+
+# A skill learned, an item the server would not take, and a broken piece
+# of gear coming off the player.
+Client/PacketHandler/GCLearnSkillOKHandler.cpp
+Client/PacketHandler/GCCannotAddHandler.cpp
+Client/PacketHandler/GCRemoveFromGearHandler.cpp
+
+# The player's skill failing, and another creature's.
+Client/PacketHandler/GCSkillFailed1Handler.cpp
+Client/PacketHandler/GCSkillFailed2Handler.cpp
+
+# A creature or the player riding off on a motorcycle lying in the zone,
+# and a piece of the player's gear dropped into the zone.
+Client/PacketHandler/GCRideMotorCycleHandler.cpp
+Client/PacketHandler/GCRideMotorCycleOKHandler.cpp
+Client/PacketHandler/GCAddGearToZoneHandler.cpp

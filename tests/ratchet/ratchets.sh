@@ -326,7 +326,11 @@ check () {
 # 161: the mine explosion and unseen-caster sector replies join gamemodel (4.140).
 # 158: the take-off and motorcycle get-off replies join gamemodel (4.141).
 # 156: the unseen skill on the player and the untransform reply join gamemodel (4.142).
-R1_BASELINE=156
+# 154: the say and global chat replies join gamemodel (4.143).
+# 151: the learn-skill, cannot-add and remove-from-gear replies join gamemodel (4.144).
+# 149: the two skill-failed replies join gamemodel (4.145).
+# 146: the motorcycle ride and gear-to-zone replies join gamemodel (4.146).
+R1_BASELINE=146
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -486,7 +490,11 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 159: the mine explosion and unseen-caster sector replies join gamemodel (4.140).
 	# 156: the take-off and motorcycle get-off replies join gamemodel (4.141).
 	# 154: the unseen skill on the player and the untransform reply join gamemodel (4.142).
-	R1_NINJA_BASELINE=154
+	# 152: the say and global chat replies join gamemodel (4.143).
+	# 149: the learn-skill, cannot-add and remove-from-gear replies join gamemodel (4.144).
+	# 147: the two skill-failed replies join gamemodel (4.145).
+	# 144: the motorcycle ride and gear-to-zone replies join gamemodel (4.146).
+	R1_NINJA_BASELINE=144
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

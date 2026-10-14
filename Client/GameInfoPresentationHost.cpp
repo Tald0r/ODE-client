@@ -38,4 +38,14 @@ void RunImageNotice(const char* name, std::uint32_t id)
 	if (s_Host && s_Host->RunImageNotice) s_Host->RunImageNotice(name, id);
 }
 
+int GetCharInfoLevel()
+{
+	return s_Host && s_Host->GetCharInfoLevel ? s_Host->GetCharInfoLevel() : 0;
+}
+
+void SetDelayEternity()
+{
+	if (s_Host && s_Host->SetDelayEternity) s_Host->SetDelayEternity();
+}
+
 }

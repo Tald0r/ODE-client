@@ -7886,9 +7886,9 @@ MPlayer::ActionEffect()
 // Set ItemCheckBuffer
 //----------------------------------------------------------------------
 	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
-void MPlayer::SetItemCheckBuffer(MItem* pItem, enum ITEM_CHECK_BUFFER status, TYPE_OBJECTID SubItem)
+void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status, TYPE_OBJECTID SubItem)
 	#else
-void MPlayer::SetItemCheckBuffer(MItem* pItem, enum ITEM_CHECK_BUFFER status)
+void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
 	#endif
 
 {

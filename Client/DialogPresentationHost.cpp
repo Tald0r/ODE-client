@@ -63,4 +63,9 @@ void SetStorage(MStorage* pStorage)
 	if (s_Host && s_Host->SetStorage) s_Host->SetStorage(pStorage);
 }
 
+void PickUpItem(MItem* pItem)
+{
+	if (s_Host && s_Host->PickUpItem) s_Host->PickUpItem(pItem);
+}
+
 }

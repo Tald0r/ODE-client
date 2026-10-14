@@ -32,6 +32,14 @@ struct Host
 	// The creature lying in the corpse item with this ID; NULL for no item,
 	// one that is not a corpse, or a corpse with no creature.
 	MCreature* (*GetCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
+	// The item lying in the zone with this ID; NULL for none.
+	MItem* (*GetItem)(TYPE_OBJECTID itemID) = nullptr;
+	// Takes the item out of the zone and frees it; false when it is not
+	// there.
+	bool (*RemoveItem)(TYPE_OBJECTID itemID) = nullptr;
+	// Lays the item in the zone, falling when bDropping; the zone owns it
+	// when this answers true.
+	bool (*AddItem)(MItem* pItem, bool bDropping) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -45,6 +53,10 @@ bool AddCorpseFromCreature(TYPE_OBJECTID id);
 // ZONEID_NULL without a host.
 int GetID();
 MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
+MItem* GetItem(TYPE_OBJECTID itemID);
+bool RemoveItem(TYPE_OBJECTID itemID);
+// Without a host the item is not taken: false, and the caller keeps it.
+bool AddItem(MItem* pItem, bool bDropping);
 
 }
 
@@ -70,7 +82,8 @@ struct Host
 	void (*StopRecoveryHP)(MCreature* pCreature) = nullptr;
 	void (*SetRecoveryHP)(MCreature* pCreature, int amount, int times, std::uint32_t delay) = nullptr;
 	void (*SetNickName)(MCreature* pCreature, std::uint8_t type, char* szNickName) = nullptr;
-	void (*SetChatString)(MCreature* pCreature, const char* str) = nullptr;
+	// The words over its head, in a colour (0xBBGGRR).
+	void (*SetChatString)(MCreature* pCreature, const char* str, std::uint32_t color) = nullptr;
 	void (*PacketMove)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) = nullptr;
 	void (*PacketAttackNormal)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) = nullptr;
 	void (*SetDirectionToPosition)(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) = nullptr;
@@ -150,6 +163,16 @@ struct Host
 	int (*GetCompetence)(MCreature* pCreature) = nullptr;
 	// Faces the direction at once (SetDirection turns towards it).
 	void (*SetCurrentDirection)(MCreature* pCreature, int direction) = nullptr;
+	// The name another race sees under a hallucination or the race mask.
+	const char* (*GetHalluName)(MCreature* pCreature) = nullptr;
+	// The creature table's race of its type (a monster is none of them).
+	bool (*IsSlayer)(MCreature* pCreature) = nullptr;
+	bool (*IsOusters)(MCreature* pCreature) = nullptr;
+	// Slayer, vampire, or ousters for anything else.
+	int (*GetRace)(MCreature* pCreature) = nullptr;
+	// Ends a blood drain or a soul absorption the creature was showing.
+	void (*SetStopBloodDrain)(MCreature* pCreature) = nullptr;
+	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -162,7 +185,8 @@ void SetDead(MCreature* pCreature);
 void StopRecoveryHP(MCreature* pCreature);
 void SetRecoveryHP(MCreature* pCreature, int amount, int times, std::uint32_t delay);
 void SetNickName(MCreature* pCreature, std::uint8_t type, char* szNickName);
-void SetChatString(MCreature* pCreature, const char* str);
+// White unless a colour is given, as MCreature's own default.
+void SetChatString(MCreature* pCreature, const char* str, std::uint32_t color = 0xFFFFFF);
 void PacketMove(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction);
 void PacketAttackNormal(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction);
 void SetDirectionToPosition(MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
@@ -226,5 +250,13 @@ void SetMoveDevice(MCreature* pCreature, MOVE_DEVICE device);
 int GetCreatureType(MCreature* pCreature);
 int GetCompetence(MCreature* pCreature);
 void SetCurrentDirection(MCreature* pCreature, int direction);
+// "" without a host.
+const char* GetHalluName(MCreature* pCreature);
+bool IsSlayer(MCreature* pCreature);
+bool IsOusters(MCreature* pCreature);
+// RACE_SLAYER (0) without a host.
+int GetRace(MCreature* pCreature);
+void SetStopBloodDrain(MCreature* pCreature);
+void SetStopAbsorbSoul(MCreature* pCreature);
 
 }

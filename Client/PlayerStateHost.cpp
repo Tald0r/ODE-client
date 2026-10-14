@@ -166,4 +166,14 @@ void SetDelay(std::uint32_t milliseconds)
 	if (s_Host && s_Host->SetDelay) s_Host->SetDelay(milliseconds);
 }
 
+ITEM_CHECK_BUFFER GetItemCheckBufferStatus()
+{
+	return s_Host && s_Host->GetItemCheckBufferStatus ? s_Host->GetItemCheckBufferStatus() : ITEM_CHECK_BUFFER_NULL;
+}
+
+void SetCannotTrace()
+{
+	if (s_Host && s_Host->SetCannotTrace) s_Host->SetCannotTrace();
+}
+
 }

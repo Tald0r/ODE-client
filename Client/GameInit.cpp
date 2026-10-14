@@ -3500,6 +3500,8 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.RunSkillTree = UI_RunSkillTree,
 	.MiniGameScores = UI_MiniGameScores,
 	.RunImageNotice = [](const char* name, std::uint32_t id) { UI_RunImageNotice(name, id); },
+	.GetCharInfoLevel = UI_GetCharInfoLevel,
+	.SetDelayEternity = UI_SetDelayEternity,
 };
 
 static const DialogPresentation::Host s_DialogPresentationHost = {
@@ -3513,6 +3515,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.EmptyMove = []() { gbl_global_empty_move = true; },
 	.RunStorage = UI_RunStorage,
 	.SetStorage = UI_SetStorage,
+	.PickUpItem = UI_PickUpItem,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3574,6 +3577,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
 	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
 	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
+	.GetItemCheckBufferStatus = []() { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBufferStatus() : PlayerState::ITEM_CHECK_BUFFER_NULL; },
+	.SetCannotTrace = []() { if (g_pPlayer != NULL) g_pPlayer->SetCannotTrace(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3588,6 +3593,9 @@ static const ZoneState::Host s_ZoneStateHost = {
 		MItem* pItem = g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL;
 		return pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE ? static_cast<MCorpse*>(pItem)->GetCreature() : NULL;
 	},
+	.GetItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL; },
+	.RemoveItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL && g_pZone->RemoveItem(itemID); },
+	.AddItem = [](MItem* pItem, bool bDropping) { return g_pZone != NULL && g_pZone->AddItem(pItem, bDropping ? TRUE : FALSE); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3599,7 +3607,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.StopRecoveryHP = [](MCreature* pCreature) { pCreature->StopRecoveryHP(); },
 	.SetRecoveryHP = [](MCreature* pCreature, int amount, int times, std::uint32_t delay) { pCreature->SetRecoveryHP(amount, times, delay); },
 	.SetNickName = [](MCreature* pCreature, std::uint8_t type, char* szNickName) { pCreature->SetNickName(type, szNickName); },
-	.SetChatString = [](MCreature* pCreature, const char* str) { pCreature->SetChatString(str); },
+	.SetChatString = [](MCreature* pCreature, const char* str, std::uint32_t color) { pCreature->SetChatString(str, static_cast<COLORREF>(color)); },
 	.PacketMove = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) { pCreature->PacketMove(x, y, direction); },
 	.PacketAttackNormal = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) { pCreature->PacketAttackNormal(x, y, direction); },
 	.SetDirectionToPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { pCreature->SetDirectionToPosition(sX, sY); },
@@ -3674,6 +3682,12 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetCreatureType = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCreatureType()); },
 	.GetCompetence = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCompetence()); },
 	.SetCurrentDirection = [](MCreature* pCreature, int direction) { pCreature->SetCurrentDirection(static_cast<BYTE>(direction)); },
+	.GetHalluName = [](MCreature* pCreature) { return pCreature->GetHalluName(); },
+	.IsSlayer = [](MCreature* pCreature) { return pCreature->IsSlayer(); },
+	.IsOusters = [](MCreature* pCreature) { return pCreature->IsOusters(); },
+	.GetRace = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetRace()); },
+	.SetStopBloodDrain = [](MCreature* pCreature) { pCreature->SetStopBloodDrain(); },
+	.SetStopAbsorbSoul = [](MCreature* pCreature) { pCreature->SetStopAbsorbSoul(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
