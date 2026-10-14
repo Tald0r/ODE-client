@@ -3848,9 +3848,11 @@ rounds settled* for the host rules). Test fixtures share
   > that creature, after adding the mine's effect status; OK1 also
   > changes the player's status, now only when there is a player (it
   > dereferenced the player). An unseen caster's skill (OK4) adds the
-  > node its result kind names (the result value's action, graded with
-  > the range when the skill's row is graded), acts as its step, and starts as its result, facing down
-  > unless its range is its direction. R1 is 161 Windows / 159 Ninja.
+  > node its result kind names (the result value's action; a graded
+  > skill hands it the range, which the result applies when the value's
+  > row is graded too and the range is not zero), acts as its step, and
+  > starts as its result, facing down unless its range is its
+  > direction. R1 is 161 Windows / 159 Ninja.
   - Owner: membership, R1, the new entry and its adapter, and
     `test_sector_skill_replies.cpp` (a mine near the player with its
     status, of no type, without a zone or a player; a mine elsewhere;

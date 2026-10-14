@@ -205,6 +205,16 @@ TEST(AddonOffReplies, ThePlayerGetsOffItsMotorcycle)
 	CHECK(calls.empty());
 }
 
+TEST(AddonOffReplies, TheEntriesPassTheirArgumentsAndAnswerOn)
+{
+	World world;
+	CHECK(CreatureState::RemoveAddon(Handle(world.ogre), 4));
+	CreatureState::SetMoveDevice(Handle(world.ogre), CreatureState::MOVE_DEVICE_RIDE);
+	WorldEvents::PlaySoundAt(SOUND_WORLD_BIKE_STOP, true, 1, 2);
+	CHECK(calls == std::vector<std::string>({"Ogre.off|4", "Ogre.move|" + N(CreatureState::MOVE_DEVICE_RIDE),
+		"sound|" + N(SOUND_WORLD_BIKE_STOP) + "|repeat|1,2"}));
+}
+
 TEST(AddonOffReplies, WithoutHostsAnAddonStaysOn)
 {
 	World world;
@@ -214,7 +224,9 @@ TEST(AddonOffReplies, WithoutHostsAnAddonStaysOn)
 	CreatureState::SetMoveDevice(Handle(world.ogre), CreatureState::MOVE_DEVICE_RIDE);
 	WorldEvents::PlaySoundAt(SOUND_WORLD_BIKE_STOP, false, 1, 2);
 	CHECK(calls.empty());
-	// The walking device is the first, as MCreature's was.
+	// The devices keep MCreature's order.
 	CHECK_EQ(0, static_cast<int>(CreatureState::MOVE_DEVICE_WALK));
+	CHECK_EQ(1, static_cast<int>(CreatureState::MOVE_DEVICE_RIDE));
+	CHECK_EQ(2, static_cast<int>(CreatureState::MOVE_DEVICE_SUMMON_SYLPH));
 	CHECK_EQ(3, static_cast<int>(CreatureState::MOVE_DEVICE_MAX));
 }

@@ -149,6 +149,12 @@ struct World : GameModelWorld
 		creatures.clear();
 	}
 	MActionInfo& Row(TYPE_ACTIONINFO action) { return testfw::MutableRow(actions, action); }
+	// Every row back to its default (Init releases the old rows).
+	void ResetActions()
+	{
+		actions.Init(MAX_ACTIONINFO);
+		actions.SetMinResultActionInfo(kMin);
+	}
 	static long long HP() { return static_cast<long long>(playerStatus.GetStatus(MODIFY_CURRENT_HP)); }
 };
 
@@ -303,8 +309,16 @@ TEST(SectorSkillReplies, AnUnseenCastersActionSkillActsAsItsResultValueAndItsSte
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
 		Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11, F())}));
-	// The node carries the range only when the skill is graded.
+	// The node carries the range only when the skill is graded, and the
+	// result applies it only when the value's row is graded too.
 	calls.clear();
+	world.Row(kSkill).SetUseActionGrade();
+	ReceiveUnseen(kSkill, {1001});
+	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
+		Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11, F())}));
+	calls.clear();
+	world.ResetActions();
+	world.Row(kSkill).SetActionResult(ACTIONRESULTNODE_ACTIONINFO, SKILL_SINGLE_BLOW);
 	world.Row(SKILL_SINGLE_BLOW).SetUseActionGrade();
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
@@ -333,7 +347,7 @@ TEST(SectorSkillReplies, AnUnseenCastersNodeHasNoUserAndItsStepsRowRulesItsEffec
 		Hit("Ogre", MAGIC_BLOODY_ZENITH, 1001, 10, 11, F())}));
 	// The step's row, which has no effect status and no turn, rules both.
 	calls.clear();
-	world.Row(kSkill) = MActionInfo();
+	world.ResetActions();
 	world.Row(kSkill).SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
 	world.Row(kSkill).SetOptionRangeToDirection();
 	world.Row(kSkill).SetUseActionStep();

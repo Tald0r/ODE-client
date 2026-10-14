@@ -184,6 +184,12 @@ struct World : GameModelWorld
 		creatures.clear();
 	}
 	MActionInfo& Row(TYPE_ACTIONINFO action) { return testfw::MutableRow(actions, action); }
+	// Every row back to its default (Init releases the old rows).
+	void ResetActions()
+	{
+		actions.Init(MAX_ACTIONINFO);
+		actions.SetMinResultActionInfo(kMin);
+	}
 	void Steps(TYPE_ACTIONINFO action)
 	{
 		Row(action).SetUseActionStep();
@@ -464,7 +470,7 @@ TEST(SkillTileReplies, ACreaturesSkillNearThePlayerActsAsItsStepAndAGradedOneCre
 	ReceiveNearPlayer(1002, MAGIC_BLOODY_ZENITH, {});
 	CHECK(calls == Join({CastBy("Vanda", MAGIC_BLOODY_ZENITH), Hit("Vanda", MAGIC_BLOODY_ZENITH, 1002, 40, 41, kRange, "Self")}));
 	calls.clear();
-	world.Row(MAGIC_BLOODY_ZENITH) = MActionInfo();
+	world.ResetActions();
 	ReceiveNearPlayer(1002, MAGIC_BLOODY_ZENITH, {});
 	CHECK(calls == Join({CastBy("Vanda", MAGIC_BLOODY_ZENITH), Hit("Vanda", MAGIC_BLOODY_ZENITH, 1002, 40, 41, 0, "Vanda")}));
 }
@@ -564,7 +570,7 @@ TEST(SkillTileReplies, AGradedSkillElsewhereCreditsThePlayer)
 	ReceiveElsewhere(1002, MAGIC_BLOODY_ZENITH, {});
 	CHECK(calls == Join({CastBy("Vanda", MAGIC_BLOODY_ZENITH), Hit("Vanda", MAGIC_BLOODY_ZENITH, 1002, 40, 41, kRange, "Self")}));
 	calls.clear();
-	world.Row(MAGIC_BLOODY_ZENITH) = MActionInfo();
+	world.ResetActions();
 	ReceiveElsewhere(1002, MAGIC_BLOODY_ZENITH, {});
 	CHECK(calls == Join({CastBy("Vanda", MAGIC_BLOODY_ZENITH), Hit("Vanda", MAGIC_BLOODY_ZENITH, 1002, 40, 41, 0, "Vanda")}));
 }
@@ -678,7 +684,8 @@ TEST(SkillTileReplies, AWeaponSkillsNodeOfAnotherKindComesFromTheBasicAction)
 	// Near the player the weapon is the step's: a weapon step acts as the
 	// basic action.
 	calls.clear();
-	world.Row(kSkill) = MActionInfo();
+	world.ResetActions();
+	world.Row(SKILL_ATTACK_GUN_SG).SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
 	world.Steps(kSkill);
 	world.Row(kStep).SetAffectCurrentWeaponAction();
 	ReceiveNearPlayer(1002, kSkill, {1001}, 2);
