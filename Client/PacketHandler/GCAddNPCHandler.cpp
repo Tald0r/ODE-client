@@ -9,15 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddNPC.h"
-#include "ClientDef.h"
-#include "MNPC.h"
-#include "MGuildType.h"
+#include "DebugLog.h"
 #include "EffectSpriteTypeDef.h"
-#include "MinTr.h"
-
-extern int					g_nZoneLarge;
-extern int					g_nZoneSmall;
-extern bool					g_bZonePlayerInLarge;
+#include "MCreatureSpriteTable.h"
+#include "MCreatureTable.h"
+#include "MGuildType.h"
+#include "MStatus.h"
+#include "ZoneFlags.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -31,35 +30,37 @@ void GCAddNPCHandler::execute ( GCAddNPC * pPacket , Player * pPlayer )
 	// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature is added
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{			
 			int npcID = pPacket->getNPCID();
 
-			MNPC* pNPC = new MNPC;
-			
-			pNPC->SetZone( g_pZone );
+			MCreature* pNPC = ZoneState::NewNPC();
+			if (pNPC == NULL)
+			{
+				return;
+			}
 
 			int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
 
-			// EVE 길드 마크
+			// The EVE guild mark
 			int creatureType = npcID;
 			int spriteType = (*g_pCreatureTable)[creatureType].SpriteTypes[0];			
 			
@@ -70,114 +71,116 @@ void GCAddNPCHandler::execute ( GCAddNPC * pPacket , Player * pPlayer )
 				|| spriteInfo.IsSlayerSprite())
 			{
 				// slayer NPC
-				pNPC->SetGuildNumber( GUILDID_EVE );
+				CreatureState::SetGuildNumber( pNPC, GUILDID_EVE );
 			} else
 			if( spriteInfo.IsOustersSprite() )
 			{
-				pNPC->SetGuildNumber( GUILDID_OUSTERS );
+				CreatureState::SetGuildNumber( pNPC, GUILDID_OUSTERS );
 			}
 			else if (zoneID==1007 || zoneID==1114 || zoneID==1115)
 			{
-				// 테페즈
-				pNPC->SetGuildNumber( GUILDID_TEPEZ );
+				// Tepez
+				CreatureState::SetGuildNumber( pNPC, GUILDID_TEPEZ );
 			}
 			else
 			{
-				// 바토리
-				pNPC->SetGuildNumber( GUILDID_BATHORY );
+				// Bathory
+				CreatureState::SetGuildNumber( pNPC, GUILDID_BATHORY );
 			}
 
 			//pNPC->SetCreatureType( 0 );
-			pNPC->SetCreatureType( npcID );
-			pNPC->SetGroundCreature();
-			pNPC->SetID(pPacket->getObjectID());
+			CreatureState::SetCreatureType( pNPC, npcID );
+			CreatureState::SetGroundCreature( pNPC );
+			CreatureState::SetID( pNPC, pPacket->getObjectID() );
 			//pNPC->SetAction(ACTION_MOVE);
-			pNPC->SetPosition( pPacket->getX(), pPacket->getY() );
-			pNPC->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pNPC->SetDirection( pPacket->getDir() );
-			pNPC->SetCurrentDirection( pPacket->getDir() );
-			pNPC->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pNPC, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pNPC, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pNPC, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pNPC, pPacket->getDir() );
+			CreatureState::SetAction( pNPC, ACTION_STAND );
 
 			if(zoneID>= 1500 && zoneID<=1506)
-				pNPC->SetName( pPacket->getName().c_str() );
+				CreatureState::SetName( pNPC, pPacket->getName().c_str() );
 			else
-				pNPC->SetName( (*g_pCreatureTable)[creatureType].Name );
+				CreatureState::SetName( pNPC, (*g_pCreatureTable)[creatureType].Name );
 
-			pNPC->SetBodyColor1( pPacket->getMainColor() );
-			pNPC->SetBodyColor2( pPacket->getSubColor() );
+			CreatureState::SetBodyColor1( pNPC, pPacket->getMainColor() );
+			CreatureState::SetBodyColor2( pNPC, pPacket->getSubColor() );
 
 			// NPC ID
-			pNPC->SetNPCID( pPacket->getNPCID() );
+			CreatureState::SetNPCID( pNPC, pPacket->getNPCID() );
 			
 			//
-			pNPC->SetStatus( MODIFY_MAX_HP, 100 );
+			MStatus* pStatus = CreatureState::Status( pNPC );
+			if (pStatus != NULL)
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, 100 );
+			}
 
 //			_MinTrace("AddNPC : %s Dir:%d Pos(%d,%d) CreatureType : %d\n",pNPC->GetName(), pPacket->getDir(), pPacket->getX(), pPacket->getY(), pPacket->getNPCID() );
 			//------------------------------------------------------------
-			// 바토리인 경우.. 하드코딩(-_-);
+			// Bathory.. hard-coded (-_-);
 			//------------------------------------------------------------
 			if (npcID==217)
 			{
-				pNPC->SetStatus( MODIFY_CURRENT_HP, 10 );
-				pNPC->SetStatus( MODIFY_ALIGNMENT, -10000 );	// 별 의미없다
+				if (pStatus != NULL)
+				{
+					pStatus->SetStatus( MODIFY_CURRENT_HP, 10 );
+					pStatus->SetStatus( MODIFY_ALIGNMENT, -10000 );	// means little
+				}
 			}
 			else
 			{
-				pNPC->SetStatus( MODIFY_CURRENT_HP, 100 );
+				if (pStatus != NULL)
+				{
+					pStatus->SetStatus( MODIFY_CURRENT_HP, 100 );
+				}
 			}
 
-			if (!g_pZone->AddCreature( pNPC ))
+			if (!ZoneState::AddCreature( pNPC ))
 			{
-				delete pNPC;
+				ZoneState::DeleteCreature( pNPC );
 				pNPC = NULL;
 			}
 			else
 			{			
 				//------------------------------------------------------------
-				// Slayer NPC인 경우 복장을 입힌다.
+				// A slayer NPC is dressed.
 				//------------------------------------------------------------
-				SetAddonToSlayer( (MNPC*)pNPC, npcID );
+				CreatureState::SetAddonToNPC( pNPC, npcID );
 
 				//------------------------------------------------------------
-				// Load되지 않았으면 load한다.
+				// Load it if it is not loaded.
 				//------------------------------------------------------------
 //				LoadCreatureType( pPacket->getNPCID() );
 
-				MAttachEffect* pEffect = NULL;
-
-				if( pNPC->GetCreatureType() == 638 || pNPC->GetCreatureType() == 657)					
-					pEffect = pNPC->CreateAttachEffect( EFFECTSPRITETYPE_AMATA, 0xffff,0);
+				const int npcType = CreatureState::GetCreatureType( pNPC );
+				if( npcType == 638 || npcType == 657)
+					CreatureState::AttachLastingEffect( pNPC, EFFECTSPRITETYPE_AMATA );
 				else
-				if( pNPC->GetCreatureType() == 639 || pNPC->GetCreatureType() == 654)
-					pEffect = pNPC->CreateAttachEffect( EFFECTSPRITETYPE_RIPATY, 0xffff,0);
-
-				if(pEffect != NULL)
-				{
-					pEffect->SetDirection( pNPC->GetDirection() );					
-					pEffect->SetLink( ACTIONINFO_NULL, NULL );
-					pEffect->SetAttachCreatureID( pNPC->GetID() );
-				}
+				if( npcType == 639 || npcType == 654)
+					CreatureState::AttachLastingEffect( pNPC, EFFECTSPRITETYPE_RIPATY );
 			}
 		}
 		//--------------------------------------------------
-		// 이미 있던 Creature인 경우
+		// A creature already there
 		//--------------------------------------------------
 		else
 		{
-			if (pCreature->GetClassType()==MCreature::CLASS_NPC)
+			if (CreatureState::IsNPC( pCreature ))
 			{
-				// 이미 있다..
-				pCreature->SetGroundCreature();
+				// Already there..
+				CreatureState::SetGroundCreature( pCreature );
 				
 				//pCreature->SetAction(ACTION_MOVE);
-				pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );				
-				pCreature->MovePosition( pPacket->getX(), pPacket->getY() );
-				pCreature->SetDirection( pPacket->getDir() );
-				pCreature->SetCurrentDirection( pPacket->getDir() );
-				pCreature->SetAction( ACTION_STAND );
+				CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+				CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );
+				CreatureState::SetDirection( pCreature, pPacket->getDir() );
+				CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+				CreatureState::SetAction( pCreature, ACTION_STAND );
 
-				pCreature->SetBodyColor1( pPacket->getMainColor() );
-				pCreature->SetBodyColor2( pPacket->getSubColor() );
+				CreatureState::SetBodyColor1( pCreature, pPacket->getMainColor() );
+				CreatureState::SetBodyColor2( pCreature, pPacket->getSubColor() );
 
 				//
 				//pCreature->SetStatus( MODIFY_MAX_HP, 100 );
@@ -190,7 +193,7 @@ void GCAddNPCHandler::execute ( GCAddNPC * pPacket , Player * pPlayer )
 		}
 	}
 
-	// [도움말] NPC가 나타날때
+	// [Help] when an NPC appears
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_CREATURE_APPEAR_NPC );
 //	__END_HELP_EVENT

@@ -90,6 +90,8 @@ struct Host
 	// freeing the corpse frees the creature. NULL without a host or an item
 	// factory; the caller then still owns the creature.
 	MItem* (*NewCorpse)(MCreature* pCreature) = nullptr;
+	// The same as NewCreature for an NPC (MNPC).
+	MCreature* (*NewNPC)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -123,6 +125,7 @@ bool AddCreature(MCreature* pCreature);
 MCreature* GetCreatureOnly(TYPE_OBJECTID id);
 TYPE_OBJECTID GetItemID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 MItem* NewCorpse(MCreature* pCreature);
+MCreature* NewNPC();
 void DeleteCreature(MCreature* pCreature);
 
 }
@@ -294,8 +297,8 @@ struct Host
 	void (*SetPersnalString)(MCreature* pCreature, const char* sign, std::uint32_t color) = nullptr;
 	void (*ClearChatString)(MCreature* pCreature) = nullptr;
 	void (*SetPersnalShopMessage)(MCreature* pCreature, const char* message) = nullptr;
-	// A new creature's identity and place: its name, ID, cell and guild
-	// (-1 for none).
+	// A new creature's identity and place: its name (never NULL: SetName
+	// passes a NULL one as empty), ID, cell and guild (-1 for none).
 	void (*SetName)(MCreature* pCreature, const char* name) = nullptr;
 	void (*SetID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
 	void (*SetPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
@@ -335,6 +338,16 @@ struct Host
 	bool (*IsDead)(MCreature* pCreature) = nullptr;
 	// How many items a corpse holds for looting.
 	void (*SetItemCount)(MCreature* pCreature, int count) = nullptr;
+	// The NPC ID an NPC answers to (its dialogue and shop); nothing for a
+	// creature that is no NPC.
+	void (*SetNPCID)(MCreature* pCreature, int npcID) = nullptr;
+	// Dresses a creature that wears gear as the slayer NPC of the ID wears
+	// its gear; nothing for one that wears none, or an ID past the creature
+	// table or with no gear.
+	void (*SetAddonToNPC)(MCreature* pCreature, int npcID) = nullptr;
+	// Attaches a lasting effect of the sprite type to the creature (one of
+	// 0xFFFF frames, linked to no action), facing as the creature does.
+	void (*AttachLastingEffect)(MCreature* pCreature, int effectSpriteType) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -459,5 +472,8 @@ void SetAddonToOusters3(MCreature* pCreature, const PCOustersInfo3* pInfo);
 void SetCorpse(MCreature* pCreature);
 bool IsDead(MCreature* pCreature);
 void SetItemCount(MCreature* pCreature, int count);
+void SetNPCID(MCreature* pCreature, int npcID);
+void SetAddonToNPC(MCreature* pCreature, int npcID);
+void AttachLastingEffect(MCreature* pCreature, int effectSpriteType);
 
 }

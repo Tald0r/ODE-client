@@ -308,6 +308,7 @@ TEST(SlayerCorpseReplies, AnOperatorsCorpseIsTheOperators)
 {
 	World world;
 	Receive(1005, {FEMALE, 0});
+	zoneTakesItems = 1;
 	Receive(1006, {MALE, 0});
 	CHECK(calls.size() > 25 && calls[2] == "competence|new|0" && calls[3] == "type|new|" + N(CREATURETYPE_SLAYER_OPERATOR)
 		&& calls[4] == "woman|new" && calls[5] == "guild|new|7");
@@ -365,6 +366,12 @@ TEST(SlayerCorpseReplies, AKnownCreatureDiesWhereItIs)
 	Receive(1003, {MALE, 0});
 	CHECK(calls.size() > 4 && calls[1] == "competence|1003|0" && calls[2] == "type|1003|" + N(CREATURETYPE_SLAYER_OPERATOR)
 		&& calls[3] == "man|1003" && calls[4] == "walks|1003");
+	// The operator's type is not a woman's, so a woman operator takes it
+	// again, as a woman.
+	calls.clear();
+	Receive(1003, {FEMALE, 0});
+	CHECK(calls.size() > 4 && calls[1] == "competence|1003|0" && calls[2] == "type|1003|" + N(CREATURETYPE_SLAYER_OPERATOR)
+		&& calls[3] == "woman|1003" && calls[4] == "walks|1003");
 }
 
 TEST(SlayerCorpseReplies, WithoutAZoneOrTheHostsNothingHappens)
@@ -394,8 +401,15 @@ TEST(SlayerCorpseReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1003);
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
 	CHECK(std::count(calls.begin(), calls.end(), "zone lays|1006|still") == 1 && std::count(calls.begin(), calls.end(), "holds|1003|3") == 1);
+	// Without the creature host the corpse is still made and laid; the
+	// known creature's reply runs without one.
 	calls.clear();
+	zoneTakesItems = 1;
 	CreatureState::SetHost(nullptr);
+	Receive(1007);
+	Receive(1003);
+	CHECK(calls == std::vector<std::string>({"new wearing creature", "corpse of|new", "zone lays|1007|still"}));
+	calls.clear();
 	ZoneState::SetHost(nullptr);
 	Receive(1005);
 	CHECK(calls.empty());

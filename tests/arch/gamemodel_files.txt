@@ -1185,7 +1185,11 @@ Client/PacketHandler/GCAddVampireHandler.cpp
 Client/PacketHandler/GCAddSlayerHandler.cpp
 Client/PacketHandler/GCAddOustersHandler.cpp
 
-# A monster's, a vampire's or a slayer's corpse appearing.
+# A monster's, a vampire's, a slayer's or an ouster's corpse appearing.
 Client/PacketHandler/GCAddMonsterCorpseHandler.cpp
 Client/PacketHandler/GCAddVampireCorpseHandler.cpp
 Client/PacketHandler/GCAddSlayerCorpseHandler.cpp
+Client/PacketHandler/GCAddOustersCorpseHandler.cpp
+# An NPC appearing, and the guild IDs it is given.
+Client/PacketHandler/GCAddNPCHandler.cpp
+Client/MGuildType.h

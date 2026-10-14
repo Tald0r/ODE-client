@@ -3688,6 +3688,11 @@ static const ZoneState::Host s_ZoneStateHost = {
 		if (pCorpse != NULL) pCorpse->SetCreature(pCreature);
 		return pCorpse;
 	},
+	.NewNPC = []() -> MCreature* {
+		MCreature* pCreature = new MNPC;
+		pCreature->SetZone( g_pZone );
+		return pCreature;
+	},
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3841,6 +3846,21 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetCorpse = [](MCreature* pCreature) { pCreature->SetCorpse(); },
 	.IsDead = [](MCreature* pCreature) { return pCreature->IsDead(); },
 	.SetItemCount = [](MCreature* pCreature, int count) { pCreature->SetItemCount(count); },
+	.SetNPCID = [](MCreature* pCreature, int npcID) {
+		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->SetNPCID(npcID);
+	},
+	.SetAddonToNPC = [](MCreature* pCreature, int npcID) {
+		if (pCreature->IsWear()) SetAddonToSlayer(static_cast<MCreatureWear*>(pCreature), npcID);
+	},
+	.AttachLastingEffect = [](MCreature* pCreature, int effectSpriteType) {
+		MAttachEffect* pEffect = pCreature->CreateAttachEffect(static_cast<TYPE_EFFECTSPRITETYPE>(effectSpriteType), 0xffff, 0);
+		if (pEffect != NULL)
+		{
+			pEffect->SetDirection( pCreature->GetDirection() );
+			pEffect->SetLink( ACTIONINFO_NULL, NULL );
+			pEffect->SetAttachCreatureID( pCreature->GetID() );
+		}
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

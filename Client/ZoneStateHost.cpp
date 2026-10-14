@@ -150,6 +150,11 @@ MItem* NewCorpse(MCreature* pCreature)
 	return s_Host && s_Host->NewCorpse ? s_Host->NewCorpse(pCreature) : NULL;
 }
 
+MCreature* NewNPC()
+{
+	return s_Host && s_Host->NewNPC ? s_Host->NewNPC() : NULL;
+}
+
 }
 
 namespace CreatureState {
@@ -644,7 +649,9 @@ void SetPersnalShopMessage(MCreature* pCreature, const char* message)
 
 void SetName(MCreature* pCreature, const char* name)
 {
-	if (s_Host && s_Host->SetName) s_Host->SetName(pCreature, name);
+	// The game's SetName reads the name: an empty MString, a creature
+	// table row past the table or never named, converts to NULL.
+	if (s_Host && s_Host->SetName) s_Host->SetName(pCreature, name != NULL ? name : "");
 }
 
 void SetID(MCreature* pCreature, TYPE_OBJECTID id)
@@ -720,6 +727,21 @@ bool IsDead(MCreature* pCreature)
 void SetItemCount(MCreature* pCreature, int count)
 {
 	if (s_Host && s_Host->SetItemCount) s_Host->SetItemCount(pCreature, count);
+}
+
+void SetNPCID(MCreature* pCreature, int npcID)
+{
+	if (s_Host && s_Host->SetNPCID) s_Host->SetNPCID(pCreature, npcID);
+}
+
+void SetAddonToNPC(MCreature* pCreature, int npcID)
+{
+	if (s_Host && s_Host->SetAddonToNPC) s_Host->SetAddonToNPC(pCreature, npcID);
+}
+
+void AttachLastingEffect(MCreature* pCreature, int effectSpriteType)
+{
+	if (s_Host && s_Host->AttachLastingEffect) s_Host->AttachLastingEffect(pCreature, effectSpriteType);
 }
 
 }
