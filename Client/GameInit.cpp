@@ -3594,7 +3594,6 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
-	.RemoveDescriptor = [](void* pItem) { UI_RemoveDescriptor(pItem); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3623,6 +3622,11 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.SetServerGroupName = [](const char* name) { SetServerGroupName(name); },
 	.SetGoreLevel = [](bool gore) { SetGoreLevel(gore); },
 	.UseTeenVersion = []() { return g_pUserOption->UseTeenVersion != FALSE; },
+	.FlushSocketOutput = []() { UpdateSocketOutput(); },
+	.EnterWaitPCListMode = []() { SetMode(MODE_WAIT_PCLIST); },
+	.EnterWaitUpdateInfoMode = []() { SetMode(MODE_WAIT_UPDATEINFO); },
+	.MacAddress = []() -> const std::uint8_t* { return g_macAddress; },
+	.Dimension = []() { return g_Dimension; },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {

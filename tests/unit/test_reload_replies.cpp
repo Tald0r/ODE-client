@@ -6,7 +6,6 @@
 #include "MItemTable.h"
 #include "MQuickSlot.h"
 #include "MSlayerGear.h"
-#include "DialogPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "WorldEventsHost.h"
 #include "Gpackets/GCReloadOK.h"
@@ -22,9 +21,9 @@
 // of a larger stack a new magazine of the same type and options is made
 // and the stack is one fewer. The player's status is calculated again.
 // Without a gun in the right hand the magazine is spent all the same:
-// the last one is dropped (its description forgotten), and of a stack
-// only the new one. An item that is no magazine only clears the
-// buffer; another buffer status only sounds.
+// the last one is freed, and of a stack only the new one. An item that
+// is no magazine only clears the buffer; another buffer status only
+// sounds.
 namespace {
 
 std::vector<std::string> calls;
@@ -33,6 +32,8 @@ MItem* bufferItem = nullptr;
 PlayerState::ITEM_CHECK_BUFFER bufferStatus = PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY;
 // The magazines the gun has held; it frees the one it lets go of.
 std::vector<std::unique_ptr<MItem>> loaded;
+// Whether freeing an item is recorded: only while a reply runs.
+bool recordFrees = false;
 
 std::string N(long long value) { return std::to_string(value); }
 
@@ -56,7 +57,10 @@ struct Ware : MItem
 
 MItemHost items = []() {
 	MItemHost host{};
-	host.NewItem = [](ITEM_CLASS itemClass) -> MItem* { calls.push_back("made|" + N(itemClass)); return new Ware(itemClass, 0); };
+	// A made item comes with an ID the reply replaces.
+	host.NewItem = [](ITEM_CLASS itemClass) -> MItem* { calls.push_back("made|" + N(itemClass)); return new Ware(itemClass, 999); };
+	// Freeing an item forgets its description (the executable's host).
+	host.ItemDestroyed = [](MItem* pItem) noexcept { if (recordFrees) calls.push_back("freed|" + N(pItem->GetID())); };
 	host.ReloadGun = [](MItem* pGun, MItem* pMagazine) {
 		calls.push_back("reload|" + N(pGun->GetID()) + "|" + N(pMagazine->GetID()) + "|" + N(pMagazine->GetItemType()) + "|"
 			+ N(pMagazine->GetNumber()) + "|" + N(pMagazine->GetItemOptionListCount()));
@@ -73,12 +77,6 @@ const PlayerState::Host player = []() {
 	host.GetItemCheckBufferStatus = []() { return bufferStatus; };
 	host.ClearItemCheckBuffer = []() { calls.push_back("cleared"); bufferItem = nullptr; };
 	host.CalculateStatus = []() { calls.push_back("calculated"); };
-	return host;
-}();
-
-const DialogPresentation::Host dialog = []() {
-	DialogPresentation::Host host{};
-	host.RemoveDescriptor = [](void* pItem) { calls.push_back("description gone|" + N(static_cast<MItem*>(pItem)->GetID())); };
 	return host;
 }();
 
@@ -100,7 +98,6 @@ struct World : GameModelWorld
 	MSlayerGear* oldGear = g_pSlayerGear;
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	const WorldEvents::Host* oldEvents = WorldEvents::SetHost(&events);
-	const DialogPresentation::Host* oldDialog = DialogPresentation::SetHost(&dialog);
 	World()
 	{
 		calls.clear();
@@ -128,7 +125,6 @@ struct World : GameModelWorld
 	~World()
 	{
 		MItem::SetHost(nullptr);
-		DialogPresentation::SetHost(oldDialog);
 		WorldEvents::SetHost(oldEvents);
 		PlayerState::SetHost(oldPlayer);
 		g_pSlayerGear = oldGear;
@@ -159,7 +155,9 @@ void Receive(int bullets)
 {
 	GCReloadOK packet;
 	packet.setBulletNum(static_cast<BYTE>(bullets));
+	recordFrees = true;
 	GCReloadOKHandler::execute(&packet, nullptr);
+	recordFrees = false;
 }
 
 } // namespace
@@ -190,7 +188,7 @@ TEST(ReloadReplies, OneOfAStackInTheInventoryIsAnewMagazine)
 	bufferStatus = PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY;
 	Receive(24);
 	CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "made|" + N(ITEM_CLASS_MAGAZINE), "reload|1001|0|3|24|2",
-		"calculated"}));
+		"freed|0", "calculated"}));
 	CHECK(world.inventory.GetItem(0, 0) == pStack && pStack->GetNumber() == 1);
 }
 
@@ -206,7 +204,7 @@ TEST(ReloadReplies, TheQuickSlotsMagazinesReloadAlike)
 	calls.clear();
 	bufferItem = pStack;
 	Receive(19);
-	CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "reload|1001|2001|3|19|2", "calculated"}));
+	CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "reload|1001|2001|3|19|2", "freed|0", "calculated"}));
 	CHECK(world.belt.GetItem(1) == nullptr && loaded.size() == 1 && loaded[0].get() == pStack);
 }
 
@@ -260,13 +258,13 @@ TEST(ReloadReplies, WithoutAGunTheSpentMagazineIsDropped)
 			Ware* pLast = world.Magazines(1, quickSlot);
 			(void)pLast;
 			Receive(30);
-			CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "description gone|2001", "calculated"}));
+			CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "freed|2001", "calculated"}));
 			CHECK((quickSlot ? world.belt.GetItem(1) : world.inventory.GetItem(0, 0)) == nullptr && loaded.empty());
 			// A stack keeps the rest.
 			calls.clear();
 			Ware* pStack = world.Magazines(3, quickSlot);
 			Receive(30);
-			CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "made|" + N(ITEM_CLASS_MAGAZINE), "calculated"}));
+			CHECK(calls == (std::vector<std::string>{"sound|" + N(kUseSound), "cleared", "made|" + N(ITEM_CLASS_MAGAZINE), "freed|0", "calculated"}));
 			CHECK((quickSlot ? world.belt.GetItem(1) : world.inventory.GetItem(0, 0)) == pStack && pStack->GetNumber() == 2 && loaded.empty());
 		}
 	}
