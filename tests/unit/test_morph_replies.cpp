@@ -218,8 +218,8 @@ TEST(MorphReplies, WithoutAZoneOrAPlayerNothingHappens)
 	Receive<PCVampireInfo2>(8);
 	CHECK(calls.empty());
 	CHECK(!world.Unequipped());
-	// Without the player's and the events' hosts the reply still lets go
-	// of the quick slot.
+	// With a bare player host (its creature only) and no events host the
+	// reply still lets go of the quick slot.
 	hasPlayer = true;
 	PlayerState::Host bare{};
 	bare.Creature = player.Creature;

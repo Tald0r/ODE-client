@@ -5157,8 +5157,8 @@ rounds settled* for the host rules). Test fixtures share
   > player or the trade register the reply does nothing. The old code
   > dereferenced the player first thing, and the register on the paths
   > that read it; its refusal, and its plain asking when the player
-  > waited on no trade, ran without the register. The game creates the register at start-up and frees it at
-  > shutdown. Facing the one asking needs a zone, which the old code
+  > waited on no trade, ran without the register. The game creates the
+  > register at start-up and frees it at shutdown. Facing the one asking needs a zone, which the old code
   > read unchecked. R1 is 83 Windows / 81 Ninja.
   - Owner: membership, R1, and `test_trade_prepare_replies.cpp`. It
     covers being asked by the one the player asked, by another while
@@ -5210,23 +5210,28 @@ rounds settled* for the host rules). Test fixtures share
   > - money is added (the durability its low word, the silver its
   >   high), up to what the player may still carry;
   > - into the inventory, the item goes to its cell (and is picked off
-  >   the ground) or piles on the same item there, up to the picked
-  >   item's most;
+  >   the ground) or piles on the same item there: the sum up to the old
+  >   item's most, the picked item's most past it;
   > - onto the mouse, it goes there;
   > - into the quick slot (when the trade register waits on it), it goes
   >   into the slayer's belt or the ouster's arms bands (slots 3-5 the
   >   second), or onto the same item there, and the server is told.
   >
-  > An item the player now has lets its statuses react
-  > (`PlayerState::CheckAffectStatus`, new) and gives the skills it
+  > An item the player now has is marked usable or not for the player's
+  > race, stats and sex (`PlayerState::CheckAffectStatus`, new) and
+  > gives the skills it
   > enables, through gamemodel's own available-skill set
   > (`g_pSkillAvailable`, `MSkillManager.cpp`). Refreshing that set
   > goes through `BonusSkills::RefreshAvailableSkills`. A vampire's
   > portal item asks `MItem::IsPortalMarked` (new on `MItemHost`): the
   > portal item's vtable is the executable's. Picking an item off the
   > ground is `ZoneState::PickupItem` (new). A help event follows. A dead
-  > `/* */` block and its `IsBombMaterial` declaration are gone. R1 is 81
-  > Windows / 79 Ninja.
+  > `/* */` block and its `IsBombMaterial` declaration are gone. Two
+  > paths that crashed now do nothing: removing an item from the zone
+  > without a zone (the `RemoveItem` adapter checks it), and refreshing
+  > the skills of bomb material without an available-skill set (the
+  > `RefreshAvailableSkills` adapter checks it). R1 is 81 Windows / 79
+  > Ninja.
   - Owner: membership, R1, and `test_pickup_replies.cpp`. It covers an
     empty buffer; another ID; event skulls and another class's type 12;
     money and its limit; the inventory cell, without a zone, and outside

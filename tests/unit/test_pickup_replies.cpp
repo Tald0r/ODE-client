@@ -635,3 +635,91 @@ TEST(PickupReplies, AVampiresItemsGiveOnlySkillsItHas)
 	pick(pAgain);
 	CHECK(world.available.empty());
 }
+
+TEST(PickupReplies, TheBeltAndEachBandTakeTheirOwnSlots)
+{
+	World world;
+	// The belt's slot is the slot itself, not the same item in slot 0.
+	Ware* pFirst = new Ware(ITEM_CLASS_POTION, 2000, 3, true, 10);
+	CHECK(world.belt.AddItem(pFirst, 0));
+	world.WaitingForTheQuickSlot(3);
+	MItem* pItem = Picking(new Ware(ITEM_CLASS_POTION, 2001, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	world.Receive(2001);
+	CHECK(world.belt.GetItem(3) == pItem && pFirst->GetNumber() == 1);
+	CHECK(world.connection.Sent() == Told(2001, 3));
+	// An ouster with one band only uses it.
+	race = RACE_OUSTERS;
+	ousters = true;
+	g_pQuickSlot = nullptr;
+	g_pArmsBand1 = &world.band1;
+	world.WaitingForTheQuickSlot(1);
+	pItem = Picking(new Ware(ITEM_CLASS_POTION, 2002, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	world.Receive(2002);
+	CHECK(world.band1.GetItem(1) == pItem);
+	g_pArmsBand1 = nullptr;
+	g_pArmsBand2 = &world.band2;
+	world.WaitingForTheQuickSlot(4);
+	pItem = Picking(new Ware(ITEM_CLASS_POTION, 2003, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	world.Receive(2003);
+	CHECK(world.band2.GetItem(1) == pItem);
+	// The second band's slot is the slot less three: 4 piles on its 1.
+	world.WaitingForTheQuickSlot(4);
+	Picking(new Ware(ITEM_CLASS_POTION, 2004, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	world.Receive(2004);
+	CHECK(world.band2.GetItem(1) == pItem && pItem->GetNumber() == 2 && mouse == nullptr);
+}
+
+TEST(PickupReplies, OnlyTheSameClassAndTypeMergesInTheBelt)
+{
+	World world;
+	world.WaitingForTheQuickSlot(2);
+	MItem* pThere = Picking(new Ware(ITEM_CLASS_POTION, 2001, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	world.Receive(2001);
+	world.WaitingForTheQuickSlot(2);
+	MItem* pOther = Picking(new Ware(ITEM_CLASS_HOLYWATER, 2002, 3, true, 10), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT);
+	GamePlayer untold;
+	GCDeleteandPickUpOK packet;
+	packet.setObjectID(2002);
+	GCDeleteandPickUpOKHandler::execute(&packet, &untold);
+	CHECK(mouse == pOther && untold.Sent().empty());
+	CHECK(world.belt.GetItem(2) == pThere && pThere->GetNumber() == 1);
+	delete mouse;
+	mouse = nullptr;
+}
+
+TEST(PickupReplies, ABombsUseFollowsThrowingAndAMinesInstalling)
+{
+	World world;
+	world.available.AddSkill(SKILL_THROW_BOMB);
+	world.available.AddSkill(SKILL_INSTALL_MINE, 0);
+	TYPE_OBJECTID id = 2001;
+	for (ITEM_CLASS itemClass : {ITEM_CLASS_BOMB, ITEM_CLASS_MINE})
+	{
+		Picking(new Ware(itemClass, id), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE);
+		world.Receive(id++);
+		delete mouse;
+		mouse = nullptr;
+	}
+	CHECK(world.available.IsEnableSkill(UseAction(ITEM_CLASS_BOMB)) && !world.available.IsEnableSkill(UseAction(ITEM_CLASS_MINE)));
+}
+
+TEST(PickupReplies, OnlyAVampireGetsAVampiresSkills)
+{
+	World world;
+	world.available.AddSkill(MAGIC_TRANSFORM_TO_WOLF, 0);
+	world.available.AddSkill(MAGIC_TRANSFORM_TO_BAT, 0);
+	race = RACE_OUSTERS;
+	ousters = true;
+	Picking(new Ware(ITEM_CLASS_VAMPIRE_ETC, 2001, 0), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE);
+	world.Receive(2001);
+	delete mouse;
+	mouse = nullptr;
+	// A vampire's item of another type gives neither.
+	race = RACE_VAMPIRE;
+	ousters = false;
+	Picking(new Ware(ITEM_CLASS_VAMPIRE_ETC, 2002, 2), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE);
+	world.Receive(2002);
+	delete mouse;
+	mouse = nullptr;
+	CHECK(!world.available.IsEnableSkill(MAGIC_TRANSFORM_TO_WOLF) && !world.available.IsEnableSkill(MAGIC_TRANSFORM_TO_BAT));
+}
