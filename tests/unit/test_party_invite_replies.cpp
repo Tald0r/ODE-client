@@ -145,7 +145,8 @@ struct World : GameModelWorld
 		playerType = 1;
 		lockedInput = false;
 		waitVerify = PlayerState::WAIT_VERIFY_NULL;
-		gameLog.Init(3, 512);
+		// Room for every line a test writes, so a line too many is counted.
+		gameLog.Init(8, 512);
 		party.AcceptInvite();
 		g_pTempInformation = &temp;
 		g_pParty = &party;

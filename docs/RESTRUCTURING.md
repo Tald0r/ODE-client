@@ -4413,8 +4413,8 @@ rounds settled* for the host rules). Test fixtures share
   > joins with its sex, face (new `CommunicationPresentation::GetFaceStyle`),
   > address and what the old party knew of it. A member in the zone (new
   > `ZoneState::GetCreatureID`) is in sight with its hit points, the
-  > player's zone (new `PlayerState::GetZoneID`, the large zone or the
-  > small one), its cell and guild (new `CreatureState::GetGuildNumber`),
+  > player's zone (the large zone or the small one, from `ZoneFlags`),
+  > its cell and guild (new `CreatureState::GetGuildNumber`),
   > and is marked as the player's party (new `SetPlayerParty`); one
   > elsewhere is out of sight in no zone the client knows. The asking
   > windows close, the party window opens when the party changed size
@@ -4423,9 +4423,10 @@ rounds settled* for the host rules). Test fixtures share
   > `PlayerState::SendInfoToParty`, the three sends in their order).
   > Without a member's status entry its hit points stay as the old party
   > knew them. R1 is 119 Windows / 117 Ninja.
-  - Owner: membership, R1, the seven entries and adapters, and
+  - Owner: membership, R1, the six entries and adapters, and
     `test_party_joined_replies.cpp` (a party replacing an old one with
-    a member in sight, one away, one listed but not there; a first
+    a member in sight it knew, one away, one listed but not there; the
+    small zone; a member in sight without a status entry; a first
     party, the same size again; each guard; no hosts).
 
 - [x] **4.162 A vampire portal entered, and an item dropped:** move

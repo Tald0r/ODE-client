@@ -3485,7 +3485,7 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.ClosePartyRequest = UI_ClosePartyRequest,
 	.RunPartyRequest = [](std::uint32_t inviterID) { UI_RunPartyRequest(inviterID); },
 	.RunParty = UI_RunParty,
-	.GetFaceStyle = [](bool male, int hairStyle) { return UI_GetFaceStyle(male, hairStyle); },
+	.GetFaceStyle = UI_GetFaceStyle,
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3612,7 +3612,6 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.CalculateStatus = []() { if (g_pPlayer != NULL) g_pPlayer->CalculateStatus(); },
 	.UseItemOK = []() { UseItemOK(); },
 	.UseSkillCardOK = [](int cardType) { UseSkillCardOK(static_cast<BYTE>(cardType)); },
-	.GetZoneID = []() { return g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall; },
 	.SendInfoToParty = []() {
 		SendCharacterInfoToParty();
 		SendPositionInfoToParty();

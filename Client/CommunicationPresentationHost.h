@@ -39,7 +39,8 @@ struct Host
 	// The party invitation's windows. RunPartyRequest shows the timed
 	// invitation button for the inviter (clicking it asks whether to
 	// join), and ClosePartyRequest takes it away; ClosePartyAsk closes the
-	// asking window, and its executable side also clears a party wait.
+	// asking window, and its executable side also clears a party wait and
+	// the party request mode.
 	// ClosePartyCancel, above, closes the window the inviter waits in.
 	void (*ClosePartyAsk)() = nullptr;
 	void (*ClosePartyRequest)() = nullptr;

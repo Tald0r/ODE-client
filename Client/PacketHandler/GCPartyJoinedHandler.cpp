@@ -14,6 +14,7 @@
 #include "DebugLog.h"
 #include "MStatus.h"
 #include "PlayerStateHost.h"
+#include "ZoneFlags.h"
 #include "ZoneStateHost.h"
 
 
@@ -112,7 +113,7 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 								pNewInfo->HP = static_cast<WORD>(pStatus->GetHP());
 								pNewInfo->MaxHP = static_cast<WORD>(pStatus->GetMAX_HP());
 							}
-							pNewInfo->zoneID = PlayerState::GetZoneID();
+							pNewInfo->zoneID = (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
 							pNewInfo->zoneX = static_cast<BYTE>(CreatureState::GetServerX(pCreature));
 							pNewInfo->zoneY = static_cast<BYTE>(CreatureState::GetServerY(pCreature));
 							pNewInfo->guildID = static_cast<WORD>(CreatureState::GetGuildNumber(pCreature));

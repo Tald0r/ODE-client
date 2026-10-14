@@ -152,9 +152,6 @@ struct Host
 	// that the player asked for: it is spent.
 	void (*UseItemOK)() = nullptr;
 	void (*UseSkillCardOK)(int cardType) = nullptr;
-	// The zone the player is in (the large one or the small one); 0
-	// without a host.
-	int (*GetZoneID)() = nullptr;
 	// Tells the party what the player is, where, and how it fares.
 	void (*SendInfoToParty)() = nullptr;
 };
@@ -204,7 +201,6 @@ bool RemoveAddonItem(MItem* pItem);
 void CalculateStatus();
 void UseItemOK();
 void UseSkillCardOK(int cardType);
-int GetZoneID();
 void SendInfoToParty();
 
 }
