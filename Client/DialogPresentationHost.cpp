@@ -108,4 +108,9 @@ void OpenInventoryToSell()
 	if (s_Host && s_Host->OpenInventoryToSell) s_Host->OpenInventoryToSell();
 }
 
+void CloseRequestResurrectWindow()
+{
+	if (s_Host && s_Host->CloseRequestResurrectWindow) s_Host->CloseRequestResurrectWindow();
+}
+
 }

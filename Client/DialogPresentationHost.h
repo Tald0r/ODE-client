@@ -23,7 +23,8 @@ namespace DialogPresentation {
 // PopupPCTalkDlg shows the NPC talk box (g_pPCTalkBox) at the centre;
 // ShowPCTalkDlg shows it again as it was. RunStorageBuy asks whether to buy
 // a storage at the price. OpenInventoryToSell opens the inventory to sell
-// to a shop.
+// to a shop. CloseRequestResurrectWindow closes the window asking to be
+// resurrected.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -45,6 +46,7 @@ struct Host
 	void (*ShowPCTalkDlg)() = nullptr;
 	void (*RunStorageBuy)(int price) = nullptr;
 	void (*OpenInventoryToSell)() = nullptr;
+	void (*CloseRequestResurrectWindow)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -68,5 +70,6 @@ void PopupPCTalkDlg();
 void ShowPCTalkDlg();
 void RunStorageBuy(int price);
 void OpenInventoryToSell();
+void CloseRequestResurrectWindow();
 
 }

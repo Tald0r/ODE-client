@@ -467,4 +467,9 @@ bool SetShop(MCreature* pCreature, MShop* pShop)
 	return s_Host && s_Host->SetShop ? s_Host->SetShop(pCreature, pShop) : false;
 }
 
+bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status)
+{
+	return s_Host && s_Host->HasEffectStatus ? s_Host->HasEffectStatus(pCreature, status) : false;
+}
+
 }

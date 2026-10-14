@@ -184,6 +184,8 @@ struct Host
 	// Gives an NPC the shop, which it then owns; false (the caller keeps
 	// the shop) for a creature that is not an NPC.
 	bool (*SetShop)(MCreature* pCreature, MShop* pShop) = nullptr;
+	// Whether the creature carries the effect status now.
+	bool (*HasEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -272,5 +274,6 @@ void SetStopAbsorbSoul(MCreature* pCreature);
 bool IsVampire(MCreature* pCreature);
 // false without a host: the caller keeps the shop.
 bool SetShop(MCreature* pCreature, MShop* pShop);
+bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
 
 }

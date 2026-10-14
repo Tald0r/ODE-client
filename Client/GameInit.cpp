@@ -3526,6 +3526,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.ShowPCTalkDlg = []() { g_pUIDialog->ShowPCTalkDlg(); },
 	.RunStorageBuy = UI_RunStorageBuy,
 	.OpenInventoryToSell = UI_OpenInventoryToSell,
+	.CloseRequestResurrectWindow = UI_CloseRequestResurrectWindow,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3712,6 +3713,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 		static_cast<MNPC*>(pCreature)->SetShop(pShop);
 		return true;
 	},
+	.HasEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->HasEffectStatus(status); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
