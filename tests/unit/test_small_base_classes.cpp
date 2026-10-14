@@ -1,5 +1,4 @@
 #include "test_framework.h"
-#include "CAvi.h"
 #include "MWorkNode.h"
 #include "WinLib/CWinUpdate.h"
 #include <cstring>
@@ -8,9 +7,7 @@
 #include <type_traits>
 #include <vector>
 
-// Three small classes the game builds on:
-// - CAVI, the opening video player, is a stub in this client: nothing
-//   opens or plays, and the end flag starts clear.
+// Two small classes the game builds on:
 // - CWinUpdate, the base of the game's update loops (opening, waiting,
 //   game), does nothing itself; its subclasses override Init and Update.
 // - MWorkNode, a job for the loading thread: of type 0 at first and not
@@ -50,19 +47,6 @@ struct Dirty
 };
 
 } // namespace
-
-TEST(SmallBaseClasses, TheVideoPlayerOpensAndPlaysNothing)
-{
-	Dirty<CAVI> dirty;
-	CAVI& video = *dirty.object;
-	CHECK_EQ(0, video.bEndFlag);
-	CHECK(!video.OpenMPG(nullptr, "opening.mpg"));
-	CHECK(!video.OpenAVI(nullptr, "opening.avi", 640, 480));
-	CHECK(!video.Play());
-	video.Stop();
-	video.Close();
-	CHECK_EQ(0, video.bEndFlag);
-}
 
 TEST(SmallBaseClasses, AnUpdateLoopRunsItsOwnInitAndUpdate)
 {

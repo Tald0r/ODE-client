@@ -143,6 +143,8 @@ typedef void* HBITMAP;
   NOTE: Most methods are stubs. Use SDL2 functions directly instead.
 -----------------------------------------------------------------------------*/
 
+struct spritectl_surface_s;
+
 class CSDLGraphics
 {
 public:
@@ -215,7 +217,15 @@ public:
 
 	// Display methods - Flip()/ReleaseAll() implemented in .cpp (real SDL2
 	// presentation), the rest remain stubs (no corresponding SDL2 concept needed)
+	// Flip presents the game's back buffer, as the source the executable
+	// installs gives it, through PresentFrame on this class's renderer.
+	// BackBuffer is the source's surface, or invalid without a source.
 	static void		Flip();
+	static void		SetBackBufferSource(spritectl_surface_s* (*source)());
+	static spritectl_surface_s*	BackBuffer();
+	// Nothing without a renderer. Otherwise: finish the sprite rendering,
+	// clear, draw backBuffer letterboxed when it is valid, and present.
+	static void		PresentFrame(SDL_Renderer* renderer, spritectl_surface_s* backBuffer);
 	static inline void		FlipToGDISurface() { }
 	static inline void		OnMove() { }
 	static inline bool		RestoreAllSurfaces() { return true; }

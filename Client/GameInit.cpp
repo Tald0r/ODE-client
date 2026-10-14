@@ -35,7 +35,6 @@
 #include "PacketHandlerRegistry.h"
 #include "VS_UI.h"
 #include "VS_UI_filepath.h"
-#include "COpeningUpdate.h"
 #include "CGameUpdate.h"
 #include "CWaitPacketUpdate.h"
 #include "UserInformation.h"
@@ -1512,17 +1511,27 @@ StopLoadingThread()
 	}
 }
 
+// The packet wait's services (task 4.209).
+CWaitPacketUpdate*		g_pCWaitPacketUpdate = NULL;
+
+static const CWaitPacketHost s_WaitPacketHost = {
+	.ClearInputReceivers = []() {
+		g_pSDLInput->SetMouseEventReceiver( NULL );
+		g_pSDLInput->SetKeyboardEventReceiver( NULL );
+	},
+	.StampFrameClock = StampFrameClock,
+	.SetMode = SetMode,
+	.UpdateDisconnected = UpdateDisconnected,
+	.UpdateSocketInput = UpdateSocketInput,
+	.UpdateSocketOutput = UpdateSocketOutput,
+};
+
 //---------------------------------------------------------------------------
-// update loop의 정보를 설정한다.
+// Set up the update loops.
 //---------------------------------------------------------------------------
 BOOL
 InitGameUpdate()
 {
-	if (g_pCOpeningUpdate!=NULL)
-	{
-		delete	g_pCOpeningUpdate;
-	}
-
 	if (g_pCGameUpdate!=NULL)
 	{
 		delete	g_pCGameUpdate;
@@ -1538,9 +1547,8 @@ InitGameUpdate()
 		delete	g_pCWaitUIUpdate;
 	}
 
-	g_pCOpeningUpdate		= new COpeningUpdate;
 	g_pCGameUpdate			= new CGameUpdate;
-	g_pCWaitPacketUpdate	= new CWaitPacketUpdate;
+	g_pCWaitPacketUpdate	= new CWaitPacketUpdate( &s_WaitPacketHost );
 	g_pCWaitUIUpdate		= new CWaitUIUpdate;
 
 	return TRUE;
@@ -2235,12 +2243,6 @@ InitSocket()
 void
 ReleaseGameUpdate()
 {
-	if (g_pCOpeningUpdate!=NULL)
-	{
-		delete	g_pCOpeningUpdate;
-		g_pCOpeningUpdate = NULL;
-	}
-
 	if (g_pCGameUpdate!=NULL)
 	{
 		delete	g_pCGameUpdate;
@@ -2445,19 +2447,6 @@ void ReleaseAllObjects()
 	UnInitSound();
 
 	
-
-	//----------------------------------------------------------------
-	// Avi
-	//----------------------------------------------------------------
-	DEBUG_ADD("[Release] AVI");
-
-	if (g_pAvi!=NULL)
-	{
-		g_pAvi->Close();
-		delete g_pAvi;
-		g_pAvi = NULL;
-	}
-
 
 	//----------------------------------------------------------------
 	// UnInit DirectInput

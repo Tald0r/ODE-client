@@ -51,7 +51,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "UserInformation.h"
 #include "TempInformation.h"
 
-#include "COpeningUpdate.h"
 #include "CWaitUIUpdate.h"
 #include "CWaitPacketUpdate.h"
 #include "CGameUpdate.h"
@@ -155,8 +154,6 @@ extern bool g_bGoodFPS;
 // mp3
 //CMySound*			g_pMP3 = NULL;
 
-// Avi
-CAVI				*g_pAvi = NULL;
 
 int g_previousSoundID = SOUNDID_NULL;
 
@@ -482,18 +479,8 @@ SetMode(enum CLIENT_MODE mode)
 		// 초기 화면
 		//------------------------------------------------------
 		case MODE_OPENING :
-			// Debug Message
-			DEBUG_ADD("[ SetMode ]  OPENING");
-			
-			UnInitSound();		// 잠시 Sound 중지
-
-			g_pCOpeningUpdate->PlayMPG("test.mpg");
-
-			//----------------------------------------------
-			// update 함수 설정
-			//----------------------------------------------
-			g_pUpdate = g_pCOpeningUpdate;
-			g_pCOpeningUpdate->Init();
+			// Nothing enters the opening: its loop and video were retired
+			// with task 4.210.
 		break;
 
 		//------------------------------------------------------
@@ -803,14 +790,14 @@ SetMode(enum CLIENT_MODE mode)
 			//InitFail("Server가 응답하지 않습니다.");
 			//InitFail("Server와의 접속이 끊어졌습니다.");
 			// g_pBack->GDI_Text(101,201, "ID나 Password가 틀렸습니다.", RGB(0,0,0));
-			TextSystem::TextService::RenderText(101, 201, "ID나 Password가 틀렸습니다.");
+			TextSystem::TextService::RenderText(g_pLast, 101, 201, "ID나 Password가 틀렸습니다.");
 			// g_pBack->GDI_Text(100,200, "ID나 Password가 틀렸습니다.", RGB(220,220,220));
-			TextSystem::TextService::RenderText(100, 200, "ID나 Password가 틀렸습니다.");
+			TextSystem::TextService::RenderText(g_pLast, 100, 200, "ID나 Password가 틀렸습니다.");
 
 			// g_pBack->GDI_Text(101,221, "[ESC]를 누르세요.", RGB(0,0,0));
-			TextSystem::TextService::RenderText(101, 221, "[ESC]를 누르세요.");
+			TextSystem::TextService::RenderText(g_pLast, 101, 221, "[ESC]를 누르세요.");
 			// g_pBack->GDI_Text(100,220, "[ESC]를 누르세요.", RGB(220,220,220));
-			TextSystem::TextService::RenderText(100, 220, "[ESC]를 누르세요.");
+			TextSystem::TextService::RenderText(g_pLast, 100, 220, "[ESC]를 누르세요.");
 
 			CSDLGraphics::Flip();
 
@@ -4777,14 +4764,14 @@ UpdateDisconnected()
 	//InitFail("Server가 응답하지 않습니다.");
 	//InitFail("Server와의 접속이 끊어졌습니다.");
 	// g_pBack->GDI_Text(101,201, "Server가 응답하지 않습니다.", RGB(0,0,0));
-	TextSystem::TextService::RenderText(101, 201, "Server가 응답하지 않습니다.");
+	TextSystem::TextService::RenderText(g_pLast, 101, 201, "Server가 응답하지 않습니다.");
 	// g_pBack->GDI_Text(100,200, "Server가 응답하지 않습니다.", RGB(220,220,220));
-	TextSystem::TextService::RenderText(100, 200, "Server가 응답하지 않습니다.");
+	TextSystem::TextService::RenderText(g_pLast, 100, 200, "Server가 응답하지 않습니다.");
 
 	// g_pBack->GDI_Text(101,221, "[ESC]를 누르세요.", RGB(0,0,0));
-	TextSystem::TextService::RenderText(101, 221, "[ESC]를 누르세요.");
+	TextSystem::TextService::RenderText(g_pLast, 101, 221, "[ESC]를 누르세요.");
 	// g_pBack->GDI_Text(100,220, "[ESC]를 누르세요.", RGB(220,220,220));
-	TextSystem::TextService::RenderText(100, 220, "[ESC]를 누르세요.");
+	TextSystem::TextService::RenderText(g_pLast, 100, 220, "[ESC]를 누르세요.");
 
 	CSDLGraphics::Flip();
 

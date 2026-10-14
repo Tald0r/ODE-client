@@ -35,10 +35,10 @@ file(GLOB UNIT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unit/*
 # but the DarkEden executable defined, and every one of them turned out
 # to be a seam worth cutting rather than filling. Of the libraries this
 # binary links, g_pLast was reached only by TextService::RenderText,
-# which draws through the back buffer and has ~45 live call sites; it
-# is defined in Client/TextServiceScreen.cpp now, on the executable
-# side of the split. SendBugReport moved into packetwire in 5.1.
-# (VS_UI reaches g_pLast too, and is not linked here.)
+# which draws through the back buffer; its callers pass that surface
+# now, and TextSystem defines it (task 4.208); VS_UI, which reached it
+# the same way, passes its own back-surface pointer. SendBugReport moved
+# into packetwire in 5.1.
 # A library that needs
 # something from the program around it asks through a host struct - see
 # MItemHost, MPriceHost, WireHost - which a test can install, rather

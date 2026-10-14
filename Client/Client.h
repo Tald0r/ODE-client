@@ -28,7 +28,6 @@
 
 //#include "MInput.h"
 //#include "MMusic.h"
-#include "CAvi.h"
 //#include "MySound.h"
 
 //#include "CInputManager.h"
@@ -128,7 +127,6 @@ extern int					g_y;
 //CMySound*					g_pMP3 = NULL;
 
 // Avi
-extern CAVI					*g_pAvi;
 
 // Sound PartManager
 extern CSoundPartManager*	g_pSoundManager;
@@ -224,6 +222,8 @@ extern bool				g_bHAL;
 extern bool				g_bMusicSW;
 
 extern CWinUpdate*				g_pUpdate;
+class CWaitPacketUpdate;
+extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;	// GameInit.cpp's
 
 
 

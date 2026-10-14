@@ -8,11 +8,10 @@
 
 #include "CDirectDraw.h"
 #include <stdio.h>
-// spritectl_init() only; CSDLGraphics::Flip() (which needs the full
-// CSpriteSurface definition) is implemented in Client/CSDLGraphicsFlip.cpp
-// instead, since this file is compiled into the standalone dxlib library
-// (no /IClient, no SPRITELIB_BACKEND_SDL) and can't safely pull in
-// SpriteLib/CSpriteSurface.h the way DarkEden.exe's own sources can.
+// spritectl_init() and the frame presentation. This file is compiled into
+// the standalone dxlib library (no /IClient, no SPRITELIB_BACKEND_SDL), so
+// it does not include SpriteLib/CSpriteSurface.h: Flip asks the source the
+// executable installs for the back buffer's backend surface (task 4.211).
 #include "../SpriteLib/SpriteLibBackend.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -194,8 +193,45 @@ void CSDLGraphics::Init(HWND hWnd, WORD width, WORD height, SCREENMODE mode, boo
 	m_bFullscreen = (mode == FULLSCREEN);
 }
 
-// CSDLGraphics::Flip() is defined in Client/CSDLGraphicsFlip.cpp (see comment
-// on the SpriteLibBackend.h include above for why it isn't here).
+//-----------------------------------------------------------------------------
+// Flip
+//-----------------------------------------------------------------------------
+namespace {
+spritectl_surface_t (*s_backBufferSource)() = NULL;
+}
+
+void CSDLGraphics::SetBackBufferSource(spritectl_surface_s* (*source)())
+{
+	s_backBufferSource = source;
+}
+
+spritectl_surface_s* CSDLGraphics::BackBuffer()
+{
+	return s_backBufferSource != NULL ? s_backBufferSource() : SPRITECTL_INVALID_SURFACE;
+}
+
+void CSDLGraphics::Flip()
+{
+	PresentFrame(m_pSDLRenderer, BackBuffer());
+}
+
+void CSDLGraphics::PresentFrame(SDL_Renderer* renderer, spritectl_surface_s* backBuffer)
+{
+	if (renderer == NULL)
+	{
+		return;
+	}
+
+	spritectl_finish_rendering();
+	SDL_RenderClear(renderer);
+
+	if (backBuffer != SPRITECTL_INVALID_SURFACE)
+	{
+		spritectl_present_surface(backBuffer, renderer);
+	}
+
+	SDL_RenderPresent(renderer);
+}
 
 //-----------------------------------------------------------------------------
 // ReleaseAll

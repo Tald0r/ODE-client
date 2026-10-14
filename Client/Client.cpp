@@ -865,46 +865,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		//
 		//---------------------------------------------------------------
 		case MM_MCINOTIFY :
-		{
-			// A MIDI or video finished playing.
-			if (wParam==MCI_NOTIFY_SUCCESSFUL)
-			{
-				// The opening video finished
-				if (g_pAvi!=NULL && (DWORD)lParam==g_pAvi->dwID) 
-				{ 
-					g_pAvi->bEndFlag=true; 
-					g_pAvi->Close(); 
-
-					// On to the login screen
-					SetMode( MODE_MAINMENU );
-				}				
-				// The music finished
-				else
-				{
-					/*
-					// Do not repeat it.
-					if (g_pUserOption->PlayMusic)//g_Music.IsPause())	// is this needed at all?
-					{
-						if (g_pUserOption->PlayWaveMusic)
-						{
-							g_pSDLStream->Play( FALSE );
-						}
-						else
-						{
-							g_Music.RePlay();						
-						}
-					}
-					*/
-					//else
-					//{
-						// Play it again.
-					//	g_Music.RePlay();
-					//}
-//					if(g_pMP3->IsLoop())
-//						g_pMP3->Play(true);
-				}
-			}
-		}
+			// A MIDI or video finished playing. Nothing plays one through MCI:
+			// the opening video went with task 4.210, and the music replay
+			// that used to follow here was already commented out.
 		return 0L;
 
 		//---------------------------------------------------------------
@@ -1124,20 +1087,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			#ifdef __WM_OUTPUT_DEBUG__
 				DEBUG_ADD("[WM_KEYDOWN]");
 			#endif
-
-			if (g_Mode==MODE_OPENING)
-			{
-				// End the opening.
-				if (wParam==VK_ESCAPE || wParam==VK_RETURN || wParam==VK_SPACE)
-				{	
-					if (g_pAvi!=NULL)
-					{
-						g_pAvi->Close();
-					}
-					SetMode( MODE_MAINMENU );					
-				}
-				return 0L;
-			}
 
 			gC_vs_ui.KeyboardControl(message, static_cast<UINT>(wParam), static_cast<long>(lParam));
             // Handle any non-accelerated key commands
@@ -3211,6 +3160,11 @@ bool ClientHasBrowserLoop() { return browserLoopRunning; }
 
 int ClientMain(char* lpCmdLine, int nCmdShow)
 {
+	// Flip presents g_pBack, once it exists (task 4.211).
+	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {
+		return g_pBack != NULL ? g_pBack->GetBackendSurface() : SPRITECTL_INVALID_SURFACE;
+	});
+
 // 	char tttt[] = "0000000011";
 // 	memcpy(lpCmdLine,tttt,strlen(tttt));
 	//tttt += lpCmdLine;

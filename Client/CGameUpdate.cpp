@@ -5158,9 +5158,9 @@ CGameUpdate::UpdateDraw()
 		DEBUG_ADD("Network Condition is Bad.");
 
 		// g_pBack->GDI_Text(351,11, (*g_pGameStringTable)[STRING_NETWORK_CONDITION_BAD].GetString(), RGB(10,10,10));
-		TextSystem::TextService::RenderText(351, 11, (*g_pGameStringTable)[STRING_NETWORK_CONDITION_BAD].GetString());
+		TextSystem::TextService::RenderText(g_pLast, 351, 11, (*g_pGameStringTable)[STRING_NETWORK_CONDITION_BAD].GetString());
 		// g_pBack->GDI_Text(350,10, (*g_pGameStringTable)[STRING_NETWORK_CONDITION_BAD].GetString(), RGB(230,50,50));		
-		TextSystem::TextService::RenderText(350, 10, (*g_pGameStringTable)[STRING_NETWORK_CONDITION_BAD].GetString());		
+		TextSystem::TextService::RenderText(g_pLast, 350, 10, (*g_pGameStringTable)[STRING_NETWORK_CONDITION_BAD].GetString());
 	}
 	*/
 
@@ -5639,9 +5639,9 @@ CGameUpdate::UpdateDraw()
 		int x = skillInfo.GetX()*2/3 - strlen(skillInfo.GetName())*8 + 100;
 		int y = skillInfo.GetY();
 		// g_pBack->GDI_Text(x+1, y+1, skillInfo.GetName(), 0);
-		TextSystem::TextService::RenderText(x+1, y+1, skillInfo.GetName());
+		TextSystem::TextService::RenderText(g_pLast, x+1, y+1, skillInfo.GetName());
 		// g_pBack->GDI_Text(x, y, skillInfo.GetName(), color);
-		TextSystem::TextService::RenderText(x, y, skillInfo.GetName());
+		TextSystem::TextService::RenderText(g_pLast, x, y, skillInfo.GetName());
 
 		// 다음
 		swordDomain.Next();

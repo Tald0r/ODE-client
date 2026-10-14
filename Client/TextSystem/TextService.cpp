@@ -387,12 +387,9 @@ void TextService::DrawLines(RenderTarget& target, const std::vector<std::string>
 	}
 }
 
-// RenderText is not here: it is the one member of this class that draws
-// through g_pLast, the back buffer the executable owns, which made this
-// library unlinkable without that global - a test binary had to invent
-// it. Client/TextServiceScreen.cpp defines it now, on the executable
-// side of the same split MItem/MItemUse took (docs/RESTRUCTURING.md
-// task 5.3). Everything else in this file draws through a RenderTarget
-// the caller supplies, which is what kept the rest of it clean.
+// RenderText is in RenderTargetSpriteSurface.cpp, beside the sprite-surface
+// target it draws through. The caller passes the surface (task 4.208); it
+// used to read the executable's back buffer, which kept it in the
+// executable (task 5.3).
 
 } // namespace TextSystem
