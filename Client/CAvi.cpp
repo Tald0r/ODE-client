@@ -15,9 +15,8 @@ CAVI::CAVI()
 // not actually work - mciSendCommand(MCI_OPEN, ...) would just fail at
 // runtime on any x64 Windows machine, since the OS-level driver doesn't
 // exist there. Stubbed out on all platforms instead of only non-Windows.
-// NOTE: COpeningUpdate::PlayMPG() (COpeningUpdate.cpp) pops up a blocking
-// "Not Found <file>" MessageBox when OpenMPG() fails, which now always
-// happens - see 참고자료/작업필요stub.md.
+// NOTE: COpeningUpdate::PlayMPG() (COpeningUpdate.cpp) logs and returns
+// without playing when OpenMPG() fails, which now always happens.
 int CAVI::OpenMPG(HWND hwnd, LPCSTR szName, int w, int h) { (void)hwnd; (void)szName; (void)w; (void)h; return FALSE; }
 int CAVI::OpenAVI(HWND hwnd, LPCSTR szName, int w, int h) { (void)hwnd; (void)szName; (void)w; (void)h; return FALSE; }
 void CAVI::Close() {}

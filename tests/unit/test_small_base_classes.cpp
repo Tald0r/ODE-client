@@ -2,7 +2,10 @@
 #include "CAvi.h"
 #include "MWorkNode.h"
 #include "WinLib/CWinUpdate.h"
+#include <cstring>
+#include <new>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 // Three small classes the game builds on:
@@ -22,17 +25,36 @@ struct Loop : CWinUpdate
 	void Update() override { calls.push_back("update"); }
 };
 
+bool jobGone = false;
+
 struct Job : MWorkNode
 {
+	~Job() override { jobGone = true; }
 	BOOL Execute(MWorkNode*& pNode) override { pNode = nullptr; return TRUE; }
 	void Run() { m_bExecute = TRUE; }
+};
+
+// The loading thread deletes jobs through MWorkNode*.
+static_assert(std::has_virtual_destructor_v<MWorkNode>);
+
+// Builds a T over storage filled with a non-zero byte, so a member the
+// constructor leaves unset shows.
+template <typename T>
+struct Dirty
+{
+	alignas(T) unsigned char storage[sizeof(T)];
+	T* object;
+	// Default-initialised: T() would zero a class whose constructor is implicit.
+	Dirty() { std::memset(storage, 0xA5, sizeof(storage)); object = new (storage) T; }
+	~Dirty() { object->~T(); }
 };
 
 } // namespace
 
 TEST(SmallBaseClasses, TheVideoPlayerOpensAndPlaysNothing)
 {
-	CAVI video;
+	Dirty<CAVI> dirty;
+	CAVI& video = *dirty.object;
 	CHECK_EQ(0, video.bEndFlag);
 	CHECK(!video.OpenMPG(nullptr, "opening.mpg"));
 	CHECK(!video.OpenAVI(nullptr, "opening.avi", 640, 480));
@@ -60,7 +82,8 @@ TEST(SmallBaseClasses, AnUpdateLoopRunsItsOwnInitAndUpdate)
 
 TEST(SmallBaseClasses, AWorkNodeStartsUntypedAndStopped)
 {
-	Job job;
+	Dirty<Job> dirty;
+	Job& job = *dirty.object;
 	CHECK_EQ(0, job.GetType());
 	CHECK(job.IsTypeOf(0));
 	CHECK(!job.IsExecute() && job.IsStop());
@@ -70,6 +93,12 @@ TEST(SmallBaseClasses, AWorkNodeStartsUntypedAndStopped)
 	CHECK(job.IsExecute() && !job.IsStop());
 	job.Stop();
 	CHECK(!job.IsExecute() && job.IsStop());
+	// A job runs and is deleted through the base.
+	MWorkNode& asNode = job;
 	MWorkNode* pRemain = &job;
-	CHECK(job.Execute(pRemain) && pRemain == nullptr);
+	CHECK(asNode.Execute(pRemain) && pRemain == nullptr);
+	jobGone = false;
+	MWorkNode* pOwned = new Job;
+	delete pOwned;
+	CHECK(jobGone);
 }
