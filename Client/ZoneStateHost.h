@@ -32,6 +32,14 @@ struct Host
 	// The creature lying in the corpse item with this ID; NULL for no item,
 	// one that is not a corpse, or a corpse with no creature.
 	MCreature* (*GetCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
+	// The item lying in the zone with this ID; NULL for none.
+	MItem* (*GetItem)(TYPE_OBJECTID itemID) = nullptr;
+	// Takes the item out of the zone and frees it; false when it is not
+	// there.
+	bool (*RemoveItem)(TYPE_OBJECTID itemID) = nullptr;
+	// Lays the item in the zone, falling when bDropping; the zone owns it
+	// when this answers true.
+	bool (*AddItem)(MItem* pItem, bool bDropping) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -45,6 +53,10 @@ bool AddCorpseFromCreature(TYPE_OBJECTID id);
 // ZONEID_NULL without a host.
 int GetID();
 MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
+MItem* GetItem(TYPE_OBJECTID itemID);
+bool RemoveItem(TYPE_OBJECTID itemID);
+// Without a host the item is not taken: false, and the caller keeps it.
+bool AddItem(MItem* pItem, bool bDropping);
 
 }
 

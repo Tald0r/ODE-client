@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCRideMotorCycle.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "MItem.h"
 #include "SoundDef.h"
 
@@ -25,69 +28,72 @@ void GCRideMotorCycleHandler::execute ( GCRideMotorCycle * pPacket , Player * pP
 	
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//
-	// Creature가 pItem(오토바이)을 장착한다.
+	// The creature puts pItem (the motorcycle) on.
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//-------------------------------------------------------------
-		// 캐릭터가 있는 경우
+		// The character is here.
 		//-------------------------------------------------------------
 		if (pCreature!=NULL)
 		{
-			// 장착가능한 creature인 경우
-			if (pCreature->IsWear())
+			// A creature that can wear gear.
+			if (CreatureState::IsWear(pCreature))
 			{
-				MCreatureWear* pCreatureWear = (MCreatureWear*)pCreature;
 
-				MItem* pItem = g_pZone->GetItem( pPacket->getTargetObjectID() );
+				MItem* pItem = ZoneState::GetItem( pPacket->getTargetObjectID() );
 
 				//------------------------------------------					
-				// pItem은 오토바이여야 한다.
-				// creature에 장비 시킨다.
+				// pItem must be a motorcycle.
+				// The creature puts it on.
 				//------------------------------------------					
 				if (pItem != NULL)
 				{
 					if (pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 					{
 						//------------------------------------------					
-						// 남자 / 여자에 따라서..
-						// 오토바이 addon 붙임.
+						// By sex,
+						// the motorcycle addon goes on.
 						//------------------------------------------
-						pCreatureWear->SetAddonItem( pItem );						
+						CreatureState::SetAddonItem( pCreature, pItem );						
 						
 						//------------------------------------------
-						// 움직이는 방법 바꿈
+						// It rides now.
 						//------------------------------------------					
 						//pCreatureWear->SetMoveDevice( MCreature::MOVE_DEVICE_RIDE );
 
 						//------------------------------------------
-						// Server에 접속된 경우가 아니면..
-						// 바로 mouse에 item이 붙는다.
+						// When not connected to a server,
+						// the item goes straight onto the mouse.
 						//------------------------------------------
 						//PlaySound( pItem->GetTileSoundID(),
 						//			false,
 						//			pCreatureWear->GetX(), pCreatureWear->GetY());
 
 						//gC_vs_ui.PickUpItem(pItem);
-						g_pZone->RemoveItem( pItem->GetID() );
+						ZoneState::RemoveItem( pItem->GetID() );
 
-						// 오토바이 타는 소리 출력
-						PlaySound( SOUND_WORLD_BIKE_GO,
-									false,
-									g_pPlayer->GetX(),
-									g_pPlayer->GetY());
+						// The sound of riding off.
+						// heard where the player stands.
+						if (MCreature* const pPlayerCreature = PlayerState::Creature())
+						{
+							WorldEvents::PlaySoundAt( SOUND_WORLD_BIKE_GO,
+										false,
+										CreatureState::GetX(pPlayerCreature),
+										CreatureState::GetY(pPlayerCreature));
+						}
 					}
 					else
 					{
@@ -97,21 +103,21 @@ void GCRideMotorCycleHandler::execute ( GCRideMotorCycle * pPacket , Player * pP
 			}
 		}
 		//-------------------------------------------------------------
-		// 캐릭터가 없는 경우
+		// No character.
 		//-------------------------------------------------------------
 		else
 		{
-			MItem* pItem = g_pZone->GetItem( pPacket->getTargetObjectID() );
+			MItem* pItem = ZoneState::GetItem( pPacket->getTargetObjectID() );
 
 			//------------------------------------------					
-			// pItem은 오토바이여야 한다.
-			// 걍 없앤다.
+			// pItem must be a motorcycle.
+			// Just remove it.
 			//------------------------------------------					
 			if (pItem != NULL)
 			{
 				if (pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 				{
-					g_pZone->RemoveItem( pItem->GetID() );
+					ZoneState::RemoveItem( pItem->GetID() );
 				}
 			}
 		}

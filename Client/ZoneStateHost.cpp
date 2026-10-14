@@ -55,6 +55,21 @@ MCreature* GetCorpseCreature(TYPE_OBJECTID itemID)
 	return s_Host && s_Host->GetCorpseCreature ? s_Host->GetCorpseCreature(itemID) : nullptr;
 }
 
+MItem* GetItem(TYPE_OBJECTID itemID)
+{
+	return s_Host && s_Host->GetItem ? s_Host->GetItem(itemID) : nullptr;
+}
+
+bool RemoveItem(TYPE_OBJECTID itemID)
+{
+	return s_Host && s_Host->RemoveItem ? s_Host->RemoveItem(itemID) : false;
+}
+
+bool AddItem(MItem* pItem, bool bDropping)
+{
+	return s_Host && s_Host->AddItem ? s_Host->AddItem(pItem, bDropping) : false;
+}
+
 }
 
 namespace CreatureState {

@@ -3593,6 +3593,9 @@ static const ZoneState::Host s_ZoneStateHost = {
 		MItem* pItem = g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL;
 		return pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE ? static_cast<MCorpse*>(pItem)->GetCreature() : NULL;
 	},
+	.GetItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL; },
+	.RemoveItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL && g_pZone->RemoveItem(itemID); },
+	.AddItem = [](MItem* pItem, bool bDropping) { return g_pZone != NULL && g_pZone->AddItem(pItem, bDropping ? TRUE : FALSE); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
