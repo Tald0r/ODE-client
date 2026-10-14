@@ -34,7 +34,6 @@ void GCSkillToTileOK6Handler::execute ( GCSkillToTileOK6 * pPacket , Player * pP
 	{
 		return;
 	}
-		
 
 	//------------------------------------------------------------------
 	// Apply the status change.

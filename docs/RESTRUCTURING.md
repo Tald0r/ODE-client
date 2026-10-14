@@ -3827,8 +3827,10 @@ rounds settled* for the host rules). Test fixtures share
   > quirks are kept: a graded cell node near the player or elsewhere is
   > credited to the player, and OK2's action nodes act as the skill
   > itself where OK1 and OK5 act as the weapon. Without a player, OK1, OK2
-  > and OK6 do nothing, where they dereferenced the player. R1 is
-  > 164 Windows / 162 Ninja.
+  > and OK6 do nothing, where they dereferenced the player. A Burning
+  > Soul launch near the player plays its launch effect only with its
+  > caster; it read the missing caster and crashed. R1 is 164 Windows /
+  > 162 Ninja.
   - Owner: membership, R1, the new entry and its adapter, and
     `test_skill_tile_replies.cpp` (each reply's queue, turn, steps,
     grades, weapon and Piercing, Burning Soul and Rotten Apple, the

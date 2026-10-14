@@ -35,7 +35,6 @@ void GCSkillToTileOK1Handler::execute ( GCSkillToTileOK1 * pPacket, Player * pPl
 		return;
 	}
 
-		
 	//------------------------------------------------------------------
 	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------

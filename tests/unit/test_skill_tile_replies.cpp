@@ -505,9 +505,12 @@ TEST(SkillTileReplies, ACreaturesSkillNearThePlayerGuards)
 	ReceiveNearPlayer(7, kSkill, {1001});
 	CHECK_EQ(44, World::HP());
 	ReceiveNearPlayer(1002, static_cast<int>(world.actions.GetSize()), {1001});
+	// Without a zone only the status changes; it changes first.
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	zoneExists = false;
 	ReceiveNearPlayer(1002, kSkill, {1001});
 	CHECK(calls.empty());
+	CHECK_EQ(44, World::HP());
 	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	zoneExists = true;
 	hasPlayer = false;
@@ -602,9 +605,13 @@ TEST(SkillTileReplies, AnUnseenCastersActionSkillActsAsItsResultValueOnEachCreat
 	world.Row(kSkill).SetActionResult(ACTIONRESULTNODE_ACTIONINFO, SKILL_SINGLE_BLOW);
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls == Join({{AtCell(kSkill + kMin, 50, 51, kRange, OBJECTID_NULL)}, Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11)}));
+	// The node carries the range only when the skill is graded.
+	calls.clear();
+	world.Row(SKILL_SINGLE_BLOW).SetUseActionGrade();
+	ReceiveUnseen(kSkill, {1001});
+	CHECK(calls == Join({{AtCell(kSkill + kMin, 50, 51, kRange, OBJECTID_NULL)}, Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11)}));
 	calls.clear();
 	world.Row(kSkill).SetUseActionGrade();
-	world.Row(SKILL_SINGLE_BLOW).SetUseActionGrade();
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls == Join({{AtCell(kSkill + kMin, 50, 51, kRange, OBJECTID_NULL)}, Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11, kRange)}));
 	// By its step, and a node of another kind from the step.
@@ -623,6 +630,8 @@ TEST(SkillTileReplies, AnUnseenCastersBurningSoulLandsAtTheCellAndTheGuards)
 		AtCell(SKILL_BURNING_SOUL_LAUNCH + kMin, 50, 51, kRange, OBJECTID_NULL)}));
 	calls.clear();
 	ReceiveUnseen(static_cast<int>(world.actions.GetSize()), {1001});
+	// Without a zone only the status changes; it changes first.
+	playerStatus.SetStatus(MODIFY_CURRENT_HP, 10);
 	zoneExists = false;
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls.empty());
@@ -633,4 +642,66 @@ TEST(SkillTileReplies, AnUnseenCastersBurningSoulLandsAtTheCellAndTheGuards)
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls.empty());
 	CHECK_EQ(10, World::HP());
+}
+
+TEST(SkillTileReplies, EachCreaturesActionNodeIsByItsReplysCaster)
+{
+	World world;
+	// Bloody Zenith's record shows a node's user.
+	world.Row(MAGIC_BLOODY_ZENITH).SetActionResult(ACTIONRESULTNODE_ACTIONINFO);
+	ReceivePlayers(MAGIC_BLOODY_ZENITH, {1001});
+	CHECK(calls == Join({{"player.add|9"}, Hit("Ogre", MAGIC_BLOODY_ZENITH, 1001, 10, 11, 0, "Self")}));
+	calls.clear();
+	ReceiveNearPlayer(1002, MAGIC_BLOODY_ZENITH, {1001});
+	CHECK(calls == Join({CastBy("Vanda", MAGIC_BLOODY_ZENITH), Hit("Ogre", MAGIC_BLOODY_ZENITH, 1001, 10, 11, 0, "Vanda")}));
+	calls.clear();
+	ReceiveElsewhere(1002, MAGIC_BLOODY_ZENITH, {1001});
+	CHECK(calls == Join({CastBy("Vanda", MAGIC_BLOODY_ZENITH), Hit("Ogre", MAGIC_BLOODY_ZENITH, 1001, 10, 11, 0, "Vanda")}));
+	// An unseen caster's node has no user.
+	calls.clear();
+	world.Row(kSkill).SetActionResult(ACTIONRESULTNODE_ACTIONINFO, MAGIC_BLOODY_ZENITH);
+	ReceiveUnseen(kSkill, {1001});
+	CHECK(calls == Join({{AtCell(kSkill + kMin, 50, 51, kRange, OBJECTID_NULL)}, Hit("Ogre", MAGIC_BLOODY_ZENITH, 1001, 10, 11)}));
+}
+
+TEST(SkillTileReplies, AWeaponSkillsNodeOfAnotherKindComesFromTheBasicAction)
+{
+	World world;
+	world.Row(kSkill).SetAffectCurrentWeaponAction();
+	world.Row(SKILL_ATTACK_GUN_SR).SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
+	world.Row(SKILL_ATTACK_GUN_SG).SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
+	ReceivePlayers(kSkill, {1001});
+	CHECK(calls == Join({{"player.add|9"}, Hit("Self", kSkill, 7, 40, 41), {"Ogre.burrow"}}));
+	calls.clear();
+	ReceiveElsewhere(1002, kSkill, {1001});
+	CHECK(calls == Join({CastBy("Vanda", kSkill), Hit("Vanda", kSkill, 1002, 40, 41), {"Ogre.burrow"}}));
+	// Near the player the weapon is the step's: a weapon step acts as the
+	// basic action.
+	calls.clear();
+	world.Row(kSkill) = MActionInfo();
+	world.Steps(kSkill);
+	world.Row(kStep).SetAffectCurrentWeaponAction();
+	ReceiveNearPlayer(1002, kSkill, {1001}, 2);
+	CHECK(calls == Join({CastBy("Vanda", kStep), Hit("Vanda", kStep, 1002, 40, 41), {"Ogre.burrow"}}));
+}
+
+TEST(SkillTileReplies, TheSkillsOwnRowTurnsACasterAndTheStepsRowThePlayer)
+{
+	World world;
+	world.Steps(kSkill);
+	world.Row(kSkill).SetOptionRangeToDirection();
+	// The player turns by the step's row, which does not say so.
+	ReceivePlayers(kSkill, {}, 2);
+	CHECK(calls == Join({{"player.add|9"}, Hit("Self", kStep, 7, 40, 41)}));
+	// A caster turns by the skill's own row.
+	calls.clear();
+	ReceiveNearPlayer(1002, kSkill, {}, 2);
+	CHECK(calls == Join({CastBy("Vanda", kStep, kRange), Hit("Vanda", kStep, 1002, 40, 41)}));
+	calls.clear();
+	ReceiveElsewhere(1002, kSkill, {}, 2);
+	CHECK(calls == Join({CastBy("Vanda", kStep, kRange), Hit("Vanda", kStep, 1002, 40, 41)}));
+	// Without the caster, the step's row sets the direction.
+	calls.clear();
+	ReceiveNearPlayer(4242, kSkill, {}, 2);
+	CHECK(calls == std::vector<std::string>{AtCell(kStep, 40, 41, 0, OBJECTID_NULL)});
 }
