@@ -150,6 +150,11 @@ MItem* NewCorpse(MCreature* pCreature)
 	return s_Host && s_Host->NewCorpse ? s_Host->NewCorpse(pCreature) : NULL;
 }
 
+MCreature* NewNPC()
+{
+	return s_Host && s_Host->NewNPC ? s_Host->NewNPC() : NULL;
+}
+
 }
 
 namespace CreatureState {
@@ -720,6 +725,21 @@ bool IsDead(MCreature* pCreature)
 void SetItemCount(MCreature* pCreature, int count)
 {
 	if (s_Host && s_Host->SetItemCount) s_Host->SetItemCount(pCreature, count);
+}
+
+void SetNPCID(MCreature* pCreature, int npcID)
+{
+	if (s_Host && s_Host->SetNPCID) s_Host->SetNPCID(pCreature, npcID);
+}
+
+void SetAddonToNPC(MCreature* pCreature, int npcID)
+{
+	if (s_Host && s_Host->SetAddonToNPC) s_Host->SetAddonToNPC(pCreature, npcID);
+}
+
+void AttachLastingEffect(MCreature* pCreature, int effectSpriteType)
+{
+	if (s_Host && s_Host->AttachLastingEffect) s_Host->AttachLastingEffect(pCreature, effectSpriteType);
 }
 
 }

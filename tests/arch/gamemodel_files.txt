@@ -1190,3 +1190,6 @@ Client/PacketHandler/GCAddMonsterCorpseHandler.cpp
 Client/PacketHandler/GCAddVampireCorpseHandler.cpp
 Client/PacketHandler/GCAddSlayerCorpseHandler.cpp
 Client/PacketHandler/GCAddOustersCorpseHandler.cpp
+# An NPC appearing, and the guild IDs it is given.
+Client/PacketHandler/GCAddNPCHandler.cpp
+Client/MGuildType.h
