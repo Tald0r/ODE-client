@@ -153,7 +153,7 @@ TEST(CannotUseReplies, ARefusedCoupleRingEndsTheLoveChainWait)
 	world.playerGear.AddItem(new Goods(ITEM_CLASS_VAMPIRE_COUPLE_RING, 30));
 	world.playerGear.AddItem(new Goods(ITEM_CLASS_COUPLE_RING, 31));
 	waitVerify = PlayerState::WAIT_VERIFY_LOVE_CHAIN;
-	// The check buffer is left alone.
+	// The check buffer's own reply (here the quick slot's) is skipped.
 	world.Checking(PlayerState::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT, &other);
 	Receive(31);
 	CHECK(calls == std::vector<std::string>({"buffer cleared", "verified", kLoveChainEnds}));
@@ -223,6 +223,8 @@ TEST(CannotUseReplies, AnItemUsedFromTheInventorySaysWhyWhereItHasAReason)
 		{ITEM_CLASS_DYE_POTION, 48, 2, {"popup|" + N(STRING_MESSAGE_CANNOT_CHANGE_SEX_BY_COUPLE)}},
 		{ITEM_CLASS_DYE_POTION, 48, 3, {"popup|" + N(STRING_ERROR_ETC_ERROR)}},
 		{ITEM_CLASS_DYE_POTION, 47, 1, {}},
+		{ITEM_CLASS_DYE_POTION, 49, 1, {}},
+		{ITEM_CLASS_POTION, 27, 0, {}},
 		{ITEM_CLASS_POTION, 48, 1, {}}};
 	for (const auto& c : cases)
 	{
@@ -239,6 +241,8 @@ TEST(CannotUseReplies, AnItemUsedFromTheInventorySaysWhyWhereItHasAReason)
 TEST(CannotUseReplies, EachOtherUseEndsTheCheck)
 {
 	World world;
+	// Only an item used on another ends the mode.
+	world.temp.SetMode(TempInformation::MODE_ITEM_MIXING);
 	Goods ring(ITEM_CLASS_COUPLE_RING, 40);
 	Goods vampireRing(ITEM_CLASS_VAMPIRE_COUPLE_RING, 41);
 	Goods sword(ITEM_CLASS_SWORD, 42);
@@ -262,7 +266,7 @@ TEST(CannotUseReplies, EachOtherUseEndsTheCheck)
 		Receive(42);
 	}
 	CHECK(calls == std::vector<std::string>(2, "buffer cleared"));
-	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+	CHECK(world.temp.GetMode() == TempInformation::MODE_ITEM_MIXING);
 }
 
 TEST(CannotUseReplies, AnotherCheckOrNoneIsLeftAlone)

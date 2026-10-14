@@ -18,8 +18,8 @@ namespace DialogPresentation {
 // for the pet storage window, which also keeps the storage's pointer.
 // PickUpItem puts an item back on the mouse; GetMouseItem is the item on
 // it (NULL for none, or without a host), and DropItem lets it go (the
-// window that took it keeps it). UnlockGear lifts the lock a quick-slot
-// use put on the gear window; CloseMixingForge closes the mixing forge.
+// window that took it keeps it). UnlockGear lifts the gear window's lock
+// (every item check locks it); CloseMixingForge closes the mixing forge.
 // PopupPCTalkDlg shows the NPC talk box (g_pPCTalkBox) at the centre.
 struct Host
 {

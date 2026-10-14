@@ -4140,7 +4140,10 @@ rounds settled* for the host rules). Test fixtures share
   > a quest-inventory use or a drop onto a creature only ends the check.
   > Messages go through `CommunicationPresentation::PopupMessage` and the
   > system message log. Without a player it does nothing, where it
-  > dereferenced the player. R1 is 139 Windows / 137 Ninja.
+  > dereferenced the player. Found by reading and kept, as upstream's:
+  > ending the check already unlocks the gear unless the player is in a
+  > casket, so the quick slot's own unlock matters only there, where it
+  > undoes that deliberate exception. R1 is 139 Windows / 137 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_cannot_use_replies.cpp` (each race's ring, another item or
     none; each check-buffer status and item reason; another status, an
