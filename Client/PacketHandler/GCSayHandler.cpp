@@ -183,7 +183,7 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 //							if( g_pPlayer->IsOusters() )
 //								percent = 70;
 //							else
-								percent = min(75, 25+pPlayerStatus->GetINT()*100/(min(2, PlayerState::GetRace()+1)*150));
+								percent = min(75u, 25+pPlayerStatus->GetINT()*100/(min(2, PlayerState::GetRace()+1)*150));
 							
 							g_pChatManager->AddMask(str, percent);
 
