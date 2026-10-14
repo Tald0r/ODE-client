@@ -1,5 +1,6 @@
 #ifndef _CAVI_
 #define _CAVI_
+#include "../basic/Platform.h"	// HWND, DWORD, BYTE, LPCSTR
 
 /* void Cls_OnMcinotify(HWND hwnd) // MM_MCINOTIFY */
 //#define HANDLE_MM_MCINOTIFY(hwnd, wParam, lParam, fn)
