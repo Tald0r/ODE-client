@@ -71,10 +71,8 @@
 //-----------------------------------------------------------------------------
 // Defines
 //-----------------------------------------------------------------------------
-// Maximum value설정
-#define	MAX_COLORSET_SEED			33	// 기본 색상의 개수
-#define	MAX_COLORSET_SEED_MODIFY	15	// 기본 색상마다의 변형 색깔 수
-#define	MAX_COLORSET				495 // MAX_COLORSET_SEED * MAX_COLORSET_SEED_MODIFY
+// Maximum values
+#include "../../basic/ColorSetDef.h"	// MAX_COLORSET_SEED, MAX_COLORSET_SEED_MODIFY, MAX_COLORSET
 #define	MAX_COLORGRADATION			30
 #define	MAX_COLOR_TO_GRADATION		93	// R+G+B
 #define	MAX_COLORGRADATION_HALF		15	// == MAX_COLORSET_SEED_MODIFY

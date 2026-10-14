@@ -94,7 +94,5 @@ MInteractionObject::SetNextAction(BYTE action)
 	// Action dispatch is disabled in this client.
 }
 
-//----------------------------------------------------------------------
-// ChangeAction Door
-//----------------------------------------------------------------------
-// Live door/trap/switch actions are in MInteractionObjectAction.cpp.
+// The door/trap/switch actions SetAction would have run are gone with its
+// dispatch (task 4.203): a door blocked its tile when closed.
