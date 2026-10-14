@@ -3525,6 +3525,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.PopupPCTalkDlg = []() { g_pUIDialog->PopupPCTalkDlg(); },
 	.ShowPCTalkDlg = []() { g_pUIDialog->ShowPCTalkDlg(); },
 	.RunStorageBuy = UI_RunStorageBuy,
+	.OpenInventoryToSell = UI_OpenInventoryToSell,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3706,6 +3707,11 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetStopBloodDrain = [](MCreature* pCreature) { pCreature->SetStopBloodDrain(); },
 	.SetStopAbsorbSoul = [](MCreature* pCreature) { pCreature->SetStopAbsorbSoul(); },
 	.IsVampire = [](MCreature* pCreature) { return pCreature->IsVampire(); },
+	.SetShop = [](MCreature* pCreature, MShop* pShop) {
+		if (pCreature->GetClassType() != MCreature::CLASS_NPC) return false;
+		static_cast<MNPC*>(pCreature)->SetShop(pShop);
+		return true;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

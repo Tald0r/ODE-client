@@ -22,7 +22,8 @@ namespace DialogPresentation {
 // (every item check locks it); CloseMixingForge closes the mixing forge.
 // PopupPCTalkDlg shows the NPC talk box (g_pPCTalkBox) at the centre;
 // ShowPCTalkDlg shows it again as it was. RunStorageBuy asks whether to buy
-// a storage at the price.
+// a storage at the price. OpenInventoryToSell opens the inventory to sell
+// to a shop.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -43,6 +44,7 @@ struct Host
 	void (*PopupPCTalkDlg)() = nullptr;
 	void (*ShowPCTalkDlg)() = nullptr;
 	void (*RunStorageBuy)(int price) = nullptr;
+	void (*OpenInventoryToSell)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -65,5 +67,6 @@ void CloseMixingForge();
 void PopupPCTalkDlg();
 void ShowPCTalkDlg();
 void RunStorageBuy(int price);
+void OpenInventoryToSell();
 
 }

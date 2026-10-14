@@ -103,4 +103,9 @@ void RunStorageBuy(int price)
 	if (s_Host && s_Host->RunStorageBuy) s_Host->RunStorageBuy(price);
 }
 
+void OpenInventoryToSell()
+{
+	if (s_Host && s_Host->OpenInventoryToSell) s_Host->OpenInventoryToSell();
+}
+
 }

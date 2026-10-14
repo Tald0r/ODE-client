@@ -462,4 +462,9 @@ bool IsVampire(MCreature* pCreature)
 	return s_Host && s_Host->IsVampire ? s_Host->IsVampire(pCreature) : false;
 }
 
+bool SetShop(MCreature* pCreature, MShop* pShop)
+{
+	return s_Host && s_Host->SetShop ? s_Host->SetShop(pCreature, pShop) : false;
+}
+
 }

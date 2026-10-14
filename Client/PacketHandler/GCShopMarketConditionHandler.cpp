@@ -9,12 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopMarketCondition.h"
-#include "ClientDef.h"
-#include "MNPC.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "ZoneStateHost.h"
 #include "MShopShelf.h"
 #include "MShop.h"
 #include "MPriceManager.h"
-#include "UIFunction.h"
 
 void GCShopMarketConditionHandler::execute ( GCShopMarketCondition * pPacket , Player * pPlayer )
 	 
@@ -25,66 +25,68 @@ void GCShopMarketConditionHandler::execute ( GCShopMarketCondition * pPacket , P
 	
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//------------------------------------------------------
-		// 그런 creature가 없는 경우
+		// No such creature
 		//------------------------------------------------------
 		if (pCreature==NULL)
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature id=%d", pPacket->getObjectID());
 		}
 		//------------------------------------------------------
-		// NPC인 경우
+		// An NPC
 		//------------------------------------------------------
-		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
+		else if (CreatureState::IsNPC(pCreature))
 		{
-			MNPC* pNPC = (MNPC*)pCreature;
 
 			//------------------------------------------------------
-			// 상점을 읽는다.
+			// Read its shop.
 			//------------------------------------------------------
-			MShop* pShop = pNPC->GetShop();
+			MShop* pShop = CreatureState::GetShop(pCreature);
 
 			if (pShop==NULL)
 			{
-				// 상점이 없었으면 생성한다.
+				// Without one, create it.
 				pShop = new MShop;
 				pShop->Init( MShopShelf::MAX_SHELF );
 
-				// NPC에 상점 설정
-				pNPC->SetShop( pShop );
+				// Give it to the NPC
+				if (!CreatureState::SetShop( pCreature, pShop ))
+				{
+					delete pShop;
+				}
 
-				// normal item 선반을 생성한다.
+				// Create the normal item shelf.
 				//pNPC->CreateFixedShelf();
 			}
 
 			//------------------------------------------------------
-			// 선반의 가격 비율 
+			// The shelves' price rates
 			//------------------------------------------------------
 			g_pPriceManager->SetMarketCondBuy( pPacket->getMarketCondBuy() );
 			g_pPriceManager->SetMarketCondSell( pPacket->getMarketCondSell() );
 			
 			//------------------------------------------------------
-			// 팔기 위해서 inventory를 연다.
+			// Open the inventory to sell.
 			//------------------------------------------------------
-			UI_OpenInventoryToSell();
+			DialogPresentation::OpenInventoryToSell();
 
 		}
 		//------------------------------------------------------
-		// NPC가 아닌 경우
+		// Not an NPC
 		//------------------------------------------------------
 		else
 		{

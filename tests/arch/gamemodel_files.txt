@@ -1094,3 +1094,6 @@ Client/PacketHandler/GCChangeDarkLightHandler.cpp
 # Which worn items count, and an item use or skill card the server allowed.
 Client/PacketHandler/GCRealWearingInfoHandler.cpp
 Client/PacketHandler/GCUseOKHandler.cpp
+
+# A shop's market condition, before the player sells to it.
+Client/PacketHandler/GCShopMarketConditionHandler.cpp
