@@ -36,7 +36,6 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 	{
 		return;
 	}
-		
 
 	//------------------------------------------------------------------
 	// Apply the status change.
@@ -317,7 +316,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 				DEBUG_ADD("C-OK");
 
 				//------------------------------------------------------
-				// Face the player.
+				// Face the cell.
 				//------------------------------------------------------
 				CreatureState::SetDirectionToPosition(pCreature, pPacket->getX(), pPacket->getY());		
 

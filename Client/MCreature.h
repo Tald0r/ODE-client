@@ -26,6 +26,7 @@
 #include "MStatus.h"
 #include "RaceType.h"
 #include "MemoryPool.h"
+#include "ZoneStateHost.h"
 #include "NicknameInfo.h"
 #include <string_view>
 class MItem;
@@ -68,14 +69,9 @@ class MCreature : public MObject, public MStatus {
 			CREATURE_FAKE_FLYING,
 		};
 
-		// 이동하는 방법
-		enum MOVE_DEVICE
-		{
-			MOVE_DEVICE_WALK,		// 걸어다닌다.
-			MOVE_DEVICE_RIDE,		// 모터싸이클			
-			MOVE_DEVICE_SUMMON_SYLPH,		// 정령타고 슉~ 
-			MOVE_DEVICE_MAX
-		};
+		// How the creature moves (ZoneStateHost.h).
+		using MOVE_DEVICE = CreatureState::MOVE_DEVICE;
+		using enum CreatureState::MOVE_DEVICE;
 
 		// 이동하는 방법
 		enum WEAPON_SPEED

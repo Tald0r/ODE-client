@@ -1018,3 +1018,20 @@ Client/PacketHandler/GCSkillToTileOK1Handler.cpp
 Client/PacketHandler/GCSkillToTileOK2Handler.cpp
 Client/PacketHandler/GCSkillToTileOK5Handler.cpp
 Client/PacketHandler/GCSkillToTileOK6Handler.cpp
+
+# A skill's effect starting at a cell with nobody casting it: a mine going
+# off near the player or elsewhere, and an unseen caster's skill.
+Client/PacketHandler/GCMineExplosionOK1Handler.cpp
+Client/PacketHandler/GCMineExplosionOK2Handler.cpp
+Client/PacketHandler/GCSkillToTileOK4Handler.cpp
+
+# A creature taking an addon off, and getting off its motorcycle (the
+# player's own answer among them).
+Client/PacketHandler/GCTakeOffHandler.cpp
+Client/PacketHandler/GCGetOffMotorCycleHandler.cpp
+Client/PacketHandler/GCGetOffMotorCycleOKHandler.cpp
+
+# A skill from an unseen caster landing on the player, and the player
+# turning back into a vampire.
+Client/PacketHandler/GCSkillToObjectOK6Handler.cpp
+Client/PacketHandler/GCUntransformOKHandler.cpp

@@ -50,6 +50,16 @@ MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
 
 namespace CreatureState {
 
+// How a creature moves. MCreature brings these into its own scope, so
+// MCreature::MOVE_DEVICE_X names the same values.
+enum MOVE_DEVICE
+{
+	MOVE_DEVICE_WALK,			// on foot
+	MOVE_DEVICE_RIDE,			// a motorcycle
+	MOVE_DEVICE_SUMMON_SYLPH,	// riding a summoned sylph
+	MOVE_DEVICE_MAX
+};
+
 struct Host
 {
 	MStatus* (*Status)(MCreature* pCreature) = nullptr;
@@ -130,6 +140,16 @@ struct Host
 	// Puts on a copy of the item; the caller keeps pItem.
 	bool (*SetAddonItem)(MCreature* pCreature, MItem* pItem) = nullptr;
 	void (*SetWeaponSpeed)(MCreature* pCreature, int speed) = nullptr;
+	// Takes off the addon in that slot; false for a creature not wearing
+	// gear or a slot with nothing in it.
+	bool (*RemoveAddon)(MCreature* pCreature, int addon) = nullptr;
+	void (*SetMoveDevice)(MCreature* pCreature, MOVE_DEVICE device) = nullptr;
+	// The creature table row it is drawn as; 0 without a host.
+	int (*GetCreatureType)(MCreature* pCreature) = nullptr;
+	// Its operator rank: 0 is an operator; 3 without a host.
+	int (*GetCompetence)(MCreature* pCreature) = nullptr;
+	// Faces the direction at once (SetDirection turns towards it).
+	void (*SetCurrentDirection)(MCreature* pCreature, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -201,5 +221,10 @@ void SetVisibleSoon(MCreature* pCreature);
 bool IsWear(MCreature* pCreature);
 bool SetAddonItem(MCreature* pCreature, MItem* pItem);
 void SetWeaponSpeed(MCreature* pCreature, int speed);
+bool RemoveAddon(MCreature* pCreature, int addon);
+void SetMoveDevice(MCreature* pCreature, MOVE_DEVICE device);
+int GetCreatureType(MCreature* pCreature);
+int GetCompetence(MCreature* pCreature);
+void SetCurrentDirection(MCreature* pCreature, int direction);
 
 }

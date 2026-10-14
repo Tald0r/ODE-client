@@ -161,4 +161,9 @@ void SetTempSelectPos(int x, int y)
 	if (s_Host && s_Host->SetTempSelectPos) s_Host->SetTempSelectPos(x, y);
 }
 
+void SetDelay(std::uint32_t milliseconds)
+{
+	if (s_Host && s_Host->SetDelay) s_Host->SetDelay(milliseconds);
+}
+
 }

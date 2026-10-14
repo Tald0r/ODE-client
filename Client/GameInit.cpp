@@ -3573,6 +3573,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	},
 	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
 	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
+	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3666,6 +3667,13 @@ static const CreatureState::Host s_CreatureStateHost = {
 		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->SetAddonItem(pItem);
 	},
 	.SetWeaponSpeed = [](MCreature* pCreature, int speed) { pCreature->SetWeaponSpeed(speed); },
+	.RemoveAddon = [](MCreature* pCreature, int addon) {
+		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->RemoveAddon(addon);
+	},
+	.SetMoveDevice = [](MCreature* pCreature, CreatureState::MOVE_DEVICE device) { pCreature->SetMoveDevice(device); },
+	.GetCreatureType = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCreatureType()); },
+	.GetCompetence = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCompetence()); },
+	.SetCurrentDirection = [](MCreature* pCreature, int direction) { pCreature->SetCurrentDirection(static_cast<BYTE>(direction)); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3687,6 +3695,10 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
 	},
 	.SkillCrossCounter = SkillCrossCounter,
+	.SkillToSector = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult) {
+		SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
+	},
+	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

@@ -69,6 +69,11 @@ void PlaySound(TYPE_SOUNDID soundID)
 	if (s_Host && s_Host->PlaySound) s_Host->PlaySound(soundID);
 }
 
+void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y)
+{
+	if (s_Host && s_Host->PlaySoundAt) s_Host->PlaySoundAt(soundID, repeat, x, y);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);
@@ -78,6 +83,14 @@ void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITI
 {
 	if (s_Host && s_Host->ExecuteActionInfoFromMainNode)
 		s_Host->ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
+	else
+		delete pResult;
+}
+
+void SkillToSector(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult)
+{
+	if (s_Host && s_Host->SkillToSector)
+		s_Host->SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
 	else
 		delete pResult;
 }
