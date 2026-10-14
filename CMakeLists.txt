@@ -812,7 +812,6 @@ if(BUILD_ENGINE)
 	add_executable(map_viewer
 		tools/viewers/map_viewer/main.cpp
 		tools/viewers/map_viewer/zoneloader.cpp
-		Client/TileRenderer.cpp
 	)
 
 	target_include_directories(map_viewer PRIVATE

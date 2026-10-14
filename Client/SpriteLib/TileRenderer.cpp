@@ -1,5 +1,5 @@
-#include "Client_PCH.h"
 #include "TileRenderer.h"
+#include <cstdio>
 
 //----------------------------------------------------------------------
 // TileRenderer Implementation

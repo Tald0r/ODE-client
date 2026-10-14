@@ -90,6 +90,9 @@ set(SPRITELIB_SOURCES
 	CSpriteSetManager.cpp
 	CSpritePal.cpp
 
+	# The tile layer's renderer (task 4.213)
+	TileRenderer.cpp
+
 	# Palette
 	MPalette.cpp
 	MPalettePack.cpp
@@ -116,6 +119,7 @@ set(SPRITELIB_HEADERS
 	CSpriteSet.h
 	CSpriteSetManager.h
 	CSpriteOutlineManager.h
+	TileRenderer.h
 
 	# Alpha sprites
 	CAlphaSprite.h
