@@ -1035,3 +1035,8 @@ Client/PacketHandler/GCGetOffMotorCycleOKHandler.cpp
 # turning back into a vampire.
 Client/PacketHandler/GCSkillToObjectOK6Handler.cpp
 Client/PacketHandler/GCUntransformOKHandler.cpp
+
+# A creature's words over its head and in the history, and a shout to the
+# whole zone, each masked for another race.
+Client/PacketHandler/GCSayHandler.cpp
+Client/PacketHandler/GCGlobalChatHandler.cpp

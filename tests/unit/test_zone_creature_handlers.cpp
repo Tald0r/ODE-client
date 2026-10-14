@@ -91,7 +91,11 @@ const CreatureState::Host creature{
 	.SetNickName = [](MCreature* p, std::uint8_t type, char* szNickName) {
 		calls.push_back(Who(p) + ".nickname|" + N(type) + "|" + (szNickName ? szNickName : "(null)"));
 	},
-	.SetChatString = [](MCreature* p, const char* str) { calls.push_back(Who(p) + ".says|" + (str ? str : "(null)")); },
+	// The NPC replies speak in MCreature's default white.
+	.SetChatString = [](MCreature* p, const char* str, std::uint32_t color) {
+		CHECK_EQ(0xFFFFFFu, color);
+		calls.push_back(Who(p) + ".says|" + (str ? str : "(null)"));
+	},
 	.PacketMove = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) {
 		calls.push_back(Who(p) + ".move|" + N(x) + "|" + N(y) + "|" + N(direction));
 	},

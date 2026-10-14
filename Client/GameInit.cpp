@@ -3599,7 +3599,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.StopRecoveryHP = [](MCreature* pCreature) { pCreature->StopRecoveryHP(); },
 	.SetRecoveryHP = [](MCreature* pCreature, int amount, int times, std::uint32_t delay) { pCreature->SetRecoveryHP(amount, times, delay); },
 	.SetNickName = [](MCreature* pCreature, std::uint8_t type, char* szNickName) { pCreature->SetNickName(type, szNickName); },
-	.SetChatString = [](MCreature* pCreature, const char* str) { pCreature->SetChatString(str); },
+	.SetChatString = [](MCreature* pCreature, const char* str, std::uint32_t color) { pCreature->SetChatString(str, static_cast<COLORREF>(color)); },
 	.PacketMove = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) { pCreature->PacketMove(x, y, direction); },
 	.PacketAttackNormal = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction) { pCreature->PacketAttackNormal(x, y, direction); },
 	.SetDirectionToPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { pCreature->SetDirectionToPosition(sX, sY); },
@@ -3674,6 +3674,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetCreatureType = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCreatureType()); },
 	.GetCompetence = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCompetence()); },
 	.SetCurrentDirection = [](MCreature* pCreature, int direction) { pCreature->SetCurrentDirection(static_cast<BYTE>(direction)); },
+	.GetHalluName = [](MCreature* pCreature) { return pCreature->GetHalluName(); },
+	.IsSlayer = [](MCreature* pCreature) { return pCreature->IsSlayer(); },
+	.IsOusters = [](MCreature* pCreature) { return pCreature->IsOusters(); },
+	.GetRace = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetRace()); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

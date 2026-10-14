@@ -109,9 +109,9 @@ void SetNickName(MCreature* pCreature, std::uint8_t type, char* szNickName)
 	if (s_Host && s_Host->SetNickName) s_Host->SetNickName(pCreature, type, szNickName);
 }
 
-void SetChatString(MCreature* pCreature, const char* str)
+void SetChatString(MCreature* pCreature, const char* str, std::uint32_t color)
 {
-	if (s_Host && s_Host->SetChatString) s_Host->SetChatString(pCreature, str);
+	if (s_Host && s_Host->SetChatString) s_Host->SetChatString(pCreature, str, color);
 }
 
 void PacketMove(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, std::uint8_t direction)
@@ -405,6 +405,26 @@ int GetCompetence(MCreature* pCreature)
 void SetCurrentDirection(MCreature* pCreature, int direction)
 {
 	if (s_Host && s_Host->SetCurrentDirection) s_Host->SetCurrentDirection(pCreature, direction);
+}
+
+const char* GetHalluName(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetHalluName ? s_Host->GetHalluName(pCreature) : "";
+}
+
+bool IsSlayer(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsSlayer ? s_Host->IsSlayer(pCreature) : false;
+}
+
+bool IsOusters(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsOusters ? s_Host->IsOusters(pCreature) : false;
+}
+
+int GetRace(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetRace ? s_Host->GetRace(pCreature) : 0;
 }
 
 }

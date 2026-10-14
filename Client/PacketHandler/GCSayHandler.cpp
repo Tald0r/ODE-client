@@ -9,18 +9,21 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSay.h"
-#include "ClientDef.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "UserInformation.h"
 #include "MChatManager.h"
+#include "MCreatureTable.h"
 #include "MSkillManager.h"
 #include "MZoneTable.h"	
-#include "MZone.h"	
-#include "UIFunction.h"
 #include "MGameStringTable.h"
+#include "MStatus.h"
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Run when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
@@ -28,111 +31,119 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	MStatus* const pPlayerStatus = PlayerState::Status();
+	if (pPlayerCreature == NULL || pPlayerStatus == NULL)
+	{
+		return;
+	}
 	
 
 	// Debug Message	
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
 		//---------------------------------------------------------------
-		// 캐릭터 머리 위에 채팅을 띄운다.
+		// Show the chat over the character's head.
 		//---------------------------------------------------------------
 		//DEBUG_ADD("Zone-GetCreature");
 
-		MCreature*	pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature*	pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		if (pCreature==NULL)
 		{
-			// 그런 캐릭터가 없으면 무시한다.
+			// Ignored when there is no such character.
 			DEBUG_ADD("No such Character");
 		}
 		else
 		{			
-			bool IsGildre	= pCreature->GetCreatureType() == 717 || 
-							  pCreature->GetCreatureType() == 723 ; // 질드레 일때
-			bool bMasterWords = pCreature->GetCreatureType()==CREATURETYPE_SLAYER_OPERATOR
-								|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_OPERATOR
-								|| pCreature->GetCreatureType()==CREATURETYPE_OUSTERS_OPERATOR
-								|| strncmp( pCreature->GetName(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetString(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetLength() ) == 0
+			bool IsGildre	= CreatureState::GetCreatureType(pCreature) == 717 || 
+							  CreatureState::GetCreatureType(pCreature) == 723 ; // Gilles de Rais
+			bool bMasterWords = CreatureState::GetCreatureType(pCreature)==CREATURETYPE_SLAYER_OPERATOR
+								|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_OPERATOR
+								|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_OUSTERS_OPERATOR
+								|| strncmp( CreatureState::GetName(pCreature), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetString(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetLength() ) == 0
 								|| IsGildre ;
 //								|| (strstr(pCreature->GetName(), "GM")!=NULL);
 
 			//DEBUG_ADD_FORMAT("isMasterWords=%d", bMasterWords);
 
 			//-------------------------------------------------
-			// 정상적인 대화
+			// The normal case: ordinary talk.
 			//-------------------------------------------------
 			if (bMasterWords 
-				|| g_pChatManager->IsAcceptID( pCreature->GetName() ))
+				|| g_pChatManager->IsAcceptID( CreatureState::GetName(pCreature) ))
 			{
 				//DEBUG_ADD("can see");
 
-				// 채팅~~
+				// Chat.
 				char str[256];
 
-				bool isPlayerVampire = pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE1
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE1
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE2
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE2
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE3
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE3
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_OPERATOR
-										|| pCreature->GetCreatureType()==CREATURETYPE_BAT
-										|| pCreature->GetCreatureType()==CREATURETYPE_WOLF
-										|| pCreature->GetCreatureType()==CREATURETYPE_WER_WOLF
-										// add by coffee 2006.11.24  饑쮸近蹶
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE4
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE4
+				bool isPlayerVampire = CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_MALE1
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_FEMALE1
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_MALE2
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_FEMALE2
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_MALE3
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_FEMALE3
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_OPERATOR
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_BAT
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_WOLF
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_WER_WOLF
+										// Added by coffee, 2006.11.24.
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_FEMALE4
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_MALE4
 										//add by viva
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE5
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE5
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE6
-										|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE6;
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_MALE5
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_FEMALE5
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_MALE6
+										|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_VAMPIRE_FEMALE6;
 										// add end
 
 				bool isPlayerCharacter = (isPlayerVampire 
-											|| pCreature->IsSlayer()
-											|| pCreature->IsOusters()
-											|| pCreature->GetCreatureType()==CREATURETYPE_SLAYER_OPERATOR);
+											|| CreatureState::IsSlayer(pCreature)
+											|| CreatureState::IsOusters(pCreature)
+											|| CreatureState::GetCreatureType(pCreature)==CREATURETYPE_SLAYER_OPERATOR);
 
 				//DEBUG_ADD("strcpy");
 				
 				//---------------------------------------------------------------
-				// 완성형 --> 조합형
+				// Wansung --> Johab
 				//---------------------------------------------------------------
 				//UI_WansungToJohap( pPacket->getMessage().c_str(), str );
 				snprintf(str, sizeof(str), "%s", pPacket->getMessage().c_str());
 				bool	bTranslation = g_pSkillAvailable->IsEnableSkill(SKILL_HOLYLAND_BLOOD_BIBLE_HILLEL) || 
-					!g_pZoneTable->Get( g_pZone->GetID() )->ChatMaskByRace ||
-					g_pPlayer->HasEffectStatus( EFFECTSTATUS_TRANSLATION ) ||
-					g_pPlayer->GetCreatureType() == CREATURETYPE_SLAYER_OPERATOR ||
-					g_pPlayer->GetCreatureType() == CREATURETYPE_VAMPIRE_OPERATOR ||
-					g_pPlayer->GetCreatureType() == CREATURETYPE_OUSTERS_OPERATOR;
+					!g_pZoneTable->Get( ZoneState::GetID() )->ChatMaskByRace ||
+					PlayerState::HasEffectStatus(EFFECTSTATUS_TRANSLATION ) ||
+					CreatureState::GetCreatureType(pPlayerCreature) == CREATURETYPE_SLAYER_OPERATOR ||
+					CreatureState::GetCreatureType(pPlayerCreature) == CREATURETYPE_VAMPIRE_OPERATOR ||
+					CreatureState::GetCreatureType(pPlayerCreature) == CREATURETYPE_OUSTERS_OPERATOR;
 
 				//--------------------------------------------------
-				// 욕 제거
-				// 운영자가 한 말도 아니고 나도 운영자가 아니면 filter한다.
-				// --> 운영자의 말은 다 보이고 운영자는 다 본다.
+				// Remove curses.
+				// Filtered unless an operator said it or I am one.
+				// --> An operator's words are all shown, and an operator sees all.
 				//--------------------------------------------------
 				if (!bMasterWords && !g_pUserInformation->IsMaster 
-					&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+					&& !PlayerState::HasEffectStatus(EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 				&& !g_bLight
 #endif
 					)
 				{
 				
-					// player인 경우만 나쁜말 제거
+					// Remove curses only from a player.
 					if (isPlayerCharacter)
 					{
 						DEBUG_ADD("remove curse");
@@ -140,7 +151,7 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 
 						DEBUG_ADD("has effect");
 
-						if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
+						if (PlayerState::HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
 						{
 							//DEBUG_ADD("add mask hallu");
 
@@ -152,14 +163,14 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 
 					#ifndef _DEBUG
 						//--------------------------------------------------
-						// 종족이 다른 경우
+						// Another race.
 						//--------------------------------------------------
-						if (g_pPlayer->GetRace() != pCreature->GetRace()
-							// player인 경우만.. 못 듣게..
+						if (PlayerState::GetRace() != CreatureState::GetRace(pCreature)
+							// Only a player's, so it cannot be heard...
 							//&& isPlayerVampire 
 							&& isPlayerCharacter
 							&& !bTranslation 
-							&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+							&& !PlayerState::HasEffectStatus(EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 							&& !g_bLight
 #endif
@@ -167,12 +178,12 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 						{
 							//DEBUG_ADD("add mask1");
 
-							// INT는 150까지이므로..  
+							// INT goes up to 150, so...  
 							int percent;
 //							if( g_pPlayer->IsOusters() )
 //								percent = 70;
 //							else
-								percent = min(75, 25+g_pPlayer->GetINT()*100/(min(2, g_pPlayer->GetRace()+1)*150));
+								percent = min(75, 25+pPlayerStatus->GetINT()*100/(min(2, PlayerState::GetRace()+1)*150));
 							
 							g_pChatManager->AddMask(str, percent);
 
@@ -182,14 +193,14 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 //						{
 //							//DEBUG_ADD("add mask2");
 //
-//							// INT는 300까지이므로..  
+//							// INT goes up to 300, so...  
 //							int percent = min(75, 25+g_pPlayer->GetINT()*100/300);
 //							g_pChatManager->AddMask(str, percent);
 //
 //							//DEBUG_ADD("ok");
 //						}
-						// 할루 상태는 채팅도 제대로 안 보인다.
-						else if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
+						// Under hallucination, chat is not shown properly either.
+						else if (PlayerState::HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
 						{
 							//DEBUG_ADD("add mask3");
 
@@ -202,36 +213,36 @@ void GCSayHandler::execute ( GCSay * pPacket , Player * pPlayer )
 				
 				//DEBUG_ADD("setChat");
 
-				pCreature->SetChatString( str, pPacket->getColor() );
+				CreatureState::SetChatString(pCreature, str, pPacket->getColor() );
 
 				//DEBUG_ADD("ok");
 
-				// history에 추가
+				// Add to the history.
 				char strName[256];
 				//sprintf(temp, "%s> %s", pCreature->GetName(), str);
 				
 
-				// 종족이 다르면 hallu name을 읽어온다
-				if(!bMasterWords && !g_pUserInformation->IsMaster && g_pPlayer->GetRace() != pCreature->GetRace() && !bTranslation)
-					snprintf(strName, sizeof(strName), "%s", pCreature->GetHalluName());
+				// Another race reads the hallucination name.
+				if(!bMasterWords && !g_pUserInformation->IsMaster && PlayerState::GetRace() != CreatureState::GetRace(pCreature) && !bTranslation)
+					snprintf(strName, sizeof(strName), "%s", CreatureState::GetHalluName(pCreature));
 				else
-					snprintf(strName, sizeof(strName), "%s", pCreature->GetName());
+					snprintf(strName, sizeof(strName), "%s", CreatureState::GetName(pCreature));
 
-				// player인 경우만 채팅창에 글 넣는다.
-				if (isPlayerCharacter /*|| IsGildre*/) // 질드레 일경우 존 채팅으로 날린다고 해서 막음..
+				// Only a player's words go into the chat window.
+				if (isPlayerCharacter /*|| IsGildre*/) // Gilles de Rais's would go to zone chat, so it is blocked.
 				{
 					//DEBUG_ADD("UI add");
-					UI_AddChatToHistory( str, strName, 0, pPacket->getColor() );
+					CommunicationPresentation::AddChatToHistory( str, strName, 0, pPacket->getColor() );
 					//DEBUG_ADD("UI add");
 				}
 			}
 			//-------------------------------------------------
-			// 대화 거부로 설정되어 있다면 출력안한다.
+			// Not shown when chat from them is refused.
 			//-------------------------------------------------
 			else
 			{
 				//DEBUG_ADD("no see");
-				pCreature->SetChatString( "......", pPacket->getColor() );
+				CreatureState::SetChatString(pCreature, "......", pPacket->getColor() );
 			}
 		}
 	}
