@@ -1,7 +1,9 @@
 #include "test_framework.h"
 #include "TileRenderer.h"
 #include "SpriteLibBackendSDL.h"
+#include <chrono>
 #include <cstdio>
+#include <string>
 #include <fstream>
 #include <vector>
 
@@ -13,13 +15,17 @@
 // and height apart.
 namespace {
 
-constexpr const char* path = "tile_renderer_test.bin";
 const WORD white = 0xFFFF, green = 0x07E0;
 
 // Loads entry id of the pack as a 2x1 sprite: white, then green.
 void LoadSprite(CSpritePack& pack, WORD id)
 {
 	const WORD words[] = {2, 1, 5, 1, 0, 2, white, green};
+	// A name of its own, so two test processes cannot share it.
+	static unsigned int sequence = 0;
+	const std::string path = "tile_renderer_test_"
+		+ std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())
+		+ "_" + std::to_string(sequence++) + ".bin";
 	{
 		std::ofstream out(path, std::ios::binary | std::ios::trunc);
 		for (WORD w : words) { out.put(char(w & 0xFF)); out.put(char(w >> 8)); }
@@ -27,7 +33,7 @@ void LoadSprite(CSpritePack& pack, WORD id)
 	std::ifstream in(path, std::ios::binary);
 	pack[id].LoadFromFile(in);
 	in.close();
-	std::remove(path);
+	std::remove(path.c_str());
 }
 
 WORD Pixel(CSpriteSurface& surface, int x, int y)

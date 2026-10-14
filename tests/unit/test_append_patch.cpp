@@ -1,10 +1,9 @@
 #include "test_framework.h"
 #include "AppendPatchInfo.h"
+#include <chrono>
 #include <cstdint>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <new>
 #include <string>
 #include <vector>
 
@@ -21,9 +20,14 @@ using Bytes = std::vector<unsigned char>;
 
 struct Scratch
 {
-	std::filesystem::path dir = std::filesystem::temp_directory_path() / "darkeden_append_patch";
+	std::filesystem::path dir;
+	// Unique per run and per test, so two test processes cannot share it.
 	Scratch()
 	{
+		static unsigned int sequence = 0;
+		const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+		dir = std::filesystem::temp_directory_path() / ("darkeden_append_patch_"
+			+ std::to_string(stamp) + "_" + std::to_string(sequence++));
 		std::error_code error;
 		std::filesystem::remove_all(dir, error);
 		std::filesystem::create_directories(dir);
@@ -155,18 +159,53 @@ TEST(AppendPatch, ANodeLoadsItsFourByteFieldsWhole)
 	Put(bytes, 302, 4); Put(bytes, 3, 2); Put(bytes, 1000, 4); Put(bytes, 1300, 4); Put(bytes, 13, 2);
 	scratch.Write("node.bin", bytes);
 
-	alignas(APPEND_PATCH_NODE) unsigned char storage[sizeof(APPEND_PATCH_NODE)];
-	std::memset(storage, 0xA5, sizeof(storage));
-	APPEND_PATCH_NODE* node = new (storage) APPEND_PATCH_NODE;
+	// What the memory held before: all bits set.
+	APPEND_PATCH_NODE node;
+	node.appendFilesize = node.writePosition = node.afterFilesize = -1;
 	std::ifstream in(scratch.Path("node.bin"), std::ios::binary);
-	node->LoadFromFile(in);
-	CHECK(std::string(node->appendFilename.GetString()) == "a1.spk");
-	CHECK_EQ(302, node->appendFilesize);
-	CHECK_EQ(3, node->appSpkSize);
-	CHECK_EQ(1000, node->writePosition);
-	CHECK_EQ(1300, node->afterFilesize);
-	CHECK_EQ(13, node->afterSpkSize);
-	node->~APPEND_PATCH_NODE();
+	node.LoadFromFile(in);
+	CHECK(std::string(node.appendFilename.GetString()) == "a1.spk");
+	CHECK_EQ(302, node.appendFilesize);
+	CHECK_EQ(3, node.appSpkSize);
+	CHECK_EQ(1000, node.writePosition);
+	CHECK_EQ(1300, node.afterFilesize);
+	CHECK_EQ(13, node.afterSpkSize);
+}
+
+// The 4-byte fields are signed, as long was on Windows: a size the chain
+// takes below zero comes back as such.
+TEST(AppendPatch, AFourByteFieldKeepsItsSign)
+{
+	Scratch scratch;
+	AppendPatch patch;
+	patch.SetOriginalInfo("org.spk", 0, 0);
+	patch.AddAppendInfo("a1.spk", 1, 1);	// after: 0 + 1 - 2 = -1
+	{
+		std::ofstream out(scratch.Path("patch.inf"), std::ios::binary);
+		patch.SaveToFile(out);
+	}
+	AppendPatch loaded;
+	std::ifstream in(scratch.Path("patch.inf"), std::ios::binary);
+	loaded.LoadFromFile(in);
+	const auto nodes = loaded.GetAppendPatchNode();
+	if (nodes.size() != 1) return;
+	CHECK_EQ(-1, nodes[0]->afterFilesize);
+}
+
+TEST(AppendPatch, ReleaseForgetsEverything)
+{
+	AppendPatch patch;
+	patch.SetOriginalInfo("org.spk", 5, 1);
+	patch.AddAppendInfo("a1.spk", 4, 1);
+	patch.SetFinalInfo(7, 2);
+	patch.Release();
+	CHECK_EQ(0, patch.GetSize());
+	const char* name = patch.GetOriginalFilename();	// null after Release
+	CHECK(name == nullptr || *name == '\0');
+	// Original and final both zero again.
+	CHECK(patch.CalculateFinalInfo());
+	patch.SetFinalInfo(0, 1);
+	CHECK(!patch.CalculateFinalInfo());
 }
 
 TEST(AppendPatch, TheFinalInfoCanBeReadFromAFile)

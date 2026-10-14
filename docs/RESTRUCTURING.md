@@ -5944,15 +5944,16 @@ rounds settled* for the host rules). Test fixtures share
   >   13.
   >
   > R1 is 52 Windows / 50 Ninja.
-  - Owner: R1, and `test_frame_present.cpp`. Its 4 tests, the last two
+  - Owner: R1, and `test_frame_present.cpp`. Its 5 tests, the last two
     driving a software renderer:
     - `BackBuffer` follows the installed source;
+    - `Flip` asks the source once a flip (added by the follow-up);
     - nothing happens without a renderer;
     - an empty frame is cleared;
     - a 16x12 back buffer fills the middle 80x60 of a 100x60 target,
       with black bars.
-  - Mutants: an ignored or unstored source, no clear and no draw fail.
-    Without `PresentFrame` the test link fails.
+  - Mutants: an ignored or unstored source, `Flip` not asking it, no
+    clear and no draw fail. Without `PresentFrame` the test link fails.
   - Unpinned:
     - `Flip`'s one-line delegation: the class's renderer exists only
       after `Init`, which on Windows wraps a real window.
@@ -5964,7 +5965,6 @@ rounds settled* for the host rules). Test fixtures share
       rejects a null surface on the software path. On the GPU path,
       dropping it would checkpoint every modified surface on each
       title-loading flip.
-    - (The follow-up pins that `Flip` asks the source, once a flip.)
 
 - [x] **4.212 The append patch:** move `AppendPatchInfo.cpp` into
   `gamemodel` behind `AppendPatchHost`.
@@ -5992,8 +5992,9 @@ rounds settled* for the host rules). Test fixtures share
   >   stays.
   >
   > R1 is 51 Windows / 49 Ninja.
-  - Owner: membership, R1, and `test_append_patch.cpp` (8 tests on
-    scratch files, with the `.inf` layout built byte by byte).
+  - Owner: membership, R1, and `test_append_patch.cpp` (11 tests on
+    scratch files, with the `.inf` layout built byte by byte; the fix
+    and #508's review added the 4-byte, sign and `Release` tests).
   - Mutants: all 21 are caught. Taking the source out of the membership
     breaks the test link.
   - Fixed, moved then fixed: the loader read each 4-byte size and
