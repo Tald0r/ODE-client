@@ -148,4 +148,14 @@ int GetFaceStyle(bool male, int hairStyle)
 	return s_Host && s_Host->GetFaceStyle ? s_Host->GetFaceStyle(male, hairStyle) : hairStyle;
 }
 
+bool HasProfiles()
+{
+	return s_Host && s_Host->HasProfiles && s_Host->HasProfiles();
+}
+
+const char* GetProfileFilename(const char* name)
+{
+	return s_Host && s_Host->GetProfileFilename ? s_Host->GetProfileFilename(name) : nullptr;
+}
+
 }

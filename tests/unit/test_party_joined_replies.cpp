@@ -214,7 +214,7 @@ TEST(PartyJoinedReplies, TheListedPartyReplacesTheOldOne)
 	}
 }
 
-TEST(PartyJoinedReplies, AMemberInSightInTheSmallZoneOrWithoutAStatus)
+TEST(PartyJoinedReplies, AMemberInSightInTheSmallZoneAndWithoutAStatus)
 {
 	World world;
 	world.Knew("Ana");
@@ -225,6 +225,8 @@ TEST(PartyJoinedReplies, AMemberInSightInTheSmallZoneOrWithoutAStatus)
 	noStatus.Status = nullptr;
 	CreatureState::SetHost(&noStatus);
 	Receive({{"Ana", 1, 3, kAddress}});
+	// The local host is gone before the World's teardown.
+	CreatureState::SetHost(&creature);
 	const PARTY_INFO* pAna = g_pParty->GetMemberInfo("Ana");
 	CHECK(pAna != nullptr);
 	if (pAna == nullptr) return;

@@ -85,6 +85,21 @@ MCreature* GetFakeCreature(TYPE_OBJECTID id)
 	return s_Host && s_Host->GetFakeCreature ? s_Host->GetFakeCreature(id) : nullptr;
 }
 
+MCreature* NewFakeCreature(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->NewFakeCreature ? s_Host->NewFakeCreature(pCreature, x, y) : nullptr;
+}
+
+bool AddFakeCreature(MCreature* pFakeCreature)
+{
+	return s_Host && s_Host->AddFakeCreature && s_Host->AddFakeCreature(pFakeCreature);
+}
+
+void DeleteFakeCreature(MCreature* pFakeCreature)
+{
+	if (s_Host && s_Host->DeleteFakeCreature) s_Host->DeleteFakeCreature(pFakeCreature);
+}
+
 }
 
 namespace CreatureState {
@@ -510,6 +525,36 @@ void SetAction(MCreature* pCreature, int action)
 MPetItem* GetPetItem(MCreature* pCreature)
 {
 	return s_Host && s_Host->GetPetItem ? s_Host->GetPetItem(pCreature) : nullptr;
+}
+
+void FastMovePosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server)
+{
+	if (s_Host && s_Host->FastMovePosition) s_Host->FastMovePosition(pCreature, x, y, server);
+}
+
+void SetGhost(MCreature* pCreature, int flag, int delay)
+{
+	if (s_Host && s_Host->SetGhost) s_Host->SetGhost(pCreature, flag, delay);
+}
+
+int GetDirectionToPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->GetDirectionToPosition ? s_Host->GetDirectionToPosition(pCreature, x, y) : 0;
+}
+
+void SetInstallTurretDirect(MCreature* pCreature, int direction)
+{
+	if (s_Host && s_Host->SetInstallTurretDirect) s_Host->SetInstallTurretDirect(pCreature, direction);
+}
+
+void SetInstallTurretCount(MCreature* pCreature, int count)
+{
+	if (s_Host && s_Host->SetInstallTurretCount) s_Host->SetInstallTurretCount(pCreature, count);
+}
+
+void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetFakeFastMove) s_Host->SetFakeFastMove(pFakeCreature, x, y);
 }
 
 }
