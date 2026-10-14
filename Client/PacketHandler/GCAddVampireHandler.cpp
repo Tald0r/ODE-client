@@ -20,6 +20,13 @@
 #include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
+// MCreature::IsNPC: whether the creature table's row for its type is an
+// NPC's.
+static bool IsNPCType(MCreature* pCreature)
+{
+	return (*g_pCreatureTable)[CreatureState::GetCreatureType(pCreature)].IsNPC();
+}
+
 void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 
 {
@@ -37,7 +44,7 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 		
 	}	
 	//------------------------------------------------------
-	// Normal.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
@@ -150,14 +157,14 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 			else
 				CreatureState::SetBatColor( pCreature, 0xFFFF );
 			
-			if((*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
+			if(IsNPCType( pCreature ) == false)
 				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
-			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsVampire( PlayerState::Creature() )== true && (*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsVampire( PlayerState::Creature() )== true && IsNPCType( pCreature ) == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
 					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					CreatureState::SetPersnalString( pCreature, GetGameString(UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE), CommunicationPresentation::GetChattingColor() );
+					CreatureState::SetPersnalString( pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor() );
 			}
 			
 
@@ -213,7 +220,7 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 			
 			//pCreature->SetAction(ACTION_MOVE);
 			CreatureState::MovePosition( pCreature, vi.getX(), vi.getY() );
-			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );			
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
 			CreatureState::SetDirection( pCreature, vi.getDir() );
 			CreatureState::SetCurrentDirection( pCreature, vi.getDir() );
 			CreatureState::SetAction( pCreature, ACTION_STAND );
@@ -261,15 +268,15 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 				CreatureState::SetBatColor( pCreature, vi.getBatColor() );
 			else
 				CreatureState::SetBatColor( pCreature, 0xFFFF );
-			if((*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
+			if(IsNPCType( pCreature ) == false)
 				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
 			
-			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsVampire( PlayerState::Creature() )== true && (*g_pCreatureTable)[CreatureState::GetCreatureType( pCreature )].IsNPC() == false)
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsVampire( PlayerState::Creature() )== true && IsNPCType( pCreature ) == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
 					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					CreatureState::SetPersnalString( pCreature, GetGameString(UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE), CommunicationPresentation::GetChattingColor() );
+					CreatureState::SetPersnalString( pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor() );
 			}
 
 			

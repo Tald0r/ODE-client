@@ -8,8 +8,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddMonsterCorpse.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "GameInfoPresentationHost.h"
+#include "MCreatureTable.h"
+#include "MHelpDef.h"
 #include "MItem.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -21,46 +27,46 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 		
 	
 
-	// Creature를 생성해서 MCorpse에 추가해서 Zone에 넣는다.
+	// Make the creature, put it in a corpse, and add that to the zone.
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{	
 		//----------------------------------------	
-		// 이미 있는 Creature인가?
+		// Is the creature already there?
 		//----------------------------------------	
-		MCreature* pCreature = g_pZone->GetCreatureOnly( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreatureOnly( pPacket->getObjectID() );
 		
 		static bool IsIKilled = false;
 		
-		// 2005, 1, 18 , sobeit add start - 슬레, 뱀파, 아우 모습의 몬스터들은 시체 무시(뱀파는 상관 없는데..암튼..)
-		// gcaddslayercorps나 gcaddousterscorps가 날라와야 안 팅기는데...암튼...이런 저런 이유로 무시..
+		// 2005, 1, 18 , sobeit add start - the corpses of monsters shaped as slayers, vampires and ousters are ignored (vampires would not matter.. anyway..)
+		// it only does not crash when gcaddslayercorps or gcaddousterscorps comes... anyway... ignored for one reason or another..
 		int MonsterType = pPacket->getMonsterType();
 		if(MonsterType == 735 || MonsterType == 736 ||MonsterType == 737 || (MonsterType>= 792 && MonsterType<=800))
 			return ;
 		// 2005, 1, 18 , sobeit add end
 		//---------------------------------------------------------
 		//
-		//					Zone에 없는 경우
+		//					Not in the zone
 		//
 		//---------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			// 이미 시체가 있나?
-			MItem* pItem = g_pZone->GetItem( pPacket->getObjectID() );
+			// Is there a corpse already?
+			MItem* pItem = ZoneState::GetItem( pPacket->getObjectID() );
 
 			//---------------------------------------------------------
 			//
-			// 새로운 시체를 생성
+			// Make a new corpse
 			//
 			//---------------------------------------------------------
 			if (pItem==NULL)
@@ -69,72 +75,82 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 				
 				//----------------------------------------	
 				//
-				// 죽은 Creature를 생성한다.
+				// Make the dead creature.
 				//
 				//----------------------------------------	
-				MCreature*	pCreature = new MCreature;
-
-				pCreature->SetZone( g_pZone );
-				
-				pCreature->SetCreatureType( pPacket->getMonsterType() );
-				pCreature->SetGroundCreature();
-				pCreature->SetID( pPacket->getObjectID() );
-				pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-				pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-				pCreature->SetDirection( pPacket->getDir() );
-				pCreature->SetCurrentDirection( pPacket->getDir() );
-				
-				pCreature->SetStatus( MODIFY_MAX_HP, 100 );
-				pCreature->SetStatus( MODIFY_CURRENT_HP, 0 );
-
-				// 시체로 바꾼다.
-				pCreature->SetCorpse();
-				//pCreature->SetName( (*g_pCreatureTable)[pPacket->getMonsterType()].Name.GetString() );
-				pCreature->SetName( pPacket->getMonsterName().c_str() );
-				pCreature->SetDrainCreatureID( pPacket->getLastKiller() );
-
-				// 2004, 5, 7 sobeit add start - 내가 죽인 몬스터 일 때 - 흡혈 도움말
-				if(pPacket->getLastKiller() == g_pPlayer->GetID() && !IsIKilled)
+				MCreature*	pCreature = ZoneState::NewCreature();
+				if (pCreature == NULL)
 				{
-					ExecuteHelpEvent(HELP_EVENT_KILL);
+					return;
+				}
+				
+				CreatureState::SetCreatureType( pCreature, pPacket->getMonsterType() );
+				CreatureState::SetGroundCreature( pCreature );
+				CreatureState::SetID( pCreature, pPacket->getObjectID() );
+				CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );
+				CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+				CreatureState::SetDirection( pCreature, pPacket->getDir() );
+				CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+				
+				if (MStatus* pStatus = CreatureState::Status( pCreature ))
+				{
+					pStatus->SetStatus( MODIFY_MAX_HP, 100 );
+					pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
+				}
+
+				// Turn it into a corpse.
+				CreatureState::SetCorpse( pCreature );
+				//pCreature->SetName( (*g_pCreatureTable)[pPacket->getMonsterType()].Name.GetString() );
+				CreatureState::SetName( pCreature, pPacket->getMonsterName().c_str() );
+				CreatureState::SetDrainCreatureID( pCreature, pPacket->getLastKiller() );
+
+				// 2004, 5, 7 sobeit add start - a monster I killed - the blood-drain help
+				if(PlayerState::Creature() != NULL && pPacket->getLastKiller() == PlayerState::GetID() && !IsIKilled)
+				{
+					GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_KILL);
 					IsIKilled = true;
 				}
 				// 2004, 5, 7 sobeit add end
 
-				// 임시로..
-				pCreature->SetGuildNumber( 1 );				
+				// for now..
+				CreatureState::SetGuildNumber( pCreature, 1 );
 
 				
-				// 머리가 없으면 -_-;
+				// with no head -_-;
 				if (!pPacket->gethasHead())
 				{
-					pCreature->RemoveHead();
+					CreatureState::RemoveHead( pCreature );
 				}
 
 				//----------------------------------------	
 				//
-				// 시체item을 생성한다.
+				// Make the corpse item.
 				//
 				//----------------------------------------	
-				MCorpse* pCorpse = (MCorpse*)MItem::NewItem( ITEM_CLASS_CORPSE );
+				// The corpse owns the creature from here on.
+				MItem* pCorpse = ZoneState::NewCorpse( pCreature );
+				if (pCorpse == NULL)
+				{
+					ZoneState::DeleteCreature( pCreature );
+					return;
+				}
 				pCorpse->SetID( pPacket->getObjectID() );
 				pCorpse->SetItemType( 0 );
-				pCorpse->SetCreature( pCreature );
 				pCorpse->SetPosition( pPacket->getX(), pPacket->getY() );		
 
 				//---------------------------------------------------------
-				// 시체에 들어있는 Item 개수 설정
+				// the number of items in the corpse
 				//---------------------------------------------------------
 				pCorpse->SetNumber( pPacket->getTreasureCount() );
 
 
 				//----------------------------------------
-				// Zone에 Item추가
+				// Add the item to the zone
 				//----------------------------------------
-				if (g_pZone->AddItem( pCorpse ))
+				if (ZoneState::AddItem( pCorpse, false ))
 				{
 					//------------------------------------------------------------
-					// Load되지 않았으면 load한다.
+					// Load it if it is not loaded.
 					//------------------------------------------------------------
 //					LoadCreatureType( pPacket->getMonsterType() );			
 				}
@@ -143,43 +159,48 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 					DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone. id=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 					
 					//---------------------------------------------------------
-					// 추가가 안된 경우
-					// 이미 있는 Item을 제거하고 다시 추가한다.
+					// When it could not be added
+					// Remove the item there and add it again.
 					//---------------------------------------------------------
-					TYPE_OBJECTID oldItemID = g_pZone->GetItemID( pPacket->getX(), pPacket->getY() );
+					TYPE_OBJECTID oldItemID = ZoneState::GetItemID( pPacket->getX(), pPacket->getY() );
 
 					DEBUG_ADD_FORMAT("Remove old Item id=%d", oldItemID);
 						
-					if (g_pZone->RemoveItem( oldItemID ))				
+					if (ZoneState::RemoveItem( oldItemID ))
 					{
-						// 다시 추가한다.
-						if (!g_pZone->AddItem( pCorpse ))
+						// Add it again.
+						if (!ZoneState::AddItem( pCorpse, false ))
 						{
 							DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 							
 							delete pCorpse;
+							// The corpse freed its creature too.
+							pCreature = NULL;
 						}
 					}
 					else
 					{
-						// 이미 있는 item을 제거할 수 없는 경우
+						// When the item there cannot be removed
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, pPacket->getX(), pPacket->getY());
 						
 						delete pCorpse;
+						// The corpse freed its creature too.
+						pCreature = NULL;
 					}								
 				}
 				
-				// 크리스 마스 트리는 이펙트 붙인다.
-				if(pCreature->GetCreatureType() == 482 || pCreature->GetCreatureType() == 650)
+				// A Christmas tree takes an effect.
+				if(pCreature != NULL && (CreatureState::GetCreatureType( pCreature ) == 482 || CreatureState::GetCreatureType( pCreature ) == 650))
 				{
-					if(pCreature->GetCreatureType() == 482)
-						pCreature->AddEffectStatus(EFFECTSTATUS_CLIENTONLY_XMAS_TREE, 0xFFFF);
-					pCreature->SetChatString((char *)pCreature->GetName());
+					if(CreatureState::GetCreatureType( pCreature ) == 482)
+						CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_CLIENTONLY_XMAS_TREE, 0xFFFF );
+					// The words in white, MCreature::SetChatString's default colour.
+					CreatureState::SetChatString( pCreature, CreatureState::GetName( pCreature ), 0x00FFFFFF );
 				}
 			}
 			//---------------------------------------------------------
 			//
-			// 이미 시체가 있는 경우 
+			// A corpse already there
 			//
 			//---------------------------------------------------------
 			else
@@ -187,13 +208,13 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 				#ifdef	OUTPUT_DEBUG
 					if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 					{
-						// 시체가 이미 있는 경우
+						// The corpse is already there
 						DEBUG_ADD("[Collide] Already Exist the Corpse");
 					}					
 				#endif								
 
 				//---------------------------------------------------------
-				// 시체에 들어있는 Item 개수 설정
+				// the number of items in the corpse
 				//---------------------------------------------------------
 				pItem->SetNumber( pPacket->getTreasureCount() );
 			}
@@ -201,59 +222,62 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 		}
 		//---------------------------------------------------------
 		//
-		//				Zone에 이미 있는 경우
+		//				Already in the zone
 		//
 		//---------------------------------------------------------		
 		else
 		{
 			DEBUG_ADD("[Collide] exist Creature");
 
-			if (pCreature->GetCreatureType()!=pPacket->getMonsterType())
+			if (CreatureState::GetCreatureType( pCreature )!=pPacket->getMonsterType())
 			{
-				pCreature->SetCreatureType(pPacket->getMonsterType());
-				pCreature->SetGroundCreature();
+				CreatureState::SetCreatureType( pCreature, pPacket->getMonsterType());
+				CreatureState::SetGroundCreature( pCreature );
 			}
 
-			pCreature->MovePosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
+			CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
 
 			//pCreature->SetStatus( MODIFY_MAX_HP, 100 );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, 0 );
-
-			//---------------------------------------------------------
-			// Creature를 죽여야 한다.
-			//---------------------------------------------------------
-			if (!pCreature->IsDead())
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
 			{
-				pCreature->SetStop();
-				pCreature->SetDead();		
+				pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
 			}
 
-			pCreature->SetItemCount( pPacket->getTreasureCount() );
-
-			// 임시로..
-			pCreature->SetGuildNumber( 1 );
-			pCreature->SetDrainCreatureID( pPacket->getLastKiller() );
-
-			// 2004, 5, 7 sobeit add start - 내가 죽인 몬스터 일 때 - 흡혈 도움말
-			if(pPacket->getLastKiller() == g_pPlayer->GetID() && !IsIKilled)
+			//---------------------------------------------------------
+			// The creature must die.
+			//---------------------------------------------------------
+			if (!CreatureState::IsDead( pCreature ))
 			{
-				ExecuteHelpEvent(HELP_EVENT_KILL);
+				CreatureState::SetStop( pCreature );
+				CreatureState::SetDead( pCreature );
+			}
+
+			CreatureState::SetItemCount( pCreature, pPacket->getTreasureCount() );
+
+			// for now..
+			CreatureState::SetGuildNumber( pCreature, 1 );
+			CreatureState::SetDrainCreatureID( pCreature, pPacket->getLastKiller() );
+
+			// 2004, 5, 7 sobeit add start - a monster I killed - the blood-drain help
+			if(PlayerState::Creature() != NULL && pPacket->getLastKiller() == PlayerState::GetID() && !IsIKilled)
+			{
+				GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_KILL);
 				IsIKilled = true;
 			}
 			// 2004, 5, 7 sobeit add end
-			// 머리가 없으면 -_-;
+			// with no head -_-;
 			if (!pPacket->gethasHead())
 			{
-				pCreature->RemoveHead();
+				CreatureState::RemoveHead( pCreature );
 			}
 		}
 
 	}
 
-	// [도움말] 시체 생길 때
+	// [Help] when a corpse appears
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_ITEM_APPEAR_CORPSE );	
 //	__END_HELP_EVENT

@@ -9,16 +9,24 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddSlayer.h"
-#include "ClientDef.h"
-#include "AddonDef.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
 #include "MCreatureTable.h"
-#include "MTestDef.h"
 #include "MGameStringTable.h"
-
-extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
+#include "MStatus.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
+// MCreature::IsNPC: whether the creature table's row for its type is an
+// NPC's.
+static bool IsNPCType(MCreature* pCreature)
+{
+	return (*g_pCreatureTable)[CreatureState::GetCreatureType(pCreature)].IsNPC();
+}
+
 void GCAddSlayerHandler::execute ( GCAddSlayer * pPacket , Player * pPlayer )
 
 {
@@ -28,16 +36,16 @@ void GCAddSlayerHandler::execute ( GCAddSlayer * pPacket , Player * pPlayer )
 
 	
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
@@ -45,119 +53,132 @@ void GCAddSlayerHandler::execute ( GCAddSlayer * pPacket , Player * pPlayer )
 			
 		DEBUG_ADD_FORMAT("[AddSlayer] id=%d, xy=(%d,%d), dir=%d", si.getObjectID(), si.getX(), si.getY(), si.getDir());				
 		
-		MCreature* pCreature = g_pZone->GetCreature(si.getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(si.getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
-		// 복장이 있는 Creature이다.
+		// A new creature: add it
+		// It is a creature that wears gear.
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			MCreatureWear* pCreatureWear = new MCreatureWear;
-
-			pCreatureWear->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
-			pCreatureWear->SetZone( g_pZone );
-
-			pCreature = (MCreature*)pCreatureWear;
+			MCreature* pCreatureWear = ZoneState::NewCreatureWear();
+			if (pCreatureWear == NULL)
+			{
+				return;
+			}
+			if (MStatus* pStatus = CreatureState::Status( pCreatureWear ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
+			}
+			pCreature = pCreatureWear;
 
 			if (si.getCompetence()==0)
 			{
-				pCreatureWear->SetCompetence( 0 );
-				pCreatureWear->SetCreatureType( CREATURETYPE_SLAYER_OPERATOR );
-				pCreatureWear->SetMale( si.getSex()==MALE );
+				CreatureState::SetCompetence( pCreatureWear, 0 );
+				CreatureState::SetCreatureType( pCreatureWear, CREATURETYPE_SLAYER_OPERATOR );
+				CreatureState::SetMale( pCreatureWear, si.getSex()==MALE );
 			}
 			else
 			{
-				pCreatureWear->SetCreatureType( (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
+				CreatureState::SetCreatureType( pCreatureWear, (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
 			}
 
-			pCreatureWear->SetGuildNumber( si.getGuildID() );
-			pCreatureWear->SetUnionGuildID( si.getUnionID() );
+			CreatureState::SetGuildNumber( pCreatureWear, si.getGuildID() );
+			CreatureState::SetUnionGuildID( pCreatureWear, si.getUnionID() );
 
-			pCreatureWear->SetGroundCreature();
-			pCreatureWear->SetID(si.getObjectID());
+			CreatureState::SetGroundCreature( pCreatureWear );
+			CreatureState::SetID( pCreatureWear, si.getObjectID() );
 			//pCreatureWear->SetAction(ACTION_MOVE);
-			pCreatureWear->SetPosition( si.getX(), si.getY() );
-			pCreatureWear->SetServerPosition( si.getX(), si.getY() );
-			pCreatureWear->SetDirection( si.getDir() );
-			pCreatureWear->SetCurrentDirection( si.getDir() );
-			pCreatureWear->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pCreatureWear, si.getX(), si.getY() );
+			CreatureState::SetServerPosition( pCreatureWear, si.getX(), si.getY() );
+			CreatureState::SetDirection( pCreatureWear, si.getDir() );
+			CreatureState::SetCurrentDirection( pCreatureWear, si.getDir() );
+			CreatureState::SetAction( pCreatureWear, ACTION_STAND );
 
-			// 피부색
-			pCreatureWear->SetBodyColor1( si.getSkinColor() );
+			// skin colour
+			CreatureState::SetBodyColor1( pCreatureWear, si.getSkinColor() );
 
-			pCreature->SetMasterEffectType(si.getMasterEffectColor());
+			CreatureState::SetMasterEffectType( pCreature, si.getMasterEffectColor());
 
-			pCreatureWear->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
-			pCreatureWear->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
-			pCreatureWear->SetStatus( MODIFY_ALIGNMENT, si.getAlignment() );
-			pCreatureWear->SetStatus( MODIFY_RANK, si.getRank() );
+			if (MStatus* pStatus = CreatureState::Status( pCreatureWear ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, si.getAlignment() );
+				pStatus->SetStatus( MODIFY_RANK, si.getRank() );
+			}
 
-			// 이름
-			pCreatureWear->SetName( si.getName().c_str() );
+			// the name
+			CreatureState::SetName( pCreatureWear, si.getName().c_str() );
 
-			// 색깔 정보
+			// the colour information
 
-			// 복장 정보 --> 일단 기본 옷을 입고 있게 한다.
+			// its gear --> for now, in basic clothes.
 			//----------------------------------------	
-			// 복장을 착용한다.
+			// Put the gear on.
 			//----------------------------------------	
-			SetAddonToSlayer( pCreatureWear, &si );
-			if(pCreature->IsNPC() == false)
-				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
+			CreatureState::SetAddonToSlayer3( pCreatureWear, &si );
+			if(IsNPCType( pCreature ) == false)
+				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
 
-			if(pPacket->getStoreOutlook().isOpen()&& g_pPlayer->IsSlayer()== true && pCreature->IsNPC() == false)
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsSlayer( PlayerState::Creature() )== true && IsNPCType( pCreature ) == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
-					pCreature->SetPersnalString((char*)pPacket->getStoreOutlook().getSign().c_str(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor() );
 
 			}
 
-			if (!g_pZone->AddCreature( pCreatureWear ))
+			if (!ZoneState::AddCreature( pCreatureWear ))
 			{
-				delete pCreatureWear;
+				ZoneState::DeleteCreature( pCreatureWear );
 				pCreatureWear = NULL;
 				pCreature = NULL;
 			}
 		}
 		//--------------------------------------------------
-		// 이미 있는 Creature인 경우
+		// A creature already there
 		//--------------------------------------------------
 		else
 		{
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
-			pCreature->SetGuildNumber( si.getGuildID() );
-			pCreature->SetUnionGuildID( si.getUnionID() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
+			}
+			CreatureState::SetGuildNumber( pCreature, si.getGuildID() );
+			CreatureState::SetUnionGuildID( pCreature, si.getUnionID() );
 
-			pCreature->SetGroundCreature();
+			CreatureState::SetGroundCreature( pCreature );
 			
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->MovePosition( si.getX(), si.getY() );
-			pCreature->SetServerPosition( si.getX(), si.getY() );
-			pCreature->SetDirection( si.getDir() );
-			pCreature->SetCurrentDirection( si.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::MovePosition( pCreature, si.getX(), si.getY() );
+			CreatureState::SetServerPosition( pCreature, si.getX(), si.getY() );
+			CreatureState::SetDirection( pCreature, si.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, si.getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			// 피부색
-			pCreature->SetBodyColor1( si.getSkinColor() );
-			pCreature->SetMasterEffectType(si.getMasterEffectColor());
+			// skin colour
+			CreatureState::SetBodyColor1( pCreature, si.getSkinColor() );
+			CreatureState::SetMasterEffectType( pCreature, si.getMasterEffectColor());
 
-			pCreature->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, si.getAlignment() );
-			pCreature->SetStatus( MODIFY_RANK, si.getRank() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, si.getAlignment() );
+				pStatus->SetStatus( MODIFY_RANK, si.getRank() );
+			}
 			
-			if(pCreature->IsNPC() == false)
-				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
+			if(IsNPCType( pCreature ) == false)
+				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
 			
-			if(pPacket->getStoreOutlook().isOpen()&& g_pPlayer->IsSlayer()== true && pCreature->IsNPC() == false)
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsSlayer( PlayerState::Creature() )== true && IsNPCType( pCreature ) == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
-					pCreature->SetPersnalString((char*)pPacket->getStoreOutlook().getSign().c_str(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor() );
 
 			}
 
@@ -166,35 +187,35 @@ void GCAddSlayerHandler::execute ( GCAddSlayer * pPacket , Player * pPlayer )
 		if (pCreature!=NULL)
 		{
 			//--------------------------------------------------
-			// Effect 붙이기..
+			// Attach the effects..
 			//--------------------------------------------------
-			SetEffectInfo( pCreature, pPacket->getEffectInfo() );
+			WorldEvents::SetEffectInfo( pCreature, pPacket->getEffectInfo(), 0 );
 			
-			// 펫 처리
+			// the pet
 			if(pPacket->getPetInfo() != NULL)
-				SetPetInfo(pPacket->getPetInfo(), pCreature->GetID());
+				WorldEvents::SetPetInfo(pPacket->getPetInfo(), CreatureState::GetID( pCreature ));
 			NicknameInfo* _tempNick = pPacket->getNicknameInfo();
 			if(_tempNick != NULL)
 			{
-				// 커스텀 닉네임 일때
+				// a custom nickname
 				if(_tempNick->getNicknameType() == NicknameInfo::NICK_CUSTOM_FORCED ||
 				   _tempNick->getNicknameType() == NicknameInfo::NICK_CUSTOM)
 				{
-					pCreature->SetNickName(_tempNick->getNicknameType(), (char*)_tempNick->getNickname().c_str());
+					CreatureState::SetNickName( pCreature, _tempNick->getNicknameType(), (char*)_tempNick->getNickname().c_str());
 					
 				}
-				else // 닉네임 인덱스가 있을 때
+				else // a nickname by its index
 				{
 					int TempIndex = _tempNick->getNicknameIndex();
 					if(TempIndex >= g_pNickNameStringTable->GetSize())
 						TempIndex = 0;
-					pCreature->SetNickName(_tempNick->getNicknameType(), (char*)(*g_pNickNameStringTable)[TempIndex].GetString());
+					CreatureState::SetNickName( pCreature, _tempNick->getNicknameType(), (char*)(*g_pNickNameStringTable)[TempIndex].GetString());
 				}
 			}
 		}
 	}
 
-	// [도움말] Slayer가 나타날때
+	// [Help] when a slayer appears
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_CREATURE_APPEAR_SLAYER );
 //	__END_HELP_EVENT

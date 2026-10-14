@@ -8,10 +8,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddSlayerCorpse.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
 #include "MItem.h"
-#include "AddonDef.h"
-#include "DrawTypeDef.h"
+#include "MStatus.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -22,40 +23,40 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 	(void)pPlayer;
 		
 
-	// Creature를 생성해서 MCorpse에 추가해서 Zone에 넣는다.
+	// Make the creature, put it in a corpse, and add that to the zone.
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{		
 		const PCSlayerInfo3 & si = pPacket->getSlayerInfo();	
 			
 		//----------------------------------------	
-		// 이미 있는 Creature인가?
+		// Is the creature already there?
 		//----------------------------------------	
-		MCreature* pCreature = g_pZone->GetCreatureOnly( si.getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreatureOnly( si.getObjectID() );
 		
 		//---------------------------------------------------------
 		//
-		//					Zone에 없는 경우
+		//					Not in the zone
 		//
 		//---------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			// 이미 시체가 있나?
-			MItem* pItem = g_pZone->GetItem( si.getObjectID() );
+			// Is there a corpse already?
+			MItem* pItem = ZoneState::GetItem( si.getObjectID() );
 
 			//---------------------------------------------------------
 			//
-			// 새로운 시체를 생성
+			// Make a new corpse
 			//
 			//---------------------------------------------------------
 			if (pItem==NULL)
@@ -64,83 +65,95 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 				
 				//----------------------------------------	
 				//
-				// 죽은 Creature를 생성한다.
+				// Make the dead creature.
 				//
 				//----------------------------------------	
-				MCreatureWear*	pDeadCreature = new MCreatureWear;
-				
-				pDeadCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
-
-				pDeadCreature->SetZone( g_pZone );
+				MCreature*	pDeadCreature = ZoneState::NewCreatureWear();
+				if (pDeadCreature == NULL)
+				{
+					return;
+				}
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
+				}
 				
 				//----------------------------------------	
-				// 복장을 착용한다.
+				// Put the gear on.
 				//----------------------------------------					
 				if (si.getCompetence()==0)
 				{
-					pDeadCreature->SetCompetence( 0 );
-					pDeadCreature->SetCreatureType( CREATURETYPE_SLAYER_OPERATOR );
-					pDeadCreature->SetMale( si.getSex()==MALE );
+					CreatureState::SetCompetence( pDeadCreature, 0 );
+					CreatureState::SetCreatureType( pDeadCreature, CREATURETYPE_SLAYER_OPERATOR );
+					CreatureState::SetMale( pDeadCreature, si.getSex()==MALE );
 				}
 				else
 				{
-					pDeadCreature->SetCreatureType( (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
+					CreatureState::SetCreatureType( pDeadCreature, (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
 				}
 
-				pDeadCreature->SetGuildNumber( si.getGuildID() );
+				CreatureState::SetGuildNumber( pDeadCreature, si.getGuildID() );
 
-				// creatureType이 Slayer남자면 0, Slayer여자면 1 
-				pDeadCreature->SetGroundCreature();
-				pDeadCreature->SetID( si.getObjectID() );
-				pDeadCreature->SetPosition( si.getX(), si.getY() );
-				pDeadCreature->SetServerPosition( si.getX(), si.getY() );
-				pDeadCreature->SetDirection( si.getDir() );
-				pDeadCreature->SetCurrentDirection( si.getDir() );
+				// creatureType: 0 for a male slayer, 1 for a female one
+				CreatureState::SetGroundCreature( pDeadCreature );
+				CreatureState::SetID( pDeadCreature, si.getObjectID() );
+				CreatureState::SetPosition( pDeadCreature, si.getX(), si.getY() );
+				CreatureState::SetServerPosition( pDeadCreature, si.getX(), si.getY() );
+				CreatureState::SetDirection( pDeadCreature, si.getDir() );
+				CreatureState::SetCurrentDirection( pDeadCreature, si.getDir() );
 
-				// 피부색
-				pDeadCreature->SetBodyColor1( si.getSkinColor() );
+				// skin colour
+				CreatureState::SetBodyColor1( pDeadCreature, si.getSkinColor() );
 
-				pDeadCreature->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
-				pDeadCreature->SetStatus( MODIFY_CURRENT_HP, 0 );			
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
+					pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
+				}
 				
-				SetAddonToSlayer( pDeadCreature, &si );	
+				CreatureState::SetAddonToSlayer3( pDeadCreature, &si );
 
-				// 시체로 바꾼다.
-				pDeadCreature->SetCorpse();
-				pDeadCreature->SetName( si.getName().c_str() );				
+				// Turn it into a corpse.
+				CreatureState::SetCorpse( pDeadCreature );
+				CreatureState::SetName( pDeadCreature, si.getName().c_str() );
 
 				//----------------------------------------	
 				//
-				// 시체item을 생성한다.
+				// Make the corpse item.
 				//
 				//----------------------------------------	
-				MCorpse* pCorpse = (MCorpse*)MItem::NewItem( ITEM_CLASS_CORPSE );
+				// The corpse owns the creature from here on.
+				MItem* pCorpse = ZoneState::NewCorpse( pDeadCreature );
+				if (pCorpse == NULL)
+				{
+					ZoneState::DeleteCreature( pDeadCreature );
+					return;
+				}
 				pCorpse->SetID( si.getObjectID() );
 				pCorpse->SetItemType( 0 );
-				pCorpse->SetCreature( pDeadCreature );
 				pCorpse->SetPosition( si.getX(), si.getY() );	
 				
 				pCorpse->SetNumber( pPacket->getTreasureCount() );
 
 				//----------------------------------------
-				// Zone에 Item추가
+				// Add the item to the zone
 				//----------------------------------------
-				if (!g_pZone->AddItem( pCorpse ))
+				if (!ZoneState::AddItem( pCorpse, false ))
 				{
 					DEBUG_ADD_ERR("[Error] Can't Add to Zone.");
 					
 					//---------------------------------------------------------
-					// 추가가 안된 경우
-					// 이미 있는 Item을 제거하고 다시 추가한다.
+					// When it could not be added
+					// Remove the item there and add it again.
 					//---------------------------------------------------------
-					TYPE_OBJECTID oldItemID = g_pZone->GetItemID( si.getX(), si.getY() );
+					TYPE_OBJECTID oldItemID = ZoneState::GetItemID( si.getX(), si.getY() );
 
 					DEBUG_ADD_FORMAT("Remove old Item id=%d", oldItemID);
 						
-					if (g_pZone->RemoveItem( oldItemID ))				
+					if (ZoneState::RemoveItem( oldItemID ))
 					{
-						// 다시 추가한다.
-						if (!g_pZone->AddItem( pCorpse ))
+						// Add it again.
+						if (!ZoneState::AddItem( pCorpse, false ))
 						{
 							DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", si.getObjectID(), si.getX(), si.getY());
 							
@@ -149,7 +162,7 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 					}
 					else
 					{
-						// 이미 있는 item을 제거할 수 없는 경우
+						// When the item there cannot be removed
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, si.getX(), si.getY());
 						
 						delete pCorpse;
@@ -158,7 +171,7 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 			}
 			//---------------------------------------------------------
 			//
-			// 이미 시체가 있는 경우 
+			// A corpse already there
 			//
 			//---------------------------------------------------------
 			else
@@ -168,8 +181,8 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 				if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 				{
 					//---------------------------------------------------------					
-					// 시체가 이미 있는 경우
-					// 시체에 들어있는 Item 개수 설정
+					// The corpse is already there
+					// the number of items in the corpse
 					//---------------------------------------------------------
 					pItem->SetNumber( pPacket->getTreasureCount() );
 				}
@@ -181,7 +194,7 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 		}
 		//---------------------------------------------------------
 		//
-		//				Zone에 이미 있는 경우
+		//				Already in the zone
 		//
 		//---------------------------------------------------------		
 		else
@@ -190,46 +203,52 @@ void GCAddSlayerCorpseHandler::execute ( GCAddSlayerCorpse * pPacket , Player * 
 
 			const PCSlayerInfo3 & si = pPacket->getSlayerInfo();
 
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, si.getAdvancementLevel() );
+			}
 
 			int creatureType = ((si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE);
 
-			if (pCreature->GetCreatureType()!=creatureType)
+			if (CreatureState::GetCreatureType( pCreature )!=creatureType)
 			{
 				if (si.getCompetence()==0)
 				{
-					pCreature->SetCompetence( 0 );
-					pCreature->SetCreatureType( CREATURETYPE_SLAYER_OPERATOR );
-					pCreature->SetMale( si.getSex()==MALE );
+					CreatureState::SetCompetence( pCreature, 0 );
+					CreatureState::SetCreatureType( pCreature, CREATURETYPE_SLAYER_OPERATOR );
+					CreatureState::SetMale( pCreature, si.getSex()==MALE );
 				}
 				else
 				{
-					pCreature->SetCreatureType(creatureType);
+					CreatureState::SetCreatureType( pCreature, creatureType);
 				}
 
-				pCreature->SetGroundCreature();				
+				CreatureState::SetGroundCreature( pCreature );
 			}
 
-			pCreature->SetGuildNumber( si.getGuildID() );
+			CreatureState::SetGuildNumber( pCreature, si.getGuildID() );
 			
-			pCreature->MovePosition( si.getX(), si.getY() );
-			pCreature->SetServerPosition( si.getX(), si.getY() );
-			pCreature->SetDirection( si.getDir() );
-			pCreature->SetCurrentDirection( si.getDir() );			
+			CreatureState::MovePosition( pCreature, si.getX(), si.getY() );
+			CreatureState::SetServerPosition( pCreature, si.getX(), si.getY() );
+			CreatureState::SetDirection( pCreature, si.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, si.getDir() );
 			
 			//pCreature->SetStatus( MODIFY_MAX_HP, 100 );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, 0 );
-
-			//---------------------------------------------------------
-			// Creature를 죽여야 한다.
-			//---------------------------------------------------------
-			if (!pCreature->IsDead())
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
 			{
-				pCreature->SetStop();			
-				pCreature->SetDead();		
+				pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
 			}
 
-			pCreature->SetItemCount( pPacket->getTreasureCount() );
+			//---------------------------------------------------------
+			// The creature must die.
+			//---------------------------------------------------------
+			if (!CreatureState::IsDead( pCreature ))
+			{
+				CreatureState::SetStop( pCreature );
+				CreatureState::SetDead( pCreature );
+			}
+
+			CreatureState::SetItemCount( pCreature, pPacket->getTreasureCount() );
 		}
 	}
 

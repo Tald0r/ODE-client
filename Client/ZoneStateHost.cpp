@@ -135,6 +135,21 @@ void DeleteCreature(MCreature* pCreature)
 	if (s_Host && s_Host->DeleteCreature) s_Host->DeleteCreature(pCreature);
 }
 
+MCreature* GetCreatureOnly(TYPE_OBJECTID id)
+{
+	return s_Host && s_Host->GetCreatureOnly ? s_Host->GetCreatureOnly(id) : NULL;
+}
+
+TYPE_OBJECTID GetItemID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->GetItemID ? s_Host->GetItemID(x, y) : OBJECTID_NULL;
+}
+
+MItem* NewCorpse(MCreature* pCreature)
+{
+	return s_Host && s_Host->NewCorpse ? s_Host->NewCorpse(pCreature) : NULL;
+}
+
 }
 
 namespace CreatureState {
@@ -685,6 +700,26 @@ void SetMasterEffectType(MCreature* pCreature, int type)
 void SetUnionGuildID(MCreature* pCreature, int unionID)
 {
 	if (s_Host && s_Host->SetUnionGuildID) s_Host->SetUnionGuildID(pCreature, unionID);
+}
+
+void SetAddonToOusters3(MCreature* pCreature, const PCOustersInfo3* pInfo)
+{
+	if (s_Host && s_Host->SetAddonToOusters3) s_Host->SetAddonToOusters3(pCreature, pInfo);
+}
+
+void SetCorpse(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetCorpse) s_Host->SetCorpse(pCreature);
+}
+
+bool IsDead(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsDead && s_Host->IsDead(pCreature);
+}
+
+void SetItemCount(MCreature* pCreature, int count)
+{
+	if (s_Host && s_Host->SetItemCount) s_Host->SetItemCount(pCreature, count);
 }
 
 }

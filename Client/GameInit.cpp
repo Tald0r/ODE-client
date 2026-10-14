@@ -3681,6 +3681,13 @@ static const ZoneState::Host s_ZoneStateHost = {
 	},
 	.AddCreature = [](MCreature* pCreature) { return g_pZone != NULL && g_pZone->AddCreature(pCreature); },
 	.DeleteCreature = [](MCreature* pCreature) { delete pCreature; },
+	.GetCreatureOnly = [](TYPE_OBJECTID id) -> MCreature* { return g_pZone != NULL ? g_pZone->GetCreatureOnly(id) : NULL; },
+	.GetItemID = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) -> TYPE_OBJECTID { return g_pZone != NULL ? g_pZone->GetItemID(x, y) : OBJECTID_NULL; },
+	.NewCorpse = [](MCreature* pCreature) -> MItem* {
+		MCorpse* pCorpse = static_cast<MCorpse*>(MItem::NewItem(ITEM_CLASS_CORPSE));
+		if (pCorpse != NULL) pCorpse->SetCreature(pCreature);
+		return pCorpse;
+	},
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3828,6 +3835,12 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetCompetence = [](MCreature* pCreature, int competence) { pCreature->SetCompetence(static_cast<BYTE>(competence)); },
 	.SetMasterEffectType = [](MCreature* pCreature, int type) { pCreature->SetMasterEffectType(static_cast<BYTE>(type)); },
 	.SetUnionGuildID = [](MCreature* pCreature, int unionID) { pCreature->SetUnionGuildID(unionID); },
+	.SetAddonToOusters3 = [](MCreature* pCreature, const PCOustersInfo3* pInfo) {
+		if (pCreature->IsWear()) SetAddonToOusters(static_cast<MCreatureWear*>(pCreature), pInfo);
+	},
+	.SetCorpse = [](MCreature* pCreature) { pCreature->SetCorpse(); },
+	.IsDead = [](MCreature* pCreature) { return pCreature->IsDead(); },
+	.SetItemCount = [](MCreature* pCreature, int count) { pCreature->SetItemCount(count); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
