@@ -1067,3 +1067,5 @@ Client/PacketHandler/GCShopSellOKHandler.cpp
 # The trade box's errors and verifications.
 Client/PacketHandler/GCTradeErrorHandler.cpp
 Client/PacketHandler/GCTradeVerifyHandler.cpp
+Client/PacketHandler/GCDeleteInventoryItemHandler.cpp
+Client/PacketHandler/GCDeleteObjectHandler.cpp

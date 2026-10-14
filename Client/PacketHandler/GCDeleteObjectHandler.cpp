@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCDeleteObject.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 
 
 //--------------------------------------------------------------------------------
@@ -22,53 +25,50 @@ void GCDeleteObjectHandler::execute ( GCDeleteObject * pPacket , Player * pPlaye
 	(void)pPlayer;
 
 
-	//cout << "Object[" << pPacket->getObjectID() << "] deleted from zone." << endl;
-
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
-	// 어떤 Object를 제거하는데..
-	// --> 제거해보고 확인해야 한다.
+	// Normal: some object is removed; which one is found
+	// by trying.
 	//------------------------------------------------------
 	else
 	{	
 		TYPE_OBJECTID objectID = pPacket->getObjectID();
 
-		if (g_pPlayer->IsItemCheckBufferDropToRelicTable())
+		if (PlayerState::GetItemCheckBufferStatus()==PlayerState::ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE)
 		{
 			//---------------------------------------------
-			// 떨어뜨릴려는 item
+			// the item being dropped
 			//---------------------------------------------
-			MItem* pItem = g_pPlayer->GetItemCheckBuffer();
+			MItem* pItem = PlayerState::GetItemCheckBuffer();
 
-			if(pItem->GetID() == objectID)UI_DropItem();
-			g_pPlayer->ClearItemCheckBuffer();
+			if(pItem->GetID() == objectID)DialogPresentation::DropItem();
+			PlayerState::ClearItemCheckBuffer();
 		}
 
 		//------------------------------------------------------
-		// Creature인 경우??
+		// A creature?
 		//------------------------------------------------------
-		if ( g_pZone->RemoveCreature( objectID ) )
+		if ( ZoneState::RemoveCreature( objectID ) )
 		{
 			DEBUG_ADD_FORMAT("Remove Creature OK. ID=%d", objectID);
 		}
 		//------------------------------------------------------
-		// Item인 경우??
+		// An item?
 		//------------------------------------------------------
-		else if ( g_pZone->RemoveItem( objectID ) )
+		else if ( ZoneState::RemoveItem( objectID ) )
 		{			
 			DEBUG_ADD_FORMAT("Remove Item OK. ID=%d", objectID);
 		}
 		//------------------------------------------------------
-		// 뭐지???
+		// Neither
 		//------------------------------------------------------
 		else
 		{

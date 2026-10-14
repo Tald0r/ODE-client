@@ -9,9 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCDeleteInventoryItem.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
 #include "MInventory.h"
-#include "UIFunction.h"
+#include "PlayerStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -22,13 +23,13 @@ void GCDeleteInventoryItemHandler::execute ( GCDeleteInventoryItem * pPacket , P
 	(void)pPlayer;
 
 
-	MItem* pItem = UI_GetMouseItem();
+	MItem* pItem = DialogPresentation::GetMouseItem();
 
-	// mouse에 있는 것도 함 체크해준다. by sigi. 2002.7.8
+	// The item on the mouse is checked too. by sigi. 2002.7.8
 	if (pItem!=NULL
 		&& pItem->GetID()==pPacket->getObjectID())
 	{
-		UI_DropItem();		
+		DialogPresentation::DropItem();
 	}
 	else
 	{
@@ -42,24 +43,22 @@ void GCDeleteInventoryItemHandler::execute ( GCDeleteInventoryItem * pPacket , P
 
 	if (pItem!=NULL)
 	{
+		const PlayerState::ITEM_CHECK_BUFFER status = PlayerState::GetItemCheckBufferStatus();
 
-		if (g_pPlayer->IsItemCheckBufferDropToRelicTable() || g_pPlayer->IsItemCheckBufferDropToCreature())
+		if (status==PlayerState::ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE || status==PlayerState::ITEM_CHECK_BUFFER_DROP_TO_CREATURE)
 		{
 			//---------------------------------------------
 			// the item being dropped
 			//---------------------------------------------
-			MItem* pCheckItem = g_pPlayer->GetItemCheckBuffer();
+			MItem* pCheckItem = PlayerState::GetItemCheckBuffer();
 
 			if(pCheckItem->GetID() == pItem->GetID())
-				UI_DropItem();
-			g_pPlayer->ClearItemCheckBuffer();
+				DialogPresentation::DropItem();
+			PlayerState::ClearItemCheckBuffer();
 		}
 
-		// The tooltip descriptor may still hold this item's raw pointer and
-		// dereferences it every frame, so it has to be cleared before the
-		// delete — the same pattern the shop and gear handlers use.
-		UI_RemoveDescriptor( (void*)pItem );
-
+		// The item's destroy hook clears the tooltip descriptor that may
+		// still hold it.
 		delete pItem;
 	}
 

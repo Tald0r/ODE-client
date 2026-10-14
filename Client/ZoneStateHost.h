@@ -41,6 +41,9 @@ struct Host
 	// Lays the item in the zone, falling when bDropping; the zone owns it
 	// when this answers true.
 	bool (*AddItem)(MItem* pItem, bool bDropping) = nullptr;
+	// Takes the creature with this ID out of the zone; false when it is
+	// not there.
+	bool (*RemoveCreature)(TYPE_OBJECTID id) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -58,6 +61,7 @@ MItem* GetItem(TYPE_OBJECTID itemID);
 bool RemoveItem(TYPE_OBJECTID itemID);
 // Without a host the item is not taken: false, and the caller keeps it.
 bool AddItem(MItem* pItem, bool bDropping);
+bool RemoveCreature(TYPE_OBJECTID id);
 
 }
 

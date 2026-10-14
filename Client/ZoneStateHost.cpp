@@ -70,6 +70,11 @@ bool AddItem(MItem* pItem, bool bDropping)
 	return s_Host && s_Host->AddItem ? s_Host->AddItem(pItem, bDropping) : false;
 }
 
+bool RemoveCreature(TYPE_OBJECTID id)
+{
+	return s_Host && s_Host->RemoveCreature ? s_Host->RemoveCreature(id) : false;
+}
+
 }
 
 namespace CreatureState {
