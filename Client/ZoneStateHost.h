@@ -35,11 +35,16 @@ struct Host
 	// The item lying in the zone with this ID; NULL for none.
 	MItem* (*GetItem)(TYPE_OBJECTID itemID) = nullptr;
 	// Takes the item out of the zone and frees it; false when it is not
-	// there.
+	// there. MZone's also clears the player's item check buffer when it
+	// holds the item, so it needs the player.
 	bool (*RemoveItem)(TYPE_OBJECTID itemID) = nullptr;
 	// Lays the item in the zone, falling when bDropping; the zone owns it
 	// when this answers true.
 	bool (*AddItem)(MItem* pItem, bool bDropping) = nullptr;
+	// Takes the creature with this ID out of the zone, freeing it unless
+	// it is the player; false when the zone does not hold it. MZone's also
+	// answers false, and keeps the creature, when no sector holds it.
+	bool (*RemoveCreature)(TYPE_OBJECTID id) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -57,6 +62,7 @@ MItem* GetItem(TYPE_OBJECTID itemID);
 bool RemoveItem(TYPE_OBJECTID itemID);
 // Without a host the item is not taken: false, and the caller keeps it.
 bool AddItem(MItem* pItem, bool bDropping);
+bool RemoveCreature(TYPE_OBJECTID id);
 
 }
 
@@ -173,6 +179,8 @@ struct Host
 	// Ends a blood drain or a soul absorption the creature was showing.
 	void (*SetStopBloodDrain)(MCreature* pCreature) = nullptr;
 	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
+	// The creature table's vampire flag of its type.
+	bool (*IsVampire)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -258,5 +266,6 @@ bool IsOusters(MCreature* pCreature);
 int GetRace(MCreature* pCreature);
 void SetStopBloodDrain(MCreature* pCreature);
 void SetStopAbsorbSoul(MCreature* pCreature);
+bool IsVampire(MCreature* pCreature);
 
 }

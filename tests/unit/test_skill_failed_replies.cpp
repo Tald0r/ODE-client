@@ -25,7 +25,7 @@
 // a blood drain stops, a slayer's Eternity waits out its delay, Soul Chain
 // cannot trace, Burning Soul loses its charge, and the skill is ready
 // again at once (Will of Life after its level's delay) unless its row
-// ignores a failure; the status changes last. Another creature's skill
+// ignores a failure; the status changes too. Another creature's skill
 // failed: it shows the skill (its weapon's for a plain attack, its step's
 // for a grade) failing on its target, on nobody at its own cell, on
 // itself, or at its cell; an ousters absorbing a soul finds the soul in a

@@ -1056,3 +1056,21 @@ Client/PacketHandler/GCSkillFailed2Handler.cpp
 Client/PacketHandler/GCRideMotorCycleHandler.cpp
 Client/PacketHandler/GCRideMotorCycleOKHandler.cpp
 Client/PacketHandler/GCAddGearToZoneHandler.cpp
+
+# The item classes that change the player's skill icons, and the shop's
+# answers to a purchase and a sale.
+Client/ItemSkillIcons.cpp
+Client/ItemSkillIcons.h
+Client/PacketHandler/GCShopBuyOKHandler.cpp
+Client/PacketHandler/GCShopSellOKHandler.cpp
+
+# The trade box's errors and verifications.
+Client/PacketHandler/GCTradeErrorHandler.cpp
+Client/PacketHandler/GCTradeVerifyHandler.cpp
+
+# The deletion of an inventory item and of a zone object.
+Client/PacketHandler/GCDeleteInventoryItemHandler.cpp
+Client/PacketHandler/GCDeleteObjectHandler.cpp
+
+# A refused item use.
+Client/PacketHandler/GCCannotUseHandler.cpp

@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopBuyOK.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "WorldEventsHost.h"
+#include "ItemSkillIcons.h"
 #include "MShop.h"
 #include "MShopShelf.h"
 #include "MInventory.h"
@@ -17,12 +20,6 @@
 #include "MMoneyManager.h"
 #include "MPriceManager.h"
 #include "MItemFinder.h"
-#include "UIFunction.h"
-
-#define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
-
-// PacketFunction.cpp에 있다. compile 시간 관계상..
-void	CheckItemForSkillIcon(const MItem* pItem);
 
 void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 	 
@@ -33,7 +30,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 	
 
 	//--------------------------------------------------------------
-	// Item 사는 packet을 받는게 맞나?
+	// Is a purchase what we were waiting for?
 	//--------------------------------------------------------------
 	if (g_pTempInformation->GetMode() == TempInformation::MODE_SHOP_BUY)
 	{
@@ -49,19 +46,19 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		MShopShelf* pShopShelf = pShop->GetShelf( ShelfType );
 
 		//--------------------------------------------------------------
-		// 상점에서 item을 제거한다.			
+		// Take the item out of the shop.			
 		//--------------------------------------------------------------
 		if (pShopShelf!=NULL)
 		{
 			//------------------------------------------------------
-			// Normal shelf가 아닌 경우에만 delete한다.
+			// Only a shelf other than the normal one deletes it.
 			//------------------------------------------------------
 			if (ShelfType==SHOP_RACK_SPECIAL)
 			{
 				pShopShelf->DeleteItem( index );
 			}
 
-			// 상점의 Version을 바꾼다.
+			// The shop's version changes.
 			pShopShelf->SetVersion( pPacket->getShopVersion() );
 		}
 		else
@@ -70,7 +67,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		}
 
 		//--------------------------------------------------------------
-		// 방금 구입한 item을 생성한다.
+		// Make the item just bought.
 		//--------------------------------------------------------------		
 		MItem* pItem = MItem::NewItem( (ITEM_CLASS)pPacket->getItemClass() );
 
@@ -83,7 +80,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		pItem->SetID( pPacket->getItemObjectID() );
 		pItem->SetItemType( pPacket->getItemType() );
 		pItem->SetItemOptionList( pPacket->getOptionType() );
-		pItem->SetNumber( pPacket->getItemNum() );	// 이미 쌓여진 개수
+		pItem->SetNumber( pPacket->getItemNum() );	// the number already stacked
 		pItem->SetCurrentDurability( pPacket->getDurability() );
 		pItem->SetSilver( pPacket->getSilver() );
 		pItem->SetGrade( pPacket->getGrade() );
@@ -92,13 +89,13 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		const MItem* pOldItem = g_pInventory->GetItem( x, y );
 
 		//--------------------------------------------------------------		
-		// 그 위치에 아무것도 없는 경우 --> 그냥 추가하면 된다.
+		// Nothing in that cell --> just add it.
 		//--------------------------------------------------------------				
 		if (pOldItem==NULL)
 		{				
 		}
 		//--------------------------------------------------------------		
-		// 쌓일 수 있는지 체크한다.
+		// Check whether it can stack.
 		//--------------------------------------------------------------				
 		else
 		{
@@ -108,23 +105,23 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 							pItem->GetNumber();
 				
 				//------------------------------------------------
-				// 개수 초과					
+				// Too many.					
 				//------------------------------------------------
 				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber() )
 				{
 					DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add. MaxNum exceed=%d", total);
 				}
 				//------------------------------------------------
-				// 정상적으로 쌓여질 수 있는 경우					
+				// The normal case: it stacks.					
 				//------------------------------------------------
 				else
 				{
 					//pItem->SetNumber( total );
 
-					// 기존에 있던 item을 제거한다.
+					// Remove the item that was there.
 					MItem* pRemovedItem = g_pInventory->RemoveItem( x, y );
 					
-					SAFE_DELETE( pRemovedItem );
+					delete pRemovedItem; pRemovedItem = NULL;
 
 //					if (pRemovedItem!=NULL)
 //					{
@@ -138,36 +135,41 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 			}
 		}
 
+		// A star shop's price, taken now: the item is freed below when it
+		// does not fit, and the server has charged for it either way.
+		STAR_ITEM_PRICE starPrice;
+		g_pPriceManager->GetItemPrice( pItem, starPrice );
+
 		//--------------------------------------------------------------
-		// item을 inventory에 추가한다.
+		// Add the item to the inventory.
 		//--------------------------------------------------------------
 		if (g_pInventory->AddItem( pItem, x, y ))
 		{
-			// 제대로 추가된 경우 --> sound출력
-			PlaySound( pItem->GetTileSoundID() );
+			// Added --> play its sound.
+			WorldEvents::PlaySound( pItem->GetTileSoundID() );
 
-			// skill icon 체크
+			// Check the skill icons.
 			CheckItemForSkillIcon( pItem );
 		}
 		else
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] Cannot Add to Inventory(%d,%d)", x,y);
 			
-			// 추가가 안되는 경우 지워야 한다.
+			// Not added: free it.
 			delete pItem;
 		}
 	
 		//--------------------------------------------------------------
-		// 상점에 따라서 뭘로 샀는가?..
+		// What it was bought with depends on the shop.
 		//--------------------------------------------------------------
 		switch (pShop->GetShopType())
 		{
 			//--------------------------------------------------------------
-			// 돈
+			// Money.
 			//--------------------------------------------------------------
 			case MShop::SHOP_NORMAL :
 				//--------------------------------------------------------------
-				// 돈을 바꿔준다.
+				// Change the money.
 				//--------------------------------------------------------------
 				if (!g_pMoneyManager->SetMoney( pPacket->getPrice() ))
 				{
@@ -176,29 +178,24 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 			break;
 
 			//--------------------------------------------------------------
-			// 별
+			// Stars.
 			//--------------------------------------------------------------
 			case MShop::SHOP_EVENT_STAR :
-				// 적절한 개수만큼을 inventory에서 지워준다.
-				if (pItem!=NULL)
+				// Remove that many from the inventory.
 				{
-					STAR_ITEM_PRICE starPrice;
-
-					g_pPriceManager->GetItemPrice( pItem, starPrice );
-
 					int remainNum = starPrice.number;
 
 					if (starPrice.type!=-1 && starPrice.number!=0)
 					{
-						// 몇개나 있는지 찾아본다.
+						// Find how many there are.
 						MItemClassTypeFinder starFinder(ITEM_CLASS_EVENT_STAR, starPrice.type);
 
-						// 개수만큼 inventory에서 제거한다.
+						// Remove that many from the inventory.
 						while (remainNum > 0)
 						{
 							MItem* pStarItem = g_pInventory->FindItemGridOrder( starFinder );
 
-							// 별이 없는 경우 - -;
+							// No stars.
 							if (pStarItem==NULL)
 							{
 								DEBUG_ADD_ERR("[Error] Not Enough Star -_-");
@@ -214,7 +211,7 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 							}
 							else
 							{
-								// 같거나 적은 경우
+								// The same or fewer.
 								remainNum -= itemNum;
 
 								MItem* pRemovedItem = g_pInventory->RemoveItem( 
@@ -237,20 +234,20 @@ void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 		}
 
 		
-		// mode를 없앤다.
+		// Clear the mode.
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-		// 거래를 다시 활성화한다.
-		UI_UnlockItemTrade();
+		// Trading is allowed again.
+		DialogPresentation::UnlockItemTrade();
 
 		//--------------------------------------------------------------
-		// 오토바이 (열쇠를) 산 경우
+		// A motorcycle (key) was bought.
 		//--------------------------------------------------------------
 //		__BEGIN_HELP_EVENT
 //			if (pItem->GetItemClass()==ITEM_CLASS_KEY 
 //				&& pItem->GetItemType()==2)
 //			{
-//				// [도움말] 오토바이 산 경우
+//				// [Help] when a motorcycle is bought
 ////				ExecuteHelpEvent( HE_ITEM_BUY_MOTORCYCLE );
 //			}
 //		__END_HELP_EVENT

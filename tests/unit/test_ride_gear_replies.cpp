@@ -104,6 +104,7 @@ const ZoneState::Host zone = []() {
 		return true;
 	};
 	host.AddItem = [](MItem* pItem, bool bDropping) {
+		CHECK(zoneExists);
 		calls.push_back("zone takes|" + N(pItem->GetID()) + (bDropping ? "|falling" : "|lying"));
 		dropped.push_back(pItem);
 		return true;
@@ -249,8 +250,8 @@ TEST(RideGearReplies, AWearingCreatureRidesOffOnTheMotorcycleWhereThePlayerHears
 	CHECK(calls == std::vector<std::string>({"Ogre.addon|" + kMotorcycle + "|501", "zone frees|501",
 		"sound|" + N(SOUND_WORLD_BIKE_GO) + "|once|30,31"}));
 	CHECK_EQ(1, freed);
-	CHECK(world.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_HELM) == nullptr);
-	// Without a player there is nobody to hear it.
+	// Without a player there is nobody to hear it (the executable's zone
+	// still needs the player to remove the motorcycle).
 	calls.clear();
 	hasPlayer = false;
 	lying[503] = new Piece(ITEM_CLASS_MOTORCYCLE, 503);
@@ -269,6 +270,8 @@ TEST(RideGearReplies, OnlyAMotorcycleIsRiddenAndOnlyByAWearingCreature)
 	// With no such creature, the motorcycle just leaves the zone.
 	ReceiveRide(4242, 502);
 	ReceiveRide(4242, 501);
+	// Nor with neither.
+	ReceiveRide(4242, 4242);
 	CHECK(calls == std::vector<std::string>{"zone frees|501"});
 	calls.clear();
 	zoneExists = false;
@@ -312,6 +315,34 @@ TEST(RideGearReplies, APieceOfGearFallsIntoTheZone)
 	CHECK(world.oustersGear.AddItem(new Circlet(23), MOustersGear::GEAR_OUSTERS_CIRCLET));
 	ReceiveDropped(MOustersGear::GEAR_OUSTERS_CIRCLET);
 	CHECK(calls == std::vector<std::string>({"zone takes|22|falling", "zone takes|23|falling"}));
+	CHECK(world.vampireGear.GetItem(MVampireGear::GEAR_VAMPIRE_COAT) == nullptr);
+	CHECK(world.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) == nullptr);
+}
+
+TEST(RideGearReplies, EachRacesEmptySlotDropsNothingAndWithoutAZoneEachPieceIsFreed)
+{
+	World world;
+	const struct { Race race; int slot; } slots[] = {{RACE_SLAYER, MSlayerGear::GEAR_SLAYER_HELM},
+		{RACE_VAMPIRE, MVampireGear::GEAR_VAMPIRE_COAT}, {RACE_OUSTERS, MOustersGear::GEAR_OUSTERS_CIRCLET}};
+	for (const auto& s : slots)
+	{
+		race = s.race;
+		ReceiveDropped(s.slot);
+	}
+	CHECK(calls.empty());
+	CHECK(world.slayerGear.AddItem(new Helm(21), MSlayerGear::GEAR_SLAYER_HELM));
+	CHECK(world.vampireGear.AddItem(new VampireCoat(22), MVampireGear::GEAR_VAMPIRE_COAT));
+	CHECK(world.oustersGear.AddItem(new Circlet(23), MOustersGear::GEAR_OUSTERS_CIRCLET));
+	zoneExists = false;
+	for (const auto& s : slots)
+	{
+		race = s.race;
+		ReceiveDropped(s.slot);
+	}
+	CHECK(calls.empty());
+	CHECK_EQ(3, freed);
+	CHECK(world.vampireGear.GetItem(MVampireGear::GEAR_VAMPIRE_COAT) == nullptr);
+	CHECK(world.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) == nullptr);
 }
 
 TEST(RideGearReplies, WithoutAZoneAPieceIsFreedAndAnEmptySlotDropsNothing)

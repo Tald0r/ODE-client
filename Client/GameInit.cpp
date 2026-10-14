@@ -3516,6 +3516,10 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RunStorage = UI_RunStorage,
 	.SetStorage = UI_SetStorage,
 	.PickUpItem = UI_PickUpItem,
+	.GetMouseItem = UI_GetMouseItem,
+	.DropItem = UI_DropItem,
+	.UnlockGear = UI_UnlockGear,
+	.CloseMixingForge = UI_CloseMixingForge,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3596,6 +3600,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.GetItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL; },
 	.RemoveItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL && g_pZone->RemoveItem(itemID); },
 	.AddItem = [](MItem* pItem, bool bDropping) { return g_pZone != NULL && g_pZone->AddItem(pItem, bDropping ? TRUE : FALSE); },
+	.RemoveCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL && g_pZone->RemoveCreature(id); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3688,6 +3693,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetRace = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetRace()); },
 	.SetStopBloodDrain = [](MCreature* pCreature) { pCreature->SetStopBloodDrain(); },
 	.SetStopAbsorbSoul = [](MCreature* pCreature) { pCreature->SetStopAbsorbSoul(); },
+	.IsVampire = [](MCreature* pCreature) { return pCreature->IsVampire(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

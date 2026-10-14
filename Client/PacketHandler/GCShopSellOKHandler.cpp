@@ -9,15 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopSellOK.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "WorldEventsHost.h"
+#include "ItemSkillIcons.h"
 #include "MInventory.h"
 #include "TempInformation.h"
 #include "MMoneyManager.h"
-#include "UIFunction.h"
 #include "MStorage.h"
-#include "Client.h"
-// PacketFunction.cpp에 있다. compile 시간 관계상..
-void	CheckItemForSkillIcon(const MItem* pItem);
 
 void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 	 
@@ -29,7 +28,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 
 	//--------------------------------------------------------------
 	//
-	// Item 파는 packet을 받는게 맞나?
+	// Is a sale what we were waiting for?
 	//
 	//--------------------------------------------------------------
 
@@ -47,13 +46,13 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 			{
 				const MItem *p_slot_item = g_pStorage2->GetItem(i);
 				
-				// 슬랏이 비었으면 걍~ 넣는다
+				// An empty slot just takes it.
 				if(NULL != p_slot_item)
 				{
 					if(p_slot_item->GetID() == pPacket->getObjectID())
 					{ 
 						MItem* pRemovedItem = g_pStorage2->RemoveItem( i );
-						SAFE_DELETE(pRemovedItem);
+						delete pRemovedItem; pRemovedItem = NULL;
 						break;
 					}
 				}
@@ -63,29 +62,26 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 				current_storage = 0;
 		}
 
-		// inventory에서 제거
+		// Remove it from the inventory.
 		MItem *TempItem = g_pInventory->RemoveItem( (TYPE_OBJECTID)pPacket->getItemObjectID() );
-		// item정보 제거
-		UI_RemoveDescriptor( (void*)TempItem );
-		// memory에서 제거
-		SAFE_DELETE(TempItem);
+		// Free it.
+		delete TempItem; TempItem = NULL;
 
 		g_pMoneyManager->AddMoney(pPacket->getPrice());
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
-		UI_UnlockItemTrade();
+		DialogPresentation::UnlockItemTrade();
 		return;
 	
 	}
 	if(pPacket->getShopVersion() == -1 && g_pStorage2==NULL)
 	{
 		MItem *TempItem = g_pInventory->RemoveItem( (TYPE_OBJECTID)pPacket->getItemObjectID() );
-		UI_RemoveDescriptor( (void*)TempItem );
-		// memory에서 제거
-		SAFE_DELETE(TempItem);
+		// Free it.
+		delete TempItem; TempItem = NULL;
 
 		g_pMoneyManager->AddMoney(pPacket->getPrice());
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
-		UI_UnlockItemTrade();
+		DialogPresentation::UnlockItemTrade();
 		return;
 
 	}
@@ -96,7 +92,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 		
 		const MItem* pItem = g_pInventory->GetItem( pCheckItem->GetGridX(), pCheckItem->GetGridY() );
 
-		// ID 검증을 한다.
+		// Check the ID.
 		if (pCheckItem->GetID()==pItem->GetID())
 		{
 			// ShopVersion_t getShopVersion(); -_-;;
@@ -105,12 +101,9 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 
 			if (pRemovedItem!=NULL)
 			{
-				PlaySound( pRemovedItem->GetInventorySoundID() );
+				WorldEvents::PlaySound( pRemovedItem->GetInventorySoundID() );
 
 				CheckItemForSkillIcon( pRemovedItem );
-
-				// item정보 제거
-				UI_RemoveDescriptor( (void*)pRemovedItem );
 
 				delete pRemovedItem;
 			}
@@ -120,7 +113,7 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 			}
 
 			//--------------------------------------------------------------
-			// 돈을 바꿔준다.
+			// Change the money.
 			//--------------------------------------------------------------
 			if (!g_pMoneyManager->SetMoney( pPacket->getPrice() ))
 			{
@@ -132,15 +125,15 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 			DEBUG_ADD_FORMAT_ERR("[Error] Different ID. Packet(%d)!=ClientTemp(%d)", pPacket->getItemObjectID(), pItem->GetID());
 		}
 
-		// mode를 없앤다.
+		// Clear the mode.
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 		
-		// 거래를 다시 활성화한다.
-		UI_UnlockItemTrade();
+		// Trading is allowed again.
+		DialogPresentation::UnlockItemTrade();
 	}
 	//--------------------------------------------------------------
 	//
-	// 모든 해골을 다 파는 경우
+	// Selling every skull.
 	//
 	//--------------------------------------------------------------
 	else if (g_pTempInformation->GetMode() == TempInformation::MODE_SHOP_SELL_ALL_SKULL)
@@ -148,15 +141,15 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 		MItem* pSkull = g_pInventory->FindItem( ITEM_CLASS_SKULL );
 
 		//--------------------------------------------------------------
-		// 소리 한번만 내준다.
+		// Play the sound once.
 		//--------------------------------------------------------------
 		if (pSkull!=NULL)
 		{
-			PlaySound( pSkull->GetInventorySoundID() );
+			WorldEvents::PlaySound( pSkull->GetInventorySoundID() );
 		}				
 
 		//--------------------------------------------------------------
-		// 모든 해골을 다 없애준다.
+		// Remove every skull.
 		//--------------------------------------------------------------
 		while (pSkull!=NULL)
 		{
@@ -164,35 +157,32 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 
 			if (pRemovedItem!=NULL)
 			{
-				// item정보 제거
-				UI_RemoveDescriptor( (void*)pRemovedItem );
-
 				delete pRemovedItem;
 			}
 
 			//--------------------------------------------------------------
-			// 해골이 또 있는지 검사..
+			// Is there another skull?
 			//--------------------------------------------------------------
 			pSkull = g_pInventory->FindItem( ITEM_CLASS_SKULL );
 		}
 
 		//--------------------------------------------------------------
-		// 돈을 바꿔준다.
+		// Change the money.
 		//--------------------------------------------------------------
 		if (!g_pMoneyManager->SetMoney( pPacket->getPrice() ))
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] Can't Set Money=%d, Price=%d", g_pMoneyManager->GetMoney(), pPacket->getPrice());
 		}
 
-		// mode를 없앤다.
+		// Clear the mode.
 		g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-		// 거래를 다시 활성화한다.
-		UI_UnlockItemTrade();
+		// Trading is allowed again.
+		DialogPresentation::UnlockItemTrade();
 	}	
 	//--------------------------------------------------------------
 	//
-	// 뭔가 잘못된 경우
+	// Something went wrong.
 	//
 	//--------------------------------------------------------------
 	else
