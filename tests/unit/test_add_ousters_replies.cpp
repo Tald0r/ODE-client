@@ -22,8 +22,8 @@
 // direction, hair and coat colours, master's aura, health, alignment,
 // rank, attack speed, guild and union, standing, and added to the zone
 // (or dropped if the zone refuses it); one the zone knows takes the type,
-// advancement, guild, union, cell, direction, colours, aura, health and
-// speed in place, its name kept. A creature that is no NPC by its type
+// advancement, guild, union, cell, direction, standing, colours, aura,
+// health, alignment, rank and speed in place, its name kept. A creature that is no NPC by its type
 // shows whether its personal shop is open, and an open one shows the
 // shop's sign (or the default message) to an ouster player in the chat
 // colour. The ouster then takes the packet's effect statuses, is dressed
@@ -107,8 +107,6 @@ const CreatureState::Host creature = []() {
 	host.SetCompetence = [](MCreature* p, int competence) { calls.push_back("competence|" + Who(p) + "|" + N(competence)); };
 	host.SetCreatureType = [](MCreature* p, int type) { calls.push_back("type|" + Who(p) + "|" + N(type)); Fake(p).type = type; };
 	host.GetCreatureType = [](MCreature* p) { return Fake(p).type; };
-	host.SetMale = [](MCreature* p, bool bMale) { calls.push_back(std::string(bMale ? "man|" : "woman|") + Who(p)); };
-	host.SetGroundCreature = [](MCreature* p) { calls.push_back("walks|" + Who(p)); };
 	host.SetName = [](MCreature* p, const char* name) { calls.push_back("name|" + Who(p) + "|" + name); };
 	host.SetGuildNumber = [](MCreature* p, int guild) { calls.push_back("guild|" + Who(p) + "|" + N(guild)); };
 	host.SetUnionGuildID = [](MCreature* p, int unionID) { calls.push_back("union|" + Who(p) + "|" + N(unionID)); };

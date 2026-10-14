@@ -4954,8 +4954,9 @@ rounds settled* for the host rules). Test fixtures share
   > the packet describes, and added to the zone (or dropped if the zone
   > refuses it). One the zone knows takes the advancement, guild, union,
   > walking, cell, direction, standing, skin, aura, health, alignment and
-  > rank in place, its type, name and dress kept. A creature that is no NPC by its type shows whether its
-  > personal shop is open, and an open one shows the shop's sign (or the
+  > rank in place, its type, name and dress kept. A creature that is no
+  > NPC by its type shows whether its personal shop is open, and an open
+  > one shows the shop's sign (or the
   > default message, as the string table holds it) to a slayer player in
   > the chat colour. The slayer then takes the packet's effect statuses,
   > its pet and its nickname. Without a player no sign is shown (the old
@@ -4976,14 +4977,17 @@ rounds settled* for the host rules). Test fixtures share
   > cell, direction, hair and coat colours, master's aura, health,
   > alignment, rank, attack speed, guild and union, standing, and added
   > to the zone (or dropped if the zone refuses it); one the zone knows
-  > takes the type, advancement, guild, union, cell, direction, colours,
-  > aura, health and speed in place, its name kept. A creature that is
+  > takes the type, advancement, guild, union, cell, direction,
+  > standing, colours, aura, health, alignment, rank and speed in place,
+  > its name kept. A creature that is
   > no NPC by its type shows whether its personal shop is open, and an
   > open one shows the shop's sign (or the default message) to an ouster
   > player. The ouster then takes the packet's effect statuses, is
   > dressed as the packet describes (new `CreatureState::SetAddonToOusters3`;
-  > the old code cast whatever creature it held to a wearing one, and the
-  > adapter now dresses only one that wears gear), and takes its pet and
+  > the old code cast whatever creature it held to a wearing one, which
+  > is undefined behaviour for a plain creature (a stale ID can name a
+  > monster), and the adapter, executable-side and so unpinned by the
+  > test, now dresses only one that wears gear), and takes its pet and
   > its nickname. Without a player no sign is shown (the old code
   > dereferenced `g_pPlayer`). The debug line logs the creature's ID,
   > which its `%d` asked for; it passed the name. R1 is 89 Windows / 87
