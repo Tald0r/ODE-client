@@ -44,7 +44,8 @@ struct Host
 	void (*SkillToSector)(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult) = nullptr;
 	// A sound heard from a cell (the listener's distance sets its volume).
 	void (*PlaySoundAt)(TYPE_SOUNDID soundID, bool repeat, int x, int y) = nullptr;
-	// How dark the view draws (0-15; the view ignores more).
+	// How dark the view draws (0-15; the view ignores 16-255, all a
+	// packet's byte can hold beyond; the adapter takes the low byte).
 	void (*SetDarkBits)(int darkBits) = nullptr;
 };
 

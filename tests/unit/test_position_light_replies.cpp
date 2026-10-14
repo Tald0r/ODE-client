@@ -21,12 +21,20 @@
 namespace {
 
 std::vector<std::string> calls;
+// The connection the reply works on, as the placing host sees it.
+ClientPlayer* placed = nullptr;
 
 std::string N(long long value) { return std::to_string(value); }
 
 const LoginPresentation::Host login = []() {
 	LoginPresentation::Host host{};
-	host.InitPlayer = [](int x, int y, int direction) { calls.push_back("player at|" + N(x) + "," + N(y) + "," + N(direction)); };
+	host.InitPlayer = [](int x, int y, int direction) {
+		calls.push_back("player at|" + N(x) + "," + N(y) + "," + N(direction));
+		// The connection already holds the cell and is ready for play.
+		if (placed != nullptr)
+			calls.push_back("connection at|" + N(placed->getX()) + "," + N(placed->getY())
+				+ (placed->getPlayerStatus() == CPS_NORMAL ? "|normal" : "|waiting"));
+	};
 	host.EnterGameMode = []() { calls.push_back("game"); };
 	return host;
 }();
@@ -59,10 +67,11 @@ struct World : GameModelWorld
 	World()
 	{
 		calls.clear();
-		g_pUserInformation->IsMaster = FALSE;
+		placed = &connection;
 	}
 	~World()
 	{
+		placed = nullptr;
 		PlayerState::SetHost(oldPlayer);
 		WorldEvents::SetHost(oldEvents);
 		LoginPresentation::SetHost(oldLogin);
@@ -91,9 +100,9 @@ void ReceiveDarkLight(int dark, int light)
 TEST(PositionLightReplies, TheFirstPositionPlacesThePlayerAndStartsTheGame)
 {
 	World world;
-	world.connection.setPlayerStatus(CPS_AFTER_SENDING_CG_CONNECT);
+	world.connection.setPlayerStatus(CPS_WAITING_FOR_GC_SET_POSITION);
 	ReceivePosition(&world.connection, 120, 85, 3);
-	CHECK(calls == std::vector<std::string>({"player at|120,85,3", "game"}));
+	CHECK(calls == std::vector<std::string>({"player at|120,85,3", "connection at|120,85|normal", "game"}));
 	CHECK_EQ(120, static_cast<int>(world.connection.getX()));
 	CHECK_EQ(85, static_cast<int>(world.connection.getY()));
 	CHECK(world.connection.getPlayerStatus() == CPS_NORMAL);

@@ -9,7 +9,8 @@ class PCOustersInfo;
 namespace LoginPresentation {
 
 // Login-server replies present what they receive and move the client between
-// login modes through this host. Enter* sets the mode now (SetMode); Queue*
+// login modes through this host; the game server's first reply also places
+// the player and enters the game here. Enter* sets the mode now (SetMode); Queue*
 // sets the mode the main loop switches to next (g_ModeNext). Sleep stalls the
 // caller as the reply always has. A missing service is skipped, and a missing
 // mode query answers that the client is not choosing a character.
