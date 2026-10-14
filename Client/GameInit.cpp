@@ -2970,6 +2970,10 @@ static const MItemHost	s_ItemHost = {
 		return pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM
 			&& static_cast<const MVampirePortalItem*>(pPortal)->IsMarked();
 	},
+	.MarkPortal				= [](MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
+			static_cast<MVampirePortalItem*>(pPortal)->SetZone(zoneID, x, y);
+	},
 };
 
 //-----------------------------------------------------------------------------
@@ -3657,6 +3661,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetInventoryInfo = SetInventoryInfo,
 	.SetExtraInfo = SetExtraInfo,
 	.CheckAffectStatus = [](MItem* pItem) { g_pPlayer->CheckAffectStatus(pItem); },
+	.SetItemCheckBuffer = [](MItem* pItem, PlayerState::ITEM_CHECK_BUFFER status) { g_pPlayer->SetItemCheckBuffer(pItem, status); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

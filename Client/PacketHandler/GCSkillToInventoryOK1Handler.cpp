@@ -9,16 +9,24 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToInventoryOK1.h"
-#include "ClientDef.h"
-#include "ClientFunction.h"
+#include "AffectModifyInfo.h"
+#include "BonusSkillHost.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "MCreatureTable.h"
 #include "MInventory.h"
+#include "MItem.h"
+#include "MorphState.h"
 #include "MSkillManager.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
 #include "SkillDef.h"
+#include "WorldEventsHost.h"
+#include "ZoneFlags.h"
+#include "ZoneStateHost.h"
 
-extern bool				g_bZonePlayerInLarge;
-extern int				g_nZoneLarge;
-extern int				g_nZoneSmall;
-extern int				g_MorphCreatureType;
 
 
 MItem*	PacketSkillToMakeItem(MItem* pItem,
@@ -35,42 +43,46 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		DEBUG_ADD_ERR("[Error] GCSkillToInventoryOK1Handler: no player");
+		return;
+	}
 		
 
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on is verified.
 	//------------------------------------------------------------------	
-	if (1)//g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (1)//PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 
 		//------------------------------------------------------------------	
-		// Item Check Buffer를 확인한다.
+		// Check the item check buffer.
 		//------------------------------------------------------------------
-		MItem* pItem = g_pPlayer->GetItemCheckBuffer();
+		MItem* pItem = PlayerState::GetItemCheckBuffer();
 
 		//----------------------------------------------------
-		// Check Buffer에 item이 있는 경우
+		// An item in the check buffer
 		//----------------------------------------------------
 		if (pItem!=NULL)
 		{
-			MPlayer::ITEM_CHECK_BUFFER status =	g_pPlayer->GetItemCheckBufferStatus();
+			PlayerState::ITEM_CHECK_BUFFER status =	PlayerState::GetItemCheckBufferStatus();
 
 			//----------------------------------------------------
-			// Inventory의 item에 사용
+			// used on an inventory item
 			//----------------------------------------------------
-			if (status==MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY)			
+			if (status==PlayerState::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY)
 			{
-				#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
-					DWORD dwSubInventoryID = g_pPlayer->GetItemIDCheckBufferSubInventory();
-				#endif
 				//--------------------------------------------------
-				// Item Check Buffer를 지운다.
+				// Clear the item check buffer.
 				//--------------------------------------------------
-				g_pPlayer->ClearItemCheckBuffer();
+				PlayerState::ClearItemCheckBuffer();
 		
-				// 지속 시간 변환
+				// the duration converted
 				DWORD delayFrame = 32;//ConvertDurationToFrame( pPacket->getDuration() );
 					
 				//pPacket->getX(),	
@@ -85,7 +97,7 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 				switch (skillID)
 				{
 					//----------------------------------------------------
-					// 성수/폭탄/지뢰 만들기
+					// making holy water/bombs/mines
 					//----------------------------------------------------
 					case MAGIC_CREATE_HOLY_WATER :
 					case SKILL_MAKE_BOMB :
@@ -93,7 +105,7 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 					case SKILL_CREATE_HOLY_POTION :
 					case SKILL_ABSORB_SOUL:
 					{
-						// pItem을 제거하고 holy water를 추가한다.
+						// remove pItem and add the holy water.
 						int x		= pItem->GetGridX();
 						int y		= pItem->GetGridY();
 						int targetX = pPacket->getX();
@@ -127,7 +139,7 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 								pResultItem->SetNumber( ItemNum );
 						}
 
-						// 기술 체크..
+						// check the skills..
 						//g_SkillAvailable.CheckMP();					
 					}
 					break;
@@ -136,31 +148,26 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 					// Install Mine
 					//----------------------------------------------------
 					case SKILL_INSTALL_MINE :
-						// Inventory에서 사용하게 만든다.
-						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
+						// make it used from the inventory.
+						PlayerState::SetItemCheckBuffer( pItem, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
 
-						UseItemOK();
+						PlayerState::UseItemOK();
 
 						// inventory effect
 						skillID = SKILL_INSTALL_MINE;
 
 						delayFrame = 14;
 
-						g_pSkillAvailable->SetAvailableSkills();
+						BonusSkills::RefreshAvailableSkills();
 					break;
 
 					//----------------------------------------------------
 					// Vampire Portal
 					//----------------------------------------------------
 					case MAGIC_BLOODY_TUNNEL :
-						// Inventory에서 사용하게 만든다.
-					#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
-						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY, dwSubInventoryID);
-
-					#else
-						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
-					#endif
-						UseItemOK();
+						// make it used from the inventory.
+						PlayerState::SetItemCheckBuffer( pItem, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
+						PlayerState::UseItemOK();
 
 						// inventory effect
 						skillID = MAGIC_BLOODY_MARK;
@@ -170,18 +177,16 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 
 					case MAGIC_BLOODY_MARK :
 						//-------------------------------------------------
-						// VampirePortal인 경우
+						// a vampire portal
 						//-------------------------------------------------
 						if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
 						{
-							MVampirePortalItem* pPortalItem = (MVampirePortalItem*)pItem;
-
-							if (!pPortalItem->IsMarked())
+							if (!MItem::IsPortalMarked( pItem ))
 							{
 								int zoneID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
-								int zoneX = g_pPlayer->GetServerX();
-								int zoneY = g_pPlayer->GetServerY();
-								pPortalItem->SetZone(zoneID, zoneX, zoneY);
+								int zoneX = CreatureState::GetServerX( pPlayerCreature );
+								int zoneY = CreatureState::GetServerY( pPlayerCreature );
+								MItem::MarkPortal( pItem, zoneID, zoneX, zoneY );
 							}
 						}
 
@@ -192,14 +197,14 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 					break;
 
 					//----------------------------------------------------
-					// 늑대 / 박쥐 변신
+					// turning into a wolf / bat
 					//----------------------------------------------------
 					case MAGIC_TRANSFORM_TO_WOLF :
 					case MAGIC_TRANSFORM_TO_BAT :
 					case SKILL_TRANSFORM_TO_WERWOLF :
 					{
 						//----------------------------------------------------
-						// pItem을 제거한다.
+						// remove pItem.
 						//----------------------------------------------------
 						/*
 						int x = pItem->GetGridX();
@@ -216,18 +221,14 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 							DEBUG_ADD_FORMAT("[Error] No Removed Item from Inventory=(%d, %d)", x, y);
 						}
 						*/
-						// Inventory에서 사용하게 만든다.
+						// make it used from the inventory.
 
-					#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
-						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY, dwSubInventoryID);
-					#else
-						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
-					#endif
+						PlayerState::SetItemCheckBuffer( pItem, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
 
-						UseItemOK();
+						PlayerState::UseItemOK();
 
 						//----------------------------------------------------
-						// 변신
+						// transform
 						//----------------------------------------------------
 						MActionResult* pResult = new MActionResult;
 
@@ -241,75 +242,71 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 
 						if (skillID==MAGIC_TRANSFORM_TO_WOLF)
 						{
-							pResult->Add( new MActionResultNodeChangeCreatureType( g_pPlayer->GetID(), wolfCreatureType ) );
+							pResult->Add( new MActionResultNodeChangeCreatureType( PlayerState::GetID(), wolfCreatureType ) );
 							resultSkillID = RESULT_MAGIC_TRANSFORM_TO_WOLF;							
 
 							creatureType = wolfCreatureType;
 						}
 						else if ( skillID == SKILL_TRANSFORM_TO_WERWOLF )
 						{
-							pResult->Add( new MActionResultNodeChangeCreatureType( g_pPlayer->GetID(), werwolfCreatureType ) );
+							pResult->Add( new MActionResultNodeChangeCreatureType( PlayerState::GetID(), werwolfCreatureType ) );
 
 							resultSkillID = RESULT_SKILL_TRANSFORM_TO_WERWOLF;
 							creatureType = werwolfCreatureType;
 						}
 						else	// MAGIC_TRANSFORM_TO_BAT
 						{
-							pResult->Add( new MActionResultNodeChangeCreatureType( g_pPlayer->GetID(), batCreatureType ) );
+							pResult->Add( new MActionResultNodeChangeCreatureType( PlayerState::GetID(), batCreatureType ) );
 							resultSkillID = RESULT_MAGIC_TRANSFORM_TO_BAT;
 
 							creatureType = batCreatureType;
 						}							
 
 						//--------------------------------------------------
-						// 변신 이펙트에 결과 추가
+						// add the result to the transformation effect
 						//--------------------------------------------------
-						ExecuteActionInfoFromMainNode(
-							resultSkillID,										// 사용 기술 번호
-						
-							g_pPlayer->GetX(), g_pPlayer->GetY(), 0,
-							g_pPlayer->GetDirection(),														// 사용 방향
-							
-							OBJECTID_NULL,												// 목표에 대한 정보
-							g_pPlayer->GetX(), g_pPlayer->GetY(), 0, 
-							
-							0,													// 기술의 (남은) 지속 시간		
-							
-							pResult, //NULL,
-							
-							false);			// 기술 첨부터 시작한다.
+						WorldEvents::ExecuteActionInfoFromMainNode(
+							static_cast<TYPE_ACTIONINFO>(resultSkillID),		// the skill used
+							CreatureState::GetX( pPlayerCreature ), CreatureState::GetY( pPlayerCreature ), 0,
+							CreatureState::GetDirection( pPlayerCreature ),		// the direction used
+							OBJECTID_NULL,										// the target
+							CreatureState::GetX( pPlayerCreature ), CreatureState::GetY( pPlayerCreature ), 0,
+							0,													// the skill's (remaining) duration
+							pResult,
+							false, 0, 0);		// the skill starts from the beginning.
 
-						g_pPlayer->SetDelay( 1000 );
+						PlayerState::SetDelay( 1000 );
 
 						//--------------------------------------------------
-						// 변신 처리가 제대로 안되고 
-						// 다른 존으로 넘어가는 경우가 있어서
-						// 임시로.. -_-;
-						// 이거는 MActionResultNodeChangeCreatureType나
-						// GCUpdateInfoHandler에서 제거한다.
+						// the transformation goes wrong
+						// when moving to another zone, so
+						// for now.. -_-;
+						// MActionResultNodeChangeCreatureType or
+						// GCUpdateInfoHandler clears this.
 						//--------------------------------------------------
 						g_MorphCreatureType = creatureType;
 
 
 						//--------------------------------------------------
-						// 기술 체크..
+						// check the skills..
 						//--------------------------------------------------
-						g_pSkillAvailable->SetAvailableSkills();
+						BonusSkills::RefreshAvailableSkills();
 							
 					}
 					break;
 				}
 
 				
-				// Inventory의 Item에 기술을 사용해야 한다.
-				AddNewInventoryEffect( itemID,
+				// the skill is used on the inventory item.
+				WorldEvents::AddNewInventoryEffect( itemID,
 										static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),
-										delayFrame
+										delayFrame,
+										0
 									);
 
 			}
 			//----------------------------------------------------
-			// 다른 상태??
+			// another status??
 			//----------------------------------------------------
 			else
 			{
@@ -327,39 +324,43 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 	int resultActionInfo = skillID + (*g_pActionInfoTable).GetMinResultActionInfo();
 	
 	//------------------------------------------------------------
-	// Delay Frame 설정
+	// set the delay frame
 	//------------------------------------------------------------
 	DWORD delayFrame = ConvertDurationToFrame( pPacket->getDuration() );
-	g_pPlayer->SetEffectDelayFrame(resultActionInfo, delayFrame );
+	CreatureState::SetEffectDelayFrame( pPlayerCreature, resultActionInfo, delayFrame );
 
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// change the status values.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	MStatus* pPlayerStatus = PlayerState::Status();
+	if (pPlayerStatus != NULL)
+	{
+		AffectModifyInfo(pPlayerStatus, pPacket);
+	}
 
 	//------------------------------------------------------------------
-	// effect status를 적용시킨다.
+	// apply the effect status.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
+	if (pPlayerStatus != NULL && pPlayerStatus->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 	{
 		//int esDelayFrame = ConvertDurationToFrame( g_pPlayer->GetDURATION() );
 
-		// effect를 붙인다.
-		g_pPlayer->AddEffectStatus((EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), delayFrame);	
+		// attach the effect.
+		CreatureState::AddEffectStatus( pPlayerCreature, (EFFECTSTATUS)pPlayerStatus->GetEFFECT_STAT(), delayFrame );
 		
-		g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
+		pPlayerStatus->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 	}
 	else
 	{
 		//------------------------------------------------------
-		// EffectStatus가 있다면 붙인다.
+		// attach the EffectStatus, if any.
 		//------------------------------------------------------
 		EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 
 		
 		if (es!=EFFECTSTATUS_NULL)
 		{
-			g_pPlayer->AddEffectStatus( es, delayFrame );
+			CreatureState::AddEffectStatus( pPlayerCreature, es, delayFrame );
 		}
 	}
 
@@ -370,10 +371,10 @@ void GCSkillToInventoryOK1Handler::execute ( GCSkillToInventoryOK1 * pPacket, Pl
 //-------------------------------------------------------------------------------
 // Make Item To Inventory
 //-------------------------------------------------------------------------------
-// pItem에 기술을 사용했을때 다른 item이 inventory에 생성되는 걸 처리한다.
+// Handles another item appearing in the inventory when a skill is used on pItem.
 //
-// 제대로 됐으면 새로운 아이템
-// (혹은 기존에 있던 아이템에 쌓인 경우는 쌓인 아이템)의 pointer를 넘긴다.
+// On success the new item
+// (or, piled on an item already there, that item) is returned.
 //-------------------------------------------------------------------------------
 MItem*
 PacketSkillToMakeItem(MItem* pItem,
@@ -389,8 +390,8 @@ PacketSkillToMakeItem(MItem* pItem,
 	}
 
 	//----------------------------------------------------
-	// 1개 남은 경우이거나
-	// 같은 위치이면.. 완전히 없앤다.
+	// one left, or
+	// the same place.. remove it completely.
 	//----------------------------------------------------
 	if (pItem->GetNumber()==1 
 		|| (x==targetX && y==targetY) )
@@ -407,7 +408,7 @@ PacketSkillToMakeItem(MItem* pItem,
 		}
 	}
 	//----------------------------------------------------
-	// 여러개 있는거면 개수만 하나 줄이면 된다.
+	// several: only one fewer.
 	//----------------------------------------------------
 	else
 	{
@@ -418,7 +419,7 @@ PacketSkillToMakeItem(MItem* pItem,
 	MItem* pTargetItem = g_pInventory->GetItem( targetX, targetY );
 
 	//----------------------------------------------------
-	// 쌓일 곳에 아이템이 없는 경우
+	// no item where it piles
 	//----------------------------------------------------
 	if (pTargetItem==NULL)
 	{							
@@ -447,16 +448,16 @@ PacketSkillToMakeItem(MItem* pItem,
 		}
 	}
 	//----------------------------------------------------
-	// 쌓일 곳에 아이템이 있는 경우
+	// an item where it piles
 	//----------------------------------------------------	
 	else
 	{
-		// 확인.. 별로 필요없을거도 같지만..
+		// check.. probably not needed..
 		if (pTargetItem->GetItemClass()==itemClass
 			&& pTargetItem->GetItemType()==itemType
 			&& pTargetItem->GetID()==static_cast<TYPE_OBJECTID>(itemID))
 		{
-			// Max 체크는 무시..
+			// the max check is skipped..
 			pTargetItem->SetNumber( pTargetItem->GetNumber() + 1 );
 
 			return pTargetItem;

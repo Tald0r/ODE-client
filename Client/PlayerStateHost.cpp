@@ -271,4 +271,9 @@ void CheckAffectStatus(MItem* pItem)
 	if (s_Host && s_Host->CheckAffectStatus) s_Host->CheckAffectStatus(pItem);
 }
 
+void SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
+{
+	if (s_Host && s_Host->SetItemCheckBuffer) s_Host->SetItemCheckBuffer(pItem, status);
+}
+
 }

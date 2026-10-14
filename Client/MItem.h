@@ -110,6 +110,9 @@ struct MItemHost {
 	// marked with a zone to open a tunnel to. Executable-side for the same
 	// reason: the portal item's vtable is. False without a host.
 	bool			(*IsPortalMarked)(const MItem* pPortal) = nullptr;
+	// Marks a vampire's portal item with the zone and cell its tunnel opens
+	// to. Executable-side for the same reason.
+	void			(*MarkPortal)(MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 };
 
 //----------------------------------------------------------------------
@@ -490,6 +493,7 @@ class MItem : public MObject, public CAnimationFrame {
 		static bool				LoadGun(MItem* pGun, TYPE_ITEM_NUMBER rounds)	{ return s_pHost!=NULL && s_pHost->LoadGun!=NULL && s_pHost->LoadGun(pGun, rounds); }
 		static void				SetMineInstalled(MItem* pMine)	{ if (s_pHost!=NULL && s_pHost->SetMineInstalled!=NULL) s_pHost->SetMineInstalled(pMine); }
 		static bool				IsPortalMarked(const MItem* pPortal)	{ return s_pHost!=NULL && s_pHost->IsPortalMarked!=NULL && s_pHost->IsPortalMarked(pPortal); }
+		static void				MarkPortal(MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)	{ if (s_pHost!=NULL && s_pHost->MarkPortal!=NULL) s_pHost->MarkPortal(pPortal, zoneID, x, y); }
 		// The executable's frame stamp; NULL without a host, or with one that carries none.
 		static const MonotonicClock::TimePoint*	Clock()	{ return s_pHost!=NULL ? s_pHost->pCurrentTime : NULL; }
 		BOOL		IsDropping() const		{ return m_bDropping; }

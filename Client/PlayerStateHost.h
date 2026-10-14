@@ -187,6 +187,9 @@ struct Host
 	// Lets the player's statuses react to an item it now has (a weapon
 	// it can or cannot use, say).
 	void (*CheckAffectStatus)(MItem* pItem) = nullptr;
+	// Puts an item in the player's check buffer, to wait in that status
+	// for the server's answer.
+	void (*SetItemCheckBuffer)(MItem* pItem, ITEM_CHECK_BUFFER status) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -248,5 +251,6 @@ void SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo);
 void SetInventoryInfo(InventoryInfo* pInventoryInfo);
 void SetExtraInfo(ExtraInfo* pExtraInfo);
 void CheckAffectStatus(MItem* pItem);
+void SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status);
 
 }

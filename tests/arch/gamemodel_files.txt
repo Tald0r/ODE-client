@@ -1199,3 +1199,5 @@ Client/PacketHandler/GCTradePrepareHandler.cpp
 Client/PacketHandler/GCMorph1Handler.cpp
 # An item picked up from the ground, as the server confirms it.
 Client/PacketHandler/GCDeleteandPickUpOKHandler.cpp
+# A skill used on an inventory item, as the server confirms it.
+Client/PacketHandler/GCSkillToInventoryOK1Handler.cpp
