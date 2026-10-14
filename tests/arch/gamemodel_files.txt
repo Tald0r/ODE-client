@@ -1108,3 +1108,6 @@ Client/PacketHandler/GCShopVersionHandler.cpp
 Client/PacketHandler/GCRequestPowerPointResultHandler.cpp
 Client/PacketHandler/GCUsePowerPointResultHandler.cpp
 Client/PacketHandler/GCExchangeBuyHandler.cpp
+
+# A party invitation's answers.
+Client/PacketHandler/GCPartyInviteHandler.cpp

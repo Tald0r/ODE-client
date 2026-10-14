@@ -3475,6 +3475,9 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.HideWarMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowWarMsg; },
 	.CloseParty = UI_CloseParty,
 	.ClosePartyCancel = UI_ClosePartyCancel,
+	.ClosePartyAsk = UI_ClosePartyAsk,
+	.ClosePartyRequest = UI_ClosePartyRequest,
+	.RunPartyRequest = [](std::uint32_t inviterID) { UI_RunPartyRequest(inviterID); },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3530,6 +3533,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.CloseRequestResurrectWindow = UI_CloseRequestResurrectWindow,
 	.SetShop = UI_SetShop,
 	.RunShop = UI_RunShop,
+	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3719,6 +3723,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.CreateFixedShelf = [](MCreature* pCreature, bool mysterious) {
 		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->CreateFixedShelf(mysterious);
 	},
+	.IsPlayerParty = [](MCreature* pCreature) { return pCreature->IsPlayerParty(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

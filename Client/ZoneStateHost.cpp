@@ -472,4 +472,9 @@ void CreateFixedShelf(MCreature* pCreature, bool mysterious)
 	if (s_Host && s_Host->CreateFixedShelf) s_Host->CreateFixedShelf(pCreature, mysterious);
 }
 
+bool IsPlayerParty(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsPlayerParty ? s_Host->IsPlayerParty(pCreature) : false;
+}
+
 }

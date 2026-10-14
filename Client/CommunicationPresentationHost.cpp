@@ -123,4 +123,19 @@ void ClosePartyCancel()
 	if (s_Host && s_Host->ClosePartyCancel) s_Host->ClosePartyCancel();
 }
 
+void ClosePartyAsk()
+{
+	if (s_Host && s_Host->ClosePartyAsk) s_Host->ClosePartyAsk();
+}
+
+void ClosePartyRequest()
+{
+	if (s_Host && s_Host->ClosePartyRequest) s_Host->ClosePartyRequest();
+}
+
+void RunPartyRequest(std::uint32_t inviterID)
+{
+	if (s_Host && s_Host->RunPartyRequest) s_Host->RunPartyRequest(inviterID);
+}
+
 }

@@ -188,6 +188,8 @@ struct Host
 	// Fills an NPC's shop with its fixed shelf, or its mysterious one, from
 	// the shop templates; nothing for a creature that is not an NPC.
 	void (*CreateFixedShelf)(MCreature* pCreature, bool mysterious) = nullptr;
+	// Whether the creature is in the player's party.
+	bool (*IsPlayerParty)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -277,5 +279,6 @@ bool IsVampire(MCreature* pCreature);
 // false without a host: the caller keeps the shop.
 bool SetShop(MCreature* pCreature, MShop* pShop);
 void CreateFixedShelf(MCreature* pCreature, bool mysterious);
+bool IsPlayerParty(MCreature* pCreature);
 
 }

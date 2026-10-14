@@ -36,6 +36,12 @@ struct Host
 	bool (*HideWarMessages)() = nullptr;
 	void (*CloseParty)() = nullptr;
 	void (*ClosePartyCancel)() = nullptr;
+	// The party invitation's windows: the one asking whether to join
+	// (RunPartyRequest opens it for the inviter), the one asking whether
+	// to invite, and the one the inviter waits in.
+	void (*ClosePartyAsk)() = nullptr;
+	void (*ClosePartyRequest)() = nullptr;
+	void (*RunPartyRequest)(std::uint32_t inviterID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -62,5 +68,8 @@ bool HideLairMessages();
 bool HideWarMessages();
 void CloseParty();
 void ClosePartyCancel();
+void ClosePartyAsk();
+void ClosePartyRequest();
+void RunPartyRequest(std::uint32_t inviterID);
 
 }
