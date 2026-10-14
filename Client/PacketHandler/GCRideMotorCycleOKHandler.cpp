@@ -57,7 +57,7 @@ void GCRideMotorCycleOKHandler::execute ( GCRideMotorCycleOK * pPacket , Player 
 			if (pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 			{
 				//------------------------------------------					
-				// the motorcycle addon goes on.
+				// The motorcycle addon goes on.
 				//------------------------------------------					
 				CreatureState::SetAddonItem(pPlayerCreature, pItem );
 				

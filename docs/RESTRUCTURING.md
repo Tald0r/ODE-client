@@ -4006,8 +4006,9 @@ rounds settled* for the host rules). Test fixtures share
   > zone; anything that is not a motorcycle stays. The player's own ride
   > does the same for the player and answers the wait. A piece of the
   > player's gear falls into the zone, or without a zone is freed.
-  > Without a player the ride is not heard, and the player's ride and
-  > the gear drop do nothing, where they dereferenced the player. R1 is
+  > Without a player the ride is not heard (though MZone's RemoveItem
+  > still reads the player), and the player's ride and the gear drop do
+  > nothing, where they dereferenced the player. R1 is
   > 146 Windows / 144 Ninja.
   - Owner: membership, R1, the three entries and their adapters, and
     `test_ride_gear_replies.cpp` (the ride, the sound and its absence,

@@ -35,7 +35,8 @@ struct Host
 	// The item lying in the zone with this ID; NULL for none.
 	MItem* (*GetItem)(TYPE_OBJECTID itemID) = nullptr;
 	// Takes the item out of the zone and frees it; false when it is not
-	// there.
+	// there. MZone's also clears the player's item check buffer when it
+	// holds the item, so it needs the player.
 	bool (*RemoveItem)(TYPE_OBJECTID itemID) = nullptr;
 	// Lays the item in the zone, falling when bDropping; the zone owns it
 	// when this answers true.

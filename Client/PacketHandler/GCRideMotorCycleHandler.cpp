@@ -52,7 +52,6 @@ void GCRideMotorCycleHandler::execute ( GCRideMotorCycle * pPacket , Player * pP
 			// A creature that can wear gear.
 			if (CreatureState::IsWear(pCreature))
 			{
-
 				MItem* pItem = ZoneState::GetItem( pPacket->getTargetObjectID() );
 
 				//------------------------------------------					
@@ -64,8 +63,7 @@ void GCRideMotorCycleHandler::execute ( GCRideMotorCycle * pPacket , Player * pP
 					if (pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 					{
 						//------------------------------------------					
-						// By sex,
-						// the motorcycle addon goes on.
+						// By sex, the motorcycle addon goes on.
 						//------------------------------------------
 						CreatureState::SetAddonItem( pCreature, pItem );						
 						
@@ -85,8 +83,8 @@ void GCRideMotorCycleHandler::execute ( GCRideMotorCycle * pPacket , Player * pP
 						//gC_vs_ui.PickUpItem(pItem);
 						ZoneState::RemoveItem( pItem->GetID() );
 
-						// The sound of riding off.
-						// heard where the player stands.
+						// The sound of riding off, heard where the player
+						// stands.
 						if (MCreature* const pPlayerCreature = PlayerState::Creature())
 						{
 							WorldEvents::PlaySoundAt( SOUND_WORLD_BIKE_GO,
