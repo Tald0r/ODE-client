@@ -10,6 +10,7 @@ class MItem;
 class MPetItem;
 class MShop;
 class MStatus;
+class PCOustersInfo3;
 class PCSlayerInfo3;
 
 // The zone the player is in, and the creatures in it, as the replies about
@@ -311,6 +312,11 @@ struct Host
 	void (*SetMasterEffectType)(MCreature* pCreature, int type) = nullptr;
 	// The guild union the creature's guild belongs to.
 	void (*SetUnionGuildID)(MCreature* pCreature, int unionID) = nullptr;
+	// Dresses a creature that wears gear as the ouster pInfo describes: its
+	// coat and arm, coloured by its hair, coat, boots and arm colours, and
+	// sets its attack speed. Nothing for a coat past the ousters' coats, or
+	// for a creature that wears none.
+	void (*SetAddonToOusters3)(MCreature* pCreature, const PCOustersInfo3* pInfo) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -431,5 +437,6 @@ void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo);
 void SetCompetence(MCreature* pCreature, int competence);
 void SetMasterEffectType(MCreature* pCreature, int type);
 void SetUnionGuildID(MCreature* pCreature, int unionID);
+void SetAddonToOusters3(MCreature* pCreature, const PCOustersInfo3* pInfo);
 
 }

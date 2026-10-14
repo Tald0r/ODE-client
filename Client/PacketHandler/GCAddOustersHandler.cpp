@@ -8,14 +8,24 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddOusters.h"
-#include "ClientDef.h"
+#include "CommunicationPresentationHost.h"
+#include "CreatureTypeSelection.h"
+#include "DebugLog.h"
 #include "MCreatureTable.h"
-#include "MTestDef.h"
 #include "MGameStringTable.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+// MCreature::IsNPC: whether the creature table's row for its type is an
+// NPC's.
+static bool IsNPCType(MCreature* pCreature)
+{
+	return (*g_pCreatureTable)[CreatureState::GetCreatureType(pCreature)].IsNPC();
+}
 
-extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
-//--------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------
 void GCAddOustersHandler::execute ( GCAddOusters * pPacket , Player * pPlayer )
 
 {
@@ -25,183 +35,196 @@ void GCAddOustersHandler::execute ( GCAddOusters * pPacket , Player * pPlayer )
 		
 	
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
 		const PCOustersInfo3 & oi = pPacket->getOustersInfo ();
 
-		MCreature* pCreature = g_pZone->GetCreature(oi.getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(oi.getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreatureWear;
-			
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
+			pCreature = ZoneState::NewCreatureWear();
+			if (pCreature == NULL)
+			{
+				return;
+			}
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
+			}
 
-			pCreature->SetZone( g_pZone );
-
-			pCreature->SetName( oi.getName().c_str() );
+			CreatureState::SetName( pCreature, oi.getName().c_str() );
 
 			//--------------------------------------------------
-			// CreatureType 설정
+			// Set the CreatureType
 			//--------------------------------------------------
 			ItemType_t coatType = oi.getCoatType();
 
 			if (oi.getCompetence()==0)
 			{
-				pCreature->SetCompetence( 0 );
-				pCreature->SetCreatureType( CREATURETYPE_OUSTERS_OPERATOR );
+				CreatureState::SetCompetence( pCreature, 0 );
+				CreatureState::SetCreatureType( pCreature, CREATURETYPE_OUSTERS_OPERATOR );
 			}
 			else
 			{
-				pCreature->SetCreatureType( GetOustersCreatureType( coatType ) );
+				CreatureState::SetCreatureType( pCreature, GetOustersCreatureType( coatType ) );
 			}
 
-			pCreature->SetID(oi.getObjectID());
+			CreatureState::SetID( pCreature, oi.getObjectID() );
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( oi.getX(), oi.getY() );
-			pCreature->SetServerPosition( oi.getX(), oi.getY() );
-			pCreature->SetDirection( oi.getDir() );
-			pCreature->SetCurrentDirection( oi.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pCreature, oi.getX(), oi.getY() );
+			CreatureState::SetServerPosition( pCreature, oi.getX(), oi.getY() );
+			CreatureState::SetDirection( pCreature, oi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, oi.getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			// 색깔
-			pCreature->SetBodyColor1( oi.getHairColor() );
-			pCreature->SetBodyColor2( oi.getCoatColor() );
+			// colours
+			CreatureState::SetBodyColor1( pCreature, oi.getHairColor() );
+			CreatureState::SetBodyColor2( pCreature, oi.getCoatColor() );
 	
 			// add by sonic 2006.10.29
-			pCreature->SetMasterEffectType( oi.getMasterEffectColor() );
+			CreatureState::SetMasterEffectType( pCreature, oi.getMasterEffectColor() );
 			// end
 			//--------------------------------------------------
 			// [ TEST CODE ]
 			//--------------------------------------------------
-			// 옷 색깔 설정하기
+			// set the coat's colour
 			//--------------------------------------------------
 			/*
 			if (pCreature->IsMale())
 			{
-				pCreature->SetBodyColor2( 91 );
+				CreatureState::SetBodyColor2( pCreature, 91 );
 			}
 			else
 			{
-				pCreature->SetBodyColor2( 38 );
+				CreatureState::SetBodyColor2( pCreature, 38 );
 			}
 			*/
 
-			pCreature->SetStatus( MODIFY_MAX_HP, oi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, oi.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
-			pCreature->SetStatus( MODIFY_RANK, oi.getRank() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, oi.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, oi.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
+				pStatus->SetStatus( MODIFY_RANK, oi.getRank() );
+			}
 
 			//oi.getName()
-			// 색상 정보
+			// colour information
 
-			pCreature->SetWeaponSpeed( oi.getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, oi.getAttackSpeed() );
 			
-			// 임시로
-			pCreature->SetGuildNumber( oi.getGuildID() );
-			pCreature->SetUnionGuildID( oi.getUnionID() );
-			if(pCreature->IsNPC() == false)
-				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
-			if(pPacket->getStoreOutlook().isOpen()&& g_pPlayer->IsOusters()== true && pCreature->IsNPC() == false)
+			// for now
+			CreatureState::SetGuildNumber( pCreature, oi.getGuildID() );
+			CreatureState::SetUnionGuildID( pCreature, oi.getUnionID() );
+			if(IsNPCType( pCreature ) == false)
+				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsOusters( PlayerState::Creature() )== true && IsNPCType( pCreature ) == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
-					pCreature->SetPersnalString((char*)pPacket->getStoreOutlook().getSign().c_str(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor() );
 			}
 
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 				pCreature = NULL;
 			}
 			
 		}
 		//--------------------------------------------------
-		// 이미 있는 Creature인 경우
+		// A creature already there
 		//--------------------------------------------------
 		else
 		{
 			//--------------------------------------------------
-			// CreatureType 설정
+			// Set the CreatureType
 			//--------------------------------------------------
 			ItemType_t coatType = oi.getCoatType();
 
 			if (oi.getCompetence()==0)
 			{
-				pCreature->SetCompetence( 0 );
-				pCreature->SetCreatureType( CREATURETYPE_OUSTERS_OPERATOR );
+				CreatureState::SetCompetence( pCreature, 0 );
+				CreatureState::SetCreatureType( pCreature, CREATURETYPE_OUSTERS_OPERATOR );
 			}
 			else
 			{
-				pCreature->SetCreatureType( GetOustersCreatureType( coatType ) );
+				CreatureState::SetCreatureType( pCreature, GetOustersCreatureType( coatType ) );
 			}
 
-			// 임시로
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
-			pCreature->SetGuildNumber( oi.getGuildID() );
-			pCreature->SetUnionGuildID( oi.getUnionID() );
+			// for now
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
+			}
+			CreatureState::SetGuildNumber( pCreature, oi.getGuildID() );
+			CreatureState::SetUnionGuildID( pCreature, oi.getUnionID() );
 			
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->MovePosition( oi.getX(), oi.getY() );
-			pCreature->SetServerPosition( oi.getX(), oi.getY() );			
-			pCreature->SetDirection( oi.getDir() );
-			pCreature->SetCurrentDirection( oi.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::MovePosition( pCreature, oi.getX(), oi.getY() );
+			CreatureState::SetServerPosition( pCreature, oi.getX(), oi.getY() );
+			CreatureState::SetDirection( pCreature, oi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, oi.getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			// 색깔
-			pCreature->SetBodyColor1( oi.getHairColor() );
-			pCreature->SetBodyColor2( oi.getCoatColor() );
-			pCreature->SetMasterEffectType( oi.getMasterEffectColor() );
+			// colours
+			CreatureState::SetBodyColor1( pCreature, oi.getHairColor() );
+			CreatureState::SetBodyColor2( pCreature, oi.getCoatColor() );
+			CreatureState::SetMasterEffectType( pCreature, oi.getMasterEffectColor() );
 
 	
 			//--------------------------------------------------
 			// [ TEST CODE ]
 			//--------------------------------------------------
-			// 옷 색깔 설정하기
+			// set the coat's colour
 			//--------------------------------------------------
 			/*
 			if (pCreature->IsMale())
 			{
-				pCreature->SetBodyColor2( 91 );
+				CreatureState::SetBodyColor2( pCreature, 91 );
 			}
 			else
 			{
-				pCreature->SetBodyColor2( 38 );
+				CreatureState::SetBodyColor2( pCreature, 38 );
 			}
 			*/
 
-			pCreature->SetStatus( MODIFY_MAX_HP, oi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, oi.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
-			pCreature->SetStatus( MODIFY_RANK, oi.getRank() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, oi.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, oi.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
+				pStatus->SetStatus( MODIFY_RANK, oi.getRank() );
+			}
 
-			pCreature->SetWeaponSpeed( oi.getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, oi.getAttackSpeed() );
 			
-			if(pCreature->IsNPC() == false)
-				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
+			if(IsNPCType( pCreature ) == false)
+				CreatureState::SetPersnalShop( pCreature, pPacket->getStoreOutlook().isOpen());
 
-			if(pPacket->getStoreOutlook().isOpen()&& g_pPlayer->IsOusters()== true && pCreature->IsNPC() == false)
+			if(pPacket->getStoreOutlook().isOpen()&& PlayerState::Creature() != NULL && CreatureState::IsOusters( PlayerState::Creature() )== true && IsNPCType( pCreature ) == false)
 			{
 				if(!pPacket->getStoreOutlook().getSign().empty())
-					pCreature->SetPersnalString((char*)pPacket->getStoreOutlook().getSign().c_str(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, pPacket->getStoreOutlook().getSign().c_str(), CommunicationPresentation::GetChattingColor() );
 				else
-					pCreature->SetPersnalString((*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(),g_pUserOption->ChattingColor);
+					CreatureState::SetPersnalString( pCreature, (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString(), CommunicationPresentation::GetChattingColor() );
  
 //				pCreature->SetPersnalString((char *)pPacket->getStoreOutlook().getSign().c_str());
 //				pCreature->SetPersnalShop(pPacket->getStoreOutlook().isOpen());
@@ -213,34 +236,34 @@ void GCAddOustersHandler::execute ( GCAddOusters * pPacket , Player * pPlayer )
 		if (pCreature!=NULL)
 		{
 			//--------------------------------------------------
-			// Effect 붙이기..
+			// Attach the effects..
 			//--------------------------------------------------
-			SetEffectInfo( pCreature, pPacket->getEffectInfo() );
+			WorldEvents::SetEffectInfo( pCreature, pPacket->getEffectInfo(), 0 );
 			
-			SetAddonToOusters( (MCreatureWear*)pCreature, &oi );			
+			CreatureState::SetAddonToOusters3( pCreature, &oi );
 
-			// 펫 처리
+			// the pet
 			if(pPacket->getPetInfo() != NULL)
-				SetPetInfo(pPacket->getPetInfo(), pCreature->GetID());
+				WorldEvents::SetPetInfo(pPacket->getPetInfo(), CreatureState::GetID( pCreature ));
 
-			DEBUG_ADD_FORMAT("[GCADDOUSTERS] ID = %d", pCreature->GetName());	
+			DEBUG_ADD_FORMAT("[GCADDOUSTERS] ID = %d", (int)CreatureState::GetID( pCreature ));
 			
 			NicknameInfo* _tempNick = pPacket->getNicknameInfo();
 			if(_tempNick != NULL)
 			{
-				// 커스텀 닉네임 일때
+				// a custom nickname
 				if(_tempNick->getNicknameType() == NicknameInfo::NICK_CUSTOM_FORCED ||
 				   _tempNick->getNicknameType() == NicknameInfo::NICK_CUSTOM)
 				{
-					pCreature->SetNickName(_tempNick->getNicknameType(), (char*)_tempNick->getNickname().c_str());
+					CreatureState::SetNickName( pCreature, _tempNick->getNicknameType(), (char*)_tempNick->getNickname().c_str());
 					
 				}
-				else // 닉네임 인덱스가 있을 때
+				else // a nickname by its index
 				{
 					int TempIndex = _tempNick->getNicknameIndex();
 					if(TempIndex >= g_pNickNameStringTable->GetSize())
 						TempIndex = 0;
-					pCreature->SetNickName(_tempNick->getNicknameType(), (char*)(*g_pNickNameStringTable)[TempIndex].GetString());
+					CreatureState::SetNickName( pCreature, _tempNick->getNicknameType(), (char*)(*g_pNickNameStringTable)[TempIndex].GetString());
 				}
 			}
 

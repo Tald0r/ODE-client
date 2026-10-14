@@ -1180,6 +1180,7 @@ Client/PacketHandler/GCMorphVampire2Handler.cpp
 Client/PacketHandler/GCAddVampireFromBurrowingHandler.cpp
 Client/PacketHandler/GCAddVampireFromTransformationHandler.cpp
 
-# A vampire or a slayer appearing.
+# A vampire, a slayer or an ouster appearing.
 Client/PacketHandler/GCAddVampireHandler.cpp
 Client/PacketHandler/GCAddSlayerHandler.cpp
+Client/PacketHandler/GCAddOustersHandler.cpp

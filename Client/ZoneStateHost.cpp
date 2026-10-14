@@ -687,4 +687,9 @@ void SetUnionGuildID(MCreature* pCreature, int unionID)
 	if (s_Host && s_Host->SetUnionGuildID) s_Host->SetUnionGuildID(pCreature, unionID);
 }
 
+void SetAddonToOusters3(MCreature* pCreature, const PCOustersInfo3* pInfo)
+{
+	if (s_Host && s_Host->SetAddonToOusters3) s_Host->SetAddonToOusters3(pCreature, pInfo);
+}
+
 }

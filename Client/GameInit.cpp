@@ -3828,6 +3828,9 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetCompetence = [](MCreature* pCreature, int competence) { pCreature->SetCompetence(static_cast<BYTE>(competence)); },
 	.SetMasterEffectType = [](MCreature* pCreature, int type) { pCreature->SetMasterEffectType(static_cast<BYTE>(type)); },
 	.SetUnionGuildID = [](MCreature* pCreature, int unionID) { pCreature->SetUnionGuildID(unionID); },
+	.SetAddonToOusters3 = [](MCreature* pCreature, const PCOustersInfo3* pInfo) {
+		if (pCreature->IsWear()) SetAddonToOusters(static_cast<MCreatureWear*>(pCreature), pInfo);
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
