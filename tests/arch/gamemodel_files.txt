@@ -1140,3 +1140,6 @@ Client/PacketHandler/GCAddEffectToTileHandler.cpp
 # A personal shop's contents: the player's own, and another creature's.
 Client/PacketHandler/GCMyStoreInfoHandler.cpp
 Client/PacketHandler/GCOtherStoreInfoHandler.cpp
+
+# An item created in the inventory.
+Client/PacketHandler/GCCreateItemHandler.cpp

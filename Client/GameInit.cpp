@@ -3452,6 +3452,7 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 
 // Defined in PacketFunction.cpp and MPlayer.cpp without a header.
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
+extern int g_C2G;
 extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
@@ -3856,6 +3857,15 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.ClosePersnalShop = []() { gC_vs_ui.ClosePersnalShop(); },
 	.SetPersnalShop = [](MStorage* pStorage) { gC_vs_ui.SetPersnalShop(pStorage); },
 	.SetInventoryMode = [](int mode) { gC_vs_ui.setinventory_mode(mode); },
+	.IsCreatingToGear = []() { return g_C2G > 0; },
+	.MoveCreatedToGear = [](int x, int y) {
+		C_VS_UI_INVENTORY::AutoMove( x, y );
+		for (int i = 0; i < 6; i++)
+		{
+			gpC_base->DispatchMessage();
+		}
+		g_C2G--;
+	},
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

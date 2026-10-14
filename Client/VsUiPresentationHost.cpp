@@ -152,4 +152,15 @@ void SetInventoryMode(int mode)
 	if (s_Host && s_Host->SetInventoryMode) s_Host->SetInventoryMode(mode);
 }
 
+
+bool IsCreatingToGear()
+{
+	return s_Host && s_Host->IsCreatingToGear && s_Host->IsCreatingToGear();
+}
+
+void MoveCreatedToGear(int x, int y)
+{
+	if (s_Host && s_Host->MoveCreatedToGear) s_Host->MoveCreatedToGear(x, y);
+}
+
 }

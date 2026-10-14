@@ -69,6 +69,12 @@ struct Host
 	void (*ClosePersnalShop)() = nullptr;
 	void (*SetPersnalShop)(MStorage* pStorage) = nullptr;
 	void (*SetInventoryMode)(int mode) = nullptr;
+	// An operator's "*C2G on" puts each item it then creates ("*create") on
+	// at once: IsCreatingToGear says one is pending, and MoveCreatedToGear
+	// moves the item at the inventory cell to the gear (one fewer pending).
+	// Nothing is pending without a host.
+	bool (*IsCreatingToGear)() = nullptr;
+	void (*MoveCreatedToGear)(int x, int y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -100,5 +106,7 @@ void RunPersnalShop();
 void ClosePersnalShop();
 void SetPersnalShop(MStorage* pStorage);
 void SetInventoryMode(int mode);
+bool IsCreatingToGear();
+void MoveCreatedToGear(int x, int y);
 
 }
