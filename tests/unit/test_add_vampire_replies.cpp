@@ -135,7 +135,7 @@ const CreatureState::Host creature = []() {
 	host.SetBatColor = [](MCreature* p, std::uint16_t color) { calls.push_back("bat colour|" + Who(p) + "|" + N(color)); };
 	host.SetPersnalShop = [](MCreature* p, int open) { calls.push_back("shop|" + Who(p) + "|" + N(open)); };
 	host.SetPersnalString = [](MCreature* p, const char* sign, std::uint32_t color) {
-		calls.push_back("sign|" + Who(p) + "|" + sign + "|" + N(color));
+		calls.push_back("sign|" + Who(p) + "|" + (sign ? sign : "(null)") + "|" + N(color));
 	};
 	host.SetNickName = [](MCreature* p, std::uint8_t type, char* szNickName) {
 		calls.push_back("nickname|" + Who(p) + "|" + N(type) + "|" + (szNickName ? szNickName : "(null)"));
@@ -192,9 +192,9 @@ struct World : GameModelWorld
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 3).AddonMaleFrameID = kFrame;
 		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 3).AddonFemaleFrameID = kFrame + 1;
 		creatureTypes.Init(CREATURETYPE_INSTALL_TURRET + 1);
-		// Every type a vampire here takes is a vampire's (a row's tribe is
-		// set only when the table is loaded), and so is type 0, which a
-		// creature has without the creature host.
+		// Every type a vampire here takes is a vampire's, as the loaded
+		// table has them, and so is type 0, which a creature has without
+		// the creature host (an unloaded row would be a slayer's).
 		for (int type : {0, kFrame, kFrame + 1, CREATURETYPE_BAT, CREATURETYPE_WER_WOLF, CREATURETYPE_VAMPIRE_OPERATOR})
 			testfw::MutableRow(creatureTypes, type).SetCreatureTribe(CREATURETRIBE_VAMPIRE);
 		g_pCreatureTable = &creatureTypes;
@@ -329,6 +329,7 @@ TEST(AddVampireReplies, ItsShapeAndCompetenceDecideItsType)
 	Receive(1005, {FEMALE});
 	Receive(1003, {FEMALE});
 	CHECK(std::count(calls.begin(), calls.end(), "type|new|62") == 1 && std::count(calls.begin(), calls.end(), "type|1003|62") == 1);
+	CHECK(std::count(calls.begin(), calls.end(), "woman|new") == 1 && std::count(calls.begin(), calls.end(), "woman|1003") == 1);
 	calls.clear();
 	Receive(1006, {MALE, SHAPE_BAT});
 	Receive(1003, {MALE, SHAPE_BAT});
@@ -339,7 +340,8 @@ TEST(AddVampireReplies, ItsShapeAndCompetenceDecideItsType)
 	CHECK(calls.size() > 30 && calls[3] == "competence|new|0" && calls[4] == "type|new|" + N(CREATURETYPE_VAMPIRE_OPERATOR)
 		&& calls[5] == "man|new" && calls[6] == "man|new");
 	CHECK(std::count(calls.begin(), calls.end(), "competence|1003|0") == 1
-		&& std::count(calls.begin(), calls.end(), "type|1003|" + N(CREATURETYPE_VAMPIRE_OPERATOR)) == 1);
+		&& std::count(calls.begin(), calls.end(), "type|1003|" + N(CREATURETYPE_VAMPIRE_OPERATOR)) == 1
+		&& std::count(calls.begin(), calls.end(), "woman|1003") == 2);
 }
 
 TEST(AddVampireReplies, AWerewolfIsAllCoatAndNoBatColourIsItsOwn)
@@ -367,16 +369,29 @@ TEST(AddVampireReplies, AnOpenShopShowsItsSignToAVampirePlayer)
 	calls.clear();
 	Receive(1004, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, ""});
 	CHECK(std::count(calls.begin(), calls.end(), "sign|1004|Welcome|4660") == 1);
-	// No sign for a player who is no vampire, or for no player; nothing at
-	// all for an NPC's type.
+	calls.clear();
+	Receive(1003, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, "Cheap blood"});
+	CHECK(std::count(calls.begin(), calls.end(), "sign|1003|Cheap blood|4660") == 1);
+	// The default message is passed as the table holds it, NULL when it is
+	// empty (MCreature::SetPersnalString ignores that).
+	calls.clear();
+	g_pGameStringTable->Set(UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE, "");
+	Receive(1003, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, ""});
+	Receive(1010, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, ""});
+	CHECK(std::count(calls.begin(), calls.end(), "sign|1003|(null)|4660") == 1 && std::count(calls.begin(), calls.end(), "sign|1010|(null)|4660") == 1);
+	// No sign for a player who is no vampire, or for no player, new or
+	// known; nothing at all for an NPC's type.
 	calls.clear();
 	me.vampire = false;
 	Receive(1003, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, "Cheap blood"});
+	Receive(1009, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, "Cheap blood"});
 	me.vampire = true;
 	hasPlayer = false;
 	Receive(1006, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, "Cheap blood"});
+	Receive(1003, {MALE, SHAPE_NORMAL, 9, 11, 0, 1, "Cheap blood"});
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("sign|", 0) == 0; }));
-	CHECK(std::count(calls.begin(), calls.end(), "shop|1003|1") == 1 && std::count(calls.begin(), calls.end(), "shop|1006|1") == 1);
+	CHECK(std::count(calls.begin(), calls.end(), "shop|1003|1") == 2 && std::count(calls.begin(), calls.end(), "shop|1006|1") == 1
+		&& std::count(calls.begin(), calls.end(), "shop|1009|1") == 1);
 	calls.clear();
 	hasPlayer = true;
 	testfw::MutableRow(world.creatureTypes, kFrame).SetCreatureTribe(CREATURETRIBE_NPC);

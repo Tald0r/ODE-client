@@ -117,7 +117,8 @@ ITEM_WEARINFO::LoadFromFile(std::ifstream& file)
 //----------------------------------------------------------------------
 CREATURETABLE_INFO::CREATURETABLE_INFO()
 {
-	// A row nothing has loaded: a slayer that does not move, on the ground.
+	// A row nothing has loaded: a slayer with no moves and no heights, as a
+	// zero-initialised (static) row is.
 	m_CreatureTribe	= CREATURETRIBE_SLAYER;
 	MoveTimes		= 0;
 	MoveRatio		= 0;

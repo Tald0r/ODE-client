@@ -340,7 +340,8 @@ TEST(AddSlayerReplies, AnOpenShopShowsItsSignToASlayerPlayer)
 	calls.clear();
 	g_pGameStringTable->Set(UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE, "");
 	Receive(1003, {MALE, 9, 1, ""});
-	CHECK(std::count(calls.begin(), calls.end(), "sign|1003|(null)|4660") == 1);
+	Receive(1010, {MALE, 9, 1, ""});
+	CHECK(std::count(calls.begin(), calls.end(), "sign|1003|(null)|4660") == 1 && std::count(calls.begin(), calls.end(), "sign|1010|(null)|4660") == 1);
 	// No sign for a player who is no slayer, or for no player, new or
 	// known; nothing at all for an NPC's type.
 	calls.clear();
