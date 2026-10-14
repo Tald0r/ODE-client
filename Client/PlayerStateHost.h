@@ -190,6 +190,8 @@ struct Host
 	// Puts an item in the player's check buffer, to wait in that status
 	// for the server's answer.
 	void (*SetItemCheckBuffer)(MItem* pItem, ITEM_CHECK_BUFFER status) = nullptr;
+	// Makes the player wait on that verification from the server.
+	void (*SetWaitVerify)(WAIT_VERIFY verify) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -252,5 +254,6 @@ void SetInventoryInfo(InventoryInfo* pInventoryInfo);
 void SetExtraInfo(ExtraInfo* pExtraInfo);
 void CheckAffectStatus(MItem* pItem);
 void SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status);
+void SetWaitVerify(WAIT_VERIFY verify);
 
 }

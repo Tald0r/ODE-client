@@ -138,4 +138,14 @@ void OkRemoveOption(std::uint32_t parameter, MItem* pItem)
 	if (s_Host && s_Host->OkRemoveOption) s_Host->OkRemoveOption(parameter, pItem);
 }
 
+void ClosePCTalkDlg()
+{
+	if (s_Host && s_Host->ClosePCTalkDlg) s_Host->ClosePCTalkDlg();
+}
+
+void UnSetLockInputPCTalk()
+{
+	if (s_Host && s_Host->UnSetLockInputPCTalk) s_Host->UnSetLockInputPCTalk();
+}
+
 }
