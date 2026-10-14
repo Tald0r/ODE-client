@@ -148,4 +148,19 @@ void EnterWaitPCListMode()
 	if (s_Host && s_Host->EnterWaitPCListMode) s_Host->EnterWaitPCListMode();
 }
 
+void EnterWaitUpdateInfoMode()
+{
+	if (s_Host && s_Host->EnterWaitUpdateInfoMode) s_Host->EnterWaitUpdateInfoMode();
+}
+
+const std::uint8_t* MacAddress()
+{
+	return s_Host && s_Host->MacAddress ? s_Host->MacAddress() : NULL;
+}
+
+int Dimension()
+{
+	return s_Host && s_Host->Dimension ? s_Host->Dimension() : 0;
+}
+
 }

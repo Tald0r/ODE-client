@@ -53,6 +53,12 @@ struct Host
 	void (*FlushSocketOutput)() = nullptr;
 	// Enters the mode that waits for the character list.
 	void (*EnterWaitPCListMode)() = nullptr;
+	// Enters the mode that waits for the game server's first update.
+	void (*EnterWaitUpdateInfoMode)() = nullptr;
+	// The machine's MAC address (six bytes) the game server is told of,
+	// and the dimension the player chose; NULL and 0 without a host.
+	const std::uint8_t* (*MacAddress)() = nullptr;
+	int (*Dimension)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -84,5 +90,8 @@ void SetGoreLevel(bool gore);
 bool UseTeenVersion();
 void FlushSocketOutput();
 void EnterWaitPCListMode();
+void EnterWaitUpdateInfoMode();
+const std::uint8_t* MacAddress();
+int Dimension();
 
 }

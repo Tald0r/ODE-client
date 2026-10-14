@@ -3627,6 +3627,9 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.UseTeenVersion = []() { return g_pUserOption->UseTeenVersion != FALSE; },
 	.FlushSocketOutput = []() { UpdateSocketOutput(); },
 	.EnterWaitPCListMode = []() { SetMode(MODE_WAIT_PCLIST); },
+	.EnterWaitUpdateInfoMode = []() { SetMode(MODE_WAIT_UPDATEINFO); },
+	.MacAddress = []() -> const std::uint8_t* { return g_macAddress; },
+	.Dimension = []() { return g_Dimension; },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {

@@ -1209,3 +1209,5 @@ Client/PacketHandler/GCSkillToInventoryOK1Handler.cpp
 Client/PacketHandler/GCReloadOKHandler.cpp
 # The reconnect from the game server back to the login server.
 Client/PacketHandler/GCReconnectLoginHandler.cpp
+# The reconnect from the login server to the game server.
+Client/PacketHandler/LCReconnectHandler.cpp
