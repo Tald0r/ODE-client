@@ -202,7 +202,7 @@ Shrink it when a task extracts a seam, and record the removal here.
 | Code | Why exempt |
 |---|---|
 | `GameMain.cpp`, `GameInit.cpp`, `GameUI.cpp`, `Client.cpp`, `SDLMain.cpp` | process lifecycle, DLL whitelist, render loop and quest UI events; also where the hosts (`MItemHost`, `MPriceHost`, `WireHost`) are installed, which no test can prove - `WireHost`'s installer is designated-initialised since 2026-09-09, so a wrong slot there is a compile error, but a wrong *body* still is not |
-| `MZone` live sector allocation/application, rendering and visual-effect ownership / `TileRenderer` draw paths | map parsing is tested in `ZoneMapData`; application and effects reach live sectors, creature status, sprite tables and `MTopView`; drawing uses live surfaces. Viewer tools cover some drawing; ownership guards use full builds and source-path audits. |
+| `MZone` live sector allocation/application, rendering and visual-effect ownership | map parsing is tested in `ZoneMapData`; application and effects reach live sectors, creature status, sprite tables and `MTopView`; drawing uses live surfaces. Viewer tools cover some drawing; ownership guards use full builds and source-path audits. (`TileRenderer`'s draw paths left this row with task 4.213: SpriteLib's `test_tile_renderer.cpp` covers them.) |
 | `MTopView` draw calls and the per-frame state that only the draw calls read (`DrawItemBroken` and the other draw branches) | the view draws on the live surface and reads the frame clock (`g_CurrentFrame`, `g_bFrameChanged`), `g_pEventManager` and the player's gear globals; it is the render loop the goals keep executable-side. Rules that can be stated without those globals move into a library first and get a test. Fade direction, stepping, delay and stopping now belong to `gamemodel`'s `MScreenFade` (task 4.18), with the 31 to -1 transition tested under both char signednesses; `MTopView` keeps suppression, colour conversion and surface calls. Fixes to the draw calls use full builds; the MinGW and Emscripten compiles some fix commits cite are a local check that is not in the tree, and no CI job repeats them. |
 | `MGuildMarkManager::LoadGuildMark` integration | binds the live guild mapper to the renderer's owned sprite cache; index and sprite decoding stay in the tested SpriteLib helpers. Publication and negative-cache guards use full builds and source/ownership review. |
 | `MCreature`, `MPlayer`, `MFakeCreature` movement and attached-effect orchestration; `PacketFunction::ExecuteActionInfoFromMainNode` | virtual character classes reach the live zone, UI, sprite tables and effect generators; action results transfer to `MEffectTarget` and execute through the same game objects. Bounds/queue/ownership guards stay here; extracting those classes would require the render/game-loop rewrite excluded above. Review regression guards use full builds and existing automated checks, without a runtime gate. |
@@ -5992,9 +5992,10 @@ rounds settled* for the host rules). Test fixtures share
   >   stays.
   >
   > R1 is 51 Windows / 49 Ninja.
-  - Owner: membership, R1, and `test_append_patch.cpp` (11 tests on
-    scratch files, with the `.inf` layout built byte by byte; the fix
-    and #508's review added the 4-byte, sign and `Release` tests).
+  - Owner: membership, R1, and `test_append_patch.cpp` (12 tests on
+    scratch files, with the `.inf` layout built byte by byte; the fixes
+    and #508's review added the 4-byte, sign, `Release` and short-file
+    tests).
   - Mutants: all 21 are caught. Taking the source out of the membership
     breaks the test link.
   - Fixed, moved then fixed: the loader read each 4-byte size and
@@ -6002,16 +6003,17 @@ rounds settled* for the host rules). Test fixtures share
     only the low half, and a node from `new` kept garbage in the high
     half, so a loaded patch wrote at a wild position. The ASan tree's
     poisoned allocations showed it. Each field is now read as a 32-bit
-    integer. `ANodeLoadsItsFourByteFieldsWhole` loads a node over
-    0xA5-filled storage and fails without the fix.
+    integer. `ANodeLoadsItsFourByteFieldsWhole` loads a node whose
+    fields were all bits set and fails without the fix.
   - Fixed afterwards (#508's review): the loader trusted the file's node
     count, and the count was indeterminate when the file ended before
     it. A truncated or corrupt `AppendPatch.inf` loaded garbage nodes, or
     allocated a huge count of them from a failed stream. The count now
     starts at 0, and the load stops at the first node the file fails
     on, dropping that node. `ALoadStopsWhereTheFileDoes` covers a count
-    of a million with one node, a node cut short, and no count. Each
-    case fails without the fix.
+    of a million with one node, a node cut short, and no count. The first
+    two fail without the fix every time; the third read an indeterminate
+    count, which MSVC's /RTC1 fill makes negative, so that tree passed it.
 
 - [x] **4.213 The tile renderer:** move `TileRenderer.cpp`/`.h` into
   SpriteLib (`Client/SpriteLib/`).
@@ -6036,13 +6038,17 @@ rounds settled* for the host rules). Test fixtures share
   > R1 is 50 Windows / 48 Ninja.
   - Owner: R1, and `test_tile_renderer.cpp` (6 tests on real surfaces
     and packs).
-  - Mutants: 16 of 20 are caught. Dropping the file from SpriteLib
-    breaks the test link.
+  - Mutants: all are caught but two equivalents. Dropping the file from
+    SpriteLib breaks the test link. (The first account called four
+    equivalent. #509's review showed two were not: the ID bounds matter
+    because `operator[]` takes a `WORD`, so 65537 and -65535 wrap to a
+    loaded entry; tests now pin both. It also added pins for the
+    viewport's left clamp on the no-lock path MTopView uses, drawing
+    before `Init`, `Release` forgetting the null-tile pack, and
+    `DrawTiles` unlocking.)
   - Equivalent mutants:
-    - the null tile's loaded check, and the not-loaded check, since an
-      unloaded sprite draws nothing;
-    - the two ID-range bounds, since the pack's own `operator[]`
-      range-checks;
+    - the null tile's loaded check, since an unloaded sprite draws
+      nothing;
     - `IsInit` with `||`, since `Init` and `Release` never leave one of
       the two set.
 

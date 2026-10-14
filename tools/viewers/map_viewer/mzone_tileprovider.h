@@ -10,7 +10,7 @@
 #define __MZONE_TILEPROVIDER_H__
 
 #include "Client/MZone.h"
-#include "Client/TileRenderer.h"  // For ITileDataProvider interface
+#include "Client/SpriteLib/TileRenderer.h"  // For ITileDataProvider interface
 
 /**
  * MZoneTileProvider - 让 MZone 实现 ITileDataProvider 接口

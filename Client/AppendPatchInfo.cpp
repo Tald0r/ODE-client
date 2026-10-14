@@ -393,8 +393,8 @@ AppendPatch::LoadFromFile(std::ifstream& file)
 
 	// No more nodes than the file holds whole: a count past the nodes
 	// present, or a node cut short, stops the load at the first node the
-	// file fails on. A file that ends before its count reads no count, and
-	// num stays 0 rather than indeterminate.
+	// file fails on, as does a file that ends before or inside its count
+	// (num starts at 0, so it is never indeterminate).
 	int num = 0;
 	file.read((char*)&num, 4);
 
