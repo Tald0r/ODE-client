@@ -9,12 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCPetUseSkill.h"
-#include "MZone.h"
-#include "MFakeCreature.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
+#include "MItem.h"
 #include "SkillDef.h"
-#include "PacketFunction.h"
-#include "ClientDef.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCPetUseSkillHandler::execute ( GCPetUseSkill * pGCPetUseSkill , Player * pPlayer )
@@ -26,28 +26,28 @@ void GCPetUseSkillHandler::execute ( GCPetUseSkill * pGCPetUseSkill , Player * p
 	TYPE_OBJECTID attackerID = pGCPetUseSkill->getAttacker();
 	TYPE_OBJECTID targetID = pGCPetUseSkill->getTarget();
 
-	MCreature *pAttackerCreature = g_pZone->GetCreature(attackerID);
-	MCreature *pTargetCreature = g_pZone->GetCreature(targetID);
+	MCreature *pAttackerCreature = ZoneState::GetCreature(attackerID);
+	MCreature *pTargetCreature = ZoneState::GetCreature(targetID);
 
 	if( pAttackerCreature == NULL )
 	{
-		DEBUG_ADD_FORMAT("[GCPetUseSkillHandler] 어태커(%d) 없음-_-;", attackerID);
+		DEBUG_ADD_FORMAT("[GCPetUseSkillHandler] no attacker (%d)-_-;", attackerID);
 	}
 	else
 	{
 		if( pTargetCreature == NULL )
 		{
-			DEBUG_ADD_FORMAT("[GCPetUseSkillHandler] 타겟(%d) 없음-_-;", targetID);
+			DEBUG_ADD_FORMAT("[GCPetUseSkillHandler] no target (%d)-_-;", targetID);
 		}
 		else
 		{
-			pTargetCreature->SetAction( ACTION_DAMAGED );
+			CreatureState::SetAction( pTargetCreature, ACTION_DAMAGED );
 		
-			MFakeCreature *pPet = (MFakeCreature *)g_pZone->GetFakeCreature(pAttackerCreature->GetPetID());
+			MCreature *pPet = ZoneState::GetFakeCreature(CreatureState::GetPetID(pAttackerCreature));
 			
 			if( pPet == NULL )
 			{
-				DEBUG_ADD_FORMAT("[GCPetUseSkillHandler] 펫(%d) 없음-_-;", pAttackerCreature->GetPetID());
+				DEBUG_ADD_FORMAT("[GCPetUseSkillHandler] no pet (%d)-_-;", CreatureState::GetPetID(pAttackerCreature));
 			}
 			else
 			{
@@ -55,39 +55,40 @@ void GCPetUseSkillHandler::execute ( GCPetUseSkill * pGCPetUseSkill , Player * p
 //				pPet->SyncTurretDirection();
 
 				int skillID = SKILL_CLIENT_TANK_ATTACK_3;
-				if(pPet->GetPetItem() != NULL)
+				MPetItem* pPetItem = CreatureState::GetPetItem(pPet);
+				if(pPetItem != NULL)
 				{
-					int petItemType = pPet->GetPetItem()->GetItemType();
-					int petLevel = pPet->GetPetItem()->GetNumber();
+					int petItemType = pPetItem->GetItemType();
+					int petLevel = pPetItem->GetNumber();
 
-					TYPE_SOUNDID soundID = (*g_pCreatureTable)[pPet->GetCreatureType()].GetActionSound( ACTION_ATTACK );
+					TYPE_SOUNDID soundID = (*g_pCreatureTable)[CreatureState::GetCreatureType(pPet)].GetActionSound( ACTION_ATTACK );
 
 					if (soundID!=SOUNDID_NULL  )
 					{
-						PlaySound( soundID,
+						WorldEvents::PlaySoundAt( soundID,
 									false,
-									pPet->GetX(), pPet->GetY());
+									CreatureState::GetX(pPet), CreatureState::GetY(pPet));
 					}
 
 					switch(petItemType)
 					{
-					// 탱크-_-;
+					// tank-_-;
 					case 3:
 						{
-							ExecuteActionInfoFromMainNode(
-								SKILL_CLIENT_TANK_ATTACKED,										// 사용 기술 번호
+							WorldEvents::ExecuteActionInfoFromMainNode(
+								SKILL_CLIENT_TANK_ATTACKED,										// the skill used
 								
 								0, 0, 0,
-								DIRECTION_DOWN, // 사용 방향
+								DIRECTION_DOWN, // the direction used
 								
-								pTargetCreature->GetID(),												// 목표에 대한 정보
+								CreatureState::GetID(pTargetCreature),												// the target
 								0, 0, 0, 
 								
-								0,													// 기술의 (남은) 지속 시간		
+								0,													// the skill's (remaining) duration
 								
 								NULL,
 								
-								false);	
+								false, 0, 0);	
 						}
 
 						if(petLevel >= 30 && petLevel < 40)
@@ -110,20 +111,20 @@ void GCPetUseSkillHandler::execute ( GCPetUseSkill * pGCPetUseSkill , Player * p
 							skillID = SKILL_CLIENT_STIRGE_BLOOD_DRAIN_5;
 						
 						{
-							ExecuteActionInfoFromMainNode(
-								skillID,										// 사용 기술 번호
+							WorldEvents::ExecuteActionInfoFromMainNode(
+								skillID,										// the skill used
 								
 								0, 0, 0,
-								DIRECTION_DOWN, // 사용 방향
+								DIRECTION_DOWN, // the direction used
 								
-								pTargetCreature->GetID(),												// 목표에 대한 정보
+								CreatureState::GetID(pTargetCreature),												// the target
 								0, 0, 0, 
 								
-								0,													// 기술의 (남은) 지속 시간		
+								0,													// the skill's (remaining) duration
 								
 								NULL,
 								
-								true);	
+								true, 0, 0);	
 						}
 						break;
 					case 5:	// pixie
@@ -138,60 +139,62 @@ void GCPetUseSkillHandler::execute ( GCPetUseSkill * pGCPetUseSkill , Player * p
 						else if(petLevel >= 50)
 							skillID = SKILL_CLIENT_PIXIE_ABSORB_SOUL_5;
 
-						ExecuteActionInfoFromMainNode(
-							skillID,										// 사용 기술 번호
+						WorldEvents::ExecuteActionInfoFromMainNode(
+							skillID,										// the skill used
 							
 							0, 0, 0,
-							DIRECTION_DOWN, // 사용 방향
+							DIRECTION_DOWN, // the direction used
 							
-							pTargetCreature->GetID(),												// 목표에 대한 정보
+							CreatureState::GetID(pTargetCreature),												// the target
 							0, 0, 0, 
 							
-							0,													// 기술의 (남은) 지속 시간		
+							0,													// the skill's (remaining) duration
 							
 							NULL,
 							
-							false);	
+							false, 0, 0);	
 						break;
 					}
 				}
 
-				pPet->SetTurretDelay( 3 );
+				CreatureState::SetTurretDelay( pPet, 3 );
 //				pPet->SetDirectionToPosition(pTargetCreature->GetX(), pTargetCreature->GetY());
 				int sx = 0, sy = 0;
-				BYTE petDirect = pPet->GetDirectionToPosition(pTargetCreature->GetX(), pTargetCreature->GetY());
+				BYTE petDirect = static_cast<BYTE>(CreatureState::GetDirectionToPosition(pPet, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature)));
 
-				// 2004, 12, 21, sobeit add start - 센타우로 터렛위치 세팅
-				if( pPet->GetCreatureType() == 702 || pPet->GetCreatureType() == 703 || pPet->GetCreatureType() == 704 )
-					pPet->SetTurretFinalDirection(petDirect);
+				// 2004, 12, 21, sobeit add start - set the Centauro turret's position
+				const int petType = CreatureState::GetCreatureType(pPet);
+				if( petType == 702 || petType == 703 || petType == 704 )
+					CreatureState::SetTurretFinalDirection(pPet, petDirect);
 				// 2004, 12, 21, sobeit add end
 
-				if( pPet->GetCreatureType() == 702 )
+				if( petType == 702 )
 				{
 					POINT pointGap[8] = 
 					{
-						{ 11, 6 },	// 좌
-						{ 8, 2 },	// 좌하
-						{ 0, 0 },	// 하
-						{ -7, 2 },	// 우하
-						{ -10, 6 },	// 우
-						{ -7, 10 },	// 우상
-						{ 0, 12 },	// 상
-						{ 8, 10 },	// 좌상
+						{ 11, 6 },	// left
+						{ 8, 2 },	// left-down
+						{ 0, 0 },	// down
+						{ -7, 2 },	// right-down
+						{ -10, 6 },	// right
+						{ -7, 10 },	// right-up
+						{ 0, 12 },	// up
+						{ 8, 10 },	// left-up
 					};
-					sx = pointGap[pPet->GetDirection()].x-pointGap[petDirect].x;
-					sy = pointGap[pPet->GetDirection()].y-pointGap[petDirect].y;
+					const int petFacing = CreatureState::GetDirection(pPet);
+					sx = pointGap[petFacing].x-pointGap[petDirect].x;
+					sy = pointGap[petFacing].y-pointGap[petDirect].y;
 				}
-				ExecuteActionInfoFromMainNode(
-					skillID,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+					skillID,										// the skill used
 					
-					pPet->GetX(), pPet->GetY(), 0,
-					petDirect, // 사용 방향
+					CreatureState::GetX(pPet), CreatureState::GetY(pPet), 0,
+					petDirect, // the direction used
 					
-					pPet->GetID(),												// 목표에 대한 정보
-					pPet->GetX(), pPet->GetY(), 0, 
+					CreatureState::GetID(pPet),												// the target
+					CreatureState::GetX(pPet), CreatureState::GetY(pPet), 0, 
 					
-					0,													// 기술의 (남은) 지속 시간		
+					0,													// the skill's (remaining) duration
 					
 					NULL,
 					

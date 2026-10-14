@@ -557,4 +557,14 @@ void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTO
 	if (s_Host && s_Host->SetFakeFastMove) s_Host->SetFakeFastMove(pFakeCreature, x, y);
 }
 
+void SetTurretDelay(MCreature* pFakeCreature, int delay)
+{
+	if (s_Host && s_Host->SetTurretDelay) s_Host->SetTurretDelay(pFakeCreature, delay);
+}
+
+void SetTurretFinalDirection(MCreature* pFakeCreature, int direction)
+{
+	if (s_Host && s_Host->SetTurretFinalDirection) s_Host->SetTurretFinalDirection(pFakeCreature, direction);
+}
+
 }

@@ -3767,6 +3767,14 @@ static const CreatureState::Host s_CreatureStateHost = {
 		pFake->SetFakeCreatureType(MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION);
 		pFake->SetFakeCreatureFastMoveAction(x, y, 0, 0);
 	},
+	.SetTurretDelay = [](MCreature* pFakeCreature, int delay) {
+		if (pFakeCreature->GetClassType() == MCreature::CLASS_FAKE)
+			static_cast<MFakeCreature*>(pFakeCreature)->SetTurretDelay(static_cast<BYTE>(delay));
+	},
+	.SetTurretFinalDirection = [](MCreature* pFakeCreature, int direction) {
+		if (pFakeCreature->GetClassType() == MCreature::CLASS_FAKE)
+			static_cast<MFakeCreature*>(pFakeCreature)->SetTurretFinalDirection(static_cast<BYTE>(direction));
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

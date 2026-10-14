@@ -1130,3 +1130,6 @@ Client/PacketHandler/LCRegisterPlayerOKHandler.cpp
 
 # The full quest list, rebuilt in the quest window.
 Client/PacketHandler/GCGQuestStatusInfoHandler.cpp
+
+# A pet's skill on a target.
+Client/PacketHandler/GCPetUseSkillHandler.cpp

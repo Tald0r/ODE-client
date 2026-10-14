@@ -237,6 +237,11 @@ struct Host
 	// A fake creature runs a fast move to the cell (the afterimage of a
 	// fast-moving creature); another creature is left alone.
 	void (*SetFakeFastMove)(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// A fake creature's (a pet's) turret: the frames it waits before it
+	// turns again, and the direction it ends facing. Another creature is
+	// left alone.
+	void (*SetTurretDelay)(MCreature* pFakeCreature, int delay) = nullptr;
+	void (*SetTurretFinalDirection)(MCreature* pFakeCreature, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -338,5 +343,7 @@ int GetDirectionToPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SEC
 void SetInstallTurretDirect(MCreature* pCreature, int direction);
 void SetInstallTurretCount(MCreature* pCreature, int count);
 void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetTurretDelay(MCreature* pFakeCreature, int delay);
+void SetTurretFinalDirection(MCreature* pFakeCreature, int direction);
 
 }
