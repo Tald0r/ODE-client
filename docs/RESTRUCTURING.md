@@ -5983,6 +5983,16 @@ rounds settled* for the host rules). Test fixtures share
     scratch files, with the `.inf` layout built byte by byte).
   - Mutants: all 21 are caught. Taking the source out of the membership
     breaks the test link.
+  - Fixed, moved then fixed: the loader read each 4-byte size and
+    position straight into a `long`. On LP64 (Linux, macOS) that filled
+    only the low half, and a node from `new` kept garbage in the high
+    half, so a loaded patch wrote at a wild position. The ASan tree's
+    poisoned allocations showed it. Each field is now read as a 32-bit
+    integer. `ANodeLoadsItsFourByteFieldsWhole` loads a node over
+    0xA5-filled storage and fails without the fix.
+  - Found, not fixed: the loader trusts the file's node count. A
+    truncated or corrupt `AppendPatch.inf` with a huge count allocates
+    that many nodes from a failed stream.
 
 ### Remaining R1 work after tasks 4.80-4.212
 

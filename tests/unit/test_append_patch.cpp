@@ -1,8 +1,10 @@
 #include "test_framework.h"
 #include "AppendPatchInfo.h"
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <new>
 #include <string>
 #include <vector>
 
@@ -132,10 +134,39 @@ TEST(AppendPatch, ItSavesAndLoadsTheInfLayout)
 	loaded.LoadFromFile(in);
 	CHECK(std::string(loaded.GetOriginalFilename()) == "org.spk");
 	CHECK_EQ(1, loaded.GetSize());
+	CHECK(loaded.CalculateFinalInfo());
 	const auto nodes = loaded.GetAppendPatchNode();
 	if (nodes.size() != 1) return;
 	CHECK(std::string(nodes[0]->appendFilename.GetString()) == "a1.spk");
+	CHECK_EQ(302, nodes[0]->appendFilesize);
+	CHECK_EQ(1000, nodes[0]->writePosition);
+	CHECK_EQ(1300, nodes[0]->afterFilesize);
 	CHECK_EQ(13, nodes[0]->afterSpkSize);
+}
+
+// A node's sizes and position are 4 bytes in the file, whatever the width
+// of long: a node loaded over leftover memory keeps none of it. On LP64
+// (Linux, macOS) the loader used to fill only the low half of each long.
+TEST(AppendPatch, ANodeLoadsItsFourByteFieldsWhole)
+{
+	Scratch scratch;
+	Bytes bytes;
+	PutName(bytes, "a1.spk");
+	Put(bytes, 302, 4); Put(bytes, 3, 2); Put(bytes, 1000, 4); Put(bytes, 1300, 4); Put(bytes, 13, 2);
+	scratch.Write("node.bin", bytes);
+
+	alignas(APPEND_PATCH_NODE) unsigned char storage[sizeof(APPEND_PATCH_NODE)];
+	std::memset(storage, 0xA5, sizeof(storage));
+	APPEND_PATCH_NODE* node = new (storage) APPEND_PATCH_NODE;
+	std::ifstream in(scratch.Path("node.bin"), std::ios::binary);
+	node->LoadFromFile(in);
+	CHECK(std::string(node->appendFilename.GetString()) == "a1.spk");
+	CHECK_EQ(302, node->appendFilesize);
+	CHECK_EQ(3, node->appSpkSize);
+	CHECK_EQ(1000, node->writePosition);
+	CHECK_EQ(1300, node->afterFilesize);
+	CHECK_EQ(13, node->afterSpkSize);
+	node->~APPEND_PATCH_NODE();
 }
 
 TEST(AppendPatch, TheFinalInfoCanBeReadFromAFile)

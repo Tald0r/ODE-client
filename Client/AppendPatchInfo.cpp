@@ -3,9 +3,20 @@
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "AppendPatchInfo.h"
+#include <cstdint>
 
 namespace {
 const AppendPatchHost* s_pHost = NULL;
+
+// The file holds sizes and positions in 4 bytes, but long is 8 bytes on
+// LP64 (Linux, macOS): read the 4 bytes as such.
+long
+ReadLong4(std::ifstream& file)
+{
+	std::int32_t value = 0;
+	file.read(reinterpret_cast<char*>(&value), 4);
+	return value;
+}
 }
 
 void
@@ -112,10 +123,10 @@ void
 APPEND_PATCH_NODE::LoadFromFile(std::ifstream& file)
 {
 	appendFilename.LoadFromFile( file );
-	file.read((char*)&appendFilesize, 4);
+	appendFilesize = ReadLong4( file );
 	file.read((char*)&appSpkSize, 2);
-	file.read((char*)&writePosition, 4);
-	file.read((char*)&afterFilesize, 4);
+	writePosition = ReadLong4( file );
+	afterFilesize = ReadLong4( file );
 	file.read((char*)&afterSpkSize, 2);
 }
 
@@ -375,9 +386,9 @@ AppendPatch::LoadFromFile(std::ifstream& file)
 	Release();
 
 	m_orgFilename.LoadFromFile( file );
-	file.read((char*)&m_orgFilesize, 4);
+	m_orgFilesize = ReadLong4( file );
 	file.read((char*)&m_orgSpkSize, 2);
-	file.read((char*)&m_finalFilesize, 4);
+	m_finalFilesize = ReadLong4( file );
 	file.read((char*)&m_finalSpkSize, 2);
 
 	int num;
