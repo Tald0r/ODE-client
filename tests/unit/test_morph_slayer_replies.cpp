@@ -240,6 +240,8 @@ TEST(MorphSlayerReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1003);
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
 	CHECK(std::count(calls.begin(), calls.end(), "zone takes|1006") == 1 && std::count(calls.begin(), calls.end(), "name|1003|Slayer") == 1);
+	// The known one, a man here, takes the male slayer's type.
+	CHECK(std::count(calls.begin(), calls.end(), "type|1003|" + N(CREATURETYPE_SLAYER_MALE)) == 1);
 	// Without the creature host, a made one is still added; a known one is
 	// no plain wearing creature.
 	calls.clear();

@@ -300,7 +300,9 @@ struct Host
 	bool (*IsPlainCreatureWear)(MCreature* pCreature) = nullptr;
 	// Dresses a creature that wears gear as the slayer pInfo describes: its
 	// hair, coat, trousers, helmet, weapon, shield, motorcycle and shoulder,
-	// with their colours. Nothing for a creature that wears none.
+	// each but the shoulder in its colours (an advanced slayer's coat takes
+	// the hair colour where another's takes the skin), and sets its attack
+	// speed. Nothing for a creature that wears none.
 	void (*SetAddonToSlayer3)(MCreature* pCreature, const PCSlayerInfo3* pInfo) = nullptr;
 };
 
