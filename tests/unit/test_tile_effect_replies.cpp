@@ -252,3 +252,13 @@ TEST(TileEffectReplies, WithoutTheHostsNothingIsMarked)
 	Receive(EFFECTSTATUS_DRAGON_TORNADO, 7001);
 	CHECK(calls.empty());
 }
+
+TEST(TileEffectReplies, AnEffectPastTheEffectStatusesShowsNothing)
+{
+	World world;
+	// The wire's effect ID is 16 bits; the effect statuses' enum holds 0 to
+	// 511.
+	Receive(600);
+	Receive(65535);
+	CHECK(calls.empty());
+}

@@ -32,7 +32,8 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 	if( pPacket->getEffectID() == EFFECTSTATUS_TRAP_INSTALLED && (pPlayerCreature == NULL || !CreatureState::IsSlayer(pPlayerCreature)) )
 		return;
 
-	EFFECTSTATUS EffectStatusType = (EFFECTSTATUS)pPacket->getEffectID();
+	// Not cast to EFFECTSTATUS: the wire's 16 bits run past the enum's range.
+	const int EffectStatusType = pPacket->getEffectID();
 	int skillType	= (*g_pEffectStatusTable)[ EffectStatusType ].ActionInfo;
 	
 	// 2004, 9, 3, sobeit add start

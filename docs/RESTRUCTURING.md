@@ -4607,13 +4607,16 @@ rounds settled* for the host rules). Test fixtures share
   >   (`SelectFacingDirection`, which `MTopView`'s static was; the
   >   `g_pTopView` check went, as the view outlives every zone).
   > The three short effect calls relied on `bStartFromMainNode`'s
-  > default, `true`; they now pass it. R1 is 109 Windows / 107 Ninja.
+  > default, `true`; they now pass it. Once moved, the reply stopped
+  > casting the wire's 16-bit effect ID to `EFFECTSTATUS`, whose values
+  > end at 511: an ID past that now shows nothing, where Clang's UBSan
+  > stopped at the enum load. R1 is 109 Windows / 107 Ninja.
   - Owner: membership, R1, the four entries and adapters, and
     `test_tile_effect_replies.cpp` (a skill and none, the trying, luck
     and misfortune, the three ground marks with and without a zone, a
     halo and its creature gone, a trap for a slayer, another race and no
     player, the laser for each attacker, a defender and no player, the
-    tornado and its child, no hosts).
+    tornado and its child, an ID past the effect statuses, no hosts).
 
 ### Remaining R1 work after tasks 4.80-4.168
 
