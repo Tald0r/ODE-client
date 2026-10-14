@@ -149,6 +149,9 @@ TEST(PortalDropReplies, ACreatureEntersAPortalAndLeaves)
 	zoneExists = false;
 	ReceivePortal(1003, 30, 31);
 	CHECK(calls.empty());
+	// Without a zone no creature is looked up: the executable's lookup
+	// reads the zone unguarded.
+	CHECK_EQ(2, creatureLookups);
 }
 
 TEST(PortalDropReplies, ADroppedItemLandsFalling)

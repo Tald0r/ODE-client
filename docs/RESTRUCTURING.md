@@ -4442,7 +4442,10 @@ rounds settled* for the host rules). Test fixtures share
   > sound by its pet item (new `CreatureState::GetPetItem`, for fake
   > creatures only): a dog growls at 30 or more and barks otherwise, a
   > slayer's pet makes its creature type's drained sound, and a later pet
-  > makes none. R1 is 117 Windows / 115 Ninja.
+  > makes none. R1 is 117 Windows / 115 Ninja. Recorded, not fixed:
+  > `MoveIntoPortal` (`PacketFunction.cpp`) deletes the portal's fake
+  > creature when the zone refuses it, then reads its ID for the tunnel
+  > effect.
   - Owner: membership, R1, the five entries and adapters, and
     `test_portal_drop_replies.cpp` (a portal entered, nobody, no zone;
     an item dropped by nobody, by a creature not there, without a pet,
