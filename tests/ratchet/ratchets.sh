@@ -328,7 +328,8 @@ check () {
 # 156: the unseen skill on the player and the untransform reply join gamemodel (4.142).
 # 154: the say and global chat replies join gamemodel (4.143).
 # 151: the learn-skill, cannot-add and remove-from-gear replies join gamemodel (4.144).
-R1_BASELINE=151
+# 149: the two skill-failed replies join gamemodel (4.145).
+R1_BASELINE=149
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -490,7 +491,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 154: the unseen skill on the player and the untransform reply join gamemodel (4.142).
 	# 152: the say and global chat replies join gamemodel (4.143).
 	# 149: the learn-skill, cannot-add and remove-from-gear replies join gamemodel (4.144).
-	R1_NINJA_BASELINE=149
+	# 147: the two skill-failed replies join gamemodel (4.145).
+	R1_NINJA_BASELINE=147
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

@@ -3500,6 +3500,8 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.RunSkillTree = UI_RunSkillTree,
 	.MiniGameScores = UI_MiniGameScores,
 	.RunImageNotice = [](const char* name, std::uint32_t id) { UI_RunImageNotice(name, id); },
+	.GetCharInfoLevel = UI_GetCharInfoLevel,
+	.SetDelayEternity = UI_SetDelayEternity,
 };
 
 static const DialogPresentation::Host s_DialogPresentationHost = {
@@ -3577,6 +3579,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
 	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
 	.GetItemCheckBufferStatus = []() { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBufferStatus() : PlayerState::ITEM_CHECK_BUFFER_NULL; },
+	.SetCannotTrace = []() { if (g_pPlayer != NULL) g_pPlayer->SetCannotTrace(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3590,6 +3593,10 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.GetCorpseCreature = [](TYPE_OBJECTID itemID) -> MCreature* {
 		MItem* pItem = g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL;
 		return pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE ? static_cast<MCorpse*>(pItem)->GetCreature() : NULL;
+	},
+	.GetItemAsCorpseCreature = [](TYPE_OBJECTID itemID) -> MCreature* {
+		MItem* pItem = g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL;
+		return pItem != NULL ? ((MCorpse*)pItem)->GetCreature() : NULL;
 	},
 };
 
@@ -3681,6 +3688,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.IsSlayer = [](MCreature* pCreature) { return pCreature->IsSlayer(); },
 	.IsOusters = [](MCreature* pCreature) { return pCreature->IsOusters(); },
 	.GetRace = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetRace()); },
+	.SetStopBloodDrain = [](MCreature* pCreature) { pCreature->SetStopBloodDrain(); },
+	.SetStopAbsorbSoul = [](MCreature* pCreature) { pCreature->SetStopAbsorbSoul(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

@@ -9,7 +9,9 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillFailed2.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -24,9 +26,9 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	// message
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -35,47 +37,43 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	}	
 
 	//------------------------------------------------------
-	// 대상이 되는 creature를 얻는다.
+	// The creatures involved.
 	//------------------------------------------------------
-	MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-	MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+	MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+	MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 	
 	//------------------------------------------------------
-	// Creature가 행동을 취하도록 한다.
+	// The creature acts.
 	//------------------------------------------------------
 	int skilltype = pPacket->getSkillType();
 	
 //	if(skilltype == SKILL_BLOOD_DRAIN)
 //	{
-//		DEBUG_ADD("흡혈 실패ㅋㅋ");
+//		DEBUG_ADD("blood drain failed");
 //	}
 	if( skilltype >= g_pActionInfoTable->GetSize() )
 		return;
 	
-	if(pTargetCreature == NULL && pCreature != NULL && pCreature->IsOusters() && skilltype == SKILL_ABSORB_SOUL)
+	if(pTargetCreature == NULL && pCreature != NULL && CreatureState::IsOusters(pCreature) && skilltype == SKILL_ABSORB_SOUL)
 	{
-		MItem *pItem = g_pZone->GetItem( pPacket->getTargetObjectID() );
-		if(pItem != NULL)
-		{
-			pTargetCreature = ((MCorpse *)pItem)->GetCreature();
-		}
+		pTargetCreature = ZoneState::GetItemAsCorpseCreature( pPacket->getTargetObjectID() );
 	}
 
 	if (pCreature==NULL)
 	{
-		// 그런 creature가 없을 경우
+		// No such creature.
 		DEBUG_ADD_FORMAT("There's no such creature : ID=%d, Skill=%d", pPacket->getObjectID(), SKILL_ATTACK_MELEE);				
 		
 		return;
 	}
 
 	//------------------------------------------------------
-	// 현재의 무기에 따라서 공격 기술을 결정하는 경우..
+	// The attack skill depends on the weapon in hand.
 	//------------------------------------------------------
 	if (skilltype==SKILL_ATTACK_MELEE
 		|| skilltype==SKILL_ATTACK_ARMS)
 	{
-		skilltype = pCreature->GetBasicActionInfo();
+		skilltype = CreatureState::GetBasicActionInfo(pCreature);
 	}
 
 	//
@@ -91,12 +89,12 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 
 	DEBUG_ADD_FORMAT("SkillType = %d", skilltype);
 
-	if (pCreature->IsOusters() && skilltype==SKILL_ABSORB_SOUL)
+	if (CreatureState::IsOusters(pCreature) && skilltype==SKILL_ABSORB_SOUL)
 	{
-		pCreature->SetStopAbsorbSoul();
+		CreatureState::SetStopAbsorbSoul(pCreature);
 	}
 	
-	// 2005, 1, 10, sobeit add start - 784 몬스터 수류탄 던지기 스킬 실패시 어떤 동작도 하지 않게..
+	// 2005, 1, 10, sobeit add start - a failed grenade throw by monster 784 shows nothing..
 	if(skilltype == SKILL_GRENADE_ATTACK) 
 		return;
 	// 2005, 1, 10, sobeit add end
@@ -108,33 +106,31 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	{		
 		if (skilltype==SKILL_BLOOD_DRAIN || skilltype == SKILL_BITE_OF_DEATH )
 		{
-			pCreature->SetStopBloodDrain();
-			//DEBUG_ADD("흡혈 테스트ㅋㅋ");
+			CreatureState::SetStopBloodDrain(pCreature);
+			//DEBUG_ADD("blood drain test");
 		}
 		
-		// 맞는 애가 없는 경우..  
+		// Nobody was hit.  
 		if (pTargetCreature==NULL)
 		{
-			// 그런 creature가 없을 경우
+			// No such creature.
 			DEBUG_ADD_FORMAT("There's no such creature : TargetID=%d, Skill=%d", pPacket->getTargetObjectID(), SKILL_ATTACK_MELEE);
 
 			//------------------------------------------------------
-			// Creature가 행동을 취하도록 한다.
+			// The creature acts.
 			//------------------------------------------------------
-			pCreature->PacketSpecialActionToNobody(
-							skilltype,
-							pCreature->GetX(),
-							pCreature->GetY()						
+			CreatureState::PacketSpecialActionToNobody(pCreature, skilltype,
+							CreatureState::GetX(pCreature),
+							CreatureState::GetY(pCreature)						
 			);			
 			
 			return;
 		}
 		
-		// 자신에게 쓰는 경우? - -;
+		// Used on itself?
 		if (pCreature==pTargetCreature)
 		{
-			pCreature->PacketSpecialActionToSelf(
-						skilltype, 				
+			CreatureState::PacketSpecialActionToSelf(pCreature, skilltype, 				
 						NULL
 			);
 
@@ -142,12 +138,11 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 		}
 		
 		//------------------------------------------------------
-		// 행동하는 Creature가 TargetCreature를 바라보도록 한다.
+		// The acting creature faces its target.
 		//------------------------------------------------------
-		pCreature->SetDirectionToPosition( pTargetCreature->GetX(), pTargetCreature->GetY() );
+		CreatureState::SetDirectionToPosition(pCreature, CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature) );
 
-		pCreature->PacketSpecialActionToOther(
-						skilltype, 
+		CreatureState::PacketSpecialActionToOther(pCreature, skilltype, 
 						pPacket->getTargetObjectID(), 
 						NULL
 		);		
@@ -158,8 +153,7 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	//------------------------------------------------------
 	else if ((*g_pActionInfoTable)[skilltype].IsTargetSelf())
 	{
-		pCreature->PacketSpecialActionToSelf(
-						skilltype, 				
+		CreatureState::PacketSpecialActionToSelf(pCreature, skilltype, 				
 						NULL
 		);
 	}
@@ -168,10 +162,9 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	//------------------------------------------------------
 	else if ((*g_pActionInfoTable)[skilltype].IsTargetZone())
 	{
-		pCreature->PacketSpecialActionToSector(
-						skilltype, 
-						pCreature->GetX(),
-						pCreature->GetY(),
+		CreatureState::PacketSpecialActionToSector(pCreature, skilltype, 
+						CreatureState::GetX(pCreature),
+						CreatureState::GetY(pCreature),
 						NULL
 		);
 	}

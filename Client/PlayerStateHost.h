@@ -139,6 +139,8 @@ struct Host
 	void (*SetDelay)(std::uint32_t milliseconds) = nullptr;
 	// What the item waiting on the server is for; NULL without a player.
 	ITEM_CHECK_BUFFER (*GetItemCheckBufferStatus)() = nullptr;
+	// Soul Chain failed: the player cannot trace its target.
+	void (*SetCannotTrace)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -179,5 +181,6 @@ void SetGroundCreature();
 void SetTempSelectPos(int x, int y);
 void SetDelay(std::uint32_t milliseconds);
 ITEM_CHECK_BUFFER GetItemCheckBufferStatus();
+void SetCannotTrace();
 
 }

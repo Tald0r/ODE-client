@@ -16,6 +16,10 @@ struct Host
 	void (*RunSkillTree)(int domain, int maxLevel) = nullptr;
 	void (*MiniGameScores)(GCMiniGameScores* pPacket) = nullptr;
 	void (*RunImageNotice)(const char* name, std::uint32_t id) = nullptr;
+	// The level the character window shows; 0 without a host.
+	int (*GetCharInfoLevel)() = nullptr;
+	// Eternity failed: its button waits out its delay.
+	void (*SetDelayEternity)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -25,5 +29,7 @@ void SetNPCInfo(const char* pName, int npcID, int x, int y);
 void RunSkillTree(int domain, int maxLevel);
 void MiniGameScores(GCMiniGameScores* pPacket);
 void RunImageNotice(const char* name, std::uint32_t id);
+int GetCharInfoLevel();
+void SetDelayEternity();
 
 }

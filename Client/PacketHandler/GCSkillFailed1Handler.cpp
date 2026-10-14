@@ -10,11 +10,14 @@
 
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillFailed1.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "GameInfoPresentationHost.h"
+#include "MActionInfoTable.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 #include "MSkillManager.h"
-#include "MinTr.h"
-#include "UIFunction.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -23,15 +26,22 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 	//------------------------------------------------------------------
 	// The server has answered whether the skill the player was waiting on
 	// succeeded.
 	//------------------------------------------------------------------	
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -49,18 +59,18 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 	//------------------------------------------------------------------
 	// Release the item lock.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetItemCheckBufferStatus()==MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY)
+	if (PlayerState::GetItemCheckBufferStatus()==PlayerState::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY)
 	{
-		g_pPlayer->ClearItemCheckBuffer();
+		PlayerState::ClearItemCheckBuffer();
 	}
-	else if(g_pPlayer->IsOusters() && skillID == SKILL_ABSORB_SOUL)
+	else if(CreatureState::IsOusters(pPlayerCreature) && skillID == SKILL_ABSORB_SOUL)
 	{
 //		_MinTrace(" -_-a failed\n");
-		g_pPlayer->SetStopAbsorbSoul();
-	} else if (g_pPlayer->IsSlayer() && skillID == SKILL_ETERNITY )
+		CreatureState::SetStopAbsorbSoul(pPlayerCreature);
+	} else if (CreatureState::IsSlayer(pPlayerCreature) && skillID == SKILL_ETERNITY )
 	{
 //		g_pSystemMessage->Add( (*g_pGameStringTable)[UI_STRING_MESSAGE_CANNOT_RESURRECT].GetString() );
-		UI_SetDelayEternity();
+		GameInfoPresentation::SetDelayEternity();
 	}
 
 		
@@ -103,7 +113,7 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 		if( skillID == SKILL_WILL_OF_LIFE )
 		{
 			if (auto* entry = g_pSkillInfoTable->GetMutable(skillID)) {
-				entry->SetAvailableTime( GetWillOfLifeDelay(UI_GetCharInfoLevel()) );
+				entry->SetAvailableTime( GetWillOfLifeDelay(GameInfoPresentation::GetCharInfoLevel()) );
 			}
 		}
 	}
@@ -115,23 +125,24 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 	{
 		case SKILL_BITE_OF_DEATH :
 		case SKILL_BLOOD_DRAIN :
-			g_pPlayer->SetStopBloodDrain();
+			CreatureState::SetStopBloodDrain(pPlayerCreature);
 //			DEBUG_ADD("blood drain failed");
 //			g_pPlayer->StopBloodDrain();
 			break;
 		case SKILL_SOUL_CHAIN :
 			//gC_vs_ui.SetCannotTrace();
-			g_pPlayer->SetCannotTrace();
+			PlayerState::SetCannotTrace();
 			break;		
 		case SKILL_BURNING_SOUL_CHARGING:
-			g_pPlayer->RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_1);
+			CreatureState::RemoveEffectStatus(pPlayerCreature, EFFECTSTATUS_BURNING_SOL_CHARGE_1);
 			break;
 	}
 
 	//------------------------------------------------------------------
 	// Change the status values.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	//------------------------------------------------------------------
 	// Update what the UI shows (setting it unconditionally is

@@ -55,6 +55,11 @@ MCreature* GetCorpseCreature(TYPE_OBJECTID itemID)
 	return s_Host && s_Host->GetCorpseCreature ? s_Host->GetCorpseCreature(itemID) : nullptr;
 }
 
+MCreature* GetItemAsCorpseCreature(TYPE_OBJECTID itemID)
+{
+	return s_Host && s_Host->GetItemAsCorpseCreature ? s_Host->GetItemAsCorpseCreature(itemID) : nullptr;
+}
+
 }
 
 namespace CreatureState {
@@ -425,6 +430,16 @@ bool IsOusters(MCreature* pCreature)
 int GetRace(MCreature* pCreature)
 {
 	return s_Host && s_Host->GetRace ? s_Host->GetRace(pCreature) : 0;
+}
+
+void SetStopBloodDrain(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetStopBloodDrain) s_Host->SetStopBloodDrain(pCreature);
+}
+
+void SetStopAbsorbSoul(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetStopAbsorbSoul) s_Host->SetStopAbsorbSoul(pCreature);
 }
 
 }

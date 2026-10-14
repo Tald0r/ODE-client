@@ -171,4 +171,9 @@ ITEM_CHECK_BUFFER GetItemCheckBufferStatus()
 	return s_Host && s_Host->GetItemCheckBufferStatus ? s_Host->GetItemCheckBufferStatus() : ITEM_CHECK_BUFFER_NULL;
 }
 
+void SetCannotTrace()
+{
+	if (s_Host && s_Host->SetCannotTrace) s_Host->SetCannotTrace();
+}
+
 }

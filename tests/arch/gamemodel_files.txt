@@ -1046,3 +1046,7 @@ Client/PacketHandler/GCGlobalChatHandler.cpp
 Client/PacketHandler/GCLearnSkillOKHandler.cpp
 Client/PacketHandler/GCCannotAddHandler.cpp
 Client/PacketHandler/GCRemoveFromGearHandler.cpp
+
+# The player's skill failing, and another creature's.
+Client/PacketHandler/GCSkillFailed1Handler.cpp
+Client/PacketHandler/GCSkillFailed2Handler.cpp

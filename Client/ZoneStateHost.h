@@ -32,6 +32,9 @@ struct Host
 	// The creature lying in the corpse item with this ID; NULL for no item,
 	// one that is not a corpse, or a corpse with no creature.
 	MCreature* (*GetCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
+	// The creature of the item with this ID taken as a corpse, whatever the
+	// item is (GCSkillFailed2's unchecked cast, kept for its move).
+	MCreature* (*GetItemAsCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -45,6 +48,7 @@ bool AddCorpseFromCreature(TYPE_OBJECTID id);
 // ZONEID_NULL without a host.
 int GetID();
 MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
+MCreature* GetItemAsCorpseCreature(TYPE_OBJECTID itemID);
 
 }
 
@@ -158,6 +162,9 @@ struct Host
 	bool (*IsOusters)(MCreature* pCreature) = nullptr;
 	// Slayer, vampire, or ousters for anything else.
 	int (*GetRace)(MCreature* pCreature) = nullptr;
+	// Ends a blood drain or a soul absorption the creature was showing.
+	void (*SetStopBloodDrain)(MCreature* pCreature) = nullptr;
+	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -241,5 +248,7 @@ bool IsSlayer(MCreature* pCreature);
 bool IsOusters(MCreature* pCreature);
 // RACE_SLAYER (0) without a host.
 int GetRace(MCreature* pCreature);
+void SetStopBloodDrain(MCreature* pCreature);
+void SetStopAbsorbSoul(MCreature* pCreature);
 
 }
