@@ -355,3 +355,15 @@ TEST(ShopListReplies, WithoutHostsTheShopIsNeitherShownNorFilled)
 	CHECK(merchant.shop == nullptr);
 	CHECK(calls.empty());
 }
+
+TEST(ShopListReplies, AnUnknownShopKindIsKeptAndShowsTheFixedRackFirst)
+{
+	World world;
+	// A wire byte past the two kinds the client knows (Clang's UBSan checks
+	// the enum load).
+	ReceiveList(1003, MShopShelf::SHELF_FIXED, 1, {}, 30, 10, 7);
+	CHECK(merchant.shop != nullptr);
+	if (merchant.shop == nullptr) return;
+	CHECK_EQ(7, static_cast<int>(merchant.shop->GetShopType()));
+	CHECK_EQ(0, static_cast<int>(merchant.shop->GetCurrent()));
+}
