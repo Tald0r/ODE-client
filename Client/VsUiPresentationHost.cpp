@@ -90,4 +90,30 @@ void RefreshPointExchange()
 	if (s_Host && s_Host->RefreshPointExchange) s_Host->RefreshPointExchange();
 }
 
+
+bool IsRunningQuestManager()
+{
+	return s_Host && s_Host->IsRunningQuestManager && s_Host->IsRunningQuestManager();
+}
+
+void CloseQuestManager()
+{
+	if (s_Host && s_Host->CloseQuestManager) s_Host->CloseQuestManager();
+}
+
+void RunQuestManager()
+{
+	if (s_Host && s_Host->RunQuestManager) s_Host->RunQuestManager();
+}
+
+bool SetQuestManagerInfo(UI_GQuestInfo* pInfo)
+{
+	return s_Host && s_Host->SetQuestManagerInfo && s_Host->SetQuestManagerInfo(pInfo);
+}
+
+void ReleaseQuestXML()
+{
+	if (s_Host && s_Host->ReleaseQuestXML) s_Host->ReleaseQuestXML();
+}
+
 }

@@ -62,6 +62,11 @@ struct Host
 	bool (*AddFakeCreature)(MCreature* pFakeCreature) = nullptr;
 	// Deletes a fake creature the zone did not take.
 	void (*DeleteFakeCreature)(MCreature* pFakeCreature) = nullptr;
+	// Marks the zone's cell with a ground effect: a ground elemental's
+	// aura, a darkness that cannot be cast there, the fury of gnome.
+	void (*SetGroundElemental)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -86,6 +91,9 @@ MCreature* GetFakeCreature(TYPE_OBJECTID id);
 MCreature* NewFakeCreature(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 bool AddFakeCreature(MCreature* pFakeCreature);
 void DeleteFakeCreature(MCreature* pFakeCreature);
+void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 
 }
 
@@ -237,6 +245,13 @@ struct Host
 	// A fake creature runs a fast move to the cell (the afterimage of a
 	// fast-moving creature); another creature is left alone.
 	void (*SetFakeFastMove)(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// A fake creature's (a pet's) turret. SetTurretDelay is its recoil: it
+	// is drawn pulled back by twice that many pixels, one less each frame.
+	// SetTurretFinalDirection is the direction it turns towards, on the
+	// turret's own 32-step scale; GCPetUseSkill hands it an 8-way
+	// direction, as upstream did. Another creature is left alone.
+	void (*SetTurretDelay)(MCreature* pFakeCreature, int delay) = nullptr;
+	void (*SetTurretFinalDirection)(MCreature* pFakeCreature, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -338,5 +353,7 @@ int GetDirectionToPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SEC
 void SetInstallTurretDirect(MCreature* pCreature, int direction);
 void SetInstallTurretCount(MCreature* pCreature, int count);
 void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetTurretDelay(MCreature* pFakeCreature, int delay);
+void SetTurretFinalDirection(MCreature* pFakeCreature, int direction);
 
 }

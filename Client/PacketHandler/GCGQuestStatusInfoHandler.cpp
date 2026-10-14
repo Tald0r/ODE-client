@@ -9,9 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGQuestStatusInfo.h"
-#include "ClientDef.h"
-#include "Client.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
+#include "VsUiPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -23,9 +22,9 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 	(void)pPlayer;
 //	__BEGIN_DEBUG_EX
 		
-	if(gC_vs_ui.IsRunningQuestManager()) 
-		gC_vs_ui.CloseQuestManager();
-	gC_vs_ui.RunQuestManager(); // ui setting - load xml file
+	if(VsUiPresentation::IsRunningQuestManager()) 
+		VsUiPresentation::CloseQuestManager();
+	VsUiPresentation::RunQuestManager(); // ui setting - load xml file
 
 	std::list<QuestStatusInfo*>	Infos = pGCGQuestStatusInfo->getInfos();
 	std::list<QuestStatusInfo*>::iterator itr = Infos.begin(); 
@@ -65,22 +64,21 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 			subitr++;
 		}
 
-		if(false == gC_vs_ui.SetQuestManagerInfo((void*)UI_Info))
+		if(false == VsUiPresentation::SetQuestManagerInfo(UI_Info))
 		{
-			std::vector<UI_GMissionInfo*>::iterator subitr1 = UI_Info->vMissionList.begin();
-
-			while(subitr1 != UI_Info->vMissionList.end())
+			// Nobody kept the record: free its missions, then the record. (The
+			// loop here erased each mission and went on with the erased
+			// iterator, which a checked build aborts on.)
+			for (UI_GMissionInfo* pMission : UI_Info->vMissionList)
 			{
-				UI_GMissionInfo *TempMission1 = (*subitr1);
-				UI_Info->vMissionList.erase(subitr1);
-				SAFE_DELETE(TempMission1);
+				delete pMission;
 			}
-			SAFE_DELETE(UI_Info);
+			delete UI_Info;
 		}
 		itr++;
 	}
 
-	gC_vs_ui.ReleaseQuestXML(); // Release xml file
+	VsUiPresentation::ReleaseQuestXML(); // Release xml file
 
 	//__END_DEBUG_EX 
 	__END_CATCH

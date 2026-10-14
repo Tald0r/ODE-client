@@ -84,6 +84,11 @@ void MoveIntoPortal(MCreature* pCreature)
 	if (s_Host && s_Host->MoveIntoPortal) s_Host->MoveIntoPortal(pCreature);
 }
 
+void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y)
+{
+	if (s_Host && s_Host->SetDragonTornado) s_Host->SetDragonTornado(effectStatus, objectID, x, y);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

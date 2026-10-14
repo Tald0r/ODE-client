@@ -100,6 +100,21 @@ void DeleteFakeCreature(MCreature* pFakeCreature)
 	if (s_Host && s_Host->DeleteFakeCreature) s_Host->DeleteFakeCreature(pFakeCreature);
 }
 
+void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetGroundElemental) s_Host->SetGroundElemental(x, y);
+}
+
+void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetDarknessForbidden) s_Host->SetDarknessForbidden(x, y);
+}
+
+void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetFuryOfGnome) s_Host->SetFuryOfGnome(x, y);
+}
+
 }
 
 namespace CreatureState {
@@ -555,6 +570,16 @@ void SetInstallTurretCount(MCreature* pCreature, int count)
 void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	if (s_Host && s_Host->SetFakeFastMove) s_Host->SetFakeFastMove(pFakeCreature, x, y);
+}
+
+void SetTurretDelay(MCreature* pFakeCreature, int delay)
+{
+	if (s_Host && s_Host->SetTurretDelay) s_Host->SetTurretDelay(pFakeCreature, delay);
+}
+
+void SetTurretFinalDirection(MCreature* pFakeCreature, int direction)
+{
+	if (s_Host && s_Host->SetTurretFinalDirection) s_Host->SetTurretFinalDirection(pFakeCreature, direction);
 }
 
 }

@@ -185,8 +185,8 @@ bool				g_bForceExitBynProtect = false;
 bool				g_bForceExitBynProtect2 = false;
 DWORD				g_nProtectErrorMessage = 0;
 DWORD				g_nProtectErrorMessage2 = 0;
-int					g_LeftPremiumDays = 0;
-bool				g_bFamily = false;
+// g_LeftPremiumDays and g_bFamily, the account's premium days and family
+// flag from the login, are ClientMode.cpp's too.
 bool				g_bSuperUser			= false;
 
 DWORD g_dwSeqNumL = 0;

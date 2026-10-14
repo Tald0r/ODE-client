@@ -113,4 +113,29 @@ void EnterGameMode()
 	if (s_Host && s_Host->EnterGameMode) s_Host->EnterGameMode();
 }
 
+void BackupLoginID(const char* id)
+{
+	if (s_Host && s_Host->BackupLoginID) s_Host->BackupLoginID(id);
+}
+
+void EnterWaitWorldListMode()
+{
+	if (s_Host && s_Host->EnterWaitWorldListMode) s_Host->EnterWaitWorldListMode();
+}
+
+void SetServerGroupName(const char* name)
+{
+	if (s_Host && s_Host->SetServerGroupName) s_Host->SetServerGroupName(name);
+}
+
+void SetGoreLevel(bool gore)
+{
+	if (s_Host && s_Host->SetGoreLevel) s_Host->SetGoreLevel(gore);
+}
+
+bool UseTeenVersion()
+{
+	return s_Host && s_Host->UseTeenVersion && s_Host->UseTeenVersion();
+}
+
 }

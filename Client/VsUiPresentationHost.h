@@ -44,6 +44,17 @@ struct Host
 	void (*SetPowerjjangPoint)(int points) = nullptr;
 	void (*PowerjjangGambleResult)(int itemCode) = nullptr;
 	void (*RefreshPointExchange)() = nullptr;
+	// The quest window, rebuilt from a full quest list: it is closed if it
+	// runs, opened (loading its quest XML), given each quest, and the XML
+	// released. SetQuestManagerInfo keeps a record when it answers true
+	// (except for a quest with no XML element, which leaks it, as
+	// ModifyQuestManagerInfo does); false (no game window, or no host or
+	// entry) leaves it with the caller.
+	bool (*IsRunningQuestManager)() = nullptr;
+	void (*CloseQuestManager)() = nullptr;
+	void (*RunQuestManager)() = nullptr;
+	bool (*SetQuestManagerInfo)(UI_GQuestInfo* pInfo) = nullptr;
+	void (*ReleaseQuestXML)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -63,5 +74,10 @@ void UnselectSkill();
 void SetPowerjjangPoint(int points);
 void PowerjjangGambleResult(int itemCode);
 void RefreshPointExchange();
+bool IsRunningQuestManager();
+void CloseQuestManager();
+void RunQuestManager();
+bool SetQuestManagerInfo(UI_GQuestInfo* pInfo);
+void ReleaseQuestXML();
 
 }

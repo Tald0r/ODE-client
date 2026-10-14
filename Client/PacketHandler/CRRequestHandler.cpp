@@ -29,6 +29,13 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 
 	RequestServerPlayer* pRequestServerPlayer = dynamic_cast<RequestServerPlayer*>( pPlayer );
 
+	// Only a peer's connection asks for files; the game server's connection
+	// reads any packet id it is sent, this one too.
+	if (pRequestServerPlayer==NULL)
+	{
+		return;
+	}
+
 	// No name: the IP stands for it.
 	if (pRequestServerPlayer->getName().c_str()==NULL
 		|| pRequestServerPlayer->getName().size()==0)
@@ -41,8 +48,7 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 	const std::string& otherName =	pRequestServerPlayer->getName();
 
 
-	if (pRequestServerPlayer!=NULL
-		&& g_pUserInformation!=NULL
+	if (g_pUserInformation!=NULL
 		&& CommunicationPresentation::HasProfiles()
 		&& g_pRequestFileManager!=NULL
 		&& g_pRequestUserManager!=NULL)
@@ -72,7 +78,8 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 
 				const char* pMyName = g_pUserInformation->CharacterID.GetString();
 
-				if (pPacket->getRequestName()==pMyName)
+				// No character chosen yet: no profile is the player's.
+				if (pMyName!=NULL && pPacket->getRequestName()==pMyName)
 				{
 					const char* pFilename = CommunicationPresentation::GetProfileFilename( pMyName );
 

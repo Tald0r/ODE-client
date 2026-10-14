@@ -36,6 +36,13 @@ void CRWhisperHandler::execute ( CRWhisper * pPacket , Player * pPlayer )
 	
 	
 	RequestServerPlayer* pRequestServerPlayer = dynamic_cast<RequestServerPlayer*>( pPlayer );
+
+	// Only a peer's connection whispers; the game server's connection reads
+	// any packet id it is sent, this one too.
+	if (pRequestServerPlayer==NULL)
+	{
+		return;
+	}
 		
 	//-------------------------------------------------------------------
 	// Is it really for this character?

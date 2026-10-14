@@ -3452,6 +3452,7 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 
 // Defined in PacketFunction.cpp and MPlayer.cpp without a header.
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
+extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
 extern void SendPositionInfoToParty();
@@ -3567,6 +3568,11 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.ShowMessage = g_ShowMessage,
 	.InitPlayer = [](int x, int y, int direction) { InitPlayer(x, y, direction); },
 	.EnterGameMode = []() { SetMode(MODE_GAME); },
+	.BackupLoginID = [](const char* id) { UI_BackupLoginID(id); },
+	.EnterWaitWorldListMode = []() { SetMode(MODE_WAIT_WORLD_LIST); },
+	.SetServerGroupName = [](const char* name) { SetServerGroupName(name); },
+	.SetGoreLevel = [](bool gore) { SetGoreLevel(gore); },
+	.UseTeenVersion = []() { return g_pUserOption->UseTeenVersion != FALSE; },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
@@ -3642,6 +3648,15 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.NewFakeCreature = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) -> MCreature* { return NewFakeCreature(pCreature, x, y); },
 	.AddFakeCreature = [](MCreature* pFakeCreature) { return g_pZone != NULL && g_pZone->AddFakeCreature(pFakeCreature); },
 	.DeleteFakeCreature = [](MCreature* pFakeCreature) { delete pFakeCreature; },
+	.SetGroundElemental = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetGroundElemental();
+	},
+	.SetDarknessForbidden = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetDarknessForbidden();
+	},
+	.SetFuryOfGnome = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetFuryOfGnome();
+	},
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3762,6 +3777,14 @@ static const CreatureState::Host s_CreatureStateHost = {
 		pFake->SetFakeCreatureType(MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION);
 		pFake->SetFakeCreatureFastMoveAction(x, y, 0, 0);
 	},
+	.SetTurretDelay = [](MCreature* pFakeCreature, int delay) {
+		if (pFakeCreature->GetClassType() == MCreature::CLASS_FAKE)
+			static_cast<MFakeCreature*>(pFakeCreature)->SetTurretDelay(static_cast<BYTE>(delay));
+	},
+	.SetTurretFinalDirection = [](MCreature* pFakeCreature, int direction) {
+		if (pFakeCreature->GetClassType() == MCreature::CLASS_FAKE)
+			static_cast<MFakeCreature*>(pFakeCreature)->SetTurretFinalDirection(static_cast<BYTE>(direction));
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3789,6 +3812,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
 	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
 	.MoveIntoPortal = MoveIntoPortal,
+	.SetDragonTornado = [](int effectStatus, std::uint32_t objectID, int x, int y) { SetDragonTorando(effectStatus, objectID, x, y); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
@@ -3812,6 +3836,11 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.SetPowerjjangPoint = [](int points) { g_char_slot_ingame.m_Powerjjang_Point = points; },
 	.PowerjjangGambleResult = [](int itemCode) { gC_vs_ui.PowerjjangGambleResult(static_cast<BYTE>(itemCode)); },
 	.RefreshPointExchange = []() { gC_vs_ui.RefreshPointExchange(); },
+	.IsRunningQuestManager = []() { return gC_vs_ui.IsRunningQuestManager(); },
+	.CloseQuestManager = []() { gC_vs_ui.CloseQuestManager(); },
+	.RunQuestManager = []() { gC_vs_ui.RunQuestManager(); },
+	.SetQuestManagerInfo = [](UI_GQuestInfo* pInfo) { return gC_vs_ui.SetQuestManagerInfo(static_cast<void*>(pInfo)); },
+	.ReleaseQuestXML = []() { gC_vs_ui.ReleaseQuestXML(); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

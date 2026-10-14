@@ -10,15 +10,14 @@
 #include "Client_PCH.h"
 #include "Lpackets/LCRegisterPlayerOK.h"
 #include "UserInformation.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "ClientMode.h"
+#include "LoginPresentationHost.h"
 
 
 	#include "ClientPlayer.h"
 	#include "Cpackets/CLGetWorldList.h"
 
 
-extern BOOL g_bNeedUpdate;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -35,9 +34,9 @@ void LCRegisterPlayerOKHandler::execute ( LCRegisterPlayerOK * pPacket , Player 
 
 	// Remember the ID the way a successful login does.
 	if( g_pUserInformation->UserID.GetLength() >= 15 )
-		UI_BackupLoginID( "DarkEden" );
+		LoginPresentation::BackupLoginID( "DarkEden" );
 	else
-		UI_BackupLoginID( g_pUserInformation->UserID );
+		LoginPresentation::BackupLoginID( g_pUserInformation->UserID );
 
 	if (!g_bNeedUpdate)
 	{
@@ -52,22 +51,22 @@ void LCRegisterPlayerOKHandler::execute ( LCRegisterPlayerOK * pPacket , Player 
 		CLGetWorldList clGetWorldList;
 		pClientPlayer->sendPacket( &clGetWorldList );
 
-		SetMode( MODE_WAIT_WORLD_LIST );
+		LoginPresentation::EnterWaitWorldListMode();
 
 		//------------------------------------------------------------
 		// Current server group.
 		//------------------------------------------------------------
-		SetServerGroupName( pPacket->getGroupName().c_str() );
+		LoginPresentation::SetServerGroupName( pPacket->getGroupName().c_str() );
 
 		//------------------------------------------------------------
 		// Gore level - same rule as LCLoginOKHandler: the server's
 		// adult flag is not trusted, only the teen-version option.
 		//------------------------------------------------------------
-		bool bGoreLevel = !g_pUserOption->UseTeenVersion;
+		bool bGoreLevel = !LoginPresentation::UseTeenVersion();
 
 		g_pUserInformation->GoreLevel = bGoreLevel;
 
-		SetGoreLevel( bGoreLevel );
+		LoginPresentation::SetGoreLevel( bGoreLevel );
 	}
 
 

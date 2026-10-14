@@ -3,6 +3,7 @@
 #include "packet_stream_access.h"
 #include "CMessageArray.h"
 #include "ClientMode.h"
+#include "ClientPlayer.h"
 #include "CommunicationPresentationHost.h"
 #include "GameMessages.h"
 #include "MChatManager.h"
@@ -67,6 +68,14 @@ struct Peer : RequestServerPlayer
 {
 	Peer() : RequestServerPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl()))) {}
 	~Peer() { setPlayerStatus(CPS_END_SESSION); }
+	std::vector<unsigned char> Sent() const { return SocketOutputStreamTestAccess::Bytes(*m_pOutputStream); }
+};
+
+// The game server's connection, which reads any packet id it is sent.
+struct GameConnection : ClientPlayer
+{
+	GameConnection() : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl()))) {}
+	~GameConnection() { setPlayerStatus(CPS_END_SESSION); }
 	std::vector<unsigned char> Sent() const { return SocketOutputStreamTestAccess::Bytes(*m_pOutputStream); }
 };
 
@@ -393,4 +402,31 @@ TEST(PeerWhisperHandler, WithoutAChatServiceTheTargetIsStillSet)
 	Receive("Nyx", kCursing);
 	CHECK(calls.empty());
 	CHECK(world.Target() == "Nyx ");
+}
+
+TEST(PeerWhisperHandler, TheGameServerSendingAWhisperIsIgnored)
+{
+	World world;
+	GameConnection server;
+	const PlayerStatus before = server.getPlayerStatus();
+	for (const char* target : {"Lantern", "Ruth"})
+	{
+		CRWhisper original;
+		original.setName("Nyx");
+		original.setTargetName(target);
+		WHISPER_MESSAGE message;
+		message.msg = "hello";
+		message.color = 7;
+		original.addMessage(message);
+		original.setRace(RACE_SLAYER);
+		original.setWorldID(3);
+		CRWhisper packet;
+		Decode(packet, original);
+		CRWhisperHandler::execute(&packet, &server);
+	}
+	CHECK(calls.empty());
+	CHECK(!world.users.HasRequestUser("Nyx"));
+	CHECK(world.Target() == "(none)");
+	CHECK(server.Sent().empty());
+	CHECK(server.getPlayerStatus() == before);
 }
