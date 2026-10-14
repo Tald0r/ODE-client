@@ -3849,7 +3849,7 @@ rounds settled* for the host rules). Test fixtures share
   > changes the player's status, now only when there is a player (it
   > dereferenced the player). An unseen caster's skill (OK4) adds the
   > node its result kind names (the result value's action, graded with
-  > the range), acts as its step, and starts as its result, facing down
+  > the range when the skill's row is graded), acts as its step, and starts as its result, facing down
   > unless its range is its direction. R1 is 161 Windows / 159 Ninja.
   - Owner: membership, R1, the new entry and its adapter, and
     `test_sector_skill_replies.cpp` (a mine near the player with its

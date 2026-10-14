@@ -84,6 +84,7 @@ const CreatureState::Host creature = []() {
 	host.GetX = [](MCreature* p) { return Fake(p).x; };
 	host.GetY = [](MCreature* p) { return Fake(p).y; };
 	host.SetEffectDelayFrame = [](MCreature* p, TYPE_ACTIONINFO ai, std::uint32_t frames) { Record(p, "delay|" + N(ai) + "|" + N(frames)); };
+	host.SetBloodyZenith = [](MCreature* p, int delay) { Record(p, "zenith|" + N(delay)); };
 	host.PacketSpecialActionResult = [](MCreature* p, TYPE_ACTIONINFO ai, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, std::uint8_t grade) {
 		Record(p, "result|" + N(ai) + "|" + N(id) + "|" + N(sX) + "|" + N(sY) + "|" + N(grade));
 	};
@@ -168,7 +169,7 @@ void Decode(PacketType& packet, const PacketType& original)
 void ReceiveMineNearPlayer(int itemType, std::initializer_list<ObjectID_t> targets)
 {
 	GCMineExplosionOK1 original;
-	original.setXYDir(40, 41, 2);
+	original.setXYDir(40, 41, 5);
 	original.setItemType(static_cast<ItemType_t>(itemType));
 	for (ObjectID_t id : targets) original.addCListElement(id);
 	original.addShortData(MODIFY_CURRENT_HP, 55);
@@ -180,7 +181,7 @@ void ReceiveMineNearPlayer(int itemType, std::initializer_list<ObjectID_t> targe
 void ReceiveMine(int itemType, std::initializer_list<ObjectID_t> targets)
 {
 	GCMineExplosionOK2 original;
-	original.setXYDir(40, 41, 2);
+	original.setXYDir(40, 41, 5);
 	original.setItemType(static_cast<ItemType_t>(itemType));
 	for (ObjectID_t id : targets) original.addCListElement(id);
 	GCMineExplosionOK2 packet;
@@ -236,7 +237,7 @@ TEST(SectorSkillReplies, AMineNearThePlayerGoesOffAtItsCellAndActsOnEachCreature
 	const TYPE_ACTIONINFO pomz = static_cast<TYPE_ACTIONINFO>(GetMineActionInfo(kPomz));
 	world.Row(pomz).SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
 	ReceiveMineNearPlayer(kPomz, {1001, 4242, 7});
-	CHECK(calls == Join({{"sector|" + N(pomz) + "|40,41|dir 2|16", "Ogre.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|16"},
+	CHECK(calls == Join({{"sector|" + N(pomz) + "|40,41|dir 5|16", "Ogre.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|16"},
 		Hit("Ogre", pomz, 1001, 10, 11, "16"),
 		{"Self.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|16"}, Hit("Self", pomz, 7, 30, 31, "16")}));
 	CHECK_EQ(55, World::HP());
@@ -260,7 +261,7 @@ TEST(SectorSkillReplies, AMineNearThePlayerGuards)
 	hasPlayer = false;
 	ReceiveMineNearPlayer(kPomz, {1001});
 	const TYPE_ACTIONINFO pomz = static_cast<TYPE_ACTIONINFO>(GetMineActionInfo(kPomz));
-	CHECK(calls == Join({{"sector|" + N(pomz) + "|40,41|dir 2|16"}, Hit("Ogre", pomz, 1001, 10, 11, "16")}));
+	CHECK(calls == Join({{"sector|" + N(pomz) + "|40,41|dir 5|16"}, Hit("Ogre", pomz, 1001, 10, 11, "16")}));
 	CHECK_EQ(10, World::HP());
 }
 
@@ -270,7 +271,7 @@ TEST(SectorSkillReplies, AMineElsewhereGoesOffTheSameWay)
 	const TYPE_ACTIONINFO pomz = static_cast<TYPE_ACTIONINFO>(GetMineActionInfo(kPomz));
 	world.Row(pomz).SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
 	ReceiveMine(kPomz, {1001, 4242});
-	CHECK(calls == Join({{"sector|" + N(pomz) + "|40,41|dir 2|16", "Ogre.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|16"},
+	CHECK(calls == Join({{"sector|" + N(pomz) + "|40,41|dir 5|16", "Ogre.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|16"},
 		Hit("Ogre", pomz, 1001, 10, 11, "16")}));
 	CHECK_EQ(10, World::HP());
 	calls.clear();
@@ -302,9 +303,14 @@ TEST(SectorSkillReplies, AnUnseenCastersActionSkillActsAsItsResultValueAndItsSte
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
 		Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11, F())}));
+	// The node carries the range only when the skill is graded.
+	calls.clear();
+	world.Row(SKILL_SINGLE_BLOW).SetUseActionGrade();
+	ReceiveUnseen(kSkill, {1001});
+	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
+		Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11, F())}));
 	calls.clear();
 	world.Row(kSkill).SetUseActionGrade();
-	world.Row(SKILL_SINGLE_BLOW).SetUseActionGrade();
 	ReceiveUnseen(kSkill, {1001});
 	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
 		Hit("Ogre", SKILL_SINGLE_BLOW, 1001, 10, 11, F(), kRange)}));
@@ -315,6 +321,30 @@ TEST(SectorSkillReplies, AnUnseenCastersActionSkillActsAsItsResultValueAndItsSte
 	world.Row(kStep).SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
 	ReceiveUnseen(kSkill, {1001}, 2);
 	CHECK(calls == std::vector<std::string>({"sector|" + N(kStep + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F(), "Ogre.burrow"}));
+}
+
+TEST(SectorSkillReplies, AnUnseenCastersNodeHasNoUserAndItsStepsRowRulesItsEffectAndDirection)
+{
+	World world;
+	// Bloody Zenith's record would show a node's user; there is none.
+	world.Row(kSkill).SetActionResult(ACTIONRESULTNODE_ACTIONINFO, MAGIC_BLOODY_ZENITH);
+	ReceiveUnseen(kSkill, {1001});
+	CHECK(calls == Join({{"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()},
+		Hit("Ogre", MAGIC_BLOODY_ZENITH, 1001, 10, 11, F())}));
+	// The step's row, which has no effect status and no turn, rules both.
+	calls.clear();
+	world.Row(kSkill) = MActionInfo();
+	world.Row(kSkill).SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
+	world.Row(kSkill).SetOptionRangeToDirection();
+	world.Row(kSkill).SetUseActionStep();
+	world.Row(kSkill).SetActionStep(1, kStep);
+	ReceiveUnseen(kSkill, {1001}, 2);
+	CHECK(calls == std::vector<std::string>{"sector|" + N(kStep + kMin) + "|40,41|dir " + N(DIRECTION_DOWN) + "|" + F()});
+	// Grade 0 keeps the skill itself.
+	calls.clear();
+	ReceiveUnseen(kSkill, {1001}, 0);
+	CHECK(calls == std::vector<std::string>({"sector|" + N(kSkill + kMin) + "|40,41|dir " + N(kRange) + "|" + F(),
+		"Ogre.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|" + F()}));
 }
 
 TEST(SectorSkillReplies, AnUnseenCastersSkillGuards)
