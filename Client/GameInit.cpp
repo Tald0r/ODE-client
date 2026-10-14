@@ -3452,7 +3452,7 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 
 // Defined in PacketFunction.cpp and MPlayer.cpp without a header.
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
-extern int g_C2G;
+extern int g_C2G;	// UIMessageManager.cpp's: the operator's create-to-gear count
 extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();

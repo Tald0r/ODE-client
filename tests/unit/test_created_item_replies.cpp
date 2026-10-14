@@ -106,7 +106,7 @@ struct World : GameModelWorld
 	World()
 	{
 		const struct { ITEM_CLASS itemClass; int types; } rows[] = {
-			{ITEM_CLASS_SWORD, 3}, {ITEM_CLASS_SR, 3}, {ITEM_CLASS_EVENT_TREE, 42}};
+			{ITEM_CLASS_SWORD, 13}, {ITEM_CLASS_SR, 3}, {ITEM_CLASS_EVENT_TREE, 42}};
 		for (const auto& row : rows)
 		{
 			g_pItemTable->InitClass(row.itemClass, row.types);
@@ -288,6 +288,21 @@ TEST(CreatedItemReplies, ATreeOutsideAMergeOrAnotherTreeItemLeavesThePartsAlone)
 	CHECK(At(world.inventory, 3, 2) == N(ITEM_CLASS_EVENT_TREE) + "#600 type 1 x1 dur 0 grade -1 +0 opt 0");
 	CHECK(At(world.inventory, 4, 2) == "(empty)");
 	CHECK(At(world.inventory, 5, 2) == "(empty)");
+	// Only tree parts are taken: a sword of a part's type stays; and only a
+	// tree item merges: a sword of a whole tree's type does not.
+	world.inventory.Release();
+	world.inventory.Init(10, 6);
+	world.Put<Sword>(610, 1, 3, 2);
+	bufferStatus = PlayerState::ITEM_CHECK_BUFFER_TREE_MERGE;
+	Receive(ITEM_CLASS_EVENT_TREE, 801, 12, 2, 2, 1);
+	CHECK(At(world.inventory, 3, 2) == N(ITEM_CLASS_SWORD) + "#610 type 1 x1 dur 0 grade -1 +0 opt 0");
+	// (A tree part at the block's second place, which a merge would take.)
+	world.Put<Tree>(611, 1, 7, 3);
+	calls.clear();
+	bufferStatus = PlayerState::ITEM_CHECK_BUFFER_TREE_MERGE;
+	Receive(ITEM_CLASS_SWORD, 802, 12, 6, 3, 1);
+	CHECK(At(world.inventory, 7, 3) == N(ITEM_CLASS_EVENT_TREE) + "#611 type 1 x1 dur 0 grade -1 +0 opt 0");
+	CHECK(calls.empty());
 }
 
 TEST(CreatedItemReplies, AnOperatorsCreatedItemGoesOnAtOnce)
