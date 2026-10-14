@@ -9,7 +9,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddBurrowingCreature.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
+#include "MStatus.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -21,74 +24,81 @@ void GCAddBurrowingCreatureHandler::execute ( GCAddBurrowingCreature * pPacket ,
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreature;
+			pCreature = ZoneState::NewCreature();
+			if (pCreature == NULL)
+			{
+				return;
+			}
 
-			pCreature->SetZone( g_pZone );
 
-			// 어차피 안 움직일거니까 관계없다.
-			pCreature->SetCreatureType( CREATURETYPE_VAMPIRE_MALE1 );	
+			// it will not move anyway, so it does not matter.
+			CreatureState::SetCreatureType( pCreature, CREATURETYPE_VAMPIRE_MALE1 );	
 
 
-			pCreature->SetName( pPacket->getName().c_str() );
+			CreatureState::SetName( pCreature, pPacket->getName().c_str() );
 
 			
-			pCreature->SetUndergroundCreature();
-			pCreature->SetID(pPacket->getObjectID());
+			CreatureState::SetUndergroundCreature( pCreature );
+			CreatureState::SetID( pCreature, pPacket->getObjectID() );
 			
-			pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( DIRECTION_DOWN );
-			pCreature->SetCurrentDirection( DIRECTION_DOWN );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, DIRECTION_DOWN );
+			CreatureState::SetCurrentDirection( pCreature, DIRECTION_DOWN );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			pCreature->SetGuildNumber( -1 );
+			CreatureState::SetGuildNumber( pCreature, -1 );
 
-			pCreature->SetStatus( MODIFY_MAX_HP, 100 );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, 100 );
+			MStatus* pStatus = CreatureState::Status( pCreature );
+			if (pStatus != NULL)
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, 100 );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, 100 );
+			}
 
 			//si.getName()
-			// 색상 정보
+			// the colour information
 
 			
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 			}
 		}
 		else
 		{
-			// 이미 있다면.. Underground Creature로 만든다.
-			pCreature->SetUndergroundCreature();
+			// Already there.. make it an underground creature.
+			CreatureState::SetUndergroundCreature( pCreature );
 
-			// 이름 다시 설정 - -;
-			pCreature->SetName( pPacket->getName().c_str() );
+			// set its name again - -;
+			CreatureState::SetName( pCreature, pPacket->getName().c_str() );
 
-			// 좌표 설정
-			pCreature->MovePosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
+			// set its cell
+			CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
 
-			pCreature->SetGuildNumber( -1 );
+			CreatureState::SetGuildNumber( pCreature, -1 );
 		}
 	}
 

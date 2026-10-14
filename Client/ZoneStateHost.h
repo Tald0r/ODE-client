@@ -67,6 +67,13 @@ struct Host
 	void (*SetGroundElemental)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// A new plain creature of the zone, not in it yet; the caller owns it.
+	// NULL without a host. AddCreature puts it in (false when one with its
+	// ID is there, and the caller still owns it); DeleteCreature deletes
+	// one the zone did not take.
+	MCreature* (*NewCreature)() = nullptr;
+	bool (*AddCreature)(MCreature* pCreature) = nullptr;
+	void (*DeleteCreature)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -94,6 +101,9 @@ void DeleteFakeCreature(MCreature* pFakeCreature);
 void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+MCreature* NewCreature();
+bool AddCreature(MCreature* pCreature);
+void DeleteCreature(MCreature* pCreature);
 
 }
 
@@ -264,6 +274,12 @@ struct Host
 	void (*SetPersnalString)(MCreature* pCreature, const char* sign, std::uint32_t color) = nullptr;
 	void (*ClearChatString)(MCreature* pCreature) = nullptr;
 	void (*SetPersnalShopMessage)(MCreature* pCreature, const char* message) = nullptr;
+	// A new creature's identity and place: its name, ID, cell and guild
+	// (-1 for none).
+	void (*SetName)(MCreature* pCreature, const char* name) = nullptr;
+	void (*SetID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
+	void (*SetPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*SetGuildNumber)(MCreature* pCreature, int guild) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -372,5 +388,9 @@ int CurPernalShop(MCreature* pCreature);
 void SetPersnalString(MCreature* pCreature, const char* sign, std::uint32_t color);
 void ClearChatString(MCreature* pCreature);
 void SetPersnalShopMessage(MCreature* pCreature, const char* message);
+void SetName(MCreature* pCreature, const char* name);
+void SetID(MCreature* pCreature, TYPE_OBJECTID id);
+void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetGuildNumber(MCreature* pCreature, int guild);
 
 }

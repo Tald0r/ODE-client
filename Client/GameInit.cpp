@@ -3663,6 +3663,13 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.SetFuryOfGnome = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
 		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetFuryOfGnome();
 	},
+	.NewCreature = []() -> MCreature* {
+		MCreature* pCreature = new MCreature;
+		pCreature->SetZone( g_pZone );
+		return pCreature;
+	},
+	.AddCreature = [](MCreature* pCreature) { return g_pZone != NULL && g_pZone->AddCreature(pCreature); },
+	.DeleteCreature = [](MCreature* pCreature) { delete pCreature; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3796,6 +3803,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetPersnalString = [](MCreature* pCreature, const char* sign, std::uint32_t color) { pCreature->SetPersnalString(sign, static_cast<COLORREF>(color)); },
 	.ClearChatString = [](MCreature* pCreature) { pCreature->ClearChatString(); },
 	.SetPersnalShopMessage = [](MCreature* pCreature, const char* message) { pCreature->SetPersnalShopMessage(message); },
+	.SetName = [](MCreature* pCreature, const char* name) { pCreature->SetName(name); },
+	.SetID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetID(id); },
+	.SetPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pCreature->SetPosition(x, y); },
+	.SetGuildNumber = [](MCreature* pCreature, int guild) { pCreature->SetGuildNumber(guild); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
