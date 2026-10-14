@@ -31,8 +31,6 @@ namespace {
 std::vector<std::string> calls;
 bool teen = false;
 
-std::string N(long long value) { return std::to_string(value); }
-
 const LoginPresentation::Host login = []() {
 	LoginPresentation::Host host{};
 	host.BackupLoginID = [](const char* id) { calls.push_back(std::string("keeps id|") + (id ? id : "(null)")); };
