@@ -26,7 +26,7 @@ namespace {
 
 constexpr int kTableSize = EFFECTSPRITETYPE_FIRE_32 + 1;
 DWORD frameNow;
-int acceptLimit;
+int acceptLimit, refuseFirst, offered, refusedType;
 std::vector<std::unique_ptr<MEffect>> effects;
 std::vector<MEvent> events;
 std::vector<int> removedTargets;
@@ -36,14 +36,19 @@ const MEffectHost effectHost{
 	.Light = [](BYTE, TYPE_FRAMEID, BYTE, BYTE) { return 0; },
 };
 const MEffectTargetHost targetHost{.RemoveFromPlayer = [](BYTE id) { removedTargets.push_back(id); }};
-// Each sprite's frame ID is its type, to tell the effects apart.
+// Each sprite's frame ID is its type, to tell the effects apart; its blit
+// and frame count vary with it too.
+BYTE BltOf(int type) { return static_cast<BYTE>(type % 2 ? BLT_EFFECT : BLT_NORMAL); }
+int FramesOf(int type) { return type % 7 + 1; }
 const MZoneAttackEffectHost host{
 	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MZoneAttackEffectSprite& sprite) {
-		if (type >= kTableSize) return false;
-		sprite = {BLT_EFFECT, static_cast<TYPE_FRAMEID>(type), 3};
+		if (type >= kTableSize || type == refusedType) return false;
+		sprite = {BltOf(type), static_cast<TYPE_FRAMEID>(type), FramesOf(type)};
 		return true;
 	},
+	// Refuses the first few offered, and any past the limit.
 	.Queue = [](std::unique_ptr<MEffect> effect) {
+		if (++offered <= refuseFirst) return false;
 		if (static_cast<int>(effects.size()) >= acceptLimit) return false;
 		effects.push_back(std::move(effect));
 		return true;
@@ -68,6 +73,8 @@ struct World
 	{
 		frameNow = 100;
 		acceptLimit = 99;
+		refuseFirst = offered = 0;
+		refusedType = -1;
 		effects.clear();
 		events.clear();
 		removedTargets.clear();
@@ -104,9 +111,9 @@ EFFECTGENERATOR_INFO Info(BYTE direction, MEffect* pPrevious = nullptr)
 void CheckFire(MEffect& effect, int est, int x, int y, BYTE direction)
 {
 	CHECK_EQ(est, effect.GetEst());
-	CHECK_EQ(BLT_EFFECT, effect.GetBltType());
+	CHECK_EQ(BltOf(est), effect.GetBltType());
 	CHECK_EQ(est, effect.GetFrameID());
-	CHECK_EQ(3, effect.GetMaxFrame());
+	CHECK_EQ(FramesOf(est), effect.GetMaxFrame());
 	CHECK_EQ(x, effect.GetPixelX());
 	CHECK_EQ(y, effect.GetPixelY());
 	CHECK_EQ(7, effect.GetPixelZ());
@@ -159,12 +166,14 @@ TEST(FireEffectGenerators, FirePiercingStartsThreeFiresInItsDirection)
 {
 	World world;
 	CHECK_EQ(EFFECTGENERATORID_FIRE_PIECING, world.piercing.GetID());
+	bool seen[3][2] = {};
 	for (const Start& s : kStarts)
 	{
-		for (unsigned seed : {3u, 4u})
+		for (unsigned seed = 1; seed <= 6; seed++)
 		{
 			std::srand(seed);
 			const int d0 = std::rand() % 2, d1 = std::rand() % 2, d2 = std::rand() % 2;
+			seen[0][d0] = seen[1][d1] = seen[2][d2] = true;
 			std::srand(seed);
 			effects.clear();
 			auto target = std::make_unique<MEffectTarget>(3);
@@ -174,6 +183,7 @@ TEST(FireEffectGenerators, FirePiercingStartsThreeFiresInItsDirection)
 			CHECK(world.piercing.Generate(info));
 			target.release();
 			CHECK_EQ(3, effects.size());
+			if (effects.size() != 3) continue;
 			const int x = 480 - TILE_X / 2 + s.dx, y = 240 + TILE_Y / 2 + s.dy;
 			const int first = s.fire + d0 * 16;
 			CheckFire(*effects[0], first, x, y, s.direction);
@@ -189,6 +199,8 @@ TEST(FireEffectGenerators, FirePiercingStartsThreeFiresInItsDirection)
 			}
 		}
 	}
+	// The seeds drew each set at each draw.
+	for (const auto& draw : seen) CHECK(draw[0] && draw[1]);
 	// No target: none follow one, though all follow the action.
 	effects.clear();
 	CHECK(world.piercing.Generate(Info(DIRECTION_DOWN)));
@@ -265,24 +277,90 @@ TEST(FireEffectGenerators, TheTargetGoesToTheFirstFireTheZoneKeeps)
 	CHECK(world.piercing.Generate(info));
 	target.release();
 	CHECK_EQ(2, effects.size());
+	if (effects.size() != 2) return;
 	CHECK(effects[0]->GetEffectTarget() == info.pEffectTarget);
 	CHECK(effects[1]->GetEffectTarget() != nullptr && effects[1]->GetEffectTarget() != info.pEffectTarget);
+	// The first refused: the second, the first kept, follows the target.
+	effects.clear();
+	acceptLimit = 99;
+	refuseFirst = 1;
+	offered = 0;
+	auto second = std::make_unique<MEffectTarget>(3);
+	EFFECTGENERATOR_INFO later = Info(DIRECTION_DOWN);
+	later.pEffectTarget = second.get();
+	CHECK(world.piercing.Generate(later));
+	second.release();
+	CHECK_EQ(2, effects.size());
+	if (effects.size() != 2) return;
+	CHECK(effects[0]->GetEffectTarget() == later.pEffectTarget);
+	CHECK(effects[1]->GetEffectTarget() != later.pEffectTarget);
+	// Playing with fire likewise: the first refused, the next follows the
+	// target and the rest copies.
+	effects.clear();
+	refuseFirst = 1;
+	offered = 0;
+	auto played = std::make_unique<MEffectTarget>(3);
+	EFFECTGENERATOR_INFO playedInfo = Info(DIRECTION_DOWN);
+	playedInfo.pEffectTarget = played.get();
+	CHECK(world.playing.Generate(playedInfo));
+	played.release();
+	CHECK_EQ(15, effects.size());
+	if (effects.size() != 15) return;
+	CHECK(effects[0]->GetEffectTarget() == playedInfo.pEffectTarget);
+	CHECK(effects[1]->GetEffectTarget() != nullptr && effects[1]->GetEffectTarget() != playedInfo.pEffectTarget);
+	// Playing with fire, all refused: still true (the caller keeps no
+	// target; with one, it leaks, as before).
+	effects.clear();
+	refuseFirst = 99;
+	offered = 0;
+	CHECK(world.playing.Generate(Info(DIRECTION_DOWN)));
+	CHECK(effects.empty());
+}
+
+TEST(FireEffectGenerators, AFireWhoseSpriteIsRefusedIsSkipped)
+{
+	World world;
+	// Started down: the first fire, then the one before it, then the one
+	// after; the one before is refused.
+	std::srand(5);
+	const int d0 = std::rand() % 2, d1 = std::rand() % 2, d2 = std::rand() % 2;
+	std::srand(5);
+	const int first = EFFECTSPRITETYPE_FIRE_1 + d0 * 16;
+	refusedType = Round(first, 15, d1);
+	CHECK(world.piercing.Generate(Info(DIRECTION_DOWN)));
+	CHECK_EQ(2, effects.size());
+	if (effects.size() != 2) return;
+	CHECK_EQ(first, effects[0]->GetEst());
+	CHECK_EQ(Round(first, 1, d2), effects[1]->GetEst());
 }
 
 TEST(FireEffectGenerators, PlayingWithFireStartsSixteenFiresRoundAndShakesTheScreen)
 {
 	World world;
 	CHECK_EQ(EFFECTGENERATORID_PLAYING_WITH_FIRE, world.playing.GetID());
-	for (const Start& s : kStarts)
+	bool seen[16][2] = {};
+	auto allSeen = [&seen]() {
+		for (const auto& draw : seen) if (!draw[0] || !draw[1]) return false;
+		return true;
+	};
+	// Every direction at least twice, and on until each draw has given
+	// both sets (some libraries' first draws barely vary between seeds).
+	for (unsigned seed = 1; seed <= 16 || (!allSeen() && seed <= 400); seed++)
 	{
-		std::srand(9);
+		const Start& s = kStarts[seed % 8];
+		std::srand(seed);
 		int draws[16];
-		for (int& d : draws) d = std::rand() % 2;
-		std::srand(9);
+		for (int i = 0; i < 16; i++)
+		{
+			draws[i] = std::rand() % 2;
+			seen[i][draws[i]] = true;
+		}
+		std::srand(seed);
 		effects.clear();
 		events.clear();
 		CHECK(world.playing.Generate(Info(s.direction)));
 		CHECK_EQ(16, effects.size());
+		if (effects.size() != 16) continue;
 		const int x = 480 - TILE_X / 2 + s.dx, y = 240 + TILE_Y / 2 + s.dy;
 		const int first = s.fire + draws[0] * 16;
 		CheckFire(*effects[0], first, x, y, s.direction);
@@ -299,6 +377,7 @@ TEST(FireEffectGenerators, PlayingWithFireStartsSixteenFiresRoundAndShakesTheScr
 		CHECK(event.eventID == EVENTID_METEOR_SHAKE && event.eventType == EVENTTYPE_ZONE);
 		CHECK(event.eventDelay == 2000 && event.eventFlag == EVENTFLAG_SHAKE_SCREEN && event.parameter3 == 3);
 	}
+	for (const auto& draw : seen) CHECK(draw[0] && draw[1]);
 }
 
 TEST(FireEffectGenerators, PlayingWithFireGivesItsLaterFiresCopiesOfTheTarget)
@@ -349,17 +428,26 @@ TEST(FireEffectGenerators, PlayingWithFireTurnsToTheNextFireThenAtRandom)
 		CHECK(world.playing.Generate(Info(DIRECTION_RIGHT, previous.get())));
 		CHECK_EQ(EFFECTSPRITETYPE_FIRE_4, effects[0]->GetEst());
 	}
-	// From the 113th, it switches sets at random.
-	for (unsigned seed : {3u, 4u, 5u, 6u})
+	// From the 113th, it switches sets at random: from the second set back,
+	// from the first (the 16th included) forward.
+	bool seen[2] = {};
+	for (int last : {EFFECTSPRITETYPE_FIRE_20, EFFECTSPRITETYPE_FIRE_17, EFFECTSPRITETYPE_FIRE_3, EFFECTSPRITETYPE_FIRE_16})
 	{
-		std::srand(seed);
-		const int draw = std::rand() % 2;
-		std::srand(seed);
-		effects.clear();
-		auto previous = Previous(EFFECTSPRITETYPE_FIRE_20, 600, 300);
-		CHECK(world.playing.Generate(Info(DIRECTION_RIGHT, previous.get())));
-		CHECK_EQ(EFFECTSPRITETYPE_FIRE_20 - draw * 16, effects[0]->GetEst());
+		for (unsigned seed = 1; seed <= 6; seed++)
+		{
+			std::srand(seed);
+			const int draw = std::rand() % 2;
+			seen[draw] = true;
+			std::srand(seed);
+			effects.clear();
+			auto previous = Previous(last, 600, 300);
+			CHECK(world.playing.Generate(Info(DIRECTION_RIGHT, previous.get())));
+			CHECK_EQ(1, effects.size());
+			if (effects.empty()) continue;
+			CHECK_EQ(last > EFFECTSPRITETYPE_FIRE_16 ? last - draw * 16 : last + draw * 16, effects[0]->GetEst());
+		}
 	}
+	CHECK(seen[0] && seen[1]);
 	// Started again: counting from none.
 	CHECK(world.playing.Generate(Info(DIRECTION_LEFT)));
 	effects.clear();

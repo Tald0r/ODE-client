@@ -5585,8 +5585,9 @@ rounds settled* for the host rules). Test fixtures share
   >   sprite with its frames, and the queue). `GameInit.cpp` installs
   >   that one host for all three.
   > - The screen shake goes through `WorldEvents::AddEvent`.
-  > - A sprite past the table is refused by the host, where the old
-  >   code read the table unchecked.
+  > - A later fire whose sprite is past the table is now skipped. The
+  >   old code read the table's range-checked default row for it and
+  >   still laid a fire. Only a start in no known direction can give one.
   >
   > The Korean comments are translated. R1 is 67 Windows / 65 Ninja.
   - Owner: membership, R1, and `test_fire_effect_generators.cpp`. It
@@ -5601,6 +5602,9 @@ rounds settled* for the host rules). Test fixtures share
     - A start in no known direction keeps the sprite it was given,
       and playing with fire shakes the screen even when that sprite is
       then refused.
+    - Both return true even when the zone keeps no fire (a fire point
+      off the map). The caller then neither deletes the target nor
+      hands it on, so it leaks, and its result runs only if it was due.
 
 - [x] **4.202 Ground effects at a point and pixel ripples:** move
   `MAttachZoneEffectGenerator` and `MRippleZonePixelEffectGenerator`
