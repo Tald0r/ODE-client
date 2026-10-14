@@ -117,6 +117,7 @@
 #include "GuildPresentationHost.h"
 #include "CommunicationPresentationHost.h"
 #include "QuestWarPresentationHost.h"
+#include "NoticePresentationHost.h"
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
@@ -2700,6 +2701,7 @@ void ReleaseAllObjects()
 	GuildPresentation::SetHost(nullptr);
 	CommunicationPresentation::SetHost(nullptr);
 	QuestWarPresentation::SetHost(nullptr);
+	NoticePresentation::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
@@ -2969,6 +2971,16 @@ static const MItemHost	s_ItemHost = {
 	.IsPortalMarked			= [](const MItem* pPortal) {
 		return pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM
 			&& static_cast<const MVampirePortalItem*>(pPortal)->IsMarked();
+	},
+	.MarkPortal				= [](MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
+			static_cast<MVampirePortalItem*>(pPortal)->SetZone(zoneID, x, y);
+	},
+	.ReloadGun				= [](MItem* pGun, MItem* pMagazine) {
+		MMagazine* pNew = static_cast<MMagazine*>(pMagazine);
+		MMagazine* pOld = static_cast<MGunItem*>(pGun)->SetMagazine( pNew );
+		g_pCurrentMagazine = pNew;
+		delete pOld;
 	},
 };
 
@@ -3503,6 +3515,27 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.GetChattingColor = []() { return static_cast<std::uint32_t>(g_pUserOption->ChattingColor); },
 };
 
+extern bool g_bEventQuestEnding;
+extern void SetFlagTo( bool bTae );
+
+static const NoticePresentation::Host s_NoticePresentationHost = {
+	.RunNotice = [](std::uint32_t kind, std::uint32_t parameter) { UI_RunNotice(kind, parameter); },
+	.DeleteNotice = [](std::uint32_t kind) { UI_DeleteNotice(kind); },
+	.RunWelcomeMessage = UI_RunWelcomeMessage,
+	.LotteryResult = UI_LotteryResult,
+	.RunHorn = UI_RunHorn,
+	.MasterLairMessage = [](std::uint8_t type, short value, std::uint16_t zoneID) { UI_MasterLairMessage(type, value, zoneID); },
+	.PopupMessage = UI_PopupMessage,
+	.PopupText = [](const char* text, bool bLarge) {
+		gC_vs_ui.RunPopupMessage(text, bLarge ? C_VS_UI_POPUP_MESSAGE::POPUP_LARGE : C_VS_UI_POPUP_MESSAGE::POPUP_NORMAL);
+	},
+	.RunMinigame = UI_RunMinigame,
+	.CloseCTFStatusWindow = UI_CloseCTFStatusWindow,
+	.SendCrashReport = SendCrashReport,
+	.SetFlagTo = SetFlagTo,
+	.StartQuestEnding = []() { g_bEventQuestEnding = true; },
+};
+
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
 	.RunQuestStatus = UI_RunQuestStatus,
 	.RunQuestList = UI_RunQuestList,
@@ -3561,6 +3594,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
+	.RemoveDescriptor = [](void* pItem) { UI_RemoveDescriptor(pItem); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3657,6 +3691,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetInventoryInfo = SetInventoryInfo,
 	.SetExtraInfo = SetExtraInfo,
 	.CheckAffectStatus = [](MItem* pItem) { g_pPlayer->CheckAffectStatus(pItem); },
+	.SetItemCheckBuffer = [](MItem* pItem, PlayerState::ITEM_CHECK_BUFFER status) { g_pPlayer->SetItemCheckBuffer(pItem, status); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -4561,6 +4596,7 @@ InitGameObject()
 	GuildPresentation::SetHost(&s_GuildPresentationHost);
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
+	NoticePresentation::SetHost(&s_NoticePresentationHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);

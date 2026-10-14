@@ -96,7 +96,8 @@ struct Host
 	// player and the player's zone.
 	void (*SetPlayer)() = nullptr;
 	// Takes the item of the ID off the zone's ground without freeing it:
-	// the player has it now.
+	// the player has it now. Asked only with a zone: the executable's
+	// host reads it unchecked.
 	void (*PickupItem)(TYPE_OBJECTID id) = nullptr;
 };
 

@@ -267,7 +267,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					//------------------------------------------
 					// put it in the quick slot again.
 					//------------------------------------------
-					if ((g_pQuickSlot!=NULL&&PlayerState::GetRace()==RACE_SLAYER) || (PlayerState::GetRace()==RACE_OUSTERS &&(
+					if ((g_pQuickSlot!=NULL&&PlayerState::GetRace()==RACE_SLAYER) || (PlayerState::Creature()!=NULL && CreatureState::IsOusters( PlayerState::Creature() ) &&(
 						g_pArmsBand1 != NULL || g_pArmsBand2 != NULL )))
 					{
 						MItem* pQuickItem = NULL ;//= g_pQuickSlot->GetItem( slot );

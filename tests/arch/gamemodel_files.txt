@@ -727,6 +727,10 @@ Client/PacketHandler/GCWhisperFailedHandler.cpp
 # Quest and war status replies and their presentation service.
 Client/QuestWarPresentationHost.cpp
 Client/QuestWarPresentationHost.h
+# The event notices and their presentation service.
+Client/NoticePresentationHost.cpp
+Client/NoticePresentationHost.h
+Client/PacketHandler/GCNoticeEventHandler.cpp
 Client/PacketHandler/GCBloodBibleStatusHandler.cpp
 Client/PacketHandler/GCFlagWarStatusHandler.cpp
 Client/PacketHandler/GCQuestStatusHandler.cpp
@@ -1199,3 +1203,7 @@ Client/PacketHandler/GCTradePrepareHandler.cpp
 Client/PacketHandler/GCMorph1Handler.cpp
 # An item picked up from the ground, as the server confirms it.
 Client/PacketHandler/GCDeleteandPickUpOKHandler.cpp
+# A skill used on an inventory item, as the server confirms it.
+Client/PacketHandler/GCSkillToInventoryOK1Handler.cpp
+# A gun reloaded, as the server confirms it.
+Client/PacketHandler/GCReloadOKHandler.cpp
