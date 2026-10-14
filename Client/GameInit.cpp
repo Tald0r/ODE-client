@@ -3597,6 +3597,9 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RemoveDescriptor = [](void* pItem) { UI_RemoveDescriptor(pItem); },
 };
 
+// Sends what the game connection has waiting (GameMain.cpp).
+bool UpdateSocketOutput();
+
 static const LoginPresentation::Host s_LoginPresentationHost = {
 	.NewCharacterCreateOk = UI_NewCharacterCreateOk,
 	.DeleteCharacterOK = UI_DeleteCharacterOK,
@@ -3623,6 +3626,8 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.SetServerGroupName = [](const char* name) { SetServerGroupName(name); },
 	.SetGoreLevel = [](bool gore) { SetGoreLevel(gore); },
 	.UseTeenVersion = []() { return g_pUserOption->UseTeenVersion != FALSE; },
+	.FlushSocketOutput = []() { UpdateSocketOutput(); },
+	.EnterWaitPCListMode = []() { SetMode(MODE_WAIT_PCLIST); },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {

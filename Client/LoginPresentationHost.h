@@ -49,6 +49,10 @@ struct Host
 	// The player's option for the teen version (no gore); false without a
 	// host.
 	bool (*UseTeenVersion)() = nullptr;
+	// Sends what the game connection has waiting to go (UpdateSocketOutput).
+	void (*FlushSocketOutput)() = nullptr;
+	// Enters the mode that waits for the character list.
+	void (*EnterWaitPCListMode)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -78,5 +82,7 @@ void EnterWaitWorldListMode();
 void SetServerGroupName(const char* name);
 void SetGoreLevel(bool gore);
 bool UseTeenVersion();
+void FlushSocketOutput();
+void EnterWaitPCListMode();
 
 }

@@ -138,4 +138,14 @@ bool UseTeenVersion()
 	return s_Host && s_Host->UseTeenVersion && s_Host->UseTeenVersion();
 }
 
+void FlushSocketOutput()
+{
+	if (s_Host && s_Host->FlushSocketOutput) s_Host->FlushSocketOutput();
+}
+
+void EnterWaitPCListMode()
+{
+	if (s_Host && s_Host->EnterWaitPCListMode) s_Host->EnterWaitPCListMode();
+}
+
 }

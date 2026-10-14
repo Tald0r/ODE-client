@@ -1207,3 +1207,5 @@ Client/PacketHandler/GCDeleteandPickUpOKHandler.cpp
 Client/PacketHandler/GCSkillToInventoryOK1Handler.cpp
 # A gun reloaded, as the server confirms it.
 Client/PacketHandler/GCReloadOKHandler.cpp
+# The reconnect from the game server back to the login server.
+Client/PacketHandler/GCReconnectLoginHandler.cpp
