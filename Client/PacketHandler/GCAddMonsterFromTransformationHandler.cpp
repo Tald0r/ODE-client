@@ -8,7 +8,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddMonsterFromTransformation.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -22,16 +27,16 @@ void GCAddMonsterFromTransformationHandler::execute ( GCAddMonsterFromTransforma
 	
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal.. 
 	//------------------------------------------------------
 	else
 	{
@@ -44,112 +49,124 @@ void GCAddMonsterFromTransformationHandler::execute ( GCAddMonsterFromTransforma
 		#endif
 
 		//AfxMessageBox( pPacket->toString().c_str() );
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreature;
+			pCreature = ZoneState::NewCreature();
+			if (pCreature == NULL)
+			{
+				return;
+			}
 
-			pCreature->SetZone( g_pZone );
 
-			//pCreature->SetCreatureType( 0 );
-			pCreature->SetCreatureType( pPacket->getMonsterType() );
-			pCreature->SetGroundCreature();
-			pCreature->SetID(pPacket->getObjectID());
-			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			//CreatureState::SetCreatureType( pCreature, 0 );
+			CreatureState::SetCreatureType( pCreature, pPacket->getMonsterType() );
+			CreatureState::SetGroundCreature( pCreature );
+			CreatureState::SetID( pCreature, pPacket->getObjectID() );
+			//CreatureState::SetAction( pCreature, ACTION_MOVE);
+			CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
 			// [ TEST CODE ]
-			// 이름 설정
+			// set the name
 			//char str[20];
 			//sprintf(str, "ID=%d", pCreature->GetID());
 			//pCreature->SetName( (*g_pCreatureTable)[pPacket->getMonsterType()].Name.GetString() );
-			pCreature->SetName( pPacket->getMonsterName().c_str() );
+			CreatureState::SetName( pCreature, pPacket->getMonsterName().c_str() );
 
-			// 임시로..
-			pCreature->SetGuildNumber( 1 );
+			// for now..
+			CreatureState::SetGuildNumber( pCreature, 1 );
 
-			// 이름
+			// the name
 			//pCreature->SetName( pPacket->getName().toString().c_str() );
 
-			// 색깔 정보
+			// the colour information
 			
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{	
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 				pCreature = NULL;
 			}
 			else
 			{
 				//------------------------------------------------------------
-				// Load되지 않았으면 load한다.
+				// Load it if it is not loaded.
 				//------------------------------------------------------------
 //				LoadCreatureType( pPacket->getMonsterType() );			
 			}
 		}
 		else
 		{
-			// creature가 아니면 지운다.
+			// Remove it if it is not a plain creature.
 			bool reAdd = false;
 
-			if (pCreature->GetClassType()!=MCreature::CLASS_CREATURE)
+			if (!CreatureState::IsPlainCreature( pCreature ))
 			{
-				g_pZone->RemoveCreature( pCreature->GetID() );
+				ZoneState::RemoveCreature( CreatureState::GetID( pCreature ) );
 
-				pCreature = new MCreature;
+				pCreature = ZoneState::NewCreature();
+				if (pCreature == NULL)
+				{
+					return;
+				}
 
-				pCreature->SetID(pPacket->getObjectID());
+				CreatureState::SetID( pCreature, pPacket->getObjectID() );
 
-				pCreature->SetZone( g_pZone );
-				
+					
 				//pCreature->SetName( (*g_pCreatureTable)[pPacket->getMonsterType()].Name.GetString() );
-				pCreature->SetName( pPacket->getMonsterName().c_str() );
+				CreatureState::SetName( pCreature, pPacket->getMonsterName().c_str() );
 
-				pCreature->SetPosition( pPacket->getX(), pPacket->getY() );				
+				CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );				
 
 				reAdd = true;
 			}
 			else
 			{
-				pCreature->MovePosition( pPacket->getX(), pPacket->getY() );				
+				CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );				
 			}
 
-			pCreature->SetCreatureType( pPacket->getMonsterType() );
-			pCreature->SetGroundCreature();
+			CreatureState::SetCreatureType( pCreature, pPacket->getMonsterType() );
+			CreatureState::SetGroundCreature( pCreature );
 			
-			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			//CreatureState::SetAction( pCreature, ACTION_MOVE);
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
-			// 임시로..
-			pCreature->SetGuildNumber( 1 );	
+			// for now..
+			CreatureState::SetGuildNumber( pCreature, 1 );	
 			
 			if (reAdd)
 			{
-				if (!g_pZone->AddCreature( pCreature ))
+				if (!ZoneState::AddCreature( pCreature ))
 				{	
-					delete pCreature;
+					ZoneState::DeleteCreature( pCreature );
 					pCreature = NULL;
 				}
 				else
 				{
 					//------------------------------------------------------------
-					// Load되지 않았으면 load한다.
+					// Load it if it is not loaded.
 					//------------------------------------------------------------
 //					LoadCreatureType( pPacket->getMonsterType() );			
 				}
@@ -159,31 +176,31 @@ void GCAddMonsterFromTransformationHandler::execute ( GCAddMonsterFromTransforma
 		if (pCreature!=NULL)
 		{
 			//--------------------------------------------------
-			// Effect 붙이기..
+			// Attach the effects..
 			//--------------------------------------------------
-			SetEffectInfo( pCreature, pPacket->getEffectInfo() );
+			WorldEvents::SetEffectInfo( pCreature, pPacket->getEffectInfo(), 0 );
 
 			//--------------------------------------------------
-			// Burrow에서 빠져나오는 Effect == Burrowing하는 Effect
+			// the effect of coming out of the burrow == the effect of burrowing
 			//--------------------------------------------------		
-			ExecuteActionInfoFromMainNode(
-				RESULT_MAGIC_HIDE,										// 사용 기술 번호
+			WorldEvents::ExecuteActionInfoFromMainNode(
+				RESULT_MAGIC_HIDE,										// the skill used
 			
-				pCreature->GetX(), pCreature->GetY(), 0,
-				pCreature->GetDirection(),														// 사용 방향
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,
+				CreatureState::GetDirection( pCreature ),														// the direction used
 				
-				OBJECTID_NULL,												// 목표에 대한 정보
-				pCreature->GetX(), pCreature->GetY(), 0, 
+				OBJECTID_NULL,												// the target
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 
 				
-				0,													// 기술의 (남은) 지속 시간		
+				0,													// the skill's (remaining) duration		
 				
 				NULL,
 				
-				false);			// 기술 첨부터 시작한다.
+				false, 0, 0);			// the skill starts from the beginning.
 		}
 	}
 
-	// [도움말] 몹이 나타날때
+	// [Help] when a monster appears
 //	__BEGIN_HELP_EVENT
 ////		ExecuteHelpEvent( HE_CREATURE_APPEAR_MONSTER );
 //	__END_HELP_EVENT

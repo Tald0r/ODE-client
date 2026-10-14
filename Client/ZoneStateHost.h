@@ -288,6 +288,9 @@ struct Host
 	void (*SetGuildNumber)(MCreature* pCreature, int guild) = nullptr;
 	// A bat's colour set (0xFFFF for its own).
 	void (*SetBatColor)(MCreature* pCreature, std::uint16_t colorSet) = nullptr;
+	// Whether the creature is a plain MCreature (not one that wears gear,
+	// an NPC, a fake or the player); false without a host.
+	bool (*IsPlainCreature)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -401,5 +404,6 @@ void SetID(MCreature* pCreature, TYPE_OBJECTID id);
 void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetGuildNumber(MCreature* pCreature, int guild);
 void SetBatColor(MCreature* pCreature, std::uint16_t colorSet);
+bool IsPlainCreature(MCreature* pCreature);
 
 }

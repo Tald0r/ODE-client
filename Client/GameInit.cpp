@@ -3813,6 +3813,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pCreature->SetPosition(x, y); },
 	.SetGuildNumber = [](MCreature* pCreature, int guild) { pCreature->SetGuildNumber(guild); },
 	.SetBatColor = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBatColor(colorSet); },
+	.IsPlainCreature = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_CREATURE; },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3844,6 +3845,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.AddNewInventoryEffect = [](TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) {
 		AddNewInventoryEffect(id, actionInfo, delayFrame, value);
 	},
+	.SetEffectInfo = [](MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) { SetEffectInfo(pCreature, pEffectInfo, delayedFrame); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

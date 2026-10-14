@@ -94,6 +94,11 @@ void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::ui
 	if (s_Host && s_Host->AddNewInventoryEffect) s_Host->AddNewInventoryEffect(id, actionInfo, delayFrame, value);
 }
 
+void SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
+{
+	if (s_Host && s_Host->SetEffectInfo) s_Host->SetEffectInfo(pCreature, pEffectInfo, delayedFrame);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

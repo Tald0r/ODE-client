@@ -652,4 +652,9 @@ void SetBatColor(MCreature* pCreature, std::uint16_t colorSet)
 	if (s_Host && s_Host->SetBatColor) s_Host->SetBatColor(pCreature, colorSet);
 }
 
+bool IsPlainCreature(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsPlainCreature && s_Host->IsPlainCreature(pCreature);
+}
+
 }

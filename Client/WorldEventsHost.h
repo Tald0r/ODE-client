@@ -4,6 +4,7 @@
 #include "MTypeDef.h"
 
 class BloodBibleSignInfo;
+class EffectInfo;
 class GCAddItemToZone;
 class MActionResult;
 class MCreature;
@@ -58,6 +59,10 @@ struct Host
 	// changes an option or the sex, and ends the item-to-item check, freeing
 	// the item in hand. Other actions only show.
 	void (*AddNewInventoryEffect)(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) = nullptr;
+	// The effect statuses a packet lists for a creature, put on it after
+	// delayedFrame frames (the pairs of status and duration EffectInfo
+	// holds); pEffectInfo is borrowed and may be NULL.
+	void (*SetEffectInfo)(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -78,6 +83,7 @@ void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);
 void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value);
+void SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.
