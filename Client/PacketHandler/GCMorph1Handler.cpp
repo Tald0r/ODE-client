@@ -63,6 +63,8 @@ void GCMorph1Handler::execute ( GCMorph1 * pPacket , Player * pPlayer )
 
 		default :
 			DEBUG_ADD_ERR("[Error] wrong PC Type");
+			// Sound was muted above: let it play again.
+			WorldEvents::MuteSound( false );
 		return;
 	}
 

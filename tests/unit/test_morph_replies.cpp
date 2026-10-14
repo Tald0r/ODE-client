@@ -186,6 +186,16 @@ TEST(MorphReplies, ANewIDMovesThePlayerInTheZone)
 	CHECK(calls == Then({"muted", "zone removes|8", "id|9", "zone takes the player", "to slayer", "guild|-1"}, Equipped("slayer info|9")));
 }
 
+TEST(MorphReplies, AnOustersInfoIsRefusedWithSoundPlayingAgain)
+{
+	World world;
+	race = RACE_OUSTERS;
+	Receive<PCOustersInfo2>(8);
+	CHECK(calls == std::vector<std::string>({"muted", "unmuted"}));
+	CHECK(!world.Unequipped());
+	CHECK_EQ(7u, myID);
+}
+
 TEST(MorphReplies, WithoutAZoneOrAPlayerNothingHappens)
 {
 	World world;

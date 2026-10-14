@@ -5188,6 +5188,12 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, and `test_morph_replies.cpp`: a slayer
     turning, a vampire and an ouster turning, a new ID, no zone, no
     player, and no hosts.
+  - Fixed after the move: an ouster's info (or any type but a slayer's
+    or a vampire's) left the client silent for good. The reply muted
+    sound, refused the type, and returned without letting sound play
+    again. It now unmutes before it returns. `test_morph_replies.cpp`
+    sends an ouster's info and expects sound back, with the player
+    otherwise untouched.
 
 ### Remaining R1 work after tasks 4.80-4.190
 
