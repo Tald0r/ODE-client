@@ -94,9 +94,8 @@ Client/PackFileManager.cpp
 Client/PackFileManager.h
 Client/MObjectScreen.cpp
 
-# The video stub, the update base and the work-queue node base (4.205).
-Client/CAvi.cpp
-Client/CAvi.h
+# The update base and the work-queue node base (4.205; the video stub
+# that came with them was retired with the opening in 4.210).
 Client/WinLib/CWinUpdate.cpp
 Client/WinLib/CWinUpdate.h
 Client/MWorkNode.cpp

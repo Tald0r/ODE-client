@@ -51,7 +51,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "UserInformation.h"
 #include "TempInformation.h"
 
-#include "COpeningUpdate.h"
 #include "CWaitUIUpdate.h"
 #include "CWaitPacketUpdate.h"
 #include "CGameUpdate.h"
@@ -155,8 +154,6 @@ extern bool g_bGoodFPS;
 // mp3
 //CMySound*			g_pMP3 = NULL;
 
-// Avi
-CAVI				*g_pAvi = NULL;
 
 int g_previousSoundID = SOUNDID_NULL;
 
@@ -482,18 +479,8 @@ SetMode(enum CLIENT_MODE mode)
 		// 초기 화면
 		//------------------------------------------------------
 		case MODE_OPENING :
-			// Debug Message
-			DEBUG_ADD("[ SetMode ]  OPENING");
-			
-			UnInitSound();		// 잠시 Sound 중지
-
-			g_pCOpeningUpdate->PlayMPG("test.mpg");
-
-			//----------------------------------------------
-			// update 함수 설정
-			//----------------------------------------------
-			g_pUpdate = g_pCOpeningUpdate;
-			g_pCOpeningUpdate->Init();
+			// Nothing enters the opening: its loop and video were retired
+			// with task 4.210.
 		break;
 
 		//------------------------------------------------------

@@ -936,19 +936,8 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		endif()
 	endforeach()
 
-	# CAvi.cpp is NOT excluded (re-checked 2026-08-22): the "never
-	# instantiated" claim this exclusion used to be based on doesn't hold -
-	# COpeningUpdate::PlayMPG() does instantiate CAVI and call OpenMPG()/
-	# Play()/Close(); this was only an unresolved-external link error while
-	# compile errors elsewhere stopped masking it. The MCI_DGV_* concern
-	# (current Windows SDKs no longer declare those digital-video structures)
-	# is real, but moot either way - that MCI driver (MCIAVI.DRV) was never
-	# shipped for 64-bit Windows at all, so even defining the missing
-	# structures ourselves would only compile, not actually work on x64.
-	# CAVI's methods are stubbed out directly in CAvi.cpp instead (all
-	# platforms, not just non-Windows) rather than excluding the file.
-	# Since task 4.205 it is a gamemodel member (tests/arch/gamemodel_files.txt),
-	# so it leaves this list with the other members.
+	# CAvi.cpp, the stubbed MCI video player, was retired with the opening
+	# mode, its only user (docs/RESTRUCTURING.md task 4.210).
 
 	# The custom MP3/Huffman decoder (mp3/huffman/reader/header/synfilt/
 	# subdecoder/soundbuf/BIT_RES, once duplicated between Client/ and
