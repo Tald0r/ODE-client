@@ -11,9 +11,6 @@
 #include "Gpackets/GCUseOK.h"
 #include "AffectModifyInfo.h"
 #include "PlayerStateHost.h"
-#include "MInventory.h"
-#include "MQuickSlot.h"
-#include "MSlayerGear.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -72,7 +69,6 @@ void GCUseSkillCardOKHandler::execute ( GCUseSkillCardOK * pPacket , Player * pP
 	//						Change the status values.
 	//
 	//------------------------------------------------------------------
-//	AffectModifyInfo( PlayerState::Status(), pPacket );
 
 
 	//------------------------------------------------------------------

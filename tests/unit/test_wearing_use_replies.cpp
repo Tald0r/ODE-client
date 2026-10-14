@@ -51,6 +51,8 @@ struct Bible : Worn
 {
 	explicit Bible(TYPE_OBJECTID id) : Worn(ITEM_CLASS_BLOOD_BIBLE_SIGN, id) {}
 	bool IsGearSlotBloodBible() const override { return true; }
+	bool IsGearSlotVampireBloodBible() const override { return true; }
+	bool IsGearSlotOustersBloodBible() const override { return true; }
 };
 struct VampireCoat : Worn
 {
@@ -62,6 +64,11 @@ struct Circlet : Worn
 	explicit Circlet(TYPE_OBJECTID id) : Worn(ITEM_CLASS_OUSTERS_CIRCLET, id) {}
 	bool IsGearSlotOustersCirclet() const override { return true; }
 };
+struct OustersBoots : Worn
+{
+	explicit OustersBoots(TYPE_OBJECTID id) : Worn(ITEM_CLASS_OUSTERS_BOOTS, id) {}
+	bool IsGearSlotOustersBoots() const override { return true; }
+};
 struct OustersCoat : Worn
 {
 	explicit OustersCoat(TYPE_OBJECTID id) : Worn(ITEM_CLASS_OUSTERS_COAT, id) {}
@@ -72,7 +79,7 @@ const PlayerState::Host player = []() {
 	PlayerState::Host host{};
 	host.Creature = []() { return hasPlayer ? reinterpret_cast<MCreature*>(&me) : nullptr; };
 	host.GetRace = []() { return race; };
-	host.Status = []() { return &playerStatus; };
+	host.Status = []() { calls.push_back("status read"); return &playerStatus; };
 	host.SetAddonItem = [](MItem* pItem) { calls.push_back("adds|" + N(pItem->GetID())); return true; };
 	host.RemoveAddonItem = [](MItem* pItem) { calls.push_back("no longer adds|" + N(pItem->GetID())); return true; };
 	host.CalculateStatus = []() { calls.push_back("status worked out"); };
@@ -98,6 +105,9 @@ struct World : GameModelWorld
 	VampireCoat* coat = new VampireCoat(51);
 	Circlet* circlet = new Circlet(61);
 	OustersCoat* oustersCoat = new OustersCoat(62);
+	OustersBoots* boots = new OustersBoots(64);
+	Bible* vampireBible = new Bible(53);
+	Bible* oustersBible = new Bible(63);
 	MSlayerGear* oldSlayerGear = g_pSlayerGear;
 	MVampireGear* oldVampireGear = g_pVampireGear;
 	MOustersGear* oldOustersGear = g_pOustersGear;
@@ -109,7 +119,7 @@ struct World : GameModelWorld
 		hasPlayer = true;
 		race = RACE_SLAYER;
 		playerStatus = MStatus();
-		for (ITEM_CLASS itemClass : {ITEM_CLASS_HELM, ITEM_CLASS_SWORD, ITEM_CLASS_BLOOD_BIBLE_SIGN, ITEM_CLASS_VAMPIRE_COAT, ITEM_CLASS_OUSTERS_CIRCLET, ITEM_CLASS_OUSTERS_COAT})
+		for (ITEM_CLASS itemClass : {ITEM_CLASS_HELM, ITEM_CLASS_SWORD, ITEM_CLASS_BLOOD_BIBLE_SIGN, ITEM_CLASS_VAMPIRE_COAT, ITEM_CLASS_OUSTERS_CIRCLET, ITEM_CLASS_OUSTERS_COAT, ITEM_CLASS_OUSTERS_BOOTS})
 		{
 			g_pItemTable->InitClass(itemClass, 1);
 			testfw::MutableRow(*g_pItemTable, itemClass, 0).SetGrid(1, 1);
@@ -127,8 +137,12 @@ struct World : GameModelWorld
 		CHECK(vampireGear.AddItem(coat, MVampireGear::GEAR_VAMPIRE_COAT));
 		CHECK(oustersGear.AddItem(circlet, MOustersGear::GEAR_OUSTERS_CIRCLET));
 		CHECK(oustersGear.AddItem(oustersCoat, MOustersGear::GEAR_OUSTERS_COAT));
+		CHECK(oustersGear.AddItem(boots, MOustersGear::GEAR_OUSTERS_BOOTS));
+		CHECK(vampireGear.AddItem(vampireBible, MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1));
+		CHECK(oustersGear.AddItem(oustersBible, MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1));
 		for (MItem* pItem : {static_cast<MItem*>(helm), static_cast<MItem*>(sword), static_cast<MItem*>(bible),
-			static_cast<MItem*>(coat), static_cast<MItem*>(circlet), static_cast<MItem*>(oustersCoat)})
+			static_cast<MItem*>(coat), static_cast<MItem*>(circlet), static_cast<MItem*>(oustersCoat), static_cast<MItem*>(boots),
+			static_cast<MItem*>(vampireBible), static_cast<MItem*>(oustersBible)})
 			pItem->UnSetAffectStatus();
 		calls.clear();
 	}
@@ -178,6 +192,15 @@ TEST(WearingUseReplies, ASlayersItemsCountAsTheBitsSay)
 	calls.clear();
 	ReceiveWearing(kWeaponBit);
 	CHECK(calls == std::vector<std::string>({"no longer adds|41", "adds|42", "skills refreshed", "status worked out"}));
+	// The weapon still counts: no refresh.
+	calls.clear();
+	ReceiveWearing(kWeaponBit);
+	CHECK(calls == std::vector<std::string>({"no longer adds|41", "adds|42", "status worked out"}));
+	// No weapon worn: no refresh either.
+	calls.clear();
+	delete world.slayerGear.RemoveItem(static_cast<int>(MSlayerGear::GEAR_SLAYER_RIGHTHAND));
+	ReceiveWearing(0);
+	CHECK(calls == std::vector<std::string>({"no longer adds|41", "status worked out"}));
 }
 
 TEST(WearingUseReplies, AVampiresOrOustersItemsOnlyCountOrNot)
@@ -193,12 +216,20 @@ TEST(WearingUseReplies, AVampiresOrOustersItemsOnlyCountOrNot)
 	CHECK(world.circlet->IsAffectStatus());
 	ReceiveWearing(0);
 	CHECK(!world.circlet->IsAffectStatus());
-	// Each slot reads its own bit.
+	// Each slot reads its own bit, past an empty slot too.
 	ReceiveWearing(1u << MOustersGear::GEAR_OUSTERS_COAT);
 	CHECK(!world.circlet->IsAffectStatus());
 	CHECK(world.oustersCoat->IsAffectStatus());
+	ReceiveWearing(1u << MOustersGear::GEAR_OUSTERS_BOOTS);
+	CHECK(!world.oustersCoat->IsAffectStatus());
+	CHECK(world.boots->IsAffectStatus());
+	// A worn bible sign is left alone in every race's gear.
+	ReceiveWearing(0xFFFFFFFF);
+	race = RACE_VAMPIRE;
+	ReceiveWearing(0xFFFFFFFF);
+	CHECK(!world.vampireBible->IsAffectStatus() && !world.oustersBible->IsAffectStatus());
 	// Only the status is worked out again; the slayer's gear is untouched.
-	CHECK(calls == std::vector<std::string>(5, "status worked out"));
+	CHECK(calls == std::vector<std::string>(8, "status worked out"));
 	CHECK(!world.helm->IsAffectStatus());
 }
 
@@ -217,7 +248,8 @@ TEST(WearingUseReplies, AnAllowedItemUseIsSpentAndChangesThePlayer)
 	GCUseOK packet;
 	packet.addShortData(MODIFY_CURRENT_HP, 77);
 	GCUseOKHandler::execute(&packet, nullptr);
-	CHECK(calls == std::vector<std::string>{"item spent"});
+	// The item is spent first, then the status changes.
+	CHECK(calls == std::vector<std::string>({"item spent", "status read"}));
 	CHECK_EQ(77, static_cast<long long>(playerStatus.GetStatus(MODIFY_CURRENT_HP)));
 	// Without the player's status the item is still spent.
 	calls.clear();
