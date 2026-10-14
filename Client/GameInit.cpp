@@ -3573,6 +3573,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	},
 	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
 	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
+	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3670,6 +3671,9 @@ static const CreatureState::Host s_CreatureStateHost = {
 		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->RemoveAddon(addon);
 	},
 	.SetMoveDevice = [](MCreature* pCreature, CreatureState::MOVE_DEVICE device) { pCreature->SetMoveDevice(device); },
+	.GetCreatureType = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCreatureType()); },
+	.GetCompetence = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetCompetence()); },
+	.SetCurrentDirection = [](MCreature* pCreature, int direction) { pCreature->SetCurrentDirection(static_cast<BYTE>(direction)); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

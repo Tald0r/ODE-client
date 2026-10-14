@@ -1030,3 +1030,8 @@ Client/PacketHandler/GCSkillToTileOK4Handler.cpp
 Client/PacketHandler/GCTakeOffHandler.cpp
 Client/PacketHandler/GCGetOffMotorCycleHandler.cpp
 Client/PacketHandler/GCGetOffMotorCycleOKHandler.cpp
+
+# A skill from an unseen caster landing on the player, and the player
+# turning back into a vampire.
+Client/PacketHandler/GCSkillToObjectOK6Handler.cpp
+Client/PacketHandler/GCUntransformOKHandler.cpp

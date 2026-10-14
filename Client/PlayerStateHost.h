@@ -80,6 +80,9 @@ struct Host
 	// The cell a skill was cast at, for a skill that charges before it
 	// lands there (Burning Soul).
 	void (*SetTempSelectPos)(int x, int y) = nullptr;
+	// The player acts again only after this many milliseconds (MPlayer's
+	// own delay; MCreature has none).
+	void (*SetDelay)(std::uint32_t milliseconds) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -118,5 +121,6 @@ bool PacketAddActionResult(std::uint16_t effectID, MActionResult* pResult);
 void SetCurrentMagazineNumber(int number);
 void SetGroundCreature();
 void SetTempSelectPos(int x, int y);
+void SetDelay(std::uint32_t milliseconds);
 
 }

@@ -144,6 +144,12 @@ struct Host
 	// gear or a slot with nothing in it.
 	bool (*RemoveAddon)(MCreature* pCreature, int addon) = nullptr;
 	void (*SetMoveDevice)(MCreature* pCreature, MOVE_DEVICE device) = nullptr;
+	// The creature table row it is drawn as; 0 without a host.
+	int (*GetCreatureType)(MCreature* pCreature) = nullptr;
+	// Its operator rank: 0 is an operator; 3 without a host.
+	int (*GetCompetence)(MCreature* pCreature) = nullptr;
+	// Faces the direction at once (SetDirection turns towards it).
+	void (*SetCurrentDirection)(MCreature* pCreature, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -217,5 +223,8 @@ bool SetAddonItem(MCreature* pCreature, MItem* pItem);
 void SetWeaponSpeed(MCreature* pCreature, int speed);
 bool RemoveAddon(MCreature* pCreature, int addon);
 void SetMoveDevice(MCreature* pCreature, MOVE_DEVICE device);
+int GetCreatureType(MCreature* pCreature);
+int GetCompetence(MCreature* pCreature);
+void SetCurrentDirection(MCreature* pCreature, int direction);
 
 }

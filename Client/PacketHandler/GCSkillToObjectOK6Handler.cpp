@@ -9,7 +9,17 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToObjectOK6.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "DirectionSelection.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "MStatus.h"
+#include "Packet/WireHost.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -18,26 +28,34 @@ void GCSkillToObjectOK6Handler::execute ( GCSkillToObjectOK6 * pPacket , Player 
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	int delayFrame = ConvertDurationToFrame( pPacket->getDuration() );
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{		
@@ -55,37 +73,38 @@ void GCSkillToObjectOK6Handler::execute ( GCSkillToObjectOK6 * pPacket , Player 
 			skillID = (*g_pActionInfoTable)[skillID].GetActionStep( pPacket->getGrade() - 1);
 	
 		//------------------------------------------------------
-		// 사용자가 있는 경우
+		// With a user.
 		//------------------------------------------------------
-		// 내(Player)가 누군가가 사용한 SKill을 맞은 경우..
+		// The player is hit by someone's skill.
 		// [ TEST CODE ]
 		MActionResult* pResult = new MActionResult;
 
 		//------------------------------------------------------------------
-		// effect status를 적용시킨다.
+		// Apply the effect status.
 		//------------------------------------------------------------------
-		if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
+		MStatus* pPlayerStatus = PlayerState::Status();
+		if (pPlayerStatus != NULL && pPlayerStatus->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 		{
 			//int esDelayFrame = ConvertDurationToFrame( g_pPlayer->GetDURATION() );
 
 			pResult->Add( new MActionResultNodeAddEffectStatus( 
-										g_pPlayer->GetID(), 
-										(EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), 
+										PlayerState::GetID(), 
+										(EFFECTSTATUS)pPlayerStatus->GetEFFECT_STAT(), 
 										delayFrame ));
 
-			g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
+			pPlayerStatus->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 		}
 		else
 		{
 			//------------------------------------------------------
-			// EffectStatus가 있다면 붙인다.
+			// Add the effect status, if any.
 			//------------------------------------------------------
 			EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 			
 			if (es!=EFFECTSTATUS_NULL)
 			{
 
-				pResult->Add( new MActionResultNodeAddEffectStatus( g_pPlayer->GetID(), 
+				pResult->Add( new MActionResultNodeAddEffectStatus( PlayerState::GetID(), 
 																		es, 
 																		delayFrame ) );
 			}
@@ -94,9 +113,9 @@ void GCSkillToObjectOK6Handler::execute ( GCSkillToObjectOK6 * pPacket , Player 
 		pResult->Add( new MActionResultNodeActionInfo( 
 								skillID, 
 								OBJECTID_NULL,//pCreature->GetID(), 
-								g_pPlayer->GetID(), 
-								g_pPlayer->GetX(),
-								g_pPlayer->GetY(),
+								PlayerState::GetID(), 
+								CreatureState::GetX(pPlayerCreature),
+								CreatureState::GetY(pPlayerCreature),
 								delayFrame ) );
 		
 
@@ -104,61 +123,44 @@ void GCSkillToObjectOK6Handler::execute ( GCSkillToObjectOK6 * pPacket , Player 
 
 		// [ TEST CODE ]
 		//
-		// 결과를 생성&저장해서 보내야 한다.
+		// Make the result and hand it over.
 		//
-		// 방향을 바라보기
+		// Face the player.
 		//pCreature->SetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY());
 
 		//Duration_t	m_Duration;
 		//pCreature->PacketSpecialActionToOther(
 		//					pPacket->getSkillType(), 
 		//					pPacket->getObjectID(),
-		//					pResult						// 결과
+		//					pResult						// result
 		//);
-		int direction = GetDirectionToPosition(
+		int direction = SelectFacingDirection(
 							pPacket->getX(), pPacket->getY(),
-							g_pPlayer->GetX(), g_pPlayer->GetY());
+							CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature));
 
-		ExecuteActionInfoFromMainNode(
-					static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),										// 사용 기술 번호
+		WorldEvents::ExecuteActionInfoFromMainNode(
+					static_cast<TYPE_ACTIONINFO>(pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo()),										// the skill used
 				
-					pPacket->getX(), pPacket->getY(), 0, // 기술 사용하는 사람(?) 
-					direction,														// 사용 방향
+					pPacket->getX(), pPacket->getY(), 0, // the user (?) 
+					direction,														// direction
 					
-					g_pPlayer->GetID(),												// 목표에 대한 정보
-					g_pPlayer->GetX(), g_pPlayer->GetY(), 0,
+					PlayerState::GetID(),												// the target
+					CreatureState::GetX(pPlayerCreature), CreatureState::GetY(pPlayerCreature), 0,
 					
-					delayFrame,													// 기술의 (남은) 지속 시간		
+					delayFrame,													// the skill's (remaining) duration		
 					
-					pResult,										// 결과 정보
+					pResult,										// the result
 
-					false);			// 기술 첨부터 시작한다.
+					false);			// start the skill from its beginning
 		
 	}
 		
-	/*
-	//------------------------------------------------------
-	// Player가 기술을 당했을 때의 모습..
-	//------------------------------------------------------
-	int resultActionInfo =  pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo();
-	g_pPlayer->PacketSpecialActionResult( 
-						resultActionInfo,
-						g_pPlayer->GetID(),
-						g_pPlayer->GetX(),
-						g_pPlayer->GetY()
-	);
-
-	//------------------------------------------------------------
-	// Delay Frame 설정
-	//------------------------------------------------------------
-	g_pPlayer->SetEffectDelayFrame( resultActionInfo, delayFrame );
-	*/
 
 
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

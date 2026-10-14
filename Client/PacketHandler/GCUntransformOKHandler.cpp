@@ -9,7 +9,13 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCUntransformOK.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "MCreatureTable.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 #include "MVampireGear.h"
 #include "UserInformation.h"
@@ -21,17 +27,24 @@ void GCUntransformOKHandler::execute ( GCUntransformOK * pPacket , Player * pPla
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
-	bool bWerWolf = g_pPlayer->GetCreatureType() == CREATURETYPE_WER_WOLF;
+	bool bWerWolf = CreatureState::GetCreatureType(pPlayerCreature) == CREATURETYPE_WER_WOLF;
 
 
 	//------------------------------------------------------------------
-	// Player가 기다리던 skill의 성공유무를 검증받았다.
+	// The skill the player waited on was confirmed.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -42,13 +55,13 @@ void GCUntransformOKHandler::execute ( GCUntransformOK * pPacket , Player * pPla
 	int y = pPacket->getY();
 	int dir = pPacket->getDir();
 
-	int creatureType = g_pPlayer->IsMale()?CREATURETYPE_VAMPIRE_MALE1:CREATURETYPE_VAMPIRE_FEMALE1;
+	int creatureType = CreatureState::IsMale(pPlayerCreature)?CREATURETYPE_VAMPIRE_MALE1:CREATURETYPE_VAMPIRE_FEMALE1;
 	MItem *pItem = g_pVampireGear->GetItem(MVampireGear::GEAR_VAMPIRE_COAT);
 //	_MinTrace("Adasd2:%d %d\n",creatureType,g_pPlayer->IsMale());
 
 	if(pItem != NULL)
 	{
-		if(g_pPlayer->IsMale())
+		if(CreatureState::IsMale(pPlayerCreature))
 		{
 			creatureType = pItem->GetAddonMaleFrameID();
 		}
@@ -59,48 +72,48 @@ void GCUntransformOKHandler::execute ( GCUntransformOK * pPacket , Player * pPla
 //		_MinTrace("Adasd:%d %d\n",creatureType,g_pPlayer->IsMale());
 	}
 
-	if (g_pPlayer->GetCompetence()==0)
+	if (CreatureState::GetCompetence(pPlayerCreature)==0)
 	{
 		creatureType = CREATURETYPE_VAMPIRE_OPERATOR;
 	}
 	
 	MActionResult* pResult = new MActionResult;
 
-	pResult->Add( new MActionResultNodeChangeCreatureType( g_pPlayer->GetID(), creatureType ) );
+	pResult->Add( new MActionResultNodeChangeCreatureType( PlayerState::GetID(), creatureType ) );
 
 	//--------------------------------------------------
-	// 뱀파로 돌아간다.
+	// Back to a vampire.
 	//--------------------------------------------------								
-	ExecuteActionInfoFromMainNode(
-		RESULT_MAGIC_UN_TRANSFORM,										// 사용 기술 번호
+	WorldEvents::ExecuteActionInfoFromMainNode(
+		RESULT_MAGIC_UN_TRANSFORM,										// the skill used
 	
 		x, y, 0,
 		dir,
 		
-		OBJECTID_NULL,												// 목표에 대한 정보
+		OBJECTID_NULL,												// the target
 		x, y, 0, 
 		
-		0,													// 기술의 (남은) 지속 시간		
+		0,													// the skill's (remaining) duration		
 		
 		pResult, //NULL,
 		
-		false);			// 기술 첨부터 시작한다.
+		false);			// start the skill from its beginning
 
-	g_pPlayer->SetDelay( 1000 );
+	PlayerState::SetDelay( 1000 );
 
 
-	g_pPlayer->SetServerPosition( x, y );
-	g_pPlayer->MovePosition( x, y );
-	g_pPlayer->SetDirection( dir );
-	g_pPlayer->SetCurrentDirection( dir );
+	CreatureState::SetServerPosition(pPlayerCreature, x, y );
+	CreatureState::MovePosition(pPlayerCreature, x, y );
+	CreatureState::SetDirection(pPlayerCreature, dir );
+	CreatureState::SetCurrentDirection(pPlayerCreature, dir );
 	
 	if( bWerWolf )
 	{
-		g_pPlayer->SetBodyColor1( g_pUserInformation->SkinColor );
+		CreatureState::SetBodyColor1(pPlayerCreature, g_pUserInformation->SkinColor );
 		if( pItem != NULL )
-			g_pPlayer->SetBodyColor2( pItem->GetItemOptionColorSet() );
+			CreatureState::SetBodyColor2(pPlayerCreature, pItem->GetItemOptionColorSet() );
 		else
-			g_pPlayer->SetBodyColor2( 377 );
+			CreatureState::SetBodyColor2(pPlayerCreature, 377 );
 	}
 	
 

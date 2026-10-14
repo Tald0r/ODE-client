@@ -392,4 +392,19 @@ void SetMoveDevice(MCreature* pCreature, MOVE_DEVICE device)
 	if (s_Host && s_Host->SetMoveDevice) s_Host->SetMoveDevice(pCreature, device);
 }
 
+int GetCreatureType(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetCreatureType ? s_Host->GetCreatureType(pCreature) : 0;
+}
+
+int GetCompetence(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetCompetence ? s_Host->GetCompetence(pCreature) : 3;
+}
+
+void SetCurrentDirection(MCreature* pCreature, int direction)
+{
+	if (s_Host && s_Host->SetCurrentDirection) s_Host->SetCurrentDirection(pCreature, direction);
+}
+
 }
