@@ -17,6 +17,7 @@
 #include "Gpackets/GCShopList.h"
 #include "Gpackets/GCShopListMysterious.h"
 #include "Gpackets/GCShopVersion.h"
+#include <list>
 #include <string>
 #include <vector>
 
@@ -164,6 +165,10 @@ struct Listed
 	int itemClass;
 	int type;
 	int durability;
+	int silver = 0;
+	int grade = 0;
+	int enchant = 0;
+	std::vector<int> options = {};
 };
 
 // A shop list for the NPC: its rack, version, items, rates and kind.
@@ -175,8 +180,10 @@ void ReceiveList(ObjectID_t npc, int rack, int version, std::vector<Listed> list
 	for (const Listed& l : listed)
 	{
 		bytes.Put(static_cast<BYTE>(l.index)).Put(static_cast<decltype(Item::objectID)>(l.id)).Put(static_cast<decltype(Item::itemClass)>(l.itemClass))
-			.Put(static_cast<decltype(Item::itemType)>(l.type)).Put(static_cast<BYTE>(0)).Put(static_cast<decltype(Item::durability)>(l.durability))
-			.Put(static_cast<decltype(Item::silver)>(0)).Put(static_cast<decltype(Item::grade)>(0)).Put(static_cast<decltype(Item::enchantLevel)>(0));
+			.Put(static_cast<decltype(Item::itemType)>(l.type)).Put(static_cast<BYTE>(l.options.size()));
+		for (int option : l.options) bytes.Put(static_cast<OptionType_t>(option));
+		bytes.Put(static_cast<decltype(Item::durability)>(l.durability)).Put(static_cast<decltype(Item::silver)>(l.silver))
+			.Put(static_cast<decltype(Item::grade)>(l.grade)).Put(static_cast<decltype(Item::enchantLevel)>(l.enchant));
 	}
 	bytes.Put(static_cast<MarketCond_t>(buy)).Put(static_cast<MarketCond_t>(sell)).Put(static_cast<BYTE>(shopType));
 	GCShopList packet;
@@ -214,7 +221,7 @@ const std::string kHelp = "help|" + std::to_string(HELP_EVENT_USE_SHOP);
 TEST(ShopListReplies, AListFillsARackOfANewShopAndOpensIt)
 {
 	World world;
-	ReceiveList(1003, MShopShelf::SHELF_SPECIAL, 7, {{0, 501, ITEM_CLASS_SWORD, 2, 300}, {5, 502, ITEM_CLASS_POTION, 1, 10}}, 40, 15);
+	ReceiveList(1003, MShopShelf::SHELF_SPECIAL, 7, {{0, 501, ITEM_CLASS_SWORD, 2, 300, 5, 3, 2, {7, 9}}, {5, 502, ITEM_CLASS_POTION, 1, 10}}, 40, 15);
 	CHECK(calls == std::vector<std::string>({"shop given", "fixed rack", "mysterious rack",
 		"shows the shop", "shop opens", "shows the shop", kHelp}));
 	MShop* pShop = merchant.shop;
@@ -231,6 +238,13 @@ TEST(ShopListReplies, AListFillsARackOfANewShopAndOpensIt)
 	MItem* pSword = pShelf->GetItem(0);
 	CHECK(pSword != nullptr && pSword->GetID() == 501 && pSword->GetItemClass() == ITEM_CLASS_SWORD
 		&& pSword->GetItemType() == 2 && pSword->GetCurrentDurability() == 300);
+	if (pSword != nullptr)
+	{
+		CHECK_EQ(5, pSword->GetSilver());
+		CHECK_EQ(3, pSword->GetGrade());
+		CHECK_EQ(2, static_cast<int>(pSword->GetEnchantLevel()));
+		CHECK(pSword->GetItemOptionList() == std::list<TYPE_ITEM_OPTION>({7, 9}));
+	}
 	CHECK(pShelf->GetItem(5) != nullptr && pShelf->GetItem(5)->GetID() == 502);
 	CHECK(pShelf->GetItem(1) == nullptr);
 	CHECK_EQ(40, world.prices.GetMarketCondBuy());
@@ -243,8 +257,11 @@ TEST(ShopListReplies, AListForAShopThatExistsReplacesItsRack)
 	MShop* pShop = world.Owned();
 	MShopShelf* pOld = MShopShelf::NewShelf(MShopShelf::SHELF_SPECIAL);
 	pShop->SetShelf(MShopShelf::SHELF_SPECIAL, pOld);
+	pShop->SetCurrent(1);
 	ReceiveList(1003, MShopShelf::SHELF_SPECIAL, 9, {{2, 503, ITEM_CLASS_SWORD, 0, 50}}, 30, 10);
 	CHECK(calls == std::vector<std::string>({"shows the shop", "shop opens", "shows the shop", kHelp}));
+	// A normal shop shows its fixed rack first.
+	CHECK_EQ(0, static_cast<int>(pShop->GetCurrent()));
 	CHECK(merchant.shop == pShop);
 	CHECK(pShop->GetShelf(MShopShelf::SHELF_SPECIAL) != nullptr && pShop->GetShelf(MShopShelf::SHELF_SPECIAL)->GetVersion() == 9);
 	// An event-star shop shows its second rack first.
@@ -281,7 +298,8 @@ TEST(ShopListReplies, AListThatCannotBeShelvedOrShownOnlyHelps)
 TEST(ShopListReplies, AMysteriousListFillsARackWithUnidentifiedItems)
 {
 	World world;
-	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 4, {{3, 0, ITEM_CLASS_SWORD, 1, 0}}, 35, 12);
+	// A refused item class is left out.
+	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 4, {{3, 0, ITEM_CLASS_SWORD, 1, 0}, {4, 0, 250, 0, 0}}, 35, 12);
 	CHECK(calls == std::vector<std::string>({"shop given", "fixed rack", "mysterious rack", "shows the shop", "shop opens", "shows the shop"}));
 	MShop* pShop = merchant.shop;
 	CHECK(pShop != nullptr);
@@ -292,12 +310,19 @@ TEST(ShopListReplies, AMysteriousListFillsARackWithUnidentifiedItems)
 	if (pShelf == nullptr) return;
 	CHECK(pShelf->GetItem(3) != nullptr && !pShelf->GetItem(3)->IsIdentified());
 	CHECK(pShelf->GetItem(3) != nullptr && pShelf->GetItem(3)->GetItemClass() == ITEM_CLASS_SWORD);
+	CHECK(pShelf->GetItem(4) == nullptr);
+	// On a shop that exists, the fixed rack is shown first.
+	pShop->SetCurrent(1);
+	calls.clear();
+	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 5, {}, 35, 12);
+	CHECK_EQ(0, static_cast<int>(pShop->GetCurrent()));
 	CHECK_EQ(35, world.prices.GetMarketCondBuy());
 	CHECK_EQ(12, world.prices.GetShopTaxRatio());
-	// An unknown rack type: nothing; not an NPC: nothing.
+	// An unknown rack type, not an NPC, or nobody: nothing.
 	calls.clear();
 	ReceiveMysterious(1003, MShopShelf::MAX_SHELF, 4, {}, 35, 12);
 	ReceiveMysterious(1004, MShopShelf::SHELF_UNKNOWN, 4, {}, 35, 12);
+	ReceiveMysterious(4242, MShopShelf::SHELF_UNKNOWN, 4, {}, 35, 12);
 	zoneExists = false;
 	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 4, {}, 35, 12);
 	CHECK(calls.empty());
@@ -318,17 +343,21 @@ TEST(ShopListReplies, VersionsAskForTheSpecialRackOrOpenTheShop)
 	CHECK(world.connection.Sent() == SocketOutputStreamTestAccess::Bytes(expected.stream));
 	CHECK(merchant.shop != nullptr && merchant.shop->GetShelf(SHOP_RACK_SPECIAL) != nullptr);
 	CHECK_EQ(20, world.prices.GetShopTaxRatio());
+	if (merchant.shop == nullptr || merchant.shop->GetShelf(SHOP_RACK_SPECIAL) == nullptr) return;
 	// Up to date: the shop opens, and the other racks' versions are not
 	// compared.
 	calls.clear();
 	GamePlayer quiet;
 	merchant.shop->GetShelf(SHOP_RACK_SPECIAL)->SetVersion(3);
+	merchant.shop->SetCurrent(1);
 	ReceiveVersions(&quiet, 1003, {9, 3, 9}, 20);
 	CHECK(calls == std::vector<std::string>({"fixed rack", "mysterious rack", "shop opens", "shows the shop"}));
 	CHECK(quiet.Sent().empty());
-	// Not an NPC, or no zone: nothing.
+	CHECK_EQ(0, static_cast<int>(merchant.shop->GetCurrent()));
+	// Not an NPC, nobody, or no zone: nothing.
 	calls.clear();
 	ReceiveVersions(&quiet, 1004, {0, 0, 0}, 20);
+	ReceiveVersions(&quiet, 4242, {0, 0, 0}, 20);
 	zoneExists = false;
 	ReceiveVersions(&quiet, 1003, {0, 0, 0}, 20);
 	CHECK(calls.empty());
@@ -359,6 +388,7 @@ TEST(ShopListReplies, WithoutHostsTheShopIsNeitherShownNorFilled)
 TEST(ShopListReplies, AnUnknownShopKindIsKeptAndShowsTheFixedRackFirst)
 {
 	World world;
+	world.Owned()->SetCurrent(1);
 	// A wire byte past the two kinds the client knows (Clang's UBSan checks
 	// the enum load).
 	ReceiveList(1003, MShopShelf::SHELF_FIXED, 1, {}, 30, 10, 7);

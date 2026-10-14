@@ -4314,9 +4314,10 @@ rounds settled* for the host rules). Test fixtures share
   > 125 Ninja.
   - Owner: membership, R1, the entry and adapter, and
     `test_own_skill_replies.cpp` (a success waited on and not, the
-    packet's effect status, a graded skill, a skill past the table, an
-    ouster's and a turret's untransform, Eternity by race, Concealment's
-    rounding, Soul Chain's and Will of Life's delays, no player).
+    duration at 16 frames a second, the packet's effect status, a graded
+    skill and a grade without steps, a skill past the table, an ouster's
+    and a turret's untransform, Eternity by race, Concealment's rounding,
+    Soul Chain's delay and another skill's, Will of Life's, no player).
 
 - [x] **4.158 An NPC's shop lists and versions:** move
   `GCShopListHandler`, `GCShopListMysteriousHandler` and
@@ -4336,13 +4337,17 @@ rounds settled* for the host rules). Test fixtures share
   > game connection), and open the shop when nothing is. A shop or rack
   > nothing takes (only without the entry) is freed. `MPriceManager`
   > gains a `GetShopTaxRatio` for the tests. Found by reading: the list
-  > casts the NPC's shop kind, a wire byte, to an enum with two values
-  > (fixed in the next commit). R1 is 124 Windows / 122 Ninja.
+  > casts the NPC's shop kind, a wire byte, to an enum with two values;
+  > moved as it was, then fixed by giving `MShop::SHOP_TYPE` a fixed
+  > `int` type, so an unknown kind is kept and shows the fixed rack
+  > first (ca8f5c3e). R1 is 124 Windows / 122 Ninja.
   - Owner: membership, R1, the four entries and adapters, and
     `test_shop_list_replies.cpp` (a new shop and an existing one, an
-    event-star shop, a refused item class, a rack past the shop's, not
-    an NPC, nobody, no zone; the mysterious list; versions out of date
-    and up to date; no hosts, no shop entry).
+    event-star shop and an unknown kind, each item field, a refused item
+    class, a rack past the shop's, not an NPC, nobody, no zone; the
+    mysterious list, a refused class, an existing shop, nobody; versions
+    out of date and up to date, nobody; no hosts, no shop entry), and
+    `MShop.h`'s fixed `SHOP_TYPE`.
 
 - [x] **4.159 Power points and a point exchange purchase:** move
   `GCRequestPowerPointResultHandler`, `GCUsePowerPointResultHandler` and
