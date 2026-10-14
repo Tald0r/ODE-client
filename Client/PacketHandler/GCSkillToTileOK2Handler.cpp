@@ -9,9 +9,17 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToTileOK2.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "MStatus.h"
+#include "Packet/WireHost.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "MEffectStatusDef.h"
-#include "PacketFunction2.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -21,43 +29,51 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 	int delayFrame = ConvertDurationToFrame( pPacket->getDuration() );
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{ 
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
 		//------------------------------------------------------
-		// Player가 사용한 기술이라고 packet이 날아온 경우
-		// --> Error다
+		// A packet for the player's own skill
+		// is an error.
 		//------------------------------------------------------
-		if (pPacket->getObjectID()==g_pPlayer->GetID())
+		if (pPacket->getObjectID()==PlayerState::GetID())
 		{
 			DEBUG_ADD_ERR("[Error] the User of GCSkillToTileOK2 is Player!");
 		}
 		else
 		{
 			//------------------------------------------------------
-			// 사용자
+			// the user
 			//------------------------------------------------------
 			int creatureID = pPacket->getObjectID();
-			MCreature* pCreature = g_pZone->GetCreature( creatureID );
+			MCreature* pCreature = ZoneState::GetCreature( creatureID );
 
 			int skillID = pPacket->getSkillType();
 			
@@ -71,14 +87,18 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			// 2004, 9, 9, sobeit add start
 			if(skillID == SKILL_BURNING_SOUL_LAUNCH)
 			{
-				int TempskillID = SKILL_CLIENT_BURNING_SOL_1+pPacket->getGrade();
-				ExecuteActionInfoFromMainNode(TempskillID,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(), pCreature->GetID()	,	
-					pPacket->getX(), pPacket->getY(), 0, ConvertDurationToFrame( pPacket->getDuration() ), NULL, false);
+				// The launch starts from its caster; without one there is none.
+				if (pCreature != NULL)
+				{
+					int TempskillID = SKILL_CLIENT_BURNING_SOL_1+pPacket->getGrade();
+					WorldEvents::ExecuteActionInfoFromMainNode(TempskillID,CreatureState::GetX(pCreature), CreatureState::GetY(pCreature), 0,CreatureState::GetDirection(pCreature), CreatureState::GetID(pCreature)	,	
+						pPacket->getX(), pPacket->getY(), 0, ConvertDurationToFrame( pPacket->getDuration() ), NULL, false);
+				}
 			//	return;
 			}
 			else if(skillID == SKILL_ROTTEN_APPLE)
 			{
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_ROTTEN_APPLE,pPacket->getX(), pPacket->getY(), 0,0,0	,	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_ROTTEN_APPLE,pPacket->getX(), pPacket->getY(), 0,0,0	,	
 					pPacket->getX(), pPacket->getY(), 0, ConvertDurationToFrame( pPacket->getDuration() ), NULL, false);
 			}
 			// 2004, 9, 9, sobeit add end
@@ -96,7 +116,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			{
 				DEBUG_ADD("SetBA");
 
-				useSkillID = pCreature->GetBasicActionInfo();
+				useSkillID = CreatureState::GetBasicActionInfo(pCreature);
 
 				if (static_cast<DWORD>(useSkillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
@@ -106,25 +126,26 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			}
 
 			//------------------------------------------------------
-			// TileOK2로 인한 결과 
+			// The result of the TileOK2. 
 			//------------------------------------------------------				
 			int size = pPacket->getCListNum();
 
 			MActionResult* pResult = new MActionResult;
 
 			//------------------------------------------------------------------
-			// effect status를 적용시킨다.
+			// Apply the effect status.
 			//------------------------------------------------------------------
-			if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
+			MStatus* pPlayerStatus = PlayerState::Status();
+			if (pPlayerStatus != NULL && pPlayerStatus->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 			{
 				DEBUG_ADD("AddES");
 
 				pResult->Add( new MActionResultNodeAddEffectStatus( 
-											g_pPlayer->GetID(), 
-											(EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), 
+											PlayerState::GetID(), 
+											(EFFECTSTATUS)pPlayerStatus->GetEFFECT_STAT(), 
 											delayFrame ));
 
-				g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
+				pPlayerStatus->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 			}
 
 			DEBUG_ADD("AResultID?");
@@ -141,7 +162,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			{
 				pResult->Add( new MActionResultNodeActionInfo(
 					skillID,
-					g_pPlayer->GetID(), 
+					PlayerState::GetID(), 
 					targetID, 
 					pPacket->getX(),
 					pPacket->getY(),
@@ -163,15 +184,15 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 		
 			if (size!=0)
 			{
-				// 결과를 당하는 각각의 creature에 대해서 결과 표현
+				// The result on each creature it lands on.
 				for (int i=0; i<size; i++)
 				{
 					//MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getCListElement() );
 						
-					// Creature에게 Damage 입힘
+					// The creature is hit.
 					//if (pTargetCreature != NULL)
 					//{
-						// 내(Player)가 누군가가 사용한 SKill을 맞은 경우..
+						// The player is hit by someone's skill.
 						// [ TEST CODE ]
 						
 					//	pResult->Add( new MActionResultNodeActionInfo( 
@@ -185,14 +206,14 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 
 					DEBUG_ADD("getTC");
 
-					MCreature* pTargetCreature = g_pZone->GetCreature( targetID );
+					MCreature* pTargetCreature = ZoneState::GetCreature( targetID );
 
 					if (pTargetCreature!=NULL)
 					{
 						DEBUG_ADD("TCNotNULL");
 
 						//------------------------------------------------------
-						// EffectStatus가 있다면 붙인다.
+						// Add the effect status, if any.
 						//------------------------------------------------------
 						EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 						
@@ -203,7 +224,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 
 						//------------------------------------------------------
 						//
-						// skill에 결과가 있으면 적용 시킨다.
+						// Apply the skill's own result, if it has one.
 						//
 						//------------------------------------------------------
 						MActionResultNode* pActionResultNode = NULL;
@@ -211,7 +232,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 						switch ((*g_pActionInfoTable)[skillID].GetActionResultID())
 						{
 							//------------------------------------------------------
-							// 다른 ActionInfo 실행
+							// Run another action.
 							//------------------------------------------------------
 							case ACTIONRESULTNODE_ACTIONINFO :
 								
@@ -221,15 +242,15 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 																	skillID, //(*g_pActionInfoTable)[skillID].GetActionResultValue(),
 																	creatureID, 
 																	targetID, 
-																	pTargetCreature->GetX(),
-																	pTargetCreature->GetY(),
+																	CreatureState::GetX(pTargetCreature),
+																	CreatureState::GetY(pTargetCreature),
 																	delayFrame);
 
 								DEBUG_ADD("ANodeAI-ok");
 							break;
 
 							//------------------------------------------------------
-							// Burrow 등등.. 
+							// Burrow and the like. 
 							//------------------------------------------------------
 							default :
 								DEBUG_ADD("default");
@@ -237,7 +258,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 						}
 
 						//------------------------------------------------------
-						// NULL이 아니면 같이 적용
+						// Apply it too, if there is one.
 						//------------------------------------------------------
 						if (pActionResultNode!=NULL)
 						{
@@ -257,7 +278,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 			DEBUG_ADD("pCreture?");
 
 			//------------------------------------------------------
-			// 사용한 캐릭터가 없는 경우 --> 결과 바로 표현
+			// No user: show the result at once.
 			//------------------------------------------------------
 			if (pCreature==NULL)
 			{
@@ -266,58 +287,57 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 				int direction = 0;
 
 				//------------------------------------------------------
-				// range를 direction에 적용시키는 경우
+				// The range is used as the direction.
 				//------------------------------------------------------
 				if ((*g_pActionInfoTable)[skillID].IsOptionRangeToDirection())
 				{
 					direction = pPacket->getRange();
 				}
 
-				ExecuteActionInfoFromMainNode(
-							skillID,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+							skillID,										// the skill used
 						
 							pPacket->getX(), pPacket->getY(), 0,
-							direction,														// 사용 방향
+							direction,														// direction
 							
-							OBJECTID_NULL,		// 2002.3.6에 바꿈. 원래는 pPacket->getObjectID()였다.
+							OBJECTID_NULL,		// changed 2002-03-06; it was pPacket->getObjectID()
 							pPacket->getX(), pPacket->getY(), 0,
 							
-							delayFrame,													// 기술의 (남은) 지속 시간		
+							delayFrame,													// the skill's (remaining) duration		
 							
 							pResult,
 							
-							false);			// 기술 첨부터 시작한다.);
+							false);			// start the skill from its beginning);
 			}
 			//------------------------------------------------------
-			// 정상
+			// The normal case.
 			//------------------------------------------------------
 			else
 			{				
 				DEBUG_ADD("C-OK");
 
 				//------------------------------------------------------
-				// 방향을 바라보기
+				// Face the player.
 				//------------------------------------------------------
-				pCreature->SetDirectionToPosition(pPacket->getX(), pPacket->getY());		
+				CreatureState::SetDirectionToPosition(pCreature, pPacket->getX(), pPacket->getY());		
 
 				//------------------------------------------------------
-				// range를 direction에 적용시키는 경우
+				// The range is used as the direction.
 				//------------------------------------------------------
 				if ((*g_pActionInfoTable)[pPacket->getSkillType()].IsOptionRangeToDirection())
 				{
-					pCreature->SetDirection( pPacket->getRange() );
+					CreatureState::SetDirection(pCreature, pPacket->getRange() );
 				}
 
 				//------------------------------------------------------
-				// TileOK2로 인한 결과 추가
+				// Add the result of the TileOK2.
 				//------------------------------------------------------
 				//Duration_t	m_Duration;
 				DEBUG_ADD("AtoSector");
 
-				pCreature->PacketSpecialActionToSector(
-									skillID, 
+				CreatureState::PacketSpecialActionToSector(pCreature, skillID, 
 									pPacket->getX(), pPacket->getY(),
-									pResult						// 결과
+									pResult						// result
 				);
 
 				DEBUG_ADD("AtoSectorOK");
@@ -329,7 +349,7 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 
 	
 	//------------------------------------------------------------
-	// Delay Frame 설정
+	// The delay frame
 	//------------------------------------------------------------
 	//g_pPlayer->SetEffectDelayFrame( resultActionInfo, delayFrame );
 
@@ -337,8 +357,8 @@ void GCSkillToTileOK2Handler::execute ( GCSkillToTileOK2 * pPacket , Player * pP
 
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

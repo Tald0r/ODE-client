@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCRemoveCorpseHead.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -22,67 +23,38 @@ void GCRemoveCorpseHeadHandler::execute ( GCRemoveCorpseHead * pPacket , Player 
 
 	int objectID = pPacket->getObjectID();
 
-	// Creature를 생성해서 MCorpse에 추가해서 Zone에 넣는다.
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
-		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case.
 	//------------------------------------------------------
 	else
-	{	
-		//----------------------------------------	
-		// 이미 있는 Creature인가?
-		//----------------------------------------	
-		MCreature* pCreature = g_pZone->GetCreature( objectID );
-		
-		//---------------------------------------------------------
-		//
-		//					Zone에 없는 경우
-		//
-		//---------------------------------------------------------
+	{
+		//----------------------------------------
+		// A creature still standing loses its head; otherwise the
+		// creature lying in the corpse with this ID does.
+		//----------------------------------------
+		MCreature* pCreature = ZoneState::GetCreature( objectID );
+
 		if (pCreature==NULL)
 		{
-			// 이미 시체가 있나?
-			MItem* pItem = g_pZone->GetItem( objectID );
-
-			//---------------------------------------------------------
-			// 시체도 없으면 에러당
-			//---------------------------------------------------------
-			if (pItem==NULL)
-			{
-				// 그런 아이템은 없다.
-				DEBUG_ADD_ERR("[Error] There is no such Item ID");
-			}
-			//---------------------------------------------------------
-			// 시체가 있으면 머리를 없앤다.
-			//---------------------------------------------------------
-			else if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
-			{
-				MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
-
-				pCreature->RemoveHead();
-			}
-			else
-			{
-				// 아이템은 있는데 시체가 아닌 경우
-				DEBUG_ADD_FORMAT_ERR("[Error] It's not Corpse. id=%d", objectID);
-			}
+			pCreature = ZoneState::GetCorpseCreature( objectID );
 		}
-		//---------------------------------------------------------
-		// 아직 몹인 상태인 경우.. 머리 없애기
-		//---------------------------------------------------------
+
+		if (pCreature==NULL)
+		{
+			DEBUG_ADD_FORMAT_ERR("[Error] No creature or corpse. id=%d", objectID);
+		}
 		else
 		{
-			pCreature->RemoveHead();			
+			CreatureState::RemoveHead(pCreature);
 		}
 	}
-
 
 	__END_CATCH
 }

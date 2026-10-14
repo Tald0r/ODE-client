@@ -3571,6 +3571,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 		if (g_pCurrentMagazine != NULL) g_pCurrentMagazine->SetNumber(static_cast<TYPE_ITEM_NUMBER>(number));
 		else DEBUG_ADD_ERR("[Error] Current Magazine Not Exist!");
 	},
+	.SetGroundCreature = []() { if (g_pPlayer != NULL) g_pPlayer->SetGroundCreature(); },
+	.SetTempSelectPos = [](int x, int y) { if (g_pPlayer != NULL) g_pPlayer->SetTempSelectPos(x, y); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3581,6 +3583,10 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.RemoveHelicopter = [](TYPE_OBJECTID creatureID) { g_pZone->RemoveHelicopter(creatureID); },
 	.AddCorpseFromCreature = [](TYPE_OBJECTID id) { return g_pZone->AddCorpseFromCreature(id); },
 	.GetID = []() { return g_pZone != NULL ? static_cast<int>(g_pZone->GetID()) : ZONEID_NULL; },
+	.GetCorpseCreature = [](TYPE_OBJECTID itemID) -> MCreature* {
+		MItem* pItem = g_pZone != NULL ? g_pZone->GetItem(itemID) : NULL;
+		return pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE ? static_cast<MCorpse*>(pItem)->GetCreature() : NULL;
+	},
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3651,6 +3657,15 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetBasicActionInfo = [](MCreature* pCreature) { return pCreature->GetBasicActionInfo(); },
 	.RemoveEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->RemoveEffectStatus(status); },
 	.SetFakeDie = [](MCreature* pCreature) { pCreature->SetFakeDie(); },
+	.GetDirection = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetDirection()); },
+	.RemoveHead = [](MCreature* pCreature) { pCreature->RemoveHead(); },
+	.SetDirection = [](MCreature* pCreature, int direction) { pCreature->SetDirection(static_cast<BYTE>(direction)); },
+	.SetVisibleSoon = [](MCreature* pCreature) { pCreature->SetVisibleSoon(); },
+	.IsWear = [](MCreature* pCreature) { return pCreature->IsWear() != FALSE; },
+	.SetAddonItem = [](MCreature* pCreature, MItem* pItem) {
+		return pCreature->IsWear() && static_cast<MCreatureWear*>(pCreature)->SetAddonItem(pItem);
+	},
+	.SetWeaponSpeed = [](MCreature* pCreature, int speed) { pCreature->SetWeaponSpeed(speed); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3671,6 +3686,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode, int sX, int sY) {
 		ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
 	},
+	.SkillCrossCounter = SkillCrossCounter,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

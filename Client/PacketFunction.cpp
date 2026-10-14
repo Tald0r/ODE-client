@@ -458,59 +458,7 @@ ReleasePacketItemTable()
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Get Mine ActionInfo
-//-----------------------------------------------------------------------------
-// 지뢰(item type)랑 관련된 actioninfo를 알아낸다.
-// 없으면 -1을 return한다.
-//-----------------------------------------------------------------------------
-int
-GetMineActionInfo(int itemType)
-{
-	const int maxMine = 5;
 
-	const int mineSkillID[maxMine] = {
-		MINE_ANKLE_KILLER,
-		MINE_POMZ,
-		MINE_AP_C1,
-		MINE_DIAMONDBACK,		
-		MINE_SWIFT_EX
-	};
-
-	if (itemType>=0 && itemType<maxMine)
-	{		
-		return mineSkillID[itemType];
-	}
-
-	return -1;
-}
-
-//-----------------------------------------------------------------------------
-// Get Bomb ActionInfo
-//-----------------------------------------------------------------------------
-// 폭탄(item type)랑 관련된 actioninfo를 알아낸다.
-// 없으면 -1을 return한다.
-//-----------------------------------------------------------------------------
-int
-GetBombActionInfo(int itemType)
-{
-	const int maxBomb = 5;
-
-	const int bombSkillID[maxBomb] = {
-		BOMB_SPLINTER,
-		BOMB_ACER,
-		BOMB_BULLS,
-		BOMB_STUN,
-		BOMB_CROSSBOW,		
-	};
-
-	if (itemType>=0 && itemType<maxBomb)
-	{		
-		return bombSkillID[itemType];
-	}
-
-	return -1;
-}
 
 //-----------------------------------------------------------------------------
 // Set Gore Level

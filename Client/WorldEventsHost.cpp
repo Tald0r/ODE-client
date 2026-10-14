@@ -69,6 +69,11 @@ void PlaySound(TYPE_SOUNDID soundID)
 	if (s_Host && s_Host->PlaySound) s_Host->PlaySound(soundID);
 }
 
+void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
+{
+	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);
+}
+
 void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode, int sX, int sY)
 {
 	if (s_Host && s_Host->ExecuteActionInfoFromMainNode)

@@ -318,7 +318,12 @@ check () {
 # 187: four player-target skill replies join gamemodel (4.132).
 # 181: six player attack replies join gamemodel (4.133).
 # 179: two self-skill replies join gamemodel with the result-node factory (4.134).
-R1_BASELINE=179
+# 176: the three cross-counter replies join gamemodel (4.135).
+# 174: the add-effect and corpse-head replies join gamemodel (4.136).
+# 171: the three bomb replies join gamemodel with the mine and bomb lookups (4.137).
+# 168: the unburrow, remove-effect and change-shape replies join gamemodel (4.138).
+# 164: four skill-to-tile replies join gamemodel (4.139).
+R1_BASELINE=164
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -470,7 +475,12 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 185: four player-target skill replies join gamemodel (4.132).
 	# 179: six player attack replies join gamemodel (4.133).
 	# 177: two self-skill replies join gamemodel with the result-node factory (4.134).
-	R1_NINJA_BASELINE=177
+	# 174: the three cross-counter replies join gamemodel (4.135).
+	# 172: the add-effect and corpse-head replies join gamemodel (4.136).
+	# 169: the three bomb replies join gamemodel with the mine and bomb lookups (4.137).
+	# 166: the unburrow, remove-effect and change-shape replies join gamemodel (4.138).
+	# 162: four skill-to-tile replies join gamemodel (4.139).
+	R1_NINJA_BASELINE=162
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

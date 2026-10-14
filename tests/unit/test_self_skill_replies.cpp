@@ -214,9 +214,14 @@ TEST(SelfSkillReplies, AGradedSkillOnItselfHitsAsItsStepButActsAsTheSkill)
 	auto& row = testfw::MutableRow(world.actions, SKILL_DOUBLE_IMPACT);
 	row.SetUseActionStep();
 	row.SetActionStep(1, SKILL_SINGLE_BLOW);
+	// The step's own effect status and result kind are used, not the skill's.
+	auto& step = testfw::MutableRow(world.actions, SKILL_SINGLE_BLOW);
+	step.SetEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS);
+	step.SetActionResult(ACTIONRESULTNODE_CREATURE_BURROW);
 	ReceiveOnSelf(1001, SKILL_DOUBLE_IMPACT, 0, 2);
 	CHECK(calls == std::vector<std::string>({"Ogre.self|" + N(SKILL_DOUBLE_IMPACT),
-		"Ogre.delay|" + N(SKILL_SINGLE_BLOW + kMin) + "|0", "Ogre.result|" + N(SKILL_SINGLE_BLOW + kMin) + "|1001|10|11"}));
+		"Ogre.delay|" + N(SKILL_SINGLE_BLOW + kMin) + "|0", "Ogre.result|" + N(SKILL_SINGLE_BLOW + kMin) + "|1001|10|11",
+		"Ogre.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|0", "Ogre.burrow"}));
 }
 
 TEST(SelfSkillReplies, ASkillOnItselfNeedsAZoneTheCreatureAndASkillInTheTable)

@@ -9,11 +9,15 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCRemoveEffect.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "WorldEventsHost.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "MEffectStatusDef.h"
-#include "MEventManager.h"
+#include "MEffectStatusTable.h"
 #include "MSkillManager.h"
 #include "SkillDef.h"
+#include "SoundDef.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -26,34 +30,27 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
 		int CreatureID = pPacket->getObjectID();
 		
-		MCreature* pCreature = g_pZone->GetCreature(CreatureID);
+		MCreature* pCreature = ZoneState::GetCreature(CreatureID);
 
-		// 성물보관대 얻어오기 위해서
+		// Not standing: the creature lying in the corpse with this ID (the
+		// relic shelf is one).
 		if (pCreature == NULL)
 		{
-			MItem *selectedItem = g_pZone->GetItem(CreatureID);
-			if(selectedItem != NULL)
-			{
-				if(selectedItem->GetItemClass() == ITEM_CLASS_CORPSE)
-				{
-					MCorpse *pCorpse = (MCorpse *)selectedItem;
-					pCreature = pCorpse->GetCreature();
-				}
-			}
+			pCreature = ZoneState::GetCorpseCreature(CreatureID);
 		}
 
 		if (pCreature==NULL)
@@ -82,18 +79,18 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 					case EFFECTSTATUS_KEEP_SWEEPER_10 :                   // 313
 					case EFFECTSTATUS_KEEP_SWEEPER_11 :                   // 314
 					case EFFECTSTATUS_KEEP_SWEEPER_12 :                   // 315
-						PlaySound( SOUND_SWEEPER_END );
+						WorldEvents::PlaySound( SOUND_SWEEPER_END );
 						break;
 				}
 
-				if (pCreature->RemoveEffectStatus( (EFFECTSTATUS)effectStatus ),0)
+				if (CreatureState::RemoveEffectStatus(pCreature, (EFFECTSTATUS)effectStatus ),0)
 				{					
 				}
 				else
 				{
 					DEBUG_ADD_FORMAT_ERR("[Error] Failed to Remove EffectStatus %d", effectStatus);
 				}
-				if( g_pPlayer->GetID() == pCreature->GetID() ) // -_- 내 자신이면
+				if( PlayerState::GetID() == CreatureState::GetID(pCreature) ) // the player itself
 				{
 					ACTIONINFO actionInfo = (ACTIONINFO) (*g_pEffectStatusTable)[effectStatus].OriginalActionInfo;
 					switch(actionInfo)
@@ -110,7 +107,7 @@ void GCRemoveEffectHandler::execute ( GCRemoveEffect * pPacket , Player * pPlaye
 				}
 
 				if( effectStatus == EFFECTSTATUS_FADE_OUT) 
-					pCreature->SetVisibleSoon();
+					CreatureState::SetVisibleSoon(pCreature);
 				
 //				if( effectStatus == EFFECTSTATUS_REDIANCE && pCreature->IsSlayer() )
 //				{

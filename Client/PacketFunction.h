@@ -79,8 +79,7 @@ bool			UseSkillCardOK(BYTE CardType);
 //-----------------------------------------------------------------------------
 // Get Mine/Bomb ActionInfo
 //-----------------------------------------------------------------------------
-int				GetMineActionInfo(int itemType);
-int				GetBombActionInfo(int itemType);
+#include "ExplosiveActions.h"
 
 //-----------------------------------------------------------------------------
 // 정보 설정

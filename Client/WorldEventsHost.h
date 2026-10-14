@@ -6,6 +6,7 @@
 class BloodBibleSignInfo;
 class GCAddItemToZone;
 class MActionResult;
+class MCreature;
 class MEvent;
 class MItem;
 class PetInfo;
@@ -17,7 +18,8 @@ namespace WorldEvents {
 // weather and lightning, a pet's details, a peer asking to disconnect, and
 // an event for the event manager to run (a timed logout, say) or to drop,
 // the current zone's music played again, a sound played, and an action's
-// effect started from the effect generator's main node.
+// effect started from the effect generator's main node; a cross counter
+// shown as a fading copy of the user striking back.
 // A missing host or entry adds no item (NULL) and skips the rest.
 struct Host
 {
@@ -35,6 +37,7 @@ struct Host
 	// Starts actionInfo's effect from (startX, startY, startZ) towards the
 	// target; the effect takes pResult and runs it when it lands.
 	void (*ExecuteActionInfoFromMainNode)(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode, int sX, int sY) = nullptr;
+	void (*SkillCrossCounter)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -50,6 +53,8 @@ void AddEvent(MEvent& event);
 void RemoveEvent(int eventID);
 void PlayMusicCurrentZone();
 void PlaySound(TYPE_SOUNDID soundID);
+// Either creature may be NULL; then nothing is shown.
+void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.
 void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode = true, int sX = 0, int sY = 0);
 

@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCChangeShape.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 #include "MItem.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -24,7 +25,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 
 	//--------------------------------------------------------
 	//
-	// 임시로 Item을 생성한다.
+	// A temporary item for the shape.
 	//
 	//--------------------------------------------------------
 	MItem* pItem = NULL;
@@ -32,7 +33,7 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 	pItem = MItem::NewItem( (enum ITEM_CLASS)pPacket->getItemClass() );
 
 	//--------------------------------------------------------
-	// Item이 생성되지 않은 경우...
+	// No such item.
 	//--------------------------------------------------------
 	if (pItem==NULL)
 	{
@@ -48,26 +49,26 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 
 	//------------------------------------------------------
 	//
-	//  Creature에게 적절한 Addon을 착용시킨다.
+	//  The creature puts the addon on.
 	//
 	//------------------------------------------------------
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//--------------------------------------------------
-		// Creature가 없는 경우
+		// No creature.
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
@@ -75,18 +76,16 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 			DEBUG_ADD_FORMAT_ERR("[Error] Not Exist Creature. ID=%d", pPacket->getObjectID());
 		}
 		//--------------------------------------------------
-		// 존재하는 Creature인 경우
-		// 복장이 있는 creature이면 --> Addon착용
+		// The creature is here;
+		// a wearing creature puts the addon on.
 		//--------------------------------------------------
-		else if (pCreature->IsWear())
+		else if (CreatureState::IsWear(pCreature))
 		{
-			MCreatureWear* pCreatureWear = (MCreatureWear*)pCreature;
-
-			// 캐릭터를 정지시킨다.
-			pCreatureWear->SetStop();
+			// Stop the creature.
+			CreatureState::SetStop(pCreature);
 			
 			#ifdef	OUTPUT_DEBUG				
-				if (pCreatureWear->SetAddonItem( pItem ))
+				if (CreatureState::SetAddonItem( pCreature, pItem ))
 				{
 					DEBUG_ADD_FORMAT("[OK] Addon Item. ID=%d, Class=%d, Type=%d", pPacket->getObjectID(), pItem->GetItemClass(), pItem->GetItemType());
 				}
@@ -95,14 +94,14 @@ void GCChangeShapeHandler::execute ( GCChangeShape * pPacket , Player * pPlayer 
 					DEBUG_ADD_FORMAT_ERR("[Error] Can't Addon Item. ID=%d, Class=%d, Type=%d", pPacket->getObjectID(), pItem->GetItemClass(), pItem->GetItemType());
 				}				
 			#else
-				pCreatureWear->SetAddonItem( pItem );
+				CreatureState::SetAddonItem( pCreature, pItem );
 			#endif
 
-			pCreatureWear->SetWeaponSpeed( pPacket->getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, pPacket->getAttackSpeed() );
 		}
 			
 		//--------------------------------------------------
-		// 옷을 입을 수 없는 Creature인 경우
+		// A creature that cannot wear clothes.
 		//--------------------------------------------------
 		else 
 		{

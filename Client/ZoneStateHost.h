@@ -6,6 +6,7 @@
 
 class MActionResult;
 class MCreature;
+class MItem;
 class MShop;
 class MStatus;
 
@@ -28,6 +29,9 @@ struct Host
 	bool (*AddCorpseFromCreature)(TYPE_OBJECTID id) = nullptr;
 	// The zone's ID; asked only when the zone exists.
 	int (*GetID)() = nullptr;
+	// The creature lying in the corpse item with this ID; NULL for no item,
+	// one that is not a corpse, or a corpse with no creature.
+	MCreature* (*GetCorpseCreature)(TYPE_OBJECTID itemID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -40,6 +44,7 @@ void RemoveHelicopter(TYPE_OBJECTID creatureID);
 bool AddCorpseFromCreature(TYPE_OBJECTID id);
 // ZONEID_NULL without a host.
 int GetID();
+MCreature* GetCorpseCreature(TYPE_OBJECTID itemID);
 
 }
 
@@ -106,8 +111,25 @@ struct Host
 	void (*ClearStopBloodDrain)(MCreature* pCreature) = nullptr;
 	// The action the creature attacks with by default (its weapon's).
 	TYPE_ACTIONINFO (*GetBasicActionInfo)(MCreature* pCreature) = nullptr;
+	// Whether the creature had the status; false without a host.
 	bool (*RemoveEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
+	// Marks the creature as faking its death.
 	void (*SetFakeDie)(MCreature* pCreature) = nullptr;
+	// The direction the creature faces now; 0 without a host.
+	int (*GetDirection)(MCreature* pCreature) = nullptr;
+	// Takes the creature's head off, if it can lose it.
+	void (*RemoveHead)(MCreature* pCreature) = nullptr;
+	// Turns the creature to a direction (the one it turns to, not the one
+	// GetDirection reads until it has turned).
+	void (*SetDirection)(MCreature* pCreature, int direction) = nullptr;
+	// Fades the creature back in soon after a fade-out.
+	void (*SetVisibleSoon)(MCreature* pCreature) = nullptr;
+	// Whether the creature wears gear (MCreatureWear); only a wearing
+	// creature takes an addon item (SetAddonItem answers false otherwise).
+	bool (*IsWear)(MCreature* pCreature) = nullptr;
+	// Puts on a copy of the item; the caller keeps pItem.
+	bool (*SetAddonItem)(MCreature* pCreature, MItem* pItem) = nullptr;
+	void (*SetWeaponSpeed)(MCreature* pCreature, int speed) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -171,5 +193,13 @@ void ClearStopBloodDrain(MCreature* pCreature);
 TYPE_ACTIONINFO GetBasicActionInfo(MCreature* pCreature);
 bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
 void SetFakeDie(MCreature* pCreature);
+// 0 without a host.
+int GetDirection(MCreature* pCreature);
+void RemoveHead(MCreature* pCreature);
+void SetDirection(MCreature* pCreature, int direction);
+void SetVisibleSoon(MCreature* pCreature);
+bool IsWear(MCreature* pCreature);
+bool SetAddonItem(MCreature* pCreature, MItem* pItem);
+void SetWeaponSpeed(MCreature* pCreature, int speed);
 
 }

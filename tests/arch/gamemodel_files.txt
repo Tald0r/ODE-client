@@ -985,3 +985,36 @@ Client/PacketHandler/GCAttackMeleeOK2Handler.cpp
 # effect generator's main node.
 Client/PacketHandler/GCSkillToSelfOK2Handler.cpp
 Client/PacketHandler/GCSkillToSelfOK3Handler.cpp
+
+# Cross counters: the player's, one against the player, and between two
+# creatures, shown through the world-event host.
+Client/PacketHandler/GCCrossCounterOK1Handler.cpp
+Client/PacketHandler/GCCrossCounterOK2Handler.cpp
+Client/PacketHandler/GCCrossCounterOK3Handler.cpp
+
+# An effect status added to a creature, or the head taken from one, standing
+# or lying in its corpse.
+Client/PacketHandler/GCAddEffectHandler.cpp
+Client/PacketHandler/GCRemoveCorpseHeadHandler.cpp
+
+# The mine and bomb action lookups, and the bomb replies over them: the
+# player's bomb, one thrown by another creature at the player's side, and
+# one between creatures.
+Client/ExplosiveActions.cpp
+Client/ExplosiveActions.h
+Client/PacketHandler/GCThrowBombOK1Handler.cpp
+Client/PacketHandler/GCThrowBombOK2Handler.cpp
+Client/PacketHandler/GCThrowBombOK3Handler.cpp
+
+# The player unburrowing, effect statuses removed from a creature, and a
+# creature's shape changed by an addon item.
+Client/PacketHandler/GCUnburrowOKHandler.cpp
+Client/PacketHandler/GCRemoveEffectHandler.cpp
+Client/PacketHandler/GCChangeShapeHandler.cpp
+
+# A skill cast at a cell: by the player, by another creature near the
+# player or elsewhere, and without its user near the player.
+Client/PacketHandler/GCSkillToTileOK1Handler.cpp
+Client/PacketHandler/GCSkillToTileOK2Handler.cpp
+Client/PacketHandler/GCSkillToTileOK5Handler.cpp
+Client/PacketHandler/GCSkillToTileOK6Handler.cpp

@@ -50,6 +50,11 @@ int GetID()
 	return s_Host && s_Host->GetID ? s_Host->GetID() : ZONEID_NULL;
 }
 
+MCreature* GetCorpseCreature(TYPE_OBJECTID itemID)
+{
+	return s_Host && s_Host->GetCorpseCreature ? s_Host->GetCorpseCreature(itemID) : nullptr;
+}
+
 }
 
 namespace CreatureState {
@@ -340,6 +345,41 @@ bool RemoveEffectStatus(MCreature* pCreature, EFFECTSTATUS status)
 void SetFakeDie(MCreature* pCreature)
 {
 	if (s_Host && s_Host->SetFakeDie) s_Host->SetFakeDie(pCreature);
+}
+
+int GetDirection(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetDirection ? s_Host->GetDirection(pCreature) : 0;
+}
+
+void RemoveHead(MCreature* pCreature)
+{
+	if (s_Host && s_Host->RemoveHead) s_Host->RemoveHead(pCreature);
+}
+
+void SetDirection(MCreature* pCreature, int direction)
+{
+	if (s_Host && s_Host->SetDirection) s_Host->SetDirection(pCreature, direction);
+}
+
+void SetVisibleSoon(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetVisibleSoon) s_Host->SetVisibleSoon(pCreature);
+}
+
+bool IsWear(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsWear ? s_Host->IsWear(pCreature) : false;
+}
+
+bool SetAddonItem(MCreature* pCreature, MItem* pItem)
+{
+	return s_Host && s_Host->SetAddonItem ? s_Host->SetAddonItem(pCreature, pItem) : false;
+}
+
+void SetWeaponSpeed(MCreature* pCreature, int speed)
+{
+	if (s_Host && s_Host->SetWeaponSpeed) s_Host->SetWeaponSpeed(pCreature, speed);
 }
 
 }
