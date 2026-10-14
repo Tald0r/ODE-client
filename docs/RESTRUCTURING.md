@@ -5555,6 +5555,10 @@ rounds settled* for the host rules). Test fixtures share
     Each made effect is flown for three updates beside a twin set as the
     generator should set it. This pins the guided effect's turn to its
     creature, and the homing effect's starting and turning angles.
+  - Fixed after the move: when the zone kept the first guided effect but
+    refused a later one, the generator returned false, and the effect
+    generator table then deleted the target the first effect owned (a
+    double free). It now returns true once the first effect is kept.
 
 - [x] **4.201 Fire piercing and playing with fire:** move
   `MFirePiecingEffectGenerator` and `MPlayingWithFireEffectGenerator`

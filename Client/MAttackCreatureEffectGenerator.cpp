@@ -112,7 +112,9 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 					pEffect->SetLink( egInfo.nActionInfo, pTarget );				
 				}
 			} else
-				return false;
+				// The first effect is kept and owns the target, which a
+				// false would have the caller delete again.
+				return true;
 			effectCount--;
 		}
 		return true;

@@ -295,11 +295,18 @@ TEST(CreatureAttackEffectGenerators, LaterStepsOfArrowsBoltsAndTeethShootBesideT
 	CHECK_EQ(3, effects.size());
 	CHECK(effects[1]->GetEffectTarget() == nullptr && effects[2]->GetEffectTarget() == nullptr);
 	CHECK_EQ(ACTIONINFO_NULL, effects[2]->GetActionInfo());
-	// The zone refusing a later one: false, the earlier ones kept.
+	// The zone refusing a later one: true, the earlier ones kept and the
+	// first still owning the target. (A false would have the caller
+	// delete the target the first effect owns.)
 	effects.clear();
 	acceptLimit = 2;
-	CHECK(!world.guided.Generate(Info(STEP_SKILL_BLAZE_BOLT_3)));
+	auto target = Target();
+	EFFECTGENERATOR_INFO refused = Info(STEP_SKILL_BLAZE_BOLT_3);
+	refused.pEffectTarget = target.get();
+	CHECK(world.guided.Generate(refused));
+	target.release();
 	CHECK_EQ(2, effects.size());
+	CHECK(effects[0]->GetEffectTarget() == refused.pEffectTarget);
 }
 
 namespace {
