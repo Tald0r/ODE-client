@@ -11,11 +11,11 @@
 #include "Rpackets/CRRequest.h"
 #include "RequestServerPlayer.h"
 #include "UserInformation.h"
-#include "ProfileManager.h"
 #include "RequestFileManager.h"
 #include "RequestUserManager.h"
 #include "Rpackets/RCRequestVerify.h"
-#include "DebugInfo.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 
 	RequestServerPlayer* pRequestServerPlayer = dynamic_cast<RequestServerPlayer*>( pPlayer );
 
-	// 이름이 없다면 .. IP로 설정한다.
+	// No name: the IP stands for it.
 	if (pRequestServerPlayer->getName().c_str()==NULL
 		|| pRequestServerPlayer->getName().size()==0)
 	{
@@ -43,13 +43,13 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 
 	if (pRequestServerPlayer!=NULL
 		&& g_pUserInformation!=NULL
-		&& g_pProfileManager!=NULL
+		&& CommunicationPresentation::HasProfiles()
 		&& g_pRequestFileManager!=NULL
 		&& g_pRequestUserManager!=NULL)
 	{			
 		DEBUG_ADD("Not NULL");
 
-		// 사용자 정보 다시 설정
+		// Set the user's information again
 		//RequestUserInfo* pUserInfo = g_pRequestUserManager->GetUserInfo( otherName.c_str() );
 
 		//if (pUserInfo!=NULL)
@@ -63,7 +63,7 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 		{
 			//------------------------------------------------------------------
 			//
-			//			Profile을 요청했을 때,
+			//			A profile asked for,
 			//
 			//------------------------------------------------------------------
 			case CR_REQUEST_FILE_PROFILE :
@@ -74,16 +74,16 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 
 				if (pPacket->getRequestName()==pMyName)
 				{
-					const char* pFilename = g_pProfileManager->GetFilename( pMyName );
+					const char* pFilename = CommunicationPresentation::GetProfileFilename( pMyName );
 
 					//-------------------------------------------------------------
-					// profile이 있는 경우
+					// There is a profile
 					//-------------------------------------------------------------
 					if (pFilename != NULL)
 					{
 						DEBUG_ADD("profile not NULL");
 
-						// 이미 요청한 내용이 없는 경우에.. 
+						// Nothing asked for already..
 						if (!g_pRequestFileManager->HasOtherRequest(otherName))
 						{
 							DEBUG_ADD("no Request");
@@ -118,7 +118,7 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 						}					
 					}
 					//-------------------------------------------------------------
-					// profile이 아예 없는 경우
+					// There is no profile at all
 					//-------------------------------------------------------------
 					else
 					{
@@ -137,7 +137,7 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 					}
 				}
 				//-------------------------------------------------------------
-				// 다른 사람의 profile을 요청하는 경우
+				// Someone else's profile asked for
 				//-------------------------------------------------------------
 				else
 				{
@@ -157,7 +157,7 @@ void CRRequestHandler::execute ( CRRequest * pPacket , Player * pPlayer )
 		
 			//------------------------------------------------------------------
 			//
-			//			길드 마크를 요청했을 때,
+			//			A guild mark asked for,
 			//
 			//------------------------------------------------------------------
 			case CR_REQUEST_FILE_GUILD_MARK :

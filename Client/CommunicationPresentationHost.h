@@ -50,6 +50,11 @@ struct Host
 	// The face the UI draws for a member's sex and hair style; the style
 	// unchanged without a host.
 	int (*GetFaceStyle)(bool male, int hairStyle) = nullptr;
+	// The profiles the UI keeps (a character's picture, sent to a peer that
+	// asks for it). Without a host or entry there are none.
+	bool (*HasProfiles)() = nullptr;
+	// The file of a character's profile; NULL for none.
+	const char* (*GetProfileFilename)(const char* name) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -81,5 +86,7 @@ void ClosePartyRequest();
 void RunPartyRequest(std::uint32_t inviterID);
 void RunParty();
 int GetFaceStyle(bool male, int hairStyle);
+bool HasProfiles();
+const char* GetProfileFilename(const char* name);
 
 }

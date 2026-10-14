@@ -1120,3 +1120,6 @@ Client/PacketHandler/GCDropItemToZoneHandler.cpp
 # A creature's fast move by a skill, and a fast-moving creature's afterimage.
 Client/PacketHandler/GCFastMoveHandler.cpp
 Client/PacketHandler/GCFakeMoveHandler.cpp
+
+# A peer asking for the player's profile or guild mark.
+Client/PacketHandler/CRRequestHandler.cpp

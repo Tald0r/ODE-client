@@ -3486,6 +3486,8 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.RunPartyRequest = [](std::uint32_t inviterID) { UI_RunPartyRequest(inviterID); },
 	.RunParty = UI_RunParty,
 	.GetFaceStyle = UI_GetFaceStyle,
+	.HasProfiles = []() { return g_pProfileManager != NULL; },
+	.GetProfileFilename = [](const char* name) { return g_pProfileManager->GetFilename(name); },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
