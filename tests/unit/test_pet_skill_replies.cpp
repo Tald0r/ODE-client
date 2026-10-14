@@ -15,10 +15,11 @@
 // level's attack (3 below 40, 4 below 50, 5 from 50), a stirge (type 4)
 // drains blood and a pixie (type 5) absorbs a soul at its level's grade
 // (1 below 20, then one grade per ten levels up to 5 from 50). The pet's
-// turret waits 3 frames and turns to the target; a Centauro turret
-// (creature types 702-704) ends facing it, and type 702 fires from the
-// muzzle's offset between the way it faced and the way it turns. The
-// skill then starts from the pet towards the way it turns.
+// turret recoils by 3 and the skill is aimed at the target; a Centauro
+// turret (creature types 702-704) is given the target's 8-way direction
+// as its final direction (as upstream did, on the turret's 32-step scale),
+// and type 702 fires from the muzzle's offset between the way it faced
+// and the way it aims. The skill then starts from the pet.
 namespace {
 
 std::vector<std::string> calls;
@@ -100,7 +101,8 @@ struct World : GameModelWorld
 		owner = FakeCreature{1003, 2001, 1, 10, 11, 0, nullptr};
 		target = FakeCreature{1005, OBJECTID_NULL, 1, 20, 21, 0, nullptr};
 		pet = FakeCreature{2001, OBJECTID_NULL, 2, 12, 13, 1, &petItem};
-		// Rows up to the Centauro turrets (702-704), whose attack sound is read.
+		// Rows up to the Centauro turrets (702-704), so their own (silent) rows
+		// are the ones read.
 		creatureTypes.Init(705);
 		if (auto* row = creatureTypes.GetMutable(2))
 		{
@@ -216,7 +218,7 @@ TEST(PetSkillReplies, AnotherPetOrNoPetItemFiresTheTanksFirstAttack)
 	CHECK(calls == Then({kHit}, Turret(SKILL_CLIENT_TANK_ATTACK_3)));
 }
 
-TEST(PetSkillReplies, ACentauroTurretEndsFacingTheTarget)
+TEST(PetSkillReplies, ACentauroTurretIsGivenTheTargetsDirection)
 {
 	World world;
 	world.Pet(2, 1);
@@ -245,6 +247,13 @@ TEST(PetSkillReplies, ACentauroTurretEndsFacingTheTarget)
 	facesTarget = 2;
 	Receive();
 	CHECK(calls.back() == Fired(SKILL_CLIENT_TANK_ATTACK_3, 2, 0, 0));
+	// Without a pet item too.
+	calls.clear();
+	pet.pPetItem = nullptr;
+	pet.creatureType = 703;
+	Receive();
+	CHECK(calls == std::vector<std::string>({kHit, "turret waits|2001|3", "faces|2001|20,21", "turret ends|2001|2",
+		Fired(SKILL_CLIENT_TANK_ATTACK_3, 2)}));
 }
 
 TEST(PetSkillReplies, NoAttackerTargetOrPetDoesLess)

@@ -4579,11 +4579,13 @@ rounds settled* for the host rules). Test fixtures share
   >   levels, up to 5 from 50);
   > - another pet, or one without a pet item, fires the tank's first
   >   attack.
-  > The pet's turret waits 3 frames (new `CreatureState::SetTurretDelay`)
-  > and turns to the target; a Centauro turret (creature types 702-704)
-  > ends facing it (new `SetTurretFinalDirection`), and type 702 fires
-  > from the muzzle's offset between the way it faced and the way it
-  > turns. The skill then starts from the pet. R1 is 110 Windows / 108
+  > The pet's turret recoils by 3 (new `CreatureState::SetTurretDelay`)
+  > and the skill is aimed at the target. A Centauro turret (creature
+  > types 702-704) is given the target's direction as its final one (new
+  > `SetTurretFinalDirection`); upstream hands it the 8-way direction
+  > while the turret counts 32 steps, which the move keeps. Type 702
+  > fires from the muzzle's offset between the way it faced and the way
+  > it aims. The skill then starts from the pet. R1 is 110 Windows / 108
   > Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_pet_skill_replies.cpp` (each pet type either side of each
