@@ -4470,11 +4470,14 @@ rounds settled* for the host rules). Test fixtures share
   > `ZoneState::NewFakeCreature`) running the same move (new
   > `CreatureState::SetFakeFastMove`), which the zone takes (new
   > `AddFakeCreature`) or which is deleted (new `DeleteFakeCreature`).
-  > R1 is 115 Windows / 113 Ninja.
+  > Once moved, the reply stopped casting the wire's 16-bit skill type to
+  > `ACTIONINFO`, whose values end at 2047: a type past that is now just
+  > a fast move, where Clang's UBSan stopped at the enum load. R1 is 115
+  > Windows / 113 Ninja.
   - Owner: membership, R1, the nine entries and adapters, and
     `test_fast_move_replies.cpp` (each skill for the player and another
-    creature, the player not waiting on it, no motorcycle, nobody, no
-    player; an afterimage taken, refused, for nobody, not made; no
+    creature, the player not waiting on it, a skill type past the enum,
+    no motorcycle, nobody, no player; an afterimage taken, refused, for nobody, not made; no
     hosts).
 
 ### Remaining R1 work after tasks 4.80-4.163

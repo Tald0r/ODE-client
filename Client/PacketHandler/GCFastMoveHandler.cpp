@@ -39,7 +39,8 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 	int oy = pPacket->getFromY();
 	int nx = pPacket->getToX();
 	int ny = pPacket->getToY();
-	ACTIONINFO skillType = (ACTIONINFO)pPacket->getSkillType();
+	// Not cast to ACTIONINFO: the wire's 16 bits run past the enum's range.
+	TYPE_ACTIONINFO skillType = pPacket->getSkillType();
 
 	MCreature* pCreature = NULL;
 	

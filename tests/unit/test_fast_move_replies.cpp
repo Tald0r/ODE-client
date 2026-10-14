@@ -252,6 +252,15 @@ TEST(FastMoveReplies, AnotherSkillOnlyMoves)
 	CHECK(calls == std::vector<std::string>{"fast move|1001|44,45|server"});
 }
 
+TEST(FastMoveReplies, ASkillTypePastTheSkillsOnlyMoves)
+{
+	World world;
+	// The wire's skill type is 16 bits; the skills' enum holds 0 to 2047.
+	ReceiveFast(1003, 4000);
+	ReceiveFast(1003, 65535);
+	CHECK(calls == std::vector<std::string>(2, "fast move|1003|44,45|server"));
+}
+
 TEST(FastMoveReplies, NobodyOrNoPlayerMovesNothing)
 {
 	World world;
