@@ -70,7 +70,8 @@ extern void				SanitizeGameStringTable();
 
 //----------------------------------------------------------------------
 // Reads one entry from the game string table, or "" when the table is too
-// short to hold it.
+// short to hold it or the entry is empty (an empty MString holds NULL), so
+// the answer is always text.
 //
 // String.inf decides how many entries the table has, so a data file built
 // for an older client can be shorter than GAME_STRINGID. CTypeTable range

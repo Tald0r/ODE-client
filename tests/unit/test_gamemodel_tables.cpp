@@ -720,3 +720,18 @@ TEST(GameStringTable, EnglishItemCounterIsReadableEmptyText)
     CHECK(std::strcmp(GetGameString(UI_STRING_MESSAGE_DESC_NUMBER), "") == 0);
     g_pGameStringTable = saved;
 }
+
+TEST(GameStringTable, AnEmptyEntryReadsAsEmptyText)
+{
+    MStringArray table;
+    MStringArray* saved = g_pGameStringTable;
+    g_pGameStringTable = &table;
+    table.Init(3);
+    table.Set(1, "");
+    // An empty MString holds NULL; GetGameString's callers need text.
+    CHECK(table[1].GetString() == nullptr);
+    const char* text = GetGameString(1);
+    CHECK(text != nullptr);
+    if (text) CHECK_EQ(0, std::strlen(text));
+    g_pGameStringTable = saved;
+}

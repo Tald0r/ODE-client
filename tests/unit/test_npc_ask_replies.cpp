@@ -395,3 +395,18 @@ TEST(NPCAskReplies, AnEmptyAnswerKeepsItsPlace)
 	CHECK(world.Answers() == std::vector<std::string>({"North", "East"}));
 	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 2}));
 }
+
+TEST(NPCAskReplies, AnEmptyScriptedAnswerIsLeftOut)
+{
+	World world;
+	// Shown, an empty answer would reach the dialog as a NULL menu string.
+	world.Script(78, {"Hi"}, {"Go", "", "Leave"});
+	Ask(1003, 78);
+	CHECK(world.Answers() == std::vector<std::string>({"Go", "Leave"}));
+	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 2}));
+	world.Stale();
+	waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
+	AskVariable(1003, 78);
+	CHECK(world.Answers() == std::vector<std::string>({"Go", "Leave"}));
+	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 2}));
+}

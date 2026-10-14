@@ -2087,5 +2087,7 @@ GetGameString(int stringID)
 		return "";
 	}
 
-	return (*g_pGameStringTable)[stringID].GetString();
+	// An empty entry's MString holds NULL; callers need text.
+	const char* text = (*g_pGameStringTable)[stringID].GetString();
+	return text != NULL ? text : "";
 }

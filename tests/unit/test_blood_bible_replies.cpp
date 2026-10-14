@@ -138,3 +138,14 @@ TEST(BloodBibleReplies, WithoutAPlayerZoneOrTalkBoxNothingHappens)
 	CHECK(calls == std::vector<std::string>{"verified"});
 	CHECK_EQ(2, static_cast<int>(world.Lines().size()));
 }
+
+TEST(BloodBibleReplies, MissingStringsReadAsEmpty)
+{
+	World world;
+	g_pGameStringTable->Set(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE, "");
+	g_pGameStringTable->Set(UI_STRING_MESSAGE_RENT_BLOOD_BIBLE, "");
+	Receive({});
+	CHECK(world.Lines() == std::vector<std::string>{"999"});
+	// An empty MString holds NULL.
+	CHECK(world.talkBox.GetContent() == nullptr);
+}

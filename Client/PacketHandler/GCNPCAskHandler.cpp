@@ -97,9 +97,13 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 			for (int i=0; i<contentSize; i++)
 			{
 				// Into the PC talk box.
-				if( g_pSystemAvailableManager->ScriptFiltering( scriptID, i ) )
+				// An empty answer is left out like a refused one: the talk box
+				// would hand the dialog a NULL menu string.
+				const char* pAnswer = g_pNPCScriptTable->GetContent( scriptID, i );
+				if( pAnswer != NULL && pAnswer[0] != '\0'
+					&& g_pSystemAvailableManager->ScriptFiltering( scriptID, i ) )
 				{
-					g_pPCTalkBox->AddString( g_pNPCScriptTable->GetContent( scriptID, i ) );
+					g_pPCTalkBox->AddString( pAnswer );
 					g_pPCTalkBox->m_AnswerIDMap.push_back( i );
 				}				
 			}

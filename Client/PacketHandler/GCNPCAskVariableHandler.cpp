@@ -91,7 +91,9 @@ void GCNPCAskVariableHandler::execute ( GCNPCAskVariable * pPacket , Player * pP
 				// Into the PC talk box.
 				std::string str;
 				g_pNPCScriptTable->GetContentParameter( scriptID, i ,pPacket->getScriptParameters(),str);
-				if( g_pSystemAvailableManager->ScriptFiltering( scriptID, i ) )
+				// An empty answer is left out like a refused one: the talk box
+				// would hand the dialog a NULL menu string.
+				if( !str.empty() && g_pSystemAvailableManager->ScriptFiltering( scriptID, i ) )
 				{
 					g_pPCTalkBox->AddString( str.c_str() );
 					g_pPCTalkBox->m_AnswerIDMap.push_back( i );

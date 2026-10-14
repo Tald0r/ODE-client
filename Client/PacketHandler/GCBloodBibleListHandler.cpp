@@ -75,11 +75,11 @@ void GCBloodBibleListHandler::execute ( GCBloodBibleList * pPacket , Player * pP
 	// Add the way out.
 	std::string szMsg;
 	szMsg += "999";
-	szMsg += (*g_pGameStringTable)[UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE].GetString();
+	szMsg += GetGameString(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE);
 	g_pPCTalkBox->AddString( szMsg.c_str() );
 
 
-	snprintf(str, sizeof(str), "%s", (*g_pGameStringTable)[UI_STRING_MESSAGE_RENT_BLOOD_BIBLE].GetString());
+	snprintf(str, sizeof(str), "%s", GetGameString(UI_STRING_MESSAGE_RENT_BLOOD_BIBLE));
 
 	g_pPCTalkBox->SetContent( str );
 
