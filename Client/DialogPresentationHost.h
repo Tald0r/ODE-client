@@ -18,7 +18,8 @@ namespace DialogPresentation {
 // for the pet storage window, which also keeps the storage's pointer.
 // PickUpItem puts an item back on the mouse; GetMouseItem is the item on
 // it (NULL for none, or without a host), and DropItem lets it go (the
-// window that took it keeps it).
+// window that took it keeps it). UnlockGear lifts the lock a quick-slot
+// use put on the gear window; CloseMixingForge closes the mixing forge.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -34,6 +35,8 @@ struct Host
 	void (*PickUpItem)(MItem* pItem) = nullptr;
 	MItem* (*GetMouseItem)() = nullptr;
 	void (*DropItem)() = nullptr;
+	void (*UnlockGear)() = nullptr;
+	void (*CloseMixingForge)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -51,5 +54,7 @@ void SetStorage(MStorage* pStorage);
 void PickUpItem(MItem* pItem);
 MItem* GetMouseItem();
 void DropItem();
+void UnlockGear();
+void CloseMixingForge();
 
 }

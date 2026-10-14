@@ -1069,3 +1069,4 @@ Client/PacketHandler/GCTradeErrorHandler.cpp
 Client/PacketHandler/GCTradeVerifyHandler.cpp
 Client/PacketHandler/GCDeleteInventoryItemHandler.cpp
 Client/PacketHandler/GCDeleteObjectHandler.cpp
+Client/PacketHandler/GCCannotUseHandler.cpp

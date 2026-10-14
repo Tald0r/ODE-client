@@ -3518,6 +3518,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.PickUpItem = UI_PickUpItem,
 	.GetMouseItem = UI_GetMouseItem,
 	.DropItem = UI_DropItem,
+	.UnlockGear = UI_UnlockGear,
+	.CloseMixingForge = UI_CloseMixingForge,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {

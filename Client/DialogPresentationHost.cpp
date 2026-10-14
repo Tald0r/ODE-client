@@ -78,4 +78,14 @@ void DropItem()
 	if (s_Host && s_Host->DropItem) s_Host->DropItem();
 }
 
+void UnlockGear()
+{
+	if (s_Host && s_Host->UnlockGear) s_Host->UnlockGear();
+}
+
+void CloseMixingForge()
+{
+	if (s_Host && s_Host->CloseMixingForge) s_Host->CloseMixingForge();
+}
+
 }
