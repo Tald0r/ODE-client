@@ -3160,6 +3160,11 @@ bool ClientHasBrowserLoop() { return browserLoopRunning; }
 
 int ClientMain(char* lpCmdLine, int nCmdShow)
 {
+	// Flip presents g_pBack, once it exists (task 4.211).
+	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {
+		return g_pBack != NULL ? g_pBack->GetBackendSurface() : SPRITECTL_INVALID_SURFACE;
+	});
+
 // 	char tttt[] = "0000000011";
 // 	memcpy(lpCmdLine,tttt,strlen(tttt));
 	//tttt += lpCmdLine;

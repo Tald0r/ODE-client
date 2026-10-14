@@ -399,7 +399,8 @@ check () {
 # 55: TextServiceScreen.cpp folded into TextSystem (4.208).
 # 54: the packet wait joins gamemodel (4.209).
 # 53: the opening's loop retired (4.210).
-R1_BASELINE=53
+# 52: the frame present joins dxlib (4.211).
+R1_BASELINE=52
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -631,7 +632,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 53: TextServiceScreen.cpp folded into TextSystem (4.208).
 	# 52: the packet wait joins gamemodel (4.209).
 	# 51: the opening's loop retired (4.210).
-	R1_NINJA_BASELINE=51
+	# 50: the frame present joins dxlib (4.211).
+	R1_NINJA_BASELINE=50
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
