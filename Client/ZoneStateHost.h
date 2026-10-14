@@ -72,6 +72,9 @@ struct Host
 	// ID is there, and the caller still owns it); DeleteCreature deletes
 	// one the zone did not take.
 	MCreature* (*NewCreature)() = nullptr;
+	// The same for a creature that wears gear (MCreatureWear): a bat or a
+	// wolf a vampire turns into, say.
+	MCreature* (*NewCreatureWear)() = nullptr;
 	bool (*AddCreature)(MCreature* pCreature) = nullptr;
 	void (*DeleteCreature)(MCreature* pCreature) = nullptr;
 };
@@ -102,6 +105,7 @@ void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 MCreature* NewCreature();
+MCreature* NewCreatureWear();
 bool AddCreature(MCreature* pCreature);
 void DeleteCreature(MCreature* pCreature);
 
@@ -280,6 +284,8 @@ struct Host
 	void (*SetID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
 	void (*SetPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetGuildNumber)(MCreature* pCreature, int guild) = nullptr;
+	// A bat's colour set (0xFFFF for its own).
+	void (*SetBatColor)(MCreature* pCreature, std::uint16_t colorSet) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -392,5 +398,6 @@ void SetName(MCreature* pCreature, const char* name);
 void SetID(MCreature* pCreature, TYPE_OBJECTID id);
 void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetGuildNumber(MCreature* pCreature, int guild);
+void SetBatColor(MCreature* pCreature, std::uint16_t colorSet);
 
 }

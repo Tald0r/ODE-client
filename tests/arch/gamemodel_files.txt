@@ -1149,3 +1149,7 @@ Client/PacketHandler/GCAddItemToItemVerifyHandler.cpp
 
 # A burrowing creature, seen or added underground.
 Client/PacketHandler/GCAddBurrowingCreatureHandler.cpp
+
+# A vampire as a bat or a wolf, seen or turning.
+Client/PacketHandler/GCAddBatHandler.cpp
+Client/PacketHandler/GCAddWolfHandler.cpp

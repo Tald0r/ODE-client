@@ -120,6 +120,11 @@ MCreature* NewCreature()
 	return s_Host && s_Host->NewCreature ? s_Host->NewCreature() : nullptr;
 }
 
+MCreature* NewCreatureWear()
+{
+	return s_Host && s_Host->NewCreatureWear ? s_Host->NewCreatureWear() : nullptr;
+}
+
 bool AddCreature(MCreature* pCreature)
 {
 	return s_Host && s_Host->AddCreature && s_Host->AddCreature(pCreature);
@@ -640,6 +645,11 @@ void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITIO
 void SetGuildNumber(MCreature* pCreature, int guild)
 {
 	if (s_Host && s_Host->SetGuildNumber) s_Host->SetGuildNumber(pCreature, guild);
+}
+
+void SetBatColor(MCreature* pCreature, std::uint16_t colorSet)
+{
+	if (s_Host && s_Host->SetBatColor) s_Host->SetBatColor(pCreature, colorSet);
 }
 
 }

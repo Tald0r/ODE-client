@@ -3668,6 +3668,11 @@ static const ZoneState::Host s_ZoneStateHost = {
 		pCreature->SetZone( g_pZone );
 		return pCreature;
 	},
+	.NewCreatureWear = []() -> MCreature* {
+		MCreature* pCreature = new MCreatureWear;
+		pCreature->SetZone( g_pZone );
+		return pCreature;
+	},
 	.AddCreature = [](MCreature* pCreature) { return g_pZone != NULL && g_pZone->AddCreature(pCreature); },
 	.DeleteCreature = [](MCreature* pCreature) { delete pCreature; },
 };
@@ -3807,6 +3812,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetID(id); },
 	.SetPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pCreature->SetPosition(x, y); },
 	.SetGuildNumber = [](MCreature* pCreature, int guild) { pCreature->SetGuildNumber(guild); },
+	.SetBatColor = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBatColor(colorSet); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
