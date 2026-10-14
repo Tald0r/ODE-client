@@ -100,6 +100,21 @@ void DeleteFakeCreature(MCreature* pFakeCreature)
 	if (s_Host && s_Host->DeleteFakeCreature) s_Host->DeleteFakeCreature(pFakeCreature);
 }
 
+void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetGroundElemental) s_Host->SetGroundElemental(x, y);
+}
+
+void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetDarknessForbidden) s_Host->SetDarknessForbidden(x, y);
+}
+
+void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetFuryOfGnome) s_Host->SetFuryOfGnome(x, y);
+}
+
 }
 
 namespace CreatureState {

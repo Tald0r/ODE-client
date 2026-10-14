@@ -3452,6 +3452,7 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 
 // Defined in PacketFunction.cpp and MPlayer.cpp without a header.
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
+extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
 extern void SendPositionInfoToParty();
@@ -3647,6 +3648,15 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.NewFakeCreature = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) -> MCreature* { return NewFakeCreature(pCreature, x, y); },
 	.AddFakeCreature = [](MCreature* pFakeCreature) { return g_pZone != NULL && g_pZone->AddFakeCreature(pFakeCreature); },
 	.DeleteFakeCreature = [](MCreature* pFakeCreature) { delete pFakeCreature; },
+	.SetGroundElemental = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetGroundElemental();
+	},
+	.SetDarknessForbidden = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetDarknessForbidden();
+	},
+	.SetFuryOfGnome = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (g_pZone != NULL) const_cast<MSector&>(g_pZone->GetSector(x, y)).SetFuryOfGnome();
+	},
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3802,6 +3812,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
 	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
 	.MoveIntoPortal = MoveIntoPortal,
+	.SetDragonTornado = [](int effectStatus, std::uint32_t objectID, int x, int y) { SetDragonTorando(effectStatus, objectID, x, y); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

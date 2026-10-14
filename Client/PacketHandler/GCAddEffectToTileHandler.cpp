@@ -9,12 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddEffectToTile.h"
-#include "ClientDef.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "DirectionSelection.h"
 #include "MEffectStatusTable.h"
+#include "PlayerStateHost.h"
 #include "SkillDef.h"
-#include "MTopView.h"
-
-extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * pPlayer )
@@ -23,32 +25,35 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 	(void)pPlayer;
 		
 		
-	// 예외 처리
-	if( pPacket->getEffectID() == EFFECTSTATUS_TRAP_INSTALLED && !g_pPlayer->IsSlayer() )
+	// Exceptions
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+
+	// A trap is only shown to slayers.
+	if( pPacket->getEffectID() == EFFECTSTATUS_TRAP_INSTALLED && (pPlayerCreature == NULL || !CreatureState::IsSlayer(pPlayerCreature)) )
 		return;
 
 	EFFECTSTATUS EffectStatusType = (EFFECTSTATUS)pPacket->getEffectID();
 	int skillType	= (*g_pEffectStatusTable)[ EffectStatusType ].ActionInfo;
 	
 	// 2004, 9, 3, sobeit add start
-	if(EffectStatusType == EFFECTSTATUS_TURRET_LASER && g_pPlayer) // 공성전 트랩중..공격측에 안보이는 광선
+	if(EffectStatusType == EFFECTSTATUS_TURRET_LASER && pPlayerCreature != NULL) // a siege trap: a beam the attackers do not see
 	{
-		if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_1) || 
-			g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_2) || 
-			g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_3) || 
-			g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_4) || 
-			g_pPlayer->HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_5) )
+		if(PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_1) || 
+			PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_2) || 
+			PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_3) || 
+			PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_4) || 
+			PlayerState::HasEffectStatus(EFFECTSTATUS_SIEGE_ATTACKER_5) )
 			return;
 	}
-	// 2006.10.29  sonic add 錦攣독랗瘻세콘轟槻벎
+	// 2006.10.29 sonic add (the rest of the note is garbled)
 	if(EffectStatusType == EFFECTSTATUS_DRAGON_TORNADO || EffectStatusType == EFFECTSTATUS_DRAGON_TORNADO_CHILD)
 	{
-		SetDragonTorando(EffectStatusType, pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
+		WorldEvents::SetDragonTornado(EffectStatusType, pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 		return;
 	}
 	// 2004, 9, 3, sobeit add end
 	//------------------------------------------------------------
-	// Effect와 관련된 기술이 있을때..
+	// When there is a skill tied to the effect..
 	//------------------------------------------------------------
 	if (skillType!=ACTIONINFO_NULL)
 	{
@@ -68,8 +73,8 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 //			delayFrame = 12;
 //			break;
 //		}
-		ExecuteActionInfoFromMainNode(
-				skillType,		// 값 자체가 RESULT_ACTIONINFO이다.
+		WorldEvents::ExecuteActionInfoFromMainNode(
+				skillType,		// the value itself is a RESULT_ACTIONINFO.
 			
 				x, y, 0,
 				DIRECTION_DOWN,
@@ -79,7 +84,7 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 				
 				delayFrame,	
 				
-				NULL
+				NULL, true, 0, 0
 		);
 	}
 	else
@@ -90,7 +95,7 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 	switch( EffectStatusType )
 	{
 	case EFFECTSTATUS_TRYING :
-		ExecuteActionInfoFromMainNode(
+		WorldEvents::ExecuteActionInfoFromMainNode(
 			REGEN_TOWER_TRING_POSITION_LIGHT,
 			pPacket->getX(),
 			pPacket->getY(),
@@ -101,25 +106,25 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 			pPacket->getY(),
 			0,
 			ConvertDurationToFrame( pPacket->getDuration() ),
-			NULL
+			NULL, true, 0, 0
 			);
 		break;
 		
 	case EFFECTSTATUS_GROUND_ELEMENTAL_AURA:
-		if( g_pZone != NULL )
+		if( ZoneState::Exists() )
 		{
-			const_cast<MSector &>(g_pZone->GetSector(pPacket->getX(), pPacket->getY())).SetGroundElemental();
+			ZoneState::SetGroundElemental(pPacket->getX(), pPacket->getY());
 		}
 		break;
 
 	case EFFECTSTATUS_DARKNESS_FORBIDDEN:
-		if( g_pZone != NULL )
+		if( ZoneState::Exists() )
 		{
-			const_cast<MSector &>(g_pZone->GetSector(pPacket->getX(), pPacket->getY())).SetDarknessForbidden();
+			ZoneState::SetDarknessForbidden(pPacket->getX(), pPacket->getY());
 		}
 		break;
 	case EFFECTSTATUS_LUCKY:
-		ExecuteActionInfoFromMainNode(
+		WorldEvents::ExecuteActionInfoFromMainNode(
 			RESULT_LUCKY_AURA,
 			pPacket->getX(),
 			pPacket->getY(),
@@ -130,11 +135,11 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 			pPacket->getY(),
 			0,
 			ConvertDurationToFrame( pPacket->getDuration() ),
-			NULL
+			NULL, true, 0, 0
 			);
 		break;
 	case EFFECTSTATUS_MISFORTUNE:
-		ExecuteActionInfoFromMainNode(
+		WorldEvents::ExecuteActionInfoFromMainNode(
 			RESULT_MISFORTUNE_AURA,
 			pPacket->getX(),
 			pPacket->getY(),
@@ -145,29 +150,30 @@ void GCAddEffectToTileHandler::execute ( GCAddEffectToTile * pPacket , Player * 
 			pPacket->getY(),
 			0,
 			ConvertDurationToFrame( pPacket->getDuration() ),
-			NULL
+			NULL, true, 0, 0
 			);
 		break;
 	case EFFECTSTATUS_FURY_OF_GNOME:
-		if( g_pZone != NULL )
+		if( ZoneState::Exists() )
 		{
-			const_cast<MSector &>(g_pZone->GetSector(pPacket->getX(), pPacket->getY())).SetFuryOfGnome();
+			ZoneState::SetFuryOfGnome(pPacket->getX(), pPacket->getY());
 		}
 		break;
 
 	case EFFECTSTATUS_HALO:
-		if( g_pZone != NULL )
+		if( ZoneState::Exists() )
 		{
-			MCreature * pTargetCreature = g_pZone->GetCreature(pPacket->getObjectID());
-			if(pTargetCreature != NULL && g_pTopView != NULL)
+			MCreature * pTargetCreature = ZoneState::GetCreature(pPacket->getObjectID());
+			// The view (g_pTopView, which it once also checked) outlives every zone.
+			if(pTargetCreature != NULL)
 			{
-				int TempDir = g_pTopView->GetDirectionToPosition(pPacket->getX(), pPacket->getY(), pTargetCreature->GetX(), pTargetCreature->GetY());
+				int TempDir = SelectFacingDirection(pPacket->getX(), pPacket->getY(), CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature));
 //				if(rand()%2)
 //					TempDir = (TempDir+2)%8;
 //				else
 //					TempDir = (TempDir+6)%8;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_HALO_ATTACK, pPacket->getX(), pPacket->getY(), 0,TempDir,	pTargetCreature->GetID(),	
-					pTargetCreature->GetX(), pTargetCreature->GetY(), 0, 12, NULL, true);	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_HALO_ATTACK, pPacket->getX(), pPacket->getY(), 0,TempDir,	CreatureState::GetID(pTargetCreature),	
+					CreatureState::GetX(pTargetCreature), CreatureState::GetY(pTargetCreature), 0, 12, NULL, true, 0, 0);	
 			}
 		}
 		break;

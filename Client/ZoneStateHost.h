@@ -62,6 +62,11 @@ struct Host
 	bool (*AddFakeCreature)(MCreature* pFakeCreature) = nullptr;
 	// Deletes a fake creature the zone did not take.
 	void (*DeleteFakeCreature)(MCreature* pFakeCreature) = nullptr;
+	// Marks the zone's cell with a ground effect: a ground elemental's
+	// aura, a darkness that cannot be cast there, the fury of gnome.
+	void (*SetGroundElemental)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -86,6 +91,9 @@ MCreature* GetFakeCreature(TYPE_OBJECTID id);
 MCreature* NewFakeCreature(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 bool AddFakeCreature(MCreature* pFakeCreature);
 void DeleteFakeCreature(MCreature* pFakeCreature);
+void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 
 }
 

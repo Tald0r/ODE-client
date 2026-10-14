@@ -1133,3 +1133,6 @@ Client/PacketHandler/GCGQuestStatusInfoHandler.cpp
 
 # A pet's skill on a target.
 Client/PacketHandler/GCPetUseSkillHandler.cpp
+
+# An effect added to a tile.
+Client/PacketHandler/GCAddEffectToTileHandler.cpp

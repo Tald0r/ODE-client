@@ -49,6 +49,8 @@ struct Host
 	void (*SetDarkBits)(int darkBits) = nullptr;
 	// The creature goes into a portal (the vampire portal's effect).
 	void (*MoveIntoPortal)(MCreature* pCreature) = nullptr;
+	// A dragon tornado (or its child) of the object at the cell.
+	void (*SetDragonTornado)(int effectStatus, std::uint32_t objectID, int x, int y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -67,6 +69,7 @@ void PlaySound(TYPE_SOUNDID soundID);
 void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
+void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.
