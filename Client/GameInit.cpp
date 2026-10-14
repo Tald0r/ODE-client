@@ -1512,8 +1512,23 @@ StopLoadingThread()
 	}
 }
 
+// The packet wait's services (task 4.209).
+CWaitPacketUpdate*		g_pCWaitPacketUpdate = NULL;
+
+static const CWaitPacketHost s_WaitPacketHost = {
+	.ClearInputReceivers = []() {
+		g_pSDLInput->SetMouseEventReceiver( NULL );
+		g_pSDLInput->SetKeyboardEventReceiver( NULL );
+	},
+	.StampFrameClock = StampFrameClock,
+	.SetMode = SetMode,
+	.UpdateDisconnected = UpdateDisconnected,
+	.UpdateSocketInput = UpdateSocketInput,
+	.UpdateSocketOutput = UpdateSocketOutput,
+};
+
 //---------------------------------------------------------------------------
-// update loop의 정보를 설정한다.
+// Set up the update loops.
 //---------------------------------------------------------------------------
 BOOL
 InitGameUpdate()
@@ -1540,7 +1555,7 @@ InitGameUpdate()
 
 	g_pCOpeningUpdate		= new COpeningUpdate;
 	g_pCGameUpdate			= new CGameUpdate;
-	g_pCWaitPacketUpdate	= new CWaitPacketUpdate;
+	g_pCWaitPacketUpdate	= new CWaitPacketUpdate( &s_WaitPacketHost );
 	g_pCWaitUIUpdate		= new CWaitUIUpdate;
 
 	return TRUE;

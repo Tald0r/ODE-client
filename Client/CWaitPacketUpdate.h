@@ -1,7 +1,9 @@
 //-----------------------------------------------------------------------------
 // CWaitPacketUpdate.h
 //-----------------------------------------------------------------------------
-// Server에서 메시지가 오기를 기다리는 Loop
+// The loop that waits for a message from the server. It is gamemodel's;
+// what it does to the program around it goes through CWaitPacketHost,
+// which GameInit installs (task 4.209).
 //-----------------------------------------------------------------------------
 
 #ifndef	__CWAITPACKETUPDATE_H__
@@ -9,22 +11,35 @@
 
 #include "WinLib/CWinUpdate.h"
 #include "MonotonicClock.h"
+#include "ClientMode.h"
+
+struct CWaitPacketHost
+{
+	void (*ClearInputReceivers)();		// no mouse or keyboard receiver while waiting
+	void (*StampFrameClock)();			// g_FrameNow = now
+	void (*SetMode)(CLIENT_MODE mode);
+	void (*UpdateDisconnected)();
+	bool (*UpdateSocketInput)();		// false: nothing more this frame
+	bool (*UpdateSocketOutput)();
+};
 
 class CWaitPacketUpdate : public CWinUpdate {
 	public :
-		CWaitPacketUpdate()	{ m_DelayLimit = (MonotonicClock::TimePoint::max)(); }  // Will be set by SetDelay()
+		explicit CWaitPacketUpdate(const CWaitPacketHost* pHost) : m_pHost(pHost)	{ m_DelayLimit = (MonotonicClock::TimePoint::max)(); }  // Will be set by SetDelay()
 		~CWaitPacketUpdate() {}
 
-		// 초기화
+		// No input receivers while waiting.
 		void		Init();
 
-		// Update하는 한계 시간을 설정한다.
+		// Wait delay milliseconds from now, then give up.
 		void		SetDelay(DWORD delay);		
 
-		// update
+		// On timeout, back to the main menu, disconnected; then the socket
+		// input, the queued next mode, or the socket output.
 		void		Update();		
 
 	protected :				
+		const CWaitPacketHost*		m_pHost;
 		MonotonicClock::TimePoint	m_DelayLimit;	// give up waiting past this point
 };
 

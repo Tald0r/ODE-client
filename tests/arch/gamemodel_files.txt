@@ -107,6 +107,10 @@ Client/DebugKit.cpp
 Client/DebugKit.h
 Client/StdAfx.h
 
+# The packet wait's loop (4.209).
+Client/CWaitPacketUpdate.cpp
+Client/CWaitPacketUpdate.h
+
 # Money (task 4.2; the price and trade managers wait for the item core)
 Client/MMoneyManager.cpp
 Client/MMoneyManager.h
