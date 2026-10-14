@@ -165,10 +165,10 @@ struct World : GameModelWorld
 		zoneCreatures.clear();
 		known.id = 1003;
 		zoneCreatures[known.id] = &known;
-		// Coat 1 dresses a man as frame 61 and a woman as 62.
-		g_pItemTable->InitClass(ITEM_CLASS_VAMPIRE_COAT, 2);
-		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 1).AddonMaleFrameID = 61;
-		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 1).AddonFemaleFrameID = 62;
+		// Coat 3 dresses a man as frame 61 and a woman as 62.
+		g_pItemTable->InitClass(ITEM_CLASS_VAMPIRE_COAT, 4);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 3).AddonMaleFrameID = 61;
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 3).AddonFemaleFrameID = 62;
 	}
 	~World()
 	{
@@ -200,7 +200,7 @@ void Fill(PacketType& packet, ObjectID_t id, const Vampire& vampire)
 	info.setSex(vampire.sex);
 	info.setBatColor(11);
 	info.setSkinColor(12);
-	info.setCoatType(1);
+	info.setCoatType(3);
 	info.setCoatColor(14, MAIN_COLOR);
 	info.setCoatColor(15, SUB_COLOR);
 	info.setMasterEffectColor(0);
