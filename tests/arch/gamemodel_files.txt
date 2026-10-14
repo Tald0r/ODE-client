@@ -1074,3 +1074,8 @@ Client/PacketHandler/GCDeleteObjectHandler.cpp
 
 # A refused item use.
 Client/PacketHandler/GCCannotUseHandler.cpp
+
+# An NPC's question: from its script, sent whole, or with variables.
+Client/PacketHandler/GCNPCAskHandler.cpp
+Client/PacketHandler/GCNPCAskDynamicHandler.cpp
+Client/PacketHandler/GCNPCAskVariableHandler.cpp

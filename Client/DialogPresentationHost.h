@@ -20,6 +20,7 @@ namespace DialogPresentation {
 // it (NULL for none, or without a host), and DropItem lets it go (the
 // window that took it keeps it). UnlockGear lifts the lock a quick-slot
 // use put on the gear window; CloseMixingForge closes the mixing forge.
+// PopupPCTalkDlg shows the NPC talk box (g_pPCTalkBox) at the centre.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -37,6 +38,7 @@ struct Host
 	void (*DropItem)() = nullptr;
 	void (*UnlockGear)() = nullptr;
 	void (*CloseMixingForge)() = nullptr;
+	void (*PopupPCTalkDlg)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -56,5 +58,6 @@ MItem* GetMouseItem();
 void DropItem();
 void UnlockGear();
 void CloseMixingForge();
+void PopupPCTalkDlg();
 
 }

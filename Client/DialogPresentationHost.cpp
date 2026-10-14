@@ -88,4 +88,9 @@ void CloseMixingForge()
 	if (s_Host && s_Host->CloseMixingForge) s_Host->CloseMixingForge();
 }
 
+void PopupPCTalkDlg()
+{
+	if (s_Host && s_Host->PopupPCTalkDlg) s_Host->PopupPCTalkDlg();
+}
+
 }

@@ -3520,6 +3520,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.DropItem = UI_DropItem,
 	.UnlockGear = UI_UnlockGear,
 	.CloseMixingForge = UI_CloseMixingForge,
+	.PopupPCTalkDlg = []() { g_pUIDialog->PopupPCTalkDlg(); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
