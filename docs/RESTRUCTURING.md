@@ -5776,8 +5776,9 @@ rounds settled* for the host rules). Test fixtures share
   > - `InitDebugInfo` and `ClearDebugInfo`, which fill `Client.cpp`'s
   >   debug globals from the kit, move into `Client.cpp`, which defines
   >   those globals and calls `InitDebugInfo` (`GameInit.cpp` calls
-  >   `ClearDebugInfo` through its extern, also under `DEBUG_INFO`). They compile only with `DEBUG_INFO`, which `DebugKit.h`
-  >   defines only with `WINDOWS_SCREEN_DISPLAY`, and no build sets that.
+  >   `ClearDebugInfo` through its extern, also under `DEBUG_INFO`).
+  >   They compile only with `DEBUG_INFO`, which `DebugKit.h` defines
+  >   only with `WINDOWS_SCREEN_DISPLAY`, and no build sets that.
   >   So the kit's classes name no executable symbol.
   > - The include checker's M2 now allows `DebugKit.h` in gamemodel,
   >   whose classes are now gamemodel's. W2 still bans it in packetwire,
@@ -5805,11 +5806,13 @@ rounds settled* for the host rules). Test fixtures share
   >   (`Client.cpp`'s `InitApp`) sits under `PLATFORM_WINDOWS`, where
   >   `PacketFunction.cpp` defines the real function.
   > - **`SendUserIDToGameMonA`:** nothing calls it.
-  > - **`GetNMClipData`:** a stub returning false. It was the only
-  >   source for Netmarble's `AnalyzeArgument`, which therefore always
-  >   returned FALSE at its first line. So `ParsingNetmarble`, once given
-  >   an argument, always showed its "launch from the homepage" message
-  >   and exited.
+  > - **`GetNMClipData`:** a stub returning false, since NMCrypt's
+  >   `.lib` left the build in bb70900b. It was the only source for
+  >   Netmarble's `AnalyzeArgument`, which therefore always returned
+  >   FALSE at its first line. So `ParsingNetmarble` returned false when
+  >   the command line had no space, or 4096 bytes or more after it, and
+  >   otherwise always showed its "launch from the homepage" message and
+  >   exited.
   >
   > `ParsingNetmarble` now does exactly that and nothing more.
   > `AnalyzeArgument`, `_StrTok`, `HexStringToDec` (named only in
