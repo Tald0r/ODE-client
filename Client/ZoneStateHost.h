@@ -70,7 +70,7 @@ struct Host
 	// A new plain creature of the zone, not in it yet; the caller owns it.
 	// NULL without a host. AddCreature puts it in; false when the zone
 	// refuses it (one with its ID there already, a cell outside the zone or
-	// not set, an underground creature in the cell, a move type with no
+	// not set, the cell full for its move type, a move type with no
 	// sectors), and the caller still owns it. DeleteCreature deletes one
 	// the zone did not take.
 	MCreature* (*NewCreature)() = nullptr;

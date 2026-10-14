@@ -55,9 +55,10 @@ struct Host
 	// An inventory item's effect after delayFrame frames, value being the
 	// action's own (an option, say). For an enchant's option gained or lost,
 	// a broken item or a sex change it is the item's change too: when it
-	// lands (at once for a pet item), the host removes a broken item,
-	// changes an option or the sex, and ends the item-to-item check, freeing
-	// the item in hand. Other actions only show.
+	// lands, the host removes a broken item, changes an option or the sex,
+	// and ends the item-to-item check, freeing the item in hand. (An option
+	// lost on a pet item changes nothing: the check ends at once.) Other
+	// actions only show.
 	void (*AddNewInventoryEffect)(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) = nullptr;
 	// The effect statuses a packet lists for a creature, put on it after
 	// delayedFrame frames (the pairs of status and duration EffectInfo

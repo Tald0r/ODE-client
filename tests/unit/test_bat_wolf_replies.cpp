@@ -280,8 +280,21 @@ TEST(BatWolfReplies, WithoutAZoneOrTheHostsNothingHappens)
 	ReceiveWolf(1005);
 	CHECK(calls.empty());
 	zoneExists = true;
-	ZoneState::SetHost(nullptr);
+	// A zone host that cannot make a wearing creature: nothing.
+	ZoneState::Host cannotMake = zone;
+	cannotMake.NewCreatureWear = nullptr;
+	ZoneState::SetHost(&cannotMake);
+	ReceiveBat(1005);
+	ReceiveWolf(1005);
+	CHECK(calls.empty());
+	// Without the creature's host a made one is still added, its health
+	// unset.
+	ZoneState::SetHost(&zone);
 	CreatureState::SetHost(nullptr);
+	ReceiveBat(1005);
+	CHECK(calls == std::vector<std::string>({"new wearing creature", "zone takes|new"}));
+	calls.clear();
+	ZoneState::SetHost(nullptr);
 	CHECK(ZoneState::NewCreatureWear() == nullptr);
 	CreatureState::SetBatColor(Handle(&world.known), 1);
 	ReceiveBat(1005);
