@@ -186,6 +186,12 @@ TEST(StashInfoReplies, AnotherCreaturesStatusChangesItAndRefreshesItsWindow)
 	ReceiveOtherStatus(1003, 30);
 	CHECK_EQ(30, HitPoints(other));
 	CHECK(calls == std::vector<std::string>{"other info|Lina"});
+	// A creature without a name is not the window's.
+	calls.clear();
+	other.name = nullptr;
+	ReceiveOtherStatus(1003, 25);
+	CHECK(calls.empty());
+	other.name = "Lina";
 	// Another race, another name, or no player: the window is left alone.
 	calls.clear();
 	other.race = RACE_VAMPIRE;
@@ -233,12 +239,20 @@ TEST(StashInfoReplies, WithoutHostsTheWindowsAreLeftAlone)
 	CHECK(GameInfoPresentation::GetOtherInfoName() == nullptr);
 	GameInfoPresentation::RunOtherInfo(Handle(other));
 	ReceivePrice(5000);
+	waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
 	ReceivePrice(0);
 	const GameInfoPresentation::Host bare{};
+	const DialogPresentation::Host bareDialog{};
 	GameInfoPresentation::SetHost(&bare);
+	DialogPresentation::SetHost(&bareDialog);
 	CHECK(GameInfoPresentation::GetOtherInfoName() == nullptr);
 	GameInfoPresentation::RunOtherInfo(Handle(other));
-	CHECK(calls == std::vector<std::string>{"verified"});
+	waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
+	ReceivePrice(5000);
+	waitVerify = PlayerState::WAIT_VERIFY_NPC_ASK;
+	ReceivePrice(0);
+	// Each price still ends the wait.
+	CHECK(calls == std::vector<std::string>(4, "verified"));
 }
 
 TEST(StashInfoReplies, AnEmptyMessageStringStillReadsAsText)
