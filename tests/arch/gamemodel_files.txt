@@ -613,10 +613,14 @@ Client/MAttackCreatureParabolaEffectGenerator.cpp
 Client/MAttachCreatureEffectGenerator.cpp
 Client/MAttachCreatureEffectGroundGenerator.cpp
 Client/MAttachCreatureOrbitEffectGenerator.cpp
+Client/MAttackCreatureEffectGenerator.cpp
+Client/MAttackCreatureHomingEffectGenerator.cpp
 Client/MAttackCreatureParabolaEffectGenerator.h
 Client/MAttachCreatureEffectGenerator.h
 Client/MAttachCreatureEffectGroundGenerator.h
 Client/MAttachCreatureOrbitEffectGenerator.h
+Client/MAttackCreatureEffectGenerator.h
+Client/MAttackCreatureHomingEffectGenerator.h
 
 # Wide ripple rows and center-only target ownership (4.77).
 Client/MRippleZoneWideEffectGenerator.cpp

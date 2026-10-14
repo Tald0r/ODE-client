@@ -4,22 +4,23 @@
 #include "Client_PCH.h"
 #include "MAttackCreatureEffectGenerator.h"
 #include "MGuidanceEffect.h"
-#include "MTopView.h"
-#include "MCreature.h"
-#include "MZone.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
 #include "SkillDef.h"
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
+#include <utility>
 
-//#include "MPlayer.h"
-//extern	MPlayer	g_pPlayer->
+const MCreatureParabolaEffectHost* MAttackCreatureEffectGenerator::s_pHost = nullptr;
 
-//----------------------------------------------------------------------
-// Global
-//----------------------------------------------------------------------
-//MAttackCreatureEffectGenerator	g_AttackCreatureEffectGenerator;
+const MCreatureParabolaEffectHost* MAttackCreatureEffectGenerator::SetHost(const MCreatureParabolaEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+// Consumes the effect; true only when the zone keeps it.
+bool MAttackCreatureEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
 //----------------------------------------------------------------------
 // Generate
@@ -27,11 +28,15 @@
 bool
 MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[egInfo.effectSpriteType].FrameID;
+	MCreatureParabolaEffectSprite sprite;
+	if (s_pHost == NULL || s_pHost->Sprite == NULL || !s_pHost->Sprite( egInfo.effectSpriteType, sprite ))
+	{
+		return false;
+	}
+	BLT_TYPE		bltType = static_cast<BLT_TYPE>(sprite.bltType);
+	TYPE_FRAMEID	frameID	= sprite.frameID;
 
 	int effectCount = 0;	
-
 	if( egInfo.nActionInfo == STEP_SKILL_KASAS_ARROW_2 || egInfo.nActionInfo == STEP_SKILL_BLAZE_BOLT_2 ||
 		egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_2 )
 		effectCount = 1;
@@ -40,53 +45,47 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_3 )
 		effectCount = 2;
 
-	// 목표 위치 Pixel좌표
-	MCreature* pCreature = g_pZone->GetCreature( egInfo.creatureID );
-
-	if (pCreature == NULL)
+	//---------------------------------------------
+	// the target position in pixels
+	//---------------------------------------------
+	MCreatureParabolaPosition creature;
+	if (s_pHost->Creature == NULL || !s_pHost->Creature( egInfo.creatureID, creature ))
 	{
 		return false;
 	}
 
-	//-----------------------------------
-	// [ TEST CODE ]
-	//-----------------------------------
-	//if (pCreature->GetID() != g_pPlayer->GetID())
-	//{
-	//	pCreature->PacketSpecialAction( nActionInfo, g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetZ(), g_pPlayer->GetID());
-	//}
-	
+	int maxFrame;
+	if (s_pHost->MaxFrames == NULL || !s_pHost->MaxFrames( sprite.bltType, frameID, maxFrame ))
+	{
+		return false;
+	}
+
 	MGuidanceEffect* pEffect = new MGuidanceEffect(bltType);	
 	
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
-	
-	pEffect->SetFrameID( frameID, maxFrame );		// 0번 Effect, Max 3 Frame					
+	pEffect->SetFrameID( frameID, maxFrame );		// effect 0, max 3 frames
 
-	// 발사 위치 Pixel좌표	
+	// the launch position in pixels
 	pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0 );
-
 	pEffect->SetDirection( egInfo.direction );
-	
-	// 목표 Creature
+
+	// the target creature
 	pEffect->SetTraceCreatureID( egInfo.creatureID );
 	pEffect->SetStepPixel( egInfo.step );
-	
 
-	// 지속되는 Frame (목표가 있다면 별로 관계 없음 - -;)
+	// the frames it lasts (with a target it hardly matters - -;)
 	pEffect->SetCount( egInfo.count, egInfo.linkCount );
 
-	// 위력
+	// power
 	pEffect->SetPower(egInfo.power);
-	// 빛의 밝기
-	//pEffect->SetLight( light );
-	if (g_pZone->AddEffect( pEffect ))
+
+	if (QueueEffect( std::unique_ptr<MEffect>(pEffect) ))
 	{
 		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
-
 		if( effectCount == 0)
 			return true;
 	} else
 		return false;
+
 	if( effectCount > 0)
 	{
 		int z=-12;
@@ -94,12 +93,6 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		{
 			MGuidanceEffect* pEffect = new MGuidanceEffect(bltType);
 			pEffect->SetFrameID( frameID, maxFrame );
-
-//			if( egInfo.direction == 5 )
-//			{
-//				if(!( egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_2 || egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_3) )
-//					pEffect->SetPixelPosition( egInfo.x0, egInfo.y0, egInfo.z0 + z );
-//			} else
 			if( egInfo.direction == 2 || egInfo.direction == 6 )
 			{
 				pEffect->SetPixelPosition( egInfo.x0+z, egInfo.y0, egInfo.z0 );
@@ -111,8 +104,7 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			pEffect->SetStepPixel( egInfo.step );
 			pEffect->SetCount( egInfo.count, egInfo.linkCount );
 			pEffect->SetPower( egInfo.power );
-
-			if( g_pZone->AddEffect( pEffect ) )
+			if( QueueEffect( std::unique_ptr<MEffect>(pEffect) ) )
 			{
 				if( egInfo.pEffectTarget != NULL )
 				{
@@ -125,6 +117,5 @@ MAttackCreatureEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		}
 		return true;
 	}
-
 	return false;
 }
