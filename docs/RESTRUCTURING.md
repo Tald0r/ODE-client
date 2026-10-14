@@ -4006,8 +4006,9 @@ rounds settled* for the host rules). Test fixtures share
   > zone; anything that is not a motorcycle stays. The player's own ride
   > does the same for the player and answers the wait. A piece of the
   > player's gear falls into the zone, or without a zone is freed.
-  > Without a player the ride is not heard (though MZone's RemoveItem
-  > still reads the player), and the player's ride and the gear drop do
+  > Without a player the ride is not heard, though MZone's RemoveItem
+  > still dereferences the player first, so the executable still crashes
+  > there without one; and the player's ride and the gear drop do
   > nothing, where they dereferenced the player. R1 is
   > 146 Windows / 144 Ninja.
   - Owner: membership, R1, the three entries and their adapters, and
@@ -4038,10 +4039,14 @@ rounds settled* for the host rules). Test fixtures share
   > money; a sale from storage removes the item there and adds the
   > money. The mode ends and trading is unlocked either way. The sale no
   > longer drops each item's description before freeing it, since the
-  > item's destroy hook does (4.144's reasoning); `SAFE_DELETE`, the
-  > executable's macro, is written out. Found by reading and kept, as
+  > item's destroy hook does (4.144's reasoning); a sale of an item the
+  > inventory does not hold no longer hides whatever description is
+  > showing, as `UI_RemoveDescriptor(NULL)` did. The sale's
+  > `SAFE_DELETE` (the executable's `Client.h`) is written out, and the
+  > purchase's own unused copy goes. Found by reading and kept, as
   > upstream's: the storage search sets the first page on every pass,
-  > and the sale reads the inventory cell without checking it. A star
+  > the sale reads the inventory cell without checking it, and a sale
+  > from storage frees its item without a sound or a skill-icon check. A star
   > shop priced a purchase that did not fit after freeing it; a fix that
   > follows (moved, then fixed) prices it first. R1 is
   > 144 Windows / 142 Ninja.

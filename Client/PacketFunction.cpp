@@ -116,7 +116,7 @@ int				g_DyeColorSet[48] =
 {400,359,312,267,222,174,130,86,381,342,297,252,207,159,115,70,369,327,283,237,193,145,101,57,
 165,381,407,420,435,451,466,480,170,364,412,426,440,455,471,487,179,371,419,434,449,464,479,494};
 
-// source화일 끝에 있다. header compile시간 아까버서 ..- -;
+// The skill-icon check is gamemodel's (ItemSkillIcons.cpp).
 #include "ItemSkillIcons.h"
 
 extern BYTE g_macAddress[6];
@@ -4577,8 +4577,6 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 }
 
 // CreateActionResultNode is MActionResult.cpp's.
-
-
 
 void		SetFadeStart(signed char start, signed char end, signed char step, BYTE r, BYTE g, BYTE b,WORD delay)
 {

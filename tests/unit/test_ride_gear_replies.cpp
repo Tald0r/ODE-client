@@ -270,7 +270,7 @@ TEST(RideGearReplies, OnlyAMotorcycleIsRiddenAndOnlyByAWearingCreature)
 	// With no such creature, the motorcycle just leaves the zone.
 	ReceiveRide(4242, 502);
 	ReceiveRide(4242, 501);
-	// Nor nothing at all.
+	// Nor with neither.
 	ReceiveRide(4242, 4242);
 	CHECK(calls == std::vector<std::string>{"zone frees|501"});
 	calls.clear();

@@ -21,6 +21,7 @@
 #include "SocketOutputStream.h"
 #include "Gpackets/GCShopBuyOK.h"
 #include "Gpackets/GCShopSellOK.h"
+#include <algorithm>
 #include <list>
 #include <string>
 #include <vector>
@@ -74,7 +75,12 @@ MItem* Make(ITEM_CLASS itemClass, TYPE_OBJECTID id, int type = 0, int number = 1
 const MItemHost items = []() {
 	MItemHost host{};
 	host.NewItem = [](ITEM_CLASS itemClass) -> MItem* { return new Goods(itemClass); };
-	host.ItemDestroyed = [](MItem* pItem) noexcept { calls.push_back("freed|" + N(pItem->GetID())); };
+	host.ItemDestroyed = [](MItem* pItem) noexcept {
+		calls.push_back("freed|" + N(pItem->GetID()));
+		// A freed item reads as type 1, which costs no stars: pricing a freed
+		// item fails the star tests in every tree, not only under ASan.
+		pItem->SetItemType(1);
+	};
 	return host;
 }();
 
@@ -229,13 +235,13 @@ void ReceiveBought(ITEM_CLASS itemClass, ObjectID_t id, int type = 1, int number
 	GCShopBuyOKHandler::execute(&packet, nullptr);
 }
 
-void ReceiveSold(ObjectID_t id, int version = 0)
+void ReceiveSold(ObjectID_t id, int version = 0, int price = 1500)
 {
 	GCShopSellOK original;
 	original.setObjectID(1003);
 	original.setShopVersion(static_cast<ShopVersion_t>(version));
 	original.setItemObjectID(id);
-	original.setPrice(1500);
+	original.setPrice(static_cast<Price_t>(price));
 	GCShopSellOK packet;
 	Decode(packet, original);
 	GCShopSellOKHandler::execute(&packet, nullptr);
@@ -330,28 +336,40 @@ TEST(ShopReplies, AFullCellFreesThePurchaseAndASmallerStackIsReplaced)
 	ReceiveBought(ITEM_CLASS_POTION, 502, 1, 8);
 	CHECK(calls == std::vector<std::string>({"freed|42", Tile(ITEM_CLASS_POTION), "unlocked"}));
 	CHECK_EQ(8, static_cast<int>(world.At(4, 4)->GetNumber()));
+	// At the stack's maximum it still replaces the old one.
+	calls.clear();
+	world.Buying(MShopShelf::SHELF_FIXED, 0, 4, 4);
+	ReceiveBought(ITEM_CLASS_POTION, 504, 1, 20);
+	CHECK(calls == std::vector<std::string>({"freed|502", Tile(ITEM_CLASS_POTION), "unlocked"}));
 	// Past the stack's maximum the old stack stays and the purchase goes.
 	calls.clear();
 	world.Buying(MShopShelf::SHELF_FIXED, 0, 4, 4);
 	ReceiveBought(ITEM_CLASS_POTION, 503, 1, 21);
 	CHECK(calls == std::vector<std::string>({"freed|503", "unlocked"}));
-	CHECK_EQ(502, static_cast<int>(world.At(4, 4)->GetID()));
+	CHECK_EQ(504, static_cast<int>(world.At(4, 4)->GetID()));
 }
 
 TEST(ShopReplies, AStarShopTakesTheStarsTheItemCosts)
 {
 	World world;
 	world.shop.SetShopType(MShop::SHOP_EVENT_STAR);
-	// Two stacks of black stars (type 0): 15, then 10, in grid order.
-	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 61, 0, 15), 0, 0));
+	// Two stacks of black stars (type 0): 15, then 10, in grid order,
+	// laid in the other order and with the IDs the other way round.
 	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 62, 0, 10), 1, 0));
+	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 64, 0, 15), 0, 0));
 	// A damage option asks black stars; a type 2 item costs (2 - 1) * 20.
 	world.Buying(MShopShelf::SHELF_FIXED, 0, 5, 5);
 	ReceiveBought(ITEM_CLASS_SWORD, 501, 2, 1, {1});
-	CHECK(calls == std::vector<std::string>({Tile(ITEM_CLASS_SWORD), "freed|61", "unlocked"}));
+	CHECK(calls == std::vector<std::string>({Tile(ITEM_CLASS_SWORD), "freed|64", "unlocked"}));
 	CHECK(world.At(0, 0) == nullptr);
 	CHECK_EQ(5, static_cast<int>(world.At(1, 0)->GetNumber()));
 	CHECK_EQ(1000, world.money.GetMoney());
+	// A stack exactly the rest of the price goes whole.
+	calls.clear();
+	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 63, 0, 15), 2, 0));
+	world.Buying(MShopShelf::SHELF_FIXED, 0, 5, 4);
+	ReceiveBought(ITEM_CLASS_SWORD, 502, 2, 1, {1});
+	CHECK(calls == std::vector<std::string>({Tile(ITEM_CLASS_SWORD), "freed|62", "freed|63", "unlocked"}));
 }
 
 TEST(ShopReplies, AStarShopTakesTheStarsEvenWhenThePurchaseDoesNotFit)
@@ -362,7 +380,7 @@ TEST(ShopReplies, AStarShopTakesTheStarsEvenWhenThePurchaseDoesNotFit)
 	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_EVENT_STAR, 62, 0, 10), 1, 0));
 	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_SWORD, 41), 5, 5));
 	// The server has charged for it, so the stars go though the cell is
-	// full; the item was priced after it was freed.
+	// full (the price is taken before the item is freed).
 	world.Buying(MShopShelf::SHELF_FIXED, 0, 5, 5);
 	ReceiveBought(ITEM_CLASS_SWORD, 501, 2, 1, {1});
 	CHECK(calls == std::vector<std::string>({"freed|501", "freed|61", "unlocked"}));
@@ -397,9 +415,10 @@ TEST(ShopReplies, ASaleTakesTheItemAndSetsTheMoney)
 	MItem* const pStale = Make(ITEM_CLASS_SWORD, 43);
 	pStale->SetGridXY(2, 3);
 	world.Selling(pStale);
-	ReceiveSold(43);
+	ReceiveSold(43, 0, 1700);
 	CHECK(calls == std::vector<std::string>{"unlocked"});
 	CHECK(world.At(2, 3) == pSword);
+	CHECK_EQ(1500, world.money.GetMoney());
 	delete pStale;
 }
 
@@ -420,19 +439,29 @@ TEST(ShopReplies, ASaleFromStorageRemovesItThereAndAddsTheMoney)
 {
 	World world;
 	CHECK(world.inventory.AddItem(Make(ITEM_CLASS_SWORD, 41), 0, 0));
+	world.temp.SetMode(TempInformation::MODE_SHOP_SELL);
 	ReceiveSold(41, -1);
 	CHECK(calls == std::vector<std::string>({"freed|41", "unlocked"}));
 	CHECK_EQ(2500, world.money.GetMoney());
+	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	// With storage, the item with the packet's object ID leaves its first
 	// page too.
 	calls.clear();
 	g_pStorage2 = &world.storage;
+	// A same-ID item on the second page stays: every pass sets the first
+	// page (upstream's).
+	world.storage.SetCurrent(1);
+	CHECK(world.storage.SetItem(5, Make(ITEM_CLASS_SWORD, 1003)));
 	world.storage.SetCurrent(0);
 	CHECK(world.storage.SetItem(3, Make(ITEM_CLASS_SWORD, 1003)));
+	world.temp.SetMode(TempInformation::MODE_SHOP_SELL);
 	ReceiveSold(4242, -1);
 	CHECK(calls == std::vector<std::string>({"freed|1003", "unlocked"}));
 	CHECK(world.storage.GetItem(3) == nullptr);
 	CHECK_EQ(4000, world.money.GetMoney());
+	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+	world.storage.SetCurrent(1);
+	CHECK(world.storage.GetItem(5) != nullptr);
 	g_pStorage2 = nullptr;
 }
 

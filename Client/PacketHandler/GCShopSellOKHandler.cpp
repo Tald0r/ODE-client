@@ -12,13 +12,11 @@
 #include "DebugLog.h"
 #include "DialogPresentationHost.h"
 #include "WorldEventsHost.h"
-#include "ZoneStateHost.h"
 #include "ItemSkillIcons.h"
 #include "MInventory.h"
 #include "TempInformation.h"
 #include "MMoneyManager.h"
 #include "MStorage.h"
-// (formerly declared here to save compile time)
 
 void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 	 
@@ -107,7 +105,6 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 
 				CheckItemForSkillIcon( pRemovedItem );
 
-
 				delete pRemovedItem;
 			}
 			else
@@ -160,7 +157,6 @@ void GCShopSellOKHandler::execute ( GCShopSellOK * pPacket , Player * pPlayer )
 
 			if (pRemovedItem!=NULL)
 			{
-
 				delete pRemovedItem;
 			}
 

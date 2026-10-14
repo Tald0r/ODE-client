@@ -12,7 +12,6 @@
 #include "DebugLog.h"
 #include "DialogPresentationHost.h"
 #include "WorldEventsHost.h"
-#include "ZoneStateHost.h"
 #include "ItemSkillIcons.h"
 #include "MShop.h"
 #include "MShopShelf.h"
@@ -22,9 +21,7 @@
 #include "MPriceManager.h"
 #include "MItemFinder.h"
 
-#define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
 
-// (formerly declared here to save compile time)
 
 void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 	 
