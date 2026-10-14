@@ -313,3 +313,23 @@ TEST(ItemToItemReplies, WithoutTheHostsNothingIsShown)
 	Receive(ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_OK, 78);
 	CHECK(calls.empty());
 }
+
+TEST(ItemToItemReplies, AResultForAnItemNoLongerThereShowsNothing)
+{
+	World world;
+	// No request remembered, or its cell empty: each result about the item
+	// does nothing, as the revival and the option taken off always did.
+	const int results[] = {ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL_CRASH, ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL_DECREASE,
+		ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_OK, ADD_ITEM_TO_ITEM_VERIFY_THREE_ENCHANT_OK, ADD_ITEM_TO_ITEM_VERIFY_TRANS_OK,
+		ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL, ADD_ITEM_TO_ITEM_VERIFY_CLEAR_OPTION_OK, ADD_ITEM_TO_ITEM_VERIFY_UP_GRADE_OK,
+		ADD_ITEM_TO_ITEM_REMOVE_OPTION_OK};
+	for (int result : results)
+	{
+		Receive(result, 0x0F05u, 0x0F07u);
+		world.temp.SetMode(TempInformation::MODE_ITEM_TO_ITEM);
+		world.temp.Value1 = 9;
+		world.temp.Value2 = 5;
+		Receive(result, 0x0F05u, 0x0F07u);
+	}
+	CHECK(calls.empty());
+}

@@ -4694,14 +4694,18 @@ rounds settled* for the host rules). Test fixtures share
   > changes up to three options, each byte pair of the parameters an
   > option's new and old values. A mix goes to the mixing forge (new
   > `DialogPresentation::OkMixingForge`) and clears the request; an
-  > option taken off goes to its window (new `OkRemoveOption`). R1 is 105
-  > Windows / 103 Ninja.
+  > option taken off goes to its window (new `OkRemoveOption`). Once
+  > moved, nine results that read the item no longer crash when it is gone
+  > (no request remembered, or its cell empty); they do nothing, as the
+  > revival and the option taken off always did. R1 is 105 Windows / 103
+  > Ninja.
   - Owner: membership, R1, the three entries and adapters, and
     `test_item_to_item_replies.cpp` (each refusal, the premium refusal
     by race, the mix of one option group, a sex change refused, an
     unknown code, each enchant result, the three-way enchant with and
     without zero options, the other results, a mix and an option taken
-    off, an item gone, no hosts).
+    off, an item gone, each result for an item no longer there, no
+    hosts).
 
 ### Remaining R1 work after tasks 4.80-4.171
 

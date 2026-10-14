@@ -64,6 +64,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL_CRASH:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			//----------------------------------------------------
 			// the skill's attempt
 			//----------------------------------------------------
@@ -77,6 +80,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL_DECREASE:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				
@@ -95,6 +101,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			break;
 
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				//----------------------------------------------------
@@ -113,6 +122,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			break;
 			// add  by sonic 2006.11.3  三属性
 		case ADD_ITEM_TO_ITEM_VERIFY_THREE_ENCHANT_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				DWORD OptionType2= pPacket->getParameter2();
@@ -160,6 +172,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			PlayerState::ClearItemCheckBuffer();
 			break;
 		case ADD_ITEM_TO_ITEM_VERIFY_TRANS_OK :				// the sex change worked
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID() ,
 					MAGIC_TRANS_ITEM_OK,
@@ -199,6 +214,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			break;
 			
 		case ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_FAIL:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID() ,
 					MAGIC_UNKOWN1,
@@ -226,6 +244,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 			}
 			break;
 		case ADD_ITEM_TO_ITEM_VERIFY_CLEAR_OPTION_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 				WorldEvents::AddNewInventoryEffect( pInventoryItem->GetID(),
@@ -246,6 +267,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 		// parameter this case used to read as a new item type was never
 		// on the wire (task 2.5 triage, docs/RESTRUCTURING.md).
 		case ADD_ITEM_TO_ITEM_VERIFY_UP_GRADE_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD grade = pPacket->getParameter();
 				pInventoryItem->SetGrade( grade );
@@ -265,6 +289,9 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 		// add by svi 2009-07-15 增加删除属性确认
 		
 		case ADD_ITEM_TO_ITEM_REMOVE_OPTION_OK:
+			// The item may be gone (no request remembered, or its cell empty).
+			if( pInventoryItem == NULL )
+				return;
 			{
 				DWORD OptionType = pPacket->getParameter();
 
