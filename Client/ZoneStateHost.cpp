@@ -75,6 +75,11 @@ bool RemoveCreature(TYPE_OBJECTID id)
 	return s_Host && s_Host->RemoveCreature ? s_Host->RemoveCreature(id) : false;
 }
 
+TYPE_OBJECTID GetCreatureID(const char* pName, int flag)
+{
+	return s_Host && s_Host->GetCreatureID ? s_Host->GetCreatureID(pName, flag) : OBJECTID_NULL;
+}
+
 }
 
 namespace CreatureState {
@@ -475,6 +480,16 @@ void CreateFixedShelf(MCreature* pCreature, bool mysterious)
 bool IsPlayerParty(MCreature* pCreature)
 {
 	return s_Host && s_Host->IsPlayerParty ? s_Host->IsPlayerParty(pCreature) : false;
+}
+
+int GetGuildNumber(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetGuildNumber ? s_Host->GetGuildNumber(pCreature) : 0;
+}
+
+void SetPlayerParty(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SetPlayerParty) s_Host->SetPlayerParty(pCreature);
 }
 
 }

@@ -201,4 +201,14 @@ void UseSkillCardOK(int cardType)
 	if (s_Host && s_Host->UseSkillCardOK) s_Host->UseSkillCardOK(cardType);
 }
 
+int GetZoneID()
+{
+	return s_Host && s_Host->GetZoneID ? s_Host->GetZoneID() : 0;
+}
+
+void SendInfoToParty()
+{
+	if (s_Host && s_Host->SendInfoToParty) s_Host->SendInfoToParty();
+}
+
 }

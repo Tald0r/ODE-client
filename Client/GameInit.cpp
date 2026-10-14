@@ -3450,6 +3450,12 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 	.SetGuild = [](std::uint16_t guildID, std::uint8_t rank, const std::string& guildName) { UI_SetGuild(guildID, rank, guildName); },
 };
 
+// Defined in PacketFunction.cpp and MPlayer.cpp without a header.
+extern int UI_GetFaceStyle(bool bMale, int faceStyle);
+extern void SendCharacterInfoToParty();
+extern void SendStatusInfoToParty();
+extern void SendPositionInfoToParty();
+
 static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.AddChatToHistory = [](const char* message, const char* sender, int chatType, std::uint32_t color) {
 		UI_AddChatToHistory(message, sender, chatType, color);
@@ -3478,6 +3484,8 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.ClosePartyAsk = UI_ClosePartyAsk,
 	.ClosePartyRequest = UI_ClosePartyRequest,
 	.RunPartyRequest = [](std::uint32_t inviterID) { UI_RunPartyRequest(inviterID); },
+	.RunParty = UI_RunParty,
+	.GetFaceStyle = [](bool male, int hairStyle) { return UI_GetFaceStyle(male, hairStyle); },
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3604,6 +3612,12 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.CalculateStatus = []() { if (g_pPlayer != NULL) g_pPlayer->CalculateStatus(); },
 	.UseItemOK = []() { UseItemOK(); },
 	.UseSkillCardOK = [](int cardType) { UseSkillCardOK(static_cast<BYTE>(cardType)); },
+	.GetZoneID = []() { return g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall; },
+	.SendInfoToParty = []() {
+		SendCharacterInfoToParty();
+		SendPositionInfoToParty();
+		SendStatusInfoToParty();
+	},
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3622,6 +3636,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.RemoveItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL && g_pZone->RemoveItem(itemID); },
 	.AddItem = [](MItem* pItem, bool bDropping) { return g_pZone != NULL && g_pZone->AddItem(pItem, bDropping ? TRUE : FALSE); },
 	.RemoveCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL && g_pZone->RemoveCreature(id); },
+	.GetCreatureID = [](const char* pName, int flag) { return g_pZone != NULL ? g_pZone->GetCreatureID(pName, flag) : OBJECTID_NULL; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3724,6 +3739,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->CreateFixedShelf(mysterious);
 	},
 	.IsPlayerParty = [](MCreature* pCreature) { return pCreature->IsPlayerParty(); },
+	.GetGuildNumber = [](MCreature* pCreature) { return pCreature->GetGuildNumber(); },
+	.SetPlayerParty = [](MCreature* pCreature) { pCreature->SetPlayerParty(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

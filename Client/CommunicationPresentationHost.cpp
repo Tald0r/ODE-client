@@ -138,4 +138,14 @@ void RunPartyRequest(std::uint32_t inviterID)
 	if (s_Host && s_Host->RunPartyRequest) s_Host->RunPartyRequest(inviterID);
 }
 
+void RunParty()
+{
+	if (s_Host && s_Host->RunParty) s_Host->RunParty();
+}
+
+int GetFaceStyle(bool male, int hairStyle)
+{
+	return s_Host && s_Host->GetFaceStyle ? s_Host->GetFaceStyle(male, hairStyle) : hairStyle;
+}
+
 }

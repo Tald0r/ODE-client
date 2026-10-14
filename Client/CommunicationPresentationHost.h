@@ -42,6 +42,11 @@ struct Host
 	void (*ClosePartyAsk)() = nullptr;
 	void (*ClosePartyRequest)() = nullptr;
 	void (*RunPartyRequest)(std::uint32_t inviterID) = nullptr;
+	// The party window, opened when its members change.
+	void (*RunParty)() = nullptr;
+	// The face the UI draws for a member's sex and hair style; the style
+	// unchanged without a host.
+	int (*GetFaceStyle)(bool male, int hairStyle) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -71,5 +76,7 @@ void ClosePartyCancel();
 void ClosePartyAsk();
 void ClosePartyRequest();
 void RunPartyRequest(std::uint32_t inviterID);
+void RunParty();
+int GetFaceStyle(bool male, int hairStyle);
 
 }

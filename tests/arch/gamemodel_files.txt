@@ -1109,5 +1109,6 @@ Client/PacketHandler/GCRequestPowerPointResultHandler.cpp
 Client/PacketHandler/GCUsePowerPointResultHandler.cpp
 Client/PacketHandler/GCExchangeBuyHandler.cpp
 
-# A party invitation's answers.
+# A party invitation's answers, and the party joined.
 Client/PacketHandler/GCPartyInviteHandler.cpp
+Client/PacketHandler/GCPartyJoinedHandler.cpp

@@ -45,6 +45,9 @@ struct Host
 	// it is the player; false when the zone does not hold it. MZone's also
 	// answers false, and keeps the creature, when no sector holds it.
 	bool (*RemoveCreature)(TYPE_OBJECTID id) = nullptr;
+	// The ID of the creature with this name (flag as MZone's
+	// GetCreatureID); OBJECTID_NULL for none.
+	TYPE_OBJECTID (*GetCreatureID)(const char* pName, int flag) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -63,6 +66,8 @@ bool RemoveItem(TYPE_OBJECTID itemID);
 // Without a host the item is not taken: false, and the caller keeps it.
 bool AddItem(MItem* pItem, bool bDropping);
 bool RemoveCreature(TYPE_OBJECTID id);
+// OBJECTID_NULL without a host.
+TYPE_OBJECTID GetCreatureID(const char* pName, int flag);
 
 }
 
@@ -190,6 +195,10 @@ struct Host
 	void (*CreateFixedShelf)(MCreature* pCreature, bool mysterious) = nullptr;
 	// Whether the creature is in the player's party.
 	bool (*IsPlayerParty)(MCreature* pCreature) = nullptr;
+	// The creature's guild; 0 without a host.
+	int (*GetGuildNumber)(MCreature* pCreature) = nullptr;
+	// Marks the creature as in the player's party.
+	void (*SetPlayerParty)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -280,5 +289,7 @@ bool IsVampire(MCreature* pCreature);
 bool SetShop(MCreature* pCreature, MShop* pShop);
 void CreateFixedShelf(MCreature* pCreature, bool mysterious);
 bool IsPlayerParty(MCreature* pCreature);
+int GetGuildNumber(MCreature* pCreature);
+void SetPlayerParty(MCreature* pCreature);
 
 }
