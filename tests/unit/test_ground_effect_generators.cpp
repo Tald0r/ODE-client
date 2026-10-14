@@ -510,10 +510,10 @@ TEST(GroundEffectGenerators, ATransfusionFlowsTowardTheCreatureUnlessItIsThere)
 	for (const auto& e : edges)
 	{
 		queued.clear();
-		EFFECTGENERATOR_INFO near = Info(EFFECTSPRITETYPE_TRANSFUSION_1);
-		near.x0 = e.x0;
-		near.y0 = e.y0;
-		CHECK(world.ripple.Generate(near) == !e.at);
+		EFFECTGENERATOR_INFO touching = Info(EFFECTSPRITETYPE_TRANSFUSION_1);
+		touching.x0 = e.x0;
+		touching.y0 = e.y0;
+		CHECK(world.ripple.Generate(touching) == !e.at);
 		CHECK_EQ(e.at ? 0u : 1u, queued.size());
 	}
 	// No creature: the target's position is taken for its tile.
