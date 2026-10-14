@@ -33,7 +33,6 @@ void GCSkillFailed1Handler::execute ( GCSkillFailed1 * pPacket , Player * pPlaye
 	{
 		return;
 	}
-		
 
 	//------------------------------------------------------------------
 	// The server has answered whether the skill the player was waiting on

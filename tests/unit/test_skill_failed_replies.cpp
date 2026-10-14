@@ -234,7 +234,7 @@ void ReceiveFailure(ObjectID_t user, ObjectID_t target, int skill, int grade = 0
 
 } // namespace
 
-TEST(SkillFailedReplies, ThePlayersFailedSkillIsReadyAgainAndTheStatusChangesLast)
+TEST(SkillFailedReplies, ThePlayersFailedSkillIsReadyAgainAndTheStatusChanges)
 {
 	World world;
 	waitVerify = PlayerState::WAIT_VERIFY_SKILL_SUCCESS;
@@ -339,7 +339,7 @@ TEST(SkillFailedReplies, ACreaturesPlainAttackIsItsWeaponsAndAGradedOneItsStep)
 	world.ogre.basic = kMin;
 	ReceiveFailure(1001, 1002, SKILL_ATTACK_MELEE);
 	CHECK(calls.empty());
-	// Set() rewrites a row, so the targets come before the steps.
+	// SetActionStep keeps a step only once the row uses steps.
 	world.Target(kSkill, FLAG_ACTIONINFO_TARGET_ZONE);
 	world.Target(kStep, FLAG_ACTIONINFO_TARGET_SELF);
 	world.Row(kSkill).SetUseActionStep();
@@ -360,6 +360,24 @@ TEST(SkillFailedReplies, AnOustersAbsorbingASoulFindsItInACorpseAndStops)
 	calls.clear();
 	ReceiveFailure(1001, 9001, SKILL_ABSORB_SOUL);
 	CHECK(calls == std::vector<std::string>{"Ogre.nobody|" + N(SKILL_ABSORB_SOUL) + "|10|11"});
+}
+
+TEST(SkillFailedReplies, OnlyAnOustersAbsorbingASoulWithNoLivingTargetLooksForACorpse)
+{
+	World world;
+	world.Target(SKILL_ABSORB_SOUL, FLAG_ACTIONINFO_TARGET_OTHER);
+	world.Target(kSkill, FLAG_ACTIONINFO_TARGET_OTHER);
+	// A living target is absorbed from as it stands.
+	ReceiveFailure(1002, 1001, SKILL_ABSORB_SOUL);
+	CHECK(calls == std::vector<std::string>({"Elf.stop absorb", "Elf.face|10|11", "Elf.other|" + N(SKILL_ABSORB_SOUL) + "|1001"}));
+	// Another skill of an ousters at a corpse finds nobody.
+	calls.clear();
+	ReceiveFailure(1002, 9001, kSkill);
+	CHECK(calls == std::vector<std::string>{"Elf.nobody|" + N(kSkill) + "|20|21"});
+	// With no caster, no corpse is looked for.
+	calls.clear();
+	ReceiveFailure(4242, 9001, SKILL_ABSORB_SOUL);
+	CHECK(calls.empty());
 }
 
 TEST(SkillFailedReplies, AnItemThatIsNoCorpseHoldsNoSoul)

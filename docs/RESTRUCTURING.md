@@ -3976,7 +3976,7 @@ rounds settled* for the host rules). Test fixtures share
   > (new `GameInfoPresentation::SetDelayEternity` and `GetCharInfoLevel`),
   > Soul Chain cannot trace (a new `PlayerState::SetCannotTrace`),
   > Burning Soul loses its charge, and the skill is ready again unless
-  > its row ignores a failure; the status changes last. Another
+  > its row ignores a failure; the status changes too. Another
   > creature's skill failed: it shows the skill (its weapon's for a plain
   > attack, its step's for a grade) failing on its target, on nobody at
   > its cell, on itself, or at its cell; an ousters absorbing a soul
