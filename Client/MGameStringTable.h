@@ -70,13 +70,14 @@ extern void				SanitizeGameStringTable();
 
 //----------------------------------------------------------------------
 // Reads one entry from the game string table, or "" when the table is too
-// short to hold it.
+// short to hold it or the entry is empty (an empty MString holds NULL), so
+// the answer is always text.
 //
 // String.inf decides how many entries the table has, so a data file built
-// for an older client can be shorter than GAME_STRINGID. CTypeTable range
-// checks only under _DEBUG - which MSVC defines for Debug builds but not
-// for Release - so in Release an out-of-range id indexes past the array and
-// ids added after the shipped String.inf must be read through here.
+// for an older client can be shorter than GAME_STRINGID. CTypeTable's
+// subscript range-checks in every build, but past the table it answers a
+// default MString, whose GetString() is NULL, so ids added after the
+// shipped String.inf must be read through here.
 //----------------------------------------------------------------------
 extern const char*		GetGameString(int stringID);
 

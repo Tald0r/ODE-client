@@ -9,15 +9,17 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCNPCAskDynamic.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "TalkBox.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "SystemAvailabilities.h"
 
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Run when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPlayer )
@@ -25,24 +27,31 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	if (PlayerState::Creature() == NULL)
+	{
+		DEBUG_ADD_ERR("[Error] Player is NULL");
+		return;
+	}
 	
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
-		if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_NPC_ASK)
+		if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_NPC_ASK)
 		{
-			g_pPlayer->SetWaitVerifyNULL();
+			PlayerState::SetWaitVerifyNULL();
 
 			int size = pPacket->getContentsCount();
 
@@ -53,18 +62,18 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 			else
 			{
 				// NPC
-				MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+				MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 				if (pCreature==NULL)
 				{
-					// 그런 캐릭터가 없으면 무시한다.
+					// No such character: ignore it.
 				}
 				else
 				{
 					//---------------------------------------------------
-					// g_PCTalkBox에 추가하면 된다.
+					// It goes into the PC talk box.
 					//---------------------------------------------------
-					// 기존에 있던것 제거
+					// Clear what was there.
 					g_pPCTalkBox->Release();
 
 					//---------------------------------------------------
@@ -73,33 +82,37 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 					g_pPCTalkBox->SetType( PCTalkBox::NORMAL );
 
 					//---------------------------------------------------
-					// PC Talk Box의 정보 설정
+					// Set up the PC talk box.
 					//---------------------------------------------------
 					g_pPCTalkBox->SetContent( pPacket->getSubject().c_str() );
 					g_pPCTalkBox->SetNPCID( pPacket->getObjectID() );
-					g_pPCTalkBox->SetCreatureType( pCreature->GetCreatureType() );
+					g_pPCTalkBox->SetCreatureType( CreatureState::GetCreatureType(pCreature) );
 					g_pPCTalkBox->SetScriptID( pPacket->getScriptID() );
 
 					//---------------------------------------------------
-					// 각 std::string 추가
+					// Add each string.
 					//---------------------------------------------------
 
 					g_pPCTalkBox->m_AnswerIDMap.clear();
 					for (int i=0; i<size; i++)
 					{
-						// g_PCTalkBox에 추가
-						if( g_pSystemAvailableManager->ScriptFiltering( pPacket->getScriptID(), i ) )
+						// Into the PC talk box.
+						// Every answer leaves the packet, so a refused one takes its
+						// text with it. An empty one is left out like a refused one:
+						// the talk box would hand the dialog a NULL menu string.
+						const std::string answer = pPacket->popContent();
+						if( !answer.empty() && g_pSystemAvailableManager->ScriptFiltering( pPacket->getScriptID(), i ) )
 						{
-							g_pPCTalkBox->AddString( pPacket->popContent().c_str() );
+							g_pPCTalkBox->AddString( answer.c_str() );
 							g_pPCTalkBox->m_AnswerIDMap.push_back( i );
 						}
 					}
 					
-					g_pUIDialog->PopupPCTalkDlg();
+					DialogPresentation::PopupPCTalkDlg();
 				}
 
 				//---------------------------------------------------
-				// Dialog를 띄운다.
+				// Pop up the dialog.
 				//---------------------------------------------------
 				//POINT point = ConvertPositionMapToScreen(pCreature->GetX(), pCreature->GetY());
 

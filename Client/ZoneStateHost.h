@@ -181,6 +181,9 @@ struct Host
 	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
 	// The creature table's vampire flag of its type.
 	bool (*IsVampire)(MCreature* pCreature) = nullptr;
+	// Gives an NPC the shop, which it then owns; false (the caller keeps
+	// the shop) for a creature that is not an NPC.
+	bool (*SetShop)(MCreature* pCreature, MShop* pShop) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -267,5 +270,7 @@ int GetRace(MCreature* pCreature);
 void SetStopBloodDrain(MCreature* pCreature);
 void SetStopAbsorbSoul(MCreature* pCreature);
 bool IsVampire(MCreature* pCreature);
+// false without a host: the caller keeps the shop.
+bool SetShop(MCreature* pCreature, MShop* pShop);
 
 }

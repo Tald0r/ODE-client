@@ -1074,3 +1074,26 @@ Client/PacketHandler/GCDeleteObjectHandler.cpp
 
 # A refused item use.
 Client/PacketHandler/GCCannotUseHandler.cpp
+
+# An NPC's question: from its script, sent whole, or with variables.
+Client/PacketHandler/GCNPCAskHandler.cpp
+Client/PacketHandler/GCNPCAskDynamicHandler.cpp
+Client/PacketHandler/GCNPCAskVariableHandler.cpp
+
+# The blood bibles the player may rent, as an NPC's question.
+Client/PacketHandler/GCBloodBibleListHandler.cpp
+
+# The storage price an NPC asks, and another creature's changed status.
+Client/PacketHandler/GCStashSellHandler.cpp
+Client/PacketHandler/GCOtherModifyInfoHandler.cpp
+
+# The player's place on entering the game, and the dark and light of the hour.
+Client/PacketHandler/GCSetPositionHandler.cpp
+Client/PacketHandler/GCChangeDarkLightHandler.cpp
+
+# Which worn items count, and an item use or skill card the server allowed.
+Client/PacketHandler/GCRealWearingInfoHandler.cpp
+Client/PacketHandler/GCUseOKHandler.cpp
+
+# A shop's market condition, before the player sells to it.
+Client/PacketHandler/GCShopMarketConditionHandler.cpp

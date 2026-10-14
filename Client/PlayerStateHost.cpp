@@ -176,4 +176,29 @@ void SetCannotTrace()
 	if (s_Host && s_Host->SetCannotTrace) s_Host->SetCannotTrace();
 }
 
+void SetTimeLightSight(int sight)
+{
+	if (s_Host && s_Host->SetTimeLightSight) s_Host->SetTimeLightSight(sight);
+}
+
+bool RemoveAddonItem(MItem* pItem)
+{
+	return s_Host && s_Host->RemoveAddonItem ? s_Host->RemoveAddonItem(pItem) : false;
+}
+
+void CalculateStatus()
+{
+	if (s_Host && s_Host->CalculateStatus) s_Host->CalculateStatus();
+}
+
+void UseItemOK()
+{
+	if (s_Host && s_Host->UseItemOK) s_Host->UseItemOK();
+}
+
+void UseSkillCardOK(int cardType)
+{
+	if (s_Host && s_Host->UseSkillCardOK) s_Host->UseSkillCardOK(cardType);
+}
+
 }

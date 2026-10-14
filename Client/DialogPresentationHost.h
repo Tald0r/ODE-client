@@ -18,8 +18,12 @@ namespace DialogPresentation {
 // for the pet storage window, which also keeps the storage's pointer.
 // PickUpItem puts an item back on the mouse; GetMouseItem is the item on
 // it (NULL for none, or without a host), and DropItem lets it go (the
-// window that took it keeps it). UnlockGear lifts the lock a quick-slot
-// use put on the gear window; CloseMixingForge closes the mixing forge.
+// window that took it keeps it). UnlockGear lifts the gear window's lock
+// (every item check locks it); CloseMixingForge closes the mixing forge.
+// PopupPCTalkDlg shows the NPC talk box (g_pPCTalkBox) at the centre;
+// ShowPCTalkDlg shows it again as it was. RunStorageBuy asks whether to buy
+// a storage at the price. OpenInventoryToSell opens the inventory to sell
+// to a shop.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -37,6 +41,10 @@ struct Host
 	void (*DropItem)() = nullptr;
 	void (*UnlockGear)() = nullptr;
 	void (*CloseMixingForge)() = nullptr;
+	void (*PopupPCTalkDlg)() = nullptr;
+	void (*ShowPCTalkDlg)() = nullptr;
+	void (*RunStorageBuy)(int price) = nullptr;
+	void (*OpenInventoryToSell)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -56,5 +64,9 @@ MItem* GetMouseItem();
 void DropItem();
 void UnlockGear();
 void CloseMixingForge();
+void PopupPCTalkDlg();
+void ShowPCTalkDlg();
+void RunStorageBuy(int price);
+void OpenInventoryToSell();
 
 }

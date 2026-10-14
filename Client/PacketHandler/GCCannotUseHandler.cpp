@@ -107,7 +107,7 @@ void GCCannotUseHandler::execute ( GCCannotUse * pPacket , Player * pPlayer )
 
 			if(pItem->GetItemClass() == ITEM_CLASS_DYE_POTION && pItem->GetItemType() == 48)
 			{
-				// 1: wearing something, 2: not for a couple, 3: an odd error
+				// 1: wearing something, 2: not while in a couple, 3: an odd error
 				switch( pPacket->getObjectID() )
 				{
 				case 1 :

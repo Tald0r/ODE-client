@@ -45,16 +45,17 @@ void GCNPCAskDynamic::read ( SocketInputStream & iStream )
 
 	for (int i=0; i<m_ContentsCount; i++)
 	{
-		// 문자열 길이를 읽어들인다.
+		// Read the string's length.
 		iStream.read(size);
 
-		// 내용이 있는 문자열이라면 내용 자체를 읽어들인다.
+		// An empty answer keeps its place, so each answer keeps its index
+		// and every one counted can be popped.
+		std::string msg = "";
 		if (size > 0)
 		{
-			std::string msg = "";
 			iStream.read(msg, size);
-			m_Contents.push_back(msg);
 		}
+		m_Contents.push_back(msg);
 	}
 	
 	__END_CATCH

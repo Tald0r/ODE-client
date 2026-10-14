@@ -48,4 +48,14 @@ void SetDelayEternity()
 	if (s_Host && s_Host->SetDelayEternity) s_Host->SetDelayEternity();
 }
 
+const char* GetOtherInfoName()
+{
+	return s_Host && s_Host->GetOtherInfoName ? s_Host->GetOtherInfoName() : nullptr;
+}
+
+void RunOtherInfo(MCreature* pCreature)
+{
+	if (s_Host && s_Host->RunOtherInfo) s_Host->RunOtherInfo(pCreature);
+}
+
 }

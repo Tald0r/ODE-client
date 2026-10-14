@@ -9,11 +9,13 @@
 #include "Client_PCH.h"
 // include files
 #include "Gpackets/GCRealWearingInfo.h"
-#include "ClientDef.h"
+#include "BonusSkillHost.h"
+#include "DebugLog.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
 #include "MSlayerGear.h"
 #include "MVampireGear.h"
 #include "MOustersGear.h"
-#include "MSkillManager.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -29,9 +31,9 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 
 	DEBUG_ADD_FORMAT("[GCRealWearingInfo] flag=0x%08X (bit n = gear slot n is effective)", (unsigned)flag);
 
-	if (g_pPlayer==NULL)
+	if (PlayerState::Creature()==NULL)
 	{
-		DEBUG_ADD_ERR("[Error] g_pPlayer is NULL");
+		DEBUG_ADD_ERR("[Error] Player is NULL");
 	}
 	else
 	{
@@ -39,7 +41,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 		//------------------------------------------------------------
 		// Slayer
 		//------------------------------------------------------------
-		switch(g_pPlayer->GetRace())
+		switch(PlayerState::GetRace())
 		{
 		case RACE_SLAYER:
 		{
@@ -49,12 +51,12 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 			
 			if(pWeapon != NULL)
 			{
-				if(flag & 0x10)	// 무기 수치가 적용되는 경우
+				if(flag & 0x10)	// the weapon's values apply
 				{
 					if(pWeapon->IsAffectStatus() == false)
 						bResetSkills = true;
 				}
-				else	// 무기 수치가 적용되지 않는 경우
+				else	// the weapon's values do not apply
 				{
 					if(pWeapon->IsAffectStatus() == true)
 						bResetSkills = true;
@@ -65,7 +67,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 			DWORD bit = 1;
 
 			//-------------------------------------------------------
-			// 각 Slot에 대해서 item의 수치 적용 여부를 판단한다.
+			// For each slot, whether its item's values apply.
 			//-------------------------------------------------------
 			for (int i=0; i<num; i++)
 			{
@@ -85,22 +87,22 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 					if (pModifyItem!=NULL)
 					{
 						//-------------------------------------------------------
-						// 제대로 수치가 적용되는 경우
+						// The values apply
 						//-------------------------------------------------------
 						if (flag & bit)
 						{
 							pModifyItem->SetAffectStatus();
-							g_pPlayer->SetAddonItem(pModifyItem);
+							PlayerState::SetAddonItem(pModifyItem);
 						}
 						//-------------------------------------------------------
-						// 제대로 수치가 적용되지 않는 경우
+						// The values do not apply
 						//-------------------------------------------------------
 						else
 						{
 							DEBUG_ADD_FORMAT("[GCRealWearingInfo] slayer slot %d item id=%d class=%d type=%d not effective - addon removed",
 								i, itemID, (int)pModifyItem->GetItemClass(), (int)pModifyItem->GetItemType());
 							pModifyItem->UnSetAffectStatus();
-							g_pPlayer->RemoveAddonItem(pModifyItem);
+							PlayerState::RemoveAddonItem(pModifyItem);
 						}
 					}
 				}
@@ -109,7 +111,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 			}
 
 			if(bResetSkills)
-				g_pSkillAvailable->SetAvailableSkills();
+				BonusSkills::RefreshAvailableSkills();
 
 		}
 		break;
@@ -123,7 +125,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 			DWORD bit = 1;
 
 			//-------------------------------------------------------
-			// 각 Slot에 대해서 item의 수치 적용 여부를 판단한다.
+			// For each slot, whether its item's values apply.
 			//-------------------------------------------------------
 			for (int i=0; i<num; i++)
 			{
@@ -142,14 +144,14 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 					if (pModifyItem!=NULL)
 					{
 						//-------------------------------------------------------
-						// 제대로 수치가 적용되는 경우
+						// The values apply
 						//-------------------------------------------------------
 						if (flag & bit)
 						{
 							pModifyItem->SetAffectStatus();
 						}
 						//-------------------------------------------------------
-						// 제대로 수치가 적용되지 않는 경우
+						// The values do not apply
 						//-------------------------------------------------------
 						else
 						{
@@ -169,7 +171,7 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 				DWORD bit = 1;
 				
 				//-------------------------------------------------------
-				// 각 Slot에 대해서 item의 수치 적용 여부를 판단한다.
+				// For each slot, whether its item's values apply.
 				//-------------------------------------------------------
 				for (int i=0; i<num; i++)
 				{
@@ -188,14 +190,14 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 						if (pModifyItem!=NULL)
 						{
 							//-------------------------------------------------------
-							// 제대로 수치가 적용되는 경우
+							// The values apply
 							//-------------------------------------------------------
 							if (flag & bit)
 							{
 								pModifyItem->SetAffectStatus();
 							}
 							//-------------------------------------------------------
-							// 제대로 수치가 적용되지 않는 경우
+							// The values do not apply
 							//-------------------------------------------------------
 							else
 							{
@@ -211,9 +213,9 @@ void GCRealWearingInfoHandler::execute ( GCRealWearingInfo * pPacket , Player * 
 		default:
 			break;
 		}
+
+		PlayerState::CalculateStatus();
 	}
-	
-	g_pPlayer->CalculateStatus();
 
 
 	__END_CATCH

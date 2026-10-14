@@ -13,17 +13,18 @@
 #include "Gpackets/GCBloodBibleList.h"
 
 
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "TalkBox.h"
-#include "UIDialog.h"
-#include "SystemAvailabilities.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
 #include "TempInformation.h"
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Run when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCBloodBibleListHandler::execute ( GCBloodBibleList * pPacket , Player * pPlayer )
@@ -32,16 +33,15 @@ void GCBloodBibleListHandler::execute ( GCBloodBibleList * pPacket , Player * pP
 	__BEGIN_TRY 
 	(void)pPlayer;
 	
-	if (g_pPlayer==NULL
-		|| g_pZone==NULL
-		|| g_pUIDialog==NULL
+	if (PlayerState::Creature()==NULL
+		|| !ZoneState::Exists()
 		|| g_pPCTalkBox==NULL)
 	{
 		DEBUG_ADD_ERR("[Error] Some Object is NULL");
 		return;
 	}
 
-	g_pPlayer->SetWaitVerifyNULL();
+	PlayerState::SetWaitVerifyNULL();
 
 	g_pPCTalkBox->Release();		// 
 
@@ -71,18 +71,18 @@ void GCBloodBibleListHandler::execute ( GCBloodBibleList * pPacket , Player * pP
 		g_pPCTalkBox->AddString( str );
 	}
 	
-	// 끝내기 추가
+	// Add the way out.
 	std::string szMsg;
 	szMsg += "999";
-	szMsg += (*g_pGameStringTable)[UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE].GetString();
+	szMsg += GetGameString(UI_STRING_MESSAGE_RENT_LATER_BLOOD_BIBLE);
 	g_pPCTalkBox->AddString( szMsg.c_str() );
 
 
-	snprintf(str, sizeof(str), "%s", (*g_pGameStringTable)[UI_STRING_MESSAGE_RENT_BLOOD_BIBLE].GetString());
+	snprintf(str, sizeof(str), "%s", GetGameString(UI_STRING_MESSAGE_RENT_BLOOD_BIBLE));
 
 	g_pPCTalkBox->SetContent( str );
 
-	g_pUIDialog->PopupPCTalkDlg();
+	DialogPresentation::PopupPCTalkDlg();
 	g_pTempInformation->SetMode(TempInformation::MODE_SKILL_LEARN);
 
 

@@ -3,6 +3,7 @@
 #include <cstdint>
 
 class GCMiniGameScores;
+class MCreature;
 
 namespace GameInfoPresentation {
 
@@ -20,6 +21,11 @@ struct Host
 	int (*GetCharInfoLevel)() = nullptr;
 	// Eternity failed: its button waits out its delay.
 	void (*SetDelayEternity)() = nullptr;
+	// The name of the creature the other-info window shows; NULL for none,
+	// or without a host.
+	const char* (*GetOtherInfoName)() = nullptr;
+	// Shows the creature in the other-info window.
+	void (*RunOtherInfo)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -31,5 +37,7 @@ void MiniGameScores(GCMiniGameScores* pPacket);
 void RunImageNotice(const char* name, std::uint32_t id);
 int GetCharInfoLevel();
 void SetDelayEternity();
+const char* GetOtherInfoName();
+void RunOtherInfo(MCreature* pCreature);
 
 }

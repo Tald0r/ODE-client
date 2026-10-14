@@ -103,4 +103,14 @@ void ShowMessage(const char* message)
 	if (s_Host && s_Host->ShowMessage) s_Host->ShowMessage(message);
 }
 
+void InitPlayer(int x, int y, int direction)
+{
+	if (s_Host && s_Host->InitPlayer) s_Host->InitPlayer(x, y, direction);
+}
+
+void EnterGameMode()
+{
+	if (s_Host && s_Host->EnterGameMode) s_Host->EnterGameMode();
+}
+
 }

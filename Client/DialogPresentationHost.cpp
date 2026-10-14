@@ -88,4 +88,24 @@ void CloseMixingForge()
 	if (s_Host && s_Host->CloseMixingForge) s_Host->CloseMixingForge();
 }
 
+void PopupPCTalkDlg()
+{
+	if (s_Host && s_Host->PopupPCTalkDlg) s_Host->PopupPCTalkDlg();
+}
+
+void ShowPCTalkDlg()
+{
+	if (s_Host && s_Host->ShowPCTalkDlg) s_Host->ShowPCTalkDlg();
+}
+
+void RunStorageBuy(int price)
+{
+	if (s_Host && s_Host->RunStorageBuy) s_Host->RunStorageBuy(price);
+}
+
+void OpenInventoryToSell()
+{
+	if (s_Host && s_Host->OpenInventoryToSell) s_Host->OpenInventoryToSell();
+}
+
 }

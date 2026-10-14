@@ -9,16 +9,17 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCNPCAsk.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "TalkBox.h"
-#include "UIDialog.h"
+#include "DialogPresentationHost.h"
 #include "MNPCScriptTable.h"
-#include "TempInformation.h"
 #include "SystemAvailabilities.h"
 
 //////////////////////////////////////////////////////////////////////
 //
-// 클라이언트에서 서버로부터 메시지를 받았을때 실행되는 메쏘드이다.
+// Run when the client receives this message from the server.
 //
 //////////////////////////////////////////////////////////////////////
 void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
@@ -28,10 +29,9 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 	(void)pPlayer;
 	
 
-	if (g_pPlayer==NULL
-		|| g_pZone==NULL
+	if (PlayerState::Creature()==NULL
+		|| !ZoneState::Exists()
 		|| g_pNPCScriptTable==NULL
-		|| g_pUIDialog==NULL
 		|| g_pPCTalkBox==NULL)
 	{
 		DEBUG_ADD_ERR("[Error] Some Object is NULL");
@@ -39,12 +39,12 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 	}
 
 
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_NPC_ASK)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_NPC_ASK)
 	{
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 		
 		// NPC
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 		
 //		pPacket->
 
@@ -57,13 +57,13 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 				CreatureType = pPacket->getNPCID();
 			} else
 			{
-				CreatureType= pCreature->GetCreatureType();
+				CreatureType= CreatureState::GetCreatureType(pCreature);
 			}
 			
 			//---------------------------------------------------
-			// g_PCTalkBox에 추가하면 된다.
+			// It goes into the PC talk box.
 			//---------------------------------------------------
-			// 기존에 있던것 제거
+			// Clear what was there.
 			g_pPCTalkBox->Release();
 
 			DEBUG_ADD("TalkBoxRel");
@@ -77,9 +77,9 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 			int scriptID = pPacket->getScriptID();
 
 			//---------------------------------------------------
-			// PC Talk Box의 정보 설정
+			// Set up the PC talk box.
 			//---------------------------------------------------
-			// SetContent라고 이름이 되어있지만.. Subject이다. - -;
+			// It is called SetContent, but it is the subject. - -;
 			g_pPCTalkBox->SetContent( g_pNPCScriptTable->GetSubject(scriptID, 0) );
 			g_pPCTalkBox->SetNPCID( pPacket->getObjectID() );
 			g_pPCTalkBox->SetCreatureType( CreatureType );
@@ -88,7 +88,7 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 			DEBUG_ADD("SetScript");
 
 			//---------------------------------------------------
-			// 각 std::string 추가
+			// Add each string.
 			//---------------------------------------------------
 			int contentSize = g_pNPCScriptTable->GetContentSize( scriptID );
 
@@ -96,21 +96,25 @@ void GCNPCAskHandler::execute ( GCNPCAsk * pPacket , Player * pPlayer )
 
 			for (int i=0; i<contentSize; i++)
 			{
-				// g_PCTalkBox에 추가
-				if( g_pSystemAvailableManager->ScriptFiltering( scriptID, i ) )
+				// Into the PC talk box.
+				// An empty answer is left out like a refused one: the talk box
+				// would hand the dialog a NULL menu string.
+				const char* pAnswer = g_pNPCScriptTable->GetContent( scriptID, i );
+				if( pAnswer != NULL && pAnswer[0] != '\0'
+					&& g_pSystemAvailableManager->ScriptFiltering( scriptID, i ) )
 				{
-					g_pPCTalkBox->AddString( g_pNPCScriptTable->GetContent( scriptID, i ) );
+					g_pPCTalkBox->AddString( pAnswer );
 					g_pPCTalkBox->m_AnswerIDMap.push_back( i );
 				}				
 			}
 
 			DEBUG_ADD("SetContent");
 			
-			g_pUIDialog->PopupPCTalkDlg();
+			DialogPresentation::PopupPCTalkDlg();
 		}
 
 		//---------------------------------------------------
-		// Dialog를 띄운다.
+		// Pop up the dialog.
 		//---------------------------------------------------
 		//POINT point = ConvertPositionMapToScreen(pCreature->GetX(), pCreature->GetY());
 

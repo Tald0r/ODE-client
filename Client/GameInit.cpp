@@ -3502,6 +3502,8 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.RunImageNotice = [](const char* name, std::uint32_t id) { UI_RunImageNotice(name, id); },
 	.GetCharInfoLevel = UI_GetCharInfoLevel,
 	.SetDelayEternity = UI_SetDelayEternity,
+	.GetOtherInfoName = UI_GetOtherInfoName,
+	.RunOtherInfo = [](MCreature* pCreature) { UI_RunOtherInfo(pCreature); },
 };
 
 static const DialogPresentation::Host s_DialogPresentationHost = {
@@ -3520,6 +3522,10 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.DropItem = UI_DropItem,
 	.UnlockGear = UI_UnlockGear,
 	.CloseMixingForge = UI_CloseMixingForge,
+	.PopupPCTalkDlg = []() { g_pUIDialog->PopupPCTalkDlg(); },
+	.ShowPCTalkDlg = []() { g_pUIDialog->ShowPCTalkDlg(); },
+	.RunStorageBuy = UI_RunStorageBuy,
+	.OpenInventoryToSell = UI_OpenInventoryToSell,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3541,6 +3547,8 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
 	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
 	.ShowMessage = g_ShowMessage,
+	.InitPlayer = [](int x, int y, int direction) { InitPlayer(x, y, direction); },
+	.EnterGameMode = []() { SetMode(MODE_GAME); },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
@@ -3583,6 +3591,11 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
 	.GetItemCheckBufferStatus = []() { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBufferStatus() : PlayerState::ITEM_CHECK_BUFFER_NULL; },
 	.SetCannotTrace = []() { if (g_pPlayer != NULL) g_pPlayer->SetCannotTrace(); },
+	.SetTimeLightSight = [](int sight) { if (g_pPlayer != NULL) g_pPlayer->SetTimeLightSight(static_cast<char>(sight)); },
+	.RemoveAddonItem = [](MItem* pItem) { return g_pPlayer != NULL && g_pPlayer->RemoveAddonItem(pItem); },
+	.CalculateStatus = []() { if (g_pPlayer != NULL) g_pPlayer->CalculateStatus(); },
+	.UseItemOK = []() { UseItemOK(); },
+	.UseSkillCardOK = [](int cardType) { UseSkillCardOK(static_cast<BYTE>(cardType)); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3694,6 +3707,11 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetStopBloodDrain = [](MCreature* pCreature) { pCreature->SetStopBloodDrain(); },
 	.SetStopAbsorbSoul = [](MCreature* pCreature) { pCreature->SetStopAbsorbSoul(); },
 	.IsVampire = [](MCreature* pCreature) { return pCreature->IsVampire(); },
+	.SetShop = [](MCreature* pCreature, MShop* pShop) {
+		if (pCreature->GetClassType() != MCreature::CLASS_NPC) return false;
+		static_cast<MNPC*>(pCreature)->SetShop(pShop);
+		return true;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3719,6 +3737,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
 	},
 	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
+	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
