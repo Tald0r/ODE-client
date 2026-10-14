@@ -8,8 +8,8 @@
 
 // A packed file's record: its ID, name and position in the data file.
 // Saved as the ID (4 bytes), the name's length (1 byte) and bytes, and the
-// position (4 bytes), and loaded back in that order. A record saves no
-// data of its own.
+// position (4 bytes), and loaded back in that order, the name exactly
+// its bytes. A record saves no data of its own.
 namespace {
 
 struct TempFile
@@ -78,4 +78,26 @@ TEST(PackFileInfo, ARecordLoadsItsIDAndPosition)
 	second.LoadFromFile(in);
 	CHECK(first.GetID() == 77 && first.GetFilePosition() == 4321 && first.GetFilename().empty());
 	CHECK(second.GetID() == 77 && second.GetFilePosition() == 4321);
+}
+
+TEST(PackFileInfo, ARecordLoadsExactlyItsNamesBytes)
+{
+	// A long name, then a shorter one: the second must not keep the
+	// first's tail (both load through the same buffer on the stack).
+	TempFile file;
+	{
+		std::ofstream out(file.path, std::ios::binary);
+		PackFileInfo(1, "a_long_sound_name.wav").SaveToFile(out);
+		PackFileInfo(2, "ab").SaveToFile(out);
+		PackFileInfo(3).SaveToFile(out);
+	}
+	std::ifstream in(file.path, std::ios::binary);
+	PackFileInfo first, second, third;
+	first.LoadFromFile(in);
+	second.LoadFromFile(in);
+	third.LoadFromFile(in);
+	CHECK(first.GetFilename() == "a_long_sound_name.wav");
+	CHECK(second.GetFilename() == "ab");
+	CHECK(second.GetID() == 2 && third.GetID() == 3);
+	CHECK(third.GetFilename().empty());
 }

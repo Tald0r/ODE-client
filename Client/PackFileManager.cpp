@@ -59,7 +59,8 @@ PackFileInfo::LoadFromFile(std::ifstream& file)
 	{
 		char buf[256];
 		file.read((char*)buf, len);
-		m_Filename = buf;
+		// The name is not terminated in the file: take exactly its bytes.
+		m_Filename.assign(buf, len);
 	}
 
 	file.read((char*)&m_FP, 4);

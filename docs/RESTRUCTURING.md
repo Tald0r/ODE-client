@@ -5725,9 +5725,10 @@ rounds settled* for the host rules). Test fixtures share
   > R1 is 61 Windows / 59 Ninja.
   - Owner: membership, R1, `test_pack_file_info.cpp` and
     `test_object_screen_rect.cpp`.
-  - Found: `PackFileInfo::LoadFromFile` reads the name's bytes into an
-    unterminated buffer and builds the name from it, which reads past
-    the name. The next commit fixes it.
+  - Fixed after the move: `PackFileInfo::LoadFromFile` read the name's
+    bytes into an unterminated stack buffer and built the name from
+    it, so a name loaded after a longer one kept the longer one's tail
+    (or ran past the buffer). It now takes exactly the name's bytes.
 
 ### Remaining R1 work after tasks 4.80-4.204
 
