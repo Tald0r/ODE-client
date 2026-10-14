@@ -9,11 +9,15 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradeVerify.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "PlayerStateHost.h"
+#include "TradePresentationHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "TempInformation.h"
 #include "MTradeManager.h"
 #include "MMoneyManager.h"
-#include "UIFunction.h"
 
 
 	#include "ClientPlayer.h"
@@ -27,10 +31,17 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 {
 	__BEGIN_TRY
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 	
 
 	//------------------------------------------------------------------------
-	// TradeManager가 생성되지 않은 경우 --> -_-;;
+	// No trade manager.
 	//------------------------------------------------------------------------
 	if (g_pTradeManager==NULL)
 	{
@@ -45,14 +56,14 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 	{
 		//----------------------------------------------------------------------
 		//
-		// GCTradeAddItem을 검증 받아야 하는 경우에.. OK
+		// A GCTradeAddItem waiting to be verified: OK.
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_ADD_ITEM_OK :
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_ADD_ITEM)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
@@ -61,7 +72,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				pItem->SetTrade();
 
 				//-----------------------------------------------------------
-				// 뭔가 바뀐다면... OK취소
+				// Something changed: the OKs are cancelled.
 				//-----------------------------------------------------------
 				g_pTradeManager->RefuseOtherTrade();
 				g_pTradeManager->RefuseMyTrade();
@@ -70,13 +81,13 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 		//----------------------------------------------------------------------
 		//
-		// GCTradeAddItem을 검증 받아야 하는 경우에.. Fail
+		// A GCTradeAddItem waiting to be verified: failed.
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_ADD_ITEM_FAIL :
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_ADD_ITEM)
 			{
-				g_pPlayer->ClearItemCheckBuffer();
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 			}
@@ -84,27 +95,27 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 		//----------------------------------------------------------------------
 		//
-		//		교환 대상으로 아이템을 추가하는 것을 인증
+		//		Verifies an item added to the trade
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_ADD_ITEM_WHEN_ACCEPT :
 			
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_ADD_ITEM)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
 				
 				//-----------------------------------------------------------
-				// 추가 확인
+				// The addition is confirmed.
 				//-----------------------------------------------------------
 				pItem->SetTrade();
 
 				//-----------------------------------------------------------
-				// 뭔가 바뀐다면... OK취소
+				// Something changed: the OKs are cancelled.
 				//-----------------------------------------------------------
 				g_pTradeManager->RefuseOtherTrade();
 				g_pTradeManager->RefuseMyTrade();				
@@ -117,7 +128,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 		//----------------------------------------------------------------------
 		//
-		//			교환 대상에서 아이템을 제거하는 것을 인증
+		//			Verifies an item taken out of the trade
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_REMOVE_ITEM :
@@ -141,31 +152,31 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 			//----------------------------------------------------------------------
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_REMOVE_ITEM)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
 				
 				//-----------------------------------------------------------
-				// 선택되어 있던 아이템 --> 취소
+				// The item that was chosen --> cancelled.
 				//-----------------------------------------------------------
 				pItem->UnSetTrade();
 
 				//-----------------------------------------------------------
-				// 뭔가 바뀐다면... OK취소
+				// Something changed: the OKs are cancelled.
 				//-----------------------------------------------------------
 				g_pTradeManager->RefuseOtherTrade();
 				g_pTradeManager->RefuseMyTrade();				
 			}
 			//----------------------------------------------------------------------
-			// inventory --> mouse 의 검증
+			// Verifying inventory --> mouse.
 			//----------------------------------------------------------------------
 			else if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_PICKUP_FROM_INVENTORY)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
@@ -173,18 +184,18 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				int gridX		= static_cast<int>(g_pTempInformation->Value2);
 				int gridY		= static_cast<int>(g_pTempInformation->Value3);
 			
-				UI_PickUpItem( pItem );
+				DialogPresentation::PickUpItem( pItem );
 				g_pTradeManager->GetMyInventory()->RemoveItem( gridX, gridY );
 
 				//----------------------------------------------------------------
-				// OK 취소
+				// Cancel the OKs.
 				//----------------------------------------------------------------				
 				g_pTradeManager->RefuseMyTrade();
 				g_pTradeManager->RefuseOtherTrade();
 
 				//----------------------------------------------------------------
-				// 교환에서 선택된 아이템이면 자동으로 OK가 취소되지만
-				// 아닌 아이템은.. 수동으로 OK버튼을 취소하는 packet을 보내야 한다.
+				// An item chosen for the trade cancels the OK by itself,
+				// any other item must send a packet cancelling the OK.
 				//----------------------------------------------------------------
 				if (!pItem->IsTrade())
 				{
@@ -197,48 +208,48 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				}			
 			}
 			//----------------------------------------------------------------
-			// 그냥 item 놓을 때
+			// Just putting an item down.
 			//----------------------------------------------------------------
 			else if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_DROP_TO_INVENTORY)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-				// pItem은 원래 들고 있던 item
+				// pItem is the item that was held.
 				int gridX		= static_cast<int>(g_pTempInformation->Value2);
 				int gridY		= static_cast<int>(g_pTempInformation->Value3);
-				MItem* pMouseItem = UI_GetMouseItem();
+				MItem* pMouseItem = DialogPresentation::GetMouseItem();
 
-				// pItem == pMouseItem이다.
+				// pItem == pMouseItem.
 				//----------------------------------------------------------------
-				// mouse에 item이 있을 때
+				// With an item on the mouse.
 				//----------------------------------------------------------------
 				if (pMouseItem!=NULL)
 				{			
 					MItem* pOldItem = NULL;
 
 					//----------------------------------------------------------------
-					// inventory에 추가시킨다.
+					// Add it to the inventory.
 					//----------------------------------------------------------------
 					if (g_pTradeManager->GetMyInventory()->ReplaceItem(
-															pMouseItem,		// 추가할 item
-															gridX, gridY,	// 추가할 위치 
-															pOldItem))								// 원래있던 item
+															pMouseItem,		// the item to add
+															gridX, gridY,	// where to add it 
+															pOldItem))								// the item that was there
 					{
-						if (pOldItem != NULL) // replace 되었는가?
+						if (pOldItem != NULL) // replaced?
 						{
-							UI_PickUpItem( pOldItem );						
+							DialogPresentation::PickUpItem( pOldItem );						
 						}
 						else
 						{
-							UI_DropItem();
+							DialogPresentation::DropItem();
 						}
 					}
 
 					//---------------------------------------------------
-					// 놓은 아이템이 교환할려고 선택된 것인 경우
+					// The item put down was chosen for the trade.
 					//---------------------------------------------------
 					if (pMouseItem->IsTrade())
 					{
@@ -252,18 +263,18 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				}
 				else
 				{
-					// 콩가루
+					// (a mess)
 				}
 
 				//----------------------------------------------------------------
-				// OK 취소
+				// Cancel the OKs.
 				//----------------------------------------------------------------
 				g_pTradeManager->RefuseMyTrade();
 				g_pTradeManager->RefuseOtherTrade();
 
 				//----------------------------------------------------------------
-				// 교환에서 선택된 아이템이면 자동으로 OK가 취소되지만
-				// 아닌 아이템은.. 수동으로 OK버튼을 취소하는 packet을 보내야 한다.
+				// An item chosen for the trade cancels the OK by itself,
+				// any other item must send a packet cancelling the OK.
 				//----------------------------------------------------------------
 				if (pMouseItem!=NULL && !pMouseItem->IsTrade())
 				{
@@ -276,45 +287,45 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				}
 			}
 			//----------------------------------------------------------------
-			// item에 추가될때
+			// Added onto an item.
 			//----------------------------------------------------------------
 			else if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_INSERT_TO_INVENTORY)				
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				MItem* pItem	= (MItem*)g_pTempInformation->pValue;
-				MItem* pMouseItem = UI_GetMouseItem();
+				MItem* pMouseItem = DialogPresentation::GetMouseItem();
 
 				//----------------------------------------------------
-				// pMouseItem을 pItem에 추가시킨다.
+				// Add pMouseItem onto pItem.
 				//----------------------------------------------------
 				int total = pMouseItem->GetNumber() + pItem->GetNumber();
 				if ( static_cast<TYPE_ITEM_NUMBER>(total) > pItem->GetMaxNumber() )
 				{
-					// 한계 수치를 넘어갈 경우
+					// Past the stack's limit.
 					pMouseItem->SetNumber( total - pItem->GetMaxNumber() );
 					pItem->SetNumber( pItem->GetMaxNumber() );
 				}
 				else
 				{
-					// 모두 pItem에 추가될 수 있는 경우
+					// All of it fits on pItem.
 					pItem->SetNumber( total );
-					UI_DropItem();
+					DialogPresentation::DropItem();
 
 					delete pMouseItem;
 				}
 
 				//----------------------------------------------------
-				// 교환중에 선택된 아이템인 경우
+				// An item chosen for the trade.
 				//----------------------------------------------------
 				// Remove and Add - -;
 				if (pItem->IsTrade())
 				{
 						//----------------------------------------------------
-						// 개수가 바껴서 제거했다가..
+						// Its number changed, so remove it...
 						//----------------------------------------------------
 						CGTradeRemoveItem _CGTradeRemoveItem;
 						_CGTradeRemoveItem.setTargetObjectID( g_pTradeManager->GetOtherID() );
@@ -327,7 +338,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 						#endif
 						
 						//----------------------------------------------------
-						// 다시 추가
+						// ...and add it again.
 						//----------------------------------------------------
 						CGTradeAddItem _CGTradeAddItem;
 						_CGTradeAddItem.setTargetObjectID( g_pTradeManager->GetOtherID() );
@@ -339,8 +350,8 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				else
 				{
 					//----------------------------------------------------------------
-					// 교환에서 선택된 아이템이면 자동으로 OK가 취소되지만
-					// 아닌 아이템은.. 수동으로 OK버튼을 취소하는 packet을 보내야 한다.
+					// An item chosen for the trade cancels the OK by itself,
+					// any other item must send a packet cancelling the OK.
 					//----------------------------------------------------------------					
 					CGTradeFinish _CGTradeFinish;
 					_CGTradeFinish.setTargetObjectID( g_pTradeManager->GetOtherID() );
@@ -350,10 +361,10 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 				}
 
-				PlaySound( pItem->GetInventorySoundID() );
+				WorldEvents::PlaySound( pItem->GetInventorySoundID() );
 			}
 			//----------------------------------------------------------------
-			// 잘못된 mode
+			// The wrong mode.
 			//----------------------------------------------------------------
 			else
 			{
@@ -364,7 +375,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 		//----------------------------------------------------------------------
 		//
-		//			교환 대상에서 돈을 추가하는 것을 인증
+		//			Verifies money added to the trade
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_MONEY_INCREASE :
@@ -383,7 +394,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				//g_pTradeManager->GetMyMoneyManager()->AddMoney( money );
 
 				//-----------------------------------------------------------
-				// 뭔가 바뀐다면... OK취소
+				// Something changed: the OKs are cancelled.
 				//-----------------------------------------------------------
 				g_pTradeManager->RefuseOtherTrade();
 				g_pTradeManager->RefuseMyTrade();
@@ -396,7 +407,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 
 		//----------------------------------------------------------------------
 		//
-		//			교환 대상에서 돈을 제거하는 것을 인증
+		//			Verifies money taken out of the trade
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_MONEY_DECREASE:
@@ -410,7 +421,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				//g_pMoneyManager->AddMoney( money );	
 
 				//-----------------------------------------------------------
-				// 뭔가 바뀐다면... OK취소
+				// Something changed: the OKs are cancelled.
 				//-----------------------------------------------------------
 				g_pTradeManager->RefuseOtherTrade();
 				g_pTradeManager->RefuseMyTrade();				
@@ -422,15 +433,15 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 		break;
 
 		//----------------------------------------------------------------------
-		// 교환 성립을 확인하는 것을 인증
+		// Verifies the trade being agreed.
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_FINISH_ACCEPT:
-			// 검증이 필요없다.
+			// Needs no verification.
 		break;
 
 		//----------------------------------------------------------------------
 		//
-		//				교환 성립을 취소하는 것을 인증
+		//				Verifies the trade being cancelled
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_FINISH_REJECT:
@@ -440,20 +451,20 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				//----------------------------------------------------------------
-				// 교환창 닫기
+				// Close the exchange window.
 				//----------------------------------------------------------------			
 				if (g_pTradeManager!=NULL)
 				{
 					g_pTradeManager->CancelTrade();
 				}
 
-				UI_CloseExchange();
+				TradePresentation::CloseExchange();
 			}
 		break;
 
 		//----------------------------------------------------------------------
 		//
-		//				교환 성립을 재고려하는 것을 인증
+		//				Verifies the trade being reconsidered
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_VERIFY_CODE_FINISH_RECONSIDER:
@@ -463,7 +474,7 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				//----------------------------------------------------------------
-				// OK 취소
+				// Cancel the OKs.
 				//----------------------------------------------------------------			
 				g_pTradeManager->RefuseMyTrade();
 			}
@@ -477,8 +488,8 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 		case GC_TRADE_VERIFY_CODE_MOUSE_TO_INVENTORY_FAIL:
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_DROP_TO_INVENTORY)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 			}
@@ -497,8 +508,8 @@ void GCTradeVerifyHandler::execute ( GCTradeVerify * pPacket , Player * pPlayer 
 		case GC_TRADE_VERIFY_CODE_INVENTORY_TO_MOUSE_FAIL:
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_PICKUP_FROM_INVENTORY)
 			{
-				// g_pPlayer->ItemCheckBuffer도 검증해야되는데..생략.. - -;
-				g_pPlayer->ClearItemCheckBuffer();
+				// The player's item check buffer should be verified too; skipped.
+				PlayerState::ClearItemCheckBuffer();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 			}

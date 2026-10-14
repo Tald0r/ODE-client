@@ -1063,3 +1063,7 @@ Client/ItemSkillIcons.cpp
 Client/ItemSkillIcons.h
 Client/PacketHandler/GCShopBuyOKHandler.cpp
 Client/PacketHandler/GCShopSellOKHandler.cpp
+
+# The trade box's errors and verifications.
+Client/PacketHandler/GCTradeErrorHandler.cpp
+Client/PacketHandler/GCTradeVerifyHandler.cpp

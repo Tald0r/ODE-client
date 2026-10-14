@@ -3516,6 +3516,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RunStorage = UI_RunStorage,
 	.SetStorage = UI_SetStorage,
 	.PickUpItem = UI_PickUpItem,
+	.GetMouseItem = UI_GetMouseItem,
+	.DropItem = UI_DropItem,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
