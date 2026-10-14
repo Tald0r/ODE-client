@@ -169,8 +169,11 @@ TEST(PeerRequestReplies, APeerWithARequestQueuedGetsNothingMore)
 	Peer peer;
 	peer.setName("Nyx");
 	const PlayerStatus before = peer.getPlayerStatus();
+	const REQUEST_CLIENT_MODE mode = peer.getRequestMode();
 	CHECK(!Receive(peer, CR_REQUEST_FILE_PROFILE, "Lantern"));
 	CHECK_EQ(0u, world.files.Of("Nyx")->GetSize());
+	// The connection is not switched to send the queued request again.
+	CHECK(peer.getRequestMode() == mode && mode != REQUEST_CLIENT_MODE_PROFILE);
 	CHECK(peer.getPlayerStatus() == before);
 	CHECK(peer.Sent().empty());
 }

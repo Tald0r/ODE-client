@@ -3128,8 +3128,8 @@ rounds settled* for the host rules). Test fixtures share
     opened is announced empty and the request still ends; one request
     per player, a second refused; a removed or unknown request sends
     nothing).
-  - Follow-up: `CRRequestHandler`, which builds the requests, stays in
-    the executable for the profile manager.
+  - Follow-up: `CRRequestHandler`, which builds the requests, stayed in
+    the executable for the profile manager until task 4.164 moved it.
 
 - [x] **4.110 The frame clock and the help display:** move `g_FrameNow`'s
   definition into a new `FrameClock.cpp` and `MHelpDisplayer.cpp` into
@@ -4498,14 +4498,30 @@ rounds settled* for the host rules). Test fixtures share
   > someone else's, it answers why not and the session ends. Asked for
   > the guild mark, the connection switches to sending it. Without the
   > user information, the request managers or the UI's profiles (new
-  > `HasProfiles`) nothing is done. Once moved, `CR_REQUEST_CODE` took
-  > `BYTE` as its fixed type: the request's code is a byte a peer sends,
-  > and a code past the three known ones loaded an invalid enum value,
-  > where Clang's UBSan stopped. R1 is 114 Windows / 112 Ninja.
+  > `HasProfiles`) nothing is done. Once moved:
+  > - `CR_REQUEST_CODE` took `BYTE` as its fixed type. The request's
+  >   code is a byte a peer sends, the old enum held 0-3, and converting
+  >   any other byte to it was undefined; Clang's UBSan stopped at the
+  >   load in the reply's switch.
+  > - So did `RC_CONNECT_VERIFY_CODE` and `REQUEST_VERIFY`. The client
+  >   writes those answers, but its game connection, which accepts any
+  >   packet id in the normal status, reads them too before it finds no
+  >   reply.
+  > - The reply returns at once without a peer's connection (the game
+  >   connection reads a `CRRequest` as well, and the cast gave NULL),
+  >   and before a character is chosen no profile is the player's (the
+  >   compare ran `strlen` on the empty `CharacterID`'s NULL). Both
+  >   crashed any client a peer or the server sent the request to;
+  >   `CRWhisperHandler` had the first crash too, and has the same
+  >   return.
+  > R1 is 114 Windows / 112 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_peer_request_replies.cpp` (the profile queued, a request
     queued already, no profile, someone else's, the guild mark, no
-    request, a code no request has, a nameless and a named peer, each guard, no host).
+    request, a code no request has, a nameless and a named peer, each
+    guard, no host, the game connection, no character yet),
+    `test_request_verify_codes.cpp` and the whisper test's game
+    connection case.
 
 - [x] **4.165 The login server's welcome:** move `LCLoginOKHandler` and
   `LCRegisterPlayerOKHandler` into `gamemodel`.
