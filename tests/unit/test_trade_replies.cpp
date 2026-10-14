@@ -22,6 +22,7 @@
 #include "Cpackets/CGTradeRemoveItem.h"
 #include "Gpackets/GCTradeError.h"
 #include "Gpackets/GCTradeVerify.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -522,4 +523,78 @@ TEST(TradeReplies, AVerifyWithoutAPlayerOrATradeDoesNothing)
 	g_pTradeManager = &world.tradeManager;
 	CHECK(world.tradeManager.IsAcceptMyTrade());
 	CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_VERIFY_ADD_MONEY);
+}
+
+TEST(TradeReplies, OnlyARefusalEndsTheRequestWait)
+{
+	World world;
+	for (int code : {GC_TRADE_ERROR_CODE_ALREADY_TRADING, GC_TRADE_ERROR_CODE_UNKNOWN, GC_TRADE_ERROR_CODE_NOT_TRADING})
+	{
+		world.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
+		waitVerify = PlayerState::WAIT_VERIFY_TRADE;
+		ReceiveError(code);
+		CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_REQUEST);
+	}
+	CHECK(std::find(calls.begin(), calls.end(), "verified") == calls.end());
+	// Without the game strings, nothing happens.
+	calls.clear();
+	MStringArray* strings = g_pGameStringTable;
+	g_pGameStringTable = nullptr;
+	ReceiveError(GC_TRADE_ERROR_CODE_TARGET_NOT_EXIST);
+	g_pGameStringTable = strings;
+	CHECK(calls.empty());
+	CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_REQUEST);
+}
+
+TEST(TradeReplies, AStackFillingItsLimitExactlyJoinsWhole)
+{
+	World world;
+	Goods* stack = new Goods(ITEM_CLASS_POTION, 41, 12);
+	CHECK(world.inventory.AddItem(stack, 1, 1));
+	mouseItem = new Goods(ITEM_CLASS_POTION, 42, 8);
+	world.Waiting(TempInformation::MODE_TRADE_VERIFY_INSERT_TO_INVENTORY, stack);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_MOUSE_TO_INVENTORY_OK, &world.connection);
+	CHECK_EQ(20, static_cast<int>(stack->GetNumber()));
+	CHECK(calls == std::vector<std::string>({"buffer cleared", "mouse drops", "freed|42", "sound|" + N(200 + ITEM_CLASS_POTION)}));
+}
+
+TEST(TradeReplies, AnItemThatCannotBePutDownStaysOnTheMouse)
+{
+	World world;
+	Goods* sword = new Goods(ITEM_CLASS_SWORD, 41);
+	mouseItem = sword;
+	world.Accepted();
+	// Past the trade box's edge.
+	world.Waiting(TempInformation::MODE_TRADE_VERIFY_DROP_TO_INVENTORY, nullptr, 6, 0);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_MOUSE_TO_INVENTORY_OK, &world.connection);
+	CHECK(calls == std::vector<std::string>{"buffer cleared"});
+	CHECK(world.Refused());
+	CHECK(world.connection.Sent() == Reconsider());
+	delete sword;
+}
+
+TEST(TradeReplies, AVerifyInTheWrongModeChangesNothing)
+{
+	World world;
+	Goods sword(ITEM_CLASS_SWORD, 41);
+	mouseItem = &sword;
+	world.Accepted();
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_MOUSE_TO_INVENTORY_OK, &world.connection);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_INVENTORY_TO_MOUSE_OK, &world.connection);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_REMOVE_ITEM, &world.connection);
+	CHECK(world.tradeManager.IsAcceptMyTrade() && world.tradeManager.IsAcceptOtherTrade());
+	CHECK(world.connection.Sent().empty());
+	// The trade's end, each in another's mode.
+	world.tradeManager.GetMyMoneyManager()->SetMoney(100);
+	world.temp.SetMode(TempInformation::MODE_TRADE_VERIFY_CANCEL);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_FINISH_REJECT, &world.connection);
+	CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_VERIFY_CANCEL);
+	world.temp.SetMode(TempInformation::MODE_TRADE_VERIFY_CLOSE);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_FINISH_RECONSIDER, &world.connection);
+	ReceiveVerify(GC_TRADE_VERIFY_CODE_FINISH_ACCEPT, &world.connection);
+	CHECK(world.temp.GetMode() == TempInformation::MODE_TRADE_VERIFY_CLOSE);
+	CHECK(world.tradeManager.IsAcceptMyTrade() && world.tradeManager.IsAcceptOtherTrade());
+	CHECK_EQ(1000, world.money.GetMoney());
+	CHECK(calls.empty());
+	mouseItem = nullptr;
 }

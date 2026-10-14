@@ -4073,10 +4073,15 @@ rounds settled* for the host rules). Test fixtures share
   > part of the trade asks the other side to reconsider, and one that is
   > tells the other side what changed, through the game connection. The
   > error reply no longer requires the UI dialog to exist (a missing
-  > dialog host skips the message), and loses `if (g_pDebugMessage)`
-  > guards inside its never-compiled `OUTPUT_DEBUG` logs. Without a
-  > player both do nothing, where they dereferenced the player. R1 is
-  > 142 Windows / 140 Ninja.
+  > dialog host skips the message; the installed adapter reads
+  > `g_pUIDialog` unguarded, which is safe, since it exists from start-up
+  > until shutdown), and loses `if (g_pDebugMessage)` guards inside its
+  > never-compiled `OUTPUT_DEBUG` logs. The error reply already did
+  > nothing without a player. The verification now does nothing without
+  > one either, where its item branches dereferenced the player and its
+  > money and finish branches ran; the player is missing only after the
+  > game connection is left for the login server, or at release, when
+  > no trade is open. R1 is 142 Windows / 140 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_trade_replies.cpp` (each refusal with and without the wait,
     each other error, the money returned, the guards; each verification

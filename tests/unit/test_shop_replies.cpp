@@ -77,8 +77,9 @@ const MItemHost items = []() {
 	host.NewItem = [](ITEM_CLASS itemClass) -> MItem* { return new Goods(itemClass); };
 	host.ItemDestroyed = [](MItem* pItem) noexcept {
 		calls.push_back("freed|" + N(pItem->GetID()));
-		// A freed item reads as type 1, which costs no stars: pricing a freed
-		// item fails the star tests in every tree, not only under ASan.
+		// A freed item reads as type 1, which costs no stars, so pricing a
+		// freed item fails the star tests in the plain trees too. Reading
+		// freed memory is still undefined; only ASan makes it certain.
 		pItem->SetItemType(1);
 	};
 	return host;

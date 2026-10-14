@@ -21,8 +21,6 @@
 #include "MPriceManager.h"
 #include "MItemFinder.h"
 
-
-
 void GCShopBuyOKHandler::execute ( GCShopBuyOK * pPacket , Player * pPlayer )
 	 
 
