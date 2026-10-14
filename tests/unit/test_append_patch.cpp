@@ -208,6 +208,56 @@ TEST(AppendPatch, ReleaseForgetsEverything)
 	CHECK(!patch.CalculateFinalInfo());
 }
 
+// The loader takes no more nodes than the file holds whole: a count past
+// the nodes present, a node cut short, or a file that ends before its
+// count loads what is really there.
+TEST(AppendPatch, ALoadStopsWhereTheFileDoes)
+{
+	Scratch scratch;
+	Bytes header;
+	PutName(header, "org.spk");
+	Put(header, 1000, 4); Put(header, 10, 2); Put(header, 1300, 4); Put(header, 13, 2);
+	Bytes node;
+	PutName(node, "a1.spk");
+	Put(node, 302, 4); Put(node, 3, 2); Put(node, 1000, 4); Put(node, 1300, 4); Put(node, 13, 2);
+
+	// A count of a million, one node.
+	Bytes huge = header;
+	Put(huge, 1000000, 4);
+	huge.insert(huge.end(), node.begin(), node.end());
+	scratch.Write("huge.inf", huge);
+	AppendPatch fromHuge;
+	{
+		std::ifstream in(scratch.Path("huge.inf"), std::ios::binary);
+		fromHuge.LoadFromFile(in);
+	}
+	CHECK_EQ(1, fromHuge.GetSize());
+
+	// A count of two, the second node cut short.
+	Bytes cut = header;
+	Put(cut, 2, 4);
+	cut.insert(cut.end(), node.begin(), node.end());
+	cut.insert(cut.end(), node.begin(), node.begin() + 9);
+	scratch.Write("cut.inf", cut);
+	AppendPatch fromCut;
+	{
+		std::ifstream in(scratch.Path("cut.inf"), std::ios::binary);
+		fromCut.LoadFromFile(in);
+	}
+	CHECK_EQ(1, fromCut.GetSize());
+	const auto nodes = fromCut.GetAppendPatchNode();
+	if (nodes.size() == 1) CHECK_EQ(1000, nodes[0]->writePosition);
+
+	// No count at all.
+	scratch.Write("short.inf", header);
+	AppendPatch fromShort;
+	{
+		std::ifstream in(scratch.Path("short.inf"), std::ios::binary);
+		fromShort.LoadFromFile(in);
+	}
+	CHECK_EQ(0, fromShort.GetSize());
+}
+
 TEST(AppendPatch, TheFinalInfoCanBeReadFromAFile)
 {
 	Scratch scratch;

@@ -391,7 +391,11 @@ AppendPatch::LoadFromFile(std::ifstream& file)
 	m_finalFilesize = ReadLong4( file );
 	file.read((char*)&m_finalSpkSize, 2);
 
-	int num;
+	// No more nodes than the file holds whole: a count past the nodes
+	// present, or a node cut short, stops the load at the first node the
+	// file fails on. A file that ends before its count reads no count, and
+	// num stays 0 rather than indeterminate.
+	int num = 0;
 	file.read((char*)&num, 4);
 
 	for (int i=0; i<num; i++)
@@ -399,7 +403,13 @@ AppendPatch::LoadFromFile(std::ifstream& file)
 		APPEND_PATCH_NODE* pNode = new APPEND_PATCH_NODE;
 
 		pNode->LoadFromFile( file );
-		
+
+		if (!file)
+		{
+			delete pNode;
+			break;
+		}
+
 		m_AppendPatch.push_back( pNode );
 	}
 }

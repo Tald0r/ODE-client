@@ -6004,9 +6004,14 @@ rounds settled* for the host rules). Test fixtures share
     poisoned allocations showed it. Each field is now read as a 32-bit
     integer. `ANodeLoadsItsFourByteFieldsWhole` loads a node over
     0xA5-filled storage and fails without the fix.
-  - Found, not fixed: the loader trusts the file's node count. A
-    truncated or corrupt `AppendPatch.inf` with a huge count allocates
-    that many nodes from a failed stream.
+  - Fixed afterwards (#508's review): the loader trusted the file's node
+    count, and the count was indeterminate when the file ended before
+    it. A truncated or corrupt `AppendPatch.inf` loaded garbage nodes, or
+    allocated a huge count of them from a failed stream. The count now
+    starts at 0, and the load stops at the first node the file fails
+    on, dropping that node. `ALoadStopsWhereTheFileDoes` covers a count
+    of a million with one node, a node cut short, and no count. Each
+    case fails without the fix.
 
 - [x] **4.213 The tile renderer:** move `TileRenderer.cpp`/`.h` into
   SpriteLib (`Client/SpriteLib/`).
