@@ -247,10 +247,12 @@ struct Host
 	void (*SetFakeFastMove)(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	// A fake creature's (a pet's) turret. SetTurretDelay is its recoil: it
 	// is drawn pulled back by twice that many pixels, one less each frame.
-	// SetTurretFinalDirection is the direction it turns towards when its
-	// owner's last target is not in the zone (otherwise it turns to that
-	// target), on the turret's own 32-step scale; GCPetUseSkill hands it an
-	// 8-way direction, as upstream did. Another creature is left alone.
+	// SetTurretFinalDirection is the direction a Centauro turret (types
+	// 702-704) turns towards when its owner, or the owner's last target, is
+	// not in the zone (otherwise it turns to that target; 0xFF, unset,
+	// keeps its own direction), on the turret's own 32-step scale.
+	// GCPetUseSkill hands it an 8-way direction, as upstream did. Another
+	// creature is left alone.
 	void (*SetTurretDelay)(MCreature* pFakeCreature, int delay) = nullptr;
 	void (*SetTurretFinalDirection)(MCreature* pFakeCreature, int direction) = nullptr;
 	// A creature's personal shop: whether it is open (CurPernalShop; 0

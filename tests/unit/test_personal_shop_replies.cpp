@@ -88,6 +88,11 @@ struct Belt : MBelt
 	Belt() { alive++; }
 	~Belt() { alive--; }
 };
+struct ArmsBand : MOustersArmsBand
+{
+	ArmsBand() { alive++; }
+	~ArmsBand() { alive--; }
+};
 
 MItemHost ItemHost()
 {
@@ -99,6 +104,7 @@ MItemHost ItemHost()
 			case ITEM_CLASS_POTION: return new Potion;
 			case ITEM_CLASS_SR: return new Gun;
 			case ITEM_CLASS_BELT: return new Belt;
+			case ITEM_CLASS_OUSTERS_ARMSBAND: return new ArmsBand;
 			default: return nullptr;
 		}
 	};
@@ -176,7 +182,7 @@ struct World : GameModelWorld
 	{
 		InitGameStringTable();
 		const struct { ITEM_CLASS itemClass; int pockets; } rows[] = {
-			{ITEM_CLASS_SWORD, 0}, {ITEM_CLASS_POTION, 0}, {ITEM_CLASS_BELT, 3}, {ITEM_CLASS_SR, 0}};
+			{ITEM_CLASS_SWORD, 0}, {ITEM_CLASS_POTION, 0}, {ITEM_CLASS_BELT, 3}, {ITEM_CLASS_SR, 0}, {ITEM_CLASS_OUSTERS_ARMSBAND, 2}};
 		for (const auto& row : rows)
 		{
 			g_pItemTable->InitClass(row.itemClass, 3);
@@ -227,6 +233,7 @@ struct Ware
 	ObjectID_t id;
 	int price;
 	std::vector<int> subPotions;	// slot IDs of potions in a belt
+	std::vector<int> badSubs = {};	// slot IDs of sub items of no class, first
 };
 
 // StoreInfo has no setters, so the shop's bytes are written here.
@@ -256,6 +263,14 @@ void WriteShop(SocketOutputStream& out, bool open, const std::string& sign, cons
 		info.setEnchantLevel(2);
 		info.setItemNum(1);
 		info.setPrice(ware.price);
+		for (int slot : ware.badSubs)
+		{
+			SubItemInfo* pSub = new SubItemInfo;
+			pSub->setObjectID(ware.id + 200 + slot);
+			pSub->setItemClass(ITEM_CLASS_MAGAZINE);
+			pSub->setSlotID(static_cast<SlotID_t>(slot));
+			info.addListElement(pSub);
+		}
 		for (int slot : ware.subPotions)
 		{
 			SubItemInfo* pSub = new SubItemInfo;
@@ -266,7 +281,7 @@ void WriteShop(SocketOutputStream& out, bool open, const std::string& sign, cons
 			pSub->setSlotID(static_cast<SlotID_t>(slot));
 			info.addListElement(pSub);
 		}
-		info.setListNum(static_cast<BYTE>(ware.subPotions.size()));
+		info.setListNum(static_cast<BYTE>(ware.subPotions.size() + ware.badSubs.size()));
 		info.write(out);
 	}
 }
@@ -311,12 +326,14 @@ std::string Shown(const MItem* pItem)
 	std::string s = N(p->GetItemClass()) + "#" + N(p->GetID()) + " type " + N(p->GetItemType()) + " $" + N(p->GetPersnalPrice())
 		+ " x" + N(p->GetNumber()) + " dur " + N(p->GetCurrentDurability()) + " silver " + N(p->GetSilver())
 		+ " grade " + N(p->GetGrade()) + " +" + N(p->GetEnchantLevel()) + " opt " + N(p->GetItemOptionListCount());
-	if (p->GetItemClass() == ITEM_CLASS_BELT)
+	if (p->GetItemClass() == ITEM_CLASS_BELT || p->GetItemClass() == ITEM_CLASS_OUSTERS_ARMSBAND)
 	{
-		MBelt* pBelt = static_cast<MBelt*>(p);
-		for (int slot = 0; slot < 3; slot++)
+		MSlotItemManager* pPockets = p->GetItemClass() == ITEM_CLASS_BELT
+			? static_cast<MSlotItemManager*>(static_cast<MBelt*>(p)) : static_cast<MSlotItemManager*>(static_cast<MOustersArmsBand*>(p));
+		const int slots = p->GetItemClass() == ITEM_CLASS_BELT ? 3 : 2;
+		for (int slot = 0; slot < slots; slot++)
 		{
-			const MItem* pSub = pBelt->GetItem(slot);
+			const MItem* pSub = pPockets->GetItem(slot);
 			s += pSub ? " [" + N(const_cast<MItem*>(pSub)->GetID()) + " x" + N(const_cast<MItem*>(pSub)->GetNumber()) + "]" : " []";
 		}
 	}
@@ -340,6 +357,40 @@ TEST(PersonalShopReplies, AnotherCreaturesShopTheyAskedForOpensBesideTheInventor
 	// A gun takes no silver.
 	CHECK(Shown(g_pStorage2->GetItem(2)) == N(ITEM_CLASS_SR) + "#502 type 1 $700 x1 dur 300 silver 0 grade 5 +2 opt 1");
 	CHECK(Shown(g_pStorage2->GetItem(3)) == N(ITEM_CLASS_BELT) + "#503 type 1 $300 x1 dur 300 silver 40 grade 5 +2 opt 1 [603 x2] [] [605 x2]");
+}
+
+TEST(PersonalShopReplies, AnArmsBandAndSubItemsOfNoClassOrADoubledSlot)
+{
+	World world;
+	Ware band{ITEM_CLASS_OUSTERS_ARMSBAND, 504, 100, {0, 1}};
+	// A sub item of no class is skipped and the rest still come; a second
+	// one for a taken slot is refused and freed.
+	Ware belt{ITEM_CLASS_BELT, 505, 100, {1, 1}, {0}};
+	ReceiveOthers(1003, true, true, "x", {band, belt});
+	CHECK(g_pStorage2 != nullptr);
+	if (g_pStorage2 == nullptr) return;
+	CHECK(Shown(g_pStorage2->GetItem(0)) == N(ITEM_CLASS_OUSTERS_ARMSBAND) + "#504 type 1 $100 x1 dur 300 silver 40 grade 5 +2 opt 1 [604 x2] [605 x2]");
+	CHECK(Shown(g_pStorage2->GetItem(1)) == N(ITEM_CLASS_BELT) + "#505 type 1 $100 x1 dur 300 silver 40 grade 5 +2 opt 1 [] [606 x2] []");
+	// The band, its two, the belt and its one.
+	CHECK_EQ(5, alive);
+}
+
+TEST(PersonalShopReplies, ANewShopReplacesTheStorageAndTheViewedShopIsRefreshed)
+{
+	World world;
+	ReceiveOthers(1003, true, true, "x", {{ITEM_CLASS_SWORD, 501, 900, {}}, {ITEM_CLASS_SWORD, 502, 900, {}}});
+	ReceiveOthers(1007, true, true, "y", {{ITEM_CLASS_SWORD, 503, 900, {}}});
+	CHECK_EQ(1, alive);
+	// The shop being viewed, sent open again, refills the window.
+	calls.clear();
+	windowRunning = true;
+	ReceiveOthers(1007, true, true, "y", {{ITEM_CLASS_SWORD, 504, 900, {}}});
+	CHECK(calls == std::vector<std::string>({"shop|1007|1", "sign|1007|y|" + N(0x123456), "message|1007|y", "inventory mode|2", "window opens",
+		"inventory mode|2", "window shows the shop"}));
+	CHECK_EQ(1, alive);
+	// The player's own shop replaces it too.
+	ReceiveMine(true, "z", {{ITEM_CLASS_SWORD, 505, 900, {}}, {ITEM_CLASS_SWORD, 506, 900, {}}});
+	CHECK_EQ(2, alive);
 }
 
 TEST(PersonalShopReplies, AnotherCreaturesShopNewsOnlyMarksIt)
@@ -387,6 +438,12 @@ TEST(PersonalShopReplies, ThePlayersShopIsStockedAndShownWhenStocking)
 	tracing = true;
 	windowMode = 1;
 	// The player's own sword for sale is in the inventory.
+	// Another item of the player's, not for sale, found first (the
+	// inventory runs in ID order).
+	Sword* pKept = new Sword;
+	pKept->SetID(400);
+	pKept->SetItemType(1);
+	CHECK(world.inventory.AddItem(pKept));
 	Sword* pMine = new Sword;
 	pMine->SetID(501);
 	pMine->SetItemType(1);
@@ -395,6 +452,7 @@ TEST(PersonalShopReplies, ThePlayersShopIsStockedAndShownWhenStocking)
 	CHECK(calls == std::vector<std::string>({"stops following", "shop|1001|1", "sign|1001|Fine wares|" + N(0x123456),
 		"message|1001|Fine wares", "window opens", "window shows the shop"}));
 	CHECK(pMine->GetPersnal());
+	CHECK(!pKept->GetPersnal());
 	CHECK(world.inventory.GetItem(pMine->GetGridX(), pMine->GetGridY()) == pMine);
 	CHECK(g_pStorage2 != nullptr && g_pStorage2->GetCuropenid() == 1001);
 	if (g_pStorage2 != nullptr)
