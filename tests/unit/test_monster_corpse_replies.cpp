@@ -408,3 +408,23 @@ TEST(MonsterCorpseReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1005);
 	CHECK(calls.empty());
 }
+
+TEST(MonsterCorpseReplies, ACorpseTheZoneWillNotTakeIsFreedAndItsCreatureLeftAlone)
+{
+	World world;
+	// The zone refuses it, and the item in the cell will not go: the
+	// corpse (and its creature) is freed, and nothing touches the creature
+	// after.
+	zoneTakesItems = 0;
+	itemInTheCell = 2002;
+	removesItem = false;
+	Receive(1005, {482});
+	CHECK(calls == Then(Made("1005", 482), {"zone lays|1005|still", "item at|30,31", "removes item|2002", "corpse freed|1005"}));
+	// The zone refuses it again after the item goes: the same.
+	calls.clear();
+	removesItem = true;
+	zoneTakesItems = -1;
+	Receive(1006, {650});
+	CHECK(calls == Then(Made("1006", 650), {"zone lays|1006|still", "item at|30,31", "removes item|2002", "zone lays|1006|still",
+		"corpse freed|1006"}));
+}

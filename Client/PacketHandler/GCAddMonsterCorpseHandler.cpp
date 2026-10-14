@@ -174,6 +174,8 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 							DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 							
 							delete pCorpse;
+							// The corpse freed its creature too.
+							pCreature = NULL;
 						}
 					}
 					else
@@ -182,11 +184,13 @@ void GCAddMonsterCorpseHandler::execute ( GCAddMonsterCorpse * pPacket , Player 
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, pPacket->getX(), pPacket->getY());
 						
 						delete pCorpse;
+						// The corpse freed its creature too.
+						pCreature = NULL;
 					}								
 				}
 				
 				// A Christmas tree takes an effect.
-				if(CreatureState::GetCreatureType( pCreature ) == 482 || CreatureState::GetCreatureType( pCreature ) == 650)
+				if(pCreature != NULL && (CreatureState::GetCreatureType( pCreature ) == 482 || CreatureState::GetCreatureType( pCreature ) == 650))
 				{
 					if(CreatureState::GetCreatureType( pCreature ) == 482)
 						CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_CLIENTONLY_XMAS_TREE, 0xFFFF );
