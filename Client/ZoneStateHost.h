@@ -307,6 +307,10 @@ struct Host
 	// The creature's competence (0 for an operator, as the server marks
 	// one).
 	void (*SetCompetence)(MCreature* pCreature, int competence) = nullptr;
+	// The colour of the master's aura the creature shows (0 for none).
+	void (*SetMasterEffectType)(MCreature* pCreature, int type) = nullptr;
+	// The guild union the creature's guild belongs to.
+	void (*SetUnionGuildID)(MCreature* pCreature, int unionID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -425,5 +429,7 @@ int GetZ(MCreature* pCreature);
 bool IsPlainCreatureWear(MCreature* pCreature);
 void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo);
 void SetCompetence(MCreature* pCreature, int competence);
+void SetMasterEffectType(MCreature* pCreature, int type);
+void SetUnionGuildID(MCreature* pCreature, int unionID);
 
 }
