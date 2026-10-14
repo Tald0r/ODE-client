@@ -11,12 +11,8 @@
 #endif
 #include <fstream>
 
-extern BOOL g_bMsgOutPutFlag;
-extern BOOL g_bMsgDetailFlag;
-extern BOOL g_bMsgContentFlag;
-extern CMessageStringTable g_MessageStringTable;
-extern BYTE g_nKeyMapSelect;
-extern int g_nGameVersion;
+// InitDebugInfo, which fills Client.cpp's debug globals from these, is
+// Client.cpp's (task 4.206).
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -148,33 +144,3 @@ void CMessageStringTable::SaveToFile(std::string strFileName)
 	(void)strFileName;
 
 }
-
-#ifdef DEBUG_INFO
-BOOL InitDebugInfo()
-{
-	CDebugKit *p_dKit = new CDebugKit();
-	if(p_dKit->load() == FALSE)
-		return FALSE;
-
-	g_bMsgOutPutFlag = p_dKit->GetMsgOutPutFlag();
-	g_bMsgContentFlag = p_dKit->GetMsgContentFlag();
-	g_bMsgDetailFlag = p_dKit->GetMsgDetailFlag();
-
-	g_nKeyMapSelect = p_dKit->GetAuthKeyMap();
-	g_nGameVersion = p_dKit->GetGameVersion();
-	std::string strFileName;
-	strFileName = p_dKit->GetMsgFileName();
-	
-	g_MessageStringTable.LoadFromFile(strFileName);
-
-	const char *p_cName = g_MessageStringTable.GetMessageName(100);
-	delete p_dKit;
-	return TRUE;
-}
-
-void ClearDebugInfo()
-{
-	g_MessageStringTable.ClearMessageName();
-}
-
-#endif

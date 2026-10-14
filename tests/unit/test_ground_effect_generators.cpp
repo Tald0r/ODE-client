@@ -312,6 +312,7 @@ TEST(GroundEffectGenerators, TheActionsGradeLaysARowACrossOrASquare)
 	EFFECTGENERATOR_INFO facing = Info(500, 1);
 	facing.direction = DIRECTION_DOWN;
 	CHECK(world.attach.Generate(facing));
+	CHECK_EQ(3, queued.size());
 	for (size_t i = 0; i < queued.size(); i++) CHECK_EQ(DIRECTION_DOWN, Effect(i).GetDirection());
 	// An unknown grade lays nothing, and is still true.
 	queued.clear();

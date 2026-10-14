@@ -900,12 +900,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		Client/WinLib/*.cpp
 	)
 
-	# Add additional source files
-	list(APPEND CLIENT_MAIN_SOURCES
-		# Globals.cpp - the globals and print helpers the game needs
-		Client/Globals.cpp
-	)
-
 	# The eight files this list used to remove one by one - the port-era
 	# exclusion graveyard (GlobalVariables, MissingGlobals, GameHelpers,
 	# GameFunctions, GamePacketFunctions, ActionFunctions and a stale
@@ -953,6 +947,8 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	# structures ourselves would only compile, not actually work on x64.
 	# CAVI's methods are stubbed out directly in CAvi.cpp instead (all
 	# platforms, not just non-Windows) rather than excluding the file.
+	# Since task 4.205 it is a gamemodel member (tests/arch/gamemodel_files.txt),
+	# so it leaves this list with the other members.
 
 	# The custom MP3/Huffman decoder (mp3/huffman/reader/header/synfilt/
 	# subdecoder/soundbuf/BIT_RES, once duplicated between Client/ and

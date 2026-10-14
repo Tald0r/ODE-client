@@ -241,7 +241,39 @@ struct REALSERVER_INFO
 BYTE g_macAddress[6];
 extern void CheckMacScreenMode();
 extern BOOL GetMacAddressFromSock();
-extern BOOL InitDebugInfo();
+// The debug kit's start-up (DebugKit.h defines DEBUG_INFO only with
+// WINDOWS_SCREEN_DISPLAY, which no build sets). It fills the debug globals
+// above from DebugInfo.ini; moved from DebugKit.cpp with task 4.206, so the
+// kit's classes carry no executable symbol.
+#ifdef DEBUG_INFO
+BOOL InitDebugInfo()
+{
+	CDebugKit *p_dKit = new CDebugKit();
+	if(p_dKit->load() == FALSE)
+		return FALSE;
+
+	g_bMsgOutPutFlag = p_dKit->GetMsgOutPutFlag();
+	g_bMsgContentFlag = p_dKit->GetMsgContentFlag();
+	g_bMsgDetailFlag = p_dKit->GetMsgDetailFlag();
+
+	g_nKeyMapSelect = p_dKit->GetAuthKeyMap();
+	g_nGameVersion = p_dKit->GetGameVersion();
+	std::string strFileName;
+	strFileName = p_dKit->GetMsgFileName();
+
+	g_MessageStringTable.LoadFromFile(strFileName);
+
+	const char *p_cName = g_MessageStringTable.GetMessageName(100);
+	delete p_dKit;
+	return TRUE;
+}
+
+void ClearDebugInfo()
+{
+	g_MessageStringTable.ClearMessageName();
+}
+
+#endif
 // add by Sonic 2006.9.26 检测1024 * 768版本全局变量
 BOOL g_MyFull=TRUE;
 RECT g_GameRect={799,599,800,600};

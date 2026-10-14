@@ -81,14 +81,31 @@ Client/MShadowAnimationObject.cpp
 Client/MShadowAnimationObject.h
 Client/MInteractionObject.cpp
 Client/MInteractionObject.h
-Client/CUsingColorSetTable.cpp
-Client/CUsingColorSetTable.h
-Client/PackFileManager.cpp
-Client/PackFileManager.h
-Client/MObjectScreen.cpp
 Client/ShowTimeData.cpp
 Client/ShowTimeChecker.cpp
 Client/ShowTimeChecker.h
+
+# The colour-set table (4.203).
+Client/CUsingColorSetTable.cpp
+Client/CUsingColorSetTable.h
+
+# The pack-file record and the objects' screen rects (4.204).
+Client/PackFileManager.cpp
+Client/PackFileManager.h
+Client/MObjectScreen.cpp
+
+# The video stub, the update base and the work-queue node base (4.205).
+Client/CAvi.cpp
+Client/CAvi.h
+Client/WinLib/CWinUpdate.cpp
+Client/WinLib/CWinUpdate.h
+Client/MWorkNode.cpp
+Client/MWorkNode.h
+
+# The debug kit's ini reader and the message-name table (4.206).
+Client/DebugKit.cpp
+Client/DebugKit.h
+Client/StdAfx.h
 
 # Money (task 4.2; the price and trade managers wait for the item core)
 Client/MMoneyManager.cpp

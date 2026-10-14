@@ -175,14 +175,14 @@ bool	g_bFrameChanged	 = false;
 DWORD	g_DrawAlphaNum = 256;
 extern bool	g_bInterpolateDraw;	// MObjectScreen.cpp's
 
-// The game frame is letterbox-scaled into the window by
-// spritectl_present_surface, so every Win32 cursor position must be mapped
-// from window-client space back to game space before the UI consumes it.
 // The camera-interpolation bias passed into the last MTopView::Draw;
 // MObjectScreen.cpp holds it and says why picking adds it back.
 extern int	g_DrawCamGapX;
 extern int	g_DrawCamGapY;
 
+// The game frame is letterbox-scaled into the window by
+// spritectl_present_surface, so every Win32 cursor position must be mapped
+// from window-client space back to game space before the UI consumes it.
 extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 static void WindowToGamePoint(POINT& pt)
 {
