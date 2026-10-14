@@ -4510,10 +4510,12 @@ rounds settled* for the host rules). Test fixtures share
   > - The reply returns at once without a peer's connection (the game
   >   connection reads a `CRRequest` as well, and the cast gave NULL),
   >   and before a character is chosen no profile is the player's (the
-  >   compare ran `strlen` on the empty `CharacterID`'s NULL). Both
-  >   crashed any client a peer or the server sent the request to;
+  >   compare ran `strlen` on the empty `CharacterID`'s NULL). The
+  >   first crash needed the game server to send the request; the second
+  >   needed only a peer asking before a character was chosen.
   >   `CRWhisperHandler` had the first crash too, and has the same
-  >   return.
+  >   return. `CRConnectHandler` still answers a request off the game
+  >   connection by throwing `DisconnectException` (a follow-up).
   > R1 is 114 Windows / 112 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_peer_request_replies.cpp` (the profile queued, a request
@@ -4537,9 +4539,10 @@ rounds settled* for the host rules). Test fixtures share
   > `SetServerGroupName`). After a login the account's family flag and
   > premium days are kept: a Netmarble account has none to show, and the
   > dormant-account event's first login starts a free week with a
-  > notice. `g_LeftPremiumDays` and `g_bFamily` moved from `Client.cpp`
-  > to `ClientMode.cpp`, beside `g_bNeedUpdate`. R1 is 112 Windows / 110
-  > Ninja.
+  > notice, whose missing string now reads as empty (`GetGameString`)
+  > rather than NULL. `g_LeftPremiumDays` and `g_bFamily` moved from
+  > `Client.cpp` to `ClientMode.cpp`, beside `g_bNeedUpdate`. R1 is 112
+  > Windows / 110 Ninja.
   - Owner: membership, R1, the five entries and adapters, and
     `test_login_welcome_replies.cpp` (a login, a new account, the ID's
     length either side of 15, the teen version, quitting to update, the

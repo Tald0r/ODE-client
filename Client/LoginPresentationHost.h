@@ -42,6 +42,7 @@ struct Host
 	void (*BackupLoginID)(const char* id) = nullptr;
 	// Sets the mode that waits for the world list now.
 	void (*EnterWaitWorldListMode)() = nullptr;
+	// The server group the account joined, kept for the world screens.
 	void (*SetServerGroupName)(const char* name) = nullptr;
 	// Shows blood and gore, or hides them.
 	void (*SetGoreLevel)(bool gore) = nullptr;

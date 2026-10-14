@@ -141,9 +141,12 @@ TEST(LoginWelcomeReplies, ALongIDIsKeptAsDarkEden)
 	g_pUserInformation->UserID = "fifteen_chars__";
 	ReceiveLogin(player);
 	ReceiveRegistered(player);
+	g_pUserInformation->UserID = "fourteen_chars";
+	ReceiveRegistered(player);
 	CHECK(calls[0] == "keeps id|fourteen_chars");
 	CHECK(calls[3] == "keeps id|DarkEden");
 	CHECK(calls[6] == "keeps id|DarkEden");
+	CHECK(calls[10] == "keeps id|fourteen_chars");
 }
 
 TEST(LoginWelcomeReplies, TheTeenVersionHidesTheBlood)
