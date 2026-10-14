@@ -3514,6 +3514,8 @@ static const TradePresentation::Host s_TradePresentationHost = {
 	.CloseExchangeCancel = UI_CloseExchangeCancel,
 	.UnlockItem = UI_UnlockItem,
 	.RunItemShop = UI_RunItemShop,
+	.RunExchange = [](std::uint32_t otherID) { UI_RunExchange(otherID); },
+	.RunExchangeAsk = [](std::uint32_t otherID) { UI_RunExchangeAsk(otherID); },
 };
 
 static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
@@ -3637,6 +3639,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	},
 	.IsTraceCreature = []() { return g_pPlayer->IsTraceCreature() != FALSE; },
 	.TraceNULL = []() { g_pPlayer->TraceNULL(); },
+	.IsRepeatAction = []() { return g_pPlayer->IsRepeatAction() != FALSE; },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

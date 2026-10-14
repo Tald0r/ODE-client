@@ -1193,3 +1193,5 @@ Client/PacketHandler/GCAddOustersCorpseHandler.cpp
 # An NPC appearing, and the guild IDs it is given.
 Client/PacketHandler/GCAddNPCHandler.cpp
 Client/MGuildType.h
+# A trade asked for, accepted, refused or cancelled.
+Client/PacketHandler/GCTradePrepareHandler.cpp

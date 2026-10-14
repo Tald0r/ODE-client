@@ -216,4 +216,9 @@ void TraceNULL()
 	if (s_Host && s_Host->TraceNULL) s_Host->TraceNULL();
 }
 
+bool IsRepeatAction()
+{
+	return s_Host && s_Host->IsRepeatAction && s_Host->IsRepeatAction();
+}
+
 }

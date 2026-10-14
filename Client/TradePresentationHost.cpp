@@ -43,4 +43,14 @@ void RunItemShop(GCGoodsList* pPacket)
 	if (s_Host && s_Host->RunItemShop) s_Host->RunItemShop(pPacket);
 }
 
+void RunExchange(std::uint32_t otherID)
+{
+	if (s_Host && s_Host->RunExchange) s_Host->RunExchange(otherID);
+}
+
+void RunExchangeAsk(std::uint32_t otherID)
+{
+	if (s_Host && s_Host->RunExchangeAsk) s_Host->RunExchangeAsk(otherID);
+}
+
 }

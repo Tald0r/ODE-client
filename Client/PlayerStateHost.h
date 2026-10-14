@@ -158,6 +158,9 @@ struct Host
 	// it); TraceNULL stops it. False without a host.
 	bool (*IsTraceCreature)() = nullptr;
 	void (*TraceNULL)() = nullptr;
+	// Whether the player is repeating an action (attacking or using a
+	// skill again and again); false without a host.
+	bool (*IsRepeatAction)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -208,5 +211,6 @@ void UseSkillCardOK(int cardType);
 void SendInfoToParty();
 bool IsTraceCreature();
 void TraceNULL();
+bool IsRepeatAction();
 
 }
