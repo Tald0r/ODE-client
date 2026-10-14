@@ -9,15 +9,17 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToObjectOK2.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
 #include "MSkillManager.h"
-#include "PacketFunction2.h"
-
-// [새기술2]
-#include "SkillDef.h"	
-void	SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID);
-extern void Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature);
-extern void Add_Wild_Wolf(MCreature* UserCreature, MCreature* TargetCreature, bool IsEatCorpse);
+#include "Packet/WireHost.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
+#include "SkillDef.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player * pPlayer )
@@ -25,13 +27,21 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 	
 	//------------------------------------------------------------------
-	// 상태값을 바꾼다.
+	// Apply the status change.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	if (MStatus* pPlayerStatus = PlayerState::Status())
+		AffectModifyInfo(pPlayerStatus, pPacket);
 
 
 	int skillID = pPacket->getSkillType();
@@ -50,22 +60,22 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 	int delayFrame = ConvertDurationToFrame( pPacket->getDuration() );
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 
-		// 내(Player)가 누군가가 사용한 SKill을 맞은 경우..
+		// When I (the player) am hit by someone's skill..
 		// [ TEST CODE ]
 		MActionResult* pResult = new MActionResult;
 
@@ -73,73 +83,72 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 		if(pPacket->getSkillType() == SKILL_WILD_WOLF)
 		{
 			if(pCreature != NULL)
-				Add_Wild_Wolf(pCreature, g_pPlayer, pPacket->getGrade()?true:false);
+				WorldEvents::AddWildWolf(pCreature, pPlayerCreature, pPacket->getGrade()?true:false);
 			else
 			{
-				MItem* pItem = g_pZone->GetItem(pPacket->getObjectID());
-				if(pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE)
+				// The user may lie in a corpse; the skill then goes on
+				// from the corpse's creature.
+				pCreature = ZoneState::GetCorpseCreature(pPacket->getObjectID());
+				if(pCreature != NULL)
 				{
-					pCreature = ((MCorpse*)pItem)->GetCreature();
-					if(pCreature != NULL)
-					{
-						Add_Wild_Wolf(pCreature, g_pPlayer, pPacket->getGrade()?true:false);
-					}
+					WorldEvents::AddWildWolf(pCreature, pPlayerCreature, pPacket->getGrade()?true:false);
 				}
 			}
 		}
 		// 2005, 1, 3, sobeit add end
 		//------------------------------------------------------------------
-		// effect status를 적용시킨다.
+		// Apply the effect status.
 		//------------------------------------------------------------------
-		if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
+		MStatus* pPlayerStatus = PlayerState::Status();
+		if (pPlayerStatus != NULL && pPlayerStatus->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 		{
 			//int esDelayFrame = ConvertDurationToFrame( g_pPlayer->GetDURATION() );
 			pResult->Add( new MActionResultNodeAddEffectStatus( 
-										g_pPlayer->GetID(), 
-										(EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), 
+										PlayerState::GetID(), 
+										(EFFECTSTATUS)pPlayerStatus->GetEFFECT_STAT(), 
 										delayFrame ));
 
-			g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
+			pPlayerStatus->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 		}
 		else
 		{
 			//------------------------------------------------------
-			// EffectStatus가 있다면 붙인다.
+			// Attach the effect status, if there is one.
 			//------------------------------------------------------
 			EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 			
 			if (es!=EFFECTSTATUS_NULL)
 			{
-				pResult->Add( new MActionResultNodeAddEffectStatus( g_pPlayer->GetID(),
+				pResult->Add( new MActionResultNodeAddEffectStatus( PlayerState::GetID(),
 																		es, 
 																		delayFrame ) );
 			}
 		}
 
 		//------------------------------------------------------
-		// [새기술]
-		// Typhoon 맞은 경우는 한동안 못 움직이게 한다.
-		// 임시로(-_-;) 1초
-		// player만 못 움직이도록 막으면 된다.
+		// [new skill]
+		// One hit by Typhoon cannot move for a while,
+		// for now (-_-;) a second.
+		// Only the player needs stopping.
 		//------------------------------------------------------
 		if (skillID==SKILL_TYPHOON || skillID == SKILL_WILD_TYPHOON)
 		{
 			if( pPacket->getGrade() == 1 || skillID == SKILL_WILD_TYPHOON )
-				g_pPlayer->SetDelay( 1000 );
+				PlayerState::SetDelay( 1000 );
 
 		}
 		// 2004, 11, 13, sobeit add start 
 		if(skillID == SKILL_PLASMA_ROCKET_LAUNCHER)
 		{
-			Add_RocketRuncher(pCreature, g_pPlayer);
+			WorldEvents::AddRocketLauncher(pCreature, pPlayerCreature);
 		}
 		// 2004, 11, 13, sobeit add end
 	
-		// 현재 무기의 적용을 받는 기술이면..
+		// A skill that takes the current weapon's action..
 		if ((*g_pActionInfoTable)[skillID].IsAffectCurrentWeaponAction()
 			&& pCreature!=NULL)
 		{
-			skillID = pCreature->GetBasicActionInfo();
+			skillID = CreatureState::GetBasicActionInfo( pCreature );
 
 			if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 			{
@@ -151,20 +160,20 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 		pResult->Add( new MActionResultNodeActionInfo( 
 								skillID, 
 								pPacket->getObjectID(), 
-								g_pPlayer->GetID(), 
-								g_pPlayer->GetX(),
-								g_pPlayer->GetY(),
+								PlayerState::GetID(), 
+								CreatureState::GetX( pPlayerCreature ),
+								CreatureState::GetY( pPlayerCreature ),
 								delayFrame ) );	
 
 		//------------------------------------------------------
 		//
-		// skill에 결과가 있으면 적용 시킨다.
+		// If the skill has a result, apply it.
 		//
 		//------------------------------------------------------
-		MActionResultNode* pActionResultNode = CreateActionResultNode(g_pPlayer, skillID, pPacket->getGrade() );
+		MActionResultNode* pActionResultNode = CreateActionResultNode(pPlayerCreature, skillID, pPacket->getGrade() );
 
 		//------------------------------------------------------
-		// NULL이 아니면 실행
+		// Run it if not NULL
 		//------------------------------------------------------
 		if (pActionResultNode!=NULL)
 		{
@@ -172,69 +181,69 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 		}
 
 		//------------------------------------------------------
-		// 사용자가 없는 경우
+		// Without the user
 		//------------------------------------------------------
 		if (pCreature == NULL)
 		{
-			ExecuteActionInfoFromMainNode(
-						static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),										// 사용 기술 번호
+			WorldEvents::ExecuteActionInfoFromMainNode(
+						static_cast<TYPE_ACTIONINFO>(skillID + (*g_pActionInfoTable).GetMinResultActionInfo()),										// the skill used
 					
-						g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetZ(),
-						g_pPlayer->GetDirection(),														// 사용 방향
+						CreatureState::GetX( pPlayerCreature ), CreatureState::GetY( pPlayerCreature ), CreatureState::GetZ( pPlayerCreature ),
+						CreatureState::GetDirection( pPlayerCreature ),														// the direction used
 						
-						g_pPlayer->GetID(),												// 목표에 대한 정보
-						g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetZ(),
+						PlayerState::GetID(),												// the target
+						CreatureState::GetX( pPlayerCreature ), CreatureState::GetY( pPlayerCreature ), CreatureState::GetZ( pPlayerCreature ),
 						
-						delayFrame,													// 기술의 (남은) 지속 시간		
+						delayFrame,													// the skill's (remaining) duration		
 						
 						pResult,
 						
-						false);			// 기술 첨부터 시작한다.
+						false, 0, 0);			// start the skill from its beginning.
 		}
 		//------------------------------------------------------
-		// 사용자가 있는 경우
+		// With the user
 		//------------------------------------------------------
 		else
 		{
 			if(skillID == SKILL_ABSORB_SOUL)
-				pCreature->ClearStopBloodDrain();
+				CreatureState::ClearStopBloodDrain( pCreature );
 
-			// [새기술2]
-			// ShadowDancing인지 체크하고 임시로(-_-;) DoubleImpacet를 쓴다.
+			// [new skill 2]
+			// Check for Shadow Dancing, and use Double Impact for now (-_-;).
 
 			switch( skillID )
 			{
 			case SKILL_SHADOW_DANCING :
-				SkillShadowDancing(pCreature, g_pPlayer, SKILL_SINGLE_BLOW);
+				WorldEvents::SkillShadowDancing(pCreature, pPlayerCreature, SKILL_SINGLE_BLOW);
 				break;
 			// add by Coffee 2007-4-15
 			case SKILL_ILLUSION_INVERSION:
-				SkillIllendue( pCreature, g_pPlayer, TEMP_SKILL_ILLUSION_INVERSION);
+				WorldEvents::SkillIllendue( pCreature, pPlayerCreature, TEMP_SKILL_ILLUSION_INVERSION);
 				break;
 			// end by Coffee	
 			case SKILL_ILLENDUE :
-				// 2004, 12, 15, sobeit modify start - 힐직이 인챈 라이트볼 쓰는게 버그.
+				// 2004, 12, 15, sobeit modify start - a healer using the enchant light ball was a bug.
 				//SkillIllendue( pCreature, g_pPlayer, SKILL_LIGHT_BALL );
-				SkillIllendue( pCreature, g_pPlayer, MAGIC_CAUSE_SERIOUS_WOUNDS );
+				WorldEvents::SkillIllendue( pCreature, pPlayerCreature, MAGIC_CAUSE_SERIOUS_WOUNDS );
 				// 2004, 12, 15, sobeit modify end
 				break;
 				
 			case SKILL_BLAZE_WALK :
-				SkillBlazeWalk( pCreature , dynamic_cast<MCreature*>(g_pPlayer), SKILL_BLAZE_WALK_ATTACK, pPacket->getGrade()  );
+				WorldEvents::SkillBlazeWalk( pCreature , pPlayerCreature, SKILL_BLAZE_WALK_ATTACK, pPacket->getGrade()  );
 				break;
 
 			case SKILL_BITE_OF_DEATH :
-				g_pPlayer->SetDrainCreatureID( pPacket->getObjectID() );
+				CreatureState::SetDrainCreatureID( pPlayerCreature, pPacket->getObjectID() );
 				break;
 			case SKILL_SET_AFIRE:
-				pCreature->AddEffectStatus(EFFECTSTATUS_SET_AFIRE_ATTACK, 20);
+				CreatureState::AddEffectStatus( pCreature, EFFECTSTATUS_SET_AFIRE_ATTACK, 20 );
 				break;
 			}
 			
 			//------------------------------------------------------
-			// Player에게 protection이 걸려있는 경우
+			// When the player is protected
 			//------------------------------------------------------
-			if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_PROTECTION_FROM_ACID))
+			if (PlayerState::HasEffectStatus(EFFECTSTATUS_PROTECTION_FROM_ACID))
 			{
 				//------------------------------------------------------
 				// PROTECTION_FROM_ACID
@@ -248,42 +257,25 @@ void GCSkillToObjectOK2Handler::execute ( GCSkillToObjectOK2 * pPacket , Player 
 
 			// [ TEST CODE ]
 			//
-			// 결과를 생성&저장해서 보내야 한다.
+			// The result must be made, stored and sent.
 			//
-			// 방향을 바라보기
-			pCreature->SetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY());
+			// Face the direction
+			CreatureState::SetDirectionToPosition( pCreature, CreatureState::GetX( pPlayerCreature ), CreatureState::GetY( pPlayerCreature ));
 
 			//Duration_t	m_Duration;
-			pCreature->PacketSpecialActionToOther(
+			CreatureState::PacketSpecialActionToOther( pCreature,
 								skillID, 
-								g_pPlayer->GetID(),//pPacket->getObjectID(),
-								pResult						// 결과
+								PlayerState::GetID(),//pPacket->getObjectID(),
+								pResult						// the result
 			);
 		}
 	}		
 	
-	/*
-	//------------------------------------------------------
-	// Player가 기술을 당했을 때의 모습..
-	//------------------------------------------------------
-	int resultActionInfo =  pPacket->getSkillType() + (*g_pActionInfoTable).GetMinResultActionInfo();
-	g_pPlayer->PacketSpecialActionResult( 
-						resultActionInfo,
-						g_pPlayer->GetID(),
-						g_pPlayer->GetX(),
-						g_pPlayer->GetY()
-	);
-
-	//------------------------------------------------------------
-	// Delay Frame 설정
-	//------------------------------------------------------------
-	g_pPlayer->SetEffectDelayFrame( resultActionInfo, delayFrame );
-	*/
 
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Update what the UI shows.
+	// (Setting it beats comparing first.)
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

@@ -291,6 +291,9 @@ struct Host
 	// Whether the creature is a plain MCreature (not one that wears gear,
 	// an NPC, a fake or the player); false without a host.
 	bool (*IsPlainCreature)(MCreature* pCreature) = nullptr;
+	// The creature's height off the ground (a flying one's); 0 without a
+	// host.
+	int (*GetZ)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -405,5 +408,6 @@ void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITIO
 void SetGuildNumber(MCreature* pCreature, int guild);
 void SetBatColor(MCreature* pCreature, std::uint16_t colorSet);
 bool IsPlainCreature(MCreature* pCreature);
+int GetZ(MCreature* pCreature);
 
 }

@@ -3820,6 +3820,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetGuildNumber = [](MCreature* pCreature, int guild) { pCreature->SetGuildNumber(guild); },
 	.SetBatColor = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBatColor(colorSet); },
 	.IsPlainCreature = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_CREATURE; },
+	.GetZ = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetZ()); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

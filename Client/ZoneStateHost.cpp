@@ -657,4 +657,9 @@ bool IsPlainCreature(MCreature* pCreature)
 	return s_Host && s_Host->IsPlainCreature && s_Host->IsPlainCreature(pCreature);
 }
 
+int GetZ(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetZ ? s_Host->GetZ(pCreature) : 0;
+}
+
 }

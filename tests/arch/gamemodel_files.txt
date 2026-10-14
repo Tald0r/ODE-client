@@ -1161,5 +1161,8 @@ Client/PacketHandler/GCAddMonsterFromTransformationHandler.cpp
 # A monster appearing.
 Client/PacketHandler/GCAddMonsterHandler.cpp
 
-# A creature's skill landing on another creature.
+# A skill landing on a creature: the player's (OK1), on the player (OK2),
+# or between two other creatures (OK5).
+Client/PacketHandler/GCSkillToObjectOK1Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK2Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK5Handler.cpp
