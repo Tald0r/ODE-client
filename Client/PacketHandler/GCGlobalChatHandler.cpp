@@ -118,7 +118,7 @@ void GCGlobalChatHandler::execute ( GCGlobalChat * pPacket , Player * pPlayer )
 							if (PlayerState::GetRace() != race)
 							{
 								// INT goes up to 150, so...  
-								int percent = min(75, 25+pPlayerStatus->GetINT()*100/(min(2, PlayerState::GetRace()+1)*150));
+								int percent = min(75u, 25+pPlayerStatus->GetINT()*100/(min(2, PlayerState::GetRace()+1)*150));
 //								if(g_pPlayer->GetRace() == RACE_OUSTERS || race == RACE_OUSTERS)
 //									percent = 70;
 								
