@@ -4759,12 +4759,14 @@ rounds settled* for the host rules). Test fixtures share
   > up out of the ground; a land mine or a pleasure station trap out of a
   > burrow also shows its light. In a siege, a trap marked hidden is not
   > shown to an attacker at all; without a player it is shown (the old
-  > code dereferenced `g_pPlayer`). R1 is 100 Windows / 98 Ninja.
+  > code dereferenced `g_pPlayer`). Once moved, the hidden mark's check
+  > stopped casting the list's 16-bit statuses to `EFFECTSTATUS`, whose
+  > values end at 511. R1 is 100 Windows / 98 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_monster_appear_replies.cpp` (a new monster and one refused, a
     known one, each trap's light, a hidden trap for each attacker and
-    trap type, a defender, a non-trap, the mark as a duration, no
-    player, a transformed monster made, a plain one in place, another
+    trap type, a defender, a non-trap, the mark as a duration, a status
+    past the enum, no player, a transformed monster made, a plain one in place, another
     made again, one refused, no zone, no hosts).
 
 ### Remaining R1 work after tasks 4.80-4.174
