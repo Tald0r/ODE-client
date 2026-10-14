@@ -317,6 +317,10 @@ TEST(AddSlayerReplies, AnOperatorIsTheOperators)
 	Receive(1005, {FEMALE, 0});
 	CHECK(calls.size() > 5 && calls[2] == "competence|new|0" && calls[3] == "type|new|" + N(CREATURETYPE_SLAYER_OPERATOR)
 		&& calls[4] == "woman|new" && calls[5] == "guild|new|7");
+	// A man too.
+	calls.clear();
+	Receive(1006, {MALE, 0});
+	CHECK(calls.size() > 4 && calls[4] == "man|new");
 	// A known one takes no type.
 	calls.clear();
 	Receive(1003, {MALE, 0});

@@ -189,7 +189,7 @@ void GCAddVampireFromBurrowingHandler::execute ( GCAddVampireFromBurrowing * pPa
 			CreatureState::SetID( pCreature, vi.getObjectID() );
 			//pCreature->SetAction(ACTION_MOVE);
 			CreatureState::MovePosition( pCreature, vi.getX(), vi.getY() );
-			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );			
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
 			CreatureState::SetDirection( pCreature, vi.getDir() );
 			//pCreature->SetCurrentDirection( vi.getDir() );
 			CreatureState::SetAction( pCreature, ACTION_STAND );
@@ -243,9 +243,9 @@ void GCAddVampireFromBurrowingHandler::execute ( GCAddVampireFromBurrowing * pPa
 				CreatureState::GetDirection( pCreature ),														// the direction used
 				
 				OBJECTID_NULL,												// the target
-				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,
 				
-				0,													// the skill's (remaining) duration		
+				0,													// the skill's (remaining) duration
 				
 				NULL,
 				

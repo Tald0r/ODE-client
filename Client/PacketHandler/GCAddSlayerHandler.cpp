@@ -45,7 +45,7 @@ void GCAddSlayerHandler::execute ( GCAddSlayer * pPacket , Player * pPlayer )
 		
 	}	
 	//------------------------------------------------------
-	// Normal.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{

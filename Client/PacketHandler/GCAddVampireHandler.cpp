@@ -44,7 +44,7 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 		
 	}	
 	//------------------------------------------------------
-	// Normal.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
@@ -220,7 +220,7 @@ void GCAddVampireHandler::execute ( GCAddVampire * pPacket , Player * pPlayer )
 			
 			//pCreature->SetAction(ACTION_MOVE);
 			CreatureState::MovePosition( pCreature, vi.getX(), vi.getY() );
-			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );			
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
 			CreatureState::SetDirection( pCreature, vi.getDir() );
 			CreatureState::SetCurrentDirection( pCreature, vi.getDir() );
 			CreatureState::SetAction( pCreature, ACTION_STAND );

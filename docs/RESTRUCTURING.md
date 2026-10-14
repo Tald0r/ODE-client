@@ -4953,8 +4953,8 @@ rounds settled* for the host rules). Test fixtures share
   > master's aura, health, alignment, rank and name, standing, dressed as
   > the packet describes, and added to the zone (or dropped if the zone
   > refuses it). One the zone knows takes the advancement, guild, union,
-  > cell, direction, skin, aura and health in place, its type, name and
-  > dress kept. A creature that is no NPC by its type shows whether its
+  > walking, cell, direction, standing, skin, aura, health, alignment and
+  > rank in place, its type, name and dress kept. A creature that is no NPC by its type shows whether its
   > personal shop is open, and an open one shows the shop's sign (or the
   > default message, as the string table holds it) to a slayer player in
   > the chat colour. The slayer then takes the packet's effect statuses,

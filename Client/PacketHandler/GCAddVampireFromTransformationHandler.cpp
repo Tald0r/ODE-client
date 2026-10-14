@@ -270,9 +270,9 @@ void GCAddVampireFromTransformationHandler::execute ( GCAddVampireFromTransforma
 				CreatureState::GetDirection( pCreature ),														// the direction used
 				
 				OBJECTID_NULL,												// the target
-				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,
 				
-				0,													// the skill's (remaining) duration		
+				0,													// the skill's (remaining) duration
 				
 				NULL,
 				
