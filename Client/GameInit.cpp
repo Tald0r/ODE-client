@@ -3687,6 +3687,9 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
 	},
 	.SkillCrossCounter = SkillCrossCounter,
+	.SkillToSector = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult) {
+		SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
+	},
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

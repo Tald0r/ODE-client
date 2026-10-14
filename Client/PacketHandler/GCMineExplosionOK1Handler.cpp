@@ -9,7 +9,14 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMineExplosionOK1.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "DebugLog.h"
+#include "ExplosiveActions.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -24,15 +31,15 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not made yet.
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// The normal case. 
 	//------------------------------------------------------
 	else
 	{		 
@@ -43,7 +50,7 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 			//int resultActionInfo = skillID + (*g_pActionInfoTable).GetMinResultActionInfo();
 
 			//------------------------------------------------------
-			// 결과 생성
+			// Make the result.
 			//------------------------------------------------------
 			MActionResult* pResult = new MActionResult;
 		
@@ -54,23 +61,23 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 			for (int i=0; i<size; i++)
 			{
 				//pResult->Add( new MActionResultNodeActionInfo( 
-				//					OBJECTID_NULL,		// 사용자 없어도 되는걸까?
+				//					OBJECTID_NULL,		// the user; may it be missing?
 				//					pPacket->popCListElement(), 
 				//					skillType,
 				//					delayFrame ) );
 				//------------------------------------------------------
 				//
-				// skill에 결과가 있으면 적용 시킨다.
+				// Apply the skill's own result, if it has one.
 				//
 				//------------------------------------------------------
 				int targetID = pPacket->popCListElement();
 
-				MCreature* pTargetCreature = g_pZone->GetCreature( targetID );
+				MCreature* pTargetCreature = ZoneState::GetCreature( targetID );
 
 				if (pTargetCreature!=NULL)
 				{
 					//------------------------------------------------------
-					// EffectStatus가 있다면 붙인다.
+					// Add the effect status, if any.
 					//------------------------------------------------------
 					EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 								
@@ -85,12 +92,12 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 					switch ((*g_pActionInfoTable)[skillID].GetActionResultID())
 					{
 						//------------------------------------------------------
-						// 다른 ActionInfo 실행
+						// Run another action.
 						//------------------------------------------------------
 						case ACTIONRESULTNODE_ACTIONINFO :
 							pActionResultNode =  new MActionResultNodeActionInfo( 
 																(*g_pActionInfoTable)[skillID].GetActionResultValue(),
-																OBJECTID_NULL, // 사용자 없다 - -;
+																OBJECTID_NULL, // no user
 																targetID, 
 																pTargetCreature->GetX(),
 																pTargetCreature->GetY(),
@@ -109,12 +116,12 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 																skillID, //resultActionInfo,
 																targetID,
 																targetID, 
-																pTargetCreature->GetX(),
-																pTargetCreature->GetY(),
+																CreatureState::GetX(pTargetCreature),
+																CreatureState::GetY(pTargetCreature),
 																delayFrame);
 
 					//------------------------------------------------------
-					// NULL이 아니면 같이 적용
+					// Apply it too, if there is one.
 					//------------------------------------------------------
 					if (pActionResultNode!=NULL)
 					{
@@ -124,11 +131,11 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 			}
 
 			//------------------------------------------------------
-			// Sector에 바로 적용
+			// Apply it straight to the sector.
 			//------------------------------------------------------
 			int direction = pPacket->getDir();
 
-			SkillToSector(skillID, 
+			WorldEvents::SkillToSector(skillID, 
 							pPacket->getX(),
 							pPacket->getY(),
 							direction, 
@@ -141,11 +148,14 @@ void GCMineExplosionOK1Handler::execute ( GCMineExplosionOK1 * pPacket , Player 
 		}
 
 		//------------------------------------------------------------------
-		// Player가 당한것이므로..
+		// The player was caught in it, so...
 		//------------------------------------------------------------------
-		// 상태값을 바꾼다.
+		// Apply the status change.
 		//------------------------------------------------------------------
-		AffectModifyInfo(g_pPlayer, pPacket);
+		if (MStatus* pPlayerStatus = PlayerState::Status())
+		{
+			AffectModifyInfo(pPlayerStatus, pPacket);
+		}
 	}
 
 

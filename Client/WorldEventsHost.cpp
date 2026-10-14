@@ -82,4 +82,12 @@ void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITI
 		delete pResult;
 }
 
+void SkillToSector(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult)
+{
+	if (s_Host && s_Host->SkillToSector)
+		s_Host->SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
+	else
+		delete pResult;
+}
+
 }
