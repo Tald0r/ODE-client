@@ -1166,3 +1166,6 @@ Client/PacketHandler/GCAddMonsterHandler.cpp
 Client/PacketHandler/GCSkillToObjectOK1Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK2Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK5Handler.cpp
+
+# A creature turning into a slayer in sight.
+Client/PacketHandler/GCMorphSlayer2Handler.cpp

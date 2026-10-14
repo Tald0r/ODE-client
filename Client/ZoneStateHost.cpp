@@ -662,4 +662,14 @@ int GetZ(MCreature* pCreature)
 	return s_Host && s_Host->GetZ ? s_Host->GetZ(pCreature) : 0;
 }
 
+bool IsPlainCreatureWear(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsPlainCreatureWear && s_Host->IsPlainCreatureWear(pCreature);
+}
+
+void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo)
+{
+	if (s_Host && s_Host->SetAddonToSlayer3) s_Host->SetAddonToSlayer3(pCreature, pInfo);
+}
+
 }

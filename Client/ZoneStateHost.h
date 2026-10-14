@@ -10,6 +10,7 @@ class MItem;
 class MPetItem;
 class MShop;
 class MStatus;
+class PCSlayerInfo3;
 
 // The zone the player is in, and the creatures in it, as the replies about
 // them read and change them. MCreature stays the executable's: replies hold
@@ -294,6 +295,13 @@ struct Host
 	// The creature's height off the ground (a flying one's); 0 without a
 	// host.
 	int (*GetZ)(MCreature* pCreature) = nullptr;
+	// Whether the creature is a plain MCreatureWear (not the player, an NPC
+	// or a fake, which wear gear too); false without a host.
+	bool (*IsPlainCreatureWear)(MCreature* pCreature) = nullptr;
+	// Dresses a creature that wears gear as the slayer pInfo describes: its
+	// hair, coat, trousers, helmet, weapon, shield, motorcycle and shoulder,
+	// with their colours. Nothing for a creature that wears none.
+	void (*SetAddonToSlayer3)(MCreature* pCreature, const PCSlayerInfo3* pInfo) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -409,5 +417,7 @@ void SetGuildNumber(MCreature* pCreature, int guild);
 void SetBatColor(MCreature* pCreature, std::uint16_t colorSet);
 bool IsPlainCreature(MCreature* pCreature);
 int GetZ(MCreature* pCreature);
+bool IsPlainCreatureWear(MCreature* pCreature);
+void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo);
 
 }

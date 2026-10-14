@@ -3821,6 +3821,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetBatColor = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBatColor(colorSet); },
 	.IsPlainCreature = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_CREATURE; },
 	.GetZ = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetZ()); },
+	.IsPlainCreatureWear = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_CREATUREWEAR; },
+	.SetAddonToSlayer3 = [](MCreature* pCreature, const PCSlayerInfo3* pInfo) {
+		if (pCreature->IsWear()) SetAddonToSlayer(static_cast<MCreatureWear*>(pCreature), pInfo);
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

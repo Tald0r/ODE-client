@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------------------
 //
-// Filename    : GCMorph1Handler.cpp
+// Filename    : GCMorphSlayer2Handler.cpp
 // Written By  : Reiot
 //
 //--------------------------------------------------------------------------------
@@ -8,8 +8,10 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMorphSlayer2.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
 #include "MCreatureTable.h"
+#include "MStatus.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -22,116 +24,124 @@ void GCMorphSlayer2Handler::execute ( GCMorphSlayer2 * pPacket , Player * pPlaye
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
 		const PCSlayerInfo3 & si = pPacket->getSlayerInfo();
 
-		MCreature* pCreature = g_pZone->GetCreature(si.getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(si.getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
-		// 복장이 있는 Creature이다.
+		// A new creature: add it
+		// It is a creature that wears gear.
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			MCreatureWear* pCreatureWear = new MCreatureWear;
-
-			pCreatureWear->SetZone( g_pZone );
-	
-	
-
-			pCreatureWear->SetCreatureType( (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
-
-			pCreatureWear->SetGroundCreature();
-			pCreatureWear->SetID(si.getObjectID());
-			//pCreatureWear->SetAction(ACTION_MOVE);
-			pCreatureWear->SetPosition( si.getX(), si.getY() );
-			pCreatureWear->SetServerPosition( si.getX(), si.getY() );
-			pCreatureWear->SetDirection( si.getDir() );
-			pCreatureWear->SetCurrentDirection( si.getDir() );
-			pCreatureWear->SetAction( ACTION_STAND );
-
-			// 피부색
-			pCreatureWear->SetBodyColor1( si.getSkinColor() );
-			
-			pCreatureWear->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
-			pCreatureWear->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
-
-			// 이름
-			pCreatureWear->SetName( si.getName().c_str() );
-
-			// 색깔 정보
-
-			// 복장 정보 --> 일단 기본 옷을 입고 있게 한다.
-			//----------------------------------------	
-			// 복장을 착용한다.
-			//----------------------------------------	
-			SetAddonToSlayer( pCreatureWear, &si );
-
-			// 임시로
-			pCreatureWear->SetGuildNumber( -1 );
-
-			
-			if (!g_pZone->AddCreature( pCreatureWear ))
+			MCreature* pCreatureWear = ZoneState::NewCreatureWear();
+			if (pCreatureWear == NULL)
 			{
-				delete pCreatureWear;
+				return;
+			}
+	
+	
+
+			CreatureState::SetCreatureType( pCreatureWear, (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
+
+			CreatureState::SetGroundCreature( pCreatureWear );
+			CreatureState::SetID( pCreatureWear, si.getObjectID() );
+			//pCreatureWear->SetAction(ACTION_MOVE);
+			CreatureState::SetPosition( pCreatureWear, si.getX(), si.getY() );
+			CreatureState::SetServerPosition( pCreatureWear, si.getX(), si.getY() );
+			CreatureState::SetDirection( pCreatureWear, si.getDir() );
+			CreatureState::SetCurrentDirection( pCreatureWear, si.getDir() );
+			CreatureState::SetAction( pCreatureWear, ACTION_STAND );
+
+			// skin colour
+			CreatureState::SetBodyColor1( pCreatureWear, si.getSkinColor() );
+			
+			if (MStatus* pStatus = CreatureState::Status( pCreatureWear ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
+			}
+
+			// the name
+			CreatureState::SetName( pCreatureWear, si.getName().c_str() );
+
+			// the colour information
+
+			// its gear --> for now, in basic clothes.
+			//----------------------------------------	
+			// Put the gear on.
+			//----------------------------------------	
+			CreatureState::SetAddonToSlayer3( pCreatureWear, &si );
+
+			// for now
+			CreatureState::SetGuildNumber( pCreatureWear, -1 );
+
+			
+			if (!ZoneState::AddCreature( pCreatureWear ))
+			{
+				ZoneState::DeleteCreature( pCreatureWear );
 				pCreatureWear = NULL;
 				pCreature = NULL;
 			}
 		}
 		//--------------------------------------------------
-		// 기존에 있던 Creature이면 정보 변경
+		// A creature already there: change it
 		//--------------------------------------------------
 		else
 		{
-			if (pCreature->GetClassType()==MCreature::CLASS_CREATUREWEAR)
+			if (CreatureState::IsPlainCreatureWear( pCreature ))
 			{
-				MCreatureWear* pCreatureWear = (MCreatureWear*)pCreature;
+				MCreature* pCreatureWear = pCreature;
 
-				pCreatureWear->SetCreatureType( (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
+				CreatureState::SetCreatureType( pCreatureWear, (si.getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
 
-				pCreatureWear->SetGroundCreature();
+				CreatureState::SetGroundCreature( pCreatureWear );
 				//pCreatureWear->SetID(si.getObjectID());
 
-				// 임시로
-				pCreatureWear->SetGuildNumber( -1 );
+				// for now
+				CreatureState::SetGuildNumber( pCreatureWear, -1 );
 				
-				pCreatureWear->SetServerPosition( si.getX(), si.getY() );				
-				pCreatureWear->MovePosition( si.getX(), si.getY() );
-				pCreatureWear->SetDirection( si.getDir() );
+				CreatureState::SetServerPosition( pCreatureWear, si.getX(), si.getY() );				
+				CreatureState::MovePosition( pCreatureWear, si.getX(), si.getY() );
+				CreatureState::SetDirection( pCreatureWear, si.getDir() );
 				//pCreatureWear->SetCurrentDirection( si.getDir() );
-				pCreatureWear->SetAction( ACTION_STAND );
+				CreatureState::SetAction( pCreatureWear, ACTION_STAND );
 
-				// 피부색
-				pCreatureWear->SetBodyColor1( si.getSkinColor() );
+				// skin colour
+				CreatureState::SetBodyColor1( pCreatureWear, si.getSkinColor() );
 			
-				pCreatureWear->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
-				pCreatureWear->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
+				if (MStatus* pStatus = CreatureState::Status( pCreatureWear ))
+				{
+					pStatus->SetStatus( MODIFY_MAX_HP, si.getMaxHP() );
+					pStatus->SetStatus( MODIFY_CURRENT_HP, si.getCurrentHP() );
+				}
 
-				// 이름
-				pCreatureWear->SetName( si.getName().c_str() );
+				// the name
+				CreatureState::SetName( pCreatureWear, si.getName().c_str() );
 
-				// 색깔 정보
+				// the colour information
 
 				//----------------------------------------	
-				// 복장을 착용한다.
+				// Put the gear on.
 				//----------------------------------------	
-				SetAddonToSlayer( pCreatureWear, &si );
+				CreatureState::SetAddonToSlayer3( pCreatureWear, &si );
 			}
 			else
 			{
-				DEBUG_ADD_FORMAT_ERR("[Error] the Creature is Not CreatureWear. id=%d", pCreature->GetID());
+				DEBUG_ADD_FORMAT_ERR("[Error] the Creature is Not CreatureWear. id=%d", CreatureState::GetID( pCreature ));
 			}
 		}
 
