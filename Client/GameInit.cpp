@@ -138,6 +138,8 @@
 #include "MStopZoneEmptyVerticalEffectGenerator.h"
 #include "MFallingEffectGenerator.h"
 #include "MAttackZoneEffectGenerator.h"
+#include "MFirePiecingEffectGenerator.h"
+#include "MPlayingWithFireEffectGenerator.h"
 #include "MAttackZoneParabolaEffectGenerator.h"
 #include "MAttackZoneBombEffectGenerator.h"
 #include "MMultipleFallingEffectGenerator.h"
@@ -2725,6 +2727,8 @@ void ReleaseAllObjects()
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(nullptr);
 	MFallingEffectGenerator::SetHost(nullptr);
 	MAttackZoneEffectGenerator::SetHost(nullptr);
+	MFirePiecingEffectGenerator::SetHost(nullptr);
+	MPlayingWithFireEffectGenerator::SetHost(nullptr);
 	MAttackZoneBombEffectGenerator::SetHost(nullptr);
 	MAttackZoneParabolaEffectGenerator::SetHost(nullptr);
 	MMultipleFallingEffectGenerator::SetHost(nullptr);
@@ -4738,6 +4742,8 @@ InitGameObject()
 	MStopZoneEmptyVerticalWallEffectGenerator::SetHost(&s_EmptyWallEffectHost);
 	MFallingEffectGenerator::SetHost(&s_FallingEffectHost);
 	MAttackZoneEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
+	MFirePiecingEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
+	MPlayingWithFireEffectGenerator::SetHost(&s_ZoneAttackEffectHost);
 	MAttackZoneBombEffectGenerator::SetHost(&s_ZoneBombEffectHost);
 	MAttackZoneParabolaEffectGenerator::SetHost(&s_ZoneParabolaEffectHost);
 	MMultipleFallingEffectGenerator::SetHost(&s_MultipleFallingEffectHost);

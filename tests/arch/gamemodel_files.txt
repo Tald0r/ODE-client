@@ -627,6 +627,13 @@ Client/MAttackCreatureEffectGenerator.h
 Client/MAttackCreatureHomingEffectGenerator.cpp
 Client/MAttackCreatureHomingEffectGenerator.h
 
+# Fire piercing and playing with fire, over the zone attack's services
+# (4.201).
+Client/MFirePiecingEffectGenerator.cpp
+Client/MFirePiecingEffectGenerator.h
+Client/MPlayingWithFireEffectGenerator.cpp
+Client/MPlayingWithFireEffectGenerator.h
+
 # Wide ripple rows and center-only target ownership (4.77).
 Client/MRippleZoneWideEffectGenerator.cpp
 Client/MRippleZoneWideEffectGenerator.h
