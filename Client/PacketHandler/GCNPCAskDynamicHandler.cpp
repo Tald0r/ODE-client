@@ -96,9 +96,12 @@ void GCNPCAskDynamicHandler::execute ( GCNPCAskDynamic * pPacket , Player * pPla
 					for (int i=0; i<size; i++)
 					{
 						// Into the PC talk box.
+						// Every answer leaves the packet, so a refused one takes its
+						// text with it.
+						const std::string answer = pPacket->popContent();
 						if( g_pSystemAvailableManager->ScriptFiltering( pPacket->getScriptID(), i ) )
 						{
-							g_pPCTalkBox->AddString( pPacket->popContent().c_str() );
+							g_pPCTalkBox->AddString( answer.c_str() );
 							g_pPCTalkBox->m_AnswerIDMap.push_back( i );
 						}
 					}

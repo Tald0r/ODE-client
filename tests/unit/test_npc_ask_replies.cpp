@@ -332,3 +332,14 @@ TEST(NPCAskReplies, WithoutADialogHostTheTalkBoxIsNotShown)
 	CHECK(calls == std::vector<std::string>({"verified", "verified"}));
 	world.Shows("Hello, %(name)", 1003, 250, 77);
 }
+
+TEST(NPCAskReplies, AWholeQuestionKeepsEachAnswerWithItsText)
+{
+	World world;
+	world.GuildClosed();
+	AskDynamic(1003, "Where to?", {"North", "South", "East"});
+	CHECK(calls == std::vector<std::string>({"verified", "talk box shown"}));
+	// The refused second answer goes with its text, not the third's.
+	CHECK(world.Answers() == std::vector<std::string>({"North", "East"}));
+	CHECK(world.talkBox.m_AnswerIDMap == std::vector<int>({0, 2}));
+}
