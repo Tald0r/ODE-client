@@ -38,3 +38,10 @@ extern enum CLIENT_MODE		g_ModeNext;
 // Whether the client is quitting to be updated (it is set with MODE_QUIT);
 // login replies then show nothing. A BOOL.
 extern int					g_bNeedUpdate;
+
+// The account's premium days left, as the login server sends them: 0xFFFF
+// for a Netmarble account, 0xFFFE for none to show. The title screen and
+// the event notices read it.
+extern int					g_LeftPremiumDays;
+// Whether the account is a family (PC room) one.
+extern bool					g_bFamily;

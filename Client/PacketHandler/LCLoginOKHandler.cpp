@@ -16,23 +16,18 @@
 	#include "Cpackets/CLGetWorldList.h"
 	#include "UserInformation.h"
 	#include "MGameStringTable.h"
-	#include "UIDialog.h"
 
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "ClientMode.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "LoginPresentationHost.h"
 //#include "ServerInformation.h"
-
-extern BOOL		g_bNeedUpdate;
-extern int		g_LeftPremiumDays;
-extern bool		g_bFamily;
-
-bool	ChecknProtectCRC(HINSTANCE dll, char* FilePath);
 
 //----------------------------------------------------------------------
 //
-// 로그인 서버로부터 아이디와 패스워드의 인증을 받았다는 소리다.
+// The login server has accepted the ID and password.
 //
-// 이제 로그인 서버에게 PC 의 리스트를 요청하는 패킷을 전송하면 된다.
+// Now ask the login server for the world list (it once asked for the PC list).
 //
 //----------------------------------------------------------------------
 void LCLoginOKHandler::execute ( LCLoginOK * pPacket , Player * pPlayer )
@@ -43,15 +38,15 @@ void LCLoginOKHandler::execute ( LCLoginOK * pPacket , Player * pPlayer )
 
 	if( g_pUserInformation->UserID.GetLength() >= 15 )
 	{
-		UI_BackupLoginID( "DarkEden" );
+		LoginPresentation::BackupLoginID( "DarkEden" );
 	} 
 	else 
-		UI_BackupLoginID( g_pUserInformation->UserID );
+		LoginPresentation::BackupLoginID( g_pUserInformation->UserID );
 
 	if (!g_bNeedUpdate)
 	{
 		// 2004, 07, 20 sobeit add start
-		// 블럭 처리 된건 그전 꺼
+		// The blocked-out code is the earlier one
 //			ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
 //
 //			CLGetWorldList clGetWorldList;
@@ -67,7 +62,7 @@ void LCLoginOKHandler::execute ( LCLoginOK * pPacket , Player * pPlayer )
 			ClientPlayer * pClientPlayer = (ClientPlayer *)(g_pUserInformation->pLogInClientPlayer);
 			pClientPlayer->sendPacket( &clGetWorldList );
 
-			SetMode( MODE_WAIT_WORLD_LIST );
+			LoginPresentation::EnterWaitWorldListMode();
 /*
 		if(false == g_pUserInformation->IsAutoLogIn) 
 		{
@@ -87,32 +82,32 @@ void LCLoginOKHandler::execute ( LCLoginOK * pPacket , Player * pPlayer )
 
 
 		/*
-		// 예전꺼
+		// The old one
 		ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
 
 		CLGetPCList clGetPCList;
 
 		pClientPlayer->sendPacket( &clGetPCList );
 		
-		// 플레이어의 상태를 바꾼다.
+		// Change the player's status.
 		pClientPlayer->setPlayerStatus( CPS_AFTER_SENDING_CL_GET_PC_LIST );
 
 		//------------------------------------------------------------
-		// 현재 Server 정보를 저장해둔다.
+		// Keep the current server's information.
 		//------------------------------------------------------------
 		SetServerGroupName( pPacket->getGroupName().c_str() );
 		SetServerGroupStatus( (int)pPacket->getStat() );
 		//SetServerName( pPacket->getServerName().c_str() );
 
 		//------------------------------------------------------------
-		// Client는 PC List를 기다려야 한다.
+		// The client must wait for the PC list.
 		//------------------------------------------------------------	
 		SetMode( MODE_WAIT_PCLIST );
 		*/
 
-		// 넷마블용
+		// For Netmarble
 		//------------------------------------------------------------
-		// Gore Level을 바꾼다.
+		// Change the gore level.
 		//------------------------------------------------------------
 		bool bGoreLevel;
 		
@@ -121,11 +116,11 @@ void LCLoginOKHandler::execute ( LCLoginOK * pPacket , Player * pPlayer )
 //		else
 //		By tiancaiamao:
 //		bGoreLevel = pPacket->isAdult() && !g_pUserOption->UseTeenVersion;
-		bGoreLevel = !g_pUserOption->UseTeenVersion;
+		bGoreLevel = !LoginPresentation::UseTeenVersion();
 
 		g_pUserInformation->GoreLevel = bGoreLevel;
 
-		SetGoreLevel( bGoreLevel );			
+		LoginPresentation::SetGoreLevel( bGoreLevel );			
 	}
 
 
@@ -161,8 +156,8 @@ void LCLoginOKHandler::execute ( LCLoginOK * pPacket , Player * pPlayer )
 		// 2005, 1, 24, sobeit add start
 		if(0xFFFD == pPacket->getLastDays())
 		{
-			g_LeftPremiumDays = 7; // 휴면 계정 아이템 주는 이벤트 시 첫 접속일때 fffd가 날라온다. -> 무료 프리미엄 7일 시작
-			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[UI_STRING_MESSAGE_GET_EVENT_ITEM_NOTICE].GetString() );
+			g_LeftPremiumDays = 7; // on an account's first login in the dormant-account item event fffd comes: a free 7-day premium starts
+			DialogPresentation::PopupFreeMessageDlg( GetGameString(UI_STRING_MESSAGE_GET_EVENT_ITEM_NOTICE) );
 		}
 		else
 		// 2005, 1, 24, sobeit add end

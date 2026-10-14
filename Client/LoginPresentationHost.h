@@ -38,6 +38,16 @@ struct Host
 	void (*InitPlayer)(int x, int y, int direction) = nullptr;
 	// Sets the game mode now.
 	void (*EnterGameMode)() = nullptr;
+	// Keeps the login ID for the next login's ID box.
+	void (*BackupLoginID)(const char* id) = nullptr;
+	// Sets the mode that waits for the world list now.
+	void (*EnterWaitWorldListMode)() = nullptr;
+	void (*SetServerGroupName)(const char* name) = nullptr;
+	// Shows blood and gore, or hides them.
+	void (*SetGoreLevel)(bool gore) = nullptr;
+	// The player's option for the teen version (no gore); false without a
+	// host.
+	bool (*UseTeenVersion)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -62,5 +72,10 @@ void QueueWaitSelectPCMode();
 void ShowMessage(const char* message);
 void InitPlayer(int x, int y, int direction);
 void EnterGameMode();
+void BackupLoginID(const char* id);
+void EnterWaitWorldListMode();
+void SetServerGroupName(const char* name);
+void SetGoreLevel(bool gore);
+bool UseTeenVersion();
 
 }

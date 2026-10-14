@@ -1123,3 +1123,7 @@ Client/PacketHandler/GCFakeMoveHandler.cpp
 
 # A peer asking for the player's profile or guild mark.
 Client/PacketHandler/CRRequestHandler.cpp
+
+# The login server's welcome, after a login or a new account.
+Client/PacketHandler/LCLoginOKHandler.cpp
+Client/PacketHandler/LCRegisterPlayerOKHandler.cpp

@@ -3567,6 +3567,11 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.ShowMessage = g_ShowMessage,
 	.InitPlayer = [](int x, int y, int direction) { InitPlayer(x, y, direction); },
 	.EnterGameMode = []() { SetMode(MODE_GAME); },
+	.BackupLoginID = [](const char* id) { UI_BackupLoginID(id); },
+	.EnterWaitWorldListMode = []() { SetMode(MODE_WAIT_WORLD_LIST); },
+	.SetServerGroupName = [](const char* name) { SetServerGroupName(name); },
+	.SetGoreLevel = [](bool gore) { SetGoreLevel(gore); },
+	.UseTeenVersion = []() { return g_pUserOption->UseTeenVersion != FALSE; },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
