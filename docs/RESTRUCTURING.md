@@ -4672,8 +4672,10 @@ rounds settled* for the host rules). Test fixtures share
   > place of its twelve parts: each cell of the 3x4 block gives up a
   > part of any tree that belongs at that place. An operator's "*C2G on"
   > puts each item it creates on at once (new
-  > `VsUiPresentation::IsCreatingToGear`, `MoveCreatedToGear`). R1 is 106
-  > Windows / 104 Ninja.
+  > `VsUiPresentation::IsCreatingToGear`, `MoveCreatedToGear`). Once
+  > moved, a partial pickup whose stack is not where the inventory has it
+  > leaves the cell alone; it used to take out whatever item was there and
+  > lose it. R1 is 106 Windows / 104 Ninja.
   - Owner: membership, R1, the two entries and adapters, and
     `test_created_item_replies.cpp` (an item and a gun created, a taken
     cell, no class, part of a stack picked up, the part not where the

@@ -30,6 +30,7 @@ namespace {
 
 std::vector<std::string> calls;
 bool playerIsSlayer = true;
+bool hasPlayer = true;
 
 std::string N(long long value) { return std::to_string(value); }
 
@@ -59,14 +60,14 @@ const DialogPresentation::Host dialog = []() {
 
 const PlayerState::Host player = []() {
 	PlayerState::Host host{};
-	host.Creature = []() { return reinterpret_cast<MCreature*>(&calls); };
+	host.Creature = []() { return hasPlayer ? reinterpret_cast<MCreature*>(&calls) : nullptr; };
 	host.ClearItemCheckBuffer = []() { calls.push_back("check over"); };
 	return host;
 }();
 
 const CreatureState::Host creature = []() {
 	CreatureState::Host host{};
-	host.IsSlayer = [](MCreature*) { return playerIsSlayer; };
+	host.IsSlayer = [](MCreature* p) { CHECK(p != nullptr); return playerIsSlayer; };
 	return host;
 }();
 
@@ -104,6 +105,7 @@ struct World : GameModelWorld
 		pOther = Put(502, 5, 1);
 		calls.clear();
 		playerIsSlayer = true;
+		hasPlayer = true;
 	}
 	~World()
 	{
@@ -181,12 +183,21 @@ TEST(ItemToItemReplies, ARefusalSaysWhyAndLetsTheItemGo)
 	playerIsSlayer = false;
 	world.OnTarget();
 	Receive(ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_IMPOSSIBLE_NO_PREMIUM);
+	// No player: the vampire message, the race never asked.
+	playerIsSlayer = true;
+	hasPlayer = false;
+	world.OnTarget();
+	Receive(ADD_ITEM_TO_ITEM_VERIFY_ENCHANT_IMPOSSIBLE_NO_PREMIUM);
+	hasPlayer = true;
 	CHECK(calls == std::vector<std::string>({"popup|" + N(STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_SLAYER), "unlock", "check over",
+		"popup|" + N(STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_VAMPIRE), "unlock", "check over",
 		"popup|" + N(STRING_MESSAGE_ITEM_TO_ITEM_FAIL_NO_PREMIUM_VAMPIRE), "unlock", "check over"}));
 	// A mix of one option group, and a sex change refused.
 	calls.clear();
 	world.Mixing();
 	Receive(ADD_ITEM_TO_ITEM_VERIFY_MIXING_FAILED_SAME_OPTION_GROUP);
+	// The mix is over too.
+	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
 	world.OnTarget();
 	Receive(ADD_ITEM_TO_ITEM_VERIFY_TRANS_IMPOSSIBLE);
 	Receive(250);

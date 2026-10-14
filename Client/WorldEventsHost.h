@@ -51,8 +51,10 @@ struct Host
 	void (*MoveIntoPortal)(MCreature* pCreature) = nullptr;
 	// A dragon tornado (or its child) of the object at the cell.
 	void (*SetDragonTornado)(int effectStatus, std::uint32_t objectID, int x, int y) = nullptr;
-	// The effect an inventory item shows (an enchant's sparkle, say), after
-	// delayFrame frames; value is the action's own (an option, say).
+	// An inventory item's effect after delayFrame frames, value being the
+	// action's own (an option, say). It is the item's change too: when it
+	// lands, the host removes a broken item, changes an option or the sex,
+	// and ends the item-to-item check, freeing the item in hand.
 	void (*AddNewInventoryEffect)(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) = nullptr;
 };
 

@@ -46,10 +46,10 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 			// ( the number there was - the number left behind ).
 			int numPickup = pItem->GetNumber() - pPacket->getItemNum();
 
-			// Take it out of the inventory.
-			MItem* pRemovedItem = g_pInventory->RemoveItem( pItem->GetGridX(), pItem->GetGridY() );
-
-			if (pRemovedItem==pItem)
+			// Take it out of the inventory, if it is where the inventory has it
+			// (another item may be in its cell: that one stays).
+			if (g_pInventory->GetItem( pItem->GetGridX(), pItem->GetGridY() )==pItem
+				&& g_pInventory->RemoveItem( pItem->GetGridX(), pItem->GetGridY() )==pItem)
 			{
 				// Set its number again.
 				pItem->SetNumber( numPickup );
@@ -60,13 +60,6 @@ void GCCreateItemHandler::execute ( GCCreateItem * pPacket , Player * pPlayer )
 			else
 			{
 				DEBUG_ADD_ERR("[Error] PickupPart item Wrong");
-
-				// Another item was in its cell: it goes back where it was.
-				if (pRemovedItem!=NULL
-					&& !g_pInventory->AddItem( pRemovedItem, pRemovedItem->GetGridX(), pRemovedItem->GetGridY() ))
-				{
-					delete pRemovedItem;
-				}
 			}
 		}
 		else
