@@ -68,9 +68,11 @@ struct Host
 	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	// A new plain creature of the zone, not in it yet; the caller owns it.
-	// NULL without a host. AddCreature puts it in (false when one with its
-	// ID is there, and the caller still owns it); DeleteCreature deletes
-	// one the zone did not take.
+	// NULL without a host. AddCreature puts it in; false when the zone
+	// refuses it (one with its ID there already, a cell outside the zone or
+	// not set, an underground creature in the cell, a move type with no
+	// sectors), and the caller still owns it. DeleteCreature deletes one
+	// the zone did not take.
 	MCreature* (*NewCreature)() = nullptr;
 	// The same for a creature that wears gear (MCreatureWear): a bat or a
 	// wolf a vampire turns into, say.
