@@ -1,17 +1,21 @@
  //----------------------------------------------------------------------
 // MAttachZoneEffectGenerator.cpp
 //----------------------------------------------------------------------
-// Tile과 맞붙은 Effect들을 생성한다.
+// creates effects joined to the tiles.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MAttachZoneEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
+#include "MEffectTarget.h"
+#include "MEventQueue.h"
+#include "MViewDef.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "DebugInfo.h"
-#include "MEventManager.h"
+#include "DebugLog.h"
+#include "WorldEventsHost.h"
+#include "WorldTileGeometry.h"
+#include <cstdlib>
+#include <utility>
+#include <vector>
 //#define	new			DEBUG_NEW
 
 //----------------------------------------------------------------------
@@ -19,9 +23,31 @@
 //----------------------------------------------------------------------
 //MAttachZoneEffectGenerator	g_StopZoneEffectGenerator;
 
-bool	MercyGroundEffect( const EFFECTGENERATOR_INFO& egInfo )
+const MFixedZoneEffectHost* MAttachZoneEffectGenerator::s_pHost = nullptr;
+
+const MFixedZoneEffectHost* MAttachZoneEffectGenerator::SetHost(const MFixedZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+// The sprite of the type, with its frames; none past the table.
+bool MAttachZoneEffectGenerator::ReadSprite(int type, MFixedZoneEffectSprite& sprite)
+{
+	sprite = {};
+	return type >= 0 && s_pHost && s_pHost->Sprite && s_pHost->Sprite(static_cast<TYPE_EFFECTSPRITETYPE>(type), sprite);
+}
+
+// Consumes the effect; true only when the zone keeps it on the ground.
+bool MAttachZoneEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
+
+bool	MAttachZoneEffectGenerator::MercyGroundEffect( const EFFECTGENERATOR_INFO& egInfo )
 {	
-	POINT pt ={egInfo.x0, egInfo.y0};//g_pTopView->PixelToMap( egInfo.x0, egInfo.y0 );
+	POINT pt ={egInfo.x0, egInfo.y0};
 
 	int est = egInfo.effectSpriteType;		
 	
@@ -29,9 +55,15 @@ bool	MercyGroundEffect( const EFFECTGENERATOR_INFO& egInfo )
 	{
 		for(int i=-1;i<=1;i++)
 		{
-			BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-			TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
-			int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+			MFixedZoneEffectSprite sprite;
+			if (!ReadSprite( est, sprite ))
+			{
+				est++;
+				continue;
+			}
+			BLT_TYPE		bltType = static_cast<BLT_TYPE>(sprite.bltType);
+			TYPE_FRAMEID	frameID	= sprite.frameID;
+			int maxFrame = sprite.maxFrames;
 			
 			MEffect*	pEffect;
 			pEffect = new MEffect(bltType);
@@ -40,13 +72,13 @@ bool	MercyGroundEffect( const EFFECTGENERATOR_INFO& egInfo )
 			pEffect->SetPixelPosition(
 				pt.x , 
 				pt.y , 
-				egInfo.z0);		// pixel좌표
+				egInfo.z0);		// pixel position
 			
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+			pEffect->SetStepPixel(egInfo.step);		// it does not really move, but the next effect takes it.
+			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// the frames it lasts
 			pEffect->SetDirection( egInfo.direction );			
 			pEffect->SetPower(egInfo.power);			
-			if (g_pZone->AddGroundEffect( pEffect ) )
+			if (QueueEffect( std::unique_ptr<MEffect>(pEffect) ))
 			{
 				if( egInfo.effectSpriteType == est )
 					pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );				
@@ -81,26 +113,12 @@ MAttachZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		return MercyGroundEffect( egInfo );
 	}
 	
-	//---------------------------------------------
-	// pixel좌표를 Map의 좌표로 바꿔준다.
-	//---------------------------------------------
-	/*
-	int	sX, sY;
-	sX = g_pTopView->PixelToMapX(egInfo.x0);
-	sY = g_pTopView->PixelToMapY(egInfo.y0);
-	
-	  //---------------------------------------------
-	  // Map좌표를 다시 pixel좌표로 바꾼다.
-	  //---------------------------------------------
-	  POINT pixelPoint;
-	  pixelPoint = g_pTopView->MapToPixel(sX, sY);
-	*/
 	// 2001.10.6
 	POINT pixelPoint = { egInfo.x0, egInfo.y0 };
 	
 	
 	//----------------------------------------------------------------
-	// 바닥에 떨어지는 피 종류 랜덤하게.. 하드 코딩.. 에휴~
+	// the kind of blood on the ground at random.. hard-coded.. sigh~
 	//----------------------------------------------------------------
 	if (est==EFFECTSPRITETYPE_GREEN_BLOOD_GROUND_2_1)
 	{
@@ -138,7 +156,7 @@ MAttachZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		event.eventDelay = 500;
 		event.eventFlag = EVENTFLAG_SHAKE_SCREEN;
 		event.parameter3 = 3;
-		g_pEventManager->AddEvent(event);
+		WorldEvents::AddEvent(event);
 	}
 	else if(est == EFFECTSPRITETYPE_QUEST_MAGIC_ZONE)
 	{
@@ -146,55 +164,60 @@ MAttachZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		pixelPoint.y -= 14;
 	}
 	
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
+	MFixedZoneEffectSprite sprite;
+	if (!ReadSprite( est, sprite ))
+	{
+		return false;
+	}
+	BLT_TYPE		bltType = static_cast<BLT_TYPE>(sprite.bltType);
+	TYPE_FRAMEID	frameID	= sprite.frameID;
 	
 	//---------------------------------------------
-	// MaxFrame의 값을 알아온다.
+	// read MaxFrame.
 	//---------------------------------------------
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	int maxFrame = sprite.maxFrames;
 	
-	// 으흑흑..ㅡ.ㅜ
+	// sob.. -.-
 	if( egInfo.temp1 == 0 )				// UseActionGrade
 	{
 		MEffect*	pEffect;
 		//---------------------------------------------
-		// Effect 생성
+		// create the effect
 		//---------------------------------------------
 		pEffect = new MEffect(bltType);
 		
 		pEffect->SetFrameID( frameID, maxFrame );	
 		
-		pEffect->SetPixelPosition(pixelPoint.x, pixelPoint.y, egInfo.z0);		// pixel좌표		
+		pEffect->SetPixelPosition(pixelPoint.x, pixelPoint.y, egInfo.z0);		// pixel position
 		
-		pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
+		pEffect->SetStepPixel(egInfo.step);		// it does not really move, but the next effect takes it.
 		
-		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// the frames it lasts
 		
-		// 방향 설정
+		// the direction
 		pEffect->SetDirection( egInfo.direction );
 		
-		// 위력
+		// power
 		pEffect->SetPower(egInfo.power);
 		
-		// 빛의 밝기
+		// light brightness
 		//pEffect->SetLight( light );
 		
 		
-		// Ground Effect로..
-		// Zone에 추가한다.
-		if (g_pZone->AddGroundEffect( pEffect ))
+		// as a ground effect..
+		// add to the zone.
+		if (QueueEffect( std::unique_ptr<MEffect>(pEffect) ))
 		{
-			// 다음 Effect 생성 정보
+			// how the next effect is made
 			pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 			
 			return true;
 		}
 	} else
 	{
-		// ActionGrade 를 사용한다.
+		// with ActionGrade.
 		std::vector<POINT> effectlist;
-		POINT pt = g_pTopView->PixelToMap( pixelPoint.x, pixelPoint.y );
+		POINT pt = { WorldTileGeometry::PixelToTileX( pixelPoint.x ), WorldTileGeometry::PixelToTileY( pixelPoint.y ) };
 		
 		if( egInfo.temp1 == 1 )
 		{
@@ -239,15 +262,18 @@ MAttachZoneEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			pEffect = new MEffect(bltType);
 			
 			pEffect->SetFrameID( frameID, maxFrame );				
-			pEffect->SetPixelPosition(g_pTopView->MapToPixelX( effectlist[i].x), g_pTopView->MapToPixelY(effectlist[i].y), egInfo.z0);		// pixel좌표
-			pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+			pEffect->SetPixelPosition(WorldTileGeometry::TileToPixelX( effectlist[i].x), WorldTileGeometry::TileToPixelY(effectlist[i].y), egInfo.z0);		// pixel position
+			pEffect->SetStepPixel(egInfo.step);		// it does not really move, but the next effect takes it.
+			pEffect->SetCount( egInfo.count, egInfo.linkCount );			// the frames it lasts
 			pEffect->SetDirection( egInfo.direction );			
 			pEffect->SetPower(egInfo.power);			
-			if (g_pZone->AddGroundEffect( pEffect ) && i == 0)
+			// A refused effect is gone; only a kept one is linked (the first
+			// to the target, the others to copies).
+			const bool bKept = QueueEffect( std::unique_ptr<MEffect>(pEffect) );
+			if (bKept && i == 0)
 			{
 				pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );				
-			}  else
+			}  else if (bKept)
 			{
 				MEffectTarget *pTarget = egInfo.pEffectTarget;
 				

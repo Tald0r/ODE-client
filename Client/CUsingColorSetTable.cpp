@@ -17,7 +17,7 @@ USINGCOLORSET_TABLE*	g_pUsingColorSetTable = NULL;
 //----------------------------------------------------------------------
 USINGCOLORSET_NODE::USINGCOLORSET_NODE()
 {
-	// 모두 사용할 수 없다고 체크한다.
+	// mark them all unusable.
 	for (int i=0; i<MAX_COLORSET; i++)
 	{
 		m_bEnable[i] = false;
@@ -62,7 +62,7 @@ USINGCOLORSET_NODE::Disable(int set)
 //----------------------------------------------------------------------
 // Enable ( start ~ end )
 //----------------------------------------------------------------------
-// 일정 영역을 모두 enable 시킨다.
+// enable a whole range.
 //----------------------------------------------------------------------
 void			
 USINGCOLORSET_NODE::Enable(int start, int end)
@@ -81,7 +81,7 @@ USINGCOLORSET_NODE::Enable(int start, int end)
 //----------------------------------------------------------------------
 // Disable ( start ~ end )
 //----------------------------------------------------------------------
-// 일정 영역을 모두 disable 시킨다.
+// disable a whole range.
 //----------------------------------------------------------------------
 void			
 USINGCOLORSET_NODE::Disable(int start, int end)
@@ -104,14 +104,14 @@ USINGCOLORSET_NODE::Disable(int start, int end)
 void			
 USINGCOLORSET_NODE::SaveToFile(ofstream& file)
 {
-	// 개수 저장
+	// save the count
 	int size = MAX_COLORSET;
 	file.write((const char*)&size, 4);
 
-	// enable정보 저장
+	// save the enable flags
 	for (int i=0; i<MAX_COLORSET; i++)
 	{
-		file.write((const char*)&m_bEnable, 1);
+		file.write((const char*)&m_bEnable[i], 1);
 	}
 }
 
@@ -121,12 +121,18 @@ USINGCOLORSET_NODE::SaveToFile(ofstream& file)
 bool
 USINGCOLORSET_NODE::LoadFromFile(ifstream& file)
 {
-	// 개수 읽기
-	int size;
+	// read the count
+	int size = 0;
 	file.read((char*)&size, 4);
 
-	// 현재의 colorset과 개수가 다른 경우..
-	// file에서는 일단 읽어준다.
+	// A file cut short has no count to go by.
+	if (!file)
+	{
+		return false;
+	}
+
+	// a count other than the current colorsets'..
+	// still read them from the file.
 	if (MAX_COLORSET != size)
 	{
 		bool temp;
@@ -138,7 +144,7 @@ USINGCOLORSET_NODE::LoadFromFile(ifstream& file)
 		return false;
 	}
 
-	// 제대로 된 경우.. 다 읽어들인다.
+	// the right count.. read them all.
 	for (int i=0; i<size; i++)
 	{
 		file.read((char*)&m_bEnable[i], 1);

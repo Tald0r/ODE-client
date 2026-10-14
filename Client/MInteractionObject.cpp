@@ -21,7 +21,7 @@ MInteractionObject::MInteractionObject()
 
 MInteractionObject::MInteractionObject(TYPE_INTERACTIONOBJECTTYPE iaotype, TYPE_OBJECTID id, TYPE_OBJECTID ImageObjectID, TYPE_SPRITEID SpriteID, int pX, int pY, TYPE_SECTORPOSITION viewpoint, bool trans, BYTE type)
 {
-	// instance ID발급
+	// issue an instance ID
 	m_ID			= id;
 
 	m_InteractionObjectType	 = iaotype;
@@ -85,7 +85,7 @@ MInteractionObject::SetAction(BYTE action)
 //----------------------------------------------------------------------
 // Set NextAction
 //----------------------------------------------------------------------
-// action의 다음 action을 설정한다.
+// set the action after an action.
 //----------------------------------------------------------------------
 void			
 MInteractionObject::SetNextAction(BYTE action)
@@ -94,7 +94,6 @@ MInteractionObject::SetNextAction(BYTE action)
 	// Action dispatch is disabled in this client.
 }
 
-//----------------------------------------------------------------------
-// ChangeAction Door
-//----------------------------------------------------------------------
-// Live door/trap/switch actions are in MInteractionObjectAction.cpp.
+// SetAction's dispatch was disabled in the port, so the door/trap/switch
+// actions it would have run were never called; task 4.203 retired them
+// (a door blocked its tile when closed).

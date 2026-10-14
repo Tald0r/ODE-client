@@ -4,12 +4,14 @@
 #include "Client_PCH.h"
 #include "MRippleZonePixelEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
-#include "MCreature.h"
+#include "MEffectTarget.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
 #include "UserInformation.h"
+#include "WorldTileGeometry.h"
+#include "ZoneStateHost.h"
+#include <cmath>
+#include <cstdlib>
+#include <utility>
 
 //#include "DebugInfo.h"
 //#define	new			DEBUG_NEW
@@ -20,6 +22,21 @@
 //----------------------------------------------------------------------
 //MRippleZonePixelEffectGenerator	g_RippleZoneEffectGenerator;
 
+const MRippleZoneEffectHost* MRippleZonePixelEffectGenerator::s_pHost = nullptr;
+
+const MRippleZoneEffectHost* MRippleZonePixelEffectGenerator::SetHost(const MRippleZoneEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+// Consumes the effect; true only when the zone keeps it.
+bool MRippleZonePixelEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect, bool ground)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect), ground);
+}
+
 //----------------------------------------------------------------------
 // Generate
 //----------------------------------------------------------------------
@@ -27,17 +44,17 @@ bool
 MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 {
 	//------------------------------------------------------------
-	// 이번에는 시작좌표(sx,sy)에 Effect를 출력하고
-	// 다음에는 (tx,ty)에 Effect를 출력하게 된다.
-	// MEffectTarget을 수정하면 가능하다.
+	// this time the effect is drawn at the start (sx,sy)
+	// and next time at (tx,ty).
+	// changing the MEffectTarget makes it so.
 	//------------------------------------------------------------
 	MEffectTarget* pTarget = egInfo.pEffectTarget;
 
-	// 시작 좌표
+	// the start
 	int sx = egInfo.x0;
 	int sy = egInfo.y0;
 
-	// 목표 좌표
+	// the target
 	int tx = egInfo.x1; 
 	int ty = egInfo.y1;
 	int tz = 0;//egInfo.z1;
@@ -48,7 +65,7 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int est = egInfo.effectSpriteType;
 
 	//------------------------------------------------------------
-	// 하드코딩.. ㅋㅋ
+	// hard-coded.. heh
 	//------------------------------------------------------------
 	bool bPixelStepMove = false;
 	bool bGroundEffect = false;
@@ -60,7 +77,7 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	//------------------------------------------------------------
 	if (est==EFFECTSPRITETYPE_POWER_OF_LAND_STONE_1)
 	{
-		// 1~3사이에 하나를 선택한다.
+		// pick one of 1 to 3.
 		est = EFFECTSPRITETYPE_POWER_OF_LAND_STONE_2 + rand()%3;
 		
 		bGroundEffect = true;
@@ -73,7 +90,7 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	//------------------------------------------------------------
 	else if (est==EFFECTSPRITETYPE_EARTHQUAKE_1)
 	{
-		// 1~3사이에 하나를 선택한다.
+		// pick one of 1 to 3.
 		est = EFFECTSPRITETYPE_EARTHQUAKE_1 + rand()%3;
 		
 		bGroundEffect = true;
@@ -85,13 +102,13 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	//------------------------------------------------------------
 	else if (est==EFFECTSPRITETYPE_TRANSFUSION_1 || est==EFFECTSPRITETYPE_GREEN_TRANSFUSION_1)
 	{
-		MCreature* pCreature = g_pZone->GetCreature( egInfo.creatureID );
+		MCreature* pCreature = ZoneState::GetCreature( egInfo.creatureID );
 
 		int targetX, targetY;
 
-		// 이펙트(egInfo.xy0 + size)가  
-		// 캐릭터(pt + size)와 충돌하면
-		// 이펙트 그만 그린다..
+		// if the effect (egInfo.xy0 + size)
+		// meets the character (pt + size),
+		// stop drawing the effect..
 		POINT pt;
 
  		if (pCreature==NULL)
@@ -104,11 +121,12 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		}
 		else
 		{
-			targetX = pCreature->GetX();
-			targetY = pCreature->GetY();
+			targetX = CreatureState::GetX( pCreature );
+			targetY = CreatureState::GetY( pCreature );
 
 		}
-		pt = MTopView::MapToPixel( targetX, targetY );
+		pt.x = WorldTileGeometry::TileToPixelX( targetX );
+		pt.y = WorldTileGeometry::TileToPixelY( targetY );
 
 		RECT rectEffect = 
 		{
@@ -134,7 +152,7 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			return false;
 		}
 
-		// 1~3사이에 하나를 선택한다.
+		// pick one of 1 to 3.
 		if(g_pUserInformation->GoreLevel == false)
 			est = EFFECTSPRITETYPE_GREEN_TRANSFUSION_1 + rand()%3;
 		else
@@ -147,8 +165,8 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 
 	if (bPixelStepMove)
 	{
-		// 목표까지가는게 아니라.. 일정한 pixel수 만큼 가야한다?
-		// 한 단계 이동..
+		// not to the target.. but a set number of pixels?
+		// one step..
 		int movePixel = egInfo.step;// * egInfo.count;
 
 		int cx = sx-tx;
@@ -157,25 +175,25 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		if (bResetTarget && (cx==0 || cy==0))
 		{
 			//---------------------------------------------
-			// pixel좌표를 Map의 좌표로 바꿔준다.
+			// the pixel position to the map's.
 			//---------------------------------------------
 			TYPE_SECTORPOSITION	sX, sY;
-			sX = g_pTopView->PixelToMapX( sx );
-			sY = g_pTopView->PixelToMapY( sy );
+			sX = WorldTileGeometry::PixelToTileX( sx );
+			sY = WorldTileGeometry::PixelToTileY( sy );
 
 			//---------------------------------------------
-			// 나가는 방향으로 다음 좌표를 정한다.	
+			// the next position in the direction it goes.
 			//---------------------------------------------
 			TYPE_SECTORPOSITION x=sX, y=sY;
-			MCreature::GetPositionToDirection(x,y, egInfo.direction);
+			WorldTileGeometry::Step(x,y, egInfo.direction);
 
 			//---------------------------------------------
-			// (x,y)를 다시 pixel좌표로 바꾼다.
+			// (x,y) back to pixels.
 			//---------------------------------------------
-			tx = g_pTopView->MapToPixelX( x );
-			ty = g_pTopView->MapToPixelY( y );
+			tx = WorldTileGeometry::TileToPixelX( x );
+			ty = WorldTileGeometry::TileToPixelY( y );
 
-			// 다시 계산..
+			// work it out again..
 			cx = sx - tx;
 			cy = sy - ty;
 		}
@@ -205,7 +223,7 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	}
 
 	//-----------------------------------------------------
-	// MEffectTarget에 목표 위치를 다시 설정해야한다.
+	// the MEffectTarget's target must be set again.
 	//-----------------------------------------------------	
 	if (pTarget!=NULL && bResetTarget)
 	{
@@ -213,50 +231,48 @@ MRippleZonePixelEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	}
 
 
-	BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est].BltType;
-	TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est].FrameID;
+	// The sprite, with its frames; none past the table.
+	MFixedZoneEffectSprite sprite;
+	if (est < 0 || s_pHost == NULL || s_pHost->Sprite == NULL || !s_pHost->Sprite( static_cast<TYPE_EFFECTSPRITETYPE>(est), sprite ))
+	{
+		return false;
+	}
+	BLT_TYPE		bltType = static_cast<BLT_TYPE>(sprite.bltType);
+	TYPE_FRAMEID	frameID	= sprite.frameID;
 
-	int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+	int maxFrame = sprite.maxFrames;
 
 	MEffect*	pEffect;
 	//---------------------------------------------
-	// Effect 생성
+	// create the effect
 	//---------------------------------------------
 	pEffect = new MEffect(bltType);
 
 	pEffect->SetFrameID( frameID, maxFrame );	
 
-	//pEffect->SetPosition(x, y);		// Sector 좌표(의미 없을 듯)
+	//pEffect->SetPosition(x, y);		// sector position (probably meaningless)
 
-	pEffect->SetPixelPosition(tx, ty, tz);		// pixel 좌표		
+	pEffect->SetPixelPosition(tx, ty, tz);		// pixel position
 	
-	// 방향 설정
+	// the direction
 	pEffect->SetDirection( egInfo.direction );
 
 	//pEffect->SetZ( sz );			
-	pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+	pEffect->SetStepPixel(egInfo.step);		// it does not really move, but the next effect takes it.
+	pEffect->SetCount( egInfo.count, egInfo.linkCount );			// the frames it lasts
 
-	// 위력
+	// power
 	pEffect->SetPower(egInfo.power);
 
-	// 빛의 밝기
+	// light brightness
 	//pEffect->SetLight( light );
 
-	bool bAdd = false;
-	// Zone에 추가한다.		
-	if (bGroundEffect)
-	{
-		bAdd = g_pZone->AddGroundEffect( pEffect );
-	}	
-	else
-	{
-		bAdd = g_pZone->AddEffect( pEffect );
-	}
+	// add to the zone, on the ground or not.
+	bool bAdd = QueueEffect( std::unique_ptr<MEffect>(pEffect), bGroundEffect );
 
 	if (bAdd)
 	{
-		// 다음 Effect 생성 정보
+		// how the next effect is made
 		pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );	
 	}
 

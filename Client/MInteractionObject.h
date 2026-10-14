@@ -2,12 +2,12 @@
 // MInteractionObject.h
 //----------------------------------------------------------------------
 //
-// Action이 있는 ImageObject
+// An ImageObject with actions
 // 
 //----------------------------------------------------------------------
 //
-// 단, 각각의 Action에 대해서는 Animation이 없다.
-// 하나의 Action은 하나의 Frame에 대응한다.
+// but no animation for each action.
+// One action matches one frame.
 //
 //----------------------------------------------------------------------
 
@@ -32,13 +32,13 @@ class MInteractionObject : public MAnimationObject {
 		~MInteractionObject();
 
 		//--------------------------------------------------------
-		// Action에 관련된 함수
+		// the actions
 		//--------------------------------------------------------		
 		void			SetAction(BYTE action);
 		BYTE			GetAction() const			{ return m_CurrentFrame; }
 
 		//--------------------------------------------------------		
-		// action의 다음 action을 설정한다.
+		// set the action after an action.
 		//--------------------------------------------------------		
 		void			SetNextAction(BYTE action);
 
@@ -62,12 +62,6 @@ class MInteractionObject : public MAnimationObject {
 			TYPE_MAX
 		};
 		
-	protected :
-		// Action을 바꾼다.
-		void			ChangeActionDoor();
-		void			ChangeActionTrap();
-		void			ChangeActionSwitch();
-
 	protected :
 		TYPE_INTERACTIONOBJECTTYPE m_InteractionObjectType;
 };

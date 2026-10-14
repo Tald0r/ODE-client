@@ -81,6 +81,11 @@ Client/MShadowAnimationObject.cpp
 Client/MShadowAnimationObject.h
 Client/MInteractionObject.cpp
 Client/MInteractionObject.h
+Client/CUsingColorSetTable.cpp
+Client/CUsingColorSetTable.h
+Client/PackFileManager.cpp
+Client/PackFileManager.h
+Client/MObjectScreen.cpp
 Client/ShowTimeData.cpp
 Client/ShowTimeChecker.cpp
 Client/ShowTimeChecker.h
@@ -633,6 +638,13 @@ Client/MFirePiecingEffectGenerator.cpp
 Client/MFirePiecingEffectGenerator.h
 Client/MPlayingWithFireEffectGenerator.cpp
 Client/MPlayingWithFireEffectGenerator.h
+
+# Ground effects at a point and in pixel ripples, over the ground and
+# ripple services (4.202).
+Client/MAttachZoneEffectGenerator.cpp
+Client/MAttachZoneEffectGenerator.h
+Client/MRippleZonePixelEffectGenerator.cpp
+Client/MRippleZonePixelEffectGenerator.h
 
 # Wide ripple rows and center-only target ownership (4.77).
 Client/MRippleZoneWideEffectGenerator.cpp

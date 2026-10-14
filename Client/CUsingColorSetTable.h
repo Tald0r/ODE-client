@@ -1,16 +1,16 @@
 //----------------------------------------------------------------------
 // CUsingColorSetTable.h
 //----------------------------------------------------------------------
-// CIndexSprite에서 사용하는 ColorSet 중에서
-// 어떤 Sprite에는 특정한 색깔들만 사용할 수 있게 하기 위해서..
-// MAX_COLORSET개의 bool을 만들고
-// 사용할 수 있는 COLORSET에는 BOOL을 표시한다.
+// Of the ColorSets CIndexSprite uses,
+// so that some sprites may use only certain colours..
+// MAX_COLORSET bools are kept
+// and a usable COLORSET's is set.
 //----------------------------------------------------------------------
 
 #ifndef	__CUSINGCOLORSETTABLE_H__
 #define	__CUSINGCOLORSETTABLE_H__
 
-#include "CIndexSprite.h"
+#include "ColorSetDef.h"
 #include "CTypeTable.h"
 
 #include <fstream>
@@ -28,7 +28,7 @@ class USINGCOLORSET_NODE {
 		void			Disable(int set);
 
 		//-------------------------------------------------
-		// 일정 범위의 Enable / Disable 
+		// Enable / Disable a range
 		//-------------------------------------------------
 		void			Enable(int start, int end);
 		void			Disable(int start, int end);
@@ -49,7 +49,7 @@ extern 	USINGCOLORSET_TABLE*	g_pUsingColorSetTable;
 
 
 //----------------------------------------------------------------------
-// UsingColorSet의 종류...
+// the kinds of UsingColorSet...
 //----------------------------------------------------------------------
 enum USINGCOLORSET
 {
