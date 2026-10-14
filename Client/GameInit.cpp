@@ -3591,6 +3591,10 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.GetItemCheckBufferStatus = []() { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBufferStatus() : PlayerState::ITEM_CHECK_BUFFER_NULL; },
 	.SetCannotTrace = []() { if (g_pPlayer != NULL) g_pPlayer->SetCannotTrace(); },
 	.SetTimeLightSight = [](int sight) { if (g_pPlayer != NULL) g_pPlayer->SetTimeLightSight(static_cast<char>(sight)); },
+	.RemoveAddonItem = [](MItem* pItem) { return g_pPlayer != NULL && g_pPlayer->RemoveAddonItem(pItem); },
+	.CalculateStatus = []() { if (g_pPlayer != NULL) g_pPlayer->CalculateStatus(); },
+	.UseItemOK = []() { UseItemOK(); },
+	.UseSkillCardOK = [](int cardType) { UseSkillCardOK(static_cast<BYTE>(cardType)); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {

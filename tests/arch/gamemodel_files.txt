@@ -1090,3 +1090,7 @@ Client/PacketHandler/GCOtherModifyInfoHandler.cpp
 # The player's place on entering the game, and the dark and light of the hour.
 Client/PacketHandler/GCSetPositionHandler.cpp
 Client/PacketHandler/GCChangeDarkLightHandler.cpp
+
+# Which worn items count, and an item use or skill card the server allowed.
+Client/PacketHandler/GCRealWearingInfoHandler.cpp
+Client/PacketHandler/GCUseOKHandler.cpp

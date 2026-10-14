@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCUseOK.h"
-#include "ClientDef.h"
+#include "AffectModifyInfo.h"
+#include "PlayerStateHost.h"
 #include "MInventory.h"
 #include "MQuickSlot.h"
 #include "MSlayerGear.h"
@@ -25,21 +26,25 @@ void GCUseOKHandler::execute ( GCUseOK * pPacket , Player * pPlayer )
 
 	// message
 
-	// 음.. cut & paste의 걸작.. - -;;
+	// Hm.. a cut & paste masterpiece.. - -;;
 
-	UseItemOK();
+	PlayerState::UseItemOK();
 
 	//------------------------------------------------------------------
 	//
-	//						상태값을 바꾼다.
+	//						Change the status values.
 	//
 	//------------------------------------------------------------------
-	AffectModifyInfo( g_pPlayer, pPacket );
+	MStatus* pPlayerStatus = PlayerState::Status();
+	if (pPlayerStatus != NULL)
+	{
+		AffectModifyInfo( pPlayerStatus, pPacket );
+	}
 
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Change what the UI shows.
+	// Isn't this faster than comparing.. hm.. - -;
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );
@@ -58,21 +63,21 @@ void GCUseSkillCardOKHandler::execute ( GCUseSkillCardOK * pPacket , Player * pP
 
 	// message
 
-	// 음.. cut & paste의 걸작.. - -;;
+	// Hm.. a cut & paste masterpiece.. - -;;
 
-	UseSkillCardOK(pPacket->getCardType());
+	PlayerState::UseSkillCardOK(pPacket->getCardType());
 
 	//------------------------------------------------------------------
 	//
-	//						상태값을 바꾼다.
+	//						Change the status values.
 	//
 	//------------------------------------------------------------------
-//	AffectModifyInfo( g_pPlayer, pPacket );
+//	AffectModifyInfo( PlayerState::Status(), pPacket );
 
 
 	//------------------------------------------------------------------
-	// UI에 보이는 것을 바꿔준다.
-	// 비교연산하는거보다 이게 더 빠르지 않을까.. 음.. - -;
+	// Change what the UI shows.
+	// Isn't this faster than comparing.. hm.. - -;
 	//------------------------------------------------------------------
 	//UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
 	//UI_SetMP( g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP() );

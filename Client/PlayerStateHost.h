@@ -143,6 +143,15 @@ struct Host
 	void (*SetCannotTrace)() = nullptr;
 	// The player's sight by the time of day (the light around it).
 	void (*SetTimeLightSight)(int sight) = nullptr;
+	// The worn item no longer adds to the player (SetAddonItem undone);
+	// false when it did not.
+	bool (*RemoveAddonItem)(MItem* pItem) = nullptr;
+	// Works the player's status out again from what it wears and has.
+	void (*CalculateStatus)() = nullptr;
+	// The server allowed the item use, or the skill card of that type,
+	// that the player asked for: it is spent.
+	void (*UseItemOK)() = nullptr;
+	void (*UseSkillCardOK)(int cardType) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -185,5 +194,10 @@ void SetDelay(std::uint32_t milliseconds);
 ITEM_CHECK_BUFFER GetItemCheckBufferStatus();
 void SetCannotTrace();
 void SetTimeLightSight(int sight);
+// false without a host.
+bool RemoveAddonItem(MItem* pItem);
+void CalculateStatus();
+void UseItemOK();
+void UseSkillCardOK(int cardType);
 
 }
