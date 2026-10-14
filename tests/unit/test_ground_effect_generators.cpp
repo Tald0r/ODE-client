@@ -217,18 +217,24 @@ TEST(GroundEffectGenerators, BloodLandsNearItsPointInARandomFrame)
 		{EFFECTSPRITETYPE_BLOOD_GROUND_2_1, 4}, {EFFECTSPRITETYPE_BLOOD_GROUND_1_1, 5}};
 	for (const auto& c : cases)
 	{
-		for (unsigned seed : {3u, 4u, 5u})
+		// Seeds until every frame has been drawn.
+		std::vector<bool> seen(c.frames, false);
+		auto all = [&seen]() { for (bool s : seen) if (!s) return false; return true; };
+		for (unsigned seed = 1; seed <= 400 && !all(); seed++)
 		{
 			std::srand(seed);
 			const int frame = std::rand() % c.frames;
 			const int dx = std::rand() % TILE_X_HALF - (TILE_X_HALF >> 1);
 			const int dy = std::rand() % 24 - 12;
+			seen[frame] = true;
 			std::srand(seed);
 			queued.clear();
 			CHECK(world.attach.Generate(Info(c.type)));
 			CHECK_EQ(1, queued.size());
+			if (queued.empty()) continue;
 			CheckEffect(Effect(0), c.type + frame, 480 + dx, 240 + dy, 7);
 		}
+		CHECK(all());
 	}
 }
 
@@ -297,7 +303,16 @@ TEST(GroundEffectGenerators, TheActionsGradeLaysARowACrossOrASquare)
 	CHECK(world.attach.Generate(Info(EFFECTSPRITETYPE_QUEST_MAGIC_ZONE, 1)));
 	CHECK_EQ(3, queued.size());
 	for (size_t i = 0; i < queued.size(); i++)
+	{
 		CHECK_EQ(WorldTileGeometry::TileToPixelX(8 + static_cast<int>(i)), Effect(i).GetPixelX());
+		CHECK_EQ(WorldTileGeometry::TileToPixelY(9), Effect(i).GetPixelY());
+	}
+	// A grade's tiles face the action's direction.
+	queued.clear();
+	EFFECTGENERATOR_INFO facing = Info(500, 1);
+	facing.direction = DIRECTION_DOWN;
+	CHECK(world.attach.Generate(facing));
+	for (size_t i = 0; i < queued.size(); i++) CHECK_EQ(DIRECTION_DOWN, Effect(i).GetDirection());
 	// An unknown grade lays nothing, and is still true.
 	queued.clear();
 	CHECK(world.attach.Generate(Info(500, 4)));
@@ -339,6 +354,13 @@ TEST(GroundEffectGenerators, MercyGroundLaysItsNineParts)
 		if (i == 0) CHECK(Effect(i).GetEffectTarget() == info.pEffectTarget);
 		else CHECK(Effect(i).GetEffectTarget() != nullptr && Effect(i).GetEffectTarget() != info.pEffectTarget);
 	}
+	// Mercy Ground's parts face the action's direction.
+	queued.clear();
+	EFFECTGENERATOR_INFO facing = Info(EFFECTSPRITETYPE_MERCY_GROUND_1);
+	facing.direction = DIRECTION_UP;
+	CHECK(world.attach.Generate(facing));
+	CHECK_EQ(9, queued.size());
+	for (size_t i = 0; i < queued.size(); i++) CHECK_EQ(DIRECTION_UP, Effect(i).GetDirection());
 	// The zone keeping four: those four are linked, the rest are gone.
 	queued.clear();
 	acceptLimit = 4;

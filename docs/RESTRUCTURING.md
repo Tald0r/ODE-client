@@ -768,7 +768,7 @@ rounds settled* for the host rules). Test fixtures share
 - [x] **4.6 Map-file loading (code-health follow-up):** the header and five
   scenery record classes, with pure show-time data, are in `gamemodel`.
   > **Status:** implemented 2026-09-18. `MImageObjectScreen.cpp` retains
-  > screen geometry; `MInteractionObjectAction.cpp` retains live actions;
+  > screen geometry; `MInteractionObjectAction.cpp` kept the door/trap/switch actions (never called, retired in 4.203);
   > `ShowTimeChecker.cpp` retains scheduling. `ZoneMapData` now owns parsing
   > and validates the complete map before live sectors are replaced. Its
   > budgets bound input bytes, dimensions, sectors, objects and positions.

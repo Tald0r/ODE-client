@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -67,9 +68,11 @@ TEST(UsingColorSetTable, OneSetTurnsOnAndOffInRangeOnly)
 	node.Enable(0);
 	node.Enable(MAX_COLORSET - 1);
 	CHECK(node.Enabled() == (std::vector<int>{0, MAX_COLORSET - 1}));
-	node.Disable(0);
+	// Out of range: nothing, though the edge sets are on.
 	node.Disable(-1);
 	node.Disable(MAX_COLORSET);
+	CHECK(node.Enabled() == (std::vector<int>{0, MAX_COLORSET - 1}));
+	node.Disable(0);
 	CHECK(node.Enabled() == std::vector<int>{MAX_COLORSET - 1});
 }
 
@@ -85,6 +88,10 @@ TEST(UsingColorSetTable, ARangeTurnsOnAndOffWhenItsStartIsBelowItsEnd)
 	node.Enable(MAX_COLORSET - 2, MAX_COLORSET);
 	CHECK(node.Enabled() == (std::vector<int>{3, 4, 5, 6}));
 	node.Enable(MAX_COLORSET - 2, MAX_COLORSET - 1);
+	// A range may start at the first set.
+	node.Enable(0, 1);
+	CHECK(node.Is(0) && node.Is(1));
+	node.Disable(0, 1);
 	node.Disable(4, 5);
 	node.Disable(6, 6);
 	node.Disable(-1, 3);
@@ -132,18 +139,21 @@ TEST(UsingColorSetTable, ANodeLoadsOnlyItsOwnCount)
 		CHECK_EQ(9, next);
 	}
 	for (int i = 0; i < MAX_COLORSET; i++) CHECK(node.Is(i) == (i % 3 == 0));
-	// Another count: its bytes are skipped, the node is left as it was.
-	std::vector<unsigned char> other = Count(3);
-	other.insert(other.end(), {0, 1, 1, 7});
-	file.Write(other);
+	// Another count, smaller or larger: its bytes are skipped, the node is
+	// left as it was.
+	for (int count : {3, MAX_COLORSET + 1})
 	{
+		std::vector<unsigned char> other = Count(count);
+		for (int i = 0; i < count; i++) other.push_back(1);
+		other.push_back(7);
+		file.Write(other);
 		std::ifstream in(file.path, std::ios::binary);
 		CHECK(!node.LoadFromFile(in));
 		char next = 0;
 		in.read(&next, 1);
 		CHECK_EQ(7, next);
+		for (int i = 0; i < MAX_COLORSET; i++) CHECK(node.Is(i) == (i % 3 == 0));
 	}
-	for (int i = 0; i < MAX_COLORSET; i++) CHECK(node.Is(i) == (i % 3 == 0));
 }
 
 TEST(UsingColorSetTable, AFileCutShortBeforeItsCountLoadsNothing)
