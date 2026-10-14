@@ -1127,3 +1127,6 @@ Client/PacketHandler/CRRequestHandler.cpp
 # The login server's welcome, after a login or a new account.
 Client/PacketHandler/LCLoginOKHandler.cpp
 Client/PacketHandler/LCRegisterPlayerOKHandler.cpp
+
+# The full quest list, rebuilt in the quest window.
+Client/PacketHandler/GCGQuestStatusInfoHandler.cpp

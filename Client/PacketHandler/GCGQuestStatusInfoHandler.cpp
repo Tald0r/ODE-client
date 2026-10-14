@@ -9,9 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCGQuestStatusInfo.h"
-#include "ClientDef.h"
-#include "Client.h"
-#include "VS_UI.h"
+#include "DebugLog.h"
+#include "VsUiPresentationHost.h"
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -23,9 +22,9 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 	(void)pPlayer;
 //	__BEGIN_DEBUG_EX
 		
-	if(gC_vs_ui.IsRunningQuestManager()) 
-		gC_vs_ui.CloseQuestManager();
-	gC_vs_ui.RunQuestManager(); // ui setting - load xml file
+	if(VsUiPresentation::IsRunningQuestManager()) 
+		VsUiPresentation::CloseQuestManager();
+	VsUiPresentation::RunQuestManager(); // ui setting - load xml file
 
 	std::list<QuestStatusInfo*>	Infos = pGCGQuestStatusInfo->getInfos();
 	std::list<QuestStatusInfo*>::iterator itr = Infos.begin(); 
@@ -65,7 +64,7 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 			subitr++;
 		}
 
-		if(false == gC_vs_ui.SetQuestManagerInfo((void*)UI_Info))
+		if(false == VsUiPresentation::SetQuestManagerInfo(UI_Info))
 		{
 			std::vector<UI_GMissionInfo*>::iterator subitr1 = UI_Info->vMissionList.begin();
 
@@ -73,14 +72,14 @@ void GCGQuestStatusInfoHandler::execute ( GCGQuestStatusInfo * pGCGQuestStatusIn
 			{
 				UI_GMissionInfo *TempMission1 = (*subitr1);
 				UI_Info->vMissionList.erase(subitr1);
-				SAFE_DELETE(TempMission1);
+				{ if(TempMission1!=NULL) delete TempMission1; TempMission1=NULL; }	// SAFE_DELETE
 			}
-			SAFE_DELETE(UI_Info);
+			{ if(UI_Info!=NULL) delete UI_Info; UI_Info=NULL; }	// SAFE_DELETE
 		}
 		itr++;
 	}
 
-	gC_vs_ui.ReleaseQuestXML(); // Release xml file
+	VsUiPresentation::ReleaseQuestXML(); // Release xml file
 
 	//__END_DEBUG_EX 
 	__END_CATCH

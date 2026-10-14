@@ -349,7 +349,8 @@ check () {
 # 115: the fast move and fake move replies join gamemodel (4.163).
 # 114: the peer's file request joins gamemodel (4.164).
 # 112: the login and new-account welcomes join gamemodel (4.165).
-R1_BASELINE=112
+# 111: the quest list joins gamemodel (4.166).
+R1_BASELINE=111
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -532,7 +533,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 113: the fast move and fake move replies join gamemodel (4.163).
 	# 112: the peer's file request joins gamemodel (4.164).
 	# 110: the login and new-account welcomes join gamemodel (4.165).
-	R1_NINJA_BASELINE=110
+	# 109: the quest list joins gamemodel (4.166).
+	R1_NINJA_BASELINE=109
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

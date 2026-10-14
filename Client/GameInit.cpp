@@ -3817,6 +3817,11 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.SetPowerjjangPoint = [](int points) { g_char_slot_ingame.m_Powerjjang_Point = points; },
 	.PowerjjangGambleResult = [](int itemCode) { gC_vs_ui.PowerjjangGambleResult(static_cast<BYTE>(itemCode)); },
 	.RefreshPointExchange = []() { gC_vs_ui.RefreshPointExchange(); },
+	.IsRunningQuestManager = []() { return gC_vs_ui.IsRunningQuestManager(); },
+	.CloseQuestManager = []() { gC_vs_ui.CloseQuestManager(); },
+	.RunQuestManager = []() { gC_vs_ui.RunQuestManager(); },
+	.SetQuestManagerInfo = [](UI_GQuestInfo* pInfo) { return gC_vs_ui.SetQuestManagerInfo(static_cast<void*>(pInfo)); },
+	.ReleaseQuestXML = []() { gC_vs_ui.ReleaseQuestXML(); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {
