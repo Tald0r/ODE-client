@@ -4958,10 +4958,10 @@ rounds settled* for the host rules). Test fixtures share
   > NPC by its type shows whether its personal shop is open, and an open
   > one shows the shop's sign (or the default message, as the string
   > table holds it) to a slayer player in the chat colour. The slayer
-  > then takes the packet's effect statuses,
-  > its pet and its nickname. Without a player no sign is shown (the old
-  > code dereferenced `g_pPlayer`). An unused `AddonDef.h` include, an
-  > executable header, is gone. R1 is 90 Windows / 88 Ninja.
+  > then takes the packet's effect statuses, its pet and its nickname.
+  > Without a player no sign is shown (the old code dereferenced
+  > `g_pPlayer`). An unused `AddonDef.h` include, an executable header,
+  > is gone. R1 is 90 Windows / 88 Ninja.
   - Owner: membership, R1, and `test_add_slayer_replies.cpp` (a new
     slayer of each sex and one refused, a known one, an operator new and
     known, an open shop with a sign and without, new and known, an empty
@@ -5049,8 +5049,8 @@ rounds settled* for the host rules). Test fixtures share
     corpse of each sex and a bat, an operator's, one laid after the
     item in its cell, one freed when the item will not go or the zone
     refuses again, a corpse and another item already there, a known
-    creature alive and dead and an operator, no zone, no hosts, no
-    corpse, no status array).
+    creature alive and dead, one now a bat (which walks) and an
+    operator, no zone, no hosts, no corpse, no status array).
 
 - [x] **4.186 A slayer's corpse appearing:** move
   `GCAddSlayerCorpseHandler` into `gamemodel`.
@@ -5071,8 +5071,8 @@ rounds settled* for the host rules). Test fixtures share
     corpse of each sex, an operator's of each sex, one laid after the
     item in its cell, one freed when the item will not go or the zone
     refuses again, a corpse and another item already there, a known
-    creature alive and dead and an operator, no zone, no hosts, no
-    corpse, no status array).
+    creature alive and dead and an operator of each sex, no zone, no
+    hosts, no creature host, no corpse, no status array).
 
 - [x] **4.187 An ouster's corpse appearing:** move
   `GCAddOustersCorpseHandler` into `gamemodel`.
