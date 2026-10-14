@@ -58,14 +58,44 @@ int dimension = 0;
 bool hasMacAddress = true;
 const std::uint8_t kMacAddress[6] = {1, 2, 3, 4, 5, 6};
 uint s_UDPPort = 0;
+// How long a check port is watched for what must arrive, and for what
+// must not (a loopback send has arrived by the time the handler returns).
+constexpr int kArrival = 2000, kSilence = 100;
 
 std::string N(long long value) { return std::to_string(value); }
+
+// A datagram's text and the port it came from.
+struct Heard
+{
+	std::string text;
+	uint port = 0;
+};
+
+// What arrives at the probe within the given milliseconds.
+Heard Received(DatagramSocket& probe, int ms)
+{
+	for (int i = 0; i < ms / 10; i++)
+	{
+		std::unique_ptr<Datagram> pDatagram(probe.receive());
+		if (pDatagram) return Heard{std::string(pDatagram->getData(), pDatagram->getLength()), pDatagram->getPort()};
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	return Heard{};
+}
+
+// The check port that must hear of the character, and what it had heard
+// when the player began to wait for the first update.
+DatagramSocket* pTarget = nullptr;
+Heard heardAtWait;
 
 const LoginPresentation::Host login = []() {
 	LoginPresentation::Host host{};
 	host.FlushSocketOutput = []() { calls.push_back("flushed|" + N(static_cast<long long>(Queued()))); };
 	host.Sleep = [](std::uint32_t ms) { calls.push_back("sleep|" + N(ms)); };
-	host.EnterWaitUpdateInfoMode = []() { calls.push_back("wait update info"); };
+	host.EnterWaitUpdateInfoMode = []() {
+		calls.push_back("wait update info");
+		if (pTarget != nullptr) heardAtWait = Received(*pTarget, kArrival);
+	};
 	host.MacAddress = []() -> const std::uint8_t* { return hasMacAddress ? kMacAddress : nullptr; };
 	host.Dimension = []() { return dimension; };
 	return host;
@@ -113,9 +143,9 @@ uint BoundPort(SOCKET s)
 // The game connection, its output kept unsent for inspection.
 struct GamePlayer : ClientPlayer
 {
-	GamePlayer() : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl())))
+	explicit GamePlayer(PCType type = PC_OUSTERS) : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl())))
 	{
-		setPCType(PC_OUSTERS);
+		setPCType(type);
 		setPCName("Nosferatu");
 	}
 	~GamePlayer() { setPlayerStatus(CPS_END_SESSION); }
@@ -131,18 +161,6 @@ std::vector<unsigned char> Encoded(const std::vector<const Packet*>& packets)
 	SocketOutputStream encoded(&out);
 	for (const Packet* pPacket : packets) encoded.write(pPacket);
 	return SocketOutputStreamTestAccess::Bytes(encoded);
-}
-
-// What arrives at the probe within two seconds, as a string.
-std::string Received(DatagramSocket& probe)
-{
-	for (int i = 0; i < 200; i++)
-	{
-		std::unique_ptr<Datagram> pDatagram(probe.receive());
-		if (pDatagram) return std::string(pDatagram->getData(), pDatagram->getLength());
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	}
-	return std::string();
 }
 
 struct TempServerInfo
@@ -162,6 +180,8 @@ struct TempServerInfo
 	}
 };
 
+enum Target { kKorean, kForeign0, kForeign1 };
+
 struct World : GameModelWorld
 {
 	std::unique_ptr<ServerSocket> gameServer;
@@ -177,7 +197,7 @@ struct World : GameModelWorld
 	ServerInfoFileParser* oldForeign = g_pConfigForeign;
 	ClientCommunicationManager* oldCommunication = g_pClientCommunicationManager;
 	const LoginPresentation::Host* oldLogin = LoginPresentation::SetHost(&login);
-	World()
+	explicit World(Target target)
 	{
 		calls.clear();
 		dimension = 0;
@@ -189,26 +209,34 @@ struct World : GameModelWorld
 		korean.reset(new DatagramSocket(0));
 		foreign0.reset(new DatagramSocket(0));
 		foreign1.reset(new DatagramSocket(0));
-		koreanConfig.setProperty("LoginServerAddress", "127.0.0.1");
+		// Only the target's address is the probes'; 192.0.2.1 (TEST-NET-1)
+		// is no one's, so the address read from the wrong entry is seen.
+		auto address = [target](Target which) { return std::string(which == target ? "127.0.0.1" : "192.0.2.1"); };
+		koreanConfig.setProperty("LoginServerAddress", address(kKorean));
 		koreanConfig.setProperty("LoginServerCheckPort", N(BoundPort(korean->getSOCKET())));
 		foreignFile.reset(new TempServerInfo(
-			"@ zero\nLoginServerAddress:127.0.0.1\nLoginServerCheckPort:" + N(BoundPort(foreign0->getSOCKET())) + "\n@\n"
-			"@ one\nLoginServerAddress:127.0.0.1\nLoginServerCheckPort:" + N(BoundPort(foreign1->getSOCKET())) + "\n@\n"));
+			"@ zero\nLoginServerAddress:" + address(kForeign0) + "\nLoginServerCheckPort:" + N(BoundPort(foreign0->getSOCKET())) + "\n@\n"
+			"@ one\nLoginServerAddress:" + address(kForeign1) + "\nLoginServerCheckPort:" + N(BoundPort(foreign1->getSOCKET())) + "\n@\n"));
+		if (!NetworkTransport::UsesWebSocket())
+			pTarget = target == kKorean ? korean.get() : target == kForeign0 ? foreign0.get() : foreign1.get();
+		heardAtWait = Heard{};
 		foreignConfig.reset(new ServerInfoFileParser(foreignFile->path.string()));
 		g_pConfigKorean = &koreanConfig;
 		g_pConfigForeign = foreignConfig.get();
 		// The client's own UDP socket, on a port no one holds.
 		{
-			DatagramSocket free(0);
-			s_UDPPort = BoundPort(free.getSOCKET());
+			DatagramSocket unused(0);
+			s_UDPPort = BoundPort(unused.getSOCKET());
 		}
 		Wire::SetHost(&s_Wire);
 		communication.reset(new ClientCommunicationManager);
 		g_pClientCommunicationManager = communication.get();
-		g_pUserInformation->CharacterID = "Nosferatu";
+		// Not the PC's name, so the two sources cannot stand in for each other.
+		g_pUserInformation->CharacterID = "Kasper";
 	}
 	~World()
 	{
+		pTarget = nullptr;
 		g_pClientCommunicationManager = oldCommunication;
 		communication.reset();
 		Wire::SetHost(NULL);
@@ -224,20 +252,23 @@ void Receive(GamePlayer& player, uint port, DWORD key)
 	packet.setGameServerIP("127.0.0.1");
 	packet.setGameServerPort(port);
 	packet.setKey(key);
-	current = &player;
+	struct Running
+	{
+		explicit Running(GamePlayer* pPlayer) { current = pPlayer; }
+		~Running() { current = nullptr; }
+	} running(&player);
 	LCReconnectHandler::execute(&packet, &player);
-	current = nullptr;
 }
 
 // The key packet and the connect, as the player's stream holds them.
-void CheckConnect(const GamePlayer& player, DWORD key, const std::uint8_t* mac)
+void CheckConnect(const GamePlayer& player, DWORD key, PCType type, const std::uint8_t* mac)
 {
 	CGConnectSetKey keyPacket;
 	keyPacket.setEncryptKey(0);
 	keyPacket.setHashKey(0);
 	CGConnect connect;
 	connect.setKey(key);
-	connect.setPCType(PC_OUSTERS);
+	connect.setPCType(type);
 	connect.setPCName("Nosferatu");
 	connect.setMacAddress(mac);
 	const std::vector<unsigned char> keyOnly = Encoded({&keyPacket});
@@ -253,7 +284,7 @@ void CheckConnect(const GamePlayer& player, DWORD key, const std::uint8_t* mac)
 
 TEST(ReconnectGameReplies, TheGameServerIsReachedAndTheLoginServerToldOverUDP)
 {
-	World world;
+	World world(kKorean);
 	g_pUserInformation->bKorean = true;
 	GamePlayer player;
 	Receive(player, world.gamePort, 0x0BADF00D);
@@ -266,50 +297,62 @@ TEST(ReconnectGameReplies, TheGameServerIsReachedAndTheLoginServerToldOverUDP)
 	CHECK(calls == (std::vector<std::string>{"flushed|" + N(static_cast<long long>(keyBytes)), "sleep|500",
 		"flushed|" + N(static_cast<long long>(allBytes)), "wait update info"}));
 	CHECK(player.getPlayerStatus() == CPS_AFTER_SENDING_CG_CONNECT);
-	CheckConnect(player, 0x0BADF00D, kMacAddress);
+	CheckConnect(player, 0x0BADF00D, PC_OUSTERS, kMacAddress);
 #ifndef _WIN32
 	// Non-blocking, or the main loop would stall on it (Windows cannot say).
 	CHECK(player.getSocket()->isNonBlocking());
 #endif
 	if (!NetworkTransport::UsesWebSocket())
 	{
-		// The Korean config's check port hears of the character.
-		CHECK(Received(*world.korean).find("Nosferatu") != std::string::npos);
-		CHECK(Received(*world.foreign0).empty() && Received(*world.foreign1).empty());
+		// The Korean config's check port has heard of the character, from
+		// the client's own UDP port, before the wait for the first update.
+		CHECK(heardAtWait.text.find("Kasper") != std::string::npos && heardAtWait.port == s_UDPPort);
+		CHECK(Received(*world.foreign0, kSilence).text.empty() && Received(*world.foreign1, kSilence).text.empty());
 	}
 }
 
 TEST(ReconnectGameReplies, AForeignPlayerTellsItsDimensionsCheckPort)
 {
 	if (NetworkTransport::UsesWebSocket()) return;
-	World world;
-	g_pUserInformation->bKorean = false;
-	dimension = 1;
-	GamePlayer player;
-	Receive(player, world.gamePort, 7);
-	CHECK(Received(*world.foreign1).find("Nosferatu") != std::string::npos);
-	CHECK(Received(*world.foreign0).empty() && Received(*world.korean).empty());
-	dimension = 0;
-	GamePlayer again;
-	Receive(again, world.gamePort, 8);
-	CHECK(Received(*world.foreign0).find("Nosferatu") != std::string::npos);
-	CHECK(Received(*world.foreign1).empty());
+	{
+		World world(kForeign1);
+		g_pUserInformation->bKorean = false;
+		dimension = 1;
+		GamePlayer player;
+		Receive(player, world.gamePort, 7);
+		CHECK(heardAtWait.text.find("Kasper") != std::string::npos && heardAtWait.port == s_UDPPort);
+		CHECK(Received(*world.foreign0, kSilence).text.empty() && Received(*world.korean, kSilence).text.empty());
+	}
+	{
+		World world(kForeign0);
+		g_pUserInformation->bKorean = false;
+		dimension = 0;
+		GamePlayer player;
+		Receive(player, world.gamePort, 8);
+		CHECK(heardAtWait.text.find("Kasper") != std::string::npos && heardAtWait.port == s_UDPPort);
+		CHECK(Received(*world.foreign1, kSilence).text.empty() && Received(*world.korean, kSilence).text.empty());
+	}
 }
 
-TEST(ReconnectGameReplies, WithoutAMacAddressTheConnectCarriesZeros)
+TEST(ReconnectGameReplies, TheConnectCarriesThePCsTypeAndTheMacAddressOrZeros)
 {
-	World world;
+	World world(kKorean);
 	g_pUserInformation->bKorean = true;
+	// Two connects through the same frames: what the first leaves on the
+	// stack cannot pass for what the second must set.
+	GamePlayer vampire(PC_VAMPIRE);
+	Receive(vampire, world.gamePort, 9);
+	CheckConnect(vampire, 9, PC_VAMPIRE, kMacAddress);
 	hasMacAddress = false;
-	GamePlayer player;
-	Receive(player, world.gamePort, 9);
+	GamePlayer ousters(PC_OUSTERS);
+	Receive(ousters, world.gamePort, 10);
 	const std::uint8_t zeros[6] = {};
-	CheckConnect(player, 9, zeros);
+	CheckConnect(ousters, 10, PC_OUSTERS, zeros);
 }
 
 TEST(ReconnectGameReplies, AnUnreachableGameServerThrowsAndNothingFollows)
 {
-	World world;
+	World world(kKorean);
 	uint port = 0;
 	{
 		ServerSocket closed(0);
@@ -327,5 +370,5 @@ TEST(ReconnectGameReplies, AnUnreachableGameServerThrowsAndNothingFollows)
 	CHECK(player.getPlayerStatus() == CPS_END_SESSION);
 	CHECK(calls.empty());
 	CHECK(player.Sent().empty());
-	if (!NetworkTransport::UsesWebSocket()) CHECK(Received(*world.korean).empty());
+	if (!NetworkTransport::UsesWebSocket()) CHECK(Received(*world.korean, kSilence).text.empty());
 }

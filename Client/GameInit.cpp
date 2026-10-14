@@ -34,6 +34,7 @@
 #include "PacketDef.h"
 #include "PacketHandlerRegistry.h"
 #include "VS_UI.h"
+#include "VS_UI_filepath.h"
 #include "COpeningUpdate.h"
 #include "CGameUpdate.h"
 #include "CWaitPacketUpdate.h"
@@ -118,6 +119,7 @@
 #include "CommunicationPresentationHost.h"
 #include "QuestWarPresentationHost.h"
 #include "NoticePresentationHost.h"
+#include "NPCPresentationHost.h"
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
@@ -2702,6 +2704,7 @@ void ReleaseAllObjects()
 	CommunicationPresentation::SetHost(nullptr);
 	QuestWarPresentation::SetHost(nullptr);
 	NoticePresentation::SetHost(nullptr);
+	NPCPresentation::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
@@ -3518,6 +3521,35 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 extern bool g_bEventQuestEnding;
 extern void SetFlagTo( bool bTae );
 
+static const NPCPresentation::Host s_NPCPresentationHost = {
+	.OpenInventoryToRepair = UI_OpenInventoryToRepair,
+	.RunSelectWayPoint = UI_RunSelectWayPoint,
+	.OpenInventoryToSilvering = UI_OpenInventoryToSilvering,
+	.RunTutorialExit = UI_RunTutorialExit,
+	.RunComputer = UI_RunComputer,
+	.RunBriefing = UI_RunBriefing,
+	.RunBookcase = UI_RunBookcase,
+	.SetCharInfoSilverDamage = [](int minDamage, int maxDamage) { UI_SetCharInfoSilverDamage(minDamage, maxDamage); },
+	.ShowGuildRegist = [](std::uint32_t fee) { UI_ShowGuildRegist(fee); },
+	.OpenBringFee = [](std::uint32_t totalFee) { UI_OpenBringFee(totalFee); },
+	.SetTotalFee = [](std::uint32_t fee) { UI_SetTotalFee(fee); },
+	.RunInputNameWindow = [](int id) { UI_RunInputNameWindow(id); },
+	.CloseInputNameWindow = UI_CloseInputNameWindow,
+	.InitQuestStatus = UI_InitQuestStatus,
+	.RunLottery = [](int step) { UI_RunLottery(step); },
+	.DownSkill = UI_DownSkill,
+	.RunModifyTax = UI_RunModifyTax,
+	.ShowSwapAdvancementItem = UI_Show_Swap_Advancement_Item,
+	.RunCampaignHelp = [](int value) { UI_Run_Campaign_Help_Unfortunate_Neighbors(value); },
+	.RunConfirmGetEventItem = [](int value) { UI_Run_Confirm_GetEventItem(value); },
+	.PopupComebackNotice = [](int which) {
+		const char* text = which == 0 ? TXT_TUTORIAL_COMEBACKEVENT_NOTICE
+			: which == 1 ? TXT_TUTORIAL_COMEBACKEVENT_PAY : TXT_TUTORIAL_COMEBACKEVENT_RECOMMEND;
+		gC_vs_ui.RunPopupMessage(text, C_VS_UI_POPUP_MESSAGE::POPUP_WELCOME);
+	},
+	.PopupMessage = [](int gameStringID) { UI_PopupMessage(gameStringID); },
+};
+
 static const NoticePresentation::Host s_NoticePresentationHost = {
 	.RunNotice = [](std::uint32_t kind, std::uint32_t parameter) { UI_RunNotice(kind, parameter); },
 	.DeleteNotice = [](std::uint32_t kind) { UI_DeleteNotice(kind); },
@@ -3594,6 +3626,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
+	.ClosePCTalkDlg = []() { g_pUIDialog->ClosePCTalkDlg(); },
+	.UnSetLockInputPCTalk = []() { g_pUIDialog->UnSetLockInputPCTalk(); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3696,6 +3730,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetExtraInfo = SetExtraInfo,
 	.CheckAffectStatus = [](MItem* pItem) { g_pPlayer->CheckAffectStatus(pItem); },
 	.SetItemCheckBuffer = [](MItem* pItem, PlayerState::ITEM_CHECK_BUFFER status) { g_pPlayer->SetItemCheckBuffer(pItem, status); },
+	.SetWaitVerify = [](PlayerState::WAIT_VERIFY verify) { g_pPlayer->SetWaitVerify(verify); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -4601,6 +4636,7 @@ InitGameObject()
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	NoticePresentation::SetHost(&s_NoticePresentationHost);
+	NPCPresentation::SetHost(&s_NPCPresentationHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);

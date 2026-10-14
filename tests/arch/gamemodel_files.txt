@@ -730,6 +730,10 @@ Client/QuestWarPresentationHost.h
 # The event notices and their presentation service.
 Client/NoticePresentationHost.cpp
 Client/NoticePresentationHost.h
+# An NPC's answers and the windows they open.
+Client/NPCPresentationHost.cpp
+Client/NPCPresentationHost.h
+Client/PacketHandler/GCNPCResponseHandler.cpp
 Client/PacketHandler/GCNoticeEventHandler.cpp
 Client/PacketHandler/GCBloodBibleStatusHandler.cpp
 Client/PacketHandler/GCFlagWarStatusHandler.cpp

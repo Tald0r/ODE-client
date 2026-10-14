@@ -276,4 +276,9 @@ void SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
 	if (s_Host && s_Host->SetItemCheckBuffer) s_Host->SetItemCheckBuffer(pItem, status);
 }
 
+void SetWaitVerify(WAIT_VERIFY verify)
+{
+	if (s_Host && s_Host->SetWaitVerify) s_Host->SetWaitVerify(verify);
+}
+
 }
