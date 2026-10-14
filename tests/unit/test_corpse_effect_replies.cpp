@@ -303,3 +303,14 @@ TEST(CorpseEffectReplies, AStandingOrLyingCreatureLosesItsHead)
 	ReceiveRemoveHead(1001);
 	CHECK(calls == std::vector<std::string>({"Ogre.headless", "Lying.headless"}));
 }
+
+TEST(CorpseEffectReplies, AnEffectPastTheEffectStatusesIsDropped)
+{
+	World world;
+	// The wire's effect ID is 16 bits; the effect statuses' enum holds 0 to
+	// 511, and the reply takes those below EFFECTSTATUS_MAX.
+	ReceiveEffect(1001, EFFECTSTATUS_MAX);
+	ReceiveEffect(1001, 600);
+	ReceiveEffect(1001, 65535);
+	CHECK(calls.empty());
+}

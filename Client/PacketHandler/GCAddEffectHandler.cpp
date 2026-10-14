@@ -57,15 +57,17 @@ void GCAddEffectHandler::execute ( GCAddEffect * pPacket , Player * pPlayer )
 		}
 		else
 		{
+			// Checked before it becomes an EFFECTSTATUS: the wire's 16 bits
+			// run past the enum's range.
+			if(pPacket->getEffectID() >= EFFECTSTATUS_MAX)
+				return;
+
 			EFFECTSTATUS status = (EFFECTSTATUS)pPacket->getEffectID();
 //			if( status == EFFECTSTATUS_VIEW_HP )
 //			{
 //				int a = 0;
 //			}
 		
-
-			if(status >= EFFECTSTATUS_MAX)
-				return;
 			
 			if( (*g_pEffectStatusTable)[ status ].SoundID != SOUNDID_NULL )
 			{
