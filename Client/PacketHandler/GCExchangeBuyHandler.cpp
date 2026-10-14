@@ -10,11 +10,10 @@
 #include "Gpackets/GCExchangeBuy.h"
 
 #include "Player.h"
-#include "VS_UI_GameCommon.h"
-#include "UIFunction.h"
-#include "UIDialog.h"
+#include "CommunicationPresentationHost.h"
+#include "DialogPresentationHost.h"
+#include "VsUiPresentationHost.h"
 #include "MGameStringTable.h"
-#include "VS_UI.h"
 
 void GCExchangeBuyHandler::execute(GCExchangeBuy* pPacket, Player* pPlayer)
 {
@@ -26,14 +25,14 @@ void GCExchangeBuyHandler::execute(GCExchangeBuy* pPacket, Player* pPlayer)
 	// which the free message dialog's 256-byte rows hold whole.
 	const std::string& message = pPacket->getMessage();
 	if (!message.empty())
-		g_pUIDialog->PopupFreeMessageDlg(message.c_str());
+		DialogPresentation::PopupFreeMessageDlg(message.c_str());
 	else if (!pPacket->isSuccess())
-		UI_PopupMessage(STRING_ERROR_ETC_ERROR);
+		CommunicationPresentation::PopupMessage(STRING_ERROR_ETC_ERROR);
 
 	// A purchase takes the listing off the market, so the open window asks
 	// for its page again rather than keep showing what was just bought.
 	if (pPacket->isSuccess())
-		gC_vs_ui.RefreshPointExchange();
+		VsUiPresentation::RefreshPointExchange();
 
 	__END_CATCH
 }

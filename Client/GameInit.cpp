@@ -3765,6 +3765,9 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.CloseNamingChange = []() { gC_vs_ui.CloseNamingChange(); },
 	.SelectSkill = [](int skillID) { gC_vs_ui.SelectSkill(skillID); },
 	.UnselectSkill = []() { gC_vs_ui.UnselectSkill(); },
+	.SetPowerjjangPoint = [](int points) { g_char_slot_ingame.m_Powerjjang_Point = points; },
+	.PowerjjangGambleResult = [](int itemCode) { gC_vs_ui.PowerjjangGambleResult(static_cast<BYTE>(itemCode)); },
+	.RefreshPointExchange = []() { gC_vs_ui.RefreshPointExchange(); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

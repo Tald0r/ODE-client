@@ -1103,3 +1103,8 @@ Client/PacketHandler/GCShopMarketConditionHandler.cpp
 Client/PacketHandler/GCShopListHandler.cpp
 Client/PacketHandler/GCShopListMysteriousHandler.cpp
 Client/PacketHandler/GCShopVersionHandler.cpp
+
+# Power points asked for and spent, and a point exchange purchase.
+Client/PacketHandler/GCRequestPowerPointResultHandler.cpp
+Client/PacketHandler/GCUsePowerPointResultHandler.cpp
+Client/PacketHandler/GCExchangeBuyHandler.cpp
