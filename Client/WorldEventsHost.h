@@ -61,9 +61,13 @@ struct Host
 	// lost on a pet item changes nothing: the check ends at once.) Other
 	// actions only show.
 	void (*AddNewInventoryEffect)(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) = nullptr;
-	// The effect statuses a packet lists for a creature, put on it after
-	// delayedFrame frames (the pairs of status and duration EffectInfo
-	// holds); pEffectInfo is borrowed and may be NULL.
+	// The effect statuses a packet lists for a creature (the pairs of
+	// status and duration EffectInfo holds): each is put on it for its
+	// duration less delayedFrame, the frames already spent loading, and one
+	// with no time left is skipped. A coma also makes the creature a
+	// corpse; a trap's, Back Stab 3's, the ice of soul stone's and the
+	// ground elemental centre's start their action. The host empties the
+	// list, so read it first; pEffectInfo may be NULL.
 	void (*SetEffectInfo)(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) = nullptr;
 	// Gilles de Rais's map effect (1 or 2), shown as the boss appears.
 	void (*AddGDREffect)(int effect, bool bAppearBossMonster) = nullptr;

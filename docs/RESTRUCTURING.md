@@ -4765,9 +4765,11 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, the two entries and adapters, and
     `test_monster_appear_replies.cpp` (a new monster and one refused, a
     known one, each trap's light, a hidden trap for each attacker and
-    trap type, a defender, a non-trap, the mark as a duration, a status
-    past the enum, no player, a transformed monster made, a plain one in place, another
-    made again, one refused, no zone, no hosts).
+    trap type, the mark alone, a defender, a non-trap above and below
+    the traps, the mark as a duration, a status past the enum, no
+    player, a transformed monster made, one refused, a plain one in
+    place, another made again, one refused, no zone, no hosts, no
+    status array).
 
 - [x] **4.175 A monster appearing:** move `GCAddMonsterHandler` into
   `gamemodel`.

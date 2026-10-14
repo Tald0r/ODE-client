@@ -9,6 +9,7 @@
 #include "ZoneStateHost.h"
 #include "Gpackets/GCAddMonsterFromBurrowing.h"
 #include "Gpackets/GCAddMonsterFromTransformation.h"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <set>
@@ -50,10 +51,13 @@ struct FakeCreature
 {
 	TYPE_OBJECTID id = 0;
 	bool plain = true;
+	int type = 0;
 	TYPE_SECTORPOSITION x = 0, y = 0;
 	int direction = 0;
 	RecordingStatus status;
 	FakeCreature() { status.owner = this; }
+	FakeCreature(const FakeCreature&) = delete;
+	FakeCreature& operator=(const FakeCreature&) = delete;
 };
 std::map<TYPE_OBJECTID, FakeCreature*> zoneCreatures;
 std::vector<std::unique_ptr<FakeCreature>> made;
@@ -73,7 +77,11 @@ void RecordingStatus::SetStatus(DWORD n, DWORD value)
 const PlayerState::Host player = []() {
 	PlayerState::Host host{};
 	host.Creature = []() { return hasPlayer ? reinterpret_cast<MCreature*>(&calls) : nullptr; };
-	host.HasEffectStatus = [](EFFECTSTATUS status) { return playerEffects.count(status) != 0; };
+	// Asked only of a player there (the game's dereferences it).
+	host.HasEffectStatus = [](EFFECTSTATUS status) {
+		CHECK(hasPlayer);
+		return playerEffects.count(status) != 0;
+	};
 	return host;
 }();
 
@@ -102,8 +110,8 @@ const ZoneState::Host zone = []() {
 const CreatureState::Host creature = []() {
 	CreatureState::Host host{};
 	host.IsPlainCreature = [](MCreature* p) { return Fake(p).plain; };
-	host.SetCreatureType = [](MCreature* p, int type) { calls.push_back("type|" + Who(p) + "|" + N(type)); };
-	host.GetCreatureType = [](MCreature*) { return 0; };
+	host.SetCreatureType = [](MCreature* p, int type) { calls.push_back("type|" + Who(p) + "|" + N(type)); Fake(p).type = type; };
+	host.GetCreatureType = [](MCreature* p) { return Fake(p).type; };
 	host.SetGroundCreature = [](MCreature* p) { calls.push_back("walks|" + Who(p)); };
 	host.SetID = [](MCreature* p, TYPE_OBJECTID id) { calls.push_back("id|" + N(id)); Fake(p).id = id; };
 	host.SetName = [](MCreature* p, const char* name) { calls.push_back("name|" + Who(p) + "|" + name); };
@@ -133,9 +141,6 @@ const CreatureState::Host creature = []() {
 	return host;
 }();
 
-// The trap's light keys off the creature's type as the creature reports it.
-int reportedType = 0;
-
 const WorldEvents::Host events = []() {
 	WorldEvents::Host host{};
 	host.SetEffectInfo = [](MCreature* p, EffectInfo* pInfo, int delayedFrame) {
@@ -154,20 +159,18 @@ const WorldEvents::Host events = []() {
 struct World : GameModelWorld
 {
 	FakeCreature known;
-	CreatureState::Host typed = creature;
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	const ZoneState::Host* oldZone = ZoneState::SetHost(&zone);
-	const CreatureState::Host* oldCreature = CreatureState::SetHost(&typed);
+	const CreatureState::Host* oldCreature = CreatureState::SetHost(&creature);
 	const WorldEvents::Host* oldEvents = WorldEvents::SetHost(&events);
 	World()
 	{
-		typed.GetCreatureType = [](MCreature*) { return reportedType; };
 		calls.clear();
 		zoneExists = true;
 		zoneTakes = true;
 		hasPlayer = true;
 		playerEffects.clear();
-		reportedType = 50;
+		known.type = 50;
 		made.clear();
 		zoneCreatures.clear();
 		known.id = 1003;
@@ -208,7 +211,6 @@ void Fill(PacketType& packet, ObjectID_t id, int type, const Effects& effects)
 
 void ReceiveBurrowing(ObjectID_t id, int type = 50, const Effects& effects = {{EFFECTSTATUS_CURSE_PARALYSIS, 20}})
 {
-	reportedType = type;
 	GCAddMonsterFromBurrowing packet;
 	Fill(packet, id, type, effects);
 	GCAddMonsterFromBurrowingHandler::execute(&packet, nullptr);
@@ -216,7 +218,6 @@ void ReceiveBurrowing(ObjectID_t id, int type = 50, const Effects& effects = {{E
 
 void ReceiveTransformation(ObjectID_t id, int type = 50)
 {
-	reportedType = type;
 	GCAddMonsterFromTransformation packet;
 	Fill(packet, id, type, {{EFFECTSTATUS_CURSE_PARALYSIS, 20}});
 	GCAddMonsterFromTransformationHandler::execute(&packet, nullptr);
@@ -300,6 +301,8 @@ TEST(MonsterAppearReplies, ATrapHiddenFromAttackersIsNotShownToOne)
 		playerEffects = {attacker};
 		for (int trap : {738, 739, 740, 741})
 			ReceiveBurrowing(1005, trap, hidden);
+		// The mark alone hides it too.
+		ReceiveBurrowing(1005, 741, {{EFFECTSTATUS_HIDE_TO_ATTACKER, 30}});
 	}
 	CHECK(calls.empty());
 	// A defender sees it; so does an attacker when it is not a trap, or not
@@ -310,10 +313,11 @@ TEST(MonsterAppearReplies, ATrapHiddenFromAttackersIsNotShownToOne)
 	CHECK(made.size() == 1);
 	playerEffects = {EFFECTSTATUS_SIEGE_ATTACKER_1};
 	ReceiveBurrowing(1006, 742, hidden);
+	ReceiveBurrowing(1009, 737, hidden);
 	ReceiveBurrowing(1007, 741, {{EFFECTSTATUS_CURSE_PARALYSIS, EFFECTSTATUS_HIDE_TO_ATTACKER}});
 	hasPlayer = false;
 	ReceiveBurrowing(1008, 741, hidden);
-	CHECK(made.size() == 4);
+	CHECK(made.size() == 5);
 }
 
 TEST(MonsterAppearReplies, ATransformedMonsterIsMadeOrTakesTheFormInPlace)
@@ -328,6 +332,11 @@ TEST(MonsterAppearReplies, ATransformedMonsterIsMadeOrTakesTheFormInPlace)
 	CHECK(calls == std::vector<std::string>({"moves|1003|30,31", "type|1003|51", "walks|1003", "turns|1003|5", "faces|1003|5",
 		"acts|1003|" + N(ACTION_STAND), "server at|1003|30,31", Health("1003"), Current("1003"), "guild|1003|1", Up("1003"), kOut}));
 	CHECK(made.size() == 1);
+	// A new one refused is dropped, with no effect.
+	calls.clear();
+	zoneTakes = false;
+	ReceiveTransformation(1006);
+	CHECK(calls.size() >= 2 && calls[calls.size() - 2] == "zone takes|1006" && calls.back() == "deleted|1006");
 }
 
 TEST(MonsterAppearReplies, AnotherKnownCreatureIsMadeAgainAsAPlainOne)
@@ -340,7 +349,6 @@ TEST(MonsterAppearReplies, AnotherKnownCreatureIsMadeAgainAsAPlainOne)
 		Health("1003"), Current("1003"), "guild|1003|1", "zone takes|1003", Up("1003"), kOut}));
 	// Refused, the new one is dropped, with no effect.
 	calls.clear();
-	zoneTakes = true;
 	made.back()->plain = false;
 	zoneTakes = false;
 	ReceiveTransformation(1003, 52);
@@ -362,6 +370,28 @@ TEST(MonsterAppearReplies, WithoutAZoneOrTheHostsNothingHappens)
 	ReceiveBurrowing(1005);
 	ReceiveTransformation(1005);
 	CHECK(calls.empty());
+	// Nor can it make another creature in place of one it removed.
+	world.known.plain = false;
+	ReceiveTransformation(1003);
+	CHECK(calls == std::vector<std::string>({"removed|1003"}));
+	calls.clear();
+	world.known.plain = true;
+	zoneCreatures[world.known.id] = &world.known;
+	// A creature host without the status array: no health is set, new or
+	// known, made again or in place.
+	ZoneState::SetHost(&zone);
+	CreatureState::Host noStatus = creature;
+	noStatus.Status = nullptr;
+	CreatureState::SetHost(&noStatus);
+	ReceiveBurrowing(1003);
+	ReceiveBurrowing(1006);
+	ReceiveTransformation(1003);
+	ReceiveTransformation(1007);
+	world.known.plain = false;
+	ReceiveTransformation(1003);
+	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
+	CHECK(std::count(calls.begin(), calls.end(), kOut) == 5);
+	calls.clear();
 	// Without the creature's host a made creature is still added, its
 	// health unset, and comes out.
 	ZoneState::SetHost(&zone);

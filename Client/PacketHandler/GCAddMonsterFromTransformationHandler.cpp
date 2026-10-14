@@ -11,7 +11,6 @@
 #include "DebugLog.h"
 #include "MCreatureTable.h"
 #include "MStatus.h"
-#include "PlayerStateHost.h"
 #include "WorldEventsHost.h"
 #include "ZoneStateHost.h"
 #include "SkillDef.h"

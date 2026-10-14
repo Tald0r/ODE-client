@@ -8,6 +8,7 @@
 #include "ZoneStateHost.h"
 #include "Gpackets/GCAddBat.h"
 #include "Gpackets/GCAddWolf.h"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -294,6 +295,19 @@ TEST(BatWolfReplies, WithoutAZoneOrTheHostsNothingHappens)
 	ReceiveBat(1005);
 	CHECK(calls == std::vector<std::string>({"new wearing creature", "zone takes|new"}));
 	calls.clear();
+	// A creature host without the status array: no health is set, new or
+	// known.
+	CreatureState::Host noStatus = creature;
+	noStatus.Status = nullptr;
+	CreatureState::SetHost(&noStatus);
+	ReceiveBat(1006);
+	ReceiveBat(1003);
+	ReceiveWolf(1007);
+	ReceiveWolf(1003);
+	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
+	CHECK(std::count(calls.begin(), calls.end(), "zone takes|1006") == 1 && std::count(calls.begin(), calls.end(), "zone takes|1007") == 1);
+	calls.clear();
+	CreatureState::SetHost(nullptr);
 	ZoneState::SetHost(nullptr);
 	CHECK(ZoneState::NewCreatureWear() == nullptr);
 	CreatureState::SetBatColor(Handle(&world.known), 1);
