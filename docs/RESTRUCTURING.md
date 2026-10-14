@@ -5774,8 +5774,9 @@ rounds settled* for the host rules). Test fixtures share
   >   past leading blanks, blank lines skipped) and answers
   >   `UNKNOWN_MESSAGE` for an ID it lacks.
   > - `InitDebugInfo` and `ClearDebugInfo`, which fill `Client.cpp`'s
-  >   debug globals from the kit, move into `Client.cpp`, their only
-  >   caller. They compile only with `DEBUG_INFO`, which `DebugKit.h`
+  >   debug globals from the kit, move into `Client.cpp`, which defines
+  >   those globals and calls `InitDebugInfo` (`GameInit.cpp` calls
+  >   `ClearDebugInfo` through its extern, also under `DEBUG_INFO`). They compile only with `DEBUG_INFO`, which `DebugKit.h`
   >   defines only with `WINDOWS_SCREEN_DISPLAY`, and no build sets that.
   >   So the kit's classes name no executable symbol.
   > - The include checker's M2 now allows `DebugKit.h` in gamemodel,

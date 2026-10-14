@@ -28,8 +28,9 @@
 #       that resolves inside the repository is treated exactly like a
 #       quoted one; only one that resolves nowhere in the tree is a
 #       system header and ignored.
-#   W2  The debug facilities whose definitions live in the executable
-#       or VS_UI (MinTr.h, DebugInfo.h, DebugKit.h) may not be included
+#   W2  The debug facilities defined outside packetwire and the
+#       libraries it links (MinTr.h, DebugInfo.h: the executable or VS_UI;
+#       DebugKit.h: gamemodel since task 4.206) may not be included
 #       anywhere in the closure, so the library stays linkable into a
 #       test binary without game stubs.
 #   DC1 The vendored de-core copy (third_party/decore/domain, the

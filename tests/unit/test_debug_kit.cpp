@@ -21,6 +21,8 @@ struct ScratchDir
 	std::filesystem::path dir = std::filesystem::temp_directory_path() / ("darkeden_debugkit_" + std::to_string(reinterpret_cast<std::uintptr_t>(this)));
 	ScratchDir()
 	{
+		std::error_code error;
+		std::filesystem::remove_all(dir, error);	// what a crashed run left
 		std::filesystem::create_directories(dir);
 		std::filesystem::current_path(dir);
 	}
@@ -58,11 +60,35 @@ TEST(DebugKit, TheKitReadsItsSettings)
 	CHECK(kit.GetMsgContentFlag() == TRUE);
 	CHECK_EQ(3, kit.GetAuthKeyMap());
 	CHECK_EQ(1207, kit.GetGameVersion());
-	// The flags the other way round.
-	scratch.Write("DebugInfo.ini", "MsgOutPutFlag : 0\nMsgDetailFlag : 5\nMsgContentFlag : 0\n");
-	CDebugKit other;
-	CHECK(other.load());
-	CHECK(other.GetMsgOutPutFlag() == FALSE && other.GetMsgDetailFlag() == TRUE && other.GetMsgContentFlag() == FALSE);
+}
+
+TEST(DebugKit, EachFlagIsOnAboveZeroAndReadsItsOwnKey)
+{
+	ScratchDir scratch;
+	// Each flag sees 1, 0 and -1 across the three files, in a different
+	// order from the others.
+	const char* files[] = {
+		"MsgOutPutFlag : 1\nMsgDetailFlag : 0\nMsgContentFlag : -1\n",
+		"MsgOutPutFlag : -1\nMsgDetailFlag : 1\nMsgContentFlag : 0\n",
+		"MsgOutPutFlag : 0\nMsgDetailFlag : -1\nMsgContentFlag : 1\n",
+	};
+	for (int i = 0; i < 3; i++)
+	{
+		scratch.Write("DebugInfo.ini", files[i]);
+		CDebugKit kit;
+		CHECK(kit.load());
+		CHECK(kit.GetMsgOutPutFlag() == (i == 0 ? TRUE : FALSE));
+		CHECK(kit.GetMsgDetailFlag() == (i == 1 ? TRUE : FALSE));
+		CHECK(kit.GetMsgContentFlag() == (i == 2 ? TRUE : FALSE));
+	}
+}
+
+TEST(DebugKit, AMalformedFileDoesNotLoad)
+{
+	ScratchDir scratch;
+	scratch.Write("DebugInfo.ini", "MsgOutPutFlag 1\n");
+	CDebugKit kit;
+	CHECK(!kit.load());
 }
 
 TEST(DebugKit, AbsentSettingsTakeTheirDefaults)
@@ -94,9 +120,9 @@ TEST(DebugKit, TheMessageTableLoadsANameALine)
 {
 	ScratchDir scratch;
 	// The last line ends in a newline; a final line without one is not read.
-	scratch.Write("messages.txt", "CGConnect, 1\n  GCUpdateInfo,2\n\n   \nLCLogin\nCGMove,3\nCGSay, 4");
+	scratch.Write("messages.txt", "CGConnect, 1\n  GCUpdateInfo,2\n\n   \nLCLogin\n\tCGMove,3\nCGSay, 4");
 	CMessageStringTable table;
-	table.LoadFromFile((scratch.dir / "messages.txt").string());
+	table.LoadFromFile("messages.txt");
 	CHECK(std::string(table.GetMessageName(0)) == "CGConnect");
 	CHECK(std::string(table.GetMessageName(1)) == "GCUpdateInfo");
 	CHECK(std::string(table.GetMessageName(2)) == "LCLogin");
@@ -104,8 +130,8 @@ TEST(DebugKit, TheMessageTableLoadsANameALine)
 	CHECK(!table.IsExistMessageName(4));
 	// No file: nothing, and no throw.
 	CMessageStringTable none;
-	none.LoadFromFile((scratch.dir / "missing.txt").string());
+	none.LoadFromFile("missing.txt");
 	CHECK(!none.IsExistMessageName(0));
-	none.SaveToFile((scratch.dir / "out.txt").string());
-	CHECK(!std::filesystem::exists(scratch.dir / "out.txt"));
+	none.SaveToFile("out.txt");
+	CHECK(!std::filesystem::exists("out.txt"));
 }
