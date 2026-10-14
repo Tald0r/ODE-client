@@ -18,8 +18,9 @@ class MStatus;
 // GetShop is an NPC's shop, asked only of a creature IsNPC says is one.
 // A missing host or entry means no zone and no creature: queries answer
 // false, NULL, 0, ACTIONINFO_NULL or an empty name, and actions are skipped.
-// The executable's host reads the zone unguarded in GetCreature, so a reply
-// that may run without a zone asks Exists first.
+// The executable's host reads the zone unguarded in GetCreature: a reply
+// asks Exists first where its old code checked g_pZone, and the others (a
+// creature's move, say) only arrive in a zone, as they always assumed.
 namespace ZoneState {
 
 struct Host

@@ -70,9 +70,8 @@ const PlayerState::Host player = []() {
 
 const ZoneState::Host zone = []() {
 	ZoneState::Host host{};
-	host.GetCreature = [](TYPE_OBJECTID id) {
-		return id == other.id ? Handle(other) : id == me.id ? Handle(me) : nullptr;
-	};
+	// The player is not looked up: it is the player's own creature.
+	host.GetCreature = [](TYPE_OBJECTID id) { return id == other.id ? Handle(other) : nullptr; };
 	host.NewFakeCreature = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) -> MCreature* {
 		calls.push_back("afterimage of|" + Id(p) + "|" + N(x) + "," + N(y));
 		return makesFakes ? Handle(afterimage) : nullptr;
