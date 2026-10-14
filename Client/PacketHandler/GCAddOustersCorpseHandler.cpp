@@ -8,8 +8,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddOustersCorpse.h"
-#include "ClientDef.h"
+#include "CreatureTypeSelection.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
 #include "MItem.h"
+#include "MStatus.h"
+#include "ZoneStateHost.h"
 
 
 //--------------------------------------------------------------------------------
@@ -20,112 +24,129 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 	__BEGIN_TRY
 	(void)pPlayer;
 	
-	// Creature를 생성해서 MCorpse에 추가해서 Zone에 넣는다.
+	// Make the creature, put it in a corpse, and add that to the zone.
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
-		DEBUG_ADD_ERR("[Error] GCAddOusterCorpseHandler. Zone 이 NULL 이예요.");
+		DEBUG_ADD_ERR("[Error] GCAddOusterCorpseHandler. The zone is NULL.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{	
 		const PCOustersInfo3 & oi = pPacket->getOustersInfo();
 		
 		//----------------------------------------	
-		// 이미 있는 Creature인가?
+		// Is the creature already there?
 		//----------------------------------------	
-		MCreature* pCreature = g_pZone->GetCreatureOnly( oi.getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreatureOnly( oi.getObjectID() );
 		
 		//---------------------------------------------------------
-		//					Zone에 없는 경우
+		//					Not in the zone
 		//---------------------------------------------------------
 		if (pCreature==NULL)
 		{
-			// 이미 시체가 있나?
-			MItem* pItem = g_pZone->GetItem( oi.getObjectID() );
+			// Is there a corpse already?
+			MItem* pItem = ZoneState::GetItem( oi.getObjectID() );
 			
 			//---------------------------------------------------------
-			// 새로운 시체를 생성
+			// Make a new corpse
 			//---------------------------------------------------------
 			if (pItem==NULL)
 			{
 				//----------------------------------------	
-				// 죽은 Creature를 생성한다.
+				// Make the dead creature.
 				//----------------------------------------	
 				DEBUG_ADD("[GCAddOustersCorpseHandler] New OustersCorpse");				
-				MCreatureWear*	pDeadCreature = new MCreatureWear;				
+				MCreature*	pDeadCreature = ZoneState::NewCreatureWear();
+				if (pDeadCreature == NULL)
+				{
+					return;
+				}
 				//add by zdj 2005.6.24
-				pDeadCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
+				}
 
 				//pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
-				pDeadCreature->SetZone( g_pZone );
 				
 				ItemType_t		coatType	= oi.getCoatType();
 
 				if (oi.getCompetence()==0)
 				{
-					pDeadCreature->SetCompetence( 0 );
-					pDeadCreature->SetCreatureType( CREATURETYPE_OUSTERS_OPERATOR );
+					CreatureState::SetCompetence( pDeadCreature, 0 );
+					CreatureState::SetCreatureType( pDeadCreature, CREATURETYPE_OUSTERS_OPERATOR );
 				}
 				else
 				{
-					pDeadCreature->SetCreatureType( GetOustersCreatureType( coatType ));
+					CreatureState::SetCreatureType( pDeadCreature, GetOustersCreatureType( coatType ));
 				}
 				
-				pDeadCreature->SetID( oi.getObjectID() );
-				pDeadCreature->SetPosition( oi.getX(), oi.getY() );
-				pDeadCreature->SetServerPosition( oi.getX(), oi.getY() );
-				pDeadCreature->SetDirection( oi.getDir() );
-				pDeadCreature->SetCurrentDirection( oi.getDir() );				
-				pDeadCreature->SetStatus( MODIFY_MAX_HP, oi.getMaxHP() );
-				pDeadCreature->SetStatus( MODIFY_CURRENT_HP, 0 );				
-				// 시체로 바꾼다.
-				pDeadCreature->SetCorpse();
-				pDeadCreature->SetName( oi.getName().c_str() );				
-				// 임시로
-				pDeadCreature->SetGuildNumber( oi.getGuildID() );				
+				CreatureState::SetID( pDeadCreature, oi.getObjectID() );
+				CreatureState::SetPosition( pDeadCreature, oi.getX(), oi.getY() );
+				CreatureState::SetServerPosition( pDeadCreature, oi.getX(), oi.getY() );
+				CreatureState::SetDirection( pDeadCreature, oi.getDir() );
+				CreatureState::SetCurrentDirection( pDeadCreature, oi.getDir() );
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_MAX_HP, oi.getMaxHP() );
+					pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
+				}
+				// Turn it into a corpse.
+				CreatureState::SetCorpse( pDeadCreature );
+				CreatureState::SetName( pDeadCreature, oi.getName().c_str() );
+				// for now
+				CreatureState::SetGuildNumber( pDeadCreature, oi.getGuildID() );
 				
-				pDeadCreature->SetWeaponSpeed( oi.getAttackSpeed() );
-				pDeadCreature->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );				
-				// 색깔
-				pDeadCreature->SetBodyColor1( oi.getHairColor() );
-				pDeadCreature->SetBodyColor2( oi.getCoatColor() );
+				CreatureState::SetWeaponSpeed( pDeadCreature, oi.getAttackSpeed() );
+				if (MStatus* pStatus = CreatureState::Status( pDeadCreature ))
+				{
+					pStatus->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
+				}
+				// colours
+				CreatureState::SetBodyColor1( pDeadCreature, oi.getHairColor() );
+				CreatureState::SetBodyColor2( pDeadCreature, oi.getCoatColor() );
 
-				SetAddonToOusters( pDeadCreature, &oi );				
+				CreatureState::SetAddonToOusters3( pDeadCreature, &oi );
 				
 				//----------------------------------------	
-				// 시체item을 생성한다.
+				// Make the corpse item.
 				//----------------------------------------	
-				MCorpse* pCorpse = (MCorpse*)MItem::NewItem( ITEM_CLASS_CORPSE );
+				// The corpse owns the creature from here on.
+				MItem* pCorpse = ZoneState::NewCorpse( pDeadCreature );
+				if (pCorpse == NULL)
+				{
+					ZoneState::DeleteCreature( pDeadCreature );
+					return;
+				}
 				
 				pCorpse->SetID( oi.getObjectID() );
 				pCorpse->SetItemType( 0 );
-				pCorpse->SetCreature( pDeadCreature );
 				pCorpse->SetPosition( oi.getX(), oi.getY() );				
 				pCorpse->SetNumber( pPacket->getTreasureCount() );
 				
 				//----------------------------------------
-				// Zone에 Item추가
+				// Add the item to the zone
 				//----------------------------------------
-				if (!g_pZone->AddItem( pCorpse ))
+				if (!ZoneState::AddItem( pCorpse, false ))
 				{
 					//---------------------------------------------------------
-					// 추가가 안된 경우
-					// 이미 있는 Item을 제거하고 다시 추가한다.
+					// When it could not be added
+					// Remove the item there and add it again.
 					//---------------------------------------------------------
-					TYPE_OBJECTID oldItemID = g_pZone->GetItemID( oi.getX(), oi.getY() );
+					TYPE_OBJECTID oldItemID = ZoneState::GetItemID( oi.getX(), oi.getY() );
 					
 					DEBUG_ADD_FORMAT("Remove old Item id=%d", oldItemID);
 					
-					if (g_pZone->RemoveItem( oldItemID ))				
+					if (ZoneState::RemoveItem( oldItemID ))
 					{
-						// 다시 추가한다.
-						if (!g_pZone->AddItem( pCorpse ))
+						// Add it again.
+						if (!ZoneState::AddItem( pCorpse, false ))
 						{
 							DEBUG_ADD_FORMAT_ERR("[Error] Can't add Corpse to Zone, too. id=%d, xy=(%d, %d)", oi.getObjectID(), oi.getX(), oi.getY());
 							
@@ -134,7 +155,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 					}
 					else
 					{
-						// 이미 있는 item을 제거할 수 없는 경우
+						// When the item there cannot be removed
 						DEBUG_ADD_FORMAT_ERR("[Error] Can't remove old Item. id=%d, xy=(%d, %d)", oldItemID, oi.getX(), oi.getY());
 						
 						delete pCorpse;
@@ -143,7 +164,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 			}
 			//---------------------------------------------------------
 			//
-			// 이미 시체가 있는 경우 
+			// A corpse already there
 			//
 			//---------------------------------------------------------
 			else
@@ -153,8 +174,8 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 				if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 				{
 					//---------------------------------------------------------					
-					// 시체가 이미 있는 경우
-					// 시체에 들어있는 Item 개수 설정
+					// The corpse is already there
+					// the number of items in the corpse
 					//---------------------------------------------------------
 					pItem->SetNumber( pPacket->getTreasureCount() );
 				}
@@ -166,7 +187,7 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 		}
 		//---------------------------------------------------------
 		//
-		//				Zone에 이미 있는 경우
+		//				Already in the zone
 		//
 		//---------------------------------------------------------		
 		else
@@ -177,42 +198,53 @@ void GCAddOustersCorpseHandler::execute ( GCAddOustersCorpse * pPacket , Player 
 			
 			int creatureType = GetOustersCreatureType( coatType );
 			
-			if (pCreature->GetCreatureType()!=creatureType)
+			if (CreatureState::GetCreatureType( pCreature )!=creatureType)
 			{
 				if (oi.getCompetence()==0)
 				{
-					pCreature->SetCompetence( 0 );
-					pCreature->SetCreatureType( CREATURETYPE_OUSTERS_OPERATOR );
+					CreatureState::SetCompetence( pCreature, 0 );
+					CreatureState::SetCreatureType( pCreature, CREATURETYPE_OUSTERS_OPERATOR );
 				}
 				else
 				{
-					pCreature->SetCreatureType(creatureType);
+					CreatureState::SetCreatureType( pCreature, creatureType);
 				}
 				
-				pCreature->SetGroundCreature();
+				CreatureState::SetGroundCreature( pCreature );
 			}			
-			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
-			pCreature->MovePosition( oi.getX(), oi.getY() );
-			pCreature->SetServerPosition( oi.getX(), oi.getY() );
-			pCreature->SetDirection( oi.getDir() );
-			pCreature->SetCurrentDirection( oi.getDir() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, 0 );
-			
-			pCreature->SetWeaponSpeed( oi.getAttackSpeed() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
-
-			pCreature->SetGuildNumber( oi.getGuildID() );
-			
-			//---------------------------------------------------------
-			// Creature를 죽여야 한다.
-			//---------------------------------------------------------
-			if (!pCreature->IsDead())
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
 			{
-				pCreature->SetStop();			
-				pCreature->SetDead();		
+				pStatus->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, oi.getAdvancementLevel() );
+			}
+			CreatureState::MovePosition( pCreature, oi.getX(), oi.getY() );
+			CreatureState::SetServerPosition( pCreature, oi.getX(), oi.getY() );
+			CreatureState::SetDirection( pCreature, oi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, oi.getDir() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_CURRENT_HP, 0 );
+			}
+			
+			CreatureState::SetWeaponSpeed( pCreature, oi.getAttackSpeed() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_ALIGNMENT, oi.getAlignment() );
+			}
+
+			CreatureState::SetGuildNumber( pCreature, oi.getGuildID() );
+			
+			//---------------------------------------------------------
+			// The creature must die.
+			//---------------------------------------------------------
+			if (!CreatureState::IsDead( pCreature ))
+			{
+				CreatureState::SetStop( pCreature );
+				CreatureState::SetDead( pCreature );
 			}			
-			pCreature->SetItemCount( pPacket->getTreasureCount() );
-			SetAddonToOusters( dynamic_cast<MCreatureWear*>(pCreature), &oi );			
+			CreatureState::SetItemCount( pCreature, pPacket->getTreasureCount() );
+			// Only a creature that wears gear is dressed, as the old dynamic_cast
+			// to MCreatureWear allowed.
+			CreatureState::SetAddonToOusters3( pCreature, &oi );
 		}
 	}		
 	__END_CATCH
