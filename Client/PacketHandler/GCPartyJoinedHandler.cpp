@@ -10,17 +10,14 @@
 #include "UserInformation.h"
 #include "TempInformation.h"
 
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "CommunicationPresentationHost.h"
+#include "DebugLog.h"
+#include "MStatus.h"
+#include "PlayerStateHost.h"
+#include "ZoneFlags.h"
+#include "ZoneStateHost.h"
 
-extern int	UI_GetFaceStyle(bool bMale, int faceStyle);
-extern void	SendCharacterInfoToParty();
-extern void	SendStatusInfoToParty();
-extern void	SendPositionInfoToParty();
 
-extern int					g_nZoneLarge;
-extern int					g_nZoneSmall;
-extern bool					g_bZonePlayerInLarge;
 
 void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 	 
@@ -30,11 +27,11 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 	(void)pPlayer;
 	
 
-	if (g_pPlayer==NULL
+	if (PlayerState::Creature()==NULL
 		|| g_pParty==NULL
 		|| g_pUserInformation==NULL
 		|| g_pTempInformation==NULL
-		|| g_pZone==NULL)
+		|| !ZoneState::Exists())
 	{
 		DEBUG_ADD_WAR("GCPartyJoinedHandler Failed");
 		return;
@@ -66,7 +63,7 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 
 				pNewInfo->Name		= pInfo->name.c_str();
 				pNewInfo->bMale		= (pInfo->sex==1);				
-				pNewInfo->hairStyle	= UI_GetFaceStyle(pNewInfo->bMale, pInfo->hair_style);
+				pNewInfo->hairStyle	= CommunicationPresentation::GetFaceStyle(pNewInfo->bMale, pInfo->hair_style);
 
 #ifdef PLATFORM_WINDOWS
 				sa.S_un.S_addr = pInfo->ip;
@@ -76,7 +73,7 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 				pNewInfo->IP		= inet_ntoa( sa );
 
 				//---------------------------------------------------------
-				// 이전 파티 정보에 있는지 ..
+				// Was it in the party before..
 				//---------------------------------------------------------
 				PARTY_INFO* pOldInfo = pOldParty->GetMemberInfo( pInfo->name.c_str() );
 					
@@ -91,11 +88,11 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 				}			
 
 				//---------------------------------------------------------
-				// 현재 zone에 있는지 체크
+				// Is it in this zone?
 				//---------------------------------------------------------
-				if (g_pZone!=NULL)
+				if (ZoneState::Exists())
 				{
-					int creatureID = g_pZone->GetCreatureID( pInfo->name.c_str(), 1 );
+					int creatureID = ZoneState::GetCreatureID( pInfo->name.c_str(), 1 );
 
 					if (static_cast<unsigned int>(creatureID)==OBJECTID_NULL)
 					{
@@ -104,20 +101,24 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 					}
 					else
 					{
-						MCreature* pCreature = g_pZone->GetCreature( creatureID );
+						MCreature* pCreature = ZoneState::GetCreature( creatureID );
 						
 						if (pCreature!=NULL)
 						{
 							pNewInfo->bInSight = true;
 
-							pNewInfo->HP = static_cast<WORD>(pCreature->GetHP());
-							pNewInfo->MaxHP = static_cast<WORD>(pCreature->GetMAX_HP());
+							const MStatus* pStatus = CreatureState::Status(pCreature);
+							if (pStatus != NULL)
+							{
+								pNewInfo->HP = static_cast<WORD>(pStatus->GetHP());
+								pNewInfo->MaxHP = static_cast<WORD>(pStatus->GetMAX_HP());
+							}
 							pNewInfo->zoneID = (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
-							pNewInfo->zoneX = static_cast<BYTE>(pCreature->GetServerX());
-							pNewInfo->zoneY = static_cast<BYTE>(pCreature->GetServerY());
-							pNewInfo->guildID = pCreature->GetGuildNumber();
+							pNewInfo->zoneX = static_cast<BYTE>(CreatureState::GetServerX(pCreature));
+							pNewInfo->zoneY = static_cast<BYTE>(CreatureState::GetServerY(pCreature));
+							pNewInfo->guildID = static_cast<WORD>(CreatureState::GetGuildNumber(pCreature));
 
-							pCreature->SetPlayerParty();
+							CreatureState::SetPlayerParty(pCreature);
 						}
 						else
 						{
@@ -141,28 +142,26 @@ void GCPartyJoinedHandler::execute (GCPartyJoined * pPacket , Player * pPlayer)
 		}
 	}
 
-	UI_ClosePartyCancel();
-	UI_ClosePartyAsk();
-	UI_ClosePartyRequest();
+	CommunicationPresentation::ClosePartyCancel();
+	CommunicationPresentation::ClosePartyAsk();
+	CommunicationPresentation::ClosePartyRequest();
 
 	if (previousSize!=g_pParty->GetSize())
 	{
-		UI_RunParty();
+		CommunicationPresentation::RunParty();
 	}	
 
-	// 이전에 아무도 없었는데 파티원들이 생긴다면
-	// 내가 파티에 들어간거다.
+	// Nobody before, and members now:
+	// the player has joined a party.
 	if (previousSize==0)
 	{
 		g_pParty->SetJoinTime();
 	}
 
 	//---------------------------------------------------------------
-	// 내 정보를 보내준다.
+	// Tell the party about the player.
 	//---------------------------------------------------------------
-	SendCharacterInfoToParty();
-	SendPositionInfoToParty();
-	SendStatusInfoToParty();
+	PlayerState::SendInfoToParty();
 
 	delete pOldParty;
 

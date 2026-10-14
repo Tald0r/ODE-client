@@ -152,6 +152,8 @@ struct Host
 	// that the player asked for: it is spent.
 	void (*UseItemOK)() = nullptr;
 	void (*UseSkillCardOK)(int cardType) = nullptr;
+	// Tells the party what the player is, where, and how it fares.
+	void (*SendInfoToParty)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -199,5 +201,6 @@ bool RemoveAddonItem(MItem* pItem);
 void CalculateStatus();
 void UseItemOK();
 void UseSkillCardOK(int cardType);
+void SendInfoToParty();
 
 }

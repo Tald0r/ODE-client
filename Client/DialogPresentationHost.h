@@ -26,7 +26,8 @@ namespace DialogPresentation {
 // a storage at the price. OpenInventoryToSell opens the inventory to sell
 // to a shop. CloseRequestResurrectWindow closes the window asking to be
 // resurrected. SetShop names the shop the shop window shows; RunShop
-// opens that window.
+// opens that window. IsLockInput answers whether the game's input is
+// locked (the player is talking to an NPC); false without a host.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -51,6 +52,7 @@ struct Host
 	void (*CloseRequestResurrectWindow)() = nullptr;
 	void (*SetShop)(MShop* pShop) = nullptr;
 	void (*RunShop)() = nullptr;
+	bool (*IsLockInput)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -77,5 +79,6 @@ void OpenInventoryToSell();
 void CloseRequestResurrectWindow();
 void SetShop(MShop* pShop);
 void RunShop();
+bool IsLockInput();
 
 }

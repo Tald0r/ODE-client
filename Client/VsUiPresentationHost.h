@@ -23,9 +23,10 @@ namespace VsUiPresentation {
 // element, which leaks it); false (or no entry) leaves it with the caller.
 // ChangeCustomNaming shows a custom nickname in the naming window, and
 // CloseNamingChange closes it. SelectSkill and UnselectSkill set the
-// skill in hand. SetPowerjjangPoint sets the player's power points the
-// character window shows; PowerjjangGambleResult shows what a points
-// gamble won; RefreshPointExchange reloads the point exchange window.
+// skill in hand. SetPowerjjangPoint sets the player's power points, which
+// the power points window shows and gates its gamble on;
+// PowerjjangGambleResult shows what a points gamble won;
+// RefreshPointExchange reloads the point exchange window.
 struct Host
 {
 	int (*InventoryMode)() = nullptr;

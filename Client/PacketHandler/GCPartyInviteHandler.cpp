@@ -9,13 +9,18 @@
 #include "Cpackets/CGPartyInvite.h"
 #include "ClientPlayer.h"
 #include "MGameStringTable.h"
-#include "UIDialog.h"
+#include "CommunicationPresentationHost.h"
+#include "DialogPresentationHost.h"
+#include "GameInfoPresentationHost.h"
+#include "GameMessages.h"
+#include "MCreatureTable.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
 #include "TempInformation.h"
 #include "MParty.h"
-#include "ClientDef.h"
-#include "UIFunction.h"
+#include "CMessageArray.h"
+#include "DebugLog.h"
 #include "MHelpDef.h"
-extern CMessageArray*		g_pGameMessage;
 
 void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 	 
@@ -24,10 +29,10 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 	__BEGIN_TRY
 	
 
-	if (g_pZone==NULL
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (!ZoneState::Exists()
 		|| g_pTempInformation==NULL
-		|| g_pUIDialog==NULL
-		|| g_pPlayer==NULL
+		|| pPlayerCreature==NULL
 		|| g_pParty==NULL
 		|| g_pGameMessage==NULL)
 	{
@@ -49,20 +54,20 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 	{
 		//--------------------------------------------------------------------
 		//
-		// 누가 나를 초대한다.
+		// Someone invites me.
 		//
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_REQUEST :
 			//----------------------------------------------------------------------
-			// 이미 내가 다른 누구한테 거래하자고 한 경우 
+			// I already invited someone (upstream said 'trade')
 			//----------------------------------------------------------------------
-			if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY
+			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_PARTY
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_PARTY_REQUEST)
 			{
 				int code;
 
 				//----------------------------------------------------------------------
-				// 그 사람이 나한테 파티 신청한 경우 --> OK
+				// the one I invited invites me too --> OK
 				//----------------------------------------------------------------------
 				if (g_pTempInformation->Value1==targetID)
 				{
@@ -71,20 +76,20 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 					g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 					//-------------------------------------------
-					// 파티 성공
+					// The party is formed
 					//-------------------------------------------
 					// UI_RunParty();
-					// 파티 성공 패킷을 기다린다.
-					UI_ClosePartyCancel();
+					// Wait for the party-success packet.
+					CommunicationPresentation::ClosePartyCancel();
 
 					bJoinedSomeone = true;
 					
 					//2004, 5, 6 sobeit add start
-					ExecuteHelpEvent(HELP_EVENT_PARTY);
+					GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_PARTY);
 					//2004, 5, 6 sobeit add end
 				}
 				//----------------------------------------------------------------------
-				// 아닌 경우
+				// Otherwise
 				//----------------------------------------------------------------------
 				else
 				{
@@ -99,22 +104,22 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 
 			}
 			//----------------------------------------------------------------------
-			// 파티할까? Y/N
+			// Party? Y/N
 			//----------------------------------------------------------------------
 			else
 			{
 				//-------------------------------------------
-				// 파티에 들어오남?
+				// Join the party?
 				//-------------------------------------------
-				if ((g_pPlayer->IsWaitVerify() && g_pPlayer->GetWaitVerify()!=MPlayer::WAIT_VERIFY_PARTY)			// 검증 받아야 하는게 있는 경우
-					//|| g_pPlayer->IsRepeatAction()		// 반복 행동 중인 경우
-					|| g_pUIDialog->IsLockInput()		// NPC랑 대화중..
-					|| g_pPlayer->GetCreatureType()==CREATURETYPE_BAT	// 박쥐인 경우
-					|| g_pPlayer->GetCreatureType()==CREATURETYPE_WOLF	// 늑대인 경우
+				if ((PlayerState::GetWaitVerify()!=PlayerState::WAIT_VERIFY_NULL && PlayerState::GetWaitVerify()!=PlayerState::WAIT_VERIFY_PARTY)			// waiting on another verification
+					//|| g_pPlayer->IsRepeatAction()		// repeating an action
+					|| DialogPresentation::IsLockInput()		// talking to an NPC..
+					|| CreatureState::GetCreatureType(pPlayerCreature)==CREATURETYPE_BAT	// a bat
+					|| CreatureState::GetCreatureType(pPlayerCreature)==CREATURETYPE_WOLF	// a wolf
 					|| !g_pParty->IsAcceptInvite()
 					)
 				{
-					// 파티 거부
+					// Refuse the party
 					CGPartyInvite _CGPartyInvite;
 					_CGPartyInvite.setTargetObjectID( targetID );
 					_CGPartyInvite.setCode( CG_PARTY_INVITE_REJECT );
@@ -123,14 +128,14 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 				}
 				else
 				{
-					UI_RunPartyRequest( targetID );
+					CommunicationPresentation::RunPartyRequest( targetID );
 				}
 			}
 		break;
 
 		//--------------------------------------------------------------------
 		//
-		// 나를 초대할려던 애가 초대를 취소했다.
+		// The one inviting me cancelled.
 		//
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_CANCEL :
@@ -139,20 +144,20 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 			}		
 
-			UI_ClosePartyRequest();
-			UI_ClosePartyAsk();			
+			CommunicationPresentation::ClosePartyRequest();
+			CommunicationPresentation::ClosePartyAsk();			
 		break;
 
 		//--------------------------------------------------------------------
 		//
-		// 내가 초대한 애가 파티에 들어왔다.
+		// The one I invited joined.
 		//
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_ACCEPT :
 			//----------------------------------------------------------------------
-			// 이미 내가 다른 누구한테 파티하자고 한 경우 
+			// I already invited someone else
 			//----------------------------------------------------------------------
-			if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY
+			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_PARTY
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_PARTY_REQUEST)
 			{
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
@@ -160,16 +165,16 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 			
 			bJoinedSomeone = true;
 
-			UI_ClosePartyCancel();			
+			CommunicationPresentation::ClosePartyCancel();			
 
 			//2004, 5, 6 sobeit add start
-			ExecuteHelpEvent(HELP_EVENT_PARTY);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_PARTY);
 			//2004, 5, 6 sobeit add end	
 		break;
 
 		//--------------------------------------------------------------------
 		//
-		// 내가 초대한 애가 파티에 들어오길 거부했다.
+		// The one I invited refused.
 		//
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_REJECT :
@@ -180,7 +185,7 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 
 		//--------------------------------------------------------------------
 		//
-		// 내가 초대한 애가 이미 다른 사람의 초대에 응답하는 중이다.
+		// The one I invited is already answering another invitation.
 		//
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_BUSY :
@@ -191,17 +196,17 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 
 		//--------------------------------------------------------------------
 		//
-		// 내가 초대한 애가 이미 다른 파티에 속해있다.
+		// The one I invited is already in another party.
 		//
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_ANOTHER_PARTY :
 		{
-			MCreature* pCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );
+			MCreature* pCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );
 			
 			if ( pCreature!=NULL )
 			{
-				// player의 파티가 아닌 경우에만 메시지를 출력해준다.
-				if (pCreature->IsPlayerParty())
+				// Say so only when it is not the player's party.
+				if (CreatureState::IsPlayerParty(pCreature))
 				{
 					bCancelAll = true;
 					bMessage = false;
@@ -218,7 +223,7 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 
 		//--------------------------------------------------------------------
 		//
-		// 꽉 찼당.
+		// It is full.
 		// 
 		//--------------------------------------------------------------------
 		case GC_PARTY_INVITE_MEMBER_FULL :
@@ -229,40 +234,40 @@ void GCPartyInviteHandler::execute (GCPartyInvite * pPacket , Player * pPlayer)
 	}
 
 	//-------------------------------------------
-	// 파티 확인
+	// Joined: say so
 	//-------------------------------------------
 	if (bJoinedSomeone)
 	{
-		MCreature* pCreature = g_pZone->GetCreature( g_pTempInformation->PartyInviter );
+		MCreature* pCreature = ZoneState::GetCreature( g_pTempInformation->PartyInviter );
 
 		if (pCreature!=NULL)
 		{
-			g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_SOMEONE_JOINED_PARTY), pCreature->GetName());
+			g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_SOMEONE_JOINED_PARTY), CreatureState::GetName(pCreature));
 		}
 	}
 
 	//--------------------------------------------------------------------
-	// 다 닫고 message 띄우는 경우
+	// Close everything, and say why
 	//--------------------------------------------------------------------
 	if (bCancelAll)
 	{
-		if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY
+		if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_PARTY
 			&& g_pTempInformation->GetMode()==TempInformation::MODE_PARTY_REQUEST)
 		{			
-			// 검증용 data제거
-			g_pPlayer->SetWaitVerifyNULL();
+			// Drop the verification data
+			PlayerState::SetWaitVerifyNULL();
 			g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 		}
 
-		// 파티취소할래?를 닫는다.
-		UI_ClosePartyCancel();
+		// Close "cancel the party?".
+		CommunicationPresentation::ClosePartyCancel();
 
-		UI_ClosePartyAsk();
-		UI_ClosePartyRequest();
+		CommunicationPresentation::ClosePartyAsk();
+		CommunicationPresentation::ClosePartyRequest();
 
 		if (bMessage)
 		{
-			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[cancelMessage].GetString());		
+			DialogPresentation::PopupFreeMessageDlg( GetGameString(cancelMessage) );		
 		}
 	}
 

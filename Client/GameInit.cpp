@@ -3450,6 +3450,12 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 	.SetGuild = [](std::uint16_t guildID, std::uint8_t rank, const std::string& guildName) { UI_SetGuild(guildID, rank, guildName); },
 };
 
+// Defined in PacketFunction.cpp and MPlayer.cpp without a header.
+extern int UI_GetFaceStyle(bool bMale, int faceStyle);
+extern void SendCharacterInfoToParty();
+extern void SendStatusInfoToParty();
+extern void SendPositionInfoToParty();
+
 static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.AddChatToHistory = [](const char* message, const char* sender, int chatType, std::uint32_t color) {
 		UI_AddChatToHistory(message, sender, chatType, color);
@@ -3475,6 +3481,11 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.HideWarMessages = []() { return g_pUserOption != NULL && g_pUserOption->DoNotShowWarMsg; },
 	.CloseParty = UI_CloseParty,
 	.ClosePartyCancel = UI_ClosePartyCancel,
+	.ClosePartyAsk = UI_ClosePartyAsk,
+	.ClosePartyRequest = UI_ClosePartyRequest,
+	.RunPartyRequest = [](std::uint32_t inviterID) { UI_RunPartyRequest(inviterID); },
+	.RunParty = UI_RunParty,
+	.GetFaceStyle = UI_GetFaceStyle,
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3530,6 +3541,7 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.CloseRequestResurrectWindow = UI_CloseRequestResurrectWindow,
 	.SetShop = UI_SetShop,
 	.RunShop = UI_RunShop,
+	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3600,6 +3612,11 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.CalculateStatus = []() { if (g_pPlayer != NULL) g_pPlayer->CalculateStatus(); },
 	.UseItemOK = []() { UseItemOK(); },
 	.UseSkillCardOK = [](int cardType) { UseSkillCardOK(static_cast<BYTE>(cardType)); },
+	.SendInfoToParty = []() {
+		SendCharacterInfoToParty();
+		SendPositionInfoToParty();
+		SendStatusInfoToParty();
+	},
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3618,6 +3635,8 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.RemoveItem = [](TYPE_OBJECTID itemID) { return g_pZone != NULL && g_pZone->RemoveItem(itemID); },
 	.AddItem = [](MItem* pItem, bool bDropping) { return g_pZone != NULL && g_pZone->AddItem(pItem, bDropping ? TRUE : FALSE); },
 	.RemoveCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL && g_pZone->RemoveCreature(id); },
+	.GetCreatureID = [](const char* pName, int flag) { return g_pZone != NULL ? g_pZone->GetCreatureID(pName, flag) : OBJECTID_NULL; },
+	.GetFakeCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL ? g_pZone->GetFakeCreature(id) : NULL; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3719,6 +3738,14 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.CreateFixedShelf = [](MCreature* pCreature, bool mysterious) {
 		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->CreateFixedShelf(mysterious);
 	},
+	.IsPlayerParty = [](MCreature* pCreature) { return pCreature->IsPlayerParty(); },
+	.GetGuildNumber = [](MCreature* pCreature) { return pCreature->GetGuildNumber(); },
+	.SetPlayerParty = [](MCreature* pCreature) { pCreature->SetPlayerParty(); },
+	.GetPetID = [](MCreature* pCreature) { return pCreature->GetPetID(); },
+	.SetAction = [](MCreature* pCreature, int action) { pCreature->SetAction(static_cast<BYTE>(action)); },
+	.GetPetItem = [](MCreature* pCreature) -> MPetItem* {
+		return pCreature->GetClassType() == MCreature::CLASS_FAKE ? static_cast<MFakeCreature*>(pCreature)->GetPetItem() : NULL;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3745,6 +3772,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	},
 	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
 	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
+	.MoveIntoPortal = MoveIntoPortal,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

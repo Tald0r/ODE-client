@@ -150,7 +150,7 @@ TEST(PowerPointReplies, AnExchangePurchaseSaysWhatTheServerSaid)
 	CHECK(calls == std::vector<std::string>{Popup(STRING_ERROR_ETC_ERROR)});
 }
 
-TEST(PowerPointReplies, WithoutAHostNothingIsShown)
+TEST(PowerPointReplies, WithoutTheUIHostOnlyTheMessageIsShown)
 {
 	World world;
 	VsUiPresentation::SetHost(nullptr);

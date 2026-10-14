@@ -123,4 +123,9 @@ void RunShop()
 	if (s_Host && s_Host->RunShop) s_Host->RunShop();
 }
 
+bool IsLockInput()
+{
+	return s_Host && s_Host->IsLockInput ? s_Host->IsLockInput() : false;
+}
+
 }

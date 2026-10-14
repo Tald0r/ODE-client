@@ -9,8 +9,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCDropItemToZone.h"
-#include "ClientDef.h"
-#include "MFakeCreature.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
+#include "MItem.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "UserInformation.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -32,46 +35,46 @@ void GCDropItemToZoneHandler::execute ( GCDropItemToZone * pPacket , Player * pP
 		
 
 		// dropping = TRUE
-		AddItemToZone( (GCAddItemToZone*) pPacket, TRUE );		
+		WorldEvents::AddItemToZone( (GCAddItemToZone*) pPacket, true );		
 
 		TYPE_OBJECTID id = pPacket->getDropPetOID();
-		if(id != 0)	// 먼가가 떨궜다-_-
+		if(id != 0)	// something was dropped -_-
 		{
-			MCreature *pCreature = g_pZone->GetCreature(id);
+			MCreature *pCreature = ZoneState::GetCreature(id);
 			if(pCreature != NULL)
 			{
-				TYPE_OBJECTID petID = pCreature->GetPetID();
+				TYPE_OBJECTID petID = CreatureState::GetPetID(pCreature);
 
 				if(petID != OBJECTID_NULL)
 				{
-					MFakeCreature *pPet = (MFakeCreature *)(g_pZone->GetFakeCreature(petID));
+					MCreature *pPet = ZoneState::GetFakeCreature(petID);
 
 					if(pPet != NULL)
 					{
-						pPet->SetAction(ACTION_DRAINED);		// 펫은 흡혈당하기가 펫 짖기이다.
+						CreatureState::SetAction(pPet, ACTION_DRAINED);		// a pet drained is a pet barking.
 
-						MPetItem *pPetItem = pPet->GetPetItem();
+						MPetItem *pPetItem = CreatureState::GetPetItem(pPet);
 						if(pPetItem != NULL)
 						{
-							if(pPetItem->GetItemType()<3) // 2차 펫이 아닐 때
+							if(pPetItem->GetItemType()<3) // not a second-generation pet
 							{
 								if(pPetItem->GetNumber() >= 30)
 								{
-									PlaySound(SOUND_WORLD_DOG_GRRR, false, pPacket->getX(), pPacket->getY());
+									WorldEvents::PlaySoundAt(SOUND_WORLD_DOG_GRRR, false, pPacket->getX(), pPacket->getY());
 								}
 								else
 								{
-									PlaySound(SOUND_WORLD_DOG_BARK, false, pPacket->getX(), pPacket->getY());
+									WorldEvents::PlaySoundAt(SOUND_WORLD_DOG_BARK, false, pPacket->getX(), pPacket->getY());
 								}
 							}
-							else if(pPetItem->GetItemType() == 3) // 슬레이어 펫일 때
-							{	// 슬래 펫(탱크)은 루팅할때 사운드가 있다.
-								TYPE_SOUNDID soundID = (*g_pCreatureTable)[pPet->GetCreatureType()].GetActionSound( ACTION_DRAINED );
+							else if(pPetItem->GetItemType() == 3) // a slayer's pet
+							{	// the slayer's pet (a tank) sounds when looting.
+								TYPE_SOUNDID soundID = (*g_pCreatureTable)[CreatureState::GetCreatureType(pPet)].GetActionSound( ACTION_DRAINED );
 								if (soundID!=SOUNDID_NULL  )
 								{
-									PlaySound( soundID,
+									WorldEvents::PlaySoundAt( soundID,
 												false,
-												pPet->GetX(), pPet->GetY());
+												CreatureState::GetX(pPet), CreatureState::GetY(pPet));
 								}
 
 							}

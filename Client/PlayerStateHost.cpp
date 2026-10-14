@@ -201,4 +201,9 @@ void UseSkillCardOK(int cardType)
 	if (s_Host && s_Host->UseSkillCardOK) s_Host->UseSkillCardOK(cardType);
 }
 
+void SendInfoToParty()
+{
+	if (s_Host && s_Host->SendInfoToParty) s_Host->SendInfoToParty();
+}
+
 }
