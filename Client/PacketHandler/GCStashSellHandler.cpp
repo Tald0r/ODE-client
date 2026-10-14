@@ -47,7 +47,7 @@ void GCStashSellHandler::execute ( GCStashSell * pPacket , Player * pPlayer )
 			// Let the player choose something else..
 			DialogPresentation::ShowPCTalkDlg();
 
-			DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_BUY_MORE].GetString());
+			DialogPresentation::PopupFreeMessageDlg(GetGameString(STRING_MESSAGE_CANNOT_BUY_MORE));
 		}
 		//------------------------------------------------------
 		// Buy the storage at the price, or not?

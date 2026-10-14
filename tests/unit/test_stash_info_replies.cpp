@@ -240,3 +240,12 @@ TEST(StashInfoReplies, WithoutHostsTheWindowsAreLeftAlone)
 	GameInfoPresentation::RunOtherInfo(Handle(other));
 	CHECK(calls == std::vector<std::string>{"verified"});
 }
+
+TEST(StashInfoReplies, AnEmptyMessageStringStillReadsAsText)
+{
+	World world;
+	// An empty entry holds NULL; the dialog's message box takes its length.
+	g_pGameStringTable->Set(STRING_MESSAGE_CANNOT_BUY_MORE, "");
+	ReceivePrice(0);
+	CHECK(calls == std::vector<std::string>({"verified", "talk box again", "message|"}));
+}
