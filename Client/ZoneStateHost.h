@@ -304,6 +304,9 @@ struct Host
 	// the hair colour where another's takes the skin), and sets its attack
 	// speed. Nothing for a creature that wears none.
 	void (*SetAddonToSlayer3)(MCreature* pCreature, const PCSlayerInfo3* pInfo) = nullptr;
+	// The creature's competence (0 for an operator, as the server marks
+	// one).
+	void (*SetCompetence)(MCreature* pCreature, int competence) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -421,5 +424,6 @@ bool IsPlainCreature(MCreature* pCreature);
 int GetZ(MCreature* pCreature);
 bool IsPlainCreatureWear(MCreature* pCreature);
 void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo);
+void SetCompetence(MCreature* pCreature, int competence);
 
 }
