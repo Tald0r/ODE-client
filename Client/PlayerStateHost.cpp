@@ -281,4 +281,29 @@ void SetWaitVerify(WAIT_VERIFY verify)
 	if (s_Host && s_Host->SetWaitVerify) s_Host->SetWaitVerify(verify);
 }
 
+int GetSpecialActionInfo()
+{
+	return s_Host && s_Host->GetSpecialActionInfo ? s_Host->GetSpecialActionInfo() : ACTIONINFO_NULL;
+}
+
+void SetSpecialActionInfo(int actionInfo)
+{
+	if (s_Host && s_Host->SetSpecialActionInfo) s_Host->SetSpecialActionInfo(actionInfo);
+}
+
+void SetAttackModeNormal()
+{
+	if (s_Host && s_Host->SetAttackModeNormal) s_Host->SetAttackModeNormal();
+}
+
+void Recreate()
+{
+	if (s_Host && s_Host->Recreate) s_Host->Recreate();
+}
+
+void SetXY(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetXY) s_Host->SetXY(x, y);
+}
+
 }

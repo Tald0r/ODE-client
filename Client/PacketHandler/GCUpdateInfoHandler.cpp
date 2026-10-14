@@ -8,71 +8,49 @@
 
 // include files
 #include "Client_PCH.h"
-#include "MTopView.h"
 #include "Gpackets/GCUpdateInfo.h"
-#include "ClientDef.h"
-#include "MonotonicClock.h"
-#include "AddonDef.h"
-#include "MGameTime.h"
-#include "MQuickSlot.h"
-#include "MEffectStatusDef.h"
-#include "MSkillManager.h"
-#include "MMoneyManager.h"
-#include "CDirectSound.h"
+#include "BonusSkillHost.h"
+#include "CMessageArray.h"
 #include "COrderedList.h"
-#include "MZoneTable.h"
-#include "UIDialog.h"
-#include "TalkBox.h"
-#include "MWeather.h"
-#include "MStorage.h"
-//#include "MFileDef.h"
-#include "Properties.h"
 #include "CServerInformation.h"
-#include "UserInformation.h"
-#include "MEventManager.h"
-#include "UIMessageManager.h"
-#include "ServerInfo.h"
+#include "ClientMode.h"
 #include "ClientPlayer.h"
-#include "UIFunction.h"
+#include "DebugLog.h"
+#include "FrameClock.h"
+#include "GameInfoPresentationHost.h"
+#include "GameMessages.h"
+#include "MCreatureTable.h"
+#include "MEffectStatusDef.h"
+#include "MGameStringTable.h"
+#include "MGameTime.h"
 #include "MGuildInfoMapper.h"
+#include "MItem.h"
+#include "MQuickSlot.h"
+#include "MSkillManager.h"
+#include "MStorage.h"
+#include "MWeather.h"
+#include "MZoneTable.h"
+#include "MonotonicClock.h"
 #include "MorphState.h"
-
-
-	#include "ClientPlayer.h"
-	#include "PCSlayerInfo2.h"
-	#include "PCVampireInfo2.h"
-	#include "PCOustersInfo2.h"
-	#include "Cpackets/CGReady.h"
-	#include "VS_UI_GameCommon2.h"
-	#include "MGameStringTable.h"
-
-
-
-extern MonotonicClock::TimePoint	g_FrameNow;
-extern void		StampFrameClock();
-extern DWORD		g_CurrentFrame;
-extern MGameTime*	g_pGameTime;
-extern CMessageArray*			g_pNoticeMessage;
-
-extern int			g_nZoneLarge;
-extern MZone*		g_pZoneLarge;				
-extern bool			g_bZonePlayerInLarge;
-
-extern bool			LoadingAddonSPK( bool bLoadingAll );
-extern bool				g_bHALAvailable;
-extern DWORD			g_dwVideoMemory;
-extern BOOL g_bEnable3DHAL;
-extern WORD				g_ZoneCreatureColorSet;
-extern WORD				g_MyBatColorSet;
+#include "PCOustersInfo2.h"
+#include "PCSlayerInfo2.h"
+#include "PCVampireInfo2.h"
+#include "PlayerStateHost.h"
+#include "TalkBox.h"
+#include "UserInformation.h"
+#include "WorldEventsHost.h"
+#include "ZoneFlags.h"
+#include "ZoneLoadingHost.h"
+#include "ZoneStateHost.h"
 
 
 DWORD	g_PreviousCreatureType = -1;
 // g_MorphCreatureType is MorphState.cpp's.
 
 //----------------------------------------------------------------------
-// 클라이언트가 게임 서버로부터 GCUpdateInfo 패킷을 받게 되면,
-// 패킷 안의 데이터들을 클라이언트에 저장한 후, 데이터 로딩이
-// 끝이 나면 게임 서버로 CGReady 패킷을 보내면 된다.
+// When the client receives GCUpdateInfo from the game server, it stores
+// the packet's data in the client; once the data is loaded, it sends
+// CGReady to the game server.
 //----------------------------------------------------------------------
 void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 
@@ -84,20 +62,17 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		DEBUG_ADD("Execute UpdateInfo");
 	#endif
 
-	// EventManager의 Zone종속 이벤트를 삭제한다
-	g_pEventManager->RemoveAllEventByType(EVENTTYPE_ZONE);
+	// Drop the event manager's zone-bound events.
+	ZoneLoading::RemoveZoneEvents();
 
 	//-----------------------------------------------------------
-	// 다른 부분에서 mode를 참조하는 경우가 있어서
-	// mode를 설정해준다.
+	// Other parts read the mode, so set it.
 	//-----------------------------------------------------------
 	CLIENT_MODE	previousMode = g_Mode;
 	g_Mode = MODE_WAIT_UPDATEINFO;
 
-	//UI_SaveUserOption();
-
 	//-----------------------------------------------------------
-	// 현재 server의 상태 표시
+	// Show the current server's status.
 	//-----------------------------------------------------------
 	if (g_pServerInformation!=NULL)
 	{
@@ -105,45 +80,41 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 	}
 
 	//-----------------------------------------------------------
-	// AddonSPK를 분할 로딩하는데..
-	// 여기서는 loading 안된 부분을 다 loading해야 한다. 2001.8.20
+	// AddonSPK loads in parts..
+	// here every part not loaded yet must load. 2001.8.20
 	//-----------------------------------------------------------
-	LoadingAddonSPK( true );
-
-//	g_pUserOption->LoadFromFile( FILE_INFO_USEROPTION );
-//	UI_AffectUserOption();
-	
+	ZoneLoading::LoadAllAddonSprites();
 
 	int i;
 
 	//-----------------------------------------------------------
-	// Sound를 출력하지 않는다.
+	// Play no sound.
 	//-----------------------------------------------------------
-	g_SDLAudio.SetMute();
+	WorldEvents::MuteSound( true );
 
 	//-----------------------------------------------------------
-	// updateInfo를 처리하기 시작할때의 시간을 저장한다.
+	// The time the update info's handling starts.
 	//-----------------------------------------------------------
 	const MonotonicClock::TimePoint startTime = MonotonicClock::Now();
 	
 	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
 
 	//--------------------------------------------------
-	// 데이터 로딩을 시작한다.
+	// Start loading the data.
 	//--------------------------------------------------
 	pClientPlayer->setPlayerStatus( CPS_WAITING_FOR_LOADING );
 
 	
 	//--------------------------------------------------
 	//
-	//			 Player 정보 설정
+	//			 Set the player's details
 	//
 	//--------------------------------------------------
-	Race wasInterfaceRace = UI_GetInterfaceRace();//TRUE;
+	Race wasInterfaceRace = ZoneLoading::InterfaceRace();
 	int spActionInfo = ACTIONINFO_NULL;
 	g_PreviousCreatureType = -1;
 
-	if (g_pPlayer!=NULL)
+	if (PlayerState::Creature()!=NULL)
 	{	
 		if (g_MorphCreatureType!=0)
 		{
@@ -152,58 +123,37 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		}
 		else
 		{
-			g_PreviousCreatureType = g_pPlayer->GetCreatureType();
+			g_PreviousCreatureType = CreatureState::GetCreatureType( PlayerState::Creature() );
 		}
 
 		//--------------------------------------------------
-		// interface 변경에 관하여..
+		// Keep the skill in use before.
 		//--------------------------------------------------
-		/*
-		if (g_pPlayer->IsVampire())
-		{
-			wasSlayerInterface = FALSE;
-		}
-		*/
-		// 죽었을때, dialog 다 닫기
-		if (g_pPlayer->IsDead())
-		{
-			//UI_CloseAllDialog();
-		}
-		
-
-		//--------------------------------------------------
-		// 이전에 사용중이던 기술 유지..
-		//--------------------------------------------------
-		spActionInfo = g_pPlayer->GetSpecialActionInfo();
-		if (g_pZone!=NULL)
-		{
-			g_pZone->RemoveCreature( g_pPlayer->GetID() );
-		}
-		delete g_pPlayer;
+		spActionInfo = PlayerState::GetSpecialActionInfo();
+		ZoneState::RemoveCreature( PlayerState::GetID() );
 	}	
-	g_pPlayer = new MPlayer;
-	DEBUG_ADD_FORMAT("[g_pPlayer] %p", static_cast<const void*>(g_pPlayer));
+	// Delete the player and make a new one.
+	PlayerState::Recreate();
 
 	//--------------------------------------------------
 	//
-	//		복장 초기화
+	//		Reset the gear
 	//
 	//--------------------------------------------------
 	DEBUG_ADD( "Remove All Addon" );
 	
 	for (i=0; i<ADDON_MAX; i++)
 	{
-		g_pPlayer->RemoveAddon((enum ADDON)i);
+		CreatureState::RemoveAddon( PlayerState::Creature(), i );
 	}			
 
-	g_pPlayer->SetBasicActionInfo( SKILL_ATTACK_MELEE );
-	g_pPlayer->SetBasicAttackDistance( 1 );
+	PlayerState::SetBasicAttack( SKILL_ATTACK_MELEE, 1 );
 		
 
 
 	//--------------------------------------------------
 	//
-	//	Skill Info Table 초기화
+	//	Reset the skill info table
 	//
 	//--------------------------------------------------
 	DEBUG_ADD( "SkillInfoTable Init" );
@@ -211,11 +161,11 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 
 	//--------------------------------------------------
 	//
-	// Skill Tree 초기화
+	// Reset the skill tree
 	//
 	//--------------------------------------------------
 	DEBUG_ADD( "SkillManager Init" );
-	InitSkillTree();	
+	ZoneLoading::InitSkillTree();
 
 	g_PreviousCreatureType = -1;
 	g_MorphCreatureType = 0;
@@ -250,55 +200,55 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 
 	//--------------------------------------------------
 	//
-	//			 player의 정보를 저장한다.
+	//			 Store the player's details.
 	//
 	//--------------------------------------------------		
 	switch (pPacket->getPCInfo()->getPCType())
 	{
 		//--------------------------------------------------
-		// Slayer인 경우
+		// A slayer
 		//--------------------------------------------------
 		case PC_SLAYER :
 		{
-			SetPCSlayerInfo( (PCSlayerInfo2*)pPacket->getPCInfo() );
+			PlayerState::SetPCSlayerInfo( (PCSlayerInfo2*)pPacket->getPCInfo() );
 
 			if (wasInterfaceRace != RACE_SLAYER)
 			{
-				UI_ChangeInterfaceRace(RACE_SLAYER);
+				ZoneLoading::ChangeInterfaceRace(RACE_SLAYER);
 			}
 		}
 		break;
 
 		//--------------------------------------------------
-		// Vampire인 경우
+		// A vampire
 		//--------------------------------------------------
 		case PC_VAMPIRE :
 		{
-			SetPCVampireInfo( (PCVampireInfo2*)pPacket->getPCInfo() );
+			PlayerState::SetPCVampireInfo( (PCVampireInfo2*)pPacket->getPCInfo() );
 
 			if (wasInterfaceRace != RACE_VAMPIRE)
 			{
-				UI_ChangeInterfaceRace(RACE_VAMPIRE);
+				ZoneLoading::ChangeInterfaceRace(RACE_VAMPIRE);
 			}
 		}
 		break;
 
 		//--------------------------------------------------
-		// Ousters인 경우
+		// An ouster
 		//--------------------------------------------------
 		case PC_OUSTERS :
 		{
-			SetPCOustersInfo( (PCOustersInfo2*)pPacket->getPCInfo() );
+			PlayerState::SetPCOustersInfo( (PCOustersInfo2*)pPacket->getPCInfo() );
 			
 			if (wasInterfaceRace != RACE_OUSTERS)
 			{
-				UI_ChangeInterfaceRace(RACE_OUSTERS);
+				ZoneLoading::ChangeInterfaceRace(RACE_OUSTERS);
 			}
 		}
 		break;
 	}	
 	// 2004, 6, 4 sobeit add start - sms charge
-	g_char_slot_ingame.m_SMS_Charge		= pPacket->GetSMSCharge();
+	ZoneLoading::SetSMSCharge( pPacket->GetSMSCharge() );
 	// 2004, 6, 4 sobeit add end - sms charge
 	
 	// 2004, 6, 15 sobeit add end - nick name
@@ -338,40 +288,38 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		if(szNickName == NULL)
 			szNickName = "";
 
-		g_pPlayer->SetNickName(TempNick->getNicknameType(), (char*)szNickName);
-//		g_char_slot_ingame.m_NickNameType = TempNick->getNicknameType();
-//		g_char_slot_ingame.m_NickName = szNickName;
+		CreatureState::SetNickName( PlayerState::Creature(), TempNick->getNicknameType(), (char*)szNickName );
 	}
 	// 2004, 6, 15 sobeit add end - nick name
 
-	// 2004, 9, 15, sobeit add start - non pk 관련
+	// 2004, 9, 15, sobeit add start - non pk
 	g_pUserInformation->IsNonPK = (pPacket->isNonPK())?true:false;
-	// 2004, 9, 15, sobeit add end - non pk 관련
+	// 2004, 9, 15, sobeit add end - non pk
 	
-	// 2004, 10, 18, sobeit add start - 유니온 길드 관련
+	// 2004, 10, 18, sobeit add start - the union guild
 	g_pUserInformation->dwUnionID = pPacket->getGuildUnionID();
 	g_pUserInformation->bUnionGrade = pPacket->getGuildUnionUserType();
-	g_pPlayer->SetUnionGuildID(g_pUserInformation->dwUnionID);
+	CreatureState::SetUnionGuildID( PlayerState::Creature(), g_pUserInformation->dwUnionID );
 	// 2004, 10, 18, sobeit add end
 	
-	// 2004, 12, 2, sobeit add start 파워짱 포인트 
-	g_char_slot_ingame.m_Powerjjang_Point		= pPacket->GetPowerjjang_Point();
+	// 2004, 12, 2, sobeit add start - Powerjjang points
+	ZoneLoading::SetPowerjjangPoint( pPacket->GetPowerjjang_Point() );
 	// 2004, 12, 2, sobeit add end
 
 	//--------------------------------------------------
-	// 이전에 지정해뒀던 actionInfo로 설정
+	// Set the actionInfo chosen before
 	//--------------------------------------------------
-	g_pPlayer->SetSpecialActionInfo( spActionInfo );
+	PlayerState::SetSpecialActionInfo( spActionInfo );
 
 	//--------------------------------------------------
-	// 공격 모드 설정
+	// Set the attack mode
 	//--------------------------------------------------
-	g_pPlayer->SetAttackModeNormal();
+	PlayerState::SetAttackModeNormal();
 
 
 
 	//-----------------------------------------------------------
-	// 보관함 지운다.
+	// Drop the stash.
 	//-----------------------------------------------------------
 	if (g_pStorage!=NULL)
 	{
@@ -380,31 +328,9 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 	}
 
 	//-----------------------------------------------------------
-	// 정리 정리~~
+	// Tidy up.
 	//-----------------------------------------------------------
-	UI_UnlockGear();
-	UI_UnlockItem();
-	UI_UnlockItemTrade();
-	UI_CloseShop();
-	UI_CloseBookcase();
-	UI_CloseExchange();
-	UI_CloseExchangeAsk();
-	UI_CloseExchangeCancel();
-	UI_CloseRepair();
-	UI_CloseSell();
-	UI_CloseStorage();
-	UI_ClosePartyCancel();
-	UI_ClosePartyAsk();
-	UI_ClosePartyRequest();
-	UI_ClosePartyCancel();
-	g_pUIMessageManager->Execute(UI_CLOSE_TRACE_WINDOW, 0, 0, NULL);
-
-	if (g_pUIDialog!=NULL)
-	{
-		g_pUIDialog->ClosePCTalkDlg();
-		g_pUIDialog->CloseMessageDlg();
-//		g_pUIDialog->CloseHelpDlg();
-	}
+	ZoneLoading::CloseWindows();
 
 	if (g_pPCTalkBox!=NULL)
 	{
@@ -413,43 +339,36 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		
 
 	//--------------------------------------------------
-	// QuickSlot을 없앤다. 필요한가? - -;
+	// Drop the quick slot. Needed? - -;
 	//--------------------------------------------------	
 	g_pQuickSlot = NULL;
 	g_pArmsBand1 = NULL;
 	g_pArmsBand2 = NULL;
 
 				
-	UI_StartProgress( pPacket->getZoneID() );
+	ZoneLoading::StartProgress( pPacket->getZoneID() );
 
-	//UI_SetCurrentServerName(g_pServerInformation->GetServerGroupName(), 
-	//						g_pServerInformation->GetServerName(), 
-	//						g_pServerInformation->GetServerStatus());
+	ZoneLoading::DrawProgress(0);
 
-	UI_DrawProgress(0);
-
-	DEBUG_ADD("Init g_pTopView");
+	DEBUG_ADD("Init the top view");
 	
 	//------------------------------
-	// 초기화 되지 않았으면 초기화한다.
+	// Initialise it unless it is.
 	//------------------------------
-	if (!g_pTopView->IsInit())
-	{
-		g_pTopView->Init();			
-	}
+	ZoneLoading::InitTopView();
 
-	UI_DrawProgress( 15 );
+	ZoneLoading::DrawProgress( 15 );
 	
 	//--------------------------------------------------
 	//
-	// Zone의 환경 정보를 설정한다.
+	// Set the zone's surroundings.
 	//
 	//--------------------------------------------------
 	DEBUG_ADD("[UpdateInfo] Set Weather");
 	
 	//--------------------------------------------------
-	// Zone이동할때 다른 날씨로 바뀌는 경우라면..
-	// 날씨를 완전히 제거한다.
+	// When moving zones changes the weather..
+	// clear the weather entirely.
 	//--------------------------------------------------
 	if ((g_pWeather->GetWeatherType()==MWeather::WEATHER_SNOW
 		&& pPacket->getWeather()!=WEATHER_SNOWY)
@@ -460,7 +379,7 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		g_pWeather->Release();
 	}
 	
-	SetWeather(pPacket->getWeather(), pPacket->getWeatherLevel());
+	WorldEvents::SetWeather(pPacket->getWeather(), pPacket->getWeatherLevel());
 
 	DEBUG_ADD_FORMAT( "[UpdateInfo] Set Dark/Light : %d / %d", pPacket->getDarkLevel(), pPacket->getLightLevel());
 	
@@ -473,23 +392,23 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		lightSight = 13;
 	}
 
-	// 화면의 어둡기
-	g_pTopView->SetDarkBits( darkLevel );		
+	// the screen's darkness
+	WorldEvents::SetDarkBits( darkLevel );
 	
-	// Player시야 빛의 크기
-	g_pPlayer->SetTimeLightSight( lightSight );
+	// the light around the player
+	PlayerState::SetTimeLightSight( lightSight );
 
 	
 	//--------------------------------------------------
 	//
-	//		Game 시간
+	//		The game's time
 	//
 	//--------------------------------------------------
 	DEBUG_ADD( "Set Game Time" );
 	
 	GameTime gt = pPacket->getGameTime();
 	
-	// 기준 시간 설정
+	// the starting time
 	g_pGameTime->SetStartTime(g_FrameNow,
 							gt.getYear(),
 							gt.getMonth(),
@@ -499,113 +418,56 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 							gt.getSecond()
 							);
   
-	// 시간 비율
+	// the time ratio
 	g_pGameTime->SetTimeRatio( 24 );
 
 
 	//--------------------------------------------------
 	//
-	//	 Gear의 정보를 저장한다.
+	//	 Store the gear's details.
 	//
 	//--------------------------------------------------
-	// 2004, 10 ,21, sobeit Modify start - 블러드바이블 장착아이템 관련
-	SetGearInfo( pPacket->getGearInfo(), pPacket->getBloodBibleSignInfo() );
-	// 2004, 10 ,21, sobeit Modify end - 블러드바이블 장착아이템 관련
+	// 2004, 10 ,21, sobeit Modify start - the Blood Bible's gear items
+	PlayerState::SetGearInfo( pPacket->getGearInfo(), pPacket->getBloodBibleSignInfo() );
+	// 2004, 10 ,21, sobeit Modify end - the Blood Bible's gear items
 	//--------------------------------------------------
-	// 상태값 계산..
+	// Calculate the status..
 	//--------------------------------------------------
-	g_pPlayer->CalculateStatus();
-
-
-	//---------------------------------------------------------------
-	// 임시 Belt
-	//---------------------------------------------------------------
-	/*
-	MItem* pItem = MItem::NewItem( ITEM_CLASS_BELT );
-			
-	// object ID
-	pItem->SetID( 9999 );
-
-	// type / option
-	pItem->SetItemType(	1 );
-	pItem->SetItemOption( 0 );
-
-	g_SlayerGear.AddItem( pItem, (MSlayerGear::GEAR_SLAYER)MSlayerGear::GEAR_SLAYER_BELT );			
-	*/
-	/*
-	// 임시로 칼 넣기
-	static MBlade	blade;	blade.SetItemType( 0 ); blade.SetItemOption( 0 );
-	//static MSword	sword;	sword.SetItemType( 0 );	sword.SetItemOption( 0 );
-	g_pPlayer->SetAddonItem( &blade);
-	*/
-
-	/*
-	// 임시로 총 넣기
-	static MGunSMG	gun;	gun.SetItemType( 0 ); gun.SetItemOption( 0 );
-	MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
-
-	// 의미 없음 - -;
-	pMagazine->SetID( 0 );
-
-	// 이거는 총에 맞춰서 해줘야된다.
-	for (int j=0; j<g_ItemTable[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
-	{
-		pMagazine->SetItemType(	j );
-
-		if (pMagazine->IsInsertToItem( (MItem*)&gun ))
-		{
-			break;
-		}
-	}
-
-	// 의미 없음
-	pMagazine->SetItemOption( 0 );
-
-	// 탄창 개수
-	pMagazine->SetNumber( 1000 );
-
-	//------------------------------------
-	// 탄창 설정
-	//------------------------------------
-	gun.SetMagazine( pMagazine );
-
-	g_pPlayer->SetAddonItem( &gun );
-	*/
+	PlayerState::CalculateStatus();
 
 
 	//--------------------------------------------------
 	//
-	//			Inventory 초기화
+	//			Reset the inventory
 	//
 	//--------------------------------------------------
-	SetInventoryInfo( pPacket->getInventoryInfo() );
+	PlayerState::SetInventoryInfo( pPacket->getInventoryInfo() );
 
 
 	//--------------------------------------------------
 	//
-	// 기타 Item 정보 == Mouse에 붙어 있는 item
+	// Other item details == the item held at the mouse
 	//
 	//--------------------------------------------------
-	SetExtraInfo( pPacket->getExtraInfo() );
+	PlayerState::SetExtraInfo( pPacket->getExtraInfo() );
 
 
 	//--------------------------------------------------
 	//
-	// 오토바이
+	// The motorcycle
 	//
 	//--------------------------------------------------
 	if (pPacket->hasMotorcycle())
 	{
 		//--------------------------------------------
-		// 오토바이 생성
+		// make the motorcycle
 		//--------------------------------------------
 		MItem*	pMotor = new MMotorcycle;	
 		pMotor->SetID( 0 );
 		pMotor->SetItemType( 0 ); 
-//		pMotor->SetItemOption( 0 );
 						
 		//--------------------------------------------
-		// 오토바이 안의 아이템들..
+		// the items in the motorcycle..
 		//--------------------------------------------
 		RideMotorcycleInfo* pMotorInfo = pPacket->getRideMotorcycleInfo();
 
@@ -623,8 +485,8 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 
 				if (pMotorSlotInfo!=NULL)
 				{
-					// slot 정보를 읽어서 pMotor에 추가하면 된다.
-					// Motor는 MGridItemManager이다.
+					// read the slot and add it to pMotor.
+					// Motor is an MGridItemManager.
 
 					delete pMotorSlotInfo;
 				}
@@ -632,57 +494,22 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		}
 
 		//--------------------------------------------
-		// 오토바이에 타게 한다.
+		// put the player on the motorcycle.
 		//--------------------------------------------
-		g_pPlayer->SetAddonItem( pMotor );	
+		PlayerState::SetAddonItem( pMotor );
 		
 		// -_-;;		
-		// 나중에는 player가 오토바이를 갖게 해야한다. -_-;;
-		// 지우면 아이템 정보고 뭐고 다 사라짐 T_T;
+		// later the player should own the motorcycle. -_-;;
+		// deleting it drops its item details and all T_T;
 		delete pMotor;	
 	}
 
-	UI_DrawProgress(17);
+	ZoneLoading::DrawProgress(17);
 
 	//--------------------------------------------------
-	// 현재 사용 가능한 skill들을 다시 체크한다.
+	// Check again which skills can be used now.
 	//--------------------------------------------------
-	g_pSkillAvailable->SetAvailableSkills();
-
-	//--------------------------------------------------
-	//
-	// 필요한 캐릭터 Sprite Load
-	//
-	//--------------------------------------------------
-	// [ TEST CODE ]
-	// 캐릭터 몸 로드
-//	DEBUG_ADD( "Load Creature Sprites" );
-	
-	//----------------------------------------
-	// Player 캐릭터 그림 Load
-	//----------------------------------------
-	// Slayer남자	- 그냥.. - -; 의미가 있을까..
-//	LoadCreature( 0 );
-//	UI_DrawProgress(25);
-//
-//	// Slayer여자
-//	LoadCreature( 1 );
-//	UI_DrawProgress(35);
-//
-//	// Vampire남자
-//	LoadCreature( 2 );
-//	UI_DrawProgress(38);
-//
-//	// Vampire여자
-//	LoadCreature( 3 );
-//	UI_DrawProgress(39);
-//
-//	// 늑대 : spriteType이다.
-//	LoadCreature( 58 );
-//	// 박쥐 : spriteType이다.
-//	LoadCreature( 59 );
-//	UI_DrawProgress(40);
-
+	BonusSkills::RefreshAvailableSkills();
 
 	int numNPC = pPacket->getNPCCount();
 	int numMonster = pPacket->getMonsterCount();
@@ -703,14 +530,11 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 	{
 		int spriteType = pPacket->getNPCType( i );
 
-		// 2001.8.20 주석처리
-		//LoadCreature( spriteType );
-
-		// 이 zone에서 사용하는 creature의 SpriteType
+		// the SpriteType of a creature this zone uses
 		listUse.Add( spriteType );
 
 		progress += progressInc;
-		UI_DrawProgress(progress);		
+		ZoneLoading::DrawProgress(progress);
 	}
 
 	//--------------------------------------------------
@@ -720,77 +544,74 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 	{	
 		int spriteType = pPacket->getMonsterType( i );
 
-		// 2001.8.20 주석처리
-		if(g_pUserOption->IsPreLoadMonster)
-			LoadCreature( spriteType );
+		if (ZoneLoading::PreloadsMonsters())
+			ZoneLoading::LoadCreature( spriteType );
 
-		// 이 zone에서 사용하는 creature의 SpriteType
+		// the SpriteType of a creature this zone uses
 		listUse.Add( spriteType );
 
 		progress += progressInc;
-		UI_DrawProgress(progress);		
+		ZoneLoading::DrawProgress(progress);
 	}
 
 	//--------------------------------------------------
-	// 이 Zone에서 사용하지 않는 creature들은 제거한다.
+	// Release the creatures this zone does not use.
 	//	
-	// 단, LargeZone에서 LargeZone으로 이동하는 경우에만!
+	// Only when moving from a large zone to a large zone!
 	//--------------------------------------------------
-	if (g_bZonePlayerInLarge && g_nZoneLarge!=ZONEID_NULL && g_pZoneLarge!=NULL)
+	if (g_bZonePlayerInLarge && g_nZoneLarge!=ZONEID_NULL && ZoneLoading::HasLargeZone())
 	{
 		ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( pPacket->getZoneID() );
 
 		if (pZoneInfo->Property & FLAG_ZONESIZE_SMALL)
 		{
-			g_pTopView->AddMonsterSpriteTypes( listUse );
+			ZoneLoading::AddMonsterSpriteTypes( listUse );
 		}
 		//--------------------------------------------------
-		// Large Zone으로 이동하는 경우
+		// moving to a large zone
 		//--------------------------------------------------	
 		else
 		{
-			ReleaseUselessCreatureSPKExcept( listUse ); 
+			ZoneLoading::ReleaseCreatureSpritesExcept( listUse );
 		}
 	}	
 	else
 	{
-		g_pTopView->AddMonsterSpriteTypes( listUse );
+		ZoneLoading::AddMonsterSpriteTypes( listUse );
 	}
-	//*/
 
 	if (progress<70)
 	{
-		UI_DrawProgress( 70 );
+		ZoneLoading::DrawProgress( 70 );
 	}
 
 	//--------------------------------------------------
 	// Zone Loading...			
 	//--------------------------------------------------
-	// 게임 중이었으면.. Zone 이동.
+	// From the game.. move zones.
 	DEBUG_ADD( "Load Zone" );
 	
 	//--------------------------------------------------
-	// 임시 Zone좌표
+	// the zone position, for now
 	//--------------------------------------------------
-	g_pPlayer->SetX( pPacket->getZoneX() );
-	g_pPlayer->SetY( pPacket->getZoneY() );
+	PlayerState::SetXY( pPacket->getZoneX(), pPacket->getZoneY() );
 
 	if (previousMode == MODE_GAME)
 	{
-		MoveZone( pPacket->getZoneID() );
+		ZoneLoading::MoveZone( pPacket->getZoneID() );
 	}
-	// 아니면.. 그냥 Zone Loading
+	// Otherwise.. just load the zone.
 	else
 	{
-		LoadZone( pPacket->getZoneID() );
+		ZoneLoading::LoadZone( pPacket->getZoneID() );
 	}
 	
 	// Packet Encrypt
-	g_pSocket->setEncryptCode();
+	ZoneLoading::SetEncryptCode();
 
 	//-----------------------------------------------------------
 	//
-	// Zone에서의 NPC 좌표 설정
+	// The NPCs' positions in the zone
 	//
 	//-----------------------------------------------------------
 	while (1)
@@ -811,52 +632,50 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 		int x = pInfo->getX();
 		int y = pInfo->getY();
 
-		if(g_pZone)
+		if(ZoneState::Exists())
 		{
-			int zoneID	= g_pZone->GetID();
+			int zoneID	= ZoneState::GetID();
 			if(zoneID< 1500 || zoneID >1506)
 				pName = (*g_pCreatureTable)[npcID].Name;
 		}else
 			pName = (*g_pCreatureTable)[npcID].Name;
 
-		UI_SetNPCInfo( pName, npcID, x, y );
+		GameInfoPresentation::SetNPCInfo( pName, npcID, x, y );
 
 		delete pInfo;		
 	}
 
 	//--------------------------------------------------
 	//
-	//	현재 Player에 걸려있는 Effect Status를 설정한다.
+	//	Set the effect statuses on the player now.
 	//
 	//--------------------------------------------------
-	// [!] Zone Loading 이후에 해야한다.
+	// [!] Must come after the zone loads.
 	//--------------------------------------------------
 	
 	//--------------------------------------------------
-	// 현재 시간과 Frame 계산을 다시 해준다.
+	// Work out the current time and frame again.
 	//--------------------------------------------------
-	StampFrameClock();
+	ZoneLoading::StampFrameClock();
 	
-	// updateInfo를 처리한다고 소요된 시간
-	// ...을 frame으로 환산한 값
-	int delayedFrame = ConvertMillisecondToFrame( (DWORD)(MonotonicClock::Now() - startTime).count() );		
+	// the time handling the update info took
+	// ...as frames
+	int delayedFrame = ZoneLoading::MillisecondsToFrames( (DWORD)(MonotonicClock::Now() - startTime).count() );
 
-	// 게임 frame 증가
-	g_CurrentFrame += delayedFrame;
-	g_MyBatColorSet = 0xFFFF;
+	// advance the game's frame
+	ZoneLoading::AdvanceFrame( delayedFrame );
+	ZoneLoading::SetMyBatColorSet( 0xFFFF );
 
 	switch (pPacket->getPCInfo()->getPCType())
 	{
 		//--------------------------------------------------
-		// Vampire인 경우
+		// A vampire
 		//--------------------------------------------------
 		case PC_VAMPIRE :
 		{
 			PCVampireInfo2 *pInfo = dynamic_cast< PCVampireInfo2* >( pPacket->getPCInfo() );
 			if( pInfo->getBatColor() != 0 )
-				g_MyBatColorSet = pInfo->getBatColor();
-
-//			g_pPlayer->SetChangeColorSet( pInfo->getBatColor() );
+				ZoneLoading::SetMyBatColorSet( pInfo->getBatColor() );
 		}
 		break;
 		default:
@@ -865,103 +684,34 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 
 
 
-	SetEffectInfo( g_pPlayer, pPacket->getEffectInfo(), delayedFrame );
+	WorldEvents::SetEffectInfo( PlayerState::Creature(), pPacket->getEffectInfo(), delayedFrame );
 
 	
-	UI_DrawProgress(100);
-	UI_DrawProgress(100);
+	ZoneLoading::DrawProgress(100);
+	ZoneLoading::DrawProgress(100);
 
-	//--------------------------------------------------
-	//
-	// Skill Tree
-	//
-	//--------------------------------------------------
-	/*
-	g_SkillManager.Init( MAX_SKILLDOMAIN );
-
-	//---------------------------------------------------------------------
-	// 기본 기술로부터 skill tree를 초기화한다.
-	//---------------------------------------------------------------------
-	g_SkillManager[SKILLDOMAIN_BLADE].SetRootSkill( SKILL_SINGLE_BLOW );
-	g_SkillManager[SKILLDOMAIN_SWORD].SetRootSkill( SKILL_DOUBLE_IMPACT );
-	g_SkillManager[SKILLDOMAIN_GUN].SetRootSkill( SKILL_SNIPPING );
-	g_SkillManager[SKILLDOMAIN_GUN].SetRootSkill( SKILL_SHARP_SHOOTING );
-	g_SkillManager[SKILLDOMAIN_ENCHANT].SetRootSkill( MAGIC_CREATE_HOLY_WATER );
-	g_SkillManager[SKILLDOMAIN_HEAL].SetRootSkill( MAGIC_CURE_POISON );
-	g_SkillManager[SKILLDOMAIN_VAMPIRE].SetRootSkill( MAGIC_HIDE );	
-	*/
-
-	/*
-	g_SkillAvailable.AddSkill( SKILL_DOUBLE_IMPACT );
-	g_SkillAvailable.AddSkill( SKILL_TRIPLE_SLASHER );
-	g_SkillAvailable.DisableSkill( SKILL_TRIPLE_SLASHER );
-	g_SkillAvailable.AddSkill( SKILL_SCREW_SLASHER );
-	
-	g_SkillAvailable.AddSkill( SKILL_SINGLE_BLOW );
-	g_SkillAvailable.DisableSkill( SKILL_SINGLE_BLOW );
-	
-	g_SkillAvailable.AddSkill( SKILL_ARMOR_CRASH );
-
-	g_SkillAvailable.AddSkill( SKILL_SNIPPING );
-	g_SkillAvailable.AddSkill( SKILL_KNOCKS_TARGET_BACK );
-
-	g_SkillAvailable.AddSkill( MAGIC_LIGHT );
-	g_SkillAvailable.AddSkill( MAGIC_DETECT_HIDDEN );
-	g_SkillAvailable.DisableSkill( MAGIC_DETECT_HIDDEN );
-	
-	g_SkillAvailable.AddSkill( MAGIC_CURE_POISON );
-	g_SkillAvailable.AddSkill( MAGIC_PROTECTION_FROM_CURSE );
-	
-	g_SkillAvailable.AddSkill( MAGIC_CURE_POISON );
-	g_SkillAvailable.DisableSkill( MAGIC_CURE_POISON );
-	g_SkillAvailable.AddSkill( MAGIC_PROTECTION_FROM_POISON );
-	g_SkillAvailable.AddSkill( MAGIC_CURE_PARALYSIS );
-	*/
-
-	UI_EndProgress();	
+	ZoneLoading::EndProgress();
 
 
 	//-----------------------------------------------------------
-	// Sound를 출력할 수 있게 한다.
+	// Let sound play again.
 	//-----------------------------------------------------------
-	g_SDLAudio.UnSetMute();
+	WorldEvents::MuteSound( false );
 
-	// blood drain체크때메 함 더 출력 ㅡ.ㅡ
-	UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );
+	// shown once more for the blood drain check -.-
+	ZoneLoading::ShowPlayerHP();
 	
-	//UI_AffectUserOption();
-
 	//--------------------------------------------------
-	// message 초기화
+	// Clear the messages
 	//--------------------------------------------------
 	g_pSystemMessage->Clear();
 	g_pGameMessage->Clear();
 	g_pNoticeMessage->Clear();
 
 	//--------------------------------------------------
-	// player의 위치를 기다린다.
+	// Wait for the player's position.
 	//--------------------------------------------------
-	SetMode( MODE_WAIT_SETPOSITION );	
-
-
-//	FILE *fp=fopen("InventoryLog.txt","rt");
-//	if( fp != NULL )
-//	{
-//		char szBuffer[128] = "InventoryLogStart012301230123012301230123012301230123InventoryLogEnd";		                                       
-//		fseek(fp,0,SEEK_END);
-//		int filesize = ftell(fp);
-//
-//		if( filesize < strlen(szBuffer) )
-//		{
-//			char filebuffer[128];
-//			sprintf(filebuffer,"InventoryLog:%d", filesize);
-//			
-//			SendBugReport( filebuffer );
-//		}
-//		fclose(fp);
-//	}
-
-//	ExecuteHelpEvent( HELP_EVENT_INTERFACE );
+	ZoneLoading::EnterWaitSetPositionMode();
 
 
 	__END_CATCH
