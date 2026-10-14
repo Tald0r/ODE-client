@@ -5,7 +5,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "Client_PCH.h"
 #include "Gpackets/GCEnterVampirePortal.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -18,39 +20,39 @@ void GCEnterVampirePortalHandler::execute ( GCEnterVampirePortal * pPacket , Pla
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
 		int creatureID = pPacket->getObjectID();
 
-		MCreature* pCreature = g_pZone->GetCreature( creatureID );
+		MCreature* pCreature = ZoneState::GetCreature( creatureID );
 
 		//--------------------------------------------------
-		// portal로 사라지는 모습
+		// It vanishes into the portal
 		//--------------------------------------------------
 		if (pCreature!=NULL)
 		{
 			int x = pPacket->getX();
 			int y = pPacket->getY();
 
-			pCreature->SetStop();
+			CreatureState::SetStop( pCreature );
 
-			pCreature->MovePosition( x, y );
-			pCreature->SetServerPosition( x, y );
+			CreatureState::MovePosition( pCreature, x, y );
+			CreatureState::SetServerPosition( pCreature, x, y );
 
-			MoveIntoPortal( pCreature );
+			WorldEvents::MoveIntoPortal( pCreature );
 
-			g_pZone->RemoveCreature( creatureID );
+			ZoneState::RemoveCreature( creatureID );
 		}
 		else
 		{

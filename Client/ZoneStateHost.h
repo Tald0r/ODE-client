@@ -7,6 +7,7 @@
 class MActionResult;
 class MCreature;
 class MItem;
+class MPetItem;
 class MShop;
 class MStatus;
 
@@ -48,6 +49,8 @@ struct Host
 	// The ID of the creature with this name (flag as MZone's
 	// GetCreatureID); OBJECTID_NULL for none.
 	TYPE_OBJECTID (*GetCreatureID)(const char* pName, int flag) = nullptr;
+	// The fake creature (a pet, a turret) with this ID; NULL for none.
+	MCreature* (*GetFakeCreature)(TYPE_OBJECTID id) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -68,6 +71,7 @@ bool AddItem(MItem* pItem, bool bDropping);
 bool RemoveCreature(TYPE_OBJECTID id);
 // OBJECTID_NULL without a host.
 TYPE_OBJECTID GetCreatureID(const char* pName, int flag);
+MCreature* GetFakeCreature(TYPE_OBJECTID id);
 
 }
 
@@ -199,6 +203,11 @@ struct Host
 	int (*GetGuildNumber)(MCreature* pCreature) = nullptr;
 	// Marks the creature as in the player's party.
 	void (*SetPlayerParty)(MCreature* pCreature) = nullptr;
+	// The creature's pet; OBJECTID_NULL for none, or without a host.
+	TYPE_OBJECTID (*GetPetID)(MCreature* pCreature) = nullptr;
+	void (*SetAction)(MCreature* pCreature, int action) = nullptr;
+	// A fake creature's pet item; NULL for another creature, or none.
+	MPetItem* (*GetPetItem)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -291,5 +300,8 @@ void CreateFixedShelf(MCreature* pCreature, bool mysterious);
 bool IsPlayerParty(MCreature* pCreature);
 int GetGuildNumber(MCreature* pCreature);
 void SetPlayerParty(MCreature* pCreature);
+TYPE_OBJECTID GetPetID(MCreature* pCreature);
+void SetAction(MCreature* pCreature, int action);
+MPetItem* GetPetItem(MCreature* pCreature);
 
 }

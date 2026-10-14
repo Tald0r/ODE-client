@@ -79,6 +79,11 @@ void SetDarkBits(int darkBits)
 	if (s_Host && s_Host->SetDarkBits) s_Host->SetDarkBits(darkBits);
 }
 
+void MoveIntoPortal(MCreature* pCreature)
+{
+	if (s_Host && s_Host->MoveIntoPortal) s_Host->MoveIntoPortal(pCreature);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

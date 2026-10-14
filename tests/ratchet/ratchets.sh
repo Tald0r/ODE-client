@@ -345,7 +345,8 @@ check () {
 # 121: the power point and point exchange replies join gamemodel (4.159).
 # 120: the party invitation joins gamemodel (4.160).
 # 119: the party joined joins gamemodel (4.161).
-R1_BASELINE=119
+# 117: the vampire portal and item drop replies join gamemodel (4.162).
+R1_BASELINE=117
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -524,7 +525,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 119: the power point and point exchange replies join gamemodel (4.159).
 	# 118: the party invitation joins gamemodel (4.160).
 	# 117: the party joined joins gamemodel (4.161).
-	R1_NINJA_BASELINE=117
+	# 115: the vampire portal and item drop replies join gamemodel (4.162).
+	R1_NINJA_BASELINE=115
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

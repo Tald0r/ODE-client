@@ -1112,3 +1112,7 @@ Client/PacketHandler/GCExchangeBuyHandler.cpp
 # A party invitation's answers, and the party joined.
 Client/PacketHandler/GCPartyInviteHandler.cpp
 Client/PacketHandler/GCPartyJoinedHandler.cpp
+
+# A creature entering a vampire portal, and an item dropped to the zone.
+Client/PacketHandler/GCEnterVampirePortalHandler.cpp
+Client/PacketHandler/GCDropItemToZoneHandler.cpp
