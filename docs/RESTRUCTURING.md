@@ -5072,7 +5072,8 @@ rounds settled* for the host rules). Test fixtures share
     item in its cell, one freed when the item will not go or the zone
     refuses again, a corpse and another item already there, a known
     creature alive and dead and an operator of each sex, no zone, no
-    hosts, no creature host, no corpse, no status array).
+    hosts, a zone that cannot make a creature, no creature host, no
+    corpse, no status array).
 
 - [x] **4.187 An ouster's corpse appearing:** move
   `GCAddOustersCorpseHandler` into `gamemodel`.
@@ -5094,8 +5095,9 @@ rounds settled* for the host rules). Test fixtures share
     corpse and an operator's, one laid after the item in its cell, one
     freed when the item will not go or the zone refuses again, a corpse
     and another item already there, a known creature alive and dead, an
-    operator of another type and of the ouster's, no zone, no hosts, no
-    corpse, no status array).
+    operator of another type and of the ouster's, no zone, no hosts, a
+    zone that cannot make a creature, no creature host, no corpse, no
+    status array).
 
 - [x] **4.188 An NPC appearing:** move `GCAddNPCHandler` into
   `gamemodel`.

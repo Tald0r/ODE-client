@@ -157,7 +157,6 @@ const CreatureState::Host creature = []() {
 	host.SetCurrentDirection = [](MCreature* p, int direction) { calls.push_back("faces|" + Who(p) + "|" + N(direction)); };
 	host.SetCorpse = [](MCreature* p) { calls.push_back("corpse|" + Who(p)); Fake(p).dead = true; };
 	host.SetCompetence = [](MCreature* p, int competence) { calls.push_back("competence|" + Who(p) + "|" + N(competence)); };
-	host.SetMale = [](MCreature* p, bool bMale) { calls.push_back(std::string(bMale ? "man|" : "woman|") + Who(p)); };
 	host.SetBodyColor1 = [](MCreature* p, std::uint16_t color) { calls.push_back("hair|" + Who(p) + "|" + N(color)); };
 	host.SetBodyColor2 = [](MCreature* p, std::uint16_t color) { calls.push_back("coat|" + Who(p) + "|" + N(color)); };
 	host.SetWeaponSpeed = [](MCreature* p, int speed) { calls.push_back("speed|" + Who(p) + "|" + N(speed)); };
@@ -166,17 +165,7 @@ const CreatureState::Host creature = []() {
 	};
 
 	host.SetName = [](MCreature* p, const char* name) { calls.push_back("name|" + Who(p) + "|" + name); Fake(p).name = name; };
-	host.GetName = [](MCreature* p) { return Fake(p).name.c_str(); };
-	host.SetDrainCreatureID = [](MCreature* p, TYPE_OBJECTID id) { calls.push_back("killed by|" + Who(p) + "|" + N(id)); };
 	host.SetGuildNumber = [](MCreature* p, int guild) { calls.push_back("guild|" + Who(p) + "|" + N(guild)); };
-	host.RemoveHead = [](MCreature* p) { calls.push_back("headless|" + Who(p)); };
-	host.AddEffectStatus = [](MCreature* p, EFFECTSTATUS status, std::uint32_t delayFrame) {
-		calls.push_back("has|" + Who(p) + "|" + N(status) + "|" + N(delayFrame));
-		return true;
-	};
-	host.SetChatString = [](MCreature* p, const char* str, std::uint32_t color) {
-		calls.push_back("says|" + Who(p) + "|" + (str ? str : "(null)") + "|" + N(color));
-	};
 	host.IsDead = [](MCreature* p) { return Fake(p).dead; };
 	host.SetStop = [](MCreature* p) { calls.push_back("stops|" + Who(p)); };
 	host.SetDead = [](MCreature* p) { calls.push_back("dies|" + Who(p)); Fake(p).dead = true; };
@@ -264,13 +253,13 @@ std::vector<std::string> Then(std::vector<std::string> first, const std::vector<
 
 std::vector<std::string> Made(const std::string& id, bool isOperator = false)
 {
-	std::vector<std::string> made = {"new wearing creature", Status("new", MODIFY_ADVANCEMENT_CLASS_LEVEL, 2)};
+	std::vector<std::string> expected = {"new wearing creature", Status("new", MODIFY_ADVANCEMENT_CLASS_LEVEL, 2)};
 	if (isOperator)
 	{
-		made.push_back("competence|new|0");
+		expected.push_back("competence|new|0");
 	}
-	made.push_back("type|new|" + N(isOperator ? CREATURETYPE_OUSTERS_OPERATOR : CREATURETYPE_OUSTERS));
-	return Then(made, {"id|" + id, "at|" + id + "|30,31", "server at|" + id + "|30,31", "turns|" + id + "|5", "faces|" + id + "|5",
+	expected.push_back("type|new|" + N(isOperator ? CREATURETYPE_OUSTERS_OPERATOR : CREATURETYPE_OUSTERS));
+	return Then(expected, {"id|" + id, "at|" + id + "|30,31", "server at|" + id + "|30,31", "turns|" + id + "|5", "faces|" + id + "|5",
 		Status(id, MODIFY_MAX_HP, 90), Status(id, MODIFY_CURRENT_HP, 0), "corpse|" + id, "name|" + id + "|Oust", "guild|" + id + "|7",
 		"speed|" + id + "|10", Status(id, MODIFY_ALIGNMENT, 100), "hair|" + id + "|11", "coat|" + id + "|14", "dressed|" + id + "|" + id,
 		"corpse of|" + id});
@@ -388,8 +377,15 @@ TEST(OustersCorpseReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1003);
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
 	CHECK(std::count(calls.begin(), calls.end(), "zone lays|1006|still") == 1 && std::count(calls.begin(), calls.end(), "holds|1003|3") == 1);
+	// Without the creature host the corpse is still made and laid; the
+	// known creature's reply runs without one.
 	calls.clear();
+	zoneTakesItems = 1;
 	CreatureState::SetHost(nullptr);
+	Receive(1007);
+	Receive(1003);
+	CHECK(calls == std::vector<std::string>({"new wearing creature", "corpse of|new", "zone lays|1007|still"}));
+	calls.clear();
 	ZoneState::SetHost(nullptr);
 	Receive(1005);
 	CHECK(calls.empty());

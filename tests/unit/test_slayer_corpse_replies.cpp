@@ -401,8 +401,8 @@ TEST(SlayerCorpseReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1003);
 	CHECK(std::none_of(calls.begin(), calls.end(), [](const std::string& call) { return call.rfind("status|", 0) == 0; }));
 	CHECK(std::count(calls.begin(), calls.end(), "zone lays|1006|still") == 1 && std::count(calls.begin(), calls.end(), "holds|1003|3") == 1);
-	// Without the creature host the corpse is still made and laid, and a
-	// known creature is left as it is.
+	// Without the creature host the corpse is still made and laid; the
+	// known creature's reply runs without one.
 	calls.clear();
 	zoneTakesItems = 1;
 	CreatureState::SetHost(nullptr);
