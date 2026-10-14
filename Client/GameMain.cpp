@@ -803,14 +803,14 @@ SetMode(enum CLIENT_MODE mode)
 			//InitFail("Server가 응답하지 않습니다.");
 			//InitFail("Server와의 접속이 끊어졌습니다.");
 			// g_pBack->GDI_Text(101,201, "ID나 Password가 틀렸습니다.", RGB(0,0,0));
-			TextSystem::TextService::RenderText(101, 201, "ID나 Password가 틀렸습니다.");
+			TextSystem::TextService::RenderText(g_pLast, 101, 201, "ID나 Password가 틀렸습니다.");
 			// g_pBack->GDI_Text(100,200, "ID나 Password가 틀렸습니다.", RGB(220,220,220));
-			TextSystem::TextService::RenderText(100, 200, "ID나 Password가 틀렸습니다.");
+			TextSystem::TextService::RenderText(g_pLast, 100, 200, "ID나 Password가 틀렸습니다.");
 
 			// g_pBack->GDI_Text(101,221, "[ESC]를 누르세요.", RGB(0,0,0));
-			TextSystem::TextService::RenderText(101, 221, "[ESC]를 누르세요.");
+			TextSystem::TextService::RenderText(g_pLast, 101, 221, "[ESC]를 누르세요.");
 			// g_pBack->GDI_Text(100,220, "[ESC]를 누르세요.", RGB(220,220,220));
-			TextSystem::TextService::RenderText(100, 220, "[ESC]를 누르세요.");
+			TextSystem::TextService::RenderText(g_pLast, 100, 220, "[ESC]를 누르세요.");
 
 			CSDLGraphics::Flip();
 
@@ -4777,14 +4777,14 @@ UpdateDisconnected()
 	//InitFail("Server가 응답하지 않습니다.");
 	//InitFail("Server와의 접속이 끊어졌습니다.");
 	// g_pBack->GDI_Text(101,201, "Server가 응답하지 않습니다.", RGB(0,0,0));
-	TextSystem::TextService::RenderText(101, 201, "Server가 응답하지 않습니다.");
+	TextSystem::TextService::RenderText(g_pLast, 101, 201, "Server가 응답하지 않습니다.");
 	// g_pBack->GDI_Text(100,200, "Server가 응답하지 않습니다.", RGB(220,220,220));
-	TextSystem::TextService::RenderText(100, 200, "Server가 응답하지 않습니다.");
+	TextSystem::TextService::RenderText(g_pLast, 100, 200, "Server가 응답하지 않습니다.");
 
 	// g_pBack->GDI_Text(101,221, "[ESC]를 누르세요.", RGB(0,0,0));
-	TextSystem::TextService::RenderText(101, 221, "[ESC]를 누르세요.");
+	TextSystem::TextService::RenderText(g_pLast, 101, 221, "[ESC]를 누르세요.");
 	// g_pBack->GDI_Text(100,220, "[ESC]를 누르세요.", RGB(220,220,220));
-	TextSystem::TextService::RenderText(100, 220, "[ESC]를 누르세요.");
+	TextSystem::TextService::RenderText(g_pLast, 100, 220, "[ESC]를 누르세요.");
 
 	CSDLGraphics::Flip();
 

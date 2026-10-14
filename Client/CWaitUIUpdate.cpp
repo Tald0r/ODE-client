@@ -846,9 +846,9 @@ CWaitUIUpdate::UpdateDraw()
 				snprintf(str, sizeof(str), "%d FPS", g_FrameRate);	
 				
 				// g_pLast->GDI_Text(11,11, str, RGB(20,20,20));
-				TextSystem::TextService::RenderText(11, 11, str);
+				TextSystem::TextService::RenderText(g_pLast, 11, 11, str);
 				// g_pLast->GDI_Text(10,10, str, 0xFFFFFF);
-				TextSystem::TextService::RenderText(10, 10, str);
+				TextSystem::TextService::RenderText(g_pLast, 10, 10, str);
 			}
 		#endif
 

@@ -9610,28 +9610,28 @@ void MTopView::DrawDebugInfo(void* pSurface)
 
 SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->GetID(), m_pZone->GetCreatureNumber(), attackMode, g_pPlayer->GetAlignment());
 		// pSurfaceCast->GDI_Text(10,35, str, RGB(220,220,220));
-		TextSystem::TextService::RenderText(10, 35, str);
+		TextSystem::TextService::RenderText(g_pLast, 10, 35, str);
 
 		SafeFormat::Format(str, " [ZoneID=%d] XY=(%d, %d), sXY=(%d, %d), SerXY=(%d, %d)", zoneID, g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY(), g_pPlayer->GetServerX(), g_pPlayer->GetServerY());
 		// pSurfaceCast->GDI_Text(10,56, str, RGB(220,220,220));
-		TextSystem::TextService::RenderText(10, 56, str);
+		TextSystem::TextService::RenderText(g_pLast, 10, 56, str);
 
 		SafeFormat::Format(str, "SX = %d, SY = %d, HP=%d, MP=%d", g_pPlayer->GetSX(), g_pPlayer->GetSY(), g_pPlayer->GetHP(), g_pPlayer->GetMP());
 		//sprintf(str, "[Wait Move = %d]", g_pPlayer->GetSendMove());
 		// pSurfaceCast->GDI_Text(10,72, str, RGB(220,220,220));
-		TextSystem::TextService::RenderText(10, 72, str);
+		TextSystem::TextService::RenderText(g_pLast, 10, 72, str);
 
 		SafeFormat::Format(str, "ActionCount = [%d] %d/%d", g_pPlayer->GetAction(), g_pPlayer->GetActionCount(), g_pPlayer->GetActionCountMax());
 		// pSurfaceCast->GDI_Text(10,88, str, RGB(220,220,220));
-		TextSystem::TextService::RenderText(10, 88, str);
+		TextSystem::TextService::RenderText(g_pLast, 10, 88, str);
 
 		SafeFormat::Format(str, "MoveCount = %d/%d", g_pPlayer->GetMoveCount(), g_pPlayer->GetMoveCountMax());
 		// pSurfaceCast->GDI_Text(10,104, str, RGB(220,220,220));
-		TextSystem::TextService::RenderText(10, 104, str);
+		TextSystem::TextService::RenderText(g_pLast, 10, 104, str);
 
 		SafeFormat::Format(str, "Dark/Light/Sight = %d/%d/%d", m_DarkBits, g_pPlayer->GetLightSight() + g_pPlayer->GetItemLightSight(), g_pPlayer->GetSight());
 		// pSurfaceCast->GDI_Text(10,120, str, RGB(220,220,220));
-		TextSystem::TextService::RenderText(10, 120, str);
+		TextSystem::TextService::RenderText(g_pLast, 10, 120, str);
 
 		if (g_pProfiler!=NULL && g_pProfiler->HasProfileInfo(g_ProfileInfoName.GetString()))
 		{
@@ -9641,7 +9641,7 @@ SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->Get
 
 			SafeFormat::Format(str, "%s = %d / %d = %7.3f", g_ProfileInfoName.GetString(), totalTime, times, avgTime);
 			// pSurfaceCast->GDI_Text(10,136, str, RGB(220,220,220));		
-			TextSystem::TextService::RenderText(10, 136, str);		
+			TextSystem::TextService::RenderText(g_pLast, 10, 136, str);
 		}		
 
 
@@ -9654,7 +9654,7 @@ SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->Get
 		{
 			SafeFormat::Format(str, "Request Other = %d", g_pRequestServerPlayerManager->GetSize());
 			// pSurfaceCast->GDI_Text(10,225, str, RGB(220,220,220));	
-			TextSystem::TextService::RenderText(10, 225, str);	
+			TextSystem::TextService::RenderText(g_pLast, 10, 225, str);
 		}
 
 
@@ -9687,7 +9687,7 @@ SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->Get
 				);
 
 		// pSurfaceCast->GDI_Text(150,580, str, 0xFFFFFF);		
-		TextSystem::TextService::RenderText(150, 580, str);		
+		TextSystem::TextService::RenderText(g_pLast, 150, 580, str);
 
 		// 남은 Texture메모리 test
 		DDSCAPS2 ddsCaps2;
@@ -9699,7 +9699,7 @@ SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->Get
 
 		SafeFormat::Format(str, "Texture = %ld/%ld", dwFree, dwTotal);
 		// pSurfaceCast->GDI_Text(500,580, str, 0xFFFFFF);		
-		TextSystem::TextService::RenderText(500, 580, str);		
+		TextSystem::TextService::RenderText(g_pLast, 500, 580, str);
 
 
 	#endif
@@ -9777,7 +9777,7 @@ MTopView::DrawTestHelp()
 			{
 				//pSurface->GDI_Text(point.x,1, point.y,1, helpStr[i], RGB(0,0,0));
 				// m_pSurface->GDI_Text(point.x, point.y, helpStr[i], RGB(220,220,220));
-				TextSystem::TextService::RenderText(point.x, point.y, helpStr[i]);
+				TextSystem::TextService::RenderText(g_pLast, point.x, point.y, helpStr[i]);
 				point.y += 20;
 			}
 		}
@@ -12797,7 +12797,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 									// 						tilePointTemp.y, 
 									// 						"X", 														
 									// 						0xFFFFFF);	
-									TextSystem::TextService::RenderText(tilePointTemp.x, tilePointTemp.y, "X");
+									TextSystem::TextService::RenderText(g_pLast, tilePointTemp.x, tilePointTemp.y, "X");
 									m_pSurface->Lock();
 								}
 
@@ -13140,7 +13140,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 										// 						tilePointTemp.y, 
 										// 						"X", 														
 										// 						0xFFFFFF);	
-										TextSystem::TextService::RenderText(tilePointTemp.x, tilePointTemp.y, "X");
+										TextSystem::TextService::RenderText(g_pLast, tilePointTemp.x, tilePointTemp.y, "X");
 										m_pSurface->Lock();
 									}
 
@@ -15141,7 +15141,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 						char str[128];
 						SafeFormat::Format(str, "iid=%d, view=%d", (int)pImageObject->GetImageObjectID(), (int)pImageObject->GetViewpoint());
 						// m_pSurface->GDI_Text(pPoint->x, pPoint->y, str, 0xFFFF);
-						TextSystem::TextService::RenderText(pPoint->x, pPoint->y, str);
+						TextSystem::TextService::RenderText(g_pLast, pPoint->x, pPoint->y, str);
 
 						m_pSurface->Lock();
 					}
@@ -15443,7 +15443,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 					m_pSurface->Unlock();
 					// m_pSurface->GDI_Text(pPoint->x, pPoint->y, str, 0xFFFF);
-					TextSystem::TextService::RenderText(pPoint->x, pPoint->y, str);
+					TextSystem::TextService::RenderText(g_pLast, pPoint->x, pPoint->y, str);
 					m_pSurface->Lock();
 				}
 			#endif
@@ -18167,7 +18167,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 				char str[128];
 				SafeFormat::Format(str, "HP=%d/%d", currentHP, maxHP);
 				// m_pSurface->GDI_Text(rectLeft, rectTop-20, str, 0xFFFF);
-				TextSystem::TextService::RenderText(rectLeft, rectTop-20, str);
+				TextSystem::TextService::RenderText(g_pLast, rectLeft, rectTop-20, str);
 			}
 		#endif
 
@@ -18601,7 +18601,7 @@ MTopView::DrawCreatureMyName()
 				char str[128];
 				SafeFormat::Format(str, "HP=%d/%d", currentHP, maxHP);
 				// m_pSurface->GDI_Text(rectLeft, rectTop-20, str, 0xFFFF);
-				TextSystem::TextService::RenderText(rectLeft, rectTop-20, str);
+				TextSystem::TextService::RenderText(g_pLast, rectLeft, rectTop-20, str);
 			}					
 		#endif
 

@@ -6,6 +6,8 @@
 
 #include "TextBackend.h"
 
+class CSpriteSurface;
+
 namespace TextSystem {
 
 struct NormalizationCacheLimits {
@@ -40,13 +42,12 @@ public:
 
 	int GetLineHeight(const TextStyle& style) const;
 
-	// Simple text rendering API (compatibility layer for SDL_RenderText).
-	// Renders white text at the specified position through g_pLast, the
-	// back buffer the executable owns - so it is the one member of this
-	// class the library does not define. Client/TextServiceScreen.cpp
-	// does (docs/RESTRUCTURING.md task 5.3), which is what lets a test
-	// binary link TextSystem without inventing that global.
-	static void RenderText(int x, int y, const std::string& text);
+	// Simple text rendering API (compatibility layer for SDL_RenderText):
+	// white text in the default style at (x, y) on surface; nothing when
+	// surface is null or has no backend surface. The executable passes
+	// g_pLast, its back buffer (task 4.208; defined with the sprite-surface
+	// target in RenderTargetSpriteSurface.cpp).
+	static void RenderText(CSpriteSurface* surface, int x, int y, const std::string& text);
 
 	// Display text is UTF-8. Preserve valid scalars and replace each malformed
 	// byte with U+FFFD; legacy resources must decode at their declared boundary.

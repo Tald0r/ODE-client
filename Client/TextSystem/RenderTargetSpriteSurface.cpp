@@ -1,5 +1,6 @@
 #include "RenderTargetSpriteSurface.h"
 
+#include "TextService.h"
 #include "SpriteLib/CSpriteSurface.h"
 #include "SpriteLib/SpriteLibBackend.h"
 
@@ -29,6 +30,21 @@ int SpriteSurfaceRenderTarget::GetWidth() const
 int SpriteSurfaceRenderTarget::GetHeight() const
 {
 	return m_surface ? m_surface->GetHeight() : 0;
+}
+
+void TextService::RenderText(CSpriteSurface* surface, int x, int y, const std::string& text)
+{
+	auto& service = Get();
+	if (!surface || !surface->GetBackendSurface())
+		return;
+
+	SpriteSurfaceRenderTarget target(surface);
+	TextStyle style = service.GetDefaultStyle();
+	style.color.r = 255;
+	style.color.g = 255;
+	style.color.b = 255;
+	style.color.a = 255;
+	service.DrawLine(target, text, x, y, 0, style);
 }
 
 } // namespace TextSystem

@@ -6,6 +6,9 @@
 #include "TextService.h"
 #include "RenderTarget.h"
 #include "SpriteLib/SpriteLibBackend.h"
+#include "SpriteLib/CSpriteSurface.h"
+#include "RenderTargetSpriteSurface.h"
+#include <vector>
 #include <cstring>
 #include <string>
 
@@ -104,4 +107,63 @@ TEST(TextServiceRaster, DescendersShareTheLowercaseBaseline)
             CHECK(top[letter] <= top[0] + 1);
         }
     }
+}
+
+// RenderText, the executable's quick white text: the default style in
+// white at (x, y) on the surface it is given, exactly as DrawLine draws it
+// (task 4.208); nothing on a null surface or one without a backend.
+namespace {
+std::vector<uint16_t> Pixels(CSpriteSurface& surface)
+{
+    std::vector<uint16_t> out;
+    spritectl_surface_info_t info;
+    if (spritectl_lock_surface(surface.GetBackendSurface(), &info) != 0) return out;
+    for (int y = 0; y < info.height; ++y) {
+        const auto* row = reinterpret_cast<const uint16_t*>(
+            static_cast<const unsigned char*>(info.pixels) + y * info.pitch);
+        out.insert(out.end(), row, row + info.width);
+    }
+    spritectl_unlock_surface(surface.GetBackendSurface());
+    return out;
+}
+}
+
+TEST(TextServiceRenderText, DrawsTheDefaultStyleInWhiteAtThePoint)
+{
+    CHECK_EQ(0, spritectl_init());
+    CSpriteSurface drawn, expected;
+    CHECK(drawn.Init(120, 60) && expected.Init(120, 60));
+    if (!drawn.GetBackendSurface() || !expected.GetBackendSurface()) return;
+    drawn.FillSurface(0);
+    expected.FillSurface(0);
+
+    TextSystem::TextService::RenderText(&drawn, 30, 20, "Hi");
+
+    auto& service = TextSystem::TextService::Get();
+    auto style = service.GetDefaultStyle();
+    style.color.r = style.color.g = style.color.b = style.color.a = 255;
+    TextSystem::SpriteSurfaceRenderTarget target(&expected);
+    service.DrawLine(target, "Hi", 30, 20, 0, style);
+
+    const auto got = Pixels(drawn), want = Pixels(expected);
+    CHECK(got.size() == 120u * 60u);
+    CHECK(got == want);
+    // Something was drawn, in white, below and right of the point.
+    bool white = false, beforePoint = false;
+    for (size_t i = 0; i < got.size(); ++i) {
+        if (!got[i]) continue;
+        white = white || got[i] == 0xFFFF;
+        beforePoint = beforePoint || static_cast<int>(i % 120) < 30 || static_cast<int>(i / 120) < 20;
+    }
+    CHECK(white);
+    CHECK(!beforePoint);
+}
+
+TEST(TextServiceRenderText, NeedsASurfaceWithABackend)
+{
+    CHECK_EQ(0, spritectl_init());
+    TextSystem::TextService::RenderText(nullptr, 30, 20, "Hi");
+    CSpriteSurface bare;
+    CHECK(bare.GetBackendSurface() == nullptr);
+    TextSystem::TextService::RenderText(&bare, 30, 20, "Hi");
 }
