@@ -110,6 +110,10 @@ Client/StdAfx.h
 Client/CWaitPacketUpdate.cpp
 Client/CWaitPacketUpdate.h
 
+# The append patch (4.212).
+Client/AppendPatchInfo.cpp
+Client/AppendPatchInfo.h
+
 # Money (task 4.2; the price and trade managers wait for the item core)
 Client/MMoneyManager.cpp
 Client/MMoneyManager.h

@@ -3160,6 +3160,13 @@ bool ClientHasBrowserLoop() { return browserLoopRunning; }
 
 int ClientMain(char* lpCmdLine, int nCmdShow)
 {
+	// The append patch's progress bar (task 4.212).
+	static const AppendPatchHost appendPatchHost = {
+		.UpdateProgress = UpdateProgressBar,
+		.SetProgressText = SetProgressBarText,
+	};
+	SetAppendPatchHost(&appendPatchHost);
+
 	// Flip presents g_pBack, once it exists (task 4.211).
 	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {
 		return g_pBack != NULL ? g_pBack->GetBackendSurface() : SPRITECTL_INVALID_SURFACE;
