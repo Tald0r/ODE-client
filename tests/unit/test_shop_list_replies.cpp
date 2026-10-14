@@ -258,6 +258,7 @@ TEST(ShopListReplies, AListForAShopThatExistsReplacesItsRack)
 	MShopShelf* pOld = MShopShelf::NewShelf(MShopShelf::SHELF_SPECIAL);
 	pShop->SetShelf(MShopShelf::SHELF_SPECIAL, pOld);
 	pShop->SetCurrent(1);
+	CHECK_EQ(1, static_cast<int>(pShop->GetCurrent()));
 	ReceiveList(1003, MShopShelf::SHELF_SPECIAL, 9, {{2, 503, ITEM_CLASS_SWORD, 0, 50}}, 30, 10);
 	CHECK(calls == std::vector<std::string>({"shows the shop", "shop opens", "shows the shop", kHelp}));
 	// A normal shop shows its fixed rack first.
@@ -298,8 +299,8 @@ TEST(ShopListReplies, AListThatCannotBeShelvedOrShownOnlyHelps)
 TEST(ShopListReplies, AMysteriousListFillsARackWithUnidentifiedItems)
 {
 	World world;
-	// A refused item class is left out.
-	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 4, {{3, 0, ITEM_CLASS_SWORD, 1, 0}, {4, 0, 250, 0, 0}}, 35, 12);
+	// A refused item class is left out, and the items after it are not.
+	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 4, {{2, 0, 250, 0, 0}, {3, 0, ITEM_CLASS_SWORD, 1, 0}}, 35, 12);
 	CHECK(calls == std::vector<std::string>({"shop given", "fixed rack", "mysterious rack", "shows the shop", "shop opens", "shows the shop"}));
 	MShop* pShop = merchant.shop;
 	CHECK(pShop != nullptr);
@@ -310,9 +311,10 @@ TEST(ShopListReplies, AMysteriousListFillsARackWithUnidentifiedItems)
 	if (pShelf == nullptr) return;
 	CHECK(pShelf->GetItem(3) != nullptr && !pShelf->GetItem(3)->IsIdentified());
 	CHECK(pShelf->GetItem(3) != nullptr && pShelf->GetItem(3)->GetItemClass() == ITEM_CLASS_SWORD);
-	CHECK(pShelf->GetItem(4) == nullptr);
+	CHECK(pShelf->GetItem(2) == nullptr);
 	// On a shop that exists, the fixed rack is shown first.
 	pShop->SetCurrent(1);
+	CHECK_EQ(1, static_cast<int>(pShop->GetCurrent()));
 	calls.clear();
 	ReceiveMysterious(1003, MShopShelf::SHELF_UNKNOWN, 5, {}, 35, 12);
 	CHECK_EQ(0, static_cast<int>(pShop->GetCurrent()));
@@ -350,6 +352,7 @@ TEST(ShopListReplies, VersionsAskForTheSpecialRackOrOpenTheShop)
 	GamePlayer quiet;
 	merchant.shop->GetShelf(SHOP_RACK_SPECIAL)->SetVersion(3);
 	merchant.shop->SetCurrent(1);
+	CHECK_EQ(1, static_cast<int>(merchant.shop->GetCurrent()));
 	ReceiveVersions(&quiet, 1003, {9, 3, 9}, 20);
 	CHECK(calls == std::vector<std::string>({"fixed rack", "mysterious rack", "shop opens", "shows the shop"}));
 	CHECK(quiet.Sent().empty());
@@ -389,6 +392,7 @@ TEST(ShopListReplies, AnUnknownShopKindIsKeptAndShowsTheFixedRackFirst)
 {
 	World world;
 	world.Owned()->SetCurrent(1);
+	CHECK_EQ(1, static_cast<int>(merchant.shop->GetCurrent()));
 	// A wire byte past the two kinds the client knows (Clang's UBSan checks
 	// the enum load).
 	ReceiveList(1003, MShopShelf::SHELF_FIXED, 1, {}, 30, 10, 7);

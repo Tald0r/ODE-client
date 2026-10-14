@@ -2,8 +2,7 @@
 // Filename    : GCExchangeBuyHandler.cpp
 // Description : Client-side handler for GCExchangeBuy, the server's answer to
 //               a Point Exchange purchase. The packet class compiles into the
-//               packetwire library; the handler stays with the executable
-//               like every other one.
+//               packetwire library, and the handler into gamemodel (4.159).
 //////////////////////////////////////////////////////////////////////////////
 
 #include "Client_PCH.h"
