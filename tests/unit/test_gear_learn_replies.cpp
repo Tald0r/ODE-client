@@ -90,15 +90,23 @@ struct VampireCoat : Gear
 	explicit VampireCoat(TYPE_OBJECTID id) : Gear(ITEM_CLASS_VAMPIRE_COAT, id) {}
 	bool IsGearSlotVampireCoat() const override { return true; }
 };
+struct OustersCoat : Gear
+{
+	explicit OustersCoat(TYPE_OBJECTID id) : Gear(ITEM_CLASS_OUSTERS_COAT, id) {}
+	bool IsGearSlotOustersCoat() const override { return true; }
+};
 struct Circlet : Gear
 {
 	explicit Circlet(TYPE_OBJECTID id) : Gear(ITEM_CLASS_OUSTERS_CIRCLET, id) {}
 	bool IsGearSlotOustersCirclet() const override { return true; }
 };
 
+// A freed item's description goes with it (the executable's hook drops
+// any description window showing the item).
 const MItemHost items = []() {
 	MItemHost host{};
 	host.pCurrentTime = &now;
+	host.ItemDestroyed = [](MItem* pItem) noexcept { calls.push_back("destroyed|" + N(pItem->GetID())); };
 	return host;
 }();
 
@@ -127,7 +135,6 @@ const CreatureState::Host creature = []() {
 const DialogPresentation::Host dialog = []() {
 	DialogPresentation::Host host{};
 	host.PickUpItem = [](MItem* pItem) { calls.push_back("mouse|" + N(pItem->GetID())); };
-	host.RemoveDescriptor = [](const void* pItem) { calls.push_back("descriptor|" + N(static_cast<const MItem*>(pItem)->GetID())); };
 	return host;
 }();
 
@@ -185,7 +192,7 @@ struct World : GameModelWorld
 		log.Init(8, 128);
 		g_pGameMessage = &log;
 		const ITEM_CLASS classes[] = {ITEM_CLASS_HELM, ITEM_CLASS_NECKLACE, ITEM_CLASS_COUPLE_RING, ITEM_CLASS_VAMPIRE_COUPLE_RING,
-			ITEM_CLASS_SWORD, ITEM_CLASS_VAMPIRE_COAT, ITEM_CLASS_OUSTERS_CIRCLET};
+			ITEM_CLASS_SWORD, ITEM_CLASS_VAMPIRE_COAT, ITEM_CLASS_OUSTERS_CIRCLET, ITEM_CLASS_OUSTERS_COAT};
 		for (ITEM_CLASS itemClass : classes)
 		{
 			g_pItemTable->InitClass(itemClass, 1);
@@ -274,8 +281,8 @@ void ReceiveBroken(int slot)
 
 const std::string kLearned = "You learned the [Double Impact] skill.";
 
-// A broken piece's record: its stop and addon (when it draws one), its
-// description, in that order.
+// A broken piece's record: its stop and addon (when it draws one), then
+// its end.
 std::vector<std::string> Broken(int addon, TYPE_OBJECTID id)
 {
 	std::vector<std::string> out;
@@ -284,7 +291,7 @@ std::vector<std::string> Broken(int addon, TYPE_OBJECTID id)
 		out.push_back("stop");
 		out.push_back("addon off|" + N(addon));
 	}
-	out.push_back("descriptor|" + N(id));
+	out.push_back("destroyed|" + N(id));
 	return out;
 }
 
@@ -293,10 +300,12 @@ std::vector<std::string> Broken(int addon, TYPE_OBJECTID id)
 TEST(GearLearnReplies, ALearnedSkillJoinsItsDomainAndTheUsableSetAtLevelOneWithItsFullDelay)
 {
 	World world;
-	world.Domain().SetNewSkill();
+	// The reply opens the domain to a new skill itself.
+	world.Info().SetEnable(false);
 	world.Info().SetExpLevel(4);
 	world.Info().SetSkillExp(99);
 	ReceiveLearned(SKILLDOMAIN_BLADE, kSkill);
+	CHECK(world.Info().IsEnable());
 	CHECK(world.Domain().GetSkillStatus(kSkill) == MSkillDomain::SKILLSTATUS_LEARNED);
 	CHECK(world.usable.IsEnableSkill(kSkill));
 	CHECK_EQ(1, world.Info().GetExpLevel());
@@ -306,6 +315,18 @@ TEST(GearLearnReplies, ALearnedSkillJoinsItsDomainAndTheUsableSetAtLevelOneWithI
 	CHECK(calls == std::vector<std::string>{"refresh"});
 	CHECK(world.Messages() == std::vector<std::string>{kLearned});
 	CHECK(world.temp.GetMode() == TempInformation::MODE_NULL);
+}
+
+TEST(GearLearnReplies, AnOustersLearnsANewSkillLikeAnyone)
+{
+	World world;
+	ousters = true;
+	world.Info().SetExpLevel(4);
+	ReceiveLearned(SKILLDOMAIN_BLADE, kSkill);
+	CHECK(world.Domain().GetSkillStatus(kSkill) == MSkillDomain::SKILLSTATUS_LEARNED);
+	CHECK(world.usable.IsEnableSkill(kSkill));
+	CHECK_EQ(1, world.Info().GetExpLevel());
+	CHECK_EQ(2500u, static_cast<unsigned>(world.Info().GetDelayTime()));
 }
 
 TEST(GearLearnReplies, AnOustersThatKnowsTheSkillRaisesItsLevel)
@@ -429,9 +450,14 @@ TEST(GearLearnReplies, ABrokenVampireOrOustersPieceComesOffItsGear)
 	CHECK(world.oustersGear.AddItem(new CoupleRing(34), MOustersGear::GEAR_OUSTERS_RING1));
 	ReceiveBroken(MOustersGear::GEAR_OUSTERS_CIRCLET);
 	ReceiveBroken(MOustersGear::GEAR_OUSTERS_RING1);
-	CHECK(calls == std::vector<std::string>({"descriptor|33", "descriptor|34"}));
-	CHECK_EQ(static_cast<size_t>(3), world.Messages().size());
-	CHECK_EQ(4, freed);
+	CHECK(calls == std::vector<std::string>({"destroyed|33", "destroyed|34"}));
+	// An ousters coat draws one.
+	calls.clear();
+	CHECK(world.oustersGear.AddItem(new OustersCoat(35), MOustersGear::GEAR_OUSTERS_COAT));
+	ReceiveBroken(MOustersGear::GEAR_OUSTERS_COAT);
+	CHECK(calls == Broken(ADDON_COAT, 35));
+	CHECK_EQ(static_cast<size_t>(4), world.Messages().size());
+	CHECK_EQ(5, freed);
 }
 
 TEST(GearLearnReplies, AnEmptySlotOrNoPlayerTakesNothingOff)

@@ -3516,7 +3516,6 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RunStorage = UI_RunStorage,
 	.SetStorage = UI_SetStorage,
 	.PickUpItem = UI_PickUpItem,
-	.RemoveDescriptor = [](const void* pItem) { UI_RemoveDescriptor(const_cast<void*>(pItem)); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {

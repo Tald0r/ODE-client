@@ -12,7 +12,6 @@
 #include "DebugLog.h"
 #include "DialogPresentationHost.h"
 #include "PlayerStateHost.h"
-#include "ZoneStateHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -35,11 +34,10 @@ void GCCannotAddHandler::execute ( GCCannotAdd * pPacket , Player * pPlayer )
 	//-----------------------------------------------------------------
 	// By what the item waiting on the server was for.
 	//-----------------------------------------------------------------
+	const PlayerState::ITEM_CHECK_BUFFER status = PlayerState::GetItemCheckBufferStatus();
 
 	//-----------------------------------------------------------------
 	// Pickup to Inventory
-	const PlayerState::ITEM_CHECK_BUFFER status = PlayerState::GetItemCheckBufferStatus();
-
 	//-----------------------------------------------------------------
 	if (status == PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY)
 	{

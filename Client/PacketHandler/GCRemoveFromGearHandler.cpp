@@ -10,7 +10,6 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCRemoveFromGear.h"
 #include "DebugLog.h"
-#include "DialogPresentationHost.h"
 #include "GameMessages.h"
 #include "../basic/CMessageArray.h"
 #include "MItem.h"
@@ -149,9 +148,6 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 				#endif
 			}
 
-			// Drop the item's description.
-			DialogPresentation::RemoveDescriptor( pRemovedItem );
-
 			//----------------------------------------------------------
 			// Free the item.
 			//----------------------------------------------------------
@@ -238,9 +234,6 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 					CreatureState::RemoveAddon(pPlayerCreature, addonSlotID );
 				#endif
 			}
-
-			// Drop the item's description.
-			DialogPresentation::RemoveDescriptor( pRemovedItem );
 
 			//----------------------------------------------------------
 			// Free the item.
@@ -349,9 +342,6 @@ void GCRemoveFromGearHandler::execute ( GCRemoveFromGear * pPacket , Player * pP
 					CreatureState::RemoveAddon(pPlayerCreature, addonSlotID );
 				#endif
 			}
-
-			// Drop the item's description.
-			DialogPresentation::RemoveDescriptor( pRemovedItem );
 
 			//----------------------------------------------------------
 			// Free the item.

@@ -16,8 +16,7 @@ namespace DialogPresentation {
 // EmptyMove replays the mouse position once, so the UI under it refreshes.
 // RunStorage and SetStorage do for the stash window what the pet ones do
 // for the pet storage window, which also keeps the storage's pointer.
-// PickUpItem puts an item back on the mouse; RemoveDescriptor drops any
-// description window showing that item, which is about to be freed.
+// PickUpItem puts an item back on the mouse.
 struct Host
 {
 	void (*PopupFreeMessageDlg)(const char* message) = nullptr;
@@ -31,7 +30,6 @@ struct Host
 	void (*RunStorage)() = nullptr;
 	void (*SetStorage)(MStorage* pStorage) = nullptr;
 	void (*PickUpItem)(MItem* pItem) = nullptr;
-	void (*RemoveDescriptor)(const void* pItem) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -47,6 +45,5 @@ void EmptyMove();
 void RunStorage();
 void SetStorage(MStorage* pStorage);
 void PickUpItem(MItem* pItem);
-void RemoveDescriptor(const void* pItem);
 
 }

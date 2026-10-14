@@ -3918,17 +3918,19 @@ rounds settled* for the host rules). Test fixtures share
   > or the player is a ghost. Another race's words are masked in a zone
   > that masks by race, under its hallucination name, unless the player
   > reads them (the Hillel skill, translation, an operator type); a
-  > hallucinating player sees any words masked. A shout names its sender
-  > before the first space. New entries: `CreatureState::GetHalluName`,
-  > `IsSlayer`, `IsOusters` and `GetRace`; the player's race, effects and
-  > INT come through `PlayerState`. Without a player both do nothing;
-  > most of their paths dereferenced the player. A debug build (`_DEBUG`)
-  > masks by race nowhere, as before. Found by reading and kept, as
-  > upstream's: a shout's race mask lands on the copied sender name, so
-  > its words arrive unmasked; both replies read the current zone's row
-  > in the zone table unchecked (a zone missing from the table crashes,
-  > as before); and unlike the whisper replies, the player's INT is not
-  > clamped to 300 before the mask's arithmetic. R1 is 154 Windows / 152 Ninja.
+  > hallucinating player sees any words masked (a debug build masks only
+  > a player character's). A shout names its sender before the first
+  > space. New entries: `CreatureState::GetHalluName`, `IsSlayer`,
+  > `IsOusters` and `GetRace`; the player's race, effects and INT come
+  > through `PlayerState`. Without a player, or its status, both do
+  > nothing; most of their paths dereferenced the player. A debug build
+  > (`_DEBUG`) masks by race nowhere, as before. Found by reading and
+  > kept, as upstream's: a shout's race mask lands on the copied sender
+  > name, so its words arrive unmasked; both replies read the current
+  > zone's row in the zone table unchecked (a zone missing from the
+  > table crashes, as before); and unlike the whisper replies, the
+  > player's INT is not clamped to 300 before the mask's arithmetic. R1
+  > is 154 Windows / 152 Ninja.
   - Owner: membership, R1, the entries and adapters, the colour on
     `SetChatString`, and `test_chat_replies.cpp` (filtering and its
     exemptions, refusal, the race mask and every way to read past it,
@@ -3950,18 +3952,18 @@ rounds settled* for the host rules). Test fixtures share
   > the zone. `ITEM_CHECK_BUFFER` moves from `MPlayer` into
   > `PlayerState`, as `WAIT_VERIFY` did, behind a new
   > `PlayerState::GetItemCheckBufferStatus`; `MPlayer` brings it back with
-  > `using enum` and loses the elaborated `enum` keyword on its four uses.
+  > `using enum` and loses the elaborated `enum` keyword on its five uses.
   > A broken piece of gear comes off the player: it is announced with its
   > options (not a couple ring, except for an ousters), the player stops
-  > and the addon it drew comes off, its description closes (a new
-  > `DialogPresentation::RemoveDescriptor`), and it is freed; the
+  > and the addon it drew comes off, and it is freed (its description
+  > closes with it, through the item's destroy hook); the
   > `OUTPUT_DEBUG` log no longer prints the addon's frame. Without a
   > player the last two do nothing, where they dereferenced it. R1 is
   > 151 Windows / 149 Ninja.
   - Owner: membership, R1, the entries and adapters, the enum's move,
     and `test_gear_learn_replies.cpp` (learning, an ousters' level, a
-    known skill learned again, unknown domains and skills; every buffer
-    state; each race's broken pieces, options, couple rings, a
+    known skill learned again, unknown domains and skills; each branch's
+    buffer state; each race's broken pieces, options, couple rings, a
     two-handed weapon, empty slots, no player).
 
 - [x] **4.145 The skill-failed replies:** move `GCSkillFailed1Handler` and
