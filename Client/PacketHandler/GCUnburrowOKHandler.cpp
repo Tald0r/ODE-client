@@ -29,9 +29,6 @@ void GCUnburrowOKHandler::execute ( GCUnburrowOK * pPacket , Player * pPlayer )
 	{
 		return;
 	}
-		
-
-
 
 	//------------------------------------------------------------------
 	// The skill the player waited on was confirmed.

@@ -33,6 +33,8 @@ namespace {
 std::vector<std::string> calls;
 bool zoneExists = true;
 bool hasPlayer = true;
+// Whether MovePosition reaches the cell; a blocked move leaves the creature.
+bool movable = true;
 PlayerState::WAIT_VERIFY waitVerify = PlayerState::WAIT_VERIFY_NULL;
 
 struct FakeCreature
@@ -102,6 +104,7 @@ const CreatureState::Host creature = []() {
 	host.SetServerPosition = [](MCreature* p, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) { Record(p, "server|" + N(sX) + "," + N(sY)); };
 	host.MovePosition = [](MCreature* p, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
 		Record(p, "move|" + N(x) + "," + N(y));
+		if (!movable) return false;
 		Fake(p).x = x;
 		Fake(p).y = y;
 		return true;
@@ -173,6 +176,7 @@ struct World : GameModelWorld
 		corpses = {{9001, &lying}};
 		zoneExists = true;
 		hasPlayer = true;
+		movable = true;
 		waitVerify = PlayerState::WAIT_VERIFY_NULL;
 		calls.clear();
 		alive = 0;
@@ -271,6 +275,15 @@ TEST(ShapeUnburrowReplies, ThePlayerComesUpAtTheServersCellWithTheBurrowingEffec
 	ReceiveUnburrow();
 	CHECK(calls == Unburrowed(false));
 	CHECK(waitVerify == PlayerState::WAIT_VERIFY_LOGOUT);
+	// A blocked move plays the effect where the player still stands.
+	calls.clear();
+	me.x = 30;
+	me.y = 31;
+	movable = false;
+	ReceiveUnburrow();
+	std::vector<std::string> blocked = Unburrowed(false);
+	blocked.back() = "action|" + N(RESULT_MAGIC_HIDE) + "|30,31|dir 6|" + N(OBJECTID_NULL) + "@30,31|0|resume";
+	CHECK(calls == blocked);
 	// Without a player, nothing.
 	calls.clear();
 	hasPlayer = false;
@@ -308,6 +321,8 @@ TEST(ShapeUnburrowReplies, ThePlayersAuraShieldIsReadyAgainWhenItsStatusLeaves)
 	World world;
 	world.Row(EFFECTSTATUS_CURSE_PARALYSIS).OriginalActionInfo = MAGIC_AURA_SHIELD;
 	world.Row(EFFECTSTATUS_FADE_OUT).OriginalActionInfo = MAGIC_HIDE;
+	// A reuse delay of its own, so that only "ready now" frees the shield.
+	world.Skill(MAGIC_AURA_SHIELD).SetDelayTime(2000);
 	world.Skill(MAGIC_AURA_SHIELD).SetAvailableTime(5000);
 	world.Skill(MAGIC_HIDE).SetAvailableTime(5000);
 	CHECK(!world.Skill(MAGIC_AURA_SHIELD).IsAvailableTime());

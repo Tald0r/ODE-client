@@ -125,7 +125,7 @@ struct Host
 	// Fades the creature back in soon after a fade-out.
 	void (*SetVisibleSoon)(MCreature* pCreature) = nullptr;
 	// Whether the creature wears gear (MCreatureWear); only a wearing
-	// creature takes an addon item or a weapon speed.
+	// creature takes an addon item (SetAddonItem answers false otherwise).
 	bool (*IsWear)(MCreature* pCreature) = nullptr;
 	// Puts on a copy of the item; the caller keeps pItem.
 	bool (*SetAddonItem)(MCreature* pCreature, MItem* pItem) = nullptr;
