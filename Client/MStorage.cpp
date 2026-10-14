@@ -25,6 +25,7 @@ MStorage::MStorage()
 	m_pStorage			= NULL;
 	m_pMoneyManager		= NULL;
 	m_pPersnalMsg		= NULL;
+	m_curopenid			= 0;
 }
 
 MStorage::~MStorage()
