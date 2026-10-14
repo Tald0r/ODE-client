@@ -173,6 +173,8 @@ struct Host
 	// Ends a blood drain or a soul absorption the creature was showing.
 	void (*SetStopBloodDrain)(MCreature* pCreature) = nullptr;
 	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
+	// The creature table's vampire flag of its type.
+	bool (*IsVampire)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -258,5 +260,6 @@ bool IsOusters(MCreature* pCreature);
 int GetRace(MCreature* pCreature);
 void SetStopBloodDrain(MCreature* pCreature);
 void SetStopAbsorbSoul(MCreature* pCreature);
+bool IsVampire(MCreature* pCreature);
 
 }

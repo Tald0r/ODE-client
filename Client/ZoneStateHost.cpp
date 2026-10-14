@@ -452,4 +452,9 @@ void SetStopAbsorbSoul(MCreature* pCreature)
 	if (s_Host && s_Host->SetStopAbsorbSoul) s_Host->SetStopAbsorbSoul(pCreature);
 }
 
+bool IsVampire(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsVampire ? s_Host->IsVampire(pCreature) : false;
+}
+
 }

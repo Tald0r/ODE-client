@@ -117,7 +117,7 @@ int				g_DyeColorSet[48] =
 165,381,407,420,435,451,466,480,170,364,412,426,440,455,471,487,179,371,419,434,449,464,479,494};
 
 // source화일 끝에 있다. header compile시간 아까버서 ..- -;
-void	CheckItemForSkillIcon(const MItem* pItem);
+#include "ItemSkillIcons.h"
 
 extern BYTE g_macAddress[6];
 
@@ -4578,34 +4578,6 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 
 // CreateActionResultNode is MActionResult.cpp's.
 
-//-----------------------------------------------------------------------------
-// Check Item For SkillIcon
-//-----------------------------------------------------------------------------
-// 이 부분은 MItem에 각 item마다의 skill icon을 체크하는
-// virtual member function을 만들어야 한다.
-// 지금은 헤더 컴파일과 시간 관계상 이렇게 간다. - -; T_T;
-//-----------------------------------------------------------------------------
-void
-CheckItemForSkillIcon(const MItem* pItem)
-{
-	ITEM_CLASS itemClass = pItem->GetItemClass();
-
-	// 특정 item class인 경우는 skill icon이 바뀐다.
-	if ((g_pPlayer->IsSlayer()
-		&& (itemClass==ITEM_CLASS_HOLYWATER
-			|| itemClass==ITEM_CLASS_SLAYER_PORTAL_ITEM
-			|| itemClass==ITEM_CLASS_BOMB
-			|| itemClass==ITEM_CLASS_MINE
-			|| itemClass==ITEM_CLASS_BOMB_MATERIAL))
-
-		|| (g_pPlayer->IsVampire()
-		&& (itemClass==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
-			|| itemClass==ITEM_CLASS_VAMPIRE_ETC))
-		)
-	{
-		g_pSkillAvailable->SetAvailableSkills();
-	}	
-}
 
 
 void		SetFadeStart(signed char start, signed char end, signed char step, BYTE r, BYTE g, BYTE b,WORD delay)

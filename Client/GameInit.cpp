@@ -3688,6 +3688,7 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetRace = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetRace()); },
 	.SetStopBloodDrain = [](MCreature* pCreature) { pCreature->SetStopBloodDrain(); },
 	.SetStopAbsorbSoul = [](MCreature* pCreature) { pCreature->SetStopAbsorbSoul(); },
+	.IsVampire = [](MCreature* pCreature) { return pCreature->IsVampire(); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
