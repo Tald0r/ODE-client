@@ -107,6 +107,7 @@ public:
 			m_Colors[i] = slayerInfo.m_Colors[i]; 	// 슬레이어 색깔 정보
 
 		m_Competence = slayerInfo.m_Competence;
+		m_UnionID = slayerInfo.m_UnionID;
 	}
 
 
