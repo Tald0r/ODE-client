@@ -72,7 +72,12 @@ const MGuidanceEffectHost guidanceHost{
 	},
 };
 const MCreatureParabolaEffectHost host{
-	.Sprite = [](TYPE_EFFECTSPRITETYPE, MCreatureParabolaEffectSprite& result) { calls.push_back(1); result = sprite; return spriteAvailable; },
+	.Sprite = [](TYPE_EFFECTSPRITETYPE type, MCreatureParabolaEffectSprite& result) {
+		calls.push_back(1);
+		CHECK_EQ(17, type);
+		result = sprite;
+		return spriteAvailable;
+	},
 	.Creature = [](TYPE_OBJECTID id, MCreatureParabolaPosition& position) {
 		calls.push_back(2);
 		CHECK_EQ(123, id);
@@ -172,11 +177,12 @@ void CheckCommon(MEffect& effect, int x, int y, int z, DWORD count)
 	CHECK_EQ(77, effect.GetPower());
 }
 
-// Two effects fly alike for three updates.
+// Two effects fly alike for eight updates (long enough for a start a
+// degree off to show).
 void CheckFlight(MEffect& effect, MEffect& twin)
 {
 	CHECK_EQ(twin.GetDirection(), effect.GetDirection());
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		const bool a = effect.Update();
 		const bool b = twin.Update();
@@ -295,11 +301,18 @@ TEST(CreatureAttackEffectGenerators, LaterStepsOfArrowsBoltsAndTeethShootBesideT
 	CHECK_EQ(3, effects.size());
 	CHECK(effects[1]->GetEffectTarget() == nullptr && effects[2]->GetEffectTarget() == nullptr);
 	CHECK_EQ(ACTIONINFO_NULL, effects[2]->GetActionInfo());
-	// The zone refusing a later one: false, the earlier ones kept.
+	// The zone refusing a later one: true, the earlier ones kept and the
+	// first still owning the target. (A false would have the caller
+	// delete the target the first effect owns.)
 	effects.clear();
 	acceptLimit = 2;
-	CHECK(!world.guided.Generate(Info(STEP_SKILL_BLAZE_BOLT_3)));
+	auto target = Target();
+	EFFECTGENERATOR_INFO refused = Info(STEP_SKILL_BLAZE_BOLT_3);
+	refused.pEffectTarget = target.get();
+	CHECK(world.guided.Generate(refused));
+	target.release();
 	CHECK_EQ(2, effects.size());
+	CHECK(effects[0]->GetEffectTarget() == refused.pEffectTarget);
 }
 
 namespace {
@@ -356,12 +369,18 @@ TEST(CreatureAttackEffectGenerators, AHomingAttackStartsAtItsDirectionsAngleAndT
 TEST(CreatureAttackEffectGenerators, AHaloTurnsFasterFromTwoDirectionsAside)
 {
 	World world;
+	bool sides[2] = {false, false};
+	// Two creatures whose pixel x and y differ, so a mixed-up target shows
+	// in the halo's flight (which does not trace the creature).
+	for (const MCreatureParabolaPosition& at : {MCreatureParabolaPosition{1, 7, 6}, MCreatureParabolaPosition{9, 12, 6}})
 	for (BYTE direction : {BYTE(0), BYTE(2), BYTE(3), BYTE(6)})
 	{
+		creature = at;
 		for (unsigned seed : {1u, 2u, 3u, 4u})
 		{
 			std::srand(seed);
 			const int side = std::rand() % 2 ? 2 : 6;
+			sides[side == 2] = true;
 			std::srand(seed);
 			effects.clear();
 			EFFECTGENERATOR_INFO info = Info(SKILL_CLIENT_HALO_ATTACK, direction);
@@ -375,6 +394,8 @@ TEST(CreatureAttackEffectGenerators, AHaloTurnsFasterFromTwoDirectionsAside)
 			CheckFlight(*effects.front(), *twin);
 		}
 	}
+	// The seeds drew both sides.
+	CHECK(sides[0] && sides[1]);
 }
 
 TEST(CreatureAttackEffectGenerators, AHomingAttackNeedsTheSpriteTheCreatureTheFramesAndTheZone)

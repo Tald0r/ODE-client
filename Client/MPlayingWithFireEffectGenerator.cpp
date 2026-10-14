@@ -1,17 +1,19 @@
  //----------------------------------------------------------------------
 // MSkipEffectGenerator.cpp
 //----------------------------------------------------------------------
-// Tile과 맞붙은 깜빡이는 Effect들을 생성한다.
+// creates blinking effects joined to the tiles.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MPlayingWithFireEffectGenerator.h"
 #include "MEffect.h"
-#include "MTopView.h"
-#include "MZone.h"
+#include "MEffectTarget.h"
+#include "MEventQueue.h"
+#include "MViewDef.h"
 #include "EffectSpriteTypeDef.h"
-#include "MEffectSpriteTypeTable.h"
-#include "MEventManager.h"
 #include "SkillDef.h"
+#include "WorldEventsHost.h"
+#include <cstdlib>
+#include <utility>
 
 //#define	new			DEBUG_NEW
 
@@ -19,6 +21,28 @@
 // Global
 //----------------------------------------------------------------------
 //MAttachZoneEffectGenerator	g_StopZoneEffectGenerator;
+
+const MZoneAttackEffectHost* MPlayingWithFireEffectGenerator::s_pHost = nullptr;
+
+const MZoneAttackEffectHost* MPlayingWithFireEffectGenerator::SetHost(const MZoneAttackEffectHost* host)
+{
+	const auto* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+// The sprite of the type, with its frames; none past the table.
+bool MPlayingWithFireEffectGenerator::ReadSprite(int type, MZoneAttackEffectSprite& sprite)
+{
+	sprite = {};
+	return type >= 0 && s_pHost && s_pHost->Sprite && s_pHost->Sprite(static_cast<TYPE_EFFECTSPRITETYPE>(type), sprite);
+}
+
+// Consumes the effect; true only when the zone keeps it.
+bool MPlayingWithFireEffectGenerator::QueueEffect(std::unique_ptr<MEffect> effect)
+{
+	return s_pHost && s_pHost->Queue && s_pHost->Queue(std::move(effect));
+}
 
 //----------------------------------------------------------------------
 // Generate
@@ -225,11 +249,13 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		event.eventDelay = 2000;
 		event.eventFlag = EVENTFLAG_SHAKE_SCREEN;
 		event.parameter3 = 3;
-		g_pEventManager->AddEvent(event);
+		WorldEvents::AddEvent(event);
 
 	}
 
-	if (est[0] >= g_pEffectSpriteTypeTable->GetSize())
+	// The first sprite type must be in the table.
+	MZoneAttackEffectSprite firstSprite;
+	if (!ReadSprite( est[0], firstSprite ))
 	{
 		return false;
 	}
@@ -238,21 +264,26 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 	int direction = egInfo.direction;
 
 
-	// Zone에 추가한다.
+	// add to the zone.
 
 	bool bAdd = false;
 	MEffectTarget*	pEffectTarget2;
 
 	for(int i = 0; i < effectCount; i++)
 	{
-		BLT_TYPE		bltType = (*g_pEffectSpriteTypeTable)[est[i]].BltType;
-		TYPE_FRAMEID	frameID	= (*g_pEffectSpriteTypeTable)[est[i]].FrameID;
+		MZoneAttackEffectSprite sprite;
+		if (!ReadSprite( est[i], sprite ))
+		{
+			continue;
+		}
+		BLT_TYPE		bltType = static_cast<BLT_TYPE>(sprite.bltType);
+		TYPE_FRAMEID	frameID	= sprite.frameID;
 		
-		int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);
+		int maxFrame = sprite.maxFrames;
 		
 		MEffect*	pEffect;
 		//---------------------------------------------
-		// Effect 생성
+		// create the effect
 		//---------------------------------------------
 		pEffect = new MEffect(bltType);
 		
@@ -260,24 +291,24 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		pEffect->SetFrameID( frameID, maxFrame );	
 		pEffect->SetPixelPosition( x, y, egInfo.z0 );
 //		pEffect->SetZ(egInfo.z0);			
-		pEffect->SetStepPixel(egInfo.step);		// 실제로 움직이지는 않지만, 다음 Effect를 위해서 대입해준다.
-		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// 지속되는 Frame
+		pEffect->SetStepPixel(egInfo.step);		// it does not really move, but the next effect takes it.
+		pEffect->SetCount( egInfo.count, egInfo.linkCount );			// the frames it lasts
 		
 //		pEffect->SetDelayFrame( i*8 );
 		
-		// 방향 설정
+		// the direction
 		pEffect->SetDirection( direction );
 		
-		// 위력
+		// power
 		pEffect->SetPower(egInfo.power);
 		
-		// 빛의 밝기
+		// light brightness
 		//pEffect->SetLight( light );
 		
-		// 중복 가능한가
+		// can it overlap
 		pEffect->SetMulti(true);
 
-		if(g_pZone->AddEffect( pEffect))
+		if(QueueEffect( std::unique_ptr<MEffect>(pEffect)))
 		{
 			if (!bAdd)
 			{
@@ -286,7 +317,7 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 			}
 			else
 			{
-				// 다음 Effect 생성 정보
+				// how the next effect is made
 				if (egInfo.pEffectTarget == NULL)
 				{
 					pEffect->SetLink( egInfo.nActionInfo, NULL );
@@ -301,7 +332,7 @@ MPlayingWithFireEffectGenerator::Generate( const EFFECTGENERATOR_INFO& egInfo )
 		}
 //		if (bAdd)
 //		{
-//			// 다음 Effect 생성 정보
+//			// how the next effect is made
 //			pEffect->SetLink( egInfo.nActionInfo, egInfo.pEffectTarget );
 //		
 //		}
