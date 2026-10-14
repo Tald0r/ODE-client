@@ -67,15 +67,17 @@ struct Host
 	// delayedFrame, the frames already spent loading, and one with no time
 	// left is skipped. A coma also makes the creature a corpse; a trap's,
 	// Back Stab 3's, the ice of soul stone's and the ground elemental
-	// centre's start their action, and take that action's own duration (a
-	// trap's converted to frames twice). The host empties the list, though
-	// getListNum() still counts it, so read it first; pEffectInfo may be
-	// NULL.
+	// centre's start their action when the status table names one, for a
+	// set time (18 frames; 19 for the ice; 0xFFFF for the centre; a trap's
+	// own duration, converted to frames twice). The host empties the list,
+	// though getListNum() still counts it, so read it first; pEffectInfo
+	// may be NULL.
 	void (*SetEffectInfo)(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) = nullptr;
-	// Gilles de Rais's map effect, in his hard zone (1413) only: the smoke
-	// over the upper (1) or lower (2) half, cleared as the boss appears
-	// (bAppearBossMonster) or left standing (on loading the map, or when
-	// the boss dies). It asks the player's cell too.
+	// Gilles de Rais's map effects, in his hard zone (1413) only, over the
+	// upper (1) or lower (2) half: as the boss appears (bAppearBossMonster)
+	// the smoke is cleared and a black hall and four electric posts rise;
+	// otherwise (on loading the map, or when the boss dies) the smoke is
+	// laid. It reads the player's direction and ID.
 	void (*AddGDREffect)(int effect, bool bAppearBossMonster) = nullptr;
 	// The creature comes up out of a portal: its body is drawn rising from
 	// the ground, under an effect at its cell (the wolverine summon for
@@ -85,17 +87,20 @@ struct Host
 	// A monster in a slayer's or an ouster's shape, made from the packet as
 	// a creature of that race and added to the zone, or, when the zone
 	// knows it, set at the packet's cell and health in place. One made, and
-	// a known ouster, faces down (2) whatever the packet says. 797 becomes
-	// a female slayer; ouster 800 is dressed in a coat and chakram. A
+	// a known ouster, is turned down (2) whatever the packet says, though it
+	// faces the packet's direction until it next turns. 797 becomes a
+	// female slayer; ouster 800 is dressed in a coat and chakram. A
 	// sacrifice (793, 795) is wounded.
 	void (*AddRaceSlayerMonster)(GCAddMonster* pPacket) = nullptr;
 	void (*AddRaceOustersMonster)(GCAddMonster* pPacket) = nullptr;
 	// Skills shown with copies or summoned creatures, the user striking the
-	// target: Shadow Dancing's and Illendue's fading copies (Illendue's
-	// copy using skillID), Blaze Walk's strikes at its grade, the plasma
-	// rocket launcher's rocket, and the wild wolf running at the target
-	// (to eat it, when it is a corpse). Either creature may be NULL; then
-	// nothing is shown.
+	// target: Shadow Dancing's and Illendue's fading copies and Blaze
+	// Walk's strikes, each striking with skillID (SKILL_ATTACK_MELEE meaning
+	// the user's basic action), one strike per grade from 0 (the game's
+	// shows three at most, and grade 3 on is undefined); the plasma rocket
+	// launcher's rocket; and the wild wolf, the user turned to the target
+	// and the wolf running at it, to eat it when bEatCorpse (the packet's
+	// grade). Either creature may be NULL; then nothing is shown.
 	void (*SkillShadowDancing)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
 	void (*SkillIllendue)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
 	void (*SkillBlazeWalk)(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) = nullptr;

@@ -4806,11 +4806,11 @@ rounds settled* for the host rules). Test fixtures share
   > status. A weapon skill acts as the user's basic action (none at all
   > when that is a result action); a skill with steps acts as the step
   > its grade names. Some skills also show a copy or a summoned creature
-  > (five new `WorldEvents` entries, which OK1 and OK2 call too): Shadow
-  > Dancing, Illusion Inversion and Illendue's fading copies, Blaze Walk's
-  > strikes, the plasma rocket, and the wild wolf, which runs at a target
-  > or at the creature in a corpse (the skill then goes on against that
-  > one). Set Afire marks the user, Bite of Death marks the target as
+  > (five new `WorldEvents` entries, which OK1 and OK2 use from 4.177):
+  > Shadow Dancing, Illusion Inversion and Illendue's fading copies, Blaze
+  > Walk's strikes, the plasma rocket, and the wild wolf, which runs at a
+  > target or at the creature in a corpse (the skill then goes on against
+  > that one). Set Afire marks the user, Bite of Death marks the target as
   > drained by the user. Without a zone, the user or the target nothing
   > happens; a skill past the action table is refused. R1 is 98 Windows /
   > 96 Ninja.

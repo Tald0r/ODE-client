@@ -330,7 +330,6 @@ TEST(SkillObjectReplies, AWeaponSkillActsAsTheUsersBasicActionAndAStepAsItsGrade
 	Receive(1001, 1002, kSkill);
 	CHECK(calls.empty());
 	// A skill with steps acts as the step its grade names; grade 0 as itself.
-	world.Row(kStep).SetActionResult(ACTIONRESULTNODE_NULL);
 	world.Row(SKILL_SINGLE_BLOW).SetUseActionStep();
 	world.Row(SKILL_SINGLE_BLOW).SetActionStep(1, kStep);
 	Receive(1001, 1002, SKILL_SINGLE_BLOW, 2);
@@ -383,6 +382,9 @@ TEST(SkillObjectReplies, TheWildWolfRunsAtTheTargetOrTheCreatureInACorpse)
 	calls.clear();
 	Receive(1001, 2001, SKILL_WILD_WOLF, 1);
 	CHECK(calls == std::vector<std::string>({"Ogre.wild wolf|Fallen|eat", "Ogre.face|25|26", "Ogre.cast|" + N(SKILL_WILD_WOLF) + "|2001"}));
+	calls.clear();
+	Receive(1001, 2001, SKILL_WILD_WOLF, 0);
+	CHECK(calls.size() == 3 && calls[0] == "Ogre.wild wolf|Fallen|hunt");
 	// Another skill at a corpse, or the wolf at nothing or without its user:
 	// nothing.
 	calls.clear();
@@ -639,4 +641,62 @@ TEST(SkillObjectReplies, ASkillOnThePlayerWithoutAZoneOrPastTheTable)
 	ReceiveOnPlayer(1001, kSkill);
 	CHECK(calls.empty());
 	CHECK_EQ(10LL, PlayerHP());
+}
+
+TEST(SkillObjectReplies, AResultActionOnAProtectedPlayerIsNoAcid)
+{
+	World world;
+	// The skill table holds a row per skill, below the result actions; a
+	// result action cast at a player protected from acid reads its default
+	// row past the end, no acid, and is cast as itself.
+	playerEffects = {EFFECTSTATUS_PROTECTION_FROM_ACID};
+	ReceiveOnPlayer(1001, kMin + 1);
+	CHECK(calls.size() >= 2 && calls[1] == "Ogre.cast|" + N(kMin + 1) + "|7");
+}
+
+TEST(SkillObjectReplies, TheRewrittenSkillDecidesTheStepAndTheSpecialsTheCastOneTheRocket)
+{
+	World world;
+	// A weapon skill whose basic action has steps steps as the basic one;
+	// on the player the step is taken first, from the skill cast, so the
+	// basic action is used as it is.
+	world.Row(kSkill).SetAffectCurrentWeaponAction();
+	world.Row(SKILL_SINGLE_BLOW).SetUseActionStep();
+	world.Row(SKILL_SINGLE_BLOW).SetActionStep(1, kStep);
+	world.ogre.basic = SKILL_SINGLE_BLOW;
+	me.basic = SKILL_SINGLE_BLOW;
+	Receive(1001, 1002, kSkill, 2);
+	ReceivePlayers(1002, kSkill, 2);
+	ReceiveOnPlayer(1001, kSkill, 2);
+	CHECK(calls == Then(Then(Cast(kStep), Adds(kStep)), OnPlayer(SKILL_SINGLE_BLOW)));
+	// A step onto Bite of Death or Shadow Dancing is that skill.
+	calls.clear();
+	world.Row(kStep).SetUseActionStep();
+	world.Row(kStep).SetActionStep(1, SKILL_BITE_OF_DEATH);
+	world.Row(kStep).SetActionStep(2, SKILL_SHADOW_DANCING);
+	Receive(1001, 1002, kStep, 2);
+	ReceivePlayers(1002, kStep, 2);
+	ReceiveOnPlayer(1001, kStep, 2);
+	CHECK(calls == Then(Then(Then(Cast(SKILL_BITE_OF_DEATH), {"Vanda.drained by|1001"}),
+		Then({"Vanda.drained by|7"}, Adds(SKILL_BITE_OF_DEATH))),
+		Then({"Self.drained by|1001"}, OnPlayer(SKILL_BITE_OF_DEATH))));
+	calls.clear();
+	Receive(1001, 1002, kStep, 3);
+	ReceivePlayers(1002, kStep, 3);
+	ReceiveOnPlayer(1001, kStep, 3);
+	CHECK(calls == Then(Then(
+		Then({"Ogre.shadow dancing|Vanda|" + N(SKILL_SINGLE_BLOW)}, Cast(SKILL_SHADOW_DANCING, SKILL_SINGLE_BLOW + kMin)),
+		Then({"Self.shadow dancing|Vanda|" + N(SKILL_SINGLE_BLOW)}, Adds(SKILL_SHADOW_DANCING, SKILL_SINGLE_BLOW + kMin))),
+		Then({"Ogre.shadow dancing|Self|" + N(SKILL_SINGLE_BLOW)}, OnPlayer(SKILL_SHADOW_DANCING, SKILL_SINGLE_BLOW + kMin))));
+	// The rocket flies for the skill cast, even one that acts as the
+	// weapon's.
+	calls.clear();
+	world.Row(SKILL_PLASMA_ROCKET_LAUNCHER).SetAffectCurrentWeaponAction();
+	world.ogre.basic = SKILL_ATTACK_MELEE;
+	me.basic = SKILL_ATTACK_MELEE;
+	Receive(1001, 1002, SKILL_PLASMA_ROCKET_LAUNCHER);
+	ReceivePlayers(1002, SKILL_PLASMA_ROCKET_LAUNCHER);
+	ReceiveOnPlayer(1001, SKILL_PLASMA_ROCKET_LAUNCHER);
+	CHECK(calls == Then(Then(Then({"Ogre.rocket|Vanda"}, Cast(SKILL_ATTACK_MELEE)), Then({"Self.rocket|Vanda"}, Adds(SKILL_ATTACK_MELEE))),
+		Then({"Ogre.rocket|Self"}, OnPlayer(SKILL_ATTACK_MELEE))));
 }
