@@ -9,14 +9,23 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToSelfOK1.h"
-#include "ClientDef.h"
-#include "PacketFunction2.h"
-#include "SkillDef.h"
-#include "MSkillManager.h"
-#include "UIMessageManager.h"
-#include "MEventManager.h"
-#include "UIFunction.h"
+#include "AffectModifyInfo.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "GameInfoPresentationHost.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "MEventQueue.h"
 #include "MGameStringTable.h"
+#include "MSkillManager.h"
+#include "MStatus.h"
+#include "Packet/WireHost.h"
+#include "PlayerStateHost.h"
+#include "RankBonusHandlerHost.h"
+#include "SkillDef.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -26,15 +35,22 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	// The player; without one there is nothing to do.
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 	//------------------------------------------------------------------
 	// The server has answered whether the skill the player was waiting on
 	// succeeded.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+	if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 	{		
-		g_pPlayer->SetWaitVerifyNULL();
+		PlayerState::SetWaitVerifyNULL();
 	}
 	else
 	{
@@ -60,19 +76,19 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 		// An ousters sends untransform when it gets off a summoned sylph,
 		// and this arrives as the answer to that. It is handled here as
 		// an exception rather than fixed.
-		if(g_pPlayer->IsOusters())
+		if(CreatureState::IsOusters(pPlayerCreature))
 		{
-			g_pPlayer->SetWaitVerifyNULL();
+			PlayerState::SetWaitVerifyNULL();
 			return;
 		}
-		else if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
+		else if(PlayerState::HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 		{
 			return;
 			//resultActionInfo = RESULT_SKILL_INSTALL_TURRET;
 		}
 	}
 	
-	if( skillID == SKILL_ETERNITY && g_pPlayer->IsSlayer() )
+	if( skillID == SKILL_ETERNITY && CreatureState::IsSlayer(pPlayerCreature) )
 	{	
 		MEvent event;
 		event.eventID = EVENTID_RESURRECT;
@@ -81,8 +97,8 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 		event.eventType = EVENTTYPE_ZONE;
 		event.m_StringsID.push_back(STRING_MESSAGE_RESURRECT_AFTER_SECONDS);
 		
-		g_pEventManager->AddEvent(event);
-		UI_CloseRequestResurrectWindow();
+		WorldEvents::AddEvent(event);
+		DialogPresentation::CloseRequestResurrectWindow();
 	}
 
 	//------------------------------------------------------------
@@ -102,7 +118,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 		}
 	}
 
-	g_pPlayer->SetEffectDelayFrame(resultActionInfo, delayFrame );
+	CreatureState::SetEffectDelayFrame(pPlayerCreature, resultActionInfo, delayFrame );
 
 	// Soul Chain's delay starts when it is confirmed, not when it is used.
 	if(skillID == SKILL_SOUL_CHAIN)
@@ -119,11 +135,11 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	//------------------------------------------------------
 	// How the player looks when the skill succeeds
 	//------------------------------------------------------
-	g_pPlayer->PacketSpecialActionResult( 
+	CreatureState::PacketSpecialActionResult( pPlayerCreature,
 					resultActionInfo,
-					g_pPlayer->GetID(),
-					g_pPlayer->GetX(),
-					g_pPlayer->GetY()
+					CreatureState::GetID(pPlayerCreature),
+					CreatureState::GetX(pPlayerCreature),
+					CreatureState::GetY(pPlayerCreature)
 	);
 
 	//------------------------------------------------------------------
@@ -132,19 +148,23 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	//------------------------------------------------------------------
 	// Change the status values.
 	//------------------------------------------------------------------
-	AffectModifyInfo(g_pPlayer, pPacket);
+	MStatus* pPlayerStatus = PlayerState::Status();
+	if (pPlayerStatus != NULL)
+	{
+		AffectModifyInfo(pPlayerStatus, pPacket);
+	}
 
 	//------------------------------------------------------------------
 	// Apply the effect status.
 	//------------------------------------------------------------------
-	if (g_pPlayer->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
+	if (pPlayerStatus != NULL && pPlayerStatus->GetEFFECT_STAT()!=EFFECTSTATUS_NULL)
 	{
 		//int esDelayFrame = ConvertDurationToFrame( g_pPlayer->GetDURATION() );
 
 		// Attach the effect.
-		g_pPlayer->AddEffectStatus((EFFECTSTATUS)g_pPlayer->GetEFFECT_STAT(), delayFrame);	
+		CreatureState::AddEffectStatus(pPlayerCreature, (EFFECTSTATUS)pPlayerStatus->GetEFFECT_STAT(), delayFrame);	
 		
-		g_pPlayer->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
+		pPlayerStatus->SetStatus( MODIFY_EFFECT_STAT, EFFECTSTATUS_NULL );
 	}
 	else
 	{
@@ -156,16 +176,16 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 		
 		if (es!=EFFECTSTATUS_NULL)
 		{
-			g_pPlayer->AddEffectStatus( es, delayFrame );
+			CreatureState::AddEffectStatus( pPlayerCreature, es, delayFrame );
 		}
 	}
 
 	// Will of Life's reuse time depends on the vampire's level.
 	if(skillID == SKILL_WILL_OF_LIFE )
 	{
-		g_pPlayer->CheckRegen();
+		RankBonusHandlers::CheckRegen();
 		if (auto* entry = g_pSkillInfoTable->GetMutable(skillID)) {
-			entry->SetAvailableTime( GetWillOfLifeDelay(UI_GetCharInfoLevel()) );
+			entry->SetAvailableTime( GetWillOfLifeDelay(GameInfoPresentation::GetCharInfoLevel()) );
 		}
 	}
 
@@ -183,7 +203,7 @@ void GCSkillToSelfOK1Handler::execute ( GCSkillToSelfOK1 * pPacket , Player * pP
 	// Apply the skill's result, if it has one.
 	//
 	//------------------------------------------------------
-	MActionResultNode* pActionResultNode = CreateActionResultNode(g_pPlayer, skillID);
+	MActionResultNode* pActionResultNode = CreateActionResultNode(pPlayerCreature, skillID);
 
 	//------------------------------------------------------
 	// Run it if there is one

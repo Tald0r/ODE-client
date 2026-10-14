@@ -76,7 +76,9 @@ class MShopShelf;
 
 class MShop {
 	public :
-		enum SHOP_TYPE
+		// A fixed type: the kind arrives as a wire byte (GCShopList), and a
+		// value past the two known ones must stay defined.
+		enum SHOP_TYPE : int
 		{
 			SHOP_NORMAL,
 			SHOP_EVENT_STAR

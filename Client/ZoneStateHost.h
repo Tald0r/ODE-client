@@ -181,9 +181,13 @@ struct Host
 	void (*SetStopAbsorbSoul)(MCreature* pCreature) = nullptr;
 	// The creature table's vampire flag of its type.
 	bool (*IsVampire)(MCreature* pCreature) = nullptr;
-	// Gives an NPC the shop, which it then owns; false (the caller keeps
-	// the shop) for a creature that is not an NPC.
+	// Gives an NPC the shop, which it then owns (MNPC frees the shop it had,
+	// so never pass its current one); false (the caller keeps the shop) for
+	// a creature that is not an NPC.
 	bool (*SetShop)(MCreature* pCreature, MShop* pShop) = nullptr;
+	// Fills an NPC's shop with its fixed shelf, or its mysterious one, from
+	// the shop templates; nothing for a creature that is not an NPC.
+	void (*CreateFixedShelf)(MCreature* pCreature, bool mysterious) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -272,5 +276,6 @@ void SetStopAbsorbSoul(MCreature* pCreature);
 bool IsVampire(MCreature* pCreature);
 // false without a host: the caller keeps the shop.
 bool SetShop(MCreature* pCreature, MShop* pShop);
+void CreateFixedShelf(MCreature* pCreature, bool mysterious);
 
 }

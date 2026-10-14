@@ -75,4 +75,19 @@ void UnselectSkill()
 	if (s_Host && s_Host->UnselectSkill) s_Host->UnselectSkill();
 }
 
+void SetPowerjjangPoint(int points)
+{
+	if (s_Host && s_Host->SetPowerjjangPoint) s_Host->SetPowerjjangPoint(points);
+}
+
+void PowerjjangGambleResult(int itemCode)
+{
+	if (s_Host && s_Host->PowerjjangGambleResult) s_Host->PowerjjangGambleResult(itemCode);
+}
+
+void RefreshPointExchange()
+{
+	if (s_Host && s_Host->RefreshPointExchange) s_Host->RefreshPointExchange();
+}
+
 }

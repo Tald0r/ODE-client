@@ -108,4 +108,19 @@ void OpenInventoryToSell()
 	if (s_Host && s_Host->OpenInventoryToSell) s_Host->OpenInventoryToSell();
 }
 
+void CloseRequestResurrectWindow()
+{
+	if (s_Host && s_Host->CloseRequestResurrectWindow) s_Host->CloseRequestResurrectWindow();
+}
+
+void SetShop(MShop* pShop)
+{
+	if (s_Host && s_Host->SetShop) s_Host->SetShop(pShop);
+}
+
+void RunShop()
+{
+	if (s_Host && s_Host->RunShop) s_Host->RunShop();
+}
+
 }

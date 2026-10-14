@@ -26,6 +26,8 @@ struct Host
 	const char* (*GetOtherInfoName)() = nullptr;
 	// Shows the creature in the other-info window.
 	void (*RunOtherInfo)(MCreature* pCreature) = nullptr;
+	// Shows the help for the event (a HELP_EVENT, MHelpDef.h).
+	void (*ExecuteHelpEvent)(int helpEvent) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -39,5 +41,6 @@ int GetCharInfoLevel();
 void SetDelayEternity();
 const char* GetOtherInfoName();
 void RunOtherInfo(MCreature* pCreature);
+void ExecuteHelpEvent(int helpEvent);
 
 }

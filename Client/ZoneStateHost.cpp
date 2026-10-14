@@ -467,4 +467,9 @@ bool SetShop(MCreature* pCreature, MShop* pShop)
 	return s_Host && s_Host->SetShop ? s_Host->SetShop(pCreature, pShop) : false;
 }
 
+void CreateFixedShelf(MCreature* pCreature, bool mysterious)
+{
+	if (s_Host && s_Host->CreateFixedShelf) s_Host->CreateFixedShelf(pCreature, mysterious);
+}
+
 }

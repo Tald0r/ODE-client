@@ -3504,6 +3504,7 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.SetDelayEternity = UI_SetDelayEternity,
 	.GetOtherInfoName = UI_GetOtherInfoName,
 	.RunOtherInfo = [](MCreature* pCreature) { UI_RunOtherInfo(pCreature); },
+	.ExecuteHelpEvent = [](int helpEvent) { ExecuteHelpEvent(static_cast<HELP_EVENT>(helpEvent)); },
 };
 
 static const DialogPresentation::Host s_DialogPresentationHost = {
@@ -3526,6 +3527,9 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.ShowPCTalkDlg = []() { g_pUIDialog->ShowPCTalkDlg(); },
 	.RunStorageBuy = UI_RunStorageBuy,
 	.OpenInventoryToSell = UI_OpenInventoryToSell,
+	.CloseRequestResurrectWindow = UI_CloseRequestResurrectWindow,
+	.SetShop = UI_SetShop,
+	.RunShop = UI_RunShop,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3712,6 +3716,9 @@ static const CreatureState::Host s_CreatureStateHost = {
 		static_cast<MNPC*>(pCreature)->SetShop(pShop);
 		return true;
 	},
+	.CreateFixedShelf = [](MCreature* pCreature, bool mysterious) {
+		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->CreateFixedShelf(mysterious);
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3758,6 +3765,9 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 	.CloseNamingChange = []() { gC_vs_ui.CloseNamingChange(); },
 	.SelectSkill = [](int skillID) { gC_vs_ui.SelectSkill(skillID); },
 	.UnselectSkill = []() { gC_vs_ui.UnselectSkill(); },
+	.SetPowerjjangPoint = [](int points) { g_char_slot_ingame.m_Powerjjang_Point = points; },
+	.PowerjjangGambleResult = [](int itemCode) { gC_vs_ui.PowerjjangGambleResult(static_cast<BYTE>(itemCode)); },
+	.RefreshPointExchange = []() { gC_vs_ui.RefreshPointExchange(); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

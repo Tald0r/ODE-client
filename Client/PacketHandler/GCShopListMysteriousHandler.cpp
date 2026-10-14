@@ -9,11 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCShopListMysterious.h"
-#include "ClientDef.h"
-#include "MNPC.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "MShop.h"
+#include "ZoneStateHost.h"
 #include "MShopShelf.h"
 #include "MPriceManager.h"
-#include "UIFunction.h"
 
 void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Player * pPlayer )
 	 
@@ -26,7 +27,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 	//------------------------------------------------------
 	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
@@ -36,7 +37,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature( pPacket->getObjectID() );
+		MCreature* pCreature = ZoneState::GetCreature( pPacket->getObjectID() );
 
 		//------------------------------------------------------
 		// No creature has that id
@@ -48,9 +49,8 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 		//------------------------------------------------------
 		// The creature is an NPC
 		//------------------------------------------------------
-		else if (pCreature->GetClassType()==MCreature::CLASS_NPC)
+		else if (CreatureState::IsNPC(pCreature))
 		{
-			MNPC* pNPC = (MNPC*)pCreature;
 
 			//------------------------------------------------------
 			// A new rack for the items
@@ -99,7 +99,7 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 			// Put the rack in the NPC's shop
 			//
 			//------------------------------------------------------
-			MShop* pShop = pNPC->GetShop();
+			MShop* pShop = CreatureState::GetShop(pCreature);
 
 			if (pShop==NULL)
 			{
@@ -108,11 +108,17 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 				pShop->Init( MShopShelf::MAX_SHELF );
 
 				// and give it to the NPC
-				pNPC->SetShop( pShop );
+				if (!CreatureState::SetShop( pCreature, pShop ))
+				{
+					// Only without the entry: nothing takes the shop or the rack.
+					delete pShop;
+					delete pShelf;
+					return;
+				}
 
 				// Build the normal rack (and the mysterious one) from the shop templates.
-				pNPC->CreateFixedShelf();
-				pNPC->CreateFixedShelf(true);	// mystrious
+				CreatureState::CreateFixedShelf( pCreature, false );
+				CreatureState::CreateFixedShelf( pCreature, true );	// mystrious
 			}
 
 			//------------------------------------------------------
@@ -136,9 +142,9 @@ void GCShopListMysteriousHandler::execute ( GCShopListMysterious * pPacket , Pla
 			// Everything is in place:
 			// open the shop.
 			//------------------------------------------------------
-			UI_SetShop( pShop );		// the shop to show
-			UI_RunShop();
-			UI_SetShop( pShop );		// the shop to show
+			DialogPresentation::SetShop( pShop );		// the shop to show
+			DialogPresentation::RunShop();
+			DialogPresentation::SetShop( pShop );		// the shop to show
 		}
 		//------------------------------------------------------
 		// The creature is not an NPC
