@@ -3546,6 +3546,8 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
 	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
 	.ShowMessage = g_ShowMessage,
+	.InitPlayer = [](int x, int y, int direction) { InitPlayer(x, y, direction); },
+	.EnterGameMode = []() { SetMode(MODE_GAME); },
 };
 
 static const PlayerState::Host s_PlayerStateHost = {
@@ -3588,6 +3590,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.SetDelay = [](std::uint32_t milliseconds) { if (g_pPlayer != NULL) g_pPlayer->SetDelay(milliseconds); },
 	.GetItemCheckBufferStatus = []() { return g_pPlayer != NULL ? g_pPlayer->GetItemCheckBufferStatus() : PlayerState::ITEM_CHECK_BUFFER_NULL; },
 	.SetCannotTrace = []() { if (g_pPlayer != NULL) g_pPlayer->SetCannotTrace(); },
+	.SetTimeLightSight = [](int sight) { if (g_pPlayer != NULL) g_pPlayer->SetTimeLightSight(static_cast<char>(sight)); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3724,6 +3727,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		SkillToSector(actionInfo, sX, sY, direction, delayFrame, pResult);
 	},
 	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
+	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

@@ -176,4 +176,9 @@ void SetCannotTrace()
 	if (s_Host && s_Host->SetCannotTrace) s_Host->SetCannotTrace();
 }
 
+void SetTimeLightSight(int sight)
+{
+	if (s_Host && s_Host->SetTimeLightSight) s_Host->SetTimeLightSight(sight);
+}
+
 }

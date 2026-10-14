@@ -74,6 +74,11 @@ void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 	if (s_Host && s_Host->PlaySoundAt) s_Host->PlaySoundAt(soundID, repeat, x, y);
 }
 
+void SetDarkBits(int darkBits)
+{
+	if (s_Host && s_Host->SetDarkBits) s_Host->SetDarkBits(darkBits);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

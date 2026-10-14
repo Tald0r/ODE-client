@@ -7,13 +7,13 @@
 
 // include files
 #include "Client_PCH.h"
-#include "MTopView.h"
 #include "Gpackets/GCChangeDarkLight.h"
 #include "UserInformation.h"
 
 	#include "ClientPlayer.h"
 
-#include "ClientDef.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -36,11 +36,11 @@ void GCChangeDarkLightHandler::execute ( GCChangeDarkLight * pPacket , Player * 
 		lightSight = 13;
 	}
 
-	// 화면의 어둡기
-	g_pTopView->SetDarkBits( darkLevel );		
+	// How dark the view is
+	WorldEvents::SetDarkBits( darkLevel );		
 	
-	// Player시야 빛의 크기
-	g_pPlayer->SetTimeLightSight( lightSight );		
+	// The size of the light around the player
+	PlayerState::SetTimeLightSight( lightSight );		
 
 	
 

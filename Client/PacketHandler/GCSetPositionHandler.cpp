@@ -9,7 +9,8 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSetPosition.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "LoginPresentationHost.h"
 
 	#include "ClientPlayer.h"
 
@@ -34,16 +35,16 @@ void GCSetPositionHandler::execute ( GCSetPosition * pPacket , Player * pPlayer 
 
 
 	//--------------------------------------------------------
-	// Player의 위치 지정
+	// Place the player
 	//--------------------------------------------------------
-	InitPlayer(	pPacket->getX(), 
+	LoginPresentation::InitPlayer(	pPacket->getX(), 
 				pPacket->getY(),
 				pPacket->getDir());
 
 	//--------------------------------------------------------
-	// 게임 시작..
+	// Start the game..
 	//--------------------------------------------------------
-	SetMode( MODE_GAME );
+	LoginPresentation::EnterGameMode();
 
 	
 	__END_CATCH

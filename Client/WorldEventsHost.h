@@ -44,6 +44,8 @@ struct Host
 	void (*SkillToSector)(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult) = nullptr;
 	// A sound heard from a cell (the listener's distance sets its volume).
 	void (*PlaySoundAt)(TYPE_SOUNDID soundID, bool repeat, int x, int y) = nullptr;
+	// How dark the view draws (0-15; the view ignores more).
+	void (*SetDarkBits)(int darkBits) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -60,6 +62,7 @@ void RemoveEvent(int eventID);
 void PlayMusicCurrentZone();
 void PlaySound(TYPE_SOUNDID soundID);
 void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
+void SetDarkBits(int darkBits);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.

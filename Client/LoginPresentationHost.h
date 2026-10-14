@@ -33,6 +33,10 @@ struct Host
 	void (*PopupErrorMessage)(int errorID) = nullptr;
 	void (*QueueWaitSelectPCMode)() = nullptr;
 	void (*ShowMessage)(const char* message) = nullptr;
+	// Places the player at the cell, facing the direction, for the game.
+	void (*InitPlayer)(int x, int y, int direction) = nullptr;
+	// Sets the game mode now.
+	void (*EnterGameMode)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -55,5 +59,7 @@ bool IsSelectPCMode();
 void PopupErrorMessage(int errorID);
 void QueueWaitSelectPCMode();
 void ShowMessage(const char* message);
+void InitPlayer(int x, int y, int direction);
+void EnterGameMode();
 
 }
