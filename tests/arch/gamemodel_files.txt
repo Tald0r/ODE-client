@@ -1003,6 +1003,11 @@ Client/PacketHandler/GCRemoveCorpseHeadHandler.cpp
 # one between creatures.
 Client/ExplosiveActions.cpp
 Client/ExplosiveActions.h
+
+# A vampire's creature type for its shape and coat, and an ouster's, lifted
+# out of the executable's PacketFunction.cpp (4.179).
+Client/CreatureTypeSelection.cpp
+Client/CreatureTypeSelection.h
 Client/PacketHandler/GCThrowBombOK1Handler.cpp
 Client/PacketHandler/GCThrowBombOK2Handler.cpp
 Client/PacketHandler/GCThrowBombOK3Handler.cpp
@@ -1167,5 +1172,6 @@ Client/PacketHandler/GCSkillToObjectOK1Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK2Handler.cpp
 Client/PacketHandler/GCSkillToObjectOK5Handler.cpp
 
-# A creature turning into a slayer in sight.
+# A creature turning into a slayer, or a vampire, in sight.
 Client/PacketHandler/GCMorphSlayer2Handler.cpp
+Client/PacketHandler/GCMorphVampire2Handler.cpp

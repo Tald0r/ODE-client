@@ -82,10 +82,13 @@ bool			UseSkillCardOK(BYTE CardType);
 #include "ExplosiveActions.h"
 
 //-----------------------------------------------------------------------------
+// Creature types for a vampire's shape and an ouster
+//-----------------------------------------------------------------------------
+#include "CreatureTypeSelection.h"
+
+//-----------------------------------------------------------------------------
 // 정보 설정
 //-----------------------------------------------------------------------------
-extern int		GetVampireCreatureType(int shape, bool bMale, int coatType);
-extern int		GetOustersCreatureType(int coatType);
 extern void		SetPCSlayerInfo(PCSlayerInfo2* pInfo);
 extern void		SetPCVampireInfo(PCVampireInfo2* pInfo);
 extern void		SetPCOustersInfo(PCOustersInfo2* pInfo);

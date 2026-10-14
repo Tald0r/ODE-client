@@ -601,62 +601,6 @@ ConvertMillisecondToFrame(DWORD ms)
 }
 
 //-----------------------------------------------------------------------------
-// Set VampireCreatureType
-//-----------------------------------------------------------------------------
-// 사람(남, 여), 늑대, 박쥐..
-//-----------------------------------------------------------------------------
-int
-GetVampireCreatureType(int shape, bool bMale, int coatType)
-{
-	DEBUG_ADD_FORMAT("Shape=%d. Male=%d", shape, (int)bMale);
-	
-	//--------------------------------------------------
-	// CreatureType 설정
-	//--------------------------------------------------
-	switch ( shape )
-	{
-	case SHAPE_NORMAL :
-		if(bMale)
-		{
-			return (*g_pItemTable)[ITEM_CLASS_VAMPIRE_COAT][coatType].AddonMaleFrameID;//(bMale)? CREATURETYPE_VAMPIRE_MALE : CREATURETYPE_VAMPIRE_FEMALE;
-		}
-		else
-		{
-			return (*g_pItemTable)[ITEM_CLASS_VAMPIRE_COAT][coatType].AddonFemaleFrameID;//(bMale)? CREATURETYPE_VAMPIRE_MALE : CREATURETYPE_VAMPIRE_FEMALE;
-		}		
-		break;
-	case SHAPE_BAT :
-		return CREATURETYPE_BAT;
-		break;
-	case SHAPE_WOLF :
-		return CREATURETYPE_WOLF;
-		break;
-	case SHAPE_WERWOLF :
-		return CREATURETYPE_WER_WOLF;
-		break;
-	} 
-
-	return SHAPE_MAX;
-}
-
-
-//-----------------------------------------------------------------------------
-// Set OustersCreatureType
-//-----------------------------------------------------------------------------
-// 사람(남, 여), 늑대, 박쥐..
-//-----------------------------------------------------------------------------
-int
-GetOustersCreatureType(int coatType)
-{
-	(void)coatType;
-	//--------------------------------------------------
-	// CreatureType 설정
-	//--------------------------------------------------
-	return CREATURETYPE_OUSTERS;
-	//	return (*g_pItemTable)[ITEM_CLASS_VAMPIRE_COAT][coatType].AddonMaleFrameID;
-}
-
-//-----------------------------------------------------------------------------
 // Set Addon To Slayer
 //-----------------------------------------------------------------------------
 // NPC 복장을 입힌다.

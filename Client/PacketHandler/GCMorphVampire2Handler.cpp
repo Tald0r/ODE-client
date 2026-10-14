@@ -8,7 +8,11 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCMorphVampire2.h"
-#include "ClientDef.h"
+#include "CreatureTypeSelection.h"
+#include "DebugLog.h"
+#include "MCreatureTable.h"
+#include "MStatus.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -21,142 +25,150 @@ void GCMorphVampire2Handler::execute ( GCMorphVampire2 * pPacket , Player * pPla
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
 		const PCVampireInfo3& vi = pPacket->getSlayerInfo();
 
-		MCreature* pCreature = g_pZone->GetCreature(vi.getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(vi.getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreatureWear;
+			pCreature = ZoneState::NewCreatureWear();
+			if (pCreature == NULL)
+			{
+				return;
+			}
 
-			pCreature->SetZone( g_pZone );			
-
-			pCreature->SetName( vi.getName().c_str() );
+			CreatureState::SetName( pCreature, vi.getName().c_str() );
 
 			//pCreature->SetCreatureType( 0 );
 			Shape_t shape	= vi.getShape();
 			bool bMale		= vi.getSex()==MALE;
 			ItemType_t coatType = vi.getCoatType();
-			pCreature->SetCreatureType( GetVampireCreatureType( shape, bMale, coatType ) );
+			CreatureState::SetCreatureType( pCreature, GetVampireCreatureType( shape, bMale, coatType ) );
 
-			pCreature->SetMale( bMale );
+			CreatureState::SetMale( pCreature, bMale );
 
-			pCreature->SetGroundCreature();
-			pCreature->SetID(vi.getObjectID());
+			CreatureState::SetGroundCreature( pCreature );
+			CreatureState::SetID( pCreature, vi.getObjectID() );
 			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( vi.getX(), vi.getY() );
-			pCreature->SetServerPosition( vi.getX(), vi.getY() );
-			pCreature->SetDirection( vi.getDir() );
-			pCreature->SetCurrentDirection( vi.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::SetPosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetDirection( pCreature, vi.getDir() );
+			CreatureState::SetCurrentDirection( pCreature, vi.getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			// 색깔
-			pCreature->SetBodyColor1( vi.getSkinColor() );
-			pCreature->SetBodyColor2( vi.getCoatColor() );
+			// colours
+			CreatureState::SetBodyColor1( pCreature, vi.getSkinColor() );
+			CreatureState::SetBodyColor2( pCreature, vi.getCoatColor() );
 
 			// speed
-			pCreature->SetWeaponSpeed( vi.getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, vi.getAttackSpeed() );
 			//--------------------------------------------------
 			// [ TEST CODE ]
 			//--------------------------------------------------
-			// 옷 색깔 설정하기
+			// set the coat's colour
 			//--------------------------------------------------
 			/*
 			if (pCreature->IsMale())
 			{
-				pCreature->SetBodyColor2( 91 );
+				CreatureState::SetBodyColor2( pCreature, 91 );
 			}
 			else
 			{
-				pCreature->SetBodyColor2( 38 );
+				CreatureState::SetBodyColor2( pCreature, 38 );
 			}
 			*/
 
 
-			pCreature->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+			}
 
 			//si.getName()
-			// 색상 정보
-			// 임시로
-			pCreature->SetGuildNumber( 2 );
+			// colour information
+			// for now
+			CreatureState::SetGuildNumber( pCreature, 2 );
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 				pCreature = NULL;
 			}
 		}
 		//--------------------------------------------------
-		// 이미 있던 Creature이면 정보 변경
+		// A creature already there: change it
 		//--------------------------------------------------
 		else
 		{
-			pCreature->SetName( vi.getName().c_str() );
+			CreatureState::SetName( pCreature, vi.getName().c_str() );
 
-			// 임시로
-			pCreature->SetGuildNumber( 2 );
+			// for now
+			CreatureState::SetGuildNumber( pCreature, 2 );
 
 			//pCreature->SetCreatureType( 0 );
 			Shape_t shape	= vi.getShape();
 			bool bMale		= vi.getSex()==MALE;
 			ItemType_t coatType = vi.getCoatType();
-			pCreature->SetCreatureType( GetVampireCreatureType( shape, bMale, coatType ) );
+			CreatureState::SetCreatureType( pCreature, GetVampireCreatureType( shape, bMale, coatType ) );
 
-			pCreature->SetMale( bMale );
+			CreatureState::SetMale( pCreature, bMale );
 
-			pCreature->SetGroundCreature();
+			CreatureState::SetGroundCreature( pCreature );
 			//pCreature->SetID(vi.getObjectID());
 			
-			pCreature->MovePosition( vi.getX(), vi.getY() );
-			pCreature->SetServerPosition( vi.getX(), vi.getY() );
-			pCreature->SetDirection( vi.getDir() );
+			CreatureState::MovePosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetServerPosition( pCreature, vi.getX(), vi.getY() );
+			CreatureState::SetDirection( pCreature, vi.getDir() );
 			//pCreature->SetCurrentDirection( vi.getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
-			// 색깔
-			pCreature->SetBodyColor1( vi.getSkinColor() );
-			pCreature->SetBodyColor2( vi.getCoatColor() );
+			// colours
+			CreatureState::SetBodyColor1( pCreature, vi.getSkinColor() );
+			CreatureState::SetBodyColor2( pCreature, vi.getCoatColor() );
 
 			// speed
-			pCreature->SetWeaponSpeed( vi.getAttackSpeed() );
+			CreatureState::SetWeaponSpeed( pCreature, vi.getAttackSpeed() );
 
 			//--------------------------------------------------
 			// [ TEST CODE ]
 			//--------------------------------------------------
-			// 옷 색깔 설정하기
+			// set the coat's colour
 			//--------------------------------------------------
 			/*
 			if (pCreature->IsMale())
 			{
-				pCreature->SetBodyColor2( 91 );
+				CreatureState::SetBodyColor2( pCreature, 91 );
 			}
 			else
 			{
-				pCreature->SetBodyColor2( 38 );
+				CreatureState::SetBodyColor2( pCreature, 38 );
 			}
 			*/
 
-			pCreature->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );			
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, vi.getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, vi.getCurrentHP() );
+				pStatus->SetStatus( MODIFY_ALIGNMENT, vi.getAlignment() );
+			}			
 			
 		}
 	}
