@@ -55,11 +55,6 @@ MCreature* GetCorpseCreature(TYPE_OBJECTID itemID)
 	return s_Host && s_Host->GetCorpseCreature ? s_Host->GetCorpseCreature(itemID) : nullptr;
 }
 
-MCreature* GetItemAsCorpseCreature(TYPE_OBJECTID itemID)
-{
-	return s_Host && s_Host->GetItemAsCorpseCreature ? s_Host->GetItemAsCorpseCreature(itemID) : nullptr;
-}
-
 }
 
 namespace CreatureState {

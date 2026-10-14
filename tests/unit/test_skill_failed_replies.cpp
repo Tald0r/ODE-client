@@ -52,10 +52,8 @@ struct FakeCreature
 	bool slayer = false;
 };
 std::map<TYPE_OBJECTID, FakeCreature*> creatures;
-// Item ID -> the creature a corpse item holds; for any other item, the
-// creature the unchecked cast would read.
+// Corpse item ID -> the creature it holds; item 9002 is no corpse.
 std::map<TYPE_OBJECTID, FakeCreature*> corpses;
-std::map<TYPE_OBJECTID, FakeCreature*> others;
 FakeCreature me;
 
 std::string N(long long value) { return std::to_string(value); }
@@ -87,10 +85,6 @@ const ZoneState::Host zone = []() {
 		return Find(creatures, id);
 	};
 	host.GetCorpseCreature = [](TYPE_OBJECTID id) -> MCreature* { return Find(corpses, id); };
-	host.GetItemAsCorpseCreature = [](TYPE_OBJECTID id) -> MCreature* {
-		MCreature* const pCorpse = Find(corpses, id);
-		return pCorpse != nullptr ? pCorpse : Find(others, id);
-	};
 	return host;
 }();
 
@@ -154,7 +148,7 @@ constexpr TYPE_ACTIONINFO kStep = SKILL_TRIPLE_SLASHER;
 
 struct World : GameModelWorld
 {
-	FakeCreature ogre, elf, lying, garbage;
+	FakeCreature ogre, elf, lying;
 	MActionInfoTable actions;
 	MSkillInfoTable skills;
 	MActionInfoTable* oldActions = g_pActionInfoTable;
@@ -169,10 +163,8 @@ struct World : GameModelWorld
 		ogre = {1001, "Ogre", 10, 11, SKILL_ATTACK_GUN_SG};
 		elf = {1002, "Elf", 20, 21, SKILL_ATTACK_MELEE, true};
 		lying = {5001, "Lying", 40, 41};
-		garbage = {6666, "Garbage", 50, 51};
 		creatures = {{ogre.id, &ogre}, {elf.id, &elf}, {lying.id, &lying}, {me.id, &me}};
 		corpses = {{9001, &lying}};
-		others = {{9002, &garbage}};
 		zoneExists = true;
 		hasPlayer = true;
 		waitVerify = PlayerState::WAIT_VERIFY_NULL;
@@ -197,7 +189,6 @@ struct World : GameModelWorld
 		g_pActionInfoTable = oldActions;
 		creatures.clear();
 		corpses.clear();
-		others.clear();
 	}
 	MActionInfo& Row(TYPE_ACTIONINFO action) { return testfw::MutableRow(actions, action); }
 	void Target(TYPE_ACTIONINFO action, BYTE flags) { Row(action).Set("skill", 0, 0, 0, flags); }
@@ -369,6 +360,15 @@ TEST(SkillFailedReplies, AnOustersAbsorbingASoulFindsItInACorpseAndStops)
 	calls.clear();
 	ReceiveFailure(1001, 9001, SKILL_ABSORB_SOUL);
 	CHECK(calls == std::vector<std::string>{"Ogre.nobody|" + N(SKILL_ABSORB_SOUL) + "|10|11"});
+}
+
+TEST(SkillFailedReplies, AnItemThatIsNoCorpseHoldsNoSoul)
+{
+	World world;
+	world.Target(SKILL_ABSORB_SOUL, FLAG_ACTIONINFO_TARGET_OTHER);
+	// Item 9002 is no corpse; the reply read it as one before.
+	ReceiveFailure(1002, 9002, SKILL_ABSORB_SOUL);
+	CHECK(calls == std::vector<std::string>({"Elf.stop absorb", "Elf.nobody|" + N(SKILL_ABSORB_SOUL) + "|20|21"}));
 }
 
 TEST(SkillFailedReplies, ACreaturesBloodDrainStopsAndAGrenadeShowsNothing)

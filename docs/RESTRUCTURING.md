@@ -3980,15 +3980,17 @@ rounds settled* for the host rules). Test fixtures share
   > its cell, on itself, or at its cell; an ousters absorbing a soul
   > finds it in a corpse and stops; a blood drain stops; a grenade shows
   > nothing. The corpse came from an unchecked cast of whatever item had
-  > the target's ID; the move keeps it in a temporary
-  > `ZoneState::GetItemAsCorpseCreature`, and the next commit fixes it.
+  > the target's ID; the move kept it in a temporary entry, and a fix
+  > that follows (moved, then fixed) takes it through 4.136's
+  > `ZoneState::GetCorpseCreature`, so an item that is no corpse holds
+  > no soul.
   > Without a player the player's reply does nothing, where it
   > dereferenced the player. R1 is 149 Windows / 147 Ninja.
   - Owner: membership, R1, the entries and adapters, and
     `test_skill_failed_replies.cpp` (the reuse time and its exemption,
     Will of Life, each undoing, the guards; each target kind, the
-    weapon and the step, the corpse, the drain, the grenade, the
-    guards).
+    weapon and the step, the corpse and an item that is none, the
+    drain, the grenade, the guards).
 
 ### Remaining R1 work after tasks 4.80-4.145
 

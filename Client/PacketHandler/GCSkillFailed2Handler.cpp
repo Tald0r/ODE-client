@@ -56,7 +56,8 @@ void GCSkillFailed2Handler::execute ( GCSkillFailed2 * pPacket , Player * pPlaye
 	
 	if(pTargetCreature == NULL && pCreature != NULL && CreatureState::IsOusters(pCreature) && skilltype == SKILL_ABSORB_SOUL)
 	{
-		pTargetCreature = ZoneState::GetItemAsCorpseCreature( pPacket->getTargetObjectID() );
+		// The soul lies in a corpse; any other item holds none.
+		pTargetCreature = ZoneState::GetCorpseCreature( pPacket->getTargetObjectID() );
 	}
 
 	if (pCreature==NULL)
