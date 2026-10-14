@@ -159,7 +159,7 @@ void Receive(ObjectID_t id, Sex sex = MALE, Shape_t shape = SHAPE_NORMAL)
 	info.setAttackSpeed(10);
 	info.setAlignment(100);
 	info.setShape(shape);
-	info.setCompetence(3);
+	info.setCompetence(9);
 	info.setGuildID(0);
 	info.setUnionID(0);
 	info.setRank(1);

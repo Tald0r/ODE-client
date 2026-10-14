@@ -260,7 +260,7 @@ void GCAddVampireFromTransformationHandler::execute ( GCAddVampireFromTransforma
 			WorldEvents::SetEffectInfo( pCreature, pPacket->getEffectInfo(), 0 );
 
 			//--------------------------------------------------
-			// the effect of coming out of the burrow == the effect of burrowing
+			// the effect of coming out of the transformation
 			//--------------------------------------------------		
 			WorldEvents::ExecuteActionInfoFromMainNode(
 //				RESULT_MAGIC_HIDE,										// the skill used

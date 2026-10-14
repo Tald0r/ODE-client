@@ -184,7 +184,7 @@ struct Vampire
 {
 	Sex sex = MALE;
 	Shape_t shape = SHAPE_NORMAL;
-	BYTE competence = 3;
+	BYTE competence = 9;
 };
 
 // Every field set: the packet copies the vampire's details whole.
@@ -300,10 +300,28 @@ TEST(VampireAppearReplies, ABatFliesAndAnOperatorIsTheOperators)
 	calls.clear();
 	ReceiveBurrowing(1007, {FEMALE, SHAPE_NORMAL, 0});
 	CHECK(calls.size() > 6 && calls[2] == "competence|new|0" && calls[3] == "type|new|" + N(CREATURETYPE_VAMPIRE_OPERATOR)
-		&& calls[6] == "walks|new");
+		&& calls[4] == "woman|new" && calls[5] == "woman|new" && calls[6] == "walks|new");
 	calls.clear();
 	ReceiveBurrowing(1003, {MALE, SHAPE_BAT});
 	CHECK(calls.size() > 6 && calls[3] == "type|1003|" + N(CREATURETYPE_BAT) && calls[5] == "flies|1003");
+	// A known operator transformed.
+	calls.clear();
+	ReceiveTransformation(1003, {MALE, SHAPE_NORMAL, 0});
+	CHECK(calls.size() > 5 && calls[2] == "competence|1003|0" && calls[3] == "type|1003|" + N(CREATURETYPE_VAMPIRE_OPERATOR)
+		&& calls[4] == "man|1003" && calls[5] == "man|1003");
+}
+
+TEST(VampireAppearReplies, EachBranchTakesItsSexsFrame)
+{
+	World world;
+	// A new woman out of each, and a known woman transformed (the known
+	// woman out of a burrow is pinned above).
+	ReceiveBurrowing(1005, {FEMALE});
+	ReceiveTransformation(1006, {FEMALE});
+	ReceiveTransformation(1003, {FEMALE});
+	for (const char* call : {"type|new|62", "type|1003|62", "woman|1003"})
+		CHECK(std::count(calls.begin(), calls.end(), call) >= 1);
+	CHECK(std::count(calls.begin(), calls.end(), "type|new|62") == 2 && std::count(calls.begin(), calls.end(), "woman|new") == 2);
 }
 
 TEST(VampireAppearReplies, ATransformedVampireIsMadeOrTakesTheFormInPlace)
