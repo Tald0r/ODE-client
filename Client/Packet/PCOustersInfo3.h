@@ -47,6 +47,7 @@ public:
 			m_Colors[i] = oustersInfo.m_Colors[i];
 
 		m_Competence = oustersInfo.m_Competence;
+		m_UnionID = oustersInfo.m_UnionID;
 	}
 	
 public:

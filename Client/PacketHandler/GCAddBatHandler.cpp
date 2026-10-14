@@ -9,7 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddBat.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "MCreatureTable.h"
+#include "MStatus.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -26,124 +31,133 @@ void GCAddBatHandler::execute ( GCAddBat * pPacket , Player * pPlayer )
 	// _MinTrace("%d\n", pPacket->getBatColor() ); // Windows-only debug trace
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal.. 
 	//------------------------------------------------------
 	else
 	{
 		//AfxMessageBox( pPacket->toString().c_str() );
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreatureWear;
-
-			pCreature->SetZone( g_pZone );
-			
-			//pCreature->SetCreatureType( 0 );
-			pCreature->SetCreatureType( batCreatureType );
-
-
-			pCreature->SetName( pPacket->getName().c_str() );
-
-			// 임시로
-			pCreature->SetGuildNumber( pPacket->getGuildID() );
-
-			pCreature->SetFlyingCreature();
-
-			pCreature->SetID(pPacket->getObjectID());
-			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			pCreature = ZoneState::NewCreatureWear();
+			if (pCreature == NULL)
+			{
+				return;
+			}
 
 			
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			//CreatureState::SetCreatureType( pCreature, 0 );
+			CreatureState::SetCreatureType( pCreature, batCreatureType );
+
+
+			CreatureState::SetName( pCreature, pPacket->getName().c_str() );
+
+			// for now
+			CreatureState::SetGuildNumber( pCreature, pPacket->getGuildID() );
+
+			CreatureState::SetFlyingCreature( pCreature );
+
+			CreatureState::SetID( pCreature, pPacket->getObjectID() );
+			//CreatureState::SetAction( pCreature, ACTION_MOVE);
+			CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
+
+			
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
 			//pPacket->getName()
-			// 색상 정보
+			// the colour information
 			
 			if( pPacket->getBatColor() != 0 )
-				pCreature->SetBatColor( pPacket->getBatColor() );
+				CreatureState::SetBatColor( pCreature, pPacket->getBatColor() );
 			else
-				pCreature->SetBatColor( 0xFFFF );
+				CreatureState::SetBatColor( pCreature, 0xFFFF );
 			
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 			}
 		}
 		//--------------------------------------------------
-		// 이미 있는 Creature인 경우
+		// A creature already there
 		//--------------------------------------------------
 		else
 		{
-			//pCreature->SetCreatureType( batCreatureType );
-			pCreature->SetFlyingCreature();
+			//CreatureState::SetCreatureType( pCreature, batCreatureType );
+			CreatureState::SetFlyingCreature( pCreature );
 			
-			// 임시로
-			pCreature->SetGuildNumber( pPacket->getGuildID() );
+			// for now
+			CreatureState::SetGuildNumber( pCreature, pPacket->getGuildID() );
 
-			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->MovePosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			//pCreature->SetAction( ACTION_STAND );			
+			//CreatureState::SetAction( pCreature, ACTION_MOVE);
+			CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			//CreatureState::SetAction( pCreature, ACTION_STAND );			
 
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
 			if( pPacket->getBatColor() != 0 )
-				pCreature->SetBatColor( pPacket->getBatColor() );
+				CreatureState::SetBatColor( pCreature, pPacket->getBatColor() );
 			else
-				pCreature->SetBatColor( 0xFFFF );
+				CreatureState::SetBatColor( pCreature, 0xFFFF );
 
 			//--------------------------------------------------
-			// 박쥐로 변신하는 결과
+			// the result: it turns into a bat
 			//--------------------------------------------------
 			MActionResult* pResult = new MActionResult;
 
-			pResult->Add( new MActionResultNodeChangeCreatureType( pCreature->GetID(), batCreatureType ) );
+			pResult->Add( new MActionResultNodeChangeCreatureType( CreatureState::GetID( pCreature ), batCreatureType ) );
 
 			//--------------------------------------------------
-			// 박쥐 변신 
+			// turning into a bat 
 			//--------------------------------------------------								
-			ExecuteActionInfoFromMainNode(
-				RESULT_MAGIC_TRANSFORM_TO_BAT,										// 사용 기술 번호
+			WorldEvents::ExecuteActionInfoFromMainNode(
+				RESULT_MAGIC_TRANSFORM_TO_BAT,										// the skill used
 			
-				pCreature->GetX(), pCreature->GetY(), 0,
-				pCreature->GetDirection(),														// 사용 방향
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,
+				CreatureState::GetDirection( pCreature ),														// the direction used
 				
-				OBJECTID_NULL,												// 목표에 대한 정보
-				pCreature->GetX(), pCreature->GetY(), 0, 
+				OBJECTID_NULL,												// the target
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 
 				
-				0,													// 기술의 (남은) 지속 시간		
+				0,													// the skill's (remaining) duration		
 				
 				pResult, //NULL,
 				
-				false);			// 기술 첨부터 시작한다.
+				false, 0, 0);			// the skill starts from the beginning.
 
 			//pCreature->SetDelay( 1000 );
 		}	
 	}
 
-	// [도움말] Vampire가 나타날때
+	// [Help] when a vampire appears
 //	__BEGIN_HELP_EVENT
 //		//ExecuteHelpEvent( HE_CREATURE_APPEAR_VAMPIRE );
 //	__END_HELP_EVENT

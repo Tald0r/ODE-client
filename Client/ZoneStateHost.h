@@ -10,6 +10,7 @@ class MItem;
 class MPetItem;
 class MShop;
 class MStatus;
+class PCSlayerInfo3;
 
 // The zone the player is in, and the creatures in it, as the replies about
 // them read and change them. MCreature stays the executable's: replies hold
@@ -68,10 +69,15 @@ struct Host
 	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	// A new plain creature of the zone, not in it yet; the caller owns it.
-	// NULL without a host. AddCreature puts it in (false when one with its
-	// ID is there, and the caller still owns it); DeleteCreature deletes
-	// one the zone did not take.
+	// NULL without a host. AddCreature puts it in; false when the zone
+	// refuses it (one with its ID there already, a cell outside the zone or
+	// not set, the cell full for its move type, a move type with no
+	// sectors), and the caller still owns it. DeleteCreature deletes one
+	// the zone did not take.
 	MCreature* (*NewCreature)() = nullptr;
+	// The same for a creature that wears gear (MCreatureWear): a bat or a
+	// wolf a vampire turns into, say.
+	MCreature* (*NewCreatureWear)() = nullptr;
 	bool (*AddCreature)(MCreature* pCreature) = nullptr;
 	void (*DeleteCreature)(MCreature* pCreature) = nullptr;
 };
@@ -102,6 +108,7 @@ void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 MCreature* NewCreature();
+MCreature* NewCreatureWear();
 bool AddCreature(MCreature* pCreature);
 void DeleteCreature(MCreature* pCreature);
 
@@ -280,6 +287,23 @@ struct Host
 	void (*SetID)(MCreature* pCreature, TYPE_OBJECTID id) = nullptr;
 	void (*SetPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetGuildNumber)(MCreature* pCreature, int guild) = nullptr;
+	// A bat's colour set (0xFFFF for its own).
+	void (*SetBatColor)(MCreature* pCreature, std::uint16_t colorSet) = nullptr;
+	// Whether the creature is a plain MCreature (not one that wears gear,
+	// an NPC, a fake or the player); false without a host.
+	bool (*IsPlainCreature)(MCreature* pCreature) = nullptr;
+	// The creature's height off the ground (a flying one's); 0 without a
+	// host.
+	int (*GetZ)(MCreature* pCreature) = nullptr;
+	// Whether the creature is a plain MCreatureWear (not the player, an NPC
+	// or a fake, which wear gear too); false without a host.
+	bool (*IsPlainCreatureWear)(MCreature* pCreature) = nullptr;
+	// Dresses a creature that wears gear as the slayer pInfo describes: its
+	// hair, coat, trousers, helmet, weapon, shield, motorcycle and shoulder,
+	// each but the shoulder in its colours (an advanced slayer's coat takes
+	// the hair colour where another's takes the skin), and sets its attack
+	// speed. Nothing for a creature that wears none.
+	void (*SetAddonToSlayer3)(MCreature* pCreature, const PCSlayerInfo3* pInfo) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -392,5 +416,10 @@ void SetName(MCreature* pCreature, const char* name);
 void SetID(MCreature* pCreature, TYPE_OBJECTID id);
 void SetPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 void SetGuildNumber(MCreature* pCreature, int guild);
+void SetBatColor(MCreature* pCreature, std::uint16_t colorSet);
+bool IsPlainCreature(MCreature* pCreature);
+int GetZ(MCreature* pCreature);
+bool IsPlainCreatureWear(MCreature* pCreature);
+void SetAddonToSlayer3(MCreature* pCreature, const PCSlayerInfo3* pInfo);
 
 }

@@ -9,14 +9,16 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCSkillToObjectOK5.h"
-#include "ClientDef.h"
-#include "PacketFunction2.h"
+#include "ConvertDuration.h"
+#include "DebugLog.h"
+#include "MActionInfoTable.h"
+#include "MActionResult.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
+#include "Packet/WireHost.h"
 
-// [새기술2]
+// [new skill 2]
 #include "SkillDef.h"	
-void	SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID);
-extern void Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature);
-extern void Add_Wild_Wolf(MCreature* UserCreature, MCreature* TargetCreature, bool IsEatCorpse);
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player * pPlayer )
@@ -28,15 +30,15 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 
 
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 	}
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal..
 	//------------------------------------------------------
 	else
 	{
@@ -50,8 +52,8 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 		}
 
 
-		MCreature* pUserCreature = g_pZone->GetCreature( pPacket->getObjectID() );
-		MCreature* pTargetCreature = g_pZone->GetCreature( pPacket->getTargetObjectID() );		
+		MCreature* pUserCreature = ZoneState::GetCreature( pPacket->getObjectID() );
+		MCreature* pTargetCreature = ZoneState::GetCreature( pPacket->getTargetObjectID() );		
 //		if(pTargetCreature == NULL && skillID == SKILL_ABSORB_SOUL && pUserCreature != NULL && pUserCreature->IsOusters())
 //		{
 //			MItem *pItem = g_pZone->GetItem(pPacket->getTargetObjectID());
@@ -64,36 +66,34 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 		if(pPacket->getSkillType() == SKILL_WILD_WOLF && pUserCreature != NULL)
 		{
 			if(pTargetCreature != NULL)
-				Add_Wild_Wolf(pUserCreature, pTargetCreature, pPacket->getGrade()?true:false);
+				WorldEvents::AddWildWolf(pUserCreature, pTargetCreature, pPacket->getGrade()?true:false);
 			else
 			{
-				MItem* pItem = g_pZone->GetItem(pPacket->getTargetObjectID());
-				if(pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE)
+				// The target may lie in a corpse; the skill then goes on
+				// against the corpse's creature.
+				pTargetCreature = ZoneState::GetCorpseCreature(pPacket->getTargetObjectID());
+				if(pTargetCreature != NULL)
 				{
-					pTargetCreature = ((MCorpse*)pItem)->GetCreature();
-					if(pTargetCreature != NULL)
-					{
-						Add_Wild_Wolf(pUserCreature, pTargetCreature, pPacket->getGrade()?true:false);
-					}
+					WorldEvents::AddWildWolf(pUserCreature, pTargetCreature, pPacket->getGrade()?true:false);
 				}
 			}
 		}
 		// 2005, 1, 3, sobeit add end
 	
-		// Creature에게 Damage 입힘
+		// Damage the creature
 		if (pUserCreature != NULL && pTargetCreature != NULL)
 		{
 			// 2004, 11, 13, sobeit add start 
 			if(skillID == SKILL_PLASMA_ROCKET_LAUNCHER)
 			{
-				Add_RocketRuncher(pUserCreature, pTargetCreature);
+				WorldEvents::AddRocketLauncher(pUserCreature, pTargetCreature);
 			}
 			// 2004, 11, 13, sobeit add end
 		
 
 			if ((*g_pActionInfoTable)[skillID].IsAffectCurrentWeaponAction())
 			{
-				skillID = pUserCreature->GetBasicActionInfo();
+				skillID = CreatureState::GetBasicActionInfo( pUserCreature );
 
 				if (static_cast<DWORD>(skillID) >= g_pActionInfoTable->GetMinResultActionInfo())
 				{
@@ -104,38 +104,38 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 			if( (*g_pActionInfoTable)[skillID].IsUseActionStep() && pPacket->getGrade() > 0)
 				skillID = (*g_pActionInfoTable)[skillID].GetActionStep(pPacket->getGrade() - 1);
 
-			// [새기술2]
-			// ShadowDancing인지 체크하고 임시로(-_-;) DoubleImpacet를 쓴다.
+			// [new skill 2]
+			// Check for Shadow Dancing, and use Double Impact for now (-_-;).
 			switch( skillID )
 			{
 			case SKILL_SHADOW_DANCING :
-				SkillShadowDancing(pUserCreature, pTargetCreature, SKILL_SINGLE_BLOW);
+				WorldEvents::SkillShadowDancing(pUserCreature, pTargetCreature, SKILL_SINGLE_BLOW);
 				break;
 			// add by Coffee 2007-4-15
 			case SKILL_ILLUSION_INVERSION:
-				SkillIllendue( pUserCreature, pTargetCreature, TEMP_SKILL_ILLUSION_INVERSION);
+				WorldEvents::SkillIllendue( pUserCreature, pTargetCreature, TEMP_SKILL_ILLUSION_INVERSION);
 				break;
 			// end by Coffee
 			case SKILL_ILLENDUE :
-				// 2004, 12, 15, sobeit modify start - 힐직이 인챈 라이트볼 쓰는게 버그.
+				// 2004, 12, 15, sobeit modify start - a healer using the enchant light ball was a bug.
 				//SkillIllendue( pUserCreature, pTargetCreature, SKILL_LIGHT_BALL );
-				SkillIllendue( pUserCreature, pTargetCreature, MAGIC_CAUSE_SERIOUS_WOUNDS );
+				WorldEvents::SkillIllendue( pUserCreature, pTargetCreature, MAGIC_CAUSE_SERIOUS_WOUNDS );
 				// 2004, 12, 15, sobeit modify end
 				break;
 
 			case SKILL_BLAZE_WALK :
-				SkillBlazeWalk( pUserCreature, pTargetCreature, SKILL_BLAZE_WALK_ATTACK, pPacket->getGrade()  );
+				WorldEvents::SkillBlazeWalk( pUserCreature, pTargetCreature, SKILL_BLAZE_WALK_ATTACK, pPacket->getGrade()  );
 				break;
 			case SKILL_SET_AFIRE:
-				pUserCreature->AddEffectStatus(EFFECTSTATUS_SET_AFIRE_ATTACK, 20);
+				CreatureState::AddEffectStatus( pUserCreature, EFFECTSTATUS_SET_AFIRE_ATTACK, 20 );
 				break;
 			}
 
 			// [ TEST CODE ]
 			//
-			// 결과를 생성&저장해서 보내야 한다.
+			// The result must be made, stored and sent.
 			//
-			// 누군가(target)가 누군가가 사용한 SKill을 맞은 경우..
+			// When someone (the target) is hit by someone's skill..
 			// [ TEST CODE ]
 			MActionResult* pResult = new MActionResult;
 
@@ -145,19 +145,19 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 										skillID, 
 										pPacket->getObjectID(), 
 										pPacket->getTargetObjectID(), 
-										pTargetCreature->GetX(),
-										pTargetCreature->GetY(),
+										CreatureState::GetX( pTargetCreature ),
+										CreatureState::GetY( pTargetCreature ),
 										delayFrame ) );
 
 			//------------------------------------------------------
 			//
-			// skill에 결과가 있으면 적용 시킨다.
+			// If the skill has a result, apply it.
 			//
 			//------------------------------------------------------
 			MActionResultNode* pActionResultNode = CreateActionResultNode(pTargetCreature, skillID, pPacket->getGrade() );
 
 			//------------------------------------------------------
-			// NULL이 아니면 실행
+			// Run it if not NULL
 			//------------------------------------------------------
 			if (pActionResultNode!=NULL)
 			{
@@ -165,31 +165,31 @@ void GCSkillToObjectOK5Handler::execute ( GCSkillToObjectOK5 * pPacket , Player 
 			}
 
 			//------------------------------------------------------
-			// EffectStatus가 있다면 붙인다.
+			// Attach the effect status, if there is one.
 			//------------------------------------------------------
 			EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
 			
 			if (es!=EFFECTSTATUS_NULL)
 			{
-				pResult->Add( new MActionResultNodeAddEffectStatus( pTargetCreature->GetID(),
+				pResult->Add( new MActionResultNodeAddEffectStatus( CreatureState::GetID( pTargetCreature ),
 																		es, 
 																		delayFrame ) );
 			}
 
 
-			// 서로 바라보기
-			pUserCreature->SetDirectionToPosition(pTargetCreature->GetX(), pTargetCreature->GetY());
+			// Face each other
+			CreatureState::SetDirectionToPosition( pUserCreature, CreatureState::GetX( pTargetCreature ), CreatureState::GetY( pTargetCreature ));
 			//pTargetCreature->SetDirectionToPosition(pUserCreature->GetX(), pUserCreature->GetY());
 
 			//Duration_t	m_Duration;
-			pUserCreature->PacketSpecialActionToOther(
+			CreatureState::PacketSpecialActionToOther( pUserCreature,
 								skillID, /*pPacket->getSkillType(), */
 								pPacket->getTargetObjectID(),
-								pResult			// 결과
+								pResult			// the result
 			);		
 
 			if( skillID == SKILL_BITE_OF_DEATH )
-				pTargetCreature->SetDrainCreatureID( pPacket->getObjectID() );
+				CreatureState::SetDrainCreatureID( pTargetCreature, pPacket->getObjectID() );
 		}
 	}	
 

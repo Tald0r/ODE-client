@@ -9,7 +9,12 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCAddWolf.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "MActionResult.h"
+#include "MCreatureTable.h"
+#include "MStatus.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -24,123 +29,132 @@ void GCAddWolfHandler::execute ( GCAddWolf * pPacket , Player * pPlayer )
 	
 	int wolfCreatureType = 186;
 
-	if( pPacket->getItemType() == 39 )			// Were Wolf로 변신
+	if( pPacket->getItemType() == 39 )			// turning into a werewolf
 		wolfCreatureType = CREATURETYPE_WER_WOLF;
 	
 	//------------------------------------------------------
-	// Zone이 아직 생성되지 않은 경우
+	// The zone is not created yet
 	//------------------------------------------------------
-	if (g_pZone==NULL)
+	if (!ZoneState::Exists())
 	{
 		// message
 		DEBUG_ADD_ERR("[Error] Zone is Not Init.. yet.");
 		
 	}	
 	//------------------------------------------------------
-	// 정상.. 
+	// Normal.. 
 	//------------------------------------------------------
 	else
 	{
-		MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+		MCreature* pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 
 		//--------------------------------------------------
-		// 새로운 Creature이면 추가
+		// A new creature: add it
 		//--------------------------------------------------
 		if (pCreature==NULL)
 		{
-			pCreature = new MCreatureWear;
+			pCreature = ZoneState::NewCreatureWear();
+			if (pCreature == NULL)
+			{
+				return;
+			}
 //			pCreature->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, vi.getAdvancementLevel() );
 
-			pCreature->SetZone( g_pZone );
 			
 			
-			pCreature->SetName( pPacket->getName().c_str() );
+			CreatureState::SetName( pCreature, pPacket->getName().c_str() );
 
 
-			//pCreature->SetCreatureType( 0 );
-			pCreature->SetCreatureType( wolfCreatureType );
-			pCreature->SetGroundCreature();
-			pCreature->SetID(pPacket->getObjectID());
-			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->SetPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );
+			//CreatureState::SetCreatureType( pCreature, 0 );
+			CreatureState::SetCreatureType( pCreature, wolfCreatureType );
+			CreatureState::SetGroundCreature( pCreature );
+			CreatureState::SetID( pCreature, pPacket->getObjectID() );
+			//CreatureState::SetAction( pCreature, ACTION_MOVE);
+			CreatureState::SetPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );
 
 			
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
 			//pPacket->getName()
-			// 색상 정보
-			// 임시로
-			pCreature->SetGuildNumber( pPacket->getGuildID() );
+			// the colour information
+			// for now
+			CreatureState::SetGuildNumber( pCreature, pPacket->getGuildID() );
 
-			if (!g_pZone->AddCreature( pCreature ))
+			if (!ZoneState::AddCreature( pCreature ))
 			{
-				delete pCreature;
+				ZoneState::DeleteCreature( pCreature );
 				pCreature = NULL;
 			}
 		}
 		//--------------------------------------------------
-		// 이미 있는 Creature인 경우
+		// A creature already there
 		//--------------------------------------------------
 		else
 		{
-			pCreature->SetCreatureType( wolfCreatureType );
+			CreatureState::SetCreatureType( pCreature, wolfCreatureType );
 
-			// 임시로
-			pCreature->SetGuildNumber( pPacket->getGuildID() );
+			// for now
+			CreatureState::SetGuildNumber( pCreature, pPacket->getGuildID() );
 
-			pCreature->SetGroundCreature();
+			CreatureState::SetGroundCreature( pCreature );
 			
-			//pCreature->SetAction(ACTION_MOVE);
-			pCreature->MovePosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetServerPosition( pPacket->getX(), pPacket->getY() );
-			pCreature->SetDirection( pPacket->getDir() );
-			pCreature->SetCurrentDirection( pPacket->getDir() );
-			pCreature->SetAction( ACTION_STAND );			
+			//CreatureState::SetAction( pCreature, ACTION_MOVE);
+			CreatureState::MovePosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetServerPosition( pCreature, pPacket->getX(), pPacket->getY() );
+			CreatureState::SetDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetCurrentDirection( pCreature, pPacket->getDir() );
+			CreatureState::SetAction( pCreature, ACTION_STAND );			
 
-			pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
-			pCreature->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			if (MStatus* pStatus = CreatureState::Status( pCreature ))
+			{
+				pStatus->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
+				pStatus->SetStatus( MODIFY_CURRENT_HP, pPacket->getCurrentHP() );
+			}
 
 			//--------------------------------------------------
-			// 늑대로 변신하는 결과
+			// the result: it turns into a wolf
 			//--------------------------------------------------
 			MActionResult* pResult = new MActionResult;
 
-			pResult->Add( new MActionResultNodeChangeCreatureType( pCreature->GetID(), wolfCreatureType ) );
+			pResult->Add( new MActionResultNodeChangeCreatureType( CreatureState::GetID( pCreature ), wolfCreatureType ) );
 
 			//--------------------------------------------------
-			// 늑대 변신 
+			// turning into a wolf 
 			//--------------------------------------------------								
-			ExecuteActionInfoFromMainNode(
-				RESULT_MAGIC_TRANSFORM_TO_WOLF,										// 사용 기술 번호
+			WorldEvents::ExecuteActionInfoFromMainNode(
+				RESULT_MAGIC_TRANSFORM_TO_WOLF,										// the skill used
 			
-				pCreature->GetX(), pCreature->GetY(), 0,
-				pCreature->GetDirection(),														// 사용 방향
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0,
+				CreatureState::GetDirection( pCreature ),														// the direction used
 				
-				OBJECTID_NULL,												// 목표에 대한 정보
-				pCreature->GetX(), pCreature->GetY(), 0, 
+				OBJECTID_NULL,												// the target
+				CreatureState::GetX( pCreature ), CreatureState::GetY( pCreature ), 0, 
 				
-				0,													// 기술의 (남은) 지속 시간		
+				0,													// the skill's (remaining) duration		
 				
 				pResult, //NULL,
 				
-				false);			// 기술 첨부터 시작한다.
+				false, 0, 0);			// the skill starts from the beginning.
 
 			//pCreature->SetDelay( 1000 );
 		}	
 
 		// This runs after both arms of the if/else above, and the "new
-		// creature" arm nulls pCreature when AddCreature rejects it -- an
-		// out-of-zone position, or a move type with no sector list.
+		// creature" arm nulls pCreature when the zone refuses it (see
+		// ZoneState::AddCreature).
 		if( pCreature != NULL && wolfCreatureType == CREATURETYPE_WER_WOLF )
-			pCreature->SetBodyColor1( pPacket->getColor() );
+			CreatureState::SetBodyColor1( pCreature, pPacket->getColor() );
 	}
 
-	// [도움말] Vampire가 나타날때
+	// [Help] when a vampire appears
 //	__BEGIN_HELP_EVENT
 //		//ExecuteHelpEvent( HE_CREATURE_APPEAR_VAMPIRE );
 //	__END_HELP_EVENT

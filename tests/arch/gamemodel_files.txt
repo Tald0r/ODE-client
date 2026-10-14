@@ -1003,6 +1003,11 @@ Client/PacketHandler/GCRemoveCorpseHeadHandler.cpp
 # one between creatures.
 Client/ExplosiveActions.cpp
 Client/ExplosiveActions.h
+
+# A vampire's creature type for its shape and coat, and an ouster's, lifted
+# out of the executable's PacketFunction.cpp (4.179).
+Client/CreatureTypeSelection.cpp
+Client/CreatureTypeSelection.h
 Client/PacketHandler/GCThrowBombOK1Handler.cpp
 Client/PacketHandler/GCThrowBombOK2Handler.cpp
 Client/PacketHandler/GCThrowBombOK3Handler.cpp
@@ -1149,3 +1154,24 @@ Client/PacketHandler/GCAddItemToItemVerifyHandler.cpp
 
 # A burrowing creature, seen or added underground.
 Client/PacketHandler/GCAddBurrowingCreatureHandler.cpp
+
+# A vampire as a bat or a wolf, seen or turning.
+Client/PacketHandler/GCAddBatHandler.cpp
+Client/PacketHandler/GCAddWolfHandler.cpp
+
+# A monster out of a burrow, or out of a transformation.
+Client/PacketHandler/GCAddMonsterFromBurrowingHandler.cpp
+Client/PacketHandler/GCAddMonsterFromTransformationHandler.cpp
+
+# A monster appearing.
+Client/PacketHandler/GCAddMonsterHandler.cpp
+
+# A skill landing on a creature: the player's (OK1), on the player (OK2),
+# or between two other creatures (OK5).
+Client/PacketHandler/GCSkillToObjectOK1Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK2Handler.cpp
+Client/PacketHandler/GCSkillToObjectOK5Handler.cpp
+
+# A creature turning into a slayer, or a vampire, in sight.
+Client/PacketHandler/GCMorphSlayer2Handler.cpp
+Client/PacketHandler/GCMorphVampire2Handler.cpp

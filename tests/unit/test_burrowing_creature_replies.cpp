@@ -21,10 +21,22 @@ std::vector<std::string> calls;
 bool zoneExists = true;
 bool zoneTakes = true;
 
+struct FakeCreature;
+std::string Who(const FakeCreature* p);
+
+// The creature's status array, recording each value set: SetStatus is
+// virtual, as MCreature's own is in the game.
+struct RecordingStatus : MStatus
+{
+	FakeCreature* owner = nullptr;
+	void SetStatus(DWORD n, DWORD value) override;
+};
+
 struct FakeCreature
 {
 	TYPE_OBJECTID id = 0;
-	MStatus status;
+	RecordingStatus status;
+	FakeCreature() { status.owner = this; }
 };
 std::map<TYPE_OBJECTID, FakeCreature*> zoneCreatures;
 std::vector<std::unique_ptr<FakeCreature>> made;
@@ -32,7 +44,14 @@ std::vector<std::unique_ptr<FakeCreature>> made;
 std::string N(long long value) { return std::to_string(value); }
 MCreature* Handle(FakeCreature* creature) { return reinterpret_cast<MCreature*>(creature); }
 FakeCreature& Fake(MCreature* p) { return *reinterpret_cast<FakeCreature*>(p); }
-std::string Who(MCreature* p) { return Fake(p).id == 0 ? std::string("new") : N(Fake(p).id); }
+std::string Who(const FakeCreature* p) { return p->id == 0 ? std::string("new") : N(p->id); }
+std::string Who(MCreature* p) { return Who(&Fake(p)); }
+
+void RecordingStatus::SetStatus(DWORD n, DWORD value)
+{
+	calls.push_back("status|" + Who(owner) + "|" + N(n) + "|" + N(value));
+	MStatus::SetStatus(n, value);
+}
 
 const ZoneState::Host zone = []() {
 	ZoneState::Host host{};
@@ -75,7 +94,7 @@ const CreatureState::Host creature = []() {
 	host.SetCurrentDirection = [](MCreature* p, int direction) { calls.push_back("faces|" + Who(p) + "|" + N(direction)); };
 	host.SetAction = [](MCreature* p, int action) { calls.push_back("acts|" + Who(p) + "|" + N(action)); };
 	host.SetGuildNumber = [](MCreature* p, int guild) { calls.push_back("guild|" + Who(p) + "|" + N(guild)); };
-	host.Status = [](MCreature* p) { return &Fake(p).status; };
+	host.Status = [](MCreature* p) -> MStatus* { return &Fake(p).status; };
 	return host;
 }();
 
@@ -121,7 +140,8 @@ TEST(BurrowingCreatureReplies, ANewCreatureIsMadeUndergroundAndAdded)
 	Receive(1005, "Mole", 30, 31);
 	CHECK(calls == std::vector<std::string>({"new creature", "type|new|" + N(CREATURETYPE_VAMPIRE_MALE1), "name|new|Mole",
 		"underground|new", "id|1005", "at|1005|30,31", "server at|1005|30,31", "turns|1005|" + N(DIRECTION_DOWN),
-		"faces|1005|" + N(DIRECTION_DOWN), "acts|1005|" + N(ACTION_STAND), "guild|1005|-1", "zone takes|1005"}));
+		"faces|1005|" + N(DIRECTION_DOWN), "acts|1005|" + N(ACTION_STAND), "guild|1005|-1",
+		"status|1005|" + N(MODIFY_MAX_HP) + "|100", "status|1005|" + N(MODIFY_CURRENT_HP) + "|100", "zone takes|1005"}));
 	CHECK(made.size() == 1);
 	if (made.size() != 1) return;
 	CHECK_EQ(100, static_cast<int>(made[0]->status.GetMAX_HP()));
@@ -159,7 +179,15 @@ TEST(BurrowingCreatureReplies, WithoutAZoneOrTheHostsNothingHappens)
 	Receive(1005, "Mole", 30, 31);
 	CHECK(calls == std::vector<std::string>({"new creature", "zone takes|new"}));
 	CHECK_EQ(1u, made.size());
+	// A zone host that cannot make a creature: nothing.
 	calls.clear();
+	CreatureState::SetHost(&creature);
+	ZoneState::Host cannotMake = zone;
+	cannotMake.NewCreature = nullptr;
+	ZoneState::SetHost(&cannotMake);
+	Receive(1006, "Mole", 30, 31);
+	CHECK(calls.empty());
+	CreatureState::SetHost(nullptr);
 	ZoneState::SetHost(nullptr);
 	CHECK(ZoneState::NewCreature() == nullptr);
 	CHECK(!ZoneState::AddCreature(Handle(&world.known)));

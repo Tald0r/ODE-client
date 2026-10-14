@@ -94,6 +94,56 @@ void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::ui
 	if (s_Host && s_Host->AddNewInventoryEffect) s_Host->AddNewInventoryEffect(id, actionInfo, delayFrame, value);
 }
 
+void SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
+{
+	if (s_Host && s_Host->SetEffectInfo) s_Host->SetEffectInfo(pCreature, pEffectInfo, delayedFrame);
+}
+
+void AddGDREffect(int effect, bool bAppearBossMonster)
+{
+	if (s_Host && s_Host->AddGDREffect) s_Host->AddGDREffect(effect, bAppearBossMonster);
+}
+
+void ComeFromPortal(MCreature* pCreature)
+{
+	if (s_Host && s_Host->ComeFromPortal) s_Host->ComeFromPortal(pCreature);
+}
+
+void AddRaceSlayerMonster(GCAddMonster* pPacket)
+{
+	if (s_Host && s_Host->AddRaceSlayerMonster) s_Host->AddRaceSlayerMonster(pPacket);
+}
+
+void AddRaceOustersMonster(GCAddMonster* pPacket)
+{
+	if (s_Host && s_Host->AddRaceOustersMonster) s_Host->AddRaceOustersMonster(pPacket);
+}
+
+void SkillShadowDancing(MCreature* pUser, MCreature* pTarget, int skillID)
+{
+	if (s_Host && s_Host->SkillShadowDancing) s_Host->SkillShadowDancing(pUser, pTarget, skillID);
+}
+
+void SkillIllendue(MCreature* pUser, MCreature* pTarget, int skillID)
+{
+	if (s_Host && s_Host->SkillIllendue) s_Host->SkillIllendue(pUser, pTarget, skillID);
+}
+
+void SkillBlazeWalk(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade)
+{
+	if (s_Host && s_Host->SkillBlazeWalk) s_Host->SkillBlazeWalk(pUser, pTarget, skillID, grade);
+}
+
+void AddRocketLauncher(MCreature* pUser, MCreature* pTarget)
+{
+	if (s_Host && s_Host->AddRocketLauncher) s_Host->AddRocketLauncher(pUser, pTarget);
+}
+
+void AddWildWolf(MCreature* pUser, MCreature* pTarget, bool bEatCorpse)
+{
+	if (s_Host && s_Host->AddWildWolf) s_Host->AddWildWolf(pUser, pTarget, bEatCorpse);
+}
+
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID)
 {
 	if (s_Host && s_Host->SkillCrossCounter) s_Host->SkillCrossCounter(pUser, pTarget, skillID);

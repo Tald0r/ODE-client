@@ -47,6 +47,7 @@ public:
 			m_Colors[i] = vampireInfo.m_Colors[i];
 
 		m_Competence = vampireInfo.m_Competence;
+		m_UnionID = vampireInfo.m_UnionID;
 	}
 	
 public:

@@ -3454,6 +3454,12 @@ static const GuildPresentation::Host s_GuildPresentationHost = {
 extern int UI_GetFaceStyle(bool bMale, int faceStyle);
 extern int g_C2G;	// UIMessageManager.cpp's: the operator's create-to-gear count
 extern void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
+extern void Add_GDR_Effect(int nEffect, bool bAppearBossMonster);
+extern void Add_Race_SlayerMonster(GCAddMonster * pPacket);
+extern void Add_Race_OustersMonster(GCAddMonster * pPacket);
+extern void SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID);
+extern void Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature);
+extern void Add_Wild_Wolf(MCreature* UserCreature, MCreature* TargetCreature, bool IsEatCorpse);
 extern void SendCharacterInfoToParty();
 extern void SendStatusInfoToParty();
 extern void SendPositionInfoToParty();
@@ -3668,6 +3674,11 @@ static const ZoneState::Host s_ZoneStateHost = {
 		pCreature->SetZone( g_pZone );
 		return pCreature;
 	},
+	.NewCreatureWear = []() -> MCreature* {
+		MCreature* pCreature = new MCreatureWear;
+		pCreature->SetZone( g_pZone );
+		return pCreature;
+	},
 	.AddCreature = [](MCreature* pCreature) { return g_pZone != NULL && g_pZone->AddCreature(pCreature); },
 	.DeleteCreature = [](MCreature* pCreature) { delete pCreature; },
 };
@@ -3807,6 +3818,13 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetID = [](MCreature* pCreature, TYPE_OBJECTID id) { pCreature->SetID(id); },
 	.SetPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pCreature->SetPosition(x, y); },
 	.SetGuildNumber = [](MCreature* pCreature, int guild) { pCreature->SetGuildNumber(guild); },
+	.SetBatColor = [](MCreature* pCreature, std::uint16_t colorSet) { pCreature->SetBatColor(colorSet); },
+	.IsPlainCreature = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_CREATURE; },
+	.GetZ = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetZ()); },
+	.IsPlainCreatureWear = [](MCreature* pCreature) { return pCreature->GetClassType() == MCreature::CLASS_CREATUREWEAR; },
+	.SetAddonToSlayer3 = [](MCreature* pCreature, const PCSlayerInfo3* pInfo) {
+		if (pCreature->IsWear()) SetAddonToSlayer(static_cast<MCreatureWear*>(pCreature), pInfo);
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3838,6 +3856,16 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.AddNewInventoryEffect = [](TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value) {
 		AddNewInventoryEffect(id, actionInfo, delayFrame, value);
 	},
+	.SetEffectInfo = [](MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) { SetEffectInfo(pCreature, pEffectInfo, delayedFrame); },
+	.AddGDREffect = Add_GDR_Effect,
+	.ComeFromPortal = ComeFromPortal,
+	.AddRaceSlayerMonster = Add_Race_SlayerMonster,
+	.AddRaceOustersMonster = Add_Race_OustersMonster,
+	.SkillShadowDancing = SkillShadowDancing,
+	.SkillIllendue = SkillIllendue,
+	.SkillBlazeWalk = [](MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) { SkillBlazeWalk(pUser, pTarget, skillID, grade); },
+	.AddRocketLauncher = Add_RocketRuncher,
+	.AddWildWolf = Add_Wild_Wolf,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
