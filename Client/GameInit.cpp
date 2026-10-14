@@ -3594,7 +3594,6 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.IsLockInput = []() { return UIDialog::IsLockInput() != 0; },
 	.OkMixingForge = [](std::uint32_t parameter, MItem* pItem, MItem* pItem2) { UI_OkMixingForge(parameter, pItem, pItem2); },
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
-	.RemoveDescriptor = [](void* pItem) { UI_RemoveDescriptor(pItem); },
 };
 
 // Sends what the game connection has waiting (GameMain.cpp).

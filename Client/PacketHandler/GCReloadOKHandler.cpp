@@ -10,7 +10,6 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCReloadOK.h"
 #include "DebugLog.h"
-#include "DialogPresentationHost.h"
 #include "MInventory.h"
 #include "MItem.h"
 #include "MQuickSlot.h"
@@ -133,14 +132,10 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 				//----------------------------------------------------
 				else
 				{
-					DEBUG_ADD_ERR("[Error] Player not Use GUN");
+					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d",
+						pRightHandItem==NULL? -1 : (int)pRightHandItem->GetItemClass());
 
-					if (pMagazineItem == pItem)
-					{
-						// forget the item's description - any use? - -;
-						DialogPresentation::RemoveDescriptor( (void*)pItem );
-					}
-
+					// freeing it forgets its description too (ItemDestroyed)
 					delete pMagazineItem;
 				}
 			}
@@ -222,14 +217,10 @@ void GCReloadOKHandler::execute ( GCReloadOK * pPacket , Player * pPlayer )
 				//----------------------------------------------------
 				else
 				{
-					DEBUG_ADD_ERR("[Error] Player not Use GUN");
+					DEBUG_ADD_FORMAT_ERR("[Error] Player not Use GUN. the ItemClass=%d",
+						pRightHandItem==NULL? -1 : (int)pRightHandItem->GetItemClass());
 
-					if (pMagazineItem == pItem)
-					{
-						// forget the item's description - any use? - -;
-						DialogPresentation::RemoveDescriptor( (void*)pItem );
-					}
-
+					// freeing it forgets its description too (ItemDestroyed)
 					delete pMagazineItem;
 				}
 			}

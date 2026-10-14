@@ -138,9 +138,4 @@ void OkRemoveOption(std::uint32_t parameter, MItem* pItem)
 	if (s_Host && s_Host->OkRemoveOption) s_Host->OkRemoveOption(parameter, pItem);
 }
 
-void RemoveDescriptor(void* pItem)
-{
-	if (s_Host && s_Host->RemoveDescriptor) s_Host->RemoveDescriptor(pItem);
-}
-
 }

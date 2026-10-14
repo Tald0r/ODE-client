@@ -61,8 +61,6 @@ struct Host
 	// off an item, which stays the inventory's.
 	void (*OkMixingForge)(std::uint32_t parameter, MItem* pItem, MItem* pItem2) = nullptr;
 	void (*OkRemoveOption)(std::uint32_t parameter, MItem* pItem) = nullptr;
-	// Forgets the item's description window, if it shows that item.
-	void (*RemoveDescriptor)(void* pItem) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -92,6 +90,5 @@ void RunShop();
 bool IsLockInput();
 void OkMixingForge(std::uint32_t parameter, MItem* pItem, MItem* pItem2);
 void OkRemoveOption(std::uint32_t parameter, MItem* pItem);
-void RemoveDescriptor(void* pItem);
 
 }

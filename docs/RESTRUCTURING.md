@@ -5332,20 +5332,20 @@ rounds settled* for the host rules). Test fixtures share
   > again. Loading the gun is `MItem::ReloadGun` (new on `MItemHost`).
   > The adapter sets the magazine in the `MGunItem`, makes it the
   > current one and frees the one it held: a magazine's vtable is the
-  > executable's, so gamemodel never casts to `MMagazine`. Forgetting an
-  > item's description is `DialogPresentation::RemoveDescriptor` (new).
-  > R1 is 78 Windows / 76 Ninja.
+  > executable's, so gamemodel never casts to `MMagazine`. Freeing an
+  > item forgets its description through `MItemHost::ItemDestroyed`, so
+  > the old explicit call is not needed. R1 is 78 Windows / 76 Ninja.
   - Owner: membership, R1, and `test_reload_replies.cpp`. It covers the
     last magazine and a stack (of two and of three) in the inventory and
     the quick slot, an item that is no magazine, a vampire, another
     buffer status, and an empty buffer.
   - Fixed after the move: a reload without a gun in the right hand.
-    With the hand empty, the old branch logged through the NULL item
-    and crashed. With another item there, the spent magazine leaked, and
-    its unreachable cleanup would have freed a whole stack's remaining
-    magazines. Now the spent magazine is dropped either way. The last
-    one has already left its container, so its description is forgotten
-    and it is freed; of a stack only the new magazine goes. The test
+    With the hand empty, the old branch logged through the NULL item and
+    crashed; its cleanup, never reached, would have freed a whole stack's
+    remaining magazines. With another item there, the spent magazine
+    leaked. Now the spent magazine is freed either way: the last one has
+    already left its container, and of a stack only the new magazine
+    goes. The test
     covers both hands, both containers, and the last magazine and a
     stack.
 
