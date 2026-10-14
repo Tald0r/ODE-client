@@ -64,7 +64,7 @@ void GCGlobalChatHandler::execute ( GCGlobalChat * pPacket , Player * pPlayer )
 		//UI_WansungToJohap( pPacket->getMessage().c_str(), str );
 		snprintf(str, sizeof(str), "%s", pPacket->getMessage().c_str());
 
-		//CommunicationPresentation::AddChatToHistory( str );
+		//UI_AddChatToHistory( str );
 		char* pLB = strchr( str, ' ' );
 
 		if (pLB!=NULL)

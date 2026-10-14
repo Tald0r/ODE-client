@@ -3921,12 +3921,14 @@ rounds settled* for the host rules). Test fixtures share
   > hallucinating player sees any words masked. A shout names its sender
   > before the first space. New entries: `CreatureState::GetHalluName`,
   > `IsSlayer`, `IsOusters` and `GetRace`; the player's race, effects and
-  > INT come through `PlayerState`. Without a player both do nothing,
-  > where they dereferenced the player. Found by reading and kept, as
+  > INT come through `PlayerState`. Without a player both do nothing;
+  > most of their paths dereferenced the player. A debug build (`_DEBUG`)
+  > masks by race nowhere, as before. Found by reading and kept, as
   > upstream's: a shout's race mask lands on the copied sender name, so
   > its words arrive unmasked; both replies read the current zone's row
   > in the zone table unchecked (a zone missing from the table crashes,
-  > as before). R1 is 154 Windows / 152 Ninja.
+  > as before); and unlike the whisper replies, the player's INT is not
+  > clamped to 300 before the mask's arithmetic. R1 is 154 Windows / 152 Ninja.
   - Owner: membership, R1, the entries and adapters, the colour on
     `SetChatString`, and `test_chat_replies.cpp` (filtering and its
     exemptions, refusal, the race mask and every way to read past it,

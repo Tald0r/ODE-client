@@ -41,6 +41,8 @@ namespace {
 std::vector<std::string> calls;
 bool zoneExists = true;
 bool hasPlayer = true;
+// The player's status can be missing on its own.
+bool hasStatus = true;
 std::set<EFFECTSTATUS> playerEffects;
 Race playerRace = RACE_SLAYER;
 MStatus playerStatus;
@@ -81,7 +83,7 @@ const ZoneState::Host zone = []() {
 const PlayerState::Host player = []() {
 	PlayerState::Host host{};
 	host.Creature = []() { return hasPlayer ? Handle(me) : nullptr; };
-	host.Status = []() { return hasPlayer ? &playerStatus : nullptr; };
+	host.Status = []() { return hasPlayer && hasStatus ? &playerStatus : nullptr; };
 	host.HasEffectStatus = [](EFFECTSTATUS status) { return playerEffects.count(status) != 0; };
 	host.GetRace = []() { return playerRace; };
 	return host;
@@ -139,6 +141,7 @@ struct World : GameModelWorld
 		creatures = {{slayer.id, &slayer}, {vampire.id, &vampire}, {monster.id, &monster}, {gilles.id, &gilles}, {master.id, &master}};
 		zoneExists = true;
 		hasPlayer = true;
+		hasStatus = true;
 		playerEffects.clear();
 		playerRace = RACE_SLAYER;
 		playerStatus = MStatus();
@@ -212,6 +215,22 @@ std::string History(const char* who, const std::string& words, int type = 0)
 }
 
 const std::string kLong = "abcdefghijklmnopqrstuvwxyzabcdefghijklmn";
+// 120 letters, for counting how many a mask covers.
+const std::string kLine = []() {
+	std::string line;
+	while (line.size() < 120) line += "abcdefghijklmnopqrstuvwxyz";
+	return line.substr(0, 120);
+}();
+
+// How many letters a mask changed.
+int Masked(const std::string& shown, const std::string& line)
+{
+	CHECK_EQ(line.size(), shown.size());
+	int masked = 0;
+	for (size_t i = 0; i < line.size() && i < shown.size(); i++)
+		if (shown[i] != line[i]) masked++;
+	return masked;
+}
 
 // The words a creature said, as recorded over its head.
 std::string Said(const std::string& record)
@@ -270,12 +289,29 @@ TEST(ChatReplies, AnotherRacesWordsAreMaskedUnderItsHallucinationName)
 {
 	World world;
 	srand(1);
-	ReceiveSay(1002, kLong);
-	CHECK_EQ(static_cast<size_t>(2), calls.size());
-	const std::string masked = calls.size() == 2 ? Said(calls[0]) : std::string();
-	CHECK_EQ(kLong.size(), masked.size());
-	CHECK(masked != kLong);
-	CHECK(calls.size() == 2 && calls[1] == History("Stranger", masked));
+	playerStatus.SetStatus(MODIFY_CURRENT_INT, 0);
+	ReceiveSay(1002, kLine);
+	playerStatus.SetStatus(MODIFY_CURRENT_INT, 150);
+	ReceiveSay(1002, kLine);
+	CHECK_EQ(static_cast<size_t>(4), calls.size());
+	if (calls.size() != 4) return;
+	const std::string dull = Said(calls[0]);
+	const std::string sharp = Said(calls[2]);
+	CHECK(calls[1] == History("Stranger", dull));
+	CHECK(calls[3] == History("Stranger", sharp));
+#ifdef _DEBUG
+	// A debug build does not mask by race.
+	CHECK(dull == kLine);
+	CHECK(sharp == kLine);
+#else
+	// A letter is masked when (rand() & 63) >= readable% * 63 / 100. With
+	// no INT a slayer reads 25% (about 92 of the 120 letters masked); with
+	// 150 INT, the 75% cap (about 32). The bounds sit over three standard
+	// deviations out, whatever the platform's rand().
+	CHECK(Masked(dull, kLine) > 75);
+	const int sharpMasked = Masked(sharp, kLine);
+	CHECK(sharpMasked > 15 && sharpMasked < 50);
+#endif
 	// The player reads them in a zone that does not mask, with the Hillel
 	// skill, under translation, or as an operator.
 	const auto readable = [&]() {
@@ -292,8 +328,11 @@ TEST(ChatReplies, AnotherRacesWordsAreMaskedUnderItsHallucinationName)
 	playerEffects.insert(EFFECTSTATUS_TRANSLATION);
 	CHECK(readable());
 	playerEffects.clear();
-	me.type = CREATURETYPE_SLAYER_OPERATOR;
-	CHECK(readable());
+	for (int operatorType : {CREATURETYPE_SLAYER_OPERATOR, CREATURETYPE_VAMPIRE_OPERATOR, CREATURETYPE_OUSTERS_OPERATOR})
+	{
+		me.type = operatorType;
+		CHECK(readable());
+	}
 	// A master player reads the words but sees the real name.
 	me.type = CREATURETYPE_SLAYER_MALE;
 	g_pUserInformation->IsMaster = TRUE;
@@ -311,12 +350,48 @@ TEST(ChatReplies, AHallucinatingPlayerSeesEvenItsOwnRaceMasked)
 	const std::string masked = calls.size() == 2 ? Said(calls[0]) : std::string();
 	CHECK(masked.size() == kLong.size() && masked != kLong);
 	CHECK(calls.size() == 2 && calls[1] == History("Nyx", masked));
-	// Even a monster's words, which are never filtered.
+	// Even a monster's words, which are never filtered; a debug build
+	// leaves those alone.
 	calls.clear();
 	ReceiveSay(1003, kLong);
 	CHECK_EQ(static_cast<size_t>(1), calls.size());
 	const std::string monster = calls.size() == 1 ? Said(calls[0]) : std::string();
-	CHECK(monster.size() == kLong.size() && monster != kLong);
+	CHECK_EQ(kLong.size(), monster.size());
+#ifdef _DEBUG
+	CHECK(monster == kLong);
+#else
+	CHECK(monster != kLong);
+#endif
+}
+
+TEST(ChatReplies, EveryOperatorTypeSpeaksPastARefusal)
+{
+	World world;
+	world.filter.SetIgnoreMode();
+	FakeCreature slayerOperator{2001, "Sop", CREATURETYPE_SLAYER_OPERATOR, RACE_SLAYER};
+	FakeCreature vampireOperator{2002, "Vop", CREATURETYPE_VAMPIRE_OPERATOR, RACE_VAMPIRE};
+	FakeCreature oustersOperator{2003, "Oop", CREATURETYPE_OUSTERS_OPERATOR, RACE_OUSTERS, false, true};
+	FakeCreature gilles{2004, "Gilles", 723, RACE_VAMPIRE};
+	for (FakeCreature* c : {&slayerOperator, &vampireOperator, &oustersOperator, &gilles}) creatures[c->id] = c;
+	ReceiveSay(2001, "darn it");
+	ReceiveSay(2002, "darn it");
+	ReceiveSay(2003, "darn it");
+	ReceiveSay(2004, "darn it");
+	// Unfiltered, under their real names though another race; an operator
+	// type is a player character, Gilles is not.
+	CHECK(calls == std::vector<std::string>({Says("Sop", "darn it"), History("Sop", "darn it"),
+		Says("Vop", "darn it"), History("Vop", "darn it"), Says("Oop", "darn it"), History("Oop", "darn it"),
+		Says("Gilles", "darn it")}));
+}
+
+TEST(ChatReplies, AnOustersIsAPlayerCharacter)
+{
+	World world;
+	playerRace = RACE_OUSTERS;
+	FakeCreature elf{2005, "Elf", 999, RACE_OUSTERS, false, true};
+	creatures[elf.id] = &elf;
+	ReceiveSay(2005, "darn it");
+	CHECK(calls == std::vector<std::string>({Says("Elf", "xxxx it"), History("Elf", "xxxx it")}));
 }
 
 TEST(ChatReplies, TheSayGuards)
@@ -328,6 +403,10 @@ TEST(ChatReplies, TheSayGuards)
 	zoneExists = true;
 	hasPlayer = false;
 	ReceiveSay(1001, "hello");
+	hasPlayer = true;
+	hasStatus = false;
+	ReceiveSay(1001, "hello");
+	ReceiveShout("Nyx hello");
 	CHECK(calls.empty());
 }
 
