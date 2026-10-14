@@ -5132,8 +5132,9 @@ rounds settled* for the host rules). Test fixtures share
       hosts.
   - Fixed after the move: an NPC whose creature table row has no
     name crashed the client. That is an NPC ID past the client's
-    table, which a server with a newer table sends, or a row never
-    named. The table's empty `MString` converts to NULL, and
+    table, which a server with a newer table sends, or a row a
+    truncated table file left unread (a row read from the file holds
+    "" for an empty name). The empty `MString` converts to NULL, and
     `MCreature::SetName` runs `strlen` on it. `CreatureState::SetName`
     now passes a NULL name as an empty one for every caller;
     `test_add_npc_replies.cpp` makes both kinds of NPC.

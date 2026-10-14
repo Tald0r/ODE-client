@@ -126,7 +126,7 @@ const int SLAYER_SPRITE = 301;		// a slayer's sprite not marked an NPC's
 const int OUSTERS_NPC = 302;
 const int VAMPIRE_NPC = 303;
 const int BATHORY = 217;
-const int NAMELESS = 304;			// in the table, never named
+const int NAMELESS = 304;			// in the table, never read from its file
 const int PAST_THE_TABLE = 900;
 
 struct World : GameModelWorld
@@ -166,7 +166,6 @@ struct World : GameModelWorld
 		creatureTypes.Init(700);
 		const std::pair<int, int> spriteOf[] = {{SLAYER_NPC, 1}, {SLAYER_SPRITE, 2}, {OUSTERS_NPC, 3}, {VAMPIRE_NPC, 4}, {BATHORY, 4},
 			{638, 3}, {657, 3}, {639, 3}, {654, 3}};
-		testfw::MutableRow(creatureTypes, NAMELESS).SpriteTypes.Init(1);
 		for (const auto& [npcID, sprite] : spriteOf)
 		{
 			CREATURETABLE_INFO& row = testfw::MutableRow(creatureTypes, npcID);
@@ -258,6 +257,14 @@ TEST(AddNPCReplies, ItsGuildIsItsSpritesOrItsZones)
 		Receive(++id, VAMPIRE_NPC);
 		const bool tepez = zoneID != 1006 && zoneID != 1116;
 		CHECK(calls.size() > 1 && calls[1] == "guild|new|" + N(tepez ? GUILDID_TEPEZ : GUILDID_BATHORY));
+	}
+	// A slayer's or an ouster's sprite outranks Tepez's zones.
+	g_nZoneLarge = 1007;
+	for (const auto& [npcID, guild] : {std::pair<int, int>{SLAYER_NPC, GUILDID_EVE}, {OUSTERS_NPC, GUILDID_OUSTERS}})
+	{
+		calls.clear();
+		Receive(++id, npcID);
+		CHECK(calls.size() > 1 && calls[1] == "guild|new|" + N(guild));
 	}
 	g_nZoneLarge = 60;
 	g_bZonePlayerInLarge = false;
