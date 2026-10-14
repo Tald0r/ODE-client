@@ -3504,6 +3504,7 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.SetDelayEternity = UI_SetDelayEternity,
 	.GetOtherInfoName = UI_GetOtherInfoName,
 	.RunOtherInfo = [](MCreature* pCreature) { UI_RunOtherInfo(pCreature); },
+	.ExecuteHelpEvent = [](int helpEvent) { ExecuteHelpEvent(static_cast<HELP_EVENT>(helpEvent)); },
 };
 
 static const DialogPresentation::Host s_DialogPresentationHost = {
@@ -3527,6 +3528,8 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.RunStorageBuy = UI_RunStorageBuy,
 	.OpenInventoryToSell = UI_OpenInventoryToSell,
 	.CloseRequestResurrectWindow = UI_CloseRequestResurrectWindow,
+	.SetShop = UI_SetShop,
+	.RunShop = UI_RunShop,
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3714,6 +3717,9 @@ static const CreatureState::Host s_CreatureStateHost = {
 		return true;
 	},
 	.HasEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->HasEffectStatus(status); },
+	.CreateFixedShelf = [](MCreature* pCreature, bool mysterious) {
+		if (pCreature->GetClassType() == MCreature::CLASS_NPC) static_cast<MNPC*>(pCreature)->CreateFixedShelf(mysterious);
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

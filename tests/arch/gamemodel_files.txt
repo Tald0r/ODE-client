@@ -1098,3 +1098,8 @@ Client/PacketHandler/GCUseOKHandler.cpp
 
 # A shop's market condition, before the player sells to it.
 Client/PacketHandler/GCShopMarketConditionHandler.cpp
+
+# An NPC's shop list, its mysterious list, and its versions.
+Client/PacketHandler/GCShopListHandler.cpp
+Client/PacketHandler/GCShopListMysteriousHandler.cpp
+Client/PacketHandler/GCShopVersionHandler.cpp

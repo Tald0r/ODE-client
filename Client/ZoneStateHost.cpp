@@ -472,4 +472,9 @@ bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status)
 	return s_Host && s_Host->HasEffectStatus ? s_Host->HasEffectStatus(pCreature, status) : false;
 }
 
+void CreateFixedShelf(MCreature* pCreature, bool mysterious)
+{
+	if (s_Host && s_Host->CreateFixedShelf) s_Host->CreateFixedShelf(pCreature, mysterious);
+}
+
 }

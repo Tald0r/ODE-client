@@ -58,4 +58,9 @@ void RunOtherInfo(MCreature* pCreature)
 	if (s_Host && s_Host->RunOtherInfo) s_Host->RunOtherInfo(pCreature);
 }
 
+void ExecuteHelpEvent(int helpEvent)
+{
+	if (s_Host && s_Host->ExecuteHelpEvent) s_Host->ExecuteHelpEvent(helpEvent);
+}
+
 }
