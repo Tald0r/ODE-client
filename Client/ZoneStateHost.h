@@ -81,6 +81,14 @@ struct Host
 	MCreature* (*NewCreatureWear)() = nullptr;
 	bool (*AddCreature)(MCreature* pCreature) = nullptr;
 	void (*DeleteCreature)(MCreature* pCreature) = nullptr;
+	// The creature in the zone's creature list with this ID, not one lying
+	// in a corpse (GetCreature finds those too); NULL for none.
+	MCreature* (*GetCreatureOnly)(TYPE_OBJECTID id) = nullptr;
+	// The ID of the item lying in the cell; OBJECTID_NULL for none.
+	TYPE_OBJECTID (*GetItemID)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// A new corpse item holding the creature, which it owns from then on:
+	// freeing the corpse frees the creature. NULL without a host.
+	MItem* (*NewCorpse)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -111,6 +119,9 @@ void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 MCreature* NewCreature();
 MCreature* NewCreatureWear();
 bool AddCreature(MCreature* pCreature);
+MCreature* GetCreatureOnly(TYPE_OBJECTID id);
+TYPE_OBJECTID GetItemID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+MItem* NewCorpse(MCreature* pCreature);
 void DeleteCreature(MCreature* pCreature);
 
 }
@@ -317,6 +328,12 @@ struct Host
 	// sets its attack speed. Nothing for a coat past the ousters' coats, or
 	// for a creature that wears none.
 	void (*SetAddonToOusters3)(MCreature* pCreature, const PCOustersInfo3* pInfo) = nullptr;
+	// Lays the creature down dead, a corpse (its own body's last frame).
+	void (*SetCorpse)(MCreature* pCreature) = nullptr;
+	// Whether the creature is dead; false without a host.
+	bool (*IsDead)(MCreature* pCreature) = nullptr;
+	// How many items a corpse holds for looting.
+	void (*SetItemCount)(MCreature* pCreature, int count) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -438,5 +455,8 @@ void SetCompetence(MCreature* pCreature, int competence);
 void SetMasterEffectType(MCreature* pCreature, int type);
 void SetUnionGuildID(MCreature* pCreature, int unionID);
 void SetAddonToOusters3(MCreature* pCreature, const PCOustersInfo3* pInfo);
+void SetCorpse(MCreature* pCreature);
+bool IsDead(MCreature* pCreature);
+void SetItemCount(MCreature* pCreature, int count);
 
 }
