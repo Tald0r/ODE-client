@@ -192,6 +192,15 @@ struct Host
 	void (*SetItemCheckBuffer)(MItem* pItem, ITEM_CHECK_BUFFER status) = nullptr;
 	// Makes the player wait on that verification from the server.
 	void (*SetWaitVerify)(WAIT_VERIFY verify) = nullptr;
+	// The special action (skill) chosen, kept across a new player.
+	int (*GetSpecialActionInfo)() = nullptr;
+	void (*SetSpecialActionInfo)(int actionInfo) = nullptr;
+	// The normal attack mode.
+	void (*SetAttackModeNormal)() = nullptr;
+	// Deletes the player and makes a new one.
+	void (*Recreate)() = nullptr;
+	// The player's sector position, X and Y set alone.
+	void (*SetXY)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -255,5 +264,10 @@ void SetExtraInfo(ExtraInfo* pExtraInfo);
 void CheckAffectStatus(MItem* pItem);
 void SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status);
 void SetWaitVerify(WAIT_VERIFY verify);
+int GetSpecialActionInfo();
+void SetSpecialActionInfo(int actionInfo);
+void SetAttackModeNormal();
+void Recreate();
+void SetXY(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 
 }

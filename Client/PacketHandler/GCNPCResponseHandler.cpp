@@ -145,10 +145,6 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 				BOOL	bInGear			= static_cast<BOOL>(g_pTempInformation->Value2);
 				
 				//--------------------------------------------------------------
-				// repair an inventory item
-				//--------------------------------------------------------------		
-
-				//--------------------------------------------------------------
 				// repairing everything
 				//--------------------------------------------------------------
 				if (pModifyItem==NULL && !bInInventory && bInGear)

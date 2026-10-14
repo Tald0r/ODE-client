@@ -120,6 +120,7 @@
 #include "QuestWarPresentationHost.h"
 #include "NoticePresentationHost.h"
 #include "NPCPresentationHost.h"
+#include "ZoneLoadingHost.h"
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
@@ -2705,6 +2706,7 @@ void ReleaseAllObjects()
 	QuestWarPresentation::SetHost(nullptr);
 	NoticePresentation::SetHost(nullptr);
 	NPCPresentation::SetHost(nullptr);
+	ZoneLoading::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
@@ -3521,6 +3523,65 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 extern bool g_bEventQuestEnding;
 extern void SetFlagTo( bool bTae );
 
+extern WORD g_MyBatColorSet;	// GameMain.cpp's
+
+static const ZoneLoading::Host s_ZoneLoadingHost = {
+	.RemoveZoneEvents = []() { g_pEventManager->RemoveAllEventByType(EVENTTYPE_ZONE); },
+	.LoadAllAddonSprites = []() { LoadingAddonSPK( true ); },
+	.InterfaceRace = UI_GetInterfaceRace,
+	.ChangeInterfaceRace = UI_ChangeInterfaceRace,
+	.InitSkillTree = InitSkillTree,
+	.SetSMSCharge = [](int charge) { g_char_slot_ingame.m_SMS_Charge = charge; },
+	.SetPowerjjangPoint = [](int point) { g_char_slot_ingame.m_Powerjjang_Point = point; },
+	.CloseWindows = []() {
+		UI_UnlockGear();
+		UI_UnlockItem();
+		UI_UnlockItemTrade();
+		UI_CloseShop();
+		UI_CloseBookcase();
+		UI_CloseExchange();
+		UI_CloseExchangeAsk();
+		UI_CloseExchangeCancel();
+		UI_CloseRepair();
+		UI_CloseSell();
+		UI_CloseStorage();
+		UI_ClosePartyCancel();
+		UI_ClosePartyAsk();
+		UI_ClosePartyRequest();
+		UI_ClosePartyCancel();
+		g_pUIMessageManager->Execute(UI_CLOSE_TRACE_WINDOW, 0, 0, NULL);
+
+		if (g_pUIDialog!=NULL)
+		{
+			g_pUIDialog->ClosePCTalkDlg();
+			g_pUIDialog->CloseMessageDlg();
+		}
+	},
+	.StartProgress = [](int zoneID) { UI_StartProgress( zoneID ); },
+	.DrawProgress = UI_DrawProgress,
+	.EndProgress = UI_EndProgress,
+	.InitTopView = []() {
+		if (!g_pTopView->IsInit())
+		{
+			g_pTopView->Init();
+		}
+	},
+	.PreloadsMonsters = []() -> bool { return g_pUserOption->IsPreLoadMonster; },
+	.LoadCreature = [](int spriteType) { LoadCreature( spriteType ); },
+	.HasLargeZone = []() { return g_pZoneLarge != NULL; },
+	.AddMonsterSpriteTypes = [](const COrderedList<int>& types) { g_pTopView->AddMonsterSpriteTypes( types ); },
+	.ReleaseCreatureSpritesExcept = [](const COrderedList<int>& types) { ReleaseUselessCreatureSPKExcept( types ); },
+	.MoveZone = MoveZone,
+	.LoadZone = [](int zoneID) { LoadZone( zoneID ); },
+	.SetEncryptCode = []() { g_pSocket->setEncryptCode(); },
+	.StampFrameClock = StampFrameClock,
+	.MillisecondsToFrames = [](std::uint32_t ms) -> std::uint32_t { return ConvertMillisecondToFrame( ms ); },
+	.AdvanceFrame = [](int frames) { g_CurrentFrame += frames; },
+	.SetMyBatColorSet = [](std::uint16_t colorSet) { g_MyBatColorSet = colorSet; },
+	.ShowPlayerHP = []() { UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() ); },
+	.EnterWaitSetPositionMode = []() { SetMode( MODE_WAIT_SETPOSITION ); },
+};
+
 static const NPCPresentation::Host s_NPCPresentationHost = {
 	.OpenInventoryToRepair = UI_OpenInventoryToRepair,
 	.RunSelectWayPoint = UI_RunSelectWayPoint,
@@ -3731,6 +3792,18 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.CheckAffectStatus = [](MItem* pItem) { g_pPlayer->CheckAffectStatus(pItem); },
 	.SetItemCheckBuffer = [](MItem* pItem, PlayerState::ITEM_CHECK_BUFFER status) { g_pPlayer->SetItemCheckBuffer(pItem, status); },
 	.SetWaitVerify = [](PlayerState::WAIT_VERIFY verify) { g_pPlayer->SetWaitVerify(verify); },
+	.GetSpecialActionInfo = []() { return static_cast<int>(g_pPlayer->GetSpecialActionInfo()); },
+	.SetSpecialActionInfo = [](int actionInfo) { g_pPlayer->SetSpecialActionInfo( actionInfo ); },
+	.SetAttackModeNormal = []() { g_pPlayer->SetAttackModeNormal(); },
+	.Recreate = []() {
+		delete g_pPlayer;
+		g_pPlayer = new MPlayer;
+		DEBUG_ADD_FORMAT("[g_pPlayer] %p", static_cast<const void*>(g_pPlayer));
+	},
+	.SetXY = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		g_pPlayer->SetX( x );
+		g_pPlayer->SetY( y );
+	},
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -4637,6 +4710,7 @@ InitGameObject()
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	NoticePresentation::SetHost(&s_NoticePresentationHost);
 	NPCPresentation::SetHost(&s_NPCPresentationHost);
+	ZoneLoading::SetHost(&s_ZoneLoadingHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);

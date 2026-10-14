@@ -298,6 +298,8 @@ TEST(ReconnectGameReplies, TheGameServerIsReachedAndTheLoginServerToldOverUDP)
 		"flushed|" + N(static_cast<long long>(allBytes)), "wait update info"}));
 	CHECK(player.getPlayerStatus() == CPS_AFTER_SENDING_CG_CONNECT);
 	CheckConnect(player, 0x0BADF00D, PC_OUSTERS, kMacAddress);
+	// No linger time (setLinger(0) is the fresh socket's own default).
+	CHECK(player.getSocket()->getLinger() == 0);
 #ifndef _WIN32
 	// Non-blocking, or the main loop would stall on it (Windows cannot say).
 	CHECK(player.getSocket()->isNonBlocking());
@@ -307,6 +309,8 @@ TEST(ReconnectGameReplies, TheGameServerIsReachedAndTheLoginServerToldOverUDP)
 		// The Korean config's check port has heard of the character, from
 		// the client's own UDP port, before the wait for the first update.
 		CHECK(heardAtWait.text.find("Kasper") != std::string::npos && heardAtWait.port == s_UDPPort);
+		// Once.
+		CHECK(Received(*world.korean, kSilence).text.empty());
 		CHECK(Received(*world.foreign0, kSilence).text.empty() && Received(*world.foreign1, kSilence).text.empty());
 	}
 }
