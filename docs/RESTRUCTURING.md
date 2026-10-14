@@ -4844,7 +4844,10 @@ rounds settled* for the host rules). Test fixtures share
     with and without the protection, an unseen user, no zone, no
     player, past the table).
   - Recorded, not fixed: OK2 returns without freeing its queue when the
-    user's basic action is a result action.
+    user's basic action is a result action. In the executable,
+    `SkillShadowDancing`, `SkillIllendue` and `SkillBlazeWalk` go on with
+    a fake creature they deleted when the zone refused it, and
+    `SkillBlazeWalk` leaves its direction unset from grade 3.
 
 - [x] **4.178 A creature turning into a slayer:** move
   `GCMorphSlayer2Handler` into `gamemodel`.

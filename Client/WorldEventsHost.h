@@ -65,13 +65,14 @@ struct Host
 	// status and duration EffectInfo holds): each is put on it for its
 	// duration in frames (a blood drain's ten times longer) less
 	// delayedFrame, the frames already spent loading, and one with no time
-	// left is skipped. A coma also makes the creature a corpse; a trap's,
-	// Back Stab 3's, the ice of soul stone's and the ground elemental
-	// centre's start their action when the status table names one, for a
-	// set time (18 frames; 19 for the ice; 0xFFFF for the centre; a trap's
-	// own duration, converted to frames twice). The host empties the list,
-	// though getListNum() still counts it, so read it first; pEffectInfo
-	// may be NULL.
+	// left is skipped. A coma also makes the creature a corpse. Back Stab
+	// 3, the ice of soul stone, a trap and the ground elemental centre,
+	// when the status table names an action, start it for a set number of
+	// frames (18; 19 for the ice; 0xFFFF for the centre; the trap's
+	// duration in frames), and the status then takes that number, converted
+	// to frames again, as its duration. The host empties the list, though
+	// getListNum() still counts it, so read it first; pEffectInfo may be
+	// NULL.
 	void (*SetEffectInfo)(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame) = nullptr;
 	// Gilles de Rais's map effects, in his hard zone (1413) only, over the
 	// upper (1) or lower (2) half: as the boss appears (bAppearBossMonster)
@@ -94,13 +95,13 @@ struct Host
 	void (*AddRaceSlayerMonster)(GCAddMonster* pPacket) = nullptr;
 	void (*AddRaceOustersMonster)(GCAddMonster* pPacket) = nullptr;
 	// Skills shown with copies or summoned creatures, the user striking the
-	// target: Shadow Dancing's and Illendue's fading copies and Blaze
-	// Walk's strikes, each striking with skillID (SKILL_ATTACK_MELEE meaning
-	// the user's basic action), one strike per grade from 0 (the game's
-	// shows three at most, and grade 3 on is undefined); the plasma rocket
-	// launcher's rocket; and the wild wolf, the user turned to the target
-	// and the wolf running at it, to eat it when bEatCorpse (the packet's
-	// grade). Either creature may be NULL; then nothing is shown.
+	// target: Shadow Dancing's three and Illendue's four fading copies, and
+	// Blaze Walk's strikes, one per grade from 0 (the game's shows three at
+	// most, and grade 3 on is undefined), each striking with skillID
+	// (SKILL_ATTACK_MELEE meaning the user's basic action); the plasma
+	// rocket launcher's rocket; and the wild wolf, the user turned to the
+	// target and the wolf running at it, to eat it when bEatCorpse (the
+	// packet's grade). Either creature may be NULL; then nothing is shown.
 	void (*SkillShadowDancing)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
 	void (*SkillIllendue)(MCreature* pUser, MCreature* pTarget, int skillID) = nullptr;
 	void (*SkillBlazeWalk)(MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) = nullptr;

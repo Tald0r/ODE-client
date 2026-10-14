@@ -13,6 +13,7 @@
 #include "Gpackets/GCSkillToObjectOK1.h"
 #include "Gpackets/GCSkillToObjectOK2.h"
 #include "Gpackets/GCSkillToObjectOK5.h"
+#include <cstddef>
 #include <map>
 #include <set>
 #include <string>
@@ -297,7 +298,7 @@ std::vector<std::string> OnPlayer(TYPE_ACTIONINFO action, TYPE_ACTIONINFO result
 // The calls after the first n.
 std::vector<std::string> Drop(std::vector<std::string> all, std::size_t n)
 {
-	all.erase(all.begin(), all.begin() + static_cast<long>(n));
+	all.erase(all.begin(), all.begin() + static_cast<std::ptrdiff_t>(n));
 	return all;
 }
 
@@ -615,7 +616,7 @@ TEST(SkillObjectReplies, AnUnseenUsersSkillRisesFromThePlayer)
 		"Self.effect|" + N(EFFECTSTATUS_CURSE_PARALYSIS) + "|" + F(), "Self.delay|" + N(kSkill + kMin) + "|" + F(),
 		"Self.result|" + N(kSkill + kMin) + "|7|30|31|0"}));
 	// The wolf from a corpse's creature runs at the player, then the skill
-	// goes on from it unseen.
+	// goes on from that creature, which faces the player and casts.
 	calls.clear();
 	world.Row(kSkill).SetEffectStatus(EFFECTSTATUS_NULL);
 	ReceiveOnPlayer(2001, SKILL_WILD_WOLF, 1);
@@ -699,4 +700,42 @@ TEST(SkillObjectReplies, TheRewrittenSkillDecidesTheStepAndTheSpecialsTheCastOne
 	ReceiveOnPlayer(1001, SKILL_PLASMA_ROCKET_LAUNCHER);
 	CHECK(calls == Then(Then(Then({"Ogre.rocket|Vanda"}, Cast(SKILL_ATTACK_MELEE)), Then({"Self.rocket|Vanda"}, Adds(SKILL_ATTACK_MELEE))),
 		Then({"Ogre.rocket|Self"}, OnPlayer(SKILL_ATTACK_MELEE))));
+}
+
+TEST(SkillObjectReplies, TheWildWolfOnThePlayerAndEachCorpseAtEitherGrade)
+{
+	World world;
+	// From a live user, eating or hunting by grade.
+	ReceiveOnPlayer(1001, SKILL_WILD_WOLF, 1);
+	ReceiveOnPlayer(1001, SKILL_WILD_WOLF, 0);
+	CHECK(calls == Then(Then({"Ogre.wild wolf|Self|eat"}, OnPlayer(SKILL_WILD_WOLF)), Then({"Ogre.wild wolf|Self|hunt"}, OnPlayer(SKILL_WILD_WOLF))));
+	// From or at a corpse, at the grade not covered elsewhere.
+	calls.clear();
+	ReceiveOnPlayer(2001, SKILL_WILD_WOLF, 0);
+	ReceivePlayers(2001, SKILL_WILD_WOLF, 1);
+	CHECK(calls.size() == 7 && calls[0] == "Fallen.wild wolf|Self|hunt" && calls[5] == "Self.wild wolf|Fallen|eat");
+}
+
+TEST(SkillObjectReplies, AnUnseenUsersWeaponSkillIsCastAsSent)
+{
+	World world;
+	world.Row(kSkill).SetAffectCurrentWeaponAction();
+	ReceiveOnPlayer(1009, kSkill);
+	CHECK(calls.size() == 3 && calls[0] == "cell|" + N(kSkill + kMin) + "|30,31,0|dir 6|7@30,31,0|" + F() + "|resume");
+}
+
+TEST(SkillObjectReplies, BlitzSlidingLandsOnItsUser)
+{
+	World world;
+	// Its result shows on the user the queue names: the player for its
+	// own skill, the caster otherwise.
+	const TYPE_ACTIONINFO result = SKILL_BLITZ_SLIDING_ATTACK + kMin;
+	Receive(1001, 1002, SKILL_BLITZ_SLIDING_ATTACK);
+	ReceivePlayers(1002, SKILL_BLITZ_SLIDING_ATTACK);
+	ReceiveOnPlayer(1001, SKILL_BLITZ_SLIDING_ATTACK);
+	CHECK(calls == std::vector<std::string>({"Ogre.face|20|21", "Ogre.cast|" + N(SKILL_BLITZ_SLIDING_ATTACK) + "|1002",
+		"Vanda.delay|" + N(result) + "|" + F(), "Ogre.result|" + N(result) + "|1002|20|21|0",
+		"Self.adds|9", "Vanda.delay|" + N(result) + "|" + F(), "Self.result|" + N(result) + "|1002|20|21|0",
+		"Ogre.face|30|31", "Ogre.cast|" + N(SKILL_BLITZ_SLIDING_ATTACK) + "|7",
+		"Self.delay|" + N(result) + "|" + F(), "Ogre.result|" + N(result) + "|7|30|31|0"}));
 }
