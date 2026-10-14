@@ -41,8 +41,9 @@ struct Host
 	// Lays the item in the zone, falling when bDropping; the zone owns it
 	// when this answers true.
 	bool (*AddItem)(MItem* pItem, bool bDropping) = nullptr;
-	// Takes the creature with this ID out of the zone; false when it is
-	// not there.
+	// Takes the creature with this ID out of the zone, freeing it unless
+	// it is the player; false when the zone does not hold it. MZone's also
+	// answers false, and keeps the creature, when no sector holds it.
 	bool (*RemoveCreature)(TYPE_OBJECTID id) = nullptr;
 };
 

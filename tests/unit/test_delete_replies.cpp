@@ -158,11 +158,13 @@ TEST(DeleteReplies, AnInventoryDeletionEndsADropOntoARelicTableOrACreature)
 	world.Stocked();
 	Goods other(50);
 	// The deleted item is the one being dropped: the mouse lets it go too.
+	MItem* pHeld = mouseItem;
 	MItem* pDropped = world.inventory.GetItem(2, 1);
 	checkItem = pDropped;
 	checkStatus = PlayerState::ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE;
 	ReceiveInventoryDeletion(42);
 	CHECK(calls == std::vector<std::string>({"mouse drops", "buffer cleared", "freed|42"}));
+	delete pHeld;
 	// Another item is being dropped: only the drop ends.
 	calls.clear();
 	mouseItem = new Goods(43);
@@ -171,11 +173,27 @@ TEST(DeleteReplies, AnInventoryDeletionEndsADropOntoARelicTableOrACreature)
 	ReceiveInventoryDeletion(41);
 	CHECK(calls == std::vector<std::string>({"buffer cleared", "freed|41"}));
 	CHECK(mouseItem != nullptr);
-	// From the mouse, being dropped onto a creature.
+	// From the mouse, being dropped onto a creature or a relic table (the
+	// dropped item is always the mouse's): the mouse lets it go twice.
 	calls.clear();
 	checkItem = mouseItem;
 	ReceiveInventoryDeletion(43);
 	CHECK(calls == std::vector<std::string>({"mouse drops", "mouse drops", "buffer cleared", "freed|43"}));
+	calls.clear();
+	mouseItem = checkItem = new Goods(44);
+	checkStatus = PlayerState::ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE;
+	ReceiveInventoryDeletion(44);
+	CHECK(calls == std::vector<std::string>({"mouse drops", "mouse drops", "buffer cleared", "freed|44"}));
+}
+
+TEST(DeleteReplies, WithNothingOnTheMouseTheInventoryItemIsFreed)
+{
+	World world;
+	CHECK(world.inventory.AddItem(new Goods(41), 1, 1));
+	calls.clear();
+	ReceiveInventoryDeletion(41);
+	CHECK(calls == std::vector<std::string>{"freed|41"});
+	CHECK(world.inventory.GetItem(1, 1) == nullptr);
 }
 
 TEST(DeleteReplies, AnInventoryDeletionLeavesOtherChecksAndMissingItemsAlone)

@@ -4103,11 +4103,17 @@ rounds settled* for the host rules). Test fixtures share
   > that drop first. The inventory deletion no longer drops the item's
   > description before freeing it, since the item's destroy hook does
   > (4.144's reasoning; the item is never NULL there). Without a player
-  > the check buffer reads as empty, where the object deletion
-  > dereferenced the player; MZone's RemoveItem still does. Found by
-  > reading and kept, as upstream's: a drop status with an empty check
-  > buffer would dereference NULL, and an item deleted from the mouse
-  > while it is the one dropped onto a creature lets the mouse go twice.
+  > the check buffer reads as empty, where both deletions dereferenced
+  > the player (the inventory one once it found the item); MZone's
+  > RemoveItem still does. Found by reading and kept, as upstream's:
+  > - a drop status with an empty check buffer would dereference NULL
+  >   (unreachable: the buffer is set with its status);
+  > - the dropped item is always the mouse's, so an item deleted while
+  >   it is being dropped lets the mouse go twice (harmless: letting go
+  >   only clears the mouse's pointer);
+  > - an object deletion of the relic being dropped lets the mouse go,
+  >   but the relic is not in the zone, so nothing frees it.
+  >
   > R1 is 140 Windows / 138 Ninja.
   - Owner: membership, R1, the zone entry and adapter, and
     `test_delete_replies.cpp` (the mouse, the inventory, a missing item;
