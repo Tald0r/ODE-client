@@ -94,6 +94,11 @@ Client/WinLib/CWinUpdate.cpp
 Client/WinLib/CWinUpdate.h
 Client/MWorkNode.cpp
 Client/MWorkNode.h
+
+# The debug kit's ini reader and the message-name table (4.206).
+Client/DebugKit.cpp
+Client/DebugKit.h
+Client/StdAfx.h
 Client/ShowTimeData.cpp
 Client/ShowTimeChecker.cpp
 Client/ShowTimeChecker.h

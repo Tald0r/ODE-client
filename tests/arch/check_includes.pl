@@ -145,7 +145,9 @@ die "$members_file lists only " . scalar(@members) . " files - truncated?" unles
 #       or a file listed in the membership file. Anything else - an
 #       SDL, UI, dxlib or unlisted game header - is a reach out of the
 #       model.
-#   M2  As W2: no MinTr.h / DebugInfo.h / DebugKit.h.
+#   M2  As W2: no MinTr.h / DebugInfo.h. DebugKit.h is allowed here: its
+#       classes are gamemodel's since task 4.206 (its start-up, which
+#       names executable globals, moved to Client.cpp).
 #----------------------------------------------------------------------
 my @gm_listed = read_list($gamemodel_file);
 die "$gamemodel_file lists only " . scalar(@gm_listed) . " files - truncated?" unless @gm_listed >= 10;
@@ -299,6 +301,9 @@ if (open my $fh, '<', 'tests/arch/baseline.txt') {
 # Closure walk
 #----------------------------------------------------------------------
 my %banned = map { $_ => 1 } qw(MinTr.h DebugInfo.h DebugKit.h);
+# gamemodel defines DebugKit.h's classes (task 4.206); packetwire, which
+# does not link gamemodel, still may not include it.
+my %banned_in_gamemodel = map { $_ => 1 } qw(MinTr.h DebugInfo.h);
 
 sub violate {
 	my ($key) = @_;
@@ -355,7 +360,7 @@ while (@queue) {
 		next if grep { defined $_->[0] && !$_->[0] } @stack;	# dead branch
 
 		my ($base) = $inc =~ m{([^/\\]+)$};
-		if ($banned{$base}) {
+		if ($rule eq 'M' ? $banned_in_gamemodel{$base} : $banned{$base}) {
 			violate("${rule}2|$file|$inc");
 			next;
 		}
