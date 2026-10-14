@@ -49,7 +49,6 @@ struct FakeCreature
 {
 	TYPE_OBJECTID id = 0;
 	int type = 0;
-	std::string name;
 	bool dead = false;
 	// Set once the corpse that owns it is freed: any later use fails.
 	bool freed = false;
@@ -164,7 +163,7 @@ const CreatureState::Host creature = []() {
 		calls.push_back("dressed|" + Who(p) + "|" + N(pInfo->getObjectID()));
 	};
 
-	host.SetName = [](MCreature* p, const char* name) { calls.push_back("name|" + Who(p) + "|" + name); Fake(p).name = name; };
+	host.SetName = [](MCreature* p, const char* name) { calls.push_back("name|" + Who(p) + "|" + name); };
 	host.SetGuildNumber = [](MCreature* p, int guild) { calls.push_back("guild|" + Who(p) + "|" + N(guild)); };
 	host.IsDead = [](MCreature* p) { return Fake(p).dead; };
 	host.SetStop = [](MCreature* p) { calls.push_back("stops|" + Who(p)); };

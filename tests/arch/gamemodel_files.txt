@@ -1193,3 +1193,9 @@ Client/PacketHandler/GCAddOustersCorpseHandler.cpp
 # An NPC appearing, and the guild IDs it is given.
 Client/PacketHandler/GCAddNPCHandler.cpp
 Client/MGuildType.h
+# A trade asked for, accepted, refused or cancelled.
+Client/PacketHandler/GCTradePrepareHandler.cpp
+# The player transforming between a slayer and a vampire.
+Client/PacketHandler/GCMorph1Handler.cpp
+# An item picked up from the ground, as the server confirms it.
+Client/PacketHandler/GCDeleteandPickUpOKHandler.cpp

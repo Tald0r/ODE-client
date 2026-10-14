@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 class GCGoodsList;
 
 namespace TradePresentation {
@@ -15,6 +17,10 @@ struct Host
 	void (*CloseExchangeCancel)() = nullptr;
 	void (*UnlockItem)() = nullptr;
 	void (*RunItemShop)(GCGoodsList* pPacket) = nullptr;
+	// Opens the exchange window with the creature of the ID, or asks the
+	// player whether to trade with it.
+	void (*RunExchange)(std::uint32_t otherID) = nullptr;
+	void (*RunExchangeAsk)(std::uint32_t otherID) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -25,5 +31,7 @@ void CloseExchangeAsk();
 void CloseExchangeCancel();
 void UnlockItem();
 void RunItemShop(GCGoodsList* pPacket);
+void RunExchange(std::uint32_t otherID);
+void RunExchangeAsk(std::uint32_t otherID);
 
 }

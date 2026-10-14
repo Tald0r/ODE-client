@@ -92,6 +92,12 @@ struct Host
 	MItem* (*NewCorpse)(MCreature* pCreature) = nullptr;
 	// The same as NewCreature for an NPC (MNPC).
 	MCreature* (*NewNPC)() = nullptr;
+	// Puts the player in the zone again, under its ID now: the zone's
+	// player and the player's zone.
+	void (*SetPlayer)() = nullptr;
+	// Takes the item of the ID off the zone's ground without freeing it:
+	// the player has it now.
+	void (*PickupItem)(TYPE_OBJECTID id) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -126,6 +132,8 @@ MCreature* GetCreatureOnly(TYPE_OBJECTID id);
 TYPE_OBJECTID GetItemID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 MItem* NewCorpse(MCreature* pCreature);
 MCreature* NewNPC();
+void SetPlayer();
+void PickupItem(TYPE_OBJECTID id);
 void DeleteCreature(MCreature* pCreature);
 
 }

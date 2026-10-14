@@ -9,21 +9,23 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCDeleteandPickUpOK.h"
-#include "ClientDef.h"
-#include "MItem.h"
-#include "MInventory.h"
-#include "MMoneyManager.h"
-#include "SkillDef.h"
-#include "MSkillManager.h"
-#include "TempInformation.h"
-#include "MQuickSlot.h"
-#include "UIFunction.h"
-
+#include "BonusSkillHost.h"
 #include "ClientPlayer.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "GameInfoPresentationHost.h"
+#include "MHelpDef.h"
+#include "MInventory.h"
+#include "MItem.h"
+#include "MMoneyManager.h"
+#include "MQuickSlot.h"
+#include "MSkillManager.h"
+#include "PlayerStateHost.h"
+#include "SkillDef.h"
+#include "TempInformation.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "Packet/Cpackets/CGAddMouseToQuickSlot.h"
-
-// MItem.cpp에 있다.
-bool	IsBombMaterial(const MItem* pItem);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -35,22 +37,22 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 
 
 	//---------------------------------------------
-	// ItemCheckBuffer의 item기억
+	// remember the ItemCheckBuffer's item
 	//---------------------------------------------
-	MItem* pItem = g_pPlayer->GetItemCheckBuffer();
+	MItem* pItem = PlayerState::GetItemCheckBuffer();
 
 	//---------------------------------------------
-	// buffer의 상태
+	// the buffer's status
 	//---------------------------------------------
-	MPlayer::ITEM_CHECK_BUFFER	status = g_pPlayer->GetItemCheckBufferStatus();
+	PlayerState::ITEM_CHECK_BUFFER	status = PlayerState::GetItemCheckBufferStatus();
 
 	//---------------------------------------------
-	// item check buffer를 없애준다.
+	// clear the item check buffer.
 	//---------------------------------------------
-	g_pPlayer->ClearItemCheckBuffer();
+	PlayerState::ClearItemCheckBuffer();
 
 	//---------------------------------------------
-	// 주울 item이 없다? 뭐지..
+	// no item to pick up? what..
 	//---------------------------------------------
 	if (pItem==NULL)
 	{
@@ -64,13 +66,13 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 	BOOL bRemoveZoneItem = FALSE;
 
 	//------------------------------------------------------------------------
-	// id가 같은 경우..
+	// the same id..
 	//------------------------------------------------------------------------
 	if (pItem->GetID() == pPacket->getObjectID())
 	{		
 		BOOL bSkillCheck = FALSE;
 
-		// 우리편 성물인경우 바로 제거
+		// our side's relic: remove it at once
 //		if (pItem->GetItemClass()==ITEM_CLASS_RELIC// && 
 //				(
 //					(pItem->GetItemType() == 0 || pItem->GetItemType() == 1 ) && g_pPlayer->IsSlayer() ||
@@ -81,98 +83,98 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 //			// sound
 //			PlaySound( pItem->GetTileSoundID() );
 //
-//			// zone에서 제거
+//			// remove it from the zone
 //			bRemoveZoneItem = TRUE;
 //			//g_pZone->RemoveItem( pItem->GetID() );
 //			
 //		}
 
 		//------------------------------------------------------------------------
-		// 이벤트용 아이템인 경우... 제거한다.
+		// an event item... remove it.
 		//------------------------------------------------------------------------
 //		else 
 		if (pItem->GetItemClass()==ITEM_CLASS_SKULL
 			&& pItem->GetItemType()>=12 && pItem->GetItemType()<=16)
 		{
 			// sound
-			PlaySound( pItem->GetInventorySoundID() );
+			WorldEvents::PlaySound( pItem->GetInventorySoundID() );
 
-			// zone에서 제거
+			// remove it from the zone
 			bRemoveZoneItem = TRUE;
 			//g_pZone->RemoveItem( pItem->GetID() );
 		}
 		//------------------------------------------------------------------------
-		// 돈을 줍는 경우
+		// picking up money
 		//------------------------------------------------------------------------
-		else if (status == MPlayer::ITEM_CHECK_BUFFER_PICKUP_MONEY)
+		else if (status == PlayerState::ITEM_CHECK_BUFFER_PICKUP_MONEY)
 		{
 			int lowWord = pItem->GetCurrentDurability();
 			int highWord = pItem->GetSilver();
 			int money = (highWord << 16) | lowWord;
 
-			// 돈제한 limit넘지 않게
+			// not past the money limit
 			money = min(money, g_pMoneyManager->GetMaxAddMoney());
 			
-			// 돈 증가
+			// add the money
 			g_pMoneyManager->AddMoney( money );
 
 			// sound
-			PlaySound( pItem->GetTileSoundID() );
+			WorldEvents::PlaySound( pItem->GetTileSoundID() );
 
-			// zone에서 제거
+			// remove it from the zone
 			bRemoveZoneItem = TRUE;
 			//g_pZone->RemoveItem( pItem->GetID() );
 		}		
 		//------------------------------------------------------------------------
-		// Item을 Inventory에 넣는 경우
+		// putting the item in the inventory
 		//------------------------------------------------------------------------
-		else if (status == MPlayer::ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY)
+		else if (status == PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY)
 		{
 			const MItem* pOldItem = g_pInventory->GetItem( pItem->GetGridX(), pItem->GetGridY() );
 
 			//------------------------------------------------------------------------
-			// 빈 공간에 추가되는 경우
+			// added to an empty place
 			//------------------------------------------------------------------------
 			if (pOldItem==NULL)
 			{
 				//---------------------------------------------
-				// item을 inventory에 넣는다.
+				// put the item in the inventory.
 				//---------------------------------------------
 				if (g_pInventory->AddItem( pItem, pItem->GetGridX(), pItem->GetGridY() ))
 				{		
 					bSkillCheck = TRUE;
 
-					// inventory에 추가됐을 경우만 zone에서 지워준다.
-					if (g_pZone==NULL)
+					// remove it from the zone only once it is in the inventory.
+					if (!ZoneState::Exists())
 					{					
 						DEBUG_ADD_ERR("[Error] Zone is not Init!");
 					}
 					else
 					{
-						// 줍는 소리를 낸다.
+						// play the pick-up sound.
 						//PlaySound( pItem->GetTileSoundID(),
 						//			false,
 						//			g_pPlayer->GetX(), g_pPlayer->GetY());
 
-						g_pZone->PickupItem( pItem->GetID() );
+						ZoneState::PickupItem( pItem->GetID() );
 					}
 				}
 				//---------------------------------------------
-				// 아니면 뭐지?? item
+				// otherwise what?? item
 				//---------------------------------------------
 				else
 				{
-					// 들어갈 자리가 있었는데 없어진 경우..
+					// there was room, and now there is not..
 					DEBUG_ADD_FORMAT_ERR("[Error] Pickup Item ID no fit position! ID=%d, xy=(%d, %d)", pItem->GetID(), pItem->GetGridX(), pItem->GetGridY());
 				}
 			}
 			//------------------------------------------------------------------------
-			// 기존에 있던 Item에 쌓이는 경우
+			// piled on the item already there
 			//------------------------------------------------------------------------
 			else
 			{
 				//--------------------------------------------------------
-				// 쌓일 수 있는 item인지 한번 더 검증해 준다.
+				// check once more that the items pile.
 				//--------------------------------------------------------
 				if (pOldItem->IsPileItem() && pItem->IsPileItem()
 					&& pOldItem->GetItemClass()==itemClass
@@ -181,30 +183,30 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					bSkillCheck = TRUE;
 
 					//----------------------------------------------------
-					// pItem을 pOldItem에 쌓는다.
+					// pile pItem on pOldItem.
 					//----------------------------------------------------
 					int total = pOldItem->GetNumber() + pItem->GetNumber();
 					if ( static_cast<TYPE_ITEM_NUMBER>(total) > pOldItem->GetMaxNumber() )
 					{
 						DEBUG_ADD_FORMAT_ERR("[Error] Exceed Item Pile Limit : %d/%d", total, pOldItem->GetMaxNumber());
 						
-						// max까지만 추가한다고 가정한다.
+						// assume only up to the max is added.
 						total = pItem->GetMaxNumber();
 					}
 					
 					//---------------------------------------------
-					// OldItem의 개수를 바꿔서 다시 추가한다.
+					// change OldItem's number and add it again.
 					//---------------------------------------------
 					MItem* pNewItem = g_pInventory->RemoveItem( pOldItem->GetID() );
 					pNewItem->SetNumber( total );
 					g_pInventory->AddItem( pNewItem, pItem->GetGridX(), pItem->GetGridY() );
 
-					// item을 완전히 제거한다.
+					// remove the item completely.
 					bRemoveZoneItem = TRUE;
 					//g_pZone->RemoveItem( pItem->GetID() );
 				}
 				//--------------------------------------------------------
-				// 쌓일 수 없는 item인 경우
+				// items that do not pile
 				//--------------------------------------------------------
 				else
 				{
@@ -213,33 +215,33 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 			}
 		}
 		//---------------------------------------------
-		// Item을 Mouse에 붙이는 경우
+		// putting the item on the mouse
 		//---------------------------------------------
-		else if (status == MPlayer::ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE)
+		else if (status == PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE)
 		{
 			bSkillCheck = TRUE;
 
-			UI_PickUpItem( pItem );
+			DialogPresentation::PickUpItem( pItem );
 
-			if (g_pZone==NULL)
+			if (!ZoneState::Exists())
 			{
 				DEBUG_ADD_ERR("[Error] Zone is not Init!");
 			}
 			else
 			{				
-				// 줍는 소리를 낸다.
+				// play the pick-up sound.
 				//PlaySound( pItem->GetTileSoundID(),
 				//			false,
 				//			g_pPlayer->GetX(), g_pPlayer->GetY());
 
 
-				g_pZone->PickupItem( pItem->GetID() );
+				ZoneState::PickupItem( pItem->GetID() );
 			}
 		}
 		//------------------------------------------------------------------------
-		// Item을 Quickslot에 넣는 경우
+		// putting the item in the quick slot
 		//------------------------------------------------------------------------
-		else if (status == MPlayer::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT)
+		else if (status == PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_QUICKSLOT)
 		{
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_VERIFY_PICKUP_TO_QUICKSLOT)
 			{
@@ -248,24 +250,24 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 
 				int itemID = pItem->GetID();
 
-				// 냠..
+				// yum..
 				bSkillCheck = TRUE;	
 				
-				if (g_pZone==NULL)		// 걍 폼이다 - -;
+				if (!ZoneState::Exists())		// just for show - -;
 				{
-					DEBUG_ADD_ERR("[Error] Zone is not Init!");	// 콩가루~
+					DEBUG_ADD_ERR("[Error] Zone is not Init!");	// in pieces~
 				}
 				else 
 				{	
-					UI_PickUpItem( pItem );
+					DialogPresentation::PickUpItem( pItem );
 
-					// zone에서 줍는다.
-					g_pZone->PickupItem( pItem->GetID() );
+					// pick it up from the zone.
+					ZoneState::PickupItem( pItem->GetID() );
 
 					//------------------------------------------
-					// 다시 Quickslot에 넣는다.
+					// put it in the quick slot again.
 					//------------------------------------------
-					if ((g_pQuickSlot!=NULL&&g_pPlayer->IsSlayer()) || (g_pPlayer->IsOusters() &&(
+					if ((g_pQuickSlot!=NULL&&PlayerState::GetRace()==RACE_SLAYER) || (PlayerState::GetRace()==RACE_OUSTERS &&(
 						g_pArmsBand1 != NULL || g_pArmsBand2 != NULL )))
 					{
 						MItem* pQuickItem = NULL ;//= g_pQuickSlot->GetItem( slot );
@@ -276,7 +278,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 						else
 							pQuickSlot = g_pArmsBand1;
 						
-						if( g_pPlayer->IsSlayer() )
+						if( PlayerState::GetRace()==RACE_SLAYER )
 							pQuickItem = g_pQuickSlot->GetItem( slot );
 						else
 							pQuickItem = pQuickSlot->GetItem( slot % 3 );
@@ -285,12 +287,12 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 						bool bSendPacket = false;
 
 						//--------------------------------------------------------
-						// 아무것도 없다면 그냥 넣으면 된다.
+						// nothing there: just put it in.
 						//--------------------------------------------------------
 						if (pQuickItem==NULL)
 						{
 							// mouse --> quickslot
-							UI_DropItem();
+							DialogPresentation::DropItem();
 							
 							if( pQuickSlot!= NULL)
 							{
@@ -307,8 +309,8 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 							bSendPacket = true;
 						}
 						//--------------------------------------------------------
-						// 뭔가 있는 경우면 쌓일 수 있는 경우일 것이다.
-						// 다시 한번 검증해준다.
+						// something there must be something it piles on.
+						// check once more.
 						//--------------------------------------------------------
 						else
 						{
@@ -316,16 +318,16 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 								&& pQuickItem->GetItemType()==pItem->GetItemType())
 							{
 								//----------------------------------------------------
-								// 더한 개수가 max를 넘지 않아야 한다.
+								// the sum must not pass the max.
 								//----------------------------------------------------
 								int addTotal = pQuickItem->GetNumber() + pItem->GetNumber();
 								if ( static_cast<TYPE_ITEM_NUMBER>(addTotal) <= pQuickItem->GetMaxNumber() )
 								{
-									UI_DropItem();
+									DialogPresentation::DropItem();
 
-									delete pItem;	// 합쳐지므로 제거한다.
+									delete pItem;	// merged, so delete it.
 
-									pItem = pQuickItem;	// 아래에서 pItem을 참조하기 때문에..
+									pItem = pQuickItem;	// pItem is read below..
 									
 									pQuickItem->SetNumber( addTotal );
 
@@ -337,7 +339,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 						if (bSendPacket)
 						{
 							//------------------------------------------
-							// 이거는 검증받지 않아도 된다.
+							// this needs no verification.
 							//------------------------------------------
 							CGAddMouseToQuickSlot _CGAddMouseToQuickSlot;
 							_CGAddMouseToQuickSlot.setObjectID( itemID );
@@ -352,75 +354,68 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 			}		 
 		}
 		//---------------------------------------------
-		// 다른 경우?
+		// another case?
 		//---------------------------------------------		
 		else
 		{
-			// 뭐지??
+			// what??
 			DEBUG_ADD_FORMAT_ERR("[Error] ItemCheckBuffer is not Pickup Status [ID=%d]", pItem->GetID());
 		}
 
 		//------------------------------------------------------------------
-		// 제대로 가졌을 경우의 처리..
+		// what follows a proper pick-up..
 		//------------------------------------------------------------------
 		if (bSkillCheck)
 		{
-			g_pPlayer->CheckAffectStatus(pItem);
+			PlayerState::CheckAffectStatus(pItem);
 
 			//------------------------------------------------------------------------
 			//
-			//							Slayer인 경우
+			//							A slayer
 			//
 			//------------------------------------------------------------------------
-			if (g_pPlayer->IsSlayer())
+			if (PlayerState::GetRace()==RACE_SLAYER)
 			{
 				switch (itemClass)
 				{
 					//----------------------------------------------------------
-					// 성수
+					// holy water
 					//----------------------------------------------------------
 					case ITEM_CLASS_HOLYWATER :
 						g_pSkillAvailable->AddSkill( MAGIC_THROW_HOLY_WATER );
 					break;
 
 					//----------------------------------------------------------
-					// 슬레이어 포탈
+					// a slayer portal
 					//----------------------------------------------------------
 					case ITEM_CLASS_SLAYER_PORTAL_ITEM :
 						g_pSkillAvailable->AddSkill( SUMMON_HELICOPTER );
 					break;
 
 					//----------------------------------------------------------
-					// 폭탄/지뢰 재료
+					// bomb/mine material
 					//----------------------------------------------------------
 					case ITEM_CLASS_BOMB_MATERIAL :
 					{
-						// 0~4는 bomb
-						// 5~9는 mine -_-;
-						/*
-						int itemType = pItem->GetItemType();
-						if (IsBombMaterial(pItem))
-							g_pSkillAvailable->AddSkill( SKILL_MAKE_BOMB );
-						else 
-							g_pSkillAvailable->AddSkill( SKILL_MAKE_MINE );
-						*/
-						// SKILL_INSTALL_MINE에 대한 체크를 해야한다. -_-;
-						// g_pSkillAvailable에 각 기술에 대한 체크를 넣어두는게 좋겠다.
-						g_pSkillAvailable->SetAvailableSkills();
+						// 0~4 are bombs
+						// 5~9 are mines -_-;
+						// SKILL_INSTALL_MINE must be checked. -_-;
+						// the available-skill set had better check each skill.
+						BonusSkills::RefreshAvailableSkills();
 					}
 					break;
 
 					//----------------------------------------------------------
-					// 폭탄 / 지뢰
+					// bombs / mines
 					//----------------------------------------------------------
 					case ITEM_CLASS_BOMB :
-						g_pSkillAvailable->SetAvailableSkills();
+						BonusSkills::RefreshAvailableSkills();
 						g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(), 
 													g_pSkillAvailable->IsEnableSkill(SKILL_THROW_BOMB));
 					break;
 
 					case ITEM_CLASS_MINE :
-						g_pSkillAvailable->SetAvailableSkills();
+						BonusSkills::RefreshAvailableSkills();
 						g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(),
 													g_pSkillAvailable->IsEnableSkill(SKILL_INSTALL_MINE));
 					break;
@@ -431,10 +426,10 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 			}
 			//----------------------------------------------------------
 			//
-			//					Vampire인 경우
+			//					A vampire
 			//
 			//----------------------------------------------------------
-			else if (g_pPlayer->IsVampire())
+			else if (PlayerState::GetRace()==RACE_VAMPIRE)
 			{
 				switch (itemClass)
 				{
@@ -442,7 +437,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					// Vampire Portal Item
 					//----------------------------------------------------------
 					case ITEM_CLASS_VAMPIRE_PORTAL_ITEM :
-						if (((MVampirePortalItem*)pItem)->IsMarked())
+						if (MItem::IsPortalMarked( pItem ))
 						{
 							if (g_pSkillAvailable->find( MAGIC_BLOODY_TUNNEL ) != g_pSkillAvailable->end())
 							{
@@ -459,7 +454,7 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 					break;
 
 					//----------------------------------------------------------
-					// Vampire ETC (변신 아이템)
+					// Vampire ETC (transformation items)
 					//----------------------------------------------------------
 					case ITEM_CLASS_VAMPIRE_ETC :
 						if (pItem->GetItemType()==0)
@@ -485,15 +480,15 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 		}
 
 		//---------------------------------------------
-		// Zone에서 Item을 제거해야하는 경우
+		// the item must leave the zone
 		//---------------------------------------------
 		if (bRemoveZoneItem)
 		{
-			g_pZone->RemoveItem( pItem->GetID() );
+			ZoneState::RemoveItem( pItem->GetID() );
 		}
 	}
 	//---------------------------------------------
-	// id가 다른 경우.. 뭐지?? - -;;
+	// a different id.. what?? - -;;
 	//---------------------------------------------
 	else
 	{
@@ -502,20 +497,20 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 
 //	__BEGIN_HELP_EVENT
 		if(itemClass == ITEM_CLASS_BELT)
-			ExecuteHelpEvent( HELP_EVENT_GET_BELT );
+			GameInfoPresentation::ExecuteHelpEvent( HELP_EVENT_GET_BELT );
 		else
-			ExecuteHelpEvent( HELP_EVENT_GET_ITEM );
+			GameInfoPresentation::ExecuteHelpEvent( HELP_EVENT_GET_ITEM );
 //	__END_HELP_EVENT
 
 //	__BEGIN_HELP_EVENT
-//		if (status == MPlayer::ITEM_CHECK_BUFFER_PICKUP_MONEY)
+//		if (status == PlayerState::ITEM_CHECK_BUFFER_PICKUP_MONEY)
 //		{
-//			// [도움말] 아이템 주울 때
+//			// [Help] picking up an item
 //			ExecuteHelpEvent( HE_ITEM_PICKUP_MONEY );	
 //		}
 //		else
 //		{
-//			// [도움말] 아이템 주울 때
+//			// [Help] picking up an item
 //			ExecuteHelpEvent( HE_ITEM_PICKUP );	
 //		}
 //	__END_HELP_EVENT

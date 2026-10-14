@@ -9,16 +9,16 @@
 // include files
 #include "Client_PCH.h"
 #include "Gpackets/GCTradePrepare.h"
-#include "ClientDef.h"
+#include "Cpackets/CGTradePrepare.h"
+#include "ClientPlayer.h"
+#include "DebugLog.h"
+#include "DialogPresentationHost.h"
+#include "MCreatureTable.h"
 #include "MGameStringTable.h"
-#include "UIDialog.h"
+#include "PlayerStateHost.h"
 #include "TempInformation.h"
-#include "MTradeManager.h"
-
-
-	#include "ClientPlayer.h"
-	#include "Cpackets/CGTradePrepare.h"
-	#include "UIFunction.h"
+#include "TradePresentationHost.h"
+#include "ZoneStateHost.h"
 
 
 
@@ -31,24 +31,31 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 	
 
 	ObjectID_t targetID = pPacket->getTargetObjectID();
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature==NULL
+		|| g_pTempInformation==NULL)
+	{
+		DEBUG_ADD_WAR("GCTradePrepareHandler Failed");
+		return;
+	}
 
 	ClientPlayer * pClientPlayer = dynamic_cast<ClientPlayer*>(pPlayer);
 		
 	//----------------------------------------------------------------------
 	//
-	//			누가 나한테 거래하자고 신청하는 경우이다.
+	//			Someone asks me to trade.
 	//
 	//----------------------------------------------------------------------
-	// 이미 거래 중인 경우... 등등.. 뭔가 하고 있으면.. --> 거부
+	// Already trading... etc.. busy with something.. --> refuse
 	//----------------------------------------------------------------------
-	if ((g_pPlayer->IsWaitVerify() && g_pPlayer->GetWaitVerify()!=MPlayer::WAIT_VERIFY_TRADE)			// 검증 받아야 하는게 있는 경우
-		|| g_pPlayer->IsRepeatAction()		// 반복 행동 중인 경우
-		|| g_pUIDialog->IsLockInput()		// NPC랑 대화중..
-		|| g_pPlayer->GetCreatureType()==CREATURETYPE_BAT	// 박쥐인 경우
-		|| g_pPlayer->GetCreatureType()==CREATURETYPE_WOLF	// 늑대인 경우
+	if ((PlayerState::GetWaitVerify()!=PlayerState::WAIT_VERIFY_NULL && PlayerState::GetWaitVerify()!=PlayerState::WAIT_VERIFY_TRADE)			// waiting on a verification
+		|| PlayerState::IsRepeatAction()		// repeating an action
+		|| DialogPresentation::IsLockInput()		// talking to an NPC..
+		|| CreatureState::GetCreatureType( pPlayerCreature )==CREATURETYPE_BAT	// a bat
+		|| CreatureState::GetCreatureType( pPlayerCreature )==CREATURETYPE_WOLF	// a wolf
 		)
 	{
-		// 교환 거부
+		// refuse the exchange
 		CGTradePrepare _CGTradePrepare;
 		_CGTradePrepare.setTargetObjectID( targetID );
 		_CGTradePrepare.setCode( CG_TRADE_PREPARE_CODE_REJECT );
@@ -59,12 +66,12 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 	}
 
 
-	// 이미 다른 누가 나한테 거래하자고 해버린 경우 --> 거부 [서버에서 처리]
+	// someone else already asked me to trade --> refuse [the server handles it]
 	switch (pPacket->getCode())
 	{
 		//----------------------------------------------------------------------
 		//
-		// 다른 사람이 나한테 교환 신청할때
+		// when someone else asks me to exchange
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_PREPARE_CODE_REQUEST :
@@ -72,15 +79,15 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 			bool bLookMe = false;
 
 			//----------------------------------------------------------------------
-			// 이미 내가 다른 누구한테 거래하자고 한 경우 
+			// I already asked someone to trade
 			//----------------------------------------------------------------------
-			if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_TRADE
+			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_TRADE
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_REQUEST)
 			{
 				int code;
 
 				//----------------------------------------------------------------------
-				// 그 사람이 나한테 거래 신청한 경우 --> OK
+				// that one asks me to trade --> OK
 				//----------------------------------------------------------------------
 				if (g_pTempInformation->Value1==targetID)
 				{
@@ -89,14 +96,14 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 					g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 					//-------------------------------------------
-					// 교환창 띄운다.
+					// open the exchange window.
 					//-------------------------------------------
-					UI_RunExchange( targetID );
+					TradePresentation::RunExchange( targetID );
 
 					bLookMe = true;
 				}
 				//----------------------------------------------------------------------
-				// 아닌 경우
+				// otherwise
 				//----------------------------------------------------------------------
 				else
 				{
@@ -111,28 +118,28 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 
 			}
 			//----------------------------------------------------------------------
-			// 교환할까? Y/N
+			// Exchange? Y/N
 			//----------------------------------------------------------------------
 			else
 			{
 				//-------------------------------------------
-				// 교환할까?
+				// Exchange?
 				//-------------------------------------------
-				UI_RunExchangeAsk( targetID );	
+				TradePresentation::RunExchangeAsk( targetID );
 				
 				bLookMe = true;
 			}
 
 			//----------------------------------------------------------------------
-			// 다른 캐릭터가 나를 바라보는 경우
+			// the other character faces me
 			//----------------------------------------------------------------------
 			if (bLookMe)
 			{
-				MCreature* pCreature = g_pZone->GetCreature( targetID );
+				MCreature* pCreature = ZoneState::Exists()? ZoneState::GetCreature( targetID ) : NULL;
 				
 				if (pCreature!=NULL)
 				{
-					pCreature->SetDirectionToPosition( g_pPlayer->GetX(), g_pPlayer->GetY() );
+					CreatureState::SetDirectionToPosition( pCreature, CreatureState::GetX( pPlayerCreature ), CreatureState::GetY( pPlayerCreature ) );
 				}
 				else
 				{
@@ -144,7 +151,7 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 
 		//----------------------------------------------------------------------
 		//
-		// 교환 신청한 사람이 교환 취소한 경우
+		// the one who asked to exchange cancels it
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_PREPARE_CODE_CANCEL :
@@ -154,35 +161,35 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 			}		
 
-			// 이미 내가 OK 눌러서 교환창이 떠 있는 경우
-			if (UI_IsRunningExchange())
+			// I already pressed OK and the exchange window is open
+			if (TradePresentation::IsRunningExchange())
 			{
-				UI_CloseExchange();
+				TradePresentation::CloseExchange();
 			}
 			else
 			{
-				UI_CloseExchangeAsk();
+				TradePresentation::CloseExchangeAsk();
 			}
 		break;
 
 		//----------------------------------------------------------------------
 		//
-		// 내 교환신청이 받아들여질때
+		// when my exchange request is accepted
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_PREPARE_CODE_ACCEPT :
 			//----------------------------------------------------------------------
-			// 이미 내가 다른 누구한테 거래하자고 한 경우 
+			// I already asked someone to trade
 			//----------------------------------------------------------------------
-			if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_TRADE
+			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_TRADE
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_REQUEST)
 			{
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
 				//-------------------------------------------
-				// 교환창을 띄운다.
+				// open the exchange window.
 				//-------------------------------------------
-				UI_RunExchange( targetID );
+				TradePresentation::RunExchange( targetID );
 			}
 
 		break;
@@ -190,46 +197,46 @@ void GCTradePrepareHandler::execute ( GCTradePrepare * pPacket , Player * pPlaye
 
 		//----------------------------------------------------------------------
 		//
-		// 내 교환신청이 거부될때
+		// when my exchange request is refused
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_PREPARE_CODE_REJECT :
 		{
-			if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_TRADE
+			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_TRADE
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_REQUEST)
 			{			
-				// 검증용 data제거
-				g_pPlayer->SetWaitVerifyNULL();
+				// drop the verification data
+				PlayerState::SetWaitVerifyNULL();
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
-				// 교환취소할래?를 닫는다.
-				UI_CloseExchangeCancel();
+				// close 'cancel the exchange?'.
+				TradePresentation::CloseExchangeCancel();
 
-				// 거래 거부 dialog
-				g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_TRADE_REJECTED].GetString());
+				// the trade-refused dialog
+				DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_TRADE_REJECTED].GetString());
 			}
 		}
 		break;
 
 		//----------------------------------------------------------------------
 		//
-		// 교환 신청한 사람이 현재 교환 중이다. (혹은 딴거한다..)
+		// the one I asked is exchanging now (or doing something else..)
 		//
 		//----------------------------------------------------------------------
 		case GC_TRADE_PREPARE_CODE_BUSY :
-			if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_TRADE
+			if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_TRADE
 				&& g_pTempInformation->GetMode()==TempInformation::MODE_TRADE_REQUEST)
 			{			
-				// 검증용 data제거
-				g_pPlayer->SetWaitVerifyNULL();
+				// drop the verification data
+				PlayerState::SetWaitVerifyNULL();
 
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);				
 
-				UI_CloseExchangeAsk();
-				UI_CloseExchangeCancel();
+				TradePresentation::CloseExchangeAsk();
+				TradePresentation::CloseExchangeCancel();
 
-				// busy라서 교환 안됨
-				g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_TRADE_BUSY].GetString());
+				// busy, so no exchange
+				DialogPresentation::PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_TRADE_BUSY].GetString());
 			}
 		break;
 

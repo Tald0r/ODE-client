@@ -155,6 +155,16 @@ MCreature* NewNPC()
 	return s_Host && s_Host->NewNPC ? s_Host->NewNPC() : NULL;
 }
 
+void SetPlayer()
+{
+	if (s_Host && s_Host->SetPlayer) s_Host->SetPlayer();
+}
+
+void PickupItem(TYPE_OBJECTID id)
+{
+	if (s_Host && s_Host->PickupItem) s_Host->PickupItem(id);
+}
+
 }
 
 namespace CreatureState {
@@ -650,7 +660,8 @@ void SetPersnalShopMessage(MCreature* pCreature, const char* message)
 void SetName(MCreature* pCreature, const char* name)
 {
 	// The game's SetName reads the name: an empty MString, a creature
-	// table row past the table or never named, converts to NULL.
+	// table row past the table or never read from its file, converts to
+	// NULL.
 	if (s_Host && s_Host->SetName) s_Host->SetName(pCreature, name != NULL ? name : "");
 }
 

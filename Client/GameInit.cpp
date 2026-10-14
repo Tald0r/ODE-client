@@ -2966,6 +2966,10 @@ static const MItemHost	s_ItemHost = {
 	.NewItem				= NewItemOfClass,
 	.LoadGun				= LoadGun,
 	.SetMineInstalled		= [](MItem* pMine) { static_cast<MMine*>(pMine)->SetInstalled(); },
+	.IsPortalMarked			= [](const MItem* pPortal) {
+		return pPortal->GetItemClass() == ITEM_CLASS_VAMPIRE_PORTAL_ITEM
+			&& static_cast<const MVampirePortalItem*>(pPortal)->IsMarked();
+	},
 };
 
 //-----------------------------------------------------------------------------
@@ -3514,6 +3518,8 @@ static const TradePresentation::Host s_TradePresentationHost = {
 	.CloseExchangeCancel = UI_CloseExchangeCancel,
 	.UnlockItem = UI_UnlockItem,
 	.RunItemShop = UI_RunItemShop,
+	.RunExchange = [](std::uint32_t otherID) { UI_RunExchange(otherID); },
+	.RunExchangeAsk = [](std::uint32_t otherID) { UI_RunExchangeAsk(otherID); },
 };
 
 static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
@@ -3637,6 +3643,20 @@ static const PlayerState::Host s_PlayerStateHost = {
 	},
 	.IsTraceCreature = []() { return g_pPlayer->IsTraceCreature() != FALSE; },
 	.TraceNULL = []() { g_pPlayer->TraceNULL(); },
+	.IsRepeatAction = []() { return g_pPlayer->IsRepeatAction() != FALSE; },
+	.ChangeToSlayer = []() { g_pPlayer->ChangeToSlayer(); },
+	.ChangeToVampire = []() { g_pPlayer->ChangeToVampire(); },
+	.SetBasicAttack = [](TYPE_ACTIONINFO actionInfo, int distance) {
+		g_pPlayer->SetBasicActionInfo( actionInfo );
+		g_pPlayer->SetBasicAttackDistance( static_cast<BYTE>(distance) );
+	},
+	.SetPCSlayerInfo = SetPCSlayerInfo,
+	.SetPCVampireInfo = SetPCVampireInfo,
+	.SetPCOustersInfo = SetPCOustersInfo,
+	.SetGearInfo = SetGearInfo,
+	.SetInventoryInfo = SetInventoryInfo,
+	.SetExtraInfo = SetExtraInfo,
+	.CheckAffectStatus = [](MItem* pItem) { g_pPlayer->CheckAffectStatus(pItem); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3693,6 +3713,12 @@ static const ZoneState::Host s_ZoneStateHost = {
 		pCreature->SetZone( g_pZone );
 		return pCreature;
 	},
+	// MPlayer::SetZone hides MCreature's, so the player is set as an MPlayer.
+	.SetPlayer = []() {
+		g_pZone->SetPlayer();
+		g_pPlayer->SetZone( g_pZone );
+	},
+	.PickupItem = [](TYPE_OBJECTID id) { g_pZone->PickupItem(id); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3902,6 +3928,10 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.SkillBlazeWalk = [](MCreature* pUser, MCreature* pTarget, int skillID, std::uint8_t grade) { SkillBlazeWalk(pUser, pTarget, skillID, grade); },
 	.AddRocketLauncher = Add_RocketRuncher,
 	.AddWildWolf = Add_Wild_Wolf,
+	.MuteSound = [](bool bMute) {
+		if (bMute) g_SDLAudio.SetMute();
+		else g_SDLAudio.UnSetMute();
+	},
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
