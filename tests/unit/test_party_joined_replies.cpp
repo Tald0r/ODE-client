@@ -6,6 +6,7 @@
 #include "PlayerStateHost.h"
 #include "TempInformation.h"
 #include "UserInformation.h"
+#include "ZoneFlags.h"
 #include "ZoneStateHost.h"
 #include "Gpackets/GCPartyJoined.h"
 #include <cstring>
@@ -55,7 +56,6 @@ const MPartyHost partyHost = []() {
 const PlayerState::Host player = []() {
 	PlayerState::Host host{};
 	host.Creature = []() { return hasPlayer ? reinterpret_cast<MCreature*>(&me) : nullptr; };
-	host.GetZoneID = []() { return 12; };
 	host.SendInfoToParty = []() { calls.push_back("player's information sent"); };
 	return host;
 }();
@@ -97,6 +97,9 @@ struct World : GameModelWorld
 	TempInformation temp;
 	MParty* oldParty = g_pParty;
 	TempInformation* oldTemp = g_pTempInformation;
+	int oldLarge = g_nZoneLarge;
+	int oldSmall = g_nZoneSmall;
+	bool oldInLarge = g_bZonePlayerInLarge;
 	const MPartyHost* oldPartyHost = MParty::SetHost(&partyHost);
 	const PlayerState::Host* oldPlayer = PlayerState::SetHost(&player);
 	const ZoneState::Host* oldZone = ZoneState::SetHost(&zone);
@@ -114,6 +117,9 @@ struct World : GameModelWorld
 		g_pUserInformation->CharacterID = "Me";
 		g_pParty = new MParty;
 		g_pTempInformation = &temp;
+		g_nZoneLarge = 12;
+		g_nZoneSmall = 13;
+		g_bZonePlayerInLarge = true;
 	}
 	~World()
 	{
@@ -125,6 +131,9 @@ struct World : GameModelWorld
 		MParty::SetHost(oldPartyHost);
 		g_pTempInformation = oldTemp;
 		g_pParty = oldParty;
+		g_bZonePlayerInLarge = oldInLarge;
+		g_nZoneSmall = oldSmall;
+		g_nZoneLarge = oldLarge;
 	}
 	// A member of the party before the list arrives.
 	void Knew(const char* name)
@@ -163,16 +172,17 @@ TEST(PartyJoinedReplies, TheListedPartyReplacesTheOldOne)
 {
 	World world;
 	world.Knew("Bo");
+	world.Knew("Ana");
 	MParty* pOld = g_pParty;
 	pOld->SetJoinTime(kJoined);
 	Receive({{"Me", 1, 1, kAddress}, {"Ana", 1, 3, kAddress}, {"Bo", 0, 4, 0}, {"Cy", 0, 5, 0}});
 	CHECK(g_pParty != nullptr && g_pParty != pOld);
-	CHECK(calls == std::vector<std::string>({"leaves|Bo", "in the party|1004",
+	CHECK(calls == std::vector<std::string>({"leaves|Bo", "leaves|Ana", "in the party|1004",
 		"cancel? closed", "ask closed", "request closed", "party window", "player's information sent"}));
 	CHECK_EQ(3, g_pParty->GetSize());
 	CHECK(g_pParty->GetJoinTime() == kJoined);
 	CHECK(g_pParty->GetMemberInfo("Me") == nullptr);
-	// In sight: what the zone knows of it.
+	// In sight: what the zone knows of it, over what the old party knew.
 	const PARTY_INFO* pAna = g_pParty->GetMemberInfo("Ana");
 	CHECK(pAna != nullptr);
 	if (pAna != nullptr)
@@ -195,7 +205,32 @@ TEST(PartyJoinedReplies, TheListedPartyReplacesTheOldOne)
 	}
 	// In the zone's list but not there: out of sight, its zone unknown.
 	const PARTY_INFO* pCy = g_pParty->GetMemberInfo("Cy");
-	CHECK(pCy != nullptr && !pCy->bInSight && pCy->zoneID != 60002 && pCy->zoneID != 12);
+	CHECK(pCy != nullptr);
+	if (pCy != nullptr)
+	{
+		CHECK(!pCy->bInSight);
+		CHECK_EQ(0, pCy->zoneID);
+		CHECK(pCy->HP == 100 && pCy->MaxHP == 100);
+	}
+}
+
+TEST(PartyJoinedReplies, AMemberInSightInTheSmallZoneOrWithoutAStatus)
+{
+	World world;
+	world.Knew("Ana");
+	g_bZonePlayerInLarge = false;
+	// Without the creature's status: its hit points stay as the old party
+	// knew them.
+	CreatureState::Host noStatus = creature;
+	noStatus.Status = nullptr;
+	CreatureState::SetHost(&noStatus);
+	Receive({{"Ana", 1, 3, kAddress}});
+	const PARTY_INFO* pAna = g_pParty->GetMemberInfo("Ana");
+	CHECK(pAna != nullptr);
+	if (pAna == nullptr) return;
+	CHECK(pAna->bInSight);
+	CHECK_EQ(13, pAna->zoneID);
+	CHECK(pAna->HP == 50 && pAna->MaxHP == 80);
 }
 
 TEST(PartyJoinedReplies, AFirstPartyStartsItsClockAndASameSizedOneShowsNoWindow)
@@ -228,15 +263,21 @@ TEST(PartyJoinedReplies, WithoutItsPiecesNothingChanges)
 	g_pTempInformation = nullptr;
 	Receive({{"Ana", 1, 3, kAddress}});
 	g_pTempInformation = &world.temp;
+	UserInformation* pUser = g_pUserInformation;
+	g_pUserInformation = nullptr;
+	Receive({{"Ana", 1, 3, kAddress}});
+	g_pUserInformation = pUser;
+	g_pParty = nullptr;
+	Receive({{"Ana", 1, 3, kAddress}});
+	g_pParty = pParty;
 	CHECK(calls.empty());
 	CHECK(g_pParty == pParty && g_pParty->GetSize() == 1);
-	// Without the hosts the windows stay, the face is the style, the
-	// player's zone is 0 and nothing is sent.
+	// Without the hosts the windows stay, the face is the style and
+	// nothing is sent.
 	CommunicationPresentation::SetHost(nullptr);
 	PlayerState::SetHost(nullptr);
 	CommunicationPresentation::RunParty();
 	CHECK_EQ(7, CommunicationPresentation::GetFaceStyle(true, 7));
-	CHECK_EQ(0, PlayerState::GetZoneID());
 	PlayerState::SendInfoToParty();
 	ZoneState::SetHost(nullptr);
 	CreatureState::SetHost(nullptr);

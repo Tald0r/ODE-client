@@ -80,6 +80,11 @@ TYPE_OBJECTID GetCreatureID(const char* pName, int flag)
 	return s_Host && s_Host->GetCreatureID ? s_Host->GetCreatureID(pName, flag) : OBJECTID_NULL;
 }
 
+MCreature* GetFakeCreature(TYPE_OBJECTID id)
+{
+	return s_Host && s_Host->GetFakeCreature ? s_Host->GetFakeCreature(id) : nullptr;
+}
+
 }
 
 namespace CreatureState {
@@ -490,6 +495,21 @@ int GetGuildNumber(MCreature* pCreature)
 void SetPlayerParty(MCreature* pCreature)
 {
 	if (s_Host && s_Host->SetPlayerParty) s_Host->SetPlayerParty(pCreature);
+}
+
+TYPE_OBJECTID GetPetID(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetPetID ? s_Host->GetPetID(pCreature) : OBJECTID_NULL;
+}
+
+void SetAction(MCreature* pCreature, int action)
+{
+	if (s_Host && s_Host->SetAction) s_Host->SetAction(pCreature, action);
+}
+
+MPetItem* GetPetItem(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetPetItem ? s_Host->GetPetItem(pCreature) : nullptr;
 }
 
 }

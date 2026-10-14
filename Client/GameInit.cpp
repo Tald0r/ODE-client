@@ -3485,7 +3485,7 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 	.ClosePartyRequest = UI_ClosePartyRequest,
 	.RunPartyRequest = [](std::uint32_t inviterID) { UI_RunPartyRequest(inviterID); },
 	.RunParty = UI_RunParty,
-	.GetFaceStyle = [](bool male, int hairStyle) { return UI_GetFaceStyle(male, hairStyle); },
+	.GetFaceStyle = UI_GetFaceStyle,
 };
 
 static const QuestWarPresentation::Host s_QuestWarPresentationHost = {
@@ -3612,7 +3612,6 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.CalculateStatus = []() { if (g_pPlayer != NULL) g_pPlayer->CalculateStatus(); },
 	.UseItemOK = []() { UseItemOK(); },
 	.UseSkillCardOK = [](int cardType) { UseSkillCardOK(static_cast<BYTE>(cardType)); },
-	.GetZoneID = []() { return g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall; },
 	.SendInfoToParty = []() {
 		SendCharacterInfoToParty();
 		SendPositionInfoToParty();
@@ -3637,6 +3636,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.AddItem = [](MItem* pItem, bool bDropping) { return g_pZone != NULL && g_pZone->AddItem(pItem, bDropping ? TRUE : FALSE); },
 	.RemoveCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL && g_pZone->RemoveCreature(id); },
 	.GetCreatureID = [](const char* pName, int flag) { return g_pZone != NULL ? g_pZone->GetCreatureID(pName, flag) : OBJECTID_NULL; },
+	.GetFakeCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL ? g_pZone->GetFakeCreature(id) : NULL; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3741,6 +3741,11 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.IsPlayerParty = [](MCreature* pCreature) { return pCreature->IsPlayerParty(); },
 	.GetGuildNumber = [](MCreature* pCreature) { return pCreature->GetGuildNumber(); },
 	.SetPlayerParty = [](MCreature* pCreature) { pCreature->SetPlayerParty(); },
+	.GetPetID = [](MCreature* pCreature) { return pCreature->GetPetID(); },
+	.SetAction = [](MCreature* pCreature, int action) { pCreature->SetAction(static_cast<BYTE>(action)); },
+	.GetPetItem = [](MCreature* pCreature) -> MPetItem* {
+		return pCreature->GetClassType() == MCreature::CLASS_FAKE ? static_cast<MFakeCreature*>(pCreature)->GetPetItem() : NULL;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -3767,6 +3772,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	},
 	.PlaySoundAt = [](TYPE_SOUNDID soundID, bool repeat, int x, int y) { PlaySound(soundID, repeat, x, y); },
 	.SetDarkBits = [](int darkBits) { if (g_pTopView != NULL) g_pTopView->SetDarkBits(static_cast<BYTE>(darkBits)); },
+	.MoveIntoPortal = MoveIntoPortal,
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

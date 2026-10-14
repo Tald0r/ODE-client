@@ -47,6 +47,8 @@ struct Host
 	// How dark the view draws (0-15; the view ignores 16-255, all a
 	// packet's byte can hold beyond; the adapter takes the low byte).
 	void (*SetDarkBits)(int darkBits) = nullptr;
+	// The creature goes into a portal (the vampire portal's effect).
+	void (*MoveIntoPortal)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -64,6 +66,7 @@ void PlayMusicCurrentZone();
 void PlaySound(TYPE_SOUNDID soundID);
 void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 void SetDarkBits(int darkBits);
+void MoveIntoPortal(MCreature* pCreature);
 // Either creature may be NULL; then nothing is shown.
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.
