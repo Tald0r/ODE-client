@@ -51,6 +51,14 @@ struct Host
 	TYPE_OBJECTID (*GetCreatureID)(const char* pName, int flag) = nullptr;
 	// The fake creature (a pet, a turret) with this ID; NULL for none.
 	MCreature* (*GetFakeCreature)(TYPE_OBJECTID id) = nullptr;
+	// A new fake creature looking like pCreature (body, gear, direction,
+	// actions) standing at the cell; the caller owns it. NULL without a host.
+	MCreature* (*NewFakeCreature)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// The zone takes the fake creature; false when it has one with that ID
+	// already, and the caller still owns it.
+	bool (*AddFakeCreature)(MCreature* pFakeCreature) = nullptr;
+	// Deletes a fake creature the zone did not take.
+	void (*DeleteFakeCreature)(MCreature* pFakeCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -72,6 +80,9 @@ bool RemoveCreature(TYPE_OBJECTID id);
 // OBJECTID_NULL without a host.
 TYPE_OBJECTID GetCreatureID(const char* pName, int flag);
 MCreature* GetFakeCreature(TYPE_OBJECTID id);
+MCreature* NewFakeCreature(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+bool AddFakeCreature(MCreature* pFakeCreature);
+void DeleteFakeCreature(MCreature* pFakeCreature);
 
 }
 
@@ -208,6 +219,21 @@ struct Host
 	void (*SetAction)(MCreature* pCreature, int action) = nullptr;
 	// A fake creature's pet item; NULL for another creature, or none.
 	MPetItem* (*GetPetItem)(MCreature* pCreature) = nullptr;
+	// Moves the creature to the cell at once, over what lies between (a
+	// charge, a teleport); server: the server put it there.
+	void (*FastMovePosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server) = nullptr;
+	// Draws the creature as a ghost trail (flag picks the trail) for delay
+	// frames.
+	void (*SetGhost)(MCreature* pCreature, int flag, int delay) = nullptr;
+	// The direction from the creature to the cell; its current direction
+	// for its own cell, and 0 without a host.
+	int (*GetDirectionToPosition)(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// The installed turret's (a bike's) direction and its turning count.
+	void (*SetInstallTurretDirect)(MCreature* pCreature, int direction) = nullptr;
+	void (*SetInstallTurretCount)(MCreature* pCreature, int count) = nullptr;
+	// A fake creature runs a fast move to the cell (the afterimage of a
+	// fast-moving creature); another creature is left alone.
+	void (*SetFakeFastMove)(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -303,5 +329,11 @@ void SetPlayerParty(MCreature* pCreature);
 TYPE_OBJECTID GetPetID(MCreature* pCreature);
 void SetAction(MCreature* pCreature, int action);
 MPetItem* GetPetItem(MCreature* pCreature);
+void FastMovePosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server);
+void SetGhost(MCreature* pCreature, int flag, int delay);
+int GetDirectionToPosition(MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void SetInstallTurretDirect(MCreature* pCreature, int direction);
+void SetInstallTurretCount(MCreature* pCreature, int count);
+void SetFakeFastMove(MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 
 }

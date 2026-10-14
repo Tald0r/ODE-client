@@ -3637,6 +3637,9 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.RemoveCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL && g_pZone->RemoveCreature(id); },
 	.GetCreatureID = [](const char* pName, int flag) { return g_pZone != NULL ? g_pZone->GetCreatureID(pName, flag) : OBJECTID_NULL; },
 	.GetFakeCreature = [](TYPE_OBJECTID id) { return g_pZone != NULL ? g_pZone->GetFakeCreature(id) : NULL; },
+	.NewFakeCreature = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) -> MCreature* { return NewFakeCreature(pCreature, x, y); },
+	.AddFakeCreature = [](MCreature* pFakeCreature) { return g_pZone != NULL && g_pZone->AddFakeCreature(pFakeCreature); },
+	.DeleteFakeCreature = [](MCreature* pFakeCreature) { delete pFakeCreature; },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -3745,6 +3748,17 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetAction = [](MCreature* pCreature, int action) { pCreature->SetAction(static_cast<BYTE>(action)); },
 	.GetPetItem = [](MCreature* pCreature) -> MPetItem* {
 		return pCreature->GetClassType() == MCreature::CLASS_FAKE ? static_cast<MFakeCreature*>(pCreature)->GetPetItem() : NULL;
+	},
+	.FastMovePosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server) { pCreature->FastMovePosition(x, y, server); },
+	.SetGhost = [](MCreature* pCreature, int flag, int delay) { pCreature->SetGhost(static_cast<BYTE>(flag), delay); },
+	.GetDirectionToPosition = [](MCreature* pCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return static_cast<int>(pCreature->GetDirectionToPosition(x, y)); },
+	.SetInstallTurretDirect = [](MCreature* pCreature, int direction) { pCreature->SetInstallTurretDirect(direction); },
+	.SetInstallTurretCount = [](MCreature* pCreature, int count) { pCreature->SetInstallTurretCount(count); },
+	.SetFakeFastMove = [](MCreature* pFakeCreature, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		if (pFakeCreature->GetClassType() != MCreature::CLASS_FAKE) return;
+		MFakeCreature* pFake = static_cast<MFakeCreature*>(pFakeCreature);
+		pFake->SetFakeCreatureType(MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION);
+		pFake->SetFakeCreatureFastMoveAction(x, y, 0, 0);
 	},
 };
 

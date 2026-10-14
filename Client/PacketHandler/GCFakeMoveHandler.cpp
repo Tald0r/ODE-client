@@ -9,8 +9,8 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCFakeMove.h"
 #include "Player.h"
-#include "ClientDef.h"
-#include "MFakeCreature.h"
+#include "DebugLog.h"
+#include "ZoneStateHost.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -21,24 +21,23 @@ void GCFakeMoveHandler::execute ( GCFakeMove * pPacket , Player * pPlayer )
 	(void)pPlayer;
 		
 
-	MCreature *pCreature = g_pZone->GetCreature(pPacket->getObjectID());
+	MCreature *pCreature = ZoneState::GetCreature(pPacket->getObjectID());
 	
 	if(pCreature == NULL) return;
 
-	MFakeCreature* pFakeCreature = NewFakeCreature( pCreature, pCreature->GetX(), pCreature->GetY() );
-	
-	pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION );
+	MCreature* pFakeCreature = ZoneState::NewFakeCreature( pCreature, CreatureState::GetX(pCreature), CreatureState::GetY(pCreature) );
+	if (pFakeCreature == NULL) return;
 
-	pFakeCreature->SetFakeCreatureFastMoveAction(pPacket->getToX(), pPacket->getToY(), 0, 0);
+	CreatureState::SetFakeFastMove( pFakeCreature, pPacket->getToX(), pPacket->getToY() );
 //	pFakeCreature->SetAction( ACTION_MOVE );
 //	pFakeCreature->SetFakePosition( pCreature->GetX(), pCreature->GetY() );
 	
 	//------------------------------------------------------
-	// Fake Creature를 Zone에 추가
+	// Add the fake creature to the zone
 	//------------------------------------------------------
-	if (!g_pZone->AddFakeCreature( pFakeCreature ))
+	if (!ZoneState::AddFakeCreature( pFakeCreature ))
 	{
-		delete pFakeCreature;
+		ZoneState::DeleteFakeCreature( pFakeCreature );
 	}
 
 

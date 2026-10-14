@@ -9,9 +9,13 @@
 #include "Client_PCH.h"
 #include "Gpackets/GCFastMove.h"
 #include "Player.h"
-#include "ClientDef.h"
+#include "DebugLog.h"
+#include "DirectionSelection.h"
+#include "MItem.h"
+#include "PlayerStateHost.h"
+#include "WorldEventsHost.h"
+#include "ZoneStateHost.h"
 #include "SkillDef.h"
-#include "MTopView.h"
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
 void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
@@ -19,6 +23,12 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 {
 	__BEGIN_TRY
 	(void)pPlayer;
+
+	MCreature* const pPlayerCreature = PlayerState::Creature();
+	if (pPlayerCreature == NULL)
+	{
+		return;
+	}
 		
 
 
@@ -34,47 +44,47 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 	MCreature* pCreature = NULL;
 	
 	//------------------------------------------------------------------
-	// Player인 경우
+	// The player
 	//------------------------------------------------------------------
-	if (static_cast<TYPE_OBJECTID>(objectID)==g_pPlayer->GetID())
+	if (static_cast<TYPE_OBJECTID>(objectID)==PlayerState::GetID())
 	{
 		//------------------------------------------------------------------
-		// Player가 기다리던 skill의 성공유무를 검증받았다.
+		// The skill the player waited on was verified.
 		//------------------------------------------------------------------
-		if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_SKILL_SUCCESS)
+		if (PlayerState::GetWaitVerify()==PlayerState::WAIT_VERIFY_SKILL_SUCCESS)
 		{		
-			g_pPlayer->SetWaitVerifyNULL();
+			PlayerState::SetWaitVerifyNULL();
 		}
 		else
 		{
 			DEBUG_ADD_ERR("[Error] Player is not WaitVerifySkillSuccess");
 		}
 
-		pCreature = g_pPlayer;
+		pCreature = pPlayerCreature;
 	}
 	else
 	{
-		pCreature = g_pZone->GetCreature( objectID );
+		pCreature = ZoneState::GetCreature( objectID );
 	}
 
 	if (pCreature == NULL)
 	{
-		// 캐릭터 없다.
+		// No such character.
 		DEBUG_ADD_FORMAT_ERR("[Error] There is no such Creature. id=%d", objectID);
 	}
-	// Creature있을 때.. 		
+	// The creature is there..
 	else
 	{
 		switch(skillType)
 		{
 		case SKILL_CHARGING_ATTACK:
-				ExecuteActionInfoFromMainNode(
-							SKILL_CLIENT_CHARGING_ATTACK,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+							SKILL_CLIENT_CHARGING_ATTACK,										// the skill used
 						
 							ox, oy, 0,
-							pCreature->GetDirection(),														// 사용 방향
+							CreatureState::GetDirection(pCreature),														// the direction used
 							
-							pCreature->GetID(),												// 목표에 대한 정보
+							CreatureState::GetID(pCreature),												// the target
 							nx, ny, 0,
 							
 							17, //5*16, 
@@ -85,23 +95,23 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 							
 							0, 0);	
 
-				if(pCreature == g_pPlayer)
+				if(pCreature == pPlayerCreature)
 				{
-					g_pPlayer->SetDelay(1000);
+					PlayerState::SetDelay(1000);
 				}
-				pCreature->FastMovePosition( nx, ny, true );
-				pCreature->SetGhost(3, 16);
+				CreatureState::FastMovePosition( pCreature, nx, ny, true );
+				CreatureState::SetGhost(pCreature, 3, 16);
 			break;
 			
 		case SKILL_TELEPORT:
 			{
-				ExecuteActionInfoFromMainNode(
-							SKILL_CLIENT_TELEPORT,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+							SKILL_CLIENT_TELEPORT,										// the skill used
 						
 							ox, oy, 0,
-							pCreature->GetDirection(),														// 사용 방향
+							CreatureState::GetDirection(pCreature),														// the direction used
 							
-							pCreature->GetID(),												// 목표에 대한 정보
+							CreatureState::GetID(pCreature),												// the target
 							ox, oy, 0,
 							
 							20, //5*16, 
@@ -113,20 +123,20 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 							0, 0);	
 
 				//pCreature->SetPosition(nx, ny);
-				pCreature->FastMovePosition( nx, ny, true );
-				if(pCreature == g_pPlayer)
+				CreatureState::FastMovePosition( pCreature, nx, ny, true );
+				if(pCreature == pPlayerCreature)
 				{
-					g_pPlayer->SetDelay(1250);
+					PlayerState::SetDelay(1250);
 				}
-				pCreature->SetGhost(0xFF, 18);
+				CreatureState::SetGhost(pCreature, 0xFF, 18);
 
-				ExecuteActionInfoFromMainNode(
-							SKILL_CLIENT_TELEPORT2,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+							SKILL_CLIENT_TELEPORT2,										// the skill used
 						
 							nx, ny, 0,
-							pCreature->GetDirection(),														// 사용 방향
+							CreatureState::GetDirection(pCreature),														// the direction used
 							
-							pCreature->GetID(),												// 목표에 대한 정보
+							CreatureState::GetID(pCreature),												// the target
 							nx, ny, 0,
 							
 							20, //5*16, 
@@ -142,13 +152,13 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 
 		case SKILL_DUCKING_WALLOP:
 			{
-				ExecuteActionInfoFromMainNode(
-							SKILL_CLIENT_DUCKING_WALLOP,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+							SKILL_CLIENT_DUCKING_WALLOP,										// the skill used
 						
 							ox, oy, 0,
-							pCreature->GetDirectionToPosition(nx, ny),														// 사용 방향
+							CreatureState::GetDirectionToPosition(pCreature, nx, ny),														// the direction used
 							
-							pCreature->GetID(),												// 목표에 대한 정보
+							CreatureState::GetID(pCreature),												// the target
 							ox, oy, 0,
 							
 							10, //5*16, 
@@ -159,11 +169,11 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 							
 							0, 0);	
 
-				pCreature->FastMovePosition( nx, ny, true );
-				pCreature->SetGhost(0xFF, 9);
-				if(pCreature == g_pPlayer)
+				CreatureState::FastMovePosition( pCreature, nx, ny, true );
+				CreatureState::SetGhost(pCreature, 0xFF, 9);
+				if(pCreature == pPlayerCreature)
 				{
-					g_pPlayer->SetDelay(565);
+					PlayerState::SetDelay(565);
 				}
 			}
 			break;
@@ -172,25 +182,25 @@ void GCFastMoveHandler::execute ( GCFastMove * pPacket , Player * pPlayer )
 				MItem*	pItem = MItem::NewItem( ITEM_CLASS_MOTORCYCLE );
 				if(pItem != NULL)
 				{
-					pCreature->AddEffectStatus(EFFECTSTATUS_BIKE_CRASH, 0xffff);
+					CreatureState::AddEffectStatus(pCreature, EFFECTSTATUS_BIKE_CRASH, 0xffff);
 					pItem->SetItemType( 6 );
-					((MCreatureWear*)pCreature)->SetAddonItem( pItem );
+					CreatureState::SetAddonItem( pCreature, pItem );
 					delete pItem;
-					int TempDir = MTopView::GetDirectionToPosition(pCreature->GetX(), pCreature->GetY(), nx, ny);
-					pCreature->SetInstallTurretDirect(TempDir);
-					pCreature->SetDirection(TempDir);
-					pCreature->SetCurrentDirection(TempDir);
-					pCreature->SetInstallTurretCount(0);
-					if(pCreature->GetID() == g_pPlayer->GetID())
-						g_pPlayer->SetDelay(3000);
+					int TempDir = SelectFacingDirection(CreatureState::GetX(pCreature), CreatureState::GetY(pCreature), nx, ny);
+					CreatureState::SetInstallTurretDirect(pCreature, TempDir);
+					CreatureState::SetDirection(pCreature, TempDir);
+					CreatureState::SetCurrentDirection(pCreature, TempDir);
+					CreatureState::SetInstallTurretCount(pCreature, 0);
+					if(CreatureState::GetID(pCreature) == PlayerState::GetID())
+						PlayerState::SetDelay(3000);
 				}
-				pCreature->FastMovePosition( nx, ny, true );
+				CreatureState::FastMovePosition( pCreature, nx, ny, true );
 			}
 			break;
 		default:
 			{
 //							
-				pCreature->FastMovePosition( nx, ny, true );
+				CreatureState::FastMovePosition( pCreature, nx, ny, true );
 				
 			}
 		}
