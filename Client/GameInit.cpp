@@ -4738,7 +4738,35 @@ InitGameObject()
  
 	if (g_pObjectSelector==NULL)
 	{
-		g_pObjectSelector = new MObjectSelector;
+		// What selection asks of the game (task 4.225).
+		static const MObjectSelectorHost objectSelectorHost{
+			.ForceAttack = []() { return g_pSDLInput->KeyDown(DIK_LSHIFT) != FALSE; },
+			.PlayerHasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
+			.PlayerCanAttackTribe = [](MCreature* pCreature) { return g_pPlayer->CanAttackTribe(pCreature) != FALSE; },
+			.PlayerCanAttackGuild = [](MCreature* pCreature) { return g_pPlayer->CanAttackGuild(pCreature) != FALSE; },
+			.PlayerCreatureType = []() { return static_cast<int>(g_pPlayer->GetCreatureType()); },
+			.PlayerGuildNumber = []() { return static_cast<int>(g_pPlayer->GetGuildNumber()); },
+			.PlayerUnionGuildID = []() { return static_cast<int>(g_pPlayer->GetUnionGuildID()); },
+			.IsNonPK = []() { return g_pUserInformation->IsNonPK != FALSE; },
+			.GetName = [](MCreature* pCreature) { return pCreature->GetName(); },
+			.IsNPC = [](MCreature* pCreature) { return pCreature->IsNPC() != FALSE; },
+			.GetGuildNumber = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetGuildNumber()); },
+			.GetUnionGuildID = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetUnionGuildID()); },
+			.HasEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->HasEffectStatus(status) != FALSE; },
+			.HasAvailableEffectStatus = [](MCreature* pCreature) {
+				return pCreature->GetObjectType() == MObject::TYPE_CREATURE && pCreature->IsAvailableEffectStatus();
+			},
+			.HasPlayerOnlySprite = [](MCreature* pCreature) {
+				const int spriteType = (*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteTypes[0];
+				return (*g_pCreatureSpriteTable)[spriteType].IsPlayerOnlySprite() != FALSE;
+			},
+			.HasZone = []() { return g_pZone != NULL; },
+			.GetZoneID = []() { return static_cast<int>(g_pZone->GetID()); },
+			.GetZonePKType = []() { return static_cast<int>(g_pZone->GetPKType()); },
+			.JusticeAttackManager = []() { return g_pJusticeAttackManager; },
+			.WarManager = []() { return g_pWarManager; },
+		};
+		g_pObjectSelector = new MObjectSelector(&objectSelectorHost);
 	}
 
 	//----------------------------------------

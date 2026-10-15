@@ -132,6 +132,10 @@ Client/HelpEvent.h
 # The game's event queue and background IDs (4.224).
 Client/MEventManager.h
 
+# Whom the player may select and attack (4.225).
+Client/MObjectSelector.cpp
+Client/MObjectSelector.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
