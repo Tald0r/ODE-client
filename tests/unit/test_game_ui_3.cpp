@@ -95,11 +95,11 @@ namespace {
 std::vector<std::string> calls;
 std::string N(long long value) { return std::to_string(value); }
 
-bool Same(const std::vector<std::string>& expected)
+bool Same(const std::vector<std::string>& expected, const std::vector<std::string>& actual = calls)
 {
-	if (calls == expected) return true;
+	if (actual == expected) return true;
 	std::printf("      calls: ");
-	for (const std::string& call : calls) std::printf("[%s] ", call.c_str());
+	for (const std::string& call : actual) std::printf("[%s] ", call.c_str());
 	std::printf("\n      wanted:");
 	for (const std::string& call : expected) std::printf("[%s] ", call.c_str());
 	std::printf("\n");
@@ -160,10 +160,20 @@ const WorldEvents::Host worldHost = []() {
 	return host;
 }();
 
+std::string Options(const MItem* pItem)
+{
+	std::string text;
+	for (TYPE_ITEM_OPTION option : pItem->GetItemOptionList()) text += (text.empty() ? "" : ",") + N(option);
+	return text;
+}
+
 // The items the factory made, in order; the class it refuses (none
-// when -1).
+// when -1); and what each of them held when it was freed, in the order
+// they were: "index made|id|type|grade|options|number|quest", MItem's
+// own fields, which are all a destroyed item still has.
 std::vector<MItem*> made;
 int refusedClass = -1;
+std::vector<std::string> freed;
 const MItemHost itemHost = []() {
 	MItemHost host{};
 	host.NewItem = [](ITEM_CLASS itemClass) {
@@ -173,7 +183,13 @@ const MItemHost itemHost = []() {
 		return pItem;
 	};
 	host.RefreshAffect = [](MItem* pItem) { calls.push_back("affect|" + N(pItem->GetID())); };
-	host.ItemDestroyed = [](MItem* pItem) noexcept { calls.push_back("destroyed|" + N(pItem->GetID())); };
+	host.ItemDestroyed = [](MItem* pItem) noexcept {
+		calls.push_back("destroyed|" + N(pItem->GetID()));
+		for (size_t i = 0; i < made.size(); ++i)
+			if (made[i] == pItem)
+				freed.push_back(N(i) + "|" + N(pItem->GetID()) + "|" + N(pItem->GetItemType()) + "|" + N(pItem->GetGrade())
+					+ "|" + Options(pItem) + "|" + N(pItem->GetNumber()) + "|" + N(pItem->IsQuestItem()));
+	};
 	return host;
 }();
 
@@ -262,13 +278,6 @@ std::vector<std::string> Lines(CMessageArray& log)
 	return lines;
 }
 
-std::string Options(const MItem* pItem)
-{
-	std::string text;
-	for (TYPE_ITEM_OPTION option : pItem->GetItemOptionList()) text += (text.empty() ? "" : ",") + N(option);
-	return text;
-}
-
 struct Scene
 {
 	GameModelWorld world;
@@ -319,6 +328,7 @@ struct Scene
 	{
 		calls.clear();
 		made.clear();
+		freed.clear();
 		windowCount = 0;
 		refusedClass = -1;
 		MItem::SetHost(&itemHost);
@@ -926,17 +936,6 @@ GoodsInfo* Good(ObjectID_t id, int itemClass, int type, int grade, std::initiali
 	return pInfo;
 }
 
-// The items the shop made (the window would have kept them), freed; a
-// gun frees its magazine.
-void FreeMade()
-{
-	std::vector<MItem*> owners;
-	for (MItem* pItem : made)
-		if (pItem->GetItemClass() != ITEM_CLASS_MAGAZINE) owners.push_back(pItem);
-	for (MItem* pItem : owners) delete pItem;
-	made.clear();
-}
-
 } // namespace
 
 TEST(GameUI3ItemShop, EachGoodBecomesAnItem)
@@ -951,52 +950,22 @@ TEST(GameUI3ItemShop, EachGoodBecomesAnItem)
 	packet.addGoodsInfo(Good(13, ITEM_CLASS_SG, 0, 4, {2}, 30, 1));
 	packet.addGoodsInfo(Good(14, ITEM_CLASS_SR, 0, 0, {}, 12, 0));
 	UI_RunItemShop(&packet);
-	CHECK(Same({"finish 1", "new|" + N(ITEM_CLASS_SWORD), "new|" + N(ITEM_CLASS_POTION), "new|" + N(ITEM_CLASS_SG),
-		"new|" + N(ITEM_CLASS_MAGAZINE), "new|" + N(ITEM_CLASS_SR), "new|" + N(ITEM_CLASS_MAGAZINE)}));
+	// Without the item list window, which would own them, each item is
+	// freed as soon as it is made, a gun with its magazine.
+	CHECK(Same({"finish 1", "new|" + N(ITEM_CLASS_SWORD), "destroyed|11", "new|" + N(ITEM_CLASS_POTION), "destroyed|12",
+		"new|" + N(ITEM_CLASS_SG), "new|" + N(ITEM_CLASS_MAGAZINE), "destroyed|0", "destroyed|13",
+		"new|" + N(ITEM_CLASS_SR), "new|" + N(ITEM_CLASS_MAGAZINE), "destroyed|0", "destroyed|14"}));
 	CHECK(packet.isEmpty());
 	CHECK(scene.me->GetWaitVerify() == MPlayer::WAIT_VERIFY_NULL);
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
-	CHECK_EQ((size_t)6, made.size());
-	if (made.size() == 6)
-	{
-		MItem* pSword = made[0];
-		CHECK_EQ(11u, unsigned(pSword->GetID()));
-		CHECK_EQ(2, int(pSword->GetItemType()));
-		CHECK_EQ(3, pSword->GetGrade());
-		CHECK(Options(pSword) == "5,7");
-		CHECK_EQ(1, int(pSword->GetNumber()));
-		CHECK_EQ(0, pSword->IsQuestItem());
+	CHECK(Same({"0|11|2|3|5,7|1|0",
 		// A good with a time limit is a quest item.
-		MItem* pPotion = made[1];
-		CHECK_EQ(12u, unsigned(pPotion->GetID()));
-		CHECK_EQ(9, int(pPotion->GetNumber()));
-		CHECK_EQ(1, pPotion->IsQuestItem());
+		"1|12|0|0||9|1",
 		// A gun's count is its magazine's: the first magazine that fits,
-		// with no options and no id.
-		MGunItem* pShotgun = static_cast<MGunItem*>(made[2]);
-		CHECK_EQ(13u, unsigned(pShotgun->GetID()));
-		CHECK_EQ(4, pShotgun->GetGrade());
-		CHECK(Options(pShotgun) == "2");
-		CHECK_EQ(1, pShotgun->IsQuestItem());
-		CHECK(pShotgun->GetMagazine() == made[3]);
-		if (pShotgun->GetMagazine() != NULL)
-		{
-			CHECK_EQ(1, int(pShotgun->GetMagazine()->GetItemType()));
-			CHECK_EQ(30, int(pShotgun->GetMagazine()->GetNumber()));
-			CHECK_EQ(0u, unsigned(pShotgun->GetMagazine()->GetID()));
-			CHECK(pShotgun->GetMagazine()->IsEmptyItemOptionList());
-		}
-		CHECK_EQ(1, int(pShotgun->GetNumber()));
+		// with no options and no id, freed by the gun before it.
+		"3|0|1|-1||30|0", "2|13|0|4|2|1|1",
 		// No magazine fits the rifle: it is given the last one tried.
-		MGunItem* pRifle = static_cast<MGunItem*>(made[4]);
-		CHECK(pRifle->GetMagazine() == made[5]);
-		if (pRifle->GetMagazine() != NULL)
-		{
-			CHECK_EQ(2, int(pRifle->GetMagazine()->GetItemType()));
-			CHECK_EQ(12, int(pRifle->GetMagazine()->GetNumber()));
-		}
-	}
-	FreeMade();
+		"5|0|2|-1||12|0", "4|14|0|0||1|0"}, freed));
 }
 
 TEST(GameUI3ItemShop, AGoodWithNoItemIsSkippedAndAMissingOneEndsTheList)
@@ -1011,14 +980,12 @@ TEST(GameUI3ItemShop, AGoodWithNoItemIsSkippedAndAMissingOneEndsTheList)
 	packet.addGoodsInfo(NULL);
 	packet.addGoodsInfo(Good(15, ITEM_CLASS_SWORD, 0, 0, {}, 1, 0));
 	UI_RunItemShop(&packet);
-	CHECK(Same({"new|" + N(ITEM_CLASS_POTION), "new|" + N(ITEM_CLASS_SWORD)}));
-	CHECK_EQ((size_t)1, made.size());
-	if (!made.empty()) CHECK_EQ(13u, unsigned(made[0]->GetID()));
+	CHECK(Same({"new|" + N(ITEM_CLASS_POTION), "new|" + N(ITEM_CLASS_SWORD), "destroyed|13"}));
+	CHECK(Same({"0|13|0|0||1|0"}, freed));
 	GoodsInfo* pLeft = packet.popGoodsInfo();
 	CHECK(pLeft != NULL && pLeft->objectID == 15);
 	delete pLeft;
 	CHECK(packet.isEmpty());
-	FreeMade();
 }
 
 TEST(GameUI3ItemShop, AGunTheFactoryMakesNoMagazineForIsListedEmpty)
@@ -1029,20 +996,13 @@ TEST(GameUI3ItemShop, AGunTheFactoryMakesNoMagazineForIsListedEmpty)
 	packet.addGoodsInfo(Good(13, ITEM_CLASS_SG, 0, 4, {2}, 30, 1));
 	packet.addGoodsInfo(Good(14, ITEM_CLASS_SWORD, 0, 0, {}, 1, 0));
 	UI_RunItemShop(&packet);
-	CHECK(Same({"new|" + N(ITEM_CLASS_SG), "new|" + N(ITEM_CLASS_MAGAZINE), "new|" + N(ITEM_CLASS_SWORD)}));
+	// The gun is made and listed with no magazine (none freed with it),
+	// and the good after it is made too; without the item list window
+	// each is freed at once.
+	CHECK(Same({"new|" + N(ITEM_CLASS_SG), "new|" + N(ITEM_CLASS_MAGAZINE), "destroyed|13",
+		"new|" + N(ITEM_CLASS_SWORD), "destroyed|14"}));
 	CHECK(packet.isEmpty());
-	CHECK_EQ((size_t)2, made.size());
-	if (made.size() == 2)
-	{
-		MGunItem* pShotgun = static_cast<MGunItem*>(made[0]);
-		CHECK_EQ(13u, unsigned(pShotgun->GetID()));
-		CHECK_EQ(4, pShotgun->GetGrade());
-		CHECK(Options(pShotgun) == "2");
-		CHECK_EQ(1, pShotgun->IsQuestItem());
-		CHECK(pShotgun->GetMagazine() == NULL);
-		CHECK_EQ(14u, unsigned(made[1]->GetID()));
-	}
-	FreeMade();
+	CHECK(Same({"0|13|0|4|2|1|1", "1|14|0|0||1|0"}, freed));
 }
 
 //----------------------------------------------------------------------

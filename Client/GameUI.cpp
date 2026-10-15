@@ -4364,7 +4364,8 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 		C_VS_UI_ITEM_LIST::ItemList Item;
 		Item.pItem = pItem;
 		Item.TimeLimit = pInfo->timeLimit;		
-		gC_vs_ui.AddItemToItemList( Item );
+		if (!gC_vs_ui.AddItemToItemList( Item ))	// the list owns what it takes
+			delete pItem;
 		
 		delete pInfo;
 		pInfo = NULL;
