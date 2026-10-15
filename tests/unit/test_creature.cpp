@@ -335,6 +335,20 @@ struct Scene
 	}
 };
 
+// Whether no call is a skill, printing the calls when one is.
+bool NoSkill()
+{
+	for (const std::string& call : calls)
+		if (call.rfind("skill|", 0) == 0)
+		{
+			std::printf("      calls: ");
+			for (const std::string& each : calls) std::printf("[%s] ", each.c_str());
+			std::printf("\n      wanted no skill\n");
+			return false;
+		}
+	return true;
+}
+
 // Whether the first call is this one, printing the calls when not.
 bool FirstIs(const std::string& expected)
 {
@@ -554,7 +568,7 @@ TEST(Creature, AnAdvancedSylphCallsItsSkill)
 	MCreature creature;
 	Place(creature, 7);
 	creature.AddEffectStatus(EFFECTSTATUS_SUMMON_SYLPH, 40);
-	CHECK(calls.empty() || calls[0].rfind("skill|", 0) != 0);
+	CHECK(NoSkill());
 	calls.clear();
 	MCreature advanced;
 	Place(advanced, 7);
@@ -568,7 +582,7 @@ TEST(Creature, AnAdvancedSylphCallsItsSkill)
 	Place(coloured, 7);
 	coloured.SetStatus(MODIFY_ADVANCEMENT_CLASS_LEVEL, 1);
 	coloured.AddEffectStatus(EFFECTSTATUS_SUMMON_SYLPH_RED, 40);
-	CHECK(calls.empty() || calls[0].rfind("skill|", 0) != 0);
+	CHECK(NoSkill());
 	// Its end has a skill too, for the advanced plain sylph only (after
 	// the hand lookups of its walk's frame count).
 	calls.clear();
@@ -683,6 +697,7 @@ TEST(Creature, OnlyThePlayersHallucinationFadesTheScreen)
 {
 	Scene scene;
 	scene.Tribe(5, CREATURETRIBE_SLAYER);
+	const int oldFPS = g_pClientConfig->FPS;
 	g_pClientConfig->FPS = 16;
 	MCreature creature;
 	Place(creature);
@@ -703,6 +718,7 @@ TEST(Creature, OnlyThePlayersHallucinationFadesTheScreen)
 		CHECK_EQ((30 << 16) | 30, int(pEvent->parameter2));
 	}
 	player = nullptr;
+	g_pClientConfig->FPS = oldFPS;
 }
 
 //----------------------------------------------------------------------
@@ -726,7 +742,7 @@ TEST(Creature, ComingToAgainResurrectsAVampireByItsBlood)
 	slayer.AddEffectStatus(EFFECTSTATUS_COMA, 40);
 	calls.clear();
 	slayer.RemoveEffectStatus(EFFECTSTATUS_COMA);
-	CHECK(calls.empty() || calls[0].rfind("skill|", 0) != 0);
+	CHECK(NoSkill());
 }
 
 TEST(Creature, ATurretPackedUpFiresItsLastResult)
@@ -985,15 +1001,53 @@ TEST(Creature, ALowCreatureBleedsWhenTheOptionIsOn)
 	bloodDrop = true;
 	creature.CheckDropBlood();
 	CHECK(Same({"skill|" + N(BLOOD_DROP_GROUND) + "|12,34,0|3|900|12,34,0|80|none|first|0,0"}));
-	// Not again before its next time.
+	// Not again for 300 ms and a bit: the remainder of (4 x the HP %) x a
+	// random number by 20. At 30% that is always 0; at 29% it is 0 to 16,
+	// so the next drop comes after 300 ms and by 320 ms, every time.
+	const std::string drop = "skill|" + N(BLOOD_DROP_GROUND) + "|12,34,0|3|900|12,34,0|80|none|first|0,0";
+	creature.SetStatus(MODIFY_CURRENT_HP, 29);
+	int early = 0, late = 0;
+	for (int cycle = 0; cycle < 200; ++cycle)
+	{
+		const MonotonicClock::TimePoint last = g_FrameNow;
+		calls.clear();
+		g_FrameNow = last + MonotonicClock::Millis(300);
+		creature.CheckDropBlood();
+		if (!calls.empty()) ++early;
+		g_FrameNow = last + MonotonicClock::Millis(320);
+		creature.CheckDropBlood();
+		if (calls != Calls{drop}) ++late;
+	}
+	CHECK_EQ(0, early);
+	CHECK_EQ(0, late);
+	creature.SetStatus(MODIFY_CURRENT_HP, 30);
+	// Drained, five times as long: 1500 to 1595 ms.
+	creature.AddEffectStatus(EFFECTSTATUS_BLOOD_DRAIN, 0xFFFF);
+	g_FrameNow += MonotonicClock::Millis(1000);
 	calls.clear();
 	creature.CheckDropBlood();
+	CHECK(Same({drop}));
+	const MonotonicClock::TimePoint drained = g_FrameNow;
+	calls.clear();
+	g_FrameNow = drained + MonotonicClock::Millis(1500);
+	creature.CheckDropBlood();
 	CHECK(Same({}));
-	// Above the threshold, or in a coma: none.
+	g_FrameNow = drained + MonotonicClock::Millis(1596);
+	creature.CheckDropBlood();
+	CHECK(Same({drop}));
+	// Above the threshold: none.
+	calls.clear();
 	g_FrameNow += MonotonicClock::Millis(1000000);
 	creature.SetStatus(MODIFY_CURRENT_HP, 31);
 	creature.CheckDropBlood();
 	CHECK(Same({}));
+	// In a coma: none.
+	creature.SetStatus(MODIFY_CURRENT_HP, 30);
+	creature.AddEffectStatus(EFFECTSTATUS_COMA, 0xFFFF);
+	g_FrameNow += MonotonicClock::Millis(1000000);
+	calls.clear();
+	creature.CheckDropBlood();
+	CHECK(NoSkill());
 	g_FrameNow = oldNow;
 }
 
@@ -1994,8 +2048,9 @@ TEST(Creature, ANewCreatureIsNotInTheParty)
 	g_pParty = NULL;
 	// The pool hands out used memory: build one over leftover bytes. The
 	// constructor sets the status, which asks the party flag. Reading the
-	// leftover flag is undefined (UBSan stops on it); with no name yet, the
-	// party lookup it led to found nobody, so nothing else showed.
+	// leftover flag is undefined, and only UBSan sees it (it stops on the
+	// load). In the game, with no name yet, the party lookup it could lead
+	// to found nobody; here there is no party at all.
 	alignas(MCreature) unsigned char storage[sizeof(MCreature)];
 	std::memset(storage, 0xFF, sizeof storage);
 	MCreature* pCreature = ::new (storage) MCreature;

@@ -23,6 +23,7 @@
 #include "DebugLog.h"
 
 #include <cstdio>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -685,7 +686,9 @@ TEST(UIDialog, AnEmptyLineIsLoggedAsEmpty)
 	// Each skill, bible or quest line is logged at debug level before it is
 	// read, and an empty line's string is NULL. The logger formats through
 	// SafeFormat, which writes NULL as "" (printf's "%s" may not take it).
-	const std::filesystem::path path = std::filesystem::temp_directory_path() / "darkeden-ui-dialog.log";
+	// A name of its own, so parallel test runs cannot share the file.
+	const std::filesystem::path path = std::filesystem::temp_directory_path()
+		/ ("darkeden-ui-dialog-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".log");
 	const bool debugWasOn = log_is_enabled(LOG_LEVEL_DEBUG);
 	log_init();
 	log_set_console_output(false);

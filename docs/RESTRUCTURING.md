@@ -7133,10 +7133,12 @@ rounds settled* for the host rules). Test fixtures share
   > - The creature pool (`g_CreatureMemoryPool`) is defined in MCreature.cpp;
   >   MemoryPool.cpp keeps the pools of the executable's creature classes.
   > - A cell's pixel is WorldTileGeometry's, as it was through MTopView.
-  > - **Retired:** the commented-out light-sight blocks, and two
+  > - **Retired:** the commented-out light-sight blocks, two
   >   commented-out blocks (a can't-move log under the never-defined
   >   `OUTPUT_DEBUG`, a switch on the occupied cell) that alone would have
-  >   needed host entries.
+  >   needed host entries, and `g_bCheckError`'s definition under
+  >   `OUTPUT_DEBUG`. Its readers, also under it, stay, so defining the
+  >   macro no longer compiles.
   > - **Recorded, not changed:**
   >   - `UpdateAttachEffect` recolours a sylph only when its effect sprite is
   >     both `SYLPH_GREEN_FLY` and `SYLPH_BLACK_STOP`, which never holds.
@@ -7156,7 +7158,7 @@ rounds settled* for the host rules). Test fixtures share
   >     It stops at 0.
   >
   > R1 is 25 Windows / 23 Ninja.
-  - Owner: membership, R1, `test_creature.cpp`: 59 tests. The hosts
+  - Owner: membership, R1, `test_creature.cpp`: 60 tests. The hosts
     are fakes that record; the tables, the sector, the effects and the
     event queue are real, with a recording effect generator.
   - Mutants: 140 of the 141 caught. The one left is equivalent: a blitz slide turns to its target twice, and the second turn is the same as the first.

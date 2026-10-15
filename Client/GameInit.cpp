@@ -4214,7 +4214,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.IsStop = [](MCreature* pCreature) { return pCreature->IsStop() != FALSE; },
 	.SyncTurretDirection = [](MCreature* pCreature) { static_cast<MFakeCreature*>(pCreature)->SyncTurretDirection(); },
 	.GetAddonItemClass = [](MCreature* pCreature, int addon, ITEM_CLASS* pItemClass) {
-		// The creature wears gear: MCreature asks only of an advanced one.
+		// MCreature asks only of an advanced creature, and only the creatures
+		// that wear gear are made advanced (the add-slayer and add-ousters
+		// replies and their corpses set the level); the cast is the one
+		// MCreature made before.
 		const MCreatureWear::ADDON_INFO& info = static_cast<MCreatureWear*>(pCreature)->GetAddonInfo(static_cast<ADDON>(addon));
 		*pItemClass = info.ItemClass;
 		return info.bAddon != FALSE;
