@@ -10196,7 +10196,7 @@ UIMessageManager::Execute_UI_CLEAR_STAGE(intptr_t left, intptr_t right, void *vo
 
 	Time/=10;
 
-	Time = min(65535,Time);
+	Time = min(DWORD(65535), Time);
 	DEBUG_ADD_FORMAT("[Execute_UI_CLEAR_STAGE] GameType:%d Stage:%d Time:%d", GameType, Stage,Time);	
 	
 	CGSubmitScore _CGSubmitScore;
