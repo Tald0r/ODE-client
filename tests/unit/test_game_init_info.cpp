@@ -279,12 +279,29 @@ struct Fixture
 			SaveMap<MShopTemplateTable, MShopTemplate>(out, 2);
 		}
 		{
+			// Named in the data's own language; the English client's
+			// overlay knows NPC 11 (Drake) and script 100's first subject.
+			MNPCTable npcs;
+			for (int id = 11; id <= 13; id++)
+			{
+				NPC_INFO* pNPC = new NPC_INFO;
+				pNPC->Name = "Korean";
+				npcs.AddData(id, pNPC);
+			}
 			std::ofstream out(Path("FILE_INFO_NPC"), std::ios::binary | std::ios::trunc);
-			SaveMap<MNPCTable, NPC_INFO>(out, 3);
+			npcs.SaveToFile(out);
 		}
 		{
+			MNPCScriptTable scripts;
+			for (int id = 100; id <= 103; id++)
+			{
+				NPC_SCRIPT* pScript = new NPC_SCRIPT;
+				pScript->SubjectTable.Init(1);
+				pScript->SubjectTable.Set(0, "Korean");
+				scripts.AddData(id, pScript);
+			}
 			std::ofstream out(Path("FILE_INFO_NPC_SCRIPT_INFO"), std::ios::binary | std::ios::trunc);
-			SaveMap<MNPCScriptTable, NPC_SCRIPT>(out, 4);
+			scripts.SaveToFile(out);
 		}
 		SaveSized<EFFECTSPRITETYPE_TABLE>("FILE_INFO_EFFECTSPRITETYPE", 15);
 		SaveSized<MActionEffectSpriteTypeTable>("FILE_INFO_ACTIONEFFECTSPRITETYPE", 16);
@@ -293,11 +310,11 @@ struct Fixture
 			// The whole table, as the skill files must be: one skill on
 			// its screen position, and the server's numbers for it.
 			MSkillInfoTable skills;
-			skills.GetInternalPointer()[kSkill].Set(1, "Fixture", 41, 42, 7, "Fixture");
+			skills.GetInternalPointer()[kSkill].Set(1, "Fixture", 41, 42, 7, "Korean");
 			std::ofstream out(Path("FILE_INFO_SKILL"), std::ios::binary | std::ios::trunc);
 			skills.SaveToFile(out);
 			SKILLINFO_NODE server;
-			server.Set(1, "Fixture", 0, 0, 0, "Fixture");
+			server.Set(1, "Fixture", 0, 0, 0, "Korean");
 			server.SetMP(43);
 			server.SetLearnLevel(44);
 			std::ofstream serverOut(Path("FILE_INFO_SKILL_INFO"), std::ios::binary | std::ios::trunc);
@@ -351,6 +368,9 @@ struct Fixture
 		definitions.setProperty(key, Path(key));
 	}
 	void Remove(const std::string& key) { std::remove(Path(key).c_str()); }
+	// The client's language (Language.inf's LANGUAGE line; 3 is English,
+	// which the client also takes without the file).
+	void Language(int language) { Write("FILE_LANGUAGE_INFO", "LANGUAGE " + std::to_string(language) + "\n"); }
 	template<class T> static void Free(T*& p) { delete p; p = nullptr; }
 	static void FreeAll()
 	{
@@ -646,4 +666,43 @@ TEST(GameInitInfo, AReloadStartsFromNewObjects)
 	CHECK(g_pTimeItemManager != nullptr && !g_pTimeItemManager->IsExist(5));
 	CHECK(g_pItemOptionTable != nullptr && g_pItemOptionTable->GetSize() == 0);
 	CHECK(g_pGuildInfoMapper != nullptr && g_pGuildInfoMapper->empty());
+}
+
+TEST(GameInitInfo, TheEnglishClientShowsTheEnglishNames)
+{
+	// The data files hold the names in their own language; in English the
+	// built-in translations are laid over the NPCs, their scripts and the
+	// skills' display names.
+	for (bool withFile : {false, true})
+	{
+		Fixture fixture;
+		if (withFile) fixture.Language(3);
+		CHECK(Load());
+		if (g_pNPCTable == nullptr || g_pNPCScriptTable == nullptr || g_pSkillInfoTable == nullptr) return;
+		CHECK(g_pNPCTable->GetData(11) != nullptr && std::string(g_pNPCTable->GetData(11)->Name.GetString()) == "Drake");
+		const NPC_SCRIPT* pScript = g_pNPCScriptTable->GetData(100);
+		CHECK(pScript != nullptr && std::string(pScript->SubjectTable[0].GetString()).rfind("These accessories", 0) == 0);
+		CHECK(std::string((*g_pSkillInfoTable)[kSkill].GetHName()) == "Fixture");
+	}
+}
+
+TEST(GameInitInfo, AnotherLanguageKeepsTheDataFilesNames)
+{
+	Fixture fixture;
+	fixture.Language(0);
+	CHECK(Load());
+	if (g_pNPCTable == nullptr || g_pNPCScriptTable == nullptr || g_pSkillInfoTable == nullptr) return;
+	CHECK(g_pNPCTable->GetData(11) != nullptr && std::string(g_pNPCTable->GetData(11)->Name.GetString()) == "Korean");
+	const NPC_SCRIPT* pScript = g_pNPCScriptTable->GetData(100);
+	CHECK(pScript != nullptr && std::string(pScript->SubjectTable[0].GetString()) == "Korean");
+	CHECK(std::string((*g_pSkillInfoTable)[kSkill].GetHName()) == "Korean");
+}
+
+TEST(GameInitInfo, AnEmptyEffectSpriteTableStopsTheLoading)
+{
+	// No effect sprite types: the loading stops, with no message of its own.
+	Fixture fixture;
+	SaveSized<EFFECTSPRITETYPE_TABLE>("FILE_INFO_EFFECTSPRITETYPE", 0);
+	CHECK(!Load());
+	CHECK(failures.empty());
 }
