@@ -248,6 +248,17 @@ TEST(AppendPatch, ALoadStopsWhereTheFileDoes)
 	const auto nodes = fromCut.GetAppendPatchNode();
 	if (nodes.size() == 1) CHECK_EQ(1000, nodes[0]->writePosition);
 
+	// Half a count.
+	Bytes half = header;
+	Put(half, 1, 2);
+	scratch.Write("half.inf", half);
+	AppendPatch fromHalf;
+	{
+		std::ifstream in(scratch.Path("half.inf"), std::ios::binary);
+		fromHalf.LoadFromFile(in);
+	}
+	CHECK_EQ(0, fromHalf.GetSize());
+
 	// No count at all.
 	scratch.Write("short.inf", header);
 	AppendPatch fromShort;

@@ -2,9 +2,10 @@
 // MMusic.h
 //----------------------------------------------------------------------
 // The MIDI player's state: initialised, loaded, playing, paused, and the
-// volume. The client plays no MIDI. The Win32 MCI implementation was never
-// built (__USE_REAL_MIDI__ was never defined) and was retired with task
-// 4.214, so this keeps only the state the game asks about.
+// volume. The client plays no MIDI. The Win32 MCI implementation has not
+// been built since 9e60d44e put it behind __USE_REAL_MIDI__, which nothing
+// defines, and task 4.214 retired it; this keeps only the state the game
+// asks about.
 //----------------------------------------------------------------------
 #ifndef __MMUSIC_H__
 #define __MMUSIC_H__

@@ -6052,13 +6052,14 @@ rounds settled* for the host rules). Test fixtures share
     - `IsInit` with `||`, since `Init` and `Release` never leave one of
       the two set.
 
-- [x] **4.214 The MIDI player's state:** retire `MMusic`'s never-built
+- [x] **4.214 The MIDI player's state:** retire `MMusic`'s unbuilt
   MCI branch and move the stub that every build compiles into
   `gamemodel`.
   > **Status:** done (2026-10-14).
-  > - **The dead branch:** the real Win32 MCI/MIDI implementation sat
-  >   behind `__USE_REAL_MIDI__`, which nothing defines, so every build
-  >   compiled the `#else` stub. The branch is retired, with its
+  > - **The dead branch:** the real Win32 MCI/MIDI implementation (the
+  >   original VC6 code) sat behind `__USE_REAL_MIDI__` since 9e60d44e
+  >   disabled it, and nothing defines that, so every build compiled the
+  >   `#else` stub. The branch is retired, with its
   >   `<MMSystem.h>` include, the error-text buffer only it used, and
   >   the window handle nothing read.
   > - **The stub:** its bodies are unchanged. The script that rewrote it
@@ -6070,13 +6071,21 @@ rounds settled* for the host rules). Test fixtures share
   >     playing and paused.
   >   - Before `Init`, every call but `SetVolume` refuses.
   >   - `g_Music` is gamemodel's.
-  > - **The header** includes `Platform.h`. Its Korean comments go with
-  >   the retired notes.
+  > - **The header** includes `Platform.h`. Its Korean notes on the MCI
+  >   notification go; its member comments are translated.
   >
   > R1 is 49 Windows / 47 Ninja.
   - Owner: membership, R1, and `test_music.cpp` (7 tests).
   - Mutants: 19 of 21 are caught. Taking the source out of the
-    membership breaks the test link.
+    membership breaks the test link. #510's review found more:
+    - A real survivor, now pinned: `Pause` without `|| !m_bPlay`. A
+      second `Init` leaves a file loaded, neither playing nor paused,
+      and then `Pause` must change nothing.
+    - More equivalents, not in the first count: `Stop` not clearing
+      the paused flag (no call leaves the player paused while
+      playing), and any change to `UnInit`'s guard (`Stop` does
+      nothing unless initialised and playing, and playing means
+      loaded).
   - Equivalent mutants:
     - `Play` not stopping a loaded file first, since its flags are
       overwritten at once;

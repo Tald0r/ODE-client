@@ -1,5 +1,7 @@
 #include "test_framework.h"
 #include "MMusic.h"
+#include <cstring>
+#include <new>
 
 // The MIDI player's state (task 4.214). Nothing plays: Init and Play
 // report failure, but the state moves as the game expects. Before Init,
@@ -15,10 +17,15 @@ bool State(const MMusic& music, bool load, bool play, bool pause)
 
 TEST(Music, ANewPlayerIsIdle)
 {
-	MMusic music;
+	// Built over memory with every byte set, so a field the constructor
+	// left alone would show.
+	alignas(MMusic) unsigned char storage[sizeof(MMusic)];
+	std::memset(storage, 0x01, sizeof(storage));
+	MMusic& music = *new (storage) MMusic;
 	CHECK(!music.IsInit());
 	CHECK(State(music, false, false, false));
 	CHECK_EQ(0, music.GetVolume());
+	music.~MMusic();
 }
 
 TEST(Music, BeforeInitEveryCallRefuses)
@@ -98,6 +105,21 @@ TEST(Music, PausedNeedsALoadedFile)
 	CHECK(!music.IsPause());
 	music.m_bLoad = true;
 	CHECK(music.IsPause());
+}
+
+// A second Init leaves a file loaded but neither playing nor paused;
+// Pause then has nothing to pause.
+TEST(Music, PauseNeedsAPlayingFile)
+{
+	MMusic music;
+	music.Init(nullptr);
+	music.Play("music.mid");
+	music.Pause();
+	music.Init(nullptr);
+	CHECK(State(music, true, false, false));
+	CHECK(music.Pause());
+	CHECK(State(music, true, false, false));
+	CHECK(!music.IsPause());
 }
 
 TEST(Music, UnInitStopsALoadedFile)
