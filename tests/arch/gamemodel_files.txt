@@ -188,8 +188,8 @@ Client/MMoneyManager.h
 
 # Item core (task 4.4, second slice): MItem, the gear/armour/weapon
 # families and (since 4.3) the container-based gear; the use handlers
-# are the executable's MItemUse.cpp. MObject is the base; MItemLimits.h
-# holds the pile sizes both halves read.
+# are MItemUse.cpp's (gamemodel's since 4.237). MObject is the base;
+# MItemLimits.h holds the pile sizes both halves read.
 Client/MItem.cpp
 Client/MItem.h
 # Using items: the factory table and the use bodies (4.237).
@@ -893,14 +893,6 @@ Client/PacketHandler/GCTeachSkillInfoHandler.cpp
 # Replies that end in a message box or release a locked item, and their presentation service.
 Client/DialogPresentationHost.cpp
 Client/DialogPresentationHost.h
-# The NPC talk box and the message box, and their windows (4.238).
-# An advanced creature's actions: the conversions and frame counts (4.239).
-Client/AdvancementAction.cpp
-Client/AdvancementAction.h
-Client/DialogWindowHost.cpp
-Client/DialogWindowHost.h
-Client/UIDialog.cpp
-Client/UIDialog.h
 Client/PacketHandler/GCLearnSkillFailedHandler.cpp
 Client/PacketHandler/GCPetStashVerifyHandler.cpp
 Client/PacketHandler/GCSearchMotorcycleFailHandler.cpp
@@ -910,6 +902,16 @@ Client/PacketHandler/GCShopSellFailHandler.cpp
 Client/PacketHandler/GCTakeOutFailHandler.cpp
 Client/PacketHandler/GCTakeOutOKHandler.cpp
 Client/PacketHandler/GCUseBonusPointFailHandler.cpp
+
+# The NPC talk box and the message box, and their windows (4.238).
+Client/DialogWindowHost.cpp
+Client/DialogWindowHost.h
+Client/UIDialog.cpp
+Client/UIDialog.h
+
+# An advanced creature's actions: the conversions and frame counts (4.239).
+Client/AdvancementAction.cpp
+Client/AdvancementAction.h
 
 # Login-server replies about characters, IDs and versions, and their presentation and mode service.
 Client/LoginPresentationHost.cpp

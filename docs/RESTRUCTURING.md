@@ -7048,7 +7048,7 @@ rounds settled* for the host rules). Test fixtures share
   >   an answer, and the exit ID cut to the answer's byte goes as answer 0.
   >
   > R1 is 26 Windows / 24 Ninja.
-  - Owner: membership, R1, `test_ui_dialog.cpp`: 17 tests. The windows,
+  - Owner: membership, R1, `test_ui_dialog.cpp`: 18 tests. The windows,
     the other windows, the party window and the player are fakes that
     record; a ClientPlayer keeps what is sent; the talk box and the temp
     information are real.

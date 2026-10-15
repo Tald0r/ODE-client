@@ -8,7 +8,10 @@
 // it and hands it back. When the player picks an answer or a button, the
 // host calls UIDialog::ProcessPCTalkDlg or UIDialog::ProcessMessageDlg
 // with the window and the ID picked. Without a host no window opens (the
-// New entries answer NULL) and the rest is skipped.
+// New entries answer NULL) and the rest is skipped, but UIDialog still
+// locks the game's input for the window it asked for, and its Close
+// calls, which free only a window they have, leave the lock set; the
+// executable installs the host before any window opens.
 namespace DialogWindow {
 
 struct Window;

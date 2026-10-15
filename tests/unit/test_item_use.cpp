@@ -1305,7 +1305,13 @@ TEST(ItemUse, QuickSlotCandyFollowsTheArmsBandForOusters)
 	MEventEtcItem* pHeld = new MEventEtcItem;
 	pHeld->SetID(51);
 	pHeld->SetItemType(15);
-	CHECK(band.AddItem(pHeld, 2));
+	const bool held = band.AddItem(pHeld, 2);
+	CHECK(held);
+	if (!held)
+	{
+		delete pHeld;
+		return;
+	}
 	calls.clear();
 	pHeld->UseQuickItem();
 	CHECK(Same(Calls{"quick potion|51|2", Buffer(51, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT), "lock gear"}));

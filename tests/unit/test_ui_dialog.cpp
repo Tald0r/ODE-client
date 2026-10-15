@@ -35,8 +35,10 @@ namespace {
 std::vector<std::string> calls;
 std::string N(long long value) { return std::to_string(value); }
 
-// The windows are numbered in the order they open.
+// The windows are numbered in the order they open; talks are the talk
+// windows among them.
 std::vector<int> windows;
+std::vector<DialogWindow::Window*> talks;
 DialogWindow::Window* NewWindow()
 {
 	windows.push_back(static_cast<int>(windows.size()) + 1);
@@ -80,6 +82,7 @@ const DialogWindow::Host windowHost = []() {
 	DialogWindow::Host host{};
 	host.NewTalk = [](int creatureType, const char* name) {
 		DialogWindow::Window* pWindow = NewWindow();
+		talks.push_back(pWindow);
 		calls.push_back("talk " + W(pWindow) + "|" + N(creatureType) + "|" + (name != NULL ? name : "(null)"));
 		return pWindow;
 	};
@@ -100,7 +103,13 @@ const DialogWindow::Host windowHost = []() {
 	};
 	host.Start = [](DialogWindow::Window* pWindow) { calls.push_back("start " + W(pWindow)); };
 	host.Finish = [](DialogWindow::Window* pWindow) { calls.push_back("finish " + W(pWindow)); };
-	host.Run = [](DialogWindow::Window* pWindow, std::uint32_t id) { calls.push_back("run " + W(pWindow) + "|" + N(id)); };
+	// As VS_UI's dialog does, running a choice reports it to the window's
+	// own callback at once.
+	host.Run = [](DialogWindow::Window* pWindow, std::uint32_t id) {
+		calls.push_back("run " + W(pWindow) + "|" + N(id));
+		for (DialogWindow::Window* pTalk : talks)
+			if (pTalk == pWindow) UIDialog::ProcessPCTalkDlg(pWindow, id);
+	};
 	host.Delete = [](DialogWindow::Window* pWindow) { calls.push_back("delete " + W(pWindow)); };
 	return host;
 }();
@@ -178,6 +187,7 @@ struct Scene
 	{
 		calls.clear();
 		windows.clear();
+		talks.clear();
 		storage = shop = bookcase = repair = sell = swapping = partyUp = exchange = false;
 		waiting = PlayerState::WAIT_VERIFY_NULL;
 		g_pSocket = &wire;
@@ -249,7 +259,7 @@ TEST(UIDialog, AShortMessageIsOneLine)
 TEST(UIDialog, ALongMessageBreaksAtTheLastSpaceBeforeForty)
 {
 	Scene scene;
-	// 41 characters: the space at 34 breaks it, and the space goes.
+	// 41 characters: the space at 35 breaks it, and the space goes.
 	const std::string text = "The storage is full, so the item is kept";
 	CHECK_EQ(40u, text.size());
 	const std::string longer = text + "!";
@@ -512,13 +522,15 @@ TEST(UIDialog, LeavingTheTalkFreesThePlayer)
 
 TEST(UIDialog, LearningASkillSendsItWithTheDomain)
 {
+	// Leaving the window reports the leaving at once, whose own handling
+	// (the second "verify null") runs before the rest of the learning's.
 	Scene scene;
 	scene.Talk(PCTalkBox::SKILL_LEARN, {"012Fire Ball"});
 	scene.temp.SetMode(TempInformation::MODE_SKILL_LEARN);
 	scene.temp.Value1 = 3;
 	UIDialog::SetLockInputPCTalk();
 	UIDialog::ProcessPCTalkDlg(scene.Window(1), 12);
-	CHECK(Same({"learn|12|3", "run 1|" + Exit, "verify null"}));
+	CHECK(Same({"learn|12|3", "run 1|" + Exit, "verify null", "verify null"}));
 	CHECK_EQ(0, int(UIDialog::IsLockInput()));
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
 	// Not learning: nothing.
@@ -529,7 +541,7 @@ TEST(UIDialog, LearningASkillSendsItWithTheDomain)
 	UIDialog::SetLockInputPCTalk();
 	scene.temp.SetMode(TempInformation::MODE_SKILL_LEARN);
 	UIDialog::ProcessPCTalkDlg(scene.Window(1), 999);
-	CHECK(Same({"run 1|" + Exit, "verify null"}));
+	CHECK(Same({"run 1|" + Exit, "verify null", "verify null"}));
 	CHECK_EQ(0, int(UIDialog::IsLockInput()));
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
 }
@@ -541,7 +553,7 @@ TEST(UIDialog, SelectingAQuestSendsItForTheNPC)
 	scene.temp.SetMode(TempInformation::MODE_SELECT_QUEST);
 	UIDialog::SetLockInputPCTalk();
 	UIDialog::ProcessPCTalkDlg(scene.Window(1), 42);
-	CHECK(Same({"quest|42|300", "run 1|" + Exit, "verify null"}));
+	CHECK(Same({"quest|42|300", "run 1|" + Exit, "verify null", "verify null"}));
 	CHECK_EQ(0, int(UIDialog::IsLockInput()));
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
 	calls.clear();
@@ -551,7 +563,7 @@ TEST(UIDialog, SelectingAQuestSendsItForTheNPC)
 	// 9999 leaves.
 	UIDialog::SetLockInputPCTalk();
 	UIDialog::ProcessPCTalkDlg(scene.Window(1), 9999);
-	CHECK(Same({"run 1|" + Exit, "verify null"}));
+	CHECK(Same({"run 1|" + Exit, "verify null", "verify null"}));
 	CHECK_EQ(0, int(UIDialog::IsLockInput()));
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
 }
@@ -571,7 +583,7 @@ TEST(UIDialog, SigningABloodBibleKeepsTheTalkOpen)
 	UIDialog::ProcessPCTalkDlg(scene.Window(1), 5);
 	CHECK(Same({}));
 	UIDialog::ProcessPCTalkDlg(scene.Window(1), 999);
-	CHECK(Same({"run 1|" + Exit, "verify null"}));
+	CHECK(Same({"run 1|" + Exit, "verify null", "verify null"}));
 	CHECK_EQ(0, int(UIDialog::IsLockInput()));
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
 }
@@ -628,4 +640,38 @@ TEST(UIDialog, LeavingASkillQuestOrBibleTalkSendsNothing)
 		CHECK_EQ(0, int(UIDialog::IsLockInput()));
 		CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
 	}
+}
+
+TEST(UIDialog, LeavingAfterAChoiceBringsThePartyWindowBack)
+{
+	// The way out a choice takes runs the leaving, which brings back the
+	// party window that was up when the talk opened.
+	Scene scene;
+	scene.Talk(PCTalkBox::SKILL_LEARN, {"012Fire Ball"});
+	scene.temp.SetMode(TempInformation::MODE_SKILL_LEARN);
+	g_bPartyRunning = true;
+	UIDialog::ProcessPCTalkDlg(scene.Window(1), 12);
+	CHECK(Same({"learn|12|0", "run 1|" + Exit, "verify null", "party", "verify null"}));
+	CHECK(!g_bPartyRunning);
+}
+
+TEST(UIDialog, WithoutAWindowHostTheLockIsStillSet)
+{
+	// Production installs the host before any window opens; without one the
+	// lock is set for the window asked for and nothing clears it.
+	Scene scene;
+	DialogWindow::SetHost(nullptr);
+	scene.dialog.PopupFreeMessageDlg("Hi");
+	CHECK_EQ(FLAG_UIDIALOG_LOCK_MESSAGE, int(UIDialog::IsLockInput()));
+	scene.dialog.CloseMessageDlg();
+	CHECK_EQ(FLAG_UIDIALOG_LOCK_MESSAGE, int(UIDialog::IsLockInput()));
+	scene.talkBox.AddString("Buy");
+	scene.dialog.PopupPCTalkDlg();
+	CHECK_EQ(FLAG_UIDIALOG_LOCK_MESSAGE | FLAG_UIDIALOG_LOCK_PCTALK, int(UIDialog::IsLockInput()));
+	scene.dialog.ClosePCTalkDlg();
+	CHECK_EQ(FLAG_UIDIALOG_LOCK_MESSAGE | FLAG_UIDIALOG_LOCK_PCTALK, int(UIDialog::IsLockInput()));
+	CHECK(Same({"close all"}));
+	DialogWindow::SetHost(&windowHost);
+	scene.dialog.Release();
+	scene.dialog.Init();
 }
