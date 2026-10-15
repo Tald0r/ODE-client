@@ -365,7 +365,7 @@ TEST(GameInitInfo, WithEveryFileThereEverythingIsMade)
 	Fixture fixture;
 	CHECK(Load());
 	CHECK(failures.empty());
-	// The packets' item table follows the item table.
+	// The packets' item table is made once.
 	CHECK(calls == std::vector<std::string>({"packet items"}));
 	// Made, with nothing to load.
 	CHECK(g_pKeyAccelerator != nullptr && g_pWarManager != nullptr && g_pTimeItemManager != nullptr);
@@ -520,7 +520,9 @@ TEST(GameInitInfo, WithoutAHostTheDefaultsApply)
 	Fixture fixture;
 	GameInitInfoHost::SetHost(nullptr);
 	CHECK(Load());
+	const int xbrz = spritectl_get_xbrz_enabled();
 	CHECK(InitUserOption());
+	spritectl_set_xbrz_enabled(xbrz);
 	CHECK(g_pUserOption != nullptr && g_pUserOption->persnalShopupdatetime == 60000);
 	// A missing file still stops the loading, with no one to tell.
 	fixture.Remove("FILE_INFO_SOUND");
