@@ -4079,6 +4079,10 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.IsExistAttachEffect = [](MCreature* pCreature) { return pCreature->IsExistAttachEffect(); },
 	.FirstAttachEffect = [](MCreature* pCreature) { return *(pCreature->GetAttachEffectIterator()); },
 	.ClearAttachEffect = [](MCreature* pCreature) { pCreature->ClearAttachEffect(); },
+	.HasEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->HasEffectStatus(status); },
+	.GetActionCount = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetActionCount()); },
+	.GetActionCountMax = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetActionCountMax()); },
+	.SetShadowCount = [](MCreature* pCreature, int count) { pCreature->SetShadowCount(count); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {

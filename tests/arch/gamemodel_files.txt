@@ -144,6 +144,10 @@ Client/MHelicopterManager.h
 Client/MZoneSoundManager.cpp
 Client/MZoneSoundManager.h
 
+# How some creature types are drawn differently (4.229).
+Client/CreatureDrawExceptions.cpp
+Client/CreatureDrawExceptions.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

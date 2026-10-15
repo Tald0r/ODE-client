@@ -379,7 +379,7 @@ MTopView::MTopView()
 //	m_bTileSearchForCreature = true;
 	m_bTileSearchForCreature = false;		
 
-	InitMapingExceptionProc();
+	MapCreatureDrawExceptions( m_ExceptionProcMap );
 }
 
 

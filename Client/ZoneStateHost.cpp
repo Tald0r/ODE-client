@@ -775,4 +775,24 @@ void ClearAttachEffect(MCreature* pCreature)
 	if (s_Host && s_Host->ClearAttachEffect) s_Host->ClearAttachEffect(pCreature);
 }
 
+bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status)
+{
+	return s_Host && s_Host->HasEffectStatus && s_Host->HasEffectStatus(pCreature, status);
+}
+
+int GetActionCount(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetActionCount ? s_Host->GetActionCount(pCreature) : 0;
+}
+
+int GetActionCountMax(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetActionCountMax ? s_Host->GetActionCountMax(pCreature) : 0;
+}
+
+void SetShadowCount(MCreature* pCreature, int count)
+{
+	if (s_Host && s_Host->SetShadowCount) s_Host->SetShadowCount(pCreature, count);
+}
+
 }
