@@ -783,10 +783,7 @@ TEST(GameUI1ServerList, NetmarbleNeverReadsTheServerInformation)
 TEST(GameUI1ServerList, OtherwiseTheListsGoToTheUIOnly)
 {
 	// The lists go to the title UI (none here); nothing is queued and the
-	// information is left as it was. Recorded defects, not run: an unknown
-	// current group is read through NULL (GameUI.cpp:536-538), and a group
-	// or server with an empty name (MString's NULL) reaches strlen
-	// (GameUI.cpp:484, 556).
+	// information is left as it was.
 	ServerScene scene;
 	g_pUserInformation->IsNetmarble = false;
 	UI_SetWorldList();
@@ -800,6 +797,26 @@ TEST(GameUI1ServerList, OtherwiseTheListsGoToTheUIOnly)
 	CHECK_EQ(5, int(scene.servers.GetServerGroupID()));
 	CHECK_EQ(3, int(scene.servers.GetServerID()));
 	CHECK(std::string("World") == scene.servers.GetServerGroupName());
+
+	// A group or server with an empty name (which MString keeps as NULL)
+	// is listed with an empty one; a current group the information no
+	// longer holds shows no list, as no information shows none.
+	ServerGroup* pNameless = new ServerGroup;
+	pNameless->SetGroupName("");
+	SERVER_INFO* pServer = new SERVER_INFO;
+	pServer->ServerName = "";
+	pNameless->AddData(4, pServer);
+	scene.servers.AddData(6, pNameless);
+	CHECK(scene.servers.SetServerGroupID(6));
+	CHECK(scene.servers.GetServerGroupName() == NULL);
+	UI_SetWorldList();
+	UI_SetServerList();
+	scene.servers.Release();	// no group left; the current one is 0
+	UI_SetWorldList();
+	UI_SetServerList();
+	scene.ui.Drain();
+	CHECK(calls.empty());
+	CHECK_EQ(0, int(scene.servers.GetServerGroupID()));
 }
 
 //----------------------------------------------------------------------

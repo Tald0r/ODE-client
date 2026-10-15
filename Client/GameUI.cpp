@@ -478,7 +478,8 @@ UI_SetWorldList()
 		//-----------------------------------------------------
 		for (int i=0; i<numGroup; i++)
 		{			
-			const char* groupNameOrg = iGroup->second->GetGroupName();
+			// An empty name is kept as NULL (MString).
+			const char* groupNameOrg = iGroup->second->GetGroupName() != NULL ? iGroup->second->GetGroupName() : "";
 			int status = iGroup->second->GetGroupStatus();
 		
 			groupName[i] = new char[strlen(groupNameOrg) + 1];
@@ -525,7 +526,9 @@ UI_SetServerList()
 		return;
 	}
 
-	if (g_pServerInformation!=NULL)
+	// A current group the information no longer holds (a world list that
+	// left it out) has no servers to list: nothing, as with no information.
+	if (g_pServerInformation!=NULL && g_pServerInformation->GetData( g_pServerInformation->GetServerGroupID() )!=NULL)
 	{
 		// If false, a server is being selected.
 		gC_vs_ui.StartServerSelect( false );
@@ -550,7 +553,8 @@ UI_SetServerList()
 		{			
 			SERVER_INFO* pServerInfo = iServer->second;
 
-			const char* serverNameOrg = pServerInfo->ServerName.GetString();
+			// An empty name is kept as NULL (MString).
+			const char* serverNameOrg = pServerInfo->ServerName.GetString() != NULL ? pServerInfo->ServerName.GetString() : "";
 			int status = pServerInfo->ServerStatus;
 
 			serverName[i] = new char[strlen(serverNameOrg) + 1];
