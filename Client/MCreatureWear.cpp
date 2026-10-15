@@ -2,21 +2,19 @@
 // MCreatureWear.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
 #include "MCreatureWear.h"
 #include "MItem.h"
 #include "AddonDef.h"
 #include "SkillDef.h"
-#include "DebugInfo.h"
-#include "CIndexSprite.h"
+#include "DebugLog.h"
 #include "ClientConfig.h"
 #include "MEffectGeneratorTable.h"
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
 #include "MItemOptionTable.h"
-#include "PacketFunction.h"
-#include "MinTr.h"
-#include "MTopView.h"
+#include "../basic/ColorSetDef.h"
+#include "FrameClock.h"
+#include "WorldEventsHost.h"
 
 int defaultSkinColor		= 410;					
 int defaultCoatColor		= 377;//368;	
@@ -24,6 +22,10 @@ int defaultTrouserColor	= 377;//489;
 
 
 #define	ATTACHEFFECTCOLOR_NULL		0xFFFF
+
+// The allocator pool of the creatures that wear gear (task 4.243:
+// MemoryPool.cpp's until then).
+MemoryPool g_CreatureWearMemoryPool( sizeof( MCreatureWear ), 30 );
 
 
 //----------------------------------------------------------------------
@@ -1064,7 +1066,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			if(IsAdvancementClass() && status==EFFECTSTATUS_SUMMON_SYLPH)
 			{
 				type = EFFECTSPRITETYPE_OUSTERS_FASTMOVE_LOOP;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, 8, NULL, false);
 			}
 		break;
@@ -1135,7 +1137,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			SetAlive();
 			if(IsVampire())
 			{
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 							BLOOD_RESURRECT,										// 사용 기술 번호
 						
 							m_X, m_Y, 0,
@@ -1187,7 +1189,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 		if(type == EFFECTSPRITETYPE_FAST_MOVE_STOP)
 			type2 = EFFECTSPRITETYPE_FAST_MOVE_FLY;
 
-		_MinTraceA("remove effectsprite\n");
+		DEBUG_ADD("remove effectsprite");
 
 		//-------------------------------------------------------
 		// Creature에 붙어 있는 Effect중에서
@@ -1417,7 +1419,7 @@ MCreatureWear::UpdateAttachEffect()
 				if( bNewSummonSylphEffect )
 					frameID = (*g_pEffectSpriteTypeTable)[ EffectSpriteType + 1 ].FrameID;
 
-				int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);			
+				int maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 			
 				pEffect->SetEffectSprite( EFFECTSPRITETYPE_FAST_MOVE_STOP );
 				if( bNewSummonSylphEffect )
@@ -1434,7 +1436,7 @@ MCreatureWear::UpdateAttachEffect()
 				if( bNewSummonSylphEffect )
 					frameID = (*g_pEffectSpriteTypeTable)[ EffectSpriteType - 1 ].FrameID;
 
-				int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);			
+				int maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 
 				pEffect->SetEffectSprite( EFFECTSPRITETYPE_FAST_MOVE_FLY );
 

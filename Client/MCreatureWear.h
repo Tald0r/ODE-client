@@ -10,7 +10,10 @@
 #include "MTypeDef.h"
 #include "MCreature.h"
 #include "MItem.h"
-#include "MemoryPool.h"
+#include "../basic/MemoryPool.h"
+
+// The pool of the creatures that wear gear (MCreatureWear.cpp's).
+extern MemoryPool g_CreatureWearMemoryPool;
 
 //----------------------------------------------------------------------
 // define

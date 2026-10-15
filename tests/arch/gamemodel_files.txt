@@ -301,6 +301,10 @@ Client/MZoneTable.h
 # creature classes (wear, NPC, fake, player) derive from it.
 Client/MCreature.cpp
 Client/MCreature.h
+# The creature that wears gear: its addons, colours and effects (4.243).
+Client/MCreatureWear.cpp
+Client/MCreatureWear.h
+Client/AddonDef.h
 Client/MCreatureTable.cpp
 Client/MCreatureTable.h
 Client/MNPCTable.cpp
