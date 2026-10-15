@@ -6,13 +6,16 @@
 #include "MNPCTable.h"
 #include "MShopTemplateTable.h"
 #include "MShopShelf.h"
-#include "MPlayer.h"
 #include "NPCShopBuilder.h"
+#include "PlayerStateHost.h"
+
+// The NPCs' allocator pool (task 4.244: MemoryPool.cpp's until then).
+MemoryPool g_NPCCreatureMemoryPool( sizeof( MNPC ), 5 );
 
 namespace {
 const NPCShopHost shopHost{
 	.CreateItem = MItem::NewItem,
-	.IsFemale = []() { return g_pPlayer && g_pPlayer->IsFemale(); },
+	.IsFemale = []() { MCreature* pPlayer = PlayerState::Creature(); return pPlayer != NULL && pPlayer->IsFemale(); },
 	.SetPortalDestination = [](MItem& item, int zone,
 		TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
 		static_cast<MVampirePortalItem&>(item).SetZone(zone, x, y);
@@ -60,7 +63,7 @@ MNPC::GetNPCInfo(TYPE_OBJECTID id) const
 void				
 MNPC::SetShop(MShop* pShop)
 {
-	// 기존에 있던걸 지운다.
+	// Delete the one there was.
 	if (m_pShop!=NULL)
 	{
 		delete m_pShop;
@@ -78,17 +81,17 @@ MNPC::CreateFixedShelf(bool bMysterious)
 	NPC_INFO* pInfo = (*g_pNPCTable).GetData( m_NPCID );
 
 	//-----------------------------------------------------------
-	// NPC의 상점을 얻는다.
+	// Get the NPC's shop.
 	//-----------------------------------------------------------
 	MShop* pShop = m_pShop;
 
 	if (pShop==NULL)
 	{
-		// 상점이 없으면 상점을 만든다.
+		// No shop: make one.
 		pShop = new MShop;
 		pShop->Init( MShopShelf::MAX_SHELF );
 
-		// NPC에 상점 설정..
+		// Give it to the NPC..
 		m_pShop = pShop;
 	}
 
@@ -103,30 +106,34 @@ MNPC::Action()
 {
 	MCreature::Action();
 
-	// 바토리인 경우
+	// Bathory
 	if (m_CreatureType==217
-		// 테페즈인 경우
+		// Tepez
 		|| m_CreatureType==366)
 	{
 		//--------------------------------------------------------
-		// 방향을 바꿀 필요가 없던 경우에..
-		// 심심할때마다 한번씩 방향 바꿔주기.. - -;
+		// When it had no need to turn..
+		// turn it now and then, when it is bored.. - -;
 		//--------------------------------------------------------			
-		if (//Player가 아니고
+		if (//not a player
 			m_CreatureType >= 4
-			// 살아 있고..
+			// alive..
 			&& m_bAlive
-			// 정지상태이고
+			// standing
 			&& m_Action==ACTION_STAND
-			// 움직일곳이 없고
+			// with nowhere to move
 			&& m_listMoveBuffer.size()==0
-			// 정지동작의 끝에..
+			// at the end of its stand..
 			&& m_ActionCount>=m_ActionCountMax-1
-			// random하게.. - -;
+			// at random.. - -;
 			&& (rand() % 5)==0)
 		{
-			// 랜덤하게 player를 바라본다.
-			SetDirectionToPosition( g_pPlayer->GetX(), g_pPlayer->GetY() );
+			// look at the player, at random.
+			MCreature* pPlayer = PlayerState::Creature();
+			if (pPlayer != NULL)
+			{
+				SetDirectionToPosition( pPlayer->GetX(), pPlayer->GetY() );
+			}
 		}
 	}
 	if(m_CreatureType >= 636 && m_CreatureType <= 639 )

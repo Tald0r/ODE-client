@@ -305,6 +305,9 @@ Client/MCreature.h
 Client/MCreatureWear.cpp
 Client/MCreatureWear.h
 Client/AddonDef.h
+# The NPC: its shop and its idle turning (4.244).
+Client/MNPC.cpp
+Client/MNPC.h
 Client/MCreatureTable.cpp
 Client/MCreatureTable.h
 Client/MNPCTable.cpp
