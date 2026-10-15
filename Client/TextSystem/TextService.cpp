@@ -87,21 +87,10 @@ NormalizationCacheStats TextService::GetNormalizationCacheStats()
 	return stats;
 }
 
-// Resources decode at their declared boundary; display text is UTF-8.
-// Repair malformed bytes without guessing a different character set.
+// The repair is basic's (TextEncoding::NormalizeUtf8); this caches it.
 static std::string NormalizeUncached(const std::string& text)
 {
-	if (text.empty())
-		return text;
-
-	if (IsValidUtf8(text.c_str(), text.size()))
-		return text;
-
-	using TextEncoding::Encoding;
-	std::string converted;
-	if (!TextEncoding::Convert(text, Encoding::Utf8, Encoding::Utf8, converted,
-		TextEncoding::InvalidInput::Replace)) return {};
-	return converted;
+	return TextEncoding::NormalizeUtf8(text);
 }
 
 std::string TextService::NormalizeText(const std::string& text)

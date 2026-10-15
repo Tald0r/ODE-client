@@ -7089,7 +7089,16 @@ rounds settled* for the host rules). Test fixtures share
   unchanged.
   > **Status:** done (2026-10-15). R1 is unchanged.
 
-### Remaining R1 work after tasks 4.80-4.240
+- [x] **4.241 Repairing display text:** `TextEncoding::NormalizeUtf8`
+  (basic) does what TextService's uncached normalisation did: valid UTF-8
+  as it is, each malformed byte replaced by U+FFFD. `NormalizeText` keeps
+  its cache over it. MCreature's chat wrapping can call it without
+  TextSystem, which gamemodel does not link.
+  > **Status:** done (2026-10-15). R1 is unchanged.
+  - Owner: `test_text_encoding.cpp` (one new test); TextService's 13
+    normalisation tests run through it.
+
+### Remaining R1 work after tasks 4.80-4.241
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
