@@ -48,6 +48,8 @@
 #include "VS_UI_title.h"
 #include "VS_UI_mouse_pointer.h"
 #include "VS_UI_item.h"
+#include "Player.h"
+#include "Cpackets/CGSay.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -214,6 +216,29 @@ const MEffectTargetHost targetHost = []() {
 	return host;
 }();
 
+// The server a bug report about an item outside the item table goes to:
+// the chat lines it is sent.
+std::vector<std::string> reports;
+struct Server : Player
+{
+	void sendPacket(Packet* pPacket) override { reports.push_back(static_cast<CGSay*>(pPacket)->getMessage()); }
+};
+Player* reportTarget = nullptr;
+const WireHost wireHost = []() {
+	WireHost host{};
+	host.BugReportTarget = []() { return reportTarget; };
+	return host;
+}();
+
+// The class and type that end each report, in order.
+std::vector<std::string> Reported()
+{
+	std::vector<std::string> tails;
+	for (const std::string& report : reports) tails.push_back(report.substr(report.find_last_of(' ') + 1));
+	return tails;
+}
+std::string ClassType(int itemClass, int type) { return N(itemClass) + "," + N(type); }
+
 struct Scene
 {
 	GameModelWorld world{ 4 };
@@ -242,6 +267,7 @@ struct Scene
 	CMessageArray systemMessages;
 	C_VS_UI_ITEM uiItem;
 	C_VS_UI_MOUSE_POINTER mouse;
+	Server server;
 	CREATURE_TABLE* oldCreatureTypes = g_pCreatureTable;
 	CREATURESPRITE_TABLE* oldSprites = g_pCreatureSpriteTable;
 	MActionInfoTable* oldActions = g_pActionInfoTable;
@@ -288,8 +314,11 @@ struct Scene
 	Scene()
 	{
 		calls.clear();
+		reports.clear();
 		refusedClass = -1;
 		MItem::SetHost(&itemHost);
+		reportTarget = &server;
+		Wire::SetHost(&wireHost);
 		creatureTypes.Init(800);
 		g_pCreatureTable = &creatureTypes;
 		Type(CREATURETYPE_SLAYER_MALE, CREATURETRIBE_SLAYER);
@@ -362,6 +391,8 @@ struct Scene
 		vampireGear.Release();
 		oustersGear.Release();
 		mouse.DropItem();
+		Wire::SetHost(NULL);
+		reportTarget = nullptr;
 		MItem::SetHost(NULL);
 		MEffectTarget::SetHost(oldTargetHost);
 		DialogPresentation::SetHost(oldDialog);
@@ -611,12 +642,14 @@ TEST(PacketPlayerItems, InventoryGunsGetAMagazineOfTheirClass)
 TEST(PacketPlayerItems, InventoryContainersFillTheirPockets)
 {
 	Scene scene;
+	// A second pupa type, so the band's pocket item shows the type it took.
+	scene.Class(ITEM_CLASS_PUPA, 2, 1, 1, FLAG_RACE_OUSTERS);
 	InventorySlotInfo* pBelt = InventorySlot(ITEM_CLASS_BELT, 0, 521, 0, 0);
 	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 1, 601, 2, 0));
 	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 602, 5, 2));
 	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 605, 1, 3));
 	InventorySlotInfo* pBand = InventorySlot(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 522, 3, 0);
-	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 603, 4, 1));
+	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 1, 603, 4, 1));
 	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 606, 1, 2));
 	InventorySlotInfo* pSword = InventorySlot(ITEM_CLASS_SWORD, 0, 523, 6, 0);
 	pSword->addListElement(SubItem(ITEM_CLASS_POTION, 0, 604, 1, 0));
@@ -643,7 +676,7 @@ TEST(PacketPlayerItems, InventoryContainersFillTheirPockets)
 	{
 		CHECK(pPlacedBand->GetItem(0) == NULL);
 		const MItem* pPupa = pPlacedBand->GetItem(1);
-		CHECK(pPupa != NULL && pPupa->GetID() == 603 && pPupa->GetItemClass() == ITEM_CLASS_PUPA && pPupa->GetNumber() == 4);
+		CHECK(pPupa != NULL && pPupa->GetID() == 603 && pPupa->GetItemClass() == ITEM_CLASS_PUPA && pPupa->GetItemType() == 1 && pPupa->GetNumber() == 4);
 	}
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(523)) != NULL);
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(604)) == NULL);
@@ -653,9 +686,9 @@ TEST(PacketPlayerItems, InventoryContainersFillTheirPockets)
 
 //----------------------------------------------------------------------
 // A slot that is missing, of a class or type the item table does not
-// have, of a class the factory cannot make, or of an item that does not
-// fit where it says is passed over (the last one freed), and the next one
-// still placed.
+// have (reported to the server), of a class the factory cannot make, or of
+// an item that does not fit where it says is passed over (the last one
+// freed), and the next one still placed.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, InventorySkipsWhatCannotBePlaced)
 {
@@ -677,6 +710,7 @@ TEST(PacketPlayerItems, InventorySkipsWhatCannotBePlaced)
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(536)) != NULL);
 	CHECK_EQ(1, Count("destroyed|535"));
 	CHECK_EQ(2, scene.inventory.GetItemNum());
+	CHECK(Reported() == std::vector<std::string>({ ClassType(MAX_ITEM_CLASS, 0), ClassType(ITEM_CLASS_SWORD, 1) }));
 }
 
 //----------------------------------------------------------------------
@@ -701,10 +735,10 @@ TEST(PacketPlayerItems, InventoryInfoNoneStillEmptiesTheInventory)
 }
 
 //----------------------------------------------------------------------
-// A pocket item of a class or type outside the item table is freed and
-// passed over like any other the pocket cannot take: its container and
-// the pocket items after it still go in, the slots after it are read,
-// the items are checked and the inventory's effects let go.
+// A pocket item of a class or type outside the item table is reported,
+// freed and passed over like any other the pocket cannot take: its
+// container and the pocket items after it still go in, the slots after it
+// are read, the items are checked and the inventory's effects let go.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, InventorySkipsAPocketItemOutsideTheTable)
 {
@@ -736,6 +770,7 @@ TEST(PacketPlayerItems, InventorySkipsAPocketItemOutsideTheTable)
 	CHECK_EQ(4, scene.inventory.GetItemNum());
 	CHECK(Freed(pPastClass));
 	CHECK(Freed(pPastType));
+	CHECK(Reported() == std::vector<std::string>({ ClassType(MAX_ITEM_CLASS, 0), ClassType(ITEM_CLASS_PUPA, 1) }));
 	// Each item checked as it goes in and again after; the effects let go.
 	CHECK_EQ(2, Count("affect|542"));
 	CHECK(!calls.empty() && calls.back() == "inventory effects released");
@@ -760,7 +795,8 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 	scene.me->SetStatus(MODIFY_TOHIT, 66);
 	GearSlotInfo* pHelm = GearSlot(ITEM_CLASS_HELM, 1, 701, MSlayerGear::GEAR_SLAYER_HELM);
 	pHelm->setOptionType({ 3 });
-	pHelm->setItemNum(1);
+	// Not the new item's one, to show the number is the slot's.
+	pHelm->setItemNum(2);
 	pHelm->setSilver(3);
 	pHelm->setGrade(4);
 	pHelm->setMainColor(130);
@@ -787,7 +823,7 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 	{
 		CHECK_EQ(1, pPlacedHelm->GetItemType());
 		CHECK(Options(pPlacedHelm) == "3");
-		CHECK_EQ(1, pPlacedHelm->GetNumber());
+		CHECK_EQ(2, pPlacedHelm->GetNumber());
 		CHECK_EQ(3, pPlacedHelm->GetSilver());
 		CHECK_EQ(4, pPlacedHelm->GetGrade());
 		CHECK_EQ(MSlayerGear::GEAR_SLAYER_HELM, pPlacedHelm->GetItemSlot());
@@ -797,11 +833,13 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 	}
 	const MBelt* pPlacedBelt = dynamic_cast<const MBelt*>(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BELT));
 	CHECK(pPlacedBelt != NULL && g_pQuickSlot == pPlacedBelt);
-	CHECK(pPlacedBelt != NULL && pPlacedBelt->GetItem(1) != NULL && pPlacedBelt->GetItem(1)->GetID() == 703);
+	const MItem* pPocket = pPlacedBelt != NULL ? pPlacedBelt->GetItem(1) : NULL;
+	CHECK(pPocket != NULL && pPocket->GetID() == 703 && pPocket->GetItemType() == 1 && pPocket->GetNumber() == 3);
 	const MGunItem* pPlacedRifle = dynamic_cast<const MGunItem*>(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_RIGHTHAND));
 	CHECK(pPlacedRifle != NULL && pPlacedRifle->GetID() == 704 && pPlacedRifle->GetMagazine() != NULL);
 	if (pPlacedRifle != NULL && pPlacedRifle->GetMagazine() != NULL)
 	{
+		CHECK_EQ(0, pPlacedRifle->GetMagazine()->GetID());
 		CHECK_EQ(1 + 8, pPlacedRifle->GetMagazine()->GetItemType());
 		CHECK_EQ(25, pPlacedRifle->GetMagazine()->GetNumber());
 		CHECK(g_pCurrentMagazine == pPlacedRifle->GetMagazine());
@@ -835,8 +873,8 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 
 //----------------------------------------------------------------------
 // A vampire's and an ousters' items go on their own race's gear, which
-// starts empty; what their gear, or an arms band's pockets, refuse is
-// freed.
+// starts empty; an arms band's pocket items take their slot's type and
+// number; what their gear, or an arms band's pockets, refuse is freed.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, GearInfoUsesThePlayersRaceGear)
 {
@@ -863,8 +901,9 @@ TEST(PacketPlayerItems, GearInfoUsesThePlayersRaceGear)
 		Scene scene;
 		scene.me->SetCreatureType(CREATURETYPE_OUSTERS);
 		scene.oustersGear.SetBloodBibleOpenSlot(4);
+		scene.Class(ITEM_CLASS_PUPA, 2, 1, 1, FLAG_RACE_OUSTERS);
 		GearSlotInfo* pBand = GearSlot(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 723, MOustersGear::GEAR_OUSTERS_ARMSBAND1);
-		pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 724, 1, 0));
+		pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 1, 724, 3, 0));
 		pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 725, 1, 2));
 		GearInfo info;
 		Add(info, { GearSlot(ITEM_CLASS_OUSTERS_CIRCLET, 0, 721, MOustersGear::GEAR_OUSTERS_CIRCLET),
@@ -878,7 +917,8 @@ TEST(PacketPlayerItems, GearInfoUsesThePlayersRaceGear)
 		CHECK(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_COAT) == NULL);
 		CHECK_EQ(1, Count("destroyed|722"));
 		const MOustersArmsBand* pPlacedBand = dynamic_cast<const MOustersArmsBand*>(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_ARMSBAND1));
-		CHECK(pPlacedBand != NULL && pPlacedBand->GetItem(0) != NULL && pPlacedBand->GetItem(0)->GetID() == 724);
+		const MItem* pPupa = pPlacedBand != NULL ? pPlacedBand->GetItem(0) : NULL;
+		CHECK(pPupa != NULL && pPupa->GetID() == 724 && pPupa->GetItemType() == 1 && pPupa->GetNumber() == 3);
 		CHECK_EQ(1, Count("destroyed|725"));
 		CHECK_EQ(0, scene.oustersGear.GetBloodBibleOpenSlot());
 		CHECK_EQ(1, Count("stats"));
@@ -915,8 +955,9 @@ TEST(PacketPlayerItems, GearInfoNoneStillEmptiesTheGear)
 }
 
 //----------------------------------------------------------------------
-// A slot of a class or type the item table does not have, or of a class
-// the factory cannot make, is passed over and the next one still worn.
+// A slot of a class or type the item table does not have (reported to the
+// server), or of a class the factory cannot make, is passed over and the
+// next one still worn.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, GearSkipsWhatCannotBeMade)
 {
@@ -932,10 +973,11 @@ TEST(PacketPlayerItems, GearSkipsWhatCannotBeMade)
 	CHECK(pHelm != NULL && pHelm->GetID() == 734);
 	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_RIGHTHAND) == NULL);
 	CHECK_EQ(1, scene.slayerGear.GetItemNum());
+	CHECK(Reported() == std::vector<std::string>({ ClassType(MAX_ITEM_CLASS, 0), ClassType(ITEM_CLASS_HELM, 2) }));
 }
 
 //----------------------------------------------------------------------
-// A pocket item outside the item table is freed and passed over: the belt
+// A pocket item outside the item table is reported, freed and passed over: the belt
 // and the pocket items after it still go on, the slots after it are read,
 // the blood bible is applied and the player's gear, skills and stats are
 // checked; an ousters' arms band likewise.
@@ -971,6 +1013,7 @@ TEST(PacketPlayerItems, GearSkipsAPocketItemOutsideTheTable)
 		CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_RIGHTHAND) != NULL);
 		CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1) != NULL);
 		CHECK(Freed(pPastType));
+		CHECK(Reported() == std::vector<std::string>({ ClassType(ITEM_CLASS_POTION, 5) }));
 		const std::vector<std::string> last = { "affect|0", "affect|741", "affect|742", "affect|744", "stats" };
 		CHECK(calls.size() >= last.size() && std::equal(last.begin(), last.end(), calls.end() - static_cast<std::ptrdiff_t>(last.size())));
 		CHECK(scene.skills.empty());
@@ -992,6 +1035,7 @@ TEST(PacketPlayerItems, GearSkipsAPocketItemOutsideTheTable)
 		CHECK(pPlacedBand != NULL && pPlacedBand->GetItem(0) == NULL);
 		CHECK(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) != NULL);
 		CHECK(Freed(pPastType));
+		CHECK(Reported() == std::vector<std::string>({ ClassType(ITEM_CLASS_PUPA, 1) }));
 		CHECK_EQ(1, Count("stats"));
 	}
 }
@@ -1048,30 +1092,40 @@ TEST(PacketPlayerItems, BloodBibleReplacesTheSignsOfEachRace)
 
 //----------------------------------------------------------------------
 // The signs' types and count are the server's: a type past the twelve
-// bonuses marks none, and a sign past the six slots is freed.
+// bonuses (12 the first) marks none, and a sign past the six slots is
+// freed; each race's gear alike.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, BloodBibleSignsPastTheBonusesOrTheSlotsAreKeptOut)
 {
-	Scene scene;
-	scene.me->SetCreatureType(TYPE_CREATURETYPE(CREATURETYPE_SLAYER_MALE));
-	BloodBibleSignInfo info;
-	info.setOpenNum(6);
-	info.getList() = { 3, HOLYLAND_BONUS_MAX, 255, 1, 2, 4, 5 };
-	calls.clear();
-	SetBloodBibleSlot(&info);
-	for (int i = 0; i < HOLYLAND_BONUS_MAX; ++i)
-		CHECK_EQ(i == 1 || i == 2 || i == 3 || i == 4 || i == 5, g_abHolyLandBonusSkills[i]);
-	// The gear takes the signs the item table knows; the ones it refuses
-	// (types 12 and 255, past the table) and the seventh, which no slot
-	// takes, are made and freed.
-	for (int i = 0; i < 6; ++i)
-		CHECK_EQ(i != 1 && i != 2, scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1 + i)) != NULL);
-	CHECK_EQ(1, Count("destroyed|1"));
-	CHECK_EQ(1, Count("destroyed|2"));
-	CHECK_EQ(1, Count("destroyed|6"));
-	// The signs the gear took stay.
-	for (const char* kept : {"destroyed|0", "destroyed|3", "destroyed|4", "destroyed|5"})
-		CHECK_EQ(0, Count(kept));
+	struct RaceGear { int creatureType; MPlayerGear* (*gear)(Scene&); int first; };
+	const RaceGear races[] = {
+		{ CREATURETYPE_SLAYER_MALE, [](Scene& s) -> MPlayerGear* { return &s.slayerGear; }, MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1 },
+		{ CREATURETYPE_VAMPIRE_MALE1, [](Scene& s) -> MPlayerGear* { return &s.vampireGear; }, MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1 },
+		{ CREATURETYPE_OUSTERS, [](Scene& s) -> MPlayerGear* { return &s.oustersGear; }, MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1 },
+	};
+	for (const RaceGear& race : races)
+	{
+		Scene scene;
+		scene.me->SetCreatureType(TYPE_CREATURETYPE(race.creatureType));
+		BloodBibleSignInfo info;
+		info.setOpenNum(6);
+		info.getList() = { 3, HOLYLAND_BONUS_MAX, 255, 1, 2, 4, 5 };
+		calls.clear();
+		SetBloodBibleSlot(&info);
+		for (int i = 0; i < HOLYLAND_BONUS_MAX; ++i)
+			CHECK_EQ(i == 1 || i == 2 || i == 3 || i == 4 || i == 5, g_abHolyLandBonusSkills[i]);
+		// The gear takes the signs the item table knows; the ones it refuses
+		// (types 12 and 255, past the table) and the seventh, which no slot
+		// takes, are made and freed.
+		for (int i = 0; i < 6; ++i)
+			CHECK_EQ(i != 1 && i != 2, race.gear(scene)->GetItem(BYTE(race.first + i)) != NULL);
+		CHECK_EQ(1, Count("destroyed|1"));
+		CHECK_EQ(1, Count("destroyed|2"));
+		CHECK_EQ(1, Count("destroyed|6"));
+		// The signs the gear took stay.
+		for (const char* kept : {"destroyed|0", "destroyed|3", "destroyed|4", "destroyed|5"})
+			CHECK_EQ(0, Count(kept));
+	}
 }
 
 //----------------------------------------------------------------------
@@ -1119,15 +1173,18 @@ TEST(PacketPlayerItems, ExtraInfoPutsTheItemOnTheMouse)
 	CHECK_EQ(6, pPicked->GetSilver());
 	CHECK_EQ(7, pPicked->GetGrade());
 	CHECK_EQ(8, pPicked->GetEnchantLevel());
-	CHECK(pPicked->GetItem(2) != NULL && pPicked->GetItem(2)->GetID() == 752 && pPicked->GetItem(2)->GetNumber() == 9);
+	const MItem* pPocket = pPicked->GetItem(2);
+	CHECK(pPocket != NULL && pPocket->GetID() == 752 && pPocket->GetItemType() == 1 && pPocket->GetNumber() == 9);
 }
 
 //----------------------------------------------------------------------
-// A gun on the mouse takes its magazine; an arms band its pockets.
+// A gun on the mouse takes its magazine; an arms band its pockets, each
+// pocket item of its slot's type and number.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, ExtraInfoGunsAndArmsBandsAreFilled)
 {
 	Scene scene;
+	scene.Class(ITEM_CLASS_PUPA, 2, 1, 1, FLAG_RACE_OUSTERS);
 	ExtraSlotInfo* pRifle = NewSlot<ExtraSlotInfo>(ITEM_CLASS_AR, 0, 761);
 	pRifle->setItemNum(12);
 	pRifle->setSilver(1);
@@ -1146,7 +1203,7 @@ TEST(PacketPlayerItems, ExtraInfoGunsAndArmsBandsAreFilled)
 	}
 
 	ExtraSlotInfo* pBand = NewSlot<ExtraSlotInfo>(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 762);
-	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 763, 2, 0));
+	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 1, 763, 2, 0));
 	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 764, 1, 2));
 	ExtraInfo band;
 	Add(band, { pBand });
@@ -1158,13 +1215,15 @@ TEST(PacketPlayerItems, ExtraInfoGunsAndArmsBandsAreFilled)
 	// not have takes nothing.
 	CHECK(Same({ "destroyed|0", "destroyed|761", "drop", "destroyed|764", "pick up|762" }));
 	const MOustersArmsBand* pPicked = dynamic_cast<const MOustersArmsBand*>(scene.mouse.GetPickUpItem());
-	CHECK(pPicked != NULL && pPicked->GetItem(0) != NULL && pPicked->GetItem(0)->GetID() == 763);
+	const MItem* pPupa = pPicked != NULL ? pPicked->GetItem(0) : NULL;
+	CHECK(pPupa != NULL && pPupa->GetID() == 763 && pPupa->GetItemType() == 1 && pPupa->GetNumber() == 2);
 }
 
 //----------------------------------------------------------------------
-// A class the factory cannot make, or one outside the item table, is
-// passed over (its slot freed) and the next one still picked up; a pocket
-// item outside the table is freed and its container picked up without it.
+// A class the factory cannot make, or one outside the item table (which
+// is reported), is passed over (its slot freed) and the next one still
+// picked up, of its slot's number; a pocket item outside the table is
+// reported and freed and its container picked up without it.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, ExtraInfoSkipsAnItemOutsideTheTable)
 {
@@ -1173,6 +1232,7 @@ TEST(PacketPlayerItems, ExtraInfoSkipsAnItemOutsideTheTable)
 	ExtraSlotInfo* pRefused = NewSlot<ExtraSlotInfo>(ITEM_CLASS_SWORD, 0, 771);
 	ExtraSlotInfo* pPastType = NewSlot<WatchedExtraSlot>(ITEM_CLASS_HELM, 7, 773);
 	ExtraSlotInfo* pPotion = NewSlot<ExtraSlotInfo>(ITEM_CLASS_POTION, 0, 772);
+	pPotion->setItemNum(6);
 	ExtraInfo info;
 	Add(info, { pRefused, pPastType, pPotion });
 	calls.clear();
@@ -1181,6 +1241,8 @@ TEST(PacketPlayerItems, ExtraInfoSkipsAnItemOutsideTheTable)
 
 	CHECK(Same({ "slot freed|773", "pick up|772" }));
 	CHECK(scene.mouse.GetPickUpItem() != NULL && scene.mouse.GetPickUpItem()->GetID() == 772);
+	CHECK(scene.mouse.GetPickUpItem() != NULL && scene.mouse.GetPickUpItem()->GetNumber() == 6);
+	CHECK(Reported() == std::vector<std::string>({ ClassType(ITEM_CLASS_HELM, 7) }));
 
 	SubItemInfo* pPastClass = SubItem(MAX_ITEM_CLASS, 0, 776, 1, 0);
 	ExtraSlotInfo* pBelt = NewSlot<ExtraSlotInfo>(ITEM_CLASS_BELT, 0, 775);
@@ -1196,6 +1258,7 @@ TEST(PacketPlayerItems, ExtraInfoSkipsAnItemOutsideTheTable)
 	const MBelt* pPickedBelt = dynamic_cast<const MBelt*>(scene.mouse.GetPickUpItem());
 	CHECK(pPickedBelt != NULL && pPickedBelt->GetItem(0) == NULL && pPickedBelt->GetItem(1) != NULL && pPickedBelt->GetItem(1)->GetID() == 777);
 	CHECK(Freed(pPastClass));
+	CHECK(Reported() == std::vector<std::string>({ ClassType(ITEM_CLASS_HELM, 7), ClassType(MAX_ITEM_CLASS, 0) }));
 
 	SubItemInfo* pPupaPastType = SubItem(ITEM_CLASS_PUPA, 1, 779, 1, 0);
 	ExtraSlotInfo* pBand = NewSlot<ExtraSlotInfo>(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 778);
@@ -1210,6 +1273,7 @@ TEST(PacketPlayerItems, ExtraInfoSkipsAnItemOutsideTheTable)
 	const MOustersArmsBand* pPickedBand = dynamic_cast<const MOustersArmsBand*>(scene.mouse.GetPickUpItem());
 	CHECK(pPickedBand != NULL && pPickedBand->GetItem(0) == NULL);
 	CHECK(Freed(pPupaPastType));
+	CHECK(Reported() == std::vector<std::string>({ ClassType(ITEM_CLASS_HELM, 7), ClassType(MAX_ITEM_CLASS, 0), ClassType(ITEM_CLASS_PUPA, 1) }));
 }
 //----------------------------------------------------------------------
 // Each status lasts its duration in frames less the frames the loading
@@ -1318,6 +1382,13 @@ MFakeCreature* PetOf(Scene& scene, MCreature* pOwner, MPetItem* pItem = NULL)
 	return pPet;
 }
 
+// Whom a creature follows, which it keeps to itself.
+struct TraceAccess : MCreature
+{
+	using MCreature::m_TraceID;
+};
+TYPE_OBJECTID TraceID(const MCreature* p) { return p->*(&TraceAccess::m_TraceID); }
+
 PetInfo Pet(int type, int level)
 {
 	PetInfo pet;
@@ -1409,6 +1480,10 @@ TEST(PacketPlayerItems, PetInfoMakesAnotherCreaturesPet)
 	CHECK_EQ(12, pPet->GetY());
 	CHECK_EQ(300, pPet->GetOwnerID());
 	CHECK_EQ(MFakeCreature::FAKE_CREATURE_TRACE, pPet->GetFakeCreatureType());
+	// Tracing the owner from the owner's cell.
+	CHECK_EQ(300, TraceID(pPet));
+	CHECK_EQ(10, pPet->GetFakeX());
+	CHECK_EQ(12, pPet->GetFakeY());
 	CHECK_EQ(MCreature::CREATURE_FAKE_GROUND, pPet->GetMoveType());
 	CHECK(pPet->GetNickName() == "Rex");
 	CHECK_EQ(NicknameInfo::NICK_CUSTOM, pPet->GetNickNameType());
@@ -1562,7 +1637,8 @@ TEST(PacketPlayerItems, PetInfoWithoutThePlayersItemMakesNoPet)
 
 //----------------------------------------------------------------------
 // Another creature's pet it already has keeps its creature type and takes
-// the new item; the item it had, which the pet owned, is freed. A pet id
+// the new item; the item it had, which the pet owned, is freed; it traces
+// the owner from the owner's cell, its turret turned as it faces. A pet id
 // the zone has no pet for ends the info with nothing made: the new item
 // is freed.
 //----------------------------------------------------------------------
@@ -1576,6 +1652,8 @@ TEST(PacketPlayerItems, PetInfoForAnotherCreaturesPetItAlreadyHas)
 	pOld->SetID(880);
 	MFakeCreature* pPet = PetOf(scene, pOwner, pOld);
 	pPet->SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	pPet->SetCurrentDirection(DIRECTION_UP);
+	pPet->SetTurreDirection(0);
 	PetInfo pet = Pet(2, 7);
 	calls.clear();
 
@@ -1583,6 +1661,11 @@ TEST(PacketPlayerItems, PetInfoForAnotherCreaturesPetItAlreadyHas)
 
 	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
 	CHECK_EQ(CREATURETYPE_SLAYER_MALE, pPet->GetCreatureType());
+	CHECK_EQ(300, TraceID(pPet));
+	CHECK_EQ(10, pPet->GetFakeX());
+	CHECK_EQ(12, pPet->GetFakeY());
+	// The turret's 32 steps, a quarter turn behind the pet's way.
+	CHECK_EQ((DIRECTION_UP + 6) % 8 * 4, pPet->GetTurretDirection());
 	CHECK(pPet->GetPetItem() != NULL && pPet->GetPetItem() != pOld);
 	CHECK(pPet->GetPetItem() != NULL && pPet->GetPetItem()->GetItemType() == 2 && pPet->GetPetItem()->GetNumber() == 7);
 	CHECK_EQ(1, Count("destroyed|880"));

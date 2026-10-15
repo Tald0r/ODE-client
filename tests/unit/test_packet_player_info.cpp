@@ -755,11 +755,13 @@ TEST(PacketPlayerInfo, TransformedVampireKeepsItsForm)
 }
 
 //----------------------------------------------------------------------
-// Bat colour 0 means none: the player's is 0xFFFF, the record's 0.
+// Bat colour 0 means none: the player's is 0xFFFF (whatever it was), the
+// record's 0.
 //----------------------------------------------------------------------
 TEST(PacketPlayerInfo, VampireWithoutABatColourGetsTheDefault)
 {
 	Scene scene;
+	scene.me->SetBatColor(5);
 	PCVampireInfo2 info = Vampire();
 	info.setBatColor(0);
 
@@ -768,6 +770,38 @@ TEST(PacketPlayerInfo, VampireWithoutABatColourGetsTheDefault)
 	CHECK_EQ(0xFFFF, scene.me->GetBatColor());
 	CHECK_EQ(0, g_pUserInformation->BatColor);
 	CHECK_EQ(0, g_char_slot_ingame.hair_color);
+}
+
+//----------------------------------------------------------------------
+// No guild name: a vampire's and an ousters' sheet shows "" too, not the
+// name it showed before.
+//----------------------------------------------------------------------
+TEST(PacketPlayerInfo, VampireAndOustersWithoutAGuildNameShowAnEmptyOne)
+{
+	{
+		Scene scene;
+		g_char_slot_ingame.sz_guild_name = "Old";
+		PCVampireInfo2 info = Vampire();
+		info.setGuildName("");
+
+		SetPCVampireInfo(&info);
+
+		CHECK(g_pUserInformation->GuildName.GetString() == NULL);
+		CHECK(g_char_slot_ingame.sz_guild_name.empty());
+		CHECK(std::string() == scene.guilds.GetGuildName(31));
+	}
+	{
+		Scene scene;
+		g_char_slot_ingame.sz_guild_name = "Old";
+		PCOustersInfo2 info = Ousters();
+		info.setGuildName("");
+
+		SetPCOustersInfo(&info);
+
+		CHECK(g_pUserInformation->GuildName.GetString() == NULL);
+		CHECK(g_char_slot_ingame.sz_guild_name.empty());
+		CHECK(std::string() == scene.guilds.GetGuildName(32));
+	}
 }
 
 //----------------------------------------------------------------------
