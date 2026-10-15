@@ -7403,7 +7403,7 @@ rounds settled* for the host rules). Test fixtures share
   >
   > R1 is 19 Windows / 17 Ninja.
   - Owner: membership, R1, `test_player.cpp`: 62 tests (64 with the
-    fixes), over a real zone behind `ZoneState` as `g_pZone`, with the
+    fixes, 73 with the review's follow-up), over a real zone behind `ZoneState` as `g_pZone`, with the
     player as `g_pPlayer`, the packets it sends caught on a `ClientPlayer`
     socket, and recording UI, view and help hosts. What it is (identity,
     attack modes, a stop, the path cost, darkness, safe cells, a drink cut

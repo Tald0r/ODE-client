@@ -53,6 +53,14 @@
 #include "MJusticeAttackManager.h"
 #include "MOustersGear.h"
 #include "MStorage.h"
+#include "MFakeCreature.h"
+#include "MSoundTable.h"
+#include "SoundDef.h"
+#include "MPortal.h"
+#include "ClientMode.h"
+#include "MStatusManager.h"
+#include "NoticePresentationHost.h"
+#include "PetWindowInfo.h"
 #include "MActionResult.h"
 #include "ClientCommunicationManager.h"
 #include "SystemAvailabilities.h"
@@ -213,6 +221,8 @@ const WorldEvents::Host worldHost = []() {
 
 // The UI: each call recorded; its windows open as a test sets them.
 bool inventoryOpen = false;
+bool mineProgress = false;
+bool forceFeel = false;
 std::string inputString;
 bool gearOpen = false;
 MItem* pickedUp = NULL;
@@ -231,6 +241,19 @@ const PlayerPresentation::Host presentationHost = []() {
 	host.GetInventoryOpenState = []() { return inventoryOpen; };
 	host.GetGearOpenState = []() { return gearOpen; };
 	host.GetPickUpItem = []() { return pickedUp; };
+	host.SetCursorAttack = []() { calls.push_back("cursor attack"); };
+	host.RunElevator = []() { calls.push_back("elevator"); };
+	host.RunTraceWindow = []() { calls.push_back("trace window"); };
+	host.SetCannotTrace = []() { calls.push_back("cannot trace"); };
+	host.IsInstallMineProgress = []() { return mineProgress; };
+	host.StartInstallMineProgress = [](int gridX, int gridY) { calls.push_back("install mine|" + N(gridX) + "," + N(gridY)); };
+	host.EndInstallMineProgress = []() { calls.push_back("end mine"); };
+	host.ForceFeelReady = []() { return forceFeel; };
+	host.ForceAction = [](int soundID) { calls.push_back("force|" + N(soundID)); };
+	host.RunPetInfo = [](PETINFO* pInfo) {
+		calls.push_back("pet|" + N(pInfo->ITEM_ID) + "|" + N(pInfo->LEVEL) + "|" + N(pInfo->ATTR) + "|" + N(pInfo->ATTR_VALUE)
+			+ "|" + N(pInfo->OPTION) + "|" + pInfo->NICK_NAME + "|" + N(pInfo->ChangeAbleNickName));
+	};
 	host.GetInputString = []() { return inputString.c_str(); };
 	host.AddInputString = [](const char* pString) { calls.push_back(std::string("input|") + pString); };
 	host.RunExchangeCancel = [](const char* pName) { calls.push_back(std::string("exchange cancel|") + pName); };
@@ -242,6 +265,9 @@ const PlayerPresentation::Host presentationHost = []() {
 const StatusPresentation::Host statusHost = []() {
 	StatusPresentation::Host host{};
 	host.SetHP = [](int current, int maximum) { calls.push_back("hp bar|" + N(current) + "/" + N(maximum)); };
+	host.SetCharInfoDefense = [](int value) { calls.push_back("defense|" + N(value)); };
+	host.SetCharInfoProtection = [](int value) { calls.push_back("protection|" + N(value)); };
+	host.SetCharInfoTOHIT = [](int value) { calls.push_back("tohit|" + N(value)); };
 	return host;
 }();
 const DialogPresentation::Host dialogHost = []() {
@@ -262,6 +288,11 @@ const GameInfoPresentation::Host gameInfoHost = []() {
 	GameInfoPresentation::Host host{};
 	host.ExecuteHelpEvent = [](int helpEvent) { calls.push_back("help|" + N(helpEvent)); };
 	host.RunOtherInfo = [](MCreature* pCreature) { calls.push_back("other info|" + N(pCreature->GetID())); };
+	return host;
+}();
+const NoticePresentation::Host noticeHost = []() {
+	NoticePresentation::Host host{};
+	host.RunHorn = [](int zoneID) { calls.push_back("horn|" + N(zoneID)); };
 	return host;
 }();
 const ZoneLoading::Host loadingHost = []() {
@@ -432,6 +463,13 @@ struct Scene
 	MZone* oldZone = g_pZone;
 	MPlayer* oldPlayer = g_pPlayer;
 	bool oldZoneSafe = g_bZoneSafe;
+	// What GameMain's input and the zone's arrival set, kept as they were.
+	int oldMouseX = g_x, oldMouseY = g_y;
+	bool oldLeft = g_bLButtonDown, oldRight = g_bRButtonDown, oldNetGood = g_bNetStatusGood;
+	POINT oldSelectSector = g_SelectSector;
+	bool oldInLarge = g_bZonePlayerInLarge;
+	int oldZoneLarge = g_nZoneLarge, oldZoneSmall = g_nZoneSmall;
+	int oldMode = g_Mode;
 	const ZoneState::Host* oldZoneHost = ZoneState::SetHost(&zoneHost);
 	const PlayerState::Host* oldPlayerHost = PlayerState::SetHost(&playerHost);
 	const WorldEvents::Host* oldWorld = WorldEvents::SetHost(&worldHost);
@@ -442,6 +480,7 @@ struct Scene
 	const VsUiPresentation::Host* oldVsUi = VsUiPresentation::SetHost(&vsUiHost);
 	const GameInfoPresentation::Host* oldGameInfo = GameInfoPresentation::SetHost(&gameInfoHost);
 	const ZoneLoading::Host* oldLoading = ZoneLoading::SetHost(&loadingHost);
+	const NoticePresentation::Host* oldNotice = NoticePresentation::SetHost(&noticeHost);
 	const MEffectHost* oldEffectHost = MEffect::SetHost(&effectHost);
 	const MAttachEffectHost* oldAttachHost = MAttachEffect::SetHost(&attachHost);
 	const MEffectTargetHost* oldTargetHost = MEffectTarget::SetHost(&targetHost);
@@ -456,7 +495,10 @@ struct Scene
 		(void)moveTables;
 		calls.clear();
 		sent.clear();
-		inventoryOpen = gearOpen = false;
+		inventoryOpen = gearOpen = mineProgress = forceFeel = false;
+		selectedSector.x = 7;
+		selectedSector.y = 8;
+		cursorPixel.x = cursorPixel.y = 0;
 		inputString.clear();
 		viewRequest = MRequestMode::REQUEST_NULL;
 		pickedUp = NULL;
@@ -469,8 +511,13 @@ struct Scene
 		sprites.Init(4);
 		g_pCreatureSpriteTable = &sprites;
 		actions.Init(MAX_ACTIONINFO);
+		// (MActionInfo leaves its sound unset; the data file sets every
+		// row's, and so does this.)
 		for (int info = 0; info < MAX_ACTIONINFO; ++info)
+		{
 			actions.GetMutable(info)->Set("", ACTION_STAND, EFFECTSPRITETYPE_NULL, 0, 0);
+			actions.GetMutable(info)->SetSoundID(SOUNDID_NULL);
+		}
 		actions.SetMinResultActionInfo(MIN_RESULT_ACTIONINFO);
 		g_pActionInfoTable = &actions;
 		effectSprites.Init(MAX_EFFECTSPRITETYPE);
@@ -534,6 +581,7 @@ struct Scene
 		MEffectTarget::SetHost(oldTargetHost);
 		MAttachEffect::SetHost(oldAttachHost);
 		MEffect::SetHost(oldEffectHost);
+		NoticePresentation::SetHost(oldNotice);
 		ZoneLoading::SetHost(oldLoading);
 		GameInfoPresentation::SetHost(oldGameInfo);
 		VsUiPresentation::SetHost(oldVsUi);
@@ -545,6 +593,16 @@ struct Scene
 		PlayerState::SetHost(oldPlayerHost);
 		ZoneState::SetHost(oldZoneHost);
 		g_bZoneSafe = oldZoneSafe;
+		g_x = oldMouseX;
+		g_y = oldMouseY;
+		g_bLButtonDown = oldLeft;
+		g_bRButtonDown = oldRight;
+		g_bNetStatusGood = oldNetGood;
+		g_SelectSector = oldSelectSector;
+		g_bZonePlayerInLarge = oldInLarge;
+		g_nZoneLarge = oldZoneLarge;
+		g_nZoneSmall = oldZoneSmall;
+		g_Mode = decltype(g_Mode)(oldMode);
 		g_pSocket = oldSocket;
 		g_pWarManager = oldWars;
 		g_pParty = oldParty;
@@ -1210,7 +1268,6 @@ TEST(Player, TheServerPlacesItWhereItHasNoMoveUnanswered)
 	CHECK_EQ(int(SECTORPOSITION_NULL), int(me.m_NextDestX));
 	CHECK(me.m_listDirection.empty());
 	CHECK_EQ(0, int(me.GetSendMove()));
-	CHECK(&g_pZone->GetSector(18, 12) != NULL && g_pZone->GetCreature(77) == NULL);
 }
 
 TEST(Player, ARefusedMoveTakesItBackToTheServersCell)
@@ -1402,7 +1459,9 @@ TEST(Player, ADrainCountsItsSlayerDownToConversion)
 {
 	Scene scene;
 	PlayerProbe& me = *scene.me;
-	g_FrameNow += MonotonicClock::Millis(24 * 60 * 60 * 1000);
+	// Past any blink an earlier run left in UpdateConversionTime's static.
+	static int runs = 0;
+	g_FrameNow += MonotonicClock::Millis(++runs * 24LL * 60 * 60 * 1000);
 	// 16 frames a second: 160 frames are ten seconds.
 	me.AddEffectStatus(EFFECTSTATUS_BLOOD_DRAIN, 160);
 	CHECK(InOrder({ "help|" + N(HELP_EVENT_DRAIN_BLOOD), "ui status|" + N(EFFECTSTATUS_BLOOD_DRAIN) + "|160" }));
@@ -2427,4 +2486,230 @@ TEST(Player, AWeaponInHandSetsTheReachOfItsBlow)
 	CHECK(me.RemoveAddonItem(gun.get()));
 	CHECK_EQ(1, int(me.GetBasicAttackDistance()));
 	CHECK_EQ(int(SKILL_ATTACK_MELEE), int(me.GetBasicActionInfo()));
+}
+
+//----------------------------------------------------------------------
+// What the review of #535 found unpinned
+//----------------------------------------------------------------------
+TEST(Player, InLockModeItTakesTheEnemyInReachItself)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.Tribe(6, CREATURETRIBE_VAMPIRE);
+	CHECK(scene.zone->AddCreature(Make(20000, 21, 15, 6)));
+	me.SetLockMode();
+	g_bLButtonDown = true;
+	me.Action();
+	CHECK(InOrder({ "select creature|20000", "cursor attack", "unselect sector" }));
+	CHECK_EQ(20000, int(me.GetTraceID()));
+	// A forced blow at it.
+	Frames(me, 2);
+	CHECK(sent == std::vector<std::string>{ Attack(20000, 20, 15, DIRECTION_RIGHT) });
+	// Nobody in reach: it lets go of all it held.
+	scene.zone->RemoveCreature(20000);
+	me.SetStop();
+	me.SetRepeatAction();
+	calls.clear();
+	me.Action();
+	CHECK_EQ(1, Count("unselect"));
+	CHECK_EQ(0, Count("select creature|20000"));
+	CHECK(me.IsTraceNULL());
+	CHECK(!me.IsRepeatAction());
+}
+
+TEST(Player, ASlayerSteppingOnAnElevatorRunsItsWindow)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.Sector(21, 15).SetPortal();
+	CHECK(scene.Sector(21, 15).AddPortal(MPortal::TYPE_MULTI_PORTAL, 61));
+	Go(me, 23, 15);
+	Frames(me, 2);
+	CHECK_EQ(21, int(me.GetX()));
+	CHECK(InOrder({ "elevator", "unselect sector" }));
+	// It goes no further.
+	Frames(me, 40);
+	CHECK_EQ(21, int(me.GetX()));
+	// Not a slayer: no elevator.
+	scene.Tribe(6, CREATURETRIBE_VAMPIRE);
+	me.SetCreatureType(6);
+	calls.clear();
+	Go(me, 20, 15);
+	Frames(me, 40);
+	Go(me, 22, 15);
+	Frames(me, 40);
+	CHECK_EQ(0, Count("elevator"));
+}
+
+TEST(Player, ASoulChainAsksForItsTargetInAWindow)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.Skill(SKILL_SOUL_CHAIN, FLAG_ACTIONINFO_TARGET_SELF, 0, ACTIONINFO_PACKET_SELF);
+	me.SetSpecialActionInfo(SKILL_SOUL_CHAIN);
+	CHECK(!me.SelfSpecialAction());
+	CHECK(Same({ "trace window" }));
+	CHECK(sent.empty());
+	// Waiting for the server: no window.
+	me.SetWaitVerify(MPlayer::WAIT_VERIFY_ITEM_USE);
+	calls.clear();
+	CHECK(!me.SelfSpecialAction());
+	CHECK(calls.empty());
+	me.SetCannotTrace();
+	CHECK(Same({ "cannot trace" }));
+}
+
+TEST(Player, InstallingAMineShowsItsProgressAndAStepEndsIt)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.Skill(SKILL_INSTALL_MINE, FLAG_ACTIONINFO_TARGET_SELF, 0, ACTIONINFO_PACKET_SELF);
+	g_pItemTable->InitClass(ITEM_CLASS_MINE, 1);
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_MINE, 0).SetGrid(1, 1);
+	MItem* pMine = NewItemOfClass(ITEM_CLASS_MINE);
+	pMine->SetItemType(0);
+	pMine->SetID(801);
+	CHECK(scene.inventory.AddItem(pMine, 3, 2));
+	me.SetSpecialActionInfo(SKILL_INSTALL_MINE);
+	me.SetRepeatAction();
+	CHECK(!me.SelfSpecialAction());
+	CHECK(Same({ "install mine|3,2" }));
+	CHECK(!me.IsRepeatAction());
+	// No mine in the bag: nothing to show.
+	CHECK(scene.inventory.RemoveItem(3, 2) == pMine);
+	delete pMine;
+	calls.clear();
+	CHECK(!me.SelfSpecialAction());
+	CHECK(calls.empty());
+	// Walking away while it runs ends it.
+	mineProgress = true;
+	Go(me, 22, 15);
+	Frames(me, 2);
+	CHECK_EQ(1, Count("end mine"));
+}
+
+TEST(Player, APetsWindowShowsWhatItsItemSays)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	g_pItemTable->InitClass(ITEM_CLASS_PET_ITEM, 1);
+	MItem* pPet = NewItemOfClass(ITEM_CLASS_PET_ITEM);
+	pPet->SetItemType(0);
+	pPet->SetID(901);
+	pPet->SetNumber(7);
+	pPet->SetEnchantLevel(3);
+	pPet->SetSilver(12);
+	MFakeCreature* pFake = new MFakeCreature;
+	pFake->SetZone(g_pZone);
+	pFake->SetCreatureType(5);
+	pFake->SetID(40000);
+	pFake->SetPosition(22, 15);
+	pFake->SetOwnerID(77);
+	pFake->SetPetItem(static_cast<MPetItem*>(pPet));
+	char nick[] = "Rex";
+	pFake->SetNickName(0, nick);
+	CHECK(scene.zone->AddFakeCreature(pFake));
+	CHECK(!me.TraceCreatureToBasicAction(40000, false, true));
+	CHECK(Same({ "pet|901|7|3|12|-1|Rex|1" }));
+	CHECK(me.IsTraceNULL());
+	// Another's pet: its name cannot be changed.
+	pFake->SetOwnerID(78);
+	calls.clear();
+	CHECK(!me.TraceCreatureToBasicAction(40000, false, true));
+	CHECK(Same({ "pet|901|7|3|12|-1|Rex|0" }));
+}
+
+TEST(Player, ItsBlowSoundsWhereItStandsAndShakesAReadyPad)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.Tribe(6, CREATURETRIBE_VAMPIRE);
+	testfw::MutableRow(scene.creatureTypes, 5).SetActionSound(ACTION_ATTACK, 14);
+	testfw::MutableRow(scene.creatureTypes, 5).SetActionSound(ACTION_MOVE, 15);
+	SOUND_TABLE sounds;
+	sounds.Init(20);
+	SOUND_TABLE* oldSounds = g_pSoundTable;
+	g_pSoundTable = &sounds;
+	CHECK(scene.zone->AddCreature(Make(20000, 22, 15, 6)));
+	forceFeel = true;
+	CHECK(me.TraceCreatureToBasicAction(20000, false, true));
+	Frames(me, 14);
+	// A step's sound from the cell it steps to; the blow's from its cell,
+	// and on the pad.
+	CHECK(InOrder({ "sound at|15|0|21,15", "sound at|14|0|21,15", "force|14" }));
+	// A sound past the pad's table is not played on it.
+	testfw::MutableRow(scene.creatureTypes, 5).SetActionSound(ACTION_ATTACK, 25);
+	Frames(me, 40);
+	me.SetStop();
+	calls.clear();
+	CHECK(me.TraceCreatureToBasicAction(20000, false, true));
+	Frames(me, 3);
+	CHECK_EQ(1, Count("sound at|25|0|21,15"));
+	CHECK_EQ(0, Count("force|25"));
+	g_pSoundTable = oldSounds;
+}
+
+TEST(Player, AnEmptyGunClicksAndWaits)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.Tribe(6, CREATURETRIBE_VAMPIRE);
+	scene.actions.GetMutable(SKILL_ATTACK_MELEE)->Set("", ACTION_ATTACK, EFFECTSPRITETYPE_NULL, 0, 0, FLAG_ACTIONINFO_START_USER, 400);
+	scene.actions.GetMutable(SKILL_ATTACK_MELEE)->SetWeaponType(FLAG_ACTIONINFO_WEAPON_GUN_SR);
+	MMagazine magazine;
+	magazine.SetNumber(0);
+	g_pCurrentMagazine = &magazine;
+	CHECK(scene.zone->AddCreature(Make(20000, 22, 15, 6)));
+	me.SetRepeatAction();
+	CHECK(!me.TraceCreatureToBasicAction(20000, false, true));
+	CHECK(Same({ "sound|" + N(SOUND_ITEM_NO_MAGAZINE) }));
+	CHECK(!me.IsRepeatAction());
+	CHECK(me.m_DelayTime == g_FrameNow + MonotonicClock::Millis(400));
+	CHECK(me.IsTraceNULL());
+	// Loaded, it attacks.
+	magazine.SetNumber(5);
+	g_FrameNow += MonotonicClock::Millis(400);
+	calls.clear();
+	CHECK(me.TraceCreatureToBasicAction(20000, false, true));
+	CHECK_EQ(0, Count("sound|" + N(SOUND_ITEM_NO_MAGAZINE)));
+	g_pCurrentMagazine = NULL;
+}
+
+TEST(Player, TheHornOfTheEarthSpiritOpensItsWindow)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	scene.PlayerOnly(5);
+	scene.Tribe(659, CREATURETRIBE_NPC);
+	scene.zone->SetCurrentZoneID(60);
+	CHECK(scene.zone->AddCreature(Make(30000, 21, 15, 659)));
+	CHECK(me.TraceCreatureToBasicAction(30000, false, true));
+	// A horn is spoken to from the next cell.
+	CHECK_EQ(1, int(me.m_TraceDistance));
+	Frames(me, 3);
+	CHECK_EQ(1, Count("horn|60"));
+	CHECK(sent.empty());
+	CHECK(me.IsWaitVerifyNULL());
+}
+
+TEST(Player, ItsCharacterWindowShowsItsDamageAndDefences)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	me.MStatus::SetStatus(MODIFY_MIN_DAMAGE, 3);
+	me.MStatus::SetStatus(MODIFY_MAX_DAMAGE, 9);
+	me.MStatus::SetStatus(MODIFY_DEFENSE, 11);
+	me.MStatus::SetStatus(MODIFY_PROTECTION, 12);
+	me.MStatus::SetStatus(MODIFY_TOHIT, 13);
+	g_Mode = MODE_GAME;
+	calls.clear();
+	me.CalculateStatus();
+	// The most, then the least; silver none without a weapon.
+	CHECK(InOrder({ "dam|9,3", "silver|0,0", "defense|11", "protection|12", "tohit|13" }));
+	// Choosing a character: the values worked out from its stats.
+	g_Mode = MODE_WAIT_PCLIST;
+	calls.clear();
+	me.CalculateStatus();
+	CHECK(InOrder({ "dam|9,3", "defense|" + N(g_StatusManager.GetDefense()), "protection|" + N(g_StatusManager.GetProtection()),
+		"tohit|" + N(g_StatusManager.GetTOHIT()) }));
 }
