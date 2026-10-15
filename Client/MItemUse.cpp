@@ -525,34 +525,6 @@ MMixingItem::GetMaxNumber() const
 	return MAX_MIXING_ITEM_NUMBER;
 }
 
-//----------------------------------------------------------------------
-// Is BombMaterial
-//----------------------------------------------------------------------
-// 이거는 나중에 필살~수정이 필요하다.
-// BombMaterial에 member로 넣든지.. 
-// Bomb / Mine Material을 분리하든지....
-//----------------------------------------------------------------------
-bool
-IsBombMaterial(const MItem* pItem)
-{
-	return pItem->GetItemClass()==ITEM_CLASS_BOMB_MATERIAL
-			&& pItem->GetItemType() <= 4;
-}
-
-//----------------------------------------------------------------------
-// Is MineMaterial
-//----------------------------------------------------------------------
-// 이거는 나중에 필살~수정이 필요하다.
-// BombMaterial에 member로 넣든지.. 
-// Bomb / Mine Material을 분리하든지....
-//----------------------------------------------------------------------
-bool
-IsMineMaterial(const MItem* pItem)
-{
-	return pItem->GetItemClass()==ITEM_CLASS_BOMB_MATERIAL
-			&& pItem->GetItemType() >= 5;
-}
-
 TYPE_ITEM_NUMBER
 MOustersSummonGem::GetMaxNumber() const 
 {

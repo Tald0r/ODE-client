@@ -5,29 +5,48 @@
 // The half of MSkillSet that asks the executable what the player can
 // use right now (docs/RESTRUCTURING.md task 4.4): the weapon in hand,
 // the inventory, the zone, the gear and the war bonuses all decide
-// which skills are enabled. The rest of the skill core - the info
-// table, the skill set itself, the domains and the tree - is in
-// gamemodel; these three methods stay here, where the player is.
+// which skills are enabled. The player, the zone and the UI are reached
+// through PlayerState, CreatureState, ZoneState, DialogPresentation and
+// VsUiPresentation (gamemodel's since task 4.234, with the rest of the
+// skill core).
 //
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "MSkillManager.h"
 #include "MTypeDef.h"
 
-#include "MPlayer.h"
+#include "MStatus.h"
+#include "MCreatureTable.h"
 #include "MSlayerGear.h"
+#include "MVampireGear.h"
+#include "MOustersGear.h"
 #include "MInventory.h"
-#include "ServerInfo.h"
-#include "MHelpManager.h"
-#include "Properties.h"
 #include "MItemFinder.h"
 #include "UserInformation.h"
-#include "VS_UI.h"
-#include "MZone.h"		// the rare zone refuses invisibility
-#include "DebugInfo.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
+#include "DialogPresentationHost.h"
+#include "VsUiPresentationHost.h"
 
-extern MItem* UI_GetMouseItem();
-extern bool IsBombMaterial(const MItem* pItem);
+//----------------------------------------------------------------------
+// Is BombMaterial
+//----------------------------------------------------------------------
+// Bomb material: types 0 to 4 of the bomb material class (the rest make
+// mines).
+//----------------------------------------------------------------------
+static bool
+IsBombMaterial(const MItem* pItem)
+{
+	return pItem->GetItemClass()==ITEM_CLASS_BOMB_MATERIAL
+			&& pItem->GetItemType() <= 4;
+}
+
+// The player's creature type (its form: a vampire, a bat, a wolf...).
+static int
+GetPlayerCreatureType()
+{
+	return CreatureState::GetCreatureType(PlayerState::Creature());
+}
 
 //----------------------------------------------------------------------
 // Set Avaliable Skills
@@ -43,9 +62,10 @@ void
 MSkillSet::SetAvailableSkills()
 {
 
-	if (g_pPlayer==NULL 		
+	MStatus* pPlayer = PlayerState::Status();
+	if (pPlayer==NULL
 		|| g_pSkillManager==NULL
-		|| g_pSkillManager->GetSize()==0		
+		|| g_pSkillManager->GetSize()==0
 		|| g_pSkillInfoTable==NULL
 		|| g_pSkillInfoTable->GetSize()==0)
 	{
@@ -55,34 +75,34 @@ MSkillSet::SetAvailableSkills()
 	//--------------------------------------------------
 	// The player's current MP
 	//--------------------------------------------------
-	int playerMP;		
+	int playerMP;
 	BYTE flag;
-	
-	if (g_pPlayer->GetRace() != RACE_VAMPIRE)
+
+	if (PlayerState::GetRace() != RACE_VAMPIRE)
 	{
-		playerMP = g_pPlayer->GetMP();	
+		playerMP = pPlayer->GetMP();
 
 		// Under EFFECTSTATUS_SACRIFICE each HP counts as 2 MP.
-		if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_SACRIFICE))
+		if (PlayerState::HasEffectStatus(EFFECTSTATUS_SACRIFICE))
 		{
-			playerMP += (g_pPlayer->GetHP() << 1);
-		}		
+			playerMP += (pPlayer->GetHP() << 1);
+		}
 	}
 	else
 	{
 		// A vampire spends HP instead of MP.
-		playerMP = g_pPlayer->GetHP();	
+		playerMP = pPlayer->GetHP();
 	}
 
 	// What a vampire's skill costs takes its current INT, and Will of
 	// Life's its level (GetVampireConsumeMP).
-	const int playerINT = (int)g_pPlayer->GetINT();
-	const int playerLevel = (int)g_pPlayer->GetLEVEL();
+	const int playerINT = (int)pPlayer->GetINT();
+	const int playerLevel = (int)pPlayer->GetLEVEL();
 
 	// Clear every skill.
 	clear();
-	
-	if( g_pZone != NULL && g_pZone->GetID() == 3001 )
+
+	if( ZoneState::GetID() == 3001 )
 		return;
 
 
@@ -91,7 +111,7 @@ MSkillSet::SetAvailableSkills()
 	//					Slayer
 	//
 	//-----------------------------------------------------
-	switch(g_pPlayer->GetRace())
+	switch(PlayerState::GetRace())
 	{
 		case RACE_SLAYER:
 		{
@@ -101,7 +121,7 @@ MSkillSet::SetAvailableSkills()
 				return;
 			}
 			// 2004, 9, 16, sobeit add start - the skills while installed as a turret
-			if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
+			if(PlayerState::HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 			{
 				insert(SKILLID_MAP::value_type( MAGIC_UN_TRANSFORM, SKILLID_NODE(MAGIC_UN_TRANSFORM, FLAG_SKILL_ENABLE) ));
 				if ((*g_pSkillInfoTable)[SKILL_TURRET_FIRE].GetMP() > playerMP)
@@ -118,7 +138,7 @@ MSkillSet::SetAvailableSkills()
 			//
 			//-----------------------------------------------------
 			BYTE fDomain[MAX_SKILLDOMAIN];
-			
+
 			// The item in hand
 			const MItem* pItem = (*g_pSlayerGear).GetItem( (MSlayerGear::GEAR_SLAYER)MSlayerGear::GEAR_SLAYER_RIGHTHAND );
 
@@ -130,7 +150,7 @@ MSkillSet::SetAvailableSkills()
 			fDomain[SKILLDOMAIN_SWORD]	= 0;
 
 			if (pItem!=NULL && pItem->IsAffectStatus())
-			{	
+			{
 				//-----------------------------------------------------
 				// A gun enables only the gun domain
 				//-----------------------------------------------------
@@ -153,7 +173,7 @@ MSkillSet::SetAvailableSkills()
 					fDomain[SKILLDOMAIN_BLADE]	= FLAG_SKILL_ENABLE;
 				}
 			}
-			
+
 			//-----------------------------------------------------
 			//
 			// Walk the skill tree
@@ -166,7 +186,7 @@ MSkillSet::SetAvailableSkills()
 			if (pBladeDomain == nullptr) return;
 			MSkillDomain& bladeDomain = *pBladeDomain;
 
-			bladeDomain.SetBegin();		
+			bladeDomain.SetBegin();
 			while (bladeDomain.IsNotEnd())
 			{
 				MSkillDomain::SKILLSTATUS	status	= bladeDomain.GetSkillStatus();
@@ -175,7 +195,7 @@ MSkillSet::SetAvailableSkills()
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
 					ACTIONINFO id = bladeDomain.GetSkillID();
-		
+
 					if ((*g_pSkillInfoTable)[id].GetMP() > playerMP)
 					{
 						flag = 0;
@@ -187,7 +207,7 @@ MSkillSet::SetAvailableSkills()
 						if ((*g_pSkillInfoTable)[id].IsActive())
 						{
 							flag |= FLAG_SKILL_ENABLE;
-						}					
+						}
 					}
 
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
@@ -204,7 +224,7 @@ MSkillSet::SetAvailableSkills()
 			if (pSwordDomain == nullptr) return;
 			MSkillDomain& swordDomain = *pSwordDomain;
 
-			swordDomain.SetBegin();		
+			swordDomain.SetBegin();
 			while (swordDomain.IsNotEnd())
 			{
 				MSkillDomain::SKILLSTATUS	status	= swordDomain.GetSkillStatus();
@@ -225,7 +245,7 @@ MSkillSet::SetAvailableSkills()
 						if ((*g_pSkillInfoTable)[id].IsActive())
 						{
 							flag |= FLAG_SKILL_ENABLE;
-						}					
+						}
 					}
 
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
@@ -242,11 +262,11 @@ MSkillSet::SetAvailableSkills()
 			if (pGunDomain == nullptr) return;
 			MSkillDomain& gunDomain = *pGunDomain;
 
-			gunDomain.SetBegin();		
+			gunDomain.SetBegin();
 			while (gunDomain.IsNotEnd())
 			{
 				MSkillDomain::SKILLSTATUS	status	= gunDomain.GetSkillStatus();
-				
+
 				// Learned
 				if (status == MSkillDomain::SKILLSTATUS_LEARNED)
 				{
@@ -263,7 +283,7 @@ MSkillSet::SetAvailableSkills()
 						if ((*g_pSkillInfoTable)[id].IsActive())
 						{
 							flag |= FLAG_SKILL_ENABLE;
-						}					
+						}
 					}
 
 					insert(SKILLID_MAP::value_type( id, SKILLID_NODE(id, flag) ));
@@ -280,7 +300,7 @@ MSkillSet::SetAvailableSkills()
 			if (pEnchantDomain == nullptr) return;
 			MSkillDomain& enchantDomain = *pEnchantDomain;
 
-			enchantDomain.SetBegin();		
+			enchantDomain.SetBegin();
 			while (enchantDomain.IsNotEnd())
 			{
 				MSkillDomain::SKILLSTATUS	status	= enchantDomain.GetSkillStatus();
@@ -306,7 +326,7 @@ MSkillSet::SetAvailableSkills()
 				enchantDomain.Next();
 			}
 
-			
+
 			//-----------------------------------------------------
 			// Heal - add every learned skill.
 			//-----------------------------------------------------
@@ -314,7 +334,7 @@ MSkillSet::SetAvailableSkills()
 			if (pHealDomain == nullptr) return;
 			MSkillDomain& healDomain = *pHealDomain;
 
-			healDomain.SetBegin();		
+			healDomain.SetBegin();
 			while (healDomain.IsNotEnd())
 			{
 				MSkillDomain::SKILLSTATUS	status	= healDomain.GetSkillStatus();
@@ -347,7 +367,7 @@ MSkillSet::SetAvailableSkills()
 			if (pEtcDomain == nullptr) return;
 			MSkillDomain& etcDomain = *pEtcDomain;
 
-			etcDomain.SetBegin();		
+			etcDomain.SetBegin();
 			while (etcDomain.IsNotEnd())
 			{
 				MSkillDomain::SKILLSTATUS	status	= etcDomain.GetSkillStatus();
@@ -384,12 +404,12 @@ MSkillSet::SetAvailableSkills()
 
 			BOOL bCheckInstallMine = (gunDomain.GetSkillStatus(SKILL_INSTALL_MINE)==MSkillDomain::SKILLSTATUS_LEARNED);
 			BOOL bCheckCreateMine = (gunDomain.GetSkillStatus(SKILL_MAKE_MINE)==MSkillDomain::SKILLSTATUS_LEARNED);
-			BOOL bCheckCreateBomb = (gunDomain.GetSkillStatus(SKILL_MAKE_BOMB)==MSkillDomain::SKILLSTATUS_LEARNED);		
-			
+			BOOL bCheckCreateBomb = (gunDomain.GetSkillStatus(SKILL_MAKE_BOMB)==MSkillDomain::SKILLSTATUS_LEARNED);
+
 			BOOL bCheckBomb			= (gunDomain.GetSkillStatus(SKILL_THROW_BOMB)==MSkillDomain::SKILLSTATUS_LEARNED);
 			BOOL bCheckBombOrMine   = bCheckBomb || bCheckInstallMine;
 			BOOL bCheckBombOrMineMaterial   = bCheckCreateBomb || bCheckCreateMine;
-			
+
 			BOOL bHasBomb			= FALSE;
 			BOOL bHasMine			= FALSE;
 			BOOL bHasMineMaterial	= FALSE;
@@ -427,16 +447,16 @@ MSkillSet::SetAvailableSkills()
 				// Portal
 				//-----------------------------------------------------
 				if (bCheckPortal && itemClass==ITEM_CLASS_SLAYER_PORTAL_ITEM)
-				{				
+				{
 					flag = FLAG_SKILL_ENABLE;
-				
+
 					insert(SKILLID_MAP::value_type( SUMMON_HELICOPTER, SKILLID_NODE(SUMMON_HELICOPTER, flag)) );
 
 					bCheckPortal = FALSE;
 				}
 				//-----------------------------------------------------
 				// HolyWater
-				//-----------------------------------------------------			
+				//-----------------------------------------------------
 				else if (bCheckHolyWater && itemClass==ITEM_CLASS_HOLYWATER)
 				{
 					if ((*g_pSkillInfoTable)[MAGIC_THROW_HOLY_WATER].GetMP() > playerMP)
@@ -448,11 +468,11 @@ MSkillSet::SetAvailableSkills()
 						flag = FLAG_SKILL_ENABLE;
 					}
 
-					insert(SKILLID_MAP::value_type( MAGIC_THROW_HOLY_WATER, SKILLID_NODE(MAGIC_THROW_HOLY_WATER, flag)) );				
+					insert(SKILLID_MAP::value_type( MAGIC_THROW_HOLY_WATER, SKILLID_NODE(MAGIC_THROW_HOLY_WATER, flag)) );
 
 					// [Help] using an item on the belt
 //					__BEGIN_HELP_EVENT
-//						ExecuteHelpEvent( HE_ITEM_APPEAR_HOLY_WATER );	
+//						ExecuteHelpEvent( HE_ITEM_APPEAR_HOLY_WATER );
 //					__END_HELP_EVENT
 
 					bCheckHolyWater = FALSE;
@@ -476,12 +496,12 @@ MSkillSet::SetAvailableSkills()
 						bHasMine = TRUE;
 
 						if (bCheckInstallMine) flag = FLAG_SKILL_ENABLE;
-										else flag = 0;					
+										else flag = 0;
 					}
 
 					int skillID = pItem->GetUseActionInfo();
 
-					
+
 
 					// Add a usable icon for each bomb or mine.
 					if (find((ACTIONINFO)skillID)==end())
@@ -504,13 +524,13 @@ MSkillSet::SetAvailableSkills()
 						bHasMineMaterial = TRUE;
 					}
 				}
-				
+
 				// Next
 				g_pInventory->Next();
 			}
 
 			// The item held by the mouse counts too.
-			MItem* pMouseItem = UI_GetMouseItem();
+			MItem* pMouseItem = DialogPresentation::GetMouseItem();
 
 			if (pMouseItem!=NULL)
 			{
@@ -529,10 +549,10 @@ MSkillSet::SetAvailableSkills()
 			{
 				ACTIONINFO skillID = SKILL_INSTALL_MINE;
 				flag = (IsEnableSkill(skillID) && bHasMine? FLAG_SKILL_ENABLE : 0);
-				
+
 				iterator iSkill = find( skillID );
 				if (iSkill != end())
-				{			
+				{
 					iSkill->second.Flag = flag;
 				}
 				else
@@ -546,10 +566,10 @@ MSkillSet::SetAvailableSkills()
 			{
 				ACTIONINFO skillID = SKILL_MAKE_MINE;
 				flag = (IsEnableSkill(skillID) && bHasMineMaterial? FLAG_SKILL_ENABLE : 0);
-				
+
 				iterator iSkill = find( skillID );
 				if (iSkill != end())
-				{			
+				{
 					iSkill->second.Flag = flag;
 				}
 				else
@@ -563,10 +583,10 @@ MSkillSet::SetAvailableSkills()
 			{
 				ACTIONINFO skillID = SKILL_MAKE_BOMB;
 				flag = (IsEnableSkill(skillID) && bHasBombMaterial? FLAG_SKILL_ENABLE : 0);
-				
+
 				iterator iSkill = find( skillID );
 				if (iSkill != end())
-				{			
+				{
 					iSkill->second.Flag = flag;
 				}
 				else
@@ -580,10 +600,10 @@ MSkillSet::SetAvailableSkills()
 			{
 				ACTIONINFO skillID = SKILL_THROW_BOMB;
 				flag = (IsEnableSkill(skillID) && bHasBomb? FLAG_SKILL_ENABLE : 0);
-				
+
 				iterator iSkill = find( skillID );
 				if (iSkill != end())
-				{			
+				{
 					iSkill->second.Flag = flag;
 				}
 				else
@@ -617,48 +637,48 @@ MSkillSet::SetAvailableSkills()
 	//
 	//-----------------------------------------------------
 	case RACE_VAMPIRE:
-		{		
+		{
 			//-----------------------------------------------------
 			//
 			// Walk the skill tree
 			//
 			//-----------------------------------------------------
 			// [new skill 3] In a casket the only skill is opening it.
-			if (g_pPlayer->IsInCasket())
+			if (CreatureState::IsInCasket(PlayerState::Creature()))
 			{
 				flag = FLAG_SKILL_ENABLE;
 
 				insert(SKILLID_MAP::value_type( MAGIC_OPEN_CASKET, SKILLID_NODE(MAGIC_OPEN_CASKET, flag) ));
-				gC_vs_ui.SelectSkill( MAGIC_OPEN_CASKET );
+				VsUiPresentation::SelectSkill( MAGIC_OPEN_CASKET );
 
 				return;
 			}
-			
+
 			// Only in vampire form: not as a bat or a wolf.
-			if (g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE1
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE1
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE2
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE2
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE3
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE3
+			if (GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_MALE1
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_FEMALE1
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_MALE2
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_FEMALE2
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_MALE3
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_FEMALE3
 				// add by Coffee 2006.12.7
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE4
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE4
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_MALE4
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_FEMALE4
 				//add by viva
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE5
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE5
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_MALE5
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_FEMALE5
 				//add by viva
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE6
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE6
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_MALE6
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_FEMALE6
 				// end
-				|| g_pPlayer->GetCreatureType()==CREATURETYPE_VAMPIRE_OPERATOR)
+				|| GetPlayerCreatureType()==CREATURETYPE_VAMPIRE_OPERATOR)
 
 			{
 				auto* pVampireDomain = g_pSkillManager->GetMutable(SKILLDOMAIN_VAMPIRE);
 				if (pVampireDomain == nullptr) return;
 				MSkillDomain& vampireDomain = *pVampireDomain;
-				
-				vampireDomain.SetBegin();		
+
+				vampireDomain.SetBegin();
 
 			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9: bags inside the inventory
 				MItem* pSubInventory = NULL;
@@ -675,13 +695,13 @@ MSkillSet::SetAvailableSkills()
 
 						// Invisibility is not allowed in the lair zones.
 						if (g_pSkillInfoTable->GetVampireConsumeMP(id, playerINT, playerLevel) > playerMP
-							|| (id == MAGIC_INVISIBILITY && (g_pZone->GetID() == 1104 || g_pZone->GetID() == 1106 || g_pZone->GetID() == 1114 || g_pZone->GetID() == 1115)))
+							|| (id == MAGIC_INVISIBILITY && (ZoneState::GetID() == 1104 || ZoneState::GetID() == 1106 || ZoneState::GetID() == 1114 || ZoneState::GetID() == 1115)))
 						{
 							flag = 0;
 						}
 						else
 						{
-							flag = FLAG_SKILL_ENABLE;					
+							flag = FLAG_SKILL_ENABLE;
 						}
 
 						// Skills that need an item
@@ -720,7 +740,7 @@ MSkillSet::SetAvailableSkills()
 								if (NULL == g_pInventory->FindItem( ITEM_CLASS_VAMPIRE_ETC, 0 ))
 								{
 									flag = 0;
-								}							
+								}
 							break;
 
 							case MAGIC_TRANSFORM_TO_BAT :
@@ -732,9 +752,9 @@ MSkillSet::SetAvailableSkills()
 							#endif
 								{
 									flag = 0;
-								}							
+								}
 							break;
-							
+
 							case SKILL_TRANSFORM_TO_WERWOLF :
 								if(g_pInventory->FindItem( ITEM_CLASS_SKULL, 39) == NULL)
 								{
@@ -745,7 +765,7 @@ MSkillSet::SetAvailableSkills()
 							case MAGIC_HOWL :
 								flag=0;
 							break;
-							
+
 							default:
 							break;
 
@@ -764,44 +784,6 @@ MSkillSet::SetAvailableSkills()
 			// Search the inventory
 			//
 			//-----------------------------------------------------
-			/*
-			BOOL bCheckPortalMark = TRUE;
-			BOOL bCheckPortalTunnel = TRUE;
-
-			g_pInventory->SetBegin();
-
-			while ((*g_pInventory).IsNotEnd())
-			{
-				const MItem* pItem = g_pInventory->Get();
-
-				ITEM_CLASS itemClass = pItem->GetItemClass();
-
-				//-----------------------------------------------------
-				// Portal
-				//-----------------------------------------------------
-				if (itemClass==ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
-				{				
-					flag = FLAG_SKILL_ENABLE;
-				
-					if (bCheckPortalMark && !pItem->IsMarked())
-					{
-						insert(SKILLID_MAP::value_type( MAGIC_BLOODY_MARK, SKILLID_NODE(MAGIC_BLOODY_MARK, flag)) );
-						
-						bCheckPortalMark = false;
-					}
-
-					if (bCheckPortalTunnel && pItem->IsMarked())
-					{
-						insert(SKILLID_MAP::value_type( MAGIC_BLOODY_TUNNEL, SKILLID_NODE(MAGIC_BLOODY_TUNNEL, flag)) );
-						
-						bCheckPortalTunnel = false;
-					}				
-				}
-
-				// Next
-				g_pInventory->Next();
-			}
-			*/
 
 			//-----------------------------------------------------
 			//
@@ -809,7 +791,7 @@ MSkillSet::SetAvailableSkills()
 			//
 			//-----------------------------------------------------
 			// Blood drain: a wolf or a bat cannot drain.
-			
+
 
 			//-----------------------------------------------------
 			// Ground attack (pillar of fire), added by hand
@@ -827,7 +809,7 @@ MSkillSet::SetAvailableSkills()
 
 				insert(SKILLID_MAP::value_type( MAGIC_GROUND_ATTACK, SKILLID_NODE(MAGIC_GROUND_ATTACK, flag) ));
 			}
-			
+
 			SetAvailableVampireSkills();
 
 			//-----------------------------------------------------
@@ -867,7 +849,7 @@ MSkillSet::SetAvailableSkills()
 		break;
 
 	case RACE_OUSTERS:
-		{		
+		{
 			//-----------------------------------------------------
 			//
 			// Walk the skill tree
@@ -877,8 +859,8 @@ MSkillSet::SetAvailableSkills()
 				auto* pOustersDomain = g_pSkillManager->GetMutable(SKILLDOMAIN_OUSTERS);
 				if (pOustersDomain == nullptr) return;
 				MSkillDomain& oustersDomain = *pOustersDomain;
-				
-				oustersDomain.SetBegin();		
+
+				oustersDomain.SetBegin();
 				while (oustersDomain.IsNotEnd())
 				{
 					MSkillDomain::SKILLSTATUS	status	= oustersDomain.GetSkillStatus();
@@ -889,20 +871,20 @@ MSkillSet::SetAvailableSkills()
 						ACTIONINFO id = oustersDomain.GetSkillID();
 
 						SKILLINFO_NODE sInfo = (*g_pSkillInfoTable)[id];
-						
+
 						flag = 0;
 
 						if (sInfo.GetMP() <= playerMP)
 						{
 							if(sInfo.IsActive())
 							{
-								flag = FLAG_SKILL_ENABLE;					
+								flag = FLAG_SKILL_ENABLE;
 							}
 							else
 							{
 								// The item in hand
 								const MItem* pItem = (*g_pOustersGear).GetItem( (MOustersGear::GEAR_OUSTERS)MOustersGear::GEAR_OUSTERS_RIGHTHAND );
-								
+
 								if(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_NO_DOMAIN || sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_WIND
 									|| sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_ETC ||
 									sInfo.GetSkillStep() == SKILL_STEP_ETC)
@@ -912,15 +894,15 @@ MSkillSet::SetAvailableSkills()
 								else
 								{
 									if (pItem!=NULL && pItem->IsAffectStatus())
-									{	
+									{
 										const int itemClass = pItem->GetItemClass();
-										
+
 										if ((itemClass == ITEM_CLASS_OUSTERS_CHAKRAM && sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_COMBAT) ||
 											(itemClass == ITEM_CLASS_OUSTERS_WRISTLET &&
 												(
-													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_FIRE && static_cast<DWORD>(sInfo.Fire) <= g_pPlayer->GetElementalFire()) ||
-													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_WATER && static_cast<DWORD>(sInfo.Water) <= g_pPlayer->GetElementalWater()) ||
-													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_EARTH && static_cast<DWORD>(sInfo.Earth) <= g_pPlayer->GetElementalEarth())
+													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_FIRE && static_cast<DWORD>(sInfo.Fire) <= pPlayer->GetElementalFire()) ||
+													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_WATER && static_cast<DWORD>(sInfo.Water) <= pPlayer->GetElementalWater()) ||
+													(sInfo.ElementalDomain == SKILLINFO_NODE::ELEMENTAL_DOMAIN_EARTH && static_cast<DWORD>(sInfo.Earth) <= pPlayer->GetElementalEarth())
 												))
 											)
 										{
@@ -954,25 +936,6 @@ MSkillSet::SetAvailableSkills()
 				}
 			}
 
-			//-----------------------------------------------------
-			//
-			// Basic skills
-			//
-			//-----------------------------------------------------
-//			// Blood drain: a wolf or a bat cannot drain.
-//			if (g_pPlayer->GetCreatureType()!=CREATURETYPE_BAT
-//				&& g_pPlayer->GetCreatureType()!=CREATURETYPE_WOLF)
-//			{
-//				if ((*g_pSkillInfoTable)[SKILL_BLOOD_DRAIN].GetMP() > playerMP)
-//				{
-//					flag = 0;
-//				}
-//				else
-//				{
-//					flag = FLAG_SKILL_ENABLE;
-//				}
-//				insert(SKILLID_MAP::value_type( SKILL_BLOOD_DRAIN, SKILLID_NODE(SKILL_BLOOD_DRAIN, flag) ));
-//			}
 
 		}
 		break;
@@ -1007,16 +970,16 @@ MSkillSet::SetAvailableSkills()
 		}
 	}
 
-	if (g_pPlayer->GetCreatureType()!=CREATURETYPE_BAT
-		&& g_pPlayer->GetCreatureType()!=CREATURETYPE_WOLF)
+	if (GetPlayerCreatureType()!=CREATURETYPE_BAT
+		&& GetPlayerCreatureType()!=CREATURETYPE_WOLF)
 	{
 		MPlayerGear* pGear = NULL;
 		MItemClassFinder itemFinder( ITEM_CLASS_COUPLE_RING );
-		
-		switch(g_pPlayer->GetRace())
+
+		switch(PlayerState::GetRace())
 		{
 		case RACE_SLAYER:
-			pGear = g_pSlayerGear;							
+			pGear = g_pSlayerGear;
 			break;
 
 		case RACE_VAMPIRE:
@@ -1031,7 +994,7 @@ MSkillSet::SetAvailableSkills()
 		default:
 			break;
 		}
-		
+
 		if (pGear != NULL)
 		{
 			MItem *pItem = pGear->FindItem( itemFinder );
@@ -1041,50 +1004,48 @@ MSkillSet::SetAvailableSkills()
 			}
 		}
 	}
-	
+
 //	insert(SKILLID_MAP::value_type( (ACTIONINFO)SKILL_MAGIC_ELUSION, SKILLID_NODE((ACTIONINFO)(SKILL_MAGIC_ELUSION),  FLAG_SKILL_ENABLE)) );
 
-	g_pPlayer->CalculateLightSight();
-	
+	PlayerState::CalculateLightSight();
+
 
 	//CheckMP();
 
-	// ResetHotKey goes wrong when called with no skills.
-//	if( size() > 5 )
-//		gC_vs_ui.ResetHotKey();
 }
 
-void			
+void
 MSkillSet::SetAvailableVampireSkills()
 {
 	auto* pVampireDomain = g_pSkillManager->GetMutable(SKILLDOMAIN_VAMPIRE);
 	if (pVampireDomain == nullptr) return;
 	MSkillDomain& vampireDomain = *pVampireDomain;
-	TYPE_CREATURETYPE PlayerCreatureType = g_pPlayer->GetCreatureType();
+	TYPE_CREATURETYPE PlayerCreatureType = static_cast<TYPE_CREATURETYPE>(GetPlayerCreatureType());
+	MStatus* pPlayer = PlayerState::Status();
 
-	int playerMP;		
+	int playerMP;
 	BYTE flag;
-	
-	if (g_pPlayer->GetRace() != RACE_VAMPIRE)
+
+	if (PlayerState::GetRace() != RACE_VAMPIRE)
 	{
-		playerMP = g_pPlayer->GetMP();	
+		playerMP = pPlayer->GetMP();
 
 		// Under EFFECTSTATUS_SACRIFICE each HP counts as 2 MP.
-		if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_SACRIFICE))
+		if (PlayerState::HasEffectStatus(EFFECTSTATUS_SACRIFICE))
 		{
-			playerMP += (g_pPlayer->GetHP() << 1);
-		}		
+			playerMP += (pPlayer->GetHP() << 1);
+		}
 	}
 	else
 	{
 		// A vampire spends HP instead of MP.
-		playerMP = g_pPlayer->GetHP();	
+		playerMP = pPlayer->GetHP();
 	}
 
 	// What a vampire's skill costs takes its current INT, and Will of
 	// Life's its level (GetVampireConsumeMP).
-	const int playerINT = (int)g_pPlayer->GetINT();
-	const int playerLevel = (int)g_pPlayer->GetLEVEL();
+	const int playerINT = (int)pPlayer->GetINT();
+	const int playerLevel = (int)pPlayer->GetLEVEL();
 
 	if (PlayerCreatureType!=CREATURETYPE_BAT
 		&& PlayerCreatureType!=CREATURETYPE_WOLF
@@ -1101,19 +1062,19 @@ MSkillSet::SetAvailableVampireSkills()
 		}
 		insert(SKILLID_MAP::value_type( SKILL_BLOOD_DRAIN, SKILLID_NODE(SKILL_BLOOD_DRAIN, flag) ));
 	}
-	
+
 	//-----------------------------------------------------
-	// 
+	//
 	// Invisible?
 	//
 	//-----------------------------------------------------
-	if (g_pPlayer->IsInvisible())
+	if (PlayerState::IsInvisible())
 	{
 		flag = FLAG_SKILL_ENABLE;
-		
+
 		insert(SKILLID_MAP::value_type( MAGIC_UN_INVISIBILITY, SKILLID_NODE(MAGIC_UN_INVISIBILITY, flag) ));
 	}
-		
+
 	switch( PlayerCreatureType )
 	{
 	case CREATURETYPE_WOLF :
@@ -1127,11 +1088,11 @@ MSkillSet::SetAvailableVampireSkills()
 				flag = FLAG_SKILL_ENABLE;
 			}
 			insert(SKILLID_MAP::value_type( MAGIC_EAT_CORPSE, SKILLID_NODE(MAGIC_EAT_CORPSE, flag) ));
-			
+
 			// Howl
 			if( vampireDomain.GetSkillStatus( MAGIC_HOWL ) == MSkillDomain::SKILLSTATUS_LEARNED )
 			{
-				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_HOWL, playerINT, playerLevel) > playerMP)				
+				if( g_pSkillInfoTable->GetVampireConsumeMP(MAGIC_HOWL, playerINT, playerLevel) > playerMP)
 				{
 					flag = 0;
 				}
@@ -1170,9 +1131,9 @@ MSkillSet::SetAvailableVampireSkills()
 		}
 		break;
 	}
-		
+
 	//-----------------------------------------------------
-	// 
+	//
 	// Transformed?
 	//
 	//-----------------------------------------------------
@@ -1191,13 +1152,13 @@ MSkillSet::SetAvailableVampireSkills()
 		//add by viva
 		&& PlayerCreatureType!=CREATURETYPE_VAMPIRE_MALE6
 		&& PlayerCreatureType!=CREATURETYPE_VAMPIRE_FEMALE6
-		// end 
+		// end
 		&& PlayerCreatureType!=CREATURETYPE_VAMPIRE_OPERATOR)
-	{			
+	{
 		flag = FLAG_SKILL_ENABLE;
-		
+
 		insert(SKILLID_MAP::value_type( MAGIC_UN_TRANSFORM, SKILLID_NODE(MAGIC_UN_TRANSFORM, flag) ));
-	}	
+	}
 }
 
 //----------------------------------------------------------------------
@@ -1209,58 +1170,9 @@ MSkillSet::SetAvailableVampireSkills()
 void
 MSkillSet::CheckMP()
 {
-	
-	// mp 체크할때.. 현재 장비중인 무기도 체크해야되는데
-	// 일단은.. 이케 간다. T_T;
-	SetAvailableSkills(); 
 
-	/*
-	if (g_pPlayer==NULL)
-	{
-		return;
-	}
+	// Checking MP should check the weapon held too; for now the whole
+	// set is rebuilt.
+	SetAvailableSkills();
 
-	//--------------------------------------------------
-	// player의 현재 MP
-	//--------------------------------------------------
-	int playerMP;
-	
-	if (g_pPlayer->IsSlayer())
-	{
-		playerMP = g_pPlayer->GetMP();	
-	}
-	else
-	{
-		// vampire인 경우는 HP를 MP대신에 쓴다.
-		playerMP = g_pPlayer->GetHP();	
-	}
-
-	SKILLID_MAP::iterator iID = begin();
-	
-	//--------------------------------------------------
-	// 모든 skill들에 대해서 mp 체크
-	//--------------------------------------------------
-	while (iID != end())
-	{
-		ACTIONINFO		id = (*iID).first;
-		SKILLID_NODE&	node = (*iID).second;	
-
-		//--------------------------------------------------
-		// MP사용량이 현재MP보다 큰 경우.. --> 사용 불가
-		//--------------------------------------------------
-		if ((*g_pSkillInfoTable)[id].GetMP() > playerMP)
-		{
-			node.SetDisable();
-		}
-		//--------------------------------------------------
-		// 아니면, 사용 가능하게 표시
-		//--------------------------------------------------
-		else
-		{
-			node.SetEnable();
-		}
-
-		iID++;
-	}
-	*/
 }

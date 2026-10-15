@@ -1,11 +1,11 @@
 //----------------------------------------------------------------------
 // MItemFinder.h
 //----------------------------------------------------------------------
-// 특별한 item을 찾기 위해 쓰인다.
-// MItemFinder를 상속받아서 필요한걸 만들면 된다.
+// Used to find a particular item.
+// Derive from MItemFinder for what is needed.
 //
-// 이제서야 필요를 느껴 만들게 되었당.. --;
-// 예전 코드들은 그냥 그케 쓰도록 둬야지.. - -;;
+// (Made only once it was needed;
+// older code keeps its own searches.)
 //----------------------------------------------------------------------
 
 #ifndef __MITEMFINDER_H__
@@ -24,7 +24,7 @@ class MItemFinder {
 //----------------------------------------------------------------------
 // MItemClassFinder
 //----------------------------------------------------------------------
-// 같은 ItemClass의 item을 찾는다.
+// Finds an item of the item class.
 //----------------------------------------------------------------------
 class MItemClassFinder : public MItemFinder {
 	public :
@@ -38,13 +38,13 @@ class MItemClassFinder : public MItemFinder {
 		}
 
 	protected :
-		ITEM_CLASS	m_ItemClass;	// 찾을려는 itemClass
+		ITEM_CLASS	m_ItemClass;	// the item class looked for
 };
 
 //----------------------------------------------------------------------
 // MItemClassTypeFinder
 //----------------------------------------------------------------------
-// 같은 ItemClass, ItemType의 item을 찾는다.
+// Finds an item of the item class and type.
 //----------------------------------------------------------------------
 class MItemClassTypeFinder : public MItemClassFinder {
 	public :
@@ -62,13 +62,13 @@ class MItemClassTypeFinder : public MItemClassFinder {
 		}
 
 	protected :
-		TYPE_ITEMTYPE	m_ItemType;	// 찾을려는 itemType
+		TYPE_ITEMTYPE	m_ItemType;	// the item type looked for
 };
 
 //----------------------------------------------------------------------
 // MVampirePortalItemFinder
 //----------------------------------------------------------------------
-// Mark되거나 안된 VampirePortal을 찾기 위해서
+// Finds a vampire portal item, marked or not.
 //----------------------------------------------------------------------
 class MVampirePortalItemFinder : public MItemFinder {
 	public :
@@ -79,8 +79,10 @@ class MVampirePortalItemFinder : public MItemFinder {
 
 		bool	operator () ( const MItem* pItem )
 		{
+			// The portal item's vtable is executable-side: its mark comes
+			// through MItemHost.
 			return pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM
-					&& ((MVampirePortalItem*)pItem)->IsMarked()==m_bMarked;
+					&& MItem::IsPortalMarked(pItem)==m_bMarked;
 		}
 
 	protected :
@@ -90,7 +92,7 @@ class MVampirePortalItemFinder : public MItemFinder {
 //----------------------------------------------------------------------
 // MSlayerPortalItemFinder
 //----------------------------------------------------------------------
-// 사용할 수 있는걸 찾는다.
+// Finds one that can be used.
 //----------------------------------------------------------------------
 class MSlayerPortalItemFinder : public MItemFinder {
 	public :
@@ -106,7 +108,7 @@ class MSlayerPortalItemFinder : public MItemFinder {
 //----------------------------------------------------------------------
 // MEventStartItemFinder
 //----------------------------------------------------------------------
-// 특정한 class, type의 item이 몇개나 있는가..
+// How many items of the class and type there are..
 class MItemClassTypeNumberFinder : public MItemClassTypeFinder {
 	public :
 		MItemClassTypeNumberFinder(ITEM_CLASS itemClass, TYPE_ITEMTYPE itemType) 
@@ -117,14 +119,14 @@ class MItemClassTypeNumberFinder : public MItemClassTypeFinder {
 	
 		bool	operator () ( const MItem* pItem )
 		{
-			// 같은 class, type이면 개수를 더한다.
+			// The same class and type: add its number.
 			if (pItem->GetItemClass()==m_ItemClass
 					&& pItem->GetItemType()==m_ItemType)
 			{
 				m_TotalNumber += pItem->GetNumber();
 			}
 
-			// 계속 찾게 할려는 목적이다.
+			// (So the search goes on.)
 			return false;
 		}
 
@@ -139,7 +141,7 @@ class MItemClassTypeNumberFinder : public MItemClassTypeFinder {
 //----------------------------------------------------------------------
 // MItemClassRangeTypeFinder
 //----------------------------------------------------------------------
-// 같은 ItemClass, min~max ItemType의 item을 찾는다.
+// Finds an item of the item class and a type from min to max.
 //----------------------------------------------------------------------
 class MItemClassRangeTypeFinder : public MItemClassFinder {
 	public :
@@ -159,8 +161,8 @@ class MItemClassRangeTypeFinder : public MItemClassFinder {
 		}
 
 	protected :
-		TYPE_ITEMTYPE	m_MinItemType;	// 찾을려는 min itemType
-		TYPE_ITEMTYPE	m_MaxItemType;	// 찾을려는 max itemType
+		TYPE_ITEMTYPE	m_MinItemType;	// the lowest item type looked for
+		TYPE_ITEMTYPE	m_MaxItemType;	// the highest item type looked for
 };
 
 //----------------------------------------------------------------------

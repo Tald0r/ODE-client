@@ -3846,6 +3846,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 		g_pPlayer->SetX( x );
 		g_pPlayer->SetY( y );
 	},
+	.IsInvisible = []() { return g_pPlayer->IsInvisible() != 0; },
+	.CalculateLightSight = []() { g_pPlayer->CalculateLightSight(); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
