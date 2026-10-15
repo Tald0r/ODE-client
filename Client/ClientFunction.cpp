@@ -4,13 +4,15 @@
 // The whisper target, whether the player stands somewhere safe, and the
 // inventory effects (task 4.236: gamemodel's since then; the UI's
 // translucent box went into SpriteLib's AlphaBox.cpp and VS_UI_Base.cpp,
-// and the blood bible's gear effect into UiRuntime).
+// and the blood bible's gear effect into UiRuntime). Where an item made
+// from another goes (task 4.237, GameMain's until then).
 //---------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "ClientFunction.h"
 #include "SkillDef.h"
 #include "InventoryEffectTarget.h"
 #include "MInventory.h"
+#include "MItem.h"
 #include "MEffectGeneratorTable.h"
 #include "MActionInfoTable.h"
 #include "MActionResult.h"
@@ -100,4 +102,65 @@ AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO ai, DWORD delayFrame, DW
 	g_pEffectGeneratorTable->Generate(x, y, 0, 0, 1, ai, target.release());
 
 	DEBUG_ADD_FORMAT("[AddNewInventoryEffect] ai=%d, item id=%d", ai, id);
+}
+
+//-----------------------------------------------------------------------------
+// GetMakeItemFitPosition
+//-----------------------------------------------------------------------------
+//
+// Used when making holy water, bombs or mines from an item.
+//
+// Where the item made from pItem (itemClass, itemType) goes in the
+// inventory, in fitPoint: only when it returns true; false means there is
+// no room for it.
+//-----------------------------------------------------------------------------
+bool
+GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint)
+{
+	bool bFindPos = false;	// is there room?
+
+	// create a temporary item to find the position it would fit into.
+	MItem* pResultItem = MItem::NewItem( itemClass );
+
+	if (pResultItem == NULL)
+	{
+		DEBUG_ADD_FORMAT_ERR("[Error] GetMakeItemFitPosition: invalid item class %d", itemClass);
+		return false;
+	}
+
+	pResultItem->SetItemType( itemType );
+
+	if (g_pInventory->GetFitPosition(pResultItem, fitPoint))
+	{
+		bFindPos = true;
+
+		MItem* pOldItem = g_pInventory->GetItem(static_cast<BYTE>(fitPoint.x), static_cast<BYTE>(fitPoint.y));
+
+		// Going into an empty cell while only one is left:
+		// it changes where it is.
+		if (pOldItem==NULL
+			&& pItem->GetNumber()==1)
+		{
+			fitPoint.x = pItem->GetGridX();
+			fitPoint.y = pItem->GetGridY();
+
+			bFindPos = true;
+		}
+	}
+	else
+	{
+		// No empty cell, but only one left: it changes where it is.
+		if (pItem->GetNumber()==1)
+		{
+			fitPoint.x = pItem->GetGridX();
+			fitPoint.y = pItem->GetGridY();
+
+			bFindPos = true;
+		}
+	}
+
+	// free the temporary item
+	delete pResultItem;
+
+	return bFindPos;
 }

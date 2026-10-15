@@ -292,7 +292,7 @@ void		UpdateMouse();
 void		SelectLastSelectedCharacter();
 void		SaveLastSelectedCharacter( int slot );
 
-bool		GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint);
+// GetMakeItemFitPosition: ClientFunction.h
 
 // thread
 //LONG		FileThreadProc(LPVOID lpParameter);

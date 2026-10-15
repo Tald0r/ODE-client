@@ -104,6 +104,11 @@ struct Host
 	// Removes from the zone the creatures out of sight of the cell. Asked
 	// only with a zone, as PickupItem.
 	void (*KeepObjectInSight)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight) = nullptr;
+	// Whether the creature of the ID has called a helicopter, and whether
+	// a corpse of the creature type lies in a cell next to the creature or
+	// under it (task 4.237). Both false without a host.
+	bool (*HasHelicopter)(TYPE_OBJECTID creatureID) = nullptr;
+	bool (*IsExistCorpseFromPlayer)(MCreature* pCreature, int creatureType) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -142,6 +147,8 @@ void SetPlayer();
 void PickupItem(TYPE_OBJECTID id);
 void KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight);
 void DeleteCreature(MCreature* pCreature);
+bool HasHelicopter(TYPE_OBJECTID creatureID);
+bool IsExistCorpseFromPlayer(MCreature* pCreature, int creatureType);
 
 }
 
@@ -384,6 +391,10 @@ struct Host
 	// sector holds as a creature, back. NULL without a host.
 	MObject* (*ObjectOf)(const MCreature* pCreature) = nullptr;
 	MCreature* (*CreatureOf)(MObject* pObject) = nullptr;
+	// How the creature moves (MOVE_DEVICE_WALK without a host), and
+	// whether it stands still (false without a host).
+	MOVE_DEVICE (*GetMoveDevice)(MCreature* pCreature) = nullptr;
+	bool (*IsStop)(MCreature* pCreature) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -521,5 +532,7 @@ int GetActionCountMax(MCreature* pCreature);
 void SetShadowCount(MCreature* pCreature, int count);
 MObject* ObjectOf(const MCreature* pCreature);
 MCreature* CreatureOf(MObject* pObject);
+MOVE_DEVICE GetMoveDevice(MCreature* pCreature);
+bool IsStop(MCreature* pCreature);
 
 }

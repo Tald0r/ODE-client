@@ -163,4 +163,29 @@ void MoveCreatedToGear(int x, int y)
 	if (s_Host && s_Host->MoveCreatedToGear) s_Host->MoveCreatedToGear(x, y);
 }
 
+void LockGear()
+{
+	if (s_Host && s_Host->LockGear) s_Host->LockGear();
+}
+
+void RunMixingForge(int forgeClass, int forgeType)
+{
+	if (s_Host && s_Host->RunMixingForge) s_Host->RunMixingForge(forgeClass, forgeType);
+}
+
+void RunBulletinBoardWindow(const MItem* pItem)
+{
+	if (s_Host && s_Host->RunBulletinBoardWindow) s_Host->RunBulletinBoardWindow(pItem);
+}
+
+void RunXmasCardWindow(const MItem* pItem)
+{
+	if (s_Host && s_Host->RunXmasCardWindow) s_Host->RunXmasCardWindow(pItem);
+}
+
+void RunQuestInventory(const MItem* pItem)
+{
+	if (s_Host && s_Host->RunQuestInventory) s_Host->RunQuestInventory(pItem);
+}
+
 }

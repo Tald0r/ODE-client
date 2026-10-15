@@ -3898,6 +3898,10 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.IsInSafeSector = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->IsInSafeSector()) : 0; },
 };
 
+// UIMessageManager.cpp's: whether a corpse of the type lies next to the
+// creature.
+bool IsExistCorpseFromPlayer(MCreature* OriginCreature, int creature_type);
+
 static const ZoneState::Host s_ZoneStateHost = {
 	.Exists = []() { return g_pZone != NULL; },
 	.GetCreature = [](TYPE_OBJECTID id) { return g_pZone->GetCreature(id); },
@@ -3959,6 +3963,8 @@ static const ZoneState::Host s_ZoneStateHost = {
 	},
 	.PickupItem = [](TYPE_OBJECTID id) { g_pZone->PickupItem(id); },
 	.KeepObjectInSight = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight) { g_pZone->KeepObjectInSight(x, y, static_cast<BYTE>(sight)); },
+	.HasHelicopter = [](TYPE_OBJECTID creatureID) { return g_pZone != NULL && g_pZone->GetHelicopter(creatureID) != NULL; },
+	.IsExistCorpseFromPlayer = IsExistCorpseFromPlayer,
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -4140,6 +4146,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetShadowCount = [](MCreature* pCreature, int count) { pCreature->SetShadowCount(count); },
 	.ObjectOf = [](const MCreature* pCreature) -> MObject* { return const_cast<MCreature*>(pCreature); },
 	.CreatureOf = [](MObject* pObject) { return static_cast<MCreature*>(pObject); },
+	.GetMoveDevice = [](MCreature* pCreature) { return pCreature->GetMoveDevice(); },
+	.IsStop = [](MCreature* pCreature) { return pCreature->IsStop() != FALSE; },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -4229,6 +4237,17 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 		}
 		g_C2G--;
 	},
+	.LockGear = UI_LockGear,
+	.RunMixingForge = [](int forgeClass, int forgeType) {
+		static_assert(int(C_VS_UI_MIXING_FORGE::CLASS_WEAPON) == VsUiPresentation::FORGE_CLASS_WEAPON
+			&& int(C_VS_UI_MIXING_FORGE::CLASS_ARMOR) == VsUiPresentation::FORGE_CLASS_ARMOR
+			&& int(C_VS_UI_MIXING_FORGE::CLASS_ACCESSORY) == VsUiPresentation::FORGE_CLASS_ACCESSORY);
+		gC_vs_ui.RunMixingForge(C_VS_UI_MIXING_FORGE::FORGE_CLASS(forgeClass),
+			C_VS_UI_MIXING_FORGE::FORGE_TYPE(C_VS_UI_MIXING_FORGE::TYPE_A + forgeType));
+	},
+	.RunBulletinBoardWindow = [](const MItem* pItem) { gC_vs_ui.RunBulletinBoardWindow(pItem); },
+	.RunXmasCardWindow = [](const MItem* pItem) { gC_vs_ui.RunXmasCardWindow(pItem); },
+	.RunQuestInventory = [](const MItem* pItem) { gC_vs_ui.RunQuestInventory(pItem); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {

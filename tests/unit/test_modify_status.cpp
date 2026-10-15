@@ -436,8 +436,8 @@ TEST(ModifyStatus, TheMagazinesBullets)
 {
 	Scene scene;
 	scene.Modify(MODIFY_BULLET, 9);			// no magazine: nothing
-	Ware magazine(ITEM_CLASS_MAGAZINE, 5);
-	g_pCurrentMagazine = reinterpret_cast<MMagazine*>(static_cast<MItem*>(&magazine));
+	MMagazine magazine;
+	g_pCurrentMagazine = &magazine;
 	scene.Modify(MODIFY_BULLET, 9);
 	CHECK_EQ(9, magazine.GetNumber());
 	g_pCurrentMagazine = NULL;

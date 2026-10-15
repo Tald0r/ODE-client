@@ -11,6 +11,9 @@
 #include "../basic/Platform.h"
 #endif
 #include "MTypeDef.h"
+#include "ItemClassDef.h"
+
+class MItem;
 
 extern const char*	GetWhisperID();
 
@@ -28,5 +31,9 @@ extern void		DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha);
 
 // 0 not, 1 safe for the player's race, 2 safe for everyone.
 extern BOOL		IsPlayerInSafePosition();
+
+// Where the item of the class and type made from pItem goes in the
+// inventory; false for nowhere.
+extern bool		GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint);
 
 #endif

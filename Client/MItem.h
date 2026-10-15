@@ -90,38 +90,38 @@ struct MItemHost {
 	void			(*ResetQuickItemSlot)();				// the UI rebuilds the quick-item slots after the belt or an arms band changed
 	void			(*RepairHint)();						// the help event for a piece of gear that started to break
 	MMagazine*		(*EmptyMagazineFor)(MItem* pGun);		// a fresh, empty magazine of the type the gun takes, or NULL
-	void			(*UsePotionFromInventory)(MItem* pPotion);	// MUsePotionItem::UseInventory's body: send the use packet, arm the player's check buffer. The other use bodies are executable-side overrides; this one is inherited by MSerum and its kin, whose vtables GCC emits in the library (their key function is in MItem.cpp), so the slot has to resolve here. NULL in a test binary: the use is a no-op.
-	void			(*UsePetFromInventory)(MItem* pPet);		// MPetItem::UseInventory's body, for the same reason: MPetItem's constructor and its life countdown are in MItem.cpp (the clocks work), so its vtable is emitted in the library and the use it names has to resolve here. NULL in a test binary: the use is a no-op.
+	void			(*UsePotionFromInventory)(MItem* pPotion);	// MUsePotionItem::UseInventory's body: send the use packet, arm the player's check buffer. Inherited by MSerum and its kin; the body is MItemUse.cpp's (gamemodel's since task 4.237, so a direct call could replace the entry). NULL in a test binary: the use is a no-op.
+	void			(*UsePetFromInventory)(MItem* pPet);		// MPetItem::UseInventory's body, MItemUse.cpp's as above. NULL in a test binary: the use is a no-op.
 	// Identity-only notification: derived members have already been destroyed.
 	void			(*ItemDestroyed)(MItem* pItem) noexcept = nullptr;
-	// The executable's item factory: a new item of the class, or NULL for a
-	// class with no constructor there. MItem::NewItem range-checks the class
-	// first. NULL in a test binary that installs none: nothing is created.
+	// The item factory (MItemUse.cpp's NewItemOfClass, which GameInit.cpp
+	// installs): a new item of the class, or NULL for a class with no
+	// constructor there. MItem::NewItem range-checks the class first. NULL
+	// in a test binary that installs none: nothing is created.
 	MItem*			(*NewItem)(ITEM_CLASS itemClass) = nullptr;
+	// LoadGun to PetName were the executable's because the classes'
+	// vtables were (MItemUse.cpp), and GCC's UBSan checks every use of
+	// such a class against its vtable's typeinfo. Task 4.237 put
+	// MItemUse.cpp in gamemodel, so direct calls could replace them.
+	//
 	// Loads a gun with a fresh magazine of its type holding that many rounds;
-	// false when no magazine could be made. Executable-side because a
-	// magazine's vtable is (its use bodies send packets), and GCC's UBSan
-	// checks every use of an MMagazine against that vtable's typeinfo.
+	// false when no magazine could be made.
 	bool			(*LoadGun)(MItem* pGun, TYPE_ITEM_NUMBER rounds) = nullptr;
 	// Marks a mine (an item of ITEM_CLASS_MINE) installed in the ground.
-	// Executable-side for the same reason: a mine's vtable is.
 	void			(*SetMineInstalled)(MItem* pMine) = nullptr;
 	// Whether a vampire's portal item (ITEM_CLASS_VAMPIRE_PORTAL_ITEM) is
-	// marked with a zone to open a tunnel to. Executable-side for the same
-	// reason: the portal item's vtable is. False without a host.
+	// marked with a zone to open a tunnel to. False without a host.
 	bool			(*IsPortalMarked)(const MItem* pPortal) = nullptr;
 	// Marks a vampire's portal item with the zone and cell its tunnel opens
-	// to. Executable-side for the same reason.
+	// to.
 	void			(*MarkPortal)(MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	// Puts the magazine (an item of ITEM_CLASS_MAGAZINE) in the gun, as the
-	// player's current magazine, freeing the one the gun held. Executable-
-	// side because a magazine's vtable is.
+	// player's current magazine, freeing the one the gun held.
 	void			(*ReloadGun)(MItem* pGun, MItem* pMagazine) = nullptr;
 	// The creature a corpse (an item of ITEM_CLASS_CORPSE) holds, or NULL.
-	// Executable-side because a corpse's vtable is. NULL without a host.
+	// NULL without a host.
 	MCreature*		(*CorpseCreature)(const MItem* pCorpse) = nullptr;
-	// A pet item's (ITEM_CLASS_PET_ITEM) pet name. Executable-side because
-	// MPetItem::GetPetName is. Empty without a host.
+	// A pet item's (ITEM_CLASS_PET_ITEM) pet name. Empty without a host.
 	std::string		(*PetName)(MItem* pPet) = nullptr;
 };
 

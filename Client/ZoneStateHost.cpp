@@ -170,6 +170,16 @@ void KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight)
 	if (s_Host && s_Host->KeepObjectInSight) s_Host->KeepObjectInSight(x, y, sight);
 }
 
+bool HasHelicopter(TYPE_OBJECTID creatureID)
+{
+	return s_Host && s_Host->HasHelicopter && s_Host->HasHelicopter(creatureID);
+}
+
+bool IsExistCorpseFromPlayer(MCreature* pCreature, int creatureType)
+{
+	return s_Host && s_Host->IsExistCorpseFromPlayer && s_Host->IsExistCorpseFromPlayer(pCreature, creatureType);
+}
+
 }
 
 namespace CreatureState {
@@ -808,6 +818,16 @@ MObject* ObjectOf(const MCreature* pCreature)
 MCreature* CreatureOf(MObject* pObject)
 {
 	return s_Host && s_Host->CreatureOf ? s_Host->CreatureOf(pObject) : nullptr;
+}
+
+MOVE_DEVICE GetMoveDevice(MCreature* pCreature)
+{
+	return s_Host && s_Host->GetMoveDevice ? s_Host->GetMoveDevice(pCreature) : MOVE_DEVICE_WALK;
+}
+
+bool IsStop(MCreature* pCreature)
+{
+	return s_Host && s_Host->IsStop && s_Host->IsStop(pCreature);
 }
 
 }

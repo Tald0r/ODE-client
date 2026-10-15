@@ -174,6 +174,10 @@ Client/StatusPresentationHost.h
 Client/ClientFunction.cpp
 Client/ClientFunction.h
 
+# The connection to the game server, for code that sends (4.237).
+Client/GameSocket.cpp
+Client/GameSocket.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
@@ -188,6 +192,8 @@ Client/MMoneyManager.h
 # holds the pile sizes both halves read.
 Client/MItem.cpp
 Client/MItem.h
+# Using items: the factory table and the use bodies (4.237).
+Client/MItemUse.cpp
 Client/MItemLimits.h
 Client/MObject.cpp
 Client/MObject.h
