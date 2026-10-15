@@ -109,9 +109,8 @@ class Player;
 #define SAFE_DELETE_ARRAY(x){ if(x!=NULL) delete []x; x=NULL;}
 
 
-const LONG SOUND_MIN	= DSBVOLUME_MIN / 4;
-const LONG SOUND_RANGE	= DSBVOLUME_MAX - SOUND_MIN;
-const LONG SOUND_DEGREE = SOUND_RANGE / 15;
+// SOUND_MIN, SOUND_RANGE and SOUND_DEGREE are AudioTypes.h's (basic) since
+// task 4.258.
 
 //-----------------------------------------------------------------------------
 // Global data

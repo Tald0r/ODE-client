@@ -1,8 +1,9 @@
 ﻿//-----------------------------------------------------------------------------
 // UIMessageManager.cpp
 //-----------------------------------------------------------------------------
-// QuickSlot에 뭔가 할려는 경우에.. QuickSlot이 없어질 수가 있다... 
-// 지금 UI에서 타이밍 문제가 있어서 못 고치고 있음.
+// The UI's results turned into packets and model changes (UIMessageManager.h),
+// gameclient's since task 4.258. Something done to the quick slot may find it
+// gone: a timing problem in the UI, still unfixed.
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "CrtCompat.h"
@@ -13,7 +14,17 @@
 #include <process.h>
 #endif
 #include <stdio.h>
-#include "Client.h"
+#include "MPlayer.h"
+#include "MZone.h"
+#include "ZoneFlags.h"
+#include "FrameClock.h"
+#include "InputState.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
+#include "HelpEvent.h"
+#include "GameInitInfo.h"
+#include "DXLib/CSoundPartManager.h"
+#include "Packet/WireHost.h"
 #include "UIMessageManager.h"
 #include "WorldEventsHost.h"
 #include "LoginPresentationHost.h"
@@ -47,15 +58,13 @@
 #include "CServerInformation.h"
 #include "MParty.h"
 #include "MItemFinder.h"
-#include "ServerInfo.h"
+#include "GameSocket.h"
 #include "MZoneTable.h"
 //#include "MFileDef.h"
 #include "Properties.h"
 #include "UserInformation.h"
 #include "TempInformation.h"
 #include "ProfileManager.h"
-#include "CGameUpdate.h"
-#include "MTestDef.h"
 
 #include "Packet/Cpackets/CGRequestNewbieItem.h"
 #include "Packet/Cpackets/CGSilverCoating.h"
@@ -118,10 +127,10 @@
 #include "RankBonusTable.h"
 #include "Profiler.h"
 
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #include "MEventManager.h"
 #include "MOustersGear.h"
-#include "SoundSetting.h"
+#include "DXLib/COGGSTREAM.h"
 #include "ShrineInfoManager.h"
 
 #include "MTimeItemManager.h"
@@ -208,7 +217,6 @@ int g_C2G = 0;
 #endif
 
 bool							g_bEventQuestEnding = false;
-extern CGameUpdate*		g_pCGameUpdate;
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
 //-----------------------------------------------------------------------------
@@ -363,22 +371,6 @@ ExecuteLogout()
 				g_pPlayer->SetStop();
 				g_pPlayer->SetAction( ACTION_STAND );
 				//g_pZone->UnSetLight(g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetLightSight());	// 시야 제거
-			}
-			*/
-
-			// 캐릭터 선택창으로 간다는 message
-			/*
-			if (g_pCGameUpdate!=NULL)
-			{
-				gC_vs_ui.CloseGameMenu();
-
-				g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_WAIT_FOR_CHARACTER_SELECT_MODE].GetString(), -1, -1, 0 );			
-				
-				g_pCGameUpdate->UpdateDraw();				
-				CSDLGraphics::Flip();
-
-				g_pCGameUpdate->UpdateDraw();				
-				CSDLGraphics::Flip();
 			}
 			*/
 
@@ -7346,196 +7338,6 @@ UIMessageManager::Execute_UI_EXCHANGE_REQUEST_CANCEL(intptr_t left, intptr_t rig
 	}	
 }
 
-/*
-//-----------------------------------------------------------------------------
-//
-// Game Option 바꾸기
-//
-//-----------------------------------------------------------------------------
-// left = 바뀌는 option
-// right = 값
-void
-UIMessageManager::Execute_UI_CHANGE_GAME_OPTION(intptr_t left, intptr_t right, void* void_ptr)
-{
-	DEBUG_ADD_FORMAT("[UI] Execute_UI_CHANGE_GAME_OPTION[%d] = %d", left, right);
-	
-	if (g_Mode!=MODE_GAME)
-	{
-		DEBUG_ADD("Not Mode MODE_GAME");
-		return;
-	}
-
-	int value = right;
-	
-	switch (left)
-	{
-		//-------------------------------------------------------------------
-		// DRAW_MINIMAP
-		//-------------------------------------------------------------------		
-		//case C_VS_UI_GAMEMENU_OPTION::DRAW_MINIMAP :
-		//	g_pUserOption->DrawMinimap = (BOOL)value;
-		//break;
-
-		//-------------------------------------------------------------------
-		// DRAW_ZONE_NAME
-		//-------------------------------------------------------------------
-		//case C_VS_UI_GAMEMENU_OPTION::DRAW_ZONE_NAME :
-		//	g_pUserOption->DrawZoneName = (BOOL)value;
-		//break;
-
-		//-------------------------------------------------------------------
-		// DRAW_GAME_TIME
-		//-------------------------------------------------------------------
-		//case C_VS_UI_GAMEMENU_OPTION::DRAW_GAME_TIME :
-		//	g_pUserOption->DrawGameTime = (BOOL)value;
-		//break;
-
-		//-------------------------------------------------------------------
-		// DRAW_BLENDING_CHARACTER_SHADOW
-		//-------------------------------------------------------------------
-		//case C_VS_UI_GAMEMENU_OPTION::DRAW_BLENDING_CHARACTER_SHADOW :
-		//	///g_pUserOption->BlendingShadow = (BOOL)value;
-		//break;
-
-		//-------------------------------------------------------------------
-		// PLAY_WAV
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::PLAY_WAV :
-			g_pUserOption->PlayWaveMusic = (BOOL)value;
-
-			PlayGameMusic();			
-		break;
-
-		//-------------------------------------------------------------------
-		// BLOOD_DROP
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::BLOOD_DROP :
-			g_pUserOption->BloodDrop = (BOOL)value;
-		break;
-
-		//-------------------------------------------------------------------
-		// PLAY_SOUND
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::PLAY_SOUND :
-			g_pUserOption->PlaySound = (BOOL)value;
-
-			if (g_pUserOption->PlaySound)
-			{
-				g_SDLAudio.UnSetMute();
-			}
-			else
-			{
-				if (g_pSoundManager != NULL)
-				{
-					g_pSoundManager->Stop();
-				}
-				
-				g_SDLAudio.SetMute();
-			}
-		break;
-
-		//-------------------------------------------------------------------
-		// PLAY_MUSIC
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::PLAY_MUSIC :
-			g_pUserOption->PlayMusic = (BOOL)value;
-
-			PlayGameMusic();
-		break;
-
-		//-------------------------------------------------------------------
-		// VOLUME_SOUND
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::VOLUME_SOUND :
-			if (value>=0 && value<16)
-			{
-				g_pUserOption->VolumeSound = value;	
-
-				LONG volume = value*SOUND_DEGREE + SOUND_MIN;
-
-				g_SDLAudio.SetVolumeLimit( volume );			
-			}
-		break;
-
-		//-------------------------------------------------------------------
-		// VOLUME_MUSIC 
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::VOLUME_MUSIC :
-
-			if (value>=0 && value<16)
-			{
-				g_pUserOption->VolumeMusic = value;
-				
-				if (g_pUserOption->PlayWaveMusic)
-				{
-					LONG volume = value*SOUND_DEGREE + SOUND_MIN;
-
-					DEBUG_ADD_FORMAT("Change VOLUME_MUSIC = %ld", volume);
-					
-					//LONG maxVolume = g_SDLAudio.GetVolumeLimit();
-
-					//g_SDLAudio.SetVolumeLimit( volume );
-					//g_SDLAudio.AddVolume( g_pSDLStream->GetBuffer(), 0 );
-					g_pSDLStream->SetVolumeLimit( volume );
-
-					// 원래의 max volume으로 돌린다.
-					//g_SDLAudio.SetVolumeLimit( maxVolume );
-				}
-				else
-				{
-					WORD volume = value*0x1000 + 0x0FFF;
-				
-					if (!g_pUserOption->PlayMusic || g_Music.IsPause())
-					{
-						g_Music.SetVolume( volume );
-					}
-					else
-					{
-						g_Music.Pause();
-						g_Music.SetVolume( volume );
-						g_Music.Resume();
-					}
-				}
-			}
-		break;
-
-		//-------------------------------------------------------------------
-		// 캐릭터 HP바 투명/불투명 
-		//-------------------------------------------------------------------
-		case C_VS_UI_GAMEMENU_OPTION::PARTY_HPBAR_ALPHA :
-			g_pUserOption->DrawTransHPBar = (BOOL)value;
-		break;
-		
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-//
-// GameOption 닫기
-//
-//-----------------------------------------------------------------------------
-void
-UIMessageManager::Execute_UI_CLOSE_GAME_OPTION(intptr_t left, intptr_t right, void* void_ptr)
-{
-	DEBUG_ADD("[UI] Execute_UI_CLOSE_GAME_OPTION");
-	
-	if (g_Mode!=MODE_GAME)
-	{
-		DEBUG_ADD("Not Mode MODE_GAME");
-		return;
-	}
-
-	
-	gC_vs_ui.CloseGameMenuOption();
-
-	//---------------------------------------------------------------
-	// 그냥 저장해버린다. - -;
-	//---------------------------------------------------------------
-	g_pUserOption->SaveToFile( FILE_INFO_USEROPTION );
-}
-*/
-
 //-----------------------------------------------------------------------------
 //
 // Title Option 바꾸기
@@ -7671,17 +7473,6 @@ UIMessageManager::Execute_UI_CHANGE_OPTION(intptr_t left, intptr_t right, void* 
 				
 				if (g_pUserOption->PlayWaveMusic)
 				{
-					/*
-					LONG volume = value*SOUND_DEGREE + SOUND_MIN;
-
-					LONG maxVolume = g_SDLAudio.GetVolumeLimit();
-
-					g_SDLAudio.SetVolumeLimit( volume );
-					g_SDLAudio.AddVolume( g_pSDLStream->GetBuffer(), 0 );
-
-					// 원래의 max volume으로 돌린다.
-					g_SDLAudio.SetVolumeLimit( maxVolume );
-					*/
 //					LONG volume = value*16*257;//*SOUND_DEGREE + SOUND_MIN;
 
 //					DEBUG_ADD_FORMAT("Change VOLUME_MUSIC = %ld", volume);
