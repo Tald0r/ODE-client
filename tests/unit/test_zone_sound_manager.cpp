@@ -306,9 +306,9 @@ TEST(ZoneSound, DistanceAlongYCountsAboveAndBelow)
 	CHECK_EQ(22 * 4 * 3, f.state.volumes.back());
 	// 45 north is out of hearing.
 	f.state.py = 50;
-	ZONESOUND_NODE far(1);
-	far.Play(10, 5);
-	CHECK(far.GetBuffer() == nullptr);
+	ZONESOUND_NODE distant(1);
+	distant.Play(10, 5);
+	CHECK(distant.GetBuffer() == nullptr);
 }
 
 TEST(ZoneSound, StoppingAndEndingALoop)
