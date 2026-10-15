@@ -1011,6 +1011,30 @@ TEST(GameUI3ItemShop, AGoodWithNoItemIsSkippedAndAMissingOneEndsTheList)
 	FreeMade();
 }
 
+TEST(GameUI3ItemShop, AGunTheFactoryMakesNoMagazineForIsListedEmpty)
+{
+	Scene scene;
+	GCGoodsList packet;
+	refusedClass = ITEM_CLASS_MAGAZINE;
+	packet.addGoodsInfo(Good(13, ITEM_CLASS_SG, 0, 4, {2}, 30, 1));
+	packet.addGoodsInfo(Good(14, ITEM_CLASS_SWORD, 0, 0, {}, 1, 0));
+	UI_RunItemShop(&packet);
+	CHECK(Same({"new|" + N(ITEM_CLASS_SG), "new|" + N(ITEM_CLASS_MAGAZINE), "new|" + N(ITEM_CLASS_SWORD)}));
+	CHECK(packet.isEmpty());
+	CHECK_EQ((size_t)2, made.size());
+	if (made.size() == 2)
+	{
+		MGunItem* pShotgun = static_cast<MGunItem*>(made[0]);
+		CHECK_EQ(13u, unsigned(pShotgun->GetID()));
+		CHECK_EQ(4, pShotgun->GetGrade());
+		CHECK(Options(pShotgun) == "2");
+		CHECK_EQ(1, pShotgun->IsQuestItem());
+		CHECK(pShotgun->GetMagazine() == NULL);
+		CHECK_EQ(14u, unsigned(made[1]->GetID()));
+	}
+	FreeMade();
+}
+
 //----------------------------------------------------------------------
 // The mixing forge and the option removal
 //----------------------------------------------------------------------

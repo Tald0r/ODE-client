@@ -4298,9 +4298,11 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 		pItem->SetGrade( pInfo->grade );
 		// 2004, 5, 18 sobeit add end
 		pItem->SetItemOptionList( pInfo->optionType );
-		if( pItem->IsGunItem() )
+		// A gun's count is its magazine's; a gun the factory makes no
+		// magazine for is listed empty.
+		MMagazine* pMagazine = pItem->IsGunItem() ? (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE ) : NULL;
+		if( pMagazine != NULL )
 		{
-			MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 			pMagazine->SetID( 0 );
 			for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 			{
@@ -4320,7 +4322,7 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 			//------------------------------------
 			MGunItem* pGunItem = (MGunItem*)pItem;
 			pGunItem->SetMagazine( pMagazine );
-		} else
+		} else if( !pItem->IsGunItem() )
 		{
 			pItem->SetNumber( pInfo->num );
 		}
