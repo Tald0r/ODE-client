@@ -7204,12 +7204,16 @@ rounds settled* for the host rules). Test fixtures share
   >   MemoryPool.cpp keeps only the fake creature's.
   >
   > R1 is 23 Windows / 21 Ninja.
-  - Owner: membership, R1, `test_npc.cpp`: 8 tests. Its info, a
-    new shop freeing the old one's stock, the shelves it builds (a female
-    player's paired types, a portal item's zone), Bathory's and Tepez's
-    turns (about one stand end in five, never while attacking, never
-    without a player) and the effects some NPCs restart with each stand.
-    The shop builder's own rules are `test_npc_shop.cpp`'s.
+  - Owner: membership, R1, `test_npc.cpp`: 8 tests (9 with the
+    follow-up's). Its info, its pool, a new shop freeing the old one's
+    stock, the shelves it builds (a female player's paired types, a
+    portal item's zone), Bathory's and Tepez's turns (one stand end in
+    five over about 2000, within four standard deviations; never while
+    attacking, dead or without a player) and the effects NPCs 636 to 639
+    restart whenever their action count is back at 0. That is each
+    stand's start, and every frame of a walk, whose count stays 0; the
+    test pins the stand. The shop builder's own rules are
+    `test_npc_shop.cpp`'s.
   - Mutants: 19 of 19 caught.
     Taking `MNPC.cpp` out of the membership breaks the test link.
 

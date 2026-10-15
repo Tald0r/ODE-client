@@ -27,6 +27,7 @@
 #include "ZoneStateHost.h"
 #include "WorldEventsHost.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <vector>
@@ -210,8 +211,11 @@ MShopTemplate Template(BYTE shelf, int itemClass, WORD first, WORD last)
 	return row;
 }
 
-std::vector<int> Types(const MShopShelf* pShelf)
+// The item types on a shelf; a missing shelf reads as {-1}.
+std::vector<int> Types(const MShop* pShop, MShopShelf::SHELF_TYPE shelf)
 {
+	const MShopShelf* pShelf = pShop != NULL ? pShop->GetShelf(shelf) : NULL;
+	if (pShelf == NULL) return {-1};
 	std::vector<int> types;
 	for (unsigned int slot = 0; slot < SHOP_SHELF_SLOT; ++slot)
 	{
@@ -262,6 +266,14 @@ TEST(NPC, ANewShopReplacesTheOldOneAndItsStock)
 	CHECK(npc.GetShop() == NULL);
 }
 
+TEST(NPC, ItsPoolMakesAndFreesIt)
+{
+	Scene scene;
+	MNPC* pNpc = new MNPC;
+	CHECK(g_NPCCreatureMemoryPool.IsPtrInPool(pNpc));
+	delete pNpc;
+}
+
 TEST(NPC, ItsShopGoesWithIt)
 {
 	Scene scene;
@@ -280,18 +292,18 @@ TEST(NPC, AFixedShelfIsBuiltFromItsTemplatesInANewShop)
 	npc.SetNPCID(7);
 	CHECK(npc.CreateFixedShelf(false));
 	CHECK(npc.GetShop() != NULL);
-	CHECK(Types(npc.GetShop()->GetShelf(MShopShelf::SHELF_FIXED)) == (std::vector<int>{1, 2, 3}));
+	CHECK(Types(npc.GetShop(), MShopShelf::SHELF_FIXED) == (std::vector<int>{1, 2, 3}));
 	// Built again into the same shop.
 	MShop* pShop = npc.GetShop();
 	CHECK(npc.CreateFixedShelf(false));
 	CHECK(npc.GetShop() == pShop);
-	CHECK(Types(pShop->GetShelf(MShopShelf::SHELF_FIXED)) == (std::vector<int>{1, 2, 3}));
+	CHECK(Types(pShop, MShopShelf::SHELF_FIXED) == (std::vector<int>{1, 2, 3}));
 	// An NPC the table lacks: no stock.
 	MNPC stranger;
 	stranger.SetNPCID(8);
 	CHECK(!stranger.CreateFixedShelf(false));
 	CHECK(stranger.GetShop() != NULL);
-	CHECK(Types(stranger.GetShop()->GetShelf(MShopShelf::SHELF_FIXED)).empty());
+	CHECK(Types(stranger.GetShop(), MShopShelf::SHELF_FIXED).empty());
 }
 
 TEST(NPC, AMysteriousShelfDressesAFemalePlayer)
@@ -307,7 +319,7 @@ TEST(NPC, AMysteriousShelfDressesAFemalePlayer)
 	MNPC npc;
 	npc.SetNPCID(7);
 	CHECK(npc.CreateFixedShelf(true));
-	CHECK(Types(npc.GetShop()->GetShelf(MShopShelf::SHELF_UNKNOWN)) == (std::vector<int>{1, 3}));
+	CHECK(Types(npc.GetShop(), MShopShelf::SHELF_UNKNOWN) == (std::vector<int>{1, 3}));
 	// A male player, or none, the whole range.
 	MCreature man;
 	man.SetCreatureType(5);
@@ -315,12 +327,12 @@ TEST(NPC, AMysteriousShelfDressesAFemalePlayer)
 	MNPC other;
 	other.SetNPCID(7);
 	CHECK(other.CreateFixedShelf(true));
-	CHECK(Types(other.GetShop()->GetShelf(MShopShelf::SHELF_UNKNOWN)) == (std::vector<int>{0, 1, 2, 3}));
+	CHECK(Types(other.GetShop(), MShopShelf::SHELF_UNKNOWN) == (std::vector<int>{0, 1, 2, 3}));
 	player = nullptr;
 	MNPC alone;
 	alone.SetNPCID(7);
 	CHECK(alone.CreateFixedShelf(true));
-	CHECK(Types(alone.GetShop()->GetShelf(MShopShelf::SHELF_UNKNOWN)) == (std::vector<int>{0, 1, 2, 3}));
+	CHECK(Types(alone.GetShop(), MShopShelf::SHELF_UNKNOWN) == (std::vector<int>{0, 1, 2, 3}));
 }
 
 TEST(NPC, APortalItemIsSetForItsZone)
@@ -330,7 +342,9 @@ TEST(NPC, APortalItemIsSetForItsZone)
 	MNPC npc;
 	npc.SetNPCID(7);
 	CHECK(npc.CreateFixedShelf(false));
-	const MItem* pItem = npc.GetShop()->GetShelf(MShopShelf::SHELF_FIXED)->GetItem(0);
+	const MShopShelf* pShelf = npc.GetShop() != NULL ? npc.GetShop()->GetShelf(MShopShelf::SHELF_FIXED) : NULL;
+	CHECK(pShelf != NULL);
+	const MItem* pItem = pShelf != NULL ? pShelf->GetItem(0) : NULL;
 	CHECK(pItem != NULL);
 	const MVampirePortalItem* pPortal = dynamic_cast<const MVampirePortalItem*>(pItem);
 	CHECK(pPortal != NULL);
@@ -349,8 +363,8 @@ namespace {
 // The player stands straight below the NPC (12,34): swapping x and y would
 // face another way.
 const int PlayerX = 12, PlayerY = 40;
-// Of 400 frames, how often the NPC of the type turned to the player, and
-// how many stands it ended. Attacking, it never stands to the end.
+// Of 20000 frames, how often the NPC of the type turned to the player,
+// and how many stands it ended. Attacking, it never stands to the end.
 std::pair<int, int> FacingThePlayer(Scene& scene, int type, bool attacking = false)
 {
 	scene.Tribe(type, CREATURETRIBE_NPC);
@@ -362,7 +376,7 @@ std::pair<int, int> FacingThePlayer(Scene& scene, int type, bool attacking = fal
 	const BYTE away = BYTE((toPlayer + 4) % 8);
 	int facing = 0, standEnds = 0;
 	std::srand(1);
-	for (int frame = 0; frame < 400; ++frame)
+	for (int frame = 0; frame < 20000; ++frame)
 	{
 		if (attacking && npc.GetAction() == ACTION_STAND) npc.SetAction(ACTION_ATTACK);
 		if (npc.GetAction() == ACTION_STAND && npc.GetActionCount() + 1 >= npc.GetActionCountMax()) ++standEnds;
@@ -382,17 +396,37 @@ TEST(NPC, BathoryAndTepezLookAtThePlayerNowAndThen)
 	somebody.SetCreatureType(5);
 	somebody.SetPosition(PlayerX, PlayerY);
 	player = &somebody;
-	// At the end of a stand, one time in five: about 8 of 40 stand ends
-	// (binomial, standard deviation 2.5; the bounds are about 3 of them).
+	// At the end of a stand, one time in five: of about 2000 stand ends,
+	// within four standard deviations of a fifth (about 400, give or take
+	// 72). One in four (500) or three (667), or a check on two frames of
+	// each stand (800), falls outside.
 	for (int type : {217, 366})
 	{
 		const std::pair<int, int> seen = FacingThePlayer(scene, type);
-		CHECK(seen.second >= 30);
-		CHECK(seen.first >= 1);
-		CHECK(seen.first <= seen.second / 5 + 8);
+		CHECK(seen.second >= 1900);
+		const double expected = seen.second / 5.0;
+		const double sd = std::sqrt(seen.second * 0.2 * 0.8);
+		CHECK(std::fabs(seen.first - expected) <= 4 * sd);
 	}
-	// Not while it does something else, nor another NPC.
+	// Not while it does something else, nor dead, nor another NPC.
 	CHECK_EQ(0, FacingThePlayer(scene, 217, true).first);
+	{
+		scene.Tribe(366, CREATURETRIBE_NPC);
+		MNPC dead;
+		dead.SetCreatureType(366);
+		dead.SetPosition(12, 34);
+		dead.SetDead();
+		const BYTE toPlayer = SelectFacingDirection(12, 34, PlayerX, PlayerY);
+		int facing = 0;
+		std::srand(1);
+		for (int frame = 0; frame < 2000; ++frame)
+		{
+			dead.SetDirection(BYTE((toPlayer + 4) % 8));
+			dead.Action();
+			if (dead.GetServerDirection() == toPlayer) ++facing;
+		}
+		CHECK_EQ(0, facing);
+	}
 	CHECK_EQ(0, FacingThePlayer(scene, 300).first);
 	// Without a player, they keep their way.
 	player = nullptr;
