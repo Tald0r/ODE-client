@@ -109,8 +109,6 @@ namespace {
 	}
 };
 
-
-
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
 //add by viva

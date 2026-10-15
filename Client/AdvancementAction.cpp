@@ -15,20 +15,20 @@ BYTE g_AdvanceOustersActionMaxCount[ ACTION_ADVANCEMENT_OUSTERS_MAX - ACTION_ADV
 
 static const int AdvancementOustersActionConvTable[ ACTION_MAX_SLAYER ] =
 {
-	ACTION_STAND,		// converted by its own rule
-	ACTION_MOVE,		// converted by its own rule
+	ACTION_STAND,		// converted by its own rule (the chakram's)
+	ACTION_MOVE,		// converted by its own rule (the chakram's)
 	ACTION_ADVANCEMENT_OUSTERS_ATTACK_NORMAL,
 	ACTION_ADVANCEMENT_OUSTERS_MAGIC,
 	ACTION_ADVANCEMENT_OUSTERS_DAMAGED,
 	ACTION_ADVANCEMENT_OUSTERS_DRAINED,
 	ACTION_ADVANCEMENT_OUSTERS_DIE,
-	ACTION_STAND,		// converted by its own rule (standing)
-	ACTION_MOVE,		// converted by its own rule (walking)
+	ACTION_STAND,		// needs its own rule, which it lacks (standing)
+	ACTION_MOVE,		// needs its own rule, which it lacks (walking)
 	ACTION_ADVANCEMENT_OUSTERS_SKILL_NORMAL,
 	ACTION_ADVANCEMENT_OUSTERS_MAGIC_ATTACK,
 	ACTION_ADVANCEMENT_OUSTERS_ABSORB_SOUL,
-	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE_STOP,		// converted by its own rule (hovering)
-	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE,		// converted by its own rule (flying)
+	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE_STOP,		// needs its own rule, which it lacks (hovering)
+	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE,		// needs its own rule, which it lacks (flying)
 	ACTION_ADVANCEMENT_OUSTERS_ATTACK_SLOW,
 	ACTION_ADVANCEMENT_OUSTERS_ATTACK_FAST,
 	ACTION_ADVANCEMENT_OUSTERS_SKILL_SLOW,
@@ -38,9 +38,9 @@ static const int AdvancementOustersActionConvTable[ ACTION_MAX_SLAYER ] =
 
 static const int AdvancementSlayerActionConvTable[ ACTION_MAX_SLAYER ] =
 {
-	ACTION_STAND,	// converted by its own rule
-	ACTION_MOVE,	// converted by its own rule
-	-1,	// converted by its own rule
+	ACTION_STAND,	// converted by its own rule (the right hand's)
+	ACTION_MOVE,	// converted by its own rule (the right hand's)
+	-1,	// needs its own rule, which it lacks
 	ACTION_ADVANCEMENT_SLAYER_MAGIC,
 	ACTION_DAMAGED,
 	ACTION_ADVANCEMENT_SLAYER_DRAINED,

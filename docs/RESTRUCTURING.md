@@ -7072,9 +7072,14 @@ rounds settled* for the host rules). Test fixtures share
   >   (`ConvAdvancementSlayerAction`). MTopViewDraw.cpp keeps
   >   `ConvAdvancementSlayerActionFromSlayerAction(action, MCreatureWear*)`
   >   for the view's callers, reading the hand from the creature.
-  > - **Recorded, not changed:** an action at or past `ACTION_MAX_SLAYER`
-  >   (35) and below 100 reads past the slayer's and the vampire's tables.
-  >   No creature has one.
+  > - **Recorded, not changed:**
+  >   - An action at or past `ACTION_MAX_SLAYER` (35) and below 100 reads
+  >     past the slayer's and the vampire's tables. No creature has one.
+  >   - The ousters' rows 7 and 8 (standing and walking) give back the
+  >     plain actions 0 and 1, and the view's advanced ousters drawing
+  >     subtracts `ADVANCEMENT_ACTION_START` from them, a negative frame
+  >     pack index (#527's review). The table's comments say these rows,
+  >     and 12 and 13, still lack the rule upstream marked them for.
   >
   > R1 is unchanged: no executable source leaves.
   - Owner: membership, `test_advancement_action.cpp` (6 tests, the three
