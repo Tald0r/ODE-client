@@ -329,7 +329,7 @@ MonotonicClock::TimePoint LaterShopTime()
 {
 	static long long millis = 0;
 	millis += 1000000000;
-	return MonotonicClock::TimePoint() + MonotonicClock::Millis(millis);
+	return MonotonicClock::TimePoint() + MonotonicClock::Duration(millis);
 }
 
 // A creature that counts its deletions.
