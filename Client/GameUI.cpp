@@ -1,7 +1,7 @@
  //-----------------------------------------------------------------------------
 // GameUI.cpp`
 //-----------------------------------------------------------------------------
-// UI의 message를 처리하는 부분이다.
+// The game's calls into the UI (UIFunction.h), gameclient's since task 4.256.
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 
@@ -9,7 +9,14 @@
 #include <Winuser.h>
 #endif
 
-#include "Client.h"
+#include "MPlayer.h"
+#include "MZone.h"
+#include "ZoneFlags.h"
+#include "FrameClock.h"
+#include "InputState.h"
+#include "MHelpManager.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
 #include "UIFunction.h"
 #include "VS_UI.h" 
 #include "VS_UI_mouse_pointer.h"
@@ -33,7 +40,6 @@
 #include "MWeather.h"
 #include "MStatusManager.h"
 #include "MChatManager.h"
-#include "UIMessageManager.h"
 #include "CServerInformation.h"
 #include "UserInformation.h"
 #include "TempInformation.h"
@@ -41,8 +47,7 @@
 #include "MMusic.h"
 //#include "MFileDef.h"
 #include "Properties.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #include "GuildInfo.h"
 #include "MGuildInfoMapper.h"
 //#include "KeyAccelerator.h"
@@ -66,7 +71,7 @@
 #include "MZoneTable.h"
 #include <string>
 
-#include "SoundSetting.h"
+#include "DXLib/COGGSTREAM.h"
 #include "Packet/Gpackets/GCMiniGameScores.h"
 #include "SystemAvailabilities.h"
 #include "VS_UI_GameCommon2.h"
@@ -4357,8 +4362,7 @@ void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 	//2004,04,27 sobeit set grade add end
 
 	MItem* pRemoveItem = g_pInventory->RemoveItem( pItem2->GetID() );
-	SAFE_DELETE( pRemoveItem );
-	//delete pRemoveItem;	
+	delete pRemoveItem;
 		
 	PlaySound(SOUND_EVENT_FANFARE);
 	gC_vs_ui.CloseMixingForge();	

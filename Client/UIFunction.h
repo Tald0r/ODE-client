@@ -7,6 +7,7 @@
 
 #include "RaceType.h"
 #include "MonotonicClock.h"
+#include "MTypeDef.h"
 #include <cstdint>
 
 #ifndef	__UIFUNCTION_H__
