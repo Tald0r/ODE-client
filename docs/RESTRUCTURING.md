@@ -7314,7 +7314,7 @@ rounds settled* for the host rules). Test fixtures share
   >   tile unchecked) were looked up unchecked when it died
   >   (`AddCorpseFromCreature`, which also leaked a corpse the zone
   >   refused) and when it moved (`Move{Ground,Flying,Underground}Creature`,
-  >   its old cell). Both go through `SectorAt` now, and a refused corpse
+  >   its old cell and its server cell). Both go through `SectorAt` now, and a refused corpse
   >   is freed with its creature.
   >
   > R1 is 20 Windows / 18 Ninja.

@@ -2296,8 +2296,8 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	//----------------------------------------
 	if (!AddItem( pCorpse ))
 	{
-		// Refused (its server cell off the map): the corpse goes, and the
-		// creature with it, out of the zone already.
+		// Refused (its server cell off the map, or its ID or cell taken): the
+		// corpse goes, and the creature with it, out of the zone already.
 		DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
 		delete pCorpse;
 		return false;
