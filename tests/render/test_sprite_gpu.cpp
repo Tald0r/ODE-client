@@ -273,7 +273,7 @@ TEST(SpriteGpu, ShadowSpritesDrawBlackAndDarkenWhatLiesUnderThem)
 	const char* path = "sprite_gpu_shadow.bin";
 	{
 		std::ofstream out(path, std::ios::binary | std::ios::trunc);
-		for (WORD word : {4, 1, 3, 1, 1, 2}) { out.put(char(word & 0xFF)); out.put(char(word >> 8)); }
+		for (int word : {4, 1, 3, 1, 1, 2}) { out.put(char(word & 0xFF)); out.put(char(word >> 8)); }
 	}
 	CShadowSprite shadow;
 	{

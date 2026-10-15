@@ -291,9 +291,9 @@ struct Scene
 		for (int type = 0; type < 5; ++type)
 		{
 			CREATURESPRITETABLE_INFO& row = testfw::MutableRow(sprites, type);
-			row.FrameID = type == 3 ? TYPE_FRAMEID(1) : type == 4 ? TYPE_FRAMEID(2) : FRAMEID_NULL;
-			row.CreatureType = type == 4 ? FLAG_CREATURESPRITE_PLAYER_VAMPIRE
-				: type == 2 ? FLAG_CREATURESPRITE_PLAYER_OUSTERS : FLAG_CREATURESPRITE_MONSTER;
+			row.FrameID = TYPE_FRAMEID(type == 3 ? 1 : type == 4 ? 2 : FRAMEID_NULL);
+			row.CreatureType = BYTE(type == 4 ? FLAG_CREATURESPRITE_PLAYER_VAMPIRE
+				: type == 2 ? FLAG_CREATURESPRITE_PLAYER_OUSTERS : FLAG_CREATURESPRITE_MONSTER);
 		}
 		g_pCreatureSpriteTable = &sprites;
 		effectSprites.Init(MAX_EFFECTSPRITETYPE);
