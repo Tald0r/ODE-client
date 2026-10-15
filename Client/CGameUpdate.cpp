@@ -87,9 +87,9 @@ bool g_bPreviousMove = false;
 	
 extern DWORD g_double_click_time;
 
-// g_pOGG is COGGSTREAM.cpp's (dxlib) since task 4.256.
+// g_pOGG and g_oggfile are COGGSTREAM.cpp's (dxlib) since tasks 4.256 and
+// 4.258.
 CDirectSoundBuffer*			g_pSoundBufferForOGG = NULL;
-FILE	*					g_oggfile = NULL;
 
 extern int g_SoundPerSecond;
 

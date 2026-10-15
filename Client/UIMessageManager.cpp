@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include "Client.h"
 #include "UIMessageManager.h"
+#include "WorldEventsHost.h"
+#include "LoginPresentationHost.h"
 #include "PacketDispatcher.h"
 #include "UIFunction.h"
 #include "VS_UI.h" 
@@ -206,7 +208,6 @@ int g_C2G = 0;
 #endif
 
 bool							g_bEventQuestEnding = false;
-extern bool		LoadingAddonSPK(bool bLoading);
 extern CGameUpdate*		g_pCGameUpdate;
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
@@ -217,12 +218,66 @@ UIMessageManager*	g_pUIMessageManager = NULL;
 
 extern BOOL g_bEnable3DHAL;
 extern BOOL g_bSetHotKey;
-extern bool g_bWatchMode;
 extern bool	g_bTestMode;
 extern bool g_bHolyLand;
 extern bool g_bZoneSafe;
-extern DWORD g_dwSeqNumL;
-extern DWORD g_dwSeqNumG;
+
+//-----------------------------------------------------------------------------
+// The host GameInit installs (UIMessageManager.h); none until it does.
+//-----------------------------------------------------------------------------
+namespace UIMessages {
+
+static const Host* s_Host = NULL;
+
+const Host*
+SetHost(const Host* host)
+{
+	const Host* previous = s_Host;
+	s_Host = host;
+	return previous;
+}
+
+static BOOL InitSocket()
+{
+	return s_Host != NULL && s_Host->InitSocket != NULL ? s_Host->InitSocket() : FALSE;
+}
+
+static void LoadingAddonSPK(bool bLoading)
+{
+	if (s_Host != NULL && s_Host->LoadingAddonSPK != NULL) s_Host->LoadingAddonSPK(bLoading);
+}
+
+static void ReleaseGameObject()
+{
+	if (s_Host != NULL && s_Host->ReleaseGameObject != NULL) s_Host->ReleaseGameObject();
+}
+
+static void StopLoadingThread()
+{
+	if (s_Host != NULL && s_Host->StopLoadingThread != NULL) s_Host->StopLoadingThread();
+}
+
+static void SaveLastSelectedCharacter(int slot)
+{
+	if (s_Host != NULL && s_Host->SaveLastSelectedCharacter != NULL) s_Host->SaveLastSelectedCharacter(slot);
+}
+
+static void SetMode(CLIENT_MODE mode)
+{
+	if (s_Host != NULL && s_Host->SetMode != NULL) s_Host->SetMode(mode);
+}
+
+static TYPE_OBJECTID GetSelectedCreature()
+{
+	return s_Host != NULL && s_Host->GetSelectedCreature != NULL ? s_Host->GetSelectedCreature() : OBJECTID_NULL;
+}
+
+static TYPE_OBJECTID GetSelectedItemID()
+{
+	return s_Host != NULL && s_Host->GetSelectedItemID != NULL ? s_Host->GetSelectedItemID() : OBJECTID_NULL;
+}
+
+}
 
 //-----------------------------------------------------------------------------
 // Execute Logout
@@ -239,8 +294,8 @@ ExecuteLogout()
 
 		UI_SaveUserOption();
 
-		// 날씨 멈춤
-		SetWeather(WEATHER_CLEAR, 0);
+		// Stop the weather
+		WorldEvents::SetWeather(WEATHER_CLEAR, 0);
 
 		// 죽었으면 부활 패킷을 보내고 Logout한다.
 		// 근데.. 실제 처리될때 별 의미가 없네.. - -;
@@ -274,9 +329,9 @@ ExecuteLogout()
 			}
 
 			//--------------------------------------------------
-			// Thread Loading 종료..
+			// End the loading thread..
 			//--------------------------------------------------
-			StopLoadingThread();
+			UIMessages::StopLoadingThread();
 
 			//
 			// Client, Server에 logout packet 보냄.
@@ -327,13 +382,13 @@ ExecuteLogout()
 			}
 			*/
 
-			// 날씨 멈춤..
+			// Stop the weather..
 			//SetWeather(WEATHER_CLEAR, 0);
-			ReleaseGameObject();
+			UIMessages::ReleaseGameObject();
 
-			// 2001.6.12 : 재접속~
+			// 2001.6.12: reconnect
 			//SetMode( MODE_MAINMENU );	
-			SetMode( MODE_WAIT_RECONNECT_LOGIN );
+			UIMessages::SetMode( MODE_WAIT_RECONNECT_LOGIN );
 
 			//------------------------------------------------------
 			// [ TEST CODE ]
@@ -564,7 +619,7 @@ PlayGameMusic()
 				g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 			}
 
-			PlayMusicCurrentZone();				
+			WorldEvents::PlayMusicCurrentZone();
 		}
 		else
 		{					
@@ -604,7 +659,7 @@ PlayGameMusic()
 				g_Music.SetVolume( volume );
 				DEBUG_ADD("MP3 STOP12 pp2");
 				
-				PlayMusicCurrentZone();
+				WorldEvents::PlayMusicCurrentZone();
 				DEBUG_ADD("MP3 STOP12 PlayMusicCurrentZone OK");
 			}				
 		}
@@ -1192,7 +1247,7 @@ UIMessageManager::Execute_UI_NEW_CHARACTER(intptr_t left, intptr_t right, void* 
 
 			
 
-		SetMode(MODE_WAIT_CREATEPCOK);
+		UIMessages::SetMode(MODE_WAIT_CREATEPCOK);
 	}
 }
 
@@ -1294,7 +1349,7 @@ RegisterNewUser(LOGIN* pLogin)
 		}
 	}
 
-	if (bOK && !InitSocket())
+	if (bOK && !UIMessages::InitSocket())
 	{
 		DEBUG_ADD_ERR("[RegisterNewUser] Can't init Socket");
 		bOK = false;
@@ -1319,7 +1374,7 @@ RegisterNewUser(LOGIN* pLogin)
 		cgConnectSetKey.setEncryptKey(rand());
 		cgConnectSetKey.setHashKey(rand());
 		g_pSocket->sendPacket(&cgConnectSetKey);
-		UpdateSocketOutput();
+		LoginPresentation::FlushSocketOutput();
 		// Registered as an explicit no-op (see PacketHandlerRegistry.cpp) -
 		// the linked handler was always the empty stub.
 		PacketDispatcher::dispatch(&cgConnectSetKey, g_pSocket);
@@ -1357,7 +1412,7 @@ RegisterNewUser(LOGIN* pLogin)
 
 		gC_vs_ui.ClearAllCharacter();
 
-		SetMode( MODE_WAIT_REGISTERPLAYEROK );
+		UIMessages::SetMode( MODE_WAIT_REGISTERPLAYEROK );
 	}
 
 	// C_VS_UI_LOGIN::SendNewUserToClient() malloc()s these.
@@ -1402,8 +1457,8 @@ UIMessageManager::Execute_UI_RUN_NEWUSER_REGISTRATION(intptr_t left, intptr_t ri
 		{
 			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_USER_REGISTER_HOMEPAGE].GetString() );			
 
-			// 종료..
-			SetMode( MODE_QUIT );
+			// Quit..
+			UIMessages::SetMode( MODE_QUIT );
 
 #ifdef PLATFORM_WINDOWS
 			char str[256];
@@ -1513,9 +1568,9 @@ UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void*
 		else
 		{
 			//--------------------------------------------------
-			// socket 초기화
+			// Initialise the socket
 			//--------------------------------------------------
-			if (!InitSocket())
+			if (!UIMessages::InitSocket())
 			{						
 				//InitFail("[Error] Can't init Socket");
 				return;
@@ -1581,7 +1636,7 @@ UIMessageManager::Execute_UI_DELETE_CHARACTER(intptr_t left, intptr_t right, voi
 	//--------------------------------------------
 	g_pUserInformation->Slot = pChar->slot;
 
-	SetMode( MODE_WAIT_DELETEPCOK );
+	UIMessages::SetMode( MODE_WAIT_DELETEPCOK );
 }
 
 	
@@ -1604,7 +1659,7 @@ UIMessageManager::Execute_UI_TERMINATION(intptr_t left, intptr_t right, void* vo
 		return;
 	}
 
-	SetMode( MODE_QUIT );
+	UIMessages::SetMode( MODE_QUIT );
 }
 
 //-----------------------------------------------------------------------------
@@ -1648,8 +1703,8 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 		return;
 	}	
 
-	// 슬레이어 그림 일부 로딩 - 2001.8.20
-	LoadingAddonSPK( false );
+	// Load part of the slayer pictures - 2001.8.20
+	UIMessages::LoadingAddonSPK( false );
 
 	if (login->sz_id!=NULL && login->sz_password!=NULL)
 	{
@@ -1662,7 +1717,7 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 			{
 				{
 					DEBUG_ADD("[Execute_UI_LOGIN]");
-					if (!InitSocket())
+					if (!UIMessages::InitSocket())
 					{
 						//InitFail("[Error] Can't init Socket");
 						DEBUG_ADD_ERR("[Execute_UI_LOGIN] Can't init Socket");
@@ -1712,7 +1767,7 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 					cgConnectSetKey.setEncryptKey(rand());
 					cgConnectSetKey.setHashKey(rand());
 					g_pSocket->sendPacket(&cgConnectSetKey);
-					UpdateSocketOutput();
+					LoginPresentation::FlushSocketOutput();
 					// See PacketHandlerRegistry.cpp: registered explicit no-op.
 					PacketDispatcher::dispatch(&cgConnectSetKey, g_pSocket);
 					Sleep(500);
@@ -1770,7 +1825,7 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 				gC_vs_ui.ClearAllCharacter();
 				DEBUG_ADD("[Execute_UI_LOGIN] ClearAllCharacter OK");
 				if(false == g_pUserInformation->IsAutoLogIn) 
-					SetMode( MODE_WAIT_LOGINOK );
+					UIMessages::SetMode( MODE_WAIT_LOGINOK );
 				DEBUG_ADD("[Execute_UI_LOGIN] SetMode OK");
 			}
 			else
@@ -1822,7 +1877,7 @@ UIMessageManager::Execute_UI_CHARACTER_MANAGER_FINISHED(intptr_t left, intptr_t 
 	// 넷마블용
 	if(g_pUserInformation->IsNetmarble)
 	{
-		SetMode( MODE_MAINMENU );
+		UIMessages::SetMode( MODE_MAINMENU );
 		return;
 	}
 
@@ -1848,12 +1903,12 @@ UIMessageManager::Execute_UI_CHARACTER_MANAGER_FINISHED(intptr_t left, intptr_t 
 	#endif					
 
 
-	SetMode( MODE_MAINMENU );
+	UIMessages::SetMode( MODE_MAINMENU );
 	*/
 
 	UI_SetServerList();
 
-	SetMode( MODE_WAIT_SELECT_SERVER );
+	UIMessages::SetMode( MODE_WAIT_SELECT_SERVER );
 }
 
 //-----------------------------------------------------------------------------
@@ -1945,9 +2000,9 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 	//------------------------------------------------------------
 	// Test 2001.8.20
 	//------------------------------------------------------------
-	// 캐릭 선택 후에 바로
-	// 슬레이어 그림 일부 로딩 - 2001.8.20
-	LoadingAddonSPK( false );
+	// Right after the character is chosen
+	// Load part of the slayer pictures - 2001.8.20
+	UIMessages::LoadingAddonSPK( false );
 	
 
 	DEBUG_ADD_FORMAT("CLSelectPC(%d)", left);
@@ -2003,13 +2058,13 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 	g_pSocket->sendPacket( &clSelectPC );
 	g_pSocket->setPlayerStatus( CPS_AFTER_SENDING_CL_SELECT_PC );
 
-	// 바로 보낸다.
-	UpdateSocketOutput();
+	// Send it at once.
+	LoginPresentation::FlushSocketOutput();
 
-	SaveLastSelectedCharacter( static_cast<int>(left) );
+	UIMessages::SaveLastSelectedCharacter( static_cast<int>(left) );
 
 	DEBUG_ADD("set mode MODE_WAIT_RECONNECT");
-	SetMode(MODE_WAIT_RECONNECT);
+	UIMessages::SetMode(MODE_WAIT_RECONNECT);
 	//------------------------------
 	// 게임 UI
 	//------------------------------
@@ -3183,15 +3238,15 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_CLIENT(intptr_t left, intptr_t right, 
 			pItem->GetItemClass() == ITEM_CLASS_SWEEPER || pItem->GetItemClass() == ITEM_CLASS_PET_FOOD
 			))
 		{
-			// 성물을 성물 보관대에 클릭하면 ??-_-;
-			int CreatureID = g_pTopView->GetSelectedCreature();
+			// A relic clicked on its shelf ??-_-;
+			int CreatureID = UIMessages::GetSelectedCreature();
 
 			MCreature *pCreature = NULL;
 			bool		bCorpse = false;
 
 			if(CreatureID == -1)
 			{
-				CreatureID = g_pTopView->GetSelectedItemID();
+				CreatureID = UIMessages::GetSelectedItemID();
 				MItem *selectedItem = g_pZone->GetItem(CreatureID);
 				if(selectedItem != NULL)
 				{
@@ -8616,7 +8671,7 @@ UIMessageManager::Execute_UI_CONNECT_SERVER(intptr_t left, intptr_t right, void*
 
 			g_pServerInformation->SetServerGroupID( selectID );
 
-			SetMode( MODE_WAIT_SERVER_LIST );
+			UIMessages::SetMode( MODE_WAIT_SERVER_LIST );
 		}
 		else
 		{
@@ -8642,7 +8697,7 @@ UIMessageManager::Execute_UI_CONNECT_SERVER(intptr_t left, intptr_t right, void*
 
 			g_pServerInformation->SetServerID( selectID );			
 
-			SetMode( MODE_WAIT_PCLIST );
+			UIMessages::SetMode( MODE_WAIT_PCLIST );
 		}
 		else
 		{
@@ -8673,7 +8728,7 @@ UIMessageManager::Execute_UI_CLOSE_SERVER_SELECT(intptr_t left, intptr_t right, 
 	//------------------------------------------------------------
 	if (bSelectGroup)
 	{
-		SetMode( MODE_MAINMENU );
+		UIMessages::SetMode( MODE_MAINMENU );
 	}
 	//------------------------------------------------------------
 	// server선택에서 back하면 group선택으로..
@@ -8682,7 +8737,7 @@ UIMessageManager::Execute_UI_CLOSE_SERVER_SELECT(intptr_t left, intptr_t right, 
 	{
 		UI_SetWorldList();
 
-		SetMode( MODE_WAIT_SELECT_WORLD );
+		UIMessages::SetMode( MODE_WAIT_SELECT_WORLD );
 	}	
 }
 
@@ -9645,8 +9700,8 @@ UIMessageManager::Execute_GO_BILING_PAGE(intptr_t left, intptr_t right, void* vo
 	(void)void_ptr;
 	if(left == TRUE)
 	{
-		// 종료..
-		SetMode( MODE_QUIT );
+		// Quit..
+		UIMessages::SetMode( MODE_QUIT );
 
 
 	}
@@ -11475,7 +11530,7 @@ UIMessageManager::Execute_UI_OTHER_STORE_INFO(intptr_t left, intptr_t right, voi
 		 DEBUG_ADD("[UI] Execute_UI_OTHER_STORE_INFO");
 	 
 	  GCOtherStoreInfo _GCOtherStoreInfo;
-	 _GCOtherStoreInfo.setObjectID(g_pTopView->GetSelectedCreature());
+	 _GCOtherStoreInfo.setObjectID(UIMessages::GetSelectedCreature());
 	  g_pSocket->sendPacket( &_GCOtherStoreInfo );
 }
 
@@ -11485,7 +11540,7 @@ UIMessageManager::Execute_UI_BUY_STORE_ITEM(intptr_t left, intptr_t right, void*
 	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_BUY_STORE_ITEM");
 	
-	if(g_pTopView->GetSelectedCreature() == 0)
+	if(UIMessages::GetSelectedCreature() == 0)
 		return;
 	MItem* pItem = (MItem*)void_ptr;		// inventory에 있는 아이템(NULL일 수도 있다)
 	

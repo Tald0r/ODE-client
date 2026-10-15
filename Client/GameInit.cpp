@@ -2731,6 +2731,7 @@ void ReleaseAllObjects()
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
 	GameUI::SetHost(nullptr);
+	UIMessages::SetHost(nullptr);
 
 #ifdef DEBUG_INFO
 	ClearDebugInfo();
@@ -4800,6 +4801,20 @@ static const GameUI::Host s_GameUIHost = {
 	},
 };
 
+// What the UI's messages need (task 4.258): the login connection, the
+// add-on sprites, the game's objects released on a logout, the chosen slot
+// kept, the mode, and what the view has selected.
+static const UIMessages::Host s_UIMessagesHost = {
+	.InitSocket = InitSocket,
+	.LoadingAddonSPK = LoadingAddonSPK,
+	.ReleaseGameObject = ReleaseGameObject,
+	.StopLoadingThread = StopLoadingThread,
+	.SaveLastSelectedCharacter = SaveLastSelectedCharacter,
+	.SetMode = SetMode,
+	.GetSelectedCreature = []() { return g_pTopView->GetSelectedCreature(); },
+	.GetSelectedItemID = []() { return g_pTopView->GetSelectedItemID(); },
+};
+
 //-----------------------------------------------------------------------------
 // The wire layer's host (docs/RESTRUCTURING.md task 5.1): three tuning
 // values out of the config, and the connection a bug report goes to.
@@ -5084,6 +5099,7 @@ InitGameObject()
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 	GameUI::SetHost(&s_GameUIHost);
+	UIMessages::SetHost(&s_UIMessagesHost);
 
 	if (g_pPCTalkBox==NULL)
 	{

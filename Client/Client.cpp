@@ -191,8 +191,7 @@ DWORD				g_nProtectErrorMessage2 = 0;
 // flag from the login, are ClientMode.cpp's too.
 bool				g_bSuperUser			= false;
 
-DWORD g_dwSeqNumL = 0;
-DWORD g_dwSeqNumG = 0;
+// g_dwSeqNumL and g_dwSeqNumG are ClientMode.cpp's (gamemodel) since task 4.258.
 //WORD g_wAuthKeyMap = 0x28AA;
 //WORD g_wAuthKeyMap = 0x1455;
 //edit by sonic 2006.4.12
