@@ -20,6 +20,7 @@
 #include "Types/ModifyDef.h"
 #include "CSpriteSurface.h"
 #include "CIndexSprite.h"
+#include "CIndexSprite565.h"
 #include "CSpriteOutlineManager.h"
 
 #include <algorithm>
@@ -275,6 +276,26 @@ struct Scene
 
 int Special(int colorSet) { return MItem::GetSpecialColorItemColorset(colorSet); }
 
+// The sprite effects' global state (the index sprites' and the surface's
+// effect, and the value they read), put back as it was.
+struct IndexEffect : CIndexSprite565
+{
+	static decltype(s_pMemcpyEffectFunction) Get() { return s_pMemcpyEffectFunction; }
+	static void Set(decltype(s_pMemcpyEffectFunction) effect) { s_pMemcpyEffectFunction = effect; }
+};
+struct EffectGuard
+{
+	decltype(IndexEffect::Get()) index = IndexEffect::Get();
+	decltype(CSpriteSurface::s_pMemcpyEffectFunction) surface = CSpriteSurface::s_pMemcpyEffectFunction;
+	int value = CSpriteSurface::s_Value1;
+	~EffectGuard()
+	{
+		IndexEffect::Set(index);
+		CSpriteSurface::s_pMemcpyEffectFunction = surface;
+		CSpriteSurface::s_Value1 = value;
+	}
+};
+
 bool SameRect(const RECT& a, int left, int top, int right, int bottom)
 {
 	const bool same = a.left == left && a.top == top && a.right == right && a.bottom == bottom;
@@ -406,11 +427,13 @@ TEST(CreatureEffect, APetMovingFastIsDrawnToo)
 
 TEST(CreatureEffect, AnInvisibleSlayerWipesInBetweenItsEnds)
 {
-	// Wholly there (0) or wholly gone (64) it draws plainly; in between it
-	// sets the wipe effect to its count and draws through it.
+	// Wholly there (0) it draws plainly and wholly gone (64) darkened (which
+	// SDL draws plainly); in between it sets the wipe effect to its count
+	// and draws through it.
 	for (int count : {0, 64, 32})
 	{
 		Scene scene;
+		EffectGuard effects;
 		Wearer slayer;
 		slayer.Become(kSlayer);
 		slayer.SetCurrentDirection(2);
@@ -424,8 +447,6 @@ TEST(CreatureEffect, AnInvisibleSlayerWipesInBetweenItsEnds)
 		CHECK(scene.Same());
 		CHECK_EQ(count == 32 ? 32 : 99, CSpriteSurface::s_Value1);
 		CHECK_EQ(count == 32, CIndexSprite::IsWipeOutEffect());
-		CIndexSprite::SetEffect(CIndexSprite::EFFECT_NET);
-		CSpriteSurface::s_Value1 = 0;
 	}
 }
 
@@ -476,7 +497,7 @@ TEST(CreatureEffect, ASwungWeaponLeavesUpToFiveAfterimages)
 	}
 }
 
-TEST(CreatureEffect, TheWeaponsAfterimagesUnderRedianceAndItsEffectColour)
+TEST(CreatureEffect, UnderRedianceOrAnEffectColourOrFadingTheWeaponIsStillDrawn)
 {
 	// Under Rediance the afterimages take the effect colour set, and an
 	// effect-coloured part keeps it (the SDL backend draws a colour set as
@@ -640,16 +661,51 @@ TEST(CreatureEffect, AnAdvancedSlayersSwungWeaponLeavesItsAfterimages)
 					: scene.slayerManFPK[TYPE_FRAMEID(part)][BYTE(action)][2];
 				frames.Init(WORD(c.frame + 1));
 				for (int f = 0; f <= c.frame; ++f)
-					frames[WORD(f)].Set(TYPE_SPRITEID(f == c.frame ? 1 : 2), short((sword ? 10 : 70) + 4 * f), short(sword ? 20 : 60));
+					frames[WORD(f)].Set(TYPE_SPRITEID(f == c.frame ? 1 : 2), short((sword ? 10 : 50) + 4 * f), short(sword ? 20 : 60));
 			}
 			scene.Draw(DrawWeaponFadeOutForACSlayer, slayer, ACTION_MAGIC, 2, c.frame);
 			const int set1 = c.colorSet2 == UNIQUE_ITEM_COLOR ? Special(UNIQUE_ITEM_COLOR) : 40;
 			const int set2 = c.colorSet2 == UNIQUE_ITEM_COLOR ? Special(UNIQUE_ITEM_COLOR) : c.colorSet2;
 			for (int f = 1; f <= (std::min)(c.frame, 5); ++f) scene.Blit(10 + 4 * (c.frame - f), 20, scene.slayerManSPK[2], set1, set2);
 			scene.Blit(10 + 4 * c.frame, 20, scene.slayerManSPK[1], set1, set2);
-			scene.Blit(70 + 4 * c.frame, 60, scene.slayerManSPK[1], 30, 60);
+			scene.Blit(50 + 4 * c.frame, 60, scene.slayerManSPK[1], 30, 60);
 			const bool same = scene.Same();
 			if (!same) std::printf("      %s, frame %d\n", newItems ? "a new sword" : "a sword's part", c.frame);
+			CHECK(same);
+		}
+}
+
+TEST(CreatureEffect, AnAdvancedSlayersWeaponUnderRedianceOrAnEffectColourOrFadingIsStillDrawn)
+{
+	// Rediance's afterimages and an effect-coloured weapon go through the
+	// colour-set blit, a fading one through the darkened one (both drawn
+	// plainly by SDL, in the colours last set): all of them drawn, for the
+	// sword's part and for a new sword.
+	for (bool newItems : {false, true})
+		for (int kind : {0, 1})
+		{
+			Scene scene;
+			Wearer slayer;
+			slayer.Become(kSlayer);
+			slayer.MStatus::SetStatus(MODIFY_ADVANCEMENT_CLASS_LEVEL, 1);
+			MCreatureWear::ADDON_INFO& sword = slayer.Wear(ADDON_RIGHTHAND, 2, ITEM_CLASS_SWORD, 40, 50, newItems ? 16 : 0);
+			if (kind == 0)
+			{
+				slayer.Set(EFFECTSTATUS_REDIANCE);
+				sword.bEffectColor = TRUE;
+				sword.EffectColorSet = 77;
+			}
+			else slayer.SetFade();
+			const int action = newItems ? ConvNewSlayerActionFromSlayerAction(ACTION_MAGIC, &slayer)
+				: ConvAdvancementSlayerActionFromSlayerAction(ACTION_MAGIC, &slayer) - ADVANCEMENT_ACTION_START;
+			FRAME_ARRAY& frames = scene.slayerManFPK[TYPE_FRAMEID(newItems ? 2 : int(AC_SWORD))][BYTE(action)][2];
+			frames.Init(3);
+			for (int f = 0; f <= 2; ++f) frames[WORD(f)].Set(TYPE_SPRITEID(f == 2 ? 1 : 2), short(10 + 4 * f), 20);
+			scene.Draw(DrawWeaponFadeOutForACSlayer, slayer, ACTION_MAGIC, 2, 2);
+			for (int f = 1; f <= 2; ++f) scene.Blit(10 + 4 * (2 - f), 20, scene.slayerManSPK[2], 40, 50);
+			scene.Blit(18, 20, scene.slayerManSPK[1], 40, 50);
+			const bool same = scene.Same();
+			if (!same) std::printf("      %s, %s\n", newItems ? "a new sword" : "a sword's part", kind == 0 ? "Rediance" : "fading");
 			CHECK(same);
 		}
 }
@@ -920,6 +976,7 @@ TEST(CreatureEffect, AnAdvancedInvisibleSlayerWipesInBetweenItsEnds)
 		for (int count : {0, 64, 32})
 		{
 			Scene scene;
+			EffectGuard effects;
 			Wearer slayer;
 			slayer.Become(kSlayer);
 			slayer.MStatus::SetStatus(MODIFY_ADVANCEMENT_CLASS_LEVEL, 1);
@@ -935,8 +992,6 @@ TEST(CreatureEffect, AnAdvancedInvisibleSlayerWipesInBetweenItsEnds)
 			CHECK(scene.Same());
 			CHECK_EQ(count == 32 ? 32 : 99, CSpriteSurface::s_Value1);
 			CHECK_EQ(count == 32, CIndexSprite::IsWipeOutEffect());
-			CIndexSprite::SetEffect(CIndexSprite::EFFECT_NET);
-			CSpriteSurface::s_Value1 = 0;
 		}
 }
 

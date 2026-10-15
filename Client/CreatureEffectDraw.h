@@ -5,7 +5,8 @@
 // moving fast, invisible or wiping in, its weapon leaving afterimages,
 // and the slayers' pets' and installing slayers' turrets. pPoint is where
 // the creature is drawn; each part's screen rect is added to the
-// creature. The ...ForACSlayer forms are the advanced slayer's.
+// creature's (a pet's turret adds none; an installing turret sets it).
+// The ...ForACSlayer forms are the advanced slayer's.
 
 #include "../basic/Platform.h"
 #include "CreatureDrawPacks.h"

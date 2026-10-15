@@ -7610,7 +7610,7 @@ rounds settled* for the host rules). Test fixtures share
     offset, the recoil, the body's colours) and an installing turret
     (its facing, count and frame, the screen rect on the first frame
     index), each to the outlines when selected.
-  - Mutants: 296 written, one per live copy of each line (the four effects and their advanced forms repeat their code); 277 caught (some by crashing under ASan), 184 in a first pass and 93 in a second, after tests of the parts' order, the advanced slayer's special colours, screen rect, frames, new items class by class and invisibility, and a bright advanced pet. Of the 19 left, 16 are in the advanced slayer's afterimages, which no test reached: they were drawn for the shoulder piece, not the weapon (fixed below). Three are equivalent: the afterimage loop's coat test, which only a weapon reaches.
+  - Mutants: 296 written, one per live copy of each line chosen (the four effects and their advanced forms repeat their code); 277 caught (some by crashing under ASan), 184 in a first pass and 93 in a second, after tests of the parts' order, the advanced slayer's special colours, screen rect, frames, new items class by class and invisibility, and a bright advanced pet. Of the 19 left, 16 are in the advanced slayer's afterimages, which no test reached: they were drawn for the shoulder piece, not the weapon (fixed below). Three are equivalent: the afterimage loop's coat test, which only a weapon reaches.
     Taking `CreatureEffectDraw.cpp` out of gameview's list leaves
     `unit_tests` with undefined symbols.
   - Fixed after the move: the advanced slayer's weapon afterimages were
@@ -7623,6 +7623,20 @@ rounds settled* for the host rules). Test fixtures share
     unique sword, failed first. The 16 mutants in the afterimages that no
     test reached before are caught now, so 293 of the 296 are; the three
     left are the equivalent coat tests.
+  - The review of #538 found the advanced weapon fade's other branches
+    unreached: Rediance's afterimages, an effect-coloured weapon and a
+    fading one. A test draws them now, a sword's part and a new sword
+    (SDL draws the colour-set and darkened blits plainly, so the test
+    sees that each is drawn, not how); deleting any of the six blits
+    fails it. Two mutants stay alive and equivalent: flipping the
+    Rediance test (both blits draw the same picture on SDL), and giving
+    the new items' branch the shoulder's afterimages too (shoulder armour
+    is never a new item). The surface's wipe-out selection
+    (`CSpriteSurface::SetEffect`) is not seen by SDL, whose blit reads
+    only the index sprite's effect. The test of the fix keeps the
+    shoulder piece on the surface, so a slot test that let both through
+    fails it, and the invisibility tests put the effects' global state
+    back.
 
 - [x] **4.251 The crash report:** `CrashReport.cpp` and `GetWinVer.cpp`
   join gamemodel.
@@ -7657,6 +7671,12 @@ rounds settled* for the host rules). Test fixtures share
     divide by zero at the test thread's own context: the log's message,
     address, version, OS, executable time and a stack walk that starts at
     the address (run by the Windows CI).
+  - Recorded, not changed: the stack walk passes `StackWalk64` no context
+    record and initialises no symbols (`SymInitialize`), which on x64 may
+    end the walk at once, leaving the log's call stack empty (the review
+    of #539 found it by reading). The Windows test prints the stack and
+    accepts it empty or starting at the faulting address; the Windows
+    CI's log tells which.
   - Mutants: 44 on the code every platform compiles (each table entry,
     the table walk, each field and format, the version read, the OS
     name's refusals and result), all caught. The Windows gathering is

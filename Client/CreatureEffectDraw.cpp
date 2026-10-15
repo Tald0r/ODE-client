@@ -433,7 +433,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 				//---------------------------------------- 
 				//else
 				{								
-					// [new skill] - a fake is always darkened when moving fast..
+					// [new skill] - a fake moving fast is darkened (a bright one brightened)
 					if (pCreature->IsFakeCreature())
 					{
 						MFakeCreature *pFakeCreature = dynamic_cast<MFakeCreature*>(pCreature);
@@ -479,7 +479,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 	
 	
 	//-----------------------------------------------------------
-	// Afterimages to the left and right
+	// Afterimages along the move
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
@@ -590,7 +590,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 						//---------------------------------------- 
 						//else
 						{								
-							// [new skill] - a fake is always darkened when moving fast..
+							// [new skill] - a fake moving fast is darkened (a bright one brightened)
 							if (pCreature->IsFakeCreature())
 							{
 								MFakeCreature *pFakeCreature = dynamic_cast<MFakeCreature*>(pCreature);
@@ -697,7 +697,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					//---------------------------------------- 
 					//else
 					{								
-						// [new skill] - a fake is always darkened when moving fast..
+						// [new skill] - a fake moving fast is darkened (a bright one brightened)
 						if (pCreature->IsFakeCreature())
 						{
 							MFakeCreature *pFakeCreature = dynamic_cast<MFakeCreature*>(pCreature);
@@ -867,7 +867,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 	
 	
 	//-----------------------------------------------------------
-	// Afterimages to the left and right
+	// Invisible: drawn wiping in
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
@@ -1286,7 +1286,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 	
 	
 	//-----------------------------------------------------------
-	// Afterimages to the left and right
+	// The swung weapon's afterimages
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
