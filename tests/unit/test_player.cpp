@@ -685,6 +685,18 @@ TEST(Player, ItStartsIdleAndClearsTheGlobalWhenItGoes)
 	CHECK(!g_pUserInformation->bCompetenceShape);
 }
 
+TEST(Player, HoldingASkillOnItselfFromTheStartIsNoAttack)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	// A self skill is the first thing held down (SelfSpecialAction then
+	// SetRepeatAction): no creature was ever traced, so it is no forced
+	// attack, and the view shows no attack cursor.
+	me.SetRepeatAction();
+	CHECK(!me.OnAttacking());
+	CHECK(!me.m_bTraceCreatureToForceAttack);
+}
+
 TEST(Player, ItsAttackModeDecidesWhomItMayAttack)
 {
 	Scene scene;
@@ -908,7 +920,6 @@ TEST(Player, ResettingItsSentMovesTrustsTheNetworkAgain)
 	CHECK(g_bNetStatusGood);
 	// It attacks when it repeats a forced attack.
 	CHECK(!me.OnAttacking());
-	me.m_bTraceCreatureToForceAttack = false;
 	me.m_bRepeatAction = TRUE;
 	CHECK(!me.OnAttacking());
 	me.m_bTraceCreatureToForceAttack = true;

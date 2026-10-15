@@ -888,6 +888,9 @@ MPlayer::MPlayer()
 
 	// 계속 추적하기..
 	m_bKeepTraceCreature = true;
+	m_bTraceCreatureToForceAttack = false;
+	m_bNextForceAttack = false;
+	m_TraceIDBuffer = OBJECTID_NULL;
 
 	// 행동 반복
 	m_bRepeatAction		= FALSE;

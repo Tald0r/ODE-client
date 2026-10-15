@@ -7383,27 +7383,34 @@ rounds settled* for the host rules). Test fixtures share
   >   reckoning, not as it opens; the party's position report goes out on
   >   every call outside the peer-to-peer path, which alone remembers the
   >   last one sent.
+  > - Fixed after the move (found by the tests under UBSan): the
+  >   constructor left `m_bTraceCreatureToForceAttack` unset, and a skill
+  >   on itself held down from the start (`SelfSpecialAction`, then
+  >   `SetRepeatAction`) made `OnAttacking` read it, so the view chose its
+  >   attack cursor by whatever the heap held. It starts cleared, and so
+  >   do the two members set beside it (`m_bNextForceAttack`,
+  >   `m_TraceIDBuffer`), which nothing read before their time.
   >
   > R1 is 19 Windows / 17 Ninja.
-  - Owner: membership, R1, `test_player.cpp`: 62 tests, over a
-    real zone behind `ZoneState` as `g_pZone`, with the player as
-    `g_pPlayer`, the packets it sends caught on a `ClientPlayer` socket,
-    and recording UI, view and help hosts. What it is (identity, attack
-    modes, a stop, the path cost, darkness, safe cells, a drink cut
-    short, the death delay); where it goes (the next destination, the
-    path round a wall, a place it found no way to, a sanctuary, a relic
-    into its safe zone); walking (one `CGMove` a step, the unanswered
-    moves' cap, the server's OK and NO, its cell keeping the zone in
-    sight, zone 74's clouds); death and life; its statuses (the UI, the
-    drain's countdown to conversion, a turret, a coma, a ghost, a sylph);
+  - Owner: membership, R1, `test_player.cpp`: 62 tests (63 with the
+    fixes), over a real zone behind `ZoneState` as `g_pZone`, with the
+    player as `g_pPlayer`, the packets it sends caught on a `ClientPlayer`
+    socket, and recording UI, view and help hosts. What it is (identity,
+    attack modes, a stop, the path cost, darkness, safe cells, a drink cut
+    short, the death delay); where it goes (the next destination, the path
+    round a wall, a place it found no way to, a sanctuary, a relic into
+    its safe zone); walking (one `CGMove` a step, the unanswered moves'
+    cap, the server's OK and NO, its cell keeping the zone in sight, zone
+    74's clouds); death and life; its statuses (the UI, the drain's
+    countdown to conversion, a turret, a coma, a ghost, a sylph);
     attacking (a blow struck once, a friend followed, a forced blow, the
     self-defence roster, refusals, the safe-zone rule, an NPC greeted);
     picking up (to the inventory, walking there, what does not fit or is
-    not its race's, money, to the hand, a motorcycle); skills on itself,
-    a creature and a cell; requests to trade, to party and for
-    information; moves by force; finding an enemy; changing race; action
-    results; its light; its party reports; held-down blows and ground
-    skills; the item check buffer's locks; a skill's range.
+    not its race's, money, to the hand, a motorcycle); skills on itself, a
+    creature and a cell; requests to trade, to party and for information;
+    moves by force; finding an enemy; changing race; action results; its
+    light; its party reports; held-down blows and ground skills; the item
+    check buffer's locks; a skill's range.
   - Mutants: 85 written; 80 caught at first, and the four gaps they showed are now pinned (a monster outside the safe zone, the first result's info chosen as a skill, a safe zone that keeps the button held, a weapon's reach). One is equivalent: the knockback's own reset of the sent moves, which the creature's knockback already makes through `SetServerPosition`.
     Taking `MPlayer.cpp` out of the membership breaks the test link.
 
