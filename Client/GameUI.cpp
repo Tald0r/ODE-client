@@ -4019,7 +4019,9 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 			
 		while( !pPacket->empty() )
 		{
-			char str[256];
+			// A quest type with nothing to tell (a gathering, or one this
+			// client does not know) tells an empty text.
+			char str[256] = "";
 			QuestID_t	ID = pPacket->popQuestID();		
 			QUEST_INFO* mkq = g_pQuestInfoManager->GetInfo( ID );		
 			if(NULL != mkq )
@@ -4125,7 +4127,9 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 		else
 			return;				// For Ousters lol
 		
-		char str[256];
+		// Empty until a hunt is listed: an empty line, which the talk
+		// window leaves out, for a quest that is not one.
+		char str[256] = "";
 		
 		while ( ! pPacket->empty() )
 		{

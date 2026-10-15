@@ -233,6 +233,14 @@ std::unique_ptr<GCSelectQuestID> QuestIDs(std::initializer_list<QuestID_t> ids)
 	return packet;
 }
 
+// Leaves the stack below the caller full of '#', so a buffer a callee
+// never writes reads as a run of them with no end.
+void DirtyStack()
+{
+	volatile char buffer[16384];
+	for (size_t i = 0; i < sizeof buffer; ++i) buffer[i] = '#';
+}
+
 std::vector<std::string> Lines(CMessageArray& log)
 {
 	std::vector<std::string> lines;
@@ -677,6 +685,8 @@ TEST(GameUI3Quest, TheQuestNPCsTellEachQuestAndOfferIt)
 	AddQuest(scene.quests, 506, QUEST_INFO_MINI_GAME, 0, MINI_GAME_TYPE_NEMO, 0, 0, "Nemo");
 	AddQuest(scene.quests, 507, QUEST_INFO_MONSTER_KILL, 40 * 60, 0, 0, 2, "Bat");
 	AddQuest(scene.quests, 508, QUEST_INFO_MONSTER_KILL, 0, 0, 0, 4, "Imp");
+	AddQuest(scene.quests, 509, QUEST_INFO_GATHER_ITEM, 60, 0, 0, 2, "Herb");
+	AddQuest(scene.quests, 510, QUEST_INFO_TYPE_NULL, 0, 0, 0, 0, "Odd");
 	struct Case { int race; QuestID_t id; std::string content; std::string line; };
 	const std::string cancel = "|9999:Later";
 	const Case cases[] = {
@@ -695,6 +705,10 @@ TEST(GameUI3Quest, TheQuestNPCsTellEachQuestAndOfferIt)
 		{CREATURETYPE_SLAYER_MALE, 504, S(STRING_MESSAGE_SELECT_MINI_GAME), "|504:" + S(STRING_MESSAGE_SELECT_CRAZY_MINE)},
 		{CREATURETYPE_SLAYER_MALE, 505, S(STRING_MESSAGE_SELECT_MINI_GAME), "|505:" + S(STRING_MESSAGE_SELECT_ARROW_TILES)},
 		{CREATURETYPE_SLAYER_MALE, 506, S(STRING_MESSAGE_SELECT_MINI_GAME), ""},
+		// A quest with nothing to tell (a gathering, or a type the client
+		// does not know) is offered with no text.
+		{CREATURETYPE_SLAYER_MALE, 509, "", "|509:Yes"},
+		{CREATURETYPE_VAMPIRE_MALE1, 510, "", "|510:Yes"},
 	};
 	for (unsigned npc : { 17u, 255u, 653u })
 		for (const Case& c : cases)
@@ -708,7 +722,9 @@ TEST(GameUI3Quest, TheQuestNPCsTellEachQuestAndOfferIt)
 			scene.dialog.ClosePCTalkDlg();
 			calls.clear();
 			windowCount = 0;
-			UI_RunQuestList(QuestIDs({c.id}).get());
+			std::unique_ptr<GCSelectQuestID> packet = QuestIDs({c.id});
+			DirtyStack();
+			UI_RunQuestList(packet.get());
 			const bool same = Same({"close all", "talk 1|" + N(npc) + "|(null)", "menu 1" + c.line + cancel,
 				"text 1 fit|" + c.content, "start 1"});
 			if (!same) std::printf("      npc %u quest %u\n", npc, unsigned(c.id));
@@ -787,6 +803,16 @@ TEST(GameUI3Quest, OtherNPCsListTheHuntsForTheRace)
 	UI_RunQuestList(QuestIDs({501, 502}).get());
 	CHECK(Same({"close all", "talk 1|654|(null)",
 		"menu 1|501:Wolf 7 heads Limit:3h 5m|501:Wolf 7 heads Limit:3h 5m|9999:Later",
+		"text 1 fit|" + S(UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS), "start 1"}));
+	// Before any hunt, a quest that is not one adds an empty line, which
+	// the talk window leaves out.
+	scene.dialog.ClosePCTalkDlg();
+	calls.clear();
+	windowCount = 0;
+	std::unique_ptr<GCSelectQuestID> packet = QuestIDs({502, 501});
+	DirtyStack();
+	UI_RunQuestList(packet.get());
+	CHECK(Same({"close all", "talk 1|654|(null)", "menu 1|501:Wolf 7 heads Limit:3h 5m|9999:Later",
 		"text 1 fit|" + S(UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS), "start 1"}));
 }
 
