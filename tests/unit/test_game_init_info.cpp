@@ -520,6 +520,9 @@ TEST(GameInitInfo, WithoutAHostTheDefaultsApply)
 	Fixture fixture;
 	GameInitInfoHost::SetHost(nullptr);
 	CHECK(Load());
+	// A real options file: the key bindings' loader reads an empty one's
+	// count uninitialised (fixed with its siblings' loaders).
+	UserOption().SaveToFile(Path("FILE_INFO_USEROPTION").c_str());
 	const int xbrz = spritectl_get_xbrz_enabled();
 	CHECK(InitUserOption());
 	spritectl_set_xbrz_enabled(xbrz);
