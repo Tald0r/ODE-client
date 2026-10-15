@@ -80,6 +80,7 @@ chdir $root or die "cannot chdir to repo root: $!";
 my $members_file  = 'tests/arch/packetwire_files.txt';
 my $holdouts_file = 'tests/arch/packetwire_holdouts.txt';
 my $gamemodel_file = 'tests/arch/gamemodel_files.txt';
+my $gameview_file = 'tests/arch/gameview_files.txt';
 
 my @violations;
 
@@ -164,6 +165,29 @@ my @gm_members;
 }
 
 #----------------------------------------------------------------------
+# gameview (docs/RESTRUCTURING.md task 4.248) - the view's drawing that
+# reads the model and draws with SpriteLib, which gamemodel may not.
+#
+#   V0  As M0, for tests/arch/gameview_files.txt (no length floor yet).
+#   V1  A file in the gameview closure may include what M1 allows, files
+#       under Client/SpriteLib/, or a file listed for gameview.
+#   V2  As M2.
+#----------------------------------------------------------------------
+my @gv_listed = read_list($gameview_file);
+die "$gameview_file lists nothing - truncated?" unless @gv_listed >= 1;
+my %gv_listed;
+my @gv_members;
+{
+	for my $f (@gv_listed) {
+		push @violations, "V0|$f|listed twice" if $gv_listed{lc $f}++;
+		push @violations, "V0|$f|listed but missing" unless -f $f;
+		push @violations, "V0|$f|listed but not under Client/" unless $f =~ m{^Client/};
+		push @violations, "V0|$f|listed for gamemodel too" if $gm_listed{lc $f};
+		push @gv_members, $f if $f =~ /\.cpp$/i;
+	}
+}
+
+#----------------------------------------------------------------------
 # Include resolution: the file's own directory first (how the compiler
 # treats quote-includes), then the include path the library compiles
 # with, IN THE COMPILER'S ORDER - target_include_directories(packetwire)
@@ -178,7 +202,8 @@ my @gm_members;
 # packetwire's resolution order is unchanged. third_party/decore is the
 # include dir gamemodel gets from linking decore ("domain/X.h"); it comes
 # after that, so nothing that resolved before resolves anywhere else now.
-my @searchdirs = ('.', 'basic', 'Client', 'Client/Packet', 'Client/framelib', 'third_party/decore');
+# Client/SpriteLib is gameview's; it comes last for the same reason.
+my @searchdirs = ('.', 'basic', 'Client', 'Client/Packet', 'Client/framelib', 'third_party/decore', 'Client/SpriteLib');
 
 sub normalize {
 	my ($p) = @_;
@@ -361,7 +386,7 @@ while (@queue) {
 		next if grep { defined $_->[0] && !$_->[0] } @stack;	# dead branch
 
 		my ($base) = $inc =~ m{([^/\\]+)$};
-		if ($rule eq 'M' ? $banned_in_gamemodel{$base} : $banned{$base}) {
+		if ($rule eq 'M' || $rule eq 'V' ? $banned_in_gamemodel{$base} : $banned{$base}) {
 			violate("${rule}2|$file|$inc");
 			next;
 		}
@@ -394,6 +419,13 @@ my $gm_count = walk_closure(\@gm_members, 'M', sub {
 	my ($r) = @_;
 	return $r =~ m{^basic/} || $r =~ m{^Client/framelib/} || $r =~ m{^Client/Packet/}
 		|| $r eq 'Client/Client_PCH.h' || $gm_listed{lc $r}
+		|| $r =~ m{^third_party/decore/domain/[^/]+\.h$};
+});
+my $gv_count = walk_closure(\@gv_members, 'V', sub {
+	my ($r) = @_;
+	return $r =~ m{^basic/} || $r =~ m{^Client/framelib/} || $r =~ m{^Client/Packet/}
+		|| $r eq 'Client/Client_PCH.h' || $gm_listed{lc $r} || $gv_listed{lc $r}
+		|| $r =~ m{^Client/SpriteLib/}
 		|| $r =~ m{^third_party/decore/domain/[^/]+\.h$};
 });
 
@@ -464,8 +496,8 @@ for my $b (sort keys %baseline) {
 my $nmembers = scalar @members;
 my $gm_nmembers = scalar @gm_members;
 if ($fail) {
-	print "arch_includes: FAILED (packetwire $nmembers members, $count files walked; gamemodel $gm_nmembers members, $gm_count files walked; de-core " . scalar(@decore_files) . " files)\n";
+	print "arch_includes: FAILED (packetwire $nmembers members, $count files walked; gamemodel $gm_nmembers members, $gm_count files walked; gameview " . scalar(@gv_members) . " members, $gv_count files walked; de-core " . scalar(@decore_files) . " files)\n";
 	exit 1;
 }
-print "arch_includes: OK (packetwire $nmembers members, $count files walked, W0/W1/W2 clean; gamemodel $gm_nmembers members, $gm_count files walked, M0/M1/M2 clean; de-core " . scalar(@decore_files) . " files, DC1 clean)\n";
+print "arch_includes: OK (packetwire $nmembers members, $count files walked, W0/W1/W2 clean; gamemodel $gm_nmembers members, $gm_count files walked, M0/M1/M2 clean; gameview " . scalar(@gv_members) . " members, $gv_count files walked, V0/V1/V2 clean; de-core " . scalar(@decore_files) . " files, DC1 clean)\n";
 exit 0;

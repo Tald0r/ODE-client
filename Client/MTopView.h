@@ -60,6 +60,7 @@
 #endif
 
 #include "MViewDef.h"
+#include "CreatureDrawPacks.h"
 #include "WorldTileGeometry.h"
 #include "MScreenFade.h"
 #include <fstream>
@@ -826,14 +827,9 @@ class MTopView : public MRequestMode {
 		void	DrawInvisibleForACSlayer(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
 		void	DrawWeaponFadeOutForACSlayer(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
 		
-		// DrawDivineGuidance
-		void	DrawDivineGuidanceSlayerCharacter( POINT *pPoint, MCreature* pCreature, int direction );
-		void	DrawDivineGuidanceVampireCharacter( POINT *pPoint, MCreature* pCreature, int direction, int body );
-		void	DrawDivineGuidanceOustersCharacter( POINT *pPoint, MCreature* pCreature, int direction );
-		
-		void	DrawDivineGuidanceAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pCreature, int direction );
-		void	DrawDivineGuidanceAdvancementClassVampireCharacter( POINT *pPoint, MCreature* pCreature, int direction, int body );
-		void	DrawDivineGuidanceAdvancementClassOustersCharacter( POINT *pPoint, MCreature* pCreature, int direction );
+		// The packs and surface the creature drawing moved to gameview reads
+		// (task 4.248: the divine-guidance silhouettes).
+		CreatureDrawPacks	GetCreatureDrawPacks();
 		
 		// DrawNormalCharacter
 		void	DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int FrameIndex );		

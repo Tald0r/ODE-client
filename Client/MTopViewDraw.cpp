@@ -64,6 +64,7 @@
 #include "VS_UI_item.h"
 #include "MTopViewDraw.inl"
 #include "AdvancementAction.h"
+#include "CreatureDivineGuidanceDraw.h"
 
 #define	SHIFT_SNIPPING			2
 
@@ -110,6 +111,31 @@ namespace {
 };
 
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
+
+// The packs and surface the creature drawing in gameview reads.
+CreatureDrawPacks
+MTopView::GetCreatureDrawPacks()
+{
+	CreatureDrawPacks packs;
+	packs.pSurface = m_pSurface;
+	packs.pCreatureFPK = &m_CreatureFPK;
+	packs.pCreatureSPK = &m_CreatureSPK;
+	packs.pAddonFPK = &m_AddonFPK;
+	packs.pAddonSPK = &m_AddonSPK;
+	packs.pOustersFPK = &m_OustersFPK;
+	packs.pOustersSPK = &m_OustersSPK;
+	packs.pAdvancementSlayerManFPK = &m_AdvancementSlayerManFPK;
+	packs.pAdvancementSlayerManSPK = &m_AdvancementSlayerManSPK;
+	packs.pAdvancementSlayerWomanFPK = &m_AdvancementSlayerWomanFPK;
+	packs.pAdvancementSlayerWomanSPK = &m_AdvancementSlayerWomanSPK;
+	packs.pAdvancementVampireManFPK = &m_AdvancementVampireManFPK;
+	packs.pAdvancementVampireManSPK = &m_AdvancementVampireManSPK;
+	packs.pAdvancementVampireWomanFPK = &m_AdvancementVampireWomanFPK;
+	packs.pAdvancementVampireWomanSPK = &m_AdvancementVampireWomanSPK;
+	packs.pAdvancementOustersFPK = &m_AdvancementOustersFPK;
+	packs.pAdvancementOustersSPK = &m_AdvancementOustersSPK;
+	return packs;
+}
 
 bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
 {
@@ -593,27 +619,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 		if(!pCreature->IsNPC() &&  pCreature->HasEffectStatus(EFFECTSTATUS_DIVINE_GUIDANCE))
 		{	
-			if(isSlayerCharacter)
-			{
-				if( pCreature->IsAdvancementClass() )
-					DrawDivineGuidanceAdvancementClassSlayerCharacter( pPoint, pCreature, direction );
-				else
-					DrawDivineGuidanceSlayerCharacter( pPoint, pCreature, direction );
-			}
-			else if(isOustersCharacter)
-			{
-				if( pCreature->IsAdvancementClass() )
-					DrawDivineGuidanceAdvancementClassOustersCharacter( pPoint, pCreature, direction );
-				else
-					DrawDivineGuidanceOustersCharacter( pPoint, pCreature, direction );				
-			}
-			else
-			{
-				if( pCreature->IsAdvancementClass() )
-					DrawDivineGuidanceAdvancementClassVampireCharacter( pPoint, pCreature, direction, body );
-				else
-					DrawDivineGuidanceVampireCharacter( pPoint, pCreature, direction, body );
-			}
+			DrawDivineGuidanceCharacter( GetCreatureDrawPacks(), pPoint, pCreature, direction, body, isSlayerCharacter, isOustersCharacter );
 		}
 
 		//----------------------------------------
