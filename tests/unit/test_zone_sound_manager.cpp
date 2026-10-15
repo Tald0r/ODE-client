@@ -252,11 +252,11 @@ TEST(ZoneSound, ItIsPannedAndQuietenedByDistance)
 	}
 	// From 40 sectors it is not heard, and gets no buffer.
 	f.state.pans.clear();
-	ZONESOUND_NODE far(1);
-	far.Play(50, 10);
-	CHECK(far.GetBuffer() == nullptr);
+	ZONESOUND_NODE distant(1);
+	distant.Play(50, 10);
+	CHECK(distant.GetBuffer() == nullptr);
 	CHECK(f.state.pans.empty());
-	CHECK_EQ(50, far.GetX());
+	CHECK_EQ(50, distant.GetX());
 	ZONESOUND_NODE farUp(1);
 	farUp.Play(10, 50);
 	CHECK(farUp.GetBuffer() == nullptr);
@@ -306,9 +306,9 @@ TEST(ZoneSound, DistanceAlongYCountsAboveAndBelow)
 	CHECK_EQ(22 * 4 * 3, f.state.volumes.back());
 	// 45 north is out of hearing.
 	f.state.py = 50;
-	ZONESOUND_NODE far(1);
-	far.Play(10, 5);
-	CHECK(far.GetBuffer() == nullptr);
+	ZONESOUND_NODE distant(1);
+	distant.Play(10, 5);
+	CHECK(distant.GetBuffer() == nullptr);
 }
 
 TEST(ZoneSound, StoppingAndEndingALoop)
