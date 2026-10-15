@@ -7671,12 +7671,18 @@ rounds settled* for the host rules). Test fixtures share
     divide by zero at the test thread's own context: the log's message,
     address, version, OS, executable time and a stack walk that starts at
     the address (run by the Windows CI).
-  - Recorded, not changed: the stack walk passes `StackWalk64` no context
-    record and initialises no symbols (`SymInitialize`), which on x64 may
-    end the walk at once, leaving the log's call stack empty (the review
-    of #539 found it by reading). The Windows test prints the stack and
-    accepts it empty or starting at the faulting address; the Windows
-    CI's log tells which.
+  - Fixed after the move, found by reading (the reviews of #539): the
+    stack walk passed `StackWalk64` no context record, which on x64 it
+    requires, seeded no stack pointer and loaded no symbols for its
+    function-table and module-base callbacks, so on x64 the log's call
+    stack was empty at best. It walks a copy of the crash's context now,
+    with the stack pointer, after `SymInitialize` (loaded from dbghelp
+    like the rest; if something loaded the symbols first, as a
+    sanitizer's runtime does, it walks anyway and leaves them to their
+    owner). Not reproduced here, with no
+    Windows machine: the Windows test, which asks for a stack that starts
+    at the faulting address and goes on, runs in the Windows CI, before
+    the merge.
   - Mutants: 44 on the code every platform compiles (each table entry,
     the table walk, each field and format, the version read, the OS
     name's refusals and result), all caught. The Windows gathering is

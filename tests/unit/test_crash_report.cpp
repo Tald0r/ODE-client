@@ -177,12 +177,11 @@ TEST(CrashReport, TheHandlerLogsTheCrashItIsHanded)
 	CHECK(std::string(report.GetOS()).rfind("Windows", 0) == 0);
 	// The executable's time, "yyyy-mm-dd hh:mm:ss".
 	CHECK(report.GetExecutableTime() != nullptr && std::strlen(report.GetExecutableTime()) == 19);
-	// The walk, if it walks, starts at the faulting address. It passes
-	// StackWalk64 no context and initialises no symbols, which on x64 may
-	// end it at once (an empty stack): printed for the CI's log to tell.
+	// The walk starts at the faulting address and goes on to its callers.
 	const std::string stack = report.GetCallStack() != nullptr ? report.GetCallStack() : "";
 	std::printf("      call stack:%s\n", stack.c_str());
-	CHECK(stack.empty() || stack.rfind(std::string(" ") + address, 0) == 0);
+	CHECK(stack.rfind(std::string(" ") + address, 0) == 0);
+	CHECK(stack.size() > std::string(" ").size() + std::strlen(address));
 }
 #else
 TEST(CrashReport, OffWindowsTheHandlerDoesNothing)

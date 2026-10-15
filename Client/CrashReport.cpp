@@ -193,6 +193,11 @@ tSFTA pSFTA = NULL;
 typedef DWORD64 (__stdcall *tSGMB)( IN HANDLE hProcess, IN DWORD64 dwAddr );
 tSGMB pSGMB = NULL;
 
+// SymInitialize() and SymCleanup(): the two callbacks above read the
+// process's symbols, which have to be loaded for the walk.
+typedef BOOL (__stdcall *tSI)( HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess );
+typedef BOOL (__stdcall *tSC)( HANDLE hProcess );
+
 LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp )
 {
 	if( g_pSocket != NULL )
@@ -258,22 +263,35 @@ LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp )
 			pSFTA = (tSFTA) GetProcAddress( hImagehlpDll, "SymFunctionTableAccess64" );
 			pSGMB = (tSGMB) GetProcAddress( hImagehlpDll, "SymGetModuleBase64" );
 			pSW = (tSW) GetProcAddress( hImagehlpDll, "StackWalk64" );
+			tSI pSI = (tSI) GetProcAddress( hImagehlpDll, "SymInitialize" );
+			tSC pSC = (tSC) GetProcAddress( hImagehlpDll, "SymCleanup" );
+			// Someone else may have loaded the symbols already (a sanitizer's
+			// runtime does): walk either way, and clean up only ours.
+			const BOOL bSymbols = pSI != NULL && pSC != NULL && pSI( hSWProcess, NULL, TRUE );
 
 			if(pSFTA != NULL && pSGMB != NULL && pSW != NULL)
 			{
+				// On x64 the walk needs the crash's context record (it
+				// updates the one it is handed, so a copy) and the stack
+				// pointer as well as the frame and the instruction.
+				CONTEXT walkContext = *Context;
 				s.AddrPC.Offset = Context->Rip;
 				s.AddrPC.Mode = AddrModeFlat;
 				s.AddrFrame.Offset = Context->Rbp;
 				s.AddrFrame.Mode = AddrModeFlat;
+				s.AddrStack.Offset = Context->Rsp;
+				s.AddrStack.Mode = AddrModeFlat;
 
 				for ( frameNum = 0; ; ++ frameNum )
 				{
-					if ( ! pSW( imageType, hSWProcess, hThread, &s, NULL, NULL, pSFTA, pSGMB, NULL ) )
+					if ( ! pSW( imageType, hSWProcess, hThread, &s, &walkContext, NULL, pSFTA, pSGMB, NULL ) )
 						break;
 
 					callStack.push_back(s.AddrPC.Offset);
 				}
 			}
+			if (bSymbols)
+				pSC( hSWProcess );
 			FreeLibrary( hImagehlpDll );
 		}
 

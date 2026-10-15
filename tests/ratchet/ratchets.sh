@@ -465,11 +465,11 @@ if [ -n "$R1_VCXPROJ" ]; then
 elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# The Ninja generator (the Linux and macOS presets): the same count,
 	# read from build.ninja's object rules for the DarkEden target. Its
-	# own baseline, because the non-Windows source list is two files
-	# shorter: of CMakeLists.txt's NOT WIN32 filters only GetWinVer,
-	# and WavePackFileManager match anything the glob
-	# yields (the Immersion, D3D, EXECryptor and VolumeOut patterns match
-	# no file at all). Before
+	# own baseline, because the non-Windows source list is one file
+	# shorter: of CMakeLists.txt's NOT WIN32 filters only
+	# WavePackFileManager matches anything the glob yields (GetWinVer has
+	# been gamemodel's since task 4.251; the Immersion, D3D, EXECryptor
+	# and VolumeOut patterns match no file at all). Before
 	# this branch existed the ratchet SKIPPED on every non-MSVC tree,
 	# which the port assessment listed as fail-open (area A). build.ninja
 	# is rewritten on every configure, so its mtime is the configure time.
