@@ -6779,8 +6779,8 @@ rounds settled* for the host rules). Test fixtures share
   >     both 0x10 of the second flag byte: a sector safe for ousters reads
   >     as blocked underground, a burrowed creature's block makes it safe
   >     for ousters, and setting the safety replaces the server's blocks
-  >     (#521's review). MZone::UnSetServerBlock, which clears all three
-  >     server blocks, so also takes the sector's ousters safety away.
+  >     (#521's review). MZone::UnSetServerBlock clears all three server
+  >     blocks, so it also takes the sector's ousters safety away.
   >   - Removing one of two darkness (or sanctuary) effects clears the
   >     flag.
   >   - Removing a sweeper's corpse lifts the ground block even where the
@@ -6881,10 +6881,11 @@ rounds settled* for the host rules). Test fixtures share
   >     (`g_pSkillAvailable` is gamemodel's since 4.234).
   > - **ConvertAlignment** moves out of PacketFunction.cpp, which includes
   >   its header.
-  > - **Recorded, not changed:** once the old or new alignment is negative
-  >   (sent as 16 bits), the two are compared unsigned. A move from 2000
-  >   to -3000 is told as one towards good, and from -9000 to 9000 as one
-  >   towards evil (with the fame help). The step itself is right.
+  > - **Recorded, not changed:** the old and new alignments (a negative one
+  >   sent as 16 bits) are compared unsigned, so when exactly one of them is
+  >   negative the move is told the wrong way: from 2000 to -3000 as one
+  >   towards good, and from -9000 to 9000 as one towards evil (with the
+  >   fame help). The step itself is right.
   >
   > R1 is 29 Windows / 27 Ninja.
   - Owner: membership, R1, and `test_modify_status.cpp` (32 tests, every
@@ -6895,8 +6896,9 @@ rounds settled* for the host rules). Test fixtures share
     the choice.
   - Mutants: 84 of the 85 that build are caught. The one left is
     equivalent: the UI value's own 16-bit conversion, a no-op on a
-    `short`. Taking `ModifyStatusManager.cpp` out of the membership
-    breaks the test link.
+    `short`. #523's follow-up gives the pet a real experience row, which
+    catches 2 more (the row read). Taking `ModifyStatusManager.cpp` out of
+    the membership breaks the test link.
 
 - [x] **4.236 ClientFunction split:** the game logic joins `gamemodel`, the
   UI's translucent box goes into SpriteLib, and the blood bible's gear

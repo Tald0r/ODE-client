@@ -162,11 +162,12 @@ int	RunAll()
 	std::printf("\n%d test(s), %d check(s), %d failed\n",
 		    ran, g_TotalChecks, failedTests);
 
-	// A filter that names no test is a mistake, not a pass.
+	// A filter that names no test is a mistake, not a pass: 2, apart from
+	// a failing test's 1, so a mutant run cannot read it as a kill.
 	if (!filter.empty() && ran == 0)
 	{
 		std::printf("TEST_FILTER=%s names no test\n", filter.c_str());
-		return 1;
+		return 2;
 	}
 
 	return failedTests;

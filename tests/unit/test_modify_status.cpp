@@ -26,6 +26,9 @@
 #include "GameInfoPresentationHost.h"
 #include "RankBonusHandlerHost.h"
 
+#include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -686,8 +689,8 @@ TEST(ModifyStatus, TheAlignmentsStepAndValue)
 	CHECK((calls == Calls{Sheet(StatusPresentation::SHEET_ALIGNMENT_NUM, 1000), "help|" + N(HELP_EVENT_FAME)}));
 	CHECK((scene.Messages() == Calls{bad}));
 	// Down into evil (a negative value comes as 16 bits): the step changes.
-	// Recorded, not changed: the two values are compared unsigned once
-	// negative, so this move reads as one towards good.
+	// Recorded, not changed: the two values are compared unsigned, so when
+	// exactly one of them is negative this move reads as one towards good.
 	scene.Clear();
 	const MODIFY_VALUE down = scene.Modify(MODIFY_ALIGNMENT, 65536 - 3000, 2000);
 	CHECK_EQ(DWORD(-3000), down.newValue);
@@ -865,17 +868,32 @@ TEST(ModifyStatus, APetsExperienceIsWhatIsLeft)
 	pet.SetNumber(3);
 	petID = 900;
 	petItem = &pet;
-	const DWORD accum = g_pExperienceTable != NULL ? g_pExperienceTable->GetPetExp(3).AccumExp : 0;
+	// Levels 1 to 4 at 100, 500, 1000 and 2000 in all: the pet's level
+	// (its number) picks its row.
 	ExperienceTable table;
+	{
+		const std::string path = (std::filesystem::temp_directory_path() / "darkeden_pet_exp_rows.bin").string();
+		{
+			std::ofstream out(path, std::ios::binary);
+			const int rows[][3] = {{1, 100, 100}, {2, 400, 500}, {3, 500, 1000}, {4, 1000, 2000}};
+			const int count = 4;
+			out.write(reinterpret_cast<const char*>(&count), 4);
+			for (const auto& row : rows)
+				out.write(reinterpret_cast<const char*>(row), 12);
+		}
+		std::ifstream in(path, std::ios::binary);
+		table.LoadFromFilePetExp(in);
+		in.close();
+		std::remove(path.c_str());
+	}
 	ExperienceTable* oldTable = g_pExperienceTable;
 	g_pExperienceTable = &table;
 	scene.Modify(MODIFY_PET_EXP_REMAIN, 5);
-	CHECK_EQ(DWORD(table.GetPetExp(3).AccumExp - 5), pet.GetPetExpRemain());
-	(void)accum;
+	CHECK_EQ(995u, pet.GetPetExpRemain());
 	// Without a pet in the zone, nothing.
 	petInZone = false;
 	scene.Modify(MODIFY_PET_EXP_REMAIN, 1);
-	CHECK_EQ(DWORD(table.GetPetExp(3).AccumExp - 5), pet.GetPetExpRemain());
+	CHECK_EQ(995u, pet.GetPetExpRemain());
 	g_pExperienceTable = oldTable;
 	petItem = NULL;
 }
