@@ -1090,14 +1090,15 @@ TEST(GameUI2, HPFallingTo30PercentAsksForAPotion)
 	UI_SetHP(100, 100);
 }
 
-TEST(GameUI2, MPFallingTo30PercentAsksForAPotionAndAbsorbingASoulOnce)
+TEST(GameUI2, MPFallingTo30PercentAsksForAPotionAndAbsorbingASoul)
 {
-	// The first time the MP goes from above 30% to 30% or less, the
-	// potion's and the soul-absorbing help mails. Recorded defect: the
-	// last percent is only kept when they are sent (GameUI.cpp:3058), so
-	// it never rises above 30 again and they are sent once a process.
-	// Nothing else in unit_tests calls UI_SetMP.
+	// Each time the MP goes from above 30% to 30% or less, the potion's
+	// and the soul-absorbing help mails; the last percent is kept whatever
+	// the mode, as the HP's is.
 	HelpScene scene;
+	const std::vector<int> lowMP{HELP_EVENT_USE_POTION, HELP_EVENT_ABSORB_SOUL};
+	UI_SetMP(100, 100);	// the last percent a full bar (the static persists)
+	mails.clear();
 	UI_SetMP(31, 100);
 	UI_SetMP(500, 100);	// 100 of 100
 	// Past the 21,474,836 MP whose hundredfold is past the int range.
@@ -1105,14 +1106,34 @@ TEST(GameUI2, MPFallingTo30PercentAsksForAPotionAndAbsorbingASoulOnce)
 	UI_SetMP(INT_MAX, INT_MAX);
 	CHECK(mails.empty());
 	UI_SetMP(30, 100);
-	CHECK((std::vector<int>{HELP_EVENT_USE_POTION, HELP_EVENT_ABSORB_SOUL}) == mails);
+	CHECK(lowMP == mails);
+	mails.clear();
+	UI_SetMP(29, 100);	// still low: no new mail
+	UI_SetMP(-5, 100);	// 0 of 100
+	CHECK(mails.empty());
+	UI_SetMP(100, 100);
+	UI_SetMP(30, 100);	// from 100 down again
+	CHECK(lowMP == mails);
+
+	// An MP with no maximum is 0%.
+	mails.clear();
+	UI_SetMP(31, 100);
+	UI_SetMP(5, -1);
+	CHECK(lowMP == mails);
+	mails.clear();
+	UI_SetMP(31, 100);
+	UI_SetMP(0, 0);
+	CHECK(lowMP == mails);
+
+	// Out of the game no mail is sent, but the drop is remembered.
 	mails.clear();
 	UI_SetMP(100, 100);
-	UI_SetMP(30, 100);
-	UI_SetMP(-5, 100);
-	UI_SetMP(5, -1);
-	UI_SetMP(0, 0);
+	g_Mode = MODE_MAINMENU;
+	UI_SetMP(20, 100);
+	g_Mode = MODE_GAME;
+	UI_SetMP(10, 100);
 	CHECK(mails.empty());
+	UI_SetMP(100, 100);
 }
 
 //----------------------------------------------------------------------

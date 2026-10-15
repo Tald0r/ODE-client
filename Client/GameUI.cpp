@@ -3079,9 +3079,8 @@ UI_SetMP(int current, int max)
 			// [Help] When MP is low
 			ExecuteHelpEvent( HELP_EVENT_USE_POTION );
 			ExecuteHelpEvent( HELP_EVENT_ABSORB_SOUL );
-
-			lastPercent = percent;
 		}
+		lastPercent = percent;
 	__END_HELP_EVENT
 
 	DEBUG_ADD_FORMAT("[UI] Set MP  (%d / %d)", current, max);
