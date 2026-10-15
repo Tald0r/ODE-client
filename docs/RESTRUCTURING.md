@@ -6075,7 +6075,8 @@ rounds settled* for the host rules). Test fixtures share
   >   notification go; its member comments are translated.
   >
   > R1 is 49 Windows / 47 Ninja.
-  - Owner: membership, R1, and `test_music.cpp` (7 tests).
+  - Owner: membership, R1, and `test_music.cpp` (8 tests, with #510's
+    follow-up).
   - Mutants: 19 of 21 are caught. Taking the source out of the
     membership breaks the test link. #510's review found more:
     - A real survivor, now pinned: `Pause` without `|| !m_bPlay`. A
@@ -6096,18 +6097,25 @@ rounds settled* for the host rules). Test fixtures share
   `__USE_MP3__` block.
   > **Status:** done (2026-10-14).
   > - **The macro:** `__USE_MP3__` was only ever commented out
-  >   (`SoundSetting.h`), so every build compiled the `CMP3` stub. The
+  >   (`SoundSetting.h`), so since 9e60d44e moved the real MCI class
+  >   behind it, every build compiled the `CMP3` stub (Windows compiled
+  >   the MCI class before that, though nothing constructed it). The
   >   music streams as OGG.
   > - **Why the class is dead:** its one `new` sat under the macro, so
   >   `g_pMP3` stayed null. Outside the macro and comments, only three
   >   spots named it:
   >   - `SAFE_DELETE` at shutdown, of a null pointer;
   >   - two `g_pMP3->Play(false)` calls in `MTopView`'s Ousters finale
-  >     events. These were member calls through a null pointer:
-  >     undefined behaviour that did nothing only because the stub's
-  >     `Play` touched no member.
+  >     events. They were unreachable: they sat in `case 1000` and
+  >     `case 2000` of `ExcuteOustersFinEvent`, whose only creator sets
+  >     the step to 0, and the one assignment of 1000/2000 is commented
+  >     out, so the step only goes 0, 9998, 9999. (The first account
+  >     called them live member calls through a null pointer; #511's
+  >     review found them dead. Those two cases are dead code for a
+  >     later slice.)
   >   - a Ctrl+0 debug key in `CGameUpdate`, behind `g_bTestMusic`,
-  >     which nothing ever sets.
+  >     which nothing ever sets, inside `#ifdef OUTPUT_DEBUG`, which no
+  >     build defines.
   > - **What goes:** those spots, `g_bTestMusic`, the class and its
   >   includes. The 21 `__USE_MP3__` blocks in `Client.cpp`,
   >   `GameInit.cpp`, `GameMain.cpp`, `GameUI.cpp`, `UIMessageManager.cpp`
@@ -6142,19 +6150,25 @@ rounds settled* for the host rules). Test fixtures share
   >     that member; the review of a later slice may retire it.
   >
   > R1 is 47 Windows / 45 Ninja.
-  - Owner: R1, and `test_effect_resource_container.cpp` (6 tests on
+  - Owner: R1, and `test_effect_resource_container.cpp` (7 tests on
     scratch directories with saved packs; the sprite-getter bounds use
     directly sized packs, because a pack of unloaded sprites does not
     load back).
   - Mutants: 21 of 24 are caught. Renaming `Load`'s definition away
-    breaks the test link.
+    breaks the test link. #511's review found more that survived, now
+    pinned: every sprite getter's `>= 0` as `> 0` (ID 0 was never asked
+    for), and the alpha palette's later names (only the first was
+    saved). Still unpinned: the lowercase second names (`effect.efpk`,
+    `effect.ppk`), which a case-insensitive disk cannot tell from the
+    first.
   - Equivalent mutants:
     - `GetSprite`'s `spriteID >= 0`: the `DWORD` cast already puts a
       negative ID past the pack.
     - `GetSprite`'s shadow bound: `GetShadowSprite` checks it again.
-  - Platform-dependent: the alpha palette's first name ("Effect.ppk")
-    survives on macOS, whose case-insensitive disk finds it as the
-    second name, "effect.ppk". Linux CI catches it.
+  - Platform-dependent: the alpha palette's and the alpha frame pack's
+    first names ("Effect.ppk", "Effect.efpk") survive on macOS and
+    Windows, whose case-insensitive disks find them as the second
+    names. Linux CI catches them.
   - Unpinned: loading the alpha, shadow and screen sprite packs. Their
     formats would need hand-built sprites; the normal pack's load, by
     the same code, is pinned.

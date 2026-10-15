@@ -19,7 +19,7 @@
 #include "CSpritePack.h"
 #include "CAlphaSpritePack.h"
 #include "CShadowSprite.h"  // CShadowSpritePack typedef here
-#include "CSpritePal.h"      // CSpritePalPack typedef here
+#include "../SpriteLib/CSpritePal.h"	// CSpritePalPack typedef here (by path: Client/ holds a stale copy)
 
 class EffectResourceContainer {
 public:

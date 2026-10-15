@@ -158,6 +158,7 @@ TEST(EffectResourceContainer, AnEffectSpritePackLoads)
 	Scratch scratch;
 	SaveSpritePack(scratch, "Effect.spk");
 	SavePack<MPalettePack>(scratch, "Effect.ppk", 6);
+	SavePack<MPalettePack>(scratch, "EffectAlpha.ppk", 8);	// a later name: not read
 	SavePack<MPalettePack>(scratch, "EffectScreen.ppk", 7);
 	EffectResourceContainer resources;
 	CHECK(resources.Load(scratch.Base().c_str()));
@@ -165,6 +166,15 @@ TEST(EffectResourceContainer, AnEffectSpritePackLoads)
 	CHECK(resources.GetSprite(BLT_NORMAL, 1) == &resources.m_EffectNormalSPK[1]);
 	CHECK_EQ(6u, resources.m_EffectAlphaPPK.GetSize());
 	CHECK_EQ(7u, resources.m_EffectScreenPPK.GetSize());
+}
+
+TEST(EffectResourceContainer, TheAlphaPaletteFallsBackToItsThirdName)
+{
+	Scratch scratch;
+	SavePack<MPalettePack>(scratch, "EffectAlpha.ppk", 8);
+	EffectResourceContainer resources;
+	CHECK(resources.Load(scratch.Base().c_str()));
+	CHECK_EQ(8u, resources.m_EffectAlphaPPK.GetSize());
 }
 
 TEST(EffectResourceContainer, SpritesAndPalettesAreFoundByBltTypeWithinTheirPacks)
@@ -177,9 +187,14 @@ TEST(EffectResourceContainer, SpritesAndPalettesAreFoundByBltTypeWithinTheirPack
 	resources.m_EffectAlphaPPK.Init(6);
 	resources.m_EffectScreenPPK.Init(7);
 
+	CHECK(resources.GetSprite(BLT_NORMAL, 0) == &resources.m_EffectNormalSPK[0]);
 	CHECK(resources.GetSprite(BLT_NORMAL, 1) == &resources.m_EffectNormalSPK[1]);
 	CHECK(resources.GetSprite(BLT_NORMAL, 2) == nullptr);
 	CHECK(resources.GetSprite(BLT_NORMAL, -1) == nullptr);
+	CHECK(resources.GetSprite(BLT_SHADOW, 0) == &resources.m_EffectShadowSPK[0]);
+	CHECK(resources.GetSprite(BLT_SCREEN, 0) == &resources.m_EffectScreenSPK[0]);
+	CHECK(resources.GetAlphaSprite(0) == &resources.m_EffectAlphaSPK[0]);
+	CHECK(resources.GetShadowSprite(0) == &resources.m_EffectShadowSPK[0]);
 	CHECK(resources.GetSprite(BLT_SHADOW, 3) == &resources.m_EffectShadowSPK[3]);
 	CHECK(resources.GetSprite(BLT_SHADOW, 4) == nullptr);
 	CHECK(resources.GetSprite(BLT_SHADOW, -1) == nullptr);
