@@ -165,6 +165,11 @@ void PickupItem(TYPE_OBJECTID id)
 	if (s_Host && s_Host->PickupItem) s_Host->PickupItem(id);
 }
 
+void KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight)
+{
+	if (s_Host && s_Host->KeepObjectInSight) s_Host->KeepObjectInSight(x, y, sight);
+}
+
 }
 
 namespace CreatureState {

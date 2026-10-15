@@ -122,7 +122,7 @@ extern BYTE		GetDirectionToPosition(int originX, int originY, int destX, int des
 //-----------------------------------------------------------------------------
 // Convert Alignment
 //-----------------------------------------------------------------------------
-int				ConvertAlignment(int alignment);
+#include "Alignment.h"
 
 //-----------------------------------------------------------------------------
 // Skill to Sector

@@ -121,6 +121,7 @@
 #include "CommunicationPresentationHost.h"
 #include "QuestWarPresentationHost.h"
 #include "NoticePresentationHost.h"
+#include "StatusPresentationHost.h"
 #include "NPCPresentationHost.h"
 #include "ZoneLoadingHost.h"
 #include "TradePresentationHost.h"
@@ -2683,6 +2684,7 @@ void ReleaseAllObjects()
 	CommunicationPresentation::SetHost(nullptr);
 	QuestWarPresentation::SetHost(nullptr);
 	NoticePresentation::SetHost(nullptr);
+	StatusPresentation::SetHost(nullptr);
 	NPCPresentation::SetHost(nullptr);
 	ZoneLoading::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
@@ -2971,6 +2973,7 @@ static const MItemHost	s_ItemHost = {
 		const MCorpse* p = dynamic_cast<const MCorpse*>(pCorpse);
 		return p != NULL ? p->GetCreature() : NULL;
 	},
+	.PetName				= [](MItem* pPet) { return static_cast<MPetItem*>(pPet)->GetPetName(); },
 };
 
 //-----------------------------------------------------------------------------
@@ -3653,6 +3656,49 @@ static const NPCPresentation::Host s_NPCPresentationHost = {
 	.PopupMessage = [](int gameStringID) { UI_PopupMessage(gameStringID); },
 };
 
+static const StatusPresentation::Host s_StatusPresentationHost = {
+	.SetHP = [](int current, int maximum) { UI_SetHP(current, maximum); },
+	.SetMP = [](int current, int maximum) { UI_SetMP(current, maximum); },
+	.SetCharInfoHP = [](int value) { UI_SetCharInfoHP(value); },
+	.SetCharInfoMP = [](int value) { UI_SetCharInfoMP(value); },
+	.SetCharInfoHP_max = [](int value) { UI_SetCharInfoHP_max(value); },
+	.SetCharInfoMP_max = [](int value) { UI_SetCharInfoMP_max(value); },
+	.SetCharInfoSTR = [](int value) { UI_SetCharInfoSTR(value); },
+	.SetCharInfoDEX = [](int value) { UI_SetCharInfoDEX(value); },
+	.SetCharInfoINT = [](int value) { UI_SetCharInfoINT(value); },
+	.SetCharInfoFAME = [](int value) { UI_SetCharInfoFAME(value); },
+	.SetCharInfoTOHIT = [](int value) { UI_SetCharInfoTOHIT(value); },
+	.SetCharInfoDefense = [](int value) { UI_SetCharInfoDefense(value); },
+	.SetCharInfoProtection = [](int value) { UI_SetCharInfoProtection(value); },
+	.SetCharInfoLevel = [](int value) { UI_SetCharInfoLevel(value); },
+	.SetCharInfoSilverDamage = [](int value) { UI_SetCharInfoSilverDamage(value); },
+	.LevelUp = []() { UI_LevelUp(); },
+	.SetBonusPoint = [](int points) { UI_SetBonusPoint(points); },
+	.SetSkillPoint = [](int points) { UI_SetSkillPoint(points); },
+	.SetElementalValue = [](int element, int value) { UI_SetElementalValue(static_cast<BYTE>(element), value); },
+	.SetSheet = [](StatusPresentation::SheetField field, int value) {
+		switch (field)
+		{
+		case StatusPresentation::SHEET_STR_PURE:			g_char_slot_ingame.STR_PURE = value; break;
+		case StatusPresentation::SHEET_STR_MAX:			g_char_slot_ingame.STR_MAX = value; break;
+		case StatusPresentation::SHEET_STR_EXP_REMAIN:		g_char_slot_ingame.STR_EXP_REMAIN = value; break;
+		case StatusPresentation::SHEET_DEX_PURE:			g_char_slot_ingame.DEX_PURE = value; break;
+		case StatusPresentation::SHEET_DEX_MAX:			g_char_slot_ingame.DEX_MAX = value; break;
+		case StatusPresentation::SHEET_DEX_EXP_REMAIN:		g_char_slot_ingame.DEX_EXP_REMAIN = value; break;
+		case StatusPresentation::SHEET_INT_PURE:			g_char_slot_ingame.INT_PURE = value; break;
+		case StatusPresentation::SHEET_INT_MAX:			g_char_slot_ingame.INT_MAXX = value; break;
+		case StatusPresentation::SHEET_INT_EXP_REMAIN:		g_char_slot_ingame.INT_EXP_REMAIN = value; break;
+		case StatusPresentation::SHEET_EXP_REMAIN:			g_char_slot_ingame.EXP_REMAIN = value; break;
+		case StatusPresentation::SHEET_GRADE:				g_char_slot_ingame.GRADE = value; break;
+		case StatusPresentation::SHEET_GRADE_EXP_REMAIN:	g_char_slot_ingame.GRADE_EXP_REMAIN = value; break;
+		case StatusPresentation::SHEET_GUILD_ID:			g_char_slot_ingame.GUILD_ID = static_cast<WORD>(value); break;
+		case StatusPresentation::SHEET_ALIGNMENT:			g_char_slot_ingame.alignment = (ALIGNMENT)value; break;
+		case StatusPresentation::SHEET_ALIGNMENT_NUM:		g_char_slot_ingame.alignment_num = value; break;
+		case StatusPresentation::SHEET_ADVANCEMENT_LEVEL:	g_char_slot_ingame.m_AdvancementLevel = value; break;
+		}
+	},
+};
+
 static const NoticePresentation::Host s_NoticePresentationHost = {
 	.RunNotice = [](std::uint32_t kind, std::uint32_t parameter) { UI_RunNotice(kind, parameter); },
 	.DeleteNotice = [](std::uint32_t kind) { UI_DeleteNotice(kind); },
@@ -3848,6 +3894,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	},
 	.IsInvisible = []() { return g_pPlayer->IsInvisible() != 0; },
 	.CalculateLightSight = []() { g_pPlayer->CalculateLightSight(); },
+	.SetSight = [](int sight) { g_pPlayer->SetSight(static_cast<char>(sight)); },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -3910,6 +3957,7 @@ static const ZoneState::Host s_ZoneStateHost = {
 		g_pPlayer->SetZone( g_pZone );
 	},
 	.PickupItem = [](TYPE_OBJECTID id) { g_pZone->PickupItem(id); },
+	.KeepObjectInSight = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight) { g_pZone->KeepObjectInSight(x, y, static_cast<BYTE>(sight)); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -4772,6 +4820,7 @@ InitGameObject()
 	CommunicationPresentation::SetHost(&s_CommunicationPresentationHost);
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	NoticePresentation::SetHost(&s_NoticePresentationHost);
+	StatusPresentation::SetHost(&s_StatusPresentationHost);
 	NPCPresentation::SetHost(&s_NPCPresentationHost);
 	ZoneLoading::SetHost(&s_ZoneLoadingHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);

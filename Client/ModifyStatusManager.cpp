@@ -1,29 +1,36 @@
 //-----------------------------------------------------------------------------
 // ModifyStatusManager.cpp
 //-----------------------------------------------------------------------------
+// What a change of one of the player's status values does (task 4.235:
+// gamemodel's since then). The player, the zone and the UI are reached
+// through PlayerState, CreatureState, ZoneState and StatusPresentation.
+//-----------------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "MZone.h"
-#include "MTopView.h"
 #include "MTypeDef.h"
 #include "ModifyStatusManager.h"
 #include "Packet/Types/ModifyDef.h"
-#include "UIFunction.h"
-#include "MPlayer.h"
 #include "MSkillManager.h"
-#include "ClientDef.h"
+#include "ClientMode.h"
+#include "../basic/CMessageArray.h"
+#include "GameMessages.h"
+#include "MMoneyManager.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
+#include "MStatus.h"
+#include "MInventory.h"
 #include "MSlayerGear.h"
 #include "MVampireGear.h"
 #include "MOustersGear.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #include "UserInformation.h"
 #include "ExperienceTable.h"
-#include "VS_UI.h"
-#include "VS_UI_mouse_pointer.h"
-#include "MFakeCreature.h"
 #include "MHelpDef.h"
+#include "Alignment.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
+#include "StatusPresentationHost.h"
+#include "GameInfoPresentationHost.h"
+#include "RankBonusHandlerHost.h"
 //-----------------------------------------------------------------------------
 // Global
 //-----------------------------------------------------------------------------
@@ -32,6 +39,9 @@ ModifyStatusManager*		g_pModifyStatusManager = NULL;
 //-----------------------------------------------------------------------------
 // define Functions
 //-----------------------------------------------------------------------------
+// The player whose value changed (MPlayer::SetStatus runs these).
+static MStatus& Player()	{ return *PlayerState::Status(); }
+
 #define	EXTRACT_MODIFY_VALUE( pVoid )							\
 																\
 			MODIFY_VALUE* pValue	= (MODIFY_VALUE*)pVoid;		\
@@ -54,9 +64,9 @@ CanLearnDomainSkill(int domain)
 	if (pSkillDomain == nullptr) return false;
 	MSkillDomain& skillDomain = *pSkillDomain;
 	int domainLevel = skillDomain.GetDomainLevel();
-	
+
 	//--------------------------------------------------
-	// 새 기술을 배울 수 있는지 체크
+	// Whether a new skill can be learned
 	//--------------------------------------------------
 	skillDomain.SetBegin();
 
@@ -65,7 +75,7 @@ CanLearnDomainSkill(int domain)
 		ACTIONINFO					ai		= skillDomain.GetSkillID();
 		MSkillDomain::SKILLSTATUS	status	= skillDomain.GetSkillStatus();
 
-		int learnLevel = (*g_pSkillInfoTable)[ai].GetLearnLevel();		
+		int learnLevel = (*g_pSkillInfoTable)[ai].GetLearnLevel();
 
 		if (learnLevel>=0
 			&& status != MSkillDomain::SKILLSTATUS_LEARNED
@@ -78,9 +88,9 @@ CanLearnDomainSkill(int domain)
 			&& ai != SKILL_REPUTO_FACTUM)
 		{
 			DEBUG_ADD_FORMAT("[CanLearnNewSkill] skill=%s. learnLev=%d. domainLev=%d", (*g_pSkillInfoTable)[ai].GetName(), learnLevel, domainLevel);
-			
-			// 새로운 기술을 배울 수 있는 경우
-			// 그냥 배울 수 있는지만 알면 된다.
+
+			// A new skill can be learned:
+			// knowing that is enough.
 			return true;
 		}
 
@@ -93,7 +103,7 @@ CanLearnDomainSkill(int domain)
 //----------------------------------------------------------------------
 // Set Domain Level
 //----------------------------------------------------------------------
-// 이 domain의 새로운 기술을 배울 수 있는가?
+// Can a new skill of this domain be learned?
 //----------------------------------------------------------------------
 void
 SetDomainLevel( int domain, int domainLevel )
@@ -106,7 +116,7 @@ SetDomainLevel( int domain, int domainLevel )
 	if (g_Mode==MODE_GAME)
 	{
 		//--------------------------------------------------
-		// 도메인 레벨이 얼마가 되었다고 표시
+		// Say which level the domain reached
 		//--------------------------------------------------
 		int num1 = domainLevel % 10;
 		if (num1==2 || num1==4 || num1==5 || num1==9)
@@ -119,26 +129,26 @@ SetDomainLevel( int domain, int domainLevel )
 		}
 
 		//--------------------------------------------------
-		// 새 기술을 배울 수 있는지 체크
+		// Whether a new skill can be learned
 		//--------------------------------------------------
 		if (CanLearnDomainSkill(domain))
 		{
 			g_pGameMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_NEW_SKILL_AVAILABLE].GetString());
-		}	
+		}
 		// 2004, 5, 6 sobeit add start
 		switch(domainLevel)
 		{
 		case 5:
-			ExecuteHelpEvent(HELP_EVENT_LEARN_SKILL);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEARN_SKILL);
 			break;
 		case 30:
-			ExecuteHelpEvent(HELP_EVENT_LEVEL_30);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEVEL_30);
 			break;
 		case 31:
-			ExecuteHelpEvent(HELP_EVENT_LEVEL_31);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEVEL_31);
 			break;
 		case 32:
-			ExecuteHelpEvent(HELP_EVENT_LEVEL_32);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEVEL_32);
 			break;
 		}
 		// 2004, 5, 6 sobeit add end
@@ -215,7 +225,7 @@ ModifyStatusManager::ModifyStatusManager()
 
 	MFunctionManager::SetFunction(MODIFY_UNIONID, Function_MODIFY_UNIONID);
 	MFunctionManager::SetFunction(MODIFY_UNIONGRADE, Function_MODIFY_UNIONGRADE);
-	
+
 	MFunctionManager::SetFunction(MODIFY_ADVANCEMENT_CLASS_LEVEL, Function_MODIFY_ADVANCEMENT_CLASS_LEVEL);
 	MFunctionManager::SetFunction(MODIFY_ADVANCEMENT_CLASS_GOAL_EXP, Function_MODIFY_ADVANCEMENT_CLASS_GOAL_EXP);
 }
@@ -227,18 +237,18 @@ ModifyStatusManager::~ModifyStatusManager()
 //-----------------------------------------------------------------------------
 // MODIFY_CURRENT_HP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_CURRENT_HP(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	pValue->newValue = value = min(g_pPlayer->GetMAX_HP()-g_pPlayer->GetSilverDamage(), value);	
+	pValue->newValue = value = min(Player().GetMAX_HP()-Player().GetSilverDamage(), value);
 
-	UI_SetHP( value, g_pPlayer->GetMAX_HP() );
-	UI_SetCharInfoHP( value );		
-	
-	// skill마다 MP가 충분한지 체크
-	if (g_pPlayer->IsVampire())
+	StatusPresentation::SetHP( value, Player().GetMAX_HP() );
+	StatusPresentation::SetCharInfoHP( value );
+
+	// Check each skill's MP
+	if ((PlayerState::GetRace()==RACE_VAMPIRE))
 	{
 		g_pSkillAvailable->CheckMP();
 	}
@@ -247,20 +257,20 @@ ModifyStatusManager::Function_MODIFY_CURRENT_HP(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_CURRENT_HP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_CURRENT_MP(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	//pValue->newValue = value = min(g_pPlayer->GetMAX_MP(), value);
+	//pValue->newValue = value = min(Player().GetMAX_MP(), value);
 	pValue->newValue = value;
 
-	DEBUG_ADD_FORMAT("[UI] Set MP  (%d)", value); 
-	UI_SetMP( value, g_pPlayer->GetMAX_MP() );	
-	UI_SetCharInfoMP( value );
+	DEBUG_ADD_FORMAT("[UI] Set MP  (%d)", value);
+	StatusPresentation::SetMP( value, Player().GetMAX_MP() );
+	StatusPresentation::SetCharInfoMP( value );
 
-	// skill마다 MP가 충분한지 체크
-	if (!g_pPlayer->IsVampire())
+	// Check each skill's MP
+	if (!(PlayerState::GetRace()==RACE_VAMPIRE))
 	{
 		g_pSkillAvailable->CheckMP();
 	}
@@ -269,13 +279,13 @@ ModifyStatusManager::Function_MODIFY_CURRENT_MP(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_MAX_HP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MAX_HP(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	UI_SetHP( g_pPlayer->GetHP(), value );	
-	UI_SetCharInfoHP_max( value );
+	StatusPresentation::SetHP( Player().GetHP(), value );
+	StatusPresentation::SetCharInfoHP_max( value );
 
 	if (g_Mode==MODE_GAME)
 	{
@@ -294,15 +304,15 @@ ModifyStatusManager::Function_MODIFY_MAX_HP(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_MAX_MP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MAX_MP(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	UI_SetMP( g_pPlayer->GetMP(), value );	
-	UI_SetCharInfoMP_max( value );
+	StatusPresentation::SetMP( Player().GetMP(), value );
+	StatusPresentation::SetCharInfoMP_max( value );
 
-	// skill마다 MP가 충분한지 체크
+	// Check each skill's MP
 	//(*g_pSkillAvailable).CheckMP();
 
 	if (g_Mode==MODE_GAME)
@@ -313,13 +323,13 @@ ModifyStatusManager::Function_MODIFY_MAX_MP(void* pVoid)
 		if (num1==2 || num1==4 || num1==5 || num1==9)
 		{
 			stringID = STRING_STATUS_MP_MAX_1;
-			if(g_pPlayer->IsOusters())
+			if(CreatureState::IsOusters(PlayerState::Creature()))
 				stringID = STRING_STATUS_EP_MAX_1;
 		}
 		else
 		{
 			stringID = STRING_STATUS_MP_MAX_2;
-			if(g_pPlayer->IsOusters())
+			if(CreatureState::IsOusters(PlayerState::Creature()))
 				stringID = STRING_STATUS_EP_MAX_2;
 		}
 		g_pGameMessage->AddSafeFormat(GetGameString(stringID), value);
@@ -329,46 +339,46 @@ ModifyStatusManager::Function_MODIFY_MAX_MP(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_DURABILITY
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_DURABILITY(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
 
-	// 2005, 2, 23, sobeit modify start - 1BYTE | 3BYTE 로 수정
+	// 2005, 2, 23, sobeit modify start - changed to 1 BYTE | 3 BYTES
 	int slotID		= (value & 0xFF000000) >> 24;
-	int	durability	= value & 0x00FFFFFF;	// 빼준다.
+	int	durability	= value & 0x00FFFFFF;	// the slot taken off
 //	int slotID		= (value & 0xFFFF0000) >> 16;
-//	int	durability	= value & 0x0000FFFF;	// 빼준다.
+//	int	durability	= value & 0x0000FFFF;	// the slot taken off
 	// 2005, 2, 23, sobeit modify end
 
 	#ifdef	OUTPUT_DEBUG
 		DEBUG_ADD_FORMAT("[MODIFY_DURABILITY] slot=%d, value=%d", (int)slotID, (int)durability);
 
 		bool bModified;
-	#endif			
+	#endif
 
-	
-	switch(g_pPlayer->GetRace())
+
+	switch(PlayerState::GetRace())
 	{
 	case RACE_SLAYER:
 	{
 		//-------------------------------------------------
-		// 오른손에 무기 들고 있는데.
-		// 서버에서는 왼손이라고 날아오기도 한다. - -;
+		// The weapon is in the right hand,
+		// but the server sometimes says the left.
 		//-------------------------------------------------
 		const MItem* pItem = g_pSlayerGear->GetItem( (MSlayerGear::GEAR_SLAYER)slotID );
 
 		if (pItem!=NULL)
 		{
-			// 양손 무기 이면.. 무조건 오른손으로 slot 고정
+			// A two-handed weapon: always the right hand's slot
 			if (pItem->GetGearSlot()==MItem::SLOT_TWOHAND)
 			{
 				slotID = (BYTE)MSlayerGear::GEAR_SLAYER_RIGHTHAND;
-			}									
+			}
 
 			#ifdef	OUTPUT_DEBUG
-				bModified = 
+				bModified =
 			#endif
 
 			//pItem->GetCurrentDurability();
@@ -381,21 +391,21 @@ ModifyStatusManager::Function_MODIFY_DURABILITY(void* pVoid)
 	case RACE_VAMPIRE:
 	{
 		//-------------------------------------------------
-		// 오른손에 무기 들고 있는데.
-		// 서버에서는 왼손이라고 날아오기도 한다. - -;
+		// The weapon is in the right hand,
+		// but the server sometimes says the left.
 		//-------------------------------------------------
 		const MItem* pItem = g_pVampireGear->GetItem( (MVampireGear::GEAR_VAMPIRE)slotID );
 
 		if (pItem!=NULL)
 		{
-			// 양손 무기 이면.. 무조건 오른손으로 slot 고정
+			// A two-handed weapon: always the right hand's slot
 			if (pItem->GetGearSlot()==MItem::SLOT_VAMPIRE_TWOHAND)
 			{
 				slotID = (BYTE)MVampireGear::GEAR_VAMPIRE_RIGHTHAND;
-			}									
+			}
 
 			#ifdef	OUTPUT_DEBUG
-				bModified = 
+				bModified =
 			#endif
 
 			//pItem->GetCurrentDurability();
@@ -408,25 +418,25 @@ ModifyStatusManager::Function_MODIFY_DURABILITY(void* pVoid)
 	case RACE_OUSTERS:
 		{
 			//-------------------------------------------------
-			// 오른손에 무기 들고 있는데.
-			// 서버에서는 왼손이라고 날아오기도 한다. - -;
+			// The weapon is in the right hand,
+			// but the server sometimes says the left.
 			//-------------------------------------------------
 			const MItem* pItem = g_pOustersGear->GetItem( (MOustersGear::GEAR_OUSTERS)slotID );
-			
+
 			if (pItem!=NULL)
 			{
-				// 양손 무기 이면.. 무조건 오른손으로 slot 고정
+				// A two-handed weapon: always the right hand's slot
 				if (pItem->GetGearSlot()==MItem::SLOT_OUSTERS_TWOHAND)
 				{
 					slotID = (BYTE)MOustersGear::GEAR_OUSTERS_RIGHTHAND;
-				}									
-				
+				}
+
 #ifdef	OUTPUT_DEBUG
-				bModified = 
+				bModified =
 #endif
-					
+
 					//pItem->GetCurrentDurability();
-					
+
 					g_pOustersGear->ModifyDurability(slotID, durability);
 			}
 		}
@@ -443,75 +453,74 @@ ModifyStatusManager::Function_MODIFY_DURABILITY(void* pVoid)
 		}
 	#endif
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_STR_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_STR_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.STR_EXP_REMAIN = value;
-}	
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_STR_EXP_REMAIN, value);
+}
 
 //-----------------------------------------------------------------------------
 // MODIFY_DEX_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_DEX_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.DEX_EXP_REMAIN = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_DEX_EXP_REMAIN, value);
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_INT_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_INT_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.INT_EXP_REMAIN = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_INT_EXP_REMAIN, value);
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_VAMP_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_VAMP_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.EXP_REMAIN = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_EXP_REMAIN, value);
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_BULLET
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BULLET(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-//	g_pSystemMessage->Add("총알 받다.");
 
 	if (g_pCurrentMagazine!=NULL)
 	{
 		g_pCurrentMagazine->SetNumber( value );
 	}
-}	
+}
 
 //-----------------------------------------------------------------------------
 // MODIFY_SILVER_DURABILITY
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_SILVER_DURABILITY(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	if (g_pPlayer->IsSlayer())
+	if ((PlayerState::GetRace()==RACE_SLAYER))
 	{
 		const MItem* pWeapon = g_pSlayerGear->GetItem( MSlayerGear::GEAR_SLAYER_RIGHTHAND );
 
@@ -525,30 +534,30 @@ ModifyStatusManager::Function_MODIFY_SILVER_DURABILITY(void* pVoid)
 			}
 		}
 	}
-}	
+}
 
 //-----------------------------------------------------------------------------
 // MODIFY_VISION
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_VISION(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
 	//--------------------------------------------------------
-	// (m_ServerX, m_ServerY)에서부터 
-	// Player의 시야에 포함되지 않는 Creature를 Zone에서 제거시킨다.
+	// Remove from the zone the creatures out of the player's sight
+	// from (m_ServerX, m_ServerY).
 	//--------------------------------------------------------
-	g_pPlayer->SetSight( static_cast<char>(value) );
-	g_pZone->KeepObjectInSight(g_pPlayer->GetServerX(), 
-								g_pPlayer->GetServerY(), 
-								g_pPlayer->GetSight());
+	PlayerState::SetSight( static_cast<char>(value) );
+	ZoneState::KeepObjectInSight(CreatureState::GetServerX(PlayerState::Creature()),
+								CreatureState::GetServerY(PlayerState::Creature()),
+								PlayerState::GetSight());
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_GOLD
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_GOLD(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -560,13 +569,13 @@ ModifyStatusManager::Function_MODIFY_GOLD(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_CURRENT_STR
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_CURRENT_STR(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
 	DEBUG_ADD_FORMAT("MODIFY_CURRENT_STR = %d", value);
-			
+
 	if (g_Mode==MODE_GAME)
 	{
 		int num1 = value % 10;
@@ -579,29 +588,29 @@ ModifyStatusManager::Function_MODIFY_CURRENT_STR(void* pVoid)
 			g_pGameMessage->AddSafeFormat(GetGameString(STRING_STATUS_STR_2), value);
 		}
 	}
-	
+
 	//C_VS_UI_SLAYER_PDS::m_str		= value;
 	//C_VS_UI_SLAYER_PDS::m_str_max	= value;
-	UI_SetCharInfoSTR( value );
-	
+	StatusPresentation::SetCharInfoSTR( value );
+
 	//------------------------------------------
-	// 다른 값 바뀌는 것 계산
+	// Recheck what the change affects
 	//------------------------------------------
-	MPlayerGear *pGear = g_pPlayer->GetGear();
+	MItemManager* pGear = PlayerState::GetGear();
 
 	g_pInventory->CheckAffectStatusAll();
-	pGear->CheckAffectStatusAll();				
+	pGear->CheckAffectStatusAll();
 
 	//------------------------------------------
-	// 바뀌는 수치 계산
+	// Recompute the derived values
 	//------------------------------------------
-	g_pPlayer->CalculateStatus();
+	PlayerState::CalculateStatus();
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_CURRENT_DEX
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_CURRENT_DEX(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -620,26 +629,26 @@ ModifyStatusManager::Function_MODIFY_CURRENT_DEX(void* pVoid)
 	}
 	//C_VS_UI_SLAYER_PDS::m_dex		= value;
 	//C_VS_UI_SLAYER_PDS::m_dex_max	= value;
-	UI_SetCharInfoDEX( value );
+	StatusPresentation::SetCharInfoDEX( value );
 
 	//------------------------------------------
-	// 다른 값 바뀌는 것 계산
+	// Recheck what the change affects
 	//------------------------------------------
-	MPlayerGear *pGear = g_pPlayer->GetGear();
-	
+	MItemManager* pGear = PlayerState::GetGear();
+
 	g_pInventory->CheckAffectStatusAll();
-	pGear->CheckAffectStatusAll();				
-		
+	pGear->CheckAffectStatusAll();
+
 	//------------------------------------------
-	// 바뀌는 수치 계산
+	// Recompute the derived values
 	//------------------------------------------
-	g_pPlayer->CalculateStatus();					
+	PlayerState::CalculateStatus();
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_CURRENT_INT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -658,12 +667,12 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 	}
 	//C_VS_UI_SLAYER_PDS::m_int		= value;
 	//C_VS_UI_SLAYER_PDS::m_int_max	= value;
-	UI_SetCharInfoINT( value );
+	StatusPresentation::SetCharInfoINT( value );
 
 	//------------------------------------------
 	// Recheck what depends on INT
 	//------------------------------------------
-	switch(g_pPlayer->GetRace())
+	switch(PlayerState::GetRace())
 	{
 		case RACE_SLAYER:
 			//------------------------------------------
@@ -672,12 +681,12 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 			g_pInventory->CheckAffectStatusAll();
 			g_pSlayerGear->CheckAffectStatusAll();
 			break;
-			
+
 		case RACE_VAMPIRE:
 			g_pInventory->CheckAffectStatusAll();
 			g_pVampireGear->CheckAffectStatusAll();
 			break;
-			
+
 		case RACE_OUSTERS:
 			g_pInventory->CheckAffectStatusAll();
 			g_pOustersGear->CheckAffectStatusAll();
@@ -690,12 +699,12 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 	//------------------------------------------
 	// Recompute the derived values
 	//------------------------------------------
-	g_pPlayer->CalculateStatus();
+	PlayerState::CalculateStatus();
 
 	// A vampire's skill costs fall as its current INT rises
 	// (MSkillInfoTable::GetVampireConsumeMP), so which skills it can use
 	// changes with INT as well as with HP.
-	if (g_pPlayer->IsVampire())
+	if ((PlayerState::GetRace()==RACE_VAMPIRE))
 	{
 		g_pSkillAvailable->CheckMP();
 	}
@@ -704,83 +713,83 @@ ModifyStatusManager::Function_MODIFY_CURRENT_INT(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_FAME
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_FAME(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-  
-	UI_SetCharInfoFAME( value );
+
+	StatusPresentation::SetCharInfoFAME( value );
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_TOHIT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_TOHIT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-  
-	UI_SetCharInfoTOHIT( value );
+
+	StatusPresentation::SetCharInfoTOHIT( value );
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_DEFENSE
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_DEFENSE(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-  
-	UI_SetCharInfoDefense( value );
+
+	StatusPresentation::SetCharInfoDefense( value );
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_PROTECTION
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_PROTECTION(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-  
-	UI_SetCharInfoProtection( value );
+
+	StatusPresentation::SetCharInfoProtection( value );
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_BONUS_POINT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BONUS_POINT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-  
+
 	if (value!=0)
 	{
-		UI_LevelUp();
+		StatusPresentation::LevelUp();
 	}
 
-	UI_SetBonusPoint( value );
+	StatusPresentation::SetBonusPoint( value );
 
-	// [도움말] bonus point
+	// [help] bonus point
 //	__BEGIN_HELP_EVENT
-//		ExecuteHelpEvent( HE_STATUS_BONUS_POINT );	
+//		ExecuteHelpEvent( HE_STATUS_BONUS_POINT );
 //	__END_HELP_EVENT
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_ATTACK_SPEED
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_ATTACK_SPEED(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-  
-	g_pPlayer->SetWeaponSpeed( value );
+
+	CreatureState::SetWeaponSpeed( PlayerState::Creature(), value );
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_SWORD_DOMAIN_LEVEL
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_SWORD_DOMAIN_LEVEL(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -791,7 +800,7 @@ ModifyStatusManager::Function_MODIFY_SWORD_DOMAIN_LEVEL(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_BLADE_DOMAIN_LEVEL
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BLADE_DOMAIN_LEVEL(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -802,7 +811,7 @@ ModifyStatusManager::Function_MODIFY_BLADE_DOMAIN_LEVEL(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_ENCHANT_DOMAIN_LEVEL
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_ENCHANT_DOMAIN_LEVEL(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -813,7 +822,7 @@ ModifyStatusManager::Function_MODIFY_ENCHANT_DOMAIN_LEVEL(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_HEAL_DOMAIN_LEVEL
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_HEAL_DOMAIN_LEVEL(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -825,7 +834,7 @@ ModifyStatusManager::Function_MODIFY_HEAL_DOMAIN_LEVEL(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_GUN_DOMAIN_LEVEL
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_GUN_DOMAIN_LEVEL(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -836,7 +845,7 @@ ModifyStatusManager::Function_MODIFY_GUN_DOMAIN_LEVEL(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_LEVEL
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_LEVEL(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -847,7 +856,7 @@ ModifyStatusManager::Function_MODIFY_LEVEL(void* pVoid)
 
 	if (g_Mode==MODE_GAME)
 	{
-		g_pGameMessage->AddSafeFormat(GetGameString(STRING_STATUS_LEVEL), value);				
+		g_pGameMessage->AddSafeFormat(GetGameString(STRING_STATUS_LEVEL), value);
 
 		if (CanLearnDomainSkill(SKILLDOMAIN_VAMPIRE))
 		{
@@ -857,72 +866,72 @@ ModifyStatusManager::Function_MODIFY_LEVEL(void* pVoid)
 		switch(value)
 		{
 		case 5:
-			ExecuteHelpEvent(HELP_EVENT_LEARN_SKILL);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEARN_SKILL);
 			break;
 		case 30:
-			ExecuteHelpEvent(HELP_EVENT_LEVEL_30);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEVEL_30);
 			break;
 		case 31:
-			ExecuteHelpEvent(HELP_EVENT_LEVEL_31);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEVEL_31);
 			break;
 		case 32:
-			ExecuteHelpEvent(HELP_EVENT_LEVEL_32);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_LEVEL_32);
 			break;
 		}
 		// 2004, 5, 6 sobeit add end
 
-		UI_SetCharInfoLevel( value );
+		StatusPresentation::SetCharInfoLevel( value );
 	}
 
 	//------------------------------------------
-	// 사용가능한지 체크한다.
+	// Recheck which items can be used.
 	//------------------------------------------
-	MPlayerGear *pGear = g_pPlayer->GetGear();
-	
+	MItemManager* pGear = PlayerState::GetGear();
+
 	g_pInventory->CheckAffectStatusAll();
-	pGear->CheckAffectStatusAll();				
+	pGear->CheckAffectStatusAll();
 
 }
 
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_ALIGNMENT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_ALIGNMENT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-			
+
 	const int numAlignment = 5;
 
 	//#ifdef	OUTPUT_DEBUG
 	//	if (g_pGameMessage!=NULL)
 	//		g_pGameMessage->AddFormat("oldValue=%d. newAlignment=%d, modifyAlignment=%d", oldValue, value, -(~(short)value + 1));
-	//#endif		
+	//#endif
 
 	//--------------------------------------------------
-	// UI에 설정
+	// Set it in the UI
 	//--------------------------------------------------
 	short uiAlignment = static_cast<short>(value);
 	if (uiAlignment > 10000)
-	{	
+	{
 		uiAlignment = - (short)(~uiAlignment + 1);
 	}
-	g_char_slot_ingame.alignment_num = uiAlignment;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_ALIGNMENT_NUM, uiAlignment);
 
 	//--------------------------------------------------
-	// -10000 ~ 10000을 0~4로 바꾼다.
+	// -10000 ~ 10000 to the steps 0~4.
 	//--------------------------------------------------
 	int alignment;
 	int oldAlignment;
 
 	if (value > 10000)
-	{	
+	{
 		pValue->newValue = value = - (short)(~value + 1);
 	}
 
 	if (oldValue > 10000)
-	{	
+	{
 		oldValue = - (short)(~oldValue + 1);
 	}
 
@@ -930,7 +939,7 @@ ModifyStatusManager::Function_MODIFY_ALIGNMENT(void* pVoid)
 	oldAlignment = ConvertAlignment( oldValue );
 
 	//--------------------------------------------------
-	// 성향이 조금 바꼈다는 메세지
+	// The message that the alignment moved a little
 	//--------------------------------------------------
 	if (g_Mode==MODE_GAME)
 	{
@@ -941,9 +950,9 @@ ModifyStatusManager::Function_MODIFY_ALIGNMENT(void* pVoid)
 		else if (value < oldValue)
 		{
 			g_pGameMessage->Add((*g_pGameStringTable)[STRING_CHANGE_TO_BAD_ALIGNMENT].GetString());
-			
+
 			// 2004, 5, 6 sobeit add start
-			ExecuteHelpEvent(HELP_EVENT_FAME);
+			GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_FAME);
 			// 2004, 5, 6 sobeit add end
 		}
 	}
@@ -955,10 +964,10 @@ ModifyStatusManager::Function_MODIFY_ALIGNMENT(void* pVoid)
 	//#endif
 
 	//--------------------------------------------------
-	// 성향의 단계가 바뀐 경우..
+	// When the alignment's step changed..
 	//--------------------------------------------------
 	if (oldAlignment != alignment)
-	{	
+	{
 		const char* alignmentName[numAlignment] =
 		{
 			"Evil-",
@@ -981,87 +990,87 @@ ModifyStatusManager::Function_MODIFY_ALIGNMENT(void* pVoid)
 		{
 			char str[256];
 			SafeFormat::Format(str, GetGameString(stringSelect[alignment]), alignmentName[alignment]);
-			g_pGameMessage->Add(str);					
+			g_pGameMessage->Add(str);
 
-			g_char_slot_ingame.alignment = (ALIGNMENT)alignment;
-		}				
+			StatusPresentation::SetSheet(StatusPresentation::SHEET_ALIGNMENT, alignment);
+		}
 	}
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_BASIC_STR
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BASIC_STR(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.STR_PURE = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_STR_PURE, value);
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_MAX_STR
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MAX_STR(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
 	DEBUG_ADD_FORMAT("MODIFY_MAX_STR = %d", value);
-			
-	g_char_slot_ingame.STR_MAX = value;			
+
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_STR_MAX, value);
 }
-		
+
 //-----------------------------------------------------------------------------
 // MODIFY_BASIC_DEX
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BASIC_DEX(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.DEX_PURE = value;	
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_DEX_PURE, value);
 
-	g_pPlayer->CheckRegen();
-}	
+	RankBonusHandlers::CheckRegen();
+}
 
 //-----------------------------------------------------------------------------
 // MODIFY_MAX_DEX
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MAX_DEX(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.DEX_MAX = value;			
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_DEX_MAX, value);
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_BASIC_INT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BASIC_INT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	
-	g_char_slot_ingame.INT_PURE = value;
+
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_INT_PURE, value);
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_MAX_INT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MAX_INT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	
-	g_char_slot_ingame.INT_MAXX= value;
+
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_INT_MAX, value);
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_SWORD_DOMAIN_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_SWORD_DOMAIN_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1074,7 +1083,7 @@ ModifyStatusManager::Function_MODIFY_SWORD_DOMAIN_EXP_REMAIN(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_BLADE_DOMAIN_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_BLADE_DOMAIN_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1087,7 +1096,7 @@ ModifyStatusManager::Function_MODIFY_BLADE_DOMAIN_EXP_REMAIN(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_HEAL_DOMAIN_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_HEAL_DOMAIN_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1100,7 +1109,7 @@ ModifyStatusManager::Function_MODIFY_HEAL_DOMAIN_EXP_REMAIN(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_ENCHANT_DOMAIN_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_ENCHANT_DOMAIN_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1113,7 +1122,7 @@ ModifyStatusManager::Function_MODIFY_ENCHANT_DOMAIN_EXP_REMAIN(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_GUN_DOMAIN_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_GUN_DOMAIN_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1126,7 +1135,7 @@ ModifyStatusManager::Function_MODIFY_GUN_DOMAIN_EXP_REMAIN(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_ETC_DOMAIN_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_ETC_DOMAIN_EXP_REMAIN(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1135,66 +1144,66 @@ ModifyStatusManager::Function_MODIFY_ETC_DOMAIN_EXP_REMAIN(void* pVoid)
 		entry->SetDomainExpRemain( value );
 	}
 }
-	
+
 //-----------------------------------------------------------------------------
 // MODIFY_MIN_DAMAGE
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MIN_DAMAGE(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-			
-	// 이거 말고 그냥 damage만 계산하도록 바꿔야 한다.. 
-	// 일단 잊을까봐 임시로.. - -;;
-	g_pPlayer->CalculateStatus();
+
+	// This should compute only the damage..
+	// (for now the whole status, so as not to forget it)
+	PlayerState::CalculateStatus();
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_MAX_DAMAGE
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_MAX_DAMAGE(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-			
-	g_pPlayer->CalculateStatus();
+
+	PlayerState::CalculateStatus();
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_SILVER_DAMAGE
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_SILVER_DAMAGE(void* pVoid)
 {
-	EXTRACT_MODIFY_VALUE( pVoid )			
-	
-	UI_SetCharInfoSilverDamage( value );
+	EXTRACT_MODIFY_VALUE( pVoid )
 
-	UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() );	
+	StatusPresentation::SetCharInfoSilverDamage( value );
+
+	StatusPresentation::SetHP( Player().GetHP(), Player().GetMAX_HP() );
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_GUILDID
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_GUILDID(void* pVoid)
 {
-	EXTRACT_MODIFY_VALUE( pVoid )			
+	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_pPlayer->SetGuildNumber(value);
+	PlayerState::SetGuildNumber(value);
 
-	g_char_slot_ingame.GUILD_ID = static_cast<WORD>(value);
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_GUILD_ID, value);
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_RANK
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_RANK(void* pVoid)
 {
-	EXTRACT_MODIFY_VALUE( pVoid )			
+	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.GRADE = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_GRADE, value);
 
 	if(value > oldValue)
 		g_pGameMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_UP_TO_GRADE].GetString());
@@ -1203,47 +1212,47 @@ ModifyStatusManager::Function_MODIFY_RANK(void* pVoid)
 //-----------------------------------------------------------------------------
 // MODIFY_RANK_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_RANK_EXP_REMAIN(void* pVoid)
 {
-	EXTRACT_MODIFY_VALUE( pVoid )			
+	EXTRACT_MODIFY_VALUE( pVoid )
 
 //	int accum = 0;
-//	accum = g_pExperienceTable->GetRankInfo(g_char_slot_ingame.GRADE, g_pPlayer->GetRace()).AccumExp;
+//	accum = g_pExperienceTable->GetRankInfo(g_char_slot_ingame.GRADE, PlayerState::GetRace()).AccumExp;
 //	g_char_slot_ingame.GRADE_EXP_REMAIN = accum-value;
-	g_char_slot_ingame.GRADE_EXP_REMAIN = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_GRADE_EXP_REMAIN, value);
 }
 
 //-----------------------------------------------------------------------------
 // MODIFY_OUSTERS_EXP
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_OUSTERS_EXP_REMAIN(void* pVoid)
 {
-	EXTRACT_MODIFY_VALUE( pVoid )			
+	EXTRACT_MODIFY_VALUE( pVoid )
 
-	g_char_slot_ingame.EXP_REMAIN = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_EXP_REMAIN, value);
 }
 
 
 //-----------------------------------------------------------------------------
 // MODIFY_BONUS_POINT
 //-----------------------------------------------------------------------------
-void		
+void
 ModifyStatusManager::Function_MODIFY_SKILL_POINT(void* pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-		
+
 //		if (value!=0)
 //		{
-//			UI_LevelUp();
+//			StatusPresentation::LevelUp();
 //		}
-		
-		UI_SetSkillPoint( value );
-		
-		// [도움말] bonus point
+
+		StatusPresentation::SetSkillPoint( value );
+
+		// [help] bonus point
 //		__BEGIN_HELP_EVENT
-//			ExecuteHelpEvent( HE_STATUS_BONUS_POINT );	
+//			ExecuteHelpEvent( HE_STATUS_BONUS_POINT );
 //		__END_HELP_EVENT
 }
 
@@ -1252,34 +1261,34 @@ ModifyStatusManager::Function_MODIFY_ELEMENTAL_FIRE(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	UI_SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_FIRE, value);
+	StatusPresentation::SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_FIRE, value);
 }
 
 void
 ModifyStatusManager::Function_MODIFY_ELEMENTAL_WATER(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-		
-	UI_SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_WATER, value);
+
+	StatusPresentation::SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_WATER, value);
 }
 
 void
 ModifyStatusManager::Function_MODIFY_ELEMENTAL_EARTH(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-		
-	UI_SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH, value);
+
+	StatusPresentation::SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_EARTH, value);
 }
 
 void
 ModifyStatusManager::Function_MODIFY_ELEMENTAL_WIND(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-		
-	UI_SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_WIND, value);
+
+	StatusPresentation::SetElementalValue(ITEMTABLE_INFO::ELEMENTAL_TYPE_WIND, value);
 }
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_SKILL_LEVEL(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1298,19 +1307,19 @@ ModifyStatusManager::Function_MODIFY_SKILL_LEVEL(void *pVoid)
 			int num1 = SkillLev % 10;
 			if (num1==2 || num1==4 || num1==5 || num1==9)
 			{
-				g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_MODIFY_SKILL_LEVEL_2), 
+				g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_MODIFY_SKILL_LEVEL_2),
 					(*g_pSkillInfoTable)[SkillID].GetHName(), SkillLev );
 			}
 			else
 			{
-				g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_MODIFY_SKILL_LEVEL_1), 
+				g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_MODIFY_SKILL_LEVEL_1),
 					(*g_pSkillInfoTable)[SkillID].GetHName(), SkillLev);
 			}
 		}
 	}
 }
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_SKILL_EXP(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
@@ -1324,27 +1333,27 @@ ModifyStatusManager::Function_MODIFY_SKILL_EXP(void *pVoid)
 		}
 }
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_PET_HP(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	TYPE_OBJECTID id = g_pPlayer->GetID();
+	TYPE_OBJECTID id = PlayerState::GetID();
 	if(id == OBJECTID_NULL)
 		return;
-	MFakeCreature *pPet = (MFakeCreature *)g_pZone->GetFakeCreature(g_pPlayer->GetPetID());
+	MCreature* pPet = ZoneState::GetFakeCreature(CreatureState::GetPetID(PlayerState::Creature()));
 	if(pPet == NULL)
 		return;
-	MPetItem *pPetItem = pPet->GetPetItem();
+	MPetItem* pPetItem = CreatureState::GetPetItem(pPet);
 	if(pPetItem == NULL)
 		return;
 	if(pPetItem != NULL)
 	{
 		pPetItem->SetCurrentDurability(value);
 
-		// 펫 죽기
+		// The pet dying
 		if(value == 60)
 		{
-			std::string petName = pPetItem->GetPetName().c_str();
+			std::string petName = MItem::PetName(pPetItem).c_str();
 			char szTemp[512];
 			SafeFormat::Format(szTemp, GetGameString(UI_STRING_MESSAGE_HOUR), 1);
 
@@ -1353,7 +1362,7 @@ ModifyStatusManager::Function_MODIFY_PET_HP(void *pVoid)
 		}
 		else if(value == 10)
 		{
-			std::string petName = pPetItem->GetPetName().c_str();
+			std::string petName = MItem::PetName(pPetItem).c_str();
 			char szTemp[512];
 			SafeFormat::Format(szTemp, GetGameString(UI_STRING_MESSAGE_MINUTE), 10);
 
@@ -1362,28 +1371,26 @@ ModifyStatusManager::Function_MODIFY_PET_HP(void *pVoid)
 		}
 		else if(value == 0)
 		{
-			TYPE_OBJECTID petID = g_pPlayer->GetPetID();
+			TYPE_OBJECTID petID = CreatureState::GetPetID(PlayerState::Creature());
 			if(petID != OBJECTID_NULL)
 			{
-				MCreature *pCreature = g_pZone->GetFakeCreature(petID);
-
-				pCreature->SetDead();
+				CreatureState::SetDead(ZoneState::GetFakeCreature(petID));
 			}
 		}
 	}
 }
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_PET_EXP_REMAIN(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	TYPE_OBJECTID id = g_pPlayer->GetID();
+	TYPE_OBJECTID id = PlayerState::GetID();
 	if(id == OBJECTID_NULL)
 		return;
-	MFakeCreature *pPet = (MFakeCreature *)g_pZone->GetFakeCreature(g_pPlayer->GetPetID());
+	MCreature* pPet = ZoneState::GetFakeCreature(CreatureState::GetPetID(PlayerState::Creature()));
 	if(pPet == NULL)
 		return;
-	MPetItem *pPetItem = pPet->GetPetItem();
+	MPetItem* pPetItem = CreatureState::GetPetItem(pPet);
 	if(pPetItem == NULL)
 		return;
 	if(pPetItem != NULL)
@@ -1395,23 +1402,23 @@ ModifyStatusManager::Function_MODIFY_PET_EXP_REMAIN(void *pVoid)
 }
 
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_UNIONID(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
 
-	if(g_pPlayer == NULL)
+	if (PlayerState::Status() == NULL)
 		return;
-	g_pPlayer->SetUnionGuildID(value);
+	CreatureState::SetUnionGuildID( PlayerState::Creature(), value );
 	g_pUserInformation->dwUnionID = value;
 
 }
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_UNIONGRADE(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	if(g_pPlayer == NULL)
+	if (PlayerState::Status() == NULL)
 		return;
 
 	g_pUserInformation->bUnionGrade = static_cast<BYTE>(value);
@@ -1419,25 +1426,25 @@ ModifyStatusManager::Function_MODIFY_UNIONGRADE(void *pVoid)
 }
 
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_ADVANCEMENT_CLASS_LEVEL(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	if(g_pPlayer == NULL)
+	if (PlayerState::Status() == NULL)
 		return;
-	
 
-	g_char_slot_ingame.m_AdvancementLevel = value;
+
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_ADVANCEMENT_LEVEL, value);
 }
 
-void 
+void
 ModifyStatusManager::Function_MODIFY_ADVANCEMENT_CLASS_GOAL_EXP(void *pVoid)
 {
 	EXTRACT_MODIFY_VALUE( pVoid )
-	if(g_pPlayer == NULL)
+	if (PlayerState::Status() == NULL)
 		return;
 
-	g_char_slot_ingame.EXP_REMAIN = value;
+	StatusPresentation::SetSheet(StatusPresentation::SHEET_EXP_REMAIN, value);
 
 
 }

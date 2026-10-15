@@ -205,6 +205,8 @@ struct Host
 	// player recomputing its light sight.
 	bool (*IsInvisible)() = nullptr;
 	void (*CalculateLightSight)() = nullptr;
+	// The player's sight (in sectors).
+	void (*SetSight)(int sight) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -275,5 +277,6 @@ void Recreate();
 void SetXY(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 bool IsInvisible();
 void CalculateLightSight();
+void SetSight(int sight);
 
 }

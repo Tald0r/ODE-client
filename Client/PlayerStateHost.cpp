@@ -316,4 +316,9 @@ void CalculateLightSight()
 	if (s_Host && s_Host->CalculateLightSight) s_Host->CalculateLightSight();
 }
 
+void SetSight(int sight)
+{
+	if (s_Host && s_Host->SetSight) s_Host->SetSight(sight);
+}
+
 }
