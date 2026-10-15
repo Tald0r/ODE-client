@@ -82,6 +82,8 @@ extern bool g_bRunning;			// cleared by the pump on SDL_QUIT (DXLibBackendSDL.cp
 // (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
 #include "DirectoryListing.h"
 #include "Client.h"
+#include "GameInitInfoHost.h"
+#include "PacketFunction.h"
 #include "GameObject.h"
 #include "VS_UI.h"
 #include "MMusic.h"
@@ -3163,6 +3165,17 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	// The loading thread's sprite-pack jobs open their files so (task 4.217).
 	static const MLoadingSPKHost loadingSPKHost = { .OpenBinary = FileOpenBinary };
 	SetLoadingSPKHost(&loadingSPKHost);
+
+	// What the start-up's loading (gameclient's, task 4.252) asks of the
+	// executable, installed before FileOpenBinary's first caller
+	// (CheckTerriblePatch, then InitGame's string tables).
+	static const GameInitInfoHost::Host gameInitInfoHost{
+		.SetFadeStart = ::SetFadeStart,
+		.InitPacketItemTable = ::InitPacketItemTable,
+		.PersonalShopUpdateTime = GetPersnalShopUpdateTime,
+		.InitFailMessage = [](const char* message) { InitFailMessage(message); },
+	};
+	GameInitInfoHost::SetHost(&gameInitInfoHost);
 
 	// Flip presents g_pBack, once it exists (task 4.211).
 	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {

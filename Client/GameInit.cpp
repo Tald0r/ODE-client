@@ -25,7 +25,6 @@
 #include "TextEncoding.h"
 #include "DirectoryListing.h"
 #include "Client.h"
-#include "GameInitInfoHost.h"
 #include "GameObject.h"
 #include "AddonDef.h"
 #include "ServerInfo.h"
@@ -1802,15 +1801,6 @@ InitGame()
 	//                 Init...
 	//
 	//--------------------------------------------------------
-	// What the information's loading (gameclient's) asks of the executable.
-	static const GameInitInfoHost::Host s_GameInitInfoHost{
-		.SetFadeStart = ::SetFadeStart,
-		.InitPacketItemTable = ::InitPacketItemTable,
-		.PersonalShopUpdateTime = GetPersnalShopUpdateTime,
-		.InitFailMessage = [](const char* message) { InitFailMessage(message); },
-	};
-	GameInitInfoHost::SetHost(&s_GameInitInfoHost);
-
 	if (!InitClientConfig()) return false;
 	if (!InitInfomation()) return false;
 	if (!InitUserOption()) return false;
