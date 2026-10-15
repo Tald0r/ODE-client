@@ -88,8 +88,16 @@ extern BOOL	g_bSetHotKey;
 
 BOOL g_bDrawProgress = FALSE;
 
+// The host GameInit installs (UIFunction.h); none until it does.
+static const GameUI::Host* s_GameUIHost = NULL;
 
-extern IWebBrowser2*			g_pWebBrowser; 
+const GameUI::Host*
+GameUI::SetHost(const Host* host)
+{
+	const Host* previous = s_GameUIHost;
+	s_GameUIHost = host;
+	return previous;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //UI friend system
@@ -1629,7 +1637,7 @@ UI_ChangeInterfaceRace(Race race)
 	if(bLevelUp)
 		gC_vs_ui.LevelUp();
 
-	// UI에 정보 설정
+	// The zone the player is in, to the UI
 	int zoneID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
 
 	if (g_pZone!=NULL)
@@ -1638,8 +1646,11 @@ UI_ChangeInterfaceRace(Race race)
 		gC_vs_ui.SetZone( zoneID );
 		gC_vs_ui.SetSize( zoneSize );
 
-		// 안전지대 정보 등.. 다시 설정해준다.
-		LoadZoneInfo(zoneID);
+		// The zone's safety zones and the rest of its information again.
+		if (s_GameUIHost != NULL && s_GameUIHost->LoadZoneInfo != NULL)
+		{
+			s_GameUIHost->LoadZoneInfo(zoneID);
+		}
 	}
 
 	UI_AffectUserOption();
@@ -3174,18 +3185,14 @@ UI_UnlockGear()
 }
 
 //-----------------------------------------------------------------------------
-// UI 메세지 처리
+// The UI's results, handed to the UI message manager through the host
 //-----------------------------------------------------------------------------
 void UI_ResultReceiver(DWORD message, intptr_t left, intptr_t right, void *void_ptr)
 {
-//	DEBUG_ADD("[UI_ResultReceiver] Start");
-	if (g_pUIMessageManager==NULL)
+	if (s_GameUIHost != NULL && s_GameUIHost->ExecuteUIMessage != NULL)
 	{
-		g_pUIMessageManager = new UIMessageManager;
+		s_GameUIHost->ExecuteUIMessage(message, left, right, void_ptr);
 	}
-	
-	g_pUIMessageManager->Execute(message, left, right, void_ptr);	
-//	DEBUG_ADD("[UI_ResultReceiver] End");
 }
 
 //-----------------------------------------------------------------------------

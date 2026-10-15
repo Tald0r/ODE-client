@@ -2730,6 +2730,7 @@ void ReleaseAllObjects()
 	MRisingEffectGenerator::SetHost(nullptr);
 	MParty::SetHost(nullptr);
 	UiRuntime::SetHost(nullptr);
+	GameUI::SetHost(nullptr);
 
 #ifdef DEBUG_INFO
 	ClearDebugInfo();
@@ -4786,6 +4787,19 @@ static const UiRuntime::Host s_UiRuntimeHost = {
 	},
 };
 
+// What the game's UI calls need (task 4.256): the zone's information again,
+// and the UI message manager, made on the first result if it is not yet.
+static const GameUI::Host s_GameUIHost = {
+	.LoadZoneInfo = [](int zoneID) { LoadZoneInfo( zoneID ); },
+	.ExecuteUIMessage = [](DWORD message, intptr_t left, intptr_t right, void* void_ptr) {
+		if (g_pUIMessageManager==NULL)
+		{
+			g_pUIMessageManager = new UIMessageManager;
+		}
+		g_pUIMessageManager->Execute(message, left, right, void_ptr);
+	},
+};
+
 //-----------------------------------------------------------------------------
 // The wire layer's host (docs/RESTRUCTURING.md task 5.1): three tuning
 // values out of the config, and the connection a bug report goes to.
@@ -5069,6 +5083,7 @@ InitGameObject()
 	MRisingEffectGenerator::SetHost(&s_RisingEffectHost);
 	MParty::SetHost(&s_PartyHost);
 	UiRuntime::SetHost(&s_UiRuntimeHost);
+	GameUI::SetHost(&s_GameUIHost);
 
 	if (g_pPCTalkBox==NULL)
 	{

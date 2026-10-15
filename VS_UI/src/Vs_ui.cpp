@@ -65,6 +65,10 @@ extern HWND	g_hWnd;
 //----------------------------------------------------------------------------
 C_VS_UI	gC_vs_ui;
 
+// The executable's until task 4.256 (Client.cpp); VS_UI_WebBrowser.h says
+// what it is.
+IWebBrowser2*	g_pWebBrowser = NULL;
+
 // Exchange UI
 C_VS_UI_POINT_EXCHANGE*	g_pC_point_exchange = NULL;
 

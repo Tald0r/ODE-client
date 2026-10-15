@@ -201,7 +201,7 @@ DWORD g_dwSeqNumG = 0;
 WORD g_wAuthKeyMap = 0x5154;
 
 //#define				__WEB_BROWSER__
-IWebBrowser2*			g_pWebBrowser = NULL; 
+// g_pWebBrowser is Vs_ui.cpp's (VS_UI) since task 4.256.
 // [Futec수정]
 char g_FutecIP[20] = { 0, };
 unsigned int g_FutecPort = 0;

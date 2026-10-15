@@ -4,6 +4,9 @@
 
 #include <stdlib.h>
 
+// The executable's until task 4.256 (CGameUpdate.cpp).
+COGGSTREAM*	g_pOGG = NULL;
+
 COGGSTREAM::COGGSTREAM(void* pDirectSound, CDirectSoundBuffer* pBuffer,
                        unsigned long ulMin, unsigned long ulMax,
                        unsigned long ulFlags, unsigned long ulBufferSize)

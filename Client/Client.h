@@ -302,8 +302,7 @@ void		SaveLastSelectedCharacter( int slot );
 // Etc
 void		MakeScreenShot();
 
-// UI
-void		UI_ResultReceiver(DWORD message, intptr_t left, intptr_t right, void *void_ptr);
+// UI_ResultReceiver: UIFunction.h (GameUI.cpp's).
 
 // 날씨
 void		SetWeather(int weather, int level);
