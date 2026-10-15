@@ -1,8 +1,10 @@
 //---------------------------------------------------------------------------
 // MHelpManager.h
 //---------------------------------------------------------------------------
-// Help events: ExecuteHelpEvent adds a help mail in game mode. The decision
-// tree that would choose help by conditions (MHelpManager, its nodes, and
+// Help events: ExecuteHelpEvent (HelpEvent.h, gamemodel's since task 4.222)
+// adds a help mail in game mode, through the host the game installs. This
+// header adds the __BEGIN_HELP_EVENT macros. The decision tree
+// that would choose help by conditions (MHelpManager, its nodes, and
 // MCompareManager's conditions) was created at start-up but never loaded or
 // run, and task 4.221 retired it.
 //---------------------------------------------------------------------------
@@ -13,17 +15,9 @@
 #pragma warning(disable:4786)
 #endif
 
-#include "CTypeTable.h"
-#include "MHelpDef.h"
+#include "HelpEvent.h"
 #include "Client_PCH.h"
-#include <fstream>
-#include <list>
 	#include "UserOption.h"
-
-//-----------------------------------------------------------------------------
-// Execute Help Event
-//-----------------------------------------------------------------------------
-extern void		ExecuteHelpEvent(HELP_EVENT he);
 
 #ifdef OUTPUT_DEBUG
 	#define __BEGIN_HELP_EVENT 		if (g_pUserOption!=NULL && g_pUserOption->UseHelpEvent) {

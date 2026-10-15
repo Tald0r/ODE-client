@@ -125,6 +125,10 @@ Client/MEffectGeneratorTable.h
 Client/Netmarble.cpp
 Client/Netmarble.h
 
+# Help events' mail (4.222).
+Client/HelpEvent.cpp
+Client/HelpEvent.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

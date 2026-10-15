@@ -1,10 +1,19 @@
 //---------------------------------------------------------------------------
-// MHelpManager.cpp
+// HelpEvent.cpp
 //---------------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "MHelpManager.h"
-	#include "ClientDef.h"
-#include "VS_UI.h"
+#include "HelpEvent.h"
+#include "ClientMode.h"
+
+namespace {
+const MHelpHost* s_pHost = NULL;
+}
+
+void
+SetHelpHost(const MHelpHost* pHost)
+{
+	s_pHost = pHost;
+}
 
 //-----------------------------------------------------------------------------
 // Execute Help Event
@@ -12,8 +21,8 @@
 void		
 ExecuteHelpEvent(HELP_EVENT he)
 {
-		if (g_Mode==MODE_GAME)
+		if (g_Mode==MODE_GAME && s_pHost != NULL && s_pHost->AddHelpMail != NULL)
 		{
-			gC_vs_ui.AddHelpMail(he);//, g_pPlayer->IsInSafeSector());
+			s_pHost->AddHelpMail(he);
 		}
 }

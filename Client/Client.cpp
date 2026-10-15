@@ -3149,6 +3149,12 @@ bool ClientHasBrowserLoop() { return browserLoopRunning; }
 
 int ClientMain(char* lpCmdLine, int nCmdShow)
 {
+	// Help events' mail (task 4.222).
+	static const MHelpHost helpHost = {
+		.AddHelpMail = [](HELP_EVENT he) { gC_vs_ui.AddHelpMail(he); },
+	};
+	SetHelpHost(&helpHost);
+
 	// A refused Netmarble launch (task 4.220).
 	static const NetmarbleHost netmarbleHost = {
 		.RefuseLaunch = [] {
