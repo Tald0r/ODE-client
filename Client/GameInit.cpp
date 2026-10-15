@@ -773,6 +773,9 @@ InitSurface()
 		delete g_pBack;
 	}
 	g_pBack = new CSpriteSurface;
+	// Text printed before the UI sets its surface lands on g_pLast, or
+	// before that on g_pBack (task 4.228).
+	g_SetFL2FallbackSurface([]() { return g_pLast != NULL ? g_pLast : g_pBack; });
 	// g_pBack is the final present-to-screen buffer (see SDLMain.cpp's
 	// g_pBack->Blt(&origin, g_pLast, NULL) frame flip). It must match
 	// g_pLast's size (g_GameRect), not a hardcoded 800x600, or any mode

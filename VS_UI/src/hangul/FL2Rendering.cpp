@@ -1,76 +1,74 @@
 ﻿//----------------------------------------------------------------------
-// RenderingFunctions.cpp - macOS rendering functions
+// FL2Rendering.cpp - the FL2 text layer over TextSystem
 //----------------------------------------------------------------------
-#include "../Client_PCH.h"
-#include "../basic/BasicException.h"
-#include "../basic/BasicData.h"
-#include "../basic/2d.h"
+// The UI prints through these: plain, coloured, shadowed and outlined
+// strings on the FL2 surface (or, before the UI sets one, the surface
+// source the game installs), string measurements, and the DBCS
+// conversions of the hangul editor. Client/RenderingFunctions.cpp until
+// task 4.228, which moved it into VS_UI.
+//----------------------------------------------------------------------
+#include "Client_PCH.h"
+#include "basic/BasicException.h"
+#include "basic/BasicData.h"
+#include "basic/2d.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
 
-#include "../VS_UI/src/hangul/Fl2.h"
+#include "Fl2.h"
 #include "TextSystem/TextService.h"
 #include "TextSystem/RenderTargetSpriteSurface.h"
 #include "TextSystem/TextTypes.h"
 #include "TextSystem/FontHandleUtil.h"
 
 class CSpriteSurface;
-extern CSpriteSurface* g_pLast;
-extern CSpriteSurface* g_pBack;
 
 //----------------------------------------------------------------------
 // Surface/DC Management
 //----------------------------------------------------------------------
-static void* g_pFL2Surface = NULL;
-static void* g_pFL2DC = NULL;
+static void* s_pFL2Surface = NULL;
+static void* s_pFL2DC = NULL;
+// Where to print before the UI sets an FL2 surface: the game's.
+static CSpriteSurface* (*s_FallbackSurface)() = NULL;
 
-// SDL/TextSystem 백엔드는 draw 시점마다 surface를 즉시 resolve하므로
-// 원본처럼 실제 GDI HDC를 오래 들고 있을 필요가 없다.
-// 다만 호출부(FL2.cpp 등)는 "최초 GetDC만 true, 중첩 호출은 false"라는
-// 반환값 규약에 기대어 Release 짝을 맞추므로, 그 상태만 흉내낸다.
+// The SDL/TextSystem backend resolves the surface at each draw, so there
+// is no real GDI HDC to hold as the original did. But the callers (FL2.cpp
+// and others) pair their Release with the return value - only the first
+// GetDC answers true, a nested one false - so that state is kept.
 bool g_FL2_GetDC()
 {
-	if (g_pFL2DC != NULL)
+	if (s_pFL2DC != NULL)
 	{
 		return false;
 	}
 
-	g_pFL2DC = reinterpret_cast<void*>(1);
+	s_pFL2DC = reinterpret_cast<void*>(1);
 
 	return true;
 }
 
 bool g_FL2_ReleaseDC()
 {
-	if (g_pFL2DC == NULL)
+	if (s_pFL2DC == NULL)
 	{
 		return false;
 	}
 
-	g_pFL2DC = NULL;
+	s_pFL2DC = NULL;
 
 	return true;
 }
 
 void g_SetFL2Surface(void* pSurface)
 {
-    g_pFL2Surface = pSurface;
+    s_pFL2Surface = pSurface;
 }
 
-//----------------------------------------------------------------------
-// OpenGL Initialization
-//----------------------------------------------------------------------
-bool InitializeGL(int width, int height, int bpp, int fullscreen)
+void g_SetFL2FallbackSurface(CSpriteSurface* (*source)())
 {
-    (void)width;
-    (void)height;
-    (void)bpp;
-    (void)fullscreen;
-    // Stub: SDL backend handles this
-    return true;
+	s_FallbackSurface = source;
 }
 
 //----------------------------------------------------------------------
@@ -84,26 +82,16 @@ void rectangle(S_SURFACEINFO* pSurfaceInfo, Rect* pRect, int color)
     // Stub: Would draw rectangle outline
 }
 
-void FillRect(S_SURFACEINFO* pSurfaceInfo, Rect* pRect, int color)
-{
-    (void)pSurfaceInfo;
-    (void)pRect;
-    (void)color;
-    // Stub: Would fill rectangle
-}
-
 //----------------------------------------------------------------------
 // Text Rendering
 //----------------------------------------------------------------------
 
 static CSpriteSurface* ResolveTextSurface()
 {
-	if (g_pFL2Surface != NULL)
-		return reinterpret_cast<CSpriteSurface*>(g_pFL2Surface);
-	if (g_pLast != NULL)
-		return g_pLast;
-	if (g_pBack != NULL)
-		return g_pBack;
+	if (s_pFL2Surface != NULL)
+		return reinterpret_cast<CSpriteSurface*>(s_pFL2Surface);
+	if (s_FallbackSurface != NULL)
+		return s_FallbackSurface();
 	return NULL;
 }
 
@@ -194,12 +182,6 @@ void g_Print(int x, int y, const char* pStr, PrintInfo* pInfo)
 	TextSystem::TextService::Get().DrawLine(target, pStr, drawX, y, 0, style);
 }
 
-// Basic print function (void* version for legacy callers)
-void g_Print(int x, int y, const char* pStr, void* pInfo)
-{
-	g_Print(x, y, pStr, reinterpret_cast<PrintInfo*>(pInfo));
-}
-
 // Colored string print (PrintInfo version)
 int g_PrintColorStr(int x, int y, const char* pStr, PrintInfo& info, DWORD color)
 {
@@ -207,15 +189,6 @@ int g_PrintColorStr(int x, int y, const char* pStr, PrintInfo& info, DWORD color
 	useInfo.text_color = color;
 	g_Print(x, y, pStr, &useInfo);
 	return x + g_GetStringWidth(pStr, useInfo.hfont);
-}
-
-// Colored string print (void* version)
-void g_PrintColorStr(int x, int y, const char* pStr, void* info, unsigned long color)
-{
-	if (info == NULL)
-		return;
-	PrintInfo* pi = reinterpret_cast<PrintInfo*>(info);
-	g_PrintColorStr(x, y, pStr, *pi, static_cast<DWORD>(color));
 }
 
 // Colored string with shadow
@@ -241,15 +214,6 @@ int g_PrintColorStrShadow(int x, int y, const char* pStr, PrintInfo& info,
 	return x + g_GetStringWidth(pStr, useInfo.hfont);
 }
 
-void g_PrintColorStrShadow(int x, int y, const char* pStr, void* info,
-							unsigned long color, unsigned long shadowColor)
-{
-	if (info == NULL)
-		return;
-	PrintInfo* pi = reinterpret_cast<PrintInfo*>(info);
-	g_PrintColorStrShadow(x, y, pStr, *pi, static_cast<DWORD>(color), static_cast<DWORD>(shadowColor));
-}
-
 // Colored string with outline
 int g_PrintColorStrOut(int x, int y, const char* pStr, PrintInfo& info,
 					   DWORD color, DWORD outColor)
@@ -266,15 +230,6 @@ int g_PrintColorStrOut(int x, int y, const char* pStr, PrintInfo& info,
 	g_Print(x, y, pStr, &useInfo);
 
 	return x + g_GetStringWidth(pStr, useInfo.hfont);
-}
-
-void g_PrintColorStrOut(int x, int y, const char* pStr, void* info,
-						 unsigned long color, unsigned long outColor)
-{
-	if (info == NULL)
-		return;
-	PrintInfo* pi = reinterpret_cast<PrintInfo*>(info);
-	g_PrintColorStrOut(x, y, pStr, *pi, static_cast<DWORD>(color), static_cast<DWORD>(outColor));
 }
 
 //----------------------------------------------------------------------

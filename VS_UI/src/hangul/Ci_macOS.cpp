@@ -152,4 +152,4 @@ void CI_CHINESE::IME_Composition()
 	/* Stub: Chinese IME not implemented on macOS */
 }
 
-// g_GetStringByMoney is provided by RenderingFunctions.cpp for SDL builds.
+// g_GetStringByMoney is provided by FL2Rendering.cpp for SDL builds.
