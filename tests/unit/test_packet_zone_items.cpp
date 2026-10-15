@@ -56,6 +56,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 // MItemUse.cpp's, reached through MItemHost.
 MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 
@@ -71,6 +83,19 @@ namespace {
 
 std::vector<std::string> calls;
 std::string N(long long value) { return std::to_string(value); }
+
+// Whether a SubItemInfo (no virtual destructor to watch) was freed. Only
+// ASan can tell, by the poison its quarantine keeps on a freed block;
+// without it this says yes, so the check is the sanitized trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
+}
 
 bool Same(const std::vector<std::string>& expected)
 {
@@ -536,7 +561,7 @@ std::unique_ptr<GCDropItemToZone> Drop(TYPE_OBJECTID id, int itemClass, int type
 	return pPacket;
 }
 
-void AddSub(GCAddItemToZone& packet, TYPE_OBJECTID id, int itemClass, int type, int number, int slot)
+SubItemInfo* AddSub(GCAddItemToZone& packet, TYPE_OBJECTID id, int itemClass, int type, int number, int slot)
 {
 	SubItemInfo* pSub = new SubItemInfo;
 	pSub->setObjectID(id);
@@ -546,6 +571,7 @@ void AddSub(GCAddItemToZone& packet, TYPE_OBJECTID id, int itemClass, int type, 
 	pSub->setSlotID(SlotID_t(slot));
 	packet.addListElement(pSub);
 	packet.setListNum(BYTE(packet.getListNum() + 1));
+	return pSub;
 }
 
 } // namespace
@@ -767,12 +793,14 @@ TEST(PacketZoneItems, ABeltComesWithItsPocketsFilled)
 	scene.Items(ITEM_CLASS_POTION, 2);
 	std::unique_ptr<GCDropItemToZone> pPacket = Drop(301, ITEM_CLASS_BELT, 0, 7, 8);
 	AddSub(*pPacket, 401, ITEM_CLASS_POTION, 1, 4, 2);
-	// An unknown type is reported and skipped; the rest still go in. (The
-	// skipped SubItemInfo is not freed: PacketFunction.cpp:1111 and 1160
-	// `continue` past the delete. A leak, which no check here sees.)
-	AddSub(*pPacket, 402, ITEM_CLASS_POTION, 2, 1, 1);
+	// An unknown type is reported, freed and skipped; the rest still go
+	// in, but for one in a pocket the belt does not have, which is freed.
+	SubItemInfo* pPastType = AddSub(*pPacket, 402, ITEM_CLASS_POTION, 2, 1, 1);
 	AddSub(*pPacket, 403, ITEM_CLASS_POTION, 0, 7, 0);
+	AddSub(*pPacket, 404, ITEM_CLASS_POTION, 0, 1, 3);
 	MItem* pItem = AddItemToZone(pPacket.get(), FALSE);
+	CHECK(Freed(pPastType));
+	CHECK(scene.Destroyed(404));
 	CHECK(pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_BELT);
 	if (pItem == NULL || pItem->GetItemClass() != ITEM_CLASS_BELT) return;
 	const MBelt* pBelt = static_cast<const MBelt*>(pItem);
@@ -797,8 +825,11 @@ TEST(PacketZoneItems, AnArmsBandComesWithItsPocketsFilled)
 	scene.Items(ITEM_CLASS_PUPA, 1);
 	std::unique_ptr<GCDropItemToZone> pPacket = Drop(301, ITEM_CLASS_OUSTERS_ARMSBAND, 0, 7, 8);
 	AddSub(*pPacket, 401, ITEM_CLASS_PUPA, 0, 3, 1);
-	AddSub(*pPacket, 402, int(g_pItemTable->GetSize()), 0, 1, 0);
+	SubItemInfo* pPastClass = AddSub(*pPacket, 402, int(g_pItemTable->GetSize()), 0, 1, 0);
+	AddSub(*pPacket, 403, ITEM_CLASS_PUPA, 0, 1, 2);
 	MItem* pItem = AddItemToZone(pPacket.get(), FALSE);
+	CHECK(Freed(pPastClass));
+	CHECK(scene.Destroyed(403));
 	CHECK(pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_OUSTERS_ARMSBAND);
 	if (pItem == NULL || pItem->GetItemClass() != ITEM_CLASS_OUSTERS_ARMSBAND) return;
 	const MOustersArmsBand* pBand = static_cast<const MOustersArmsBand*>(pItem);

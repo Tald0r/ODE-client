@@ -1114,6 +1114,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 						(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 					{
 						SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
+						delete pSubItemInfo;
 						continue;
 					}
 					MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
@@ -1135,7 +1136,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					//------------------------------------------
 					// add the item to the given slot of the Belt.
 					//------------------------------------------
-					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+					if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+					{
+						delete pSubItem;
+					}
 
 					delete pSubItemInfo;
 				}
@@ -1163,6 +1167,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 						(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 					{
 						SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
+						delete pSubItemInfo;
 						continue;
 					}
 					MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
@@ -1184,7 +1189,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					//------------------------------------------
 					// add the item to the given slot of the Belt.
 					//------------------------------------------
-					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+					if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+					{
+						delete pSubItem;
+					}
 					
 					delete pSubItemInfo;
 				}
