@@ -27,8 +27,8 @@ static const int AdvancementOustersActionConvTable[ ACTION_MAX_SLAYER ] =
 	ACTION_ADVANCEMENT_OUSTERS_SKILL_NORMAL,
 	ACTION_ADVANCEMENT_OUSTERS_MAGIC_ATTACK,
 	ACTION_ADVANCEMENT_OUSTERS_ABSORB_SOUL,
-	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE_STOP,		// needs its own rule, which it lacks (hovering)
-	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE,		// needs its own rule, which it lacks (flying)
+	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE_STOP,		// marked upstream for its own rule; already advanced (hovering)
+	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE,		// marked upstream for its own rule; already advanced (flying)
 	ACTION_ADVANCEMENT_OUSTERS_ATTACK_SLOW,
 	ACTION_ADVANCEMENT_OUSTERS_ATTACK_FAST,
 	ACTION_ADVANCEMENT_OUSTERS_SKILL_SLOW,
@@ -42,7 +42,7 @@ static const int AdvancementSlayerActionConvTable[ ACTION_MAX_SLAYER ] =
 	ACTION_MOVE,	// converted by its own rule (the right hand's)
 	-1,	// needs its own rule, which it lacks
 	ACTION_ADVANCEMENT_SLAYER_MAGIC,
-	ACTION_DAMAGED,
+	ACTION_DAMAGED,	// converted by its own rule (the right hand's)
 	ACTION_ADVANCEMENT_SLAYER_DRAINED,
 	ACTION_ADVANCEMENT_SLAYER_DIE,
 	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_NORMAL,	// SR

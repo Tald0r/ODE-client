@@ -2,21 +2,19 @@
 // MCreatureWear.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "Client.h"
 #include "MCreatureWear.h"
 #include "MItem.h"
 #include "AddonDef.h"
 #include "SkillDef.h"
-#include "DebugInfo.h"
-#include "CIndexSprite.h"
+#include "DebugLog.h"
 #include "ClientConfig.h"
 #include "MEffectGeneratorTable.h"
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
 #include "MItemOptionTable.h"
-#include "PacketFunction.h"
-#include "MinTr.h"
-#include "MTopView.h"
+#include "../basic/ColorSetDef.h"
+#include "FrameClock.h"
+#include "WorldEventsHost.h"
 
 int defaultSkinColor		= 410;					
 int defaultCoatColor		= 377;//368;	
@@ -25,13 +23,17 @@ int defaultTrouserColor	= 377;//489;
 
 #define	ATTACHEFFECTCOLOR_NULL		0xFFFF
 
+// The allocator pool of the creatures that wear gear (task 4.243:
+// MemoryPool.cpp's until then).
+MemoryPool g_CreatureWearMemoryPool( sizeof( MCreatureWear ), 30 );
+
 
 //----------------------------------------------------------------------
 // static member
 //----------------------------------------------------------------------
-// Creature의 현재 방향에 따라서...
-// 옷을 출력해주는 순서가 다를 수 있다.
-// 각 방향별로 옷 출력해주는 순서를 정하는 부분이다.
+// Depending on the Creature's current direction...
+// the order in which clothes are drawn may differ.
+// This part sets the clothes drawing order for each direction.
 int			MCreatureWear::s_AddonOrder[DIRECTION_MAX][ADDON_MAX] = 
 {
 	{ ADDON_MOTOR, ADDON_TROUSER, ADDON_COAT, ADDON_HAIR, ADDON_HELM, ADDON_RIGHTHAND, ADDON_LEFTHAND },	// LEFT
@@ -73,13 +75,13 @@ MCreatureWear::MCreatureWear()
 	m_HairColorSet = 0;
 
 	m_ShoulderAddon.bAddon = FALSE;
-	m_ShoulderAddon.FrameID	= FRAMEID_NULL;		// 복장
+	m_ShoulderAddon.FrameID	= FRAMEID_NULL;		// outfit
 
 	m_ShoulderAddon.ItemClass	= ITEM_CLASS_NULL;	// item class
 	m_ShoulderAddon.ItemType	= ITEMTYPE_NULL;			// item type
 	m_ShoulderAddon.ColorSet1	= 0;						// colorset1
 	m_ShoulderAddon.ColorSet2	= 0;						// colorset2
-	m_ShoulderAddon.bEffectColor = FALSE;					// effect color로 보여지는 부위인가?
+	m_ShoulderAddon.bEffectColor = FALSE;					// Is this a part shown with the effect color?
 	m_ShoulderAddon.EffectColorSet	= 0;				// effectcolorset
 }
 
@@ -100,15 +102,15 @@ MCreatureWear::ClearAddonInfo(int Addon)
 {
 	ADDON_INFO& addon = m_Addon[Addon];
 
-	// 초기화
-	addon.bAddon	= FALSE;			// 착용했나?	
-	addon.FrameID	= FRAMEID_NULL;		// 복장
+	// Initialize
+	addon.bAddon	= FALSE;			// Is it worn?
+	addon.FrameID	= FRAMEID_NULL;		// outfit
 
 	addon.ItemClass	= ITEM_CLASS_NULL;	// item class
 	addon.ItemType	= ITEMTYPE_NULL;			// item type
 	addon.ColorSet1	= 0;						// colorset1
 	addon.ColorSet2	= 0;						// colorset2
-	addon.bEffectColor = FALSE;					// effect color로 보여지는 부위인가?
+	addon.bEffectColor = FALSE;					// Is this a part shown with the effect color?
 	addon.EffectColorSet	= 0;				// effectcolorset
 }
 
@@ -118,7 +120,7 @@ MCreatureWear::ClearAddonInfo(int Addon)
 void				
 MCreatureWear::SetSameWear(const MCreatureWear* pCreature)
 {
-	// 복장의 정보	
+	// Outfit info
 	for (int i=0; i<ADDON_MAX; i++)
 	{
 		m_Addon[i] = pCreature->m_Addon[i];
@@ -139,7 +141,7 @@ MCreatureWear::SetAddonColorSet1(int Addon, WORD colorSet)
 		return;
 	}
 	
-	// 2004, 5, 4 sobeit add start - 다른 캐릭의 아우스터즈 부츠는 세팅하는 코드가 없어서 간단히 추가
+	// 2004, 5, 4 sobeit add start - simply added because there was no code to set Ouster boots for other characters
 	if(Addon == ADDON_TROUSER)
 		m_Addon[Addon].bAddon = true;
 	// 2004, 5, 4 sobeit add end
@@ -165,14 +167,14 @@ MCreatureWear::SetAddonColorSet2(int Addon, WORD colorSet)
 		return;
 	}
 
-	// 2004, 5, 4 sobeit add start - 다른 캐릭의 아우스터즈 부츠는 세팅하는 코드가 없어서 간단히 추가
+	// 2004, 5, 4 sobeit add start - simply added because there was no code to set Ouster boots for other characters
 	if(Addon == ADDON_TROUSER)
 		m_Addon[Addon].bAddon = true;
 	// 2004, 5, 4 sobeit add end
 	
 	if (colorSet < MAX_COLORSET || colorSet == UNIQUE_ITEM_COLOR || colorSet == QUEST_ITEM_COLOR)
 	{	
-		// 운영자는 set1이다. T_T;;
+		// An operator's coat colours its whole body. T_T;;
 		if (m_CreatureType==CREATURETYPE_SLAYER_OPERATOR
 			&& Addon==ADDON_COAT)
 		{
@@ -190,8 +192,8 @@ MCreatureWear::SetAddonColorSet2(int Addon, WORD colorSet)
 //----------------------------------------------------------------------
 // New Item From AddonInfo
 //----------------------------------------------------------------------
-// Addon번째 정보로 Item을 생성한다.
-// 외부에서 delete해줘야 한다.
+// Creates an Item from the Addon's info.
+// The caller must delete it.
 //----------------------------------------------------------------------
 MItem*
 MCreatureWear::NewItemFromAddonInfo(int Addon)
@@ -204,7 +206,7 @@ MCreatureWear::NewItemFromAddonInfo(int Addon)
 	ADDON_INFO& addon = m_Addon[Addon];
 
 	//--------------------------------------------------
-	// item을 착용한 경우
+	// If an item is worn
 	//--------------------------------------------------
 	if (!addon.bAddon || addon.ItemClass==ITEM_CLASS_NULL)
 	{
@@ -230,7 +232,7 @@ MCreatureWear::NewItemFromAddonInfo(int Addon)
 //----------------------------------------------------------------------
 // Remove Addon
 //----------------------------------------------------------------------
-// Addon의 위치의 복장을 없앤다.
+// Removes the outfit at the Addon's position.
 //----------------------------------------------------------------------
 bool		
 MCreatureWear::RemoveAddon(int Addon)
@@ -245,7 +247,7 @@ MCreatureWear::RemoveAddon(int Addon)
 	ADDON_INFO& addon = m_Addon[Addon];
 
 	//--------------------------------------------------
-	// 장착한게 있을 경우에만 벗긴다. - -;
+	// Only take it off if something is equipped. - -;
 	//--------------------------------------------------
 	if (addon.bAddon)
 	{
@@ -254,7 +256,7 @@ MCreatureWear::RemoveAddon(int Addon)
 		if (pItem!=NULL)
 		{
 			//--------------------------------------------------
-			// addon Item을 복장에서 제거한다.
+			// Remove the addon Item from the outfit.
 			//--------------------------------------------------
 			bool bRemove = RemoveAddonItem( pItem );
 
@@ -264,7 +266,7 @@ MCreatureWear::RemoveAddon(int Addon)
 		}
 
 		//--------------------------------------------------
-		// 정보 제거..
+		// Remove the info..
 		//--------------------------------------------------
 		ClearAddonInfo( Addon );
 
@@ -277,16 +279,16 @@ MCreatureWear::RemoveAddon(int Addon)
 //---------------------------------------------------------------------------
 // Set AddonItem
 //---------------------------------------------------------------------------
-// 머리카락을 설정한다.
+// Sets the hair.
 //---------------------------------------------------------------------------
 void			
 MCreatureWear::SetAddonHair(TYPE_FRAMEID id, WORD cs1)
 {
 	ADDON_INFO& addon = m_Addon[ADDON_HAIR];
 
-	// 초기화
-	addon.bAddon	= TRUE;			// 착용했나?	
-	addon.FrameID	= id;		// 복장
+	// Initialize
+	addon.bAddon	= TRUE;			// Is it worn?
+	addon.FrameID	= id;		// outfit
 
 	addon.ItemClass	= ITEM_CLASS_NULL;	// item class
 
@@ -296,7 +298,7 @@ MCreatureWear::SetAddonHair(TYPE_FRAMEID id, WORD cs1)
 	addon.bEffectColor = FALSE;
 	addon.EffectColorSet = 0;
 
-	// 저장해 둔다.
+	// Save it.
 	m_HairFrameID = id;
 	m_HairColorSet = cs1;
 }
@@ -304,8 +306,8 @@ MCreatureWear::SetAddonHair(TYPE_FRAMEID id, WORD cs1)
 //---------------------------------------------------------------------------
 // Set AddonItem
 //---------------------------------------------------------------------------
-// 장착해서 모양이 바뀌는 item(AddonItem)인 경우
-// Creature에 장착하고 상태를 바꾼다.
+// For an item (AddonItem) whose appearance changes when equipped
+// equips it on the Creature and changes its state.
 //---------------------------------------------------------------------------
 bool
 MCreatureWear::SetAddonItem(MItem* pItem)
@@ -321,12 +323,12 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 
 	//-------------------------------------------------
 	//
-	// 정지한 상태인 경우만 복장을 바꿀 수 있다.
+	// The outfit can only be changed while stopped.
 	//
 	//-------------------------------------------------
-	// player가 아닌 경우나..
-	// 오토바이를 타는 경우는..
-	// 그냥 정지하게 해 버린다. - -;
+	// If it is not the player, or..
+	// if riding a motorcycle..
+	// just make it stop. - -;
 	if (GetClassType()!=MCreature::CLASS_PLAYER
 		|| pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 	{
@@ -338,7 +340,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 		|| (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND) )
 	{
 		//-------------------------------------------------
-		// 장착해서 모양이 바뀌는 Item인 경우에만 처리한다.
+		// Only handle Items whose appearance changes when equipped.
 		//-------------------------------------------------
 		if (pItem->IsAddonItem() && pItem->IsAffectStatus())
 		{
@@ -346,7 +348,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 			ADDON			Addon = pItem->GetAddonSlot();
 
 			//-------------------------------------------------
-			// 복장이 바뀌는 위치가 있는 경우
+			// If there is a position where the outfit changes
 			//-------------------------------------------------
 			if (pItem->GetAddonSlot()==ADDON_NULL)
 			{			
@@ -358,36 +360,36 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 			{	
 				//-------------------------------------------------
 				//
-				//			장착하는 위치에 따라서 처리..
+				//			Handle according to the equip position..
 				//
 				//-------------------------------------------------
 				switch (Addon)
 				{
 					//-------------------------------------------------
-					// 오토바이를 장착한 경우
+					// If a motorcycle is equipped
 					//-------------------------------------------------
 					case ADDON_MOTOR :
 						//------------------------------------------
-						// 움직이는 방법 바꿈
+						// Change the way of moving
 						//------------------------------------------					
 						SetMoveDevice( MCreature::MOVE_DEVICE_RIDE );
 					break;
 
 					//-------------------------------------------------
-					// 장착할려는게 왼손무기?인 경우
+					// If the item to equip is a left-hand weapon?
 					//-------------------------------------------------
 					case ADDON_LEFTHAND :
 					{
-						// 방패밖에 없다. - -;
-						// 필살 하드코딩.. - -;;;;
+						// Only shields exist. - -;
+						// Ultimate hard-coding.. - -;;;;
 
 						//-------------------------------------------------
-						// 기존에 있던 오른손무기가 양손무기이면 
-						// 오른손Addon을 제거한다.
+						// If the existing right-hand weapon is two-handed
+						// remove the right-hand Addon.
 						//-------------------------------------------------
 						MItem* pOldItem = NewItemFromAddonInfo( ADDON_RIGHTHAND );
 
-						// 오른손 item이 있는 경우 제거한다.
+						// If there is a right-hand item, remove it.
 						if (pOldItem!=NULL)
 						{	
 							if (pOldItem->IsGearSlotTwoHand())
@@ -401,11 +403,11 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 					break;
 
 					//-------------------------------------------------
-					// 장착할려는게 오른손무기?인 경우
+					// If the item to equip is a right-hand weapon?
 					//-------------------------------------------------
 					case ADDON_RIGHTHAND :
 					{
-						// 양손무기이면 왼손을 없앤다.
+						// If it is two-handed, remove the left hand.
 						if (pItem->IsGearSlotTwoHand())
 						{
 							RemoveAddon( ADDON_LEFTHAND );
@@ -414,11 +416,11 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 					break;
 
 					//-------------------------------------------------
-					// 모자
+					// Hat
 					//-------------------------------------------------
-					// 모자인 경우는
-					// 짧은 머리카락이라면 없앤다.
-					// 짧은 머리 : 여1, 남123
+					// For a hat,
+					// remove short hair.
+					// Short hair: female 1, male 123
 					//-------------------------------------------------
 					case ADDON_HELM :
 						if (m_HairFrameID==ADDONID_HAIR1_FEMALE
@@ -431,7 +433,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 					break;
 
 					//-------------------------------------------------
-					// 운영자인 경우.. 옷 바꾸면 몸 색깔 바뀐다.
+					// For an operator.. changing clothes changes the body colour.
 					//-------------------------------------------------
 					case ADDON_COAT :
 						if (m_CreatureType==CREATURETYPE_SLAYER_OPERATOR
@@ -451,7 +453,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 					
 				//-------------------------------------------------
 				//
-				//			성별에 따른 FrameID
+				//			FrameID by gender
 				//
 				//-------------------------------------------------	
 				if (IsMale())
@@ -464,7 +466,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 				}
 			
 				//-------------------------------------------------	
-				// Slayer이면서 fid가 없는 경우..
+				// If it is a Slayer with no fid..
 				//-------------------------------------------------					
 				if (fid == FRAMEID_NULL && IsSlayer())
 				{					
@@ -472,23 +474,23 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 										pItem->GetID(), (int)pItem->GetItemClass(), (int)pItem->GetItemType());					
 				}
 				//-------------------------------------------------					
-				// 정상적이거나.. Vampire인 경우
+				// Normal case.. or a Vampire
 				//-------------------------------------------------					
 				else
 				{	
 					//-------------------------------------------------
-					// 장착한다.
+					// Equip it.
 					//-------------------------------------------------
 					ADDON_INFO& addon = m_Addon[Addon];
 
-					// 초기화
+					// Initialize
 					addon.bAddon	= TRUE;
 					addon.FrameID	= fid;
 
 					addon.ItemClass	= pItem->GetItemClass();
 					addon.ItemType	= pItem->GetItemType();
 
-					// 뱀파 옷추가
+					// Added Vampire clothes
 					if(pItem->GetItemClass() == ITEM_CLASS_VAMPIRE_COAT)
 					{
 						unsigned short nSpecialActionInfo = GetSpecialActionInfo();
@@ -514,7 +516,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 									}
 								}
 							}
-							addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 피부
+							addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// skin
 //							if(pItem->IsUniqueItem())
 //								m_ColorBody2 = UNIQUE_ITEM_COLOR;
 //							else
@@ -535,7 +537,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 					if (Addon==ADDON_COAT || Addon==ADDON_TROUSER)
 					{
 						{
-							addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 피부
+							addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// skin
 							//						if(pItem->IsUniqueItem())
 							//							addon.ColorSet2	= UNIQUE_ITEM_COLOR;			// option
 							//						else
@@ -543,11 +545,11 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 							addon.bEffectColor = FALSE;
 							addon.EffectColorSet = 0;
 							
-							// 상의인 경우만 옷이 바뀐다.
+							// The outfit only changes for a coat.
 							//if (Addon==ADDON_COAT)
 							{
 								//-------------------------------------------------
-								// Vampire만 적용된다.
+								// Applies to Vampire only.
 								//-------------------------------------------------
 								if (m_CreatureType==CREATURETYPE_VAMPIRE_OPERATOR)
 								{
@@ -591,30 +593,30 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 		}
 
 		//-------------------------------------------------
-		// 장착한 Item이 
-		// 기본공격용 아이템이라면...
-		// 기본공격ActionInfo가 바뀌어야 한다.
+		// The equipped Item
+		// if it is a basic-attack item...
+		// the basic-attack ActionInfo must change.
 		//-------------------------------------------------
 		if (pItem->IsBasicWeapon() && pItem->IsAffectStatus())
 		{
 			TYPE_ACTIONINFO ai = pItem->GetUseActionInfo();
 
 			//-------------------------------------------------
-			// 설정된 actionInfo가 없는 경우
+			// If no actionInfo is set
 			//-------------------------------------------------
 			if (ai==ACTIONINFO_NULL)
 			{
-				// 기본 맨손 공격 동작으로 전환한다.
+				// Switch to the basic bare-hand attack action.
 				SetBasicActionInfo( SKILL_ATTACK_MELEE );
 				
 				DEBUG_ADD("[Empty ActionInfo]This Creature's basic attack is Melee");				
 			}
 			//-------------------------------------------------
-			// 설정된 actionInfo가 있다면..
+			// If an actionInfo is set..
 			//-------------------------------------------------
 			else
 			{
-				// 기본 공격 동작으로 설정한다.
+				// Set it as the basic attack action.
 				SetBasicActionInfo( ai );
 				
 				DEBUG_ADD_FORMAT("[Set BasicActionInfo] %d", ai);
@@ -622,15 +624,15 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 		}
 
 		//-------------------------------------------------
-		// 오른손이 비어있으면..
-		// 공격은 맨손이라고 보면 된다..
-		// 하드 코딩.. - -;;
+		// If the right hand is empty..
+		// the attack can be treated as bare-handed..
+		// Hard-coding.. - -;;
 		//-------------------------------------------------
 		if (!m_Addon[ADDON_RIGHTHAND].bAddon)
 		{
 			DEBUG_ADD("[Empty RightHand]This Creature's basic attack is Melee");
 			
-			// 기본 맨손 공격 동작으로 전환한다.
+			// Switch to the basic bare-hand attack action.
 			SetBasicActionInfo( SKILL_ATTACK_MELEE );			
 		}
 
@@ -640,13 +642,13 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 
 	//-------------------------------------------------
 	//
-	// 정지한 상태가 아닌 경우
+	// If not in the stopped state
 	//
 	//-------------------------------------------------
 	DEBUG_ADD_FORMAT_ERR("[Error] Not STAND action. id=%d, action=%d", m_ID, m_Action);
 	
-	// 다음에 정지할 때, 복장을 바꾸도록 한다..
-	// 그래야 되는데.. 귀찮다. - -;;
+	// Change the outfit the next time it stops..
+	// That is what should be done.. but it is a bother. - -;;
 
 	return false;	
 }
@@ -654,7 +656,7 @@ MCreatureWear::SetAddonItem(MItem* pItem)
 //---------------------------------------------------------------------------
 // Remove AddonItem
 //---------------------------------------------------------------------------
-// AddonItem을 장착해제 한다.
+// Unequips an AddonItem.
 //---------------------------------------------------------------------------
 bool
 MCreatureWear::RemoveAddonItem( MItem* pItem )
@@ -670,12 +672,12 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 
 	//-------------------------------------------------
 	//
-	// 정지한 상태인 경우만 복장을 바꿀 수 있다.
+	// The outfit can only be changed while stopped.
 	//
 	//-------------------------------------------------
-	// player가 아닌 경우나..
-	// 오토바이를 타는 경우는..
-	// 그냥 정지하게 해 버린다. - -;
+	// If it is not the player, or..
+	// if riding a motorcycle..
+	// just make it stop. - -;
 	if (GetClassType()!=MCreature::CLASS_PLAYER
 		|| pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
 	{
@@ -687,7 +689,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 		|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
 		|| (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND) )
 	{
-		// 뱀파 옷추가
+		// Added Vampire clothes
 		if(pItem->GetItemClass() == ITEM_CLASS_VAMPIRE_COAT)
 		{
 			if(m_CreatureType != CREATURETYPE_VAMPIRE_OPERATOR)
@@ -700,7 +702,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 						m_ColorBody1 = defaultCoatColor;
 					} else
 					{
-						if (IsMale())	// 아씨 하드 코딩 하면 안대는데-ㅅ-
+						if (IsMale())	// Ugh, I should not hard-code this, but -_-
 						{
 							SetCreatureType(2);
 						}			
@@ -710,7 +712,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 						}
 					}
 				}
-				//						addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 피부
+				//						addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// skin
 
 				m_ColorBody2	= defaultCoatColor;
 			}
@@ -721,10 +723,10 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 		}
 
 		//-------------------------------------------------
-		// 착용해서 모양이 바뀌는 Item인가?
+		// Is it an Item whose appearance changes when worn?
 		//-------------------------------------------------
-		// --> 장착 부위를 알아내서 
-		//    그 부위의 Addon을 없애야 한다.
+		// --> find the equip slot
+		//    and remove the Addon of that slot.
 		//-------------------------------------------------
 //		else
 		if (pItem->IsAddonItem())
@@ -732,7 +734,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 			enum ADDON add = pItem->GetAddonSlot();
 
 			//-------------------------------------------------
-			// 장착 부위의 Addon을 없앤다.
+			// Remove the Addon of the equip slot.
 			//-------------------------------------------------
 			if (add == ADDON_NULL)
 			{				
@@ -742,19 +744,19 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 			else
 			{
 				//--------------------------------------------------
-				// 정보를 제거 한다.
+				// Remove the info.
 				//--------------------------------------------------
 				ClearAddonInfo( add );
 
 				//-------------------------------------------------
 				//
-				//			장착하는 부위에 따라서
+				//			According to the equip slot
 				//
 				//-------------------------------------------------	
 				switch (add)
 				{
 					//-------------------------------------------------
-					// 상의 : 맨몸일 경우에는 기본몸으로..
+					// Coat: if bare, use the default body..
 					//-------------------------------------------------
 					case ADDON_COAT :
 					{
@@ -765,11 +767,11 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 
 						//delete pItem;
 						//-------------------------------------------------
-						// 장착한다.
+						// Equip it.
 						//-------------------------------------------------						
 						ADDON_INFO& addon = m_Addon[ADDON_COAT];
 
-						// 초기화
+						// Initialize
 						addon.bAddon	= TRUE;
 						if(GetRace() == RACE_OUSTERS)
 						{
@@ -779,7 +781,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 						else
 						{
 							addon.FrameID	= IsMale()? ADDONID_COAT0_MALE : ADDONID_COAT0_FEMALE; 
-							addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 기본 피부색
+							addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// default skin colour
 						}
 
 						addon.ItemClass	= ITEM_CLASS_COAT;
@@ -789,8 +791,8 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 						addon.EffectColorSet = 0;
 						
 						//-------------------------------------------------	
-						// Vampire만 적용된다.
-						// 운영자도 적용되겠지..
+						// Applies to Vampire only.
+						// The operator probably applies too..
 						//-------------------------------------------------													
 						if (m_CreatureType==CREATURETYPE_VAMPIRE_OPERATOR
 							|| m_CreatureType==CREATURETYPE_SLAYER_OPERATOR
@@ -808,7 +810,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 					break;
 
 					//-------------------------------------------------
-					// 하의 : 맨몸일 경우에는 기본몸으로..
+					// Trousers: if bare, use the default body..
 					//-------------------------------------------------
 					case ADDON_TROUSER :
 					{
@@ -819,17 +821,17 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 
 						//delete pItem;
 						//-------------------------------------------------
-						// 장착한다.
+						// Equip it.
 						//-------------------------------------------------
 						ADDON_INFO& addon = m_Addon[ADDON_TROUSER];
 
-						// 초기화
+						// Initialize
 						addon.bAddon	= TRUE;
 						addon.FrameID	= IsMale()? ADDONID_TROUSER0_MALE : ADDONID_TROUSER0_FEMALE;
 
 						addon.ItemClass	= ITEM_CLASS_TROUSER;
 						addon.ItemType	= 0;
-						addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 기본 피부색
+						addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// default skin colour
 						addon.ColorSet2	= defaultTrouserColor;
 						addon.bEffectColor = FALSE;
 						addon.EffectColorSet = 0;
@@ -837,17 +839,17 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 					break;
 
 					//-------------------------------------------------
-					// 오른손은 무기..이므로..
+					// The right hand is a weapon.., so..
 					//-------------------------------------------------				
 					case ADDON_RIGHTHAND :
-						// 기본 맨손 공격 동작으로 전환한다.
+						// Switch to the basic bare-hand attack action.
 						SetBasicActionInfo( SKILL_ATTACK_MELEE );
 
-						// 특정 무기에만 걸리는 Effect
+						// Effect that applies only to certain weapons
 						switch (pItem->GetItemClass())
 						{
 							//-------------------------------------------------	
-							// 도
+							// Sword
 							//-------------------------------------------------	
 							case ITEM_CLASS_BLADE :
 								if (HasEffectStatus(EFFECTSTATUS_BERSERKER))
@@ -857,7 +859,7 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 							break;
 
 							//-------------------------------------------------	
-							// 십자가
+							// Cross
 							//-------------------------------------------------	
 							case ITEM_CLASS_CROSS :
 							case ITEM_CLASS_MACE :
@@ -873,20 +875,20 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 					break;
 
 					//-------------------------------------------------
-					// 오토바이 장착 해제
+					// Motorcycle unequipped
 					//-------------------------------------------------
 					case ADDON_MOTOR :
 						//------------------------------------------
-						// 움직이는 방법 바꿈
+						// Change the way of moving
 						//------------------------------------------					
 						SetMoveDevice( MCreature::MOVE_DEVICE_WALK );
 					break;
 
 					//-------------------------------------------------
-					// 모자
+					// Hat
 					//-------------------------------------------------
-					// 모자를 제거한 경우는 
-					// 짧은 머리카락을 다시 붙여준다.
+					// When the hat is removed,
+					// put the short hair back.
 					//-------------------------------------------------
 					case ADDON_HELM :
 						if (m_HairFrameID==ADDONID_HAIR1_FEMALE
@@ -907,19 +909,19 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 			return true;
 		}
 
-		// addon item이 아닌 경우
+		// If it is not an addon item
 		return true;
 	}
 
 	//-------------------------------------------------
 	//
-	// 정지한 상태가 아닌 경우
+	// If not in the stopped state
 	//
 	//-------------------------------------------------
 	DEBUG_ADD_FORMAT_ERR("[Error] Not STAND action. id=%d, action=%d", m_ID, m_Action);
 	
-	// 다음에 정지할 때, 복장을 바꾸도록 한다..
-	// 그래야 되는데.. 귀찮다. - -;;
+	// Change the outfit the next time it stops..
+	// That is what should be done.. but it is a bother. - -;;
 
 
 	return false;
@@ -928,18 +930,18 @@ MCreatureWear::RemoveAddonItem( MItem* pItem )
 //---------------------------------------------------------------------------
 // Set Creature Type
 //---------------------------------------------------------------------------
-// 기본 복장을 입힌다.
+// Puts on the default outfit.
 //---------------------------------------------------------------------------
 void
 MCreatureWear::SetCreatureType(TYPE_CREATURETYPE type)
 {
 	//-------------------------------------------------
-	// type설정
+	// Set the type
 	//-------------------------------------------------
 	MCreature::SetCreatureType( type );
 
 	//-------------------------------------------------
-	// 다 벗긴다.
+	// Take everything off.
 	//-------------------------------------------------
 	for (int i=0; i<ADDON_MAX; i++)
 	{
@@ -949,17 +951,17 @@ MCreatureWear::SetCreatureType(TYPE_CREATURETYPE type)
 	if(IsVampire())
 	{
 		//-------------------------------------------------
-		// 상의 : 맨몸일 경우에는 기본몸으로..
+		// Coat: if bare, use the default body..
 		//-------------------------------------------------
 		ADDON_INFO& addon = m_Addon[ADDON_COAT];
 
-		// 초기화
+		// Initialize
 		addon.bAddon	= TRUE;
 //		addon.FrameID	= IsMale()? ADDONID_COAT0_MALE : ADDONID_COAT0_FEMALE;
 		
 		addon.ItemClass	= ITEM_CLASS_VAMPIRE_COAT;
 		addon.ItemType	= 0;
-		addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 기본 피부색
+		addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// default skin colour
 		addon.ColorSet2	= defaultCoatColor;	
 		addon.bEffectColor = FALSE;
 		addon.EffectColorSet = 0;
@@ -968,18 +970,18 @@ MCreatureWear::SetCreatureType(TYPE_CREATURETYPE type)
 	if(IsOusters())
 	{
 		//-------------------------------------------------
-		// 상의 : 맨몸일 경우에는 기본몸으로..
+		// Coat: if bare, use the default body..
 		//-------------------------------------------------
 		ADDON_INFO& addon = m_Addon[ADDON_COAT];
 		
-		// 초기화
+		// Initialize
 		addon.bAddon	= TRUE;
 		addon.FrameID	= 1;
 		//		addon.FrameID	= IsMale()? ADDONID_COAT0_MALE : ADDONID_COAT0_FEMALE;
 		
 		addon.ItemClass	= ITEM_CLASS_OUSTERS_COAT;
 		addon.ItemType	= 0;
-		addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 기본 피부색
+		addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// default skin colour
 		addon.ColorSet2	= defaultCoatColor;	
 		addon.bEffectColor = FALSE;
 		addon.EffectColorSet = 0;
@@ -987,33 +989,33 @@ MCreatureWear::SetCreatureType(TYPE_CREATURETYPE type)
 	else
 	{
 		//-------------------------------------------------
-		// 상의 : 맨몸일 경우에는 기본몸으로..
+		// Coat: if bare, use the default body..
 		//-------------------------------------------------
 		ADDON_INFO& addon = m_Addon[ADDON_COAT];
 
-		// 초기화
+		// Initialize
 		addon.bAddon	= TRUE;
 		addon.FrameID	= IsMale()? ADDONID_COAT0_MALE : ADDONID_COAT0_FEMALE;
 		
 		addon.ItemClass	= ITEM_CLASS_COAT;
 		addon.ItemType	= 0;
-		addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 기본 피부색
+		addon.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// default skin colour
 		addon.ColorSet2	= defaultCoatColor;	
 		addon.bEffectColor = FALSE;
 		addon.EffectColorSet = 0;
 		
 		//-------------------------------------------------
-		// 하의 : 맨몸일 경우에는 기본몸으로..
+		// Trousers: if bare, use the default body..
 		//-------------------------------------------------
 		ADDON_INFO& addon2 = m_Addon[ADDON_TROUSER];
 		
-		// 초기화
+		// Initialize
 		addon2.bAddon	= TRUE;
 		addon2.FrameID	= IsMale()? ADDONID_TROUSER0_MALE : ADDONID_TROUSER0_FEMALE;
 		
 		addon2.ItemClass	= ITEM_CLASS_TROUSER;
 		addon2.ItemType	= 0;
-		addon2.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// 기본 피부색
+		addon2.ColorSet1	= m_ColorBody1;//defaultSkinColor;	// default skin colour
 		addon2.ColorSet2	= defaultTrouserColor;
 		addon2.bEffectColor = FALSE;
 		addon2.EffectColorSet = 0;
@@ -1023,7 +1025,7 @@ MCreatureWear::SetCreatureType(TYPE_CREATURETYPE type)
 //----------------------------------------------------------------------
 // Remove EffectStatus
 //----------------------------------------------------------------------
-// 특정한 EffectSpriteType을 제거한다.
+// Removes a specific EffectSpriteType.
 //----------------------------------------------------------------------
 bool
 MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
@@ -1047,7 +1049,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 	bool bUseEffectSprite = (*g_pEffectStatusTable)[status].bUseEffectSprite;
 	TYPE_EFFECTSPRITETYPE type = (*g_pEffectStatusTable)[status].EffectSpriteType;
 	//------------------------------------------------------------
-	// effectStatus에 따라서.
+	// Depending on effectStatus.
 	//------------------------------------------------------------
 	switch (status)
 	{
@@ -1064,7 +1066,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			if(IsAdvancementClass() && status==EFFECTSTATUS_SUMMON_SYLPH)
 			{
 				type = EFFECTSPRITETYPE_OUSTERS_FASTMOVE_LOOP;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, 8, NULL, false);
 			}
 		break;
@@ -1072,7 +1074,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			SetMoveDevice(MOVE_DEVICE_WALK);
 			break;
 		//------------------------------------------------------------
-		// 마비 풀릴 때
+		// When paralysis ends
 		//------------------------------------------------------------
 		// add by Coffee 2007-3-21
 		case EFFECTSTATUS_SATELLITE_BOMB_AIM :
@@ -1089,7 +1091,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 		break;
 
 		//------------------------------------------------------------
-		// 마비 풀릴 때
+		// When paralysis ends
 		//------------------------------------------------------------
 		case EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS :
 		case EFFECTSTATUS_EXPLOSION_WATER :
@@ -1112,19 +1114,19 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 		break;
 
 		//------------------------------------------------------------
-		// EFFECTSTATUS_SUMMON_CASKET [새기술]
+		// EFFECTSTATUS_SUMMON_CASKET [new skill]
 		//------------------------------------------------------------
 		case EFFECTSTATUS_CASKET :
-			// 바로 invisible로 만든다.
+			// Make it invisible right away.
 			RemoveCasket();
 		break;
 
 		//------------------------------------------------------------
-		// invisible 제거
+		// Remove invisible
 		//------------------------------------------------------------
 		case EFFECTSTATUS_INVISIBILITY :
 		case EFFECTSTATUS_SNIPPING_MODE :
-			// invisible을 제거한다.
+			// Remove the invisible.
 			SetVisible();
 		break;
 
@@ -1135,13 +1137,13 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			SetAlive();
 			if(IsVampire())
 			{
-				ExecuteActionInfoFromMainNode(
-							BLOOD_RESURRECT,										// 사용 기술 번호
+				WorldEvents::ExecuteActionInfoFromMainNode(
+							BLOOD_RESURRECT,										// skill number used
 						
 							m_X, m_Y, 0,
-							(int)m_Direction,														// 사용 방향
+							(int)m_Direction,														// direction used
 							
-							m_ID,												// 목표에 대한 정보
+							m_ID,												// target info
 							m_X, m_Y, 0,
 							
 							2*16, //5*16, 
@@ -1155,7 +1157,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			break;
 
 		case EFFECTSTATUS_GHOST:
-			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// 박쥐인 경우
+			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// unless it flies (a bat)
 				SetGroundCreature();
 			break;
 		case EFFECTSTATUS_GLACIER:	
@@ -1176,7 +1178,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 
 	//------------------------------------------------------------
 	//
-	//			EffectSprite로 표현하는 경우
+	//			Case expressed with EffectSprite
 	//
 	//------------------------------------------------------------
 	if (bUseEffectSprite)
@@ -1187,11 +1189,11 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 		if(type == EFFECTSPRITETYPE_FAST_MOVE_STOP)
 			type2 = EFFECTSPRITETYPE_FAST_MOVE_FLY;
 
-		_MinTraceA("remove effectsprite\n");
+		DEBUG_ADD("remove effectsprite");
 
 		//-------------------------------------------------------
-		// Creature에 붙어 있는 Effect중에서
-		// EffectSpriteType이 type인 것을 제거한다.
+		// Among the Effects attached to the Creature,
+		// remove those whose EffectSpriteType is type.
 		//-------------------------------------------------------
 		if (type < g_pEffectSpriteTypeTable->GetSize())
 		{
@@ -1205,7 +1207,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			if (m_bAttachEffect[type])
 			{
 				//-------------------------------------------------------
-				// 몸에 붙은 경우
+				// If attached to the body
 				//-------------------------------------------------------			
 				ATTACHEFFECT_LIST::iterator iEffect = m_listEffect.begin();
 
@@ -1216,7 +1218,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 					MAttachEffect* pEffect = *iEffect;
 					
 					//-------------------------------------------------------
-					// 같은 type을 찾는다.
+					// Find the same type.
 					//-------------------------------------------------------
 					if (pEffect->IsEffectSprite() 
 						&& (pEffect->GetEffectSpriteType() == type ||
@@ -1243,7 +1245,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 					return true;
 
 				//-------------------------------------------------------
-				// 바닥에 붙은 경우
+				// If attached to the ground
 				//-------------------------------------------------------
 				iEffect = m_listGroundEffect.begin();
 
@@ -1252,16 +1254,16 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 					MAttachEffect* pEffect = *iEffect;
 					
 					//-------------------------------------------------------
-					// 같은 type을 찾는다.
+					// Find the same type.
 					//-------------------------------------------------------
 					if (pEffect->IsEffectSprite() && 
 						( pEffect->GetEffectSpriteType() == type || (type2 != EFFECTSPRITETYPE_NULL && 
 						type2 == pEffect->GetEffectSpriteType())) )
 					{
-						// 메모리 제거
+						// Free memory
 						delete pEffect;
 
-						// list에서 제거
+						// Remove from the list
 						m_listGroundEffect.erase( iEffect );
 
 						m_bAttachEffect[type] = false;
@@ -1275,7 +1277,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 	}
 	//------------------------------------------------------------
 	//
-	//			EffectColor로 표현하는 경우
+	//			Case expressed with EffectColor
 	//
 	//------------------------------------------------------------
 	else
@@ -1283,8 +1285,8 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 		WORD colorSet = (*g_pEffectStatusTable)[status].EffectColor;
 
 		//-------------------------------------------------------
-		// Creature에 붙어 있는 Effect중에서
-		// EffectColor가 color인 것을 제거한다.
+		// Among the Effects attached to the Creature,
+		// remove those whose EffectColor is color.
 		//-------------------------------------------------------
 		ATTACHEFFECT_LIST::iterator iEffect = m_listEffect.begin();
 
@@ -1293,21 +1295,21 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			MAttachEffect* pEffect = *iEffect;
 			
 			//-------------------------------------------------------
-			// 같은 type을 찾는다.
+			// Find the same type.
 			//-------------------------------------------------------
 			if (pEffect->IsEffectColor() && pEffect->GetEffectColor() == colorSet)
 			{
 				ADDON	part = pEffect->GetEffectColorPart();
 
 				//------------------------------------------------------------
-				// 특정한 부위만 색깔이 바뀌는 경우도 있다.
+				// In some cases only a specific part changes colour.
 				//------------------------------------------------------------
 				if (part < ADDON_MAX)
 				{
 					m_Addon[part].bEffectColor = FALSE;
 				}
 				//------------------------------------------------------------
-				// 모든 부위를 원래대로...
+				// Restore all parts to the original...
 				//------------------------------------------------------------
 				else
 				{
@@ -1317,10 +1319,10 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 					}
 				}
 
-				// 메모리 제거
+				// Free memory
 				delete pEffect;
 
-				// list에서 제거
+				// Remove from the list
 				m_listEffect.erase( iEffect );
 
 				return true;
@@ -1336,8 +1338,8 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 //----------------------------------------------------------------------
 // Update Effect
 //----------------------------------------------------------------------
-// Creature에 붙은 모든 Effect의 Frame을 바꿔주고..
-// 끝나는게 있으면 list와 memory에서 삭제한다.
+// Advances the Frame of every Effect attached to the Creature..
+// and deletes finished ones from the list and memory.
 //----------------------------------------------------------------------
 void		
 MCreatureWear::UpdateAttachEffect()
@@ -1345,18 +1347,18 @@ MCreatureWear::UpdateAttachEffect()
 	ATTACHEFFECT_LIST::iterator iEffect = m_listEffect.begin();
 	ATTACHEFFECT_LIST::iterator iEffectTemp;
 
-	// 밝기는 0
+	// Brightness is 0
 	//m_MaxEffectLight = 0;
 
 	//---------------------------------------------------------------------
-	// 캐릭터 색깔 바꾸는 색..
+	// Colour that changes the character's colour..
 	//---------------------------------------------------------------------
-	// NULL값이당.. 외부에서 체크해야함..
+	// It is a NULL value.. the caller must check..
 	m_AttachEffectColor = m_ChangeColorSet;	//ATTACHEFFECTCOLOR_NULL;
 	int bShowColor = (HasEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS) 
-						|| g_CurrentFrame % g_pClientConfig->FRAME_DRAW_ORIGINAL_SPRITE);	// 몇 frame마다 한번씩은 원래 색깔을 보여준다.
+						|| g_CurrentFrame % g_pClientConfig->FRAME_DRAW_ORIGINAL_SPRITE);	// Every few frames, show the original colour once.
 
-	int bShowColorPart = (g_CurrentFrame & 0x00000004);	// 4 frame씩 번갈아가며 색 출력
+	int bShowColorPart = (g_CurrentFrame & 0x00000004);	// Alternate the colour output every 4 frames
 	int numColors = 0;
 	BOOL bChangeColor = FALSE;
 
@@ -1364,7 +1366,7 @@ MCreatureWear::UpdateAttachEffect()
 	WORD	addonColor[ADDON_MAX] = { m_ChangeColorSet, };
 
 	//---------------------------------------------------------------------
-	// 모든 Effect를 Update한다.
+	// Update all Effects.
 	//---------------------------------------------------------------------
 	while (iEffect != m_listEffect.end())
 	{
@@ -1417,7 +1419,7 @@ MCreatureWear::UpdateAttachEffect()
 				if( bNewSummonSylphEffect )
 					frameID = (*g_pEffectSpriteTypeTable)[ EffectSpriteType + 1 ].FrameID;
 
-				int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);			
+				int maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 			
 				pEffect->SetEffectSprite( EFFECTSPRITETYPE_FAST_MOVE_STOP );
 				if( bNewSummonSylphEffect )
@@ -1434,7 +1436,7 @@ MCreatureWear::UpdateAttachEffect()
 				if( bNewSummonSylphEffect )
 					frameID = (*g_pEffectSpriteTypeTable)[ EffectSpriteType - 1 ].FrameID;
 
-				int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);			
+				int maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 
 				pEffect->SetEffectSprite( EFFECTSPRITETYPE_FAST_MOVE_FLY );
 
@@ -1463,40 +1465,40 @@ MCreatureWear::UpdateAttachEffect()
 
 		if (bErase == false && pEffect->Update())
 		{
-			// -_- 흡영은 방향 안바꾼다..
+			// -_- Absorb-soul does not change direction..
 			if( pEffect->GetEffectSpriteType() != EFFECTSPRITETYPE_ABSORB_SOUL )
 				pEffect->SetDirection( m_CurrentDirection );
-			// 최고 밝기를 가진 Effect의 밝기를 저장한다.
+			// Save the brightness of the Effect with the highest brightness.
 //			if (m_MaxEffectLight < pEffect->GetLight())
 //			{
 //				m_MaxEffectLight = pEffect->GetLight();
 //			}
 
-			// 위치 설정
+			// Set the position
 			pEffect->SetPosition(m_X, m_Y);
 
 			//---------------------------------------------------------------------
-			// 위치가 바뀌었거나
-			// 빛의 크기(시야)가 바뀐 경우
+			// If the position changed or
+			// the light size (sight) changed
 			//---------------------------------------------------------------------
 			if (x!=pEffect->GetX() || y!=pEffect->GetY()
 				|| light != pEffect->GetLight())
 			{				
-				// 시야 바꾸기
+				// Change the sight
 //				g_pZone->UnSetLight(x, y, light);
 //				g_pZone->SetLight(pEffect->GetX(), pEffect->GetY(), pEffect->GetLight());
 			}
 
 			//---------------------------------------------------------------------
-			// 캐릭터 색깔 바꾸는 Effect이면
-			// 하나를 선택해야 한다.
+			// If it is an Effect that changes the character's colour
+			// one must be chosen.
 			//---------------------------------------------------------------------
 			if (pEffect->IsEffectColor())
 			{
 				ADDON	part = pEffect->GetEffectColorPart();
 
 				//--------------------------------------------------------
-				// 부분적으로 색깔 바뀌는 effect
+				// Effect that changes colour partially
 				//--------------------------------------------------------
 				if (part < ADDON_MAX)
 				{
@@ -1509,7 +1511,7 @@ MCreatureWear::UpdateAttachEffect()
 					}
 				}
 				//--------------------------------------------------------
-				// 전체 색깔 바뀌는 effect
+				// Effect that changes the whole colour
 				//--------------------------------------------------------
 				else if (bShowColor)
 				{
@@ -1526,51 +1528,51 @@ MCreatureWear::UpdateAttachEffect()
 
 			//-----------------------------------------------
 			//
-			// 이 Effect가 끝나기 전에 LinkCount에 의해서
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// Before this Effect ends, by LinkCount
+			// if there is a next linked Effect, it must be created.
 			//
-			// 현재Frame이 EndLinkFrame을 넘어간 경우
+			// If the current Frame has passed EndLinkFrame
 			//
 			//-----------------------------------------------
 			if (g_CurrentFrame >= pEffect->GetEndLinkFrame()
 				&& pEffect->GetLinkSize() != 0)
 			{
-				// GenerateNext에서 
-				// pEffect의 EffectTarget을 NULL로 만들어주기 때문에
-				// 여기서 지울 필요 없다.
+				// In GenerateNext,
+				// pEffect's EffectTarget is set to NULL, so
+				// there is no need to delete it here.
 				g_pEffectGeneratorTable->GenerateNext( pEffect );
 
-				// pEffect는 여전히 존재해야 하므로 지우면 안된다.
+				// pEffect must still exist, so do not delete it.
 			}
 
-			// 제대로 된 경우
+			// If it went fine
 			iEffect++;
 		}
 		//---------------------------------------------------------------------
-		// 시간이 다 돼서 끝나는 경우
+		// If it ends because time ran out
 		//---------------------------------------------------------------------
 		else
 		{
 			bool bUseEffectSprite = pEffect->IsEffectSprite();
 
-			// flag제거
+			// Remove the flag
 			if (bUseEffectSprite)
 			{
-				m_bAttachEffect[pEffect->GetEffectSpriteType()] = false;	// flag제거
+				m_bAttachEffect[pEffect->GetEffectSpriteType()] = false;	// Remove the flag
 			}
 
 
 			ADDON	part = pEffect->GetEffectColorPart();
 
 			//------------------------------------------------------------
-			// 특정한 부위만 색깔이 바뀌는 경우도 있다.
+			// In some cases only a specific part changes colour.
 			//------------------------------------------------------------
 			if (part < ADDON_MAX)
 			{
 				m_Addon[part].bEffectColor = FALSE;
 			}
 			//------------------------------------------------------------
-			// 원래대로 모두 돌린다.
+			// Restore everything to the original.
 			//------------------------------------------------------------
 			else
 			{
@@ -1582,7 +1584,7 @@ MCreatureWear::UpdateAttachEffect()
 		
 			//---------------------------------------------------------------------
 			//
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// if there is a next linked Effect, it must be created.
 			//
 			//---------------------------------------------------------------------
 			if (pEffect->GetLinkSize() != 0)
@@ -1590,12 +1592,12 @@ MCreatureWear::UpdateAttachEffect()
 				g_pEffectGeneratorTable->GenerateNext( pEffect );
 			}
 
-			// 빛나는 Effect면 시야를 사라지게 해야한다.
+			// If it is a glowing Effect, the sight must be removed.
 			//if (pEffect->GetBltType()==BLT_EFFECT)
 			{
 				//m_nAlphaEffect --;
 
-				// 모든 빛나는Effect가 사라졌으면 시야를 제거시킨다.
+				// If all glowing Effects are gone, remove the sight.
 				//if (m_nAlphaEffect==0)
 				{
 //					g_pZone->UnSetLight(x, y, light);
@@ -1605,23 +1607,23 @@ MCreatureWear::UpdateAttachEffect()
 
 			DEBUG_ADD_FORMAT("[DeleteAttachEffect] id=%d, esType=%d", m_ID, pEffect->GetEffectSpriteType());
 			
-			// memory삭제, list삭제						
-			delete pEffect;						// memory제거
+			// Delete memory, delete from list
+			delete pEffect;						// Free memory
 			
 			DEBUG_ADD("[DeleteAttachEffect] OK");
 			
-			// list에서 삭제하기 위해서.. 임시로 저장
+			// Save temporarily.. to delete from the list
 			iEffectTemp = iEffect;
 
 			iEffect++;
-			m_listEffect.erase( iEffectTemp );	// list에서 제거
+			m_listEffect.erase( iEffectTemp );	// Remove from the list
 		}		
 	}
 
 	//---------------------------------------------------------------------
-	// 몸에 붙는 effect
+	// Effect attached to the body
 	//---------------------------------------------------------------------
-	// 모든 Effect를 Update한다.
+	// Update all Effects.
 	//---------------------------------------------------------------------
 	iEffect = m_listGroundEffect.begin();
 	
@@ -1644,65 +1646,65 @@ MCreatureWear::UpdateAttachEffect()
 
 		if (pEffect->Update())
 		{
-			// 최고 밝기를 가진 Effect의 밝기를 저장한다.
+			// Save the brightness of the Effect with the highest brightness.
 //			if (m_MaxEffectLight < pEffect->GetLight())
 //			{
 //				m_MaxEffectLight = pEffect->GetLight();
 //			}
 
-			// 위치 설정
+			// Set the position
 			pEffect->SetPosition(m_X, m_Y);
 
 			//---------------------------------------------------------------------
-			// 위치가 바뀌었거나
-			// 빛의 크기(시야)가 바뀐 경우
+			// If the position changed or
+			// the light size (sight) changed
 			//---------------------------------------------------------------------
 			if (x!=pEffect->GetX() || y!=pEffect->GetY()
 				|| light != pEffect->GetLight())
 			{				
-				// 시야 바꾸기
+				// Change the sight
 //				g_pZone->UnSetLight(x, y, light);
 //				g_pZone->SetLight(pEffect->GetX(), pEffect->GetY(), pEffect->GetLight());
 			}
 
 			//-----------------------------------------------
 			//
-			// 이 Effect가 끝나기 전에 LinkCount에 의해서
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// Before this Effect ends, by LinkCount
+			// if there is a next linked Effect, it must be created.
 			//
-			// 현재Frame이 EndLinkFrame을 넘어간 경우
+			// If the current Frame has passed EndLinkFrame
 			//
 			//-----------------------------------------------
 			if (g_CurrentFrame >= pEffect->GetEndLinkFrame()
 				&& pEffect->GetLinkSize() != 0)
 			{
-				// GenerateNext에서 
-				// pEffect의 EffectTarget을 NULL로 만들어주기 때문에
-				// 여기서 지울 필요 없다.
+				// In GenerateNext,
+				// pEffect's EffectTarget is set to NULL, so
+				// there is no need to delete it here.
 				g_pEffectGeneratorTable->GenerateNext( pEffect );
 
-				// pEffect는 여전히 존재해야 하므로 지우면 안된다.
+				// pEffect must still exist, so do not delete it.
 			}
 
-			// 제대로 된 경우
+			// If it went fine
 			iEffect++;
 		}
 		//---------------------------------------------------------------------
-		// 시간이 다 돼서 끝나는 경우
+		// If it ends because time ran out
 		//---------------------------------------------------------------------
 		else
 		{
 			bool bUseEffectSprite = pEffect->IsEffectSprite();
 
-			// flag제거
+			// Remove the flag
 			if (bUseEffectSprite)
 			{
-				m_bAttachEffect[pEffect->GetEffectSpriteType()] = false;	// flag제거
+				m_bAttachEffect[pEffect->GetEffectSpriteType()] = false;	// Remove the flag
 			}
 
 			//---------------------------------------------------------------------
 			//
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// if there is a next linked Effect, it must be created.
 			//
 			//---------------------------------------------------------------------
 			if (pEffect->GetLinkSize() != 0)
@@ -1710,12 +1712,12 @@ MCreatureWear::UpdateAttachEffect()
 				g_pEffectGeneratorTable->GenerateNext( pEffect );
 			}
 
-			// 빛나는 Effect면 시야를 사라지게 해야한다.
+			// If it is a glowing Effect, the sight must be removed.
 			//if (pEffect->GetBltType()==BLT_EFFECT)
 			{
 				//m_nAlphaEffect --;
 
-				// 모든 빛나는Effect가 사라졌으면 시야를 제거시킨다.
+				// If all glowing Effects are gone, remove the sight.
 				//if (m_nAlphaEffect==0)
 				{
 //					g_pZone->UnSetLight(x, y, light);
@@ -1726,28 +1728,28 @@ MCreatureWear::UpdateAttachEffect()
 			DEBUG_ADD_FORMAT("[DeleteAttachEffect] id=%d, esType=%d", m_ID, pEffect->GetEffectSpriteType());
 			
 
-			// memory삭제, list삭제						
-			delete pEffect;						// memory제거
+			// Delete memory, delete from list
+			delete pEffect;						// Free memory
 			
 			
 			DEBUG_ADD("[DeleteAttachEffect] OK");
 			
 
-			// list에서 삭제하기 위해서.. 임시로 저장
+			// Save temporarily.. to delete from the list
 			iEffectTemp = iEffect;
 
 			iEffect++;
-			m_listGroundEffect.erase( iEffectTemp );	// list에서 제거
+			m_listGroundEffect.erase( iEffectTemp );	// Remove from the list
 		}		
 	}
 
 	//---------------------------------------------------------------------
-	// 색깔 바뀌는 거 보여주는 시점이면..
+	// If it is the time to show the colour change..
 	//---------------------------------------------------------------------
 	if (bChangeColor)
 	{
 		//---------------------------------------------------------------------
-		// 전체 색깔 바뀌는 Effect가 없는 경우
+		// If there is no Effect changing the whole colour
 		//---------------------------------------------------------------------	
 		if (m_AttachEffectColor == m_ChangeColorSet)//ATTACHEFFECTCOLOR_NULL)
 		{
@@ -1755,19 +1757,19 @@ MCreatureWear::UpdateAttachEffect()
 			{
 				if (bAddonColorPart[p])
 				{
-					// 그 부분만 바뀌는 색깔로..
+					// Use the changing colour for that part only..
 					m_Addon[p].bEffectColor		= TRUE;
 					m_Addon[p].EffectColorSet	= addonColor[p];
 				}		
 				else
 				{
-					// 원래 색깔로..
+					// Use the original colour..
 					m_Addon[p].bEffectColor		= FALSE;
 				}
 			}
 		}
 		//---------------------------------------------------------------------
-		// 전체 색깔 바뀌는 Effect가 있는 경우
+		// If there is an Effect changing the whole colour
 		//---------------------------------------------------------------------
 		else
 		{
@@ -1777,19 +1779,19 @@ MCreatureWear::UpdateAttachEffect()
 
 				if (bAddonColorPart[p])
 				{
-					// 그 부분만 바뀌는 색깔로..			
+					// Use the changing colour for that part only..
 					m_Addon[p].EffectColorSet	= addonColor[p];
 				}		
 				else
 				{
-					// 전체 바뀌는 색깔로..				
+					// Use the changing colour for the whole..
 					m_Addon[p].EffectColorSet	= m_AttachEffectColor;
 				}
 			}
 		}
 	}
 	//---------------------------------------------------------------------
-	// 색깔 바뀌는거 안 보여주는 시점...
+	// Time when the colour change is not shown...
 	//---------------------------------------------------------------------
 	else
 	{

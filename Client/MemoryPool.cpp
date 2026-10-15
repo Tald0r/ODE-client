@@ -27,8 +27,8 @@
 #include "MFakeCreature.h"
 
 
-MemoryPool g_CreatureMemoryPool( sizeof( MCreature ), 30 );
-MemoryPool g_CreatureWearMemoryPool( sizeof( MCreatureWear ), 30 );
+// g_CreatureMemoryPool is MCreature.cpp's (gamemodel, task 4.242).
+// g_CreatureWearMemoryPool is MCreatureWear.cpp's (gamemodel, task 4.243).
 MemoryPool g_NPCCreatureMemoryPool( sizeof( MNPC ), 5 );
 MemoryPool g_FakeCreatureMemoryPool( sizeof( MFakeCreature ), 30 );
 

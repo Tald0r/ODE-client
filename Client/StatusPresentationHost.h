@@ -49,6 +49,9 @@ struct Host
 	void (*SetElementalValue)(int element, int value) = nullptr;
 	// A field of the character sheet (the UI's g_char_slot_ingame).
 	void (*SetSheet)(SheetField field, int value) = nullptr;
+	// The player's weapon speed (task 4.242): the value it came as and the
+	// speed class it gives (WEAPON_SPEED_*).
+	void (*SetWeaponSpeed)(int speed, int speedClass) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -73,5 +76,6 @@ void SetBonusPoint(int points);
 void SetSkillPoint(int points);
 void SetElementalValue(int element, int value);
 void SetSheet(SheetField field, int value);
+void SetWeaponSpeed(int speed, int speedClass);
 
 }

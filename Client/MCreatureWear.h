@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------
 // MCreatureWear.h
 //----------------------------------------------------------------------
-// 옷입고 움직이는 생물에 대한 class
+// Class for creatures that wear clothes and move
 //----------------------------------------------------------------------
 
 #ifndef	__MCREATUREWEAR_H__
@@ -10,7 +10,10 @@
 #include "MTypeDef.h"
 #include "MCreature.h"
 #include "MItem.h"
-#include "MemoryPool.h"
+#include "../basic/MemoryPool.h"
+
+// The pool of the creatures that wear gear (MCreatureWear.cpp's).
+extern MemoryPool g_CreatureWearMemoryPool;
 
 //----------------------------------------------------------------------
 // define
@@ -19,17 +22,17 @@
 class MCreatureWear : public MCreature {
 	public :
 		//----------------------------------------------------
-		// Creature의 그림과 복장에 대한 정보 
+		// Info on the Creature's image and outfit
 		//----------------------------------------------------
 		struct ADDON_INFO 
 		{
-			BOOL				bAddon;			// 착용했나?	
-			TYPE_FRAMEID		FrameID;		// 복장
+			BOOL				bAddon;			// Is it worn?
+			TYPE_FRAMEID		FrameID;		// outfit
 			ITEM_CLASS	ItemClass;		// item class
 			TYPE_ITEMTYPE		ItemType;		// item type
 			WORD				ColorSet1;		// colorset1
 			WORD				ColorSet2;		// colorset2
-			BOOL				bEffectColor;	// EffectColor를 사용하는가?
+			BOOL				bEffectColor;	// Does it use EffectColor?
 			WORD				EffectColorSet;	// EffectColor			
 		};
 
@@ -62,22 +65,22 @@ class MCreatureWear : public MCreature {
 		BOOL		IsWear() const					{ return TRUE; }
 
 		//------------------------------------------------------
-		// type설정
+		// Set the type
 		//------------------------------------------------------
 		virtual void	SetCreatureType(TYPE_CREATURETYPE type);
 
 
 		//------------------------------------------------------
-		// 복장 바꾸기 관련
+		// Outfit changing
 		//------------------------------------------------------			
-		// 머리카락
+		// Hair
 		void			SetAddonHair(TYPE_FRAMEID id, WORD cs1);
 		TYPE_FRAMEID	GetHairFrameID()			{ return m_HairFrameID; }
 		
-		// 복장 벗기기
+		// Taking off the outfit
 		bool			RemoveAddon(int Addon);
 
-		// 복장 있는가?
+		// Is there an outfit?
 		//BOOL			IsExistAddon(int Addon) const		{ return m_Addon[Addon].bAddon; }
 		//TYPE_FRAMEID	GetAddonFrameID(int Addon) const	{ return m_Addon[Addon].FrameID; }
 		//ITEM_CLASS	GetAddonItemClass(int Addon) const	{ return m_Addon[Addon].ItemClass; }
@@ -86,13 +89,13 @@ class MCreatureWear : public MCreature {
 		const ADDON_INFO&	GetACAddonInfo(int Addon) const;
 
 		//------------------------------------------------------			
-		// ColorSet을 설정한다.
+		// Sets the ColorSet.
 		//------------------------------------------------------			
 		void			SetAddonColorSet1(int Addon, WORD colorSet);
 		void			SetAddonColorSet2(int Addon, WORD colorSet);	
 		
 		//------------------------------------------------------
-		// AddonItem을 착용/해제한다.
+		// Wears/removes an AddonItem.
 		//------------------------------------------------------
 		virtual	bool		SetAddonItem(MItem* pItem);
 		virtual bool		RemoveAddonItem(MItem* pItem);
@@ -113,18 +116,18 @@ class MCreatureWear : public MCreature {
 		MItem*			NewItemFromAddonInfo(int Addon);
 
 	protected :
-		// 복장의 정보	
+		// Outfit info
 		ADDON_INFO			m_Addon[ ADDON_MAX ];
 //		ADDON_INFO			m_ACAddon[ AC_ADDON_MAX ];
 		ADDON_INFO			m_ShoulderAddon;
 
-		// 모자 썼을때 짧은 머리는 안 보여주게 하기 위해서..
-		// 머리카락 정보만 따로 저장한다. -- 임시.. 그러나.. --;;
+		// So that short hair is not shown when a hat is worn..
+		// Only the hair info is saved separately. -- temporary.. but.. --;;
 		TYPE_FRAMEID		m_HairFrameID;
 		WORD				m_HairColorSet;
 
 	public :
-		// 8방향에 따른 옷의 출력 순서
+		// Clothes drawing order for the 8 directions
 		static int			s_AddonOrder[DIRECTION_MAX][ADDON_MAX];
 		static int			s_ACAddonOrder[ DIRECTION_MAX ][ AC_ADDON_MAX ];
 };

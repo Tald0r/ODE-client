@@ -426,7 +426,9 @@ check () {
 # 28: ClientFunction splits into gamemodel, SpriteLib and UiRuntime (4.236).
 # 27: the item uses join gamemodel (4.237).
 # 26: the talk box and the message box join gamemodel (4.238).
-R1_BASELINE=26
+# 25: the creature joins gamemodel (4.242).
+# 24: the creature that wears gear joins gamemodel (4.243).
+R1_BASELINE=24
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -685,7 +687,9 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 26: ClientFunction splits into gamemodel, SpriteLib and UiRuntime (4.236).
 	# 25: the item uses join gamemodel (4.237).
 	# 24: the talk box and the message box join gamemodel (4.238).
-	R1_NINJA_BASELINE=24
+	# 23: the creature joins gamemodel (4.242).
+	# 22: the creature that wears gear joins gamemodel (4.243).
+	R1_NINJA_BASELINE=22
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
