@@ -136,6 +136,10 @@ Client/MEventManager.h
 Client/MObjectSelector.cpp
 Client/MObjectSelector.h
 
+# The helicopters chasing players (4.226).
+Client/MHelicopterManager.cpp
+Client/MHelicopterManager.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

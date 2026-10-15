@@ -2636,6 +2636,7 @@ void ReleaseAllObjects()
 	MWarManager::SetHost(nullptr);
 	MEffectTarget::SetHost(nullptr);
 	MEffect::SetHost(nullptr);
+	MHelicopter::SetHost(nullptr);
 	MGuidanceEffect::SetHost(nullptr);
 	MParabolaEffect::SetHost(nullptr);
 	MAttachEffect::SetHost(nullptr);
@@ -3075,6 +3076,31 @@ static const MWarHost s_WarHost = {
 		UI_SetBloodBibleStatusTimer(30);
 		UI_CloseRangerChat();
 	},
+};
+
+// What the helicopters ask of the game (task 4.226).
+static const MHelicopterHost s_HelicopterHost = {
+	.GetCreaturePosition = [](TYPE_OBJECTID id, int& sectorX, int& sectorY) {
+		MCreature* pCreature = g_pZone != NULL ? g_pZone->GetCreature(id) : NULL;
+		if (pCreature == NULL) return false;
+		sectorX = pCreature->GetX();
+		sectorY = pCreature->GetY();
+		return true;
+	},
+	.AddEffect = [](MEffect* pEffect) { g_pZone->AddEffect(pEffect); },
+	.GetEffect = [](TYPE_OBJECTID id) { return g_pZone != NULL ? g_pZone->GetEffect(id) : NULL; },
+	.RemoveEffect = [](TYPE_OBJECTID id) { if (g_pZone != NULL) g_pZone->RemoveEffect(id); },
+	.GetMaxEffectFrame = [](BLT_TYPE bltType, TYPE_FRAMEID frameID) { return g_pTopView->GetMaxEffectFrame(bltType, frameID); },
+	.PlayerID = []() { return g_pPlayer->GetID(); },
+	.IsSelectingWayPoint = []() { return UI_IsRunningSelectWayPoint() != FALSE; },
+	.SelectWayPoint = []() { UI_RunSelectWayPoint(); },
+	.PlayLoop = [](TYPE_SOUNDID id, int x, int y) {
+		ZONESOUND_NODE* pSound = new ZONESOUND_NODE(id);
+		pSound->Play(x, y, true);
+		return pSound;
+	},
+	.MoveSound = [](ZONESOUND_NODE* pSound, int x, int y) { pSound->Play(x, y, true); },
+	.DeleteSound = [](ZONESOUND_NODE* pSound) { delete pSound; },
 };
 
 static const MEffectHost s_EffectHost = {
@@ -4653,6 +4679,7 @@ InitGameObject()
 	MWarManager::SetHost(&s_WarHost);
 	MEffectTarget::SetHost(&s_EffectTargetHost);
 	MEffect::SetHost(&s_EffectHost);
+	MHelicopter::SetHost(&s_HelicopterHost);
 	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
 	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
 	MAttachEffect::SetHost(&s_AttachEffectHost);
