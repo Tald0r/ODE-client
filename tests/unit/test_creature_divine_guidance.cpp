@@ -447,20 +447,34 @@ TEST(DivineGuidance, AChakramIsDrawnInItsColoursAndAGhostsPartsAreNot)
 	ousters.Wear(ADDON_RIGHTHAND, 3, ITEM_CLASS_OUSTERS_CHAKRAM, 50, 80);
 	Place(scene.oustersFPK, 1, ACTION_DRAINED, 0, 1, 2, 3);
 	Place(scene.oustersFPK, 3, ACTION_DRAINED, 0, 2, 30, 30);
+	auto coat = [&] {
+		CIndexSprite::SetUsingColorSetOnly(0, 11);
+		CIndexSprite::SetUsingColorSetOnly(1, 60);
+		CIndexSprite::SetUsingColorSetOnly(2, 80);
+		CIndexSprite::SetUsingColorSetOnly(3, defaultCoatColor);
+		scene.expected.Blit(12, 23 - kHeight, scene.oustersSPK[1], 2);
+	};
+	auto chakram = [&] {
+		CIndexSprite::SetUsingColorSet(50, 80);
+		scene.expected.Blit(40, 50 - kHeight, scene.oustersSPK[2], 2);
+	};
 	scene.Draw(DrawDivineGuidanceOustersCharacter, ousters, 0);
-	CIndexSprite::SetUsingColorSetOnly(0, 11);
-	CIndexSprite::SetUsingColorSetOnly(1, 60);
-	CIndexSprite::SetUsingColorSetOnly(2, 80);
-	CIndexSprite::SetUsingColorSetOnly(3, defaultCoatColor);
-	scene.expected.Blit(12, 23 - kHeight, scene.oustersSPK[1], 2);
-	CIndexSprite::SetUsingColorSet(50, 80);
-	scene.expected.Blit(40, 50 - kHeight, scene.oustersSPK[2], 2);
+	coat();
+	chakram();
 	CHECK(scene.Same());
-	// A ghost's coat (1) and chakram (2) are not drawn.
-	ousters.SetGhost(1 | 2, 10);
-	scene.drawn.surface.FillSurface(0);
-	scene.Draw(DrawDivineGuidanceOustersCharacter, ousters, 0);
-	CHECK(scene.drawn.Blank());
+	// A ghost's coat (1) is not drawn, nor its chakram (2); each flag
+	// hides its own part.
+	for (int ghost : {1, 2, 1 | 2})
+	{
+		ousters.SetGhost(BYTE(ghost), 10);
+		scene.drawn.surface.FillSurface(0);
+		scene.expected.surface.FillSurface(0);
+		scene.Draw(DrawDivineGuidanceOustersCharacter, ousters, 0);
+		if (!(ghost & 1)) coat();
+		if (!(ghost & 2)) chakram();
+		if (ghost == (1 | 2)) CHECK(scene.drawn.Blank());
+		else CHECK(scene.Same());
+	}
 }
 
 //----------------------------------------------------------------------
@@ -519,6 +533,29 @@ TEST(DivineGuidance, AnAdvancedSlayerFacingTheLastDirectionDrawsItsPartsInThatOr
 	CHECK(scene.Same());
 }
 
+TEST(DivineGuidance, AMountedAdvancedSlayerDrawsItsMotorcycleOnceUnderItself)
+{
+	// Every row of the parts' order starts with the motorcycle, so a walk
+	// one past a row draws the next row's first, the motorcycle, again,
+	// over the rider.
+	const int drained = ACTION_ADVANCEMENT_SLAYER_DRAINED - ADVANCEMENT_ACTION_START;
+	Scene scene;
+	Wearer slayer;
+	slayer.Become(kSlayer);
+	slayer.SetMale(true);
+	slayer.SetCurrentDirection(2);
+	slayer.Wear(ADDON_MOTOR, 1, ITEM_CLASS_MOTORCYCLE, 30, 60);
+	slayer.Wear(ADDON_COAT, 1, ITEM_CLASS_COAT, 40, 50);
+	Place(scene.slayerManFPK, AC_BIKE_1, drained, 2, 1, 2, 3);
+	Place(scene.slayerManFPK, AC_BODY, drained, 2, 2, 2, 3);
+	scene.Draw(DrawDivineGuidanceAdvancementClassSlayerCharacter, slayer, 2);
+	CIndexSprite::SetUsingColorSet(30, 60);
+	scene.expected.Blit(12, 23 - kHeight, scene.slayerManSPK[1], 2);
+	CIndexSprite::SetUsingColorSet(40, 50);
+	scene.expected.Blit(12, 23 - kHeight, scene.slayerManSPK[2], 2);
+	CHECK(scene.Same());
+}
+
 TEST(DivineGuidance, AnAdvancedVampireDrawsItsOneBodyFromItsGendersPack)
 {
 	const int drained = ACTION_ADVANCEMENT_DRAINED - ADVANCEMENT_ACTION_START;
@@ -553,15 +590,33 @@ TEST(DivineGuidance, AnAdvancedOustersDrawsCoatSet1AndChakramSet0)
 	ousters.Wear(ADDON_RIGHTHAND, 3, ITEM_CLASS_OUSTERS_CHAKRAM, 50, 80);
 	Place(scene.advancedOustersFPK, 1, drained, 0, 1, 2, 3);
 	Place(scene.advancedOustersFPK, 0, drained, 0, 2, 30, 30);
+	auto coat = [&] {
+		CIndexSprite::SetUsingColorSetOnly(0, 11);
+		CIndexSprite::SetUsingColorSetOnly(1, 60);
+		CIndexSprite::SetUsingColorSetOnly(2, 80);
+		CIndexSprite::SetUsingColorSetOnly(3, 70);
+		scene.expected.Blit(12, 23 - kHeight, scene.advancedOustersSPK[1], 2);
+	};
+	auto chakram = [&] {
+		CIndexSprite::SetUsingColorSet(50, 80);
+		scene.expected.Blit(40, 50 - kHeight, scene.advancedOustersSPK[2], 2);
+	};
 	scene.Draw(DrawDivineGuidanceAdvancementClassOustersCharacter, ousters, 0);
-	CIndexSprite::SetUsingColorSetOnly(0, 11);
-	CIndexSprite::SetUsingColorSetOnly(1, 60);
-	CIndexSprite::SetUsingColorSetOnly(2, 80);
-	CIndexSprite::SetUsingColorSetOnly(3, 70);
-	scene.expected.Blit(12, 23 - kHeight, scene.advancedOustersSPK[1], 2);
-	CIndexSprite::SetUsingColorSet(50, 80);
-	scene.expected.Blit(40, 50 - kHeight, scene.advancedOustersSPK[2], 2);
+	coat();
+	chakram();
 	CHECK(scene.Same());
+	// A ghost's coat (1) and chakram (2) are left out, each by its flag.
+	for (int ghost : {1, 2, 1 | 2})
+	{
+		ousters.SetGhost(BYTE(ghost), 10);
+		scene.drawn.surface.FillSurface(0);
+		scene.expected.surface.FillSurface(0);
+		scene.Draw(DrawDivineGuidanceAdvancementClassOustersCharacter, ousters, 0);
+		if (!(ghost & 1)) coat();
+		if (!(ghost & 2)) chakram();
+		if (ghost == (1 | 2)) CHECK(scene.drawn.Blank());
+		else CHECK(scene.Same());
+	}
 }
 
 //----------------------------------------------------------------------

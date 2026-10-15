@@ -2536,8 +2536,11 @@ TEST(Player, ASlayerSteppingOnAnElevatorRunsItsWindow)
 	calls.clear();
 	Go(me, 20, 15);
 	Frames(me, 40);
+	CHECK_EQ(20, int(me.GetX()));
+	// Over the elevator's tile and on.
 	Go(me, 22, 15);
 	Frames(me, 40);
+	CHECK_EQ(22, int(me.GetX()));
 	CHECK_EQ(0, Count("elevator"));
 }
 
@@ -2706,10 +2709,14 @@ TEST(Player, ItsCharacterWindowShowsItsDamageAndDefences)
 	me.CalculateStatus();
 	// The most, then the least; silver none without a weapon.
 	CHECK(InOrder({ "dam|9,3", "silver|0,0", "defense|11", "protection|12", "tohit|13" }));
-	// Choosing a character: the values worked out from its stats.
+	// Choosing a character: the values worked out from its stats. A bare
+	// slayer's defence and to-hit are both half its DEX, its protection
+	// its STR.
 	g_Mode = MODE_WAIT_PCLIST;
+	me.MStatus::SetStatus(MODIFY_CURRENT_STR, 20);
+	me.MStatus::SetStatus(MODIFY_CURRENT_DEX, 30);
+	me.MStatus::SetStatus(MODIFY_CURRENT_INT, 40);
 	calls.clear();
 	me.CalculateStatus();
-	CHECK(InOrder({ "dam|9,3", "defense|" + N(g_StatusManager.GetDefense()), "protection|" + N(g_StatusManager.GetProtection()),
-		"tohit|" + N(g_StatusManager.GetTOHIT()) }));
+	CHECK(InOrder({ "dam|9,3", "defense|15", "protection|20", "tohit|15" }));
 }
