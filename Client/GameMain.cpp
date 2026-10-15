@@ -175,17 +175,14 @@ int					g_UpdateDelay		= 0;
 // Zone
 // g_ZoneCreatureColorSet is ZoneFlags.cpp's.
 WORD				g_MyBatColorSet = 0xFFFF;
-bool				g_bZoneLargeLoadImage = false;
-bool				g_bZoneSmallLoadImage = false;
-MZone*				g_pZoneLarge = NULL;				
-MZone*				g_pZoneSmall = NULL;
-// g_bZoneSafe, g_nZoneLarge, g_nZoneSmall and g_bZonePlayerInLarge are ZoneFlags.cpp's.
+// g_bZoneSafe, g_nZoneLarge, g_nZoneSmall and g_bZonePlayerInLarge are
+// ZoneFlags.cpp's, and so are the large and small zones and whether their
+// images are loaded (task 4.253).
 // g_ZoneAmbientSounds is AmbientSoundState.cpp's (gamemodel, task 4.246).
 bool				g_bWatchMode = false;
 
 
-// effectManager
-MScreenEffectManager*	g_pInventoryEffectManager = NULL;
+// g_pInventoryEffectManager is MScreenEffectManager.cpp's (task 4.253).
 
 // DirectDraw
 CSpriteSurface*			g_pBack		= NULL;

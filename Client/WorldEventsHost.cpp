@@ -271,6 +271,23 @@ void SetFadeEnd()
 	if (s_Host && s_Host->SetFadeEnd) s_Host->SetFadeEnd();
 }
 
+POINT MapToScreen(int sectorX, int sectorY)
+{
+	if (s_Host && s_Host->MapToScreen) return s_Host->MapToScreen(sectorX, sectorY);
+	POINT none = { 0, 0 };
+	return none;
+}
+
+int CreatureSpriteHeight(int body, int action, int direction)
+{
+	return s_Host && s_Host->CreatureSpriteHeight ? s_Host->CreatureSpriteHeight(body, action, direction) : -1;
+}
+
+void SetFlagSprites(bool bTae)
+{
+	if (s_Host && s_Host->SetFlagSprites) s_Host->SetFlagSprites(bTae);
+}
+
 }
 
 void PlaySound(TYPE_SOUNDID soundID)

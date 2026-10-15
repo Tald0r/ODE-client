@@ -119,6 +119,20 @@ int				g_DyeColorSet[48] =
 
 // The skill-icon check is gamemodel's (ItemSkillIcons.cpp).
 #include "ItemSkillIcons.h"
+#include "WorldEventsHost.h"
+#include "DialogPresentationHost.h"
+#include "PlayerPresentationHost.h"
+#include "NoticePresentationHost.h"
+#include "DirectionSelection.h"
+
+// A sector's pixel position on the map (MTopView::MapToPixel's).
+static POINT TileToPixel(int sectorX, int sectorY)
+{
+	POINT point;
+	point.x = WorldTileGeometry::TileToPixelX(sectorX);
+	point.y = WorldTileGeometry::TileToPixelY(sectorY);
+	return point;
+}
 
 extern BYTE g_macAddress[6];
 
@@ -549,7 +563,7 @@ SetGoreLevel(bool bGoreLevel)
 BYTE		
 GetDirectionToPosition(int originX, int originY, int destX, int destY)
 {
-	return MTopView::GetDirectionToPosition(originX, originY, destX, destY);
+	return SelectFacingDirection(originX, originY, destX, destY);
 }
 
 //-----------------------------------------------------------------------------
@@ -919,7 +933,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				//---------------------------------------------
 				// mouse cursor에서 제거
 				//---------------------------------------------
-				UI_DropItem();
+				DialogPresentation::DropItem();
 
 				// 떨어뜨리는 좌표 설정
 				pItem->SetPosition( pPacket->getX(), pPacket->getY() );
@@ -1277,7 +1291,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 void
 SkillToSector(TYPE_ACTIONINFO nActionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int dir, DWORD delayFrame, MActionResult* pResult)
 {
-	POINT point = MTopView::MapToPixel(sX, sY);
+	POINT point = TileToPixel(sX, sY);
 
 	//------------------------------------------------------
 	//
@@ -1384,7 +1398,7 @@ AddVampirePortal(
 		POINT point;	
 		int x,y,z, dir = DIRECTION_DOWN;
 
-		point = MTopView::MapToPixel(sX, sY);
+		point = TileToPixel(sX, sY);
 		x = point.x;
 		y = point.y;
 		z = 0;
@@ -1454,7 +1468,7 @@ ExecuteActionInfoFromMainNode(
 		//--------------------------------------------------------
 		// 목표 위치 Pixel좌표
 		//--------------------------------------------------------
-		point = MTopView::MapToPixel(targetX, targetY);
+		point = TileToPixel(targetX, targetY);
 
 		//--------------------------------------------------------
 		//
@@ -1507,7 +1521,7 @@ ExecuteActionInfoFromMainNode(
 		//--------------------------------------------------------
 		if ((*g_pActionInfoTable)[nActionInfo].IsStartUser())
 		{
-			point = MTopView::MapToPixel(startX, startY);
+			point = TileToPixel(startX, startY);
 
 			x			= point.x + sX;
 			y			= point.y + sY;
@@ -1580,7 +1594,7 @@ ExecuteActionInfoFromMainNode(
 POINT			
 ConvertPositionMapToScreen(int sX, int sY)
 {
-	POINT point = g_pTopView->MapToScreen(sX, sY);
+	POINT point = WorldEvents::MapToScreen(sX, sY);
 
 	return point;
 }
@@ -2274,7 +2288,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 	if (pCurrentItem!=NULL)
 	{
 		delete pCurrentItem;
-		UI_DropItem();
+		DialogPresentation::DropItem();
 	}
 
 	if (pExtraInfo!=NULL)
@@ -2493,7 +2507,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 			//------------------------------------------
 			// Item을 든다.
 			//------------------------------------------
-			UI_PickUpItem( pItem );
+			DialogPresentation::PickUpItem( pItem );
 
 			delete pSlotInfo;
 		}
@@ -2894,10 +2908,10 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	//--------------------------------------------------
 	if (!g_bSetHotKey)
 	{		
-		UI_SetHotKey( 0, pInfo->getHotKey( 0 ) );
-		UI_SetHotKey( 1, pInfo->getHotKey( 1 ) );
-		UI_SetHotKey( 2, pInfo->getHotKey( 2 ) );
-		UI_SetHotKey( 3, pInfo->getHotKey( 3 ) );
+		PlayerPresentation::SetHotKey( 0, pInfo->getHotKey( 0 ) );
+		PlayerPresentation::SetHotKey( 1, pInfo->getHotKey( 1 ) );
+		PlayerPresentation::SetHotKey( 2, pInfo->getHotKey( 2 ) );
+		PlayerPresentation::SetHotKey( 3, pInfo->getHotKey( 3 ) );
 
 		g_bSetHotKey = TRUE;
 	}	
@@ -3188,14 +3202,14 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	//--------------------------------------------------
 	if (!g_bSetHotKey)
 	{		
-		UI_SetHotKey( 0, pInfo->getHotKey( 0 ) );
-		UI_SetHotKey( 1, pInfo->getHotKey( 1 ) );
-		UI_SetHotKey( 2, pInfo->getHotKey( 2 ) );
-		UI_SetHotKey( 3, pInfo->getHotKey( 3 ) );
-		UI_SetHotKey( 4, pInfo->getHotKey( 4 ) );
-		UI_SetHotKey( 5, pInfo->getHotKey( 5 ) );
-		UI_SetHotKey( 6, pInfo->getHotKey( 6 ) );
-		UI_SetHotKey( 7, pInfo->getHotKey( 7 ) );
+		PlayerPresentation::SetHotKey( 0, pInfo->getHotKey( 0 ) );
+		PlayerPresentation::SetHotKey( 1, pInfo->getHotKey( 1 ) );
+		PlayerPresentation::SetHotKey( 2, pInfo->getHotKey( 2 ) );
+		PlayerPresentation::SetHotKey( 3, pInfo->getHotKey( 3 ) );
+		PlayerPresentation::SetHotKey( 4, pInfo->getHotKey( 4 ) );
+		PlayerPresentation::SetHotKey( 5, pInfo->getHotKey( 5 ) );
+		PlayerPresentation::SetHotKey( 6, pInfo->getHotKey( 6 ) );
+		PlayerPresentation::SetHotKey( 7, pInfo->getHotKey( 7 ) );
 
 
 		g_bSetHotKey = TRUE;		
@@ -3452,14 +3466,14 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 //	//--------------------------------------------------
 //	if (!g_bSetHotKey)
 //	{		
-//		UI_SetHotKey( 0, pInfo->getHotKey( 0 ) );
-//		UI_SetHotKey( 1, pInfo->getHotKey( 1 ) );
-//		UI_SetHotKey( 2, pInfo->getHotKey( 2 ) );
-//		UI_SetHotKey( 3, pInfo->getHotKey( 3 ) );
-//		UI_SetHotKey( 4, pInfo->getHotKey( 4 ) );
-//		UI_SetHotKey( 5, pInfo->getHotKey( 5 ) );
-//		UI_SetHotKey( 6, pInfo->getHotKey( 6 ) );
-//		UI_SetHotKey( 7, pInfo->getHotKey( 7 ) );
+//		PlayerPresentation::SetHotKey( 0, pInfo->getHotKey( 0 ) );
+//		PlayerPresentation::SetHotKey( 1, pInfo->getHotKey( 1 ) );
+//		PlayerPresentation::SetHotKey( 2, pInfo->getHotKey( 2 ) );
+//		PlayerPresentation::SetHotKey( 3, pInfo->getHotKey( 3 ) );
+//		PlayerPresentation::SetHotKey( 4, pInfo->getHotKey( 4 ) );
+//		PlayerPresentation::SetHotKey( 5, pInfo->getHotKey( 5 ) );
+//		PlayerPresentation::SetHotKey( 6, pInfo->getHotKey( 6 ) );
+//		PlayerPresentation::SetHotKey( 7, pInfo->getHotKey( 7 ) );
 //
 //
 //		g_bSetHotKey = TRUE;		
@@ -3626,7 +3640,7 @@ bool UseSkillCardOK(BYTE CardType)
 			{
 				g_pInventory->RemoveItem( (TYPE_OBJECTID)pItem->GetID() );
 
-				UI_RemoveDescriptor( (void*)pItem );
+				PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
 				delete pItem;	
 			}
@@ -3702,7 +3716,7 @@ UseItemOK()
 						++itr;
 					}					
 				}				
-				UI_DropItem();
+				DialogPresentation::DropItem();
 				if( g_pTempInformation->pValue != NULL )
 				{
 					MItem *pMouseItem = (MItem*)(g_pTempInformation->pValue);
@@ -3847,7 +3861,7 @@ UseItemOK()
 					int myColor = ItemType - 49;
 					
 					g_pPlayer->SetBatColor( colorset_list[myColor] );
-					UI_PopupMessage( STRING_MESSAGE_SUCCESS_CHANGED_BAT_COLOR );
+					NoticePresentation::PopupMessage( STRING_MESSAGE_SUCCESS_CHANGED_BAT_COLOR );
 				}
 				else if( ItemType >= 58 && ItemType <= 62 )
 				{
@@ -3855,7 +3869,7 @@ UseItemOK()
 						g_pPlayer->ChangeMasterEffectType(0);
 					else
 						g_pPlayer->ChangeMasterEffectType(ItemType - 57);
-					UI_PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
+					NoticePresentation::PopupMessage( STRING_MESSAGE_SUCCESS_CHANGE );
 				}
 
 			}
@@ -3901,7 +3915,7 @@ UseItemOK()
 					{
 						SubInventoryItem->RemoveItem((TYPE_OBJECTID)pItem->GetID());
 						// item정보 제거
-						UI_RemoveDescriptor( (void*)pItem );
+						PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
 						// memory에서 제거
 						delete pItem;		
@@ -3913,7 +3927,7 @@ UseItemOK()
 					g_pInventory->RemoveItem( (TYPE_OBJECTID)pItem->GetID() );
 
 					// item정보 제거
-					UI_RemoveDescriptor( (void*)pItem );
+					PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
 					// memory에서 제거
 					delete pItem;			
@@ -3923,7 +3937,7 @@ UseItemOK()
 					g_pInventory->RemoveItem( (TYPE_OBJECTID)pItem->GetID() );
 
 					// item정보 제거
-					UI_RemoveDescriptor( (void*)pItem );
+					PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
 					// memory에서 제거
 					delete pItem;	
@@ -3978,7 +3992,7 @@ UseItemOK()
 						pQuickSlot->RemoveItem( (BYTE)pItem->GetItemSlot() );
 				}
 				// item정보 제거
-				UI_RemoveDescriptor( (void*)pItem );
+				PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
 				// memory에서 제거
 				delete pItem;		
@@ -3987,7 +4001,7 @@ UseItemOK()
 			//----------------------------------------------------
 			// 벨트 못 없애도록 한거.. 취소
 			//----------------------------------------------------
-			UI_UnlockGear();
+			DialogPresentation::UnlockGear();
 		}
 		//----------------------------------------------------
 		// 다른 상태??
@@ -4153,17 +4167,12 @@ ComeFromPortal(MCreature* pCreature)
 	int action = ACTION_STAND;
 	int direction = 2;
 
-	const FRAME_ARRAY& FA = g_pTopView->GetCreatureFrameArray(body, action, direction);
-	if(FA.GetSize() != 0)
+	// The height of the sprite the body stands in (-1: the view has none).
+	const int spriteHeight = WorldEvents::CreatureSpriteHeight(body, action, direction);
 	{
-		const CFrame &Frame = FA[0];					
-		int sprite	= Frame.GetSpriteID();
-
-		const CIndexSprite* pSprite = g_pTopView->GetCreatureSprite(sprite);
-
-		if(pSprite != NULL)
+		if(spriteHeight >= 0)
 		{
-			WORD height = pSprite->GetHeight();
+			WORD height = static_cast<WORD>(spriteHeight);
 
 			cutStart = (height+15)-(height+15)%16;
 			if(height == 0)
@@ -4488,12 +4497,12 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 
 void		SetFadeStart(signed char start, signed char end, signed char step, BYTE r, BYTE g, BYTE b,WORD delay)
 {
-	g_pTopView->SetFadeStart(start, end, step, r, g, b, delay);
+	WorldEvents::SetFadeStart(start, end, step, r, g, b, delay);
 }
 
 void		SetFadeEnd()
 {
-	g_pTopView->SetFadeEnd();
+	WorldEvents::SetFadeEnd();
 }
 
 //------------------------------------------------------------------
@@ -4886,14 +4895,14 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 									{
 										g_pGameMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_PET_GAMBLE_DESC].GetString());
 									}
-									UI_UnlockItem();
+									DialogPresentation::UnlockItem();
 									
 								}
 								// 3차 겜블 성공
 								else if(pPetInfo->canAttack() != false && pPetItem->IsCanAttack() == false)
 								{
 									g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_3RD_GAMBLE_OK), pPetItem->GetPetName().c_str());
-									UI_UnlockItem();
+									DialogPresentation::UnlockItem();
 								}
 								// 겜블 실패
 								else if(pPetInfo->canGamble() == false && pPetItem->IsCanGamble() != false)
@@ -4902,7 +4911,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 										g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_3RD_GAMBLE_FAIL), pPetItem->GetPetName().c_str());
 									else
 										g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_GAMBLE_FAIL), pPetItem->GetPetName().c_str());
-									UI_UnlockItem();
+									DialogPresentation::UnlockItem();
 								}
 							}
 						}
@@ -5145,7 +5154,7 @@ void	SendCrashReport()
 
 void	SetFlagTo( bool bTae )
 {
-	if( g_pTopView == NULL )
+	if( !WorldEvents::ViewExists() )
 		return;
 	auto* itemClass = g_pItemTable->GetMutable(ITEM_CLASS_EVENT_ITEM);
 	auto* flag = itemClass == nullptr ? nullptr : itemClass->GetMutable(27);
@@ -5157,11 +5166,7 @@ void	SetFlagTo( bool bTae )
 			flag->SetDropFrameID(856);
 		}
 		
-		(g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_HEAD_TAE];
-		(g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_GROUND_TAE];
-
-		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD_TAE];
-		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND_TAE];
+		WorldEvents::SetFlagSprites(true);
 	}
 	else
 	{
@@ -5170,11 +5175,7 @@ void	SetFlagTo( bool bTae )
 			flag->SetDropFrameID(750);
 		}
 
-		(g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_HEAD_ORIGINAL];
-		(g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_GROUND_ORIGINAL];
-		
-		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD_ORIGINAL];
-		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND_ORIGINAL];
+		WorldEvents::SetFlagSprites(false);
 	}
 }
 
@@ -5929,7 +5930,7 @@ void Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature)
 {
 	if(NULL == UserCreature || NULL == TargetCreature)
 		return;
-	int TempDir = MTopView::GetDirectionToPosition(UserCreature->GetX(), UserCreature->GetY(), TargetCreature->GetX(), TargetCreature->GetY());
+	int TempDir = SelectFacingDirection(UserCreature->GetX(), UserCreature->GetY(), TargetCreature->GetX(), TargetCreature->GetY());
 	POINT _Tile = GetNextTileByDirection(UserCreature->GetX(), UserCreature->GetY(), TempDir);
 
 	MFakeCreature *pFakeCreature = NewFakeCreature(CREATURETYPE_ROCKET_LUNCHER, _Tile.x, _Tile.y, UserCreature->GetDirection());
@@ -5958,7 +5959,7 @@ void Add_Wild_Wolf(MCreature* UserCreature, MCreature* TargetCreature, bool IsEa
 {
 	if(NULL == UserCreature || NULL == TargetCreature)
 		return;
-	int TempDir = MTopView::GetDirectionToPosition(UserCreature->GetX(), UserCreature->GetY(), TargetCreature->GetX(), TargetCreature->GetY());
+	int TempDir = SelectFacingDirection(UserCreature->GetX(), UserCreature->GetY(), TargetCreature->GetX(), TargetCreature->GetY());
 	POINT StartTile = GetNextTileByDirection(UserCreature->GetX(), UserCreature->GetY(), TempDir);
 //	POINT EndTile = GetNextTileByDirection(TargetCreature->GetX(), TargetCreature->GetY(), TempDir);
 	

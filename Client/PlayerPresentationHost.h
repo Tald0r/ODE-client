@@ -61,6 +61,8 @@ struct Host
 	void (*AddEffectStatus)(int status, std::uint32_t delayFrame) = nullptr;
 	void (*RemoveEffectStatus)(int status) = nullptr;
 	void (*FinishLevelUpButton)() = nullptr;
+	// The quick slot's hot key to the item or skill id.
+	void (*SetHotKey)(int hotkey, int id) = nullptr;
 };
 
 // Borrowed until replaced; each call reads the current host.
@@ -98,5 +100,6 @@ void CloseSelectWayPoint();
 void AddEffectStatus(int status, std::uint32_t delayFrame);
 void RemoveEffectStatus(int status);
 void FinishLevelUpButton();
+void SetHotKey(int hotkey, int id);
 
 }
