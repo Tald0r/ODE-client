@@ -4344,7 +4344,10 @@ void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 	WORD	FirstOption = (parameter & 0xffff0000) >> 16;		// Or paramter >> 16 -_- lol
 	WORD	SecondOption = parameter & 0xffff;
 	
+	// One item twice (by id) is refused: taking the second out of the
+	// inventory would delete the first, which is changed and used after.
 	if( pItem == NULL || pItem2 == NULL || 
+		pItem->GetID() == pItem2->GetID() ||
 		pItem->IsEmptyItemOptionList() || 
 		pItem2->IsEmptyItemOptionList()||
 		pItem->GetItemOptionListCount() > 1 ||

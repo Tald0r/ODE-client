@@ -999,6 +999,7 @@ TEST(GameUI3Forge, MixingRefusesItemsThatDoNotMatch)
 	MItem* pBare = scene.Sword(23, {}, 0, 2);
 	MItem* pDouble = scene.Sword(24, {5, 9}, 0, 3);
 	MItem* pOutside = scene.Sword(25, {5}, 0, -1);
+	MItem* pTwin = scene.Sword(21, {9}, 0, -1);	// the first's id
 	const std::vector<std::string> refused = scene.Popup(1, S(STRING_ERROR_ETC_ERROR));
 	struct Case { const char* what; DWORD parameter; MItem* pItem; MItem* pItem2; };
 	const Case cases[] = {
@@ -1014,6 +1015,9 @@ TEST(GameUI3Forge, MixingRefusesItemsThatDoNotMatch)
 		// The high word is the first option whole, not its low byte.
 		{"high word", (0x105u << 16) | 9u, pFirst, pSecond},
 		{"not held", (5u << 16) | 9u, pOutside, pSecond},
+		// One item twice: the second's removal would delete the first.
+		{"same item", (5u << 16) | 5u, pFirst, pFirst},
+		{"same id", (5u << 16) | 9u, pFirst, pTwin},
 	};
 	for (const Case& c : cases)
 	{
@@ -1026,7 +1030,9 @@ TEST(GameUI3Forge, MixingRefusesItemsThatDoNotMatch)
 		CHECK(Options(pFirst) == "5");
 		CHECK_EQ(2, pFirst->GetGrade());
 		CHECK(scene.inventory.GetItem(TYPE_OBJECTID(22)) == pSecond);
+		CHECK(scene.inventory.GetItem(TYPE_OBJECTID(21)) == pFirst);
 	}
+	delete pTwin;
 	delete pOutside;
 }
 
