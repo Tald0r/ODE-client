@@ -675,9 +675,8 @@ TEST(WaitUIUpdate, TheButtonsOfTheFrameGoToTheUIAtTheCursor)
 	CHECK_SAME(move + "ldown" + At(7, 9) + ";lup" + At(7, 9) + ";rdown" + At(7, 9) + ";", scene.Buttons(true, true, true, true, true, true));
 	CHECK_SAME(move + "rup" + At(7, 9) + ";", scene.Buttons(false, false, false, true, true, true));
 	CHECK_SAME(move + "cdown" + At(7, 9) + ";", scene.Buttons(false, false, false, false, true, true));
-	// Recorded defect: the center button's release is read from the right
-	// button's (m_rb_up), so a center release alone gives the UI nothing.
-	CHECK_SAME(move, scene.Buttons(false, false, false, false, false, true));
+	// The center release is the center button's own.
+	CHECK_SAME(move + "cup" + At(7, 9) + ";", scene.Buttons(false, false, false, false, false, true));
 }
 
 TEST(WaitUIUpdate, ButtonsTheUILeavesAreFollowedByTheRest)
@@ -688,14 +687,15 @@ TEST(WaitUIUpdate, ButtonsTheUILeavesAreFollowedByTheRest)
 	g_x = 7;
 	g_y = 9;
 	// Moving, the left press and release, the right press and release, the
-	// center press, and (the defect above) a center release for the right's.
+	// center press and release.
 	CHECK_SAME(std::string("m;m;m;m;m;m;m;"), scene.Buttons(true, true, true, true, true, true));
 	CHECK_EQ(7, scene.pointer.GetX());
 	CHECK_EQ(9, scene.pointer.GetY());
-	CHECK_SAME(std::string("m;m;m;"), scene.Buttons(false, false, false, true, false, false));
+	// A right release is no center release.
+	CHECK_SAME(std::string("m;m;"), scene.Buttons(false, false, false, true, false, false));
 	CHECK_SAME(std::string("m;m;"), scene.Buttons(false, false, true, false, false, false));
 	CHECK(scene.pointer.RightMousePushed());
-	CHECK_SAME(std::string("m;"), scene.Buttons(false, false, false, false, false, true));
+	CHECK_SAME(std::string("m;m;"), scene.Buttons(false, false, false, false, false, true));
 }
 
 TEST(WaitUIUpdate, TheDrawShowsTheUIAndTheCursorAndCopiesTheLastFrame)

@@ -488,7 +488,7 @@ CWaitUIUpdate::ProcessInput()
 		if (gC_vs_ui.MouseControl(M_CENTERBUTTON_DOWN, g_x, g_y))
 			return;
 	}
-	if (g_pSDLInput->m_rb_up)
+	if (g_pSDLInput->m_cb_up)
 	{
 		if (gC_vs_ui.MouseControl(M_CENTERBUTTON_UP, g_x, g_y))
 			return;
