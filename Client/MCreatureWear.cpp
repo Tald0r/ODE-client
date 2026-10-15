@@ -174,7 +174,7 @@ MCreatureWear::SetAddonColorSet2(int Addon, WORD colorSet)
 	
 	if (colorSet < MAX_COLORSET || colorSet == UNIQUE_ITEM_COLOR || colorSet == QUEST_ITEM_COLOR)
 	{	
-		// An operator's coat colours its whole body. T_T;;
+		// A slayer operator's coat colours its whole body. T_T;;
 		if (m_CreatureType==CREATURETYPE_SLAYER_OPERATOR
 			&& Addon==ADDON_COAT)
 		{
