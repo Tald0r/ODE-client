@@ -529,7 +529,9 @@ MZone::ReleaseObject()
 		pEffect = iEffect->second;
 		if (pEffect != NULL)
 		{
-			if (m_ppSector!=NULL)
+			// A chasing effect may be off the map (the zone keeps those): it
+			// is in no sector.
+			if (SectorAt(pEffect->GetX(), pEffect->GetY())!=NULL)
 			{
 				// [새기술9]
 				RemoveSectorEffect( pEffect->GetX(), pEffect->GetY(), pEffect->GetID() );				

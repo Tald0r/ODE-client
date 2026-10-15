@@ -1985,3 +1985,20 @@ TEST(Zone, ATilesEffectOffTheMapIsNotLookedFor)
 	CHECK(zone.AddFakeCreature(tornado));
 	CHECK(zone.RemoveTileEffect(60000, 60000, int(EFFECTSTATUS_DRAGON_TORNADO), 6001));
 }
+
+TEST(Zone, AChasingEffectOffTheMapIsFreedWithTheZonesObjects)
+{
+	Scene scene(10, 10);
+	ZoneProbe& zone = *scene.zone;
+	effectsDeleted = 0;
+	// A helicopter's shadow starts 500 pixels right and 300 up of its
+	// creature: near an edge its sector lies off the map (above the top,
+	// a sector number past 65000). The zone keeps such chasing effects.
+	CHECK(zone.AddEffect(Effect(23, 20, 3, 100, MEffect::EFFECT_CHASE)));
+	CHECK(zone.AddEffect(Effect(23, 3, 65000, 100, MEffect::EFFECT_CHASE)));
+	CHECK(zone.AddEffect(Effect(24, 3, 3)));
+	zone.ReleaseObject();
+	CHECK_EQ(3, effectsDeleted);
+	CHECK_EQ(0, zone.GetEffectCount());
+	CHECK_EQ(0, int(scene.Sector(3, 3).GetEffectSize()));
+}
