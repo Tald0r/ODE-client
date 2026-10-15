@@ -4210,7 +4210,9 @@ void		UI_RunQuestStatus( GCQuestStatus * pPacket )
 	QUEST_INFO* Quest_Info = g_pQuestInfoManager->GetInfo( pPacket->getQuestID() );
 	if(NULL != Quest_Info)
 	{
-		if( Quest_Info->GetEventQuest() )
+		// Only the five event quests have titles of their own; any other
+		// level is titled like the rest.
+		if( Quest_Info->GetEventQuest() && Quest_Info->GetQuestLevel() <= UI_STRING_MESSAGE_EVENT_QUEST2_5 - UI_STRING_MESSAGE_EVENT_QUEST2_1 )
 		{
 			QuestStatus.Title = (*g_pGameStringTable)[UI_STRING_MESSAGE_EVENT_QUEST2_1+Quest_Info->GetQuestLevel()].GetString();
 		} else

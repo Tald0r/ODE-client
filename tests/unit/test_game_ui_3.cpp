@@ -855,6 +855,34 @@ TEST(GameUI3Quest, TheHuntUnderWayIsAskedAboutItsMonster)
 	CHECK(!UI_IsMonsterKillQuest_Monster(9));
 }
 
+TEST(GameUI3Quest, AHuntTheServerAddsIsNoEventQuest)
+{
+	// GCMonsterKillQuestInfo adds a hunt the quest file lacks through
+	// SetInfo, which gives it no event flag or level: both are 0.
+	Scene scene;
+	scene.quests.SetInfo(601, 5, 60, "Wolf");
+	QUEST_INFO* pQuest = scene.quests.GetInfo(601);
+	CHECK(pQuest != NULL);
+	if (pQuest != NULL)
+	{
+		CHECK_EQ(0, int(pQuest->GetEventQuest()));
+		CHECK_EQ(0, int(pQuest->GetQuestLevel()));
+	}
+	// Its status, and that of an event quest of a level past the five
+	// event titles, take the quests' title (the window is not built here).
+	AddQuest(scene.quests, 602, QUEST_INFO_MONSTER_KILL, 60, 0, 0, 7, "Event", 1, 5);
+	AddQuest(scene.quests, 603, QUEST_INFO_MONSTER_KILL, 60, 0, 0, 7, "Event", 1, 255);
+	for (WORD id : { WORD(601), WORD(602), WORD(603) })
+	{
+		GCQuestStatus status;
+		status.setQuestID(id);
+		status.setCurrentNul(1);
+		status.setRemainTime(90);
+		UI_RunQuestStatus(&status);
+	}
+	CHECK(calls.empty());
+}
+
 //----------------------------------------------------------------------
 // The item shop
 //----------------------------------------------------------------------
