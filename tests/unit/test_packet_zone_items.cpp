@@ -276,11 +276,14 @@ const MAttachEffectHost attachHost = []() {
 	return host;
 }();
 std::vector<int> itemsDestroyed;
+// The items whose use the player checked again, in order.
+std::vector<int> itemsChecked;
 const MItemHost itemHost = []() {
 	MItemHost host{};
 	host.NewItem = NewItemOfClass;
 	host.DropFrameCount = [](TYPE_FRAMEID) { return 4; };
 	host.ItemDestroyed = [](MItem* pItem) noexcept { itemsDestroyed.push_back(int(pItem->GetID())); };
+	host.RefreshAffect = [](MItem* pItem) { itemsChecked.push_back(int(pItem->GetID())); };
 	return host;
 }();
 
@@ -368,6 +371,7 @@ struct Scene
 		started.clear();
 		descriptorsRemoved.clear();
 		itemsDestroyed.clear();
+		itemsChecked.clear();
 		reports.clear();
 		skillRefreshes = 0;
 		spriteHeight = -1;
@@ -822,9 +826,9 @@ TEST(PacketZoneItems, AnArmsBandComesWithItsPocketsFilled)
 	Scene scene;
 	scene.Items(ITEM_CLASS_OUSTERS_ARMSBAND, 1);
 	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_OUSTERS_ARMSBAND, 0).Value3 = 2;
-	scene.Items(ITEM_CLASS_PUPA, 1);
+	scene.Items(ITEM_CLASS_PUPA, 2);
 	std::unique_ptr<GCDropItemToZone> pPacket = Drop(301, ITEM_CLASS_OUSTERS_ARMSBAND, 0, 7, 8);
-	AddSub(*pPacket, 401, ITEM_CLASS_PUPA, 0, 3, 1);
+	AddSub(*pPacket, 401, ITEM_CLASS_PUPA, 1, 3, 1);
 	SubItemInfo* pPastClass = AddSub(*pPacket, 402, int(g_pItemTable->GetSize()), 0, 1, 0);
 	AddSub(*pPacket, 403, ITEM_CLASS_PUPA, 0, 1, 2);
 	MItem* pItem = AddItemToZone(pPacket.get(), FALSE);
@@ -839,6 +843,7 @@ TEST(PacketZoneItems, AnArmsBandComesWithItsPocketsFilled)
 	if (pPupa != NULL)
 	{
 		CHECK_EQ(401, int(pPupa->GetID()));
+		CHECK_EQ(1, int(pPupa->GetItemType()));
 		CHECK_EQ(3, int(pPupa->GetNumber()));
 	}
 	CHECK_EQ(1u, reports.size());
@@ -1201,6 +1206,51 @@ TEST(PacketZoneItems, ASexChangeKeepsASlayersHairStyleAndColour)
 	}
 }
 
+// A woman turned man: the flag says man even where the new body's table
+// row says woman, the sheet's man takes the woman's hair and face, and
+// the player's own race's gear (not the other's) and then its inventory
+// are checked again.
+TEST(PacketZoneItems, ASexChangeToAManSetsTheFlagTakesTheLooksAndChecksTheItems)
+{
+	for (const bool slayer : {true, false})
+	{
+		Scene scene(slayer ? Slayer : Vampire);
+		const CREATURETRIBE tribe = slayer ? CREATURETRIBE_SLAYER : CREATURETRIBE_VAMPIRE;
+		const int woman = slayer ? CREATURETYPE_SLAYER_FEMALE : CREATURETYPE_VAMPIRE_FEMALE1;
+		const int man = slayer ? CREATURETYPE_SLAYER_MALE : CREATURETYPE_VAMPIRE_MALE1;
+		scene.Tribe(woman, tribe);
+		scene.Tribe(man, tribe);
+		testfw::MutableRow(scene.creatureTypes, woman).bMale = false;
+		testfw::MutableRow(scene.creatureTypes, man).bMale = false;
+		scene.me->SetCreatureType(TYPE_CREATURETYPE(woman));
+		CHECK(scene.me->IsFemale());
+		// An item on each race's gear, to tell whose is checked.
+		scene.Items(ITEM_CLASS_HELM, 1);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_HELM, 0).Race = FLAG_RACE_SLAYER;
+		scene.Items(ITEM_CLASS_VAMPIRE_NECKLACE, 1);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_NECKLACE, 0).Race = FLAG_RACE_VAMPIRE;
+		CHECK(scene.slayerGear.AddItem(scene.NewItem(ITEM_CLASS_HELM, 501), MSlayerGear::GEAR_SLAYER_HELM));
+		CHECK(scene.vampireGear.AddItem(scene.NewItem(ITEM_CLASS_VAMPIRE_NECKLACE, 502), MVampireGear::GEAR_VAMPIRE_NECKLACE));
+		scene.Items(ITEM_CLASS_DYE_POTION, 64);
+		g_char_slot_ingame.bl_female = true;
+		g_char_slot_ingame.woman_info.hair = CHAR_WOMAN(3);
+		g_char_slot_ingame.woman_info.face = CHAR_WOMAN(2);
+		g_char_slot_ingame.man_info.hair = CHAR_MAN(5);
+		g_char_slot_ingame.man_info.face = CHAR_MAN(6);
+		scene.Hold(ITEM_CLASS_DYE_POTION, 300, 48, 1);
+		itemsChecked.clear();
+		CHECK(UseItemOK());
+		CHECK_EQ(man, int(scene.me->GetCreatureType()));
+		CHECK(scene.me->IsMale());
+		CHECK(!g_char_slot_ingame.bl_female);
+		CHECK_EQ(3, int(g_char_slot_ingame.man_info.hair));
+		CHECK_EQ(2, int(g_char_slot_ingame.man_info.face));
+		// The potion is in the inventory until it is used up, after.
+		CHECK(itemsChecked == std::vector<int>({ slayer ? 501 : 502, 300 }));
+		CHECK(scene.Destroyed(300));
+	}
+}
+
 TEST(PacketZoneItems, AnOusterTakesNoSexChange)
 {
 	Scene scene(Ousters);
@@ -1314,6 +1364,12 @@ TEST(PacketZoneItems, AnOustersLastPupaLeavesTheArmsBandHoldingIt)
 	CHECK(pBand1->GetItem(1) == pKept);
 	CHECK(scene.DescriptorRemoved(pPupa));
 	CHECK(scene.Destroyed(300));
+	// The first band's last pupa leaves the first band.
+	scene.me->SetItemCheckBuffer(pKept, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT);
+	CHECK(UseItemOK());
+	CHECK(pBand1->GetItem(1) == NULL);
+	CHECK(descriptorsRemoved.size() == 2u && descriptorsRemoved[1] == pKept);
+	CHECK(scene.Destroyed(299));
 	g_pArmsBand1 = g_pArmsBand2 = NULL;
 }
 

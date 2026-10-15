@@ -681,6 +681,24 @@ TEST(PacketSkillShows, ACrossCounterWithAResultsActionShowsTheCopyOnly)
 	}
 }
 
+TEST(PacketSkillShows, ACrossCounterWithTheTablesFirstResultShowsTheCopyOnly)
+{
+	// The results start where the table says. With them starting at a
+	// step skill, which a creature's own special action still plays, the
+	// copy is still shown alone: the counter's own check is the table's.
+	Scene scene;
+	scene.actions.SetMinResultActionInfo(STEP_SKILL_FLOURISH_2);
+	scene.actions.GetMutable(STEP_SKILL_FLOURISH_2)->Set("", ACTION_ATTACK, EFFECTSPRITETYPE_NULL, 1, FLAG_ACTIONINFO_TARGET_OTHER);
+	MCreature* user = scene.Put(500, 10, 10);
+	MCreature* target = scene.Put(501, 14, 12);
+	SkillCrossCounter(user, target, STEP_SKILL_FLOURISH_2);
+	std::vector<MFakeCreature*> fakes = scene.Fakes();
+	CHECK(fakes.size() == 1u);
+	if (fakes.size() != 1u) return;
+	CHECK(ResultOf(fakes[0]) == NULL);
+	CHECK(int(fakes[0]->GetSpecialActionInfo()) != int(STEP_SKILL_FLOURISH_2));
+}
+
 //----------------------------------------------------------------------
 // The fast-moving copies: Shadow Dancing, Illendue, Blaze Walk
 //----------------------------------------------------------------------
@@ -690,6 +708,9 @@ TEST(PacketSkillShows, ShadowDancingSendsThreeCopiesAroundTheTarget)
 	MCreature* user = scene.Put(500, 10, 10);
 	MCreature* target = scene.Put(501, 14, 12);
 	user->SetBasicActionInfo(SKILL_DOUBLE_IMPACT);
+	// Turned away from the target, which the copies are not.
+	user->SetDirection(DIRECTION_UP);
+	user->SetCurrentDirection(DIRECTION_UP);
 	SkillShadowDancing(user, target, SKILL_ATTACK_MELEE);
 	std::vector<MFakeCreature*> fakes = scene.Fakes();
 	CHECK(fakes.size() == 3u);
@@ -706,8 +727,9 @@ TEST(PacketSkillShows, ShadowDancingSendsThreeCopiesAroundTheTarget)
 		CHECK_EQ(int(SKILL_DOUBLE_IMPACT), int(copy->GetBasicActionInfo()));
 		CHECK_EQ(int(SKILL_DOUBLE_IMPACT), int(copy->GetSpecialActionInfo()));
 		CHECK_EQ(501, int(TraceID(copy)));
-		// Facing the target from where it started.
+		// Facing and turned to the target from where it started.
 		CHECK_EQ(int(DIRECTION_RIGHTDOWN), int(copy->GetServerDirection()));
+		CHECK_EQ(int(DIRECTION_RIGHTDOWN), int(copy->GetDirection()));
 	}
 }
 
@@ -725,10 +747,19 @@ TEST(PacketSkillShows, ShadowDancingWithAResultsActionStopsAtTheFirstCopy)
 	Scene scene;
 	MCreature* user = scene.Put(500, 10, 10);
 	MCreature* target = scene.Put(501, 14, 12);
+	user->SetDirection(DIRECTION_UP);
+	user->SetCurrentDirection(DIRECTION_UP);
 	SkillShadowDancing(user, target, MIN_RESULT_ACTIONINFO);
 	std::vector<MFakeCreature*> fakes = scene.Fakes();
 	CHECK(fakes.size() == 1u);
-	if (fakes.size() == 1u) CHECK(!fakes[0]->IsFastMove());
+	if (fakes.size() == 1u)
+	{
+		// It stays, turned to the target with its sword stroke, which a
+		// fast move would have stopped.
+		CHECK(!fakes[0]->IsFastMove());
+		CHECK_EQ(int(DIRECTION_RIGHTDOWN), int(fakes[0]->GetDirection()));
+		CHECK_EQ(int(ACTION_SLAYER_SWORD), int(fakes[0]->GetAction()));
+	}
 	SkillShadowDancing(NULL, target, SKILL_DOUBLE_IMPACT);
 	SkillShadowDancing(user, NULL, SKILL_DOUBLE_IMPACT);
 	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
@@ -752,6 +783,9 @@ TEST(PacketSkillShows, IllendueSendsFourCopiesToTheTargetsCornersOrSides)
 		CHECK_EQ(int(MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION), int(copy->GetFakeCreatureType()));
 		CHECK_EQ(int(SKILL_DOUBLE_IMPACT), int(copy->GetSpecialActionInfo()));
 		CHECK_EQ(501, int(TraceID(copy)));
+		// Facing and turned to the target, not the user's way.
+		CHECK_EQ(int(DIRECTION_RIGHTDOWN), int(copy->GetServerDirection()));
+		CHECK_EQ(int(DIRECTION_RIGHTDOWN), int(copy->GetDirection()));
 	}
 	// Facing on a diagonal: the sides two cells off.
 	for (MFakeCreature* copy : fakes) scene.zone->RemoveFakeCreature(copy->GetID());
@@ -779,7 +813,12 @@ TEST(PacketSkillShows, IllendueWithAMeleeStrikeUsesTheBasicActionAndAResultsActi
 	SkillIllendue(user, target, MIN_RESULT_ACTIONINFO);
 	fakes = scene.Fakes();
 	CHECK(fakes.size() == 1u);
-	if (fakes.size() == 1u) CHECK(!fakes[0]->IsFastMove());
+	if (fakes.size() == 1u)
+	{
+		// It stays casting, which a fast move would have stopped.
+		CHECK(!fakes[0]->IsFastMove());
+		CHECK_EQ(int(ACTION_MAGIC), int(fakes[0]->GetAction()));
+	}
 	SkillIllendue(NULL, target, SKILL_DOUBLE_IMPACT);
 	SkillIllendue(user, NULL, SKILL_DOUBLE_IMPACT);
 	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
@@ -791,10 +830,15 @@ TEST(PacketSkillShows, BlazeWalkSendsOneCopyAGradeEachLaterThanTheLast)
 	MCreature* user = scene.Put(500, 10, 10);
 	MCreature* target = scene.Put(501, 14, 12);
 	user->SetBasicActionInfo(SKILL_DOUBLE_IMPACT);
-	// Grade 0: one copy, to the target's right.
+	// Turned none of the copies' ways.
+	user->SetDirection(DIRECTION_RIGHTDOWN);
+	user->SetCurrentDirection(DIRECTION_RIGHTDOWN);
+	// Grade 0: one copy, to the target's right, striking with the user's
+	// basic action for a melee strike.
 	SkillBlazeWalk(user, target, SKILL_ATTACK_MELEE, 0);
 	std::vector<MFakeCreature*> fakes = scene.Fakes();
 	CHECK(Destinations(fakes) == std::vector<std::string>({"15,12"}));
+	for (MFakeCreature* copy : fakes) CHECK_EQ(int(SKILL_DOUBLE_IMPACT), int(copy->GetSpecialActionInfo()));
 	for (MFakeCreature* copy : fakes) scene.zone->RemoveFakeCreature(copy->GetID());
 	// Grade 2: right, left and below, facing left, up and right... as the
 	// directions 0, 4 and 6 are; 4, 8 and 12 frames late.
@@ -812,6 +856,7 @@ TEST(PacketSkillShows, BlazeWalkSendsOneCopyAGradeEachLaterThanTheLast)
 		CHECK_EQ(int(SKILL_DOUBLE_IMPACT), int(copy->GetSpecialActionInfo()));
 		CHECK_EQ(501, int(TraceID(copy)));
 		CHECK_EQ(directions[i], int(copy->GetServerDirection()));
+		CHECK_EQ(directions[i], int(copy->GetDirection()));
 		CHECK_EQ(4 * (i + 1), int(copy->*(&FakeAccess::m_Delay)));
 	}
 }
@@ -1462,4 +1507,10 @@ TEST(PacketSkillShows, AnElementalFliesBesideItsOwnerTracingIt)
 	AddOustersElemental(owner, 650, EFFECTSTATUS_SUMMON_SYLPH_GREEN);
 	AddOustersElemental(NULL, 650, EFFECTSTATUS_SUMMON_SYLPH_GREEN);
 	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
+	// An owner at the far corner: the elemental traces it from its cell.
+	MCreature* farOwner = scene.Put(502, 39, 29, Ousters);
+	AddOustersElemental(farOwner, 650, EFFECTSTATUS_SUMMON_SYLPH_GREEN);
+	fakes = scene.Fakes();
+	CHECK(fakes.size() == 2u);
+	if (fakes.size() == 2u) CHECK(Cell(fakes[1]->GetFakeX(), fakes[1]->GetFakeY()) == "39,29");
 }
