@@ -3174,6 +3174,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		.InitPacketItemTable = ::InitPacketItemTable,
 		.PersonalShopUpdateTime = GetPersnalShopUpdateTime,
 		.InitFailMessage = [](const char* message) { InitFailMessage(message); },
+		.ShowError = [](const char* message) { MessageBox(NULL, message, "Error", MB_OK); },
 	};
 	GameInitInfoHost::SetHost(&gameInitInfoHost);
 

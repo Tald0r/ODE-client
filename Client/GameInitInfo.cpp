@@ -129,6 +129,12 @@ void InitFailMessage(const char* message)
 		s_pHost->InitFailMessage(message);
 }
 
+void ShowError(const char* message)
+{
+	if (s_pHost != nullptr && s_pHost->ShowError != nullptr)
+		s_pHost->ShowError(message);
+}
+
 }
 
 // The sound parts' manager, which InitInfomation makes (GameMain.cpp's
@@ -547,7 +553,7 @@ InitInfomation()
 		g_pRegenTowerInfoManager = new RegenTowerInfoManager();
 		if( g_pRegenTowerInfoManager->LoadRegenTowerInfo() == false )
 		{
-			MessageBox(NULL,"Cannot Open RTI File","Error",MB_OK);
+			GameInitInfoHost::ShowError("Cannot Open RTI File");
 			return FALSE;			
 		}
 	}

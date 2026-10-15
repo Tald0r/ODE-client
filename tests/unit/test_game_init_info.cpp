@@ -209,6 +209,7 @@ struct Fixture
 		host.InitFailMessage = [](const char* message) { failures.push_back(message); };
 		host.PersonalShopUpdateTime = []() { return 4321; };
 		host.InitPacketItemTable = []() { calls.push_back("packet items"); };
+		host.ShowError = [](const char* message) { calls.push_back(std::string("error|") + message); };
 		host.SetFadeStart = [](signed char start, signed char end, signed char step, BYTE red, BYTE green, BYTE blue, WORD delay) {
 			calls.push_back(Fade(start, end, step, red, green, blue, delay));
 		};
@@ -498,11 +499,13 @@ TEST(GameInitInfo, TheOptionalFilesMayBeMissing)
 
 TEST(GameInitInfo, AMissingRegenTowerFileStopsTheLoading)
 {
-	// It says so in a message box of its own, before any table loads.
+	// It says so in an error box of its own (the host's), before any table
+	// loads.
 	Fixture fixture;
 	fixture.Remove("FILE_REGEN_TOWER_INFO");
 	CHECK(!Load());
 	CHECK(failures.empty());
+	CHECK(calls == std::vector<std::string>({"error|Cannot Open RTI File"}));
 	CHECK(g_pChatManager != nullptr && g_pChatManager->IsAcceptID("fixture") == g_pChatManager->IsAcceptID("someone else"));
 	CHECK(g_pSoundTable != nullptr && g_pSoundTable->GetSize() == 0);
 }
@@ -586,6 +589,7 @@ TEST(GameInitInfo, TheHostsEntriesArePassedOn)
 	GameInitInfoHost::SetFadeStart(1, 2, 3, 4, 5, 6, 7);
 	GameInitInfoHost::InitPacketItemTable();
 	GameInitInfoHost::InitFailMessage("unheard");
+	GameInitInfoHost::ShowError("unseen");
 	CHECK_EQ(60000, GameInitInfoHost::PersonalShopUpdateTime());
 	const GameInitInfoHost::Host empty{};
 	CHECK(GameInitInfoHost::SetHost(&empty) == nullptr);
@@ -601,13 +605,15 @@ TEST(GameInitInfo, TheHostsEntriesArePassedOn)
 		.InitPacketItemTable = []() { calls.push_back("packet items"); },
 		.PersonalShopUpdateTime = []() { return 7; },
 		.InitFailMessage = [](const char* message) { failures.push_back(message); },
+		.ShowError = [](const char* message) { calls.push_back(std::string("error|") + message); },
 	};
 	CHECK(GameInitInfoHost::SetHost(&host) == &empty);
 	GameInitInfoHost::SetFadeStart(-1, 2, 3, 4, 5, 6, 700);
 	GameInitInfoHost::InitPacketItemTable();
 	GameInitInfoHost::InitFailMessage("heard");
+	GameInitInfoHost::ShowError("shown");
 	CHECK_EQ(7, GameInitInfoHost::PersonalShopUpdateTime());
-	CHECK(calls == std::vector<std::string>({"fade -1 2 3 4 5 6 700", "packet items"}));
+	CHECK(calls == std::vector<std::string>({"fade -1 2 3 4 5 6 700", "packet items", "error|shown"}));
 	CHECK(failures == std::vector<std::string>({"heard"}));
 	CHECK(GameInitInfoHost::SetHost(old) == &host);
 }
