@@ -5,8 +5,8 @@
 #include <fstream>
 #include <initializer_list>
 
-// CTypeMap's file: a count, then each record's id and the record. The NPC,
-// shop template, quest and zone sound tables load through it.
+// CTypeMap's file: a count, then each record's id and the record. The NPC
+// and zone sound tables load through it.
 namespace {
 
 const char* kPath = "type_map_test.bin";
@@ -74,6 +74,21 @@ TEST(TypeMap, ACountPastTheFileStopsAtItsEnd)
 	CHECK_EQ(1, Load(map));
 	CHECK_EQ(1, int(map.size()));
 	CHECK(map.GetData(7) != nullptr && map.GetData(7)->value == 42);
+}
+
+TEST(TypeMap, ARecordTheFileEndsInsideIsNotKept)
+{
+	// Two records; the file ends in the second's value.
+	WriteInts({2, 7, 42, 9});
+	{
+		std::ofstream out(kPath, std::ios::binary | std::ios::app);
+		out.write("\x01\x02", 2);
+	}
+	CTypeMap<Record> map;
+	CHECK_EQ(2, Load(map));
+	CHECK_EQ(1, int(map.size()));
+	CHECK(map.GetData(7) != nullptr && map.GetData(7)->value == 42);
+	CHECK(map.GetData(9) == nullptr);
 }
 
 TEST(TypeMap, AnEmptyFileLoadsNothing)

@@ -136,14 +136,13 @@ ZONETABLE_INFO::LoadFromFile(std::ifstream& file)
 	// sound id들 loading
 	SoundIDList.clear();
 
-	int numSound;
+	// No count, or one past the end of the file: the sounds the file holds.
+	int numSound = 0;
 	file.read((char*)&numSound, 4);
 
 	TYPE_SOUNDID soundID;
-	for (int i=0; i<numSound; i++)
+	for (int i=0; i<numSound && file.read((char*)&soundID, SIZE_SOUNDID); i++)
 	{
-		file.read((char*)&soundID, SIZE_SOUNDID);
-
 		SoundIDList.push_back( soundID );
 	}
 
@@ -295,18 +294,27 @@ CZoneTable::LoadFromFile(std::ifstream& file)
 	//---------------------------------------------
 	// size 읽어오기
 	//---------------------------------------------
-	int size;
+	// No count (an empty or short file) loads nothing; a count past the
+	// end of the file stops where the file does.
+	int size = 0;
 
 	file.read((char*)&size, 4);
 
 	//---------------------------------------------
-	// 각각의 ZoneInfo를 Load한다.
+	// load each zone's information
 	//---------------------------------------------
-	for (int i=0; i<size; i++)
+	for (int i=0; i<size && file; i++)
 	{
 		ZONETABLE_INFO* pInfo = new ZONETABLE_INFO;
 
 		pInfo->LoadFromFile( file );
+
+		// A record the file ends inside is not kept.
+		if (!file)
+		{
+			delete pInfo;
+			break;
+		}
 
 		Add( pInfo );
 	}

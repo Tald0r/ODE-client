@@ -544,15 +544,16 @@ CreatureSpriteTypeMapper::GetRandomCreatureType(TYPE_SPRITEID spriteID) const
 {
 	const int defaultCreatureType = 28;
 
-	if (spriteID > m_CreatureSpriteTypes.capacity())
+	// A sprite type past the table, or one the file gave no creatures:
+	// the Blood Warlock.
+	if (spriteID >= m_CreatureSpriteTypes.size())
 	{
-		// 블러드 워록 default - -;
 		return defaultCreatureType;
 	}
 
 	const CREATURE_TYPES* pCreatureTypes = m_CreatureSpriteTypes[spriteID];
 
-	int numCreatures = static_cast<int>(pCreatureTypes->capacity());
+	int numCreatures = pCreatureTypes == NULL ? 0 : static_cast<int>(pCreatureTypes->size());
 
 	if (numCreatures==0)
 	{
@@ -605,31 +606,27 @@ CreatureSpriteTypeMapper::SaveToFile(std::ofstream& file)
 void				
 CreatureSpriteTypeMapper::LoadFromFile(std::ifstream& file)
 {
-	int numSpriteTypes;
+	// No count (an empty or short file) loads nothing; a count past the
+	// end of the file stops where the file does, and the sprite types it
+	// did not reach are past the table. The table grows as it is read, so
+	// a count no file could hold allocates nothing.
+	int numSpriteTypes = 0;
 	
 	file.read((char*)&numSpriteTypes, 4);
 	
-	Init( numSpriteTypes );
+	Init( 0 );
 
-	for (int i=0; i<numSpriteTypes; i++)
+	int numCreatureTypes = 0;
+	for (int i=0; i<numSpriteTypes && file.read((char*)&numCreatureTypes, 4); i++)
 	{
 		CREATURE_TYPES* pCreatureTypes = new CREATURE_TYPES;
 		
-		m_CreatureSpriteTypes[i] = pCreatureTypes;
+		m_CreatureSpriteTypes.push_back( pCreatureTypes );
 
-		int numCreatureTypes;
-
-		file.read((char*)&numCreatureTypes, 4);
-
-		// Use resize() instead of reserve() to actually allocate elements
-		pCreatureTypes->resize( numCreatureTypes, 0 );
-
-		for (int j=0; j<numCreatureTypes; j++)
+		WORD creatureType;
+		for (int j=0; j<numCreatureTypes && file.read((char*)&creatureType, 2); j++)
 		{
-			WORD creatureType;
-			file.read((char*)&creatureType, 2);
-
-			(*pCreatureTypes)[j] = creatureType;
+			pCreatureTypes->push_back( creatureType );
 		}
 	}
 }

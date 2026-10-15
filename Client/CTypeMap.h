@@ -213,9 +213,10 @@ CTypeMap<DataType>::LoadFromFile(std::ifstream& file)
 		pData->LoadFromFile( file );
 
 		//-----------------------------------------------------
-		// add it to the map
+		// add it to the map; a record the file ends inside is
+		// not kept
 		//-----------------------------------------------------
-		if (!AddData( id, pData ))
+		if (!file || !AddData( id, pData ))
 		{
 			delete pData;
 		}

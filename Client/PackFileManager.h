@@ -391,15 +391,23 @@ PackFileManager<FileInfoType>::LoadFromFileInfo(const char* pFilename)
 	// 개수
 	if (file.is_open())
 	{
-		WORD num;
+		// No count (an empty or short file) loads nothing; a count past
+		// the end of the file stops where the file does.
+		WORD num = 0;
 		file.read((char*)&num, 2);
 
-		for (int i=0; i<num; i++)
+		for (int i=0; i<num && file; i++)
 		{
-			// Header 읽기
+			// read the header; one the file ends inside is not kept
 			FileInfoType* pInfo = new FileInfoType;
 
 			pInfo->LoadFromFile( file );
+
+			if (!file)
+			{
+				delete pInfo;
+				break;
+			}
 
 			AddInfo( pInfo->GetID(), pInfo );
 		}

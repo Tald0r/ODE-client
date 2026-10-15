@@ -171,13 +171,13 @@ SKILLINFO_NODE::LoadFromFileServerSkillInfo(std::ifstream& file)
 	{
 		file.read((char*)&SkillPoint,		sizeof(int));
 		file.read((char*)&LevelUpPoint,		sizeof(int));
-		int szSkill;
+		// No count, or one past the end of the file: the skills the file holds.
+		int szSkill = 0;
 		file.read((char*)&szSkill,			sizeof(int));
 		SkillTypeList.clear();
-		for(int i = 0; i < szSkill; i++)
+		int skillType;
+		for(int i = 0; i < szSkill && file.read((char*)&skillType, sizeof(int)); i++)
 		{
-			int skillType;
-			file.read((char*)&skillType,		sizeof(int));
 			SkillTypeList.push_back(skillType);
 		}
 		file.read((char*)&Fire,				sizeof(int));
@@ -295,16 +295,14 @@ SKILLINFO_NODE::LoadFromFile(std::ifstream& file)
 	file.read((char*)&skillStep, 1);
 	m_SkillStep = (SKILL_STEP)skillStep;
 	// id list load
-	int idNum;
+	// No count, or one past the end of the file: the skills the file holds.
+	int idNum = 0;
 	file.read((char*)&idNum, 4);
 
 	m_listNextSkill.clear();
-	for (int i=0; i<idNum; i++)
+	TYPE_ACTIONINFO id;
+	for (int i=0; i<idNum && file.read((char*)&id, SIZE_ACTIONINFO); i++)
 	{
-		TYPE_ACTIONINFO id;
-
-		file.read((char*)&id, SIZE_ACTIONINFO);
-
 		m_listNextSkill.push_back( (ACTIONINFO)id );
 	}	
 
