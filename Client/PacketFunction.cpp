@@ -2142,7 +2142,10 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			//---------------------------------------------
 			// change outfit
 			//---------------------------------------------
-			g_pPlayer->SetAddonItem( pItem );
+			if (bAdd)
+			{
+				g_pPlayer->SetAddonItem( pItem );
+			}
 
 			//---------------------------------------------
 			// if Gear cannot be added

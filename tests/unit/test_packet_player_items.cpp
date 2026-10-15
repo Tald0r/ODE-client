@@ -759,11 +759,11 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_COAT) == NULL);
 	CHECK_EQ(1, Count("destroyed|950"));
 	CHECK_EQ(1, Count("destroyed|705"));
-	// Defect: the body takes every item before the gear may refuse it
-	// (PacketFunction.cpp:2152), so the refused helm is the one worn.
+	// The body wears only what the gear took: the helm, not the one the
+	// coat's slot refused.
 	CHECK(scene.me->GetAddonInfo(ADDON_HELM).bAddon);
-	CHECK_EQ(0, scene.me->GetAddonInfo(ADDON_HELM).ItemType);
-	CHECK_EQ(40, scene.me->GetAddonInfo(ADDON_HELM).FrameID);
+	CHECK_EQ(1, scene.me->GetAddonInfo(ADDON_HELM).ItemType);
+	CHECK_EQ(41, scene.me->GetAddonInfo(ADDON_HELM).FrameID);
 
 	const MItem* pFirstSign = scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1);
 	const MItem* pSecondSign = scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE2);
