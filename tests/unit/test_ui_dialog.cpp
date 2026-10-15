@@ -352,6 +352,30 @@ TEST(UIDialog, SkillAndBibleLinesStartWithAThreeDigitID)
 	}
 }
 
+TEST(UIDialog, ALineThatIsOnlyItsIDHasAnEmptyName)
+{
+	// Its name is empty, which a string keeps as NULL; the menu gets "".
+	Scene scene;
+	scene.talkBox.SetType(PCTalkBox::SKILL_LEARN);
+	scene.talkBox.AddString("012");
+	scene.dialog.PopupPCTalkDlg();
+	CHECK(Same({"close all", "talk 1|7|Merchant", "menu 1|12:", "text 1 fit|Hello there", "start 1"}));
+	calls.clear();
+	scene.talkBox.Release();
+	scene.talkBox.SetType(PCTalkBox::SELECT_QUEST);
+	scene.talkBox.AddString("0042");
+	scene.dialog.PopupPCTalkDlg();
+	CHECK(Same({"delete 1", "close all", "talk 2|7|Merchant", "menu 2|42:", "text 2 fit|Hello there", "start 2"}));
+	// A plain line that is empty, the same.
+	calls.clear();
+	scene.talkBox.Release();
+	scene.talkBox.SetType(PCTalkBox::NORMAL);
+	scene.talkBox.AddString("Buy");
+	scene.talkBox.AddString("");
+	scene.dialog.PopupPCTalkDlg();
+	CHECK(Same({"delete 2", "close all", "talk 3|7|Merchant", "menu 3|1:Buy|2:", "text 3 fit|Hello there", "start 3"}));
+}
+
 TEST(UIDialog, QuestLinesStartWithAFourDigitID)
 {
 	Scene scene;

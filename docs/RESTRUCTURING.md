@@ -4208,12 +4208,13 @@ rounds settled* for the host rules). Test fixtures share
   > the zone or the talk box it does nothing, as before. Its subject and
   > way-out strings are read through `GetGameString`, which now answers
   > "" for an empty entry as well as for one past the table (445a9109).
-  > Still open, in executable code: `UIDialog` reads a list line's first
-  > three characters as its id, so a way-out string that is empty leaves
-  > an empty, NULL menu name, which crashes the dialog's menu as an empty
-  > answer would (only with an empty way-out entry; the English table has
-  > text there), and an id of four digits would be misread (the server
-  > sends small ids). R1 is 135 Windows / 133 Ninja.
+  > Still open then, in executable code: `UIDialog` reads a list line's
+  > first three characters as its id, so a way-out string that is empty
+  > leaves an empty, NULL menu name, which crashed the dialog's menu as an
+  > empty answer would (only with an empty way-out entry; the English
+  > table has text there). Fixed after 4.238 moved UIDialog into
+  > gamemodel: an empty name goes to the menu as "". An id of four digits
+  > would still be misread (the server sends small ids). R1 is 135 Windows / 133 Ninja.
   - Owner: membership, R1, and `test_blood_bible_replies.cpp` (two
     bibles, one without strings, none; each guard; no dialog host).
 

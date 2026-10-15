@@ -529,7 +529,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 
 				// the menu line
 				pMenu[i].id			= i+1;						// ID+1
-				pMenu[i].text		= pString->GetString();		// its text..
+				pMenu[i].text		= pString->GetString() != NULL ? pString->GetString() : "";		// its text (an empty one is NULL)
 
 				// next..
 				iString++;
@@ -565,7 +565,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 
 				// the menu line
 				pMenu[i].id			= atoi(strID);
-				pMenu[i].text		= pString->GetString();		// its text..
+				pMenu[i].text		= pString->GetString() != NULL ? pString->GetString() : "";		// its text (an empty one is NULL)
 
 				// next..
 				iString++;
@@ -594,7 +594,7 @@ UIDialog::PopupPCTalkDlg(int x, int y)
 
 				// the menu line
 				pMenu[i].id			= atoi(strID);
-				pMenu[i].text		= pString->GetString();		// its text..
+				pMenu[i].text		= pString->GetString() != NULL ? pString->GetString() : "";		// its text (an empty one is NULL)
 
 				// next..
 				iString++;
