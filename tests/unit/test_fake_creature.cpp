@@ -29,8 +29,10 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <memory>
+#include <new>
 #include <set>
 #include <string>
 #include <utility>
@@ -640,6 +642,24 @@ TEST(FakeCreature, ATurretTurnsToItsOwnersTarget)
 	other.SetCurrentDirection(1);
 	other.UpdateTurret();
 	CHECK_EQ(before, int(other.GetTurretDirection()));
+}
+
+TEST(FakeCreature, ANewTurretFacesAsItDoesWithNoFinalDirection)
+{
+	// Made over memory that is not zero, so what the constructor leaves
+	// unset shows.
+	Scene scene;
+	scene.Tribe(703);
+	alignas(MFakeCreature) unsigned char memory[sizeof(MFakeCreature)];
+	std::memset(memory, 0xA5, sizeof(memory));
+	MFakeCreature* pTurret = ::new (memory) MFakeCreature;
+	CHECK_EQ(((pTurret->GetDirection() + 6) % 8) * 4, int(pTurret->GetTurretDirection()));
+	// No owner and no final direction: it stays facing its own way.
+	Place(*pTurret, 703, 20, 20);
+	const int before = pTurret->GetTurretDirection();
+	pTurret->UpdateTurret();
+	CHECK_EQ(before, int(pTurret->GetTurretDirection()));
+	pTurret->~MFakeCreature();
 }
 
 //----------------------------------------------------------------------

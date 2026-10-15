@@ -121,6 +121,8 @@ MFakeCreature::MFakeCreature()
 	m_PatrolCount = rand()%5+1;
 
 	m_TurretDelay = 0;
+	// the turret starts facing as the creature does, with no final direction
+	SyncTurretDirection();
 	m_WildWolf_Mode = 0;
 	m_IsEatCorps = false;
 }

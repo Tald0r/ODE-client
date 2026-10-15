@@ -5,6 +5,8 @@
 # (rules C0-C2) and tests/ratchet/ratchets.sh read the file too. Header
 # lines are the include checker's allowed set: gameclient's own, and the
 # headers under Client/ of classes VS_UI compiles.
+Client/CWaitUIUpdate.cpp
+Client/CWaitUIUpdate.h
 Client/GameInitInfo.cpp
 Client/GameInitInfo.h
 Client/GameInitInfoHost.h

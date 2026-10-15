@@ -165,8 +165,9 @@ the start-up's loading of the game information, `GameInitInfo`, behind the
 `GameInitInfoHost` `ClientMain` installs, and the packet handlers' helpers,
 `PacketFunction`: the packet item tables, a creature's look and the player's
 info, items, effects and pets from their packets, item use, portals and the
-skills' shows; membership in `tests/arch/gameclient_files.txt`, tasks 4.252
-and 4.253),
+skills' shows, and the login and waiting screens' update loop,
+`CWaitUIUpdate`, behind its `CWaitUIHost`; membership in
+`tests/arch/gameclient_files.txt`, tasks 4.252, 4.253 and 4.255),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

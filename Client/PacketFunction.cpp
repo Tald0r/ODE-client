@@ -1114,6 +1114,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 						(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 					{
 						SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
+						delete pSubItemInfo;
 						continue;
 					}
 					MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
@@ -1135,7 +1136,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					//------------------------------------------
 					// add the item to the given slot of the Belt.
 					//------------------------------------------
-					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+					if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+					{
+						delete pSubItem;
+					}
 
 					delete pSubItemInfo;
 				}
@@ -1163,6 +1167,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 						(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 					{
 						SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
+						delete pSubItemInfo;
 						continue;
 					}
 					MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
@@ -1184,7 +1189,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					//------------------------------------------
 					// add the item to the given slot of the Belt.
 					//------------------------------------------
-					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+					if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+					{
+						delete pSubItem;
+					}
 					
 					delete pSubItemInfo;
 				}
@@ -1233,6 +1241,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 						// remove memory
 						delete pItem;
 					}		
+					else
+					{
+						return pItem;
+					}
 				}
 				else
 				{
@@ -1270,6 +1282,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					// remove memory
 					delete pItem;
 				}		
+				else
+				{
+					return pItem;
+				}
 			}
 			else
 			{
@@ -1738,7 +1754,8 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -1759,7 +1776,10 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -1788,7 +1808,8 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -1809,7 +1830,10 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 							
 							delete pSubItemInfo;
 						}
@@ -1905,7 +1929,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 	{
 		int itemNum = pGearInfo->getListNum();
 				
-		bool bAdd;
+		bool bAdd = false;
 		
 		for (int i=0; i<itemNum; i++)
 		{
@@ -2033,7 +2057,8 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2054,7 +2079,10 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -2083,7 +2111,8 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2104,7 +2133,10 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -2142,7 +2174,10 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			//---------------------------------------------
 			// change outfit
 			//---------------------------------------------
-			g_pPlayer->SetAddonItem( pItem );
+			if (bAdd)
+			{
+				g_pPlayer->SetAddonItem( pItem );
+			}
 
 			//---------------------------------------------
 			// if Gear cannot be added
@@ -2321,7 +2356,8 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 				(*g_pItemTable)[pSlotInfo->getItemClass()].GetSize() <= pSlotInfo->getItemType() )
 			{
 				SendBugReportAt(DiagnosticSite(), "%d,%d",pSlotInfo->getItemClass(), pSlotInfo->getItemType() );
-				return;
+				delete pSlotInfo;
+				continue;
 			}
 			MItem* pItem = MItem::NewItem( (ITEM_CLASS)pSlotInfo->getItemClass() );
 
@@ -2422,7 +2458,8 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2443,7 +2480,10 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -2472,7 +2512,8 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
@@ -2494,7 +2535,10 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 							
 							delete pSubItemInfo;
 						}
@@ -3048,8 +3092,6 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	}
 	g_pUserInformation->GuildGrade = pInfo->getGuildMemberRank();
 
-	g_pGuildInfoMapper->SetGuildName( pInfo->getGuildID(), g_char_slot_ingame.sz_guild_name );
-
 	//--------------------------------------------------
 	// info needed when displaying in the info window..
 	//--------------------------------------------------
@@ -3058,6 +3100,8 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		g_char_slot_ingame.sz_guild_name	= "";
 	else
 		g_char_slot_ingame.sz_guild_name	= g_pUserInformation->GuildName.GetString();
+
+	g_pGuildInfoMapper->SetGuildName( pInfo->getGuildID(), g_char_slot_ingame.sz_guild_name );
 
 	g_char_slot_ingame.GUILD_ID			= guildID;
 	g_char_slot_ingame.GUILD_GRADE		= g_pUserInformation->GuildGrade;
@@ -4164,7 +4208,8 @@ ComeFromPortal(MCreature* pCreature)
 		return;
 
 	int cutStart = 80;
-	int cutInc = -5;
+	// a step down, as the sprite path computes it: SetCutHeightFrom takes -cutInc
+	int cutInc = 5;
 
 	int body = pCreature->GetCreatureFrameID(0);
 	int action = ACTION_STAND;
@@ -4273,6 +4318,7 @@ MoveIntoPortal(MCreature* pCreature)
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
 		delete pFakeCreature;
+		return;
 	}
 
 	//------------------------------------------------------
@@ -4355,6 +4401,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
 		delete pFakeCreature;
+		return;
 	}
 
 	//------------------------------------------------------
@@ -4472,6 +4519,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
 			delete pFakeCreature;
+			continue;
 		}
 
 		//------------------------------------------------------
@@ -4591,6 +4639,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
 			delete pFakeCreature;
+			continue;
 		}
 
 		//------------------------------------------------------
@@ -4734,6 +4783,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
 			delete pFakeCreature;
+			continue;
 		}
 		
 		//------------------------------------------------------
@@ -4848,7 +4898,14 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature = dynamic_cast<MFakeCreature *>(g_pZone->GetFakeCreature(pCreature->GetPetID()));
 
 					if(pFakeCreature == NULL)
+					{
+						// another creature's item was made above; the player's is the inventory's
+						if(pCreature != g_pPlayer)
+						{
+							delete pItem;
+						}
 						return;
+					}
 
 					if(pCreature == g_pPlayer)		// if it is the player's own pet
 					{
@@ -4937,13 +4994,16 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					if (!g_pZone->AddFakeCreature( pFakeCreature ))
 					{
 						delete pFakeCreature;
-						if(pCreature != g_pPlayer)		// if it is the player's own pet
+						pFakeCreature = NULL;
+						if(pCreature != g_pPlayer)		// another creature's new pet item is ours to free
 						{
 							delete pItem;
 						}
 					}
-
-					pFakeCreature->SetZone(g_pZone);
+					else
+					{
+						pFakeCreature->SetZone(g_pZone);
+					}
 				}
 
 				if(pFakeCreature)
@@ -4990,6 +5050,12 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature->SetTraceID( objectID ); 
 					pFakeCreature->SyncTurretDirection();
 					
+					// another creature's pet owns the item it had (see ~MFakeCreature); the player's is the inventory's
+					if(pCreature != g_pPlayer)
+					{
+						delete pFakeCreature->GetPetItem();
+					}
+
 					// the FakeCreature was added successfully
 					pFakeCreature->SetPetItem(pItem);
 

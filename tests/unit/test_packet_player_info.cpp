@@ -619,10 +619,9 @@ TEST(PacketPlayerInfo, VampireInfoSetsThePlayerTheSheetAndTheHotKeys)
 	CHECK_EQ(99, g_pUserInformation->HairColor);
 	CHECK_EQ(230, g_pUserInformation->SkinColor);
 	CHECK_EQ(99, g_pUserInformation->BatColor);
-	// Defect: the mapper is told the guild's name before the sheet takes the
-	// new one (PacketFunction.cpp:3040, four lines above the slayer's and the
-	// ousters' order), so it keeps the name the sheet showed before.
-	CHECK(std::string("Old") == scene.guilds.GetGuildName(31));
+	// The mapper is told the packet's name, not the one the sheet showed
+	// before.
+	CHECK(std::string("Moon") == scene.guilds.GetGuildName(31));
 
 	const std::vector<std::string> statuses = {
 		N(MODIFY_MAX_HP) + "=400", N(MODIFY_CURRENT_HP) + "=250",
@@ -756,11 +755,13 @@ TEST(PacketPlayerInfo, TransformedVampireKeepsItsForm)
 }
 
 //----------------------------------------------------------------------
-// Bat colour 0 means none: the player's is 0xFFFF, the record's 0.
+// Bat colour 0 means none: the player's is 0xFFFF (whatever it was), the
+// record's 0.
 //----------------------------------------------------------------------
 TEST(PacketPlayerInfo, VampireWithoutABatColourGetsTheDefault)
 {
 	Scene scene;
+	scene.me->SetBatColor(5);
 	PCVampireInfo2 info = Vampire();
 	info.setBatColor(0);
 
@@ -769,6 +770,38 @@ TEST(PacketPlayerInfo, VampireWithoutABatColourGetsTheDefault)
 	CHECK_EQ(0xFFFF, scene.me->GetBatColor());
 	CHECK_EQ(0, g_pUserInformation->BatColor);
 	CHECK_EQ(0, g_char_slot_ingame.hair_color);
+}
+
+//----------------------------------------------------------------------
+// No guild name: a vampire's and an ousters' sheet shows "" too, not the
+// name it showed before.
+//----------------------------------------------------------------------
+TEST(PacketPlayerInfo, VampireAndOustersWithoutAGuildNameShowAnEmptyOne)
+{
+	{
+		Scene scene;
+		g_char_slot_ingame.sz_guild_name = "Old";
+		PCVampireInfo2 info = Vampire();
+		info.setGuildName("");
+
+		SetPCVampireInfo(&info);
+
+		CHECK(g_pUserInformation->GuildName.GetString() == NULL);
+		CHECK(g_char_slot_ingame.sz_guild_name.empty());
+		CHECK(std::string() == scene.guilds.GetGuildName(31));
+	}
+	{
+		Scene scene;
+		g_char_slot_ingame.sz_guild_name = "Old";
+		PCOustersInfo2 info = Ousters();
+		info.setGuildName("");
+
+		SetPCOustersInfo(&info);
+
+		CHECK(g_pUserInformation->GuildName.GetString() == NULL);
+		CHECK(g_char_slot_ingame.sz_guild_name.empty());
+		CHECK(std::string() == scene.guilds.GetGuildName(32));
+	}
 }
 
 //----------------------------------------------------------------------

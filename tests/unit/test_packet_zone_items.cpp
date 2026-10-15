@@ -56,6 +56,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 // MItemUse.cpp's, reached through MItemHost.
 MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 
@@ -71,6 +83,19 @@ namespace {
 
 std::vector<std::string> calls;
 std::string N(long long value) { return std::to_string(value); }
+
+// Whether a SubItemInfo (no virtual destructor to watch) was freed. Only
+// ASan can tell, by the poison its quarantine keeps on a freed block;
+// without it this says yes, so the check is the sanitized trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
+}
 
 bool Same(const std::vector<std::string>& expected)
 {
@@ -251,11 +276,14 @@ const MAttachEffectHost attachHost = []() {
 	return host;
 }();
 std::vector<int> itemsDestroyed;
+// The items whose use the player checked again, in order.
+std::vector<int> itemsChecked;
 const MItemHost itemHost = []() {
 	MItemHost host{};
 	host.NewItem = NewItemOfClass;
 	host.DropFrameCount = [](TYPE_FRAMEID) { return 4; };
 	host.ItemDestroyed = [](MItem* pItem) noexcept { itemsDestroyed.push_back(int(pItem->GetID())); };
+	host.RefreshAffect = [](MItem* pItem) { itemsChecked.push_back(int(pItem->GetID())); };
 	return host;
 }();
 
@@ -343,6 +371,7 @@ struct Scene
 		started.clear();
 		descriptorsRemoved.clear();
 		itemsDestroyed.clear();
+		itemsChecked.clear();
 		reports.clear();
 		skillRefreshes = 0;
 		spriteHeight = -1;
@@ -536,7 +565,7 @@ std::unique_ptr<GCDropItemToZone> Drop(TYPE_OBJECTID id, int itemClass, int type
 	return pPacket;
 }
 
-void AddSub(GCAddItemToZone& packet, TYPE_OBJECTID id, int itemClass, int type, int number, int slot)
+SubItemInfo* AddSub(GCAddItemToZone& packet, TYPE_OBJECTID id, int itemClass, int type, int number, int slot)
 {
 	SubItemInfo* pSub = new SubItemInfo;
 	pSub->setObjectID(id);
@@ -546,6 +575,7 @@ void AddSub(GCAddItemToZone& packet, TYPE_OBJECTID id, int itemClass, int type, 
 	pSub->setSlotID(SlotID_t(slot));
 	packet.addListElement(pSub);
 	packet.setListNum(BYTE(packet.getListNum() + 1));
+	return pSub;
 }
 
 } // namespace
@@ -767,12 +797,14 @@ TEST(PacketZoneItems, ABeltComesWithItsPocketsFilled)
 	scene.Items(ITEM_CLASS_POTION, 2);
 	std::unique_ptr<GCDropItemToZone> pPacket = Drop(301, ITEM_CLASS_BELT, 0, 7, 8);
 	AddSub(*pPacket, 401, ITEM_CLASS_POTION, 1, 4, 2);
-	// An unknown type is reported and skipped; the rest still go in. (The
-	// skipped SubItemInfo is not freed: PacketFunction.cpp:1111 and 1160
-	// `continue` past the delete. A leak, which no check here sees.)
-	AddSub(*pPacket, 402, ITEM_CLASS_POTION, 2, 1, 1);
+	// An unknown type is reported, freed and skipped; the rest still go
+	// in, but for one in a pocket the belt does not have, which is freed.
+	SubItemInfo* pPastType = AddSub(*pPacket, 402, ITEM_CLASS_POTION, 2, 1, 1);
 	AddSub(*pPacket, 403, ITEM_CLASS_POTION, 0, 7, 0);
+	AddSub(*pPacket, 404, ITEM_CLASS_POTION, 0, 1, 3);
 	MItem* pItem = AddItemToZone(pPacket.get(), FALSE);
+	CHECK(Freed(pPastType));
+	CHECK(scene.Destroyed(404));
 	CHECK(pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_BELT);
 	if (pItem == NULL || pItem->GetItemClass() != ITEM_CLASS_BELT) return;
 	const MBelt* pBelt = static_cast<const MBelt*>(pItem);
@@ -794,11 +826,14 @@ TEST(PacketZoneItems, AnArmsBandComesWithItsPocketsFilled)
 	Scene scene;
 	scene.Items(ITEM_CLASS_OUSTERS_ARMSBAND, 1);
 	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_OUSTERS_ARMSBAND, 0).Value3 = 2;
-	scene.Items(ITEM_CLASS_PUPA, 1);
+	scene.Items(ITEM_CLASS_PUPA, 2);
 	std::unique_ptr<GCDropItemToZone> pPacket = Drop(301, ITEM_CLASS_OUSTERS_ARMSBAND, 0, 7, 8);
-	AddSub(*pPacket, 401, ITEM_CLASS_PUPA, 0, 3, 1);
-	AddSub(*pPacket, 402, int(g_pItemTable->GetSize()), 0, 1, 0);
+	AddSub(*pPacket, 401, ITEM_CLASS_PUPA, 1, 3, 1);
+	SubItemInfo* pPastClass = AddSub(*pPacket, 402, int(g_pItemTable->GetSize()), 0, 1, 0);
+	AddSub(*pPacket, 403, ITEM_CLASS_PUPA, 0, 1, 2);
 	MItem* pItem = AddItemToZone(pPacket.get(), FALSE);
+	CHECK(Freed(pPastClass));
+	CHECK(scene.Destroyed(403));
 	CHECK(pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_OUSTERS_ARMSBAND);
 	if (pItem == NULL || pItem->GetItemClass() != ITEM_CLASS_OUSTERS_ARMSBAND) return;
 	const MOustersArmsBand* pBand = static_cast<const MOustersArmsBand*>(pItem);
@@ -808,6 +843,7 @@ TEST(PacketZoneItems, AnArmsBandComesWithItsPocketsFilled)
 	if (pPupa != NULL)
 	{
 		CHECK_EQ(401, int(pPupa->GetID()));
+		CHECK_EQ(1, int(pPupa->GetItemType()));
 		CHECK_EQ(3, int(pPupa->GetNumber()));
 	}
 	CHECK_EQ(1u, reports.size());
@@ -827,17 +863,17 @@ TEST(PacketZoneItems, AnyOtherItemsSubItemsAreLeftInThePacket)
 //----------------------------------------------------------------------
 // AddItemToZone: a new item the zone refuses
 //----------------------------------------------------------------------
-TEST(PacketZoneItems, AnotherItemOnTheCellMakesWayButTheNewOneIsNotReturned)
+TEST(PacketZoneItems, AnotherItemOnTheCellMakesWayForTheNewOne)
 {
 	Scene scene;
 	scene.Items(ITEM_CLASS_POTION, 1);
 	std::unique_ptr<GCDropItemToZone> first = Drop(301, ITEM_CLASS_POTION, 0, 7, 8);
 	CHECK(AddItemToZone(first.get(), FALSE) != NULL);
 	std::unique_ptr<GCDropItemToZone> second = Drop(302, ITEM_CLASS_POTION, 0, 7, 8);
-	// Recorded defect (PacketFunction.cpp:1219-1278): the new item is in
-	// the zone, yet NULL comes back, so GCAddInstalledMineToZone's handler
-	// never marks a mine laid this way installed.
-	CHECK(AddItemToZone(second.get(), FALSE) == NULL);
+	// The new item laid is returned, as GCAddInstalledMineToZone's handler
+	// needs to mark a mine laid this way installed.
+	MItem* pItem = AddItemToZone(second.get(), FALSE);
+	CHECK(pItem != NULL && pItem == scene.zone->GetItem(302));
 	CHECK(scene.zone->GetItem(301) == NULL);
 	CHECK(scene.Destroyed(301));
 	CHECK(scene.zone->GetItem(302) != NULL);
@@ -863,11 +899,11 @@ TEST(PacketZoneItems, TheSameItemOnAnotherCellMovesThere)
 	std::unique_ptr<GCDropItemToZone> first = Drop(301, ITEM_CLASS_POTION, 0, 7, 8);
 	MItem* pOld = AddItemToZone(first.get(), FALSE);
 	std::unique_ptr<GCDropItemToZone> moved = Drop(301, ITEM_CLASS_POTION, 0, 9, 8);
-	// Recorded defect, as above (PacketFunction.cpp:1256-1278): laid, yet
-	// NULL.
-	CHECK(AddItemToZone(moved.get(), FALSE) == NULL);
+	// Laid, and returned.
+	MItem* pItem = AddItemToZone(moved.get(), FALSE);
 	MItem* pNow = scene.zone->GetItem(301);
 	CHECK(pNow != NULL && pNow != pOld);
+	CHECK(pItem == pNow);
 	CHECK_EQ(301, int(scene.zone->GetItemID(9, 8)));
 	CHECK(scene.zone->GetItemID(7, 8) == OBJECTID_NULL);
 	CHECK_EQ(1u, itemsDestroyed.size());
@@ -1170,6 +1206,51 @@ TEST(PacketZoneItems, ASexChangeKeepsASlayersHairStyleAndColour)
 	}
 }
 
+// A woman turned man: the flag says man even where the new body's table
+// row says woman, the sheet's man takes the woman's hair and face, and
+// the player's own race's gear (not the other's) and then its inventory
+// are checked again.
+TEST(PacketZoneItems, ASexChangeToAManSetsTheFlagTakesTheLooksAndChecksTheItems)
+{
+	for (const bool slayer : {true, false})
+	{
+		Scene scene(slayer ? Slayer : Vampire);
+		const CREATURETRIBE tribe = slayer ? CREATURETRIBE_SLAYER : CREATURETRIBE_VAMPIRE;
+		const int woman = slayer ? CREATURETYPE_SLAYER_FEMALE : CREATURETYPE_VAMPIRE_FEMALE1;
+		const int man = slayer ? CREATURETYPE_SLAYER_MALE : CREATURETYPE_VAMPIRE_MALE1;
+		scene.Tribe(woman, tribe);
+		scene.Tribe(man, tribe);
+		testfw::MutableRow(scene.creatureTypes, woman).bMale = false;
+		testfw::MutableRow(scene.creatureTypes, man).bMale = false;
+		scene.me->SetCreatureType(TYPE_CREATURETYPE(woman));
+		CHECK(scene.me->IsFemale());
+		// An item on each race's gear, to tell whose is checked.
+		scene.Items(ITEM_CLASS_HELM, 1);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_HELM, 0).Race = FLAG_RACE_SLAYER;
+		scene.Items(ITEM_CLASS_VAMPIRE_NECKLACE, 1);
+		testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_NECKLACE, 0).Race = FLAG_RACE_VAMPIRE;
+		CHECK(scene.slayerGear.AddItem(scene.NewItem(ITEM_CLASS_HELM, 501), MSlayerGear::GEAR_SLAYER_HELM));
+		CHECK(scene.vampireGear.AddItem(scene.NewItem(ITEM_CLASS_VAMPIRE_NECKLACE, 502), MVampireGear::GEAR_VAMPIRE_NECKLACE));
+		scene.Items(ITEM_CLASS_DYE_POTION, 64);
+		g_char_slot_ingame.bl_female = true;
+		g_char_slot_ingame.woman_info.hair = CHAR_WOMAN(3);
+		g_char_slot_ingame.woman_info.face = CHAR_WOMAN(2);
+		g_char_slot_ingame.man_info.hair = CHAR_MAN(5);
+		g_char_slot_ingame.man_info.face = CHAR_MAN(6);
+		scene.Hold(ITEM_CLASS_DYE_POTION, 300, 48, 1);
+		itemsChecked.clear();
+		CHECK(UseItemOK());
+		CHECK_EQ(man, int(scene.me->GetCreatureType()));
+		CHECK(scene.me->IsMale());
+		CHECK(!g_char_slot_ingame.bl_female);
+		CHECK_EQ(3, int(g_char_slot_ingame.man_info.hair));
+		CHECK_EQ(2, int(g_char_slot_ingame.man_info.face));
+		// The potion is in the inventory until it is used up, after.
+		CHECK(itemsChecked == std::vector<int>({ slayer ? 501 : 502, 300 }));
+		CHECK(scene.Destroyed(300));
+	}
+}
+
 TEST(PacketZoneItems, AnOusterTakesNoSexChange)
 {
 	Scene scene(Ousters);
@@ -1283,6 +1364,12 @@ TEST(PacketZoneItems, AnOustersLastPupaLeavesTheArmsBandHoldingIt)
 	CHECK(pBand1->GetItem(1) == pKept);
 	CHECK(scene.DescriptorRemoved(pPupa));
 	CHECK(scene.Destroyed(300));
+	// The first band's last pupa leaves the first band.
+	scene.me->SetItemCheckBuffer(pKept, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT);
+	CHECK(UseItemOK());
+	CHECK(pBand1->GetItem(1) == NULL);
+	CHECK(descriptorsRemoved.size() == 2u && descriptorsRemoved[1] == pKept);
+	CHECK(scene.Destroyed(299));
 	g_pArmsBand1 = g_pArmsBand2 = NULL;
 }
 
@@ -1475,6 +1562,24 @@ MCreature* Riser(Scene& scene, int type, TYPE_OBJECTID id, int x, int y)
 	CHECK(g_pZone->AddCreature(pCreature));
 	return pCreature;
 }
+
+// A fake the zone holds under the ID the next new fake takes, with
+// ZoneState blind to the zone's fakes for the rest of the scene so the ID
+// counter (one up, wrapping at 10000) does not step past it: the zone
+// refuses that next fake.
+MFakeCreature* BlockNextFake()
+{
+	static const ZoneState::Host blind = []() {
+		ZoneState::Host host = zoneHost;
+		host.GetFakeCreature = [](TYPE_OBJECTID) -> MCreature* { return NULL; };
+		return host;
+	}();
+	ZoneState::SetHost(&blind);
+	MFakeCreature* pBlocker = new MFakeCreature;
+	pBlocker->SetID((pBlocker->GetID() + 1) % 10000);
+	CHECK(g_pZone->AddFakeCreature(pBlocker));
+	return pBlocker;
+}
 }
 
 TEST(PacketZoneItems, ACreatureRisesFromAPortalAsTallAsItsSprite)
@@ -1516,20 +1621,24 @@ TEST(PacketZoneItems, ACreatureRisesFromAPortalAsTallAsItsSprite)
 	}
 }
 
-TEST(PacketZoneItems, ACreatureWithoutASpriteRisesFromEightyButNeverShows)
+TEST(PacketZoneItems, ACreatureWithoutASpriteRisesFromEighty)
 {
 	Scene scene;
 	MCreature* pCreature = Riser(scene, Vampire, 500, 6, 9);
 	spriteHeight = -1;
 	ComeFromPortal(pCreature);
-	// Recorded defect (PacketFunction.cpp:4165): the default increment is
-	// -5 and is negated again, so the cut is set to grow from 80 to 0 and
-	// ends on its first update; the creature appears at once instead of
-	// rising.
+	// Like the others it rises: the cut comes down from 80 to 0, five a
+	// frame, and the creature shows whole on the sixteenth update.
 	CHECK(pCreature->IsCutHeight());
 	CHECK_EQ(80, pCreature->GetCutHeightCount());
-	CHECK_EQ(5, CutInc(pCreature));
+	CHECK_EQ(-5, CutInc(pCreature));
 	CHECK_EQ(0, CutLast(pCreature));
+	pCreature->UpdateCutHeight();
+	CHECK(pCreature->IsCutHeight());
+	CHECK_EQ(75, pCreature->GetCutHeightCount());
+	for (int frame = 2; frame < 16; ++frame) pCreature->UpdateCutHeight();
+	CHECK(pCreature->IsCutHeight());
+	CHECK_EQ(5, pCreature->GetCutHeightCount());
 	pCreature->UpdateCutHeight();
 	CHECK(!pCreature->IsCutHeight());
 	// Without the view's entry it is the same.
@@ -1538,7 +1647,7 @@ TEST(PacketZoneItems, ACreatureWithoutASpriteRisesFromEightyButNeverShows)
 	ComeFromPortal(pCreature);
 	WorldEvents::SetHost(old);
 	CHECK_EQ(80, pCreature->GetCutHeightCount());
-	CHECK_EQ(5, CutInc(pCreature));
+	CHECK_EQ(-5, CutInc(pCreature));
 }
 
 TEST(PacketZoneItems, AWolverineAndTheGreatRuffianRiseUnderTheirOwnEffects)
@@ -1581,8 +1690,6 @@ TEST(PacketZoneItems, NoCreatureComesFromAPortal)
 	CHECK(started.empty());
 }
 
-// (A copy the zone refuses is freed and then read, PacketFunction.cpp:4271
-// and 4289; not exercised, as a new fake's ID is always free.)
 TEST(PacketZoneItems, ACreatureGoesIntoAPortalAsAShrinkingCopy)
 {
 	Scene scene;
@@ -1621,5 +1728,21 @@ TEST(PacketZoneItems, ACreatureGoesIntoAPortalAsAShrinkingCopy)
 	CHECK_EQ(1, s.step);
 	CHECK_EQ(0, int(s.delay));
 	CHECK(!s.result);
+	CHECK(calls.empty());
+}
+
+TEST(PacketZoneItems, ACopyTheZoneRefusesGoesIntoNoPortal)
+{
+	Scene scene;
+	scene.Show(RESULT_MAGIC_BLOODY_TUNNEL_INTO, 1);
+	MCreature* pCreature = Riser(scene, Vampire, 500, 6, 9);
+	MFakeCreature* pBlocker = BlockNextFake();
+	MoveIntoPortal(pCreature);
+	// The zone holds the blocker as it was; no effect starts.
+	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
+	CHECK(scene.zone->GetFakeCreature(pBlocker->GetID()) == pBlocker);
+	CHECK_EQ(int(MFakeCreature::FAKE_CREATURE_STAND), int(pBlocker->GetFakeCreatureType()));
+	CHECK(scene.zone->GetCreature(500) == pCreature);
+	CHECK(started.empty());
 	CHECK(calls.empty());
 }

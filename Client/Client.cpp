@@ -160,7 +160,7 @@ DWORD				g_TimerNPMON = 0;
 // FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
 // g_CurrentFrame, the frame count, is FrameClock.cpp's.
 
-int					g_FrameCount		= 0;
+// g_FrameCount is ClientMode.cpp's (gamemodel) since task 4.255.
 int					g_StartFrameCount	= 0;
 MonotonicClock::TimePoint	g_StartTime		= MonotonicClock::Now();
 int					g_FrameRate			= 0;
@@ -174,11 +174,12 @@ void StampFrameClock()
 
 // Execute Program --> bActiveApp
 // minimize | anotherWnd click--> !ActiveGame
-BOOL				g_bActiveApp			= FALSE; // Is application active?
+// g_bActiveApp, whether the application is active, is ClientMode.cpp's
+// (gamemodel) since task 4.255.
 // g_bActiveGame, whether the game's window is the active one, is ClientMode.cpp's.
 // g_bNeedUpdate, whether the client is quitting to be updated, is ClientMode.cpp's.
 
-DWORD				g_double_click_time = 0;
+// g_double_click_time is ClientMode.cpp's (gamemodel) since task 4.255.
 
 bool				g_bTestMode = false;
 //BOOL				g_WindowsNT = FALSE;

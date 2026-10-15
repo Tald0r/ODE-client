@@ -4,6 +4,9 @@
 
 #include "CWinUpdate.h"
 
+// The executable's until task 4.255 (GameMain.cpp).
+CWinUpdate*				g_pUpdate = NULL;
+
 //-----------------------------------------------------------------------------
 //
 // constructor / destructor

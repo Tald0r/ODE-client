@@ -24,3 +24,17 @@ BOOL				g_bEnable3DHAL = FALSE;
 HWND				g_hWnd = NULL;
 bool				g_bFullScreen = false;
 BYTE				g_macAddress[6] = { 0, };
+
+// The loop's and the screen's state the waiting screens' update
+// (CWaitUIUpdate.cpp) reads and writes, the executable's until task 4.255:
+// the frames drawn, how many milliseconds a logic tick waits, whether the
+// application is active, the double-click interval, the title picture's
+// fading alpha (32 until the fade starts), and the back buffer and the
+// last frame.
+int					g_FrameCount = 0;
+int					g_UpdateDelay = 0;
+BOOL				g_bActiveApp = FALSE;
+DWORD				g_double_click_time = 0;
+int					g_TitleSpriteAlpha = 32;
+CSpriteSurface*		g_pBack = NULL;
+CSpriteSurface*		g_pLast = NULL;
