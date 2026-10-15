@@ -72,7 +72,8 @@ struct Host
 	// Deletes a fake creature the zone did not take.
 	void (*DeleteFakeCreature)(MCreature* pFakeCreature) = nullptr;
 	// Marks the zone's cell with a ground effect: a ground elemental's
-	// aura, a darkness that cannot be cast there, the fury of gnome.
+	// aura, a darkness that cannot be cast there, the fury of gnome. The
+	// forwarders pass on only a cell inside GetWidth and GetHeight.
 	void (*SetGroundElemental)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetDarknessForbidden)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
 	void (*SetFuryOfGnome)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;

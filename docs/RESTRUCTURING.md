@@ -7300,7 +7300,11 @@ rounds settled* for the host rules). Test fixtures share
   >   read the sector of the packet's tile unchecked, and
   >   `GCDeleteEffectFromTile` passes the server's tile straight on. A
   >   tile off the map now finds nothing (and sets no sector mark by
-  >   status) instead of reading past the sector rows.
+  >   status) instead of reading past the sector rows. The marks
+  >   `GCAddEffectToTile` sets (a ground elemental's aura, darkness
+  >   forbidden, the gnome's fury) went the same way through the
+  >   `ZoneState` adapters; their forwarders now pass on only a cell
+  >   inside the zone's size.
   >
   > R1 is 20 Windows / 18 Ninja.
   - Owner: membership, R1, `test_zone.cpp`: 45 tests, over a real

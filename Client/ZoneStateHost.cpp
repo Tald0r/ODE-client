@@ -100,19 +100,27 @@ void DeleteFakeCreature(MCreature* pFakeCreature)
 	if (s_Host && s_Host->DeleteFakeCreature) s_Host->DeleteFakeCreature(pFakeCreature);
 }
 
+// A tile mark goes only to a sector of the zone: the server's tile comes
+// on unchecked (GCAddEffectToTile), and the adapters index the zone's
+// sectors by it.
+static bool InTheZone(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return x < GetWidth() && y < GetHeight();
+}
+
 void SetGroundElemental(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
-	if (s_Host && s_Host->SetGroundElemental) s_Host->SetGroundElemental(x, y);
+	if (s_Host && s_Host->SetGroundElemental && InTheZone(x, y)) s_Host->SetGroundElemental(x, y);
 }
 
 void SetDarknessForbidden(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
-	if (s_Host && s_Host->SetDarknessForbidden) s_Host->SetDarknessForbidden(x, y);
+	if (s_Host && s_Host->SetDarknessForbidden && InTheZone(x, y)) s_Host->SetDarknessForbidden(x, y);
 }
 
 void SetFuryOfGnome(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
-	if (s_Host && s_Host->SetFuryOfGnome) s_Host->SetFuryOfGnome(x, y);
+	if (s_Host && s_Host->SetFuryOfGnome && InTheZone(x, y)) s_Host->SetFuryOfGnome(x, y);
 }
 
 MCreature* NewCreature()
