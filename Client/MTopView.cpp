@@ -89,7 +89,6 @@
 #include "MItemOptionTable.h"
 #include "MMonsterKillQuestInfo.h"
 #include "Client.h"
-#include "CMP3.h"
 #include "CSprite555.h"
 #include "CSprite565.h"
 #include "SoundSetting.h"
@@ -19121,7 +19120,6 @@ MTopView::ExcuteOustersFinEvent()
 								OustersFinEvent->eventStartTickCount = MonotonicClock::Now();
 								OustersFinEvent->parameter1 = 9998;
 								OustersFinEvent->parameter4 = EVENTBACKGROUNDID_OUSTERS_SLAYER;
-								g_pMP3->Play( false );
 								fadeDirect = 0;
 							}
 						}
@@ -19277,7 +19275,6 @@ MTopView::ExcuteOustersFinEvent()
 								OustersFinEvent->eventStartTickCount = MonotonicClock::Now();
 								OustersFinEvent->parameter1 = 9998;
 								OustersFinEvent->parameter4 = EVENTBACKGROUNDID_OUSTERS_VAMPIRE;
-								g_pMP3->Play( false );
 								fadeDirect = 0;
 							}
 						}

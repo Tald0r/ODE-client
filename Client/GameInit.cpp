@@ -165,7 +165,6 @@
 #include "MAttachOrbitEffect.h"
 #include "DebugInfo.h"
 #include "MTestDef.h"
-#include "CMP3.h"
 #include "RankBonusTable.h"
 #include "MMonsterKillQuestInfo.h"
 #include "MTimeItemManager.h"
@@ -1058,7 +1057,6 @@ InitSound()
 
 			g_SDLAudio.SetVolumeLimit( volume );	
 
-#ifndef __USE_MP3__
 			//-----------------------------------------------------------
 			// The OGG music streamer. InitMusic() below would create it,
 			// but nothing calls InitMusic(); and once IsInit() is true the
@@ -1072,7 +1070,6 @@ InitSound()
 				int musicVolume = (g_pUserOption->VolumeMusic - 15) * 250;
 				g_pOGG->streamVolume( max( -10000, min( -1, musicVolume ) ) );
 			}
-#endif
 		}
 		else
 		{
@@ -1184,21 +1181,6 @@ InitMusic()
 //	}
 
 	DEBUG_ADD("MP3 new");
-#ifdef __USE_MP3__
-	if (g_pMP3 == NULL)
-	{
-		g_pMP3 = new CMP3;
-
-	DEBUG_ADD("MP3 new OK");
-		int value = g_pUserOption->VolumeMusic;	
-
-		LONG volume = value*16*257;// value*SOUND_DEGREE + SOUND_MIN;
-
-	DEBUG_ADD("MP3 SetVolume1");
-		g_pMP3->SetVolume( volume );	
-	DEBUG_ADD("MP3 SetVolume1 OK");
-	}
-#else
 	if( g_SDLAudio.IsInit() )
 	{
 		// SDL backend stub - OGG streaming not implemented
@@ -1219,7 +1201,6 @@ InitMusic()
 			g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 		}
 	}
-#endif
 
 	return TRUE;
 }
@@ -2290,7 +2271,6 @@ void ReleaseAllObjects()
 	}
 	*/
 
-#ifndef __USE_MP3__
 
 	if(g_pOGG != NULL )
 	{		
@@ -2304,7 +2284,6 @@ void ReleaseAllObjects()
 		}
 		g_pSoundBufferForOGG = NULL;
 	}
-#endif
 
 	//----------------------------------------------------------------
 	//
@@ -2428,8 +2407,6 @@ void ReleaseAllObjects()
 //		delete g_pSDLStream;
 //		g_pSDLStream = NULL;
 //	}
-	DEBUG_ADD("[Release] MP3");
-	SAFE_DELETE( g_pMP3 );	
 	DEBUG_ADD("[Release] ZoneSound");
 
 

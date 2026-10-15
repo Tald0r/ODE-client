@@ -113,7 +113,6 @@
 #include "Packet/Cpackets/CGWhisper.h"
 #include "Packet/Rpackets/RCSay.h"
 #include "Packet/Cpackets/CGGuildChat.h"
-#include "CMP3.h"
 #include "RankBonusTable.h"
 #include "Profiler.h"
 
@@ -265,12 +264,8 @@ ExecuteLogout()
 			{
 //				g_pSDLStream->Stop();
 				DEBUG_ADD("MP3 STOP7");
-#ifdef __USE_MP3__
-				g_pMP3->Stop();
-#else
 				if( g_SDLAudio.IsInit() )
 					g_pOGG->streamClose();
-#endif
 				DEBUG_ADD("MP3 STOP7 OK");
 			}
 			else
@@ -390,12 +385,8 @@ ExecuteLogout()
 			{
 //				g_pSDLStream->Stop();			
 				DEBUG_ADD("MP3 STOP8");
-#ifdef __USE_MP3__
-				g_pMP3->Stop();
-#else
 				if( g_SDLAudio.IsInit() )
 					g_pOGG->streamClose();
-#endif
 				DEBUG_ADD("MP3 STOP8 OK");
 
 				if (g_pUserOption->PlayMusic)
@@ -404,16 +395,6 @@ ExecuteLogout()
 
 					if (musicID!=MUSICID_NULL)
 					{
-#ifdef __USE_MP3__					
-//						g_pSDLStream->Load( (*g_pMusicTable)[ musicID ].FilenameWav );
-//						g_pSDLStream->Play( FALSE );
-						DEBUG_ADD("MP3 OPEN2");
-						g_pMP3->Open( (*g_pMusicTable)[ musicID ].FilenameWav );
-						DEBUG_ADD("MP3 OPEN2 OK");
-						DEBUG_ADD("MP3 PLAY4");
-						g_pMP3->Play( false );
-						DEBUG_ADD("MP3 PLAY4 OK");
-#else
 						if( g_oggfile != NULL )
 							fclose(g_oggfile);
 						
@@ -430,7 +411,6 @@ ExecuteLogout()
 								g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 							}
 						}
-#endif
 					}
 				}
 			}
@@ -479,22 +459,6 @@ PlayTitleMusic()
 
 			if (musicID!=MUSICID_NULL)
 			{
-#ifdef __USE_MP3__
-				LONG volume = g_pUserOption->VolumeMusic*16*257;//*SOUND_DEGREE + SOUND_MIN;
-//				g_pSDLStream->SetVolumeLimit( volume );
-				DEBUG_ADD("MP3 SetVolume2");
-				g_pMP3->SetVolume( volume );
-				DEBUG_ADD("MP3 SetVolume2 OK");
-
-				DEBUG_ADD("MP3 OPEN3");
-				g_pMP3->Open( (*g_pMusicTable)[ musicID ].FilenameWav );
-				DEBUG_ADD("MP3 OPEN3 OK");
-				DEBUG_ADD("MP3 PLAY5");
-				g_pMP3->Play( false );				
-				DEBUG_ADD("MP3 PLAY5 OK");
-//				g_pSDLStream->Load( (*g_pMusicTable)[ musicID ].FilenameWav );
-//				g_pSDLStream->Play( FALSE );				
-#else
 				if( g_oggfile != NULL )
 					fclose(g_oggfile);
 
@@ -512,19 +476,14 @@ PlayTitleMusic()
 						g_pOGG->streamPlay( SOUND_PLAY_REPEAT );					
 					}
 				}
-#endif
 			}									
 		}
 		else
 		{
 //			g_pSDLStream->Stop();
 			DEBUG_ADD("MP3 STOP9");
-#ifdef __USE_MP3__
-			g_pMP3->Stop();
-#else
 			if( g_SDLAudio.IsInit() )
 				g_pOGG->streamClose();
-#endif
 			DEBUG_ADD("MP3 STOP9 OK");
 		}
 	}
@@ -535,12 +494,8 @@ PlayTitleMusic()
 	{
 //		g_pSDLStream->Stop();
 		DEBUG_ADD("MP3 STOP10");
-#ifdef __USE_MP3__
-		g_pMP3->Stop();
-#else
 		if( g_SDLAudio.IsInit() )
 			g_pOGG->streamClose();
-#endif
 		DEBUG_ADD("MP3 STOP10 OK");
 
 		if (g_pUserOption->PlayMusic)
@@ -602,20 +557,12 @@ PlayGameMusic()
 
 		if (g_pUserOption->PlayMusic)
 		{
-#ifdef __USE_MP3__
-			LONG volume = g_pUserOption->VolumeMusic*16*257;//*SOUND_DEGREE + SOUND_MIN;
-//			g_pSDLStream->SetVolumeLimit( volume );
-			DEBUG_ADD("MP3 SetVolume3");
-			g_pMP3->SetVolume( volume );
-			DEBUG_ADD("MP3 SetVolume3 OK");
-#else
 			if( g_SDLAudio.IsInit() )
 			{
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;
 
 				g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 			}
-#endif
 
 			PlayMusicCurrentZone();				
 		}
@@ -623,12 +570,8 @@ PlayGameMusic()
 		{					
 //			g_pSDLStream->Stop();				
 			DEBUG_ADD("MP3 STOP11");
-#ifdef __USE_MP3__
-			g_pMP3->Stop();
-#else
 			if( g_SDLAudio.IsInit() )
 				g_pOGG->streamClose();
-#endif
 			DEBUG_ADD("MP3 STOP11 OK");
 		}
 	}
@@ -639,12 +582,8 @@ PlayGameMusic()
 	{
 //		g_pSDLStream->Stop();
 		DEBUG_ADD("MP3 STOP12");
-#ifdef __USE_MP3__
-		g_pMP3->Stop();
-#else
 		if( g_SDLAudio.IsInit() )
 			g_pOGG->streamClose();
-#endif
 		
 		DEBUG_ADD("MP3 STOP12 OK");
 
@@ -1947,14 +1886,6 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 //			{
 //				g_pSDLStream->Stop();
 //			}
-#ifdef __USE_MP3__
-			if (g_pMP3 != NULL)
-			{
-				DEBUG_ADD("MP3 STOP13");
-				g_pMP3->Stop();
-				DEBUG_ADD("MP3 STOP13 OK");
-			}
-#else
 			if (g_pOGG != NULL)
 			{
 				DEBUG_ADD("MP3 STOP13");
@@ -2079,7 +2010,6 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 
 	DEBUG_ADD("set mode MODE_WAIT_RECONNECT");
 	SetMode(MODE_WAIT_RECONNECT);
-#endif
 	//------------------------------
 	// 게임 UI
 	//------------------------------
@@ -7703,9 +7633,6 @@ UIMessageManager::Execute_UI_CHANGE_OPTION(intptr_t left, intptr_t right, void* 
 					
 //					g_pSDLStream->SetVolumeLimit( volume );
 					DEBUG_ADD("MP3 SetVolume4");
-#ifdef __USE_MP3__
-					g_pMP3->SetVolume( volume );
-#else
 					if( g_SDLAudio.IsInit() && g_pOGG != NULL )
 					{
 						//int step = (DSBVOLUME_MIN) / 16;
@@ -7713,7 +7640,6 @@ UIMessageManager::Execute_UI_CHANGE_OPTION(intptr_t left, intptr_t right, void* 
 
 						g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 					}
-#endif
 					DEBUG_ADD("MP3 SetVolume4 OK");
 				}
 				else

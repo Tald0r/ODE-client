@@ -51,7 +51,6 @@
 #include "MTestDef.h"
 #include "MEventManager.h"
 #include "UIFunction.h"
-#include "CMP3.h"
 #include "COGGSTREAM.h"
 #include "SystemAvailabilities.h"
 #include "MWarManager.h"
@@ -192,7 +191,6 @@ static void WindowToGamePoint(POINT& pt)
 	pt.x = mouseX;
 	pt.y = mouseY;
 }
-bool	g_bTestMusic = false;
 
 #ifdef OUTPUT_DEBUG
 std::string g_musicfilename[8]=
@@ -1716,16 +1714,7 @@ CGameUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 						}
 #endif
 						break;
-					case DIK_0 :
-						{
-							if (g_pSDLInput->KeyDown(DIK_LCONTROL) || g_pSDLInput->KeyDown(DIK_RCONTROL))
-							{
-								if( g_bTestMusic )
-								{
-									g_pMP3->Stop();									
-								}
-							}				
-						}
+					case DIK_0 :	// falls through, as it always did: its MP3 test is retired (task 4.215)
 
 					case DIK_Z :
 						if (g_pSDLInput->KeyDown(DIK_LCONTROL) || g_pSDLInput->KeyDown(DIK_RCONTROL))

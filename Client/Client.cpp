@@ -1363,10 +1363,8 @@ color
 		case WM_TIMER :			
 			//for (loop = 0; loop < STREAM_MAX; ++loop)
 //					if (g_pOGG[loop] ) 
-#ifndef __USE_MP3__
 			if( g_SDLAudio.IsInit() && g_pOGG != NULL )
 				g_pOGG->streamUpdate (g_pOGG);
-#endif
 			break;
 
 		//---------------------------------------------------------------
