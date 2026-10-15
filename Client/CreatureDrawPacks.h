@@ -1,13 +1,15 @@
 #pragma once
 
 // The packs a creature is drawn from and the surface it is drawn on
-// (task 4.248): MTopView's, handed to the creature drawing that moved out
-// of it into gameview. MTopView fills one from its members at each draw;
+// (task 4.248; the shadows' since 4.249): MTopView's, handed to the
+// creature drawing that moved out of it into gameview. MTopView fills one from its members at each draw;
 // a test fills one from packs of its own. A drawing reads only the packs
 // it draws from.
 
 #include "CFramePack.h"
 #include "CIndexSpritePack.h"
+#include "CShadowSprite.h"
+#include "CSpritePack.h"
 
 class CSpriteSurface;
 
@@ -33,4 +35,25 @@ struct CreatureDrawPacks
 	CIndexSpritePack*	pAdvancementVampireWomanSPK = nullptr;
 	CCreatureFramePack*	pAdvancementOustersFPK = nullptr;
 	CIndexSpritePack*	pAdvancementOustersSPK = nullptr;
+
+	// The shadows', frames and sprites, as above.
+	CCreatureFramePack*	pCreatureShadowFPK = nullptr;
+	CShadowSpritePack*	pCreatureSSPK = nullptr;
+	CCreatureFramePack*	pAddonShadowFPK = nullptr;
+	CShadowSpritePack*	pAddonSSPK = nullptr;
+	CCreatureFramePack*	pOustersShadowFPK = nullptr;
+	CShadowSpritePack*	pOustersSSPK = nullptr;
+	CCreatureFramePack*	pAdvancementSlayerManShadowFPK = nullptr;
+	CShadowSpritePack*	pAdvancementSlayerManSSPK = nullptr;
+	CCreatureFramePack*	pAdvancementSlayerWomanShadowFPK = nullptr;
+	CShadowSpritePack*	pAdvancementSlayerWomanSSPK = nullptr;
+	CCreatureFramePack*	pAdvancementVampireManShadowFPK = nullptr;
+	CShadowSpritePack*	pAdvancementVampireManSSPK = nullptr;
+	CCreatureFramePack*	pAdvancementVampireWomanShadowFPK = nullptr;
+	CShadowSpritePack*	pAdvancementVampireWomanSSPK = nullptr;
+	CCreatureFramePack*	pAdvancementOustersShadowFPK = nullptr;
+	CShadowSpritePack*	pAdvancementOustersSSPK = nullptr;
+
+	// The other sprites: a slayer's cross, the caskets.
+	CSpritePack*		pEtcSPK = nullptr;
 };

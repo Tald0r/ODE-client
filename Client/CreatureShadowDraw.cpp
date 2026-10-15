@@ -1,82 +1,32 @@
-//#define __3D_IMAGE_OBJECT__					// by sonee
 //----------------------------------------------------------------------
-// MTopViewDraw.cpp
+// CreatureShadowDraw.cpp
 //----------------------------------------------------------------------
-//
-// 복잡한 Draw 함수 부분만 따로 빼놓는다.
-// 작업하기가 영 불편해서 
+// A creature's shadow (task 4.249: MTopView's members in
+// DrawCreatureShadow.cpp until then, gameview's since). The view's packs
+// and surface come in a CreatureDrawPacks, the player's shadow option as
+// bUserBlendingShadow.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#ifdef _MSC_VER
-#pragma warning(disable:4786)
-#endif
-
-#include <math.h>
-#include <list>
-#include <stdio.h>
-#include <fstream>
-#include "MZone.h"
-#include "MCreature.h"
+#include "CreatureShadowDraw.h"
+#include "MCreatureWear.h"
 #include "MFakeCreature.h"
 #include "MPlayer.h"
-#include "MItem.h"
-#include "MImageObject.h"
-#include "MAnimationObject.h"
-#include "MShadowAnimationObject.h"
-#include "assert.h"
-
-#include "MMovingEffect.h"
-#include "MScreenEffect.h"
-#include "MTopView.h"
-#include "MItemTable.h"
-#include "MCreatureTable.h"
-#include "MWeather.h"
-#include "CMessageArray.h"
-#include "DXLib.h"
-#include "SP.h"
-#include "Fl2.h"
-//#include "2D.h"
-#include "ClientConfig.h"
-#include "VS_UI_Base.h"
-#include "VS_UI_mouse_pointer.h"
-#include "UIFunction.h"
-#include "AddonDef.h"
-#include "MZoneTable.h"
-#include "MGameTime.h"
-#include "UserOption.h"
-#include "UserInformation.h"
-#include "SpriteIDDef.h"
-#include "MGameStringTable.h"
-//#include "MZoneInfo.h"
-#include "MObjectSelector.h"
-#include "MPortal.h"
-#include "EffectSpriteTypeDef.h"
-#include "MScreenEffectManager.h"
-#include "MEffectSpriteTypeTable.h"
-#include "Profiler.h"
-//#include "MFileDef.h"
-#include "Properties.h"
+#include "MZone.h"
 #include "MEventManager.h"
-#include "DebugInfo.h"
-#include "MItemOptionTable.h"
-#include "Client.h"
-#include "SkillDef.h"
-#include "VS_UI_item.h"
-#include "MTopViewDraw.inl"
-
-extern int defaultSkinColor;
-extern int defaultCoatColor;
-extern int defaultTrouserColor;
+#include "MCreatureTable.h"
+#include "MCreatureSpriteTable.h"
+#include "UserInformation.h"
+#include "AdvancementAction.h"
+#include "SpriteIDDef.h"
+#include "MViewDef.h"
+#include "FrameClock.h"
+#include "CSpriteSurface.h"
 
 namespace {
 	POINT pointTemp;
-};
+}
 
-
-int GetAdvancementPartFromItemClass( ITEM_CLASS itemClass , TYPE_FRAMEID frameID);
-int ConvAdvancementSlayerActionFromSlayerAction( int CurAction, MCreatureWear* pCreatureWear );
-int ConvAdvancementOustersActionFromOusterAction( int CurAction, bool bChakram );
-int GetAdvancementVampireActionFromVampireAction( int CurAction, const MCreature* pCreature );
+// MCreature.cpp's: the frames of a creature's action.
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
 //----------------------------------------------------------------
@@ -86,7 +36,7 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 // Lock / Unlock은 외부에서 해줘야 한다.
 //----------------------------------------------------------------
 void
-MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
+DrawCreatureShadow(const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCreature, bool bUserBlendingShadow)
 {
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_DRAW_CREATURE_SHADOW)
 		|| (pCreature->IsGhost(1) && pCreature->IsGhost(2) && pCreature->IsGhost(4)))
@@ -133,9 +83,6 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 			return;
 	}
 
-	#ifdef OUTPUT_DEBUG_DRAW_PROCESS
-		DEBUG_ADD( "Start DrawCreatureShadow" );
-	#endif
 
 	bool bBlendingShadow = false;
 	bool bSlayerPet_ShowTurret = false;
@@ -478,17 +425,14 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 		{
 			if(pCreature->IsSlayer())
 			{
-				CSprite *pSprite = &m_EtcSPK[ SPRITEID_SLAYER_CROSS_SHADOW ];
+				CSprite *pSprite = &(*packs.pEtcSPK)[ SPRITEID_SLAYER_CROSS_SHADOW ];
 				// 좌표 보정
 				POINT pointTemp;
 				pointTemp.x = pPoint->x - 5;
 				pointTemp.y = pPoint->y;				
-				m_pSurface->BltSprite(&pointTemp, pSprite);	
+				packs.pSurface->BltSprite(&pointTemp, pSprite);
 			}
 
-			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
-				DEBUG_ADD("EndDrawCreatureShadow-S");
-			#endif
 
 			return;		
 		}
@@ -499,9 +443,6 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 		if (pCreature->IsInDarkness() && !pCreature->IsNPC() && !g_pPlayer->IsVampire()
 			&& g_pPlayer!=pCreature && (!g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS)|| g_pZone->GetID() == 3001) )
 		{
-			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
-				DEBUG_ADD("EndDrawCreatureSha-D");
-			#endif
 
 			return;
 		}
@@ -522,9 +463,6 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 			//|| pCreature->GetInvisibleCount()==64
 			)
 		{
-			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
-				DEBUG_ADD( "End DrawCreatureShadow" );
-			#endif
 
 			//----------------------------------------------------
 			// 관 출력
@@ -535,10 +473,10 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 				int casketType = pCreature->GetCasketType();
 				int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2 + 1;
 
-				if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
+				if (static_cast<DWORD>(casketID) < packs.pEtcSPK->GetSize())
 				{
-					CSprite* pSpriteImage = &m_EtcSPK[casketID-1];
-					CSprite* pSprite = &m_EtcSPK[casketID];
+					CSprite* pSpriteImage = &(*packs.pEtcSPK)[casketID-1];
+					CSprite* pSprite = &(*packs.pEtcSPK)[casketID];
 
 					if (pSprite!=NULL)
 					{
@@ -557,15 +495,12 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 						pointTemp.x += shadowPoint[casketType].x;
 						pointTemp.y += shadowPoint[casketType].y;
 
-						m_pSurface->BltSprite(&pointTemp, pSprite);					
+						packs.pSurface->BltSprite(&pointTemp, pSprite);
 					}
 				}
 			}
 
 			
-			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
-				DEBUG_ADD("EndDrawCreature-C");
-			#endif
 
 			return;
 		}
@@ -622,9 +557,9 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 			bool bWerWolf = pCreature->GetCreatureType() == CREATURETYPE_WER_WOLF;
 
 			if( pCreature->IsAdvancementClass() && !bBat && !bWolf && !bWerWolf )
-				DrawShadowAdvancementClassVampireCharacter( pPoint, pCreature, action, direction, frame, body, bBlendingShadow, bSlayerPet_ShowTurret );		
+				DrawShadowAdvancementClassVampireCharacter( packs, pPoint, pCreature, action, direction, frame, body, bBlendingShadow, bSlayerPet_ShowTurret );
 			else
-				DrawShadowVampireCharacter( pPoint, pCreature, action, direction, frame, body, bBlendingShadow, bSlayerPet_ShowTurret );		
+				DrawShadowVampireCharacter( packs, pPoint, pCreature, action, direction, frame, body, bBlendingShadow, bSlayerPet_ShowTurret );
 			
 		}	
 		
@@ -640,31 +575,28 @@ MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
 		if (isSlayerCharacter)
 		{
 			if( pCreature->IsAdvancementClass() )
-				DrawShadowAdvancementClassSlayerCharacter( pPoint, pCreature, action, direction, frame );
+				DrawShadowAdvancementClassSlayerCharacter( packs, pPoint, pCreature, action, direction, frame, bUserBlendingShadow );
 			else
-				DrawShadowSlayerCharacter( pPoint, pCreature, action, direction, frame );
+				DrawShadowSlayerCharacter( packs, pPoint, pCreature, action, direction, frame, bUserBlendingShadow );
 		}
 		else if(isOustersCharacter)
 		{
 			if( pCreature->IsAdvancementClass() )
-				DrawShadowAdvancementClassOustersCharacter( pPoint, pCreature, action, direction, frame );
+				DrawShadowAdvancementClassOustersCharacter( packs, pPoint, pCreature, action, direction, frame, bUserBlendingShadow );
 			else
-				DrawShadowOustersCharacter( pPoint, pCreature, action, direction, frame );
+				DrawShadowOustersCharacter( packs, pPoint, pCreature, action, direction, frame, bUserBlendingShadow );
 			
 		}
 	}
-	#ifdef OUTPUT_DEBUG_DRAW_PROCESS
-		DEBUG_ADD( "End DrawCreatureShadow" );
-	#endif
 
 	
 }
 
-void	MTopView::DrawShadowSlayerCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame )
+void	DrawShadowSlayerCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, bool bUserBlendingShadow )
 {
 	// Check if m_AddonShadowFPK is initialized (fix crash in SDL backend)
 	// CCreatureFramePack doesn't have IsNotInit(), so we check m_Size
-	if (m_AddonShadowFPK.GetSize() == 0) {
+	if (packs.pAddonShadowFPK->GetSize() == 0) {
 		return;
 	}
 
@@ -676,7 +608,7 @@ void	MTopView::DrawShadowSlayerCharacter( POINT *pPoint, MCreature* pCreature, i
 			direction = 2;
 			frame = pCreature->GetInstallTurretCount();
 		}
-		FRAME_ARRAY& FA = m_CreatureShadowFPK[222][action][direction];
+		FRAME_ARRAY& FA = (*packs.pCreatureShadowFPK)[222][action][direction];
 		
 		if (FA.GetSize() > frame)
 		{			
@@ -686,12 +618,12 @@ void	MTopView::DrawShadowSlayerCharacter( POINT *pPoint, MCreature* pCreature, i
 				cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
 				cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
 			
-			CShadowSprite* pSprite = &m_CreatureSSPK[ sprite ];
+			CShadowSprite* pSprite = &(*packs.pCreatureSSPK)[ sprite ];
 			
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();			
 			
-			m_pSurface->BltShadowSprite(&pointTemp, pSprite);
+			packs.pSurface->BltShadowSprite(&pointTemp, pSprite);
 			
 		}
 	}
@@ -721,7 +653,7 @@ void	MTopView::DrawShadowSlayerCharacter( POINT *pPoint, MCreature* pCreature, i
 				clothes = addonInfo.FrameID;
 				
 				
-				FRAME_ARRAY &FA = m_AddonShadowFPK[clothes][action][direction];
+				FRAME_ARRAY &FA = (*packs.pAddonShadowFPK)[clothes][action][direction];
 				
 				// 있는 동작인 경우
 				if (FA.GetSize() > frame)
@@ -740,15 +672,15 @@ void	MTopView::DrawShadowSlayerCharacter( POINT *pPoint, MCreature* pCreature, i
 					
 					pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 					pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
-					CShadowSprite* pSprite = &m_AddonSSPK[ sprite ];
+					CShadowSprite* pSprite = &(*packs.pAddonSSPK)[ sprite ];
 						
-					if (g_pUserOption->BlendingShadow)
+					if (bUserBlendingShadow)
 					{
-						m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+						packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 					}
 					else
 					{
-						m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+						packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 					}
 				}
 			}
@@ -756,9 +688,9 @@ void	MTopView::DrawShadowSlayerCharacter( POINT *pPoint, MCreature* pCreature, i
 	}
 }
 
-void	MTopView::DrawShadowVampireCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int body, bool bBlendingShadow , bool bSlayerPet_ShowTurret )
+void	DrawShadowVampireCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int body, bool bBlendingShadow , bool bSlayerPet_ShowTurret )
 {
-	FRAME_ARRAY &FA = m_CreatureShadowFPK[body][action][direction];
+	FRAME_ARRAY &FA = (*packs.pCreatureShadowFPK)[body][action][direction];
 	
 	if (FA.GetSize() > frame)
 	{
@@ -771,7 +703,7 @@ void	MTopView::DrawShadowVampireCharacter( POINT *pPoint, MCreature* pCreature, 
 		// 좌표 보정
 		pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 		pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
-		CShadowSprite* pSprite = &m_CreatureSSPK[sprite];
+		CShadowSprite* pSprite = &(*packs.pCreatureSSPK)[sprite];
 		
 		//				if (pSprite->IsNotInit())
 		//				{
@@ -780,11 +712,11 @@ void	MTopView::DrawShadowVampireCharacter( POINT *pPoint, MCreature* pCreature, 
 		
 		if (bBlendingShadow)
 		{
-			m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+			packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 		}
 		else
 		{
-			m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+			packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 		}
 	}		
 	
@@ -794,7 +726,7 @@ void	MTopView::DrawShadowVampireCharacter( POINT *pPoint, MCreature* pCreature, 
 		MFakeCreature *pFakeCreature = (MFakeCreature *)pCreature;
 		BYTE direct = pFakeCreature->GetTurretDirection();
 		
-		FRAME_ARRAY& FA = m_CreatureShadowFPK[body][ACTION_VAMPIRE_DRAIN][2];
+		FRAME_ARRAY& FA = (*packs.pCreatureShadowFPK)[body][ACTION_VAMPIRE_DRAIN][2];
 		
 		CFrame& Frame =	FA[direct];
 		int sprite = Frame.GetSpriteID(),	//m_CreatureFPK[body][action][direction][frame].GetSpriteID(),
@@ -829,20 +761,20 @@ void	MTopView::DrawShadowVampireCharacter( POINT *pPoint, MCreature* pCreature, 
 		pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 		pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 		
-		CShadowSprite* pSprite = &m_CreatureSSPK[ sprite ];
+		CShadowSprite* pSprite = &(*packs.pCreatureSSPK)[ sprite ];
 		
 		if (bBlendingShadow)
 		{
-			m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+			packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 		}
 		else
 		{
-			m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+			packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 		}
 	}
 }
 
-void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame )
+void	DrawShadowOustersCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, bool bUserBlendingShadow )
 {
 	//  챠크람이 있다
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
@@ -872,7 +804,7 @@ void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, 
 	{
 		int clothes = addonInfo.FrameID;
 		
-		FRAME_ARRAY &FA = m_OustersShadowFPK[clothes][tempAction][direction];
+		FRAME_ARRAY &FA = (*packs.pOustersShadowFPK)[clothes][tempAction][direction];
 		
 		// 있는 동작인 경우
 		if (FA.GetSize() > frame)
@@ -892,15 +824,15 @@ void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, 
 			//				}
 			//				else
 			{
-				CShadowSprite* pSprite = &m_OustersSSPK[ sprite ];
+				CShadowSprite* pSprite = &(*packs.pOustersSSPK)[ sprite ];
 				
-				if (g_pUserOption->BlendingShadow)
+				if (bUserBlendingShadow)
 				{
-					m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+					packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 				}
 				else
 				{
-					m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+					packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 				}
 			}
 		}
@@ -909,7 +841,7 @@ void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, 
 	{
 		int clothes = addonInfoChakram.FrameID;
 		
-		FRAME_ARRAY &FA = m_OustersShadowFPK[clothes][tempAction][direction];
+		FRAME_ARRAY &FA = (*packs.pOustersShadowFPK)[clothes][tempAction][direction];
 		
 		// 있는 동작인 경우
 		if (FA.GetSize() > frame)
@@ -919,7 +851,7 @@ void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, 
 			int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
 			int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
 			
-			CShadowSprite* pSprite = &m_OustersSSPK[ sprite ];					
+			CShadowSprite* pSprite = &(*packs.pOustersSSPK)[ sprite ];
 			
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
@@ -931,13 +863,13 @@ void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, 
 			//				else
 			{
 				
-				if (g_pUserOption->BlendingShadow)
+				if (bUserBlendingShadow)
 				{
-					m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+					packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 				}
 				else
 				{
-					m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+					packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 				}
 			}
 			
@@ -945,7 +877,7 @@ void	MTopView::DrawShadowOustersCharacter( POINT *pPoint, MCreature* pCreature, 
 	}
 }
 
-void	MTopView::DrawShadowAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame )
+void	DrawShadowAdvancementClassSlayerCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, bool bUserBlendingShadow )
 {
 	if(pCreature->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 	{
@@ -955,7 +887,7 @@ void	MTopView::DrawShadowAdvancementClassSlayerCharacter( POINT *pPoint, MCreatu
 			direction = 2;
 			frame = pCreature->GetInstallTurretCount();
 		}
-		FRAME_ARRAY& FA = m_CreatureShadowFPK[222][action][direction];
+		FRAME_ARRAY& FA = (*packs.pCreatureShadowFPK)[222][action][direction];
 		
 		if (FA.GetSize() > frame)
 		{			
@@ -965,12 +897,12 @@ void	MTopView::DrawShadowAdvancementClassSlayerCharacter( POINT *pPoint, MCreatu
 				cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
 				cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
 			
-			CShadowSprite* pSprite = &m_CreatureSSPK[ sprite ];
+			CShadowSprite* pSprite = &(*packs.pCreatureSSPK)[ sprite ];
 			
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();			
 			
-			m_pSurface->BltShadowSprite(&pointTemp, pSprite);
+			packs.pSurface->BltShadowSprite(&pointTemp, pSprite);
 			
 		}
 	}
@@ -988,8 +920,8 @@ void	MTopView::DrawShadowAdvancementClassSlayerCharacter( POINT *pPoint, MCreatu
 		int clothes;
 		BYTE clothesType;
 
-		CCreatureFramePack& slayerFPK = pCreature->IsMale() ? m_AdvancementSlayerManShadowFPK : m_AdvancementSlayerWomanShadowFPK;
-		CShadowSpritePack& addonSSPK = pCreature->IsMale() ? m_AdvancementSlayerManSSPK : m_AdvancementSlayerWomanSSPK;
+		CCreatureFramePack& slayerFPK = pCreature->IsMale() ? (*packs.pAdvancementSlayerManShadowFPK) : (*packs.pAdvancementSlayerWomanShadowFPK);
+		CShadowSpritePack& addonSSPK = pCreature->IsMale() ? (*packs.pAdvancementSlayerManSSPK) : (*packs.pAdvancementSlayerWomanSSPK);
 
 		for (int i=0; i<AC_ADDON_MAX; i++)
 		{
@@ -1028,13 +960,13 @@ void	MTopView::DrawShadowAdvancementClassSlayerCharacter( POINT *pPoint, MCreatu
 					pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 					CShadowSprite* pSprite = &addonSSPK[ sprite ];
 						
-					if (g_pUserOption->BlendingShadow)
+					if (bUserBlendingShadow)
 					{
-						m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+						packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 					}
 					else
 					{
-						m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+						packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 					}
 				}
 			}
@@ -1042,10 +974,10 @@ void	MTopView::DrawShadowAdvancementClassSlayerCharacter( POINT *pPoint, MCreatu
 	}
 }
 
-void	MTopView::DrawShadowAdvancementClassVampireCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int body, bool bBlendingShadow , bool bSlayerPet_ShowTurret )
+void	DrawShadowAdvancementClassVampireCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int body, bool bBlendingShadow , bool bSlayerPet_ShowTurret )
 {		
-	CCreatureFramePack& advanceVampireFPK = pCreature->IsMale() ? m_AdvancementVampireManShadowFPK : m_AdvancementVampireWomanShadowFPK;
-	CShadowSpritePack& advanceVampireSSPK = pCreature->IsMale() ? m_AdvancementVampireManSSPK : m_AdvancementVampireWomanSSPK;
+	CCreatureFramePack& advanceVampireFPK = pCreature->IsMale() ? (*packs.pAdvancementVampireManShadowFPK) : (*packs.pAdvancementVampireWomanShadowFPK);
+	CShadowSpritePack& advanceVampireSSPK = pCreature->IsMale() ? (*packs.pAdvancementVampireManSSPK) : (*packs.pAdvancementVampireWomanSSPK);
 
 	action = GetAdvancementVampireActionFromVampireAction( action, pCreature );
 
@@ -1077,11 +1009,11 @@ void	MTopView::DrawShadowAdvancementClassVampireCharacter( POINT *pPoint, MCreat
 		
 		if (bBlendingShadow)
 		{
-			m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+			packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 		}
 		else
 		{
-			m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+			packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 		}
 	}		
 
@@ -1115,11 +1047,11 @@ void	MTopView::DrawShadowAdvancementClassVampireCharacter( POINT *pPoint, MCreat
 			
 			if (bBlendingShadow)
 			{
-				m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+				packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 			}
 			else
 			{
-				m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+				packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 			}
 		}
 	}
@@ -1130,7 +1062,7 @@ void	MTopView::DrawShadowAdvancementClassVampireCharacter( POINT *pPoint, MCreat
 		MFakeCreature *pFakeCreature = (MFakeCreature *)pCreature;
 		BYTE direct = pFakeCreature->GetTurretDirection();
 		
-		FRAME_ARRAY& FA = m_CreatureShadowFPK[body][ACTION_VAMPIRE_DRAIN][2];
+		FRAME_ARRAY& FA = (*packs.pCreatureShadowFPK)[body][ACTION_VAMPIRE_DRAIN][2];
 		
 		CFrame& Frame =	FA[direct];
 		int sprite = Frame.GetSpriteID(),	//m_CreatureFPK[body][action][direction][frame].GetSpriteID(),
@@ -1165,20 +1097,20 @@ void	MTopView::DrawShadowAdvancementClassVampireCharacter( POINT *pPoint, MCreat
 		pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 		pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 		
-		CShadowSprite* pSprite = &m_CreatureSSPK[ sprite ];
+		CShadowSprite* pSprite = &(*packs.pCreatureSSPK)[ sprite ];
 		
 		if (bBlendingShadow)
 		{
-			m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+			packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 		}
 		else
 		{
-			m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+			packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 		}
 	}
 }
 
-void	MTopView::DrawShadowAdvancementClassOustersCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame )
+void	DrawShadowAdvancementClassOustersCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, bool bUserBlendingShadow )
 {
 		//  챠크람이 있다
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
@@ -1198,7 +1130,7 @@ void	MTopView::DrawShadowAdvancementClassOustersCharacter( POINT *pPoint, MCreat
 	
 	if (addonInfo.bAddon && !pCreatureWear->IsGhost(1))
 	{
-		FRAME_ARRAY &FA = m_AdvancementOustersShadowFPK[1][tempAction][direction];
+		FRAME_ARRAY &FA = (*packs.pAdvancementOustersShadowFPK)[1][tempAction][direction];
 		
 		// 있는 동작인 경우
 		if (FA.GetSize() > frame)
@@ -1212,21 +1144,21 @@ void	MTopView::DrawShadowAdvancementClassOustersCharacter( POINT *pPoint, MCreat
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
-			CShadowSprite* pSprite = &m_AdvancementOustersSSPK[ sprite ];
+			CShadowSprite* pSprite = &(*packs.pAdvancementOustersSSPK)[ sprite ];
 			
-			if (g_pUserOption->BlendingShadow)
+			if (bUserBlendingShadow)
 			{
-				m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+				packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 			}
 			else
 			{
-				m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+				packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 			}
 		}
 	}
 	if (bChakram && !pCreatureWear->IsGhost(2))
 	{
-		FRAME_ARRAY &FA = m_AdvancementOustersShadowFPK[0][tempAction][direction];
+		FRAME_ARRAY &FA = (*packs.pAdvancementOustersShadowFPK)[0][tempAction][direction];
 		
 		// 있는 동작인 경우
 		if (FA.GetSize() > frame)
@@ -1236,18 +1168,18 @@ void	MTopView::DrawShadowAdvancementClassOustersCharacter( POINT *pPoint, MCreat
 			int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
 			int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
 			
-			CShadowSprite* pSprite = &m_AdvancementOustersSSPK[ sprite ];
+			CShadowSprite* pSprite = &(*packs.pAdvancementOustersSSPK)[ sprite ];
 			
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
-			if (g_pUserOption->BlendingShadow)
+			if (bUserBlendingShadow)
 			{
-				m_pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
+				packs.pSurface->BltShadowSpriteDarkness( &pointTemp, pSprite, 1 );
 			}
 			else
 			{
-				m_pSurface->BltShadowSprite( &pointTemp, pSprite );
+				packs.pSurface->BltShadowSprite( &pointTemp, pSprite );
 			}
 		}
 	}

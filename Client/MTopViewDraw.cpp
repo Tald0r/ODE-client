@@ -65,6 +65,7 @@
 #include "MTopViewDraw.inl"
 #include "AdvancementAction.h"
 #include "CreatureDivineGuidanceDraw.h"
+#include "CreatureShadowDraw.h"
 
 #define	SHIFT_SNIPPING			2
 
@@ -134,7 +135,31 @@ MTopView::GetCreatureDrawPacks()
 	packs.pAdvancementVampireWomanSPK = &m_AdvancementVampireWomanSPK;
 	packs.pAdvancementOustersFPK = &m_AdvancementOustersFPK;
 	packs.pAdvancementOustersSPK = &m_AdvancementOustersSPK;
+	packs.pCreatureShadowFPK = &m_CreatureShadowFPK;
+	packs.pCreatureSSPK = &m_CreatureSSPK;
+	packs.pAddonShadowFPK = &m_AddonShadowFPK;
+	packs.pAddonSSPK = &m_AddonSSPK;
+	packs.pOustersShadowFPK = &m_OustersShadowFPK;
+	packs.pOustersSSPK = &m_OustersSSPK;
+	packs.pAdvancementSlayerManShadowFPK = &m_AdvancementSlayerManShadowFPK;
+	packs.pAdvancementSlayerManSSPK = &m_AdvancementSlayerManSSPK;
+	packs.pAdvancementSlayerWomanShadowFPK = &m_AdvancementSlayerWomanShadowFPK;
+	packs.pAdvancementSlayerWomanSSPK = &m_AdvancementSlayerWomanSSPK;
+	packs.pAdvancementVampireManShadowFPK = &m_AdvancementVampireManShadowFPK;
+	packs.pAdvancementVampireManSSPK = &m_AdvancementVampireManSSPK;
+	packs.pAdvancementVampireWomanShadowFPK = &m_AdvancementVampireWomanShadowFPK;
+	packs.pAdvancementVampireWomanSSPK = &m_AdvancementVampireWomanSSPK;
+	packs.pAdvancementOustersShadowFPK = &m_AdvancementOustersShadowFPK;
+	packs.pAdvancementOustersSSPK = &m_AdvancementOustersSSPK;
+	packs.pEtcSPK = &m_EtcSPK;
 	return packs;
+}
+
+// A creature's shadow, gameview's (task 4.249), with the player's option.
+void
+MTopView::DrawCreatureShadow(POINT* pPoint, MCreature* pCreature)
+{
+	::DrawCreatureShadow(GetCreatureDrawPacks(), pPoint, pCreature, g_pUserOption->BlendingShadow);
 }
 
 bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
