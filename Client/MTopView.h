@@ -94,7 +94,7 @@ class MEffect;
 // TileRenderer for unified tile rendering
 #include "SpriteLib/TileRenderer.h"
 #include "MZoneTileProvider.h"
-#include "EffectResourceContainer.h"
+#include "framelib/EffectResourceContainer.h"
 
 
 //class MZoneInfo;

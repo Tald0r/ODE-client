@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------
 // EffectResourceContainer.cpp
 //----------------------------------------------------------------------
-#include "Client_PCH.h"
+#include "Frame_PCH.h"
 #include "EffectResourceContainer.h"
 #include <iostream>
 #include <stdio.h>

@@ -844,7 +844,6 @@ endif()
 add_executable(effect_viewer
 	tools/viewers/effect_viewer/main.cpp
 	tools/viewers/effect_viewer/EffectSpriteTypeTable.cpp
-	Client/EffectResourceContainer.cpp
 )
 
 target_include_directories(effect_viewer PRIVATE

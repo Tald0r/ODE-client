@@ -15,11 +15,11 @@
 #define	__EFFECTRESOURCECONTAINER_H__
 
 #include "DrawTypeDef.h"
-#include "framelib/CFramePack.h"
-#include "SpriteLib/CSpritePack.h"
-#include "SpriteLib/CAlphaSpritePack.h"
-#include "SpriteLib/CShadowSprite.h"  // CShadowSpritePack typedef here
-#include "SpriteLib/CSpritePal.h"      // CSpritePalPack typedef here
+#include "CFramePack.h"
+#include "CSpritePack.h"
+#include "CAlphaSpritePack.h"
+#include "CShadowSprite.h"  // CShadowSpritePack typedef here
+#include "CSpritePal.h"      // CSpritePalPack typedef here
 
 class EffectResourceContainer {
 public:
