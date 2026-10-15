@@ -102,7 +102,7 @@ void	DrawDivineGuidanceAdvancementClassSlayerCharacter( const CreatureDrawPacks&
 			
 	for(int k = 0; k < 2; k++)
 	{
-		for (int i=0; i<ADDON_MAX; i++)
+		for (int i=0; i<AC_ADDON_MAX; i++)	// the order's row (ADDON_MAX read past it)
 		{
 			// Creature의 현재 방향에 따라서...
 			// 옷을 출력해주는 순서가 다를 수 있다.

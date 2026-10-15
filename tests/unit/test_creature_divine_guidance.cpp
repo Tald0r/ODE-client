@@ -466,6 +466,59 @@ TEST(DivineGuidance, AChakramIsDrawnInItsColoursAndAGhostsPartsAreNot)
 //----------------------------------------------------------------------
 // The advanced (second) classes
 //----------------------------------------------------------------------
+TEST(DivineGuidance, AnAdvancedSlayerDrawsItsPartsFromItsGendersPack)
+{
+	const int drained = ACTION_ADVANCEMENT_SLAYER_DRAINED - ADVANCEMENT_ACTION_START;
+	for (bool male : {true, false})
+	{
+		Scene scene;
+		Wearer slayer;
+		slayer.Become(kSlayer);
+		slayer.SetMale(male);
+		// Facing direction 2, the left hand comes before the right, so the
+		// sword lies over the shield.
+		slayer.SetCurrentDirection(2);
+		slayer.Wear(ADDON_RIGHTHAND, 9, ITEM_CLASS_SWORD, 30, 60);
+		slayer.Wear(ADDON_LEFTHAND, 8, ITEM_CLASS_SHIELD, 40, 50);
+		CCreatureFramePack& pack = male ? scene.slayerManFPK : scene.slayerWomanFPK;
+		CIndexSpritePack& sprites = male ? scene.slayerManSPK : scene.slayerWomanSPK;
+		// The parts of a sword and a shield, not their frame IDs.
+		Place(pack, AC_SWORD, drained, 2, 1, 2, 3);
+		Place(pack, AC_SHIELD, drained, 2, 2, 2, 3);
+		scene.Draw(DrawDivineGuidanceAdvancementClassSlayerCharacter, slayer, 2);
+		CIndexSprite::SetUsingColorSet(40, 50);
+		scene.expected.Blit(12, 23 - kHeight, sprites[2], 2);
+		CIndexSprite::SetUsingColorSet(30, 60);
+		scene.expected.Blit(12, 23 - kHeight, sprites[1], 2);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(DivineGuidance, AnAdvancedSlayerFacingTheLastDirectionDrawsItsPartsInThatOrder)
+{
+	// The parts' order is the row of the direction the slayer faces, of
+	// AC_ADDON_MAX parts; facing direction 7, the last row, the body comes
+	// second and the left hand last, so a shield lies over the coat.
+	const int drained = ACTION_ADVANCEMENT_SLAYER_DRAINED - ADVANCEMENT_ACTION_START;
+	Scene scene;
+	Wearer slayer;
+	slayer.Become(kSlayer);
+	slayer.SetMale(true);
+	slayer.SetCurrentDirection(7);
+	slayer.Wear(ADDON_COAT, 1, ITEM_CLASS_COAT, 30, 60);
+	slayer.Wear(ADDON_LEFTHAND, 1, ITEM_CLASS_SHIELD, 40, 50);
+	// Frame 6 of the clock turns it on by three: 7 to 2.
+	Place(scene.slayerManFPK, AC_BODY, drained, 2, 1, 2, 3);
+	Place(scene.slayerManFPK, AC_SHIELD, drained, 2, 2, 2, 3);
+	g_CurrentFrame = 6;
+	scene.Draw(DrawDivineGuidanceAdvancementClassSlayerCharacter, slayer, 7);
+	CIndexSprite::SetUsingColorSet(30, 60);
+	scene.expected.Blit(12, 23 - kHeight, scene.slayerManSPK[1], 2);
+	CIndexSprite::SetUsingColorSet(40, 50);
+	scene.expected.Blit(12, 23 - kHeight, scene.slayerManSPK[2], 2);
+	CHECK(scene.Same());
+}
+
 TEST(DivineGuidance, AnAdvancedVampireDrawsItsOneBodyFromItsGendersPack)
 {
 	const int drained = ACTION_ADVANCEMENT_DRAINED - ADVANCEMENT_ACTION_START;
@@ -518,7 +571,7 @@ TEST(DivineGuidance, TheSilhouetteFollowsTheRaceAndTheClass)
 {
 	// Each pack's frame 30 at its own place, so the picture names the pack.
 	struct Case { bool slayer, ousters, advanced; };
-	for (const Case& c : {Case{true, false, false}, Case{false, true, false},
+	for (const Case& c : {Case{true, false, false}, Case{true, false, true}, Case{false, true, false},
 		Case{false, true, true}, Case{false, false, false}, Case{false, false, true}})
 	{
 		Scene scene;

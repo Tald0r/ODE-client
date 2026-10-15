@@ -7461,7 +7461,7 @@ rounds settled* for the host rules). Test fixtures share
   >   given.
   >
   > R1 is 18 Windows / 16 Ninja.
-  - Owner: membership, R1, `test_creature_divine_guidance.cpp`: 15
+  - Owner: membership, R1, `test_creature_divine_guidance.cpp`: 17
     tests. Each draws through the moved code onto a surface in memory and
     lays the blits it should make, with the colour sets named, onto
     another (sprites whose four indexed pixels show the four colour sets
@@ -7473,8 +7473,24 @@ rounds settled* for the host rules). Test fixtures share
     bare arms and feet in the default coat colour, its chakram, and a
     ghost's parts left out; the advanced vampire and ousters from their
     packs; the choice of silhouette by race and class.
-  - Mutants: 31 written; 29 caught (four by crashing), after a test that the colour sets the tests name are lit and tell apart, a vampire's bob past frame 10, and sprites at a gradation that is not black. The two left change only a pass's darkness, which the SDL backend ignores (they are equivalent there).
-    Taking `gameview` out of `unit_tests`' link breaks it.
+  - Mutants: 31 written; 29 caught (four by crashing), after a test that
+    the colour sets the tests name are lit and can be told apart, a
+    vampire's bob past frame 10, and sprites at a gradation that is not
+    black. The two left change only a pass's darkness, which the SDL
+    backend ignores (they are equivalent there). Taking `gameview` out of
+    `unit_tests`' link breaks it.
+  - Fixed after the move: the advanced slayer's silhouette walked the
+    parts' order to `ADDON_MAX` (7) over a row of `AC_ADDON_MAX` (6),
+    reading one past the row, and past the table when the slayer faces
+    direction 7; it walks the row, as the advanced slayer's other drawings
+    do. Two tests reach it (the creature's facing is its current
+    direction, `SetCurrentDirection`): facing direction 2, a sword over a
+    shield from either gender's pack; facing direction 7, a shield over a
+    coat, at frame 6 of the clock. The old bound stops under UBSan; in a
+    plain build the extra read finds no part. 12 mutants on the advanced
+    slayer (the old bound, the order's row and direction, the lookup by
+    AC slot, the part, gender, frame, height, clock and colour sets), all
+    caught.
 
 ### Remaining R1 work after tasks 4.80-4.248
 
