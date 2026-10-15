@@ -222,4 +222,58 @@ std::uint16_t GetImageObjectFrameSprite(int frameID, int frame)
 	return s_Host && s_Host->GetImageObjectFrameSprite ? s_Host->GetImageObjectFrameSprite(frameID, frame) : std::uint16_t(0xFFFF);
 }
 
+void SetSelectedSectorNULL()
+{
+	if (s_Host && s_Host->SetSelectedSectorNULL) s_Host->SetSelectedSectorNULL();
+}
+
+void SetSelectedNULL()
+{
+	if (s_Host && s_Host->SetSelectedNULL) s_Host->SetSelectedNULL();
+}
+
+void SetSelectedCreature(TYPE_OBJECTID creatureID)
+{
+	if (s_Host && s_Host->SetSelectedCreature) s_Host->SetSelectedCreature(creatureID);
+}
+
+POINT GetSelectedSector(int screenX, int screenY)
+{
+	if (s_Host && s_Host->GetSelectedSector) return s_Host->GetSelectedSector(screenX, screenY);
+	POINT none = { SECTORPOSITION_NULL, SECTORPOSITION_NULL };
+	return none;
+}
+
+POINT ScreenToPixel(int screenX, int screenY)
+{
+	if (s_Host && s_Host->ScreenToPixel) return s_Host->ScreenToPixel(screenX, screenY);
+	POINT origin = { 0, 0 };
+	return origin;
+}
+
+int GetViewRequestMode()
+{
+	return s_Host && s_Host->GetViewRequestMode ? s_Host->GetViewRequestMode() : 0;
+}
+
+bool IsViewRequestMode()
+{
+	return s_Host && s_Host->IsViewRequestMode && s_Host->IsViewRequestMode();
+}
+
+void SetFadeStart(signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay)
+{
+	if (s_Host && s_Host->SetFadeStart) s_Host->SetFadeStart(start, end, step, r, g, b, delay);
+}
+
+void SetFadeEnd()
+{
+	if (s_Host && s_Host->SetFadeEnd) s_Host->SetFadeEnd();
+}
+
+int GetCreatureActionFrameCount(int frameID, int action, int direction)
+{
+	return s_Host && s_Host->GetCreatureActionFrameCount ? s_Host->GetCreatureActionFrameCount(frameID, action, direction) : 0;
+}
+
 }

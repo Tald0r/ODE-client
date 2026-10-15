@@ -147,8 +147,7 @@ CMessageStringTable g_MessageStringTable;
 // REMOVED: nProtect anti-cheat code (SDL migration - no longer needed)
 HWND				g_hWnd;
 HINSTANCE			g_hInstance;
-int					g_x=400;
-int					g_y=300;
+// g_x and g_y are InputState.cpp's (gamemodel, task 4.247).
 //bool				g_bHALAvailable = false;
 DWORD				g_dwVideoMemory = 0;
 

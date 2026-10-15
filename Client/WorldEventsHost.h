@@ -130,6 +130,23 @@ struct Host
 	int (*GetTileSpriteCount)() = nullptr;
 	int (*GetImageObjectFrameCount)(int frameID) = nullptr;
 	std::uint16_t (*GetImageObjectFrameSprite)(int frameID, int frame) = nullptr;
+	// The player's (task 4.247): the view's selection cleared (the sector,
+	// or everything) or set on a creature; the sector and the pixel under a
+	// screen point; the view's request mode (MRequestMode's) and whether it
+	// has one; a screen fade started and ended; and how many frames a
+	// creature's frame pack holds for an action and direction. Without a
+	// host: nothing set, the null sector, pixel (0, 0), REQUEST_NULL and
+	// false, and no frames.
+	void (*SetSelectedSectorNULL)() = nullptr;
+	void (*SetSelectedNULL)() = nullptr;
+	void (*SetSelectedCreature)(TYPE_OBJECTID creatureID) = nullptr;
+	POINT (*GetSelectedSector)(int screenX, int screenY) = nullptr;
+	POINT (*ScreenToPixel)(int screenX, int screenY) = nullptr;
+	int (*GetViewRequestMode)() = nullptr;
+	bool (*IsViewRequestMode)() = nullptr;
+	void (*SetFadeStart)(signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay) = nullptr;
+	void (*SetFadeEnd)() = nullptr;
+	int (*GetCreatureActionFrameCount)(int frameID, int action, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -156,10 +173,20 @@ void SetFirstDraw();
 int GetTileSpriteCount();
 int GetImageObjectFrameCount(int frameID);
 std::uint16_t GetImageObjectFrameSprite(int frameID, int frame);
+void SetSelectedSectorNULL();
+void SetSelectedNULL();
+void SetSelectedCreature(TYPE_OBJECTID creatureID);
+POINT GetSelectedSector(int screenX, int screenY);
+POINT ScreenToPixel(int screenX, int screenY);
+int GetViewRequestMode();
+bool IsViewRequestMode();
+void SetFadeStart(signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay);
+void SetFadeEnd();
+int GetCreatureActionFrameCount(int frameID, int action, int direction);
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);
-void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value);
+void AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO actionInfo, std::uint32_t delayFrame, std::uint32_t value = 0);
 void SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame);
 void AddGDREffect(int effect, bool bAppearBossMonster);
 void ComeFromPortal(MCreature* pCreature);

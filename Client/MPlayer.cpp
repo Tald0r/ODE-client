@@ -11,7 +11,20 @@
 #include "Client_PCH.h"
 #include <math.h>
 #include "MZone.h"
-#include "MTopView.h"
+#include "WorldEventsHost.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
+#include "MSlayerGear.h"
+#include "MVampireGear.h"
+#include "ClientMode.h"
+#include "MHelpDef.h"
+#include "SkillDef.h"
+#include "MSkillManager.h"
+#include "MViewDef.h"
+#include "MInventory.h"
+#include "MStorage.h"
+#include "FrameClock.h"
+#include "WorldTileGeometry.h"
 #include "MItem.h"
 #include "MCreature.h"
 #include "MInteractionObject.h"
@@ -23,7 +36,7 @@
 #include "MEffectTarget.h"
 #include "MEffectGeneratorTable.h"
 #include "PacketDef.h" 
-#include "ClientDef.h"
+#include "PlayerPresentationHost.h"
 #include "MCreatureTable.h"
 #include "MSoundTable.h"
 #include "MItemTable.h"
@@ -33,9 +46,8 @@
 #include "MItemOptionTable.h"
 #include "TalkBox.h"
 #include "UIDialog.h"
-#include "MHelpManager.h"
 #include "MPortal.h"
-#include "PacketFunction.h"
+#include "InputState.h"
 #include "MGameTime.h"
 #include "MObjectSelector.h"
 #include "SoundDef.h"
@@ -62,9 +74,8 @@
 #include "MWarManager.h"
 
 #include "MGuildType.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
-#include "MTestDef.h"
+#include "GameSocket.h"
+#include "DebugLog.h"
 #include "RankBonusTable.h"
 #include "RankBonusDef.h"
 #include "MOustersGear.h"
@@ -72,17 +83,17 @@
 
 #include "Cpackets/CGAbsorbSoul.h"
 
-#include "UIMessageManager.h"
-#include "UIFunction.h"
+#include "DirectionSelection.h"
+#include "PetWindowInfo.h"
 #include "SystemAvailabilities.h"
 
-#include "UserOption.h"
-#include "VS_UI_GameCommon2.h"
+#include "VsUiPresentationHost.h"
+#include "DialogPresentationHost.h"
 
 #include "Cpackets/CGPartyPosition.h"
 #include "WebSocketTransport.h"
 
-extern void UI_RunPetInfo(struct PETINFO *pPetInfo);
+#include "NoticePresentationHost.h"
 extern bool UpdateSocketOutput();
 //GameNew Mode  add by sonc 2006.9.27
 extern	LONG g_SECTOR_WIDTH;
@@ -100,7 +111,7 @@ extern	LONG g_TILESURFACE_HEIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 //end 
-#include "Client.h"
+#include "StatusPresentationHost.h"
 bool		GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint);
 
 // [새기술]
@@ -116,7 +127,6 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 // #endif
 
 
-#include "MTestDef.h"
 
 #ifdef __METROTECH_TEST__
 //	#define OUTPUT_DEBUG_PLAYER_ACTION
@@ -124,18 +134,10 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
 
 
-#include "VS_UI.h" // KJTINC
-#include "VS_UI_mouse_pointer.h"
-#ifdef PLATFORM_WINDOWS
-#include "CImm.h"
-#endif
+#include "ZoneLoadingHost.h"
+#include "GameInfoPresentationHost.h"
 
 extern	MonotonicClock::TimePoint	g_FrameNow;
-extern	int		g_x;
-extern	int		g_y;
-extern	bool	g_bNetStatusGood;
-extern BOOL					g_bLButtonDown;
-extern BOOL					g_bRButtonDown;
 extern BOOL					g_bCButtonDown;
 extern bool g_bPreviousMove;
 
@@ -144,7 +146,6 @@ extern int					g_nZoneSmall;
 extern bool					g_bZonePlayerInLarge;
 extern bool					g_bZoneSafe;
 extern bool					g_bHolyLand;
-extern POINT						g_SelectSector;
 
 //#define	new			DEBUG_NEW
 
@@ -160,6 +161,20 @@ extern POINT						g_SelectSector;
 //
 //----------------------------------------------------------------------
 MPlayer*			g_pPlayer = NULL;
+
+// The view's tile-to-pixel conversions (MTopView's statics forward to
+// these): a sector's pixel, and the sector of a pixel.
+static POINT MapToPixel(int x, int y)
+{
+	POINT p = { WorldTileGeometry::TileToPixelX(x), WorldTileGeometry::TileToPixelY(y) };
+	return p;
+}
+
+static POINT PixelToMap(int x, int y)
+{
+	POINT p = { WorldTileGeometry::PixelToTileX(x), WorldTileGeometry::PixelToTileY(y) };
+	return p;
+}
 
 //----------------------------------------------------------------------
 // define Functions
@@ -531,7 +546,7 @@ MPlayer*			g_pPlayer = NULL;
 
 						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT);
 
-						UI_LockGear();
+						VsUiPresentation::LockGear();
 					}					
 				}			
 				
@@ -1197,7 +1212,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	while (!m_pZone->CanMove(m_MoveType, destX, destY))
 	{
 		// 목표(sX,sY)에서 현재 위치로의 방향
-		BYTE direction = MTopView::GetDirectionToPosition(sX, sY, m_X, m_Y);
+		BYTE direction = SelectFacingDirection(sX, sY, m_X, m_Y);
 
 		GetPositionToDirection(destX, destY, direction);
 
@@ -1256,7 +1271,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	//---------------------------------------------------
 //	if (m_fTrace==FLAG_TRACE_NULL && !m_pZone->CanMove(m_MoveType, sX, sY))
 //	{
-//		BYTE direction = MTopView::GetDirectionToPosition(m_X, m_Y, sX, sY);
+//		BYTE direction = SelectFacingDirection(m_X, m_Y, sX, sY);
 //
 //		sX = m_X;
 //		sY = m_Y;
@@ -1469,7 +1484,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 		// 현재 진행 방향으로 이동하게 하는 경우
 		/*
-		POINT position = g_pTopView->GetSelectedSector(g_x, g_y);		
+		POINT position = WorldEvents::GetSelectedSector(g_x, g_y);
 		BYTE direction = GetDirectionToPosition(position.x, position.y);		
 
 		// 방향에 따른 위치를 결정한다.		
@@ -1560,7 +1575,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		// visited를 모두 false로 해두고
 		// 현재위치부터 방문하지 않은 곳들을 방문하기 시작한다.
 		//-------------------------------------------------------
-		POINT firstSector = g_pTopView->GetFirstSector();
+		POINT firstSector = WorldEvents::GetFirstSector();
 		//int x0 = m_DestX - g_pClientConfig->MAX_FINDPATH_WIDTH, 
 		//	x1 = m_DestX + g_pClientConfig->MAX_FINDPATH_WIDTH+1, 
 		//	y0 = m_DestY - g_pClientConfig->MAX_FINDPATH_HEIGHT,
@@ -1985,7 +2000,7 @@ MPlayer::SelfSpecialAction()
 				if (pItem!=NULL)
 				{
 					// 지뢰 설치 준비..
-					gC_vs_ui.StartInstallMineProgress( pItem->GetGridX(), pItem->GetGridY() );
+					PlayerPresentation::StartInstallMineProgress( pItem->GetGridX(), pItem->GetGridY() );
 				}									
 			}
 
@@ -2272,7 +2287,7 @@ MPlayer::SelfSpecialAction()
 								//----------------------------------------------------
 								// 기술 사용 시도 동작
 								//----------------------------------------------------
-								AddNewInventoryEffect( pItem->GetID(),
+								WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 													MAGIC_CREATE_HOLY_WATER, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
 													g_pClientConfig->FPS*3	// 3초
 												);
@@ -2342,7 +2357,7 @@ MPlayer::SelfSpecialAction()
 								//----------------------------------------------------
 								// 기술 사용 시도 동작
 								//----------------------------------------------------
-								AddNewInventoryEffect( pItem->GetID(),
+								WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 													SKILL_CREATE_HOLY_POTION, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
 													g_pClientConfig->FPS*3	// 3초
 												);
@@ -2369,7 +2384,7 @@ MPlayer::SelfSpecialAction()
 					if (IsSlayer()
 						&& !IsWaitVerify()
 						&& IsItemCheckBufferNULL()
-						&& !gC_vs_ui.IsInstallMineProgress())	// 지뢰 만드는 중이면..
+						&& !PlayerPresentation::IsInstallMineProgress())	// 지뢰 만드는 중이면..
 						//|| gC_vs_ui.IsCreateMineProgress()	// 지뢰 만드는 중이면..
 						//|| gC_vs_ui.IsCreateBombProgress()	// 지뢰 만드는 중이면..
 					{					
@@ -2415,11 +2430,11 @@ MPlayer::SelfSpecialAction()
 								// 만들기 시작하는 순간...
 								if (skillID==SKILL_MAKE_BOMB)
 								{
-									gC_vs_ui.StartCreateBombProgress( pItem->GetGridX(), pItem->GetGridY() );
+									PlayerPresentation::StartCreateBombProgress( pItem->GetGridX(), pItem->GetGridY() );
 								}
 								else
 								{
-									gC_vs_ui.StartCreateMineProgress( pItem->GetGridX(), pItem->GetGridY() );
+									PlayerPresentation::StartCreateMineProgress( pItem->GetGridX(), pItem->GetGridY() );
 								}
 
 								// UI에서 막대기 보여주고 나서
@@ -2461,7 +2476,7 @@ MPlayer::SelfSpecialAction()
 								//----------------------------------------------------
 								// 기술 사용 시도 동작
 								//----------------------------------------------------
-								AddNewInventoryEffect( pItem->GetID(),
+								WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 													skillID, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
 													g_pClientConfig->FPS*3	// 3초
 												);
@@ -2565,7 +2580,7 @@ MPlayer::SelfSpecialAction()
 									//----------------------------------------------------
 									// 기술 사용 시도 동작
 									//----------------------------------------------------
-									AddNewInventoryEffect( pItem->GetID(),
+									WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 														m_nSpecialActionInfo, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
 														g_pClientConfig->FPS*3	// 3초
 													);
@@ -2671,7 +2686,7 @@ MPlayer::SelfSpecialAction()
 					{
 						// UI 창을 띄워준다.
 						// UI 창을 띄운 뒤 메시지가 날아오면 거기서 sendpacket 을 해준다.
-						gC_vs_ui.RunTraceWindow();
+						PlayerPresentation::RunTraceWindow();
 						
 //						int skillID = SKILL_SOUL_CHAIN;
 //						
@@ -2883,7 +2898,7 @@ MPlayer::KeepTraceCreature()
 	{		
 		TraceCreatureToBasicAction( m_TraceID, false );	
 		
-		g_pTopView->SetSelectedSectorNULL();
+		WorldEvents::SetSelectedSectorNULL();
 	}	
 }
 
@@ -2927,11 +2942,11 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 	switch( nActionInfo )
 	{
 	case MAGIC_RAPID_GLIDING :
-		return ( min(6, (2+ (GetDEX() / 50)) ) );
+		return ( min(6, int(2+ (GetDEX() / 50)) ) );
 		break;
 	
 	case MAGIC_BLOODY_ZENITH :
-		return min(6, 2 + GetSTR()/80 + GetDEX()/120 + GetINT()/240 );
+		return min(6, int(2 + GetSTR()/80 + GetDEX()/120 + GetINT()/240) );
 		break;	
 	
 	case SKILL_SOUL_REBIRTH:
@@ -3025,16 +3040,16 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 						petInfo.ChangeAbleNickName = true;
 					else
 						petInfo.ChangeAbleNickName = false;
-					UI_RunPetInfo(&petInfo);
+					PlayerPresentation::RunPetInfo(&petInfo);
 				}
 				return false;
 			}
 		}
 		// 2004,5, 28 sobeit add start - 다른 캐릭터 정보
-		if(g_pTopView->GetRequestMode() == MRequestMode::REQUEST_INFO)
+		if(static_cast<MRequestMode::REQUEST_MODE>(WorldEvents::GetViewRequestMode()) == MRequestMode::REQUEST_INFO)
 		{
 			SetTraceID( id );
-			SetRequestMode( g_pTopView->GetRequestMode() );
+			SetRequestMode( static_cast<MRequestMode::REQUEST_MODE>(WorldEvents::GetViewRequestMode()) );
 			BasicActionToCreature();				
 			SetTraceID( 0 );
 			return false;	
@@ -3097,7 +3112,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		//------------------------------------------------
 		// Request할려고 쫓아가는 경우
 		//------------------------------------------------
-		if (g_pTopView->IsRequestMode() 
+		if (WorldEvents::IsViewRequestMode()
 			// Player만 된다.
 			//&& pCreature->GetCreatureType()<=CREATURETYPE_VAMPIRE_FEMALE
 			&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[m_CreatureType].SpriteTypes[0]].IsPlayerOnlySprite()
@@ -3118,7 +3133,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 			bKeepTraceCreature			= false;
 			m_bNextForceAttack			= false;
 			
-			SetRequestMode( g_pTopView->GetRequestMode() );
+			SetRequestMode( static_cast<MRequestMode::REQUEST_MODE>(WorldEvents::GetViewRequestMode()) );
 		}
 		//------------------------------------------------
 		// 오토바이를 타고 있으면 공격이 안된다.
@@ -3222,7 +3237,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 						if (g_pCurrentMagazine->GetNumber()==0)	// 총알이 없는 경우
 						{
 							// 총을 사용하는데 탄창이 없는 경우
-							PlaySound( SOUND_ITEM_NO_MAGAZINE );
+							WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 							m_fNextTrace	= FLAG_TRACE_NULL;
 
@@ -3231,7 +3246,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 
 							// [도움말] 총알 다 썼을 때
 //							__BEGIN_HELP_EVENT
-//								ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
+//								GameInfoPresentation::ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
 //							__END_HELP_EVENT
 
 							m_fNextTrace = FLAG_TRACE_NULL;
@@ -3334,7 +3349,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		}
 
 		// 선택된 sector 없애기
-		g_pTopView->SetSelectedSectorNULL();
+		WorldEvents::SetSelectedSectorNULL();
 			
 
 		return true;
@@ -3771,7 +3786,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 					if (g_pCurrentMagazine==NULL)
 					{
 						// 총을 사용하는데 탄창이 없는 경우
-						PlaySound( SOUND_ITEM_NO_MAGAZINE );
+						WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 						// the delay for an empty magazine
 							m_DelayTime	= g_FrameNow + MonotonicClock::Duration(GetActionInfoDelay(m_nBasicActionInfo));
@@ -3784,7 +3799,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 						if (g_pCurrentMagazine->GetNumber()==0)
 						{
 							// 총을 사용하는데 탄창이 없는 경우
-							PlaySound( SOUND_ITEM_NO_MAGAZINE );
+							WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 							// the delay for an empty magazine
 							m_DelayTime	= g_FrameNow + MonotonicClock::Duration(GetActionInfoDelay(m_nBasicActionInfo));
@@ -3806,7 +3821,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 
 							// [도움말] 총알 다 썼을 때
 //							__BEGIN_HELP_EVENT
-//								ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
+//								GameInfoPresentation::ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
 //							__END_HELP_EVENT
 							
 
@@ -3866,7 +3881,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			DEBUG_ADD_FORMAT("Trace Creature To SpecialAction: ID=%d, (%d, %d)", id, m_TraceX, m_TraceY);					
 
 			// 선택된 sector 없애기
-			g_pTopView->SetSelectedSectorNULL();
+			WorldEvents::SetSelectedSectorNULL();
 		}
 		else
 		{
@@ -4401,7 +4416,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 					if (g_pCurrentMagazine->GetNumber()==0)	// 총알이 없는 경우
 					{
 						// 총을 사용하는데 탄창이 없는 경우
-						PlaySound( SOUND_ITEM_NO_MAGAZINE );
+						WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 						m_fNextTrace	= FLAG_TRACE_NULL;
 
@@ -4409,7 +4424,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 
 						// [도움말] 총알 다 썼을 때
 //						__BEGIN_HELP_EVENT
-//							ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
+//							GameInfoPresentation::ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
 //						__END_HELP_EVENT
 
 						m_fNextTrace = FLAG_TRACE_NULL;
@@ -5820,9 +5835,9 @@ MPlayer::ActionMove()
 				//----------------------------------------------------
 				// 지뢰 설치중이면 취소하기
 				//----------------------------------------------------
-				if (gC_vs_ui.IsInstallMineProgress())
+				if (PlayerPresentation::IsInstallMineProgress())
 				{
-					gC_vs_ui.EndInstallMineProgress();
+					PlayerPresentation::EndInstallMineProgress();
 				}
 
 				CGMove _CGMove;
@@ -5903,10 +5918,10 @@ MPlayer::ActionMove()
 						{
 							DEBUG_ADD("[MPlayer] Run Elevator");
 							
-							gC_vs_ui.RunElevator();
+							PlayerPresentation::RunElevator();
 
 							// 목적지 표시를 없앤다.
-							g_pTopView->SetSelectedSectorNULL();
+							WorldEvents::SetSelectedSectorNULL();
 
 							// 목적지 없앰..
 							m_DestX		= SECTORPOSITION_NULL;
@@ -6041,7 +6056,7 @@ MPlayer::ActionMove()
 
 			if (soundID!=SOUNDID_NULL)
 			{
-				PlaySound( soundID,
+				WorldEvents::PlaySoundAt( soundID,
 							false,
 							m_X,
 							m_Y);
@@ -6173,7 +6188,7 @@ MPlayer::ActionMove()
 							
 							m_bNextAction = true;
 							SetNextAction(GetActionInfoAction( m_nNextUsedActionInfo ));
-							SetDirection( MTopView::GetDirectionToPosition( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
+							SetDirection( SelectFacingDirection( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
 							return;
 						}
 						if(m_nSpecialActionInfo == SKILL_SET_AFIRE)
@@ -6237,7 +6252,7 @@ MPlayer::ActionMove()
 						
 						m_bNextAction = true;
 						SetNextAction(GetActionInfoAction( m_nNextUsedActionInfo ));
-						SetDirection( MTopView::GetDirectionToPosition( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
+						SetDirection( SelectFacingDirection( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
 
 						// 다음에 한 번 패킷을 안 보낸다.
 						m_nNoPacketUsedActionInfo = m_nNextUsedActionInfo;
@@ -6444,7 +6459,7 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 	//--------------------------------------------------------
 	// 목표 위치 Pixel좌표
 	//--------------------------------------------------------
-	point = MTopView::MapToPixel(m_TraceX, m_TraceY);
+	point = MapToPixel(m_TraceX, m_TraceY);
 	//point.x += m_sX;
 	//point.y += m_sY;
 	//point.x += TILE_X_HALF;
@@ -6555,20 +6570,17 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 			int soundID = (*g_pCreatureTable)[m_CreatureType].GetActionSound( 
 									GetActionInfoAction(nUsedActionInfo) );
 
-			PlaySound( soundID,	false, m_X, m_Y	);
+			WorldEvents::PlaySoundAt( soundID,	false, m_X, m_Y	);
 
 			//-------------------------------------------------
 			// Force Feel
 			//-------------------------------------------------
-			if (g_pUserOption->UseForceFeel && gpC_Imm!=NULL && gpC_Imm->IsDevice()
+			if (PlayerPresentation::ForceFeelReady()
 				&& soundID < g_pSoundTable->GetSize())
 			{
 				DEBUG_ADD_FORMAT("ForceAction-AffectUsedActionInfo(%d, %s)", soundID, strrchr((*g_pSoundTable)[soundID].Filename.GetString(), '\\'));
 
-#ifdef PLATFORM_WINDOWS
-				// Force feedback only supported on Windows with IFC
-				gpC_Imm->ForceAction( soundID );
-#endif
+				PlayerPresentation::ForceAction( soundID );
 			}
 		}
 
@@ -6618,7 +6630,7 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 	//--------------------------------------------------------
 	if ((*g_pActionInfoTable)[nUsedActionInfo].IsStartUser())
 	{
-		point = MTopView::MapToPixel(m_X, m_Y);
+		point = MapToPixel(m_X, m_Y);
 		point.x += m_sX;
 		point.y += m_sY;
 		//point.x += TILE_X_HALF;
@@ -6654,7 +6666,7 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 	if( nUsedActionInfo == SKILL_ABSORB_SOUL )
 	{
 		// m_TraceID 는 존의 시체이므로 아이템이다.		
-		direction = g_pTopView->GetDirectionToPosition( 
+		direction = SelectFacingDirection(
 			GetX(), GetY(),m_TraceX, m_TraceY);
 	}
 	else
@@ -6912,12 +6924,12 @@ MPlayer::ActionToSendPacket()
 			//------------------------------------------------
 			// 캐릭터의 Action에 맞는 Sound를 출력해준다.
 			//------------------------------------------------
-			PlaySound( soundID,	false, m_X, m_Y	);
+			WorldEvents::PlaySoundAt( soundID,	false, m_X, m_Y	);
 
 			//-------------------------------------------------
 			// Force Feel
 			//-------------------------------------------------
-			if (g_pUserOption->UseForceFeel && gpC_Imm!=NULL && gpC_Imm->IsDevice())				
+			if (PlayerPresentation::ForceFeelReady())
 			{				
 				if ((*g_pActionInfoTable)[m_nUsedActionInfo].IsWeaponTypeGunAny())
 				{
@@ -6927,10 +6939,7 @@ MPlayer::ActionToSendPacket()
 				if (soundID < g_pSoundTable->GetSize())
 				{
 					DEBUG_ADD_FORMAT("ForceAction-ActionToSendPacket(%d, %s)", soundID, strrchr((*g_pSoundTable)[soundID].Filename.GetString(), '\\'));
-#ifdef PLATFORM_WINDOWS
-					// Force feedback only supported on Windows with IFC
-					gpC_Imm->ForceAction( soundID );
-#endif
+					PlayerPresentation::ForceAction( soundID );
 				}
 			}
 
@@ -7206,7 +7215,7 @@ MPlayer::ActionToSendPacket()
 								if (pRemovedItem!=NULL)
 								{
 									// item정보 제거
-									UI_RemoveDescriptor( (void*)pRemovedItem );
+									PlayerPresentation::RemoveDescriptor( (void*)pRemovedItem );
 
 									delete pRemovedItem;								
 								}
@@ -7294,7 +7303,7 @@ MPlayer::ActionToSendPacket()
 								if (pRemovedItem!=NULL)
 								{
 									// item정보 제거
-									UI_RemoveDescriptor( (void*)pRemovedItem );
+									PlayerPresentation::RemoveDescriptor( (void*)pRemovedItem );
 
 									delete pRemovedItem;								
 								}
@@ -7473,12 +7482,12 @@ MPlayer::ActionToSendPacket()
 		int soundID = (*g_pCreatureTable)[m_CreatureType].GetActionSound( 
 										GetActionInfoAction(m_nUsedActionInfo) );
 		if(!HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET) && !m_bBurningSol)
-			PlaySound( soundID,	false, m_X, m_Y	);
+			WorldEvents::PlaySoundAt( soundID,	false, m_X, m_Y	);
 
 		//-------------------------------------------------
 		// Force Feel
 		//-------------------------------------------------
-		if (g_pUserOption->UseForceFeel && gpC_Imm!=NULL && gpC_Imm->IsDevice())
+		if (PlayerPresentation::ForceFeelReady())
 		{
 			if ((*g_pActionInfoTable)[m_nUsedActionInfo].IsWeaponTypeGunAny())
 			{
@@ -7488,10 +7497,7 @@ MPlayer::ActionToSendPacket()
 			if (soundID < g_pSoundTable->GetSize())
 			{
 				DEBUG_ADD_FORMAT("ForceAction-ActionToSendPacket(%d, %s)", soundID, strrchr((*g_pSoundTable)[soundID].Filename.GetString(), '\\'));
-#ifdef PLATFORM_WINDOWS
-				// Force feedback only supported on Windows with IFC
-				gpC_Imm->ForceAction( soundID );
-#endif
+				PlayerPresentation::ForceAction( soundID );
 			}
 		}
 	}
@@ -7684,13 +7690,13 @@ MPlayer::ActionEffect()
 				)
 			{
 				SetSweepViewValue(1);
-				g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
+				g_SelectSector = WorldEvents::GetSelectedSector(g_x, g_y);
 
 				m_TempSelectPosX = static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x);
 				m_TempSelectPosY = static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y);
 				m_SweepViceX = m_TraceX;
 				m_SweepViceY = m_TraceY;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_SWEEP_VICE,m_SweepViceX, m_SweepViceY, 0,g_pPlayer->GetDirection(),0	,	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_SWEEP_VICE,m_SweepViceX, m_SweepViceY, 0,g_pPlayer->GetDirection(),0	,
 						m_SweepViceX, m_SweepViceY, 0, 0xffff, NULL, false);
 			}
 			return;
@@ -7918,9 +7924,9 @@ void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
 //		}
 	#endif
 
-	UI_LockItem();
-	UI_LockGear();
-	UI_LockItemTrade();
+	PlayerPresentation::LockItem();
+	VsUiPresentation::LockGear();
+	PlayerPresentation::LockItemTrade();
 }
 
 //----------------------------------------------------------------------
@@ -7940,10 +7946,10 @@ MPlayer::ClearItemCheckBuffer()
 	// 2004, 8, 27, sobeit add start - 관소환 상태에서 인벤아이템 사용후 착용아이템 벗었다 입었다 하면 
 	// 클라이언트 쪽에서 관상태가 풀린다.-_- 따라서 관 소환일땐 UI_UnlockGear()을 호출하지 않는다.
 	if(!IsInCasket())
-		UI_UnlockGear();
+		DialogPresentation::UnlockGear();
 	// 2004, 8, 27, sobeit add end - 
-	UI_UnlockItem();
-	UI_UnlockItemTrade();
+	DialogPresentation::UnlockItem();
+	DialogPresentation::UnlockItemTrade();
 }
 
 //----------------------------------------------------------------------
@@ -8119,7 +8125,7 @@ MPlayer::SetAction(BYTE action)
 				// UI에서 gear의 item 이동을 못하게 한다. 
 				//---------------------------------------------
 				//gC_vs_ui.LockItem();
-				gC_vs_ui.LockGear();				
+				VsUiPresentation::LockGear();
 			}
 			//------------------------------------------------
 			// 움직이고 있는 도중이면 Buffering한다.
@@ -8130,7 +8136,7 @@ MPlayer::SetAction(BYTE action)
 				// UI에서 gear item 이동을 할 수 있도록 한다.
 				//---------------------------------------------
 				//gC_vs_ui.UnlockItem();
-				gC_vs_ui.UnlockGear();
+				DialogPresentation::UnlockGear();
 
 				// buffering
 				SetNextAction(action);
@@ -8178,7 +8184,7 @@ MPlayer::SetAction(BYTE action)
 			//---------------------------------------------
 			//gC_vs_ui.UnlockItem();
 			if(!IsInCasket())
-				gC_vs_ui.UnlockGear();		
+				DialogPresentation::UnlockGear();
 
 			// 동작 설정		
 			SetNextAction(ACTION_STAND);
@@ -8331,8 +8337,7 @@ MPlayer::SetAction(BYTE action)
 			break;
 
 			default :
-				m_ActionCountMax = g_pTopView->m_CreatureFPK[(*g_pCreatureTable)[m_CreatureType].FrameID]
-															[m_Action][m_Direction].GetSize();
+				m_ActionCountMax = WorldEvents::GetCreatureActionFrameCount((*g_pCreatureTable)[m_CreatureType].FrameID, m_Action, m_Direction);
 		}
 
 		m_ActionCount = 0;
@@ -8510,9 +8515,9 @@ MPlayer::SetAlive()
 	m_bAlive = true;
 
 	// item 이동 해제
-	UI_UnlockItem();
-	UI_UnlockGear();
-	UI_UnlockItemTrade();
+	DialogPresentation::UnlockItem();
+	DialogPresentation::UnlockGear();
+	DialogPresentation::UnlockItemTrade();
 
 	SetAction( ACTION_STAND );
 
@@ -8529,9 +8534,9 @@ MPlayer::SetAlive()
 	}
 	*/
 
-	if (g_pTopView!=NULL)
+	if (WorldEvents::ViewExists())
 	{
-		g_pTopView->SetFadeEnd();
+		WorldEvents::SetFadeEnd();
 	}
 
 	if (m_MoveType == CREATURE_FLYING)
@@ -8568,15 +8573,15 @@ MPlayer::SetDead()
 			SetAction(ACTION_STAND);
 			ClearAttachEffect();
 		}
-		g_pUIMessageManager->Execute(UI_FINISH_LEVELUP_BUTTON, 0, 0, NULL);
+		PlayerPresentation::FinishLevelUpButton();
 		
 		StopDrain();
 		StopAbsorb();
 
 		// item 이동 못하게..
-		UI_LockItem();
-		UI_LockGear();
-		UI_LockItemTrade();
+		PlayerPresentation::LockItem();
+		VsUiPresentation::LockGear();
+		PlayerPresentation::LockItemTrade();
 
 		SetStop();	
 //		StopCauseCriticalWounds();
@@ -8636,7 +8641,7 @@ MPlayer::SetDead()
 
 		m_Z = 0;
 		// 확인.. 
-		UI_CloseSelectWayPoint();
+		PlayerPresentation::CloseSelectWayPoint();
 
 		// cancel the logout
 		g_pUserInformation->CancelLogout();
@@ -8682,7 +8687,7 @@ MPlayer::SetDead()
 		SendStatusInfoToParty();	
 
 		// 2004, 5, 7 sobeit add start - 죽었을 때 도움말
-		ExecuteHelpEvent(HELP_EVENT_DIE);
+		GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_DIE);
 		// 2004, 5, 7 sobeit add end
 	}
 }
@@ -8819,8 +8824,8 @@ MPlayer::CheckRepeatAction()
 				//------------------------------------------------------------
 				// 현재의 mouse 좌표를 읽어서 map의 좌표로 바꾼다.
 				//------------------------------------------------------------
-				POINT temp = g_pTopView->ScreenToPixel(g_x, g_y);
-				temp = MTopView::PixelToMap( temp.x, temp.y );
+				POINT temp = WorldEvents::ScreenToPixel(g_x, g_y);
+				temp = PixelToMap( temp.x, temp.y );
 				
 				m_NextTraceX = static_cast<TYPE_SECTORPOSITION>(temp.x);
 				m_NextTraceY = static_cast<TYPE_SECTORPOSITION>(temp.y);
@@ -8996,27 +9001,6 @@ MPlayer::UnSetRepeatAction()
 	BOOL bSlayer = IsSlayer();
 
 	//m_fTraceBuffer = FLAG_TRACE_NULL;
-	/*
-	#ifdef OUTPUT_DEBUG
-		if (g_pDebugMessage)
-			{
-				if (m_nUsedActionInfo != ACTIONINFO_NULL)
-				{
-					DEBUG_ADD_FORMAT("UnSetRepeatAction:ai=%d, ir=%d, at=%d, sm=%d, acm=%d",
-			
-					(int)m_nUsedActionInfo, 
-					(int)(*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame(),
-					(int)m_Action!=ACTION_STAND,
-					(int)(!bSlayer || bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND),
-					(int)m_ActionCountMax!=0);
-				}
-				else
-				{
-					DEBUG_ADD("UnSetRepeatAction: m_nUsedActionInfo is ACTIONINFO_NULL");
-				}
-			}
-	#endif
-	*/
 
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL 
 		&& (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame() //m_WeaponSpeed )
@@ -9039,7 +9023,6 @@ MPlayer::UnSetRepeatAction()
 bool		
 MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 {	
-	__BEGIN_HELP_EVENT
 		switch (status)
 		{		
 		case EFFECTSTATUS_SUMMON_SYLPH_GREEN :
@@ -9059,7 +9042,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//--------------------------------------------------
 			case EFFECTSTATUS_BLESS :
 				// [도움말] striking
-//				ExecuteHelpEvent( HE_EFFECT_BLESS );
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_BLESS );
 			break;
 
 			//--------------------------------------------------
@@ -9067,7 +9050,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//--------------------------------------------------
 			case EFFECTSTATUS_STRIKING :
 				// [도움말] striking
-//				ExecuteHelpEvent( HE_EFFECT_STRIKING );
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_STRIKING );
 			break;
 
 			//--------------------------------------------------
@@ -9076,7 +9059,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			case EFFECTSTATUS_GREEN_POISON :
 			case EFFECTSTATUS_POISON :
 				// [도움말] green poison
-//				ExecuteHelpEvent( HE_EFFECT_GREEN_POISON );
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_GREEN_POISON );
 			break;
 
 			//--------------------------------------------------
@@ -9085,7 +9068,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//case EFFECTSTATUS_PURPLE_WALL :
 			case EFFECTSTATUS_CURSE_PARALYSIS :
 				// [도움말] purple wall
-//				ExecuteHelpEvent( HE_EFFECT_PURPLE_WALL );
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_PURPLE_WALL );
 			break;
 
 			//--------------------------------------------------
@@ -9094,7 +9077,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			case EFFECTSTATUS_YELLOW_POISON :
 			case EFFECTSTATUS_YELLOW_POISON_TO_CREATURE :
 				// [도움말] yellow poison
-//				ExecuteHelpEvent( HE_EFFECT_YELLOW_POISON );
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_YELLOW_POISON );
 			break;
 		
 			//--------------------------------------------------
@@ -9103,7 +9086,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			case EFFECTSTATUS_BLOOD_DRAIN :
 			{
 				// 2004, 5, 6 sobeit add start [도움말] 흡혈당했을때
-				ExecuteHelpEvent( HELP_EVENT_DRAIN_BLOOD );				
+				GameInfoPresentation::ExecuteHelpEvent( HELP_EVENT_DRAIN_BLOOD );
 				// 2004, 5, 6 sobeit add end
 			}
 			break;		
@@ -9127,7 +9110,6 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			default:
 			break;
 		}
-	__END_HELP_EVENT
 
 	//--------------------------------------------------
 	// 뱀파이어로 변하는 effect이면.. 시간 설정을 해둔다.
@@ -9170,7 +9152,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 		case EFFECTSTATUS_INSTALL_TURRET:
 //			g_pSkillAvailable->SetAvailableSkills();
 			SetDelay(1000);
-			gC_vs_ui.UnselectSkill();
+			VsUiPresentation::UnselectSkill();
 			//gC_vs_ui.SelectSkill( SKILL_TURRET_FIRE );
 			break;
 
@@ -9183,12 +9165,12 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 	// UI에 알린다. 왜 이걸 re로 판단하면 삑살나지-_-; 2002.5.5 쑥갓
 	//--------------------------------------------------
 	if(!(IsSlayer() && status == EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS))
-		UI_AddEffectStatus( status, delayFrame );
+		PlayerPresentation::AddEffectStatus( status, delayFrame );
 	
 	if(status == EFFECTSTATUS_INSTALL_TURRET)
 	{
 		g_pSkillAvailable->SetAvailableSkills();
-		gC_vs_ui.SelectSkill( SKILL_TURRET_FIRE );
+		VsUiPresentation::SelectSkill( SKILL_TURRET_FIRE );
 	}
 	CheckRegen();
 
@@ -9206,7 +9188,7 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 	//--------------------------------------------------
 	// UI에 알린다.
 	//--------------------------------------------------
-	UI_RemoveEffectStatus( status );
+	PlayerPresentation::RemoveEffectStatus( status );
 
 	switch (status)
 	{		
@@ -9245,7 +9227,7 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 		case EFFECTSTATUS_BLOOD_DRAIN :
 			UnSetConversionDelay();
 
-			UI_SetHP( GetHP(), GetMAX_HP() );		
+			StatusPresentation::SetHP( GetHP(), GetMAX_HP() );
 		break;
 
 		//--------------------------------------------------
@@ -9263,9 +9245,9 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 				SetWaitVerifyNULL();
 			}
 
-			gC_vs_ui.FinishRequestDie();
-			gC_vs_ui.FinishRequestResurrect();
-			gC_vs_ui.CloseRequestShrineMinimap();
+			PlayerPresentation::FinishRequestDie();
+			PlayerPresentation::FinishRequestResurrect();
+			PlayerPresentation::CloseRequestShrineMinimap();
 		break;
 
 		//--------------------------------------------------
@@ -9302,7 +9284,7 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 //		break;
 		case EFFECTSTATUS_INSTALL_TURRET:
 			g_pSkillAvailable->SetAvailableSkills();
-			ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,	
+			WorldEvents::ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,
 				GetX(), GetY(), 0, 0, NULL, false);
 			SetDelay(1000);
 			break;
@@ -9361,7 +9343,7 @@ MPlayer::UpdateConversionTime()
 			//--------------------------------------------------------
 			// msec to minutes: * GetTimeRatio / 1000 / 60
 			int changeTime = (int)(m_ConversionDelayTime - g_FrameNow).count()/* * g_pGameTime->GetTimeRatio()*/ / 60000 ;
-			g_char_slot_ingame.CHANGE_VAMPIRE = changeTime;
+			PlayerPresentation::SetChangeVampireTime( changeTime );
 
 			static MonotonicClock::TimePoint enableBlinkTime;	// when the next blink may start
 			
@@ -9403,7 +9385,7 @@ MPlayer::UpdateConversionTime()
 					{
 						if (timeGap > blinkValue[i][0])
 						{
-							g_pTopView->SetFadeStart(25, 31, 2, 31,0,0);
+							WorldEvents::SetFadeStart(25, 31, 2, 31,0,0, 0);
 
 							// when the next blink may start
 							enableBlinkTime = g_FrameNow + MonotonicClock::Millis(blinkValue[i][1]);
@@ -9428,7 +9410,7 @@ MPlayer::UpdateConversionTime()
 			//--------------------------------------------------------
 			// give the UI the time left before the change
 			//--------------------------------------------------------
-			g_char_slot_ingame.CHANGE_VAMPIRE = 0;
+			PlayerPresentation::SetChangeVampireTime( 0 );
 		}
 	}
 }
@@ -9588,7 +9570,7 @@ MPlayer::Action()
 //		static DWORD nextHelpTime = g_CurrentTime+20*1000;	// 20초 뒤 처음으로 메세지 출력
 //		if (g_CurrentTime > nextHelpTime)
 //		{
-//			ExecuteHelpEvent( HE_TIME_PASSED );
+//			GameInfoPresentation::ExecuteHelpEvent( HE_TIME_PASSED );
 //
 //			nextHelpTime = g_CurrentTime + 20*1000;	// 20초
 //		}
@@ -9842,7 +9824,7 @@ MPlayer::Action()
 					m_NextDestX	= SECTORPOSITION_NULL;
 					m_NextDestY	= SECTORPOSITION_NULL;
 
-					g_pTopView->SetSelectedNULL();
+					WorldEvents::SetSelectedNULL();
 				}
 				//--------------------------------------------------------
 				// 적이 있는 경우
@@ -9871,8 +9853,8 @@ MPlayer::Action()
 							//	SetRepeatAction();
 							//}
 
-							g_pTopView->SetSelectedCreature( creatureID );			
-							gpC_mouse_pointer->SetCursorAttack();					
+							WorldEvents::SetSelectedCreature( creatureID );
+							PlayerPresentation::SetCursorAttack();
 
 							//g_bPreviousMove = false;
 						}
@@ -9895,15 +9877,15 @@ MPlayer::Action()
 								SetRepeatAction();
 							}							
 							
-							g_pTopView->SetSelectedCreature( creatureID );			
-							gpC_mouse_pointer->SetCursorAttack();					
+							WorldEvents::SetSelectedCreature( creatureID );
+							PlayerPresentation::SetCursorAttack();
 
 							//g_bPreviousMove = false;
 						}
 					}					
 
 					// 목적지 표시를 없앤다.
-					g_pTopView->SetSelectedSectorNULL();
+					WorldEvents::SetSelectedSectorNULL();
 				}
 				
 			}
@@ -11024,7 +11006,7 @@ MPlayer::BasicActionToCreature()
 			(*g_pCreatureSpriteTable)[(*g_pCreatureTable)[m_CreatureType].SpriteTypes[0]].IsPlayerOnlySprite())
 		{		
 			if(pCreature->GetCreatureType() == 659)	// 대지정령의 뿔이면 UI띄운다
-				UI_RunHorn(g_pZone->GetID());
+				NoticePresentation::RunHorn(g_pZone->GetID());
 			else
 				
 				if (IsWaitVerifyNULL())
@@ -11085,7 +11067,7 @@ MPlayer::BasicActionToCreature()
 					//-----------------------------------------------------
 					// 교환 취소할까?
 					//-----------------------------------------------------
-					UI_RunExchangeCancel( pCreature->GetName() );
+					PlayerPresentation::RunExchangeCancel( pCreature->GetName() );
 				}				
 			}
 			break;
@@ -11120,7 +11102,7 @@ MPlayer::BasicActionToCreature()
 					//-----------------------------------------------------
 					// 교환 취소할까?
 					//-----------------------------------------------------
-					UI_RunPartyCancel( pCreature->GetName() );
+					PlayerPresentation::RunPartyCancel( pCreature->GetName() );
 				}				
 			}
 			break;
@@ -11147,12 +11129,12 @@ MPlayer::BasicActionToCreature()
 					GetCompetence() == 0 )
 					)
 				{
-						const char* str = gC_vs_ui.GetInputString();
+						const char* str = PlayerPresentation::GetInputString();
 						if(strlen(str)>0)
 						{
 							if(str[0] == '*')
 							{
-								gC_vs_ui.AddInputString(pCreature->GetName());
+								PlayerPresentation::AddInputString(pCreature->GetName());
 								break;
 
 							}
@@ -11168,7 +11150,7 @@ MPlayer::BasicActionToCreature()
 						
 						if(pCreature != NULL)
 						{
-							UI_RunOtherInfo(pCreature);
+							GameInfoPresentation::RunOtherInfo(pCreature);
 						}
 
 
@@ -11525,7 +11507,7 @@ MPlayer::PickupItem(MItem* pItem)
 		return;
 
 	if (IsItemCheckBufferNULL() 
-		&& gpC_mouse_pointer->GetPickUpItem()==NULL)
+		&& PlayerPresentation::GetPickUpItem()==NULL)
 	{
 		//----------------------------------------------------------------
 		// 위치 검증이 된 상태
@@ -11693,8 +11675,8 @@ MPlayer::PickupItem(MItem* pItem)
 					//------------------------------------------
 					// gear나 Inventory가 열려있다면 --> mouse로
 					//------------------------------------------
-					if (gC_vs_ui.GetGearOpenState() ||
-						gC_vs_ui.GetInventoryOpenState())
+					if (PlayerPresentation::GetGearOpenState() ||
+						PlayerPresentation::GetInventoryOpenState())
 					{							
 						PickupItemToMouse( pItem );
 					}
@@ -11722,7 +11704,7 @@ MPlayer::PickupItem(MItem* pItem)
 					//----------------------------------------------------------------
 					// inventory가 열려있다면 --> mouse로
 					//----------------------------------------------------------------
-					if (gC_vs_ui.GetInventoryOpenState())
+					if (PlayerPresentation::GetInventoryOpenState())
 					{							
 						PickupItemToMouse( pItem );
 					}
@@ -11753,9 +11735,9 @@ MPlayer::PickupItem(MItem* pItem)
 	#ifdef OUTPUT_DEBUG
 	else
 	{
-		if (gpC_mouse_pointer->GetPickUpItem()!=NULL)
+		if (PlayerPresentation::GetPickUpItem()!=NULL)
 		{
-			DEBUG_ADD_FORMAT("[UI] Already Handle a Item id=%d", gpC_mouse_pointer->GetPickUpItem()->GetID());
+			DEBUG_ADD_FORMAT("[UI] Already Handle a Item id=%d", PlayerPresentation::GetPickUpItem()->GetID());
 		}
 	}
 	#endif
@@ -11807,7 +11789,7 @@ MPlayer::PickupItemToInventory(MItem* pItem)
 				pItem->SetDropping();
 
 				// 2004, 5, 7 , sobeit add start - 인벤에 자리가 없으면 보관함 사라고 도움말 보여줌
-				ExecuteHelpEvent( HELP_EVENT_STORAGE_BUY );
+				GameInfoPresentation::ExecuteHelpEvent( HELP_EVENT_STORAGE_BUY );
 				// 2004, 5, 6, sobeit add end
 			}
 		}
@@ -12020,7 +12002,7 @@ MPlayer::RideMotorcycle(MMotorcycle* pMotorcycle)
 // 여기서는 casting동작만 시작하게 하면 된다.
 //
 // 결과는 packet을 받아서 처리..
-// 결과는 (global) AddNewInventoryEffect(...)에서 보여지게 하면 된다.
+// 결과는 (global) WorldEvents::AddNewInventoryEffect(...)에서 보여지게 하면 된다.
 //----------------------------------------------------------------------
 bool
 MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
@@ -12177,9 +12159,9 @@ MPlayer::ChangeToSlayer()
 		//-----------------------------------------------------
 		// 번쩍
 		//-----------------------------------------------------
-		g_pTopView->SetFadeStart(1, 31, 6,  5,5,31);
+		WorldEvents::SetFadeStart(1, 31, 6,  5,5,31, 0);
 
-		UI_ChangeInterfaceRace(RACE_SLAYER);
+		ZoneLoading::ChangeInterfaceRace(RACE_SLAYER);
 
 		SetWaitVerifyNULL();
 
@@ -12216,9 +12198,9 @@ MPlayer::ChangeToVampire()
 			g_pStorage = NULL;
 		}
 
-		g_pTopView->SetFadeStart(1, 31, 6,  31,0,0);
+		WorldEvents::SetFadeStart(1, 31, 6,  31,0,0, 0);
 
-		UI_ChangeInterfaceRace(RACE_VAMPIRE);
+		ZoneLoading::ChangeInterfaceRace(RACE_VAMPIRE);
 
 		SetWaitVerifyNULL();
 
@@ -12655,23 +12637,22 @@ MPlayer::CalculateStatus()
 		break;
 	}
 
-	UI_SetCharInfoDAM( maxDAM, minDAM );
+	PlayerPresentation::SetCharInfoDAM( maxDAM, minDAM );
 	
-	g_char_slot_ingame.SILVER_DAM2	= minSilverDAM;
-	g_char_slot_ingame.SILVER_DAM	= maxSilverDAM;
+	PlayerPresentation::SetSilverDamage( minSilverDAM, maxSilverDAM );
 
 	// 게임 중에는 서버에서 보내주기 때문에..
 	if (g_Mode == MODE_WAIT_PCLIST)
 	{
-		UI_SetCharInfoDefense( DV );	
-		UI_SetCharInfoProtection( PV );	
-		UI_SetCharInfoTOHIT( TOHIT );
+		StatusPresentation::SetCharInfoDefense( DV );
+		StatusPresentation::SetCharInfoProtection( PV );
+		StatusPresentation::SetCharInfoTOHIT( TOHIT );
 	}
 	else
 	{
-		UI_SetCharInfoDefense( GetDefense() );	
-		UI_SetCharInfoProtection( GetProtection() );	
-		UI_SetCharInfoTOHIT( GetTOHIT() );
+		StatusPresentation::SetCharInfoDefense( GetDefense() );
+		StatusPresentation::SetCharInfoProtection( GetProtection() );
+		StatusPresentation::SetCharInfoTOHIT( GetTOHIT() );
 	}
 }
 
@@ -12683,9 +12664,9 @@ MPlayer::CalculateStatus()
 bool
 MPlayer::FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server)
 {	
-	if (g_pTopView!=NULL)
+	if (WorldEvents::ViewExists())
 	{
-		g_pTopView->SetSelectedSectorNULL();
+		WorldEvents::SetSelectedSectorNULL();
 	}
 
 	if (MCreature::FastMovePosition( x, y ))
@@ -13085,7 +13066,7 @@ MPlayer::IsInSafeSector() const
 void	
 MPlayer::SetCannotTrace()
 {
-	gC_vs_ui.SetCannotTrace();
+	PlayerPresentation::SetCannotTrace();
 }
 
 void	MPlayer::SetTimeLightSight(char s)
@@ -13269,7 +13250,7 @@ MPlayer::UpdateSweepVice()
 			SetSweepViewValue(0);
 			return;
 		}
-		POINT CurrentPos = g_pTopView->GetSelectedSector(g_x, g_y);
+		POINT CurrentPos = WorldEvents::GetSelectedSector(g_x, g_y);
 		int TempVal = 0;
 		int Distance = max(abs(m_TempSelectPosX - CurrentPos.x),abs(m_TempSelectPosY - CurrentPos.y));
 
@@ -13279,7 +13260,7 @@ MPlayer::UpdateSweepVice()
 			if(GetSweepViewValue()!=TempVal)
 			{
 				g_pZone->ChangeSwapViceType(m_SweepViceX, m_SweepViceY, EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_1);
-				PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
+				WorldEvents::PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
 			}
 				
 		}
@@ -13289,7 +13270,7 @@ MPlayer::UpdateSweepVice()
 			if(GetSweepViewValue()!=TempVal)
 			{
 				g_pZone->ChangeSwapViceType(m_SweepViceX, m_SweepViceY, EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_2);
-				PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
+				WorldEvents::PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
 			}
 		}
 		else
@@ -13298,7 +13279,7 @@ MPlayer::UpdateSweepVice()
 			if(GetSweepViewValue()!=TempVal)
 			{
 				g_pZone->ChangeSwapViceType(m_SweepViceX, m_SweepViceY, EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_3);
-				PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
+				WorldEvents::PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
 			}
 		}
 		SetSweepViewValue(TempVal);
@@ -13397,10 +13378,10 @@ bool MPlayer::UpdateBurningSol()
 			if(m_bBurningSolCount>=bCheckFrame)
 				m_bBurningSolCount = bCheckFrame;
 		}
-		POINT  TempPos = g_pTopView->GetSelectedSector(g_x, g_y);
+		POINT  TempPos = WorldEvents::GetSelectedSector(g_x, g_y);
 		m_TempSelectPosX = static_cast<TYPE_SECTORPOSITION>(TempPos.x);
 		m_TempSelectPosY = static_cast<TYPE_SECTORPOSITION>(TempPos.y);
-		m_Direction = MTopView::GetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
+		m_Direction = SelectFacingDirection(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
 		ChangeNearDirection();
 		//else
 		if(!g_bRButtonDown)
@@ -13410,7 +13391,7 @@ bool MPlayer::UpdateBurningSol()
 //				POINT  TempPos = g_pTopView->GetSelectedSector(g_x, g_y);
 //				m_TempSelectPosX = TempPos.x;
 //				m_TempSelectPosY = TempPos.y;
-//				m_CurrentDirection = MTopView::GetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
+//				m_CurrentDirection = SelectFacingDirection(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
 //				
 
 				bool ShowLunchEffect = true;
@@ -13423,28 +13404,28 @@ bool MPlayer::UpdateBurningSol()
 				if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_1))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_1,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_1,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX,m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_1);
 				}
 				else if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_2))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_2,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_2,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX, m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_2);
 				}
 				else if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_3))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_3,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_3,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX, m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_3);
 				}
 				else if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_4))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_4,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_4,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX, m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_4);
 				}
