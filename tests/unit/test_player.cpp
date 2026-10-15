@@ -1461,7 +1461,7 @@ TEST(Player, ADrainCountsItsSlayerDownToConversion)
 	PlayerProbe& me = *scene.me;
 	// Past any blink an earlier run left in UpdateConversionTime's static.
 	static int runs = 0;
-	g_FrameNow += MonotonicClock::Millis(++runs * 24LL * 60 * 60 * 1000);
+	g_FrameNow += MonotonicClock::Duration(++runs * 24LL * 60 * 60 * 1000);
 	// 16 frames a second: 160 frames are ten seconds.
 	me.AddEffectStatus(EFFECTSTATUS_BLOOD_DRAIN, 160);
 	CHECK(InOrder({ "help|" + N(HELP_EVENT_DRAIN_BLOOD), "ui status|" + N(EFFECTSTATUS_BLOOD_DRAIN) + "|160" }));
