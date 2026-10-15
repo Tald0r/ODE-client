@@ -52,8 +52,8 @@ RemoveStringSpace(char*& str)
 //-----------------------------------------------------------------------------
 // Is Valid ID
 //-----------------------------------------------------------------------------
-// 4 to 10 bytes, no spaces; all hangul, or all English (with digits and
-// the permitted characters).
+// 4 to 10 bytes, no spaces, no leading digit; letters, or hangul, but not
+// both, with digits and the permitted characters.
 //-----------------------------------------------------------------------------
 int
 IsValidID(const char* strID, const char* strPermit)

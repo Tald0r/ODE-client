@@ -6687,7 +6687,8 @@ rounds settled* for the host rules). Test fixtures share
   >   (`Execute_UI_CLOSE_FILE_DIALOG`) went on only when it answered
   >   true, so choosing a profile picture has never done anything in
   >   this port. That branch goes, with a comment saying how to restore
-  >   it (load into a `CSpriteSurface`, which the live overload does).
+  >   it: load into a `CSpriteSurface` sized to the picture first (the
+  >   BMP loader cannot size one, see 4.232).
   > - **With it go:** `LoadJPG` (its only user), `SaveJPG` and
   >   `SaveSurfaceToImage` (no callers), and `IsValidSSN` and
   >   `GetDiskFreeSpace` (no callers). `git grep -a` over the tree
@@ -6695,8 +6696,10 @@ rounds settled* for the host rules). Test fixtures share
   > - **What stays:** `RemoveStringSpace`, `IsValidID`,
   >   `IsValidPassword` and the live `LoadImageToSurface(const char*,
   >   CSpriteSurface&)`, which the next task moves into libraries.
-  > - **Not done:** DarkEden still links the JPEG library it found for
-  >   this file; dropping that link is a build change for later.
+  > - **The JPEG library** went in #520's follow-up: CMake no longer
+  >   looks for it or links it, the manifest no longer names it (SDL_image
+  >   still brings it for the help artwork), and `Client/JpegLib`'s
+  >   headers, which nothing included, are gone.
   - Owner: retired code, so no test. The argument above is the proof.
 
 - [x] **4.232 The account input rules and the BMP loader:**
@@ -6711,8 +6714,14 @@ rounds settled* for the host rules). Test fixtures share
   >   an even byte offset, is refused. `IsValidPassword` refuses a
   >   backslash or a quote.
   > - **A quirk kept, not changed:** the jamo list is UTF-8 since the
-  >   source became UTF-8, while the check reads 2-byte (CP949) pairs.
-  >   The tests pin what it does today.
+  >   source became UTF-8 (and MSVC builds with `/utf-8`), while the check
+  >   reads 2-byte (CP949) pairs. The list's bytes are E3 8x yy, so no
+  >   real CP949 lone jamo (A4 A1 to A4 D3) is refused any more, and some
+  >   valid two-byte syllables are (0x82 0xE3, 0x85 0x83). The tests pin
+  >   what it does today.
+  > - **Recorded, not changed:** the file dialog's preview never shows.
+  >   Its `CSpriteSurface` is never sized, so the surface cannot be
+  >   locked and the load always fails (#520's review).
   > - **The BMP loader.** `LoadImageToSurface(const char*,
   >   CSpriteSurface&)` loads a .bmp (a name of at least 8 characters,
   >   the extension in any case) into a sprite surface, converted to
@@ -6722,11 +6731,13 @@ rounds settled* for the host rules). Test fixtures share
   >
   > R1 is 32 Windows / 30 Ninja.
   - Owner: membership, R1, `test_utility_function.cpp` (5 tests) and
-    `test_surface_image.cpp` (6 tests, on BMPs the tests write through
-    SDL).
-  - Mutants: 28 of 30 are caught. The 2 left are visible only through
-    undefined behaviour: trimming the end of an all-space string reads
-    before the buffer, and a high byte last reads past its end.
+    `test_surface_image.cpp` (7 tests since #520's follow-up, on BMPs
+    the tests write through SDL).
+  - Mutants: 28 of 30 were caught at first; #520's follow-up catches
+    the trimming one (an all-space string after a character) and pins
+    the height clamp and the 8-character boundary. The 1 left is
+    visible only through undefined behaviour: a high byte last reads
+    the uninitialised rest of IsValidID's copy.
     Taking `UtilityFunction.cpp` out of the membership breaks the test
     link.
 

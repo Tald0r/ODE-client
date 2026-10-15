@@ -96,7 +96,6 @@ The [browser and WebSocket guide](docs/webgl-client.md) covers the WebAssembly /
 WebGL 2 build, asset packaging, gateway configuration and browser tests. Existing
 classic vcpkg trees also need `vcpkg install openssl:x64-windows --classic`.
 | `libiconv` | shared resource and legacy text conversion in `basic/TextEncoding.cpp` |
-| `libjpeg-turbo` | JPG load/save in `UtilityFunction.cpp` |
 
 vcpkg can live anywhere — just point `-DCMAKE_TOOLCHAIN_FILE` at wherever you
 put it in the next step. `vcpkg integrate install` is optional.

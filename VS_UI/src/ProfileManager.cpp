@@ -218,8 +218,9 @@ ProfileManager::InitProfiles()
 
 			// CDirectDrawSurface-based loading used to run here on Windows,
 			// but with SPRITELIB_BACKEND_SDL CSpriteSurface no longer
-			// inherits from CDirectDrawSurface (LoadImageToSurface() has no
-			// overload for it), so that branch never type-checked - see the
+			// inherits from CDirectDrawSurface (LoadImageToSurface(), in
+			// SpriteLib/SurfaceImage.h, takes a CSpriteSurface only), so that
+			// branch never type-checked - see the
 			// stub notes further below. Profile image loading is not yet
 			// implemented on the SDL backend (Windows included); this is a
 			// non-critical feature (profile character portraits).

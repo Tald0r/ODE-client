@@ -217,7 +217,7 @@ TEST(GuildMarkManager, EachMarkIsReadAtItsOwnIndexEntry)
 	// Entries 2 and 3 swapped: the pair at 2 is sprite 3 large and sprite
 	// 2 small, wherever reading the large one leaves the file.
 	Scene scene;
-	const std::string swapped = scene.packs.Write("swapped.spk", 6, 1, -1, false, 2);
+	const std::string swapped = scene.packs.Write("swapped.spk", 6, 1, -1, -1, 2);
 	std::unique_ptr<MGuildMarkManager> marks(scene.Manager(swapped.c_str()));
 	CHECK(marks->LoadGuildMark(7));
 	CHECK_EQ(4, Width(marks->GetGuildMark(7)));
