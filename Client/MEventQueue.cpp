@@ -1,4 +1,5 @@
 #include "MEventQueue.h"
+#include "MEventManager.h"
 #include "DebugLog.h"
 
 void MEventQueue::SetAddGammaRamp(WORD red, WORD green, WORD blue) const
@@ -54,13 +55,16 @@ MEvent::IsShowTime() const
 	return false;
 }
 
+// The game's queue (MEventManager.h), created by GameInitInfo.
+MEventQueue* g_pEventManager = NULL;
+
 MEventQueue::MEventQueue(const MEventHost* host) : m_Host(host)
 {
 }
 
 MEventQueue::~MEventQueue()
 {
-	// MEventManager clears before destroying its background images.
+	// Clear what is queued (MEventManager did so before task 4.224).
 	if (!IsEmptyEvent())
 		RemoveAllEvent();
 }

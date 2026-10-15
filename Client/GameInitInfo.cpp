@@ -264,7 +264,19 @@ InitInfomation()
 
 	if (g_pEventManager==NULL)
 	{
-		g_pEventManager = new MEventManager;
+		// What events do to the screen and the player (task 4.224; the
+		// former MEventManager's).
+		static const MEventHost eventHost{
+			.SetAddGammaRamp = [](WORD red, WORD green, WORD blue) {
+				CSDLGraphics::SetAddGammaRamp(red, green, blue);
+			},
+			.HasEffectStatus = [](DWORD effect) {
+				// With no player, keep effect events until their explicit expiry.
+				return !g_pPlayer || g_pPlayer->HasEffectStatus(static_cast<EFFECTSTATUS>(effect));
+			},
+			.SetFadeStart = ::SetFadeStart,
+		};
+		g_pEventManager = new MEventQueue(&eventHost);
 	}
 
 	if (g_pEffectSpriteTypeTable==NULL)

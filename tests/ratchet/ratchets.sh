@@ -412,7 +412,8 @@ check () {
 # 42: the help decision tree's conditions retired (4.221).
 # 41: help events' mail joins gamemodel (4.222).
 # 40: the zone's tile provider becomes a SpriteLib template (4.223).
-R1_BASELINE=40
+# 39: the never-drawn event background images retired (4.224).
+R1_BASELINE=39
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -657,7 +658,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 40: the help decision tree's conditions retired (4.221).
 	# 39: help events' mail joins gamemodel (4.222).
 	# 38: the zone's tile provider becomes a SpriteLib template (4.223).
-	R1_NINJA_BASELINE=38
+	# 37: the never-drawn event background images retired (4.224).
+	R1_NINJA_BASELINE=37
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

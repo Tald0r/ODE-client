@@ -129,6 +129,9 @@ Client/Netmarble.h
 Client/HelpEvent.cpp
 Client/HelpEvent.h
 
+# The game's event queue and background IDs (4.224).
+Client/MEventManager.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
