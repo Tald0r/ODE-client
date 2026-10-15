@@ -1021,7 +1021,7 @@ TEST(Creature, ALowCreatureBleedsWhenTheOptionIsOn)
 	CHECK_EQ(0, early);
 	CHECK_EQ(0, late);
 	creature.SetStatus(MODIFY_CURRENT_HP, 30);
-	// Drained, five times as long: 1500 to 1595 ms.
+	// Drained, five times as long: at 30% exactly 1500 ms.
 	creature.AddEffectStatus(EFFECTSTATUS_BLOOD_DRAIN, 0xFFFF);
 	g_FrameNow += MonotonicClock::Millis(1000);
 	calls.clear();
@@ -1032,7 +1032,7 @@ TEST(Creature, ALowCreatureBleedsWhenTheOptionIsOn)
 	g_FrameNow = drained + MonotonicClock::Millis(1500);
 	creature.CheckDropBlood();
 	CHECK(Same({}));
-	g_FrameNow = drained + MonotonicClock::Millis(1596);
+	g_FrameNow = drained + MonotonicClock::Millis(1501);
 	creature.CheckDropBlood();
 	CHECK(Same({drop}));
 	// Above the threshold: none.
