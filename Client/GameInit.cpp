@@ -210,9 +210,7 @@ extern RECT g_GameRect;
 // ToT SafeDelete 도 없고..ToT 2003.5.11 by sonee
 
 extern int					g_Dimension ;
-// g_bEnable3DHAL was originally defined in VS_UI_Title.cpp when _LIB is not defined
-// Now that VS_UI is built with _LIB defined, we need to define it here
-BOOL g_bEnable3DHAL = FALSE;
+// g_bEnable3DHAL is gamemodel's (ClientMode.cpp) since task 4.252.
 
 //----------------------------------------------------------------------
 // Title Loading - 2001.8.20 우헤헤 자꾸 늘어나는 global - -;;
@@ -4255,7 +4253,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.AddEvent = [](MEvent& event) { if (g_pEventManager != NULL) g_pEventManager->AddEvent(event); },
 	.RemoveEvent = [](int eventID) { if (g_pEventManager != NULL) g_pEventManager->RemoveEvent(static_cast<EVENT_ID>(eventID)); },
 	.PlayMusicCurrentZone = PlayMusicCurrentZone,
-	.PlaySound = [](TYPE_SOUNDID soundID) { PlaySound(soundID); },
+	.PlaySound = PlaySoundAtPlayer,
 	.ExecuteActionInfoFromMainNode = [](TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode, int sX, int sY) {
 		ExecuteActionInfoFromMainNode(actionInfo, startX, startY, startZ, direction, targetID, targetX, targetY, targetZ, delayFrame, pResult, bStartFromMainNode, sX, sY);
 	},

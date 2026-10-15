@@ -153,7 +153,6 @@ DWORD				g_dwVideoMemory = 0;
 
 char				g_CWD[_MAX_PATH];
 
-int					g_Dimension = 0;
 DWORD				g_TimerNPMON = 0;
 
 // FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
@@ -263,9 +262,7 @@ void ClearDebugInfo()
 }
 
 #endif
-// add by Sonic 2006.9.26 检测1024 * 768版本全局变量
-BOOL g_MyFull=TRUE;
-RECT g_GameRect={799,599,800,600};
+// g_MyFull and g_GameRect are gamemodel's (ClientMode.cpp) since task 4.252.
 
 // Integer factor by which the OS window is larger than the game frame in
 // windowed mode. The game still renders at g_GameRect size; the renderer

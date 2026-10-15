@@ -275,3 +275,21 @@ TEST(WorldEventHandlers, MissingHostsAndEntriesSkipEverything)
 	RunEveryHandler();
 	CHECK_EQ(8u, calls.size());
 }
+
+TEST(WorldEventHandlers, TheClientsPlaySoundIsTheHostsEntry)
+{
+	// The UI's sounds go through it (task 4.252).
+	World world;
+	static std::vector<int> played;
+	played.clear();
+	const WorldEvents::Host sound{
+		.PlaySound = [](TYPE_SOUNDID soundID) { played.push_back(soundID); },
+	};
+	const WorldEvents::Host* old = WorldEvents::SetHost(&sound);
+	::PlaySound(7);
+	CHECK(played == std::vector<int>({7}));
+	WorldEvents::SetHost(nullptr);
+	::PlaySound(8);
+	CHECK(played == std::vector<int>({7}));
+	WorldEvents::SetHost(old);
+}

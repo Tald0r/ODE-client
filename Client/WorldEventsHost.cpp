@@ -272,3 +272,8 @@ void SetFadeEnd()
 }
 
 }
+
+void PlaySound(TYPE_SOUNDID soundID)
+{
+	WorldEvents::PlaySound(soundID);
+}

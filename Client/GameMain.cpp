@@ -3537,7 +3537,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 // CenterPan & MaxVolume
 //-----------------------------------------------------------------------------
 void	
-PlaySound(TYPE_SOUNDID soundID)
+PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 {
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_PLAY_SOUND))
 		return;

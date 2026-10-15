@@ -202,3 +202,8 @@ void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITI
 void SkillToSector(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult);
 
 }
+
+// The client's PlaySound, at the player (ClientDef.h), which the UI calls:
+// WorldEvents::PlaySound. The executable's until task 4.252; its body is
+// the host's (GameMain.cpp's PlaySoundAtPlayer).
+void PlaySound(TYPE_SOUNDID soundID);
