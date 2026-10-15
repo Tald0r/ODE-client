@@ -18,21 +18,19 @@
 #endif
 #include <string>
 #include "TextSystem/TextService.h"
-#include "Client.h"
 #include "MonotonicClock.h"
-#include "GameObject.h"
-#include "ServerInfo.h"
 #include "PacketDef.h"
 #include "VS_UI.h"
 #include "CServerInformation.h"
 #include "Packet/Cpackets/CLGetServerList.h"
 #include "Packet/Cpackets/CLChangeServer.h"
 #include "CWaitUIUpdate.h"
-#include "MTestDef.h"
-#include "DXLibBackend.h"  // For SDL text input functions
-
-extern bool	LoadingAddonSPK(bool bLoadingAll);
-extern bool	g_AddonSPKAllLoaded;
+#include "DebugLog.h"
+#include "FrameClock.h"
+#include "InputState.h"
+#include "SpriteLib/CSpriteSurface.h"
+#include "DXLib/CDirectDraw.h"
+#include "DXLib/DXLibBackend.h"  // For SDL text input functions
 
 extern BOOL g_MyFull;
 extern RECT g_GameRect;

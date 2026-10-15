@@ -10,7 +10,7 @@
 #define	__CWAITUIUPDATE_H__
 
 #include "WinLib/CWinUpdate.h"
-#include "InputService.h"
+#include "DXLib/CDirectInput.h"
 #include "ClientMode.h"
 
 struct CWaitUIHost
