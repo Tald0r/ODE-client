@@ -29,6 +29,6 @@
 
 // g_CreatureMemoryPool is MCreature.cpp's (gamemodel, task 4.242).
 // g_CreatureWearMemoryPool is MCreatureWear.cpp's (gamemodel, task 4.243).
-MemoryPool g_NPCCreatureMemoryPool( sizeof( MNPC ), 5 );
+// g_NPCCreatureMemoryPool is MNPC.cpp's (gamemodel, task 4.244).
 MemoryPool g_FakeCreatureMemoryPool( sizeof( MFakeCreature ), 30 );
 

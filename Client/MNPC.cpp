@@ -6,13 +6,16 @@
 #include "MNPCTable.h"
 #include "MShopTemplateTable.h"
 #include "MShopShelf.h"
-#include "MPlayer.h"
 #include "NPCShopBuilder.h"
+#include "PlayerStateHost.h"
+
+// The NPCs' allocator pool (task 4.244: MemoryPool.cpp's until then).
+MemoryPool g_NPCCreatureMemoryPool( sizeof( MNPC ), 5 );
 
 namespace {
 const NPCShopHost shopHost{
 	.CreateItem = MItem::NewItem,
-	.IsFemale = []() { return g_pPlayer && g_pPlayer->IsFemale(); },
+	.IsFemale = []() { MCreature* pPlayer = PlayerState::Creature(); return pPlayer != NULL && pPlayer->IsFemale(); },
 	.SetPortalDestination = [](MItem& item, int zone,
 		TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
 		static_cast<MVampirePortalItem&>(item).SetZone(zone, x, y);
@@ -126,7 +129,11 @@ MNPC::Action()
 			&& (rand() % 5)==0)
 		{
 			// 랜덤하게 player를 바라본다.
-			SetDirectionToPosition( g_pPlayer->GetX(), g_pPlayer->GetY() );
+			MCreature* pPlayer = PlayerState::Creature();
+			if (pPlayer != NULL)
+			{
+				SetDirectionToPosition( pPlayer->GetX(), pPlayer->GetY() );
+			}
 		}
 	}
 	if(m_CreatureType >= 636 && m_CreatureType <= 639 )

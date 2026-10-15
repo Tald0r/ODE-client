@@ -9,7 +9,10 @@
 
 #include "MCreatureWear.h"
 #include "MShop.h"
-#include "MemoryPool.h"
+#include "../basic/MemoryPool.h"
+
+// The NPCs' pool (MNPC.cpp's).
+extern MemoryPool g_NPCCreatureMemoryPool;
 class NPC_INFO;
 
 class MNPC : public MCreatureWear {
