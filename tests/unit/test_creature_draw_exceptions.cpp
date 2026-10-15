@@ -22,7 +22,10 @@ struct Fake
 	bool dead = false;
 	std::set<int> effects;
 	int actionCount = 0, actionCountMax = 8;
+	// As in MCreature: SetDirection sets where it turns to, GetDirection
+	// reads where it faces now (SetCurrentDirection sets that).
 	int direction = 0;
+	int currentDirection = 0;
 	int shadowCount = -1;
 	std::vector<int> currentDirections;
 	MStatus status;
@@ -36,10 +39,10 @@ const CreatureState::Host creatureHost{
 	.Status = [](MCreature* c) -> MStatus* { return &F(c).status; },
 	.GetID = [](MCreature* c) { return F(c).id; },
 	.IsAlive = [](MCreature* c) { return !F(c).dead; },
-	.GetDirection = [](MCreature* c) { return F(c).direction; },
+	.GetDirection = [](MCreature* c) { return F(c).currentDirection; },
 	.SetDirection = [](MCreature* c, int d) { F(c).direction = d; },
 	.GetCreatureType = [](MCreature* c) { return F(c).type; },
-	.SetCurrentDirection = [](MCreature* c, int d) { F(c).currentDirections.push_back(d); },
+	.SetCurrentDirection = [](MCreature* c, int d) { F(c).currentDirection = d; F(c).currentDirections.push_back(d); },
 	.IsDead = [](MCreature* c) { return F(c).dead; },
 	.HasEffectStatus = [](MCreature* c, EFFECTSTATUS s) { return F(c).effects.count(s) != 0; },
 	.GetActionCount = [](MCreature* c) { return F(c).actionCount; },
@@ -140,6 +143,8 @@ TEST(CreatureDrawExceptions, TheSweeperKeeperWalksInPlaceAndRings)
 	CHECK_EQ(1u, sounds.size());
 	f.Draw(672, ACTION_MOVE, 0, 6, 21);											// not a 14th frame
 	CHECK_EQ(1u, sounds.size());
+	f.Draw(672, ACTION_MOVE, 0, 6, 14);
+	CHECK_EQ(2u, sounds.size());
 }
 
 TEST(CreatureDrawExceptions, GildreFloatsDrainingAndKneelsDead)
@@ -149,12 +154,17 @@ TEST(CreatureDrawExceptions, GildreFloatsDrainingAndKneelsDead)
 		CHECK(Is(f.Draw(type, ACTION_MOVE, 3, 6), ACTION_MOVE, 3, 6));
 	f.creature.effects = {EFFECTSTATUS_GDR_FLOATING};
 	CHECK(Is(f.Draw(717, ACTION_MOVE, 13, 6), ACTION_VAMPIRE_DRAIN, 6 + (13 & 7), 6));
+	CHECK(Is(f.Draw(717, ACTION_MOVE, 14, 6), ACTION_VAMPIRE_DRAIN, 12, 6));
+	CHECK(Is(f.Draw(721, ACTION_MOVE, 14, 6), ACTION_VAMPIRE_DRAIN, 12, 6));
+	CHECK(Is(f.Draw(723, ACTION_MOVE, 14, 6), ACTION_VAMPIRE_DRAIN, 12, 6));
 	f.creature.effects.clear();
 	// Dead, at the end of its action: 723 kneels on frame 46.
 	f.creature.dead = true;
 	f.creature.actionCount = 8;
 	CHECK(Is(f.Draw(723, ACTION_DIE, 3, 6), ACTION_DIE, 46, 6));
 	CHECK(Is(f.Draw(717, ACTION_DIE, 3, 6), ACTION_DIE, 3, 6));
+	f.creature.actionCount = 9;											// past the end
+	CHECK(Is(f.Draw(723, ACTION_DIE, 3, 6), ACTION_DIE, 46, 6));
 	f.creature.actionCount = 7;
 	CHECK(Is(f.Draw(723, ACTION_DIE, 3, 6), ACTION_DIE, 3, 6));
 	f.creature.actionCount = 8;
@@ -164,12 +174,15 @@ TEST(CreatureDrawExceptions, GildreFloatsDrainingAndKneelsDead)
 
 TEST(CreatureDrawExceptions, FrozenGildreTurnsEveryOtherFrame)
 {
+	// It is told to turn one step from the drawn direction, and drawn
+	// facing where it faces now.
 	Fixture f;
 	f.creature.direction = 7;
+	f.creature.currentDirection = 3;
 	CHECK(Is(f.Draw(722, ACTION_STAND, 3, 7, 2), ACTION_STAND, 3, 7));
 	CHECK_EQ(7, f.creature.direction);
-	CHECK(Is(f.Draw(722, ACTION_STAND, 3, 7, 3), ACTION_STAND, 3, 0));	// (7 + 1) % 8
-	CHECK_EQ(0, f.creature.direction);
+	CHECK(Is(f.Draw(722, ACTION_STAND, 3, 7, 3), ACTION_STAND, 3, 3));
+	CHECK_EQ(0, f.creature.direction);									// (7 + 1) % 8
 }
 
 TEST(CreatureDrawExceptions, WaypointsTowersObstaclesAndTheGoreGrand)
@@ -178,14 +191,19 @@ TEST(CreatureDrawExceptions, WaypointsTowersObstaclesAndTheGoreGrand)
 	for (int type : {730, 731, 732})
 		CHECK(Is(f.Draw(type, ACTION_MOVE, 3, 6), ACTION_STAND, 0, 2));
 	CHECK(Is(f.Draw(734, ACTION_MOVE, 3, 6), ACTION_STAND, 0, 1));		// a guild tower
-	for (int type : {743, 748})
+	for (int type = 743; type <= 748; ++type)
 		CHECK(Is(f.Draw(type, ACTION_MOVE, 3, 6), ACTION_STAND, 0, 2));
 	CHECK(Is(f.Draw(753, ACTION_MOVE, 3, 6), ACTION_MOVE, 3, 2));
 	f.creature.dead = true;
-	CHECK(Is(f.Draw(730, ACTION_DIE, 3, 6), ACTION_DIE, 3, 6));			// a dead waypoint: as drawn
+	for (int type : {730, 731, 732})
+		CHECK(Is(f.Draw(type, ACTION_DIE, 3, 6), ACTION_DIE, 3, 6));		// a dead waypoint: as drawn
 	CHECK(Is(f.Draw(734, ACTION_DIE, 3, 6), ACTION_DIE, 3, 1));
-	CHECK(Is(f.Draw(743, ACTION_MOVE, 3, 6), ACTION_DIE, 3, 2));
+	for (int type = 743; type <= 748; ++type)
+		CHECK(Is(f.Draw(type, ACTION_MOVE, 3, 6), ACTION_DIE, 3, 2));
 	CHECK(Is(f.Draw(753, ACTION_MOVE, 3, 6), ACTION_DIE, 3, 2));
+	// Standing still even dead.
+	for (int type : {738, 739, 741})
+		CHECK(Is(f.Draw(type, ACTION_DIE, 3, 6), ACTION_STAND, 0, 2));
 }
 
 TEST(CreatureDrawExceptions, TheGuildWarGateShowsItsDamage)
@@ -245,4 +263,34 @@ TEST(CreatureDrawExceptions, Types764And765ShakeTheGroundAndTurnWhileDrained)
 	CHECK(f.creature.currentDirections.empty());
 	CHECK(Is(f.Draw(764, ACTION_DRAINED, 6, 0, 3), ACTION_ATTACK, 4, 7));
 	CHECK((f.creature.currentDirections == std::vector<int>{7}));
+	CHECK(Is(f.Draw(764, ACTION_DRAINED, 5, 6, 3), ACTION_ATTACK, 4, 5));	// held from 5, turned from 6
+	CHECK((f.creature.currentDirections == std::vector<int>{7, 5}));
+}
+
+TEST(CreatureDrawExceptions, TheNewCreatureEntriesForwardOrDefault)
+{
+	Fake creature;
+	const CreatureState::Host* old = CreatureState::SetHost(nullptr);
+	CHECK(!CreatureState::HasEffectStatus(C(creature), EFFECTSTATUS_COMA));
+	CHECK_EQ(0, CreatureState::GetActionCount(C(creature)));
+	CHECK_EQ(0, CreatureState::GetActionCountMax(C(creature)));
+	CreatureState::SetShadowCount(C(creature), 3);
+	CHECK_EQ(-1, creature.shadowCount);
+	const CreatureState::Host none{};
+	CreatureState::SetHost(&none);
+	CHECK(!CreatureState::HasEffectStatus(C(creature), EFFECTSTATUS_COMA));
+	CHECK_EQ(0, CreatureState::GetActionCount(C(creature)));
+	CHECK_EQ(0, CreatureState::GetActionCountMax(C(creature)));
+	CreatureState::SetShadowCount(C(creature), 3);
+	CHECK_EQ(-1, creature.shadowCount);
+	CreatureState::SetHost(&creatureHost);
+	creature.effects = {EFFECTSTATUS_COMA};
+	creature.actionCount = 2;
+	creature.actionCountMax = 6;
+	CHECK(CreatureState::HasEffectStatus(C(creature), EFFECTSTATUS_COMA));
+	CHECK_EQ(2, CreatureState::GetActionCount(C(creature)));
+	CHECK_EQ(6, CreatureState::GetActionCountMax(C(creature)));
+	CreatureState::SetShadowCount(C(creature), 3);
+	CHECK_EQ(3, creature.shadowCount);
+	CreatureState::SetHost(old);
 }

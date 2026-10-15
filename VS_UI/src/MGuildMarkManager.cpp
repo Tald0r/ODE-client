@@ -13,6 +13,7 @@
 #include "CSprite565.h"
 #include "basic/ColorDraw.h"
 #include "basic/DebugLog.h"
+#include <fstream>
 #include <memory>
 #include <vector>
 
@@ -27,7 +28,7 @@ MGuildMarkManager* g_pGuildMarkManager = NULL;
 //						MGuildMarkManager
 //
 //----------------------------------------------------------------------
-MGuildMarkManager::MGuildMarkManager(const char* pGuildMarkSPKFilename, 
+MGuildMarkManager::MGuildMarkManager(const char* pGuildMarkSPKFilename,
 									const char* pGuildInfoMapperFilename,
 									const char* pSlayerGradeMarkSPKFilename,
 									const char* pVampireGradeMarkSPKFilename,
@@ -42,7 +43,7 @@ MGuildMarkManager::MGuildMarkManager(const char* pGuildMarkSPKFilename,
 	// The sprite ID mapper is read from its file.
 	if (pGuildInfoMapperFilename!=NULL)
 	{
-		m_GuildMarkSpriteMapperFilename = pGuildInfoMapperFilename;		
+		m_GuildMarkSpriteMapperFilename = pGuildInfoMapperFilename;
 	}
 
 //	m_GradeMarks.Init(GRADE_MARK_MAX<<2, ColorDraw::Is565());
@@ -60,7 +61,7 @@ MGuildMarkManager::~MGuildMarkManager()
 //----------------------------------------------------------------------
 // Release
 //----------------------------------------------------------------------
-void		
+void
 MGuildMarkManager::Release()
 {
 	GUILDMARK_MAP::iterator iMark = m_GuildMarks.begin();
@@ -88,7 +89,7 @@ MGuildMarkManager::Release()
 //----------------------------------------------------------------------
 // Get GuildMark
 //----------------------------------------------------------------------
-CSprite*	
+CSprite*
 MGuildMarkManager::GetGuildMark(WORD guildID)
 {
 	GUILDMARK_MAP::iterator iMark = m_GuildMarks.find(guildID);
@@ -104,7 +105,7 @@ MGuildMarkManager::GetGuildMark(WORD guildID)
 //----------------------------------------------------------------------
 // Get GuildMarkSmall
 //----------------------------------------------------------------------
-CSprite*	
+CSprite*
 MGuildMarkManager::GetGuildMarkSmall(WORD guildID)
 {
 	GUILDMARK_MAP::iterator iMark = m_GuildMarks.find(guildID);
@@ -120,7 +121,7 @@ MGuildMarkManager::GetGuildMarkSmall(WORD guildID)
 //----------------------------------------------------------------------
 // Has GuildMark
 //----------------------------------------------------------------------
-bool			
+bool
 MGuildMarkManager::HasGuildMark(WORD guildID) const
 {
 	GUILDMARK_MAP::const_iterator iMark = m_GuildMarks.find(guildID);
@@ -188,7 +189,7 @@ MGuildMarkManager::LoadGuildMark(WORD guildID)
 //----------------------------------------------------------------------
 // Get GradeMark
 //----------------------------------------------------------------------
-CSprite*	
+CSprite*
 MGuildMarkManager::GetGradeMark(WORD gradeID, Race race)
 {
 	if(race >= RACE_MAX)
@@ -200,19 +201,19 @@ MGuildMarkManager::GetGradeMark(WORD gradeID, Race race)
 //----------------------------------------------------------------------
 // Get GradeMarkSmall
 //----------------------------------------------------------------------
-CSprite*	
+CSprite*
 MGuildMarkManager::GetGradeMarkSmall(WORD gradeID, Race race)
 {
 	if(race >= RACE_MAX)
 		return NULL;
-	
+
 	return &m_GradeMarks[race][gradeID*2+1];
 }
 
 //----------------------------------------------------------------------
 // Get LevelMark
 //----------------------------------------------------------------------
-CSprite*	
+CSprite*
 MGuildMarkManager::GetLevelMark(WORD level)
 {
 	return &m_LevelMarks[level*2];
@@ -221,7 +222,7 @@ MGuildMarkManager::GetLevelMark(WORD level)
 //----------------------------------------------------------------------
 // Get LevelMarkSmall
 //----------------------------------------------------------------------
-CSprite*	
+CSprite*
 MGuildMarkManager::GetLevelMarkSmall(WORD level)
 {
 	return &m_LevelMarks[level*2+1];

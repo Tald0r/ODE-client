@@ -8,6 +8,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 // The guild, grade and level marks (task 4.230, VS_UI's since then).
@@ -31,7 +32,12 @@ struct Packs
 		std::filesystem::create_directories(dir);
 	}
 	~Packs() { std::error_code e; std::filesystem::remove_all(dir, e); }
-	std::string Write(const char* name, int count, int first = 1, int indexCount = -1)
+	// indexCount: the count the index claims; bad: that sprite's row runs
+	// past its width (rejected, with the file still readable after it);
+	// swap: index entries swapped pairwise from that entry on (the
+	// sprites stay in order in the pack).
+	std::string Write(const char* name, int count, int first = 1, int indexCount = -1,
+		int bad = -1, int swap = -1)
 	{
 		const std::string spk = (dir / name).string();
 		std::ofstream data(spk, std::ios::binary);
@@ -39,15 +45,19 @@ struct Packs
 		auto put16 = [](std::ofstream& out, std::uint16_t v) { out.put(char(v & 0xFF)); out.put(char(v >> 8)); };
 		put16(data, std::uint16_t(count));
 		put16(index, std::uint16_t(indexCount < 0 ? count : indexCount));
+		std::vector<std::int32_t> offsets;
 		for (int i = 0; i < count; ++i)
 		{
-			const std::int32_t offset = static_cast<std::int32_t>(data.tellp());
-			index.write(reinterpret_cast<const char*>(&offset), 4);
+			offsets.push_back(static_cast<std::int32_t>(data.tellp()));
 			const std::uint16_t width = std::uint16_t(first + i);
-			std::vector<std::uint16_t> words = {width, 1, std::uint16_t(3 + width), 1, 0, width};
-			for (int x = 0; x < width; ++x) words.push_back(0xFFFF);
+			const std::uint16_t run = std::uint16_t(i == bad ? width + 5 : width);
+			std::vector<std::uint16_t> words = {width, 1, std::uint16_t(3 + run), 1, 0, run};
+			for (int x = 0; x < run; ++x) words.push_back(0xFFFF);
 			for (std::uint16_t w : words) put16(data, w);
 		}
+		if (swap >= 0)
+			for (int i = swap; i + 1 < count; i += 2) std::swap(offsets[i], offsets[i + 1]);
+		for (std::int32_t offset : offsets) index.write(reinterpret_cast<const char*>(&offset), 4);
 		return spk;
 	}
 };
@@ -170,6 +180,48 @@ TEST(GuildMarkManager, NoMapperOrPackNoGuildMarks)
 		std::unique_ptr<MGuildMarkManager> marks(scene.Manager(""));
 		CHECK(!marks->LoadGuildMark(7));
 	}
+	{
+		// An empty pack: no pair at any sprite ID.
+		scene.Guild(12, 0);
+		const std::string empty = scene.packs.Write("empty.spk", 0);
+		std::unique_ptr<MGuildMarkManager> marks(scene.Manager(empty.c_str()));
+		CHECK(!marks->LoadGuildMark(12));
+	}
+}
+
+TEST(GuildMarkManager, AHalfLoadedPairIsNotPublished)
+{
+	// Sprite 5, the small one of the pair at 4, is malformed.
+	Scene scene;
+	scene.Guild(13, 4);
+	const std::string badSmall = scene.packs.Write("badsmall.spk", 6, 1, -1, 5);
+	std::unique_ptr<MGuildMarkManager> marks(scene.Manager(badSmall.c_str()));
+	CHECK(!marks->LoadGuildMark(13));
+	CHECK(marks->HasGuildMark(13));
+	CHECK(marks->GetGuildMark(13) == nullptr);
+	CHECK(marks->GetGuildMarkSmall(13) == nullptr);
+	// The pair before it loads.
+	CHECK(marks->LoadGuildMark(7));
+	CHECK_EQ(3, Width(marks->GetGuildMark(7)));
+	// The large one malformed, the small one whole.
+	scene.Guild(14, 4);
+	const std::string badLarge = scene.packs.Write("badlarge.spk", 6, 1, -1, 4);
+	std::unique_ptr<MGuildMarkManager> others(scene.Manager(badLarge.c_str()));
+	CHECK(!others->LoadGuildMark(14));
+	CHECK(others->GetGuildMark(14) == nullptr);
+	CHECK(others->GetGuildMarkSmall(14) == nullptr);
+}
+
+TEST(GuildMarkManager, EachMarkIsReadAtItsOwnIndexEntry)
+{
+	// Entries 2 and 3 swapped: the pair at 2 is sprite 3 large and sprite
+	// 2 small, wherever reading the large one leaves the file.
+	Scene scene;
+	const std::string swapped = scene.packs.Write("swapped.spk", 6, 1, -1, false, 2);
+	std::unique_ptr<MGuildMarkManager> marks(scene.Manager(swapped.c_str()));
+	CHECK(marks->LoadGuildMark(7));
+	CHECK_EQ(4, Width(marks->GetGuildMark(7)));
+	CHECK_EQ(3, Width(marks->GetGuildMarkSmall(7)));
 }
 
 TEST(GuildMarkManager, ItIsInitWithAPackOrAMapperName)

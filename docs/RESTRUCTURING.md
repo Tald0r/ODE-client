@@ -6585,9 +6585,10 @@ rounds settled* for the host rules). Test fixtures share
   >   the original's.
   >
   > R1 is 35 Windows / 33 Ninja.
-  - Owner: R1, and `tests/ui/test_fl2_rendering.cpp` (10 tests, real
-    TextService rendering on real surfaces).
-  - Mutants: 38 of 40 are caught. The 2 left are equivalent:
+  - Owner: R1, and `tests/ui/test_fl2_rendering.cpp` (11 tests since
+    #517's follow-up, real TextService rendering on real surfaces).
+  - Mutants: 38 of 40 are caught (and 9 more after #517's follow-up
+    pinned what its review found). The 2 left are equivalent:
     - an empty string draws nothing either way;
     - a length of 0 or less never enters the loop.
   - Hiding the source from the VS_UI glob breaks the `ui_tests` link.
@@ -6616,11 +6617,21 @@ rounds settled* for the host rules). Test fixtures share
   >   translated.
   >
   > R1 is 34 Windows / 32 Ninja.
-  - Owner: membership, R1, and `test_creature_draw_exceptions.cpp` (10
-    tests: the table's types, and each procedure).
+  - Owner: membership, R1, and `test_creature_draw_exceptions.cpp` (11
+    tests since #518's follow-up: the table's types, each procedure,
+    and the four new creature entries).
   - Mutants: all 54 are caught, among them each registered type range
     and each procedure's rule. Taking the source out of the membership
-    breaks the test link.
+    breaks the test link. #518's review found more unpinned, which its
+    follow-up pins (12 more mutants, all caught):
+    - the fake creature keeps where it turns to (`SetDirection`) apart
+      from where it faces (`GetDirection`), as `MCreature` does;
+    - the drained turn from direction 6, and frame 5 held at 4;
+    - the sweeper's sound at frame 14, Gildre's frame mask at 14, and
+      a dead Gildre's action count past its maximum;
+    - every waypoint, standing and obstacle type, alive and dead;
+    - the four new creature entries with no host, an empty host and a
+      real one.
 
 - [x] **4.230 The guild, grade and level marks:** move
   `MGuildMarkManager.cpp` into VS_UI (`VS_UI/src/MGuildMarkManager.cpp`,
@@ -6645,13 +6656,20 @@ rounds settled* for the host rules). Test fixtures share
   >   `AppendPatchInfo.h`, and of `DebugInfo.h` (now `DebugLog.h`).
   >
   > R1 is 33 Windows / 31 Ninja.
-  - Owner: R1, and `tests/ui/test_guild_mark_manager.cpp` (5 tests, on
+  - Owner: R1, and `tests/ui/test_guild_mark_manager.cpp` (7 tests, on
     packs the tests write and a real `MGuildInfoMapper`).
-  - Mutants: 21 of 23 are caught. Of the 2 left:
-    - `offsets.size() >= 1` for `>= 2` is equivalent: the sprite ID
-      bound already rejects a pack of one;
-    - letting the last sprite through reads one past the index, which
-      only undefined behaviour shows.
+  - Mutants: 21 of 23 were caught at first. #519's review found three
+    more rules unpinned, which its follow-up pins:
+    - a half-loaded pair is never published (a pack whose large, or
+      small, sprite is malformed);
+    - an empty pack is refused;
+    - each mark is read at its own index entry (a pack with swapped
+      entries).
+    Of the 2 left, `offsets.size() >= 1` for `>= 2` is equivalent (the
+    sprite ID bound rejects a pack of one). Letting the last sprite
+    through reads one past the index; ASan would report that, a plain
+    build cannot. `Is565()` is a compile-time true, so its other branch
+    is unreached.
   - Hiding the source from the VS_UI glob breaks the `ui_tests` link.
 
 - [x] **4.231 Retire UtilityFunction's dead image path:** the stub
