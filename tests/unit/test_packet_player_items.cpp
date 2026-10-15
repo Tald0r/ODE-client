@@ -606,8 +606,7 @@ TEST(PacketPlayerItems, InventoryGunsGetAMagazineOfTheirClass)
 //----------------------------------------------------------------------
 // A belt's and an arms band's items go in the pockets their slots name,
 // with their id, type and number; another item's are passed over, and a
-// pocket the belt does not have takes nothing (that item is never freed:
-// the pockets' AddItem result is ignored, PacketFunction.cpp:1769).
+// pocket the container does not have takes nothing: that item is freed.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, InventoryContainersFillTheirPockets)
 {
@@ -618,6 +617,7 @@ TEST(PacketPlayerItems, InventoryContainersFillTheirPockets)
 	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 605, 1, 3));
 	InventorySlotInfo* pBand = InventorySlot(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 522, 3, 0);
 	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 603, 4, 1));
+	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 606, 1, 2));
 	InventorySlotInfo* pSword = InventorySlot(ITEM_CLASS_SWORD, 0, 523, 6, 0);
 	pSword->addListElement(SubItem(ITEM_CLASS_POTION, 0, 604, 1, 0));
 	pSword->setItemNum(1);
@@ -647,6 +647,8 @@ TEST(PacketPlayerItems, InventoryContainersFillTheirPockets)
 	}
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(523)) != NULL);
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(604)) == NULL);
+	CHECK_EQ(1, Count("destroyed|605"));
+	CHECK_EQ(1, Count("destroyed|606"));
 }
 
 //----------------------------------------------------------------------
@@ -744,7 +746,7 @@ TEST(PacketPlayerItems, InventorySkipsAPocketItemOutsideTheTable)
 // options, grade, slot, colour, durability and enchantment (a gun its
 // magazine and not the silver, anything else its number and silver), and
 // goes on the slayer's gear and on the player's body; one the gear refuses
-// is freed. The blood bible follows, then the player checks its gear, its
+// is freed, and so is a pocket item the belt refuses. The blood bible follows, then the player checks its gear, its
 // skills and its stats, and the sheet shows its to-hit.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
@@ -766,6 +768,7 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 	pHelm->setEnchantLevel(2);
 	GearSlotInfo* pBelt = GearSlot(ITEM_CLASS_BELT, 0, 702, MSlayerGear::GEAR_SLAYER_BELT);
 	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 1, 703, 3, 1));
+	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 706, 1, 3));
 	GearSlotInfo* pRifle = GearSlot(ITEM_CLASS_AR, 0, 704, MSlayerGear::GEAR_SLAYER_RIGHTHAND);
 	pRifle->setItemNum(25);
 	pRifle->setSilver(1);
@@ -807,6 +810,7 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_COAT) == NULL);
 	CHECK_EQ(1, Count("destroyed|950"));
 	CHECK_EQ(1, Count("destroyed|705"));
+	CHECK_EQ(1, Count("destroyed|706"));
 	// The body wears only what the gear took: the helm, not the one the
 	// coat's slot refused.
 	CHECK(scene.me->GetAddonInfo(ADDON_HELM).bAddon);
@@ -831,7 +835,8 @@ TEST(PacketPlayerItems, GearInfoDressesTheSlayer)
 
 //----------------------------------------------------------------------
 // A vampire's and an ousters' items go on their own race's gear, which
-// starts empty; what their gear refuses is freed.
+// starts empty; what their gear, or an arms band's pockets, refuse is
+// freed.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, GearInfoUsesThePlayersRaceGear)
 {
@@ -858,9 +863,12 @@ TEST(PacketPlayerItems, GearInfoUsesThePlayersRaceGear)
 		Scene scene;
 		scene.me->SetCreatureType(CREATURETYPE_OUSTERS);
 		scene.oustersGear.SetBloodBibleOpenSlot(4);
+		GearSlotInfo* pBand = GearSlot(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 723, MOustersGear::GEAR_OUSTERS_ARMSBAND1);
+		pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 724, 1, 0));
+		pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 725, 1, 2));
 		GearInfo info;
 		Add(info, { GearSlot(ITEM_CLASS_OUSTERS_CIRCLET, 0, 721, MOustersGear::GEAR_OUSTERS_CIRCLET),
-			GearSlot(ITEM_CLASS_VAMPIRE_NECKLACE, 0, 722, MOustersGear::GEAR_OUSTERS_COAT) });
+			GearSlot(ITEM_CLASS_VAMPIRE_NECKLACE, 0, 722, MOustersGear::GEAR_OUSTERS_COAT), pBand });
 		calls.clear();
 
 		SetGearInfo(&info);
@@ -869,6 +877,9 @@ TEST(PacketPlayerItems, GearInfoUsesThePlayersRaceGear)
 		CHECK(pCirclet != NULL && pCirclet->GetID() == 721);
 		CHECK(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_COAT) == NULL);
 		CHECK_EQ(1, Count("destroyed|722"));
+		const MOustersArmsBand* pPlacedBand = dynamic_cast<const MOustersArmsBand*>(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_ARMSBAND1));
+		CHECK(pPlacedBand != NULL && pPlacedBand->GetItem(0) != NULL && pPlacedBand->GetItem(0)->GetID() == 724);
+		CHECK_EQ(1, Count("destroyed|725"));
 		CHECK_EQ(0, scene.oustersGear.GetBloodBibleOpenSlot());
 		CHECK_EQ(1, Count("stats"));
 	}
@@ -1065,7 +1076,8 @@ TEST(PacketPlayerItems, BloodBibleSignsPastTheBonusesOrTheSlotsAreKeptOut)
 
 //----------------------------------------------------------------------
 // The item the mouse held is freed and let go; then each slot's item is
-// made like the inventory's and picked up.
+// made like the inventory's and picked up, less a pocket item its
+// container refuses, which is freed.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, ExtraInfoPutsTheItemOnTheMouse)
 {
@@ -1088,13 +1100,14 @@ TEST(PacketPlayerItems, ExtraInfoPutsTheItemOnTheMouse)
 	pBelt->setGrade(7);
 	pBelt->setEnchantLevel(8);
 	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 1, 752, 9, 2));
+	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 753, 1, 3));
 	ExtraInfo info;
 	Add(info, { pBelt });
 	calls.clear();
 
 	SetExtraInfo(&info);
 
-	CHECK(Same({ "pick up|751" }));
+	CHECK(Same({ "destroyed|753", "pick up|751" }));
 	const MBelt* pPicked = dynamic_cast<const MBelt*>(scene.mouse.GetPickUpItem());
 	CHECK(pPicked != NULL && pPicked->GetID() == 751);
 	if (pPicked == NULL) return;
@@ -1134,14 +1147,16 @@ TEST(PacketPlayerItems, ExtraInfoGunsAndArmsBandsAreFilled)
 
 	ExtraSlotInfo* pBand = NewSlot<ExtraSlotInfo>(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 762);
 	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 763, 2, 0));
+	pBand->addListElement(SubItem(ITEM_CLASS_PUPA, 0, 764, 1, 2));
 	ExtraInfo band;
 	Add(band, { pBand });
 	calls.clear();
 
 	SetExtraInfo(&band);
 
-	// The rifle frees its magazine as it goes.
-	CHECK(Same({ "destroyed|0", "destroyed|761", "drop", "pick up|762" }));
+	// The rifle frees its magazine as it goes; the pocket the band does
+	// not have takes nothing.
+	CHECK(Same({ "destroyed|0", "destroyed|761", "drop", "destroyed|764", "pick up|762" }));
 	const MOustersArmsBand* pPicked = dynamic_cast<const MOustersArmsBand*>(scene.mouse.GetPickUpItem());
 	CHECK(pPicked != NULL && pPicked->GetItem(0) != NULL && pPicked->GetItem(0)->GetID() == 763);
 }

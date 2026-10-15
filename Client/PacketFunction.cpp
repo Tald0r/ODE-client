@@ -1760,7 +1760,10 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -1811,7 +1814,10 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 							
 							delete pSubItemInfo;
 						}
@@ -2057,7 +2063,10 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -2108,7 +2117,10 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -2452,7 +2464,10 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 
 							delete pSubItemInfo;
 						}
@@ -2504,7 +2519,10 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 							//------------------------------------------
 							// add the item to the given slot of the Belt.
 							//------------------------------------------
-							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
+							if (!pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() ))
+							{
+								delete pSubItem;
+							}
 							
 							delete pSubItemInfo;
 						}
