@@ -2,36 +2,36 @@
 // MZone.h
 //----------------------------------------------------------------------
 //
-// Creature : ID로 관리된다. 마구 움직인다. - -;;
-// Item     : ID로 관리된다. 사라졌다가(creature가 pickup) 생기기도 한다(drop)
-// Obstacle : Sector에 고정된다. 움직이지 않는다.
+// Creature : managed by ID. Moves around wildly. (sigh)
+// Item     : managed by ID. It can vanish (creature picks it up) and appear (drop)
+// Obstacle : fixed to a Sector. Does not move.
 // ImageObject : ??
 //
 //----------------------------------------------------------------------
-// File에 저장된 정보
+// Information stored in the File
 //----------------------------------------------------------------------
 //
-// [ MapData : Filename.MD ]   - Zone에서 Load한다.
-//   가로 size, 세로 size
+// [ MapData : Filename.MD ]   - loaded by Zone.
+// width size, height size
 //   Zone ID
-//   속성
-//   가로size * 세로size 개의 Sector정보(TileSpriteID, Flag)
-//   Obstacle수, Obstacle수 * Obstacle 정보
-//   ImageObject수, ImageObject수 * (ImageObject, ImageObjectSectorInfo)
+// attributes
+// width*height Sector infos (TileSpriteID, Flag)
+// Obstacle count, Obstacle count * Obstacle info
+// ImageObject count, ImageObject count * (ImageObject, ImageObjectSectorInfo)
 //
 //
 //----------------------------------------------------------------------
 // On-line Update
 //----------------------------------------------------------------------
 //
-// File을 하나로 관리하게 되면, 
-// File의 중간에 data를 추가할 수 없으므로 File전체를 Load했다가
-// Memory에서 Update하고 File전체를 Save해야한다.
-// (!)속도 문제가 있을 수 있다.
+// If the File is managed as one,
+// data cannot be added in the middle of the File, so the whole File must be loaded,
+// updated in Memory, and the whole File saved.
+// (!) there may be a speed problem.
 //
-// 그렇다고, 각각의 Data부분들을 따로 file로 두면 지저분하당. - -;
-// Zone 하나가 생성되었을 때, 더 이상 data가 바뀌지 않는다고 하면..
-// 하나의 File로 사용해도 문제가 없을 것이다.
+// But keeping each Data part in a separate file is messy. (sigh)
+// If the data no longer changes once a Zone is created..
+// using a single File should be no problem.
 //
 //----------------------------------------------------------------------
 
@@ -72,7 +72,7 @@ typedef std::vector<UI_PORTAL_LIST> UI_PORTAL_VECTOR;
 
 //----------------------------------------------------------------------
 //
-// Zone class는 Sector의 2차원 배열이다.
+// The Zone class is a 2D array of Sectors.
 //
 //----------------------------------------------------------------------
 class MZone {
@@ -83,10 +83,10 @@ class MZone {
 		// building map
 		typedef std::map<TYPE_OBJECTID, MImageObject*>				IMAGEOBJECT_MAP;
 
-		// IMAGEOBJECT_POSITION_LIST를 정의한다.
+		// define IMAGEOBJECT_POSITION_LIST.
 		typedef	CPositionList<TYPE_SECTORPOSITION>							IMAGEOBJECT_POSITION_LIST;
 
-		// IMAGEOBJECT_POSITION_LIST의 map이다.
+		// a map of IMAGEOBJECT_POSITION_LIST.
 		typedef	std::map<TYPE_OBJECTID, IMAGEOBJECT_POSITION_LIST*>	IMAGEOBJECT_POSITION_LIST_MAP;
 
 
@@ -136,15 +136,15 @@ class MZone {
 		bool		LoadFromFileSectorSound(std::ifstream& file);
 
 		//--------------------------------------------------------------		
-		// Zone File Header 부분
+		// Zone File Header part
 		//--------------------------------------------------------------		
-		const MString&	GetVersion() const			{ return m_Info.ZoneVersion; } // 최종 업데이트된 날짜
-		WORD			GetID() const				{ return m_Info.ZoneID; }			//	존 아이디
-		WORD			GetGroupID() const			{ return m_Info.ZoneGroupID; }	//	존 그룹 아이디
-		const MString&	GetName() const				{ return m_Info.ZoneName; }		// 존 이름
-		BYTE			GetType() const				{ return m_Info.ZoneType; }		//	존의 타입
-		BYTE			GetLevel() const			{ return m_Info.ZoneLevel; }		//	존에 나오는 몬스터의 레벨. 1-10 사이.
-		const MString&	GetDescription() const		{ return m_Info.Description; }	//	존	
+		const MString&	GetVersion() const			{ return m_Info.ZoneVersion; } // last updated date
+		WORD			GetID() const				{ return m_Info.ZoneID; }			// zone ID
+		WORD			GetGroupID() const			{ return m_Info.ZoneGroupID; }	// zone group ID
+		const MString&	GetName() const				{ return m_Info.ZoneName; }		// zone name
+		BYTE			GetType() const				{ return m_Info.ZoneType; }		// zone type
+		BYTE			GetLevel() const			{ return m_Info.ZoneLevel; }		// level of the monsters in the zone. Between 1 and 10.
+		const MString&	GetDescription() const		{ return m_Info.Description; }	// zone description
 
 
 
@@ -156,27 +156,27 @@ class MZone {
 		void		SetPlayer();//MPlayer* pPlayer);
 		void		RemovePlayer();
 		
-		// Creature Map : Zone에 존재하는 전체 creature 수
+		// Creature Map : total number of creatures in the Zone
 		int			GetCreatureNumber() const		{ return static_cast<int>(m_mapCreature.size()); }
 		CREATURE_MAP::const_iterator GetCreatureBegin()		{ return m_mapCreature.begin(); }
 
 		// Move
 		void		UpdateAllCreature();
 
-		// player의 시야를 벗어나는 Object들을 제거한다.
+		// Remove Objects outside the player's sight.
 		void		KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sight);
 
-		// (x,y) sector에 들어갈 수 있는가?
+		// Can it enter sector (x,y)?
 		bool		CanMove(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 		void		SetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 		void		UnSetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 
-		// (xo,yo)에 있던 Creature를 (xn,yn)으로 옮긴다.		
+		// Move the Creature at (xo,yo) to (xn,yn).
 		bool		MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
 		bool		MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
 		bool		MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
 
-		// (x,y) Sector에 있는 Creature의 ID를 넘겨준다.
+		// Return the ID of the Creature at Sector (x,y).
 		
 		TYPE_OBJECTID		GetCreatureID(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
 		TYPE_OBJECTID		GetFlyingCreatureID(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);
@@ -185,23 +185,23 @@ class MZone {
 		TYPE_OBJECTID		GetCreatureID(const char* pName, int flag = 0) const;
 
 		// other creatures : Add, Get, Remove
-		bool		AddCreature(MCreature* pCreature);	// Zone에 Creature 추가
-		bool		RemoveCreature(TYPE_OBJECTID	id);			// Zone에서 Creature 제거
-		MCreature*	GetCreature(TYPE_OBJECTID id);				// Zone의 Creature 읽어오기
+		bool		AddCreature(MCreature* pCreature);	// Add Creature to the Zone
+		bool		RemoveCreature(TYPE_OBJECTID	id);			// Remove Creature from the Zone
+		MCreature*	GetCreature(TYPE_OBJECTID id);				// Read a Creature of the Zone
 		MCreature*	GetCreatureOnly(TYPE_OBJECTID id);
 
 		// 2004, 8, 12 sobeit add start
 		MCreature*  GetCreatureBySector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 		// 2004, 8, 12 sobeit add end
-		//MCreature*	GetUndergroundCreature(TYPE_OBJECTID id);				// Zone의 UndergroundCreature 읽어오기
-		//MCreature*	GetFlyingCreature(TYPE_OBJECTID id);				// Zone의 FlyingCreature 읽어오기
+		//MCreature*	GetUndergroundCreature(TYPE_OBJECTID id);				// Read an UndergroundCreature of the Zone
+		//MCreature*	GetFlyingCreature(TYPE_OBJECTID id);				// Read a FlyingCreature of the Zone
 
-		// Sector에서 Creature 제거
+		// Remove Creature from Sector
 		void		RemoveUndergroundCreature(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id)	{ m_ppSector[sY][sX].RemoveUndergroundCreature(id); }
 		void		RemoveGroundCreature(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id)		{ m_ppSector[sY][sX].RemoveGroundCreature(id); }
 		void		RemoveFlyingCreature(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id)		{ m_ppSector[sY][sX].RemoveFlyingCreature(id); }
 
-		// Hallu관련
+		// Hallu related
 		void		ChangeToHalluCreature();
 		void		RemoveHalluCreature();
 
@@ -211,20 +211,20 @@ class MZone {
 		//							Item
 		//
 		//--------------------------------------------------------------
-		bool		AddItem(MItem* pItem, BOOL bDropping=false);				// Zone에 Item 추가, bDropping은 떨어지기 시작하는것인가?를 나타냄..
-		bool		RemoveItem(TYPE_OBJECTID	id);	// Zone에서 Item 제거(delete해줌)
-		bool		PickupItem(TYPE_OBJECTID	id);	// Zone에서 Item 제거
-		MItem*		GetItem(TYPE_OBJECTID id);			// Zone의 Item 읽어오기
-		MItem*		GetCorpseKilledByMe(int limitItemCount = 0);				// Zone에서 내가 죽인 몬스터 하나 넘겨준다.
+		bool		AddItem(MItem* pItem, BOOL bDropping=false);				// Add Item to the Zone, bDropping tells whether it is starting to drop?
+		bool		RemoveItem(TYPE_OBJECTID	id);	// Remove Item from the Zone (deletes it)
+		bool		PickupItem(TYPE_OBJECTID	id);	// Remove Item from the Zone
+		MItem*		GetItem(TYPE_OBJECTID id);			// Read an Item of the Zone
+		MItem*		GetCorpseKilledByMe(int limitItemCount = 0);				// Return one monster I killed in the Zone.
 		
-		// (x,y) Sector에 있는 Item의 ID를 넘겨준다.
+		// Return the ID of the Item at Sector (x,y).
 		TYPE_OBJECTID		GetItemID(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);	
 
-		// Creature가 시체로 변하는 것... - -;
+		// A Creature turning into a corpse... (sigh)
 		//bool		AddCorpseFromCreature(MCreature* pCreature);
 		bool		AddCorpseFromCreature(TYPE_OBJECTID id);
 
-		// Item Map : Zone에 존재하는 전체 Item 수
+		// Item Map : total number of Items in the Zone
 		int			GetItemNumber() const		{ return static_cast<int>(m_mapItem.size()); }
 		ITEM_MAP::const_iterator GetItemBegin()		{ return m_mapItem.begin(); }
 
@@ -237,13 +237,13 @@ class MZone {
 		//							ImageObject
 		//
 		//--------------------------------------------------------------
-		bool		AddImageObject(MImageObject* pImageObject);	// Zone에 ImageObject 추가
-		bool		RemoveImageObject(TYPE_OBJECTID	id);			// Zone에서 ImageObject 제거
-		MImageObject*	GetImageObject(TYPE_OBJECTID id);				// Zone의 ImageObject 읽어오기
+		bool		AddImageObject(MImageObject* pImageObject);	// Add ImageObject to the Zone
+		bool		RemoveImageObject(TYPE_OBJECTID	id);			// Remove ImageObject from the Zone
+		MImageObject*	GetImageObject(TYPE_OBJECTID id);				// Read an ImageObject of the Zone
 		void		SetImageObjectSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id);	// ImageObject Sector
 		void		UnSetImageObjectSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id);	// Unset ImageObject Sector
 
-		// 添加 map_viewer 访问接口
+		// Add map_viewer access interface
 		const IMAGEOBJECT_MAP&	GetImageObjectMap() const { return m_mapImageObject; }	
 
 		//--------------------------------------------------------------
@@ -251,9 +251,9 @@ class MZone {
 		//							Obstacle
 		//
 		//--------------------------------------------------------------
-		//bool		AddObstacle(MObstacle* pObstacle);	// Zone에 Obstacle 추가
-		//bool		RemoveObstacle(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);	// Zone에서 Obstacle 제거
-		//void		ChangeFrameObstacle();				// Frame변화 (임시함수!!!)
+		//bool		AddObstacle(MObstacle* pObstacle);	// Add Obstacle to the Zone
+		//bool		RemoveObstacle(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);	// Remove Obstacle from the Zone
+		//void		ChangeFrameObstacle();				// Frame change (temporary function!!!)
 
 		//--------------------------------------------------------------
 		//
@@ -263,7 +263,7 @@ class MZone {
 		// Takes ownership on entry; destroys rejected effects, retains accepted ones.
 		bool		AddEffect(MEffect* pEffect, DWORD dwWaitCount = 0);
 		bool		RemoveEffect(TYPE_OBJECTID id);
-		void		UpdateEffects();				// Frame변화 (임시함수!!!)
+		void		UpdateEffects();				// Frame change (temporary function!!!)
 		// 2004, 8, 31, sobeit add start
 		void		UpdateWaitEffects();
 		// 2004, 8, 31, sobeit add end
@@ -275,12 +275,12 @@ class MZone {
 		void		ChangeSwapViceType(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFFECTSPRITETYPE type, WORD wDelay = 0xffff);
 		void		RemoveSwapViceType();
 		//--------------------------------------------------------------
-		//						Ground Effect - Tile과 붙음..
+		// Ground Effect - attached to the Tile..
 		//--------------------------------------------------------------
-		bool		AddGroundEffect(MEffect* pEffect);	// Zone에 Effect 추가	
+		bool		AddGroundEffect(MEffect* pEffect);	// Add Effect to the Zone
 		bool		RemoveGroundEffect(TYPE_OBJECTID id);
 		MEffect*	GetGroundEffect(TYPE_OBJECTID id) const;
-		void		UpdateGroundEffects();				// Frame변화 (임시함수!!!)
+		void		UpdateGroundEffects();				// Frame change (temporary function!!!)
 		int			GetGroundEffectCount()				{ return static_cast<int>(m_mapGroundEffect.size()); }
 		EFFECT_MAP::const_iterator GetGroundEffects()	{ return m_mapGroundEffect.begin(); }
 		EFFECT_MAP::const_iterator GetGroundEffectsEnd()	{ return m_mapGroundEffect.end(); }
@@ -291,7 +291,7 @@ class MZone {
 		//
 		//--------------------------------------------------------------
 		void		AddSound(const SOUND_NODE& sound);
-		void		UpdateSound();					// 소리 출력
+		void		UpdateSound();					// sound output
 
 
 		//--------------------------------------------------------------
@@ -303,17 +303,17 @@ class MZone {
 
 		void		SetSector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, const MSector& sector)	{ m_ppSector[y][x]=sector; }
 
-		void		SetBlockAllSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)				{ m_ppSector[sY][sX].SetBlockAll(); }		// All Block sector로 만든다.
-		void		UnSetBlockAllSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)			{ m_ppSector[sY][sX].UnSetBlockAll(); }	// All Block sector로 만든다.
+		void		SetBlockAllSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)				{ m_ppSector[sY][sX].SetBlockAll(); }		// make it an All Block sector.
+		void		UnSetBlockAllSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)			{ m_ppSector[sY][sX].UnSetBlockAll(); }	// make it an All Block sector.
 
-		void		SetBlockUndergroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)		{ m_ppSector[sY][sX].SetBlockUnderground(); }		// UndergroundBlock sector 설정
-		void		UnSetBlockUndergroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)	{ m_ppSector[sY][sX].UnSetBlockUnderground(); }	// UndergroundBlock sector 해제
+		void		SetBlockUndergroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)		{ m_ppSector[sY][sX].SetBlockUnderground(); }		// set UndergroundBlock sector
+		void		UnSetBlockUndergroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)	{ m_ppSector[sY][sX].UnSetBlockUnderground(); }	// clear UndergroundBlock sector
 
-		void		SetBlockGroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)			{ m_ppSector[sY][sX].SetBlockGround(); }	// Ground Block sector 설정
-		void		UnSetBlockGroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)		{ m_ppSector[sY][sX].UnSetBlockGround(); }	// Ground Block sector 해제
+		void		SetBlockGroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)			{ m_ppSector[sY][sX].SetBlockGround(); }	// set Ground Block sector
+		void		UnSetBlockGroundSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)		{ m_ppSector[sY][sX].UnSetBlockGround(); }	// clear Ground Block sector
 
-		void		SetBlockFlyingSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)	{ m_ppSector[sY][sX].SetBlockFlying(); }					// Flying Block sector로 만든다.
-		void		UnSetBlockFlyingSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)	{ m_ppSector[sY][sX].UnSetBlockFlying(); }			// Flying Block sector로 만든다.
+		void		SetBlockFlyingSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)	{ m_ppSector[sY][sX].SetBlockFlying(); }					// make it a Flying Block sector.
+		void		UnSetBlockFlyingSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)	{ m_ppSector[sY][sX].UnSetBlockFlying(); }			// make it a Flying Block sector.
 
 		void		SetVisitedFlag(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)				{ m_ppSector[sY][sX].SetVisitedFlag(); }
 		void		UnSetVisitedFlag(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)			{ m_ppSector[sY][sX].UnSetVisitedFlag(); }
@@ -333,7 +333,7 @@ class MZone {
 		long						GetImageObjectFilePosition() const	{ return m_fpImageObject; }
 
 		//--------------------------------------------------------------
-		// Tile SpriteID 얻기
+		// Get Tile SpriteID
 		//--------------------------------------------------------------
 		void						GetNearSpriteSet(std::set<TYPE_SPRITEID>& TileSSM, std::set<TYPE_SPRITEID>& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const;
 
@@ -358,7 +358,7 @@ class MZone {
 		// Fake Creature
 		//
 		//--------------------------------------------------------------
-		// Creature Map : Zone에 존재하는 전체 creature 수
+		// Creature Map : total number of creatures in the Zone
 		int			GetFakeCreatureNumber() const		{ return static_cast<int>(m_mapFakeCreature.size()); }
 		CREATURE_MAP::const_iterator GetFakeCreatureBegin()		{ return m_mapFakeCreature.begin(); }
 
@@ -366,9 +366,9 @@ class MZone {
 		void		UpdateFakeCreature();
 
 		// other creatures : Add, Get, Remove
-		bool		AddFakeCreature(MCreature* pCreature);	// Zone에 Creature 추가
-		bool		RemoveFakeCreature(TYPE_OBJECTID id);			// Zone에서 Creature 제거
-		MCreature*	GetFakeCreature(TYPE_OBJECTID id);				// Zone의 Creature 읽어오기		
+		bool		AddFakeCreature(MCreature* pCreature);	// Add Creature to the Zone
+		bool		RemoveFakeCreature(TYPE_OBJECTID id);			// Remove Creature from the Zone
+		MCreature*	GetFakeCreature(TYPE_OBJECTID id);				// Read a Creature of the Zone
 	
 		//--------------------------------------------------------------
 		// ZoneSound
@@ -383,7 +383,7 @@ class MZone {
 		void			RemoveHelicopter(TYPE_OBJECTID creatureID);
 		UI_PORTAL_VECTOR &	GetHorn() { return m_horn; }
 		
-		void			SetCurrentZoneID( WORD id ) { m_Info.ZoneID = id; }			// 아아아 왜 map 에 zoneid 가 들어있는거얏!!
+		void			SetCurrentZoneID( WORD id ) { m_Info.ZoneID = id; }			// Ahhh why is the zoneid inside the map!!
 
 		BYTE			GetPKType();
 
@@ -426,9 +426,9 @@ class MZone {
 		// Zone File Header
 		FILEINFO_ZONE_HEADER	m_Info;
 
-		TYPE_SECTORPOSITION					m_Width;		// Zone의 가로 크기
-		TYPE_SECTORPOSITION					m_Height;		// Zone의 세로 크기
-		MSector**				m_ppSector;		// 각각의 Sector
+		TYPE_SECTORPOSITION					m_Width;		// width of the Zone
+		TYPE_SECTORPOSITION					m_Height;		// height of the Zone
+		MSector**				m_ppSector;		// each Sector
 
 		// Other Creature
 		CREATURE_MAP			m_mapCreature;	// other creatures	
@@ -448,16 +448,16 @@ class MZone {
 		// Effects
 		EFFECT_MAP				m_mapGroundEffect;	// Effect map
 
-		// Zone에 필요한 그림 정보에 대한 File Position
+		// File Position of the picture info needed by the Zone
 		long					m_fpTile;
 		long					m_fpImageObject;
 
 		DelayedSoundQueue		m_DelayedSounds;
 
-		// client에서만 돌아가는 서비스용 creature - -;;
+		// a service creature that runs only on the client (sigh)
 		CREATURE_MAP			m_mapFakeCreature;
 
-		// sound가 load되었나.. 케케..
+		// has the sound been loaded.. heh heh
 		bool					m_bZoneSoundLoaded;
 
 		MHelicopterManager		m_HelicopterManager;
