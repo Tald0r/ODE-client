@@ -2212,6 +2212,12 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	//------------------------------------------------------------
 	// Set outfit info
 	//------------------------------------------------------------
+	// The outlook's fields are 2 and 3 bits wide, wider than the tables:
+	// a value past one is its first entry, as PacketFunction takes a hair
+	// past its table as the first and an item past its own as none worn.
+	auto outlook = [](const auto& table, unsigned index) { return index < std::size(table) ? table[index] : table[0]; };
+
+	//------------------------------------------------------------
 	// If female
 	//------------------------------------------------------------
 	if (slot.bl_female)
@@ -2283,13 +2289,13 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 			W_DRAGON_SHIELD,			
 		};
 
-		slot.woman_info.helmet = uiHelmFemale[pInfo->getHelmetType()];
-		slot.woman_info.coat = uiCoatFemale[pInfo->getJacketType()];
-		slot.woman_info.trouser = uiTrouserFemale[pInfo->getPantsType()];
-		slot.woman_info.face = uiFaceFemale[pInfo->getHairStyle()];
-		slot.woman_info.hair = uiHairFemale[pInfo->getHairStyle()];
+		slot.woman_info.helmet = outlook(uiHelmFemale, pInfo->getHelmetType());
+		slot.woman_info.coat = outlook(uiCoatFemale, pInfo->getJacketType());
+		slot.woman_info.trouser = outlook(uiTrouserFemale, pInfo->getPantsType());
+		slot.woman_info.face = outlook(uiFaceFemale, pInfo->getHairStyle());
+		slot.woman_info.hair = outlook(uiHairFemale, pInfo->getHairStyle());
 		slot.woman_info.right = uiWeaponFemale[pInfo->getWeaponType()];
-		slot.woman_info.left = uiShieldFemale[pInfo->getShieldType()];
+		slot.woman_info.left = outlook(uiShieldFemale, pInfo->getShieldType());
 	}
 	//------------------------------------------------------------
 	// If male
@@ -2363,13 +2369,13 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 			M_DRAGON_SHIELD			
 		};
 
-		slot.man_info.helmet	= uiHelmMale[pInfo->getHelmetType()];
-		slot.man_info.coat		= uiCoatMale[pInfo->getJacketType()];
-		slot.man_info.trouser	= uiTrouserMale[pInfo->getPantsType()];
-		slot.man_info.face = uiFaceMale[pInfo->getHairStyle()];
-		slot.man_info.hair = uiHairMale[pInfo->getHairStyle()];
+		slot.man_info.helmet	= outlook(uiHelmMale, pInfo->getHelmetType());
+		slot.man_info.coat		= outlook(uiCoatMale, pInfo->getJacketType());
+		slot.man_info.trouser	= outlook(uiTrouserMale, pInfo->getPantsType());
+		slot.man_info.face = outlook(uiFaceMale, pInfo->getHairStyle());
+		slot.man_info.hair = outlook(uiHairMale, pInfo->getHairStyle());
 		slot.man_info.right = uiWeaponMale[pInfo->getWeaponType()];
-		slot.man_info.left = uiShieldMale[pInfo->getShieldType()];
+		slot.man_info.left = outlook(uiShieldMale, pInfo->getShieldType());
 	}
 
 	// Outfit info

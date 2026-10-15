@@ -752,11 +752,8 @@ TEST(GameUI2, ASlayerSlotGivesTheStatusManagerItsCombatStats)
 {
 	// The slot shows the combat stats the status manager works out for
 	// this character; the slot itself goes to the title's character
-	// manager, which is not running here. Recorded defect, not run: the
-	// face, hair, helmet and shield tables hold 3 entries and the coat and
-	// trouser ones 4, indexed unchecked by 2- and 3-bit outlook fields
-	// (GameUI.cpp:2286-2292, 2366-2372), so a hair style, helmet or shield
-	// of 3 or a jacket or pants of 4 to 7 reads past them.
+	// manager, which is not running here (the next test has the outlook
+	// past the slot's tables).
 	SlotScene scene;
 	for (Sex sex : {MALE, FEMALE})
 		for (int kind = 0; kind < 3; ++kind)
@@ -781,6 +778,35 @@ TEST(GameUI2, ASlayerSlotGivesTheStatusManagerItsCombatStats)
 			info.setSkinColor(1000);
 			scene.Unlike();
 			CHECK(!(Expected(info) == Combat(g_StatusManager)));
+			UI_SetCharacter(2, &info);
+			CHECK(Expected(info) == Combat(g_StatusManager));
+		}
+}
+
+TEST(GameUI2, ASlayerSlotsOutlookPastTheSlotsTablesIsTheirFirstEntry)
+{
+	// The face, hair, helmet and shield tables hold 3 entries and the coat
+	// and trouser ones 4, but the login packet's outlook fields are 2 and 3
+	// bits wide: a hair style, helmet or shield of 3 or a jacket or pants
+	// of 4 to 7 takes the table's first entry (the first face and hair,
+	// nothing worn), as PacketFunction's PacketHair and PacketItem do. The
+	// slot itself goes to the title's character manager, which is not
+	// running here; the sanitizers see a read past a table.
+	SlotScene scene;
+	for (Sex sex : {MALE, FEMALE})
+		for (int past = 4; past < 8; ++past)
+		{
+			PCSlayerInfo info = Slayer();
+			info.setSex(sex);
+			info.setHairStyle(HairStyle(3));
+			info.setHelmetType(HelmetType(3));
+			info.setJacketType(JacketType(past));
+			info.setPantsType(PantsType(past));
+			info.setShieldType(ShieldType(3));
+			CHECK_EQ(3, int(info.getHairStyle()));
+			CHECK_EQ(past, int(info.getJacketType()));
+			CHECK_EQ(past, int(info.getPantsType()));
+			scene.Unlike();
 			UI_SetCharacter(2, &info);
 			CHECK(Expected(info) == Combat(g_StatusManager));
 		}
