@@ -127,6 +127,8 @@
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
+#include "DialogWindowHost.h"
+#include "VS_UI_ExtraDialog.h"
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
@@ -2690,6 +2692,7 @@ void ReleaseAllObjects()
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
+	DialogWindow::SetHost(nullptr);
 	LoginPresentation::SetHost(nullptr);
 	PlayerState::SetHost(nullptr);
 	ZoneState::SetHost(nullptr);
@@ -3749,6 +3752,43 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.ExecuteHelpEvent = [](int helpEvent) { ExecuteHelpEvent(static_cast<HELP_EVENT>(helpEvent)); },
 };
 
+// The windows UIDialog opens: VS_UI's dialogs, handed to it as opaque
+// windows, and back to its callbacks the same way.
+static_assert(DialogWindow::EXECID_EXIT == DIALOG_EXECID_EXIT);
+static DialogWindow::Window* AsWindow(C_VS_UI_DIALOG* pDialog) { return reinterpret_cast<DialogWindow::Window*>(pDialog); }
+static C_VS_UI_DIALOG* AsDialog(DialogWindow::Window* pWindow) { return reinterpret_cast<C_VS_UI_DIALOG*>(pWindow); }
+
+static const DialogWindow::Host s_DialogWindowHost = {
+	.NewTalk = [](int creatureType, const char* name) {
+		C_VS_UI_DIALOG* pDialog = new C_VS_UI_NPC_DIALOG(
+			[](C_VS_UI_DIALOG* pDlg, id_t id) { UIDialog::ProcessPCTalkDlg(AsWindow(pDlg), id); },
+			creatureType, name);
+		return AsWindow(pDialog);
+	},
+	.NewMessage = [](int x, int y, int extraHeight, std::uint16_t buttons) {
+		return AsWindow(new C_VS_UI_DIALOG(x, y, 3, extraHeight,
+			[](C_VS_UI_DIALOG* pDlg, id_t id) { UIDialog::ProcessMessageDlg(AsWindow(pDlg), id); },
+			buttons));
+	},
+	.SetMenu = [](DialogWindow::Window* pWindow, const DialogWindow::MenuItem* pItems, int count) {
+		// The dialog copies the lines; the texts stay the caller's.
+		std::vector<DIALOG_MENU> menu(count > 0 ? count : 1);
+		for (int i = 0; i < count; ++i)
+		{
+			menu[i].sz_menu_str = pItems[i].text;
+			menu[i].exec_id = pItems[i].id;
+		}
+		AsDialog(pWindow)->SetMenu(menu.data(), count, false);
+	},
+	.SetMessage = [](DialogWindow::Window* pWindow, const char* const* pLines, int count, bool noFit) {
+		AsDialog(pWindow)->SetMessage(pLines, count, noFit ? SMO_NOFIT : SMO_FIT);
+	},
+	.Start = [](DialogWindow::Window* pWindow) { AsDialog(pWindow)->Start(); },
+	.Finish = [](DialogWindow::Window* pWindow) { AsDialog(pWindow)->Finish(); },
+	.Run = [](DialogWindow::Window* pWindow, std::uint32_t id) { AsDialog(pWindow)->Run(id); },
+	.Delete = [](DialogWindow::Window* pWindow) { delete AsDialog(pWindow); },
+};
+
 static const DialogPresentation::Host s_DialogPresentationHost = {
 	.PopupFreeMessageDlg = [](const char* message) { g_pUIDialog->PopupFreeMessageDlg(message); },
 	.UnlockItem = UI_UnlockItem,
@@ -3777,6 +3817,13 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
 	.ClosePCTalkDlg = []() { g_pUIDialog->ClosePCTalkDlg(); },
 	.UnSetLockInputPCTalk = []() { g_pUIDialog->UnSetLockInputPCTalk(); },
+	.IsRunningStorage = []() { return UI_IsRunningStorage() != FALSE; },
+	.IsRunningShop = []() { return UI_IsRunningShop() != FALSE; },
+	.IsRunningBookcase = []() { return UI_IsRunningBookcase() != FALSE; },
+	.IsRunningRepair = []() { return UI_IsRunningRepair() != FALSE; },
+	.IsRunningSell = []() { return UI_IsRunningSell() != FALSE; },
+	.IsRunningParty = UI_IsRunningParty,
+	.CloseAllDialog = []() { gC_vs_ui.CloseAllDialog(); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -4850,6 +4897,7 @@ InitGameObject()
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);
+	DialogWindow::SetHost(&s_DialogWindowHost);
 	LoginPresentation::SetHost(&s_LoginPresentationHost);
 	PlayerState::SetHost(&s_PlayerStateHost);
 	ZoneState::SetHost(&s_ZoneStateHost);

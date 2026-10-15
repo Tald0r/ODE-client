@@ -148,4 +148,39 @@ void UnSetLockInputPCTalk()
 	if (s_Host && s_Host->UnSetLockInputPCTalk) s_Host->UnSetLockInputPCTalk();
 }
 
+bool IsRunningStorage()
+{
+	return s_Host && s_Host->IsRunningStorage && s_Host->IsRunningStorage();
+}
+
+bool IsRunningShop()
+{
+	return s_Host && s_Host->IsRunningShop && s_Host->IsRunningShop();
+}
+
+bool IsRunningBookcase()
+{
+	return s_Host && s_Host->IsRunningBookcase && s_Host->IsRunningBookcase();
+}
+
+bool IsRunningRepair()
+{
+	return s_Host && s_Host->IsRunningRepair && s_Host->IsRunningRepair();
+}
+
+bool IsRunningSell()
+{
+	return s_Host && s_Host->IsRunningSell && s_Host->IsRunningSell();
+}
+
+bool IsRunningParty()
+{
+	return s_Host && s_Host->IsRunningParty && s_Host->IsRunningParty();
+}
+
+void CloseAllDialog()
+{
+	if (s_Host && s_Host->CloseAllDialog) s_Host->CloseAllDialog();
+}
+
 }

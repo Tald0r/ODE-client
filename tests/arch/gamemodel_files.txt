@@ -893,6 +893,11 @@ Client/PacketHandler/GCTeachSkillInfoHandler.cpp
 # Replies that end in a message box or release a locked item, and their presentation service.
 Client/DialogPresentationHost.cpp
 Client/DialogPresentationHost.h
+# The NPC talk box and the message box, and their windows (4.238).
+Client/DialogWindowHost.cpp
+Client/DialogWindowHost.h
+Client/UIDialog.cpp
+Client/UIDialog.h
 Client/PacketHandler/GCLearnSkillFailedHandler.cpp
 Client/PacketHandler/GCPetStashVerifyHandler.cpp
 Client/PacketHandler/GCSearchMotorcycleFailHandler.cpp
