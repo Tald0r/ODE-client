@@ -1349,7 +1349,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 						//------------------------------------------------------
 						// 잔상 추가
 						//------------------------------------------------------
-						if (clothesType==ADDON_RIGHTHAND)
+						if (clothesType==AC_ADDON_RIGHTHAND)	// the AC order's slot (ADDON_RIGHTHAND is AC_ADDON_SHOULDER)
 						{			
 							// 0, 1, 2, 3, 4, 5
 							const int darkbits[6] =
@@ -1477,7 +1477,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 					//------------------------------------------------------
 					// 잔상 추가
 					//------------------------------------------------------
-					if (clothesType==ADDON_RIGHTHAND)
+					if (clothesType==AC_ADDON_RIGHTHAND)	// the AC order's slot (ADDON_RIGHTHAND is AC_ADDON_SHOULDER)
 					{			
 						// 0, 1, 2, 3, 4, 5
 						const int darkbits[6] =

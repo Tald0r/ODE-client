@@ -7593,7 +7593,7 @@ rounds settled* for the host rules). Test fixtures share
   >   actions, a coat from two frame sets.
   >
   > R1 is 16 Windows / 14 Ninja.
-  - Owner: membership, R1, `test_creature_effect.cpp`: 22 tests. Each
+  - Owner: membership, R1, `test_creature_effect.cpp`: 23 tests (with the fix's). Each
     draws through the moved code onto a surface in memory and lays the
     blits it expects, in their colour sets, onto another (index sprites
     whose four indexed pixels show the colour sets and whose fixed pixel
@@ -7613,6 +7613,16 @@ rounds settled* for the host rules). Test fixtures share
   - Mutants: 296 written, one per live copy of each line (the four effects and their advanced forms repeat their code); 277 caught (some by crashing under ASan), 184 in a first pass and 93 in a second, after tests of the parts' order, the advanced slayer's special colours, screen rect, frames, new items class by class and invisibility, and a bright advanced pet. Of the 19 left, 16 are in the advanced slayer's afterimages, which no test reached: they were drawn for the shoulder piece, not the weapon (fixed below). Three are equivalent: the afterimage loop's coat test, which only a weapon reaches.
     Taking `CreatureEffectDraw.cpp` out of gameview's list leaves
     `unit_tests` with undefined symbols.
+  - Fixed after the move: the advanced slayer's weapon afterimages were
+    drawn for the shoulder piece, not the weapon. The parts are walked in
+    the AC order, whose right hand is `AC_ADDON_RIGHTHAND` (3), but the
+    test compared the slot with the plain slayer's `ADDON_RIGHTHAND` (5),
+    which in the AC order is `AC_ADDON_SHOULDER`. It compares with
+    `AC_ADDON_RIGHTHAND` now, in both branches (a weapon's part and a new
+    weapon). A test of a sword and a shoulder piece, frames 3 and 7, a
+    unique sword, failed first. The 16 mutants in the afterimages that no
+    test reached before are caught now, so 293 of the 296 are; the three
+    left are the equivalent coat tests.
 
 ### Remaining R1 work after tasks 4.80-4.250
 

@@ -615,6 +615,45 @@ TEST(CreatureEffect, AnAdvancedSlayersNewItemOutsideItsPackIsSkipped)
 	}
 }
 
+TEST(CreatureEffect, AnAdvancedSlayersSwungWeaponLeavesItsAfterimages)
+{
+	// The afterimages are the right hand's: a sword's, not the shoulder
+	// piece's; for a sword's part and for a new sword alike; up to five,
+	// a unique sword's in its colour in both sets.
+	struct Case { int frame; int colorSet2; };
+	for (bool newItems : {false, true})
+		for (const Case& c : {Case{3, 50}, Case{7, UNIQUE_ITEM_COLOR}})
+		{
+			Scene scene;
+			Wearer slayer;
+			slayer.Become(kSlayer);
+			slayer.MStatus::SetStatus(MODIFY_ADVANCEMENT_CLASS_LEVEL, 1);
+			slayer.Wear(ADDON_RIGHTHAND, 2, ITEM_CLASS_SWORD, 40, c.colorSet2, newItems ? 16 : 0);
+			// The shoulder piece, which has no slot of the plain slayer's.
+			slayer.Wear(ADDON_MAX, 3, ITEM_CLASS_SHOULDER_ARMOR, 30, 60);
+			const int action = ConvAdvancementSlayerActionFromSlayerAction(ACTION_MAGIC, &slayer) - ADVANCEMENT_ACTION_START;
+			const int newAction = ConvNewSlayerActionFromSlayerAction(ACTION_MAGIC, &slayer);
+			for (int part : {int(AC_SWORD), int(AC_SHOULDER)})
+			{
+				const bool sword = part == AC_SWORD;
+				FRAME_ARRAY& frames = sword && newItems ? scene.slayerManFPK[2][BYTE(newAction)][2]
+					: scene.slayerManFPK[TYPE_FRAMEID(part)][BYTE(action)][2];
+				frames.Init(WORD(c.frame + 1));
+				for (int f = 0; f <= c.frame; ++f)
+					frames[WORD(f)].Set(TYPE_SPRITEID(f == c.frame ? 1 : 2), short((sword ? 10 : 70) + 4 * f), short(sword ? 20 : 60));
+			}
+			scene.Draw(DrawWeaponFadeOutForACSlayer, slayer, ACTION_MAGIC, 2, c.frame);
+			const int set1 = c.colorSet2 == UNIQUE_ITEM_COLOR ? Special(UNIQUE_ITEM_COLOR) : 40;
+			const int set2 = c.colorSet2 == UNIQUE_ITEM_COLOR ? Special(UNIQUE_ITEM_COLOR) : c.colorSet2;
+			for (int f = 1; f <= (std::min)(c.frame, 5); ++f) scene.Blit(10 + 4 * (c.frame - f), 20, scene.slayerManSPK[2], set1, set2);
+			scene.Blit(10 + 4 * c.frame, 20, scene.slayerManSPK[1], set1, set2);
+			scene.Blit(70 + 4 * c.frame, 60, scene.slayerManSPK[1], 30, 60);
+			const bool same = scene.Same();
+			if (!same) std::printf("      %s, frame %d\n", newItems ? "a new sword" : "a sword's part", c.frame);
+			CHECK(same);
+		}
+}
+
 //----------------------------------------------------------------------
 // The turrets
 //----------------------------------------------------------------------
