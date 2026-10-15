@@ -7356,11 +7356,16 @@ rounds settled* for the host rules). Test fixtures share
   >   `StatusPresentation` (the HP bar, to-hit, protection, defense),
   >   `ZoneLoading` (the interface's race), `GameInfoPresentation` (another
   >   player's info, help events) and `NoticePresentation` (the horn).
-  > - The view's selection, its fades, its request mode, the screen's
-  >   pixel under the cursor and a creature action's frame count are new
-  >   `WorldEvents` entries; tile and pixel conversions use
-  >   `WorldTileGeometry`, which `MTopView`'s statics forward to, and the
-  >   facing direction `SelectFacingDirection`.
+  > - The view's selection, its fades, its request mode and the screen's
+  >   pixel under the cursor are new `WorldEvents` entries; tile and pixel
+  >   conversions use `WorldTileGeometry`, which `MTopView`'s statics
+  >   forward to, and the facing direction `SelectFacingDirection`. (An
+  >   entry for a creature action's frame count went with the commented-out
+  >   code that alone named it, after the review of #535.)
+  > - `SetAction`'s gear lock and unlocks, which called `gC_vs_ui`
+  >   directly, now go through the `UI_LockGear` and `UI_UnlockGear` the
+  >   hosts already used; those add a debug log line each, the only
+  >   difference.
   > - The input globals it reads (`g_x`, `g_y`, the mouse buttons, the
   >   selected sector, the network status) move to `InputState.cpp`, and
   >   `PETINFO` to `PetWindowInfo.h`.
