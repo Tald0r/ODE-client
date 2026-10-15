@@ -4029,6 +4029,14 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.MoveGroundCreatureIn = [](MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) { return pZone->MoveGroundCreature(pCreature, xo, yo, xn, yn); },
 	.MoveFlyingCreatureIn = [](MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) { return pZone->MoveFlyingCreature(pCreature, xo, yo, xn, yn); },
 	.MoveUndergroundCreatureIn = [](MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) { return pZone->MoveUndergroundCreature(pCreature, xo, yo, xn, yn); },
+	.SetVisitedFlag = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { g_pZone->SetVisitedFlag(x, y); },
+	.UnSetVisitedFlag = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { g_pZone->UnSetVisitedFlag(x, y); },
+	.IsVisitedFlag = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return g_pZone->IsVisitedFlag(x, y); },
+	.CanMove = [](int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return g_pZone->CanMove(static_cast<BYTE>(moveType), x, y); },
+	.CanMoveIn = [](MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return pZone->CanMove(static_cast<BYTE>(moveType), x, y); },
+	.GetWidthIn = [](MZone* pZone) { return int(pZone->GetWidth()); },
+	.GetHeightIn = [](MZone* pZone) { return int(pZone->GetHeight()); },
+	.GetCreatureIn = [](MZone* pZone, TYPE_OBJECTID id) { return pZone->GetCreature(id); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -4270,6 +4278,7 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.ViewExists = []() { return g_pTopView != NULL; },
 	.GetMaxEffectFrame = [](int bltType, std::uint16_t frameID) { return g_pTopView->GetMaxEffectFrame(static_cast<BLT_TYPE>(bltType), frameID); },
 	.AddOustersElemental = AddOustersElemental,
+	.GetFirstSector = []() { return g_pTopView->GetFirstSector(); },
 };
 
 static const GameOptions::Host s_GameOptionsHost = {

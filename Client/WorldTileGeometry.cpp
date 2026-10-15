@@ -59,3 +59,10 @@ void Step(TYPE_SECTORPOSITION& x, TYPE_SECTORPOSITION& y, BYTE direction)
 }
 
 } // namespace WorldTileGeometry
+
+POINT GetNextTileByDirection(int TileX, int TileY, unsigned char Dir)
+{
+	const POINT offset = WorldTileGeometry::DirectionOffset(Dir);
+	POINT tile = { TileX + offset.x, TileY + offset.y };
+	return tile;
+}

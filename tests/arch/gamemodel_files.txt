@@ -308,6 +308,12 @@ Client/AddonDef.h
 # The NPC: its shop and its idle turning (4.244).
 Client/MNPC.cpp
 Client/MNPC.h
+# The fake creature (a pet, an elemental, a turret, a rocket) and the view's
+# size in sectors it reads (4.245).
+Client/MFakeCreature.cpp
+Client/MFakeCreature.h
+Client/ViewSectors.cpp
+Client/ViewSectors.h
 Client/MCreatureTable.cpp
 Client/MCreatureTable.h
 Client/MNPCTable.cpp

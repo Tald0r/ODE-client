@@ -13,7 +13,10 @@
 #include "MonotonicClock.h"
 #include <list>
 #include <queue>
-#include "MemoryPool.h"
+#include "../basic/MemoryPool.h"
+
+// The fake creatures' pool (MFakeCreature.cpp's).
+extern MemoryPool g_FakeCreatureMemoryPool;
 
 #ifndef __DNODE_DEFINE__
 #define __DNODE_DEFINE__

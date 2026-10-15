@@ -114,3 +114,21 @@ TEST(WorldTileGeometry, UnknownDirectionOffsetsDoNotNarrowIntoValidDirections)
 		CHECK_EQ(0, offset.x); CHECK_EQ(0, offset.y);
 	}
 }
+
+// PacketFunction.cpp's own switch until task 4.245; the rocket, the wild
+// wolf and their packet senders step with it.
+TEST(WorldTileGeometry, TheNextTileIsOneStepTheWayGiven)
+{
+	struct Case { unsigned char direction; int x, y; };
+	for (const Case c : {Case{DIRECTION_LEFTDOWN, 9, 21}, {DIRECTION_RIGHTUP, 11, 19},
+		{DIRECTION_LEFTUP, 9, 19}, {DIRECTION_RIGHTDOWN, 11, 21}, {DIRECTION_LEFT, 9, 20},
+		{DIRECTION_DOWN, 10, 21}, {DIRECTION_UP, 10, 19}, {DIRECTION_RIGHT, 11, 20},
+		{8, 10, 20}, {255, 10, 20}})
+	{
+		const POINT tile = GetNextTileByDirection(10, 20, c.direction);
+		CHECK_EQ(c.x, int(tile.x)); CHECK_EQ(c.y, int(tile.y));
+	}
+	// No clamp: off the map's edge it goes below zero.
+	const POINT edge = GetNextTileByDirection(0, 0, DIRECTION_LEFTUP);
+	CHECK_EQ(-1, int(edge.x)); CHECK_EQ(-1, int(edge.y));
+}

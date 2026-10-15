@@ -133,6 +133,18 @@ struct Host
 	bool (*MoveGroundCreatureIn)(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) = nullptr;
 	bool (*MoveFlyingCreatureIn)(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) = nullptr;
 	bool (*MoveUndergroundCreatureIn)(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) = nullptr;
+	// A fake creature's path search (MFakeCreature): the sectors it has
+	// visited in the player's zone, and whether a creature of the move type
+	// can stand on a cell there or in its own zone; its own zone's size and
+	// a creature in it.
+	void (*SetVisitedFlag)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*UnSetVisitedFlag)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	bool (*IsVisitedFlag)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	bool (*CanMove)(int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	bool (*CanMoveIn)(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	int (*GetWidthIn)(MZone* pZone) = nullptr;
+	int (*GetHeightIn)(MZone* pZone) = nullptr;
+	MCreature* (*GetCreatureIn)(MZone* pZone, TYPE_OBJECTID id) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -183,6 +195,14 @@ void UnSetServerBlockIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_
 bool MoveGroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
 bool MoveFlyingCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
 bool MoveUndergroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
+void SetVisitedFlag(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void UnSetVisitedFlag(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+bool IsVisitedFlag(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+bool CanMove(int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+bool CanMoveIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+int GetWidthIn(MZone* pZone);
+int GetHeightIn(MZone* pZone);
+MCreature* GetCreatureIn(MZone* pZone, TYPE_OBJECTID id);
 
 }
 

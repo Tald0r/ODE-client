@@ -116,6 +116,8 @@ struct Host
 	bool (*ViewExists)() = nullptr;
 	int (*GetMaxEffectFrame)(int bltType, std::uint16_t frameID) = nullptr;
 	void (*AddOustersElemental)(MCreature* pOwner, int creatureType, int status) = nullptr;
+	// The view's top-left sector (MTopView::GetFirstSector).
+	POINT (*GetFirstSector)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -135,6 +137,7 @@ void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 bool ViewExists();
 int GetMaxEffectFrame(int bltType, std::uint16_t frameID);
 void AddOustersElemental(MCreature* pOwner, int creatureType, int status);
+POINT GetFirstSector();
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);

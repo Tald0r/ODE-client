@@ -274,12 +274,7 @@ RECT g_GameRect={799,599,800,600};
 // maps back down (spritectl_window_to_game_coords). Chosen in InitApp as the
 // largest factor that fits the desktop work area.
 static int g_WindowScale = 1;
-LONG	g_SECTOR_WIDTH           =16 ;
-LONG	g_SECTOR_HEIGHT          =25 ;
-LONG	g_SECTOR_WIDTH_HALF      =9 ;
-LONG	g_SECTOR_HEIGHT_HALF     =13 ;
-LONG	g_SECTOR_SKIP_PLAYER_LEFT=-8 ;
-LONG	g_SECTOR_SKIP_PLAYER_UP  =-12 ;
+// The g_SECTOR_* view sizes are ViewSectors.cpp's (gamemodel, task 4.245).
 
 LONG	g_TILESURFACE_SECTOR_WIDTH         =22;
 LONG	g_TILESURFACE_SECTOR_HEIGHT        =31;

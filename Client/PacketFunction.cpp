@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 #include "Client_PCH.h"
+#include "WorldTileGeometry.h"
 #include "CrtCompat.h"
 #ifdef PLATFORM_WINDOWS
 #include <WINDOWS.H>
@@ -5922,25 +5923,7 @@ Send_nProtect_Auth(DWORD dwVal)
 }
 // 2004, 8, 26, sobeit add end - nProtct 인증 패킷
 
-POINT GetNextTileByDirection(int TileX, int TileY, unsigned char Dir)
-{
-	POINT FinalTile;
-	FinalTile.x = TileX; 
-	FinalTile.y = TileY;
-	switch (Dir)
-	{
-		case DIRECTION_LEFTDOWN		: FinalTile.x--;	FinalTile.y++;	break;
-		case DIRECTION_RIGHTUP		: FinalTile.x++;	FinalTile.y--;	break;
-		case DIRECTION_LEFTUP		: FinalTile.x--;	FinalTile.y--;	break;
-		case DIRECTION_RIGHTDOWN	: FinalTile.x++;	FinalTile.y++;	break;
-		case DIRECTION_LEFT			: FinalTile.x--;				break;
-		case DIRECTION_DOWN			:			FinalTile.y++;	break;
-		case DIRECTION_UP			:			FinalTile.y--;	break;
-		case DIRECTION_RIGHT		: FinalTile.x++;				break;
-	}
-
-	return FinalTile;
-}
+// GetNextTileByDirection is WorldTileGeometry's (gamemodel, task 4.245).
 // 2004, 11, 16, sobeit add start
 void Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature)
 {

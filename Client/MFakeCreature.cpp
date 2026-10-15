@@ -2,35 +2,27 @@
 // MFakeCreature.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "ClientDef.h"
 #include "MFakeCreature.h"
-#include "MTopView.h"
-#include "DebugInfo.h"
-#include "MPlayer.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
+#include "WorldEventsHost.h"
+#include "WorldTileGeometry.h"
+#include "DirectionSelection.h"
+#include "ViewSectors.h"
+#include "MViewDef.h"
 #include "SkillDef.h"
 #include "UserInformation.h"
-#include "VS_UI.h"
 #include "OrbitEffectPolicy.h"
 extern MonotonicClock::TimePoint g_FrameNow;
 extern bool			HasEffectStatusSummonSylph( MCreature* pCreature );
 extern void			RemoveEffectStatusSummonSylph( MCreature* pCreature );
-extern	LONG g_SECTOR_WIDTH;
-extern	LONG g_SECTOR_HEIGHT;
-extern	LONG g_SECTOR_WIDTH_HALF;
-extern	LONG g_SECTOR_HEIGHT_HALF;
-extern	LONG g_SECTOR_SKIP_PLAYER_LEFT;
-extern	LONG g_SECTOR_SKIP_PLAYER_UP;
-extern	LONG g_TILESURFACE_SECTOR_WIDTH;
-extern	LONG g_TILESURFACE_SECTOR_HEIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_DOWN;
-extern	LONG g_TILESURFACE_WIDTH;
-extern	LONG g_TILESURFACE_HEIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
-extern POINT GetNextTileByDirection(int TileX, int TileY, BYTE Dir);
+// The fake creatures' allocator pool (task 4.245: MemoryPool.cpp's until
+// then, which it retires).
+MemoryPool g_FakeCreatureMemoryPool( sizeof( MFakeCreature ), 30 );
+
 #define MoveNextPosition()					\
 											\
 		MovePosition( m_NextX, m_NextY );	\
@@ -84,7 +76,7 @@ MFakeCreature::GetFakeID()
 		{
 			m_FakeID = 0;
 		}
-		pFakeCreature = g_pZone->GetFakeCreature(m_FakeID);
+		pFakeCreature = ZoneState::GetFakeCreature(m_FakeID);
 
 	} while(pFakeCreature != NULL);
 
@@ -138,7 +130,7 @@ MFakeCreature::~MFakeCreature()
 	if(m_pPetItem != NULL)
 	{
 		TYPE_OBJECTID id = GetOwnerID();
-		if(g_pPlayer != NULL && id != g_pPlayer->GetID())
+		if(PlayerState::Creature() != NULL && id != PlayerState::Creature()->GetID())
 		{
 			delete m_pPetItem;
 			m_pPetItem = NULL;
@@ -629,14 +621,14 @@ MFakeCreature::UpdateFake()
 					// 새로운 map좌표 계산
 					int mapX = m_X;
 					int mapY = m_Y;
-					int	pixelX = MTopView::MapToPixelX(mapX);
-					int	pixelY = MTopView::MapToPixelY(mapY);
+					int	pixelX = WorldTileGeometry::TileToPixelX(mapX);
+					int	pixelY = WorldTileGeometry::TileToPixelY(mapY);
 
 					pixelX += sX;
 					pixelY += sY;
 
-					m_X = MTopView::PixelToMapX(pixelX);
-					m_Y = MTopView::PixelToMapY(pixelY);
+					m_X = WorldTileGeometry::PixelToTileX(pixelX);
+					m_Y = WorldTileGeometry::PixelToTileY(pixelY);
 
 					sX %= TILE_X;
 					sY %= TILE_Y;
@@ -693,12 +685,12 @@ MFakeCreature::IsFakeEnd()
 		break;
 		case FAKE_CREATURE_ROCKET:
 			{
-				MCreature *pCreature = g_pZone->GetCreature(m_TraceID);	
+				MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 //			if(pCreature != NULL)
 //			{
 //				if(GetX() == pCreature->GetX() && GetY() == pCreature->GetY())
 //				{
-//					ExecuteActionInfoFromMainNode(RESULT_TEMP_SKILL_PLASMA_ROCKET_LAUNCHER,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,	
+//					WorldEvents::ExecuteActionInfoFromMainNode(RESULT_TEMP_SKILL_PLASMA_ROCKET_LAUNCHER,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,
 //							pCreature->GetX(), pCreature->GetY(), 0, 10, NULL, false);			
 //					return true;
 //				}
@@ -706,7 +698,7 @@ MFakeCreature::IsFakeEnd()
 				if( MonotonicClock::Now() > m_nextMoveTime || NULL == pCreature)
 				{
 					if(pCreature != NULL)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_PLASMA_ROCKET_LAUNCHER_BLOW,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_PLASMA_ROCKET_LAUNCHER_BLOW,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,
 								pCreature->GetX(), pCreature->GetY(), 0, 10, NULL, false);			
 					return true;
 				}
@@ -721,8 +713,8 @@ MFakeCreature::IsFakeEnd()
 		case FAKE_CREATURE_DRAGON_TORNADO:
 			{
 				POINT	firstSector, endSector;
-				firstSector.x = g_pPlayer->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1; 
-				firstSector.y = g_pPlayer->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
+				firstSector.x = PlayerState::Creature()->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1;
+				firstSector.y = PlayerState::Creature()->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
 				endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 				endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
 				// 화면 밖으로 가믄 없애자..일단..
@@ -763,7 +755,7 @@ MFakeCreature::PacketSpecialActionToOther(TYPE_ACTIONINFO nActionInfo, TYPE_OBJE
 void
 MFakeCreature::KeepTraceCreature()
 {
-	MCreature *pCreature = g_pZone->GetCreature(m_TraceID);
+	MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 
 	if(pCreature != NULL)
 	{
@@ -826,7 +818,7 @@ MFakeCreature::KeepTraceCreature()
 					case 3:
 						m_PatrolCount = rand()%3+2;
 						m_nextMoveTime = MonotonicClock::Now() + MonotonicClock::Millis((rand()%3+2)*1000);
-						ExecuteActionInfoFromMainNode(
+						WorldEvents::ExecuteActionInfoFromMainNode(
 							SKILL_CLIENT_TANK_SMOKE,										// 사용 기술 번호
 							
 							0, 0, 0,
@@ -924,7 +916,7 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 
 	if(m_bTraceFlag == false)
 	{
-		BOOL bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
+		BOOL bCanStand = ZoneState::CanMoveIn(m_pZone, m_MoveType, sX,sY);
 		if(!bCanStand)
 		{
 			POINT MovePoint;
@@ -946,13 +938,13 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 			int limit = 20;	// 유효값 20번내에 못찾으면 포기
 
 			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY )
-				&& sX < m_pZone->GetWidth() && sY < m_pZone->GetHeight()
+				&& sX < ZoneState::GetWidthIn(m_pZone) && sY < ZoneState::GetHeightIn(m_pZone)
 				&& limit-- > 0
 				)
 			{
 				if( GetX() != sX )sX = static_cast<TYPE_SECTORPOSITION>(sX + MovePoint.x);
 				if( GetY() != sY )sY = static_cast<TYPE_SECTORPOSITION>(sY + MovePoint.y);
-				bCanStand = m_pZone->CanMove( m_MoveType, sX,sY );
+				bCanStand = ZoneState::CanMoveIn(m_pZone,  m_MoveType, sX,sY );
 			};
 
 			if( bCanStand == FALSE || (GetX() == sX && GetY() == sY))
@@ -1031,7 +1023,7 @@ bool
 MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 {
 	if(HasEffectStatus(EFFECTSTATUS_SLEEP)
-		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+		&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
@@ -1067,7 +1059,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	//-------------------------------------------------------
 	// Zone의 영역 밖이면 check 안한다.
 	//-------------------------------------------------------
-	if (sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
+	if (sX>=ZoneState::GetWidthIn(m_pZone) || sY>=ZoneState::GetHeightIn(m_pZone)
 		)
 	{
 		// Zone영역 밖이면 check 안 할 경우
@@ -1081,25 +1073,6 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		#endif
 
 		return false;
-
-		// 현재 진행 방향으로 이동하게 하는 경우
-		/*
-		POINT position = g_pTopView->GetSelectedSector(g_x, g_y);		
-		BYTE direction = GetDirectionToPosition(position.x, position.y);		
-
-		// 방향에 따른 위치를 결정한다.		
-		MCreature::GetNextPosition(direction, position);
-		
-		sX = position.x;
-		sY = position.y;
-		
-		// 현재 진행 방향이 Zone을 벗어나는 경우
-		if (sX<0 || sY<0 
-			|| sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()) 
-		{
-			return false;
-		}
-		*/
 	}
 
 	//-------------------------------------------------------
@@ -1152,7 +1125,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	//--------------------------------------------------------------
 	// Best First Search
 	//--------------------------------------------------------------
-	BOOL	bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
+	BOOL	bCanStand = ZoneState::CanMoveIn(m_pZone, m_MoveType, sX,sY);
 
 	//--------------------------------------------------------------
 	// 갈 수 있는 곳이거나
@@ -1175,7 +1148,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		// visited를 모두 false로 해두고
 		// 현재위치부터 방문하지 않은 곳들을 방문하기 시작한다.
 		//-------------------------------------------------------
-		POINT firstSector = g_pTopView->GetFirstSector();
+		POINT firstSector = WorldEvents::GetFirstSector();
 		//int x0 = m_DestX - g_pClientConfig->MAX_FINDPATH_WIDTH, 
 		//	x1 = m_DestX + g_pClientConfig->MAX_FINDPATH_WIDTH+1, 
 		//	y0 = m_DestY - g_pClientConfig->MAX_FINDPATH_HEIGHT,
@@ -1187,13 +1160,13 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 		if (x0 < 0)						
 			x0 = 0;
-		if (x1 > g_pZone->GetWidth())	
-			x1 = g_pZone->GetWidth();
+		if (x1 > ZoneState::GetWidth())
+			x1 = ZoneState::GetWidth();
 		
 		if (y0 < 0)				
 			y0 = 0;
-		if (y1 > g_pZone->GetHeight())	
-			y1 = g_pZone->GetHeight();
+		if (y1 > ZoneState::GetHeight())
+			y1 = ZoneState::GetHeight();
 		
 //		int size = x1-x0;	// BYTE수
 		for (int i=y0; i<y1; i++)
@@ -1201,7 +1174,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			for (int j=x0; j<x1; j++)
 			{
 				//m_ppVisited[i][j] = false;
-				g_pZone->UnSetVisitedFlag(j, i);
+				ZoneState::UnSetVisitedFlag(j, i);
 			}
 //			memset( m_ppVisited[i]+x0, false, size );
 		}
@@ -1317,12 +1290,12 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				// Zone의 영역 밖이면 check 안한다.
 				//-------------------------------------------------------
 				if (next.x<0 || next.y<0 
-					|| next.x>=m_pZone->GetWidth() || next.y>=m_pZone->GetHeight()) continue;
+					|| next.x>=ZoneState::GetWidthIn(m_pZone) || next.y>=ZoneState::GetHeightIn(m_pZone)) continue;
 
 				//-------------------------------------------------------
 				// 갔던 곳이면 안 간다.
 				//-------------------------------------------------------
-				if (g_pZone->IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
+				if (ZoneState::IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
 
 				// 한 화면을 넘어가는 경우는 check하지 않는다.				
 				if (next.x<x0 || next.y<y0 
@@ -1331,9 +1304,9 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				//-------------------------------------------------------
 				// 갈 수 있으면 pqueue에 넣는다.
 				//-------------------------------------------------------
-				if (m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y)))
+				if (ZoneState::CanMoveIn(m_pZone, m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y)))
 				{				
-					g_pZone->SetVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y));
+					ZoneState::SetVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y));
 
 					//-------------------------------------------------------
 					// Node를 만들어서 priority queue에 추가한다.
@@ -1708,7 +1681,7 @@ MFakeCreature::ActionMovePet()
 			if (m_bTraceFlag == true) 
 			{
 				// 추적하는 Creature의 정보를 읽어온다.
-				MCreature*	pCreature = m_pZone->GetCreature( m_TraceID );				
+				MCreature*	pCreature = ZoneState::GetCreatureIn(m_pZone,  m_TraceID );
 
 				//GET_DYING_CREATURE( pCreature, m_TraceID );
 
@@ -1841,7 +1814,7 @@ MFakeCreature::ActionMovePet()
 		//--------------------------------------------------------------------
 		// 움직일 수 있을 경우		
 		//--------------------------------------------------------------------
-		if (m_pZone->CanMove(m_MoveType, x,y)
+		if (ZoneState::CanMoveIn(m_pZone, m_MoveType, x,y)
 			|| m_bFastMove		// Fast Move인 경우는 무조건 이동 가능..
 			
 			)
@@ -1996,7 +1969,7 @@ MFakeCreature::ActionMovePet()
 
 			if (soundID!=SOUNDID_NULL)
 			{
-				PlaySound( soundID,
+				WorldEvents::PlaySoundAt( soundID,
 							false,
 							m_X,
 							m_Y);
@@ -2162,7 +2135,7 @@ MFakeCreature::CaculatePetPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION s
 {
 	POINT p = {sX, sY};
 
-	if(g_pZone == NULL)
+	if(!ZoneState::Exists())
 	{
 		return p;
 	}
@@ -2178,7 +2151,7 @@ MFakeCreature::CaculatePetPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION s
 	{			
 		for (int j=x0; j<x1; j++)
 		{
-			if(g_pZone->CanMove(moveType, j, i) && j != sX && i != sY && max(abs(i-petY), abs(j-petX)) >= distanceMin)
+			if(ZoneState::CanMove(moveType, j, i) && j != sX && i != sY && max(abs(i-petY), abs(j-petX)) >= distanceMin)
 			{
 				POINT tempPoint = {j, i};
 				vMovePoint.push_back(tempPoint);
@@ -2227,13 +2200,13 @@ MFakeCreature::UpdateTurret()
 
 		BYTE finalDirect = 0;
 		
-		MCreature *pOwnerCreature = g_pZone->GetCreature( ownerID );
+		MCreature *pOwnerCreature = ZoneState::GetCreature( ownerID );
 
 		if( pOwnerCreature != NULL )
 		{
 			TYPE_OBJECTID targetID = pOwnerCreature->GetStatus( MODIFY_LAST_TARGET );
 
-			MCreature *pTargetCreature = g_pZone->GetCreature( targetID );
+			MCreature *pTargetCreature = ZoneState::GetCreature( targetID );
 
 			if( pTargetCreature != NULL )
 			{
@@ -2272,8 +2245,8 @@ MFakeCreature::KeepWanderCreature()
 	if(GetCreatureType() != CREATURETYPE_GHOST)
 		return;
 	POINT	firstSector, endSector,NextMove;
-	firstSector.x = g_pPlayer->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1;// +4 테스트
-	firstSector.y = g_pPlayer->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
+	firstSector.x = PlayerState::Creature()->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1;// +4 테스트
+	firstSector.y = PlayerState::Creature()->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
 	endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 	endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
 	// 화면 안에 있는 유령 이믄..
@@ -2292,7 +2265,7 @@ MFakeCreature::KeepWanderCreature()
 			case DIRECTION_RIGHT		: NextMove.x++;				break;
 		}
 
-		if(	!m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(NextMove.x),static_cast<TYPE_SECTORPOSITION>(NextMove.y)))
+		if(	!ZoneState::CanMoveIn(m_pZone, m_MoveType, static_cast<TYPE_SECTORPOSITION>(NextMove.x),static_cast<TYPE_SECTORPOSITION>(NextMove.y)))
 			m_Direction = (m_Direction + 3 + rand()%3)%8;
 		
 		if( m_Action != ACTION_MOVE )
@@ -2305,7 +2278,7 @@ MFakeCreature::KeepWanderCreature()
 	}
 	else
 	{
-		if(ACTION_MOVE == g_pPlayer->GetAction())
+		if(ACTION_MOVE == PlayerState::Creature()->GetAction())
 		{
 			//SetStop();
 			SetAction(ACTION_STAND);
@@ -2313,7 +2286,7 @@ MFakeCreature::KeepWanderCreature()
 		}
 		else
 		{
-			if(abs(GetX()-g_pPlayer->GetX())>10 ||abs(GetY()-g_pPlayer->GetY())>15 )
+			if(abs(GetX()-PlayerState::Creature()->GetX())>10 ||abs(GetY()-PlayerState::Creature()->GetY())>15 )
 			{
 				//SetStop();
 				SetAction(ACTION_STAND);
@@ -2373,7 +2346,7 @@ MFakeCreature::KeepRocketLuncher()
 
 	if(IsGhost(0xff))
 		return;
-	MCreature *pCreature = g_pZone->GetCreature(m_TraceID);	
+	MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 	if(pCreature != NULL)
 	{
 		int distance = max(abs(pCreature->GetX()-m_X), abs(pCreature->GetY()-m_Y));
@@ -2425,7 +2398,7 @@ void MFakeCreature::SetFakeMoveOnce(BYTE Dir)
 void
 MFakeCreature::KeepWildWolfAttack()
 {
-	if(g_pZone == NULL)
+	if(!ZoneState::Exists())
 		return;
 	
 	if(m_PatrolCount++ < 4 ) return;
@@ -2439,7 +2412,7 @@ MFakeCreature::KeepWildWolfAttack()
 				case WILD_WOLF_MODE_ATTACK_2nd:
 				case WILD_WOLF_MODE_ATTACK_3rd:
 				{
-					int TempDir = MTopView::GetDirectionToPosition(GetX(), GetY(), m_DestX, m_DestY);
+					int TempDir = SelectFacingDirection(GetX(), GetY(), m_DestX, m_DestY);
 					POINT TargetPoint = GetNextTileByDirection(m_DestX, m_DestY, TempDir);
 					m_bTraceFlag = true;
 					SetCurrentDirection(TempDir);
@@ -2470,7 +2443,7 @@ MFakeCreature::KeepWildWolfAttack()
 	}
 	else
 	{
-		MCreature *pCreature = g_pZone->GetCreature(m_TraceID);
+		MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 		if(NULL != pCreature)
 		{
 			if((GetX() == m_DestX && GetY() ==m_DestY) || m_WildWolf_Mode == 0 )
@@ -2481,7 +2454,7 @@ MFakeCreature::KeepWildWolfAttack()
 				case WILD_WOLF_MODE_ATTACK_2nd:
 				case WILD_WOLF_MODE_ATTACK_3rd:
 					{
-						int TempDir = MTopView::GetDirectionToPosition(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
+						int TempDir = SelectFacingDirection(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
 						POINT TargetPoint = GetNextTileByDirection(pCreature->GetX(), pCreature->GetY(), TempDir);
 						m_bTraceFlag = true;
 						SetCurrentDirection(TempDir);
@@ -2499,7 +2472,7 @@ MFakeCreature::KeepWildWolfAttack()
 				case WILD_WOLF_MODE_MOVE_1st:
 				case WILD_WOLF_MODE_MOVE_2st:
 					{
-						int TempDir = MTopView::GetDirectionToPosition(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
+						int TempDir = SelectFacingDirection(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
 						TempDir = (TempDir +7)%8;
 						POINT TargetPoint = GetNextTileByDirection(GetX(), GetY(), TempDir );
 						m_bTraceFlag = true;

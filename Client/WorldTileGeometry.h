@@ -19,3 +19,8 @@ POINT DirectionOffset(int direction);
 void Step(TYPE_SECTORPOSITION& x, TYPE_SECTORPOSITION& y, BYTE direction);
 
 } // namespace WorldTileGeometry
+
+// The tile one step from (TileX, TileY) in the direction, in ints (a step
+// off the map goes negative); an unknown direction stays put. PacketFunction's
+// until task 4.245.
+POINT GetNextTileByDirection(int TileX, int TileY, unsigned char Dir);

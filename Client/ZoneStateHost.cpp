@@ -230,6 +230,46 @@ bool MoveUndergroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPO
 	return s_Host && s_Host->MoveUndergroundCreatureIn && s_Host->MoveUndergroundCreatureIn(pZone, pCreature, xo, yo, xn, yn);
 }
 
+void SetVisitedFlag(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetVisitedFlag) s_Host->SetVisitedFlag(x, y);
+}
+
+void UnSetVisitedFlag(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->UnSetVisitedFlag) s_Host->UnSetVisitedFlag(x, y);
+}
+
+bool IsVisitedFlag(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->IsVisitedFlag && s_Host->IsVisitedFlag(x, y);
+}
+
+bool CanMove(int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->CanMove && s_Host->CanMove(moveType, x, y);
+}
+
+bool CanMoveIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->CanMoveIn && s_Host->CanMoveIn(pZone, moveType, x, y);
+}
+
+int GetWidthIn(MZone* pZone)
+{
+	return s_Host && s_Host->GetWidthIn ? s_Host->GetWidthIn(pZone) : 0;
+}
+
+int GetHeightIn(MZone* pZone)
+{
+	return s_Host && s_Host->GetHeightIn ? s_Host->GetHeightIn(pZone) : 0;
+}
+
+MCreature* GetCreatureIn(MZone* pZone, TYPE_OBJECTID id)
+{
+	return s_Host && s_Host->GetCreatureIn ? s_Host->GetCreatureIn(pZone, id) : nullptr;
+}
+
 }
 
 namespace CreatureState {
