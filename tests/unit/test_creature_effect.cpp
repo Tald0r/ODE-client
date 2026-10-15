@@ -722,11 +722,13 @@ TEST(CreatureEffect, AnInstallingTurretStandsFacing2OnItsCount)
 	slayer.SetCurrentDirection(5);
 	slayer.SetInstallTurretCount(4);
 	slayer.m_AttachEffectColor = 66;
-	auto install = [](int frameIndex) {
-		return frameIndex == 0
-			? [](const CreatureDrawPacks& packs, POINT* p, MCreature* c, int a, int d, int f) { DrawInstallTurret(packs, p, c, a, d, f, 0); }
-			: [](const CreatureDrawPacks& packs, POINT* p, MCreature* c, int a, int d, int f) { DrawInstallTurret(packs, p, c, a, d, f, 1); };
-	};
+	// One function pointer per frame index (a conditional between two
+	// lambdas is not one MSVC is sure to take).
+	const Scene::Effect firstIndex = [](const CreatureDrawPacks& packs, POINT* p, MCreature* c, int a, int d, int f) {
+		DrawInstallTurret(packs, p, c, a, d, f, 0); };
+	const Scene::Effect secondIndex = [](const CreatureDrawPacks& packs, POINT* p, MCreature* c, int a, int d, int f) {
+		DrawInstallTurret(packs, p, c, a, d, f, 1); };
+	auto install = [&](int frameIndex) { return frameIndex == 0 ? firstIndex : secondIndex; };
 	Place(scene.creatureFPK, 222, ACTION_STAND, 2, 4, 1, 6, 7);
 	Place(scene.creatureFPK, 222, ACTION_ATTACK, 5, 3, 2, 16, 17);
 	// Standing: facing 2 on its count; the first frame index sets the
