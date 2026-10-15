@@ -121,6 +121,10 @@ Client/PacketHandlerRegistry.h
 Client/MEffectGeneratorTable.cpp
 Client/MEffectGeneratorTable.h
 
+# The Netmarble launch check (4.220).
+Client/Netmarble.cpp
+Client/Netmarble.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
