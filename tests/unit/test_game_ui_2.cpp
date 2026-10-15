@@ -886,6 +886,30 @@ TEST(GameUI2, AnOustersSlotSaysWhenItsCoatIsUnknown)
 	g_pPacketItemOustersCoat[OUSTERS_COAT4] = NULL;
 }
 
+TEST(GameUI2, ASlotPastTheUsersThreeCharacterNamesIsRefused)
+{
+	// The slot is the index of the character's name (the user's three);
+	// LCPCList hands 0 to SLOT_MAX - 1. Any other slot does nothing: the
+	// status manager keeps the stats it had.
+	SlotScene scene;
+	PCSlayerInfo slayer = Slayer();
+	PCVampireInfo vampire{};
+	vampire.setLevel(7);
+	PCOustersInfo ousters{};
+	ousters.setLevel(13);
+	ousters.setCoatType(OUSTERS_COAT_MAX);
+	scene.Unlike();
+	const Combat before(g_StatusManager);
+	for (int slot : {-1, 3, 4, INT_MIN, INT_MAX})
+	{
+		UI_SetCharacter(slot, &slayer);
+		UI_SetCharacter(slot, &vampire);
+		const std::string said = Stderr([&]() { UI_SetCharacter(slot, &ousters); });
+		CHECK(said.empty());
+		CHECK(before == Combat(g_StatusManager));
+	}
+}
+
 //----------------------------------------------------------------------
 // The loading screen
 //----------------------------------------------------------------------

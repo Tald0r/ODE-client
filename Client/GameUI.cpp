@@ -2141,6 +2141,11 @@ UI_SetNPCInfo( const char* pName, int npcID, int x, int y )
 void
 UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 {
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
 	// set character
 	S_SLOT slot;
 
@@ -2469,6 +2474,11 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 void
 UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 {
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
 	S_SLOT slot;
 
 	slot.sz_name = g_pUserInformation->Character[slotID];
@@ -2602,6 +2612,11 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 void
 UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 {
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
 	S_SLOT slot;
 
 	slot.sz_name = g_pUserInformation->Character[slotID];
