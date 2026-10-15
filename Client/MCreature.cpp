@@ -3162,7 +3162,7 @@ MCreature::CreateAttachEffect(TYPE_EFFECTSPRITETYPE type,
 	if (!m_bAlive)
 	{
 		// - -;;
-		delayFrame = min( 10, delayFrame );
+		delayFrame = min( DWORD(10), delayFrame );
 	}
 	bool	IsMulti = false;
 	int		orbitType = 0;
