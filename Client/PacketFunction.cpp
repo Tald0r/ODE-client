@@ -8,6 +8,7 @@
 #include "Client_PCH.h"
 #include "WorldTileGeometry.h"
 #include "CrtCompat.h"
+#include <algorithm>
 #ifdef PLATFORM_WINDOWS
 #include <WINDOWS.H>
 #include <nb30.h>
@@ -4691,7 +4692,10 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		{ 0, 1 }
 	};
 		
-	for (int i=0; i<=grade; i++)
+	// A copy for each grade, in the three directions there are; the grade
+	// is the server's, so one past 2 sends the three.
+	const int lastCopy = (std::min)(int(grade), 2);
+	for (int i=0; i<=lastCopy; i++)
 	{			
 		MFakeCreature* pFakeCreature = NewFakeCreature( pUserCreature, pUserCreature->GetX() , pUserCreature->GetY() );
 		

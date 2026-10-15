@@ -816,6 +816,21 @@ TEST(PacketSkillShows, BlazeWalkSendsOneCopyAGradeEachLaterThanTheLast)
 	}
 }
 
+TEST(PacketSkillShows, BlazeWalkPastTheThirdGradeSendsTheThreeCopies)
+{
+	// The grade is the server's (GCSkillToObjectOK1/2/5); there are three
+	// directions to send copies in, so a grade past 2 sends those three.
+	for (int grade : {3, 255})
+	{
+		Scene scene;
+		MCreature* user = scene.Put(500, 10, 10);
+		MCreature* target = scene.Put(501, 14, 12);
+		SkillBlazeWalk(user, target, SKILL_DOUBLE_IMPACT, BYTE(grade));
+		const std::vector<MFakeCreature*> fakes = scene.Fakes();
+		CHECK(Destinations(fakes) == std::vector<std::string>({"15,12", "13,12", "14,13"}));
+	}
+}
+
 TEST(PacketSkillShows, BlazeWalkWithAResultsActionStopsAtTheFirstCopy)
 {
 	Scene scene;
