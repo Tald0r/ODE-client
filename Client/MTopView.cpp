@@ -11978,36 +11978,12 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	bool bDrawBackGround = DrawEvent();
 
 	__BEGIN_PROFILE("ReuseBltTileSurface")
-	// 2004, 9, 3, sobeit add start - 타일 뒷쪽에 구름-_-;
-//	event = g_pEventManager->GetEventByFlag(EVENTFLAG_CLOUD_BACKGROUND);
-	if(g_pPlayer->IsShowAdamCloud())
-	{
-		CDirectDrawSurface *pCloudSurface = g_pEventManager->GetEventBackground(EVENTBACKGROUNDID_CLOUD);
-		if(pCloudSurface != NULL)
-		{
-			int CloudPos = g_CurrentFrame % g_GameRect.right;
-			POINT CloudPoint = {0,0};
-			RECT CloudRect = { CloudPos, 0, g_GameRect.left, g_GameRect.top };
-// SDL2: Cast CDirectDrawSurface* to CSpriteSurface* for compatibility (unified path)
-			CSpriteSurface* pCloudSprite = reinterpret_cast<CSpriteSurface*>(pCloudSurface);
-			if(CloudPos != g_GameRect.left)
-				m_pSurface->BltNoColorkey(&CloudPoint, pCloudSprite, &CloudRect);
-			if(CloudPos != 0)
-			{
-				CloudPoint.x	= g_GameRect.left-CloudPos;
-				CloudRect.left	=  0;
-				CloudRect.right	=  CloudPos;
-				m_pSurface->BltNoColorkey(&CloudPoint, pCloudSprite, &CloudRect);
-			}
-			if(bDrawBackGround)
-				m_pSurface->Blt(&point, m_pTileSurface, &rectReuse);
-		}
-		else
-		if(bDrawBackGround)
-			m_pSurface->BltNoColorkey(&point, m_pTileSurface, &rectReuse);
-	}
-	else
-	// 2004, 9, 3, sobeit add end - 타일 뒷쪽에 구름-_-;
+	// Adam's cloud was drawn behind the tiles here (2004). The SDL port
+	// never drew it: its image went into a CDirectDrawSurface, a stub that
+	// holds no pixels, and the blit read that as a CSpriteSurface without
+	// a backend surface, so it returned at once. Task 4.224 retired that
+	// path; restoring the cloud needs its JPEG decoded into a
+	// CSpriteSurface. The tiles are blitted the same either way.
 	if(bDrawBackGround)
 	{
 		m_pSurface->BltNoColorkey(&point, m_pTileSurface, &rectReuse);
@@ -18989,25 +18965,9 @@ MTopView::ExcuteOustersFinEvent()
 		{
 			m_pSurface->FillSurface(0);	//	화면지우기
 		}
-		else if(event->parameter4 < EVENTBACKGROUNDID_MAX)
-		{
-//			AssertEventBackground(event->parameter4);
-
-			POINT p = { 0, 0 };
-			RECT r = {0, 0, g_GameRect.left, g_GameRect.top };
-//			if(!m_pSurface->Lock()) return;
-
-			CDirectDrawSurface *pSurface = g_pEventManager->GetEventBackground((EVENTBACKGROUND_ID)event->parameter4);
-
-// SDL2: Cast CDirectDrawSurface* to CSpriteSurface* for compatibility (unified path)
-		CSpriteSurface* pSpriteSurface = reinterpret_cast<CSpriteSurface*>(pSurface);
-		if (pSpriteSurface != nullptr)
-			m_pSurface->BltNoColorkey(&p, pSpriteSurface, &r);
-
-//			m_pSurface->BltSprite(&p, g_pEventManager->GetEventBackground(event->parameter4));
-
-//			m_pSurface->Unlock();
-		}
+		// The event's background image (parameter4, an EVENTBACKGROUND_ID)
+		// was drawn here. As with Adam's cloud above, the SDL port never
+		// drew one (task 4.224 retired the path).
 
 		if(event->eventFlag & EVENTFLAG_ONLY_EVENT_BACKGROUND)
 			bDrawBackGround = false;

@@ -1,20 +1,17 @@
 //----------------------------------------------------------------------
-// MEventManager.h
+// MEventManager.h - the game's event queue and the background IDs events
+// carry.
 //----------------------------------------------------------------------
-
+// g_pEventManager is an MEventQueue with the host GameInitInfo installs.
+// MEventManager, which added background images, went with task 4.224:
+// this port never drew them (see MTopView.cpp).
+//----------------------------------------------------------------------
 #ifndef __MEVENT_MANAGER_H__
 #define __MEVENT_MANAGER_H__
 
-#ifdef _MSC_VER
-#pragma warning(disable:4786)
-#endif
-
-#include "CTypeTable.h"
 #include "MEventQueue.h"
-/* Explicit path: plain "CDirectDrawSurface.h" resolves to this same
-   directory's stale, unmigrated copy (missing m_ddsd) instead of the
-   maintained Client/DXLib/CDirectDrawSurface.h. */
-#include "DXLib/CDirectDrawSurface.h"
+
+// An event's background image (MEvent::parameter4).
 enum EVENTBACKGROUND_ID
 {
 	EVENTBACKGROUNDID_COSMOS,
@@ -22,29 +19,9 @@ enum EVENTBACKGROUND_ID
 	EVENTBACKGROUNDID_OUSTERS_VAMPIRE,
 	EVENTBACKGROUNDID_QUEST_2,
 	EVENTBACKGROUNDID_CLOUD,
-	
 	EVENTBACKGROUNDID_MAX,
 };
 
-class MEventManager : public MEventQueue
-{
-	public:
-		MEventManager();
-		~MEventManager();
-
-		bool					AssertEventBackground(EVENTBACKGROUND_ID id);
-		CDirectDrawSurface*		GetEventBackground(EVENTBACKGROUND_ID id) {
-			return AssertEventBackground(id) ? m_EventBackGround.GetMutable(id) : nullptr;
-		}
-		
-	protected :
-		CTypeTable<CDirectDrawSurface>	m_EventBackGround;	// Owned event background images.
-		
-};
-
-//----------------------------------------------------------------------
-// global
-//----------------------------------------------------------------------
-extern MEventManager* g_pEventManager;
+extern MEventQueue* g_pEventManager;
 
 #endif

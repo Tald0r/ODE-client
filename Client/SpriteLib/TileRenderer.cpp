@@ -71,7 +71,7 @@ bool TileRenderer::DrawTile(int spriteID, POINT* pPoint, float scale)
 bool TileRenderer::DrawTileInternal(int spriteID, POINT* pPoint, float scale)
 {
 	(void)scale;
-	// Handle SPRITEID_NULL (0xFFFF) or -1 (returned by MZoneTileProvider)
+	// Handle SPRITEID_NULL (0xFFFF) or -1 (returned by ZoneTileProvider)
 	// Draw null tile sprite from m_nullTileSpritePack
 	if (spriteID == SPRITEID_NULL || spriteID == -1)
 	{

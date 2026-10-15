@@ -122,6 +122,7 @@ set(SPRITELIB_HEADERS
 	CSpriteSetManager.h
 	CSpriteOutlineManager.h
 	TileRenderer.h
+	ZoneTileProvider.h
 	MLoadingSPKWorkNode.h
 
 	# Alpha sprites

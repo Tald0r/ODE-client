@@ -4417,15 +4417,16 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 #endif
 	if (InitApp(nCmdShow))
 	{
-		// SDL2는 DirectX처럼 비디오 메모리 쿼리를 제공하지 않습니다.
-		// 모든 플랫폼에 대해 적절한 기본값을 사용하십시오.
+		// SDL2 offers no video memory query as DirectX did: use a
+		// reasonable default on every platform.
 
 		g_dwVideoMemory = 256 * 1024 * 1024;  // 256 MB default
 
-		// 넷마블용
-		// A Netmarble launch never gets this far: ParsingNetmarble refuses
-		// it or clears bNetmarble (task 4.220 retired the copy of its never
-		// filled NETMARBLE_INFO that stood here).
+		// For Netmarble: a Netmarble launch never gets this far with
+		// bNetmarble set. ParsingNetmarble refuses it or answers false,
+		// and on false ClientMain returns or clears bNetmarble above (task
+		// 4.220 retired the copy of its never filled NETMARBLE_INFO that
+		// stood here).
 		{
 			// mode|demention|ID|key
 			g_pUserInformation->IsAutoLogIn			= RealServerInfo.bMode;

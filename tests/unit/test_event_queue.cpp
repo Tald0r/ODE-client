@@ -6,14 +6,9 @@
 #include <type_traits>
 #include <vector>
 
-// The screen manager uses these exact library members, so testing the queue
+// The game's queue is this library's (task 4.224), so testing the queue
 // exercises the calls made by CGameUpdate, MTopView and packet handlers.
-static_assert(std::is_same_v<decltype(&MEventManager::AddEvent),
-	void (MEventQueue::*)(MEvent&)>);
-static_assert(std::is_same_v<decltype(&MEventManager::ProcessEvent),
-	void (MEventQueue::*)()>);
-static_assert(std::is_same_v<decltype(&MEventManager::GetEventByFlag),
-	const MEvent* (MEventQueue::*)(DWORD, int)>);
+static_assert(std::is_same_v<decltype(g_pEventManager), MEventQueue*>);
 
 namespace {
 MonotonicClock::TimePoint now;

@@ -129,6 +129,21 @@ Client/Netmarble.h
 Client/HelpEvent.cpp
 Client/HelpEvent.h
 
+# The game's event queue and background IDs (4.224).
+Client/MEventManager.h
+
+# Whom the player may select and attack (4.225).
+Client/MObjectSelector.cpp
+Client/MObjectSelector.h
+
+# The helicopters chasing players (4.226).
+Client/MHelicopterManager.cpp
+Client/MHelicopterManager.h
+
+# The zone's sounds around the player (4.227).
+Client/MZoneSoundManager.cpp
+Client/MZoneSoundManager.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
@@ -366,8 +381,8 @@ Client/ApplySkillInfo.h
 Client/ConvertDuration.cpp
 Client/ConvertDuration.h
 
-# Event records, flag queries and expiry; MEventManager keeps live image
-# ownership and installs rendering/player callbacks in the executable.
+# Event records, flag queries and expiry; GameInitInfo installs the
+# rendering/player callbacks (MEventManager's until task 4.224).
 Client/MEventQueue.cpp
 Client/MEventQueue.h
 

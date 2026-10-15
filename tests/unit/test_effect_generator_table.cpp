@@ -258,11 +258,18 @@ TEST(EffectGeneratorTable, ADelayNodeCountsTheTargetsDelay)
 	fixture.table.Generate(0, 0, 0, 0, 1, kAction, delayed);
 	Target* undelayed = fixture.NewTarget(2);
 	fixture.table.Generate(0, 0, 0, 0, 1, kAction, undelayed);
-	CHECK(generated.size() == 2u);
-	if (generated.size() == 2u)
+	// Not a delay node: the node's count, whatever the target's delay.
+	fixture.Phase(kAction + 1, 0, 2);
+	fixture.Phase(kAction + 1, 1, 2);
+	Target* ordinary = fixture.NewTarget(2);
+	ordinary->SetDelayFrame(40);
+	fixture.table.Generate(0, 0, 0, 0, 1, kAction + 1, ordinary);
+	CHECK(generated.size() == 3u);
+	if (generated.size() == 3u)
 	{
 		CHECK_EQ(40, generated[0].count);
 		CHECK_EQ(5, generated[1].count);
+		CHECK_EQ(5, generated[2].count);
 	}
 	CHECK(sounds.empty());		// phases without a sound
 }
@@ -420,20 +427,26 @@ TEST(EffectGeneratorTable, GenerateNextAtADelayNodeCountsTheTargetsDelay)
 	fixture.Phase(kAction, 0, 3);
 	fixture.Phase(kAction, 1, 3).SetDelayNode();
 	fixture.Phase(kAction, 2, 3);
-	for (DWORD delay : {DWORD(40), DWORD(0)})
+	fixture.Phase(kAction + 1, 0, 3);
+	fixture.Phase(kAction + 1, 1, 3);		// not a delay node
+	fixture.Phase(kAction + 1, 2, 3);
+	const struct { TYPE_ACTIONINFO action; DWORD delay; } cases[] = {
+		{kAction, 40}, {kAction, 0}, {TYPE_ACTIONINFO(kAction + 1), 40}};
+	for (const auto& c : cases)
 	{
 		Target* target = fixture.NewTarget(3);
 		target->NextPhase();
-		target->SetDelayFrame(delay);
+		target->SetDelayFrame(c.delay);
 		MEffect effect(BLT_EFFECT);
-		effect.SetLink(kAction, target);
+		effect.SetLink(c.action, target);
 		fixture.table.GenerateNext(&effect);
 	}
-	CHECK(generated.size() == 2u);
-	if (generated.size() == 2u)
+	CHECK(generated.size() == 3u);
+	if (generated.size() == 3u)
 	{
 		CHECK_EQ(40, generated[0].count);
 		CHECK_EQ(5, generated[1].count);		// no delay: the node's count
+		CHECK_EQ(5, generated[2].count);		// not a delay node
 	}
 }
 

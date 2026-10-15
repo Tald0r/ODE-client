@@ -2636,6 +2636,8 @@ void ReleaseAllObjects()
 	MWarManager::SetHost(nullptr);
 	MEffectTarget::SetHost(nullptr);
 	MEffect::SetHost(nullptr);
+	MHelicopter::SetHost(nullptr);
+	ZONESOUND_NODE::SetHost(nullptr);
 	MGuidanceEffect::SetHost(nullptr);
 	MParabolaEffect::SetHost(nullptr);
 	MAttachEffect::SetHost(nullptr);
@@ -3075,6 +3077,64 @@ static const MWarHost s_WarHost = {
 		UI_SetBloodBibleStatusTimer(30);
 		UI_CloseRangerChat();
 	},
+};
+
+// What the zone's sounds ask of the game (task 4.227).
+static const ZoneSoundHost s_ZoneSoundHost = {
+	.AudioReady = []() { return g_SDLAudio.IsInit(); },
+	.LoadWav = [](const char* filename) { return g_SDLAudio.LoadWav(const_cast<LPSTR>(filename)); },
+	.Duplicate = [](LPDIRECTSOUNDBUFFER buffer) { return g_SDLAudio.DuplicateSoundBuffer(buffer, false); },
+	.Release = [](LPDIRECTSOUNDBUFFER buffer) { g_SDLAudio.Release(buffer); },
+	.IsPlaying = [](LPDIRECTSOUNDBUFFER buffer) { return g_SDLAudio.IsPlay(buffer); },
+	.Play = [](LPDIRECTSOUNDBUFFER buffer, bool loop) { g_SDLAudio.Play(buffer, loop); },
+	.Stop = [](LPDIRECTSOUNDBUFFER buffer) { g_SDLAudio.Stop(buffer); },
+	.CenterToRightPan = [](LPDIRECTSOUNDBUFFER buffer, int pan) { g_SDLAudio.CenterToRightPan(buffer, pan); },
+	.CenterToLeftPan = [](LPDIRECTSOUNDBUFFER buffer, int pan) { g_SDLAudio.CenterToLeftPan(buffer, pan); },
+	.CenterPan = [](LPDIRECTSOUNDBUFFER buffer) { g_SDLAudio.CenterPan(buffer); },
+	.SubVolumeFromMax = [](LPDIRECTSOUNDBUFFER buffer, int volume) { g_SDLAudio.SubVolumeFromMax(buffer, volume); },
+	.IsCached = [](TYPE_SOUNDID id) { return !g_pSoundManager->IsDataNULL(id); },
+	.Cache = [](TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER buffer, LPDIRECTSOUNDBUFFER& old) {
+		return g_pSoundManager->SetData(id, buffer, old) != 0xFFFF;
+	},
+	.GetCached = [](TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER& buffer) { return g_pSoundManager->GetData(id, buffer); },
+	.SoundOn = []() { return g_pUserOption->PlaySound != FALSE; },
+	.SoundVolume = []() { return g_pUserOption->VolumeSound; },
+	.PlayerPosition = [](int& x, int& y) {
+		if (g_pPlayer == NULL) return false;
+		x = g_pPlayer->GetX();
+		y = g_pPlayer->GetY();
+		return true;
+	},
+	.SectorSounds = [](int x, int y) -> const SECTORSOUND_LIST* {
+		return g_pZone != NULL ? &g_pZone->GetSector(x, y).GetSectorSoundList() : NULL;
+	},
+	.Now = []() { return g_FrameNow; },
+	.GameHour = []() { return g_pGameTime ? std::optional<BYTE>{g_pGameTime->GetHour()} : std::nullopt; },
+};
+
+// What the helicopters ask of the game (task 4.226).
+static const MHelicopterHost s_HelicopterHost = {
+	.GetCreaturePosition = [](TYPE_OBJECTID id, int& sectorX, int& sectorY) {
+		MCreature* pCreature = g_pZone != NULL ? g_pZone->GetCreature(id) : NULL;
+		if (pCreature == NULL) return false;
+		sectorX = pCreature->GetX();
+		sectorY = pCreature->GetY();
+		return true;
+	},
+	.AddEffect = [](MEffect* pEffect) { g_pZone->AddEffect(pEffect); },
+	.GetEffect = [](TYPE_OBJECTID id) { return g_pZone != NULL ? g_pZone->GetEffect(id) : NULL; },
+	.RemoveEffect = [](TYPE_OBJECTID id) { if (g_pZone != NULL) g_pZone->RemoveEffect(id); },
+	.GetMaxEffectFrame = [](BLT_TYPE bltType, TYPE_FRAMEID frameID) { return g_pTopView->GetMaxEffectFrame(bltType, frameID); },
+	.PlayerID = []() { return g_pPlayer->GetID(); },
+	.IsSelectingWayPoint = []() { return UI_IsRunningSelectWayPoint() != FALSE; },
+	.SelectWayPoint = []() { UI_RunSelectWayPoint(); },
+	.PlayLoop = [](TYPE_SOUNDID id, int x, int y) {
+		ZONESOUND_NODE* pSound = new ZONESOUND_NODE(id);
+		pSound->Play(x, y, true);
+		return pSound;
+	},
+	.MoveSound = [](ZONESOUND_NODE* pSound, int x, int y) { pSound->Play(x, y, true); },
+	.DeleteSound = [](ZONESOUND_NODE* pSound) { delete pSound; },
 };
 
 static const MEffectHost s_EffectHost = {
@@ -4653,6 +4713,8 @@ InitGameObject()
 	MWarManager::SetHost(&s_WarHost);
 	MEffectTarget::SetHost(&s_EffectTargetHost);
 	MEffect::SetHost(&s_EffectHost);
+	MHelicopter::SetHost(&s_HelicopterHost);
+	ZONESOUND_NODE::SetHost(&s_ZoneSoundHost);
 	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
 	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
 	MAttachEffect::SetHost(&s_AttachEffectHost);
@@ -4738,7 +4800,35 @@ InitGameObject()
  
 	if (g_pObjectSelector==NULL)
 	{
-		g_pObjectSelector = new MObjectSelector;
+		// What selection asks of the game (task 4.225).
+		static const MObjectSelectorHost objectSelectorHost{
+			.ForceAttack = []() { return g_pSDLInput->KeyDown(DIK_LSHIFT) != FALSE; },
+			.PlayerHasEffectStatus = [](EFFECTSTATUS status) { return g_pPlayer->HasEffectStatus(status); },
+			.PlayerCanAttackTribe = [](MCreature* pCreature) { return g_pPlayer->CanAttackTribe(pCreature) != FALSE; },
+			.PlayerCanAttackGuild = [](MCreature* pCreature) { return g_pPlayer->CanAttackGuild(pCreature) != FALSE; },
+			.PlayerCreatureType = []() { return static_cast<int>(g_pPlayer->GetCreatureType()); },
+			.PlayerGuildNumber = []() { return static_cast<int>(g_pPlayer->GetGuildNumber()); },
+			.PlayerUnionGuildID = []() { return static_cast<int>(g_pPlayer->GetUnionGuildID()); },
+			.IsNonPK = []() { return g_pUserInformation->IsNonPK != FALSE; },
+			.GetName = [](MCreature* pCreature) { return pCreature->GetName(); },
+			.IsNPC = [](MCreature* pCreature) { return pCreature->IsNPC() != FALSE; },
+			.GetGuildNumber = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetGuildNumber()); },
+			.GetUnionGuildID = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetUnionGuildID()); },
+			.HasEffectStatus = [](MCreature* pCreature, EFFECTSTATUS status) { return pCreature->HasEffectStatus(status) != FALSE; },
+			.HasAvailableEffectStatus = [](MCreature* pCreature) {
+				return pCreature->GetObjectType() == MObject::TYPE_CREATURE && pCreature->IsAvailableEffectStatus();
+			},
+			.HasPlayerOnlySprite = [](MCreature* pCreature) {
+				const int spriteType = (*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteTypes[0];
+				return (*g_pCreatureSpriteTable)[spriteType].IsPlayerOnlySprite() != FALSE;
+			},
+			.HasZone = []() { return g_pZone != NULL; },
+			.GetZoneID = []() { return static_cast<int>(g_pZone->GetID()); },
+			.GetZonePKType = []() { return static_cast<int>(g_pZone->GetPKType()); },
+			.JusticeAttackManager = []() { return g_pJusticeAttackManager; },
+			.WarManager = []() { return g_pWarManager; },
+		};
+		g_pObjectSelector = new MObjectSelector(&objectSelectorHost);
 	}
 
 	//----------------------------------------

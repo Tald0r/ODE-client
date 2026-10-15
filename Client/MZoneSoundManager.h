@@ -1,13 +1,14 @@
 //-----------------------------------------------------------------------------
 // MZoneSoundManager.h
 //-----------------------------------------------------------------------------
-// Zone에서 소리가 나고 있는 도중에..
-// Player가 움직여버리면.. 소리들의 방향과 크기가 달라진다.
-// 순간적으로 나는 소리들은 무시하더라도...
-// 반복되는 소리같은 것들이나.. 좀 긴것들은.. 바꿔줘야한다.. 냠.
+// When the player moves while a zone's sounds play, their direction and
+// volume change. Momentary sounds can be ignored, but looping or long ones
+// have to follow.
 //
-// ZONESOUND_NODE는 현재 play되고 있는 소리 하나에 대한 정보이고
-// MZoneSoundManager는 그 소리들을 관리한다..
+// ZONESOUND_NODE is one sound playing now; MZoneSoundManager manages them
+// (task 4.227, gamemodel's since then). What they ask of the game - the
+// audio device, its sound cache, the options, the player's sector, the
+// zone's sector sounds and the clocks - goes through ZoneSoundHost.
 //-----------------------------------------------------------------------------
 
 #ifndef	__MZONESOUNDMANAGER_H__
@@ -31,20 +32,55 @@ typedef struct IDirectSoundBuffer* LPDIRECTSOUNDBUFFER;
 #endif
 
 #include <map>
-
 #include <fstream>
+#include <optional>
+#include "SectorSoundInfo.h"
+
+struct ZoneSoundHost
+{
+	// The audio device and its buffers.
+	bool (*AudioReady)() = nullptr;
+	LPDIRECTSOUNDBUFFER (*LoadWav)(const char* filename) = nullptr;
+	LPDIRECTSOUNDBUFFER (*Duplicate)(LPDIRECTSOUNDBUFFER buffer) = nullptr;
+	void (*Release)(LPDIRECTSOUNDBUFFER buffer) = nullptr;
+	bool (*IsPlaying)(LPDIRECTSOUNDBUFFER buffer) = nullptr;
+	void (*Play)(LPDIRECTSOUNDBUFFER buffer, bool loop) = nullptr;
+	void (*Stop)(LPDIRECTSOUNDBUFFER buffer) = nullptr;
+	void (*CenterToRightPan)(LPDIRECTSOUNDBUFFER buffer, int pan) = nullptr;
+	void (*CenterToLeftPan)(LPDIRECTSOUNDBUFFER buffer, int pan) = nullptr;
+	void (*CenterPan)(LPDIRECTSOUNDBUFFER buffer) = nullptr;
+	void (*SubVolumeFromMax)(LPDIRECTSOUNDBUFFER buffer, int volume) = nullptr;
+	// The sound cache: whether a sound is in it; storing one (false when it
+	// was not stored, otherwise old is what it pushed out); reading one.
+	bool (*IsCached)(TYPE_SOUNDID id) = nullptr;
+	bool (*Cache)(TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER buffer, LPDIRECTSOUNDBUFFER& old) = nullptr;
+	bool (*GetCached)(TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER& buffer) = nullptr;
+	// The options.
+	bool (*SoundOn)() = nullptr;
+	int (*SoundVolume)() = nullptr;
+	// The player's sector; false without a player.
+	bool (*PlayerPosition)(int& x, int& y) = nullptr;
+	// The sounds heard in the zone's sector; null without a zone.
+	const SECTORSOUND_LIST* (*SectorSounds)(int x, int y) = nullptr;
+	// The frame clock, and the game's hour (none before it is known).
+	MonotonicClock::TimePoint (*Now)() = nullptr;
+	std::optional<BYTE> (*GameHour)() = nullptr;
+};
 
 //-----------------------------------------------------------------------------
 // ZONESOUND_NODE
 //-----------------------------------------------------------------------------
-// 현재 Play되고 있는 소리에 관한 정보
-// m_pBuffer는 g_pSoundTable의 Buffer를 Duplicate해서 갖고 있는다.
+// A sound playing now. m_pBuffer holds a duplicate of the cached buffer
+// of its g_pSoundTable entry.
 //-----------------------------------------------------------------------------
 class ZONESOUND_NODE
 {
 	public :
 		ZONESOUND_NODE(TYPE_SOUNDID id=SOUNDID_NULL);
 		~ZONESOUND_NODE();
+
+		// Without a host no sound plays.
+		static const ZoneSoundHost*	SetHost(const ZoneSoundHost* pHost);
 
 		//---------------------------------------------------------------
 		// Get
@@ -78,17 +114,17 @@ class ZONESOUND_NODE
 	protected :
 		TYPE_SOUNDID				m_SoundID;				// Sound ID
 		LPDIRECTSOUNDBUFFER			m_pBuffer;				// buffer
-		int							m_X, m_Y;				// 소리가 출력되는 좌표
-		bool						m_bLoop;				// 반복 여부
-		bool						m_bContinueLoop;		// 계속 반복해서 소리낼까?
-		int							m_playerX, m_playerY;	// 이 소리가 날때의 player의 좌표
+		int							m_X, m_Y;				// where the sound is
+		bool						m_bLoop;				// whether it loops
+		bool						m_bContinueLoop;		// keep looping?
+		int							m_playerX, m_playerY;	// the player's sector when it played
 };
 
 
 //-----------------------------------------------------------------------------
 // MZoneSoundTable
 //-----------------------------------------------------------------------------
-// Zone에 존재하는 소리들에 대한 정보
+// The sounds of the zones, by ZoneSoundID
 //-----------------------------------------------------------------------------
 class MZoneSoundTable : public CTypeMap<ZONESOUND_INFO>
 {
@@ -100,7 +136,7 @@ class MZoneSoundTable : public CTypeMap<ZONESOUND_INFO>
 //-----------------------------------------------------------------------------
 // MZoneSoundManager
 //-----------------------------------------------------------------------------
-// id==ZoneSoundID. 현재 Play되고 있는 소리들 모음
+// The sounds playing now, by ZoneSoundID
 //-----------------------------------------------------------------------------
 class MZoneSoundManager : public CTypeMap<ZONESOUND_NODE>
 {

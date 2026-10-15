@@ -48,11 +48,24 @@ TEST(Netmarble, AnArgumentOf4096BytesIsNotOne)
 	CHECK_EQ(1, refused);
 }
 
+TEST(Netmarble, TheArgumentStartsAtTheFirstSpace)
+{
+	Fixture fixture;
+	// 4096 bytes after the first space, though few after the last.
+	const std::string line = "DarkEden.exe " + std::string(4096, 'a') + " x";
+	CHECK(!ParsingNetmarble(line.c_str()));
+	CHECK_EQ(0, refused);
+}
+
 TEST(Netmarble, WithoutAHostARefusalOnlyReturns)
 {
 	refused = 0;
 	SetNetmarbleHost(nullptr);
 	CHECK(!ParsingNetmarble("DarkEden.exe 2,20,id,key"));
+	const NetmarbleHost empty{};
+	SetNetmarbleHost(&empty);
+	CHECK(!ParsingNetmarble("DarkEden.exe 2,20,id,key"));
+	SetNetmarbleHost(nullptr);
 	CHECK_EQ(0, refused);
 	CHECK(g_CpCookie.empty());
 }
