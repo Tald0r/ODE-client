@@ -363,7 +363,7 @@ namespace {
 // The player stands straight below the NPC (12,34): swapping x and y would
 // face another way.
 const int PlayerX = 12, PlayerY = 40;
-// Of 20000 frames, how often the NPC of the type turned to the player,
+// Of 100000 frames, how often the NPC of the type turned to the player,
 // and how many stands it ended. Attacking, it never stands to the end.
 std::pair<int, int> FacingThePlayer(Scene& scene, int type, bool attacking = false)
 {
@@ -376,7 +376,7 @@ std::pair<int, int> FacingThePlayer(Scene& scene, int type, bool attacking = fal
 	const BYTE away = BYTE((toPlayer + 4) % 8);
 	int facing = 0, standEnds = 0;
 	std::srand(1);
-	for (int frame = 0; frame < 20000; ++frame)
+	for (int frame = 0; frame < 100000; ++frame)
 	{
 		if (attacking && npc.GetAction() == ACTION_STAND) npc.SetAction(ACTION_ATTACK);
 		if (npc.GetAction() == ACTION_STAND && npc.GetActionCount() + 1 >= npc.GetActionCountMax()) ++standEnds;
@@ -396,14 +396,14 @@ TEST(NPC, BathoryAndTepezLookAtThePlayerNowAndThen)
 	somebody.SetCreatureType(5);
 	somebody.SetPosition(PlayerX, PlayerY);
 	player = &somebody;
-	// At the end of a stand, one time in five: of about 2000 stand ends,
-	// within four standard deviations of a fifth (about 400, give or take
-	// 72). One in four (500) or three (667), or a check on two frames of
-	// each stand (800), falls outside.
+	// At the end of a stand, one time in five: of about 10000 stand ends,
+	// within four standard deviations (160) of a fifth (2000). One in four
+	// (2500, itself give or take 43) or three (3333), or a check on two
+	// frames of each stand, falls far outside on any C library.
 	for (int type : {217, 366})
 	{
 		const std::pair<int, int> seen = FacingThePlayer(scene, type);
-		CHECK(seen.second >= 1900);
+		CHECK(seen.second >= 9500);
 		const double expected = seen.second / 5.0;
 		const double sd = std::sqrt(seen.second * 0.2 * 0.8);
 		CHECK(std::fabs(seen.first - expected) <= 4 * sd);
@@ -416,15 +416,19 @@ TEST(NPC, BathoryAndTepezLookAtThePlayerNowAndThen)
 		dead.SetCreatureType(366);
 		dead.SetPosition(12, 34);
 		dead.SetDead();
+		CHECK(!dead.IsAlive());
 		const BYTE toPlayer = SelectFacingDirection(12, 34, PlayerX, PlayerY);
-		int facing = 0;
+		int facing = 0, standEnds = 0;
 		std::srand(1);
 		for (int frame = 0; frame < 2000; ++frame)
 		{
+			// Every other clause holds: it stands, to the end of its stand.
+			if (dead.GetAction() == ACTION_STAND && dead.GetActionCount() + 1 >= dead.GetActionCountMax()) ++standEnds;
 			dead.SetDirection(BYTE((toPlayer + 4) % 8));
 			dead.Action();
 			if (dead.GetServerDirection() == toPlayer) ++facing;
 		}
+		CHECK(standEnds > 0);
 		CHECK_EQ(0, facing);
 	}
 	CHECK_EQ(0, FacingThePlayer(scene, 300).first);

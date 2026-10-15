@@ -2,35 +2,27 @@
 // MFakeCreature.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "ClientDef.h"
 #include "MFakeCreature.h"
-#include "MTopView.h"
-#include "DebugInfo.h"
-#include "MPlayer.h"
+#include "DebugLog.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
+#include "WorldEventsHost.h"
+#include "WorldTileGeometry.h"
+#include "DirectionSelection.h"
+#include "ViewSectors.h"
+#include "MViewDef.h"
 #include "SkillDef.h"
 #include "UserInformation.h"
-#include "VS_UI.h"
 #include "OrbitEffectPolicy.h"
 extern MonotonicClock::TimePoint g_FrameNow;
 extern bool			HasEffectStatusSummonSylph( MCreature* pCreature );
 extern void			RemoveEffectStatusSummonSylph( MCreature* pCreature );
-extern	LONG g_SECTOR_WIDTH;
-extern	LONG g_SECTOR_HEIGHT;
-extern	LONG g_SECTOR_WIDTH_HALF;
-extern	LONG g_SECTOR_HEIGHT_HALF;
-extern	LONG g_SECTOR_SKIP_PLAYER_LEFT;
-extern	LONG g_SECTOR_SKIP_PLAYER_UP;
-extern	LONG g_TILESURFACE_SECTOR_WIDTH;
-extern	LONG g_TILESURFACE_SECTOR_HEIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_DOWN;
-extern	LONG g_TILESURFACE_WIDTH;
-extern	LONG g_TILESURFACE_HEIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
-extern POINT GetNextTileByDirection(int TileX, int TileY, BYTE Dir);
+// The fake creatures' allocator pool (task 4.245: MemoryPool.cpp's until
+// then, which it retires).
+MemoryPool g_FakeCreatureMemoryPool( sizeof( MFakeCreature ), 30 );
+
 #define MoveNextPosition()					\
 											\
 		MovePosition( m_NextX, m_NextY );	\
@@ -73,8 +65,8 @@ DWORD MFakeCreature::m_FakeID = 0;
 DWORD
 MFakeCreature::GetFakeID()
 {
-	// 서버에서는 10000부터 objectID를 사용한다..고 가정하고...
-	// 냠냠.... 하드 코딩~~ 케케..	
+	// Assumes the server uses objectIDs starting from 10000... probably.
+	// Yum yum.... hard-coded, heh..
 	MCreature *pFakeCreature = NULL;
 
 	do
@@ -84,7 +76,7 @@ MFakeCreature::GetFakeID()
 		{
 			m_FakeID = 0;
 		}
-		pFakeCreature = g_pZone->GetFakeCreature(m_FakeID);
+		pFakeCreature = ZoneState::GetFakeCreature(m_FakeID);
 
 	} while(pFakeCreature != NULL);
 
@@ -113,15 +105,15 @@ MFakeCreature::MFakeCreature()
 
 	m_pPetItem = NULL;
 
-	// 목적지	
+	// destination
 	m_DestX = SECTORPOSITION_NULL;
 	m_DestY = SECTORPOSITION_NULL;
 
-	// 다음 목적지
+	// next destination
 	m_NextDestX = SECTORPOSITION_NULL;
 	m_NextDestY = SECTORPOSITION_NULL;
 
-	// 못 갔던 곳..
+	// a place it could not reach..
 	m_BlockDestX = SECTORPOSITION_NULL;
 	m_BlockDestY = SECTORPOSITION_NULL;
 
@@ -138,7 +130,7 @@ MFakeCreature::~MFakeCreature()
 	if(m_pPetItem != NULL)
 	{
 		TYPE_OBJECTID id = GetOwnerID();
-		if(g_pPlayer != NULL && id != g_pPlayer->GetID())
+		if(PlayerState::Creature() != NULL && id != PlayerState::Creature()->GetID())
 		{
 			delete m_pPetItem;
 			m_pPetItem = NULL;
@@ -169,23 +161,23 @@ MFakeCreature::SetFakeCreatureType(FAKE_CREATURE_TYPE fct)
 	switch (fct)
 	{
 		//----------------------------------------------
-		// 흐릿한 한번의 동작 후에 사라짐
+		// disappears after one faded action
 		//----------------------------------------------
-		case FAKE_CREATURE_FAST_MOVE_ACTION :		// [새기술]
+		case FAKE_CREATURE_FAST_MOVE_ACTION :		// [new skill]
 		case FAKE_CREATURE_FADE_ACTION :
 		case FAKE_CREATURE_BRIGHTNESS :
 			SetFade();
 		break;
 
 		//----------------------------------------------
-		// 포탈로 들어가는 경우
+		// when entering a portal
 		//----------------------------------------------
 		case FAKE_CREATURE_TO_PORTAL :
 			SetCutHeightFrom( 0, 80, 5 );
 		break;
 
 		//----------------------------------------------
-		// 빙글빙글
+		// spinning around
 		//----------------------------------------------
 		case FAKE_CREATURE_TURNING_MOVE :
 			SetFade();
@@ -198,9 +190,9 @@ MFakeCreature::SetFakeCreatureType(FAKE_CREATURE_TYPE fct)
 }
 
 //----------------------------------------------------------------------
-// Set ActionResult  [새기술]
+// Set ActionResult  [new skill]
 //----------------------------------------------------------------------
-// Creature에 넣어야 되는데.. 컴파일 시간을 줄이기 위해서 -_-;;
+// It should go into Creature.. but to cut compile time -_-;;
 //----------------------------------------------------------------------
 /*
 MActionResult*		
@@ -208,12 +200,12 @@ MFakeCreature::SetActionResult(MActionResult* pResult)
 {
 	if (m_pActionResult != NULL)
 	{		
-		// 이미 있던 결과를 처리해준다.	
+		// process the result that already exists.
 		// [ TEST CODE ]
-		// 결과 처리..
+		// process the result..
 		//
-		// (!) m_pActionResult값이 Execute에서 변할 수 있어서 
-		//		저장했다가 지워줘야 한다.
+		// (!) m_pActionResult may change inside Execute,
+		//		so it must be saved and deleted afterwards.
 		MActionResult* pOldResult = m_pActionResult;
 
 		m_pActionResult = NULL;
@@ -223,7 +215,7 @@ MFakeCreature::SetActionResult(MActionResult* pResult)
 		delete pOldResult;			
 	}
 
-	// 결과를 설정
+	// set the result
 	m_pActionResult = pActionResult;
 }
 */
@@ -248,12 +240,12 @@ MFakeCreature::Action()
 		FadeChatString();		
 	}
 	//--------------------------------------------------------
-	// Status 상태 변화	- HP, MP 변화
+	// Status change - HP, MP change
 	//--------------------------------------------------------
 	UpdateStatus();	
 	
 	//--------------------------------------------------------
-	// 특수한 효과들
+	// special effects
 	//--------------------------------------------------------
 	UpdateInvisible();
 	UpdateCasket();
@@ -286,7 +278,7 @@ MFakeCreature::Action()
 
 	}
 	//--------------------------------------------------------
-	// 방향 전환을 자연스럽게
+	// make the direction change look natural
 	//--------------------------------------------------------
 	ChangeNearDirection();
 	//m_CurrentDirection = m_Direction;
@@ -296,19 +288,19 @@ MFakeCreature::Action()
 
 	if (m_nNextUsedActionInfo!=ACTIONINFO_NULL)
 	{		
-		// affectUsedActionInfo를 실행하고 나면
-		// NextActionInfo가 바뀔 수가 있다.			
+		// after affectUsedActionInfo is executed,
+		// NextActionInfo may have changed.
 		TYPE_ACTIONINFO nextUsedActionInfo = m_nNextUsedActionInfo;
 		TYPE_ACTIONINFO nextNextUsedActionInfo = ACTIONINFO_NULL;
 
 		//--------------------------------------------------------
-		// 이전에 사용 중인 기술이 있다면... 바로 적용 시킨다.
+		// if a skill was in use before... apply it right away.
 		//--------------------------------------------------------
 		if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 		{	
 			m_nNextUsedActionInfo = ACTIONINFO_NULL;
 
-			// castingEffect가 아직 출력 안됐으면 출력시킨다.
+			// if the castingEffect has not been shown yet, show it.
 			if (GetActionInfoCastingStartFrame(m_nUsedActionInfo) >= m_ActionCount)
 			{
 				AttachCastingEffect( m_nUsedActionInfo, TRUE );
@@ -325,7 +317,7 @@ MFakeCreature::Action()
 
 		int actionInfoAction = GetActionInfoAction(m_nUsedActionInfo);
 
-		// 맞는 동작이면.. 피 튀김..
+		// if it is a hit action.. blood splatter..
 		if (actionInfoAction==ACTION_DAMAGED)
 		{
 			if //(m_Action!=ACTION_STAND 
@@ -341,15 +333,15 @@ MFakeCreature::Action()
 			}
 		}
 
-		// 2001.05.21 추가
-		// 기술 동작에서 ACTION_STAND는 보여주지 않는다.
+		// added 2001.05.21
+		// ACTION_STAND is not shown in a skill action.
 		if (actionInfoAction!=ACTION_STAND)
 		{
 			SetAction( actionInfoAction );
 		}
 	}
 	//--------------------------------------------------------
-	// 기억된 다음 행동... 
+	// remembered next action...
 	//--------------------------------------------------------
 	else if (m_bNextAction 
 			|| (m_NextAction!=ACTION_STAND 
@@ -360,7 +352,7 @@ MFakeCreature::Action()
 	}	 
 
 	//--------------------------------------------------------
-	// 마비 됐을 때..
+	// when paralyzed..
 	//--------------------------------------------------------
 	if (HasEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS)
 		|| HasEffectStatus(EFFECTSTATUS_EXPLOSION_WATER)
@@ -368,7 +360,7 @@ MFakeCreature::Action()
 		|| HasEffectStatus(EFFECTSTATUS_GLACIER))
 	{			
 		//--------------------------------------------------------
-		// 기술을 사용하려는 경우
+		// when trying to use a skill
 		//--------------------------------------------------------
 		if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 		{
@@ -377,28 +369,28 @@ MFakeCreature::Action()
 		}
 	}
 	//--------------------------------------------------------
-	// 일반적인 경우
+	// normal case
 	//--------------------------------------------------------
 	else
 	{
 		//--------------------------------------------------------
-		// Action 처리
+		// process Action
 		//--------------------------------------------------------
 		if (m_ActionCount < m_ActionCountMax)
 		{		
 			//--------------------------------------------------------
-			// 기술을 사용하려는 경우
+			// when trying to use a skill
 			//--------------------------------------------------------
 			if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 			{
 				ActionEffect();
 			}
 			//--------------------------------------------------------
-			// 행동..
+			// action..
 			//--------------------------------------------------------
 			else
 			{
-				// 적절한 Action 수행
+				// perform the appropriate Action
 				//switch (m_Action)
 				if (m_Action==ACTION_STAND 
 					|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND))
@@ -410,7 +402,7 @@ MFakeCreature::Action()
 				else if (m_Action==ACTION_MOVE
 					|| IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_MOVE)
 				{
-						// 걷는 동작은 따로 처리한다.
+						// walking action is handled separately.
 						//ActionMove();
 				}
 				*/
@@ -424,25 +416,25 @@ MFakeCreature::Action()
 		}
 		
 		//--------------------------------------------------------
-		// Action이 끝난 경우...
+		// when the Action has finished...
 		//--------------------------------------------------------
 		if (m_ActionCount>=m_ActionCountMax)
 		{
 			//--------------------------------------------------------
-			// 살아 있는 경우만
+			// only if alive
 			//--------------------------------------------------------
 			if (m_bAlive)
 			{
 				//--------------------------------------------------------
-				// 목표 타일에 도착한 상태에서..
-				// 계속 서 있거나.. 다 걸은 경우는.. 
-				// 제자리에서 흔들거리는 모습을 표현해준다.
+				// having arrived at the target tile..
+				// if it keeps standing.. or has finished walking..
+				// show it swaying in place.
 				//--------------------------------------------------------
 				if (m_MoveCount==m_MoveCountMax)
 				{		
 					//#ifdef CONNECT_SERVER
 					//--------------------------------------------------------
-					// 다음 이동이 없다면.. 정지시킨다.
+					// if there is no next move.. stop it.
 					//--------------------------------------------------------
 					AffectMoveBuffer();
 
@@ -464,8 +456,8 @@ MFakeCreature::Action()
 					//#endif
 				}
 				//--------------------------------------------------------
-				// 걷다가 다른 action을 보여줬거나 계속 걷던 중이다.
-				// 다시 걷는다.
+				// it showed another action while walking, or was still walking.
+				// walk again.
 				//--------------------------------------------------------
 				else 
 				{			
@@ -475,7 +467,7 @@ MFakeCreature::Action()
 
 					if (m_MoveCount>=m_MoveCountMax)
 					{
-						// 다음 이동할 곳이 있으면..
+						// if there is a next place to move to..
 //						if (m_NextX != SECTORPOSITION_NULL)
 						if (m_NextX != SECTORPOSITION_NULL
 							&& m_NextDirection != DIRECTION_NULL)
@@ -488,7 +480,7 @@ MFakeCreature::Action()
 //							MovePosition( m_NextX, m_NextY );
 //							m_Direction = m_NextDirection;					
 //							
-//							// 이동하게 한다.
+//							// make it move.
 //							SetAction( m_MoveAction );
 //
 //							m_NextX = SECTORPOSITION_NULL;
@@ -512,7 +504,7 @@ MFakeCreature::Action()
 							//#ifdef CONNECT_SERVER
 
 							//--------------------------------------------------------
-							// 다음 이동이 없다면.. 정지시킨다.
+							// if there is no next move.. stop it.
 							//--------------------------------------------------------
 							AffectMoveBuffer();
 
@@ -541,7 +533,7 @@ MFakeCreature::Action()
 }
 
 //----------------------------------------------------------------------
-// Set FakeCreature FastMoveAction [새기술]
+// Set FakeCreature FastMoveAction [new skill]
 //----------------------------------------------------------------------
 void
 MFakeCreature::SetFakeCreatureFastMoveAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY,
@@ -567,7 +559,7 @@ MFakeCreature::SetFakePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	switch (m_FakeCreatureType)
 	{
 		//----------------------------------------------
-		// 빙글빙글
+		// spinning around
 		//----------------------------------------------
 		case FAKE_CREATURE_TURNING_MOVE :
 		{
@@ -579,7 +571,7 @@ MFakeCreature::SetFakePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				actionCountMax = 1;
 			}
 
-			// 목표 200, 현재 100
+			// target 200, current 100
 			// gapX = 200 - 100 = 100
 			// m_cX = 100 / c
 			int gapX = m_FakeX - m_X;
@@ -609,7 +601,7 @@ MFakeCreature::UpdateFake()
 	switch (m_FakeCreatureType)
 	{
 		//----------------------------------------------
-		// 빙글빙글
+		// spinning around
 		//----------------------------------------------
 		case FAKE_CREATURE_TURNING_MOVE :
 		{
@@ -623,20 +615,20 @@ MFakeCreature::UpdateFake()
 				int sX = static_cast<int>(m_FakeSX);
 				int sY = static_cast<int>(m_FakeSY);
 
-				// 한 타일 좌표를 넘게 이동했으면..
+				// if it moved more than one tile coordinate..
 				if (abs(sX) >= TILE_X || abs(sY) >= TILE_Y)
 				{
-					// 새로운 map좌표 계산
+					// calculate the new map coordinate
 					int mapX = m_X;
 					int mapY = m_Y;
-					int	pixelX = MTopView::MapToPixelX(mapX);
-					int	pixelY = MTopView::MapToPixelY(mapY);
+					int	pixelX = WorldTileGeometry::TileToPixelX(mapX);
+					int	pixelY = WorldTileGeometry::TileToPixelY(mapY);
 
 					pixelX += sX;
 					pixelY += sY;
 
-					m_X = MTopView::PixelToMapX(pixelX);
-					m_Y = MTopView::PixelToMapY(pixelY);
+					m_X = WorldTileGeometry::PixelToTileX(pixelX);
+					m_Y = WorldTileGeometry::PixelToTileY(pixelY);
 
 					sX %= TILE_X;
 					sY %= TILE_Y;
@@ -683,7 +675,7 @@ MFakeCreature::IsFakeEnd()
 					&& m_ActionCount>=m_ActionCountMax;
 		break;
 
-		// [새기술]
+		// [new skill]
 		case FAKE_CREATURE_FAST_MOVE_ACTION :
 			return !m_bFastMove
 					&& m_nUsedActionInfo==ACTIONINFO_NULL
@@ -693,12 +685,12 @@ MFakeCreature::IsFakeEnd()
 		break;
 		case FAKE_CREATURE_ROCKET:
 			{
-				MCreature *pCreature = g_pZone->GetCreature(m_TraceID);	
+				MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 //			if(pCreature != NULL)
 //			{
 //				if(GetX() == pCreature->GetX() && GetY() == pCreature->GetY())
 //				{
-//					ExecuteActionInfoFromMainNode(RESULT_TEMP_SKILL_PLASMA_ROCKET_LAUNCHER,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,	
+//					WorldEvents::ExecuteActionInfoFromMainNode(RESULT_TEMP_SKILL_PLASMA_ROCKET_LAUNCHER,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,
 //							pCreature->GetX(), pCreature->GetY(), 0, 10, NULL, false);			
 //					return true;
 //				}
@@ -706,7 +698,7 @@ MFakeCreature::IsFakeEnd()
 				if( MonotonicClock::Now() > m_nextMoveTime || NULL == pCreature)
 				{
 					if(pCreature != NULL)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_PLASMA_ROCKET_LAUNCHER_BLOW,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_PLASMA_ROCKET_LAUNCHER_BLOW,pCreature->GetX(), pCreature->GetY(), 0,pCreature->GetDirection(),	0,
 								pCreature->GetX(), pCreature->GetY(), 0, 10, NULL, false);			
 					return true;
 				}
@@ -721,11 +713,11 @@ MFakeCreature::IsFakeEnd()
 		case FAKE_CREATURE_DRAGON_TORNADO:
 			{
 				POINT	firstSector, endSector;
-				firstSector.x = g_pPlayer->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1; 
-				firstSector.y = g_pPlayer->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
+				firstSector.x = PlayerState::Creature()->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1;
+				firstSector.y = PlayerState::Creature()->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
 				endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 				endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
-				// 화면 밖으로 가믄 없애자..일단..
+				// if it goes off screen, remove it.. for now..
 				if(!IsInSector(firstSector.x, firstSector.y, endSector.x, endSector.y))
 					return true;
 			}
@@ -738,7 +730,7 @@ MFakeCreature::IsFakeEnd()
 }
 
 //----------------------------------------------------------------------
-// Packet Special Action To Other [새기술]
+// Packet Special Action To Other [new skill]
 //----------------------------------------------------------------------
 void		
 MFakeCreature::PacketSpecialActionToOther(TYPE_ACTIONINFO nActionInfo, TYPE_OBJECTID id, MActionResult* pActionResult)
@@ -763,7 +755,7 @@ MFakeCreature::PacketSpecialActionToOther(TYPE_ACTIONINFO nActionInfo, TYPE_OBJE
 void
 MFakeCreature::KeepTraceCreature()
 {
-	MCreature *pCreature = g_pZone->GetCreature(m_TraceID);
+	MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 
 	if(pCreature != NULL)
 	{
@@ -784,7 +776,7 @@ MFakeCreature::KeepTraceCreature()
 			m_bTraceFlag = true;
 			RemoveNodes();
 			SetNextDestination(pCreature->GetX(), pCreature->GetY());
-			// 하드하드 ㅋㅋㅋ -ㅅ-
+			// hard-coded, hard-coded, heh
 			if(m_Action == ACTION_VAMPIRE_DRAIN)
 			{
 				if(m_ActionCount < m_ActionCountMax-13)
@@ -802,7 +794,7 @@ MFakeCreature::KeepTraceCreature()
 		static BYTE lastAction = ACTION_STAND;
 		if(lastAction != ACTION_STAND && m_Action == ACTION_STAND)
 		{
-			// 멈췄다
+			// it stopped
 			m_bTraceFlag = false;
 		}
 		lastAction = m_Action;
@@ -826,16 +818,16 @@ MFakeCreature::KeepTraceCreature()
 					case 3:
 						m_PatrolCount = rand()%3+2;
 						m_nextMoveTime = MonotonicClock::Now() + MonotonicClock::Millis((rand()%3+2)*1000);
-						ExecuteActionInfoFromMainNode(
-							SKILL_CLIENT_TANK_SMOKE,										// 사용 기술 번호
+						WorldEvents::ExecuteActionInfoFromMainNode(
+							SKILL_CLIENT_TANK_SMOKE,										// skill number used
 							
 							0, 0, 0,
-							DIRECTION_DOWN, // 사용 방향
+							DIRECTION_DOWN, // direction used
 							
-							GetID(),												// 목표에 대한 정보
+							GetID(),												// information about the target
 							0, 0, 0, 
 							
-							0,													// 기술의 (남은) 지속 시간		
+							0,													// (remaining) duration of the skill
 							
 							NULL,
 							
@@ -901,21 +893,21 @@ MFakeCreature::KeepTraceCreature()
 //----------------------------------------------------------------------
 // Set Next Destination
 //----------------------------------------------------------------------
-// 다음에 이동할 목표 위치를 결정한다.
-// 목표위치가 갈 수 없는 곳인 경우... 어떻게 할 것인가?
+// Decide the next target position to move to.
+// What to do if the target position is unreachable?
 //----------------------------------------------------------------------
 bool	
 MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 { 
-	// 추적 중이 아니면서
-	// 이미 목표위치에 있는 경우는 길찾기 필요없다.
+	// while not tracing,
+	// if already at the target position, no path finding is needed.
 	if (m_bTraceFlag==false && sX==m_X && sY==m_Y)
 	{
 		return false;
 	}	
 
-	// 잘못된 값
-	// 이전에 못 갔던 곳..
+	// invalid value
+	// a place it could not reach before..
 	if (sX==SECTORPOSITION_NULL || sY==SECTORPOSITION_NULL
 		|| (sX==m_BlockDestX && sY==m_BlockDestY))
 	{
@@ -924,7 +916,7 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 
 	if(m_bTraceFlag == false)
 	{
-		BOOL bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
+		BOOL bCanStand = ZoneState::CanMoveIn(m_pZone, m_MoveType, sX,sY);
 		if(!bCanStand)
 		{
 			POINT MovePoint;
@@ -943,16 +935,16 @@ MFakeCreature::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 			else
 				MovePoint.x = 0;
 
-			int limit = 20;	// 유효값 20번내에 못찾으면 포기
+			int limit = 20;	// give up if not found within 20 valid tries
 
 			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY )
-				&& sX < m_pZone->GetWidth() && sY < m_pZone->GetHeight()
+				&& sX < ZoneState::GetWidthIn(m_pZone) && sY < ZoneState::GetHeightIn(m_pZone)
 				&& limit-- > 0
 				)
 			{
 				if( GetX() != sX )sX = static_cast<TYPE_SECTORPOSITION>(sX + MovePoint.x);
 				if( GetY() != sY )sY = static_cast<TYPE_SECTORPOSITION>(sY + MovePoint.y);
-				bCanStand = m_pZone->CanMove( m_MoveType, sX,sY );
+				bCanStand = ZoneState::CanMoveIn(m_pZone,  m_MoveType, sX,sY );
 			};
 
 			if( bCanStand == FALSE || (GetX() == sX && GetY() == sY))
@@ -982,15 +974,15 @@ MFakeCreature::GetNextDestination(POINT &dest)
 //----------------------------------------------------------------------
 // Get NextPosition()
 //----------------------------------------------------------------------
-// 길찾기에 의해서 정해진 길들 중에서
-// 바로 다음에 가야할 Sector에 대한 좌표를 넘겨준다.
+// Of the paths decided by path finding,
+// return the coordinates of the Sector to go to right next.
 //
-// '현재위치'에서 '다음 방향'에 대해 적절한 변화를 더해준다.
+// add the appropriate change for the 'next direction' to the 'current position'.
 //----------------------------------------------------------------------
 bool
 MFakeCreature::GetNextPosition(POINT &next)
 {
-	// 갈 길이 정해지지 않은 경우
+	// when no path has been decided
 	if (m_listDirection.empty())
 	{
 		//next.x = SECTORPOSITION_NULL;
@@ -999,9 +991,9 @@ MFakeCreature::GetNextPosition(POINT &next)
 	}
 
 	
-	// 갈 길이 정해진 경우, 다음 좌표를 return한다.
+	// when a path has been decided, return the next coordinates.
 
-	// 현재 위치에서 다음 방향에 대해서 목표 설정
+	// set the target from the current position for the next direction
 	next.x = m_X;
 	next.y = m_Y;
 	
@@ -1024,14 +1016,14 @@ MFakeCreature::GetNextPosition(POINT &next)
 //----------------------------------------------------------------------
 // Set Destination(sX, sY)
 //----------------------------------------------------------------------
-// 목표위치를 지정하는 순간에 목표위치까지의
-// Best Path를 결정해서 m_listDirection에 저장해둔다.
+// At the moment the target position is specified,
+// decide the Best Path to it and store it in m_listDirection.
 //----------------------------------------------------------------------
 bool
 MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 {
 	if(HasEffectStatus(EFFECTSTATUS_SLEEP)
-		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+		&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
@@ -1046,7 +1038,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	#endif
 
 	//-------------------------------------------------------
-	// 살아있지 않은 경우..
+	// if not alive..
 	//-------------------------------------------------------
 	if (!m_bAlive)
 	{
@@ -1065,12 +1057,12 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// do not check if outside the Zone area.
 	//-------------------------------------------------------
-	if (sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
+	if (sX>=ZoneState::GetWidthIn(m_pZone) || sY>=ZoneState::GetHeightIn(m_pZone)
 		)
 	{
-		// Zone영역 밖이면 check 안 할 경우
+		// case: do not check if outside the Zone area
 		//m_ActionCount = m_ActionCountMax;
 		m_MoveCount = m_MoveCountMax;
 		m_DestX = SECTORPOSITION_NULL;
@@ -1081,29 +1073,10 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		#endif
 
 		return false;
-
-		// 현재 진행 방향으로 이동하게 하는 경우
-		/*
-		POINT position = g_pTopView->GetSelectedSector(g_x, g_y);		
-		BYTE direction = GetDirectionToPosition(position.x, position.y);		
-
-		// 방향에 따른 위치를 결정한다.		
-		MCreature::GetNextPosition(direction, position);
-		
-		sX = position.x;
-		sY = position.y;
-		
-		// 현재 진행 방향이 Zone을 벗어나는 경우
-		if (sX<0 || sY<0 
-			|| sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()) 
-		{
-			return false;
-		}
-		*/
 	}
 
 	//-------------------------------------------------------
-	// 추적 중일 경우, 이미 사정 거리에 있을 때...
+	// when tracing and already within range...
 	//-------------------------------------------------------
 	if (m_bTraceFlag == true
 		&& max(abs(m_TraceX-m_X), abs(m_TraceY-m_Y))<=1)
@@ -1148,34 +1121,34 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	*/
 
 	//--------------------------------------------------------------
-	// 갈 수 있는 곳이면
+	// if it is a place it can go
 	//--------------------------------------------------------------
 	// Best First Search
 	//--------------------------------------------------------------
-	BOOL	bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
+	BOOL	bCanStand = ZoneState::CanMoveIn(m_pZone, m_MoveType, sX,sY);
 
 	//--------------------------------------------------------------
-	// 갈 수 있는 곳이거나
-	// 추적중이면 Best Search~로 길을 찾는다.
+	// if it is a place it can go, or
+	// if tracing, find the path with Best Search~.
 	//--------------------------------------------------------------
 	if (bCanStand || m_bTraceFlag == true) 
 	{		
 		//-------------------------------------------------------
-		// 목표위치를 저장
+		// store the target position
 		//-------------------------------------------------------
 		m_DestX = sX;
 		m_DestY = sY;
 
 		//-------------------------------------------------------
-		// priority queue를 초기화한다.
+		// initialize the priority queue.
 		//-------------------------------------------------------
 		RemoveNodes();	
 
 		//-------------------------------------------------------
-		// visited를 모두 false로 해두고
-		// 현재위치부터 방문하지 않은 곳들을 방문하기 시작한다.
+		// set visited all to false, and
+		// start visiting the unvisited places from the current position.
 		//-------------------------------------------------------
-		POINT firstSector = g_pTopView->GetFirstSector();
+		POINT firstSector = WorldEvents::GetFirstSector();
 		//int x0 = m_DestX - g_pClientConfig->MAX_FINDPATH_WIDTH, 
 		//	x1 = m_DestX + g_pClientConfig->MAX_FINDPATH_WIDTH+1, 
 		//	y0 = m_DestY - g_pClientConfig->MAX_FINDPATH_HEIGHT,
@@ -1187,21 +1160,21 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 		if (x0 < 0)						
 			x0 = 0;
-		if (x1 > g_pZone->GetWidth())	
-			x1 = g_pZone->GetWidth();
+		if (x1 > ZoneState::GetWidth())
+			x1 = ZoneState::GetWidth();
 		
 		if (y0 < 0)				
 			y0 = 0;
-		if (y1 > g_pZone->GetHeight())	
-			y1 = g_pZone->GetHeight();
+		if (y1 > ZoneState::GetHeight())
+			y1 = ZoneState::GetHeight();
 		
-//		int size = x1-x0;	// BYTE수
+//		int size = x1-x0;	// number of BYTEs
 		for (int i=y0; i<y1; i++)
 		{			
 			for (int j=x0; j<x1; j++)
 			{
 				//m_ppVisited[i][j] = false;
-				g_pZone->UnSetVisitedFlag(j, i);
+				ZoneState::UnSetVisitedFlag(j, i);
 			}
 //			memset( m_ppVisited[i]+x0, false, size );
 		}
@@ -1209,20 +1182,20 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 		//-------------------------------------------------------
 		//
-		// 현재 위치
+		// current position
 		//
 		//-------------------------------------------------------
 
 		//-------------------------------------------------------
-		// 목적지를 향한 방향부터 길찾기를 한다.		
+		// start path finding from the direction toward the destination.
 		//-------------------------------------------------------
 		static BYTE FirstDirection = GetDirectionToPosition(m_DestX, m_DestY);
 		static TYPE_SECTORPOSITION previousDestX = SECTORPOSITION_NULL;
 		static TYPE_SECTORPOSITION previousDestY = SECTORPOSITION_NULL;
 
 		//-------------------------------------------------------
-		// 방금 전의 길찾기 했던거랑 목표 위치가 다른 경우에만 
-		// 목적지를 향한 방향을 설정한다.
+		// only when the target position differs from the previous path finding,
+		// set the direction toward the destination.
 		//-------------------------------------------------------
 		if (previousDestX!=m_DestX || previousDestY!=m_DestY)
 		{
@@ -1231,8 +1204,8 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			previousDestY = m_DestY;
 		}
 		//-------------------------------------------------------
-		// 같은 목표를 향해 나아가는 경우는 
-		// 현재 Player의 방향부터 살펴본다.
+		// when heading to the same target,
+		// look from the current Player direction first.
 		//-------------------------------------------------------
 		else
 		{
@@ -1248,7 +1221,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 									);
 	
 		//-------------------------------------------------------
-		// listDNodes에 넣어서 나중에 지워준다.
+		// put it into listDNodes to delete later.
 		//-------------------------------------------------------
 		m_listDNodes.push_back( currentDNode );
 
@@ -1257,19 +1230,19 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		
 		POINT	next;
 		int		dist;
-		bool	bFound = false;		// 아직 도달하지 않았다는 의미
+		bool	bFound = false;		// means not reached yet
 
 		while (!bFound && !m_pqDNodes.empty())
 		{
 			//-------------------------------------------------------
-			// 제일 괜찮은(!) Node를 골라서(priority queue이다)
-			// 어디로 가야할지에 대해서 계산해본다.
+			// pick the best (!) Node (it is a priority queue)
+			// and calculate where to go.
 			//-------------------------------------------------------
 			DNode* pDNode = m_pqDNodes.top();
 			m_pqDNodes.pop();
 
 			//-------------------------------------------------------
-			// 완전히 도착한 경우
+			// fully arrived
 			//-------------------------------------------------------
 			if (pDNode->distance==0) 
 			{
@@ -1279,7 +1252,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			}
 			
 			//-------------------------------------------------------
-			// 사정 거리 이내로 접근하기
+			// approach to within range
 			//-------------------------------------------------------
 			if (m_bTraceFlag == true && 
 				max(abs(pDNode->x-m_DestX), abs(pDNode->y-m_DestY))<=1)
@@ -1292,7 +1265,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			int Direction = pDNode->direction;
 
 			//-------------------------------------------------------
-			// 8방향을 모두 check
+			// check all 8 directions
 			//-------------------------------------------------------
 			for (int i=0; i<8; Direction++, i++)
 			{		
@@ -1314,34 +1287,34 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				}
 
 				//-------------------------------------------------------
-				// Zone의 영역 밖이면 check 안한다.
+				// do not check if outside the Zone area.
 				//-------------------------------------------------------
 				if (next.x<0 || next.y<0 
-					|| next.x>=m_pZone->GetWidth() || next.y>=m_pZone->GetHeight()) continue;
+					|| next.x>=ZoneState::GetWidthIn(m_pZone) || next.y>=ZoneState::GetHeightIn(m_pZone)) continue;
 
 				//-------------------------------------------------------
-				// 갔던 곳이면 안 간다.
+				// do not go to a place already visited.
 				//-------------------------------------------------------
-				if (g_pZone->IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
+				if (ZoneState::IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
 
-				// 한 화면을 넘어가는 경우는 check하지 않는다.				
+				// do not check if it goes beyond one screen.
 				if (next.x<x0 || next.y<y0 
 					|| next.x>=x1 || next.y>=y1) continue;
 
 				//-------------------------------------------------------
-				// 갈 수 있으면 pqueue에 넣는다.
+				// if it can go, put it into the pqueue.
 				//-------------------------------------------------------
-				if (m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y)))
+				if (ZoneState::CanMoveIn(m_pZone, m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y)))
 				{				
-					g_pZone->SetVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y));
+					ZoneState::SetVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y));
 
 					//-------------------------------------------------------
-					// Node를 만들어서 priority queue에 추가한다.
+					// create a Node and add it to the priority queue.
 					//-------------------------------------------------------
-					// 거리 계산
+					// calculate distance
 					dist = CalculateDistance(next.x, next.y);
 
-					// Node를 만들어서 추가
+					// create a Node and add it
 					DNode*	nextDNode = new DNode(
 											next.x, 
 											next.y, 
@@ -1351,7 +1324,7 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 					
 				
 					//-------------------------------------------------------
-					// listDNodes에 넣어서 나중에 지워준다.
+					// put it into listDNodes to delete later.
 					//-------------------------------------------------------
 					m_listDNodes.push_back( nextDNode );
 					
@@ -1367,15 +1340,15 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		}
 
 		//-------------------------------------------------------
-		// 찾았을 경우 길을 정해야 한다.
+		// when found, the path must be decided.
 		//-------------------------------------------------------
 		if (bFound)
 		{				
 			//-------------------------------------------------------
-			// m_pqDNodes로부터 list를 채운다. (parent를 따라가야한다)
+			// fill the list from m_pqDNodes. (must follow the parent)
 			//-------------------------------------------------------
 
-			// 목표위치
+			// target position
 			DNode* currentNode = m_pqDNodes.top();
 			m_pqDNodes.pop();
 			
@@ -1391,18 +1364,18 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			m_BlockDestY = SECTORPOSITION_NULL;
 		}
 		//-------------------------------------------------------
-		// 길이 없을 경우 정지한다.
+		// stop if there is no path.
 		//-------------------------------------------------------
 		else
 		{
-			// 추적 중지
+			// stop tracing
 			if (m_bTraceFlag == true)				
 			{
 				m_MoveCount = m_MoveCountMax;
 
 				m_bTraceFlag = false;
 
-				// 2001.7.31 추가
+				// added 2001.7.31
 				m_nUsedActionInfo = ACTIONINFO_NULL;
 				m_nNextUsedActionInfo = ACTIONINFO_NULL;
 			}
@@ -1414,13 +1387,13 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			m_DestY = SECTORPOSITION_NULL;			
 		}
 	}
-	// 갈 수 없는 곳
+	// a place it cannot go
 	else 
 	{
 		//m_ActionCount = m_ActionCountMax;
 		m_MoveCount = m_MoveCountMax;
 
-		// 이번에 갈 수 없었던 곳 설정
+		// set the place it could not go this time
 		//m_BlockDestX = m_DestX;
 		//m_BlockDestY = m_DestY;
 
@@ -1436,12 +1409,12 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 	/*
 	else
-	// 이 부분에 약간의 오류가 있는 듯 함!! -_-;;;;
+	// There seems to be a slight error in this part!! -_-;;;;
 	//--------------------------------------------------------------
-	// 아예 갈 수 없는 곳이면..
+	// if it is a place it cannot go at all..
 	//--------------------------------------------------------------
-	// Player위치에서 목표지점까지 직선?으로 걸어가다가 
-	// 장애물이 생기면 멈춘다.
+	// walk in a straight line(?) from the Player position to the target,
+	// and stop when an obstacle appears.
 	// (m_X, m_Y)  --->  (sX, sY)
 	//--------------------------------------------------------------		
 	{
@@ -1462,27 +1435,27 @@ MFakeCreature::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		
 		while (1)
 		{
-			// 부호에 따라서..
+			// according to the sign..
 			signX = (stepX==0)? 0 : (stepX<0)? -1 : 1;
 			signY = (stepY==0)? 0 : (stepY<0)? -1 : 1;
 
 			x += signX;
 			y += signY;
 				
-			// 갈 수 있는 곳이면 list에 넣는다.
+			// if it is a place it can go, put it into the list.
 			if (m_pZone->CanMove(x,y))
 			{				
 				m_listDirection.insert( m_listDirection.end(), DetermineDirection(stepX, stepY));
 			}
 			else 
 			{
-				// x,y 한칸 전의 위치를 목표지점으로 정한다.
+				// set the position one step before x,y as the target.
 				m_DestX = x - signX;
 				m_DestY = y - signY;
 				break;
 			}	
 			
-			// 한 칸 움직였음을 표시
+			// mark that it moved one step
 			stepX -= signX;
 			stepY -= signY;
 		}				
@@ -1509,7 +1482,7 @@ MFakeCreature::GetDestination(POINT &dest)
 }
 
 //----------------------------------------------------------------------
-// priority queue인 m_pqDNodes를 지운다.
+// delete m_pqDNodes, the priority queue.
 //----------------------------------------------------------------------
 void
 MFakeCreature::RemoveNodes()
@@ -1520,7 +1493,7 @@ MFakeCreature::RemoveNodes()
 	}
 
 
-	// temp를 지운다.
+	// delete temp.
 	DNODE_LIST::iterator iNode = m_listDNodes.begin();
 
 	while (iNode != m_listDNodes.end())
@@ -1534,10 +1507,10 @@ MFakeCreature::RemoveNodes()
 }
 
 //----------------------------------------------------------------------
-// (x,y)로 부터 m_Dest(X,Y)까지의 거리를 구한다.
+// get the distance from (x,y) to m_Dest(X,Y).
 //----------------------------------------------------------------------
-// 가로,세로,대각선 모두 1이므로 가장 큰 값이 거리이고
-// 목표와 같은 좌표가 있는게 더 좋으므로 아닌 경우 +1이 되도록 한다.
+// Horizontal, vertical and diagonal are all 1, so the largest value is the distance,
+// and having a coordinate equal to the target is better, so add +1 if not.
 //----------------------------------------------------------------------
 int
 MFakeCreature::CalculateDistance(int x, int y)
@@ -1560,22 +1533,22 @@ MFakeCreature::CalculateDistance(int x, int y)
 void
 MFakeCreature::SetStop()
 {
-	// 길찾기 제거
+	// remove path finding
 	m_listDirection.clear(); 
 
-	// 추적 중지	
+	// stop tracing
 	m_bTraceFlag = false;
 	//m_fNextTrace	= FLAG_TRACE_NULL;
 
-	// Action 중지
+	// stop Action
 	m_sX=0; 
 	m_sY=0;
 
-	// 다음 동작도 없앰
+	// also remove the next action
 	m_NextX = SECTORPOSITION_NULL;
 	m_NextY = SECTORPOSITION_NULL;
 
-	// 목표 제거
+	// remove target
 	m_DestX			= SECTORPOSITION_NULL; 
 	m_DestY			= SECTORPOSITION_NULL; 
 	m_NextDestX		= SECTORPOSITION_NULL; 
@@ -1585,15 +1558,15 @@ MFakeCreature::SetStop()
 	m_bKnockBack = 0;	
 
 	//------------------------------------------------
-	// 기존의 MoveBuffer를 다 지움
+	// delete the whole existing MoveBuffer
 	//------------------------------------------------
 	AffectMoveBufferAll();
 	//ReleaseMoveBuffer();
 
-	// 2001.11.8 - 정지할때 좌표 보정 확실히..
+	// 2001.11.8 - make sure the coordinates are corrected when stopping..
 	ActionMoveNextPosition();
 
-	// Action 중지
+	// stop Action
 	m_sX=0; 
 	m_sY=0;
 
@@ -1602,7 +1575,7 @@ MFakeCreature::SetStop()
 	m_ActionCount	= m_ActionCountMax; 
 	m_MoveCount		= m_MoveCountMax;
 
-	// 다음 동작도 없앰
+	// also remove the next action
 	m_bNextAction = false;
 	m_NextX = SECTORPOSITION_NULL;
 	m_NextY = SECTORPOSITION_NULL;
@@ -1616,18 +1589,18 @@ MFakeCreature::SetStop()
 // Move
 //----------------------------------------------------------------------
 //
-// 현재의 방향(m_CurrentDirection)으로 한 Frame이동한다.
+// Move one Frame in the current direction (m_CurrentDirection).
 //
-// 한 Sector를 이동하는게 아니고 Sector와 Sector사이를 이동하는 중간의
-// 한 Frame을 이동하는 것이다. 
+// This is not moving one Sector; it moves one Frame
+// in the middle of moving between Sector and Sector.
 //
-// Sector --> Sector에서 몇 Frame을 이동할까??가 문제인데...
-//    = cX,cY에 한번에 이동하는 pixel단위를 대입하고
-//    = sX,sY에 한번에 이동하는 pixel단위를 입력하면 된다.
+// The question is how many Frames to move from Sector --> Sector??
+//    = assign the per-step pixel unit to cX,cY
+//    = and enter the per-step pixel unit in sX,sY.
 //
-// Move()에서는
-//    cX,cY가 0이면 다시 cX,cY, sX,sY 값을 생성하고
-//    0이 아니면 sX
+// In Move(),
+//    if cX,cY is 0, regenerate the cX,cY, sX,sY values,
+//    if it is not 0, sX
 //----------------------------------------------------------------------
 void	
 MFakeCreature::ActionMovePet()
@@ -1652,18 +1625,18 @@ MFakeCreature::ActionMovePet()
 
 	//----------------------------------------------------
 	//
-	// 다음 Sector에 도달한 경우	
+	// when the next Sector has been reached
 	//
 	//----------------------------------------------------
-	// m_listDirection에서 방향을 하나 읽어와서 
-	// check해보고 움직인다.
+	// read one direction from m_listDirection,
+	// check it and move.
 	//----------------------------------------------------
 	if (m_MoveCount%moveTimesTemp==0)//m_sX==0 && m_sY==0)
 	{
 		TYPE_SECTORPOSITION	x, y;
 
 		//-------------------------------------------------------------
-		// fast move인 경우는 nextX, nextY에 좌표가 있다.
+		// for fast move, the coordinates are in nextX, nextY.
 		//-------------------------------------------------------------
 		if (m_bFastMove)
 		{
@@ -1676,12 +1649,12 @@ MFakeCreature::ActionMovePet()
 			m_Direction = GetDirectionToPosition( x, y );
 		}
 		//-------------------------------------------------------------
-		// 일반적인 움직임
+		// normal movement
 		//-------------------------------------------------------------
 		else
 		{
 			//----------------------------------------------------
-			// 목표위치가 없으면 움직이지 않는다.
+			// if there is no target position, do not move.
 			//----------------------------------------------------
 			if (m_DestX==SECTORPOSITION_NULL && m_NextDestX==SECTORPOSITION_NULL) 
 			{
@@ -1696,45 +1669,45 @@ MFakeCreature::ActionMovePet()
 			//----------------------------------------------------
 			//
 			//
-			//                 추적 중이면..
+			//                 if tracing..
 			//
 			//
 			//----------------------------------------------------		
 			//----------------------------------------------------	
-			// Creature 추적 중이면..
-			// Creature가 사라지거나
-			// 추적 목표좌표가 바뀔 수 있으므로 check해준다.
+			// if tracing a Creature..
+			// the Creature may disappear, or
+			// the trace target coordinates may change, so check.
 			//----------------------------------------------------	
 			if (m_bTraceFlag == true) 
 			{
-				// 추적하는 Creature의 정보를 읽어온다.
-				MCreature*	pCreature = m_pZone->GetCreature( m_TraceID );				
+				// read the information of the Creature being traced.
+				MCreature*	pCreature = ZoneState::GetCreatureIn(m_pZone,  m_TraceID );
 
 				//GET_DYING_CREATURE( pCreature, m_TraceID );
 
 				//-------------------------------------------------------
-				// 추적하는 Creature가 사라졌을 경우 --> 추적 중지
-				// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.					
+				// if the traced Creature disappeared --> stop tracing
+				// if I am a Slayer, I cannot chase a character that entered Darkness.
 				//-------------------------------------------------------								
 				if (pCreature==NULL )
 				{
-					// 추적 중지
+					// stop tracing
 					m_bTraceFlag = false;
 						
-					// 멈춘다.
+					// stop.
 					SetStop();					
 					return;			
 				}
 			
 				//-------------------------------------------------------			
-				// 추적할려는 Creature의 좌표가 달라졌을 경우
+				// if the coordinates of the Creature to trace changed
 				//-------------------------------------------------------			
 				if (pCreature->GetX()!=m_TraceX ||
 					pCreature->GetY()!=m_TraceY)
 				{										
 					m_NextDestX = pCreature->GetX();
 					m_NextDestY = pCreature->GetY();
-					// Z는 관계없다.
+					// Z does not matter.
 				}
 
 				m_TraceX	= pCreature->GetX();
@@ -1742,11 +1715,11 @@ MFakeCreature::ActionMovePet()
 				m_TraceZ	= pCreature->GetZ();
 			}
 			//----------------------------------------------------
-			// 길찾기 Buffering했던걸 설정한다.
+			// set the buffered path finding.
 			//----------------------------------------------------
 			if (m_NextDestX!=SECTORPOSITION_NULL)
 			{
-				// 길찾기
+				// path finding
 				//SetDestination(m_NextDestX, m_NextDestY);
 				m_DestX		= m_NextDestX;	// TEST
 				m_DestY		= m_NextDestY;	// TEST
@@ -1755,24 +1728,24 @@ MFakeCreature::ActionMovePet()
 			}
 
 			//----------------------------------------------------
-			// 길찾기 : 한 Tile 이동시마다 길찾기를 한다.
+			// path finding: do path finding every time it moves one Tile.
 			//----------------------------------------------------
 			if (m_DestX!=SECTORPOSITION_NULL)
 				SetDestination(m_DestX, m_DestY);
 
 			//----------------------------------------------------
-			// Server에서 검증받기 위해서 Send
+			// Send it to get verified by the Server
 			//----------------------------------------------------
 			//SetAction( m_MoveAction );
 
 			
 			//----------------------------------------------------
-			// 갈 길이 없는 경우
+			// when there is no path to go
 			//----------------------------------------------------
 			if (m_listDirection.empty())
 			{
 				//--------------------------------------------
-				// 목적지에 도달한 경우..
+				// when the destination has been reached..
 				//--------------------------------------------
 				if (m_DestX==m_X && m_DestY==m_Y)
 				{
@@ -1796,17 +1769,17 @@ MFakeCreature::ActionMovePet()
 			
 			//----------------------------------------------------	
 			//
-			// 방향대로 움직인다.
+			// move in the direction.
 			//
 			//----------------------------------------------------			
 			//----------------------------------------------------
-			// m_listDirection에서 방향을 하나 읽어온다.
+			// read one direction from m_listDirection.
 			//----------------------------------------------------
 			m_Direction = m_listDirection.front();
 			m_listDirection.pop_front();	
 				
 			//----------------------------------------------------
-			// 다음에 길찾기를 해야할 경우...
+			// when path finding needs to be done next...
 			//----------------------------------------------------
 			if (m_NextDestX!=SECTORPOSITION_NULL)
 			{
@@ -1815,12 +1788,12 @@ MFakeCreature::ActionMovePet()
 			}
 
 			//----------------------------------------------------
-			// 읽어온 방향으로 한 Sector를 진행하고
-			// cX,cY, sX,sY를 다시 지정해줘야 한다.
+			// advance one Sector in the direction read,
+			// and cX,cY, sX,sY must be set again.
 			//----------------------------------------------------
 
 			//----------------------------------------------------
-			// 이동 가능한지 check
+			// check whether movement is possible
 			//----------------------------------------------------
 			x = m_X;
 			y = m_Y;
@@ -1839,78 +1812,78 @@ MFakeCreature::ActionMovePet()
 		}
 
 		//--------------------------------------------------------------------
-		// 움직일 수 있을 경우		
+		// when it can move
 		//--------------------------------------------------------------------
-		if (m_pZone->CanMove(m_MoveType, x,y)
-			|| m_bFastMove		// Fast Move인 경우는 무조건 이동 가능..
+		if (ZoneState::CanMoveIn(m_pZone, m_MoveType, x,y)
+			|| m_bFastMove		// Fast Move can always move..
 			
 			)
 		{		
 			//---------------------------------------------------------------
-			// Fast Move인 경우..
+			// for Fast Move..
 			//---------------------------------------------------------------
 			if (m_bFastMove)
 			{
 				// nothing
 			}
 			//---------------------------------------------------------------
-			// 일반적인 움직임 --> 검증 필요
+			// normal movement --> needs verification
 			//---------------------------------------------------------------
 			else
 			{
 			}
 
 			//-----------------------
-			// 시야 바꿔주기
+			// change the view
 			//-----------------------
 			//m_pZone->MoveLightSight(m_X, m_Y, m_LightSight, m_Direction);
 			//m_pZone->UnSetLightSight(m_X, m_Y, m_LightSight);
 			//m_pZone->SetLightSight(x, y, m_LightSight);
 
-			// 이전 좌표 기억
+			// remember the previous coordinates
 			TYPE_SECTORPOSITION ox = m_X;
 			TYPE_SECTORPOSITION oy = m_Y;
 
-			// zone의 sector의 정보를 바꿔준다.
+			// change the zone's sector information.
 			MovePosition( x, y );
 			
 			//CheckInDarkness();
 
 			//--------------------------------------------
-			// 5 Frame이 있다고 할 경우
+			// suppose there are 5 Frames
 			//--------------------------------------------
 			//
-			// [1] UP,DOWN,LEFT,RIGHT일 때,
+			// [1] for UP,DOWN,LEFT,RIGHT,
 			//
-			//     X변화 : 0 16 32 48 64   (+-16)
-			//     Y변화 : 0  8 16 24 32   (+-8)
+			//     X change : 0 16 32 48 64   (+-16)
+			//     Y change : 0  8 16 24 32   (+-8)
 			// 
 			//
-			// [2] 대각선(LEFTUP,LEFTDOWN,RIGHTUP,RIGHTDOWN)으로 움직일때,
+			// [2] when moving diagonally (LEFTUP,LEFTDOWN,RIGHTUP,RIGHTDOWN),
 			//
-			//     X변화 : 0  8 16 24 32   (+-8)
-			//     Y변화 : 0  4  8 12 16   (+-4)
+			//     X change : 0  8 16 24 32   (+-8)
+			//     Y change : 0  4  8 12 16   (+-4)
 			//
 			//--------------------------------------------
-			// sX,sY : 움직여야할 전체 pixel(한 TILE)
-			// cX,cY : 이동하는 단위 pixel
+			// sX,sY : total pixels to move (one TILE)
+			// cX,cY : pixels per step
 			//--------------------------------------------		
 			//--------------------------------------------
-			// Fast Move 인 경우
+			// for Fast Move
 			//--------------------------------------------
 
 			if (m_bFastMove)
 			{
-				// 직선 거리로 움직일때의 pixel거리
-				// ex) 왼쪽 2 --> 1 : ( 2 - 1 ) * TILE_X
-				//     위쪽 2 --> 1 : ( 2 - 1 ) * TILE_Y
+				// pixel distance when moving in a straight line
+				// ex) left 2 --> 1 : ( 2 - 1 ) * TILE_X
+				//     up 2 --> 1 : ( 2 - 1 ) * TILE_Y
 				m_sX = (ox - m_X) * TILE_X;
 				m_sY = (oy - m_Y) * TILE_Y;
 				
 				//------------------------------------------------
-				// 실제 한 타일 이동 속도의 반의 속도에 목적지까지 이동한다.
+				// reaches the destination at half the speed of actually moving one tile.
 				//------------------------------------------------
-				// 한 타일 이동할때의 Frame 수
+				// number of Frames when moving one tile
 				int moveTimes_div_2 = (*g_pCreatureTable)[m_CreatureType].MoveTimes >> 1;
 				
 				m_cX = -m_sX / moveTimes_div_2;
@@ -1924,7 +1897,7 @@ MFakeCreature::ActionMovePet()
 				}
 			}
 			//--------------------------------------------	
-			// 정상 이동
+			// normal movement
 			//--------------------------------------------
 			else
 			{	
@@ -1935,7 +1908,7 @@ MFakeCreature::ActionMovePet()
 
 				//????????????????????????????????????????????????????????
 				//???                                                  ???
-				//???   한 Frame을 이동...해야하는가?? 말아야 하는가   ???
+				//???   Should it move one Frame... or not??   ???
 				//???                                                  ???
 				//????????????????????????????????????????????????????????
 				int moveTimes_1;
@@ -1987,25 +1960,25 @@ MFakeCreature::ActionMovePet()
 
 			m_MoveCount++;
 
-			// 다음에 이동할 count를 지정한다.
+			// set the count for the next move.
 
 			//------------------------------------------------
-			// 캐릭터의 MoveAction에 맞는 Sound를 출력해준다.
+			// play the Sound matching the character's MoveAction.
 			//------------------------------------------------
 			TYPE_SOUNDID soundID = (*g_pCreatureTable)[m_CreatureType].GetActionSound( m_MoveAction );
 
 			if (soundID!=SOUNDID_NULL)
 			{
-				PlaySound( soundID,
+				WorldEvents::PlaySoundAt( soundID,
 							false,
 							m_X,
 							m_Y);
 			}
 		}	
 		//--------------------------------------------
-		// 움직일 수 없을 경우		
+		// when it cannot move
 		//--------------------------------------------
-		// 길찾기를 다시 해준다.
+		// do path finding again.
 		else
 		{
 			m_NextDestX = m_DestX;
@@ -2013,10 +1986,10 @@ MFakeCreature::ActionMovePet()
 			m_listDirection.clear();
 
 
-			DEBUG_ADD("다른 캐릭터에 의해서 Block됐음.");					
+			DEBUG_ADD("Blocked by another character.");
 		}
 
-		// 다음 Sector까지 움직인다.
+		// move to the next Sector.
 		if (!m_listDirection.empty())
 		{
 			//m_NextAction = m_MoveAction;
@@ -2025,12 +1998,12 @@ MFakeCreature::ActionMovePet()
 	}
 	//----------------------------------------------------
 	//
-	// 아직 다음 Sector까지 덜 도달한 경우
+	// when it has not yet reached the next Sector
 	//
 	//----------------------------------------------------
 	else
 	{
-		// 한 Frame을 이동한다.
+		// move one Frame.
 		/*
 		switch (m_MoveDevice)
 		{
@@ -2050,15 +2023,15 @@ MFakeCreature::ActionMovePet()
 			DEBUG_ADD("going");
 		#endif
 
-		// 이동할 count가 됐을때만 이동한다.
+		// move only when it is time for the move count.
 		if (m_MoveCount>=m_NextMoveCount)
 		{			
 			//--------------------------------------------
-			// Fast Move 인 경우
+			// for Fast Move
 			//--------------------------------------------
 			if (m_bFastMove)
 			{
-				// 2001.8.22 추가 - 냠냠
+				// added 2001.8.22 - yum yum
 				if (m_sX!=0)	m_sX += m_cX;
 				if (m_sY!=0)	m_sY += m_cY;		
 
@@ -2069,12 +2042,12 @@ MFakeCreature::ActionMovePet()
 					m_MoveCount = m_MoveCountMax;
 				}
 
-				// 다음에 이동할 count를 지정한다.
+				// set the count for the next move.
 				m_NextMoveCount += 1;//(*g_pCreatureTable)[m_CreatureType].MoveRatio;
 
 			}
 			//--------------------------------------------
-			// 일반적인 이동의 경우
+			// in the case of normal movement
 			//--------------------------------------------
 			else
 			{
@@ -2103,11 +2076,11 @@ MFakeCreature::ActionMovePet()
 				m_cX = m_cXTable[moveTimes_1][m_DirectionMoved][m_MoveTableCount%moveTimes_1];
 				m_cY = m_cYTable[moveTimes_1][m_DirectionMoved][m_MoveTableCount%moveTimes_1];
 
-				// 2001.8.22 추가 - 냠냠
+				// added 2001.8.22 - yum yum
 				if (m_sX!=0)	m_sX += m_cX;
 				if (m_sY!=0)	m_sY += m_cY;		
 
-				// 다음에 이동할 count를 지정한다.
+				// set the count for the next move.
 				m_NextMoveCount += 1;//(*g_pCreatureTable)[m_CreatureType].MoveRatio;
 
 				m_MoveCount++;
@@ -2119,7 +2092,7 @@ MFakeCreature::ActionMovePet()
 		}
 		
 		//m_ActionCount++;
-		// frame을 바꿔준다. 마지막 Frame까지 갔으면 0번째 Frame으로 바꾼다.
+		// change the frame. If it reached the last Frame, go back to Frame 0.
 		//if (++m_ActionCount == (*m_pFrames)[m_Action][m_Direction].GetCount())
 		//	m_ActionCount = 0;
 
@@ -2162,7 +2135,7 @@ MFakeCreature::CaculatePetPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION s
 {
 	POINT p = {sX, sY};
 
-	if(g_pZone == NULL)
+	if(!ZoneState::Exists())
 	{
 		return p;
 	}
@@ -2178,7 +2151,7 @@ MFakeCreature::CaculatePetPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION s
 	{			
 		for (int j=x0; j<x1; j++)
 		{
-			if(g_pZone->CanMove(moveType, j, i) && j != sX && i != sY && max(abs(i-petY), abs(j-petX)) >= distanceMin)
+			if(ZoneState::CanMove(moveType, j, i) && j != sX && i != sY && max(abs(i-petY), abs(j-petX)) >= distanceMin)
 			{
 				POINT tempPoint = {j, i};
 				vMovePoint.push_back(tempPoint);
@@ -2227,13 +2200,13 @@ MFakeCreature::UpdateTurret()
 
 		BYTE finalDirect = 0;
 		
-		MCreature *pOwnerCreature = g_pZone->GetCreature( ownerID );
+		MCreature *pOwnerCreature = ZoneState::GetCreature( ownerID );
 
 		if( pOwnerCreature != NULL )
 		{
 			TYPE_OBJECTID targetID = pOwnerCreature->GetStatus( MODIFY_LAST_TARGET );
 
-			MCreature *pTargetCreature = g_pZone->GetCreature( targetID );
+			MCreature *pTargetCreature = ZoneState::GetCreature( targetID );
 
 			if( pTargetCreature != NULL )
 			{
@@ -2268,15 +2241,15 @@ MFakeCreature::UpdateTurret()
 void 
 MFakeCreature::KeepWanderCreature()
 {
-	// 유령이 아니믄 리턴
+	// return if not a ghost
 	if(GetCreatureType() != CREATURETYPE_GHOST)
 		return;
 	POINT	firstSector, endSector,NextMove;
-	firstSector.x = g_pPlayer->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1;// +4 테스트
-	firstSector.y = g_pPlayer->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
+	firstSector.x = PlayerState::Creature()->GetX() + g_SECTOR_SKIP_PLAYER_LEFT-1;// +4 test
+	firstSector.y = PlayerState::Creature()->GetY() + g_SECTOR_SKIP_PLAYER_UP-1;
 	endSector.x	  = firstSector.x+g_SECTOR_WIDTH+2;
 	endSector.y   = firstSector.y+g_SECTOR_HEIGHT+2;
-	// 화면 안에 있는 유령 이믄..
+	// if it is a ghost inside the screen..
 	if(IsInSector(firstSector.x, firstSector.y, endSector.x, endSector.y))
 	{
 		NextMove.x = GetX(); NextMove.y = GetY();
@@ -2292,7 +2265,7 @@ MFakeCreature::KeepWanderCreature()
 			case DIRECTION_RIGHT		: NextMove.x++;				break;
 		}
 
-		if(	!m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(NextMove.x),static_cast<TYPE_SECTORPOSITION>(NextMove.y)))
+		if(	!ZoneState::CanMoveIn(m_pZone, m_MoveType, static_cast<TYPE_SECTORPOSITION>(NextMove.x),static_cast<TYPE_SECTORPOSITION>(NextMove.y)))
 			m_Direction = (m_Direction + 3 + rand()%3)%8;
 		
 		if( m_Action != ACTION_MOVE )
@@ -2305,7 +2278,7 @@ MFakeCreature::KeepWanderCreature()
 	}
 	else
 	{
-		if(ACTION_MOVE == g_pPlayer->GetAction())
+		if(ACTION_MOVE == PlayerState::Creature()->GetAction())
 		{
 			//SetStop();
 			SetAction(ACTION_STAND);
@@ -2313,32 +2286,32 @@ MFakeCreature::KeepWanderCreature()
 		}
 		else
 		{
-			if(abs(GetX()-g_pPlayer->GetX())>10 ||abs(GetY()-g_pPlayer->GetY())>15 )
+			if(abs(GetX()-PlayerState::Creature()->GetX())>10 ||abs(GetY()-PlayerState::Creature()->GetY())>15 )
 			{
 				//SetStop();
 				SetAction(ACTION_STAND);
 				return;
 			}
 			if(IsInSector(firstSector.x-1, firstSector.y, firstSector.x-1, endSector.y))
-			{// 왼쪽 벽
+			{// left wall
 				m_Direction = 3 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
 			else if(IsInSector(endSector.x+1, firstSector.y, endSector.x+1, endSector.y))
-			{// 오른쪽 벽
+			{// right wall
 				m_Direction = (7 + rand()%3)%8;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
 			else if(IsInSector(firstSector.x, firstSector.y-1, endSector.x, firstSector.y-1))
-			{// 위쪽 벽
+			{// top wall
 				m_Direction = 1 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
 			}
 			else if(IsInSector(firstSector.x, endSector.y+1, endSector.x, endSector.y+1))
-			{// 아래쪽 벽
+			{// bottom wall
 				m_Direction = 5 + rand()%3;
 				m_DirectionMove = m_Direction;
 				SetAction(ACTION_MOVE);
@@ -2373,11 +2346,11 @@ MFakeCreature::KeepRocketLuncher()
 
 	if(IsGhost(0xff))
 		return;
-	MCreature *pCreature = g_pZone->GetCreature(m_TraceID);	
+	MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 	if(pCreature != NULL)
 	{
 		int distance = max(abs(pCreature->GetX()-m_X), abs(pCreature->GetY()-m_Y));
-//		// 처음 접근할때까지만 추적하고 ( 걍있는 변수 m_PatrolCount 써야지..ㅎㅎ)
+//		// trace only until the first approach (use the existing variable m_PatrolCount.. heh)
 		if(distance > 1)
 		{
 			m_DirectionMove = m_Direction = m_CurrentDirection = GetDirectionToPosition(pCreature->GetX(), pCreature->GetY());
@@ -2385,7 +2358,7 @@ MFakeCreature::KeepRocketLuncher()
 			m_DestY = pCreature->GetY();
 			m_PatrolCount = m_CurrentDirection;
 		}
-//		// 타겟주위를 맴돈다..? -_-;
+//		// circle around the target..? -_-;
 		else
 		{
 			if(m_DestX == GetX() && m_DestY == GetY())
@@ -2425,7 +2398,7 @@ void MFakeCreature::SetFakeMoveOnce(BYTE Dir)
 void
 MFakeCreature::KeepWildWolfAttack()
 {
-	if(g_pZone == NULL)
+	if(!ZoneState::Exists())
 		return;
 	
 	if(m_PatrolCount++ < 4 ) return;
@@ -2439,7 +2412,7 @@ MFakeCreature::KeepWildWolfAttack()
 				case WILD_WOLF_MODE_ATTACK_2nd:
 				case WILD_WOLF_MODE_ATTACK_3rd:
 				{
-					int TempDir = MTopView::GetDirectionToPosition(GetX(), GetY(), m_DestX, m_DestY);
+					int TempDir = SelectFacingDirection(GetX(), GetY(), m_DestX, m_DestY);
 					POINT TargetPoint = GetNextTileByDirection(m_DestX, m_DestY, TempDir);
 					m_bTraceFlag = true;
 					SetCurrentDirection(TempDir);
@@ -2470,7 +2443,7 @@ MFakeCreature::KeepWildWolfAttack()
 	}
 	else
 	{
-		MCreature *pCreature = g_pZone->GetCreature(m_TraceID);
+		MCreature *pCreature = ZoneState::GetCreature(m_TraceID);
 		if(NULL != pCreature)
 		{
 			if((GetX() == m_DestX && GetY() ==m_DestY) || m_WildWolf_Mode == 0 )
@@ -2481,7 +2454,7 @@ MFakeCreature::KeepWildWolfAttack()
 				case WILD_WOLF_MODE_ATTACK_2nd:
 				case WILD_WOLF_MODE_ATTACK_3rd:
 					{
-						int TempDir = MTopView::GetDirectionToPosition(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
+						int TempDir = SelectFacingDirection(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
 						POINT TargetPoint = GetNextTileByDirection(pCreature->GetX(), pCreature->GetY(), TempDir);
 						m_bTraceFlag = true;
 						SetCurrentDirection(TempDir);
@@ -2499,7 +2472,7 @@ MFakeCreature::KeepWildWolfAttack()
 				case WILD_WOLF_MODE_MOVE_1st:
 				case WILD_WOLF_MODE_MOVE_2st:
 					{
-						int TempDir = MTopView::GetDirectionToPosition(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
+						int TempDir = SelectFacingDirection(GetX(), GetY(), pCreature->GetX(), pCreature->GetY());
 						TempDir = (TempDir +7)%8;
 						POINT TargetPoint = GetNextTileByDirection(GetX(), GetY(), TempDir );
 						m_bTraceFlag = true;

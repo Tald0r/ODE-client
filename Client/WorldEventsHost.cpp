@@ -185,4 +185,11 @@ void AddOustersElemental(MCreature* pOwner, int creatureType, int status)
 	if (s_Host && s_Host->AddOustersElemental) s_Host->AddOustersElemental(pOwner, creatureType, status);
 }
 
+POINT GetFirstSector()
+{
+	if (s_Host && s_Host->GetFirstSector) return s_Host->GetFirstSector();
+	POINT none = { 0, 0 };
+	return none;
+}
+
 }
