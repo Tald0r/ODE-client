@@ -157,7 +157,7 @@ int g_previousSoundID = SOUNDID_NULL;
 
 	
 // Sound PartManager
-CSoundPartManager*	g_pSoundManager = NULL;
+// g_pSoundManager is GameInitInfo.cpp's (gameclient's) since task 4.252.
 
 // Cursor Surface
 CStorageSurface*	g_pCursorSurface = NULL;
@@ -4034,39 +4034,6 @@ SetLightning(DWORD delay)
 
 	// Queue the thunder at this frame's player position and timestamp.
 	g_pZone->AddSound(MakeThunderSound(delay, g_pPlayer->GetX(), g_pPlayer->GetY(), g_FrameNow));
-}
-
-//---------------------------------------------------------------------------
-// Open File
-//---------------------------------------------------------------------------
-bool
-FileOpenBinary(const char* filename, std::ifstream& file)
-{
-	if (file.is_open())
-	{
-		file.close();
-	}
-
-	// The game's spelling of the path resolved to the disk's (basic/DataPath.h):
-	// the identity on Windows; off Windows the separators folded and each
-	// component matched case-insensitively, since the data tree's case does
-	// not always match the tables. This used to fold the separators alone.
-	const std::string convertedPath = Basic::NormalizeDataPath(filename);
-	file.open(convertedPath.c_str(), ios::binary);
-
-	if (!file.is_open())
-	{
-		/*
-		DEBUG_ADD_FORMAT("[Error] File Open Error : [%s]", filename);
-		*/
-		InitFail("[Error] File Open Error : [%s]", filename);
-		return false;
-	}
-
-	/*
-	DEBUG_ADD_FORMAT("File Open OK : [%s]", filename);
-	*/
-	return true;
 }
 
 //---------------------------------------------------------------------------

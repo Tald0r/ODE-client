@@ -911,6 +911,47 @@ endif()
 # 	add_subdirectory(examples)
 # endif()
 
+# ============================================================
+# gameclient - the client that puts the game together: what starts it,
+# runs it and wires the model, the view and the UI (docs/RESTRUCTURING.md
+# task 4.252), which may use VS_UI and the view. Same membership-file
+# discipline: tests/arch/gameclient_files.txt is read by this block
+# (.cpp lines), the include checker (rules C0-C2) and the ratchet script.
+# ============================================================
+if(USE_SDL_BACKEND OR NOT WIN32)
+	set(GAMECLIENT_MEMBERSHIP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/arch/gameclient_files.txt)
+	set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${GAMECLIENT_MEMBERSHIP_FILE})
+	file(STRINGS ${GAMECLIENT_MEMBERSHIP_FILE} _gameclient_lines)
+	set(GAMECLIENT_SOURCES)
+	foreach(_line IN LISTS _gameclient_lines)
+		string(STRIP "${_line}" _line)
+		if(NOT _line MATCHES "^Client/.*\\.cpp$")
+			continue()
+		endif()
+		if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${_line})
+			message(FATAL_ERROR "gameclient membership lists a file that does not exist: ${_line}")
+		endif()
+		list(APPEND GAMECLIENT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${_line})
+	endforeach()
+	list(LENGTH GAMECLIENT_SOURCES _gameclient_count)
+	if(_gameclient_count LESS 1)
+		message(FATAL_ERROR "gameclient membership file yielded no sources - is ${GAMECLIENT_MEMBERSHIP_FILE} intact?")
+	endif()
+
+	add_library(gameclient STATIC ${GAMECLIENT_SOURCES})
+
+	# The same definitions as gamemodel's, which these files compiled with
+	# in the executable.
+	target_compile_definitions(gameclient PRIVATE
+		USE_SDL_BACKEND
+		SPRITELIB_BACKEND_SDL
+	)
+
+	target_link_libraries(gameclient PUBLIC gameview VS_UI gamemodel dxlib SpriteLib framelib)
+
+	message(STATUS "gameclient library: ${_gameclient_count} sources from tests/arch/gameclient_files.txt")
+endif()
+
 # Dark Eden Client Executable
 if(USE_SDL_BACKEND OR NOT WIN32)
 	# Collect remaining Client source files (excluding those already in VS_UI)
@@ -969,6 +1010,15 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		list(FIND CLIENT_MAIN_SOURCES ${_src} _still_in_exe)
 		if(NOT _still_in_exe EQUAL -1)
 			message(FATAL_ERROR "gameview member is still in the executable's source list (case mismatch in tests/arch/gameview_files.txt?): ${_src}")
+		endif()
+	endforeach()
+
+	# And for gameclient (tests/arch/gameclient_files.txt).
+	list(REMOVE_ITEM CLIENT_MAIN_SOURCES ${GAMECLIENT_SOURCES})
+	foreach(_src IN LISTS GAMECLIENT_SOURCES)
+		list(FIND CLIENT_MAIN_SOURCES ${_src} _still_in_exe)
+		if(NOT _still_in_exe EQUAL -1)
+			message(FATAL_ERROR "gameclient member is still in the executable's source list (case mismatch in tests/arch/gameclient_files.txt?): ${_src}")
 		endif()
 	endforeach()
 
@@ -1078,6 +1128,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		packetwire
 		gamemodel
 		gameview
+		gameclient
 		framelib
 		VS_UI
 		TextSystem

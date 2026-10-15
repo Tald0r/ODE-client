@@ -160,6 +160,10 @@ user, config and timed-item loaders gamemodel reads, and their string support; m
 silhouettes, the creature shadows and the creatures drawn with an effect,
 over the packs and selection `MTopView` hands it as a `CreatureDrawPacks`;
 membership in `tests/arch/gameview_files.txt`, tasks 4.248 to 4.250),
+`gameclient` (the client that puts the game together, which may use `VS_UI`:
+the start-up's loading of the game information, `GameInitInfo`, behind the
+`GameInitInfoHost` `InitGame` installs; membership in
+`tests/arch/gameclient_files.txt`, task 4.252),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -195,7 +199,7 @@ asserts the shared parity vectors on this toolchain, and `decore_vendored`
 checks the copy against its manifest.
 
 `unit_tests` links `basic`, `SpriteLib`, `TextSystem`, `packetwire`, `gamemodel`,
-`gameview` and `dxlib`. The input pump reaches application state and text editors through
+`gameview`, `gameclient` (and through it the whole of `VS_UI`) and `dxlib`. The input pump reaches application state and text editors through
 `DXInput::Host`, installed in `GameInit.cpp`; tests link the real adapter and
 backend without game-global stubs. `ui_tests` links `VS_UI` for independently
 reachable widgets; `user_option_tests` also links it for key bindings.

@@ -21,12 +21,35 @@
 #include <algorithm>
 //#include "MFileDef.h"
 #include "Properties.h"
-#include "Client.h"
+#include "GameInitInfo.h"
+#include "GameInitInfoHost.h"
+#include "ClientConfig.h"
+#include "UserOption.h"
+#include "SkillDef.h"
+#include "DXLib/CSoundPartManager.h"
+#include "DXLib/CDirectDraw.h"
+#include "MEffectSpriteTypeTable.h"
+#include "MActionInfoTable.h"
+#include "MCreatureSpriteTable.h"
+#include "MCreatureTable.h"
+#include "MEffectGeneratorTable.h"
+#include "MEffectStatusTable.h"
+#include "MInteractionObjectTable.h"
+#include "MItemOptionTable.h"
+#include "MItemTable.h"
+#include "MMusicTable.h"
+#include "MNPCTable.h"
+#include "MPlayer.h"
+#include "MShopTemplateTable.h"
+#include "MSkillManager.h"
+#include "MSoundTable.h"
+#include "CUsingColorSetTable.h"
+#include "MZoneTable.h"
+#include "SafeFormat.h"
+#include "DataPath.h"
 //#include "AddonDef.h"
-#include "GameObject.h"
 #include "UIDialog.h"
 #include "MChatManager.h"
-#include "MHelpManager.h"
 #include "MHelpStringTable.h"
 #include "MHelpDisplayer.h"
 #include "MLevelNameTable.h"
@@ -45,8 +68,6 @@
 #include "MGuildInfoMapper.h"
 #include "MEventManager.h"
 #include "MJusticeAttackManager.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
 #include "RankBonusTable.h"
 #include "MWarManager.h"
 #include "FameInfo.h"	
@@ -60,6 +81,88 @@
 #endif
 
 //#define	new		DEBUG_NEW
+
+// Client.h's, the executable's header.
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
+#endif
+
+//-----------------------------------------------------------------------------
+// The executable's services (task 4.252)
+//-----------------------------------------------------------------------------
+namespace GameInitInfoHost {
+
+namespace {
+const Host* s_pHost = nullptr;
+}
+
+const Host* SetHost(const Host* host)
+{
+	const Host* old = s_pHost;
+	s_pHost = host;
+	return old;
+}
+
+void SetFadeStart(signed char start, signed char end, signed char step,
+	BYTE red, BYTE green, BYTE blue, WORD delay)
+{
+	if (s_pHost != nullptr && s_pHost->SetFadeStart != nullptr)
+		s_pHost->SetFadeStart(start, end, step, red, green, blue, delay);
+}
+
+void InitPacketItemTable()
+{
+	if (s_pHost != nullptr && s_pHost->InitPacketItemTable != nullptr)
+		s_pHost->InitPacketItemTable();
+}
+
+int PersonalShopUpdateTime()
+{
+	if (s_pHost != nullptr && s_pHost->PersonalShopUpdateTime != nullptr)
+		return s_pHost->PersonalShopUpdateTime();
+	return 60000;
+}
+
+void InitFailMessage(const char* message)
+{
+	if (s_pHost != nullptr && s_pHost->InitFailMessage != nullptr)
+		s_pHost->InitFailMessage(message);
+}
+
+}
+
+// The sound parts' manager, which InitInfomation makes (GameMain.cpp's
+// until task 4.252).
+CSoundPartManager*	g_pSoundManager = NULL;
+
+//---------------------------------------------------------------------------
+// FileOpenBinary (GameMain.cpp's until task 4.252)
+//---------------------------------------------------------------------------
+bool
+FileOpenBinary(const char* filename, std::ifstream& file)
+{
+	if (file.is_open())
+	{
+		file.close();
+	}
+
+	// The game's spelling of the path resolved to the disk's (basic/DataPath.h):
+	// the identity on Windows; off Windows the separators folded and each
+	// component matched case-insensitively, since the data tree's case does
+	// not always match the tables. This used to fold the separators alone.
+	const std::string convertedPath = Basic::NormalizeDataPath(filename);
+	file.open(convertedPath.c_str(), std::ios::binary);
+
+	if (!file.is_open())
+	{
+		char message[1024];
+		SafeFormat::Format(message, "[Error] File Open Error : [%s]", filename);
+		GameInitInfoHost::InitFailMessage(message);
+		return false;
+	}
+
+	return true;
+}
 
 
 //-----------------------------------------------------------------------------
@@ -138,7 +241,7 @@ InitUserOption()
 	}
 	
 	spritectl_set_xbrz_enabled(g_pUserOption->UseXbrz);
-	g_pUserOption->persnalShopupdatetime = GetPersnalShopUpdateTime();
+	g_pUserOption->persnalShopupdatetime = GameInitInfoHost::PersonalShopUpdateTime();
 	g_pUserOption->PlayWaveMusic = TRUE;
 
 	return TRUE;
@@ -274,7 +377,7 @@ InitInfomation()
 				// With no player, keep effect events until their explicit expiry.
 				return !g_pPlayer || g_pPlayer->HasEffectStatus(static_cast<EFFECTSTATUS>(effect));
 			},
-			.SetFadeStart = ::SetFadeStart,
+			.SetFadeStart = GameInitInfoHost::SetFadeStart,
 		};
 		g_pEventManager = new MEventQueue(&eventHost);
 	}
@@ -458,7 +561,7 @@ InitInfomation()
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - PacketItemTable");
 
-	InitPacketItemTable();
+	GameInitInfoHost::InitPacketItemTable();
 
 	//---------------------------------------------------------------------
 	//
