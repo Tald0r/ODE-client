@@ -178,6 +178,18 @@ TEST(FL2Rendering, AShadowFallsOnePixelDownRight)
 	CHECK(text >= 28);
 	CHECK(quarter * 4 >= text - 4);
 	CHECK(quarter * 4 <= text + 4);
+	// Of the colour's own channels: red text casts a red shadow.
+	// (COLORREF keeps red in its low byte.)
+	scene.canvas.Clear();
+	g_PrintColorStrShadow(20, 4, "HH", scene.info, RGB(248, 0, 0));
+	bool shaded = false;
+	for (int x = 0; x < 160; ++x)
+	{
+		const WORD value = scene.canvas.At(x, bottom + 1);
+		CHECK_EQ(0, value & ~Red);
+		shaded = shaded || value != 0;
+	}
+	CHECK(shaded);
 }
 
 TEST(FL2Rendering, AnOutlineSurroundsTheText)

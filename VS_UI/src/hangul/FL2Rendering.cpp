@@ -202,9 +202,10 @@ int g_PrintColorStrShadow(int x, int y, const char* pStr, PrintInfo& info,
 
 	if (shadowColor == 0xFFFFFFFF)
 	{
-		int r = (color & 0xFF0000) >> 16;
+		// A COLORREF is 0x00BBGGRR: red in the low byte.
+		int r = color & 0xFF;
 		int g = (color & 0xFF00) >> 8;
-		int b = color & 0xFF;
+		int b = (color & 0xFF0000) >> 16;
 		shadowColor = RGB(r >> 2, g >> 2, b >> 2);
 	}
 
