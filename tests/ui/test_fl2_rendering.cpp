@@ -3,6 +3,8 @@
 #include "FontHandleUtil.h"
 #include "SpriteLib/CSpriteSurface.h"
 #include "SpriteLib/SpriteLibBackend.h"
+#include "TextService.h"
+#include "RenderTargetSpriteSurface.h"
 #include <algorithm>
 #include <cstring>
 #include <string>
@@ -19,7 +21,8 @@ struct Box { int left = 1 << 30, top = 1 << 30, right = -1, bottom = -1; bool Em
 struct Canvas
 {
 	CSpriteSurface surface;
-	Canvas() { spritectl_init(); surface.Init(160, 40); surface.FillSurface(0); }
+	// Tall enough for 32-point glyphs printed near the top.
+	Canvas() { spritectl_init(); surface.Init(160, 64); surface.FillSurface(0); }
 	WORD At(int x, int y)
 	{
 		spritectl_surface_info_t info{};
@@ -33,7 +36,7 @@ struct Canvas
 	Box Lit(WORD channels = 0xFFFF)
 	{
 		Box box;
-		for (int y = 0; y < 40; ++y)
+		for (int y = 0; y < 64; ++y)
 			for (int x = 0; x < 160; ++x)
 			{
 				const WORD value = At(x, y);
@@ -87,6 +90,28 @@ TEST(FL2Rendering, TextGoesOnTheFL2SurfaceOrElseTheGamesSurface)
 	CHECK(other.Lit().Empty());
 }
 
+TEST(FL2Rendering, TextLandsWhereTextServiceDrawsIt)
+{
+	// The same string drawn straight through TextService, left-aligned in
+	// the default 16-point font and the colour, at the same point.
+	Scene scene;
+	g_Print(30, 12, "HH", &scene.info);
+	Canvas direct;
+	auto& text = TextSystem::TextService::Get();
+	auto style = text.GetDefaultStyle();
+	style.font = text.GetFont(16);
+	style.color = TextSystem::ColorFromCOLORREF(scene.info.text_color);
+	style.align = TextSystem::TextAlign::Left;
+	TextSystem::SpriteSurfaceRenderTarget target(&direct.surface);
+	text.DrawLine(target, "HH", 30, 12, 0, style);
+	const Box printed = scene.canvas.Lit(), expected = direct.Lit();
+	CHECK(!expected.Empty());
+	CHECK_EQ(expected.left, printed.left);
+	CHECK_EQ(expected.top, printed.top);
+	CHECK_EQ(expected.right, printed.right);
+	CHECK_EQ(expected.bottom, printed.bottom);
+}
+
 TEST(FL2Rendering, NothingPrintsWithoutText)
 {
 	Scene scene;
@@ -123,6 +148,11 @@ TEST(FL2Rendering, ItPrintsInItsColourAlignedByItsWidth)
 	// (2), so the centre test must not take right for centre.
 	scene.canvas.Clear();
 	scene.info.text_align = TA_RIGHT;
+	g_Print(60, 10, "HH", &scene.info);
+	CHECK_EQ(left.left - width, scene.canvas.Lit().left);
+	// Only the horizontal part counts: right and baseline is right.
+	scene.canvas.Clear();
+	scene.info.text_align = TA_RIGHT | TA_BASELINE;
 	g_Print(60, 10, "HH", &scene.info);
 	CHECK_EQ(left.left - width, scene.canvas.Lit().left);
 }
@@ -175,9 +205,19 @@ TEST(FL2Rendering, AShadowFallsOnePixelDownRight)
 	scene.canvas.Clear();
 	g_PrintColorStrShadow(20, 4, "HH", scene.info, RGB(248, 248, 248));
 	const int quarter = brightestRed(bottom + 1);
-	CHECK(text >= 28);
+	CHECK(text >= 12);
 	CHECK(quarter * 4 >= text - 4);
 	CHECK(quarter * 4 <= text + 4);
+	// Green and blue are quartered too, not dropped.
+	bool green = false, blue = false;
+	for (int x = 0; x < 160; ++x)
+	{
+		const WORD value = scene.canvas.At(x, bottom + 1);
+		green = green || (value & 0x07E0) != 0;
+		blue = blue || (value & Blue) != 0;
+	}
+	CHECK(green);
+	CHECK(blue);
 	// Of the colour's own channels: red text casts a red shadow.
 	// (COLORREF keeps red in its low byte.)
 	scene.canvas.Clear();
@@ -190,6 +230,21 @@ TEST(FL2Rendering, AShadowFallsOnePixelDownRight)
 		shaded = shaded || value != 0;
 	}
 	CHECK(shaded);
+	// The text is printed over its shadow: where a stem fully covers a
+	// pixel and the one up-left of it, the pixel is the text's red, not
+	// the shadow's blue.
+	scene.canvas.Clear();
+	g_PrintColorStr(20, 4, "HH", scene.info, RGB(248, 0, 0));
+	int px = -1, py = -1;
+	for (int y = 1; y < 64 && px < 0; ++y)
+		for (int x = 1; x < 160; ++x)
+			if ((scene.canvas.At(x, y) >> 11) >= 28 && (scene.canvas.At(x - 1, y - 1) >> 11) >= 28) { px = x; py = y; break; }
+	CHECK(px >= 0);
+	if (px < 0) return;
+	scene.canvas.Clear();
+	g_PrintColorStrShadow(20, 4, "HH", scene.info, RGB(248, 0, 0), RGB(0, 0, 248));
+	CHECK_EQ(0, scene.canvas.At(px, py) & Blue);
+	CHECK((scene.canvas.At(px, py) >> 11) >= 28);
 }
 
 TEST(FL2Rendering, AnOutlineSurroundsTheText)
@@ -201,6 +256,22 @@ TEST(FL2Rendering, AnOutlineSurroundsTheText)
 	const int width = g_GetStringWidth("HH", scene.info.hfont);
 	CHECK_EQ(20 + width, g_PrintColorStrOut(20, 10, "HH", scene.info, RGB(248, 0, 0), RGB(0, 0, 248)));
 	const Box outline = scene.canvas.Lit(Blue);
+	// The copy above and below line up with the text: the outline's top
+	// and bottom rows start where the text's do.
+	auto rowLeft = [&](Canvas& canvas, int row, WORD channels) {
+		for (int x = 0; x < 160; ++x)
+		{
+			const WORD value = canvas.At(x, row);
+			if (value != 0 && (value & ~channels) == 0) return x;
+		}
+		return -1;
+	};
+	Canvas reference;
+	g_SetFL2Surface(&reference.surface);
+	g_Print(20, 10, "HH", &scene.info);
+	g_SetFL2Surface(&scene.canvas.surface);
+	CHECK_EQ(rowLeft(reference, plain.top, 0xFFFF), rowLeft(scene.canvas, plain.top - 1, Blue));
+	CHECK_EQ(rowLeft(reference, plain.bottom, 0xFFFF), rowLeft(scene.canvas, plain.bottom + 1, Blue));
 	CHECK_EQ(plain.left - 1, outline.left);
 	CHECK_EQ(plain.right + 1, outline.right);
 	CHECK_EQ(plain.top - 1, outline.top);

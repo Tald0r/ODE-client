@@ -6543,8 +6543,8 @@ rounds settled* for the host rules). Test fixtures share
   `ui_tests`.
   > **Status:** done (2026-10-14).
   > - **What it does:** the UI prints through it.
-  >   - Plain strings, in their colour and font size, left-aligned or
-  >     centred by their measured width.
+  >   - Plain strings, in their colour and font size, left-aligned,
+  >     right-aligned or centred by their measured width.
   >   - Coloured strings return where they end.
   >   - A shadow falls 1 pixel down-right, by default a quarter of the
   >     colour.
@@ -6563,10 +6563,24 @@ rounds settled* for the host rules). Test fixtures share
   >     source declared them, so nothing else could call them.
   >   - `InitializeGL` and the `FillRect(S_SURFACEINFO*)` stub, which
   >     have no callers. The `rectangle` stub stays: it has callers.
-  > - **Two defects found and kept here**, fixed by the next two
-  >   commits:
-  >   - Right-aligned text is centred.
-  >   - The default shadow swaps red and blue.
+  > - **Three defects found and kept here**, fixed by the next three
+  >   commits (test path: moved, then fixed):
+  >   - Right-aligned text was centred: `TA_CENTER` (6) holds
+  >     `TA_RIGHT`'s bit. VS_UI_Base's value and money fonts are
+  >     right-aligned.
+  >   - The default shadow swapped red and blue. The original Win32
+  >     `FL2.cpp` had the same swap, so this corrects an original bug.
+  >     No caller uses the default shadow today (each passes a colour;
+  >     the two that once did are commented out), so nothing visible
+  >     changes yet.
+  >   - The DBCS conversions read and wrote wide characters at odd
+  >     addresses, which is undefined behaviour (UBSan stops there); they
+  >     now copy the two bytes.
+  > - **A known deviation, kept:** `g_GetNumberString` prints a number
+  >   without grouping ("1234"). The original grouped thousands
+  >   ("1,234"); the SDL port (a6e21d27, #45) dropped that, so the EXP
+  >   tooltips show plain digits. The test pins today's behaviour, not
+  >   the original's.
   >
   > R1 is 35 Windows / 33 Ninja.
   - Owner: R1, and `tests/ui/test_fl2_rendering.cpp` (10 tests, real
