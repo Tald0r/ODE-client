@@ -4995,7 +4995,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					{
 						delete pFakeCreature;
 						pFakeCreature = NULL;
-						if(pCreature != g_pPlayer)		// if it is the player's own pet
+						if(pCreature != g_pPlayer)		// another creature's new pet item is ours to free
 						{
 							delete pItem;
 						}
