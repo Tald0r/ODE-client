@@ -137,7 +137,7 @@ public:
 	int		GetPartyManagerFocused()		{ if(m_pC_game)return m_pC_game->GetPartyManagerFocused();  return -1; }
 
 	void	SetWhisperID(char *id)	{ if(m_pC_game)m_pC_game->SetWhisperID(id); }
-	void	SetOtherInfo(C_VS_UI_OTHER_INFO::PLAYER_INFO &info){m_pC_game->SetOtherInfo(info); }
+	void	SetOtherInfo(C_VS_UI_OTHER_INFO::PLAYER_INFO &info){ if(m_pC_game)m_pC_game->SetOtherInfo(info); }
 
 	void	SetAccelMode(BYTE accel_num)	{ m_bl_accel_mode = true; m_iAccel = accel_num; }
 	bool	IsAccelMode()					{ return m_bl_accel_mode; }

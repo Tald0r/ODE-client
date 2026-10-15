@@ -4,6 +4,7 @@
 #include "packet_stream_access.h"
 #include "UIFunction.h"
 #include "MPlayer.h"
+#include "AddonDef.h"
 #include "MCreatureTable.h"
 #include "MCreatureSpriteTable.h"
 #include "MEffectStatusTable.h"
@@ -1536,6 +1537,33 @@ TEST(GameUI3Notice, EachNoticeIsItsRacesFile)
 	CHECK(calls.empty());
 }
 #endif
+
+//----------------------------------------------------------------------
+// The other player's info
+//----------------------------------------------------------------------
+TEST(GameUI3OtherInfo, ASlayersInfoGoesOnlyToTheGameWindow)
+{
+	// The info, the slayer's face among it (its hair frame less its sex's
+	// first hair frame), goes to the game window, which is not built here:
+	// nothing changes.
+	Scene scene;
+	MCreatureWear slayer;
+	slayer.SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	slayer.SetName("Kim");
+	const std::pair<bool, TYPE_FRAMEID> faces[] = {
+		{true, ADDONID_HAIR1_MALE}, {true, ADDONID_HAIR2_MALE}, {true, ADDONID_HAIR3_MALE},
+		{false, ADDONID_HAIR1_FEMALE}, {false, ADDONID_HAIR2_FEMALE}, {false, ADDONID_HAIR3_FEMALE},
+	};
+	for (const auto& face : faces)
+	{
+		slayer.SetMale(face.first);
+		slayer.SetAddonHair(face.second, 0);
+		UI_RunOtherInfo(&slayer);
+	}
+	CHECK(slayer.IsSlayer());
+	CHECK(UI_GetOtherInfoName() == NULL);
+	CHECK(calls.empty());
+}
 
 //----------------------------------------------------------------------
 // The calls only the game's windows see
