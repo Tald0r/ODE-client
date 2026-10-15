@@ -2657,6 +2657,8 @@ bool C_VS_UI_FILE_DIALOG::MouseControl(UINT message, int _x, int _y)
 		{
 			if(temp_m_select != m_tempselect && !(m_vs_file_list_attr[m_tempselect] & FILE_ATTRIBUTE_DIRECTORY))
 			{
+					// Never sized (Init), so the load below always fails and
+					// the preview stays blank (recorded in task 4.232).
 					CSpriteSurface bmpSurface;
 				POINT destPoint={0,0};
 				std::string filename;

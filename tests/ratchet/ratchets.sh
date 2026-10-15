@@ -420,7 +420,11 @@ check () {
 # 34: the creature draw exceptions join gamemodel (4.229).
 # 33: the guild marks join VS_UI (4.230).
 # 32: the account input rules join gamemodel, the BMP loader SpriteLib (4.232).
-R1_BASELINE=32
+# 31: the map cell joins gamemodel (4.233).
+# 30: the player's available skills join gamemodel (4.234).
+# 29: the status changes join gamemodel (4.235).
+# 28: ClientFunction splits into gamemodel, SpriteLib and UiRuntime (4.236).
+R1_BASELINE=28
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -673,7 +677,11 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 32: the creature draw exceptions join gamemodel (4.229).
 	# 31: the guild marks join VS_UI (4.230).
 	# 30: the account input rules join gamemodel, the BMP loader SpriteLib (4.232).
-	R1_NINJA_BASELINE=30
+	# 29: the map cell joins gamemodel (4.233).
+	# 28: the player's available skills join gamemodel (4.234).
+	# 27: the status changes join gamemodel (4.235).
+	# 26: ClientFunction splits into gamemodel, SpriteLib and UiRuntime (4.236).
+	R1_NINJA_BASELINE=26
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
@@ -790,8 +798,9 @@ check "R3 (unsafe format/copy lines in Client/Packet + Client/PacketHandler)" "$
 # g_pSkillManager, which MSkillManager.cpp defines. Note what this
 # ratchet cannot see: it matches g_p* only, so a library file calling an
 # executable-side function - VS_UI_GameCommon.cpp calls
-# g_pSkillAvailable->SetAvailableSkills(), which lives in the
-# executable's MSkillAvailable.cpp - is a seam the number does not
+# g_pSkillAvailable->SetAvailableSkills(), which lived in the
+# executable's MSkillAvailable.cpp until task 4.234 - is a seam the
+# number does not
 # count, before or after.
 # 27: 28 - 1, a reclassification (task 4.4's third slice moved the gear
 # into gamemodel): VS_UI_Game.cpp's only reaches past the libraries were

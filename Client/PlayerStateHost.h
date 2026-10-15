@@ -201,6 +201,15 @@ struct Host
 	void (*Recreate)() = nullptr;
 	// The player's sector position, X and Y set alone.
 	void (*SetXY)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	// Whether the player is invisible (false without a host), and the
+	// player recomputing its light sight.
+	bool (*IsInvisible)() = nullptr;
+	void (*CalculateLightSight)() = nullptr;
+	// The player's sight (in sectors).
+	void (*SetSight)(int sight) = nullptr;
+	// Whether the player stands somewhere safe: 0 not, 1 safe for its
+	// race, 2 safe for everyone; 0 without a host.
+	int (*IsInSafeSector)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -269,5 +278,9 @@ void SetSpecialActionInfo(int actionInfo);
 void SetAttackModeNormal();
 void Recreate();
 void SetXY(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+bool IsInvisible();
+void CalculateLightSight();
+void SetSight(int sight);
+int IsInSafeSector();
 
 }

@@ -306,4 +306,24 @@ void SetXY(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	if (s_Host && s_Host->SetXY) s_Host->SetXY(x, y);
 }
 
+bool IsInvisible()
+{
+	return s_Host && s_Host->IsInvisible && s_Host->IsInvisible();
+}
+
+void CalculateLightSight()
+{
+	if (s_Host && s_Host->CalculateLightSight) s_Host->CalculateLightSight();
+}
+
+void SetSight(int sight)
+{
+	if (s_Host && s_Host->SetSight) s_Host->SetSight(sight);
+}
+
+int IsInSafeSector()
+{
+	return s_Host && s_Host->IsInSafeSector ? s_Host->IsInSafeSector() : 0;
+}
+
 }

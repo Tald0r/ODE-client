@@ -11,7 +11,6 @@
     "sdl2-ttf",
     "sdl2-mixer",
     "libiconv",
-    "libjpeg-turbo",
     "openssl"
   ]
 }

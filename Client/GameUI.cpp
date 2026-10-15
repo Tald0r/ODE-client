@@ -30,7 +30,6 @@
 #include "MItemOptionTable.h"
 #include "CToken.h"
 #include "UserOption.h"
-#include "UtilityFunction.h"
 #include "MWeather.h"
 #include "MStatusManager.h"
 #include "MChatManager.h"

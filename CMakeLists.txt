@@ -330,20 +330,6 @@ endif()
 # right there in the vcpkg install.
 find_package(Iconv REQUIRED)
 
-# Find JPEG library (needed for UtilityFunction.cpp)
-find_package(JPEG QUIET)
-if(NOT JPEG_FOUND)
-	# Try pkg-config as fallback
-	find_package(PkgConfig QUIET)
-	if(PKG_CONFIG_FOUND)
-		pkg_check_modules(JPEG libjpeg)
-	endif()
-endif()
-if(JPEG_FOUND OR JPEG_LIBRARIES)
-	message(STATUS "JPEG library found: ${JPEG_LIBRARIES}")
-else()
-	message(WARNING "JPEG library not found - JPG loading/saving may not work")
-endif()
 endif()
 
 # Subdirectories
@@ -1105,14 +1091,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		target_link_libraries(DarkEden PRIVATE Iconv::Iconv)
 	else()
 		target_link_libraries(DarkEden PRIVATE iconv)
-	endif()
-
-	# Link JPEG library if available
-	if(JPEG_LIBRARIES)
-		target_link_libraries(DarkEden PRIVATE ${JPEG_LIBRARIES})
-		if(JPEG_INCLUDE_DIRS)
-			target_include_directories(DarkEden PRIVATE ${JPEG_INCLUDE_DIRS})
-		endif()
 	endif()
 
 	# Include directories

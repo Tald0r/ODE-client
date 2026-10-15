@@ -5,6 +5,8 @@
 #include "test_framework.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <exception>
 #include <vector>
 
@@ -77,17 +79,52 @@ void	RecordFailureInt(const char* file, int line, const char* expr,
 }
 
 //----------------------------------------------------------------------
+// TEST_FILTER's value, or empty when it is not set (getenv warns on MSVC,
+// so Windows reads it as basic/CrtCompat.h does).
+static std::string	FilterFromEnvironment()
+{
+#ifdef _WIN32
+	char*		value	= nullptr;
+	std::size_t	length	= 0;
+	if (_dupenv_s(&value, &length, "TEST_FILTER") != 0 || value == nullptr)
+		return std::string();
+	std::string	filter(value);
+	std::free(value);
+	return filter;
+#else
+	const char*	value	= std::getenv("TEST_FILTER");
+	return value != nullptr ? std::string(value) : std::string();
+#endif
+}
+
+//----------------------------------------------------------------------
 int	RunAll()
 {
 	const std::vector<TestCase>&	tests	= Registry();
 
 	int	failedTests	= 0;
 
-	std::printf("Running %d test(s)\n\n", (int)tests.size());
+	// TEST_FILTER, when set, runs only the tests whose "Suite.Name" starts
+	// with it (a mutant run's speed-up).
+	const std::string	filter	= FilterFromEnvironment();
+	int			ran		= 0;
+
+	if (filter.empty())
+		std::printf("Running %d test(s)\n\n", (int)tests.size());
+	else
+		std::printf("Running the tests TEST_FILTER=%s names\n\n", filter.c_str());
 
 	for (size_t i = 0; i < tests.size(); i++)
 	{
 		const TestCase&	testCase = tests[i];
+
+		if (!filter.empty())
+		{
+			const std::string	fullName = std::string(testCase.suite) + "." + testCase.name;
+			if (fullName.compare(0, filter.size(), filter) != 0)
+				continue;
+		}
+		ran++;
 
 		g_TestFailures = 0;
 
@@ -123,7 +160,15 @@ int	RunAll()
 	}
 
 	std::printf("\n%d test(s), %d check(s), %d failed\n",
-		    (int)tests.size(), g_TotalChecks, failedTests);
+		    ran, g_TotalChecks, failedTests);
+
+	// A filter that names no test is a mistake, not a pass: 2, apart from
+	// a failing test's 1, so a mutant run cannot read it as a kill.
+	if (!filter.empty() && ran == 0)
+	{
+		std::printf("TEST_FILTER=%s names no test\n", filter.c_str());
+		return 2;
+	}
 
 	return failedTests;
 }

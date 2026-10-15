@@ -42,6 +42,9 @@ struct Host {
 	bool (*ReadHornPortals)(std::size_t, HornPortals&) = nullptr;
 	bool (*ReadPetProgress)(std::uint32_t itemID, PetProgress&) = nullptr;
 	bool (*SendPacket)(Packet&) = nullptr;
+	// The blood bible's effect behind its item in the gear window, at the
+	// screen point (the view draws it).
+	void (*DrawBloodBibleEffect_InGear)(int x, int y) = nullptr;
 };
 
 const Host* SetHost(const Host* host);
@@ -54,4 +57,5 @@ HornPortals ReadHornPortals(std::size_t map);
 bool ReadPetProgress(std::uint32_t itemID, PetProgress& progress);
 bool RequestExchangeList(const ExchangeFilter& filter);
 bool RequestExchangeBuy(std::uint64_t listingID);
+void DrawBloodBibleEffect_InGear(int x, int y);
 }

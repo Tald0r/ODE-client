@@ -27,8 +27,6 @@ foreach(_sdl SDL2 SDL2_image SDL2_ttf SDL2_mixer)
     set(${_sdl}_FOUND TRUE)
 endforeach()
 set(SDL2_MIXER_FOUND TRUE)
-set(JPEG_FOUND TRUE)
-set(JPEG_LIBRARIES "")
 
 # musl's iconv cannot encode the game's legacy CJK wire/resource formats.
 # Use the same GNU implementation used by the native Windows build.

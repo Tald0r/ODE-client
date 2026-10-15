@@ -74,7 +74,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "Profiler.h"
 #include "MEventManager.h"
 #include "MNPC.h"
-#include "UtilityFunction.h"
 
 // 2002.6.28 [UDP수정]
 
@@ -3289,12 +3288,13 @@ MakeScreenShot()
 			#endif
 
 //			g_pBack->SaveToBMP(str);
-			// SaveSurfaceToImage() (UtilityFunction.cpp) takes a
-			// CDirectDrawSurface&, but with SPRITELIB_BACKEND_SDL (the only
-			// backend this project builds now, Windows included)
-			// CSpriteSurface is a standalone class that no longer inherits
-			// from CDirectDrawSurface. g_pBack is a CSpriteSurface*,
-			// so this call never type-checked under that backend.
+			// SaveSurfaceToImage() (UtilityFunction.cpp, retired in task
+			// 4.231) took a CDirectDrawSurface&, but with
+			// SPRITELIB_BACKEND_SDL (the only backend this project builds
+			// now, Windows included) CSpriteSurface is a standalone class
+			// that no longer inherits from CDirectDrawSurface. g_pBack is a
+			// CSpriteSurface*, so this call never type-checked under that
+			// backend.
 			// TODO: Implement screenshot saving against CSpriteSurface (SDL
 			// surface -> BMP/JPEG) or via stb_image_write; see 참고자료/작업필요stub.md.
 			printf("Screenshot functionality not yet implemented on this platform\n");

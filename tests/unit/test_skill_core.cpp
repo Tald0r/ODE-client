@@ -6,9 +6,10 @@
 // info table one entry per skill, the set of skills a character may use
 // now, and the domains that hold a skill tree and hand out what the
 // character learns. The half that decides what the player can use at
-// this moment - the weapon in hand, the inventory, the zone - is the
-// executable's MSkillAvailable.cpp and is not reachable from here; the
-// use delays run on the item host's clock, which these tests drive.
+// this moment - the weapon in hand, the inventory, the zone - is
+// MSkillAvailable.cpp (gamemodel's since task 4.234), which
+// test_skill_available.cpp drives; the use delays run on the item host's
+// clock, which these tests drive.
 //
 //----------------------------------------------------------------------
 

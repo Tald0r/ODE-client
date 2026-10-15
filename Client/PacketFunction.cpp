@@ -552,43 +552,6 @@ GetDirectionToPosition(int originX, int originY, int destX, int destY)
 }
 
 //-----------------------------------------------------------------------------
-// Convert Alignment
-//-----------------------------------------------------------------------------
-int
-ConvertAlignment(int alignment2)
-{
-	int alignment = alignment2;
-
-	// 음수인 경우..
-	if (alignment > 10000)
-	{	
-		alignment = - (short)(~alignment + 1);
-
-		DEBUG_ADD_FORMAT("Modify AlignmentValue = %d --> %d", alignment2, alignment);
-	}
-
-	const int numAlignment = 5;
-	int alignmentValue[numAlignment] =
-	{
-		-7501,		// evil+
-		-2501,		// evil
-		2500,		// neutral
-		7500,		// good
-		10000		// good+
-	};
-
-	for (int i=0; i<numAlignment; i++)
-	{
-		if (alignment <= alignmentValue[i])
-		{
-			return i;
-		}
-	}
-
-	return 0;
-}
-
-//-----------------------------------------------------------------------------
 // Convert Millisecond To Frame
 //-----------------------------------------------------------------------------
 DWORD

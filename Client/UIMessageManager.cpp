@@ -9228,8 +9228,9 @@ UIMessageManager::Execute_UI_CLOSE_FILE_DIALOG(intptr_t left, intptr_t right, vo
 		// character's profile. In this port that class is a stub, so the
 		// load never succeeded (see LoadImageToSurface's retirement in
 		// task 4.231), and choosing a picture has done nothing. Restoring
-		// it means loading into a CSpriteSurface (UtilityFunction.h) and
-		// saving that.
+		// it means loading into a CSpriteSurface sized to the picture
+		// first (LoadImageToSurface in SpriteLib/SurfaceImage.h cannot size
+		// one) and saving that.
 		(void)void_ptr;
 		break;
 	}

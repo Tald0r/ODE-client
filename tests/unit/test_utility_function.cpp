@@ -1,5 +1,6 @@
 #include "test_framework.h"
 #include "UtilityFunction.h"
+#include <cstdio>
 #include <cstring>
 #include <string>
 
@@ -30,6 +31,14 @@ TEST(UtilityFunction, RemoveStringSpaceTrimsBothEnds)
 	CHECK(Trimmed("") == "");
 	CHECK(Trimmed("    ") == "");
 	CHECK(Trimmed(" a ") == "a");
+	// An all-space string is not trimmed from its end: nothing before it
+	// is written.
+	char buffer[] = "x    ";
+	char* str = buffer + 1;
+	RemoveStringSpace(str);
+	CHECK(*str == '\0');
+	CHECK(buffer[1] == ' ');
+	CHECK(buffer[0] == 'x');
 }
 
 TEST(UtilityFunction, AnIDIsFourToTenWithoutSpaces)

@@ -4,6 +4,7 @@
 #include "Cpackets/CGExchangeList.h"
 #include "Cpackets/CGExchangeBuy.h"
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -233,4 +234,25 @@ TEST(UiRuntime, ExchangeListCarriesTheSellerFilterItWasGiven)
 	CHECK(UiRuntime::RequestExchangeList({}));
 	CHECK(capture.seller.empty());
 	CHECK_EQ(2, capture.packetIDs.size());
+}
+
+TEST(UiRuntime, TheBloodBiblesGearEffectIsTheViews)
+{
+	// Task 4.236: the gear window draws it through the host (the view
+	// draws behind the item at the point).
+	static std::vector<std::pair<int, int>> drawn;
+	drawn.clear();
+	UiRuntime::DrawBloodBibleEffect_InGear(1, 2);
+	UiRuntime::Host drawing{};
+	drawing.DrawBloodBibleEffect_InGear = [](int x, int y) { drawn.push_back({x, y}); };
+	{
+		HostScope scope(&drawing);
+		UiRuntime::DrawBloodBibleEffect_InGear(30, 47);
+	}
+	UiRuntime::Host none{};
+	{
+		HostScope scope(&none);
+		UiRuntime::DrawBloodBibleEffect_InGear(5, 6);
+	}
+	CHECK((drawn == std::vector<std::pair<int, int>>{{30, 47}}));
 }

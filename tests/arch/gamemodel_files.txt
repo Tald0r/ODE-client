@@ -152,6 +152,28 @@ Client/CreatureDrawExceptions.h
 Client/UtilityFunction.cpp
 Client/UtilityFunction.h
 
+# A map cell's objects, effects, portals and sounds (4.233).
+Client/EffectSpriteTypeHelper.h
+Client/MSector.cpp
+Client/MSector.h
+
+# Which skills the player can use now (4.234).
+Client/MSkillAvailable.cpp
+
+# What a change of the player's status values does, with the alignment
+# steps and what the change shows (4.235).
+Client/ModifyStatusManager.cpp
+Client/ModifyStatusManager.h
+Client/Alignment.cpp
+Client/Alignment.h
+Client/StatusPresentationHost.cpp
+Client/StatusPresentationHost.h
+
+# The whisper target, whether the player stands somewhere safe, and the
+# inventory effects (4.236).
+Client/ClientFunction.cpp
+Client/ClientFunction.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
@@ -228,9 +250,9 @@ Client/MShop.h
 
 # The skill core (task 4.4, fourth slice): the skill info table, the set
 # of skills a character may use, and the domains and the tree over them.
-# The half that asks what the player can use right now is the
-# executable's MSkillAvailable.cpp; the delays run on the item host's
-# clock. MSkillInfoTable.cpp also owns Soul Rebirth range arithmetic;
+# The half that asks what the player can use right now,
+# MSkillAvailable.cpp, joined in task 4.234; the delays run on the item
+# host's clock. MSkillInfoTable.cpp also owns Soul Rebirth range arithmetic;
 # MPlayer retains the live skill-table reads. SkillDef.h is listed with the fame table
 # above, which already needed its SKILLDOMAIN enum.
 Client/MSkillManager.cpp
@@ -380,9 +402,10 @@ Client/PacketHandler/GCRemoveInjuriousCreatureHandler.cpp
 # The skill model's rebuild from a GCSkillInfo packet (task 4.16): which
 # skills each domain has learned, the per-skill state the wire carries
 # and the user's skill flags. Lifted out of GCSkillInfoHandler, which
-# stays executable-side for what it reaches there (the sweeper bonus
-# skills and MSkillSet::SetAvailableSkills, both MSkillAvailable.cpp),
-# with the two duration conversions it and the handlers read, which
+# stayed executable-side then for what it reached there (the sweeper
+# bonus skills and MSkillSet::SetAvailableSkills, both
+# MSkillAvailable.cpp, gamemodel's since 4.234), with the two duration
+# conversions it and the handlers read, which
 # ClientDef.h includes.
 Client/ApplySkillInfo.cpp
 Client/ApplySkillInfo.h
