@@ -129,6 +129,12 @@
 #include "DialogPresentationHost.h"
 #include "DialogWindowHost.h"
 #include "GameOptionsHost.h"
+#include "PlayerPresentationHost.h"
+#include "PetWindowInfo.h"
+#include "VS_UI_mouse_pointer.h"
+#ifdef PLATFORM_WINDOWS
+#include "CImm.h"
+#endif
 #include "VS_UI_ExtraDialog.h"
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
@@ -2689,6 +2695,7 @@ void ReleaseAllObjects()
 	NoticePresentation::SetHost(nullptr);
 	StatusPresentation::SetHost(nullptr);
 	GameOptions::SetHost(nullptr);
+	PlayerPresentation::SetHost(nullptr);
 	NPCPresentation::SetHost(nullptr);
 	ZoneLoading::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
@@ -4291,6 +4298,69 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.GetImageObjectFrameSprite = [](int frameID, int frame) {
 		return static_cast<std::uint16_t>(g_pTopView->m_ImageObjectFPK[frameID][frame].GetSpriteID());
 	},
+	.SetSelectedSectorNULL = []() { g_pTopView->SetSelectedSectorNULL(); },
+	.SetSelectedNULL = []() { g_pTopView->SetSelectedNULL(); },
+	.SetSelectedCreature = [](TYPE_OBJECTID creatureID) { g_pTopView->SetSelectedCreature(creatureID); },
+	.GetSelectedSector = [](int screenX, int screenY) { return g_pTopView->GetSelectedSector(screenX, screenY); },
+	.ScreenToPixel = [](int screenX, int screenY) { return g_pTopView->ScreenToPixel(screenX, screenY); },
+	.GetViewRequestMode = []() { return static_cast<int>(g_pTopView->GetRequestMode()); },
+	.IsViewRequestMode = []() { return g_pTopView->IsRequestMode(); },
+	.SetFadeStart = [](signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay) {
+		g_pTopView->SetFadeStart(start, end, step, r, g, b, delay);
+	},
+	.SetFadeEnd = []() { g_pTopView->SetFadeEnd(); },
+	.GetCreatureActionFrameCount = [](int frameID, int action, int direction) {
+		return static_cast<int>(g_pTopView->m_CreatureFPK[frameID][action][direction].GetSize());
+	},
+};
+
+extern void UI_RunPetInfo(struct PETINFO *pPetInfo);
+
+// MPlayer.cpp's (gamemodel, task 4.247): the UI object, the mouse pointer,
+// force feedback, the character window's slot and GameUI's functions.
+static const PlayerPresentation::Host s_PlayerPresentationHost = {
+	.GetInventoryOpenState = []() { return gC_vs_ui.GetInventoryOpenState(); },
+	.GetGearOpenState = []() { return gC_vs_ui.GetGearOpenState(); },
+	.RunTraceWindow = []() { gC_vs_ui.RunTraceWindow(); },
+	.SetCannotTrace = []() { gC_vs_ui.SetCannotTrace(); },
+	.RunElevator = []() { gC_vs_ui.RunElevator(); },
+	.FinishRequestDie = []() { gC_vs_ui.FinishRequestDie(); },
+	.FinishRequestResurrect = []() { gC_vs_ui.FinishRequestResurrect(); },
+	.CloseRequestShrineMinimap = []() { gC_vs_ui.CloseRequestShrineMinimap(); },
+	.IsInstallMineProgress = []() { return gC_vs_ui.IsInstallMineProgress(); },
+	.StartInstallMineProgress = [](int gridX, int gridY) { gC_vs_ui.StartInstallMineProgress(gridX, gridY); },
+	.StartCreateMineProgress = [](int gridX, int gridY) { gC_vs_ui.StartCreateMineProgress(gridX, gridY); },
+	.StartCreateBombProgress = [](int gridX, int gridY) { gC_vs_ui.StartCreateBombProgress(gridX, gridY); },
+	.EndInstallMineProgress = []() { gC_vs_ui.EndInstallMineProgress(); },
+	.GetInputString = []() { return gC_vs_ui.GetInputString(); },
+	.AddInputString = [](const char* pString) { gC_vs_ui.AddInputString(pString); },
+	.GetPickUpItem = []() { return gpC_mouse_pointer->GetPickUpItem(); },
+	.SetCursorAttack = []() { gpC_mouse_pointer->SetCursorAttack(); },
+	.ForceFeelReady = []() { return g_pUserOption->UseForceFeel && gpC_Imm != NULL && gpC_Imm->IsDevice(); },
+	.ForceAction = [](int soundID) {
+		// Force feedback is the Immersion library's, Windows only.
+#ifdef PLATFORM_WINDOWS
+		gpC_Imm->ForceAction(soundID);
+#else
+		(void)soundID;
+#endif
+	},
+	.SetChangeVampireTime = [](int time) { g_char_slot_ingame.CHANGE_VAMPIRE = time; },
+	.SetSilverDamage = [](int minDamage, int maxDamage) {
+		g_char_slot_ingame.SILVER_DAM2 = minDamage;
+		g_char_slot_ingame.SILVER_DAM = maxDamage;
+	},
+	.RunPetInfo = [](PETINFO* pPetInfo) { UI_RunPetInfo(pPetInfo); },
+	.RemoveDescriptor = [](void* pPtr) { UI_RemoveDescriptor(pPtr); },
+	.LockItem = UI_LockItem,
+	.LockItemTrade = UI_LockItemTrade,
+	.SetCharInfoDAM = [](int value, int value2) { UI_SetCharInfoDAM(value, value2); },
+	.RunPartyCancel = [](const char* pName) { UI_RunPartyCancel(pName); },
+	.RunExchangeCancel = [](const char* pName) { UI_RunExchangeCancel(pName); },
+	.CloseSelectWayPoint = UI_CloseSelectWayPoint,
+	.AddEffectStatus = [](int status, std::uint32_t delayFrame) { UI_AddEffectStatus(status, delayFrame); },
+	.RemoveEffectStatus = [](int status) { UI_RemoveEffectStatus(status); },
+	.FinishLevelUpButton = []() { g_pUIMessageManager->Execute(UI_FINISH_LEVELUP_BUTTON, 0, 0, NULL); },
 };
 
 static const GameOptions::Host s_GameOptionsHost = {
@@ -4951,6 +5021,7 @@ InitGameObject()
 	NoticePresentation::SetHost(&s_NoticePresentationHost);
 	StatusPresentation::SetHost(&s_StatusPresentationHost);
 	GameOptions::SetHost(&s_GameOptionsHost);
+	PlayerPresentation::SetHost(&s_PlayerPresentationHost);
 	NPCPresentation::SetHost(&s_NPCPresentationHost);
 	ZoneLoading::SetHost(&s_ZoneLoadingHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);

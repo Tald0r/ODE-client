@@ -2,16 +2,29 @@
 // MPlayer.cpp
 //----------------------------------------------------------------------
 //
-// m_nUsedActionInfo는 다음 turn에 바로 수행하게 되는 동작이고
+// m_nUsedActionInfo is the action performed right on the next turn, and
 //
-// m_nNextUsedActionInfo는 
-//          추적이 끝나고 나서야 수행하게 되는 동작이다.(buffer의 역할)
+// m_nNextUsedActionInfo is
+//          the action performed only after the trace is finished (acts as a buffer).
 //
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
 #include <math.h>
 #include "MZone.h"
-#include "MTopView.h"
+#include "WorldEventsHost.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
+#include "MSlayerGear.h"
+#include "MVampireGear.h"
+#include "ClientMode.h"
+#include "MHelpDef.h"
+#include "SkillDef.h"
+#include "MSkillManager.h"
+#include "MViewDef.h"
+#include "MInventory.h"
+#include "MStorage.h"
+#include "FrameClock.h"
+#include "WorldTileGeometry.h"
 #include "MItem.h"
 #include "MCreature.h"
 #include "MInteractionObject.h"
@@ -23,7 +36,7 @@
 #include "MEffectTarget.h"
 #include "MEffectGeneratorTable.h"
 #include "PacketDef.h" 
-#include "ClientDef.h"
+#include "PlayerPresentationHost.h"
 #include "MCreatureTable.h"
 #include "MSoundTable.h"
 #include "MItemTable.h"
@@ -33,9 +46,8 @@
 #include "MItemOptionTable.h"
 #include "TalkBox.h"
 #include "UIDialog.h"
-#include "MHelpManager.h"
 #include "MPortal.h"
-#include "PacketFunction.h"
+#include "InputState.h"
 #include "MGameTime.h"
 #include "MObjectSelector.h"
 #include "SoundDef.h"
@@ -62,9 +74,8 @@
 #include "MWarManager.h"
 
 #include "MGuildType.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
-#include "MTestDef.h"
+#include "GameSocket.h"
+#include "DebugLog.h"
 #include "RankBonusTable.h"
 #include "RankBonusDef.h"
 #include "MOustersGear.h"
@@ -72,17 +83,17 @@
 
 #include "Cpackets/CGAbsorbSoul.h"
 
-#include "UIMessageManager.h"
-#include "UIFunction.h"
+#include "DirectionSelection.h"
+#include "PetWindowInfo.h"
 #include "SystemAvailabilities.h"
 
-#include "UserOption.h"
-#include "VS_UI_GameCommon2.h"
+#include "VsUiPresentationHost.h"
+#include "DialogPresentationHost.h"
 
 #include "Cpackets/CGPartyPosition.h"
 #include "WebSocketTransport.h"
 
-extern void UI_RunPetInfo(struct PETINFO *pPetInfo);
+#include "NoticePresentationHost.h"
 extern bool UpdateSocketOutput();
 //GameNew Mode  add by sonc 2006.9.27
 extern	LONG g_SECTOR_WIDTH;
@@ -100,10 +111,10 @@ extern	LONG g_TILESURFACE_HEIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 //end 
-#include "Client.h"
+#include "StatusPresentationHost.h"
 bool		GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint);
 
-// [새기술]
+// [new skill]
 void		SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID);
 bool			IsCreatureMove( MCreature *pCreature );
 bool			IsCreatureActionAttack( MCreature *pCreature );
@@ -116,7 +127,6 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 // #endif
 
 
-#include "MTestDef.h"
 
 #ifdef __METROTECH_TEST__
 //	#define OUTPUT_DEBUG_PLAYER_ACTION
@@ -124,18 +134,10 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
 
 
-#include "VS_UI.h" // KJTINC
-#include "VS_UI_mouse_pointer.h"
-#ifdef PLATFORM_WINDOWS
-#include "CImm.h"
-#endif
+#include "ZoneLoadingHost.h"
+#include "GameInfoPresentationHost.h"
 
 extern	MonotonicClock::TimePoint	g_FrameNow;
-extern	int		g_x;
-extern	int		g_y;
-extern	bool	g_bNetStatusGood;
-extern BOOL					g_bLButtonDown;
-extern BOOL					g_bRButtonDown;
 extern BOOL					g_bCButtonDown;
 extern bool g_bPreviousMove;
 
@@ -144,7 +146,6 @@ extern int					g_nZoneSmall;
 extern bool					g_bZonePlayerInLarge;
 extern bool					g_bZoneSafe;
 extern bool					g_bHolyLand;
-extern POINT						g_SelectSector;
 
 //#define	new			DEBUG_NEW
 
@@ -161,10 +162,24 @@ extern POINT						g_SelectSector;
 //----------------------------------------------------------------------
 MPlayer*			g_pPlayer = NULL;
 
+// The view's tile-to-pixel conversions (MTopView's statics forward to
+// these): a sector's pixel, and the sector of a pixel.
+static POINT MapToPixel(int x, int y)
+{
+	POINT p = { WorldTileGeometry::TileToPixelX(x), WorldTileGeometry::TileToPixelY(y) };
+	return p;
+}
+
+static POINT PixelToMap(int x, int y)
+{
+	POINT p = { WorldTileGeometry::PixelToTileX(x), WorldTileGeometry::PixelToTileY(y) };
+	return p;
+}
+
 //----------------------------------------------------------------------
 // define Functions
 //----------------------------------------------------------------------
-// 막 시체가 되는 순간...
+// The moment it becomes a corpse...
 /*
 #define GET_DYING_CREATURE( pCreature, id )								\
 		if (pCreature==NULL)											\
@@ -198,7 +213,7 @@ MPlayer*			g_pPlayer = NULL;
 		}
 
 //----------------------------------------------------------------------
-// 포션 자동 먹기
+// Auto-drink potions
 //----------------------------------------------------------------------
 #ifdef __METROTECH_TEST__
 
@@ -227,7 +242,7 @@ MPlayer*			g_pPlayer = NULL;
 				
 				if(hp_gap > 0)
 				{
-					if(g_iAutoHealPotion == 2)	// 에너지 달면 단만큼 채운다
+					if(g_iAutoHealPotion == 2)	// when energy runs low, refill by one step
 					{
 						if(g_pSkillAvailable->IsEnableSkill( MAGIC_CURE_CRITICAL_WOUNDS ) &&
 							(*g_pSkillInfoTable)[MAGIC_CURE_CRITICAL_WOUNDS].IsEnable() && 
@@ -253,7 +268,7 @@ MPlayer*			g_pPlayer = NULL;
 							bUse = true;
 						}
 					}
-					else if(g_iAutoHealPotion == 3)	// 에너지 달면 채운다
+					else if(g_iAutoHealPotion == 3)	// when energy runs low, refill
 					{
 						if(g_pSkillAvailable->IsEnableSkill( MAGIC_CURE_CRITICAL_WOUNDS ) &&
 							(*g_pSkillInfoTable)[MAGIC_CURE_CRITICAL_WOUNDS].IsEnable())
@@ -292,7 +307,7 @@ MPlayer*			g_pPlayer = NULL;
 
 			if(bUse == true && skill_id != ACTIONINFO_NULL)
 			{
-				// 스킬사용
+				// Use skill
 				g_pPlayer->UnSetRequestMode();
 				
 				TYPE_ACTIONINFO old_special = g_pPlayer->GetSpecialActionInfo();
@@ -306,7 +321,7 @@ MPlayer*			g_pPlayer = NULL;
 	}
 
 	//------------------------------------------------------------
-	// Healing 먹기
+	// Drink healing
 	//------------------------------------------------------------
 	void
 	AutoUsePotion(int bHeal)	// 0:heal 1:mana 2:magazine
@@ -390,7 +405,7 @@ MPlayer*			g_pPlayer = NULL;
 			switch(bHeal)
 			{
 			case 0:	// Heal
-				// HP는 50% 이하일때 먹는다.
+				// Drink when HP is 50% or less.
 				forceUse = percent <= 50;
 				break;
 
@@ -399,7 +414,7 @@ MPlayer*			g_pPlayer = NULL;
 				itemType += 5;
 				maxItemType += 5;
 
-				// Mana는 현재 사용중인 기술과 비교해서 먹는다.
+				// Drink mana by comparing with the skill currently in use.
 				if (g_pSkillInfoTable!=NULL)
 				{
 					int skill = g_pPlayer->GetSpecialActionInfo();
@@ -423,14 +438,14 @@ MPlayer*			g_pPlayer = NULL;
 				{
 					pItem = g_pInventory->FindItem(itemClass , type );
 
-					// reload일때는 은제총알을 찾아보자
+					// When reloading, look for silver bullets
 					if(bHeal >= 2 && pItem == NULL) pItem = g_pInventory->FindItem(itemClass , type +8);
 
 					if (pItem!=NULL) break;					
 				}
 				while (--type > badType);
 
-				// 몇 percent 이하일때는 그냥 먹어야 한다. 총알은 빼구
+				// Below a certain percent just drink it. Except bullets
 				if (bHeal != 2 && pItem==NULL && forceUse)
 				{
 					type = badType + 1;
@@ -469,7 +484,7 @@ MPlayer*			g_pPlayer = NULL;
 				}
 				else if (g_pQuickSlot!=NULL)
 				{
-					// 벨트에서 찾기
+					// Look in the belt
 					type = itemType;
 
 					do
@@ -478,7 +493,7 @@ MPlayer*			g_pPlayer = NULL;
 
 						pItem = g_pQuickSlot->FindItem( itemFinder );
 
-						// reload일때는 은제총알을 찾아보자
+						// When reloading, look for silver bullets
 						if(bHeal >= 2 && pItem == NULL)
 						{
 							MItemClassTypeFinder itemFinder( itemClass, type +8 );
@@ -490,7 +505,7 @@ MPlayer*			g_pPlayer = NULL;
 					}
 					while (--type > badType);
 
-					// 몇 percent 이하일때는 그냥 먹어야 한다. 총알일 때는 빼구
+					// Below a certain percent just drink it. Except for bullets
 					if (bHeal != 2 && pItem==NULL && forceUse)
 					{
 						type = badType + 1;
@@ -531,7 +546,7 @@ MPlayer*			g_pPlayer = NULL;
 
 						g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT);
 
-						UI_LockGear();
+						VsUiPresentation::LockGear();
 					}					
 				}			
 				
@@ -547,7 +562,7 @@ bool	CanActionByZoneInfo()
 	{
 		ZONETABLE_INFO *pZoneInfo = g_pZoneTable->Get( g_pZone->GetID() );
 		
-		if(pZoneInfo->CannotAttackInSafe == true)					// 안전지대 안에서 공격할 수 없으면
+		if(pZoneInfo->CannotAttackInSafe == true)					// if attacking inside the safe zone is not allowed
 		{			
 			if ( g_pZone->GetSector(g_pPlayer->GetX(),g_pPlayer->GetY()).IsSafeComplete() )
 				return true;
@@ -566,13 +581,13 @@ bool	CanActionByZoneInfo()
 }
 
 //----------------------------------------------------------------------
-// 파티원들에게 내 좌표를 보낸다.
+// Send my coordinates to party members.
 //----------------------------------------------------------------------
 void
 SendPositionInfoToParty()
 {
 	//------------------------------------------------------
-	// 지속적으로 좌표를 보내는 경우
+	// When sending coordinates continuously
 	//------------------------------------------------------		
 	if (g_pParty->GetSize()!=0
 		&& g_pClientCommunicationManager!=NULL)
@@ -585,20 +600,20 @@ SendPositionInfoToParty()
 		int y		= g_pPlayer->GetY();
 		int zoneID	= (g_bZonePlayerInLarge?g_nZoneLarge : g_nZoneSmall);
 
-		// 좌표가 달라졌으면 보낸다.
+		// Send if the coordinates changed.
 		if (oldX!=x || oldY!=y || oldZoneID!=zoneID)			
 		{
 			if(g_pUserInformation->bKorean == true && !NetworkTransport::UsesWebSocket())
 			{
 				RCPositionInfo _RCPositionInfo;
 
-				// 이름을 안 보내도 IP로 체크하기 때메 된다.
+				// No need to send the name since it is checked by IP.
 				//_RCPositionInfo.setName( g_pUserInformation->CharacterID.GetString() );
 				_RCPositionInfo.setZoneX( x );
 				_RCPositionInfo.setZoneY( y );
 				_RCPositionInfo.setZoneID( zoneID );
 
-				// 보낸 정보 기억
+				// Remember the sent information
 				oldX = x;
 				oldY = y;
 				oldZoneID = zoneID;
@@ -608,8 +623,8 @@ SendPositionInfoToParty()
 					PARTY_INFO* pInfo = g_pParty->GetMemberInfo( i );
 					
 					if (pInfo!=NULL
-						// 시야에 없는 경우에만 위치 정보를 보낸다.
-						// 의미가 없을지도.. - -;
+						// Send position info only when out of sight.
+						// Might be meaningless.. (sigh)
 						//&& !pInfo->bInSight
 						)
 					{
@@ -629,7 +644,7 @@ SendPositionInfoToParty()
 					}
 				}			
 			}
-			else	// 한국어가 아닐 경우
+			else	// not Korean
 			{
 				CGPartyPosition _CGPartyPosition;
 
@@ -646,7 +661,7 @@ SendPositionInfoToParty()
 //----------------------------------------------------------------------
 // Send StatusInfo To Party
 //----------------------------------------------------------------------
-// 파티원들에게 내 상태 정보를 보낸다. 언제? - -;
+// Send my status info to party members. When? (sigh)
 //----------------------------------------------------------------------
 void
 SendStatusInfoToParty()
@@ -656,7 +671,7 @@ SendStatusInfoToParty()
 	if (g_FrameNow >= nextTime)
 	{
 		//------------------------------------------------------
-		// 지속적으로 좌표를 보내는 경우
+		// When sending coordinates continuously
 		//------------------------------------------------------		
 		if (g_pParty->GetSize()!=0
 			&& g_pClientCommunicationManager!=NULL)
@@ -667,19 +682,19 @@ SendStatusInfoToParty()
 			int HP		= g_pPlayer->GetHP();
 			int MaxHP	= g_pPlayer->GetMAX_HP();
 			
-			// 좌표가 달라졌으면 보낸다.
+			// Send if the coordinates changed.
 			if (oldHP!=HP || oldMaxHP!=MaxHP)
 			{
 				if(g_pUserInformation->bKorean == true && !NetworkTransport::UsesWebSocket())
 				{
 					RCStatusHP _RCStatusHP;
 
-					// 이름을 안 보내도 IP로 체크하기 때메 된다.
+					// No need to send the name since it is checked by IP.
 					//_RCStatusHP.setName( g_pUserInformation->CharacterID.GetString() );
 					_RCStatusHP.setCurrentHP( HP );
 					_RCStatusHP.setMaxHP( MaxHP );
 					
-					// 보낸 정보 기억
+					// Remember the sent information
 					oldHP = HP;
 					oldMaxHP = MaxHP;
 					
@@ -688,8 +703,8 @@ SendStatusInfoToParty()
 						PARTY_INFO* pInfo = g_pParty->GetMemberInfo( i );
 						
 						if (pInfo!=NULL
-							// 시야에 없는 경우에만 상태 정보를 보낸다.
-							// 의미가 없을지도.. - -;
+							// Send status info only when out of sight.
+							// Might be meaningless.. (sigh)
 							//&& !pInfo->bInSight
 							)
 						{
@@ -709,7 +724,7 @@ SendStatusInfoToParty()
 						}
 					}	
 				}
-				else // 한국어가 아닌 경우
+				else // not Korean
 				{
 					int x		= g_pPlayer->GetX();
 					int y		= g_pPlayer->GetY();
@@ -735,13 +750,13 @@ SendStatusInfoToParty()
 //----------------------------------------------------------------------
 // Send StatusInfo To Party
 //----------------------------------------------------------------------
-// 파티원들에게 내 상태 정보를 보낸다. 언제? - -;
+// Send my status info to party members. When? (sigh)
 //----------------------------------------------------------------------
 void
 SendCharacterInfoToParty()
 {
 	//------------------------------------------------------
-	// 지속적으로 좌표를 보내는 경우
+	// When sending coordinates continuously
 	//------------------------------------------------------		
 	if (g_pParty->GetSize()!=0
 		&& g_pClientCommunicationManager!=NULL)
@@ -751,7 +766,7 @@ SendCharacterInfoToParty()
 		{
 			RCCharacterInfo _RCCharacterInfo;
 
-			// 이름을 안 보내도 IP로 체크하기 때메 된다.
+			// No need to send the name since it is checked by IP.
 			//_RCStatusHP.setName( g_pUserInformation->CharacterID.GetString() );
 			_RCCharacterInfo.setGuildID( guildID );
 			
@@ -760,8 +775,8 @@ SendCharacterInfoToParty()
 				PARTY_INFO* pInfo = g_pParty->GetMemberInfo( i );
 				
 				if (pInfo!=NULL
-					// 시야에 없는 경우에만 상태 정보를 보낸다.
-					// 의미가 없을지도.. - -;
+					// Send status info only when out of sight.
+					// Might be meaningless.. (sigh)
 					//&& !pInfo->bInSight
 					)
 				{
@@ -820,7 +835,7 @@ IsBlockAllDirection()
 //----------------------------------------------------------------------
 MPlayer::MPlayer()
 {	
-	// 추적 정보
+	// Trace info
 	m_fTrace				= FLAG_TRACE_NULL;
 	m_TraceDistance			= 0;
 	m_TraceObjectAction		= 0;
@@ -828,7 +843,7 @@ MPlayer::MPlayer()
 
 	m_BasicAttackDistance	= 1;
 
-	// 다음 추적 정보 
+	// Next trace info
 	m_fNextTrace			= FLAG_TRACE_NULL;
 	m_NextTraceID			= OBJECTID_NULL;
 	m_NextTraceX			= SECTORPOSITION_NULL;
@@ -837,19 +852,19 @@ MPlayer::MPlayer()
 	m_NextTraceObjectAction	= 0;
 
 	
-	// 목적지	
+	// Destination
 	m_DestX = SECTORPOSITION_NULL;
 	m_DestY = SECTORPOSITION_NULL;
 
-	// 다음 목적지
+	// Next destination
 	m_NextDestX = SECTORPOSITION_NULL;
 	m_NextDestY = SECTORPOSITION_NULL;
 
-	// 못 갔던 곳..
+	// Places that could not be reached..
 	m_BlockDestX = SECTORPOSITION_NULL;
 	m_BlockDestY = SECTORPOSITION_NULL;
 
-	// Server로 보낸 메세지 개수
+	// Number of messages sent to the server
 	m_SendMove = 0;
 
 	// the action delay
@@ -858,23 +873,26 @@ MPlayer::MPlayer()
 	// attack mode
 	m_AttackMode = ATTACK_MODE_NORMAL;
 
-	// 방금 주운 item
+	// Item just picked up
 	m_ItemCheckBufferStatus = ITEM_CHECK_BUFFER_NULL;
 	m_pItemCheckBuffer = NULL;
-	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 		m_dwSubItemIDCheckBuffer = OBJECTID_NULL;
 	#endif
-	// 기술 사용의 목표
+	// Target of skill use
 	m_pEffectTarget = NULL;
 
-	// server에서 기다리기
+	// Waiting on the server
 	m_WaitVerify = WAIT_VERIFY_NULL;
 	m_WaitVerifyActionInfo = ACTIONINFO_NULL;
 
-	// 계속 추적하기..
+	// Keep tracing..
 	m_bKeepTraceCreature = true;
+	m_bTraceCreatureToForceAttack = false;
+	m_bNextForceAttack = false;
+	m_TraceIDBuffer = OBJECTID_NULL;
 
-	// 행동 반복
+	// Repeat action
 	m_bRepeatAction		= FALSE;
 
 	// when the change to vampire is due
@@ -885,7 +903,7 @@ MPlayer::MPlayer()
 	m_bLockMode = false;
 
 	//-------------------------------------------------------
-	// 빛의 크기 시야
+	// Light radius sight
 	//-------------------------------------------------------
 	m_TimeLightSight = 0;
 //	m_TimeLightSightX = SECTORPOSITION_NULL;
@@ -893,7 +911,7 @@ MPlayer::MPlayer()
 	m_ItemLightSight = 0;
 	m_LightSight = 0;
 
-	// 캐릭터 시야
+	// Character sight
 	m_Sight = 0;
 	m_PetDelayTime = MonotonicClock::TimePoint();
 
@@ -909,10 +927,10 @@ MPlayer::MPlayer()
 
 MPlayer::~MPlayer()
 {
-	// 으헐~~ 필살의 코드 - -;;
-	// Effect가 delete되면서
-	// player의 EffectTarget을 제거할려고 g_pPlayer로 접근하는 바람에..
-	// 구조를 좀 바꿔야될텐데.. T_T;; 고칠 시간이.. - -;	
+	// Ugh~~ a killer hack (sigh)
+	// When an Effect is deleted,
+	// it accesses g_pPlayer to remove the player's EffectTarget, so..
+	// The structure should be changed.. (sob) no time to fix.. (sigh)
 	g_pUserInformation->bCompetence = false;
 	g_pUserInformation->bCompetenceShape = false;
 	g_pPlayer = NULL;
@@ -924,7 +942,7 @@ MPlayer::~MPlayer()
 	m_listDirection.clear();
 	m_listSendDirection.clear();
 
-	// 기술 사용 목표
+	// Skill use target
 	if (m_pEffectTarget!=NULL)
 	{
 		MEffectTarget* pTempEffectTarget = m_pEffectTarget;
@@ -942,7 +960,7 @@ MPlayer::~MPlayer()
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
-// MPlayer가 존재하는 Zone을 설정한다.
+// Set the Zone in which the MPlayer exists.
 //----------------------------------------------------------------------
 void	
 MPlayer::SetZone(MZone* pZone)
@@ -953,24 +971,24 @@ MPlayer::SetZone(MZone* pZone)
 }
 
 //----------------------------------------------------------------------
-// Player를 멈추게 한다.
+// Stop the Player.
 //----------------------------------------------------------------------
 void
 MPlayer::SetStop()
 { 
-	// 길찾기 제거
-	// 2004, 9, 1, sobeit add start - 서서 죽는거 방지?ㅋㅋ
+	// Remove pathfinding
+	// 2004, 9, 1, sobeit add start - prevent dying while standing? (heh)
 	m_bKnockBack = 0;
 
 	// 2004, 9, 1, sobeit add end
 
 	m_listDirection.clear(); 
 
-	// 추적 중지	
+	// Stop tracing
 	m_fTrace		= FLAG_TRACE_NULL;
 	//m_fNextTrace	= FLAG_TRACE_NULL;
 
-	// Action 중지
+	// Stop Action
 	m_sX=0; 
 	m_sY=0;
 
@@ -979,13 +997,13 @@ MPlayer::SetStop()
 		tempAction = ACTION_OUSTERS_FAST_MOVE_STAND;
 
 	m_Action		= tempAction;
-	// 2004, 11, 3, sobeit modify start - m_ActionCount를 바뀐 액션의 맥스 카운트로 세팅 했음 - 아우스터즈 고스트 버그 땜시..ㅡㅡ;
+	// 2004, 11, 3, sobeit modify start - set m_ActionCount to the max count of the changed action - because of the Ousters ghost bug..
 	m_ActionCount	= m_ActionCountMax; 
 	//m_ActionCount	= (*g_pCreatureTable)[m_CreatureType].GetActionCount( m_Action );
 	// 2004, 11, 3, sobeit modify end
 	m_MoveCount		= m_MoveCountMax; 
 
-	// 다음 동작도 없앰
+	// Also remove the next action
 	m_bNextAction = false;
 	m_NextX = SECTORPOSITION_NULL;
 	m_NextY = SECTORPOSITION_NULL;
@@ -994,7 +1012,7 @@ MPlayer::SetStop()
 	//m_nUsedActionInfo = ACTIONINFO_NULL;
 
 	
-	// 목표 제거
+	// Remove target
 	m_DestX			= SECTORPOSITION_NULL; 
 	m_DestY			= SECTORPOSITION_NULL; 
 	m_NextDestX		= SECTORPOSITION_NULL; 
@@ -1003,7 +1021,7 @@ MPlayer::SetStop()
 
 
 //----------------------------------------------------------------------
-// priority queue인 m_pqDNodes를 지운다.
+// Delete m_pqDNodes, the priority queue.
 //----------------------------------------------------------------------
 void
 MPlayer::RemoveNodes()
@@ -1016,7 +1034,7 @@ MPlayer::RemoveNodes()
 	}
 
 
-	// temp를 지운다.
+	// Delete temp.
 	DNODE_LIST::iterator iNode = m_listDNodes.begin();
 
 	while (iNode != m_listDNodes.end())
@@ -1030,10 +1048,10 @@ MPlayer::RemoveNodes()
 }
 
 //----------------------------------------------------------------------
-// (x,y)로 부터 m_Dest(X,Y)까지의 거리를 구한다.
+// Get the distance from (x,y) to m_Dest(X,Y).
 //----------------------------------------------------------------------
-// 가로,세로,대각선 모두 1이므로 가장 큰 값이 거리이고
-// 목표와 같은 좌표가 있는게 더 좋으므로 아닌 경우 +1이 되도록 한다.
+// Horizontal, vertical and diagonal all cost 1, so the largest value is the distance,
+// and being on the same coordinate as the target is better, so add +1 otherwise.
 //----------------------------------------------------------------------
 int
 MPlayer::CalculateDistance(int x, int y)
@@ -1078,13 +1096,13 @@ MPlayer::GetDestination(POINT &dest)
 bool	
 MPlayer::SetMovePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 {
-	// 살아있지 않은 경우..
+	// When not alive..
 	if	(
 		(
 		!m_bAlive
-		// 관속에 있는 경우
+		// When inside a casket
 		|| m_bInCasket
-		// 땅 속에 있는 경우
+		// When underground
 		|| IsUndergroundCreature()
 		|| HasEffectStatus(EFFECTSTATUS_SLEEP)
 		)
@@ -1097,7 +1115,7 @@ MPlayer::SetMovePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		return false;
 	}
 
-	// 다음에 사용해야할 기술이 있는 경우...
+	// When there is a skill to use next...
 	//if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 	if (m_ActionCount>=m_ActionCountMax)
 	{
@@ -1126,15 +1144,15 @@ MPlayer::SetMovePosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 //----------------------------------------------------------------------
 // Set Next Destination
 //----------------------------------------------------------------------
-// 다음에 이동할 목표 위치를 결정한다.
-// 목표위치가 갈 수 없는 곳인 경우... 어떻게 할 것인가?
+// Decide the next target position to move to.
+// What to do when the target position is unreachable?
 //----------------------------------------------------------------------
 bool	
 MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 { 
 	//DEBUG_ADD_FORMAT("[Set] NextDestination (%d, %d) --> (%d, %d)", m_X, m_Y, sX, sY);
 
-	// 살아있지 않은 경우..
+	// When not alive..
 	if	(
 		(!m_bAlive || HasEffectStatus(EFFECTSTATUS_SLEEP))
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
@@ -1146,7 +1164,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		return false;
 	}
 
-	// 다음에 사용해야할 기술이 있는 경우...
+	// When there is a skill to use next...
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 	{
 		m_fTraceBuffer = FLAG_TRACE_NULL;
@@ -1167,15 +1185,15 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		TraceNULL();
 	}
 	
-	// 추적 중이 아니면서
-	// 이미 목표위치에 있는 경우는 길찾기 필요없다.
+	// Not tracing, and
+	// no pathfinding needed if already at the target position.
 	if (m_fTrace==FLAG_TRACE_NULL && sX==m_X && sY==m_Y)
 	{
 		return false;
 	}	
 
-	// 잘못된 값
-	// 이전에 못 갔던 곳..
+	// Invalid value
+	// Place that could not be reached before..
 	if (sX==SECTORPOSITION_NULL || sY==SECTORPOSITION_NULL
 		|| (sX==m_BlockDestX && sY==m_BlockDestY))
 	{
@@ -1183,25 +1201,25 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 
 	//---------------------------------------------------
-	// [방법 1]
-	// 목표지점으로 갈 수 없다면
-	// 목표 지점과 가장 가까운 곳으로 이동하게 한다.
+	// [Method 1]
+	// If the target point is unreachable,
+	// move to the closest point to the target.
 	//---------------------------------------------------
 	/*
 	TYPE_SECTORPOSITION destX = sX;
 	TYPE_SECTORPOSITION	destY = sY;	
 
 	//---------------------------------------------------
-	// 갈 수 있는 목표지점을 지정한다.
+	// Specify a reachable target point.
 	//---------------------------------------------------
 	while (!m_pZone->CanMove(m_MoveType, destX, destY))
 	{
-		// 목표(sX,sY)에서 현재 위치로의 방향
-		BYTE direction = MTopView::GetDirectionToPosition(sX, sY, m_X, m_Y);
+		// Direction from the target (sX,sY) to the current position
+		BYTE direction = SelectFacingDirection(sX, sY, m_X, m_Y);
 
 		GetPositionToDirection(destX, destY, direction);
 
-		// 완전히(!) 갈 수 없는 곳이다.
+		// Completely (!) unreachable.
 		if (destX==m_X && destY==m_Y)
 			return false;
 	}
@@ -1230,7 +1248,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			else
 				MovePoint.x = 0;
 
-			int limit = 20;	// 유효값 20번내에 못찾으면 포기
+			int limit = 20;	// give up if no valid value is found within 20 tries
 
 			while( bCanStand == FALSE && !( GetX() == sX && GetY() == sY )
 				&& sX < m_pZone->GetWidth() && sY < m_pZone->GetHeight()
@@ -1248,22 +1266,22 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 //	else
 	//---------------------------------------------------
-	// [방법 2]
-	// 현재 위치에서 목표 지점으로 한 칸 이동..
+	// [Method 2]
+	// Move one tile from the current position toward the target..
 	//
-	// 단, 추적 중인 경우는... 관계없고.. 
-	// 이동 중에서만...
+	// However, when tracing... it doesn't matter..
+	// Only while moving...
 	//---------------------------------------------------
 //	if (m_fTrace==FLAG_TRACE_NULL && !m_pZone->CanMove(m_MoveType, sX, sY))
 //	{
-//		BYTE direction = MTopView::GetDirectionToPosition(m_X, m_Y, sX, sY);
+//		BYTE direction = SelectFacingDirection(m_X, m_Y, sX, sY);
 //
 //		sX = m_X;
 //		sY = m_Y;
 //
 //		GetPositionToDirection(sX, sY, direction);
 //
-//		// 새로운 목표 지점으로 못 가는 경우..
+//		// When unable to reach the new target point..
 //		if (!m_pZone->CanMove(m_MoveType, sX, sY))
 //		{
 //			return false;
@@ -1281,7 +1299,7 @@ MPlayer::SetNextDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 //----------------------------------------------------------------------
 // Reset Send Move
 //----------------------------------------------------------------------
-// server에서 기다리는 messasge는 없다고 표시한다.
+// Mark that there is no message awaited from the server.
 //----------------------------------------------------------------------
 void	
 MPlayer::ResetSendMove()	
@@ -1294,7 +1312,7 @@ MPlayer::ResetSendMove()
 //----------------------------------------------------------------------
 // Get DeadDelay Last
 //----------------------------------------------------------------------
-// Player가 죽고 난 후, 기다리는 시간..
+// Waiting time after the Player dies..
 //----------------------------------------------------------------------
 DWORD			
 MPlayer::GetDeadDelayLast() const
@@ -1322,15 +1340,15 @@ MPlayer::GetNextDestination(POINT &dest)
 //----------------------------------------------------------------------
 // Get NextPosition()
 //----------------------------------------------------------------------
-// 길찾기에 의해서 정해진 길들 중에서
-// 바로 다음에 가야할 Sector에 대한 좌표를 넘겨준다.
+// Among the paths determined by pathfinding,
+// return the coordinates of the very next Sector to go to.
 //
-// '현재위치'에서 '다음 방향'에 대해 적절한 변화를 더해준다.
+// Add the appropriate change for the 'next direction' to the 'current position'.
 //----------------------------------------------------------------------
 bool
 MPlayer::GetNextPosition(POINT &next)
 {
-	// 갈 길이 정해지지 않은 경우
+	// When no path has been decided
 	if (m_listDirection.empty())
 	{
 		//next.x = SECTORPOSITION_NULL;
@@ -1339,9 +1357,9 @@ MPlayer::GetNextPosition(POINT &next)
 	}
 
 	
-	// 갈 길이 정해진 경우, 다음 좌표를 return한다.
+	// When a path has been decided, return the next coordinates.
 
-	// 현재 위치에서 다음 방향에 대해서 목표 설정
+	// Set the target for the next direction from the current position
 	next.x = m_X;
 	next.y = m_Y;
 	
@@ -1364,8 +1382,8 @@ MPlayer::GetNextPosition(POINT &next)
 //----------------------------------------------------------------------
 // Set Destination(sX, sY)
 //----------------------------------------------------------------------
-// 목표위치를 지정하는 순간에 목표위치까지의
-// Best Path를 결정해서 m_listDirection에 저장해둔다.
+// At the moment the target position is specified, decide the
+// Best Path to it and store it in m_listDirection.
 //----------------------------------------------------------------------
 bool
 MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
@@ -1386,7 +1404,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	#endif
 
 	//-------------------------------------------------------
-	// 살아있지 않은 경우..
+	// When not alive..
 	//-------------------------------------------------------
 	if (!m_bAlive)
 	{
@@ -1404,15 +1422,18 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		m_listDirection.clear();
 	}
 
-		// 성물을 들었을때는 자기편 안전지대는 못간다!
-	bool bHasRelic = 
+		// While carrying a relic you cannot enter your own side's safe zone!
+	// Whose safe zone the cell is matters on the map only: past it, the
+	// check below refuses the move anyway.
+	const bool bOnMap = sX < g_pZone->GetWidth() && sY < g_pZone->GetHeight();
+	bool bHasRelic = bOnMap &&
 		( m_bEffectStatus[EFFECTSTATUS_HAS_VAMPIRE_RELIC] || m_bEffectStatus[EFFECTSTATUS_HAS_SLAYER_RELIC] ) && 
 		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters())
 		);
 
-	bool bHasBloodBible =
+	bool bHasBloodBible = bOnMap &&
 	(
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_ARMEGA] || m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_MIHOLE] ||
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_KIRO] ||m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_INI] ||
@@ -1435,7 +1456,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		g_pSystemMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_MOVE_SAFETY_ZONE_RELIC].GetString());
 	}
 
-	if( HasEffectStatus( EFFECTSTATUS_HAS_FLAG ) &&
+	if( bOnMap && HasEffectStatus( EFFECTSTATUS_HAS_FLAG ) &&
 		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters())
@@ -1446,16 +1467,16 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// Do not check if outside the Zone area.
 	//-------------------------------------------------------
 	if (sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()
-		// [새기술] Sanctuary 로는 못 움직인다.
+		// [new skill] Cannot move into Sanctuary.
 		|| g_pZone->GetSector(m_X, m_Y).HasSanctuary()
 		|| bHasRelic
 		|| bHasBloodBible
 		)
 	{
-		// Zone영역 밖이면 check 안 할 경우
+		// When not checking if outside the Zone area
 		//m_ActionCount = m_ActionCountMax;
 		m_MoveCount = m_MoveCountMax;
 		m_DestX = SECTORPOSITION_NULL;
@@ -1467,18 +1488,18 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 		return false;
 
-		// 현재 진행 방향으로 이동하게 하는 경우
+		// When making it move in the current direction
 		/*
-		POINT position = g_pTopView->GetSelectedSector(g_x, g_y);		
+		POINT position = WorldEvents::GetSelectedSector(g_x, g_y);
 		BYTE direction = GetDirectionToPosition(position.x, position.y);		
 
-		// 방향에 따른 위치를 결정한다.		
+		// Decide the position according to the direction.
 		MCreature::GetNextPosition(direction, position);
 		
 		sX = position.x;
 		sY = position.y;
 		
-		// 현재 진행 방향이 Zone을 벗어나는 경우
+		// When the current direction leaves the Zone
 		if (sX<0 || sY<0 
 			|| sX>=m_pZone->GetWidth() || sY>=m_pZone->GetHeight()) 
 		{
@@ -1488,7 +1509,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 
 	//-------------------------------------------------------
-	// 추적 중일 경우, 이미 사정 거리에 있을 때...
+	// When tracing and already within range...
 	//-------------------------------------------------------
 	if (m_fTrace!=FLAG_TRACE_NULL
 		&& max(abs(m_TraceX-m_X), abs(m_TraceY-m_Y))<=m_TraceDistance)
@@ -1533,34 +1554,34 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	*/
 
 	//--------------------------------------------------------------
-	// 갈 수 있는 곳이면
+	// If it is a reachable place
 	//--------------------------------------------------------------
 	// Best First Search
 	//--------------------------------------------------------------
 	BOOL	bCanStand = m_pZone->CanMove(m_MoveType, sX,sY);
 
 	//--------------------------------------------------------------
-	// 갈 수 있는 곳이거나
-	// 추적중이면 Best Search~로 길을 찾는다.
+	// If it is a reachable place, or
+	// if tracing, find the path with Best Search~.
 	//--------------------------------------------------------------
 	if (bCanStand || m_fTrace!=FLAG_TRACE_NULL) 
 	{		
 		//-------------------------------------------------------
-		// 목표위치를 저장
+		// Store the target position
 		//-------------------------------------------------------
 		m_DestX = sX;
 		m_DestY = sY;
 
 		//-------------------------------------------------------
-		// priority queue를 초기화한다.
+		// Initialize the priority queue.
 		//-------------------------------------------------------
 		RemoveNodes();	
 
 		//-------------------------------------------------------
-		// visited를 모두 false로 해두고
-		// 현재위치부터 방문하지 않은 곳들을 방문하기 시작한다.
+		// Set all visited to false,
+		// and start visiting unvisited places from the current position.
 		//-------------------------------------------------------
-		POINT firstSector = g_pTopView->GetFirstSector();
+		POINT firstSector = WorldEvents::GetFirstSector();
 		//int x0 = m_DestX - g_pClientConfig->MAX_FINDPATH_WIDTH, 
 		//	x1 = m_DestX + g_pClientConfig->MAX_FINDPATH_WIDTH+1, 
 		//	y0 = m_DestY - g_pClientConfig->MAX_FINDPATH_HEIGHT,
@@ -1593,20 +1614,20 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 		//-------------------------------------------------------
 		//
-		// 현재 위치
+		// Current position
 		//
 		//-------------------------------------------------------
 
 		//-------------------------------------------------------
-		// 목적지를 향한 방향부터 길찾기를 한다.		
+		// Pathfind starting from the direction toward the destination.
 		//-------------------------------------------------------
 		static BYTE FirstDirection = GetDirectionToPosition(m_DestX, m_DestY);
 		static TYPE_SECTORPOSITION previousDestX = SECTORPOSITION_NULL;
 		static TYPE_SECTORPOSITION previousDestY = SECTORPOSITION_NULL;
 
 		//-------------------------------------------------------
-		// 방금 전의 길찾기 했던거랑 목표 위치가 다른 경우에만 
-		// 목적지를 향한 방향을 설정한다.
+		// Only when the target position differs from the previous pathfinding,
+		// set the direction toward the destination.
 		//-------------------------------------------------------
 		if (previousDestX!=m_DestX || previousDestY!=m_DestY)
 		{
@@ -1615,8 +1636,8 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			previousDestY = m_DestY;
 		}
 		//-------------------------------------------------------
-		// 같은 목표를 향해 나아가는 경우는 
-		// 현재 Player의 방향부터 살펴본다.
+		// When heading toward the same target,
+		// look starting from the current Player direction.
 		//-------------------------------------------------------
 		else
 		{
@@ -1632,7 +1653,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 									);
 	
 		//-------------------------------------------------------
-		// listDNodes에 넣어서 나중에 지워준다.
+		// Put in listDNodes to delete later.
 		//-------------------------------------------------------
 		m_listDNodes.push_back( currentDNode );
 
@@ -1641,19 +1662,19 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		
 		POINT	next;
 		int		dist;
-		bool	bFound = false;		// 아직 도달하지 않았다는 의미
+		bool	bFound = false;		// means not reached yet
 
 		while (!bFound && !m_pqDNodes.empty())
 		{
 			//-------------------------------------------------------
-			// 제일 괜찮은(!) Node를 골라서(priority queue이다)
-			// 어디로 가야할지에 대해서 계산해본다.
+			// Pick the best (!) Node (it is a priority queue)
+			// and calculate where to go.
 			//-------------------------------------------------------
 			DNode* pDNode = m_pqDNodes.top();
 			m_pqDNodes.pop();
 
 			//-------------------------------------------------------
-			// 완전히 도착한 경우
+			// When fully arrived
 			//-------------------------------------------------------
 			if (pDNode->distance==0) 
 			{
@@ -1663,7 +1684,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			}
 			
 			//-------------------------------------------------------
-			// 사정 거리 이내로 접근하기
+			// Approach within range
 			//-------------------------------------------------------
 			if (m_fTrace!=FLAG_TRACE_NULL && 
 				max(abs(pDNode->x-m_DestX), abs(pDNode->y-m_DestY))<=m_TraceDistance)
@@ -1676,7 +1697,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			int Direction = pDNode->direction;
 
 			//-------------------------------------------------------
-			// 8방향을 모두 check
+			// Check all 8 directions
 			//-------------------------------------------------------
 			for (int i=0; i<8; Direction++, i++)
 			{		
@@ -1698,22 +1719,22 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 				}
 
 				//-------------------------------------------------------
-				// Zone의 영역 밖이면 check 안한다.
+				// Do not check if outside the Zone area.
 				//-------------------------------------------------------
 				if (next.x<0 || next.y<0 
 					|| next.x>=m_pZone->GetWidth() || next.y>=m_pZone->GetHeight()) continue;
 
 				//-------------------------------------------------------
-				// 갔던 곳이면 안 간다.
+				// Do not go to places already visited.
 				//-------------------------------------------------------
 				if (g_pZone->IsVisitedFlag(static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))) continue;
 
-				// 한 화면을 넘어가는 경우는 check하지 않는다.				
+				// Do not check if it goes beyond one screen.
 				if (next.x<x0 || next.y<y0 
 					|| next.x>=x1 || next.y>=y1) continue;
 
 				//-------------------------------------------------------
-				// 갈 수 있으면 pqueue에 넣는다.
+				// If reachable, put it in the pqueue.
 				//-------------------------------------------------------
 				if (m_pZone->CanMove(m_MoveType, static_cast<TYPE_SECTORPOSITION>(next.x), static_cast<TYPE_SECTORPOSITION>(next.y))
 					&& !bHasRelic && !bHasBloodBible
@@ -1724,12 +1745,12 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 //					m_ppVisited[next.y][next.x] = true;
 
 					//-------------------------------------------------------
-					// Node를 만들어서 priority queue에 추가한다.
+					// Create a Node and add it to the priority queue.
 					//-------------------------------------------------------
-					// 거리 계산
+					// Distance calculation
 					dist = CalculateDistance(next.x, next.y);
 
-					// Node를 만들어서 추가
+					// Create a Node and add it
 					DNode*	nextDNode = new DNode(
 											next.x, 
 											next.y, 
@@ -1739,7 +1760,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 					
 				
 					//-------------------------------------------------------
-					// listDNodes에 넣어서 나중에 지워준다.
+					// Put in listDNodes to delete later.
 					//-------------------------------------------------------
 					m_listDNodes.push_back( nextDNode );
 					
@@ -1755,15 +1776,15 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		}
 
 		//-------------------------------------------------------
-		// 찾았을 경우 길을 정해야 한다.
+		// If found, the path must be decided.
 		//-------------------------------------------------------
 		if (bFound)
 		{				
 			//-------------------------------------------------------
-			// m_pqDNodes로부터 list를 채운다. (parent를 따라가야한다)
+			// Fill the list from m_pqDNodes. (must follow the parent)
 			//-------------------------------------------------------
 
-			// 목표위치
+			// Target position
 			DNode* currentNode = m_pqDNodes.top();
 			m_pqDNodes.pop();
 			
@@ -1779,18 +1800,18 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			m_BlockDestY = SECTORPOSITION_NULL;
 		}
 		//-------------------------------------------------------
-		// 길이 없을 경우 정지한다.
+		// Stop if there is no path.
 		//-------------------------------------------------------
 		else
 		{
-			// 추적 중지
+			// Stop tracing
 			if (m_fTrace!=FLAG_TRACE_NULL)				
 			{
 				m_MoveCount = m_MoveCountMax;
 
 				TraceNULL();
 
-				// 2001.7.31 추가
+				// added 2001.7.31
 				m_nUsedActionInfo = ACTIONINFO_NULL;
 				m_nNextUsedActionInfo = ACTIONINFO_NULL;
 			}
@@ -1802,13 +1823,13 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 			m_DestY = SECTORPOSITION_NULL;			
 		}
 	}
-	// 갈 수 없는 곳
+	// Unreachable place
 	else 
 	{
 		//m_ActionCount = m_ActionCountMax;
 		m_MoveCount = m_MoveCountMax;
 
-		// 이번에 갈 수 없었던 곳 설정
+		// Set the place that could not be reached this time
 		//m_BlockDestX = m_DestX;
 		//m_BlockDestY = m_DestY;
 
@@ -1824,12 +1845,12 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 
 	/*
 	else
-	// 이 부분에 약간의 오류가 있는 듯 함!! -_-;;;;
+	// There seems to be a slight error in this part!! (sigh)
 	//--------------------------------------------------------------
-	// 아예 갈 수 없는 곳이면..
+	// If it is completely unreachable..
 	//--------------------------------------------------------------
-	// Player위치에서 목표지점까지 직선?으로 걸어가다가 
-	// 장애물이 생기면 멈춘다.
+	// Walk in a straight line(?) from the Player position to the target point,
+	// and stop when an obstacle appears.
 	// (m_X, m_Y)  --->  (sX, sY)
 	//--------------------------------------------------------------		
 	{
@@ -1850,27 +1871,27 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		
 		while (1)
 		{
-			// 부호에 따라서..
+			// According to the sign..
 			signX = (stepX==0)? 0 : (stepX<0)? -1 : 1;
 			signY = (stepY==0)? 0 : (stepY<0)? -1 : 1;
 
 			x += signX;
 			y += signY;
 				
-			// 갈 수 있는 곳이면 list에 넣는다.
+			// If reachable, put it in the list.
 			if (m_pZone->CanMove(x,y))
 			{				
 				m_listDirection.insert( m_listDirection.end(), DetermineDirection(stepX, stepY));
 			}
 			else 
 			{
-				// x,y 한칸 전의 위치를 목표지점으로 정한다.
+				// Set the position one tile before x,y as the target point.
 				m_DestX = x - signX;
 				m_DestY = y - signY;
 				break;
 			}	
 			
-			// 한 칸 움직였음을 표시
+			// Mark that it moved one tile
 			stepX -= signX;
 			stepY -= signY;
 		}				
@@ -1889,7 +1910,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 //----------------------------------------------------------------------
 // Self Special Action
 //----------------------------------------------------------------------
-// 자신한테 특수기술 사용
+// Use a special skill on oneself
 //----------------------------------------------------------------------
 bool	
 MPlayer::SelfSpecialAction()
@@ -1903,14 +1924,14 @@ MPlayer::SelfSpecialAction()
 		return false;
 
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay() || HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE ) )
 	{
 		return false;
 	}
 
-	// [새기술3] 관 속에 있는 경우는 Open casket만 사용할 수 있다.
+	// [new skill 3] When inside a casket, only Open casket can be used.
 	//if (IsInCasket())
 //	{
 //		m_nSpecialActionInfo = MAGIC_OPEN_CASKET;
@@ -1918,21 +1939,21 @@ MPlayer::SelfSpecialAction()
 
 	
 	if (m_nSpecialActionInfo == ACTIONINFO_NULL
-		// 오토바이를 타고 있으면 특수공격이 안된다.
+		// Special attacks are not allowed while riding a motorcycle.
 		|| m_MoveDevice == MOVE_DEVICE_RIDE
-		// 뭔가 기술 사용을 검정 받아야 하면 사용할 수 없다.
-		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 주석처리
+		// Cannot be used if some skill use is awaiting verification.
+		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 commented out
 		|| IsInSafeSector() == 2
-		// 완전 안전지대에서는 기술을 사용할 수 없다.
+		// Skills cannot be used in a complete safe zone.
 		)
 		return false;
 
-	// 자신에게 사용할 수 있는 것들만 사용한다.
+	// Use only those that can be used on oneself.
 	if ((*g_pActionInfoTable)[m_nSpecialActionInfo].IsTargetSelf())
 	{	
 		
 		//-------------------------------------------------------
-		// 지뢰 만들기
+		// Make a mine
 		//-------------------------------------------------------
 		// skillID            itemType
 		// MINE_ANKLE_KILLER,	// 5
@@ -1941,7 +1962,7 @@ MPlayer::SelfSpecialAction()
 		// MINE_DIAMONDBACK,	// 8
 		// MINE_SWIFT_EX		// 9
 		//
-		// 하드하드...
+		// Hard hard...
 		//			
 		if (m_nSpecialActionInfo==SKILL_INSTALL_MINE
 			|| (m_nSpecialActionInfo>=MINE_ANKLE_KILLER 
@@ -1950,8 +1971,8 @@ MPlayer::SelfSpecialAction()
 			int					useSkill = SKILL_INSTALL_MINE;					
 
 			//-------------------------------------------------------
-			// 현재 사용할 수 있는 기술인지 체크..
-			// Passive 스킬이면 사용 못하게..
+			// Check whether the skill is currently usable..
+			// Disallow it if it is a Passive skill..
 			//-------------------------------------------------------
 			if (g_pSkillAvailable->IsEnableSkill( (ACTIONINFO)useSkill )
 				&& (*g_pSkillInfoTable)[useSkill].IsEnable()
@@ -1968,7 +1989,7 @@ MPlayer::SelfSpecialAction()
 
 				if (m_nSpecialActionInfo!=SKILL_INSTALL_MINE)
 				{
-					// 특정 type의 지뢰를 찾는다.
+					// Find a mine of a specific type.
 					int itemType = m_nSpecialActionInfo-MINE_ANKLE_KILLER;
 
 					MItemClassTypeFinder itemFinder(itemClass, itemType);
@@ -1976,28 +1997,28 @@ MPlayer::SelfSpecialAction()
 				}
 				else
 				{
-					// 지뢰 암꺼나 찾는다.
+					// Find any mine.
 					MItemClassFinder itemFinder(itemClass);
 					pItem = ((MItemManager*)g_pInventory)->FindItem( itemFinder );
 				}
 				
-				// 쓸려는 폭탄이 있는 경우
+				// When there is a bomb to use
 				if (pItem!=NULL)
 				{
-					// 지뢰 설치 준비..
-					gC_vs_ui.StartInstallMineProgress( pItem->GetGridX(), pItem->GetGridY() );
+					// Prepare to install the mine..
+					PlayerPresentation::StartInstallMineProgress( pItem->GetGridX(), pItem->GetGridY() );
 				}									
 			}
 
-			// 반복동작을 설정하지 않는다.
+			// Do not set a repeat action.
 			m_fNextTrace = FLAG_TRACE_NULL;
 			UnSetRepeatAction();
 			return false;	
 		}
 
 		//-------------------------------------------------------
-		// 현재 사용할 수 있는 기술인지 체크..
-		// Passive 스킬이면 사용 못하게..
+		// Check whether the skill is currently usable..
+		// Disallow it if it is a Passive skill..
 		//-------------------------------------------------------
 		if (!g_pSkillAvailable->IsEnableSkill( (ACTIONINFO)m_nSpecialActionInfo )
 			|| !(*g_pSkillInfoTable)[m_nSpecialActionInfo].IsEnable()
@@ -2014,28 +2035,28 @@ MPlayer::SelfSpecialAction()
 		if (IsStop()) // || m_Action!=ACTION_ATTACK)
 		{
 			//-------------------------------------------------------
-			// 특정한 기술인 경우의 체크
+			// Check for specific skills
 			//-------------------------------------------------------
 			switch (m_nSpecialActionInfo)
 			{
 				//-------------------------------------------------------
-				// 포탈
+				// Portal
 				//-------------------------------------------------------
 				case MAGIC_BLOODY_MARK :
 					if (IsVampire() && g_bHolyLand == false && g_pZoneTable->Get( m_pZone->GetID() )->CannotUseSpecialItem == false)
 					{
 						//----------------------------------------------------
-						// Server에 접속한 경우
+						// When connected to the Server
 						//----------------------------------------------------
 							//----------------------------------------------------
-							// 검증 받을게 없는 경우..
+							// When there is nothing to be verified..
 							//----------------------------------------------------
 							if (!IsWaitVerify()
 								&& IsItemCheckBufferNULL())
 							{									
-								// 사용안된(Marked=false) VampirePortalItem을 찾는다.
+								// Find an unused (Marked=false) VampirePortalItem.
 
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								MItem* pSubInventory = NULL;
 								MVampirePortalItemFinder finder1( false );
 								MItem* pItem = ((MItemManager*)g_pInventory)->FindItemAll( finder1 , pSubInventory );
@@ -2048,11 +2069,11 @@ MPlayer::SelfSpecialAction()
 								
 								if (pItem!=NULL && pItem->GetNumber()>0 && pItem->IsAffectStatus())
 								{	
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										DWORD SubInventoryItemID = 0;
 									#endif
 									//----------------------------------------------------
-									// Server에 접속한 경우
+									// When connected to the Server
 									//----------------------------------------------------
 										CGSkillToInventory _CGSkillToInventory;
 										_CGSkillToInventory.setObjectID( pItem->GetID() );
@@ -2060,7 +2081,7 @@ MPlayer::SelfSpecialAction()
 										_CGSkillToInventory.setY( pItem->GetGridY() );
 										_CGSkillToInventory.setSkillType( MAGIC_BLOODY_MARK );
 										//_CGSkillToInventory.setCEffectID( 0 );	// -_-;;							
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										if(NULL != pSubInventory)
 										{
 											SubInventoryItemID = pSubInventory->GetID();
@@ -2070,11 +2091,11 @@ MPlayer::SelfSpecialAction()
 										g_pSocket->sendPacket( &_CGSkillToInventory );
 
 										//----------------------------------------------------
-										// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+										// Wait for verification of using the item from the Inventory.
 										//----------------------------------------------------
 										SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS );
 
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY, SubInventoryItemID);
 									#else
 										SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY);
@@ -2092,19 +2113,19 @@ MPlayer::SelfSpecialAction()
 				break;
 
 				//-------------------------------------------------------
-				// 포탈
+				// Portal
 				//-------------------------------------------------------
 				case MAGIC_BLOODY_TUNNEL :					
 					if (IsVampire() && g_bHolyLand == false && g_pZoneTable->Get( m_pZone->GetID() )->CannotUseSpecialItem == false)
 					{
 							//----------------------------------------------------
-							// 검증 받을게 없는 경우..
+							// When there is nothing to be verified..
 							//----------------------------------------------------
 							if (!IsWaitVerify()
 								&& IsItemCheckBufferNULL())
 							{		
-								// 사용된(Marked=true) VampirePortalItem을 찾는다.
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+								// Find a used (Marked=true) VampirePortalItem.
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								MItem* pSubInventory = NULL;
 								MVampirePortalItemFinder finder2( true );
 								MItem* pItem = ((MItemManager*)g_pInventory)->FindItemAll( finder2 , pSubInventory );
@@ -2116,7 +2137,7 @@ MPlayer::SelfSpecialAction()
 								
 								if (pItem!=NULL && pItem->GetNumber()>0 && pItem->IsAffectStatus())
 								{				
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										DWORD SubInventoryItemID = 0;
 									#endif
 										CGSkillToInventory _CGSkillToInventory;
@@ -2125,7 +2146,7 @@ MPlayer::SelfSpecialAction()
 										_CGSkillToInventory.setY( pItem->GetGridY() );
 										_CGSkillToInventory.setSkillType( MAGIC_BLOODY_TUNNEL );
 										//_CGSkillToInventory.setCEffectID( 0 );	// -_-;;							
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										if(NULL != pSubInventory)
 										{
 											SubInventoryItemID = pSubInventory->GetID();
@@ -2135,11 +2156,11 @@ MPlayer::SelfSpecialAction()
 										g_pSocket->sendPacket( &_CGSkillToInventory );
 
 										//----------------------------------------------------
-										// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+										// Wait for verification of using the item from the Inventory.
 										//----------------------------------------------------
 										SetWaitVerify( MPlayer::WAIT_VERIFY_SKILL_SUCCESS );
 
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY, SubInventoryItemID);
 									#else
 										SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY);
@@ -2158,20 +2179,20 @@ MPlayer::SelfSpecialAction()
 				break;
 
 				//-------------------------------------------------------
-				// 포탈
+				// Portal
 				//-------------------------------------------------------
 				case SUMMON_HELICOPTER :
 					if (IsSlayer() && g_bHolyLand == false && g_pZoneTable->Get( m_pZone->GetID() )->CannotUseSpecialItem == false)
 					{
 							//----------------------------------------------------
-							// 검증 받을게 없는 경우..
+							// When there is nothing to be verified..
 							//----------------------------------------------------
 							if (IsWaitVerifyNULL()
 								&& IsItemCheckBufferNULL()
 								&& g_pZone->GetHelicopter( GetID() )==NULL)				
 							{		
 
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								MItem* pSubInventory = NULL;
 								MSlayerPortalItemFinder finder3;
 								MItem* pItem = ((MItemManager*)g_pInventory)->FindItemAll( finder3 , pSubInventory);
@@ -2183,7 +2204,7 @@ MPlayer::SelfSpecialAction()
 								
 								if (pItem!=NULL && pItem->GetNumber()>0 && pItem->IsAffectStatus())
 								{				
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										DWORD SubInventoryItemID = 0;
 									#endif
 										CGUseItemFromInventory _CGUseItemFromInventory;
@@ -2191,7 +2212,7 @@ MPlayer::SelfSpecialAction()
 										_CGUseItemFromInventory.setX( pItem->GetGridX() );
 										_CGUseItemFromInventory.setY( pItem->GetGridY() );
 
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										if(NULL != pSubInventory)
 										{
 											SubInventoryItemID = pSubInventory->GetID();
@@ -2202,9 +2223,9 @@ MPlayer::SelfSpecialAction()
 										g_pSocket->sendPacket( &_CGUseItemFromInventory );
 
 										//----------------------------------------------------
-										// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+										// Wait for verification of using the item from the Inventory.
 										//----------------------------------------------------
-									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+									#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 										SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY, SubInventoryItemID);
 									#else
 										SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
@@ -2218,7 +2239,7 @@ MPlayer::SelfSpecialAction()
 				break;
 
 				//-------------------------------------------------------
-				// 성수 만들기
+				// Make holy water
 				//-------------------------------------------------------
 				case MAGIC_CREATE_HOLY_WATER :				
 					if (
@@ -2237,7 +2258,7 @@ MPlayer::SelfSpecialAction()
 
 						if (pItem!=NULL)
 						{
-//							POINT fitPoint;			// 성수가 들어갈 자리
+//							POINT fitPoint;			// spot where the holy water goes
 
 //							if (GetMakeItemFitPosition(pItem, 
 //														ITEM_CLASS_HOLYWATER, 
@@ -2256,11 +2277,11 @@ MPlayer::SelfSpecialAction()
 								g_pSocket->sendPacket( &_CGSkillToInventory );
 
 								
-								// 일단(!) 그냥 없애고 본다.
+								// For now (!) just remove it and see.
 								//(*g_pInventory).RemoveItem( pItem->GetID() );
 
 								//----------------------------------------------------
-								// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+								// Wait for verification of using the item from the Inventory.
 								//----------------------------------------------------
 								SetWaitVerify( MPlayer::WAIT_VERIFY_SKILL_SUCCESS );
 								SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY );
@@ -2270,19 +2291,19 @@ MPlayer::SelfSpecialAction()
 								}
 
 								//----------------------------------------------------
-								// 기술 사용 시도 동작
+								// Skill use attempt action
 								//----------------------------------------------------
-								AddNewInventoryEffect( pItem->GetID(),
+								WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 													MAGIC_CREATE_HOLY_WATER, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
-													g_pClientConfig->FPS*3	// 3초
+													g_pClientConfig->FPS*3	// 3 seconds
 												);
-								// 반복동작을 설정하지 않는다.
+								// Do not set a repeat action.
 								m_fNextTrace = FLAG_TRACE_NULL;
 								UnSetRepeatAction();
 							}
 //							else
 //							{
-//								// g_pGameMessage( "자리가 없따야~" );
+//								// g_pGameMessage( "No room~" );
 //							}
 						}						
 					}
@@ -2307,7 +2328,7 @@ MPlayer::SelfSpecialAction()
 
 						if (pItem!=NULL)
 						{
-							POINT fitPoint;			// 성수가 들어갈 자리
+							POINT fitPoint;			// spot where the holy water goes
 
 							if (GetMakeItemFitPosition(pItem, 
 														ITEM_CLASS_POTION, 
@@ -2326,11 +2347,11 @@ MPlayer::SelfSpecialAction()
 								g_pSocket->sendPacket( &_CGSkillToInventory );
 
 								
-								// 일단(!) 그냥 없애고 본다.
+								// For now (!) just remove it and see.
 								//(*g_pInventory).RemoveItem( pItem->GetID() );
 
 								//----------------------------------------------------
-								// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+								// Wait for verification of using the item from the Inventory.
 								//----------------------------------------------------
 								SetWaitVerify( MPlayer::WAIT_VERIFY_SKILL_SUCCESS );
 								SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY );
@@ -2340,19 +2361,19 @@ MPlayer::SelfSpecialAction()
 								}
 
 								//----------------------------------------------------
-								// 기술 사용 시도 동작
+								// Skill use attempt action
 								//----------------------------------------------------
-								AddNewInventoryEffect( pItem->GetID(),
+								WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 													SKILL_CREATE_HOLY_POTION, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
-													g_pClientConfig->FPS*3	// 3초
+													g_pClientConfig->FPS*3	// 3 seconds
 												);
-								// 반복동작을 설정하지 않는다.
+								// Do not set a repeat action.
 								m_fNextTrace = FLAG_TRACE_NULL;
 								UnSetRepeatAction();
 							}
 							else
 							{
-								// g_pGameMessage( "자리가 없따야~" );
+								// g_pGameMessage( "No room~" );
 							}
 						}						
 					}
@@ -2361,17 +2382,17 @@ MPlayer::SelfSpecialAction()
 				break;
 
 				//-------------------------------------------------------
-				// 폭탄 만들기
-				// 지뢰 만들기
+				// Make a bomb
+				// Make a mine
 				//-------------------------------------------------------
 				case SKILL_MAKE_BOMB :
 				case SKILL_MAKE_MINE :
 					if (IsSlayer()
 						&& !IsWaitVerify()
 						&& IsItemCheckBufferNULL()
-						&& !gC_vs_ui.IsInstallMineProgress())	// 지뢰 만드는 중이면..
-						//|| gC_vs_ui.IsCreateMineProgress()	// 지뢰 만드는 중이면..
-						//|| gC_vs_ui.IsCreateBombProgress()	// 지뢰 만드는 중이면..
+						&& !PlayerPresentation::IsInstallMineProgress())	// if a mine is being made..
+						//|| gC_vs_ui.IsCreateMineProgress()	// if a mine is being made..
+						//|| gC_vs_ui.IsCreateBombProgress()	// if a mine is being made..
 					{					
 
 						int					skillID;
@@ -2380,7 +2401,7 @@ MPlayer::SelfSpecialAction()
 						int					maxItemType;
 						int					itemTypeModifier;
 							
-						// itemType이 0~4까지이면 폭탄이다.
+						// If itemType is 0~4 it is a bomb.
 						if (m_nSpecialActionInfo==SKILL_MAKE_BOMB)
 						{
 							skillID = SKILL_MAKE_BOMB;
@@ -2405,32 +2426,32 @@ MPlayer::SelfSpecialAction()
 
 						if (pItem!=NULL)
 						{
-							POINT fitPoint;			// 들어갈 자리
+							POINT fitPoint;			// spot where it goes
 
 							if (GetMakeItemFitPosition(pItem, 
 														itemClass, 
 														pItem->GetItemType() + itemTypeModifier, 
 														fitPoint))
 							{
-								// 만들기 시작하는 순간...
+								// The moment making starts...
 								if (skillID==SKILL_MAKE_BOMB)
 								{
-									gC_vs_ui.StartCreateBombProgress( pItem->GetGridX(), pItem->GetGridY() );
+									PlayerPresentation::StartCreateBombProgress( pItem->GetGridX(), pItem->GetGridY() );
 								}
 								else
 								{
-									gC_vs_ui.StartCreateMineProgress( pItem->GetGridX(), pItem->GetGridY() );
+									PlayerPresentation::StartCreateMineProgress( pItem->GetGridX(), pItem->GetGridY() );
 								}
 
-								// UI에서 막대기 보여주고 나서
-								// UI_ITEM_USE가 날아오는 부분에서 처리한다.
+								// After the bar is shown in the UI,
+								// handle it where UI_ITEM_USE arrives.
 								
-								// 연속적으로 사용하기 위해서
+								// To use continuously
 //								m_fNextTrace	= FLAG_TRACE_SELF;
 //				
 //								m_bRepeatAction = FALSE;
 								
-								// 반복동작을 설정하지 않는다.
+								// Do not set a repeat action.
 								m_fNextTrace = FLAG_TRACE_NULL;
 								UnSetRepeatAction();
 								
@@ -2447,11 +2468,11 @@ MPlayer::SelfSpecialAction()
 								g_pSocket->sendPacket( &_CGSkillToInventory );
 
 								
-								// 일단(!) 그냥 없애고 본다.
+								// For now (!) just remove it and see.
 								//(*g_pInventory).RemoveItem( pItem->GetID() );
 
 								//----------------------------------------------------
-								// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+								// Wait for verification of using the item from the Inventory.
 								//----------------------------------------------------
 								SetWaitVerify( MPlayer::WAIT_VERIFY_SKILL_SUCCESS );
 								SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY );
@@ -2459,17 +2480,17 @@ MPlayer::SelfSpecialAction()
 								(*g_pSkillInfoTable)[skillID].SetNextAvailableTime();
 
 								//----------------------------------------------------
-								// 기술 사용 시도 동작
+								// Skill use attempt action
 								//----------------------------------------------------
-								AddNewInventoryEffect( pItem->GetID(),
+								WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 													skillID, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
-													g_pClientConfig->FPS*3	// 3초
+													g_pClientConfig->FPS*3	// 3 seconds
 												);
 								*/
 							}
 							else
 							{
-								// g_pGameMessage( "자리가 없따야~" );
+								// g_pGameMessage( "No room~" );
 							}
 						}						
 					}
@@ -2478,33 +2499,33 @@ MPlayer::SelfSpecialAction()
 				break;
 
 				//-------------------------------------------------------
-				// 박쥐나 늑대 변신
+				// Bat or wolf transformation
 				//-------------------------------------------------------
 				case SKILL_TRANSFORM_TO_WERWOLF :
 				case MAGIC_TRANSFORM_TO_WOLF :
 				case MAGIC_TRANSFORM_TO_BAT :					
 					//----------------------------------------------------
 					//
-					//					변신용 아이템 - vampire인 경우
+					//					Transformation item - for a vampire
 					//
 					//----------------------------------------------------
 					if (IsVampire() && g_pZoneTable->Get( m_pZone->GetID() )->CannotUseSpecialItem == false)
 					{
 							//----------------------------------------------------
-							// 검증 받을게 없는 경우..
+							// When there is nothing to be verified..
 							//----------------------------------------------------
 							if (!IsWaitVerify()
 								&& IsItemCheckBufferNULL())
 							{		
 								MItem* pItem = NULL;
 
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								MItem* pSubInventory = NULL;
 							#endif
 
 								if (m_nSpecialActionInfo==MAGIC_TRANSFORM_TO_WOLF)
 								{
-									// 늑대 발톱 찾기
+									// Find the wolf claw
 									pItem = g_pInventory->FindItem(ITEM_CLASS_VAMPIRE_ETC, 0);
 								}
 								else if ( m_nSpecialActionInfo == SKILL_TRANSFORM_TO_WERWOLF )
@@ -2513,7 +2534,7 @@ MPlayer::SelfSpecialAction()
 								}
 								else
 								{
-								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 									pItem = g_pInventory->FindItemAll( MItemClassTypeFinder(ITEM_CLASS_VAMPIRE_ETC , 1), pSubInventory );
 								#else
 									pItem = g_pInventory->FindItem(ITEM_CLASS_VAMPIRE_ETC, 1);
@@ -2523,7 +2544,7 @@ MPlayer::SelfSpecialAction()
 
 								if (pItem!=NULL)
 								{			
-								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 									DWORD dwSubInventoryID = 0;
 								#endif
 									CGSkillToInventory _CGSkillToInventory;
@@ -2533,7 +2554,7 @@ MPlayer::SelfSpecialAction()
 									_CGSkillToInventory.setSkillType( m_nSpecialActionInfo );
 									//_CGSkillToInventory.setCEffectID( 0 );	// -_-;;	
 									
-								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 									if(NULL != pSubInventory)
 										dwSubInventoryID = pSubInventory->GetID();
 
@@ -2543,15 +2564,15 @@ MPlayer::SelfSpecialAction()
 									g_pSocket->sendPacket( &_CGSkillToInventory );
 
 
-									// 일단(!) 그냥 없애고 본다.
+									// For now (!) just remove it and see.
 									//(*g_pInventory).RemoveItem( pItem->GetID() );
 
 									//----------------------------------------------------
-									// Inventory에서 item을 사용하는 걸 검증받기를 기다린다.
+									// Wait for verification of using the item from the Inventory.
 									//----------------------------------------------------
 									SetWaitVerify( MPlayer::WAIT_VERIFY_SKILL_SUCCESS );
 									
-								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+								#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 									SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY , dwSubInventoryID);
 								#else
 									SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY );
@@ -2563,11 +2584,11 @@ MPlayer::SelfSpecialAction()
 									}
 
 									//----------------------------------------------------
-									// 기술 사용 시도 동작
+									// Skill use attempt action
 									//----------------------------------------------------
-									AddNewInventoryEffect( pItem->GetID(),
+									WorldEvents::AddNewInventoryEffect( pItem->GetID(),
 														m_nSpecialActionInfo, //+ (*g_pActionInfoTable).GetMinResultActionInfo(),
-														g_pClientConfig->FPS*3	// 3초
+														g_pClientConfig->FPS*3	// 3 seconds
 													);
 								}
 							}
@@ -2578,7 +2599,7 @@ MPlayer::SelfSpecialAction()
 
 				//----------------------------------------------------
 				//
-				// 변신 풀기
+				// Release transformation
 				// 
 				//----------------------------------------------------
 				case MAGIC_UN_TRANSFORM :
@@ -2600,7 +2621,7 @@ MPlayer::SelfSpecialAction()
 				case SKILL_SUMMON_SYLPH :
 					if( IsOusters() && !HasEffectStatus( EFFECTSTATUS_HAS_FLAG )
 						//----------------------------------------------------
-						// 검증 받을게 없는 경우..
+						// When there is nothing to be verified..
 						//----------------------------------------------------
 						&& IsWaitVerifyNULL()
 						&& IsItemCheckBufferNULL()
@@ -2608,7 +2629,7 @@ MPlayer::SelfSpecialAction()
 					{
 						//MItem* pItem = g_pInventory->FindItem( ITEM_CLASS_OUSTERS_SUMMON_ITEM );
 
-					#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+					#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 						MItem* pSubInventory = NULL;
 						MOustersSummonGemItemFinder finder4;
 						MItem* pItem = ((MItemManager*)g_pInventory)->FindItemAll( finder4, pSubInventory );
@@ -2622,7 +2643,7 @@ MPlayer::SelfSpecialAction()
 							if( pItem->IsAffectStatus() && pItem->IsChargeItem() && pItem->GetNumber() > 0 )
 							{
 								
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								DWORD SubInventoryItemID = 0;
 							#endif
 
@@ -2631,7 +2652,7 @@ MPlayer::SelfSpecialAction()
 								_CGUseItemFromInventory.setX( pItem->GetGridX() );
 								_CGUseItemFromInventory.setY( pItem->GetGridY() );
 
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								if(NULL != pSubInventory)
 								{
 									SubInventoryItemID = pSubInventory->GetID();
@@ -2642,7 +2663,7 @@ MPlayer::SelfSpecialAction()
 
 								g_pSocket->sendPacket( &_CGUseItemFromInventory );
 
-							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+							#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 								SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY, SubInventoryItemID);
 							#else
 								SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
@@ -2661,17 +2682,17 @@ MPlayer::SelfSpecialAction()
 				break;
 				//-----------------------------------------------------
 				//
-				// 추적
+				// Trace
 				//
 				//-----------------------------------------------------
 				case SKILL_SOUL_CHAIN :
-					// 뱀파이어 슬레이어 구분이 없다.
+					// No distinction between vampire and slayer.
 
 					if (!IsWaitVerify())
 					{
-						// UI 창을 띄워준다.
-						// UI 창을 띄운 뒤 메시지가 날아오면 거기서 sendpacket 을 해준다.
-						gC_vs_ui.RunTraceWindow();
+						// Show the UI window.
+						// After showing the UI window, when the message arrives, do the sendpacket there.
+						PlayerPresentation::RunTraceWindow();
 						
 //						int skillID = SKILL_SOUL_CHAIN;
 //						
@@ -2687,7 +2708,7 @@ MPlayer::SelfSpecialAction()
 
 				case SKILL_LOVE_CHAIN :
 					//----------------------------------------------------
-					// 검증 받을게 없는 경우..
+					// When there is nothing to be verified..
 					//----------------------------------------------------
 					if (!IsWaitVerify()
 						&& IsItemCheckBufferNULL())
@@ -2723,7 +2744,7 @@ MPlayer::SelfSpecialAction()
 						return false;
 					}
 					break;
-				// add by Coffee 2007-6-9 藤속賈痰劤세콘膠틔왱뇜
+				// add by Coffee 2007-6-9 new skill item usage restriction (garbled)
 // 				case SKILL_BLLODY_SCARIFY:
 // 				case SKILL_BLOOD_CURSE:
 // 					if (IsVampire() && !IsWaitVerify() && IsItemCheckBufferNULL())
@@ -2749,42 +2770,42 @@ MPlayer::SelfSpecialAction()
 			if( (*g_pActionInfoTable)[m_nSpecialActionInfo].GetParentActionInfo() != ACTIONINFO_NULL )
 				m_nSpecialActionInfo = (*g_pActionInfoTable)[m_nSpecialActionInfo].GetParentActionInfo();
 
-			// 사용한 기술로 설정
+			// Set as the skill used
 			m_nUsedActionInfo	= m_nSpecialActionInfo;
 
-			// 추적 정보 초기화
+			// Initialize trace info
 			SetTraceID( m_ID );
 			m_fTrace	= FLAG_TRACE_SELF;
 			m_TraceX	= m_X;//SECTORPOSITION_NULL;
 			m_TraceY	= m_Y;//SECTORPOSITION_NULL;
 			m_TraceZ	= 0;
 
-			// 현재 추적하는 대상에 대해서 기억해둔다.
+			// Remember the target currently being traced.
 			m_fTraceBuffer	= m_fTrace;	
 
 			//------------------------------------------------------------
-			// BasicAction이 뭐냐에 따라서..
-			// 현재 Player의 능력에 따라서 TraceDistance가 달라질 것이다.
+			// Depending on what the BasicAction is..
+			// TraceDistance will vary with the current Player's abilities.
 			//------------------------------------------------------------
 			
 			m_TraceDistance		= 0;
 			
 			//------------------------------------------------------------
-			// 기술 사용 Action표현
+			// Skill use Action display
 			SetNextAction( GetActionInfoAction(m_nUsedActionInfo, true) );
 
-			// buffering을 없앤다.
+			// Remove buffering.
 			m_fNextTrace			= FLAG_TRACE_NULL;	
 
 			//------------------------------------------------------------
-			// message출력
+			// Print message
 			//------------------------------------------------------------
 			DEBUG_ADD_FORMAT("Self SpecialAction");					
 		}
 		else
 		{
 			//------------------------------------------------------------
-			// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+			// Buffer the next action when not in a repeat action
 			//------------------------------------------------------------
 			if (m_bRepeatAction)
 			{
@@ -2811,7 +2832,7 @@ MPlayer::SelfSpecialAction()
 //----------------------------------------------------------------------
 // Keep Trace Creature
 //----------------------------------------------------------------------
-// 추적하던 Creature를 계속 추적한다.
+// Keep tracing the Creature that was being traced.
 //----------------------------------------------------------------------
 void
 MPlayer::KeepTraceCreature()
@@ -2825,7 +2846,7 @@ MPlayer::KeepTraceCreature()
 		return;			
 	}
 
-	// 추적하는 Creature의 정보를 읽어온다.
+	// Read the info of the Creature being traced.
 	MCreature*	pCreature = m_pZone->GetCreature( m_TraceID );
 
 	//GET_DYING_CREATURE( pCreature, m_TraceID );
@@ -2866,10 +2887,10 @@ MPlayer::KeepTraceCreature()
 #endif
 		))
 	{
-		// 추적 중지
+		// Stop tracing
 		TraceNULL();
 			
-		// 멈춘다.
+		// Stop.
 		SetStop();	
 		
 		UnSetRepeatAction();
@@ -2883,7 +2904,7 @@ MPlayer::KeepTraceCreature()
 	{		
 		TraceCreatureToBasicAction( m_TraceID, false );	
 		
-		g_pTopView->SetSelectedSectorNULL();
+		WorldEvents::SetSelectedSectorNULL();
 	}	
 }
 
@@ -2927,11 +2948,11 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 	switch( nActionInfo )
 	{
 	case MAGIC_RAPID_GLIDING :
-		return ( min(6, (2+ (GetDEX() / 50)) ) );
+		return ( min(6, int(2+ (GetDEX() / 50)) ) );
 		break;
 	
 	case MAGIC_BLOODY_ZENITH :
-		return min(6, 2 + GetSTR()/80 + GetDEX()/120 + GetINT()/240 );
+		return min(6, int(2 + GetSTR()/80 + GetDEX()/120 + GetINT()/240) );
 		break;	
 	
 	case SKILL_SOUL_REBIRTH:
@@ -2948,8 +2969,8 @@ MPlayer::GetActionInfoRange(TYPE_ACTIONINFO nActionInfo)
 //----------------------------------------------------------------------
 // Trace Creature To BasicAction
 //----------------------------------------------------------------------
-// 기본공격으로(L-Click) 한 명의 Creature를 추적하여 공격한다.
-// 멈춰있는 상태가 아니면.. Next에 설정해둔다.
+// Trace and attack one Creature with the basic attack (L-Click).
+// If not standing still.. set it in Next.
 //----------------------------------------------------------------------
 bool
 MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bClick)
@@ -2968,10 +2989,10 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		return false;
 
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay() 
-		|| IsInCasket()	// [새기술3]
+		|| IsInCasket()	// [new skill 3]
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
 		|| (IsInDarkness() && 
 		!HasEffectStatus( EFFECTSTATUS_LIGHTNESS )
@@ -2992,12 +3013,12 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 
 	if (IsStop()) // || m_Action!=ACTION_ATTACK)
 	{		
-		// Zone에 존재하는 Creature인지 check한다.
+		// Check whether the Creature exists in the Zone.
 		MCreature*	pCreature = m_pZone->GetCreature(id);
 		if(pCreature == NULL)
 		{
 			MFakeCreature *pFakeCreature = (MFakeCreature *)m_pZone->GetFakeCreature(id);
-			if(pFakeCreature != NULL && pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// 펫이당
+			if(pFakeCreature != NULL && pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// it is a pet
 			{
 				MPetItem *pPetItem = pFakeCreature->GetPetItem();
 				if(pPetItem != NULL)
@@ -3025,16 +3046,16 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 						petInfo.ChangeAbleNickName = true;
 					else
 						petInfo.ChangeAbleNickName = false;
-					UI_RunPetInfo(&petInfo);
+					PlayerPresentation::RunPetInfo(&petInfo);
 				}
 				return false;
 			}
 		}
-		// 2004,5, 28 sobeit add start - 다른 캐릭터 정보
-		if(g_pTopView->GetRequestMode() == MRequestMode::REQUEST_INFO)
+		// 2004,5, 28 sobeit add start - other character info
+		if(static_cast<MRequestMode::REQUEST_MODE>(WorldEvents::GetViewRequestMode()) == MRequestMode::REQUEST_INFO)
 		{
 			SetTraceID( id );
-			SetRequestMode( g_pTopView->GetRequestMode() );
+			SetRequestMode( static_cast<MRequestMode::REQUEST_MODE>(WorldEvents::GetViewRequestMode()) );
 			BasicActionToCreature();				
 			SetTraceID( 0 );
 			return false;	
@@ -3042,9 +3063,9 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		// 2004,5, 28 sobeit add end
 		//GET_DYING_CREATURE( pCreature, id );
 
-		// creature가 없는 경우
-		// creature가 이미 죽은 경우
-		// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.	
+		// When there is no creature
+		// When the creature is already dead
+		// As a Slayer I cannot chase a character that is inside Darkness.
 		
 		if( pCreature != NULL )
 		{
@@ -3095,21 +3116,21 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		MItem *pOustersItem = g_pOustersGear->GetItem(MOustersGear::GEAR_OUSTERS_RIGHTHAND);
 
 		//------------------------------------------------
-		// Request할려고 쫓아가는 경우
+		// When chasing in order to Request
 		//------------------------------------------------
-		if (g_pTopView->IsRequestMode() 
-			// Player만 된다.
+		if (WorldEvents::IsViewRequestMode()
+			// Only Players are allowed.
 			//&& pCreature->GetCreatureType()<=CREATURETYPE_VAMPIRE_FEMALE
 			&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[m_CreatureType].SpriteTypes[0]].IsPlayerOnlySprite()
-			// 관 속에 있는 경우는 안된다.
+			// Not allowed when inside a casket.
 			&& !pCreature->IsInCasket()
-			// 숨어 있는 경우는 안된다.
+			// Not allowed when hiding.
 			&& !pCreature->IsUndergroundCreature()
 			&& pCreature->GetCreatureType() != CREATURETYPE_SLAYER_OPERATOR
 			&& pCreature->GetCreatureType() != CREATURETYPE_VAMPIRE_OPERATOR
 			&& pCreature->GetCreatureType() != CREATURETYPE_OUSTERS_OPERATOR
 
-			// 내가 박쥐나 늑대가 아닌 경우
+			// When I am neither a bat nor a wolf
 			//&& m_CreatureType!=CREATURETYPE_BAT
 			//&& m_CreatureType!=CREATURETYPE_WOLF
 			)
@@ -3118,11 +3139,11 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 			bKeepTraceCreature			= false;
 			m_bNextForceAttack			= false;
 			
-			SetRequestMode( g_pTopView->GetRequestMode() );
+			SetRequestMode( static_cast<MRequestMode::REQUEST_MODE>(WorldEvents::GetViewRequestMode()) );
 		}
 		//------------------------------------------------
-		// 오토바이를 타고 있으면 공격이 안된다.
-		// 박쥐인 경우 공격이 안된다.
+		// Cannot attack while riding a motorcycle.
+		// Cannot attack when a bat.
 		//------------------------------------------------
 		else if (m_MoveDevice == MOVE_DEVICE_RIDE 
 				|| m_MoveDevice == MOVE_DEVICE_SUMMON_SYLPH || HasEffectStatusSummonSylph( dynamic_cast<MCreature*>(this) )
@@ -3137,7 +3158,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 			UnSetRequestMode();
 		}
 		//------------------------------------------------
-		// 강제 공격인가?
+		// Is it a forced attack?
 		//------------------------------------------------		
 		else if (bForceAttack)
 		{
@@ -3150,25 +3171,25 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 			UnSetRequestMode();
 		}
 		//------------------------------------------------
-		// 아니면.. 종족에 따라서..
+		// Otherwise.. depending on the race..
 		//------------------------------------------------
 		else
 		{
 			bTraceCreatureToForceAttack = CanAttackTribe( pCreature )
-										// 뱀파이어인 경우에는 Guild에 따라서 공격할 수 있거나..
+										// A vampire can attack depending on the Guild, or..
 										|| (IsVampire() && CanAttackGuild( pCreature ))
 										|| g_pObjectSelector->IsWarEnemy( pCreature );
-									//	|| m_pZone->IsFreePKZone();			// -_- 바나툴
+									//	|| m_pZone->IsFreePKZone();			// -_- Vanatul
 
 
-			// 정당방위가 되는가?
+			// Is it self-defense?
 			bTraceCreatureToForceAttack |= g_pJusticeAttackManager->HasCreature( pCreature->GetName() );
 
-			// 계속 쫓아가는가? - 공격이 아니라면..
+			// Keep chasing? - if it is not an attack..
 			bKeepTraceCreature			= !bTraceCreatureToForceAttack;	
 		}
 
-		// 2005, 1, 8, sobeit add start - 승직 슬래이어 중 힐직 인챈은 일반 공격을 할 수 없다. 동작이 없다..-_-
+		// 2005, 1, 8, sobeit add start - among promoted Slayers, the healer-line Enchanter cannot make a normal attack. There is no motion..
 		if(IsAdvancementClass())
 		{
 			const MCreatureWear::ADDON_INFO& TempaddonInfo = GetAddonInfo(ADDON_RIGHTHAND);
@@ -3182,29 +3203,29 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		}
 		// 2005, 1, 8, sobeit add end
 		//------------------------------------------------
-		// 총 공격일 경우 
-		// --> 탄창이 설정되어 있는 경우를 체크하면 된다.
+		// For a gun attack
+		// --> just check whether a magazine is set.
 		//------------------------------------------------
 		if (bKeepTraceCreature)
 		{
-			// 추적하는 경우 체크할 것...
+			// Things to check when tracing...
 		}
-		// NPC가 아니라면 공격할려는건데... 총알 체크해야 한다.
+		// If it is not an NPC it is an attack... must check bullets.
 		else if (!pCreature->IsNPC())
 		{
 			if(!IsRequestMode() && IsInSafeSector() == 2)
 				return false;
 			
-			// g_pCurrentMagazine을 확실히 NULL로 설정하면 된다.
+			// Just make sure g_pCurrentMagazine is set to NULL.
 			//if (IsSlayer())
 			{
 			//	const MItem* pWeapon = g_pSlayerGear->GetItem( MSlayerGear::GEAR_SLAYER_RIGHTHAND );
 				
 				//------------------------------------------------
-				// 총알 체크
+				// Check bullets
 				//------------------------------------------------
-			//	if (pWeapon!=NULL					// 무기가 있고
-			//		&& pWeapon->IsGunItem()			// 총이고
+			//	if (pWeapon!=NULL					// has a weapon and
+			//		&& pWeapon->IsGunItem()			// is a gun and
 				//	&&	
 
 				if (
@@ -3217,21 +3238,21 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 				{
 					if (!IsRequestMode() 
 						
-						&& g_pCurrentMagazine!=NULL)		// 총알이 필요 없는 경우
+						&& g_pCurrentMagazine!=NULL)		// when no bullets are needed
 					{
-						if (g_pCurrentMagazine->GetNumber()==0)	// 총알이 없는 경우
+						if (g_pCurrentMagazine->GetNumber()==0)	// when there are no bullets
 						{
-							// 총을 사용하는데 탄창이 없는 경우
-							PlaySound( SOUND_ITEM_NO_MAGAZINE );
+							// When using a gun without a magazine
+							WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 							m_fNextTrace	= FLAG_TRACE_NULL;
 
 							// the delay for an empty magazine
 							m_DelayTime	= g_FrameNow + MonotonicClock::Duration(GetActionInfoDelay(m_nBasicActionInfo));
 
-							// [도움말] 총알 다 썼을 때
+							// [Help] When bullets run out
 //							__BEGIN_HELP_EVENT
-//								ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
+//								GameInfoPresentation::ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
 //							__END_HELP_EVENT
 
 							m_fNextTrace = FLAG_TRACE_NULL;
@@ -3245,11 +3266,11 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 				}
 			}
 			
-			// 사용한 기술로 설정
+			// Set as the skill used
 			m_nNextUsedActionInfo	= GetBasicActionInfo(); //m_nBasicActionInfo;
 		}
 		
-		// 추적 정보 설정
+		// Set trace info
 		SetTraceID( id );
 
 		if( !bForceAttack && bClick )
@@ -3263,22 +3284,22 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		m_TraceZ	= pCreature->GetZ();
 		
 		//------------------------------------------------------------
-		// 강제 공격인가?
-		// 계속 추적하는가?
+		// Is it a forced attack?
+		// Keep tracing?
 		//------------------------------------------------------------
 		m_bTraceCreatureToForceAttack	= bTraceCreatureToForceAttack;
 		m_bKeepTraceCreature			= bKeepTraceCreature;
 
 		//------------------------------------------------------------
-		// 추적 목표 거리..
+		// Trace target distance..
 		//------------------------------------------------------------
-		// BasicAction이 뭐냐에 따라서..
-		// 현재 Player의 능력에 따라서 TraceDistance가 달라질 것이다.
+		// Depending on what the BasicAction is..
+		// TraceDistance will vary with the current Player's abilities.
 		//
-		// 따라가는 것이면 1이고
-		// 아니면 기본 공격에 따라서..
+		// 1 if it is following,
+		// otherwise depending on the basic attack..
 		//
-		// NPC인 경우는 거리가 달라질 수 있다.
+		// For an NPC the distance may differ.
 		//------------------------------------------------------------
 		if (m_bKeepTraceCreature)
 		{
@@ -3292,18 +3313,18 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 		// NPC 
 		if (pCreature->IsNPC())
 		{
-			if(pCreature->GetCreatureType() == 659)	// 대지정령의 뿔은 한칸
+			if(pCreature->GetCreatureType() == 659)	// the Earth Elemental's horn is one tile
 				m_TraceDistance		= 1;	
 			else
 				m_TraceDistance		= TRADE_DISTANCE_NPC;	
 		}
-		// Trade할려고 쫓아가는 경우
+		// When chasing in order to Trade
 		else if (IsRequestMode())
 		{
 			m_TraceDistance		= TRADE_DISTANCE_PC;	
 		}
 
-		// 현재 추적하는 대상에 대해서 기억해둔다.
+		// Remember the target currently being traced.
 		m_fTraceBuffer	= m_fTrace;	
 		m_TraceIDBuffer = id;
 
@@ -3313,28 +3334,28 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 			m_bTraceCreatureToForceAttack = false;
 
 
-		// 추적하는 길 설정
+		// Set the tracing path
 		SetAction( m_MoveAction );
 		SetNextDestination(m_TraceX, m_TraceY);
 
-		// buffering을 없앤다.
+		// Remove buffering.
 		m_fNextTrace			= FLAG_TRACE_NULL;	
 
 		//------------------------------------------------------------
-		// message출력
+		// Print message
 		//------------------------------------------------------------
 		DEBUG_ADD_FORMAT("Trace Creature To BasicAction : ID=%d, (%d, %d)", id, m_TraceX, m_TraceY);				
 
 		//------------------------------------------------------------
-		// return false하면 반복 action을 안하게 된다.
+		// Returning false means no repeat action.
 		//------------------------------------------------------------
 		if (m_bKeepTraceCreature)// || m_bTraceCreatureToForceAttack)
 		{
 			return false;
 		}
 
-		// 선택된 sector 없애기
-		g_pTopView->SetSelectedSectorNULL();
+		// Clear the selected sector
+		WorldEvents::SetSelectedSectorNULL();
 			
 
 		return true;
@@ -3342,7 +3363,7 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 	else
 	{
 		//------------------------------------------------------------
-		// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+		// Buffer the next action when not in a repeat action
 		//------------------------------------------------------------
 		if (m_bRepeatAction)
 		{
@@ -3373,12 +3394,12 @@ MPlayer::TraceCreatureToBasicAction(TYPE_OBJECTID id, bool bForceAttack, bool bC
 //----------------------------------------------------------------------
 // Trace Creature To SpecialAction
 //----------------------------------------------------------------------
-// 특수공격으로(R-Click) 한 명의 Creature를 추적하여 공격한다.
-// 멈춰있는 상태가 아니면.. Next에 설정해둔다.
+// Trace and attack one Creature with the special attack (R-Click).
+// If not standing still.. set it in Next.
 //----------------------------------------------------------------------
-// [return값]
+// [return value]
 //
-//  다른 Creature에게 사용하지 못하는 경우만 false를 return한다. 
+//  Returns false only when it cannot be used on another Creature.
 //
 //----------------------------------------------------------------------
 bool	
@@ -3400,11 +3421,11 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 //	}
 		
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay() 
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInCasket()	// [새기술3]
+		|| IsInCasket()	// [new skill 3]
 		|| (IsInDarkness() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || g_pZone->GetID() == 3001)
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
@@ -3416,14 +3437,14 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 	}
 
 	if (m_nSpecialActionInfo == ACTIONINFO_NULL
-		// 오토바이를 타고 있으면 특수공격이 안된다.
+		// Special attacks are not allowed while riding a motorcycle.
 		|| m_MoveDevice == MOVE_DEVICE_RIDE
-		// 뭔가 기술 사용을 검정 받아야 하면 사용할 수 없다.
-		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 주석처리
+		// Cannot be used if some skill use is awaiting verification.
+		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 commented out
 		|| IsInSafeSector() == 2
-		// 완전 안전지대에서는 기술을 사용할 수 없다.
+		// Skills cannot be used in a complete safe zone.
 		|| CanActionByZoneInfo()
-		|| HasEffectStatusSummonSylph( dynamic_cast<MCreature*>(this) )				// 달라댕기면 못한당~ 
+		|| HasEffectStatusSummonSylph( dynamic_cast<MCreature*>(this) )				// cannot do it while running around~
 		)
 	{
 		m_fNextTrace = FLAG_TRACE_NULL;
@@ -3434,12 +3455,12 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 	}
 
 		
-	// 다른 기술을 사용중인 경우
+	// When using another skill
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 		return false;
 
 	//-------------------------------------------------------
-	// 타인에게 사용할 수 있는 것들만 사용한다.
+	// Use only those that can be used on others.
 	//-------------------------------------------------------
 	
 	if ((*g_pActionInfoTable)[m_nSpecialActionInfo].IsTargetOther())
@@ -3447,7 +3468,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 		int useSkill = m_nSpecialActionInfo;
 		int originalSkill = m_nSpecialActionInfo;
 
-//		// 2004, 6, 9 sobeit add start - 테스트, 흡혈 성공 메세지 온담에 동작하게..-_-
+//		// 2004, 6, 9 sobeit add start - test, make it work after the successful bloodsucking message arrives..
 //		if(m_nSpecialActionInfo == SKILL_BLOOD_DRAIN)
 //		{
 //			m_fNextTrace = FLAG_TRACE_NULL;
@@ -3457,11 +3478,11 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 //				CGBloodDrain _CGBloodDrain;
 //				_CGBloodDrain.setObjectID( m_TraceID );
 //				g_pSocket->sendPacket( &_CGBloodDrain );
-//				DEBUG_ADD("흡혈 메세지 보냄");
+//				DEBUG_ADD("Sent bloodsucking message");
 //			}
 //			return false;
 //		}
-//		// 2004, 6, 9 sobeit add end - 테스트, 흡혈 성공 메세지 온담에 동작하게..-_-
+//		// 2004, 6, 9 sobeit add end - test, make it work after the successful bloodsucking message arrives..
 	
 		if( m_nSpecialActionInfo == SKILL_BLITZ_SLIDING_ATTACK ||
 			m_nSpecialActionInfo == SKILL_BLAZE_WALK_ATTACK 
@@ -3512,8 +3533,8 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			(int)m_nUsedActionInfo, (int)m_fTrace, (int)m_fTraceBuffer);
 
 		//-------------------------------------------------------
-		// 현재 사용할 수 있는 기술인지 체크..
-		// Passive 스킬이면 사용 못하게..
+		// Check whether the skill is currently usable..
+		// Disallow it if it is a Passive skill..
 		//-------------------------------------------------------
 			if (!g_pSkillAvailable->IsEnableSkill( (ACTIONINFO)originalSkill )
 				|| !(*g_pSkillInfoTable)[originalSkill].IsEnable()
@@ -3537,25 +3558,25 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 
 		if (IsStop()) // || m_Action!=ACTION_ATTACK)
 		{
-			// Zone에 존재하는 Creature인지 check한다.
+			// Check whether the Creature exists in the Zone.
 			MCreature*	pCreature = m_pZone->GetCreature(id);
 
 			//GET_DYING_CREATURE( pCreature, id );
 			
-			// creature가 없는 경우
-			// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.
+			// When there is no creature
+			// As a Slayer I cannot chase a character that is inside Darkness.
 			if (pCreature==NULL 
-				// 시체한테 쓸 수 있는 스킬 정보를 추가해야한다.
+				// Need to add info on skills usable on corpses.
 				|| (pCreature->IsDead() && originalSkill!=MAGIC_RESURRECT && originalSkill!=SKILL_TRANSFUSION  && originalSkill!=SKILL_SOUL_REBIRTH) 
 				|| (pCreature->IsInGroundElemental() && pCreature->IsOusters() && !g_pPlayer->IsOusters())
-				// 2004, 10, 14, sobiet modify start - 라이트니스걸렸을때 다크니스 안에 녀석 공격이 안된다고 해서 수정..
+				// 2004, 10, 14, sobiet modify start - fixed because reportedly a target inside Darkness could not be attacked while under Lightness..
 //				|| pCreature->IsInDarkness() && !pCreature->IsNPC() && 
 //				!(IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS )  ||
 //				g_pZone->GetID() != 3001 && IsVampire() )
 //				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST ) 
 				|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST ) &&
 				((!IsVampire() && !HasEffectStatus( EFFECTSTATUS_LIGHTNESS ))  ||	(g_pZone->GetID() == 3001 && IsVampire()) )
-				// 2004, 10, 14, sobiet modify end- 라이트니스걸렸을때 다크니스 안에 녀석 공격이 안된다고 해서 수정..
+				// 2004, 10, 14, sobiet modify end- fixed because reportedly a target inside Darkness could not be attacked while under Lightness..
 #ifdef __METROTECH_TEST__
 				&& !g_bLight
 #endif
@@ -3576,9 +3597,9 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 					(int)(pCreature!=NULL && pCreature->IsDead()),
 					(int)(pCreature!=NULL && pCreature->IsInDarkness()));
 
-				// 여기까지 오면 ACTIONINFO_NULL인데..
-				// UnSetRepeatAction()에서 제대로 처리하기 위해서.. - -;;
-				// 암튼 콩가루다.. - -;;
+				// Reaching here means ACTIONINFO_NULL..
+				// so that UnSetRepeatAction() handles it properly.. (sigh)
+				// Anyway it's a mess.. (sigh)
 				if (IsRepeatAction())
 				{
 					m_nUsedActionInfo = originalSkill;
@@ -3622,7 +3643,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			bool bKeepTraceCreature			= false;			
 
 			//-------------------------------------------------------
-			// NPC인 경우.. 그냥 추적하게 한다.
+			// For an NPC.. just let it trace.
 			//-------------------------------------------------------
 			if (pCreature->IsNPC())
 			{
@@ -3644,7 +3665,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 
 
 			//-------------------------------------------------------
-			// 특정 기술에 대한 체크 - 따로 빼야되는데. 늘 그렇듯이.. --;
+			// Checks for specific skills - should be split out, as always.. (sigh)
 			//-------------------------------------------------------
 			switch (originalSkill)
 			{
@@ -3654,15 +3675,15 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 				case SKILL_TRANSFUSION :
 
 					//--------------------------------------------------
-					// 사용할 수 없는 경우
+					// When it cannot be used
 					//--------------------------------------------------
-					// 내 HP가 30보다 적은 경우
-					// 다른 길드인 경우
-					// 상대의 HP가 full인 경우
+					// My HP is less than 30
+					// Different guild
+					// Opponent's HP is full
 					if (GetHP() < 30
 						|| pCreature->IsSlayer()
 							//|| GetGuildNumber()!=pCreature->GetGuildNumber()	
-							// vampire의 default 길드
+							// Default guild of vampire
 							//&& GetGuildNumber()!=0
 						//	&& pCreature->GetGuildNumber()!=0
 						|| pCreature->GetHP()==pCreature->GetMAX_HP()
@@ -3697,12 +3718,12 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			}
 
 			//-------------------------------------------------------
-			// 특정한 상황 체크
+			// Check for specific situations
 			//-------------------------------------------------------
 			if ((*g_pActionInfoTable)[originalSkill].HasOption())
 			{
 				//-------------------------------------------------------
-				// bless 걸려야 사용하는 기술
+				// Skill that requires bless to be active
 				//-------------------------------------------------------
 				if ((*g_pActionInfoTable)[originalSkill].IsOptionUseWithBless())
 				{
@@ -3718,7 +3739,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			}
 
 			//-------------------------------------------------------
-			// item을 사용하는 기술이면 item을 체크해야 한다.
+			// If the skill uses an item, the item must be checked.
 			//-------------------------------------------------------
 			WORD fWeaponType = (*g_pActionInfoTable)[originalSkill].GetWeaponType();
 			if (fWeaponType	& FLAG_ACTIONINFO_WEAPON_HOLY_WATER)
@@ -3734,14 +3755,14 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 					return false;
 				}
 
-				// holy water가 있는 경우라면..
-				// 딴짓 못하도록... item 고정..
-				// 기술 끝나고 풀어야 한다.
+				// If there is holy water..
+				// Fix the item... so nothing else can be done..
+				// Must be released after the skill ends.
 				//SetItemCheckBuffer( pItem, ITEM_CHECK_BUFFER_SKILL_FROM_ITEM );
 			}
 
 			//-------------------------------------------------------
-			// item을 사용하는 기술이면 item을 체크해야 한다.
+			// If the skill uses an item, the item must be checked.
 			//-------------------------------------------------------
 			if (fWeaponType & FLAG_ACTIONINFO_WEAPON_BOMB)
 			{
@@ -3756,22 +3777,22 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 					return false;
 				}
 
-				// holy water가 있는 경우라면..
-				// 딴짓 못하도록... item 고정..
-				// 기술 끝나고 풀어야 한다.
+				// If there is holy water..
+				// Fix the item... so nothing else can be done..
+				// Must be released after the skill ends.
 				//SetItemCheckBuffer( pItem, ITEM_CHECK_BUFFER_SKILL_FROM_ITEM );
 			}
 
 			//-------------------------------------------------------
-			// 총을 사용하는 기술이면 
-			// 총알을 체크해야 한다.
+			// If the skill uses a gun,
+			// bullets must be checked.
 			//-------------------------------------------------------
 			if ((*g_pActionInfoTable)[originalSkill].IsWeaponTypeGunAny())
 			{
 					if (g_pCurrentMagazine==NULL)
 					{
-						// 총을 사용하는데 탄창이 없는 경우
-						PlaySound( SOUND_ITEM_NO_MAGAZINE );
+						// When using a gun without a magazine
+						WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 						// the delay for an empty magazine
 							m_DelayTime	= g_FrameNow + MonotonicClock::Duration(GetActionInfoDelay(m_nBasicActionInfo));
@@ -3783,8 +3804,8 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 					{
 						if (g_pCurrentMagazine->GetNumber()==0)
 						{
-							// 총을 사용하는데 탄창이 없는 경우
-							PlaySound( SOUND_ITEM_NO_MAGAZINE );
+							// When using a gun without a magazine
+							WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 							// the delay for an empty magazine
 							m_DelayTime	= g_FrameNow + MonotonicClock::Duration(GetActionInfoDelay(m_nBasicActionInfo));
@@ -3804,9 +3825,9 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 
 							m_fNextTrace	= FLAG_TRACE_NULL;
 
-							// [도움말] 총알 다 썼을 때
+							// [Help] When bullets run out
 //							__BEGIN_HELP_EVENT
-//								ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
+//								GameInfoPresentation::ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
 //							__END_HELP_EVENT
 							
 
@@ -3815,33 +3836,33 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 					}
 			}
 
-			// creature가 이미 죽은 경우
+			// When the creature is already dead
 			//if (pCreature->IsDead()) return;
 
-			// 사용한 기술로 설정
+			// Set as the skill used
 			m_nNextUsedActionInfo	= useSkill;
 
-			// 추적 정보 설정
+			// Set trace info
 			SetTraceID( id );
 			m_fTrace	= FLAG_TRACE_CREATURE_SPECIAL;		
 			m_TraceX	= pCreature->GetX();
 			m_TraceY	= pCreature->GetY();
 			m_TraceZ	= pCreature->GetZ();
 
-			// 추적대상이 되는 캐릭터의 종족
+			// Race of the character being traced
 			//m_TraceCreatureTribe = pCreature->GetCreatureTribe();
 
-			// 현재 추적하는 대상에 대해서 기억해둔다.
+			// Remember the target currently being traced.
 			m_fTraceBuffer	= m_fTrace;	
 			m_TraceIDBuffer = id;
 
 			//------------------------------------------------------------
-			// SpecialAction이 뭐냐에 따라서.. 
-			// 현재 Player의 능력에 따라서 TraceDistance가 달라질 것이다.
+			// Depending on what the SpecialAction is..
+			// TraceDistance will vary with the current Player's abilities.
 			//------------------------------------------------------------
 			//------------------------------------------------------------
-			// 강제 공격인가?
-			// 계속 추적하는가?
+			// Is it a forced attack?
+			// Keep tracing?
 			//------------------------------------------------------------
 			m_bTraceCreatureToForceAttack	= bTraceCreatureToForceAttack;
 			m_bKeepTraceCreature			= bKeepTraceCreature;
@@ -3850,23 +3871,23 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 			
 			//------------------------------------------------------------
 
-			// 추적하는 길 설정
+			// Set the tracing path
 			SetAction( m_MoveAction );
 			SetNextDestination(m_TraceX, m_TraceY);
 
-			// buffering을 없앤다.
+			// Remove buffering.
 			m_fNextTrace			= FLAG_TRACE_NULL;
 
-			// 계속 쫓아가는 것을 중지
+			// Stop continuing the chase
 			m_bKeepTraceCreature	= false;
 		
 			//------------------------------------------------------------
-			// message출력
+			// Print message
 			//------------------------------------------------------------
 			DEBUG_ADD_FORMAT("Trace Creature To SpecialAction: ID=%d, (%d, %d)", id, m_TraceX, m_TraceY);					
 
-			// 선택된 sector 없애기
-			g_pTopView->SetSelectedSectorNULL();
+			// Clear the selected sector
+			WorldEvents::SetSelectedSectorNULL();
 		}
 		else
 		{
@@ -3877,7 +3898,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 				(int)m_MoveCount, (int)m_MoveCountMax);
 
 			//------------------------------------------------------------
-			// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+			// Buffer the next action when not in a repeat action
 			//------------------------------------------------------------
 			if (m_bRepeatAction)
 			{
@@ -3904,7 +3925,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 		return true;
 	}
 	
-	// Target to creature가 아니라는 의미.
+	// Means the target is not a creature.
 	return false;
 }
 
@@ -3912,29 +3933,29 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 //----------------------------------------------------------------------
 // Trace Sector To BasicAction
 //----------------------------------------------------------------------
-// 기본공격으로(L-Click)  Sector(sX,sY)를 공격한다.
-// 멈춰있는 상태가 아니면.. Next에 설정해둔다.
+// Attack Sector(sX,sY) with the basic attack (L-Click).
+// If not standing still.. set it in Next.
 //----------------------------------------------------------------------
 bool	
 MPlayer::TraceSectorToBasicAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 {
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay() 
 		|| HasEffectStatus ( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInCasket()	// [새기술3]
+		|| IsInCasket()	// [new skill 3]
 		|| g_bZoneSafe)
 	{
 		return false;
 	}
 
-	// 좌표가 잘못 입력된 경우
+	// When the coordinates were entered wrongly
 	if (sX==SECTORPOSITION_NULL || sY==SECTORPOSITION_NULL)
 		return false;
 	
 	if (m_nBasicActionInfo == ACTIONINFO_NULL
-		// 오토바이를 타고 있으면 공격 안됨
+		// No attacking while riding a motorcycle
 		|| m_MoveDevice == MOVE_DEVICE_RIDE
 		|| CanActionByZoneInfo())
 	{
@@ -3943,39 +3964,39 @@ MPlayer::TraceSectorToBasicAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 		
 	if (IsStop()) // || m_Action!=ACTION_ATTACK)
 	{		
-		// 사용한 기술로 설정
+		// Set as the skill used
 		m_nNextUsedActionInfo	= GetBasicActionInfo(); //m_nBasicActionInfo;
 		
-		// 추적 정보 설정
+		// Set trace info
 		m_fTrace	= FLAG_TRACE_SECTOR_BASIC;
 		m_TraceX	= sX;
 		m_TraceY	= sY;
 		m_TraceZ	= 0;
 		
-		// 현재 추적하는 대상에 대해서 기억해둔다.
+		// Remember the target currently being traced.
 		m_fTraceBuffer	= m_fTrace;	
 
 		//------------------------------------------------------------
-		// BasicAction이 뭐냐에 따라서..
-		// 현재 Player의 능력에 따라서 TraceDistance가 달라질 것이다.
+		// Depending on what the BasicAction is..
+		// TraceDistance will vary with the current Player's abilities.
 		//------------------------------------------------------------
 		
 		m_TraceDistance		= GetActionInfoRange(m_nNextUsedActionInfo);
 		
 		//------------------------------------------------------------		
 
-		// 추적하는 길 설정
+		// Set the tracing path
 		SetAction( m_MoveAction );
 		SetNextDestination(m_TraceX, m_TraceY);
 
-		// buffering을 없앤다.
+		// Remove buffering.
 		m_fNextTrace			= FLAG_TRACE_NULL;
 		
-		// 계속 쫓아가는 것을 중지
+		// Stop continuing the chase
 		m_bKeepTraceCreature	= false;
 
 		//------------------------------------------------------------
-		// message출력
+		// Print message
 		//------------------------------------------------------------
 		#ifdef	OUTPUT_DEBUG
 			DEBUG_ADD_FORMAT("Trace Sector To BasicAction: (%d, %d)", sX, sY);				
@@ -3984,7 +4005,7 @@ MPlayer::TraceSectorToBasicAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 	else
 	{
 		//------------------------------------------------------------
-		// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+		// Buffer the next action when not in a repeat action
 		//------------------------------------------------------------
 		if (m_bRepeatAction)
 		{
@@ -4010,12 +4031,12 @@ MPlayer::TraceSectorToBasicAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 //----------------------------------------------------------------------
 // Trace Sector To SpecialAction
 //----------------------------------------------------------------------
-// 특수공격으로(R-Click)  Sector(sX,sY)를 공격한다.
-// 멈춰있는 상태가 아니면.. Next에 설정해둔다.
+// Attack Sector(sX,sY) with the special attack (R-Click).
+// If not standing still.. set it in Next.
 //----------------------------------------------------------------------
-// [return값]
+// [return value]
 //
-//  Zone에 사용하지 못하는 경우만 false를 return한다. 
+//  Returns false only when it cannot be used on the Zone.
 //
 //----------------------------------------------------------------------
 bool	
@@ -4030,11 +4051,11 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 		return false;
 
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay() 
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInCasket()	// [새기술3]
+		|| IsInCasket()	// [new skill 3]
 		|| g_bZoneSafe
 		|| CanActionByZoneInfo()
 		)
@@ -4042,17 +4063,17 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 		return false;
 	}
 
-	// 좌표가 잘못 입력된 경우
+	// When the coordinates were entered wrongly
 	if (sX==SECTORPOSITION_NULL || sY==SECTORPOSITION_NULL)
 		return false;
 	
 	if (m_nSpecialActionInfo == ACTIONINFO_NULL		
-		// 오토바이를 타고 있으면 기술을 사용할 수 없다.
+		// Skills cannot be used while riding a motorcycle.
 		|| m_MoveDevice == MOVE_DEVICE_RIDE
-		// 뭔가 기술 사용을 검정 받아야 하면 사용할 수 없다.
-		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 주석처리
+		// Cannot be used if some skill use is awaiting verification.
+		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 commented out
 		|| IsInSafeSector() == 2
-		// 완전 안전지대에서는 기술을 사용할 수 없다.		
+		// Skills cannot be used in a complete safe zone.
 		)
 	{
 		m_fNextTrace = FLAG_TRACE_NULL;
@@ -4061,7 +4082,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 
 		return false;
 	}
-	// 2004, 9, 18, sobeit add start - 터렛 파이어는 사정거리 벗어나믄 무시 ㅜ.ㅜ 
+	// 2004, 9, 18, sobeit add start - turret fire is ignored when out of range (sob)
 	if (m_nSpecialActionInfo==SKILL_TURRET_FIRE)
 	{
 		m_TraceDistance		= GetActionInfoRange(m_nSpecialActionInfo);
@@ -4075,11 +4096,11 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 	}
 	// 2004, 9, 18, sobeit add end
 
-	// 다른 기술을 사용중인 경우
+	// When using another skill
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 		return false;
 
-	// 2004, 9, 21, sobeit add start - 타겟 크리쳐 스킬이 타겟 존 스킬로 사용할 수 있게
+	// 2004, 9, 21, sobeit add start - allow target-creature skills to be used as target-zone skills
 	bool bAbleTargetSector = false;
 //	if(m_nSpecialActionInfo == SKILL_DESTRUCTION_SPEAR || m_nSpecialActionInfo == SKILL_DESTRUCTION_SPEAR_MASTERY)
 //	{
@@ -4093,7 +4114,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 			bAbleTargetSector = true;
 	}
 	// 2004, 9, 21, sobeit add end
-	// Zone에 사용할 수 있는 것들만 사용한다.
+	// Only use the ones that can be used on a Zone.
 	if ((*g_pActionInfoTable)[m_nSpecialActionInfo].IsTargetZone() || bAbleTargetSector)
 	{
 		int grade = 0;
@@ -4127,13 +4148,13 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 //			}
 //		}
 		//-------------------------------------------------------
-		// 폭탄 골라서 던지기
+		// Pick a bomb and throw it
 		//-------------------------------------------------------
 		if (useSkill==SKILL_THROW_BOMB)
 		{
 			//-------------------------------------------------------
-			// 현재 사용할 수 있는 기술인지 체크..
-			// Passive 스킬이면 사용 못하게..
+			// Check whether the skill is currently usable..
+			// Disallow it if it is a Passive skill..
 			//-------------------------------------------------------
 			if (IsSlayer()
 				&& !IsWaitVerify()
@@ -4157,8 +4178,8 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 
 		
 		//-------------------------------------------------------
-		// 현재 사용할 수 있는 기술인지 체크..
-		// Passive 스킬이면 사용 못하게..
+		// Check whether the skill is currently usable..
+		// Disallow it if it is a Passive skill..
 		//-------------------------------------------------------
 		if (
 			(!g_pSkillAvailable->IsEnableSkill( (ACTIONINFO)m_nSpecialActionInfo ) && m_nSpecialActionInfo != SKILL_TURRET_FIRE)
@@ -4200,7 +4221,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 				
 				if(pItem != NULL)
 				{
-					// 성물은 안먹게 하기
+					// Do not eat relics
 					MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 					if(pCreature != NULL)
 					{
@@ -4217,11 +4238,11 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 			int targetY = sY;
 
 			//-------------------------------------------------------
-			// 특정한 기술인 경우의 체크
+			// Check for specific skills
 			//-------------------------------------------------------
 			switch (useSkill)
 			{
-				// 트랜스 퓨전은 타일기술로 체크되있지만 실제로 사용할 수 는 없다
+				// Transfusion is flagged as a tile skill but cannot actually be used
 				case SKILL_TRANSFUSION:
 					return false;
 					break;
@@ -4231,9 +4252,9 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 					break;
 
 				//-------------------------------------------------------
-				// 흡영
+				// Soul drain
 				//-------------------------------------------------------
-				// 바닥에 시체가 없는 경우는 기술 사용 안한다.
+				// Do not use the skill if there is no corpse on the ground.
 				//-------------------------------------------------------
 				case SKILL_ABSORB_SOUL :
 					if (IsOusters())
@@ -4258,7 +4279,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 							return false;
 						}
 						
-						// 성물은 안먹게 하기
+						// Do not eat relics
 						MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 						if(pCreature != NULL)
 						{
@@ -4278,9 +4299,9 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 					break;
 
 				//-------------------------------------------------------
-				// 늑대인 경우 시체 먹기
+				// Eat the corpse if a wolf
 				//-------------------------------------------------------
-				// 바닥에 시체가 없는 경우는 기술 사용 안한다.
+				// Do not use the skill if there is no corpse on the ground.
 				//-------------------------------------------------------
 				case SKILL_BITE_OF_DEATH :
 					if (m_CreatureType != CREATURETYPE_WER_WOLF )
@@ -4303,7 +4324,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 							return false;
 						}
 
-						// 성물은 안먹게 하기
+						// Do not eat relics
 						MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 						if(pCreature != NULL)
 						{
@@ -4323,7 +4344,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 				break;
 //				// 2004, 8, 30, sobeit add start - sweep vice test
 //				case SKILL_SWEEP_VICE_1:
-//					if(!GetSweepViewValue()) //스윕바이스를 아직 사용중이 아닐때
+//					if(!GetSweepViewValue()) //when Sweep Vice is not yet in use
 //					{
 //						SetSweepViewValue(1);
 //						g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
@@ -4361,7 +4382,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 			WORD fWeaponType = (*g_pActionInfoTable)[useSkill].GetWeaponType();
 			
 			//------------------------------------------------
-			// 폭탄인 경우.. 레벨에 따라서 좌표 어긋나게
+			// For bombs: offset the coordinates depending on level
 			//------------------------------------------------
 			if (fWeaponType	& FLAG_ACTIONINFO_WEAPON_BOMB)
 			{
@@ -4371,20 +4392,20 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 
 				if (rand()%100 < hitRoll)
 				{
-					// 제대로 맞은 경우
+					// Direct hit
 				}
 				else
 				{
 					if (rand()%100 < 25
-						&& skillLevel < 30)		// 2타일 근처
+						&& skillLevel < 30)		// within 2 tiles
 					{
-						// 빚맞아야 한다.
+						// It has to be a near miss.
 						targetX += rand()%5 - 2;
 						targetY += rand()%5 - 2;
 					}
-					else						// 1타일 근처
+					else						// within 1 tile
 					{
-						// 빚맞아야 한다.
+						// It has to be a near miss.
 						targetX += rand()%3 - 1;
 						targetY += rand()%3 - 1;
 					}
@@ -4392,30 +4413,30 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 			}
 
 			//------------------------------------------------
-			// 총알 체크
+			// Check ammo
 			//------------------------------------------------
 			if ((*g_pActionInfoTable)[useSkill].IsWeaponTypeGunAny())
 			{
-				if (!IsRequestMode() && g_pCurrentMagazine!=NULL)		// 총알이 필요 없는 경우
+				if (!IsRequestMode() && g_pCurrentMagazine!=NULL)		// no ammo needed
 				{
-					if (g_pCurrentMagazine->GetNumber()==0)	// 총알이 없는 경우
+					if (g_pCurrentMagazine->GetNumber()==0)	// out of ammo
 					{
-						// 총을 사용하는데 탄창이 없는 경우
-						PlaySound( SOUND_ITEM_NO_MAGAZINE );
+						// When using a gun without a magazine
+						WorldEvents::PlaySound( SOUND_ITEM_NO_MAGAZINE );
 
 						m_fNextTrace	= FLAG_TRACE_NULL;
 
 						
 
-						// [도움말] 총알 다 썼을 때
+						// [Help] when ammo runs out
 //						__BEGIN_HELP_EVENT
-//							ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
+//							GameInfoPresentation::ExecuteHelpEvent( HE_ITEM_EMPTY_BULLET );
 //						__END_HELP_EVENT
 
 						m_fNextTrace = FLAG_TRACE_NULL;
 
 						UnSetRepeatAction();
-						// 2004, 9, 23, sobeit add start - 터렛 공격 끝나는 동작
+						// 2004, 9, 23, sobeit add start - turret attack end motion
 						if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 						{
 							InstallTurretStopAttack();
@@ -4429,39 +4450,39 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 				}
 			}
 
-			// 사용한 기술로 설정
+			// Set as the skill used
 			m_nNextUsedActionInfo	= useSkill;
 
-			// 추적 정보 설정
+			// Set trace info
 			m_fTrace	= FLAG_TRACE_SECTOR_SPECIAL;
 			m_TraceX	= targetX;
 			m_TraceY	= targetY;
 			m_TraceZ	= 0;
 
-			// 현재 추적하는 대상에 대해서 기억해둔다.
+			// Remember the target currently being traced.
 			m_fTraceBuffer	= m_fTrace;	
 			
 			//------------------------------------------------------------
-			// BasicAction이 뭐냐에 따라서..
-			// 현재 Player의 능력에 따라서 TraceDistance가 달라질 것이다.
+			// Depending on what the BasicAction is..
+			// TraceDistance will vary with the current Player's abilities.
 			//------------------------------------------------------------
 			
 			m_TraceDistance		= GetActionInfoRange(m_nNextUsedActionInfo);
 			
 			//------------------------------------------------------------		
 
-			// 추적하는 길 설정
+			// Set the tracing path
 			SetAction( m_MoveAction );
 			SetNextDestination(m_TraceX, m_TraceY);
 
-			// buffering을 없앤다.
+			// Remove buffering.
 			m_fNextTrace			= FLAG_TRACE_NULL;
 
-			// 계속 쫓아가는 것을 중지
+			// Stop continuing the chase
 			m_bKeepTraceCreature	= false;
 			
 			//------------------------------------------------------------
-			// message출력
+			// Print message
 			//------------------------------------------------------------
 			DEBUG_ADD_FORMAT("Trace Sector To SpecialAction: (%d, %d)", sX, sY);					
 			if(useSkill == SKILL_TELEPORT)
@@ -4473,7 +4494,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 		{
 
 			//------------------------------------------------------------
-			// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+			// Buffer the next action when not in a repeat action
 			//------------------------------------------------------------
 			if (m_bRepeatAction)
 			{
@@ -4491,7 +4512,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 
 				m_bRepeatAction = FALSE;
 
-				// 200411, 12, 21, sobeit modify start - 이동중 스킬 사용시 반복이 안되는 현상 수정
+				// 200411, 12, 21, sobeit modify start - fix skill not repeating when used while moving
 				//return false;
 				return true;
 				// 200411, 12, 21, sobeit modify end
@@ -4501,7 +4522,7 @@ MPlayer::TraceSectorToSpecialAction(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION 
 		return true;
 	}
 
-	// Zone에 사용하는게 아니라는 의미
+	// Means it is not used on a Zone
 	return false;
 }
 
@@ -4527,18 +4548,18 @@ MPlayer::IsItemHiddenInDarkness(const MItem* pItem) const
 //----------------------------------------------------------------------
 // Trace Item
 //----------------------------------------------------------------------
-// Item으로 다가가서 주워야 한다.
-// 멈춰있는 상태가 아니면.. Next에 설정해둔다.
+// Must approach the Item and pick it up.
+// If not standing still.. set it in Next.
 //----------------------------------------------------------------------
 bool	
 MPlayer::TraceItem(TYPE_OBJECTID id)
 {
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay() 
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInCasket()	// [새기술3]
+		|| IsInCasket()	// [new skill 3]
 		|| (IsInDarkness() && (!HasEffectStatus( EFFECTSTATUS_LIGHTNESS )||g_pZone->GetID() == 3001)
 		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
@@ -4551,7 +4572,7 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 
 	if (IsStop()) // || m_Action!=ACTION_ATTACK)
 	{
-		// Zone에 존재하는 Item인지 check한다.
+		// Check whether the Item exists in the Zone.
 		MItem*	pItem = m_pZone->GetItem(id);
 
 		// the item is not in the zone, or darkness hides it
@@ -4562,7 +4583,7 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 		}
 	
 		//-------------------------------------------------------------
-		// Item 줍기 가능 거리에 이미 있다면..
+		// If already within pickup range of the Item..
 		//-------------------------------------------------------------
 		if (max(abs(pItem->GetX()-m_X), abs(pItem->GetY()-m_Y)) <= 1)
 		{
@@ -4570,51 +4591,51 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 
 			TraceNULL();
 			
-			// 추적을 완료했으므로 Item을 줍는다.
+			// Tracing is complete, so pick up the Item.
 			PickupItem( pItem );	
 			
 			return true;
 		}
 
 
-		// 추적 정보 설정
+		// Set trace info
 		SetTraceID( id );
 		m_fTrace	= FLAG_TRACE_ITEM;
 		m_TraceX	= pItem->GetX();
 		m_TraceY	= pItem->GetY();
 		m_TraceZ	= 0;
 
-		// 현재 추적하는 대상에 대해서 기억해둔다.
+		// Remember the target currently being traced.
 		m_fTraceBuffer	= m_fTrace;	
 		
 
 		//------------------------------------------------------------		
-		// 현재 Player의 능력에 따라서 TraceDistance가 달라질까?
+		// Should TraceDistance vary with the current Player's abilities?
 		//------------------------------------------------------------
 		
 		m_TraceDistance		= 1;
 		
 		//------------------------------------------------------------
 
-		// 추적하는 길 설정
+		// Set the tracing path
 		SetAction( m_MoveAction );
 		SetNextDestination(m_TraceX, m_TraceY);
 
-		// buffering을 없앤다.
+		// Remove buffering.
 		m_fNextTrace			= FLAG_TRACE_NULL;
 	
-		// 계속 쫓아가는 것을 중지
+		// Stop continuing the chase
 		m_bKeepTraceCreature	= false;
 
 		//------------------------------------------------------------
-		// message출력
+		// Print message
 		//------------------------------------------------------------
 		DEBUG_ADD_FORMAT("Trace IteM: %d", id);				
 	}
 	else
 	{
 		//------------------------------------------------------------
-		// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+		// Buffer the next action when not in a repeat action
 		//------------------------------------------------------------
 		if (m_bRepeatAction)
 		{
@@ -4639,27 +4660,27 @@ MPlayer::TraceItem(TYPE_OBJECTID id)
 //----------------------------------------------------------------------
 // Trace InteractionObject
 //----------------------------------------------------------------------
-// InteractionObject로 다가가서 currentAction을 변경시킨다.
-// --> 다가갔을때, currentAction이 
-//     "이미" 변경되어있으면 변경하지 않아야 한다.
+// Approach the InteractionObject and change currentAction.
+// --> When we get there, if currentAction
+//     has "already" been changed, it must not be changed.
 //
-// 멈춰있는 상태가 아니면.. Next에 설정해둔다.
+// If not standing still.. set it in Next.
 //----------------------------------------------------------------------
 bool	
 MPlayer::TraceInteractionObject(TYPE_OBJECTID id, BYTE currentAction)
 {
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay()
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInCasket())	// [새기술3]		
+		|| IsInCasket())	// [new skill 3]
 	{
 		return false;
 	}
 
 	//------------------------------------------------
-	// 오토바이를 타고 있으면 문을 열 수 없다.
+	// Cannot open a door while riding a motorcycle.
 	//------------------------------------------------
 	if (m_MoveDevice == MOVE_DEVICE_RIDE)
 	{
@@ -4668,17 +4689,17 @@ MPlayer::TraceInteractionObject(TYPE_OBJECTID id, BYTE currentAction)
 
 	if (IsStop()) // || m_Action!=ACTION_ATTACK)
 	{
-		// Zone에 존재하는 Item인지 check한다.
+		// Check whether the Item exists in the Zone.
 		MImageObject*	pImageObject = m_pZone->GetImageObject(id);
 
-		// ImageObject가 없으면 return
+		// Return if there is no ImageObject
 		if (pImageObject==NULL) return false;
 
-		// InteractionObject가 아니면 return
+		// Return if not an InteractionObject
 		if (pImageObject->GetObjectType()!=MObject::TYPE_INTERACTIONOBJECT)
 			return false;	 	
 
-		// 추적 정보 설정
+		// Set trace info
 		SetTraceID( id );
 		m_fTrace			= FLAG_TRACE_INTERACTIONOBJECT;
 		m_TraceObjectAction	= currentAction;
@@ -4686,36 +4707,36 @@ MPlayer::TraceInteractionObject(TYPE_OBJECTID id, BYTE currentAction)
 		m_TraceY			= pImageObject->GetY();
 		m_TraceZ			= 0;
 
-		// 현재 추적하는 대상에 대해서 기억해둔다.
+		// Remember the target currently being traced.
 		m_fTraceBuffer	= m_fTrace;	
 
 		//------------------------------------------------------------		
-		// 현재 Player의 능력에 따라서 TraceDistance가 달라질까?
+		// Should TraceDistance vary with the current Player's abilities?
 		//------------------------------------------------------------
 		
 		m_TraceDistance		= 1;
 		
 		//------------------------------------------------------------
 
-		// 추적하는 길 설정
+		// Set the tracing path
 		SetAction( m_MoveAction );
 		SetNextDestination(m_TraceX, m_TraceY);
 
-		// buffering을 없앤다.
+		// Remove buffering.
 		m_fNextTrace			= FLAG_TRACE_NULL;
 	
-		// 계속 쫓아가는 것을 중지
+		// Stop continuing the chase
 		m_bKeepTraceCreature	= false;
 
 		//------------------------------------------------------------
-		// message출력
+		// Print message
 		//------------------------------------------------------------
 		DEBUG_ADD_FORMAT("Trace InteractionObject: %d", id);				
 	}
 	else
 	{
 		//------------------------------------------------------------
-		// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+		// Buffer the next action when not in a repeat action
 		//------------------------------------------------------------
 		if (m_bRepeatAction)
 		{
@@ -4741,23 +4762,23 @@ MPlayer::TraceInteractionObject(TYPE_OBJECTID id, BYTE currentAction)
 //----------------------------------------------------------------------
 // Trace Effect
 //----------------------------------------------------------------------
-// SelectableEffect에 접근한다.
+// Approach the SelectableEffect.
 //----------------------------------------------------------------------
 bool	
 MPlayer::TraceEffect(TYPE_OBJECTID id)
 {
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay()
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE )
-		|| IsInCasket())	// [새기술3]
+		|| IsInCasket())	// [new skill 3]
 	{
 		return false;
 	}
 
 	//------------------------------------------------
-	// 오토바이를 타고 있으면 문을 열 수 없다.
+	// Cannot open a door while riding a motorcycle.
 	//------------------------------------------------
 	if (m_MoveDevice == MOVE_DEVICE_RIDE)
 	{
@@ -4781,7 +4802,7 @@ MPlayer::TraceEffect(TYPE_OBJECTID id)
 		if (!pEffect->IsSelectable())
 			return false;	 	
 
-		// 추적 정보 설정
+		// Set trace info
 		SetTraceID( id );
 		m_fTrace			= FLAG_TRACE_EFFECT;
 		//m_TraceObjectAction	= currentAction;
@@ -4789,36 +4810,36 @@ MPlayer::TraceEffect(TYPE_OBJECTID id)
 		m_TraceY			= pEffect->GetY();
 		m_TraceZ			= 0;
 
-		// 현재 추적하는 대상에 대해서 기억해둔다.
+		// Remember the target currently being traced.
 		m_fTraceBuffer	= m_fTrace;	
 
 		//------------------------------------------------------------		
-		// 현재 Player의 능력에 따라서 TraceDistance가 달라질까?
+		// Should TraceDistance vary with the current Player's abilities?
 		//------------------------------------------------------------
 		
 		m_TraceDistance		= 1;
 		
 		//------------------------------------------------------------
 
-		// 추적하는 길 설정
+		// Set the tracing path
 		SetAction( m_MoveAction );
 		SetNextDestination(m_TraceX, m_TraceY);
 
-		// buffering을 없앤다.
+		// Remove buffering.
 		m_fNextTrace			= FLAG_TRACE_NULL;
 	
-		// 계속 쫓아가는 것을 중지
+		// Stop continuing the chase
 		m_bKeepTraceCreature	= false;
 
 		//------------------------------------------------------------
-		// message출력
+		// Print message
 		//------------------------------------------------------------
 		DEBUG_ADD_FORMAT("Trace Effect: %d", id);				
 	}
 	else
 	{
 		//------------------------------------------------------------
-		// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+		// Buffer the next action when not in a repeat action
 		//------------------------------------------------------------
 		if (m_bRepeatAction)
 		{
@@ -4846,15 +4867,15 @@ MPlayer::TraceEffect(TYPE_OBJECTID id)
 //----------------------------------------------------------------------
 // Set Trace Position
 //----------------------------------------------------------------------
-// Creature가 있는 sector는 이미 Creature가 있기 때문에 갈 수 없다.
-// 그러므로, Creature에 가장 근접하면서 현재 Player에서 가까운 
-// Sector를 선택해야 한다.
+// A sector with a Creature cannot be entered because the Creature is already there.
+// So we have to pick the Sector that is closest to the Creature and
+// also near the current Player.
 //----------------------------------------------------------------------
 /*
 void
 MPlayer::SetTraceDestination()
 {
-	// check하는 방향의 순서를 둔다.
+	// Set the order of directions to check.
 	int		stepX = m_X - m_TraceX,
 			stepY = m_Y - m_TraceY;
 	int		signX = (stepX==0)? 0 : (stepX<0)? -1 : 1,
@@ -4862,7 +4883,7 @@ MPlayer::SetTraceDestination()
 
 	int		check[8];
 
-	// signX,signY로 
+	// by signX, signY
 	switch (DetermineDirection(signX, signY))
 	{
 		case RIGHT :
@@ -4872,7 +4893,7 @@ MPlayer::SetTraceDestination()
 	
 
 	//-------------------------------------------------------
-	// 8방향을 모두 check
+	// Check all 8 directions
 	//-------------------------------------------------------
 	for (int i=0; i<8; i++)
 	{		
@@ -4889,13 +4910,13 @@ MPlayer::SetTraceDestination()
 		}
 
 		//-------------------------------------------------------
-		// Zone의 영역 밖이면 check 안한다.
+		// Skip the check if outside the Zone's area.
 		//-------------------------------------------------------
 		if (next.x<0 || next.y<0 
 					|| next.x>=m_pZone->GetWidth() || next.y>=m_pZone->GetHeight()) continue;
 
 		//-------------------------------------------------------
-		// 갈 수 있으면 선택한다.
+		// Select it if it can be entered.
 		//-------------------------------------------------------
 		if (m_pZone->CanMove(next.x, next.y))
 		{				
@@ -4907,7 +4928,7 @@ MPlayer::SetTraceDestination()
 //----------------------------------------------------------------------
 // Can Attack Tribe
 //----------------------------------------------------------------------
-// 어떤 종족을 공격할 수 있는 AttackMode인지를 알아본다.
+// Find out which tribes the AttackMode allows attacking.
 //----------------------------------------------------------------------
 bool
 MPlayer::CanAttackTribe( enum CREATURETRIBE to ) const
@@ -4915,24 +4936,24 @@ MPlayer::CanAttackTribe( enum CREATURETRIBE to ) const
 	switch ( m_AttackMode )
 	{
 		//--------------------------------------------
-		// 평화상태 : 아무도 공격 안 한다.
+		// Peace: attack no one.
 		//--------------------------------------------
 		case ATTACK_MODE_PEACE :
 			return false;
 		break;
 
 		//--------------------------------------------
-		// 공격상태 : 아무나 공격 한다.
+		// Attack: attack anyone.
 		//--------------------------------------------
 		case ATTACK_MODE_AGGRESS :
 			return true;
 		break;
 
 		//--------------------------------------------
-		// 보통 : 적만 공격한다.
+		// Normal: attack enemies only.
 		//--------------------------------------------
-		// 적 = Tribe가 같지 않은 경우..
-		// NPC는 공격 못한다.
+		// Enemy = different Tribe..
+		// NPCs cannot be attacked.
 		case ATTACK_MODE_NORMAL :
 			return GetCreatureTribe()!=to;// && to!=CREATURETRIBE_NPC;
 		break;		
@@ -4947,7 +4968,7 @@ MPlayer::CanAttackTribe( enum CREATURETRIBE to ) const
 //----------------------------------------------------------------------
 // Can Attack Guild
 //----------------------------------------------------------------------
-// 어떤 guild를 공격할 수 있는 AttackMode인지를 알아본다.
+// Find out which guilds the AttackMode allows attacking.
 //----------------------------------------------------------------------
 bool	
 MPlayer::CanAttackGuild( const MCreature* pCreature ) const
@@ -4955,33 +4976,33 @@ MPlayer::CanAttackGuild( const MCreature* pCreature ) const
 	switch ( m_AttackMode )
 	{
 		//--------------------------------------------
-		// 평화상태 : 아무도 공격 안 한다.
+		// Peace: attack no one.
 		//--------------------------------------------
 		case ATTACK_MODE_PEACE :
 			return false;
 		break;
 
 		//--------------------------------------------
-		// 공격상태 : 아무나 공격 한다.
+		// Attack: attack anyone.
 		//--------------------------------------------
 		case ATTACK_MODE_AGGRESS :
 			return true;
 		break;
 
 		//--------------------------------------------
-		// 보통 : 적만 공격한다.
+		// Normal: attack enemies only.
 		//--------------------------------------------
-		// 적 = Guild가 같지 않은 경우..
+		// Enemy = different Guild..
 		case ATTACK_MODE_NORMAL :
 		{
 			int gn = pCreature->GetGuildNumber();
 
 			return (m_GuildNumber!=gn
-					// 현재는 사용자끼리는 공격하면 안되기 때문에..
-					// 사용자 길드가 아닌 경우만 공격할 수 있다.
-					// 나중에는 이거 빠져야되지 않을까?
+					// Currently users must not attack each other, so..
+					// only non-user guilds can be attacked.
+					// Shouldn't this be removed later?
 
-					// vampire인 경우. 일단 vampire만 AttackByGuild를 사용하기 때문
+					// For vampires. Only vampires use AttackByGuild for now
 					&& gn!=GUILDID_VAMPIRE_DEFAULT && gn<MIN_USER_GUILDID)
 					|| GetCreatureTribe()!=pCreature->GetCreatureTribe();
 					// && to!=CREATURETRIBE_NPC;
@@ -4998,10 +5019,10 @@ MPlayer::CanAttackGuild( const MCreature* pCreature ) const
 //----------------------------------------------------------------------
 // Action In Trace Distance
 //----------------------------------------------------------------------
-// 행동이 가능한 거리에 있을 때의 행동 처리
+// Action handling when within range for the action
 //
-// return true : 거리에 있을 때
-//		  false : 거리 밖.
+// return true : when in range
+//		  false : out of range.
 //----------------------------------------------------------------------
 bool
 MPlayer::ActionInTraceDistance()
@@ -5017,12 +5038,12 @@ MPlayer::ActionInTraceDistance()
 			}
 			else
 			{
-				// 콩가루~~..
+				// (a mess)..
 				//nextAction = ACTION_STAND;
 			}
 		}
 		//-----------------------------------------------------
-		// 걸어다닐때
+		// When walking
 		//-----------------------------------------------------
 		else if( m_MoveDevice == MOVE_DEVICE_SUMMON_SYLPH )
 		{
@@ -5043,9 +5064,9 @@ MPlayer::ActionInTraceDistance()
 
 	//-------------------------------------------------------
 	//
-	// [ 추적 완료 ] 
+	// [ Trace complete ]
 	//
-	// : 사정 거리 이내인 경우 --> 추적 중지 --> 추적 Action
+	// : within range --> stop tracing --> trace Action
 	//
 	//-------------------------------------------------------			
 	if (max(abs(m_X-m_TraceX), abs(m_Y-m_TraceY)) 
@@ -5053,21 +5074,21 @@ MPlayer::ActionInTraceDistance()
 	{	
 		//----------------------------------------------------
 		//
-		// 사정거리에 접근했으므로 Action Mode전환				
+		// Switch Action Mode since we are within range
 		//
 		//----------------------------------------------------
 				
 		//----------------------------------------------------
-		// 추적이 완료됐으므로 적절한 행동을 취하게 한다.
-		// m_NextAction에 적절한 행동을 설정..
+		// Tracing is complete, so take the appropriate action.
+		// Set the appropriate action in m_NextAction..
 		//----------------------------------------------------
 		//---------------------
-		// 자신에게 행동
+		// Action on self
 		//---------------------
 		if (m_fTrace & FLAG_TRACE_SELF)
 		{
 			//---------------------------------------------------------------
-			// 현재 선택된 특수기술에 따라서..
+			// Depending on the currently selected special skill..
 			//---------------------------------------------------------------					
 			//m_ActionCount = m_ActionCountMax;
 			m_MoveCount = m_MoveCountMax;					
@@ -5082,16 +5103,16 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//					기본 행동
+		//					Basic action
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_CREATURE_BASIC)
 		{
 			//---------------------------------------------------------------
-			// 현재 사용중인 무기에 따라서...
+			// Depending on the weapon currently in use...
 			//---------------------------------------------------------------
 			// pCreature
-			// m_TraceX, m_TraceY가 목적지
+			// m_TraceX, m_TraceY is the destination
 			//---------------------------------------------------------------
 			//m_ActionCount = m_ActionCountMax;
 			m_MoveCount = m_MoveCountMax;
@@ -5102,16 +5123,16 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//						특수 행동
+		//						Special action
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_CREATURE_SPECIAL)
 		{
 			//---------------------------------------------------------------
-			// Slot에 설정된 특수공격(공격이 아닐수도 있겠지)에 따라서..
+			// Depending on the special attack set in the Slot (it may not be an attack)..
 			//---------------------------------------------------------------
 			// pCreature
-			// m_TraceX, m_TraceY가 목적지
+			// m_TraceX, m_TraceY is the destination
 			//---------------------------------------------------------------
 			//m_ActionCount = m_ActionCountMax;
 			m_MoveCount = m_MoveCountMax;
@@ -5141,16 +5162,16 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//				기본 행동 -> Sector
+		//				Basic action -> Sector
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_SECTOR_BASIC)
 		{
 			//---------------------------------------------------------------
-			// 현재 사용중인 무기에 따라서...
+			// Depending on the weapon currently in use...
 			//---------------------------------------------------------------
 			// pCreature
-			// m_TraceX, m_TraceY가 목적지
+			// m_TraceX, m_TraceY is the destination
 			//---------------------------------------------------------------
 			//m_ActionCount = m_ActionCountMax;
 			m_MoveCount = m_MoveCountMax;
@@ -5180,16 +5201,16 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//				특수 행동 -> Sector
+		//				Special action -> Sector
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_SECTOR_SPECIAL)
 		{
 			//---------------------------------------------------------------
-			// Slot에 설정된 특수공격(공격이 아닐수도 있겠지)에 따라서..
+			// Depending on the special attack set in the Slot (it may not be an attack)..
 			//---------------------------------------------------------------
 			// pCreature
-			// m_TraceX, m_TraceY가 목적지
+			// m_TraceX, m_TraceY is the destination
 			//---------------------------------------------------------------
 			//m_NextAction = ACTION_SHOOT;
 			//m_ActionCount = m_ActionCountMax; 
@@ -5221,14 +5242,14 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//					Item 추적
+		//					Item trace
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_ITEM)
 		{
 			MItem*	pItem = m_pZone->GetItem( m_TraceID );
 
-			// 추적을 완료했으므로 Item을 줍는다.
+			// Tracing is complete, so pick up the Item.
 			if (pItem!=NULL
 				&& !IsItemHiddenInDarkness( pItem ))
 			{
@@ -5239,17 +5260,17 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//			Inventory의 Item에 기술 사용
+		//			Use skill on an Inventory Item
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_INVENTORY)
 		{
 			MItem* pItem = g_pInventory->GetItemToModify( m_TraceID );
 
-			// 추적을 완료했으므로 Item을 줍는다.
+			// Tracing is complete, so pick up the Item.
 			if (pItem!=NULL)
 			{
-				// ActionEffect()를 호출하기 위해서...
+				// To call ActionEffect()...
 				m_MoveCount = m_MoveCountMax;
 				SetNextAction(nextAction);
 			}
@@ -5262,7 +5283,7 @@ MPlayer::ActionInTraceDistance()
 		}
 		//----------------------------------------------------
 		//
-		//			Effect추적
+		//			Effect trace
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_EFFECT)
@@ -5310,7 +5331,7 @@ MPlayer::ActionInTraceDistance()
 		}	
 		//----------------------------------------------------
 		//
-		//			InteractionObject추적
+		//			InteractionObject trace
 		//
 		//----------------------------------------------------
 		else if (m_fTrace & FLAG_TRACE_INTERACTIONOBJECT)
@@ -5330,42 +5351,42 @@ MPlayer::ActionInTraceDistance()
 		return false;
 	}
 	//-------------------------------------------------------
-	// 더 추적해야 하는 경우
+	// When tracing must continue
 	//-------------------------------------------------------
 	else
 	{
 		//------------------------------------------
-		// 추적할 길이 없는 경우 --> 길찾기
+		// When there is no path to trace --> pathfinding
 		//------------------------------------------
 		if (m_listDirection.empty())
 		{
 			//---------------------
-			// 기본 행동
+			// Basic action
 			//---------------------
 			if (m_fTrace & FLAG_TRACE_CREATURE_BASIC)
 			{
 				TraceCreatureToBasicAction( m_TraceID, m_bTraceCreatureToForceAttack );
 			}
 			//---------------------
-			// 특수 행동
+			// Special action
 			//---------------------
 			else  if (m_fTrace & FLAG_TRACE_CREATURE_SPECIAL)
 			{
 				TraceCreatureToSpecialAction( m_TraceID, m_bTraceCreatureToForceAttack );
 			}
 			//---------------------
-			// 기본 행동 -> Sector
+			// Basic action -> Sector
 			//---------------------
 			else if (m_fTrace & FLAG_TRACE_SECTOR_BASIC)
 			{
 				TraceSectorToBasicAction( m_TraceX, m_TraceY );
 			}
 			//---------------------
-			// 특수 행동 -> Sector
+			// Special action -> Sector
 			//---------------------
 			else if (m_fTrace & FLAG_TRACE_SECTOR_SPECIAL)
 			{
-				// 2004, 9, 18, sobeit add start - 터렛 파이어는 사정거리 벗어나믄 무시 ㅜ.ㅜ 
+				// 2004, 9, 18, sobeit add start - turret fire is ignored when out of range
 				if (m_nUsedActionInfo==SKILL_TURRET_FIRE)
 				{
 					m_fNextTrace = FLAG_TRACE_NULL;
@@ -5378,35 +5399,35 @@ MPlayer::ActionInTraceDistance()
 				TraceSectorToSpecialAction( m_TraceX, m_TraceY );
 			}
 			//---------------------
-			// Item 추적
+			// Item trace
 			//---------------------
 			else if (m_fTrace & FLAG_TRACE_ITEM)
 			{
 				TraceItem( m_TraceID );
 			}
 			//---------------------
-			// Inventory에 기술 사용
+			// Use skill on Inventory
 			//---------------------
 			else if (m_fTrace & FLAG_TRACE_INVENTORY)
 			{
 				TraceInventoryItem( m_TraceID );
 			}
 			//---------------------
-			// Effect추적
+			// Effect trace
 			//---------------------
 			else if (m_fTrace & FLAG_TRACE_EFFECT)
 			{
 				TraceEffect( m_TraceID );
 			}
 			//---------------------
-			// InteractionObject추적
+			// InteractionObject trace
 			//---------------------
 			else if (m_fTrace & FLAG_TRACE_INTERACTIONOBJECT)
 			{
 				TraceInteractionObject( m_TraceID, m_TraceObjectAction );
 			}
 
-			// 이동~하면서 추적..
+			// Trace while moving..
 			//SetAction( m_MoveAction );
 		}
 
@@ -5421,10 +5442,10 @@ MPlayer::ActionInTraceDistance()
 //----------------------------------------------------------------------
 // Move
 //----------------------------------------------------------------------
-// MCreature::Move와 비슷하지만 MPlayer::Move는 
-//    m_listDirection에서 방향을 하나씩 읽어서 움직이게 된다.
+// Similar to MCreature::Move, but MPlayer::Move
+//    reads directions one by one from m_listDirection and moves.
 // 
-// 단, 길을 가다가 막히면 다시 길을 정해야한다(SetDest...)
+// However, if blocked along the way, the path must be chosen again (SetDest...)
 //----------------------------------------------------------------------
 void	
 MPlayer::ActionMove()
@@ -5435,11 +5456,11 @@ MPlayer::ActionMove()
 
 	//----------------------------------------------------
 	//
-	// 다음 Sector에 도달한 경우	
+	// When the next Sector is reached
 	//
 	//----------------------------------------------------
-	// m_listDirection에서 방향을 하나 읽어와서 
-	// check해보고 움직인다.
+	// Read one direction from m_listDirection,
+	// check it, and move.
 	//----------------------------------------------------
 	if( HasEffectStatus( EFFECTSTATUS_TRYING ) )
 	{
@@ -5467,7 +5488,7 @@ MPlayer::ActionMove()
 		TYPE_SECTORPOSITION	x, y;
 
 		//-------------------------------------------------------------
-		// fast move인 경우는 nextX, nextY에 좌표가 있다.
+		// For fast move, the coordinates are in nextX, nextY.
 		//-------------------------------------------------------------
 		if (m_bFastMove)
 		{
@@ -5481,12 +5502,12 @@ MPlayer::ActionMove()
 
 		}
 		//-------------------------------------------------------------
-		// 일반적인 움직임
+		// Normal movement
 		//-------------------------------------------------------------
 		else
 		{
 			//----------------------------------------------------
-			// 목표위치가 없으면 움직이지 않는다.
+			// Do not move if there is no target position.
 			//----------------------------------------------------
 			if (m_DestX==SECTORPOSITION_NULL && m_NextDestX==SECTORPOSITION_NULL) 
 			{
@@ -5500,11 +5521,11 @@ MPlayer::ActionMove()
 			
 			//----------------------------------------------------
 			// 
-			// 1. 길찾기를 해서 이동하게 하고..
-			// 2. Server에서 검증 받기 위해 Send..
+			// 1. Do pathfinding and move..
+			// 2. Send to have the Server verify..
 			//
 			//----------------------------------------------------
-			// Server로부터 기다리는 message의 개수 출력		
+			// Print the number of messages awaited from the Server
 			if (m_SendMove != 0  && g_bNetStatusGood)
 			{
 				static int lastSendCount = 0;
@@ -5520,28 +5541,28 @@ MPlayer::ActionMove()
 			//----------------------------------------------------
 			//
 			//
-			//                 추적 중이면..
+			//                 If tracing..
 			//
 			//
 			//----------------------------------------------------		
 			if (m_fTrace != FLAG_TRACE_NULL)
 			{				
 				//----------------------------------------------------	
-				// Creature 추적 중이면..
-				// Creature가 사라지거나
-				// 추적 목표좌표가 바뀔 수 있으므로 check해준다.
+				// If tracing a Creature..
+				// The Creature may vanish or
+				// the trace target coordinates may change, so check.
 				//----------------------------------------------------	
 				if ((m_fTrace & FLAG_TRACE_CREATURE_BASIC) 
 					|| (m_fTrace & FLAG_TRACE_CREATURE_SPECIAL))
 				{
-					// 추적하는 Creature의 정보를 읽어온다.
+					// Read the info of the Creature being traced.
 					MCreature*	pCreature = m_pZone->GetCreature( m_TraceID );				
 
 					//GET_DYING_CREATURE( pCreature, m_TraceID );
 
 					//-------------------------------------------------------
-					// 추적하는 Creature가 사라졌을 경우 --> 추적 중지
-					// 내가 Slayer인 경우는 Darkness안에 들어간 캐릭을 쫓아갈 수 없다.					
+					// If the traced Creature vanished --> stop tracing
+					// As a Slayer, I cannot chase a character that went into Darkness.
 					//-------------------------------------------------------								
 					if (pCreature==NULL 
 						|| (pCreature->IsInDarkness() && !pCreature->IsNPC() && 
@@ -5558,16 +5579,16 @@ MPlayer::ActionMove()
 						{
 							m_fNextTrace = FLAG_TRACE_NULL;
 
-							// 버튼을 떼었으므로 행동 반복을 취소한다.
+							// The button was released, so cancel action repeat.
 							UnSetRepeatAction();
 							//TraceNextNULL();
 						}
 						else
 						{
-							// 추적 중지
+							// Stop tracing
 							TraceNULL();
 								
-							// 멈춘다.
+							// Stop.
 							SetStop();					
 						}
 
@@ -5579,14 +5600,14 @@ MPlayer::ActionMove()
 					}
 				
 					//-------------------------------------------------------			
-					// 추적할려는 Creature의 좌표가 달라졌을 경우
+					// If the coordinates of the Creature being traced changed
 					//-------------------------------------------------------			
 					if (pCreature->GetX()!=m_TraceX ||
 						pCreature->GetY()!=m_TraceY)
 					{										
 						m_NextDestX = pCreature->GetX();
 						m_NextDestY = pCreature->GetY();
-						// Z는 관계없다.
+						// Z does not matter.
 					}
 
 					m_TraceX	= pCreature->GetX();
@@ -5594,24 +5615,24 @@ MPlayer::ActionMove()
 					m_TraceZ	= pCreature->GetZ();
 				}
 				//----------------------------------------------------	
-				// Item 추적 중이면..
-				// Item이 사라질 수 있으므로 check해준다.
+				// If tracing an Item..
+				// The Item may vanish, so check.
 				//----------------------------------------------------
 				else if (m_fTrace & FLAG_TRACE_ITEM)
 				{
-					// 추적하는 Creature의 정보를 읽어온다.
+					// Read the info of the Creature being traced.
 					MItem*	pItem = m_pZone->GetItem( m_TraceID );
 
 					//-------------------------------------------------------
-					// 추적하는 Item이 사라졌을 경우 --> 추적 중지
+					// If the traced Item vanished --> stop tracing
 					//-------------------------------------------------------
 					if (pItem==NULL
 						|| IsItemHiddenInDarkness( pItem ))
 					{
-						// 추적 중지
+						// Stop tracing
 						TraceNULL();
 							
-						// 멈춘다.
+						// Stop.
 						SetStop();					
 							
 						#ifdef OUTPUT_DEBUG_PLAYER_ACTION
@@ -5623,19 +5644,19 @@ MPlayer::ActionMove()
 				}
 
 				//-------------------------------------------------------
-				// 행동 가능 거리에 있는지 판단한다.
+				// Determine whether within range for the action.
 				//-------------------------------------------------------
 				if (ActionInTraceDistance())
 				{
-					// 기술 사용~~
+					// Use skill~~
 					if (m_nNextUsedActionInfo!=ACTIONINFO_NULL)
 					{						
 						m_nUsedActionInfo = m_nNextUsedActionInfo;
 						m_nNextUsedActionInfo = ACTIONINFO_NULL;
 
-						// 다음 action설정
+						// Set next action
 						m_bNextAction = true;
-						// 2004, 11, 23, sobeit add start - 아..감기걸려서..눈에 암것두 안들어온다..ㅜ.ㅜ
+						// 2004, 11, 23, sobeit add start - ugh.. I caught a cold.. can't see anything..
 						if(m_nUsedActionInfo == SKILL_SET_AFIRE)
 						{
 							if(max(abs(m_X-m_TraceX), abs(m_Y-m_TraceY))<2)
@@ -5648,25 +5669,25 @@ MPlayer::ActionMove()
 							SetNextAction(GetActionInfoAction( m_nUsedActionInfo ));
 					}
 
-					// 더 이상 갈 필요가 없다.
+					// No need to go any further.
 					m_listDirection.clear();
 
-					// Action중지
+					// Stop Action
 					//m_ActionCount = m_ActionCountMax;
 					m_MoveCount = m_MoveCountMax;
 
-					// Player가 바라보는 방향이 현재 적이 있는 방향이 되도록 한다.				
+					// Make the Player face the direction of the current enemy.
 					SetDirectionToPosition( m_TraceX, m_TraceY );
 					
 							
 					//----------------------------------------------------			
-					// 계속 추적하는 경우가 아니면 추적 중지
+					// Stop tracing unless continuing to trace
 					//----------------------------------------------------
 					if (m_bKeepTraceCreature)
 					{
 						int fTrace = m_fTrace;
 						
-						// 정지
+						// Stop
 						SetStop();
 
 						m_fTrace = fTrace;
@@ -5675,7 +5696,7 @@ MPlayer::ActionMove()
 					{
 						TraceNULL();
 
-						// 정지
+						// Stop
 						SetStop();
 					}
 				}
@@ -5683,11 +5704,11 @@ MPlayer::ActionMove()
 			}
 
 			//----------------------------------------------------
-			// 길찾기 Buffering했던걸 설정한다.
+			// Set the buffered pathfinding result.
 			//----------------------------------------------------
 			if (m_NextDestX!=SECTORPOSITION_NULL)
 			{
-				// 길찾기
+				// Pathfinding
 				//SetDestination(m_NextDestX, m_NextDestY);
 				m_DestX		= m_NextDestX;	// TEST
 				m_DestY		= m_NextDestY;	// TEST
@@ -5696,20 +5717,20 @@ MPlayer::ActionMove()
 			}
 
 			//----------------------------------------------------
-			// 길찾기 : 한 Tile 이동시마다 길찾기를 한다.
+			// Pathfinding: do pathfinding on every Tile moved.
 			//----------------------------------------------------
 			if (m_DestX!=SECTORPOSITION_NULL)
 				SetDestination(m_DestX, m_DestY);
 
 			//----------------------------------------------------
-			// Server에서 검증받기 위해서 Send
+			// Send to have the Server verify
 			//----------------------------------------------------
 			//SetAction( m_MoveAction );
 
 			
 			//----------------------------------------------------
-			// 검증받지 않은 움직임이 
-			// 정해진 숫자 이하일 경우에만 움직이게 한다.
+			// Only allow movement if the number of
+			// unverified moves is at or below the set number.
 			//----------------------------------------------------
 			if (m_SendMove > g_pClientConfig->MAX_CLIENT_MOVE)	
 			{			
@@ -5727,12 +5748,12 @@ MPlayer::ActionMove()
 			}
 
 			//----------------------------------------------------
-			// 갈 길이 없는 경우
+			// When there is no path
 			//----------------------------------------------------
 			if (m_listDirection.empty())
 			{
 				//--------------------------------------------
-				// 목적지에 도달한 경우..
+				// When the destination is reached..
 				//--------------------------------------------
 				if (m_DestX==m_X && m_DestY==m_Y)
 				{
@@ -5756,17 +5777,17 @@ MPlayer::ActionMove()
 			
 			//----------------------------------------------------	
 			//
-			// 방향대로 움직인다.
+			// Move along the direction.
 			//
 			//----------------------------------------------------			
 			//----------------------------------------------------
-			// m_listDirection에서 방향을 하나 읽어온다.
+			// Read one direction from m_listDirection.
 			//----------------------------------------------------
 			m_Direction = m_listDirection.front();
 			m_listDirection.pop_front();	
 				
 			//----------------------------------------------------
-			// 다음에 길찾기를 해야할 경우...
+			// When pathfinding must be done next...
 			//----------------------------------------------------
 			if (m_NextDestX!=SECTORPOSITION_NULL)
 			{
@@ -5775,12 +5796,12 @@ MPlayer::ActionMove()
 			}
 
 			//----------------------------------------------------
-			// 읽어온 방향으로 한 Sector를 진행하고
-			// cX,cY, sX,sY를 다시 지정해줘야 한다.
+			// Advance one Sector in the direction read,
+			// and reset cX, cY, sX, sY.
 			//----------------------------------------------------
 
 			//----------------------------------------------------
-			// 이동 가능한지 check
+			// Check whether movement is possible
 			//----------------------------------------------------
 			x = m_X;
 			y = m_Y;
@@ -5799,30 +5820,30 @@ MPlayer::ActionMove()
 		}
 
 		//--------------------------------------------------------------------
-		// 움직일 수 있을 경우		
+		// When movement is possible
 		//--------------------------------------------------------------------
 		if (m_pZone->CanMove(m_MoveType, x,y)
-			|| m_bFastMove		// Fast Move인 경우는 무조건 이동 가능..
+			|| m_bFastMove		// Always movable for Fast Move..
 			)
 		{		
 			//---------------------------------------------------------------
-			// Fast Move인 경우..
+			// For Fast Move..
 			//---------------------------------------------------------------
 			if (m_bFastMove)
 			{
 				// nothing
 			}
 			//---------------------------------------------------------------
-			// 일반적인 움직임 --> 검증 필요
+			// Normal movement --> needs verification
 			//---------------------------------------------------------------
 			else
 			{
 				//----------------------------------------------------
-				// 지뢰 설치중이면 취소하기
+				// Cancel if installing a mine
 				//----------------------------------------------------
-				if (gC_vs_ui.IsInstallMineProgress())
+				if (PlayerPresentation::IsInstallMineProgress())
 				{
-					gC_vs_ui.EndInstallMineProgress();
+					PlayerPresentation::EndInstallMineProgress();
 				}
 
 				CGMove _CGMove;
@@ -5833,13 +5854,13 @@ MPlayer::ActionMove()
 
 				//yckou
 //				UpdateSocketOutput();
-				// Server로 보낸 방향을 기억해둔다.
+				// Remember the direction sent to the Server.
 				m_listSendDirection.push_back( m_Direction );
 				m_SendMove++;
 				
 
 				//----------------------------------------------------
-				// NPC에게 말 건 상태에서 움직이는 경우..			
+				// When moving while talking to an NPC..
 				//----------------------------------------------------
 				if (m_WaitVerifyActionInfo==WAIT_VERIFY_NPC_ASK)
 				{
@@ -5848,14 +5869,14 @@ MPlayer::ActionMove()
 					if (pCreature!=NULL)
 					{
 						//----------------------------------------------------
-						// 거리가 멀어지면 대화 중지당.
+						// Dialog stops when the distance grows.
 						//----------------------------------------------------
 						if ((max(abs(m_X-pCreature->GetX()), abs(m_Y-pCreature->GetY()))) > TRADE_DISTANCE_NPC)
 						{
-							// 검증 제거
+							// Remove verification
 							SetWaitVerifyNULL();
 
-							// Dialog 꺼준다.
+							// Close the Dialog.
 							g_pUIDialog->ClosePCTalkDlg();
 						}
 					}
@@ -5863,24 +5884,24 @@ MPlayer::ActionMove()
 			}
 
 			//-----------------------
-			// 시야 바꿔주기
+			// Change the view
 			//-----------------------
 			//m_pZone->MoveLightSight(m_X, m_Y, m_LightSight, m_Direction);
 			//m_pZone->UnSetLightSight(m_X, m_Y, m_LightSight);
 			//m_pZone->SetLightSight(x, y, m_LightSight);
 
-			// 이전 좌표 기억
+			// Remember previous coordinates
 			TYPE_SECTORPOSITION ox = m_X;
 			TYPE_SECTORPOSITION oy = m_Y;
 
-			// zone의 sector의 정보를 바꿔준다.
+			// Update the zone's sector info.
 			MovePosition( x, y );
 			
 			//CheckInDarkness();
 
 			//--------------------------------------------
 			//
-			// 이동한 곳이 '포탈'인 경우
+			// When the destination is a 'portal'
 			//
 			//--------------------------------------------
 			if (IsSlayer())
@@ -5897,18 +5918,18 @@ MPlayer::ActionMove()
 						PORTAL_INFO portalInfo = *iPortal;			
 
 						//--------------------------------------------
-						// 멀티 포탈이면 elevator를 띄운다.
+						// For a multi portal, show the elevator.
 						//--------------------------------------------
 						if (portalInfo.Type==MPortal::TYPE_MULTI_PORTAL)
 						{
 							DEBUG_ADD("[MPlayer] Run Elevator");
 							
-							gC_vs_ui.RunElevator();
+							PlayerPresentation::RunElevator();
 
-							// 목적지 표시를 없앤다.
-							g_pTopView->SetSelectedSectorNULL();
+							// Remove the destination marker.
+							WorldEvents::SetSelectedSectorNULL();
 
-							// 목적지 없앰..
+							// Destination removed..
 							m_DestX		= SECTORPOSITION_NULL;
 							m_DestY		= SECTORPOSITION_NULL;	
 							m_NextDestX = SECTORPOSITION_NULL;
@@ -5921,39 +5942,39 @@ MPlayer::ActionMove()
 			}
 
 			//--------------------------------------------
-			// 5 Frame이 있다고 할 경우
+			// Assuming there are 5 Frames
 			//--------------------------------------------
 			//
-			// [1] UP,DOWN,LEFT,RIGHT일 때,
+			// [1] for UP, DOWN, LEFT, RIGHT,
 			//
-			//     X변화 : 0 16 32 48 64   (+-16)
-			//     Y변화 : 0  8 16 24 32   (+-8)
+			//     X change : 0 16 32 48 64   (+-16)
+			//     Y change : 0  8 16 24 32   (+-8)
 			// 
 			//
-			// [2] 대각선(LEFTUP,LEFTDOWN,RIGHTUP,RIGHTDOWN)으로 움직일때,
+			// [2] when moving diagonally (LEFTUP, LEFTDOWN, RIGHTUP, RIGHTDOWN),
 			//
-			//     X변화 : 0  8 16 24 32   (+-8)
-			//     Y변화 : 0  4  8 12 16   (+-4)
+			//     X change : 0  8 16 24 32   (+-8)
+			//     Y change : 0  4  8 12 16   (+-4)
 			//
 			//--------------------------------------------
-			// sX,sY : 움직여야할 전체 pixel(한 TILE)
-			// cX,cY : 이동하는 단위 pixel
+			// sX,sY : total pixels to move (one TILE)
+			// cX,cY : pixels per move step
 			//--------------------------------------------		
 			//--------------------------------------------
-			// Fast Move 인 경우
+			// For Fast Move
 			//--------------------------------------------
 			if (m_bFastMove)
 			{
-				// 직선 거리로 움직일때의 pixel거리
-				// ex) 왼쪽 2 --> 1 : ( 2 - 1 ) * TILE_X
-				//     위쪽 2 --> 1 : ( 2 - 1 ) * TILE_Y
+				// Pixel distance when moving in a straight line
+				// ex) left 2 --> 1 : ( 2 - 1 ) * TILE_X
+				//     up 2 --> 1 : ( 2 - 1 ) * TILE_Y
 				m_sX = (ox - m_X) * TILE_X;
 				m_sY = (oy - m_Y) * TILE_Y;
 					
 				//------------------------------------------------
-				// 실제 한 타일 이동 속도의 반의 속도에 목적지까지 이동한다.
+				// Move to the destination at half the speed of a normal one-tile move.
 				//------------------------------------------------
-				// 한 타일 이동할때의 Frame 수
+				// Number of Frames for one tile move
 				int moveTimes_div_2 = (*g_pCreatureTable)[m_CreatureType].MoveTimes >> 1;
 				// 2005, 1, 5, sobeit add start
 				if(HasEffectStatus(EFFECTSTATUS_BIKE_CRASH))
@@ -5973,7 +5994,7 @@ MPlayer::ActionMove()
 				}
 			}
 			//--------------------------------------------	
-			// 정상 이동
+			// Normal move
 			//--------------------------------------------
 			else
 			{	
@@ -5984,7 +6005,7 @@ MPlayer::ActionMove()
 
 				//????????????????????????????????????????????????????????
 				//???                                                  ???
-				//???   한 Frame을 이동...해야하는가?? 말아야 하는가   ???
+				//???   Move one Frame... or not??   ???
 				//???                                                  ???
 				//????????????????????????????????????????????????????????
 				int moveTimes_1;
@@ -6031,26 +6052,26 @@ MPlayer::ActionMove()
 
 			m_MoveCount++;
 
-			// 다음에 이동할 count를 지정한다.
+			// Set the count for the next move.
 			m_NextMoveCount = (*g_pCreatureTable)[m_CreatureType].MoveRatio;
 
 			//------------------------------------------------
-			// 캐릭터의 MoveAction에 맞는 Sound를 출력해준다.
+			// Play the Sound matching the character's MoveAction.
 			//------------------------------------------------
 			TYPE_SOUNDID soundID = (*g_pCreatureTable)[m_CreatureType].GetActionSound( m_MoveAction );
 
 			if (soundID!=SOUNDID_NULL)
 			{
-				PlaySound( soundID,
+				WorldEvents::PlaySoundAt( soundID,
 							false,
 							m_X,
 							m_Y);
 			}
 		}	
 		//--------------------------------------------
-		// 움직일 수 없을 경우		
+		// When movement is impossible
 		//--------------------------------------------
-		// 길찾기를 다시 해준다.
+		// Redo the pathfinding.
 		else
 		{
 			m_NextDestX = m_DestX;
@@ -6061,7 +6082,7 @@ MPlayer::ActionMove()
 			DEBUG_ADD("다른 캐릭터에 의해서 Block됐음.");					
 		}
 
-		// 다음 Sector까지 움직인다.
+		// Move to the next Sector.
 		if (!m_listDirection.empty())
 		{
 			//m_NextAction = m_MoveAction;
@@ -6070,12 +6091,12 @@ MPlayer::ActionMove()
 	}
 	//----------------------------------------------------
 	//
-	// 아직 다음 Sector까지 덜 도달한 경우
+	// When the next Sector is not yet reached
 	//
 	//----------------------------------------------------
 	else
 	{
-		// 한 Frame을 이동한다.
+		// Move one Frame.
 		/*
 		switch (m_MoveDevice)
 		{
@@ -6095,15 +6116,15 @@ MPlayer::ActionMove()
 			DEBUG_ADD("going");
 		#endif
 
-		// 이동할 count가 됐을때만 이동한다.
+		// Move only when the move count is reached.
 		if (m_MoveCount>=m_NextMoveCount)
 		{			
 			//--------------------------------------------
-			// Fast Move 인 경우
+			// For Fast Move
 			//--------------------------------------------
 			if (m_bFastMove)
 			{
-				// 2001.8.22 추가 - 냠냠
+				// 2001.8.22 added
 				if (m_sX!=0)	m_sX += m_cX;
 				if (m_sY!=0)	m_sY += m_cY;		
 
@@ -6114,16 +6135,16 @@ MPlayer::ActionMove()
 					m_MoveCount = m_MoveCountMax;
 				}
 
-				// 다음에 이동할 count를 지정한다.
+				// Set the count for the next move.
 				m_NextMoveCount += (*g_pCreatureTable)[m_CreatureType].MoveRatio;
 
 				if (m_MoveCount+1 >= m_MoveCountMax
 					&& m_nNoPacketUsedActionInfo==ACTIONINFO_NULL)
 				{
 					//----------------------------------------------------------
-					// 으으흠.. 테스트 코드.
+					// Hmm.. test code.
 					//----------------------------------------------------------
-					// fast move 후에 한번 때리기.. - -
+					// Hit once after fast move..
 					// Flash Sliding
 					//----------------------------------------------------------
 					//m_TraceID	= id;		
@@ -6135,7 +6156,7 @@ MPlayer::ActionMove()
 						&& m_nSpecialActionInfo != MAGIC_RAPID_GLIDING 
 						&& m_nSpecialActionInfo != SKILL_TELEPORT
 						&& !HasEffectStatus(EFFECTSTATUS_BIKE_CRASH)
-						)		//-_- 현재 선택된게...로..
+						)		// currently selected is... so..
 					{
 //						_MinTrace(" SpecialActionInfo : %d UsedAction : %d NextUsedActionInfo :%d\n",
 //							m_nSpecialActionInfo, m_nUsedActionInfo, m_nNextUsedActionInfo);
@@ -6145,14 +6166,14 @@ MPlayer::ActionMove()
 
 						UnSetRequestMode();
 
-						// 사용한 기술로 설정
+						// Set as the used skill
 						
 						//---------------------------------------------------
-						// 우후훗..
+						// (heh)..
 						//---------------------------------------------------
 						MActionResult* pResult = new MActionResult;
 
-						// 결과 표현
+						// Show result
 						int ActionInfo = GetBasicActionInfo() ; //m_nBasicActionInfo;
 						if( m_nSpecialActionInfo == SKILL_BLITZ_SLIDING || m_nSpecialActionInfo == SKILL_BLAZE_WALK )
 						{
@@ -6173,7 +6194,7 @@ MPlayer::ActionMove()
 							
 							m_bNextAction = true;
 							SetNextAction(GetActionInfoAction( m_nNextUsedActionInfo ));
-							SetDirection( MTopView::GetDirectionToPosition( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
+							SetDirection( SelectFacingDirection( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
 							return;
 						}
 						if(m_nSpecialActionInfo == SKILL_SET_AFIRE)
@@ -6200,16 +6221,16 @@ MPlayer::ActionMove()
 														0 ) 
 										);	
 
-						// Player의 현재 진행 중인 기술의 결과로 추가시킨다.
+						// Add as a result of the Player's skill currently in progress.
 						if( m_nUsedActionInfo == SKILL_BLITZ_SLIDING_ATTACK ||
 							m_nUsedActionInfo == SKILL_BLAZE_WALK_ATTACK 
 							)
 							m_nUsedActionInfo = GetBasicActionInfo(); //m_nBasicActionInfo;
 						
 						int tempActionInfo = m_nUsedActionInfo;
-						m_nUsedActionInfo = GetBasicActionInfo(); //m_nBasicActionInfo;	// 막가는 코드 - -;
+						m_nUsedActionInfo = GetBasicActionInfo(); //m_nBasicActionInfo;	// reckless code
 						
-						// 막간다 ~~  --;
+						// reckless ~~
 						if (m_listEffectTarget.size()==0)
 						{
 							m_pEffectTarget = new MEffectTarget( 0 );
@@ -6222,10 +6243,10 @@ MPlayer::ActionMove()
 
 						m_nUsedActionInfo = tempActionInfo;
 						//---------------------------------------------------
-						// 우후후훗... - -; 2001.12.10에 추가.. ㅋㅋ.
+						// (heh)... added on 2001.12.10..
 						//---------------------------------------------------
 						
-						// 추적 정보 설정						
+						// Set trace info
 						m_fTrace	= FLAG_TRACE_CREATURE_BASIC;
 						m_TraceX	= pCreature->GetX();
 						m_TraceY	= pCreature->GetY();
@@ -6237,9 +6258,9 @@ MPlayer::ActionMove()
 						
 						m_bNextAction = true;
 						SetNextAction(GetActionInfoAction( m_nNextUsedActionInfo ));
-						SetDirection( MTopView::GetDirectionToPosition( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
+						SetDirection( SelectFacingDirection( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
 
-						// 다음에 한 번 패킷을 안 보낸다.
+						// Do not send a packet once next time.
 						m_nNoPacketUsedActionInfo = m_nNextUsedActionInfo;
 					}
 					else
@@ -6252,7 +6273,7 @@ MPlayer::ActionMove()
 	
 			}
 			//--------------------------------------------
-			// 일반적인 이동의 경우
+			// For normal movement
 			//--------------------------------------------
 			else
 			{
@@ -6278,18 +6299,18 @@ MPlayer::ActionMove()
 				}
 
 				m_MoveTableCount++;
-				// 2004, 12, 22, sobeit add start - max 값 넘어가면 엉뚱한 좌표가 들어간다.
+				// 2004, 12, 22, sobeit add start - if the max value is exceeded, a wrong coordinate gets in.
 				if(m_MoveTableCount > moveTimes_1)
 					m_MoveTableCount = moveTimes_1;
 				// 2004, 12, 22, sobeit add end
 				m_cX = m_cXTable[moveTimes_1][m_DirectionMoved][m_MoveTableCount];
 				m_cY = m_cYTable[moveTimes_1][m_DirectionMoved][m_MoveTableCount];
 
-				// 2001.8.22 추가 - 냠냠
+				// 2001.8.22 added
 				if (m_sX!=0)	m_sX += m_cX;
 				if (m_sY!=0)	m_sY += m_cY;		
 			
-				// 다음에 이동할 count를 지정한다.
+				// Set the count for the next move.
 				m_NextMoveCount += (*g_pCreatureTable)[m_CreatureType].MoveRatio;
 
 				m_MoveCount++;
@@ -6301,7 +6322,7 @@ MPlayer::ActionMove()
 		}
 		
 		//m_ActionCount++;
-		// frame을 바꿔준다. 마지막 Frame까지 갔으면 0번째 Frame으로 바꾼다.
+		// Change the frame. If the last Frame was reached, go back to Frame 0.
 		//if (++m_ActionCount == (*m_pFrames)[m_Action][m_Direction].GetCount())
 		//	m_ActionCount = 0;
 
@@ -6325,13 +6346,13 @@ MPlayer::AttachCastingEffect(TYPE_ACTIONINFO nUsedActionInfo, BOOL bForceAttach)
 {
 	MCreature::AttachCastingEffect(nUsedActionInfo, bForceAttach);
 
-	// 켁..
+	// (gasp)..
 }
 
 //----------------------------------------------------------------------
 // Affect UsedActionInfo
 //----------------------------------------------------------------------
-// m_nUsedActionInfo를 실행시킨다.
+// Execute m_nUsedActionInfo.
 //----------------------------------------------------------------------
 void
 MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
@@ -6398,7 +6419,7 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 //		if(abs(g_SelectSector.y - m_TraceY) > GetActionInfoRange(nUsedActionInfo))
 //			g_SelectSector.y = GetY();
 //		
-//		// 다음 목표위치로 설정한다
+//		// Set as the next target position
 //		g_pPlayer->TraceNULL();
 //		
 //		if (g_pPlayer->SetMovePosition(g_SelectSector.x, g_SelectSector.y))
@@ -6406,12 +6427,12 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 //			g_pPlayer->SetNextActionToMove();
 //		}
 //		
-//		// 다음 갈 곳이 없으면
+//		// If there is no next place to go
 //		POINT point;
 //		g_pPlayer->GetNextDestination( point );		
 //		if (point.x==SECTORPOSITION_NULL || point.y==SECTORPOSITION_NULL)
 //		{
-//			// 현재 가고 있는 곳이 없으면
+//			// If there is no place currently being headed to
 //			g_pPlayer->GetDestination( point );
 //			if (point.x==SECTORPOSITION_NULL || point.y==SECTORPOSITION_NULL)
 //			{
@@ -6430,38 +6451,38 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 #endif
 
 	//-----------------------------------------------------
-	// 이 기술에서 사용할 EffectTarget
+	// EffectTarget to use in this skill
 	//-----------------------------------------------------
 	MEffectTarget* pEffectTarget = NULL;
 
 	DEBUG_ADD_FORMAT("[MPlayer-StartEffect] ActionInfo=%d, ActionCount=%d/%d", nUsedActionInfo, m_ActionCount, m_ActionCountMax);
 	
 	//--------------------------------------------------------
-	// Casting ActionInfo인가?
+	// Is it a Casting ActionInfo?
 	//--------------------------------------------------------
 	BOOL bCastingAction = (*g_pActionInfoTable)[nUsedActionInfo].IsCastingAction();
 
 	//--------------------------------------------------------
-	// 목표 위치 Pixel좌표
+	// Target position in Pixel coordinates
 	//--------------------------------------------------------
-	point = MTopView::MapToPixel(m_TraceX, m_TraceY);
+	point = MapToPixel(m_TraceX, m_TraceY);
 	//point.x += m_sX;
 	//point.y += m_sY;
 	//point.x += TILE_X_HALF;
 	
 	//--------------------------------------------------------
 	//
-	//					Effect 목표 설정
+	//					Set Effect target
 	//Z
 	//--------------------------------------------------------
 	//MEffectTarget* m_pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[nUsedActionInfo].GetSize() );
 	// 
 	//--------------------------------------------------------
-	// casting action인 경우
+	// For a casting action
 	//--------------------------------------------------------
 	if (bCastingAction)
 	{
-		// casting용 EffectTarget을 생성한다.
+		// Create an EffectTarget for casting.
 		pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[nUsedActionInfo].GetSize() );
 		pEffectTarget->NewEffectID();
 
@@ -6473,10 +6494,10 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 			pEffectTarget->Set( point.x, point.y, m_TraceZ, m_TraceID );
 
 		//--------------------------------------------------------
-		// castingAction에서도 delay가 적용되지만,
-		// castingAction인 경우는 delay를 제거하면 안된다.
+		// Delay also applies in castingAction, but
+		// for castingAction the delay must not be removed.
 		//--------------------------------------------------------
-		// 이거 검증할 방법이 없다.
+		// There is no way to verify this.
 		//if (m_DelayActionInfo==nUsedActionInfo) - -;
 		{
 			pEffectTarget->SetDelayFrame( m_EffectDelayFrame );
@@ -6486,13 +6507,13 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 
 	}
 	//--------------------------------------------------------
-	// casting action이 아닌.. 실제 기술인 경우..
+	// For a real skill, not a casting action..
 	//--------------------------------------------------------
 	else
 	{
 		//--------------------------------------------------------
-		// 시작 기술이면.. 이미 new를 했으므로
-		// 결과 기술인 경우에만 EffectTarget을 생성한다.
+		// For a start skill.. new was already done, so
+		// only create the EffectTarget for a result skill.
 		//--------------------------------------------------------
 		if (nUsedActionInfo < (*g_pActionInfoTable).GetMinResultActionInfo())
 		{
@@ -6507,17 +6528,17 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 				MEffectTarget* pTempEffectTarget = m_pEffectTarget;
 				m_pEffectTarget = NULL;
 				
-				// delete되면서 m_pEffectTarget에 접근이 된다 - -;
+				// m_pEffectTarget gets accessed while being deleted
 				delete pTempEffectTarget;				
 			}
 
 			//----------------------------------------------------------
-			// 결과를 하나 생성시켜 둔다.
+			// Create one result in advance.
 			//----------------------------------------------------------
 			m_pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[nUsedActionInfo].GetSize() );
 			m_pEffectTarget->NewEffectID();
 
-			// 나중에 지워주기 위해서..
+			// So it can be deleted later..
 			AddEffectTarget( m_pEffectTarget );
 			//m_listEffectTarget.push_back( pEffectTarget );
 
@@ -6547,33 +6568,30 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 		}
 
 		//--------------------------------------------------------
-		// Action에 맞는 Sound 출력
+		// Play the Sound matching the Action
 		//--------------------------------------------------------
-		// 결과인 경우만 여기서 사운드 출력한다.
+		// Only play the sound here for results.
 		if (nUsedActionInfo >= g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			int soundID = (*g_pCreatureTable)[m_CreatureType].GetActionSound( 
 									GetActionInfoAction(nUsedActionInfo) );
 
-			PlaySound( soundID,	false, m_X, m_Y	);
+			WorldEvents::PlaySoundAt( soundID,	false, m_X, m_Y	);
 
 			//-------------------------------------------------
 			// Force Feel
 			//-------------------------------------------------
-			if (g_pUserOption->UseForceFeel && gpC_Imm!=NULL && gpC_Imm->IsDevice()
+			if (PlayerPresentation::ForceFeelReady()
 				&& soundID < g_pSoundTable->GetSize())
 			{
 				DEBUG_ADD_FORMAT("ForceAction-AffectUsedActionInfo(%d, %s)", soundID, strrchr((*g_pSoundTable)[soundID].Filename.GetString(), '\\'));
 
-#ifdef PLATFORM_WINDOWS
-				// Force feedback only supported on Windows with IFC
-				gpC_Imm->ForceAction( soundID );
-#endif
+				PlayerPresentation::ForceAction( soundID );
 			}
 		}
 
 		//--------------------------------------------------------
-		// 지속 시간 설정
+		// Set duration
 		//--------------------------------------------------------
 		if (m_DelayActionInfo==nUsedActionInfo)
 		{
@@ -6582,17 +6600,17 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 			m_EffectDelayFrame	= 0;
 		}
 
-		// 저장해두고
+		// Save it,
 		pEffectTarget = m_pEffectTarget;
 		
-		// 지움.. 
+		// and delete..
 		m_pEffectTarget = NULL;
 	}
 
-	// 진행중인 Effect로서 기억해둔다.		
+	// Remember it as an Effect in progress.
 	//AddEffectTarget( m_pEffectTarget );
 	
-	// 결과에 대한 정보를 설정 - delete는 결과를 적용할때..
+	// Set info for the result - delete happens when the result is applied..
 	/*
 	MActionResult* pResult = new MActionResult;
 	pResult->Add( new MActionResultNodeActionInfo( m_ID, m_TraceID, nUsedActionInfo ) );
@@ -6618,7 +6636,7 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 	//--------------------------------------------------------
 	if ((*g_pActionInfoTable)[nUsedActionInfo].IsStartUser())
 	{
-		point = MTopView::MapToPixel(m_X, m_Y);
+		point = MapToPixel(m_X, m_Y);
 		point.x += m_sX;
 		point.y += m_sY;
 		//point.x += TILE_X_HALF;
@@ -6653,8 +6671,8 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 	//{
 	if( nUsedActionInfo == SKILL_ABSORB_SOUL )
 	{
-		// m_TraceID 는 존의 시체이므로 아이템이다.		
-		direction = g_pTopView->GetDirectionToPosition( 
+		// m_TraceID is a corpse in the zone, so it is an item.
+		direction = SelectFacingDirection(
 			GetX(), GetY(),m_TraceX, m_TraceY);
 	}
 	else
@@ -6665,15 +6683,15 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 	
 	//--------------------------------------------------------
 	//
-	//                   Effect생성		
+	//                   Create Effect
 	//
 	//--------------------------------------------------------
 	g_pEffectGeneratorTable->Generate(
-			x,y,z,				// 시작 위치
-			direction, 		// 방향
+			x,y,z,				// start position
+			direction, 		// direction
 			1,					// power
-			nUsedActionInfo,		//	ActionInfoTable종류,
-			pEffectTarget		// 목표 정보
+			nUsedActionInfo,		//	ActionInfoTable type,
+			pEffectTarget		// target info
 			, GetActionGrade()
 	);
 	ClearActionGrade();
@@ -6684,13 +6702,13 @@ MPlayer::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 //----------------------------------------------------------------------
 // Action to Send Packet
 //----------------------------------------------------------------------
-// packet을 보낸당...
+// Send the packet...
 //----------------------------------------------------------------------
 void
 MPlayer::ActionToSendPacket()
 {
 	//--------------------------------------------------------
-	// 결과 행동이 아닌 경우만 packet을 보낸다.
+	// Only send the packet if it is not a result action.
 	//--------------------------------------------------------
 	if (m_nUsedActionInfo >= g_pActionInfoTable->GetMinResultActionInfo() || m_nUsedActionInfo == ACTIONINFO_NULL)
 	{
@@ -6713,7 +6731,7 @@ MPlayer::ActionToSendPacket()
 	case SKILL_SWEEP_VICE_1:
 	case SKILL_SWEEP_VICE_3:
 	case SKILL_SWEEP_VICE_5:
-//		if(!GetSweepViewValue()) //스윕바이스를 아직 사용중이 아닐때
+//		if(!GetSweepViewValue()) //when Sweep Vice is not yet in use
 //		{
 //			SetSweepViewValue(1);
 //			g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
@@ -6837,14 +6855,14 @@ MPlayer::ActionToSendPacket()
 	}
 
 	/*
-	// [적절한 타이밍]에 .. 
+	// [proper timing]..
 	BOOL	bActionStand	= (m_Action==ACTION_STAND || IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND);
 	int		actionCountMax_1 = m_ActionCountMax-1;
 	BOOL	bEndAction		= (m_ActionCount==actionCountMax_1);// || bActionStand;
 	int		StartFrame		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetStartFrame( m_WeaponSpeed );
 
 	int		packetSendTiming = min(actionCountMax_1, StartFrame);
-	BOOL	bStartAction	= (m_ActionCount==packetSendTiming);	// packetSendTiming이 원래는 0이었다.
+	BOOL	bStartAction	= (m_ActionCount==packetSendTiming);	// packetSendTiming was originally 0.
 	
 	if (bActionStand)
 	{
@@ -6860,14 +6878,14 @@ MPlayer::ActionToSendPacket()
 	BOOL	bStartAction	= (m_ActionCount==0);	
 	
 
-	// Effect가 시작되는 경우는..
-	// (1) StartFrame인 경우
-	// (2) 마지막 ActionFrame인 경우
+	// An Effect starts when..
+	// (1) it is the StartFrame
+	// (2) it is the last ActionFrame
 	[[maybe_unused]] BOOL	bStartEffect = m_ActionCount==StartFrame || 
 							(StartFrame >= m_ActionCountMax && bEndAction);
 	
 	//BOOL	bCastingEffect	= GetActionInfoCastingStartFrame(m_nUsedActionInfo)==m_ActionCount;
-		// 반복 action의 시작 frame
+		// Start frame of the repeated action
 	bStartAction |= m_bRepeatAction 
 					&& (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame()
 					&& m_RepeatCount!=0
@@ -6876,14 +6894,14 @@ MPlayer::ActionToSendPacket()
 	//----------------------------------------------------------------------
 	// [ TEST CODE ]
 	//----------------------------------------------------------------------
-	// 상당히 위험한 짓이지만.. - -;;
-	// 크게 문제는 없을 듯...
+	// This is quite risky, but..
+	// it should not be a big problem...
 	//----------------------------------------------------------------------
-	// EffectTarget은 casting동작이 끝난 뒤에 생성되는데,
-	// EffectTarget의 ID를 casting시작때에 server로 보내야 하기 때문에
-	// 임시로... EffectTarget을 먼저 생성시켜두고 사용했다.
+	// The EffectTarget is created after the casting motion ends,
+	// but its ID must be sent to the server when casting starts,
+	// so as a stopgap the EffectTarget was created first and used.
 	//----------------------------------------------------------------------
-	// 음. data member로 바꿨다. - -;;
+	// Hmm. Changed it to a data member.
 	//static MEffectTarget* 
 
 	
@@ -6893,14 +6911,14 @@ MPlayer::ActionToSendPacket()
 
 	//----------------------------------------------------------
 	//
-	//					동작 시작 시점..
+	//					Motion start point..
 	//
 	//----------------------------------------------------------
 	if (//bStartEffect)
 		bStartAction || m_nUsedActionInfo == SKILL_BURNING_SOUL_LAUNCH)
 	{			
 		//----------------------------------------------------------
-		// Packet을 안 보내는 경우이다.
+		// This is the case where no Packet is sent.
 		//----------------------------------------------------------
 		if (m_nNoPacketUsedActionInfo==m_nUsedActionInfo)
 		{
@@ -6910,14 +6928,14 @@ MPlayer::ActionToSendPacket()
 											GetActionInfoAction(m_nUsedActionInfo) );
 
 			//------------------------------------------------
-			// 캐릭터의 Action에 맞는 Sound를 출력해준다.
+			// Play the Sound matching the character's Action.
 			//------------------------------------------------
-			PlaySound( soundID,	false, m_X, m_Y	);
+			WorldEvents::PlaySoundAt( soundID,	false, m_X, m_Y	);
 
 			//-------------------------------------------------
 			// Force Feel
 			//-------------------------------------------------
-			if (g_pUserOption->UseForceFeel && gpC_Imm!=NULL && gpC_Imm->IsDevice())				
+			if (PlayerPresentation::ForceFeelReady())
 			{				
 				if ((*g_pActionInfoTable)[m_nUsedActionInfo].IsWeaponTypeGunAny())
 				{
@@ -6927,10 +6945,7 @@ MPlayer::ActionToSendPacket()
 				if (soundID < g_pSoundTable->GetSize())
 				{
 					DEBUG_ADD_FORMAT("ForceAction-ActionToSendPacket(%d, %s)", soundID, strrchr((*g_pSoundTable)[soundID].Filename.GetString(), '\\'));
-#ifdef PLATFORM_WINDOWS
-					// Force feedback only supported on Windows with IFC
-					gpC_Imm->ForceAction( soundID );
-#endif
+					PlayerPresentation::ForceAction( soundID );
 				}
 			}
 
@@ -6938,28 +6953,28 @@ MPlayer::ActionToSendPacket()
 		}
 
 		//----------------------------------------------------------------------
-		// 이 단계에서 Packet을 보내야 한다.
+		// The Packet must be sent at this stage.
 		//----------------------------------------------------------------------
-		// 단, ActionEffect()가 호출됐다고 해서 모든 경우에 
-		// 다 Packet전송이 일어나는 것은 아니다.
+		// However, even if ActionEffect() was called, not in every case
+		// does a Packet get sent.
 		//
-		// Server에서 받아서 Player가 어떤 Action을 취할 경우도 있기 때문이다.
+		// This is because the Player may take some Action after receiving from the Server.
 		//
-		// ActionEffect()가 불리기 전에..
-		// Packet을 보낼지 말지를 결정하는 변수가 필요할 것이다.
+		// Before ActionEffect() is called..
+		// a variable deciding whether to send a Packet will be needed.
 		//
-		// (!) Packet에는 사용한 ActionInfo에 대한 Instance ID를 붙여줘야 한다.
-		//     결과를 받았을 때 check를 위해서이다.
-		//     그리고, 가장 최근의 Instance ID를 하나만 기억한다.		
+		// (!) The Packet must carry the Instance ID of the ActionInfo used.
+		//     This is for checking when the result is received.
+		//     Also, remember only the most recent Instance ID.
 		//----------------------------------------------------------------------
 
-		// 결과를 보여주는 Action이 아니고
-		// 실제로 Player가 사용한 Action일 경우에만 Packet을 보낸다.
+		// Only send the Packet if it is not an Action showing a result
+		// but an Action the Player actually used.
 		if (m_nUsedActionInfo < (*g_pActionInfoTable).GetMinResultActionInfo())
 		{
 			//--------------------------------------------------------
-			// 기술 사용 시간 Delay를 설정해준다.
-			// 시작 기술인 경우에만..
+			// Set the skill use time Delay.
+			// Only for start skills..
 			//--------------------------------------------------------
 			if (m_Action==ACTION_STAND)
 			{
@@ -6979,7 +6994,7 @@ MPlayer::ActionToSendPacket()
 
 		//----------------------------------------------------------
 		//
-		//			서버에 접속해 있는 경우..
+		//			When connected to the server..
 		//
 		//----------------------------------------------------------
 
@@ -6998,19 +7013,19 @@ MPlayer::ActionToSendPacket()
 			}
 
 			//----------------------------------------------------------
-			// 결과를 하나 생성시켜 둔다.
+			// Create one result in advance.
 			//----------------------------------------------------------
 			m_pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[m_nUsedActionInfo].GetSize() );
 			
 			DEBUG_ADD_FORMAT("NewEffectTarget: action=(%d/%d) ActionInfo=%d, pEffectTarget=%p", m_ActionCount, m_ActionCountMax, m_nUsedActionInfo, static_cast<const void*>(m_pEffectTarget));
 			
 			//---------------------------------------------------------
-			// 진행중인 결과로서 추가한다.
+			// Add as a result in progress.
 			//----------------------------------------------------------
 			AddEffectTarget( m_pEffectTarget );
 
 			//----------------------------------------------------------
-			// 새로운 EffectID를 발급?받는다.
+			// Get a new EffectID issued?
 			//----------------------------------------------------------
 			m_pEffectTarget->NewEffectID();
 
@@ -7018,7 +7033,7 @@ MPlayer::ActionToSendPacket()
 			if (m_fTraceBuffer!=FLAG_TRACE_NULL)
 			{
 				//----------------------------------------------------------
-				// 다음에 이 기술을 사용할 수 있는 시간 설정
+				// Set the time this skill can next be used
 				//----------------------------------------------------------
 				int originalActionInfo = m_nUsedActionInfo;
 				if( (*g_pActionInfoTable)[m_nUsedActionInfo].GetParentActionInfo() != ACTIONINFO_NULL )
@@ -7028,17 +7043,17 @@ MPlayer::ActionToSendPacket()
 				}
 
 				//----------------------------------------------------------
-				// 보내는 packet 종류 설정
+				// Set the type of packet to send
 				//----------------------------------------------------------
 				ACTIONINFO_PACKET	packetType		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetPacketType();
 				
 
 				//----------------------------------------------------------
 				//
-				//			상대에게 사용하는 것이면..
+				//			If used on an opponent..
 				//
 				//----------------------------------------------------------
-				// 기본 공격
+				// Basic attack
 				//----------------------------------------------------------
 				if (m_fTraceBuffer & FLAG_TRACE_CREATURE_BASIC) 
 				{
@@ -7067,7 +7082,7 @@ MPlayer::ActionToSendPacket()
 				}
 				//----------------------------------------------------------
 				//
-				// Blood drain인 경우
+				// For Blood drain
 				//
 				//----------------------------------------------------------
 				else if (packetType==ACTIONINFO_PACKET_BLOOD_DRAIN)
@@ -7075,13 +7090,13 @@ MPlayer::ActionToSendPacket()
 					CGBloodDrain _CGBloodDrain;
 					_CGBloodDrain.setObjectID( m_TraceID );
 					g_pSocket->sendPacket( &_CGBloodDrain );
-			//		DEBUG_ADD("흡혈 메세지 보냄");									
-					// 2001.8.20 주석처리
+			//		DEBUG_ADD("blood drain message sent");
+					// 2001.8.20 commented out
 //					SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 				}
 				//----------------------------------------------------------
 				//
-				// 흡영인 경우
+				// For Soul drain
 				//
 				//----------------------------------------------------------
 				else if (packetType==ACTIONINFO_PACKET_ABSORB_SOUL)
@@ -7116,7 +7131,7 @@ MPlayer::ActionToSendPacket()
 
 						MOustersPupa pupa;
 
-						// 라바와 같은 타입으로
+						// Same type as Lava
 						pupa.SetItemType(pLarvaItem->GetItemType());
 
 						POINT p;
@@ -7124,32 +7139,32 @@ MPlayer::ActionToSendPacket()
 						_CGAbsorbSoul.setTargetInvenX(static_cast<CoordInven_t>(p.x));
 						_CGAbsorbSoul.setTargetInvenY(static_cast<CoordInven_t>(p.y));
 
-						// (!!!) 검증 packet을 받을때까지 item을 못 움직이도록 해야한다.
-						// Item관련 행위 중단
+						// (!!!) Items must not be movable until the verification packet is received.
+						// Stop Item-related actions
 						SetItemCheckBuffer(pLarvaItem, ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY);
 						
-						// 기술 사용 중단
-						// 2001.8.20 주석처리
-						// 2001.10.26 주석해제 - Item은 검증되어야 한다.
+						// Stop skill use
+						// 2001.8.20 commented out
+						// 2001.10.26 uncommented - Items must be verified.
 						SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 					}
 
 					g_pSocket->sendPacket( &_CGAbsorbSoul );
 
 					
-					// 2001.8.20 주석처리
+					// 2001.8.20 commented out
 					SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 				}
 				//----------------------------------------------------------
 				//
-				// 다른 사람에게 사용하는 packet을 보내는 경우
+				// When sending a packet used on another person
 				//
 				//----------------------------------------------------------
 				else if	(packetType==ACTIONINFO_PACKET_OTHER
 						||	(m_fTraceBuffer & FLAG_TRACE_CREATURE_SPECIAL))
 				{
 						//-----------------------------------------------
-						// item을 사용해서 skill을 사용하는 경우
+						// When using a skill by using an item
 						//-----------------------------------------------					
 						if ((*g_pActionInfoTable)[m_nUsedActionInfo].GetWeaponType()
 							& FLAG_ACTIONINFO_WEAPON_HOLY_WATER)
@@ -7157,20 +7172,20 @@ MPlayer::ActionToSendPacket()
 							MItem* pUsingItem = g_pInventory->FindItem( ITEM_CLASS_HOLYWATER );
 							
 							//-----------------------------------------------
-							// 사용할 item이 없는 경우
+							// When there is no item to use
 							//-----------------------------------------------
 							if (pUsingItem==NULL)
 							{
 								//-------------------------------------------------
-								// Skill Icon 체크 - 필요할려나.. - -;
+								// Skill Icon check - maybe needed..
 								//-------------------------------------------------
 								g_pSkillAvailable->SetAvailableSkills();
 
-								// 추적 중지
+								// Stop tracing
 								TraceNULL();
 
 								//------------------------------------------
-								// 제자리에서 흔들거리는 모습
+								// Wobbling in place
 								//------------------------------------------
 								SetAction( ACTION_STAND );
 
@@ -7190,14 +7205,14 @@ MPlayer::ActionToSendPacket()
 							g_pSocket->sendPacket( &_CGThrowItem );						
 							
 							//--------------------------------------------------
-							// 1개 이상인 경우에는 개수만 줄인다.
+							// If there is more than one, only reduce the count.
 							//--------------------------------------------------
 							if (pUsingItem->GetNumber()>1)
 							{
 								pUsingItem->SetNumber( pUsingItem->GetNumber() - 1 );
 							}
 							//--------------------------------------------------
-							// 1개만 남은 경우는 Item을 완전히 제거한다
+							// If only one is left, remove the Item completely
 							//--------------------------------------------------
 							else
 							{
@@ -7205,8 +7220,8 @@ MPlayer::ActionToSendPacket()
 
 								if (pRemovedItem!=NULL)
 								{
-									// item정보 제거
-									UI_RemoveDescriptor( (void*)pRemovedItem );
+									// Remove item info
+									PlayerPresentation::RemoveDescriptor( (void*)pRemovedItem );
 
 									delete pRemovedItem;								
 								}
@@ -7216,13 +7231,13 @@ MPlayer::ActionToSendPacket()
 								}
 
 								//-------------------------------------------------
-								// Skill Icon 체크
+								// Skill Icon check
 								//-------------------------------------------------
 								g_pSkillAvailable->SetAvailableSkills();
 							}
 						}
 						//-----------------------------------------------
-						// 폭탄을 사용해서 skill을 사용하는 경우
+						// When using a skill by using a bomb
 						//-----------------------------------------------					
 						if ((*g_pActionInfoTable)[m_nUsedActionInfo].GetWeaponType()
 							& FLAG_ACTIONINFO_WEAPON_BOMB)
@@ -7243,20 +7258,20 @@ MPlayer::ActionToSendPacket()
 							}
 							
 							//-----------------------------------------------
-							// 사용할 item이 없는 경우
+							// When there is no item to use
 							//-----------------------------------------------
 							if (pUsingItem==NULL)
 							{
 								//-------------------------------------------------
-								// Skill Icon 체크 - 필요할려나.. - -;
+								// Skill Icon check - maybe needed..
 								//-------------------------------------------------
 								g_pSkillAvailable->SetAvailableSkills();
 
-								// 추적 중지
+								// Stop tracing
 								TraceNULL();
 
 								//------------------------------------------
-								// 제자리에서 흔들거리는 모습
+								// Wobbling in place
 								//------------------------------------------
 								SetAction( ACTION_STAND );
 
@@ -7278,14 +7293,14 @@ MPlayer::ActionToSendPacket()
 							g_pSocket->sendPacket( &cgThrowBomb );						
 							
 							//--------------------------------------------------
-							// 1개 이상인 경우에는 개수만 줄인다.
+							// If there is more than one, only reduce the count.
 							//--------------------------------------------------
 							if (pUsingItem->GetNumber()>1)
 							{
 								pUsingItem->SetNumber( pUsingItem->GetNumber() - 1 );
 							}
 							//--------------------------------------------------
-							// 1개만 남은 경우는 Item을 완전히 제거한다
+							// If only one is left, remove the Item completely
 							//--------------------------------------------------
 							else
 							{
@@ -7293,8 +7308,8 @@ MPlayer::ActionToSendPacket()
 
 								if (pRemovedItem!=NULL)
 								{
-									// item정보 제거
-									UI_RemoveDescriptor( (void*)pRemovedItem );
+									// Remove item info
+									PlayerPresentation::RemoveDescriptor( (void*)pRemovedItem );
 
 									delete pRemovedItem;								
 								}
@@ -7304,7 +7319,7 @@ MPlayer::ActionToSendPacket()
 								}
 
 								//-------------------------------------------------
-								// Skill Icon 체크
+								// Skill Icon check
 								//-------------------------------------------------
 								g_pSkillAvailable->SetAvailableSkills();
 							}
@@ -7327,12 +7342,12 @@ MPlayer::ActionToSendPacket()
 						}
 
 						
-					// 2001.8.20 주석처리
+					// 2001.8.20 commented out
 					SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 				}
 				//----------------------------------------------------------
 				//
-				//			자신에게 사용하는 것이면..
+				//			If used on self..
 				//
 				//----------------------------------------------------------
 				else if (packetType==ACTIONINFO_PACKET_SELF
@@ -7350,13 +7365,13 @@ MPlayer::ActionToSendPacket()
 					_CGSkillToSelf.setCEffectID( m_pEffectTarget->GetEffectID() );
 					g_pSocket->sendPacket( &_CGSkillToSelf );
 
-					// 2001.8.20 주석처리
+					// 2001.8.20 commented out
 					SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 					//*/
 				}
 				//----------------------------------------------------------
 				//
-				//				Tile에 사용하는 것이면..
+				//				If used on a Tile..
 				//
 				//----------------------------------------------------------
 				else if (packetType==ACTIONINFO_PACKET_ZONE
@@ -7399,13 +7414,13 @@ MPlayer::ActionToSendPacket()
 					_CGSkillToTile.setY( static_cast<Coord_t>(m_TraceY) );
 					g_pSocket->sendPacket( &_CGSkillToTile );
 
-					// 2001.8.20 주석처리
+					// 2001.8.20 commented out
 					SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 					//*/
 				}
 				//----------------------------------------------------------
 				//
-				//				Inventory에 사용하는 것이면..
+				//				If used on the Inventory..
 				//
 				//----------------------------------------------------------
 				else if (packetType==ACTIONINFO_PACKET_ITEM
@@ -7415,7 +7430,7 @@ MPlayer::ActionToSendPacket()
 
 					if (pItem!=NULL && IsItemCheckBufferNULL())
 					{
-						// inventory의 Item에 기술을 사용한다고 packet처리를 해주면 된다.
+						// Just handle the packet as using a skill on an inventory Item.
 						CGSkillToInventory _CGSkillToInventory;
 						
 						_CGSkillToInventory.setSkillType( m_nUsedActionInfo );
@@ -7425,13 +7440,13 @@ MPlayer::ActionToSendPacket()
 						_CGSkillToInventory.setY( pItem->GetGridY() );
 
 							
-						// (!!!) 검증 packet을 받을때까지 item을 못 움직이도록 해야한다.
-						// Item관련 행위 중단
+						// (!!!) Items must not be movable until the verification packet is received.
+						// Stop Item-related actions
 						SetItemCheckBuffer(pItem, ITEM_CHECK_BUFFER_SKILL_TO_INVENTORY);
 						
-						// 기술 사용 중단
-						// 2001.8.20 주석처리
-						// 2001.10.26 주석해제 - Item은 검증되어야 한다.
+						// Stop skill use
+						// 2001.8.20 commented out
+						// 2001.10.26 uncommented - Items must be verified.
 						SetWaitVerify( WAIT_VERIFY_SKILL_SUCCESS, m_nUsedActionInfo );
 					}
 					
@@ -7443,24 +7458,24 @@ MPlayer::ActionToSendPacket()
 
 
 		//----------------------------------------------------------------------
-		// Packet 결과를 받을 경우에..
+		// When a Packet result is received..
 		//----------------------------------------------------------------------
-		// Client에서 보낸 Instance ID를 같이 받아서..
-		// 그 ID가 현재 저장된 InstanceID와 같으면 .. 아직 그 ActionInfo가
-		// 진행중이라는 의미이다. Player의 ActionInfo가 끝날때는
-		// Instance ID를 0으로? 해야하지 않을까..
+		// Receive the Instance ID sent from the Client too..
+		// If that ID equals the currently stored InstanceID.. that ActionInfo is still
+		// in progress. When the Player's ActionInfo ends,
+		// shouldn't the Instance ID be set to 0?..
 		//
-		// 같으면.. Server에서 날아온 ActionInfo의 결과를 기억시켜두고  
-		//          나중에~~~ 출력하고..(ActionInfo가 끝난후에)
-		// 다르면.. 즉시 출력하면 된다.
+		// If equal.. remember the ActionInfo result that came from the Server
+		//          and show it later~~~ (after the ActionInfo ends)
+		// If different.. just show it immediately.
 		//
-		// 이렇게 강제로 시간차를 두어서.. Packet처리에 따른 흐름을 만들어야 한다.
+		// A forced time gap like this has to create the flow that follows Packet handling.
 		//----------------------------------------------------------------------
 
-		// casting동작이 원래는 여기서 표현됐다. - -;
+		// The casting motion was originally shown here.
 
 		//------------------------------------------------
-		// 기술의 동작에 맞는 sound를 출력해준다.
+		// Play the sound matching the skill's motion.
 		//------------------------------------------------
 		//g_Sound.Play( g_SoundTable[(*g_pActionInfoTable)[m_nUsedActionInfo].GetSoundID()].pDSBuffer );
 		//PlaySound( (*g_pActionInfoTable)[m_nUsedActionInfo].GetSoundID() ,
@@ -7468,17 +7483,17 @@ MPlayer::ActionToSendPacket()
 		//			m_X, m_Y);	
 
 		//------------------------------------------------
-		// 캐릭터의 Action에 맞는 Sound를 출력해준다.
+		// Play the Sound matching the character's Action.
 		//------------------------------------------------
 		int soundID = (*g_pCreatureTable)[m_CreatureType].GetActionSound( 
 										GetActionInfoAction(m_nUsedActionInfo) );
 		if(!HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET) && !m_bBurningSol)
-			PlaySound( soundID,	false, m_X, m_Y	);
+			WorldEvents::PlaySoundAt( soundID,	false, m_X, m_Y	);
 
 		//-------------------------------------------------
 		// Force Feel
 		//-------------------------------------------------
-		if (g_pUserOption->UseForceFeel && gpC_Imm!=NULL && gpC_Imm->IsDevice())
+		if (PlayerPresentation::ForceFeelReady())
 		{
 			if ((*g_pActionInfoTable)[m_nUsedActionInfo].IsWeaponTypeGunAny())
 			{
@@ -7488,10 +7503,7 @@ MPlayer::ActionToSendPacket()
 			if (soundID < g_pSoundTable->GetSize())
 			{
 				DEBUG_ADD_FORMAT("ForceAction-ActionToSendPacket(%d, %s)", soundID, strrchr((*g_pSoundTable)[soundID].Filename.GetString(), '\\'));
-#ifdef PLATFORM_WINDOWS
-				// Force feedback only supported on Windows with IFC
-				gpC_Imm->ForceAction( soundID );
-#endif
+				PlayerPresentation::ForceAction( soundID );
 			}
 		}
 	}
@@ -7504,7 +7516,7 @@ void
 MPlayer::SetServerPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 {
 	//--------------------------------------------------------
-	// 모두 제거..
+	// Remove all..
 	//--------------------------------------------------------
 	m_listSendDirection.clear();
 
@@ -7513,14 +7525,14 @@ MPlayer::SetServerPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	g_bNetStatusGood = true;
 
 	//--------------------------------------------------------
-	// Server에서 검증된 위치를 기억해둔다.
+	// Remember the position verified by the Server.
 	//--------------------------------------------------------
 	m_ServerX	= sX;
 	m_ServerY	= sY;
 
 	//--------------------------------------------------------
-	// (m_ServerX, m_ServerY)에서부터 
-	// Player의 시야에 포함되지 않는 Creature를 Zone에서 제거시킨다.
+	// (m_ServerX, m_ServerY) onward,
+	// remove Creatures not in the Player's view from the Zone.
 	//--------------------------------------------------------
 	if (m_pZone!=NULL)
 	{
@@ -7533,22 +7545,22 @@ MPlayer::SetServerPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 //----------------------------------------------------------------------
 // Action Effect
 //----------------------------------------------------------------------
-// 동작이 모두 끝날때에 Effect효과를 수행한다.
+// Perform the Effect when the motion fully ends.
 //----------------------------------------------------------------------
 void	
 MPlayer::ActionEffect()
 {
 	/*
-	// [적절한 타이밍]에 패킷을 보내는 코드
+	// [proper timing] code that sends the packet
 	// 
 	BOOL	bActionStand	= (m_Action==ACTION_STAND || IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND);
 	int		actionCountMax_1 = m_ActionCountMax-1;
 	BOOL	bEndAction		= (m_ActionCount==actionCountMax_1);// || bActionStand;
 	int		StartFrame		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetStartFrame( m_WeaponSpeed );
 	
-	// 동작 끝부분에서 패킷 보낸다. 2001.8.1
+	// Send the packet at the end of the motion. 2001.8.1
 	int		packetSendTiming = min(actionCountMax_1, StartFrame);
-	BOOL	bStartAction	= (m_ActionCount==packetSendTiming);	// packetSendTiming이 원래는 0이었다.
+	BOOL	bStartAction	= (m_ActionCount==packetSendTiming);	// packetSendTiming was originally 0.
 	
 	if (bActionStand)
 	{
@@ -7561,10 +7573,10 @@ MPlayer::ActionEffect()
 	#endif
 
 	// 2002.3.12
-	// packet을 보내야하는 시작 동작의 기술이면..
+	// If it is a start-motion skill that must send a packet..
 	if (m_nUsedActionInfo < g_pActionInfoTable->GetMinResultActionInfo())
 	{
-		// 거리가 되는 경우만 ActionEffect를 수행한다.		
+		// Only perform ActionEffect when in range.
 		if (max(abs(m_X-m_TraceX), abs(m_Y-m_TraceY)) 
 			<= m_TraceDistance)
 		{
@@ -7578,18 +7590,18 @@ MPlayer::ActionEffect()
 				DEBUG_ADD("not inDist");
 			#endif
 
-			// 거리가 안 되면? 
+			// If not in range?
 			//if (m_listDirection.empty())
 			{
 				if (m_DestX != SECTORPOSITION_NULL
 					&& m_DestY != SECTORPOSITION_NULL)
 				{
-					// 현재 가고 있는 목표가 있는 경우
+					// When there is a target currently being headed to
 				}
 				else if (abs((int)m_X-m_TraceX) < g_SECTOR_WIDTH
 						&& abs((int)m_Y-m_TraceY) < g_SECTOR_HEIGHT)
 				{
-					// 추적하는 경우
+					// When tracing
 					m_DestX = m_TraceX;
 					m_DestY = m_TraceY;
 				}
@@ -7600,7 +7612,7 @@ MPlayer::ActionEffect()
 						DEBUG_ADD("NewWayOK");
 					#endif
 
-					// 갈 길이 있는 경우
+					// When there is a path
 					m_nNextUsedActionInfo = m_nUsedActionInfo;
 					m_nUsedActionInfo = ACTIONINFO_NULL;
 					
@@ -7608,8 +7620,8 @@ MPlayer::ActionEffect()
 				}
 				else
 				{				
-					// 갈길이 없는 경우
-					// 또 이런 코드가 늘었다. 쩝.. 싹 뜯어고쳐야되는데 --;
+					// When there is no path
+					// Yet another piece of code like this. (sigh).. this should be completely overhauled
 					SetAction(((m_MoveDevice==MOVE_DEVICE_WALK)? ACTION_STAND : ACTION_SLAYER_MOTOR_STAND));
 					SetNextAction(ACTION_STAND);
 					m_fTraceBuffer = 0;
@@ -7640,13 +7652,13 @@ MPlayer::ActionEffect()
 	
 	BOOL	bStartAction	= (m_ActionCount==0 && !IsGunShotGuidance());
 	
-	// Effect가 시작되는 경우는..
-	// (1) StartFrame인 경우
-	// (2) 마지막 ActionFrame인 경우
+	// An Effect starts when..
+	// (1) it is the StartFrame
+	// (2) it is the last ActionFrame
 	BOOL	bStartEffect = m_ActionCount==StartFrame || 
 							(StartFrame >= m_ActionCountMax && bEndAction);
 
-	// 반복 action의 시작 frame
+	// Start frame of the repeated action
 	bStartAction |= m_bRepeatAction 
 					&& (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame()
 					&& m_RepeatCount!=0
@@ -7658,14 +7670,14 @@ MPlayer::ActionEffect()
 	//----------------------------------------------------------------------
 	// [ TEST CODE ]
 	//----------------------------------------------------------------------
-	// 상당히 위험한 짓이지만.. - -;;
-	// 크게 문제는 없을 듯...
+	// This is quite risky, but..
+	// it should not be a big problem...
 	//----------------------------------------------------------------------
-	// EffectTarget은 casting동작이 끝난 뒤에 생성되는데,
-	// EffectTarget의 ID를 casting시작때에 server로 보내야 하기 때문에
-	// 임시로... EffectTarget을 먼저 생성시켜두고 사용했다.
+	// The EffectTarget is created after the casting motion ends,
+	// but its ID must be sent to the server when casting starts,
+	// so as a stopgap the EffectTarget was created first and used.
 	//----------------------------------------------------------------------
-	// 음. data member로 바꿨다. - -;;
+	// Hmm. Changed it to a data member.
 	//static MEffectTarget* 
 
 	
@@ -7676,7 +7688,7 @@ MPlayer::ActionEffect()
 	int SkillInfo = m_nUsedActionInfo;
 	if(SkillInfo == SKILL_SWEEP_VICE_1)
 	{
-		if(!GetSweepViewValue() && g_bRButtonDown) //스윕바이스를 아직 사용중이 아닐때
+		if(!GetSweepViewValue() && g_bRButtonDown) //when Sweep Vice is not yet in use
 		{
 			if(g_pSkillAvailable->IsEnableSkill( SKILL_SWEEP_VICE_1)
 				&&!IsDead()
@@ -7684,13 +7696,13 @@ MPlayer::ActionEffect()
 				)
 			{
 				SetSweepViewValue(1);
-				g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
+				g_SelectSector = WorldEvents::GetSelectedSector(g_x, g_y);
 
 				m_TempSelectPosX = static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x);
 				m_TempSelectPosY = static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y);
 				m_SweepViceX = m_TraceX;
 				m_SweepViceY = m_TraceY;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_SWEEP_VICE,m_SweepViceX, m_SweepViceY, 0,g_pPlayer->GetDirection(),0	,	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_SWEEP_VICE,m_SweepViceX, m_SweepViceY, 0,g_pPlayer->GetDirection(),0	,
 						m_SweepViceX, m_SweepViceY, 0, 0xffff, NULL, false);
 			}
 			return;
@@ -7715,11 +7727,11 @@ MPlayer::ActionEffect()
 	
 	//----------------------------------------------------------
 	//
-	//					동작 시작 시점..
+	//					Motion start point..
 	//
 	//----------------------------------------------------------
-	if (//bStartEffect)		// Effect가 붙을때 packet을 보낸다.
-		bStartAction)		// 동작 시작할때 packet을 보낸다.
+	if (//bStartEffect)		// Send the packet when the Effect is attached.
+		bStartAction)		// Send the packet when the motion starts.
 	{	
 		if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 		{
@@ -7745,27 +7757,27 @@ MPlayer::ActionEffect()
 	AttachCastingEffect( SkillInfo );
 
 	//-------------------------------------------------------------
-	// 정지 동작이면..
-	// 바로 effect를 보여준다.
+	// If it is a stop motion..
+	// Show the effect right away.
 	//-------------------------------------------------------------
 
-	// [적절한 타이밍] 맞게 보낼려면 이거 주석처리 해야한다.
+	// To send at the [proper timing], this must be commented out.
 	if (bActionStand)
 	{
 		m_ActionCount = actionCountMax_1;
 	}
 
 	//----------------------------------------------------------
-	// action count 증가
+	// Increase action count
 	//----------------------------------------------------------
-	// 왜 여기서 증가하냐면?
-	// 밑에서.. actionCount가 바뀔 수 있기 때문에..
+	// Why increase it here?
+	// Because actionCount may change below..
 	//----------------------------------------------------------
 	m_ActionCount++; 
 
 
 	//--------------------------------------------------------	
-	// 임시로 흡혈동작 중지하는거..
+	// Temporarily stopping the blood drain motion..
 	//--------------------------------------------------------	
 	if (m_bStopBloodDrain)
 	{
@@ -7779,10 +7791,10 @@ MPlayer::ActionEffect()
 		
 	//----------------------------------------------------------
 	//
-	//					Effect 시작
+	//					Effect start
 	//
 	//----------------------------------------------------------
-	// affect 후에 이게 바뀔 수도 있다 T_T;
+	// this may change after affect (sigh);
 	if (bStartEffect)
 	{
 		AffectUsedActionInfo(SkillInfo);
@@ -7794,21 +7806,21 @@ MPlayer::ActionEffect()
 
 	//----------------------------------------------------------
 	//
-	//					Action동작이 끝날 때
+	//					When the Action motion ends
 	//
 	//----------------------------------------------------------
 	if (bEndAction)
 		//&& (*g_pActionInfoTable)[ m_nUsedActionInfo ].GetSize()!=0)		
 	{
 		//--------------------------------------------------------
-		// 추적 정보를 없애준다.
+		// Clear the trace info.
 		//--------------------------------------------------------
 		//m_TraceID	= OBJECTID_NULL;
 		//m_Action	= ACTION_STAND;
 
 		//--------------------------------------------------------
-		// 기술 사용 시간 Delay를 설정해준다.
-		// 시작 기술인 경우에만..
+		// Set the skill-use delay time.
+		// Only for the starting skill..
 		//--------------------------------------------------------
 		// [ TEST CODE ]
 		//if (//currentUsedActionInfo!=ACTIONINFO_NULL && 
@@ -7821,7 +7833,7 @@ MPlayer::ActionEffect()
 
 
 		//------------------------------------------------------------
-		// 반복 행동 체크..
+		// Check repeated action..
 		//------------------------------------------------------------
 			///*
 		if (CheckRepeatAction())
@@ -7829,7 +7841,7 @@ MPlayer::ActionEffect()
 			CheckBufferAction();
 		}
 
-		// 2002.3.24 checkRepeatAction() 위에 있던걸 여기로 내렸다.
+		// 2002.3.24 moved down here from above checkRepeatAction().
 		m_nUsedActionInfo = ACTIONINFO_NULL;		
 
 		//*/
@@ -7842,35 +7854,35 @@ MPlayer::ActionEffect()
 
 
 //----------------------------------------------------------------------
-// 시야 수정
+// Modify sight
 //----------------------------------------------------------------------
 //void	
 //MPlayer::SetLightSight(char LightSight)
 //{
-//	// 시야가 설정되어 있을 때, 시야 제거..
+//	// When a sight is set, remove it..
 ////	if (m_TimeLightSightX != SECTORPOSITION_NULL)
 ////	{
 //////		m_pZone->UnSetLight(m_LightSightX, m_LightSightY, m_LightSight);	
 ////	}
 //
-//	// 설정
+//	// Set
 //	m_TimeLightSight = LightSight;
 //
-//	// 설정된 시야에 대한 좌표값을 Set..	
+//	// Set the coordinates for the configured sight..
 ////	m_TimeLightSightX = m_X;
 ////	m_TimeLightSightY = m_Y;
 //
-//	// 새로운 시야 범위 지정.		
+//	// Specify a new sight range.
 ////	m_pZone->SetLight(m_X, m_Y, m_LightSight);			
 //}
 
 //----------------------------------------------------------------------
-// 시야 삭제
+// Remove sight
 //----------------------------------------------------------------------
 //void	
 //MPlayer::UnSetLightSight()
 //{
-//	// 시야가 설정되어 있을 때, 시야 제거..
+//	// When a sight is set, remove it..
 ////	if (m_LightSightX != SECTORPOSITION_NULL)
 ////	{
 ////		m_pZone->UnSetLight(m_LightSightX, m_LightSightY, m_LightSight);	
@@ -7885,7 +7897,7 @@ MPlayer::ActionEffect()
 //----------------------------------------------------------------------
 // Set ItemCheckBuffer
 //----------------------------------------------------------------------
-	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status, TYPE_OBJECTID SubItem)
 	#else
 void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
@@ -7894,7 +7906,7 @@ void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
 {
 	m_pItemCheckBuffer = pItem;
 
-	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 		m_dwSubItemIDCheckBuffer = SubItem;
 	#endif
 
@@ -7918,9 +7930,9 @@ void MPlayer::SetItemCheckBuffer(MItem* pItem, ITEM_CHECK_BUFFER status)
 //		}
 	#endif
 
-	UI_LockItem();
-	UI_LockGear();
-	UI_LockItemTrade();
+	PlayerPresentation::LockItem();
+	VsUiPresentation::LockGear();
+	PlayerPresentation::LockItemTrade();
 }
 
 //----------------------------------------------------------------------
@@ -7932,22 +7944,22 @@ MPlayer::ClearItemCheckBuffer()
 	DEBUG_ADD("Set Item Check Buffer to NULL");
 	
 	m_pItemCheckBuffer = NULL;
-	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 bag inside a bag
 		m_dwSubItemIDCheckBuffer = OBJECTID_NULL;
 	#endif
 	m_ItemCheckBufferStatus = ITEM_CHECK_BUFFER_NULL;
 
-	// 2004, 8, 27, sobeit add start - 관소환 상태에서 인벤아이템 사용후 착용아이템 벗었다 입었다 하면 
-	// 클라이언트 쪽에서 관상태가 풀린다.-_- 따라서 관 소환일땐 UI_UnlockGear()을 호출하지 않는다.
+	// 2004, 8, 27, sobeit add start - while in coffin-summon state, taking off and putting on equipped items after using an inventory item
+	// releases the coffin state on the client side. So UI_UnlockGear() is not called while a coffin is summoned.
 	if(!IsInCasket())
-		UI_UnlockGear();
+		DialogPresentation::UnlockGear();
 	// 2004, 8, 27, sobeit add end - 
-	UI_UnlockItem();
-	UI_UnlockItemTrade();
+	DialogPresentation::UnlockItem();
+	DialogPresentation::UnlockItemTrade();
 }
 
 //----------------------------------------------------------------------
-// 행동 결정
+// Decide action
 //----------------------------------------------------------------------
 void	
 MPlayer::SetAction(BYTE action)
@@ -7974,17 +7986,17 @@ MPlayer::SetAction(BYTE action)
 		action = ACTION_STAND;
 	}
 
-	// 무조건 꺼준다.
+	// Always turn it off.
 	m_bFastMove = false;
 	//m_bFastMove = false;
 	
 	//-----------------------------------------------------------------
-	// 현재 모습의 action에 맞는 경우. 2001.10.5
+	// When it matches the action of the current form. 2001.10.5
 	//-----------------------------------------------------------------
 	if (action < GetActionMax())
 	{
 		//-----------------------------------------------------
-		// 오토바이 타고 있을때
+		// While riding a motorcycle
 		//-----------------------------------------------------
 		if (m_MoveDevice==MOVE_DEVICE_RIDE)
 		{
@@ -8001,7 +8013,7 @@ MPlayer::SetAction(BYTE action)
 			}
 		}
 		//-----------------------------------------------------
-		// 걸어다닐때
+		// When walking
 		//-----------------------------------------------------
 		else
 		{
@@ -8033,7 +8045,7 @@ MPlayer::SetAction(BYTE action)
 		#ifdef OUTPUT_DEBUG
 			if (IsSlayer())
 			{
-				// slayer인 경우
+				// Slayer case
 				if (action >= GetActionMax())
 				{
 					DEBUG_ADD_FORMAT_ERR("[Error] Slayer's Action exceed MAX : id=%d, action=%d", m_ID, action);
@@ -8080,12 +8092,12 @@ MPlayer::SetAction(BYTE action)
 		m_bNextAction = false;
 
 		//------------------------------------------------
-		// Move인 경우
+		// Move case
 		//------------------------------------------------
 		if (action==m_MoveAction)
 		{
-			// 그냥 서있는 경우면... 끝동작으로 만든다.
-			// Action이 끝났다고 표시해주기 위해서..
+			// If just standing... turn it into the ending motion.
+			// To mark that the Action has finished..
 			if (m_Action==ACTION_STAND 
 				|| (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND)
 				|| (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND))
@@ -8095,7 +8107,7 @@ MPlayer::SetAction(BYTE action)
 			}
 
 			//------------------------------------------------
-			// 정지된 경우만 움직인다.
+			// Only move when stopped.
 			//------------------------------------------------
 			if (IsStop())
 			{	
@@ -8104,45 +8116,45 @@ MPlayer::SetAction(BYTE action)
 
 				SetNextAction(ACTION_STAND);
 
-				// Move 첫 동작
+				// First Move motion
 				m_MoveCount = 0;
 				m_NextMoveCount = 0;
 				
-				// 정지  :  m_sX = 0; m_sY = 0;
-				// 움직이는 종류에 따라서..
+				// Stopped  :  m_sX = 0; m_sY = 0;
+				// Depending on the kind of movement..
 				//m_MoveCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( action );
 				m_MoveCountMax = GetCreatureActionCountMax( this, action );
 					//g_pTopView->m_CreatureFPK[(*g_pCreatureTable)[m_CreatureType].FrameID]
 					//									[action][m_Direction].GetSize();		
 			
 				//---------------------------------------------
-				// UI에서 gear의 item 이동을 못하게 한다. 
+				// Prevent moving gear items in the UI.
 				//---------------------------------------------
 				//gC_vs_ui.LockItem();
-				gC_vs_ui.LockGear();				
+				VsUiPresentation::LockGear();
 			}
 			//------------------------------------------------
-			// 움직이고 있는 도중이면 Buffering한다.
+			// If already moving, buffer it.
 			//------------------------------------------------
 			else
 			{
 				//---------------------------------------------
-				// UI에서 gear item 이동을 할 수 있도록 한다.
+				// Allow moving gear items in the UI.
 				//---------------------------------------------
 				//gC_vs_ui.UnlockItem();
-				gC_vs_ui.UnlockGear();
+				DialogPresentation::UnlockGear();
 
 				// buffering
 				SetNextAction(action);
 			}
 		}
 		//------------------------------------------------
-		// Action인 경우
+		// Action case
 		//------------------------------------------------
 		else
 		{
 			//------------------------------------------------
-			// extreme은 특정 동작에서 풀린다.
+			// extreme is released on a particular motion.
 			//------------------------------------------------
 //			if (HasEffectStatus(EFFECTSTATUS_EXTREME))
 //			{
@@ -8155,16 +8167,16 @@ MPlayer::SetAction(BYTE action)
 //				}
 //			}
 
-			if (// 오토바이 타고 있을때는 action 안 보여준다.
+			if (// do not show the action while riding a motorcycle.
 				(m_MoveDevice==MOVE_DEVICE_RIDE && action!=ACTION_SLAYER_MOTOR_STAND)
-				// damaged인 경우..
+				// damaged case..
 				|| (action==ACTION_DAMAGED 						
-						&& (// 공격받는 중이 아니거나 정지 동작이 아니면 공격 받는 모습 표현 안 한다
+						&& (// if not being attacked or not a stop motion, do not show the being-hit look
 							m_Action!=ACTION_DAMAGED && m_Action!=ACTION_STAND && m_Action!=ACTION_MOVE
 
-							// 흡혈 당하는 동작 중이거나 
+							// during the blood-sucked motion, or
 	//						m_Action==ACTION_DRAINED
-							// 뱀파이어일때, 흡혈하는 동작 중에는 damaged를 안 보여준다.
+							// when a vampire, do not show damaged during the blood-sucking motion.
 	//						|| IsVampire() && m_Action==ACTION_VAMPIRE_DRAIN
 							))
 				)
@@ -8174,13 +8186,13 @@ MPlayer::SetAction(BYTE action)
 			}
 
 			//---------------------------------------------
-			// UI에서 gear item 이동을 할 수 있도록 한다.
+			// Allow moving gear items in the UI.
 			//---------------------------------------------
 			//gC_vs_ui.UnlockItem();
 			if(!IsInCasket())
-				gC_vs_ui.UnlockGear();		
+				DialogPresentation::UnlockGear();
 
-			// 동작 설정		
+			// Set motion
 			SetNextAction(ACTION_STAND);
 
 			//m_ActionCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( action );
@@ -8188,7 +8200,7 @@ MPlayer::SetAction(BYTE action)
 
 			if (m_ActionCountMax==0)
 			{
-				// 동작이 없는 경우
+				// When there is no motion
 				m_Action = ((m_MoveDevice==MOVE_DEVICE_WALK)? ACTION_STAND : ACTION_SLAYER_MOTOR_STAND);
 				//SetAction( ((m_MoveDevice==MOVE_DEVICE_WALK)? ACTION_STAND : ACTION_SLAYER_MOTOR_STAND) );
 				m_ActionCount = 0;		
@@ -8199,7 +8211,7 @@ MPlayer::SetAction(BYTE action)
 			else
 			{
 				//---------------------------------------------
-				// action을 반복하는 경우
+				// When the action repeats
 				//---------------------------------------------
 				if (m_nUsedActionInfo!=ACTIONINFO_NULL 
 					&& m_bRepeatAction 
@@ -8208,18 +8220,18 @@ MPlayer::SetAction(BYTE action)
 					m_Action = action; 
 					//SetAction( action );
 
-					// 반복회수 제한이 걸리면..
+					// If a repeat count limit applies..
 					if (m_RepeatCount >= (*g_pActionInfoTable)[m_nUsedActionInfo].GetRepeatLimit())
 					{		
 						m_RepeatCount = 0;
 
-						// 무조건 첫 동작부터..
+						// Always from the first motion..
 						m_ActionCount = 0;
 					}
 					else
 					{
 						//---------------------------------------------
-						// 계속 반복하는 경우
+						// When repeating continuously
 						//---------------------------------------------
 						BOOL bSlayer = IsSlayer();
 
@@ -8228,12 +8240,12 @@ MPlayer::SetAction(BYTE action)
 							&& action!=ACTION_STAND 
 							&& (!bSlayer || (bSlayer && action!=ACTION_SLAYER_MOTOR_STAND)))
 						{
-							// count 설정..
+							// Set count..
 							//m_ActionCount = (*g_pActionInfoTable)[m_nUsedActionInfo].GetRepeatStartFrame( m_WeaponSpeed );
 							m_ActionCount = GetActionInfoRepeatStartFrame( m_nUsedActionInfo );
 						}
 						//---------------------------------------------
-						// 처음 반복을 시작할려는 경우
+						// When starting the first repeat
 						//---------------------------------------------
 						else
 						{
@@ -8245,7 +8257,7 @@ MPlayer::SetAction(BYTE action)
 					m_ActionCountMax = GetActionInfoRepeatEndFrame( m_nUsedActionInfo );
 				}
 				//---------------------------------------------
-				// 일반적인 경우..
+				// Normal case..
 				//---------------------------------------------
 				else
 				{			
@@ -8255,7 +8267,7 @@ MPlayer::SetAction(BYTE action)
 							|| (IsOusters() && action==ACTION_OUSTERS_FAST_MOVE_STAND && m_Action==ACTION_OUSTERS_FAST_MOVE_STAND))
 							)
 					{
-						// 같은 정지 동작이면 설정하지 않는다.
+						// Do not set if it is the same stop motion.
 						//m_ActionCount = 0;
 						//m_ActionCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( m_Action );
 					}
@@ -8264,7 +8276,7 @@ MPlayer::SetAction(BYTE action)
 						m_Action = action;
 						//SetAction( action );
 
-						// count 설정..
+						// Set count..
 						m_ActionCount = 0;
 						
 							//g_pTopView->m_CreatureFPK[(*g_pCreatureTable)[m_CreatureType].FrameID]
@@ -8276,8 +8288,8 @@ MPlayer::SetAction(BYTE action)
 	}
 
 
-	// 동작을 시작할때 부가적으로 붙는 Effect 들.
-	// 어딘가로 빼야 하는데.-_-
+	// Additional Effects attached when a motion starts.
+	// Should be moved somewhere else. (sigh)
 	if( HasEffectStatus( EFFECTSTATUS_REDIANCE ) )
 	{
 		if( 
@@ -8306,7 +8318,7 @@ MPlayer::SetAction(BYTE action)
 	}
 
 	//------------------------------
-	// 정지한 상태이면
+	// If stopped
 	//------------------------------
 	/*
 	if (IsStop())
@@ -8314,7 +8326,7 @@ MPlayer::SetAction(BYTE action)
 		m_Action = action; 
 		m_NextAction = ACTION_STAND;
 
-		// Creature의 종류에 따라 Action에 대한 frame수가 달라야 하나?
+		// Should the frame count for an Action differ by Creature type?
 		switch (m_Action)
 		{
 			case ACTION_MOVE :
@@ -8331,14 +8343,13 @@ MPlayer::SetAction(BYTE action)
 			break;
 
 			default :
-				m_ActionCountMax = g_pTopView->m_CreatureFPK[(*g_pCreatureTable)[m_CreatureType].FrameID]
-															[m_Action][m_Direction].GetSize();
+				m_ActionCountMax = WorldEvents::GetCreatureActionFrameCount((*g_pCreatureTable)[m_CreatureType].FrameID, m_Action, m_Direction);
 		}
 
 		m_ActionCount = 0;
 	}
 	//------------------------------
-	// 움직이고 있는 상태이면
+	// If moving
 	//------------------------------
 	else
 	{
@@ -8351,7 +8362,7 @@ MPlayer::SetAction(BYTE action)
 //----------------------------------------------------------------------
 // Set AddonItem
 //----------------------------------------------------------------------
-// AddonItem을 장착한다.
+// Equip an AddonItem.
 //----------------------------------------------------------------------
 bool
 MPlayer::SetAddonItem( MItem* pItem )
@@ -8359,21 +8370,21 @@ MPlayer::SetAddonItem( MItem* pItem )
 	DEBUG_ADD("MPlayer::SetAddonItem");
 	
 	//-------------------------------------------------
-	// 제대로 장착한 경우
+	// If equipped properly
 	//-------------------------------------------------
 	if (MCreatureWear::SetAddonItem( pItem ))
 	{
 		//-------------------------------------------------
-		// 장착한 Item이 
-		// 기본공격용 아이템이라면...
-		// 기본공격ActionInfo가 바뀌어야 한다.
+		// If the equipped Item
+		// is a basic-attack item...
+		// the basic-attack ActionInfo must change.
 		//-------------------------------------------------
 		if (pItem->IsBasicWeapon())
 		{
 			//-------------------------------------------------
-			// 공격 가능거리 설정
-			// 총인 경우만 다르고.. 
-			// 나머지는 모두 근접공격이므로 1이다.							
+			// Set attack range
+			// Only guns differ,
+			// everything else is melee, so 1.
 			//-------------------------------------------------
 			//if (pItem->IsGunItem())
 			//{
@@ -8385,7 +8396,7 @@ MPlayer::SetAddonItem( MItem* pItem )
 			//}
 
 			//-------------------------------------------------
-			// Skill Icon 체크
+			// Skill Icon check
 			//-------------------------------------------------
 			//(*g_pSkillAvailable).SetAvailableSkills();
 		}
@@ -8399,7 +8410,7 @@ MPlayer::SetAddonItem( MItem* pItem )
 //----------------------------------------------------------------------
 // Remove AddonItem
 //----------------------------------------------------------------------
-// AddonItem을 장착해제한다.
+// Unequip an AddonItem.
 //----------------------------------------------------------------------
 bool
 MPlayer::RemoveAddonItem( MItem* pItem )
@@ -8407,26 +8418,26 @@ MPlayer::RemoveAddonItem( MItem* pItem )
 	DEBUG_ADD("MCreatureWear::RemoveAddonItem");
 	
 	//-------------------------------------------------
-	// 제대로 해제된 경우
+	// If unequipped properly
 	//-------------------------------------------------
 	if (MCreatureWear::RemoveAddonItem( pItem ))
 	{
 		//-------------------------------------------------
-		// 해제한 Item이 
-		// 기본공격용 아이템이라면...
-		// 기본공격ActionInfo가 맨손 공격으로 바뀌어야 한다.
+		// If the removed Item
+		// is a basic-attack item...
+		// the basic-attack ActionInfo must change to bare-handed attack.
 		//-------------------------------------------------
 		if (pItem->IsBasicWeapon())
 		{
-			// 기본 맨손 공격 동작으로 전환한다.
+			// Switch to the basic bare-handed attack motion.
 			SetBasicActionInfo( SKILL_ATTACK_MELEE );
 
 
-			// 공격 가능거리 설정
+			// Set attack range
 			SetBasicAttackDistance( 1 );
 
 			//-------------------------------------------------
-			// Skill Icon 체크
+			// Skill Icon check
 			//-------------------------------------------------
 			//(*g_pSkillAvailable).SetAvailableSkills();
 		}
@@ -8440,8 +8451,8 @@ MPlayer::RemoveAddonItem( MItem* pItem )
 //----------------------------------------------------------------------
 // Set Next Action
 //----------------------------------------------------------------------
-// 다음에 할 행동 설정.. 현재 그냥 서있으면(STAND) 바로 action 설정
-// 아니면, buffering
+// Set the next action.. if currently just standing (STAND), set the action immediately
+// otherwise, buffer it
 //----------------------------------------------------------------------
 void	
 MPlayer::SetNextAction(BYTE action)
@@ -8482,7 +8493,7 @@ MPlayer::SetNextAction(BYTE action)
 //----------------------------------------------------------------------
 // Set NextAction To Move
 //----------------------------------------------------------------------
-// 다음 action에는 이동한다.
+// Move on the next action.
 //----------------------------------------------------------------------
 void	
 MPlayer::SetNextActionToMove()
@@ -8502,22 +8513,22 @@ MPlayer::SetNextActionToMove()
 //----------------------------------------------------------------------
 // Set Alive
 //----------------------------------------------------------------------
-// 살았다~ 
+// Alive again~
 //----------------------------------------------------------------------
 void	
 MPlayer::SetAlive()
 {
 	m_bAlive = true;
 
-	// item 이동 해제
-	UI_UnlockItem();
-	UI_UnlockGear();
-	UI_UnlockItemTrade();
+	// Release item movement
+	DialogPresentation::UnlockItem();
+	DialogPresentation::UnlockGear();
+	DialogPresentation::UnlockItemTrade();
 
 	SetAction( ACTION_STAND );
 
 	//-------------------------------------------------------
-	// Effect상태들 제거
+	// Remove Effect states
 	//-------------------------------------------------------
 	/*
 	if (g_pEffectStatusTable!=NULL)
@@ -8529,9 +8540,9 @@ MPlayer::SetAlive()
 	}
 	*/
 
-	if (g_pTopView!=NULL)
+	if (WorldEvents::ViewExists())
 	{
-		g_pTopView->SetFadeEnd();
+		WorldEvents::SetFadeEnd();
 	}
 
 	if (m_MoveType == CREATURE_FLYING)
@@ -8543,13 +8554,13 @@ MPlayer::SetAlive()
 //----------------------------------------------------------------------
 // Set Dead
 //----------------------------------------------------------------------
-// 죽었다~ 
-// ServerPosition으로 가서 죽자..
+// Dead~
+// Go to ServerPosition and die..
 //----------------------------------------------------------------------
 void	
 MPlayer::SetDead()
 {
-	// 살아 있는 경우만 죽인다. -_-;;
+	// Only kill if alive. (sigh)
 	if (m_bAlive)
 	{
 		if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
@@ -8568,15 +8579,15 @@ MPlayer::SetDead()
 			SetAction(ACTION_STAND);
 			ClearAttachEffect();
 		}
-		g_pUIMessageManager->Execute(UI_FINISH_LEVELUP_BUTTON, 0, 0, NULL);
+		PlayerPresentation::FinishLevelUpButton();
 		
 		StopDrain();
 		StopAbsorb();
 
-		// item 이동 못하게..
-		UI_LockItem();
-		UI_LockGear();
-		UI_LockItemTrade();
+		// Prevent item movement..
+		PlayerPresentation::LockItem();
+		VsUiPresentation::LockGear();
+		PlayerPresentation::LockItemTrade();
 
 		SetStop();	
 //		StopCauseCriticalWounds();
@@ -8585,18 +8596,18 @@ MPlayer::SetDead()
 
 		DEBUG_ADD_FORMAT("PlayerDeadPosition(%d, %d)", m_ServerX, m_ServerY);
 
-		// 정지
+		// Stop
 		TraceNULL();
 		
-		// 죽을 때의 ActionInfo
+		// ActionInfo on death
 		m_nUsedActionInfo	= (*g_pCreatureTable)[m_CreatureType].DeadActionInfo;
 		
 		if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 		{
-			// 죽을 때의 동작
+			// Motion on death
 			SetAction( GetActionInfoAction(m_nUsedActionInfo) );
 
-			// 나한테 하는 동작
+			// Motion directed at myself
 			m_NextTraceID			= m_ID;
 			m_NextTraceX			= m_X;
 			m_NextTraceY			= m_Y;
@@ -8613,11 +8624,11 @@ MPlayer::SetDead()
 
 
 		//-------------------------------------------------------
-		// 보이게 하기
+		// Make visible
 		//-------------------------------------------------------
 		SetVisibleSoon();
 
-		// 죽을때 벌떡 서는거 없애기 위해서.. 확인사살.. - -; 2001.7.23
+		// To remove the sudden standing up on death.. making sure.. (sigh) 2001.7.23
 		m_bNextAction = false;
 		m_bKeepTraceCreature = false;
 		SetNextAction(ACTION_STAND);
@@ -8628,15 +8639,15 @@ MPlayer::SetDead()
 		StopRecoveryMP();
 		SetStatus( MODIFY_CURRENT_HP, 0 );
 
-		// LockMode 끄기
+		// Turn off LockMode
 		UnSetLockMode();
 
-		// 음악을 느리게...
+		// Slow down the music...
 		//g_SDLMusic.SetCurrentTempo( g_SDLMusic.GetOriginalTempo() * 0.8f );
 
 		m_Z = 0;
-		// 확인.. 
-		UI_CloseSelectWayPoint();
+		// Confirm..
+		PlayerPresentation::CloseSelectWayPoint();
 
 		// cancel the logout
 		g_pUserInformation->CancelLogout();
@@ -8646,20 +8657,20 @@ MPlayer::SetDead()
 		g_pEventManager->RemoveEvent(EVENTID_LOGOUT);
 		g_pEventManager->RemoveEvent(EVENTID_LOVECHAIN);
 
-		// 죽었다.
+		// Dead.
 		m_bAlive = false;
 		m_bInCasket = false;
 	
 		//-------------------------------------------------------
-		// Effect상태들 제거
+		// Remove Effect states
 		//-------------------------------------------------------
 		if (g_pEffectStatusTable!=NULL)
 		{
 			for (int e=0; e<g_pEffectStatusTable->GetSize(); e++)
 			{
-				// 흡혈은 제거하지 않는다.
+				// Do not remove blood-sucking.
 				if (e!=EFFECTSTATUS_BLOOD_DRAIN && 
-					// 2004, 11, 16, sobeit add start - 공성전 공성측 녀석들 상태가 필요해서 삭제 안함..
+					// 2004, 11, 16, sobeit add start - the siege attackers' states are needed, so not deleted..
 					e!=EFFECTSTATUS_SIEGE_ATTACKER_1 &&	
 					e!=EFFECTSTATUS_SIEGE_ATTACKER_2 &&
 					e!=EFFECTSTATUS_SIEGE_ATTACKER_3 &&
@@ -8677,12 +8688,12 @@ MPlayer::SetDead()
 //		g_pTempInformation->SetMode( TempInformation::MODE_NULL );
 
 		//---------------------------------------------------------------
-		// 내 정보를 파티에게 보내준다.
+		// Send my info to the party.
 		//---------------------------------------------------------------
 		SendStatusInfoToParty();	
 
-		// 2004, 5, 7 sobeit add start - 죽었을 때 도움말
-		ExecuteHelpEvent(HELP_EVENT_DIE);
+		// 2004, 5, 7 sobeit add start - help message on death
+		GameInfoPresentation::ExecuteHelpEvent(HELP_EVENT_DIE);
 		// 2004, 5, 7 sobeit add end
 	}
 }
@@ -8694,7 +8705,7 @@ bool
 MPlayer::CheckRepeatAction()
 {
 	//----------------------------------------------------------------------
-	// 반복 action이 안되는 경우
+	// When repeat action is not possible
 	//----------------------------------------------------------------------
 	if (m_bKeepTraceCreature || IsRequestMode() || IsInDarkness())// || m_bTraceCreatureToForceAttack)
 	{
@@ -8708,7 +8719,7 @@ MPlayer::CheckRepeatAction()
 	}
 
 	//----------------------------------------------------------------------
-	// action의 마지막 동작이거나 정지동작인 경우에 반복 action을 적용한다.
+	// Apply repeat action if it is the last motion of the action or a stop motion.
 	//----------------------------------------------------------------------
 	if (m_ActionCount>=m_ActionCountMax-1 
 			|| m_Action==ACTION_STAND 
@@ -8717,12 +8728,12 @@ MPlayer::CheckRepeatAction()
 		static DWORD repeatFrameIncTurn = 0;
 
 		//------------------------------------------------------------
-		// 반복 행동이 설정된 경우
+		// When a repeat action is set
 		//------------------------------------------------------------
 		if (m_bRepeatAction)				
 		{
 			//------------------------------------------------------------
-			// 자신에게 특수 기술
+			// Special skill on self
 			//------------------------------------------------------------
 			if (m_fTraceBuffer & FLAG_TRACE_SELF)
 			{
@@ -8740,7 +8751,7 @@ MPlayer::CheckRepeatAction()
 				return true;
 			}				
 			//------------------------------------------------------------
-			// 기본 행동			
+			// Basic action
 			//------------------------------------------------------------
 			else if (m_fTraceBuffer & FLAG_TRACE_CREATURE_BASIC)
 			{	
@@ -8762,7 +8773,7 @@ MPlayer::CheckRepeatAction()
 				return true;
 			}				
 			//------------------------------------------------------------
-			// 특수 행동
+			// Special action
 			//------------------------------------------------------------
 			else  if (m_fTraceBuffer & FLAG_TRACE_CREATURE_SPECIAL)
 			{
@@ -8782,10 +8793,10 @@ MPlayer::CheckRepeatAction()
 				//CHECK_REPEAT_LIMIT_TO_RETURN_FALSE( m_nUsedActionInfo, m_RepeatCount )				
 				if (m_nUsedActionInfo < g_pActionInfoTable->GetSize())
 				{
-					// 반복회수 제한에 걸리면..
+					// If the repeat count limit is hit..
 					if (m_RepeatCount >= (*g_pActionInfoTable)[m_nUsedActionInfo].GetRepeatLimit())
 					{		
-						// 동작 끝으로 보낸다.
+						// Send to the end of the motion.
 						//m_RepeatCount = 0;
 
 						BOOL bSlayer = IsSlayer();
@@ -8793,7 +8804,7 @@ MPlayer::CheckRepeatAction()
 						if ((*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame() //m_WeaponSpeed )
 							&& m_Action!=ACTION_STAND 
 							&& (!bSlayer || (bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND))
-							&& m_ActionCountMax!=0 )	// 이걸로 될려나.. - -;
+							&& m_ActionCountMax!=0 )	// Will this work.. (sigh)
 						{	
 							//m_ActionCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( m_Action );
 							m_ActionCountMax = GetCreatureActionCountMax( this, m_Action );
@@ -8806,7 +8817,7 @@ MPlayer::CheckRepeatAction()
 				return true;
 			}
 			//------------------------------------------------------------
-			// 특수 행동 -> Sector
+			// Special action -> Sector
 			//------------------------------------------------------------
 			else if (m_fTraceBuffer & FLAG_TRACE_SECTOR_SPECIAL)
 			{
@@ -8817,10 +8828,10 @@ MPlayer::CheckRepeatAction()
 				//m_NextTraceY = m_TraceY;
 
 				//------------------------------------------------------------
-				// 현재의 mouse 좌표를 읽어서 map의 좌표로 바꾼다.
+				// Read the current mouse coordinates and convert them to map coordinates.
 				//------------------------------------------------------------
-				POINT temp = g_pTopView->ScreenToPixel(g_x, g_y);
-				temp = MTopView::PixelToMap( temp.x, temp.y );
+				POINT temp = WorldEvents::ScreenToPixel(g_x, g_y);
+				temp = PixelToMap( temp.x, temp.y );
 				
 				m_NextTraceX = static_cast<TYPE_SECTORPOSITION>(temp.x);
 				m_NextTraceY = static_cast<TYPE_SECTORPOSITION>(temp.y);
@@ -8837,12 +8848,12 @@ MPlayer::CheckRepeatAction()
 			}		
 		}
 		//------------------------------------------------------------
-		// 반복 행동이 설정 안 된 경우
+		// When no repeat action is set
 		//------------------------------------------------------------
 		else
 		{
 			//------------------------------------------------------------
-			// buffering된 다음 행동이 있다면..
+			// If there is a buffered next action..
 			//------------------------------------------------------------
 			if (m_fNextTrace!=FLAG_TRACE_NULL)
 			{
@@ -8861,9 +8872,9 @@ MPlayer::CheckRepeatAction()
 //----------------------------------------------------------------------
 // Check BufferAction
 //----------------------------------------------------------------------
-// 다음에 처리해야할 buffering된 action이 있는지를 알아본다.
-// 있을 경우는 return true
-// 없을 경우는 return false
+// Check whether there is a buffered action to process next.
+// Return true if there is
+// Return false if there is not
 //----------------------------------------------------------------------
 bool
 MPlayer::CheckBufferAction()
@@ -8871,70 +8882,70 @@ MPlayer::CheckBufferAction()
 	//DEBUG_ADD("Before CheckBufferAction");
 	
 	//------------------------------------------		
-	//     추적해야 하는 경우..		
+	//         When tracing is required..
 	//------------------------------------------
 	if (m_fNextTrace != FLAG_TRACE_NULL)
 	{			
 		//SetAction( (m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND );
 
 		//---------------------
-		// 자신에게 특수 기술
+		// Special skill on self
 		//---------------------
 		if (m_fNextTrace & FLAG_TRACE_SELF)
 		{
 			SelfSpecialAction();
 		}				
 		//---------------------
-		// 기본 행동			
+		// Basic action
 		//---------------------
 		if (m_fNextTrace & FLAG_TRACE_CREATURE_BASIC)
 		{
 			TraceCreatureToBasicAction( m_NextTraceID, m_bNextForceAttack );
 		}				
 		//---------------------
-		// 특수 행동
+		// Special action
 		//---------------------
 		else  if (m_fNextTrace & FLAG_TRACE_CREATURE_SPECIAL)
 		{
 			TraceCreatureToSpecialAction( m_NextTraceID, m_bNextForceAttack );
 		}
 		//---------------------
-		// 기본 행동 -> Sector
+		// Basic action -> Sector
 		//---------------------
 		else if (m_fNextTrace & FLAG_TRACE_SECTOR_BASIC)
 		{
 			TraceSectorToBasicAction( m_NextTraceX, m_NextTraceY );
 		}
 		//---------------------
-		// 특수 행동 -> Sector
+		// Special action -> Sector
 		//---------------------
 		else if (m_fNextTrace & FLAG_TRACE_SECTOR_SPECIAL)
 		{
 			TraceSectorToSpecialAction( m_NextTraceX, m_NextTraceY );
 		}
 		//---------------------
-		// Item 추적
+		// Item trace
 		//---------------------
 		else if (m_fNextTrace & FLAG_TRACE_ITEM)
 		{
 			TraceItem( m_NextTraceID );
 		}
 		//---------------------
-		// Inventory의 Item 에 기술 사용
+		// Use skill on an Item in the Inventory
 		//---------------------
 		else if (m_fNextTrace & FLAG_TRACE_INVENTORY)
 		{
 			TraceInventoryItem( m_NextTraceID );
 		}
 		//---------------------
-		// Effect추적
+		// Effect trace
 		//---------------------
 		else if (m_fNextTrace & FLAG_TRACE_EFFECT)
 		{
 			TraceEffect( m_NextTraceID );
 		}
 		//---------------------
-		// InteractionObject추적
+		// InteractionObject trace
 		//---------------------
 		else if (m_fNextTrace & FLAG_TRACE_INTERACTIONOBJECT)
 		{
@@ -8947,7 +8958,7 @@ MPlayer::CheckBufferAction()
 	}
 
 	//------------------------------------------		
-	//     Buffering된 다음 행동
+	//         Buffered next action
 	//------------------------------------------
 	BOOL bSlayer = IsSlayer();
 
@@ -8985,7 +8996,7 @@ MPlayer::UnSetRepeatAction()
 			(int)g_bRButtonDown, (int)g_bLButtonDown, (int)m_bLockMode);
 	}
 
-	// 반복이 중지되면 다음 buffering행동도 없애야 될까?
+	// If repeat stops, should the next buffered action be removed too?
 
 	m_bRepeatAction = FALSE;
 
@@ -8996,33 +9007,12 @@ MPlayer::UnSetRepeatAction()
 	BOOL bSlayer = IsSlayer();
 
 	//m_fTraceBuffer = FLAG_TRACE_NULL;
-	/*
-	#ifdef OUTPUT_DEBUG
-		if (g_pDebugMessage)
-			{
-				if (m_nUsedActionInfo != ACTIONINFO_NULL)
-				{
-					DEBUG_ADD_FORMAT("UnSetRepeatAction:ai=%d, ir=%d, at=%d, sm=%d, acm=%d",
-			
-					(int)m_nUsedActionInfo, 
-					(int)(*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame(),
-					(int)m_Action!=ACTION_STAND,
-					(int)(!bSlayer || bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND),
-					(int)m_ActionCountMax!=0);
-				}
-				else
-				{
-					DEBUG_ADD("UnSetRepeatAction: m_nUsedActionInfo is ACTIONINFO_NULL");
-				}
-			}
-	#endif
-	*/
 
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL 
 		&& (*g_pActionInfoTable)[m_nUsedActionInfo].IsUseRepeatFrame() //m_WeaponSpeed )
 		&& m_Action!=ACTION_STAND 
 		&& (!bSlayer || (bSlayer && m_Action!=ACTION_SLAYER_MOTOR_STAND))
-		&& m_ActionCountMax!=0 )	// 이걸로 될려나.. - -;
+		&& m_ActionCountMax!=0 )	// Will this work.. (sigh)
 	{	
 		//m_ActionCountMax = (*g_pCreatureTable)[m_CreatureType].GetActionCount( m_Action );		
 		m_ActionCountMax = GetCreatureActionCountMax( this, m_Action );
@@ -9039,7 +9029,6 @@ MPlayer::UnSetRepeatAction()
 bool		
 MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 {	
-	__BEGIN_HELP_EVENT
 		switch (status)
 		{		
 		case EFFECTSTATUS_SUMMON_SYLPH_GREEN :
@@ -9058,16 +9047,16 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			// Bless
 			//--------------------------------------------------
 			case EFFECTSTATUS_BLESS :
-				// [도움말] striking
-//				ExecuteHelpEvent( HE_EFFECT_BLESS );
+				// [Help] striking
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_BLESS );
 			break;
 
 			//--------------------------------------------------
 			// Striking
 			//--------------------------------------------------
 			case EFFECTSTATUS_STRIKING :
-				// [도움말] striking
-//				ExecuteHelpEvent( HE_EFFECT_STRIKING );
+				// [Help] striking
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_STRIKING );
 			break;
 
 			//--------------------------------------------------
@@ -9075,8 +9064,8 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//--------------------------------------------------
 			case EFFECTSTATUS_GREEN_POISON :
 			case EFFECTSTATUS_POISON :
-				// [도움말] green poison
-//				ExecuteHelpEvent( HE_EFFECT_GREEN_POISON );
+				// [Help] green poison
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_GREEN_POISON );
 			break;
 
 			//--------------------------------------------------
@@ -9084,8 +9073,8 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//--------------------------------------------------
 			//case EFFECTSTATUS_PURPLE_WALL :
 			case EFFECTSTATUS_CURSE_PARALYSIS :
-				// [도움말] purple wall
-//				ExecuteHelpEvent( HE_EFFECT_PURPLE_WALL );
+				// [Help] purple wall
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_PURPLE_WALL );
 			break;
 
 			//--------------------------------------------------
@@ -9093,8 +9082,8 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//--------------------------------------------------
 			case EFFECTSTATUS_YELLOW_POISON :
 			case EFFECTSTATUS_YELLOW_POISON_TO_CREATURE :
-				// [도움말] yellow poison
-//				ExecuteHelpEvent( HE_EFFECT_YELLOW_POISON );
+				// [Help] yellow poison
+//				GameInfoPresentation::ExecuteHelpEvent( HE_EFFECT_YELLOW_POISON );
 			break;
 		
 			//--------------------------------------------------
@@ -9102,17 +9091,17 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			//--------------------------------------------------
 			case EFFECTSTATUS_BLOOD_DRAIN :
 			{
-				// 2004, 5, 6 sobeit add start [도움말] 흡혈당했을때
-				ExecuteHelpEvent( HELP_EVENT_DRAIN_BLOOD );				
+				// 2004, 5, 6 sobeit add start [Help] when blood-sucked
+				GameInfoPresentation::ExecuteHelpEvent( HELP_EVENT_DRAIN_BLOOD );
 				// 2004, 5, 6 sobeit add end
 			}
 			break;		
 
 			//--------------------------------------------------
-			// OBSERVING_EYE [새기술6]
+			// OBSERVING_EYE [new skill 6]
 			//--------------------------------------------------
 			case EFFECTSTATUS_OBSERVING_EYE :
-				// 아직 안 걸려있는 경우
+				// If not yet applied
 				if (!m_bEffectStatus[EFFECTSTATUS_OBSERVING_EYE])
 				{
 					CalculateLightSight();
@@ -9127,15 +9116,14 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 			default:
 			break;
 		}
-	__END_HELP_EVENT
 
 	//--------------------------------------------------
-	// 뱀파이어로 변하는 effect이면.. 시간 설정을 해둔다.
+	// If it is an effect that turns into a vampire.. set the time.
 	//--------------------------------------------------
 	switch (status)
 	{
 		//--------------------------------------------------
-		// 흡혈
+		// Blood-sucking
 		//--------------------------------------------------
 		case EFFECTSTATUS_BLOOD_DRAIN :
 		{
@@ -9170,7 +9158,7 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 		case EFFECTSTATUS_INSTALL_TURRET:
 //			g_pSkillAvailable->SetAvailableSkills();
 			SetDelay(1000);
-			gC_vs_ui.UnselectSkill();
+			VsUiPresentation::UnselectSkill();
 			//gC_vs_ui.SelectSkill( SKILL_TURRET_FIRE );
 			break;
 
@@ -9180,15 +9168,15 @@ MPlayer::AddEffectStatus(EFFECTSTATUS status, DWORD delayFrame)
 
 	bool re = MCreature::AddEffectStatus( status, delayFrame );
 	//--------------------------------------------------
-	// UI에 알린다. 왜 이걸 re로 판단하면 삑살나지-_-; 2002.5.5 쑥갓
+	// Notify the UI. Why does judging this by re go wrong (sigh) 2002.5.5 Ssukgat
 	//--------------------------------------------------
 	if(!(IsSlayer() && status == EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS))
-		UI_AddEffectStatus( status, delayFrame );
+		PlayerPresentation::AddEffectStatus( status, delayFrame );
 	
 	if(status == EFFECTSTATUS_INSTALL_TURRET)
 	{
 		g_pSkillAvailable->SetAvailableSkills();
-		gC_vs_ui.SelectSkill( SKILL_TURRET_FIRE );
+		VsUiPresentation::SelectSkill( SKILL_TURRET_FIRE );
 	}
 	CheckRegen();
 
@@ -9204,9 +9192,9 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 	bool bOK = MCreatureWear::RemoveEffectStatus( status );
 
 	//--------------------------------------------------
-	// UI에 알린다.
+	// Notify the UI.
 	//--------------------------------------------------
-	UI_RemoveEffectStatus( status );
+	PlayerPresentation::RemoveEffectStatus( status );
 
 	switch (status)
 	{		
@@ -9223,7 +9211,7 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 		if(GetWaitVerify() == MPlayer::WAIT_VERIFY_SYLPH_SUMMON_GETOFF)
 			SetWaitVerifyNULL();
 		
-		/*  add by sonic 錦攣침쥣랗瘻빈賈痰루쑹쥣꼇콘긴쀼覩近BUG 2006.10.4 */
+		/* add by sonic (garbled) fix for a bug, 2006.10.4 */
 		if(IsAdvancementClass() && status==EFFECTSTATUS_SUMMON_SYLPH)
 		{
 				m_bEffectStatus[status]=true;
@@ -9240,19 +9228,19 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 		break;
 
 		//--------------------------------------------------
-		// 뱀파이어로 변하는 effect이면.. 시간 설정 제거
+		// If it is an effect that turns into a vampire.. clear the time
 		//--------------------------------------------------
 		case EFFECTSTATUS_BLOOD_DRAIN :
 			UnSetConversionDelay();
 
-			UI_SetHP( GetHP(), GetMAX_HP() );		
+			StatusPresentation::SetHP( GetHP(), GetMAX_HP() );
 		break;
 
 		//--------------------------------------------------
-		// 죽다가 살아난 경우
+		// When revived after dying
 		//--------------------------------------------------		
 		case EFFECTSTATUS_COMA :
-			// 검증 제거
+			// Remove verification
 			if (g_pTempInformation->GetMode()==TempInformation::MODE_WAIT_RESURRECT)
 			{
 				g_pTempInformation->SetMode(TempInformation::MODE_NULL);
@@ -9263,20 +9251,20 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 				SetWaitVerifyNULL();
 			}
 
-			gC_vs_ui.FinishRequestDie();
-			gC_vs_ui.FinishRequestResurrect();
-			gC_vs_ui.CloseRequestShrineMinimap();
+			PlayerPresentation::FinishRequestDie();
+			PlayerPresentation::FinishRequestResurrect();
+			PlayerPresentation::CloseRequestShrineMinimap();
 		break;
 
 		//--------------------------------------------------
-		// OBSERVING_EYE [새기술6]
+		// OBSERVING_EYE [new skill 6]
 		//--------------------------------------------------
 		case EFFECTSTATUS_OBSERVING_EYE :
 			CalculateStatus();
 		break;
 
 		case EFFECTSTATUS_GHOST:
-			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// 박쥐인 경우
+			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// Bat case
 				SetGroundCreature();
 			break;
 		case EFFECTSTATUS_WILL_OF_LIFE :
@@ -9302,7 +9290,7 @@ MPlayer::RemoveEffectStatus(EFFECTSTATUS status)
 //		break;
 		case EFFECTSTATUS_INSTALL_TURRET:
 			g_pSkillAvailable->SetAvailableSkills();
-			ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,	
+			WorldEvents::ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,
 				GetX(), GetY(), 0, 0, NULL, false);
 			SetDelay(1000);
 			break;
@@ -9325,7 +9313,7 @@ MPlayer::SetCreatureType(TYPE_CREATURETYPE type)
 	MCreatureWear::SetCreatureType(type);
 
 	//---------------------------------------------------
-	// Skill Icon을 다시 체크한다.
+	// Check the Skill Icon again.
 	//---------------------------------------------------
 	if (g_pSkillAvailable!=NULL)
 	{
@@ -9346,11 +9334,11 @@ void
 MPlayer::UpdateConversionTime()
 {
 	//--------------------------------------------------------
-	// 뱀파이어로 변하는 Effect체크
-	// 코드 마구 추가하기.. 카카...- -;
+	// Check the Effect that turns into a vampire
+	// Piling on code left and right.. heh (sigh)
 	//--------------------------------------------------------
 
-	// 전쟁 남은 시간 체크
+	// Check remaining war time
 	
 	if (IsSlayer())
 	{
@@ -9361,28 +9349,28 @@ MPlayer::UpdateConversionTime()
 			//--------------------------------------------------------
 			// msec to minutes: * GetTimeRatio / 1000 / 60
 			int changeTime = (int)(m_ConversionDelayTime - g_FrameNow).count()/* * g_pGameTime->GetTimeRatio()*/ / 60000 ;
-			g_char_slot_ingame.CHANGE_VAMPIRE = changeTime;
+			PlayerPresentation::SetChangeVampireTime( changeTime );
 
 			static MonotonicClock::TimePoint enableBlinkTime;	// when the next blink may start
 			
 			//const DWORD sixHour = 6*60*60*1000;
 
-			// { 남은시간, 깜빡이는 시간 }
+			// { remaining time, blink interval }
 			const int maxBlink = 12;
 			const DWORD blinkValue[maxBlink][2] = 
 			{
-				{ 4*60*60*1000, 6*60*1000 },	// 4시간 이상 --> 5분마다			
-				{ 3*60*60*1000, 4*60*1000 },	// 3시간 이상 --> 4분마다			
-				{ 2*60*60*1000, 3*60*1000 },	// 2시간 이상 --> 3분마다			
-				{ 1*60*60*1000, 2*60*1000 },	// 1시간 이상 --> 2분마다
-				{ 1*60*60*1000, 1*60*1000 },	// 10분 이상 --> 1분
-				{ 3*60*1000, 30*1000 },			// 3분 이상 --> 30초
-				{ 2*60*1000, 10*1000 },			// 2분 이상 --> 10초
-				{ 1*60*1000, 5*1000 },			// 1분 이상 --> 5초
-				{ 30*60*1000, 3*1000 },			// 30초 이상 --> 3초
-				{ 10*1000, 2*1000 },			// 10초 이상 --> 2초
-				{ 10*1000, 2*1000 },			// 5초 이상 --> 1초
-				{ 0*1000, 300 }					// 0초 이상 --> 0.3초
+				{ 4*60*60*1000, 6*60*1000 },	// 4 hours or more --> every 5 minutes
+				{ 3*60*60*1000, 4*60*1000 },	// 3 hours or more --> every 4 minutes
+				{ 2*60*60*1000, 3*60*1000 },	// 2 hours or more --> every 3 minutes
+				{ 1*60*60*1000, 2*60*1000 },	// 1 hour or more --> every 2 minutes
+				{ 1*60*60*1000, 1*60*1000 },	// 10 minutes or more --> 1 minute
+				{ 3*60*1000, 30*1000 },			// 3 minutes or more --> 30 seconds
+				{ 2*60*1000, 10*1000 },			// 2 minutes or more --> 10 seconds
+				{ 1*60*1000, 5*1000 },			// 1 minute or more --> 5 seconds
+				{ 30*60*1000, 3*1000 },			// 30 seconds or more --> 3 seconds
+				{ 10*1000, 2*1000 },			// 10 seconds or more --> 2 seconds
+				{ 10*1000, 2*1000 },			// 5 seconds or more --> 1 second
+				{ 0*1000, 300 }					// 0 seconds or more --> 0.3 seconds
 			};
 
 			//--------------------------------------------------------
@@ -9394,7 +9382,7 @@ MPlayer::UpdateConversionTime()
 				// time left to the change; /1000 gives seconds
 				DWORD timeGap = (DWORD)(m_ConversionDelayTime - g_FrameNow).count();
 				
-				// 무조건 출력. 6시간이 안 남은 경우에만 effect출력
+				// Always output. Output the effect only when less than 6 hours remain.
 				if (1)//timeGap < sixHour)
 				{
 					BOOL bBlink = FALSE;
@@ -9403,7 +9391,7 @@ MPlayer::UpdateConversionTime()
 					{
 						if (timeGap > blinkValue[i][0])
 						{
-							g_pTopView->SetFadeStart(25, 31, 2, 31,0,0);
+							WorldEvents::SetFadeStart(25, 31, 2, 31,0,0, 0);
 
 							// when the next blink may start
 							enableBlinkTime = g_FrameNow + MonotonicClock::Millis(blinkValue[i][1]);
@@ -9428,13 +9416,13 @@ MPlayer::UpdateConversionTime()
 			//--------------------------------------------------------
 			// give the UI the time left before the change
 			//--------------------------------------------------------
-			g_char_slot_ingame.CHANGE_VAMPIRE = 0;
+			PlayerPresentation::SetChangeVampireTime( 0 );
 		}
 	}
 }
 
 //----------------------------------------------------------------------
-// 다음 동작을 취한다.
+// Take the next action.
 //----------------------------------------------------------------------
 void
 MPlayer::Action()
@@ -9444,7 +9432,7 @@ MPlayer::Action()
 		g_pZone->RemoveFakeCreature(GetElementalID());
 	}
 
-	// 펫이 있고 펫 동작한지 1초 넘었을때
+	// When there is a pet and over 1 second has passed since the pet's action
 	if( GetPetID() != OBJECTID_NULL)
 	{
 		MFakeCreature *pFakeCreature = (MFakeCreature *)g_pZone->GetFakeCreature(GetPetID());
@@ -9457,22 +9445,22 @@ MPlayer::Action()
 				int petLevel = pPetItem->GetNumber();
 				int petDelayTime = 0;	
 				TYPE_ITEMTYPE tmpItemType = pPetItem->GetItemType();
-				// add by svi 2009-07-01 藤속劤녘膠穀庫돨醵똑
+				// add by svi 2009-07-01 pet speed (garbled)
 				if(tmpItemType == 6 || tmpItemType == 7 || tmpItemType == 8)
 				{
 					petDelayTime = 1200 + ((petLevelMax-petLevel)*120)/petLevelMax;
 				}
 				// end
-				else if(pPetItem->GetItemType()>2)// 2 차 펫이면
+				else if(pPetItem->GetItemType()>2)// If it is a 2nd-tier pet
 					petDelayTime = 3200+((petLevelMax-petLevel)*2800)/petLevelMax;
 				else
 					petDelayTime = 1200+((petLevelMax-petLevel)*2800)/petLevelMax;
 
 				if(MonotonicClock::Now() - m_PetDelayTime > MonotonicClock::Millis((DWORD)max(0, petDelayTime)) )
 				{
-					int itemLimit = 1;	// 머리는 빼고
+					int itemLimit = 1;	// Excluding the head
 
-					if(pPetItem->IsCanCutHead())	// 머리따기 기능이 있으면 머리 포함해서
+					if(pPetItem->IsCanCutHead())	// If it has the head-cutting function, including the head
 						itemLimit = 0;
 
 					MItem *pItem = g_pZone->GetCorpseKilledByMe(itemLimit);
@@ -9487,7 +9475,7 @@ MPlayer::Action()
 
 						g_pSocket->sendPacket( &_CGDissectionCorpse );
 
-						// 한꺼번에 따진다 limit로 세팅해주쟈
+						// Count everything together, let's set it as the limit
 						DEBUG_ADD_FORMAT("[PETPET] itemLimit %d", itemLimit);
 						pItem->SetNumber( itemLimit );
 					}
@@ -9498,7 +9486,7 @@ MPlayer::Action()
 		}
 	}
 
-	// 너무 오래 반복 시키지 않게
+	// So it does not repeat for too long
 	if( m_nUsedActionInfo == SKILL_BLITZ_SLIDING_ATTACK || m_nUsedActionInfo == SKILL_BLAZE_WALK_ATTACK )
 	{
 		// [SKILLREPEAT DIAG] kept
@@ -9519,7 +9507,7 @@ MPlayer::Action()
 			UnSetRepeatAction();
 		}
 	}
-	// 너무 오래 반복 시키지 않게
+	// So it does not repeat for too long
 	if(IsLockMode())
 	{
 		if(MonotonicClock::Now() - m_LockTimer > MonotonicClock::Millis(g_pClientConfig->LOCK_TIME))
@@ -9531,7 +9519,7 @@ MPlayer::Action()
 	//}
 	
 	//----------------------------------------------------------------------
-	// 파티원들에게 나의 상태정보를 보낸다.
+	// Send my status info to the party members.
 	//----------------------------------------------------------------------
 	SendStatusInfoToParty();
 	
@@ -9552,13 +9540,13 @@ MPlayer::Action()
 #endif
 	/*
 	// [ TEST CODE ]
-	// EffectTarget에 결과 추가하기 Test
+	// EffectTarget add-result test
 	if (m_listEffectTarget.size()!=0 && m_ActionCount==m_ActionCountMax)
 	{
 		MActionResult* pResult = new MActionResult;
 		pResult->Add( new MActionResultNodeActionInfo( 1, 1001, GUIDANCE_FIRE ) );
 		
-		// 결과와 관련된 Effect가 없는 경우..
+		// When there is no Effect related to the result..
 		EFFECTTARGET_LIST::iterator iEffectTarget = m_listEffectTarget.begin();
 		MEffectTarget* pEffectTarget = *iEffectTarget;
 		
@@ -9566,8 +9554,8 @@ MPlayer::Action()
 
 		if (!AddActionResult(id, pResult))
 		{
-			// 결과를 바로 실행하고..
-			// 메모리에서 지운다.
+			// Execute the result right away..
+			// and delete it from memory.
 			delete pResult;
 		}
 		
@@ -9582,25 +9570,25 @@ MPlayer::Action()
 	#endif
 
 	//--------------------------------------------------------
-	// 도움말 --;
+	// Help --;
 	//--------------------------------------------------------
 //	__BEGIN_HELP_EVENT
-//		static DWORD nextHelpTime = g_CurrentTime+20*1000;	// 20초 뒤 처음으로 메세지 출력
+//		static DWORD nextHelpTime = g_CurrentTime+20*1000;	// first message output after 20 seconds
 //		if (g_CurrentTime > nextHelpTime)
 //		{
-//			ExecuteHelpEvent( HE_TIME_PASSED );
+//			GameInfoPresentation::ExecuteHelpEvent( HE_TIME_PASSED );
 //
-//			nextHelpTime = g_CurrentTime + 20*1000;	// 20초
+//			nextHelpTime = g_CurrentTime + 20*1000;	// 20 seconds
 //		}
 //	__END_HELP_EVENT
 
 	//--------------------------------------------------------
-	// Status 상태 변화	- HP, MP 변화
+	// Status change - HP, MP change
 	//--------------------------------------------------------
 	UpdateStatus();	
 	
 	//--------------------------------------------------------
-	// 뱀파이어로 변하는 Effect체크
+	// Check the Effect that turns into a vampire
 	//--------------------------------------------------------
 	UpdateConversionTime();
 	
@@ -9613,7 +9601,7 @@ MPlayer::Action()
 	}
 
 	//--------------------------------------------------------
-	// 특수한 효과들
+	// Special effects
 	//--------------------------------------------------------
 	if(UpDateInstallTurret())
 		return;
@@ -9634,13 +9622,13 @@ MPlayer::Action()
 
 	UpdateBikeCrash();
 	//--------------------------------------------------------
-	// 방향 전환을 자연스럽게
+	// Make direction changes natural
 	//--------------------------------------------------------
 	ChangeNearDirection();
 	//m_CurrentDirection = m_Direction;
 
 	//--------------------------------------------------------
-	// 기술에 따른 결과 표현 체크
+	// Check result display depending on the skill
 	//--------------------------------------------------------
 	#ifdef OUTPUT_DEBUG_PLAYER_ACTION
 		DEBUG_ADD("beforeCheckListEffect");
@@ -9653,8 +9641,8 @@ MPlayer::Action()
 		if (numTarget!=0)
 		{
 			//------------------------------------------------------------
-			// 뭔가 기술을 사용하고 있다면 
-			// 그 기술의 결과 시점에서 결과를 보여주게 할려고...
+			// If some skill is being used
+			// so that the result is shown at that skill's result point...
 			//------------------------------------------------------------
 			BOOL	bActionStand	= (m_Action==ACTION_STAND || (IsSlayer() && m_Action==ACTION_SLAYER_MOTOR_STAND));
 			//int		actionCountMax_1 = m_ActionCountMax-1;
@@ -9670,7 +9658,7 @@ MPlayer::Action()
 							&& m_RepeatCount!=0
 							&& m_ActionCount >= GetActionInfoRepeatStartFrame( m_nUsedActionInfo );
 
-			// 결과를 전부 실행해버린다.
+			// Execute all the results.
 			if (bStartResult)
 			{
 				EFFECTTARGET_LIST::iterator iEffectTarget = m_listEffectTarget.begin();
@@ -9685,7 +9673,7 @@ MPlayer::Action()
 
 						if (pResult!=NULL)
 						{
-							// 실행한 결과는 없앤다.
+							// Remove the executed result.
 							int numTargetBeforeExecute = static_cast<int>(m_listEffectTarget.size());
 
 							pEffectTarget->SetResultNULL();
@@ -9696,19 +9684,19 @@ MPlayer::Action()
 
 							int numTargetAfterExecute = static_cast<int>(m_listEffectTarget.size());
 							
-							// pResult->Execute()에서 m_listEffectTarget이 제거될 수가 있다 - -;
-							// 콩가루 구조... 수정이 필요하다 - -;;
+							// m_listEffectTarget may be removed in pResult->Execute() (sigh)
+							// Messy structure... needs fixing (sigh)
 							if (numTargetBeforeExecute!=numTargetAfterExecute)
 							{
-								// 처음부터 다시 체크
+								// Check again from the beginning
 								iEffectTarget = m_listEffectTarget.begin();
 								continue;
 							}
 
-							// delete는 외부에서 한다...
-							// 아마(-_-;;) Effect에 붙여서 Effect 제거될때 지우는 듯..
-							// 그러나.. 별로 기억이 안나는데.. ㅡ.ㅡ;;
-							// 일단 지우면 다운되는데. 안 지우면 다운안되는걸보면.. 맞는듯.. - -;;
+							// The delete is done externally...
+							// Probably (sigh) attached to the Effect and deleted when the Effect is removed..
+							// But.. I don't remember well..
+							// It crashes if deleted, and doesn't crash if not deleted, so that seems right.. (sigh)
 							//delete pEffectTarget;
 						}
 					}
@@ -9726,9 +9714,9 @@ MPlayer::Action()
 	#endif
 
 	//--------------------------------------------------------
-	// 기술 사용후의 delay가 모두 끝난 상태이면...
+	// If all the delay after skill use has finished...
 	//--------------------------------------------------------	
-	if ((!m_bTurning	// [새기술]
+	if ((!m_bTurning	// [new skill]
 		&& !HasEffectStatus(EFFECTSTATUS_CURSE_PARALYSIS)
 		&& !IsCauseCriticalWounds()
 //		&& !IsBloodyZenith()
@@ -9744,7 +9732,7 @@ MPlayer::Action()
 		)// && !HasEffectStatus(EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS))	//IsNotDelay())
 	{
 		//--------------------------------------------------------
-		// 다음 buffering된 actioninfo
+		// Next buffered actioninfo
 		//--------------------------------------------------------
 		/*
 		if (m_nNextUsedActionInfo!=ACTIONINFO_NULL
@@ -9755,7 +9743,7 @@ MPlayer::Action()
 		}
 		*/
 		//--------------------------------------------------------
-		// 무슨 effect가 걸려있다면 2배 느리게 움직인다.
+		// If any effect is applied, move twice as slowly.
 		//--------------------------------------------------------
 		if ((HasEffectStatus( EFFECTSTATUS_HAS_SLAYER_RELIC )       || HasEffectStatus( EFFECTSTATUS_HAS_VAMPIRE_RELIC ) ||
 			HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_GREGORI )|| HasEffectStatus( EFFECTSTATUS_HAS_BLOOD_BIBLE_NEMA ) ||
@@ -9790,14 +9778,14 @@ MPlayer::Action()
 		}
 
 		//--------------------------------------------------------
-		// KnockBack 처리 2001.10.9
+		// KnockBack handling 2001.10.9
 		//--------------------------------------------------------
 		if (m_bKnockBack > 0)
 		{
 			m_sX += m_cX;
 			m_sY += m_cY;
 
-			// knockBack 다x 됐으면 정지동작.
+			// When knockBack is all done, stop motion.
 			if (--m_bKnockBack==0)
 			{
 				m_sX = 0;
@@ -9809,19 +9797,19 @@ MPlayer::Action()
 			}			
 		}
 		//--------------------------------------------------------
-		// FastMove중에는 action을 취하지 않는다. 2001.8.10
+		// Do not take actions during FastMove. 2001.8.10
 		//--------------------------------------------------------
 		else if (!m_bFastMove)
 		{
 			//--------------------------------------------------------
-			// Lock Mode 사용
+			// Use Lock Mode
 			//--------------------------------------------------------
 			if (m_bLockMode && !IsInDarkness())
 			{
 				int creatureID = FindEnemy();
 
 				//--------------------------------------------------------
-				// 사정거리 이내에 적이 없는 경우
+				// When there is no enemy within range
 				//--------------------------------------------------------
 				if (static_cast<TYPE_OBJECTID>(creatureID) == OBJECTID_NULL)
 				{
@@ -9836,16 +9824,16 @@ MPlayer::Action()
 					m_fTraceBuffer	= FLAG_TRACE_NULL;	
 					m_fNextTrace	= FLAG_TRACE_NULL;
 
-					// 길찾기 했던걸 없애준다.
+					// Clear the path that was found.
 					m_DestX		= SECTORPOSITION_NULL;
 					m_DestY		= SECTORPOSITION_NULL;
 					m_NextDestX	= SECTORPOSITION_NULL;
 					m_NextDestY	= SECTORPOSITION_NULL;
 
-					g_pTopView->SetSelectedNULL();
+					WorldEvents::SetSelectedNULL();
 				}
 				//--------------------------------------------------------
-				// 적이 있는 경우
+				// When there is an enemy
 				//--------------------------------------------------------
 				else
 				{
@@ -9853,16 +9841,16 @@ MPlayer::Action()
 					int bSpecialAction = g_bRButtonDown;
 
 					//---------------------------------------------------------------
-					// 기본 행동
+					// Basic action
 					//-------------------------------------------------------------
 					if (bBasicAction)
 					{
 						if (TraceCreatureToBasicAction( 
 									creatureID, 
-									true ))		// 강제 공격
+									true ))		// forced attack
 						{
 							//----------------------------------
-							// 반복 action인 경우만 반복 설정
+							// Set repeat only for repeat actions
 							//----------------------------------
 							//if (m_nBasicActionInfo!=ACTIONINFO_NULL 
 							//	&& (*g_pActionInfoTable)[m_nBasicActionInfo].IsUseRepeatFrame()
@@ -9871,21 +9859,21 @@ MPlayer::Action()
 							//	SetRepeatAction();
 							//}
 
-							g_pTopView->SetSelectedCreature( creatureID );			
-							gpC_mouse_pointer->SetCursorAttack();					
+							WorldEvents::SetSelectedCreature( creatureID );
+							PlayerPresentation::SetCursorAttack();
 
 							//g_bPreviousMove = false;
 						}
 					}
 					//-------------------------------------------------------------
-					// 특수 행동
+					// Special action
 					//-------------------------------------------------------------
 					else if (bSpecialAction)
 					{
 						if (TraceCreatureToSpecialAction( creatureID, true ))
 						{
 							//----------------------------------
-							// 반복 action인 경우만 반복 설정
+							// Set repeat only for repeat actions
 							//----------------------------------
 							if (m_nSpecialActionInfo!=ACTIONINFO_NULL 
 								&& (*g_pActionInfoTable)[m_nSpecialActionInfo].IsUseRepeatFrame()
@@ -9895,32 +9883,32 @@ MPlayer::Action()
 								SetRepeatAction();
 							}							
 							
-							g_pTopView->SetSelectedCreature( creatureID );			
-							gpC_mouse_pointer->SetCursorAttack();					
+							WorldEvents::SetSelectedCreature( creatureID );
+							PlayerPresentation::SetCursorAttack();
 
 							//g_bPreviousMove = false;
 						}
 					}					
 
-					// 목적지 표시를 없앤다.
-					g_pTopView->SetSelectedSectorNULL();
+					// Remove the destination marker.
+					WorldEvents::SetSelectedSectorNULL();
 				}
 				
 			}
 
 			//--------------------------------------------------------
-			// 피 흘리는거 체크
+			// Check bleeding
 			//--------------------------------------------------------
 			if (m_bAlive)
 			{
 				CheckDropBlood();
 			}
 
-			// delayTime은 없는 걸로 setting한다.
+			// Set delayTime to none.
 			//m_DelayTime	= 0;
 			//----------------------------------------------------
-			// 계속 추적하는 경우
-			// 음.. 지저분한 코드가 늘어난다... - -;;
+			// When continuing to trace
+			// Hmm.. the messy code keeps growing... (sigh)
 			//----------------------------------------------------
 			if (m_bKeepTraceCreature && (m_fTrace & FLAG_TRACE_CREATURE_BASIC))
 			{							
@@ -9928,7 +9916,7 @@ MPlayer::Action()
 			}
 			
 			//------------------------------------------		
-			//     Buffering된 다음 행동
+			//         Buffered next action
 			//------------------------------------------
 			BOOL bSlayer = IsSlayer();
 			if (m_bNextAction ||
@@ -9952,10 +9940,10 @@ MPlayer::Action()
 			//------------------------------------------
 			// [ TEST CODE ]
 			//------------------------------------------
-			// 움직이는 도중에..
-			// 추적하는 경우 추적목표거리가 되는 경우에는..
-			// 바로 이번에.. action을 수행하게 해야한다.
-			// 그래서, return false
+			// While moving..
+			// When tracing and the trace target distance is reached..
+			// the action must be performed right this time.
+			// So, return false
 			if (m_NextAction==m_MoveAction &&
 				m_fTrace != FLAG_TRACE_NULL &&
 				(max(abs(m_X-m_TraceX), abs(m_Y-m_TraceY))) <= m_TraceDistance)
@@ -9964,7 +9952,7 @@ MPlayer::Action()
 			}
 
 			//------------------------------------------
-			// Action 수행.. 다음 Frame으로...
+			// Perform Action.. to the next Frame...
 			//------------------------------------------
 			if (m_ActionCount < m_ActionCountMax)
 			{		
@@ -9976,13 +9964,13 @@ MPlayer::Action()
 				{
 					//m_ActionCount--;
 
-					// 적절한 Action 수행
+					// Perform the appropriate Action
 					//switch (m_Action)
 					//
 
 					BOOL bSlayer = IsSlayer();
 
-						// 정지 동작
+						// Stop motion
 					if (m_Action==ACTION_STAND || (IsOusters() && m_Action==ACTION_OUSTERS_FAST_MOVE_MOVE)
 						|| (bSlayer && m_Action==ACTION_SLAYER_MOTOR_STAND))
 					{
@@ -9990,7 +9978,7 @@ MPlayer::Action()
 						m_ActionCount++;						
 
 						//------------------------------------------------------------
-						// 반복 행동 체크..
+						// Check repeated action..
 						//------------------------------------------------------------
 						if (CheckRepeatAction())
 						{
@@ -9998,7 +9986,7 @@ MPlayer::Action()
 							{
 								if (m_nNextUsedActionInfo != ACTIONINFO_NULL)
 								{
-									// 아.. 헷갈려라.. - -;
+									// Ugh.. confusing.. (sigh)
 									m_nUsedActionInfo = m_nNextUsedActionInfo;
 									m_nNextUsedActionInfo = ACTIONINFO_NULL;							
 
@@ -10006,19 +9994,19 @@ MPlayer::Action()
 									{
 										if (m_nNextUsedActionInfo != ACTIONINFO_NULL)
 										{
-											// 아.. 헷갈려라.. - -;
+											// Ugh.. confusing.. (sigh)
 											m_nUsedActionInfo = m_nNextUsedActionInfo;
 											m_nNextUsedActionInfo = ACTIONINFO_NULL;
 										}
 										else
 										{
-											// 더 이상 갈 필요가 없다.
+											// No need to go any further.
 											m_listDirection.clear();
 
-											// 이동 중지
+											// Stop moving
 											m_MoveCount = m_MoveCountMax;
 
-											// Player가 바라보는 방향이 현재 적이 있는 방향이 되도록 한다.				
+											// Make the direction the Player faces the direction where the enemy currently is.
 											SetDirectionToPosition( m_TraceX, m_TraceY );
 
 											SetAction( m_NextAction );
@@ -10042,7 +10030,7 @@ MPlayer::Action()
 						else if (m_Action==ACTION_MOVE 
 								|| bSlayer && ACTION_SLAYER_MOTOR_MOVE)
 						{
-							// Move는 따로 처리한다.
+							// Move is handled separately.
 							//ActionMove();					
 						}
 						*/					
@@ -10075,19 +10063,19 @@ MPlayer::Action()
 
 
 		//------------------------------------------
-		// Action이 끝난 상태이면
+		// When the Action has finished
 		//------------------------------------------
 		if (m_bAlive)
 		{
-			// 부등호 추가 2001.10.7
+			// Added inequality sign 2001.10.7
 			if (m_ActionCount>=m_ActionCountMax) //if (IsStop())
 			{
 				//--------------------------------------------------------
-				// 목표 타일에 도착한 상태에서..
-				// 계속 서 있거나.. 다 걸은 경우는.. 
-				// 제자리에서 흔들거리는 모습을 표현해준다.
+				// Having arrived at the target tile..
+				// if standing still.. or if done walking..
+				// show a swaying-in-place look.
 				//--------------------------------------------------------
-				// 부등호 추가 2001.10.7
+				// Added inequality sign 2001.10.7
 				if (m_MoveCount>=m_MoveCountMax)
 				{					
 					//if (m_bRepeatAction && m_RepeatCount!=0 && (*g_pActionInfoTable)[m_nUsedActionInfo].IsRepeatFrame())
@@ -10095,7 +10083,7 @@ MPlayer::Action()
 					//	int a =0;
 					//}
 					//------------------------------------------------------------
-					// 반복 행동 체크..
+					// Check repeated action..
 					//------------------------------------------------------------
 					//if (
 						bool bCheckRepeat = CheckRepeatAction();
@@ -10124,7 +10112,7 @@ MPlayer::Action()
 						*/
 						if (m_nNextUsedActionInfo != ACTIONINFO_NULL)
 						{
-							// 아.. 헷갈려라.. - -;
+							// Ugh.. confusing.. (sigh)
 							m_nUsedActionInfo = m_nNextUsedActionInfo;
 							m_nNextUsedActionInfo = ACTIONINFO_NULL;							
 
@@ -10132,19 +10120,19 @@ MPlayer::Action()
 							{
 								if (m_nNextUsedActionInfo != ACTIONINFO_NULL)
 								{
-									// 아.. 헷갈려라.. - -;
+									// Ugh.. confusing.. (sigh)
 									m_nUsedActionInfo = m_nNextUsedActionInfo;
 									m_nNextUsedActionInfo = ACTIONINFO_NULL;
 								}
 								else
 								{
-									// 더 이상 갈 필요가 없다.
+									// No need to go any further.
 									m_listDirection.clear();
 
-									// 이동 중지
+									// Stop moving
 									m_MoveCount = m_MoveCountMax;
 
-									// Player가 바라보는 방향이 현재 적이 있는 방향이 되도록 한다.				
+									// Make the direction the Player faces the direction where the enemy currently is.
 									SetDirectionToPosition( m_TraceX, m_TraceY );
 
 									SetAction( m_NextAction );
@@ -10165,7 +10153,7 @@ MPlayer::Action()
 					}
 
 					//------------------------------------------
-					// 제자리에서 흔들거리는 모습
+					// Swaying-in-place look
 					//------------------------------------------
 					if (m_bRepeatAction)// && m_RepeatCount!=0)// && (*g_pActionInfoTable)[m_nUsedActionInfo].IsRepeatFrame())
 					{						
@@ -10177,8 +10165,8 @@ MPlayer::Action()
 					
 				}
 				//--------------------------------------------------------
-				// 걷다가 다른 action을 보여줬거나 계속 걷던 중이다.
-				// 다시 걷는다.
+				// Showed another action while walking, or was walking continuously.
+				// Walk again.
 				//--------------------------------------------------------					
 				else
 				{			
@@ -10186,8 +10174,8 @@ MPlayer::Action()
 					ActionMove();
 
 					//----------------------------------------------------
-					// 이동이 모두 끝났으면..
-					// 제자리에서 흔들거리는 모습 
+					// When movement is all done..
+					// Swaying-in-place look
 					//----------------------------------------------------
 					if (m_MoveCount==m_MoveCountMax)
 					{		
@@ -10203,7 +10191,7 @@ MPlayer::Action()
 						{
 							if (m_nNextUsedActionInfo != ACTIONINFO_NULL)
 							{
-								// 아.. 헷갈려라.. - -;
+								// Ugh.. confusing.. (sigh)
 								m_nUsedActionInfo = m_nNextUsedActionInfo;
 								m_nNextUsedActionInfo = ACTIONINFO_NULL;							
 
@@ -10211,19 +10199,19 @@ MPlayer::Action()
 								{
 									if (m_nNextUsedActionInfo != ACTIONINFO_NULL)
 									{
-										// 아.. 헷갈려라.. - -;
+										// Ugh.. confusing.. (sigh)
 										m_nUsedActionInfo = m_nNextUsedActionInfo;
 										m_nNextUsedActionInfo = ACTIONINFO_NULL;
 									}
 									else
 									{
-										// 더 이상 갈 필요가 없다.
+										// No need to go any further.
 										m_listDirection.clear();
 
-										// 이동 중지
+										// Stop moving
 										m_MoveCount = m_MoveCountMax;
 
-										// Player가 바라보는 방향이 현재 적이 있는 방향이 되도록 한다.				
+										// Make the direction the Player faces the direction where the enemy currently is.
 										SetDirectionToPosition( m_TraceX, m_TraceY );
 
 										SetAction( m_NextAction );
@@ -10244,7 +10232,7 @@ MPlayer::Action()
 						}
 
 						//------------------------------------------
-						// 제자리에서 흔들거리는 모습
+						// Swaying-in-place look
 						//------------------------------------------				
 						if (m_ActionCount>=m_ActionCountMax)
 						{
@@ -10258,8 +10246,8 @@ MPlayer::Action()
 
 	
 	//--------------------------------------------------------
-	// Delay가 있는 경우...  
-	// 살아 있는 경우에만 --> 정지동작을 보여준다.
+	// When there is a Delay...
+	// Only if alive --> show the stop motion.
 	//--------------------------------------------------------
 	/*
 	else if (m_bAlive)
@@ -10272,10 +10260,10 @@ MPlayer::Action()
 				m_ActionCount++;
 			}		
 
-			// action이 끝났으면..
+			// When the action has finished..
 			if (m_ActionCount==m_ActionCountMax) 
 			{
-				// 다시 정지 동작
+				// Stop motion again
 				SetAction( (m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND );
 			}		hflh
 		}
@@ -10291,41 +10279,41 @@ MPlayer::Action()
 //----------------------------------------------------------------------
 // Add EffectTarget
 //----------------------------------------------------------------------
-// 진행중인 EffectTarget을 추가한다.
+// Add an in-progress EffectTarget.
 //----------------------------------------------------------------------
 void
 MPlayer::AddEffectTarget(MEffectTarget* pEffectTarget)
 {
-	// 기존에꺼 다 지워버린다. ㅋㅋ
+	// Delete all the existing ones. heh
 	m_listEffectTarget.clear();
 
-	// 새거 하나 추가
+	// Add one new one
 	m_listEffectTarget.push_back( pEffectTarget );
 }
 
 //----------------------------------------------------------------------
 // Remove EffectTarget
 //----------------------------------------------------------------------
-// 진행중이던 Effect가 끝난 경우...
-// 그와 관련있는 Target을 제거한다.
+// When an in-progress Effect has finished...
+// Remove the Target related to it.
 //----------------------------------------------------------------------
 void
 MPlayer::RemoveEffectTarget(BYTE id)
 {
 	EFFECTTARGET_LIST::iterator iEffectTarget = m_listEffectTarget.begin();
 
-	// id가 같은 경우를 찾아서 제거한다.
-	// list이기 때문에.. 다 비교해야 하지만...
-	// 실제로 Player가 사용중인 기술이 몇개~ 밖에 안되기 때문에...
+	// Find and remove the one with the same id.
+	// Since it is a list, everything must be compared, but...
+	// the Player is only using a few skills in practice...
 	while (iEffectTarget != m_listEffectTarget.end())
 	{
-		// id가 같은 경우
+		// When the id is the same
 		if ((*iEffectTarget)->GetEffectID() == id)
 		{
-			// 메모리에서 제거는 외부에서 한다.
+			// Removal from memory is done externally.
 			//delete (*iEffectTarget);
 
-			// list에서 제거한다.			
+			// Remove from the list.
 			m_listEffectTarget.erase( iEffectTarget );
 
 			break;
@@ -10338,31 +10326,31 @@ MPlayer::RemoveEffectTarget(BYTE id)
 //----------------------------------------------------------------------
 // Packet Back
 //----------------------------------------------------------------------
-// 이동 중이면..
-// 바로 전의 칸으로 Back한다.
-// 공격 당했을때의 처리이다.
-// 해킹의 위험이 있지 않을까.. 흠흠.. - -;;
+// If moving..
+// Go Back to the previous tile.
+// This is the handling for when attacked.
+// There may be a hacking risk.. hmm.. (sigh)
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
 // Packet MoveOK
 //----------------------------------------------------------------------
-// Server에서 MOVE_OK를 받은 경우
+// When MOVE_OK is received from the Server
 //
-// 현재위치에서 direction방향인 (x,y) sector로 이동가능하다는 의미이다.
+// It means moving to the (x,y) sector in direction from the current position is possible.
 //----------------------------------------------------------------------
 void
 MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direction)
 {
 	(void)direction;
-	// 2004, 9, 16, sobeit add start - 터렛 방향 바꾸기, 뺄까..ㅡㅡ;
+	// 2004, 9, 16, sobeit add start - change turret direction, maybe remove it.. (sigh)
 //	if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 //	{
 //		SetCurrentDirection(direction);
 //		return;
 //	}
 	// 2004, 9, 16, sobeit add end
-	// 2004, 9, 21, sobeit add start - 아담 북 구름
+	// 2004, 9, 21, sobeit add start - Adam north cloud
 	m_bShowAdamCloud = false;
 	if(NULL != g_pZone && g_pZone->GetID() == 74)
 	{
@@ -10371,8 +10359,8 @@ MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direc
 	}
 	// 2004, 9, 21, sobeit add end
 	//--------------------------------------------------------
-	// 기억해둔 것 중에서..
-	// 검증받은 방향을 제거한다.
+	// Among the remembered ones..
+	// Remove the verified direction.
 	//--------------------------------------------------------
 	if (!m_listSendDirection.empty())
 	{
@@ -10380,45 +10368,45 @@ MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direc
 	}
 
 	//--------------------------------------------------------
-	// MoveError다음에 MoveOK가 바로 날아오는 경우
+	// When MoveOK arrives right after MoveError
 	//--------------------------------------------------------
 	if (m_SendMove==0)
 	{
 		//--------------------------------------------------------
-		// MoveError다음에 바로 MoveOK가 날아오는 경우가 있었다.
-		// 이 경우.. (아마 - -;) 좌표가 삐끗~해서 
-		// 계속 다음부터 좌표 검증을 못받는거 같다.
-		// 그래서.. 임시(?) 대책으로... Server에서 검증된 좌표로 바로 이동시킨다.
+		// There were cases where MoveOK arrived right after MoveError.
+		// In this case.. (probably (sigh)) the coordinates get out of sync
+		// and from then on it seems coordinate verification is never received.
+		// So.. as a temporary(?) measure... move straight to the coordinates verified by the Server.
 		//--------------------------------------------------------
 		MovePosition( sX, sY );
 
-		// 이동을 중지한다.
+		// Stop moving.
 		m_sX = 0;	
 		m_sY = 0;
 
 		m_MoveCount		= m_MoveCountMax;
 		m_ActionCount	= m_ActionCountMax; 
 
-		// 길찾기 제거
+		// Remove path finding
 		m_listDirection.clear();
 
 		//----------------------------------------------------
-		// Creature를 계속 추적하던 중이면..
+		// If it was continuously tracing a Creature...
 		//----------------------------------------------------
-		if (m_bKeepTraceCreature						// 계속 추적하는 경우
-			&& (m_fTrace & FLAG_TRACE_CREATURE_BASIC)	// creature를 추적하는 경우
-			&& !m_bTraceCreatureToForceAttack)			// 그냥 따라가는 경우
+		if (m_bKeepTraceCreature						// continuously tracing
+			&& (m_fTrace & FLAG_TRACE_CREATURE_BASIC)	// tracing a creature
+			&& !m_bTraceCreatureToForceAttack)			// just following
 		{							
 			KeepTraceCreature();		
 		}
 		//----------------------------------------------------
-		// 보통 이동시에 중지된 경우
+		// When stopped during normal movement
 		//----------------------------------------------------
 		else
 		{		
 			TraceNULL();	
 
-			// 길찾기 했던걸 없애준다.
+			// Clear the path that was found.
 			m_DestX		= SECTORPOSITION_NULL;
 			m_DestY		= SECTORPOSITION_NULL;
 			m_NextDestX	= SECTORPOSITION_NULL;
@@ -10426,7 +10414,7 @@ MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direc
 		}
 	}
 	//--------------------------------------------------------
-	// 정상적인 MoveOK인 경우
+	// Normal MoveOK case
 	//--------------------------------------------------------
 	else if (m_SendMove>0)
 	{
@@ -10436,7 +10424,7 @@ MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direc
 	g_bNetStatusGood = true;
 
 	//--------------------------------------------------------
-	// Server에서 검증된 위치를 기억해둔다.
+	// Remember the position verified by the Server.
 	//--------------------------------------------------------
 	//POINT nextPoint;
 	//MCreature::GetNextPosition(direction, nextPoint);
@@ -10448,8 +10436,8 @@ MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direc
 
 
 	//--------------------------------------------------------
-	// (m_ServerX, m_ServerY)에서부터 
-	// Player의 시야에 포함되지 않는 Creature를 Zone에서 제거시킨다.
+	// (m_ServerX, m_ServerY) onward,
+	// remove Creatures not in the Player's view from the Zone.
 	//--------------------------------------------------------
 	if (m_pZone!=NULL)
 	{
@@ -10464,7 +10452,7 @@ MPlayer::PacketMoveOK(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE direc
 //----------------------------------------------------------------------
 // Packet MoveNO
 //----------------------------------------------------------------------
-// Server에서 MOVE_NO를 받은 경우
+// When MOVE_NO is received from the Server
 //----------------------------------------------------------------------
 void	
 MPlayer::PacketMoveNO()	
@@ -10478,22 +10466,22 @@ MPlayer::PacketMoveNO()
 	m_SendMove = 0;
 
 	//------------------------------------------------------------
-	// 현재 위치로 올 수 있는 길이 있는지 살펴본다.
+	// See whether there is a path to the current position.
 	//
-	// 길이 없는 경우이거나 길이 넘 긴 경우?는 
-	//		최근의 검증받은 위치(ServerX,Y)로 이동한다.
+	// If there is no path, or the path is too long?
+	//		move to the most recently verified position (ServerX,Y).
 	//
-	// 길이 있다면, 찾은 위치까지의 이동 packet을 보낸다.
+	// If there is a path, send the movement packet up to the found position.
 	//------------------------------------------------------------
-	//if (!SetDestination( m_X, m_Y ) || m_listDirection.empty()	// 길이 없는 경우
-		//|| m_SendMove > g_pClientConfig->MAX_CLIENT_MOVE)		// 길이 넘 긴 경우
+	//if (!SetDestination( m_X, m_Y ) || m_listDirection.empty()	// no path
+		//|| m_SendMove > g_pClientConfig->MAX_CLIENT_MOVE)		// path too long
 	{
-		// Zone에서 현재 있는 Sector에서 제거하고 
-		// Server에서 검증된 최근의 Sector로 이동한다.
+		// Remove from the Sector in the Zone where it currently is
+		// and move to the most recently verified Sector from the Server.
 		MovePosition( m_ServerX, m_ServerY );
 		
 
-		// 이동을 중지한다.
+		// Stop moving.
 		m_sX = 0;	
 		m_sY = 0;
 		
@@ -10501,25 +10489,25 @@ MPlayer::PacketMoveNO()
 		//m_ActionCount	= m_ActionCountMax; 
 
 		//----------------------------------------------------
-		// Creature를 계속 추적하던 중이면..
+		// If it was continuously tracing a Creature...
 		//----------------------------------------------------
-		if (m_bKeepTraceCreature						// 계속 추적하는 경우
-			&& (m_fTrace & FLAG_TRACE_CREATURE_BASIC)	// creature를 추적하는 경우
-			&& !m_bTraceCreatureToForceAttack			// 그냥 따라가는 경우
-			&& m_ActionCount>=m_ActionCountMax)			// 특별한 동작없이 움직이고 있던 경우
+		if (m_bKeepTraceCreature						// continuously tracing
+			&& (m_fTrace & FLAG_TRACE_CREATURE_BASIC)	// tracing a creature
+			&& !m_bTraceCreatureToForceAttack			// just following
+			&& m_ActionCount>=m_ActionCountMax)			// was moving with no special motion
 		{							
 			KeepTraceCreature();		
 		}
 		//----------------------------------------------------
-		// 보통 이동시에 중지된 경우
+		// When stopped during normal movement
 		//----------------------------------------------------
 		else
 		{		
-			// 길찾기 했던걸 없애준다.
+			// Clear the path that was found.
 			m_listDirection.clear();
 
 			/*
-			// 다 주석처리하면 왠지 될거같다... - -;  2001.8.1		
+			// Somehow it feels like it will work if everything is commented out... (sigh)  2001.8.1
 			m_DestX		= SECTORPOSITION_NULL;
 			m_DestY		= SECTORPOSITION_NULL;
 			m_NextDestX	= SECTORPOSITION_NULL;
@@ -10527,7 +10515,7 @@ MPlayer::PacketMoveNO()
 
 			TraceNULL();	
 
-			// 2001.7.27 추가
+			// Added 2001.7.27
 			UnSetRepeatAction();	
 			*/
 		}
@@ -10535,7 +10523,7 @@ MPlayer::PacketMoveNO()
 		// 2001.8.22
 		if (m_Action==m_MoveAction)
 		{
-			// 이동 중이면 그냥 정지
+			// If moving, just stop
 			/*
 			SetStop();
 
@@ -10548,20 +10536,20 @@ MPlayer::PacketMoveNO()
 
 			UnSetRepeatAction();			
 			*/
-			// 길찾기 제거
+			// Remove path finding
 			m_listDirection.clear(); 
 
-			// 추적 중지	
+			// Stop tracing
 			//m_fTrace		= FLAG_TRACE_NULL;
 			//m_fNextTrace	= FLAG_TRACE_NULL;
 
-			// Action 중지
+			// Stop Action
 			//m_Action		= (m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND;
 			//m_ActionCount	= m_ActionCountMax; 	
 			m_MoveCount		= m_MoveCountMax-1; 
 			m_NextMoveCount = m_MoveCount;
 
-			// 다음 동작도 없앰
+			// Also remove the next motion
 			m_bNextAction = false;
 			m_NextX = SECTORPOSITION_NULL;
 			m_NextY = SECTORPOSITION_NULL;
@@ -10570,14 +10558,14 @@ MPlayer::PacketMoveNO()
 			//m_nUsedActionInfo = ACTIONINFO_NULL;
 
 			
-			// 목표 제거
+			// Remove target
 			m_DestX			= SECTORPOSITION_NULL; 
 			m_DestY			= SECTORPOSITION_NULL; 
 			m_NextDestX		= SECTORPOSITION_NULL; 
 			m_NextDestY		= SECTORPOSITION_NULL; 
 		}
 		// 2001.8.6
-		// 임시 대책.. - 움직이다가 부딪혀셔 튕기는 경우..
+		// Temporary measure.. - when bumping into something and bouncing back while moving..
 		else if (m_ActionCount>=m_ActionCountMax)
 		{
 			if (m_Action==m_MoveAction)
@@ -10603,20 +10591,20 @@ MPlayer::PacketMoveNO()
 		}
 
 		//m_SendMove = 0;
-		// 여기서 뭔가 SX, SY값이 이상하게 되는데~~!!!!!!!!!!!!!!!!
+		// Here the SX, SY values somehow become weird~~!!!!!!!!!!!!!!!!
 	}
 	/*
-	// 한칸 차이로 대체로 막혀버리기 때문에
-	// 별로 의미가 없어서 주석처리해뒀다.
-	// 그리고.. 테스트도 한번도 못해본 코드이다. - -;
+	// Because it is mostly blocked by a one-tile difference
+	// it is not very meaningful, so it was commented out.
+	// Also.. this is code that has never been tested even once. (sigh)
 	else
 	{
 		DEBUG_ADD_FORMAT("[MoveNo] Find New Way. num=%d", m_listDirection.size());
 
 		//----------------------------------------------------	
 		//
-		// (m_ServerX, m_ServerY)에서 
-		//	(m_X, m_Y)까지 방향대로 움직인다.
+		// From (m_ServerX, m_ServerY)
+		//	move in the direction up to (m_X, m_Y).
 		//
 		//----------------------------------------------------
 		int x = m_ServerX;
@@ -10625,7 +10613,7 @@ MPlayer::PacketMoveNO()
 		while (!m_listDirection.empty())
 		{
 			//----------------------------------------------------
-			// m_listDirection에서 방향을 하나 읽어온다.
+			// Read one direction from m_listDirection.
 			//----------------------------------------------------
 			int direction = m_listDirection.front();
 			m_listDirection.pop_front();	
@@ -10643,7 +10631,7 @@ MPlayer::PacketMoveNO()
 			}
 
 			//----------------------------------------------------
-			// Server에서 검증을 받아야 한다.
+			// Must be verified by the Server.
 			//----------------------------------------------------
 			#ifdef	CONNECT_SERVER
 				CGMove _CGMove;
@@ -10652,7 +10640,7 @@ MPlayer::PacketMoveNO()
 				_CGMove.setDir( direction );
 				g_pSocket->sendPacket( &_CGMove );
 				
-				// Server로 보낸 방향을 기억해둔다.
+				// Remember the direction sent to the Server.
 				m_listSendDirection.push_back( direction );
 				m_SendMove++;				
 			#endif
@@ -10665,34 +10653,34 @@ MPlayer::PacketMoveNO()
 //----------------------------------------------------------------------
 // Packet SpecialAction Result
 //----------------------------------------------------------------------
-// this Creature는 Damage를 받았으므로
-// 이동 중이면 방금 전의 Tile로 Back시켜야 한다.
+// This Creature took Damage, so
+// if moving, it must be put Back to the tile just before.
 //
-// 0. 모든 동작을 중지하고..
-// 1. Action --> Damage받는 동작
-// 2. Damage 표시
+// 0. Stop all motions..
+// 1. Action --> Damage-taking motion
+// 2. Show Damage
 //----------------------------------------------------------------------
 void		
 MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJECTID id, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BYTE temp)
 {
 	//--------------------------------------------------
-	// 죽었으면 return
+	// Return if dead
 	//--------------------------------------------------
 	if (!m_bAlive)
 		return;
 
 	//----------------------------------------------------------------------
-	// 결과 action이 아닌 경우..  - 의미가 있나?? 흠..
+	// If it is not a result action..  - does it matter?? hmm..
 	//----------------------------------------------------------------------
 	if (nResultActionInfo < (*g_pActionInfoTable).GetMinResultActionInfo()
-		// fast move중에는 action을 보여주지 않는다... // 2001.8.10
+		// Do not show the action during fast move... // 2001.8.10
 		|| m_bFastMove || m_bKnockBack)
 	{
 		return;
 	}
 
 	//----------------------------------------------------------------------
-	// 방어막 효과.. - -;
+	// Shield effect.. (sigh)
 	//----------------------------------------------------------------------
 	int actionInfoAction = GetActionInfoAction(nResultActionInfo);
 	
@@ -10720,12 +10708,12 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 	}
 
 	//-------------------------------------------------
-	// 반복 action 때문에 기억해둔다.
+	// Remember it because of the repeat action.
 	//-------------------------------------------------
 	int oldTraceID = m_TraceID;
 
 	//----------------------------------------------------------------------
-	// 기존에 사용할려는 것이 있었다면...
+	// If there was something it was about to use...
 	//----------------------------------------------------------------------
 	///*
 	m_nNextUsedActionInfo = ACTIONINFO_NULL;
@@ -10737,16 +10725,16 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 		BOOL	bSentPacket		= (m_ActionCount>0);
 		int		StartFrame		= (*g_pActionInfoTable)[m_nUsedActionInfo].GetStartFrame( m_WeaponSpeed );
 
-		// Effect가 시작되는 경우는..
-		// (1) StartFrame인 경우
-		// (2) 마지막 ActionFrame인 경우
+		// When the Effect starts:
+		// (1) when it is the StartFrame
+		// (2) when it is the last ActionFrame
 		BOOL	bStartedEffect = m_ActionCount>=StartFrame;
 
 		//--------------------------------------------------
-		// 이미 effect가 붙은게 아니라면 붙인다.
+		// Attach it if an effect is not already attached.
 		//--------------------------------------------------		
-		if (!bStartActionInfo						// 결과 패킷이거나..
-			|| (bSentPacket && !bStartedEffect))	// 패킷을 보냈는데 Effect가 안 붙은 경우..
+		if (!bStartActionInfo						// result packet, or..
+			|| (bSentPacket && !bStartedEffect))	// packet was sent but the Effect was not attached..
 		{
 			TYPE_ACTIONINFO oldUsedActionInfo = m_nUsedActionInfo;
 
@@ -10754,7 +10742,7 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 
 			AffectUsedActionInfo(oldUsedActionInfo);
 			
-			// AffectUsedActionInfo에 의해서 생긴 결과 표현..
+			// Result display produced by AffectUsedActionInfo..
 			if (m_nUsedActionInfo != ACTIONINFO_NULL)
 			{
 				AttachCastingEffect( m_nUsedActionInfo, TRUE );
@@ -10762,7 +10750,7 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 			}
 		}			
 		//--------------------------------------------------		
-		// 바로 이전의 Effect를 출력 안 하는 경우.
+		// When the immediately preceding Effect is not output.
 		//--------------------------------------------------		
 		else
 		{
@@ -10770,7 +10758,7 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 		}
 		
 		//-------------------------------------------------------------
-		// castingEffect가 아직 출력 안됐으면 출력시킨다.
+		// If castingEffect has not been output yet, output it.
 		//-------------------------------------------------------------
 		if (m_nUsedActionInfo!=ACTIONINFO_NULL
 			&& GetActionInfoCastingStartFrame(m_nUsedActionInfo) >= m_ActionCount)
@@ -10781,18 +10769,18 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 	}
 	//*/
 
-	// 이동을 중지한다.
+	// Stop moving.
 	//m_sX = 0;	
 	//m_sY = 0;
-	// Back시킨다.	
+	// Put Back.
 	////SetStop();
 	//PacketBack();		
 	
 	//m_ActionCount = m_ActionCountMax; 
 
-	// 추적 중지
+	// Stop tracing
 	//-------------------------------------------------
-	// 2000.09.22 에 m_fTrace만 NULL로 바꿈..
+	// On 2000.09.22 only m_fTrace was changed to NULL..
 	//-------------------------------------------------
 	//TraceNULL();
 	m_fTrace = FLAG_TRACE_NULL;
@@ -10802,29 +10790,29 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 	m_TraceX	= sX;
 	m_TraceY	= sY;
 
-	// 길찾기 했던걸 없애준다.
+	// Clear the path that was found.
 	m_listDirection.clear();
 	m_DestX		= m_X;//SECTORPOSITION_NULL;
 	m_DestY		= m_Y;//SECTORPOSITION_NULL;
 	m_NextDestX	= SECTORPOSITION_NULL;
 	m_NextDestY	= SECTORPOSITION_NULL;
 
-	// nResultActionInfo에 해당하는 ActionInfo를 찾아야 한다.
-	// 원래ActionInfo + MIN_RESULT_ACTIONINFO를 하면 된다.
+	// Need to find the ActionInfo matching nResultActionInfo.
+	// Just add MIN_RESULT_ACTIONINFO to the original ActionInfo.
 //	m_nUsedActionInfo	= nResultActionInfo;	// + (*g_pActionInfoTable).GetMinResultActionInfo()
 	//SetAction( (*g_pActionInfoTable)[m_nUsedActionInfo].GetAction() );
 
-	// 이렇게 해버리면..
-	// 현재 진행하는 Tile까지 가서.. 공격을 받기 때문에
-	// 한 칸 떨어져서 공격받는 경우가 발생한다.
-	// 어떻게 해야할까??
+	// If done like this..
+	// it goes to the tile currently in progress.. and gets attacked there,
+	// so it can happen that it is attacked one tile away.
+	// What should be done??
 	//m_NextAction = (*g_pActionInfoTable)[m_nUsedActionInfo].GetAction();
 	
 	//SetNextAction( GetActionInfoAction(m_nUsedActionInfo) );
 	//m_bNextAction = true;
 
-	// 2001.05.21 추가
-	// 기술 동작에서 ACTION_STAND는 보여주지 않는다.
+	// Added 2001.05.21
+	// ACTION_STAND is not shown in the skill motion.
 	if (actionInfoAction!=ACTION_STAND)
 	{
 		SetAction( actionInfoAction );
@@ -10833,7 +10821,7 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 	if( temp != 0)
 		SetActionGrade( temp );
 
-	// 바로 적용
+	// Apply immediately
 	//-------------------------------------------------------------
 	//
 	// Casting effect
@@ -10847,13 +10835,13 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 
 
 	//-------------------------------------------------
-	// 반복 action 때문에...
+	// because of the repeat action...
 	//-------------------------------------------------
 	SetTraceID( oldTraceID );
 
-	// 자신에게 사용?..
+	// use on self?..
 	//-------------------------------------------------
-	// 2000.09.22 에 주석 처리.. -_-;
+	// commented out on 2000.09.22.. (sigh)
 	//-------------------------------------------------
 	//m_TraceID = m_ID;
 
@@ -10869,16 +10857,16 @@ MPlayer::PacketSpecialActionResult(TYPE_ACTIONINFO nResultActionInfo, TYPE_OBJEC
 //----------------------------------------------------------------------
 // Packet Add ActionResult
 //----------------------------------------------------------------------
-// Player가 사용한 Action과 관련된 결과를 Server로 부터 받아서
-// 외부에서 ActionResult로 생성한 것을 
-// Player의 ActionResultList에 추가한다.
+// Receives from the Server the result related to an Action the Player used,
+// and adds the ActionResult created externally
+// to the Player's ActionResultList.
 //
-// 즉, InstanceID가 id인 MEffectTarget의 Result를 설정한다.
+// That is, sets the Result of the MEffectTarget whose InstanceID is id.
 //----------------------------------------------------------------------
-// return값이 
-//     true이면 추가되었다는 의미
-//     false이면 관련된 EffectTarget이 없으므로 
-//               결과를 바로 실행해줘야 한다.
+// Return value:
+//     true means it was added
+//     false means there is no related EffectTarget,
+//               so the result must be executed immediately.
 //----------------------------------------------------------------------
 bool		
 MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
@@ -10891,7 +10879,7 @@ MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 	pEffectTarget->SetResult( pResult );
 	*/
 	
-	// 처리할 결과가 없는 경우
+	// when there is no result to process
 	if (pActionResult==NULL)
 	{
 		return false;
@@ -10901,14 +10889,14 @@ MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 	if (m_nUsedActionInfo < g_pActionInfoTable->GetMinResultActionInfo())
 	{
 		//------------------------------------------------------------
-		// 진행중인 Effect의 EffectTarget이 있을 경우에
+		// when the Effect in progress has an EffectTarget
 		//------------------------------------------------------------
 		if (m_listEffectTarget.size()!=0)
 		{
-			// 마지막 EffectTarget의 결과를 확인해본다..
+			// check the result of the last EffectTarget..
 			MEffectTarget* pEffectTarget = m_listEffectTarget.back();
 
-			// 이미 결과가 있는 경우라면..
+			// if there is already a result..
 			MActionResult* pResult = pEffectTarget->GetResult();
 
 			if (pResult!=NULL)
@@ -10916,12 +10904,12 @@ MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 				pEffectTarget->SetResultNULL();
 			}
 
-			// 새로운 결과를 대입해준다.
+			// assign the new result.
 			pEffectTarget->SetResult( pActionResult );
 
 			if (pResult!=NULL)
 			{
-				// 기존의 결과를 실행시켜 버린다.
+				// execute the existing result right away.
 				pResult->Execute();
 
 				delete pResult;
@@ -10935,29 +10923,29 @@ MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 			while (iEffectTarget != m_listEffectTarget.end())
 			{
 				//------------------------------------------------------------
-				// id가 같은 경우
+				// when the ids are the same
 				//------------------------------------------------------------
-				// EffectID를 체크해야하지만,
-				// 현재(!)는 .. 기술 하나 쓰고 하나 검증받기 때문에
-				// EffectID를 체크 안해도 된다.
+				// EffectID should be checked,
+				// but at present(!) one skill is used and verified one at a time,
+				// so there is no need to check EffectID.
 				//------------------------------------------------------------
-				// 무조건 이번 행동에 맞춰서 결과를 표현해줄 예정이므로
-				// 결과를 넣어둔다.
+				// the result will be shown in line with this action unconditionally,
+				// so store the result.
 				//if ((*iEffectTarget)->GetEffectID() == effectID)
 				{
-					// EffectTarget의 결과로 추가시킨다.
-					// 이미 결과가 있는 경우..(?)
-					// 그 전의 결과를 실행시켜버린다.
+					// add it as the result of the EffectTarget.
+					// when there is already a result..(?)
+					// execute the previous result right away.
 					if ((*iEffectTarget)->IsExistResult())
 					{
 						(*iEffectTarget)->GetResult()->Execute();
-						//break; // 원래는.. - -;
+						//break; // originally.. (sigh)
 					}
 
-					// 새로운걸 set하면 기존에건 delete된다.
+					// setting a new one deletes the old one.
 					(*iEffectTarget)->SetResult( pActionResult );
 
-					// 제대로 설정 된 경우
+					// when it was set properly
 					return true;
 				}
 
@@ -10968,11 +10956,11 @@ MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 	}
 
 	//------------------------------------------------------------
-	// 진행중인 Effect의 EffectTarget이 없을 경우에
+	// when the Effect in progress has no EffectTarget
 	//------------------------------------------------------------			
-	// 결과를 바로 실행하고..
-	// 메모리에서 지운다.
-	// (!) 결과 실행을 위한 Manager class가 필요하다.
+	// execute the result right away..
+	// and delete it from memory.
+	// (!) a Manager class for executing results is needed.
 	pActionResult->Execute();
 
 	delete pActionResult;
@@ -10983,7 +10971,7 @@ MPlayer::PacketAddActionResult(WORD effectID, MActionResult* pActionResult)
 //----------------------------------------------------------------------
 // On Attacking
 //----------------------------------------------------------------------
-// 반복 행동 중에 공격하는 경우..
+// when attacking during a repeat action..
 //----------------------------------------------------------------------
 bool			
 MPlayer::OnAttacking() const				
@@ -10994,7 +10982,7 @@ MPlayer::OnAttacking() const
 //----------------------------------------------------------------------
 // Basic Action To Creature
 //----------------------------------------------------------------------
-// 추적을 완료한 경우.. Creature에게 기본action을 취한다.
+// when tracing is complete.. take the basic action on the Creature.
 //----------------------------------------------------------------------
 void
 MPlayer::BasicActionToCreature()
@@ -11014,22 +11002,22 @@ MPlayer::BasicActionToCreature()
 		return;
 
 	//---------------------------------------------------------------
-	// 대상이 NPC인 경우..
+	// when the target is an NPC..
 	//---------------------------------------------------------------
 	if (pCreature->IsNPC())
 	{
-		// 박쥐나 늑대가 아닌 경우.. 거래 가능하다.
+		// if it is not a bat or wolf.. trading is possible.
 		if (//m_CreatureType!=CREATURETYPE_BAT
 			//&& m_CreatureType!=CREATURETYPE_WOLF)
 			(*g_pCreatureSpriteTable)[(*g_pCreatureTable)[m_CreatureType].SpriteTypes[0]].IsPlayerOnlySprite())
 		{		
-			if(pCreature->GetCreatureType() == 659)	// 대지정령의 뿔이면 UI띄운다
-				UI_RunHorn(g_pZone->GetID());
+			if(pCreature->GetCreatureType() == 659)	// if it is the Earth Spirit's Horn, show the UI
+				NoticePresentation::RunHorn(g_pZone->GetID());
 			else
 				
 				if (IsWaitVerifyNULL())
 				{
-					// NPC 처리 packet을 보낸다.
+					// send the NPC processing packet.
 					CGNPCTalk _CGNPCTalk;
 					_CGNPCTalk.setObjectID( m_TraceID );
 
@@ -11039,11 +11027,11 @@ MPlayer::BasicActionToCreature()
 				}
 		}
 
-		// 필요하려나.. - -;
+		// might be needed.. (sigh)
 		m_bTraceCreatureToForceAttack = false;
 		m_bKeepTraceCreature = false;
 
-		// 정지한다.
+		// stop.
 		SetNextAction(ACTION_STAND);
 		m_nUsedActionInfo = ACTIONINFO_NULL;
 		m_nNextUsedActionInfo = ACTIONINFO_NULL;
@@ -11051,14 +11039,14 @@ MPlayer::BasicActionToCreature()
 		UnSetRepeatAction();
 	}
 	//---------------------------------------------------------------
-	// Request할려는 경우
+	// when trying to Request
 	//---------------------------------------------------------------
 	else if (IsRequestMode())
 	{
 		switch (m_RequestMode)
 		{
 			//---------------------------------------------------------------
-			// Trade 할려는 경우
+			// when trying to Trade
 			//---------------------------------------------------------------
 			case MRequestMode::REQUEST_TRADE :
 			{
@@ -11069,7 +11057,7 @@ MPlayer::BasicActionToCreature()
 					(IsOusters() && pCreature->IsOusters()))
 					)
 				{
-						// 교환 신청
+						// trade request
 						CGTradePrepare _CGTradePrepare;
 						_CGTradePrepare.setTargetObjectID( m_TraceID );
 						_CGTradePrepare.setCode( CG_TRADE_PREPARE_CODE_REQUEST );
@@ -11078,33 +11066,33 @@ MPlayer::BasicActionToCreature()
 
 					SetWaitVerify( WAIT_VERIFY_TRADE );
 					
-					// temp information도 설정.. (음..약간 허접하당.- -;)
+					// also set temp information.. (hm.. a bit sloppy)
 					g_pTempInformation->SetMode(TempInformation::MODE_TRADE_REQUEST);
 					g_pTempInformation->Value1 = m_TraceID;
 
 					//-----------------------------------------------------
-					// 교환 취소할까?
+					// cancel the trade?
 					//-----------------------------------------------------
-					UI_RunExchangeCancel( pCreature->GetName() );
+					PlayerPresentation::RunExchangeCancel( pCreature->GetName() );
 				}				
 			}
 			break;
 
 			//---------------------------------------------------------------
-			// Party 할려는 경우
+			// when trying to Party
 			//---------------------------------------------------------------
 			case MRequestMode::REQUEST_PARTY :
 			{
 				if (IsWaitVerifyNULL() 
 					&& g_pTempInformation->GetMode() == TempInformation::MODE_NULL
 					&& g_pParty!=NULL
-					// 내 파티원이 아닌 경우에만 신청 가능하다.
+					// can only request if they are not in my party.
 					&& !g_pParty->HasMember( pCreature->GetName() )
 					&& ((IsSlayer() && pCreature->IsSlayer()) || (IsVampire() && pCreature->IsVampire()) || (IsOusters() && pCreature->IsOusters()))
 					&& g_pSystemAvailableManager->IsAvailablePartySystem()
 					)
 				{
-						// 파티 신청
+						// party request
 						CGPartyInvite _CGPartyInvite;
 						_CGPartyInvite.setTargetObjectID( m_TraceID );
 						_CGPartyInvite.setCode( CG_PARTY_INVITE_REQUEST );
@@ -11113,25 +11101,25 @@ MPlayer::BasicActionToCreature()
 
 					SetWaitVerify( WAIT_VERIFY_PARTY );
 
-					// temp information도 설정.. (음..약간 허접하당.- -;)
+					// also set temp information.. (hm.. a bit sloppy)
 					g_pTempInformation->SetMode(TempInformation::MODE_PARTY_REQUEST);
 					g_pTempInformation->Value1 = m_TraceID;
 
 					//-----------------------------------------------------
-					// 교환 취소할까?
+					// cancel the trade?
 					//-----------------------------------------------------
-					UI_RunPartyCancel( pCreature->GetName() );
+					PlayerPresentation::RunPartyCancel( pCreature->GetName() );
 				}				
 			}
 			break;
 
 			//---------------------------------------------------------------
-			// OtherInfo 볼려는 경우
+			// when trying to view OtherInfo
 			//---------------------------------------------------------------
 			case REQUEST_INFO:
 			{
 //				MFakeCreature *pFakeCreature = (MFakeCreature *)g_pZone->GetFakeCreature(m_TraceID);
-//				if(pFakeCreature != NULL && pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// 펫이당
+//				if(pFakeCreature != NULL && pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// it's a pet
 //				{
 //					UI_RunPetInfo(pFakeCreature->GetPetItem());
 //				}
@@ -11147,17 +11135,17 @@ MPlayer::BasicActionToCreature()
 					GetCompetence() == 0 )
 					)
 				{
-						const char* str = gC_vs_ui.GetInputString();
+						const char* str = PlayerPresentation::GetInputString();
 						if(strlen(str)>0)
 						{
 							if(str[0] == '*')
 							{
-								gC_vs_ui.AddInputString(pCreature->GetName());
+								PlayerPresentation::AddInputString(pCreature->GetName());
 								break;
 
 							}
 						}
-						// 정보 신청
+						// info request
 						CGRequestInfo _CGRequestInfo;
 						_CGRequestInfo.setValue( m_TraceID );
 						_CGRequestInfo.setCode( CGRequestInfo::REQUEST_CHARACTER_INFO );
@@ -11168,7 +11156,7 @@ MPlayer::BasicActionToCreature()
 						
 						if(pCreature != NULL)
 						{
-							UI_RunOtherInfo(pCreature);
+							GameInfoPresentation::RunOtherInfo(pCreature);
 						}
 
 
@@ -11180,11 +11168,11 @@ MPlayer::BasicActionToCreature()
 	
 		}
 
-		// 필요하려나.. - -;
+		// might be needed.. (sigh)
 		m_bTraceCreatureToForceAttack = false;
 		m_bKeepTraceCreature = false;
 
-		// 정지한다.
+		// stop.
 		SetNextAction(ACTION_STAND);
 		m_nUsedActionInfo = ACTIONINFO_NULL;
 		m_nNextUsedActionInfo = ACTIONINFO_NULL;
@@ -11194,13 +11182,13 @@ MPlayer::BasicActionToCreature()
 		UnSetRequestMode();
 	}	
 	//---------------------------------------------------------------
-	// 아니면.. 공격이거나 멈춤..
+	// otherwise.. it's an attack or a stop
 	//---------------------------------------------------------------
 	else
 	{
 		//---------------------------------------------------------------
-		// 강제 attack이거나..
-		// 추적대상이 되는 캐릭터의 종족을 보고 공격할지를 결정한다.
+		// either a forced attack..
+		// decide whether to attack by looking at the race of the character being traced.
 		//---------------------------------------------------------------
 		bool bOusters = IsOusters();
 		MItem *pOustersItem = NULL;
@@ -11226,11 +11214,11 @@ MPlayer::BasicActionToCreature()
 		{
 			DEBUG_ADD_FORMAT("Basic Action : %d - But don't attack", m_TraceID);					
 			
-			// 공격 안한다.
+			// do not attack.
 			m_nUsedActionInfo = ACTIONINFO_NULL;
 			
 			//---------------------------------
-			// 계속 추적해야 하면..
+			// if tracing must continue..
 			//---------------------------------
 			if (m_bKeepTraceCreature)
 			{
@@ -11269,22 +11257,22 @@ MPlayer::BasicActionToCreature()
 //	}
 //
 //	//---------------------------------------------------------------
-//	// 대상이 NPC인 경우..
+//	// when the target is an NPC..
 //	//---------------------------------------------------------------
 //	if (pCreature->IsNPC())
 //	{
-//		// 박쥐나 늑대가 아닌 경우.. 거래 가능하다.
+//		// if it is not a bat or wolf.. trading is possible.
 //		if (//m_CreatureType!=CREATURETYPE_BAT
 //			//&& m_CreatureType!=CREATURETYPE_WOLF)
 //			(*g_pCreatureSpriteTable)[(*g_pCreatureTable)[m_CreatureType].SpriteType].IsPlayerOnlySprite())
 //		{		
-//			if(pCreature->GetCreatureType() == 659)	// 대지정령의 뿔이면 UI띄운다
+//			if(pCreature->GetCreatureType() == 659)	// if it is the Earth Spirit's Horn, show the UI
 //				UI_RunHorn(g_pZone->GetID());
 //			else
 //				
 //				if (IsWaitVerifyNULL())
 //				{
-//					// NPC 처리 packet을 보낸다.
+//					// send the NPC processing packet.
 //					CGNPCTalk _CGNPCTalk;
 //					_CGNPCTalk.setObjectID( m_TraceID );
 //
@@ -11294,11 +11282,11 @@ MPlayer::BasicActionToCreature()
 //				}
 //		}
 //
-//		// 필요하려나.. - -;
+//		// might be needed.. (sigh)
 //		m_bTraceCreatureToForceAttack = false;
 //		m_bKeepTraceCreature = false;
 //
-//		// 정지한다.
+//		// stop.
 //		SetNextAction(ACTION_STAND);
 //		m_nUsedActionInfo = ACTIONINFO_NULL;
 //		m_nNextUsedActionInfo = ACTIONINFO_NULL;
@@ -11306,14 +11294,14 @@ MPlayer::BasicActionToCreature()
 //		UnSetRepeatAction();
 //	}
 //	//---------------------------------------------------------------
-//	// Request할려는 경우
+//	// when trying to Request
 //	//---------------------------------------------------------------
 //	else if (IsRequestMode())
 //	{
 //		switch (m_RequestMode)
 //		{
 //			//---------------------------------------------------------------
-//			// Trade 할려는 경우
+//			// when trying to Trade
 //			//---------------------------------------------------------------
 //			case REQUEST_TRADE :
 //			{
@@ -11324,7 +11312,7 @@ MPlayer::BasicActionToCreature()
 //					IsOusters() && pCreature->IsOusters())
 //					)
 //				{
-//						// 교환 신청
+//						// trade request
 //						CGTradePrepare _CGTradePrepare;
 //						_CGTradePrepare.setTargetObjectID( m_TraceID );
 //						_CGTradePrepare.setCode( CG_TRADE_PREPARE_CODE_REQUEST );
@@ -11333,12 +11321,12 @@ MPlayer::BasicActionToCreature()
 //
 //					SetWaitVerify( WAIT_VERIFY_TRADE );
 //					
-//					// temp information도 설정.. (음..약간 허접하당.- -;)
+//					// also set temp information.. (hm.. a bit sloppy)
 //					g_pTempInformation->SetMode(TempInformation::MODE_TRADE_REQUEST);
 //					g_pTempInformation->Value1 = m_TraceID;
 //
 //					//-----------------------------------------------------
-//					// 교환 취소할까?
+//					// cancel the trade?
 //					//-----------------------------------------------------
 //					UI_RunExchangeCancel( pCreature->GetName() );
 //				}				
@@ -11346,20 +11334,20 @@ MPlayer::BasicActionToCreature()
 //			break;
 //
 //			//---------------------------------------------------------------
-//			// Party 할려는 경우
+//			// when trying to Party
 //			//---------------------------------------------------------------
 //			case REQUEST_PARTY :
 //			{
 //				if (IsWaitVerifyNULL() 
 //					&& g_pTempInformation->GetMode() == TempInformation::MODE_NULL
 //					&& g_pParty!=NULL
-//					// 내 파티원이 아닌 경우에만 신청 가능하다.
+//					// can only request if they are not in my party.
 //					&& !g_pParty->HasMember( pCreature->GetName() )
 //					&& (IsSlayer() && pCreature->IsSlayer() || IsVampire() && pCreature->IsVampire() || IsOusters() && pCreature->IsOusters())
 //					&& g_pSystemAvailableManager->IsAvailablePartySystem()
 //					)
 //				{
-//						// 파티 신청
+//						// party request
 //						CGPartyInvite _CGPartyInvite;
 //						_CGPartyInvite.setTargetObjectID( m_TraceID );
 //						_CGPartyInvite.setCode( CG_PARTY_INVITE_REQUEST );
@@ -11368,12 +11356,12 @@ MPlayer::BasicActionToCreature()
 //
 //					SetWaitVerify( WAIT_VERIFY_PARTY );
 //
-//					// temp information도 설정.. (음..약간 허접하당.- -;)
+//					// also set temp information.. (hm.. a bit sloppy)
 //					g_pTempInformation->SetMode(TempInformation::MODE_PARTY_REQUEST);
 //					g_pTempInformation->Value1 = m_TraceID;
 //
 //					//-----------------------------------------------------
-//					// 교환 취소할까?
+//					// cancel the trade?
 //					//-----------------------------------------------------
 //					UI_RunPartyCancel( pCreature->GetName() );
 //				}				
@@ -11381,12 +11369,12 @@ MPlayer::BasicActionToCreature()
 //			break;
 //
 //			//---------------------------------------------------------------
-//			// OtherInfo 볼려는 경우
+//			// when trying to view OtherInfo
 //			//---------------------------------------------------------------
 //			case REQUEST_INFO:
 //			{
 ////				MFakeCreature *pFakeCreature = (MFakeCreature *)g_pZone->GetFakeCreature(m_TraceID);
-////				if(pFakeCreature != NULL && pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// 펫이당
+////				if(pFakeCreature != NULL && pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// it's a pet
 ////				{
 ////					UI_RunPetInfo(pFakeCreature->GetPetItem());
 ////				}
@@ -11412,7 +11400,7 @@ MPlayer::BasicActionToCreature()
 //
 //							}
 //						}
-//						// 정보 신청
+//						// info request
 //						CGRequestInfo _CGRequestInfo;
 //						_CGRequestInfo.setValue( m_TraceID );
 //						_CGRequestInfo.setCode( CGRequestInfo::REQUEST_CHARACTER_INFO );
@@ -11434,11 +11422,11 @@ MPlayer::BasicActionToCreature()
 //	
 //		}
 //
-//		// 필요하려나.. - -;
+//		// might be needed.. (sigh)
 //		m_bTraceCreatureToForceAttack = false;
 //		m_bKeepTraceCreature = false;
 //
-//		// 정지한다.
+//		// stop.
 //		SetNextAction(ACTION_STAND);
 //		m_nUsedActionInfo = ACTIONINFO_NULL;
 //		m_nNextUsedActionInfo = ACTIONINFO_NULL;
@@ -11448,13 +11436,13 @@ MPlayer::BasicActionToCreature()
 //		UnSetRequestMode();
 //	}	
 //	//---------------------------------------------------------------
-//	// 아니면.. 공격이거나 멈춤..
+//	// otherwise.. it's an attack or a stop
 //	//---------------------------------------------------------------
 //	else
 //	{
 //		//---------------------------------------------------------------
-//		// 강제 attack이거나..
-//		// 추적대상이 되는 캐릭터의 종족을 보고 공격할지를 결정한다.
+//		// either a forced attack..
+//		// decide whether to attack by looking at the race of the character being traced.
 //		//---------------------------------------------------------------
 //		bool bOusters = IsOusters();
 //		MItem *pOustersItem = NULL;
@@ -11480,11 +11468,11 @@ MPlayer::BasicActionToCreature()
 //		{
 //			DEBUG_ADD_FORMAT("Basic Action : %d - But don't attack", m_TraceID);					
 //			
-//			// 공격 안한다.
+//			// do not attack.
 //			m_nUsedActionInfo = ACTIONINFO_NULL;
 //			
 //			//---------------------------------
-//			// 계속 추적해야 하면..
+//			// if tracing must continue..
 //			//---------------------------------
 //			if (m_bKeepTraceCreature)
 //			{
@@ -11511,32 +11499,32 @@ MPlayer::BasicActionToCreature()
 //----------------------------------------------------------------------
 // Pickup Item
 //----------------------------------------------------------------------
-// Item줍기를 수행한다.
+// Performs item pickup.
 //----------------------------------------------------------------------
 void
 MPlayer::PickupItem(MItem* pItem)
 {
 	//----------------------------------------------------
-	// 검증 받을 아이템이 없고..
-	// 현재 들고 있는 Item이 없는 경우
+	// when there is no item awaiting verification..
+	// and no Item is currently held
 	//----------------------------------------------------
 
 	if( HasEffectStatusSummonSylph( dynamic_cast<MCreature*>(this) ) )
 		return;
 
 	if (IsItemCheckBufferNULL() 
-		&& gpC_mouse_pointer->GetPickUpItem()==NULL)
+		&& PlayerPresentation::GetPickUpItem()==NULL)
 	{
 		//----------------------------------------------------------------
-		// 위치 검증이 된 상태
+		// position has been verified
 		//----------------------------------------------------------------
 		//if (m_SendMove==0)
 		{
 			// [ TEST CODE ]
-			// Item 정보를 읽어와서 Item줍기할때 Sound를 낸다.
-			// 이 부분은 나중에.. 
-			// Server Packet에서 확실히 "주웠다"라고 할 때
-			// 하는 것이 좋을 것 같기도 하다.
+			// read the Item info and play the pickup Sound.
+			// this part later..
+			// it might be better to do it
+			// when the Server Packet clearly says "picked up".
 			//MItem*	pItem = m_pZone->GetItem( m_TraceID );
 
 			//g_Sound.Play( g_SoundTable[ g_ItemTable[pItem->GetItemType()].PickupSoundID ].pDSBuffer );
@@ -11544,13 +11532,13 @@ MPlayer::PickupItem(MItem* pItem)
 			//			false,
 			//			m_X, m_Y);
 
-			// item class 비교하지 말고..
-			// item class에다가 virtual pickup()을 두는게 낫지 싶은데.
-			// 귀찮어랑.. -_-;;
+			// don't compare item classes..
+			// it seems better to put a virtual pickup() in the item class,
+			// too lazy.. (sigh)
 
 			//----------------------------------------------------------------
 			//
-			//	 Motorcycle인 경우 --> 타기
+			//	 if Motorcycle --> ride it
 			//
 			//----------------------------------------------------------------
 			if (pItem->GetItemClass()==ITEM_CLASS_MOTORCYCLE)
@@ -11564,13 +11552,13 @@ MPlayer::PickupItem(MItem* pItem)
 			
 			//----------------------------------------------------------------
 			//
-			// 시체인 경우 --> Looting
+			// if corpse --> Looting
 			//
 			//----------------------------------------------------------------
 			else if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 			{				
 				//----------------------------------------------------
-				// Server에 접속해 있을 때,
+				// while connected to the Server,
 				//----------------------------------------------------
 					MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 
@@ -11585,14 +11573,14 @@ MPlayer::PickupItem(MItem* pItem)
 							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || 
 							(pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) || 
 							(pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) ||
-							pCreature->GetCreatureType() == 670 ||			// 깃대면
-							pCreature->GetCreatureType() == 672	||			// 스위퍼 보관대이면
+							pCreature->GetCreatureType() == 670 ||			// if it is a flagpole
+							pCreature->GetCreatureType() == 672	||			// if it is a sweeper storage
 							pCreature->GetCreatureType() == 673
 							)
 						{
-							// 박쥐가 아닌 경우에만 보낸다.
-							// 오토바이를 타지 않은 보통 걸음인 경우에만
-							// 석화 안걸렸을때
+							// send only if it is not a bat.
+							// only when walking normally, not riding a motorcycle
+							// when not petrified
 							if (m_CreatureType!=CREATURETYPE_BAT
 								&& m_MoveDevice==MOVE_DEVICE_WALK
 								&& !m_bEffectStatus[EFFECTSTATUS_CURSE_PARALYSIS])
@@ -11608,26 +11596,26 @@ MPlayer::PickupItem(MItem* pItem)
 									pItem->SetNumber( pItem->GetNumber()-1 );
 							}
 						}
-						// item이 없는 경우엔..
+						// when there is no item..
 						else
 						{
-							// 늑대라면 시체 먹기
-							// 성물이 아닌 경우에만, 수호성단이 아닌 경우에만.
+							// if it is a wolf, eat the corpse
+							// only if it is not a relic and not a guardian altar.
 							if ( m_CreatureType==CREATURETYPE_WOLF && 
 								!(
 								(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || 
-								pCreature->GetCreatureType() == 670	||			// 깃대면
-								pCreature->GetCreatureType() == 672 ||			// 스위퍼 보관대이면
+								pCreature->GetCreatureType() == 670	||			// if it is a flagpole
+								pCreature->GetCreatureType() == 672 ||			// if it is a sweeper storage
 								pCreature->GetCreatureType() == 673 ||
 								(pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) || 
 								(pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)
 								)								
 							   )
 							{
-								// 사용한 기술로 설정
+								// set as the skill used
 								m_nNextUsedActionInfo	= MAGIC_EAT_CORPSE;
 
-								// 추적 정보 설정
+								// set the trace info
 								m_fTraceBuffer = m_fTrace = FLAG_TRACE_SECTOR_SPECIAL;
 								m_TraceX	= pItem->GetX();
 								m_TraceY	= pItem->GetY();
@@ -11648,7 +11636,7 @@ MPlayer::PickupItem(MItem* pItem)
 
 			//----------------------------------------------------------------
 			//
-			// 돈인 경우 --> 무조건 inventory로..
+			// if money --> goes straight to the inventory..
 			//
 			//----------------------------------------------------------------
 			else if (pItem->GetItemClass()==ITEM_CLASS_MONEY)
@@ -11659,7 +11647,7 @@ MPlayer::PickupItem(MItem* pItem)
 			else //if (m_CreatureType!=CREATURETYPE_BAT || m_MoveDevice!=MOVE_DEVICE_WALK)
 			{
 				//----------------------------------------------------------------
-				// 설치된 지뢰인 경우는 주을 수 없다.
+				// an installed mine cannot be picked up.
 				//----------------------------------------------------------------
 				if (pItem->GetItemClass()==ITEM_CLASS_MINE)
 				{
@@ -11670,72 +11658,72 @@ MPlayer::PickupItem(MItem* pItem)
 				}				
 				//----------------------------------------------------------------
 				//
-				//	 Event 아이템인 경우
+				//	 if Event item
 				//
 				//----------------------------------------------------------------
 //				else if (pItem->GetItemClass()==ITEM_CLASS_EVENT_GIFT_BOX)
 //				{
-//					// 같은 type의 아이템이 있는지 체크한다.
+//					// check whether an item of the same type exists.
 //					if (NULL != g_pInventory->FindItem( ITEM_CLASS_EVENT_GIFT_BOX, pItem->GetItemType() ))
 //					{
-//						// 있다면 못 줍는다.
+//						// if so, it cannot be picked up.
 //						return;
 //					}
 //				}
 
 				//----------------------------------------------------------------
 				//
-				//	Gear에 들어갈 수 있는 Item인 경우..
+				//	if the Item can go into Gear..
 				//
 				//----------------------------------------------------------------
 				if (pItem->IsGearItem())
 				{					
 					//------------------------------------------
-					// gear나 Inventory가 열려있다면 --> mouse로
+					// if gear or Inventory is open --> to the mouse
 					//------------------------------------------
-					if (gC_vs_ui.GetGearOpenState() ||
-						gC_vs_ui.GetInventoryOpenState())
+					if (PlayerPresentation::GetGearOpenState() ||
+						PlayerPresentation::GetInventoryOpenState())
 					{							
 						PickupItemToMouse( pItem );
 					}
 					//------------------------------------------
-					// 아니면 
+					// otherwise
 					//------------------------------------------
 					else
 					{
-						// gear에 넣어보고 들어갈 수 없다면
-						// inventory에 넣어본다.
+						// try putting it in gear, and if it does not fit,
+						// try the inventory.
 
-						// 둘 다 안 들어가면 못 집는다.
+						// if it fits in neither, it cannot be picked up.
 
-						// 일단은.. --;
+						// for now.. (sigh)
 						PickupItemToInventory( pItem );									
 					}
 				}
 				//----------------------------------------------------------------
 				//
-				//	Inventory에 들어갈 수 있는 Item인 경우..
+				//	if the Item can go into the Inventory..
 				//
 				//----------------------------------------------------------------
 				else if (pItem->IsInventoryItem())
 				{												
 					//----------------------------------------------------------------
-					// inventory가 열려있다면 --> mouse로
+					// if the inventory is open --> to the mouse
 					//----------------------------------------------------------------
-					if (gC_vs_ui.GetInventoryOpenState())
+					if (PlayerPresentation::GetInventoryOpenState())
 					{							
 						PickupItemToMouse( pItem );
 					}
 					//----------------------------------------------------------------
-					// 아니면 그냥 inventory로
+					// otherwise straight into the inventory
 					//----------------------------------------------------------------
 					else
 					{
 						if (pItem->IsQuickItem()
 							&& PickupItemToQuickslot( pItem ))
 						{
-							// quickslot에 들어갈 수 있어서 들어가도 되는 경우다.
-							// 냥냥..
+							// this is the case where it can go into the quickslot, so that is fine.
+							// meow..
 						}
 						else
 						{
@@ -11746,16 +11734,16 @@ MPlayer::PickupItem(MItem* pItem)
 			}
 		}
 		//----------------------------------------------------------------
-		// 위치 검증이 안된 상태
+		// position has not been verified
 		//----------------------------------------------------------------
 		//DEBUG_ADD_FORMAT("Cannot Pickup item (Position not verified) sendMove=%d", m_SendMove);		
 	}
 	#ifdef OUTPUT_DEBUG
 	else
 	{
-		if (gpC_mouse_pointer->GetPickUpItem()!=NULL)
+		if (PlayerPresentation::GetPickUpItem()!=NULL)
 		{
-			DEBUG_ADD_FORMAT("[UI] Already Handle a Item id=%d", gpC_mouse_pointer->GetPickUpItem()->GetID());
+			DEBUG_ADD_FORMAT("[UI] Already Handle a Item id=%d", PlayerPresentation::GetPickUpItem()->GetID());
 		}
 	}
 	#endif
@@ -11765,18 +11753,18 @@ MPlayer::PickupItem(MItem* pItem)
 //----------------------------------------------------------------------
 // Pickup Item to Inventory
 //----------------------------------------------------------------------
-// Zone의 Item을 주워서 inventory에 넣는다.
+// Picks up an Item from the Zone and puts it into the inventory.
 //----------------------------------------------------------------------
 void
 MPlayer::PickupItemToInventory(MItem* pItem)
 {
 	//------------------------------------------
-	// Inventory에 들어갈 자리가 있는 경우
-	// : Server에서 검증받기 위한 packet을 보낸다.
+	// when there is room in the Inventory
+	// : send a packet to be verified by the Server.
 	//------------------------------------------
 		POINT fitPoint;
 		//------------------------------------------
-		// 이전에 처리할려는 item이 없는 경우..
+		// when there is no item previously being processed..
 		//------------------------------------------
 		if (IsItemCheckBufferNULL())
 		{
@@ -11795,43 +11783,43 @@ MPlayer::PickupItemToInventory(MItem* pItem)
 
 				g_pSocket->sendPacket( &_CGAddZoneToInventory );
 
-				// 주울려는 item을 기억한다.
+				// remember the item to pick up.
 				pItem->SetGridXY( static_cast<BYTE>(fitPoint.x), static_cast<BYTE>(fitPoint.y) );
 				SetItemCheckBuffer(pItem, ITEM_CHECK_BUFFER_PICKUP_TO_INVENTORY);											
 			}
 			else
 			{
 				//------------------------------------------------------------
-				// inventory에 적절한 공간이 없어서 주울 수 없는 경우이다.				
+				// this is the case where there is no suitable space in the inventory, so it cannot be picked up.
 				//------------------------------------------------------------
 				pItem->SetDropping();
 
-				// 2004, 5, 7 , sobeit add start - 인벤에 자리가 없으면 보관함 사라고 도움말 보여줌
-				ExecuteHelpEvent( HELP_EVENT_STORAGE_BUY );
+				// 2004, 5, 7 , sobeit add start - if the inventory has no room, show a help message suggesting buying a storage box
+				GameInfoPresentation::ExecuteHelpEvent( HELP_EVENT_STORAGE_BUY );
 				// 2004, 5, 6, sobeit add end
 			}
 		}
 		//------------------------------------------
-		// 아직 다른 item을 처리 중이기 때문에
-		// item을 줍지 못하는 경우이다.
+		// because another item is still being processed,
+		// this is the case where the item cannot be picked up.
 		//------------------------------------------
 		else
 		{
-			// message출력
-			// "아직 item을 주울 수 없습니다."
+			// Print message
+			// "You cannot pick up the item yet."
 		}
 }
 
 //----------------------------------------------------------------------
 // Pickup Money
 //----------------------------------------------------------------------
-// Zone의 Item을 줍는다.
+// Picks up an Item from the Zone.
 //----------------------------------------------------------------------
 void
 MPlayer::PickupMoney(MMoney* pItem)
 {
 		//------------------------------------------
-		// 이전에 처리할려는 item이 없는 경우..
+		// when there is no item previously being processed..
 		//------------------------------------------
 		if (IsItemCheckBufferNULL())
 		{		
@@ -11843,37 +11831,37 @@ MPlayer::PickupMoney(MMoney* pItem)
 		
 			g_pSocket->sendPacket( &_CGPickupMoney );
 
-			// 주울려는 item을 기억한다.
+			// remember the item to pick up.
 			SetItemCheckBuffer(pItem, ITEM_CHECK_BUFFER_PICKUP_MONEY);											
 		
 		}
 		//------------------------------------------
-		// 아직 다른 item을 처리 중이기 때문에
-		// item을 줍지 못하는 경우이다.
+		// because another item is still being processed,
+		// this is the case where the item cannot be picked up.
 		//------------------------------------------
 		else
 		{
-			// message출력
-			// "아직 item을 주울 수 없습니다."
+			// Print message
+			// "You cannot pick up the item yet."
 		}
 }
 
 //----------------------------------------------------------------------
 // Pickup Item to Mouse
 //----------------------------------------------------------------------
-// Zone의 Item을 주워서 Mouse에 붙인다. - -
+// Picks up an Item from the Zone and attaches it to the Mouse. (sigh)
 //----------------------------------------------------------------------
 void
 MPlayer::PickupItemToMouse(MItem* pItem)
 {
 	//------------------------------------------
-	// Server에 접속된 경우는..
+	// when connected to the Server..
 	//------------------------------------------
-	// item을 주울 수 있는지 server에서 
-	// 검증을 받아야 한다.
+	// the server must verify
+	// whether the item can be picked up.
 	//------------------------------------------
 		//------------------------------------------
-		// 이전에 처리할려는 item이 없는 경우..
+		// when there is no item previously being processed..
 		//------------------------------------------
 		if (IsItemCheckBufferNULL())
 		{
@@ -11889,30 +11877,30 @@ MPlayer::PickupItemToMouse(MItem* pItem)
 				
 				g_pSocket->sendPacket( &_CGAddZoneToMouse );
 				
-				// 주울려는 item을 기억한다.
+				// remember the item to pick up.
 				SetItemCheckBuffer(pItem, ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE);
 			}
 		}								
 		//------------------------------------------
-		// item을 줍지 못하는 경우이다.
+		// this is the case where the item cannot be picked up.
 		//------------------------------------------
 		else
 		{
-			// message출력
-			// "아직 item을 주울 수 없습니다."
+			// Print message
+			// "You cannot pick up the item yet."
 		}
 }
 
 //----------------------------------------------------------------------
 // Pickup Item to Quickslot
 //----------------------------------------------------------------------
-// Zone의 Item을 주워서 Mouse에 붙인다. - -
+// Picks up an Item from the Zone and attaches it to the Mouse. (sigh)
 //----------------------------------------------------------------------
 bool
 MPlayer::PickupItemToQuickslot(MItem* pItem)
 {
 	//------------------------------------------------------------------
-	// 일단 QuickSlot에 들어갈 수 있는지를 확인해야 한다.
+	// first, check whether it can go into the QuickSlot.
 	//------------------------------------------------------------------
 	if (CanPickupItemToQuickslot( GetRace(),
 		g_pQuickSlot!=NULL,
@@ -11925,7 +11913,7 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 		int slot;
 
 		//---------------------------------------------------------
-		// QuickSlot의 어디에 들어갈 수 있을까?
+		// where in the QuickSlot can it go?
 		//---------------------------------------------------------
 		if (IsSlayer() && !g_pQuickSlot->FindSlotToAddItem(pItem, slot))
 		{
@@ -11933,7 +11921,7 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 		} 
 		else if( IsOusters() )
 		{
-			// 첫번째꺼먼저 뒤지고 없으면 두번째껄 뒤진다.
+			// search the first one first, and if none, search the second.
 			
 			if( g_pArmsBand1 == NULL ||  !g_pArmsBand1->FindSlotToAddItem( pItem, slot ) )
 			{
@@ -11947,7 +11935,7 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 		}
 
 			//---------------------------------------------------------
-			// 일단 마우스로 갈 수 있는걸 검증받아야 한다...
+			// first it must be verified that it can go to the mouse...
 			//---------------------------------------------------------
 			CGAddZoneToMouse _CGAddZoneToMouse;
 
@@ -11958,7 +11946,7 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 			g_pSocket->sendPacket( &_CGAddZoneToMouse );
 
 			//---------------------------------------------------------
-			// slot에 들어갈 수 있다.
+			// it can go into the slot.
 			//---------------------------------------------------------
 			g_pTempInformation->SetMode(TempInformation::MODE_TRADE_VERIFY_PICKUP_TO_QUICKSLOT);
 			g_pTempInformation->Value1 = FirstArmsband ? slot : slot + 3;
@@ -11976,7 +11964,7 @@ MPlayer::PickupItemToQuickslot(MItem* pItem)
 //----------------------------------------------------------------------
 // Pickup Item to Mouse
 //----------------------------------------------------------------------
-// Zone의 Item을 주워서 Mouse에 붙인다. - -
+// Picks up an Item from the Zone and attaches it to the Mouse. (sigh)
 //----------------------------------------------------------------------
 void
 MPlayer::RideMotorcycle(MMotorcycle* pMotorcycle)
@@ -11989,7 +11977,7 @@ MPlayer::RideMotorcycle(MMotorcycle* pMotorcycle)
 	}
 
 	//------------------------------------------
-	// 걷고 있는 중인 경우 오토바이에 탈 수 있다.
+	// can ride a motorcycle while walking.
 	//------------------------------------------
 	if (m_MoveDevice==MOVE_DEVICE_WALK)
 	{
@@ -12001,32 +11989,32 @@ MPlayer::RideMotorcycle(MMotorcycle* pMotorcycle)
 
 		g_pSocket->sendPacket( &_CGRideMotorCycle );
 
-		// Motorcycle을 타기 위해 검증받기를 기다린다.
+		// wait for verification to ride the Motorcycle.
 		SetWaitVerify( WAIT_VERIFY_MOTORCYCLE_GETON );
 	}
 	//------------------------------------------
-	// 이미 오토바이를 타고 있는 경우이다.
+	// this is the case where a motorcycle is already being ridden.
 	//------------------------------------------
 	else
 	{
-		// 오토바이 탈 수 없다. 
+		// cannot ride a motorcycle.
 	}
 }
 
 //----------------------------------------------------------------------
 // Skill To Inventory Item
 //----------------------------------------------------------------------
-// Inventory에 있는 item에 기술을 사용한다.
-// 여기서는 casting동작만 시작하게 하면 된다.
+// Uses a skill on an item in the Inventory.
+// here it is enough to just start the casting motion.
 //
-// 결과는 packet을 받아서 처리..
-// 결과는 (global) AddNewInventoryEffect(...)에서 보여지게 하면 된다.
+// the result is handled by receiving a packet..
+// the result is shown by (global) WorldEvents::AddNewInventoryEffect(...).
 //----------------------------------------------------------------------
 bool
 MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
 {
 	//-----------------------------------------------------
-	// delay가 있으면 안된다.
+	// Must not have a delay.
 	//-----------------------------------------------------
 	if (!IsNotDelay()
 		|| HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE ))
@@ -12035,20 +12023,20 @@ MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
 	}
 
 	//--------------------------------------------------------
-	// 사용할 수 없는 경우
+	// when it cannot be used
 	//--------------------------------------------------------
 	if (m_nSpecialActionInfo == ACTIONINFO_NULL
-		// 오토바이를 타고 있으면 특수공격이 안된다.
+		// Special attacks are not allowed while riding a motorcycle.
 		|| m_MoveDevice == MOVE_DEVICE_RIDE
-		// 뭔가 기술 사용을 검정 받아야 하면 사용할 수 없다.
-		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 주석처리
+		// Cannot be used if some skill use is awaiting verification.
+		//|| m_WaitVerify != WAIT_VERIFY_NULL)	// 2001.8.20 commented out
 		)
 	{
 		return false;
 	}
 	
 	//--------------------------------------------------------
-	// 다른 기술을 사용중인 경우
+	// When using another skill
 	//--------------------------------------------------------
 	if (m_nUsedActionInfo!=ACTIONINFO_NULL)
 		return false;
@@ -12056,13 +12044,13 @@ MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
 	
 
 	//--------------------------------------------------------
-	// 현재 기술이 item에 사용하는게 맞나?
+	// is the current skill really one used on items?
 	//--------------------------------------------------------
 	if ((*g_pActionInfoTable)[m_nSpecialActionInfo].IsTargetItem())
 	{
 		//-------------------------------------------------------
-		// 현재 사용할 수 있는 기술인지 체크..
-		// Passive 스킬이면 사용 못하게..
+		// Check whether the skill is currently usable..
+		// Disallow it if it is a Passive skill..
 		//-------------------------------------------------------
 		if (!g_pSkillAvailable->IsEnableSkill( (ACTIONINFO)m_nSpecialActionInfo )
 			|| !(*g_pSkillInfoTable)[m_nSpecialActionInfo].IsEnable()
@@ -12076,11 +12064,11 @@ MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
 			return false;
 		}
 
-		// 정지 상태에서만 사용할 수 있다.
+		// can be used only while stationary.
 		if (IsStop() && IsItemCheckBufferNULL()) // || m_Action!=ACTION_ATTACK)
 		{
 			//--------------------------------------------------------
-			// pItem이 inventory에 있는 item인지 체크한다.
+			// check whether pItem is an item in the inventory.
 			//--------------------------------------------------------
 			const MItem* pItem = ((MItemManager)(*g_pInventory)).GetItem( id );
 			
@@ -12089,42 +12077,42 @@ MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
 				return false;
 			}
 
-			// 사용한 기술로 설정
+			// Set as the skill used
 			m_nNextUsedActionInfo	= m_nSpecialActionInfo;
 
-			// 추적 정보 설정
+			// Set trace info
 			SetTraceID( id );
 			m_fTrace	= FLAG_TRACE_INVENTORY;
 			m_TraceX	= pItem->GetGridX();
 			m_TraceY	= pItem->GetGridY();
 			m_TraceZ	= 0;
 
-			// 현재 추적하는 대상에 대해서 기억해둔다.
+			// Remember the target currently being traced.
 			m_fTraceBuffer	= m_fTrace;	
 			
 
 			//------------------------------------------------------------		
-			// Inventory Item에 대해서는 의미 없다. - -;
+			// meaningless for Inventory Items. (sigh)
 			//------------------------------------------------------------	
-			m_TraceDistance		= 1;		//흔벎굳錦맣槨40앎홍팁숄膠	
+			m_TraceDistance		= 1;		//(garbled) probably: if changed to 40, all are the same range
 			SetAction( m_MoveAction );
 			SetNextDestination(m_X, m_Y);
 
-			// buffering을 없앤다.
+			// Remove buffering.
 			m_fNextTrace			= FLAG_TRACE_NULL;
 		
-			// 계속 쫓아가는 것을 중지
+			// Stop continuing the chase
 			m_bKeepTraceCreature	= false;
 
 			//------------------------------------------------------------
-			// message출력
+			// Print message
 			//------------------------------------------------------------
 			DEBUG_ADD_FORMAT("Trace IteMM: %d", id);				
 		}
 		else
 		{
 			//------------------------------------------------------------
-			// 반복 action하는 중이 아닌 경우에 다음 동작 buffering
+			// Buffer the next action when not in a repeat action
 			//------------------------------------------------------------
 			if (m_bRepeatAction)
 			{
@@ -12146,15 +12134,15 @@ MPlayer::TraceInventoryItem(TYPE_OBJECTID id)
 		return true;
 	}
 
-	// item에 사용하는 기술이 아니라는 의미
+	// means it is not a skill used on items
 	return false;
 }
 
 //----------------------------------------------------------------------
 // Change To Slayer
 //----------------------------------------------------------------------
-// slayer로 변신하는데..
-// 이미 slayer이면.. return false
+// Transforms into a slayer..
+// if already a slayer.. return false
 //----------------------------------------------------------------------
 bool	
 MPlayer::ChangeToSlayer()
@@ -12166,7 +12154,7 @@ MPlayer::ChangeToSlayer()
 		g_pCurrentMagazine = NULL;
 		
 		//-----------------------------------------------------
-		// 보관함도 날려준다.
+		// also remove the storage box.
 		//-----------------------------------------------------
 		if (g_pStorage!=NULL)
 		{
@@ -12175,11 +12163,11 @@ MPlayer::ChangeToSlayer()
 		}
 
 		//-----------------------------------------------------
-		// 번쩍
+		// flash
 		//-----------------------------------------------------
-		g_pTopView->SetFadeStart(1, 31, 6,  5,5,31);
+		WorldEvents::SetFadeStart(1, 31, 6,  5,5,31, 0);
 
-		UI_ChangeInterfaceRace(RACE_SLAYER);
+		ZoneLoading::ChangeInterfaceRace(RACE_SLAYER);
 
 		SetWaitVerifyNULL();
 
@@ -12194,8 +12182,8 @@ MPlayer::ChangeToSlayer()
 //----------------------------------------------------------------------
 // Change To Vampire
 //----------------------------------------------------------------------
-// vampire로 변신하는데..
-// 이미 vampire이면.. return false
+// Transforms into a vampire..
+// if already a vampire.. return false
 //----------------------------------------------------------------------
 bool
 MPlayer::ChangeToVampire()
@@ -12208,7 +12196,7 @@ MPlayer::ChangeToVampire()
 		
 
 		//-----------------------------------------------------
-		// 보관함도 날려준다.
+		// also remove the storage box.
 		//-----------------------------------------------------
 		if (g_pStorage!=NULL)
 		{
@@ -12216,9 +12204,9 @@ MPlayer::ChangeToVampire()
 			g_pStorage = NULL;
 		}
 
-		g_pTopView->SetFadeStart(1, 31, 6,  31,0,0);
+		WorldEvents::SetFadeStart(1, 31, 6,  31,0,0, 0);
 
-		UI_ChangeInterfaceRace(RACE_VAMPIRE);
+		ZoneLoading::ChangeInterfaceRace(RACE_VAMPIRE);
 
 		SetWaitVerifyNULL();
 
@@ -12235,7 +12223,7 @@ MPlayer::ChangeToVampire()
 //----------------------------------------------------------------------
 // Set Status
 //----------------------------------------------------------------------
-// 캐릭터의 상태값을 바꾼다.
+// Changes the character's status values.
 //----------------------------------------------------------------------
 void	
 MPlayer::SetStatus(DWORD n, DWORD value)
@@ -12251,26 +12239,26 @@ MPlayer::SetStatus(DWORD n, DWORD value)
 	modifyValue.oldValue = m_Status[n];
 	modifyValue.newValue = value;
 
-	// 일단 값 변경
+	// first change the value
 	m_Status[n] = value; 
 	
-	// 변경된 값과 관련된 처리
+	// handling related to the changed value
 	g_pModifyStatusManager->Execute( n, (void*)&modifyValue );
 
-	// 다시.. - -;
+	// again.. (sigh)
 	m_Status[n] = modifyValue.newValue;
 }
 
 //----------------------------------------------------------------------
 // Check Status
 //----------------------------------------------------------------------
-// 수치 변하는거 체크
+// Checks for changing values
 //----------------------------------------------------------------------
 void	
 MPlayer::CalculateStatus()
 {
 	//-----------------------------------------------------------------
-	// item 착용한거에 따라서...
+	// depending on the equipped items...
 	//-----------------------------------------------------------------
 	MItemManager* pGear = NULL;
 
@@ -12289,7 +12277,7 @@ MPlayer::CalculateStatus()
 			int domainLevel = 0;
 			
 			//------------------------------------------------------
-			// 총들었는지 체크
+			// check whether a gun is held
 			//------------------------------------------------------
 			if (pWeapon!=NULL && pWeapon->IsAffectStatus())
 			{
@@ -12323,7 +12311,7 @@ MPlayer::CalculateStatus()
 				
 				
 				//----------------------------------------------------
-				// 무기의 기본 속도
+				// base speed of the weapon
 				//----------------------------------------------------			
 				if(pWeapon->IsAffectStatus())
 					weaponSpeed = pWeapon->GetOriginalSpeed();
@@ -12342,7 +12330,7 @@ MPlayer::CalculateStatus()
 			if (pWeapon!=NULL)
 			{
 				//----------------------------------------------------
-				// 무기의 기본 속도
+				// base speed of the weapon
 				//----------------------------------------------------			
 				if(pWeapon->IsAffectStatus())
 					weaponSpeed = pWeapon->GetOriginalSpeed();
@@ -12360,7 +12348,7 @@ MPlayer::CalculateStatus()
 			if (pWeapon!=NULL)
 			{
 				//----------------------------------------------------
-				// 무기의 기본 속도
+				// base speed of the weapon
 				//----------------------------------------------------			
 				if(pWeapon->IsAffectStatus())
 					weaponSpeed = pWeapon->GetOriginalSpeed();
@@ -12374,9 +12362,9 @@ MPlayer::CalculateStatus()
 
 	
 	//-----------------------------------------------------------------
-	// Gear의 모든 item에 대해서..
+	// for all items in Gear..
 	//
-	// DAM, AC, TOHIT, CC option만 적용시킨다.
+	// apply only the DAM, AC, TOHIT, CC options.
 	//-----------------------------------------------------------------
 	g_StatusManager.Set(GetSTR(), GetDEX(), GetINT());
 
@@ -12421,7 +12409,7 @@ MPlayer::CalculateStatus()
 	int	ElementalWind = 0;
 
 	//-----------------------------------------------------------------
-	// 아이템에 의해서 시야가 밝아지는거 체크.
+	// check whether items brighten the sight.
 	//-----------------------------------------------------------------
 	SetItemLightSight(0);
 
@@ -12432,7 +12420,7 @@ MPlayer::CalculateStatus()
 		const MItem* pItem = pGear->Get();
 
 		//----------------------------------------------------------
-		// 수치가 적용되는 item인 경우만..
+		// only for items to which values apply..
 		//----------------------------------------------------------
 		if (pItem != NULL && pItem->IsAffectStatus())
 		{
@@ -12450,7 +12438,7 @@ MPlayer::CalculateStatus()
 
 			}
 			//---------------------------------------------------
-			// 기본적인 방어수치 증가
+			// basic defense increase
 			//---------------------------------------------------
 			int def = pItem->GetDefenseValue();
 			
@@ -12475,7 +12463,7 @@ MPlayer::CalculateStatus()
 				
 				const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[*optionListItr];
 				//---------------------------------------------------
-				// 부가적인 Option
+				// additional Options
 				//---------------------------------------------------
 				switch ((ITEMOPTION_TABLE::ITEMOPTION_PART)optionInfo.Part)
 				{
@@ -12502,7 +12490,7 @@ MPlayer::CalculateStatus()
 
 				const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[option];
 				//---------------------------------------------------
-				// 부가적인 Option
+				// additional Options
 				//---------------------------------------------------
 				switch ((ITEMOPTION_TABLE::ITEMOPTION_PART)optionInfo.Part)
 				{
@@ -12526,7 +12514,7 @@ MPlayer::CalculateStatus()
 		pGear->Next();
 	}	
 
-	// 2004, 9, 20, sobeit add start - 정령 레벨 올려주는 계급스킬이 있네..
+	// 2004, 9, 20, sobeit add start - there is a rank skill that raises the spirit level
 	if((*g_pRankBonusTable)[RANK_BONUS_SALAMANDERS_KNOWLEDGE].GetStatus() == RankBonusInfo::STATUS_LEARNED)
 		ElementalFire ++;
 	if((*g_pRankBonusTable)[RANK_BONUS_UNDINES_KNOWLEDGE].GetStatus() == RankBonusInfo::STATUS_LEARNED)
@@ -12534,7 +12522,7 @@ MPlayer::CalculateStatus()
 	if((*g_pRankBonusTable)[RANK_BONUS_GNOMES_KNOWLEDGE].GetStatus() == RankBonusInfo::STATUS_LEARNED)
 		ElementalEarth ++;
 	// 2004, 9, 20, sobeit add end
-	// 정령 수치 지정
+	// set spirit value
 	SetStatus(MODIFY_ELEMENTAL_FIRE, ElementalFire);
 	SetStatus(MODIFY_ELEMENTAL_WATER, ElementalWater);
 	SetStatus(MODIFY_ELEMENTAL_EARTH, ElementalEarth);
@@ -12543,21 +12531,21 @@ MPlayer::CalculateStatus()
 		g_pSkillAvailable->SetAvailableSkills();
 
 	//-----------------------------------------------------------------
-	// 무기 속도 지정
+	// set weapon speed
 	//-----------------------------------------------------------------
 	SetStatus(MODIFY_ATTACK_SPEED, AttackSpeed);
 
 	//-----------------------------------------------------------------
-	// DAM, AC, TOHI, CC option만 적용시킨다.
+	// apply only the DAM, AC, TOHI, CC options.
 	//-----------------------------------------------------------------
-	// 2001.9.28 제거
+	// removed 2001.9.28
 	//SetStatus(MODIFY_DEFENSE, DV);
 	//SetStatus(MODIFY_PROTECTION, PV);
 	//SetStatus(MODIFY_TOHIT, TOHIT);
 //	SetStatus(MODIFY_CARRYWEIGHT, CC);			
 
 	//-----------------------------------------------------------------
-	// DAM만 따로 체크.. 냠냠..
+	// check DAM separately.. yum yum..
 	//-----------------------------------------------------------------	
 //	m_Status[MODIFY_MIN_DAMAGE] = MinDAM; 
 //	m_Status[MODIFY_MAX_DAMAGE] = MaxDAM; 
@@ -12565,7 +12553,7 @@ MPlayer::CalculateStatus()
 	int maxSilverDAM = 0, minSilverDAM = 0;
 
 	//-----------------------------------------------------------------
-	// Slayer인 경우 --> 무기 damage 적용
+	// if Slayer --> apply weapon damage
 	//-----------------------------------------------------------------
 	switch(GetRace())
 	{
@@ -12584,7 +12572,7 @@ MPlayer::CalculateStatus()
 				maxDAM = MaxDAM + pWeapon->GetMaxDamage();		
 
 				//-----------------------------------------------------------------
-				// 십자가나 메이스인 경우  : 은데미지 +10%
+				// for a cross or mace : silver damage +10%
 				//-----------------------------------------------------------------
 				if (pWeapon->GetItemClass()==ITEM_CLASS_MACE
 					|| pWeapon->GetItemClass()==ITEM_CLASS_CROSS)
@@ -12594,8 +12582,8 @@ MPlayer::CalculateStatus()
 				}
 
 				//-----------------------------------------------------------------
-				// 은도금이 되어 있는 경우 : 은데미지 +10%
-				// 총인 경우 은총알 체크
+				// if silver-plated : silver damage +10%
+				// if a gun, check for silver bullets
 				//-----------------------------------------------------------------
 				if ((!pWeapon->IsGunItem() && pWeapon->GetSilver() > 0)
 					|| (pWeapon->IsGunItem() 
@@ -12612,7 +12600,7 @@ MPlayer::CalculateStatus()
 
 	case RACE_VAMPIRE:
 		//-----------------------------------------------------------------
-		// 뱀파이어..
+		// vampire..
 		//-----------------------------------------------------------------
 		{
 			const MItem* pWeapon = g_pVampireGear->GetItem( MVampireGear::GEAR_VAMPIRE_RIGHTHAND );
@@ -12633,7 +12621,7 @@ MPlayer::CalculateStatus()
 
 	case RACE_OUSTERS:
 		//-----------------------------------------------------------------
-		// 아우스터즈..
+		// ousters..
 		//-----------------------------------------------------------------
 		{
 			const MItem* pWeapon = g_pOustersGear->GetItem( MOustersGear::GEAR_OUSTERS_RIGHTHAND );
@@ -12655,23 +12643,22 @@ MPlayer::CalculateStatus()
 		break;
 	}
 
-	UI_SetCharInfoDAM( maxDAM, minDAM );
+	PlayerPresentation::SetCharInfoDAM( maxDAM, minDAM );
 	
-	g_char_slot_ingame.SILVER_DAM2	= minSilverDAM;
-	g_char_slot_ingame.SILVER_DAM	= maxSilverDAM;
+	PlayerPresentation::SetSilverDamage( minSilverDAM, maxSilverDAM );
 
-	// 게임 중에는 서버에서 보내주기 때문에..
+	// during the game the server sends it, so..
 	if (g_Mode == MODE_WAIT_PCLIST)
 	{
-		UI_SetCharInfoDefense( DV );	
-		UI_SetCharInfoProtection( PV );	
-		UI_SetCharInfoTOHIT( TOHIT );
+		StatusPresentation::SetCharInfoDefense( DV );
+		StatusPresentation::SetCharInfoProtection( PV );
+		StatusPresentation::SetCharInfoTOHIT( TOHIT );
 	}
 	else
 	{
-		UI_SetCharInfoDefense( GetDefense() );	
-		UI_SetCharInfoProtection( GetProtection() );	
-		UI_SetCharInfoTOHIT( GetTOHIT() );
+		StatusPresentation::SetCharInfoDefense( GetDefense() );
+		StatusPresentation::SetCharInfoProtection( GetProtection() );
+		StatusPresentation::SetCharInfoTOHIT( GetTOHIT() );
 	}
 }
 
@@ -12683,17 +12670,17 @@ MPlayer::CalculateStatus()
 bool
 MPlayer::FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool server)
 {	
-	if (g_pTopView!=NULL)
+	if (WorldEvents::ViewExists())
 	{
-		g_pTopView->SetSelectedSectorNULL();
+		WorldEvents::SetSelectedSectorNULL();
 	}
 
 	if (MCreature::FastMovePosition( x, y ))
 	{
 		if(server == true)
 			SetServerPosition( x, y);
-		// 2001.8.8  계속 추적하게 해보기 위한 주석처리
-		// 그러나.. 뭔가 문제가 있어서.. 다시... - -;;
+		// 2001.8.8  commented out to try continuing the trace
+		// but.. there was some problem, so again... (sigh)
 		//m_nUsedActionInfo = ACTIONINFO_NULL;
 		//m_Action		= (m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND;
 
@@ -12706,10 +12693,10 @@ MPlayer::FastMovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, bool ser
 		UnSetRepeatAction();
 		//*/
 
-		// 다 검증됐다고 본다.
+		// consider everything verified.
 		ResetSendMove();
 
-		// 2001.8.10에 추가
+		// added on 2001.8.10
 		m_nUsedActionInfo = ACTIONINFO_NULL;
 
 		return true;
@@ -12726,8 +12713,8 @@ MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE Ac
 {
 	if (MCreature::KnockBackPosition( x, y, Action ))
 	{
-		// 2001.8.8  계속 추적하게 해보기 위한 주석처리
-		// 그러나.. 뭔가 문제가 있어서.. 다시... - -;;
+		// 2001.8.8  commented out to try continuing the trace
+		// but.. there was some problem, so again... (sigh)
 		//m_nUsedActionInfo = ACTIONINFO_NULL;
 		//m_Action		= (m_MoveAction==ACTION_SLAYER_MOTOR_MOVE)? ACTION_SLAYER_MOTOR_STAND : ACTION_STAND;
 
@@ -12740,10 +12727,10 @@ MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE Ac
 		//UnSetRepeatAction();
 		//*/
 
-		// 다 검증됐다고 본다.
+		// consider everything verified.
 		ResetSendMove();
 
-		// 2001.8.10에 추가
+		// added on 2001.8.10
 		m_nUsedActionInfo = ACTIONINFO_NULL;
 
 		return true;
@@ -12755,33 +12742,33 @@ MPlayer::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE Ac
 //----------------------------------------------------------------------
 // Find Enemy
 //----------------------------------------------------------------------
-// 근처의 적을 찾는다.
-// 적이 없다면 OBJECTID_NULL을 return한다.
+// Finds a nearby enemy.
+// If there is no enemy, returns OBJECTID_NULL.
 //----------------------------------------------------------------------
 int		
 MPlayer::FindEnemy()
 {
 	//---------------------------------------------------------------
-	// 현재 L, R Button이 눌린 상태로 LockMode의 행동을 판단한다.
-	// 별루 안 깔끔하지만.. ㅋㅋ..
+	// decides the LockMode action based on whether the L and R Buttons are currently pressed.
+	// not very clean.. heh..
 	//---------------------------------------------------------------
 	int bBasicAction = g_bLButtonDown;
 	int bSpecialAction = g_bRButtonDown;
 	int actionDistance = 0;
 
 	//---------------------------------------------------------------
-	// 기본 행동
+	// basic action
 	//-------------------------------------------------------------
 	if (bBasicAction)
 	{
 		actionDistance = m_BasicAttackDistance;		
 	}
 	//-------------------------------------------------------------
-	// 특수 행동
+	// special action
 	//-------------------------------------------------------------
 	else if (bSpecialAction)
 	{
-		// 특수 기술이 설정되지 않은 경우
+		// when no special skill is set
 		if (m_nSpecialActionInfo==ACTIONINFO_NULL)
 		{
 			return OBJECTID_NULL;
@@ -12791,7 +12778,7 @@ MPlayer::FindEnemy()
 	}
 
 	//-------------------------------------------------------------
-	// Zone의 모든 Creature를 검색한다.
+	// search all Creatures in the Zone.
 	//-------------------------------------------------------------
 	int	numCreature = g_pZone->GetCreatureNumber();
 
@@ -12804,7 +12791,7 @@ MPlayer::FindEnemy()
 		MCreature* pCreature = iCreature->second;
 
 		//--------------------------------------------------
-		// NPC도 아니고, 내가 아닌 경우..
+		// if it is neither an NPC nor myself..
 		//--------------------------------------------------
 		if (!pCreature->IsNPC() 
 			&& pCreature->GetID()!=m_ID)
@@ -12813,35 +12800,35 @@ MPlayer::FindEnemy()
 			int ty = pCreature->GetServerY();
 
 			//--------------------------------------------------
-			// 적이고..
-			// 행동 가능 거리이면...
+			// if it is an enemy..
+			// and within action range...
 			//--------------------------------------------------
 			if (g_pObjectSelector->CanAttack(pCreature)
 				&& max(abs(tx-m_X), abs(ty-m_Y)) <= actionDistance)
 				//&& g_pObjectSelector->IsAblePKbyZone(pCreature))					
 			{
 				//--------------------------------------------------
-				// 처음 선택된 캐릭터인 경우
+				// if it is the first selected character
 				//--------------------------------------------------
 				if (static_cast<TYPE_OBJECTID>(targetCreatureID)==OBJECTID_NULL)
 				{
 					targetCreatureID = pCreature->GetID();
 				}
 				//--------------------------------------------------
-				// 처음 선택된 캐릭터가 아닌 경우
+				// if it is not the first selected character
 				//--------------------------------------------------
 				else
 				{
 					//--------------------------------------------------
-					// 반반의 확률로 목표를 다시 설정한다.
+					// re-pick the target with 50% probability.
 					//--------------------------------------------------
 					if (rand()%2)
 					{
 						targetCreatureID = pCreature->GetID();	
 					}
 					//--------------------------------------------------
-					// 다시 설정되지 않은 경우
-					// 기존에 설정된 캐릭터를 선택한다.
+					// if it was not re-picked
+					// select the previously set character.
 					//--------------------------------------------------
 					else
 					{
@@ -12860,7 +12847,7 @@ MPlayer::FindEnemy()
 //----------------------------------------------------------------------
 // Stop Blood Drain
 //----------------------------------------------------------------------
-// m_bStopBloodDrain이면 이걸 호출해야 한다.
+// Call this when m_bStopBloodDrain is set.
 //----------------------------------------------------------------------
 void	
 MPlayer::StopBloodDrain()
@@ -12873,7 +12860,7 @@ MPlayer::StopBloodDrain()
 		{
 			m_ActionCount = 60;
 
-			// delay 다시 설정
+			// reset delay
 			//m_DelayTime	= g_CurrentTime + (m_ActionCountMax-m_ActionCount)*60;		
 			
 			UnSetStopBloodDrain();
@@ -12895,7 +12882,7 @@ MPlayer::StopBloodDrain()
 //----------------------------------------------------------------------
 // Stop Absorb Soul
 //----------------------------------------------------------------------
-// m_bStopAbsorbSoul이면 이걸 호출해야 한다.
+// Call this when m_bStopAbsorbSoul is set.
 //----------------------------------------------------------------------
 void	
 MPlayer::StopAbsorbSoul()
@@ -12919,10 +12906,10 @@ MPlayer::StopAbsorbSoul()
 				{
 					bool bUseEffectSprite = pEffect->IsEffectSprite();
 					
-					// flag제거
+					// remove flag
 					if (bUseEffectSprite)
 					{
-						m_bAttachEffect[pEffect->GetEffectSpriteType()] = false;	// flag제거
+						m_bAttachEffect[pEffect->GetEffectSpriteType()] = false;	// remove flag
 					}
 					
 					delete pEffect;
@@ -12944,8 +12931,8 @@ MPlayer::StopAbsorbSoul()
 //----------------------------------------------------------------------
 // Check In Darkness
 //----------------------------------------------------------------------
-// darkness가 나타나고/사라지는 순간
-//            player가 움직이는 순간을 체크하면 된다.
+// the moment darkness appears/disappears
+//            can be checked at the moment the player moves.
 //----------------------------------------------------------------------
 void
 MPlayer::CheckInDarkness()
@@ -12961,19 +12948,19 @@ MPlayer::CheckInDarkness()
 		)
 	{
 		//-------------------------------------------------------
-		// Darkness에 들어왔는지 체크
+		// check whether it entered Darkness
 		//-------------------------------------------------------
-		// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
+		// the current coordinates look better than the server coordinates.. heh..
 		const MSector& sector = g_pZone->GetSector( m_X, m_Y );
 
 		if (sector.HasDarkness())
 		{
-			// darkness에 있는 경우
+			// when in darkness
 			PlaceInDarkness();
 		}
 		else
 		{		
-			// darkness는 사라졌다.
+			// the darkness has disappeared.
 			PlaceNotInDarkness();
 		}
 	}
@@ -12994,12 +12981,12 @@ MPlayer::SetSpecialActionInfo( TYPE_ACTIONINFO n )
 	{
 		m_nSpecialActionInfo = n; 
 
-		// 반복 중에는..
-		// 기술의 Target이 바뀌는 경우가 있다.
+		// during repetition..
+		// the skill's Target may change.
 		if (IsRepeatAction())
 		{
 			if (m_fTraceBuffer != FLAG_TRACE_NULL
-				// 기본 동작 중에는 관계없다.
+				// does not matter during the basic action.
 				&& !(m_fTraceBuffer & FLAG_TRACE_CREATURE_BASIC)
 				&& !(m_fTraceBuffer & FLAG_TRACE_SECTOR_BASIC)
 				&& !(m_fTraceBuffer & FLAG_TRACE_ITEM)
@@ -13007,13 +12994,13 @@ MPlayer::SetSpecialActionInfo( TYPE_ACTIONINFO n )
 				&& !(m_fTraceBuffer & FLAG_TRACE_EFFECT)
 				)
 			{			
-				// 기술 사용중인 경우..
+				// when a skill is being used..
 				BOOL bOther = ((*g_pActionInfoTable)[n].IsTargetOther());
 				BOOL bSelf = ((*g_pActionInfoTable)[n].IsTargetSelf());
 				BOOL bZone = ((*g_pActionInfoTable)[n].IsTargetZone());
 				BOOL bItem = ((*g_pActionInfoTable)[n].IsTargetItem());
 
-				// 정상적인 경우...
+				// normal case...
 				if (((m_fTraceBuffer & FLAG_TRACE_SELF) && bSelf)
 					|| ((m_fTraceBuffer & FLAG_TRACE_CREATURE_SPECIAL) && bOther)
 					|| ((m_fTraceBuffer & FLAG_TRACE_SECTOR_SPECIAL) && bZone)
@@ -13021,7 +13008,7 @@ MPlayer::SetSpecialActionInfo( TYPE_ACTIONINFO n )
 					)
 				{				
 				}
-				// 비정상적인 경우.. target 설정을 바꿔야 한다.
+				// abnormal case.. the target setting must be changed.
 				else
 				{
 					if (bOther)
@@ -13085,7 +13072,7 @@ MPlayer::IsInSafeSector() const
 void	
 MPlayer::SetCannotTrace()
 {
-	gC_vs_ui.SetCannotTrace();
+	PlayerPresentation::SetCannotTrace();
 }
 
 void	MPlayer::SetTimeLightSight(char s)
@@ -13105,7 +13092,7 @@ void	MPlayer::CalculateLightSight()
 //	CalculateSight();
 	m_LightSight = GetTimeLightSight() + GetItemLightSight();
 
-	// [새기술6] observing eye가 걸려있으면 시야가 넓어진다.
+	// [new skill 6] observing eye widens the sight when active.
 	if (m_bEffectStatus[EFFECTSTATUS_OBSERVING_EYE])
 	{
 		m_LightSight +=  1 + (*g_pSkillInfoTable)[SKILL_OBSERVING_EYE].GetLevel() / 50;
@@ -13171,15 +13158,15 @@ void	MPlayer::SetFlyingCreature()
 
 void	MPlayer::CalculateSight()
 {
-	// -_----; 시야 세팅 ㅋㅋㅋ 버그가 많아서 걍 맨들자
+	// (sigh) setting the sight, heh, too many bugs so just write it from scratch
 
 	//-----------------------------------------------------------------
-	// item 착용한거에 따라서...
+	// depending on the equipped items...
 	//-----------------------------------------------------------------
 	MItemManager* pGear = GetGear();
 
 	//-----------------------------------------------------------------
-	// Slayer인 경우
+	// if Slayer
 	//-----------------------------------------------------------------	
 	if(pGear == NULL )
 		return;
@@ -13193,7 +13180,7 @@ void	MPlayer::CalculateSight()
 		const MItem* pItem = pGear->Get();
 
 		//----------------------------------------------------------
-		// 수치가 적용되는 item인 경우만..
+		// only for items to which values apply..
 		//----------------------------------------------------------
 		if (pItem->IsAffectStatus())
 		{	
@@ -13203,7 +13190,7 @@ void	MPlayer::CalculateSight()
 			{				
 				const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[*optionListItr];
 				//---------------------------------------------------
-				// 부가적인 Option
+				// additional Options
 				//---------------------------------------------------
 				switch ((ITEMOPTION_TABLE::ITEMOPTION_PART)optionInfo.Part)
 				{
@@ -13223,7 +13210,7 @@ void	MPlayer::CalculateSight()
 				TYPE_ITEM_OPTION option = *itr;
 				const ITEMOPTION_INFO& optionInfo = (*g_pItemOptionTable)[option];
 				//---------------------------------------------------
-				// 부가적인 Option
+				// additional Options
 				//---------------------------------------------------
 				switch ((ITEMOPTION_TABLE::ITEMOPTION_PART)optionInfo.Part)
 				{
@@ -13245,7 +13232,7 @@ void	MPlayer::CalculateSight()
 #endif
 		)
 	{
-		// 최강~~
+		// the strongest~~
 		SetItemLightSight( GetItemLightSight() + 15 );
 	} else
 	{
@@ -13260,7 +13247,7 @@ void	MPlayer::CalculateSight()
 void
 MPlayer::UpdateSweepVice()
 {
-	if(GetSweepViewValue())	// 스윕 바이스 중일떄
+	if(GetSweepViewValue())	// when in Sweep Vice
 	{
 		//if(IsDead() || m_nUsedActionInfo != SKILL_SWEEP_VICE_1 || m_SweepViceX == SECTORPOSITION_NULL ||	m_SweepViceY == SECTORPOSITION_NULL	)
 		if(IsDead() ||!IsSlayer() || m_SweepViceX == SECTORPOSITION_NULL ||	m_SweepViceY == SECTORPOSITION_NULL	)
@@ -13269,7 +13256,7 @@ MPlayer::UpdateSweepVice()
 			SetSweepViewValue(0);
 			return;
 		}
-		POINT CurrentPos = g_pTopView->GetSelectedSector(g_x, g_y);
+		POINT CurrentPos = WorldEvents::GetSelectedSector(g_x, g_y);
 		int TempVal = 0;
 		int Distance = max(abs(m_TempSelectPosX - CurrentPos.x),abs(m_TempSelectPosY - CurrentPos.y));
 
@@ -13279,7 +13266,7 @@ MPlayer::UpdateSweepVice()
 			if(GetSweepViewValue()!=TempVal)
 			{
 				g_pZone->ChangeSwapViceType(m_SweepViceX, m_SweepViceY, EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_1);
-				PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
+				WorldEvents::PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
 			}
 				
 		}
@@ -13289,7 +13276,7 @@ MPlayer::UpdateSweepVice()
 			if(GetSweepViewValue()!=TempVal)
 			{
 				g_pZone->ChangeSwapViceType(m_SweepViceX, m_SweepViceY, EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_2);
-				PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
+				WorldEvents::PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
 			}
 		}
 		else
@@ -13298,7 +13285,7 @@ MPlayer::UpdateSweepVice()
 			if(GetSweepViewValue()!=TempVal)
 			{
 				g_pZone->ChangeSwapViceType(m_SweepViceX, m_SweepViceY, EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_3);
-				PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
+				WorldEvents::PlaySound( SOUND_SLAYER_SWEEPVICE_RESIZE );
 			}
 		}
 		SetSweepViewValue(TempVal);
@@ -13397,10 +13384,10 @@ bool MPlayer::UpdateBurningSol()
 			if(m_bBurningSolCount>=bCheckFrame)
 				m_bBurningSolCount = bCheckFrame;
 		}
-		POINT  TempPos = g_pTopView->GetSelectedSector(g_x, g_y);
+		POINT  TempPos = WorldEvents::GetSelectedSector(g_x, g_y);
 		m_TempSelectPosX = static_cast<TYPE_SECTORPOSITION>(TempPos.x);
 		m_TempSelectPosY = static_cast<TYPE_SECTORPOSITION>(TempPos.y);
-		m_Direction = MTopView::GetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
+		m_Direction = SelectFacingDirection(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
 		ChangeNearDirection();
 		//else
 		if(!g_bRButtonDown)
@@ -13410,7 +13397,7 @@ bool MPlayer::UpdateBurningSol()
 //				POINT  TempPos = g_pTopView->GetSelectedSector(g_x, g_y);
 //				m_TempSelectPosX = TempPos.x;
 //				m_TempSelectPosY = TempPos.y;
-//				m_CurrentDirection = MTopView::GetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
+//				m_CurrentDirection = SelectFacingDirection(g_pPlayer->GetX(), g_pPlayer->GetY(),m_TempSelectPosX, m_TempSelectPosY);
 //				
 
 				bool ShowLunchEffect = true;
@@ -13423,28 +13410,28 @@ bool MPlayer::UpdateBurningSol()
 				if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_1))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_1,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_1,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX,m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_1);
 				}
 				else if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_2))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_2,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_2,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX, m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_2);
 				}
 				else if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_3))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_3,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_3,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX, m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_3);
 				}
 				else if(HasEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_4))
 				{
 					if(ShowLunchEffect)
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_4,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BURNING_SOL_4,g_pPlayer->GetX(), g_pPlayer->GetY(), 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),
 								m_TempSelectPosX, m_TempSelectPosY, 0, 10, NULL, false);	
 					RemoveEffectStatus(EFFECTSTATUS_BURNING_SOL_CHARGE_4);
 				}

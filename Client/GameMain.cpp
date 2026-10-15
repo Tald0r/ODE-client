@@ -163,9 +163,8 @@ CSoundPartManager*	g_pSoundManager = NULL;
 CStorageSurface*	g_pCursorSurface = NULL;
 
 // mouse cursor
-POINT				g_SelectSector = { SECTORPOSITION_NULL, SECTORPOSITION_NULL };
-BOOL				g_bLButtonDown = FALSE;
-BOOL				g_bRButtonDown = FALSE;
+// g_SelectSector, g_bLButtonDown, g_bRButtonDown and g_bNetStatusGood are
+// InputState.cpp's (gamemodel, task 4.247).
 BOOL				g_bCButtonDown = FALSE;
 BOOL				g_bUIInput		= FALSE;
 //Edit by sonic 2006.7.27  修改加速地址
@@ -205,7 +204,6 @@ bool				g_bPutMessage = false;		// 화면에 debug메세지를 출력할까?
 
 bool				g_bNewDraw = false;			// 화면을 다시 그렸는가? (커서 제외)
 bool				g_bSmoothCursor = false;	// 부드러운(?) cursor를 출력할 수 있나?
-bool				g_bNetStatusGood = true;		// 네트웍 상태가 좋은가?
 
 // socket: GameSocket.cpp (gamemodel)
 

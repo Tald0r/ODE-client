@@ -323,6 +323,15 @@ struct Scene
 	MSector& Sector(int x, int y) { return *zone->SectorAt(x, y); }
 };
 
+// A frame time later than any a shop test used before: the zone keeps
+// the personal shops' next refresh in a function-local static.
+MonotonicClock::TimePoint LaterShopTime()
+{
+	static long long millis = 0;
+	millis += 1000000000;
+	return MonotonicClock::TimePoint() + MonotonicClock::Duration(millis);
+}
+
 // A creature that counts its deletions.
 int creaturesDeleted = 0;
 struct Counted : MCreature
@@ -1720,7 +1729,7 @@ TEST(Zone, PersonalShopSignsAreRedrawnOnTheOptionsTime)
 	CHECK(zone.AddCreature(passer));
 	// (The next time is set on the first update the program makes; one
 	// update and then one past the period redraw it either way.)
-	g_FrameNow = MonotonicClock::TimePoint() + MonotonicClock::Millis(1000000000);
+	g_FrameNow = LaterShopTime();
 	zone.UpdateAllCreature();
 	shop->SetPersonalShopMsgTime(200);
 	passer->SetPersonalShopMsgTime(200);
@@ -2025,6 +2034,16 @@ TEST(Zone, ACorpseWhoseServerCellIsOffTheMapIsNotMade)
 	runner->SetServerPosition(255, 4);
 	CHECK(!zone.AddCorpseFromCreature(1001));
 	CHECK_EQ(1, creaturesDeleted);
+	// The first cells off the map too (each edge's, which ASan watches).
+	for (const std::pair<int, int>& cell : {std::pair<int, int>{40, 4}, {3, 30}})
+	{
+		Counted* edge = Make(1010, 3, 4);
+		CHECK(zone.AddCreature(edge));
+		edge->SetServerPosition(TYPE_SECTORPOSITION(cell.first), TYPE_SECTORPOSITION(cell.second));
+		CHECK(!zone.AddCorpseFromCreature(1010));
+		CHECK(scene.Sector(3, 4).GetGroundCreature() == NULL);
+	}
+	CHECK_EQ(3, creaturesDeleted);
 	CHECK(zone.GetCreatureOnly(1001) == NULL);
 	CHECK(zone.GetItem(1001) == NULL);
 	CHECK(scene.Sector(3, 4).GetGroundCreature() == NULL);
@@ -2033,7 +2052,7 @@ TEST(Zone, ACorpseWhoseServerCellIsOffTheMapIsNotMade)
 	// server cell, and the corpse lies there.
 	Counted* stray = Make(1002, 5, 4);
 	CHECK(zone.AddCreature(stray));
-	stray->SetX(255);
+	stray->SetX(40);
 	CHECK(zone.AddCorpseFromCreature(1002));
 	CHECK(scene.Sector(5, 4).GetGroundCreature() == NULL);
 	CHECK_EQ(1002, int(zone.GetItemID(5, 4)));
@@ -2045,21 +2064,27 @@ TEST(Zone, AMoveFromACellOffTheMapTakesTheServerCell)
 	ZoneProbe& zone = *scene.zone;
 	Counted* walker = Make(1001, 3, 4);
 	CHECK(zone.AddCreature(walker));
-	// Told it was off the map: taken from its server cell instead.
-	CHECK(zone.MoveGroundCreature(walker, 255, 4, 5, 4));
+	// Told it was off the map (the first cell past the right edge): taken
+	// from its server cell instead.
+	CHECK(zone.MoveGroundCreature(walker, 40, 4, 5, 4));
 	CHECK(scene.Sector(3, 4).GetGroundCreature() == NULL);
 	CHECK(scene.Sector(5, 4).GetGroundCreature() == walker);
 	walker->SetServerPosition(5, 4);
-	CHECK(zone.MoveFlyingCreature(walker, 5, 65000, 6, 4));
+	CHECK(zone.MoveFlyingCreature(walker, 5, 30, 6, 4));
+	CHECK(scene.Sector(5, 4).GetGroundCreature() == NULL);
 	CHECK(scene.Sector(6, 4).GetFlyingCreature() == walker);
 	walker->SetServerPosition(6, 4);
-	CHECK(zone.MoveUndergroundCreature(walker, 300, 300, 7, 4));
+	CHECK(zone.MoveUndergroundCreature(walker, 300, 65000, 7, 4));
+	CHECK(scene.Sector(6, 4).GetFlyingCreature() == NULL);
 	CHECK(scene.Sector(7, 4).GetUndergroundCreature() == walker);
 	// Both cells off the map: nothing to take it from; it joins the new
-	// cell all the same.
-	walker->SetServerPosition(255, 255);
-	CHECK(zone.MoveGroundCreature(walker, 255, 4, 8, 4));
+	// cell all the same (recorded: still in its old sector too, which the
+	// game never meets, as a creature's own cell stays on the map).
+	walker->SetServerPosition(40, 30);
+	CHECK(zone.MoveGroundCreature(walker, 40, 4, 8, 4));
 	CHECK(scene.Sector(8, 4).GetGroundCreature() == walker);
+	CHECK(scene.Sector(7, 4).GetUndergroundCreature() == walker);
+	scene.Sector(7, 4).RemoveCreature(1001);
 }
 
 //----------------------------------------------------------------------
@@ -2116,7 +2141,7 @@ TEST(Zone, ANegativeShopRefreshTimeMeansEveryFrame)
 	Counted* shop = Make(1001, 3, 4);
 	shop->SetPersnalShop(1);
 	CHECK(zone.AddCreature(shop));
-	g_FrameNow = MonotonicClock::TimePoint() + MonotonicClock::Millis(2000000000);
+	g_FrameNow = LaterShopTime();
 	zone.UpdateAllCreature();
 	for (int frame = 0; frame < 3; ++frame)
 	{

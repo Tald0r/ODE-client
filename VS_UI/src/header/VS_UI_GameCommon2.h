@@ -32,6 +32,7 @@ class HelpImageCache;
 
 #include "SXml.h"
 #include "MInventory.h"
+#include "PetWindowInfo.h"
 #include "MonotonicClock.h"
 #include "../Client/Packet/QuestStatusInfo.h"
 //-----------------------------------------------------------------------------
@@ -815,25 +816,7 @@ public:
 	
 };
 
-struct PETINFO
-{
-	bool EXIST;
-	int HP;
-	int ATTR;
-	int ATTR_VALUE;
-	int LEVEL;
-	int FOODTYPE;
-	int EXP_REMAIN;
-	bool CUT_HEAD;
-	bool GAMBLE;
-	int OPTION;
-	int ITEM_TYPE;
-	TYPE_OBJECTID ITEM_ID;
-	std::string NAME;
-	bool ATTACK;
-	std::string NICK_NAME;
-	bool ChangeAbleNickName; // 내펫인지 아닌지..
-};
+// PETINFO: PetWindowInfo.h (the player builds one, task 4.247).
 
 //-----------------------------------------------------------------------------
 // C_VS_UI_PET_INFO

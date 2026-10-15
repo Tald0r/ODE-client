@@ -317,6 +317,14 @@ Client/ViewSectors.h
 Client/MZone.cpp
 Client/MZone.h
 Client/PortalFlag.h
+Client/InputState.cpp
+Client/InputState.h
+Client/PlayerPresentationHost.cpp
+Client/PlayerPresentationHost.h
+Client/PetWindowInfo.h
+Client/MPlayer.cpp
+Client/MPlayer.h
+Client/PacketDef.h
 Client/MCreatureTable.cpp
 Client/MCreatureTable.h
 Client/MNPCTable.cpp
