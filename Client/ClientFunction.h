@@ -24,8 +24,9 @@ extern void			AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO ai, DWORD 
 //---------------------------------------------------------------------------
 // Draw AlphaBox
 //---------------------------------------------------------------------------
-// The UI's translucent box on its back surface, within g_GameRect: (r,g,b)
-// each 0~31, alpha 0~31 (VS_UI_Base.cpp, over SpriteLib's AlphaBox.h).
+// The UI's translucent box on its back surface, within g_GameRect: r and b
+// 0~31, g 0~63, alpha 0~31 (VS_UI_Base.cpp, over SpriteLib's AlphaBox.h).
+// Declared here for gamemodel's callers; VS_UI defines it.
 //---------------------------------------------------------------------------
 extern void		DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha);
 

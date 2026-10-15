@@ -14147,58 +14147,6 @@ MTopView::DrawPartyHP(POINT* pPoint, MCreature* pCreature)
 }
 
 
-//----------------------------------------------------------------------
-// Draw InventoryEffect
-//----------------------------------------------------------------------
-void
-MTopView::DrawInventoryEffect(POINT* pPoint)
-{
-	if (g_pInventoryEffectManager!=NULL)
-	{			
-		//------------------------------------------------
-		// Unlock 상태로 만든다. 
-		//------------------------------------------------
-		BOOL bLock = m_pSurface->IsLock();
-		if (!bLock)
-		{
-			m_pSurface->Lock();
-		}
-
-		MScreenEffect::SetScreenBasis( pPoint->x, pPoint->y );
-
-		g_pTopView->DrawEffect(pPoint, g_pInventoryEffectManager->GetEffects(), g_pInventoryEffectManager->GetSize());
-
-		//------------------------------------------------
-		// 원래 lock 된 상태면 다시 되돌린다.
-		//------------------------------------------------
-		if (!bLock)
-		{
-			m_pSurface->Unlock();
-		}
-	}
-}
-
-
-//----------------------------------------------------------------------
-// Draw InventoryEffect
-//----------------------------------------------------------------------
-void
-MTopView::DrawTitleEffect(POINT* pPoint)
-{
-	int _FrameID = EFFECTSPRITETYPE_UI_TITLE_FIRE;
-	int _Direction = 0;
-	int _Frame = (g_FrameCount % 80)>>1;
-	CEffectFrame& Frame = m_EffectAlphaFPK[_FrameID][_Direction][_Frame];
-	int spriteID = Frame.GetSpriteID();
-	POINT point = *pPoint;
-	if (spriteID != SPRITEID_NULL)
-	{
-		point.x += Frame.GetCX();
-		point.y += Frame.GetCY();
-
-		DRAW_ALPHASPRITEPAL(&point, spriteID, m_EffectAlphaSPK, m_EffectAlphaPPK[_FrameID])//, m_EffectAlphaSPKI, m_EffectAlphaSPKFile)
-	}
-}
 // 2004, 11, 22, sobeit add start
 void
 MTopView::DrawBloodBibleEffect_InGear(POINT* pPoint)

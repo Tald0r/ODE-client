@@ -6927,10 +6927,17 @@ rounds settled* for the host rules). Test fixtures share
   >   - `IsPlayerInSafeZone` (no callers).
   >   - `DrawTitleEffect` (its callers commented out).
   >   - `DrawInventoryEffect`, which only read the inventory's position;
-  >     the gear window's call goes too.
+  >     the inventory window's call goes too. #524's follow-up retires
+  >     the view's `DrawInventoryEffect` and `DrawTitleEffect`, which
+  >     nothing called after that.
   >   - Commented-out minimap code.
-  > - **Recorded, not changed:** on Windows a coloured box draws nothing,
-  >   since BltColorAlpha is a stub. The test pins it.
+  > - **Recorded, not changed:**
+  >   - On Windows a coloured box draws nothing, since BltColorAlpha is a
+  >     stub. The test pins it.
+  >   - The inventory's item effects (making holy water, an enchant) are
+  >     generated and advanced, but nothing draws them: the port left the
+  >     draw a TODO ("not implemented for SDL backend"). The retired view
+  >     member is in git history.
   >
   > R1 is 28 Windows / 26 Ninja.
   - Owner: membership, R1, `test_client_function.cpp` (8 tests, with a

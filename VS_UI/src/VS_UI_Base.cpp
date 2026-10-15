@@ -8,6 +8,7 @@
 // Disabled assert for macOS
 #include "VS_UI_Base.h"
 #include "SpriteLib/AlphaBox.h"
+#include "ClientFunction.h"
 // GDI removed (SDL2) - All platforms use TextSystem (SDL + freetype2)
 #include "../../basic/Platform.h"
 #include "TextSystem/FontHandleUtil.h"

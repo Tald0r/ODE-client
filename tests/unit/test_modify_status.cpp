@@ -26,6 +26,7 @@
 #include "GameInfoPresentationHost.h"
 #include "RankBonusHandlerHost.h"
 
+#include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -872,7 +873,8 @@ TEST(ModifyStatus, APetsExperienceIsWhatIsLeft)
 	// (its number) picks its row.
 	ExperienceTable table;
 	{
-		const std::string path = (std::filesystem::temp_directory_path() / "darkeden_pet_exp_rows.bin").string();
+		const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+		const std::string path = (std::filesystem::temp_directory_path() / ("darkeden_pet_exp_rows_" + std::to_string(stamp) + ".bin")).string();
 		{
 			std::ofstream out(path, std::ios::binary);
 			const int rows[][3] = {{1, 100, 100}, {2, 400, 500}, {3, 500, 1000}, {4, 1000, 2000}};

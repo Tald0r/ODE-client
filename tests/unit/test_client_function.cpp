@@ -109,7 +109,8 @@ struct Scene
 		PlayerState::SetHost(oldPlayer);
 		inventory.Release();
 	}
-	// An item action of `phases` phases by the fake generator.
+	// An item action of `phases` phases by the fake generator. The first
+	// is a delay node: it lasts the delay its target was given.
 	void Action(TYPE_ACTIONINFO action, int phases, BYTE target = FLAG_ACTIONINFO_TARGET_ITEM)
 	{
 		MActionInfo* info = actions.GetMutable(action);
@@ -117,6 +118,7 @@ struct Scene
 		if (phases == 0) info->Release(); else info->Init(phases);
 		for (int phase = 0; phase < phases; ++phase)
 			info->GetMutable(phase)->EffectGeneratorID = 7;
+		if (phases > 0) info->GetMutable(0)->bDelayNode = true;
 	}
 	Ware* Put(ITEM_CLASS itemClass, TYPE_OBJECTID id, int x, int y, TYPE_ITEMTYPE type = 0)
 	{
@@ -162,6 +164,7 @@ TEST(ClientFunction, AnItemEffectStartsAtItsCellAndRemovesIt)
 	CHECK_EQ(50, generated[0].creatureID);
 	CHECK_EQ(2, generated[0].x1);
 	CHECK_EQ(1, generated[0].y1);
+	CHECK_EQ(33, generated[0].count);
 	// The generator declined: the result ran, and the item is gone.
 	CHECK(scene.inventory.GetItem(50) == nullptr);
 }
