@@ -116,8 +116,12 @@ struct Scene
 		MActionInfo* info = actions.GetMutable(action);
 		info->Set("action", 0, 0, 1, target);
 		if (phases == 0) info->Release(); else info->Init(phases);
+		// A phase's own length (5) is set: its constructor leaves it unset.
 		for (int phase = 0; phase < phases; ++phase)
+		{
 			info->GetMutable(phase)->EffectGeneratorID = 7;
+			info->GetMutable(phase)->Count = 5;
+		}
 		if (phases > 0) info->GetMutable(0)->bDelayNode = true;
 	}
 	Ware* Put(ITEM_CLASS itemClass, TYPE_OBJECTID id, int x, int y, TYPE_ITEMTYPE type = 0)

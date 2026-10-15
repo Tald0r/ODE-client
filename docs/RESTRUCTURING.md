@@ -207,6 +207,9 @@ a real guild info mapper.
 `ModifyStatusManager.cpp`'s `Function_MODIFY_*` bodies left it with task
 4.235: they compile in gamemodel, where `test_modify_status.cpp` runs each
 one through hosts that record the UI, the player and the zone.
+The executable halves of split classes left it with task 4.237, whose
+last, `MItemUse.cpp`, compiles in gamemodel, where `test_item_use.cpp`
+runs each item's use.
 `UIDialog.cpp`'s popups left it with task 4.238: they compile in gamemodel,
 and `test_ui_dialog.cpp` runs them over windows that record.
 
@@ -221,7 +224,6 @@ and `test_ui_dialog.cpp` runs them over windows that record.
 | `UIMessageManager::Execute_UI_CHAT_RETURN` | application chat callback reaches the current game mode, player, party/guild state, live socket, help events and dialogs. Its payload borrowing is source-audited with full builds; the queue that owns deferred text is independently tested in `ui_tests`. |
 | `Client/MinTr.h` raw trace transport | the one remaining caller sends a fixed text message to the optional external Win32 trace window. Unused variadic and command formatting paths are retired. |
 | `PacketFunction.cpp` connect paths | Winsock + connection state machine. `RequestClientPlayerManager.cpp` was listed here until 2026-09-09; task 5.1's fifth slice put its seams behind `WireHost`, and task 5.2's eighth slice deleted it with the rest of the outbound peer side |
-| The executable halves of split classes: `MItemUse.cpp` (`MSkillAvailable.cpp` joined gamemodel in task 4.234, `MObjectScreen.cpp` in task 4.204, and `TextServiceScreen.cpp` was folded into TextSystem in task 4.208) | the packet/dialog/drawing side of a class whose core is in a library, by design |
 | `PacketFunction.cpp` error popups and addon item tables (`PopupErrorMessage`, `InitPacketItemTable`) | the popups reach the live UI and message tables, and the tables store item templates the executable builds at start-up (`g_pPacketItemShoulder` and its siblings); neither has a harness. Precedent `0557a039`; also `10b1da62` and `6ebdc97c`. Added 2026-09-29. The connect paths in the row above are a separate case. |
 | `UIMessageManager.cpp` handlers other than `Execute_UI_CHAT_RETURN` (the other `Execute_UI_*` bodies) | each reaches the live storages, inventory, `g_pTempInformation`, the player and the socket, like the chat handler above; the class has no harness. Precedent `ace28baf`; also `dfaeda5b`. Added 2026-09-29. |
 | `DebugKit.cpp` (`CDebugKit`) | a debug facility compiled into the executable and reached only under `DEBUG_INFO`, which no build defines; moving it into `gamemodel` would change the W2/M2 include rules. Precedent `6a46b721`. Added 2026-09-29. |

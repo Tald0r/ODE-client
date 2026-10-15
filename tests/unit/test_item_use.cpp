@@ -378,6 +378,7 @@ struct Scene
 		pInfo->Set("action", 0, 0, 1, FLAG_ACTIONINFO_TARGET_ITEM);
 		pInfo->Init(1);
 		pInfo->GetMutable(0)->EffectGeneratorID = 7;
+		pInfo->GetMutable(0)->Count = 5;
 		pInfo->GetMutable(0)->bDelayNode = true;
 	}
 };
@@ -406,12 +407,18 @@ const std::string SkillVerify = "verify|" + N(PlayerState::WAIT_VERIFY_SKILL_SUC
 //----------------------------------------------------------------------
 TEST(ItemUse, TheFactoryMakesEachClass)
 {
+	// Every class makes an item of that class: the table is in class order.
 	Scene scene;
-	for (ITEM_CLASS itemClass : {ITEM_CLASS_MOTORCYCLE, ITEM_CLASS_MAGAZINE, ITEM_CLASS_CORPSE, ITEM_CLASS_MOON_CARD, ITEM_CLASS_TRAP_ITEM})
+	for (int i = 0; i < MAX_ITEM_CLASS; ++i)
 	{
+		const ITEM_CLASS itemClass = ITEM_CLASS(i);
 		std::unique_ptr<MItem> pItem(NewItemOfClass(itemClass));
 		CHECK(pItem != nullptr);
-		if (pItem) CHECK_EQ(itemClass, pItem->GetItemClass());
+		if (pItem && pItem->GetItemClass() != itemClass)
+		{
+			std::printf("      class %d makes class %d\n", i, int(pItem->GetItemClass()));
+			CHECK(false);
+		}
 	}
 	CHECK(NewItemOfClass(ITEM_CLASS(-1)) == NULL);
 	CHECK(NewItemOfClass(ITEM_CLASS(MAX_ITEM_CLASS)) == NULL);
@@ -1125,7 +1132,7 @@ TEST(ItemUse, PlainItemsAreUsedFromTheInventory)
 	const auto used = [](TYPE_OBJECTID id) { return Calls{"use|" + N(id) + "|3|2|0", Buffer(id, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY)}; };
 	scene.Put<MTrapItem>(50, 3, 2)->UseInventory();
 	CHECK(Same(used(50)));
-	scene.inventory.RemoveItem(50);
+	delete scene.inventory.RemoveItem(50);
 	// A gift box from type 6.
 	calls.clear();
 	MEventGiftBoxItem* pBox = scene.Put<MEventGiftBoxItem>(51, 3, 2, 5);
@@ -1298,17 +1305,11 @@ TEST(ItemUse, QuickSlotCandyFollowsTheArmsBandForOusters)
 	MEventEtcItem* pHeld = new MEventEtcItem;
 	pHeld->SetID(51);
 	pHeld->SetItemType(15);
-	if (band.AddItem(pHeld, 2))
-	{
-		calls.clear();
-		pHeld->UseQuickItem();
-		CHECK(Same(Calls{"quick potion|51|2", Buffer(51, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT), "lock gear"}));
-		band.MSlotItemManager::Release();
-	}
-	else
-	{
-		delete pHeld;
-	}
+	CHECK(band.AddItem(pHeld, 2));
+	calls.clear();
+	pHeld->UseQuickItem();
+	CHECK(Same(Calls{"quick potion|51|2", Buffer(51, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT), "lock gear"}));
+	band.MSlotItemManager::Release();
 	// Anything but candy and rice cakes: nothing.
 	calls.clear();
 	candy.SetItemType(13);
@@ -1400,7 +1401,9 @@ TEST(ItemUse, PetFoodFeedsAPetOutOrSplits)
 	petID = 900;
 	pFood->UseInventory();
 	CHECK(Same(Calls{"use|50|3|2|0", Buffer(50, PlayerState::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY)}));
-	// Without a player: no pet, whatever the creature host answers.
+	// Without a player: no pet, whatever the creature host answers. (The
+	// executable's creature adapters read the player unchecked, so there
+	// pet food without a player crashes, as before 4.237.)
 	calls.clear();
 	noPlayer = true;
 	pFood->UseInventory();

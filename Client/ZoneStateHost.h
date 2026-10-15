@@ -76,7 +76,8 @@ struct Host
 	// refuses it (one with its ID there already, a cell outside the zone or
 	// not set, the cell full for its move type, a move type with no
 	// sectors), and the caller still owns it. DeleteCreature deletes one
-	// the zone did not take.
+	// the zone did not take, or a corpse's (MCorpse's destructor frees its
+	// creature through it; without a host the creature leaks).
 	MCreature* (*NewCreature)() = nullptr;
 	// The same for a creature that wears gear (MCreatureWear): a bat or a
 	// wolf a vampire turns into, say.
