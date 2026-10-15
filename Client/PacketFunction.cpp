@@ -2209,8 +2209,12 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
 				pItem->SetID(i);
-				g_pSlayerGear->AddItem(pItem, (MSlayerGear::GEAR_SLAYER)(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1+i));
-				g_abHolyLandBonusSkills[TempSignList[i]] = true;
+				// A sign past the six slots, which none takes, is freed.
+				if (!g_pSlayerGear->AddItem(pItem, (MSlayerGear::GEAR_SLAYER)(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1+i)))
+					delete pItem;
+				// The type is the server's: one past the bonuses marks none.
+				if (TempSignList[i] < HOLYLAND_BONUS_MAX)
+					g_abHolyLandBonusSkills[TempSignList[i]] = true;
 			}
 		}
 		break;
@@ -2229,8 +2233,12 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
 				pItem->SetID(i);
-				g_pVampireGear->AddItem(pItem, (MVampireGear::GEAR_VAMPIRE)(MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1+i));
-				g_abHolyLandBonusSkills[TempSignList[i]] = true;
+				// A sign past the six slots, which none takes, is freed.
+				if (!g_pVampireGear->AddItem(pItem, (MVampireGear::GEAR_VAMPIRE)(MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1+i)))
+					delete pItem;
+				// The type is the server's: one past the bonuses marks none.
+				if (TempSignList[i] < HOLYLAND_BONUS_MAX)
+					g_abHolyLandBonusSkills[TempSignList[i]] = true;
 			}
 		}
 		break;
@@ -2249,8 +2257,12 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
 				pItem->SetID(i);
-				g_pOustersGear->AddItem(pItem, (MOustersGear::GEAR_OUSTERS)(MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1+i));
-				g_abHolyLandBonusSkills[TempSignList[i]] = true;
+				// A sign past the six slots, which none takes, is freed.
+				if (!g_pOustersGear->AddItem(pItem, (MOustersGear::GEAR_OUSTERS)(MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1+i)))
+					delete pItem;
+				// The type is the server's: one past the bonuses marks none.
+				if (TempSignList[i] < HOLYLAND_BONUS_MAX)
+					g_abHolyLandBonusSkills[TempSignList[i]] = true;
 			}
 		}
 		break;

@@ -958,6 +958,31 @@ TEST(PacketPlayerItems, BloodBibleReplacesTheSignsOfEachRace)
 }
 
 //----------------------------------------------------------------------
+// The signs' types and count are the server's: a type past the twelve
+// bonuses marks none, and a sign past the six slots is freed.
+//----------------------------------------------------------------------
+TEST(PacketPlayerItems, BloodBibleSignsPastTheBonusesOrTheSlotsAreKeptOut)
+{
+	Scene scene;
+	scene.me->SetCreatureType(TYPE_CREATURETYPE(CREATURETYPE_SLAYER_MALE));
+	BloodBibleSignInfo info;
+	info.setOpenNum(6);
+	info.getList() = { 3, HOLYLAND_BONUS_MAX, 255, 1, 2, 4, 5 };
+	calls.clear();
+	SetBloodBibleSlot(&info);
+	for (int i = 0; i < HOLYLAND_BONUS_MAX; ++i)
+		CHECK_EQ(i == 1 || i == 2 || i == 3 || i == 4 || i == 5, g_abHolyLandBonusSkills[i]);
+	// The gear takes the signs the item table knows; the ones it refuses
+	// (types 12 and 255, past the table) and the seventh, which no slot
+	// takes, are made and freed.
+	for (int i = 0; i < 6; ++i)
+		CHECK_EQ(i != 1 && i != 2, scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1 + i)) != NULL);
+	CHECK_EQ(1, Count("destroyed|1"));
+	CHECK_EQ(1, Count("destroyed|2"));
+	CHECK_EQ(1, Count("destroyed|6"));
+}
+
+//----------------------------------------------------------------------
 // The item the mouse held is freed and let go; then each slot's item is
 // made like the inventory's and picked up.
 //----------------------------------------------------------------------
