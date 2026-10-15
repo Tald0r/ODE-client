@@ -1929,7 +1929,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 	{
 		int itemNum = pGearInfo->getListNum();
 				
-		bool bAdd;
+		bool bAdd = false;
 		
 		for (int i=0; i<itemNum; i++)
 		{
