@@ -28,11 +28,12 @@ struct Audio
 	int nextBuffer = 100;
 	bool loadFails = false;
 	bool cacheStores = true;
-	int evicted = 0;					// what storing pushes out
+	int evicted = 0;					// what storing pushes out (0: a free place)
 	std::map<TYPE_SOUNDID, int> cache;
 	std::map<int, int> duplicates;		// duplicate -> source
 	std::vector<std::string> loads;
 	std::vector<int> released, stopped;
+	std::vector<std::string> events;	// stops and releases, in order
 	std::vector<std::pair<int, bool>> played;
 	std::vector<std::string> pans;
 	std::vector<int> volumes;
@@ -54,10 +55,17 @@ const ZoneSoundHost host{
 		return audio->loadFails ? nullptr : B(audio->nextBuffer++);
 	},
 	.Duplicate = [](Buffer buffer) { audio->duplicates[audio->nextBuffer] = N(buffer); return B(audio->nextBuffer++); },
-	.Release = [](Buffer buffer) { audio->released.push_back(N(buffer)); },
+	.Release = [](Buffer buffer) {
+		audio->released.push_back(N(buffer));
+		audio->events.push_back("release " + std::to_string(N(buffer)));
+	},
 	.IsPlaying = [](Buffer buffer) { return audio->playing[N(buffer)]; },
 	.Play = [](Buffer buffer, bool loop) { audio->played.push_back({N(buffer), loop}); audio->playing[N(buffer)] = true; },
-	.Stop = [](Buffer buffer) { audio->stopped.push_back(N(buffer)); audio->playing[N(buffer)] = false; },
+	.Stop = [](Buffer buffer) {
+		audio->stopped.push_back(N(buffer));
+		audio->events.push_back("stop " + std::to_string(N(buffer)));
+		audio->playing[N(buffer)] = false;
+	},
 	.CenterToRightPan = [](Buffer, int pan) { audio->pans.push_back("R" + std::to_string(pan)); },
 	.CenterToLeftPan = [](Buffer, int pan) { audio->pans.push_back("L" + std::to_string(pan)); },
 	.CenterPan = [](Buffer) { audio->pans.push_back("C"); },
@@ -66,6 +74,7 @@ const ZoneSoundHost host{
 	.Cache = [](TYPE_SOUNDID id, Buffer buffer, Buffer& old) {
 		if (!audio->cacheStores) return false;
 		audio->cache[id] = N(buffer);
+		if (audio->evicted == 0) return false;	// a free place
 		old = B(audio->evicted);
 		return true;
 	},
@@ -187,10 +196,10 @@ TEST(ZoneSound, ItLoadsCachesAndPlaysADuplicate)
 		CHECK_EQ(100, f.state.duplicates[102]);
 		CHECK(!second.IsLoop());
 		f.state.released.clear();
+		f.state.events.clear();
 	}
-	// Each node stops and releases its own duplicate.
-	CHECK((f.state.stopped == std::vector<int>{102, 101}));
-	CHECK((f.state.released == std::vector<int>{102, 101}));
+	// Each node stops, then releases, its own duplicate.
+	CHECK((f.state.events == std::vector<std::string>{"stop 102", "release 102", "stop 101", "release 101"}));
 }
 
 TEST(ZoneSound, WithoutAFileOrALoadOrACacheEntryThereIsNoBuffer)
@@ -281,6 +290,27 @@ TEST(ZoneSound, APlayingSoundKeepsItsNearerSourceWhileThePlayerStands)
 	CHECK_EQ(16, upward.GetX());
 }
 
+TEST(ZoneSound, DistanceAlongYCountsAboveAndBelow)
+{
+	Fixture f;
+	f.state.px = 10;
+	f.state.py = 30;						// off the diagonal
+	ZONESOUND_NODE node(1);
+	node.Play(10, 12);						// 18 north
+	CHECK((f.state.pans == std::vector<std::string>{"C"}));
+	CHECK((f.state.volumes == std::vector<int>{18 * 4 * 3}));
+	node.Play(15, 30);						// 5 east: nearer, taken
+	CHECK_EQ(15, node.GetX());
+	ZONESOUND_NODE south(1);
+	south.Play(11, 52);						// 22 south
+	CHECK_EQ(22 * 4 * 3, f.state.volumes.back());
+	// 45 north is out of hearing.
+	f.state.py = 50;
+	ZONESOUND_NODE far(1);
+	far.Play(10, 5);
+	CHECK(far.GetBuffer() == nullptr);
+}
+
 TEST(ZoneSound, StoppingAndEndingALoop)
 {
 	Fixture f;
@@ -308,7 +338,7 @@ TEST(ZoneSound, StoppingAndEndingALoop)
 TEST(ZoneSoundManager, NothingWithoutAPlayerOrAZone)
 {
 	Fixture f;
-	f.ZoneSound(1, 1, true, 12, 10);
+	f.ZoneSound(7, 1, true, 12, 10);
 	MZoneSoundManager manager;
 	f.state.player = false;
 	manager.UpdateSound();
@@ -325,12 +355,12 @@ TEST(ZoneSoundManager, NothingWithoutAPlayerOrAZone)
 TEST(ZoneSoundManager, ItPlaysTheSectorsSoundsEveryFiveSecondsOrOnAMove)
 {
 	Fixture f;
-	ZONESOUND_INFO& bird = f.ZoneSound(1, 1, false, 12, 10);
+	ZONESOUND_INFO& bird = f.ZoneSound(7, 1, false, 12, 10);
 	MZoneSoundManager manager;
 	f.Advance(100);
 	manager.UpdateSound();
 	CHECK((f.state.sectorsAsked == std::vector<std::pair<int, int>>{{10, 10}}));
-	ZONESOUND_NODE* pNode = manager.GetData(1);
+	ZONESOUND_NODE* pNode = manager.GetData(7);
 	CHECK(pNode != nullptr);
 	if (pNode == nullptr) return;
 	CHECK_EQ(1, pNode->GetSoundID());
@@ -345,11 +375,13 @@ TEST(ZoneSoundManager, ItPlaysTheSectorsSoundsEveryFiveSecondsOrOnAMove)
 	f.Advance(1);
 	manager.UpdateSound();
 	CHECK_EQ(2u, f.state.sectorsAsked.size());
-	CHECK(manager.GetData(1) == pNode);		// the same node
-	// A move: at once.
+	CHECK(manager.GetData(7) == pNode);		// the same node
+	// A move: at once; then standing there, not again.
 	f.state.py = 11;
 	manager.UpdateSound();
 	CHECK((f.state.sectorsAsked.back() == std::pair<int, int>{10, 11}));
+	manager.UpdateSound();
+	CHECK_EQ(3u, f.state.sectorsAsked.size());
 	f.state.px = 11;
 	manager.UpdateSound();
 	CHECK_EQ(4u, f.state.sectorsAsked.size());
@@ -360,17 +392,17 @@ TEST(ZoneSoundManager, ItPlaysTheSectorsSoundsEveryFiveSecondsOrOnAMove)
 TEST(ZoneSoundManager, ASoundWaitsForItsTimeAndHours)
 {
 	Fixture f;
-	ZONESOUND_INFO& bird = f.ZoneSound(1, 1, false, 12, 10);
+	ZONESOUND_INFO& bird = f.ZoneSound(7, 1, false, 12, 10);
 	bird.NextPlayTime = f.state.now + MonotonicClock::Millis(3000);
-	f.ZoneSound(9, 1, false, 12, 10);		// no zone sound 9 in the table:
-	f.zoneSounds.RemoveData(9);				// skipped
+	f.ZoneSound(15, 1, false, 12, 10);		// no zone sound 15 in the table:
+	f.zoneSounds.RemoveData(15);				// skipped
 	MZoneSoundManager manager;
 	manager.UpdateSound();
-	CHECK(manager.GetData(1) == nullptr);	// not yet
-	CHECK(manager.GetData(9) == nullptr);
+	CHECK(manager.GetData(7) == nullptr);	// not yet
+	CHECK(manager.GetData(15) == nullptr);
 	f.Advance(6000);
 	manager.UpdateSound();
-	ZONESOUND_NODE* pNode = manager.GetData(1);
+	ZONESOUND_NODE* pNode = manager.GetData(7);
 	CHECK(pNode != nullptr);
 	if (pNode == nullptr) return;
 	// Outside its hours it stops.
@@ -392,8 +424,8 @@ TEST(ZoneSoundManager, ASoundWaitsForItsTimeAndHours)
 TEST(ZoneSoundManager, ALoopNoLongerHeardStopsLooping)
 {
 	Fixture f;
-	f.ZoneSound(1, 1, true, 12, 10);
-	f.ZoneSound(2, 2, true, 8, 10);
+	f.ZoneSound(7, 1, true, 12, 10);
+	f.ZoneSound(8, 2, true, 8, 10);
 	MZoneSoundManager manager;
 	manager.UpdateSound();
 	CHECK_EQ(2u, f.state.played.size());
@@ -401,19 +433,19 @@ TEST(ZoneSoundManager, ALoopNoLongerHeardStopsLooping)
 	f.state.sector.pop_back();
 	f.state.px = 11;
 	manager.UpdateSound();
-	ZONESOUND_NODE* pWind = manager.GetData(2);
+	ZONESOUND_NODE* pWind = manager.GetData(8);
 	CHECK(pWind != nullptr);
 	if (pWind == nullptr) return;
 	CHECK_EQ(2, pWind->GetSoundID());		// its zone sound's sound
 	CHECK(!pWind->IsContinueLoop());
 	CHECK((f.state.played.back() == std::pair<int, bool>{N(pWind->GetBuffer()), false}));
-	CHECK(manager.GetData(1)->IsContinueLoop());
+	CHECK(manager.GetData(7)->IsContinueLoop());
 }
 
 TEST(ZoneSoundManager, ALoopWithinItsHoursKeepsLoopingBetweenShows)
 {
 	Fixture f;
-	ZONESOUND_INFO& wind = f.ZoneSound(2, 2, true, 8, 10);
+	ZONESOUND_INFO& wind = f.ZoneSound(8, 2, true, 8, 10);
 	MZoneSoundManager manager;
 	manager.UpdateSound();
 	// Its table entry stops looping, but the node still loops: within
@@ -423,14 +455,14 @@ TEST(ZoneSoundManager, ALoopWithinItsHoursKeepsLoopingBetweenShows)
 	f.state.px = 11;
 	const size_t played = f.state.played.size();
 	manager.UpdateSound();
-	CHECK(manager.GetData(2)->IsContinueLoop());
+	CHECK(manager.GetData(8)->IsContinueLoop());
 	CHECK_EQ(played, f.state.played.size());
 	// A sound that does not loop is not told to continue.
-	ZONESOUND_INFO& bird = f.ZoneSound(1, 1, false, 12, 10);
+	ZONESOUND_INFO& bird = f.ZoneSound(7, 1, false, 12, 10);
 	f.state.px = 12;
 	manager.UpdateSound();
 	bird.NextPlayTime = f.state.now + MonotonicClock::Millis(60000);
 	f.state.px = 13;
 	manager.UpdateSound();
-	CHECK(manager.GetData(1) != nullptr && !manager.GetData(1)->IsContinueLoop());
+	CHECK(manager.GetData(7) != nullptr && !manager.GetData(7)->IsContinueLoop());
 }

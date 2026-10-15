@@ -50,8 +50,9 @@ struct ZoneSoundHost
 	void (*CenterToLeftPan)(LPDIRECTSOUNDBUFFER buffer, int pan) = nullptr;
 	void (*CenterPan)(LPDIRECTSOUNDBUFFER buffer) = nullptr;
 	void (*SubVolumeFromMax)(LPDIRECTSOUNDBUFFER buffer, int volume) = nullptr;
-	// The sound cache: whether a sound is in it; storing one (false when it
-	// was not stored, otherwise old is what it pushed out); reading one.
+	// The sound cache: whether a sound is in it; storing one (true when
+	// that pushed a buffer out, which is then old - false when it took a
+	// free place or was not stored); reading one.
 	bool (*IsCached)(TYPE_SOUNDID id) = nullptr;
 	bool (*Cache)(TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER buffer, LPDIRECTSOUNDBUFFER& old) = nullptr;
 	bool (*GetCached)(TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER& buffer) = nullptr;

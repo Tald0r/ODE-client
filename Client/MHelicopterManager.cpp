@@ -135,6 +135,8 @@ MHelicopter::SetChaseCreature(TYPE_OBJECTID id, int x0, int y0)
 		return true;
 	}
 
+	DEBUG_ADD_FORMAT("MHelicopter::SetChase-No Such Creature id=%d", id);
+
 	Release();
 
 	return false;
@@ -307,6 +309,8 @@ MHelicopterManager::RemoveHelicopterSoon(TYPE_OBJECTID creatureID)
 void
 MHelicopterManager::RemoveHelicopter(TYPE_OBJECTID creatureID)
 {
+	DEBUG_ADD_FORMAT("RemoveHelicopter. cid=%d", creatureID);
+
 	iterator iHelicopter = find( creatureID );
 
 	if (iHelicopter != end())

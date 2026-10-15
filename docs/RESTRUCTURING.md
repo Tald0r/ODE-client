@@ -6497,8 +6497,11 @@ rounds settled* for the host rules). Test fixtures share
   - Owner: membership, R1, and `test_helicopter_manager.cpp` (12
     tests). They run real chase effects to their arrival, with the
     guidance host tracing the fake zone's creatures.
-  - Mutants: all 36 are caught (the effect-type check's by a crash).
-    Taking the source out of the membership breaks the test link.
+  - Mutants: all 36 are caught. #516's follow-up added pins for the
+    shadow's first direction, the send-away's z and step, and the
+    remove's effect-type check (a guidance effect stand-in, so that
+    one no longer needs a crash). Taking the source out of the
+    membership breaks the test link.
 
 - [x] **4.227 The zone's sounds:** move `MZoneSoundManager` (with
   `ZONESOUND_NODE` and `MZoneSoundTable`) into `gamemodel` behind
@@ -6523,9 +6526,11 @@ rounds settled* for the host rules). Test fixtures share
   >   the options, the player's sector, the zone's sector sounds, and
   >   the frame clock and game hour. GameInit installs it with the
   >   effect hosts.
-  > - **One change:** the sector's sounds are now read only when an
-  >   update is due, and without a zone nothing changes, as before. The
-  >   rest is unchanged.
+  > - **One reordering:** the check that there is a zone now comes
+  >   first inside the update (the sector's sounds were always read only
+  >   when an update is due). Without a zone nothing changes, as before,
+  >   in every case. The rest is unchanged, the log lines included (#516's
+  >   follow-up restored the ones the move had dropped).
   >
   > R1 is 36 Windows / 34 Ninja.
   - Owner: membership, R1, and `test_zone_sound_manager.cpp` (11 tests,

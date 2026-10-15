@@ -24,6 +24,7 @@ struct Zone
 	std::map<TYPE_OBJECTID, MEffect*> effects;
 	std::vector<Sound> sounds;
 	TYPE_OBJECTID player = 1;
+	bool untraceable = false;				// the guidance host cannot find creatures
 	bool selecting = false;
 	int waypointSelections = 0;
 	~Zone() { for (auto& entry : effects) delete entry.second; }
@@ -68,7 +69,7 @@ const MHelicopterHost helicopterHost{
 const MGuidanceEffectHost guidanceHost{
 	.CreaturePosition = [](TYPE_OBJECTID id, int& x, int& y, int& z) {
 		const auto entry = zone->creatures.find(id);
-		if (entry == zone->creatures.end()) return false;
+		if (zone->untraceable || entry == zone->creatures.end()) return false;
 		x = WorldTileGeometry::TileToPixelX(entry->second.first);
 		y = WorldTileGeometry::TileToPixelY(entry->second.second);
 		z = 0;
@@ -184,6 +185,19 @@ TEST(Helicopter, ItsShadowChasesTheCreatureWithAPropeller)
 	CHECK_EQ(WorldTileGeometry::TileToPixelY(40), pShadow->GetPixelY());
 }
 
+TEST(Helicopter, ItsShadowStartsFacingSouthEast)
+{
+	// Direction 2 until a trace turns it; here none can.
+	Fixture f;
+	f.state.untraceable = true;
+	MHelicopter helicopter;
+	CHECK(helicopter.SetChaseCreature(2, 5, 6));
+	MChaseEffect* pShadow = f.Shadow(&helicopter);
+	CHECK(pShadow != nullptr);
+	if (pShadow == nullptr) return;
+	CHECK_EQ(2, pShadow->GetDirection());
+}
+
 TEST(Helicopter, CallingItAgainReplacesItsSound)
 {
 	Fixture f;
@@ -279,6 +293,8 @@ TEST(HelicopterManager, RemovingSendsItAwayUntilItArrives)
 	manager.RemoveHelicopter(2);
 	CHECK_EQ(x - 1000, pShadow->GetPixelX());
 	CHECK_EQ(y + 600, pShadow->GetPixelY());
+	CHECK_EQ(0, pShadow->GetPixelZ());
+	CHECK_EQ(20, pShadow->GetStepPixel());
 	pShadow->Update();							// still there
 	CHECK(pShadow->IsChaseOver());
 	manager.Update();
@@ -340,6 +356,25 @@ TEST(HelicopterManager, ThePlayersArrivalOpensTheWayPoints)
 	manager.Update();								// already open
 	CHECK_EQ(1, f.state.waypointSelections);
 	CHECK(manager.GetHelicopter(1) == pHelicopter);
+}
+
+TEST(HelicopterManager, AnotherKindOfGuidedEffectIsNotSentAway)
+{
+	Fixture f;
+	MHelicopterManager manager;
+	MHelicopter* pHelicopter = f.Call(2);
+	manager.AddHelicopter(pHelicopter);
+	// Its ID now names a guidance effect tracing creature 2, which is
+	// not a chase.
+	const TYPE_OBJECTID id = pHelicopter->GetEffectID();
+	auto* pGuided = new MGuidanceEffect(BLT_EFFECT);
+	pGuided->SetID(id);
+	pGuided->SetTraceCreatureID(2);
+	delete f.state.effects[id];
+	f.state.effects[id] = pGuided;
+	manager.RemoveHelicopter(2);
+	CHECK_EQ(2, pGuided->GetTraceCreatureID());
+	CHECK(manager.GetHelicopter(2) == pHelicopter);
 }
 
 TEST(HelicopterManager, AnotherKindOfEffectIsLeftAlone)

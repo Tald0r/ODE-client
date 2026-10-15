@@ -126,8 +126,15 @@ ZONESOUND_NODE::Play(int x, int y, bool bLoop)
 		//------------------------------------------------------------
 		if (m_pBuffer==NULL)
 		{
+			DEBUG_ADD("[ZONESOUND_NODE] Play:New Buffer");
+
 			if (!s_pHost->IsCached(m_SoundID))
 			{
+				DEBUG_ADD("[ZONESOUND_NODE] Load Wave");
+
+				// GameMain releases the table Filename when its own load
+				// fails, so it can be NULL here - don't pass that to
+				// LoadWav or format it with %s below.
 				const char* pFilename = (*g_pSoundTable)[m_SoundID].Filename;
 				if (pFilename==NULL)
 				{
@@ -138,6 +145,8 @@ ZONESOUND_NODE::Play(int x, int y, bool bLoop)
 
 				if (pBuffer==NULL)
 				{
+					DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", m_SoundID, pFilename );
+
 					return;
 				}
 				else
@@ -149,11 +158,14 @@ ZONESOUND_NODE::Play(int x, int y, bool bLoop)
 						s_pHost->Release(pOld);
 					}
 
+					// Not auto-released: the node releases it.
 					m_pBuffer = s_pHost->Duplicate(pBuffer);
 				}
 			}
 			else
 			{
+				DEBUG_ADD("[ZONESOUND_NODE] Already Exist Buffer");
+
 				LPDIRECTSOUNDBUFFER pBuffer;
 				if (s_pHost->GetCached(m_SoundID, pBuffer))
 				{
@@ -161,6 +173,8 @@ ZONESOUND_NODE::Play(int x, int y, bool bLoop)
 				}
 			}
 		}
+
+		DEBUG_ADD("[ZONESOUND_NODE] Arrange Volume & Dist");
 
 		if (m_pBuffer!=NULL)
 		{
@@ -185,6 +199,8 @@ ZONESOUND_NODE::Play(int x, int y, bool bLoop)
 			//------------------------------------------------------------
 			int sub = (dist << 2) * s_pHost->SoundVolume();
 			s_pHost->SubVolumeFromMax(m_pBuffer, sub);
+
+			DEBUG_ADD("[ZONESOUND_NODE] Play Buffer");
 
 			if (!s_pHost->IsPlaying( m_pBuffer ))
 			{
