@@ -4163,8 +4163,7 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 		else
 			return;				// For Ousters lol
 		
-		// Empty until a hunt is listed: an empty line, which the talk
-		// window leaves out, for a quest that is not one.
+		// Only a hunt fills and lists a line; it starts empty all the same.
 		char str[256] = "";
 		
 		while ( ! pPacket->empty() )

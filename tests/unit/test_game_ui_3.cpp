@@ -839,8 +839,7 @@ TEST(GameUI3Quest, OtherNPCsListTheHuntsForTheRace)
 	CHECK(Same({"close all", "talk 1|654|(null)",
 		"menu 1|501:Wolf 7 heads Limit:3h 5m|9999:Later",
 		"text 1 fit|" + S(UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS), "start 1"}));
-	// Before any hunt, a quest that is not one adds an empty line, which
-	// the talk window leaves out.
+	// Before any hunt, a quest that is not one lists nothing.
 	scene.dialog.ClosePCTalkDlg();
 	calls.clear();
 	windowCount = 0;
