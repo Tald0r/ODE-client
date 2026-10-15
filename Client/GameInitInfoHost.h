@@ -16,6 +16,8 @@ struct Host
 	void (*InitPacketItemTable)() = nullptr;
 	int (*PersonalShopUpdateTime)() = nullptr;
 	void (*InitFailMessage)(const char* message) = nullptr;
+	// An error the player is told of (the executable's message box).
+	void (*ShowError)(const char* message) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -25,5 +27,6 @@ void SetFadeStart(signed char start, signed char end, signed char step,
 void InitPacketItemTable();
 int PersonalShopUpdateTime();
 void InitFailMessage(const char* message);
+void ShowError(const char* message);
 
 }
