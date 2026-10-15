@@ -38,8 +38,8 @@ struct Canvas
 			{
 				const WORD value = At(x, y);
 				if (value == 0 || (value & ~channels) != 0) continue;
-				box.left = std::min(box.left, x); box.right = std::max(box.right, x);
-				box.top = std::min(box.top, y); box.bottom = std::max(box.bottom, y);
+				box.left = (std::min)(box.left, x); box.right = (std::max)(box.right, x);
+				box.top = (std::min)(box.top, y); box.bottom = (std::max)(box.bottom, y);
 			}
 		return box;
 	}
@@ -163,7 +163,7 @@ TEST(FL2Rendering, AShadowFallsOnePixelDownRight)
 	auto brightestRed = [&](int row) {
 		int brightest = 0;
 		for (int x = 0; x < 160; ++x)
-			brightest = std::max(brightest, scene.canvas.At(x, row) >> 11);
+			brightest = (std::max)(brightest, scene.canvas.At(x, row) >> 11);
 		return brightest;
 	};
 	// At 24 points the bottom row of "HH" is fully covered.
