@@ -113,6 +113,10 @@ Client/CWaitPacketUpdate.h
 Client/AppendPatchInfo.cpp
 Client/AppendPatchInfo.h
 
+# The packet-handler registry (4.218).
+Client/PacketHandlerRegistry.cpp
+Client/PacketHandlerRegistry.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

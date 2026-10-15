@@ -36,6 +36,14 @@ public:
 	// so dispatch needs no locking.
 	static void dispatch(Packet* pPacket, Player* pPlayer);
 
+	// The handler registered for an id, or null (none, or out of range).
+	static HandlerFn handlerFor(PacketID_t packetID);
+
+	// Tests only: forget every registration, so a test can register the
+	// whole table (PacketHandlerRegistry) without meeting another test's
+	// ids.
+	static void clearForTests();
+
 private:
 	static HandlerFn s_Handlers[];
 };
