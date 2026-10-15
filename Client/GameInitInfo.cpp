@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 // GameInitInfo.cpp
 //---------------------------------------------------------------------------
-// Information Table에 대한 초기화를 한다.
+// Initializes the information tables.
 //---------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -175,7 +175,7 @@ InitClientConfig()
 	DEBUG_ADD("[ InitGame ]  ClientConfig");
 	
 	//---------------------------------------------------------------------
-	// 메모리 잡기
+	// Allocate
 	//---------------------------------------------------------------------
 	if (g_pClientConfig==NULL)
 	{
@@ -184,7 +184,7 @@ InitClientConfig()
 
 	//---------------------------------------------------------------------
 	//
-	//			Client Config 설정
+	//			Client Config
 	//
 	//---------------------------------------------------------------------
 	///*
@@ -199,7 +199,7 @@ InitClientConfig()
 		//return FALSE;
 	}
 
-	// 다시 한 번 저장해둔다.
+	// Save it back.
 	g_pClientConfig->SaveToFile(g_pFileDef->getProperty("FILE_INFO_CLIENTCONFIG").c_str());
 
 	return TRUE;
@@ -215,7 +215,7 @@ InitUserOption()
 	DEBUG_ADD("[ InitGame ]  UserOption");
 	
 	//---------------------------------------------------------------------
-	// 메모리 잡기
+	// Allocate
 	//---------------------------------------------------------------------
 	if (g_pUserOption==NULL)
 	{
@@ -224,7 +224,7 @@ InitUserOption()
 
 	//---------------------------------------------------------------------
 	//
-	//			User Option 설정
+	//			User Option
 	//
 	//---------------------------------------------------------------------
 	///*
@@ -257,7 +257,7 @@ InitInfomation()
 	DEBUG_ADD("[ InitGame ]  Information");
 	
 	//---------------------------------------------------------------------
-	// 메모리 잡기
+	// Allocate
 	//---------------------------------------------------------------------
 	SAFE_DELETE( g_pRegenTowerInfoManager );
 	SAFE_DELETE( g_pQuestInfoManager );
@@ -307,8 +307,8 @@ InitInfomation()
 	{
 		g_pKeyAccelerator = new KeyAccelerator;
 		g_pKeyAccelerator->Init( MAX_ACCELERATOR );
-		SetDefaultAccelerator();		// 일단은..
-		//g_pKeyAccelerator->LoadFromFile( ) 이 나을 듯..
+		SetDefaultAccelerator();		// for now..
+		//g_pKeyAccelerator->LoadFromFile( ) would be better..
 	}
 
 	if (g_pWarManager == NULL)
@@ -350,7 +350,7 @@ InitInfomation()
 	{
 		g_pGuildInfoMapper = new MGuildInfoMapper;
 
-		// 이 화일은 없을 수도 있다.
+		// This file may be missing.
 		std::ifstream guildInfoFile(g_pFileDef->getProperty("FILE_INFO_GUILD_INFO_MAPPER").c_str(), std::ios::binary);
 
 		if (guildInfoFile.is_open())
@@ -556,7 +556,7 @@ InitInfomation()
 	//int i;
 	//---------------------------------------------------------------------
 	//
-	//			Global 정보 설정
+	//			Global information
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - PacketItemTable");
@@ -565,7 +565,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//          class에 있는 정보 설정..
+	//          The information the classes hold..
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - InitMoveTable");
@@ -578,7 +578,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//      EffectGenerator 생성
+	//      EffectGenerator creation
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - EffectGenerator");
@@ -597,7 +597,7 @@ InitInfomation()
 	std::ifstream chatInfoFile2;//(g_pFileDef->getProperty("FILE_INFO_USINGCOLORSET").c_str(), ios::binary);
 	if (!FileOpenBinary(g_pFileDef->getProperty("FILE_INFO_CHAT").c_str(), chatInfoFile2))
 		return FALSE;
-	chatInfoFile2.close();		// file체크용. - -;
+	chatInfoFile2.close();		// only checks that the file is there. - -;
 
 	g_pChatManager->LoadFromFile(g_pFileDef->getProperty("FILE_INFO_CHAT").c_str());
 	
@@ -647,7 +647,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//          UsingColor 정보 생성
+	//          UsingColor information
 	//
 	//---------------------------------------------------------------------
 	/*
@@ -743,7 +743,7 @@ InitInfomation()
 	(*g_pItemOptionTable).LoadFromFile( itemOptionTable2 );
 	itemOptionTable2.close();
 
-	// 0을 추가한다.
+	// Add 0.
 	/*
 	ITEMOPTION_TABLE ItemOptionTable;
 	ItemOptionTable.Init( (*g_pItemOptionTable).GetSize()+1 );
@@ -767,7 +767,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    InteractionObjectTable에 대한 정보 설정
+	//    InteractionObjectTable information
 	//
 	//---------------------------------------------------------------------
 	/*
@@ -894,7 +894,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    NPC Script에 대한 정보 설정
+	//    NPC Script information
 	//
 	//---------------------------------------------------------------------	
 
@@ -974,7 +974,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    SkillInfoTable에 대한 정보 설정
+	//    SkillInfoTable information
 	//
 	//---------------------------------------------------------------------
 	//------------------------------------------------
@@ -989,7 +989,7 @@ InitInfomation()
 	skillTable2.close();
 
 	//------------------------------------------------
-	// Server 정보를 loading한다.
+	// Load the server's information.
 	//------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - ServerSkillInfo");
 
@@ -1009,7 +1009,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    RankBonusTable에 대한 정보 설정
+	//    RankBonusTable information
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - rankBonusInfoFile");
@@ -1032,7 +1032,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    ExperienceTable에 대한 정보 설정
+	//    ExperienceTable information
 	//
 	//---------------------------------------------------------------------
 	//------------------------------------------------
