@@ -7296,7 +7296,8 @@ rounds settled* for the host rules). Test fixtures share
   >   a vampire portal by status answers false after deleting it; a tile's
   >   darkness is matched by comparing frame IDs with sprite type numbers;
   >   `LoadFromFileSectorSound` trusts the file's counts.
-  > - Fixed after the move (found by reading): removing a tile's effect
+  > - Fixed after the move (the first two found by reading, the third by
+  >   a test of the move crashing): removing a tile's effect
   >   read the sector of the packet's tile unchecked, and
   >   `GCDeleteEffectFromTile` passes the server's tile straight on. A
   >   tile off the map now finds nothing (and sets no sector mark by
@@ -7308,9 +7309,17 @@ rounds settled* for the host rules). Test fixtures share
   >   effect out of its sector unchecked, though the zone keeps chasing
   >   effects off the map (a helicopter's shadow near an edge): those are
   >   now freed without a sector.
+  > - The review of #533 found two more, fixed in the next branch: a
+  >   creature's own and server cells (`GCFastMove` stores the server's
+  >   tile unchecked) were looked up unchecked when it died
+  >   (`AddCorpseFromCreature`, which also leaked a corpse the zone
+  >   refused) and when it moved (`Move{Ground,Flying,Underground}Creature`,
+  >   its old cell). Both go through `SectorAt` now, and a refused corpse
+  >   is freed with its creature.
   >
   > R1 is 20 Windows / 18 Ninja.
-  - Owner: membership, R1, `test_zone.cpp`: 45 tests, over a real
+  - Owner: membership, R1, `test_zone.cpp`: 45 tests (47 with the fixes
+    in #533, 51 with the review's follow-up and its fix), over a real
     zone that stands behind `ZoneState` as `g_pZone`, recording player,
     view and option hosts. The grid and its blocks; creatures on their
     layers (refusals, a sector's capacity, removal and its server block,
@@ -7592,10 +7601,11 @@ Continue with reviewable boundaries. The packet handlers (4.198) and the
 effect generators (4.202) are all in gamemodel. What remains:
 - small sources that touch a few executable globals, behind a host;
 - dead code to retire, with the argument that it is dead;
-- the coupled cores: `MPlayer`, `MZone`, `MTopView`, `UIMessageManager`,
+- the coupled cores: `MPlayer`, `MTopView`, `UIMessageManager`,
   `GameMain`, `GameInit` and `Client`. They need their state extracted
   before they can run without the executable. `MCreature` went first
-  (4.242); the classes derived from it can follow it.
+  (4.242), the classes derived from it but the player followed
+  (4.243-4.245), and the zone (4.246).
 Each slice needs production-object link evidence and contract tests, not
 merely a new static-library wrapper.
 Their extraction needs independent ownership and packet-contract tests before

@@ -114,6 +114,7 @@ struct Player : MCreature
 {
 	CLASS_TYPE GetClassType() const override { return CLASS_PLAYER; }
 	MZone* Zone() const { return m_pZone; }
+	using MCreature::m_ActionCount;
 };
 MCreature* player = nullptr;
 std::set<int> playerStatuses;
@@ -1628,7 +1629,10 @@ TEST(Zone, WhatLeavesThePlayersSightIsDropped)
 		{20004, {29, 40}}, {20005, {51, 40}}, {20006, {40, 25}}, {20007, {40, 55}},
 	};
 	for (const auto& c : creatures)
+	{
 		CHECK(zone.AddCreature(Make(c.first, c.second.first, c.second.second)));
+		zone.SetServerBlock(MCreature::CREATURE_GROUND, TYPE_SECTORPOSITION(c.second.first), TYPE_SECTORPOSITION(c.second.second));
+	}
 	// A creature the client made (an ID under 10000) stays anywhere.
 	CHECK(zone.AddCreature(Make(500, 70, 70)));
 	CHECK(zone.AddItem(Item(ITEM_CLASS_SWORD, 0, 5001, 40, 41)));
@@ -1649,6 +1653,10 @@ TEST(Zone, WhatLeavesThePlayersSightIsDropped)
 	for (TYPE_OBJECTID gone : {20004, 20005, 20006, 20007})
 		CHECK(zone.GetCreature(gone) == NULL);
 	CHECK_EQ(4, creaturesDeleted);
+	// Their server cells are walkable again; the kept one's is not.
+	CHECK(scene.Sector(40, 40).IsBlockServerGround());
+	for (const std::pair<int, int>& cell : {std::pair<int, int>{29, 40}, {51, 40}, {40, 25}, {40, 55}})
+		CHECK(!scene.Sector(cell.first, cell.second).IsBlockServerGround());
 	CHECK(zone.GetCreature(500) != NULL);
 	CHECK(scene.Sector(29, 40).GetGroundCreature() == NULL);
 	CHECK(zone.GetItem(5001) != NULL);
@@ -1687,13 +1695,13 @@ TEST(Zone, EachCreatureActsEachUpdateTheDragonEyedTwice)
 	zone.SetPlayer();
 	scene.me->SetAction(ACTION_ATTACK);
 	zone.UpdateAllCreature();
-	CHECK_EQ(1, int(static_cast<Counted*>(static_cast<MCreature*>(scene.me))->m_ActionCount));
+	CHECK_EQ(1, int(scene.me->m_ActionCount));
 	for (int status : {int(EFFECTSTATUS_GHOST), int(EFFECTSTATUS_DRAGON_EYES)})
 	{
 		playerStatuses = {status};
 		scene.me->SetAction(ACTION_ATTACK);
 		zone.UpdateAllCreature();
-		CHECK_EQ(2, int(static_cast<Counted*>(static_cast<MCreature*>(scene.me))->m_ActionCount));
+		CHECK_EQ(2, int(scene.me->m_ActionCount));
 	}
 	playerStatuses.clear();
 	zone.RemovePlayer();
@@ -2052,4 +2060,70 @@ TEST(Zone, AMoveFromACellOffTheMapTakesTheServerCell)
 	walker->SetServerPosition(255, 255);
 	CHECK(zone.MoveGroundCreature(walker, 255, 4, 8, 4));
 	CHECK(scene.Sector(8, 4).GetGroundCreature() == walker);
+}
+
+//----------------------------------------------------------------------
+// The review of 4.246
+//----------------------------------------------------------------------
+TEST(Zone, CreaturesOnACellAreToldWhenItsDarknessComesAndGoes)
+{
+	Scene scene;
+	ZoneProbe& zone = *scene.zone;
+	Counted* walker = Make(1001, 3, 4);
+	CHECK(zone.AddCreature(walker));
+	CHECK(!walker->IsInDarkness());
+	// The middle darkness darkens its sector; those standing there know.
+	CountedEffect* dark = Effect(EFFECTSPRITETYPE_DARKNESS_2_1, 3, 4);
+	const TYPE_OBJECTID darkID = dark->GetID();
+	CHECK(zone.AddEffect(dark));
+	CHECK(walker->IsInDarkness());
+	CHECK(zone.RemoveEffect(darkID));
+	CHECK(!walker->IsInDarkness());
+	// The player too, by its cell, though it stands in no sector.
+	CHECK(!scene.me->IsInDarkness());
+	CountedEffect* overPlayer = Effect(EFFECTSPRITETYPE_DARKNESS_2_4, 20, 15);
+	const TYPE_OBJECTID overPlayerID = overPlayer->GetID();
+	CHECK(zone.AddEffect(overPlayer));
+	CHECK(scene.me->IsInDarkness());
+	// Taken away by its tile, and by its time running out.
+	CHECK(zone.RemoveTileEffect(20, 15, TYPE_EFFECTSPRITETYPE(EFFECTSPRITETYPE_DARKNESS_2_4)));
+	CHECK(zone.GetEffect(overPlayerID) == NULL);
+	CHECK(!scene.me->IsInDarkness());
+	CHECK(zone.AddEffect(Effect(EFFECTSPRITETYPE_DARKNESS_2_2, 3, 4, 1)));
+	CHECK(walker->IsInDarkness());
+	g_CurrentFrame += 5;
+	zone.UpdateEffects();
+	CHECK(!walker->IsInDarkness());
+	// Merged into a middle darkness already there, the sector is darkened
+	// again and those on it told.
+	CHECK(zone.AddEffect(Effect(EFFECTSPRITETYPE_DARKNESS_2_1, 5, 4)));
+	Counted* late = Make(1002, 5, 4);
+	CHECK(zone.AddCreature(late));
+	scene.Sector(5, 4).UnSetDarkness();
+	late->CheckInDarkness();
+	CHECK(!late->IsInDarkness());
+	CHECK(!zone.AddEffect(Effect(EFFECTSPRITETYPE_DARKNESS_2_5, 5, 4)));
+	CHECK(scene.Sector(5, 4).HasDarkness());
+	CHECK(late->IsInDarkness());
+}
+
+TEST(Zone, ANegativeShopRefreshTimeMeansEveryFrame)
+{
+	Scene scene;
+	ZoneProbe& zone = *scene.zone;
+	const MonotonicClock::TimePoint oldNow = g_FrameNow;
+	personalShopUpdateTime = -1000;
+	Counted* shop = Make(1001, 3, 4);
+	shop->SetPersnalShop(1);
+	CHECK(zone.AddCreature(shop));
+	g_FrameNow = MonotonicClock::TimePoint() + MonotonicClock::Millis(2000000000);
+	zone.UpdateAllCreature();
+	for (int frame = 0; frame < 3; ++frame)
+	{
+		shop->SetPersonalShopMsgTime(200);
+		g_FrameNow += MonotonicClock::Millis(1);
+		zone.UpdateAllCreature();
+		CHECK(shop->GetPersonalShopMsgTime() <= 127);
+	}
+	g_FrameNow = oldNow;
 }
