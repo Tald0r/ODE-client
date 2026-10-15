@@ -4200,7 +4200,8 @@ ComeFromPortal(MCreature* pCreature)
 		return;
 
 	int cutStart = 80;
-	int cutInc = -5;
+	// a step down, as the sprite path computes it: SetCutHeightFrom takes -cutInc
+	int cutInc = 5;
 
 	int body = pCreature->GetCreatureFrameID(0);
 	int action = ACTION_STAND;

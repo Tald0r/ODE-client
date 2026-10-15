@@ -1516,20 +1516,24 @@ TEST(PacketZoneItems, ACreatureRisesFromAPortalAsTallAsItsSprite)
 	}
 }
 
-TEST(PacketZoneItems, ACreatureWithoutASpriteRisesFromEightyButNeverShows)
+TEST(PacketZoneItems, ACreatureWithoutASpriteRisesFromEighty)
 {
 	Scene scene;
 	MCreature* pCreature = Riser(scene, Vampire, 500, 6, 9);
 	spriteHeight = -1;
 	ComeFromPortal(pCreature);
-	// Recorded defect (PacketFunction.cpp:4165): the default increment is
-	// -5 and is negated again, so the cut is set to grow from 80 to 0 and
-	// ends on its first update; the creature appears at once instead of
-	// rising.
+	// Like the others it rises: the cut comes down from 80 to 0, five a
+	// frame, and the creature shows whole on the sixteenth update.
 	CHECK(pCreature->IsCutHeight());
 	CHECK_EQ(80, pCreature->GetCutHeightCount());
-	CHECK_EQ(5, CutInc(pCreature));
+	CHECK_EQ(-5, CutInc(pCreature));
 	CHECK_EQ(0, CutLast(pCreature));
+	pCreature->UpdateCutHeight();
+	CHECK(pCreature->IsCutHeight());
+	CHECK_EQ(75, pCreature->GetCutHeightCount());
+	for (int frame = 2; frame < 16; ++frame) pCreature->UpdateCutHeight();
+	CHECK(pCreature->IsCutHeight());
+	CHECK_EQ(5, pCreature->GetCutHeightCount());
 	pCreature->UpdateCutHeight();
 	CHECK(!pCreature->IsCutHeight());
 	// Without the view's entry it is the same.
@@ -1538,7 +1542,7 @@ TEST(PacketZoneItems, ACreatureWithoutASpriteRisesFromEightyButNeverShows)
 	ComeFromPortal(pCreature);
 	WorldEvents::SetHost(old);
 	CHECK_EQ(80, pCreature->GetCutHeightCount());
-	CHECK_EQ(5, CutInc(pCreature));
+	CHECK_EQ(-5, CutInc(pCreature));
 }
 
 TEST(PacketZoneItems, AWolverineAndTheGreatRuffianRiseUnderTheirOwnEffects)
