@@ -39,12 +39,6 @@ extern RECT g_GameRect;
 CWaitUIUpdate*	g_pCWaitUIUpdate = NULL;
 
 
-#if defined(OUTPUT_DEBUG) //&& defined(_DEBUG)
-	#ifdef __METROTECH_TEST__
-//		#define	OUTPUT_DEBUG_UPDATE_LOOP
-	#endif
-	//#define OUTPUT_DEBUG_PROCESS_INPUT
-#endif
 
 //-----------------------------------------------------------------------------
 // Init
@@ -109,48 +103,6 @@ CWaitUIUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 
 			gC_vs_ui.DIKeyboardControl(event, key);
 	
-			#ifdef OUTPUT_DEBUG
-
-			switch (key)
-			{
-				//------------------------------------
-				// FPS Toggle
-				//------------------------------------
-				case DIK_F : 
-					if (g_pSDLInput->KeyDown(DIK_LCONTROL) || g_pSDLInput->KeyDown(DIK_RCONTROL))
-					{
-						(*g_pUserOption).DrawFPS = !(*g_pUserOption).DrawFPS;
-					}
-				break;
-
-				//-----------------------------------------------------
-				// Sound Test
-				//-----------------------------------------------------
-				case DIK_F4 :
-				{
-					PlaySound( SOUND_VAMPIRE_POISON_DB );
-				}
-				break;
-
-				//-----------------------------------------------------
-				// Get the server list
-				//-----------------------------------------------------
-				case DIK_SPACE :
-				{
-				}
-				break;
-
-				//-----------------------------------------------------
-				// Select a server
-				//-----------------------------------------------------
-				case DIK_C :
-				{
-				}
-				break;			
-
-			}		
-	
-			#endif
 		}
 }
 
@@ -174,15 +126,9 @@ CWaitUIUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 				if (g_x>= double_click_x-1 && g_x <= double_click_x+1 &&
 					 g_y>= double_click_y-1 && g_y <= double_click_y+1)
 				{
-					#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-						DEBUG_ADD("MLD");
-					#endif
 					
 						gC_vs_ui.MouseControl(M_LB_DOUBLECLICK, g_x, g_y);
 
-					#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-						DEBUG_ADD("MLD2");
-					#endif
 
 					last_click_time = MonotonicClock::TimePoint();
 					return;
@@ -220,9 +166,6 @@ CWaitUIUpdate::Update()
 	static MonotonicClock::TimePoint lastDrawTime;
 	const bool drawDue = g_FrameNow - lastDrawTime >= MonotonicClock::Millis(15);
 
-	#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-		DEBUG_ADD("UM");
-	#endif
 
 	m_pHost->UpdateMouse();
 	if (drawDue)
@@ -233,9 +176,6 @@ CWaitUIUpdate::Update()
 		if (g_pUpdate != this || !g_bActiveApp) return;
 	}
 
-	#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-		DEBUG_ADD("UM2");
-	#endif
 
 	//------------------------------------------
 	// update once per interval
@@ -273,15 +213,9 @@ CWaitUIUpdate::Update()
 		// Input and cursor drawing run at the display cadence above/below.
 		// Network and menu processing retain the original update interval.
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("UP");
-		#endif
 
 		gC_vs_ui.Process();
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("UP2");
-		#endif
 
 		if (!g_bActiveApp)
 			return;
@@ -334,9 +268,6 @@ CWaitUIUpdate::Update()
 	bool bLoad = false;
 	if (g_Mode==MODE_MAINMENU)
 	{		
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("Lo1");
-		#endif
 
 		// At the main menu
 		// Load the male vampire
@@ -346,15 +277,9 @@ CWaitUIUpdate::Update()
 			bLoad = true;
 		}
 		
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("Lo2");
-		#endif
 	}
 	else if (g_Mode==MODE_WAIT_SELECTPC)
 	{
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("Lo3");
-		#endif
 
 		// At the main menu
 		// Load the female vampire
@@ -364,9 +289,6 @@ CWaitUIUpdate::Update()
 			bLoad = true;
 		}
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("Lo4");
-		#endif
 	}
 
 	//-------------------------------------------------------------
@@ -378,24 +300,15 @@ CWaitUIUpdate::Update()
 		// Load once every 5 seconds.
 		&& g_CurrentTime - lastLoadingTime > 5000)
 	{
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("Lo5");
-		#endif
 
 		// Load part of the slayer pictures - 2001.8.20
 		LoadingAddonSPK( false );
 
 		lastLoadingTime = timeGetTime();
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("Lo6");
-		#endif
 	}
 	*/
 
-	#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-		DEBUG_ADD("UOK");
-	#endif
 }
 
 //---------------------------------------------------------------------------
@@ -422,66 +335,36 @@ CWaitUIUpdate::ProcessInput()
 	gC_vs_ui.MouseControl(M_MOVING, g_x, g_y);
 	if (g_pSDLInput->m_lb_down)
 	{
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("LD");
-		#endif
 
 		gC_vs_ui.MouseControl(M_LEFTBUTTON_DOWN, g_x, g_y);
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("LD1");
-		#endif
 	}
 
 	if (g_pSDLInput->m_lb_up)
 	{
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("LU");
-		#endif
 
 		gC_vs_ui.MouseControl(M_LEFTBUTTON_UP, g_x, g_y);
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("LU1");
-		#endif
 	}
 	if (g_pSDLInput->m_rb_down)
 	{
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("RD");
-		#endif
 
 		if (gC_vs_ui.MouseControl(M_RIGHTBUTTON_DOWN, g_x, g_y))
 		{
-			#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-				DEBUG_ADD("RD1");
-			#endif
 
 			return;
 		}
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("RD2");
-		#endif
 	}
 	if (g_pSDLInput->m_rb_up)
 	{
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("RU");
-		#endif
 
 		if (gC_vs_ui.MouseControl(M_RIGHTBUTTON_UP, g_x, g_y))
 		{
-			#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-				DEBUG_ADD("RU1");
-			#endif
 
 			return;
 		}
 
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD("RU2");
-		#endif
 	}
 	if (g_pSDLInput->m_cb_down)
 	{
@@ -830,19 +713,6 @@ CWaitUIUpdate::UpdateDraw()
 		//-----------------------------------------------------------------
 		gC_vs_ui.DrawMousePointer(); // Not a memory leak!
 
-		#ifdef OUTPUT_DEBUG
-			if (g_pUserOption->DrawFPS)
-			{
-				char str[256];
-				
-				snprintf(str, sizeof(str), "%d FPS", g_FrameRate);	
-				
-				// g_pLast->GDI_Text(11,11, str, RGB(20,20,20));
-				TextSystem::TextService::RenderText(g_pLast, 11, 11, str);
-				// g_pLast->GDI_Text(10,10, str, 0xFFFFFF);
-				TextSystem::TextService::RenderText(g_pLast, 10, 10, str);
-			}
-		#endif
 
 		//-----------------------------------------------------------------
 		// Copy Last to Back - only without 3D HAL..
