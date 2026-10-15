@@ -190,29 +190,30 @@ void
 CTypeMap<DataType>::LoadFromFile(std::ifstream& file)
 {
 	//-----------------------------------------------------
-	// 기존에 있던것 제거
+	// drop what the map held
 	//-----------------------------------------------------
 	Release();
 
 	//-----------------------------------------------------
 	// size 
 	//-----------------------------------------------------
-	int infoSize;
+	// No count (an empty or short file) loads nothing.
+	int infoSize = 0;
 	file.read((char*)&infoSize, 4);
 
 	//-----------------------------------------------------
-	// 각 info
+	// each record
 	//-----------------------------------------------------
+	// A count past the end of the file stops where the file does.
 	unsigned int id;
-	for (int i=0; i<infoSize; i++)
+	for (int i=0; i<infoSize && file.read((char*)&id, 4); i++)
 	{		
-		file.read((char*)&id, 4);
 		DataType*	pData = new DataType;
 
 		pData->LoadFromFile( file );
 
 		//-----------------------------------------------------
-		// map에 추가한다.
+		// add it to the map
 		//-----------------------------------------------------
 		if (!AddData( id, pData ))
 		{
