@@ -162,7 +162,7 @@ over the packs and selection `MTopView` hands it as a `CreatureDrawPacks`;
 membership in `tests/arch/gameview_files.txt`, tasks 4.248 to 4.250),
 `gameclient` (the client that puts the game together, which may use `VS_UI`:
 the start-up's loading of the game information, `GameInitInfo`, behind the
-`GameInitInfoHost` `InitGame` installs; membership in
+`GameInitInfoHost` `ClientMain` installs; membership in
 `tests/arch/gameclient_files.txt`, task 4.252),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both

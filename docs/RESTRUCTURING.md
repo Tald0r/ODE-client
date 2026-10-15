@@ -7710,7 +7710,8 @@ rounds settled* for the host rules). Test fixtures share
   >   (`InitClientConfig`, which writes it back), the player's options
   >   (`InitUserOption`) and every information table (`InitInfomation`).
   >   What it asked of the executable goes through `GameInitInfoHost`,
-  >   which `InitGame` installs: the event queue's fade, the packets' item
+  >   which `ClientMain` installs before `FileOpenBinary`'s first caller
+  >   (`CheckTerriblePatch`): the event queue's fade, the packets' item
   >   table, the personal shop's update time, and the message for a file
   >   that will not open. `FileOpenBinary` and the definition of
   >   `g_pSoundManager` come with it from `GameMain.cpp`;
