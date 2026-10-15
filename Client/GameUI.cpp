@@ -83,7 +83,8 @@
 extern Race g_eRaceInterface;
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
-BOOL	g_bSetHotKey = FALSE;
+// g_bSetHotKey is PacketFunction.cpp's (gameclient's) since task 4.253.
+extern BOOL	g_bSetHotKey;
 
 BOOL g_bDrawProgress = FALSE;
 

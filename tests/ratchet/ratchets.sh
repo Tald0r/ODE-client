@@ -437,7 +437,8 @@ check () {
 # 16: the creatures drawn with an effect join gameview (4.250).
 # 14: the crash report and the Windows-only Windows version join gamemodel (4.251).
 # 13: the start-up's loading joins gameclient, a new library (4.252).
-R1_BASELINE=13
+# 12: the packet handlers' helpers join gameclient (4.253).
+R1_BASELINE=12
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -707,7 +708,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 14: the creatures drawn with an effect join gameview (4.250).
 	# 13: the crash report joins gamemodel (4.251).
 	# 12: the start-up's loading joins gameclient, a new library (4.252).
-	R1_NINJA_BASELINE=12
+	# 11: the packet handlers' helpers join gameclient (4.253).
+	R1_NINJA_BASELINE=11
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameclient_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
@@ -924,7 +926,9 @@ lib_members () {
 lib_defs () {
 	lib_members | sort -u | while read -r f; do
 		[ -f "$f" ] || continue
-		grep -aoE '^[A-Za-z_][A-Za-z0-9_:<>]*[[:space:]]*\*?[[:space:]]*g_p[A-Z]\w*[[:space:]]*(=|;)' "$f" \
+		# An array's bound is part of its definition (task 4.253 brought the
+		# packet item tables, MItem* g_pPacketItemHelm[HELMET_MAX] = ...).
+		grep -aoE '^[A-Za-z_][A-Za-z0-9_:<>]*[[:space:]]*\*?[[:space:]]*g_p[A-Z]\w*[[:space:]]*(\[[^]=;]*\])?[[:space:]]*(=|;)' "$f" \
 			| grep -aoE '\bg_p[A-Z]\w*'
 	done | sort -u
 }

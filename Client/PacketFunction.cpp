@@ -19,8 +19,6 @@
 // NetBIOS, IPX/SPX are Windows-specific protocols
 #endif
 #include "MGameDef.h"
-#include "MTopView.h"
-#include "ClientDef.h"
 #include "MCreatureWear.h"
 #include "MItem.h"
 #include "MEffectGeneratorTable.h"
@@ -45,8 +43,6 @@
 #include "MSoundTable.h"
 #include "MGuildMarkManager.h"
 #include "MGuildInfoMapper.h"
-#include "UIFunction.h"
-#include "ServerInfo.h"
 // packet
 #include "Packet/PetInfo.h"
 #include "Packet/PCSlayerInfo3.h"
@@ -72,11 +68,14 @@
 //#include "MFileDef.h"
 #include "Properties.h"
 
-#ifdef PLATFORM_WINDOWS
-#include "CImm.h"
-#endif
 
-#include "DebugInfo.h"
+#include "DebugLog.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
+#include "GameSocket.h"
+#include "ClientPlayer.h"
+#include "UserOption.h"
+#include "ConvertDuration.h"
 #include "MEventManager.h"
 #include "MCreature.h"
 #include "MZone.h"
@@ -103,7 +102,9 @@ extern DWORD	g_PreviousCreatureType;
 
 extern bool FileOpenBinary(const char* filename, std::ifstream& file);
 
-extern BOOL g_bSetHotKey;
+// Whether the player's info has set the quick slots' hot keys
+// (GameUI.cpp's until task 4.253).
+BOOL g_bSetHotKey = FALSE;
 
 extern bool		g_bZoneLargeLoadImage;
 extern bool		g_bZoneSmallLoadImage;
