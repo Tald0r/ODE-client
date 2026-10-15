@@ -1382,6 +1382,24 @@ MFakeCreature* PetOf(Scene& scene, MCreature* pOwner, MPetItem* pItem = NULL)
 	return pPet;
 }
 
+// A fake the zone holds under the ID the next new fake takes, with
+// ZoneState blind to the zone's fakes for the rest of the scene so the ID
+// counter (one up, wrapping at 10000) does not step past it: the zone
+// refuses that next fake.
+MFakeCreature* BlockNextFake()
+{
+	static const ZoneState::Host blind = []() {
+		ZoneState::Host host = zoneHost;
+		host.GetFakeCreature = [](TYPE_OBJECTID) -> MCreature* { return NULL; };
+		return host;
+	}();
+	ZoneState::SetHost(&blind);
+	MFakeCreature* pBlocker = new MFakeCreature;
+	pBlocker->SetID((pBlocker->GetID() + 1) % 10000);
+	CHECK(g_pZone->AddFakeCreature(pBlocker));
+	return pBlocker;
+}
+
 // Whom a creature follows, which it keeps to itself.
 struct TraceAccess : MCreature
 {
@@ -1707,5 +1725,45 @@ TEST(PacketPlayerItems, PetInfoLeavesThePlayersPetItemsToTheInventory)
 	SetPetInfo(&pet, 77);
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(0)) == pNamed);
 	CHECK(Same({}));
+	scene.zone->RemoveCreature(77);
+}
+
+//----------------------------------------------------------------------
+// A new pet the zone refuses (its ID taken) is freed and nothing is made
+// of it: another creature's new pet item goes with it, the player's stays
+// in the inventory, and the fake the zone holds is left as it was.
+//----------------------------------------------------------------------
+TEST(PacketPlayerItems, PetInfoMakesNothingOfAPetTheZoneRefuses)
+{
+	Scene scene;
+	MCreature* pOwner = Owner(scene, 300);
+	PetInfo pet = Pet(2, 5);
+	MFakeCreature* pBlocker = BlockNextFake();
+	calls.clear();
+
+	SetPetInfo(&pet, 300);
+
+	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
+	CHECK(scene.zone->GetFakeCreature(pBlocker->GetID()) == pBlocker);
+	CHECK_EQ(OBJECTID_NULL, pBlocker->GetOwnerID());
+	CHECK(pBlocker->GetPetItem() == NULL);
+	CHECK_EQ(OBJECTID_NULL, pOwner->GetPetID());
+	// The new item never took an id.
+	CHECK(Same({ "destroyed|" + N(OBJECTID_NULL) }));
+
+	scene.zone->AddCreature(scene.me);
+	// PetInfo has no setter for its item's id, so the item named is id 0.
+	MItem* pItem = scene.Hold(ITEM_CLASS_PET_ITEM, 3, 0, 0, 0);
+	pBlocker = BlockNextFake();
+	calls.clear();
+
+	SetPetInfo(&pet, 77);
+
+	CHECK_EQ(2, scene.zone->GetFakeCreatureNumber());
+	CHECK(scene.zone->GetFakeCreature(pBlocker->GetID()) == pBlocker);
+	CHECK(pBlocker->GetPetItem() == NULL);
+	CHECK_EQ(OBJECTID_NULL, scene.me->GetPetID());
+	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(0)) == pItem);
+	CHECK(Same({ "stats" }));
 	scene.zone->RemoveCreature(77);
 }

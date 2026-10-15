@@ -4318,6 +4318,7 @@ MoveIntoPortal(MCreature* pCreature)
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
 		delete pFakeCreature;
+		return;
 	}
 
 	//------------------------------------------------------
@@ -4400,6 +4401,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
 		delete pFakeCreature;
+		return;
 	}
 
 	//------------------------------------------------------
@@ -4517,6 +4519,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
 			delete pFakeCreature;
+			continue;
 		}
 
 		//------------------------------------------------------
@@ -4636,6 +4639,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
 			delete pFakeCreature;
+			continue;
 		}
 
 		//------------------------------------------------------
@@ -4779,6 +4783,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
 			delete pFakeCreature;
+			continue;
 		}
 		
 		//------------------------------------------------------
@@ -4989,13 +4994,16 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					if (!g_pZone->AddFakeCreature( pFakeCreature ))
 					{
 						delete pFakeCreature;
+						pFakeCreature = NULL;
 						if(pCreature != g_pPlayer)		// if it is the player's own pet
 						{
 							delete pItem;
 						}
 					}
-
-					pFakeCreature->SetZone(g_pZone);
+					else
+					{
+						pFakeCreature->SetZone(g_pZone);
+					}
 				}
 
 				if(pFakeCreature)

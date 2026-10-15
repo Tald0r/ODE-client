@@ -1562,6 +1562,24 @@ MCreature* Riser(Scene& scene, int type, TYPE_OBJECTID id, int x, int y)
 	CHECK(g_pZone->AddCreature(pCreature));
 	return pCreature;
 }
+
+// A fake the zone holds under the ID the next new fake takes, with
+// ZoneState blind to the zone's fakes for the rest of the scene so the ID
+// counter (one up, wrapping at 10000) does not step past it: the zone
+// refuses that next fake.
+MFakeCreature* BlockNextFake()
+{
+	static const ZoneState::Host blind = []() {
+		ZoneState::Host host = zoneHost;
+		host.GetFakeCreature = [](TYPE_OBJECTID) -> MCreature* { return NULL; };
+		return host;
+	}();
+	ZoneState::SetHost(&blind);
+	MFakeCreature* pBlocker = new MFakeCreature;
+	pBlocker->SetID((pBlocker->GetID() + 1) % 10000);
+	CHECK(g_pZone->AddFakeCreature(pBlocker));
+	return pBlocker;
+}
 }
 
 TEST(PacketZoneItems, ACreatureRisesFromAPortalAsTallAsItsSprite)
@@ -1672,8 +1690,6 @@ TEST(PacketZoneItems, NoCreatureComesFromAPortal)
 	CHECK(started.empty());
 }
 
-// (A copy the zone refuses is freed and then read, PacketFunction.cpp:4271
-// and 4289; not exercised, as a new fake's ID is always free.)
 TEST(PacketZoneItems, ACreatureGoesIntoAPortalAsAShrinkingCopy)
 {
 	Scene scene;
@@ -1712,5 +1728,21 @@ TEST(PacketZoneItems, ACreatureGoesIntoAPortalAsAShrinkingCopy)
 	CHECK_EQ(1, s.step);
 	CHECK_EQ(0, int(s.delay));
 	CHECK(!s.result);
+	CHECK(calls.empty());
+}
+
+TEST(PacketZoneItems, ACopyTheZoneRefusesGoesIntoNoPortal)
+{
+	Scene scene;
+	scene.Show(RESULT_MAGIC_BLOODY_TUNNEL_INTO, 1);
+	MCreature* pCreature = Riser(scene, Vampire, 500, 6, 9);
+	MFakeCreature* pBlocker = BlockNextFake();
+	MoveIntoPortal(pCreature);
+	// The zone holds the blocker as it was; no effect starts.
+	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
+	CHECK(scene.zone->GetFakeCreature(pBlocker->GetID()) == pBlocker);
+	CHECK_EQ(int(MFakeCreature::FAKE_CREATURE_STAND), int(pBlocker->GetFakeCreatureType()));
+	CHECK(scene.zone->GetCreature(500) == pCreature);
+	CHECK(started.empty());
 	CHECK(calls.empty());
 }

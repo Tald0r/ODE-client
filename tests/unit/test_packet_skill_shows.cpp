@@ -410,6 +410,37 @@ std::vector<std::string> Destinations(const std::vector<MFakeCreature*>& fakes)
 	return cells;
 }
 
+// A fake the zone holds under the ID the next new fake takes, with
+// ZoneState blind to the zone's fakes for the rest of the scene so the ID
+// counter (one up, wrapping at 10000) does not step past it: the zone
+// refuses that next fake.
+MFakeCreature* BlockNextFake()
+{
+	static const ZoneState::Host blind = []() {
+		ZoneState::Host host = zoneHost;
+		host.GetFakeCreature = [](TYPE_OBJECTID) -> MCreature* { return NULL; };
+		return host;
+	}();
+	ZoneState::SetHost(&blind);
+	MFakeCreature* pBlocker = new MFakeCreature;
+	pBlocker->SetID((pBlocker->GetID() + 1) % 10000);
+	CHECK(g_pZone->AddFakeCreature(pBlocker));
+	return pBlocker;
+}
+
+// The zone holds the blocker, still standing, and the copies after the one
+// it refused, each on its way.
+void CheckFirstCopyRefused(Scene& scene, MFakeCreature* pBlocker, int laterCopies)
+{
+	const std::vector<MFakeCreature*> fakes = scene.Fakes();
+	CHECK_EQ(1 + laterCopies, int(fakes.size()));
+	CHECK(scene.zone->GetFakeCreature(pBlocker->GetID()) == pBlocker);
+	CHECK_EQ(int(MFakeCreature::FAKE_CREATURE_STAND), int(pBlocker->GetFakeCreatureType()));
+	CHECK(ResultOf(pBlocker) == NULL);
+	for (MFakeCreature* pFake : fakes)
+		CHECK_EQ(pFake != pBlocker, pFake->IsFastMove());
+}
+
 } // namespace
 
 //----------------------------------------------------------------------
@@ -580,10 +611,6 @@ TEST(PacketSkillShows, ASkillToASectorPastTheTableFreesTheResultUnrun)
 //----------------------------------------------------------------------
 // SkillCrossCounter
 //----------------------------------------------------------------------
-// The copies below are each freed when the zone refuses them and then used
-// all the same (PacketFunction.cpp:4353/4398, 4470/4490, 4589/4610 and
-// 4729/4748). Not exercised: a new fake takes an ID no fake in the zone
-// has, so the zone never refuses one.
 TEST(PacketSkillShows, ACrossCounterNeedsBothCreatures)
 {
 	Scene scene;
@@ -895,6 +922,49 @@ TEST(PacketSkillShows, BlazeWalkWithAResultsActionStopsAtTheFirstCopy)
 	// (Grade 3 and up is a defect, not exercised: PacketFunction.cpp:4699
 	// loops to the grade, reading past the three cells of TargetList and
 	// leaving the direction unset.)
+}
+
+//----------------------------------------------------------------------
+// A copy the zone refuses (its ID taken) is freed and not used again
+//----------------------------------------------------------------------
+TEST(PacketSkillShows, ACrossCounterCopyTheZoneRefusesStrikesNothing)
+{
+	Scene scene;
+	MCreature* user = scene.Put(500, 10, 10);
+	MCreature* target = scene.Put(501, 14, 12);
+	MFakeCreature* pBlocker = BlockNextFake();
+	SkillCrossCounter(user, target, SKILL_DOUBLE_IMPACT);
+	CheckFirstCopyRefused(scene, pBlocker, 0);
+}
+
+TEST(PacketSkillShows, ShadowDancingSendsTheCopiesAfterOneTheZoneRefuses)
+{
+	Scene scene;
+	MCreature* user = scene.Put(500, 10, 10);
+	MCreature* target = scene.Put(501, 14, 12);
+	MFakeCreature* pBlocker = BlockNextFake();
+	SkillShadowDancing(user, target, SKILL_DOUBLE_IMPACT);
+	CheckFirstCopyRefused(scene, pBlocker, 2);
+}
+
+TEST(PacketSkillShows, IllendueSendsTheCopiesAfterOneTheZoneRefuses)
+{
+	Scene scene;
+	MCreature* user = scene.Put(500, 10, 10);
+	MCreature* target = scene.Put(501, 14, 12);
+	MFakeCreature* pBlocker = BlockNextFake();
+	SkillIllendue(user, target, SKILL_DOUBLE_IMPACT);
+	CheckFirstCopyRefused(scene, pBlocker, 3);
+}
+
+TEST(PacketSkillShows, BlazeWalkSendsTheCopiesAfterOneTheZoneRefuses)
+{
+	Scene scene;
+	MCreature* user = scene.Put(500, 10, 10);
+	MCreature* target = scene.Put(501, 14, 12);
+	MFakeCreature* pBlocker = BlockNextFake();
+	SkillBlazeWalk(user, target, SKILL_DOUBLE_IMPACT, 2);
+	CheckFirstCopyRefused(scene, pBlocker, 2);
 }
 
 //----------------------------------------------------------------------
