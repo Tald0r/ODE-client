@@ -5,9 +5,9 @@
 	file path:	D:\study\smodulelib
 	file base:	CrashReport
 	file ext:	h
-	author:		쑥갓
+	author:		Ssukgat
 	
-	purpose:	치명적인 오류가 났을때 로그를 남긴다.
+	purpose:	logs a fatal error when one happens.
 *********************************************************************/
 
 #pragma once
@@ -22,7 +22,7 @@ extern LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp );
 LONG __stdcall RecordExceptionInfo( struct _EXCEPTION_POINTERS* pExp );
 #endif
 
-// 로그 파일명을 바꾸고 싶으면 여길 바꾸셈
+// To change the log file names, change them here
 #include <vector>
 
 class MCrashReport;

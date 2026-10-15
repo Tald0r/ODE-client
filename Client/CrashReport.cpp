@@ -5,9 +5,9 @@
 	file path:	D:\study\smodulelib
 	file base:	CrashReport
 	file ext:	cpp
-	author:		쑥갓
+	author:		Ssukgat
 	
-	purpose:	치명적인 오류가 발생했을때 로그를 남긴다.
+	purpose:	logs a fatal error when one happens.
 *********************************************************************/
 #include "Client_PCH.h"
 #ifdef PLATFORM_WINDOWS
@@ -326,7 +326,7 @@ LONG __stdcall RecordExceptionInfo( struct _EXCEPTION_POINTERS* pExp )
 //		strcpy(szWinVer, "");
 //		GetWinVersion(szWinVer);
 //
-//		// *CrashLog 2003-12-01 10:50:00 98 0xffffffff 0xffffffff에서 메모리 침범 에러
+//		// *CrashLog 2003-12-01 10:50:00 98 0xffffffff a memory access violation at 0xffffffff
 //		wsprintf(szTemp, "%04d-%02d-%02d %02d:%02d:%02d %d 0x%08x %s (0x%08x), %s", 
 //			st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
 //			version,
