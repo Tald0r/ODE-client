@@ -114,6 +114,10 @@ Client/CWaitPacketUpdate.h
 Client/AppendPatchInfo.cpp
 Client/AppendPatchInfo.h
 
+# The MIDI player's state (4.214).
+Client/MMusic.cpp
+Client/MMusic.h
+
 # Money (task 4.2; the price and trade managers wait for the item core)
 Client/MMoneyManager.cpp
 Client/MMoneyManager.h

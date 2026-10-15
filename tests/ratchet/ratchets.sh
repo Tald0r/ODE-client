@@ -402,7 +402,8 @@ check () {
 # 52: the frame present joins dxlib (4.211).
 # 51: the append patch joins gamemodel (4.212).
 # 50: the tile renderer joins SpriteLib (4.213).
-R1_BASELINE=50
+# 49: the MIDI player's state joins gamemodel (4.214).
+R1_BASELINE=49
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -637,7 +638,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 50: the frame present joins dxlib (4.211).
 	# 49: the append patch joins gamemodel (4.212).
 	# 48: the tile renderer joins SpriteLib (4.213).
-	R1_NINJA_BASELINE=48
+	# 47: the MIDI player's state joins gamemodel (4.214).
+	R1_NINJA_BASELINE=47
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
