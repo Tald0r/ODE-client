@@ -3165,6 +3165,10 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	};
 	SetAppendPatchHost(&appendPatchHost);
 
+	// The loading thread's sprite-pack jobs open their files so (task 4.217).
+	static const MLoadingSPKHost loadingSPKHost = { .OpenBinary = FileOpenBinary };
+	SetLoadingSPKHost(&loadingSPKHost);
+
 	// Flip presents g_pBack, once it exists (task 4.211).
 	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {
 		return g_pBack != NULL ? g_pBack->GetBackendSurface() : SPRITECTL_INVALID_SURFACE;

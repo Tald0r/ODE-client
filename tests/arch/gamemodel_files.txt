@@ -94,12 +94,11 @@ Client/PackFileManager.cpp
 Client/PackFileManager.h
 Client/MObjectScreen.cpp
 
-# The update base and the work-queue node base (4.205; the video stub
-# that came with them was retired with the opening in 4.210).
+# The update base (4.205; the video stub that came with it was retired
+# with the opening in 4.210, and the work-queue node base moved to basic
+# in 4.217).
 Client/WinLib/CWinUpdate.cpp
 Client/WinLib/CWinUpdate.h
-Client/MWorkNode.cpp
-Client/MWorkNode.h
 
 # The debug kit's ini reader and the message-name table (4.206).
 Client/DebugKit.cpp

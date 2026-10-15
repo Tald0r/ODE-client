@@ -64,7 +64,7 @@
 #include "UserInformation.h"
 #include "SpriteIDDef.h"
 #include "MWorkThread.h"
-#include "MLoadingSPKWorkNode.h"
+#include "SpriteLib/MLoadingSPKWorkNode.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
 #include "HPModifyLabel.h"

@@ -1,22 +1,22 @@
 //----------------------------------------------------------------------
 // MLoadingSPKWorkNode.h
 //----------------------------------------------------------------------
-// class 이름 붙이기가 골치가 아파서 숫자 붙였음. - -;;
+// Naming the classes was a headache, so they are numbered.
 //
-// 암튼.. SPK를 Loading하는데.. 그 방법에 따라서 몇개의 Node로 나뉨
+// Each one loads an SPK; they differ in how, hence several nodes.
 //
-// [Remain]의 의미는 Node가 실행중에 중단되었을 경우
-// 남은 작업을 다시 하나의 Node로 만들어야 되는데..
-// 그 때 생성할 Node의 종류이다.
+// [Remain]: when a node is stopped while it runs, the work left
+// over has to become a node again;
+// this is the kind of node made then.
 /*
 
-  [ 공통 ]
+  [ Common ]
   		CSpritePack*	SPK
 		char			SPKFilename
 
 
   [Node 1]
-		= FilePosition에서 SFPArray를 읽어서 SPK에 load한다.
+		= reads the SFPArray at FilePosition and loads the SPK by it.
 		
 		char			SFPFilename
 		long			FilePosition
@@ -25,7 +25,7 @@
 
 
   [Node 2]
-		= SFPArray를 이용해서 SPK에다 load한다.
+		= loads the SPK by the SFPArray.
 
 		SFPArray*		SFPA
 
@@ -33,7 +33,7 @@
 		
 
   [Node 3]
-		= FilePosition에서 하나의 Sprite를 읽어서 SPK의 ID번째에 저장한다.
+		= reads one sprite at FilePosition into the SPK's entry ID.
 
 		TYPE_SPRITEID	SpriteID
 		long			FilePosition
@@ -41,7 +41,7 @@
 		[Remain] --> NULL
 
   [Node 4]
-		= FilePosition에서 SPK의 FirstID ~ LastID까지를 읽어들인다.
+		= reads the SPK's FirstID to LastID from FilePosition.
 
 		TYPE_SPRITEID	FirstSpriteID
 		TYPE_SPRITEID	LastSpriteID
@@ -58,17 +58,28 @@
 
 #include "MWorkNode.h"
 #include <string>
-#include "SpriteLib/CSpriteDef.h"
+#include "CSpriteDef.h"
 //#include "CSpritePack.h"
-#include "SpriteLib/CSpritePack.h"
+#include "CSpritePack.h"
+#include <fstream>
 
 
 #define	MAX_FILENAME		256
 
+// Opening a data file is the program's (FileOpenBinary: the data-path
+// spelling, and the init-failure report when it fails). Without a host no
+// file opens, and a node that needs one fails (task 4.217).
+struct MLoadingSPKHost
+{
+	bool (*OpenBinary)(const char* filename, std::ifstream& file);
+};
+
+void	SetLoadingSPKHost(const MLoadingSPKHost* pHost);
+
 //----------------------------------------------------------------------
 // MLoadingSPKWorkNode
 //----------------------------------------------------------------------
-// SPKFile에서 어떻게~해서 SPK를 loading한다.
+// Loads the SPK from the SPK file, one way or another.
 //----------------------------------------------------------------------
 class MLoadingSPKWorkNode : public MWorkNode {
 	public :
@@ -76,7 +87,7 @@ class MLoadingSPKWorkNode : public MWorkNode {
 		~MLoadingSPKWorkNode() {}
 
 		//---------------------------------------------------
-		// pSPK에 SPKFilename의 뭔가를(?) Loading하는 것이다.
+		// Loads something (?) of SPKFilename into pSPK.
 		//---------------------------------------------------
 		void			SetSPK(CSpritePack* pSPK, const char* filename)
 		{
@@ -107,7 +118,7 @@ class MLoadingSPKWorkNode1 : public MLoadingSPKWorkNode {
 //----------------------------------------------------------------------
 // Node 2
 //----------------------------------------------------------------------
-// m_pSFPA는 내부에서 delete한다.
+// The node deletes m_pSFPA.
 //----------------------------------------------------------------------
 class MLoadingSPKWorkNode2 : public MLoadingSPKWorkNode {
 	public :
