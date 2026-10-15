@@ -20,8 +20,12 @@
 #include "Cpackets/CGNPCAskAnswer.h"
 #include "Cpackets/CGSelectBloodBible.h"
 #include "Cpackets/CGSelectQuest.h"
+#include "DebugLog.h"
 
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -523,7 +527,7 @@ TEST(UIDialog, LeavingTheTalkFreesThePlayer)
 TEST(UIDialog, LearningASkillSendsItWithTheDomain)
 {
 	// Leaving the window reports the leaving at once, whose own handling
-	// (the second "verify null") runs before the rest of the learning's.
+	// (an added "verify null") runs before the rest of the learning's.
 	Scene scene;
 	scene.Talk(PCTalkBox::SKILL_LEARN, {"012Fire Ball"});
 	scene.temp.SetMode(TempInformation::MODE_SKILL_LEARN);
@@ -625,12 +629,12 @@ TEST(UIDialog, LeavingASkillQuestOrBibleTalkSendsNothing)
 {
 	// Leaving is no choice, even while one is awaited.
 	Scene scene;
-	const std::pair<PCTalkBox::TALKBOX_TYPE, TempInformation::TEMP_MODE> talks[] = {
+	const std::pair<PCTalkBox::TALKBOX_TYPE, TempInformation::TEMP_MODE> kinds[] = {
 		{PCTalkBox::SKILL_LEARN, TempInformation::MODE_SKILL_LEARN},
 		{PCTalkBox::SELECT_QUEST, TempInformation::MODE_SELECT_QUEST},
 		{PCTalkBox::BLOOD_BIBLE_SIGN, TempInformation::MODE_SKILL_LEARN},
 	};
-	for (const auto& talk : talks)
+	for (const auto& talk : kinds)
 	{
 		scene.Talk(talk.first, {"0042Line"});
 		scene.temp.SetMode(talk.second);
@@ -658,7 +662,7 @@ TEST(UIDialog, LeavingAfterAChoiceBringsThePartyWindowBack)
 TEST(UIDialog, WithoutAWindowHostTheLockIsStillSet)
 {
 	// Production installs the host before any window opens; without one the
-	// lock is set for the window asked for and nothing clears it.
+	// lock is set for the window asked for, and only Release clears it.
 	Scene scene;
 	DialogWindow::SetHost(nullptr);
 	scene.dialog.PopupFreeMessageDlg("Hi");
@@ -673,5 +677,35 @@ TEST(UIDialog, WithoutAWindowHostTheLockIsStillSet)
 	CHECK(Same({"close all"}));
 	DialogWindow::SetHost(&windowHost);
 	scene.dialog.Release();
-	scene.dialog.Init();
+	CHECK_EQ(0, int(UIDialog::IsLockInput()));
+}
+
+TEST(UIDialog, AnEmptyLineIsLoggedAsEmpty)
+{
+	// Each skill, bible or quest line is logged at debug level before it is
+	// read, and an empty line's string is NULL. The logger formats through
+	// SafeFormat, which writes NULL as "" (printf's "%s" may not take it).
+	const std::filesystem::path path = std::filesystem::temp_directory_path() / "darkeden-ui-dialog.log";
+	const bool debugWasOn = log_is_enabled(LOG_LEVEL_DEBUG);
+	log_init();
+	log_set_console_output(false);
+	log_set_file_output(path.string().c_str());
+	log_set_level(LOG_LEVEL_DEBUG);
+	{
+		Scene scene;
+		scene.Talk(PCTalkBox::SKILL_LEARN, {"", "012Fire Ball"});
+		scene.Talk(PCTalkBox::SELECT_QUEST, {"", "0042Line"});
+	}
+	log_set_level(debugWasOn ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO);
+	log_set_file_output(nullptr);
+	log_set_console_output(true);
+	log_cleanup();
+	std::ifstream input(path);
+	const std::string text((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+	input.close();
+	std::error_code error;
+	std::filesystem::remove(path, error);
+	CHECK(text.find("012Fire Ball") != std::string::npos);
+	CHECK(text.find("0042Line") != std::string::npos);
+	CHECK(text.find("(null)") == std::string::npos);
 }

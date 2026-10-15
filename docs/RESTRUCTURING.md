@@ -4190,9 +4190,10 @@ rounds settled* for the host rules). Test fixtures share
   > empty list (undefined behaviour) and later answers shifted; the read
   > now keeps an empty answer in its place (38aa7cfc, in 4.152's PR).
   > No question shows an empty answer: each leaves it out like a refused
-  > one, since an empty MString holds NULL and the talk-box dialog hands
-  > its menu each line's string as it is (445a9109). R1 is 136 Windows /
-  > 134 Ninja.
+  > one, since an empty MString holds NULL and the talk-box dialog then
+  > handed its menu each line's string as it was (445a9109); it hands ""
+  > since 4.238's follow-up (ff6f4a91, whose message names this record
+  > for 4.152's). R1 is 136 Windows / 134 Ninja.
   - Owner: membership, R1, the entry and adapter, and
     `test_npc_ask_replies.cpp` (each question with and without a refused
     answer, the four creatureless NPCs and their neighbours, no answer,
@@ -4217,7 +4218,8 @@ rounds settled* for the host rules). Test fixtures share
   > empty answer would (only with an empty way-out entry; the English
   > table has text there). Fixed after 4.238 moved UIDialog into
   > gamemodel: an empty name goes to the menu as "". An id of four digits
-  > would still be misread (the server sends small ids). R1 is 135 Windows / 133 Ninja.
+  > would still be misread (the server sends small ids). R1 is 135
+  > Windows / 133 Ninja.
   - Owner: membership, R1, and `test_blood_bible_replies.cpp` (two
     bibles, one without strings, none; each guard; no dialog host).
 
@@ -7051,7 +7053,8 @@ rounds settled* for the host rules). Test fixtures share
   >   an answer, and the exit ID cut to the answer's byte goes as answer 0.
   >
   > R1 is 26 Windows / 24 Ninja.
-  - Owner: membership, R1, `test_ui_dialog.cpp`: 18 tests. The windows,
+  - Owner: membership, R1, `test_ui_dialog.cpp`: 18 tests (22 with the
+    follow-ups'). The windows,
     the other windows, the party window and the player are fakes that
     record; a ClientPlayer keeps what is sent; the talk box and the temp
     information are real.
@@ -7080,9 +7083,12 @@ rounds settled* for the host rules). Test fixtures share
   >     past the slayer's and the vampire's tables. No creature has one.
   >   - The ousters' rows 7 and 8 (standing and walking) give back the
   >     plain actions 0 and 1, and the view's advanced ousters drawing
+  >     (MTopViewDraw.cpp's body and DrawCreatureShadow.cpp's shadow)
   >     subtracts `ADVANCEMENT_ACTION_START` from them, a negative frame
-  >     pack index (#527's review). The table's comments say these rows,
-  >     and 12 and 13, still lack the rule upstream marked them for.
+  >     pack index (#527's review); only MCreature's frame count checks
+  >     for one. The table's comments say rows 7 and 8 still lack the rule
+  >     upstream marked them for; 12 and 13 were marked too, but already
+  >     answer advanced actions.
   >
   > R1 is unchanged: no executable source leaves.
   - Owner: membership, `test_advancement_action.cpp` (6 tests, the three

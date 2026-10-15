@@ -20,7 +20,7 @@ struct Window;
 // picking it reports.
 struct MenuItem
 {
-	const char*		text;
+	const char*		text;	// never NULL ("" for an empty line)
 	std::uint32_t	id;
 };
 
