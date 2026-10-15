@@ -2,56 +2,56 @@
 // MSector.h
 //----------------------------------------------------------------------
 //
-// - Object Map을 사용한다.
+// - It uses an object map.
 //
-// - Effect는 Object이긴 하지만, 구조상..
-//   Effect만 List로 따로 관리하는게 낫다..
-//
-//----------------------------------------------------------------------
-// Flag를 이용해서 Sector에 현재 존재하는 Object들의 정보를 저장해두면,
-// 속도가 빠를 것이다!
-//----------------------------------------------------------------------
-// 한 Sector에는 여러개의 ImageObject가 존재할 수 있다.
-// 단, Map의 구조상.. 게임 실행시에 추가된 것이 삭제가 되면 안된다.
-// 
-// 
-// list보다는 map이 낫지 않을까??
-//
-// 특정 key값을 통해서 map에 추가/삭제가 가능하다.
-//----------------------------------------------------------------------
-//
-// Map에서 사용될 Key값은 다음과 같이 정의한다.
-//
-//	1			POSITION_ITEM = 1,					// Item이 있는 Node
-//	2			POSITION_UNDERGROUNDCREATURE,		// 지하 캐릭터가 있는 Node
-//	3			POSITION_GROUNDCREATURE,			// 지상 캐릭터가 있는 Node
-//	4			POSITION_FLYINGCREATURE,			// 공중 캐릭터가 있는 Node
-//	5			POSITION_PORTAL,					// Zone 이동이 되는 곳이다.
-//	100 ~255	POSITION_IMAGEOBJECT				// ImageObject들이 있는 곳
-//
+// - Effects are objects too, but structurally..
+//   they are better kept apart, in a list..
 //
 //----------------------------------------------------------------------
-// 
-// [시야처리에 관련된 것]
-//
-// m_Light는 이 Sector에 표현되는 빛의 밝기를 의미한다.
-// m_Light가 0이면 m_FilterSpriteID를 이용해서 Fog를 표현해야한다.
-// m_Light가 1 이상일때는 Fog가 없어야 한다.
-//
-// m_Light가 단순히 true/false가 아닌 이유는..
-// 한 Sector에는 여러개의 빛이 동시에 존재할 수 있으므로 
-// 중첩됐다가 제거할 때.. 여러번 제거하게 되면.. 
-// 아직 빛이 존재하는데도 0이 될 수가 있기 때문이다.
-// 
-// 예) [추가]고정된 사물 + Player시야 + 마법Effect  = 3개의 빛
-//     1. 고정된 사물 제거 = 2개의 빛
-//     2. 마법Effect 제거 = 1개의 빛
-//     3. Player시야 제거 = 0개의 빛
-//     4. 이제부터는 FilterSpriteID를 사용해서 Fog를 출력해야 한다.
+// Keeping flags for the objects now in the sector
+// makes the checks fast.
+//----------------------------------------------------------------------
+// A sector can hold several image objects.
+// But given the map's layout, one added while the game runs must not be removed.
 //
 //
-// = Sector와 MTopView와 creature의 light관련 부분을 BYTE에서 short로 고쳐야할까?
-//   - 한 Sector에 너무 많은 빛이 겹쳐지게 되면 문제가 생긴다.
+// (A map rather than a list.)
+//
+// Objects are added to and removed from the map by key.
+//----------------------------------------------------------------------
+//
+// The map's keys are defined as follows.
+//
+//	1			POSITION_ITEM = 1,					// the item's node
+//	2			POSITION_UNDERGROUNDCREATURE,		// the underground creatures' nodes
+//	3			POSITION_GROUNDCREATURE,			// the ground creatures' nodes
+//	4			POSITION_FLYINGCREATURE,			// the flying creatures' nodes
+//	5			POSITION_PORTAL,					// where a zone change happens
+//	100 ~255	POSITION_IMAGEOBJECT				// the image objects' nodes
+//
+//
+//----------------------------------------------------------------------
+//
+// [Sight]
+//
+// m_Light is the brightness of the light shown on this sector.
+// At 0 the sector is drawn in fog (m_FilterSpriteID).
+// At 1 or more there is no fog.
+//
+// m_Light is not just true or false because..
+// a sector can hold several lights at once,
+// and removing overlapping lights several times..
+// could reach 0 while a light is still there.
+//
+// E.g. [added] a fixed object + the player's sight + a magic effect = 3 lights
+//     1. the fixed object removed = 2 lights
+//     2. the magic effect removed = 1 light
+//     3. the player's sight removed = 0 lights
+//     4. from now on the fog is drawn with FilterSpriteID.
+//
+//
+// = Should the light of sectors, MTopView and creatures go from BYTE to short?
+//   - Too many lights overlapping on one sector is a problem.
 //
 //----------------------------------------------------------------------
 
@@ -79,26 +79,26 @@ class MEffect;
 //----------------------------------------------------------------------
 // Flag
 //----------------------------------------------------------------------
-#define	FLAG_SECTOR_BLOCK_UNDERGROUND		0x01	// 지하로 지나갈 수 없는 Sector인가?
-#define	FLAG_SECTOR_BLOCK_GROUND			0x02	// 지상으로 지나갈 수 없는 Sector인가?
-#define	FLAG_SECTOR_BLOCK_FLYING			0x04	// 공중으로 지나갈 수 없는 Sector인가?
+#define	FLAG_SECTOR_BLOCK_UNDERGROUND		0x01	// no passing underground
+#define	FLAG_SECTOR_BLOCK_GROUND			0x02	// no passing on the ground
+#define	FLAG_SECTOR_BLOCK_FLYING			0x04	// no passing in the air
 #define	FLAG_SECTOR_BLOCK_ALL				0x07	// Block ALL
-#define	FLAG_SECTOR_ITEM					0x08	// Item이 존재한다.
-#define	FLAG_SECTOR_UNDERGROUNDCREATURE		0x10	// 지하 캐릭터가 존재한다.
-#define	FLAG_SECTOR_GROUNDCREATURE			0x20	// 지상 캐릭터가 존재한다.
-#define	FLAG_SECTOR_FLYINGCREATURE			0x40	// 공중 캐릭터가 존재한다.
-#define	FLAG_SECTOR_PORTAL					0x80	// Zone 이동이 되는 곳이다.
+#define	FLAG_SECTOR_ITEM					0x08	// an item is there
+#define	FLAG_SECTOR_UNDERGROUNDCREATURE		0x10	// an underground creature is there
+#define	FLAG_SECTOR_GROUNDCREATURE			0x20	// a ground creature is there
+#define	FLAG_SECTOR_FLYINGCREATURE			0x40	// a flying creature is there
+#define	FLAG_SECTOR_PORTAL					0x80	// where a zone change happens
 
 //----------------------------------------------------------------------
 // Flag2
 //----------------------------------------------------------------------
-#define	FLAG_SECTOR_SAFE_COMMON				0x01	// 전부 다 안전한 곳
-#define	FLAG_SECTOR_SAFE_SLAYER				0x02	// slayer만 안전한 곳
-#define	FLAG_SECTOR_SAFE_VAMPIRE			0x04	// vampire만 안전한 곳
-#define FLAG_SECTOR_SAFE_NO_PK_ZONE			0x08	// 노 피케존 
-#define	FLAG_SECTOR_SAFE_OUSTERS			0x10	// ousters만 안전한 곳
+#define	FLAG_SECTOR_SAFE_COMMON				0x01	// safe for everyone
+#define	FLAG_SECTOR_SAFE_SLAYER				0x02	// safe for slayers only
+#define	FLAG_SECTOR_SAFE_VAMPIRE			0x04	// safe for vampires only
+#define FLAG_SECTOR_SAFE_NO_PK_ZONE			0x08	// no player killing
+#define	FLAG_SECTOR_SAFE_OUSTERS			0x10	// safe for ousters only
 #define FLAG_SECTOR_SAFE_ZONE				0x17
-// server에 block된 것
+// Blocked by the server
 #define FLAG_SECTOR_BLOCK_SERVER_UNDERGROUND	0x10
 #define FLAG_SECTOR_BLOCK_SERVER_GROUND			0x20
 #define FLAG_SECTOR_BLOCK_SERVER_FLYING			0x40
@@ -116,10 +116,10 @@ typedef std::list<MEffect*>		EFFECT_LIST;
 //----------------------------------------------------------------------
 class PORTAL_INFO
 {
-	// type은 MPortal의 Type을 사용한다.
+	// type is MPortal's type.
 	public :
 		int		Type;
-		int		ZoneID;	
+		int		ZoneID;
 
 	public :
 		PORTAL_INFO(int type, int zoneID)
@@ -133,10 +133,10 @@ class PORTAL_INFO
 typedef std::list<PORTAL_INFO>			PORTAL_LIST;
 
 //----------------------------------------------------------------------
-// 
-// MSector class는 하나의 Object가 존재할 수 있는
-//                 한 영역에 대한 정보를 가지고 있는다.
-//                 Sector는 하나의 바닥 타일로서 표현된다.
+//
+// The MSector class holds what is in one area
+//                 where objects can be.
+//                 A sector is drawn as one floor tile.
 //
 //----------------------------------------------------------------------
 class MSector {
@@ -207,10 +207,10 @@ class MSector {
 		void	SetBlockServerFlying()			{ m_fProperty2 |= FLAG_SECTOR_BLOCK_SERVER_FLYING; }
 		void	UnSetBlockServerFlying()		{ m_fProperty2 &= ~FLAG_SECTOR_BLOCK_SERVER_FLYING; }
 
-		
+
 		//------------------------------------------------
 		//
-		// Sector에 Object가 존재하는가?
+		// Are there objects in the sector?
 		//
 		//------------------------------------------------
 		BYTE	IsExistObject() const	{ return !m_mapObject.empty(); }
@@ -219,21 +219,21 @@ class MSector {
 		BYTE	IsExistItem() const					{ return m_fProperty & FLAG_SECTOR_ITEM; }
 		BYTE	IsExistUndergroundCreature() const	{ return m_fProperty & FLAG_SECTOR_UNDERGROUNDCREATURE; }
 		BYTE	IsExistGroundCreature() const		{ return m_fProperty & FLAG_SECTOR_GROUNDCREATURE; }
-		BYTE	IsExistFlyingCreature() const		{ return m_fProperty & FLAG_SECTOR_FLYINGCREATURE; }		
-		BYTE	IsExistImageObject() const			{ return m_nImageObject; }		
+		BYTE	IsExistFlyingCreature() const		{ return m_fProperty & FLAG_SECTOR_FLYINGCREATURE; }
+		BYTE	IsExistImageObject() const			{ return m_nImageObject; }
 		BYTE	IsExistAnyCreature() const			{ return (m_fProperty & FLAG_SECTOR_UNDERGROUNDCREATURE) ||
 																(m_fProperty & FLAG_SECTOR_GROUNDCREATURE) ||
 																(m_fProperty & FLAG_SECTOR_FLYINGCREATURE); }
 
-		// ImageObject가 보이기는 하는 곳인데 Block이 아닌 곳인가? (반투명 처리)
+		// An image object shown on a sector that is not blocked? (drawn translucent)
 		//BYTE	IsImageObjectAndNotBlock()	const	{ return (m_nImageObject && (m_fProperty & FLAG_SECTOR_BLOCK)); }
-		
+
 
 		//------------------------------------------------
 		//
 		// Add Object to Sector
 		//
-		//------------------------------------------------		
+		//------------------------------------------------
 		bool	AddItem(const MItem* pItem);
 		bool	AddUndergroundCreature(const MCreature* pCreature);
 		bool	AddGroundCreature(const MCreature* pCreature);
@@ -245,33 +245,33 @@ class MSector {
 		//
 		// Remove Object from Sector
 		//
-		//------------------------------------------------				
+		//------------------------------------------------
 		bool	RemoveItem(MItem*& pItem);
 		//bool	RemoveUndergroundCreature(MCreature*& pCreature);
 		//bool	RemoveGroundCreature(MCreature*& pCreature);
-		//bool	RemoveFlyingCreature(MCreature*& pCreature);		
+		//bool	RemoveFlyingCreature(MCreature*& pCreature);
 
-		// ID check and remove		
+		// ID check and remove
 		bool	RemoveItem(TYPE_OBJECTID id, MItem*& pItem);
 		bool	RemoveUndergroundCreature(TYPE_OBJECTID id, MCreature*& pCreature);
 		bool	RemoveGroundCreature(TYPE_OBJECTID id, MCreature*& pCreature);
 		bool	RemoveFlyingCreature(TYPE_OBJECTID id, MCreature*& pCreature);
-		bool	RemoveImageObject(TYPE_OBJECTID id, MImageObject*& pImageObject);		
+		bool	RemoveImageObject(TYPE_OBJECTID id, MImageObject*& pImageObject);
 		bool	RemoveCreature(TYPE_OBJECTID id, MCreature*& pCreature);
 
-		// ID check and just remove		
+		// ID check and just remove
 		bool	RemoveItem(TYPE_OBJECTID id);
 		bool	RemoveUndergroundCreature(TYPE_OBJECTID id);
 		bool	RemoveGroundCreature(TYPE_OBJECTID id);
 		bool	RemoveFlyingCreature(TYPE_OBJECTID id);
 		bool	RemoveCreature(TYPE_OBJECTID id);
-		bool	RemoveImageObject(TYPE_OBJECTID id);		
+		bool	RemoveImageObject(TYPE_OBJECTID id);
 
-		// just remove		
+		// just remove
 		bool	RemoveItem();
 		//bool	RemoveUndergroundCreature();
 		//bool	RemoveGroundCreature();
-		//bool	RemoveFlyingCreature();		
+		//bool	RemoveFlyingCreature();
 
 		// remove all
 		void	RemoveAllObject();
@@ -279,9 +279,9 @@ class MSector {
 
 		//------------------------------------------------
 		//
-		// get Object		
+		// get Object
 		//
-		//------------------------------------------------			
+		//------------------------------------------------
 		OBJECT_MAP::iterator		GetObjectEnd()			{ return m_mapObject.end(); }
 		OBJECT_MAP::const_iterator	GetObjectEnd() const	{ return m_mapObject.end(); }
 
@@ -305,28 +305,28 @@ class MSector {
 		MCreature*				GetUndergroundCreature() const;
 		MCreature*				GetGroundCreature() const;
 		MCreature*				GetFlyingCreature() const;
-		MImageObject*			GetImageObject(TYPE_OBJECTID id) const;		
+		MImageObject*			GetImageObject(TYPE_OBJECTID id) const;
 
-		// 개수		
+		// How many
 		BYTE			GetImageObjectSize() const		{ return m_nImageObject; }
 
-		// iterator를 넘겨준다.
-		OBJECT_MAP::const_iterator	GetImageObjectIterator() const;		
-		
+		// The iterator to the first one.
+		OBJECT_MAP::const_iterator	GetImageObjectIterator() const;
+
 
 		// assign operator
 		void	operator = (const MSector& sector);
 
 		//------------------------------------------------
 		//
-		// Effect 관련...
+		// Effects...
 		//
 		//------------------------------------------------
 		bool		IsExistEffect() const		{ return !m_listEffect.empty(); }
 		void		ClearEffect()				{ m_listEffect.clear(); }
 		int			GetEffectSize() const		{ return static_cast<int>(m_listEffect.size()); }
 
-		// 외부에서 iterator로 작업을 할 수 있도록..
+		// So callers can walk them with an iterator..
 		EFFECT_LIST::const_iterator GetEffectIterator() const { return m_listEffect.begin(); }
 
 		// Add/Get/Remove
@@ -334,27 +334,27 @@ class MSector {
 		MEffect*	GetEffect(TYPE_OBJECTID id) const;
 		bool		RemoveEffect(TYPE_OBJECTID id, MEffect*& pEffect);
 		bool		RemoveEffect(TYPE_OBJECTID id);
-		
-		// 계산을 빨리 할려고 darkness만 따로 처리한다.
+
+		// Darkness is tracked apart, to check it fast.
 		bool		HasDarkness() const			{ return m_bDarkness; }
 		void		SetDarkness()				{ m_bDarkness = true; }
 		void		UnSetDarkness()				{ m_bDarkness = false; }
-		
-		// 계산을 빨리 할려고 대지정령도 따로 처리한다.-ㅅ-;;;
+
+		// So is the earth elemental, to check it fast.
 		bool		HasGroundElemental() const			{ return m_bGroundElemental; }
 		void		SetGroundElemental()				{ m_bGroundElemental = true; }
 		void		UnSetGroundElemental()				{ m_bGroundElemental = false; }
-		
-		// 계산을 빨리 할려고 DARKNESS_FORBIDDEN마저 따로 처리한다.-ㅅ-;;;
+
+		// And DARKNESS_FORBIDDEN, to check it fast.
 		bool		HasDarknessForbidden() const			{ return m_bDarknessForbidden; }
 		void		SetDarknessForbidden()				{ m_bDarknessForbidden = true; }
 		void		UnSetDarknessForbidden()				{ m_bDarknessForbidden = false; }
-		
-		// [새기술] sanctuary도 추가 --;
+
+		// [new skill] sanctuary too.
 		bool		HasSanctuary() const		{ return m_bSanctuary; }
 		void		SetSanctuary()				{ m_bSanctuary = true; }
 		void		UnSetSanctuary()			{ m_bSanctuary = false; }
-		
+
 		//------------------------------------------------
 		// Can Stand ?
 		//------------------------------------------------
@@ -365,18 +365,18 @@ class MSector {
 
 		//------------------------------------------------
 		//
-		// 시야/Filter 관련
+		// Sight and filter
 		//
 		//------------------------------------------------
 		//void			SetFilterSpriteID(TYPE_SPRITEID id)	{ m_FilterSpriteID = id; }
 		//TYPE_SPRITEID	GetFilterSpriteID() const			{ return m_FilterSpriteID; }
 
-		// 빛 관련..
+		// Light..
 		BYTE			GetLight() const					{ return m_Light; }
 		void			SetLight(BYTE light)				{ m_Light = light; }
 		void			AddLight()							{ if (m_Light<0xFF) m_Light++; }
 		void			RemoveLight() 						{ if (m_Light>0) m_Light--; }
-		
+
 		//------------------------------------------------
 		//
 		// Portal
@@ -404,7 +404,7 @@ class MSector {
 
 		//------------------------------------------------
 		//
-		// Safe - 안전지대
+		// Safe - safety zones
 		//
 		//------------------------------------------------
 		void				SetSafe(BYTE flag)		{ m_fProperty2 = flag; }
@@ -418,7 +418,7 @@ class MSector {
 
 		//------------------------------------------------
 		//
-		// Visited Flag - 길찾기용
+		// Visited flag - for path finding
 		//
 		//------------------------------------------------
 		void				SetVisitedFlag()		{ m_bVisitedFlag = true; }
@@ -426,12 +426,12 @@ class MSector {
 		bool				IsVisitedFlag() const	{ return m_bVisitedFlag; }
 
 
-		// 대지 아우 140 스킬 퓨리 오브 놈 관련 fury of gnome
+		// The earth ousters' level 140 skill, Fury of Gnome
 		bool		HasFuryOfGnome() const			{ return m_bFuryOfGnome; }
 		void		SetFuryOfGnome()				{ m_bFuryOfGnome = true; }
 		void		UnSetFuryOfGnome()				{ m_bFuryOfGnome = false; }
 
-		// 퀘스트 관련 - 타일 보여줄지 안보여줄지..-_-
+		// For quests - whether the tile is shown
 		bool		HasDisableTileImage() const			{ return m_bDisableTileImage; }
 		void		SetDisableTileImage()				{ m_bDisableTileImage = true; }
 		void		UnSetDisableTileImage()				{ m_bDisableTileImage = false; }
@@ -439,66 +439,66 @@ class MSector {
 		//----------------------------------------------------------------------
 		// Key Value of Map
 		//----------------------------------------------------------------------
-		// 값이 약간 불안한데.. ㅡ.ㅡ;;
-		enum POSITION_VALUE 
-		{				
-			POSITION_ITEM = 1,					// Item이 있는 Node
+		// The values are a little fragile..
+		enum POSITION_VALUE
+		{
+			POSITION_ITEM = 1,					// the item's node
 
-			POSITION_UNDERGROUNDCREATURE=2,		// 지하 캐릭터가 있는 Node (2~14)
+			POSITION_UNDERGROUNDCREATURE=2,		// the underground creatures' nodes (2~14)
 			POSITION_UNDERGROUNDCREATURE_MAX=14,
 
-			POSITION_GROUNDCREATURE=15,			// 지상 캐릭터가 있는 Node (15~49)
+			POSITION_GROUNDCREATURE=15,			// the ground creatures' nodes (15~49)
 			POSITION_GROUNDCREATURE_MAX=49,
 
-			POSITION_FLYINGCREATURE=50,			// 공중 캐릭터가 있는 Node (50~79)
+			POSITION_FLYINGCREATURE=50,			// the flying creatures' nodes (50~79)
 			POSITION_FLYINGCREATURE_MAX=79,
 
-			POSITION_PORTAL=80,					// Zone 이동이 되는 곳이다.
-			POSITION_IMAGEOBJECT = 81,			// ImageObject들이 존재하는 Node(81~149)
-			POSITION_EFFECT	= 150				// Effect들이 존재하는 Node (150~255)	// 안쓰네 - -;
+			POSITION_PORTAL=80,					// where a zone change happens
+			POSITION_IMAGEOBJECT = 81,			// the image objects' nodes (81~149)
+			POSITION_EFFECT	= 150				// the effects' nodes (150~255)	// unused
 		};
 
 
 
 
 	protected :
-		// tile sprite에 대한 정보
+		// The tile sprite
 		TYPE_SPRITEID		m_SpriteID;
 
-		// 한 Sector에 있을 수 있는 Object들에 대한 pointer
+		// The objects that can be in a sector
 		OBJECT_MAP			m_mapObject;
 
-		// 한 Sector에 있을 수 있는 Effect들에 대한 pointer
+		// The effects that can be in a sector
 		EFFECT_LIST			m_listEffect;
 
-		// Filer로 사용할 SpriteID
+		// The sprite ID used as the filter
 		//TYPE_SPRITEID	m_FilterSpriteID;
-	
+
 		PORTAL_LIST			m_listPortal;
 
 		SECTORSOUND_LIST	m_listSectorSound;
 
-		// 캐릭터 마리수
+		// How many creatures
 		BYTE				m_nGroundCreature;
 		BYTE				m_nUndergroundCreature;
 		BYTE				m_nFlyingCreature;
 
-		// 존재하는 ImageObject 개수에 대한 정보
-		BYTE				m_nImageObject;			
+		// How many image objects
+		BYTE				m_nImageObject;
 
-		// 정보 Flag
+		// The flags
 		BYTE				m_fProperty;
 
-		// 안전지대
+		// The safety zone flags
 		BYTE				m_fProperty2;
 
-		// 빛에 대한 값
+		// The light
 		BYTE				m_Light;
 
 
 		bool				m_bDarkness;
-		bool				m_bSanctuary;		// [새기술]
-		bool				m_bGroundElemental;		// [새기술]
+		bool				m_bSanctuary;		// [new skill]
+		bool				m_bGroundElemental;		// [new skill]
 		bool				m_bDarknessForbidden;
 		bool				m_bVisitedFlag;
 
