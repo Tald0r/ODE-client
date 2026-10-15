@@ -6654,7 +6654,34 @@ rounds settled* for the host rules). Test fixtures share
       only undefined behaviour shows.
   - Hiding the source from the VS_UI glob breaks the `ui_tests` link.
 
-### Remaining R1 work after tasks 4.80-4.230
+- [x] **4.231 Retire UtilityFunction's dead image path:** the stub
+  surface's image loader, JPEG decoding and encoding, the image saver,
+  the SSN check and the free-space query.
+  > **Status:** done (2026-10-14).
+  > - **The loader was dead in fact.** `LoadImageToSurface(const char*,
+  >   CDirectDrawSurface&)` decoded a .bmp or .jpg into a
+  >   `CDirectDrawSurface`, which in this port is a stub (task 4.224).
+  >   For a .bmp, its `InitFromBMP` returns false. For a .jpg, `Lock`
+  >   gives a null surface pointer, and `bOK` was set only past that
+  >   null check. So it always answered false, after reading and
+  >   decoding the file.
+  > - **Its one caller:** UIMessageManager's profile-picture selection
+  >   (`Execute_UI_CLOSE_FILE_DIALOG`) went on only when it answered
+  >   true, so choosing a profile picture has never done anything in
+  >   this port. That branch goes, with a comment saying how to restore
+  >   it (load into a `CSpriteSurface`, which the live overload does).
+  > - **With it go:** `LoadJPG` (its only user), `SaveJPG` and
+  >   `SaveSurfaceToImage` (no callers), and `IsValidSSN` and
+  >   `GetDiskFreeSpace` (no callers). `git grep -a` over the tree
+  >   finds none.
+  > - **What stays:** `RemoveStringSpace`, `IsValidID`,
+  >   `IsValidPassword` and the live `LoadImageToSurface(const char*,
+  >   CSpriteSurface&)`, which the next task moves into libraries.
+  > - **Not done:** DarkEden still links the JPEG library it found for
+  >   this file; dropping that link is a build change for later.
+  - Owner: retired code, so no test. The argument above is the proof.
+
+### Remaining R1 work after tasks 4.80-4.231
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.

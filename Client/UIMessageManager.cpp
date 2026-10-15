@@ -9223,49 +9223,14 @@ UIMessageManager::Execute_UI_CLOSE_FILE_DIALOG(intptr_t left, intptr_t right, vo
 	switch(left)
 	{
 	case C_VS_UI_FILE_DIALOG::MODE_PROFILE_SELECT:
-		if(void_ptr != NULL)
-		{
-			char *p_str = (char *)void_ptr;
-			const int str_size = static_cast<int>(strlen(p_str));
-
-			if(str_size > 4)
-			{
-				const POINT bigSize = { 55, 70 };
-				
-				CDirectDrawSurface surface;
-
-				surface.InitOffsurface( bigSize.x, bigSize.y, DDSCAPS_SYSTEMMEMORY );
-				
-				RECT destBigRect = { 0, 0, bigSize.x, bigSize.y };
-
-				CDirectDrawSurface bmpSurface;
-				
-				if (LoadImageToSurface(p_str, bmpSurface))
-				{
-					// surface의 크기가 default Profile크기와 다르다면
-					// size를 변경시켜줘야 한다..	
-					RECT bmpRect = { 0, 0, bmpSurface.GetWidth(), bmpSurface.GetHeight() };
-
-					// BigSize
-					surface.FillSurface( 0 );
-					surface.Blt(&destBigRect, &bmpSurface, &bmpRect);
-
-					// Resolved for the platform (basic/DataPath.h): off Windows
-					// the backslash is a file name character, and the picture
-					// landed beside UserSet/ rather than in it, where
-					// ProfileManager does not look and the browser build does
-					// not persist it.
-					const std::string saveBmpName = Basic::NormalizeDataPath(g_pFileDef->getProperty("DIR_PROFILE")
-						+ "\\" + g_char_slot_ingame.sz_name + ".bmp");
-					surface.SaveToBMP(saveBmpName.c_str());
-
-					g_pProfileManager->InitProfiles();
-					gC_vs_ui.RefreshInfoImage();
-
-				}
-
-			}
-		}
+		// A chosen profile picture (void_ptr, its file name) was loaded
+		// into a CDirectDrawSurface here, scaled to 55x70 and saved as the
+		// character's profile. In this port that class is a stub, so the
+		// load never succeeded (see LoadImageToSurface's retirement in
+		// task 4.231), and choosing a picture has done nothing. Restoring
+		// it means loading into a CSpriteSurface (UtilityFunction.h) and
+		// saving that.
+		(void)void_ptr;
 		break;
 	}
 	gC_vs_ui.CloseFileDialog();
