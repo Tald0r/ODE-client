@@ -2194,15 +2194,17 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 				SetCauseCriticalWounds(delayFrame);
 			//	if(!HasEffectStatus(EFFECTSTATUS_GLACIER))
 				{
+					// Twenty frames shorter, never below 0 (the frames are unsigned).
+					const DWORD glacierFrames = delayFrame > 20 ? delayFrame - 20 : 0;
 					if(IsSlayer())
 						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_SLAYER,GetX(), GetY(), 0,GetDirection(),	GetID(),
-										GetX(), GetY(), 0, max(0, delayFrame-20), NULL, false);
+										GetX(), GetY(), 0, glacierFrames, NULL, false);
 					else if(IsVampire())
 						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_VAMPIRE,GetX(), GetY(), 0,GetDirection(),	GetID(),
-										GetX(), GetY(), 0, max(0, delayFrame-20), NULL, false);
+										GetX(), GetY(), 0, glacierFrames, NULL, false);
 					else if(IsOusters())
 						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_OUSTERS,GetX(), GetY(), 0,GetDirection(),	GetID(),
-										GetX(), GetY(), 0, max(0, delayFrame-20), NULL, false);
+										GetX(), GetY(), 0, glacierFrames, NULL, false);
 				}
 			}
 		//	m_bEffectStatus[status] = true;

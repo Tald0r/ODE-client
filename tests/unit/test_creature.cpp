@@ -530,13 +530,20 @@ TEST(Creature, AGlacierFreezesEachRaceItsOwnWay)
 		creature.AddEffectStatus(EFFECTSTATUS_GLACIER, 50);
 		// Twenty frames shorter, never below 0.
 		CHECK(FirstIs(Skill(race.second, 30)));
-		// Recorded: under twenty frames the subtraction wraps (the frames
-		// are unsigned), so the clamp at 0 never clamps.
+		// Twenty frames or fewer: none left.
+		for (DWORD frames : {DWORD(10), DWORD(20)})
+		{
+			calls.clear();
+			MCreature short_;
+			Place(short_, race.first);
+			short_.AddEffectStatus(EFFECTSTATUS_GLACIER, frames);
+			CHECK(FirstIs(Skill(race.second, 0)));
+		}
 		calls.clear();
-		MCreature short_;
-		Place(short_, race.first);
-		short_.AddEffectStatus(EFFECTSTATUS_GLACIER, 10);
-		CHECK(FirstIs(Skill(race.second, DWORD(10 - 20))));
+		MCreature longer;
+		Place(longer, race.first);
+		longer.AddEffectStatus(EFFECTSTATUS_GLACIER, 21);
+		CHECK(FirstIs(Skill(race.second, 1)));
 	}
 }
 

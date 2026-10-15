@@ -7136,12 +7136,18 @@ rounds settled* for the host rules). Test fixtures share
   >     both `SYLPH_GREEN_FLY` and `SYLPH_BLACK_STOP`, which never holds.
   >   - A crashed bike ends its spin the third time it faces its start, after
   >     two crash skills.
-  > - **Fixed after the move** (UBSan stopped on both): the constructor
-  >   read `m_bPlayerParty` (through `SetStatus`) before setting it, and
-  >   the bleeding interval's `(percentHP<<2) * rand()` overflowed `int`
-  >   where `RAND_MAX` is 2^31-1 (macOS, Linux). It is taken in 64 bits,
-  >   so its result is Windows' as before: the remainder of the product
-  >   by 20, not a random multiple of the HP as the formula may have meant.
+  > - **Fixed after the move:**
+  >   - The constructor read `m_bPlayerParty` (through `SetStatus`) before
+  >     setting it; UBSan stopped on the load.
+  >   - The bleeding interval's `(percentHP<<2) * rand()` overflowed `int`
+  >     where `RAND_MAX` is 2^31-1 (macOS, Linux); UBSan stopped on it. It
+  >     is taken in 64 bits, so its result is Windows' as before: the
+  >     remainder of the product by 20, not a random multiple of the HP as
+  >     the formula may have meant.
+  >   - A glacier's skill lasts twenty frames less than the status, and
+  >     `max(0, delayFrame - 20)` was meant to stop at 0. The frames are
+  >     unsigned, so under twenty it wrapped to about four billion frames.
+  >     It stops at 0.
   >
   > R1 is 25 Windows / 23 Ninja.
   - Owner: membership, R1, `test_creature.cpp`: 59 tests. The hosts
