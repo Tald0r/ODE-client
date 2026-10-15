@@ -761,21 +761,19 @@ TEST(GameUI3Quest, TheQuestNPCsOfferEveryKnownQuestInOrder)
 	scene.talkBox.SetCreatureType(255);
 	// An id the table does not know is passed over.
 	UI_RunQuestList(QuestIDs({501, 600, 502, 503, 504}).get());
-	// The last quest told is the text. Recorded defect: the time limit
-	// is appended to the buffer that last held the previous offer, so the
-	// third quest's text carries the second's offer in front of its time.
+	// The last quest told is the text, with its own time limit.
 	CHECK(Same({"close all", "talk 1|255|(null)",
 		"menu 1|501:Yes|502:Yes|503:Yes|504:" + S(STRING_MESSAGE_SELECT_CRAZY_MINE) + "|9999:Later",
 		"text 1 fit|" + S(STRING_MESSAGE_SELECT_MINI_GAME), "start 1"}));
 	calls.clear();
 	UI_RunQuestList(QuestIDs({502, 503}).get());
 	CHECK(Same({"delete 1", "close all", "talk 2|255|(null)", "menu 2|502:Yes|503:Yes|9999:Later",
-		"text 2 fit|Bring Ghoul, 3 of them, within  502Yes2h 0m.", "start 2"}));
+		"text 2 fit|Bring Ghoul, 3 of them, within 2h 0m.", "start 2"}));
 	// Only unknown ids: just the way out.
 	calls.clear();
 	UI_RunQuestList(QuestIDs({600}).get());
 	CHECK(Same({"delete 2", "close all", "talk 3|255|(null)", "menu 3|9999:Later",
-		"text 3 fit|Bring Ghoul, 3 of them, within  502Yes2h 0m.", "start 3"}));
+		"text 3 fit|Bring Ghoul, 3 of them, within 2h 0m.", "start 3"}));
 }
 
 TEST(GameUI3Quest, OtherNPCsListTheHuntsForTheRace)
@@ -811,14 +809,13 @@ TEST(GameUI3Quest, OtherNPCsListTheHuntsForTheRace)
 			CHECK(scene.talkBox.GetType() == PCTalkBox::SELECT_QUEST);
 			CHECK(scene.me->GetWaitVerify() == MPlayer::WAIT_VERIFY_NULL);
 		}
-	// Recorded defect: a quest that is not a hunt adds the line of the
-	// hunt before it again.
+	// A quest that is not a hunt is not listed.
 	scene.dialog.ClosePCTalkDlg();
 	calls.clear();
 	windowCount = 0;
 	UI_RunQuestList(QuestIDs({501, 502}).get());
 	CHECK(Same({"close all", "talk 1|654|(null)",
-		"menu 1|501:Wolf 7 heads Limit:3h 5m|501:Wolf 7 heads Limit:3h 5m|9999:Later",
+		"menu 1|501:Wolf 7 heads Limit:3h 5m|9999:Later",
 		"text 1 fit|" + S(UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS), "start 1"}));
 	// Before any hunt, a quest that is not one adds an empty line, which
 	// the talk window leaves out.

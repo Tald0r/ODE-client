@@ -4043,6 +4043,7 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 			QUEST_INFO* mkq = g_pQuestInfoManager->GetInfo( ID );		
 			if(NULL != mkq )
 			{
+				tempstr[0] = 0;	// the time is this quest's own, not after the last offer
 				DWORD time = mkq->GetTimeLimit();				
 				DWORD minute = (time / 60) % 60;
 				DWORD hour = (time / 60 / 60);
@@ -4180,12 +4181,11 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 				{
 				case QUEST_INFO_MONSTER_KILL :
 					SafeFormat::Format(str,"%4d%s %d%s %s%s",ID,mkq->GetName(), mkq->GetGoal(), (*g_pGameStringTable)[UI_STRING_MESSAGE_NUMBER_OF_ANIMALS].GetString(),(*g_pGameStringTable)[UI_STRING_MESSAGE_TIME_LIMIT].GetString(),timestr);
+					g_pPCTalkBox->AddString( str );	// a hunt is the only quest listed
 					break;			
 				default :
 					break;
 				}		
-				
-				g_pPCTalkBox->AddString( str );
 			}
 		}
 		
