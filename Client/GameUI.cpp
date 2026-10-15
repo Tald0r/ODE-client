@@ -3722,14 +3722,18 @@ void	UI_RunOtherInfo(MCreature *pCreature)
 		};
 
 		int faceFrameID = pCreatureWear->GetHairFrameID();
+		// A hair outside the sex's three (a corpse packet can change the sex
+		// and not the hair) is the first face, as PacketFunction takes a hair
+		// past its table as the first.
+		auto face = [](const auto& table, int index) { return index >= 0 && index < int(std::size(table)) ? table[index] : table[0]; };
 		
 		if(info.bl_female)
 		{
-			info.face_type = uiFaceFemale[faceFrameID - ADDONID_HAIR1_FEMALE];
+			info.face_type = face(uiFaceFemale, faceFrameID - ADDONID_HAIR1_FEMALE);
 		}
 		else
 		{
-			info.face_type = uiFaceMale[faceFrameID - ADDONID_HAIR1_MALE];
+			info.face_type = face(uiFaceMale, faceFrameID - ADDONID_HAIR1_MALE);
 		}
 	}
 	info.GRADE = pCreature->GetGrade();

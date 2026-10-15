@@ -1565,6 +1565,29 @@ TEST(GameUI3OtherInfo, ASlayersInfoGoesOnlyToTheGameWindow)
 	CHECK(calls.empty());
 }
 
+TEST(GameUI3OtherInfo, ASlayersFaceOutsideItsSexsThreeHairsIsTheFirst)
+{
+	// The hair is set with the sex, but a corpse packet of the other sex
+	// changes an existing slayer's sex and not its hair (GCAddSlayerCorpse
+	// sets the creature type), and a slayer whose hair was never set has
+	// the first male one: a face outside its sex's three is the first.
+	Scene scene;
+	MCreatureWear slayer;
+	slayer.SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	slayer.SetName("Kim");
+	const TYPE_FRAMEID hairs[] = {ADDONID_HAIR1_FEMALE, ADDONID_HAIR3_FEMALE, ADDONID_HAIR1_MALE, ADDONID_HAIR3_MALE,
+		0, MAX_ADDONID_SLAYER, 0xFFFF};
+	for (bool male : {true, false})
+		for (TYPE_FRAMEID hair : hairs)
+		{
+			slayer.SetMale(male);
+			slayer.SetAddonHair(hair, 0);
+			UI_RunOtherInfo(&slayer);
+		}
+	CHECK(UI_GetOtherInfoName() == NULL);
+	CHECK(calls.empty());
+}
+
 //----------------------------------------------------------------------
 // The calls only the game's windows see
 //----------------------------------------------------------------------
