@@ -2210,8 +2210,10 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
 				pItem->SetID(i);
-				// A sign past the six slots, which none takes, is freed.
-				if (!g_pSlayerGear->AddItem(pItem, (MSlayerGear::GEAR_SLAYER)(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1+i)))
+				// A sign past the six slots, which none takes, is freed (and
+				// never named as a slot, which the enum does not hold).
+				if (i > MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE6 - MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1
+					|| !g_pSlayerGear->AddItem(pItem, (MSlayerGear::GEAR_SLAYER)(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1+i)))
 					delete pItem;
 				// The type is the server's: one past the bonuses marks none.
 				if (TempSignList[i] < HOLYLAND_BONUS_MAX)
@@ -2234,8 +2236,10 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
 				pItem->SetID(i);
-				// A sign past the six slots, which none takes, is freed.
-				if (!g_pVampireGear->AddItem(pItem, (MVampireGear::GEAR_VAMPIRE)(MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1+i)))
+				// A sign past the six slots, which none takes, is freed (and
+				// never named as a slot, which the enum does not hold).
+				if (i > MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE6 - MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1
+					|| !g_pVampireGear->AddItem(pItem, (MVampireGear::GEAR_VAMPIRE)(MVampireGear::GEAR_VAMPIRE_BLOOD_BIBLE1+i)))
 					delete pItem;
 				// The type is the server's: one past the bonuses marks none.
 				if (TempSignList[i] < HOLYLAND_BONUS_MAX)
@@ -2258,8 +2262,10 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 				MItem* pItem = MItem::NewItem( ITEM_CLASS_BLOOD_BIBLE_SIGN );
 				pItem->SetItemType(	TempSignList[i] );
 				pItem->SetID(i);
-				// A sign past the six slots, which none takes, is freed.
-				if (!g_pOustersGear->AddItem(pItem, (MOustersGear::GEAR_OUSTERS)(MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1+i)))
+				// A sign past the six slots, which none takes, is freed (and
+				// never named as a slot, which the enum does not hold).
+				if (i > MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE6 - MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1
+					|| !g_pOustersGear->AddItem(pItem, (MOustersGear::GEAR_OUSTERS)(MOustersGear::GEAR_OUSTERS_BLOOD_BIBLE1+i)))
 					delete pItem;
 				// The type is the server's: one past the bonuses marks none.
 				if (TempSignList[i] < HOLYLAND_BONUS_MAX)

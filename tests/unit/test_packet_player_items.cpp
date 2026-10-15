@@ -980,6 +980,9 @@ TEST(PacketPlayerItems, BloodBibleSignsPastTheBonusesOrTheSlotsAreKeptOut)
 	CHECK_EQ(1, Count("destroyed|1"));
 	CHECK_EQ(1, Count("destroyed|2"));
 	CHECK_EQ(1, Count("destroyed|6"));
+	// The signs the gear took stay.
+	for (const char* kept : {"destroyed|0", "destroyed|3", "destroyed|4", "destroyed|5"})
+		CHECK_EQ(0, Count(kept));
 }
 
 //----------------------------------------------------------------------
