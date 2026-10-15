@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <fstream>
 #include <cstring>
 #include <filesystem>
 #include <string>
@@ -259,8 +260,7 @@ TEST(PacketHelpers, AKoreanClientSendsItsCrashReportsAndForgetsThem)
 		pFirst->SetVersion(42);
 		log.GetMutable(1)->SetVersion(7);
 		log.SaveToFile(CRASH_LOG_FILENAME);
-		std::FILE* pOld = std::fopen(OLD_CRASH_LOG_FILENAME, "wb");
-		if (pOld != nullptr) std::fclose(pOld);
+		std::ofstream(OLD_CRASH_LOG_FILENAME, std::ios::binary);
 	}
 	SentPackets wire;
 	g_pSocket = &wire;
