@@ -377,8 +377,8 @@ Client/ApplySkillInfo.h
 Client/ConvertDuration.cpp
 Client/ConvertDuration.h
 
-# Event records, flag queries and expiry; MEventManager keeps live image
-# ownership and installs rendering/player callbacks in the executable.
+# Event records, flag queries and expiry; GameInitInfo installs the
+# rendering/player callbacks (MEventManager's until task 4.224).
 Client/MEventQueue.cpp
 Client/MEventQueue.h
 

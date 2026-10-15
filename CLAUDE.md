@@ -101,9 +101,9 @@ roster's `GCAddInjuriousCreature` and `GCRemoveInjuriousCreature`; rank-bonus st
 `GCSkillInfoHandler` runs on its packet (the handler clears model-owned
 sweeper bonuses and requests the live availability refresh through `BonusSkillHost`), and the duration conversions
 `ConvertDurationToFrame` and `ConvertDurationToMillisecond`, and the event
-queue (`MEventQueue`, inherited by the executable's `MEventManager`, with
-gamma, effect and fade actions behind `MEventHost`; background images stay
-executable-side), and screen-fade progression (`MScreenFade`, which `MTopView`
+queue (`MEventQueue`, the game's `g_pEventManager`, with gamma, effect and
+fade actions behind the `MEventHost` `GameInitInfo` installs; the
+never-drawn background images were retired in task 4.224), and screen-fade progression (`MScreenFade`, which `MTopView`
 draws and advances with the frame number), and the login world/server metadata
 and selection (`CServerInformation`, with `ApplyWorldList` and `ApplyServerList`
 consuming login packets; their handlers keep UI and mode changes), callback
