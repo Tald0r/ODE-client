@@ -1171,7 +1171,12 @@ TEST(GameUI2, AChatLineReadsTheBaseOnlyForWhiteText)
 	gpC_base = &base;
 	UI_AddChatToHistory("hello", "Kim", CLD_WHISPER, 0x123456);
 	// A missing line, or a condition that is negative or from CLD_TOTAL
-	// on, is dropped.
+	// on, is dropped. CLD_TOTAL is CLD_MASTER, the operator's, and
+	// dropping it is intended: the chat window indexes its filters and its
+	// name divisors (m_chat_filter, g_sz_chat_id_divisor: CLD_TOTAL
+	// entries) by a line's condition, and only its colour table has
+	// CLD_MASTER's entry, which it picks for an operator's name whatever
+	// the line's condition. No caller passes it.
 	UI_AddChatToHistory(NULL, "Kim", CLD_NORMAL, 0);
 	UI_AddChatToHistory("hello", "Kim", CLD_TOTAL, 0);
 	UI_AddChatToHistory("hello", "Kim", 100, 0);
