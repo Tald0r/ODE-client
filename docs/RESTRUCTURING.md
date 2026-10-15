@@ -7296,6 +7296,11 @@ rounds settled* for the host rules). Test fixtures share
   >   a vampire portal by status answers false after deleting it; a tile's
   >   darkness is matched by comparing frame IDs with sprite type numbers;
   >   `LoadFromFileSectorSound` trusts the file's counts.
+  > - Fixed after the move (found by reading): removing a tile's effect
+  >   read the sector of the packet's tile unchecked, and
+  >   `GCDeleteEffectFromTile` passes the server's tile straight on. A
+  >   tile off the map now finds nothing (and sets no sector mark by
+  >   status) instead of reading past the sector rows.
   >
   > R1 is 20 Windows / 18 Ninja.
   - Owner: membership, R1, `test_zone.cpp`: 45 tests, over a real

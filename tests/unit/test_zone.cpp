@@ -1952,3 +1952,36 @@ TEST(Zone, ReleasingItsObjectsFreesThemAllButThePlayer)
 	CHECK(zone.GetImageObject(7) == object);
 	// (The player is the Scene's to free.)
 }
+
+//----------------------------------------------------------------------
+// A server's tile off the map
+//----------------------------------------------------------------------
+TEST(Zone, ATilesEffectOffTheMapIsNotLookedFor)
+{
+	Scene scene(10, 8);
+	ZoneProbe& zone = *scene.zone;
+	// GCDeleteEffectFromTile hands its packet's tile on unchecked: one
+	// past an edge, or a sector number far off, finds nothing to remove
+	// and reads no sector.
+	testfw::MutableRow(scene.effectStatuses, EFFECTSTATUS_POISON).EffectSpriteType = 30;
+	CHECK(zone.AddEffect(Effect(30, 9, 7)));
+	for (const std::pair<int, int>& tile : {std::pair<int, int>{10, 0}, {0, 8}, {60000, 60000}})
+	{
+		const TYPE_SECTORPOSITION x = TYPE_SECTORPOSITION(tile.first), y = TYPE_SECTORPOSITION(tile.second);
+		CHECK(!zone.RemoveTileEffect(x, y, TYPE_EFFECTSPRITETYPE(30)));
+		CHECK(!zone.RemoveTileEffect(x, y, int(EFFECTSTATUS_POISON)));
+		// The sector marks by status: none set, none read; no redraw.
+		calls.clear();
+		for (int status : {int(EFFECTSTATUS_GROUND_ELEMENTAL_AURA), int(EFFECTSTATUS_DARKNESS_FORBIDDEN),
+			int(EFFECTSTATUS_FURY_OF_GNOME), int(EFFECTSTATUS_DELETE_TILE)})
+			CHECK(!zone.RemoveTileEffect(x, y, status));
+		CHECK(Same({}));
+	}
+	CHECK_EQ(1, int(scene.Sector(9, 7).GetEffectSize()));
+	// A tornado or a trap is found by its ID or cell, not by indexing.
+	MFakeCreature* tornado = new MFakeCreature;
+	tornado->SetCreatureType(5);
+	tornado->SetID(6001);
+	CHECK(zone.AddFakeCreature(tornado));
+	CHECK(zone.RemoveTileEffect(60000, 60000, int(EFFECTSTATUS_DRAGON_TORNADO), 6001));
+}

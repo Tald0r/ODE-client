@@ -4274,21 +4274,21 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 		break;	// - -;
 		
 		case EFFECTSTATUS_GROUND_ELEMENTAL_AURA:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetGroundElemental();
 			}
 			break;
 		
 		case EFFECTSTATUS_DARKNESS_FORBIDDEN:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetDarknessForbidden();
 			}
 			break;
 			
 		case EFFECTSTATUS_FURY_OF_GNOME:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetFuryOfGnome();
 			}
@@ -4300,7 +4300,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 			}
 			
 		case EFFECTSTATUS_DELETE_TILE:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetDisableTileImage();
 				WorldEvents::SetFirstDraw();
@@ -4341,8 +4341,15 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 		return false;
 	}
 
+	// The packet's tile may lie off the map (GCDeleteEffectFromTile does not
+	// check it): nothing is there to remove.
+	MSector* pSector = SectorAt(sX, sY);
+	if (pSector==NULL)
+	{
+		return false;
+	}
 
-	MSector& sector = m_ppSector[sY][sX];
+	MSector& sector = *pSector;
 
 	//--------------------------------------------------
 	// effect가 있는 sector인지 확인
