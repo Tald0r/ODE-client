@@ -1137,12 +1137,16 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	//------------------------------------------------
 	// remove from the sector.
 	//------------------------------------------------
-	if (!m_ppSector[yo][xo].RemoveCreature(id))
+	// The cells it is said to be in may lie off the map (a packet's tile
+	// goes on unchecked): no sector there to take it from.
+	MSector* pOldSector = SectorAt(xo, yo);
+	if (pOldSector==NULL || !pOldSector->RemoveCreature(id))
 	{
 		int xs = pCreature->GetServerX();
 		int ys = pCreature->GetServerY();
 
-		if (!m_ppSector[ys][xs].RemoveCreature(id))
+		MSector* pServerSector = SectorAt(xs, ys);
+		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{	
 			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Ground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
@@ -1300,12 +1304,16 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	//------------------------------------------------
 	// remove from the sector.
 	//------------------------------------------------
-	if (!m_ppSector[yo][xo].RemoveCreature(id))
+	// The cells it is said to be in may lie off the map (a packet's tile
+	// goes on unchecked): no sector there to take it from.
+	MSector* pOldSector = SectorAt(xo, yo);
+	if (pOldSector==NULL || !pOldSector->RemoveCreature(id))
 	{
 		int xs = pCreature->GetServerX();
 		int ys = pCreature->GetServerY();
 
-		if (!m_ppSector[ys][xs].RemoveCreature(id))
+		MSector* pServerSector = SectorAt(xs, ys);
+		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{	
 			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Flying] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
@@ -1454,12 +1462,16 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 	//------------------------------------------------
 	// remove from the sector.
 	//------------------------------------------------
-	if (!m_ppSector[yo][xo].RemoveCreature(id))
+	// The cells it is said to be in may lie off the map (a packet's tile
+	// goes on unchecked): no sector there to take it from.
+	MSector* pOldSector = SectorAt(xo, yo);
+	if (pOldSector==NULL || !pOldSector->RemoveCreature(id))
 	{
 		int xs = pCreature->GetServerX();
 		int ys = pCreature->GetServerY();
 
-		if (!m_ppSector[ys][xs].RemoveCreature(id))
+		MSector* pServerSector = SectorAt(xs, ys);
+		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{	
 			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Underground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
@@ -2179,12 +2191,16 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 		// remove from the sector.
 		//------------------------------------------------
 		removed = true;
-		if (!m_ppSector[sY][sX].RemoveCreature(id))
+		// Either cell may lie off the map (a packet's tile goes on
+		// unchecked): no sector there to take it from.
+		MSector* pSector = SectorAt(sX, sY);
+		if (pSector==NULL || !pSector->RemoveCreature(id))
 		{
 			int serverX = pCreature->GetServerX();
 			int serverY = pCreature->GetServerY();
 
-			if (!m_ppSector[serverY][serverX].RemoveCreature(id))
+			MSector* pServerSector = SectorAt(serverX, serverY);
+			if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 			{	
 				removed = false;
 				DEBUG_ADD_FORMAT_WAR("Can't RemoveCreatureToCorpse! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), sX,sY,serverX,serverY);
@@ -2253,9 +2269,10 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	//----------------------------------------	
 	// if another Item is already there?? remove it.
 	//----------------------------------------
-	if (m_ppSector[sSY][sSX].IsExistItem())
+	MSector* pCorpseSector = SectorAt(sSX, sSY);
+	if (pCorpseSector!=NULL && pCorpseSector->IsExistItem())
 	{
-		MItem* pOldItem = m_ppSector[sSY][sSX].GetItem();
+		MItem* pOldItem = pCorpseSector->GetItem();
 		
 		#ifdef OUTPUT_DEBUG
 			if (pOldItem!=NULL)
@@ -2277,21 +2294,16 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	//----------------------------------------
 	// Add Item to the Zone
 	//----------------------------------------
-	#ifdef OUTPUT_DEBUG
-		if (!AddItem( pCorpse ))
-		{
-			// hmm.. you could say this case is impossible. (sigh)
-			DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
-		
-			delete pCorpse;
+	if (!AddItem( pCorpse ))
+	{
+		// Refused (its server cell off the map): the corpse goes, and the
+		// creature with it, out of the zone already.
+		DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
+		delete pCorpse;
+		return false;
+	}
 
-			return false;
-		}
-
-		return true;
-	#else
-		return AddItem( pCorpse );
-	#endif
+	return true;
 
 }
 

@@ -2002,3 +2002,54 @@ TEST(Zone, AChasingEffectOffTheMapIsFreedWithTheZonesObjects)
 	CHECK_EQ(0, zone.GetEffectCount());
 	CHECK_EQ(0, int(scene.Sector(3, 3).GetEffectSize()));
 }
+
+TEST(Zone, ACorpseWhoseServerCellIsOffTheMapIsNotMade)
+{
+	Scene scene;
+	ZoneProbe& zone = *scene.zone;
+	creaturesDeleted = 0;
+	// GCFastMove hands its packet's tile on unchecked: the creature keeps
+	// a server cell off the map (the zone refused to block it). Then it
+	// dies: no corpse can lie there, and the creature, out of the zone
+	// already, is freed rather than lost.
+	Counted* runner = Make(1001, 3, 4);
+	CHECK(zone.AddCreature(runner));
+	runner->SetServerPosition(255, 4);
+	CHECK(!zone.AddCorpseFromCreature(1001));
+	CHECK_EQ(1, creaturesDeleted);
+	CHECK(zone.GetCreatureOnly(1001) == NULL);
+	CHECK(zone.GetItem(1001) == NULL);
+	CHECK(scene.Sector(3, 4).GetGroundCreature() == NULL);
+	CHECK_EQ(0, zone.GetItemNumber());
+	// Its own cell off the map, its server cell on it: taken from the
+	// server cell, and the corpse lies there.
+	Counted* stray = Make(1002, 5, 4);
+	CHECK(zone.AddCreature(stray));
+	stray->SetX(255);
+	CHECK(zone.AddCorpseFromCreature(1002));
+	CHECK(scene.Sector(5, 4).GetGroundCreature() == NULL);
+	CHECK_EQ(1002, int(zone.GetItemID(5, 4)));
+}
+
+TEST(Zone, AMoveFromACellOffTheMapTakesTheServerCell)
+{
+	Scene scene;
+	ZoneProbe& zone = *scene.zone;
+	Counted* walker = Make(1001, 3, 4);
+	CHECK(zone.AddCreature(walker));
+	// Told it was off the map: taken from its server cell instead.
+	CHECK(zone.MoveGroundCreature(walker, 255, 4, 5, 4));
+	CHECK(scene.Sector(3, 4).GetGroundCreature() == NULL);
+	CHECK(scene.Sector(5, 4).GetGroundCreature() == walker);
+	walker->SetServerPosition(5, 4);
+	CHECK(zone.MoveFlyingCreature(walker, 5, 65000, 6, 4));
+	CHECK(scene.Sector(6, 4).GetFlyingCreature() == walker);
+	walker->SetServerPosition(6, 4);
+	CHECK(zone.MoveUndergroundCreature(walker, 300, 300, 7, 4));
+	CHECK(scene.Sector(7, 4).GetUndergroundCreature() == walker);
+	// Both cells off the map: nothing to take it from; it joins the new
+	// cell all the same.
+	walker->SetServerPosition(255, 255);
+	CHECK(zone.MoveGroundCreature(walker, 255, 4, 8, 4));
+	CHECK(scene.Sector(8, 4).GetGroundCreature() == walker);
+}
