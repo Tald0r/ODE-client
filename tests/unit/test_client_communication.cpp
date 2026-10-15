@@ -121,11 +121,13 @@ void	PositionInfoHandler(Packet*, Player*)
 }
 
 // The dispatch table refuses a second registration, and another test may
-// clear it: bind the handler whenever the table lacks it.
+// clear it: bind the handler whenever the table lacks it. Whatever was
+// bound, it must be this one, or the packets would go elsewhere.
 void	EnsurePositionInfoHandlerRegistered()
 {
 	if (PacketDispatcher::handlerFor(Packet::PACKET_RC_POSITION_INFO) == nullptr)
 		PacketDispatcher::registerHandler(Packet::PACKET_RC_POSITION_INFO, &PositionInfoHandler);
+	CHECK(PacketDispatcher::handlerFor(Packet::PACKET_RC_POSITION_INFO) == &PositionInfoHandler);
 }
 
 // A port no socket holds right now: bound on 0, read back, released.

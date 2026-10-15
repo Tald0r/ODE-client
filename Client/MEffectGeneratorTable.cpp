@@ -49,7 +49,6 @@
 #include "MSoundTable.h"
 #include "MEffectSpriteTypeTable.h"
 
-
 #include "DebugLog.h"
 #include "WorldEventsHost.h"
 #include "WorldTileGeometry.h"

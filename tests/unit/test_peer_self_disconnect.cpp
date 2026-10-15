@@ -88,13 +88,17 @@ const WorldEvents::Host events{
 // The game binds handlers at start-up (PacketHandlerRegistry.cpp); a test
 // that runs the registry clears the table around itself. This binds the
 // real CRDisconnect handler whenever the table lacks it, since the table
-// refuses a second registration.
+// refuses a second registration. Whatever was bound must be this one.
+static void DisconnectHandler(Packet* pPacket, Player* pPlayer)
+{
+	CRDisconnectHandler::execute(static_cast<CRDisconnect*>(pPacket), pPlayer);
+}
+
 void BindDisconnectHandler()
 {
-	if (PacketDispatcher::handlerFor(Packet::PACKET_CR_DISCONNECT) != nullptr) return;
-	PacketDispatcher::registerHandler(Packet::PACKET_CR_DISCONNECT, [](Packet* pPacket, Player* pPlayer) {
-		CRDisconnectHandler::execute(static_cast<CRDisconnect*>(pPacket), pPlayer);
-	});
+	if (PacketDispatcher::handlerFor(Packet::PACKET_CR_DISCONNECT) == nullptr)
+		PacketDispatcher::registerHandler(Packet::PACKET_CR_DISCONNECT, &DisconnectHandler);
+	CHECK(PacketDispatcher::handlerFor(Packet::PACKET_CR_DISCONNECT) == &DisconnectHandler);
 }
 
 struct World

@@ -29,8 +29,8 @@
 // the player; when nothing was generated, or at the last phase, the
 // target goes. (A target also leaves the player when destroyed, so an
 // explicit leave shows as two entries in the record below, the
-// destructor's alone as one.) GenerateNext carries an effect's target to its next phase
-// the same way, from the effect's place.
+// destructor's alone as one.) GenerateNext carries an effect's target to
+// its next phase the same way, from the effect's place.
 namespace {
 
 std::vector<EFFECTGENERATOR_INFO> generated;
@@ -186,6 +186,13 @@ TEST(EffectGeneratorTable, AMismatchedOrUnboundPhaseDropsTheTargetUnrun)
 	fixture.table.Generate(0, 0, 0, 0, 1, kAction + 1, unbound);
 	CHECK_EQ(2, fixture.destroyed);
 	CHECK_EQ(0, executed);
+
+	fixture.Phase(kAction + 2, 0, 1).EffectGeneratorID = MAX_EFFECTGENERATORID;	// past the table
+	Target* past = fixture.NewTarget(1);
+	past->GiveResult();
+	fixture.table.Generate(0, 0, 0, 0, 1, kAction + 2, past);
+	CHECK_EQ(3, fixture.destroyed);
+	CHECK_EQ(0, executed);
 	CHECK(generated.empty());
 }
 
@@ -256,6 +263,7 @@ TEST(EffectGeneratorTable, ADelayNodeCountsTheTargetsDelay)
 		CHECK_EQ(40, generated[0].count);
 		CHECK_EQ(5, generated[1].count);
 	}
+	CHECK(sounds.empty());		// phases without a sound
 }
 
 TEST(EffectGeneratorTable, AcidTouchAndBloodyNailAtPowerTwoTakeTheirOwnSprite)
@@ -271,7 +279,9 @@ TEST(EffectGeneratorTable, AcidTouchAndBloodyNailAtPowerTwoTakeTheirOwnSprite)
 	CHECK(generated.size() == 6u);
 	if (generated.size() != 6u) return;
 	CHECK_EQ(12, generated[0].effectSpriteType);
+	CHECK_EQ(1, generated[0].power);
 	CHECK_EQ(EFFECTSPRITETYPE_ACID_TOUCH, generated[1].effectSpriteType);
+	CHECK_EQ(2, generated[1].power);
 	CHECK_EQ(12, generated[2].effectSpriteType);
 	CHECK_EQ(EFFECTSPRITETYPE_BLOODY_NAIL, generated[3].effectSpriteType);
 	CHECK_EQ(12, generated[4].effectSpriteType);
@@ -358,8 +368,14 @@ TEST(EffectGeneratorTable, GenerateNextStartsTheNextPhaseFromTheEffect)
 	CHECK(generated.size() == 1u);
 	if (generated.size() != 1u) return;
 	const EFFECTGENERATOR_INFO& info = generated[0];
+	CHECK_EQ(kAction, info.nActionInfo);
+	CHECK_EQ(12, info.effectSpriteType);
 	CHECK(info.x0 == 256 && info.y0 == 96 && info.z0 == 2);
 	CHECK(info.x1 == 10 && info.y1 == 20 && info.z1 == 30);
+	CHECK_EQ(77, info.creatureID);
+	CHECK_EQ(4, info.step);
+	CHECK_EQ(5, info.count);
+	CHECK_EQ(9, info.linkCount);
 	CHECK_EQ(5, info.direction);
 	CHECK_EQ(2, info.power);
 	CHECK(info.pPreviousEffect == &effect);
@@ -369,6 +385,7 @@ TEST(EffectGeneratorTable, GenerateNextStartsTheNextPhaseFromTheEffect)
 	if (!sounds.empty())
 	{
 		CHECK_EQ(44, sounds[0].id);
+		CHECK(!sounds[0].repeat);
 		CHECK_EQ(WorldTileGeometry::PixelToTileX(256), sounds[0].x);
 		CHECK_EQ(WorldTileGeometry::PixelToTileY(96), sounds[0].y);
 	}
@@ -391,8 +408,55 @@ TEST(EffectGeneratorTable, GenerateNextAtAResultTimePhaseRunsTheResult)
 	effect.SetLink(kAction, target);
 	fixture.table.GenerateNext(&effect);
 	CHECK_EQ(1u, generated.size());
+	CHECK(sounds.empty());		// a phase without a sound
 	CHECK_EQ(1, executed);
 	CHECK_EQ(2u, leftPlayer.size());
+}
+
+TEST(EffectGeneratorTable, GenerateNextAtADelayNodeCountsTheTargetsDelay)
+{
+	Fixture fixture;
+	fixture.Phase(kAction, 0, 3);
+	fixture.Phase(kAction, 1, 3).SetDelayNode();
+	fixture.Phase(kAction, 2, 3);
+	for (DWORD delay : {DWORD(40), DWORD(0)})
+	{
+		Target* target = fixture.NewTarget(3);
+		target->NextPhase();
+		target->SetDelayFrame(delay);
+		MEffect effect(BLT_EFFECT);
+		effect.SetLink(kAction, target);
+		fixture.table.GenerateNext(&effect);
+	}
+	CHECK(generated.size() == 2u);
+	if (generated.size() == 2u)
+	{
+		CHECK_EQ(40, generated[0].count);
+		CHECK_EQ(5, generated[1].count);		// no delay: the node's count
+	}
+}
+
+TEST(EffectGeneratorTable, GenerateNextAtAnUnboundPhaseDropsTheTargetUnrun)
+{
+	Fixture fixture;
+	fixture.Phase(kAction, 0, 2);
+	fixture.Phase(kAction, 1, 2).EffectGeneratorID = kGenerator + 1;	// no such generator
+	fixture.Phase(kAction + 1, 0, 2);
+	fixture.Phase(kAction + 1, 1, 2).EffectGeneratorID = MAX_EFFECTGENERATORID;	// past the table
+	for (TYPE_ACTIONINFO action : {kAction, TYPE_ACTIONINFO(kAction + 1)})
+	{
+		Target* target = fixture.NewTarget(2);
+		target->NextPhase();
+		target->GiveResult();
+		MEffect effect(BLT_EFFECT);
+		effect.SetLink(action, target);
+		fixture.table.GenerateNext(&effect);
+		CHECK(effect.GetEffectTarget() == nullptr);
+	}
+	CHECK(generated.empty());
+	CHECK(sounds.empty());
+	CHECK_EQ(0, executed);
+	CHECK_EQ(2, fixture.destroyed);
 }
 
 TEST(EffectGeneratorTable, GenerateNextFailingRunsTheResult)
