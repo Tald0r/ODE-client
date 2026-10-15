@@ -60,6 +60,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 // Defined in GameUI.cpp and MItemUse.cpp, declared by no header.
 int GetMyLevelWarStair();
 void UI_RunPetInfo(struct PETINFO* pPetInfo);
@@ -1285,15 +1297,31 @@ TEST(GameUI3MiniGame, TheScoresTakenAreTheOnesShown)
 //----------------------------------------------------------------------
 namespace {
 
+// The last login received. Unlike the game's UI_LOGIN handler, which
+// frees its two strings and clears them, this receiver leaves them.
+LOGIN* pTaken = NULL;
+
 void Received(DWORD message, intptr_t left, intptr_t right, void* pVoid)
 {
 	std::string line = "message|" + N(message) + "|" + N(left) + "|" + N(right);
 	if (message == UI_LOGIN && pVoid != NULL)
 	{
-		const LOGIN* pLogin = static_cast<const LOGIN*>(pVoid);
-		line += "|" + Text(pLogin->sz_id) + "|" + Text(pLogin->sz_password);
+		pTaken = static_cast<LOGIN*>(pVoid);
+		line += "|" + Text(pTaken->sz_id) + "|" + Text(pTaken->sz_password);
 	}
 	calls.push_back(line);
+}
+
+// Whether a string was freed: ASan's poison on a freed block; without
+// ASan this says yes, so the check is the sanitized trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
 }
 
 void NoTimer() {}
@@ -1381,6 +1409,40 @@ TEST(GameUI3Login, TheWebLoginLogsInWithItsKey)
 	UI_RunConnect();
 	queue.Dispatch();
 	CHECK(Same({"message|" + N(UI_LOGIN) + "|0|0||"}));
+}
+
+TEST(GameUI3Login, AConnectFreesTheLoginItReplaces)
+{
+	// Each login (Netmarble's, the web's) is a static whose strings the
+	// UI_LOGIN handler frees and clears; a connect before the handler took
+	// them (here: strings this receiver left) frees the ones it replaces.
+	Queue queue;
+	g_CpCookie = "cookie-123";
+	g_pUserInformation->UserID = "kim";
+	g_pUserInformation->AutoLogInKeyValue = "key-42";
+	for (bool netmarble : {true, false})
+	{
+		g_pUserInformation->IsNetmarble = netmarble;
+		g_pUserInformation->IsAutoLogIn = true;
+		UI_RunConnect();
+		queue.Dispatch();
+		CHECK(pTaken != NULL);
+		if (pTaken == NULL) return;
+		const LOGIN first = *pTaken;
+		UI_RunConnect();
+		CHECK(Freed(first.sz_id));
+		CHECK(Freed(first.sz_password));
+		// Strings the handler freed and cleared are not freed again.
+		queue.Dispatch();
+		delete[] pTaken->sz_id;
+		pTaken->sz_id = NULL;
+		delete[] pTaken->sz_password;
+		pTaken->sz_password = NULL;
+		calls.clear();
+		UI_RunConnect();
+		queue.Dispatch();
+		CHECK(Same({"message|" + N(UI_LOGIN) + "|0|0|" + (netmarble ? "cookie-123|DarkEden" : "kim|key-42")}));
+	}
 }
 
 TEST(GameUI3Login, AManualLoginQueuesNothing)

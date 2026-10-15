@@ -3824,6 +3824,8 @@ void	UI_RunConnect()
 		//		login.sz_password = new char [g_pUserInformation->NetmarblePassword.GetLength()+1];
 //		strcpy(login.sz_password, g_pUserInformation->NetmarblePassword.GetString());
 		
+		delete[] login.sz_id;	// the last login, if the UI_LOGIN handler has not freed it
+		delete[] login.sz_password;
 		login.sz_id = new char[ g_CpCookie.length() + 1 ];
 		login.sz_password = new char[ 10 ];
 		
@@ -3860,6 +3862,8 @@ void	UI_RunConnect()
 			}
 */
 			static LOGIN	login;
+			delete[] login.sz_id;	// the last login, if the UI_LOGIN handler has not freed it
+			delete[] login.sz_password;
 			login.sz_id = new char[  g_pUserInformation->UserID.GetLength() + 1 ];
 			login.sz_password = new char[g_pUserInformation->AutoLogInKeyValue.GetLength() + 1];
 			
