@@ -67,6 +67,18 @@
 #include <unistd.h>
 #endif
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 // GameUI.cpp's, not declared in UIFunction.h.
 extern BOOL g_bDrawProgress;
 extern bool UI_SetWaitGuildList();
@@ -1360,6 +1372,20 @@ TEST(GameUI2, ClosingThePartyCancelEndsAPartyWaitAndRequest)
 //----------------------------------------------------------------------
 namespace {
 
+// Whether a guild's record (none has a virtual destructor to watch) was
+// freed. Only ASan can tell, by the poison its quarantine keeps on a
+// freed block; without it this says yes, so the check is the sanitized
+// trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
+}
+
 GuildInfo* Guild(int id, const char* name)
 {
 	GuildInfo* pInfo = new GuildInfo;
@@ -1375,8 +1401,8 @@ GuildInfo* Guild(int id, const char* name)
 
 TEST(GameUI2, TheGuildListsHideTheTalkAndTakeEveryGuildOutOfThePacket)
 {
-	// Recorded defect: the guilds taken out are never freed (the packet
-	// frees only what it still holds); the test frees them.
+	// Each guild taken out is freed once the window has its copy (the
+	// packet frees only what it still holds).
 	{
 		Scene scene;
 		scene.TalkOpen();
@@ -1386,8 +1412,7 @@ TEST(GameUI2, TheGuildListsHideTheTalkAndTakeEveryGuildOutOfThePacket)
 		UI_ShowWaitGuildList(&packet);
 		CHECK(Same({"finish 1"}));
 		CHECK_EQ(0, int(packet.getListNum()));
-		CHECK(std::string("Two") == guilds[1]->getGuildName());	// still there
-		for (GuildInfo* pInfo : guilds) delete pInfo;
+		for (GuildInfo* pInfo : guilds) CHECK(Freed(pInfo));
 	}
 	{
 		Scene scene;
@@ -1398,8 +1423,7 @@ TEST(GameUI2, TheGuildListsHideTheTalkAndTakeEveryGuildOutOfThePacket)
 		UI_ShowActiveGuildList(&packet);
 		CHECK(Same({"finish 1"}));
 		CHECK_EQ(0, int(packet.getListNum()));
-		CHECK(std::string("Three") == guilds[2]->getGuildName());
-		for (GuildInfo* pInfo : guilds) delete pInfo;
+		for (GuildInfo* pInfo : guilds) CHECK(Freed(pInfo));
 	}
 	{
 		// The union's guilds, after its master guild.
@@ -1420,8 +1444,7 @@ TEST(GameUI2, TheGuildListsHideTheTalkAndTakeEveryGuildOutOfThePacket)
 		CHECK(Same({}));	// the talk stays
 		CHECK(packet.popFrontUnionGuildInfoList() == NULL);
 		CHECK(std::string("Master") == packet.getMasterGuildInfo().getGuildName());
-		CHECK(std::string("Member") == guilds[1]->getGuildName());
-		for (SingleGuildInfo* pInfo : guilds) delete pInfo;
+		for (SingleGuildInfo* pInfo : guilds) CHECK(Freed(pInfo));
 	}
 }
 
@@ -1429,8 +1452,7 @@ TEST(GameUI2, TheGuildMemberListTakesEveryMemberOutOfThePacket)
 {
 	// Each member's server is looked up in the current world when it is
 	// logged on; one on no server of it shows as not logged on. Only the
-	// game window would see the lines; the members taken out are never
-	// freed (recorded defect; the test frees them).
+	// game window would see the lines; each member taken out is freed.
 	Scene scene;
 	CServerInformation servers;
 	CServerInformation* oldServers = g_pServerInformation;
@@ -1442,28 +1464,27 @@ TEST(GameUI2, TheGuildMemberListTakesEveryMemberOutOfThePacket)
 	servers.AddData(5, pGroup);
 	CHECK(servers.SetServerGroupID(5));
 
-	GuildMemberInfo* members[3];
-	for (int i = 0; i < 3; ++i)
-	{
-		members[i] = new GuildMemberInfo;
-		members[i]->setName("Member" + N(i));
-		members[i]->setRank(GuildMemberRank_t(i));
-		members[i]->setLogOn(i != 2);
-		members[i]->setServerID(ServerID_t(i));	// server 0 is not in the world
-	}
 	// The second time with no world chosen.
 	CServerInformation none;
 	for (CServerInformation* pServers : {&servers, &none})
 	{
+		GuildMemberInfo* members[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			members[i] = new GuildMemberInfo;
+			members[i]->setName("Member" + N(i));
+			members[i]->setRank(GuildMemberRank_t(i));
+			members[i]->setLogOn(i != 2);
+			members[i]->setServerID(ServerID_t(i));	// server 0 is not in the world
+		}
 		g_pServerInformation = pServers;
 		GCGuildMemberList packet;
 		packet.setType(BYTE(pServers == &none));
 		for (GuildMemberInfo* pInfo : members) packet.addGuildMemberInfo(pInfo);
 		UI_ShowGuildMemberList(&packet);
 		CHECK_EQ(0, int(packet.getListNum()));
+		for (GuildMemberInfo* pInfo : members) CHECK(Freed(pInfo));
 	}
-	CHECK(std::string("Member2") == members[2]->getName());
-	for (GuildMemberInfo* pInfo : members) delete pInfo;
 	CHECK(Same({}));
 	g_pServerInformation = oldServers;
 }

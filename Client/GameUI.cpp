@@ -3449,6 +3449,7 @@ UI_ShowWaitGuildList( GCWaitGuildList *pPacket)
 		ready_team_info.MEMBERS_MAX = 5;
 
 		gC_vs_ui.AddReadyTeamInfo(ready_team_info);
+		delete pInfo;	// the window keeps its own copy
 	}
 
 	DEBUG_ADD_FORMAT( "[GCWaitGuildList] Finish");
@@ -3478,6 +3479,7 @@ UI_ShowActiveGuildList( GCActiveGuildList *pPacket)
 		regist_team_info.MEMBERS = pInfo->getGuildMemberCount();
 
 		gC_vs_ui.AddRegistTeamInfo(regist_team_info);
+		delete pInfo;	// the window keeps its own copy
 	}
 
 	DEBUG_ADD_FORMAT( "[GCActiveGuildList] Finish");
@@ -3528,6 +3530,7 @@ UI_ShowGuildMemberList( GCGuildMemberList *pPacket)
 		}
 		// 2004, 10, 8, sobeit add end
 		gC_vs_ui.AddTeamMemberInfo(member_info, bAvailableRecall); 
+		delete pInfo;	// the window keeps its own copy
 	}
 
 	DEBUG_ADD_FORMAT( "[GCShowGuildMemberList] Finish");	
@@ -3638,6 +3641,7 @@ UI_ShowUnionGuildMemberInfo(GCShowUnionInfo *pPacket)
 		regist_team_info.MEMBERS = pInfo->getGuildMemberCount();
 	
 		gC_vs_ui.AddRegistTeamInfo(regist_team_info);
+		delete pInfo;	// the window keeps its own copy
 	}
 	DEBUG_ADD_FORMAT( "[GCActiveGuildList] Finish");
 }
