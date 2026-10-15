@@ -56,7 +56,6 @@ extern MItem*		g_pPacketItemOustersArm[OUSTERS_ARM_MAX];
 //-----------------------------------------------------------------------------
 void			SetServerGroupName( const char* pName );
 void			SetServerGroupStatus( int status );
-void			SetServerName( const char* pName );
 
 //-----------------------------------------------------------------------------
 // Set GoreLevel

@@ -303,21 +303,16 @@ TEST(WorldEventHandlers, TheViewQueriesAndTheHotKeyPassTheirArguments)
 	static std::vector<std::string> seen;
 	seen.clear();
 	const WorldEvents::Host* old = WorldEvents::SetHost(nullptr);
-	// Without a host: the origin, no sprite, nothing set.
-	const POINT none = WorldEvents::MapToScreen(3, 4);
-	CHECK(none.x == 0 && none.y == 0);
+	// Without a host: no sprite, nothing set.
 	CHECK_EQ(-1, WorldEvents::CreatureSpriteHeight(1, 2, 3));
 	WorldEvents::SetFlagSprites(true);
 	PlayerPresentation::SetHotKey(1, 2);
 	CHECK(seen.empty());
 	const WorldEvents::Host view{
-		.MapToScreen = [](int sectorX, int sectorY) { POINT point = { sectorX * 10, sectorY * 100 }; return point; },
 		.CreatureSpriteHeight = [](int body, int action, int direction) { return body * 100 + action * 10 + direction; },
 		.SetFlagSprites = [](bool bTae) { seen.push_back(bTae ? "flag tae" : "flag original"); },
 	};
 	WorldEvents::SetHost(&view);
-	const POINT point = WorldEvents::MapToScreen(3, 4);
-	CHECK(point.x == 30 && point.y == 400);
 	CHECK_EQ(123, WorldEvents::CreatureSpriteHeight(1, 2, 3));
 	WorldEvents::SetFlagSprites(true);
 	WorldEvents::SetFlagSprites(false);

@@ -271,13 +271,6 @@ void SetFadeEnd()
 	if (s_Host && s_Host->SetFadeEnd) s_Host->SetFadeEnd();
 }
 
-POINT MapToScreen(int sectorX, int sectorY)
-{
-	if (s_Host && s_Host->MapToScreen) return s_Host->MapToScreen(sectorX, sectorY);
-	POINT none = { 0, 0 };
-	return none;
-}
-
 int CreatureSpriteHeight(int body, int action, int direction)
 {
 	return s_Host && s_Host->CreatureSpriteHeight ? s_Host->CreatureSpriteHeight(body, action, direction) : -1;

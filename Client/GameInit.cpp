@@ -199,7 +199,6 @@
 #include "DebugKit.h"
 
 extern BYTE g_macAddress[6];
-extern BOOL GetMacAddressFromSock();
 extern DWORD g_dwSeqNumL;
 extern DWORD g_dwSeqNumG;
 extern BOOL g_MyFull;
@@ -4307,7 +4306,6 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		g_pTopView->SetFadeStart(start, end, step, r, g, b, delay);
 	},
 	.SetFadeEnd = []() { g_pTopView->SetFadeEnd(); },
-	.MapToScreen = [](int sectorX, int sectorY) { return g_pTopView->MapToScreen(sectorX, sectorY); },
 	.CreatureSpriteHeight = [](int body, int action, int direction) -> int {
 		const FRAME_ARRAY& frames = g_pTopView->GetCreatureFrameArray(body, action, direction);
 		if (frames.GetSize() == 0) return -1;

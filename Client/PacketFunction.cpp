@@ -11,8 +11,6 @@
 #ifdef PLATFORM_WINDOWS
 #include <WINDOWS.H>
 #include <nb30.h>
-#include <wsipx.h>
-#include <wsnwlink.h>
 #else
 #include <netinet/in.h>
 // Windows networking headers not available on macOS/Linux
@@ -84,7 +82,6 @@
 #include "MEffectSpriteTypeTable.h"
 #include "EffectSpriteTypeDef.h"
 
-#include "Packet/Cpackets/CGAuthKey.h"
 #include "BloodBibleSignInfo.h"
 
 #ifdef __NPROTECT__
@@ -1587,18 +1584,6 @@ ExecuteActionInfoFromMainNode(
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Get Position  Map  To  Screen
-//-----------------------------------------------------------------------------
-// map좌표 (sX,sY)를 화면 상의 좌표로 바꾼다.
-//-----------------------------------------------------------------------------
-POINT			
-ConvertPositionMapToScreen(int sX, int sY)
-{
-	POINT point = WorldEvents::MapToScreen(sX, sY);
-
-	return point;
-}
 
 
 
@@ -3603,15 +3588,6 @@ SetServerGroupStatus( int status )
 	g_pServerInformation->SetServerGroupStatus( status );
 }
 
-//-----------------------------------------------------------------------------
-// Set ServerName
-//-----------------------------------------------------------------------------
-void
-SetServerName( const char* pName )
-{
-	(void)pName;
-//	g_pServerInformation->SetServerName( pName );
-}
 
 //-----------------------------------------------------------------------------
 // Use Item OK
@@ -5241,84 +5217,6 @@ BOOL GetMacAddressFromNetBIOS(LPBYTE lpMacAddress)
 }
 #endif
 
-#ifdef PLATFORM_WINDOWS
-// IPX/SPX is Windows-specific (legacy NetWare protocol)
-BOOL GetMacAddressFromSock()
-{
-    int          iAdapters ;
-    int          iOpt  = sizeof(iAdapters) ;
-    int          iSize = sizeof(SOCKADDR_IPX) ;
-    BOOL         bRet  = FALSE ;
-    SOCKET       sock ;
-    SOCKADDR_IPX adrIPX ;
-    WSADATA      wsaData ;
-
-	WORD wVersionRequested;
-  
-	wVersionRequested = MAKEWORD( 2, 0 );
-//    #define WINSOCK_11 0x0101
-//	char name[255];
-//	PHOSTENT hostinfo;
-
-
-    if(WSAStartup(wVersionRequested,&wsaData)==0)
-    {
-//		if( gethostname ( name, sizeof(name)) == 0)
-//        {
-//           if((hostinfo = gethostbyname(name)) != NULL)
-//           {
-//              g_IPAddress = inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list);
-//           }
-//        }      
-		sock=socket(AF_IPX,SOCK_DGRAM,NSPROTO_IPX);
-        if(sock !=INVALID_SOCKET)
-        {
-			
-            memset(&adrIPX,0x00,sizeof(SOCKADDR_IPX)) ;
-            adrIPX.sa_family = AF_IPX ;
-
-            if(bind(sock,(SOCKADDR*)&adrIPX,iSize)!=SOCKET_ERROR)
-            {
-                if(getsockopt(sock,NSPROTO_IPX,IPX_MAX_ADAPTER_NUM,
-                    (char*)&iAdapters,&iOpt)!=SOCKET_ERROR)
-                {
-                    while(iAdapters)
-                    {
-                        IPX_ADDRESS_DATA ipxAdrData ;
-                        memset( &ipxAdrData,0x00,
-                            sizeof(IPX_ADDRESS_DATA)) ;
-                        ipxAdrData.adapternum = --iAdapters ;
-                        iOpt = sizeof(IPX_ADDRESS_DATA) ;
-                        if(getsockopt(sock,NSPROTO_IPX,IPX_ADDRESS,
-                            (char*)&ipxAdrData,&iOpt)!=SOCKET_ERROR)
-                        {
-                            if(ipxAdrData.status==TRUE && 
-                                ipxAdrData.wan==FALSE)
-                            {
-                                memcpy(g_macAddress,
-                                    &ipxAdrData.nodenum,
-                                    6) ;
-                                bRet = TRUE ;
-                                break ;
-                            }
-                        }
-                    }
-                }
-            }
-            closesocket(sock) ;
-        }
-
-        WSACleanup() ;
-    }
-    return(bRet) ;
-}
-#else
-// IPX/SPX not available on non-Windows platforms
-BOOL GetMacAddressFromSock()
-{
-    return(FALSE) ;
-}
-#endif
 
 // 2004, 8, 26, sobeit add start - mac address 체크해서 윈도 모드 변경
 
@@ -5910,20 +5808,6 @@ void Add_Race_OustersMonster(GCAddMonster * pPacket)
 	}
 }
 
-// 2004, 8, 26, sobeit add start - nProtct 인증 패킷
-void 
-Send_nProtect_Auth(DWORD dwVal)
-{
-	CGAuthKey _CGAuthKey;
-	_CGAuthKey.setKey(dwVal);
-
-	if( g_pSocket != NULL )
-	{
-		g_pSocket->sendPacket( &_CGAuthKey );
-//		MessageBox(g_hWnd, "_CGAuthKey보냄", "Warning", MB_OK);
-	}
-}
-// 2004, 8, 26, sobeit add end - nProtct 인증 패킷
 
 // GetNextTileByDirection is WorldTileGeometry's (gamemodel, task 4.245).
 // 2004, 11, 16, sobeit add start
