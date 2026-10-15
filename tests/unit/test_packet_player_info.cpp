@@ -619,10 +619,9 @@ TEST(PacketPlayerInfo, VampireInfoSetsThePlayerTheSheetAndTheHotKeys)
 	CHECK_EQ(99, g_pUserInformation->HairColor);
 	CHECK_EQ(230, g_pUserInformation->SkinColor);
 	CHECK_EQ(99, g_pUserInformation->BatColor);
-	// Defect: the mapper is told the guild's name before the sheet takes the
-	// new one (PacketFunction.cpp:3040, four lines above the slayer's and the
-	// ousters' order), so it keeps the name the sheet showed before.
-	CHECK(std::string("Old") == scene.guilds.GetGuildName(31));
+	// The mapper is told the packet's name, not the one the sheet showed
+	// before.
+	CHECK(std::string("Moon") == scene.guilds.GetGuildName(31));
 
 	const std::vector<std::string> statuses = {
 		N(MODIFY_MAX_HP) + "=400", N(MODIFY_CURRENT_HP) + "=250",

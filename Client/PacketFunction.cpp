@@ -3048,8 +3048,6 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	}
 	g_pUserInformation->GuildGrade = pInfo->getGuildMemberRank();
 
-	g_pGuildInfoMapper->SetGuildName( pInfo->getGuildID(), g_char_slot_ingame.sz_guild_name );
-
 	//--------------------------------------------------
 	// info needed when displaying in the info window..
 	//--------------------------------------------------
@@ -3058,6 +3056,8 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		g_char_slot_ingame.sz_guild_name	= "";
 	else
 		g_char_slot_ingame.sz_guild_name	= g_pUserInformation->GuildName.GetString();
+
+	g_pGuildInfoMapper->SetGuildName( pInfo->getGuildID(), g_char_slot_ingame.sz_guild_name );
 
 	g_char_slot_ingame.GUILD_ID			= guildID;
 	g_char_slot_ingame.GUILD_GRADE		= g_pUserInformation->GuildGrade;
