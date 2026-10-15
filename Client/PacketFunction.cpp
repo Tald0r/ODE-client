@@ -3810,17 +3810,19 @@ UseItemOK()
 						if( g_pPlayer->IsSlayer() )
 						{
 							// The new body takes the hair off: keep its style, the same
-							// row of the other sex's table (the first if none), and colour.
-							const MCreatureWear::ADDON_INFO hair = g_pPlayer->GetAddonInfo( ADDON_HAIR );
+							// row of the other sex's table (the first if none), and colour,
+							// from the hair kept aside (a helmet takes short hair's addon off).
+							const TYPE_FRAMEID hairFrameID = g_pPlayer->GetHairFrameID();
+							const WORD hairColorSet = g_pPlayer->GetHairColorSet();
 							const int* pOldHair = bMale? g_PacketHairFemaleID : g_PacketHairMaleID;
 							unsigned style = 0;
 							for (unsigned i = 0; i < 3; i++)
-								if (pOldHair[i] == hair.FrameID)
+								if (pOldHair[i] == hairFrameID)
 									style = i;
 
 							g_pPlayer->SetCreatureType( bMale? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
 							g_pPlayer->SetMale( bMale );
-							g_pPlayer->SetAddonHair( bMale? PacketHair(g_PacketHairMaleID, style) : PacketHair(g_PacketHairFemaleID, style), hair.ColorSet1 );
+							g_pPlayer->SetAddonHair( bMale? PacketHair(g_PacketHairMaleID, style) : PacketHair(g_PacketHairFemaleID, style), hairColorSet );
 						}
 						else
 						{

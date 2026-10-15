@@ -76,6 +76,7 @@ class MCreatureWear : public MCreature {
 		// Hair
 		void			SetAddonHair(TYPE_FRAMEID id, WORD cs1);
 		TYPE_FRAMEID	GetHairFrameID()			{ return m_HairFrameID; }
+		WORD			GetHairColorSet() const	{ return m_HairColorSet; }
 		
 		// Taking off the outfit
 		bool			RemoveAddon(int Addon);

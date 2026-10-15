@@ -1139,7 +1139,9 @@ TEST(PacketZoneItems, ASexChangeTurnsAVampiresBodyAndFlag)
 TEST(PacketZoneItems, ASexChangeKeepsASlayersHairStyleAndColour)
 {
 	// Each of the three styles, and a hair that is none of them (the
-	// first style), for either sex.
+	// first style), for either sex, bare-headed and under a helmet (which
+	// takes short hair off: MCreatureWear::SetAddonItem's ADDON_HELM).
+	for (const bool helmet : {false, true})
 	for (const bool male : {true, false})
 	for (int style = 0; style < 4; ++style)
 	{
@@ -1153,6 +1155,8 @@ TEST(PacketZoneItems, ASexChangeKeepsASlayersHairStyleAndColour)
 		const int* oldHair = male ? g_PacketHairMaleID : g_PacketHairFemaleID;
 		const int* newHair = male ? g_PacketHairFemaleID : g_PacketHairMaleID;
 		scene.me->SetAddonHair(TYPE_FRAMEID(style < 3 ? oldHair[style] : 999), 77);
+		if (helmet)
+			scene.me->RemoveAddon(ADDON_HAIR);
 		scene.Items(ITEM_CLASS_DYE_POTION, 64);
 		g_char_slot_ingame.bl_female = !male;
 		Dye(scene, 48);
