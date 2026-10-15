@@ -52,10 +52,10 @@ CWaitUIUpdate*	g_pCWaitUIUpdate = NULL;
 void
 CWaitUIUpdate::Init()
 {
-	// mouse event 처리
+	// mouse event handling
 	g_pSDLInput->SetMouseEventReceiver( DXMouseEvent );
 
-	// keyboard event 처리
+	// keyboard event handling
 	g_pSDLInput->SetKeyboardEventReceiver( DXKeyboardEvent );
 
 	// Text input (SDL2 only). The SDL backend delivers SDL_TEXTINPUT to
@@ -133,7 +133,7 @@ CWaitUIUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 				break;
 
 				//-----------------------------------------------------
-				// Server List 받기
+				// Get the server list
 				//-----------------------------------------------------
 				case DIK_SPACE :
 				{
@@ -141,7 +141,7 @@ CWaitUIUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 				break;
 
 				//-----------------------------------------------------
-				// Server 선택하기
+				// Select a server
 				//-----------------------------------------------------
 				case DIK_C :
 				{
@@ -211,7 +211,7 @@ CWaitUIUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 //-----------------------------------------------------------------------------
 // Update
 //-----------------------------------------------------------------------------
-// 접속 전..
+// Before connecting..
 //-----------------------------------------------------------------------------
 void		
 CWaitUIUpdate::Update()
@@ -329,7 +329,7 @@ CWaitUIUpdate::Update()
 	//------------------------------------------------------------
 	// Test 2001.8.20
 	//------------------------------------------------------------
-	// 실행 중에 loading하는 걸로 바꿔서 뺀다..
+	// Taken out: changed to loading while running..
 	/*
 	bool bLoad = false;
 	if (g_Mode==MODE_MAINMENU)
@@ -338,8 +338,8 @@ CWaitUIUpdate::Update()
 			DEBUG_ADD("Lo1");
 		#endif
 
-		// main menu에서
-		// 남자 뱀파이어 로딩
+		// At the main menu
+		// Load the male vampire
 		if (!(*g_pCreatureSpriteTable)[2].bLoad)
 		{
 			LoadCreature( 2 );
@@ -356,8 +356,8 @@ CWaitUIUpdate::Update()
 			DEBUG_ADD("Lo3");
 		#endif
 
-		// main menu에서
-		// 여자 뱀파이어 로딩
+		// At the main menu
+		// Load the female vampire
 		if (!(*g_pCreatureSpriteTable)[3].bLoad)
 		{
 			LoadCreature( 3 );	
@@ -370,19 +370,19 @@ CWaitUIUpdate::Update()
 	}
 
 	//-------------------------------------------------------------
-	// 틈틈히(-_-;) 슬레이어 그림 loading하기
+	// Load the slayer pictures bit by bit (-_-;)
 	//-------------------------------------------------------------
 	static DWORD lastLoadingTime = 0;
 		
 	if (!bLoad && !g_AddonSPKAllLoaded
-		// 5초에 한번씩 로딩한다.
+		// Load once every 5 seconds.
 		&& g_CurrentTime - lastLoadingTime > 5000)
 	{
 		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
 			DEBUG_ADD("Lo5");
 		#endif
 
-		// 슬레이어 그림 일부 로딩 - 2001.8.20
+		// Load part of the slayer pictures - 2001.8.20
 		LoadingAddonSPK( false );
 
 		lastLoadingTime = timeGetTime();
@@ -648,7 +648,7 @@ CWaitUIUpdate::UpdateDraw()
 //		}
 //		*/
 //		//-----------------------------------------------------------------
-//		// 서버 이름 출력
+//		// Print the server name
 //		//-----------------------------------------------------------------
 //		/*
 //		#ifdef OUTPUT_DEBUG
@@ -706,7 +706,7 @@ CWaitUIUpdate::UpdateDraw()
 //		*/
 //
 //		//-----------------------------------------------------------------
-//		// Mouse 그리기
+//		// Draw the mouse
 //		//-----------------------------------------------------------------
 //		gC_vs_ui.DrawMousePointer();
 //
@@ -807,8 +807,8 @@ CWaitUIUpdate::UpdateDraw()
 						lpDestSurfaceTemp2++;
 					}
 
-					lpSrcSurfaceTemp += pitch;		// 다음줄
-					lpDestSurfaceTemp += wavePitch;		// 다음줄
+					lpSrcSurfaceTemp += pitch;		// next line
+					lpDestSurfaceTemp += wavePitch;		// next line
 				}
                 
 			}
@@ -826,9 +826,9 @@ CWaitUIUpdate::UpdateDraw()
 		g_pLast->BltNoColorkey( &point, pWaveSurface, &rectWave );	
 		*/
 		//-----------------------------------------------------------------
-		// Mouse 그리기
+		// Draw the mouse
 		//-----------------------------------------------------------------
-		gC_vs_ui.DrawMousePointer(); // 메모리 누수 아님!
+		gC_vs_ui.DrawMousePointer(); // Not a memory leak!
 
 		#ifdef OUTPUT_DEBUG
 			if (g_pUserOption->DrawFPS)
@@ -845,15 +845,15 @@ CWaitUIUpdate::UpdateDraw()
 		#endif
 
 		//-----------------------------------------------------------------
-		// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
+		// Copy Last to Back - only without 3D HAL..
 		//-----------------------------------------------------------------		
 		point.x = 0;
 		point.y = 0;
 		RECT rect = { 0, 0, g_GameRect.right, g_GameRect.bottom };
 		g_pBack->BltNoColorkey( &point, g_pLast, &rect );	
 
-		// 창모드에서 3D가속 안한 경우에..
-		// 왜 이거 하니까 빨라지지? - -;
+		// In window mode without 3D acceleration..
+		// Why does doing this make it faster? - -;
 		//HDC hdc;
 		//g_pBack->GetSurface()->GetDC(&hdc);
 		//g_pBack->GetSurface()->ReleaseDC(hdc);
