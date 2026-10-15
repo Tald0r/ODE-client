@@ -948,6 +948,10 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	)
 
 	target_link_libraries(gameclient PUBLIC gameview VS_UI gamemodel dxlib SpriteLib framelib)
+	# PacketFunction's Windows MAC address lookup calls Netbios.
+	if(WIN32)
+		target_link_libraries(gameclient PUBLIC netapi32)
+	endif()
 
 	message(STATUS "gameclient library: ${_gameclient_count} sources from tests/arch/gameclient_files.txt")
 endif()
