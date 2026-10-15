@@ -169,6 +169,11 @@ Client/Alignment.h
 Client/StatusPresentationHost.cpp
 Client/StatusPresentationHost.h
 
+# The whisper target, whether the player stands somewhere safe, and the
+# inventory effects (4.236).
+Client/ClientFunction.cpp
+Client/ClientFunction.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

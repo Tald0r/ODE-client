@@ -76,4 +76,10 @@ bool RequestExchangeBuy(std::uint64_t listingID)
 	packet.setListingID(listingID);
 	return activeHost->SendPacket(packet);
 }
+
+void DrawBloodBibleEffect_InGear(int x, int y)
+{
+	if (activeHost && activeHost->DrawBloodBibleEffect_InGear) activeHost->DrawBloodBibleEffect_InGear(x, y);
+}
+
 }

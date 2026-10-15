@@ -207,6 +207,9 @@ struct Host
 	void (*CalculateLightSight)() = nullptr;
 	// The player's sight (in sectors).
 	void (*SetSight)(int sight) = nullptr;
+	// Whether the player stands somewhere safe: 0 not, 1 safe for its
+	// race, 2 safe for everyone; 0 without a host.
+	int (*IsInSafeSector)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -278,5 +281,6 @@ void SetXY(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 bool IsInvisible();
 void CalculateLightSight();
 void SetSight(int sight);
+int IsInSafeSector();
 
 }

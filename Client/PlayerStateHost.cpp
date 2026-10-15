@@ -321,4 +321,9 @@ void SetSight(int sight)
 	if (s_Host && s_Host->SetSight) s_Host->SetSight(sight);
 }
 
+int IsInSafeSector()
+{
+	return s_Host && s_Host->IsInSafeSector ? s_Host->IsInSafeSector() : 0;
+}
+
 }

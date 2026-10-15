@@ -3286,7 +3286,7 @@ void C_VS_UI_GEAR::Show()
 				int item_y = y+m_p_slot_rect[i].y+m_p_slot_rect[i].h/2-gpC_item->GetHeight(frame_id)/2;
 
 				if(p_item->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE_SIGN)
-					DrawBloodBibleEffect_InGear(x+m_p_slot_rect[i].x-8, y+m_p_slot_rect[i].y+7);
+					UiRuntime::DrawBloodBibleEffect_InGear(x+m_p_slot_rect[i].x-8, y+m_p_slot_rect[i].y+7);
 				
 				if (p_selected_item && (p_selected_item->GetID() == p_item->GetID()))
 				{
@@ -8243,8 +8243,6 @@ void C_VS_UI_INVENTORY::Show()
 	g_FL2_ReleaseDC();
 	WriteLogLine(__LINE__);
 			
-	DrawInventoryEffect();
-	WriteLogLine(__LINE__);
 		
 	SHOW_WINDOW_ATTR;
 		

@@ -3895,6 +3895,7 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.IsInvisible = []() { return g_pPlayer->IsInvisible() != 0; },
 	.CalculateLightSight = []() { g_pPlayer->CalculateLightSight(); },
 	.SetSight = [](int sight) { g_pPlayer->SetSight(static_cast<char>(sight)); },
+	.IsInSafeSector = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->IsInSafeSector()) : 0; },
 };
 
 static const ZoneState::Host s_ZoneStateHost = {
@@ -4563,6 +4564,10 @@ static const UiRuntime::Host s_UiRuntimeHost = {
 	.ReadHornPortals = UiReadHornPortals,
 	.ReadPetProgress = UiReadPetProgress,
 	.SendPacket = UiSendPacket,
+	.DrawBloodBibleEffect_InGear = [](int x, int y) {
+		POINT point = {x, y};
+		g_pTopView->DrawBloodBibleEffect_InGear(&point);
+	},
 };
 
 //-----------------------------------------------------------------------------

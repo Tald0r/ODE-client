@@ -16,27 +16,17 @@ extern const char*	GetWhisperID();
 
 extern void			PlaySound(TYPE_SOUNDID soundID);
 
-extern void			DrawInventoryEffect();
-
 extern void			AddNewInventoryEffect(TYPE_OBJECTID id, TYPE_ACTIONINFO ai, DWORD delayFrame, DWORD value = 0);
-
-extern void			DrawTitleEffect();
-
-extern void			DrawBloodBibleEffect_InGear(int X, int Y);
 
 //---------------------------------------------------------------------------
 // Draw AlphaBox
 //---------------------------------------------------------------------------
-// (r,g,b)는 각각 0~31, alpha도 아마 0~31 -_-;
+// The UI's translucent box on its back surface, within g_GameRect: (r,g,b)
+// each 0~31, alpha 0~31 (VS_UI_Base.cpp, over SpriteLib's AlphaBox.h).
 //---------------------------------------------------------------------------
 extern void		DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha);
 
+// 0 not, 1 safe for the player's race, 2 safe for everyone.
 extern BOOL		IsPlayerInSafePosition();
-
-extern bool		IsPlayerInSafeZone();
-
-//class CSpriteSurface;
-//extern void		InitMinimap(CSpriteSurface *minimap_surface);
-//extern void		DrawMinimapAlpha(int x, int y, CSpriteSurface *minimap_surface);
 
 #endif

@@ -7,6 +7,7 @@
 #define assert(e) ((void)(e))
 // Disabled assert for macOS
 #include "VS_UI_Base.h"
+#include "SpriteLib/AlphaBox.h"
 // GDI removed (SDL2) - All platforms use TextSystem (SDL + freetype2)
 #include "../../basic/Platform.h"
 #include "TextSystem/FontHandleUtil.h"
@@ -393,4 +394,16 @@ void	Base::FinishEvent()
 	//assert(m_event_occured == true);
 
 	m_event_occured = false; 
+}
+
+//-----------------------------------------------------------------------------
+// Draw AlphaBox
+//-----------------------------------------------------------------------------
+// The UI's translucent box on its back surface, within the game screen
+// (task 4.236: ClientFunction.cpp's until then; SpriteLib draws it).
+//-----------------------------------------------------------------------------
+void
+DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
+{
+	DrawAlphaBox(*gpC_base->m_p_DDSurface_back, g_GameRect, *pRect, CSDLGraphics::Color(r, g, b), alpha);
 }
