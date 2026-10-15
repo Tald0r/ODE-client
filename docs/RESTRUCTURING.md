@@ -6767,9 +6767,17 @@ rounds settled* for the host rules). Test fixtures share
   >   commented-out code. The preprocessed source is identical before and
   >   after it.
   > - **Recorded, not changed:**
-  >   - Image objects are looked up from the first key and added at the
-  >     count's key. Removing any but the last loses track of the others,
-  >     as the header warns.
+  >   - Image objects are looked up from the first key, so once the first
+  >     is removed none is found. After a middle removal the others are
+  >     still found, but the next add lands on a taken key: it is dropped
+  >     yet counted, and a walk for an ID not there then runs past the
+  >     map's end. Nothing in the executable removes image objects (the
+  >     header says they must not be).
+  >   - The ousters safety flag and the server's underground block are
+  >     both 0x10 of the second flag byte: a sector safe for ousters reads
+  >     as blocked underground, a burrowed creature's block makes it safe
+  >     for ousters, and setting the safety replaces the server's blocks
+  >     (#521's review).
   >   - Removing one of two darkness (or sanctuary) effects clears the
   >     flag.
   >   - Removing a sweeper's corpse lifts the ground block even where the
@@ -6778,12 +6786,17 @@ rounds settled* for the host rules). Test fixtures share
   >     it holds.
   >
   > R1 is 31 Windows / 29 Ninja.
-  - Owner: membership, R1, and `test_sector.cpp` (31 tests, on real
-    effects and image objects, with plain objects as creatures).
+  - Owner: membership, R1, and `test_sector.cpp` (33 tests since #521's
+    follow-up, on real effects and image objects, with plain objects as
+    creatures, handed out as tokens of their own so that a sector reaching
+    them past the host fails).
   - Mutants: 88 of 91 are caught. The 3 left are equivalent: each
     layer's "after the last" slot, which is never reached. A taken next
     slot always has a free one below it while the counts hold. Taking
-    `MSector.cpp` out of the membership breaks the test link.
+    `MSector.cpp` out of the membership breaks the test link. #521's
+    follow-up adds 18: one per host conversion cast past the host (14
+    caught, the 3 "after the last" inserts equivalent) and the safety
+    assignment (caught).
 
 - [x] **4.234 Which skills the player can use now:** `MSkillAvailable.cpp`
   (MSkillSet's SetAvailableSkills, SetAvailableVampireSkills and CheckMP)

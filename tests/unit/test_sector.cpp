@@ -28,16 +28,43 @@ std::map<TYPE_OBJECTID, int> creatureTypes;
 // The creature each corpse holds, read through MItem::CorpseCreature.
 std::map<const MItem*, MCreature*> corpseCreatures;
 
-MCreature* Handle(MObject& object) { return reinterpret_cast<MCreature*>(&object); }
+// Creatures are handed out as tokens of their own, not as their objects'
+// addresses: a sector that reached a creature past the host would hold or
+// hand back the wrong pointer.
+alignas(16) char tokens[16 * 256];
+std::map<const MCreature*, MObject*> objectOfHandle;
+std::map<const MObject*, MCreature*> handleOfObject;
+
+void ForgetHandles() { objectOfHandle.clear(); handleOfObject.clear(); }
+
+MCreature* Handle(MObject& object)
+{
+	const auto found = handleOfObject.find(&object);
+	if (found != handleOfObject.end()) return found->second;
+	MCreature* handle = reinterpret_cast<MCreature*>(&tokens[16 * handleOfObject.size()]);
+	handleOfObject[&object] = handle;
+	objectOfHandle[handle] = &object;
+	return handle;
+}
+
+MObject* ObjectOfHandle(const MCreature* pCreature)
+{
+	const auto found = objectOfHandle.find(pCreature);
+	return found == objectOfHandle.end() ? nullptr : found->second;
+}
 
 const CreatureState::Host creatureHost = []() {
 	CreatureState::Host host{};
 	host.GetCreatureType = [](MCreature* pCreature) {
-		const auto found = creatureTypes.find(reinterpret_cast<MObject*>(pCreature)->GetID());
+		MObject* pObject = ObjectOfHandle(pCreature);
+		const auto found = pObject == nullptr ? creatureTypes.end() : creatureTypes.find(pObject->GetID());
 		return found == creatureTypes.end() ? 0 : found->second;
 	};
-	host.ObjectOf = [](const MCreature* pCreature) { return reinterpret_cast<MObject*>(const_cast<MCreature*>(pCreature)); };
-	host.CreatureOf = [](MObject* pObject) { return reinterpret_cast<MCreature*>(pObject); };
+	host.ObjectOf = [](const MCreature* pCreature) { return ObjectOfHandle(pCreature); };
+	host.CreatureOf = [](MObject* pObject) {
+		const auto found = handleOfObject.find(pObject);
+		return found == handleOfObject.end() ? static_cast<MCreature*>(nullptr) : found->second;
+	};
 	return host;
 }();
 
@@ -58,6 +85,7 @@ struct Scene
 		MItem::SetHost(&itemHost);
 		creatureTypes.clear();
 		corpseCreatures.clear();
+		ForgetHandles();
 	}
 	~Scene()
 	{
@@ -592,6 +620,7 @@ TEST(Sector, WithoutACreatureHostCreaturesAreHeldAsNull)
 {
 	// The executable always installs it; without, a creature is held as
 	// the NULL object the host gives, and read back as NULL.
+	ForgetHandles();
 	MSector sector;
 	const CreatureState::Host* previous = CreatureState::SetHost(nullptr);
 	Creature creature(1);
@@ -657,11 +686,10 @@ TEST(Sector, ImageObjectsFillTheirRange)
 	CHECK(sector.GetImageObject(168) == images.back().get());
 }
 
-TEST(Sector, ImageObjectsAreNotMeantToLeaveFirstOrMidway)
+TEST(Sector, AnImageObjectIsNotMeantToLeaveFirst)
 {
 	// Recorded, not changed: image objects are looked up from the first
-	// key and added at the count's key, so removing one but the last
-	// loses track of the others.
+	// key, so once the first is gone none is found.
 	MSector sector;
 	Image a(1), b(2), c(3);
 	sector.AddImageObject(&a);
@@ -675,6 +703,45 @@ TEST(Sector, ImageObjectsAreNotMeantToLeaveFirstOrMidway)
 	CHECK(sector.AddImageObject(&c));
 	CHECK_EQ(2, sector.GetImageObjectSize());
 	CHECK(sector.GetImageObject(3) == NULL);
+}
+
+TEST(Sector, AnImageObjectMayLeaveMidwayButTheNextIsDropped)
+{
+	// Recorded, not changed: with the middle one gone the others are still
+	// found (each walk stops at the count), but the next one is added at
+	// the count's key, which the last one holds: it is dropped, yet
+	// counted, and from then on a walk for an ID not there runs past the
+	// map's end.
+	MSector sector;
+	Image a(1), b(2), c(3), d(4);
+	sector.AddImageObject(&a);
+	sector.AddImageObject(&b);
+	sector.AddImageObject(&c);
+	CHECK(sector.RemoveImageObject(2));
+	CHECK(sector.GetImageObject(1) == &a);
+	CHECK(sector.GetImageObject(3) == &c);
+	CHECK(sector.AddImageObject(&d));
+	CHECK_EQ(3, sector.GetImageObjectSize());
+	CHECK((Objects(sector, sector.GetImageObjectIterator(), 2) == std::vector<TYPE_OBJECTID>{1, 3}));
+}
+
+TEST(Sector, OustersSafetyAndTheServersUndergroundBlockShareABit)
+{
+	// Recorded, not changed: both are 0x10 of the second flag byte, and
+	// setting the safety replaces the server's blocks.
+	MSector sector;
+	sector.SetSafe(FLAG_SECTOR_SAFE_OUSTERS);
+	CHECK(sector.IsBlockServerUnderground());
+	CHECK(!sector.CanStandUndergroundCreature());
+	MSector other;
+	other.SetBlockServerUnderground();
+	CHECK(other.IsSafeOusters());
+	other.UnSetBlockServerUnderground();
+	CHECK(!other.IsSafeOusters());
+	other.SetBlockServerGround();
+	other.SetSafe(FLAG_SECTOR_SAFE_SLAYER);
+	CHECK(!other.IsBlockServerGround());
+	CHECK(other.CanStandGroundCreature());
 }
 
 TEST(Sector, EffectsAreKeptInOrder)

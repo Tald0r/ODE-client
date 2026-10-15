@@ -1093,7 +1093,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		target_link_libraries(DarkEden PRIVATE iconv)
 	endif()
 
-
 	# Include directories
 	target_include_directories(DarkEden PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}

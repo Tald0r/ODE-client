@@ -22,12 +22,13 @@
 //
 // The map's keys are defined as follows.
 //
-//	1			POSITION_ITEM = 1,					// the item's node
-//	2			POSITION_UNDERGROUNDCREATURE,		// the underground creatures' nodes
-//	3			POSITION_GROUNDCREATURE,			// the ground creatures' nodes
-//	4			POSITION_FLYINGCREATURE,			// the flying creatures' nodes
-//	5			POSITION_PORTAL,					// where a zone change happens
-//	100 ~255	POSITION_IMAGEOBJECT				// the image objects' nodes
+//	1			POSITION_ITEM						// the item's node
+//	2 ~ 14		POSITION_UNDERGROUNDCREATURE		// the underground creatures' nodes
+//	15 ~ 49		POSITION_GROUNDCREATURE				// the ground creatures' nodes
+//	50 ~ 79		POSITION_FLYINGCREATURE				// the flying creatures' nodes
+//	80			POSITION_PORTAL						// where a zone change happens
+//	81 ~ 149	POSITION_IMAGEOBJECT				// the image objects' nodes
+// (see POSITION_VALUE below)
 //
 //
 //----------------------------------------------------------------------
@@ -98,7 +99,9 @@ class MEffect;
 #define FLAG_SECTOR_SAFE_NO_PK_ZONE			0x08	// no player killing
 #define	FLAG_SECTOR_SAFE_OUSTERS			0x10	// safe for ousters only
 #define FLAG_SECTOR_SAFE_ZONE				0x17
-// Blocked by the server
+// Blocked by the server. These share the byte, and 0x10 the bit, with
+// the safety flags above: a sector safe for ousters reads as blocked
+// underground, and the reverse (recorded in task 4.233's follow-up).
 #define FLAG_SECTOR_BLOCK_SERVER_UNDERGROUND	0x10
 #define FLAG_SECTOR_BLOCK_SERVER_GROUND			0x20
 #define FLAG_SECTOR_BLOCK_SERVER_FLYING			0x40

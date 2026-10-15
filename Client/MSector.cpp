@@ -98,7 +98,7 @@ MSector::RemoveAllObject()
 //----------------------------------------------------------------------
 // Save to File
 //----------------------------------------------------------------------
-// Saves only the sprite ID, the block flags and the light.
+// Saves only the sprite ID, the block and portal flags and the light.
 //----------------------------------------------------------------------
 void
 MSector::SaveToFile(ofstream& file)
@@ -164,8 +164,8 @@ MSector::LoadFromFile(ifstream& file)
 //----------------------------------------------------------------------
 // Assign Operator
 //----------------------------------------------------------------------
-// Only the tile's look and
-// the block flags are assigned.
+// Only the tile's look is assigned, and the block flags are added to
+// the sector's own.
 //----------------------------------------------------------------------
 void
 MSector::operator = (const MSector& sector)
@@ -282,8 +282,9 @@ MSector::AddItem(const MItem* pItem)
 //----------------------------------------------------------------------
 // Add UndergroundCreature
 //----------------------------------------------------------------------
-// Adds an underground creature at the first free underground position
-// (false when they are all taken)
+// Adds an underground creature at the slot its count points to or, when that is
+// taken, just below the first taken slot after a free one (false past
+// the layer's last slot)
 // Set the underground creature flag.
 //----------------------------------------------------------------------
 bool
@@ -350,8 +351,9 @@ MSector::AddUndergroundCreature(const MCreature* pUndergroundCreature)
 //----------------------------------------------------------------------
 // Add Creature
 //----------------------------------------------------------------------
-// Adds a ground creature at the first free ground position
-// (false when they are all taken)
+// Adds a ground creature at the slot its count points to or, when that is
+// taken, just below the first taken slot after a free one (false past
+// the layer's last slot)
 // Set the ground creature flag.
 //----------------------------------------------------------------------
 bool
@@ -418,8 +420,9 @@ MSector::AddGroundCreature(const MCreature* pCreature)
 //----------------------------------------------------------------------
 // Add FlyingCreature
 //----------------------------------------------------------------------
-// Adds a flying creature at the first free flying position
-// (false when they are all taken)
+// Adds a flying creature at the slot its count points to or, when that is
+// taken, just below the first taken slot after a free one (false past
+// the layer's last slot)
 // Set the flying creature flag.
 //----------------------------------------------------------------------
 bool
@@ -552,7 +555,7 @@ MSector::GetItem() const
 OBJECT_MAP::const_iterator
 MSector::GetCreatureIterator() const
 {
-	// If there is an underground creature...
+	// If there is any creature...
 	if (IsExistAnyCreature())
 	{
 		// Find the object at the underground creatures' position.
@@ -650,7 +653,7 @@ MSector::GetFlyingCreatureIterator() const
 OBJECT_MAP::iterator
 MSector::GetCreatureIterator()
 {
-	// If there is an underground creature...
+	// If there is any creature...
 	if (IsExistAnyCreature())
 	{
 		// Find the object at the underground creatures' position.
@@ -748,7 +751,7 @@ MSector::GetFlyingCreatureIterator()
 MCreature *
 MSector::GetCreature() const
 {
-	// If there is an underground creature...
+	// If there is any creature...
 	if (IsExistAnyCreature())
 	{
 		// Find the object at the underground creatures' position.
@@ -906,7 +909,7 @@ MSector::RemoveItem(MItem*& pItem)
 		// Remove iObject.
 		m_mapObject.erase( iObject );
 
-		// Clear only the item flag.
+		// Clear the item flag (and a sweeper corpse's ground block).
 		if (IsBlockingCorpse(pItem))
 			m_fProperty &= ~FLAG_SECTOR_BLOCK_GROUND;
 
@@ -923,7 +926,8 @@ MSector::RemoveItem(MItem*& pItem)
 // Remove Item(id, &Item)
 //----------------------------------------------------------------------
 // Removes the item if its ID is id, clears its flag
-// and hands it back in pItem.
+// and hands it back in pItem (which is set to the item even when its
+// ID differs).
 //----------------------------------------------------------------------
 bool
 MSector::RemoveItem(TYPE_OBJECTID id, MItem*& pItem)
@@ -948,7 +952,7 @@ MSector::RemoveItem(TYPE_OBJECTID id, MItem*& pItem)
 			// Remove iObject.
 			m_mapObject.erase( iObject );
 
-			// Clear only the item flag.
+			// Clear the item flag (and a sweeper corpse's ground block).
 			if (IsBlockingCorpse(pItem))
 				m_fProperty &= ~FLAG_SECTOR_BLOCK_GROUND;
 
@@ -1245,7 +1249,7 @@ MSector::RemoveItem(TYPE_OBJECTID id)
 
 			m_mapObject.erase( iObject );
 
-			// Clear only the item flag.
+			// Clear the item flag (and a sweeper corpse's ground block).
 			m_fProperty &= ~FLAG_SECTOR_ITEM;
 
 			return true;
@@ -1512,7 +1516,7 @@ MSector::RemoveItem()
 		// Remove it
 		m_mapObject.erase( iObject );
 
-		// Clear only the item flag.
+		// Clear the item flag (and a sweeper corpse's ground block).
 		m_fProperty &= ~FLAG_SECTOR_ITEM;
 
 		return true;

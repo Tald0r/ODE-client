@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <utility>
 
 // Loading a *.bmp into a sprite surface (task 4.232, SpriteLib's since
 // then): converted to RGB565, as much as fits from the top left. Only a
@@ -106,22 +107,43 @@ TEST(SurfaceImage, ANameUnderEightCharactersIsRefused)
 {
 	// Real BMPs under 7- and 8-character names, in a scratch working
 	// directory.
+	// Entered for the test's length; back out and removed whatever happens.
+	struct Scratch
+	{
+		std::filesystem::path dir, previous;
+		bool entered = false;
+		explicit Scratch(std::filesystem::path path) : dir(std::move(path))
+		{
+			std::error_code error;
+			std::filesystem::create_directory(dir, error);
+			previous = std::filesystem::current_path(error);
+			if (error) return;
+			std::filesystem::current_path(dir, error);
+			entered = !error;
+		}
+		~Scratch()
+		{
+			std::error_code error;
+			if (entered) std::filesystem::current_path(previous, error);
+			std::filesystem::remove_all(dir, error);
+		}
+	};
 	const std::string path = WriteBmp();
-	const std::filesystem::path scratch = std::filesystem::path(path).replace_extension(".dir");
-	std::error_code error;
-	std::filesystem::create_directory(scratch, error);
-	const std::filesystem::path previous = std::filesystem::current_path(error);
-	std::filesystem::current_path(scratch, error);
-	CHECK(!error);
-	std::filesystem::copy_file(path, "sxy.bmp", error);
-	std::filesystem::copy_file(path, "sxyz.bmp", error);
-	Surface target(4, 3);
-	CHECK(!LoadImageToSurface("sxy.bmp", target.surface));
-	CHECK_EQ(0x1234, Pixel(target.surface, 0, 0));
-	CHECK(LoadImageToSurface("sxyz.bmp", target.surface));
-	CHECK_EQ(0xF800, Pixel(target.surface, 0, 0));
-	std::filesystem::current_path(previous, error);
-	std::filesystem::remove_all(scratch, error);
+	{
+		const Scratch scratch(std::filesystem::path(path).replace_extension(".dir"));
+		CHECK(scratch.entered);
+		if (scratch.entered)
+		{
+			std::error_code error;
+			std::filesystem::copy_file(path, "sxy.bmp", error);
+			std::filesystem::copy_file(path, "sxyz.bmp", error);
+			Surface target(4, 3);
+			CHECK(!LoadImageToSurface("sxy.bmp", target.surface));
+			CHECK_EQ(0x1234, Pixel(target.surface, 0, 0));
+			CHECK(LoadImageToSurface("sxyz.bmp", target.surface));
+			CHECK_EQ(0xF800, Pixel(target.surface, 0, 0));
+		}
+	}
 	std::remove(path.c_str());
 }
 
