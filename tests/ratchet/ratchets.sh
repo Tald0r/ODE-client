@@ -409,7 +409,8 @@ check () {
 # 45: the packet-handler registry joins gamemodel (4.218).
 # 44: the effect generator table joins gamemodel (4.219).
 # 43: the Netmarble launch check joins gamemodel (4.220).
-R1_BASELINE=43
+# 42: the help decision tree's conditions retired (4.221).
+R1_BASELINE=42
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -651,7 +652,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 43: the packet-handler registry joins gamemodel (4.218).
 	# 42: the effect generator table joins gamemodel (4.219).
 	# 41: the Netmarble launch check joins gamemodel (4.220).
-	R1_NINJA_BASELINE=41
+	# 40: the help decision tree's conditions retired (4.221).
+	R1_NINJA_BASELINE=40
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

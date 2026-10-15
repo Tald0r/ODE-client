@@ -28,7 +28,6 @@
 #include "MChatManager.h"
 #include "MHelpManager.h"
 #include "MHelpStringTable.h"
-#include "MCompareManager.h"
 #include "MHelpDisplayer.h"
 #include "MLevelNameTable.h"
 #include "MonsterNameTable.h"
@@ -196,9 +195,7 @@ InitInfomation()
 	SAFE_DELETE( g_pUsingColorSetTable );
 	SAFE_DELETE( g_pActionInfoTable );
 	SAFE_DELETE( g_pChatManager );
-	SAFE_DELETE( g_pHelpManager );
 	SAFE_DELETE( g_pHelpStringTable );
-	SAFE_DELETE( g_pCompareManager );
 	SAFE_DELETE( g_pHelpDisplayer );
 	SAFE_DELETE( g_pLevelNameTable );
 	SAFE_DELETE( g_pMonsterNameTable );
@@ -400,19 +397,9 @@ InitInfomation()
 		g_pChatManager = new MChatManager;
 	}
 	
-	if (g_pHelpManager==NULL)
-	{
-		g_pHelpManager = new MHelpManager;
-	}
-
 	if (g_pHelpStringTable==NULL)
 	{
 		g_pHelpStringTable= new MHelpStringTable;
-	}
-
-	if (g_pCompareManager==NULL)
-	{
-		g_pCompareManager= new MCompareManager;
 	}
 
 	if (g_pHelpDisplayer==NULL)

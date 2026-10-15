@@ -53,7 +53,6 @@
 #include "MStorage.h"
 #include "MHelpManager.h"
 #include "MHelpStringTable.h"
-#include "MCompareManager.h"
 #include "MHelpDisplayer.h"
 #include "MObjectSelector.h"
 #include "MLevelNameTable.h"
@@ -2598,9 +2597,7 @@ void ReleaseAllObjects()
 	SAFE_DELETE( g_pPCTalkBox );
 	SAFE_DELETE( g_pNPCTalkBox );
 	SAFE_DELETE( g_pChatManager );	
-	SAFE_DELETE( g_pHelpManager );
 	SAFE_DELETE( g_pHelpStringTable );	
-//	SAFE_DELETE( g_pCompareManager );
 	SAFE_DELETE( g_pHelpDisplayer );
 	SAFE_DELETE( g_pObjectSelector );	
 	SAFE_DELETE( g_pUIMessageManager );	
