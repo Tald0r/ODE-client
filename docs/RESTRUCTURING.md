@@ -7383,16 +7383,21 @@ rounds settled* for the host rules). Test fixtures share
   >   reckoning, not as it opens; the party's position report goes out on
   >   every call outside the peer-to-peer path, which alone remembers the
   >   last one sent.
-  > - Fixed after the move (found by the tests under UBSan): the
-  >   constructor left `m_bTraceCreatureToForceAttack` unset, and a skill
-  >   on itself held down from the start (`SelfSpecialAction`, then
+  > - Fixed after the move, both found by the tests under the sanitizers:
+  >   the constructor left `m_bTraceCreatureToForceAttack` unset, and a
+  >   skill on itself held down from the start (`SelfSpecialAction`, then
   >   `SetRepeatAction`) made `OnAttacking` read it, so the view chose its
-  >   attack cursor by whatever the heap held. It starts cleared, and so
+  >   attack cursor by whatever the heap held; it starts cleared, and so
   >   do the two members set beside it (`m_bNextForceAttack`,
-  >   `m_TraceIDBuffer`), which nothing read before their time.
+  >   `m_TraceIDBuffer`), which nothing read before their time. And
+  >   `SetDestination` read the target cell's safe zones for a carried
+  >   relic, blood bible or flag before its own check that the cell lies
+  >   on the map, which a sector trace hands it unchecked: one row past
+  >   the map, ASan stopped on the row array. Those checks read the cell
+  >   on the map only; off it the move is refused as before.
   >
   > R1 is 19 Windows / 17 Ninja.
-  - Owner: membership, R1, `test_player.cpp`: 62 tests (63 with the
+  - Owner: membership, R1, `test_player.cpp`: 62 tests (64 with the
     fixes), over a real zone behind `ZoneState` as `g_pZone`, with the
     player as `g_pPlayer`, the packets it sends caught on a `ClientPlayer`
     socket, and recording UI, view and help hosts. What it is (identity,

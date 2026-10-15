@@ -1121,6 +1121,30 @@ std::string Move(int direction, int x, int y)
 	return text;
 }
 
+TEST(Player, CarryingARelicItReadsNoCellOffTheMap)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	me.AddEffectStatus(EFFECTSTATUS_HAS_SLAYER_RELIC, 0xFFFF);
+	me.AddEffectStatus(EFFECTSTATUS_HAS_FLAG, 0xFFFF);
+	// The first row and column past the map: refused, with no relic or
+	// flag message and no cell read there (ASan watches the row array).
+	CHECK(!me.SetDestination(20, 30));
+	CHECK(!me.SetDestination(40, 15));
+	CHECK(scene.System().empty());
+	POINT dest;
+	me.GetDestination(dest);
+	CHECK_EQ(int(SECTORPOSITION_NULL), int(dest.x));
+	// A sector trace takes the cell as it is; walking there asks again.
+	me.SetBasicActionInfo(SKILL_ATTACK_MELEE);
+	CHECK(me.TraceSectorToBasicAction(20, 30));
+	Frames(me, 30);
+	CHECK_EQ(20, int(me.GetX()));
+	CHECK_EQ(15, int(me.GetY()));
+	CHECK(sent.empty());
+	CHECK(scene.System().empty());
+}
+
 TEST(Player, ItWalksACellAStepAndTellsTheServerEachOne)
 {
 	Scene scene;

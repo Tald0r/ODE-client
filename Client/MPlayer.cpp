@@ -1423,14 +1423,17 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 	}
 
 		// 성물을 들었을때는 자기편 안전지대는 못간다!
-	bool bHasRelic = 
+	// Whose safe zone the cell is matters on the map only: past it, the
+	// check below refuses the move anyway.
+	const bool bOnMap = sX < g_pZone->GetWidth() && sY < g_pZone->GetHeight();
+	bool bHasRelic = bOnMap &&
 		( m_bEffectStatus[EFFECTSTATUS_HAS_VAMPIRE_RELIC] || m_bEffectStatus[EFFECTSTATUS_HAS_SLAYER_RELIC] ) && 
 		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters())
 		);
 
-	bool bHasBloodBible =
+	bool bHasBloodBible = bOnMap &&
 	(
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_ARMEGA] || m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_MIHOLE] ||
 	m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_KIRO] ||m_bEffectStatus[EFFECTSTATUS_HAS_BLOOD_BIBLE_INI] ||
@@ -1453,7 +1456,7 @@ MPlayer::SetDestination(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
 		g_pSystemMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_CANNOT_MOVE_SAFETY_ZONE_RELIC].GetString());
 	}
 
-	if( HasEffectStatus( EFFECTSTATUS_HAS_FLAG ) &&
+	if( bOnMap && HasEffectStatus( EFFECTSTATUS_HAS_FLAG ) &&
 		((g_pZone->GetSector(sX, sY).IsSafeSlayer() && IsSlayer()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeVampire() && IsVampire()) ||
 		(g_pZone->GetSector(sX, sY).IsSafeOusters() && IsOusters())
