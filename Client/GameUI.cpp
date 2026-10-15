@@ -3974,6 +3974,10 @@ void	UI_SetBloodBibleStatusTimer(DWORD sec)
 
 void	UI_RunInputNameWindow(int ID)
 {
+	// Only the window's modes; another would be cast to the enum below.
+	if(ID < 0 || ID >= C_VS_UI_INPUT_NAME::INPUT_NAME_MAX)
+		return;
+
 	if(gC_vs_ui.IsRunningInputNameWindow())
 		gC_vs_ui.CloseInputNameWindow();
 

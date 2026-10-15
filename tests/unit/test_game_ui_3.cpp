@@ -587,6 +587,21 @@ TEST(GameUI3Talk, TheWindowsThatOpenOverTheTalkHideIt)
 	}
 }
 
+TEST(GameUI3Talk, AnInputNameModeOutsideTheThreeIsRefused)
+{
+	// The window's modes are 0 to 2 (INPUT_NAME_MAX is their count); any
+	// other leaves the talk as it is.
+	Scene scene;
+	for (int mode : {-1, 3, 4, 255})
+	{
+		scene.OpenTalk();
+		UI_RunInputNameWindow(mode);
+		CHECK(calls.empty());
+		CHECK_EQ(FLAG_UIDIALOG_LOCK_PCTALK, int(UIDialog::IsLockInput()));
+		scene.dialog.ClosePCTalkDlg();
+	}
+}
+
 TEST(GameUI3Talk, ClosingTheInputNameWindowEndsTheTalkAndTheWait)
 {
 	Scene scene;
