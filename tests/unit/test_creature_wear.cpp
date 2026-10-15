@@ -557,6 +557,86 @@ TEST(CreatureWear, RemovingASlotTakesOffItsItem)
 	CHECK_EQ(0, int(creature.GetAddonInfo(ADDON_HAIR).bAddon));
 }
 
+TEST(CreatureWear, PuttingAWeaponDownEndsItsStatus)
+{
+	Scene scene;
+	scene.Tribe(Slayer, CREATURETRIBE_SLAYER);
+	// A blade ends berserking; a cross or a mace ends hypnosis; a sword
+	// ends neither.
+	const std::pair<ITEM_CLASS, EFFECTSTATUS> weapons[] = {
+		{ITEM_CLASS_BLADE, EFFECTSTATUS_BERSERKER}, {ITEM_CLASS_CROSS, EFFECTSTATUS_HYPNOSIS}, {ITEM_CLASS_MACE, EFFECTSTATUS_HYPNOSIS},
+	};
+	for (const auto& weapon : weapons)
+	{
+		MCreatureWear creature;
+		Dress(creature, Slayer);
+		std::unique_ptr<MItem> pItem = scene.Item(weapon.first);
+		CHECK(creature.SetAddonItem(pItem.get()));
+		creature.AddEffectStatus(EFFECTSTATUS_BERSERKER, 0xFFFF);
+		creature.AddEffectStatus(EFFECTSTATUS_HYPNOSIS, 0xFFFF);
+		CHECK(creature.RemoveAddonItem(pItem.get()));
+		CHECK(!creature.HasEffectStatus(weapon.second));
+		CHECK(creature.HasEffectStatus(weapon.second == EFFECTSTATUS_BERSERKER ? EFFECTSTATUS_HYPNOSIS : EFFECTSTATUS_BERSERKER));
+	}
+	MCreatureWear swordsman;
+	Dress(swordsman, Slayer);
+	std::unique_ptr<MItem> sword = scene.Item(ITEM_CLASS_SWORD);
+	CHECK(swordsman.SetAddonItem(sword.get()));
+	swordsman.AddEffectStatus(EFFECTSTATUS_BERSERKER, 0xFFFF);
+	swordsman.AddEffectStatus(EFFECTSTATUS_HYPNOSIS, 0xFFFF);
+	CHECK(swordsman.RemoveAddonItem(sword.get()));
+	CHECK(swordsman.HasEffectStatus(EFFECTSTATUS_BERSERKER));
+	CHECK(swordsman.HasEffectStatus(EFFECTSTATUS_HYPNOSIS));
+}
+
+TEST(CreatureWear, AVampiresCoatIsItsBody)
+{
+	Scene scene;
+	for (int type : {Vampire, 2, 3, 11, 12, CREATURETYPE_VAMPIRE_OPERATOR, CREATURETYPE_BAT, CREATURETYPE_WOLF})
+		scene.Tribe(type, CREATURETRIBE_VAMPIRE);
+	// A vampire takes the coat's frame (11 male, 12 female) as its type, and
+	// the coat's option colour on its body; off, it is the bare vampire of
+	// its gender (2 male, 3 female) in the coat colour.
+	for (bool male : {true, false})
+	{
+		MCreatureWear vampire;
+		Dress(vampire, Vampire, male);
+		testfw::MutableRow(*g_pCreatureTable, 11).bMale = true;
+		testfw::MutableRow(*g_pCreatureTable, 12).bMale = false;
+		std::unique_ptr<MItem> coat = scene.Item(ITEM_CLASS_VAMPIRE_COAT);
+		CHECK(vampire.SetAddonItem(coat.get()));
+		CHECK_EQ(male ? 11 : 12, int(vampire.GetCreatureType()));
+		CHECK_EQ(33, int(vampire.GetBodyColor2()));
+		CHECK(vampire.RemoveAddonItem(coat.get()));
+		CHECK_EQ(male ? 2 : 3, int(vampire.GetCreatureType()));
+		CHECK_EQ(CoatColor, int(vampire.GetBodyColor2()));
+	}
+	// A bat or a wolf keeps its shape.
+	for (int shape : {CREATURETYPE_BAT, CREATURETYPE_WOLF})
+	{
+		MCreatureWear beast;
+		Dress(beast, shape);
+		std::unique_ptr<MItem> coat = scene.Item(ITEM_CLASS_VAMPIRE_COAT);
+		CHECK(beast.SetAddonItem(coat.get()));
+		CHECK_EQ(shape, int(beast.GetCreatureType()));
+		CHECK(beast.RemoveAddonItem(coat.get()));
+		CHECK_EQ(shape, int(beast.GetCreatureType()));
+	}
+	// An operator keeps its type, and its whole body takes the colour.
+	MCreatureWear op;
+	Dress(op, CREATURETYPE_VAMPIRE_OPERATOR);
+	std::unique_ptr<MItem> coat = scene.Item(ITEM_CLASS_VAMPIRE_COAT);
+	CHECK(op.SetAddonItem(coat.get()));
+	CHECK_EQ(CREATURETYPE_VAMPIRE_OPERATOR, int(op.GetCreatureType()));
+	CHECK_EQ(33, int(op.GetBodyColor1()));
+	CHECK_EQ(33, int(op.GetBodyColor2()));
+	// Off, the coat slot's own rule follows the vampire coat's: an
+	// operator's body goes to the skin colour.
+	CHECK(op.RemoveAddonItem(coat.get()));
+	CHECK_EQ(SkinColor, int(op.GetBodyColor1()));
+	CHECK_EQ(SkinColor, int(op.GetBodyColor2()));
+}
+
 //----------------------------------------------------------------------
 // What it asks of the world
 //----------------------------------------------------------------------
@@ -565,8 +645,10 @@ TEST(CreatureWear, ItsPoolMakesAndFreesIt)
 	Scene scene;
 	std::unique_ptr<MCreatureWear> pCreature(new MCreatureWear);
 	CHECK(pCreature->IsWear());
+	CHECK(g_CreatureWearMemoryPool.IsPtrInPool(pCreature.get()));
 	pCreature.reset();
 	MCreatureWear* pAgain = new MCreatureWear;
+	CHECK(g_CreatureWearMemoryPool.IsPtrInPool(pAgain));
 	delete pAgain;
 }
 
@@ -588,11 +670,21 @@ TEST(CreatureWear, AnAdvancedSylphEndsWithItsSkill)
 	calls.clear();
 	advanced.RemoveEffectStatus(EFFECTSTATUS_SUMMON_SYLPH);
 	CHECK(!calls.empty() && calls.back() == "skill|" + N(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END) + "|12,34,0|5|900|12,34,0|8|none|first|0,0");
+	// The plain one and a coloured one end without a skill. Both had the
+	// status and both went through the sylph's branch (it sets them back on
+	// foot), so neither returned early.
+	CHECK(plain.HasEffectStatus(EFFECTSTATUS_SUMMON_SYLPH));
+	CHECK(coloured.HasEffectStatus(EFFECTSTATUS_SUMMON_SYLPH_RED));
+	CHECK_EQ(int(MCreature::MOVE_DEVICE_SUMMON_SYLPH), int(plain.GetMoveDevice()));
+	CHECK_EQ(int(MCreature::MOVE_DEVICE_SUMMON_SYLPH), int(coloured.GetMoveDevice()));
 	calls.clear();
 	plain.RemoveEffectStatus(EFFECTSTATUS_SUMMON_SYLPH);
 	coloured.RemoveEffectStatus(EFFECTSTATUS_SUMMON_SYLPH_RED);
 	for (const std::string& call : calls)
 		CHECK(call.rfind("skill|", 0) != 0);
+	CHECK(!plain.HasEffectStatus(EFFECTSTATUS_SUMMON_SYLPH));
+	CHECK_EQ(int(MCreature::MOVE_DEVICE_WALK), int(plain.GetMoveDevice()));
+	CHECK_EQ(int(MCreature::MOVE_DEVICE_WALK), int(coloured.GetMoveDevice()));
 	CHECK_EQ(int(MCreature::MOVE_DEVICE_WALK), int(advanced.GetMoveDevice()));
 }
 
@@ -604,9 +696,14 @@ TEST(CreatureWear, AVampireComingToRisesByItsBlood)
 	MCreatureWear vampire;
 	Dress(vampire, Vampire);
 	vampire.AddEffectStatus(EFFECTSTATUS_COMA, 40);
+	// Pushed two cells off, its pixel offset is where the skill starts.
+	CHECK(vampire.KnockBackPosition(14, 36, 1));
+	const std::string offset = N(vampire.GetSX()) + "," + N(vampire.GetSY());
+	CHECK(offset != "0,0");
 	calls.clear();
 	vampire.RemoveEffectStatus(EFFECTSTATUS_COMA);
-	CHECK(Same({"skill|" + N(BLOOD_RESURRECT) + "|12,34,0|3|900|12,34,0|32|none|first|0,0"}));
+	CHECK(!calls.empty() && calls.back() == "skill|" + N(BLOOD_RESURRECT) + "|12,34,0|"
+		+ N(vampire.GetServerDirection()) + "|900|12,34,0|32|none|first|" + offset);
 	CHECK(vampire.IsAlive());
 	MCreatureWear slayer;
 	Dress(slayer, Slayer);
@@ -635,6 +732,8 @@ TEST(CreatureWear, AnOustersFastMoveSpriteFollowsItsAction)
 	stander.UpdateAttachEffect();
 	CHECK(Same({"max frame|" + N(BLT_SCREEN) + "|41"}));
 	CHECK_EQ(int(EFFECTSPRITETYPE_FAST_MOVE_STOP), int(pFly->GetEffectSpriteType()));
+	CHECK_EQ(41, int(pFly->GetFrameID()));
+	CHECK_EQ(7, int(pFly->GetMaxFrame()));
 	// Moving under a sylph on foot, the hovering one flies (blitted as the
 	// hovering one is).
 	MCreatureWear mover;
@@ -648,4 +747,6 @@ TEST(CreatureWear, AnOustersFastMoveSpriteFollowsItsAction)
 	mover.UpdateAttachEffect();
 	CHECK(Same({"max frame|" + N(BLT_SCREEN) + "|42"}));
 	CHECK_EQ(int(EFFECTSPRITETYPE_FAST_MOVE_FLY), int(pHover->GetEffectSpriteType()));
+	CHECK_EQ(42, int(pHover->GetFrameID()));
+	CHECK_EQ(7, int(pHover->GetMaxFrame()));
 }

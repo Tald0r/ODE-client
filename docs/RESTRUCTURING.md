@@ -7165,7 +7165,7 @@ rounds settled* for the host rules). Test fixtures share
     Taking `MCreature.cpp` out of the membership breaks the test link.
 
 - [x] **4.243 The creature that wears gear:** `MCreatureWear.cpp` joins
-  `gamemodel`, with `AddonDef.h` (the default gear's frame IDs).
+  `gamemodel`, with `AddonDef.h` (an enum of the gear's frame IDs).
   > **Status:** done (2026-10-15).
   > - Its two skills (a sylph's end, a vampire coming to) go through
   >   `WorldEvents::ExecuteActionInfoFromMainNode`, and the fast-move
@@ -7174,15 +7174,18 @@ rounds settled* for the host rules). Test fixtures share
   > - Its pool (`g_CreatureWearMemoryPool`) is defined in MCreatureWear.cpp;
   >   MemoryPool.cpp keeps the NPC's and the fake creature's.
   > - The last `_MinTraceA` call ("remove effectsprite", on every removed
-  >   status sprite) goes to the debug log: on Windows it reached the
-  >   optional external trace window, elsewhere it printed to stderr.
+  >   status sprite) goes to the debug log, which shows it only with
+  >   debug tracing on (`DARKEDEN_TRACE`). Before, on Windows it looked for
+  >   the optional external trace window each time, and elsewhere it
+  >   printed to stderr every time.
   >
   > R1 is 24 Windows / 22 Ninja.
-  - Owner: membership, R1, `test_creature_wear.cpp`: 21 tests. What a
-    wearer wears by race and gender, the colour sets it takes, hair, the
-    gear it puts on and takes off (and what each takes off with it), its
-    pool, and the skills and frame counts it asks for, over recording
-    hosts; the item, option and creature tables are real.
+  - Owner: membership, R1, `test_creature_wear.cpp`: 21 tests (23 with
+    the follow-up's). What a wearer wears by race and gender, the colour
+    sets it takes, hair, the gear it puts on and takes off (and what each
+    takes off with it, the weapons' statuses and a vampire's coat among
+    them), its pool, and the skills and frame counts it asks for, over
+    recording hosts; the item, option and creature tables are real.
   - Mutants: 48 of the 50 caught. The two left are equivalent: the item rebuilt to take a slot off is read only for its class and slot, and the slot past the array is the shoulder, which nothing wears, so removing it answers false either way.
     Taking `MCreatureWear.cpp` out of the membership breaks the test link.
 

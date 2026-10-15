@@ -174,7 +174,7 @@ MCreatureWear::SetAddonColorSet2(int Addon, WORD colorSet)
 	
 	if (colorSet < MAX_COLORSET || colorSet == UNIQUE_ITEM_COLOR || colorSet == QUEST_ITEM_COLOR)
 	{	
-		// The operator uses set1. T_T;;
+		// An operator's coat colours its whole body. T_T;;
 		if (m_CreatureType==CREATURETYPE_SLAYER_OPERATOR
 			&& Addon==ADDON_COAT)
 		{
@@ -1157,7 +1157,7 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 			break;
 
 		case EFFECTSTATUS_GHOST:
-			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// If it is a bat
+			if (!(*g_pCreatureTable)[m_CreatureType].bFlyingCreature)	// unless it flies (a bat)
 				SetGroundCreature();
 			break;
 		case EFFECTSTATUS_GLACIER:	
