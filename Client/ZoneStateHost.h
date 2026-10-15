@@ -1,16 +1,21 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 #include "MTypeDef.h"
+#include "ItemClassDef.h"
 #include "MEffectStatusDef.h"
 
 class MActionResult;
 class MAttachEffect;
 class MCreature;
+class MEffect;
 class MObject;
 class MItem;
 class MPetItem;
+class MSector;
 class MShop;
+class MZone;
 class MStatus;
 class PCOustersInfo3;
 class PCSlayerInfo3;
@@ -110,6 +115,24 @@ struct Host
 	// under it (task 4.237). Both false without a host.
 	bool (*HasHelicopter)(TYPE_OBJECTID creatureID) = nullptr;
 	bool (*IsExistCorpseFromPlayer)(MCreature* pCreature, int creatureType) = nullptr;
+	// What MCreature reads of the zone (task 4.242). RemoveFakeCreature
+	// takes the fake (a pet, an elemental) of the ID out and frees it;
+	// GetWidth and GetHeight are the zone's size in sectors (0 without a
+	// host); GetSector is the sector at a cell inside it (NULL without a
+	// host); GetGroundEffects lists the effects lying on the ground.
+	bool (*RemoveFakeCreature)(TYPE_OBJECTID id) = nullptr;
+	int (*GetWidth)() = nullptr;
+	int (*GetHeight)() = nullptr;
+	const MSector* (*GetSector)(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*GetGroundEffects)(std::vector<const MEffect*>& effects) = nullptr;
+	// The same for the zone a creature is in (its own MZone, which need not
+	// be the player's): the server's blocks a creature leaves and takes, and
+	// a creature's move by its move type (false when refused).
+	void (*SetServerBlockIn)(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	void (*UnSetServerBlockIn)(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) = nullptr;
+	bool (*MoveGroundCreatureIn)(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) = nullptr;
+	bool (*MoveFlyingCreatureIn)(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) = nullptr;
+	bool (*MoveUndergroundCreatureIn)(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -150,6 +173,16 @@ void KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight);
 void DeleteCreature(MCreature* pCreature);
 bool HasHelicopter(TYPE_OBJECTID creatureID);
 bool IsExistCorpseFromPlayer(MCreature* pCreature, int creatureType);
+bool RemoveFakeCreature(TYPE_OBJECTID id);
+int GetWidth();
+int GetHeight();
+const MSector* GetSector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void GetGroundEffects(std::vector<const MEffect*>& effects);
+void SetServerBlockIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+void UnSetServerBlockIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
+bool MoveGroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
+bool MoveFlyingCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
+bool MoveUndergroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn);
 
 }
 
@@ -396,6 +429,13 @@ struct Host
 	// whether it stands still (false without a host).
 	MOVE_DEVICE (*GetMoveDevice)(MCreature* pCreature) = nullptr;
 	bool (*IsStop)(MCreature* pCreature) = nullptr;
+	// For MCreature (task 4.242): a fake creature's turret turned to face
+	// its direction (MFakeCreature's), and what a creature that wears gear
+	// (MCreatureWear) has at an addon slot: whether something is there,
+	// and its item class (ITEM_CLASS_NULL without a host or for a creature
+	// that wears nothing).
+	void (*SyncTurretDirection)(MCreature* pCreature) = nullptr;
+	bool (*GetAddonItemClass)(MCreature* pCreature, int addon, ITEM_CLASS* pItemClass) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -535,5 +575,7 @@ MObject* ObjectOf(const MCreature* pCreature);
 MCreature* CreatureOf(MObject* pObject);
 MOVE_DEVICE GetMoveDevice(MCreature* pCreature);
 bool IsStop(MCreature* pCreature);
+void SyncTurretDirection(MCreature* pCreature);
+bool GetAddonItemClass(MCreature* pCreature, int addon, ITEM_CLASS* pItemClass);
 
 }

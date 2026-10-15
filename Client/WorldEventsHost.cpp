@@ -170,4 +170,19 @@ void MuteSound(bool bMute)
 	if (s_Host && s_Host->MuteSound) s_Host->MuteSound(bMute);
 }
 
+bool ViewExists()
+{
+	return s_Host && s_Host->ViewExists && s_Host->ViewExists();
+}
+
+int GetMaxEffectFrame(int bltType, std::uint16_t frameID)
+{
+	return s_Host && s_Host->GetMaxEffectFrame ? s_Host->GetMaxEffectFrame(bltType, frameID) : 0;
+}
+
+void AddOustersElemental(MCreature* pOwner, int creatureType, int status)
+{
+	if (s_Host && s_Host->AddOustersElemental) s_Host->AddOustersElemental(pOwner, creatureType, status);
+}
+
 }

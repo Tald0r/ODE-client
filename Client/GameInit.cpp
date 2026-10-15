@@ -128,6 +128,7 @@
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
 #include "DialogWindowHost.h"
+#include "GameOptionsHost.h"
 #include "VS_UI_ExtraDialog.h"
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
@@ -2687,6 +2688,7 @@ void ReleaseAllObjects()
 	QuestWarPresentation::SetHost(nullptr);
 	NoticePresentation::SetHost(nullptr);
 	StatusPresentation::SetHost(nullptr);
+	GameOptions::SetHost(nullptr);
 	NPCPresentation::SetHost(nullptr);
 	ZoneLoading::SetHost(nullptr);
 	TradePresentation::SetHost(nullptr);
@@ -3700,6 +3702,7 @@ static const StatusPresentation::Host s_StatusPresentationHost = {
 		case StatusPresentation::SHEET_ADVANCEMENT_LEVEL:	g_char_slot_ingame.m_AdvancementLevel = value; break;
 		}
 	},
+	.SetWeaponSpeed = [](int speed, int speedClass) { UI_SetWeaponSpeed(speed, static_cast<BYTE>(speedClass)); },
 };
 
 static const NoticePresentation::Host s_NoticePresentationHost = {
@@ -4012,6 +4015,20 @@ static const ZoneState::Host s_ZoneStateHost = {
 	.KeepObjectInSight = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight) { g_pZone->KeepObjectInSight(x, y, static_cast<BYTE>(sight)); },
 	.HasHelicopter = [](TYPE_OBJECTID creatureID) { return g_pZone != NULL && g_pZone->GetHelicopter(creatureID) != NULL; },
 	.IsExistCorpseFromPlayer = IsExistCorpseFromPlayer,
+	.RemoveFakeCreature = [](TYPE_OBJECTID id) { return g_pZone->RemoveFakeCreature(id); },
+	.GetWidth = []() { return g_pZone != NULL ? int(g_pZone->GetWidth()) : 0; },
+	.GetHeight = []() { return g_pZone != NULL ? int(g_pZone->GetHeight()) : 0; },
+	.GetSector = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return &g_pZone->GetSector(x, y); },
+	.GetGroundEffects = [](std::vector<const MEffect*>& effects) {
+		if (g_pZone == NULL) return;
+		for (MZone::EFFECT_MAP::const_iterator itr = g_pZone->GetGroundEffects(); itr != g_pZone->GetGroundEffectsEnd(); ++itr)
+			effects.push_back(itr->second);
+	},
+	.SetServerBlockIn = [](MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pZone->SetServerBlock(static_cast<BYTE>(moveType), x, y); },
+	.UnSetServerBlockIn = [](MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { pZone->UnSetServerBlock(static_cast<BYTE>(moveType), x, y); },
+	.MoveGroundCreatureIn = [](MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) { return pZone->MoveGroundCreature(pCreature, xo, yo, xn, yn); },
+	.MoveFlyingCreatureIn = [](MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) { return pZone->MoveFlyingCreature(pCreature, xo, yo, xn, yn); },
+	.MoveUndergroundCreatureIn = [](MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn) { return pZone->MoveUndergroundCreature(pCreature, xo, yo, xn, yn); },
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -4195,6 +4212,13 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.CreatureOf = [](MObject* pObject) { return static_cast<MCreature*>(pObject); },
 	.GetMoveDevice = [](MCreature* pCreature) { return pCreature->GetMoveDevice(); },
 	.IsStop = [](MCreature* pCreature) { return pCreature->IsStop() != FALSE; },
+	.SyncTurretDirection = [](MCreature* pCreature) { static_cast<MFakeCreature*>(pCreature)->SyncTurretDirection(); },
+	.GetAddonItemClass = [](MCreature* pCreature, int addon, ITEM_CLASS* pItemClass) {
+		// The creature wears gear: MCreature asks only of an advanced one.
+		const MCreatureWear::ADDON_INFO& info = static_cast<MCreatureWear*>(pCreature)->GetAddonInfo(static_cast<ADDON>(addon));
+		*pItemClass = info.ItemClass;
+		return info.bAddon != FALSE;
+	},
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -4240,6 +4264,15 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		if (bMute) g_SDLAudio.SetMute();
 		else g_SDLAudio.UnSetMute();
 	},
+	.ViewExists = []() { return g_pTopView != NULL; },
+	.GetMaxEffectFrame = [](int bltType, std::uint16_t frameID) { return g_pTopView->GetMaxEffectFrame(static_cast<BLT_TYPE>(bltType), frameID); },
+	.AddOustersElemental = AddOustersElemental,
+};
+
+static const GameOptions::Host s_GameOptionsHost = {
+	.BloodDrop = []() { return g_pUserOption->BloodDrop != FALSE; },
+	.ChatWhite = []() { return g_pUserOption->ChatWhite != FALSE; },
+	.ChattingColor = []() { return static_cast<std::uint32_t>(g_pUserOption->ChattingColor); },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {
@@ -4892,6 +4925,7 @@ InitGameObject()
 	QuestWarPresentation::SetHost(&s_QuestWarPresentationHost);
 	NoticePresentation::SetHost(&s_NoticePresentationHost);
 	StatusPresentation::SetHost(&s_StatusPresentationHost);
+	GameOptions::SetHost(&s_GameOptionsHost);
 	NPCPresentation::SetHost(&s_NPCPresentationHost);
 	ZoneLoading::SetHost(&s_ZoneLoadingHost);
 	TradePresentation::SetHost(&s_TradePresentationHost);

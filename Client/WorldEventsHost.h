@@ -109,6 +109,13 @@ struct Host
 	void (*AddWildWolf)(MCreature* pUser, MCreature* pTarget, bool bEatCorpse) = nullptr;
 	// Silences every sound, or lets it play again.
 	void (*MuteSound)(bool bMute) = nullptr;
+	// For MCreature (task 4.242): whether the view exists; how many frames
+	// an effect sprite of the blending type and frame ID runs (0 without a
+	// host); and an ouster's elemental of the creature type summoned beside
+	// its owner for the effect status.
+	bool (*ViewExists)() = nullptr;
+	int (*GetMaxEffectFrame)(int bltType, std::uint16_t frameID) = nullptr;
+	void (*AddOustersElemental)(MCreature* pOwner, int creatureType, int status) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -125,6 +132,9 @@ void RemoveEvent(int eventID);
 void PlayMusicCurrentZone();
 void PlaySound(TYPE_SOUNDID soundID);
 void PlaySoundAt(TYPE_SOUNDID soundID, bool repeat, int x, int y);
+bool ViewExists();
+int GetMaxEffectFrame(int bltType, std::uint16_t frameID);
+void AddOustersElemental(MCreature* pOwner, int creatureType, int status);
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);

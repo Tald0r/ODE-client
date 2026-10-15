@@ -297,6 +297,10 @@ Client/MTypeDef.h
 # World metadata and game calendar; unchanged implementation ownership.
 Client/MZoneTable.cpp
 Client/MZoneTable.h
+# The creature: its state, moves, effects and chat (4.242). The executable's
+# creature classes (wear, NPC, fake, player) derive from it.
+Client/MCreature.cpp
+Client/MCreature.h
 Client/MCreatureTable.cpp
 Client/MCreatureTable.h
 Client/MNPCTable.cpp
@@ -903,6 +907,9 @@ Client/PacketHandler/GCTakeOutFailHandler.cpp
 Client/PacketHandler/GCTakeOutOKHandler.cpp
 Client/PacketHandler/GCUseBonusPointFailHandler.cpp
 
+# The user options the creature reads (4.242).
+Client/GameOptionsHost.cpp
+Client/GameOptionsHost.h
 # The NPC talk box and the message box, and their windows (4.238).
 Client/DialogWindowHost.cpp
 Client/DialogWindowHost.h

@@ -113,4 +113,9 @@ void SetSheet(SheetField field, int value)
 	if (s_Host && s_Host->SetSheet) s_Host->SetSheet(field, value);
 }
 
+void SetWeaponSpeed(int speed, int speedClass)
+{
+	if (s_Host && s_Host->SetWeaponSpeed) s_Host->SetWeaponSpeed(speed, speedClass);
+}
+
 }

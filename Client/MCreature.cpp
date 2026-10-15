@@ -2,68 +2,73 @@
 // MCreature.cpp
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#include "MZone.h"
 #include "MObject.h"
 #include "MCreature.h"
-#include "ClientDef.h"
-#include "MTopView.h"
 #include "WorldTileGeometry.h"
 #include "MActionInfoTable.h"
 #include "MEffectGeneratorTable.h"
 #include "MCreatureTable.h"
 #include "MSoundTable.h"
 #include "MEffectStatusTable.h"
-#include "Fl2.h"
 #include "ClientConfig.h"
-#include "TextService.h"
 #include "TextUtf8.h"
 #include "TextWrap.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
 #include "SkillDef.h"
 #include "MLevelNameTable.h"
 #include "EffectSpriteTypeDef.h"
 #include "SoundDef.h"
 #include "MParty.h"
-#include "PacketFunction.h"
 #include "MonsterNameTable.h"
 #include "MEffectSpriteTypeTable.h"
 #include "MAttachOrbitEffect.h"
 #include "UserInformation.h"
-#include "VS_UI_Base.h"
 #include "MSkillManager.h"	// [새기술3]
-#include "UIFunction.h"
 #include "MEventManager.h"
-#include "PacketFunction2.h"
 #include "RankBonusTable.h"
 #include "DebugLog.h"
+#include "MItem.h"
+#include "MSector.h"
+#include "MEffect.h"
+#include "MViewDef.h"
+#include "Alignment.h"
+#include "AdvancementAction.h"
+#include "DirectionSelection.h"
+#include "FrameClock.h"
+#include "ZoneFlags.h"
+#include "GameMessages.h"
+#include "../basic/ColorSetDef.h"
+#include "../basic/TextEncoding.h"
+#include "PlayerStateHost.h"
+#include "ZoneStateHost.h"
+#include "WorldEventsHost.h"
+#include "StatusPresentationHost.h"
+#include "DialogPresentationHost.h"
+#include "VsUiPresentationHost.h"
+#include "GameOptionsHost.h"
 #include "RankBonusDef.h"
-#include "MTestDef.h"
 #include "MTimeItemManager.h"
 
 #include "domain/Formulas.h"
-#ifdef PLATFORM_WINDOWS
-#include "MinTr.h"
-#endif
-#include "MFakeCreature.h"
 #include "SystemAvailabilities.h"
 #include "MGameStringTable.h"
-#include "VS_UI.h"
-#include "Client.h"
 
 #define ATTACHEFFECTCOLOR_NULL	0xFFFF
 
-extern MonotonicClock::TimePoint	g_FrameNow;
-extern DWORD	g_CurrentFrame;
+// White, as the UI's RGB_WHITE (VS_UI_Base.h).
+#define RGB_WHITE	RGB(255, 255, 255)
 
-extern int					g_nZoneLarge;
-extern int					g_nZoneSmall;
-extern bool					g_bZonePlayerInLarge;
-extern WORD					g_ZoneCreatureColorSet;
+// The creature allocator's pool (task 4.242: MemoryPool.cpp's until then,
+// which keeps the pools of the executable's creature classes).
+MemoryPool g_CreatureMemoryPool( sizeof( MCreature ), 30 );
 
-#ifdef OUTPUT_DEBUG	
-	bool g_bCheckError = false;	// 테스트를 위해서 임시로..
-#endif
+namespace {
+// The player's cell (the regen tower check, the move logs); (0, 0)
+// without a player.
+int PlayerX() { MCreature* pPlayer = PlayerState::Creature(); return pPlayer != NULL ? pPlayer->GetX() : 0; }
+int PlayerY() { MCreature* pPlayer = PlayerState::Creature(); return pPlayer != NULL ? pPlayer->GetY() : 0; }
+// The view's cell-to-pixel conversion (MTopView's statics).
+POINT MapToPixel(int x, int y) { POINT p; p.x = WorldTileGeometry::TileToPixelX(x); p.y = WorldTileGeometry::TileToPixelY(y); return p; }
+}
 
 //#define	new			DEBUG_NEW
 #define				MAX_DARKNESS_COUNT		13
@@ -185,14 +190,14 @@ extern WORD					g_ZoneCreatureColorSet;
 			if (classType!=CLASS_PLAYER && classType!=CLASS_FAKE	\
 				&& (m_ServerX!=sX || m_ServerY!=sY))				\
 			{														\
-				m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);	\
+				ZoneState::UnSetServerBlockIn(m_pZone, m_MoveType, m_ServerX, m_ServerY);	\
 																	\
 				m_ServerX = static_cast<TYPE_SECTORPOSITION>(sX);	\
 				m_ServerY = static_cast<TYPE_SECTORPOSITION>(sY);	\
 																	\
 				if (m_bAlive)										\
 				{													\
-					m_pZone->SetServerBlock(m_MoveType, static_cast<TYPE_SECTORPOSITION>(sX), static_cast<TYPE_SECTORPOSITION>(sY));	\
+					ZoneState::SetServerBlockIn(m_pZone, m_MoveType, static_cast<TYPE_SECTORPOSITION>(sX), static_cast<TYPE_SECTORPOSITION>(sY));	\
 				}													\
 			}														\
 		}
@@ -390,9 +395,6 @@ bool			IsCreatureMove( MCreature *pCreature )
 	return false;
 }
 
-int ConvAdvancementSlayerActionFromSlayerAction( int CurAction, MCreatureWear* pCreatureWear );
-int ConvAdvancementOustersActionFromOusterAction( int CurAction, bool bChakram );
-int GetAdvancementVampireActionFromVampireAction( int CurAction, const MCreature* pCreature );
 
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action )
 {
@@ -402,7 +404,7 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action )
 	// 2005, 1, 7, sobeit add start
 	bool bInstallTurret = pCreature->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET);
 	// 2005, 1, 7, sobeit add end
-	if( !pCreature->IsAdvancementClass() || g_pTopView == NULL || bBat || bWolf || bWerWolf || bInstallTurret)
+	if( !pCreature->IsAdvancementClass() || !WorldEvents::ViewExists() || bBat || bWolf || bWerWolf || bInstallTurret)
 	{
 		return (*g_pCreatureTable)[pCreature->GetCreatureType()].GetActionCount( action );
 	}
@@ -411,7 +413,11 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action )
 	switch( pCreature->GetRace() )
 	{
 	case RACE_SLAYER :
-		action = ConvAdvancementSlayerActionFromSlayerAction( action, (MCreatureWear*)pCreature );
+		{
+			ITEM_CLASS rightHand;
+			CreatureState::GetAddonItemClass( const_cast<MCreature*>(pCreature), ADDON_RIGHTHAND, &rightHand );
+			action = ConvAdvancementSlayerAction( action, rightHand );
+		}
 		refActionMaxTable = g_AdvanceSlayerActionMaxCount;
 		break;
 		
@@ -422,9 +428,9 @@ BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action )
 		
 	case RACE_OUSTERS :
 		{
-			MCreatureWear* pCreatureWear = (MCreatureWear*)pCreature;
-			const MCreatureWear::ADDON_INFO& addonInfoChakram = pCreatureWear->GetAddonInfo(ADDON_RIGHTHAND);
-			bool bChakram = addonInfoChakram.bAddon && addonInfoChakram.ItemClass == ITEM_CLASS_OUSTERS_CHAKRAM;
+			ITEM_CLASS rightHand;
+			const bool bAddon = CreatureState::GetAddonItemClass( const_cast<MCreature*>(pCreature), ADDON_RIGHTHAND, &rightHand );
+			bool bChakram = bAddon && rightHand == ITEM_CLASS_OUSTERS_CHAKRAM;
 			
 			action = ConvAdvancementOustersActionFromOusterAction( action, bChakram );
 			refActionMaxTable = g_AdvanceOustersActionMaxCount;
@@ -869,17 +875,17 @@ MCreature::~MCreature()
 	//----------------------------------------
 	// 펫 제거
 	//----------------------------------------
-	if(GetPetID() != OBJECTID_NULL && g_pZone != NULL)
+	if(GetPetID() != OBJECTID_NULL && ZoneState::Exists())
 	{
-		g_pZone->RemoveFakeCreature(GetPetID());
+		ZoneState::RemoveFakeCreature(GetPetID());
 	}
 
 	//----------------------------------------
 	// 정령 제거
 	//----------------------------------------
-	if(GetElementalID() != OBJECTID_NULL && g_pZone != NULL)
+	if(GetElementalID() != OBJECTID_NULL && ZoneState::Exists())
 	{
-		g_pZone->RemoveFakeCreature(GetElementalID());
+		ZoneState::RemoveFakeCreature(GetElementalID());
 	}
 
 	ClearAttachEffect();
@@ -1315,7 +1321,7 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 			if(IsAdvancementClass() && status==EFFECTSTATUS_SUMMON_SYLPH)
 			{
 				pTypes = EFFECTSPRITETYPE_OUSTERS_FASTMOVE_LOOP;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END,
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_END,
 					GetX(), GetY(), 0,GetDirection(),	GetID(),	
 					GetX(), GetY(), 0, 8, NULL, false);
 			}
@@ -1389,7 +1395,7 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 			SetAlive();
 			if(IsVampire())
 			{
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 							BLOOD_RESURRECT,										// 사용 기술 번호
 						
 							m_X, m_Y, 0,
@@ -1436,7 +1442,7 @@ MCreature::RemoveEffectStatus(EFFECTSTATUS status)
 //			StopBurningSol();
 //			break;
 		case EFFECTSTATUS_INSTALL_TURRET:
-			ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,	
+			WorldEvents::ExecuteActionInfoFromMainNode(RESULT_SKILL_INSTALL_TURRET,GetX(), GetY(), 0,0,GetID()	,
 				GetX(), GetY(), 0, 0, NULL, false);
 			SetAction( ACTION_STAND );
 			SetInstallTurretCount(0);
@@ -1722,7 +1728,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			if(IsAdvancementClass() && status==EFFECTSTATUS_SUMMON_SYLPH)
 			{
 				type = EFFECTSPRITETYPE_OUSTERS_FASTMOVE_LOOP;
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_START,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_ADVANCEMENT_SUMMON_SYLPH_START,GetX(), GetY(), 0,GetDirection(),	GetID(),
 				GetX(), GetY(), 0, 8, NULL, false);
 			}
 			/********End *******************************************/
@@ -1818,7 +1824,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			}
 			else
 			{
-				AddOustersElemental( this, 699, status );
+				WorldEvents::AddOustersElemental( this, 699, status );
 				delayFrame = 0;
 			}
 			break;
@@ -1828,7 +1834,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			{
 //				ClearAttachEffect();
 				delayFrame = 0;
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 							SKILL_CLIENT_FIRE_ELEMENTAL_ATTACK,										// 사용 기술 번호
 						
 							m_X, m_Y, 0,
@@ -1847,7 +1853,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			}
 			else
 			{
-				MFakeCreature *pFakeCreature = (MFakeCreature *)g_pZone->GetFakeCreature(GetElementalID());
+				MCreature *pFakeCreature = ZoneState::GetFakeCreature(GetElementalID());
 				if(pFakeCreature != NULL)
 				{
 					pFakeCreature->AddEffectStatus(status, 0xFFFF);
@@ -1866,7 +1872,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			}
 			else
 			{
-				AddOustersElemental( this, 699, status );
+				WorldEvents::AddOustersElemental( this, 699, status );
 				delayFrame = 0;
 			}
 			break;
@@ -1876,7 +1882,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			{
 //				ClearAttachEffect();
 				delayFrame = 0;
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 							SKILL_CLIENT_WATER_ELEMENTAL_HEAL,										// 사용 기술 번호
 						
 							m_X, m_Y, 0,
@@ -1895,7 +1901,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			}
 			else
 			{
-				MFakeCreature *pFakeCreature = (MFakeCreature *)g_pZone->GetFakeCreature(GetElementalID());
+				MCreature *pFakeCreature = ZoneState::GetFakeCreature(GetElementalID());
 				if(pFakeCreature != NULL)
 				{
 					pFakeCreature->AddEffectStatus(status, 0xFFFF);
@@ -1921,7 +1927,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 					
 					// BLT_NORMAL		
 					BLT_TYPE bltType = (*g_pEffectSpriteTypeTable)[type].BltType;
-					maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);		
+					maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 
 					delayFrame = maxFrame;
 				}
@@ -1938,7 +1944,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 					
 					// BLT_NORMAL		
 					BLT_TYPE bltType = (*g_pEffectSpriteTypeTable)[type].BltType;
-					maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);		
+					maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 
 					delayFrame = maxFrame;
 				}
@@ -2034,7 +2040,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 
 		case EFFECTSTATUS_HALLUCINATION:
 			{
-				if(this == g_pPlayer)
+				if(this == PlayerState::Creature())
 				{
 					MEvent event;
 					event.eventID = EVENTID_HALLUCINATION;
@@ -2054,7 +2060,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 
 		case EFFECTSTATUS_LEVELUP_SLAYER:
 			delayFrame = 30;
-			PlaySound(SOUND_SLAYER_ENCHANT_PFA);
+			WorldEvents::PlaySound(SOUND_SLAYER_ENCHANT_PFA);
 			break;
 
 		case EFFECTSTATUS_DISTANCE_BLITZ:
@@ -2063,7 +2069,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 
 		case EFFECTSTATUS_LEVELUP_VAMPIRE:
 			delayFrame = 24;
-			PlaySound(SOUND_SLAYER_ENCHANT_PFA);
+			WorldEvents::PlaySound(SOUND_SLAYER_ENCHANT_PFA);
 			break;
 
 		case EFFECTSTATUS_WATER_SHIELD:
@@ -2176,7 +2182,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 //			}
 //			break;
 		case EFFECTSTATUS_BLINDNESS:
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_BLINDNESS,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BLINDNESS,GetX(), GetY(), 0,GetDirection(),	GetID(),
 								GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;	
 		case EFFECTSTATUS_GLACIER:
@@ -2189,13 +2195,13 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			//	if(!HasEffectStatus(EFFECTSTATUS_GLACIER))
 				{
 					if(IsSlayer())
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_SLAYER,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_SLAYER,GetX(), GetY(), 0,GetDirection(),	GetID(),
 										GetX(), GetY(), 0, max(0, delayFrame-20), NULL, false);
 					else if(IsVampire())
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_VAMPIRE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_VAMPIRE,GetX(), GetY(), 0,GetDirection(),	GetID(),
 										GetX(), GetY(), 0, max(0, delayFrame-20), NULL, false);
 					else if(IsOusters())
-						ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_OUSTERS,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+						WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_GLACIER_OUSTERS,GetX(), GetY(), 0,GetDirection(),	GetID(),
 										GetX(), GetY(), 0, max(0, delayFrame-20), NULL, false);
 				}
 			}
@@ -2229,7 +2235,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			break;
 		case EFFECTSTATUS_REPUTO_FACTUM:
 			delayFrame = 0;
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_HIT_REPUTO_FACTUM, GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_HIT_REPUTO_FACTUM, GetX(), GetY(), 0,GetDirection(),	GetID(),
 								GetX(), GetY(), 0, 8, NULL, false);
 			break;
 		case EFFECTSTATUS_BURNING_SOL_CHARGE_1:
@@ -2328,24 +2334,24 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 			break;
 			
 		case EFFECTSTATUS_FIERCE_FLAME:
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_FIERCE_FLAME,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_FIERCE_FLAME,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;
 		// add by Coffee 2007-5-3 삽랬	
 		case EFFECTSTATUS_DUMMY_DRAKE:
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_DUMMY_DRAKE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_DUMMY_DRAKE,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;
 		case EFFECTSTATUS_HYDRO_CONVERGENCE: //水法
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_HYDRO_CONVERGENCE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_HYDRO_CONVERGENCE,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;
 		case EFFECTSTATUS_HETER_CHAKRAM: //敏战
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_SKILL_DUMMY_DRAKE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_SKILL_DUMMY_DRAKE,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;	
 		case EFFECTSTATUS_BLOOD_CURSE: // 吸血鬼技能
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_BLOOD_CURSE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BLOOD_CURSE,GetX(), GetY(), 0,GetDirection(),	GetID(),
 					GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;
 		// end 	
@@ -2353,7 +2359,7 @@ MCreature::AddEffectStatus(enum EFFECTSTATUS status, DWORD delayFrame)
 				delayFrame = 20;
 			break;
 		case EFFECTSTATUS_DONATION_200501:
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_CANDLE,GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_CANDLE,GetX(), GetY(), 0,GetDirection(),	GetID(),
 								GetX(), GetY(), 0, delayFrame, NULL, false);
 			break;	
 		default:
@@ -2872,7 +2878,7 @@ MCreature::SetWeaponSpeed(int speed)
 	}
 	if(GetClassType() == CLASS_PLAYER)
 	{
-		UI_SetWeaponSpeed(speed, m_WeaponSpeed);
+		StatusPresentation::SetWeaponSpeed(speed, m_WeaponSpeed);
 	}
 }
 
@@ -2933,10 +2939,9 @@ MCreature::SetStop()
 // g_DrawAlphaNum is how far the wall clock has advanced into the current
 // 62 ms tick, as a 0..256 fixed-point fraction. g_bInterpolateDraw is set
 // only around the world draw in CGameUpdate::UpdateDraw, so game logic
-// always reads exact tick positions. Both live in CGameUpdate.cpp.
-extern DWORD	g_DrawAlphaNum;
+// always reads exact tick positions. The clock is FrameClock's (task 4.240);
+// the flag is MObjectScreen.cpp's.
 extern bool		g_bInterpolateDraw;
-extern DWORD	g_CurrentFrame;
 
 // A creature never moves more than a tile's worth of pixels per tick; a
 // larger gap means teleport/respawn and must snap, not glide.
@@ -2952,8 +2957,8 @@ static const int DRAW_LERP_SNAP_DISTANCE = 96;
 void
 MCreature::SnapshotDrawState()
 {
-	m_PrevPixelX = MTopView::MapToPixelX(m_X) + m_sX;
-	m_PrevPixelY = MTopView::MapToPixelY(m_Y) + m_sY;
+	m_PrevPixelX = WorldTileGeometry::TileToPixelX(m_X) + m_sX;
+	m_PrevPixelY = WorldTileGeometry::TileToPixelY(m_Y) + m_sY;
 	m_DrawSnapFrame = g_CurrentFrame;
 }
 
@@ -2963,7 +2968,7 @@ MCreature::SnapshotDrawState()
 int
 MCreature::GetPixelX() const
 {
-	int cur = MTopView::MapToPixelX(m_X) + m_sX;
+	int cur = WorldTileGeometry::TileToPixelX(m_X) + m_sX;
 
 	if (!g_bInterpolateDraw || m_DrawSnapFrame != g_CurrentFrame)
 		return cur;
@@ -2981,7 +2986,7 @@ MCreature::GetPixelX() const
 int
 MCreature::GetPixelY() const
 {
-	int cur = MTopView::MapToPixelY(m_Y) + m_sY;// + ((m_MoveType == CREATURE_FLYING)<<2);
+	int cur = WorldTileGeometry::TileToPixelY(m_Y) + m_sY;// + ((m_MoveType == CREATURE_FLYING)<<2);
 
 	if (!g_bInterpolateDraw || m_DrawSnapFrame != g_CurrentFrame)
 		return cur;
@@ -3006,7 +3011,7 @@ MCreature::GetDrawGapX() const
 	if (m_DrawSnapFrame != g_CurrentFrame)
 		return 0;
 
-	int cur = MTopView::MapToPixelX(m_X) + m_sX;
+	int cur = WorldTileGeometry::TileToPixelX(m_X) + m_sX;
 	int d = cur - m_PrevPixelX;
 	if (d > DRAW_LERP_SNAP_DISTANCE || d < -DRAW_LERP_SNAP_DISTANCE)
 		return 0;
@@ -3020,7 +3025,7 @@ MCreature::GetDrawGapY() const
 	if (m_DrawSnapFrame != g_CurrentFrame)
 		return 0;
 
-	int cur = MTopView::MapToPixelY(m_Y) + m_sY;
+	int cur = WorldTileGeometry::TileToPixelY(m_Y) + m_sY;
 	int d = cur - m_PrevPixelY;
 	if (d > DRAW_LERP_SNAP_DISTANCE || d < -DRAW_LERP_SNAP_DISTANCE)
 		return 0;
@@ -3065,18 +3070,9 @@ MCreature::MovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	switch (m_MoveType)
 	{
 		case CREATURE_UNDERGROUND : 
-			if (m_pZone->MoveUndergroundCreature(this, m_X, m_Y, x, y))
+			if (ZoneState::MoveUndergroundCreatureIn(m_pZone, this, m_X, m_Y, x, y))
 			{
 				// Effect가 있을 경우
-				/*
-				if (m_nAlphaEffect)
-				{
-					// 시야를 바꿔준다.
-					g_pZone->UnSetLightSight(m_X, m_Y, 0);
-					// 시야를 바꿔준다.
-					g_pZone->SetLightSight(x, y, 0);
-				}
-				*/
 
 				// 이동했으면 새로운 좌표 설정
 				m_X	= x;
@@ -3089,18 +3085,9 @@ MCreature::MovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 		break;
 
 		case CREATURE_GROUND : 
-			if (m_pZone->MoveGroundCreature(this, m_X, m_Y, x, y))
+			if (ZoneState::MoveGroundCreatureIn(m_pZone, this, m_X, m_Y, x, y))
 			{
 				// Effect가 있을 경우
-				/*
-				if (m_nAlphaEffect)
-				{
-					// 시야를 바꿔준다.
-					g_pZone->UnSetLightSight(m_X, m_Y, 0);
-					// 시야를 바꿔준다.
-					g_pZone->SetLightSight(x, y, 0);
-				}
-				*/
 
 				// 이동했으면 새로운 좌표 설정
 				m_X	= x;
@@ -3113,18 +3100,9 @@ MCreature::MovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 		break;
 
 		case CREATURE_FLYING : 
-			if (m_pZone->MoveFlyingCreature(this, m_X, m_Y, x, y))
+			if (ZoneState::MoveFlyingCreatureIn(m_pZone, this, m_X, m_Y, x, y))
 			{
 				// Effect가 있을 경우
-				/*
-				if (m_nAlphaEffect)
-				{
-					// 시야를 바꿔준다.
-					g_pZone->UnSetLightSight(m_X, m_Y, 0);
-					// 시야를 바꿔준다.
-					g_pZone->SetLightSight(x, y, 0);
-				}
-				*/
 
 				// 이동했으면 새로운 좌표 설정
 				m_X	= x;
@@ -3713,7 +3691,7 @@ MCreature::UpdateAttachEffect()
 				if( bNewSummonSylphEffect )
 					frameID = (*g_pEffectSpriteTypeTable)[ EffectSpriteType + 1 ].FrameID;
 
-				int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);			
+				int maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 			
 				pEffect->SetEffectSprite( EFFECTSPRITETYPE_FAST_MOVE_STOP );
 				if( bNewSummonSylphEffect )
@@ -3731,7 +3709,7 @@ MCreature::UpdateAttachEffect()
 				if( bNewSummonSylphEffect )
 					frameID = (*g_pEffectSpriteTypeTable)[ EffectSpriteType - 1 ].FrameID;
 
-				int maxFrame = g_pTopView->GetMaxEffectFrame(bltType, frameID);			
+				int maxFrame = WorldEvents::GetMaxEffectFrame(bltType, frameID);
 
 				pEffect->SetEffectSprite( EFFECTSPRITETYPE_FAST_MOVE_FLY );
 
@@ -4093,7 +4071,7 @@ MCreature::SetDead()
 //		}
 		//if(HasEffectStatus( EFFECTSTATUS_SUMMON_SYLPH ) )
 		if(GetCreatureType() == 723) // 각성 질드레
-			ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_DEAD, GetX(), GetY(), 0,GetDirection(),	GetID(),	
+			WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_GDR_DEAD, GetX(), GetY(), 0,GetDirection(),	GetID(),
 								GetX(), GetY(), 0, 20, NULL, false);			
 
 		if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
@@ -4119,7 +4097,7 @@ MCreature::SetDead()
 		//-------------------------------------------------------`
 		// server block좌표 없애주기
 		//-------------------------------------------------------
-		m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);
+		ZoneState::UnSetServerBlockIn(m_pZone, m_MoveType, m_ServerX, m_ServerY);
 	
 		// 2002.3.22 추가
 		SetGroundCreature();
@@ -4217,7 +4195,7 @@ MCreature::SetCorpse()
 	//-------------------------------------------------------
 	// server block좌표 없애주기
 	//-------------------------------------------------------
-	m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);
+	ZoneState::UnSetServerBlockIn(m_pZone, m_MoveType, m_ServerX, m_ServerY);
 
 	// 정지
 	SetStop();
@@ -4341,8 +4319,7 @@ MCreature::UpdateCutHeight()
 
 		if( GetCreatureType() == 702 || GetCreatureType() == 703 || GetCreatureType() == 704 )
 		{
-			MFakeCreature *pFakeCreature = (MFakeCreature *)this;
-			pFakeCreature->SyncTurretDirection();
+			CreatureState::SyncTurretDirection( this );
 		}
 	}
 }
@@ -4888,7 +4865,7 @@ MCreature::ClearChatString()
 		if( m_PersnalMessage.empty() )
 			SetPersnalString( (*g_pGameStringTable)[UI_STRING_MESSAGE_PERSNAL_DEFAULT_MESSGE].GetString() );
 		else
-			SetPersnalString( m_PersnalMessage.c_str(), g_pUserOption->ChattingColor );
+			SetPersnalString( m_PersnalMessage.c_str(), GameOptions::ChattingColor() );
 	}
 }
 
@@ -4917,7 +4894,7 @@ MCreature::SetPersnalString(const char* input, COLORREF color)
 	}
 
 	// Copy before clearing rows; the supplied sign can belong to the creature.
-	const std::string text = TextSystem::TextService::NormalizeText(input);
+	const std::string text = TextEncoding::NormalizeUtf8(input);
 	DEBUG_ADD_FORMAT("[SetPersnalString] %s", text.c_str());
 	ClearChatString();
 	m_NextChatFadeTime = MonotonicClock::TimePoint();
@@ -4951,7 +4928,7 @@ MCreature::SetChatString(const char *input, COLORREF color)
 	}
 
 	// Normalize complete input before any byte cuts, and keep tree parsing local.
-	std::string mutableString = TextSystem::TextService::NormalizeText(input);
+	std::string mutableString = TextEncoding::NormalizeUtf8(input);
 	char* str = mutableString.data();
 
 //	if(CurPernalShop() == 1)
@@ -4959,7 +4936,7 @@ MCreature::SetChatString(const char *input, COLORREF color)
 
 	DEBUG_ADD_FORMAT("[SetChatString] %s", str);
 
-	if(g_pUserOption->ChatWhite)
+	if(GameOptions::ChatWhite())
 		color = RGB_WHITE;
 
 	SetInputChatting(false);
@@ -5264,7 +5241,7 @@ MCreature::SetDirectionToPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 	}
 	else
 	{
-		m_Direction = MTopView::GetDirectionToPosition(m_X, m_Y, sX, sY);
+		m_Direction = SelectFacingDirection(m_X, m_Y, sX, sY);
 	}
 }
 
@@ -5374,7 +5351,7 @@ MCreature::GetDirectionToPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY
 		return m_CurrentDirection;
 	}
 
-	return MTopView::GetDirectionToPosition(m_X, m_Y, sX, sY);
+	return SelectFacingDirection(m_X, m_Y, sX, sY);
 }
 
 //----------------------------------------------------------------------
@@ -5479,15 +5456,14 @@ MCreature::ActionMove()
 
 	if( HasEffectStatus( EFFECTSTATUS_TRYING ) )
 	{
-		MZone::EFFECT_MAP::const_iterator itr = g_pZone->GetGroundEffects();
+		std::vector<const MEffect*> groundEffects;
+		ZoneState::GetGroundEffects( groundEffects );
 		bool bFind = false;
 
-		for(int i = 0; i < g_pZone->GetGroundEffectCount(); itr++,i++ )
+		for( const MEffect* pEffect : groundEffects )
 		{
-			const MEffect* pEffect = itr->second;
-
-			if( g_pPlayer->GetX() == pEffect->GetX() &&
-				g_pPlayer->GetY() == pEffect->GetY() &&
+			if( PlayerX() == pEffect->GetX() &&
+				PlayerY() == pEffect->GetY() &&
 				pEffect->GetFrameID() == EFFECTSPRITETYPE_REGEN_TOWER_GROUND )
 			{
 				bFind = true;
@@ -5538,19 +5514,6 @@ MCreature::ActionMove()
 		// Server에서 날아온 정보이기 때문에..
 		// 
 		//--------------------------------------------
-		// [ TEST CODE ]
-		/*
-		#ifdef	OUTPUT_DEBUG			
-			if (!m_pZone->CanMove(m_MoveType, x,y))
-			{
-				DEBUG_ADD_FORMAT("[Can't Move] But Go! [ID=%d] (%d,%d) --> (%d,%d)",
-										m_ID,
-										m_X, m_Y,
-										x, y);
-				
-			}
-		#endif
-		*/
 
 		//#ifdef	OUTPUT_DEBUG
 			TYPE_SECTORPOSITION ox = m_X;
@@ -5699,7 +5662,7 @@ MCreature::ActionMove()
 
 				if (soundID!=SOUNDID_NULL  )
 				{
-					PlaySound( soundID,
+					WorldEvents::PlaySoundAt( soundID,
 								false,
 								m_X,
 								m_Y);
@@ -5765,7 +5728,7 @@ MCreature::ActionMove()
 				if (m_MoveCount+1 >= m_MoveCountMax
 					&& m_nNextUsedActionInfo!=m_nBasicActionInfo)
 				{
-					MCreature* pCreature = g_pZone->GetCreature( m_TraceID );
+					MCreature* pCreature = ZoneState::GetCreature( m_TraceID );
 
 					if (pCreature!=NULL 
 						&& m_nSpecialActionInfo != MAGIC_RAPID_GLIDING 
@@ -5787,7 +5750,7 @@ MCreature::ActionMove()
 							if( m_nSpecialActionInfo == SKILL_BLAZE_WALK )
 								ActionInfo = SKILL_BLAZE_WALK_ATTACK;
 							
-							SetDirection( MTopView::GetDirectionToPosition( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
+							SetDirection( SelectFacingDirection( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
 						}
 						else if(m_nSpecialActionInfo == SKILL_SET_AFIRE)
 						{
@@ -5799,7 +5762,7 @@ MCreature::ActionMove()
 //						}						
 
 						// 결과 표현
-						SetDirection( MTopView::GetDirectionToPosition( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
+						SetDirection( SelectFacingDirection( GetX(), GetY(), pCreature->GetX(), pCreature->GetY() ) );
 						pResult->Add( new MActionResultNodeActionInfo( 
 														ActionInfo,
 														m_ID,
@@ -5956,7 +5919,7 @@ MCreature::AttachCastingEffect(TYPE_ACTIONINFO nUsedActionInfo, BOOL bForceAttac
 					}
 					else
 					{
-						targetCreature = g_pZone->GetCreature( m_TraceID );					
+						targetCreature = ZoneState::GetCreature( m_TraceID );
 					}
 				}
 
@@ -6029,7 +5992,7 @@ MCreature::AttachCastingEffect(TYPE_ACTIONINFO nUsedActionInfo, BOOL bForceAttac
 			//-------------------------------------------------------------
 			// casting 동작에 맞는 sound
 			//-------------------------------------------------------------
-			PlaySound( GetCastingSoundID(nUsedActionInfo) ,
+			WorldEvents::PlaySoundAt( GetCastingSoundID(nUsedActionInfo) ,
 						false,
 						m_X, m_Y);
 		}
@@ -6051,7 +6014,7 @@ MCreature::SetUndergroundCreature()
 { 
 	if (m_pZone!=NULL)
 	{
-		m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);
+		ZoneState::UnSetServerBlockIn(m_pZone, m_MoveType, m_ServerX, m_ServerY);
 	}
 
 	m_MoveType = CREATURE_UNDERGROUND; 
@@ -6068,7 +6031,7 @@ MCreature::SetGroundCreature()
 { 
 	if (m_pZone!=NULL)
 	{
-		m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);
+		ZoneState::UnSetServerBlockIn(m_pZone, m_MoveType, m_ServerX, m_ServerY);
 	}
 
 	m_MoveType = CREATURE_GROUND; 
@@ -6085,7 +6048,7 @@ MCreature::SetFlyingCreature()
 { 
 	if (m_pZone!=NULL)
 	{
-		m_pZone->UnSetServerBlock(m_MoveType, m_ServerX, m_ServerY);
+		ZoneState::UnSetServerBlockIn(m_pZone, m_MoveType, m_ServerX, m_ServerY);
 	}
 
 	m_MoveType = CREATURE_FLYING; 
@@ -6140,7 +6103,7 @@ MCreature::ActionEffect()
 			//------------------------------------------------
 			// 캐릭터의 Action에 맞는 Sound를 출력해준다.
 			//------------------------------------------------
-			PlaySound( 
+			WorldEvents::PlaySoundAt(
 				(*g_pCreatureTable)[m_CreatureType].GetActionSound( 
 					GetActionInfoAction(m_nUsedActionInfo)
 				),
@@ -6258,7 +6221,7 @@ MCreature::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 		//--------------------------------------------------------
 		// 목표 위치 Pixel좌표
 		//--------------------------------------------------------
-		point = MTopView::MapToPixel(m_TraceX, m_TraceY);
+		point = MapToPixel(m_TraceX, m_TraceY);
 		//point.x += m_sX;
 		//point.y += m_sY;
 		//point.x += TILE_X_HALF;
@@ -6373,7 +6336,7 @@ MCreature::AffectUsedActionInfo(TYPE_ACTIONINFO nUsedActionInfo)
 		if ((*g_pActionInfoTable)[nUsedActionInfo].IsStartUser())
 		{
 			DEBUG_ADD_FORMAT("[AffectUsedActionInfo] %d",__LINE__);
-			point = MTopView::MapToPixel(m_X, m_Y);
+			point = MapToPixel(m_X, m_Y);
 			point.x += m_sX;
 			point.y += m_sY;
 			//point.x += TILE_X_HALF;
@@ -6709,7 +6672,7 @@ MCreature::CheckDropBlood()
 		//----------------------------------------------------------
 		// time to bleed?
 		//----------------------------------------------------------
-		if (g_pUserOption->BloodDrop 
+		if (GameOptions::BloodDrop()
 			&& g_FrameNow > m_NextBloodingTime)
 		{
 			int currentHP = m_Status[MODIFY_CURRENT_HP];
@@ -6722,7 +6685,7 @@ MCreature::CheckDropBlood()
 			//----------------------------------------------------------
 			if (percentHP <= g_pClientConfig->BLOOD_DROP_HP_PERCENT)
 			{
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 							BLOOD_DROP_GROUND,										// 사용 기술 번호
 						
 							m_X, m_Y, 0,
@@ -6787,9 +6750,9 @@ MCreature::AddCasketSoon(int type)
 	
 	CheckRegen();
 
-	if(g_pPlayer == this)	// Player인 경우 관소환 중에는 옷 못갈아 입는다.
+	if(PlayerState::Creature() == this)	// Player인 경우 관소환 중에는 옷 못갈아 입는다.
 	{
-		UI_LockGear();
+		VsUiPresentation::LockGear();
 	}
 }
 
@@ -6810,9 +6773,9 @@ MCreature::RemoveCasketSoon()
 	
 	CheckRegen();
 
-	if(g_pPlayer == this)	// Player인 경우 관소환 중에는 옷 못갈아 입는걸 푼다.
+	if(PlayerState::Creature() == this)	// Player인 경우 관소환 중에는 옷 못갈아 입는걸 푼다.
 	{
-		UI_UnlockGear();;
+		DialogPresentation::UnlockGear();
 	}
 }
 
@@ -7109,9 +7072,9 @@ MCreature::Action()
 	UpdateBurningSol();
 
 	UpdateBikeCrash();
-	if( !HasEffectStatus( EFFECTSTATUS_FIRE_ELEMENTAL ) && !HasEffectStatus( EFFECTSTATUS_WATER_ELEMENTAL ) && GetElementalID() != OBJECTID_NULL && g_pZone != NULL)
+	if( !HasEffectStatus( EFFECTSTATUS_FIRE_ELEMENTAL ) && !HasEffectStatus( EFFECTSTATUS_WATER_ELEMENTAL ) && GetElementalID() != OBJECTID_NULL && ZoneState::Exists())
 	{
-		g_pZone->RemoveFakeCreature(GetElementalID());
+		ZoneState::RemoveFakeCreature(GetElementalID());
 	}
 	
 	if( GetCreatureType() == 672 )
@@ -7301,7 +7264,7 @@ MCreature::Action()
 						AffectUsedActionInfo( m_nUsedActionInfo );
 				
 						// 소리 출력
-						PlaySound( 
+						WorldEvents::PlaySoundAt(
 							(*g_pCreatureTable)[m_CreatureType].GetActionSound( 
 								GetActionInfoAction(m_nUsedActionInfo)
 							),
@@ -7766,8 +7729,8 @@ MCreature::AffectMoveBuffer()
 	// 영역 넘어가는지 체크 . 2001.10.7
 	if (next.x < 0 
 		|| next.y < 0 
-		|| next.x >= g_pZone->GetWidth() 
-		|| next.y >= g_pZone->GetHeight()) 
+		|| next.x >= ZoneState::GetWidth()
+		|| next.y >= ZoneState::GetHeight())
 	{
 		m_X = oldX;
 		m_Y = oldY;
@@ -7814,7 +7777,7 @@ MCreature::AffectMoveBuffer()
 							m_ID, 
 							m_X, m_Y, 
 							m_NextX, m_NextY, 
-							g_pPlayer->GetX(), g_pPlayer->GetY());			
+							PlayerX(), PlayerY());
 		
 		// 이전 정보를 바로 update시킨다.
 		MovePosition(m_NextX, m_NextY);
@@ -7841,7 +7804,7 @@ MCreature::AffectMoveBuffer()
 	if (m_X==next.x && m_Y==next.y)
 	{	
 		// message
-		DEBUG_ADD_FORMAT("[ Stand ] [ID=%d] : Already Reached (%d, %d) ,  Player=(%d, %d)", m_ID, oldX, oldY, g_pPlayer->GetX(), g_pPlayer->GetY());						
+		DEBUG_ADD_FORMAT("[ Stand ] [ID=%d] : Already Reached (%d, %d) ,  Player=(%d, %d)", m_ID, oldX, oldY, PlayerX(), PlayerY());
 	}
 	//--------------------------------------------------
 	// 목적지에 가 있지 않은 경우 --> 움직인다.
@@ -7856,7 +7819,7 @@ MCreature::AffectMoveBuffer()
 			// 움직이는 동작이 끝난 상태이면..
 			if (m_MoveCount>=m_MoveCountMax)
 			{
-				DEBUG_ADD_FORMAT("[ MoveSetting ] [ID=%d] From(%d, %d) to Direction(%d) ,  Player=(%d, %d)", m_ID, x,y, direction, g_pPlayer->GetX(), g_pPlayer->GetY());						
+				DEBUG_ADD_FORMAT("[ MoveSetting ] [ID=%d] From(%d, %d) to Direction(%d) ,  Player=(%d, %d)", m_ID, x,y, direction, PlayerX(), PlayerY());
 				
 				m_Direction = direction;
 				m_DirectionMove = direction;
@@ -7889,7 +7852,7 @@ MCreature::AffectMoveBuffer()
 			SetNextAction( m_MoveAction );
 
 			// message
-			DEBUG_ADD_FORMAT("[ Jump ] [ID=%d] : (%d, %d) --> (%d, %d),  Player=(%d, %d)", m_ID, m_X, m_Y, next.x, next.y, g_pPlayer->GetX(), g_pPlayer->GetY());
+			DEBUG_ADD_FORMAT("[ Jump ] [ID=%d] : (%d, %d) --> (%d, %d),  Player=(%d, %d)", m_ID, m_X, m_Y, next.x, next.y, PlayerX(), PlayerY());
 		}			
 		
 		// 방향을 정하고 움직이도록 한다.
@@ -8620,27 +8583,6 @@ MCreature::PacketAttackNormal(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BY
 	
 	// server에서 날아온~ 정보 설정..
 	{
-		//--------------------------------------------------
-		// 다른 Creature가 이미 있다면?
-		//--------------------------------------------------
-		/*
-		bool bIsExistCreature;
-		switch (m_MoveType)
-		{
-			case CREATURE_UNDERGROUND : 
-				bIsExistCreature = m_pZone->GetSector(x,y).IsExistUndergroundCreature();
-			break;
-
-			case CREATURE_GROUND : 
-				bIsExistCreature = m_pZone->GetSector(x,y).IsExistGroundCreature();
-			break;
-
-			case CREATURE_FLYING : 
-				bIsExistCreature = m_pZone->GetSector(x,y).IsExistFlyingCreature();
-			break;
-		}
-		*/	
-
 		// 현재 좌표와 같은 경우.. 움직일 필요가 없다.
 		if (m_X==sX && m_Y==sY)
 		{
@@ -8652,7 +8594,7 @@ MCreature::PacketAttackNormal(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BY
 			MovePosition(sX, sY);
 			
 			// message
-			DEBUG_ADD_FORMAT("[ Move To Attack ] : (%d, %d) --> (%d, %d),  Player=(%d, %d)", m_X, m_Y, sX, sY, g_pPlayer->GetX(), g_pPlayer->GetY());								
+			DEBUG_ADD_FORMAT("[ Move To Attack ] : (%d, %d) --> (%d, %d),  Player=(%d, %d)", m_X, m_Y, sX, sY, PlayerX(), PlayerY());
 		}	
 
 		// Server에서 날아온 정보 설정..		
@@ -8847,7 +8789,7 @@ MCreature::PacketSpecialActionToOther(TYPE_ACTIONINFO nActionInfo, TYPE_OBJECTID
 	if ((*g_pActionInfoTable)[nActionInfo].IsTargetOther())
 	{
 		// 대상이 되는 creature를 얻는다.
-		MCreature* pCreature = g_pZone->GetCreature( id );
+		MCreature* pCreature = ZoneState::GetCreature( id );
 		
 		if (pCreature==NULL)
 		{
@@ -9404,7 +9346,7 @@ MCreature::ChangeToVampire()
 	if (IsMale())
 	{
 		// 변신 소리
-		PlaySound(SOUND_VAMPIRE_CHANGE_MALE, 
+		WorldEvents::PlaySoundAt(SOUND_VAMPIRE_CHANGE_MALE,
 					false,
 					m_X,
 					m_Y);
@@ -9414,7 +9356,7 @@ MCreature::ChangeToVampire()
 	else
 	{
 		// 변신 소리
-		PlaySound(SOUND_VAMPIRE_CHANGE_FEMALE, 
+		WorldEvents::PlaySoundAt(SOUND_VAMPIRE_CHANGE_FEMALE,
 					false,
 					m_X,
 					m_Y);
@@ -9525,7 +9467,7 @@ MCreature::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE 
 			
 			if (soundID!=SOUNDID_NULL)
 			{
-				PlaySound( soundID,
+				WorldEvents::PlaySoundAt( soundID,
 					false,
 					m_X,
 					m_Y);
@@ -9549,8 +9491,8 @@ MCreature::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE 
 		int oldY = m_Y;
 		int newX = x;
 		int newY = y;
-		POINT	oldPoint = g_pTopView->MapToPixel(oldX, oldY);
-		POINT	newPoint = g_pTopView->MapToPixel(newX, newY);
+		POINT	oldPoint = MapToPixel(oldX, oldY);
+		POINT	newPoint = MapToPixel(newX, newY);
 		
 		// 이동해야할 pixel수 계산
 		int gapX = newPoint.x - oldPoint.x; //+ m_sX);
@@ -9571,7 +9513,7 @@ MCreature::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE 
 			// KnockBack되는 방향 설정
 			// 새좌표에서 예전좌표를 바라보는 방향
 			//------------------------------------------------	
-			m_Direction = MTopView::GetDirectionToPosition(newX, newY, oldX, oldY);
+			m_Direction = SelectFacingDirection(newX, newY, oldX, oldY);
 		
 			//------------------------------------------------	
 			// 좌표는 바로 이동.
@@ -9605,12 +9547,12 @@ MCreature::KnockBackPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE 
 			//------------------------------------------------			
 			// 바닥에 흘리는 피 3방울(-_-;)
 			//------------------------------------------------			
-			if (g_pUserOption->BloodDrop)
+			if (GameOptions::BloodDrop())
 			{
 				int num = rand()%3 + 3;
 				for (int i=0; i<num; i++)
 				{
-					ExecuteActionInfoFromMainNode(
+					WorldEvents::ExecuteActionInfoFromMainNode(
 						BLOOD_CRITICAL_HIT,										// 사용 기술 번호
 						
 						oldX, oldY, 0,
@@ -9762,8 +9704,8 @@ MCreature::StopAbsorbSoul()
 void	
 MCreature::UpdateDarkness()
 {
-	if (!IsVampire() || (IsVampire() && g_pZone->GetID() == 3001
-		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+	if (!IsVampire() || (IsVampire() && ZoneState::GetID() == 3001
+		&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
@@ -9814,7 +9756,7 @@ MCreature::UpdateDarkness()
 void
 MCreature::CheckInDarkness()
 {
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{
 		//if (IsSlayer())
 		{
@@ -9822,10 +9764,10 @@ MCreature::CheckInDarkness()
 			// Darkness에 들어왔는지 체크
 			//-------------------------------------------------------
 			// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
-			if (m_X < g_pZone->GetWidth()
-				&& m_Y < g_pZone->GetHeight())
+			if (m_X < ZoneState::GetWidth()
+				&& m_Y < ZoneState::GetHeight())
 			{
-				const MSector& sector = g_pZone->GetSector( m_X, m_Y );
+				const MSector& sector = *ZoneState::GetSector( m_X, m_Y );
 
 				if (m_bAlive && (sector.HasDarkness()))
 				{
@@ -9849,7 +9791,7 @@ MCreature::CheckInDarkness()
 BOOL
 MCreature::IsInGroundElemental() const
 {
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{
 		//if (IsSlayer())
 		{
@@ -9857,10 +9799,10 @@ MCreature::IsInGroundElemental() const
 			// Darkness에 들어왔는지 체크
 			//-------------------------------------------------------
 			// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
-			if (m_X < g_pZone->GetWidth()
-				&& m_Y < g_pZone->GetHeight())
+			if (m_X < ZoneState::GetWidth()
+				&& m_Y < ZoneState::GetHeight())
 			{
-				const MSector& sector = g_pZone->GetSector( m_X, m_Y );
+				const MSector& sector = *ZoneState::GetSector( m_X, m_Y );
 
 				if (m_bAlive && sector.HasGroundElemental())
 				{
@@ -9875,7 +9817,7 @@ MCreature::IsInGroundElemental() const
 BOOL
 MCreature::IsInFuryOfGnome() const
 {
-	if (g_pZone!=NULL)
+	if (ZoneState::Exists())
 	{
 		//if (IsSlayer())
 		{
@@ -9883,10 +9825,10 @@ MCreature::IsInFuryOfGnome() const
 			// Fury Of Gnome에 들어왔는지 체크
 			//-------------------------------------------------------
 			// 서버 좌표보다는 현재 좌표가 보기에 좋다.. ㅋㅋ..
-			if (m_X < g_pZone->GetWidth()
-				&& m_Y < g_pZone->GetHeight())
+			if (m_X < ZoneState::GetWidth()
+				&& m_Y < ZoneState::GetHeight())
 			{
-				const MSector& sector = g_pZone->GetSector( m_X, m_Y );
+				const MSector& sector = *ZoneState::GetSector( m_X, m_Y );
 
 				if (m_bAlive && sector.HasFuryOfGnome())
 				{
@@ -9908,9 +9850,9 @@ MCreature::PlaceInDarkness(bool IsBlindness)
 {
 	if (
 		  (
-				(IsBlindness || (!IsVampire() || (IsVampire() && g_pZone->GetID() == 3001)))
+				(IsBlindness || (!IsVampire() || (IsVampire() && ZoneState::GetID() == 3001)))
 				
-				&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+				&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 			)
 		  
 #ifdef __METROTECH_TEST__
@@ -9943,8 +9885,8 @@ MCreature::PlaceInDarkness(bool IsBlindness)
 void
 MCreature::PlaceNotInDarkness()
 {
-	if (!IsVampire() || (IsVampire() && g_pZone->GetID() == 3001
-		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+	if (!IsVampire() || (IsVampire() && ZoneState::GetID() == 3001
+		&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
@@ -9973,8 +9915,8 @@ MCreature::ShowInDarkness(int sX, int sY) const
 	if (//!(m_CreatureType >= 526 && m_CreatureType <= 549 || m_CreatureType >= 371 && m_CreatureType <= 376 || m_CreatureType >= 560 && m_CreatureType <= 563) &&
 //		!IsNPC() &&
 		m_DarknessCount >= 0 &&
-		(!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || g_pZone->GetID() == 3001 )
-		&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
+		(!HasEffectStatus( EFFECTSTATUS_LIGHTNESS ) || ZoneState::GetID() == 3001 )
+		&& !PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
 #ifdef __METROTECH_TEST__
 		&& !g_bLight
 #endif
@@ -10095,11 +10037,12 @@ MCreature::GetHalluName() const
 void				
 MCreature::SetRegen(int amount, DWORD delay)
 { 
-	if(this == g_pPlayer && IsVampire() && g_pPlayer->GetCreatureType() != CREATURETYPE_BAT)
+	// The player is this creature: its own type and dexterity.
+	if(this == PlayerState::Creature() && IsVampire() && GetCreatureType() != CREATURETYPE_BAT)
 	{
 		// The server's HP regeneration bonus from the basic DEX
 		// (VampireStat.cpp), 1 from DEX 51 up to 7 from DEX 451.
-		amount += decore::vampireDexHPRegenBonus( (int)g_pPlayer->GetBASIC_DEX() );
+		amount += decore::vampireDexHPRegenBonus( (int)GetBASIC_DEX() );
 
 		if((*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetStatus() == RankBonusInfo::STATUS_LEARNED)
 			amount += (*g_pRankBonusTable)[RANK_BONUS_URANUS_BLESS].GetPoint();
@@ -10212,7 +10155,7 @@ MCreature::StopDrain()
 {
 	if(m_Action == ACTION_DRAINED)
 	{
-		MCreature *pCreature = g_pZone->GetCreature(GetDrainCreatureID());
+		MCreature *pCreature = ZoneState::GetCreature(GetDrainCreatureID());
 		if(pCreature != NULL)
 		{
 			pCreature->StopBloodDrain();
@@ -10228,7 +10171,7 @@ MCreature::StopAbsorb()
 {
 	if(m_Action == ACTION_DRAINED)
 	{
-		MCreature *pCreature = g_pZone->GetCreature(GetAbsorbCreatureID());
+		MCreature *pCreature = ZoneState::GetCreature(GetAbsorbCreatureID());
 		if(pCreature != NULL)
 		{
 			pCreature->StopAbsorb();
@@ -10317,7 +10260,7 @@ void MCreature::InstallTurretStopAttack()
 		else if(m_ActionCount<20)
 			m_ActionCount = 20;
 		m_ActionCountMax = 54;
-		PlaySound( SOUND_SLAYER_TURRET_FIRE_END );
+		WorldEvents::PlaySound( SOUND_SLAYER_TURRET_FIRE_END );
 		
 //		if(m_ActionCount<28)
 //			m_ActionCount = 75 - m_ActionCount;
@@ -10389,7 +10332,7 @@ void		MCreature::UpdateBikeCrash()
 		{
 			if(direction == ((TempDir+3)%8))
 			{
-				ExecuteActionInfoFromMainNode(SKILL_CLIENT_BIKE_CRASH, GetX(), GetY(), 0, GetDirection(),	GetID(),	
+				WorldEvents::ExecuteActionInfoFromMainNode(SKILL_CLIENT_BIKE_CRASH, GetX(), GetY(), 0, GetDirection(),	GetID(),
 					GetX(), GetY(), 0, 5000, NULL, false);	
 			}
 			SetDirection(direction);
@@ -10400,8 +10343,8 @@ void		MCreature::UpdateBikeCrash()
 				if(m_bInstallTurretCount == 3)
 				{
 					RemoveEffectStatus(EFFECTSTATUS_BIKE_CRASH);
-					if(g_pPlayer->GetID() == GetID())
-						g_pPlayer->SetDelay(0);
+					if(PlayerState::GetID() == GetID())
+						PlayerState::SetDelay(0);
 				}
 			}
 		}

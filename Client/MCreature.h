@@ -25,7 +25,11 @@
 #include "MEffectStatusTable.h"
 #include "MStatus.h"
 #include "RaceType.h"
-#include "MemoryPool.h"
+#include "../basic/MemoryPool.h"
+
+// The creatures' allocator pool (MCreature.cpp's); the executable's
+// creature classes have their own (MemoryPool.h).
+extern MemoryPool g_CreatureMemoryPool;
 #include "ZoneStateHost.h"
 #include "NicknameInfo.h"
 #include <string_view>

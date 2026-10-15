@@ -180,6 +180,56 @@ bool IsExistCorpseFromPlayer(MCreature* pCreature, int creatureType)
 	return s_Host && s_Host->IsExistCorpseFromPlayer && s_Host->IsExistCorpseFromPlayer(pCreature, creatureType);
 }
 
+bool RemoveFakeCreature(TYPE_OBJECTID id)
+{
+	return s_Host && s_Host->RemoveFakeCreature && s_Host->RemoveFakeCreature(id);
+}
+
+int GetWidth()
+{
+	return s_Host && s_Host->GetWidth ? s_Host->GetWidth() : 0;
+}
+
+int GetHeight()
+{
+	return s_Host && s_Host->GetHeight ? s_Host->GetHeight() : 0;
+}
+
+const MSector* GetSector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	return s_Host && s_Host->GetSector ? s_Host->GetSector(x, y) : nullptr;
+}
+
+void GetGroundEffects(std::vector<const MEffect*>& effects)
+{
+	if (s_Host && s_Host->GetGroundEffects) s_Host->GetGroundEffects(effects);
+}
+
+void SetServerBlockIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->SetServerBlockIn) s_Host->SetServerBlockIn(pZone, moveType, x, y);
+}
+
+void UnSetServerBlockIn(MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
+{
+	if (s_Host && s_Host->UnSetServerBlockIn) s_Host->UnSetServerBlockIn(pZone, moveType, x, y);
+}
+
+bool MoveGroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn)
+{
+	return s_Host && s_Host->MoveGroundCreatureIn && s_Host->MoveGroundCreatureIn(pZone, pCreature, xo, yo, xn, yn);
+}
+
+bool MoveFlyingCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn)
+{
+	return s_Host && s_Host->MoveFlyingCreatureIn && s_Host->MoveFlyingCreatureIn(pZone, pCreature, xo, yo, xn, yn);
+}
+
+bool MoveUndergroundCreatureIn(MZone* pZone, MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn)
+{
+	return s_Host && s_Host->MoveUndergroundCreatureIn && s_Host->MoveUndergroundCreatureIn(pZone, pCreature, xo, yo, xn, yn);
+}
+
 }
 
 namespace CreatureState {
@@ -828,6 +878,17 @@ MOVE_DEVICE GetMoveDevice(MCreature* pCreature)
 bool IsStop(MCreature* pCreature)
 {
 	return s_Host && s_Host->IsStop && s_Host->IsStop(pCreature);
+}
+
+void SyncTurretDirection(MCreature* pCreature)
+{
+	if (s_Host && s_Host->SyncTurretDirection) s_Host->SyncTurretDirection(pCreature);
+}
+
+bool GetAddonItemClass(MCreature* pCreature, int addon, ITEM_CLASS* pItemClass)
+{
+	*pItemClass = ITEM_CLASS_NULL;
+	return s_Host && s_Host->GetAddonItemClass && s_Host->GetAddonItemClass(pCreature, addon, pItemClass);
 }
 
 }
