@@ -93,7 +93,7 @@ class MEffect;
 
 // TileRenderer for unified tile rendering
 #include "SpriteLib/TileRenderer.h"
-#include "MZoneTileProvider.h"
+#include "SpriteLib/ZoneTileProvider.h"
 #include "framelib/EffectResourceContainer.h"
 
 
@@ -687,7 +687,7 @@ class MTopView : public MRequestMode {
 		// TileRenderer for unified tile rendering (Phase 4 integration)
 		//------------------------------------------------------
 		TileRenderer*				m_pTileRenderer;
-		MZoneTileProvider			m_zoneTileProvider;
+		ZoneTileProvider<MZone>		m_zoneTileProvider;
 
 		//------------------------------------------------------
 		// 현재 화면에서 존재하는 ImageObject들의 정보
