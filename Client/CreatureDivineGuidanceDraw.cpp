@@ -17,7 +17,8 @@
 #include "CSpriteSurface.h"
 #include "CIndexSprite.h"
 
-// MCreatureWear.cpp's: the coat colour a vampire wears without one.
+// MCreatureWear.cpp's: a bare coat's colour, every race's (an ousters'
+// bare arms and feet take it here).
 extern int defaultCoatColor;
 
 namespace {
@@ -28,7 +29,7 @@ void	DrawDivineGuidanceSlayerCharacter( const CreatureDrawPacks& packs, POINT *p
 {
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 	
-	// Draw the add-ons that match the creature's action.
+	// Draw the add-ons worn, as frame 30 of being drained.
 	//action = pCreature->GetAction();
 	const int tempFrame = 30;
 	
@@ -90,7 +91,7 @@ void	DrawDivineGuidanceAdvancementClassSlayerCharacter( const CreatureDrawPacks&
 {
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 	
-	// Draw the add-ons that match the creature's action.
+	// Draw the add-ons worn, as frame 30 of being drained.
 	//action = pCreature->GetAction();
 	const int tempFrame = 30;
 	
@@ -283,7 +284,7 @@ void	DrawDivineGuidanceOustersCharacter( const CreatureDrawPacks& packs, POINT *
 					Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// coat colour
 				
-				if(bChakram == false)	// if it wears a wristlet
+				if(bChakram == false)	// no chakram: a wristlet, or an empty hand
 				{
 					if(addonInfoChakram.bAddon)
 					{
@@ -415,7 +416,7 @@ void	DrawDivineGuidanceAdvancementClassOustersCharacter( const CreatureDrawPacks
 					Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// coat colour
 				
-				if(bChakram == false)	// if it wears a wristlet
+				if(bChakram == false)	// no chakram: a wristlet, or an empty hand
 				{
 					if(addonInfoChakram.bAddon)
 					{

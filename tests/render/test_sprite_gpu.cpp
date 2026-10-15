@@ -6,12 +6,14 @@
 #include "CAlphaSpritePal.h"
 #include "CSprite565.h"
 #include "CIndexSprite.h"
+#include "CShadowSprite.h"
 #include "FrameUpscaler.h"
 #include "CFilter.h"
 #include "MixedScene.h"
 #include "../support/InvisibilitySprite.h"
 #include <cstdio>
 #include <climits>
+#include <fstream>
 #include <vector>
 
 extern SDL_Renderer* testSpriteRenderer;
@@ -261,6 +263,43 @@ TEST(SpriteGpu, RgbaTextAlphaAndColorModulationDoNotLeakBetweenDraws)
 	CHECK(((blended >> 5) & 63) >= 30 && ((blended >> 5) & 63) <= 32);
 	CHECK_EQ(0, blended & 31);
 	spritectl_destroy_sprite(sprite);
+}
+
+TEST(SpriteGpu, ShadowSpritesDrawBlackAndDarkenWhatLiesUnderThem)
+{
+	// A row of four, its middle two pixels shadowed: drawn black, then
+	// darkened by one bit (black at half), as the CPU path draws them.
+	Fixture f;
+	const char* path = "sprite_gpu_shadow.bin";
+	{
+		std::ofstream out(path, std::ios::binary | std::ios::trunc);
+		for (WORD word : {4, 1, 3, 1, 1, 2}) { out.put(char(word & 0xFF)); out.put(char(word >> 8)); }
+	}
+	CShadowSprite shadow;
+	{
+		std::ifstream in(path, std::ios::binary);
+		CHECK(shadow.LoadFromFile(in));
+	}
+	std::remove(path);
+	POINT solid{1, 1}, dark{1, 3};
+	const auto draws = SpriteGpu::GetCounters().draws;
+	f.surface.BltShadowSprite(&solid, &shadow);
+	f.surface.BltShadowSpriteDarkness(&dark, &shadow, 1);
+	CHECK_EQ(draws + 2, SpriteGpu::GetCounters().draws);
+	CHECK_EQ(0x07e0, f.Pixel(1, 1));
+	CHECK_EQ(0, f.Pixel(2, 1));
+	CHECK_EQ(0, f.Pixel(3, 1));
+	CHECK_EQ(0x07e0, f.Pixel(4, 1));
+	CHECK_EQ(0x07e0, f.Pixel(1, 3));
+	for (int x : {2, 3})
+	{
+		const auto half = f.Pixel(x, 3);
+		CHECK_EQ(0, half >> 11);
+		CHECK(((half >> 5) & 63) >= 30 && ((half >> 5) & 63) <= 32);
+		CHECK_EQ(0, half & 31);
+	}
+	CHECK_EQ(0x07e0, f.Pixel(4, 3));
+	shadow.Release();
 }
 
 TEST(SpriteGpu, XbrzStillUsesTheCompositedFrame)

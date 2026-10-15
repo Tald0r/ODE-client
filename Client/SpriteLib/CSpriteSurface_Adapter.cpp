@@ -24,7 +24,9 @@
 
 #include "SpriteLibBackend.h"
 #include "SpriteScanline.h"
+#include <algorithm>
 #include <climits>
+#include <cstdint>
 #include <memory>
 #include "DebugLog.h"
 
@@ -281,18 +283,21 @@ static spritectl_sprite_t get_backend_shadow_sprite(CShadowSprite* pSprite)
 		WORD height = pSprite->GetHeight();
 
 		const size_t pixel_count = size_t(width) * height;
-		if (!pixel_count || pixel_count > INT_MAX) return SPRITECTL_INVALID_SPRITE;
+		if (!pixel_count || pixel_count > INT_MAX || pixel_count > SIZE_MAX / sizeof(uint32_t))
+			return SPRITECTL_INVALID_SPRITE;
 		for (WORD y = 0; y < height; ++y) {
 			if (!ValidateShadowScanline(pSprite->GetPixelLineSpan(y), width))
 				return SPRITECTL_INVALID_SPRITE;
 		}
-		size_t data_size = pixel_count * sizeof(WORD);
+		// RGBA, opaque black where the sprite casts its shadow: a 5:6:5
+		// black is the colour key, and drew nothing.
+		size_t data_size = pixel_count * sizeof(uint32_t);
 
 		SA_DEBUG_LIFECYCLE("get_backend_shadow_sprite: Creating backend sprite, size=%dx%d (%zu pixels, %zu bytes)",
 		                   width, height, pixel_count, data_size);
 
 		/* Allocate and decode pixel data */
-		WORD* pixels = (WORD*)malloc(data_size);
+		uint32_t* pixels = (uint32_t*)malloc(data_size);
 		if (!pixels) {
 			SA_DEBUG_LIFECYCLE("get_backend_shadow_sprite: Failed to allocate pixel buffer");
 			return SPRITECTL_INVALID_SPRITE;
@@ -304,19 +309,19 @@ static spritectl_sprite_t get_backend_shadow_sprite(CShadowSprite* pSprite)
 		// Decode with a size_t row stride; the legacy Blt API takes WORD pitch.
 		for (WORD y = 0; y < height; ++y) {
 			const auto line = pSprite->GetPixelLineSpan(y);
-			WORD* dest = pixels + size_t(y) * width;
+			uint32_t* dest = pixels + size_t(y) * width;
 			size_t x = 0;
 			for (size_t run = 0; run < line[0]; ++run) {
 				x += line[1 + run * 2];
 				const size_t colored = line[2 + run * 2];
-				memset(dest + x, 0, colored * sizeof(WORD));
+				std::fill_n(dest + x, colored, 0xFF000000u);
 				x += colored;
 			}
 		}
 
 		/* Create backend sprite */
 		spritectl_sprite_t new_sprite = spritectl_create_sprite(
-			width, height, SPRITECTL_FORMAT_RGB565,
+			width, height, SPRITECTL_FORMAT_RGBA32,
 			pixels, data_size);
 
 		SA_DEBUG_LIFECYCLE("get_backend_shadow_sprite: Created backend sprite=%p from temp pixels=%p",
@@ -1104,9 +1109,20 @@ void CSpriteSurface::BltShadowSpriteSmall(POINT* pPoint, CShadowSprite* pSprite,
 }
 
 void CSpriteSurface::BltShadowSpriteDarkness(POINT* pPoint, CShadowSprite* pSprite, BYTE DarkBits) {
-	(void)DarkBits;
-	/* TODO: Implement darkness effect */
-	BltShadowSprite(pPoint, pSprite);
+	if (!pPoint || !pSprite) {
+		return;
+	}
+
+	spritectl_sprite_t backend_sprite = get_backend_shadow_sprite(pSprite);
+	if (!backend_sprite) {
+		return;
+	}
+
+	/* DirectDraw shifted each channel under the shadow right by DarkBits:
+	 * black blended at 1 - 2^-DarkBits. */
+	const int alpha = DarkBits >= 8 ? 255 : 256 - (256 >> DarkBits);
+	spritectl_blt_sprite(m_backend_surface, pPoint->x, pPoint->y,
+	                    backend_sprite, SPRITECTL_BLT_ALPHA, alpha);
 }
 
 void CSpriteSurface::BltShadowSprite4444(POINT* pPoint, CShadowSprite* pSprite, WORD pixel) {

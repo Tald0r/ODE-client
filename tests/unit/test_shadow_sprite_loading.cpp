@@ -352,9 +352,87 @@ TEST(ShadowSpriteAdapter, WideValidRowsKeepTheirGeometryAndPixels)
 	if (backend) {
 		CHECK_EQ(40000, backend->width);
 		CHECK_EQ(2, backend->height);
-		CHECK_EQ(160000, backend->data_size);
-		CHECK_EQ(0, backend->pixels[39999]);
-		CHECK_EQ(0, backend->pixels[79999]);
+		// Opaque black where the sprite casts its shadow, clear elsewhere.
+		CHECK_EQ(SPRITECTL_FORMAT_RGBA32, backend->format);
+		CHECK_EQ(320000, backend->data_size);
+		const auto* pixels = reinterpret_cast<const uint32_t*>(backend->pixels);
+		CHECK_EQ(0u, pixels[39998]);
+		CHECK_EQ(0xFF000000u, pixels[39999]);
+		CHECK_EQ(0xFF000000u, pixels[79999]);
+	}
+}
+
+namespace {
+
+// A white surface with a shadow drawn on it: a row of four, its middle two
+// pixels shadowed, at (2, 1).
+struct ShadowOnWhite
+{
+	Fixture fixture;
+	CSpriteSurface surface;
+	CShadowSprite sprite;
+	ShadowOnWhite()
+	{
+		CHECK_EQ(0, spritectl_init());
+		CHECK(surface.Init(8, 3));
+		surface.FillSurface(0xFFFF);
+		Write({4, 1, 3, 1, 1, 2});
+		std::ifstream in(path, std::ios::binary);
+		CHECK(sprite.LoadFromFile(in));
+	}
+	WORD At(int x, int y)
+	{
+		DWORD pitch = 0;
+		const auto* base = static_cast<const unsigned char*>(surface.Lock(nullptr, &pitch));
+		const WORD pixel = base ? reinterpret_cast<const WORD*>(base + y * pitch)[x] : WORD(0xBAD);
+		surface.Unlock();
+		return pixel;
+	}
+	// The pixels the shadow does not cover are still white.
+	bool RestWhite()
+	{
+		for (int y = 0; y < 3; ++y)
+			for (int x = 0; x < 8; ++x)
+				if (!(y == 1 && (x == 3 || x == 4)) && At(x, y) != 0xFFFF) return false;
+		return true;
+	}
+};
+
+// A 5:6:5 channel is within one of the expected.
+bool Near(int value, int expected) { return value >= expected - 1 && value <= expected + 1; }
+
+} // namespace
+
+TEST(ShadowSpriteAdapter, AShadowIsDrawnBlackWhereTheSpriteCastsIt)
+{
+	// As the DirectDraw blit did: colour 0 over the shadowed pixels. The
+	// SDL raster was black too, but black is the colour key, so it drew
+	// nothing.
+	ShadowOnWhite scene;
+	POINT point{2, 1};
+	scene.surface.BltShadowSprite(&point, &scene.sprite);
+	CHECK_EQ(0, scene.At(3, 1));
+	CHECK_EQ(0, scene.At(4, 1));
+	CHECK(scene.RestWhite());
+}
+
+TEST(ShadowSpriteAdapter, ADarkenedShadowDarkensWhatLiesUnderIt)
+{
+	// The DirectDraw blit shifted each channel under the shadow right by
+	// DarkBits; black blended at 1 - 2^-DarkBits comes within one of it.
+	for (int bits : {1, 2})
+	{
+		ShadowOnWhite scene;
+		POINT point{2, 1};
+		scene.surface.BltShadowSpriteDarkness(&point, &scene.sprite, BYTE(bits));
+		for (int x : {3, 4})
+		{
+			const WORD pixel = scene.At(x, 1);
+			CHECK(Near(pixel >> 11, 31 >> bits));
+			CHECK(Near((pixel >> 5) & 0x3F, 63 >> bits));
+			CHECK(Near(pixel & 0x1F, 31 >> bits));
+		}
+		CHECK(scene.RestWhite());
 	}
 }
 
