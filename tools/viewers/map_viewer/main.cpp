@@ -1,19 +1,19 @@
 /**
  * @file map_viewer.cpp
- * @brief Map Viewer - 浏览 zone 地图
+ * @brief Map Viewer - browse zone maps
  *
- * 功能：
- * - 加载并显示 .map zone 文件
- * - 渲染 tile 和 ImageObject
- * - 支持平移、缩放、拖拽
- * - 测试 CSpritePack 和 zone 解析
- * - 使用 TileRenderer 进行渲染（Phase 3 重构）
+ * Features:
+ * - load and show .map zone files
+ * - render tiles and ImageObjects
+ * - pan, zoom and drag
+ * - exercise CSpritePack and zone parsing
+ * - render with TileRenderer (Phase 3 refactor; SpriteLib's since task 4.213)
  */
 
 #include "Client/SpriteLib/CSpritePack.h"
 #include "Client/SpriteLib/CSpriteSurface.h"
 #include "Client/SpriteLib/SpriteLibBackend.h"
-#include "Client/TileRenderer.h"  // Phase 3: Use TileRenderer
+#include "Client/SpriteLib/TileRenderer.h"  // Phase 3: Use TileRenderer
 #include "zoneloader.h"
 #include <SDL.h>
 #include <algorithm>  // std::sort - pulled in transitively by libstdc++/libc++, but not by MSVC's STL
@@ -21,15 +21,15 @@
 #include <cstring>
 #include <cstdint>
 
-// 默认配置
-// 注意：游戏中 TILE_X=48, TILE_Y=24（见 MViewDef.h）
-#define DEFAULT_CELL_PIXELS 48  // 使用正确的 TILE_X 尺寸
+// Defaults
+// Note: in the game TILE_X=48, TILE_Y=24 (see MViewDef.h)
+#define DEFAULT_CELL_PIXELS 48  // the real TILE_X size
 #define DEFAULT_WINDOW_WIDTH 800
 #define DEFAULT_WINDOW_HEIGHT 600
 
-// ImageObject 透明标志（来自 MImageObject.h）
-#define OBJECT_TRANS_FLAG  1  // 完全透明 - 跳过渲染
-#define OBJECT_HALF_FLAG   2  // 半透明 - 50% alpha
+// ImageObject transparency flags (from MImageObject.h)
+#define OBJECT_TRANS_FLAG  1  // fully transparent - not drawn
+#define OBJECT_HALF_FLAG   2  // half transparent - 50% alpha
 
 class MapViewer {
 public:
@@ -148,7 +148,7 @@ public:
             const ImageObjectData* firstObj = m_zoneLoader->GetImageObject(0);
             if (firstObj) {
                 // Center on first ImageObject
-                // pixelX/pixelY 已经是像素坐标，直接使用
+                // pixelX/pixelY are pixel coordinates already; use them as they are
                 m_cameraX = firstObj->pixelX - windowWidth / 2;
                 m_cameraY = firstObj->pixelY - windowHeight / 2;
                 std::cout << "Centering camera on first ImageObject at pixel=("
@@ -417,27 +417,27 @@ private:
         if (m_showObjects && m_objPack) {
             const auto& imageObjects = m_zoneLoader->GetAllImageObjects();
 
-            // 创建索引列表并按深度排序（等轴测渲染顺序）
+            // An index list sorted by depth (isometric draw order)
             std::vector<size_t> sorted_indices;
             sorted_indices.reserve(imageObjects.size());
             for (size_t i = 0; i < imageObjects.size(); i++) {
                 sorted_indices.push_back(i);
             }
 
-            // 按 sectorY, sectorX 排序（画家算法：从上到下，从左到右）
+            // By sectorY, then sectorX (painter's algorithm: top to bottom, left to right)
             std::sort(sorted_indices.begin(), sorted_indices.end(),
                       [&imageObjects](size_t a, size_t b) {
                           if (imageObjects[a].sectorY != imageObjects[b].sectorY) {
-                              return imageObjects[a].sectorY < imageObjects[b].sectorY;  // Y 轴优先
+                              return imageObjects[a].sectorY < imageObjects[b].sectorY;  // Y first
                           }
-                          return imageObjects[a].sectorX < imageObjects[b].sectorX;  // 同 Y 内按 X 排序
+                          return imageObjects[a].sectorX < imageObjects[b].sectorX;  // then X within a Y
                       });
 
             int rendered = 0;
-            int renderedHalf = 0;      // 半透明对象计数
+            int renderedHalf = 0;      // half-transparent objects
             int skippedNoSprite = 0;
             int skippedOffScreen = 0;
-            int skippedTrans = 0;      // 完全透明对象计数
+            int skippedTrans = 0;      // fully transparent objects
 
             static bool debugPrinted = false;
             if (!debugPrinted && m_showObjects && m_objPack) {
@@ -449,7 +449,7 @@ private:
 
             for (size_t idx : sorted_indices) {
                 const auto& imgObj = imageObjects[idx];
-                // 跳过明显无效的对象
+                // Skip objects that are plainly invalid
                 if (imgObj.sectorX >= mapWidth || imgObj.sectorY >= mapHeight ||
                     imgObj.sectorX >= 10000 || imgObj.sectorY >= 10000) {
                     if (!debugPrinted) {
@@ -459,7 +459,7 @@ private:
                     continue;
                 }
 
-                // 检查完全透明标志
+                // The fully-transparent flag
                 if (imgObj.transFlags & OBJECT_TRANS_FLAG) {
                     skippedTrans++;
                     if (!debugPrinted) {
@@ -467,12 +467,12 @@ private:
                                   << " - FULLY TRANSPARENT (transFlags=0x"
                                   << std::hex << (int)imgObj.transFlags << std::dec << ")" << std::endl;
                     }
-                    continue;  // 跳过渲染
+                    continue;  // not drawn
                 }
 
                 // Calculate screen position from pixel coordinates
-                // ImageObject 的 pixelX/pixelY 已经是像素坐标（线性映射，不是等轴测）
-                // 屏幕坐标 = 像素坐标 * 缩放 - 摄像机偏移
+                // An ImageObject's pixelX/pixelY are pixel coordinates already (linear, not isometric)
+                // screen = pixel * zoom - camera offset
                 int screenX = static_cast<int>(imgObj.pixelX * m_zoom) - m_cameraX;
                 int screenY = static_cast<int>(imgObj.pixelY * m_zoom) - m_cameraY;
 
@@ -498,9 +498,9 @@ private:
                 if (sprite.IsInit()) {
                     POINT point = { screenX, screenY };
 
-                    // 检查半透明标志
+                    // The half-transparent flag
                     if (imgObj.transFlags & OBJECT_HALF_FLAG) {
-                        // 使用 BltSpriteAlpha 实现 50% 半透明
+                        // BltSpriteAlpha for 50% transparency
                         m_screenSurface->BltSpriteAlpha(&point, &sprite, 128);
                         renderedHalf++;
                         if (!debugPrinted) {
@@ -509,7 +509,7 @@ private:
                                       << std::hex << (int)imgObj.transFlags << std::dec << ")" << std::endl;
                         }
                     } else {
-                        // 正常渲染
+                        // Drawn normally
                         m_screenSurface->BltSprite(&point, &sprite);
                         rendered++;
                         if (!debugPrinted) {
@@ -530,7 +530,7 @@ private:
                 debugPrinted = true;
             }
 
-            // 每 30 帧输出一次统计
+            // Statistics every 30 frames
             static int frameCount = 0;
             if (++frameCount % 30 == 0) {
                 std::cout << "\rNormal: " << rendered << " | Half-Trans: " << renderedHalf

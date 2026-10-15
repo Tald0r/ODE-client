@@ -1,10 +1,12 @@
 //-----------------------------------------------------------------------------
 // AppendPatchInfo.h
 //-----------------------------------------------------------------------------
-// OriginalFile과 FirstSize를 알고 있으면 
-// AppendFile과 AppendSize를 계산해서 패치를 할 수 있다.
+// Knowing the original file and its first size, a patch appends files and
+// computes the sizes after each.
 //
-// 이 정보를 화일로 빼두면 실행화일 바꿀 필요 없다.
+// Kept in a file, this information needs no new executable. It is
+// gamemodel's; the progress bar it updates is the executable's, behind
+// AppendPatchHost (task 4.212).
 //-----------------------------------------------------------------------------
 
 #ifndef __APPENDPATCHINFO_H__
@@ -14,10 +16,21 @@
 #pragma warning(disable:4786)
 #endif
 
+#include "../basic/Platform.h"
 #include "MString.h"
 #include "CTypeTable.h"
 #include <fstream>
 #include <vector>
+
+// The progress bar a patch updates: a step per node, and the text when a
+// node's append file is applied. None installed: no progress.
+struct AppendPatchHost
+{
+	void (*UpdateProgress)();
+	void (*SetProgressText)(const char* text);
+};
+
+void		SetAppendPatchHost(const AppendPatchHost* pHost);
 
 //-----------------------------------------------------------------------------
 // APPEND_PATCH_NODE
@@ -69,8 +82,8 @@ class AppendPatch {
 		// Execute / Check
 		//------------------------------------------------------------------
 		bool		ExecutePatch() const;
-		bool		CheckFinalInfo() const;			// final file을 읽어봐서
-		bool		CalculateFinalInfo() const;		// 계산으로
+		bool		CheckFinalInfo() const;			// by reading the final file
+		bool		CalculateFinalInfo() const;		// by calculation
 
 		//------------------------------------------------------------------
 		// File I / O

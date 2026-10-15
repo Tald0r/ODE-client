@@ -476,14 +476,6 @@ SetMode(enum CLIENT_MODE mode)
 	switch (g_Mode)
 	{
 		//------------------------------------------------------
-		// 초기 화면
-		//------------------------------------------------------
-		case MODE_OPENING :
-			// Nothing enters the opening: its loop and video were retired
-			// with task 4.210.
-		break;
-
-		//------------------------------------------------------
 		// 뭔가 option을 바꾼다. - -;
 		//------------------------------------------------------
 		case MODE_CHANGE_OPTION :

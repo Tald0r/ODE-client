@@ -54,6 +54,23 @@ TEST(FramePresent, TheBackBufferComesFromTheInstalledSource)
 	CHECK(CSDLGraphics::BackBuffer() == SPRITECTL_INVALID_SURFACE);
 }
 
+static int s_asked = 0;
+static spritectl_surface_t Counted() { ++s_asked; return SPRITECTL_INVALID_SURFACE; }
+
+TEST(FramePresent, FlipAsksTheSourceOnceAFlip)
+{
+	s_asked = 0;
+	CSDLGraphics::SetBackBufferSource(Counted);
+	CSDLGraphics::Flip();
+	CHECK_EQ(1, s_asked);
+	CSDLGraphics::Flip();
+	CHECK_EQ(2, s_asked);
+	CSDLGraphics::SetBackBufferSource(nullptr);
+	CSDLGraphics::Flip();
+	CHECK_EQ(2, s_asked);
+}
+
+// Without a renderer there is nothing to draw on, and no crash.
 TEST(FramePresent, WithoutARendererNothingHappens)
 {
 	CHECK_EQ(0, spritectl_init());

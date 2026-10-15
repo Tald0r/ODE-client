@@ -812,7 +812,6 @@ if(BUILD_ENGINE)
 	add_executable(map_viewer
 		tools/viewers/map_viewer/main.cpp
 		tools/viewers/map_viewer/zoneloader.cpp
-		Client/TileRenderer.cpp
 	)
 
 	target_include_directories(map_viewer PRIVATE
@@ -935,9 +934,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 			message(FATAL_ERROR "gamemodel member is still in the executable's source list (case mismatch in tests/arch/gamemodel_files.txt?): ${_src}")
 		endif()
 	endforeach()
-
-	# CAvi.cpp, the stubbed MCI video player, was retired with the opening
-	# mode, its only user (docs/RESTRUCTURING.md task 4.210).
 
 	# The custom MP3/Huffman decoder (mp3/huffman/reader/header/synfilt/
 	# subdecoder/soundbuf/BIT_RES, once duplicated between Client/ and

@@ -3,9 +3,27 @@
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "AppendPatchInfo.h"
+#include <cstdint>
 
-	extern void		UpdateProgressBar();
-	extern void		SetProgressBarText(const char* title);
+namespace {
+const AppendPatchHost* s_pHost = NULL;
+
+// The file holds sizes and positions in 4 bytes, but long is 8 bytes on
+// LP64 (Linux, macOS): read the 4 bytes as such.
+long
+ReadLong4(std::ifstream& file)
+{
+	std::int32_t value = 0;
+	file.read(reinterpret_cast<char*>(&value), 4);
+	return value;
+}
+}
+
+void
+SetAppendPatchHost(const AppendPatchHost* pHost)
+{
+	s_pHost = pHost;
+}
 
 //-----------------------------------------------------------------------------
 //s
@@ -16,22 +34,27 @@ bool
 APPEND_PATCH_NODE::Append(const char* orgFilename) const
 {	
 	//-------------------------------------------------------------
-	// append화일 체크..
+	// The append file
 	//-------------------------------------------------------------
 	std::ifstream appendFile(appendFilename.GetString(), std::ios::binary );		
 
 	int n;
 	char buffer[4096];
 
-	// 우훗.. - -;;
-		UpdateProgressBar();
+	if (s_pHost != NULL)
+	{
+		s_pHost->UpdateProgress();
+	}
 
 	//-------------------------------------------------------------
-	// 패치 화일이 있으면 걍 패치..
+	// If there is a patch file, just patch
 	//-------------------------------------------------------------
 	if (appendFile.is_open())
 	{
-			SetProgressBarText("패치 화일을 적용시키고 있습니다.");
+			if (s_pHost != NULL)
+			{
+				s_pHost->SetProgressText("패치 화일을 적용시키고 있습니다.");	// "Applying the patch file."
+			}
 
 		std::fstream orgFile(orgFilename, std::ios::binary | std::ios::ate | std::ios::in | std::ios::out);
 		
@@ -39,9 +62,9 @@ APPEND_PATCH_NODE::Append(const char* orgFilename) const
 		{
 			WORD orgSpkSize;
 			orgFile.seekg( 0 );
-			orgFile.read((char*)&orgSpkSize, 2);	// Sprite의 개수
+			orgFile.read((char*)&orgSpkSize, 2);	// the sprite count
 
-			appendFile.seekg( 2 );	// size부분 제외
+			appendFile.seekg( 2 );	// past its sprite count
 			orgFile.seekp( writePosition );		
 			
 			while (1)
@@ -61,13 +84,13 @@ APPEND_PATCH_NODE::Append(const char* orgFilename) const
 
 			appendFile.close();
 			
-			// 개수 변경
+			// The new count
 			orgFile.seekp( 0, std::ios::beg );
 
 			orgFile.write((const char*)&afterSpkSize, 2);
 			orgFile.close();
 
-			// 패치화일을 지운다.
+			// Delete the patch file.
 			remove( appendFilename.GetString() );
 		}
 		else
@@ -100,10 +123,10 @@ void
 APPEND_PATCH_NODE::LoadFromFile(std::ifstream& file)
 {
 	appendFilename.LoadFromFile( file );
-	file.read((char*)&appendFilesize, 4);
+	appendFilesize = ReadLong4( file );
 	file.read((char*)&appSpkSize, 2);
-	file.read((char*)&writePosition, 4);
-	file.read((char*)&afterFilesize, 4);
+	writePosition = ReadLong4( file );
+	afterFilesize = ReadLong4( file );
 	file.read((char*)&afterSpkSize, 2);
 }
 
@@ -176,7 +199,7 @@ AppendPatch::SetFinalInfo(long finalFilesize, WORD finalSpkSize)
 //-----------------------------------------------------------------------------
 // Set FinalInfo
 //-----------------------------------------------------------------------------
-// currentFilename에서 정보를 읽어들인다.
+// Read the final information from currentFilename.
 //-----------------------------------------------------------------------------
 bool		
 AppendPatch::SetFinalInfo(const char* currentFilename)
@@ -188,11 +211,11 @@ AppendPatch::SetFinalInfo(const char* currentFilename)
 		return false;
 	}
 
-	// appSpkSize - Pack 개수
+	// appSpkSize - the pack's sprite count
 	file.read((char*)&m_finalSpkSize, 2);
 	file.seekg( 0, std::ios::end );
 
-	// appendFilesize - AppendPack 크기
+	// appendFilesize - the append pack's size
 	m_finalFilesize = static_cast<long>(file.tellg());	
 	
 	file.close();
@@ -210,7 +233,7 @@ AppendPatch::AddAppendInfo(const char* appendFilename, long appendFilesize, WORD
 	WORD previousSpkSize;
 
 	//------------------------------------------------------------
-	// 바로 전 상태의 정보
+	// The state just before
 	//------------------------------------------------------------
 	if (m_AppendPatch.size()==0)
 	{
@@ -226,7 +249,7 @@ AppendPatch::AddAppendInfo(const char* appendFilename, long appendFilesize, WORD
 	}
 
 	//------------------------------------------------------------
-	// 현재 정보 설정
+	// This node
 	//------------------------------------------------------------
 	APPEND_PATCH_NODE* pNode = new APPEND_PATCH_NODE;
 
@@ -234,7 +257,7 @@ AppendPatch::AddAppendInfo(const char* appendFilename, long appendFilesize, WORD
 	pNode->appendFilesize	= appendFilesize;
 	pNode->appSpkSize		= appSpkSize;		
 	pNode->writePosition	= previousFilesize;
-	pNode->afterFilesize	= previousFilesize + appendFilesize-2;	// SPK의 개수 부분 2 bytes
+	pNode->afterFilesize	= previousFilesize + appendFilesize-2;	// less the SPK's 2-byte count
 	pNode->afterSpkSize		= previousSpkSize + appSpkSize;
 
 	m_AppendPatch.push_back( pNode );
@@ -274,7 +297,7 @@ AppendPatch::CheckFinalInfo() const
 	if (orgFile.is_open())
 	{
 		WORD spkSize;
-		orgFile.read((char*)&spkSize, 2);	// Sprite의 개수
+		orgFile.read((char*)&spkSize, 2);	// the sprite count
 
 		if (spkSize != m_finalSpkSize)
 		{
@@ -298,7 +321,7 @@ AppendPatch::CheckFinalInfo() const
 //-----------------------------------------------------------------------------
 // Calculate FinalInfo 
 //-----------------------------------------------------------------------------
-// 계산상으로 맞는지 체크한다.
+// Check by calculation that the final information adds up.
 //-----------------------------------------------------------------------------
 bool
 AppendPatch::CalculateFinalInfo() const
@@ -363,12 +386,16 @@ AppendPatch::LoadFromFile(std::ifstream& file)
 	Release();
 
 	m_orgFilename.LoadFromFile( file );
-	file.read((char*)&m_orgFilesize, 4);
+	m_orgFilesize = ReadLong4( file );
 	file.read((char*)&m_orgSpkSize, 2);
-	file.read((char*)&m_finalFilesize, 4);
+	m_finalFilesize = ReadLong4( file );
 	file.read((char*)&m_finalSpkSize, 2);
 
-	int num;
+	// No more nodes than the file holds whole: a count past the nodes
+	// present, or a node cut short, stops the load at the first node the
+	// file fails on. A file that ends before its count reads no count, and
+	// num stays 0 rather than indeterminate.
+	int num = 0;
 	file.read((char*)&num, 4);
 
 	for (int i=0; i<num; i++)
@@ -376,7 +403,13 @@ AppendPatch::LoadFromFile(std::ifstream& file)
 		APPEND_PATCH_NODE* pNode = new APPEND_PATCH_NODE;
 
 		pNode->LoadFromFile( file );
-		
+
+		if (!file)
+		{
+			delete pNode;
+			break;
+		}
+
 		m_AppendPatch.push_back( pNode );
 	}
 }

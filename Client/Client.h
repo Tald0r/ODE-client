@@ -126,8 +126,6 @@ extern int					g_y;
 // mp3
 //CMySound*					g_pMP3 = NULL;
 
-// Avi
-
 // Sound PartManager
 extern CSoundPartManager*	g_pSoundManager;
 

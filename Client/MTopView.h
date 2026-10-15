@@ -92,7 +92,7 @@ class MEffect;
 #include "SpriteLib/CSpriteOutlineManager.h"
 
 // TileRenderer for unified tile rendering
-#include "TileRenderer.h"
+#include "SpriteLib/TileRenderer.h"
 #include "MZoneTileProvider.h"
 #include "EffectResourceContainer.h"
 

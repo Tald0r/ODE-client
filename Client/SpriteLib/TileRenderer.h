@@ -2,11 +2,12 @@
 #define __TILE_RENDERER_H__
 
 // Platform-specific type definitions (includes POINT, RECT, WORD, etc.)
-#include "Client_PCH.h"
+#include "../../basic/Platform.h"
 
 // SpriteLib includes - needed for full type definitions
-#include "SpriteLib/CSpriteSurface.h"
-#include "SpriteLib/CSpritePack.h"
+#include "CSpriteSurface.h"
+#include "CSpritePack.h"
+#include "DrawTypeDef.h"
 
 // Forward declarations
 class CSprite;
