@@ -508,7 +508,10 @@ ModifyStatusManager::Function_MODIFY_BULLET(void* pVoid)
 
 	if (g_pCurrentMagazine!=NULL)
 	{
-		g_pCurrentMagazine->SetNumber( value );
+		// Through MItem: a magazine's vtable is executable-side, and GCC's
+		// UBSan checks a call on an MMagazine against its typeinfo.
+		MItem* pMagazine = g_pCurrentMagazine;
+		pMagazine->SetNumber( value );
 	}
 }
 
