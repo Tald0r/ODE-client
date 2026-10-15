@@ -27,4 +27,7 @@ class CWinUpdate {
 		virtual void	Update();
 };
 
+// The update the main loop runs now (one of the waits or the game).
+extern CWinUpdate*	g_pUpdate;
+
 #endif

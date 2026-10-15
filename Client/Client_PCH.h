@@ -82,8 +82,12 @@ using std::bitset;
 
 /* The game's window and sector geometry, and the server's dimension and
    3D acceleration, read by VS_UI and defined in gamemodel (ClientMode.cpp,
-   ViewSectors.cpp). Declared here so VS_UI's translation units, which
-   have no header of their own for them, see one declaration. */
+   ViewSectors.cpp), and the frame count, the tick delay, whether the
+   application is active, the double-click interval, the title's alpha
+   and the back and last surfaces, which the waiting screens' update
+   reads (ClientMode.cpp, task 4.255). Declared here so VS_UI's
+   translation units, which have no header of their own for them, see
+   one declaration. */
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
 extern int g_Dimension;
@@ -91,6 +95,14 @@ extern BOOL g_bEnable3DHAL;
 extern HWND g_hWnd;
 extern bool g_bFullScreen;
 extern BYTE g_macAddress[6];
+class CSpriteSurface;
+extern int g_FrameCount;
+extern int g_UpdateDelay;
+extern BOOL g_bActiveApp;
+extern DWORD g_double_click_time;
+extern int g_TitleSpriteAlpha;
+extern CSpriteSurface* g_pBack;
+extern CSpriteSurface* g_pLast;
 extern	LONG g_SECTOR_WIDTH;
 extern	LONG g_SECTOR_HEIGHT;
 extern	LONG g_SECTOR_WIDTH_HALF;

@@ -170,7 +170,7 @@ BOOL				g_bUIInput		= FALSE;
 //Edit by sonic 2006.7.27  修改加速地址
 //g_UpdateDelay		= DELAY_UPDATE_GAME
 
-int					g_UpdateDelay		= 0;
+// g_UpdateDelay is ClientMode.cpp's (gamemodel) since task 4.255.
 
 // Zone
 // g_ZoneCreatureColorSet is ZoneFlags.cpp's.
@@ -185,8 +185,7 @@ bool				g_bWatchMode = false;
 // g_pInventoryEffectManager is MScreenEffectManager.cpp's (task 4.253).
 
 // DirectDraw
-CSpriteSurface*			g_pBack		= NULL;
-CSpriteSurface*			g_pLast		= NULL;
+// g_pBack and g_pLast are ClientMode.cpp's (gamemodel) since task 4.255.
 int						g_ScreenShotNumber = 0;
 
 CSDLStream*		g_pSDLStream = NULL;
@@ -222,7 +221,7 @@ extern int			g_MorphCreatureType;
 // g_Mode and g_ModeNext are gamemodel's (ClientMode.cpp); the message
 // logs' pointers too (GameMessages.cpp).
 
-CWinUpdate*				g_pUpdate = NULL;
+// g_pUpdate is CWinUpdate.cpp's (gamemodel) since task 4.255.
 
 extern MCreature*		AddClientCreature();
 extern void Add_GDR_Effect(int nEffect, bool bAppearBossMonster);

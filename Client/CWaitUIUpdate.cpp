@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 // CWaitUIUpdate.cpp
 //---------------------------------------------------------------------------
-// UI에서 메시지가 오기를 기다리는 loop
+// The loop that waits for the player in the UI (CWaitUIUpdate.h)
 //---------------------------------------------------------------------------
 #include "Client_PCH.h"
 #ifdef _MSC_VER
@@ -34,18 +34,12 @@
 extern bool	LoadingAddonSPK(bool bLoadingAll);
 extern bool	g_AddonSPKAllLoaded;
 
-extern void	DrawTitleLoading();
-extern void	EndTitleLoading(bool SendLogin = false);
-extern bool 	CheckInvalidProcess();
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
-extern int	g_TitleSpriteAlpha;
 
 // Global
 CWaitUIUpdate*	g_pCWaitUIUpdate = NULL;
 
-
-extern DWORD g_double_click_time;
 
 #if defined(OUTPUT_DEBUG) //&& defined(_DEBUG)
 	#ifdef __METROTECH_TEST__
@@ -232,10 +226,10 @@ CWaitUIUpdate::Update()
 		DEBUG_ADD("UM");
 	#endif
 
-	UpdateMouse();
+	m_pHost->UpdateMouse();
 	if (drawDue)
 	{
-		UpdateInput();
+		m_pHost->UpdateInput();
 		if (g_pUpdate != this || !g_bActiveApp) return;
 		ProcessInput();
 		if (g_pUpdate != this || !g_bActiveApp) return;
@@ -256,7 +250,7 @@ CWaitUIUpdate::Update()
 		if (g_FrameNow - lastProcessCheck >= MonotonicClock::Millis(5000))
 		{
 			lastProcessCheck = g_FrameNow;
-			CheckInvalidProcess();
+			m_pHost->CheckInvalidProcess();
 		}
 
 		//------------------------------------------
@@ -268,9 +262,9 @@ CWaitUIUpdate::Update()
 //		}
 
 		//------------------------------------------
-		// Socket 입력 처리
+		// The socket's input
 		//------------------------------------------
-		if (!UpdateSocketInput())
+		if (!m_pHost->UpdateSocketInput())
 		{
 			return;
 		}
@@ -295,9 +289,9 @@ CWaitUIUpdate::Update()
 			return;
 
 		//------------------------------------------
-		// Socket Output부분 처리
+		// The socket's output
 		//------------------------------------------
-		if (!UpdateSocketOutput())
+		if (!m_pHost->UpdateSocketOutput())
 		{
 			return;
 		}
@@ -305,7 +299,7 @@ CWaitUIUpdate::Update()
 		//------------------------------------------
 		// [ TEST CODE]
 		//------------------------------------------
-		// UI 기다리는 모드가 아닐 경우...
+		// Out of the modes that wait for the UI...
 		//------------------------------------------
 		if (g_Mode!=MODE_MAINMENU &&
 			g_Mode!=MODE_NEWUSER &&
@@ -315,7 +309,7 @@ CWaitUIUpdate::Update()
 		{
 			if (g_Mode==MODE_CHANGE_OPTION)
 			{
-				SetMode( MODE_CHANGE_OPTION );
+				m_pHost->SetMode( MODE_CHANGE_OPTION );
 			}
 
 			return;
@@ -512,7 +506,7 @@ void
 CWaitUIUpdate::UpdateDraw()
 {
 	//char	str[128];
-	UpdateMouse();
+	m_pHost->UpdateMouse();
 
 	gC_vs_ui.MouseControl(M_MOVING, g_x, g_y);
 
@@ -746,11 +740,11 @@ CWaitUIUpdate::UpdateDraw()
 			const DWORD elapsed = (DWORD)(MonotonicClock::Now() - oldTime).count();
 			int alpha = (int)(31-elapsed*16/1000);
 			g_TitleSpriteAlpha = (alpha > 0) ? alpha : 0;
-			DrawTitleLoading();
+			m_pHost->DrawTitleLoading();
 
 			if(g_TitleSpriteAlpha <= 0)
 			{
-				EndTitleLoading(true);
+				m_pHost->EndTitleLoading(true);
 			}
 		}
 				

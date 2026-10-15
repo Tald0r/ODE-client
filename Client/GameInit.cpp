@@ -220,7 +220,7 @@ extern int					g_Dimension ;
 //int				g_TitleSpriteDarkness = 4;
 bool			g_bTitleLoading = false;
 CSprite*		g_pTitleLoadingSprite = NULL;
-int				g_TitleSpriteAlpha = 32;
+// g_TitleSpriteAlpha is ClientMode.cpp's (gamemodel) since task 4.255.
 //CDirectDrawSurface	g_TitleSurface;
 
 
@@ -1516,6 +1516,18 @@ static const CWaitPacketHost s_WaitPacketHost = {
 	.UpdateSocketOutput = UpdateSocketOutput,
 };
 
+// The waiting screens' services (task 4.255).
+static const CWaitUIHost s_WaitUIHost = {
+	.UpdateMouse = UpdateMouse,
+	.UpdateInput = UpdateInput,
+	.CheckInvalidProcess = CheckInvalidProcess,
+	.UpdateSocketInput = UpdateSocketInput,
+	.UpdateSocketOutput = UpdateSocketOutput,
+	.SetMode = SetMode,
+	.DrawTitleLoading = DrawTitleLoading,
+	.EndTitleLoading = EndTitleLoading,
+};
+
 //---------------------------------------------------------------------------
 // Set up the update loops.
 //---------------------------------------------------------------------------
@@ -1539,7 +1551,7 @@ InitGameUpdate()
 
 	g_pCGameUpdate			= new CGameUpdate;
 	g_pCWaitPacketUpdate	= new CWaitPacketUpdate( &s_WaitPacketHost );
-	g_pCWaitUIUpdate		= new CWaitUIUpdate;
+	g_pCWaitUIUpdate		= new CWaitUIUpdate( &s_WaitUIHost );
 
 	return TRUE;
 }
