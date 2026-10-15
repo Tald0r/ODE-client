@@ -106,7 +106,8 @@ class TextComparison {
 		bool operator () (DRAWTEXT_NODE * left, DRAWTEXT_NODE * right) const;
 };
 
-typedef void (*DrawCreatureExceptionProc)( MCreature* pCreature, int& action, int& frame, int& direction );
+// How some creature types are drawn differently (gamemodel's since 4.229).
+#include "CreatureDrawExceptions.h"
 
 //----------------------------------------------------------------------
 // 한 Surface에 특정한 Zone에 대한 그림을 그려주는 class
@@ -805,8 +806,6 @@ class MTopView : public MRequestMode {
 	private :
 		// -_- 예외처리 함수 포인터로 뺌.
 		//DrawCreatureExecptionProc*	m_pExceptionProc;
-		void	InitMapingExceptionProc();
-		void	RegistExceptionProcFunction( DWORD objectID, DrawCreatureExceptionProc proc );
 
 		// DrawSelectedCharacter
 		void	DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame, int body, int frameindex );

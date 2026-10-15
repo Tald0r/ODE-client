@@ -565,7 +565,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		# Note: u_window.cpp is now cross-platform compatible
 	endif()
 
-	# Exclude native Win32 GDI code superseded by Client/RenderingFunctions.cpp.
+	# Exclude native Win32 GDI code superseded by VS_UI/src/hangul/FL2Rendering.cpp.
 	# The excluded IMM implementation Ci.cpp was deleted; Ci_macOS.cpp supplies
 	# the compatibility classes used with SDL text input. USE_SDL_BACKEND is
 	# forced ON above for all platforms including WIN32 ("Windows native support

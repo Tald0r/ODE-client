@@ -368,6 +368,13 @@ struct Host
 	bool (*IsExistAttachEffect)(MCreature* pCreature) = nullptr;
 	MAttachEffect* (*FirstAttachEffect)(MCreature* pCreature) = nullptr;
 	void (*ClearAttachEffect)(MCreature* pCreature) = nullptr;
+	// Whether the creature has the effect status; false without a host.
+	bool (*HasEffectStatus)(MCreature* pCreature, EFFECTSTATUS status) = nullptr;
+	// Where the creature is in its current action, and the action's length.
+	int (*GetActionCount)(MCreature* pCreature) = nullptr;
+	int (*GetActionCountMax)(MCreature* pCreature) = nullptr;
+	// How many after-images the creature draws behind it.
+	void (*SetShadowCount)(MCreature* pCreature, int count) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -499,5 +506,9 @@ MAttachEffect* CreateAttachEffect(MCreature* pCreature, int effectSpriteType, st
 bool IsExistAttachEffect(MCreature* pCreature);
 MAttachEffect* FirstAttachEffect(MCreature* pCreature);
 void ClearAttachEffect(MCreature* pCreature);
+bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
+int GetActionCount(MCreature* pCreature);
+int GetActionCountMax(MCreature* pCreature);
+void SetShadowCount(MCreature* pCreature, int count);
 
 }

@@ -19,11 +19,16 @@
 // with the full definition below. Files that need SP.h should include it separately.
 
 // g_SetFL2Surface/gpC_fl2_surface only ever had an SDL-backed (void*)
-// implementation (Client/RenderingFunctions.cpp); the LPDIRECTDRAWSURFACE7
+// implementation (FL2Rendering.cpp); the LPDIRECTDRAWSURFACE7
 // variant lived in VS_UI/src/hangul/FL2.cpp, which is excluded from the
 // build now that USE_SDL_BACKEND is mandatory on all platforms.
 void	g_SetFL2Surface(void* surface);
 extern void*	gpC_fl2_surface;
+
+// Where text goes before the UI sets an FL2 surface: the game installs
+// its surfaces (task 4.228). None installed: such text is not drawn.
+class CSpriteSurface;
+void	g_SetFL2FallbackSurface(CSpriteSurface* (*source)());
 
 extern HDC gh_FL2_DC;
 

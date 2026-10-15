@@ -92,6 +92,7 @@ set(SPRITELIB_SOURCES
 
 	# The tile layer's renderer (task 4.213)
 	TileRenderer.cpp
+	SurfaceImage.cpp
 	# The loading thread's sprite-pack jobs (task 4.217)
 	MLoadingSPKWorkNode.cpp
 
@@ -123,6 +124,7 @@ set(SPRITELIB_HEADERS
 	CSpriteOutlineManager.h
 	TileRenderer.h
 	ZoneTileProvider.h
+	SurfaceImage.h
 	MLoadingSPKWorkNode.h
 
 	# Alpha sprites

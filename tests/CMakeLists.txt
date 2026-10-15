@@ -202,6 +202,8 @@ add_executable(ui_tests
 	ui/test_ui_message_receiver.cpp
 	ui/test_uitext_overrides.cpp
 	ui/test_profile_path.cpp
+	ui/test_fl2_rendering.cpp
+	ui/test_guild_mark_manager.cpp
 )
 target_link_libraries(ui_tests PRIVATE test_framework VS_UI basic)
 # The shipped English overrides of the packed UI text, checked as files.

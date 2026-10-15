@@ -628,7 +628,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		std::map< DWORD, DrawCreatureExceptionProc >::iterator itr = m_ExceptionProcMap.find( creature_type );
 
 		if( m_ExceptionProcMap.end() != itr )
-			itr->second( pCreature, action, frame, direction );
+			itr->second( pCreature, action, frame, direction, g_CurrentFrame );
 
 		switch(creature_type)
 		{		
