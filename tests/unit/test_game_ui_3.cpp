@@ -1177,11 +1177,14 @@ TEST(GameUI3Messages, TheMasterLairSaysWhetherItIsOpen)
 	UI_MasterLairMessage(2, -3, 1101);
 	CHECK(Lines(scene.systemMessages) == std::vector<std::string>({"Bathory's Lair has opened.", "Bathory's Lair has closed.",
 		"Bathory's Lair stays open for 15 minutes.", "Bathory's Lair stays open for -3 minutes."}));
-	// Another kind, the option off, or no log, zone table or strings:
-	// nothing.
+	// Another kind, a zone the table does not know, the option off, or no
+	// log, zone table or strings: nothing.
 	scene.systemMessages.Clear();
 	UI_MasterLairMessage(3, 0, 1101);
 	UI_MasterLairMessage(255, 0, 1101);
+	UI_MasterLairMessage(0, 0, 1102);
+	UI_MasterLairMessage(1, 0, 1102);
+	UI_MasterLairMessage(2, 15, 1102);
 	scene.option.DoNotShowLairMsg = TRUE;
 	UI_MasterLairMessage(0, 0, 1101);
 	scene.option.DoNotShowLairMsg = FALSE;

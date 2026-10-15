@@ -4455,7 +4455,8 @@ void	UI_RunHorn(int currentZoneID)
 
 void		UI_MasterLairMessage(BYTE type, short value, TYPE_ZONEID ZoneID)
 {
-	if( g_pUserOption->DoNotShowLairMsg || g_pSystemMessage == NULL || g_pZoneTable == NULL || g_pGameStringTable == NULL )
+	// The zone id is the server's: one the zone table does not know has no name to tell.
+	if( g_pUserOption->DoNotShowLairMsg || g_pSystemMessage == NULL || g_pZoneTable == NULL || g_pZoneTable->Get( ZoneID ) == NULL || g_pGameStringTable == NULL )
 		return;	
 
 	MString msg;
