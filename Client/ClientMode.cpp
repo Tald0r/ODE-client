@@ -17,3 +17,10 @@ BOOL				g_MyFull = TRUE;
 RECT				g_GameRect = {799, 599, 800, 600};
 int					g_Dimension = 0;
 BOOL				g_bEnable3DHAL = FALSE;
+
+// The game's window, whether it fills the screen, and the machine's MAC
+// address (the executable's until task 4.253, which the packet helpers'
+// Windows screen-mode check reads).
+HWND				g_hWnd = NULL;
+bool				g_bFullScreen = false;
+BYTE				g_macAddress[6] = { 0, };

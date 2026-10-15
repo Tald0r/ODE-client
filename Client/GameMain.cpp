@@ -213,7 +213,7 @@ MWorkThread*		g_pLoadingThread = NULL;
 
 // Server IP
 //char				g_ServerIP[80];
-bool				g_bFullScreen	= false;
+// g_bFullScreen is gamemodel's (ClientMode.cpp) since task 4.253.
 int					g_MaxNPC		= MAX_NPC;
 bool				g_bHAL			= true;
 bool				g_bMusicSW		= true;
