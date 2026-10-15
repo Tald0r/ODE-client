@@ -152,6 +152,11 @@ Client/CreatureDrawExceptions.h
 Client/UtilityFunction.cpp
 Client/UtilityFunction.h
 
+# A map cell's objects, effects, portals and sounds (4.233).
+Client/EffectSpriteTypeHelper.h
+Client/MSector.cpp
+Client/MSector.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

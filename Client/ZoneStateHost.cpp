@@ -795,4 +795,14 @@ void SetShadowCount(MCreature* pCreature, int count)
 	if (s_Host && s_Host->SetShadowCount) s_Host->SetShadowCount(pCreature, count);
 }
 
+MObject* ObjectOf(const MCreature* pCreature)
+{
+	return s_Host && s_Host->ObjectOf ? s_Host->ObjectOf(pCreature) : nullptr;
+}
+
+MCreature* CreatureOf(MObject* pObject)
+{
+	return s_Host && s_Host->CreatureOf ? s_Host->CreatureOf(pObject) : nullptr;
+}
+
 }

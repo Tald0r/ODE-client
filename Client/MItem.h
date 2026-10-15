@@ -117,6 +117,9 @@ struct MItemHost {
 	// player's current magazine, freeing the one the gun held. Executable-
 	// side because a magazine's vtable is.
 	void			(*ReloadGun)(MItem* pGun, MItem* pMagazine) = nullptr;
+	// The creature a corpse (an item of ITEM_CLASS_CORPSE) holds, or NULL.
+	// Executable-side because a corpse's vtable is. NULL without a host.
+	MCreature*		(*CorpseCreature)(const MItem* pCorpse) = nullptr;
 };
 
 //----------------------------------------------------------------------
@@ -499,6 +502,7 @@ class MItem : public MObject, public CAnimationFrame {
 		static bool				IsPortalMarked(const MItem* pPortal)	{ return s_pHost!=NULL && s_pHost->IsPortalMarked!=NULL && s_pHost->IsPortalMarked(pPortal); }
 		static void				MarkPortal(MItem* pPortal, int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)	{ if (s_pHost!=NULL && s_pHost->MarkPortal!=NULL) s_pHost->MarkPortal(pPortal, zoneID, x, y); }
 		static void				ReloadGun(MItem* pGun, MItem* pMagazine)	{ if (s_pHost!=NULL && s_pHost->ReloadGun!=NULL) s_pHost->ReloadGun(pGun, pMagazine); }
+		static MCreature*		CorpseCreature(const MItem* pCorpse)	{ return s_pHost!=NULL && s_pHost->CorpseCreature!=NULL ? s_pHost->CorpseCreature(pCorpse) : NULL; }
 		// The executable's frame stamp; NULL without a host, or with one that carries none.
 		static const MonotonicClock::TimePoint*	Clock()	{ return s_pHost!=NULL ? s_pHost->pCurrentTime : NULL; }
 		BOOL		IsDropping() const		{ return m_bDropping; }

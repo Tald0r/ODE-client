@@ -7,6 +7,7 @@
 class MActionResult;
 class MAttachEffect;
 class MCreature;
+class MObject;
 class MItem;
 class MPetItem;
 class MShop;
@@ -375,6 +376,10 @@ struct Host
 	int (*GetActionCountMax)(MCreature* pCreature) = nullptr;
 	// How many after-images the creature draws behind it.
 	void (*SetShadowCount)(MCreature* pCreature, int count) = nullptr;
+	// The creature as the MObject it is (its first base), and an object a
+	// sector holds as a creature, back. NULL without a host.
+	MObject* (*ObjectOf)(const MCreature* pCreature) = nullptr;
+	MCreature* (*CreatureOf)(MObject* pObject) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -510,5 +515,7 @@ bool HasEffectStatus(MCreature* pCreature, EFFECTSTATUS status);
 int GetActionCount(MCreature* pCreature);
 int GetActionCountMax(MCreature* pCreature);
 void SetShadowCount(MCreature* pCreature, int count);
+MObject* ObjectOf(const MCreature* pCreature);
+MCreature* CreatureOf(MObject* pObject);
 
 }

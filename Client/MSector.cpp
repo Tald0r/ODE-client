@@ -8,7 +8,7 @@
 
 #include "MObject.h"
 #include "MItem.h"
-#include "MCreature.h"
+#include "ZoneStateHost.h"
 #include "MImageObject.h"
 #include "MEffect.h"
 #include "MSector.h"
@@ -16,6 +16,17 @@
 #include "EffectSpriteTypeDef.h"
 #include "EffectSpriteTypeHelper.h"
 #include <fstream>
+
+// A corpse of creature type 672 (the sweeper) blocks the ground while it
+// lies on the sector.
+static bool IsBlockingCorpse(const MItem* pItem)
+{
+	if (pItem->GetItemClass() != ITEM_CLASS_CORPSE)
+		return false;
+
+	MCreature* pCreature = MItem::CorpseCreature(pItem);
+	return pCreature != NULL && CreatureState::GetCreatureType(pCreature) == 672;
+}
 
 //----------------------------------------------------------------------
 //
@@ -262,17 +273,8 @@ MSector::AddItem(const MItem* pItem)
 
 	// Set the item flag.
 	m_fProperty |= FLAG_SECTOR_ITEM;
-	if( pItem->GetItemClass() == ITEM_CLASS_CORPSE )
-	{
-		const MCorpse* pCorpse = dynamic_cast<const MCorpse*>(pItem);
-		if( pCorpse == NULL || pCorpse->GetCreature() == NULL )
-			return true;
-
-		const MCreature* pCreature = pCorpse->GetCreature();
-
-		if( pCreature->GetCreatureType() == 672 )
-			m_fProperty |= FLAG_SECTOR_BLOCK_GROUND;
-	}
+	if (IsBlockingCorpse(pItem))
+		m_fProperty |= FLAG_SECTOR_BLOCK_GROUND;
 
 	return true;
 }
@@ -296,7 +298,7 @@ MSector::AddUndergroundCreature(const MCreature* pUndergroundCreature)
 	int beforeSize = static_cast<int>(m_mapObject.size());
 
 	// Add it at the underground creatures' next position.
-	m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pUndergroundCreature) );
+	m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pUndergroundCreature)) );
 
 	int afterSize = static_cast<int>(m_mapObject.size());
 
@@ -307,7 +309,7 @@ MSector::AddUndergroundCreature(const MCreature* pUndergroundCreature)
 
 		// search them all for a free slot and add it there.
 		OBJECT_MAP::const_iterator iCreature = GetUndergroundCreatureIterator();
-		BYTE currentPos;
+		BYTE currentPos = 0;
 		int i;
 
 		for (i=0; i<beforeSize; i++)
@@ -319,7 +321,7 @@ MSector::AddUndergroundCreature(const MCreature* pUndergroundCreature)
 			if (currentPos - previousPos > 1)
 			{
 				pos = currentPos - 1;
-				m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pUndergroundCreature) );
+				m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pUndergroundCreature)) );
 
 				break;
 			}
@@ -333,7 +335,7 @@ MSector::AddUndergroundCreature(const MCreature* pUndergroundCreature)
 		if (i==beforeSize)
 		{
 			pos = currentPos + 1;
-			m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pUndergroundCreature) );
+			m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pUndergroundCreature)) );
 		}
 	}
 
@@ -363,7 +365,7 @@ MSector::AddGroundCreature(const MCreature* pCreature)
 	int beforeSize = static_cast<int>(m_mapObject.size());
 
 	// Add it at the ground creatures' next position.
-	m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pCreature) );
+	m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pCreature)) );
 
 	int afterSize = static_cast<int>(m_mapObject.size());
 
@@ -374,7 +376,7 @@ MSector::AddGroundCreature(const MCreature* pCreature)
 
 		// search them all for a free slot and add it there.
 		OBJECT_MAP::const_iterator iCreature = GetGroundCreatureIterator();
-		BYTE currentPos;
+		BYTE currentPos = 0;
 		int i;
 
 		for (i=0; i<beforeSize; i++)
@@ -386,7 +388,7 @@ MSector::AddGroundCreature(const MCreature* pCreature)
 			if (currentPos - previousPos > 1)
 			{
 				pos = currentPos - 1;
-				m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pCreature) );
+				m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pCreature)) );
 
 				break;
 			}
@@ -400,7 +402,7 @@ MSector::AddGroundCreature(const MCreature* pCreature)
 		if (i==beforeSize)
 		{
 			pos = currentPos + 1;
-			m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pCreature) );
+			m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pCreature)) );
 		}
 	}
 
@@ -431,7 +433,7 @@ MSector::AddFlyingCreature(const MCreature* pFlyingCreature)
 	int beforeSize = static_cast<int>(m_mapObject.size());
 
 	// Add it at the flying creatures' next position.
-	m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pFlyingCreature) );
+	m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pFlyingCreature)) );
 
 	int afterSize = static_cast<int>(m_mapObject.size());
 
@@ -442,7 +444,7 @@ MSector::AddFlyingCreature(const MCreature* pFlyingCreature)
 
 		// search them all for a free slot and add it there.
 		OBJECT_MAP::const_iterator iCreature = GetFlyingCreatureIterator();
-		BYTE currentPos;
+		BYTE currentPos = 0;
 		int i;
 
 		for (i=0; i<beforeSize; i++)
@@ -454,7 +456,7 @@ MSector::AddFlyingCreature(const MCreature* pFlyingCreature)
 			if (currentPos - previousPos > 1)
 			{
 				pos = currentPos - 1;
-				m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pFlyingCreature) );
+				m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pFlyingCreature)) );
 
 				break;
 			}
@@ -468,7 +470,7 @@ MSector::AddFlyingCreature(const MCreature* pFlyingCreature)
 		if (i==beforeSize)
 		{
 			pos = currentPos + 1;
-			m_mapObject.insert( OBJECT_MAP::value_type(pos, (MObject*)pFlyingCreature) );
+			m_mapObject.insert( OBJECT_MAP::value_type(pos, CreatureState::ObjectOf(pFlyingCreature)) );
 		}
 	}
 
@@ -755,7 +757,7 @@ MSector::GetCreature() const
 		if (iObject!=m_mapObject.end()
 			&& iObject->first <= POSITION_FLYINGCREATURE_MAX)
 		{
-			return (MCreature*)(iObject->second);
+			return CreatureState::CreatureOf(iObject->second);
 		}
 	}
 
@@ -780,7 +782,7 @@ MSector::GetUndergroundCreature() const
 		if (iObject!=m_mapObject.end()
 			&& iObject->first <= POSITION_UNDERGROUNDCREATURE_MAX)
 		{
-			return (MCreature*)(iObject->second);
+			return CreatureState::CreatureOf(iObject->second);
 		}
 	}
 
@@ -805,7 +807,7 @@ MSector::GetGroundCreature() const
 		if (iObject!=m_mapObject.end()
 			&& iObject->first <= POSITION_GROUNDCREATURE_MAX)
 		{
-			return (MCreature*)(iObject->second);
+			return CreatureState::CreatureOf(iObject->second);
 		}
 	}
 
@@ -829,7 +831,7 @@ MSector::GetFlyingCreature() const
 		if (iObject!=m_mapObject.end()
 			&& iObject->first <= POSITION_FLYINGCREATURE_MAX)
 		{
-			return (MCreature*)(iObject->second);
+			return CreatureState::CreatureOf(iObject->second);
 		}
 	}
 
@@ -905,9 +907,7 @@ MSector::RemoveItem(MItem*& pItem)
 		m_mapObject.erase( iObject );
 
 		// Clear only the item flag.
-		if( pItem->GetItemClass() == ITEM_CLASS_CORPSE &&
-			((MCorpse*)pItem)->GetCreature() != NULL &&
-			((MCorpse*)pItem)->GetCreature()->GetCreatureType() == 672 )
+		if (IsBlockingCorpse(pItem))
 			m_fProperty &= ~FLAG_SECTOR_BLOCK_GROUND;
 
 		m_fProperty &= ~FLAG_SECTOR_ITEM;
@@ -949,9 +949,7 @@ MSector::RemoveItem(TYPE_OBJECTID id, MItem*& pItem)
 			m_mapObject.erase( iObject );
 
 			// Clear only the item flag.
-			if( pItem->GetItemClass() == ITEM_CLASS_CORPSE &&
-				((MCorpse*)pItem)->GetCreature() != NULL &&
-				((MCorpse*)pItem)->GetCreature()->GetCreatureType() == 672 )
+			if (IsBlockingCorpse(pItem))
 				m_fProperty &= ~FLAG_SECTOR_BLOCK_GROUND;
 
 			m_fProperty &= ~FLAG_SECTOR_ITEM;
@@ -981,12 +979,12 @@ MSector::RemoveCreature(TYPE_OBJECTID id, MCreature*& pCreature)
 		while (iObject!=m_mapObject.end()
 				&& iObject->first <= POSITION_FLYINGCREATURE_MAX)
 		{
-			pCreature =  (MCreature*)iObject->second;
+			pCreature = CreatureState::CreatureOf(iObject->second);
 
 			// If there is one,
 			// when its ID matches,
 			// store the object in pCreature to hand it back.
-			if (pCreature->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Underground
 				if (iObject->first <= POSITION_UNDERGROUNDCREATURE_MAX)
@@ -1046,12 +1044,12 @@ MSector::RemoveUndergroundCreature(TYPE_OBJECTID id, MCreature*& pUndergroundCre
 
 		for (int i=0; iObject!=m_mapObject.end() && i<m_nUndergroundCreature; i++)
 		{
-			pUndergroundCreature =  (MCreature*)iObject->second;
+			pUndergroundCreature = CreatureState::CreatureOf(iObject->second);
 
 			// If there is one,
 			// when its ID matches,
 			// store the object in pUndergroundCreature to hand it back.
-			if (pUndergroundCreature->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Remove iObject.
 				m_mapObject.erase( iObject );
@@ -1092,12 +1090,12 @@ MSector::RemoveGroundCreature(TYPE_OBJECTID id, MCreature*& pGroundCreature)
 
 		for (int i=0; iObject!=m_mapObject.end() && i<m_nGroundCreature; i++)
 		{
-			pGroundCreature =  (MCreature*)iObject->second;
+			pGroundCreature = CreatureState::CreatureOf(iObject->second);
 
 			// If there is one,
 			// when its ID matches,
 			// store the object in pGroundCreature to hand it back.
-			if (pGroundCreature->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Remove iObject.
 				m_mapObject.erase( iObject );
@@ -1139,12 +1137,12 @@ MSector::RemoveFlyingCreature(TYPE_OBJECTID id, MCreature*& pFlyingCreature)
 
 		for (int i=0; iObject!=m_mapObject.end() && i<m_nFlyingCreature; i++)
 		{
-			pFlyingCreature =  (MCreature*)iObject->second;
+			pFlyingCreature = CreatureState::CreatureOf(iObject->second);
 
 			// If there is one,
 			// when its ID matches,
 			// store the object in pFlyingCreature to hand it back.
-			if (pFlyingCreature->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Remove iObject.
 				m_mapObject.erase( iObject );
@@ -1242,9 +1240,7 @@ MSector::RemoveItem(TYPE_OBJECTID id)
 		{
 			// Remove iObject.
 			MItem* pItem = dynamic_cast<MItem*>(iObject->second);
-			if( pItem->GetItemClass() == ITEM_CLASS_CORPSE &&
-				((MCorpse*)pItem)->GetCreature() != NULL &&
-				((MCorpse*)pItem)->GetCreature()->GetCreatureType() == 672 )
+			if (IsBlockingCorpse(pItem))
 				m_fProperty &= ~FLAG_SECTOR_BLOCK_GROUND;
 
 			m_mapObject.erase( iObject );
@@ -1280,7 +1276,7 @@ MSector::RemoveCreature(TYPE_OBJECTID id)
 			// If there is one,
 			// when its ID matches,
 			// store the object in pCreature to hand it back.
-			if (((MCreature*)iObject->second)->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Underground
 				if (iObject->first <= POSITION_UNDERGROUNDCREATURE_MAX)
@@ -1341,7 +1337,7 @@ MSector::RemoveUndergroundCreature(TYPE_OBJECTID id)
 			// If there is one,
 			// when its ID matches,
 			// store the object in pUndergroundCreature to hand it back.
-			if (((MCreature*)iObject->second)->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Remove iObject.
 				m_mapObject.erase( iObject );
@@ -1382,7 +1378,7 @@ MSector::RemoveGroundCreature(TYPE_OBJECTID id)
 			// If there is one,
 			// when its ID matches,
 			// store the object in pGroundCreature to hand it back.
-			if (((MCreature*)iObject->second)->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Remove iObject.
 				m_mapObject.erase( iObject );
@@ -1423,7 +1419,7 @@ MSector::RemoveFlyingCreature(TYPE_OBJECTID id)
 			// If there is one,
 			// when its ID matches,
 			// store the object in pFlyingCreature to hand it back.
-			if (((MCreature*)iObject->second)->GetID() == id)
+			if (iObject->second->GetID() == id)
 			{
 				// Remove iObject.
 				m_mapObject.erase( iObject );
@@ -1510,9 +1506,7 @@ MSector::RemoveItem()
 			return false;
 
 		MItem* pItem = dynamic_cast<MItem*>(iObject->second);
-		if( pItem->GetItemClass() == ITEM_CLASS_CORPSE &&
-			((MCorpse*)pItem)->GetCreature() != NULL &&
-			((MCorpse*)pItem)->GetCreature()->GetCreatureType() == 672 )
+		if (IsBlockingCorpse(pItem))
 			m_fProperty &= ~FLAG_SECTOR_BLOCK_GROUND;
 
 		// Remove it

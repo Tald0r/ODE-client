@@ -2967,6 +2967,10 @@ static const MItemHost	s_ItemHost = {
 		g_pCurrentMagazine = pNew;
 		delete pOld;
 	},
+	.CorpseCreature			= [](const MItem* pCorpse) -> MCreature* {
+		const MCorpse* p = dynamic_cast<const MCorpse*>(pCorpse);
+		return p != NULL ? p->GetCreature() : NULL;
+	},
 };
 
 //-----------------------------------------------------------------------------
@@ -4083,6 +4087,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.GetActionCount = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetActionCount()); },
 	.GetActionCountMax = [](MCreature* pCreature) { return static_cast<int>(pCreature->GetActionCountMax()); },
 	.SetShadowCount = [](MCreature* pCreature, int count) { pCreature->SetShadowCount(count); },
+	.ObjectOf = [](const MCreature* pCreature) -> MObject* { return const_cast<MCreature*>(pCreature); },
+	.CreatureOf = [](MObject* pObject) { return static_cast<MCreature*>(pObject); },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
