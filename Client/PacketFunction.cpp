@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // PacketFunction.cpp
 //-----------------------------------------------------------------------------
-// Packet에 관련된 utility함수
+// Utility functions related to Packet
 //-----------------------------------------------------------------------------
 
 #include "Client_PCH.h"
@@ -331,7 +331,7 @@ InitPacketItemTable()
 	// motorcycle
 	//------------------------------------------------------------
 	MMotorcycle* pMotor1 = new MMotorcycle;	pMotor1->SetItemType( 0 ); pMotor1->ClearItemOption();
-	// 2004, 1, 5, sobeit modify start - type 변경 1->6, 2->7 로
+	// 2004, 1, 5, sobeit modify start - type changed 1->6, 2->7
 	MMotorcycle* pMotor2 = new MMotorcycle;	pMotor2->SetItemType( 6 ); pMotor2->ClearItemOption();
 	MMotorcycle* pMotor3 = new MMotorcycle;	pMotor3->SetItemType( 7 ); pMotor3->ClearItemOption();
 	// 2004, 1, 5, sobeit modify end
@@ -479,10 +479,10 @@ ReleasePacketItemTable()
 void
 SetGoreLevel(bool bGoreLevel)
 {
-	// Gore Level 할려면..
-	// EffectGenerator에서 effectSpriteType이 EFFECTSPRITETYPE_NULL인 
-	// 경우를 체크해야 한다. 
-	// MTopView에서도 출력할때 NULL체크해야한다.
+	// To implement Gore Level..
+	// in EffectGenerator, the case where effectSpriteType is EFFECTSPRITETYPE_NULL
+	// must be checked.
+	// MTopView must also check for NULL when drawing.
 	bool bZoneRelease = false;
 
 //	if (g_pUserInformation->GoreLevel)
@@ -490,7 +490,7 @@ SetGoreLevel(bool bGoreLevel)
 		//-------------------------------------------------------
 		// Gore ---> not Gore
 		//-------------------------------------------------------
-		// effect들을 바꿔준다.
+		// replace the effects.
 		//-------------------------------------------------------
 		if (!bGoreLevel)
 		{
@@ -504,7 +504,7 @@ SetGoreLevel(bool bGoreLevel)
 		//-------------------------------------------------------
 		// not Gore --> Gore
 		//-------------------------------------------------------
-		// 다시 loading하면 된다.
+		// just load again.
 		//-------------------------------------------------------
 		if (bGoreLevel)
 		{
@@ -525,7 +525,7 @@ SetGoreLevel(bool bGoreLevel)
 	if(bZoneRelease == true)
 	{
 		//------------------------------------------------------
-		// Small Zone 제거
+		// remove Small Zone
 		//------------------------------------------------------
 		if (g_pZoneSmall != NULL)
 		{
@@ -537,7 +537,7 @@ SetGoreLevel(bool bGoreLevel)
 		}			
 		
 		//------------------------------------------------------
-		// Large Zone 제거
+		// remove Large Zone
 		//------------------------------------------------------
 		if (g_pZoneLarge != NULL)
 		{
@@ -572,20 +572,20 @@ ConvertMillisecondToFrame(DWORD ms)
 {
 	// 1 ms = 1/1000
 	// 1000 ms = 1
-	// 1 초 = 16 frame
+	// 1 sec = 16 frames
 	return ms * g_pClientConfig->FPS / 1000;
 }
 
 //-----------------------------------------------------------------------------
 // Set Addon To Slayer
 //-----------------------------------------------------------------------------
-// NPC 복장을 입힌다.
+// dress up as an NPC.
 //-----------------------------------------------------------------------------
 void
 SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 {
 	//-------------------------------------------------------------
-	// 값 체크
+	// check the value
 	//-------------------------------------------------------------
 	if (npcID >= g_pCreatureTable->GetSize())
 	{
@@ -595,7 +595,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	}
 
 	//-------------------------------------------------------------
-	// 복장을 하나하나 입힌다.
+	// put on the outfit piece by piece.
 	//-------------------------------------------------------------
 	ITEM_WEARINFO* pInfo = (*g_pCreatureTable)[npcID].pItemWearInfo;
 
@@ -607,20 +607,20 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	}
 	
 	//----------------------------------------	
-	// 머리
+	// head
 	//----------------------------------------	
 	if ((*g_pCreatureTable)[npcID].bMale)
 	{
 		pCreature->SetAddonHair(g_PacketHairMaleID[pInfo->hair], pInfo->hairColor);		
 	}
-	// slayer 여
+	// slayer female
 	else
 	{
 		pCreature->SetAddonHair(g_PacketHairFemaleID[pInfo->hair], pInfo->hairColor);	
 	}
 
 	//----------------------------------------	
-	// 복장
+	// outfit
 	//----------------------------------------	
 	MItem* pCoat		= g_pPacketItemJacket[pInfo->jacket];
 	MItem* pTrouser		= g_pPacketItemPants[pInfo->pants];
@@ -629,7 +629,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	MItem* pShield		= g_pPacketItemShield[pInfo->shield];
 	MItem* pMotorcycle	= g_pPacketItemMotorcycle[pInfo->motorcycle];
 
-	// 색깔정보 설정...
+	// set color info...
 	//pCoat->SetItemOptionList( getHelmetColor() );
 	//
 	//
@@ -644,7 +644,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	
 
 	/*
-	// 왼손엔 방패
+	// shield in the left hand
 	if (pInfo->getWeaponType()==WEAPON_SWORD_SHIELD || pInfo->getWeaponType()==WEAPON_SHIELD)
 	{
 		pCreature->SetAddonItem( pShield );
@@ -657,7 +657,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	*/
 
 	//----------------------------------------	
-	// 색깔 설정
+	// set color
 	//----------------------------------------	
 	if (pCoat!=NULL)
 	{
@@ -695,7 +695,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	}
 
 	//----------------------------------------	
-	// 공격 속도 설정
+	// set attack speed
 	//----------------------------------------	
 //	pCreature->SetStatus( MODIFY_ALIGNMENT, pInfo->getAlignment() );
 //	pCreature->SetWeaponSpeed( pInfo->getAttackSpeed() );
@@ -706,26 +706,26 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 //-----------------------------------------------------------------------------
 // Set Addon To Slayer
 //-----------------------------------------------------------------------------
-// 머리
+// head
 //-----------------------------------------------------------------------------
 void		
 SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo2* pInfo)
 {		
 	//--------------------------------------------------
-	// 머리 설정
+	// set head
 	//--------------------------------------------------
-	// slayer남 
+	// slayer male
 	if (pInfo->getSex()==MALE)
 	{
 		pCreature->SetAddonHair(g_PacketHairMaleID[(int)pInfo->getHairStyle()], pInfo->getHairColor());		
 	}
-	// slayer 여
+	// slayer female
 	else
 	{
 		pCreature->SetAddonHair(g_PacketHairFemaleID[(int)pInfo->getHairStyle()], pInfo->getHairColor ());	
 	}
 
-	if(pInfo->getAdvancementLevel()>0) // 승직 캐릭터
+	if(pInfo->getAdvancementLevel()>0) // advanced (promoted) character
 		pCreature->SetAddonColorSet1( ADDON_COAT, pInfo->getHairColor () );
 	else
 		pCreature->SetAddonColorSet1( ADDON_COAT, pInfo->getSkinColor() );
@@ -736,7 +736,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo2* pInfo)
 //-----------------------------------------------------------------------------
 // Set Addon To Slayer
 //-----------------------------------------------------------------------------
-// 복장
+// outfit
 //-----------------------------------------------------------------------------
 void		
 SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
@@ -762,7 +762,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 
 	//----------------------------------------	
 	//
-	// option과 color는 따로 지정해야 한다.
+	// option and color must be specified separately.
 	//
 	//----------------------------------------	
 	//Color_t getHairColor () const throw () 
@@ -775,20 +775,20 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 	//Color_t getMotorcycleColor ( ColorType colorType = MAIN_COLOR ) const throw () 
 
 	//----------------------------------------	
-	// 머리
+	// head
 	//----------------------------------------	
 	if (pInfo->getSex()==MALE)
 	{
 		pCreature->SetAddonHair(PacketHair(g_PacketHairMaleID, pInfo->getHairStyle()), pInfo->getHairColor());		
 	}
-	// slayer 여
+	// slayer female
 	else
 	{
 		pCreature->SetAddonHair(PacketHair(g_PacketHairFemaleID, pInfo->getHairStyle()), pInfo->getHairColor());	
 	}
 
 	//----------------------------------------	
-	// 복장
+	// outfit
 	//----------------------------------------	
 	MItem* pCoat		= PacketItem(g_pPacketItemJacket, pInfo->getJacketType());
 //	MItem* pCoat		= g_pPacketItemJacket[JACKET_BASIC];//by viva
@@ -800,7 +800,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 
 	MItem* pShoulder	= PacketItem(g_pPacketItemShoulder, pInfo->getShoulderType());
 
-	// 색깔정보 설정...
+	// set color info...
 	//pCoat->SetItemOptionList( getHelmetColor() );
 	//
 	//
@@ -818,7 +818,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 	
 
 	/*
-	// 왼손엔 방패
+	// shield in the left hand
 	if (pInfo->getWeaponType()==WEAPON_SWORD_SHIELD || pInfo->getWeaponType()==WEAPON_SHIELD)
 	{
 		pCreature->SetAddonItem( pShield );
@@ -831,14 +831,14 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 	*/
 
 	//----------------------------------------	
-	// 색깔 설정
+	// set color
 	//----------------------------------------	
 	if (pCoat!=NULL)
 	{
 		pCreature->SetAddonColorSet2( ADDON_COAT, pInfo->getJacketColor() );
 	}
 
-	if(pInfo->getAdvancementLevel()>0) // 승직 캐릭터
+	if(pInfo->getAdvancementLevel()>0) // advanced (promoted) character
 		pCreature->SetAddonColorSet1( ADDON_COAT, pInfo->getHairColor () );
 	else
 		pCreature->SetAddonColorSet1( ADDON_COAT, pInfo->getSkinColor() );
@@ -877,7 +877,7 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 	}
 
 	//----------------------------------------	
-	// 공격 속도 설정
+	// set attack speed
 	//----------------------------------------	
 	pCreature->SetWeaponSpeed( pInfo->getAttackSpeed() );
 }
@@ -885,37 +885,37 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo3* pInfo)
 //-----------------------------------------------------------------------------
 // Add Item To Zone
 //-----------------------------------------------------------------------------
-// bDropping은 방금 떨어지기 시작하는건지...(true)
-// 떨어져 있던건지(false)를 결정하는 것이다.
+// bDropping tells whether it has just started falling... (true)
+// or was already lying there (false).
 //
-// 생성된 Item을 return한다.
-// 뭔가 다른 작업을 하기 위해서.. -_-;
+// returns the created Item.
+// to do some other work with it.. -_-;
 //-----------------------------------------------------------------------------
 MItem*
 AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 {
 	//------------------------------------------------
-	// Item을 가지고 있다가 Zone으로 떨어뜨리는 경우
+	// when holding an Item and then dropping it into the Zone
 	//------------------------------------------------
-	// 떨어뜨릴려는 item
+	// the item to drop
 	if (g_pPlayer->IsItemCheckBufferDropToZone())
 	{
 		//---------------------------------------------
-		// 떨어뜨릴려는 item
+		// the item to drop
 		//---------------------------------------------
 		MItem* pItem = g_pPlayer->GetItemCheckBuffer();
 	
 		if (pItem!=NULL)
 		{
 			//---------------------------------------------
-			// 같은 ID인 경우만 떨어뜨려야 한다....
+			// only an item with the same ID should be dropped....
 			//---------------------------------------------
 			if (pItem->GetID() == pPacket->getObjectID())
 			{	
 //				__BEGIN_HELP_EVENT
 //					if (pItem->GetItemClass()==ITEM_CLASS_MONEY)
 //					{
-//						// [도움말] 돈 버릴 때
+//						// [help] when throwing away money
 ////						ExecuteHelpEvent( HE_ITEM_DROP_MONEY );	
 //					}
 //				__END_HELP_EVENT
@@ -924,19 +924,19 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				DEBUG_ADD_FORMAT("[Try To Drop Item to Zone] ID=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 				
 				//---------------------------------------------
-				// item check buffer를 없애준다.
+				// remove the item check buffer.
 				//---------------------------------------------
 				g_pPlayer->ClearItemCheckBuffer();
 
 				//---------------------------------------------
-				// mouse cursor에서 제거
+				// remove from the mouse cursor
 				//---------------------------------------------
 				DialogPresentation::DropItem();
 
-				// 떨어뜨리는 좌표 설정
+				// set the drop coordinates
 				pItem->SetPosition( pPacket->getX(), pPacket->getY() );
 
-				// Zone에 Item을 추가한다.
+				// add the Item to the Zone.
 				if (!g_pZone->AddItem( pItem, bDropping ))
 				{
 					DEBUG_ADD_FORMAT("[Can't Drop Item] ID=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
@@ -947,9 +947,9 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				}
 
 				//------------------------------------------------------------------------
-				// 기술 아이콘 재설정..
+				// reset the skill icons..
 				//------------------------------------------------------------------------
-				// 성수, 폭탄
+				// holy water, bombs
 				//------------------------------------------------------------------------
 				CheckItemForSkillIcon(pItem);
 
@@ -995,7 +995,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 	pItem->SetPosition( pPacket->getX(), pPacket->getY() );
 
-	// 개수 설정
+	// set the quantity
 	pItem->SetNumber( 1 );
 
 	// durability
@@ -1005,7 +1005,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 	pItem->SetEnchantLevel( pPacket->getEnchantLevel() );
 
 	//-------------------------------------------------
-	// 이름 설정 : 돈인 경우 액수 표시
+	// set the name : show the amount if it is money
 	//-------------------------------------------------
 	if (pItem->GetItemClass()==ITEM_CLASS_MONEY)
 	{
@@ -1022,18 +1022,18 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 
 	//------------------------------------------
-	// 개수
+	// quantity
 	//------------------------------------------
-	// 총인 경우
+	// if it is a gun
 	//------------------------------------------
 	if (pItem->IsGunItem())
 	{
 		MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 
-		// 의미 없음 - -;
+		// meaningless - -;
 		pMagazine->SetID( 0 );
 
-		// 이거는 총에 맞춰서 해줘야된다.
+		// this has to be set to match the gun.
 		for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 		{
 			pMagazine->SetItemType(	j );
@@ -1046,22 +1046,22 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 		
 		if(pPacket->getSilver())
 			pMagazine->SetItemType( pMagazine->GetItemType()+8);
-		// 어예~ 은탄환 하드코딩 by 쑥갓
+		// yeah~ silver bullets hardcoded by Ssukgat
 
-		// 의미 없음
+		// meaningless
 		pMagazine->ClearItemOption();
 	
-		// 탄창 개수
+		// magazine quantity
 		pMagazine->SetNumber( pPacket->getItemNum() );
 
 		//------------------------------------
-		// 탄창 설정
+		// set the magazine
 		//------------------------------------
 		MGunItem* pGunItem = (MGunItem*)pItem;
 		pGunItem->SetMagazine( pMagazine );
 	}		
 	//------------------------------------------
-	// 총이 아닌 경우
+	// if it is not a gun
 	//------------------------------------------
 	else
 	{
@@ -1073,7 +1073,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 
 	//------------------------------------------
 	//
-	// Item에 다른 item들이 들어있는 경우
+	// if the Item contains other items
 	//
 	//------------------------------------------
 	if (pPacket->getListNum()!=0)
@@ -1081,7 +1081,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 		DEBUG_ADD_FORMAT("This Item has Sub item(s) : size=%d", pPacket->getListNum());
 		
 		//------------------------------------------
-		// Belt인 경우
+		// if it is a Belt
 		//------------------------------------------
 		if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 		{
@@ -1125,7 +1125,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 
 					//------------------------------------------
-					// Belt의 정해진 slot에 item을 추가시킨다.
+					// add the item to the given slot of the Belt.
 					//------------------------------------------
 					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 
@@ -1174,7 +1174,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 					
 					//------------------------------------------
-					// Belt의 정해진 slot에 item을 추가시킨다.
+					// add the item to the given slot of the Belt.
 					//------------------------------------------
 					pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 					
@@ -1189,27 +1189,27 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 	}
 
 	//------------------------------------------------	
-	// Zone에 추가한다.
+	// add to the Zone.
 	//------------------------------------------------	
 	if (!g_pZone->AddItem( pItem, bDropping ))
 	{
 		//------------------------------------------------	
-		// Zone에 추가되지 않은 경우
+		// if it was not added to the Zone
 		//------------------------------------------------	
 		DEBUG_ADD_FORMAT_WAR("[Can't Add Item] ID=%d, xy=(%d, %d)", pPacket->getObjectID(), pPacket->getX(), pPacket->getY());
 		
-		// 이전에 있던걸 제거한다.
+		// remove the one that was there before.
 		TYPE_OBJECTID oldID = g_pZone->GetItemID( pItem->GetX(), pItem->GetY() );
 
 		//------------------------------------------------	
-		// 그 자리에는 다른 아이템이 있는 경우...
+		// if there is another item in that spot...
 		//------------------------------------------------	
 		if (oldID!=OBJECTID_NULL)
 		{
 			DEBUG_ADD_FORMAT("Exist Item ID = %d", oldID);
 		
 			//------------------------------------------------	
-			// 다른 아이템인 경우.. 기존에걸 제거한다.
+			// if it is a different item.. remove the existing one.
 			//------------------------------------------------	
 			if (oldID!=pItem->GetID())
 			{
@@ -1217,12 +1217,12 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				{
 					DEBUG_ADD_FORMAT("Remove Old Item(id=%d) & Add", oldID);
 					
-					// 다시 추가한다.
+					// add again.
 					if (!g_pZone->AddItem( pItem, bDropping ))
 					{
 						DEBUG_ADD_WAR("[Can't Re-Add Item]");
 						
-						// memory 제거
+						// remove memory
 						delete pItem;
 					}		
 				}
@@ -1230,12 +1230,12 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 				{
 					DEBUG_ADD_FORMAT_WAR("[Can't Remove Old Item] id=%d", oldID);
 					
-					// memory 제거
+					// remove memory
 					delete pItem;
 				}		
 			}
 			//------------------------------------------------	
-			// 같은 item인 경우..
+			// if it is the same item..
 			//------------------------------------------------	
 			else
 			{
@@ -1245,8 +1245,8 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 			}
 		}
 		//------------------------------------------------	
-		// 그 자리에 아이템이 없다면...
-		// 다른 자리에 같은 objectID를 가진 아이템이 있다는 의미이다.
+		// if there is no item in that spot...
+		// it means an item with the same objectID is in another spot.
 		//------------------------------------------------	
 		else
 		{
@@ -1254,12 +1254,12 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 			{
 				DEBUG_ADD_FORMAT("Remove Old Item(id=%d) & Add", pPacket->getObjectID());
 				
-				// 다시 추가한다.
+				// add again.
 				if (!g_pZone->AddItem( pItem, bDropping ))
 				{
 					DEBUG_ADD_WAR("[Can't Re-Add Item2]");
 					
-					// memory 제거
+					// remove memory
 					delete pItem;
 				}		
 			}
@@ -1267,7 +1267,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 			{
 				DEBUG_ADD_FORMAT_WAR("[Can't Remove Old Item2] id=%d", pPacket->getObjectID());
 				
-				// memory 제거
+				// remove memory
 				delete pItem;
 			}		
 		}
@@ -1275,7 +1275,7 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 		return NULL;
 	}
 
-	// [도움말] 아이템 떨어질 때
+	// [help] when an item falls
 //	__BEGIN_HELP_EVENT
 //		ExecuteHelpEvent( HE_ITEM_APPEAR );	
 //	__END_HELP_EVENT
@@ -1293,10 +1293,10 @@ SkillToSector(TYPE_ACTIONINFO nActionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPO
 
 	//------------------------------------------------------
 	//
-	//				목표 생성
+	//				create the target
 	//
 	//------------------------------------------------------
-	// 사용자가 없어서 .. -_-;;
+	// because there is no user .. -_-;;
 	//------------------------------------------------------
 	MEffectTarget* pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[nActionInfo].GetSize() );
 
@@ -1304,7 +1304,7 @@ SkillToSector(TYPE_ACTIONINFO nActionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPO
 
 	pEffectTarget->SetDelayFrame( delayFrame );
 
-	// 결과 설정
+	// set the result
 	pEffectTarget->SetResult( pResult );
 
 
@@ -1312,7 +1312,7 @@ SkillToSector(TYPE_ACTIONINFO nActionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPO
 
 	int z = 0;
 	//--------------------------------------------------------
-	// 공중에서 시작하는 경우
+	// when starting in the air
 	//--------------------------------------------------------
 	if ((*g_pActionInfoTable)[nActionInfo].IsStartSky())
 	{
@@ -1321,15 +1321,15 @@ SkillToSector(TYPE_ACTIONINFO nActionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPO
 
 	//--------------------------------------------------------
 	//
-	//                   Effect생성		
+	//                   Create the effect
 	//
 	//--------------------------------------------------------
 	g_pEffectGeneratorTable->Generate(
-			point.x, point.y, z,				// 시작 위치
-			dir, 		// 방향
+			point.x, point.y, z,				// start position
+			dir, 		// direction
 			1,					// power
-			nActionInfo,		//	ActionInfoTable종류,
-			pEffectTarget		// 목표 정보
+			nActionInfo,		//	ActionInfoTable type,
+			pEffectTarget		// target info
 	);	
 }
 
@@ -1338,15 +1338,15 @@ SkillToSector(TYPE_ACTIONINFO nActionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPO
 //-----------------------------------------------------------------------------
 void		
 AddVampirePortal(
-				int serverID,								// 이펙트의 OID
-				const char* ownerName,								// 포탈 주인
-				TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY,		// 포탈의 좌표
-				DWORD delayFrame,							// 포탈의 지속 시간
+				int serverID,								// OID of the effect
+				const char* ownerName,								// portal owner
+				TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY,		// portal coordinates
+				DWORD delayFrame,							// portal duration
 				
-				// 목표 정보
-				int zoneID,							// 포탈의 목표 존 ID
-				TYPE_SECTORPOSITION zoneX,			// 포탈의 목표 좌표 x
-				TYPE_SECTORPOSITION zoneY,			// 포탈의 목표 좌표 y
+				// target info
+				int zoneID,							// target zone ID of the portal
+				TYPE_SECTORPOSITION zoneX,			// target x coordinate of the portal
+				TYPE_SECTORPOSITION zoneY,			// target y coordinate of the portal
 
 				bool bStartFromMainNode )
 {
@@ -1356,7 +1356,7 @@ AddVampirePortal(
 	{
 		//--------------------------------------------------------
 		//
-		//					Effect 목표 설정
+		//					Set the Effect target
 		//
 		//--------------------------------------------------------
 		MPortalEffectTarget* pEffectTarget = new MPortalEffectTarget( (*g_pActionInfoTable)[nActionInfo].GetSize() );
@@ -1367,20 +1367,20 @@ AddVampirePortal(
 		pEffectTarget->SetPortal( zoneID, zoneX, zoneY );
 
 		//--------------------------------------------------------
-		// 지속 시간 설정
+		// set the duration
 		//--------------------------------------------------------
 		pEffectTarget->SetDelayFrame( delayFrame );		
 
 		//--------------------------------------------------------
 		//
-		//				Main Node를 찾는다.
+		//				Find the Main Node.
 		//
 		//--------------------------------------------------------
 		if (bStartFromMainNode)
 		{
 			if ((*g_pActionInfoTable)[ nActionInfo ].HasMainNode())
 			{
-				// main node가 있으면 main node부터 시작하게 한다.
+				// if there is a main node, start from the main node.
 				for (int i=0; i<(*g_pActionInfoTable)[ nActionInfo ].GetMainNode(); i++)
 				{
 					pEffectTarget->NextPhase();
@@ -1390,7 +1390,7 @@ AddVampirePortal(
 		
 		//--------------------------------------------------------
 		//
-		//					시작 위치를 결정한다.
+		//					Determine the start position.
 		//
 		//--------------------------------------------------------
 		POINT point;	
@@ -1403,15 +1403,15 @@ AddVampirePortal(
 	
 		//--------------------------------------------------------
 		//
-		//                   Effect생성		
+		//                   Create the effect
 		//
 		//--------------------------------------------------------
 		g_pEffectGeneratorTable->Generate(
-				x,y,z,				// 시작 위치
-				dir, 				// 방향
+				x,y,z,				// start position
+				dir, 				// direction
 				1,					// power
-				nActionInfo,		//	ActionInfoTable종류,
-				pEffectTarget		// 목표 정보
+				nActionInfo,		//	ActionInfoTable type,
+				pEffectTarget		// target info
 		);	
 		
 
@@ -1422,25 +1422,25 @@ AddVampirePortal(
 //-----------------------------------------------------------------------------
 // Execute ActionInfo From MainNode
 //-----------------------------------------------------------------------------
-// MainNode부터 기술을 실행한다.
+// execute the skill starting from MainNode.
 //-----------------------------------------------------------------------------
 void
 ExecuteActionInfoFromMainNode(
-			TYPE_ACTIONINFO nActionInfo,										// 사용 기술 번호
+			TYPE_ACTIONINFO nActionInfo,										// skill number to use
 		
-			TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, // 기술 사용하는 사람(?) 
-			int direction,														// 사용 방향
+			TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, // the person using the skill(?)
+			int direction,														// direction of use
 			
-			TYPE_OBJECTID targetID,												// 목표에 대한 정보
+			TYPE_OBJECTID targetID,												// info about the target
 			TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, 
 			
-			DWORD delayFrame,													// 기술의 (남은) 지속 시간		
+			DWORD delayFrame,													// (remaining) duration of the skill
 			
-			MActionResult* pActionResult,										// 결과 정보
+			MActionResult* pActionResult,										// result info
 
-			bool bStartFromMainNode,											// MainNode부터 시작하는가?
+			bool bStartFromMainNode,											// start from MainNode?
 
-			int sX, int sY)		// 좌표 보정
+			int sX, int sY)		// coordinate adjustment
 {
 
 	if (nActionInfo==ACTIONINFO_NULL)
@@ -1464,13 +1464,13 @@ ExecuteActionInfoFromMainNode(
 		POINT point;	
 
 		//--------------------------------------------------------
-		// 목표 위치 Pixel좌표
+		// target position in Pixel coordinates
 		//--------------------------------------------------------
 		point = TileToPixel(targetX, targetY);
 
 		//--------------------------------------------------------
 		//
-		//					Effect 목표 설정
+		//					Set the Effect target
 		//
 		//--------------------------------------------------------
 		MEffectTarget* pEffectTarget = new MEffectTarget( (*g_pActionInfoTable)[nActionInfo].GetSize() );
@@ -1478,23 +1478,23 @@ ExecuteActionInfoFromMainNode(
 		pEffectTarget->Set( point.x, point.y, targetZ, targetID );
 
 		//--------------------------------------------------------
-		// 지속 시간 설정
+		// set the duration
 		//--------------------------------------------------------
 		pEffectTarget->SetDelayFrame( delayFrame );		
 
-		// 결과 설정 : 결과 처리는 EffectGenerator에 맡긴다.
+		// set the result : result handling is left to EffectGenerator.
 		pEffectTarget->SetResult( pActionResult );
 
 		//--------------------------------------------------------
 		//
-		//				Main Node를 찾는다.
+		//				Find the Main Node.
 		//
 		//--------------------------------------------------------
 		if (bStartFromMainNode)
 		{
 			if ((*g_pActionInfoTable)[ nActionInfo ].HasMainNode())
 			{
-				// main node가 있으면 main node부터 시작하게 한다.
+				// if there is a main node, start from the main node.
 				for (int i=0; i<(*g_pActionInfoTable)[ nActionInfo ].GetMainNode(); i++)
 				{
 					pEffectTarget->NextPhase();
@@ -1554,15 +1554,15 @@ ExecuteActionInfoFromMainNode(
 
 		//--------------------------------------------------------
 		//
-		//                   Effect생성		
+		//                   Create the effect
 		//
 		//--------------------------------------------------------
 		g_pEffectGeneratorTable->Generate(
-				x,y,z,				// 시작 위치
-				dir, 				// 방향
+				x,y,z,				// start position
+				dir, 				// direction
 				1,					// power
-				nActionInfo,		//	ActionInfoTable종류,
-				pEffectTarget		// 목표 정보
+				nActionInfo,		//	ActionInfoTable type,
+				pEffectTarget		// target info
 		);	
 		
 
@@ -1571,14 +1571,14 @@ ExecuteActionInfoFromMainNode(
 	else
 	{
 		//------------------------------------------------------------
-		// 결과를 처리해야하는 시점인가? - 당연하다고 본다 *_*;
+		// is it time to process the result? - assume so *_*;
 		//------------------------------------------------------------				
 		if (pActionResult != NULL)
 		{					
-			// 결과 실행
+			// execute the result
 			pActionResult->Execute();
 					
-			// 메모리 제거
+			// free memory
 			delete pActionResult;		
 		}				
 	}
@@ -1590,7 +1590,7 @@ ExecuteActionInfoFromMainNode(
 //-----------------------------------------------------------------------------
 // Set Inventory Info
 //-----------------------------------------------------------------------------
-// Player의 Inventory 정보를 설정한다.
+// set the Player's Inventory info.
 //-----------------------------------------------------------------------------
 void
 SetInventoryInfo(InventoryInfo* pInventoryInfo)
@@ -1598,7 +1598,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 	DEBUG_ADD( "Set Inventory Info" );
 	
 	//--------------------------------------------------
-	// Inventory 초기화
+	// initialize Inventory
 	//--------------------------------------------------	
 	g_pInventory->Init(INVENTORY_WIDTH, INVENTORY_HEIGHT);
 	
@@ -1607,11 +1607,11 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 		int itemNum = pInventoryInfo->getListNum();
 
 		//--------------------------------------------------
-		// Inventory에 아이템들을 추가한다.
+		// add the items to the Inventory.
 		//--------------------------------------------------
 		for (int i=0; i<itemNum; i++)
 		{
-			// 외부에서 지워줘야 한다.
+			// must be deleted by the caller.
 			InventorySlotInfo * pSlotInfo = pInventoryInfo->popFrontListElement();
 
 			if( pSlotInfo == NULL )
@@ -1644,22 +1644,22 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 			pItem->SetItemType(	pSlotInfo->getItemType() );
 			pItem->SetItemOptionList( pSlotInfo->getOptionType() );
 
-			// inventory에서의 좌표
+			// coordinates in the inventory
 			pItem->SetGridXY( pSlotInfo->getInvenX(), pSlotInfo->getInvenY() );
 
 			//------------------------------------------
-			// 개수
+			// quantity
 			//------------------------------------------
-			// 총인 경우
+			// if it is a gun
 			//------------------------------------------
 			if (pItem->IsGunItem())
 			{
 				MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 
-				// 의미 없음 - -;
+				// meaningless - -;
 				pMagazine->SetID( 0 );
 
-				// 이거는 총에 맞춰서 해줘야된다.
+				// this has to be set to match the gun.
 				for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 				{
 					pMagazine->SetItemType(	j );
@@ -1672,22 +1672,22 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 
 				if(pSlotInfo->getSilver())
 					pMagazine->SetItemType( pMagazine->GetItemType()+8);
-				// 어예~ 은탄환 하드코딩 by 쑥갓
+				// yeah~ silver bullets hardcoded by Ssukgat
 
-				// 의미 없음
+				// meaningless
 				pMagazine->ClearItemOption();
 			
-				// 탄창 개수
+				// magazine quantity
 				pMagazine->SetNumber( pSlotInfo->getItemNum() );
 
 				//------------------------------------
-				// 탄창 설정
+				// set the magazine
 				//------------------------------------
 				MGunItem* pGunItem = (MGunItem*)pItem;
 				pGunItem->SetMagazine( pMagazine );
 			}		
 			//------------------------------------------
-			// 총이 아닌 경우
+			// if it is not a gun
 			//------------------------------------------
 			else
 			{
@@ -1697,7 +1697,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 
 			//------------------------------------------
 			//
-			// Item에 다른 item들이 들어있는 경우
+			// if the Item contains other items
 			//
 			//------------------------------------------
 			if (pSlotInfo->getListNum()!=0)
@@ -1705,7 +1705,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 				DEBUG_ADD_FORMAT("This Item has Sub item(s) : size=%d", pSlotInfo->getListNum());
 				
 				//------------------------------------------
-				// Belt인 경우
+				// if it is a Belt
 				//------------------------------------------
 				if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 				{
@@ -1749,7 +1749,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 							pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 
 							//------------------------------------------
-							// Belt의 정해진 slot에 item을 추가시킨다.
+							// add the item to the given slot of the Belt.
 							//------------------------------------------
 							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 
@@ -1799,7 +1799,7 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 							pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 							
 							//------------------------------------------
-							// Belt의 정해진 slot에 item을 추가시킨다.
+							// add the item to the given slot of the Belt.
 							//------------------------------------------
 							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 							
@@ -1814,24 +1814,24 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 			}
 
 
-			// main색깔
+			// main color
 			pItem->SetItemColorSet( pSlotInfo->getMainColor() );
 
-			// 현재 내구성
+			// current durability
 			pItem->SetCurrentDurability( pSlotInfo->getDurability() );
 			pItem->SetSilver( pSlotInfo->getSilver() );
 			pItem->SetGrade( pSlotInfo->getGrade() );
 			pItem->SetEnchantLevel( pSlotInfo->getEnchantLevel() );
 
 			//---------------------------------------------
-			// item을 inventory에 넣는다.
+			// put the item into the inventory.
 			//---------------------------------------------
 			if (g_pInventory->AddItem( pItem, pItem->GetGridX(), pItem->GetGridY() ))
 			{				
 			}	
 			else
 			{
-				// item을 inventory에 추가할 수 없는 경우
+				// if the item cannot be added to the inventory
 				DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Inventory. id=%d, cl=%d, tp=%d, xy=(%d,%d)",
 												(int)pItem->GetID(),
 												(int)pItem->GetItemClass(),
@@ -1847,12 +1847,12 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 	}
 
 	//---------------------------------------------------------
-	// 사용 가능 여부 체크
+	// check whether it is usable
 	//---------------------------------------------------------
 	g_pInventory->CheckAffectStatusAll();
 
 	//---------------------------------------------------------
-	// inventory에 붙은 Effect제거
+	// remove the Effect attached to the inventory
 	//---------------------------------------------------------
 	if (g_pInventoryEffectManager!=NULL)
 	{
@@ -1863,10 +1863,10 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 //--------------------------------------------------------------------------------
 // Gear Information
 //--------------------------------------------------------------------------------
-// Player의 Gear에 대한 info를 설정한다.
-// SetGearInfo()를 하기 전에..
-// g_pPlayer가 Slayer인지 Vampire인지가 결정이 나야 한다.
-// 그래야지.. g_SlayerGear인지.. g_VampireGear인지를 알 수가 있다.
+// set the info about the Player's Gear.
+// before calling SetGearInfo()..
+// it must be decided whether g_pPlayer is a Slayer or a Vampire.
+// only then can we tell whether it is g_SlayerGear.. or g_VampireGear.
 //--------------------------------------------------------------------------------
 void
 SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
@@ -1901,7 +1901,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 		
 		for (int i=0; i<itemNum; i++)
 		{
-			// 외부에서 지워줘야 한다.
+			// must be deleted by the caller.
 			GearSlotInfo * pSlotInfo = pGearInfo->popFrontListElement();
 
 			if( pSlotInfo->getItemClass() >= g_pItemTable->GetSize() ||
@@ -1932,18 +1932,18 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			pItem->SetItemOptionList( pSlotInfo->getOptionType() );
 
 			//------------------------------------------
-			// 개수
+			// quantity
 			//------------------------------------------
-			// 총인 경우
+			// if it is a gun
 			//------------------------------------------
 			if (pItem->IsGunItem())
 			{
 				MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 
-				// 의미 없음 - -;
+				// meaningless - -;
 				pMagazine->SetID( 0 );
 
-				// 이거는 총에 맞춰서 해줘야된다.
+				// this has to be set to match the gun.
 				for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 				{
 					pMagazine->SetItemType(	j );
@@ -1956,22 +1956,22 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 
 				if(pSlotInfo->getSilver())
 					pMagazine->SetItemType( pMagazine->GetItemType()+8);
-				// 어예~ 은탄환 하드코딩 by 쑥갓
+				// yeah~ silver bullets hardcoded by Ssukgat
 
-				// 의미 없음
+				// meaningless
 				pMagazine->ClearItemOption();
 			
-				// 탄창 개수
+				// magazine quantity
 				pMagazine->SetNumber( pSlotInfo->getItemNum() );
 
 				//------------------------------------
-				// 탄창 설정
+				// set the magazine
 				//------------------------------------
 				MGunItem* pGunItem = (MGunItem*)pItem;
 				pGunItem->SetMagazine( pMagazine );
 			}		
 			//------------------------------------------
-			// 총이 아닌 경우
+			// if it is not a gun
 			//------------------------------------------
 			else
 			{
@@ -1980,19 +1980,19 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			}
 
 			pItem->SetGrade( pSlotInfo->getGrade() );
-			// gear에서의 좌표
+			// coordinates in the gear
 			pItem->SetItemSlot( pSlotInfo->getSlotID() );
 
-			// main색깔
+			// main color
 			pItem->SetItemColorSet( pSlotInfo->getMainColor() );
 
-			// 현재 내구성
+			// current durability
 			pItem->SetCurrentDurability( pSlotInfo->getDurability() );			
 			pItem->SetEnchantLevel( pSlotInfo->getEnchantLevel() );		
 
 			//------------------------------------------
 			//
-			// Item에 다른 item들이 들어있는 경우
+			// if the Item contains other items
 			//
 			//------------------------------------------
 			if (pSlotInfo->getListNum()!=0)
@@ -2000,7 +2000,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 				DEBUG_ADD_FORMAT("This Item has Sub item(s) : size=%d", pSlotInfo->getListNum());
 				
 				//------------------------------------------
-				// Belt인 경우
+				// if it is a Belt
 				//------------------------------------------
 				if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 				{
@@ -2044,7 +2044,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 							pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 
 							//------------------------------------------
-							// Belt의 정해진 slot에 item을 추가시킨다.
+							// add the item to the given slot of the Belt.
 							//------------------------------------------
 							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 
@@ -2094,7 +2094,7 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 							pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 
 							//------------------------------------------
-							// Belt의 정해진 slot에 item을 추가시킨다.
+							// add the item to the given slot of the Belt.
 							//------------------------------------------
 							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 
@@ -2109,9 +2109,9 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			}
 
 			//---------------------------------------------
-			// item을 gear에 넣는다.
+			// put the item into the gear.
 			//---------------------------------------------
-			// slayer / vampire에 따라서 gear가 다르다.
+			// the gear differs depending on slayer / vampire.
 			//---------------------------------------------
 			switch(g_pPlayer->GetRace())
 			{
@@ -2132,16 +2132,16 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 			}
 
 			//---------------------------------------------
-			// 복장 바꾼다.
+			// change outfit
 			//---------------------------------------------
 			g_pPlayer->SetAddonItem( pItem );
 
 			//---------------------------------------------
-			// Gear 추가할 수 없는 경우
+			// if Gear cannot be added
 			//---------------------------------------------
 			if (!bAdd)		
 			{
-				// item을 Gear에 추가할 수 없는 경우
+				// if the item cannot be added to the Gear
 				DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Gear. id=%d, cl=%d, tp=%d, slot=%d",
 												(int)pItem->GetID(),
 												(int)pItem->GetItemClass(),
@@ -2161,12 +2161,12 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 	pGear->CheckAffectStatusAll();				
 
 	//----------------------------------------------------
-	// Skill 체크
+	// check Skill
 	//----------------------------------------------------
 	g_pSkillAvailable->SetAvailableSkills();
 	
 	//----------------------------------------------
-	// 수치 계산을 한다.
+	// do the numeric calculation.
 	//----------------------------------------------
 	g_pPlayer->CalculateStatus();
 
@@ -2259,7 +2259,7 @@ void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo)
 //--------------------------------------------------------------------------------
 // Extra Information
 //--------------------------------------------------------------------------------
-// mouse에 들고 있는 item에 대한 정보 설정
+// set the info about the item held on the mouse
 //--------------------------------------------------------------------------------
 void
 SetExtraInfo(ExtraInfo* pExtraInfo)
@@ -2267,7 +2267,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 	DEBUG_ADD( "Set Extra Info" );
 	
 	//------------------------------------------------------
-	// 들고 있는 item을 없앤다.
+	// remove the held item.
 	//------------------------------------------------------
 	MItem* pCurrentItem = gpC_mouse_pointer->GetPickUpItem();
 
@@ -2282,7 +2282,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 		int itemNum = pExtraInfo->getListNum();
 
 		//------------------------------------------------------
-		// 당연히 1개밖에 없겠지만.. - -;;
+		// of course there will be only 1.. - -;;
 		//------------------------------------------------------
 		for (int i=0; i<itemNum; i++)
 		{
@@ -2314,18 +2314,18 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 			pItem->SetItemOptionList( pSlotInfo->getOptionType() );
 
 			//------------------------------------------
-			// 개수
+			// quantity
 			//------------------------------------------
-			// 총인 경우
+			// if it is a gun
 			//------------------------------------------
 			if (pItem->IsGunItem())
 			{
 				MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 
-				// 의미 없음 - -;
+				// meaningless - -;
 				pMagazine->SetID( 0 );
 
-				// 이거는 총에 맞춰서 해줘야된다.
+				// this has to be set to match the gun.
 				for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 				{
 					pMagazine->SetItemType(	j );
@@ -2338,22 +2338,22 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 
 				if(pSlotInfo->getSilver())
 					pMagazine->SetItemType( pMagazine->GetItemType()+8);
-				// 어예~ 은탄환 하드코딩 by 쑥갓
+				// yeah~ silver bullets hardcoded by Ssukgat
 				
-				// 의미 없음
+				// meaningless
 				pMagazine->ClearItemOption();
 			
-				// 탄창 개수
+				// magazine quantity
 				pMagazine->SetNumber( pSlotInfo->getItemNum() );
 
 				//------------------------------------
-				// 탄창 설정
+				// set the magazine
 				//------------------------------------
 				MGunItem* pGunItem = (MGunItem*)pItem;
 				pGunItem->SetMagazine( pMagazine );
 			}		
 			//------------------------------------------
-			// 총이 아닌 경우
+			// if it is not a gun
 			//------------------------------------------
 			else
 			{
@@ -2363,7 +2363,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 
 			//------------------------------------------
 			//
-			// Item에 다른 item들이 들어있는 경우
+			// if the Item contains other items
 			//
 			//------------------------------------------
 			if (pSlotInfo->getListNum()!=0)
@@ -2371,7 +2371,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 				DEBUG_ADD_FORMAT("This Item has Sub item(s) : size=%d", pSlotInfo->getListNum());
 				
 				//------------------------------------------
-				// Belt인 경우
+				// if it is a Belt
 				//------------------------------------------
 				if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 				{
@@ -2415,7 +2415,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 							pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 
 							//------------------------------------------
-							// Belt의 정해진 slot에 item을 추가시킨다.
+							// add the item to the given slot of the Belt.
 							//------------------------------------------
 							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 
@@ -2466,7 +2466,7 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 							pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 							
 							//------------------------------------------
-							// Belt의 정해진 slot에 item을 추가시킨다.
+							// add the item to the given slot of the Belt.
 							//------------------------------------------
 							pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 							
@@ -2481,17 +2481,17 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 			}
 
 
-			// main색깔
+			// main color
 			pItem->SetItemColorSet( pSlotInfo->getMainColor() );
 
-			// 현재 내구성
+			// current durability
 			pItem->SetCurrentDurability( pSlotInfo->getDurability() );
 			pItem->SetSilver( pSlotInfo->getSilver() );
 			pItem->SetGrade( pSlotInfo->getGrade() );
 			pItem->SetEnchantLevel( pSlotInfo->getEnchantLevel() );
 
 			//------------------------------------------
-			// Item을 든다.
+			// pick up the Item.
 			//------------------------------------------
 			DialogPresentation::PickUpItem( pItem );
 
@@ -2504,11 +2504,11 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 //--------------------------------------------------------------------------------
 // Set EffectInfo
 //--------------------------------------------------------------------------------
-// Player에게 붙어 있는 Effect를 설정해준다.
+// set the Effects attached to the Player.
 //
-// delayedFrame은 ..
-// 처리(특히 loading)를 한다고 client에서 소요된 시간만큼을 
-// 빼주는 것이다.
+// delayedFrame is ..
+// the time the client spent on processing (especially loading)
+// that is subtracted.
 //--------------------------------------------------------------------------------
 void
 SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
@@ -2518,7 +2518,7 @@ SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
 	if (pEffectInfo!=NULL)
 	{
 		//--------------------------------------------------
-		// 각각의 Effect Status를 설정한다.
+		// set each Effect Status.
 		//--------------------------------------------------
 		for (int i=0; i<pEffectInfo->getListNum(); i++)
 		{
@@ -2530,19 +2530,19 @@ SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
 //				int a = 0;
 //			}
 			//--------------------------------------------------
-			// 종류에 따라서..
+			// depending on the type..
 			//--------------------------------------------------
 			switch (status)
 			{
 				//--------------------------------------------------
-				// 흡혈 당한거
+				// bitten by a vampire
 				//--------------------------------------------------
 				case EFFECTSTATUS_BLOOD_DRAIN :
 					duration *= 10;
 				break;
 
 				//--------------------------------------------------
-				// Coma상태
+				// Coma state
 				//--------------------------------------------------
 				case EFFECTSTATUS_COMA :
 					pCreature->SetCorpse();
@@ -2588,10 +2588,10 @@ SetEffectInfo(MCreature* pCreature, EffectInfo* pEffectInfo, int delayedFrame)
 			int				delayFrame	= ConvertDurationToFrame( duration );
 
 
-			// loading시간을 뺀 delay frame
+			// delay frame minus the loading time
 			delayFrame -= delayedFrame;
 
-			// 시간이 남아 있는 경우에만...
+			// only if there is time remaining...
 			if (delayFrame > 0)
 			{
 				pCreature->AddEffectStatus( status, delayFrame );
@@ -2644,7 +2644,7 @@ UI_GetFaceStyle(bool bMale, int faceStyle)
 //--------------------------------------------------------------------------------
 // Set PCSlayerInfo
 //--------------------------------------------------------------------------------
-// Player에게 slayer 정보를 설정한다.
+// set the slayer info for the Player.
 //--------------------------------------------------------------------------------
 void
 SetPCSlayerInfo(PCSlayerInfo2* pInfo)
@@ -2655,9 +2655,9 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	g_pPlayer->SetSight( pInfo->getSight() );
 
 	//--------------------------------------------------
-	// Player 몸 설정
+	// set the Player body
 	//--------------------------------------------------
-	// slayer남 / 여
+	// slayer male / female
 	if (pInfo->getCompetence()==0)
 	{
 		g_pPlayer->SetCompetence( 0 );
@@ -2669,15 +2669,15 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 		g_pPlayer->SetCreatureType( (pInfo->getSex()==MALE)? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
 	}
 
-	// 피부색
+	// skin color
 	g_pPlayer->SetBodyColor1( pInfo->getSkinColor() );
 	g_pPlayer->SetMasterEffectType( pInfo->getMasterEffectColor() );
 
-	// 머리			
+	// head
 	SetAddonToSlayer( g_pPlayer, pInfo );
 
 	//--------------------------------------------------
-	// 내 길드 설정
+	// set my guild
 	//--------------------------------------------------
 	int guildID = pInfo->getGuildID();
 
@@ -2694,7 +2694,7 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	g_pUserInformation->GuildGrade = pInfo->getGuildMemberRank();
 
 	//--------------------------------------------------
-	// 정보창에서 출력할 때 필요한 정보..
+	// info needed when displaying in the info window..
 	//--------------------------------------------------
 	g_char_slot_ingame.sz_name			= g_pUserInformation->CharacterID.GetString();
 	if(g_pUserInformation->GuildName.GetString() == NULL)
@@ -2723,11 +2723,11 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	g_pGuildInfoMapper->SetGuildName( pInfo->getGuildID(), g_char_slot_ingame.sz_guild_name );
 
 	//--------------------------------------------------
-	// Effect 정보 제거
+	// remove Effect info
 	//--------------------------------------------------
 	g_char_slot_ingame.STATUS.clear();
 	
-	// 얼굴 설정
+	// set face
 	if (g_pPlayer->IsMale())
 	{
 		g_char_slot_ingame.man_info.face = (CHAR_MAN)UI_GetFaceStyle(true, g_pUserInformation->FaceStyle);
@@ -2740,7 +2740,7 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	// 
 	//g_pUserInformation->FaceStyle = pInfo->getHairStyle();
 	
-	// 기본 복장
+	// default outfit
 	/*
 	MItem* pCoat = MItem::NewItem( ITEM_CLASS_COAT );
 	MItem* pTrouser = MItem::NewItem( ITEM_CLASS_TROUSER );
@@ -2757,7 +2757,7 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 
 
 	//--------------------------------------------------
-	// 현재 상태 설정
+	// set current status
 	//--------------------------------------------------		
 	int maxHP	= pInfo->getHP( ATTR_MAX );
 	int HP		= pInfo->getHP( ATTR_CURRENT );
@@ -2804,17 +2804,17 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	g_pPlayer->SetStatus( MODIFY_RANK_EXP_REMAIN, pInfo->getRankExp() );
 	g_pPlayer->SetStatus( MODIFY_ADVANCEMENT_CLASS_LEVEL, pInfo->getAdvancementLevel() );
 
-	// 2005, 1, 18, sobeit add start - 승직 슬레는 보너스 포인트가 있다.
+	// 2005, 1, 18, sobeit add start - advanced Slayers have bonus points.
 	int Bonus	= pInfo->getAttrBonus();
 	g_pPlayer->SetStatus( MODIFY_BONUS_POINT, Bonus);
-	// 2005, 1, 18, sobeit add end - 승직 슬레는 보너스 포인트가 있다.
+	// 2005, 1, 18, sobeit add end - advanced Slayers have bonus points.
 
 	//g_pPlayer->SetStatus( MODIFY_ATTACK_SPEED,  pInfo->getAttackSpeed() );
 	
 	DEBUG_ADD( "Set Slayer Info: Set g_char_slot_ingame" );
 	
 	//--------------------------------------------------
-	// UI에 정보 설정
+	// set info in the UI
 	//--------------------------------------------------
 	//UI_SetHP( HP, maxHP );
 	//UI_SetMP( MP, maxMP );
@@ -2851,7 +2851,7 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 
 	
 	//--------------------------------------------------		
-	// Domain Level 설정
+	// set Domain Level
 	//--------------------------------------------------
 	DEBUG_ADD( "Set Slayer Info : Domain" );
 	
@@ -2879,18 +2879,18 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 	
 
 	//--------------------------------------------------		
-	// 돈 설정
+	// set money
 	//--------------------------------------------------		
 	g_pMoneyManager->SetMoney( pInfo->getGold() );
 
 	//--------------------------------------------------
-	//	PCS Number 초기화 
+	//	initialize PCS Number
 	//--------------------------------------------------
 //	g_pUserInformation->PCSNumber = pInfo->getPhoneNumber();
 //	C_VS_UI_SLAYER_PDS::m_pcs_number = pInfo->getPhoneNumber();
 
 	//--------------------------------------------------
-	// Skill Hot key설정
+	// set Skill Hot key
 	//--------------------------------------------------
 	if (!g_bSetHotKey)
 	{		
@@ -2909,23 +2909,23 @@ SetPCSlayerInfo(PCSlayerInfo2* pInfo)
 //--------------------------------------------------------------------------------
 // Set PCVampire Info
 //--------------------------------------------------------------------------------
-// Player에게 vampire 정보를 설정한다.
+// set the vampire info for the Player.
 //--------------------------------------------------------------------------------
 void		
 SetPCVampireInfo(PCVampireInfo2* pInfo)
 {
 	DEBUG_ADD( "Set Vampire Info" );
 	
-	// 임시로 설정..
+	// set temporarily..
 	//g_pPlayer->SetGuildNumber( 2 );
 
 	g_pPlayer->SetID( pInfo->getObjectID() );
 	g_pPlayer->SetSight( pInfo->getSight() );
 
 	//--------------------------------------------------
-	// Player 몸 설정
+	// set the Player body
 	//--------------------------------------------------
-	// 박쥐나 늑대로 변신 중인 경우..
+	// when transformed into a bat or wolf..
 	if (g_PreviousCreatureType==CREATURETYPE_WOLF
 		|| g_PreviousCreatureType==CREATURETYPE_BAT
 		|| g_PreviousCreatureType==CREATURETYPE_WER_WOLF)
@@ -2935,7 +2935,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		if( pInfo->getCompetence() == 0 )
 			g_pPlayer->SetCompetence( 0 );
 	}
-	// Vampire남 : 여
+	// Vampire male : female
 	else
 	{
 		if (pInfo->getCompetence()==0)
@@ -2956,7 +2956,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 
 //	_MinTrace("sdfdsf:%d\n", pInfo->getSex() );
 
-	// 지상, 공중 이동 결정
+	// decide ground or air movement
 	if (g_pPlayer->GetCreatureType()==CREATURETYPE_BAT)
 	{
 		g_pPlayer->SetFlyingCreature();		
@@ -2966,7 +2966,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		g_pPlayer->SetGroundCreature();
 	}
 
-//	// 피부색
+//	// skin color
 	g_pPlayer->SetBodyColor1( pInfo->getSkinColor() );
 	g_pPlayer->SetMasterEffectType( pInfo->getMasterEffectColor() );
 
@@ -2976,7 +2976,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		g_pPlayer->SetBodyColor1( 377 );
 //		g_pPlayer->SetBodyColor1( pInfo->getCoatColor() );
 
-	// 머리색으로 바꼈다
+	// changed to hair color
 //	g_pPlayer->SetBodyColor1( pInfo->getHairColor() );
 
 	if( pInfo->getBatColor() != 0 )
@@ -2987,7 +2987,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	//--------------------------------------------------
 	// [ TEST CODE ]
 	//--------------------------------------------------
-	// 옷 색깔 설정하기
+	// set clothes color
 	//--------------------------------------------------
 //	g_pPlayer->SetBodyColor2( pInfo->getCoatColor() );
 	///*
@@ -3006,7 +3006,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 
 
 	//--------------------------------------------------
-	// 내 길드 설정
+	// set my guild
 	//--------------------------------------------------
 	int guildID = pInfo->getGuildID();
 
@@ -3025,7 +3025,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	g_pGuildInfoMapper->SetGuildName( pInfo->getGuildID(), g_char_slot_ingame.sz_guild_name );
 
 	//--------------------------------------------------
-	// 정보창에서 출력할 때 필요한 정보..
+	// info needed when displaying in the info window..
 	//--------------------------------------------------
 	g_char_slot_ingame.sz_name			= g_pUserInformation->CharacterID.GetString();
 	if(g_pUserInformation->GuildName.GetString() == NULL)
@@ -3050,13 +3050,13 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	g_pUserInformation->BatColor  = pInfo->getBatColor();
 	
 	//--------------------------------------------------
-	// Effect 정보 제거
+	// remove Effect info
 	//--------------------------------------------------
 	g_char_slot_ingame.STATUS.clear();
 	
 	//g_pUserInformation->FaceStyle = pInfo->getHairStyle();
 
-	// vampire default 얼굴
+	// vampire default face
 	if (g_pPlayer->IsMale())
 	{
 		g_char_slot_ingame.man_info.face = M_FACE1;
@@ -3067,7 +3067,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	}
 
 	//--------------------------------------------------
-	// 현재 상태 설정
+	// set current status
 	//--------------------------------------------------
 	int maxHP	= pInfo->getHP( ATTR_MAX );
 	int HP		= pInfo->getHP( ATTR_CURRENT );
@@ -3116,7 +3116,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	//g_pPlayer->SetStatus( MODIFY_INT_EXP, INT_EXP);	
 	
 	//--------------------------------------------------
-	// ui에 출력 정보 설정
+	// set display info for the ui
 	//--------------------------------------------------
 	//g_char_slot_ingame.sz_name = g_pUserInformation->CharacterID.GetString();
 	//g_char_slot_ingame.bl_vampire = g_pPlayer->IsVampire();
@@ -3151,7 +3151,7 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 		g_char_slot_ingame.EXP_REMAIN = pInfo->getAdvancementGoalExp();
 
 	//--------------------------------------------------
-	// Domain Level 설정
+	// set Domain Level
 	//--------------------------------------------------
 	/*
 	const int numDomains = 1;
@@ -3169,22 +3169,22 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 	*/
 
 	//--------------------------------------------------
-	// UI에 정보 설정
+	// set info in the UI
 	//--------------------------------------------------
 	//UI_SetHP( HP, maxHP );
 
 	//--------------------------------------------------		
-	// 돈 설정
+	// set money
 	//--------------------------------------------------		
 	g_pMoneyManager->SetMoney( pInfo->getGold() );
 
 	//--------------------------------------------------
-	//	VampireGear 초기화
+	//	initialize VampireGear
 	//--------------------------------------------------			
 	g_pVampireGear->Init();
 
 	//--------------------------------------------------
-	// Skill Hot key설정
+	// set Skill Hot key
 	//--------------------------------------------------
 	if (!g_bSetHotKey)
 	{		
@@ -3207,21 +3207,21 @@ SetPCVampireInfo(PCVampireInfo2* pInfo)
 //--------------------------------------------------------------------------------
 // Set PCVampire Info
 //--------------------------------------------------------------------------------
-// Player에게 vampire 정보를 설정한다.
+// set the vampire info for the Player.
 //--------------------------------------------------------------------------------
 void		
 SetPCOustersInfo(PCOustersInfo2* pInfo)
 {
 	DEBUG_ADD( "Set Ousters Info" );
 	
-	// 임시로 설정..
+	// set temporarily..
 	//g_pPlayer->SetGuildNumber( 2 );
 
 	g_pPlayer->SetID( pInfo->getObjectID() );
 	g_pPlayer->SetSight( pInfo->getSight() );
 
 	//--------------------------------------------------
-	// Player 몸 설정
+	// set the Player body
 	//--------------------------------------------------
 	if (pInfo->getCompetence()==0)
 	{
@@ -3239,14 +3239,14 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 
 	g_pPlayer->SetGroundCreature();
 
-	// 머리색
+	// hair color
 	g_pPlayer->SetBodyColor1( pInfo->getHairColor() );
 	g_pPlayer->SetMasterEffectType( pInfo->getMasterEffectColor() );
 
 	//--------------------------------------------------
 	// [ TEST CODE ]
 	//--------------------------------------------------
-	// 옷 색깔 설정하기
+	// set clothes color
 	//--------------------------------------------------
 //	g_pPlayer->SetBodyColor2( pInfo->getCoatColor() );
 	///*
@@ -3265,7 +3265,7 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 
 
 	//--------------------------------------------------
-	// 내 길드 설정
+	// set my guild
 	//--------------------------------------------------
 	int guildID = pInfo->getGuildID();
 
@@ -3282,7 +3282,7 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 	g_pUserInformation->GuildGrade = pInfo->getGuildMemberRank();
 
 	//--------------------------------------------------
-	// 정보창에서 출력할 때 필요한 정보..
+	// info needed when displaying in the info window..
 	//--------------------------------------------------
 	g_char_slot_ingame.sz_name			= g_pUserInformation->CharacterID.GetString();
 	if(g_pUserInformation->GuildName.GetString() == NULL)
@@ -3308,13 +3308,13 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 //	g_pUserInformation->SkinColor = pInfo->getSkinColor();
 	
 	//--------------------------------------------------
-	// Effect 정보 제거
+	// remove Effect info
 	//--------------------------------------------------
 	g_char_slot_ingame.STATUS.clear();
 	
 	//g_pUserInformation->FaceStyle = pInfo->getHairStyle();
 
-	// vampire default 얼굴
+	// vampire default face
 	if (g_pPlayer->IsMale())
 	{
 		g_char_slot_ingame.man_info.face = M_FACE1;
@@ -3325,7 +3325,7 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 	}
 
 	//--------------------------------------------------
-	// 현재 상태 설정
+	// set current status
 	//--------------------------------------------------
 	int maxHP	= pInfo->getHP( ATTR_MAX );
 	int maxMP	= pInfo->getMP( ATTR_MAX );
@@ -3380,7 +3380,7 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 	//g_pPlayer->SetStatus( MODIFY_INT_EXP, INT_EXP);	
 	
 	//--------------------------------------------------
-	// ui에 출력 정보 설정
+	// set display info for the ui
 	//--------------------------------------------------
 	//g_char_slot_ingame.sz_name = g_pUserInformation->CharacterID.GetString();
 	//g_char_slot_ingame.bl_vampire = g_pPlayer->IsVampire();
@@ -3415,7 +3415,7 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 		g_char_slot_ingame.EXP_REMAIN = pInfo->getAdvancementGoalExp();
 
 	//--------------------------------------------------
-	// Domain Level 설정
+	// set Domain Level
 	//--------------------------------------------------
 	/*
 	const int numDomains = 1;
@@ -3433,22 +3433,22 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 	*/
 
 	//--------------------------------------------------
-	// UI에 정보 설정
+	// set info in the UI
 	//--------------------------------------------------
 	//UI_SetHP( HP, maxHP );
 
 	//--------------------------------------------------		
-	// 돈 설정
+	// set money
 	//--------------------------------------------------		
 	g_pMoneyManager->SetMoney( pInfo->getGold() );
 
 	//--------------------------------------------------
-	//	OustersGear 초기화
+	//	initialize OustersGear
 	//--------------------------------------------------			
 	g_pOustersGear->Init();
 
 //	//--------------------------------------------------
-//	// Skill Hot key설정
+//	// set Skill Hot key
 //	//--------------------------------------------------
 //	if (!g_bSetHotKey)
 //	{		
@@ -3537,10 +3537,10 @@ PopupErrorMessage(ErrorID errorID)
 		break;
 
 		// 2004, 03, 26 sobeit add start
-		case CANNOT_AUTHORIZE_BILLING:   // 빌링 정보를 찾을 수 없습니다.
+		case CANNOT_AUTHORIZE_BILLING:   // billing info cannot be found.
 			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_ERROR_CANNOT_AUTHORIZE_BILLING].GetString(), -1,-1,UI_DIALOG_OK, true);
 		break;
-		case CANNOT_CREATE_PC_BILLING:    // 유료 사용자가 아니라서 캐릭터를 못 만듭니다.
+		case CANNOT_CREATE_PC_BILLING:    // not a paying user, so cannot create a character.
 			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_ERROR_CANNOT_CREATE_PC_BILLING].GetString(), -1,-1,UI_DIALOG_OK, true);
 		break;
 		// 2004, 03, 26 sobeit add end
@@ -3557,7 +3557,7 @@ PopupErrorMessage(ErrorID errorID)
 			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_ERROR_LOGIN_DENY].GetString(), -1,-1,UI_DIALOG_OK, true);
 			break;
 		case IP_DENYED:
-//			g_pUIDialog->PopupFreeMessageDlg("퀭쏟莖돨댄轎되쩌늴鑒법뜩샀賈痰죄렷랬棍밈넋埼，헝瞳24鬼珂빈疼되쩌", -1,-1,UI_DIALOG_OK, true);
+//			g_pUIDialog->PopupFreeMessageDlg("Too many failed logins, or illegal software was used. Please log in again after 24 hours.", -1,-1,UI_DIALOG_OK, true);
 			g_pUIDialog->PopupFreeMessageDlg((*g_pGameStringTable)[STRING_ERROR_IP_DENY].GetString(), -1,-1,UI_DIALOG_OK, true);
 			break;
 		case CHECK_VERSION_ERROR:
@@ -3592,7 +3592,7 @@ SetServerGroupStatus( int status )
 //-----------------------------------------------------------------------------
 // Use Item OK
 //-----------------------------------------------------------------------------
-// Potion사용
+// use Potion
 //-----------------------------------------------------------------------------
 
 bool UseSkillCardOK(BYTE CardType)
@@ -3632,13 +3632,13 @@ UseItemOK()
 {
 	//------------------------------------------------------------------
 	//
-	//				Item Check Buffer 확인
+	//				Check the Item Check Buffer
 	//
 	//------------------------------------------------------------------	
 	MItem* pItem = g_pPlayer->GetItemCheckBuffer();
 
 	//----------------------------------------------------
-	// Check Buffer에 item이 있는 경우
+	// if there is an item in the Check Buffer
 	//----------------------------------------------------
 	if (pItem!=NULL)
 	{
@@ -3706,20 +3706,20 @@ UseItemOK()
 			}
 		} else
 		//----------------------------------------------------
-		// Inventory에서 사용
+		// use from Inventory
 		//----------------------------------------------------		
 		if (status==MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY)			
 		{			
-			// Item Check Buffer를 지운다.
+			// clear the Item Check Buffer.
 			
-		#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+		#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 add sub-inventory
 			DWORD SubInvetoryID = g_pPlayer->GetItemIDCheckBufferSubInventory();
 		#endif
 
 			g_pPlayer->ClearItemCheckBuffer();
 
 			//-------------------------------------------------
-			// VampirePortal인 경우
+			// if it is a VampirePortal
 			//-------------------------------------------------
 			/*
 			if (pItem->GetItemClass()==ITEM_CLASS_VAMPIRE_PORTAL_ITEM)
@@ -3737,7 +3737,7 @@ UseItemOK()
 			*/
 
 			//-------------------------------------------------
-			// 사용하는 아이템인 경우는 숫자를 줄인다.
+			// for items that get used up, decrease the count.
 			//-------------------------------------------------
 			if (pItem->IsChargeItem() 
 				|| pItem->IsPileItem())
@@ -3748,7 +3748,7 @@ UseItemOK()
 			if(pItem->GetItemClass() == ITEM_CLASS_DYE_POTION )
 			{
 				TYPE_ITEMTYPE	ItemType = pItem->GetItemType();
-				// 헤어색은 슬레이어, 아우스터즈만
+				// hair color is only for Slayer and Ouster
 				if(ItemType <= 23 )
 				{
 					if(g_pPlayer->IsSlayer())
@@ -3780,7 +3780,7 @@ UseItemOK()
 				} else
 				if( ItemType == 48 )
 				{
-					// 성전환 아이템이다.
+					// it is a sex-change item.
 					if( !g_pPlayer->IsOusters() )
 					{
 						
@@ -3796,7 +3796,7 @@ UseItemOK()
 							{
 								g_pPlayer->SetAddonHair(g_PacketHairMaleID[addon.FrameID], addon.ColorSet1);		
 							}
-							// slayer 여
+							// slayer female
 							else
 							{
 								g_pPlayer->SetAddonHair(g_PacketHairFemaleID[addon.FrameID], addon.ColorSet1);		
@@ -3811,7 +3811,7 @@ UseItemOK()
 						}
 							
 						
-						// 가지고 있는 모든 아이템에 대해서 체크한다.
+						// check all the items held.
 						if( g_pPlayer->IsSlayer() )
 							g_pSlayerGear->CheckAffectStatusAll();
 						else if( g_pPlayer->IsVampire() )
@@ -3832,7 +3832,7 @@ UseItemOK()
 						
 					}
 				}
-				else if( ItemType >= 49 && ItemType <= 57 ) // 마스터 이펙트 컬러 변경
+				else if( ItemType >= 49 && ItemType <= 57 ) // change master effect color
 				{
 					WORD colorset_list[9] = {23, 2, 33, 82, 380, 50, 151, 395, 0xFFFF};
 					int myColor = ItemType - 49;
@@ -3850,10 +3850,10 @@ UseItemOK()
 				}
 
 			}
-	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+	#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 add sub-inventory
 			else if(pItem->GetItemClass() == ITEM_CLASS_SUB_INVENTORY )
 			{
-				// sub inventory 처리는 GCSubInventoryInfo에서 한다.
+				// sub inventory is handled in GCSubInventoryInfo.
 				g_pPlayer->SetItemCheckBuffer( pItem, MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY);
 			}
 	#endif
@@ -3867,7 +3867,7 @@ UseItemOK()
 //			}
 			// 2004, 6, 18 sobeit add end - naming pet used
 			//-------------------------------------------------
-			// 없어지지 않는 경우
+			// if it does not disappear
 			//-------------------------------------------------
 			if ((pItem->IsPileItem() && pItem->GetNumber()>0)
 				|| (pItem->IsChargeItem() && pItem->GetNumber()>0)
@@ -3879,11 +3879,11 @@ UseItemOK()
 			{
 			}
 			//-------------------------------------------------
-			// 제거하는 경우
+			// if it is removed
 			//-------------------------------------------------
 			else
 			{
-				#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+				#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 add sub-inventory
 
 				if(SubInvetoryID != 0 && SubInvetoryID != OBJECTID_NULL)
 				{
@@ -3891,32 +3891,32 @@ UseItemOK()
 					if(NULL != SubInventoryItem)
 					{
 						SubInventoryItem->RemoveItem((TYPE_OBJECTID)pItem->GetID());
-						// item정보 제거
+						// remove item info
 						PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
-						// memory에서 제거
+						// remove from memory
 						delete pItem;		
 					}
 				}
 				else
 				{
-					// inventory에서 제거
+					// remove from inventory
 					g_pInventory->RemoveItem( (TYPE_OBJECTID)pItem->GetID() );
 
-					// item정보 제거
+					// remove item info
 					PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
-					// memory에서 제거
+					// remove from memory
 					delete pItem;			
 				}
 				#else
-					// inventory에서 제거
+					// remove from inventory
 					g_pInventory->RemoveItem( (TYPE_OBJECTID)pItem->GetID() );
 
-					// item정보 제거
+					// remove item info
 					PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
-					// memory에서 제거
+					// remove from memory
 					delete pItem;	
 
 				#endif
@@ -3925,40 +3925,40 @@ UseItemOK()
 		
 		}
 		//----------------------------------------------------
-		// QuickSlot에서 사용
+		// use from QuickSlot
 		//----------------------------------------------------
 		else if (status==MPlayer::ITEM_CHECK_BUFFER_USE_FROM_QUICKSLOT)
 		{	
-			// Item Check Buffer를 지운다.
+			// clear the Item Check Buffer.
 			g_pPlayer->ClearItemCheckBuffer();
 
-			// 2004, 10, 5, sobeit add start - 퀵슬롯에서 오토바이키 사용
+			// 2004, 10, 5, sobeit add start - use motorcycle key from the quick slot
 			if(pItem->GetItemClass() == ITEM_CLASS_KEY)
 			{
-				// 할게 없네..^^
+				// nothing to do..^^
 			}
 			// 2004, 10, 5, sobeit add start
 			//-------------------------------------------------
-			// 개수 체크를 해야한다.
+			// the count must be checked.
 			//-------------------------------------------------
 			else if (pItem->IsPileItem() && pItem->GetNumber()>1)
 			{
-				// 아직 개수가 더 남아 있는 경우,
-				// 개수를 하나 줄여준다.
+				// if there are still more left,
+				// decrease the count by one.
 				pItem->SetNumber( pItem->GetNumber() - 1 );
 			}
 			//-------------------------------------------------
-			// 다 사용한 경우 --> 제거한다.
+			// if all used up --> remove.
 			//-------------------------------------------------
 			else
 			{
-				// quickSlot에서 제거
+				// remove from quickSlot
 				if( g_pPlayer->IsSlayer() )
 					g_pQuickSlot->RemoveItem( (BYTE)pItem->GetItemSlot() );
 				else if (g_pPlayer->IsOusters() )
 				{
 					MOustersArmsBand* pQuickSlot = NULL;
-					// 아이템이 있는 암스밴드를 검색한다.
+					// search the armsband that has the item.
 					
 					if( g_pArmsBand1 != NULL && g_pArmsBand1->GetItemToModify( pItem->GetID() ) == pItem )
 						pQuickSlot = g_pArmsBand1;
@@ -3968,20 +3968,20 @@ UseItemOK()
 					if( pQuickSlot != NULL )
 						pQuickSlot->RemoveItem( (BYTE)pItem->GetItemSlot() );
 				}
-				// item정보 제거
+				// remove item info
 				PlayerPresentation::RemoveDescriptor( (void*)pItem );
 
-				// memory에서 제거
+				// remove from memory
 				delete pItem;		
 			}
 
 			//----------------------------------------------------
-			// 벨트 못 없애도록 한거.. 취소
+			// the change that stopped belts from being removed.. cancelled
 			//----------------------------------------------------
 			DialogPresentation::UnlockGear();
 		}
 		//----------------------------------------------------
-		// 다른 상태??
+		// another state??
 		//----------------------------------------------------
 		else if( status == MPlayer::ITEM_CHECK_BUFFER_USE_FROM_GEAR)
 		{
@@ -3990,7 +3990,7 @@ UseItemOK()
 			if( pItem->GetItemClass() == ITEM_CLASS_COUPLE_RING || 
 				pItem->GetItemClass() == ITEM_CLASS_VAMPIRE_COUPLE_RING )
 			{
-				// -_- 커플링이면........ status...는 사용 안함.
+				// -_- if it is a coupling........ status... is not used.
 				
 				if( !g_pPlayer->IsWaitVerifyNULL() )
 					return false;
@@ -4010,13 +4010,13 @@ UseItemOK()
 				g_pEventManager->AddEvent(event);
 			} 
 		}
-		// 2004, 9, 13, sobeit add start - 퀘스트 인벤 아이템 사용 했다
+		// 2004, 9, 13, sobeit add start - used a quest inventory item
 		else if(status == MPlayer::ITEM_CHECK_BUFFER_USE_FROM_GQUEST_INVENTORY)
 		{
 			g_pPlayer->ClearItemCheckBuffer();
 			gC_vs_ui.DeleteQuestItem(pItem->GetItemSlot());
 		}
-		// 2004, 9, 13, sobeit add end - 퀘스트 인벤 아이템 사용 했다
+		// 2004, 9, 13, sobeit add end - used a quest inventory item
 		else
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] ItemCheck Buffer is not Use Status: status=%d", (int)status);
@@ -4026,7 +4026,7 @@ UseItemOK()
 
 	}
 	//----------------------------------------------------
-	// item이 없는 경우.. - -;;
+	// if there is no item.. - -;;
 	//----------------------------------------------------
 	else
 	{
@@ -4041,13 +4041,13 @@ UseItemOK()
 //------------------------------------------------------------------
 // New FakeCreature
 //------------------------------------------------------------------
-// (x,y)에 pCreature의 FakeCreature를 생성한다.
+// create a FakeCreature of pCreature at (x,y).
 //------------------------------------------------------------------
 MFakeCreature*
 NewFakeCreature(int creatureType, int x, int y, int dir)
 {
 	//------------------------------------------------------
-	// Fake Creature 생성
+	// create Fake Creature
 	//------------------------------------------------------
 	MFakeCreature* pFakeCreature = new MFakeCreature;
 	
@@ -4059,7 +4059,7 @@ NewFakeCreature(int creatureType, int x, int y, int dir)
 	pFakeCreature->SetName( name );
 #endif
 	
-	//pFakeCreature->SetID( 0 );  자동 발급 된다.
+	//pFakeCreature->SetID( 0 );  assigned automatically.
 //	pFakeCreature->SetSameBody( pCreature );
 	
 //	if (pCreature->IsWear())
@@ -4081,13 +4081,13 @@ NewFakeCreature(int creatureType, int x, int y, int dir)
 //------------------------------------------------------------------
 // New FakeCreature
 //------------------------------------------------------------------
-// (x,y)에 pCreature의 FakeCreature를 생성한다.
+// create a FakeCreature of pCreature at (x,y).
 //------------------------------------------------------------------
 MFakeCreature*
 NewFakeCreature(MCreature* pCreature, int x, int y)
 {
 	//------------------------------------------------------
-	// Fake Creature 생성
+	// create Fake Creature
 	//------------------------------------------------------
 	MFakeCreature* pFakeCreature = new MFakeCreature;
 
@@ -4099,7 +4099,7 @@ NewFakeCreature(MCreature* pCreature, int x, int y)
 		pFakeCreature->SetName( name );
 	#endif
 
-	//pFakeCreature->SetID( 0 );  자동 발급 된다.
+	//pFakeCreature->SetID( 0 );  assigned automatically.
 	pFakeCreature->SetSameBody( pCreature );
 
 	if (pCreature->IsWear())
@@ -4128,8 +4128,8 @@ NewFakeCreature(MCreature* pCreature, int x, int y)
 //------------------------------------------------------------------
 // Come From Portal
 //------------------------------------------------------------------
-// 포탈 안에서 나오는 모습 표현.. 
-// 뱀파만 .. 뭐 관계는 없겠지..
+// show it coming out of the portal..
+// vampires only .. doesn't matter much, I guess..
 //------------------------------------------------------------------
 void		
 ComeFromPortal(MCreature* pCreature)
@@ -4169,39 +4169,39 @@ ComeFromPortal(MCreature* pCreature)
 	int y =	pCreature->GetY();
 
 	//------------------------------------------------------
-	// 빙빙 돌아서 캐릭을 휘감는 이펙트 표현..
+	// show an effect that spins around and wraps the character..
 	//------------------------------------------------------
-	// 울버린 일때
+	// for Ulverine
 	if(pCreature->GetCreatureType() >= 693 && pCreature->GetCreatureType() <= 697 )
 	{
 		ExecuteActionInfoFromMainNode(
-					RESULT_SUMMON_ULBERINE,										// 사용 기술 번호
+					RESULT_SUMMON_ULBERINE,										// skill number to use
 				
 					x, y, 0,
-					DIRECTION_DOWN, // 사용 방향
+					DIRECTION_DOWN, // direction of use
 					
-					pCreature->GetID(),												// 목표에 대한 정보
+					pCreature->GetID(),												// info about the target
 					x, y, 0, 
 					
-					0,													// 기술의 (남은) 지속 시간		
+					0,													// (remaining) duration of the skill
 					
 					NULL,
 					
 					false);	
 	}
-	// 그레이트 러피언 일 때
+	// for Great Ruffian
 	else if(pCreature->GetCreatureType() == 765) 
 	{
 		ExecuteActionInfoFromMainNode(
-					SKILL_CLIENT_GREAT_RUFFIAN_ALIVE,										// 사용 기술 번호
+					SKILL_CLIENT_GREAT_RUFFIAN_ALIVE,										// skill number to use
 				
 					x, y, 0,
-					DIRECTION_DOWN, // 사용 방향
+					DIRECTION_DOWN, // direction of use
 					
-					pCreature->GetID(),												// 목표에 대한 정보
+					pCreature->GetID(),												// info about the target
 					x, y, 0, 
 					
-					0,													// 기술의 (남은) 지속 시간		
+					0,													// (remaining) duration of the skill
 					
 					NULL,
 					
@@ -4210,15 +4210,15 @@ ComeFromPortal(MCreature* pCreature)
 	else
 	{
 		ExecuteActionInfoFromMainNode(
-				RESULT_MAGIC_BLOODY_TUNNEL_INTO,										// 사용 기술 번호
+				RESULT_MAGIC_BLOODY_TUNNEL_INTO,										// skill number to use
 			
 				x, y, 0,
-				DIRECTION_DOWN, // 사용 방향
+				DIRECTION_DOWN, // direction of use
 				
-				pCreature->GetID(),												// 목표에 대한 정보
+				pCreature->GetID(),												// info about the target
 				x, y, 0, 
 				
-				0,													// 기술의 (남은) 지속 시간		
+				0,													// (remaining) duration of the skill
 				
 				NULL,
 				
@@ -4229,8 +4229,8 @@ ComeFromPortal(MCreature* pCreature)
 //------------------------------------------------------------------
 // Move Into Portal
 //------------------------------------------------------------------
-// 포탈 안으로 사라지는 모습 표현.. 
-// 뱀파만 .. 뭐 관계는 없겠지..
+// show it disappearing into the portal..
+// vampires only .. doesn't matter much, I guess..
 //------------------------------------------------------------------
 void		
 MoveIntoPortal(MCreature* pCreature)
@@ -4242,7 +4242,7 @@ MoveIntoPortal(MCreature* pCreature)
 	pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_TO_PORTAL );
 	
 	//------------------------------------------------------
-	// Fake Creature를 Zone에 추가
+	// add the Fake Creature to the Zone
 	//------------------------------------------------------
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
@@ -4250,18 +4250,18 @@ MoveIntoPortal(MCreature* pCreature)
 	}
 
 	//------------------------------------------------------
-	// 빙빙 돌아서 캐릭을 휘감는 이펙트 표현..
+	// show an effect that spins around and wraps the character..
 	//------------------------------------------------------
 	ExecuteActionInfoFromMainNode(
-				RESULT_MAGIC_BLOODY_TUNNEL_INTO,										// 사용 기술 번호
+				RESULT_MAGIC_BLOODY_TUNNEL_INTO,										// skill number to use
 			
 				x, y, 0,
-				DIRECTION_DOWN, // 사용 방향
+				DIRECTION_DOWN, // direction of use
 				
-				pFakeCreature->GetID(),												// 목표에 대한 정보
+				pFakeCreature->GetID(),												// info about the target
 				x, y, 0, 
 				
-				0,													// 기술의 (남은) 지속 시간		
+				0,													// (remaining) duration of the skill
 				
 				NULL,
 				
@@ -4277,7 +4277,7 @@ void
 SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 {
 	//------------------------------------------------------------------
-	// 체크 체크~
+	// check check~
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
@@ -4287,17 +4287,17 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	}
 
 	// [ TEST CODE ]
-	// 진행중인 Effect이면 Result로 추가해야 한다.
-	// Result를 생성하고..
+	// if it is an Effect in progress, it must be added as a Result.
+	// create the Result and..
 	// pUserCreature->>AddActionResult( ... )
 		
 	//------------------------------------------------------
-	// Fake Creature의 좌표 계산
+	// compute the Fake Creature coordinates
 	//------------------------------------------------------
 	int x = pTargetCreature->GetX();
 	int y = pTargetCreature->GetY();
 	
-	// 맞는 애에서 player방향으로 한 칸..
+	// one tile from the one hit toward the player..
 	int sx = pUserCreature->GetX() - x;
 	int sy = pUserCreature->GetY() - y;
 
@@ -4308,7 +4308,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	y += sy;					
 
 	//------------------------------------------------------
-	// Fake Creature 생성
+	// create Fake Creature
 	//------------------------------------------------------
 	MFakeCreature* pFakeCreature = NewFakeCreature( pUserCreature, x, y );
 
@@ -4316,15 +4316,15 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	pFakeCreature->SetDirection( dir );
 	pFakeCreature->SetCurrentDirection( dir );
 
-	pFakeCreature->SetAction( ACTION_ATTACK );		// 그냥.. - -;;
+	pFakeCreature->SetAction( ACTION_ATTACK );		// just because.. - -;;
 
 	//------------------------------------------------------
-	// 잔상 한번 보여주고 사라지게 설정
+	// set it to show an afterimage once and then vanish
 	//------------------------------------------------------
 	pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_FADE_ACTION );	
 
 	//------------------------------------------------------
-	// Fake Creature를 Zone에 추가
+	// add the Fake Creature to the Zone
 	//------------------------------------------------------
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
@@ -4332,7 +4332,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	}
 
 	//------------------------------------------------------
-	// 기술 사용
+	// use the skill
 	//------------------------------------------------------
 	if (skillID==SKILL_ATTACK_MELEE)
 	{	
@@ -4358,7 +4358,7 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 								delayFrame ) );
 
 	//------------------------------------------------------
-	// EffectStatus가 있다면 붙인다.
+	// attach the EffectStatus if there is one.
 	//------------------------------------------------------
 	/*
 	EFFECTSTATUS es = (*g_pActionInfoTable)[skillID].GetEffectStatus();
@@ -4374,13 +4374,13 @@ SkillCrossCounter(MCreature* pUserCreature, MCreature* pTargetCreature, int skil
 	pFakeCreature->PacketSpecialActionToOther(
 						skillID, 
 						pTargetCreature->GetID(),
-						pResult			// 결과
+						pResult			// result
 	);			
 	
 }
 
 //------------------------------------------------------------------
-// Skill ShadowDancing // [새기술]
+// Skill ShadowDancing // [new skill]
 //------------------------------------------------------------------
 // user --> target 
 //------------------------------------------------------------------
@@ -4388,7 +4388,7 @@ void
 SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 {
 	//------------------------------------------------------------------
-	// 체크 체크~
+	// check check~
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
@@ -4398,17 +4398,17 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 	}
 
 	// [ TEST CODE ]
-	// 진행중인 Effect이면 Result로 추가해야 한다.
-	// Result를 생성하고..
+	// if it is an Effect in progress, it must be added as a Result.
+	// create the Result and..
 	// pUserCreature->>AddActionResult( ... )
 		
 	//------------------------------------------------------
-	// Fake Creature의 좌표 계산
+	// compute the Fake Creature coordinates
 	//------------------------------------------------------
 	int x = pTargetCreature->GetX();
 	int y = pTargetCreature->GetY();
 	
-	// 맞는 애에서 player방향으로 한 칸..
+	// one tile from the one hit toward the player..
 	int sx = pUserCreature->GetX() - x;
 	int sy = pUserCreature->GetY() - y;
 
@@ -4416,7 +4416,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 	if (sy>0) sy=1; else if (sy<0) sy=-1; else sy=0;
 
 	//------------------------------------------------------
-	// Fake Creature 생성
+	// create Fake Creature
 	//------------------------------------------------------
 	POINT cxy[3] = 
 	{
@@ -4433,15 +4433,15 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 		pFakeCreature->SetDirection( dir );
 		pFakeCreature->SetCurrentDirection( dir );
 
-		pFakeCreature->SetAction( ACTION_SLAYER_SWORD );		// 그냥.. - -;;
+		pFakeCreature->SetAction( ACTION_SLAYER_SWORD );		// just because.. - -;;
 
 		//------------------------------------------------------
-		// 잔상 한번 보여주고 사라지게 설정
+		// set it to show an afterimage once and then vanish
 		//------------------------------------------------------
 		pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION );						
 
 		//------------------------------------------------------
-		// Fake Creature를 Zone에 추가
+		// add the Fake Creature to the Zone
 		//------------------------------------------------------
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
@@ -4449,7 +4449,7 @@ SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int ski
 		}
 
 		//------------------------------------------------------
-		// 기술 사용
+		// use the skill
 		//------------------------------------------------------
 		if (skillID==SKILL_ATTACK_MELEE)
 		{	
@@ -4483,7 +4483,7 @@ void		SetFadeEnd()
 }
 
 //------------------------------------------------------------------
-// Skill ShadowDancing // [새기술]
+// Skill ShadowDancing // [new skill]
 //------------------------------------------------------------------
 // user --> target 
 //------------------------------------------------------------------
@@ -4491,7 +4491,7 @@ void
 SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 {
 	//------------------------------------------------------------------
-	// 체크 체크~
+	// check check~
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
@@ -4501,17 +4501,17 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 	}
 
 	// [ TEST CODE ]
-	// 진행중인 Effect이면 Result로 추가해야 한다.
-	// Result를 생성하고..
+	// if it is an Effect in progress, it must be added as a Result.
+	// create the Result and..
 	// pUserCreature->>AddActionResult( ... )
 		
 	//------------------------------------------------------
-	// Fake Creature의 좌표 계산
+	// compute the Fake Creature coordinates
 	//------------------------------------------------------
 	int x = pTargetCreature->GetX();
 	int y = pTargetCreature->GetY();
 	
-	// 맞는 애에서 player방향으로 한 칸..
+	// one tile from the one hit toward the player..
 	int sx = pUserCreature->GetX() - x;
 	int sy = pUserCreature->GetY() - y;
 
@@ -4519,7 +4519,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 	if (sy>0) sy=1; else if (sy<0) sy=-1; else sy=0;
 
 	//------------------------------------------------------
-	// Fake Creature 생성
+	// create Fake Creature
 	//------------------------------------------------------
 
 	POINT Straight[4] = {
@@ -4550,17 +4550,17 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 		pFakeCreature->SetDirection( dir );
 		pFakeCreature->SetCurrentDirection( dir );
 
-		pFakeCreature->SetAction( ACTION_MAGIC );		// 그냥.. - -;;
+		pFakeCreature->SetAction( ACTION_MAGIC );		// just because.. - -;;
 
 		//------------------------------------------------------
-		// 잔상 한번 보여주고 사라지게 설정
+		// set it to show an afterimage once and then vanish
 		//------------------------------------------------------
 		//pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_BRIGHTNESS );	
 		
 		pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION );
 
 		//------------------------------------------------------
-		// Fake Creature를 Zone에 추가
+		// add the Fake Creature to the Zone
 		//------------------------------------------------------
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
@@ -4568,7 +4568,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 		}
 
 		//------------------------------------------------------
-		// 기술 사용
+		// use the skill
 		//------------------------------------------------------
 		if (skillID==SKILL_ATTACK_MELEE)
 		{	
@@ -4599,7 +4599,7 @@ SkillIllendue(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID)
 //		pFakeCreature->PacketSpecialActionToOther(
 //			skillID, 
 //			pTargetCreature->GetID(),
-//			pResult			// 결과
+//			pResult			// result
 //			);			
 	}
 }
@@ -4651,7 +4651,7 @@ void
 SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID, BYTE grade)
 {
 		//------------------------------------------------------------------
-	// 체크 체크~
+	// check check~
 	//------------------------------------------------------------------
 	if (pUserCreature==NULL || pTargetCreature==NULL)
 	{
@@ -4661,8 +4661,8 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 	}
 
 	// [ TEST CODE ]
-	// 진행중인 Effect이면 Result로 추가해야 한다.
-	// Result를 생성하고..
+	// if it is an Effect in progress, it must be added as a Result.
+	// create the Result and..
 	// pUserCreature->>AddActionResult( ... )
 	
 	POINT TargetList[3] = 
@@ -4700,7 +4700,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION );
 		
 		//------------------------------------------------------
-		// Fake Creature를 Zone에 추가
+		// add the Fake Creature to the Zone
 		//------------------------------------------------------
 		if (!g_pZone->AddFakeCreature( pFakeCreature ))
 		{
@@ -4708,7 +4708,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 		}
 		
 		//------------------------------------------------------
-		// 기술 사용
+		// use the skill
 		//------------------------------------------------------
 		if (skillID==SKILL_ATTACK_MELEE)
 		{	
@@ -4777,10 +4777,10 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 
 			ObjectID_t itemID = pPetInfo->getPetItemObjectID();
 
-			if(pCreature == g_pPlayer)		// 자기 펫인 경우
+			if(pCreature == g_pPlayer)		// if it is the player's own pet
 			{
 
-			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+			#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 add sub-inventory
 				DWORD SubInvetoryID = g_pPlayer->GetItemIDCheckBufferSubInventory();
 				if(SubInvetoryID != 0 && SubInvetoryID != OBJECTID_NULL)
 				{
@@ -4821,14 +4821,14 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					if(pFakeCreature == NULL)
 						return;
 
-					if(pCreature == g_pPlayer)		// 자기 펫인 경우
+					if(pCreature == g_pPlayer)		// if it is the player's own pet
 					{
 						MPetItem *pPetItem = pFakeCreature->GetPetItem();
 						if(pPetItem != NULL)
 						{
-							if(pItem->GetID() == pFakeCreature->GetPetItem()->GetID())	// 원래께 또 날라온경우
+							if(pItem->GetID() == pFakeCreature->GetPetItem()->GetID())	// the original came again
 							{
-								// 새 펫이 레벨이 1높은경우
+								// if the new pet's level is 1 higher
 								if(pPetInfo->getPetLevel() == pPetItem->GetNumber()+1)
 								{
 									int num1 = pPetInfo->getPetLevel() % 10;
@@ -4841,26 +4841,26 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 										g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_NEW_PET_LEVEL_2), pPetItem->GetPetName().c_str(), pPetInfo->getPetLevel());
 									}
 
-									// 레벨 10이 되서 속성을 부여할 수 있다
+									// reached level 10, so an attribute can be granted
 									if(pPetInfo->getPetLevel() == 10)
 									{
 										g_pGameMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_PET_CAN_GET_ATTR].GetString());
 									}
 									else
-									// 레벨이 49가 되서 옵션을 붙일 수 있다.
+									// reached level 49, so an option can be attached.
 									if(pPetInfo->getPetLevel() == 49)
 									{
 										g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_CAN_GET_OPTION), pPetItem->GetPetName().c_str());
 									}
 
-									// 아직 2차 능력이 없고
-									// 겜블 할 수 있는 경우
+									// no 2nd-tier ability yet, and
+									// if it can gamble
 									if(!pPetInfo->canCutHead() && pPetInfo->canGamble())
 									{
 										g_pGameMessage->Add((*g_pGameStringTable)[UI_STRING_MESSAGE_CAN_ENCHANT_PET].GetString());
 									}
 								}
-								// 2차 겜블 성공
+								// 2nd-tier gamble succeeded
 								if(pPetInfo->canCutHead() != false && pPetItem->IsCanCutHead() == false)
 								{
 									g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_GAMBLE_OK), pPetItem->GetPetName().c_str());
@@ -4875,13 +4875,13 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 									DialogPresentation::UnlockItem();
 									
 								}
-								// 3차 겜블 성공
+								// 3rd-tier gamble succeeded
 								else if(pPetInfo->canAttack() != false && pPetItem->IsCanAttack() == false)
 								{
 									g_pGameMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_3RD_GAMBLE_OK), pPetItem->GetPetName().c_str());
 									DialogPresentation::UnlockItem();
 								}
-								// 겜블 실패
+								// gamble failed
 								else if(pPetInfo->canGamble() == false && pPetItem->IsCanGamble() != false)
 								{
 									if(pPetInfo->canCutHead())
@@ -4903,12 +4903,12 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature = NewFakeCreature(pPetInfo->getPetCreatureType(), p.x, p.y, dir );
 
 					//------------------------------------------------------
-					// Fake Creature를 Zone에 추가
+					// add the Fake Creature to the Zone
 					//------------------------------------------------------
 					if (!g_pZone->AddFakeCreature( pFakeCreature ))
 					{
 						delete pFakeCreature;
-						if(pCreature != g_pPlayer)		// 자기 펫인 경우
+						if(pCreature != g_pPlayer)		// if it is the player's own pet
 						{
 							delete pItem;
 						}
@@ -4919,7 +4919,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 
 				if(pFakeCreature)
 				{
-					if(pPetInfo->getPetAttrLevel() > 0)	// 속성이 있는 경우는 색 표시
+					if(pPetInfo->getPetAttrLevel() > 0)	// if it has an attribute, show the color
 					{
 						ITEMOPTION_TABLE::ITEMOPTION_PART optionPart = static_cast<ITEMOPTION_TABLE::ITEMOPTION_PART>(pPetInfo->getPetAttr());
 
@@ -4950,7 +4950,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature->SetOwnerID(pCreature->GetID());
 					pFakeCreature->SetFakeCreatureType( MFakeCreature::FAKE_CREATURE_TRACE );
 
-					if(pItem->GetItemType() >= 4)	// 펫이 날라 다닐때 4:뱀2차펫, 5:아우2차펫
+					if(pItem->GetItemType() >= 4)	// when the pet is flying, 4: vampire 2nd-tier pet, 5: ouster 2nd-tier pet
 						pFakeCreature->SetMoveType(MCreature::CREATURE_FAKE_FLYING);
 					else
 						pFakeCreature->SetMoveType(MCreature::CREATURE_FAKE_GROUND);
@@ -4961,7 +4961,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature->SetTraceID( objectID ); 
 					pFakeCreature->SyncTurretDirection();
 					
-					// FakeCreature가 정상적으로 추가 되었다
+					// the FakeCreature was added successfully
 					pFakeCreature->SetPetItem(pItem);
 
 					pItem->SetCurrentDurability( pPetInfo->getPetHP() );
@@ -4989,7 +4989,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					{
 						ComeFromPortal( pFakeCreature );
 
-						if(pCreature == g_pPlayer)	// 자기 펫인 경우
+						if(pCreature == g_pPlayer)	// if it is the player's own pet
 						{
 							g_pSystemMessage->AddSafeFormat(GetGameString(STRING_MESSAGE_PET_SUMMON), pItem->GetPetName().c_str());
 						}
@@ -5039,7 +5039,7 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 		}
 	}
 
-	// 자기 펫인 경우
+	// if it is the player's own pet
 	if(pCreature == g_pPlayer)
 	{
 		if(pPetItem == NULL)
@@ -5083,7 +5083,7 @@ void	AddOustersElemental( MCreature *pOwnerCreature, int creatureType, int statu
 	MFakeCreature *pFakeCreature = NewFakeCreature(creatureType, p.x, p.y, dir );
 
 	//------------------------------------------------------
-	// Fake Creature를 Zone에 추가
+	// add the Fake Creature to the Zone
 	//------------------------------------------------------
 	if (!g_pZone->AddFakeCreature( pFakeCreature ))
 	{
@@ -5218,7 +5218,7 @@ BOOL GetMacAddressFromNetBIOS(LPBYTE lpMacAddress)
 #endif
 
 
-// 2004, 8, 26, sobeit add start - mac address 체크해서 윈도 모드 변경
+// 2004, 8, 26, sobeit add start - check the mac address and change window mode
 
 #ifdef PLATFORM_WINDOWS
 std::string GetLocalIP()
@@ -5254,94 +5254,94 @@ CheckMacScreenMode()
 	MACINFO_MAP MacInfo_Map;
 
 	// ip, MacAddress insert
-	// 프로그램팀_박숭욱.htm
+	// Programming team_Park Sung-wook.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0E-A6-74-38-F7", "220.117.154.99")); // ip
-	// Report-심철 하드웨어.htm
+	// Report-Sim Cheol hardware.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-4C-ED-43-AE", "220.117.154.77")); // ip
-	// D1기획최서우.htm
+	// D1 Planning_Choi Seo-woo.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-4C-0B-C5-B2", "220.117.154.110")); // ip
-	// (기획팀 박한수).htm
+	// (Planning team Park Han-su).htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-C0-26-8A-2C-D7", "220.117.154.75")); // ip
-	// 리키한 PC사양.htm
+	// Ricky's PC specs.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-50-04-C0-88-5C", "220.117.154.79")); // ip
-	// D1 그래픽팀 한광식 대리.htm
+	// D1 Graphics team Han Gwang-sik (assistant manager).htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-04-75-9D-04-7F", "220.117.154.85")); // ip
-	// D1 그래픽팀 최호진 대리.htm
+	// D1 Graphics team Choi Ho-jin (assistant manager).htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-4C-0B-BC-AA", "220.117.154.81")); // ip
-	// D1 그래픽팀 이준호 과장.htm
+	// D1 Graphics team Lee Jun-ho (manager).htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-04-75-99-30-3C", "220.117.154.82")); // ip
-	// D1 그래픽팀 이승환 사원.htm
+	// D1 Graphics team Lee Seung-hwan (staff).htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-04-75-99-07-A9", "220.117.154.90")); // ip
-	// 프로그램팀_DB백업서버.htm
+	// Programming team_DB backup server.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0C-6E-60-78-E8", "220.117.154.78")); // ip
-	// 프로그램팀_한민훈.htm
+	// Programming team_Han Min-hun.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B3-05", "221.148.70.152")); // ip
-	// 프로그램팀_장홍창.htm
+	// Programming team_Jang Hong-chang.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0D-60-2D-A8-67", "220.117.154.124")); // ip
-	// 프로그램팀_이청환.htm
+	// Programming team_Lee Cheong-hwan.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-3F", "221.148.70.153")); // ip
-	// 프로그램팀_소스세이프서버.htm
+	// Programming team_SourceSafe server.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-4C-ED-28-51", "220.117.154.106")); // ip
-	// 프로그램팀_모니터링.htm
+	// Programming team_Monitoring.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-29-38-D8-A5", "220.117.154.103")); // ip
-	// 프로그램팀_지성욱.htm
+	// Programming team_Ji Seong-uk.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0B-2B-0A-B9-0B", "220.117.154.74")); // ip
-	// 프로그램팀_손희승.htm
+	// Programming team_Son Hui-seung.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0E-A6-8D-E9-C8", "220.117.154.71")); // ip
-	// 프로그램팀_양승명.htm
+	// Programming team_Yang Seung-myeong.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-50-CE-30-B6-12", "220.117.154.70")); // ip
-	// 프로그램팀_해외테스트컴퓨터.htm
+	// Programming team_overseas test computer.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-50-DA-6E-42-C8", "192.168.1.12")); // ip
-	// 프로그램팀_최석민.htm
+	// Programming team_Choi Seok-min.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-18-FB-1A-D6", "220.117.154.72")); // ip
-	// 고객지원팀_추연우.htm
+	// Customer support team_Chu Yeon-u.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-75", "221.148.70.132")); // ip
-	// 고객지원팀_주성빈.htm
+	// Customer support team_Ju Seong-bin.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-4F", "221.148.70.133")); // ip
-	// 프로그램팀_배재형.htm
+	// Programming team_Bae Jae-hyeong.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0E-A6-27-B4-F3", "220.117.154.69")); // ip
-	// 프로그램팀_이창규.htm
+	// Programming team_Lee Chang-gyu.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0B-6A-F4-2D-5A", "220.117.154.92")); // ip
-	// 고객지원팀_조장용.htm
+	// Customer support team_Jo Jang-yong.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B2-DF", "221.148.70.136")); // ip
-	// 고객지원팀_이재성.htm
+	// Customer support team_Lee Jae-seong.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-7F", "221.148.70.141")); // ip
-	// 고객지원팀_김이동.htm
+	// Customer support team_Kim I-dong.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-7E", "221.148.70.134")); // ip
-//	// 고객지원팀_서보경.htm
+//	// Customer support team_Seo Bo-gyeong.htm
 //	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-88", "221.148.70.140")); // ip
-	// 고객지원팀_김충연.htm
+	// Customer support team_Kim Chung-yeon.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-8C", "221.148.70.142")); // ip
-	// 고객지원팀_김진한.htm -  이분껀 없네..-_-
+	// Customer support team_Kim Jin-han.htm -  this one is missing..-_-
 	//MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-8C", "221.148.70.142")); // ip
-//	// 고객지원팀_이수정.htm
+//	// Customer support team_Lee Su-jeong.htm
 //	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-7F", "221.148.70.143")); // ip
-	// 고객지원팀_박세화.htm
+	// Customer support team_Park Se-hwa.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-87", "221.148.70.135")); // ip
-	// 고객지원팀_신동일.htm
+	// Customer support team_Sin Dong-il.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-71", "221.148.70.138")); // ip
-	// 지과장님 노트북.htm
+	// Manager Ji's laptop.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-E0-91-02-07-3A", "192.168.1.100")); // ip
-	// 지과장님 노트북.htm
+	// Manager Ji's laptop.htm
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-0E-35-0F-11-DC", "192.168.1.100")); // ip
-	// 운영팀 신영은
+	// Operations team Sin Yeong-eun
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-43", "221.148.70.150")); // ip
-	// 운영팀 김진한
+	// Operations team Kim Jin-han
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-8B", "221.148.70.139")); // ip
-	// 운영팀 김정수
+	// Operations team Kim Jeong-su
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-88", "221.148.70.137")); // ip
-	// 시스템팀 고승범씨
+	// System team Mr. Go Seung-beom
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-86", "221.148.70.180")); // ip
-	// 운영팀 백경은 
+	// Operations team Baek Gyeong-eun
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B6-89", "221.148.70.140")); // ip
-	// GM파트 김건형
+	// GM part Kim Geon-hyeong
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B3-78", "221.148.70.147")); // ip
-	// 스스템팀 박정우씨
+	// System team Mr. Park Jeong-u
 	MacInfo_Map.insert(MACINFO_MAP::value_type("00-02-78-F7-B1-AB", "221.148.70.182")); // ip
 
 	char szMyMac[32];
 	SafeFormat::Format(szMyMac, "%02X-%02X-%02X-%02X-%02X-%02X", g_macAddress[0], g_macAddress[1], g_macAddress[2], g_macAddress[3], g_macAddress[4], g_macAddress[5]);
-	MACINFO_MAP::const_iterator itr = MacInfo_Map.find( szMyMac ); // 내 Mac Addresss가 있나 찾기.
+	MACINFO_MAP::const_iterator itr = MacInfo_Map.find( szMyMac ); // check whether my Mac Addresss is in the map.
 	if(itr != MacInfo_Map.end())
 	{
 		std::string CheckIP = (itr->second);
@@ -5360,21 +5360,21 @@ CheckMacScreenMode()
 	}
 	MacInfo_Map.clear();
 }
-// 2004, 8, 26, sobeit add end - mac address 체크해서 윈도 모드 변경
+// 2004, 8, 26, sobeit add end - check the mac address and change window mode
 #endif
 
 
-// 2004, 04, 3 sobeit add start - 질드레 맵 이펙트 추가 , 삭제
-// nEffect : 1 (위쪽 이펙트), 2 (아래쪽 이펙트)
-// bAppearBossMonster : true( 맵 로딩시 혹은 보스몹이 죽었을 때) , false ( 보스몹이 나오는 순간 이펙트 )
+// 2004, 04, 3 sobeit add start - add, remove Zildre map effects
+// nEffect : 1 (upper effect), 2 (lower effect)
+// bAppearBossMonster : true( when loading the map or when the boss monster died) , false ( effect at the moment the boss monster appears )
 void 
 Add_GDR_Effect(int nEffect, bool bAppearBossMonster)
 {
-	if(1413 != g_pZone->GetID()) // 질드레 하드 only
+	if(1413 != g_pZone->GetID()) // Zildre hard only
 		return;
-	if(1 == nEffect) // 위쪽 이펙트
+	if(1 == nEffect) // upper effect
 	{
-		if(bAppearBossMonster) // 보스몹이 나오는 순간 이펙트
+		if(bAppearBossMonster) // effect at the moment the boss monster appears
 		{
 //			MEvent event;
 //			event.eventID = EVENTID_CONTINUAL_GROUND_ATTACK;
@@ -5418,7 +5418,7 @@ Add_GDR_Effect(int nEffect, bool bAppearBossMonster)
 			ExecuteActionInfoFromMainNode(MAP_ELECTRIC_POST,0, 0, 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
 					130, 87, 0, 0, NULL, false);	
 		}
-		else // 기본 effect ( 보스몹이 죽거나 맵 로딩시)
+		else // default effect ( when the boss monster dies or the map loads)
 		{
 			ExecuteActionInfoFromMainNode(MAP_BLACK_SMALL_SMOKE_1,0, 0, 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
 				136, 86, 0, 0, NULL, false);								
@@ -5449,9 +5449,9 @@ Add_GDR_Effect(int nEffect, bool bAppearBossMonster)
 				130, 87, 0, 0, NULL, false);	
 		}
 	}
-	else if(2 == nEffect) // 아래쪽 이펙트
+	else if(2 == nEffect) // lower effect
 	{
-		if(bAppearBossMonster) // 보스몹이 나오는 순간 이펙트
+		if(bAppearBossMonster) // effect at the moment the boss monster appears
 		{
 			g_pZone->RemoveTileEffect(83, 139,EFFECTSTATUS_BLACK_SMALL_SMOKE_1);
 			g_pZone->RemoveTileEffect(83, 139-1,EFFECTSTATUS_BLACK_SMALL_SMOKE_2);
@@ -5479,7 +5479,7 @@ Add_GDR_Effect(int nEffect, bool bAppearBossMonster)
 			ExecuteActionInfoFromMainNode(MAP_ELECTRIC_POST,0, 0, 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
 					76, 141, 0, 0, NULL, false);	
 		}
-		else // 기본 effect ( 보스몹이 죽거나 맵 로딩시)
+		else // default effect ( when the boss monster dies or the map loads)
 		{
 			ExecuteActionInfoFromMainNode(MAP_BLACK_SMALL_SMOKE_1,0, 0, 0,g_pPlayer->GetDirection(),	g_pPlayer->GetID(),	
 				83, 139, 0, 0, NULL, false);								
@@ -5511,12 +5511,12 @@ Add_GDR_Effect(int nEffect, bool bAppearBossMonster)
 		}
 	}
 }
-// 2004, 04, 3 sobeit add end - 질드레 맵 이펙트 추가
+// 2004, 04, 3 sobeit add end - add Zildre map effects
 
-// 2004, 06, 26 sobeit add start - 일루전스 웨이 포탈
+// 2004, 06, 26 sobeit add start - Illusion's Way portal
 void Add_GDR_Potal_Effect(int nMapID)
 {
-	if(nMapID == 1410) // 일루전스 웨이 1
+	if(nMapID == 1410) // Illusion's Way 1
 	{
 		ExecuteActionInfoFromMainNode(MAP_GDR_LAIR_POTAL,0, 0, 0,0, 0,	
 				73, 80, 0, 0, NULL, false);			
@@ -5536,9 +5536,9 @@ void Add_GDR_Potal_Effect(int nMapID)
 	}
 }
 
-// 2004, 06, 26 sobeit add end - 일루전스 웨이 포탈
+// 2004, 06, 26 sobeit add end - Illusion's Way portal
 
-// 2004, 08, 6 sobeit add start - 각 종족별 몬스터 추가
+// 2004, 08, 6 sobeit add start - add monsters for each race
 void Add_Race_SlayerMonster(GCAddMonster * pPacket)
 {
 	MCreature* pCreature = g_pZone->GetCreature(pPacket->getObjectID());
@@ -5567,14 +5567,14 @@ void Add_Race_SlayerMonster(GCAddMonster * pPacket)
 		pCreatureWear->SetCurrentDirection( pPacket->getDir() );
 		pCreatureWear->SetAction( ACTION_STAND );
 
-		// 피부색
+		// skin color
 //			pCreatureWear->SetBodyColor1( si.getSkinColor() );
 		pCreatureWear->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
 		pCreatureWear->SetStatus( MODIFY_CURRENT_HP,  pPacket->getCurrentHP() );
 //			pCreatureWear->SetStatus( MODIFY_ALIGNMENT, si.getAlignment() );
 //			pCreatureWear->SetStatus( MODIFY_RANK, si.getRank() );
 
-		// 이름
+		// name
 		pCreatureWear->SetName( pPacket->getMonsterName().c_str() );
 
 		MItem* pCoat		= NULL;
@@ -5602,7 +5602,7 @@ void Add_Race_SlayerMonster(GCAddMonster * pPacket)
 		else
 		{
 			//----------------------------------------	
-			// 복장 - 암꺼나 입히자..-_-; 총은 sr
+			// outfit - just put on anything..-_-; guns are sr
 			//----------------------------------------	
 			pCoat		= g_pPacketItemJacket[JACKET3];
 			pTrouser		= g_pPacketItemPants[PANTS3];
@@ -5646,7 +5646,7 @@ void Add_Race_SlayerMonster(GCAddMonster * pPacket)
 		pCreature->SetCurrentDirection( pPacket->getDir() );
 		pCreature->SetAction( ACTION_STAND );
 
-		// 피부색
+		// skin color
 //		pCreature->SetBodyColor1( si.getSkinColor() );
 
 		pCreature->SetStatus( MODIFY_MAX_HP, pPacket->getMaxHP() );
@@ -5677,7 +5677,7 @@ void Add_Race_OustersMonster(GCAddMonster * pPacket)
 		pCreature->SetName( pPacket->getMonsterName().c_str() );
 
 		//--------------------------------------------------
-		// CreatureType 설정
+		// set CreatureType
 		//--------------------------------------------------
 		//ItemType_t coatType = oi.getCoatType();
 
@@ -5691,7 +5691,7 @@ void Add_Race_OustersMonster(GCAddMonster * pPacket)
 		pCreature->SetDirection( /*pPacket->getDir()*/2 );
 		pCreature->SetCurrentDirection( pPacket->getDir() );
 		pCreature->SetAction( ACTION_STAND );
-		// 색깔
+		// color
 //			pCreature->SetBodyColor1( oi.getHairColor() );
 //			pCreature->SetBodyColor2( oi.getCoatColor() );
 
@@ -5749,18 +5749,18 @@ void Add_Race_OustersMonster(GCAddMonster * pPacket)
 		
 	}
 	//--------------------------------------------------
-	// 이미 있는 Creature인 경우
+	// if the Creature already exists
 	//--------------------------------------------------
 	else
 	{
 		//--------------------------------------------------
-		// CreatureType 설정
+		// set CreatureType
 		//--------------------------------------------------
 	//	ItemType_t coatType = oi.getCoatType();
 
 	//	pCreature->SetCreatureType( CREATURETYPE_OUSTERS );
 
-		// 임시로
+		// temporarily
 		pCreature->SetGuildNumber( 1 );
 		
 		//pCreature->SetAction(ACTION_MOVE);
@@ -5770,7 +5770,7 @@ void Add_Race_OustersMonster(GCAddMonster * pPacket)
 		pCreature->SetCurrentDirection( pPacket->getDir() );
 		pCreature->SetAction( ACTION_STAND );
 
-		// 색깔
+		// color
 //			pCreature->SetBodyColor1( oi.getHairColor() );
 //			pCreature->SetBodyColor2( oi.getCoatColor() );
 
@@ -5778,7 +5778,7 @@ void Add_Race_OustersMonster(GCAddMonster * pPacket)
 		//--------------------------------------------------
 		// [ TEST CODE ]
 		//--------------------------------------------------
-		// 옷 색깔 설정하기
+		// set clothes color
 		//--------------------------------------------------
 		/*
 		if (pCreature->IsMale())
@@ -5881,7 +5881,7 @@ void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY)
 	MFakeCreature *pFakeCreature = (MFakeCreature*)(g_pZone->GetFakeCreature(ObjectID));
 	if(pFakeCreature == NULL)
 	{
-		// 없으면 생성
+		// create if missing
 		int TempCreatureType = Type==EFFECTSTATUS_DRAGON_TORNADO? 788:789;
 		pFakeCreature = NewFakeCreature(TempCreatureType, TileX, TileY, 0);
 		pFakeCreature->SetID(ObjectID);
@@ -5900,7 +5900,7 @@ void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY)
 	}
 	else
 	{
-		// 좌표가 틀리면 이동
+		// move if the coordinates differ
 		if(TileX != pFakeCreature->GetX() || TileY != pFakeCreature->GetY())
 		{
 			int TempDir = pFakeCreature->GetDirectionToPosition(TileX, TileY);
@@ -5909,7 +5909,7 @@ void SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY)
 	}
 }
 // 2005, 1, 6, sobeit add end
-#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 add sub-inventory
 
 void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 {
@@ -5919,11 +5919,11 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 	int itemNum = pInventoryInfo->getListNum();
 
 	//--------------------------------------------------
-	// Inventory에 아이템들을 추가한다.
+	// add the items to the Inventory.
 	//--------------------------------------------------
 	for (int i=0; i<itemNum; i++)
 	{
-		// 외부에서 지워줘야 한다.
+		// must be deleted by the caller.
 		InventorySlotInfo * pSlotInfo = pInventoryInfo->popFrontListElement();
 
 		if( pSlotInfo == NULL )
@@ -5956,22 +5956,22 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 		pItem->SetItemType(	pSlotInfo->getItemType() );
 		pItem->SetItemOptionList( pSlotInfo->getOptionType() );
 
-		// inventory에서의 좌표
+		// coordinates in the inventory
 		pItem->SetGridXY( pSlotInfo->getInvenX(), pSlotInfo->getInvenY() );
 
 		//------------------------------------------
-		// 개수
+		// quantity
 		//------------------------------------------
-		// 총인 경우
+		// if it is a gun
 		//------------------------------------------
 		if (pItem->IsGunItem())
 		{
 			MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 
-			// 의미 없음 - -;
+			// meaningless - -;
 			pMagazine->SetID( 0 );
 
-			// 이거는 총에 맞춰서 해줘야된다.
+			// this has to be set to match the gun.
 			for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 			{
 				pMagazine->SetItemType(	j );
@@ -5984,22 +5984,22 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 
 			if(pSlotInfo->getSilver())
 				pMagazine->SetItemType( pMagazine->GetItemType()+8);
-			// 어예~ 은탄환 하드코딩 by 쑥갓
+			// yeah~ silver bullets hardcoded by Ssukgat
 
-			// 의미 없음
+			// meaningless
 			pMagazine->ClearItemOption();
 		
-			// 탄창 개수
+			// magazine quantity
 			pMagazine->SetNumber( pSlotInfo->getItemNum() );
 
 			//------------------------------------
-			// 탄창 설정
+			// set the magazine
 			//------------------------------------
 			MGunItem* pGunItem = (MGunItem*)pItem;
 			pGunItem->SetMagazine( pMagazine );
 		}		
 		//------------------------------------------
-		// 총이 아닌 경우
+		// if it is not a gun
 		//------------------------------------------
 		else
 		{
@@ -6009,7 +6009,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 
 		//------------------------------------------
 		//
-		// Item에 다른 item들이 들어있는 경우
+		// if the Item contains other items
 		//
 		//------------------------------------------
 		if (pSlotInfo->getListNum()!=0)
@@ -6017,7 +6017,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 			DEBUG_ADD_FORMAT("This Item has Sub item(s) : size=%d", pSlotInfo->getListNum());
 			
 			//------------------------------------------
-			// Belt인 경우
+			// if it is a Belt
 			//------------------------------------------
 			if (pItem->GetItemClass()==ITEM_CLASS_BELT)
 			{
@@ -6061,7 +6061,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 						pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 
 						//------------------------------------------
-						// Belt의 정해진 slot에 item을 추가시킨다.
+						// add the item to the given slot of the Belt.
 						//------------------------------------------
 						pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 
@@ -6111,7 +6111,7 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 						pSubItem->SetNumber( pSubItemInfo->getItemNum() );			
 						
 						//------------------------------------------
-						// Belt의 정해진 slot에 item을 추가시킨다.
+						// add the item to the given slot of the Belt.
 						//------------------------------------------
 						pBelt->AddItem( pSubItem, pSubItemInfo->getSlotID() );
 						
@@ -6126,21 +6126,21 @@ void SetSubInventoryInfo(InventoryInfo* pInventoryInfo)
 		}
 
 
-		// main색깔
+		// main color
 		pItem->SetItemColorSet( pSlotInfo->getMainColor() );
 
-		// 현재 내구성
+		// current durability
 		pItem->SetCurrentDurability( pSlotInfo->getDurability() );
 		pItem->SetSilver( pSlotInfo->getSilver() );
 		pItem->SetGrade( pSlotInfo->getGrade() );
 		pItem->SetEnchantLevel( pSlotInfo->getEnchantLevel() );
 
 		//---------------------------------------------
-		// item을 inventory에 넣는다.
+		// put the item into the inventory.
 		//---------------------------------------------
 		if(false == UI_AddItemToSubInventory(pItem, pItem->GetGridX(), pItem->GetGridY()))
 		{
-			// item을 inventory에 추가할 수 없는 경우
+			// if the item cannot be added to the inventory
 			DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Item to Inventory. id=%d, cl=%d, tp=%d, xy=(%d,%d)",
 											(int)pItem->GetID(),
 											(int)pItem->GetItemClass(),
