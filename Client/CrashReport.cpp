@@ -5,9 +5,9 @@
 	file path:	D:\study\smodulelib
 	file base:	CrashReport
 	file ext:	cpp
-	author:		쑥갓
+	author:		Ssukgat
 	
-	purpose:	치명적인 오류가 발생했을때 로그를 남긴다.
+	purpose:	logs a fatal error when one happens.
 *********************************************************************/
 #include "Client_PCH.h"
 #ifdef PLATFORM_WINDOWS
@@ -19,22 +19,23 @@
 #include "CrashReport.h"
 #include "Properties.h"
 #include "MCrashReportManager.h"
-#include "ServerInfo.h"
+#include "GameSocket.h"
+#include "ClientPlayer.h"
+#include <cstdio>
+#include <fstream>
+#include <string>
+#include <vector>
 
-// Everything down to RecordExceptionInfo is the dbghelp stack walk, Windows
-// only; the non-Windows RecordExceptionInfo at the end is a stub that
-// nothing installs (InitCrashReport is Windows-only in ClientMain).
-#ifdef PLATFORM_WINDOWS
 ///////////////////////////////////////////////////////////////////////////////
 // GetExceptionDescription
 //
 // Translate the exception code into something human readable
-static const TCHAR *GetExceptionDescription(DWORD ExceptionCode)
+const char *GetExceptionDescription(DWORD ExceptionCode)
 {
 	struct ExceptionNames
 	{
 		DWORD	ExceptionCode;
-		const TCHAR *	ExceptionName;
+		const char *	ExceptionName;
 	};
 
 #if 0  // from winnt.h
@@ -101,12 +102,68 @@ static const TCHAR *GetExceptionDescription(DWORD ExceptionCode)
 		{0xe06d7363, "a Microsoft C++ Exception"},
 	};
 
-	for (int i = 0; i < sizeof(ExceptionMap) / sizeof(ExceptionMap[0]); i++)
+	for (size_t i = 0; i < sizeof(ExceptionMap) / sizeof(ExceptionMap[0]); i++)
 		if (ExceptionCode == ExceptionMap[i].ExceptionCode)
 			return ExceptionMap[i].ExceptionName;
 
 	return "an Unknown exception type";
 }
+
+//-----------------------------------------------------------------------------
+// FillCrashReport
+//
+// What the handler gathered, written into the report. Addresses are 0x and
+// 16 hex digits (wsprintf doesn't reliably support 64-bit arguments, so
+// these use snprintf); each call-stack address follows a space.
+//-----------------------------------------------------------------------------
+void FillCrashReport(MCrashReport& report, const char* executableTime, int version, const char* os,
+	unsigned long long address, DWORD exceptionCode, const std::vector<unsigned long long>& callStack)
+{
+	char szTemp[1024];
+
+	report.SetExcutableTime(executableTime);
+	report.SetVersion(WORD(version));
+	report.SetOS(os);
+
+	snprintf(szTemp, sizeof(szTemp), "0x%016llx", address);
+	report.SetAddress(szTemp);
+
+	snprintf(szTemp, sizeof(szTemp), "%s(0x%08x)", GetExceptionDescription(exceptionCode), unsigned(exceptionCode));
+	report.SetMessage(szTemp);
+
+	std::string stack;
+	for (unsigned long long frame : callStack)
+	{
+		snprintf(szTemp, sizeof(szTemp), "0x%016llx", frame);
+		stack += ' ';
+		stack += szTemp;
+	}
+	report.SetCallStack(stack.c_str());
+}
+
+//-----------------------------------------------------------------------------
+// ReadClientVersion
+//
+// The first four bytes of the file FILE_INFO_VERSION names; 0 if it cannot
+// be read.
+//-----------------------------------------------------------------------------
+int ReadClientVersion()
+{
+	int version = 0;
+	std::ifstream versionFile(g_pFileDef->getProperty("FILE_INFO_VERSION").c_str(), std::ios::binary);
+
+	if (versionFile.is_open())
+	{
+		versionFile.read((char*)&version, 4);
+		versionFile.close();
+	}
+	return version;
+}
+
+// Everything down to RecordExceptionInfo is the dbghelp stack walk, Windows
+// only; the non-Windows RecordExceptionInfo at the end is a stub that
+// nothing installs (InitCrashReport is Windows-only in ClientMain).
+#ifdef PLATFORM_WINDOWS
 
 // ADDRESS64/KDHELP64/STACKFRAME64 and the PREAD_PROCESS_MEMORY_ROUTINE64/
 // PFUNCTION_TABLE_ACCESS_ROUTINE64/PGET_MODULE_BASE_ROUTINE64/
@@ -136,7 +193,10 @@ tSFTA pSFTA = NULL;
 typedef DWORD64 (__stdcall *tSGMB)( IN HANDLE hProcess, IN DWORD64 dwAddr );
 tSGMB pSGMB = NULL;
 
-extern BOOL GetWinVersion(char *szVersion, size_t nSize);
+// SymInitialize() and SymCleanup(): the two callbacks above read the
+// process's symbols, which have to be loaded for the walk.
+typedef BOOL (__stdcall *tSI)( HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess );
+typedef BOOL (__stdcall *tSC)( HANDLE hProcess );
 
 LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp )
 {
@@ -155,6 +215,7 @@ LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp )
 	MCrashReport &cr = *crm.GetMutable(0); // Init(1) above guarantees this row.
 
 	char szTemp[1024];
+	char executableTime[1024] = "";
 	GetModuleFileName(NULL, szTemp, 1024);
 	SYSTEMTIME st;
 
@@ -170,37 +231,18 @@ LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp )
 			FileTimeToLocalFileTime(&LastWriteTime, &LastWriteTime);
 			FileTimeToSystemTime(&LastWriteTime, &st);
 
-			snprintf(szTemp, sizeof(szTemp), "%04d-%02d-%02d %02d:%02d:%02d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
-			cr.SetExcutableTime(szTemp);
+			snprintf(executableTime, sizeof(executableTime), "%04d-%02d-%02d %02d:%02d:%02d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
 		}
 		CloseHandle(ModuleFile);
 	}
 
-	int version = 0;
-	std::ifstream versionFile(g_pFileDef->getProperty("FILE_INFO_VERSION").c_str(), ios::binary);
-
-	if (versionFile.is_open())
-	{
-		versionFile.read((char*)&version, 4);
-		versionFile.close();
-	}
-	cr.SetVersion(version);
-
 	// print out operating system
-	szTemp[0] = '\0';
-	GetWinVersion(szTemp, sizeof(szTemp));
-	cr.SetOS(szTemp);
+	char os[1024] = "";
+	GetWinVersion(os, sizeof(os));
 
 	// Eip/Ebp are the x86 CONTEXT register names; on x64 the equivalent
-	// fields are Rip/Rbp (64-bit). wsprintf doesn't reliably support
-	// 64-bit arguments, so use sprintf here instead.
-	snprintf(szTemp, sizeof(szTemp), "0x%016llx", Context->Rip);
-	cr.SetAddress(szTemp);
-
-	snprintf(szTemp, sizeof(szTemp), "%s(0x%08x)", GetExceptionDescription(Exception->ExceptionCode), Exception->ExceptionCode);
-	cr.SetMessage(szTemp);
-
-	std::string callStack;
+	// fields are Rip/Rbp (64-bit).
+	std::vector<unsigned long long> callStack;
 
 	int frameNum;
 	// StackWalk64's frame-walking logic depends on the machine type
@@ -221,32 +263,41 @@ LONG __stdcall RecordExceptionInfo( _EXCEPTION_POINTERS* pExp )
 			pSFTA = (tSFTA) GetProcAddress( hImagehlpDll, "SymFunctionTableAccess64" );
 			pSGMB = (tSGMB) GetProcAddress( hImagehlpDll, "SymGetModuleBase64" );
 			pSW = (tSW) GetProcAddress( hImagehlpDll, "StackWalk64" );
+			tSI pSI = (tSI) GetProcAddress( hImagehlpDll, "SymInitialize" );
+			tSC pSC = (tSC) GetProcAddress( hImagehlpDll, "SymCleanup" );
+			// Someone else may have loaded the symbols already (a sanitizer's
+			// runtime does): walk either way, and clean up only ours.
+			const BOOL bSymbols = pSI != NULL && pSC != NULL && pSI( hSWProcess, NULL, TRUE );
 
 			if(pSFTA != NULL && pSGMB != NULL && pSW != NULL)
 			{
+				// On x64 the walk needs the crash's context record (it
+				// updates the one it is handed, so a copy) and the stack
+				// pointer as well as the frame and the instruction.
+				CONTEXT walkContext = *Context;
 				s.AddrPC.Offset = Context->Rip;
 				s.AddrPC.Mode = AddrModeFlat;
 				s.AddrFrame.Offset = Context->Rbp;
 				s.AddrFrame.Mode = AddrModeFlat;
+				s.AddrStack.Offset = Context->Rsp;
+				s.AddrStack.Mode = AddrModeFlat;
 
 				for ( frameNum = 0; ; ++ frameNum )
 				{
-					if ( ! pSW( imageType, hSWProcess, hThread, &s, NULL, NULL, pSFTA, pSGMB, NULL ) )
+					if ( ! pSW( imageType, hSWProcess, hThread, &s, &walkContext, NULL, pSFTA, pSGMB, NULL ) )
 						break;
 
-					// AddrPC.Offset is DWORD64 - wsprintf doesn't reliably
-					// support 64-bit arguments, so use sprintf here instead.
-					snprintf(szTemp, sizeof(szTemp), "0x%016llx", s.AddrPC.Offset);
-					callStack += ' ';
-					callStack += szTemp;
+					callStack.push_back(s.AddrPC.Offset);
 				}
 			}
+			if (bSymbols)
+				pSC( hSWProcess );
 			FreeLibrary( hImagehlpDll );
 		}
 
 		CloseHandle( hThread );
 	}
-	cr.SetCallStack(callStack.c_str());
+	FillCrashReport(cr, executableTime, ReadClientVersion(), os, Context->Rip, Exception->ExceptionCode, callStack);
 
 	crm.SaveToFile(CRASH_LOG_FILENAME);
 
@@ -293,7 +344,7 @@ LONG __stdcall RecordExceptionInfo( struct _EXCEPTION_POINTERS* pExp )
 //		strcpy(szWinVer, "");
 //		GetWinVersion(szWinVer);
 //
-//		// *CrashLog 2003-12-01 10:50:00 98 0xffffffff 0xffffffff에서 메모리 침범 에러
+//		// *CrashLog 2003-12-01 10:50:00 98 0xffffffff a memory access violation at 0xffffffff
 //		wsprintf(szTemp, "%04d-%02d-%02d %02d:%02d:%02d %d 0x%08x %s (0x%08x), %s", 
 //			st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
 //			version,

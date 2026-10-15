@@ -434,7 +434,9 @@ check () {
 # 19: the player joins gamemodel (4.247).
 # 18: the divine-guidance silhouettes join gameview, a new library (4.248).
 # 17: the creature shadows join gameview (4.249).
-R1_BASELINE=17
+# 16: the creatures drawn with an effect join gameview (4.250).
+# 14: the crash report and the Windows-only Windows version join gamemodel (4.251).
+R1_BASELINE=14
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -463,11 +465,11 @@ if [ -n "$R1_VCXPROJ" ]; then
 elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# The Ninja generator (the Linux and macOS presets): the same count,
 	# read from build.ninja's object rules for the DarkEden target. Its
-	# own baseline, because the non-Windows source list is two files
-	# shorter: of CMakeLists.txt's NOT WIN32 filters only GetWinVer,
-	# and WavePackFileManager match anything the glob
-	# yields (the Immersion, D3D, EXECryptor and VolumeOut patterns match
-	# no file at all). Before
+	# own baseline, because the non-Windows source list is one file
+	# shorter: of CMakeLists.txt's NOT WIN32 filters only
+	# WavePackFileManager matches anything the glob yields (GetWinVer has
+	# been gamemodel's since task 4.251; the Immersion, D3D, EXECryptor
+	# and VolumeOut patterns match no file at all). Before
 	# this branch existed the ratchet SKIPPED on every non-MSVC tree,
 	# which the port assessment listed as fail-open (area A). build.ninja
 	# is rewritten on every configure, so its mtime is the configure time.
@@ -701,7 +703,9 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 17: the player joins gamemodel (4.247).
 	# 16: the divine-guidance silhouettes join gameview, a new library (4.248).
 	# 15: the creature shadows join gameview (4.249).
-	R1_NINJA_BASELINE=15
+	# 14: the creatures drawn with an effect join gameview (4.250).
+	# 13: the crash report joins gamemodel (4.251).
+	R1_NINJA_BASELINE=13
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

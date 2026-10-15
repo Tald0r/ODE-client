@@ -438,7 +438,8 @@ DrawCreatureShadow(const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 		}
 
 		//------------------------------------------------
-		// A slayer cannot see into Darkness.
+		// Only a vampire sees into Darkness (an NPC and the player itself
+		// show, and so does Lightness, but in zone 3001).
 		//------------------------------------------------
 		if (pCreature->IsInDarkness() && !pCreature->IsNPC() && !g_pPlayer->IsVampire()
 			&& g_pPlayer!=pCreature && (!g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS)|| g_pZone->GetID() == 3001) )

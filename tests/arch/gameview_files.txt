@@ -6,6 +6,8 @@
 Client/CreatureDivineGuidanceDraw.cpp
 Client/CreatureDivineGuidanceDraw.h
 Client/CreatureDrawPacks.h
+Client/CreatureEffectDraw.cpp
+Client/CreatureEffectDraw.h
 Client/CreatureShadowDraw.cpp
 Client/CreatureShadowDraw.h
 Client/SpriteIDDef.h

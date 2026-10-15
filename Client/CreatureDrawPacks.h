@@ -1,8 +1,9 @@
 #pragma once
 
-// The packs a creature is drawn from and the surface it is drawn on
-// (task 4.248; the shadows' since 4.249): MTopView's, handed to the
-// creature drawing that moved out of it into gameview. MTopView fills one from its members at each draw;
+// The packs a creature is drawn from, the surface it is drawn on and the
+// selection (task 4.248; the shadows' since 4.249, the selection since
+// 4.250): MTopView's, handed to the creature drawing that moved out of
+// it into gameview. MTopView fills one from its members at each draw;
 // a test fills one from packs of its own. A drawing reads only the packs
 // it draws from.
 
@@ -10,8 +11,10 @@
 #include "CIndexSpritePack.h"
 #include "CShadowSprite.h"
 #include "CSpritePack.h"
+#include "MTypeDef.h"
 
 class CSpriteSurface;
+class CSpriteOutlineManager;
 
 struct CreatureDrawPacks
 {
@@ -56,4 +59,9 @@ struct CreatureDrawPacks
 
 	// The other sprites: a slayer's cross, the caskets.
 	CSpritePack*		pEtcSPK = nullptr;
+
+	// The selection: the creature under the cursor, whose sprites go to
+	// the outline manager to be drawn outlined, not to the surface.
+	TYPE_OBJECTID			selectedCreatureID = OBJECTID_NULL;
+	CSpriteOutlineManager*	pOutlines = nullptr;
 };

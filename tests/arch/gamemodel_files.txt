@@ -815,6 +815,9 @@ Client/InventoryEffectTarget.h
 # Crash-report records and named profiler state/output.
 Client/MCrashReportManager.cpp
 Client/MCrashReportManager.h
+Client/CrashReport.cpp
+Client/CrashReport.h
+Client/GetWinVer.cpp
 Client/Profiler.cpp
 Client/Profiler.h
 
