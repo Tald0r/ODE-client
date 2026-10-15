@@ -11,3 +11,12 @@ extern int	g_nZoneSmall;
 extern bool	g_bZonePlayerInLarge;
 extern bool	g_bHolyLand;
 extern unsigned short	g_ZoneCreatureColorSet;
+
+class MZone;
+
+// The large and the small zone the zone loading keeps (the player is in
+// one), and whether each one's images are loaded (task 4.253).
+extern MZone*	g_pZoneLarge;
+extern MZone*	g_pZoneSmall;
+extern bool	g_bZoneLargeLoadImage;
+extern bool	g_bZoneSmallLoadImage;

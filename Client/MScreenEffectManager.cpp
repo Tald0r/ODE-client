@@ -57,3 +57,7 @@ void MScreenEffectManager::Update()
 		}
 	}
 }
+
+// The effects drawn over the inventory window (GameMain.cpp's until task
+// 4.253).
+MScreenEffectManager*	g_pInventoryEffectManager = NULL;

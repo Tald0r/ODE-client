@@ -15,6 +15,8 @@
 #include "Packet/Types/PacketItemDef.h"
 #include "Packet/WireHost.h"
 #include "AffectModifyInfo.h"
+#include "Packet/Types/PlayerTypes.h"
+#include <string>
 //#include "Packet/Types/ItemTypes.h"
 class MActionResult;
 class MCreature;
@@ -56,7 +58,6 @@ extern MItem*		g_pPacketItemOustersArm[OUSTERS_ARM_MAX];
 //-----------------------------------------------------------------------------
 void			SetServerGroupName( const char* pName );
 void			SetServerGroupStatus( int status );
-void			SetServerName( const char* pName );
 
 //-----------------------------------------------------------------------------
 // Set GoreLevel
@@ -185,4 +186,25 @@ extern BOOL GetMacAddressFromNetBIOS(LPBYTE lpMacAddress);
 extern void SetBloodBibleSlot(BloodBibleSignInfo* pBloodBibleInfo);
 class PetInfo;
 extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
+
+// The rest of what PacketFunction.cpp defines, which the executable's
+// sources declared each for itself until task 4.253.
+class GCAddMonster;
+extern DWORD	ConvertMillisecondToFrame(DWORD ms);
+extern void		PopupErrorMessage(ErrorID errorID);
+extern int		UI_GetFaceStyle(bool bMale, int faceStyle);
+extern void		SetSubInventoryInfo(InventoryInfo* pInventoryInfo);
+extern void		SetFlagTo(bool bTae);
+extern void		SkillShadowDancing(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID);
+extern void		Add_GDR_Effect(int nEffect, bool bAppearBossMonster);
+extern void		Add_GDR_Potal_Effect(int nMapID);
+extern void		Add_Race_SlayerMonster(GCAddMonster* pPacket);
+extern void		Add_Race_OustersMonster(GCAddMonster* pPacket);
+extern void		Add_RocketRuncher(MCreature* UserCreature, MCreature* TargetCreature);
+extern void		Add_Wild_Wolf(MCreature* UserCreature, MCreature* TargetCreature, bool IsEatCorpse);
+extern void		SetDragonTorando(int Type, DWORD ObjectID, int TileX, int TileY);
+#ifdef PLATFORM_WINDOWS
+extern std::string	GetLocalIP();
+extern void		CheckMacScreenMode();
+#endif
 #endif

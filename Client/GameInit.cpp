@@ -199,7 +199,6 @@
 #include "DebugKit.h"
 
 extern BYTE g_macAddress[6];
-extern BOOL GetMacAddressFromSock();
 extern DWORD g_dwSeqNumL;
 extern DWORD g_dwSeqNumG;
 extern BOOL g_MyFull;
@@ -4307,6 +4306,21 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		g_pTopView->SetFadeStart(start, end, step, r, g, b, delay);
 	},
 	.SetFadeEnd = []() { g_pTopView->SetFadeEnd(); },
+	.CreatureSpriteHeight = [](int body, int action, int direction) -> int {
+		const FRAME_ARRAY& frames = g_pTopView->GetCreatureFrameArray(body, action, direction);
+		if (frames.GetSize() == 0) return -1;
+		const CIndexSprite* pSprite = g_pTopView->GetCreatureSprite(frames[0].GetSpriteID());
+		return pSprite != NULL ? pSprite->GetHeight() : -1;
+	},
+	.SetFlagSprites = [](bool bTae) {
+		if (g_pTopView == NULL) return;
+		const int head = bTae ? EFFECTSPRITETYPE_FLAG_HEAD_TAE : EFFECTSPRITETYPE_FLAG_HEAD_ORIGINAL;
+		const int ground = bTae ? EFFECTSPRITETYPE_FLAG_GROUND_TAE : EFFECTSPRITETYPE_FLAG_GROUND_ORIGINAL;
+		(g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaFPK)[head];
+		(g_pTopView->m_EffectAlphaFPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaFPK)[ground];
+		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaPPK)[head];
+		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaPPK)[ground];
+	},
 };
 
 extern void UI_RunPetInfo(struct PETINFO *pPetInfo);
@@ -4356,6 +4370,7 @@ static const PlayerPresentation::Host s_PlayerPresentationHost = {
 	.AddEffectStatus = [](int status, std::uint32_t delayFrame) { UI_AddEffectStatus(status, delayFrame); },
 	.RemoveEffectStatus = [](int status) { UI_RemoveEffectStatus(status); },
 	.FinishLevelUpButton = []() { g_pUIMessageManager->Execute(UI_FINISH_LEVELUP_BUTTON, 0, 0, NULL); },
+	.SetHotKey = UI_SetHotKey,
 };
 
 static const GameOptions::Host s_GameOptionsHost = {

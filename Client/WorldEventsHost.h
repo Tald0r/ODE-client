@@ -144,6 +144,11 @@ struct Host
 	bool (*IsViewRequestMode)() = nullptr;
 	void (*SetFadeStart)(signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay) = nullptr;
 	void (*SetFadeEnd)() = nullptr;
+	// The height of the sprite a creature body's first frame shows for an
+	// action and direction; -1 when the view has no such frame or sprite.
+	int (*CreatureSpriteHeight)(int body, int action, int direction) = nullptr;
+	// The flag's head and ground sprites: the team's (TAE) or the original.
+	void (*SetFlagSprites)(bool bTae) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -198,6 +203,9 @@ void MuteSound(bool bMute);
 void SkillCrossCounter(MCreature* pUser, MCreature* pTarget, int skillID);
 // Takes pResult; without an entry it is freed unrun.
 void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION startX, TYPE_SECTORPOSITION startY, int startZ, int direction, TYPE_OBJECTID targetID, TYPE_SECTORPOSITION targetX, TYPE_SECTORPOSITION targetY, int targetZ, std::uint32_t delayFrame, MActionResult* pResult, bool bStartFromMainNode = true, int sX = 0, int sY = 0);
+// -1 without an entry.
+int CreatureSpriteHeight(int body, int action, int direction);
+void SetFlagSprites(bool bTae);
 // Takes pResult; without an entry it is freed unrun.
 void SkillToSector(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult);
 

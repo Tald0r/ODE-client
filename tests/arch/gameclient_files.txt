@@ -10,5 +10,7 @@ Client/GameInitInfo.h
 Client/GameInitInfoHost.h
 Client/GuildMarkTypes.h
 Client/MGuildMarkManager.h
+Client/PacketFunction.cpp
+Client/PacketFunction.h
 Client/ProfileManager.h
 Client/UserOption.h

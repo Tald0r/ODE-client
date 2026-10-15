@@ -115,7 +115,6 @@ extern void		ReleaseUselessCreatureSPKExcept(const COrderedList<int>& listUse);
 // ConvertDurationToFrame and ConvertDurationToMillisecond are gamemodel's.
 #include "ConvertDuration.h"
 extern DWORD	ConvertMillisecondToFrame(DWORD ms);
-extern POINT	ConvertPositionMapToScreen(int sX, int sY);
 
 
 #endif

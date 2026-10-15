@@ -8,3 +8,7 @@ int		g_nZoneSmall = ZONEID_NULL;
 bool	g_bZonePlayerInLarge = true;
 bool	g_bHolyLand = false;
 unsigned short	g_ZoneCreatureColorSet = 0xFFFF;
+MZone*	g_pZoneLarge = NULL;
+MZone*	g_pZoneSmall = NULL;
+bool	g_bZoneLargeLoadImage = false;
+bool	g_bZoneSmallLoadImage = false;

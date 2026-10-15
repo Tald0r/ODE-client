@@ -174,4 +174,9 @@ void FinishLevelUpButton()
 	if (s_Host && s_Host->FinishLevelUpButton) s_Host->FinishLevelUpButton();
 }
 
+void SetHotKey(int hotkey, int id)
+{
+	if (s_Host && s_Host->SetHotKey) s_Host->SetHotKey(hotkey, id);
+}
+
 }

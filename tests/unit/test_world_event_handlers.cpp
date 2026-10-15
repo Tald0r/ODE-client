@@ -2,6 +2,7 @@
 #include "gamemodel_world.h"
 #include "packet_stream_access.h"
 #include "WorldEventsHost.h"
+#include "PlayerPresentationHost.h"
 #include "BloodBibleSignInfo.h"
 #include "ClientPlayer.h"
 #include "ConvertDuration.h"
@@ -292,4 +293,34 @@ TEST(WorldEventHandlers, TheClientsPlaySoundIsTheHostsEntry)
 	::PlaySound(8);
 	CHECK(played == std::vector<int>({7}));
 	WorldEvents::SetHost(old);
+}
+
+TEST(WorldEventHandlers, TheViewQueriesAndTheHotKeyPassTheirArguments)
+{
+	// The view's entries PacketFunction reaches through, and the quick
+	// slot's hot key (task 4.253).
+	World world;
+	static std::vector<std::string> seen;
+	seen.clear();
+	const WorldEvents::Host* old = WorldEvents::SetHost(nullptr);
+	// Without a host: no sprite, nothing set.
+	CHECK_EQ(-1, WorldEvents::CreatureSpriteHeight(1, 2, 3));
+	WorldEvents::SetFlagSprites(true);
+	PlayerPresentation::SetHotKey(1, 2);
+	CHECK(seen.empty());
+	const WorldEvents::Host view{
+		.CreatureSpriteHeight = [](int body, int action, int direction) { return body * 100 + action * 10 + direction; },
+		.SetFlagSprites = [](bool bTae) { seen.push_back(bTae ? "flag tae" : "flag original"); },
+	};
+	WorldEvents::SetHost(&view);
+	CHECK_EQ(123, WorldEvents::CreatureSpriteHeight(1, 2, 3));
+	WorldEvents::SetFlagSprites(true);
+	WorldEvents::SetFlagSprites(false);
+	PlayerPresentation::Host keys{};
+	keys.SetHotKey = [](int hotkey, int id) { seen.push_back("hot key " + std::to_string(hotkey) + "|" + std::to_string(id)); };
+	const PlayerPresentation::Host* oldKeys = PlayerPresentation::SetHost(&keys);
+	PlayerPresentation::SetHotKey(1, 2);
+	PlayerPresentation::SetHost(oldKeys);
+	WorldEvents::SetHost(old);
+	CHECK(seen == std::vector<std::string>({"flag tae", "flag original", "hot key 1|2"}));
 }

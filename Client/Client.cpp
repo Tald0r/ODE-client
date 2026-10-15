@@ -147,7 +147,7 @@ CMessageStringTable g_MessageStringTable;
 //-----------------------------------------------------------------------------
 
 // REMOVED: nProtect anti-cheat code (SDL migration - no longer needed)
-HWND				g_hWnd;
+// g_hWnd is gamemodel's (ClientMode.cpp) since task 4.253.
 HINSTANCE			g_hInstance;
 // g_x and g_y are InputState.cpp's (gamemodel, task 4.247).
 //bool				g_bHALAvailable = false;
@@ -228,9 +228,8 @@ struct REALSERVER_INFO
 };
 // 2004, 7, 14, sobeit add end
 
-BYTE g_macAddress[6];
+// g_macAddress is gamemodel's (ClientMode.cpp) since task 4.253.
 extern void CheckMacScreenMode();
-extern BOOL GetMacAddressFromSock();
 // The debug kit's start-up (DebugKit.h defines DEBUG_INFO only with
 // WINDOWS_SCREEN_DISPLAY, which no build sets). It fills the debug globals
 // above from DebugInfo.ini; moved from DebugKit.cpp with task 4.206, so the
@@ -1666,7 +1665,6 @@ InitApp(int nCmdShow)
 #endif
 // 2004, 8, 27, sobeit add start - mac address 체크 및, mac screen mode 체크
 	memset( g_macAddress, 0, 6*sizeof(BYTE) );
-	//if(GetMacAddressFromSock())
 	if(GetMacAddressFromNetBIOS(g_macAddress))
 	{
 #if !defined(OUTPUT_DEBUG) && !defined(_DEBUG) && !defined(__DEBUG_OUTPUT__)

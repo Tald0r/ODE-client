@@ -31,6 +31,10 @@ class MScreenEffectManager : public MEffectManager {
 		static const MScreenEffectManagerHost* s_pHost;
 };
 
+// The effects drawn over the inventory window (task 4.253: defined here,
+// GameMain.cpp's until then).
+extern MScreenEffectManager*	g_pInventoryEffectManager;
+
 #endif
 
 
