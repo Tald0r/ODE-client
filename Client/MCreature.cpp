@@ -6976,7 +6976,11 @@ MCreature::UpdateStatus()
 			if (g_FrameNow >= m_RegenBonusNextTime)
 			{		
 				if( GetStatus( MODIFY_SILVER_DAMAGE ) > 0 && IsInCasket() )
-					SetStatus( MODIFY_SILVER_DAMAGE, max( 0, GetStatus( MODIFY_SILVER_DAMAGE ) - m_RegenBonusAmount ) );
+				{
+					// Down to none: the damage is unsigned, so the difference is taken signed.
+					const long long left = static_cast<long long>(GetStatus( MODIFY_SILVER_DAMAGE )) - m_RegenBonusAmount;
+					SetStatus( MODIFY_SILVER_DAMAGE, left > 0 ? static_cast<DWORD>(left) : 0 );
+				}
 				else
 					SetStatus( MODIFY_CURRENT_HP, GetStatus(MODIFY_CURRENT_HP)+m_RegenBonusAmount );
 
