@@ -46,6 +46,8 @@
 #include "CUsingColorSetTable.h"
 #include "MZoneTable.h"
 #include "DXLib/CSoundPartManager.h"
+#include "AcceleratorDef.h"
+#include "InputCodes.h"
 #include "SpriteLib/SpriteLibBackend.h"
 
 #include <cstdio>
@@ -88,6 +90,23 @@ std::string Fade(signed char start, signed char end, signed char step, BYTE red,
 
 MonotonicClock::TimePoint now;
 MonotonicClock::TimePoint Clock() { return now; }
+
+// What the loading's Inits leave in their objects' protected tables, read
+// through member pointers named in a derived class.
+struct DialogPeek : UIDialog
+{
+	static char** PCTalk(UIDialog& dialog) { return (dialog.*(&DialogPeek::m_ppDlgMessage))[MESSAGE_PCTALK]; }
+};
+struct GeneratorPeek : MEffectGeneratorTable
+{
+	static int Count(MEffectGeneratorTable& table)
+	{
+		int count = 0;
+		for (MEffectGenerator* pGenerator : table.*(&GeneratorPeek::m_pEffectGenerator))
+			if (pGenerator != nullptr) count++;
+		return count;
+	}
+};
 
 std::string Path(const std::string& key) { return std::string(kDir) + "/" + key; }
 
@@ -367,6 +386,11 @@ TEST(GameInitInfo, WithEveryFileThereEverythingIsMade)
 	CHECK(failures.empty());
 	// The packets' item table is made once.
 	CHECK(calls == std::vector<std::string>({"packet items"}));
+	// The default key bindings, the talk box's line and the effect
+	// generators.
+	CHECK(g_pKeyAccelerator != nullptr && g_pKeyAccelerator->GetKey(ACCEL_F1) == DIK_F1);
+	CHECK(g_pUIDialog != nullptr && DialogPeek::PCTalk(*g_pUIDialog) != nullptr);
+	CHECK(g_pEffectGeneratorTable != nullptr && GeneratorPeek::Count(*g_pEffectGeneratorTable) > 0);
 	// Made, with nothing to load.
 	CHECK(g_pKeyAccelerator != nullptr && g_pWarManager != nullptr && g_pTimeItemManager != nullptr);
 	CHECK(g_pAcceleratorManager != nullptr && g_pModifyStatusManager != nullptr && g_pEffectGeneratorTable != nullptr);
