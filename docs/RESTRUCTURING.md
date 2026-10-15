@@ -7156,6 +7156,11 @@ rounds settled* for the host rules). Test fixtures share
   >     `max(0, delayFrame - 20)` was meant to stop at 0. The frames are
   >     unsigned, so under twenty it wrapped to about four billion frames.
   >     It stops at 0.
+  >   - In a coffin, the regeneration bonus heals silver damage with
+  >     `max(0, damage - bonus)`, and the damage is unsigned: less damage
+  >     than the bonus wrapped to about four billion. It stops at 0
+  >     (found by Linux CI's warning budget, a `-Wsign-compare` in
+  >     Platform.h's `max`).
   >
   > R1 is 25 Windows / 23 Ninja.
   - Owner: membership, R1, `test_creature.cpp`: 60 tests. The hosts

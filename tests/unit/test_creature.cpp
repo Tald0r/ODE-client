@@ -2058,3 +2058,32 @@ TEST(Creature, ANewCreatureIsNotInTheParty)
 	pCreature->~MCreature();
 	g_pParty = oldParty;
 }
+
+TEST(Creature, ACoffinHealsSilverDamageDownToNone)
+{
+	Scene scene;
+	scene.Tribe(6, CREATURETRIBE_VAMPIRE);
+	const MonotonicClock::TimePoint oldNow = g_FrameNow;
+	g_FrameNow = MonotonicClock::TimePoint() + MonotonicClock::Millis(1000);
+	MCreature creature;
+	Place(creature, 6);
+	creature.SetStatus(MODIFY_MAX_HP, 1000);
+	creature.SetStatus(MODIFY_CURRENT_HP, 100);
+	creature.AddCasketSoon(1);
+	CHECK(creature.IsInCasket());
+	// In the coffin, the regeneration (3) and then its bonus (5) go to the
+	// silver damage first.
+	creature.SetStatus(MODIFY_SILVER_DAMAGE, 10);
+	creature.SetRegen(3, 1000);
+	creature.SetRegenBonus(5, 1000);
+	creature.UpdateStatus();
+	CHECK_EQ(2, int(creature.GetStatus(MODIFY_SILVER_DAMAGE)));
+	CHECK_EQ(100, int(creature.GetStatus(MODIFY_CURRENT_HP)));
+	// Less damage left than the bonus: none left, not a wrap.
+	creature.SetStatus(MODIFY_SILVER_DAMAGE, 4);
+	creature.SetRegen(3, 1000);
+	creature.SetRegenBonus(5, 1000);
+	creature.UpdateStatus();
+	CHECK_EQ(0, int(creature.GetStatus(MODIFY_SILVER_DAMAGE)));
+	g_FrameNow = oldNow;
+}
