@@ -787,7 +787,7 @@ TEST(FakeCreature, AGhostWandersInThePlayersView)
 	// Too far from the player (more than 10 across or 15 down): it stands.
 	CHECK_EQ(10, x1 + 1 - 40);
 	CHECK_EQ(15, y1 + 1 - 40);
-	for (const Cell cell : {Cell(x1 + 2, 40), Cell(40, y1 + 2)})
+	for (const Cell& cell : {Cell(x1 + 2, 40), Cell(40, y1 + 2)})
 	{
 		MFakeCreature lost;
 		Place(lost, CREATURETYPE_GHOST, cell.first, cell.second);
@@ -802,7 +802,7 @@ TEST(FakeCreature, AGhostWandersInThePlayersView)
 	g_SECTOR_HEIGHT = 32;
 	g_SECTOR_SKIP_PLAYER_LEFT = -10;
 	g_SECTOR_SKIP_PLAYER_UP = -16;
-	for (const Cell cell : {Cell(40 - 10 - 2, 40), Cell(40, 40 - 16 - 2)})
+	for (const Cell& cell : {Cell(40 - 10 - 2, 40), Cell(40, 40 - 16 - 2)})
 	{
 		MFakeCreature wide;
 		Place(wide, CREATURETYPE_GHOST, cell.first, cell.second);
