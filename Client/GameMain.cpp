@@ -181,7 +181,7 @@ bool				g_bZoneSmallLoadImage = false;
 MZone*				g_pZoneLarge = NULL;				
 MZone*				g_pZoneSmall = NULL;
 // g_bZoneSafe, g_nZoneLarge, g_nZoneSmall and g_bZonePlayerInLarge are ZoneFlags.cpp's.
-AmbientSoundState g_ZoneAmbientSounds;
+// g_ZoneAmbientSounds is AmbientSoundState.cpp's (gamemodel, task 4.246).
 bool				g_bWatchMode = false;
 
 
@@ -1868,6 +1868,21 @@ ReleaseGameObject()
 }
 
 //-----------------------------------------------------------------------------
+// Get Near Sprite Sets
+//-----------------------------------------------------------------------------
+// The tile and image-object sprites near the player, from the zone (whose
+// sets are std::sets since task 4.246) into the view's set managers.
+//-----------------------------------------------------------------------------
+static void
+GetNearSpriteSets(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObjectSSM)
+{
+	std::set<TYPE_SPRITEID> tileIDs, imageObjectIDs;
+	g_pZone->GetNearSpriteSet(tileIDs, imageObjectIDs, g_pPlayer->GetX(), g_pPlayer->GetY());
+	for (TYPE_SPRITEID id : tileIDs) TileSSM.Add(id);
+	for (TYPE_SPRITEID id : imageObjectIDs) ImageObjectSSM.Add(id);
+}
+
+//-----------------------------------------------------------------------------
 // Load Zone
 //-----------------------------------------------------------------------------
 // n번째 zone을 load한다.
@@ -2117,7 +2132,7 @@ LoadZone(int n)
 			
 			CSpriteSetManager TileSSM;
 			CSpriteSetManager ImageObjectSSM;
-			g_pZone->GetNearSpriteSet(TileSSM, ImageObjectSSM, g_pPlayer->GetX(), g_pPlayer->GetY());
+			GetNearSpriteSets(TileSSM, ImageObjectSSM);
 			if (!g_pTopView->LoadFromFileTileAndImageObjectSet(TileSSM, ImageObjectSSM)) {
 				LOG_ERROR("Rejected zone sprite preload: zone=%d", n);
 				SetMode(MODE_QUIT);
@@ -2338,7 +2353,7 @@ LoadZone(int n)
 			
 			CSpriteSetManager TileSSM;
 			CSpriteSetManager ImageObjectSSM;
-			g_pZone->GetNearSpriteSet(TileSSM, ImageObjectSSM, g_pPlayer->GetX(), g_pPlayer->GetY());
+			GetNearSpriteSets(TileSSM, ImageObjectSSM);
 			if (!g_pTopView->LoadFromFileTileAndImageObjectSet(TileSSM, ImageObjectSSM)) {
 				LOG_ERROR("Rejected zone sprite preload: zone=%d", n);
 				SetMode(MODE_QUIT);

@@ -210,6 +210,11 @@ struct Host
 	// Whether the player stands somewhere safe: 0 not, 1 safe for its
 	// race, 2 safe for everyone; 0 without a host.
 	int (*IsInSafeSector)() = nullptr;
+	// The player's position and status sent to its party (MPlayer.cpp's
+	// SendPositionInfoToParty and SendStatusInfoToParty; the zone sends
+	// both when the player enters it). Nothing without a host.
+	void (*SendPositionInfoToParty)() = nullptr;
+	void (*SendStatusInfoToParty)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -282,5 +287,7 @@ bool IsInvisible();
 void CalculateLightSight();
 void SetSight(int sight);
 int IsInSafeSector();
+void SendPositionInfoToParty();
+void SendStatusInfoToParty();
 
 }

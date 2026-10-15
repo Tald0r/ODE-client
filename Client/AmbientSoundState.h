@@ -47,3 +47,8 @@ private:
 	MonotonicClock::TimePoint m_NextSound{};
 	bool m_PropellerPlaying = false;
 };
+
+// The zone's ambient sounds: MZone::UpdateSound advances it, GameMain
+// resets it on a zone load and when the sounds stop (gamemodel's since task
+// 4.246; it was GameMain.cpp's).
+extern AmbientSoundState g_ZoneAmbientSounds;

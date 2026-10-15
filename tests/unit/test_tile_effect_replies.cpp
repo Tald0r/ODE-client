@@ -50,6 +50,9 @@ const PlayerState::Host player = []() {
 const ZoneState::Host zone = []() {
 	ZoneState::Host host{};
 	host.Exists = []() { return zoneExists; };
+	// A zone of 100 by 80 sectors: a tile past it has no sector to mark.
+	host.GetWidth = []() { return 100; };
+	host.GetHeight = []() { return 80; };
 	host.GetCreature = [](TYPE_OBJECTID id) { return id == haloed.id ? Handle(haloed) : nullptr; };
 	host.SetGroundElemental = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { calls.push_back("ground elemental|" + N(x) + "," + N(y)); };
 	host.SetDarknessForbidden = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { calls.push_back("darkness forbidden|" + N(x) + "," + N(y)); };
@@ -113,13 +116,13 @@ struct World : GameModelWorld
 
 const int kDuration = 30;
 
-void Receive(int effect, ObjectID_t objectID = 0)
+void Receive(int effect, ObjectID_t objectID = 0, Coord_t x = 40, Coord_t y = 41)
 {
 	GCAddEffectToTile packet;
 	packet.setEffectID(static_cast<EffectID_t>(effect));
 	packet.setDuration(kDuration);
 	packet.setObjectID(objectID);
-	packet.setXY(40, 41);
+	packet.setXY(x, y);
 	GCAddEffectToTileHandler::execute(&packet, nullptr);
 }
 
@@ -263,4 +266,21 @@ TEST(TileEffectReplies, AnEffectPastTheEffectStatusesShowsNothing)
 	Receive(600);
 	Receive(65535);
 	CHECK(calls.empty());
+}
+
+TEST(TileEffectReplies, ATileOffTheZoneMarksNothing)
+{
+	World world;
+	// The server's tile goes on unchecked: past the zone's edge there is
+	// no sector to mark (the adapters index the zone's sectors by it).
+	for (const std::pair<Coord_t, Coord_t>& tile : {std::pair<Coord_t, Coord_t>{100, 41}, {40, 80}, {255, 255}})
+	{
+		Receive(EFFECTSTATUS_GROUND_ELEMENTAL_AURA, 0, tile.first, tile.second);
+		Receive(EFFECTSTATUS_DARKNESS_FORBIDDEN, 0, tile.first, tile.second);
+		Receive(EFFECTSTATUS_FURY_OF_GNOME, 0, tile.first, tile.second);
+	}
+	CHECK(calls.empty());
+	// The last sector of each edge is marked.
+	Receive(EFFECTSTATUS_GROUND_ELEMENTAL_AURA, 0, 99, 79);
+	CHECK(calls == std::vector<std::string>({"ground elemental|99,79"}));
 }

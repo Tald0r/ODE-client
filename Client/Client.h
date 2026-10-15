@@ -148,8 +148,7 @@ extern bool					g_bZoneSmallLoadImage;
 extern MZone*				g_pZoneLarge;
 extern MZone*				g_pZoneSmall;
 extern bool					g_bZonePlayerInLarge;
-class AmbientSoundState;
-extern AmbientSoundState g_ZoneAmbientSounds;
+// g_ZoneAmbientSounds: AmbientSoundState.h (gamemodel's since task 4.246).
 
 // EffectManager
 extern MScreenEffectManager*	g_pInventoryEffectManager;

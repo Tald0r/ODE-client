@@ -29,4 +29,9 @@ std::uint32_t ChattingColor()
 	return s_Host && s_Host->ChattingColor ? s_Host->ChattingColor() : 0x00FFFFFFu;
 }
 
+int PersonalShopUpdateTime()
+{
+	return s_Host && s_Host->PersonalShopUpdateTime ? s_Host->PersonalShopUpdateTime() : 0;
+}
+
 }

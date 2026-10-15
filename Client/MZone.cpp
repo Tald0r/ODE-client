@@ -13,7 +13,7 @@
 #include "MSector.h"
 #include "MCreature.h"
 #include "MFakeCreature.h"
-#include "MPlayer.h"
+#include "PlayerStateHost.h"
 #include "MImageObject.h"
 #include "MShadowObject.h"
 #include "MAnimationObject.h"
@@ -24,23 +24,25 @@
 #include "MEffect.h"
 #include "MZone.h"
 // Note: MTopView.h removed - MZone doesn't actually use MTopView (decoupled for demo/game flexibility)
-#include "UserOption.h"
+#include "GameOptionsHost.h"
 #include "MEffectGeneratorTable.h"
 #include "MZoneTable.h"
 #include "AmbientSoundState.h"
-#include "CMessageArray.h"
-#include "DebugInfo.h"
-#include "ServerInfo.h"
-#include "Client.h"
+#include "WorldEventsHost.h"
+#include "DebugLog.h"
+#include "ViewSectors.h"
+#include "MViewDef.h"
+#include "FrameClock.h"
+#include "ZoneFlags.h"
+#include "Packet/Properties.h"
 #include "EffectSpriteTypeDef.h"
+#include "EffectSpriteTypeHelper.h"
 #include "SoundDef.h"
 #include "MEffectSpriteTypeTable.h"
 #include "MHelicopterManager.h"
 #include "MParty.h"
-#include "MTestDef.h"
 #include <fstream>
 #include "SkillDef.h"
-#include "MinTr.h"
 #include "MNPC.h"
 #include "MGuildType.h"
 #include "MEffectStatusDef.h"
@@ -55,25 +57,8 @@
 //----------------------------------------------------------------------
 MZone*				g_pZone				= NULL;
 
-extern HWND					g_hWnd;
 
-extern void		SendPositionInfoToParty();
-extern void		SendStatusInfoToParty();
 //GameNew Mode  add by sonc 2006.9.27
-extern	LONG g_SECTOR_WIDTH;
-extern	LONG g_SECTOR_HEIGHT;
-extern	LONG g_SECTOR_WIDTH_HALF;
-extern	LONG g_SECTOR_HEIGHT_HALF;
-extern	LONG g_SECTOR_SKIP_PLAYER_LEFT;
-extern	LONG g_SECTOR_SKIP_PLAYER_UP;
-extern	LONG g_TILESURFACE_SECTOR_WIDTH;
-extern	LONG g_TILESURFACE_SECTOR_HEIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_DOWN;
-extern	LONG g_TILESURFACE_WIDTH;
-extern	LONG g_TILESURFACE_HEIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 //end 
 #ifdef __METROTECH_TEST__
 	extern int		g_iSpeed;
@@ -87,7 +72,7 @@ extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 //	#define OUTPUT_DEBUG_UPDATE_EFFECT
 #endif
 
-// ImageObject에 대한 정보 출력
+// Print info about ImageObject
 //#ifdef __OUTPUT_IMAGEOBJECT__
 
 #define	VISION_SECTOR_WIDTH_HALF				12
@@ -98,7 +83,7 @@ extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 #define NEW_VISION_SECTOR_HEIGHT_HALF_DOWN		14
 
 //----------------------------------------------------------------------
-// Is RelicTable [성물수정]
+// Is RelicTable [relic fix]
 //----------------------------------------------------------------------
 bool
 IsRelicTable( MItem* pItem )
@@ -116,13 +101,13 @@ IsRelicTable( MItem* pItem )
 }
 
 //----------------------------------------------------------------------
-// define function ㅋㅋ
+// define function
 //----------------------------------------------------------------------
 #define	CheckCreatureInDarkness( sector, x, y )						\
 		{															\
-			if (g_pPlayer->GetX()==x && g_pPlayer->GetY()==y)		\
+			if (PlayerState::Creature()->GetX()==x && PlayerState::Creature()->GetY()==y)		\
 			{														\
-				g_pPlayer->CheckInDarkness();						\
+				PlayerState::Creature()->CheckInDarkness();						\
 			}														\
 																	\
 			int numCreature = sector.GetCreatureSize();				\
@@ -163,7 +148,7 @@ IsRelicTable( MItem* pItem )
 		}
 				
 //----------------------------------------------------------------------
-// RemoveSectorEffect [새기술9]
+// RemoveSectorEffect [new skill 9]
 //----------------------------------------------------------------------
 #define RemoveSectorEffect( sX, sY, id )						\
 		{														\
@@ -287,14 +272,14 @@ void
 MZone::Release()
 {
 	//---------------------------------
-	// player 위치 제거
+	// remove player position
 	//---------------------------------
 	//m_pPlayer = NULL;
 
 	DEBUG_ADD( "Release ImageObject" );
 	
 	//---------------------------------
-	// ImageObject 제거
+	// remove ImageObject
 	//---------------------------------
 	IMAGEOBJECT_MAP::iterator iImageObject = m_mapImageObject.begin();
 
@@ -314,12 +299,12 @@ MZone::Release()
 	DEBUG_ADD( "Start Release Object" );
 	
 	//---------------------------------
-	// object들 제거
+	// remove objects
 	//---------------------------------
 	ReleaseObject();
 
 	//---------------------------------
-	// Obstacle 제거
+	// remove Obstacle
 	//---------------------------------
 	/*
 	OBSTACLE_LIST::iterator iObstacle = m_listObstacle.begin();
@@ -338,7 +323,7 @@ MZone::Release()
 	DEBUG_ADD_FORMAT( "MZone::Release() - %d x %d", m_Width, m_Height);
 
 	//---------------------------------
-	// sector 제거
+	// remove sector
 	//---------------------------------	
 	if (m_ppSector!=NULL)
 	{
@@ -363,7 +348,7 @@ MZone::Release()
 //----------------------------------------------------------------------
 // Release Object
 //----------------------------------------------------------------------
-// instance object들을 제거한다.
+// remove the instance objects.
 //----------------------------------------------------------------------
 void
 MZone::ReleaseObject()
@@ -371,7 +356,7 @@ MZone::ReleaseObject()
 	m_HelicopterManager.Release();
 
 	//---------------------------------
-	// map에 있는 Creature제거
+	// remove Creatures in the map
 	//---------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseCreature. size=%d", m_mapCreature.size());
 	
@@ -382,7 +367,7 @@ MZone::ReleaseObject()
 	while (iCreature != m_mapCreature.end())
 	{
 		pCreature = (*iCreature).second;
-		// player는 지우지 않는다.
+		// do not delete the player
 		if (pCreature!=NULL && pCreature->GetClassType()!=MCreature::CLASS_PLAYER)
 		{
 			DEBUG_ADD_FORMAT("RemoveCreature: [%s] id=%d, (%d, %d)", pCreature->GetName(), pCreature->GetID(), pCreature->GetX(), pCreature->GetY());
@@ -400,7 +385,7 @@ MZone::ReleaseObject()
 			}
 			*/
 			
-			// sector에서 제거
+			// remove from sector
 			if (m_ppSector!=NULL)
 			{
 				int id = pCreature->GetID();
@@ -469,7 +454,7 @@ MZone::ReleaseObject()
 	m_mapCreature.clear();
 
 	//---------------------------------
-	// map에 있는 FakeCreature제거
+	// remove FakeCreatures in the map
 	//---------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseFakeCreature. size=%d", m_mapFakeCreature.size());
 	
@@ -488,7 +473,7 @@ MZone::ReleaseObject()
 
 
 	//---------------------------------
-	// map에 있는 Item제거
+	// remove Items in the map
 	//---------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseItem. size=%d", m_mapItem.size());
 	
@@ -511,12 +496,12 @@ MZone::ReleaseObject()
 				MSector& sector = *pItemSector;
 				sector.RemoveItem();
 
-				// 혹시 문제가 있을까봐.. 시체 정리..
+				// just in case there is a problem.. clean up corpses..
 				if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 				{
 					sector.UnSetBlockServerGround();
 
-					// [성물수정]
+					// [relic fix]
 					if (IsRelicTable(pItem))
 					{
 						sector.UnSetBlockGround();
@@ -532,7 +517,7 @@ MZone::ReleaseObject()
 	m_mapItem.clear();
 
 	//---------------------------------
-	// Effect 제거
+	// remove Effect
 	//---------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseEffect. size=%d", m_mapEffect.size());
 	
@@ -544,9 +529,11 @@ MZone::ReleaseObject()
 		pEffect = iEffect->second;
 		if (pEffect != NULL)
 		{
-			if (m_ppSector!=NULL)
+			// A chasing effect may be off the map (the zone keeps those): it
+			// is in no sector.
+			if (SectorAt(pEffect->GetX(), pEffect->GetY())!=NULL)
 			{
-				// [새기술9]
+				// [new skill 9]
 				RemoveSectorEffect( pEffect->GetX(), pEffect->GetY(), pEffect->GetID() );				
 			}
 
@@ -557,7 +544,7 @@ MZone::ReleaseObject()
 	m_mapEffect.clear();
 
 	//---------------------------------
-	// Ground Effect 제거
+	// remove Ground Effect
 	//---------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseGroundEffect. size=%d", m_mapGroundEffect.size());
 	
@@ -576,14 +563,14 @@ MZone::ReleaseObject()
 
 
 	//---------------------------------
-	// Sound 제거
+	// remove Sound
 	//---------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseSound. size=%d", m_DelayedSounds.GetSize());
 	m_DelayedSounds.Clear();
 
 	// 2004, 11, 29, sobeit add start
 	//-----------------------------------------------
-	// wait effect list 삭제...
+	// delete wait effect list...
 	//-----------------------------------------------
 	DEBUG_ADD_FORMAT("MZone::ReleaseWaitEffect. size=%d", m_listWaitEffect.size());
 	WAIT_EFFECT_LIST::iterator iWaitEffect = m_listWaitEffect.begin();
@@ -613,7 +600,7 @@ bool
 MZone::SaveToFileSectorSound(std::ofstream& file)
 {
 	//-----------------------------------------------------------
-	// 크기
+	// size
 	//-----------------------------------------------------------
 	file.write((const char*)&m_Width, SIZE_SECTORPOSITION);
 	file.write((const char*)&m_Height, SIZE_SECTORPOSITION);
@@ -631,10 +618,10 @@ MZone::SaveToFileSectorSound(std::ofstream& file)
 
 			int num = static_cast<int>(listSound.size());
 
-			// 한 Sector에 있는 sound의 개수 저장
+			// save the number of sounds in one Sector
 			file.write((const char*)&num, 4);
 
-			// 각 sound저장
+			// save each sound
 			while (iSound != listSound.end())
 			{
 				const SECTORSOUND_INFO& info = *iSound;
@@ -650,12 +637,12 @@ MZone::SaveToFileSectorSound(std::ofstream& file)
 	//-----------------------------------------------------------
 	// MZoneSoundTable
 	//-----------------------------------------------------------
-	// 좀.. 뭐하지만.. - -;
-	// 암튼 편의상(-_-;) 같이 넣어버린다. ㅋㅋ..
+	// a bit.. awkward.. (sigh)
+	// anyway, for convenience (sigh) we put them together too..
 	//-----------------------------------------------------------
 	bool bExistZoneTable = (g_pZoneTable!=NULL);
 
-	// 체크용..
+	// for checking..
 	file.write((const char*)&bExistZoneTable, 1);
 
 	if (bExistZoneTable)
@@ -674,9 +661,9 @@ MZone::SaveToFileSectorSound(std::ofstream& file)
 //----------------------------------------------------------------------
 // Load From File SectorSound
 //----------------------------------------------------------------------
-// Width*Height로 크기 체크하고.
-// SectorSoundInfo를 Loading하고
-// //MZoneSoundTable을 Loading한다.
+// check the size with Width*Height, and
+// load SectorSoundInfo, and
+// // load the MZoneSoundTable.
 //----------------------------------------------------------------------
 bool		
 MZone::LoadFromFileSectorSound(std::ifstream& file)
@@ -685,16 +672,16 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 
 	/*
 	//---------------------------------------------------------------
-	// Sector에 사운드 정보를 Loading한다.
+	// load the sound info into the Sectors.
 	//---------------------------------------------------------------
 	// test code
 	for (int x=0; x<m_Width; x++)
 	{
 		for (int y=0; y<m_Height; y++)
 		{
-			// ZoneSound 1번이 50,50에서 소리난다고 모든 sector에 정보 추가
-			// 사실 어느 정도 거리가 안되면 추가할 필요는 없다.
-			// 일단 귀찮아서 테스트로.. - -;;
+			// ZoneSound number 1 is heard at 50,50, so add the info to every sector
+			// actually there is no need to add it unless the distance is close enough.
+			// for now, just a test since I could not be bothered.. (sigh)
 			//		DEBUG_ADD_FORMAT("AddSectorSound[%d][%d]", y, x);
 			
 		
@@ -704,7 +691,7 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 	*/
 
 	//-----------------------------------------------------------
-	// 크기
+	// size
 	//-----------------------------------------------------------
 	//TYPE_SECTORPOSITION width, height;
 
@@ -713,8 +700,8 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 
 	//if (m_Width!=width || m_Height!=height)
 	{
-		// Zone크기와 SectorSound정보의 크기가 다른 경우
-		// 절망이다 - -;
+		// when the Zone size and the SectorSound info size differ
+		// hopeless (sigh)
 	//	return false;
 	}
 
@@ -722,32 +709,32 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 	// SectorSoundInfo
 	//-----------------------------------------------------------
 	//
-	// 아래와 같이 정의하고..
+	// define it as follows..
 	//
-	//	 -         : 소리가 나지 않는 Sector
-	//	 A,C,D     : 1개의 SECTORSOUND_INFO가 있는 Sector (각각 소리는 다름)
-	//   B		   : 2개의 SECTORSOUND_INFO가 있는 Sector
-	//   E         : 3개의 SECTORSOUND_INFO가 있는 Sector
+	// -         : a Sector with no sound
+	// A,C,D     : a Sector with 1 SECTORSOUND_INFO (each with a different sound)
+	// B         : a Sector with 2 SECTORSOUND_INFO
+	// E         : a Sector with 3 SECTORSOUND_INFO
 	//   a~z       : SECTORSOUND_INFO
 	//
-	// 한줄을 예로 들자면..
+	// take one line as an example..
 	//
 	// ex) -----AAABBBAAC--DEEEEE---
 	//
-	//	   2						// 한 줄에서의 반복회수 2회(-----AAABBBAAC, --DEEEEE )
-	//                              // 한줄의 끝부분의 소리없는 sector는 무시하면 된다.
+	//	   2						// repeat count in one line: 2 (-----AAABBBAAC, --DEEEEE )
+	//                              // the trailing silent sectors at the end of a line can be ignored.
 	//
-	//      5						// 첫번째 반복. 소리없는 sector수(-----)
-	//       4						// sound종류 ( AAA, BBB, AA, C )
-	//        {3 { 1 a }}			// 3개의 sector( AAA )에  1개의 info
-	//        {3 { 2 b, b' }}		// 3개의 sector( BBB )에  2개의 info
-	//        {2 { 1 a }}			// 2개의 sector( AA )에  1개의 info
-	//        {1 { 1 c }}			// 1개의 sector( C )에  1개의 info
+	//      5						// first repeat. number of silent sectors (-----)
+	//       4						// number of sound kinds ( AAA, BBB, AA, C )
+	//        {3 { 1 a }}			// 1 info for 3 sectors ( AAA )
+	//        {3 { 2 b, b' }}		// 2 infos for 3 sectors ( BBB )
+	//        {2 { 1 a }}			// 1 info for 2 sectors ( AA )
+	//        {1 { 1 c }}			// 1 info for 1 sector ( C )
 	//
-	//      2                       // 두번째 반복. 소리없는 sector수(--)
-	//       2						// sound종류 ( D, EEEE )
-	//        {1 { 1 d }}			// 1개의 sector( D )에  1개의 info
-	//        {5 { 3 e, e', e" }}   // 5개의 sector( EEEEE )에 3개의 info	
+	//      2                       // second repeat. number of silent sectors (--)
+	//       2						// number of sound kinds ( D, EEEE )
+	//        {1 { 1 d }}			// 1 info for 1 sector ( D )
+	//        {5 { 3 e, e', e" }}   // 3 infos for 5 sectors ( EEEEE )
 	//
 	//-----------------------------------------------------------
 	BYTE				num;
@@ -756,7 +743,7 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 	for (int y=0; y<m_Height; y++)
 	{
 		//-----------------------------------------------------------
-		// 반복 회수 : { 0의 개수, 사운드 종류수 * { info * 개수 } }
+		// repeat count : { number of zeros, number of sound kinds * { info * count } }
 		//-----------------------------------------------------------
 		file.read((char*)&num, 1);
 
@@ -764,47 +751,47 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 		int numCount = num;
 		
 		//-----------------------------------------------------------
-		// 반복회수만큼..
+		// repeat as many times as the repeat count..
 		//-----------------------------------------------------------
 		for (int i=0; i<numCount; i++)
 		{
 			//-----------------------------------------------------
-			// 소리 안나는 sector수
+			// number of silent sectors
 			//-----------------------------------------------------
 			file.read((char*)&num, 1);	
-			x += num;	// 좌표 skip
+			x += num;	// skip coordinates
 
 			//-----------------------------------------------------
-			// 이번 반복에서 소리나는 sector들에서 
-			// 연속하지 않은 SECTORSOUND_INFO의 종류수
+			// in the sectors that make sound in this repeat
+			// number of kinds of non-consecutive SECTORSOUND_INFO
 			//-----------------------------------------------------
 			file.read((char*)&num, 1);	
 			int numSoundType = num;
 
 			//-----------------------------------------------------
-			// SECTORSOUND_INFO의 종류수만큼 반복
+			// repeat for each kind of SECTORSOUND_INFO
 			//-----------------------------------------------------
 			for (int j=0; j<numSoundType; j++)
 			{
 				//-----------------------------------------------------
-				// 같은 info를 가진 sector가 몇개나 연속해서 있는가?
+				// how many consecutive sectors have the same info?
 				//-----------------------------------------------------
 				file.read((char*)&num, 1);		// assert( num > 0 );
 				int numSector = num;
 
 				//-----------------------------------------------------
-				// sector에 SECTORSOUND_INFO는 몇개나 있는가?
+				// how many SECTORSOUND_INFO does the sector have?
 				//-----------------------------------------------------
 				file.read((char*)&num, 1);		// assert( num > 0 );
 				int numSound = num;
 
 				//-----------------------------------------------------
-				// sound를 읽으면서 sector들에 연속해서 info를 추가한다.
+				// while reading the sound, add the info to the consecutive sectors.
 				//-----------------------------------------------------
 				for (int n=0; n<numSound; n++)
 				{
 					//-----------------------------------------------------
-					// 하나의 SECTORSOUND_INFO를 load
+					// load one SECTORSOUND_INFO
 					//-----------------------------------------------------
 					info.LoadFromFile( file );
 					
@@ -857,13 +844,13 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 	//-----------------------------------------------------------
 	// MZoneSoundTable
 	//-----------------------------------------------------------
-	// 좀.. 뭐하지만.. - -;
-	// 암튼 편의상(-_-;) 같이 넣어버린다. ㅋㅋ..
+	// a bit.. awkward.. (sigh)
+	// anyway, for convenience (sigh) we put them together too..
 	//-----------------------------------------------------------
 	/*
 	bool bExistZoneTable;
 
-	// 체크용..
+	// for checking..
 	file.read((char*)&bExistZoneTable, 1);
 
 	if (bExistZoneTable)
@@ -886,12 +873,12 @@ MZone::LoadFromFileSectorSound(std::ifstream& file)
 //----------------------------------------------------------------------
 // Load From File
 //----------------------------------------------------------------------
-//   가로 size, 세로 size
+// width size, height size
 //   Zone ID
-//   속성
-//   가로size * 세로size 개의 Sector정보(TileSpriteID, Flag)
-//   Obstacle수,  Obstacle수 * Obstacle 정보
-//   ImageObject수,  ImageObject수 * (ImageObject, ImageObjectSectorInfo)
+// attributes
+// width*height Sector infos (TileSpriteID, Flag)
+// Obstacle count, Obstacle count * Obstacle info
+// ImageObject count, ImageObject count * (ImageObject, ImageObjectSectorInfo)
 //----------------------------------------------------------------------
 bool
 MZone::LoadFromFile(std::ifstream& file)
@@ -931,8 +918,8 @@ MZone::LoadFromFile(std::ifstream& file)
 //----------------------------------------------------------------------
 // Set Player 
 //
-// Player는 Zone의 중심에서 출력된다.
-// Player를 Zone의 Sector에 위치시킨다.
+// The Player is drawn at the center of the Zone.
+// Place the Player on a Sector of the Zone.
 //----------------------------------------------------------------------
 void		
 MZone::SetPlayer()//MPlayer* pPlayer)
@@ -944,23 +931,23 @@ MZone::SetPlayer()//MPlayer* pPlayer)
 	//m_ppSector[m_pPlayer->GetY()][m_pPlayer->GetX()].AddGroundCreature(pPlayer);
 	//m_ppSector[g_pPlayer->GetY()][g_pPlayer->GetX()].AddGroundCreature(&g_pPlayer->;
 
-	// Player의 시야 안의 Sector를 보이게 한다.
+	// make the Sectors within the Player's sight visible
 	//SetSight(g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetLightSight());
 
-	AddCreature( g_pPlayer );
+	AddCreature( PlayerState::Creature() );
 	
 	//---------------------------------------------------------------
-	// 내 정보를 파티에게 보내준다.
+	// send my info to the party.
 	//---------------------------------------------------------------
-	SendPositionInfoToParty();
-	SendStatusInfoToParty();
+	PlayerState::SendPositionInfoToParty();
+	PlayerState::SendStatusInfoToParty();
 }
 
 //----------------------------------------------------------------------
 // Set Player 
 //
-// Player는 Zone의 중심에서 출력된다.
-// Player를 Zone의 Sector에 위치시킨다.
+// The Player is drawn at the center of the Zone.
+// Place the Player on a Sector of the Zone.
 //----------------------------------------------------------------------
 void		
 MZone::RemovePlayer()//MPlayer* pPlayer)
@@ -972,30 +959,30 @@ MZone::RemovePlayer()//MPlayer* pPlayer)
 	//m_ppSector[m_pPlayer->GetY()][m_pPlayer->GetX()].AddGroundCreature(pPlayer);
 	//m_ppSector[g_pPlayer->GetY()][g_pPlayer->GetX()].RemoveGroundCreature(&g_pPlayer->;
 
-	// Player의 시야 안의 Sector를 보이게 한다.
+	// make the Sectors within the Player's sight visible
 	//SetSight(g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetLightSight());
 
-	RemoveCreature( g_pPlayer->GetID() );	
+	RemoveCreature( PlayerState::GetID() );
 }
 
 
 //----------------------------------------------------------------------
-// (x,y) sector에 들어갈 수 있는가?
+// Can it enter sector (x,y)?
 //----------------------------------------------------------------------
-// 갈 수 없는 경우를 모두 check하여 
-// return false를 해줘야 한다.
+// check every case where it cannot go
+// and return false.
 //----------------------------------------------------------------------
 bool		
 MZone::CanMove(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
-	// Zone의 영역을 벗어날 경우
+	// when outside the Zone area
 	if (x>=m_Width || y>=m_Height)
 		return false;
 
 	const MSector& sector = m_ppSector[y][x];
 
 	//------------------------------------------------------
-	// [새기술] Sanctuary 로는 못 움직인다.
+	// [new skill] cannot move into Sanctuary.
 	//------------------------------------------------------
 	if (sector.HasSanctuary()
 		&& creatureType != MCreature::CREATURE_FAKE_NO_BLOCK
@@ -1008,10 +995,10 @@ MZone::CanMove(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 	}
 
 
-	// 이미 다른 Object가 존재하는 경우
+	// when another Object already exists
 	//if (m_ppSector[y][x].IsExistObject())
 	{
-		// objectType에 따라서 달리 check해 준다.
+		// check differently depending on objectType.
 		switch (creatureType)
 		{
 			// UNDERGROUND CREATURE
@@ -1029,7 +1016,7 @@ MZone::CanMove(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 			case MCreature::CREATURE_FAKE_FLYING :
 				return sector.CanStandFlyingCreature();// || sector.IsPortal();
 
-			// fake는 무조건 움직인다.
+			// fake always moves.
 			case MCreature::CREATURE_FAKE_NO_BLOCK :
 				return true;
 		}		
@@ -1044,14 +1031,14 @@ MZone::CanMove(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 void		
 MZone::SetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
-	// Zone의 영역을 벗어날 경우
+	// when outside the Zone area
 	if (x>=m_Width || y>=m_Height)
 		return;
 
-	// 이미 다른 Object가 존재하는 경우
+	// when another Object already exists
 	//if (m_ppSector[y][x].IsExistObject())
 	{
-		// objectType에 따라서 달리 check해 준다.
+		// check differently depending on objectType.
 		switch (creatureType)
 		{
 			// UNDERGROUND CREATURE
@@ -1079,17 +1066,17 @@ void
 MZone::UnSetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	(void)creatureType;
-	// Zone의 영역을 벗어날 경우
+	// when outside the Zone area
 	if (x>=m_Width || y>=m_Height)
 		return;
 
-	// 이미 다른 Object가 존재하는 경우
+	// when another Object already exists
 	//if (m_ppSector[y][x].IsExistObject())
 	{
-		// objectType에 따라서 달리 check해 준다.
+		// check differently depending on objectType.
 		
 		// 2002.3.29
-		// block은 일단 다 푼다. 뭔가 이상해서 - -;
+		// release all blocks for now, since something seemed off (sigh)
 		/*
 		switch (creatureType)
 		{
@@ -1120,25 +1107,25 @@ MZone::UnSetServerBlock(BYTE creatureType, TYPE_SECTORPOSITION x, TYPE_SECTORPOS
 //----------------------------------------------------------------------
 // Move Ground Creature
 //----------------------------------------------------------------------
-// (xo,yo)에 있던 Creature를 (xn,yn)으로 옮긴다.
+// Move the Creature at (xo,yo) to (xn,yn).
 //----------------------------------------------------------------------
 bool		
 MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (xn>=m_Width || yn>=m_Height) return false;
 
-	// Player인 경우 --> 이동하지 않는다.
+	// if it is the Player --> do not move.
 	if (pCreature->GetClassType()==MCreature::CLASS_PLAYER
-		// fake는 이동의 의미가 없다.
+		// fake has no meaning of movement.
 		|| pCreature->IsFakeCreature())
 	{
 		return true;
 	}
 
-	// 이미 이동해있는 경우..
+	// if it has already moved..
 	//if (xo==xn && yo==yn)
 	//	return false;
 
@@ -1148,21 +1135,25 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	int id = pCreature->GetID();
 
 	//------------------------------------------------
-	// sector에서 제거시킨다.
+	// remove from the sector.
 	//------------------------------------------------
-	if (!m_ppSector[yo][xo].RemoveCreature(id))
+	// The cells it is said to be in may lie off the map (a packet's tile
+	// goes on unchecked): no sector there to take it from.
+	MSector* pOldSector = SectorAt(xo, yo);
+	if (pOldSector==NULL || !pOldSector->RemoveCreature(id))
 	{
 		int xs = pCreature->GetServerX();
 		int ys = pCreature->GetServerY();
 
-		if (!m_ppSector[ys][xs].RemoveCreature(id))
+		MSector* pServerSector = SectorAt(xs, ys);
+		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{	
 			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Ground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
 	}
 
 	//------------------------------------------------
-	// sector에 추가시킨다.
+	// add to the sector.
 	//------------------------------------------------
 	if (!m_ppSector[yn][xn].AddGroundCreature( pCreature ))
 	{
@@ -1191,7 +1182,7 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 							if (pExistCreature!=NULL)
 								id = pExistCreature->GetID();
 
-							// remove 실패
+							// remove failed
 							//MessageBox(g_hWnd, "Already Removed![Flying]", NULL, MB_OK);
 							DEBUG_ADD_FORMAT("Already Removed! [Ground] ID=%d (%d,%d) --> (%d,%d) ExistID = %d", pCreature->GetID(), xo,yo,xn,yn, id);
 						}
@@ -1204,7 +1195,7 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	MCreature* pOldCreature = m_ppSector[yn][xn].GetGroundCreature();
 
 	//------------------------------------------------
-	// 아무도 없는 경우
+	// when nobody is there
 	//------------------------------------------------
 	if (pOldCreature == NULL)
 	{
@@ -1215,17 +1206,17 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 		}
 	}
 	//------------------------------------------------
-	// 새로운 자리에 이미 다른 캐릭터가 있는 경우...
+	// when another character is already in the new spot...
 	//------------------------------------------------
 	else
 	{
 		DEBUG_ADD_FORMAT("Already ExistCreature! [Ground] ID=%d (%d,%d) --> (%d,%d) ExistID = %d", pCreature->GetID(), xo,yo,xn,yn, pOldCreature->GetID());				
 		
-		// 먼저 있는 캐릭터가 Player일 경우
+		// when the character there first is the Player
 		//if (pOldCreature->GetID()==g_pPlayer->GetID())
 		//{
-			// 추가 하지 않는다.
-			// 이동하기 전으로 되돌린다.
+			// do not add.
+			// return to the state before moving.
 			// add								
 		//	m_ppSector[xo][yo].AddGroundCreature( pCreature );
 
@@ -1234,7 +1225,7 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 		//else
 		{
 			//------------------------------------------------
-			// 먼저 있던 캐릭터 제거..
+			// remove the character that was there first..
 			//------------------------------------------------						
 			m_ppSector[yn][xn].RemoveGroundCreature( pOldCreature );
 
@@ -1248,19 +1239,19 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 			//------------------------------------------------
 			m_ppSector[yn][xn].AddGroundCreature( pCreature );
 
-			// 확인용
+			// for confirmation
 			pCreature->SetX( xn );
 			pCreature->SetY( yn );
 			
 			//------------------------------------------------
-			// 제거된 캐릭터를 제대로된 위치에 추가한다.
+			// add the removed character at the correct position.
 			//------------------------------------------------
 			if (pOldCreature!=NULL)
 			{
 				int x = pOldCreature->GetServerX();
 				int y = pOldCreature->GetServerY();
 				
-				// 살아있고.. 좌표가 다른 경우..
+				// if alive.. and the coordinates differ..
 				if (x!=xn || y!=yn)
 				{
 					if (pOldCreature->IsAlive())					
@@ -1284,25 +1275,25 @@ MZone::MoveGroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 //----------------------------------------------------------------------
 // Move Flying Creature
 //----------------------------------------------------------------------
-// (xo,yo)에 있던 FlyingCreature를 (xn,yn)으로 옮긴다.
+// Move the FlyingCreature at (xo,yo) to (xn,yn).
 //----------------------------------------------------------------------
 bool		
 MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (xn>=m_Width || yn>=m_Height) return false;
 
-	// Player인 경우 --> 이동하지 않는다.
+	// if it is the Player --> do not move.
 	if (pCreature->GetClassType()==MCreature::CLASS_PLAYER
-		// fake는 이동의 의미가 없다.
+		// fake has no meaning of movement.
 		|| pCreature->IsFakeCreature())
 	{
 		return true;
 	}
 
-	// 이미 이동해있는 경우..
+	// if it has already moved..
 	//if (xo==xn && yo==yn)
 	//	return false;
 
@@ -1311,21 +1302,25 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	int id = pCreature->GetID();
 
 	//------------------------------------------------
-	// sector에서 제거시킨다.
+	// remove from the sector.
 	//------------------------------------------------
-	if (!m_ppSector[yo][xo].RemoveCreature(id))
+	// The cells it is said to be in may lie off the map (a packet's tile
+	// goes on unchecked): no sector there to take it from.
+	MSector* pOldSector = SectorAt(xo, yo);
+	if (pOldSector==NULL || !pOldSector->RemoveCreature(id))
 	{
 		int xs = pCreature->GetServerX();
 		int ys = pCreature->GetServerY();
 
-		if (!m_ppSector[ys][xs].RemoveCreature(id))
+		MSector* pServerSector = SectorAt(xs, ys);
+		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{	
 			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Flying] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
 	}
 
 	//------------------------------------------------
-	// sector에 추가시킨다.
+	// add to the sector.
 	//------------------------------------------------
 	if (!m_ppSector[yn][xn].AddFlyingCreature( pCreature ))
 	{
@@ -1333,7 +1328,7 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	}
 
 	/*
-	// remove가 안 된 경우...
+	// when remove failed...
 	if (!m_ppSector[yo][xo].RemoveFlyingCreature(id, pExistCreature))
 	{	
 		if (!m_ppSector[yo][xo].RemoveGroundCreature(id, pExistCreature))
@@ -1354,7 +1349,7 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 							if (pExistCreature!=NULL)
 								id = pExistCreature->GetID();
 
-							// remove 실패
+							// remove failed
 							//MessageBox(g_hWnd, "Already Removed![Flying]", NULL, MB_OK);
 							DEBUG_ADD_FORMAT("Already Removed! [Flying] ID=%d (%d,%d) --> (%d,%d) ExistID = %d", pCreature->GetID(), xo,yo,xn,yn, id);
 						}
@@ -1367,22 +1362,22 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 	// test
 	MCreature* pOldCreature = m_ppSector[yn][xn].GetFlyingCreature();
 
-	// 아무도 없는 경우
+	// when nobody is there
 	if (pOldCreature == NULL)
 	{
 		// add								
 		m_ppSector[yn][xn].AddFlyingCreature( pCreature );
 	}
-	// 새로운 자리에 이미 다른 캐릭터가 있는 경우...
+	// when another character is already in the new spot...
 	else
 	{
 		DEBUG_ADD_FORMAT("Already ExistCreature! [Flying] ID=%d (%d,%d) --> (%d,%d) ExistID = %d", pCreature->GetID(), xo,yo,xn,yn, pOldCreature->GetID());				
 
-		// 먼저 있는 캐릭터가 Player일 경우
+		// when the character there first is the Player
 		//if (pOldCreature->GetID()==g_pPlayer->GetID())
 		//{
-			// 추가 하지 않는다.
-			// 이동하기 전으로 되돌린다.
+			// do not add.
+			// return to the state before moving.
 			// add								
 		//	m_ppSector[xo][yo].AddFlyingCreature( pCreature );
 
@@ -1390,7 +1385,7 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 		//}
 		//else
 		{
-			// 먼저 있던 캐릭터 제거..
+			// remove the character that was there first..
 			m_ppSector[yn][xn].RemoveFlyingCreature( pOldCreature );
 
 			#ifdef OUTPUT_DEBUG
@@ -1401,19 +1396,19 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 			// add								
 			m_ppSector[yn][xn].AddFlyingCreature( pCreature );
 
-			// 확인용
+			// for confirmation
 			pCreature->SetX( xn );
 			pCreature->SetY( yn );
 
 			//------------------------------------------------
-			// 제거된 캐릭터를 제대로된 위치에 추가한다.
+			// add the removed character at the correct position.
 			//------------------------------------------------
 			if (pOldCreature!=NULL)
 			{
 				int x = pOldCreature->GetServerX();
 				int y = pOldCreature->GetServerY();
 				
-				// 살아있고.. 좌표가 다른 경우..
+				// if alive.. and the coordinates differ..
 				if (x!=xn || y!=yn)
 				{
 					if (pOldCreature->IsAlive())					
@@ -1437,25 +1432,25 @@ MZone::MoveFlyingCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SEC
 //----------------------------------------------------------------------
 // Move Ungerground Creature
 //----------------------------------------------------------------------
-// (xo,yo)에 있던 UndergroundCreature를 (xn,yn)으로 옮긴다.
+// Move the UndergroundCreature at (xo,yo) to (xn,yn).
 //----------------------------------------------------------------------
 bool		
 MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYPE_SECTORPOSITION yo, TYPE_SECTORPOSITION xn, TYPE_SECTORPOSITION yn)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (xn>=m_Width || yn>=m_Height) return false;
 
-	// Player인 경우 --> 이동하지 않는다.
+	// if it is the Player --> do not move.
 	if (pCreature->GetClassType()==MCreature::CLASS_PLAYER
-		// fake는 이동의 의미가 없다.
+		// fake has no meaning of movement.
 		|| pCreature->IsFakeCreature())
 	{
 		return true;
 	}
 
-	// 이미 이동해있는 경우..
+	// if it has already moved..
 	//if (xo==xn && yo==yn)
 	//	return false;
 
@@ -1465,21 +1460,25 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 	int id = pCreature->GetID();
 
 	//------------------------------------------------
-	// sector에서 제거시킨다.
+	// remove from the sector.
 	//------------------------------------------------
-	if (!m_ppSector[yo][xo].RemoveCreature(id))
+	// The cells it is said to be in may lie off the map (a packet's tile
+	// goes on unchecked): no sector there to take it from.
+	MSector* pOldSector = SectorAt(xo, yo);
+	if (pOldSector==NULL || !pOldSector->RemoveCreature(id))
 	{
 		int xs = pCreature->GetServerX();
 		int ys = pCreature->GetServerY();
 
-		if (!m_ppSector[ys][xs].RemoveCreature(id))
+		MSector* pServerSector = SectorAt(xs, ys);
+		if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 		{	
 			DEBUG_ADD_FORMAT_WAR("Can't Remove! [Underground] ID=%d (%d,%d) --> (%d,%d)", pCreature->GetID(), xo,yo,xn,yn);
 		}
 	}
 
 	//------------------------------------------------
-	// sector에 추가시킨다.
+	// add to the sector.
 	//------------------------------------------------
 	if (!m_ppSector[yn][xn].AddUndergroundCreature( pCreature ))
 	{
@@ -1487,7 +1486,7 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 	}
 
 	/*
-	// remove가 안 된 경우...
+	// when remove failed...
 	if (!m_ppSector[yo][xo].RemoveUndergroundCreature(id, pExistCreature))
 	{	
 		if (!m_ppSector[yo][xo].RemoveGroundCreature(id, pExistCreature))
@@ -1508,7 +1507,7 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 							if (pExistCreature!=NULL)
 								id = pExistCreature->GetID();
 
-							// remove 실패
+							// remove failed
 							//MessageBox(g_hWnd, "Already Removed![Flying]", NULL, MB_OK);
 							DEBUG_ADD_FORMAT("Already Removed! [Under] ID=%d (%d,%d) --> (%d,%d) ExistID = %d", pCreature->GetID(), xo,yo,xn,yn, id);
 						}
@@ -1521,22 +1520,22 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 	// test
 	MCreature* pOldCreature = m_ppSector[yn][xn].GetUndergroundCreature();
 
-	// 아무도 없는 경우
+	// when nobody is there
 	if (pOldCreature == NULL)
 	{
 		// add								
 		m_ppSector[yn][xn].AddUndergroundCreature( pCreature );
 	}
-	// 새로운 자리에 이미 다른 캐릭터가 있는 경우...
+	// when another character is already in the new spot...
 	else
 	{
 		DEBUG_ADD_FORMAT("Already ExistCreature! [Underground] ID=%d (%d,%d) --> (%d,%d) ExistID = %d", pCreature->GetID(), xo,yo,xn,yn, pOldCreature->GetID());				
 
-		// 먼저 있는 캐릭터가 Player일 경우
+		// when the character there first is the Player
 		//if (pOldCreature->GetID()==g_pPlayer->GetID())
 		//{
-			// 추가 하지 않는다.
-			// 이동하기 전으로 되돌린다.
+			// do not add.
+			// return to the state before moving.
 			// add								
 		//	m_ppSector[xo][yo].AddUndergroundCreature( pCreature );
 
@@ -1545,7 +1544,7 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 		//else
 		{
 			//------------------------------------------------
-			// 먼저 있던 캐릭터 제거..
+			// remove the character that was there first..
 			//------------------------------------------------						
 			m_ppSector[yn][xn].RemoveUndergroundCreature( pOldCreature );
 
@@ -1560,14 +1559,14 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 			m_ppSector[yn][xn].AddUndergroundCreature( pCreature );
 			
 			//------------------------------------------------
-			// 제거된 캐릭터를 제대로된 위치에 추가한다.
+			// add the removed character at the correct position.
 			//------------------------------------------------
 			if (pOldCreature!=NULL)
 			{
 				int x = pOldCreature->GetServerX();
 				int y = pOldCreature->GetServerY();
 				
-				// 살아있고.. 좌표가 다른 경우..
+				// if alive.. and the coordinates differ..
 				if (x!=xn || y!=yn)
 				{
 					if (pOldCreature->IsAlive())					
@@ -1591,8 +1590,8 @@ MZone::MoveUndergroundCreature(MCreature* pCreature, TYPE_SECTORPOSITION xo, TYP
 //----------------------------------------------------------------------
 // Get CreatureID
 //----------------------------------------------------------------------
-// 이름으로 ID를 찾는다.
-// flag : 1 npc뺴고
+// Find the ID by name.
+// flag : 1 excludes npc
 //----------------------------------------------------------------------
 TYPE_OBJECTID		
 MZone::GetCreatureID(const char* pName, int flag) const
@@ -1602,14 +1601,14 @@ MZone::GetCreatureID(const char* pName, int flag) const
 	MCreature* pCreature;
 
 	//------------------------------------------------------
-	// 모든 Creature에 대해서 Action
+	// Action for all Creatures
 	//------------------------------------------------------
 	while (iCreature != m_mapCreature.end())
 	{
 		pCreature = iCreature->second;
 
-		// player가 아닌 경우에..
-		if (pCreature->GetID()!=g_pPlayer->GetID()
+		// when not the player..
+		if (pCreature->GetID()!=PlayerState::GetID()
 			&& strcmp(pCreature->GetName(), pName)==0
 			&& (flag == 0 || (flag == 1 && !pCreature->IsNPC()) )
 			)
@@ -1624,21 +1623,21 @@ MZone::GetCreatureID(const char* pName, int flag) const
 }
 
 //----------------------------------------------------------------------
-// Sector (x,y)에 있는 Creature의 ID를 넘겨준다.
+// Return the ID of the Creature at Sector (x,y).
 //----------------------------------------------------------------------
 
 TYPE_OBJECTID
 MZone::GetCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
-	// 뭔가 있는 sector이면	
+	// if the sector has something
 	MCreature*	pCreature = m_ppSector[y][x].GetGroundCreature();
 
-	// Creature가 있으면
+	// if there is a Creature
 	if (pCreature != NULL)
 	{			
 		return pCreature->GetID();
@@ -1649,20 +1648,20 @@ MZone::GetCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 }
 
 //----------------------------------------------------------------------
-// Sector (x,y)에 있는 Creature를 넘겨준다.
+// Return the Creature at Sector (x,y).
 //----------------------------------------------------------------------
 MCreature*
 MZone::GetCreatureBySector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (x>=m_Width || y>=m_Height) return NULL;
 
-	// 뭔가 있는 sector이면	
+	// if the sector has something
 	MCreature*	pCreature = m_ppSector[y][x].GetGroundCreature();
 
-	// Creature가 있으면
+	// if there is a Creature
 	if (pCreature != NULL)
 	{			
 		return pCreature;
@@ -1672,20 +1671,20 @@ MZone::GetCreatureBySector(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 
 }
 //----------------------------------------------------------------------
-// Sector (x,y)에 있는 FlyingCreature의 ID를 넘겨준다.
+// Return the ID of the FlyingCreature at Sector (x,y).
 //----------------------------------------------------------------------
 TYPE_OBJECTID
 MZone::GetFlyingCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
-	// 뭔가 있는 sector이면	
+	// if the sector has something
 	MCreature*	pCreature = (MCreature*)m_ppSector[y][x].GetFlyingCreature();
 
-	// Creature가 있으면
+	// if there is a Creature
 	if (pCreature != NULL)
 	{			
 		return pCreature->GetID();
@@ -1697,20 +1696,20 @@ MZone::GetFlyingCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 
 
 //----------------------------------------------------------------------
-// Sector (x,y)에 있는 UndergroundCreature의 ID를 넘겨준다.
+// Return the ID of the UndergroundCreature at Sector (x,y).
 //----------------------------------------------------------------------
 TYPE_OBJECTID
 MZone::GetUndergroundCreatureID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
-	// 뭔가 있는 sector이면	
+	// if the sector has something
 	MCreature*	pCreature = (MCreature*)m_ppSector[y][x].GetUndergroundCreature();
 
-	// Creature가 있으면
+	// if there is a Creature
 	if (pCreature != NULL)
 	{			
 		return pCreature->GetID();
@@ -1728,12 +1727,12 @@ void
 MZone::Update()
 {
 	//------------------------------------------
-	// 다른 Creature를 움직인다.
+	// move other Creatures.
 	//------------------------------------------
 	UpdateAllCreature();
 
 	//------------------------------------------
-	// fake Creature를 움직인다.
+	// move fake Creatures.
 	//------------------------------------------
 	UpdateFakeCreature();
 
@@ -1747,7 +1746,7 @@ MZone::Update()
 	#endif
 
 	//------------------------------------------
-	// Effect를 움직인다.
+	// move Effects.
 	//------------------------------------------
 	UpdateWaitEffects();
 	UpdateEffects();
@@ -1758,7 +1757,7 @@ MZone::Update()
 	m_HelicopterManager.Update();
 
 	//------------------------------------------
-	// Sound 처리
+	// Sound handling
 	//------------------------------------------
 	UpdateSound();
 
@@ -1770,9 +1769,9 @@ MZone::Update()
 //----------------------------------------------------------------------
 // Move All Creature
 //----------------------------------------------------------------------
-// Zone에 속한 모든 Creature를 행동하게 한다.
-// Player는 제외
-// Player의 시야를 벗어나면 제거 시켜야 한다.
+// Make all Creatures in the Zone act.
+// except the Player
+// Creatures outside the Player's sight must be removed.
 //----------------------------------------------------------------------
 void
 MZone::UpdateAllCreature()
@@ -1783,7 +1782,7 @@ MZone::UpdateAllCreature()
 
 	//	DEBUG_ADD_FORMAT("[UpdateAllCreature] %d Creature(s)", m_mapCreature.size());
 
-	const DWORD resetDelay = g_pUserOption->persnalShopupdatetime > 0 ? g_pUserOption->persnalShopupdatetime : 0;
+	const DWORD resetDelay = GameOptions::PersonalShopUpdateTime() > 0 ? GameOptions::PersonalShopUpdateTime() : 0;
 	static MonotonicClock::TimePoint nextResetTime = g_FrameNow + MonotonicClock::Millis(resetDelay);
 	bool bResetPersonalShopValue = false;
 	
@@ -1794,7 +1793,7 @@ MZone::UpdateAllCreature()
 	}	
 	
 	//------------------------------------------------------
-	// 모든 Creature에 대해서 Action
+	// Action for all Creatures
 	//------------------------------------------------------
 	while (iCreature != m_mapCreature.end())
 	{
@@ -1817,7 +1816,7 @@ MZone::UpdateAllCreature()
 		
 		//------------------------------------------------------
 		//
-		// Player인 경우
+		// if it is the Player
 		//
 		//------------------------------------------------------
 		if (pCreature->GetClassType()==MCreature::CLASS_PLAYER)
@@ -1829,18 +1828,18 @@ MZone::UpdateAllCreature()
 ////				g_pPlayer->UpdateAttachEffect();
 //			}
 #endif
-			if(g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-				||g_pPlayer->HasEffectStatus( EFFECTSTATUS_DRAGON_EYES )
+			if(PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
+				||PlayerState::HasEffectStatus( EFFECTSTATUS_DRAGON_EYES )
 				)
-				g_pPlayer->Action();
+				PlayerState::Creature()->Action();
 			
-			g_pPlayer->Action();
+			PlayerState::Creature()->Action();
 
 			#ifdef OUTPUT_DEBUG_UPDATE_ZONE
 				DEBUG_ADD_FORMAT("PlAok");
 			#endif
 
-			g_pPlayer->UpdateAttachEffect();
+			PlayerState::Creature()->UpdateAttachEffect();
 
 			#ifdef OUTPUT_DEBUG_UPDATE_ZONE
 				DEBUG_ADD_FORMAT("PlEok");
@@ -1848,7 +1847,7 @@ MZone::UpdateAllCreature()
 		}
 		//------------------------------------------------------
 		//
-		// 다른 Creature인 경우
+		// if it is another Creature
 		//
 		//------------------------------------------------------
 		else
@@ -1860,23 +1859,23 @@ MZone::UpdateAllCreature()
 			pCreature->UpdateAttachEffect();
 
 			//------------------------------------------------------
-			// Creature가 죽은 경우
+			// when the Creature is dead
 			//------------------------------------------------------
-			// Zone에서 제거하고 MCorpse로 바꾼다.
+			// Remove from the Zone and turn into an MCorpse.
 			//------------------------------------------------------
 			/*
 			if (pCreature->IsDead())
 			{
 				#ifdef CONNECT_SERVER
-					// 죽는 동작이 끝난 경우
-					// 또, AttachEffect가 없는 경우..
+					// when the death motion has finished
+					// and there is no AttachEffect either..
 					if (pCreature->GetActionCount()==pCreature->GetActionCountMax()
 						&& !pCreature->IsExistAttachEffect())
 					{	
-						// creature를 시체로 바꾼다.
+						// turn the creature into a corpse.
 						AddCorpseFromCreature( pCreature );
 
-						// map에서 creature를 제거한다.
+						// remove the creature from the map.
 						CREATURE_MAP::iterator	iCreatureTemp = iCreature;
 						iCreature++;
 
@@ -1889,28 +1888,28 @@ MZone::UpdateAllCreature()
 			*/
 
 			//------------------------------------------------------
-			// invisibleCount가 64면 이 캐릭터는 Zone에서 없어져야 한다.
+			// if invisibleCount is 64, this character must disappear from the Zone.
 			//------------------------------------------------------
 			if (pCreature->GetInvisibleCount()==64
 				&& invisibleCount!=64)
 			{
 				//-------------------------------------------------------
-				// snipping mode이면 무조건 없어진다(아무도 볼 수 없으므로)
+				// in sniping mode it always disappears (nobody can see it)
 				//
-				// invisibility이면 player가 slayer이고
-				//					detect_hidden이 없다면 없어진다.
+				// for invisibility, it disappears if the player is a slayer
+				// and has no detect_hidden.
 				//-------------------------------------------------------
 				if (//pCreature->HasEffectStatus(EFFECTSTATUS_SNIPPING_MODE)|| 
 					pCreature->HasEffectStatus(EFFECTSTATUS_INVISIBILITY)
-						&& !g_pPlayer->IsVampire()
-						&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_DETECT_INVISIBILITY)
-						&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_OBSERVING_EYE)
- 						&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_GNOME_WHISPER)
+						&& !PlayerState::Creature()->IsVampire()
+						&& !PlayerState::HasEffectStatus(EFFECTSTATUS_DETECT_INVISIBILITY)
+						&& !PlayerState::HasEffectStatus(EFFECTSTATUS_OBSERVING_EYE)
+						&& !PlayerState::HasEffectStatus(EFFECTSTATUS_GNOME_WHISPER)
 //						&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 						)
 				{
 					//-------------------------------------------------------
-					// player가 아닌 경우
+					// when not the player
 					//-------------------------------------------------------
 					int id			= pCreature->GetID();
 					int x			= pCreature->GetX();
@@ -1919,7 +1918,7 @@ MZone::UpdateAllCreature()
 					int serverY		= pCreature->GetServerY();
 
 					//----------------------------------------
-					// 헬기 제거
+					// remove helicopter
 					//----------------------------------------
 					if (pCreature->IsSlayer())
 					{
@@ -1985,7 +1984,7 @@ MZone::UpdateAllCreature()
 		while(itr != endItr)
 		{
 			MCreature *pCreature = itr->second;
-			if(pCreature->IsPlayer() && pCreature->GetID() != g_pPlayer->GetID() && !pCreature->IsPlayerParty())
+			if(pCreature->IsPlayer() && pCreature->GetID() != PlayerState::GetID() && !pCreature->IsPlayerParty())
 				break;
 			
 			itr++;
@@ -2010,7 +2009,7 @@ MZone::UpdateAllCreature()
 //----------------------------------------------------------------------
 // Create Corpse  From Creature
 //----------------------------------------------------------------------
-// 시체(MCorpse)를 생성하는데.. Creature를 참조한다..
+// Create a corpse (MCorpse).. referring to the Creature..
 //----------------------------------------------------------------------
 /*
 bool
@@ -2023,17 +2022,17 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 	int sY = pCreature->GetY();
 
 	//----------------------------------------
-	// 채팅을 없애준다.
+	// remove the chat.
 	//----------------------------------------
 	pCreature->ClearChatString();
 
 	//----------------------------------------
-	// Sector에서 Creature 제거
+	// Remove the Creature from the Sector
 	//----------------------------------------
-	// player가 아닌 경우..
+	// when not the player..
 	//----------------------------------------
 	bool removed = false;
-	if (id != g_pPlayer->GetID())
+	if (id != PlayerState::GetID())
 	{
 		int serverX = pCreature->GetServerX();
 		int serverY = pCreature->GetServerY();
@@ -2067,7 +2066,7 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 		}
 	}
 
-	// Creature가 제거가 안됐으면...
+	// if the Creature was not removed...
 	#ifdef OUTPUT_DEBUG
 		if (!removed)
 		{			
@@ -2077,10 +2076,10 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 	
 	//----------------------------------------
 	//
-	// 시체를 생성하고 Creature를 설정한다.
+	// create a corpse and set the Creature.
 	//
 	//----------------------------------------
-	// server에서 받은 위치
+	// position received from the server
 	int sSX = pCreature->GetServerX();
 	int sSY = pCreature->GetServerY();
 
@@ -2090,12 +2089,12 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 	pCorpse->SetCreature( pCreature );
 	pCorpse->SetPosition( sSX, sSY );
 
-	// item 개수 설정
+	// set item count
 	pCorpse->SetNumber( pCreature->GetItemCount() );
 
 
 	//----------------------------------------	
-	// 이미 다른 Item이 있다면?? 제거한다.
+	// if another Item is already there?? remove it.
 	//----------------------------------------
 	if (m_ppSector[sSY][sSX].IsExistItem())
 	{
@@ -2119,12 +2118,12 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 	}
 
 	//----------------------------------------
-	// Zone에 Item추가
+	// Add Item to the Zone
 	//----------------------------------------
 	#ifdef OUTPUT_DEBUG
 		if (!AddItem( pCorpse ))
 		{
-			// 음.. 불가능한 경우라고 할 수 있다. - -;
+			// hmm.. you could say this case is impossible. (sigh)
 			DEBUG_ADD_FORMAT("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
 		
 			delete pCorpse;
@@ -2142,14 +2141,14 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 //----------------------------------------------------------------------
 // Create Corpse  From Creature
 //----------------------------------------------------------------------
-// 시체(MCorpse)를 생성하는데.. Creature를 참조한다..
+// Create a corpse (MCorpse).. referring to the Creature..
 //----------------------------------------------------------------------
 bool
 MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 {
 	DEBUG_ADD_FORMAT("Add Corpse From Creature id=%d", id);
 
-	if (id==g_pPlayer->GetID())
+	if (id==PlayerState::GetID())
 	{
 		DEBUG_ADD("No Player Corpse");
 		return false;
@@ -2167,37 +2166,41 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 
 	UnSetServerBlock( pCreature->GetMoveType(), pCreature->GetServerX(), pCreature->GetServerY() );
 
-	// Zone에서 제거한다.
+	// Remove from the Zone.
 	m_mapCreature.erase( iCreature );	
 	
 	int sX = pCreature->GetX();
 	int sY = pCreature->GetY();
 
 	//----------------------------------------
-	// 채팅을 없애준다.
+	// remove the chat.
 	//----------------------------------------
-	if(pCreature->GetCreatureType() != 723) // 각성 질드레..^^: 여기서 지우면 죽으면서 하는 대사가 안나옴..
+	if(pCreature->GetCreatureType() != 723) // Awakened Gilles de Rais.. removing here would drop the line spoken on death..
 		pCreature->ClearChatString();
 
 	//----------------------------------------
-	// Sector에서 Creature 제거
+	// Remove the Creature from the Sector
 	//----------------------------------------
-	// player가 아닌 경우..
+	// when not the player..
 	//----------------------------------------
 	[[maybe_unused]] bool removed = false;
-	if (id != g_pPlayer->GetID()
+	if (id != PlayerState::GetID()
 		&& !pCreature->IsFakeCreature())
 	{
 		//------------------------------------------------
-		// sector에서 제거시킨다.
+		// remove from the sector.
 		//------------------------------------------------
 		removed = true;
-		if (!m_ppSector[sY][sX].RemoveCreature(id))
+		// Either cell may lie off the map (a packet's tile goes on
+		// unchecked): no sector there to take it from.
+		MSector* pSector = SectorAt(sX, sY);
+		if (pSector==NULL || !pSector->RemoveCreature(id))
 		{
 			int serverX = pCreature->GetServerX();
 			int serverY = pCreature->GetServerY();
 
-			if (!m_ppSector[serverY][serverX].RemoveCreature(id))
+			MSector* pServerSector = SectorAt(serverX, serverY);
+			if (pServerSector==NULL || !pServerSector->RemoveCreature(id))
 			{	
 				removed = false;
 				DEBUG_ADD_FORMAT_WAR("Can't RemoveCreatureToCorpse! ID=%d client(%d,%d), server(%d,%d)", pCreature->GetID(), sX,sY,serverX,serverY);
@@ -2236,7 +2239,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 		*/
 	}
 
-	// Creature가 제거가 안됐으면...
+	// if the Creature was not removed...
 	#ifdef OUTPUT_DEBUG
 		if (!removed)
 		{			
@@ -2246,10 +2249,10 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	
 	//----------------------------------------
 	//
-	// 시체를 생성하고 Creature를 설정한다.
+	// create a corpse and set the Creature.
 	//
 	//----------------------------------------
-	// server에서 받은 위치
+	// position received from the server
 	int sSX = pCreature->GetServerX();
 	int sSY = pCreature->GetServerY();
 
@@ -2259,16 +2262,17 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	pCorpse->SetCreature( pCreature );
 	pCorpse->SetPosition( sSX, sSY );
 
-	// item 개수 설정
+	// set item count
 	pCorpse->SetNumber( pCreature->GetItemCount() );
 
 
 	//----------------------------------------	
-	// 이미 다른 Item이 있다면?? 제거한다.
+	// if another Item is already there?? remove it.
 	//----------------------------------------
-	if (m_ppSector[sSY][sSX].IsExistItem())
+	MSector* pCorpseSector = SectorAt(sSX, sSY);
+	if (pCorpseSector!=NULL && pCorpseSector->IsExistItem())
 	{
-		MItem* pOldItem = m_ppSector[sSY][sSX].GetItem();
+		MItem* pOldItem = pCorpseSector->GetItem();
 		
 		#ifdef OUTPUT_DEBUG
 			if (pOldItem!=NULL)
@@ -2288,23 +2292,18 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	}
 
 	//----------------------------------------
-	// Zone에 Item추가
+	// Add Item to the Zone
 	//----------------------------------------
-	#ifdef OUTPUT_DEBUG
-		if (!AddItem( pCorpse ))
-		{
-			// 음.. 불가능한 경우라고 할 수 있다. - -;
-			DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
-		
-			delete pCorpse;
+	if (!AddItem( pCorpse ))
+	{
+		// Refused (its server cell off the map): the corpse goes, and the
+		// creature with it, out of the zone already.
+		DEBUG_ADD_FORMAT_ERR("[Error] Can't Add Corpse to Sector id=%d (%d,%d)", pCorpse->GetID(), sSX, sSY);
+		delete pCorpse;
+		return false;
+	}
 
-			return false;
-		}
-
-		return true;
-	#else
-		return AddItem( pCorpse );
-	#endif
+	return true;
 
 }
 
@@ -2312,7 +2311,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 //----------------------------------------------------------------------
 // Add Portal
 //----------------------------------------------------------------------
-// rect영역은 zoneID로 이동하는 portal이다.
+// The rect area is a portal that moves to zoneID.
 //----------------------------------------------------------------------
 void						
 MZone::AddPortal(int type, int zoneID, const RECT& rect)
@@ -2337,10 +2336,10 @@ MZone::AddPortal(int type, int zoneID, const RECT& rect)
 //----------------------------------------------------------------------
 // Keep Object In PlayerSight
 //----------------------------------------------------------------------
-// Zone에 속한 모든 Creature/Item중에서
-// Player의 시야 안에 있는 것만 남기고 
-// 나머지는 제거시킨다.
-// Server의 시야 범위와 맞추어야 한다.
+// Among all Creatures/Items belonging to the Zone,
+// keep only those within the Player's sight
+// and remove the rest.
+// Must match the Server's sight range.
 //----------------------------------------------------------------------
 void
 MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sight)
@@ -2349,7 +2348,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 //	int sight15 = sight + (sight>>1);
 
 	//------------------------------------------------------
-	// Player의 시야 범위를 지정한다.
+	// Set the Player's sight range.
 	//------------------------------------------------------
 //	int minX = min( sight, VISION_SECTOR_WIDTH_HALF );
 //	int minY = min( sight, VISION_SECTOR_HEIGHT_HALF );
@@ -2365,7 +2364,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 	int sY2 = y+minY2;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------
 	if (sX1 < 0) 
 	{					
@@ -2389,7 +2388,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 	
 	//------------------------------------------------------
 	//
-	//				모든 Creature에 대해서....
+	// for all Creatures....
 	//
 	//------------------------------------------------------
 	CREATURE_MAP::iterator	iCreature = m_mapCreature.begin();
@@ -2401,17 +2400,17 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 		pCreature = iCreature->second;
 
 		//-----------------------------------------------------
-		// Player가 아닌 경우에만 체크하고 제거한다.
+		// Only check and remove if not the Player.
 		//-----------------------------------------------------
-		if (pCreature->GetClassType()==MCreature::CLASS_PLAYER || pCreature->GetID() < 10000)	// 클라이언트 크리쳐는 제거 안한다
+		if (pCreature->GetClassType()==MCreature::CLASS_PLAYER || pCreature->GetID() < 10000)	// client creatures are not removed
 		{	
 			iCreature++;
 		}		
 		else
 		{
 			//-----------------------------------------------------
-			// Creature의 Server좌표가 Player의 시야에 
-			// 포함되지 않은 경우만 제거시킨다.
+			// Remove only if the Creature's Server coordinates
+			// are not included in the Player's sight.
 			//-----------------------------------------------------			
 			int cX = pCreature->GetServerX();
 			int cY = pCreature->GetServerY();
@@ -2420,7 +2419,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 			DEBUG_ADD_FORMAT("[KeepObjectInSight] %d : %d : %d , %d : %d : %d",
 				sX1, cX, sX2, sY1, cY, sY2 );
 			//-----------------------------------------------------			
-			// 시야의 범위 안에 속하는 경우는 넘어간다..
+			// skip if within the sight range..
 			//-----------------------------------------------------			
 			if (cX>=sX1 && cX<=sX2 &&
 				cY>=sY1 && cY<=sY2 
@@ -2430,14 +2429,14 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 				iCreature++;			
 			}
 			//-----------------------------------------------------			
-			// 시야의 범위 안에 속하지 않으면... 제거~~
+			// if not within the sight range... remove~~
 			//-----------------------------------------------------			
 			else
 			{
-				// iTemp를 지우면 된다.
+				// just delete iTemp.
 				CREATURE_MAP::iterator iTemp = iCreature;
 
-				// 다음 것..
+				// next one..
 				iCreature++;
 
 				DEBUG_ADD_FORMAT("[Remove Creature by Sight] id=%d xy=(%d, %d)", pCreature->GetID(), cX, cY);						
@@ -2445,9 +2444,9 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 				MCreature* pCreature = (*iTemp).second;
 				
 				//----------------------------------------
-				// Sector에서 제거
+				// Remove from Sector
 				//----------------------------------------
-				// player가 아닌 경우..
+				// when not the player..
 				//----------------------------------------
 				int id = pCreature->GetID();
 				int x = pCreature->GetX();
@@ -2502,7 +2501,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 				*/
 
 				//-------------------------------------------------------
-				// 지금 제거 될려는 애가 player의 파티인 경우
+				// when the one about to be removed is in the player's party
 				//-------------------------------------------------------
 				/*
 				if (pCreature->IsPlayerParty()
@@ -2538,7 +2537,7 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 
 	//------------------------------------------------------
 	//
-	//				모든 Item에 대해서....
+	// for all Items....
 	//
 	//------------------------------------------------------
 	ITEM_MAP::iterator	iItem = m_mapItem.begin();
@@ -2550,15 +2549,15 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 		pItem = iItem->second;
 	
 		//-----------------------------------------------------
-		// Item의 좌표가 Player의 시야에 
-		// 포함되지 않은 경우만 제거시킨다.
+		// Remove only if the Item's coordinates
+		// are not included in the Player's sight.
 		//-----------------------------------------------------			
 		int iX = pItem->GetX();
 		int iY = pItem->GetY();
 //		int dist = abs(x - iX) + abs(y - iY);
 
 		//-----------------------------------------------------			
-		// 시야의 범위 안에 속하는 경우는 넘어간다..
+		// skip if within the sight range..
 		//-----------------------------------------------------			
 		if (iX>=sX1 && iX<=sX2 &&
 			iY>=sY1 && iY<=sY2 
@@ -2568,41 +2567,42 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 			iItem++;			
 		}
 		//-----------------------------------------------------			
-		// 시야의 범위 안에 속하지 않으면... 제거~~
+		// if not within the sight range... remove~~
 		//-----------------------------------------------------			
 		else
 		{
-			// iTemp를 지우면 된다.
+			// just delete iTemp.
 			ITEM_MAP::iterator iTemp = iItem;
 
-			// 다음 것..
+			// next one..
 			iItem++;
 
 			DEBUG_ADD_FORMAT("[Remove Item by Sight] id=%d xy=(%d, %d)", pItem->GetID(), iX, iY);					
 				
 			MItem* pItem = (*iTemp).second;
 
-			// [성물수정]
+			// [relic fix]
 			MSector& sector = m_ppSector[iY][iX];				
 			sector.RemoveItem( pItem->GetID() );
 
-			// [성물수정]
+			// [relic fix]
 			if (IsRelicTable(pItem))
 			{
 				sector.UnSetBlockGround();
 				sector.UnSetBlockFlying();
 			}
 				
-			// memory에서 제거
+			// remove from memory
 			//delete pItem;				
-			SAFE_DELETE ( pItem );
+			delete pItem;
+			pItem = NULL;
 				
 			m_mapItem.erase(iTemp);	
 		}					
 	}
 	
 	//------------------------------------------------------
-	// Effect 지우기
+	// Delete Effects
 	//------------------------------------------------------
 	EFFECT_MAP::iterator	iEffect = m_mapEffect.begin();
 
@@ -2613,15 +2613,15 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 		pEffect = iEffect->second;
 	
 		//-----------------------------------------------------
-		// Item의 좌표가 Player의 시야에 
-		// 포함되지 않은 경우만 제거시킨다.
+		// Remove only if the Item's coordinates
+		// are not included in the Player's sight.
 		//-----------------------------------------------------			
 		int iX = pEffect->GetX();
 		int iY = pEffect->GetY();
 //		int dist = abs(x - iX) + abs(y - iY);
 
 		//-----------------------------------------------------			
-		// 시야의 범위 안에 속하는 경우는 넘어간다..
+		// skip if within the sight range..
 		//-----------------------------------------------------			
 		if (iX>=sX1 && iX<=sX2 &&
 			iY>=sY1 && iY<=sY2 
@@ -2631,27 +2631,27 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 			iEffect++;			
 		}
 		//-----------------------------------------------------			
-		// 시야의 범위 안에 속하지 않으면... 제거~~
+		// if not within the sight range... remove~~
 		//-----------------------------------------------------			
 		else if (pEffect->GetEffectType()!=MEffect::EFFECT_CHASE &&
 				(pEffect->GetFrameID() < EFFECTSPRITETYPE_MAP_BLACK_LARGE_SMOKE ||
 				pEffect->GetFrameID() > EFFECTSPRITETYPE_MAP_BLACK_SMALL_SMOKE_3)&&
 				pEffect->GetFrameID() != EFFECTSPRITETYPE_GDR_LAIR_POTAL)
 		{
-			// iTemp를 지우면 된다.
+			// just delete iTemp.
 			EFFECT_MAP::iterator iTemp = iEffect;
 
-			// 다음 것..
+			// next one..
 			iEffect++;
 
 			DEBUG_ADD_FORMAT("[Remove Effect by Sight] id=%d xy=(%d, %d)", pEffect->GetID(), iX, iY);					
 				
 			MEffect* pEffect = iTemp->second;
 
-			// [새기술9]
+			// [new skill 9]
 			RemoveSectorEffect( iX, iY, pEffect->GetID() );
 				
-			// memory에서 제거
+			// remove from memory
 			delete pEffect;				
 				
 			m_mapEffect.erase(iTemp);	
@@ -2664,10 +2664,10 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 }
 
 //----------------------------------------------------------------------
-// Zone에 Creature 추가 
+// Add Creature to the Zone
 //----------------------------------------------------------------------
-// 외부에서 new해줘야 한다.
-// 이미 있는지 확인을 하고 없으면 추가해야 한다.
+// Must be new'd outside.
+// Check whether it already exists, and add it if not.
 //----------------------------------------------------------------------
 bool		
 MZone::AddCreature(MCreature* pCreature)
@@ -2686,10 +2686,10 @@ MZone::AddCreature(MCreature* pCreature)
 
 	theIterator = m_mapCreature.find(pCreature->GetID());
 	
-	// 아직 없는 Creature이면 추가	
+	// add if it is a Creature that does not exist yet
 	if (theIterator == m_mapCreature.end())
 	{		
-		// 우후훗
+		// heh heh
 		if (g_pParty!=NULL 
 			&& pCreature->GetName()!=NULL
 			&& g_pParty->HasMember( pCreature->GetName() )
@@ -2698,7 +2698,7 @@ MZone::AddCreature(MCreature* pCreature)
 			pCreature->SetPlayerParty();
 				
 			//-------------------------------------------------------
-			// 지금 들어온 애가 player의 파티인 경우
+			// when the one who just came in is in the player's party
 			//-------------------------------------------------------
 			PARTY_INFO* pInfo = g_pParty->GetMemberInfo( pCreature->GetName() );
 				
@@ -2712,19 +2712,19 @@ MZone::AddCreature(MCreature* pCreature)
 		}
 
 		//----------------------------------------
-		// player가 Hallu인 경우
+		// when the player is Hallu
 		//----------------------------------------
-		if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
+		if (PlayerState::HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
 		{
-			pCreature->SetHalluCreature( g_pTopView->GetRandomMonsterTypeInZone() );
+			pCreature->SetHalluCreature( WorldEvents::GetRandomMonsterTypeInZone() );
 		}
 
 		//----------------------------------------
-		// 이동방법에 따라.. 다시 설정
+		// set again according to the movement method..
 		//----------------------------------------
 		if (pCreature->IsUndergroundCreature())
 		{
-			// 그냥 묻어둠.. - -;
+			// just bury it.. (sigh)
 		}
 		else
 		{
@@ -2745,7 +2745,7 @@ MZone::AddCreature(MCreature* pCreature)
 		//----------------------------------------
 		// Sector Setting
 		//----------------------------------------
-		// Player인 경우
+		// if it is the Player
 		//----------------------------------------
 		if (pCreature->GetClassType()==MCreature::CLASS_PLAYER)
 		{
@@ -2753,7 +2753,7 @@ MZone::AddCreature(MCreature* pCreature)
 			bAdd = true;
 		}
 		//----------------------------------------
-		// Player가 아닌 경우
+		// when not the Player
 		//----------------------------------------
 		else
 		{			
@@ -2839,7 +2839,7 @@ MZone::AddCreature(MCreature* pCreature)
 		return false;
 	}
 
-	// 이미 있는 Creature이면,
+	// if it is a Creature that already exists,
 	DEBUG_ADD_FORMAT("Add Failed - Already Exist in Zone");
 
 	return false;
@@ -2848,9 +2848,9 @@ MZone::AddCreature(MCreature* pCreature)
 	
 
 //----------------------------------------------------------------------
-// Zone에서 Creature 제거
+// Remove Creature from the Zone
 //----------------------------------------------------------------------
-// 내부에서 delete해준다.
+// deleted internally.
 //----------------------------------------------------------------------
 bool
 MZone::RemoveCreature(TYPE_OBJECTID id)
@@ -2859,10 +2859,10 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 
 	CREATURE_MAP::iterator	theIterator;
 
-	// ID가 id인 Creature를 찾는다.
+	// Find the Creature whose ID is id.
 	theIterator = m_mapCreature.find(id);
     
-	// 그런 id를 가진 Creature는 없다.	
+	// there is no Creature with that id.
 	if (theIterator == m_mapCreature.end())
 		return false;
 
@@ -2871,7 +2871,7 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 
 	
 	//-------------------------------------------------------
-	// 지금 제거 될려는 애가 player의 파티인 경우
+	// when the one about to be removed is in the player's party
 	//-------------------------------------------------------
 	/*
 	if (pCreature->IsPlayerParty()
@@ -2888,9 +2888,9 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 	*/
 	
 	//----------------------------------------
-	// Sector에서 제거
+	// Remove from Sector
 	//----------------------------------------
-	// player인 경우
+	// when it is the player
 	//----------------------------------------
 	if (pCreature==NULL || pCreature->GetClassType()==MCreature::CLASS_PLAYER)
 	{
@@ -2900,7 +2900,7 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 	}
 	
 	//----------------------------------------
-	// 헬기 제거
+	// remove helicopter
 	//----------------------------------------
 	if (pCreature->IsSlayer())
 	{
@@ -2908,14 +2908,14 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 	}
 
 	//----------------------------------------
-	// player가 아닌 경우
+	// when not the player
 	//----------------------------------------	
 	int x			= pCreature->GetX();
 	int y			= pCreature->GetY();
 	int serverX		= pCreature->GetServerX();
 	int serverY		= pCreature->GetServerY();
 
-	// move type에 관계없이 ID를 다 찾아보자..
+	// let's search for the ID regardless of move type..
 	/*
 	switch (pCreature->GetMoveType())
 	{
@@ -3001,11 +3001,11 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 	}
 	*/
 
-	// 서버좌표는 그냥 지워준다. 2002.3.29
+	// just clear the server coordinates. 2002.3.29
 	UnSetServerBlock( pCreature->GetMoveType(), pCreature->GetServerX(), pCreature->GetServerY() );
 
 
-	// memory에서 제거 : Player가 아닐 경우에만 memory에서 제거
+	// remove from memory: only when not the Player
 	if (removed)
 	{
 		//UnSetServerBlock( pCreature->GetMoveType(), pCreature->GetServerX(), pCreature->GetServerY() );
@@ -3020,19 +3020,19 @@ MZone::RemoveCreature(TYPE_OBJECTID id)
 
 
 //----------------------------------------------------------------------
-// Zone의 Creature 읽어오기
+// Read a Creature of the Zone
 //----------------------------------------------------------------------
-// item에서도 찾는다. -_-;
+// also search among items. (sigh)
 //----------------------------------------------------------------------
 MCreature*	
 MZone::GetCreature(TYPE_OBJECTID id)
 {
 	CREATURE_MAP::iterator	theIterator;
 
-	// ID가 id인 Creature를 찾는다.
+	// Find the Creature whose ID is id.
 	theIterator = m_mapCreature.find(id);
 
-	// 없을 경우 NULL을 return한다.
+	// return NULL if not found.
 	if (theIterator == m_mapCreature.end()) 
 	{
 		ITEM_MAP::iterator iItem = m_mapItem.find(id);
@@ -3059,36 +3059,36 @@ MZone::GetCreature(TYPE_OBJECTID id)
 		return NULL;
 	}
 
-	// 있으면 그 Creature를 return한다.
+	// if found, return that Creature.
 	return (*theIterator).second;
 }
 
 //----------------------------------------------------------------------
-// Zone의 Creature 읽어오기
+// Read a Creature of the Zone
 //----------------------------------------------------------------------
 MCreature*	
 MZone::GetCreatureOnly(TYPE_OBJECTID id)
 {
 	CREATURE_MAP::iterator	theIterator;
 
-	// ID가 id인 Creature를 찾는다.
+	// Find the Creature whose ID is id.
 	theIterator = m_mapCreature.find(id);
 
-	// 없을 경우 NULL을 return한다.
+	// return NULL if not found.
 	if (theIterator == m_mapCreature.end()) 
 	{
 		return NULL;
 	}
 
-	// 있으면 그 Creature를 return한다.
+	// if found, return that Creature.
 	return theIterator->second;
 }
 
 //----------------------------------------------------------------------
-// Zone에 ImageObject 추가 
+// Add ImageObject to the Zone
 //----------------------------------------------------------------------
-// 외부에서 new해줘야 한다.
-// 이미 있는지 확인을 하고 없으면 추가해야 한다.
+// Must be new'd outside.
+// Check whether it already exists, and add it if not.
 //----------------------------------------------------------------------
 bool		
 MZone::AddImageObject(MImageObject* pImageObject)
@@ -3099,7 +3099,7 @@ MZone::AddImageObject(MImageObject* pImageObject)
 
 		theIterator = m_mapImageObject.find(pImageObject->GetID());
 		
-		// 아직 없는 ImageObject이면 추가	
+		// add if it is an ImageObject that does not exist yet
 		if (theIterator == m_mapImageObject.end())
 		{
 			m_mapImageObject.insert(IMAGEOBJECT_MAP::value_type(pImageObject->GetID(), pImageObject));
@@ -3107,7 +3107,7 @@ MZone::AddImageObject(MImageObject* pImageObject)
 			return true;
 		}
 
-		// 이미 있는 ImageObject이면,
+		// if it is an ImageObject that already exists,
 	}
 	return false;
 }
@@ -3115,64 +3115,64 @@ MZone::AddImageObject(MImageObject* pImageObject)
 	
 
 //----------------------------------------------------------------------
-// Zone에서 ImageObject 제거
+// Remove ImageObject from the Zone
 //----------------------------------------------------------------------
-// 내부에서 delete해준다.
+// deleted internally.
 //----------------------------------------------------------------------
 bool
 MZone::RemoveImageObject(TYPE_OBJECTID	id)
 {
 	IMAGEOBJECT_MAP::iterator	theIterator;
 
-	// ID가 id인 ImageObject를 찾는다.
+	// Find the ImageObject whose ID is id.
 	theIterator = m_mapImageObject.find(id);
     
-	// 그런 id를 가진 ImageObject는 없다.	
+	// there is no ImageObject with that id.
 	if (theIterator == m_mapImageObject.end())
 		return false;
 
 
-	// 찾은 경우 --> 제거	
+	// if found --> remove
 	MImageObject* pImageObject = (*theIterator).second;	
 
 
 	//???????????????????????????????????????????????????????
 	//
-	// ImageObject이 존재하는 Sector도 제거해야하지 않나??
+	// shouldn't the Sector where the ImageObject exists be removed too??
 	//
 	//???????????????????????????????????????????????????????
 
 	m_mapImageObject.erase(theIterator);
 
-	// memory에서 제거
+	// remove from memory
 	delete pImageObject;	
 
 	return true;
 }
 
 //----------------------------------------------------------------------
-// Zone의 ImageObject 읽어오기
+// Read an ImageObject of the Zone
 //----------------------------------------------------------------------
 MImageObject*	
 MZone::GetImageObject(TYPE_OBJECTID id)
 {
 	IMAGEOBJECT_MAP::iterator	theIterator;
 
-	// ID가 id인 ImageObject를 찾는다.
+	// Find the ImageObject whose ID is id.
 	theIterator = m_mapImageObject.find(id);
 
-	// 없을 경우 NULL을 return한다.
+	// return NULL if not found.
 	if (theIterator == m_mapImageObject.end()) 
 		return NULL;
 
-	// 있으면 그 ImageObject를 return한다.
+	// if found, return that ImageObject.
 	return (*theIterator).second;
 }
 
 //----------------------------------------------------------------------
 // SetImageObjectSector(sX,sY)
 //----------------------------------------------------------------------
-// Zone의 Sector에 ImageObject을 set하기
+// Set an ImageObject on a Sector of the Zone
 //----------------------------------------------------------------------
 void		
 MZone::SetImageObjectSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id)
@@ -3194,21 +3194,21 @@ MZone::SetImageObjectSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE
 		return;
 	}
 
-	// ID가 id인 ImageObject를 찾는다.
+	// Find the ImageObject whose ID is id.
 	theIterator = m_mapImageObject.find(id);
 
-	// 없을 경우 
+	// if none
 	if (theIterator == m_mapImageObject.end()) 
 		return;
 	
-	// (sX,sY) Sector에 ImageObject을 set한다.
+	// Set the ImageObject on Sector (sX,sY).
 	m_ppSector[sY][sX].AddImageObject((*theIterator).second);
 }
 
 //----------------------------------------------------------------------
 // UnSetImageObjectSector(sX,sY)
 //----------------------------------------------------------------------
-// Zone의 Sector에 ImageObject을 UnSet하기
+// UnSet an ImageObject on a Sector of the Zone
 //----------------------------------------------------------------------
 void		
 MZone::UnSetImageObjectSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_OBJECTID id)
@@ -3219,16 +3219,16 @@ MZone::UnSetImageObjectSector(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TY
 	}
 
 	//-------------------------------------------------------
-	// (sX,sY) Sector에 ImageObject을 set한다.
+	// Set the ImageObject on Sector (sX,sY).
 	//-------------------------------------------------------
 	m_ppSector[sY][sX].RemoveImageObject(id);
 }
 
 //----------------------------------------------------------------------
-// Zone에 Obstacle 추가
+// Add Obstacle to the Zone
 //----------------------------------------------------------------------
-// 외부에서 new를 해줘야한다.
-// Sector에 추가할 수 있으면 m_listObstacle에 추가한다.
+// Must be new'd outside.
+// If it can be added to the Sector, add it to m_listObstacle.
 //----------------------------------------------------------------------
 /*
 bool		
@@ -3236,12 +3236,12 @@ MZone::AddObstacle(MObstacle* pObstacle)
 {	
 	if (!m_ppSector[pObstacle->GetY()][pObstacle->GetX()].AddObstacle(pObstacle))
 	{
-		// 제대로 추가가 되지 않은 경우
+		// when it was not added properly
 		return false;
 	}
 
-	// Sector에 추가가 되었으니까 list에도 추가한다.
-	// 나중에 memory에서 지우기 쉽도록 하기 위해서이다.
+	// Since it was added to the Sector, add it to the list too.
+	// This is to make it easy to delete from memory later.
 	m_listObstacle.push_front(pObstacle);
 
 	return true;
@@ -3249,13 +3249,13 @@ MZone::AddObstacle(MObstacle* pObstacle)
 */
 
 //----------------------------------------------------------------------
-// Zone에서 Obstacle 제거		
+// Remove Obstacle from the Zone
 //----------------------------------------------------------------------
-// Sector(sX,sY)에 있는 Obstacle을 제거한다.
-// map에서도 제거해야 한다.
+// Remove the Obstacle at Sector (sX,sY).
+// It must be removed from the map as well.
 //----------------------------------------------------------------------
-// 게임 실행중에는 실제로 이 함수가 호출될 이유가 없다.
-// Obstacle은 고정된 사물이기 때문이다.
+// There is no reason for this function to be called while the game runs,
+// because an Obstacle is a fixed object.
 //----------------------------------------------------------------------
 //bool		
 //MZone::RemoveObstacle(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY)
@@ -3263,27 +3263,27 @@ MZone::AddObstacle(MObstacle* pObstacle)
 	/*
 	MObstacle* pObstacle;
 
-	// 제대로 제거된 경우
+	// when removed properly
 	if (m_ppSector[sY][sX].RemoveObstacle(pObstacle))
 	{
-		// pObstacle에 제거된 MObstacle이 담겨있다.
-		// ID가 같은 Obstacle을 mapObstacle에서 제거한다.
+		// the removed MObstacle is held in pObstacle.
+		// remove the Obstacle with the same ID from mapObstacle.
 		OBSTACLE_MAP::iterator	iObstacle = m_mapObstacle.find(pObstacle->GetID());
     
-		// 그런 id를 가진 ImageObjectPositionList는 없다.	
+		// there is no ImageObjectPositionList with that id.
 		if (iObstacle == m_mapObstacle.end())
 			return false;
 
-		// map에서 삭제
+		// delete from the map
 		m_mapObstacle.erase( iObstacle );
 
-		// memory에서 제거
+		// remove from memory
 		delete pObstacle;
 		
 		return true;
 	}
 
-	// 제대로 제거되지 않은 경우 (왜일까?) - 없어서?
+	// when not removed properly (why?) - because it was not there?
 	*/
 	//return false;
 //}
@@ -3292,7 +3292,7 @@ MZone::AddObstacle(MObstacle* pObstacle)
 //----------------------------------------------------------------------
 // Change Frame Obstacle
 //----------------------------------------------------------------------
-// 임시 함수  :  모든 Obstacle의 Frame을 변화시킨다.
+// Temporary function : changes the Frame of all Obstacles.
 //----------------------------------------------------------------------
 /*
 void
@@ -3314,21 +3314,21 @@ MZone::ChangeFrameObstacle()
 */
 
 //----------------------------------------------------------------------
-// Sector (x,y)에 있는 Item의 ID를 넘겨준다.
+// Return the ID of the Item at Sector (x,y).
 //----------------------------------------------------------------------
 TYPE_OBJECTID
 MZone::GetItemID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 {
 	//-------------------------------------------------------
-	// Zone의 영역 밖이면 check 안한다.
+	// no check when outside the Zone area.
 	//-------------------------------------------------------
 	if (//x<0 || y<0 || 
 		x>=m_Width || y>=m_Height) return OBJECTID_NULL;
 
-	// 뭔가 있는 sector이면
+	// if the sector has something
 	MItem*	pItem = m_ppSector[y][x].GetItem();
 
-	// Item가 있으면
+	// if there is an Item
 	if (pItem != NULL)
 	{			
 		return pItem->GetID();
@@ -3340,28 +3340,28 @@ MZone::GetItemID(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y)
 }
 
 //----------------------------------------------------------------------
-// Zone에 Item 추가 
+// Add Item to the Zone
 //----------------------------------------------------------------------
-// 외부에서 new해줘야 한다.
-// 이미 있는지 확인을 하고 없으면 추가해야 한다.
+// Must be new'd outside.
+// Check whether it already exists, and add it if not.
 //----------------------------------------------------------------------
 bool		
 MZone::AddItem(MItem* pItem, BOOL bDropping)
 {
 	//--------------------------------------------------------	
-	// 떨어뜨리는 Frame이 있는 경우...
+	// when there is a dropping Frame...
 	//--------------------------------------------------------	
-	if (pItem->GetItemClass()!=ITEM_CLASS_MOTORCYCLE)	// 오토바이는 안 떨어진다. 소리도 안 난다.
+	if (pItem->GetItemClass()!=ITEM_CLASS_MOTORCYCLE)	// a motorcycle does not drop. No sound either.
 	{
 		if (bDropping 
-			&& pItem->GetDropFrameID()!=FRAMEID_NULL)				// 떨어지는 그림이 없는 경우
+			&& pItem->GetDropFrameID()!=FRAMEID_NULL)				// when there is no falling image
 		{
 			pItem->SetDropping();
 		}
 		else
 		{
 			//--------------------------------------------------------	
-			// 바로 떨어지는 경우는 sound출력
+			// output sound when it drops right away
 			//--------------------------------------------------------	
 			//PlaySound( pItem->GetTileSoundID(),
 			//					false,
@@ -3370,13 +3370,13 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 	}
 
 	//--------------------------------------------------------	
-	// zone에 item추가
+	// add item to the zone
 	//--------------------------------------------------------	
 	ITEM_MAP::iterator	theIterator;
 
 	theIterator = m_mapItem.find(pItem->GetID());
 	
-	// 아직 없는 Item이면 추가	
+	// add if it is an Item that does not exist yet
 	if (theIterator == m_mapItem.end())
 	{
 		// Item coordinates reach the zone straight out of GCAddItemToZone,
@@ -3397,7 +3397,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 		{		
 			m_mapItem.insert(ITEM_MAP::value_type(pItem->GetID(), pItem));
 
-			// [성물수정] - 아이템인데 강제로 block시킨다.
+			// [relic fix] - it is an item, but forcibly block it.
 			if (IsRelicTable(pItem))
 			{
 				sector.SetBlockGround();
@@ -3406,12 +3406,12 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 
 			bool bSpecialItem = false;
 
-			// 아담의 성지 강제 이펙트 붙임
+			// attach the Adam's Holy Land forced effect
 			if(pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE)
 			{
 				bSpecialItem = true;
-				ExecuteActionInfoFromMainNode(
-					ARMEGA_TILE+pItem->GetItemType(),		// 값 자체가 RESULT_ACTIONINFO이다.
+				WorldEvents::ExecuteActionInfoFromMainNode(
+					ARMEGA_TILE+pItem->GetItemType(),		// the value itself is RESULT_ACTIONINFO.
 					
 					pItem->GetX(), pItem->GetY(), 0,
 					DIRECTION_DOWN,
@@ -3425,7 +3425,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 					);
 			}
 
-			// 아담의 성지 강제 이펙트 붙임
+			// attach the Adam's Holy Land forced effect
 			if(pItem->GetItemClass() == ITEM_CLASS_CASTLE_SYMBOL)
 			{
 				int TempEffetType[6] = {	AMBER_OF_GUARD_TILE,
@@ -3440,8 +3440,8 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 				if(TempItemType >5 ) TempItemType = 0;
 				bSpecialItem = true;
 
-				ExecuteActionInfoFromMainNode(
-					TempEffetType[TempItemType],		// 값 자체가 RESULT_ACTIONINFO이다.
+				WorldEvents::ExecuteActionInfoFromMainNode(
+					TempEffetType[TempItemType],		// the value itself is RESULT_ACTIONINFO.
 					
 					pItem->GetX(), pItem->GetY(), 0,
 					DIRECTION_DOWN,
@@ -3457,8 +3457,8 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 
 			if(bSpecialItem)
 			{
-				ExecuteActionInfoFromMainNode(
-					DROP_BLOOD_BIBLE,		// 값 자체가 RESULT_ACTIONINFO이다.
+				WorldEvents::ExecuteActionInfoFromMainNode(
+					DROP_BLOOD_BIBLE,		// the value itself is RESULT_ACTIONINFO.
 					
 					pItem->GetX(), pItem->GetY(), 0,
 					DIRECTION_DOWN,
@@ -3472,14 +3472,14 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 					);
 			}
 			
-			// 2004, 10, 25, sobeit add start - 드레곤 아이 이펙트 붙임
+			// 2004, 10, 25, sobeit add start - attach Dragon Eye effect
 			if(pItem->GetItemClass() == ITEM_CLASS_WAR_ITEM)
 			{
 				int TempItemType = pItem->GetItemType();
-				if(0 == TempItemType) // 드레곤 아이 일 때
+				if(0 == TempItemType) // when it is a Dragon Eye
 				{
-					ExecuteActionInfoFromMainNode(
-						SKILL_CLIENT_DRAGON_EYES,		// 값 자체가 RESULT_ACTIONINFO이다.
+					WorldEvents::ExecuteActionInfoFromMainNode(
+						SKILL_CLIENT_DRAGON_EYES,		// the value itself is RESULT_ACTIONINFO.
 						
 						pItem->GetX(), pItem->GetY(), 0,
 						DIRECTION_DOWN,
@@ -3493,7 +3493,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 						);
 				}
 			}
-			// 2004, 10, 25, sobeit add end - 드레곤 아이 이펙트 붙임
+			// 2004, 10, 25, sobeit add end - attach Dragon Eye effect
 
 			return true;
 		}
@@ -3508,15 +3508,15 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 		return false;
 	}
 
-	// 이미 있는 Item이면,
+	// if it is an Item that already exists,
 	return false;
 }
 	
 
 //----------------------------------------------------------------------
-// Zone에서 Item 제거
+// Remove Item from the Zone
 //----------------------------------------------------------------------
-// 내부에서 delete해준다.
+// deleted internally.
 //----------------------------------------------------------------------
 bool
 MZone::RemoveItem(TYPE_OBJECTID id)
@@ -3531,19 +3531,19 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 		tempItr++;
 	}
 
-	// ID가 id인 Item를 찾는다.
+	// Find the Item whose ID is id.
 	theIterator = m_mapItem.find(id);
     
-	// 그런 id를 가진 Item는 없다.	
+	// there is no Item with that id.
 	if (theIterator == m_mapItem.end())
 		return false;
 
 
-	// 찾은 경우 --> 제거	
+	// if found --> remove
 
-	// Sector에서 제거
+	// Remove from Sector
 	MItem* pItem = NULL;
-	// [성물수정]
+	// [relic fix]
 
 	int sector_y = (*theIterator).second->GetY(), sector_x = (*theIterator).second->GetX();
 	MSector& sector = m_ppSector[sector_y][sector_x];
@@ -3551,7 +3551,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 
 	if (removed && pItem!=NULL)
 	{
-		// [성물수정]
+		// [relic fix]
 		if (IsRelicTable(pItem))
 		{
 			sector.UnSetBlockGround();
@@ -3559,7 +3559,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 		}
 		bool bSpecialItem = false;
 		
-		// 아담의 성지 강제 이펙트 붙임
+		// attach the Adam's Holy Land forced effect
 		if(pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE)
 		{
 			bSpecialItem = true;
@@ -3570,7 +3570,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 			}
 		}
 		
-		// 2004, 10, 25, sobeit add start - 드레곤 아이 이펙트 떼자
+		// 2004, 10, 25, sobeit add start - detach the Dragon Eye effect
 		if(pItem->GetItemClass() == ITEM_CLASS_WAR_ITEM)
 		{
 			if(0 == pItem->GetItemType())
@@ -3582,7 +3582,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 			}
 		}
 		// 2004, 10, 25, sobeit add end
-		// 아담의 성지 강제 이펙트 붙임
+		// attach the Adam's Holy Land forced effect
 		if(pItem->GetItemClass() == ITEM_CLASS_CASTLE_SYMBOL)
 		{
 			bSpecialItem = true;
@@ -3613,9 +3613,9 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 		m_mapItem.erase(theIterator);
 
 		//------------------------------------------------------
-		// Item Check Buffer에 있는 경우 지워줘야 한다. 2001.8.27
+		// It must be deleted if it is in the Item Check Buffer. 2001.8.27
 		//------------------------------------------------------
-		MItem* pCheckItem = g_pPlayer->GetItemCheckBuffer();
+		MItem* pCheckItem = PlayerState::GetItemCheckBuffer();
 
 		if (pCheckItem!=NULL)
 		{
@@ -3624,9 +3624,9 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 			if (pItem->GetID()==pCheckItem->GetID())
 			{
 				//---------------------------------------------
-				// item check buffer를 없애준다.
+				// remove the item check buffer.
 				//---------------------------------------------
-				g_pPlayer->ClearItemCheckBuffer();
+				PlayerState::ClearItemCheckBuffer();
 			}
 		}
 		else
@@ -3634,35 +3634,36 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 			DEBUG_ADD("Check Item is NULL");
 		}
 
-		// memory에서 제거
+		// remove from memory
 		//delete pItem;	
-		SAFE_DELETE ( pItem );
+		delete pItem;
+		pItem = NULL;
 	}
 
 	return removed;
 }
 
 //----------------------------------------------------------------------
-// Zone에서 Item 제거
+// Remove Item from the Zone
 //----------------------------------------------------------------------
-// zone에서 제거만 하고 delete하지 않는다.
+// Only remove from the zone, do not delete.
 //----------------------------------------------------------------------
 bool
 MZone::PickupItem(TYPE_OBJECTID id)
 {
 	ITEM_MAP::iterator	theIterator;
 
-	// ID가 id인 Item를 찾는다.
+	// Find the Item whose ID is id.
 	theIterator = m_mapItem.find(id);
     
-	// 그런 id를 가진 Item는 없다.	
+	// there is no Item with that id.
 	if (theIterator == m_mapItem.end())
 		return false;
 
 
-	// 찾은 경우 --> 제거	
+	// if found --> remove
 
-	// Sector에서 제거
+	// Remove from Sector
 	MItem* pItem = NULL;
 	int sector_y = (*theIterator).second->GetY(), sector_x = (*theIterator).second->GetX();
 	bool removed = m_ppSector[sector_y][sector_x].RemoveItem(pItem);
@@ -3671,7 +3672,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 
 	if(pItem != NULL && removed)
 	{
-		// 아담의 성지 강제 이펙트 붙임
+		// attach the Adam's Holy Land forced effect
 		if(pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE)
 		{
 			bSpecialItem = true;
@@ -3682,7 +3683,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 			}
 		}
 		
-		// 2004, 10, 25, sobeit add start - 드레곤 아이 이펙트 떼자
+		// 2004, 10, 25, sobeit add start - detach the Dragon Eye effect
 		if(pItem->GetItemClass() == ITEM_CLASS_WAR_ITEM)
 		{
 			if(0 == pItem->GetItemType())
@@ -3695,7 +3696,7 @@ MZone::PickupItem(TYPE_OBJECTID id)
 		}
 		// 2004, 10, 25, sobeit add end
 		
-		// 아담의 성지 강제 이펙트 붙임
+		// attach the Adam's Holy Land forced effect
 		if(pItem->GetItemClass() == ITEM_CLASS_CASTLE_SYMBOL)
 		{
 			bSpecialItem = true;
@@ -3734,29 +3735,29 @@ MZone::PickupItem(TYPE_OBJECTID id)
 }
 
 //----------------------------------------------------------------------
-// Zone의 Item 읽어오기
+// Read an Item of the Zone
 //----------------------------------------------------------------------
 MItem*	
 MZone::GetItem(TYPE_OBJECTID id)
 {
 	ITEM_MAP::iterator	theIterator;
 
-	// ID가 id인 Item를 찾는다.
+	// Find the Item whose ID is id.
 	theIterator = m_mapItem.find(id);
 
-	// 없을 경우 NULL을 return한다.
+	// return NULL if not found.
 	if (theIterator == m_mapItem.end()) 
 		return NULL;
 
-	// 있으면 그 Item를 return한다.
+	// if found, return that Item.
 	return (*theIterator).second;
 }
 
 //----------------------------------------------------------------------
-// Zone에 Effect 추가
+// Add Effect to the Zone
 //----------------------------------------------------------------------
-// m_mapEffect에 추가한다.
-// Sector에 listEffect를 추가한다.
+// Add to m_mapEffect.
+// Add listEffect to the Sector.
 //----------------------------------------------------------------------
 bool
 MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
@@ -3835,7 +3836,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 			return false;
 		}
 	}
-	// 깃대 주변에는 다크니스가 깔리지 않는다.
+	// Darkness is not laid around a flagpole.
 	if( bDarkNess )
 	{
 		if( !( x < 0 || x >= GetWidth() || y < 0 || y >=GetHeight() ) )
@@ -3843,7 +3844,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 			const MSector& sector= m_ppSector[y][x];
 			const MItem* pItem = sector.GetItem();
 			
-			// 깃대가 있는곳은 다크니스가 안찍힌다.
+			// Darkness is not stamped where the flagpole is.
 			if( pItem != NULL && pItem->GetItemClass() == ITEM_CLASS_CORPSE &&
 				((MCorpse*)pItem)->GetCreature() != NULL &&
 				((MCorpse*)pItem)->GetCreature()->GetCreatureType() == 670 )
@@ -3853,7 +3854,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 		}		
 	}
 
-	// 머시 그라운드가 이미 깔려 있으면 다크니스, 잔디, 불바다는 깔지 않는다.	
+	// If a Mercy Ground is already laid, Darkness, grass and sea of fire are not laid.
 	if( bDarkNess || bAcidSwamp || bProminence )
 	{
 		EFFECT_MAP::iterator iGroundEffect = m_mapGroundEffect.begin();
@@ -3866,7 +3867,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 			TYPE_FRAMEID	frameID_e = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_MERCY_GROUND_9].FrameID;
 			TYPE_FRAMEID	regenTowerTile = (*g_pEffectSpriteTypeTable)[EFFECTSPRITETYPE_REGEN_TOWER_GROUND].FrameID;
 			
-			// Mercy Ground 가 깔려 있으면 다크니스 찍지 않는다.
+			// Do not stamp Darkness if a Mercy Ground is laid.
 			if( pEffect->GetFrameID() >= frameID_s && pEffect->GetFrameID() <= frameID_e )
 			{
 				int fix_y =   ( pEffect->GetFrameID() - frameID_s) /3 -1;
@@ -3888,22 +3889,22 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 		
 
 	//---------------------------------------------------------
-	// Zone의 경계를 넘어가는 경우..
+	// when crossing the Zone boundary..
 	//---------------------------------------------------------
 	if (x<0 || x>=m_Width
 		|| y<0 || y>=m_Height)
 	{
 		DEBUG_ADD("OuterZone");
 
-		// chase effect 는 넘어가도 괜찮다.
+		// a chase effect is fine to cross.
 		if (pNewEffect->GetEffectType()==MEffect::EFFECT_CHASE)
 		{
 			TYPE_OBJECTID id = pNewEffect->GetID();
 
-			// 없는 경우만 추가한다.
+			// add only if not present.
 			if (m_mapEffect.find( id )==m_mapEffect.end())
 			{
-				// list에 추가
+				// add to list
 				m_mapEffect[id] = pNewEffect;
 				effect.release();
 
@@ -3922,9 +3923,9 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 	MSector &sector = m_ppSector[y][x];
 
 	//---------------------------------------------------------
-	// 기존의 Effect와 비교..
+	// Compare with existing Effects..
 	//
-	// Sector에 고정된 Effect인 경우만...
+	// only for Effects fixed to a Sector...
 	//---------------------------------------------------------
 	BOOL AddOK = TRUE;
 
@@ -3946,19 +3947,19 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 				MEffect* pEffect = *iEffect;
 
 				//---------------------------------------------------------
-				// 그림이 같다면 같은 Effect로 취급한다.
-				// 시간이 긴 쪽을 잡는다.
+				// if the image is the same, treat it as the same Effect.
+				// keep the one with the longer time.
 				//---------------------------------------------------------
-				// 같은 type을 찾는다.
+				// find the same type.
 				if (pEffect->GetEffectType()==MEffect::EFFECT_SECTOR)
 				{
 					int fid1 = pNewEffect->GetFrameID();
 					int fid2 = pEffect->GetFrameID();
 
-					int est1 = g_pTopView->GetEffectSpriteType( (BLT_TYPE)pNewEffect->GetBltType(), fid1 );
-					int est2 = g_pTopView->GetEffectSpriteType( (BLT_TYPE)pEffect->GetBltType(), fid2 );
+					int est1 = ::GetEffectSpriteType( (BLT_TYPE)pNewEffect->GetBltType(), fid1 );
+					int est2 = ::GetEffectSpriteType( (BLT_TYPE)pEffect->GetBltType(), fid2 );
 					
-//					// 2004, 10, 19, sobeit add start 도슬 140 스킬 땜에
+//					// 2004, 10, 19, sobeit add start because of the Dosl 140 skill
 //					if(est1 == EFFECTSPRITETYPE_SPIT_STREAM ||
 //						est1 == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW ||
 //						est1 == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW_SHADOW ||
@@ -3966,13 +3967,13 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 //						est1 == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_WAVE
 //						)
 //					{
-//						AddOK = TRUE; // 이 스킬은 같은 그림이 한타일에 두개 이상 다른위치에 나타날 수도 있다..-_-
+//						AddOK = TRUE; // this skill can show the same image twice or more on one tile at different positions..
 //					}
 //					else
 //					// 2004, 10, 19, sobeit add end
 					if (fid1 == fid2)
 					{
-						// 추가할려는 것이 더 늦게 끝날 경우에만 시간을 확장한다.
+						// extend the time only if the one being added ends later.
 						if (pNewEffect->GetEndFrame() > pEffect->GetEndFrame() &&
 							est1 != EFFECTSPRITETYPE_DRAGON_FIRE_CRACKER) 
 						{
@@ -3981,7 +3982,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 							pEffect->SetCount( count );
 						}
 
-						// 같은게 있다면 추가안함..
+						// do not add if there is the same one..
 						AddOK = FALSE;
 						
 						if( est1 ==	EFFECTSPRITETYPE_DRAGON_FIRE_CRACKER )
@@ -3989,7 +3990,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 
 						break;
 					}
-					// 또는 Darkness인 경우... 으흠~~ -_-;;
+					// or if it is Darkness... hmm~~ (sigh)
 					else
 					{					
 						if (
@@ -4032,7 +4033,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 								)								
 							)
 						{
-							// 추가할려는 것이 더 늦게 끝날 경우에만 시간을 확장한다.
+							// extend the time only if the one being added ends later.
 							if (pNewEffect->GetEndFrame() > pEffect->GetEndFrame()) 
 							{
 								int count = pNewEffect->GetEndFrame() - g_CurrentFrame;
@@ -4040,10 +4041,10 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 								pEffect->SetCount( count );
 							}
 
-							// 같은게 있다면 추가안함..
+							// do not add if there is the same one..
 							AddOK = FALSE;
 
-							// 반복 darkness인 경우에만..
+							// only for repeating darkness..
 							if ((est1>=EFFECTSPRITETYPE_DARKNESS_2_1 &&
 								est1<=EFFECTSPRITETYPE_DARKNESS_2_5) ||
 								(est1>=EFFECTSPRITETYPE_GRAY_DARKNESS_2_1 &&
@@ -4056,12 +4057,12 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 							CheckCreatureInDarkness( sector, x, y );
 
 							break;
-						}	// [새기술]
-							// sanctuary 있는 경우			
+						}	// [new skill]
+							// when there is a sanctuary
 						else if (est1>=EFFECTSPRITETYPE_SANCTUARY_1
 								&& est1<=EFFECTSPRITETYPE_SANCTUARY_3)
 						{
-							// 근처 타일들에도 체크한다. [새기술9]
+							// also check the nearby tiles. [new skill 9]
 							for (int i=-1; i<=1; i++)
 							{							
 								for (int j=-1; j<=1; j++)
@@ -4090,7 +4091,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 	}
 			
 	//---------------------------------------------------------
-	// 추가해도 되는 경우
+	// when it is OK to add
 	//---------------------------------------------------------
 	if (AddOK)
 	{
@@ -4098,14 +4099,14 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 
 		TYPE_OBJECTID id = pNewEffect->GetID();
 
-		// 없는 경우만 추가한다.
+		// add only if not present.
 		if (m_mapEffect.find( id )==m_mapEffect.end())
 		{
-			// list에 추가
+			// add to list
 			m_mapEffect[id] = pNewEffect;
 			effect.release();
 
-			// sector에 추가
+			// add to sector
 			MSector& sector = m_ppSector[y][x];
 
 			DEBUG_ADD("secAddEff");
@@ -4119,7 +4120,7 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 		}
 	}
 
-	// 시야 설정
+	// set sight
 //	if (pEffect->GetBltType()==BLT_EFFECT)
 //	{
 //		SetLight(pEffect->GetX(), pEffect->GetY(), pEffect->GetLight());		
@@ -4150,8 +4151,8 @@ MZone::GetEffect(TYPE_OBJECTID id) const
 //----------------------------------------------------------------------
 // Remove Effect ( id )
 //----------------------------------------------------------------------
-// effect의 id는 거의 의미가 없지만..
-// 억지로라도 지워야하는 경우가 있어서리.. - -;
+// The effect id has almost no meaning, but..
+// there are cases where it must be deleted by force.. (sigh)
 //----------------------------------------------------------------------
 bool		
 MZone::RemoveEffect(TYPE_OBJECTID id)
@@ -4168,13 +4169,13 @@ MZone::RemoveEffect(TYPE_OBJECTID id)
 	int x = pEffect->GetX();
 	int y = pEffect->GetY();
 
-	// 경계를 넘지 않는 경우
+	// when not crossing the boundary
 	if (x>=0 && x<m_Width
 		&& y>=0 && y<m_Height)
 	{
 		MSector& sector = m_ppSector[y][x];
 		
-		// [새기술9]
+		// [new skill 9]
 		RemoveSectorEffect( x, y, pEffect->GetID() );
 
 		CheckCreatureInDarkness( sector, x, y );
@@ -4190,7 +4191,7 @@ MZone::RemoveEffect(TYPE_OBJECTID id)
 //----------------------------------------------------------------------
 // Remove Tile Effect
 //----------------------------------------------------------------------
-// tile에 있는 effect를 지운다.
+// Delete the effect on the tile.
 //----------------------------------------------------------------------
 bool		
 MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effectStatus, int serverID)
@@ -4205,7 +4206,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 	TYPE_EFFECTSPRITETYPE type = (*g_pEffectStatusTable)[effectStatus].EffectSpriteType;
 
 	//----------------------------------------------------------------------
-	// EffectStatus에 따라서 특별한것 체크
+	// check special cases according to EffectStatus
 	//----------------------------------------------------------------------
 	switch (effectStatus)
 	{
@@ -4241,7 +4242,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 		break;
 
 		//----------------------------------------------------------------
-		// vampire 포탈은 m_mapGroundEffect에 추가되어 있당..
+		// the vampire portal is added to m_mapGroundEffect..
 		//----------------------------------------------------------------		
 		case EFFECTSTATUS_VAMPIRE_PORTAL :
 		{
@@ -4258,7 +4259,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 				if (pEffectTarget!=NULL)
 				{
 					//------------------------------------------------------------------
-					// Portal인 경우
+					// when it is a Portal
 					//------------------------------------------------------------------
 					if (pEffectTarget->GetEffectTargetType()==MEffectTarget::EFFECT_TARGET_PORTAL)
 					{
@@ -4287,21 +4288,21 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 		break;	// - -;
 		
 		case EFFECTSTATUS_GROUND_ELEMENTAL_AURA:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetGroundElemental();
 			}
 			break;
 		
 		case EFFECTSTATUS_DARKNESS_FORBIDDEN:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetDarknessForbidden();
 			}
 			break;
 			
 		case EFFECTSTATUS_FURY_OF_GNOME:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetFuryOfGnome();
 			}
@@ -4313,11 +4314,10 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 			}
 			
 		case EFFECTSTATUS_DELETE_TILE:
-			if( g_pZone != NULL )
+			if( g_pZone != NULL && g_pZone->IsPositionInZone(sX, sY) )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetDisableTileImage();
-				if(g_pTopView != NULL)
-					g_pTopView->SetFirstDraw();
+				WorldEvents::SetFirstDraw();
 			}
 			break;	
 			return true;
@@ -4333,7 +4333,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 //----------------------------------------------------------------------
 // Remove Tile Effect
 //----------------------------------------------------------------------
-// tile에 있는 effect를 지운다.
+// Delete the effect on the tile.
 //----------------------------------------------------------------------
 bool		
 MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFFECTSPRITETYPE type, int serverID)
@@ -4355,11 +4355,18 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 		return false;
 	}
 
+	// The packet's tile may lie off the map (GCDeleteEffectFromTile does not
+	// check it): nothing is there to remove.
+	MSector* pSector = SectorAt(sX, sY);
+	if (pSector==NULL)
+	{
+		return false;
+	}
 
-	MSector& sector = m_ppSector[sY][sX];
+	MSector& sector = *pSector;
 
 	//--------------------------------------------------
-	// effect가 있는 sector인지 확인
+	// check whether it is a sector with an effect
 	//--------------------------------------------------
 	if (sector.IsExistEffect())
 	{
@@ -4380,7 +4387,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 			MEffect* pEffect = *iEffect;
 
 			//--------------------------------------------------
-			// sector에 존재하는 effect만 체크해서 지운다.
+			// check and delete only the effects present in the sector.
 			//--------------------------------------------------
 			if (pEffect->GetEffectType() == MEffect::EFFECT_SECTOR)
 			{
@@ -4392,21 +4399,21 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 //											pEffect->GetFrameID() >= EFFECTSPRITETYPE_MAP_BLACK_SMALL_SMOKE_3;
 											);
 				//--------------------------------------------------
-				// 같은 effect type인 경우
+				// when it is the same effect type
 				//--------------------------------------------------
 				if (pEffect->GetFrameID() == frameID
 
-					// Darkness인 경우... 하드코딩.. - -;;
+					// when it is Darkness... hardcoded.. (sigh)
 					|| (isRemoveDarknessEffect
 					&& isExistDarknessEffect)					
 					)
 				{
-					// sector에서 제거 [새기술9]
+					// remove from sector [new skill 9]
 					RemoveSectorEffect( sX, sY, pEffect->GetID() );
 
 					
 					//--------------------------------------------------
-					// zone의 list에서도 체크해서 지운다.
+					// also check and delete from the zone's list.
 					//--------------------------------------------------
 					// delete
 					EFFECT_MAP::iterator iZoneEffect = m_mapEffect.begin();
@@ -4416,7 +4423,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 					{
 						MEffect* pZoneEffect = iZoneEffect->second;
 
-						// 같은 Effect이면..
+						// if it is the same Effect..
 						if (pZoneEffect->GetID()==pEffect->GetID())
 						{
 							m_mapEffect.erase( iZoneEffect );
@@ -4437,7 +4444,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 						{
 							MEffect* pGroundEffect = iGroundEffect->second;
 
-							// 같은 Effect이면..
+							// if it is the same Effect..
 							if (pGroundEffect->GetID()==pEffect->GetID())
 							{
 								m_mapGroundEffect.erase( iGroundEffect );
@@ -4449,7 +4456,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 						}
 					}
 
-					// 다크니스인 경우 그 타일에 있던 캐릭터를 보여준다.
+					// for darkness, show the character that was on that tile.
 					if (isRemoveDarknessEffect)
 					{
 						CheckCreatureInDarkness( sector, sX, sY );
@@ -4474,7 +4481,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFF
 //----------------------------------------------------------------------
 // Change Frame Effect
 //----------------------------------------------------------------------
-// 임시 함수  :  모든 Effect의 Frame을 변화시킨다.
+// Temporary function : changes the Frame of all Effects.
 //----------------------------------------------------------------------
 void
 MZone::UpdateEffects()
@@ -4487,8 +4494,8 @@ MZone::UpdateEffects()
 	int count = static_cast<int>(m_mapEffect.size());
 
 
-	int		sX, sY;		// 변경 전의 좌표
-	int		nX, nY;		// 변경 후의 좌표
+	int		sX, sY;		// coordinates before the change
+	int		nX, nY;		// coordinates after the change
 	int		light;
 	int		id;
 	
@@ -4504,20 +4511,20 @@ MZone::UpdateEffects()
 			continue;
 		}
 
-		// 이전 좌표 기억
+		// remember the previous coordinates
 		id		= pEffect->GetID();
 		sX		= pEffect->GetX();
 		sY		= pEffect->GetY();
 		light	= pEffect->GetLight();
 
-		// 시야 바꿔야 하는가?
+		// does the sight need to change?
 //		bChangeSight = pEffect->GetBltType()==BLT_EFFECT;
 
 		BOOL sXYinZone = (sX>=0 && sX<m_Width && sY>=0 && sY<m_Height);
 		
 		//---------------------------------------
 		//
-		// 제대로 움직인 경우
+		// when moved properly
 		//
 		//---------------------------------------
 		if (pEffect->Update())
@@ -4528,15 +4535,15 @@ MZone::UpdateEffects()
 			BOOL nXYinZone = (nX>=0 && nX<m_Width && nY>=0 && nY<m_Height);
 
 			//---------------------------------------
-			// chase effect가 아니고..
-			// Zone의 경계를 넘어간 경우.. --> 제거한다.
+			// if not a chase effect..
+			// when it crossed the Zone boundary.. --> remove it.
 			//---------------------------------------
 			if (pEffect->GetEffectType()!=MEffect::EFFECT_CHASE
 //				&& (pEffect->GetFrameID() <= EFFECTSPRITETYPE_MAP_BLACK_LARGE_SMOKE ||
 //					pEffect->GetFrameID() >= EFFECTSPRITETYPE_MAP_BLACK_SMALL_SMOKE_3)
 				&& !nXYinZone)
 			{
-				// 시야 제거
+				// remove sight
 //				if (bChangeSight)
 //				{
 //					UnSetLight(sX, sY, light);
@@ -4544,13 +4551,13 @@ MZone::UpdateEffects()
 
 				if (sXYinZone)
 				{
-					// sector에서 제거 [새기술9]
+					// remove from sector [new skill 9]
 					RemoveSectorEffect( sX, sY, id );
 				}
 										
 				#ifdef OUTPUT_DEBUG_UPDATE_EFFECT
 					DEBUG_ADD("delete pEffect0");
-					// memory삭제							
+					// delete memory
 					delete pEffect;			
 					DEBUG_ADD("delete OK");
 				#else
@@ -4560,20 +4567,20 @@ MZone::UpdateEffects()
 				iTemp = iEffect;
 				iEffect++;
 
-				// list에서 제거한다.
+				// remove from the list.
 				m_mapEffect.erase(iTemp);	
 
 				continue;
 			}
 
 			//-----------------------------------------------------------
-			// Effect의 종류에 따라서 처리를 해준다.
+			// Handle according to the kind of Effect.
 			//-----------------------------------------------------------
-			// Sector에 고정되어 있는 Effect
+			// Effect fixed to a Sector
 			//-----------------------------------------------------------
 			if (pEffect->GetEffectType() == MEffect::EFFECT_SECTOR)
 			{
-				// 빛나는 Effect이고, 빛의 크기가 달라졌으면..
+				// if it is a glowing Effect and the light size has changed..
 //				if (bChangeSight && light!=pEffect->GetLight())
 //				{
 //					UnSetLight(sX, sY, light);
@@ -4581,53 +4588,53 @@ MZone::UpdateEffects()
 //				}				
 			}
 			//-----------------------------------------------------------
-			// 움직이는 Effect
+			// moving Effect
 			//-----------------------------------------------------------
 			else
 			{
-				// 직선 Effect인 경우 --> Sector좌표에 따라 Sector에 체크~해야한다.
-				// 이전 좌표와 비교하여 
+				// for a straight Effect --> must check the Sector according to the Sector coordinates.
+				// compare with the previous coordinates
 				//case MEffect::EFFECT_LINEAR :
 				//case MEffect::EFFECT_PARABOLA :
 				//case MEffect::EFFECT_GUIDANCE :
 				//case MEffect::EFFECT_ATTACH :
 
 				//------------------------------------------------------
-				// 좌표가 달라졌으면..
+				// if the coordinates changed..
 				//------------------------------------------------------
 				if (sX!=nX || sY!=nY)
 				{
 					//------------------------------------------------------
-					// Block되는 Sector에 들어갔을 경우 제거한다.
+					// remove it if it entered a blocked Sector.
 					//------------------------------------------------------
 					//
-					// Block의 종류에 따라 다르지 않을까??
+					// might it differ depending on the kind of Block??
 					//
-					// 공중만 ...
+					// air only ...
 					if (0)
-						// 서버에서 block을 체크하지 않기 때문에
-						// block을 무시한다.
+						// because the server does not check blocks,
+						// ignore the block.
 						//
 						//pEffect->GetEffectType()!=MEffect::EFFECT_CHASE
 						//&& nXYinZone && m_ppSector[nY][nX].IsBlockFlying())						
 					{
-						// 시야 제거
+						// remove sight
 //						if (bChangeSight)
 //						{
 //							UnSetLight(sX, sY, light);
 //						}
 
-						// sector에서 제거	
+						// remove from sector
 						if (sXYinZone)
 						{
-							// [새기술9]
+							// [new skill 9]
 							RemoveSectorEffect(sX, sY, id);
 						}
 													
-						// memory삭제							
+						// delete memory
 						#ifdef OUTPUT_DEBUG_UPDATE_EFFECT
 							DEBUG_ADD("delete pEffect1");
-							// memory삭제							
+							// delete memory
 							delete pEffect;			
 							DEBUG_ADD("delete OK");
 						#else
@@ -4637,38 +4644,38 @@ MZone::UpdateEffects()
 						iTemp = iEffect;
 						iEffect++;
 
-						// list에서 제거한다.
+						// remove from the list.
 						m_mapEffect.erase(iTemp);	
 
 						continue;
 					}
 
-					// 시야 다시 설정
+					// set sight again
 //					if (bChangeSight)
 //					{
 //						UnSetLight(sX, sY, light);
 //						SetLight(pEffect->GetX(), pEffect->GetY(), pEffect->GetLight());
 //					}
 
-					// 이전 좌표에서 빼서 
+					// take it out of the previous coordinates
 					if (sXYinZone)
 					{
-						// [새기술9]
+						// [new skill 9]
 						RemoveSectorEffect(sX, sY, id);
 					}
 
-					//새로운 좌표에 추가한다.
+					// add it at the new coordinates.
 					if (nXYinZone)
 					{
 						m_ppSector[nY][nX].AddEffect( pEffect );
 					}
 				}		
 				//------------------------------------------------------
-				// 빛의 크기(시야)가 바뀌었으면..
+				// if the light size (sight) has changed..
 				//------------------------------------------------------
 				else if (light != pEffect->GetLight())
 				{
-					// 시야 다시 설정
+					// set sight again
 //					if (bChangeSight)
 //					{
 //						UnSetLight(sX, sY, light);
@@ -4679,18 +4686,18 @@ MZone::UpdateEffects()
 
 			//-----------------------------------------------
 			//
-			// 이 Effect가 끝나기 전에 LinkCount에 의해서
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// Before this Effect ends, because of LinkCount
+			// if there is a next linked Effect it must be generated.
 			//
-			// 현재Frame이 EndLinkFrame을 넘어간 경우
+			// when the current Frame passed EndLinkFrame
 			//
 			//-----------------------------------------------
 			if (g_CurrentFrame >= pEffect->GetEndLinkFrame()
 				&& pEffect->GetLinkSize() != 0)
 			{
-				// GenerateNext에서 
-				// pEffect의 EffectTarget을 NULL로 만들어주기 때문에
-				// 여기서 지울 필요 없다.
+				// in GenerateNext
+				// the EffectTarget of pEffect is set to NULL,
+				// so there is no need to delete it here.
 				#ifdef OUTPUT_DEBUG_UPDATE_EFFECT
 					DEBUG_ADD("GenerateNext1");
 					g_pEffectGeneratorTable->GenerateNext( pEffect );
@@ -4699,7 +4706,7 @@ MZone::UpdateEffects()
 					g_pEffectGeneratorTable->GenerateNext( pEffect );
 				#endif
 
-				// pEffect는 여전히 존재해야 하므로 지우면 안된다.
+				// pEffect must still exist, so it must not be deleted.
 			}
 			
 			
@@ -4707,24 +4714,24 @@ MZone::UpdateEffects()
 		}
 		//---------------------------------------
 		//
-		// 다 움직인 경우 = 제거해야 하는 경우 
+		// when fully moved = when it must be removed
 		//
 		//---------------------------------------
 		else
 		{
 			//-----------------------------------------------
 			//
-			//     Effect 제거
+			// remove Effect
 			//
 			//-----------------------------------------------
-			// 시야 제거			
+			// remove sight
 			//if (bChangeSight)
 			//{
 				//UnSetLight(sX, sY, light);
 			//}			
 			//-----------------------------------------------
 			//
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// if there is a next linked Effect it must be generated.
 			//
 			//-----------------------------------------------
 			if (pEffect->GetLinkSize() != 0)
@@ -4738,12 +4745,12 @@ MZone::UpdateEffects()
 				#endif
 			}		
 			
-			// sector에서 제거	
+			// remove from sector
 			if (sXYinZone)
 			{
 				MSector& sector = m_ppSector[sY][sX];
 				
-				// [새기술9]
+				// [new skill 9]
 				RemoveSectorEffect( sX, sY, id );
 
 				CheckCreatureInDarkness( sector, sX, sY );				
@@ -4751,7 +4758,7 @@ MZone::UpdateEffects()
 							
 			#ifdef OUTPUT_DEBUG_UPDATE_EFFECT
 				DEBUG_ADD("delete pEffect2");
-				// memory삭제							
+				// delete memory
 				delete pEffect;			
 				DEBUG_ADD("delete OK");
 			#else
@@ -4761,7 +4768,7 @@ MZone::UpdateEffects()
 			iTemp = iEffect;
 			iEffect++;
 
-			// list에서 제거한다.
+			// remove from the list.
 			m_mapEffect.erase(iTemp);	
 		}		
 	}	
@@ -4770,11 +4777,11 @@ MZone::UpdateEffects()
 
 
 //----------------------------------------------------------------------
-// Zone에 Effect 추가
+// Add Effect to the Zone
 //----------------------------------------------------------------------
-// m_mapGroundEffect에 추가한다.
-// GroundEffect는 pixel좌표만을 가지므로 
-// Sector좌표를 체크할 필요가 없다.
+// Add to m_mapGroundEffect.
+// A GroundEffect only has pixel coordinates,
+// so there is no need to check Sector coordinates.
 //----------------------------------------------------------------------
 bool		
 MZone::AddGroundEffect(MEffect* pEffect)
@@ -4798,8 +4805,8 @@ MZone::AddGroundEffect(MEffect* pEffect)
 			
 			if(NewEffectX == pOldEffect->GetX() && NewEffectY == pOldEffect->GetY())
 			{
-				int est1 = g_pTopView->GetEffectSpriteType( (BLT_TYPE) pEffect->GetBltType(), pEffect->GetFrameID() );
-				int est2 = g_pTopView->GetEffectSpriteType( (BLT_TYPE) pOldEffect->GetBltType(), pOldEffect->GetFrameID() );
+				int est1 = ::GetEffectSpriteType( (BLT_TYPE) pEffect->GetBltType(), pEffect->GetFrameID() );
+				int est2 = ::GetEffectSpriteType( (BLT_TYPE) pOldEffect->GetBltType(), pOldEffect->GetFrameID() );
 
 				if( est1 == EFFECTSPRITETYPE_SUMMON_GROUND_ELEMENTAL_END && est2 == EFFECTSPRITETYPE_SUMMON_GROUND_ELEMENTAL_ING)
 				{
@@ -4844,7 +4851,7 @@ MZone::AddGroundEffect(MEffect* pEffect)
 	}		
 		/*
 		//---------------------------------------------------------
-		// 선택가능한 Effect는 sector좌표가 바뀌지 않는다고 가정.
+		// assume the sector coordinates of a selectable Effect do not change.
 		//---------------------------------------------------------
 		if (pEffect->IsSelectable())
 		{	
@@ -4852,7 +4859,7 @@ MZone::AddGroundEffect(MEffect* pEffect)
 			int y = pEffect->GetY();
 
 			//---------------------------------------------------------
-			// Zone의 경계를 넘지 않는 경우만 Sector에 추가한다.
+			// add to the Sector only if it does not cross the Zone boundary.
 			//---------------------------------------------------------
 			if (x<0 || x>=m_Width
 				|| y<0 || y>=m_Height)
@@ -4888,8 +4895,8 @@ MZone::GetGroundEffect(TYPE_OBJECTID id) const
 //----------------------------------------------------------------------
 // Remove GroundEffect ( id )
 //----------------------------------------------------------------------
-// effect의 id는 거의 의미가 없지만..
-// 억지로라도 지워야하는 경우가 있어서리.. - -;
+// The effect id has almost no meaning, but..
+// there are cases where it must be deleted by force.. (sigh)
 //----------------------------------------------------------------------
 bool		
 MZone::RemoveGroundEffect(TYPE_OBJECTID id)
@@ -4905,7 +4912,7 @@ MZone::RemoveGroundEffect(TYPE_OBJECTID id)
 
 	/*
 	//---------------------------------------------------------
-	// 선택가능한 Effect는 sector좌표가 바뀌지 않는다고 가정.
+	// assume the sector coordinates of a selectable Effect do not change.
 	//---------------------------------------------------------
 	if (pEffect->IsSelectable())
 	{
@@ -4913,7 +4920,7 @@ MZone::RemoveGroundEffect(TYPE_OBJECTID id)
 		int y = pEffect->GetY();
 
 		//---------------------------------------------------------
-		// Zone의 경계를 넘지 않는 경우만 Sector에 추가한다.
+		// add to the Sector only if it does not cross the Zone boundary.
 		//---------------------------------------------------------
 		if (x<0 || x>=m_Width
 			|| y<0 || y>=m_Height)
@@ -4937,7 +4944,7 @@ MZone::RemoveGroundEffect(TYPE_OBJECTID id)
 //----------------------------------------------------------------------
 // Update GroundEffects
 //----------------------------------------------------------------------
-// 임시 함수  :  모든 GroundEffect의 Frame을 변화시킨다.
+// Temporary function : changes the Frame of all GroundEffects.
 //----------------------------------------------------------------------
 void
 MZone::UpdateGroundEffects()
@@ -4957,43 +4964,43 @@ MZone::UpdateGroundEffects()
 
 		//---------------------------------------
 		//
-		// 제대로 움직인 경우
+		// when moved properly
 		//
 		//---------------------------------------
 		if (pEffect->Update())
 		{
 			//-----------------------------------------------
 			//
-			// 이 Effect가 끝나기 전에 LinkCount에 의해서
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// Before this Effect ends, because of LinkCount
+			// if there is a next linked Effect it must be generated.
 			//
-			// 현재Frame이 EndLinkFrame을 넘어간 경우
+			// when the current Frame passed EndLinkFrame
 			//
 			//-----------------------------------------------
 			if (g_CurrentFrame >= pEffect->GetEndLinkFrame()
 				&& pEffect->GetLinkSize() != 0)
 			{
-				// GenerateNext에서 
-				// pEffect의 EffectTarget을 NULL로 만들어주기 때문에
-				// 여기서 지울 필요 없다.
+				// in GenerateNext
+				// the EffectTarget of pEffect is set to NULL,
+				// so there is no need to delete it here.
 				g_pEffectGeneratorTable->GenerateNext( pEffect );
 
-				// pEffect는 여전히 존재해야 하므로 지우면 안된다.
+				// pEffect must still exist, so it must not be deleted.
 			}
 
-			// 다음..	
+			// next..
 			iEffect++;
 		}
 		//---------------------------------------
 		//
-		// 다 움직인 경우 = 제거해야 하는 경우 
+		// when fully moved = when it must be removed
 		//
 		//---------------------------------------
 		else
 		{
 			//-----------------------------------------------
 			//
-			// 다음 연결되는 Effect가 있으면 생성해야 한다.
+			// if there is a next linked Effect it must be generated.
 			//
 			//-----------------------------------------------
 			if (pEffect->GetLinkSize() != 0)
@@ -5002,7 +5009,7 @@ MZone::UpdateGroundEffects()
 			}				
 			
 			//---------------------------------------------------------
-			// 선택가능한 Effect는 sector좌표가 바뀌지 않는다고 가정.
+			// assume the sector coordinates of a selectable Effect do not change.
 			//---------------------------------------------------------
 			/*
 			if (pEffect->IsSelectable())
@@ -5011,7 +5018,7 @@ MZone::UpdateGroundEffects()
 				int y = pEffect->GetY();
 
 				//---------------------------------------------------------
-				// Zone의 경계를 넘지 않는 경우만 Sector에서 제거
+				// remove from the Sector only if it does not cross the Zone boundary
 				//---------------------------------------------------------
 				if (x<0 || x>=m_Width
 					|| y<0 || y>=m_Height)
@@ -5024,13 +5031,13 @@ MZone::UpdateGroundEffects()
 			}
 			*/
 												
-			// memory삭제							
+			// delete memory
 			delete pEffect;			
 
 			iTemp = iEffect;
 			iEffect++;
 
-			// list에서 제거한다.
+			// remove from the list.
 			m_mapGroundEffect.erase(iTemp);	
 		}		
 	}	
@@ -5039,14 +5046,14 @@ MZone::UpdateGroundEffects()
 //----------------------------------------------------------------------
 // Get Near SpriteSet
 //----------------------------------------------------------------------
-// (sX,sY) 근처의 Tile과 ImageObject의 SpriteSet을 검색해서 넘겨준다.
+// Search and return the SpriteSets of the Tiles and ImageObjects near (sX,sY).
 //----------------------------------------------------------------------
 void						
-MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const
+MZone::GetNearSpriteSet(std::set<TYPE_SPRITEID>& TileSSM, std::set<TYPE_SPRITEID>& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const
 {
 	//----------------------------------------------------------------------
 	//
-	//                         ImageObject 검색
+	// search ImageObject
 	//
 	//----------------------------------------------------------------------	
 	POINT firstSector;
@@ -5058,7 +5065,7 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 	int sY2 = firstSector.y + g_SECTOR_HEIGHT*3;
 	
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------
 	if (sX1 < 0) 
 	{					
@@ -5085,11 +5092,11 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 	DEBUG_ADD_FORMAT("GetNearSpriteSet: (%d, %d) ~ (%d, %d)", sX1, sY1, sX2, sY2);
 
 	//------------------------------------------------------
-	// 각 Sector의 ImageObject검색
+	// search the ImageObjects of each Sector
 	//------------------------------------------------------
 	int y,x,i;
 
-	int maxTile = g_pTopView->m_TileSPK.GetSize();
+	int maxTile = WorldEvents::GetTileSpriteCount();
 
 	for (y=sY1; y<=sY2; y++)
 	{				
@@ -5098,25 +5105,25 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 			const MSector& sector = m_ppSector[y][x];
 
 			//--------------------------------------------
-			// Tile SpriteID를 저장한다.
+			// save the Tile SpriteID.
 			//--------------------------------------------
 			int spriteID = sector.GetSpriteID();
 
 			if (spriteID < maxTile)
 			{
-				TileSSM.Add( spriteID );
+				TileSSM.insert( spriteID );
 			}
 
 			//--------------------------------------------
-			// ImageObject가 있다면.. 
+			// if there is an ImageObject..
 			//--------------------------------------------
 			if (sector.IsExistImageObject())
 			{
 				OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
 				//--------------------------------------------				
-				// Sector에 있는 모든 ImageObject들을 검색한다.
-				// 각 ImageObject의 SpriteID를 모두 추가한다.
+				// search all ImageObjects in the Sector.
+				// add all the SpriteIDs of each ImageObject.
 				//--------------------------------------------
 				for (i=0; i<sector.GetImageObjectSize(); i++)
 				{
@@ -5124,27 +5131,24 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 					
 					if (pImageObject->GetSpriteID() != SPRITEID_NULL)
 					{
-						ImageObjectSSM.Add( pImageObject->GetSpriteID() );
+						ImageObjectSSM.insert( pImageObject->GetSpriteID() );
 					}
 					
-					// Frame이 있는 경우... Frame의 SpriteID도 검색 
+					// if there is a Frame... also search the Frame's SpriteID
 					if (pImageObject->IsAnimation())
 					{
 						DEBUG_ADD_FORMAT("AnimationObject: (%d, %d)",x, y);
 
 						int fid = ((MAnimationObject*)pImageObject)->GetFrameID();
 
-						if(fid < g_pTopView->m_ImageObjectFPK.GetSize())
+						// Each frame's SpriteID too (none past the view's pack).
+						const int frameCount = WorldEvents::GetImageObjectFrameCount(fid);
+						for (int j=0; j<frameCount; j++)
 						{
-							FRAME_ARRAY* pFrameArray = &(g_pTopView->m_ImageObjectFPK[ fid ]);
-							
-							// 각 Frame마다 SpriteID를 검색한다.
-							for (int j=0; j<pFrameArray->GetSize(); j++)
+							const TYPE_SPRITEID frameSpriteID = WorldEvents::GetImageObjectFrameSprite(fid, j);
+							if (frameSpriteID != SPRITEID_NULL)
 							{
-								if ((*pFrameArray)[j].GetSpriteID() != SPRITEID_NULL)
-								{
-									ImageObjectSSM.Add( (*pFrameArray)[j].GetSpriteID() );
-								}
+								ImageObjectSSM.insert( frameSpriteID );
 							}
 						}
 					}
@@ -5161,7 +5165,7 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 //----------------------------------------------------------------------
 // Add Sound
 //----------------------------------------------------------------------
-// 어느 시점에 출력할 Sound를 저장해둔다.
+// Store a Sound to be played at some point.
 //----------------------------------------------------------------------
 void
 MZone::AddSound(const SOUND_NODE& sound)
@@ -5172,29 +5176,29 @@ MZone::AddSound(const SOUND_NODE& sound)
 //----------------------------------------------------------------------
 // Update Sound
 //----------------------------------------------------------------------
-// 어느 시점에 출력할 Sound를 체크해서 소리를 낸다.
+// Check a Sound to be played at some point and make the sound.
 //----------------------------------------------------------------------
 void
 MZone::UpdateSound()
 {
 	m_DelayedSounds.Update(g_FrameNow, [](const SOUND_NODE& sound) {
-		PlaySound(sound.GetSoundID(), false, sound.GetX(), sound.GetY());
+		WorldEvents::PlaySoundAt(sound.GetSoundID(), false, sound.GetX(), sound.GetY());
 	});
 
 	const int zoneID = g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall;
 	const ZONETABLE_INFO* zone = g_pZoneTable ? g_pZoneTable->Get(zoneID) : nullptr;
 	std::optional<AmbientSoundPosition> player;
-	if (g_pPlayer) player = {g_pPlayer->GetX(), g_pPlayer->GetY()};
+	if (MCreature* pPlayer = PlayerState::Creature()) player = {pPlayer->GetX(), pPlayer->GetY()};
 	const auto actions = g_ZoneAmbientSounds.Update(g_FrameNow, zoneID, zone, player);
-	if (actions.stop) StopSound(*actions.stop);
+	if (actions.stop) WorldEvents::StopSound(*actions.stop);
 	if (actions.play)
-		PlaySound(actions.play->id, actions.play->loop, actions.play->x, actions.play->y);
+		WorldEvents::PlaySoundAt(actions.play->id, actions.play->loop, actions.play->x, actions.play->y);
 }
 
 //----------------------------------------------------------------------
 // Update Item
 //----------------------------------------------------------------------
-// Item이 시체인 경우.. - -;
+// When the Item is a corpse.. (sigh)
 //----------------------------------------------------------------------
 void
 MZone::UpdateItem()
@@ -5206,7 +5210,7 @@ MZone::UpdateItem()
 		MItem*	pItem = (*iItem).second;
 
 		//----------------------------------------------------------------------
-		// 시체인 경우.. 시체에 붙어있는 Effect를 처리해준다.
+		// for a corpse.. handle the Effects attached to the corpse.
 		//----------------------------------------------------------------------
 		if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 		{
@@ -5227,20 +5231,20 @@ MZone::UpdateItem()
 		}
 
 		//----------------------------------------------------------------------
-		// 떨어지고 있는 Item인 경우..
+		// when it is a falling Item..
 		//----------------------------------------------------------------------
 		else if (pItem->IsDropping())
 		{
 			pItem->NextDropFrame();
 
 			//--------------------------------------------------------
-			// 다 떨어진 경우
+			// when it has finished falling
 			//--------------------------------------------------------
 			if (!pItem->IsDropping())
 			{
-				PlaySound( pItem->GetTileSoundID(),
+				WorldEvents::PlaySoundAt( pItem->GetTileSoundID(),
 							false,
-							g_pPlayer->GetX(), g_pPlayer->GetY());
+							PlayerState::Creature()->GetX(), PlayerState::Creature()->GetY());
 			}
 		}
 		
@@ -5251,10 +5255,10 @@ MZone::UpdateItem()
 
 
 //----------------------------------------------------------------------
-// Zone에 FakeCreature 추가 
+// Add FakeCreature to the Zone
 //----------------------------------------------------------------------
-// 외부에서 new해줘야 한다.
-// 이미 있는지 확인을 하고 없으면 추가해야 한다.
+// Must be new'd outside.
+// Check whether it already exists, and add it if not.
 //----------------------------------------------------------------------
 bool		
 MZone::AddFakeCreature(MCreature* pCreature)
@@ -5265,7 +5269,7 @@ MZone::AddFakeCreature(MCreature* pCreature)
 
 	theIterator = m_mapFakeCreature.find(pCreature->GetID());
 	
-	// 아직 없는 Creature이면 추가	
+	// add if it is a Creature that does not exist yet
 	if (theIterator == m_mapFakeCreature.end())
 	{
 		m_mapFakeCreature.insert(CREATURE_MAP::value_type(pCreature->GetID(), pCreature));
@@ -5273,7 +5277,7 @@ MZone::AddFakeCreature(MCreature* pCreature)
 		return true;
 	}		
 
-	// 이미 있는 Creature이면,
+	// if it is a Creature that already exists,
 	DEBUG_ADD_FORMAT("Add Failed - Already Exist in Zone");
 
 	return false;
@@ -5282,19 +5286,19 @@ MZone::AddFakeCreature(MCreature* pCreature)
 	
 
 //----------------------------------------------------------------------
-// Zone에서 FakeCreature 제거
+// Remove FakeCreature from the Zone
 //----------------------------------------------------------------------
-// 내부에서 delete해준다.
+// deleted internally.
 //----------------------------------------------------------------------
 bool
 MZone::RemoveFakeCreature(TYPE_OBJECTID id)
 {
 	CREATURE_MAP::iterator	theIterator;
 
-	// ID가 id인 Creature를 찾는다.
+	// Find the Creature whose ID is id.
 	theIterator = m_mapFakeCreature.find(id);
     
-	// 그런 id를 가진 Creature는 없다.	
+	// there is no Creature with that id.
 	if (theIterator == m_mapFakeCreature.end())
 		return false;
 
@@ -5303,7 +5307,7 @@ MZone::RemoveFakeCreature(TYPE_OBJECTID id)
 
 	if(pFakeCreature != NULL)
 	{
-		// 펫인경우
+		// for a pet
 		if(pFakeCreature->GetOwnerID() != OBJECTID_NULL)
 		{
 			MCreature *pCreature = GetCreature(pFakeCreature->GetOwnerID());
@@ -5327,23 +5331,23 @@ MZone::RemoveFakeCreature(TYPE_OBJECTID id)
 
 
 //----------------------------------------------------------------------
-// Zone의 Creature 읽어오기
+// Read a Creature of the Zone
 //----------------------------------------------------------------------
 MCreature*	
 MZone::GetFakeCreature(TYPE_OBJECTID id)
 {
 	CREATURE_MAP::iterator	theIterator;
 
-	// ID가 id인 Creature를 찾는다.
+	// Find the Creature whose ID is id.
 	theIterator = m_mapFakeCreature.find(id);
 
-	// 없을 경우 NULL을 return한다.
+	// return NULL if not found.
 	if (theIterator == m_mapFakeCreature.end()) 
 	{
 		return NULL;
 	}
 
-	// 있으면 그 Creature를 return한다.
+	// if found, return that Creature.
 	return (*theIterator).second;
 }
 
@@ -5360,14 +5364,14 @@ MZone::UpdateFakeCreature()
 	//	DEBUG_ADD_FORMAT("[UpdateAllCreature] %d Creature(s)", m_mapCreature.size());
 	
 	//------------------------------------------------------
-	// 모든 Creature에 대해서 Action
+	// Action for all Creatures
 	//------------------------------------------------------
 	while (iCreature != m_mapFakeCreature.end())
 	{
 		pCreature = iCreature->second;
 
 		//------------------------------------------------------
-		// MFakeCreature인 경우만..
+		// only for MFakeCreature..
 		//------------------------------------------------------
 		if (pCreature->GetClassType()==MCreature::CLASS_FAKE)
 		{
@@ -5377,7 +5381,7 @@ MZone::UpdateFakeCreature()
 			pFakeCreature->UpdateAttachEffect();
 
 			//------------------------------------------------------
-			// FakeCreature가 사라지는 경우
+			// when the FakeCreature disappears
 			//------------------------------------------------------
 			if (pFakeCreature->IsFakeEnd())
 			{	
@@ -5448,16 +5452,16 @@ MZone::ChangeToHalluCreature()
 	DEBUG_ADD("Zone::ChangeToHalluCreature");
 	
 	//------------------------------------------------------
-	// 모든 Creature에 대해서 Action
+	// Action for all Creatures
 	//------------------------------------------------------
 	while (iCreature != m_mapCreature.end())
 	{
 		pCreature = iCreature->second;
 
-		// player가 아닌 경우에...
-		if (pCreature!=g_pPlayer)
+		// when not the player...
+		if (pCreature!=PlayerState::Creature())
 		{
-			pCreature->SetHalluCreature( g_pTopView->GetRandomMonsterTypeInZone() );
+			pCreature->SetHalluCreature( WorldEvents::GetRandomMonsterTypeInZone() );
 		}
 
 		iCreature ++;
@@ -5480,14 +5484,14 @@ MZone::RemoveHalluCreature()
 	DEBUG_ADD("Zone::RemoveHalluCreature");
 	
 	//------------------------------------------------------
-	// 모든 Creature에 대해서 Action
+	// Action for all Creatures
 	//------------------------------------------------------
 	while (iCreature != m_mapCreature.end())
 	{
 		pCreature = iCreature->second;
 
-		// player가 아닌 경우에...
-		if (pCreature!=g_pPlayer)
+		// when not the player...
+		if (pCreature!=PlayerState::Creature())
 		{
 			pCreature->UnSetHalluCreature();
 		}
@@ -5511,7 +5515,7 @@ MZone::RemoveHalluCreature()
 			
 			MCreature* pCreature = pCorpse->GetCreature();
 			
-			if (pCreature!=NULL && pCreature != g_pPlayer)
+			if (pCreature!=NULL && pCreature != PlayerState::Creature())
 			{
 				pCreature->UnSetHalluCreature();
 			}
@@ -5563,7 +5567,7 @@ MZone::GetCorpseKilledByMe(int limitItemCount)
 			MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 
 			if (pCreature!=NULL
-				&& pCreature->GetDrainCreatureID() == g_pPlayer->GetID())
+				&& pCreature->GetDrainCreatureID() == PlayerState::GetID())
 			{
 				return pItem;
 			}
@@ -5593,7 +5597,7 @@ MZone::GetPKType()
 //----------------------------------------------------------------------
 // ChangeSwapViceType
 //----------------------------------------------------------------------
-// tile에 있는 SwapViceType을 변경 한다.
+// Change the SwapViceType on the tile.
 //----------------------------------------------------------------------
 void		
 MZone::ChangeSwapViceType(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_EFFECTSPRITETYPE type, WORD wDelay)
@@ -5625,7 +5629,7 @@ MZone::ChangeSwapViceType(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_E
 //	MSector& sector = m_ppSector[sY][sX];
 //
 //	//--------------------------------------------------
-//	// effect가 있는 sector인지 확인
+//	// check whether it is a sector with an effect
 //	//--------------------------------------------------
 //	if (sector.IsExistEffect())
 //	{
@@ -5638,7 +5642,7 @@ MZone::ChangeSwapViceType(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, TYPE_E
 //			MEffect* pEffect = *iEffect;
 //
 //			//--------------------------------------------------
-//			// sector에 존재하는 effect만 체크해서 지운다.
+//			// check and delete only the effects present in the sector.
 //			//--------------------------------------------------
 //			if (pEffect->GetEffectType() == MEffect::EFFECT_SECTOR)
 //			{
@@ -5674,9 +5678,9 @@ MZone::RemoveSwapViceType()
 					pEffect->GetFrameID() == EFFECTSPRITETYPE_SWEEP_VICE_PRECASTING_3 )
 				{
 					
-//				// list에서 제거
+//				// remove from list
 					iEffect = m_mapGroundEffect.erase( iEffect );
-					// 메모리 제거
+					// free memory
 					delete pEffect;
 
 					continue;

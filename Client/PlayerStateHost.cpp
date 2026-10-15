@@ -326,4 +326,14 @@ int IsInSafeSector()
 	return s_Host && s_Host->IsInSafeSector ? s_Host->IsInSafeSector() : 0;
 }
 
+void SendPositionInfoToParty()
+{
+	if (s_Host && s_Host->SendPositionInfoToParty) s_Host->SendPositionInfoToParty();
+}
+
+void SendStatusInfoToParty()
+{
+	if (s_Host && s_Host->SendStatusInfoToParty) s_Host->SendStatusInfoToParty();
+}
+
 }
