@@ -34,3 +34,8 @@ void PacketDispatcher::dispatch(Packet* pPacket, Player* pPlayer)
 
 	fn(pPacket, pPlayer);
 }
+
+PacketDispatcher::HandlerFn PacketDispatcher::handlerFor(PacketID_t packetID)
+{
+	return packetID < Packet::PACKET_MAX ? s_Handlers[packetID] : 0;
+}

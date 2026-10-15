@@ -14,7 +14,7 @@
  * - Standalone SDL2 rendering (minimal dependencies)
  */
 
-#include "Client/EffectResourceContainer.h"
+#include "Client/framelib/EffectResourceContainer.h"
 #include "Client/MEffect.h"
 #include "Client/SpriteLib/SpriteLibBackend.h"
 #include "EffectSpriteTypeTable.h"

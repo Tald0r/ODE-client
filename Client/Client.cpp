@@ -91,6 +91,7 @@ extern bool g_bRunning;			// cleared by the pump on SDL_QUIT (DXLibBackendSDL.cp
 #include <Commctrl.h>
 #endif
 #include "AppendPatchInfo.h"
+#include "Netmarble.h"
 #include "EffectSpriteTypeDef.h"
 //#include "MFileDef.h"
 #include "Packet/Properties.h"
@@ -216,15 +217,6 @@ enum DARKEDEN_LANGUAGE
 	DARKEDEN_TAIWAN,
 	
 	DARKEDEN_LANGUAGE_MAX
-};
-
-struct NETMARBLE_INFO
-{
-	MString ID;
-	MString Password;
-	int WorldID;
-	int ServerID;
-	bool bGore;
 };
 
 // 2004, 7, 14, sobeit add start
@@ -360,7 +352,6 @@ GetFutecAddress(const char* pStr)
 	return true;
 }
 
-bool ParsingNetmarble(const char* pCommandLine, NETMARBLE_INFO &info);
 //bool ParsingRealServer(const char* pCommandLine,  int Dimention, REALSERVER_INFO &info);
 
 bool
@@ -1363,10 +1354,8 @@ color
 		case WM_TIMER :			
 			//for (loop = 0; loop < STREAM_MAX; ++loop)
 //					if (g_pOGG[loop] ) 
-#ifndef __USE_MP3__
 			if( g_SDLAudio.IsInit() && g_pOGG != NULL )
 				g_pOGG->streamUpdate (g_pOGG);
-#endif
 			break;
 
 		//---------------------------------------------------------------
@@ -3160,12 +3149,31 @@ bool ClientHasBrowserLoop() { return browserLoopRunning; }
 
 int ClientMain(char* lpCmdLine, int nCmdShow)
 {
+	// Help events' mail (task 4.222).
+	static const MHelpHost helpHost = {
+		.AddHelpMail = [](HELP_EVENT he) { gC_vs_ui.AddHelpMail(he); },
+	};
+	SetHelpHost(&helpHost);
+
+	// A refused Netmarble launch (task 4.220).
+	static const NetmarbleHost netmarbleHost = {
+		.RefuseLaunch = [] {
+			MessageBox( NULL, "넷마블 홈페이지를 통해서 다시 실행해주세요.","NetmarbleDarkEden",MB_OK);
+			exit(0);
+		},
+	};
+	SetNetmarbleHost(&netmarbleHost);
+
 	// The append patch's progress bar (task 4.212).
 	static const AppendPatchHost appendPatchHost = {
 		.UpdateProgress = UpdateProgressBar,
 		.SetProgressText = SetProgressBarText,
 	};
 	SetAppendPatchHost(&appendPatchHost);
+
+	// The loading thread's sprite-pack jobs open their files so (task 4.217).
+	static const MLoadingSPKHost loadingSPKHost = { .OpenBinary = FileOpenBinary };
+	SetLoadingSPKHost(&loadingSPKHost);
 
 	// Flip presents g_pBack, once it exists (task 4.211).
 	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {
@@ -4298,11 +4306,10 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	BOOL bBadTimer = FALSE;
 
 
-	NETMARBLE_INFO NetmarbleInfo;
 	REALSERVER_INFO RealServerInfo;
 	if(bNetmarble)
 	{
-		if(ParsingNetmarble(lpCmdLine, NetmarbleInfo) == false)
+		if(ParsingNetmarble(lpCmdLine) == false)
 		{
 			if(NetmarbleConfig.getPropertyInt("Netmarble") == 1)
 			{
@@ -4416,17 +4423,9 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		g_dwVideoMemory = 256 * 1024 * 1024;  // 256 MB default
 
 		// 넷마블용
-		if(bNetmarble)
-		{
-			g_pUserInformation->NetmarbleID = NetmarbleInfo.ID;
-			g_pUserInformation->NetmarblePassword = NetmarbleInfo.Password;
-			g_pUserInformation->WorldID = NetmarbleInfo.WorldID;
-			g_pUserInformation->ServerID = NetmarbleInfo.ServerID;
-//			g_pUserInformation->GoreLevel = NetmarbleInfo.bGore;
-			g_pUserInformation->bNetmarbleGoreLevel = NetmarbleInfo.bGore;
-			g_pUserInformation->IsNetmarble = bNetmarble;
-		}
-		else
+		// A Netmarble launch never gets this far: ParsingNetmarble refuses
+		// it or clears bNetmarble (task 4.220 retired the copy of its never
+		// filled NETMARBLE_INFO that stood here).
 		{
 			// mode|demention|ID|key
 			g_pUserInformation->IsAutoLogIn			= RealServerInfo.bMode;

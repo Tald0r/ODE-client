@@ -99,8 +99,9 @@ CFramePack<Type>::SaveToFile(std::ofstream& packFile, std::ofstream& indexFile)
 	//--------------------------------------------------
 	for (TYPE_FRAMEID i=0; i<m_Size; i++)
 	{
-		// CreatureFrame이 file에 쓰여지는 index를 저장
-		pIndex[i] = packFile.tellp();
+		// Remember where the frame is written: the index file stores it in
+		// 4 bytes, as a long.
+		pIndex[i] = static_cast<long>(packFile.tellp());
 
 		// CreatureFrame저장
 		m_pData[i].SaveToFile(packFile);

@@ -84,6 +84,7 @@ set(BASIC_SOURCES
 	ResourceText.cpp
 	RarArchive.cpp
 	MemoryPool.cpp
+	MWorkNode.cpp
 	CMessageArray.cpp
 	ConfigFile.cpp
 	# The monotonic clock adapter (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md,

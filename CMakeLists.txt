@@ -844,7 +844,6 @@ endif()
 add_executable(effect_viewer
 	tools/viewers/effect_viewer/main.cpp
 	tools/viewers/effect_viewer/EffectSpriteTypeTable.cpp
-	Client/EffectResourceContainer.cpp
 )
 
 target_include_directories(effect_viewer PRIVATE
@@ -970,9 +969,9 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		# root-level *Handler.cpp any more, and the other two compile into
 		# the executable on every platform, so the filters are gone rather
 		# than fixed - fixing them would have changed what links.
-		# MWorkThread and MMusic are needed on all platforms
+		# MWorkThread is needed on all platforms (MMusic.cpp is a gamemodel
+		# member since task 4.214)
 		# list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*MWorkThread.*")
-		# list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*MMusic\\.cpp")
 		# Note: PacketFunction.cpp now included with proper platform guards
 		# Windows-specific NetBIOS/IPX/SPX code is wrapped in #ifdef PLATFORM_WINDOWS
 		# list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*PacketFunction\\.cpp")

@@ -120,15 +120,14 @@ void	PositionInfoHandler(Packet*, Player*)
 	s_Dispatched++;
 }
 
-// The dispatch table is filled once per process and refuses a second
-// registration.
+// The dispatch table refuses a second registration, and another test may
+// clear it: bind the handler whenever the table lacks it. Whatever was
+// bound, it must be this one, or the packets would go elsewhere.
 void	EnsurePositionInfoHandlerRegistered()
 {
-	static const bool registered = [] {
+	if (PacketDispatcher::handlerFor(Packet::PACKET_RC_POSITION_INFO) == nullptr)
 		PacketDispatcher::registerHandler(Packet::PACKET_RC_POSITION_INFO, &PositionInfoHandler);
-		return true;
-	}();
-	(void)registered;
+	CHECK(PacketDispatcher::handlerFor(Packet::PACKET_RC_POSITION_INFO) == &PositionInfoHandler);
 }
 
 // A port no socket holds right now: bound on 0, read back, released.

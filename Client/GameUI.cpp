@@ -59,7 +59,6 @@
 #include "Gpackets/GCQuestStatus.h"
 #include "Gpackets/GCGoodsList.h"
 #include "Gpackets/GCShowUnionInfo.h"
-#include "CMP3.h"
 #include "AddonDef.h"
 #include "VS_UI_filepath.h"
 #include "PacketFunction.h"
@@ -2745,24 +2744,11 @@ UI_StartProgress(int zoneID)
 	{
 		if (g_pUserOption->PlayWaveMusic)
 		{
-#ifdef __USE_MP3__
-			if(g_pMP3 != NULL)
-			{
-				DEBUG_ADD("MP3 STOP6");
-				g_pMP3->Stop();
-				DEBUG_ADD("MP3 STOP6 OK");
-			}
-//			if (g_pSDLStream!=NULL)
-//			{
-//				g_pSDLStream->Stop();
-//			}
-#else
 			if(g_pOGG != NULL )
 			{
 				if( g_SDLAudio.IsInit() )
 					g_pOGG->streamClose();
 			}
-#endif
 		}
 		else
 		{

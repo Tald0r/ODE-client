@@ -3,6 +3,7 @@
 #include "SpriteLibBackendSDL.h"
 #include <chrono>
 #include <cstdio>
+#include <filesystem>
 #include <string>
 #include <fstream>
 #include <vector>
@@ -23,9 +24,9 @@ void LoadSprite(CSpritePack& pack, WORD id)
 	const WORD words[] = {2, 1, 5, 1, 0, 2, white, green};
 	// A name of its own, so two test processes cannot share it.
 	static unsigned int sequence = 0;
-	const std::string path = "tile_renderer_test_"
+	const std::string path = (std::filesystem::temp_directory_path() / ("darkeden_tile_renderer_"
 		+ std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())
-		+ "_" + std::to_string(sequence++) + ".bin";
+		+ "_" + std::to_string(sequence++) + ".bin")).string();
 	{
 		std::ofstream out(path, std::ios::binary | std::ios::trunc);
 		for (WORD w : words) { out.put(char(w & 0xFF)); out.put(char(w >> 8)); }
@@ -98,6 +99,18 @@ TEST(TileRenderer, ItNeedsASurfaceAndAPack)
 	CHECK(!scene.renderer.IsInit());
 	CHECK(!scene.Draw(1, 3, 2));
 	scene.renderer.ClearSurface(0x1234);
+	Map map(1, 1, {1});
+	scene.renderer.DrawTiles(&map, 0, 0, 1, 1);
+	scene.surface.Lock();
+	scene.renderer.DrawTilesNoLock(&map, 0, 0, 1, 1);
+	scene.surface.Unlock();
+	// Even a null tile with its pack set draws nothing before Init: there
+	// is no surface yet.
+	scene.renderer.SetNullTileSpritePack(&scene.pack, 1);
+	Map nullTile(1, 1, {-1});
+	scene.renderer.DrawTiles(&nullTile, 0, 0, 1, 1);
+	scene.renderer.DrawTilesNoLock(&nullTile, 0, 0, 1, 1);
+	scene.renderer.SetNullTileSpritePack(nullptr, 2);
 	CHECK_EQ(0, Lit(scene.surface));
 	CHECK_EQ(48, scene.renderer.GetTileX());
 	CHECK_EQ(24, scene.renderer.GetTileY());
@@ -138,6 +151,9 @@ TEST(TileRenderer, ZeroIsEmptyAndABadIdFails)
 	CHECK(!scene.Draw(2, 3, 2));		// not loaded
 	CHECK(!scene.Draw(3, 3, 2));		// past the pack
 	CHECK(!scene.Draw(-2, 3, 2));
+	// IDs that wrap to a loaded entry as a WORD are still past the pack.
+	CHECK(!scene.Draw(65537, 3, 2));
+	CHECK(!scene.Draw(-65535, 3, 2));
 	CHECK_EQ(0, Lit(scene.surface));
 }
 
@@ -163,6 +179,10 @@ TEST(TileRenderer, TheNullTileUsesItsOwnPack)
 	CHECK_EQ(4, Lit(scene.surface));
 	scene.renderer.Release();
 	CHECK(!scene.Draw(SPRITEID_NULL, 30, 20));
+	// Release forgets the null-tile pack too.
+	scene.renderer.Init(&scene.surface, &scene.pack);
+	CHECK(scene.Draw(SPRITEID_NULL, 30, 20));
+	CHECK_EQ(4, Lit(scene.surface));
 }
 
 TEST(TileRenderer, TheViewportIsClampedToTheMapAndTilesAreSpaced)
@@ -176,6 +196,7 @@ TEST(TileRenderer, TheViewportIsClampedToTheMapAndTilesAreSpaced)
 	Map map(3, 2, {1, 1, 1,
 	               1, 0, 1});
 	scene.renderer.DrawTiles(&map, 1, -4, 9, 9, 7, 4);
+	CHECK(!scene.surface.IsLocked());		// DrawTiles unlocks what it locked
 	// Column 1 at x 7, column 2 at x 12; row 0 at y 4, row 1 at y 7.
 	CHECK_EQ(white, Pixel(scene.surface, 7, 4));
 	CHECK_EQ(white, Pixel(scene.surface, 12, 4));
@@ -194,6 +215,14 @@ TEST(TileRenderer, TheViewportIsClampedToTheMapAndTilesAreSpaced)
 	// A viewport left of the map starts at column 0.
 	scene.surface.FillSurface(0);
 	scene.renderer.DrawTiles(&map, -2, 0, 9, 1, 0, 0);
+	CHECK_EQ(white, Pixel(scene.surface, 0, 0));
+	CHECK_EQ(white, Pixel(scene.surface, 10, 0));
+	CHECK_EQ(6, Lit(scene.surface));
+	// The same without the renderer locking: the path MTopView uses.
+	scene.surface.FillSurface(0);
+	scene.surface.Lock();
+	scene.renderer.DrawTilesNoLock(&map, -2, 0, 9, 1, 0, 0);
+	scene.surface.Unlock();
 	CHECK_EQ(white, Pixel(scene.surface, 0, 0));
 	CHECK_EQ(white, Pixel(scene.surface, 10, 0));
 	CHECK_EQ(6, Lit(scene.surface));

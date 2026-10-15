@@ -72,7 +72,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "WavePackFileManager.h"
 #include "PCConfigTable.h"
 #include "Profiler.h"
-#include "CMP3.h"
 #include "MEventManager.h"
 #include "MNPC.h"
 #include "UtilityFunction.h"
@@ -197,7 +196,6 @@ CSpriteSurface*			g_pLast		= NULL;
 int						g_ScreenShotNumber = 0;
 
 CSDLStream*		g_pSDLStream = NULL;
-CMP3*					g_pMP3 = NULL;
 int						g_SoundPerSecond = 0;
 
 // Chat string
@@ -489,15 +487,8 @@ SetMode(enum CLIENT_MODE mode)
 			//--------------------------------------------------
 			if (g_pUserOption->PlayWaveMusic)
 			{
-#ifdef __USE_MP3__
-					DEBUG_ADD("MP3 STOP1");
-					g_pMP3->Stop();
-					DEBUG_ADD("MP3 STOP1 OK");
-//					g_pSDLStream->Stop();
-#else
 					if( g_SDLAudio.IsInit() )
 						g_pOGG->streamClose();
-#endif
 			}
 			else
 			{
@@ -1927,20 +1918,11 @@ LoadZone(int n)
 
 	if (g_pUserOption->PlayWaveMusic)
 	{
-#ifdef __USE_MP3__
-		if (g_pMP3 != NULL)
-		{
-			DEBUG_ADD("MP3 STOP4");
-			g_pMP3->Stop();
-			DEBUG_ADD("MP3 STOP4 OK");
-		}
-#else
 		if( g_pOGG != NULL )
 		{
 			if( g_SDLAudio.IsInit() )
 				g_pOGG->streamClose();
 		}
-#endif
 //		if (g_pSDLStream!=NULL)
 //		{
 //			g_pSDLStream->Stop();
@@ -3883,16 +3865,6 @@ PlayMusicCurrentZone()
 			{
 				if (g_pUserOption->PlayWaveMusic)
 				{
-#ifdef __USE_MP3__
-					DEBUG_ADD("MP3 OPEN1");
-					g_pMP3->Open( (*g_pMusicTable)[ musicID ].FilenameWav );
-					DEBUG_ADD("MP3 OPEN1 OK");
-					DEBUG_ADD("MP3 PLAY3");
-					g_pMP3->Play( false );
-					DEBUG_ADD("MP3 PLAY3 OK");
-//					g_pSDLStream->Load( (*g_pMusicTable)[ musicID ].FilenameWav );
-//					g_pSDLStream->Play( FALSE );
-#else
 					if( g_oggfile != NULL )
 						fclose(g_oggfile);
 
@@ -3916,7 +3888,6 @@ PlayMusicCurrentZone()
 							// 2004, 11, 8, sobeit add end - 그냥 에러 체크
 						}
 					}
-#endif
 				}
 				else
 				{
@@ -4309,12 +4280,8 @@ UpdateDisconnected()
 	{
 //		g_pSDLStream->Stop();
 		DEBUG_ADD("MP3 STOP5");
-#ifdef __USE_MP3__
-		g_pMP3->Stop();
-#else
 		if( g_SDLAudio.IsInit() )
 			g_pOGG->streamClose();
-#endif
 		DEBUG_ADD("MP3 STOP5 OK");
 	}
 	else

@@ -94,12 +94,11 @@ Client/PackFileManager.cpp
 Client/PackFileManager.h
 Client/MObjectScreen.cpp
 
-# The update base and the work-queue node base (4.205; the video stub
-# that came with them was retired with the opening in 4.210).
+# The update base (4.205; the video stub that came with it was retired
+# with the opening in 4.210, and the work-queue node base moved to basic
+# in 4.217).
 Client/WinLib/CWinUpdate.cpp
 Client/WinLib/CWinUpdate.h
-Client/MWorkNode.cpp
-Client/MWorkNode.h
 
 # The debug kit's ini reader and the message-name table (4.206).
 Client/DebugKit.cpp
@@ -113,6 +112,26 @@ Client/CWaitPacketUpdate.h
 # The append patch (4.212).
 Client/AppendPatchInfo.cpp
 Client/AppendPatchInfo.h
+
+# The packet-handler registry (4.218).
+Client/PacketHandlerRegistry.cpp
+Client/PacketHandlerRegistry.h
+
+# The effect generator table (4.219).
+Client/MEffectGeneratorTable.cpp
+Client/MEffectGeneratorTable.h
+
+# The Netmarble launch check (4.220).
+Client/Netmarble.cpp
+Client/Netmarble.h
+
+# Help events' mail (4.222).
+Client/HelpEvent.cpp
+Client/HelpEvent.h
+
+# The MIDI player's state (4.214).
+Client/MMusic.cpp
+Client/MMusic.h
 
 # Money (task 4.2; the price and trade managers wait for the item core)
 Client/MMoneyManager.cpp

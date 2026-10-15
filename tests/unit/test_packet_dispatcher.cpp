@@ -17,10 +17,11 @@
 //
 // The table is process-global and written only at startup, so each test
 // registers a DISTINCT id and never re-registers one used by another
-// test. Any valid id is safe HERE because unit_tests does not link
-// Client/PacketHandlerRegistry.cpp (it is executable-side), so nothing
-// else writes this process's table - the ids are NOT "reserved" in the
-// protocol (the id space is fully allocated up to PACKET_MAX).
+// test. Any valid id is safe HERE: the registry
+// (Client/PacketHandlerRegistry.cpp, gamemodel's since task 4.218) fills
+// the table only in test_packet_handler_registry.cpp, which clears it
+// before and after - the ids are NOT "reserved" in the protocol (the id
+// space is fully allocated up to PACKET_MAX).
 //
 // Compiles with the packetwire library's own defines - see
 // tests/CMakeLists.txt.

@@ -36,7 +36,13 @@ public:
 	// so dispatch needs no locking.
 	static void dispatch(Packet* pPacket, Player* pPlayer);
 
+	// The handler registered for an id, or null (none, or out of range).
+	static HandlerFn handlerFor(PacketID_t packetID);
+
 private:
+	// Tests clear the table through tests/support/PacketDispatcherTestAccess.h.
+	friend struct PacketDispatcherTestAccess;
+
 	static HandlerFn s_Handlers[];
 };
 

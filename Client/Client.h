@@ -51,7 +51,7 @@
 #include "MScreenEffectManager.h"
 
 #include "MWorkThread.h"
-#include "MLoadingSPKWorkNode.h"
+#include "SpriteLib/MLoadingSPKWorkNode.h"
 #include "MItem.h"
 #include "SpriteLib/CStorageSurface.h"
 

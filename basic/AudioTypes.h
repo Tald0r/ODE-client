@@ -79,8 +79,10 @@
 -----------------------------------------------------------------------------*/
 
 /* FOURCC/HMMIO: skip our compat typedefs if the real <mmsystem.h>/
-   <mmiscapi.h> was already included earlier in this translation unit (e.g.
-   CMP3.cpp/MMusic.cpp still call real MCI/mmio APIs) - defining both is an
+   <mmiscapi.h> was already included earlier in this translation unit
+   (WavePackFileManager.cpp includes <MMSystem.h> before CDirectSound.h on
+   Windows; CMP3.cpp and MMusic.cpp's MCI branches did until tasks 4.214
+   and 4.215 retired them) - defining both is an
    incompatible redefinition (error C2371/C2011). _INC_MMSYSTEM and
    _MMISCAPI_H_ are those headers' own include guards. */
 #if !defined(_INC_MMSYSTEM) && !defined(_MMISCAPI_H_)
