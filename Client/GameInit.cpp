@@ -2637,6 +2637,7 @@ void ReleaseAllObjects()
 	MEffectTarget::SetHost(nullptr);
 	MEffect::SetHost(nullptr);
 	MHelicopter::SetHost(nullptr);
+	ZONESOUND_NODE::SetHost(nullptr);
 	MGuidanceEffect::SetHost(nullptr);
 	MParabolaEffect::SetHost(nullptr);
 	MAttachEffect::SetHost(nullptr);
@@ -3076,6 +3077,39 @@ static const MWarHost s_WarHost = {
 		UI_SetBloodBibleStatusTimer(30);
 		UI_CloseRangerChat();
 	},
+};
+
+// What the zone's sounds ask of the game (task 4.227).
+static const ZoneSoundHost s_ZoneSoundHost = {
+	.AudioReady = []() { return g_SDLAudio.IsInit(); },
+	.LoadWav = [](const char* filename) { return g_SDLAudio.LoadWav(const_cast<LPSTR>(filename)); },
+	.Duplicate = [](LPDIRECTSOUNDBUFFER buffer) { return g_SDLAudio.DuplicateSoundBuffer(buffer, false); },
+	.Release = [](LPDIRECTSOUNDBUFFER buffer) { g_SDLAudio.Release(buffer); },
+	.IsPlaying = [](LPDIRECTSOUNDBUFFER buffer) { return g_SDLAudio.IsPlay(buffer); },
+	.Play = [](LPDIRECTSOUNDBUFFER buffer, bool loop) { g_SDLAudio.Play(buffer, loop); },
+	.Stop = [](LPDIRECTSOUNDBUFFER buffer) { g_SDLAudio.Stop(buffer); },
+	.CenterToRightPan = [](LPDIRECTSOUNDBUFFER buffer, int pan) { g_SDLAudio.CenterToRightPan(buffer, pan); },
+	.CenterToLeftPan = [](LPDIRECTSOUNDBUFFER buffer, int pan) { g_SDLAudio.CenterToLeftPan(buffer, pan); },
+	.CenterPan = [](LPDIRECTSOUNDBUFFER buffer) { g_SDLAudio.CenterPan(buffer); },
+	.SubVolumeFromMax = [](LPDIRECTSOUNDBUFFER buffer, int volume) { g_SDLAudio.SubVolumeFromMax(buffer, volume); },
+	.IsCached = [](TYPE_SOUNDID id) { return !g_pSoundManager->IsDataNULL(id); },
+	.Cache = [](TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER buffer, LPDIRECTSOUNDBUFFER& old) {
+		return g_pSoundManager->SetData(id, buffer, old) != 0xFFFF;
+	},
+	.GetCached = [](TYPE_SOUNDID id, LPDIRECTSOUNDBUFFER& buffer) { return g_pSoundManager->GetData(id, buffer); },
+	.SoundOn = []() { return g_pUserOption->PlaySound != FALSE; },
+	.SoundVolume = []() { return g_pUserOption->VolumeSound; },
+	.PlayerPosition = [](int& x, int& y) {
+		if (g_pPlayer == NULL) return false;
+		x = g_pPlayer->GetX();
+		y = g_pPlayer->GetY();
+		return true;
+	},
+	.SectorSounds = [](int x, int y) -> const SECTORSOUND_LIST* {
+		return g_pZone != NULL ? &g_pZone->GetSector(x, y).GetSectorSoundList() : NULL;
+	},
+	.Now = []() { return g_FrameNow; },
+	.GameHour = []() { return g_pGameTime ? std::optional<BYTE>{g_pGameTime->GetHour()} : std::nullopt; },
 };
 
 // What the helicopters ask of the game (task 4.226).
@@ -4680,6 +4714,7 @@ InitGameObject()
 	MEffectTarget::SetHost(&s_EffectTargetHost);
 	MEffect::SetHost(&s_EffectHost);
 	MHelicopter::SetHost(&s_HelicopterHost);
+	ZONESOUND_NODE::SetHost(&s_ZoneSoundHost);
 	MGuidanceEffect::SetHost(&s_GuidanceEffectHost);
 	MParabolaEffect::SetHost(&s_ParabolaEffectHost);
 	MAttachEffect::SetHost(&s_AttachEffectHost);

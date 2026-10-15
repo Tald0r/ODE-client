@@ -140,6 +140,10 @@ Client/MObjectSelector.h
 Client/MHelicopterManager.cpp
 Client/MHelicopterManager.h
 
+# The zone's sounds around the player (4.227).
+Client/MZoneSoundManager.cpp
+Client/MZoneSoundManager.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h
