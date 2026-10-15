@@ -7058,7 +7058,30 @@ rounds settled* for the host rules). Test fixtures share
     the break.
     Taking `UIDialog.cpp` out of the membership breaks the test link.
 
-### Remaining R1 work after tasks 4.80-4.238
+- [x] **4.239 An advanced creature's actions:** the conversions from a
+  plain action to an advanced (second class) one, by race, and the
+  advanced actions' frame counts join `gamemodel` (`AdvancementAction.cpp`).
+  MCreature reads them, so it needs them in a library before it can move
+  (see *Remaining R1 work*).
+  > **Status:** done (2026-10-15).
+  > - The three tables and the slayer's stand, move and damaged rules move
+  >   from MTopViewDraw.cpp; the frame count arrays from Client.cpp, which
+  >   still fills them from the view's frame packs at start-up.
+  > - The slayer's conversion takes the right hand's item class
+  >   (`ConvAdvancementSlayerAction`). MTopViewDraw.cpp keeps
+  >   `ConvAdvancementSlayerActionFromSlayerAction(action, MCreatureWear*)`
+  >   for the view's callers, reading the hand from the creature.
+  > - **Recorded, not changed:** an action at or past `ACTION_MAX_SLAYER`
+  >   (35) and below 100 reads past the slayer's and the vampire's tables.
+  >   No creature has one.
+  >
+  > R1 is unchanged: no executable source leaves.
+  - Owner: membership, `test_advancement_action.cpp` (6 tests, the three
+    tables pinned row by row).
+  - Mutants: 14 of 14 caught. Taking `AdvancementAction.cpp` out of the
+    membership breaks the test link.
+
+### Remaining R1 work after tasks 4.80-4.239
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.

@@ -894,6 +894,9 @@ Client/PacketHandler/GCTeachSkillInfoHandler.cpp
 Client/DialogPresentationHost.cpp
 Client/DialogPresentationHost.h
 # The NPC talk box and the message box, and their windows (4.238).
+# An advanced creature's actions: the conversions and frame counts (4.239).
+Client/AdvancementAction.cpp
+Client/AdvancementAction.h
 Client/DialogWindowHost.cpp
 Client/DialogWindowHost.h
 Client/UIDialog.cpp

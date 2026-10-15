@@ -204,9 +204,7 @@ IWebBrowser2*			g_pWebBrowser = NULL;
 // [Futec수정]
 char g_FutecIP[20] = { 0, };
 unsigned int g_FutecPort = 0;
-BYTE g_AdvanceVampireActionMaxCount[ ACTION_ADVANCEMENT_MAX - ACTION_ADVANCEMENT_STOP ];
-BYTE g_AdvanceSlayerActionMaxCount[ ACTION_ADVANCEMENT_SLAYER_MAX - ACTION_ADVANCEMENT_SLAYER_STOP_SWORD ];
-BYTE g_AdvanceOustersActionMaxCount[ ACTION_ADVANCEMENT_OUSTERS_MAX - ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP ];
+// The advanced actions' frame counts are AdvancementAction.cpp's (gamemodel).
 
 enum DARKEDEN_LANGUAGE
 {
