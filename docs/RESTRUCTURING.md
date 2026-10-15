@@ -549,9 +549,9 @@ Not a code phase — the standing rule this plan exists to enable, stated once:
   > instruction. Review-round repair commits are not exempt.
   - Owner: the hook.
 
-The creature allocator is now directly testable in `basic/MemoryPool`, with
-its four creature-specific pool instances retained in `Client/MemoryPool.cpp`
-(each moved beside its class in tasks 4.242-4.245, which retired the file).
+The creature allocator is now directly testable in `basic/MemoryPool`. Its
+four creature-specific pool instances stayed in `Client/MemoryPool.cpp` until
+tasks 4.242-4.245 moved each beside its class; 4.245 retired the file.
 `tests/unit/test_memory_pool.cpp` owns the size, alignment, membership and
 reuse contracts; the move and the behavior change are separate commits.
 
@@ -7228,8 +7228,8 @@ rounds settled* for the host rules). Test fixtures share
   >   `ZoneState::CanMoveIn`, `GetWidthIn`, `GetHeightIn` and
   >   `GetCreatureIn`, which take the zone. The player goes through
   >   `PlayerState`; the view's first sector and the skills and sounds it
-  >   starts go through `WorldEvents`; MTopView's direction statics become
-  >   `WorldTileGeometry` and `SelectFacingDirection`.
+  >   starts go through `WorldEvents`; MTopView's pixel statics become
+  >   `WorldTileGeometry`'s and its direction static `SelectFacingDirection`.
   > - The view's sector sizes (`g_SECTOR_*`) move from Client.cpp to
   >   `ViewSectors.cpp`, and `GetNextTileByDirection` from PacketFunction.cpp
   >   to `WorldTileGeometry`, over `DirectionOffset`.
@@ -7242,7 +7242,9 @@ rounds settled* for the host rules). Test fixtures share
   >   `Action` resets within the same frame.
   >
   > R1 is 21 Windows / 19 Ninja.
-  - Owner: membership, R1, `test_fake_creature.cpp`: 22 tests. Its
+  - Owner: membership, R1, `test_fake_creature.cpp`: 22 tests (26 with
+    the review's follow-up, whose zone fake answers the player's zone and
+    the fake's own zone differently and records the move type asked). Its
     IDs (taken ones skipped, 9999 wrapping to 0), another player's pet
     item freed with it, its kinds' drawing flags and ends (a rocket's
     time and target, a wild wolf's last frames, a dragon tornado leaving
@@ -7251,11 +7253,20 @@ rounds settled* for the host rules). Test fixtures share
     turning to its owner's target, the path search (round a wall, within
     the view, an unreachable cell remembered, asleep unless the player is
     a ghost), the ghost wandering in view, the rocket circling its
-    target, the wild wolf's leaps and its feeding at a corpse, a pet
-    chasing its master and a tank pet's smoke, and a pet's step and its
+    target, the wild wolf's three leaps, its sidesteps, its end frame and
+    its feeding at a corpse, a pet chasing its master, walking near it by
+    its level, cutting a drink short and following it in its own zone,
+    a tank pet's smoke, a fast move's end, and a pet's step and its
     sound, over a zone of free and blocked cells and recording hosts.
     `test_world_tile_geometry.cpp` pins `GetNextTileByDirection`.
   - Mutants: 50 of 50 caught: 49 in MFakeCreature.cpp and GetNextTileByDirection's one. Two of them abort (they free a pet item the player's inventory or the test still holds), and one, the path search no longer skipping visited cells, never ends and was stopped at a time limit.
+    The review's follow-up: 30 of 31 more caught (each own-zone read
+    swapped for the player's zone and back, each move type, the wolf's
+    later leaps and its end frame, a walking pet's level, the drain
+    catch-up, a tracing pet, a fast move's end). The one left drops a
+    tracing pet's flag just before `SetStop`, which clears it anyway. The
+    path search's own bound on its zone's size is redundant with the
+    zone's `CanMove`, which bounds itself.
     Taking `MFakeCreature.cpp` out of the membership breaks the test link.
 
 ### Remaining R1 work after tasks 4.80-4.245

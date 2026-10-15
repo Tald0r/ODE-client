@@ -63,11 +63,17 @@ bool Same(const Calls& expected)
 
 // The creature's own zone: an address the fakes compare.
 int zoneMarker;
-// The zone: a width and height, the cells nothing can stand on, the cells
-// a path search has visited, its creatures and the fake IDs taken.
+// Two zones that answer differently, so a read of the wrong one shows. The
+// fake's own zone (m_pZone, the ...In entries): a width and height, the
+// cells nothing can stand on and its creatures. The player's zone
+// (g_pZone): its own size and blocked cells, the cells a path search has
+// visited, its creatures and the fake IDs taken.
 bool zoneExists = true;
 int zoneWidth = 60, zoneHeight = 60;
 std::set<Cell> blocked;
+std::map<TYPE_OBJECTID, MCreature*> ownZoneCreatures;
+int playerZoneWidth = 200, playerZoneHeight = 200;
+std::set<Cell> playerBlocked;
 std::set<Cell> visited;
 int unvisits = 0;
 std::map<TYPE_OBJECTID, MCreature*> creatures;
@@ -75,15 +81,26 @@ std::set<TYPE_OBJECTID> fakeIDsTaken;
 POINT firstSector = { 10, 10 };
 MZone* OwnZone() { return reinterpret_cast<MZone*>(&zoneMarker); }
 std::vector<MZone*> zonesAsked;
+// The move type each free-cell question was asked with.
+std::vector<int> moveTypesAsked;
 bool Free(int x, int y) { return x >= 0 && y >= 0 && x < zoneWidth && y < zoneHeight && blocked.count({x, y}) == 0; }
+bool PlayerZoneFree(int x, int y) { return x >= 0 && y >= 0 && x < playerZoneWidth && y < playerZoneHeight && playerBlocked.count({x, y}) == 0; }
+// Every free-cell question so far was asked with this move type.
+bool AskedAs(int moveType)
+{
+	if (moveTypesAsked.empty()) return false;
+	for (int asked : moveTypesAsked)
+		if (asked != moveType) return false;
+	return true;
+}
 
 const ZoneState::Host zoneHost = []() {
 	ZoneState::Host host{};
 	host.Exists = []() { return zoneExists; };
-	host.GetWidth = []() { return zoneWidth; };
+	host.GetWidth = []() { return playerZoneWidth; };
 	// Placing a creature reads its sector (darkness): one plain sector.
 	host.GetSector = [](TYPE_SECTORPOSITION, TYPE_SECTORPOSITION) -> const MSector* { static MSector sector; return &sector; };
-	host.GetHeight = []() { return zoneHeight; };
+	host.GetHeight = []() { return playerZoneHeight; };
 	// GetFakeID only asks whether the ID is taken: a marker answers.
 	host.GetFakeCreature = [](TYPE_OBJECTID id) -> MCreature* {
 		return fakeIDsTaken.count(id) != 0 ? reinterpret_cast<MCreature*>(&zoneMarker) : nullptr;
@@ -95,14 +112,18 @@ const ZoneState::Host zoneHost = []() {
 	host.SetVisitedFlag = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { visited.insert({x, y}); };
 	host.UnSetVisitedFlag = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { visited.erase({x, y}); ++unvisits; };
 	host.IsVisitedFlag = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return visited.count({x, y}) != 0; };
-	host.CanMove = [](int, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { return Free(x, y); };
-	host.CanMoveIn = [](MZone* pZone, int, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { zonesAsked.push_back(pZone); return Free(x, y); };
+	host.CanMove = [](int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) { moveTypesAsked.push_back(moveType); return PlayerZoneFree(x, y); };
+	host.CanMoveIn = [](MZone* pZone, int moveType, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y) {
+		zonesAsked.push_back(pZone);
+		moveTypesAsked.push_back(moveType);
+		return Free(x, y);
+	};
 	host.GetWidthIn = [](MZone* pZone) { zonesAsked.push_back(pZone); return zoneWidth; };
 	host.GetHeightIn = [](MZone* pZone) { zonesAsked.push_back(pZone); return zoneHeight; };
 	host.GetCreatureIn = [](MZone* pZone, TYPE_OBJECTID id) -> MCreature* {
 		zonesAsked.push_back(pZone);
-		auto found = creatures.find(id);
-		return found == creatures.end() ? nullptr : found->second;
+		auto found = ownZoneCreatures.find(id);
+		return found == ownZoneCreatures.end() ? nullptr : found->second;
 	};
 	host.MoveGroundCreatureIn = [](MZone*, MCreature*, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION) { return true; };
 	host.MoveFlyingCreatureIn = [](MZone*, MCreature*, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION, TYPE_SECTORPOSITION) { return true; };
@@ -193,6 +214,10 @@ struct Scene
 		zoneExists = true;
 		zoneWidth = zoneHeight = 60;
 		blocked.clear();
+		ownZoneCreatures.clear();
+		playerZoneWidth = playerZoneHeight = 200;
+		playerBlocked.clear();
+		moveTypesAsked.clear();
 		visited.clear();
 		unvisits = 0;
 		creatures.clear();
@@ -444,7 +469,7 @@ TEST(FakeCreature, ADragonTornadoEndsOutOfThePlayersView)
 //----------------------------------------------------------------------
 // The turning slide
 //----------------------------------------------------------------------
-TEST(FakeCreature, ATurningFakeSlidesToItsCellAndEnds)
+TEST(FakeCreature, ATurningFakeSlidesToItsCellButNeverEnds)
 {
 	Scene scene;
 	scene.Tribe(5);
@@ -508,6 +533,9 @@ TEST(FakeCreature, ItsNextDestinationStepsBackFromABlockedCell)
 	blocked.clear();
 	CHECK(!fake.SetNextDestination(20, 20));
 	CHECK(!fake.SetNextDestination(SECTORPOSITION_NULL, 20));
+	// It asks as what it is: a fake nothing blocks.
+	CHECK_EQ(int(MCreature::CREATURE_FAKE_NO_BLOCK), int(fake.GetMoveType()));
+	CHECK(AskedAs(MCreature::CREATURE_FAKE_NO_BLOCK));
 }
 
 TEST(FakeCreature, AnOffZoneDestinationIsNotWalkedBack)
@@ -533,26 +561,31 @@ TEST(FakeCreature, APetStandsNearItsOwnerOnAFreeCell)
 	CHECK_EQ(20, int(p.y));
 	zoneExists = true;
 	// The cells within two of the owner (18..21), off its row and column,
-	// at least the minimum from the pet. Block all but one.
+	// at least the minimum from the pet, free in the player's zone (the
+	// owner's): block all but one.
 	for (int y = 18; y < 22; ++y)
 		for (int x = 18; x < 22; ++x)
-			blocked.insert({x, y});
-	blocked.erase({21, 18});
-	p = MFakeCreature::CaculatePetPosition(20, 20, 2, 1, MCreature::CREATURE_GROUND, 25, 25);
+			playerBlocked.insert({x, y});
+	playerBlocked.erase({21, 18});
+	p = MFakeCreature::CaculatePetPosition(20, 20, 2, 1, MCreature::CREATURE_FLYING, 25, 25);
 	CHECK_EQ(21, int(p.x));
 	CHECK_EQ(18, int(p.y));
+	// Asked as the move type given.
+	CHECK(AskedAs(MCreature::CREATURE_FLYING));
+	moveTypesAsked.clear();
 	// Too near the pet (nearer than the minimum): not that one.
 	p = MFakeCreature::CaculatePetPosition(20, 20, 2, 3, MCreature::CREATURE_GROUND, 21, 19);
 	CHECK_EQ(20, int(p.x));
 	CHECK_EQ(20, int(p.y));
 	// On the owner's row or column: never.
-	blocked.clear();
+	playerBlocked.clear();
 	for (int y = 18; y < 22; ++y)
 		for (int x = 18; x < 22; ++x)
-			if (x != 20 && y != 20) blocked.insert({x, y});
+			if (x != 20 && y != 20) playerBlocked.insert({x, y});
 	p = MFakeCreature::CaculatePetPosition(20, 20, 2, 1, MCreature::CREATURE_GROUND, 25, 25);
 	CHECK_EQ(20, int(p.x));
 	CHECK_EQ(20, int(p.y));
+	CHECK(AskedAs(MCreature::CREATURE_GROUND));
 }
 
 //----------------------------------------------------------------------
@@ -618,6 +651,11 @@ struct Walker : MFakeCreature
 {
 	using MFakeCreature::m_listDirection;
 	using MFakeCreature::m_bTraceFlag;
+	using MFakeCreature::m_bFastMove;
+	using MFakeCreature::m_nUsedActionInfo;
+	using MFakeCreature::m_nNextUsedActionInfo;
+	using MFakeCreature::m_ActionCount;
+	using MFakeCreature::m_ActionCountMax;
 };
 // Where the planned steps lead from (x, y), or {-1, -1} through a blocked
 // cell.
@@ -650,8 +688,19 @@ TEST(FakeCreature, AFakeFindsAWayToItsDestination)
 	// Its search clears the visited flags of the view (from the sector
 	// before the first to five past its end, 22 by 31 here) first.
 	CHECK_EQ((10 + 16 + 5 - 9) * (10 + 25 + 5 - 9), unvisits);
-	// The size and the cells are its own zone's.
+	// The size and the cells are its own zone's, asked as a fake.
 	for (MZone* pZone : zonesAsked) CHECK(pZone == OwnZone());
+	CHECK(AskedAs(MCreature::CREATURE_FAKE_NO_BLOCK));
+	// The view box stops at the player's zone's edge (25 by 30 here), not
+	// its own.
+	playerZoneWidth = 25;
+	playerZoneHeight = 30;
+	unvisits = 0;
+	Walker clipped;
+	Place(clipped, 5, 20, 20);
+	CHECK(clipped.SetDestination(24, 20));
+	CHECK_EQ((25 - 9) * (30 - 9), unvisits);
+	playerZoneWidth = playerZoneHeight = 200;
 	// Around a wall.
 	for (int y = 12; y <= 30; ++y) blocked.insert({22, y});
 	Walker around;
@@ -738,8 +787,9 @@ TEST(FakeCreature, AGhostWandersInThePlayersView)
 	std::srand(1);
 	// In view, heading for a blocked cell: it turns three to five steps.
 	blocked = {{41, 40}};
+	moveTypesAsked.clear();
 	std::set<int> turns;
-	for (int ghosts = 0; ghosts < 30; ++ghosts)
+	for (int ghosts = 0; ghosts < 100; ++ghosts)
 	{
 		MFakeCreature ghost;
 		Place(ghost, CREATURETYPE_GHOST, 40, 40);
@@ -751,6 +801,8 @@ TEST(FakeCreature, AGhostWandersInThePlayersView)
 		CHECK_EQ(ACTION_MOVE, int(ghost.GetAction()));
 	}
 	CHECK_EQ(3, int(turns.size()));
+	// Asked of its own zone as a fake.
+	CHECK(AskedAs(MCreature::CREATURE_FAKE_NO_BLOCK));
 	blocked.clear();
 	// Out of view while the player walks: it stands.
 	MFakeCreature outOfView;
@@ -771,7 +823,7 @@ TEST(FakeCreature, AGhostWandersInThePlayersView)
 	{
 		// One of three ways in, at random: all three, and no other.
 		std::set<int> ways;
-		for (int wanderers = 0; wanderers < 30; ++wanderers)
+		for (int wanderers = 0; wanderers < 100; ++wanderers)
 		{
 			MFakeCreature wanderer;
 			Place(wanderer, CREATURETYPE_GHOST, side.first.first, side.first.second);
@@ -868,6 +920,21 @@ TEST(FakeCreature, ARocketHeadsForItsTargetThenCirclesIt)
 	CHECK_EQ(ACTION_STAND, int(plain.GetAction()));
 }
 
+namespace {
+// Where the wolf is to go now.
+Cell WolfDestination(MFakeCreature& wolf)
+{
+	POINT dest;
+	wolf.GetDestination(dest);
+	return {int(dest.x), int(dest.y)};
+}
+Cell Past(int x, int y, int towardX, int towardY)
+{
+	const POINT tile = GetNextTileByDirection(towardX, towardY, SelectFacingDirection(x, y, towardX, towardY));
+	return {int(tile.x), int(tile.y)};
+}
+}
+
 TEST(FakeCreature, AWildWolfLeapsPastItsPreyThreeTimes)
 {
 	Scene scene;
@@ -891,16 +958,59 @@ TEST(FakeCreature, AWildWolfLeapsPastItsPreyThreeTimes)
 	CHECK(frames >= 1 && frames <= 4);
 	const BYTE leap = SelectFacingDirection(20, 20, 30, 20);
 	CHECK_EQ(int(leap), int(wolf.GetDirection()));
-	const POINT past = GetNextTileByDirection(30, 20, leap);
-	POINT dest;
-	wolf.GetDestination(dest);
-	CHECK_EQ(int(past.x), int(dest.x));
-	CHECK_EQ(int(past.y), int(dest.y));
-	// Its prey gone: it is done after its last frames.
-	creatures.erase(501);
-	for (int frame = 0; frame < 5; ++frame) wolf.KeepWildWolfAttack();
+	Cell at = Past(20, 20, 30, 20);
+	CHECK(WolfDestination(wolf) == at);
+	// Landed, it waits four frames, then steps aside: one way round from
+	// facing the prey. Then it leaps past again, steps aside again, and
+	// leaps a third time.
+	for (int round = 0; round < 4; ++round)
+	{
+		wolf.SetPosition(TYPE_SECTORPOSITION(at.first), TYPE_SECTORPOSITION(at.second));
+		for (int frame = 0; frame < 4; ++frame) wolf.KeepWildWolfAttack();
+		CHECK(WolfDestination(wolf) == at);
+		wolf.KeepWildWolfAttack();
+		Cell next;
+		if (round % 2 == 0)
+		{
+			const BYTE aside = BYTE((SelectFacingDirection(at.first, at.second, 30, 20) + 7) % 8);
+			const POINT step = GetNextTileByDirection(at.first, at.second, aside);
+			next = {int(step.x), int(step.y)};
+			CHECK_EQ(int(aside), int(wolf.GetDirection()));
+		}
+		else
+			next = Past(at.first, at.second, 30, 20);
+		CHECK(WolfDestination(wolf) == next);
+		CHECK(!wolf.IsFakeEnd());
+		at = next;
+	}
+	// After the third it is done on its 31st frame.
+	wolf.SetPosition(TYPE_SECTORPOSITION(at.first), TYPE_SECTORPOSITION(at.second));
+	for (int frame = 0; frame < 30; ++frame) wolf.KeepWildWolfAttack();
+	CHECK(WolfDestination(wolf) == at);
 	CHECK(!wolf.IsFakeEnd());
-	for (int frame = 0; frame < 40; ++frame) wolf.KeepWildWolfAttack();
+	wolf.KeepWildWolfAttack();
+	CHECK(wolf.IsFakeEnd());
+}
+
+TEST(FakeCreature, AWildWolfWhosePreyIsGoneIsDone)
+{
+	Scene scene;
+	scene.Tribe(5);
+	scene.Tribe(CREATURETYPE_WILD_WOLF);
+	MCreature prey;
+	Put(prey, 501, 5, 30, 20);
+	MFakeCreature wolf;
+	Place(wolf, CREATURETYPE_WILD_WOLF, 20, 20);
+	wolf.SetFakeCreatureType(MFakeCreature::FAKE_CREATURE_WILD_WOLF);
+	wolf.SetTraceID(501);
+	int frames = 0;
+	while (!wolf.IsFastMove() && frames++ < 10) wolf.KeepWildWolfAttack();
+	CHECK(wolf.IsFastMove());
+	// Its prey gone: it is done on the 31st frame after the leap.
+	creatures.erase(501);
+	for (int frame = 0; frame < 30; ++frame) wolf.KeepWildWolfAttack();
+	CHECK(!wolf.IsFakeEnd());
+	wolf.KeepWildWolfAttack();
 	CHECK(wolf.IsFakeEnd());
 	// Without a zone it waits.
 	zoneExists = false;
@@ -958,6 +1068,26 @@ TEST(FakeCreature, AFastMoveEndsWhenItHasLandedAndActed)
 	fake.SetFakeCreatureFastMoveAction(24, 20, ACTIONINFO_NULL, 501);
 	CHECK(fake.IsFastMove());
 	CHECK(!fake.IsFakeEnd());
+	// Landed, it ends once no skill is in hand or next and its action is a
+	// stand or done.
+	Walker landed;
+	Place(landed, 5, 24, 20);
+	landed.SetFakeCreatureType(MFakeCreature::FAKE_CREATURE_FAST_MOVE_ACTION);
+	landed.SetAction(ACTION_STAND);
+	CHECK(landed.IsFakeEnd());
+	landed.m_nUsedActionInfo = 5;
+	CHECK(!landed.IsFakeEnd());
+	landed.m_nUsedActionInfo = ACTIONINFO_NULL;
+	landed.m_nNextUsedActionInfo = 5;
+	CHECK(!landed.IsFakeEnd());
+	landed.m_nNextUsedActionInfo = ACTIONINFO_NULL;
+	landed.SetAction(ACTION_ATTACK);
+	landed.m_ActionCount = 0;
+	CHECK(!landed.IsFakeEnd());
+	landed.m_ActionCount = landed.m_ActionCountMax;
+	CHECK(landed.IsFakeEnd());
+	landed.m_bFastMove = true;
+	CHECK(!landed.IsFakeEnd());
 }
 
 //----------------------------------------------------------------------
@@ -1073,12 +1203,18 @@ TEST(FakeCreature, APetsStepSoundsWhereItLands)
 	Place(pet, 5, 20, 20);
 	pet.SetOwnerID(600);
 	CHECK(pet.SetNextDestination(24, 20));
+	// Its step is its own zone's to allow, asked as a fake: the player's
+	// zone blocking the cell does not stop it.
+	playerBlocked = {{21, 20}};
 	zonesAsked.clear();
+	moveTypesAsked.clear();
 	pet.ActionMove();
 	CHECK_EQ(21, int(pet.GetX()));
 	CHECK_EQ(20, int(pet.GetY()));
 	CHECK(Same({"sound at|88|0|21,20"}));
 	for (MZone* pZone : zonesAsked) CHECK(pZone == OwnZone());
+	CHECK(AskedAs(MCreature::CREATURE_FAKE_NO_BLOCK));
+	playerBlocked.clear();
 	// A blocked next cell: it waits and plans again.
 	MFakeCreature stuck;
 	Place(stuck, 5, 20, 20);
@@ -1089,4 +1225,114 @@ TEST(FakeCreature, APetsStepSoundsWhereItLands)
 	stuck.ActionMove();
 	CHECK_EQ(20, int(stuck.GetX()));
 	CHECK(Same({}));
+}
+
+TEST(FakeCreature, AWalkingPetPatrolsNearItsMaster)
+{
+	Scene scene;
+	scene.Tribe(5);
+	MCreature master;
+	Put(master, 600, 5, 30, 20);
+	// Round the master, two cells are free in the player's zone: one next
+	// to the pet (at 31,19), one two away from it.
+	for (int y = 18; y < 22; ++y)
+		for (int x = 28; x < 32; ++x)
+			playerBlocked.insert({x, y});
+	playerBlocked.erase({31, 18});
+	playerBlocked.erase({29, 21});
+	// A pet of level 30 or more keeps two away from where it stands; a
+	// lower one takes either.
+	for (int level : {30, 29})
+	{
+		std::set<Cell> spots;
+		for (int pets = 0; pets < 40; ++pets)
+		{
+			MFakeCreature pet;
+			Place(pet, 5, 31, 19);
+			pet.SetTraceID(600);
+			std::unique_ptr<MPetItem> item(static_cast<MPetItem*>(MItem::NewItem(ITEM_CLASS_PET_ITEM)));
+			item->SetNumber(level);
+			pet.SetPetItem(item.get());
+			pet.SetAction(ACTION_STAND);
+			clockNow += MonotonicClock::Millis(20000);
+			moveTypesAsked.clear();
+			pet.KeepTraceCreature();
+			CHECK_EQ(ACTION_MOVE, int(pet.GetAction()));
+			POINT next;
+			pet.GetNextDestination(next);
+			spots.insert({int(next.x), int(next.y)});
+			CHECK(AskedAs(pet.GetMoveType()));
+			pet.SetPetItem(NULL);
+		}
+		if (level == 30)
+			CHECK(spots == std::set<Cell>({{29, 21}}));
+		else
+			CHECK(spots == std::set<Cell>({{29, 21}, {31, 18}}));
+	}
+}
+
+TEST(FakeCreature, ADrinkingPetCutsItsDrinkShortToFollow)
+{
+	Scene scene;
+	scene.Tribe(5);
+	MCreature master;
+	Put(master, 600, 5, 30, 20);
+	Walker pet;
+	Place(pet, 5, 25, 20);
+	pet.SetTraceID(600);
+	pet.SetAction(ACTION_VAMPIRE_DRAIN);
+	CHECK_EQ(ACTION_VAMPIRE_DRAIN, int(pet.GetAction()));
+	const int drainMax = pet.m_ActionCountMax;
+	CHECK(drainMax > 13);
+	// Early in its drink and five away: it skips to the drink's last 13
+	// frames and walks after them.
+	pet.m_ActionCount = 0;
+	pet.KeepTraceCreature();
+	CHECK_EQ(drainMax - 13, int(pet.m_ActionCount));
+	CHECK_EQ(ACTION_VAMPIRE_DRAIN, int(pet.GetAction()));
+	CHECK_EQ(ACTION_MOVE, int(pet.GetNextAction()));
+	// Later than that, it keeps its place.
+	pet.m_ActionCount = BYTE(drainMax - 5);
+	pet.KeepTraceCreature();
+	CHECK_EQ(drainMax - 5, int(pet.m_ActionCount));
+}
+
+TEST(FakeCreature, ATracingPetFollowsItsMasterInItsOwnZone)
+{
+	MCreature::InitMoveTable();
+	Scene scene;
+	scene.Tribe(5);
+	MCreature master;
+	Put(master, 600, 5, 24, 20);
+	// The master in the pet's own zone only.
+	creatures.clear();
+	ownZoneCreatures[600] = &master;
+	Walker pet;
+	Place(pet, 5, 20, 20);
+	pet.SetOwnerID(700);
+	pet.SetTraceID(600);
+	// Bound elsewhere (22,22), it turns to where its master stands.
+	CHECK(pet.SetNextDestination(22, 22));
+	pet.m_bTraceFlag = true;
+	zonesAsked.clear();
+	pet.ActionMove();
+	CHECK_EQ(21, int(pet.GetX()));
+	CHECK_EQ(20, int(pet.GetY()));
+	CHECK(pet.m_bTraceFlag);
+	CHECK(!zonesAsked.empty());
+	for (MZone* pZone : zonesAsked) CHECK(pZone == OwnZone());
+	// Gone from its own zone (the player's still has it): it stops tracing
+	// and stands.
+	ownZoneCreatures.clear();
+	creatures[600] = &master;
+	Walker lost;
+	Place(lost, 5, 20, 20);
+	lost.SetOwnerID(700);
+	lost.SetTraceID(600);
+	CHECK(lost.SetNextDestination(22, 22));
+	lost.m_bTraceFlag = true;
+	lost.ActionMove();
+	CHECK_EQ(20, int(lost.GetX()));
+	CHECK(!lost.m_bTraceFlag);
+	CHECK_EQ(ACTION_STAND, int(lost.GetAction()));
 }
