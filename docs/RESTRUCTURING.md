@@ -7523,6 +7523,11 @@ rounds settled* for the host rules). Test fixtures share
   >   opaque black where the sprite casts shadow, and a darkened shadow is
   >   that black at alpha 256 - 256 >> DarkBits. Shadows appear under
   >   creatures and objects again; nobody has watched it on a display.
+  >   With `BlendingShadow` off, its default, a creature's shadow is
+  >   solid black, as the original drew it; objects' and effects' are
+  >   half dark. `BltShadowSpriteSmall` and the two 4444 forms, which have
+  >   no callers, forward to the plain blit and so draw a full-size black
+  >   shadow now (they drew nothing): a caller would need them written.
   > - Recorded, not changed: the advanced slayer's "always the body"
   >   test reads the loop index (`i == AC_ADDON_BODY`, which is the
   >   motorcycle's slot in every row of the order), not the part, so it

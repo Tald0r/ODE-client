@@ -513,7 +513,7 @@ TEST(CreatureShadow, SomeTypesCastABlendedShadow)
 //----------------------------------------------------------------------
 // The slayer
 //----------------------------------------------------------------------
-TEST(CreatureShadow, ASlayersWornPartsCastShadowsInTheirOrder)
+TEST(CreatureShadow, ASlayersWornPartsCastShadowsAtTheirOffsets)
 {
 	Scene scene;
 	Creature slayer;
@@ -556,9 +556,18 @@ TEST(CreatureShadow, AnInstallingSlayerCastsItsTurretsShadow)
 		slayer.SetCurrentDirection(5);
 		slayer.Wear(ADDON_COAT, 1, ITEM_CLASS_COAT);
 		// Standing, it faces 2 on the frame of its count, solid whatever
-		// the option, and its parts cast none.
+		// the option, and its parts cast none, though their frames are
+		// there.
 		scene.userBlending = true;
 		Place(scene.creatureFPK, 222, ACTION_STAND, 2, 6, 1, 4, 5);
+		for (int action : {ACTION_STAND, ACTION_ATTACK})
+			for (int direction = 0; direction < 8; ++direction)
+			{
+				Fill(scene.addonFPK, 1, action, direction, 7, 2);
+				const int advancedAction = ConvAdvancementSlayerActionFromSlayerAction(action, &slayer);
+				if (advancedAction != -1)
+					Fill(scene.slayerManFPK, AC_BODY, advancedAction - ADVANCEMENT_ACTION_START, direction, 7, 2);
+			}
 		scene.Draw(slayer);
 		scene.Body(1, 4, 5);
 		CHECK(scene.Same());
