@@ -3094,7 +3094,8 @@ UI_AddChatToHistory(const char* str, const char* sz_id, int cond, DWORD color)
 	if(g_pUserOption->ChatWhite)
 		color = gpC_base->m_chatting_pi.text_color;
 
-	if (str==NULL || cond>=CLD_TOTAL)
+	// A condition outside the enum would make the cast below undefined.
+	if (str==NULL || cond<0 || cond>=CLD_TOTAL)
 	{
 		return;
 	}

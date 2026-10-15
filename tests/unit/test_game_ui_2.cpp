@@ -1137,10 +1137,13 @@ TEST(GameUI2, AChatLineReadsTheBaseOnlyForWhiteText)
 	option.ChatWhite = TRUE;
 	gpC_base = &base;
 	UI_AddChatToHistory("hello", "Kim", CLD_WHISPER, 0x123456);
-	// A missing line or a condition from CLD_TOTAL on is dropped.
+	// A missing line, or a condition that is negative or from CLD_TOTAL
+	// on, is dropped.
 	UI_AddChatToHistory(NULL, "Kim", CLD_NORMAL, 0);
 	UI_AddChatToHistory("hello", "Kim", CLD_TOTAL, 0);
 	UI_AddChatToHistory("hello", "Kim", 100, 0);
+	UI_AddChatToHistory("hello", "Kim", -1, 0);
+	UI_AddChatToHistory("hello", "Kim", INT_MIN, 0);
 
 	gpC_base = oldBase;
 	g_pUserOption = oldOption;
