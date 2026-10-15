@@ -7731,12 +7731,20 @@ rounds settled* for the host rules). Test fixtures share
   >   empty file and kept loading from an ended stream when the count was
   >   past the file's end; fixed with its own test
   >   (`test_type_map.cpp`). Thirteen other loaders read a count the same
-  >   way (`MGuildInfoMapper`, `MQuestInfoManager`, the server skill
-  >   information, `CreatureSpriteTypeMapper`, `MNPCTable`, `MZoneTable`
-  >   and others) and are left for a slice of their own.
+  >   way, and the next commits fix each, test-first: the creature sprite
+  >   mapper, the guild mapper, the monster-kill quests, an NPC's and a
+  >   server NPC's shop templates, a skill's next skills and an Ousters
+  >   skill's skill types, the server skill information (which also
+  >   indexed the table by an unchecked skill type), a zone's sounds, the
+  >   zone table and the sound pack's index (`test_loader_counts.cpp`);
+  >   the mailbox, which also indexed its three tabs by the file's count
+  >   (`test_mailbox_file.cpp`, which the UI linking into `unit_tests`
+  >   made possible); and the key bindings, where the start-up test spent
+  >   a minute on an empty options file (`test_user_option.cpp`). The one
+  >   left, `Client/Updater/UpdateManager.cpp`, is not compiled.
   >
   > R1 is 13 Windows / 12 Ninja.
-  - Owner: membership, R1, `test_game_init_info.cpp`: 10 tests over a
+  - Owner: membership, R1, `test_game_init_info.cpp`: 13 tests over a
     scratch directory `FileDef` points at, every table written with a
     count or a record of its own: everything made and each table loaded
     from its file (each experience file into its own table, both skill
@@ -7748,10 +7756,24 @@ rounds settled* for the host rules). Test fixtures share
     wave music forced and the shop time the host's; the host's defaults;
     each host entry passed on; the event queue's fade through the host
     and an effect's event kept without a player; a reload (the debug
-    build's Alt+F1) starting from new objects.
+    build's Alt+F1) starting from new objects; the English client's
+    overlays on the NPCs, their scripts and the skills' display names,
+    and another language's keeping the data's names; an empty effect
+    sprite type table stopping the loading.
     `test_world_event_handlers.cpp` adds the client's `PlaySound`
     reaching the host's entry.
-  -     The linker's map of `unit_tests` shows `InitInfomation`,
+  - Mutants: 178 over `GameInitInfo.cpp` (every load, every file's open
+    check and return, the regen towers', the English overlays, the host's
+    forwarders and defaults, the Inits, each `SAFE_DELETE`), run against
+    the slice's tests alone; 140 caught. Of the 38 left, 34 drop a
+    `SAFE_DELETE` before a reload, which only the debug build's Alt+F1
+    runs: each table's own loader replaces what it held, and the objects
+    whose state a reload must clear (the event queue, the self-defense
+    roster, the key bindings, the profiles, the timed items) and the two
+    optional files are pinned. The other four are two log lines, the key
+    table's `Init` (binding the defaults grows the table) and the
+    creatures' move table (a static every earlier test has filled).
+  - The linker's map of `unit_tests` shows `InitInfomation`,
     `InitClientConfig` and `InitUserOption` from
     `libgameclient.a(GameInitInfo.cpp.o)`, `PlaySound` and the four
     globals from gamemodel.
