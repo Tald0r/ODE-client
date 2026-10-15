@@ -323,7 +323,8 @@ int g_Convert_DBCS_Ascii2SingleByte(const char_t* p_dbcs, int dbcs_len, char*& p
 	{
 		if ((p_dbcs[i] & 0xFF00) != 0)
 		{
-			*(char_t*)(p_temp + i + c) = p_dbcs[i];
+			// Its two bytes, in memory order; the place may be odd.
+			memcpy(p_temp + i + c, &p_dbcs[i], sizeof(char_t));
 			c++;
 		}
 		else
@@ -357,7 +358,8 @@ int g_ConvertAscii2DBCS(const char* p_ascii, int ascii_len, char_t*& p_new_buf)
 		}
 		else
 		{
-			p_temp[dbcs] = *((char_t*)(p_ascii + i));
+			// The two bytes, in memory order; the place may be odd.
+			memcpy(&p_temp[dbcs], p_ascii + i, sizeof(char_t));
 			i++;
 		}
 	}

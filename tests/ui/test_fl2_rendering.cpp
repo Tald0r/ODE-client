@@ -265,6 +265,18 @@ TEST(FL2Rendering, DBCSStrings)
 	CHECK(wide != nullptr && wide[0] == char_t(0xA1B0) && wide[1] == 'b' && wide[2] == 0);
 	delete[] single;
 	delete[] wide;
+
+	// A narrow character first puts the wide one at an odd byte offset
+	// in the single-byte string, both ways.
+	const char_t mixed[] = {char_t('a'), char_t(0xA1B0), char_t('b'), 0};
+	single = nullptr;
+	CHECK_EQ(4, g_Convert_DBCS_Ascii2SingleByte(mixed, 3, single));
+	CHECK(single != nullptr && std::memcmp(single, "a\xB0\xA1" "b", 5) == 0);
+	wide = nullptr;
+	CHECK_EQ(3, g_ConvertAscii2DBCS(single, 4, wide));
+	CHECK(wide != nullptr && wide[0] == 'a' && wide[1] == char_t(0xA1B0) && wide[2] == 'b' && wide[3] == 0);
+	delete[] single;
+	delete[] wide;
 }
 
 TEST(FL2Rendering, NumbersAndMoney)
