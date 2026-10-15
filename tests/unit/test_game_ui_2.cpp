@@ -1313,19 +1313,22 @@ TEST(GameUI2, ClosingThePartyQuestionEndsAPartyWaitAndRequest)
 	CHECK(TempInformation::MODE_TRADE_REQUEST == scene.temp.GetMode());
 }
 
-TEST(GameUI2, ClosingThePartyCancelEndsTheRequestButNotTheWait)
+TEST(GameUI2, ClosingThePartyCancelEndsAPartyWaitAndRequest)
 {
-	// Recorded defect: it compares IsWaitVerify(), a yes or no, with
-	// WAIT_VERIFY_PARTY (7) (GameUI.cpp:3364), so no wait is ever ended.
 	Scene scene;
-	for (MPlayer::WAIT_VERIFY wait : {MPlayer::WAIT_VERIFY_PARTY, MPlayer::WAIT_VERIFY_MOTORCYCLE_GETON})
-	{
-		scene.me->SetWaitVerify(wait);
-		scene.temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
-		UI_ClosePartyCancel();
-		CHECK(wait == scene.me->GetWaitVerify());
-		CHECK(TempInformation::MODE_NULL == scene.temp.GetMode());
-	}
+	scene.me->SetWaitVerify(MPlayer::WAIT_VERIFY_PARTY);
+	scene.temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
+	UI_ClosePartyCancel();
+	CHECK(scene.me->IsWaitVerifyNULL());
+	CHECK(TempInformation::MODE_NULL == scene.temp.GetMode());
+
+	// Another wait or request is left; the motorcycle's wait is 1, the
+	// value of a yes.
+	scene.me->SetWaitVerify(MPlayer::WAIT_VERIFY_MOTORCYCLE_GETON);
+	scene.temp.SetMode(TempInformation::MODE_PARTY_REQUEST);
+	UI_ClosePartyCancel();
+	CHECK(MPlayer::WAIT_VERIFY_MOTORCYCLE_GETON == scene.me->GetWaitVerify());
+	CHECK(TempInformation::MODE_NULL == scene.temp.GetMode());
 	scene.temp.SetMode(TempInformation::MODE_TRADE_REQUEST);
 	UI_ClosePartyCancel();
 	CHECK(TempInformation::MODE_TRADE_REQUEST == scene.temp.GetMode());

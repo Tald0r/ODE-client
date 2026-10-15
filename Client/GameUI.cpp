@@ -3393,7 +3393,7 @@ UI_ClosePartyAsk()
 void		
 UI_ClosePartyCancel()
 {
-	if (g_pPlayer->IsWaitVerify()==MPlayer::WAIT_VERIFY_PARTY)
+	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY)
 	{
 		g_pPlayer->SetWaitVerifyNULL();		
 	}
