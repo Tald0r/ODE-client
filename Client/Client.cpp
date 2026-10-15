@@ -158,7 +158,7 @@ int					g_Dimension = 0;
 DWORD				g_TimerNPMON = 0;
 
 // FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
-DWORD				g_CurrentFrame		= 0;		// frame수
+// g_CurrentFrame, the frame count, is FrameClock.cpp's.
 
 int					g_FrameCount		= 0;
 int					g_StartFrameCount	= 0;

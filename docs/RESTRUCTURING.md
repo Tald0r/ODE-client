@@ -7081,7 +7081,15 @@ rounds settled* for the host rules). Test fixtures share
   - Mutants: 14 of 14 caught. Taking `AdvancementAction.cpp` out of the
     membership breaks the test link.
 
-### Remaining R1 work after tasks 4.80-4.239
+- [x] **4.240 The frame count and the zone's creature colours:**
+  `g_CurrentFrame` and `g_DrawAlphaNum` (how far the drawing is between
+  two frames) join FrameClock, and `g_ZoneCreatureColorSet` joins
+  ZoneFlags, all in `gamemodel`. They were Client.cpp's, CGameUpdate.cpp's
+  and GameMain.cpp's; MCreature reads all three. Their writers are
+  unchanged.
+  > **Status:** done (2026-10-15). R1 is unchanged.
+
+### Remaining R1 work after tasks 4.80-4.240
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.

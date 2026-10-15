@@ -174,7 +174,7 @@ BOOL				g_bUIInput		= FALSE;
 int					g_UpdateDelay		= 0;
 
 // Zone
-WORD				g_ZoneCreatureColorSet = 0xFFFF;
+// g_ZoneCreatureColorSet is ZoneFlags.cpp's.
 WORD				g_MyBatColorSet = 0xFFFF;
 bool				g_bZoneLargeLoadImage = false;
 bool				g_bZoneSmallLoadImage = false;
