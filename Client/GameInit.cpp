@@ -4309,9 +4309,6 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		g_pTopView->SetFadeStart(start, end, step, r, g, b, delay);
 	},
 	.SetFadeEnd = []() { g_pTopView->SetFadeEnd(); },
-	.GetCreatureActionFrameCount = [](int frameID, int action, int direction) {
-		return static_cast<int>(g_pTopView->m_CreatureFPK[frameID][action][direction].GetSize());
-	},
 };
 
 extern void UI_RunPetInfo(struct PETINFO *pPetInfo);

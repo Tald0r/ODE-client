@@ -271,9 +271,4 @@ void SetFadeEnd()
 	if (s_Host && s_Host->SetFadeEnd) s_Host->SetFadeEnd();
 }
 
-int GetCreatureActionFrameCount(int frameID, int action, int direction)
-{
-	return s_Host && s_Host->GetCreatureActionFrameCount ? s_Host->GetCreatureActionFrameCount(frameID, action, direction) : 0;
-}
-
 }

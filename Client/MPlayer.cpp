@@ -8316,47 +8316,6 @@ MPlayer::SetAction(BYTE action)
 			}
 		}				
 	}
-
-	//------------------------------
-	// If stopped
-	//------------------------------
-	/*
-	if (IsStop())
-	{	
-		m_Action = action; 
-		m_NextAction = ACTION_STAND;
-
-		// Should the frame count for an Action differ by Creature type?
-		switch (m_Action)
-		{
-			case ACTION_MOVE :
-				switch (m_MoveDevice)
-				{
-					case MOVE_DEVICE_NULL :			
-						m_ActionCountMax = ACTIONCOUNT_MOVE;
-					break;
-
-					case MOVE_DEVICE_MOTOR1 :						
-						m_ActionCountMax = ACTIONCOUNT_MOVE_HALF;
-					break;
-				}
-			break;
-
-			default :
-				m_ActionCountMax = WorldEvents::GetCreatureActionFrameCount((*g_pCreatureTable)[m_CreatureType].FrameID, m_Action, m_Direction);
-		}
-
-		m_ActionCount = 0;
-	}
-	//------------------------------
-	// If moving
-	//------------------------------
-	else
-	{
-		// buffering
-		m_NextAction = action;
-	}	
-	*/
 }
 
 //----------------------------------------------------------------------

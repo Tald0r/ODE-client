@@ -155,6 +155,10 @@ user, config and timed-item loaders gamemodel reads, and their string support; m
 4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25, 4.26, 4.27,
 4.28, 4.29, 4.30, 4.31, 4.32, 4.33, 4.34, 4.35, 4.36, 4.37, 4.38, 4.39,
 4.40, 4.41, 4.42, 4.43 and the follow-up extractions through 4.87),
+`gameview` (the view's drawing that reads the model and draws with
+`SpriteLib`, which `gamemodel` may not include: the divine-guidance
+silhouettes, over the packs `MTopView` hands it as a `CreatureDrawPacks`;
+membership in `tests/arch/gameview_files.txt`, task 4.248),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -189,8 +193,8 @@ slayer skill's range (`docs/RESTRUCTURING.md` task 4.12). Two ctests keep it hon
 asserts the shared parity vectors on this toolchain, and `decore_vendored`
 checks the copy against its manifest.
 
-`unit_tests` links `basic`, `SpriteLib`, `TextSystem`, `packetwire`, `gamemodel`
-and `dxlib`. The input pump reaches application state and text editors through
+`unit_tests` links `basic`, `SpriteLib`, `TextSystem`, `packetwire`, `gamemodel`,
+`gameview` and `dxlib`. The input pump reaches application state and text editors through
 `DXInput::Host`, installed in `GameInit.cpp`; tests link the real adapter and
 backend without game-global stubs. `ui_tests` links `VS_UI` for independently
 reachable widgets; `user_option_tests` also links it for key bindings.

@@ -1,84 +1,34 @@
-//#define __3D_IMAGE_OBJECT__					// by sonee
 //----------------------------------------------------------------------
-// MTopViewDraw.cpp
+// CreatureDivineGuidanceDraw.cpp
 //----------------------------------------------------------------------
-//
-// 복잡한 Draw 함수 부분만 따로 빼놓는다.
-// 작업하기가 영 불편해서 
+// A creature under divine guidance is drawn again as a darkened, turning
+// silhouette of its frame 30 of being drained (task 4.248: MTopView's
+// members in DrawCreatureDivineGuidance.cpp until then, gameview's since).
+// The view's packs and surface come in a CreatureDrawPacks.
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
-#ifdef _MSC_VER
-#pragma warning(disable:4786)
-#endif
-
-#include <math.h>
-#include <list>
-#include <stdio.h>
-#include <fstream>
-#include "MZone.h"
-#include "MCreature.h"
-#include "MFakeCreature.h"
-#include "MPlayer.h"
-#include "MItem.h"
-#include "MImageObject.h"
-#include "MAnimationObject.h"
-#include "MShadowAnimationObject.h"
-#include "assert.h"
-
-#include "MMovingEffect.h"
-#include "MScreenEffect.h"
-#include "MTopView.h"
-#include "MItemTable.h"
+#include "CreatureDivineGuidanceDraw.h"
+#include "MCreatureWear.h"
 #include "MCreatureTable.h"
-#include "MWeather.h"
-#include "CMessageArray.h"
-#include "DXLib.h"
-#include "SP.h"
-#include "Fl2.h"
-//#include "2D.h"
-#include "ClientConfig.h"
-#include "VS_UI_Base.h"
-#include "VS_UI_mouse_pointer.h"
-#include "UIFunction.h"
-#include "AddonDef.h"
-#include "MZoneTable.h"
-#include "MGameTime.h"
-#include "UserOption.h"
-#include "UserInformation.h"
-#include "SpriteIDDef.h"
-#include "MGameStringTable.h"
-//#include "MZoneInfo.h"
-#include "MObjectSelector.h"
-#include "MPortal.h"
-#include "EffectSpriteTypeDef.h"
-#include "MScreenEffectManager.h"
-#include "MEffectSpriteTypeTable.h"
-#include "Profiler.h"
-//#include "MFileDef.h"
-#include "Properties.h"
-#include "MEventManager.h"
-#include "DebugInfo.h"
+#include "MItem.h"
 #include "MItemOptionTable.h"
-#include "Client.h"
-#include "SkillDef.h"
-#include "VS_UI_item.h"
-#include "MTopViewDraw.inl"
+#include "AdvancementAction.h"
+#include "FrameClock.h"
+#include "CSpriteSurface.h"
+#include "CIndexSprite.h"
 
-extern int defaultSkinColor;
+// MCreatureWear.cpp's: the coat colour a vampire wears without one.
 extern int defaultCoatColor;
-extern int defaultTrouserColor;
 
 namespace {
 	POINT pointTemp;
-};
+}
 
-extern int GetAdvancementPartFromItemClass( ITEM_CLASS itemClass , TYPE_FRAMEID frameID);
-void	MTopView::DrawDivineGuidanceSlayerCharacter( 
-	POINT *pPoint, MCreature* pCreature, int direction )
+void	DrawDivineGuidanceSlayerCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction )
 {
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 	
-	// Creature의 Action에 맞는 add-on을 출력한다.
+	// Draw the add-ons that match the creature's action.
 	//action = pCreature->GetAction();
 	const int tempFrame = 30;
 	
@@ -89,35 +39,35 @@ void	MTopView::DrawDivineGuidanceSlayerCharacter(
 	{
 		for (int i=0; i<ADDON_MAX; i++)
 		{
-			// Creature의 현재 방향에 따라서...
-			// 옷을 출력해주는 순서가 다를 수 있다.
+			// Depending on the creature's current direction...
+			// the order the clothes are drawn in can differ.
 			clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 			
-			// i번째 종류의 옷을 입고 있다면 출력해 준다.
+			// Draw the i-th kind of clothing if it is worn.
 			const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 			
 			if (addonInfo.bAddon)
 			{
 				clothes = addonInfo.FrameID;
 				
-				FRAME_ARRAY &FA = m_AddonFPK[clothes][ACTION_DRAINED][(direction+g_CurrentFrame/2+k)%8];
+				FRAME_ARRAY &FA = (*packs.pAddonFPK)[clothes][ACTION_DRAINED][(direction+g_CurrentFrame/2+k)%8];
 				
-				// 있는 동작인 경우
+				// If the action exists
 				if (FA.GetSize() > tempFrame)
 				{
 					CFrame &Frame = FA[tempFrame];					
-					int sprite	= Frame.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
-					int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
-					int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
+					int sprite	= Frame.GetSpriteID();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetSpriteID();
+					int cx		= Frame.GetCX();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCX();
+					int cy		= Frame.GetCY();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCY();
 					
 					
-					CIndexSprite* pSprite = &m_AddonSPK[ sprite ];					
+					CIndexSprite* pSprite = &(*packs.pAddonSPK)[ sprite ];
 					
 					pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 					pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
 					
 					//---------------------------------------- 
-					// 정상적인 캐릭터 출력
+					// Draw a normal character
 					//---------------------------------------- 
 					int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 					if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
@@ -129,36 +79,36 @@ void	MTopView::DrawDivineGuidanceSlayerCharacter(
 					
 					CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 					
-					m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+					packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 				}
 			}
 		}
 	}
 }
 
-void	MTopView::DrawDivineGuidanceAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pCreature, int direction )
+void	DrawDivineGuidanceAdvancementClassSlayerCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction )
 {
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 	
-	// Creature의 Action에 맞는 add-on을 출력한다.
+	// Draw the add-ons that match the creature's action.
 	//action = pCreature->GetAction();
 	const int tempFrame = 30;
 	
 	WORD clothes;
 	BYTE clothesType;
 	
-	CCreatureFramePack& slayerFPK = pCreature->IsMale() ? m_AdvancementSlayerManFPK : m_AdvancementSlayerWomanFPK;
-	CIndexSpritePack& addonISPK = pCreature->IsMale() ? m_AdvancementSlayerManSPK : m_AdvancementSlayerWomanSPK;
+	CCreatureFramePack& slayerFPK = pCreature->IsMale() ? (*packs.pAdvancementSlayerManFPK) : (*packs.pAdvancementSlayerWomanFPK);
+	CIndexSpritePack& addonISPK = pCreature->IsMale() ? (*packs.pAdvancementSlayerManSPK) : (*packs.pAdvancementSlayerWomanSPK);
 			
 	for(int k = 0; k < 2; k++)
 	{
-		for (int i=0; i<ADDON_MAX; i++)
+		for (int i=0; i<AC_ADDON_MAX; i++)	// the order's row (ADDON_MAX read past it)
 		{
-			// Creature의 현재 방향에 따라서...
-			// 옷을 출력해주는 순서가 다를 수 있다.
+			// Depending on the creature's current direction...
+			// the order the clothes are drawn in can differ.
 			clothesType = MCreatureWear::s_ACAddonOrder[pCreature->GetDirection()][i];
 			
-			// i번째 종류의 옷을 입고 있다면 출력해 준다.
+			// Draw the i-th kind of clothing if it is worn.
 			const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetACAddonInfo(clothesType);
 			
 			if (addonInfo.bAddon)
@@ -168,13 +118,13 @@ void	MTopView::DrawDivineGuidanceAdvancementClassSlayerCharacter( POINT *pPoint,
 				FRAME_ARRAY &FA = slayerFPK[clothes][ACTION_ADVANCEMENT_SLAYER_DRAINED-ADVANCEMENT_ACTION_START][(direction+g_CurrentFrame/2+k)%8];
 				
 				
-				// 있는 동작인 경우
+				// If the action exists
 				if (FA.GetSize() > tempFrame)
 				{
 					CFrame &Frame = FA[tempFrame];					
-					int sprite	= Frame.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
-					int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
-					int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
+					int sprite	= Frame.GetSpriteID();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetSpriteID();
+					int cx		= Frame.GetCX();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCX();
+					int cy		= Frame.GetCY();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCY();
 					
 					
 					CIndexSprite* pSprite = &addonISPK[ sprite ];					
@@ -183,7 +133,7 @@ void	MTopView::DrawDivineGuidanceAdvancementClassSlayerCharacter( POINT *pPoint,
 					pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
 					
 					//---------------------------------------- 
-					// 정상적인 캐릭터 출력
+					// Draw a normal character
 					//---------------------------------------- 
 					int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 					if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
@@ -195,15 +145,14 @@ void	MTopView::DrawDivineGuidanceAdvancementClassSlayerCharacter( POINT *pPoint,
 					
 					CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 					
-					m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+					packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 				}
 			}
 		}
 	}
 }
 
-void	MTopView::DrawDivineGuidanceVampireCharacter( 
-			POINT *pPoint, MCreature* pCreature, int direction, int body )
+void	DrawDivineGuidanceVampireCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction, int body )
 {
 	static int tempGuidance = 0;
 	tempGuidance = (g_CurrentFrame)%20;
@@ -212,20 +161,20 @@ void	MTopView::DrawDivineGuidanceVampireCharacter(
 
 	for(int k = 0; k < 2; k++)
 	{
-		FRAME_ARRAY &FA = m_CreatureFPK[body][ACTION_DRAINED][(direction+g_CurrentFrame/2+k)%8];
+		FRAME_ARRAY &FA = (*packs.pCreatureFPK)[body][ACTION_DRAINED][(direction+g_CurrentFrame/2+k)%8];
 		
 		if (FA.GetSize() > tempFrame)
 		{
 			CFrame& Frame =	FA[tempFrame];
-			int sprite = Frame.GetSpriteID(),	//m_CreatureFPK[body][action][direction][frame].GetSpriteID(),
-				cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
-				cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
+			int sprite = Frame.GetSpriteID(),	//(*packs.pCreatureFPK)[body][action][direction][frame].GetSpriteID(),
+				cx		= Frame.GetCX(),	//(*packs.pCreatureFPK)[body][action][direction][frame].GetCX(),
+				cy		= Frame.GetCY();	//(*packs.pCreatureFPK)[body][action][direction][frame].GetCY();
 			
-			// 좌표 보정
+			// Adjust the coordinates
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
 			
-			CIndexSprite* pSprite = &m_CreatureSPK[ sprite ];
+			CIndexSprite* pSprite = &(*packs.pCreatureSPK)[ sprite ];
 			
 			int colorSet1 = pCreature->GetBodyColor1();
 			int colorSet2 = pCreature->GetBodyColor2();
@@ -239,21 +188,20 @@ void	MTopView::DrawDivineGuidanceVampireCharacter(
 			CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 			
 			pointTemp.y += abs(10-tempGuidance);
-			m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+			packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 		}
 	}
 }
 
-void	MTopView::DrawDivineGuidanceAdvancementClassVampireCharacter( 
-			POINT *pPoint, MCreature* pCreature, int direction, int body )
+void	DrawDivineGuidanceAdvancementClassVampireCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction, int body )
 {
 	(void)body;
 	static int tempGuidance = 0;
 	tempGuidance = (g_CurrentFrame)%20;
 	const int tempFrame = 30;
 
-	CCreatureFramePack& advanceVampireFPK = pCreature->IsMale() ? m_AdvancementVampireManFPK : m_AdvancementVampireWomanFPK;
-	CIndexSpritePack& advanceVampireSPK = pCreature->IsMale() ? m_AdvancementVampireManSPK : m_AdvancementVampireWomanSPK;	
+	CCreatureFramePack& advanceVampireFPK = pCreature->IsMale() ? (*packs.pAdvancementVampireManFPK) : (*packs.pAdvancementVampireWomanFPK);
+	CIndexSpritePack& advanceVampireSPK = pCreature->IsMale() ? (*packs.pAdvancementVampireManSPK) : (*packs.pAdvancementVampireWomanSPK);
 
 	for(int k = 0; k < 2; k++)
 	{
@@ -262,11 +210,11 @@ void	MTopView::DrawDivineGuidanceAdvancementClassVampireCharacter(
 		if (FA.GetSize() > tempFrame)
 		{
 			CFrame& Frame =	FA[tempFrame];
-			int sprite = Frame.GetSpriteID(),	//m_CreatureFPK[body][action][direction][frame].GetSpriteID(),
-				cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
-				cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
+			int sprite = Frame.GetSpriteID(),	//(*packs.pCreatureFPK)[body][action][direction][frame].GetSpriteID(),
+				cx		= Frame.GetCX(),	//(*packs.pCreatureFPK)[body][action][direction][frame].GetCX(),
+				cy		= Frame.GetCY();	//(*packs.pCreatureFPK)[body][action][direction][frame].GetCY();
 			
-			// 좌표 보정
+			// Adjust the coordinates
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
 			
@@ -284,15 +232,14 @@ void	MTopView::DrawDivineGuidanceAdvancementClassVampireCharacter(
 			CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 			
 			pointTemp.y += abs(10-tempGuidance);
-			m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+			packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 		}
 	}
 }
 
-void	MTopView::DrawDivineGuidanceOustersCharacter( 
-			POINT *pPoint, MCreature* pCreature, int direction )
+void	DrawDivineGuidanceOustersCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction )
 {
-	//  챠크람이 있다
+	// It has a chakram
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
 	const int tempFrame = 30;
 	
@@ -301,7 +248,7 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 	
 	int tempAction = ACTION_DRAINED;
 	
-	// 몸을 찍고 챠크람을 찍는다
+	// Draw the body, then the chakram
 	const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(ADDON_COAT);
 	const MCreatureWear::ADDON_INFO& bootsAddonInfo = pCreatureWear->GetAddonInfo(ADDON_TROUSER);
 	
@@ -311,22 +258,22 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 		{
 			int clothes = addonInfo.FrameID;			
 			
-			FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
+			FRAME_ARRAY &FA = (*packs.pOustersFPK)[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > tempFrame)
 			{
 				CFrame &Frame = FA[tempFrame];					
-				int sprite	= Frame.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
-				int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
-				int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
+				int sprite	= Frame.GetSpriteID();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetSpriteID();
+				int cx		= Frame.GetCX();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCX();
+				int cy		= Frame.GetCY();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCY();
 				
-				CIndexSprite* pSprite = &m_OustersSPK[ sprite ];					
+				CIndexSprite* pSprite = &(*packs.pOustersSPK)[ sprite ];
 				
 				pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 				pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
 				
-				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// 머리색
+				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// hair colour
 				
 				int Colorset;
 				
@@ -334,9 +281,9 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 				
 				if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 					Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// 옷색
+				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// coat colour
 				
-				if(bChakram == false)	// 리스틀릿을 차고 있으면
+				if(bChakram == false)	// if it wears a wristlet
 				{
 					if(addonInfoChakram.bAddon)
 					{
@@ -344,7 +291,7 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arms
 					}
 					else
 					{
@@ -352,7 +299,7 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arms
 					}
 				}
 				else
@@ -363,7 +310,7 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arms
 					
 				}
 				
@@ -373,7 +320,7 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 부츠색
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// boots colour
 				}
 				else
 				{
@@ -381,10 +328,10 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// bare feet (upstream's comment said arms)
 				}
 				
-				m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+				packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 				
 			}
 		}
@@ -393,17 +340,17 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 		{
 			int clothes = addonInfoChakram.FrameID;
 			
-			FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
+			FRAME_ARRAY &FA = (*packs.pOustersFPK)[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > tempFrame)
 			{
 				CFrame &Frame = FA[tempFrame];					
-				int sprite	= Frame.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
-				int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
-				int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
+				int sprite	= Frame.GetSpriteID();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetSpriteID();
+				int cx		= Frame.GetCX();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCX();
+				int cy		= Frame.GetCY();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCY();
 				
-				CIndexSprite* pSprite = &m_OustersSPK[ sprite ];					
+				CIndexSprite* pSprite = &(*packs.pOustersSPK)[ sprite ];
 				
 				pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 				pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
@@ -418,16 +365,15 @@ void	MTopView::DrawDivineGuidanceOustersCharacter(
 					colorset2 = MItem::GetSpecialColorItemColorset( colorset2 );
 				CIndexSprite::SetUsingColorSet( colorset1, colorset2 );
 				
-				m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+				packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 			}
 		}
 	}
 }
 
-void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter( 
-			POINT *pPoint, MCreature* pCreature, int direction )
+void	DrawDivineGuidanceAdvancementClassOustersCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction )
 {
-	//  챠크람이 있다
+	// It has a chakram
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
 	const int tempFrame = 30;
 	
@@ -444,22 +390,22 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 		{
 			int clothes = 1;
 			
-			FRAME_ARRAY &FA = m_AdvancementOustersFPK[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
+			FRAME_ARRAY &FA = (*packs.pAdvancementOustersFPK)[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > tempFrame)
 			{
 				CFrame &Frame = FA[tempFrame];					
-				int sprite	= Frame.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
-				int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
-				int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
+				int sprite	= Frame.GetSpriteID();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetSpriteID();
+				int cx		= Frame.GetCX();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCX();
+				int cy		= Frame.GetCY();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCY();
 				
-				CIndexSprite* pSprite = &m_AdvancementOustersSPK[ sprite ];					
+				CIndexSprite* pSprite = &(*packs.pAdvancementOustersSPK)[ sprite ];
 				
 				pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 				pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
 				
-				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// 머리색
+				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// hair colour
 				
 				int Colorset;
 				
@@ -467,9 +413,9 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 				
 				if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 					Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// 옷색
+				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// coat colour
 				
-				if(bChakram == false)	// 리스틀릿을 차고 있으면
+				if(bChakram == false)	// if it wears a wristlet
 				{
 					if(addonInfoChakram.bAddon)
 					{
@@ -477,7 +423,7 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arms
 					}
 					else
 					{
@@ -485,7 +431,7 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arms
 					}
 				}
 				else
@@ -496,7 +442,7 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arms
 					
 				}
 				
@@ -506,7 +452,7 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 부츠색
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// boots colour
 				}
 				else
 				{
@@ -514,10 +460,10 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// bare feet (upstream's comment said arms)
 				}
 				
-				m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+				packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 				
 			}
 		}
@@ -526,17 +472,17 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 		{
 			int clothes = 0;
 			
-			FRAME_ARRAY &FA = m_AdvancementOustersFPK[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
+			FRAME_ARRAY &FA = (*packs.pAdvancementOustersFPK)[clothes][tempAction][(direction+g_CurrentFrame/2+k)%8];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > tempFrame)
 			{
 				CFrame &Frame = FA[tempFrame];					
-				int sprite	= Frame.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
-				int cx		= Frame.GetCX();	//m_AddonFPK[clothes][action][direction][frame].GetCX();
-				int cy		= Frame.GetCY();	//m_AddonFPK[clothes][action][direction][frame].GetCY();
+				int sprite	= Frame.GetSpriteID();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetSpriteID();
+				int cx		= Frame.GetCX();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCX();
+				int cy		= Frame.GetCY();	//(*packs.pAddonFPK)[clothes][action][direction][frame].GetCY();
 				
-				CIndexSprite* pSprite = &m_AdvancementOustersSPK[ sprite ];					
+				CIndexSprite* pSprite = &(*packs.pAdvancementOustersSPK)[ sprite ];
 				
 				pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 				pointTemp.y = pPoint->y + cy-(*g_pCreatureTable)[pCreature->GetCreatureType()].Height;// + pCreature->GetSY();
@@ -551,8 +497,37 @@ void	MTopView::DrawDivineGuidanceAdvancementClassOustersCharacter(
 					colorset2 = MItem::GetSpecialColorItemColorset( colorset2 );
 				CIndexSprite::SetUsingColorSet( colorset1, colorset2 );
 				
-				m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
+				packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 2-k);
 			}
 		}
+	}
+}
+
+//----------------------------------------------------------------------
+// The silhouette for the creature's race and class (MTopView::DrawCreature
+// chose it until task 4.248).
+//----------------------------------------------------------------------
+void	DrawDivineGuidanceCharacter( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCreature, int direction, int body, bool bSlayer, bool bOusters )
+{
+	if (bSlayer)
+	{
+		if (pCreature->IsAdvancementClass())
+			DrawDivineGuidanceAdvancementClassSlayerCharacter( packs, pPoint, pCreature, direction );
+		else
+			DrawDivineGuidanceSlayerCharacter( packs, pPoint, pCreature, direction );
+	}
+	else if (bOusters)
+	{
+		if (pCreature->IsAdvancementClass())
+			DrawDivineGuidanceAdvancementClassOustersCharacter( packs, pPoint, pCreature, direction );
+		else
+			DrawDivineGuidanceOustersCharacter( packs, pPoint, pCreature, direction );
+	}
+	else
+	{
+		if (pCreature->IsAdvancementClass())
+			DrawDivineGuidanceAdvancementClassVampireCharacter( packs, pPoint, pCreature, direction, body );
+		else
+			DrawDivineGuidanceVampireCharacter( packs, pPoint, pCreature, direction, body );
 	}
 }

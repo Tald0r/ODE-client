@@ -64,6 +64,7 @@
 #include "VS_UI_item.h"
 #include "MTopViewDraw.inl"
 #include "AdvancementAction.h"
+#include "CreatureDivineGuidanceDraw.h"
 
 #define	SHIFT_SNIPPING			2
 
@@ -111,171 +112,29 @@ namespace {
 
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
-//add by viva
-int GetNewVampireActionFromVampireAction( int CurAction )
+// The packs and surface the creature drawing in gameview reads.
+CreatureDrawPacks
+MTopView::GetCreatureDrawPacks()
 {
-	int Action=CurAction;
-	if(CurAction==13)
-		Action=16;
-	else if(CurAction==12)
-		Action=7;
-	return Action;
-}
-int GetAdvancementPartFromItemClass( ITEM_CLASS itemClass , TYPE_FRAMEID frameID)
-{
-//	assert(false && "님하 즐드333");
-
-	switch( itemClass )
-	{
-	case ITEM_CLASS_MOTORCYCLE :
-		{
-			if(frameID == AC_BIKE_2)
-				return AC_BIKE_2;
-			return AC_BIKE_1;
-		}
-		
-	case ITEM_CLASS_SWORD :
-		return AC_SWORD;
-
-	case ITEM_CLASS_BLADE :
-		return AC_BLADE;
-
-	case ITEM_CLASS_AR :
-		return AC_GUN_AR;
-
-	case ITEM_CLASS_SG :
-	case ITEM_CLASS_SMG :
-	case ITEM_CLASS_SR :
-		return AC_GUN_SR;
-
-	case ITEM_CLASS_MACE :
-		return AC_MACE;
-
-	case ITEM_CLASS_CROSS :
-		return AC_CROSS;
-
-	case ITEM_CLASS_SHIELD :
-		return AC_SHIELD;
-
-	case ITEM_CLASS_HELM :
-		return AC_HELMET;
-
-	case ITEM_CLASS_COAT :
-	case ITEM_CLASS_TROUSER :
-		return AC_BODY;
-
-	case ITEM_CLASS_SHOULDER_ARMOR :
-		return AC_SHOULDER;
-
-	default:
-		break;
-	}
-
-	return -1;
-}
-
-int GetAdvancementSlayerAttackActionFromItemClass( ITEM_CLASS itemClass, MCreature* pCreature )
-{
-	switch( itemClass )
-	{
-	case ITEM_CLASS_AR :
-		return static_cast<int>(ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_SLOW) + static_cast<int>(pCreature->GetWeaponSpeed());
-	
-	case ITEM_CLASS_SG :
-	case ITEM_CLASS_SMG :
-	case ITEM_CLASS_SR :
-		return static_cast<int>(ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_SLOW) + static_cast<int>(pCreature->GetWeaponSpeed());
-
-	default:
-		break;
-	}
-
-	return -1;
-}
-//add by viva
-int ConvNewSlayerActionFromSlayerAction(int CurAction, MCreatureWear* pCreatureWear)
-{
-	assert(pCreatureWear!=NULL);
-	int Action=CurAction;
-	if(CurAction==ACTION_STAND)
-	{
-		const MCreatureWear::ADDON_INFO& addon = pCreatureWear->GetAddonInfo( ADDON_RIGHTHAND );
-		if(	addon.ItemClass==ITEM_CLASS_SG
-		||addon.ItemClass==ITEM_CLASS_SMG
-		||addon.ItemClass==ITEM_CLASS_AR
-		||addon.ItemClass==ITEM_CLASS_SR
-		)
-			return ACTION_NEW_SLAYER_STOP_GUN;
-	}
-	else if(CurAction==ACTION_MOVE)
-	{
-		const MCreatureWear::ADDON_INFO& addon = pCreatureWear->GetAddonInfo( ADDON_RIGHTHAND );
-		if(	addon.ItemClass==ITEM_CLASS_SG
-		||addon.ItemClass==ITEM_CLASS_SMG
-		||addon.ItemClass==ITEM_CLASS_AR
-		||addon.ItemClass==ITEM_CLASS_SR
-		)
-			return ACTION_NEW_SLAYER_MOVE_GUN;	
-	}
-	else if(CurAction==ACTION_SLAYER_GUN_SG)	//9
-		Action=ACTION_NEW_SLAYER_GUN_SG;
-	else if(CurAction==ACTION_SLAYER_GUN_SMG)	//10
-		Action=ACTION_NEW_SLAYER_GUN_SMG;
-	else if(CurAction==ACTION_SLAYER_SWORD)	//11
-		Action=ACTION_NEW_SLAYER_SWORD;
-	else if(CurAction==ACTION_SLAYER_BLADE)	//12
-		Action=ACTION_NEW_SLAYER_BLADE;
-	else if(CurAction==ACTION_SLAYER_SWORD_2)	//13
-		Action=ACTION_NEW_SLAYER_SWORD_2;
-	else if(CurAction==ACTION_SLAYER_BLADE_2)	//14
-		Action=ACTION_NEW_SLAYER_BLADE_2;
-	else if(CurAction==ACTION_SLAYER_MOTOR_MOVE)	//15
-		Action=ACTION_NEW_SLAYER_MOTOR_MOVE;
-	else if(CurAction==ACTION_SLAYER_MOTOR_STAND)	//16
-		Action=ACTION_NEW_SLAYER_MOTOR_STAND;
-	else if(CurAction==ACTION_SLAYER_GUN_SR_SLOW)	//17
-		Action=ACTION_NEW_SLAYER_GUN_SR_SLOW;
-	else if(CurAction==ACTION_SLAYER_GUN_SR_FAST)	//18
-		Action=ACTION_NEW_SLAYER_GUN_SR_FAST;
-	else if(CurAction==ACTION_SLAYER_GUN_AR_SLOW)	//19
-		Action=ACTION_NEW_SLAYER_GUN_AR_SLOW;
-	else if(CurAction==ACTION_SLAYER_GUN_AR_FAST)	//20
-		Action=ACTION_NEW_SLAYER_GUN_AR_FAST;
-	else if(CurAction==ACTION_SLAYER_GUN_SG_SLOW)	//21
-		Action=ACTION_NEW_SLAYER_GUN_SG_SLOW;
-	else if(CurAction==ACTION_SLAYER_GUN_SG_FAST)	//22
-		Action=ACTION_NEW_SLAYER_GUN_SG_FAST;
-	else if(CurAction==ACTION_SLAYER_GUN_SMG_SLOW)	//23
-		Action=ACTION_NEW_SLAYER_GUN_SMG_SLOW;
-	else if(CurAction==ACTION_SLAYER_GUN_SMG_FAST)	//24
-		Action=ACTION_NEW_SLAYER_GUN_SMG_FAST;
-	else if(CurAction==ACTION_SLAYER_SWORD_SLOW)	//25
-		Action=ACTION_NEW_SLAYER_SWORD_SLOW;
-	else if(CurAction==ACTION_SLAYER_SWORD_FAST)	//26
-		Action=ACTION_NEW_SLAYER_SWORD_FAST;
-	else if(CurAction==ACTION_SLAYER_BLADE_SLOW)	//27
-		Action=ACTION_NEW_SLAYER_BLADE_SLOW;
-	else if(CurAction==ACTION_SLAYER_BLADE_FAST)	//28
-		Action=ACTION_NEW_SLAYER_BLADE_FAST;
-	else if(CurAction==ACTION_SLAYER_SWORD_2_SLOW)	//29
-		Action=ACTION_NEW_SLAYER_SWORD_2_SLOW;
-	else if(CurAction==ACTION_SLAYER_SWORD_2_FAST)	//30
-		Action=ACTION_NEW_SLAYER_SWORD_2_FAST;
-	else if(CurAction==ACTION_SLAYER_BLADE_2_SLOW)	//31
-		Action=ACTION_NEW_SLAYER_BLADE_2_SLOW;
-	else if(CurAction==ACTION_SLAYER_BLADE_2_FAST)	//32
-		Action=ACTION_NEW_SLAYER_BLADE_2_FAST;
-	else if(CurAction==130)//폅都加丹
-		Action=37;
-	return Action;
-}
-// The slayer's conversion reads the right hand's item class
-// (AdvancementAction.cpp, gamemodel's since task 4.239).
-int ConvAdvancementSlayerActionFromSlayerAction( int CurAction, MCreatureWear* pCreatureWear )
-{
-	assert( pCreatureWear != NULL );
-
-	return ConvAdvancementSlayerAction( CurAction, pCreatureWear->GetAddonInfo( ADDON_RIGHTHAND ).ItemClass );
+	CreatureDrawPacks packs;
+	packs.pSurface = m_pSurface;
+	packs.pCreatureFPK = &m_CreatureFPK;
+	packs.pCreatureSPK = &m_CreatureSPK;
+	packs.pAddonFPK = &m_AddonFPK;
+	packs.pAddonSPK = &m_AddonSPK;
+	packs.pOustersFPK = &m_OustersFPK;
+	packs.pOustersSPK = &m_OustersSPK;
+	packs.pAdvancementSlayerManFPK = &m_AdvancementSlayerManFPK;
+	packs.pAdvancementSlayerManSPK = &m_AdvancementSlayerManSPK;
+	packs.pAdvancementSlayerWomanFPK = &m_AdvancementSlayerWomanFPK;
+	packs.pAdvancementSlayerWomanSPK = &m_AdvancementSlayerWomanSPK;
+	packs.pAdvancementVampireManFPK = &m_AdvancementVampireManFPK;
+	packs.pAdvancementVampireManSPK = &m_AdvancementVampireManSPK;
+	packs.pAdvancementVampireWomanFPK = &m_AdvancementVampireWomanFPK;
+	packs.pAdvancementVampireWomanSPK = &m_AdvancementVampireWomanSPK;
+	packs.pAdvancementOustersFPK = &m_AdvancementOustersFPK;
+	packs.pAdvancementOustersSPK = &m_AdvancementOustersSPK;
+	return packs;
 }
 
 bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
@@ -760,27 +619,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 		if(!pCreature->IsNPC() &&  pCreature->HasEffectStatus(EFFECTSTATUS_DIVINE_GUIDANCE))
 		{	
-			if(isSlayerCharacter)
-			{
-				if( pCreature->IsAdvancementClass() )
-					DrawDivineGuidanceAdvancementClassSlayerCharacter( pPoint, pCreature, direction );
-				else
-					DrawDivineGuidanceSlayerCharacter( pPoint, pCreature, direction );
-			}
-			else if(isOustersCharacter)
-			{
-				if( pCreature->IsAdvancementClass() )
-					DrawDivineGuidanceAdvancementClassOustersCharacter( pPoint, pCreature, direction );
-				else
-					DrawDivineGuidanceOustersCharacter( pPoint, pCreature, direction );				
-			}
-			else
-			{
-				if( pCreature->IsAdvancementClass() )
-					DrawDivineGuidanceAdvancementClassVampireCharacter( pPoint, pCreature, direction, body );
-				else
-					DrawDivineGuidanceVampireCharacter( pPoint, pCreature, direction, body );
-			}
+			DrawDivineGuidanceCharacter( GetCreatureDrawPacks(), pPoint, pCreature, direction, body, isSlayerCharacter, isOustersCharacter );
 		}
 
 		//----------------------------------------

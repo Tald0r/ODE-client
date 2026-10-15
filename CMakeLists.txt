@@ -488,6 +488,49 @@ target_link_libraries(gamemodel PUBLIC basic packetwire framelib decore)
 message(STATUS "gamemodel library: ${_gamemodel_count} sources from tests/arch/gamemodel_files.txt")
 
 # ============================================================
+# gameview - the view's drawing that reads the model and draws with
+# SpriteLib (docs/RESTRUCTURING.md task 4.248), which gamemodel may not
+# include. Same membership-file discipline: tests/arch/gameview_files.txt
+# is read by this block (.cpp lines), the include checker (rules V0-V2)
+# and the ratchet script.
+# ============================================================
+set(GAMEVIEW_MEMBERSHIP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/arch/gameview_files.txt)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${GAMEVIEW_MEMBERSHIP_FILE})
+file(STRINGS ${GAMEVIEW_MEMBERSHIP_FILE} _gameview_lines)
+set(GAMEVIEW_SOURCES)
+foreach(_line IN LISTS _gameview_lines)
+	string(STRIP "${_line}" _line)
+	if(NOT _line MATCHES "^Client/.*\\.cpp$")
+		continue()
+	endif()
+	if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${_line})
+		message(FATAL_ERROR "gameview membership lists a file that does not exist: ${_line}")
+	endif()
+	list(APPEND GAMEVIEW_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${_line})
+endforeach()
+list(LENGTH GAMEVIEW_SOURCES _gameview_count)
+if(_gameview_count LESS 1)
+	message(FATAL_ERROR "gameview membership file yielded no sources - is ${GAMEVIEW_MEMBERSHIP_FILE} intact?")
+endif()
+
+add_library(gameview STATIC ${GAMEVIEW_SOURCES})
+
+target_include_directories(gameview PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}/Client/SpriteLib
+)
+
+# The same definitions as gamemodel's, which these files compiled with in
+# the executable.
+target_compile_definitions(gameview PRIVATE
+	USE_SDL_BACKEND
+	SPRITELIB_BACKEND_SDL
+)
+
+target_link_libraries(gameview PUBLIC gamemodel SpriteLib framelib)
+
+message(STATUS "gameview library: ${_gameview_count} sources from tests/arch/gameview_files.txt")
+
+# ============================================================
 # TextSystem - New SDL-based Text System (Abstracted)
 # ============================================================
 if(USE_SDL_BACKEND OR NOT WIN32)
@@ -920,6 +963,15 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		endif()
 	endforeach()
 
+	# And for gameview (tests/arch/gameview_files.txt).
+	list(REMOVE_ITEM CLIENT_MAIN_SOURCES ${GAMEVIEW_SOURCES})
+	foreach(_src IN LISTS GAMEVIEW_SOURCES)
+		list(FIND CLIENT_MAIN_SOURCES ${_src} _still_in_exe)
+		if(NOT _still_in_exe EQUAL -1)
+			message(FATAL_ERROR "gameview member is still in the executable's source list (case mismatch in tests/arch/gameview_files.txt?): ${_src}")
+		endif()
+	endforeach()
+
 	# The custom MP3/Huffman decoder (mp3/huffman/reader/header/synfilt/
 	# subdecoder/soundbuf/BIT_RES, once duplicated between Client/ and
 	# Client/DXLib/) was deleted 2026-08-31: no CMakeLists ever compiled the
@@ -1025,6 +1077,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		basic
 		packetwire
 		gamemodel
+		gameview
 		framelib
 		VS_UI
 		TextSystem

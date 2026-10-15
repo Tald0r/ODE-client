@@ -133,10 +133,8 @@ struct Host
 	// The player's (task 4.247): the view's selection cleared (the sector,
 	// or everything) or set on a creature; the sector and the pixel under a
 	// screen point; the view's request mode (MRequestMode's) and whether it
-	// has one; a screen fade started and ended; and how many frames a
-	// creature's frame pack holds for an action and direction. Without a
-	// host: nothing set, the null sector, pixel (0, 0), REQUEST_NULL and
-	// false, and no frames.
+	// has one; and a screen fade started and ended. Without a host:
+	// nothing set, the null sector, pixel (0, 0), REQUEST_NULL and false.
 	void (*SetSelectedSectorNULL)() = nullptr;
 	void (*SetSelectedNULL)() = nullptr;
 	void (*SetSelectedCreature)(TYPE_OBJECTID creatureID) = nullptr;
@@ -146,7 +144,6 @@ struct Host
 	bool (*IsViewRequestMode)() = nullptr;
 	void (*SetFadeStart)(signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay) = nullptr;
 	void (*SetFadeEnd)() = nullptr;
-	int (*GetCreatureActionFrameCount)(int frameID, int action, int direction) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -182,7 +179,6 @@ int GetViewRequestMode();
 bool IsViewRequestMode();
 void SetFadeStart(signed char start, signed char end, signed char step, std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint16_t delay);
 void SetFadeEnd();
-int GetCreatureActionFrameCount(int frameID, int action, int direction);
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);
