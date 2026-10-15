@@ -32,6 +32,7 @@
 #include "DirectionSelection.h"
 #include "WorldTileGeometry.h"
 #include "MEffect.h"
+#include "MParty.h"
 #include "MEffectGeneratorTable.h"
 #include "MEffectGenerator.h"
 #include "MEffectTarget.h"
@@ -39,6 +40,8 @@
 #include "domain/Formulas.h"
 
 #include <cstdio>
+#include <cstring>
+#include <new>
 #include <map>
 #include <memory>
 #include <string>
@@ -1972,4 +1975,24 @@ TEST(Creature, AnAttachedEffectHandsOnAtItsLinkFrame)
 		CHECK(!calls.empty() && calls[0].rfind("effect|" + N(Cast) + "|", 0) == 0);
 	}
 	g_CurrentFrame = oldFrame;
+}
+
+//----------------------------------------------------------------------
+// Construction
+//----------------------------------------------------------------------
+TEST(Creature, ANewCreatureIsNotInTheParty)
+{
+	Scene scene;
+	MParty* oldParty = g_pParty;
+	g_pParty = NULL;
+	// The pool hands out used memory: build one over leftover bytes. The
+	// constructor sets the status, which asks the party flag. Reading the
+	// leftover flag is undefined (UBSan stops on it); with no name yet, the
+	// party lookup it led to found nobody, so nothing else showed.
+	alignas(MCreature) unsigned char storage[sizeof(MCreature)];
+	std::memset(storage, 0xFF, sizeof storage);
+	MCreature* pCreature = ::new (storage) MCreature;
+	CHECK(!pCreature->IsPlayerParty());
+	pCreature->~MCreature();
+	g_pParty = oldParty;
 }

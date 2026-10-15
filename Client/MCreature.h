@@ -1128,7 +1128,8 @@ class MCreature : public MObject, public MStatus {
 		//----------------------------------------------------
 		// party - player의 체크를 빠르게 할려고..
 		//----------------------------------------------------
-		bool					m_bPlayerParty;
+		// Set before the constructor's body, whose SetStatus calls ask it.
+		bool					m_bPlayerParty = false;
 
 		//--------------------------------------------------
 		// Hallucination걸렸을때 몹으로 보이기

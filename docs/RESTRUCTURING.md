@@ -7136,6 +7136,8 @@ rounds settled* for the host rules). Test fixtures share
   >     both `SYLPH_GREEN_FLY` and `SYLPH_BLACK_STOP`, which never holds.
   >   - A crashed bike ends its spin the third time it faces its start, after
   >     two crash skills.
+  > - **Fixed after the move** (UBSan stopped on both): the constructor
+  >   read `m_bPlayerParty` (through `SetStatus`) before setting it.
   >
   > R1 is 25 Windows / 23 Ninja.
   - Owner: membership, R1, `test_creature.cpp`: 59 tests. The hosts
