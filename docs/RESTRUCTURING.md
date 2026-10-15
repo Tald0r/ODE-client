@@ -6295,7 +6295,7 @@ rounds settled* for the host rules). Test fixtures share
   > - **The check:** `ParsingNetmarble` answers false when the command
   >   line has no space, or what follows the first space is 4096 bytes
   >   or more. Otherwise the launch is refused through the host: the
-  >   game's shows the "launch from the Netmarble homepage" message and
+  >   game shows the "launch from the Netmarble homepage" message and
   >   exits, as before. Without a host it only returns false.
   >   `g_CpCookie` (always empty, read by GameUI) moves with it, in a
   >   new `Netmarble.h`.
@@ -6307,9 +6307,10 @@ rounds settled* for the host rules). Test fixtures share
   >   struct goes from `Client.cpp`.
   >
   > R1 is 43 Windows / 41 Ninja.
-  - Owner: membership, R1, and `test_netmarble.cpp` (4 tests).
-  - Mutants: all 6 are caught. Taking the source out of the membership
-    breaks the test link.
+  - Owner: membership, R1, and `test_netmarble.cpp` (5 tests).
+  - Mutants: all 8 are caught. The review added two: the first space,
+    not the last, and a host without `RefuseLaunch`. Taking the source
+    out of the membership breaks the test link.
 
 - [x] **4.221 Retire the help decision tree:** delete
   `MCompareManager.cpp`/`.h` and the dead tree classes of

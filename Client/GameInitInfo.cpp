@@ -491,15 +491,6 @@ InitInfomation()
 	//		Help Manager , Help String Table
 	//
 	//---------------------------------------------------------------------
-	//---------------------------------------------------------------------
-	// Help Manager
-	//---------------------------------------------------------------------
-//	DEBUG_ADD("[ InitGame ]  Information - HelpManager");
-//	std::ifstream helpManagerFile;//(g_pFileDef->getProperty("FILE_INFO_USINGCOLORSET").c_str(), ios::binary);
-//	if (!FileOpenBinary(g_pFileDef->getProperty("FILE_INFO_SMART_HELP").c_str(), helpManagerFile))
-//		return FALSE;
-//	g_pHelpManager->LoadFromFile( helpManagerFile );
-//	helpManagerFile.close();
 
 	//---------------------------------------------------------------------
 	// Help String Table

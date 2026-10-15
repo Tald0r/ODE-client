@@ -99,8 +99,8 @@ CFramePack<Type>::SaveToFile(std::ofstream& packFile, std::ofstream& indexFile)
 	//--------------------------------------------------
 	for (TYPE_FRAMEID i=0; i<m_Size; i++)
 	{
-		// Remember where the frame is written: the index file stores it in
-		// 4 bytes, as a long.
+		// Remember where the frame is written. The index file stores the
+		// offset's low 4 bytes, read back as an int32_t (CFrameSet.h).
 		pIndex[i] = static_cast<long>(packFile.tellp());
 
 		// CreatureFrame저장
