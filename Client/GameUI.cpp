@@ -161,6 +161,8 @@ void UI_FriendChatting_Message(GCFriendChatting* pPacket)
 //--------------------------------------------------------------------------------
 void UI_RunFriendRequest(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendRequestAsk(pName);
@@ -175,6 +177,8 @@ void UI_RunFriendRequest(GCFriendChatting* pPacket)
 //}
 void UI_RunFriendRefuse(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendOK();
@@ -182,6 +186,8 @@ void UI_RunFriendRefuse(GCFriendChatting* pPacket)
 }
 void UI_RunFriendWait(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendWaitAsk(pName);
@@ -194,12 +200,16 @@ void UI_RunFriendOK(GCFriendChatting* pPacket)
 }
 void UI_RunFriendExist(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendExistAsk(pName);
 }
 void UI_RunFriendBlack(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendBlackAsk(pName);
