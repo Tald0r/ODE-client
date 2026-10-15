@@ -1,23 +1,25 @@
 ﻿//-----------------------------------------------------------------------------
 // UtilityFunction.cpp
 //-----------------------------------------------------------------------------
+// The account name and password input rules (task 4.232, gamemodel's since
+// then).
+//-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "CrtCompat.h"
 
 #include "UtilityFunction.h"
-#include "DataPath.h"
-#include <SDL.h>
+#include <cstring>
 
 
 //-----------------------------------------------------------------------------
 // RemoveStringSpace
 //-----------------------------------------------------------------------------
-// string 앞 뒤의 공백을 제거한다.
+// Removes the spaces before and after the string.
 //-----------------------------------------------------------------------------
 void
 RemoveStringSpace(char*& str)
 {
-	// 앞쪽 공백 제거
+	// The leading spaces
 	int bExistChar = 0;
 	while (*str != '\0')
 	{
@@ -32,7 +34,7 @@ RemoveStringSpace(char*& str)
 		}
 	}
 
-	// 뒤쪽 공백 제거 
+	// The trailing spaces
 	if (bExistChar)
 	{
 		char* strTemp = str;
@@ -50,36 +52,16 @@ RemoveStringSpace(char*& str)
 //-----------------------------------------------------------------------------
 // Is Valid ID
 //-----------------------------------------------------------------------------
-// 4~10글자 공백이 있으면 안된다.
-// 다 한글이거나
-// 다 영어야 할까??
-/*
-	char temp[3];
-	strncpy(temp, str, 2);
-	temp[2] = NULL;
-
-	if (strcmp(temp, "가") >= 0
-		&& strcmp(temp, "힝") <= 0)
-	{
-		// 제대로된 한글
-		str += 2;					
-		continue;	
-	}
-	else
-	{
-		// 2바이트 문자
-		str += 2;
-		continue;
-	}
-*/
+// 4 to 10 bytes, no spaces; all hangul, or all English (with digits and
+// the permitted characters).
 //-----------------------------------------------------------------------------
-int 
+int
 IsValidID(const char* strID, const char* strPermit)
 {
 	const int minLength = 4;
 	const int maxLength = 10;
 
-	// 어떠한 경우이든 허용되는 문자들
+	// The characters permitted in any case
 	//const char* strPermit = "_-";
 
 	int len = 0;
@@ -91,8 +73,8 @@ IsValidID(const char* strID, const char* strPermit)
 	char* str = strtempID;
 
 	//--------------------------------------------------------
-	// 공백이 들어가면 안된다.
-	// 길이도 알아낸다. *_*;
+	// No spaces.
+	// Counts the length too.
 	//--------------------------------------------------------
 	while (*str != '\0')
 	{
@@ -106,7 +88,7 @@ IsValidID(const char* strID, const char* strPermit)
 	}
 
 	//--------------------------------------------------------
-	// 길이가 잘못된 경우
+	// A wrong length
 	//--------------------------------------------------------
 	if (len<minLength || len>maxLength)
 	{
@@ -114,7 +96,7 @@ IsValidID(const char* strID, const char* strPermit)
 	}
 
 	//--------------------------------------------------------
-	// 첫글자가 숫자이면 안된다.
+	// The first character may not be a digit.
 	//--------------------------------------------------------
 	if (strtempID[0]>='0' && strtempID[0]<='9')
 	{
@@ -122,7 +104,7 @@ IsValidID(const char* strID, const char* strPermit)
 	}
 
 	//--------------------------------------------------------
-	// 한글을 제외한 특수문자가 들어가면 안된다.
+	// No special characters other than hangul.
 	//--------------------------------------------------------
 	int bExistHangul = 0;
 	int bExistEnglish = 0;
@@ -132,21 +114,21 @@ IsValidID(const char* strID, const char* strPermit)
 	{
 		char ch = *str;
 		//--------------------------------------------------------
-		// 첫 bit가 '1'이면 한글..일까?
+		// A high first bit: hangul?
 		//--------------------------------------------------------
 		if (ch & 0x80)
 		{
-			// 한글이므로 두 byte 다음 거 체크
+			// Hangul: two bytes, so check the one after it
 			str++;
 
 			if (*str=='\0')
 			{
-				// 다음게 없으면 잘못된 ID이다.
-				return 0;				
+				// Nothing after it: a wrong ID.
+				return 0;
 			}
 
 			//--------------------------------------------------------
-			// 자음, 모음만 있는 경우라면 잘못된 아이디다.
+			// A lone consonant or vowel (jamo) is a wrong ID.
 			//--------------------------------------------------------
 			const char* badKor = "ㅂㅃㅈㅉㄷㄸㄱㄲㅅㅆㅛㅕㅑㅐㅒㅔㅖㅁㄴㅇㄹㅎㅗㅓㅏㅣㅋㅌㅊㅍㅠㅜㅡㅙㅝㅟㅢ";
 
@@ -156,7 +138,7 @@ IsValidID(const char* strID, const char* strPermit)
 
 			if (findPtr!=NULL)
 			{
-				if (!((findPtr - badKor) & 0x01))	// 짝수라면..
+				if (!((findPtr - badKor) & 0x01))	// at an even offset
 				{
 					return 0;
 				}
@@ -167,28 +149,28 @@ IsValidID(const char* strID, const char* strPermit)
 			bExistHangul = 1;
 		}
 		//--------------------------------------------------------
-		// 아니면..
+		// Otherwise
 		//--------------------------------------------------------
 		else
 		{
 			//--------------------------------------------------------
-			// 영어 대소문자..
+			// English, upper or lower case
 			//--------------------------------------------------------
-			if ((ch>='a' && ch<='z') 
+			if ((ch>='a' && ch<='z')
 				|| (ch>='A' && ch<='Z'))
-			{				
+			{
 				bExistEnglish = 1;
 			}
 			//--------------------------------------------------------
-			// 숫자거나
-			// 허용된 문자인 경우는 괜찮다..
+			// A digit, or a permitted character,
+			// is fine.
 			//--------------------------------------------------------
 			else if ((ch>='0' && ch<='9')
 					|| (strPermit!=NULL && strchr(strPermit, ch)!=NULL))
 			{
 			}
 			//--------------------------------------------------------
-			// 이상한 문자 쓰면 안된다.				
+			// No other characters.
 			//--------------------------------------------------------
 			else
 			{
@@ -201,7 +183,7 @@ IsValidID(const char* strID, const char* strPermit)
 	}
 
 	//--------------------------------------------------------
-	// 한글을 사용한 경우에는 영어를 사용할 수 없다.
+	// With hangul, no English.
 	//--------------------------------------------------------
 	if (bExistHangul && bExistEnglish)
 	{
@@ -209,7 +191,7 @@ IsValidID(const char* strID, const char* strPermit)
 	}
 
 	//--------------------------------------------------------
-	// 정상적인 ID
+	// A valid ID
 	//--------------------------------------------------------
 	return 1;
 }
@@ -217,11 +199,11 @@ IsValidID(const char* strID, const char* strPermit)
 //-----------------------------------------------------------------------------
 // Is Valid Password
 //-----------------------------------------------------------------------------
-int 
+int
 IsValidPassword(const char* strPWD)
 {
 	//--------------------------------------------------
-	// 허용안되는 특수문자를 사용하면 안된다.
+	// No special characters that are not allowed.
 	//--------------------------------------------------
 	if (strchr(strPWD, '\\')!=NULL
 		|| strchr(strPWD, '\'')!=NULL)
@@ -230,12 +212,12 @@ IsValidPassword(const char* strPWD)
 	}
 
 	//--------------------------------------------------
-	// 숫자만 사용하면 안된다.
+	// Not digits only:
 	//--------------------------------------------------
-	// 흑흑.. 이미 숫자가 입력된 사람들 때메.. T_T;;
+	// disabled, since some already chose all-digit passwords.
 	/*
 	char* str = strPWD;
-	
+
 	char ch;
 
 	bool AllNumber = TRUE;
@@ -249,79 +231,11 @@ IsValidPassword(const char* strPWD)
 		}
 	}
 
-	if (AllNumber)	// 전부 숫자인 경우..
+	if (AllNumber)	// all digits
 	{
 		return 0;
 	}
 	*/
 
 	return 1;
-}
-
-// SDL backend implementation of LoadImageToSurface (USE_SDL_BACKEND is
-// mandatory on all platforms, including PLATFORM_WINDOWS)
-#include "SpriteLib/CSpriteSurface.h"
-
-bool LoadImageToSurface(const char* pFilename, CSpriteSurface& surface)
-{
-	if (pFilename == NULL) {
-		return false;
-	}
-
-	// Resolved for the disk (basic/DataPath.h): the identity on Windows;
-	// off Windows the separators folded and each component matched
-	// case-insensitively. SDL_LoadBMP() below opens it.
-	const std::string sResolved = Basic::NormalizeDataPath(pFilename);
-	pFilename = sResolved.c_str();
-
-	int fileLen = static_cast<int>(strlen(pFilename));
-
-	if (fileLen < 8) {
-		return false;
-	}
-
-	// Check file extension
-	char checkStr[10];
-	snprintf(checkStr, sizeof(checkStr), "%s", pFilename + fileLen - 4);
-	for (int i = 0; static_cast<size_t>(i) < strlen(checkStr); i++) {
-		if (checkStr[i] >= 'A' && checkStr[i] <= 'Z') {
-			checkStr[i] += 'a' - 'A';
-		}
-	}
-
-	// Only support .bmp files for now
-	if (strncmp(".bmp", checkStr, 4) != 0) {
-		return false;
-	}
-
-	// Load image using SDL_image
-	SDL_Surface* loaded = SDL_LoadBMP(pFilename);
-	if (loaded == NULL) {
-		return false;
-	}
-
-	// Convert to RGB565 format
-	SDL_Surface* converted = SDL_ConvertSurfaceFormat(loaded, SDL_PIXELFORMAT_RGB565, 0);
-	if (converted == NULL) {
-		SDL_FreeSurface(loaded);
-		return false;
-	}
-
-	DWORD pitch = 0;
-	auto* dest = static_cast<BYTE*>(surface.Lock(nullptr, &pitch));
-	if (!dest) {
-		SDL_FreeSurface(converted);
-		SDL_FreeSurface(loaded);
-		return false;
-	}
-	const int width = min(converted->w, surface.GetWidth());
-	const int height = min(converted->h, surface.GetHeight());
-	for (int y = 0; y < height; ++y)
-		memcpy(dest + y * pitch, static_cast<BYTE*>(converted->pixels) + y * converted->pitch, width * sizeof(WORD));
-	surface.Unlock();
-
-	SDL_FreeSurface(converted);
-	SDL_FreeSurface(loaded);
-
-	return true;
 }

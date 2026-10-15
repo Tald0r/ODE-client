@@ -419,7 +419,8 @@ check () {
 # 35: the FL2 text layer joins VS_UI (4.228).
 # 34: the creature draw exceptions join gamemodel (4.229).
 # 33: the guild marks join VS_UI (4.230).
-R1_BASELINE=33
+# 32: the account input rules join gamemodel, the BMP loader SpriteLib (4.232).
+R1_BASELINE=32
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -671,7 +672,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 33: the FL2 text layer joins VS_UI (4.228).
 	# 32: the creature draw exceptions join gamemodel (4.229).
 	# 31: the guild marks join VS_UI (4.230).
-	R1_NINJA_BASELINE=31
+	# 30: the account input rules join gamemodel, the BMP loader SpriteLib (4.232).
+	R1_NINJA_BASELINE=30
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

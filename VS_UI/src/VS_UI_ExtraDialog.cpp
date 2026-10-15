@@ -19,7 +19,7 @@
 #include "VS_UI.h"
 #include "MPriceManager.h"
 #include "MCreatureTable.h"
-#include "UtilityFunction.h"
+#include "SpriteLib/SurfaceImage.h"	// LoadImageToSurface
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
 #include "ClientConfig.h"
