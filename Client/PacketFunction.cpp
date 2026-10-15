@@ -611,23 +611,23 @@ SetAddonToSlayer(MCreatureWear* pCreature, int npcID )
 	//----------------------------------------	
 	if ((*g_pCreatureTable)[npcID].bMale)
 	{
-		pCreature->SetAddonHair(g_PacketHairMaleID[pInfo->hair], pInfo->hairColor);		
+		pCreature->SetAddonHair(PacketHair(g_PacketHairMaleID, pInfo->hair), pInfo->hairColor);
 	}
 	// slayer female
 	else
 	{
-		pCreature->SetAddonHair(g_PacketHairFemaleID[pInfo->hair], pInfo->hairColor);	
+		pCreature->SetAddonHair(PacketHair(g_PacketHairFemaleID, pInfo->hair), pInfo->hairColor);
 	}
 
 	//----------------------------------------	
 	// outfit
 	//----------------------------------------	
-	MItem* pCoat		= g_pPacketItemJacket[pInfo->jacket];
-	MItem* pTrouser		= g_pPacketItemPants[pInfo->pants];
-	MItem* pHelm		= g_pPacketItemHelm[pInfo->helmet];
-	MItem* pWeapon		= g_pPacketItemWeapon[pInfo->weapon];
-	MItem* pShield		= g_pPacketItemShield[pInfo->shield];
-	MItem* pMotorcycle	= g_pPacketItemMotorcycle[pInfo->motorcycle];
+	MItem* pCoat		= PacketItem(g_pPacketItemJacket, pInfo->jacket);
+	MItem* pTrouser		= PacketItem(g_pPacketItemPants, pInfo->pants);
+	MItem* pHelm		= PacketItem(g_pPacketItemHelm, pInfo->helmet);
+	MItem* pWeapon		= PacketItem(g_pPacketItemWeapon, pInfo->weapon);
+	MItem* pShield		= PacketItem(g_pPacketItemShield, pInfo->shield);
+	MItem* pMotorcycle	= PacketItem(g_pPacketItemMotorcycle, pInfo->motorcycle);
 
 	// set color info...
 	//pCoat->SetItemOptionList( getHelmetColor() );
@@ -717,12 +717,12 @@ SetAddonToSlayer(MCreatureWear* pCreature, const PCSlayerInfo2* pInfo)
 	// slayer male
 	if (pInfo->getSex()==MALE)
 	{
-		pCreature->SetAddonHair(g_PacketHairMaleID[(int)pInfo->getHairStyle()], pInfo->getHairColor());		
+		pCreature->SetAddonHair(PacketHair(g_PacketHairMaleID, pInfo->getHairStyle()), pInfo->getHairColor());
 	}
 	// slayer female
 	else
 	{
-		pCreature->SetAddonHair(g_PacketHairFemaleID[(int)pInfo->getHairStyle()], pInfo->getHairColor ());	
+		pCreature->SetAddonHair(PacketHair(g_PacketHairFemaleID, pInfo->getHairStyle()), pInfo->getHairColor ());
 	}
 
 	if(pInfo->getAdvancementLevel()>0) // advanced (promoted) character

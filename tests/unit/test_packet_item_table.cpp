@@ -483,6 +483,30 @@ TEST(PacketWear, ANpcWearsItsRowsClothesInItsColours)
 	}
 }
 
+TEST(PacketWear, AnNpcRowPastTheTablesWearsNothingThere)
+{
+	// The creature data's bytes past a table's end are nothing worn, and a
+	// hair past the three takes the first.
+	Scene scene;
+	PacketTables tables;
+	tables.Fill();
+	const int npc = 600;
+	ITEM_WEARINFO* pWear = new ITEM_WEARINFO;
+	testfw::MutableRow(scene.creatureTypes, npc).pItemWearInfo = pWear;
+	testfw::MutableRow(scene.creatureTypes, npc).bMale = true;
+	pWear->hair = 3;
+	pWear->jacket = 255;
+	pWear->pants = 255;
+	pWear->helmet = 255;
+	pWear->weapon = 255;
+	pWear->shield = 255;
+	pWear->motorcycle = 255;
+	Wearer creature;
+	SetAddonToSlayer(&creature, npc);
+	CHECK(creature.handed == std::vector<const MItem*>(6, nullptr));
+	CHECK_EQ(int(ADDONID_HAIR1_MALE), int(creature.GetHairFrameID()));
+}
+
 TEST(PacketWear, ANpcWithoutClothesKeepsItsBodyColours)
 {
 	Scene scene;
@@ -555,9 +579,19 @@ TEST(PacketWear, APlayersSlayerTakesItsHairAndSkin)
 			CHECK(Addon(creature, ADDON_TROUSER) == Colours(1, 42, 0));
 			CHECK(creature.handed.empty());
 		}
-	// SetAddonToSlayer(PCSlayerInfo2) indexes the three-entry hair tables
-	// with the wire's hair style unchecked (PacketFunction.cpp:723 and 728):
-	// a style of 3 to 255 reads past them. Not run here: ASan stops it.
+	// A style past the three the tables hold, as the wire's byte can be,
+	// takes the first, as PCSlayerInfo3's does.
+	for (Sex sex : {MALE, FEMALE})
+		for (int style : {3, 255})
+		{
+			PCSlayerInfo2 info;
+			info.setSex(sex);
+			info.setHairStyle(HairStyle(style));
+			info.setHairColor(41);
+			Wearer creature;
+			SetAddonToSlayer(&creature, &info);
+			CHECK_EQ(sex == MALE ? int(ADDONID_HAIR1_MALE) : int(ADDONID_HAIR1_FEMALE), int(creature.GetHairFrameID()));
+		}
 }
 
 TEST(PacketWear, AnAdvancedSlayersCoatTakesItsHairColour)
