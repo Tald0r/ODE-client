@@ -1738,7 +1738,8 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -1788,7 +1789,8 @@ SetInventoryInfo(InventoryInfo* pInventoryInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2033,7 +2035,8 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2083,7 +2086,8 @@ SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2324,7 +2328,8 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 				(*g_pItemTable)[pSlotInfo->getItemClass()].GetSize() <= pSlotInfo->getItemType() )
 			{
 				SendBugReportAt(DiagnosticSite(), "%d,%d",pSlotInfo->getItemClass(), pSlotInfo->getItemType() );
-				return;
+				delete pSlotInfo;
+				continue;
 			}
 			MItem* pItem = MItem::NewItem( (ITEM_CLASS)pSlotInfo->getItemClass() );
 
@@ -2425,7 +2430,8 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );
 
@@ -2475,7 +2481,8 @@ SetExtraInfo(ExtraInfo* pExtraInfo)
 								(*g_pItemTable)[pSubItemInfo->getItemClass()].GetSize() <= pSubItemInfo->getItemType() )
 							{
 								SendBugReportAt(DiagnosticSite(), "%d,%d",pSubItemInfo->getItemClass(), pSubItemInfo->getItemType() );
-								return;
+								delete pSubItemInfo;
+								continue;
 							}
 
 							MItem* pSubItem = MItem::NewItem( (enum ITEM_CLASS)pSubItemInfo->getItemClass() );

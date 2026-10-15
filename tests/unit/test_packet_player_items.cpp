@@ -55,6 +55,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 // MItemUse.cpp's, the factory GameInit installs.
 MItem* NewItemOfClass(ITEM_CLASS itemClass);
 extern S_SLOT g_char_slot_ingame;
@@ -81,6 +93,19 @@ bool Same(const std::vector<std::string>& expected)
 }
 
 int Count(const std::string& call) { return int(std::count(calls.begin(), calls.end(), call)); }
+
+// Whether a SubItemInfo (no virtual destructor to watch) was freed. Only
+// ASan can tell, by the poison its quarantine keeps on a freed block;
+// without it this says yes, so the check is the sanitized trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
+}
 
 // The class the factory cannot make (none when -1).
 int refusedClass = -1;
@@ -114,6 +139,12 @@ struct FakeGenerator : MEffectGenerator
 struct Generators : MEffectGeneratorTable
 {
 	void Add(MEffectGenerator* generator) { AddEffectGenerator(generator); }
+};
+
+// An extra slot that says when it is freed.
+struct WatchedExtraSlot : ExtraSlotInfo
+{
+	~WatchedExtraSlot() override { calls.push_back("slot freed|" + N(getObjectID())); }
 };
 
 struct InventoryEffects : MScreenEffectManager
@@ -668,27 +699,44 @@ TEST(PacketPlayerItems, InventoryInfoNoneStillEmptiesTheInventory)
 }
 
 //----------------------------------------------------------------------
-// Defect: a pocket item of a class or type outside the item table returns
-// from SetInventoryInfo at once (PacketFunction.cpp:1748, 1798): the
-// container, its slot and the pocket item are never freed, the slots after
-// it are never read, the items are not checked and the inventory's
-// effects stay.
+// A pocket item of a class or type outside the item table is freed and
+// passed over like any other the pocket cannot take: its container and
+// the pocket items after it still go in, the slots after it are read,
+// the items are checked and the inventory's effects let go.
 //----------------------------------------------------------------------
-TEST(PacketPlayerItems, InventoryStopsAtAPocketItemOutsideTheTable)
+TEST(PacketPlayerItems, InventorySkipsAPocketItemOutsideTheTable)
 {
 	Scene scene;
+	SubItemInfo* pPastClass = SubItem(MAX_ITEM_CLASS, 0, 607, 1, 0);
+	SubItemInfo* pPastType = SubItem(ITEM_CLASS_PUPA, 1, 608, 1, 0);
 	InventorySlotInfo* pBelt = InventorySlot(ITEM_CLASS_BELT, 0, 541, 2, 0);
-	pBelt->addListElement(SubItem(MAX_ITEM_CLASS, 0, 607, 1, 0));
+	pBelt->addListElement(pPastClass);
+	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 609, 1, 1));
+	InventorySlotInfo* pBand = InventorySlot(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 543, 6, 0);
+	pBand->addListElement(pPastType);
 	InventoryInfo info;
-	Add(info, { InventorySlot(ITEM_CLASS_POTION, 0, 540, 0, 0), pBelt, InventorySlot(ITEM_CLASS_POTION, 0, 542, 5, 0) });
+	Add(info, { InventorySlot(ITEM_CLASS_POTION, 0, 540, 0, 0), pBelt, pBand, InventorySlot(ITEM_CLASS_POTION, 0, 542, 5, 0) });
 	calls.clear();
 
 	SetInventoryInfo(&info);
 
+	const MBelt* pPlacedBelt = dynamic_cast<const MBelt*>(scene.inventory.GetItem(TYPE_OBJECTID(541)));
+	CHECK(pPlacedBelt != NULL);
+	if (pPlacedBelt != NULL)
+	{
+		CHECK(pPlacedBelt->GetItem(0) == NULL);
+		CHECK(pPlacedBelt->GetItem(1) != NULL && pPlacedBelt->GetItem(1)->GetID() == 609);
+	}
+	const MOustersArmsBand* pPlacedBand = dynamic_cast<const MOustersArmsBand*>(scene.inventory.GetItem(TYPE_OBJECTID(543)));
+	CHECK(pPlacedBand != NULL && pPlacedBand->GetItem(0) == NULL);
 	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(540)) != NULL);
-	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(541)) == NULL);
-	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(542)) == NULL);
-	CHECK(Same({ "affect|540" }));
+	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(542)) != NULL);
+	CHECK_EQ(4, scene.inventory.GetItemNum());
+	CHECK(Freed(pPastClass));
+	CHECK(Freed(pPastType));
+	// Each item checked as it goes in and again after; the effects let go.
+	CHECK_EQ(2, Count("affect|542"));
+	CHECK(!calls.empty() && calls.back() == "inventory effects released");
 }
 
 //----------------------------------------------------------------------
@@ -876,35 +924,65 @@ TEST(PacketPlayerItems, GearSkipsWhatCannotBeMade)
 }
 
 //----------------------------------------------------------------------
-// Defect: a pocket item outside the item table returns from SetGearInfo at
-// once (PacketFunction.cpp:2043, 2093): the belt, its slot and the pocket
-// item are never freed, the slots after it are never read, the blood bible
-// is not applied and the player's gear, skills and stats are not checked.
+// A pocket item outside the item table is freed and passed over: the belt
+// and the pocket items after it still go on, the slots after it are read,
+// the blood bible is applied and the player's gear, skills and stats are
+// checked; an ousters' arms band likewise.
 //----------------------------------------------------------------------
-TEST(PacketPlayerItems, GearStopsAtAPocketItemOutsideTheTable)
+TEST(PacketPlayerItems, GearSkipsAPocketItemOutsideTheTable)
 {
-	Scene scene;
-	scene.skills.AddSkill(ACTIONINFO(SKILL_ATTACK_MELEE));
-	scene.me->SetStatus(MODIFY_TOHIT, 64);
-	GearSlotInfo* pBelt = GearSlot(ITEM_CLASS_BELT, 0, 742, MSlayerGear::GEAR_SLAYER_BELT);
-	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 5, 743, 1, 0));
-	GearInfo info;
-	Add(info, { GearSlot(ITEM_CLASS_HELM, 0, 741, MSlayerGear::GEAR_SLAYER_HELM), pBelt,
-		GearSlot(ITEM_CLASS_SWORD, 0, 744, MSlayerGear::GEAR_SLAYER_RIGHTHAND) });
-	BloodBibleSignInfo bible;
-	bible.setOpenNum(1);
-	bible.getList() = { 5 };
-	calls.clear();
+	{
+		Scene scene;
+		scene.skills.AddSkill(ACTIONINFO(SKILL_ATTACK_MELEE));
+		scene.me->SetStatus(MODIFY_TOHIT, 64);
+		SubItemInfo* pPastType = SubItem(ITEM_CLASS_POTION, 5, 743, 1, 0);
+		GearSlotInfo* pBelt = GearSlot(ITEM_CLASS_BELT, 0, 742, MSlayerGear::GEAR_SLAYER_BELT);
+		pBelt->addListElement(pPastType);
+		pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 0, 745, 1, 1));
+		GearInfo info;
+		Add(info, { GearSlot(ITEM_CLASS_HELM, 0, 741, MSlayerGear::GEAR_SLAYER_HELM), pBelt,
+			GearSlot(ITEM_CLASS_SWORD, 0, 744, MSlayerGear::GEAR_SLAYER_RIGHTHAND) });
+		BloodBibleSignInfo bible;
+		bible.setOpenNum(1);
+		bible.getList() = { 5 };
+		calls.clear();
 
-	SetGearInfo(&info, &bible);
+		SetGearInfo(&info, &bible);
 
-	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_HELM) != NULL);
-	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BELT) == NULL);
-	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_RIGHTHAND) == NULL);
-	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1) == NULL);
-	CHECK(Same({ "affect|741" }));
-	CHECK(!scene.skills.empty());
-	CHECK_EQ(0, g_char_slot_ingame.TOHIT);
+		CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_HELM) != NULL);
+		const MBelt* pPlacedBelt = dynamic_cast<const MBelt*>(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BELT));
+		CHECK(pPlacedBelt != NULL);
+		if (pPlacedBelt != NULL)
+		{
+			CHECK(pPlacedBelt->GetItem(0) == NULL);
+			CHECK(pPlacedBelt->GetItem(1) != NULL && pPlacedBelt->GetItem(1)->GetID() == 745);
+		}
+		CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_RIGHTHAND) != NULL);
+		CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_BLOOD_BIBLE1) != NULL);
+		CHECK(Freed(pPastType));
+		const std::vector<std::string> last = { "affect|0", "affect|741", "affect|742", "affect|744", "stats" };
+		CHECK(calls.size() >= last.size() && std::equal(last.begin(), last.end(), calls.end() - static_cast<std::ptrdiff_t>(last.size())));
+		CHECK(scene.skills.empty());
+		CHECK_EQ(64, g_char_slot_ingame.TOHIT);
+	}
+	{
+		Scene scene;
+		scene.me->SetCreatureType(CREATURETYPE_OUSTERS);
+		SubItemInfo* pPastType = SubItem(ITEM_CLASS_PUPA, 1, 747, 1, 0);
+		GearSlotInfo* pBand = GearSlot(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 746, MOustersGear::GEAR_OUSTERS_ARMSBAND1);
+		pBand->addListElement(pPastType);
+		GearInfo info;
+		Add(info, { pBand, GearSlot(ITEM_CLASS_OUSTERS_CIRCLET, 0, 748, MOustersGear::GEAR_OUSTERS_CIRCLET) });
+		calls.clear();
+
+		SetGearInfo(&info);
+
+		const MOustersArmsBand* pPlacedBand = dynamic_cast<const MOustersArmsBand*>(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_ARMSBAND1));
+		CHECK(pPlacedBand != NULL && pPlacedBand->GetItem(0) == NULL);
+		CHECK(scene.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) != NULL);
+		CHECK(Freed(pPastType));
+		CHECK_EQ(1, Count("stats"));
+	}
 }
 
 //----------------------------------------------------------------------
@@ -1069,35 +1147,54 @@ TEST(PacketPlayerItems, ExtraInfoGunsAndArmsBandsAreFilled)
 }
 
 //----------------------------------------------------------------------
-// A class the factory cannot make is passed over; one outside the item
-// table, or a pocket item outside it, ends the info there (their slot,
-// and the item made so far, never freed: PacketFunction.cpp:2313, 2414,
-// 2464).
+// A class the factory cannot make, or one outside the item table, is
+// passed over (its slot freed) and the next one still picked up; a pocket
+// item outside the table is freed and its container picked up without it.
 //----------------------------------------------------------------------
-TEST(PacketPlayerItems, ExtraInfoStopsAtAnItemOutsideTheTable)
+TEST(PacketPlayerItems, ExtraInfoSkipsAnItemOutsideTheTable)
 {
 	Scene scene;
 	refusedClass = ITEM_CLASS_SWORD;
+	ExtraSlotInfo* pRefused = NewSlot<ExtraSlotInfo>(ITEM_CLASS_SWORD, 0, 771);
+	ExtraSlotInfo* pPastType = NewSlot<WatchedExtraSlot>(ITEM_CLASS_HELM, 7, 773);
+	ExtraSlotInfo* pPotion = NewSlot<ExtraSlotInfo>(ITEM_CLASS_POTION, 0, 772);
 	ExtraInfo info;
-	Add(info, { NewSlot<ExtraSlotInfo>(ITEM_CLASS_SWORD, 0, 771), NewSlot<ExtraSlotInfo>(ITEM_CLASS_POTION, 0, 772),
-		NewSlot<ExtraSlotInfo>(ITEM_CLASS_HELM, 7, 773), NewSlot<ExtraSlotInfo>(ITEM_CLASS_POTION, 1, 774) });
+	Add(info, { pRefused, pPastType, pPotion });
 	calls.clear();
 
 	SetExtraInfo(&info);
 
-	CHECK(Same({ "pick up|772" }));
+	CHECK(Same({ "slot freed|773", "pick up|772" }));
 	CHECK(scene.mouse.GetPickUpItem() != NULL && scene.mouse.GetPickUpItem()->GetID() == 772);
 
+	SubItemInfo* pPastClass = SubItem(MAX_ITEM_CLASS, 0, 776, 1, 0);
 	ExtraSlotInfo* pBelt = NewSlot<ExtraSlotInfo>(ITEM_CLASS_BELT, 0, 775);
-	pBelt->addListElement(SubItem(MAX_ITEM_CLASS, 0, 776, 1, 0));
+	pBelt->addListElement(pPastClass);
+	pBelt->addListElement(SubItem(ITEM_CLASS_POTION, 1, 777, 1, 1));
 	ExtraInfo pocket;
-	Add(pocket, { pBelt, NewSlot<ExtraSlotInfo>(ITEM_CLASS_POTION, 1, 777) });
+	Add(pocket, { pBelt });
 	calls.clear();
 
 	SetExtraInfo(&pocket);
 
-	CHECK(Same({ "destroyed|772", "drop" }));
-	CHECK(scene.mouse.GetPickUpItem() == NULL);
+	CHECK(Same({ "destroyed|772", "drop", "pick up|775" }));
+	const MBelt* pPickedBelt = dynamic_cast<const MBelt*>(scene.mouse.GetPickUpItem());
+	CHECK(pPickedBelt != NULL && pPickedBelt->GetItem(0) == NULL && pPickedBelt->GetItem(1) != NULL && pPickedBelt->GetItem(1)->GetID() == 777);
+	CHECK(Freed(pPastClass));
+
+	SubItemInfo* pPupaPastType = SubItem(ITEM_CLASS_PUPA, 1, 779, 1, 0);
+	ExtraSlotInfo* pBand = NewSlot<ExtraSlotInfo>(ITEM_CLASS_OUSTERS_ARMSBAND, 0, 778);
+	pBand->addListElement(pPupaPastType);
+	ExtraInfo band;
+	Add(band, { pBand });
+	calls.clear();
+
+	SetExtraInfo(&band);
+
+	CHECK(Same({ "destroyed|777", "destroyed|775", "drop", "pick up|778" }));
+	const MOustersArmsBand* pPickedBand = dynamic_cast<const MOustersArmsBand*>(scene.mouse.GetPickUpItem());
+	CHECK(pPickedBand != NULL && pPickedBand->GetItem(0) == NULL);
+	CHECK(Freed(pPupaPastType));
 }
 //----------------------------------------------------------------------
 // Each status lasts its duration in frames less the frames the loading
