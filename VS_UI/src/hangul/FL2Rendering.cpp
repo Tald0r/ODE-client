@@ -152,11 +152,14 @@ static int AdjustXForAlignment(int x, const char* text, const TextSystem::TextSt
 	if (text == NULL || *text == '\0')
 		return x;
 
-	if (align & TA_CENTER) {
+	// The horizontal part of a GDI alignment: TA_LEFT (0), TA_RIGHT (2) or
+	// TA_CENTER (6), which holds TA_RIGHT's bit.
+	const UINT horizontal = align & TA_CENTER;
+	if (horizontal == TA_CENTER) {
 		TextSystem::Metrics metrics = TextSystem::TextService::Get().MeasureText(text, style, 0);
 		return x - metrics.width / 2;
 	}
-	if (align & TA_RIGHT) {
+	if (horizontal == TA_RIGHT) {
 		TextSystem::Metrics metrics = TextSystem::TextService::Get().MeasureText(text, style, 0);
 		return x - metrics.width;
 	}

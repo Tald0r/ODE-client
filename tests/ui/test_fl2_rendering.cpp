@@ -119,6 +119,12 @@ TEST(FL2Rendering, ItPrintsInItsColourAlignedByItsWidth)
 	scene.info.text_align = TA_CENTER;
 	g_Print(60, 10, "HH", &scene.info);
 	CHECK_EQ(left.left - width / 2, scene.canvas.Lit().left);
+	// Right-aligned text ends at x. TA_CENTER (6) holds TA_RIGHT's bit
+	// (2), so the centre test must not take right for centre.
+	scene.canvas.Clear();
+	scene.info.text_align = TA_RIGHT;
+	g_Print(60, 10, "HH", &scene.info);
+	CHECK_EQ(left.left - width, scene.canvas.Lit().left);
 }
 
 TEST(FL2Rendering, AColouredStringReturnsWhereItEnds)
