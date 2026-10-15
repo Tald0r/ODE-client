@@ -1266,9 +1266,6 @@ TEST(GameUI2, APartyRequestRemembersWhoAsked)
 
 TEST(GameUI2, APartyInvitationRemembersWhoAskedUnlessTheyKeepAShopOrPartiesAreClosed)
 {
-	// Recorded defect: the zone and the creature are read before the
-	// checks (GameUI.cpp:3266-3267), so an invitation from no creature of
-	// the zone, or with no zone, crashes; it is not run here.
 	ZoneScene scene;
 	scene.Creature(300, "Kim");
 	scene.Creature(301, "Lee", 1);
@@ -1287,6 +1284,14 @@ TEST(GameUI2, APartyInvitationRemembersWhoAskedUnlessTheyKeepAShopOrPartiesAreCl
 	UI_RunPartyAsk(300);
 	CHECK_EQ(300, scene.temp.PartyInviter);
 	CHECK(TempInformation::MODE_NULL == scene.temp.GetMode());
+
+	// Nobody of the zone, or no zone: nothing.
+	scene.temp.PartyInviter = 7;
+	UI_RunPartyAsk(399);
+	CHECK_EQ(7, scene.temp.PartyInviter);
+	g_pZone = NULL;
+	UI_RunPartyAsk(300);
+	CHECK_EQ(7, scene.temp.PartyInviter);
 }
 
 TEST(GameUI2, ClosingThePartyQuestionEndsAPartyWaitAndRequest)

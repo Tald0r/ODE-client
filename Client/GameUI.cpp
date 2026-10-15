@@ -3288,13 +3288,19 @@ UI_RunPartyRequest(TYPE_OBJECTID otherID)
 void		
 UI_RunPartyAsk(TYPE_OBJECTID otherID)
 {
+	if (g_pZone==NULL)
+	{
+		return;
+	}
+
 	// by csm 12/4
+	// The id is the server's: nobody of the zone goes on to the error below.
 	MCreature* TempCreature = g_pZone->GetCreature( otherID );
-	if(TempCreature->CurPernalShop() != 1)
+	if(TempCreature==NULL || TempCreature->CurPernalShop() != 1)
 	{
 		
 		
-		if (g_pZone==NULL || !g_pSystemAvailableManager->IsAvailablePartySystem())
+		if (!g_pSystemAvailableManager->IsAvailablePartySystem())
 		{
 			return;
 		}
