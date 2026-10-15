@@ -5934,18 +5934,26 @@ void C_VS_UI_MAILBOX::LoadFromFile(std::ifstream &file)
 	DWORD flag = 0;
 	file.read((char *)&flag, sizeof(DWORD));
 	
-	BYTE tabCount;
+	// No count, or one past the end of the file, loads the mail the file
+	// holds; the box has three tabs, and tabs past them are not read.
+	BYTE tabCount = 0;
 	file.read((char *)&tabCount, sizeof(BYTE));
 	
-	for(int tab = 0; tab < tabCount; tab++)
+	for(int tab = 0; tab < tabCount && tab < TABID_MAX && file; tab++)
 	{
-		DWORD mailCount;
+		DWORD mailCount = 0;
 		file.read((char *)&mailCount, sizeof(DWORD));
 		
 		C_VS_UI_MAIL tempMail;
-		for(int mail = 0; static_cast<DWORD>(mail) < mailCount; mail++)
+		for(DWORD mail = 0; mail < mailCount; mail++)
 		{
-			if(tempMail.LoadFromFile(file))
+			const bool keep = tempMail.LoadFromFile(file);
+
+			// A mail the file ends inside is not kept, and ends the loading.
+			if (!file)
+				break;
+
+			if(keep)
 			{
 				if( tab == TAB_HELP_ID )
 					tempMail.show = true;
