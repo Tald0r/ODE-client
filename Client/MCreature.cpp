@@ -6707,8 +6707,10 @@ MCreature::CheckDropBlood()
 			// 다음 피 흘리기 가능한 시간 설정. 
 			// 좀 늦게 체크해도 관계없으므로 피 흘리거나 말거나..시간 확장
 			//----------------------------------------------------------
-			DWORD timeGap = 300 //+ 1000	//g_pClientConfig->BLOOD_DROP_GAP_TIME 
-							+ (percentHP<<2) * rand()%20;//g_pClientConfig->BLOOD_DROP_RANDOM_TIME;
+			// The product is taken before the remainder, as it always was (0 to
+			// 19 ms more); in 64 bits, since rand() reaches 2^31-1 off Windows.
+			DWORD timeGap = 300 //+ 1000	//g_pClientConfig->BLOOD_DROP_GAP_TIME
+							+ static_cast<DWORD>(static_cast<long long>(percentHP<<2) * rand() % 20);//g_pClientConfig->BLOOD_DROP_RANDOM_TIME;
 
 			//----------------------------------------------------------
 			// 흡혈 당한 상태이면 피를 좀 덜 흘린다.

@@ -7137,7 +7137,11 @@ rounds settled* for the host rules). Test fixtures share
   >   - A crashed bike ends its spin the third time it faces its start, after
   >     two crash skills.
   > - **Fixed after the move** (UBSan stopped on both): the constructor
-  >   read `m_bPlayerParty` (through `SetStatus`) before setting it.
+  >   read `m_bPlayerParty` (through `SetStatus`) before setting it, and
+  >   the bleeding interval's `(percentHP<<2) * rand()` overflowed `int`
+  >   where `RAND_MAX` is 2^31-1 (macOS, Linux). It is taken in 64 bits,
+  >   so its result is Windows' as before: the remainder of the product
+  >   by 20, not a random multiple of the HP as the formula may have meant.
   >
   > R1 is 25 Windows / 23 Ninja.
   - Owner: membership, R1, `test_creature.cpp`: 59 tests. The hosts
