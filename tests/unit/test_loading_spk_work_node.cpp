@@ -41,7 +41,6 @@ struct Scratch
 };
 
 // The pack file: three 1-row sprites of widths 1, 2 and 3 at 0, 14 and 30.
-const long positions[] = {0, 14, 30};
 void WriteSpk(const Scratch& scratch)
 {
 	std::ofstream out(scratch.Path("pack.spk"), std::ios::binary);

@@ -63,6 +63,7 @@ struct CountingNode : MActionResultNode
 
 struct Target : MEffectTarget
 {
+	using MEffectTarget::operator=;
 	int& destroyed;
 	Target(BYTE max, int& count) : MEffectTarget(max), destroyed(count) { Set(10, 20, 30, 77); }
 	~Target() override { ++destroyed; }
