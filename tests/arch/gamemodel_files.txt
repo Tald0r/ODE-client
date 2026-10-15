@@ -117,6 +117,10 @@ Client/AppendPatchInfo.h
 Client/PacketHandlerRegistry.cpp
 Client/PacketHandlerRegistry.h
 
+# The effect generator table (4.219).
+Client/MEffectGeneratorTable.cpp
+Client/MEffectGeneratorTable.h
+
 # The MIDI player's state (4.214).
 Client/MMusic.cpp
 Client/MMusic.h

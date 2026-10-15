@@ -49,10 +49,10 @@
 #include "MSoundTable.h"
 #include "MEffectSpriteTypeTable.h"
 
-#include "MTopView.h"
-#include "ClientDef.h"
 
-#include "DebugInfo.h"
+#include "DebugLog.h"
+#include "WorldEventsHost.h"
+#include "WorldTileGeometry.h"
 #include "SkillDef.h"
 #include "EffectSpriteTypeDef.h"
 #include "MSkipEffectGenerator.h"
@@ -405,8 +405,7 @@ MEffectGeneratorTable::Generate(
 			if (info.SoundID != SOUNDID_NULL)
 			{
 				//g_Sound.Play( g_SoundTable[info.SoundID].pDSBuffer );
-				POINT point = MTopView::PixelToMap(x0, y0);
-				PlaySound( info.SoundID, false, point.x, point.y );
+				WorldEvents::PlaySoundAt( info.SoundID, false, WorldTileGeometry::PixelToTileX(x0), WorldTileGeometry::PixelToTileY(y0) );
 			}
 
 			//------------------------------------------------------------
@@ -729,8 +728,7 @@ MEffectGeneratorTable::GenerateNext( MEffect* pEffect )
 		if (info.SoundID != SOUNDID_NULL)
 		{
 			//g_Sound.Play( g_SoundTable[info.SoundID].pDSBuffer );
-			POINT point = MTopView::PixelToMap(pEffect->GetPixelX(), pEffect->GetPixelY());
-			PlaySound( info.SoundID, false, point.x, point.y );
+			WorldEvents::PlaySoundAt( info.SoundID, false, WorldTileGeometry::PixelToTileX(pEffect->GetPixelX()), WorldTileGeometry::PixelToTileY(pEffect->GetPixelY()) );
 		}
 
 		//------------------------------------------------------------
