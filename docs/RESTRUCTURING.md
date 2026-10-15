@@ -7884,7 +7884,58 @@ rounds settled* for the host rules). Test fixtures share
     `libgameclient.a(PacketFunction.cpp.o)`; the executable compiles no
     object of it.
 
-### Remaining R1 work after tasks 4.80-4.253
+- [x] **4.254 The packet helpers' defects:** what 4.253's tests pinned
+  is fixed, each test first.
+  > **Status:** done (2026-10-15).
+  > - Fixed: the vampire's guild mapper is told the new guild name, not
+  >   the sheet's old one; a gear item the gear refused is no longer
+  >   worn; a pocket item (or a held item) past the item table is skipped
+  >   and freed instead of ending the inventory's, gear's or held item's
+  >   loading; a pocket item the belt or arms band refuses, another
+  >   creature's pet items, and `AddItemToZone`'s skipped sub-items are
+  >   freed; `AddItemToZone` hands back the item it laid after making way
+  >   for it, so `GCAddInstalledMineToZone` marks such a mine installed;
+  >   `ComeFromPortal`'s creature without a sprite height rises over
+  >   sixteen frames instead of showing at once.
+  > - The fake creatures the zone refuses: 4.253 recorded the use after
+  >   free that follows as unreachable, because `NewFakeCreature` takes an
+  >   ID the zone does not hold. A test reaches it by hiding a fake from
+  >   the ID counter, and six sites used the freed creature (Cross
+  >   Counter, Shadow Dancing, Illendue, Blaze Walk, `MoveIntoPortal`,
+  >   `SetPetInfo`, which also wrote to the freed pet item); each now
+  >   skips the refused creature. `MFakeCreature`'s constructor sets the
+  >   turret's direction and its final one, which it left uninitialised,
+  >   and `SetGearInfo`'s `bAdd` starts false (a regression guard: every
+  >   race sets it).
+  > - Tests over the 96 mutants 4.253's run counted as test gaps: 51 now
+  >   fail a check (the bug reports recorded, sub-items with types and
+  >   counts of their own, the ousters' arms band in the gear, every
+  >   race's blood bible bound, the sex change's checks, the copies'
+  >   looks), 8 failed already through the fixes' tests; 16 are
+  >   equivalent, 19 sit in code no build compiles
+  >   (`__TEST_SUB_INVENTORY__`, `OUTPUT_DEBUG`), 2 were on the refused
+  >   fake's branch, now fixed.
+  > - Recorded for the UI's slice: `UI_SetCharacter` indexes the
+  >   three-entry face and hair tables with a two-bit style
+  >   (`GameUI.cpp`), so a style of 3 reads past them, as
+  >   `SetAddonToSlayer` did.
+  >
+  > R1 is unchanged: 12 Windows / 11 Ninja.
+  - Owner: the eleven fixes' tests in `test_packet_player_info.cpp`,
+    `test_packet_player_items.cpp`, `test_packet_zone_items.cpp`,
+    `test_packet_skill_shows.cpp` and `test_fake_creature.cpp`; each
+    but `bAdd`'s (a regression guard) failed on the code before its fix
+    (an ASan report, a crash or a failed check), named in its commit.
+  - Mutants: 32 on the lines this task changed (deleted
+    statements, negated conditions, flipped comparisons): 31 caught; the
+    survivor deletes `SetPetInfo`'s `SetZone(g_pZone)`, which
+    `NewFakeCreature` has already done. A run over the whole file was
+    stopped at 394 of 1482: its 19 survivors were all of the kinds 4.253's
+    run showed equivalent (the none slots set to NULL, a new item's
+    defaults, the effect target's zeroes, the action start set to the
+    target's values).
+
+### Remaining R1 work after tasks 4.80-4.254
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
@@ -8339,9 +8390,9 @@ Follow-ups from 4.103:
   acceptance is withdrawn, so both sides stay accepted although the other
   side's offer changed; the test pins this as today's behaviour, and a
   change is a decision about the trade, not a refactor.
-- `PacketFunction.cpp` repeats the unchecked belt-pocket `AddItem` that
+- `PacketFunction.cpp` repeated the unchecked belt-pocket `AddItem` that
   4.103's fix made `GCTradeAddItemHandler` check, so a refused pocket item
-  leaks there on each packet (pinned by 4.253's tests, for 4.254).
+  leaked there on each packet (fixed in 4.254).
 
 Follow-ups from 4.104, all older than the move:
 - `ErrorID` has no fixed underlying type and holds 0-31, so a wire error
