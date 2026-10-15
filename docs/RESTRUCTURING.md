@@ -7163,7 +7163,7 @@ rounds settled* for the host rules). Test fixtures share
   >     Platform.h's `max`).
   >
   > R1 is 25 Windows / 23 Ninja.
-  - Owner: membership, R1, `test_creature.cpp`: 60 tests. The hosts
+  - Owner: membership, R1, `test_creature.cpp`: 61 tests. The hosts
     are fakes that record; the tables, the sector, the effects and the
     event queue are real, with a recording effect generator.
   - Mutants: 140 of the 141 caught. The one left is equivalent: a blitz slide turns to its target twice, and the second turn is the same as the first.
