@@ -3804,33 +3804,31 @@ UseItemOK()
 					if( !g_pPlayer->IsOusters() )
 					{
 						
+						// The new body sets the sex from the creature table; the flag is
+						// set too, for a table row that says otherwise.
+						const bool bMale = !g_pPlayer->IsMale();
 						if( g_pPlayer->IsSlayer() )
 						{
-							const MCreatureWear::ADDON_INFO& addon= g_pPlayer->GetAddonInfo( ADDON_HAIR );
-						
-							g_pPlayer->SetCreatureType( (g_pPlayer->IsMale()==true)? CREATURETYPE_SLAYER_FEMALE: CREATURETYPE_SLAYER_MALE );
-							g_pPlayer->SetMale( !g_pPlayer->IsMale() );
+							// The new body takes the hair off: keep its style, the same
+							// row of the other sex's table (the first if none), and colour.
+							const MCreatureWear::ADDON_INFO hair = g_pPlayer->GetAddonInfo( ADDON_HAIR );
+							const int* pOldHair = bMale? g_PacketHairFemaleID : g_PacketHairMaleID;
+							unsigned style = 0;
+							for (unsigned i = 0; i < 3; i++)
+								if (pOldHair[i] == hair.FrameID)
+									style = i;
 
-							
-							if (g_pPlayer->IsMale()==true)
-							{
-								g_pPlayer->SetAddonHair(g_PacketHairMaleID[addon.FrameID], addon.ColorSet1);		
-							}
-							// slayer female
-							else
-							{
-								g_pPlayer->SetAddonHair(g_PacketHairFemaleID[addon.FrameID], addon.ColorSet1);		
-							}
+							g_pPlayer->SetCreatureType( bMale? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE );
+							g_pPlayer->SetMale( bMale );
+							g_pPlayer->SetAddonHair( bMale? PacketHair(g_PacketHairMaleID, style) : PacketHair(g_PacketHairFemaleID, style), hair.ColorSet1 );
 						}
 						else
 						{
-							int creatureType = (g_pPlayer->IsMale()==true)? CREATURETYPE_VAMPIRE_MALE1 : CREATURETYPE_VAMPIRE_FEMALE1;
-							g_pPlayer->SetCreatureType( creatureType );
-							g_pPlayer->SetMale( !g_pPlayer->IsMale() );
-						
+							g_pPlayer->SetCreatureType( bMale? CREATURETYPE_VAMPIRE_MALE1 : CREATURETYPE_VAMPIRE_FEMALE1 );
+							g_pPlayer->SetMale( bMale );
 						}
-							
-						
+
+
 						// check all the items held.
 						if( g_pPlayer->IsSlayer() )
 							g_pSlayerGear->CheckAffectStatusAll();

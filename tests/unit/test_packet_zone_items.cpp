@@ -1080,7 +1080,7 @@ TEST(PacketZoneItems, ASkinDyeColoursASlayersCoatAndAnyOtherBody)
 	}
 }
 
-TEST(PacketZoneItems, ASexChangeTurnsAVampireButFlipsOnlyItsFlag)
+TEST(PacketZoneItems, ASexChangeTurnsAVampiresBodyAndFlag)
 {
 	Scene scene(Vampire);
 	scene.Tribe(CREATURETYPE_VAMPIRE_MALE1, CREATURETRIBE_VAMPIRE);
@@ -1094,17 +1094,41 @@ TEST(PacketZoneItems, ASexChangeTurnsAVampireButFlipsOnlyItsFlag)
 	g_char_slot_ingame.man_info.hair = CHAR_MAN(3);
 	g_char_slot_ingame.man_info.face = CHAR_MAN(2);
 	Dye(scene, 48);
-	// Recorded defect (PacketFunction.cpp:3831-3833): the type picked is
-	// the player's own sex, MALE1 for a male, and only the flag turns, so
-	// the body and the flag disagree afterwards. (A slayer's sex change is
-	// not run here: it indexes the three-entry hair tables with the hair's
-	// frame ID, cleared to FRAMEID_NULL by the type change, at 3821/3826,
-	// and SetCreatureType has already set the new sex when 3816 flips it.)
-	CHECK_EQ(int(CREATURETYPE_VAMPIRE_MALE1), int(scene.me->GetCreatureType()));
+	CHECK_EQ(int(CREATURETYPE_VAMPIRE_FEMALE1), int(scene.me->GetCreatureType()));
 	CHECK(scene.me->IsFemale());
 	CHECK(g_char_slot_ingame.bl_female);
 	CHECK_EQ(3, int(g_char_slot_ingame.woman_info.hair));
 	CHECK_EQ(2, int(g_char_slot_ingame.woman_info.face));
+}
+
+TEST(PacketZoneItems, ASexChangeKeepsASlayersHairStyleAndColour)
+{
+	// Each of the three styles, and a hair that is none of them (the
+	// first style), for either sex.
+	for (const bool male : {true, false})
+	for (int style = 0; style < 4; ++style)
+	{
+		Scene scene(Slayer);
+		scene.Tribe(CREATURETYPE_SLAYER_MALE);
+		scene.Tribe(CREATURETYPE_SLAYER_FEMALE);
+		testfw::MutableRow(scene.creatureTypes, CREATURETYPE_SLAYER_MALE).bMale = true;
+		testfw::MutableRow(scene.creatureTypes, CREATURETYPE_SLAYER_FEMALE).bMale = false;
+		scene.me->SetCreatureType(male ? CREATURETYPE_SLAYER_MALE : CREATURETYPE_SLAYER_FEMALE);
+		CHECK_EQ(male, scene.me->IsMale());
+		const int* oldHair = male ? g_PacketHairMaleID : g_PacketHairFemaleID;
+		const int* newHair = male ? g_PacketHairFemaleID : g_PacketHairMaleID;
+		scene.me->SetAddonHair(TYPE_FRAMEID(style < 3 ? oldHair[style] : 999), 77);
+		scene.Items(ITEM_CLASS_DYE_POTION, 64);
+		g_char_slot_ingame.bl_female = !male;
+		Dye(scene, 48);
+		CHECK_EQ(int(male ? CREATURETYPE_SLAYER_FEMALE : CREATURETYPE_SLAYER_MALE), int(scene.me->GetCreatureType()));
+		CHECK_EQ(!male, scene.me->IsMale());
+		const MCreatureWear::ADDON_INFO& hair = scene.me->GetAddonInfo(ADDON_HAIR);
+		CHECK(hair.bAddon);
+		CHECK_EQ(newHair[style < 3 ? style : 0], int(hair.FrameID));
+		CHECK_EQ(77, int(hair.ColorSet1));
+		CHECK_EQ(male, g_char_slot_ingame.bl_female);
+	}
 }
 
 TEST(PacketZoneItems, AnOusterTakesNoSexChange)
