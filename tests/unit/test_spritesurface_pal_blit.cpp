@@ -1033,17 +1033,19 @@ struct EffectLogCapture {
 
 TEST(SpriteSurfaceEffects, UnsupportedSelectionsReportOnceAndKeepTheirCopyFallback)
 {
+    // An effect no code selects (each kind is reported once a process, and
+    // the creature drawing selects the wipe-out).
     EffectLogCapture log;
     for (int repeat = 0; repeat < 100; ++repeat) {
-        CSpriteSurface::SetEffect(CSpriteSurface::EFFECT_WIPE_OUT);
-        CSpriteSurface::SetPalEffect(CSpriteSurface::EFFECT_WIPE_OUT);
+        CSpriteSurface::SetEffect(CSpriteSurface::EFFECT_DIFFERENT);
+        CSpriteSurface::SetPalEffect(CSpriteSurface::EFFECT_DIFFERENT);
     }
     CHECK_EQ(2u, log.messages.size());
     if (log.messages.size() == 2) {
         CHECK(log.messages[0].find("pixel") != std::string::npos);
         CHECK(log.messages[1].find("palette") != std::string::npos);
         for (const auto& message : log.messages) {
-            CHECK(message.find("10") != std::string::npos);
+            CHECK(message.find("effect 7;") != std::string::npos);
             CHECK(message.find("plain copy") != std::string::npos);
         }
     }

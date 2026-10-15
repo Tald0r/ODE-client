@@ -816,16 +816,7 @@ class MTopView : public MRequestMode {
 		void	DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
 
 		// DrawEffect
-		void	DrawInstallTurret( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int frameindex );
-		void	DrawFadeOut( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
-		void	DrawFastMove(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
-		void	DrawInvisible(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
-		void	DrawWeaponFadeOut(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
 		
-		void	DrawFadeOutForACSlayer( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame );
-		void	DrawFastMoveForACSlayer(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
-		void	DrawInvisibleForACSlayer(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
-		void	DrawWeaponFadeOutForACSlayer(POINT* pPoint, MCreature* pCreature, int action, int direction, int frame );
 		
 		// The packs and surface the creature drawing moved to gameview reads
 		// (task 4.248: the divine-guidance silhouettes).
@@ -843,7 +834,6 @@ class MTopView : public MRequestMode {
 		void	DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame, int body, int frameindex );
 
 		// 2004, 12, 11, sobeit add start
-		void	DrawCentauroTurret( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame , int body);
 		// 2004, 12, 11, sobeit add end
 		
 		// 2005, 1, 20, sobeit add start

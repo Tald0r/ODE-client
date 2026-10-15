@@ -157,9 +157,9 @@ user, config and timed-item loaders gamemodel reads, and their string support; m
 4.40, 4.41, 4.42, 4.43 and the follow-up extractions through 4.87),
 `gameview` (the view's drawing that reads the model and draws with
 `SpriteLib`, which `gamemodel` may not include: the divine-guidance
-silhouettes and the creature shadows, over the packs `MTopView` hands it
-as a `CreatureDrawPacks`; membership in `tests/arch/gameview_files.txt`,
-tasks 4.248 and 4.249),
+silhouettes, the creature shadows and the creatures drawn with an effect,
+over the packs and selection `MTopView` hands it as a `CreatureDrawPacks`;
+membership in `tests/arch/gameview_files.txt`, tasks 4.248 to 4.250),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

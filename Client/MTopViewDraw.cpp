@@ -66,6 +66,7 @@
 #include "AdvancementAction.h"
 #include "CreatureDivineGuidanceDraw.h"
 #include "CreatureShadowDraw.h"
+#include "CreatureEffectDraw.h"
 
 #define	SHIFT_SNIPPING			2
 
@@ -152,6 +153,8 @@ MTopView::GetCreatureDrawPacks()
 	packs.pAdvancementOustersShadowFPK = &m_AdvancementOustersShadowFPK;
 	packs.pAdvancementOustersSSPK = &m_AdvancementOustersSSPK;
 	packs.pEtcSPK = &m_EtcSPK;
+	packs.selectedCreatureID = m_SelectCreatureID;
+	packs.pOutlines = &m_SOM;
 	return packs;
 }
 
@@ -764,7 +767,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			{		
 				// 2004, 9, 15, sobeit add start  - install turret
 				if(pCreature->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
-					DrawInstallTurret( pPoint, pCreature, action, direction, frame, FrameIndex );
+					DrawInstallTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame, FrameIndex );
 				else
 				{
 					if( pCreature->IsAdvancementClass() )
@@ -784,7 +787,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			// 슬레 펫인 경우는 터렛 찍어줘야 된다-ㅅ-;;;; 하드하드..아아-_-/~
 			if( bSlayerPet_ShowTurret )
 			{
-				DrawCentauroTurret( pPoint, pCreature, action, direction, frame , body);
+				DrawCentauroTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame , body);
 			}
 
 			// FIX: Draw the actual sprites before drawing the outline
@@ -915,7 +918,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			// 슬레 펫인 경우는 터렛 찍어줘야 된다-ㅅ-;;;; 하드하드..아아-_-/~
 			if( bSlayerPet_ShowTurret )
 			{
-				DrawCentauroTurret( pPoint, pCreature, action, direction, frame , body);				
+				DrawCentauroTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame , body);
 			}
 		}
 
@@ -2139,7 +2142,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int action, int direction, int frame, int FrameIndex )
 {
 	if(pCreature->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
-		DrawInstallTurret( pPoint, pCreature, action, direction, frame, FrameIndex );
+		DrawInstallTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame, FrameIndex );
 	else
 	{
 		MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
@@ -2155,7 +2158,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 		//------------------------------------------------------------
 		if (pCreature->HasEffectStatus( EFFECTSTATUS_FADE_OUT ))
 		{
-			DrawFadeOut( pPoint, pCreature, action, direction, frame);
+			DrawFadeOut( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame);
 		}
 		
 		//------------------------------------------------------------
@@ -2163,14 +2166,14 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 		//------------------------------------------------------------
 		if (pCreature->IsFastMove())
 		{
-			DrawFastMove( pPoint, pCreature, action, direction, frame );						
+			DrawFastMove( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame );
 		}
 		//------------------------------------------------------------
 		// Invisible  - Slayer는 snipping mode에서 투명이다.
 		//------------------------------------------------------------
 		else if (pCreature->IsInvisible())
 		{
-			DrawInvisible( pPoint, pCreature, action, direction, frame );
+			DrawInvisible( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame );
 		}
 		//------------------------------------------------------------
 		// 무기 잔상 기술
@@ -2182,7 +2185,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 			)
 			)
 		{
-			DrawWeaponFadeOut( pPoint, pCreature, action, direction, frame );			
+			DrawWeaponFadeOut( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame );
 		}
 		//------------------------------------------------------------
 		// 일반적인 출력
@@ -2285,7 +2288,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 	//add by viva
 	int action_viva = action;
 	if(pCreature->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
-		DrawInstallTurret( pPoint, pCreature, action, direction, frame, FrameIndex );
+		DrawInstallTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame, FrameIndex );
 	else
 	{
 		// ToT 시간없다.. 하드 코딩.. by sonee
@@ -2310,7 +2313,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 		//------------------------------------------------------------
 		if (pCreature->HasEffectStatus( EFFECTSTATUS_FADE_OUT ))
 		{
-			DrawFadeOutForACSlayer( pPoint, pCreature, action_viva, direction, frame);	//by viva	modifyed	try
+			DrawFadeOutForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame);	//by viva	modifyed	try
 		}
 		
 		//------------------------------------------------------------
@@ -2318,14 +2321,14 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 		//------------------------------------------------------------
 		if (pCreature->IsFastMove())
 		{
-			DrawFastMoveForACSlayer( pPoint, pCreature, action_viva, direction, frame );	//by viva	modifyed try		
+			DrawFastMoveForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame );	//by viva	modifyed try
 		}
 		//------------------------------------------------------------
 		// Invisible  - Slayer는 snipping mode에서 투명이다.
 		//------------------------------------------------------------
 		else if (pCreature->IsInvisible())
 		{
-			DrawInvisibleForACSlayer( pPoint, pCreature, action_viva, direction, frame );		//by viva	modifyed try
+			DrawInvisibleForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame );		//by viva	modifyed try
 		}
 		//------------------------------------------------------------
 		// 무기 잔상 기술
@@ -2337,7 +2340,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 			)
 			)
 		{
-			DrawWeaponFadeOutForACSlayer( pPoint, pCreature, action_viva, direction, frame );	//by viva	modifyed try
+			DrawWeaponFadeOutForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame );	//by viva	modifyed try
 		}
 		//------------------------------------------------------------
 		// 일반적인 출력
