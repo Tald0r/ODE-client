@@ -396,6 +396,7 @@ ReleasePacketItemTable()
 			&& g_pPacketItemHelm[i]!=NULL)
 		{
 			delete g_pPacketItemHelm[i];
+			g_pPacketItemHelm[i] = NULL;
 		}
 	}
 	
@@ -408,6 +409,7 @@ ReleasePacketItemTable()
 			&& g_pPacketItemJacket[i]!=NULL)
 		{
 			delete g_pPacketItemJacket[i];
+			g_pPacketItemJacket[i] = NULL;
 		}
 	}	
 
@@ -420,6 +422,7 @@ ReleasePacketItemTable()
 			&& g_pPacketItemPants[i]!=NULL)
 		{
 			delete g_pPacketItemPants[i];
+			g_pPacketItemPants[i] = NULL;
 		}
 	}	
 
@@ -432,6 +435,7 @@ ReleasePacketItemTable()
 			&& g_pPacketItemWeapon[i]!=NULL)
 		{
 			delete g_pPacketItemWeapon[i];
+			g_pPacketItemWeapon[i] = NULL;
 		}
 	}
 
@@ -443,6 +447,7 @@ ReleasePacketItemTable()
 		if (g_pPacketItemShield[i]!=NULL)
 		{
 			delete g_pPacketItemShield[i];
+			g_pPacketItemShield[i] = NULL;
 		}
 	}
 	
@@ -455,6 +460,7 @@ ReleasePacketItemTable()
 			&& g_pPacketItemMotorcycle[i]!=NULL)
 		{
 			delete g_pPacketItemMotorcycle[i];
+			g_pPacketItemMotorcycle[i] = NULL;
 		}
 	}
 
@@ -467,6 +473,7 @@ ReleasePacketItemTable()
 			&& g_pPacketItemShoulder[i]!=NULL)
 		{
 			delete g_pPacketItemShoulder[i];
+			g_pPacketItemShoulder[i] = NULL;
 		}
 	}
 }

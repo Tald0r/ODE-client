@@ -404,14 +404,20 @@ TEST(PacketItemTable, ReleaseDeletesEachEntryButTheNoneSlots)
 		expected.push_back(name);
 	CHECK(Same(freed, expected));
 
-	// Only the ousters' tables are emptied. Defect: the other seven keep
-	// the deleted items' addresses, so a second release frees them again
-	// and a packet read after the release dresses a creature in freed items.
+	// Every entry it deleted is emptied, so a second release frees nothing
+	// and a packet read after it dresses no one in freed items.
 	for (MItem* pItem : g_pPacketItemOustersCoat) CHECK(pItem == nullptr);
 	for (MItem* pItem : g_pPacketItemOustersArm) CHECK(pItem == nullptr);
-	CHECK(g_pPacketItemHelm[HELMET1] != nullptr);
-	CHECK(g_pPacketItemShield[SHIELD_NONE] != nullptr);
-	CHECK(g_pPacketItemShoulder[SHOULDER1] != nullptr);
+	for (int i = 1; i < HELMET_MAX; ++i) CHECK(g_pPacketItemHelm[i] == nullptr);
+	for (int i = 1; i < JACKET_MAX; ++i) CHECK(g_pPacketItemJacket[i] == nullptr);
+	for (int i = 1; i < PANTS_MAX; ++i) CHECK(g_pPacketItemPants[i] == nullptr);
+	for (int i = 1; i < WEAPON_MAX; ++i) CHECK(g_pPacketItemWeapon[i] == nullptr);
+	for (MItem* pItem : g_pPacketItemShield) CHECK(pItem == nullptr);
+	for (int i = 1; i < MOTORCYCLE_MAX; ++i) CHECK(g_pPacketItemMotorcycle[i] == nullptr);
+	for (int i = 1; i < SHOULDER_MAX; ++i) CHECK(g_pPacketItemShoulder[i] == nullptr);
+	freed.clear();
+	ReleasePacketItemTable();
+	CHECK(freed.empty());
 
 	// The skipped slots still hold their items.
 	CHECK(g_pPacketItemHelm[HELMET_NONE] == keptHelm);
