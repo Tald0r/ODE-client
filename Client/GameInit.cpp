@@ -127,6 +127,8 @@
 #include "TradePresentationHost.h"
 #include "GameInfoPresentationHost.h"
 #include "DialogPresentationHost.h"
+#include "DialogWindowHost.h"
+#include "VS_UI_ExtraDialog.h"
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
 #include "ZoneStateHost.h"
@@ -2690,6 +2692,7 @@ void ReleaseAllObjects()
 	TradePresentation::SetHost(nullptr);
 	GameInfoPresentation::SetHost(nullptr);
 	DialogPresentation::SetHost(nullptr);
+	DialogWindow::SetHost(nullptr);
 	LoginPresentation::SetHost(nullptr);
 	PlayerState::SetHost(nullptr);
 	ZoneState::SetHost(nullptr);
@@ -3749,6 +3752,43 @@ static const GameInfoPresentation::Host s_GameInfoPresentationHost = {
 	.ExecuteHelpEvent = [](int helpEvent) { ExecuteHelpEvent(static_cast<HELP_EVENT>(helpEvent)); },
 };
 
+// The windows UIDialog opens: VS_UI's dialogs, handed to it as opaque
+// windows, and back to its callbacks the same way.
+static_assert(DialogWindow::EXECID_EXIT == DIALOG_EXECID_EXIT);
+static DialogWindow::Window* AsWindow(C_VS_UI_DIALOG* pDialog) { return reinterpret_cast<DialogWindow::Window*>(pDialog); }
+static C_VS_UI_DIALOG* AsDialog(DialogWindow::Window* pWindow) { return reinterpret_cast<C_VS_UI_DIALOG*>(pWindow); }
+
+static const DialogWindow::Host s_DialogWindowHost = {
+	.NewTalk = [](int creatureType, const char* name) {
+		C_VS_UI_DIALOG* pDialog = new C_VS_UI_NPC_DIALOG(
+			[](C_VS_UI_DIALOG* pDlg, id_t id) { UIDialog::ProcessPCTalkDlg(AsWindow(pDlg), id); },
+			creatureType, name);
+		return AsWindow(pDialog);
+	},
+	.NewMessage = [](int x, int y, int extraHeight, std::uint16_t buttons) {
+		return AsWindow(new C_VS_UI_DIALOG(x, y, 3, extraHeight,
+			[](C_VS_UI_DIALOG* pDlg, id_t id) { UIDialog::ProcessMessageDlg(AsWindow(pDlg), id); },
+			buttons));
+	},
+	.SetMenu = [](DialogWindow::Window* pWindow, const DialogWindow::MenuItem* pItems, int count) {
+		// The dialog copies the lines; the texts stay the caller's.
+		std::vector<DIALOG_MENU> menu(count > 0 ? count : 1);
+		for (int i = 0; i < count; ++i)
+		{
+			menu[i].sz_menu_str = pItems[i].text;
+			menu[i].exec_id = pItems[i].id;
+		}
+		AsDialog(pWindow)->SetMenu(menu.data(), count, false);
+	},
+	.SetMessage = [](DialogWindow::Window* pWindow, const char* const* pLines, int count, bool noFit) {
+		AsDialog(pWindow)->SetMessage(pLines, count, noFit ? SMO_NOFIT : SMO_FIT);
+	},
+	.Start = [](DialogWindow::Window* pWindow) { AsDialog(pWindow)->Start(); },
+	.Finish = [](DialogWindow::Window* pWindow) { AsDialog(pWindow)->Finish(); },
+	.Run = [](DialogWindow::Window* pWindow, std::uint32_t id) { AsDialog(pWindow)->Run(id); },
+	.Delete = [](DialogWindow::Window* pWindow) { delete AsDialog(pWindow); },
+};
+
 static const DialogPresentation::Host s_DialogPresentationHost = {
 	.PopupFreeMessageDlg = [](const char* message) { g_pUIDialog->PopupFreeMessageDlg(message); },
 	.UnlockItem = UI_UnlockItem,
@@ -3777,6 +3817,13 @@ static const DialogPresentation::Host s_DialogPresentationHost = {
 	.OkRemoveOption = [](std::uint32_t parameter, MItem* pItem) { UI_OkRemoveOption(parameter, pItem); },
 	.ClosePCTalkDlg = []() { g_pUIDialog->ClosePCTalkDlg(); },
 	.UnSetLockInputPCTalk = []() { g_pUIDialog->UnSetLockInputPCTalk(); },
+	.IsRunningStorage = []() { return UI_IsRunningStorage() != FALSE; },
+	.IsRunningShop = []() { return UI_IsRunningShop() != FALSE; },
+	.IsRunningBookcase = []() { return UI_IsRunningBookcase() != FALSE; },
+	.IsRunningRepair = []() { return UI_IsRunningRepair() != FALSE; },
+	.IsRunningSell = []() { return UI_IsRunningSell() != FALSE; },
+	.IsRunningParty = UI_IsRunningParty,
+	.CloseAllDialog = []() { gC_vs_ui.CloseAllDialog(); },
 };
 
 static const LoginPresentation::Host s_LoginPresentationHost = {
@@ -3898,6 +3945,10 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.IsInSafeSector = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->IsInSafeSector()) : 0; },
 };
 
+// UIMessageManager.cpp's: whether a corpse of the type lies next to the
+// creature.
+bool IsExistCorpseFromPlayer(MCreature* OriginCreature, int creature_type);
+
 static const ZoneState::Host s_ZoneStateHost = {
 	.Exists = []() { return g_pZone != NULL; },
 	.GetCreature = [](TYPE_OBJECTID id) { return g_pZone->GetCreature(id); },
@@ -3959,6 +4010,8 @@ static const ZoneState::Host s_ZoneStateHost = {
 	},
 	.PickupItem = [](TYPE_OBJECTID id) { g_pZone->PickupItem(id); },
 	.KeepObjectInSight = [](TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, int sight) { g_pZone->KeepObjectInSight(x, y, static_cast<BYTE>(sight)); },
+	.HasHelicopter = [](TYPE_OBJECTID creatureID) { return g_pZone != NULL && g_pZone->GetHelicopter(creatureID) != NULL; },
+	.IsExistCorpseFromPlayer = IsExistCorpseFromPlayer,
 };
 
 static const CreatureState::Host s_CreatureStateHost = {
@@ -4140,6 +4193,8 @@ static const CreatureState::Host s_CreatureStateHost = {
 	.SetShadowCount = [](MCreature* pCreature, int count) { pCreature->SetShadowCount(count); },
 	.ObjectOf = [](const MCreature* pCreature) -> MObject* { return const_cast<MCreature*>(pCreature); },
 	.CreatureOf = [](MObject* pObject) { return static_cast<MCreature*>(pObject); },
+	.GetMoveDevice = [](MCreature* pCreature) { return pCreature->GetMoveDevice(); },
+	.IsStop = [](MCreature* pCreature) { return pCreature->IsStop() != FALSE; },
 };
 
 static const WorldEvents::Host s_WorldEventsHost = {
@@ -4229,6 +4284,17 @@ static const VsUiPresentation::Host s_VsUiPresentationHost = {
 		}
 		g_C2G--;
 	},
+	.LockGear = UI_LockGear,
+	.RunMixingForge = [](int forgeClass, int forgeType) {
+		static_assert(int(C_VS_UI_MIXING_FORGE::CLASS_WEAPON) == VsUiPresentation::FORGE_CLASS_WEAPON
+			&& int(C_VS_UI_MIXING_FORGE::CLASS_ARMOR) == VsUiPresentation::FORGE_CLASS_ARMOR
+			&& int(C_VS_UI_MIXING_FORGE::CLASS_ACCESSORY) == VsUiPresentation::FORGE_CLASS_ACCESSORY);
+		gC_vs_ui.RunMixingForge(C_VS_UI_MIXING_FORGE::FORGE_CLASS(forgeClass),
+			C_VS_UI_MIXING_FORGE::FORGE_TYPE(C_VS_UI_MIXING_FORGE::TYPE_A + forgeType));
+	},
+	.RunBulletinBoardWindow = [](const MItem* pItem) { gC_vs_ui.RunBulletinBoardWindow(pItem); },
+	.RunXmasCardWindow = [](const MItem* pItem) { gC_vs_ui.RunXmasCardWindow(pItem); },
+	.RunQuestInventory = [](const MItem* pItem) { gC_vs_ui.RunQuestInventory(pItem); },
 };
 
 static const BonusSkills::Host s_BonusSkillHost = {
@@ -4831,6 +4897,7 @@ InitGameObject()
 	TradePresentation::SetHost(&s_TradePresentationHost);
 	GameInfoPresentation::SetHost(&s_GameInfoPresentationHost);
 	DialogPresentation::SetHost(&s_DialogPresentationHost);
+	DialogWindow::SetHost(&s_DialogWindowHost);
 	LoginPresentation::SetHost(&s_LoginPresentationHost);
 	PlayerState::SetHost(&s_PlayerStateHost);
 	ZoneState::SetHost(&s_ZoneStateHost);

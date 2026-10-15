@@ -174,9 +174,8 @@ BOOL				g_bUIInput		= FALSE;
 int					g_UpdateDelay		= 0;
 
 // Zone
-WORD				g_ZoneCreatureColorSet = 0xFFFF;
+// g_ZoneCreatureColorSet is ZoneFlags.cpp's.
 WORD				g_MyBatColorSet = 0xFFFF;
-bool				g_bHolyLand = false;
 bool				g_bZoneLargeLoadImage = false;
 bool				g_bZoneSmallLoadImage = false;
 MZone*				g_pZoneLarge = NULL;				
@@ -208,8 +207,7 @@ bool				g_bNewDraw = false;			// 화면을 다시 그렸는가? (커서 제외)
 bool				g_bSmoothCursor = false;	// 부드러운(?) cursor를 출력할 수 있나?
 bool				g_bNetStatusGood = true;		// 네트웍 상태가 좋은가?
 
-// socket
-ClientPlayer*		g_pSocket = NULL;
+// socket: GameSocket.cpp (gamemodel)
 
 // Thread
 MWorkThread*		g_pLoadingThread = NULL;
@@ -5344,70 +5342,8 @@ AddClientCreature()
 
 
 
-//-----------------------------------------------------------------------------
-// GetMakeItemFitPosition
-//-----------------------------------------------------------------------------
-//
-// 성수만들기, 폭탄/지뢰 만들기.. 등에서 사용된다.
-//
-// pItem으로 인해서 생성되는 item(itemClass, itemType)이 들어갈 위치를
-// fitPoint를 통해서 얻을 수 있다.
-//
-// return true인 경우만 fitPoint에 들어갈 수 있는 위치가 저장된다.
-// return false이면 들어갈 위치가 없다는 의미이다.
-//-----------------------------------------------------------------------------
-bool
-GetMakeItemFitPosition(MItem* pItem, ITEM_CLASS itemClass, int itemType, POINT& fitPoint)
-{
-	bool bFindPos = false;	// 자리가 있나?
-	
-	// create a temporary item to find the position it would fit into.
-	MItem* pResultItem = MItem::NewItem( itemClass );
+// GetMakeItemFitPosition: ClientFunction.cpp (gamemodel, task 4.237).
 
-	if (pResultItem == NULL)
-	{
-		DEBUG_ADD_FORMAT_ERR("[Error] GetMakeItemFitPosition: invalid item class %d", itemClass);
-		return false;
-	}
-
-	pResultItem->SetItemType( itemType );
-
-	if (g_pInventory->GetFitPosition(pResultItem, fitPoint))
-	{
-		bFindPos = true;
-
-		MItem* pOldItem = g_pInventory->GetItem(static_cast<BYTE>(fitPoint.x), static_cast<BYTE>(fitPoint.y));
-
-		// 빈 곳에 추가할려고 하고..
-		// 하나만 남아있다면.. 
-		// 현재 위치에서 그대로 바꾼다.
-		if (pOldItem==NULL
-			&& pItem->GetNumber()==1)
-		{
-			fitPoint.x = pItem->GetGridX();
-			fitPoint.y = pItem->GetGridY();
-
-			bFindPos = true;
-		}									
-	}
-	else
-	{
-		// 빈 자리가 없는 경우에
-		// 하나만 남아있다면.. 그 자리에서 바꾸면 된다.
-		if (pItem->GetNumber()==1)
-		{
-			fitPoint.x = pItem->GetGridX();
-			fitPoint.y = pItem->GetGridY();
-
-			bFindPos = true;
-		}
-	}
-
-	// 임시로 만든것 제거
-	delete pResultItem;
-
-	return bFindPos;
-}
 // 2004, 03, 29 sobeit add start - 질드레 맵 고스트 추가
 void
 Add_GDR_Ghost(int ZoneID)

@@ -952,9 +952,10 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		# Three anchored "^Client/..." filters used to sit here, for the
 		# root-level *Handler.cpp files, Client.cpp and ClientFunction.cpp.
 		# None ever matched: the glob yields absolute paths. There is no
-		# root-level *Handler.cpp any more, and the other two compile into
-		# the executable on every platform, so the filters are gone rather
-		# than fixed - fixing them would have changed what links.
+		# root-level *Handler.cpp any more, Client.cpp compiles into the
+		# executable on every platform and ClientFunction.cpp into gamemodel
+		# (task 4.236), so the filters are gone rather than fixed - fixing
+		# them would have changed what links.
 		# MWorkThread is needed on all platforms (MMusic.cpp is a gamemodel
 		# member since task 4.214)
 		# list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*MWorkThread.*")

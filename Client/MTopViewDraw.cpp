@@ -63,6 +63,7 @@
 #include "SkillDef.h"
 #include "VS_UI_item.h"
 #include "MTopViewDraw.inl"
+#include "AdvancementAction.h"
 
 #define	SHIFT_SNIPPING			2
 
@@ -108,117 +109,8 @@ namespace {
 	}
 };
 
-int AdvancementOustersActionConvTable[ ACTION_MAX_SLAYER ] =
-{
-	ACTION_STAND,		// 따로 조건 변환 필요
-	ACTION_MOVE,		// 따로 조건 변환 필요
-	ACTION_ADVANCEMENT_OUSTERS_ATTACK_NORMAL,
-	ACTION_ADVANCEMENT_OUSTERS_MAGIC,
-	ACTION_ADVANCEMENT_OUSTERS_DAMAGED,
-	ACTION_ADVANCEMENT_OUSTERS_DRAINED,
-	ACTION_ADVANCEMENT_OUSTERS_DIE,
-	ACTION_STAND,		// 따로 조건 변환 필요	(서있기)
-	ACTION_MOVE,		// 따로 조건 변환 필요	(걷기)
-	ACTION_ADVANCEMENT_OUSTERS_SKILL_NORMAL,
-	ACTION_ADVANCEMENT_OUSTERS_MAGIC_ATTACK,
-	ACTION_ADVANCEMENT_OUSTERS_ABSORB_SOUL,
-	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE_STOP,		// 따로 조건 변환 필요	(공중정지)
-	ACTION_ADVANCEMENT_OUSTERS_FAST_MOVE,		// 따로 조건 변환 필요  (공중이동)
-	ACTION_ADVANCEMENT_OUSTERS_ATTACK_SLOW,
-	ACTION_ADVANCEMENT_OUSTERS_ATTACK_FAST,
-	ACTION_ADVANCEMENT_OUSTERS_SKILL_SLOW,
-	ACTION_ADVANCEMENT_OUSTERS_SKILL_FAST,
-	-1,
-};
-// by viva
-int AdvancementSlayerActionConvTable[ ACTION_MAX_SLAYER ] = 
-{
-	ACTION_STAND,	// 따로 조건 변환 필요
-	ACTION_MOVE,	// 따로 조건 변환 필요
-	-1,	// 따로 조건 변환 필요
-	ACTION_ADVANCEMENT_SLAYER_MAGIC,
-	ACTION_DAMAGED,
-	ACTION_ADVANCEMENT_SLAYER_DRAINED,
-	ACTION_ADVANCEMENT_SLAYER_DIE,
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_NORMAL,	// SR
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_NORMAL,	// AR
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SWORD_NORMAL,
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_BLADE_NORMAL,
-	-1,												// 폭탄 던지기
-	ACTION_ADVANCEMENT_SLAYER_BIKE_MOVE,
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_NORMAL,	// SG
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_NORMAL,	// SMG
-	ACTION_ADVANCEMENT_SLAYER_SKILL_SWORD_NORMAL,
-	ACTION_ADVANCEMENT_SLAYER_SKILL_BLADE_NORMAL,
-	-1,												// 성수 던지기
-	ACTION_ADVANCEMENT_SLAYER_BIKE_STOP,			// 18
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_SLOW,		//SR
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_FAST,		//SR
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_SLOW,		//AR
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_FAST,		//AR
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_SLOW,		//SG
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_FAST,		//SG
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_SLOW,		//SMG
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_FAST,		//SMG
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SWORD_SLOW,
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_SWORD_FAST,
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_BLADE_SLOW,
-	ACTION_ADVANCEMENT_SLAYER_ATTACK_BLADE_FAST,
-	ACTION_ADVANCEMENT_SLAYER_SKILL_SWORD_SLOW,
-	ACTION_ADVANCEMENT_SLAYER_SKILL_SWORD_FAST,
-	ACTION_ADVANCEMENT_SLAYER_SKILL_BLADE_SLOW,
-	ACTION_ADVANCEMENT_SLAYER_SKILL_BLADE_FAST,
-};
-	
-int AdvancementVampireActionConvTable[ ACTION_MAX_SLAYER ] =
-{
-	ACTION_ADVANCEMENT_STOP,
-	ACTION_ADVANCEMENT_MOVE,
-	ACTION_ADVANCEMENT_ATTACK_NORMAL,
-	ACTION_ADVANCEMENT_MAGIC,
-	ACTION_ADVANCEMENT_DAMAGED,
-	ACTION_ADVANCEMENT_DRAINED,
-	ACTION_ADVANCEMENT_DIE,
-	ACTION_ADVANCEMENT_DRAIN,
-	ACTION_ADVANCEMENT_ATTACK_SLOW,				
-	ACTION_ADVANCEMENT_ATTACK_FAST,
-	ACTION_ADVANCEMENT_SKILL_SLOW,		// 10
-	ACTION_ADVANCEMENT_SKILL_NORMAL,	// 11
-	ACTION_ADVANCEMENT_SKILL_FAST,		// 12
-	ACTION_ADVANCEMENT_MAGIC_ATTACK,
-	ACTION_ADVANCEMENT_SPECIAL,
-	ACTION_ADVANCEMENT_CREATE_WEAPON,
-	ACTION_ADVANCEMENT_DESTROY_WEAPON,	// 16
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1,
-	-1, // 30
-	-1,
-	-1,
-	-1,
-	-1,
-};
-
 BYTE GetCreatureActionCountMax( const MCreature* pCreature, int action );
 
-int GetAdvancementVampireActionFromVampireAction( int CurAction, const MCreature* pCreature )
-{
-	(void)pCreature;
-	if( CurAction >= ADVANCEMENT_ACTION_START )
-		return CurAction;
-
-	return AdvancementVampireActionConvTable[ CurAction ];
-}
 //add by viva
 int GetNewVampireActionFromVampireAction( int CurAction )
 {
@@ -280,75 +172,6 @@ int GetAdvancementPartFromItemClass( ITEM_CLASS itemClass , TYPE_FRAMEID frameID
 	}
 
 	return -1;
-}
-
-int	GetAdvancementSlayerStandActionFromItemClass( ITEM_CLASS itemclass )
-{
-	switch( itemclass )
-	{
-	case ITEM_CLASS_SWORD :
-		return ACTION_ADVANCEMENT_SLAYER_STOP_SWORD;
-
-	case ITEM_CLASS_BLADE :
-		return ACTION_ADVANCEMENT_SLAYER_STOP_BLADE;
-
-	case ITEM_CLASS_SG :
-	case ITEM_CLASS_SMG :
-	case ITEM_CLASS_AR :
-	case ITEM_CLASS_SR :
-		return ACTION_ADVANCEMENT_SLAYER_STOP_GUN;		
-
-	default:
-		break;
-	}
-
-	return ACTION_ADVANCEMENT_SLAYER_STOP_MACE_AND_CROSS;
-}
-
-int GetAdvancementSlayerMoveActionFromItemClass( ITEM_CLASS itemclass )
-{
-	switch( itemclass )
-	{
-	case ITEM_CLASS_SWORD :
-		return ACTION_ADVANCEMENT_SLAYER_MOVE_SWORD;
-
-	case ITEM_CLASS_BLADE :
-		return ACTION_ADVANCEMENT_SLAYER_MOVE_BLADE;
-
-	case ITEM_CLASS_SG :
-	case ITEM_CLASS_SMG :
-	case ITEM_CLASS_AR :
-	case ITEM_CLASS_SR :
-		return ACTION_ADVANCEMENT_SLAYER_MOVE_GUN;
-
-	default:
-		break;
-	}
-
-	return ACTION_ADVANCEMENT_SLAYER_MOVE_MACE_AND_CROSS;
-}
-
-int GetAdvancementSlayerDamagedActionFromItemClass( ITEM_CLASS itemclass )
-{
-	switch( itemclass )
-	{
-	case ITEM_CLASS_SWORD :
-		return ACTION_ADVANCEMENT_SLAYER_DAMAGED_SWORD;
-
-	case ITEM_CLASS_BLADE :
-		return ACTION_ADVANCEMENT_SLAYER_DAMAGED_BLADE;
-
-	case ITEM_CLASS_SG :
-	case ITEM_CLASS_SMG :
-	case ITEM_CLASS_AR :
-	case ITEM_CLASS_SR :
-		return ACTION_ADVANCEMENT_SLAYER_DAMAGED_GUN;
-
-	default:
-		break;
-	}
-
-	return ACTION_ADVANCEMENT_SLAYER_DAMAGED_CROSS_MACE;
 }
 
 int GetAdvancementSlayerAttackActionFromItemClass( ITEM_CLASS itemClass, MCreature* pCreature )
@@ -446,61 +269,13 @@ int ConvNewSlayerActionFromSlayerAction(int CurAction, MCreatureWear* pCreatureW
 		Action=37;
 	return Action;
 }
+// The slayer's conversion reads the right hand's item class
+// (AdvancementAction.cpp, gamemodel's since task 4.239).
 int ConvAdvancementSlayerActionFromSlayerAction( int CurAction, MCreatureWear* pCreatureWear )
 {
 	assert( pCreatureWear != NULL );
 
-	if( ADVANCEMENT_ACTION_START <= CurAction )
-		return CurAction;
-
-	const MCreatureWear::ADDON_INFO& addon = pCreatureWear->GetAddonInfo( ADDON_RIGHTHAND );
-
-	switch( CurAction )
-	{
-	case ACTION_DAMAGED :
-		return GetAdvancementSlayerDamagedActionFromItemClass( addon.ItemClass );
-
-	case ACTION_STAND :
-		return GetAdvancementSlayerStandActionFromItemClass( addon.ItemClass );		
-		
-	case ACTION_MOVE :
-		return GetAdvancementSlayerMoveActionFromItemClass( addon.ItemClass );
-/*
-	case ACTION_SLAYER_GUN_SR :
-	case ACTION_SLAYER_GUN_AR :
-	case ACTION_SLAYER_GUN_SG :
-	case ACTION_SLAYER_GUN_SMG :
-		case ACTION_SLAYER_GUN_SR_SLOW :
-		return GetAdvancementSlayerAttackActionFromItemClass( addon.ItemClass, pCreatureWear );*/
-	}	
-
-	return AdvancementSlayerActionConvTable[ CurAction ];
-};
-
-int ConvAdvancementOustersActionFromOusterAction( int CurAction, bool bChakram )
-{
-	if( ADVANCEMENT_ACTION_START <= CurAction )
-		return CurAction;
-
-	switch( CurAction )
-	{
-	case ACTION_STAND :
-		if( bChakram )
-			return ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP;
-		else
-			return ACTION_ADVANCEMENT_OUSTERS_WRISTLET_STOP;
-		
-	case ACTION_MOVE :
-		if( bChakram )
-			return ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_MOVE;
-		else
-			return ACTION_ADVANCEMENT_OUSTERS_WRISTLET_MOVE;
-	}
-	
-	if( CurAction > ACTION_OUSTERS_CHAKRAM_FAST )
-		return -1;
-
-	return AdvancementOustersActionConvTable[ CurAction ];
+	return ConvAdvancementSlayerAction( CurAction, pCreatureWear->GetAddonInfo( ADDON_RIGHTHAND ).ItemClass );
 }
 
 bool IsEscapeDrawCreatureFunction( MCreature* pCreature )

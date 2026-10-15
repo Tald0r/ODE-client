@@ -51,10 +51,10 @@ void	RecordFailureInt(const char* file, int line, const char* expr,
 			 long long expected, long long actual);
 
 //----------------------------------------------------------------------
-// Runs every registered test. Returns the number of failed tests, so the
-// process exit code is 0 only when the whole suite passes. With
-// TEST_FILTER set, only the tests whose "Suite.Name" starts with it run;
-// a filter that names none returns 2.
+// Runs every registered test. Returns 0 when the whole suite passes and 1
+// when a test failed, the process's exit code. With TEST_FILTER set, only
+// the tests whose "Suite.Name" starts with it run; a filter that names
+// none returns 2.
 //----------------------------------------------------------------------
 int	RunAll();
 

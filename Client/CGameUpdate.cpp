@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "CrtCompat.h"
+#include "FrameClock.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
@@ -171,7 +172,7 @@ bool	g_bFrameChanged	 = false;
 // elapsed fraction of the current tick in 0..256 fixed point.
 // g_bInterpolateDraw scopes that behaviour to the world draw only, so all
 // game logic keeps reading exact tick positions.
-DWORD	g_DrawAlphaNum = 256;
+// g_DrawAlphaNum, how far the drawing is between frames, is FrameClock.cpp's.
 extern bool	g_bInterpolateDraw;	// MObjectScreen.cpp's
 
 // The camera-interpolation bias passed into the last MTopView::Draw;

@@ -65,6 +65,17 @@ struct Host
 	// again while it talks.
 	void (*ClosePCTalkDlg)() = nullptr;
 	void (*UnSetLockInputPCTalk)() = nullptr;
+	// The windows an NPC talk choice waits for (task 4.238): whether the
+	// stash, the shop, the bookcase, the repair, the sell or the party
+	// window runs (false without a host); CloseAllDialog closes the game's
+	// other windows before a talk box opens.
+	bool (*IsRunningStorage)() = nullptr;
+	bool (*IsRunningShop)() = nullptr;
+	bool (*IsRunningBookcase)() = nullptr;
+	bool (*IsRunningRepair)() = nullptr;
+	bool (*IsRunningSell)() = nullptr;
+	bool (*IsRunningParty)() = nullptr;
+	void (*CloseAllDialog)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -96,5 +107,12 @@ void OkMixingForge(std::uint32_t parameter, MItem* pItem, MItem* pItem2);
 void OkRemoveOption(std::uint32_t parameter, MItem* pItem);
 void ClosePCTalkDlg();
 void UnSetLockInputPCTalk();
+bool IsRunningStorage();
+bool IsRunningShop();
+bool IsRunningBookcase();
+bool IsRunningRepair();
+bool IsRunningSell();
+bool IsRunningParty();
+void CloseAllDialog();
 
 }

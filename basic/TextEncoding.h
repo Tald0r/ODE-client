@@ -23,6 +23,11 @@ inline bool Convert(std::string_view input, Encoding from, Encoding to,
 	return Convert(input.data(), input.size(), from, to, output, invalid);
 }
 
+// Display text as valid UTF-8: valid text (and empty text) as it is,
+// malformed bytes each replaced by U+FFFD; empty when even that fails.
+// TextService::NormalizeText caches it (task 4.241).
+std::string NormalizeUtf8(const std::string& text);
+
 // Set once before loading the resource pack. The shipped Korean data is CP949;
 // converted or regional packs must declare their encoding explicitly.
 Encoding GetResourceEncoding();

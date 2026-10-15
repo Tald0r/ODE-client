@@ -124,4 +124,20 @@ bool SetResourceEncoding(std::string_view name)
 	return Parse(name, encoding) && SetResourceEncoding(encoding);
 }
 
+// Resources decode at their declared boundary; display text is UTF-8.
+// Repair malformed bytes without guessing a different character set.
+std::string NormalizeUtf8(const std::string& text)
+{
+	if (text.empty())
+		return text;
+
+	if (TextSystem::IsValidUtf8(text.c_str(), text.size()))
+		return text;
+
+	std::string converted;
+	if (!Convert(text, Encoding::Utf8, Encoding::Utf8, converted, InvalidInput::Replace))
+		return {};
+	return converted;
+}
+
 } // namespace TextEncoding

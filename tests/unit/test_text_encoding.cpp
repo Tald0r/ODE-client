@@ -107,3 +107,14 @@ TEST(TextEncoding, ResourceSelectionRejectsUnknownNamesWithoutChangingPolicy)
 	CHECK(TextEncoding::SetResourceEncoding("utf-8"));
 	CHECK(TextEncoding::GetResourceEncoding() == Encoding::Utf8);
 }
+
+TEST(TextEncoding, NormalizeUtf8KeepsValidTextAndReplacesBadBytes)
+{
+	CHECK(TextEncoding::NormalizeUtf8("").empty());
+	CHECK(TextEncoding::NormalizeUtf8("plain") == "plain");
+	const std::string hangul = "\xED\x95\x9C";
+	CHECK(TextEncoding::NormalizeUtf8(hangul + "!") == hangul + "!");
+	// Each byte that is not UTF-8 becomes U+FFFD; the rest is kept.
+	CHECK(TextEncoding::NormalizeUtf8("a\xFF" "b") == "a\xEF\xBF\xBD" "b");
+	CHECK(TextEncoding::NormalizeUtf8("\xC0\xAF") == "\xEF\xBF\xBD\xEF\xBF\xBD");
+}

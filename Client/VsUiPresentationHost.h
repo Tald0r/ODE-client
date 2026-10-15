@@ -75,6 +75,24 @@ struct Host
 	// Nothing is pending without a host.
 	bool (*IsCreatingToGear)() = nullptr;
 	void (*MoveCreatedToGear)(int x, int y) = nullptr;
+	// What using an item opens (task 4.237): LockGear keeps the belt or
+	// arms band from being taken off while a quick slot item is in use;
+	// the mixing forge for a class (FORGE_CLASS) and a type (0 for its
+	// first, A); the bulletin board, the Christmas card and the quest
+	// inventory windows for the item. All are skipped without a host.
+	void (*LockGear)() = nullptr;
+	void (*RunMixingForge)(int forgeClass, int forgeType) = nullptr;
+	void (*RunBulletinBoardWindow)(const MItem* pItem) = nullptr;
+	void (*RunXmasCardWindow)(const MItem* pItem) = nullptr;
+	void (*RunQuestInventory)(const MItem* pItem) = nullptr;
+};
+
+// The mixing forge's item classes, in C_VS_UI_MIXING_FORGE's order.
+enum FORGE_CLASS
+{
+	FORGE_CLASS_WEAPON,
+	FORGE_CLASS_ARMOR,
+	FORGE_CLASS_ACCESSORY,
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -108,5 +126,10 @@ void SetPersnalShop(MStorage* pStorage);
 void SetInventoryMode(int mode);
 bool IsCreatingToGear();
 void MoveCreatedToGear(int x, int y);
+void LockGear();
+void RunMixingForge(int forgeClass, int forgeType);
+void RunBulletinBoardWindow(const MItem* pItem);
+void RunXmasCardWindow(const MItem* pItem);
+void RunQuestInventory(const MItem* pItem);
 
 }

@@ -163,14 +163,16 @@ int	RunAll()
 		    ran, g_TotalChecks, failedTests);
 
 	// A filter that names no test is a mistake, not a pass: 2, apart from
-	// a failing test's 1, so a mutant run cannot read it as a kill.
+	// a failing run's 1, so a mutant run cannot read it as a kill.
 	if (!filter.empty() && ran == 0)
 	{
 		std::printf("TEST_FILTER=%s names no test\n", filter.c_str());
 		return 2;
 	}
 
-	return failedTests;
+	// 1, not the count: an exit code keeps only its low byte, and a count
+	// of 2 would read as the filter's mistake.
+	return failedTests != 0 ? 1 : 0;
 }
 
 } // namespace testfw

@@ -46,3 +46,6 @@ extern int					g_bNeedUpdate;
 extern int					g_LeftPremiumDays;
 // Whether the account is on the Family pricing plan.
 extern bool					g_bFamily;
+// Whether the game's window is the active one (the executable's window
+// procedure sets it); the NPC talk box opens only then. A BOOL.
+extern int					g_bActiveGame;

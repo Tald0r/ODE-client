@@ -6,3 +6,4 @@ enum CLIENT_MODE	g_ModeNext = MODE_NULL;
 int					g_bNeedUpdate = 0;
 int					g_LeftPremiumDays = 0;
 bool				g_bFamily = false;
+int					g_bActiveGame = 0;

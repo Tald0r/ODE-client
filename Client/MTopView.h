@@ -194,7 +194,6 @@ class MTopView : public MRequestMode {
 		// Test용 도움말
 		void		DrawDebugInfo(void* pSurface);
 
-		void		DrawTitleEffect(POINT* pPoint);
 
 		void		DrawBloodBibleEffect_InGear(POINT* pPoint);
 		
@@ -439,7 +438,6 @@ class MTopView : public MRequestMode {
 		void		DrawEffect(POINT* pPoint, EFFECT_LIST::const_iterator iEffect, BYTE size);
 		void		DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha);
 		void		DrawTestHelp();
-		void		DrawInventoryEffect(POINT* pPoint);
 		void		DrawMinimap(int x, int y, BYTE scale);
 		void		DrawItemBroken(int x, int y);
 		void		DrawPartyHP(POINT* pPoint, MCreature* pCreature);

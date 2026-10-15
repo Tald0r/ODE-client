@@ -158,7 +158,7 @@ int					g_Dimension = 0;
 DWORD				g_TimerNPMON = 0;
 
 // FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
-DWORD				g_CurrentFrame		= 0;		// frame수
+// g_CurrentFrame, the frame count, is FrameClock.cpp's.
 
 int					g_FrameCount		= 0;
 int					g_StartFrameCount	= 0;
@@ -175,7 +175,7 @@ void StampFrameClock()
 // Execute Program --> bActiveApp
 // minimize | anotherWnd click--> !ActiveGame
 BOOL				g_bActiveApp			= FALSE; // Is application active?
-BOOL				g_bActiveGame			= FALSE; // Is Game Active?
+// g_bActiveGame, whether the game's window is the active one, is ClientMode.cpp's.
 // g_bNeedUpdate, whether the client is quitting to be updated, is ClientMode.cpp's.
 
 DWORD				g_double_click_time = 0;
@@ -204,9 +204,7 @@ IWebBrowser2*			g_pWebBrowser = NULL;
 // [Futec수정]
 char g_FutecIP[20] = { 0, };
 unsigned int g_FutecPort = 0;
-BYTE g_AdvanceVampireActionMaxCount[ ACTION_ADVANCEMENT_MAX - ACTION_ADVANCEMENT_STOP ];
-BYTE g_AdvanceSlayerActionMaxCount[ ACTION_ADVANCEMENT_SLAYER_MAX - ACTION_ADVANCEMENT_SLAYER_STOP_SWORD ];
-BYTE g_AdvanceOustersActionMaxCount[ ACTION_ADVANCEMENT_OUSTERS_MAX - ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP ];
+// The advanced actions' frame counts are AdvancementAction.cpp's (gamemodel).
 
 enum DARKEDEN_LANGUAGE
 {
