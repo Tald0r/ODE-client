@@ -118,6 +118,18 @@ struct Host
 	void (*AddOustersElemental)(MCreature* pOwner, int creatureType, int status) = nullptr;
 	// The view's top-left sector (MTopView::GetFirstSector).
 	POINT (*GetFirstSector)() = nullptr;
+	// The zone's (task 4.246): a sound stopped; the view's random monster
+	// type for a hallucination, a redraw of the tiles, and the sprites the
+	// tile and image-object packs hold (how many
+	// tiles; how many frames an image object's animation has, 0 past the
+	// pack, and each frame's sprite). Without a host: nothing stopped or
+	// redrawn, and 0 for each answer (SPRITEID_NULL for a frame's sprite).
+	void (*StopSound)(TYPE_SOUNDID soundID) = nullptr;
+	int (*GetRandomMonsterTypeInZone)() = nullptr;
+	void (*SetFirstDraw)() = nullptr;
+	int (*GetTileSpriteCount)() = nullptr;
+	int (*GetImageObjectFrameCount)(int frameID) = nullptr;
+	std::uint16_t (*GetImageObjectFrameSprite)(int frameID, int frame) = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -138,6 +150,12 @@ bool ViewExists();
 int GetMaxEffectFrame(int bltType, std::uint16_t frameID);
 void AddOustersElemental(MCreature* pOwner, int creatureType, int status);
 POINT GetFirstSector();
+void StopSound(TYPE_SOUNDID soundID);
+int GetRandomMonsterTypeInZone();
+void SetFirstDraw();
+int GetTileSpriteCount();
+int GetImageObjectFrameCount(int frameID);
+std::uint16_t GetImageObjectFrameSprite(int frameID, int frame);
 void SetDarkBits(int darkBits);
 void MoveIntoPortal(MCreature* pCreature);
 void SetDragonTornado(int effectStatus, std::uint32_t objectID, int x, int y);

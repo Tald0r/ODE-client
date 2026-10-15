@@ -192,4 +192,34 @@ POINT GetFirstSector()
 	return none;
 }
 
+void StopSound(TYPE_SOUNDID soundID)
+{
+	if (s_Host && s_Host->StopSound) s_Host->StopSound(soundID);
+}
+
+int GetRandomMonsterTypeInZone()
+{
+	return s_Host && s_Host->GetRandomMonsterTypeInZone ? s_Host->GetRandomMonsterTypeInZone() : 0;
+}
+
+void SetFirstDraw()
+{
+	if (s_Host && s_Host->SetFirstDraw) s_Host->SetFirstDraw();
+}
+
+int GetTileSpriteCount()
+{
+	return s_Host && s_Host->GetTileSpriteCount ? s_Host->GetTileSpriteCount() : 0;
+}
+
+int GetImageObjectFrameCount(int frameID)
+{
+	return s_Host && s_Host->GetImageObjectFrameCount ? s_Host->GetImageObjectFrameCount(frameID) : 0;
+}
+
+std::uint16_t GetImageObjectFrameSprite(int frameID, int frame)
+{
+	return s_Host && s_Host->GetImageObjectFrameSprite ? s_Host->GetImageObjectFrameSprite(frameID, frame) : std::uint16_t(0xFFFF);
+}
+
 }

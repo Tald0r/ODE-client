@@ -24,6 +24,12 @@ struct AmbientSoundUpdate
 
 // Shared across the large/small zone views, like the original frame deadline
 // and propeller flag. Audio playback and the player remain executable-owned.
+class AmbientSoundState;
+// The zone's ambient sounds: MZone::UpdateSound advances it, GameMain
+// resets it on a zone load and when the sounds stop (gamemodel's since task
+// 4.246; it was GameMain.cpp's).
+extern AmbientSoundState g_ZoneAmbientSounds;
+
 class AmbientSoundState
 {
 public:

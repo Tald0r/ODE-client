@@ -49,6 +49,7 @@
 #endif
 #include <list>
 #include <map>
+#include <set>
 #include <vector>
 #include "MTypeDef.h"
 #include "MSector.h"
@@ -58,9 +59,8 @@ class MCreature;
 class MEffect;
 class MPlayer;
 class MImageObject;
-class CSpriteSetManager;
 #include "MHelicopterManager.h"
-#include "CPositionList.h"
+#include "../basic/CPositionList.h"
 #include "ZoneFileHeader.h"
 #include "DelayedSoundQueue.h"
 
@@ -335,7 +335,7 @@ class MZone {
 		//--------------------------------------------------------------
 		// Tile SpriteID 얻기
 		//--------------------------------------------------------------
-		void						GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const;
+		void						GetNearSpriteSet(std::set<TYPE_SPRITEID>& TileSSM, std::set<TYPE_SPRITEID>& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const;
 
 
 		//--------------------------------------------------------------		

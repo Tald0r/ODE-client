@@ -3946,6 +3946,8 @@ static const PlayerState::Host s_PlayerStateHost = {
 	.CalculateLightSight = []() { g_pPlayer->CalculateLightSight(); },
 	.SetSight = [](int sight) { g_pPlayer->SetSight(static_cast<char>(sight)); },
 	.IsInSafeSector = []() { return g_pPlayer != NULL ? static_cast<int>(g_pPlayer->IsInSafeSector()) : 0; },
+	.SendPositionInfoToParty = SendPositionInfoToParty,
+	.SendStatusInfoToParty = SendStatusInfoToParty,
 };
 
 // UIMessageManager.cpp's: whether a corpse of the type lies next to the
@@ -4279,12 +4281,23 @@ static const WorldEvents::Host s_WorldEventsHost = {
 	.GetMaxEffectFrame = [](int bltType, std::uint16_t frameID) { return g_pTopView->GetMaxEffectFrame(static_cast<BLT_TYPE>(bltType), frameID); },
 	.AddOustersElemental = AddOustersElemental,
 	.GetFirstSector = []() { return g_pTopView->GetFirstSector(); },
+	.StopSound = StopSound,
+	.GetRandomMonsterTypeInZone = []() { return g_pTopView->GetRandomMonsterTypeInZone(); },
+	.SetFirstDraw = []() { if (g_pTopView != NULL) g_pTopView->SetFirstDraw(); },
+	.GetTileSpriteCount = []() { return static_cast<int>(g_pTopView->m_TileSPK.GetSize()); },
+	.GetImageObjectFrameCount = [](int frameID) {
+		return frameID < g_pTopView->m_ImageObjectFPK.GetSize() ? static_cast<int>(g_pTopView->m_ImageObjectFPK[frameID].GetSize()) : 0;
+	},
+	.GetImageObjectFrameSprite = [](int frameID, int frame) {
+		return static_cast<std::uint16_t>(g_pTopView->m_ImageObjectFPK[frameID][frame].GetSpriteID());
+	},
 };
 
 static const GameOptions::Host s_GameOptionsHost = {
 	.BloodDrop = []() { return g_pUserOption->BloodDrop != FALSE; },
 	.ChatWhite = []() { return g_pUserOption->ChatWhite != FALSE; },
 	.ChattingColor = []() { return static_cast<std::uint32_t>(g_pUserOption->ChattingColor); },
+	.PersonalShopUpdateTime = []() { return g_pUserOption->persnalShopupdatetime; },
 };
 
 static const VsUiPresentation::Host s_VsUiPresentationHost = {

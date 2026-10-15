@@ -13,7 +13,7 @@
 #include "MSector.h"
 #include "MCreature.h"
 #include "MFakeCreature.h"
-#include "MPlayer.h"
+#include "PlayerStateHost.h"
 #include "MImageObject.h"
 #include "MShadowObject.h"
 #include "MAnimationObject.h"
@@ -24,23 +24,25 @@
 #include "MEffect.h"
 #include "MZone.h"
 // Note: MTopView.h removed - MZone doesn't actually use MTopView (decoupled for demo/game flexibility)
-#include "UserOption.h"
+#include "GameOptionsHost.h"
 #include "MEffectGeneratorTable.h"
 #include "MZoneTable.h"
 #include "AmbientSoundState.h"
-#include "CMessageArray.h"
-#include "DebugInfo.h"
-#include "ServerInfo.h"
-#include "Client.h"
+#include "WorldEventsHost.h"
+#include "DebugLog.h"
+#include "ViewSectors.h"
+#include "MViewDef.h"
+#include "FrameClock.h"
+#include "ZoneFlags.h"
+#include "Packet/Properties.h"
 #include "EffectSpriteTypeDef.h"
+#include "EffectSpriteTypeHelper.h"
 #include "SoundDef.h"
 #include "MEffectSpriteTypeTable.h"
 #include "MHelicopterManager.h"
 #include "MParty.h"
-#include "MTestDef.h"
 #include <fstream>
 #include "SkillDef.h"
-#include "MinTr.h"
 #include "MNPC.h"
 #include "MGuildType.h"
 #include "MEffectStatusDef.h"
@@ -55,25 +57,8 @@
 //----------------------------------------------------------------------
 MZone*				g_pZone				= NULL;
 
-extern HWND					g_hWnd;
 
-extern void		SendPositionInfoToParty();
-extern void		SendStatusInfoToParty();
 //GameNew Mode  add by sonc 2006.9.27
-extern	LONG g_SECTOR_WIDTH;
-extern	LONG g_SECTOR_HEIGHT;
-extern	LONG g_SECTOR_WIDTH_HALF;
-extern	LONG g_SECTOR_HEIGHT_HALF;
-extern	LONG g_SECTOR_SKIP_PLAYER_LEFT;
-extern	LONG g_SECTOR_SKIP_PLAYER_UP;
-extern	LONG g_TILESURFACE_SECTOR_WIDTH;
-extern	LONG g_TILESURFACE_SECTOR_HEIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_SECTOR_OUTLINE_DOWN;
-extern	LONG g_TILESURFACE_WIDTH;
-extern	LONG g_TILESURFACE_HEIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
-extern	LONG g_TILESURFACE_OUTLINE_DOWN;
 //end 
 #ifdef __METROTECH_TEST__
 	extern int		g_iSpeed;
@@ -120,9 +105,9 @@ IsRelicTable( MItem* pItem )
 //----------------------------------------------------------------------
 #define	CheckCreatureInDarkness( sector, x, y )						\
 		{															\
-			if (g_pPlayer->GetX()==x && g_pPlayer->GetY()==y)		\
+			if (PlayerState::Creature()->GetX()==x && PlayerState::Creature()->GetY()==y)		\
 			{														\
-				g_pPlayer->CheckInDarkness();						\
+				PlayerState::Creature()->CheckInDarkness();						\
 			}														\
 																	\
 			int numCreature = sector.GetCreatureSize();				\
@@ -947,13 +932,13 @@ MZone::SetPlayer()//MPlayer* pPlayer)
 	// Player의 시야 안의 Sector를 보이게 한다.
 	//SetSight(g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetLightSight());
 
-	AddCreature( g_pPlayer );
+	AddCreature( PlayerState::Creature() );
 	
 	//---------------------------------------------------------------
 	// 내 정보를 파티에게 보내준다.
 	//---------------------------------------------------------------
-	SendPositionInfoToParty();
-	SendStatusInfoToParty();
+	PlayerState::SendPositionInfoToParty();
+	PlayerState::SendStatusInfoToParty();
 }
 
 //----------------------------------------------------------------------
@@ -975,7 +960,7 @@ MZone::RemovePlayer()//MPlayer* pPlayer)
 	// Player의 시야 안의 Sector를 보이게 한다.
 	//SetSight(g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetLightSight());
 
-	RemoveCreature( g_pPlayer->GetID() );	
+	RemoveCreature( PlayerState::GetID() );
 }
 
 
@@ -1609,7 +1594,7 @@ MZone::GetCreatureID(const char* pName, int flag) const
 		pCreature = iCreature->second;
 
 		// player가 아닌 경우에..
-		if (pCreature->GetID()!=g_pPlayer->GetID()
+		if (pCreature->GetID()!=PlayerState::GetID()
 			&& strcmp(pCreature->GetName(), pName)==0
 			&& (flag == 0 || (flag == 1 && !pCreature->IsNPC()) )
 			)
@@ -1783,7 +1768,7 @@ MZone::UpdateAllCreature()
 
 	//	DEBUG_ADD_FORMAT("[UpdateAllCreature] %d Creature(s)", m_mapCreature.size());
 
-	const DWORD resetDelay = g_pUserOption->persnalShopupdatetime > 0 ? g_pUserOption->persnalShopupdatetime : 0;
+	const DWORD resetDelay = GameOptions::PersonalShopUpdateTime() > 0 ? GameOptions::PersonalShopUpdateTime() : 0;
 	static MonotonicClock::TimePoint nextResetTime = g_FrameNow + MonotonicClock::Millis(resetDelay);
 	bool bResetPersonalShopValue = false;
 	
@@ -1829,18 +1814,18 @@ MZone::UpdateAllCreature()
 ////				g_pPlayer->UpdateAttachEffect();
 //			}
 #endif
-			if(g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
-				||g_pPlayer->HasEffectStatus( EFFECTSTATUS_DRAGON_EYES )
+			if(PlayerState::HasEffectStatus( EFFECTSTATUS_GHOST )
+				||PlayerState::HasEffectStatus( EFFECTSTATUS_DRAGON_EYES )
 				)
-				g_pPlayer->Action();
+				PlayerState::Creature()->Action();
 			
-			g_pPlayer->Action();
+			PlayerState::Creature()->Action();
 
 			#ifdef OUTPUT_DEBUG_UPDATE_ZONE
 				DEBUG_ADD_FORMAT("PlAok");
 			#endif
 
-			g_pPlayer->UpdateAttachEffect();
+			PlayerState::Creature()->UpdateAttachEffect();
 
 			#ifdef OUTPUT_DEBUG_UPDATE_ZONE
 				DEBUG_ADD_FORMAT("PlEok");
@@ -1902,10 +1887,10 @@ MZone::UpdateAllCreature()
 				//-------------------------------------------------------
 				if (//pCreature->HasEffectStatus(EFFECTSTATUS_SNIPPING_MODE)|| 
 					pCreature->HasEffectStatus(EFFECTSTATUS_INVISIBILITY)
-						&& !g_pPlayer->IsVampire()
-						&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_DETECT_INVISIBILITY)
-						&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_OBSERVING_EYE)
- 						&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_GNOME_WHISPER)
+						&& !PlayerState::Creature()->IsVampire()
+						&& !PlayerState::HasEffectStatus(EFFECTSTATUS_DETECT_INVISIBILITY)
+						&& !PlayerState::HasEffectStatus(EFFECTSTATUS_OBSERVING_EYE)
+						&& !PlayerState::HasEffectStatus(EFFECTSTATUS_GNOME_WHISPER)
 //						&& !g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST )
 						)
 				{
@@ -1985,7 +1970,7 @@ MZone::UpdateAllCreature()
 		while(itr != endItr)
 		{
 			MCreature *pCreature = itr->second;
-			if(pCreature->IsPlayer() && pCreature->GetID() != g_pPlayer->GetID() && !pCreature->IsPlayerParty())
+			if(pCreature->IsPlayer() && pCreature->GetID() != PlayerState::GetID() && !pCreature->IsPlayerParty())
 				break;
 			
 			itr++;
@@ -2033,7 +2018,7 @@ MZone::AddCorpseFromCreature(MCreature* pCreature)
 	// player가 아닌 경우..
 	//----------------------------------------
 	bool removed = false;
-	if (id != g_pPlayer->GetID())
+	if (id != PlayerState::GetID())
 	{
 		int serverX = pCreature->GetServerX();
 		int serverY = pCreature->GetServerY();
@@ -2149,7 +2134,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 {
 	DEBUG_ADD_FORMAT("Add Corpse From Creature id=%d", id);
 
-	if (id==g_pPlayer->GetID())
+	if (id==PlayerState::GetID())
 	{
 		DEBUG_ADD("No Player Corpse");
 		return false;
@@ -2185,7 +2170,7 @@ MZone::AddCorpseFromCreature(TYPE_OBJECTID id)
 	// player가 아닌 경우..
 	//----------------------------------------
 	[[maybe_unused]] bool removed = false;
-	if (id != g_pPlayer->GetID()
+	if (id != PlayerState::GetID()
 		&& !pCreature->IsFakeCreature())
 	{
 		//------------------------------------------------
@@ -2595,7 +2580,8 @@ MZone::KeepObjectInSight(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE sigh
 				
 			// memory에서 제거
 			//delete pItem;				
-			SAFE_DELETE ( pItem );
+			delete pItem;
+			pItem = NULL;
 				
 			m_mapItem.erase(iTemp);	
 		}					
@@ -2714,9 +2700,9 @@ MZone::AddCreature(MCreature* pCreature)
 		//----------------------------------------
 		// player가 Hallu인 경우
 		//----------------------------------------
-		if (g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
+		if (PlayerState::HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
 		{
-			pCreature->SetHalluCreature( g_pTopView->GetRandomMonsterTypeInZone() );
+			pCreature->SetHalluCreature( WorldEvents::GetRandomMonsterTypeInZone() );
 		}
 
 		//----------------------------------------
@@ -3410,7 +3396,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 			if(pItem->GetItemClass() == ITEM_CLASS_BLOOD_BIBLE)
 			{
 				bSpecialItem = true;
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 					ARMEGA_TILE+pItem->GetItemType(),		// 값 자체가 RESULT_ACTIONINFO이다.
 					
 					pItem->GetX(), pItem->GetY(), 0,
@@ -3440,7 +3426,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 				if(TempItemType >5 ) TempItemType = 0;
 				bSpecialItem = true;
 
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 					TempEffetType[TempItemType],		// 값 자체가 RESULT_ACTIONINFO이다.
 					
 					pItem->GetX(), pItem->GetY(), 0,
@@ -3457,7 +3443,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 
 			if(bSpecialItem)
 			{
-				ExecuteActionInfoFromMainNode(
+				WorldEvents::ExecuteActionInfoFromMainNode(
 					DROP_BLOOD_BIBLE,		// 값 자체가 RESULT_ACTIONINFO이다.
 					
 					pItem->GetX(), pItem->GetY(), 0,
@@ -3478,7 +3464,7 @@ MZone::AddItem(MItem* pItem, BOOL bDropping)
 				int TempItemType = pItem->GetItemType();
 				if(0 == TempItemType) // 드레곤 아이 일 때
 				{
-					ExecuteActionInfoFromMainNode(
+					WorldEvents::ExecuteActionInfoFromMainNode(
 						SKILL_CLIENT_DRAGON_EYES,		// 값 자체가 RESULT_ACTIONINFO이다.
 						
 						pItem->GetX(), pItem->GetY(), 0,
@@ -3615,7 +3601,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 		//------------------------------------------------------
 		// Item Check Buffer에 있는 경우 지워줘야 한다. 2001.8.27
 		//------------------------------------------------------
-		MItem* pCheckItem = g_pPlayer->GetItemCheckBuffer();
+		MItem* pCheckItem = PlayerState::GetItemCheckBuffer();
 
 		if (pCheckItem!=NULL)
 		{
@@ -3626,7 +3612,7 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 				//---------------------------------------------
 				// item check buffer를 없애준다.
 				//---------------------------------------------
-				g_pPlayer->ClearItemCheckBuffer();
+				PlayerState::ClearItemCheckBuffer();
 			}
 		}
 		else
@@ -3636,7 +3622,8 @@ MZone::RemoveItem(TYPE_OBJECTID id)
 
 		// memory에서 제거
 		//delete pItem;	
-		SAFE_DELETE ( pItem );
+		delete pItem;
+		pItem = NULL;
 	}
 
 	return removed;
@@ -3955,8 +3942,8 @@ MZone::AddEffect(MEffect* pNewEffect, DWORD dwWaitCount)
 					int fid1 = pNewEffect->GetFrameID();
 					int fid2 = pEffect->GetFrameID();
 
-					int est1 = g_pTopView->GetEffectSpriteType( (BLT_TYPE)pNewEffect->GetBltType(), fid1 );
-					int est2 = g_pTopView->GetEffectSpriteType( (BLT_TYPE)pEffect->GetBltType(), fid2 );
+					int est1 = ::GetEffectSpriteType( (BLT_TYPE)pNewEffect->GetBltType(), fid1 );
+					int est2 = ::GetEffectSpriteType( (BLT_TYPE)pEffect->GetBltType(), fid2 );
 					
 //					// 2004, 10, 19, sobeit add start 도슬 140 스킬 땜에
 //					if(est1 == EFFECTSPRITETYPE_SPIT_STREAM ||
@@ -4316,8 +4303,7 @@ MZone::RemoveTileEffect(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int effe
 			if( g_pZone != NULL )
 			{
 				const_cast<MSector &>(g_pZone->GetSector(sX, sY)).UnSetDisableTileImage();
-				if(g_pTopView != NULL)
-					g_pTopView->SetFirstDraw();
+				WorldEvents::SetFirstDraw();
 			}
 			break;	
 			return true;
@@ -4798,8 +4784,8 @@ MZone::AddGroundEffect(MEffect* pEffect)
 			
 			if(NewEffectX == pOldEffect->GetX() && NewEffectY == pOldEffect->GetY())
 			{
-				int est1 = g_pTopView->GetEffectSpriteType( (BLT_TYPE) pEffect->GetBltType(), pEffect->GetFrameID() );
-				int est2 = g_pTopView->GetEffectSpriteType( (BLT_TYPE) pOldEffect->GetBltType(), pOldEffect->GetFrameID() );
+				int est1 = ::GetEffectSpriteType( (BLT_TYPE) pEffect->GetBltType(), pEffect->GetFrameID() );
+				int est2 = ::GetEffectSpriteType( (BLT_TYPE) pOldEffect->GetBltType(), pOldEffect->GetFrameID() );
 
 				if( est1 == EFFECTSPRITETYPE_SUMMON_GROUND_ELEMENTAL_END && est2 == EFFECTSPRITETYPE_SUMMON_GROUND_ELEMENTAL_ING)
 				{
@@ -5042,7 +5028,7 @@ MZone::UpdateGroundEffects()
 // (sX,sY) 근처의 Tile과 ImageObject의 SpriteSet을 검색해서 넘겨준다.
 //----------------------------------------------------------------------
 void						
-MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const
+MZone::GetNearSpriteSet(std::set<TYPE_SPRITEID>& TileSSM, std::set<TYPE_SPRITEID>& ImageObjectSSM, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY) const
 {
 	//----------------------------------------------------------------------
 	//
@@ -5089,7 +5075,7 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 	//------------------------------------------------------
 	int y,x,i;
 
-	int maxTile = g_pTopView->m_TileSPK.GetSize();
+	int maxTile = WorldEvents::GetTileSpriteCount();
 
 	for (y=sY1; y<=sY2; y++)
 	{				
@@ -5104,7 +5090,7 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 
 			if (spriteID < maxTile)
 			{
-				TileSSM.Add( spriteID );
+				TileSSM.insert( spriteID );
 			}
 
 			//--------------------------------------------
@@ -5124,7 +5110,7 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 					
 					if (pImageObject->GetSpriteID() != SPRITEID_NULL)
 					{
-						ImageObjectSSM.Add( pImageObject->GetSpriteID() );
+						ImageObjectSSM.insert( pImageObject->GetSpriteID() );
 					}
 					
 					// Frame이 있는 경우... Frame의 SpriteID도 검색 
@@ -5134,17 +5120,14 @@ MZone::GetNearSpriteSet(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObje
 
 						int fid = ((MAnimationObject*)pImageObject)->GetFrameID();
 
-						if(fid < g_pTopView->m_ImageObjectFPK.GetSize())
+						// Each frame's SpriteID too (none past the view's pack).
+						const int frameCount = WorldEvents::GetImageObjectFrameCount(fid);
+						for (int j=0; j<frameCount; j++)
 						{
-							FRAME_ARRAY* pFrameArray = &(g_pTopView->m_ImageObjectFPK[ fid ]);
-							
-							// 각 Frame마다 SpriteID를 검색한다.
-							for (int j=0; j<pFrameArray->GetSize(); j++)
+							const TYPE_SPRITEID frameSpriteID = WorldEvents::GetImageObjectFrameSprite(fid, j);
+							if (frameSpriteID != SPRITEID_NULL)
 							{
-								if ((*pFrameArray)[j].GetSpriteID() != SPRITEID_NULL)
-								{
-									ImageObjectSSM.Add( (*pFrameArray)[j].GetSpriteID() );
-								}
+								ImageObjectSSM.insert( frameSpriteID );
 							}
 						}
 					}
@@ -5178,17 +5161,17 @@ void
 MZone::UpdateSound()
 {
 	m_DelayedSounds.Update(g_FrameNow, [](const SOUND_NODE& sound) {
-		PlaySound(sound.GetSoundID(), false, sound.GetX(), sound.GetY());
+		WorldEvents::PlaySoundAt(sound.GetSoundID(), false, sound.GetX(), sound.GetY());
 	});
 
 	const int zoneID = g_bZonePlayerInLarge ? g_nZoneLarge : g_nZoneSmall;
 	const ZONETABLE_INFO* zone = g_pZoneTable ? g_pZoneTable->Get(zoneID) : nullptr;
 	std::optional<AmbientSoundPosition> player;
-	if (g_pPlayer) player = {g_pPlayer->GetX(), g_pPlayer->GetY()};
+	if (MCreature* pPlayer = PlayerState::Creature()) player = {pPlayer->GetX(), pPlayer->GetY()};
 	const auto actions = g_ZoneAmbientSounds.Update(g_FrameNow, zoneID, zone, player);
-	if (actions.stop) StopSound(*actions.stop);
+	if (actions.stop) WorldEvents::StopSound(*actions.stop);
 	if (actions.play)
-		PlaySound(actions.play->id, actions.play->loop, actions.play->x, actions.play->y);
+		WorldEvents::PlaySoundAt(actions.play->id, actions.play->loop, actions.play->x, actions.play->y);
 }
 
 //----------------------------------------------------------------------
@@ -5238,9 +5221,9 @@ MZone::UpdateItem()
 			//--------------------------------------------------------
 			if (!pItem->IsDropping())
 			{
-				PlaySound( pItem->GetTileSoundID(),
+				WorldEvents::PlaySoundAt( pItem->GetTileSoundID(),
 							false,
-							g_pPlayer->GetX(), g_pPlayer->GetY());
+							PlayerState::Creature()->GetX(), PlayerState::Creature()->GetY());
 			}
 		}
 		
@@ -5455,9 +5438,9 @@ MZone::ChangeToHalluCreature()
 		pCreature = iCreature->second;
 
 		// player가 아닌 경우에...
-		if (pCreature!=g_pPlayer)
+		if (pCreature!=PlayerState::Creature())
 		{
-			pCreature->SetHalluCreature( g_pTopView->GetRandomMonsterTypeInZone() );
+			pCreature->SetHalluCreature( WorldEvents::GetRandomMonsterTypeInZone() );
 		}
 
 		iCreature ++;
@@ -5487,7 +5470,7 @@ MZone::RemoveHalluCreature()
 		pCreature = iCreature->second;
 
 		// player가 아닌 경우에...
-		if (pCreature!=g_pPlayer)
+		if (pCreature!=PlayerState::Creature())
 		{
 			pCreature->UnSetHalluCreature();
 		}
@@ -5511,7 +5494,7 @@ MZone::RemoveHalluCreature()
 			
 			MCreature* pCreature = pCorpse->GetCreature();
 			
-			if (pCreature!=NULL && pCreature != g_pPlayer)
+			if (pCreature!=NULL && pCreature != PlayerState::Creature())
 			{
 				pCreature->UnSetHalluCreature();
 			}
@@ -5563,7 +5546,7 @@ MZone::GetCorpseKilledByMe(int limitItemCount)
 			MCreature* pCreature = ((MCorpse*)pItem)->GetCreature();
 
 			if (pCreature!=NULL
-				&& pCreature->GetDrainCreatureID() == g_pPlayer->GetID())
+				&& pCreature->GetDrainCreatureID() == PlayerState::GetID())
 			{
 				return pItem;
 			}

@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <limits>
 
+AmbientSoundState g_ZoneAmbientSounds;
+
 namespace {
 int OffsetCoordinate(int position, int offset)
 {
