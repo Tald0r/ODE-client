@@ -3632,7 +3632,7 @@ bool UseSkillCardOK(BYTE CardType)
 		}
 		else	//NonLimit
 		{
-			pItem->SetNumber( max(0, pItem->GetNumber() - 1) );
+			pItem->SetNumber( pItem->GetNumber() > 0? pItem->GetNumber() - 1 : 0 );
 			if(pItem->GetNumber() == 0)
 			{
 				g_pInventory->RemoveItem( (TYPE_OBJECTID)pItem->GetID() );
@@ -3762,7 +3762,7 @@ UseItemOK()
 			if (pItem->IsChargeItem() 
 				|| pItem->IsPileItem())
 			{
-				pItem->SetNumber( max(0, pItem->GetNumber() - 1) );
+				pItem->SetNumber( pItem->GetNumber() > 0? pItem->GetNumber() - 1 : 0 );
 			}
 
 			if(pItem->GetItemClass() == ITEM_CLASS_DYE_POTION )

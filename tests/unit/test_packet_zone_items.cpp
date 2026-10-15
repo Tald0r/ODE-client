@@ -978,6 +978,41 @@ TEST(PacketZoneItems, APileUsedFromTheInventoryLosesOneAndGoesWithTheLast)
 	CHECK(scene.Destroyed(300));
 }
 
+TEST(PacketZoneItems, AUseAtNoneLeavesTheCountAtNone)
+{
+	// The count is unsigned: one less than none is none, not 4294967295.
+	{
+		// A spent portal used again stays, at none.
+		Scene scene;
+		scene.Items(ITEM_CLASS_SLAYER_PORTAL_ITEM, 1);
+		MItem* pPortal = scene.Hold(ITEM_CLASS_SLAYER_PORTAL_ITEM, 300, 0, 0);
+		CHECK(UseItemOK());
+		CHECK_EQ(0, int(pPortal->GetNumber()));
+		CHECK(scene.inventory.GetItem(300) == pPortal);
+	}
+	{
+		// A pile at none goes, as the last of a pile does.
+		Scene scene;
+		scene.Items(ITEM_CLASS_POTION, 1);
+		MItem* pPile = scene.Hold(ITEM_CLASS_POTION, 300, 0, 0);
+		CHECK(UseItemOK());
+		CHECK(scene.inventory.GetItem(300) == NULL);
+		CHECK(scene.DescriptorRemoved(pPile));
+		CHECK(scene.Destroyed(300));
+	}
+	{
+		// A skill card at none goes, as the last card does.
+		Scene scene(Slayer);
+		scene.Items(ITEM_CLASS_MOON_CARD, 8);
+		MItem* pCard = scene.NewItem(ITEM_CLASS_MOON_CARD, 301, 5, 0);
+		CHECK(scene.inventory.AddItem(pCard));
+		CHECK(UseSkillCardOK(0));
+		CHECK(scene.inventory.GetItem(301) == NULL);
+		CHECK(scene.DescriptorRemoved(pCard));
+		CHECK(scene.Destroyed(301));
+	}
+}
+
 TEST(PacketZoneItems, ChargedPortalsSummonsAndPetsStayWhenSpent)
 {
 	Scene scene;
