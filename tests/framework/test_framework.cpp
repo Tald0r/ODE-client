@@ -6,7 +6,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <string>
 #include <exception>
 #include <vector>
@@ -80,6 +79,25 @@ void	RecordFailureInt(const char* file, int line, const char* expr,
 }
 
 //----------------------------------------------------------------------
+// TEST_FILTER's value, or empty when it is not set (getenv warns on MSVC,
+// so Windows reads it as basic/CrtCompat.h does).
+static std::string	FilterFromEnvironment()
+{
+#ifdef _WIN32
+	char*		value	= nullptr;
+	std::size_t	length	= 0;
+	if (_dupenv_s(&value, &length, "TEST_FILTER") != 0 || value == nullptr)
+		return std::string();
+	std::string	filter(value);
+	std::free(value);
+	return filter;
+#else
+	const char*	value	= std::getenv("TEST_FILTER");
+	return value != nullptr ? std::string(value) : std::string();
+#endif
+}
+
+//----------------------------------------------------------------------
 int	RunAll()
 {
 	const std::vector<TestCase>&	tests	= Registry();
@@ -88,7 +106,7 @@ int	RunAll()
 
 	// TEST_FILTER, when set, runs only the tests whose "Suite.Name" starts
 	// with it (a mutant run's speed-up).
-	const char*	filter	= std::getenv("TEST_FILTER");
+	const std::string	filter	= FilterFromEnvironment();
 	int			ran		= 0;
 
 	std::printf("Running %d test(s)\n\n", (int)tests.size());
@@ -97,10 +115,10 @@ int	RunAll()
 	{
 		const TestCase&	testCase = tests[i];
 
-		if (filter != NULL)
+		if (!filter.empty())
 		{
 			const std::string	fullName = std::string(testCase.suite) + "." + testCase.name;
-			if (fullName.compare(0, std::strlen(filter), filter) != 0)
+			if (fullName.compare(0, filter.size(), filter) != 0)
 				continue;
 		}
 		ran++;
