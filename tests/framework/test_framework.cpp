@@ -109,7 +109,10 @@ int	RunAll()
 	const std::string	filter	= FilterFromEnvironment();
 	int			ran		= 0;
 
-	std::printf("Running %d test(s)\n\n", (int)tests.size());
+	if (filter.empty())
+		std::printf("Running %d test(s)\n\n", (int)tests.size());
+	else
+		std::printf("Running the tests TEST_FILTER=%s names\n\n", filter.c_str());
 
 	for (size_t i = 0; i < tests.size(); i++)
 	{
@@ -158,6 +161,13 @@ int	RunAll()
 
 	std::printf("\n%d test(s), %d check(s), %d failed\n",
 		    ran, g_TotalChecks, failedTests);
+
+	// A filter that names no test is a mistake, not a pass.
+	if (!filter.empty() && ran == 0)
+	{
+		std::printf("TEST_FILTER=%s names no test\n", filter.c_str());
+		return 1;
+	}
 
 	return failedTests;
 }

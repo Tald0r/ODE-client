@@ -41,7 +41,8 @@ MCreature* Handle(MObject& object)
 {
 	const auto found = handleOfObject.find(&object);
 	if (found != handleOfObject.end()) return found->second;
-	MCreature* handle = reinterpret_cast<MCreature*>(&tokens[16 * handleOfObject.size()]);
+	CHECK(handleOfObject.size() < 256);
+	MCreature* handle = reinterpret_cast<MCreature*>(&tokens[16 * (handleOfObject.size() % 256)]);
 	handleOfObject[&object] = handle;
 	objectOfHandle[handle] = &object;
 	return handle;

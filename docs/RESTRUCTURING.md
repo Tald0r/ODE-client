@@ -219,7 +219,7 @@ one through hosts that record the UI, the player and the zone.
 | `UIMessageManager::Execute_UI_CHAT_RETURN` | application chat callback reaches the current game mode, player, party/guild state, live socket, help events and dialogs. Its payload borrowing is source-audited with full builds; the queue that owns deferred text is independently tested in `ui_tests`. |
 | `Client/MinTr.h` raw trace transport | the one remaining caller sends a fixed text message to the optional external Win32 trace window. Unused variadic and command formatting paths are retired. |
 | `PacketFunction.cpp` connect paths | Winsock + connection state machine. `RequestClientPlayerManager.cpp` was listed here until 2026-09-09; task 5.1's fifth slice put its seams behind `WireHost`, and task 5.2's eighth slice deleted it with the rest of the outbound peer side |
-| The executable halves of split classes: `MItemUse.cpp`, `MSkillAvailable.cpp` (`MObjectScreen.cpp` joined gamemodel in task 4.204, and `TextServiceScreen.cpp` was folded into TextSystem in task 4.208) | the packet/dialog/drawing side of a class whose core is in a library, by design |
+| The executable halves of split classes: `MItemUse.cpp` (`MSkillAvailable.cpp` joined gamemodel in task 4.234, `MObjectScreen.cpp` in task 4.204, and `TextServiceScreen.cpp` was folded into TextSystem in task 4.208) | the packet/dialog/drawing side of a class whose core is in a library, by design |
 | `Client/UIDialog.cpp` dialog popups (`PopupPCTalkDlg` and its siblings) | each builds a VS_UI dialog from `g_pCreatureTable`, `g_pPCTalkBox` and `gC_vs_ui`, so a fix has no logic left to move into a library and no harness to run in. Regression guards use full builds and a read of the function. Added 2026-09-29 for `7d16c726`. |
 | `PacketFunction.cpp` error popups and addon item tables (`PopupErrorMessage`, `InitPacketItemTable`) | the popups reach the live UI and message tables, and the tables store item templates the executable builds at start-up (`g_pPacketItemShoulder` and its siblings); neither has a harness. Precedent `0557a039`; also `10b1da62` and `6ebdc97c`. Added 2026-09-29. The connect paths in the row above are a separate case. |
 | `UIMessageManager.cpp` handlers other than `Execute_UI_CHAT_RETURN` (the other `Execute_UI_*` bodies) | each reaches the live storages, inventory, `g_pTempInformation`, the player and the socket, like the chat handler above; the class has no harness. Precedent `ace28baf`; also `dfaeda5b`. Added 2026-09-29. |
@@ -6779,7 +6779,8 @@ rounds settled* for the host rules). Test fixtures share
   >     both 0x10 of the second flag byte: a sector safe for ousters reads
   >     as blocked underground, a burrowed creature's block makes it safe
   >     for ousters, and setting the safety replaces the server's blocks
-  >     (#521's review).
+  >     (#521's review). MZone::UnSetServerBlock, which clears all three
+  >     server blocks, so also takes the sector's ousters safety away.
   >   - Removing one of two darkness (or sanctuary) effects clears the
   >     flag.
   >   - Removing a sweeper's corpse lifts the ground block even where the
@@ -6833,16 +6834,21 @@ rounds settled* for the host rules). Test fixtures share
   >   - `IsBombMaterial`, a pure check of the item's class and type, moves
   >     from MItemUse.cpp into this file, its only user.
   >   - `IsMineMaterial` had no callers and goes.
-  >   - Commented-out code goes, and the Korean comments are translated
-  >     (with MItemFinder.h's).
+  >   - Most commented-out code goes, and the Korean comments are
+  >     translated (with MItemFinder.h's).
   >
   > R1 is 30 Windows / 28 Ninja.
-  - Owner: membership, R1, and `test_skill_available.cpp` (28 tests, on
-    a real skill tree, info table, inventory and gears, with fake items).
-  - Mutants: 80 of 81 are caught. The one left is equivalent: dropping the
-    stop after the first slayer portal only inserts the same enabled
-    entry again, which the set ignores. Taking `MSkillAvailable.cpp` out
-    of the membership breaks the test link.
+  - Owner: membership, R1, and `test_skill_available.cpp` (30 tests since
+    #522's follow-up, on a real skill tree, info table, inventory and
+    gears, with fake items).
+  - Mutants: 80 of the 81 run are caught. The one left is equivalent:
+    dropping the stop after the first slayer portal only inserts the same
+    enabled entry again, which the set ignores. #522's review named more
+    of that kind (the holy water's stop, the bomb's insert guard) and some
+    it did not run, which its follow-up pins: element levels above and
+    below, a slayer without gear or inventory, Will of Life's level, and
+    the casket's creature. Taking `MSkillAvailable.cpp` out of the
+    membership breaks the test link.
 
 - [x] **4.235 What a change of the player's status does:**
   `ModifyStatusManager.cpp`/`.h` join `gamemodel`, with the alignment

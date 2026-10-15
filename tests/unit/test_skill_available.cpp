@@ -57,7 +57,10 @@ const CreatureState::Host creatureHost = []() {
 		CHECK(pCreature == reinterpret_cast<MCreature*>(&playerObject));
 		return creatureType;
 	};
-	host.IsInCasket = [](MCreature*) { return casket; };
+	host.IsInCasket = [](MCreature* pCreature) {
+		CHECK(pCreature == reinterpret_cast<MCreature*>(&playerObject));
+		return casket;
+	};
 	return host;
 }();
 const ZoneState::Host zoneHost = []() {
@@ -292,9 +295,43 @@ TEST(SkillAvailable, Zone3001HasNoSkills)
 	zoneID = 3002;
 	CHECK((scene.Rebuild() == Flags{{MAGIC_CREATE_HOLY_WATER, FLAG_SKILL_ENABLE}}));
 	CHECK_EQ(1, lightSights);
-	// Without a zone host the zone is none.
+	// Without a zone host the zone is none, so not 3001.
+	zoneID = 3001;
+	CHECK(scene.Rebuild().empty());
 	ZoneState::SetHost(nullptr);
 	CHECK_EQ(1u, scene.Rebuild().size());
+}
+
+TEST(SkillAvailable, ASlayerWithoutGearOrInventoryHasNone)
+{
+	Scene scene;
+	scene.Points(100, 100);
+	scene.Learn(SKILLDOMAIN_ENCHANT, MAGIC_CREATE_HOLY_WATER);
+	g_abSweeperBonusSkills[0] = true;
+	g_pSlayerGear = NULL;
+	CHECK(scene.Rebuild().empty());
+	g_pSlayerGear = &scene.slayerGear;
+	g_pInventory = NULL;
+	CHECK(scene.Rebuild().empty());
+	CHECK_EQ(0, lightSights);
+	g_pInventory = &scene.inventory;
+	CHECK_EQ(2u, scene.Rebuild().size());
+}
+
+TEST(SkillAvailable, WillOfLifeCostsByLevel)
+{
+	// A vampire's Will of Life costs by its level, not its INT.
+	Scene scene(RACE_VAMPIRE);
+	scene.Learn(SKILLDOMAIN_VAMPIRE, SKILL_WILL_OF_LIFE, 10);
+	scene.Points(1000, 0, 50, 30);
+	const int atThirty = scene.VampireCost(SKILL_WILL_OF_LIFE);
+	scene.Points(1000, 0, 50, 90);
+	const int atNinety = scene.VampireCost(SKILL_WILL_OF_LIFE);
+	CHECK(atThirty != atNinety);
+	scene.Points(atNinety, 0, 50, 90);
+	CHECK_EQ(1, Flag(scene.Rebuild(), SKILL_WILL_OF_LIFE));
+	scene.Points(atNinety - 1, 0, 50, 90);
+	CHECK_EQ(0, Flag(scene.Rebuild(), SKILL_WILL_OF_LIFE));
 }
 
 TEST(SkillAvailable, AnInstalledTurretHasItsOwnThree)
@@ -522,10 +559,13 @@ TEST(SkillAvailable, TheItemAtTheMouseCounts)
 		// The mouse's item is not shown as an action.
 		CHECK(!Has(flags, 900));
 	}
-	mouseItem = NULL;
 	// Without a dialog host there is no mouse item.
+	Ware bomb(ITEM_CLASS_BOMB, 0);
+	mouseItem = &bomb;
+	CHECK_EQ(1, Flag(scene.Rebuild(), SKILL_THROW_BOMB));
 	DialogPresentation::SetHost(nullptr);
 	CHECK_EQ(0, Flag(scene.Rebuild(), SKILL_THROW_BOMB));
+	mouseItem = NULL;
 }
 
 TEST(SkillAvailable, RestoreIsGivenByHand)
@@ -671,7 +711,7 @@ TEST(SkillAvailable, AVampiresHandGivenSkills)
 	for (int only = 0; only < 3; ++only)
 	{
 		for (int i = 0; i < 3; ++i) *given[i] = i == only;
-		const Flags flags = scene.Rebuild();
+		flags = scene.Rebuild();
 		for (int i = 0; i < 3; ++i)
 			CHECK_EQ(i == only, Has(flags, skills[i]));
 	}
@@ -772,6 +812,7 @@ TEST(SkillAvailable, AnOusterNeedsTheRightWeaponOrElement)
 	learn(SKILL_ICE_FIELD, SKILLINFO_NODE::ELEMENTAL_DOMAIN_FIRE);
 	scene.Row(SKILL_ICE_FIELD).SetSkillStep(SKILL_STEP_ETC);
 	// Bare-handed: the domainless, the wind, the other and the step-less.
+	Flags flags;
 	const Flags bare = scene.Rebuild();
 	CHECK((bare == Flags{{SKILL_FLOURISH, 0}, {SKILL_EVADE, 0}, {SKILL_SHARP_ROUND, 0}, {SKILL_HIDE_SIGHT, 0},
 		{SKILL_BACK_STAB, 1}, {SKILL_BLITZ_SLIDING, 1}, {SKILL_BLAZE_BOLT, 1}, {SKILL_DESTRUCTION_SPEAR, 0}, {SKILL_ICE_FIELD, 1}}));
@@ -779,7 +820,7 @@ TEST(SkillAvailable, AnOusterNeedsTheRightWeaponOrElement)
 	const int hand = MOustersGear::GEAR_OUSTERS_RIGHTHAND;
 	// A chakram: combat.
 	scene.Hold(gear, hand, ITEM_CLASS_OUSTERS_CHAKRAM);
-	Flags flags = scene.Rebuild();
+	flags = scene.Rebuild();
 	CHECK_EQ(1, Flag(flags, SKILL_FLOURISH));
 	CHECK_EQ(0, Flag(flags, SKILL_EVADE));
 	CHECK_EQ(0, Flag(flags, SKILL_DESTRUCTION_SPEAR));
@@ -797,6 +838,16 @@ TEST(SkillAvailable, AnOusterNeedsTheRightWeaponOrElement)
 	flags = scene.Rebuild();
 	CHECK_EQ(1, Flag(flags, SKILL_SHARP_ROUND));
 	CHECK_EQ(0, Flag(flags, SKILL_EVADE));
+	// Above what each needs, still; earth below, not.
+	status.SetStatus(MODIFY_ELEMENTAL_FIRE, 6);
+	status.SetStatus(MODIFY_ELEMENTAL_WATER, 8);
+	status.SetStatus(MODIFY_ELEMENTAL_EARTH, 6);
+	flags = scene.Rebuild();
+	CHECK_EQ(1, Flag(flags, SKILL_EVADE));
+	CHECK_EQ(1, Flag(flags, SKILL_SHARP_ROUND));
+	CHECK_EQ(0, Flag(flags, SKILL_HIDE_SIGHT));
+	status.SetStatus(MODIFY_ELEMENTAL_EARTH, 8);
+	CHECK_EQ(1, Flag(scene.Rebuild(), SKILL_HIDE_SIGHT));
 	delete gear.RemoveItem(static_cast<BYTE>(hand));
 	// A wristlet the player cannot use counts for nothing.
 	scene.Hold(gear, hand, ITEM_CLASS_OUSTERS_WRISTLET, false);

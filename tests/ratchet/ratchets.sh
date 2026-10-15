@@ -796,8 +796,9 @@ check "R3 (unsafe format/copy lines in Client/Packet + Client/PacketHandler)" "$
 # g_pSkillManager, which MSkillManager.cpp defines. Note what this
 # ratchet cannot see: it matches g_p* only, so a library file calling an
 # executable-side function - VS_UI_GameCommon.cpp calls
-# g_pSkillAvailable->SetAvailableSkills(), which lives in the
-# executable's MSkillAvailable.cpp - is a seam the number does not
+# g_pSkillAvailable->SetAvailableSkills(), which lived in the
+# executable's MSkillAvailable.cpp until task 4.234 - is a seam the
+# number does not
 # count, before or after.
 # 27: 28 - 1, a reclassification (task 4.4's third slice moved the gear
 # into gamemodel): VS_UI_Game.cpp's only reaches past the libraries were

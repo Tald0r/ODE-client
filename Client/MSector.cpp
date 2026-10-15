@@ -142,7 +142,7 @@ MSector::SaveToFile(ofstream& file)
 //----------------------------------------------------------------------
 // Load From File
 //----------------------------------------------------------------------
-// Loads only the sprite ID, the block flags and the light.
+// Loads only the sprite ID, the block and portal flags and the light.
 //----------------------------------------------------------------------
 void
 MSector::LoadFromFile(ifstream& file)
@@ -1249,7 +1249,7 @@ MSector::RemoveItem(TYPE_OBJECTID id)
 
 			m_mapObject.erase( iObject );
 
-			// Clear the item flag (and a sweeper corpse's ground block).
+			// Clear the item flag.
 			m_fProperty &= ~FLAG_SECTOR_ITEM;
 
 			return true;
@@ -1516,7 +1516,7 @@ MSector::RemoveItem()
 		// Remove it
 		m_mapObject.erase( iObject );
 
-		// Clear the item flag (and a sweeper corpse's ground block).
+		// Clear the item flag.
 		m_fProperty &= ~FLAG_SECTOR_ITEM;
 
 		return true;
