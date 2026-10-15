@@ -2980,7 +2980,7 @@ UI_SetHP(int current, int max)
 	//---------------------------------------------------------------
 	__BEGIN_HELP_EVENT
 		static int lastPercent = 100;
-		int percent = ((max==0)?0 : current*100 / max);
+		int percent = ((max==0)?0 : static_cast<int>(current*100LL / max));	// 0..100, in a wider type: current*100 passes INT_MAX
 
 		// It was 30% or more a moment ago.. and now it has dropped to or below that
 		if (percent <= 30 && lastPercent > 30)
@@ -3067,7 +3067,7 @@ UI_SetMP(int current, int max)
 	//---------------------------------------------------------------
 	__BEGIN_HELP_EVENT
 		static int lastPercent = 100;
-		int percent = ((max==0)?0 : current*100 / max);
+		int percent = ((max==0)?0 : static_cast<int>(current*100LL / max));	// 0..100, in a wider type: current*100 passes INT_MAX
 
 		// It was 30% or more a moment ago.. and now it has dropped to or below that
 		if (percent <= 30 && lastPercent > 30)

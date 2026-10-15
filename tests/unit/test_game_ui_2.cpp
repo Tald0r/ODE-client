@@ -1069,6 +1069,16 @@ TEST(GameUI2, HPFallingTo30PercentAsksForAPotion)
 	UI_SetHP(0, 0);		// 0 of 1
 	CHECK(kPotion == mails);
 
+	// The percentage holds past the 21,474,836 HP whose hundredfold is
+	// past the int range.
+	mails.clear();
+	UI_SetHP(100, 100);
+	UI_SetHP(25000000, 25000000);	// 100 of 100
+	UI_SetHP(INT_MAX, INT_MAX);
+	CHECK(mails.empty());
+	UI_SetHP(7500000, 25000000);	// 30%
+	CHECK(kPotion == mails);
+
 	// Out of the game no mail is sent, but the drop is remembered.
 	mails.clear();
 	UI_SetHP(100, 100);
@@ -1090,6 +1100,9 @@ TEST(GameUI2, MPFallingTo30PercentAsksForAPotionAndAbsorbingASoulOnce)
 	HelpScene scene;
 	UI_SetMP(31, 100);
 	UI_SetMP(500, 100);	// 100 of 100
+	// Past the 21,474,836 MP whose hundredfold is past the int range.
+	UI_SetMP(25000000, 25000000);
+	UI_SetMP(INT_MAX, INT_MAX);
 	CHECK(mails.empty());
 	UI_SetMP(30, 100);
 	CHECK((std::vector<int>{HELP_EVENT_USE_POTION, HELP_EVENT_ABSORB_SOUL}) == mails);
