@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 // GameInitInfo.cpp
 //---------------------------------------------------------------------------
-// Information Table에 대한 초기화를 한다.
+// Initializes the information tables.
 //---------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -21,12 +21,35 @@
 #include <algorithm>
 //#include "MFileDef.h"
 #include "Properties.h"
-#include "Client.h"
+#include "GameInitInfo.h"
+#include "GameInitInfoHost.h"
+#include "ClientConfig.h"
+#include "UserOption.h"
+#include "SkillDef.h"
+#include "DXLib/CSoundPartManager.h"
+#include "DXLib/CDirectDraw.h"
+#include "MEffectSpriteTypeTable.h"
+#include "MActionInfoTable.h"
+#include "MCreatureSpriteTable.h"
+#include "MCreatureTable.h"
+#include "MEffectGeneratorTable.h"
+#include "MEffectStatusTable.h"
+#include "MInteractionObjectTable.h"
+#include "MItemOptionTable.h"
+#include "MItemTable.h"
+#include "MMusicTable.h"
+#include "MNPCTable.h"
+#include "MPlayer.h"
+#include "MShopTemplateTable.h"
+#include "MSkillManager.h"
+#include "MSoundTable.h"
+#include "CUsingColorSetTable.h"
+#include "MZoneTable.h"
+#include "SafeFormat.h"
+#include "DataPath.h"
 //#include "AddonDef.h"
-#include "GameObject.h"
 #include "UIDialog.h"
 #include "MChatManager.h"
-#include "MHelpManager.h"
 #include "MHelpStringTable.h"
 #include "MHelpDisplayer.h"
 #include "MLevelNameTable.h"
@@ -45,8 +68,6 @@
 #include "MGuildInfoMapper.h"
 #include "MEventManager.h"
 #include "MJusticeAttackManager.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
 #include "RankBonusTable.h"
 #include "MWarManager.h"
 #include "FameInfo.h"	
@@ -61,6 +82,94 @@
 
 //#define	new		DEBUG_NEW
 
+// Client.h's, the executable's header.
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
+#endif
+
+//-----------------------------------------------------------------------------
+// The executable's services (task 4.252)
+//-----------------------------------------------------------------------------
+namespace GameInitInfoHost {
+
+namespace {
+const Host* s_pHost = nullptr;
+}
+
+const Host* SetHost(const Host* host)
+{
+	const Host* old = s_pHost;
+	s_pHost = host;
+	return old;
+}
+
+void SetFadeStart(signed char start, signed char end, signed char step,
+	BYTE red, BYTE green, BYTE blue, WORD delay)
+{
+	if (s_pHost != nullptr && s_pHost->SetFadeStart != nullptr)
+		s_pHost->SetFadeStart(start, end, step, red, green, blue, delay);
+}
+
+void InitPacketItemTable()
+{
+	if (s_pHost != nullptr && s_pHost->InitPacketItemTable != nullptr)
+		s_pHost->InitPacketItemTable();
+}
+
+int PersonalShopUpdateTime()
+{
+	if (s_pHost != nullptr && s_pHost->PersonalShopUpdateTime != nullptr)
+		return s_pHost->PersonalShopUpdateTime();
+	return 60000;
+}
+
+void InitFailMessage(const char* message)
+{
+	if (s_pHost != nullptr && s_pHost->InitFailMessage != nullptr)
+		s_pHost->InitFailMessage(message);
+}
+
+void ShowError(const char* message)
+{
+	if (s_pHost != nullptr && s_pHost->ShowError != nullptr)
+		s_pHost->ShowError(message);
+}
+
+}
+
+// The sound parts' manager, which InitInfomation makes (GameMain.cpp's
+// until task 4.252).
+CSoundPartManager*	g_pSoundManager = NULL;
+
+//---------------------------------------------------------------------------
+// FileOpenBinary (GameMain.cpp's until task 4.252)
+//---------------------------------------------------------------------------
+bool
+FileOpenBinary(const char* filename, std::ifstream& file)
+{
+	if (file.is_open())
+	{
+		file.close();
+	}
+
+	// The game's spelling of the path resolved to the disk's (basic/DataPath.h):
+	// the identity on Windows; off Windows the separators folded and each
+	// component matched case-insensitively, since the data tree's case does
+	// not always match the tables. This used to fold the separators alone.
+	const std::string convertedPath = Basic::NormalizeDataPath(filename);
+	file.open(convertedPath.c_str(), std::ios::binary);
+
+	if (!file.is_open())
+	{
+		char message[1024];
+		SafeFormat::Format(message, "[Error] File Open Error : [%s]", filename);
+		GameInitInfoHost::InitFailMessage(message);
+		return false;
+	}
+
+	return true;
+}
+
 
 //-----------------------------------------------------------------------------
 // Init Config
@@ -72,7 +181,7 @@ InitClientConfig()
 	DEBUG_ADD("[ InitGame ]  ClientConfig");
 	
 	//---------------------------------------------------------------------
-	// 메모리 잡기
+	// Allocate
 	//---------------------------------------------------------------------
 	if (g_pClientConfig==NULL)
 	{
@@ -81,7 +190,7 @@ InitClientConfig()
 
 	//---------------------------------------------------------------------
 	//
-	//			Client Config 설정
+	//			Client Config
 	//
 	//---------------------------------------------------------------------
 	///*
@@ -96,7 +205,7 @@ InitClientConfig()
 		//return FALSE;
 	}
 
-	// 다시 한 번 저장해둔다.
+	// Save it back.
 	g_pClientConfig->SaveToFile(g_pFileDef->getProperty("FILE_INFO_CLIENTCONFIG").c_str());
 
 	return TRUE;
@@ -112,7 +221,7 @@ InitUserOption()
 	DEBUG_ADD("[ InitGame ]  UserOption");
 	
 	//---------------------------------------------------------------------
-	// 메모리 잡기
+	// Allocate
 	//---------------------------------------------------------------------
 	if (g_pUserOption==NULL)
 	{
@@ -121,7 +230,7 @@ InitUserOption()
 
 	//---------------------------------------------------------------------
 	//
-	//			User Option 설정
+	//			User Option
 	//
 	//---------------------------------------------------------------------
 	///*
@@ -138,7 +247,7 @@ InitUserOption()
 	}
 	
 	spritectl_set_xbrz_enabled(g_pUserOption->UseXbrz);
-	g_pUserOption->persnalShopupdatetime = GetPersnalShopUpdateTime();
+	g_pUserOption->persnalShopupdatetime = GameInitInfoHost::PersonalShopUpdateTime();
 	g_pUserOption->PlayWaveMusic = TRUE;
 
 	return TRUE;
@@ -154,7 +263,7 @@ InitInfomation()
 	DEBUG_ADD("[ InitGame ]  Information");
 	
 	//---------------------------------------------------------------------
-	// 메모리 잡기
+	// Allocate
 	//---------------------------------------------------------------------
 	SAFE_DELETE( g_pRegenTowerInfoManager );
 	SAFE_DELETE( g_pQuestInfoManager );
@@ -204,8 +313,8 @@ InitInfomation()
 	{
 		g_pKeyAccelerator = new KeyAccelerator;
 		g_pKeyAccelerator->Init( MAX_ACCELERATOR );
-		SetDefaultAccelerator();		// 일단은..
-		//g_pKeyAccelerator->LoadFromFile( ) 이 나을 듯..
+		SetDefaultAccelerator();		// for now..
+		//g_pKeyAccelerator->LoadFromFile( ) would be better..
 	}
 
 	if (g_pWarManager == NULL)
@@ -247,7 +356,7 @@ InitInfomation()
 	{
 		g_pGuildInfoMapper = new MGuildInfoMapper;
 
-		// 이 화일은 없을 수도 있다.
+		// This file may be missing.
 		std::ifstream guildInfoFile(g_pFileDef->getProperty("FILE_INFO_GUILD_INFO_MAPPER").c_str(), std::ios::binary);
 
 		if (guildInfoFile.is_open())
@@ -274,7 +383,7 @@ InitInfomation()
 				// With no player, keep effect events until their explicit expiry.
 				return !g_pPlayer || g_pPlayer->HasEffectStatus(static_cast<EFFECTSTATUS>(effect));
 			},
-			.SetFadeStart = ::SetFadeStart,
+			.SetFadeStart = GameInitInfoHost::SetFadeStart,
 		};
 		g_pEventManager = new MEventQueue(&eventHost);
 	}
@@ -444,7 +553,7 @@ InitInfomation()
 		g_pRegenTowerInfoManager = new RegenTowerInfoManager();
 		if( g_pRegenTowerInfoManager->LoadRegenTowerInfo() == false )
 		{
-			MessageBox(NULL,"Cannot Open RTI File","Error",MB_OK);
+			GameInitInfoHost::ShowError("Cannot Open RTI File");
 			return FALSE;			
 		}
 	}
@@ -453,16 +562,16 @@ InitInfomation()
 	//int i;
 	//---------------------------------------------------------------------
 	//
-	//			Global 정보 설정
+	//			Global information
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - PacketItemTable");
 
-	InitPacketItemTable();
+	GameInitInfoHost::InitPacketItemTable();
 
 	//---------------------------------------------------------------------
 	//
-	//          class에 있는 정보 설정..
+	//          The information the classes hold..
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - InitMoveTable");
@@ -475,7 +584,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//      EffectGenerator 생성
+	//      EffectGenerator creation
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - EffectGenerator");
@@ -494,7 +603,7 @@ InitInfomation()
 	std::ifstream chatInfoFile2;//(g_pFileDef->getProperty("FILE_INFO_USINGCOLORSET").c_str(), ios::binary);
 	if (!FileOpenBinary(g_pFileDef->getProperty("FILE_INFO_CHAT").c_str(), chatInfoFile2))
 		return FALSE;
-	chatInfoFile2.close();		// file체크용. - -;
+	chatInfoFile2.close();		// only checks that the file is there. - -;
 
 	g_pChatManager->LoadFromFile(g_pFileDef->getProperty("FILE_INFO_CHAT").c_str());
 	
@@ -544,7 +653,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//          UsingColor 정보 생성
+	//          UsingColor information
 	//
 	//---------------------------------------------------------------------
 	/*
@@ -640,7 +749,7 @@ InitInfomation()
 	(*g_pItemOptionTable).LoadFromFile( itemOptionTable2 );
 	itemOptionTable2.close();
 
-	// 0을 추가한다.
+	// Add 0.
 	/*
 	ITEMOPTION_TABLE ItemOptionTable;
 	ItemOptionTable.Init( (*g_pItemOptionTable).GetSize()+1 );
@@ -664,7 +773,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    InteractionObjectTable에 대한 정보 설정
+	//    InteractionObjectTable information
 	//
 	//---------------------------------------------------------------------
 	/*
@@ -791,7 +900,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    NPC Script에 대한 정보 설정
+	//    NPC Script information
 	//
 	//---------------------------------------------------------------------	
 
@@ -871,7 +980,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    SkillInfoTable에 대한 정보 설정
+	//    SkillInfoTable information
 	//
 	//---------------------------------------------------------------------
 	//------------------------------------------------
@@ -886,7 +995,7 @@ InitInfomation()
 	skillTable2.close();
 
 	//------------------------------------------------
-	// Server 정보를 loading한다.
+	// Load the server's information.
 	//------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - ServerSkillInfo");
 
@@ -906,7 +1015,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    RankBonusTable에 대한 정보 설정
+	//    RankBonusTable information
 	//
 	//---------------------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Information - rankBonusInfoFile");
@@ -929,7 +1038,7 @@ InitInfomation()
 
 	//---------------------------------------------------------------------
 	//
-	//    ExperienceTable에 대한 정보 설정
+	//    ExperienceTable information
 	//
 	//---------------------------------------------------------------------
 	//------------------------------------------------

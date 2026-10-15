@@ -277,6 +277,8 @@ BOOL		LoadCreature(int spriteType);
 BOOL		LoadCreatureType(int creatureType);
 void		PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 void		PlaySound(TYPE_SOUNDID soundID);
+// PlaySound's body, the host's (WorldEventsHost.h).
+void		PlaySoundAtPlayer(TYPE_SOUNDID soundID);
 void		StopSound(TYPE_SOUNDID soundID);
 void		PlayMusicCurrentZone();
 

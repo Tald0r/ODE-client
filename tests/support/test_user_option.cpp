@@ -262,3 +262,61 @@ TEST(KeyAccelerator, GetKeyBeyondSizeIsUnbound)
     keys.Init(3);
     CHECK_EQ(0, keys.GetKey(5));
 }
+
+// The bindings' file: a count, then a key for each accelerator after the
+// first. A file with no count (empty, or shorter than one), or a count no
+// table of accelerators holds (they are BYTEs), keeps the bindings it had;
+// a count past the end of the file binds the keys the file holds.
+namespace {
+void LoadKeys(KeyAccelerator& keys, const std::string& bytes)
+{
+    TemporaryFile temp("load");
+    {
+        std::ofstream out(temp.path, std::ios::binary | std::ios::trunc);
+        out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    }
+    FILE* file = Basic::OpenFile(temp.path.string().c_str(), "rb");
+    CHECK(file != nullptr);
+    if (file == nullptr) return;
+    keys.LoadFromFile(file);
+    std::fclose(file);
+}
+
+std::string Count(int count)
+{
+    char bytes[4];
+    std::memcpy(bytes, &count, 4);
+    return std::string(bytes, 4);
+}
+
+std::string Key(WORD key)
+{
+    char bytes[2];
+    std::memcpy(bytes, &key, 2);
+    return std::string(bytes, 2);
+}
+}
+
+TEST(KeyAccelerator, AFileWithoutAUsableCountKeepsTheBindings)
+{
+    for (const std::string& bytes : {std::string(), std::string("\x05\x00", 2), Count(1000) + Key(DIK_K), Count(-1) + Key(DIK_K)})
+    {
+        KeyAccelerator keys;
+        keys.Init(4);
+        keys.SetAcceleratorKey(1, DIK_I);
+        LoadKeys(keys, bytes);
+        CHECK_EQ(DIK_I, keys.GetKey(1));
+    }
+}
+
+TEST(KeyAccelerator, ACountPastTheFileBindsTheKeysItHolds)
+{
+    KeyAccelerator keys;
+    keys.Init(4);
+    keys.SetAcceleratorKey(1, DIK_I);
+    keys.SetAcceleratorKey(2, DIK_J);
+    LoadKeys(keys, Count(5) + Key(DIK_K));
+    CHECK_EQ(DIK_K, keys.GetKey(1));
+    CHECK_EQ(0, keys.GetKey(2));
+    CHECK_EQ(0, keys.GetKey(4));
+}

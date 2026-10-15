@@ -105,22 +105,25 @@ void
 MQuestInfoManager::LoadFromFile(std::ifstream& file)
 {
 	//-----------------------------------------------------
-	int infoSize;
+	// No count (an empty or short file) loads nothing; a count past the
+	// end of the file stops where the file does.
+	int infoSize = 0;
 	file.read((char*)&infoSize, 4);
 
 	//-----------------------------------------------------
-	// 각 info
+	// each record
 	//-----------------------------------------------------
-	for (int i=0; i<infoSize; i++)
+	for (int i=0; i<infoSize && file; i++)
 	{		
 		QUEST_INFO*	pData = new QUEST_INFO;
 
 		pData->LoadFromFile( file );
 
 		//-----------------------------------------------------
-		// map에 추가한다.
+		// add it to the map; a record the file ends inside is
+		// not kept
 		//-----------------------------------------------------
-		if (!AddData( pData->GetID(), pData ))
+		if (!file || !AddData( pData->GetID(), pData ))
 		{
 			delete pData;
 		}

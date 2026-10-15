@@ -70,16 +70,16 @@ NPC_INFO::LoadFromFile(std::ifstream& file)
 	//--------------------------------------------------
 	// ListShopTemplateID
 	//--------------------------------------------------
-	int size;
+	// No count (an empty or short file) holds no templates; a count past
+	// the end of the file stops where the file does.
+	int size = 0;
 	
 	file.read((char*)&size, 4);
 
 	unsigned int id;
 
-	for (int i=0; i<size; i++)
+	for (int i=0; i<size && file.read((char*)&id, 4); i++)
 	{			
-		file.read((char*)&id, 4);
-
 		ListShopTemplateID.push_back( id );
 	}
 
@@ -164,16 +164,16 @@ SERVERNPC_INFO::LoadFromFile(std::ifstream& file)
 	//--------------------------------------------------
 	// ListShopTemplateID
 	//--------------------------------------------------
-	int size;
+	// No count (an empty or short file) holds no templates; a count past
+	// the end of the file stops where the file does.
+	int size = 0;
 	
 	file.read((char*)&size, 4);
 
 	unsigned int id;
 
-	for (int i=0; i<size; i++)
+	for (int i=0; i<size && file.read((char*)&id, 4); i++)
 	{			
-		file.read((char*)&id, 4);
-
 		ListShopTemplateID.push_back( id );
 	}
 

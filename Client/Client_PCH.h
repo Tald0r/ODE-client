@@ -80,11 +80,14 @@ using std::list;
 using std::deque;
 using std::bitset;
 
-/* The game's window and sector geometry, defined in Client/Client.cpp
-   and read by VS_UI. Declared here so VS_UI's translation units, which
+/* The game's window and sector geometry, and the server's dimension and
+   3D acceleration, read by VS_UI and defined in gamemodel (ClientMode.cpp,
+   ViewSectors.cpp). Declared here so VS_UI's translation units, which
    have no header of their own for them, see one declaration. */
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
+extern int g_Dimension;
+extern BOOL g_bEnable3DHAL;
 extern	LONG g_SECTOR_WIDTH;
 extern	LONG g_SECTOR_HEIGHT;
 extern	LONG g_SECTOR_WIDTH_HALF;

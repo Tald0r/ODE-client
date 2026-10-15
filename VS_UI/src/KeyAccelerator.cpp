@@ -240,19 +240,21 @@ KeyAccelerator::SaveToFile(FILE *file)
 void				
 KeyAccelerator::LoadFromFile(FILE *file)
 {
-	int num;
-	fread((void*)&num, 1, 4, file);
+	// No count (an empty or short file), or one no table of accelerators
+	// holds (they are BYTEs), keeps the bindings there were; a count past
+	// the end of the file binds the keys the file holds.
+	int num = 0;
+	if (fread((void*)&num, 1, 4, file) != 4 || num < 0 || num > 256)
+	{
+		return;
+	}
 
 	Init( num );
 
 	WORD key;
 
-	for (int accel=1; accel<num; accel++)
+	for (int accel=1; accel<num && fread((void*)&key, 1, 2, file) == 2; accel++)
 	{
-		int sz;
-		sz = static_cast<int>(fread((void*)&key, 1, 2, file));
-		if (sz == 2) {
-			SetAcceleratorKey(accel, key);
-		}
+		SetAcceleratorKey(accel, key);
 	}
 }

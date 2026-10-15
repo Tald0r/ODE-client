@@ -436,7 +436,8 @@ check () {
 # 17: the creature shadows join gameview (4.249).
 # 16: the creatures drawn with an effect join gameview (4.250).
 # 14: the crash report and the Windows-only Windows version join gamemodel (4.251).
-R1_BASELINE=14
+# 13: the start-up's loading joins gameclient, a new library (4.252).
+R1_BASELINE=13
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -455,7 +456,7 @@ if [ -n "$R1_VCXPROJ" ]; then
 	# unchanged CMakeCache.txt) alone, so those mtimes would report a
 	# fresh reconfigure as stale.
 	R1_CACHE="$(dirname "$R1_VCXPROJ")/CMakeFiles/generate.stamp"
-	if [ ! -f "$R1_CACHE" ] || [ CMakeLists.txt -nt "$R1_CACHE" ] || [ tests/arch/packetwire_files.txt -nt "$R1_CACHE" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_CACHE" ] || [ tests/arch/gameview_files.txt -nt "$R1_CACHE" ]; then
+	if [ ! -f "$R1_CACHE" ] || [ CMakeLists.txt -nt "$R1_CACHE" ] || [ tests/arch/packetwire_files.txt -nt "$R1_CACHE" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_CACHE" ] || [ tests/arch/gameview_files.txt -nt "$R1_CACHE" ] || [ tests/arch/gameclient_files.txt -nt "$R1_CACHE" ]; then
 		echo "FAIL R1: $(dirname "$R1_VCXPROJ") was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
 		FAIL=1
 	else
@@ -705,9 +706,10 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 15: the creature shadows join gameview (4.249).
 	# 14: the creatures drawn with an effect join gameview (4.250).
 	# 13: the crash report joins gamemodel (4.251).
-	R1_NINJA_BASELINE=13
+	# 12: the start-up's loading joins gameclient, a new library (4.252).
+	R1_NINJA_BASELINE=12
 	R1_NINJA="$BUILD_DIR/build.ninja"
-	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ]; then
+	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameclient_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"
 		FAIL=1
 	else
@@ -808,9 +810,9 @@ check "R3 (unsafe format/copy lines in Client/Packet + Client/PacketHandler)" "$
 # R4 - library-compiled .cpp files referencing g_p* client globals.
 #
 # Membership: every .cpp under the whole-directory library trees, plus
-# the packetwire, gamemodel and gameview membership files (tests/arch/
-# packetwire_files.txt, tests/arch/gamemodel_files.txt,
-# tests/arch/gameview_files.txt - the CMake
+# the packetwire, gamemodel, gameview and gameclient membership files
+# (tests/arch/packetwire_files.txt, tests/arch/gamemodel_files.txt,
+# tests/arch/gameview_files.txt, tests/arch/gameclient_files.txt - the CMake
 # targets and the include checker read the same files). Extraction work
 # (Phase 4) shrinks this by cutting the global seams. The pattern is the
 # g_p prefix: the two clocks the item host carries (g_CurrentFrame,
@@ -904,6 +906,8 @@ lib_members () {
 	sed -e 's/#.*//' tests/arch/gamemodel_files.txt \
 		| grep -oE 'Client/[A-Za-z0-9_/]+\.cpp'
 	sed -e 's/#.*//' tests/arch/gameview_files.txt \
+		| grep -oE 'Client/[A-Za-z0-9_/]+\.cpp'
+	sed -e 's/#.*//' tests/arch/gameclient_files.txt \
 		| grep -oE 'Client/[A-Za-z0-9_/]+\.cpp'
 }
 
@@ -1467,6 +1471,8 @@ libset_members () {
 		| grep -oE 'Client/[A-Za-z0-9_/]+\.(cpp|h)'
 	sed -e 's/#.*//' tests/arch/gameview_files.txt \
 		| grep -oE 'Client/[A-Za-z0-9_/]+\.(cpp|h)'
+	sed -e 's/#.*//' tests/arch/gameclient_files.txt \
+		| grep -oE 'Client/[A-Za-z0-9_/]+\.(cpp|h)'
 	sed -e 's/#.*//' tests/arch/packetwire_files.txt \
 		| grep -oE 'Client/Packet/[A-Za-z0-9_/]+\.cpp'
 	find Client/Packet -name '*.h' 2>/dev/null
@@ -1483,7 +1489,7 @@ for d in basic Client/SpriteLib Client/TextSystem Client/DXLib Client/framelib \
 		FAIL=1
 	fi
 done
-for f in tests/arch/gamemodel_files.txt tests/arch/gameview_files.txt tests/arch/packetwire_files.txt; do
+for f in tests/arch/gamemodel_files.txt tests/arch/gameview_files.txt tests/arch/gameclient_files.txt tests/arch/packetwire_files.txt; do
 	if [ ! -f "$f" ]; then
 		echo "FAIL R9/R10: membership file $f is missing - fix the path list in this script"
 		FAIL=1

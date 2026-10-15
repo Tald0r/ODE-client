@@ -65,6 +65,7 @@ target_link_libraries(unit_tests PRIVATE
 	packetwire
 	gamemodel
 	gameview
+	gameclient
 	dxlib
 )
 

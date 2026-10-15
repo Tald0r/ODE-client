@@ -82,6 +82,8 @@ extern bool g_bRunning;			// cleared by the pump on SDL_QUIT (DXLibBackendSDL.cp
 // (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
 #include "DirectoryListing.h"
 #include "Client.h"
+#include "GameInitInfoHost.h"
+#include "PacketFunction.h"
 #include "GameObject.h"
 #include "VS_UI.h"
 #include "MMusic.h"
@@ -153,7 +155,6 @@ DWORD				g_dwVideoMemory = 0;
 
 char				g_CWD[_MAX_PATH];
 
-int					g_Dimension = 0;
 DWORD				g_TimerNPMON = 0;
 
 // FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
@@ -263,9 +264,7 @@ void ClearDebugInfo()
 }
 
 #endif
-// add by Sonic 2006.9.26 检测1024 * 768版本全局变量
-BOOL g_MyFull=TRUE;
-RECT g_GameRect={799,599,800,600};
+// g_MyFull and g_GameRect are gamemodel's (ClientMode.cpp) since task 4.252.
 
 // Integer factor by which the OS window is larger than the game frame in
 // windowed mode. The game still renders at g_GameRect size; the renderer
@@ -3166,6 +3165,18 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	// The loading thread's sprite-pack jobs open their files so (task 4.217).
 	static const MLoadingSPKHost loadingSPKHost = { .OpenBinary = FileOpenBinary };
 	SetLoadingSPKHost(&loadingSPKHost);
+
+	// What the start-up's loading (gameclient's, task 4.252) asks of the
+	// executable, installed before FileOpenBinary's first caller
+	// (CheckTerriblePatch, then InitGame's string tables).
+	static const GameInitInfoHost::Host gameInitInfoHost{
+		.SetFadeStart = ::SetFadeStart,
+		.InitPacketItemTable = ::InitPacketItemTable,
+		.PersonalShopUpdateTime = GetPersnalShopUpdateTime,
+		.InitFailMessage = [](const char* message) { InitFailMessage(message); },
+		.ShowError = [](const char* message) { MessageBox(NULL, message, "Error", MB_OK); },
+	};
+	GameInitInfoHost::SetHost(&gameInitInfoHost);
 
 	// Flip presents g_pBack, once it exists (task 4.211).
 	CSDLGraphics::SetBackBufferSource([]() -> spritectl_surface_t {

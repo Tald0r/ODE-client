@@ -289,13 +289,22 @@ MSkillInfoTable::SaveFromFileServerSkillInfo(std::ofstream& file)
 void			
 MSkillInfoTable::LoadFromFileServerSkillInfo(std::ifstream& file)
 {
-	int num, skillType;
+	// No count (an empty or short file) loads nothing; a count past the
+	// end of the file stops where the file does.
+	int num = 0, skillType;
 
 	file.read((char*)&num, 4);
 
-	for (int i=0; i<num; i++)
+	for (int i=0; i<num && file.read((char*)&skillType, 4); i++)
 	{
-		file.read((char*)&skillType, 4);
+		// A skill the table has no slot for is read past: its record
+		// says how long it is.
+		if (skillType < 0 || skillType >= m_Size)
+		{
+			SKILLINFO_NODE unknown;
+			unknown.LoadFromFileServerSkillInfo( file );
+			continue;
+		}
 
 		// Load into the slot the file names.
 		m_pTypeInfo[skillType].LoadFromFileServerSkillInfo( file );

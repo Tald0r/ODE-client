@@ -206,7 +206,9 @@ MGuildInfoMapper::SaveToFile(std::ofstream& file)
 void	
 MGuildInfoMapper::LoadFromFile(std::ifstream& file)
 {
-	int num;
+	// No count (an empty or short file) loads nothing; a count past the
+	// end of the file stops where the file does.
+	int num = 0;
 
 	file.read((char*)&num, 4);
 
@@ -214,14 +216,22 @@ MGuildInfoMapper::LoadFromFile(std::ifstream& file)
 
 	WORD guildID;
 	
-	for (int i=0; i<num; i++)
+	for (int i=0; i<num && file.read((char*)&guildID, 2); i++)
 	{
-		file.read((char*)&guildID, 2);
-		
 		GUILD_INFO*	pInfo	= new GUILD_INFO;
 		pInfo->LoadFromFile( file );
 
-		(*this)[guildID] = pInfo;
+		// A record the file ends inside is not kept; a guild the file
+		// names again replaces the earlier one.
+		if (!file)
+		{
+			delete pInfo;
+			break;
+		}
+
+		GUILD_INFO*& pSlot = (*this)[guildID];
+		delete pSlot;
+		pSlot = pInfo;
 	}
 }
 
