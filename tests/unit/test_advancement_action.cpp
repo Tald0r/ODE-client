@@ -1,5 +1,16 @@
 #include "test_framework.h"
 #include "AdvancementAction.h"
+#include "gamemodel_world.h"
+#include "type_table_access.h"
+#include "MCreatureWear.h"
+#include "MCreatureTable.h"
+#include "MEffectSpriteTypeTable.h"
+#include "MEffectStatusTable.h"
+#include "EffectSpriteTypeDef.h"
+#include "MCreatureSpriteTable.h"
+#include "MonsterNameTable.h"
+#include "MLevelNameTable.h"
+#include "RankBonusTable.h"
 
 #include <iterator>
 
@@ -181,4 +192,157 @@ TEST(AdvancementAction, TheFrameCountsHoldEveryAdvancedAction)
 	CHECK_EQ(size_t(ACTION_ADVANCEMENT_SLAYER_MAX - ADVANCEMENT_ACTION_START), sizeof(g_AdvanceSlayerActionMaxCount));
 	CHECK_EQ(size_t(ACTION_ADVANCEMENT_MAX - ADVANCEMENT_ACTION_START), sizeof(g_AdvanceVampireActionMaxCount));
 	CHECK_EQ(size_t(ACTION_ADVANCEMENT_OUSTERS_MAX - ADVANCEMENT_ACTION_START), sizeof(g_AdvanceOustersActionMaxCount));
+}
+
+//----------------------------------------------------------------------
+// The parts and actions the creature drawing picks (task 4.248)
+//----------------------------------------------------------------------
+namespace {
+
+// A wearer whose right hand holds what a test puts there.
+struct Wearer : MCreatureWear
+{
+	void Hold(ITEM_CLASS itemClass)
+	{
+		m_Addon[ADDON_RIGHTHAND].bAddon = TRUE;
+		m_Addon[ADDON_RIGHTHAND].ItemClass = itemClass;
+	}
+};
+
+struct Wardrobe
+{
+	GameModelWorld world;
+	CREATURE_TABLE creatureTypes;
+	EFFECTSPRITETYPE_TABLE effectSprites;
+	EFFECTSTATUS_TABLE effectStatuses;
+	CREATURESPRITE_TABLE sprites;
+	MonsterNameTable monsterNames;
+	MLevelNameTable levelNames;
+	RankBonusTable rankBonuses;
+	CREATURESPRITE_TABLE* oldSprites = g_pCreatureSpriteTable;
+	MonsterNameTable* oldMonsterNames = g_pMonsterNameTable;
+	MLevelNameTable* oldLevelNames = g_pLevelNameTable;
+	RankBonusTable* oldRankBonuses = g_pRankBonusTable;
+	CREATURE_TABLE* oldCreatureTypes = g_pCreatureTable;
+	EFFECTSPRITETYPE_TABLE* oldEffectSprites = g_pEffectSpriteTypeTable;
+	EFFECTSTATUS_TABLE* oldEffectStatuses = g_pEffectStatusTable;
+	Wardrobe()
+	{
+		creatureTypes.Init(4);
+		testfw::MutableRow(creatureTypes, 0).SetCreatureTribe(CREATURETRIBE_SLAYER, ACTION_MAX_SLAYER);
+		g_pCreatureTable = &creatureTypes;
+		effectSprites.Init(MAX_EFFECTSPRITETYPE);
+		g_pEffectSpriteTypeTable = &effectSprites;
+		effectStatuses.Init(EFFECTSTATUS_MAX);
+		g_pEffectStatusTable = &effectStatuses;
+		sprites.Init(1);
+		g_pCreatureSpriteTable = &sprites;
+		g_pMonsterNameTable = &monsterNames;
+		g_pLevelNameTable = &levelNames;
+		g_pRankBonusTable = &rankBonuses;
+	}
+	~Wardrobe()
+	{
+		g_pRankBonusTable = oldRankBonuses;
+		g_pLevelNameTable = oldLevelNames;
+		g_pMonsterNameTable = oldMonsterNames;
+		g_pCreatureSpriteTable = oldSprites;
+		g_pEffectStatusTable = oldEffectStatuses;
+		g_pEffectSpriteTypeTable = oldEffectSprites;
+		g_pCreatureTable = oldCreatureTypes;
+	}
+};
+
+} // namespace
+
+TEST(AdvancementAction, ANewVampireActionReplacesTwoActions)
+{
+	CHECK_EQ(16, GetNewVampireActionFromVampireAction(13));
+	CHECK_EQ(7, GetNewVampireActionFromVampireAction(12));
+	for (int action : {0, 1, 7, 11, 14, 16})
+		CHECK_EQ(action, GetNewVampireActionFromVampireAction(action));
+}
+
+TEST(AdvancementAction, AnAdvancedSlayerDrawsAPartForEachGearClass)
+{
+	const struct { ITEM_CLASS itemClass; int part; } parts[] = {
+		{ ITEM_CLASS_SWORD, AC_SWORD }, { ITEM_CLASS_BLADE, AC_BLADE }, { ITEM_CLASS_AR, AC_GUN_AR },
+		{ ITEM_CLASS_SG, AC_GUN_SR }, { ITEM_CLASS_SMG, AC_GUN_SR }, { ITEM_CLASS_SR, AC_GUN_SR },
+		{ ITEM_CLASS_MACE, AC_MACE }, { ITEM_CLASS_CROSS, AC_CROSS }, { ITEM_CLASS_SHIELD, AC_SHIELD },
+		{ ITEM_CLASS_HELM, AC_HELMET }, { ITEM_CLASS_COAT, AC_BODY }, { ITEM_CLASS_TROUSER, AC_BODY },
+		{ ITEM_CLASS_SHOULDER_ARMOR, AC_SHOULDER },
+		{ ITEM_CLASS_RING, -1 }, { ITEM_CLASS_GLOVE, -1 }, { ITEM_CLASS_POTION, -1 },
+	};
+	for (const auto& p : parts)
+		CHECK_EQ(p.part, GetAdvancementPartFromItemClass(p.itemClass, 0));
+	// A motorcycle by its frame: the second bike's own, else the first.
+	CHECK_EQ(int(AC_BIKE_2), GetAdvancementPartFromItemClass(ITEM_CLASS_MOTORCYCLE, AC_BIKE_2));
+	CHECK_EQ(int(AC_BIKE_1), GetAdvancementPartFromItemClass(ITEM_CLASS_MOTORCYCLE, AC_BIKE_1));
+	CHECK_EQ(int(AC_BIKE_1), GetAdvancementPartFromItemClass(ITEM_CLASS_MOTORCYCLE, 0));
+}
+
+TEST(AdvancementAction, AnAdvancedSlayersGunAttackGoesByItsSpeed)
+{
+	Wardrobe wardrobe;
+	MCreature creature;
+	for (int speed : {int(MCreature::WEAPON_SPEED_SLOW), int(MCreature::WEAPON_SPEED_NORMAL), int(MCreature::WEAPON_SPEED_FAST)})
+	{
+		creature.SetWeaponSpeed(MCreature::WEAPON_SPEED(speed));
+		CHECK_EQ(int(ACTION_ADVANCEMENT_SLAYER_ATTACK_AR_GUN_SLOW) + speed, GetAdvancementSlayerAttackActionFromItemClass(ITEM_CLASS_AR, &creature));
+		for (ITEM_CLASS itemClass : {ITEM_CLASS_SG, ITEM_CLASS_SMG, ITEM_CLASS_SR})
+			CHECK_EQ(int(ACTION_ADVANCEMENT_SLAYER_ATTACK_SR_GUN_SLOW) + speed, GetAdvancementSlayerAttackActionFromItemClass(itemClass, &creature));
+		CHECK_EQ(-1, GetAdvancementSlayerAttackActionFromItemClass(ITEM_CLASS_SWORD, &creature));
+	}
+}
+
+TEST(AdvancementAction, ANewSlayerActionFollowsItsGunAndItsAttack)
+{
+	Wardrobe wardrobe;
+	Wearer slayer;
+	slayer.Hold(ITEM_CLASS_SWORD);
+	CHECK_EQ(ACTION_STAND, ConvNewSlayerActionFromSlayerAction(ACTION_STAND, &slayer));
+	CHECK_EQ(ACTION_MOVE, ConvNewSlayerActionFromSlayerAction(ACTION_MOVE, &slayer));
+	for (ITEM_CLASS gun : {ITEM_CLASS_SG, ITEM_CLASS_SMG, ITEM_CLASS_AR, ITEM_CLASS_SR})
+	{
+		slayer.Hold(gun);
+		CHECK_EQ(int(ACTION_NEW_SLAYER_STOP_GUN), ConvNewSlayerActionFromSlayerAction(ACTION_STAND, &slayer));
+		CHECK_EQ(int(ACTION_NEW_SLAYER_MOVE_GUN), ConvNewSlayerActionFromSlayerAction(ACTION_MOVE, &slayer));
+	}
+	const struct { int from; int to; } rows[] = {
+		{ ACTION_SLAYER_GUN_SG, ACTION_NEW_SLAYER_GUN_SG }, { ACTION_SLAYER_GUN_SMG, ACTION_NEW_SLAYER_GUN_SMG },
+		{ ACTION_SLAYER_SWORD, ACTION_NEW_SLAYER_SWORD }, { ACTION_SLAYER_BLADE, ACTION_NEW_SLAYER_BLADE },
+		{ ACTION_SLAYER_SWORD_2, ACTION_NEW_SLAYER_SWORD_2 }, { ACTION_SLAYER_BLADE_2, ACTION_NEW_SLAYER_BLADE_2 },
+		{ ACTION_SLAYER_MOTOR_MOVE, ACTION_NEW_SLAYER_MOTOR_MOVE }, { ACTION_SLAYER_MOTOR_STAND, ACTION_NEW_SLAYER_MOTOR_STAND },
+		{ ACTION_SLAYER_GUN_SR_SLOW, ACTION_NEW_SLAYER_GUN_SR_SLOW }, { ACTION_SLAYER_GUN_SR_FAST, ACTION_NEW_SLAYER_GUN_SR_FAST },
+		{ ACTION_SLAYER_GUN_AR_SLOW, ACTION_NEW_SLAYER_GUN_AR_SLOW }, { ACTION_SLAYER_GUN_AR_FAST, ACTION_NEW_SLAYER_GUN_AR_FAST },
+		{ ACTION_SLAYER_GUN_SG_SLOW, ACTION_NEW_SLAYER_GUN_SG_SLOW }, { ACTION_SLAYER_GUN_SG_FAST, ACTION_NEW_SLAYER_GUN_SG_FAST },
+		{ ACTION_SLAYER_GUN_SMG_SLOW, ACTION_NEW_SLAYER_GUN_SMG_SLOW }, { ACTION_SLAYER_GUN_SMG_FAST, ACTION_NEW_SLAYER_GUN_SMG_FAST },
+		{ ACTION_SLAYER_SWORD_SLOW, ACTION_NEW_SLAYER_SWORD_SLOW }, { ACTION_SLAYER_SWORD_FAST, ACTION_NEW_SLAYER_SWORD_FAST },
+		{ ACTION_SLAYER_BLADE_SLOW, ACTION_NEW_SLAYER_BLADE_SLOW }, { ACTION_SLAYER_BLADE_FAST, ACTION_NEW_SLAYER_BLADE_FAST },
+		{ ACTION_SLAYER_SWORD_2_SLOW, ACTION_NEW_SLAYER_SWORD_2_SLOW }, { ACTION_SLAYER_SWORD_2_FAST, ACTION_NEW_SLAYER_SWORD_2_FAST },
+		{ ACTION_SLAYER_BLADE_2_SLOW, ACTION_NEW_SLAYER_BLADE_2_SLOW }, { ACTION_SLAYER_BLADE_2_FAST, ACTION_NEW_SLAYER_BLADE_2_FAST },
+		{ 130, 37 },
+	};
+	for (const auto& r : rows)
+		CHECK_EQ(r.to, ConvNewSlayerActionFromSlayerAction(r.from, &slayer));
+	// The rest pass through.
+	for (int action : {int(ACTION_ATTACK), int(ACTION_MAGIC), int(ACTION_DAMAGED), int(ACTION_DIE), 129, 131})
+		CHECK_EQ(action, ConvNewSlayerActionFromSlayerAction(action, &slayer));
+}
+
+TEST(AdvancementAction, TheWearersAdvancedSlayerActionGoesByItsRightHand)
+{
+	Wardrobe wardrobe;
+	Wearer slayer;
+	for (ITEM_CLASS hand : {ITEM_CLASS_SWORD, ITEM_CLASS_BLADE, ITEM_CLASS_AR, ITEM_CLASS_SR, ITEM_CLASS_CROSS})
+	{
+		slayer.Hold(hand);
+		for (int action = 0; action < ACTION_MAX_SLAYER; ++action)
+			CHECK_EQ(ConvAdvancementSlayerAction(action, hand), ConvAdvancementSlayerActionFromSlayerAction(action, &slayer));
+	}
+	// A different hand gives a different answer somewhere.
+	slayer.Hold(ITEM_CLASS_SWORD);
+	const int sword = ConvAdvancementSlayerActionFromSlayerAction(ACTION_STAND, &slayer);
+	slayer.Hold(ITEM_CLASS_AR);
+	CHECK(sword != ConvAdvancementSlayerActionFromSlayerAction(ACTION_STAND, &slayer));
 }
