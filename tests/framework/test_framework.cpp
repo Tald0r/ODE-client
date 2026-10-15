@@ -5,6 +5,9 @@
 #include "test_framework.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 #include <exception>
 #include <vector>
 
@@ -83,11 +86,24 @@ int	RunAll()
 
 	int	failedTests	= 0;
 
+	// TEST_FILTER, when set, runs only the tests whose "Suite.Name" starts
+	// with it (a mutant run's speed-up).
+	const char*	filter	= std::getenv("TEST_FILTER");
+	int			ran		= 0;
+
 	std::printf("Running %d test(s)\n\n", (int)tests.size());
 
 	for (size_t i = 0; i < tests.size(); i++)
 	{
 		const TestCase&	testCase = tests[i];
+
+		if (filter != NULL)
+		{
+			const std::string	fullName = std::string(testCase.suite) + "." + testCase.name;
+			if (fullName.compare(0, std::strlen(filter), filter) != 0)
+				continue;
+		}
+		ran++;
 
 		g_TestFailures = 0;
 
@@ -123,7 +139,7 @@ int	RunAll()
 	}
 
 	std::printf("\n%d test(s), %d check(s), %d failed\n",
-		    (int)tests.size(), g_TotalChecks, failedTests);
+		    ran, g_TotalChecks, failedTests);
 
 	return failedTests;
 }
