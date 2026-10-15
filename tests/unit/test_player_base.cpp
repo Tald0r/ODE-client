@@ -131,13 +131,11 @@ void ReceiveLoopHandler(Packet*, Player*)
 
 void EnsureReceiveLoopHandlerRegistered()
 {
-	// The dispatch table is initialized once per process and rejects duplicate
-	// registrations. Both fixtures use this same handler, in either test order.
-	static const bool registered = [] {
+	// The dispatch table rejects duplicate registrations, and another test
+	// may clear it: bind the handler whenever the table lacks it. Both
+	// fixtures use this same handler, in either test order.
+	if (PacketDispatcher::handlerFor(RECEIVE_LOOP_PACKET_ID) == nullptr)
 		PacketDispatcher::registerHandler(RECEIVE_LOOP_PACKET_ID, &ReceiveLoopHandler);
-		return true;
-	}();
-	(void)registered;
 }
 
 void AppendReceiveLoopFrame(std::vector<unsigned char>& wire,

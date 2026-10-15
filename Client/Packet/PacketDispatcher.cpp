@@ -39,9 +39,3 @@ PacketDispatcher::HandlerFn PacketDispatcher::handlerFor(PacketID_t packetID)
 {
 	return packetID < Packet::PACKET_MAX ? s_Handlers[packetID] : 0;
 }
-
-void PacketDispatcher::clearForTests()
-{
-	for (PacketID_t id = 0; id < Packet::PACKET_MAX; ++id)
-		s_Handlers[id] = 0;
-}

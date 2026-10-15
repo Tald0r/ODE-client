@@ -6204,9 +6204,12 @@ rounds settled* for the host rules). Test fixtures share
     three-sprite SPK file and pair files).
   - Mutants: 16 of 17 are caught. Renaming the host setter away breaks
     the test link.
-  - Unpinned: Node1 and Node2 copying the rest from the stop point `i`.
-    A single-threaded test can only stop a job before it starts
-    (`i` = 0); a stop mid-run needs the loading thread.
+  - Unpinned: Node1 and Node2 copying the rest from the stop point `i`,
+    and Node4 handing back from `i` and `tellg()`. A single-threaded
+    test can only stop a job before it starts (`i` = 0, the start
+    position); a stop mid-run needs the loading thread. (#512's review
+    added pins for Node2's skip and failed open, every job's stop on
+    success, and Node3's cleared hand-back.)
 
 - [x] **4.218 The packet-handler registry:** move
   `PacketHandlerRegistry.cpp`/`.h` into `gamemodel`.
@@ -6218,15 +6221,19 @@ rounds settled* for the host rules). Test fixtures share
   >   since 4.198, and it reaches nothing else of the executable.
   >   `GameInit` still calls `registerClientPacketHandlers()` at start-up.
   > - **The dispatcher** (packetwire) gains `handlerFor(id)`, the bound
-  >   handler or null, and `clearForTests()`, so a test can fill the
-  >   whole table without meeting `test_packet_dispatcher.cpp`'s ids.
+  >   handler or null. Tests clear the table through
+  >   `tests/support/PacketDispatcherTestAccess.h`, a befriended struct
+  >   (the first account added a public `clearForTests()`; #512's review
+  >   moved it out of the production interface). The tests that bind
+  >   one handler now bind it whenever the table lacks it, so a clear
+  >   between tests is safe.
   >
   > R1 is 45 Windows / 43 Ninja.
   - Owner: membership, R1, and `test_packet_handler_registry.cpp`. It
     walks the whole wire inventory (`tests/generated/WireInventory.inc`).
     Every received direction must be bound, except the three peer-file
     replies (`RCConnectVerify`, `RCRequestVerify`, `RCRequestedFile`)
-    whose handlers task 5.1's eighth slice deleted. Of the packets the
+    whose handlers task 5.2's eighth slice deleted. Of the packets the
     client only writes, only `CGConnectSetKey` may be. It also pins that
     a second call registers nothing, and pins the two dispatcher
     additions.

@@ -39,12 +39,10 @@ public:
 	// The handler registered for an id, or null (none, or out of range).
 	static HandlerFn handlerFor(PacketID_t packetID);
 
-	// Tests only: forget every registration, so a test can register the
-	// whole table (PacketHandlerRegistry) without meeting another test's
-	// ids.
-	static void clearForTests();
-
 private:
+	// Tests clear the table through tests/support/PacketDispatcherTestAccess.h.
+	friend struct PacketDispatcherTestAccess;
+
 	static HandlerFn s_Handlers[];
 };
 

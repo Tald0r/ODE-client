@@ -2,11 +2,13 @@
 #include "PacketHandlerRegistry.h"
 #include "PacketDispatcher.h"
 #include "PacketFactory.h"
+#include "PacketDispatcherTestAccess.h"
 
 #define WIRE_INVENTORY_INCLUDES
 #include "../generated/WireInventory.inc"
 #undef WIRE_INVENTORY_INCLUDES
 
+#include <cstdio>
 #include <set>
 #include <string>
 #include <vector>
@@ -15,8 +17,8 @@
 // table that binds each packet the client can receive to its handler. A
 // packet the client accepts but nobody registered disconnects the client
 // on arrival, so the table must cover every received direction (GC, GL,
-// GU, LC, LG, UC, CR, CU, RC) of the wire inventory, except the three
-// peer-file replies whose handlers task 5.1's eighth slice deleted with
+// LC, LG, UC, CR, CU, RC) of the wire inventory, except the three
+// peer-file replies whose handlers task 5.2's eighth slice deleted with
 // the outbound peer side. Of the packets the client only writes (CG, CL)
 // it binds just CGConnectSetKey, which the login paths dispatch to
 // themselves as a no-op.
@@ -48,11 +50,14 @@ bool ClientWrites(const std::string& name)
 	return name.compare(0, 2, "CG") == 0 || name.compare(0, 2, "CL") == 0;
 }
 
-// Clears the dispatcher's table around a test that fills it.
+// Clears the dispatcher's table around a test that fills it. The registry
+// runs once per process (its own flag, which a clear does not reset), so
+// EveryReceivedPacketHasAHandler must be the first call in the process;
+// the framework runs a file's tests in order, and no other test calls it.
 struct CleanTable
 {
-	CleanTable() { PacketDispatcher::clearForTests(); }
-	~CleanTable() { PacketDispatcher::clearForTests(); }
+	CleanTable() { PacketDispatcherTestAccess::Clear(); }
+	~CleanTable() { PacketDispatcherTestAccess::Clear(); }
 };
 
 } // namespace
@@ -85,7 +90,7 @@ TEST(PacketHandlerRegistry, RegisteringAgainChangesNothing)
 	registerClientPacketHandlers();
 	// The registry remembers it ran: a second call registers nothing,
 	// and so meets no double registration.
-	PacketDispatcher::clearForTests();
+	PacketDispatcherTestAccess::Clear();
 	registerClientPacketHandlers();
 	AllFactories all;
 	for (const auto& entry : all.factories)
@@ -100,6 +105,6 @@ TEST(PacketDispatcher, HandlerForAnswersNullPastTheTableAndWhenUnbound)
 	struct Thunk { static void call(Packet*, Player*) {} };
 	PacketDispatcher::registerHandler(0, &Thunk::call);
 	CHECK(PacketDispatcher::handlerFor(0) == &Thunk::call);
-	PacketDispatcher::clearForTests();
+	PacketDispatcherTestAccess::Clear();
 	CHECK(PacketDispatcher::handlerFor(0) == nullptr);
 }

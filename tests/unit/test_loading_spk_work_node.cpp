@@ -140,14 +140,33 @@ TEST(LoadingSPKWorkNode, ALoadedSpriteIsSkipped)
 	CHECK_EQ(2, fixture.Width(0));
 	CHECK_EQ(3, fixture.Width(1));
 
-	// Node3 on a loaded sprite does not even open the file.
+	// Node3 on a loaded sprite does not even open the file, and still
+	// hands nothing back.
 	opened.clear();
 	MLoadingSPKWorkNode3 again(0, 0);
 	again.SetSPK(&fixture.pack, fixture.Spk().c_str());
+	remain = &again;
 	CHECK(again.Execute(remain));
 	CHECK(remain == nullptr);
+	CHECK(!again.IsExecute());
 	CHECK(opened.empty());
 	CHECK_EQ(2, fixture.Width(0));
+
+	// Node2 skips a loaded sprite too.
+	CSpriteFilePositionArray* pairs = new CSpriteFilePositionArray;
+	pairs->Init(2);
+	(*pairs)[0].SpriteID = 0;
+	(*pairs)[0].FilePosition = 0;
+	(*pairs)[1].SpriteID = 3;
+	(*pairs)[1].FilePosition = 30;
+	MLoadingSPKWorkNode2 byPairs(pairs);
+	byPairs.SetSPK(&fixture.pack, fixture.Spk().c_str());
+	remain = &byPairs;
+	CHECK(byPairs.Execute(remain));
+	CHECK(remain == nullptr);
+	CHECK(!byPairs.IsExecute());
+	CHECK_EQ(2, fixture.Width(0));
+	CHECK_EQ(3, fixture.Width(3));
 }
 
 TEST(LoadingSPKWorkNode, AMissingFileFailsTheJob)
@@ -174,6 +193,18 @@ TEST(LoadingSPKWorkNode, AMissingFileFailsTheJob)
 	CHECK(!run.Execute(remain));
 	CHECK(remain == nullptr);
 	CHECK_EQ(0, fixture.Width(0));
+
+	CSpriteFilePositionArray* pairs = new CSpriteFilePositionArray;
+	pairs->Init(1);
+	(*pairs)[0].SpriteID = 1;
+	(*pairs)[0].FilePosition = 14;
+	MLoadingSPKWorkNode2 byPairs(pairs);
+	byPairs.SetSPK(&fixture.pack, missing.c_str());
+	remain = &byPairs;
+	CHECK(!byPairs.Execute(remain));
+	CHECK(remain == nullptr);
+	CHECK(!byPairs.IsExecute());
+	CHECK_EQ(0, fixture.Width(1));
 }
 
 TEST(LoadingSPKWorkNode, AStoppedPairJobHandsBackItsWork)
@@ -229,6 +260,7 @@ TEST(LoadingSPKWorkNode, Node4LoadsARunAndHandsBackItsPlace)
 	MWorkNode* done = node4;
 	CHECK(node4->Execute(done));
 	CHECK(done == nullptr);
+	CHECK(!node4->IsExecute());
 	// Entries 1 and 2 from position 14: the 2- and 3-wide sprites.
 	CHECK_EQ(0, fixture.Width(0));
 	CHECK_EQ(2, fixture.Width(1));

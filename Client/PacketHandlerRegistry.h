@@ -1,6 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Filename    : PacketHandlerRegistry.h
-// Description : the executable's packet-handler composition root
+// Description : the game's packet-handler composition root (gamemodel's
+//               since task 4.218)
 //               (docs/RESTRUCTURING.md task 2.2). Binds packet ids to
 //               their handlers on the PacketDispatcher table; called
 //               from InitSocket() (Client/GameInit.cpp) beside the
