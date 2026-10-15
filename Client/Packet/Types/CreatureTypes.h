@@ -151,7 +151,9 @@ const uint szSex = szBYTE;
 //////////////////////////////////////////////////////////////////////////////
 // 헤어스타일
 //////////////////////////////////////////////////////////////////////////////
-enum HairStyle 
+// A BYTE, as the wire carries it: a style past the three is a value
+// of its own, not undefined behaviour.
+enum HairStyle : BYTE
 { 
 	HAIR_STYLE1 , 
 	HAIR_STYLE2 , 
