@@ -31,15 +31,15 @@ void	DrawFadeOut( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCre
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 
 	//-----------------------------------------------------------
-	// 좌우 잔상
+	// Afterimages to the left and right
 	//-----------------------------------------------------------
 	for (int i=0; i<ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -48,7 +48,7 @@ void	DrawFadeOut( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCre
 			
 			FRAME_ARRAY &FA = (*packs.pAddonFPK)[clothes][action][direction];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > frame)
 			{
 				CFrame &Frame = FA[frame];					
@@ -59,7 +59,7 @@ void	DrawFadeOut( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCre
 				
 				CIndexSprite* pSprite = &(*packs.pAddonSPK)[ sprite ];
 				
-				// 복장Sprite가 초기화 되지 않은 경우
+				// If the clothing sprite is not initialised
 				//							if (pSprite->IsNotInit())
 				//							{								
 				//								LoadFromFileAddonSPK( clothes, action );
@@ -70,7 +70,7 @@ void	DrawFadeOut( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCre
 				pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character's selection rectangle
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -81,7 +81,7 @@ void	DrawFadeOut( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCre
 				int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 				if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 				{
-					// 유니크 아이템이거나 퀘스트 아이템이면
+					// If it is a unique or a quest item
 					//								
 					//								if(colorSet2 == QUEST_ITEM_COLOR)
 					//									colorSet2 = MItem::GetQuestItemColorset();
@@ -96,24 +96,24 @@ void	DrawFadeOut( const CreatureDrawPacks& packs, POINT *pPoint, MCreature* pCre
 				CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 				
 				//-----------------------------------------------------------
-				// 좌우 잔상
+				// Afterimages to the left and right
 				//-----------------------------------------------------------
 				POINT pointTemp2;
 				
 				//CSpriteSurface::SetEffect( CSpriteSurface::EFFECT_NET );
 				//CIndexSprite::SetEffect( CIndexSprite::EFFECT_NET );
 				
-				// 왼쪽
+				// left
 				pointTemp2.x = pointTemp.x - 25;
 				pointTemp2.y = pointTemp.y;
 				packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 2);
 				
-				// 오른쪽
+				// right
 				pointTemp2.x = pointTemp.x + 25;
 				pointTemp2.y = pointTemp.y;
 				packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 2);
 				
-				// 가운데							
+				// centre
 				//m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);	
 				//m_pSurface->BltIndexSprite(&pointTemp, pSprite);	
 			}
@@ -145,15 +145,15 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 
 
 	//-----------------------------------------------------------
-	// 좌우 잔상
+	// Afterimages to the left and right
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_ACAddonOrder[ direction ][ i ];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetACAddonInfo(clothesType);
 
 		if (addonInfo.bAddon )
@@ -180,7 +180,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 					if(action_viva > slayerFPK[clothes].GetSize() -1) continue;
 					try{
 					FRAME_ARRAY& FA = slayerFPK[ clothes ][ action_viva ][ direction ];
-					// 있는 동작인 경우
+					// If the action exists
 					if (FA.GetSize() > frame)
 					{
 						CFrame &Frame = FA[frame];					
@@ -191,7 +191,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 						
 						CIndexSprite* pSprite = &addonISPK[ sprite ];					
 						
-						// 복장Sprite가 초기화 되지 않은 경우
+						// If the clothing sprite is not initialised
 						//							if (pSprite->IsNotInit())
 						//							{								
 						//								LoadFromFileAddonSPK( clothes, action );
@@ -202,7 +202,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 						pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 						
 						//---------------------------------------- 
-						// 캐릭터 선택 사각형 영역 설정
+						// Set the character's selection rectangle
 						//---------------------------------------- 	
 						rect.left	= pointTemp.x;
 						rect.top	= pointTemp.y;
@@ -213,7 +213,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 						int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 						if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 						{
-							// 유니크 아이템이거나 퀘스트 아이템이면
+							// If it is a unique or a quest item
 							//								
 							//								if(colorSet2 == QUEST_ITEM_COLOR)
 							//									colorSet2 = MItem::GetQuestItemColorset();
@@ -228,24 +228,24 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 						CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 						
 						//-----------------------------------------------------------
-						// 좌우 잔상
+						// Afterimages to the left and right
 						//-----------------------------------------------------------
 						POINT pointTemp2;
 						
 						//CSpriteSurface::SetEffect( CSpriteSurface::EFFECT_NET );
 						//CIndexSprite::SetEffect( CIndexSprite::EFFECT_NET );
 						
-						// 왼쪽
+						// left
 						pointTemp2.x = pointTemp.x - 25;
 						pointTemp2.y = pointTemp.y;
 						packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 2);
 						
-						// 오른쪽
+						// right
 						pointTemp2.x = pointTemp.x + 25;
 						pointTemp2.y = pointTemp.y;
 						packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 2);
 						
-						// 가운데							
+						// centre
 						//m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);	
 						//m_pSurface->BltIndexSprite(&pointTemp, pSprite);	
 					}
@@ -261,7 +261,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 				try{
 				FRAME_ARRAY &FA = slayerFPK[clothes][action][direction];
 				
-				// 있는 동작인 경우
+				// If the action exists
 				if (FA.GetSize() > frame)
 				{
 					CFrame &Frame = FA[frame];					
@@ -272,7 +272,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 					
 					CIndexSprite* pSprite = &addonISPK[ sprite ];					
 					
-					// 복장Sprite가 초기화 되지 않은 경우
+					// If the clothing sprite is not initialised
 					//							if (pSprite->IsNotInit())
 					//							{								
 					//								LoadFromFileAddonSPK( clothes, action );
@@ -283,7 +283,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 					pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 					
 					//---------------------------------------- 
-					// 캐릭터 선택 사각형 영역 설정
+					// Set the character's selection rectangle
 					//---------------------------------------- 	
 					rect.left	= pointTemp.x;
 					rect.top	= pointTemp.y;
@@ -294,7 +294,7 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 					int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 					if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 					{
-						// 유니크 아이템이거나 퀘스트 아이템이면
+						// If it is a unique or a quest item
 						//								
 						//								if(colorSet2 == QUEST_ITEM_COLOR)
 						//									colorSet2 = MItem::GetQuestItemColorset();
@@ -309,24 +309,24 @@ void	DrawFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT *pPoint, MCre
 					CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 					
 					//-----------------------------------------------------------
-					// 좌우 잔상
+					// Afterimages to the left and right
 					//-----------------------------------------------------------
 					POINT pointTemp2;
 					
 					//CSpriteSurface::SetEffect( CSpriteSurface::EFFECT_NET );
 					//CIndexSprite::SetEffect( CIndexSprite::EFFECT_NET );
 					
-					// 왼쪽
+					// left
 					pointTemp2.x = pointTemp.x - 25;
 					pointTemp2.y = pointTemp.y;
 					packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 2);
 					
-					// 오른쪽
+					// right
 					pointTemp2.x = pointTemp.x + 25;
 					pointTemp2.y = pointTemp.y;
 					packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 2);
 					
-					// 가운데							
+					// centre
 					//m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);	
 					//m_pSurface->BltIndexSprite(&pointTemp, pSprite);	
 				}
@@ -344,11 +344,11 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 	
 	for (int i=0; i<ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -357,7 +357,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 			
 			FRAME_ARRAY &FA = (*packs.pAddonFPK)[clothes][action][direction];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > frame)
 			{
 				CFrame &Frame = FA[frame];					
@@ -373,7 +373,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 				pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character's selection rectangle
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -384,7 +384,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 				int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 				if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 				{
-					//								// 유니크 아이템이면
+					//								// If it is a unique item
 					//								if(colorSet2 == QUEST_ITEM_COLOR)
 					//									colorSet2 = MItem::GetQuestItemColorset();
 					//								else
@@ -397,7 +397,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 				CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 				
 				//-----------------------------------------------------------
-				// 빠르게 움직이는 중
+				// Moving fast
 				//-----------------------------------------------------------
 				POINT pointTemp2;
 				
@@ -421,7 +421,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 				packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 1);
 				
 				//---------------------------------------- 
-				// 캐릭터 부분 색깔이 바뀌는 경우
+				// If a part of the character changes colour
 				//---------------------------------------- 
 				//if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 				//{
@@ -429,11 +429,11 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 				//									addonInfo.EffectColorSet);
 				//}
 				//---------------------------------------- 
-				// 정상적인 캐릭터 출력
+				// Draw a normal character
 				//---------------------------------------- 
 				//else
 				{								
-					// [새기술] - fake는 fast move일때 무조건 어둡게..
+					// [new skill] - a fake is always darkened when moving fast..
 					if (pCreature->IsFakeCreature())
 					{
 						MFakeCreature *pFakeCreature = dynamic_cast<MFakeCreature*>(pCreature);
@@ -447,7 +447,7 @@ void	DrawFastMove( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pCr
 						packs.pSurface->BltIndexSprite(&pointTemp, pSprite);
 					}						
 					
-					// 정상적인 출력
+					// Draw normally
 					//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 					//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 				}
@@ -479,15 +479,15 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 	
 	
 	//-----------------------------------------------------------
-	// 좌우 잔상
+	// Afterimages to the left and right
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_ACAddonOrder[ direction ][ i ];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetACAddonInfo(clothesType);
 				
 		if (addonInfo.bAddon)
@@ -514,7 +514,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					try{
 					FRAME_ARRAY& FA = slayerFPK[ clothes ][ action_viva ][ direction ];
 					
-					// 있는 동작인 경우
+					// If the action exists
 					if (FA.GetSize() > frame)
 					{
 						CFrame &Frame = FA[frame];					
@@ -530,7 +530,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 						pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 						
 						//---------------------------------------- 
-						// 캐릭터 선택 사각형 영역 설정
+						// Set the character's selection rectangle
 						//---------------------------------------- 	
 						rect.left	= pointTemp.x;
 						rect.top	= pointTemp.y;
@@ -541,7 +541,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 						int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 						if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 						{
-							//								// 유니크 아이템이면
+							//								// If it is a unique item
 							//								if(colorSet2 == QUEST_ITEM_COLOR)
 							//									colorSet2 = MItem::GetQuestItemColorset();
 							//								else
@@ -554,7 +554,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 						CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 						
 						//-----------------------------------------------------------
-						// 빠르게 움직이는 중
+						// Moving fast
 						//-----------------------------------------------------------
 						POINT pointTemp2;
 						
@@ -578,7 +578,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 						packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 1);
 						
 						//---------------------------------------- 
-						// 캐릭터 부분 색깔이 바뀌는 경우
+						// If a part of the character changes colour
 						//---------------------------------------- 
 						//if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 						//{
@@ -586,11 +586,11 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 						//									addonInfo.EffectColorSet);
 						//}
 						//---------------------------------------- 
-						// 정상적인 캐릭터 출력
+						// Draw a normal character
 						//---------------------------------------- 
 						//else
 						{								
-							// [새기술] - fake는 fast move일때 무조건 어둡게..
+							// [new skill] - a fake is always darkened when moving fast..
 							if (pCreature->IsFakeCreature())
 							{
 								MFakeCreature *pFakeCreature = dynamic_cast<MFakeCreature*>(pCreature);
@@ -604,7 +604,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 								packs.pSurface->BltIndexSprite(&pointTemp, pSprite);
 							}						
 							
-							// 정상적인 출력
+							// Draw normally
 							//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 							//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 						}
@@ -621,7 +621,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 				try{
 				FRAME_ARRAY &FA = slayerFPK[clothes][action][direction];
 				
-				// 있는 동작인 경우
+				// If the action exists
 				if (FA.GetSize() > frame)
 				{
 					CFrame &Frame = FA[frame];					
@@ -637,7 +637,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 					
 					//---------------------------------------- 
-					// 캐릭터 선택 사각형 영역 설정
+					// Set the character's selection rectangle
 					//---------------------------------------- 	
 					rect.left	= pointTemp.x;
 					rect.top	= pointTemp.y;
@@ -648,7 +648,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 					if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 					{
-						//								// 유니크 아이템이면
+						//								// If it is a unique item
 						//								if(colorSet2 == QUEST_ITEM_COLOR)
 						//									colorSet2 = MItem::GetQuestItemColorset();
 						//								else
@@ -661,7 +661,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 					
 					//-----------------------------------------------------------
-					// 빠르게 움직이는 중
+					// Moving fast
 					//-----------------------------------------------------------
 					POINT pointTemp2;
 					
@@ -685,7 +685,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, 1);
 					
 					//---------------------------------------- 
-					// 캐릭터 부분 색깔이 바뀌는 경우
+					// If a part of the character changes colour
 					//---------------------------------------- 
 					//if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 					//{
@@ -693,11 +693,11 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 					//									addonInfo.EffectColorSet);
 					//}
 					//---------------------------------------- 
-					// 정상적인 캐릭터 출력
+					// Draw a normal character
 					//---------------------------------------- 
 					//else
 					{								
-						// [새기술] - fake는 fast move일때 무조건 어둡게..
+						// [new skill] - a fake is always darkened when moving fast..
 						if (pCreature->IsFakeCreature())
 						{
 							MFakeCreature *pFakeCreature = dynamic_cast<MFakeCreature*>(pCreature);
@@ -711,7 +711,7 @@ void	DrawFastMoveForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MCr
 							packs.pSurface->BltIndexSprite(&pointTemp, pSprite);
 						}						
 						
-						// 정상적인 출력
+						// Draw normally
 						//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 						//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 					}
@@ -730,11 +730,11 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 		
 	for (int i=0; i<ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -743,7 +743,7 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 	
 			FRAME_ARRAY &FA = (*packs.pAddonFPK)[clothes][action][direction];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > frame)
 			{
 				CFrame &Frame = FA[frame];					
@@ -759,7 +759,7 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 				pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character's selection rectangle
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -768,7 +768,7 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 				pCreature->AddScreenRect( &rect );
 				
 				//---------------------------------------- 
-				// 캐릭터 부분 색깔이 바뀌는 경우
+				// If a part of the character changes colour
 				//---------------------------------------- 
 				//if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 				//{
@@ -776,14 +776,14 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 				//									addonInfo.EffectColorSet);
 				//}
 				//---------------------------------------- 
-				// 정상적인 캐릭터 출력
+				// Draw a normal character
 				//---------------------------------------- 
 				//else
 				{
 					int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 					if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 					{
-						// 유니크 아이템이면
+						// If it is a unique item
 						//									if(colorSet2 == QUEST_ITEM_COLOR)
 						//										colorSet2 = MItem::GetQuestItemColorset();
 						//									else
@@ -810,13 +810,13 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 						
 						//m_pSurface->BltIndexSpriteEffect(&pointTemp, pSprite);
 						
-						// slayer의 invisible인 snipping
+						// a slayer's invisibility is snipping
 						packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, SHIFT_SNIPPING);
 					}
 					else
 					{
 						POINT pointTemp2 = pointTemp;
-						// slayer의 invisible인 snipping
+						// a slayer's invisibility is snipping
 						packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, SHIFT_SNIPPING);
 						
 						CSpriteSurface::s_Value1 = wipeValue;
@@ -835,7 +835,7 @@ void	DrawInvisible( const CreatureDrawPacks& packs, POINT* pPoint, MCreature* pC
 					}
 				}						
 				
-				// 정상적인 출력
+				// Draw normally
 				//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 				//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 				
@@ -867,15 +867,15 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 	
 	
 	//-----------------------------------------------------------
-	// 좌우 잔상
+	// Afterimages to the left and right
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_ACAddonOrder[ direction ][ i ];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetACAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -902,7 +902,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 					try{
 					FRAME_ARRAY& FA = slayerFPK[ clothes ][ action_viva ][ direction ];
 					
-					// 있는 동작인 경우
+					// If the action exists
 					if (FA.GetSize() > frame)
 					{
 						CFrame &Frame = FA[frame];					
@@ -918,7 +918,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 						pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 						
 						//---------------------------------------- 
-						// 캐릭터 선택 사각형 영역 설정
+						// Set the character's selection rectangle
 						//---------------------------------------- 	
 						rect.left	= pointTemp.x;
 						rect.top	= pointTemp.y;
@@ -927,7 +927,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 						pCreature->AddScreenRect( &rect );
 						
 						//---------------------------------------- 
-						// 캐릭터 부분 색깔이 바뀌는 경우
+						// If a part of the character changes colour
 						//---------------------------------------- 
 						//if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 						//{
@@ -935,14 +935,14 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 						//									addonInfo.EffectColorSet);
 						//}
 						//---------------------------------------- 
-						// 정상적인 캐릭터 출력
+						// Draw a normal character
 						//---------------------------------------- 
 						//else
 						{
 							int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 							if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 							{
-								// 유니크 아이템이면
+								// If it is a unique item
 								//									if(colorSet2 == QUEST_ITEM_COLOR)
 								//										colorSet2 = MItem::GetQuestItemColorset();
 								//									else
@@ -969,13 +969,13 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 								
 								//m_pSurface->BltIndexSpriteEffect(&pointTemp, pSprite);
 								
-								// slayer의 invisible인 snipping
+								// a slayer's invisibility is snipping
 								packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, SHIFT_SNIPPING);
 							}
 							else
 							{
 								POINT pointTemp2 = pointTemp;
-								// slayer의 invisible인 snipping
+								// a slayer's invisibility is snipping
 								packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, SHIFT_SNIPPING);
 								
 								CSpriteSurface::s_Value1 = wipeValue;
@@ -994,7 +994,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 							}
 						}						
 						
-						// 정상적인 출력
+						// Draw normally
 						//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 						//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 						
@@ -1011,7 +1011,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 				try{
 				FRAME_ARRAY &FA = slayerFPK[clothes][action][direction];
 				
-				// 있는 동작인 경우
+				// If the action exists
 				if (FA.GetSize() > frame)
 				{
 					CFrame &Frame = FA[frame];					
@@ -1027,7 +1027,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 					pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 					
 					//---------------------------------------- 
-					// 캐릭터 선택 사각형 영역 설정
+					// Set the character's selection rectangle
 					//---------------------------------------- 	
 					rect.left	= pointTemp.x;
 					rect.top	= pointTemp.y;
@@ -1036,7 +1036,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 					pCreature->AddScreenRect( &rect );
 					
 					//---------------------------------------- 
-					// 캐릭터 부분 색깔이 바뀌는 경우
+					// If a part of the character changes colour
 					//---------------------------------------- 
 					//if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 					//{
@@ -1044,14 +1044,14 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 					//									addonInfo.EffectColorSet);
 					//}
 					//---------------------------------------- 
-					// 정상적인 캐릭터 출력
+					// Draw a normal character
 					//---------------------------------------- 
 					//else
 					{
 						int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 						if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 						{
-							// 유니크 아이템이면
+							// If it is a unique item
 							//									if(colorSet2 == QUEST_ITEM_COLOR)
 							//										colorSet2 = MItem::GetQuestItemColorset();
 							//									else
@@ -1078,13 +1078,13 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 							
 							//m_pSurface->BltIndexSpriteEffect(&pointTemp, pSprite);
 							
-							// slayer의 invisible인 snipping
+							// a slayer's invisibility is snipping
 							packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, SHIFT_SNIPPING);
 						}
 						else
 						{
 							POINT pointTemp2 = pointTemp;
-							// slayer의 invisible인 snipping
+							// a slayer's invisibility is snipping
 							packs.pSurface->BltIndexSpriteDarkness(&pointTemp2, pSprite, SHIFT_SNIPPING);
 							
 							CSpriteSurface::s_Value1 = wipeValue;
@@ -1103,7 +1103,7 @@ void	DrawInvisibleForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint, MC
 						}
 					}						
 					
-					// 정상적인 출력
+					// Draw normally
 					//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 					//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 					
@@ -1122,11 +1122,11 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 	
 	for (int i=0; i<ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -1135,7 +1135,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 			
 			FRAME_ARRAY &FA = (*packs.pAddonFPK)[clothes][action][direction];
 			
-			// 있는 동작인 경우
+			// If the action exists
 			if (FA.GetSize() > frame)
 			{
 				CFrame &Frame = FA[frame];					
@@ -1151,7 +1151,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 				pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character's selection rectangle
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -1161,7 +1161,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 				
 				
 				//------------------------------------------------------
-				// 잔상 추가
+				// Add the afterimages
 				//------------------------------------------------------
 				if (clothesType==ADDON_RIGHTHAND)
 				{			
@@ -1190,7 +1190,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 						CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 						
 						//---------------------------------------- 
-						// f frame 전
+						// f frames before
 						//---------------------------------------- 
 						CFrame &Frame_f = FA[frame-f];					
 						int sprite_f	= Frame_f.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
@@ -1212,7 +1212,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 				}
 				
 				//---------------------------------------- 
-				// 캐릭터 부분 색깔이 바뀌는 경우
+				// If a part of the character changes colour
 				//---------------------------------------- 
 				if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 				{
@@ -1220,7 +1220,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 						addonInfo.EffectColorSet);
 				}
 				//---------------------------------------- 
-				// 정상적인 캐릭터 출력
+				// Draw a normal character
 				//---------------------------------------- 
 				else
 				{
@@ -1235,7 +1235,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 					
 					CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 					
-					// 어둡게 찍기
+					// Draw darkened
 					if (pCreature->IsFade())
 					{
 						packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -1246,7 +1246,7 @@ void	DrawWeaponFadeOut( const CreatureDrawPacks& packs, POINT* pPoint, MCreature
 					}
 				}						
 				
-				// 정상적인 출력
+				// Draw normally
 				//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 				//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 				
@@ -1286,15 +1286,15 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 	
 	
 	//-----------------------------------------------------------
-	// 좌우 잔상
+	// Afterimages to the left and right
 	//-----------------------------------------------------------
 	for (int i=0; i<AC_ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the creature's current direction...
+		// the order the clothes are drawn in can differ.
 		clothesType = MCreatureWear::s_ACAddonOrder[ direction ][ i ];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// Draw the i-th kind of clothing if it is worn.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetACAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -1321,7 +1321,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 					try{
 					FRAME_ARRAY& FA = slayerFPK[ clothes ][ action_viva ][ direction ];
 					
-					// 있는 동작인 경우
+					// If the action exists
 					if (FA.GetSize() > frame)
 					{
 						CFrame &Frame = FA[frame];					
@@ -1337,7 +1337,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 						pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 						
 						//---------------------------------------- 
-						// 캐릭터 선택 사각형 영역 설정
+						// Set the character's selection rectangle
 						//---------------------------------------- 	
 						rect.left	= pointTemp.x;
 						rect.top	= pointTemp.y;
@@ -1347,7 +1347,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 						
 						
 						//------------------------------------------------------
-						// 잔상 추가
+						// Add the afterimages
 						//------------------------------------------------------
 						if (clothesType==AC_ADDON_RIGHTHAND)	// the AC order's slot (ADDON_RIGHTHAND is AC_ADDON_SHOULDER)
 						{			
@@ -1376,7 +1376,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 								CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 								
 								//---------------------------------------- 
-								// f frame 전
+								// f frames before
 								//---------------------------------------- 
 								CFrame &Frame_f = FA[frame-f];					
 								int sprite_f	= Frame_f.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
@@ -1398,7 +1398,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 						}
 						
 						//---------------------------------------- 
-						// 캐릭터 부분 색깔이 바뀌는 경우
+						// If a part of the character changes colour
 						//---------------------------------------- 
 						if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 						{
@@ -1406,7 +1406,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 								addonInfo.EffectColorSet);
 						}
 						//---------------------------------------- 
-						// 정상적인 캐릭터 출력
+						// Draw a normal character
 						//---------------------------------------- 
 						else
 						{
@@ -1421,7 +1421,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 							
 							CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 							
-							// 어둡게 찍기
+							// Draw darkened
 							if (pCreature->IsFade())
 							{
 								packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -1432,7 +1432,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 							}
 						}						
 						
-						// 정상적인 출력
+						// Draw normally
 						//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 						//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 					}
@@ -1449,7 +1449,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 				try{
 				FRAME_ARRAY &FA = slayerFPK[clothes][action][direction];
 				
-				// 있는 동작인 경우
+				// If the action exists
 				if (FA.GetSize() > frame)
 				{
 					CFrame &Frame = FA[frame];					
@@ -1465,7 +1465,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 					pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 					
 					//---------------------------------------- 
-					// 캐릭터 선택 사각형 영역 설정
+					// Set the character's selection rectangle
 					//---------------------------------------- 	
 					rect.left	= pointTemp.x;
 					rect.top	= pointTemp.y;
@@ -1475,7 +1475,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 					
 					
 					//------------------------------------------------------
-					// 잔상 추가
+					// Add the afterimages
 					//------------------------------------------------------
 					if (clothesType==AC_ADDON_RIGHTHAND)	// the AC order's slot (ADDON_RIGHTHAND is AC_ADDON_SHOULDER)
 					{			
@@ -1504,7 +1504,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 							CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 							
 							//---------------------------------------- 
-							// f frame 전
+							// f frames before
 							//---------------------------------------- 
 							CFrame &Frame_f = FA[frame-f];					
 							int sprite_f	= Frame_f.GetSpriteID();	//m_AddonFPK[clothes][action][direction][frame].GetSpriteID();
@@ -1526,7 +1526,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 					}
 					
 					//---------------------------------------- 
-					// 캐릭터 부분 색깔이 바뀌는 경우
+					// If a part of the character changes colour
 					//---------------------------------------- 
 					if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 					{
@@ -1534,7 +1534,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 							addonInfo.EffectColorSet);
 					}
 					//---------------------------------------- 
-					// 정상적인 캐릭터 출력
+					// Draw a normal character
 					//---------------------------------------- 
 					else
 					{
@@ -1549,7 +1549,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 						
 						CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 						
-						// 어둡게 찍기
+						// Draw darkened
 						if (pCreature->IsFade())
 						{
 							packs.pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -1560,7 +1560,7 @@ void	DrawWeaponFadeOutForACSlayer( const CreatureDrawPacks& packs, POINT* pPoint
 						}
 					}						
 					
-					// 정상적인 출력
+					// Draw normally
 					//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 					//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 					
@@ -1590,14 +1590,14 @@ void	DrawCentauroTurret( const CreatureDrawPacks& packs, POINT* pPoint, MCreatur
 	{
 		POINT pointGap[8] = 
 		{
-			{ 11, 6 },	// 좌
-			{ 8, 2 },	// 좌하
-			{ 0, 0 },	// 하
-			{ -7, 2 },	// 우하
-			{ -10, 6 },	// 우
-			{ -7, 10 },	// 우상
-			{ 0, 12 },	// 상
-			{ 8, 10 },	// 좌상
+			{ 11, 6 },	// left
+			{ 8, 2 },	// down-left
+			{ 0, 0 },	// down
+			{ -7, 2 },	// down-right
+			{ -10, 6 },	// right
+			{ -7, 10 },	// up-right
+			{ 0, 12 },	// up
+			{ 8, 10 },	// up-left
 		};
 		cx += pointGap[pFakeCreature->GetDirection()].x;
 		cy += pointGap[pFakeCreature->GetDirection()].y;
@@ -1611,7 +1611,7 @@ void	DrawCentauroTurret( const CreatureDrawPacks& packs, POINT* pPoint, MCreatur
 		cy -= g_DirectionValue[direct].y*pFakeCreature->GetTurretDelay()*2;
 	}
 	
-	// 좌표 보정
+	// Adjust the coordinates
 	pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 	pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 	
@@ -1659,7 +1659,7 @@ void	DrawInstallTurret( const CreatureDrawPacks& packs, POINT *pPoint, MCreature
 		pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();			
 		
 		//---------------------------------------- 		
-		// 캐릭터 선택 사각형 영역 설정
+		// Set the character's selection rectangle
 		//---------------------------------------- 	
 		rect.left	= pointTemp.x;
 		rect.top	= pointTemp.y;
