@@ -4876,7 +4876,14 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature = dynamic_cast<MFakeCreature *>(g_pZone->GetFakeCreature(pCreature->GetPetID()));
 
 					if(pFakeCreature == NULL)
+					{
+						// another creature's item was made above; the player's is the inventory's
+						if(pCreature != g_pPlayer)
+						{
+							delete pItem;
+						}
 						return;
+					}
 
 					if(pCreature == g_pPlayer)		// if it is the player's own pet
 					{
@@ -5018,6 +5025,12 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 					pFakeCreature->SetTraceID( objectID ); 
 					pFakeCreature->SyncTurretDirection();
 					
+					// another creature's pet owns the item it had (see ~MFakeCreature); the player's is the inventory's
+					if(pCreature != g_pPlayer)
+					{
+						delete pFakeCreature->GetPetItem();
+					}
+
 					// the FakeCreature was added successfully
 					pFakeCreature->SetPetItem(pItem);
 

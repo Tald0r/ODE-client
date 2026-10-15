@@ -1562,8 +1562,9 @@ TEST(PacketPlayerItems, PetInfoWithoutThePlayersItemMakesNoPet)
 
 //----------------------------------------------------------------------
 // Another creature's pet it already has keeps its creature type and takes
-// the new item: the item it had is not freed (the test frees it). A pet
-// id the zone has no pet for ends the info with nothing made.
+// the new item; the item it had, which the pet owned, is freed. A pet id
+// the zone has no pet for ends the info with nothing made: the new item
+// is freed.
 //----------------------------------------------------------------------
 TEST(PacketPlayerItems, PetInfoForAnotherCreaturesPetItAlreadyHas)
 {
@@ -1584,13 +1585,44 @@ TEST(PacketPlayerItems, PetInfoForAnotherCreaturesPetItAlreadyHas)
 	CHECK_EQ(CREATURETYPE_SLAYER_MALE, pPet->GetCreatureType());
 	CHECK(pPet->GetPetItem() != NULL && pPet->GetPetItem() != pOld);
 	CHECK(pPet->GetPetItem() != NULL && pPet->GetPetItem()->GetItemType() == 2 && pPet->GetPetItem()->GetNumber() == 7);
-	CHECK_EQ(0, Count("destroyed|880"));
-	delete pOld;
+	CHECK_EQ(1, Count("destroyed|880"));
 
 	pOwner->SetPetID(4242);
 	calls.clear();
 	SetPetInfo(&pet, 300);
 	CHECK_EQ(1, scene.zone->GetFakeCreatureNumber());
 	CHECK_EQ(4242, pOwner->GetPetID());
+	// The new item never took an id.
+	CHECK(Same({ "destroyed|" + N(OBJECTID_NULL) }));
+}
+
+//----------------------------------------------------------------------
+// The player's pet items are its inventory's: the one its pet held before
+// another is named, and one named for a pet the zone no longer has, stay
+// there unfreed.
+//----------------------------------------------------------------------
+TEST(PacketPlayerItems, PetInfoLeavesThePlayersPetItemsToTheInventory)
+{
+	Scene scene;
+	testfw::MutableRow(scene.creatureTypes, 700).Name = "Cat";
+	scene.zone->AddCreature(scene.me);
+	MItem* pOld = scene.Hold(ITEM_CLASS_PET_ITEM, 3, 881, 1, 0);
+	// PetInfo has no setter for its item's id, so the item named is id 0.
+	MItem* pNamed = scene.Hold(ITEM_CLASS_PET_ITEM, 3, 0, 0, 0);
+	MFakeCreature* pPet = PetOf(scene, scene.me, dynamic_cast<MPetItem*>(pOld));
+	PetInfo pet = Pet(3, 9);
+	calls.clear();
+
+	SetPetInfo(&pet, 77);
+
+	CHECK(pPet->GetPetItem() == pNamed);
+	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(881)) == pOld);
+	CHECK_EQ(0, Count("destroyed|881"));
+
+	scene.me->SetPetID(4242);
+	calls.clear();
+	SetPetInfo(&pet, 77);
+	CHECK(scene.inventory.GetItem(TYPE_OBJECTID(0)) == pNamed);
 	CHECK(Same({}));
+	scene.zone->RemoveCreature(77);
 }
