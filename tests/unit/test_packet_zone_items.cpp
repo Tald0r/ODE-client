@@ -827,17 +827,17 @@ TEST(PacketZoneItems, AnyOtherItemsSubItemsAreLeftInThePacket)
 //----------------------------------------------------------------------
 // AddItemToZone: a new item the zone refuses
 //----------------------------------------------------------------------
-TEST(PacketZoneItems, AnotherItemOnTheCellMakesWayButTheNewOneIsNotReturned)
+TEST(PacketZoneItems, AnotherItemOnTheCellMakesWayForTheNewOne)
 {
 	Scene scene;
 	scene.Items(ITEM_CLASS_POTION, 1);
 	std::unique_ptr<GCDropItemToZone> first = Drop(301, ITEM_CLASS_POTION, 0, 7, 8);
 	CHECK(AddItemToZone(first.get(), FALSE) != NULL);
 	std::unique_ptr<GCDropItemToZone> second = Drop(302, ITEM_CLASS_POTION, 0, 7, 8);
-	// Recorded defect (PacketFunction.cpp:1219-1278): the new item is in
-	// the zone, yet NULL comes back, so GCAddInstalledMineToZone's handler
-	// never marks a mine laid this way installed.
-	CHECK(AddItemToZone(second.get(), FALSE) == NULL);
+	// The new item laid is returned, as GCAddInstalledMineToZone's handler
+	// needs to mark a mine laid this way installed.
+	MItem* pItem = AddItemToZone(second.get(), FALSE);
+	CHECK(pItem != NULL && pItem == scene.zone->GetItem(302));
 	CHECK(scene.zone->GetItem(301) == NULL);
 	CHECK(scene.Destroyed(301));
 	CHECK(scene.zone->GetItem(302) != NULL);
@@ -863,11 +863,11 @@ TEST(PacketZoneItems, TheSameItemOnAnotherCellMovesThere)
 	std::unique_ptr<GCDropItemToZone> first = Drop(301, ITEM_CLASS_POTION, 0, 7, 8);
 	MItem* pOld = AddItemToZone(first.get(), FALSE);
 	std::unique_ptr<GCDropItemToZone> moved = Drop(301, ITEM_CLASS_POTION, 0, 9, 8);
-	// Recorded defect, as above (PacketFunction.cpp:1256-1278): laid, yet
-	// NULL.
-	CHECK(AddItemToZone(moved.get(), FALSE) == NULL);
+	// Laid, and returned.
+	MItem* pItem = AddItemToZone(moved.get(), FALSE);
 	MItem* pNow = scene.zone->GetItem(301);
 	CHECK(pNow != NULL && pNow != pOld);
+	CHECK(pItem == pNow);
 	CHECK_EQ(301, int(scene.zone->GetItemID(9, 8)));
 	CHECK(scene.zone->GetItemID(7, 8) == OBJECTID_NULL);
 	CHECK_EQ(1u, itemsDestroyed.size());

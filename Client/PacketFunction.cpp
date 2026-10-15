@@ -1233,6 +1233,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 						// remove memory
 						delete pItem;
 					}		
+					else
+					{
+						return pItem;
+					}
 				}
 				else
 				{
@@ -1270,6 +1274,10 @@ AddItemToZone(GCAddItemToZone* pPacket, BOOL bDropping)
 					// remove memory
 					delete pItem;
 				}		
+				else
+				{
+					return pItem;
+				}
 			}
 			else
 			{
