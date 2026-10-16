@@ -95,8 +95,7 @@ MItem* NewItemOfClass(ITEM_CLASS itemClass);
 // slayer's quick item size and the trade window's branches reach only the
 // UI: they run here and do nothing.
 //
-// Not run: the immediate logout (ExecuteLogout starts the title screen);
-// a gear slot outside its enum (the cast at L3873-3889 is undefined).
+// Not run: the immediate logout (ExecuteLogout starts the title screen).
 namespace {
 
 std::vector<std::string> calls;
@@ -2283,6 +2282,41 @@ TEST(UIMessages2DropToGear, AnItemTheGearRefusesLeavesTheMouseAnyway)
 	CHECK(Same({"skills refreshed", "to gear|802|0"}));
 	CHECK(scene.mouse.GetPickUpItem() == NULL);
 	CHECK_EQ(0, scene.slayerGear.GetItemNum());
+}
+
+TEST(UIMessages2DropToGear, ASlotPastTheRacesGearEnumIsRefused)
+{
+	// Before anything moves: the slot is cast to the race's gear enum, and
+	// 256 past a slot would land in it through the gear's BYTE.
+	Scene scene;
+	MItem* pNecklace = scene.OnMouse(ITEM_CLASS_NECKLACE, 801);
+	for (intptr_t slot : {intptr_t(256 + MSlayerGear::GEAR_SLAYER_NECKLACE), intptr_t(MSlayerGear::MAX_GEAR_SLAYER + 1), intptr_t(-1)})
+		scene.Execute(UI_ITEM_DROP_TO_GEAR, slot);
+	CHECK(calls.empty());
+	CHECK(scene.mouse.GetPickUpItem() == pNecklace);
+	CHECK_EQ(0, scene.slayerGear.GetItemNum());
+	// Each race's own enum, with its own item on the mouse.
+	scene.mouse.DropItem();
+	scene.me->SetCreatureType(CREATURETYPE_VAMPIRE_MALE1);
+	MItem* pVampires = scene.Item(ITEM_CLASS_VAMPIRE_NECKLACE, 802, 0, FLAG_RACE_VAMPIRE);
+	scene.mouse.PickUpItem(pVampires, 0, 0);
+	calls.clear();
+	scene.Execute(UI_ITEM_DROP_TO_GEAR, 256 + MVampireGear::GEAR_VAMPIRE_NECKLACE);
+	scene.Execute(UI_ITEM_DROP_TO_GEAR, MVampireGear::MAX_GEAR_VAMPIRE + 1);
+	CHECK(calls.empty());
+	CHECK(scene.mouse.GetPickUpItem() == pVampires);
+	CHECK_EQ(0, scene.vampireGear.GetItemNum());
+	scene.mouse.DropItem();
+	scene.me->SetCreatureType(CREATURETYPE_OUSTERS);
+	MItem* pOusters = scene.Item(ITEM_CLASS_OUSTERS_PENDENT, 803, 0, FLAG_RACE_OUSTERS);
+	scene.mouse.PickUpItem(pOusters, 0, 0);
+	calls.clear();
+	scene.Execute(UI_ITEM_DROP_TO_GEAR, 256 + MOustersGear::GEAR_OUSTERS_PENDENT2);
+	scene.Execute(UI_ITEM_DROP_TO_GEAR, MOustersGear::MAX_GEAR_OUSTERS + 1);
+	CHECK(calls.empty());
+	CHECK(scene.mouse.GetPickUpItem() == pOusters);
+	CHECK_EQ(0, scene.oustersGear.GetItemNum());
+	CHECK(scene.wire.Sent().empty());
 }
 
 TEST(UIMessages2DropToGear, NothingIsWornOutsideTheGameDeadWatchingWaitingOrMoving)
