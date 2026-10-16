@@ -2,6 +2,7 @@
 #include "gamemodel_world.h"
 #include "type_table_access.h"
 #include "UIFunction.h"
+#include "GameUIBuilders.h"
 #include "MPlayer.h"
 #include "MZone.h"
 #include "MParty.h"
@@ -40,6 +41,7 @@
 #include "VS_UI_item.h"
 #include "PacketFunction.h"
 #include "CrtCompat.h"
+#include "ColorSetDef.h"
 #include "GuildInfo.h"
 #include "GuildMemberInfo.h"
 #include "Packet/PCSlayerInfo.h"
@@ -53,6 +55,7 @@
 #include "Gpackets/GCShowGuildMemberInfo.h"
 #include "Gpackets/GCShowUnionInfo.h"
 
+#include <array>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -919,6 +922,446 @@ TEST(GameUI2, ASlotPastTheUsersThreeCharacterNamesIsRefused)
 		const std::string said = Stderr([&]() { UI_SetCharacter(slot, &ousters); });
 		CHECK(said.empty());
 		CHECK(before == Combat(g_StatusManager));
+	}
+}
+
+//----------------------------------------------------------------------
+// What a slot holds (MakeCharacterSlot), read straight: the title's
+// character manager it goes to is not running here.
+//----------------------------------------------------------------------
+namespace {
+
+// The combat stats a slot shows are the status manager's, which the
+// slot gave the character's: none zero, so a stat left out shows.
+void CheckCombat(const S_SLOT& slot, const Combat& expected)
+{
+	CHECK(expected == Combat(g_StatusManager));
+	CHECK(expected.minDam != 0 && expected.maxDam != 0 && expected.defense != 0 && expected.protection != 0 && expected.toHit != 0);
+	CHECK_EQ(expected.minDam, slot.DAM2);
+	CHECK_EQ(expected.maxDam, slot.DAM);
+	CHECK_EQ(expected.defense, slot.DEFENSE);
+	CHECK_EQ(expected.protection, slot.PROTECTION);
+	CHECK_EQ(expected.toHit, slot.TOHIT);
+}
+
+// An alignment as the login packet sends it (a negative one in 16
+// bits), the slot's number and its step.
+struct SentAlignment { Alignment_t sent; int number; ALIGNMENT step; };
+const SentAlignment alignments[] = {
+	{ 65536 - 5000, -5000, UI_EVIL },
+	{ 5000, 5000, UI_GOOD },
+	// Past 10000 and below 32768 is no negative one: past good+.
+	{ 10001, 10001, UI_EVIL_PLUS },
+};
+
+// The option rows the colours below name: a colour set in range for
+// each part, one past the sets and one below them; and the unique
+// colour's base.
+void ColorRows()
+{
+	g_pItemOptionTable->Init(8);
+	const int sets[] = { 0, 101, 102, 103, 104, 105, MAX_COLORSET + 100, -3 };
+	for (int row = 0; row < 8; ++row)
+		testfw::MutableRow(*g_pItemOptionTable, row).ColorSet = sets[row];
+	g_pClientConfig->UniqueItemColorSet = 250;
+}
+
+} // namespace
+
+TEST(GameUI2, ASlayerSlotHoldsTheCharactersStats)
+{
+	SlotScene scene;
+	for (Sex sex : {MALE, FEMALE})
+		for (const SentAlignment& alignment : alignments)
+		{
+			PCSlayerInfo info = Slayer();
+			info.setSex(sex);
+			info.setAlignment(alignment.sent);
+			info.setSTRExp(301);
+			info.setDEXExp(302);
+			info.setINTExp(303);
+			info.setSkillDomainLevel(SKILL_DOMAIN_GUN, 44);
+			info.setSkillDomainLevel(SKILL_DOMAIN_HEAL, 55);
+			info.setSkillDomainLevel(SKILL_DOMAIN_ENCHANT, 66);
+			info.setFame(7777);
+			info.setRank(9);
+			info.setAdvancementLevel(12);
+			scene.Unlike();
+			const S_SLOT slot = MakeCharacterSlot("Park", &info);
+			CheckCombat(slot, Expected(info));
+			CHECK(std::string("Park") == slot.sz_name);
+			CHECK(slot.sz_guild_name.empty());
+			CHECK(RACE_SLAYER == slot.Race);
+			CHECK_EQ(sex == FEMALE, slot.bl_female);
+			CHECK_EQ(alignment.number, slot.alignment_num);
+			CHECK_EQ(int(alignment.step), int(slot.alignment));
+			// The slot is shown at full health.
+			CHECK_EQ(80, slot.HP_MAX);
+			CHECK_EQ(80, slot.HP);
+			CHECK_EQ(40, slot.MP_MAX);
+			CHECK_EQ(40, slot.MP);
+			CHECK_EQ(30, slot.STR_PURE);
+			CHECK_EQ(57, slot.DEX_PURE);
+			CHECK_EQ(10, slot.INT_PURE);
+			CHECK_EQ(301, slot.STR_EXP_REMAIN);
+			CHECK_EQ(302, slot.DEX_EXP_REMAIN);
+			CHECK_EQ(303, slot.INT_EXP_REMAIN);
+			CHECK(slot.STATUS.empty());
+			CHECK_EQ(12, slot.m_AdvancementLevel);
+			CHECK_EQ(7777, slot.FAME);
+			CHECK_EQ(9, slot.GRADE);
+			// A slayer's level is 1; the domains have their own.
+			CHECK_EQ(1, slot.level);
+			CHECK_EQ(33, slot.DOMAIN_SWORD);
+			CHECK_EQ(11, slot.DOMAIN_BLADE);
+			CHECK_EQ(44, slot.DOMAIN_GUN);
+			CHECK_EQ(55, slot.DOMAIN_HEAL);
+			CHECK_EQ(66, slot.DOMAIN_ENCHANT);
+		}
+}
+
+TEST(GameUI2, ASlayerSlotsOutlookIsItsTablesEntryForItsSex)
+{
+	// Each outlook field picks its table's entry (the two sexes' enums
+	// run in step); a value past a table is its first entry, and every
+	// weapon of a family draws as the family.
+	SlotScene scene;
+	const int faces[] = { M_FACE1, M_FACE2, M_FACE3, M_FACE1 };
+	const int hairs[] = { M_HAIR1, M_HAIR2, M_HAIR3, M_HAIR1 };
+	const int helmets[] = { M_NO_WEAR, M_OLD_HELMET, M_NEW_HELMET, M_NO_WEAR };
+	const int coats[] = { M_UP_BODY, M_OLD_COAT, M_NEW_COAT, M_NEW2_COAT, M_UP_BODY, M_UP_BODY, M_UP_BODY, M_UP_BODY };
+	const int trousers[] = { M_DOWN_BODY, M_OLD_TROUSER, M_NEW_TROUSER, M_NEW2_TROUSER, M_DOWN_BODY, M_DOWN_BODY, M_DOWN_BODY, M_DOWN_BODY };
+	const int shields[] = { M_NO_WEAR, M_BRONZE_SHIELD, M_DRAGON_SHIELD, M_NO_WEAR };
+	const int weapons[WEAPON_MAX] = { M_NO_WEAR, M_SWORD, M_SWORD, M_BLADE, M_BLADE, M_SR, M_SR, M_SR, M_SR,
+		M_AR, M_AR, M_AR, M_AR, M_SG, M_SMG, M_CROSS, M_CROSS, M_MACE, M_MACE };
+	CHECK_EQ(int(M_NO_WEAR), int(W_NO_WEAR));
+	CHECK_EQ(int(M_HAIR3), int(W_HAIR3));
+	for (Sex sex : {MALE, FEMALE})
+		for (int i = 0; i < WEAPON_MAX; ++i)
+		{
+			// Every value of each field, the ones past the tables among them.
+			PCSlayerInfo info = Slayer();
+			info.setSex(sex);
+			info.setHairStyle(HairStyle(i % 4));
+			info.setHelmetType(HelmetType((i + 1) % 4));
+			info.setJacketType(JacketType(i % 8));
+			info.setPantsType(PantsType((i + 3) % 8));
+			info.setShieldType(ShieldType((i + 2) % 4));
+			info.setWeaponType(WeaponType(i));
+			const S_SLOT slot = MakeCharacterSlot("Kim", &info);
+			auto check = [&](const auto& worn)
+			{
+				CHECK_EQ(faces[i % 4], int(worn.face));
+				CHECK_EQ(hairs[i % 4], int(worn.hair));
+				CHECK_EQ(helmets[(i + 1) % 4], int(worn.helmet));
+				CHECK_EQ(coats[i % 8], int(worn.coat));
+				CHECK_EQ(trousers[(i + 3) % 8], int(worn.trouser));
+				CHECK_EQ(shields[(i + 2) % 4], int(worn.left));
+				CHECK_EQ(weapons[i], int(worn.right));
+			};
+			if (sex == FEMALE)
+				check(slot.woman_info);
+			else
+				check(slot.man_info);
+		}
+}
+
+TEST(GameUI2, ASlayerSlotsColoursAreUniqueQuestOrTheOptionsColourSet)
+{
+	// A worn part's colour is the cycling unique colour, the quest colour
+	// or its option row's colour set; a part not worn (helmet, shield,
+	// weapon) is colour 0. Each but the trousers' is then held to the
+	// colour sets; the skin and hair colours are the packet's.
+	SlotScene scene;
+	ColorRows();
+	const int unique = MItem::GetUniqueItemColorset();
+	CHECK(unique >= 250 && unique < 250 + MAX_COLORSET_SEED_MODIFY);
+	PCSlayerInfo info = Slayer();
+	info.setHelmetType(HELMET1);
+	info.setShieldType(SHIELD1);
+	info.setWeaponType(WEAPON_SWORD);
+	auto color = [&](Color_t helmet, Color_t jacket, Color_t pants, Color_t shield, Color_t weapon, Color_t skin, Color_t hair)
+	{
+		info.setHelmetColor(helmet);
+		info.setJacketColor(jacket);
+		info.setPantsColor(pants);
+		info.setShieldColor(shield);
+		info.setWeaponColor(weapon);
+		info.setSkinColor(skin);
+		info.setHairColor(hair);
+		return MakeCharacterSlot("Kim", &info);
+	};
+	struct Colors { int helmet, coat, trouser, left, right, skin, hair; };
+	auto same = [](const S_SLOT& slot, const Colors& c)
+	{
+		return slot.helmet_color == c.helmet && slot.coat_color == c.coat && slot.trouser_color == c.trouser
+			&& slot.left_color == c.left && slot.right_color == c.right && slot.skin_color == c.skin && slot.hair_color == c.hair;
+	};
+	const int last = MAX_COLORSET - 1;
+	// The option rows' colour sets.
+	CHECK(same(color(1, 2, 3, 4, 5, 106, 107), {101, 102, 103, 104, 105, 106, 107}));
+	// Unique and quest; the skin and hair keep the packet's mark.
+	CHECK(same(color(UNIQUE_ITEM_COLOR, UNIQUE_ITEM_COLOR, UNIQUE_ITEM_COLOR, UNIQUE_ITEM_COLOR, UNIQUE_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR),
+		{unique, unique, unique, unique, unique, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR}));
+	CHECK(same(color(QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR),
+		{QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR}));
+	// Past the colour sets and below them: held, but for the trousers.
+	CHECK(same(color(6, 6, 6, 6, 6, 1000, 5000), {last, last, MAX_COLORSET + 100, last, last, last, last}));
+	CHECK(same(color(7, 7, 7, 7, 7, 0, 0), {0, 0, -3, 0, 0, 0, 0}));
+	// Nothing worn on the head, the shield arm or the weapon arm.
+	info.setHelmetType(HELMET_NONE);
+	info.setShieldType(SHIELD_NONE);
+	info.setWeaponType(WEAPON_NONE);
+	CHECK(same(color(1, 2, 3, 4, 5, 106, 107), {0, 102, 103, 0, 0, 106, 107}));
+	CHECK(same(color(UNIQUE_ITEM_COLOR, 2, 3, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, 106, 107), {0, 102, 103, 0, 0, 106, 107}));
+}
+
+TEST(GameUI2, AVampireSlotHoldsTheCharactersStatsAndCoat)
+{
+	// The coat is the frame of the sprite of the creature the coat item
+	// adds for the sex (its first sprite type); the rest of a vampire's
+	// outlook is nothing worn and the first face.
+	SlotScene scene;
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 1).AddonMaleFrameID = 5;
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_VAMPIRE_COAT, 1).AddonFemaleFrameID = 6;
+	testfw::MutableRow(scene.creatures, 5).SpriteTypes.Set(0, 1);
+	testfw::MutableRow(scene.creatures, 6).SpriteTypes.Init(1);
+	testfw::MutableRow(scene.creatures, 6).SpriteTypes.Set(0, 2);
+	scene.sprites.Init(3);
+	testfw::MutableRow(scene.sprites, 1).FrameID = 21;
+	testfw::MutableRow(scene.sprites, 2).FrameID = 22;
+	for (Sex sex : {MALE, FEMALE})
+		for (const SentAlignment& alignment : alignments)
+		{
+			PCVampireInfo info{};
+			info.setSex(sex);
+			info.setAlignment(alignment.sent);
+			info.setSTR(20);
+			info.setDEX(21);
+			info.setINT(22);
+			info.setHP(70, 90);
+			info.setLevel(7);
+			info.setBonus(4);
+			info.setExp(1234);
+			info.setFame(5555);
+			info.setRank(8);
+			info.setAdvancementLevel(3);
+			info.setCoatType(1);
+			info.setCoatColor(123);
+			info.setSkinColor(234);
+			info.setBatColor(345);
+			scene.Unlike();
+			const S_SLOT slot = MakeCharacterSlot("Lee", &info);
+			CheckCombat(slot, Expected(info));
+			CHECK(std::string("Lee") == slot.sz_name);
+			CHECK(slot.sz_guild_name.empty());
+			CHECK(RACE_VAMPIRE == slot.Race);
+			CHECK_EQ(sex == FEMALE, slot.bl_female);
+			CHECK_EQ(alignment.number, slot.alignment_num);
+			CHECK_EQ(int(alignment.step), int(slot.alignment));
+			// Full health, and no mana: 1 of 1.
+			CHECK_EQ(90, slot.HP_MAX);
+			CHECK_EQ(90, slot.HP);
+			CHECK_EQ(1, slot.MP_MAX);
+			CHECK_EQ(1, slot.MP);
+			CHECK_EQ(20, slot.STR_PURE);
+			CHECK_EQ(21, slot.DEX_PURE);
+			CHECK_EQ(22, slot.INT_PURE);
+			CHECK(slot.STATUS.empty());
+			CHECK_EQ(7, slot.level);
+			CHECK_EQ(4, slot.bonus_point);
+			CHECK_EQ(1234, slot.EXP_REMAIN);
+			CHECK_EQ(5555, slot.FAME);
+			CHECK_EQ(8, slot.GRADE);
+			CHECK_EQ(3, slot.m_AdvancementLevel);
+			// The bat colour is the hair's.
+			CHECK_EQ(234, slot.skin_color);
+			CHECK_EQ(345, slot.hair_color);
+			CHECK_EQ(123, slot.coat_color);
+			CHECK_EQ(0, slot.helmet_color);
+			CHECK_EQ(0, slot.trouser_color);
+			CHECK_EQ(0, slot.left_color);
+			CHECK_EQ(0, slot.right_color);
+			const int coat = sex == FEMALE ? 22 : 21;
+			CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.helmet));
+			CHECK_EQ(coat, int(slot.woman_info.coat));
+			CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.trouser));
+			CHECK_EQ(int(W_FACE1), int(slot.woman_info.face));
+			CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.hair));
+			CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.right));
+			CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.left));
+			CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.helmet));
+			CHECK_EQ(coat, int(slot.man_info.coat));
+			CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.trouser));
+			CHECK_EQ(int(M_FACE1), int(slot.man_info.face));
+			CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.hair));
+			CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.right));
+			CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.left));
+		}
+}
+
+TEST(GameUI2, AVampireSlotsColoursAreThePacketsHeldToTheColourSets)
+{
+	// The skin, bat and coat colours are the packet's, unique and quest
+	// kept and the rest held to the colour sets.
+	SlotScene scene;
+	PCVampireInfo info{};
+	info.setCoatType(1);
+	const int last = MAX_COLORSET - 1;
+	const std::array<Color_t, 3> sent[] = {
+		{ 1000, 5000, 600 },
+		{ UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR },
+		{ QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR },
+	};
+	const std::array<int, 3> held[] = {
+		{ last, last, last },
+		{ UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR },
+		{ QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR },
+	};
+	for (size_t i = 0; i < std::size(sent); ++i)
+	{
+		info.setSkinColor(sent[i][0]);
+		info.setBatColor(sent[i][1]);
+		info.setCoatColor(sent[i][2]);
+		const S_SLOT slot = MakeCharacterSlot("Lee", &info);
+		CHECK_EQ(held[i][0], slot.skin_color);
+		CHECK_EQ(held[i][1], slot.hair_color);
+		CHECK_EQ(held[i][2], slot.coat_color);
+	}
+}
+
+TEST(GameUI2, AnOustersSlotHoldsTheCharactersStatsArmAndCoat)
+{
+	// The coat is the male addon frame of the packet's Ousters coat item;
+	// the arm (gauntlet or chakram) is both hands, its colour also the
+	// skin's, and the boots' colour the trousers'.
+	SlotScene scene;
+	MPotion coat;
+	coat.SetItemType(1);
+	testfw::MutableRow(*g_pItemTable, ITEM_CLASS_OUSTERS_COAT, 1).AddonMaleFrameID = 17;
+	g_pPacketItemOustersCoat[OUSTERS_COAT_BASIC] = &coat;
+	for (const SentAlignment& alignment : alignments)
+	{
+		PCOustersInfo info{};
+		info.setSex(FEMALE);
+		info.setAlignment(alignment.sent);
+		info.setSTR(10);
+		info.setDEX(57);
+		info.setINT(11);
+		info.setHP(60, 95);
+		info.setMP(30, 75);
+		info.setLevel(13);
+		info.setBonus(5);
+		info.setSkillBonus(6);
+		info.setExp(4321);
+		info.setFame(6666);
+		info.setRank(7);
+		info.setAdvancementLevel(2);
+		info.setCoatType(OUSTERS_COAT_BASIC);
+		info.setArmType(OUSTERS_ARM_CHAKRAM);
+		info.setArmColor(201);
+		info.setBootsColor(202);
+		info.setCoatColor(203);
+		info.setHairColor(204);
+		scene.Unlike();
+		S_SLOT slot;
+		const std::string said = Stderr([&]() { slot = MakeCharacterSlot("Park", &info); });
+		CHECK(said.empty());
+		CheckCombat(slot, Expected(info));
+		CHECK(std::string("Park") == slot.sz_name);
+		CHECK(slot.sz_guild_name.empty());
+		CHECK(RACE_OUSTERS == slot.Race);
+		// The slot does not say the sex: the race has one.
+		CHECK(!slot.bl_female);
+		CHECK_EQ(alignment.number, slot.alignment_num);
+		CHECK_EQ(int(alignment.step), int(slot.alignment));
+		CHECK_EQ(95, slot.HP_MAX);
+		CHECK_EQ(95, slot.HP);
+		CHECK_EQ(75, slot.MP_MAX);
+		CHECK_EQ(75, slot.MP);
+		CHECK_EQ(10, slot.STR_PURE);
+		CHECK_EQ(57, slot.DEX_PURE);
+		CHECK_EQ(11, slot.INT_PURE);
+		CHECK(slot.STATUS.empty());
+		CHECK_EQ(13, slot.level);
+		CHECK_EQ(5, slot.bonus_point);
+		CHECK_EQ(6, slot.skill_point);
+		CHECK_EQ(4321, slot.EXP_REMAIN);
+		CHECK_EQ(6666, slot.FAME);
+		CHECK_EQ(7, slot.GRADE);
+		CHECK_EQ(2, slot.m_AdvancementLevel);
+		CHECK_EQ(203, slot.coat_color);
+		CHECK_EQ(201, slot.left_color);
+		CHECK_EQ(201, slot.right_color);
+		CHECK_EQ(202, slot.trouser_color);
+		CHECK_EQ(201, slot.skin_color);
+		CHECK_EQ(204, slot.hair_color);
+		CHECK_EQ(0, slot.helmet_color);
+		CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.helmet));
+		CHECK_EQ(17, int(slot.woman_info.coat));
+		CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.trouser));
+		CHECK_EQ(int(W_FACE1), int(slot.woman_info.face));
+		CHECK_EQ(int(W_NO_WEAR), int(slot.woman_info.hair));
+		CHECK_EQ(int(OUSTERS_ARM_CHAKRAM), int(slot.woman_info.right));
+		CHECK_EQ(int(OUSTERS_ARM_CHAKRAM), int(slot.woman_info.left));
+		CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.helmet));
+		CHECK_EQ(17, int(slot.man_info.coat));
+		CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.trouser));
+		CHECK_EQ(int(M_FACE1), int(slot.man_info.face));
+		CHECK_EQ(int(M_NO_WEAR), int(slot.man_info.hair));
+		CHECK_EQ(int(OUSTERS_ARM_CHAKRAM), int(slot.man_info.right));
+		CHECK_EQ(int(OUSTERS_ARM_CHAKRAM), int(slot.man_info.left));
+	}
+
+	// A coat past the packet's coats, or one it left empty, is sprite 0,
+	// and stderr says which.
+	PCOustersInfo info{};
+	info.setCoatType(OUSTERS_COAT_MAX);
+	S_SLOT slot;
+	std::string said = Stderr([&]() { slot = MakeCharacterSlot("Park", &info); });
+	CHECK(Has(said, "coatType=5 is out of range [0, 5)"));
+	CHECK_EQ(0, int(slot.man_info.coat));
+	CHECK_EQ(0, int(slot.woman_info.coat));
+	info.setCoatType(OUSTERS_COAT1);
+	said = Stderr([&]() { slot = MakeCharacterSlot("Park", &info); });
+	CHECK(Has(said, "g_pPacketItemOustersCoat[1] is NULL!"));
+	CHECK(Has(said, "All g_pPacketItemOustersCoat values: [0]="));
+	CHECK_EQ(0, int(slot.man_info.coat));
+	CHECK_EQ(0, int(slot.woman_info.coat));
+}
+
+TEST(GameUI2, AnOustersSlotsColoursAreThePacketsHeldToTheColourSets)
+{
+	SlotScene scene;
+	PCOustersInfo info{};
+	info.setCoatType(OUSTERS_COAT_MAX);
+	const int last = MAX_COLORSET - 1;
+	// Arm, boots, coat, hair as sent; the arm's is the hands' and the skin's.
+	const std::array<Color_t, 4> sent[] = {
+		{ 1000, 2000, 3000, 4000 },
+		{ UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR },
+		{ QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR },
+	};
+	const std::array<int, 4> held[] = {
+		{ last, last, last, last },
+		{ UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR },
+		{ QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR, QUEST_ITEM_COLOR, UNIQUE_ITEM_COLOR },
+	};
+	for (size_t i = 0; i < std::size(sent); ++i)
+	{
+		info.setArmColor(sent[i][0]);
+		info.setBootsColor(sent[i][1]);
+		info.setCoatColor(sent[i][2]);
+		info.setHairColor(sent[i][3]);
+		S_SLOT slot;
+		Stderr([&]() { slot = MakeCharacterSlot("Park", &info); });
+		CHECK_EQ(held[i][0], slot.left_color);
+		CHECK_EQ(held[i][0], slot.right_color);
+		CHECK_EQ(held[i][0], slot.skin_color);
+		CHECK_EQ(held[i][1], slot.trouser_color);
+		CHECK_EQ(held[i][2], slot.coat_color);
+		CHECK_EQ(held[i][3], slot.hair_color);
+		CHECK_EQ(0, slot.helmet_color);
 	}
 }
 

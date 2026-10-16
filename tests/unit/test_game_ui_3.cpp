@@ -3,6 +3,7 @@
 #include "type_table_access.h"
 #include "packet_stream_access.h"
 #include "UIFunction.h"
+#include "GameUIBuilders.h"
 #include "MPlayer.h"
 #include "AddonDef.h"
 #include "MCreatureTable.h"
@@ -1604,6 +1605,117 @@ TEST(GameUI3OtherInfo, ASlayersFaceOutsideItsSexsThreeHairsIsTheFirst)
 		}
 	CHECK(UI_GetOtherInfoName() == NULL);
 	CHECK(calls.empty());
+}
+
+//----------------------------------------------------------------------
+// What the other player's info holds (FillOtherInfo), read straight.
+//----------------------------------------------------------------------
+namespace {
+
+// A record whose every field is a mark the fill must replace.
+C_VS_UI_OTHER_INFO::PLAYER_INFO Marked(bool female)
+{
+	C_VS_UI_OTHER_INFO::PLAYER_INFO info;
+	info.PLAYER_NAME = "mark";
+	for (int& level : info.DOMAINLEVEL)
+		level = -1;
+	info.GRADE = info.LEVEL = info.FAME = info.ALIGNMENT = -1;
+	info.STR_CUR = info.DEX_CUR = info.INT_CUR = -1;
+	info.STR_PURE = info.DEX_PURE = info.INT_PURE = -1;
+	info.guild_id = info.face_type = -1;
+	info.bl_female = female;
+	return info;
+}
+
+// The stats the info shows, each its own.
+void SetStats(MCreature& creature)
+{
+	creature.SetGuildNumber(77);
+	creature.MStatus::SetStatus(MODIFY_BLADE_DOMAIN_LEVEL, 11);
+	creature.MStatus::SetStatus(MODIFY_SWORD_DOMAIN_LEVEL, 12);
+	creature.MStatus::SetStatus(MODIFY_GUN_DOMAIN_LEVEL, 13);
+	creature.MStatus::SetStatus(MODIFY_HEAL_DOMAIN_LEVEL, 14);
+	creature.MStatus::SetStatus(MODIFY_ENCHANT_DOMAIN_LEVEL, 15);
+	creature.MStatus::SetStatus(MODIFY_RANK, 21);
+	creature.MStatus::SetStatus(MODIFY_LEVEL, 22);
+	creature.MStatus::SetStatus(MODIFY_FAME, 23);
+	creature.MStatus::SetStatus(MODIFY_ALIGNMENT, DWORD(-500));
+	creature.MStatus::SetStatus(MODIFY_CURRENT_STR, 31);
+	creature.MStatus::SetStatus(MODIFY_CURRENT_DEX, 32);
+	creature.MStatus::SetStatus(MODIFY_CURRENT_INT, 33);
+	creature.MStatus::SetStatus(MODIFY_BASIC_STR, 41);
+	creature.MStatus::SetStatus(MODIFY_BASIC_DEX, 42);
+	creature.MStatus::SetStatus(MODIFY_BASIC_INT, 43);
+}
+
+void CheckStats(const C_VS_UI_OTHER_INFO::PLAYER_INFO& info)
+{
+	CHECK_EQ(11, info.DOMAINLEVEL[SKILLDOMAIN_BLADE]);
+	CHECK_EQ(12, info.DOMAINLEVEL[SKILLDOMAIN_SWORD]);
+	CHECK_EQ(13, info.DOMAINLEVEL[SKILLDOMAIN_GUN]);
+	CHECK_EQ(14, info.DOMAINLEVEL[SKILLDOMAIN_HEAL]);
+	CHECK_EQ(15, info.DOMAINLEVEL[SKILLDOMAIN_ENCHANT]);
+	CHECK_EQ(21, info.GRADE);
+	CHECK_EQ(22, info.LEVEL);
+	CHECK_EQ(23, info.FAME);
+	CHECK_EQ(-500, info.ALIGNMENT);
+	CHECK_EQ(31, info.STR_CUR);
+	CHECK_EQ(32, info.DEX_CUR);
+	CHECK_EQ(33, info.INT_CUR);
+	CHECK_EQ(41, info.STR_PURE);
+	CHECK_EQ(42, info.DEX_PURE);
+	CHECK_EQ(43, info.INT_PURE);
+	CHECK_EQ(77, info.guild_id);
+}
+
+} // namespace
+
+TEST(GameUI3OtherInfo, TheInfoHoldsASlayersNameStatsSexAndFace)
+{
+	// The face is the slayer's hair frame less its sex's first; one
+	// outside the sex's three is the first face.
+	Scene scene;
+	MCreatureWear slayer;
+	slayer.SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	slayer.SetName("Kim");
+	SetStats(slayer);
+	struct Face { bool male; int hair; int face; };
+	const Face faces[] = {
+		{true, ADDONID_HAIR1_MALE, M_FACE1}, {true, ADDONID_HAIR2_MALE, M_FACE2}, {true, ADDONID_HAIR3_MALE, M_FACE3},
+		{true, ADDONID_HAIR1_MALE - 1, M_FACE1}, {true, ADDONID_HAIR3_MALE + 1, M_FACE1},
+		{false, ADDONID_HAIR1_FEMALE, W_FACE1}, {false, ADDONID_HAIR2_FEMALE, W_FACE2}, {false, ADDONID_HAIR3_FEMALE, W_FACE3},
+		{false, ADDONID_HAIR1_FEMALE - 1, W_FACE1}, {false, ADDONID_HAIR3_FEMALE + 1, W_FACE1},
+	};
+	for (const Face& face : faces)
+	{
+		slayer.SetMale(face.male);
+		slayer.SetAddonHair(TYPE_FRAMEID(face.hair), 0);
+		C_VS_UI_OTHER_INFO::PLAYER_INFO info = Marked(face.male);
+		FillOtherInfo(info, &slayer);
+		CHECK(std::string("Kim") == info.PLAYER_NAME);
+		CHECK_EQ(!face.male, info.bl_female);
+		CHECK_EQ(face.face, info.face_type);
+		CheckStats(info);
+	}
+}
+
+TEST(GameUI3OtherInfo, TheInfoLeavesANonSlayersFaceAndANamelessCreaturesName)
+{
+	// Only a slayer has a face here, and a creature without a name keeps
+	// the record's.
+	Scene scene;
+	MCreatureWear vampire;
+	vampire.SetCreatureType(CREATURETYPE_VAMPIRE_MALE1);
+	vampire.SetMale(false);
+	vampire.SetAddonHair(ADDONID_HAIR2_FEMALE, 0);
+	SetStats(vampire);
+	CHECK(vampire.GetName() == NULL);
+	C_VS_UI_OTHER_INFO::PLAYER_INFO info = Marked(false);
+	FillOtherInfo(info, &vampire);
+	CHECK(std::string("mark") == info.PLAYER_NAME);
+	CHECK_EQ(-1, info.face_type);
+	CHECK(info.bl_female);
+	CheckStats(info);
 }
 
 //----------------------------------------------------------------------
