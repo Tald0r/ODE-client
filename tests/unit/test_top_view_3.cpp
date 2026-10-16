@@ -71,8 +71,9 @@ MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 // fade, the alpha box and the endings' fades are invisible;
 // BltSpriteOutline draws nothing, so a selected item or burrow is not
 // drawn at all; SetClipRight is a no-op, so a party HP bar is never cut;
-// BltSpriteHalf draws the sprite at half size, where DirectDraw drew it
-// half blended; BltSpriteAlphaFilter and BltIndexSpriteColor draw plain.
+// BltSpriteAlphaFilter and BltIndexSpriteColor draw plain. BltSpriteHalf
+// is not reached at all: its CPU fallback reads a CSprite's (null) 565
+// pixel buffer, so a half image object is undefined behaviour headless.
 struct MTopViewTestAccess3
 {
 	static void InitColors(MTopView& v) { v.InitColors(); }
@@ -217,7 +218,6 @@ struct Canvas
 	void Index(int x, int y, CIndexSprite& sprite) { POINT p = {x, y}; surface.BltIndexSprite(&p, &sprite); }
 	void Shadow(int x, int y, CShadowSprite& sprite) { POINT p = {x, y}; surface.BltShadowSpriteDarkness(&p, &sprite, 1); }
 	void Black(int x, int y, CShadowSprite& sprite) { POINT p = {x, y}; surface.BltShadowSprite(&p, &sprite); }
-	void Half(int x, int y, CSprite& sprite) { POINT p = {x, y}; surface.BltSpriteHalf(&p, &sprite); }
 	void Alpha(int x, int y, CAlphaSpritePal& sprite, MPalette& pal) { POINT p = {x, y}; surface.BltAlphaSpritePal(&p, &sprite, pal); }
 	void Screen(int x, int y, CSpritePal& sprite, MPalette& pal)
 	{
@@ -1691,5 +1691,1040 @@ TEST(TopView3ItemShadow, OnlyCorpsesInTheLightCastOne)
 	MCorpse& seen = scene.Body(700, 3);
 	scene.Shadow(seen);
 	scene.Expect(seen);
+	CHECK(scene.Same());
+}
+
+//----------------------------------------------------------------------
+// Image objects
+//----------------------------------------------------------------------
+namespace {
+
+// Still sprites 0 to 3 of their own sizes and colours; shadows 0 and 1.
+// Animation 1 has frame 0 (sprite 1 at (10, 2)) and frame 1 (sprite 2
+// at (12, 4)); animation 2 names a sprite past the pack. Shadow
+// animation 1: frame 0 is shadow 0 at (-2, 5), frame 1 none. Alpha and
+// screen effect 2: frame 0 at (7, 1) and (6, 2); the alpha frame 1 is
+// sprite 1 at (9, 3), the screen frame 1 has none.
+struct Scenery : Scene
+{
+	std::vector<std::unique_ptr<MImageObject>> objects;
+	CFilter sentinel;										// a filter none of the view's
+	Scenery()
+	{
+		CSpritePack& sprites = View().m_ImageObjectSPK;
+		sprites.Init(4);
+		Solid(sprites[0], 8, 6, 0xF800);
+		Solid(sprites[1], 4, 4, 0x07E0);
+		Solid(sprites[2], 6, 2, 0x001F);
+		Solid(sprites[3], 3, 3, 0xFFE0);
+		View().m_ImageObjectSSPK.Init(2);
+		Shade(View().m_ImageObjectSSPK[0], 5, 3);
+		Shade(View().m_ImageObjectSSPK[1], 3, 2);
+		View().m_ImageObjectFilter.Init(4, 4);
+		CAnimationFramePack& frames = View().m_ImageObjectFPK;
+		frames.Init(3);
+		frames[1].Init(2);
+		frames[1][0].Set(1, 10, 2);
+		frames[1][1].Set(2, 12, 4);
+		frames[2].Init(1);
+		frames[2][0].Set(7, 1, 1);
+		CAnimationFramePack& shadows = View().m_ImageObjectShadowFPK;
+		shadows.Init(2);
+		shadows[1].Init(2);
+		shadows[1][0].Set(0, -2, 5);
+		shadows[1][1].Set(SPRITEID_NULL, 0, 0);
+		CEffectFramePack& alpha = View().m_EffectAlphaFPK;
+		alpha.Init(3);
+		alpha[2].Init(1);
+		alpha[2][0].Init(2);
+		alpha[2][0][0].Set(0, 7, 1, 0, false);
+		alpha[2][0][1].Set(1, 9, 3, 0, false);
+		View().m_EffectAlphaSPK.Init(2);
+		PalSprite(View().m_EffectAlphaSPK[0], 3, 2, 0x10);
+		PalSprite(View().m_EffectAlphaSPK[1], 2, 2, 0x20);
+		View().m_EffectAlphaPPK.Init(3);
+		Palette(View().m_EffectAlphaPPK[2], 0x07FF);
+		CEffectFramePack& screen = View().m_EffectScreenFPK;
+		screen.Init(3);
+		screen[2].Init(1);
+		screen[2][0].Init(2);
+		screen[2][0][0].Set(0, 6, 2, 0, false);
+		screen[2][0][1].Set(SPRITEID_NULL, 0, 0, 0, false);
+		View().m_EffectScreenSPK.Init(1);
+		PalSprite(View().m_EffectScreenSPK[0], 3, 3, 0);
+		View().m_EffectScreenPPK.Init(3);
+		Palette(View().m_EffectScreenPPK[2], 0xF81F);
+	}
+	MImageObject& Still(int sprite, BYTE trans = 0, int viewpoint = 9, int pixelX = 0)
+	{
+		objects.emplace_back(new MImageObject(1, 1, TYPE_SPRITEID(sprite), pixelX, 0, TYPE_SECTORPOSITION(viewpoint), trans));
+		return *objects.back();
+	}
+	MAnimationObject& Animated(int sprite, BYTE bltType, int frameID, int frameCount)
+	{
+		MAnimationObject* object = new MAnimationObject(2, 2, TYPE_SPRITEID(sprite), 0, 0, 9, false, bltType);
+		object->SetFrameID(TYPE_FRAMEID(frameID), BYTE(frameCount));
+		objects.emplace_back(object);
+		return *object;
+	}
+	POINT Draw(MImageObject& object, int x = 20, int y = 30)
+	{
+		POINT point = {x, y};
+		Access::DrawImageObject(View(), &point, &object);
+		return point;
+	}
+	void Whole(int x, int y, int sprite) { expected.Sprite(x, y, View().m_ImageObjectSPK[WORD(sprite)]); }
+	void Shadow(int x, int y, int sprite) { expected.Shadow(x, y, View().m_ImageObjectSSPK[WORD(sprite)]); }
+};
+
+bool At(POINT point, int x, int y)
+{
+	if (point.x != x || point.y != y) std::printf("      the point is (%d,%d), not (%d,%d)\n", int(point.x), int(point.y), x, y);
+	return point.x == x && point.y == y;
+}
+
+} // namespace
+
+TEST(TopView3ImageObject, AShadowObjectCastsItsShadowBlended)
+{
+	Scenery scene;
+	MShadowObject shadow(3, 3, 1, 0, 0, 9, false);
+	CHECK(At(scene.Draw(shadow), 20, 30));
+	scene.Shadow(20, 30, 1);
+	CHECK(scene.Same());
+	scene.Clear();
+	MShadowObject none(3, 3, SPRITEID_NULL, 0, 0, 9, false);
+	scene.Draw(none);
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3ImageObject, AShadowAnimationObjectDrawsNothing)
+{
+	Scenery scene;
+	MShadowAnimationObject shadow(3, 3, 0, 0, 0, 9, false);
+	shadow.SetFrameID(1, 2);
+	g_bFrameChanged = true;
+	CHECK(At(scene.Draw(shadow), 20, 30));
+	CHECK(scene.drawn.Blank());
+	CHECK_EQ(0, int(shadow.GetFrame()));
+}
+
+TEST(TopView3ImageObject, AStillObjectIsDrawnWhole)
+{
+	Scenery scene;
+	CHECK(At(scene.Draw(scene.Still(0)), 20, 30));
+	scene.Whole(20, 30, 0);
+	CHECK(scene.Same());
+	scene.Clear();
+	scene.Draw(scene.Still(SPRITEID_NULL));
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3ImageObject, AWallBeforeThePlayerIsSeenThroughItsFilter)
+{
+	// Translucent, at or below the player's row (8), and not a wall or
+	// one the player is behind: the image object filter is set over it,
+	// and the alpha filter blit (which SDL draws plain, a recorded defect)
+	// or the plain one draws it whole.
+	Scenery scene;
+	scene.View().m_FilterPosition = {20, 30};
+	CSprite::SetFilter(&scene.sentinel);
+	scene.Draw(scene.Still(0, OBJECT_TRANS_FLAG, 8));
+	scene.Whole(20, 30, 0);
+	CHECK(scene.Same());
+	CHECK(CSprite::GetFilter() == &scene.View().m_ImageObjectFilter);
+	MImageObject& wall = scene.Still(0, OBJECT_TRANS_FLAG, 9, 0);
+	wall.SetWall(MImageObject::WALL_RIGHTDOWN);			// the player (8 - 8) is past 0 - 9
+	CSprite::SetFilter(&scene.sentinel);
+	scene.Draw(wall);
+	CHECK(CSprite::GetFilter() == &scene.View().m_ImageObjectFilter);
+}
+
+TEST(TopView3ImageObject, AnObjectThatHidesNothingIsDrawnWithoutTheFilter)
+{
+	Scenery scene;
+	scene.View().m_FilterPosition = {20, 30};
+	MImageObject& above = scene.Still(0, OBJECT_TRANS_FLAG, 7);	// above the player's row
+	MImageObject& wall = scene.Still(0, OBJECT_TRANS_FLAG, 9, 10 * TILE_X);
+	wall.SetWall(MImageObject::WALL_RIGHTDOWN);			// the player (8 - 8) is not past 10 - 9
+	MImageObject& solid = scene.Still(0, 0, 8);
+	for (MImageObject* object : {&above, &wall, &solid})
+	{
+		scene.Clear();
+		CSprite::SetFilter(&scene.sentinel);
+		scene.Draw(*object);
+		CHECK(CSprite::GetFilter() == &scene.sentinel);
+		scene.Whole(20, 30, 0);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3ImageObject, AnAnimatedObjectDrawsItsStillSpriteWhereItsFrameGoes)
+{
+	Scenery scene;
+	MAnimationObject& torch = scene.Animated(0, BLT_NORMAL, 1, 2);
+	g_CurrentFrame = 3;									// animation frame 3 % 2
+	g_bFrameChanged = true;
+	CSprite::SetFilter(&scene.sentinel);
+	const POINT point = scene.Draw(torch);
+	CHECK(CSprite::GetFilter() == &scene.sentinel);		// drawn plain, without the filter
+	// Recorded defect: the caller's point is moved to the frame's offset.
+	CHECK(At(point, 32, 34));
+	scene.Whole(20, 30, 0);
+	scene.Shadow(18, 35, 0);								// the shadow of the object's own frame, 0
+	// Recorded defect: the still sprite is drawn again where frame 1's
+	// sprite 2 belongs, so the object does not animate.
+	scene.Whole(32, 34, 0);
+	CHECK(scene.Same());
+	CHECK_EQ(0, int(torch.GetFrame()));						// a normal animation is not stepped here
+}
+
+TEST(TopView3ImageObject, AnAnimationWithoutAStillSpriteShowsItsFrameThroughTheFilter)
+{
+	Scenery scene;
+	MAnimationObject& torch = scene.Animated(SPRITEID_NULL, BLT_NORMAL, 1, 2);
+	g_CurrentFrame = 2;
+	CSprite::SetFilter(&scene.sentinel);
+	CHECK(At(scene.Draw(torch), 30, 32));
+	scene.Shadow(18, 35, 0);
+	scene.Whole(30, 32, 1);
+	CHECK(scene.Same());
+	CHECK(CSprite::GetFilter() == &scene.View().m_ImageObjectFilter);
+}
+
+TEST(TopView3ImageObject, ATranslucentAnimationShowsItsFrame)
+{
+	Scenery scene;
+	scene.View().m_FilterPosition = {20, 30};
+	MAnimationObject& torch = scene.Animated(0, BLT_NORMAL, 1, 2);
+	torch.SetTrans();
+	g_CurrentFrame = 3;
+	scene.Draw(torch);
+	scene.Whole(20, 30, 0);
+	scene.Shadow(18, 35, 0);
+	scene.Whole(32, 34, 2);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3ImageObject, AFrameSpriteOffThePackShowsOnlyTheStillSprite)
+{
+	Scenery scene;
+	MAnimationObject& torch = scene.Animated(0, BLT_NORMAL, 2, 1);
+	CHECK(At(scene.Draw(torch), 20, 30));
+	scene.Whole(20, 30, 0);								// shadow animation 2 is past its pack
+	CHECK(scene.Same());
+}
+
+TEST(TopView3ImageObject, TheShadowFollowsTheObjectsOwnFrame)
+{
+	Scenery scene;
+	MAnimationObject& torch = scene.Animated(SPRITEID_NULL, BLT_NORMAL, 1, 3);
+	torch.NextFrame();
+	torch.NextFrame();									// frame 2: past the shadow's two frames
+	g_CurrentFrame = 2;
+	scene.Draw(torch);
+	scene.Whole(30, 32, 1);
+	CHECK(scene.Same());
+	torch.SetFrameID(1, 2);
+	torch.NextFrame();									// frame 1: no shadow sprite
+	scene.Clear();
+	scene.Draw(torch);
+	scene.Whole(30, 32, 1);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3ImageObject, AnAlphaAnimationStepsOnAChangedFrame)
+{
+	Scenery scene;
+	MAnimationObject& glow = scene.Animated(3, BLT_EFFECT, 2, 2);
+	g_bFrameChanged = true;
+	CHECK(At(scene.Draw(glow), 27, 31));
+	scene.Whole(20, 30, 3);
+	scene.expected.Alpha(27, 31, scene.View().m_EffectAlphaSPK[0], scene.View().m_EffectAlphaPPK[2]);
+	CHECK(scene.Same());
+	CHECK_EQ(1, int(glow.GetFrame()));
+	scene.Clear();
+	scene.Draw(glow);
+	scene.Whole(20, 30, 3);
+	scene.expected.Alpha(29, 33, scene.View().m_EffectAlphaSPK[1], scene.View().m_EffectAlphaPPK[2]);
+	CHECK(scene.Same());
+	CHECK_EQ(0, int(glow.GetFrame()));
+	g_bFrameChanged = false;
+	scene.Draw(glow);
+	CHECK_EQ(0, int(glow.GetFrame()));
+}
+
+TEST(TopView3ImageObject, AnAlphaAnimationOffThePackStillSteps)
+{
+	Scenery scene;
+	MAnimationObject& glow = scene.Animated(SPRITEID_NULL, BLT_EFFECT, 5, 2);
+	g_bFrameChanged = true;
+	CHECK(At(scene.Draw(glow), 20, 30));
+	CHECK(scene.drawn.Blank());
+	CHECK_EQ(1, int(glow.GetFrame()));
+}
+
+TEST(TopView3ImageObject, AScreenAnimationStepsOnlyOnItsPack)
+{
+	Scenery scene;
+	MAnimationObject& flare = scene.Animated(SPRITEID_NULL, BLT_SCREEN, 2, 2);
+	g_bFrameChanged = true;
+	CHECK(At(scene.Draw(flare), 26, 32));
+	scene.expected.Screen(26, 32, scene.View().m_EffectScreenSPK[0], scene.View().m_EffectScreenPPK[2]);
+	CHECK(scene.Same());
+	CHECK_EQ(1, int(flare.GetFrame()));
+	scene.Clear();
+	CHECK(At(scene.Draw(flare), 20, 30));				// frame 1 has no sprite
+	CHECK(scene.drawn.Blank());
+	CHECK_EQ(0, int(flare.GetFrame()));
+	MAnimationObject& off = scene.Animated(SPRITEID_NULL, BLT_SCREEN, 5, 2);
+	scene.Draw(off);
+	CHECK(scene.drawn.Blank());
+	CHECK_EQ(0, int(off.GetFrame()));
+}
+
+//----------------------------------------------------------------------
+// Effects
+//----------------------------------------------------------------------
+namespace {
+
+// For each kind: frame ID 1's frame 0 is sprite 0 at an offset of its
+// own, its frame 1 has none; frame ID 2's sprite is past the pack (the
+// shadow's frame ID 2 names an unloaded sprite, 3 one past the pack);
+// the alpha and screen frame ID 3 has no palette.
+struct Sparks : Scene
+{
+	const MEffectHost* savedHost = MEffect::SetHost(nullptr);
+	int savedBasisX = MScreenEffect::m_ScreenBasisX, savedBasisY = MScreenEffect::m_ScreenBasisY;
+	std::vector<std::unique_ptr<MEffect>> effects;
+	Sparks()
+	{
+		Kind(View().m_EffectNormalFPK, 4, 5);
+		Kind(View().m_EffectAlphaFPK, 3, 6);
+		Kind(View().m_EffectScreenFPK, 5, 2);
+		Kind(View().m_EffectShadowFPK, 2, 3);
+		View().m_EffectShadowFPK[2][0][0].Set(1, 0, 0, 0, false);
+		View().m_EffectShadowFPK[3][0][0].Set(9, 0, 0, 0, false);
+		View().m_EffectNormalSPK.Init(2);
+		Solid(View().m_EffectNormalSPK[0], 5, 4, 0x7BEF);
+		View().m_EffectAlphaSPK.Init(1);
+		PalSprite(View().m_EffectAlphaSPK[0], 4, 3, 0x10);
+		View().m_EffectScreenSPK.Init(1);
+		PalSprite(View().m_EffectScreenSPK[0], 4, 3, 0);
+		View().m_EffectShadowSPK.Init(2);
+		Shade(View().m_EffectShadowSPK[0], 4, 2);
+		View().m_EffectAlphaPPK.Init(3);
+		View().m_EffectScreenPPK.Init(3);
+		for (WORD id : {1, 2})
+		{
+			Palette(View().m_EffectAlphaPPK[id], 0x07E0);
+			Palette(View().m_EffectScreenPPK[id], 0xF81F);
+		}
+		MScreenEffect::SetScreenBasis(0, 0);
+	}
+	~Sparks()
+	{
+		MScreenEffect::SetScreenBasis(savedBasisX, savedBasisY);
+		MEffect::SetHost(savedHost);
+	}
+	static void Kind(CEffectFramePack& frames, int cx, int cy)
+	{
+		frames.Init(4);
+		for (WORD id = 1; id < 4; ++id)
+		{
+			frames[id].Init(1);
+			frames[id][0].Init(2);
+			frames[id][0][0].Set(TYPE_SPRITEID(id == 2 ? 9 : 0), short(cx), short(cy), 0, false);
+			frames[id][0][1].Set(SPRITEID_NULL, 0, 0, 0, false);
+		}
+	}
+	template<class Effect = MSelectableEffect> Effect& Make(BYTE bltType, int frameID, int frame = 0)
+	{
+		Effect* effect = new Effect(bltType);
+		effect->SetFrameID(TYPE_FRAMEID(frameID), 2);
+		for (int f = 0; f < frame; ++f) effect->NextFrame();
+		effects.emplace_back(effect);
+		return *effect;
+	}
+	void Draw(MEffect* effect, bool selectable)
+	{
+		POINT point = {20, 30};
+		Access::DrawEffect(View(), &point, effect, selectable);
+		CHECK(At(point, 20, 30));
+	}
+	// What the kind's frame 0 at (x, y) draws on the expected canvas.
+	void Expect(BYTE bltType, int x, int y)
+	{
+		switch (bltType)
+		{
+			case BLT_NORMAL: expected.Sprite(x, y, View().m_EffectNormalSPK[0]); break;
+			case BLT_EFFECT: expected.Alpha(x, y, View().m_EffectAlphaSPK[0], View().m_EffectAlphaPPK[1]); break;
+			case BLT_SCREEN: expected.Screen(x, y, View().m_EffectScreenSPK[0], View().m_EffectScreenPPK[1]); break;
+			default: expected.Shadow(x, y, View().m_EffectShadowSPK[0]); break;
+		}
+	}
+};
+
+void Preset(MObject& object) { RECT rect = {1, 2, 3, 4}; object.SetScreenRect(&rect); }
+bool Stale(const MObject& object) { return SameRect(object.GetScreenRect(), 1, 2, 3, 4); }
+
+} // namespace
+
+TEST(TopView3Effect, EachKindDrawsItsFrameAtItsOffset)
+{
+	Sparks scene;
+	MEffect& normal = scene.Make(BLT_NORMAL, 1);
+	scene.Draw(&normal, true);
+	scene.Expect(BLT_NORMAL, 24, 35);
+	CHECK(scene.Same());
+	CHECK(SameRect(normal.GetScreenRect(), 24, 35, 29, 39));
+
+	scene.Clear();
+	MEffect& alpha = scene.Make(BLT_EFFECT, 1);
+	scene.Draw(&alpha, true);
+	scene.Expect(BLT_EFFECT, 23, 36);
+	CHECK(scene.Same());
+	CHECK(SameRect(alpha.GetScreenRect(), 23, 36, 27, 39));
+
+	scene.Clear();
+	MEffect& screen = scene.Make(BLT_SCREEN, 1);
+	scene.Draw(&screen, true);
+	scene.Expect(BLT_SCREEN, 25, 32);
+	CHECK(scene.Same());
+	CHECK(SameRect(screen.GetScreenRect(), 25, 32, 29, 35));
+
+	scene.Clear();
+	MEffect& shadow = scene.Make(BLT_SHADOW, 1);
+	scene.Draw(&shadow, true);
+	scene.Expect(BLT_SHADOW, 22, 33);
+	CHECK(scene.Same());
+	CHECK(Untouched(shadow));							// a shadow is never picked
+}
+
+TEST(TopView3Effect, AnUnselectableEffectKeepsItsRect)
+{
+	for (BYTE bltType : {BLT_NORMAL, BLT_EFFECT, BLT_SCREEN})
+	{
+		Sparks scene;
+		MEffect& effect = scene.Make(bltType, 1);
+		Preset(effect);
+		scene.Draw(&effect, false);
+		CHECK(!scene.drawn.Blank());
+		CHECK(Stale(effect));
+	}
+}
+
+TEST(TopView3Effect, ANormalEffectWithoutAFrameOrSpriteIsUnpicked)
+{
+	const struct { int frameID, frame; } cases[] = { {5, 0}, {1, 1}, {2, 0} };	// past the pack, no sprite, sprite past its pack
+	for (const auto& c : cases)
+	{
+		Sparks scene;
+		MEffect& effect = scene.Make(BLT_NORMAL, c.frameID, c.frame);
+		Preset(effect);
+		scene.Draw(&effect, true);
+		CHECK(scene.drawn.Blank());
+		CHECK(Untouched(effect));
+	}
+}
+
+TEST(TopView3Effect, AnAlphaOrScreenEffectWithoutAFrameKeepsAStaleRect)
+{
+	// Recorded defect: unlike a normal effect, these leave the last
+	// frame's pick rect, so an effect that is not drawn can be picked.
+	const struct { int frameID, frame; } cases[] = { {5, 0}, {1, 1}, {2, 0}, {3, 0} };	// ... and no palette
+	for (BYTE bltType : {BLT_EFFECT, BLT_SCREEN})
+		for (const auto& c : cases)
+		{
+			Sparks scene;
+			MEffect& effect = scene.Make(bltType, c.frameID, c.frame);
+			Preset(effect);
+			scene.Draw(&effect, true);
+			CHECK(scene.drawn.Blank());
+			CHECK(Stale(effect));
+		}
+}
+
+TEST(TopView3Effect, AShadowEffectNeedsALoadedSprite)
+{
+	const struct { int frameID, frame; } cases[] = { {5, 0}, {1, 1}, {2, 0}, {3, 0} };	// ... and an unloaded sprite
+	for (const auto& c : cases)
+	{
+		Sparks scene;
+		MEffect& effect = scene.Make(BLT_SHADOW, c.frameID, c.frame);
+		scene.Draw(&effect, true);
+		CHECK(scene.drawn.Blank());
+	}
+}
+
+TEST(TopView3Effect, TheNoEffectEventHidesEffects)
+{
+	Sparks scene;
+	scene.Event(EVENTID_METEOR, EVENTFLAG_NOT_DRAW_EFFECT);
+	MEffect& effect = scene.Make(BLT_NORMAL, 1);
+	Preset(effect);
+	scene.Draw(&effect, true);
+	scene.Draw(nullptr, true);
+	CHECK(scene.drawn.Blank());
+	CHECK(Stale(effect));
+}
+
+TEST(TopView3Effect, NoEffectDrawsNothing)
+{
+	Sparks scene;
+	scene.Draw(nullptr, true);
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3Effects, ZoneEffectsAreDrawnAtTheirPixelLessTheViewsOriginAndScreenEffectsWhereTheyAre)
+{
+	Sparks scene;
+	scene.View().m_FirstZonePixel = {60, 40};
+	MEffect& zoneEffect = scene.Make(BLT_NORMAL, 1);
+	zoneEffect.SetPixelPosition(84, 75, 10);			// (24, 25) on the screen
+	MScreenEffect& screenEffect = scene.Make<MScreenEffect>(BLT_EFFECT, 1);
+	screenEffect.SetScreenPosition(10, 12);
+	MEffect& third = scene.Make(BLT_SCREEN, 1);
+	EFFECT_LIST list{&zoneEffect, &screenEffect, &third};
+	POINT point = {1, 1};
+	Access::DrawEffects(scene.View(), &point, list.begin(), 2);
+	scene.Expect(BLT_NORMAL, 28, 30);
+	scene.Expect(BLT_EFFECT, 13, 18);
+	CHECK(scene.Same());
+	CHECK(SameRect(zoneEffect.GetScreenRect(), 28, 30, 33, 34));	// selectable: it is picked
+	CHECK(Untouched(screenEffect));								// not selectable
+	CHECK(Untouched(third));									// past the count
+}
+
+TEST(TopView3Effects, AnEffectStillDelayedIsSkipped)
+{
+	Sparks scene;
+	MEffectHost host;
+	host.CurrentFrame = +[]() -> DWORD { return 10; };
+	MEffect::SetHost(&host);
+	MEffect& waiting = scene.Make(BLT_NORMAL, 1);
+	waiting.SetDelayFrame(5);
+	MEffect& shown = scene.Make(BLT_EFFECT, 1);
+	shown.SetPixelPosition(30, 40, 0);
+	EFFECT_LIST list{&waiting, &shown};
+	POINT point = {0, 0};
+	Access::DrawEffects(scene.View(), &point, list.begin(), 2);
+	scene.Expect(BLT_EFFECT, 33, 46);
+	CHECK(scene.Same());
+	CHECK(Untouched(waiting));
+	MEffect::SetHost(nullptr);
+}
+
+TEST(TopView3Effects, TheNoEffectEventHidesThemAll)
+{
+	Sparks scene;
+	scene.Event(EVENTID_METEOR, EVENTFLAG_NOT_DRAW_EFFECT);
+	MEffect& effect = scene.Make(BLT_NORMAL, 1);
+	EFFECT_LIST list{&effect};
+	POINT point = {0, 0};
+	Access::DrawEffects(scene.View(), &point, list.begin(), 1);
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3GroundEffect, GroundEffectsAreDrawnAtTheirPixelUnlessSkipped)
+{
+	Sparks scene;
+	scene.View().m_FirstZonePixel = {60, 40};
+	MEffect& mark = scene.Make(BLT_NORMAL, 1);
+	mark.SetPixelPosition(84, 75, 10);
+	MEffect& skipped = scene.Make(BLT_EFFECT, 1);
+	skipped.SetPixelPosition(70, 50, 0);
+	skipped.SetDrawSkip(true);
+	MEffect& pool = scene.Make<MEffect>(BLT_EFFECT, 1);
+	pool.SetPixelPosition(100, 90, 4);					// (40, 46) on the screen
+	for (MEffect* effect : {&mark, &skipped, &pool}) scene.zone->m_mapGroundEffect[effect->GetID()] = effect;
+	scene.View().SetSelectedEffect(mark.GetID());			// selected, with no target to show
+	Access::DrawGroundEffect(scene.View());
+	scene.Expect(BLT_NORMAL, 28, 30);
+	scene.Expect(BLT_EFFECT, 43, 52);
+	CHECK(scene.Same());
+	CHECK(SameRect(mark.GetScreenRect(), 28, 30, 33, 34));
+	CHECK(Untouched(skipped));
+	CHECK(Untouched(pool));
+}
+
+//----------------------------------------------------------------------
+// Effects attached to a creature
+//----------------------------------------------------------------------
+namespace {
+
+// A tested frame ID has eight directions of eight frames, empty until a
+// test places one; frame ID f's palette is a colour of its own. Alpha
+// sprite 0 is half transparent, 1 opaque; the screen and normal sprites
+// are 3 x 2.
+struct Aura : Scene
+{
+	static const int kTurretBullet = EFFECTSPRITETYPE_INSTALL_TURRET_BULLET - MAX_EFFECTSPRITETYPE_ALPHAEFFECT;
+	Creature wearer;
+	std::vector<std::unique_ptr<MAttachEffect>> effects;
+	ATTACHEFFECT_LIST list;
+	Aura()
+	{
+		const int ids = (std::max)({int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), kTurretBullet}) + 1;
+		View().m_EffectAlphaFPK.Init(TYPE_FRAMEID(ids));
+		View().m_EffectScreenFPK.Init(8);
+		View().m_EffectNormalFPK.Init(8);
+		for (int id : {1, 2, 3, 4, int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), kTurretBullet})
+			Shape(View().m_EffectAlphaFPK, id);
+		for (int id = 1; id < 8; ++id)
+		{
+			Shape(View().m_EffectScreenFPK, id);
+			Shape(View().m_EffectNormalFPK, id);
+		}
+		View().m_EffectAlphaSPK.Init(2);
+		PalSprite(View().m_EffectAlphaSPK[0], 3, 2, 0x10);
+		PalSprite(View().m_EffectAlphaSPK[1], 3, 2, 0x20);
+		View().m_EffectScreenSPK.Init(1);
+		PalSprite(View().m_EffectScreenSPK[0], 3, 2, 0);
+		View().m_EffectNormalSPK.Init(1);
+		Solid(View().m_EffectNormalSPK[0], 3, 2, 0x7BEF);
+		View().m_EffectAlphaPPK.Init(WORD(ids));
+		View().m_EffectScreenPPK.Init(8);
+		for (int id = 0; id < ids; ++id) Palette(View().m_EffectAlphaPPK[WORD(id)], WORD(0x0841 * (1 + id % 7) | 0x8000));
+		for (int id = 0; id < 8; ++id) Palette(View().m_EffectScreenPPK[WORD(id)], WORD(0x1082 * (1 + id)));
+		actionEffects.Init(ACTIONEFFECTSPRITETYPE_EXTREME_FEMALE + 1);
+		for (int aest : {1, 2, int(ACTIONEFFECTSPRITETYPE_EXTREME_MALE)})
+		{
+			ACTION_FRAMEID_ARRAY& actions = testfw::MutableRow(actionEffects, aest);
+			actions.Init(256);
+			for (int action = 0; action < 256; ++action) testfw::MutableRow(actions, action).FrameID = FRAMEID_NULL;
+		}
+		wearer.SetCreatureType(kSlayer);
+		wearer.m_Action = ACTION_STAND;
+		wearer.m_ActionCountMax = 100;
+		wearer.SetCurrentDirection(0);
+	}
+	static void Shape(CEffectFramePack& frames, int id)
+	{
+		frames[WORD(id)].Init(8);
+		for (int direction = 0; direction < 8; ++direction)
+		{
+			frames[WORD(id)][BYTE(direction)].Init(8);
+			for (int f = 0; f < 8; ++f) frames[WORD(id)][BYTE(direction)][WORD(f)].Set(SPRITEID_NULL, 0, 0, 0, false);
+		}
+	}
+	// Frame f of (id, direction) is the sprite at (cx, cy), behind or in front.
+	static void Place(CEffectFramePack& frames, int id, int direction, int f, int sprite, int cx, int cy, bool back = false)
+	{
+		frames[WORD(id)][BYTE(direction)][WORD(f)].Set(TYPE_SPRITEID(sprite), short(cx), short(cy), 0, back);
+	}
+	void Alpha(int id, int direction, int f, int sprite, int cx, int cy, bool back = false) { Place(View().m_EffectAlphaFPK, id, direction, f, sprite, cx, cy, back); }
+	EFFECTSPRITETYPETABLE_INFO& Type(int est) { return testfw::MutableRow(effectSprites, est); }
+	void Act(int aest, int action, int frameID) { testfw::MutableRow(actionEffects, aest, action).FrameID = TYPE_FRAMEID(frameID); }
+	template<class Effect = MAttachEffect> Effect& Attach(Effect* effect, BYTE bltType, int frameID, int maxFrame, int frame = 0, int direction = 0)
+	{
+		effect->SetBltType(bltType);
+		effect->SetFrameID(TYPE_FRAMEID(frameID), BYTE(maxFrame));
+		for (int f = 0; f < frame; ++f) effect->NextFrame();
+		effect->SetDirection(BYTE(direction));
+		effects.emplace_back(effect);
+		list.push_back(effect);
+		return *effect;
+	}
+	MAttachEffect& Make(int est, BYTE bltType, int frameID, int maxFrame = 8, int frame = 0, int direction = 0)
+	{
+		return Attach(new MAttachEffect(TYPE_EFFECTSPRITETYPE(est), 0), bltType, frameID, maxFrame, frame, direction);
+	}
+	void Draw(int type = 0, MCreature* creature = nullptr)
+	{
+		POINT point = {20, 20};
+		Access::DrawAttachEffect(View(), &point, list.begin(), BYTE(list.size()), creature != nullptr ? creature : &wearer, type);
+		CHECK(At(point, 20, 20));
+	}
+	void ExpectAlpha(int x, int y, int sprite, int id) { expected.Alpha(20 + x, 20 + y, View().m_EffectAlphaSPK[WORD(sprite)], View().m_EffectAlphaPPK[WORD(id)]); }
+	// The attached alpha frame, which is drawn twice (recorded defect).
+	void ExpectAttached(int x, int y, int sprite, int id) { ExpectAlpha(x, y, sprite, id); ExpectAlpha(x, y, sprite, id); }
+	void ExpectScreen(int x, int y, int id) { expected.Screen(20 + x, 20 + y, View().m_EffectScreenSPK[0], View().m_EffectScreenPPK[WORD(id)]); }
+	void ExpectNormal(int x, int y) { expected.Sprite(20 + x, 20 + y, View().m_EffectNormalSPK[0]); }
+};
+
+} // namespace
+
+TEST(TopView3AttachEffect, NothingIsDrawnForNoCreature)
+{
+	Aura scene;
+	scene.Alpha(1, 0, 0, 1, 4, 5);
+	scene.Make(10, BLT_EFFECT, 1);
+	POINT point = {20, 20};
+	Access::DrawAttachEffect(scene.View(), &point, scene.list.begin(), 1, nullptr, 0);
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3AttachEffect, AnAlphaFrameIsDrawnTwice)
+{
+	Aura scene;
+	scene.Alpha(1, 0, 0, 0, 4, 5);
+	scene.Make(10, BLT_EFFECT, 1);
+	scene.Draw();
+	scene.ExpectAlpha(4, 5, 0, 1);
+	// Recorded defect: once by the expanded blit, once by DRAW_ALPHASPRITEPAL
+	// in the 2D branch, so a translucent effect shows darker than drawn once.
+	CHECK(scene.drawn.Picture() != scene.expected.Picture());
+	scene.ExpectAlpha(4, 5, 0, 1);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, AColourEffectIsSkippedAndTheNextDrawn)
+{
+	Aura scene;
+	scene.Alpha(1, 0, 0, 1, 4, 5);
+	scene.Alpha(1, 2, 0, 1, 9, 1);
+	scene.Make(10, BLT_EFFECT, 1).SetEffectColor(7);
+	scene.Make(10, BLT_EFFECT, 1, 8, 0, 2);
+	scene.Draw();
+	scene.ExpectAttached(9, 1, 1, 1);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, TheEffectsDirectionAndFrameChooseTheFrameUpToItsLast)
+{
+	Aura scene;
+	scene.Alpha(1, 3, 2, 1, 4, 5);
+	scene.Make(10, BLT_EFFECT, 1, 8, 2, 3);
+	scene.Draw();
+	scene.ExpectAttached(4, 5, 1, 1);
+	CHECK(scene.Same());
+	// A frame past the direction's last shows its last.
+	scene.View().m_EffectAlphaFPK[1][3].Init(3);
+	scene.Alpha(1, 3, 2, 1, 7, 8);
+	scene.list.clear();
+	scene.Make(10, BLT_EFFECT, 1, 8, 6, 3);
+	scene.Clear();
+	scene.Draw();
+	scene.ExpectAttached(7, 8, 1, 1);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, ADrawTypeDrawsTheFramesBehindOrInFront)
+{
+	for (bool back : {false, true})
+		for (int type : {0, 1, 2})
+		{
+			Aura scene;
+			scene.Alpha(1, 0, 0, 1, 4, 5, back);
+			scene.Make(10, BLT_EFFECT, 1);
+			scene.Draw(type);
+			if (type == 0 || (type == 1) == !back)
+			{
+				scene.ExpectAttached(4, 5, 1, 1);
+				CHECK(scene.Same());
+			}
+			else CHECK(scene.drawn.Blank());
+		}
+}
+
+TEST(TopView3AttachEffect, ATypePastTheTableIsNotDrawn)
+{
+	Aura scene;
+	scene.Alpha(1, 0, 0, 1, 4, 5);
+	scene.Make(MAX_EFFECTSPRITETYPE, BLT_EFFECT, 1);
+	scene.Draw();
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3AttachEffect, PairFramesAreDrawnAfterOrBeforeTheFrame)
+{
+	for (bool pairBack : {false, true})
+	{
+		Aura scene;
+		scene.Alpha(1, 0, 3, 1, 4, 5);
+		scene.View().m_EffectAlphaFPK[2][0].Init(2);			// the pair has two frames: 3 % 2 is 1
+		scene.Alpha(2, 0, 1, 1, 4, 5);
+		scene.Type(11).PairFrameIDList = {2};
+		scene.Type(11).bPairFrameBack = pairBack;
+		scene.Make(11, BLT_EFFECT, 1, 8, 3);
+		scene.Draw();
+		if (pairBack) scene.ExpectAlpha(4, 5, 1, 2);
+		scene.ExpectAttached(4, 5, 1, 1);
+		if (!pairBack) scene.ExpectAlpha(4, 5, 1, 2);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3AttachEffect, APairFrameKeepsToItsOwnSide)
+{
+	for (bool pairBack : {false, true})
+	{
+		Aura scene;
+		scene.Alpha(1, 0, 0, 1, 4, 5);
+		scene.Alpha(2, 0, 0, 1, 9, 9, true);					// the pair's frame is behind
+		scene.Type(11).PairFrameIDList = {2};
+		scene.Type(11).bPairFrameBack = pairBack;
+		scene.Make(11, BLT_EFFECT, 1);
+		scene.Draw(1);
+		scene.ExpectAttached(4, 5, 1, 1);
+		CHECK(scene.Same());
+		scene.Clear();
+		scene.Draw(2);
+		scene.ExpectAlpha(9, 9, 1, 2);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3AttachEffect, AnActionsFrameReplacesTheEffectsInTheCreaturesDirection)
+{
+	Aura scene;
+	scene.Type(12).ActionEffectFrameID = 1;
+	scene.Act(1, ACTION_ATTACK, 3);
+	scene.Act(1, ACTION_MAGIC, 3);
+	scene.Act(1, ACTION_MOVE, 3);
+	for (int f = 0; f < 8; ++f) scene.Alpha(3, 5, f, 1, 2 * f, 3);
+	scene.Make(12, BLT_EFFECT, 1, 6);
+	scene.wearer.SetCurrentDirection(5);
+	const struct { int action, count, move, frame; } cases[] = {
+		{ ACTION_ATTACK, 2, 0, 2 },
+		{ ACTION_ATTACK, 9, 0, 5 },							// up to the effect's last frame
+		{ ACTION_ADVANCEMENT_MAGIC_ATTACK, 4, 0, 4 },		// an advanced magic attack is magic
+		{ ACTION_ADVANCEMENT_SLAYER_MAGIC_ATTACK, 1, 0, 1 },
+		{ ACTION_ADVANCEMENT_OUSTERS_MAGIC_ATTACK, 3, 0, 3 },
+		{ ACTION_MOVE, 4, 1, 1 },							// a move counts its moves
+	};
+	for (const auto& c : cases)
+	{
+		scene.wearer.m_Action = BYTE(c.action);
+		scene.wearer.m_ActionCount = BYTE(c.count);
+		scene.wearer.m_MoveCount = BYTE(c.move);
+		scene.Clear();
+		scene.Draw();
+		scene.ExpectAttached(2 * c.frame, 3, 1, 3);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3AttachEffect, AnActionWithoutAFrameStillTurnsTheEffect)
+{
+	Aura scene;
+	scene.Type(12).ActionEffectFrameID = 1;
+	scene.Alpha(1, 5, 2, 1, 6, 6);
+	scene.Make(12, BLT_EFFECT, 1, 8, 2);
+	scene.wearer.SetCurrentDirection(5);
+	scene.Draw();
+	scene.ExpectAttached(6, 6, 1, 1);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, AnExtremeEffectNeedsAnActionFrameAndAPlainCreature)
+{
+	Aura scene;
+	const int extreme = ACTIONEFFECTSPRITETYPE_EXTREME_MALE;
+	scene.Type(13).ActionEffectFrameID = TYPE_FRAMEID(extreme);
+	scene.Alpha(1, 0, 0, 1, 1, 1);
+	scene.Alpha(3, 0, 0, 1, 6, 6);
+	scene.Make(13, BLT_EFFECT, 1);
+	scene.Draw();										// standing has no frame: skipped
+	CHECK(scene.drawn.Blank());
+	scene.Act(extreme, ACTION_STAND, 3);
+	scene.Draw();
+	scene.ExpectAttached(6, 6, 1, 3);
+	CHECK(scene.Same());
+	for (int type : {CREATURETYPE_BAT, CREATURETYPE_WOLF, CREATURETYPE_WER_WOLF})
+	{
+		Creature beast;
+		beast.SetCreatureType(TYPE_CREATURETYPE(type));
+		beast.m_Action = ACTION_STAND;
+		scene.Clear();
+		scene.Draw(0, &beast);
+		CHECK(scene.drawn.Blank());
+	}
+}
+
+TEST(TopView3AttachEffect, ASwordTrailShowsOnlyOnItsSwordActions)
+{
+	Aura scene;
+	for (int f = 0; f < 8; ++f) scene.Alpha(1, 0, f, 1, 2 * f, 2);
+	scene.Make(EFFECTSPRITETYPE_LAR_SLASH_MALE_FAST, BLT_EFFECT, 1, 6);
+	const struct { int action; bool shown; } larSlash[] = {
+		{ ACTION_SLAYER_SWORD_2, true }, { ACTION_SLAYER_SWORD_2_SLOW, true }, { ACTION_SLAYER_SWORD_2_FAST, true },
+		{ ACTION_SLAYER_SWORD, false }, { ACTION_STAND, false },
+	};
+	for (const auto& c : larSlash)
+	{
+		scene.wearer.m_Action = BYTE(c.action);
+		scene.wearer.m_ActionCount = 9;					// the trail's frame: up to the effect's last
+		scene.Clear();
+		scene.Draw();
+		if (c.shown)
+		{
+			scene.ExpectAttached(10, 2, 1, 1);
+			CHECK(scene.Same());
+		}
+		else CHECK(scene.drawn.Blank());
+	}
+	scene.list.clear();
+	scene.Make(EFFECTSPRITETYPE_REDIANCE_MALE_FAST, BLT_EFFECT, 1, 6);
+	for (int action : {int(ACTION_SLAYER_SWORD), int(ACTION_SLAYER_SWORD_FAST), int(ACTION_SLAYER_SWORD_SLOW), int(ACTION_SLAYER_SWORD_2)})
+	{
+		scene.wearer.m_Action = BYTE(action);
+		scene.wearer.m_ActionCount = 3;
+		scene.Clear();
+		scene.Draw();
+		scene.ExpectAttached(6, 2, 1, 1);
+		CHECK(scene.Same());
+	}
+	scene.wearer.m_Action = ACTION_STAND;
+	scene.Clear();
+	scene.Draw();
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3AttachEffect, AnInstalledTurretShowsOnlyItsFireAndShells)
+{
+	Aura scene;
+	scene.wearer.Set(EFFECTSTATUS_INSTALL_TURRET);
+	for (int id : {1, int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet})
+		scene.Alpha(id, 0, 0, 1, 2 + (id % 5) * 7, 3);
+	scene.Make(10, BLT_EFFECT, 1);
+	for (int id : {int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet})
+		scene.Make(10, BLT_EFFECT, id);
+	scene.Draw();
+	for (int id : {int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet})
+		scene.ExpectAttached(2 + (id % 5) * 7, 3, 1, id);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, ANormalEffectIsDrawnOnceWithItsPairs)
+{
+	Aura scene;
+	Aura::Place(scene.View().m_EffectNormalFPK, 5, 2, 1, 0, 3, 4);
+	Aura::Place(scene.View().m_EffectNormalFPK, 6, 2, 1, 0, 12, 9);
+	scene.Type(14).PairFrameIDList = {6};
+	scene.Make(14, BLT_NORMAL, 5, 8, 1, 2);
+	scene.Draw(2);										// a normal effect ignores the draw type
+	scene.ExpectNormal(3, 4);
+	scene.ExpectNormal(12, 9);
+	CHECK(scene.Same());
+	// A type past the table draws the frame but not its pairs.
+	scene.list.clear();
+	scene.Make(MAX_EFFECTSPRITETYPE, BLT_NORMAL, 5, 8, 1, 2);
+	scene.Clear();
+	scene.Draw();
+	scene.ExpectNormal(3, 4);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, AScreenEffectIsDrawnOnceThenItsPairs)
+{
+	Aura scene;
+	Aura::Place(scene.View().m_EffectScreenFPK, 1, 0, 0, 0, 4, 5);
+	Aura::Place(scene.View().m_EffectScreenFPK, 2, 0, 0, 0, 4, 5);
+	Aura::Place(scene.View().m_EffectScreenFPK, 3, 0, 0, 0, 9, 9, true);
+	scene.Type(15).PairFrameIDList = {2, 3};
+	scene.Make(15, BLT_SCREEN, 1);
+	scene.Draw();
+	scene.ExpectScreen(4, 5, 1);
+	scene.ExpectScreen(4, 5, 2);
+	scene.ExpectScreen(9, 9, 3);
+	CHECK(scene.Same());
+	scene.Clear();
+	scene.Draw(2);										// only the frame behind
+	scene.ExpectScreen(9, 9, 3);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3AttachEffect, AScreenEffectsActionFrameCountsOnlyWhenItIsAnother)
+{
+	Aura scene;
+	scene.Type(16).ActionEffectFrameID = 2;
+	scene.Act(2, ACTION_STAND, 1);						// its own frame: the effect's frame stays
+	scene.Act(2, ACTION_ATTACK, 3);
+	for (int f = 0; f < 8; ++f)
+	{
+		Aura::Place(scene.View().m_EffectScreenFPK, 1, 4, f, 0, 2 * f, 1);
+		Aura::Place(scene.View().m_EffectScreenFPK, 3, 4, f, 0, 2 * f, 7);
+	}
+	scene.Make(16, BLT_SCREEN, 1, 8, 2);
+	scene.wearer.SetCurrentDirection(4);
+	scene.wearer.m_ActionCount = 5;
+	scene.Draw();
+	scene.ExpectScreen(4, 1, 1);
+	CHECK(scene.Same());
+	scene.wearer.m_Action = ACTION_ATTACK;
+	scene.Clear();
+	scene.Draw();
+	scene.ExpectScreen(10, 7, 3);
+	CHECK(scene.Same());
+}
+
+namespace {
+
+// The orbit paths are built from the math tables; both are put back.
+struct Orbits : Aura
+{
+	std::vector<int> sine, cosine, tangent;
+	Orbits()
+		: sine(MathTable::FSinTab, MathTable::FSinTab + MathTable::MAX_ANGLE),
+		  cosine(MathTable::FCosTab, MathTable::FCosTab + MathTable::MAX_ANGLE),
+		  tangent(MathTable::FArcTanTab, MathTable::FArcTanTab + MathTable::MAX_ANGLE + 1)
+	{
+		MathTable::FCreateSines();
+		EffectOrbit::InitializePositions();
+	}
+	~Orbits()
+	{
+		std::copy(sine.begin(), sine.end(), MathTable::FSinTab);
+		std::copy(cosine.begin(), cosine.end(), MathTable::FCosTab);
+		std::copy(tangent.begin(), tangent.end(), MathTable::FArcTanTab);
+		EffectOrbit::InitializePositions();
+	}
+	// The orbit step farthest above (y < 0) or below (y > 0).
+	int Step(bool above)
+	{
+		MAttachOrbitEffect probe(10, 0, 1, 0);
+		int best = 0, bestY = 0;
+		for (int step = 0; step < EffectOrbit::StepCount; ++step)
+		{
+			probe.SetOrbitStep(step);
+			const int y = probe.GetOrbitPosition().y;
+			if (above ? y < bestY : y > bestY) { best = step; bestY = y; }
+		}
+		return best;
+	}
+	MAttachOrbitEffect& Orbit(BYTE bltType, int frameID, int step)
+	{
+		MAttachOrbitEffect& effect = Attach(new MAttachOrbitEffect(10, 0, 1, step), bltType, frameID, 8);
+		return effect;
+	}
+};
+
+} // namespace
+
+TEST(TopView3AttachEffect, AnOrbitingEffectIsDrawnAtItsOrbitBehindWhenAbove)
+{
+	for (bool above : {false, true})
+	{
+		Orbits scene;
+		scene.Alpha(1, 0, 0, 1, 30, 30);					// a frame in front
+		MAttachOrbitEffect& orbit = scene.Orbit(BLT_EFFECT, 1, scene.Step(above));
+		const POINT at = orbit.GetOrbitPosition();
+		CHECK(above ? at.y < 0 : at.y > 0);
+		CHECK(at.x != 0 || at.y != 0);
+		scene.Draw(above ? 2 : 1);
+		scene.ExpectAttached(30 + at.x, 30 + at.y, 1, 1);
+		CHECK(scene.Same());
+		scene.Clear();
+		scene.Draw(above ? 1 : 2);
+		CHECK(scene.drawn.Blank());
+	}
+}
+
+TEST(TopView3AttachEffect, AnOrbitingNormalEffectIgnoresItsOrbit)
+{
+	// Recorded defect: the orbit offset goes to a point the blit does not
+	// use. (Drawn after an alpha effect, which sets that point; alone, the
+	// offset would be added to an unset one.)
+	Orbits scene;
+	scene.Alpha(1, 0, 0, 1, 2, 2);
+	scene.Make(10, BLT_EFFECT, 1);
+	Aura::Place(scene.View().m_EffectNormalFPK, 3, 0, 0, 0, 30, 30);
+	MAttachOrbitEffect& orbit = scene.Orbit(BLT_NORMAL, 3, scene.Step(true));
+	CHECK(orbit.GetOrbitPosition().y < 0);
+	scene.Draw();
+	scene.ExpectAttached(2, 2, 1, 1);
+	scene.ExpectNormal(30, 30);
 	CHECK(scene.Same());
 }
