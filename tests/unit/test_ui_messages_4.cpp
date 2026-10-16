@@ -2189,6 +2189,14 @@ TEST(UIMessages4Store, AnItemIsDisplayedInTheFirstEmptySlot)
 	CHECK(scene.Nothing());
 }
 
+namespace {
+// A stall's item that says when it is freed.
+struct Shown : MHelm
+{
+	~Shown() override { calls.push_back("freed|" + N(GetID())); }
+};
+} // namespace
+
 TEST(UIMessages4Store, AnItemIsTakenOffTheStallBeforeTheServerAnswers)
 {
 	Scene scene;
@@ -2200,7 +2208,7 @@ TEST(UIMessages4Store, AnItemIsTakenOffTheStallBeforeTheServerAnswers)
 	CHECK(scene.Nothing());
 	g_pStorage2 = new MStorage;
 	g_pStorage2->Init(1);
-	MHelm* pShown = new MHelm;
+	Shown* pShown = new Shown;
 	pShown->SetItemType(0);
 	pShown->SetID(695);
 	CHECK(g_pStorage2->SetItem(1, pShown));
@@ -2211,10 +2219,21 @@ TEST(UIMessages4Store, AnItemIsTakenOffTheStallBeforeTheServerAnswers)
 	CHECK(g_pStorage2->GetItem(1) == pShown);
 	scene.Run(UI_UNDISPLAY_ITEM, 1, 0, &mouseItem);
 	CHECK(SameBytes(One<CGUndisplayItem>([](CGUndisplayItem& p) { p.setIndex(1); p.setItemObjectID(695); p.setXY(6, 3); }), scene.Sent()));
-	// Recorded defect: removed at once, before any answer, and the item
-	// it hands back is never deleted (L11180) - freed here.
+	// Recorded defect: removed at once, before any answer (L11180). The
+	// item it hands back is freed.
 	CHECK(g_pStorage2->GetItem(1) == NULL);
-	delete pShown;
+	CHECK(Same({"freed|695"}));
+	// As the stall's window sends it: the shown item itself.
+	Shown* pOwn = new Shown;
+	pOwn->SetItemType(0);
+	pOwn->SetID(696);
+	pOwn->SetGridXY(2, 5);
+	CHECK(g_pStorage2->SetItem(2, pOwn));
+	scene.Fresh();
+	calls.clear();
+	scene.Run(UI_UNDISPLAY_ITEM, 2, 0, pOwn);
+	CHECK(SameBytes(One<CGUndisplayItem>([](CGUndisplayItem& p) { p.setIndex(2); p.setItemObjectID(696); p.setXY(2, 5); }), scene.Sent()));
+	CHECK(Same({"freed|696"}));
 }
 
 TEST(UIMessages4Store, ClosingTheShopDropsTheStall)

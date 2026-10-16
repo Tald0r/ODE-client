@@ -11301,6 +11301,9 @@ UIMessageManager::Execute_UI_UNDISPLAY_ITEM(intptr_t left, intptr_t right, void*
 				 _CGUndisplayItem.setXY(pMouseItem->GetGridX(),pMouseItem->GetGridY());
 				 
 				 g_pSocket->sendPacket( &_CGUndisplayItem );
+
+				 // The stall's copy is ours now; often void_ptr itself, so it goes last.
+				 delete pRemovedItem;
 			}
 //		}
 	}
