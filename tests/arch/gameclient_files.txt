@@ -11,6 +11,7 @@ Client/GameInitInfo.cpp
 Client/GameInitInfo.h
 Client/GameInitInfoHost.h
 Client/GameUI.cpp
+Client/GameUIBuilders.h
 Client/GuildMarkTypes.h
 Client/MGuildMarkManager.h
 Client/MHelpManager.h

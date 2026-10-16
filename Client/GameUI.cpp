@@ -18,6 +18,7 @@
 #include "GameMessages.h"
 #include "../basic/CMessageArray.h"
 #include "UIFunction.h"
+#include "GameUIBuilders.h"
 #include "VS_UI.h" 
 #include "VS_UI_mouse_pointer.h"
 #include "PacketDef.h"
@@ -2150,20 +2151,15 @@ UI_SetNPCInfo( const char* pName, int npcID, int x, int y )
 }
 
 //-----------------------------------------------------------------------------
-// Set Character
+// Make Character Slot
 //-----------------------------------------------------------------------------
-void
-UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
+S_SLOT
+MakeCharacterSlot(const char* name, const PCSlayerInfo* pInfo)
 {
-	// The slot names one of the user's three characters; LCPCList hands
-	// 0 to SLOT_MAX - 1.
-	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
-		return;
-
 	// set character
 	S_SLOT slot;
 
-	slot.sz_name = g_pUserInformation->Character[slotID];
+	slot.sz_name = name;
 	slot.sz_guild_name = "";
 	slot.Race = RACE_SLAYER;
 
@@ -2479,23 +2475,33 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	if(slot.right_color != UNIQUE_ITEM_COLOR && slot.right_color != QUEST_ITEM_COLOR)
 		slot.right_color = max(0, min(slot.right_color, MAX_COLORSET-1));	
 	
-	gC_vs_ui.SetCharacter(slotID, slot);
+	return slot;
 }
 
 //-----------------------------------------------------------------------------
 // Set Character
 //-----------------------------------------------------------------------------
 void
-UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
+UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 {
 	// The slot names one of the user's three characters; LCPCList hands
 	// 0 to SLOT_MAX - 1.
 	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
 		return;
 
+	S_SLOT slot = MakeCharacterSlot(g_pUserInformation->Character[slotID], pInfo);
+	gC_vs_ui.SetCharacter(slotID, slot);
+}
+
+//-----------------------------------------------------------------------------
+// Make Character Slot
+//-----------------------------------------------------------------------------
+S_SLOT
+MakeCharacterSlot(const char* name, const PCVampireInfo* pInfo)
+{
 	S_SLOT slot;
 
-	slot.sz_name = g_pUserInformation->Character[slotID];
+	slot.sz_name = name;
 	slot.sz_guild_name = "";
 //	slot.bl_vampire = true;
 	slot.Race = RACE_VAMPIRE;
@@ -2615,25 +2621,35 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	if(slot.right_color != UNIQUE_ITEM_COLOR && slot.right_color != QUEST_ITEM_COLOR)
 		slot.right_color = max(0, min(slot.right_color, MAX_COLORSET-1));
 
-	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d Before", slotID);
-	gC_vs_ui.SetCharacter(slotID, slot);
-	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d After", slotID);
+	return slot;
 }
 
 //-----------------------------------------------------------------------------
 // Set Character
 //-----------------------------------------------------------------------------
 void
-UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
+UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 {
 	// The slot names one of the user's three characters; LCPCList hands
 	// 0 to SLOT_MAX - 1.
 	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
 		return;
 
+	S_SLOT slot = MakeCharacterSlot(g_pUserInformation->Character[slotID], pInfo);
+	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d Before", slotID);
+	gC_vs_ui.SetCharacter(slotID, slot);
+	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d After", slotID);
+}
+
+//-----------------------------------------------------------------------------
+// Make Character Slot
+//-----------------------------------------------------------------------------
+S_SLOT
+MakeCharacterSlot(const char* name, const PCOustersInfo* pInfo)
+{
 	S_SLOT slot;
 
-	slot.sz_name = g_pUserInformation->Character[slotID];
+	slot.sz_name = name;
 	slot.sz_guild_name = "";
 	slot.Race = RACE_OUSTERS;
 
@@ -2773,6 +2789,21 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	if(slot.right_color != UNIQUE_ITEM_COLOR && slot.right_color != QUEST_ITEM_COLOR)
 		slot.right_color = max(0, min(slot.right_color, MAX_COLORSET-1));
 
+	return slot;
+}
+
+//-----------------------------------------------------------------------------
+// Set Character
+//-----------------------------------------------------------------------------
+void
+UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
+{
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
+	S_SLOT slot = MakeCharacterSlot(g_pUserInformation->Character[slotID], pInfo);
 	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d Before", slotID);
 	gC_vs_ui.SetCharacter(slotID, slot);
 	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d After", slotID);
@@ -3688,18 +3719,8 @@ void	UI_SetGuild(WORD guild_id, BYTE guild_rank, std::string guild_name)
 	gC_vs_ui.CloseTeamMemberList();
 }
 
-void	UI_RunOtherInfo(MCreature *pCreature)
+void	FillOtherInfo(C_VS_UI_OTHER_INFO::PLAYER_INFO& info, MCreature *pCreature)
 {
-	DEBUG_ADD("[UI_RunOtherInfo] START");
-
-	if(pCreature == NULL)
-	{
-		DEBUG_ADD_WAR("[UI_RunOtherInfo] pCreature == NULL");
-		return;
-	}
-
-
-	C_VS_UI_OTHER_INFO::PLAYER_INFO info;
 	if(pCreature->GetName() != NULL)
 		info.PLAYER_NAME = pCreature->GetName();
 	else
@@ -3760,6 +3781,21 @@ void	UI_RunOtherInfo(MCreature *pCreature)
 	info.DEX_PURE = pCreature->GetBASIC_DEX();
 	info.INT_PURE = pCreature->GetBASIC_INT();
 	info.guild_id = pCreature->GetGuildNumber();
+}
+
+void	UI_RunOtherInfo(MCreature *pCreature)
+{
+	DEBUG_ADD("[UI_RunOtherInfo] START");
+
+	if(pCreature == NULL)
+	{
+		DEBUG_ADD_WAR("[UI_RunOtherInfo] pCreature == NULL");
+		return;
+	}
+
+
+	C_VS_UI_OTHER_INFO::PLAYER_INFO info;
+	FillOtherInfo(info, pCreature);
 	DEBUG_ADD_FORMAT("[UI_RunOtherInfo] Name : %s, guild_id : %d, BLADE : %d, SWORD : %d, GUN : %d, HEAL : %d, ENCHANT : %d, GRADE : %d, LEVEL : %d, FAME : %d, ALIGNMENT : %d, STR_PURE : %d, STR_CUR : %d, DEX_PURE : %d, DEX_CUR : %d, INT_PURE : %d, INT_CUR : %d, face_type : %d, bl_female : %d", 
 		info.PLAYER_NAME.c_str(), info.guild_id, info.DOMAINLEVEL[0], info.DOMAINLEVEL[1], info.DOMAINLEVEL[2], info.DOMAINLEVEL[3], info.DOMAINLEVEL[4], info.GRADE, info.LEVEL, info.FAME, info.ALIGNMENT, info.STR_PURE, info.STR_CUR, info.DEX_PURE, info.DEX_CUR, info.INT_PURE, info.INT_CUR, info.face_type, info.bl_female);
 	
