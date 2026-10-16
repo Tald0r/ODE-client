@@ -79,6 +79,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 extern BYTE g_macAddress[6];
 extern BOOL g_bSetHotKey;
 extern C_VS_UI_DIALOG* g_msg_free_text;
@@ -268,6 +280,19 @@ bool FileExists(const char* path)
 {
 	std::ifstream in(path, std::ios::binary);
 	return in.good();
+}
+
+// Whether a string the handler took was freed. Only ASan can tell, by
+// the poison its quarantine keeps on a freed block; without it this says
+// yes, so the check is the sanitized trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
 }
 
 // Strings as the UI hands them: new[] for the login, malloc() for the
@@ -1210,18 +1235,20 @@ TEST(UIMessages1Registration, NothingToRegisterOrNotOnTheTitle)
 {
 	Login scene;
 	MessageUi ui;
-	// No LOGIN, or a string missing: nothing, and the other string is kept
-	// (recorded defect: it leaks).
+	// No LOGIN, or a string missing: nothing, and the other string is
+	// freed.
 	g_Mode = MODE_MAINMENU;
 	scene.Run(UI_RUN_NEWUSER_REGISTRATION, 0, 0, NULL);
-	LOGIN noPassword = {Malloced("Alpha1"), NULL};
+	char* pID = Malloced("Alpha1");
+	LOGIN noPassword = {pID, NULL};
 	scene.Run(UI_RUN_NEWUSER_REGISTRATION, 0, 0, &noPassword);
-	CHECK(noPassword.sz_id != NULL);
-	std::free(noPassword.sz_id);
-	LOGIN noID = {NULL, Malloced("secret1")};
+	CHECK(noPassword.sz_id == NULL && noPassword.sz_password == NULL);
+	CHECK(Freed(pID));
+	char* pPassword = Malloced("secret1");
+	LOGIN noID = {NULL, pPassword};
 	scene.Run(UI_RUN_NEWUSER_REGISTRATION, 0, 0, &noID);
-	CHECK(noID.sz_password != NULL);
-	std::free(noID.sz_password);
+	CHECK(noID.sz_id == NULL && noID.sz_password == NULL);
+	CHECK(Freed(pPassword));
 	// Not on the title: the strings are freed, nothing else.
 	for (CLIENT_MODE mode : {MODE_WAIT_SELECTPC, MODE_GAME, MODE_WAIT_REGISTERPLAYEROK})
 	{
@@ -1381,9 +1408,8 @@ TEST(UIMessages1CheckExistID, NoSocketNothingSent)
 	CHECK(Same({"init socket"}));
 	CHECK(scene.Sent().empty());
 	CHECK(scene.wire.getPlayerStatus() == status);
-	// Recorded defect: this return skips the delete, so the name leaks; the
-	// test frees it (ASan reports a double free if the handler ever does).
-	delete[] pName;
+	// The name is deleted all the same.
+	CHECK(Freed(pName));
 }
 
 //----------------------------------------------------------------------

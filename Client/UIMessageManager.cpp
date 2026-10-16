@@ -1274,15 +1274,20 @@ UIMessageManager::Execute_UI_NEW_CHARACTER(intptr_t left, intptr_t right, void* 
 static void
 RegisterNewUser(LOGIN* pLogin)
 {
-	if (pLogin == NULL || pLogin->sz_id == NULL || pLogin->sz_password == NULL)
+	if (pLogin == NULL)
 	{
-		DEBUG_ADD("[RegisterNewUser] no ID/password");
+		DEBUG_ADD("[RegisterNewUser] no LOGIN");
 		return;
 	}
 
 	bool bOK = false;
 
-	if (g_Mode != MODE_MAINMENU)
+	// A string missing: the other is still freed below.
+	if (pLogin->sz_id == NULL || pLogin->sz_password == NULL)
+	{
+		DEBUG_ADD("[RegisterNewUser] no ID/password");
+	}
+	else if (g_Mode != MODE_MAINMENU)
 	{
 		DEBUG_ADD("[RegisterNewUser] Not Mode MODE_MAINMENU");
 	}
@@ -1578,6 +1583,7 @@ UIMessageManager::Execute_UI_CHECK_EXIST_ID(intptr_t left, intptr_t right, void*
 			if (!UIMessages::InitSocket())
 			{						
 				//InitFail("[Error] Can't init Socket");
+				DeleteNewArray( pName );
 				return;
 			}
 
