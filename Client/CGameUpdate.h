@@ -9,7 +9,7 @@
 #define	__CGAMEUPDATE_H__
 
 #include "WinLib/CWinUpdate.h"
-#include "InputService.h"
+#include "DXLib/CDirectInput.h"
 #include "ClientMode.h"
 #include "MonotonicClock.h"
 #include <optional>
