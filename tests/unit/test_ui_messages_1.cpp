@@ -104,9 +104,6 @@ void ExecuteLogout();
 //   (gC_vs_ui.StartTitle builds every title window, which reads the skin
 //   manager and the sprite packs, and leaves it in the process-wide
 //   gC_vs_ui, whose EndTitle is private). It needs a seam first.
-// - Execute outside the game with a message at or past MAX_UI_MESSAGE:
-//   recorded defect, the bound is checked only in the game, so the message
-//   indexes past m_UIMessageFunction and calls what it finds there.
 // - A NULL void_ptr to NEW_CHARACTER, CHECK_EXIST_ID (IsValidID formats a
 //   NULL "%s"), DELETE_CHARACTER and LOGIN (read even in the wrong mode):
 //   recorded defect, each dereferences it unchecked.
@@ -605,8 +602,8 @@ TEST(UIMessages1Table, InitFillsEverySlotButTen)
 
 //----------------------------------------------------------------------
 // Execute: outside the game it runs the slot's handler with the message's
-// arguments and checks nothing (recorded defect: not even the bound, see
-// the top); an empty slot is skipped.
+// arguments and checks nothing but the table's bound; an empty slot is
+// skipped.
 //----------------------------------------------------------------------
 TEST(UIMessages1Execute, OutsideTheGameTheHandlerRunsWithTheArguments)
 {
@@ -637,6 +634,22 @@ TEST(UIMessages1Execute, OutsideTheGameTheHandlerRunsWithTheArguments)
 	g_pTempInformation = oldTemp;
 	g_pPlayer = oldPlayer;
 	g_pZone = oldZone;
+}
+
+TEST(UIMessages1Execute, OutsideTheGameAMessagePastTheTableIsDropped)
+{
+	// On the heap, so ASan sees a read past the table.
+	Login scene;
+	std::unique_ptr<Probe> pManager(new Probe);
+	pManager->Init();
+	for (CLIENT_MODE mode : {MODE_MAINMENU, MODE_WAIT_SELECTPC, MODE_QUIT})
+	{
+		g_Mode = mode;
+		pManager->Execute(MAX_UI_MESSAGE, 1, 2, NULL);
+		pManager->Execute(0xFFFFFFFFu, 1, 2, NULL);
+	}
+	CHECK(Same({}));
+	CHECK(scene.Sent().empty());
 }
 
 namespace {

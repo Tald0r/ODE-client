@@ -1071,6 +1071,14 @@ UIMessageManager::Init()
 void			
 UIMessageManager::Execute(DWORD message, intptr_t left, intptr_t right, void* void_ptr)
 {
+	// The message indexes the handler table, in every mode.
+	if (message >= MAX_UI_MESSAGE)
+	{
+		DEBUG_ADD_FORMAT_ERR("[Error] UI message past the table. msg=%d", message);
+
+		return;
+	}
+
 	// Basically, if MODE_GAME,
 	// there are values that must not be NULL..
 	if (g_Mode==MODE_GAME
@@ -1081,9 +1089,6 @@ UIMessageManager::Execute(DWORD message, intptr_t left, intptr_t right, void* vo
 			|| (g_pPlayer->IsVampire() && g_pVampireGear==NULL)
 			|| (g_pPlayer->IsOusters() && g_pOustersGear==NULL)
 			|| g_pTempInformation==NULL
-			// 2004, 12, 17, sobeit add start
-			|| message >= MAX_UI_MESSAGE
-			// 2004, 12, 17, sobeit add end
 			)
 		)
 	{
