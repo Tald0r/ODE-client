@@ -128,9 +128,6 @@ extern int					g_y;
 // Sound PartManager
 extern CSoundPartManager*	g_pSoundManager;
 
-// Cursor 관리
-extern CStorageSurface*		g_pCursorSurface;
-
 extern POINT				g_SelectSector;
 extern BOOL					g_bLButtonDown;
 extern BOOL					g_bRButtonDown;
@@ -182,8 +179,6 @@ extern bool				g_bGoodFPS;
 
 extern bool					g_bPutMessage;		// 화면에 debug메세지를 출력할까?
 	
-extern bool					g_bNewDraw;			// 화면을 다시 그렸는가? (커서 제외)
-extern bool					g_bSmoothCursor;	// 부드러운(?) cursor를 출력할 수 있나?
 extern bool					g_bNetStatusGood;	// 네트웍 상태가 좋은가?
 
 extern CMessageArray*		g_pSystemMessage;

@@ -1844,21 +1844,6 @@ CGameUpdate::UpdateDraw()
 	}
 
 	//-----------------------------------------------------------------
-	// Mouse Cursor 위치의 image를 기억시켜두기
-	//-----------------------------------------------------------------
-	//
-	// FullScreen이고...
-	// 바로 전의 FPS가 출력FPS 한계를 넘을 경우....
-	// 커서 출력 위치를 기억한다.
-	// 	
-	// The smooth-cursor surface ping-pong (Store here, Restore/Flip in the
-	// cursor-only path of Update) existed to move the mouse between the old
-	// 16 fps world draws. Full frames now go out at the refresh rate with the
-	// cursor drawn into each one, so the machinery is retired - its saved
-	// background rectangles would smear over interpolated frames.
-	g_bSmoothCursor = false;
-
-	//-----------------------------------------------------------------
 	// Mouse 그리기
 	//-----------------------------------------------------------------
 	if (!g_pTopView->IsDrawRequest())
@@ -2441,9 +2426,6 @@ CGameUpdate::Update(void)
 		if (g_bFrameChanged || g_FrameNow - s_lastDrawTime >= MonotonicClock::Millis(15))
 		{
 			s_lastDrawTime = g_FrameNow;
-			g_bNewDraw = true;
-			
-			
 
 			//------------------------------------------------------
 			// 화면 출력
@@ -2474,153 +2456,6 @@ CGameUpdate::Update(void)
 
 			
 		}		
-		//------------------------------------------------------
-		// 부드럽게 움직이는 커서를 출력할까??
-		//------------------------------------------------------
-		else if (g_bSmoothCursor)
-		{
-			///*
-			static int surface = 0;
-			POINT point;
-
-			POINT cursorPoint;
-			GetCursorPos(&cursorPoint);
-
-			ScreenToClient(g_hWnd, &cursorPoint);//by viva
-			WindowToGamePoint(cursorPoint);
-
-			// UI에 마우스 좌표 설정
-			gC_vs_ui.MouseControl(M_MOVING, cursorPoint.x, cursorPoint.y);
-
-
-			//------------------------------------------------------
-			// 방금 게임 화면이 그려진 상태라면..
-			//------------------------------------------------------
-			// 다음부터는 Flip해서 마우스만 그리기 위해서..
-			// Primary와 Back을 똑같이 만든다.
-			//------------------------------------------------------
-			if (g_bNewDraw)
-			{
-				// 다시 false로..
-				g_bNewDraw = false;
-				
-				//------------------------------------------------------
-				// PrimarySurface --> BackSurface로 copy
-				//------------------------------------------------------
-				// 하드웨어 가속이 되는 경우..
-				// Primary --> Back으로..
-				// 그런데(!) 문제가 좀!! 있다.. 
-				// 그래서 두번 Blt해줬다. - -;;
-				//------------------------------------------------------
-				// (방금 그린 화면과 이전의 화면이 다르기 때문에.. 똑같이 해준다)
-//				if (true)
-//				{
-//					point.x = 0;
-//					point.y = 0;
-//					RECT rect = { 0, 0, 800, 600 };
-//
-//					g_pBack->BltPrimarySurface(&point, &rect);
-//
-//					// 기억했던 커서 부분을 지워준다. --> (0)
-//					//g_pCursorSurface->Restore(0, g_pBack);
-//					//g_FrameCount++;
-//
-//					g_pBack->BltPrimarySurface(&point, &rect);
-//
-//					// 기억했던 커서 부분을 지워준다. --> (0)
-//					g_pCursorSurface->Restore(0, g_pBack);
-//					
-//					// 게임 화면의 Interface부분을 Update시켜줘야 한다.
-//					//
-//					// [ TEST CODE ]					
-//					//gC_vs_ui.VS_UI_Loop();					
-//
-//					//---------------------------------------
-//					// 글자 출력
-//					//---------------------------------------
-//					//UpdateDrawText();
-//				}
-//				//------------------------------------------------------
-//				// 하드웨어 가속이 안되는 경우..
-//				// Last --> Back으로 copy
-//				//------------------------------------------------------
-//				else
-				{
-					// Last --> Back으로 copy
-					RECT rect;
-					point.x = 0;
-					point.y = 0;
-					rect.left = 0;
-					rect.top = 0;
-					rect.right = g_GameRect.right;
-					rect.bottom = g_GameRect.bottom;
-					g_pBack->BltNoColorkey( &point, g_pLast, &rect );
-
-					// 게임 화면의 Interface부분을 Update시켜줘야 한다.
-					//
-					// [ TEST CODE ]					
-					gC_vs_ui.Show();					
-
-					//---------------------------------------
-					// 글자 출력
-					//---------------------------------------
-					//UpdateDrawText();
-
-				}					
-
-				
-				MOUSEPOINTER_INFO mp_info;
-				gC_vs_ui.GetCurrentMousePointerInfo(mp_info);
-
-				// 커서 출력 위치를 기억시킨다. --> (1)
-				point.x = mp_info.x;
-				point.y = mp_info.y;
-				g_pCursorSurface->Store(1, g_pBack, &point);
-
-				// 다음에 처리할 surface번호
-				surface = 0;
-			}
-			//------------------------------------------------------
-			// Flip해서 마우스만 Update하는 상태..
-			//------------------------------------------------------
-			else
-			{	
-				// 기억했던 부분을 출력해서 커서를 지워준다. --> (surface)
-				g_pCursorSurface->Restore(surface, g_pBack);
-
-				// 마우스 출력 영역 설정
-				MOUSEPOINTER_INFO mp_info;
-				gC_vs_ui.GetCurrentMousePointerInfo(mp_info);
-
-				// 커서 출력 위치를 기억시킨다. --> (surface)
-				point.x = mp_info.x;
-				point.y = mp_info.y;
-				g_pCursorSurface->Store(surface, g_pBack, &point);
-				
-				//g_pCursorSurface->Restore(surface, g_pBack);
-
-				// 다음에 처리할 surface번호
-				surface = ((surface==0)? 1 : 0);				
-			}
-			
-			//static POINT previousPoint;
-			//if (previousPoint.x != cursorPoint.x
-			//	|| previousPoint.y != cursorPoint.y)
-			//{
-			//	gC_vs_ui.VS_UI_Loop();
-			//}
-			//previousPoint = cursorPoint;
-			
-			if (!g_pTopView->IsDrawRequest())
-			{
-				gC_vs_ui.DrawMousePointer();
-			}			
-			
-
-			// Flip		
-			//g_FrameCount++;
-			CSDLGraphics::Flip();
-		}
 	}
 	__END_PROFILE("GameUpdate")
 

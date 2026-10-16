@@ -1001,21 +1001,6 @@ InitSurface()
 	// ColorSet을 초기화시킨다.
 	CIndexSprite::SetColorSet();
 	
-	//--------------------------------------------------------
-	// Cursor Surface 초기화
-	//--------------------------------------------------------
-	// 2개의 Flip Surface, (32*32)
-	if (CSDLGraphics::IsFullscreen())
-	{
-		if (g_pCursorSurface!=NULL)
-		{
-			delete g_pCursorSurface;
-			g_pCursorSurface = NULL;
-		}
-
-		//g_pCursorSurface = new CStorageSurface;
-	}
-	//g_pCursorSurface.Init(2, CURSOR_SURFACE_WIDTH, CURSOR_SURFACE_HEIGHT);
 	DrawTitleLoading();	
 
 	return TRUE;
@@ -2475,12 +2460,6 @@ void ReleaseAllObjects()
 
 	
 
-	//----------------------------------------------------------------
-	// Cursor Surface
-	//----------------------------------------------------------------
-	DEBUG_ADD("[Release] g_pCursorSurface");
-	SAFE_DELETE(g_pCursorSurface );
-	
 	//----------------------------------------------------------------
 	// delete Surfaces
 	//----------------------------------------------------------------
