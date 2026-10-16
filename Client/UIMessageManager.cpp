@@ -9006,7 +9006,7 @@ void UIMessageManager::Execute_UI_FRIEND_CHATTING_ADD_FRIEND(intptr_t left, intp
 {
 	(void)left;
 	(void)right;
-	if(void_ptr != NULL && !gC_vs_ui.IsFriendWaitAskRuning())
+	if(void_ptr != NULL && gC_vs_ui.IsGameMode() && !gC_vs_ui.IsFriendWaitAskRuning())
 	{
 		char* pName = (char*)void_ptr;
 		GCFriendChatting gcFriend;
@@ -9061,6 +9061,8 @@ void UIMessageManager::Execute_UI_FRIEND_DELETE_ASK(intptr_t left, intptr_t righ
 	(void)left;
 	(void)right;
 	C_VS_UI_FRIEND_INFO::FRIEND_LIST* pList = (C_VS_UI_FRIEND_INFO::FRIEND_LIST*)void_ptr;
+	if (pList == NULL || !gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pList->Name.size()+1];
 	memcpy(pName, pList->Name.c_str(), pList->Name.size() + 1);
 	gC_vs_ui.RunFriendDeleteAsk(pName);

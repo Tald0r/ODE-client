@@ -140,6 +140,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature) && !defined(_MSC_VER)
+#if __has_feature(address_sanitizer)
+#define ASAN_COUNTS_BYTES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(_MSC_VER) && !defined(ASAN_COUNTS_BYTES)
+#define ASAN_COUNTS_BYTES 1
+#endif
+#ifdef ASAN_COUNTS_BYTES
+#include <sanitizer/allocator_interface.h>
+#endif
+
 // UIMessageManager.cpp's (no header declares it).
 extern bool g_bEventQuestEnding;
 // UIDialog.cpp's.
@@ -206,6 +218,18 @@ Bytes One()
 {
 	P packet;
 	return Encoded({&packet});
+}
+
+// The bytes the heap holds. Only ASan's allocator counts them (MSVC's is
+// not asked); without it this is 0, so a check on it is the sanitized
+// Clang and GCC trees' alone.
+size_t HeapBytes()
+{
+#ifdef ASAN_COUNTS_BYTES
+	return __sanitizer_get_current_allocated_bytes();
+#else
+	return 0;
+#endif
 }
 
 bool SameBytes(const Bytes& expected, const Bytes& sent)
@@ -1414,6 +1438,25 @@ TEST(UIMessages4Friends, NothingWithoutAMessageOrAName)
 	// The answer's dialog is freed all the same.
 	scene.Run(UI_FRIEND_REQUEST_ACCEPT, 0, 9, FriendDialogs::Nameless());
 	scene.Run(UI_FRIEND_DELETE_ACCEPT, 9, 9, FriendDialogs::Nameless());
+	CHECK(scene.Nothing());
+	CHECK(calls.empty());
+}
+
+TEST(UIMessages4Friends, WithoutTheGameUINothingIsAskedOrLeftAllocated)
+{
+	Scene scene;
+	C_VS_UI_FRIEND_INFO::FRIEND_LIST pal;
+	pal.Name = "Pal";
+	char name[] = "Pal";
+	// A deletion copies the name for its dialog, which frees it; with no
+	// dialog to make, nothing is copied.
+	const size_t before = HeapBytes();
+	scene.Run(UI_FRIEND_DELETE_ASK, 9, 9, &pal);
+	const size_t after = HeapBytes();
+	CHECK_EQ(before, after);
+	scene.Run(UI_FRIEND_DELETE_ASK, 9, 9, NULL);
+	// Asking for a friend needs the game UI's waiting dialog too.
+	scene.Run(UI_FRIEND_CHATTING_ADD_FRIEND, 9, 9, name);
 	CHECK(scene.Nothing());
 	CHECK(calls.empty());
 }
