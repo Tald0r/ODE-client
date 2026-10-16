@@ -1143,6 +1143,14 @@ UIMessageManager::Execute_UI_NEW_CHARACTER(intptr_t left, intptr_t right, void* 
 	//	int		trouser_color;
 	//
 	NEW_CHARACTER* pChar = (NEW_CHARACTER *)void_ptr;
+
+	// The slot indexes the three characters, the face the three hair styles.
+	if (pChar->slot < SLOT1 || pChar->slot >= SLOT_MAX
+		|| pChar->face < HAIR_STYLE1 || pChar->face > HAIR_STYLE3)
+	{
+		DEBUG_ADD_FORMAT_ERR("[Error] UI_NEW_CHARACTER slot=%d face=%d", pChar->slot, pChar->face);
+		return;
+	}
 	
 	BOOL bAllOK = TRUE;
 

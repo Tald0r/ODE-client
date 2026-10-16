@@ -107,11 +107,9 @@ void ExecuteLogout();
 // - A NULL void_ptr to NEW_CHARACTER, CHECK_EXIST_ID (IsValidID formats a
 //   NULL "%s"), DELETE_CHARACTER and LOGIN (read even in the wrong mode):
 //   recorded defect, each dereferences it unchecked.
-// - NEW_CHARACTER with a face past 2 (a read past the three-entry
-//   hairStyle array on the stack) or a slot past 2, DELETE_CHARACTER and
-//   CONNECT with a slot past 2: recorded defect, none is range-checked
-//   (Character[3] lands in UserInformation's next member, so ASan is
-//   silent).
+// - DELETE_CHARACTER and CONNECT with a slot past 2: recorded defect,
+//   neither is range-checked (Character[3] lands in UserInformation's
+//   next member, so ASan is silent).
 // - DELETE_CHARACTER or CONNECT on an empty slot: recorded defect, the
 //   slot's MString holds NULL (an empty MString always does), which the
 //   packet's setName turns into a std::string: a crash.
@@ -1130,6 +1128,24 @@ TEST(UIMessages1NewCharacter, AValidNameIsCreatedInItsSlot)
 		for (int other = 0; other < 3; ++other)
 			if (other != i) CHECK(g_pUserInformation->Character[other].GetString() == NULL);
 	}
+}
+
+TEST(UIMessages1NewCharacter, AFaceOrSlotPastTheThreeIsRefused)
+{
+	// Silently: the UI offers only the three. The face first, a read past
+	// the three hair styles on the stack, which ASan sees.
+	Login scene;
+	g_Mode = MODE_WAIT_SELECTPC;
+	struct Case { int slot; int face; };
+	for (const Case& k : {Case{0, 3}, Case{0, -1}, Case{3, 0}, Case{-1, 0}})
+	{
+		char name[] = "Abcde";
+		NEW_CHARACTER c = Character(name, k.slot, k.face);
+		scene.Run(UI_NEW_CHARACTER, 0, 0, &c);
+	}
+	CHECK(Same({}));
+	CHECK(scene.Sent().empty());
+	for (int slot = 0; slot < 3; ++slot) CHECK(g_pUserInformation->Character[slot].GetString() == NULL);
 }
 
 TEST(UIMessages1NewCharacter, TheHairAndSkinColoursAreClamped)
