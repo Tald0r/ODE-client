@@ -2097,7 +2097,10 @@ TEST(UIMessages4Nickname, ThePetsNamingPenNeedsAPetOut)
 	CHECK(calls.empty());
 	CHECK(scene.Nothing());
 	CHECK(scene.Quiet());
-	// Not run: a NULL item, dereferenced unchecked (L10688).
+	// No item: nothing.
+	scene.Run(UI_RUN_NAMING_CHANGE, 0);
+	CHECK(calls.empty());
+	CHECK(scene.Nothing());
 }
 
 //----------------------------------------------------------------------
@@ -2150,7 +2153,11 @@ TEST(UIMessages4Store, AnItemIsDisplayedInTheFirstEmptySlot)
 	scene.Run(UI_DISPLAY_ITEM, 0, 0, &box);
 	CHECK(Same({"popup|Not that."}));
 	CHECK(scene.Nothing());
-	// Not run: a NULL item, dereferenced unchecked (L11113).
+	// No item: nothing.
+	calls.clear();
+	scene.Run(UI_DISPLAY_ITEM, 0, 0, NULL);
+	CHECK(calls.empty());
+	CHECK(scene.Nothing());
 }
 
 TEST(UIMessages4Store, AnItemIsTakenOffTheStallBeforeTheServerAnswers)

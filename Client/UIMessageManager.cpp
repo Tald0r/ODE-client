@@ -4105,6 +4105,9 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_QUICKSLOT(intptr_t left, intptr_t 
 	// left = slot enum
 	// void_ptr = MItem *
 	//
+	if (void_ptr == NULL)	// no item to lift
+		return;
+
 	MOustersArmsBand* pQuickSlot = NULL;
 		
 	if( g_pPlayer->IsOusters() )
@@ -4184,6 +4187,8 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_INVENTORY(intptr_t left, intptr_t 
 	//if (g_pTempInformation->Mode==TempInformation::MODE_NULL)
 	{
 		MItem* pItem = (MItem*)void_ptr;
+		if (pItem == NULL)
+			return;
 
 		BOOL bSendPacket = TRUE;
 		
@@ -4777,6 +4782,8 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_GEAR(intptr_t left, intptr_t right
 	{
 		MItem* pItem = (MItem*)void_ptr;
 		MItem* pMouseItem = gpC_mouse_pointer->GetPickUpItem();
+		if (pItem == NULL || pMouseItem == NULL)
+			return;
 
 		//----------------------------------------------------
 		// Magazine
@@ -4842,6 +4849,8 @@ UIMessageManager::Execute_UI_ITEM_INSERT_FROM_QUICKSLOT(intptr_t left, intptr_t 
 		// QuickSlot coordinates (left)
 		MItem* pItem = (MItem*)void_ptr;
 		MItem* pMouseItem = (MItem*)gpC_mouse_pointer->GetPickUpItem();
+		if (pItem == NULL || pMouseItem == NULL)
+			return;
 
 		if (pItem->GetItemClass()==pMouseItem->GetItemClass()
 			&& pItem->GetItemType()==pMouseItem->GetItemType())
@@ -6919,7 +6928,7 @@ UIMessageManager::Execute_UI_ITEM_SELECT_EXCHANGE(intptr_t left, intptr_t right,
 		return;
 	}
 
-	if (g_pTradeManager!=NULL)
+	if (g_pTradeManager!=NULL && void_ptr!=NULL)
 	{
 		int		gridX = static_cast<int>(left);
 		int		gridY = static_cast<int>(right);
@@ -10759,7 +10768,7 @@ UIMessageManager::Execute_UI_RUN_NAMING_CHANGE(intptr_t left, intptr_t right, vo
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
 		MItem* pItem = (MItem*)left;
-		if(pItem->GetItemClass() != ITEM_CLASS_EVENT_GIFT_BOX)
+		if(pItem == NULL || pItem->GetItemClass() != ITEM_CLASS_EVENT_GIFT_BOX)
 			return;
 		// If pItem is an item that changes a character nickname
 			// one-time (2 kinds) - edit existing nickname, add new nickname
@@ -11179,7 +11188,7 @@ UIMessageManager::Execute_UI_DISPLAY_ITEM(intptr_t left, intptr_t right, void* v
 		DEBUG_ADD("Not Mode MODE_GAME");
 		return;
 	}
-	if(g_pStorage2 == NULL)
+	if(g_pStorage2 == NULL || void_ptr == NULL)
 		return;	
 
 

@@ -853,6 +853,15 @@ TEST(UIMessages3QuickSlotPickUp, ASlayerWithoutABeltLiftsNothing)
 	CHECK(scene.Held() == NULL);
 }
 
+TEST(UIMessages3QuickSlotPickUp, NothingWithoutTheItem)
+{
+	Scene scene;
+	scene.Belt();
+	scene.Run(UI_ITEM_PICKUP_FROM_QUICKSLOT, 2, 0, NULL);
+	CHECK(calls.empty());
+	CHECK(scene.Held() == NULL);
+}
+
 TEST(UIMessages3QuickSlotPickUp, AVampireHasNoSlotsSoTheItemIsOnlyLifted)
 {
 	Scene scene;
@@ -883,6 +892,18 @@ TEST(UIMessages3InventoryPickUp, OutsideATradeTheItemIsLiftedAndTheServerTold)
 	CHECK(scene.me->IsItemCheckBufferNULL());
 	// The handler leaves the inventory to the UI.
 	CHECK(scene.inventory.GetItem(3, 2) == pPotion);
+}
+
+TEST(UIMessages3InventoryPickUp, NothingWithoutTheItem)
+{
+	Scene scene;
+	scene.Run(UI_ITEM_PICKUP_FROM_INVENTORY, 3, 2, NULL);
+	scene.Trade(true);
+	scene.Run(UI_ITEM_PICKUP_FROM_INVENTORY, 3, 2, NULL);
+	CHECK(calls.empty());
+	CHECK(scene.Held() == NULL);
+	CHECK(!scene.Waiting());
+	CHECK(scene.me->IsItemCheckBufferNULL());
 }
 
 TEST(UIMessages3InventoryPickUp, ATradeNotAcceptedLiftsAsUsual)
@@ -1359,6 +1380,18 @@ TEST(UIMessages3GearInsert, AMagazineTakesTheHeldItemOnceTheServerAgrees)
 	CHECK(calls.empty());
 }
 
+TEST(UIMessages3GearInsert, NothingWithoutTheMagazineOrTheHeldItem)
+{
+	Scene scene;
+	MMagazine* pTarget = Make<MMagazine>(111);
+	scene.loose.emplace_back(pTarget);
+	scene.Run(UI_ITEM_INSERT_FROM_GEAR, 0, 0, pTarget);
+	scene.Hold(Make<MMagazine>(112));
+	scene.Run(UI_ITEM_INSERT_FROM_GEAR, 0, 0, NULL);
+	CHECK(calls.empty());
+	CHECK(scene.me->IsItemCheckBufferNULL());
+}
+
 TEST(UIMessages3GearInsert, NothingButAMagazineNothingInWatchMode)
 {
 	Scene scene;
@@ -1434,6 +1467,18 @@ TEST(UIMessages3QuickSlotInsert, AnOustersSlotIsThePocketOnTheFirstBandElseThePo
 	CHECK(Same({"mouse to quickslot|126|1", sound, "mouse to quickslot|127|4", sound, "mouse to quickslot|128|4", sound}));
 	CHECK_EQ(11, int(pFirst->GetNumber()));
 	CHECK_EQ(12, int(pSecond->GetNumber()));
+}
+
+TEST(UIMessages3QuickSlotInsert, NothingWithoutThePocketsItemOrTheHeldOne)
+{
+	Scene scene;
+	MPotion* pTarget = Make<MPotion>(121, 0, 10);
+	CHECK(scene.Belt()->AddItem(pTarget, 2));
+	scene.Run(UI_ITEM_INSERT_FROM_QUICKSLOT, 0, 0, pTarget);
+	scene.Hold(Make<MPotion>(122, 0, 5));
+	scene.Run(UI_ITEM_INSERT_FROM_QUICKSLOT, 0, 0, NULL);
+	CHECK(calls.empty());
+	CHECK_EQ(10, int(pTarget->GetNumber()));
 }
 
 TEST(UIMessages3QuickSlotInsert, NothingForAnotherKindOrWhileACheckWaits)
@@ -2611,6 +2656,18 @@ TEST(UIMessages3TradeSelect, AfterMyOKTheServerChecksTheChangeFirst)
 	CHECK(scene.Waits());
 	CHECK_EQ(int(TempInformation::MODE_TRADE_VERIFY_REMOVE_ITEM), int(scene.temp.GetMode()));
 	CHECK_EQ(int(MPlayer::ITEM_CHECK_BUFFER_TRADE_REMOVE), int(scene.me->GetItemCheckBufferStatus()));
+}
+
+TEST(UIMessages3TradeSelect, NothingWithoutTheItem)
+{
+	Scene scene;
+	scene.Trade();
+	scene.Run(UI_ITEM_SELECT_EXCHANGE, 2, 3, NULL);
+	g_pTradeManager->AcceptMyTrade();
+	scene.Run(UI_ITEM_SELECT_EXCHANGE, 2, 3, NULL);
+	CHECK(calls.empty());
+	CHECK(!scene.Waiting());
+	CHECK(scene.me->IsItemCheckBufferNULL());
 }
 
 TEST(UIMessages3TradeSelect, AfterMyOKNothingWhileARequestOrCheckWaitsAndNothingWithoutATrade)
