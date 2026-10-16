@@ -9244,7 +9244,7 @@ UIMessageManager::Execute_UI_MESSAGE_BOX(intptr_t left, intptr_t right, void* vo
 {
 	(void)right;
 	(void)void_ptr;
-	if(left < MAX_GAME_STRING)
+	if(left >= 0 && left < MAX_GAME_STRING)
 		g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[static_cast<int>(left)].GetString() );
 }
 

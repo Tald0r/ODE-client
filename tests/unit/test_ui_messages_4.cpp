@@ -1294,8 +1294,9 @@ TEST(UIMessages4Team, AMessageBoxShowsItsGameString)
 	scene.Run(UI_MESSAGE_BOX, MAX_GAME_STRING);
 	scene.Run(UI_MESSAGE_BOX, MAX_GAME_STRING + 1);
 	CHECK(calls.empty());
-	// Not run: a negative id, which passes the one bound (L9165) and hands
-	// the popup the table's empty row, whose string is NULL (strlen(NULL)).
+	// Nor a negative one (the table's empty row, whose string is NULL).
+	scene.Run(UI_MESSAGE_BOX, -1);
+	CHECK(calls.empty());
 }
 
 //----------------------------------------------------------------------
