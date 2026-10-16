@@ -114,6 +114,13 @@ class TextComparison {
 // 한 Surface에 특정한 Zone에 대한 그림을 그려주는 class
 //----------------------------------------------------------------------
 class MTopView : public MRequestMode {
+	// The view's tests read its members through these, one per test file
+	// (task 4.260).
+	friend struct MTopViewTestAccess1;
+	friend struct MTopViewTestAccess2;
+	friend struct MTopViewTestAccess3;
+	friend struct MTopViewTestAccess4;
+
 	public :	
 		// 출력에 이용할 ImageObject map
 		typedef std::map<QWORD, MImageObject*>			IMAGEOBJECT_OUTPUT_MAP;
