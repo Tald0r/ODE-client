@@ -4122,6 +4122,8 @@ UIMessageManager::Execute_UI_ITEM_PICKUP_FROM_QUICKSLOT(intptr_t left, intptr_t 
 		if( pQuickSlot == NULL )
 			return;
 	}
+	else if (g_pPlayer->IsSlayer() && g_pQuickSlot == NULL)
+		return;	// no belt, no quick slot to lift from
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
 		MItem* pItem = (MItem*)void_ptr;

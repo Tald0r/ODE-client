@@ -842,6 +842,17 @@ TEST(UIMessages3QuickSlotPickUp, TheBandComesFromThePocketAndTheSlotFromTheItem)
 	CHECK(scene.Held() == pSecond);
 }
 
+TEST(UIMessages3QuickSlotPickUp, ASlayerWithoutABeltLiftsNothing)
+{
+	Scene scene;
+	MPotion* pPotion = Make<MPotion>(41);
+	pPotion->SetItemSlot(2);
+	scene.loose.emplace_back(pPotion);
+	scene.Run(UI_ITEM_PICKUP_FROM_QUICKSLOT, 2, 0, pPotion);
+	CHECK(calls.empty());
+	CHECK(scene.Held() == NULL);
+}
+
 TEST(UIMessages3QuickSlotPickUp, AVampireHasNoSlotsSoTheItemIsOnlyLifted)
 {
 	Scene scene;
