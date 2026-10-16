@@ -96,10 +96,9 @@ MItem* NewItemOfClass(ITEM_CLASS itemClass);
 // UI: they run here and do nothing.
 //
 // Not run: the immediate logout (ExecuteLogout starts the title screen);
-// the Korean '@' commands (lowering them passes negative chars to tolower
-// off Windows, L2505-2506: undefined); a competence player in a zone the
-// zone table lacks (a NULL dereference, L2889); a gear slot outside its
-// enum (the cast at L3873-3889 is undefined).
+// a competence player in a zone the zone table lacks (a NULL dereference,
+// L2889); a gear slot outside its enum (the cast at L3873-3889 is
+// undefined).
 namespace {
 
 std::vector<std::string> calls;
@@ -1104,6 +1103,24 @@ TEST(UIMessages2Chat, WhatAndFilterSwitchTheCurseFilter)
 	CHECK_EQ(TRUE, scene.option.FilteringCurse);
 	CHECK(Same(std::vector<std::string>(4, kChatHelp)));
 	CHECK(scene.chat.IsAcceptMode());
+}
+
+TEST(UIMessages2Chat, TheKoreanCommandsWorkLikeTheEnglish)
+{
+	// Their bytes are negative chars, which the command's lowering hands
+	// to tolower off Windows (as unsigned char, or it is undefined).
+	Scene scene;
+	scene.Say("@\xEA\xB1\xB0\xEB\xB6\x80");	// ignore
+	CHECK(scene.chat.IsIgnoreMode());
+	CHECK(scene.chat.IsAcceptID(kMe));
+	scene.Say("@\xED\x97\x88\xEC\x9A\xA9");	// accept
+	CHECK(scene.chat.IsAcceptMode());
+	scene.Say("@\xEB\xAD\x90\xEB\x9D\xBC\xEA\xB3\xA0?");	// what?
+	CHECK_EQ(FALSE, scene.option.FilteringCurse);
+	scene.Say("@\xEB\xB0\x94\xEB\xA5\xB8\xEB\xA7\x90");	// filter
+	CHECK_EQ(TRUE, scene.option.FilteringCurse);
+	CHECK(Same(std::vector<std::string>(4, kChatHelp)));
+	CHECK(scene.wire.Sent().empty());
 }
 
 TEST(UIMessages2Chat, AnUnknownOrDebugCommandDoesNothing)

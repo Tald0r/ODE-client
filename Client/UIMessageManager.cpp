@@ -2552,9 +2552,10 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 #ifdef PLATFORM_WINDOWS
 								_strlwr_s(pLwrCommand, sizeof(pLwrCommand));
 #else
-								// Simple lowercase conversion for macOS
+								// Simple lowercase conversion for macOS; tolower takes an
+								// unsigned char's value (a Korean command's bytes are negative chars).
 								for (int i = 0; pLwrCommand[i]; i++) {
-									pLwrCommand[i] = tolower(pLwrCommand[i]);
+									pLwrCommand[i] = static_cast<char>(tolower(static_cast<unsigned char>(pLwrCommand[i])));
 								}
 #endif
 
