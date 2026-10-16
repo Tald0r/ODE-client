@@ -84,6 +84,7 @@
 #include "Cpackets/CGRequestNewbieItem.h"
 #include "Cpackets/CGSelectPortal.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -3116,10 +3117,14 @@ struct CloseOptionScene : Scene
 		std::filesystem::current_path(oldDir, error);
 		std::filesystem::remove_all(dir, error);
 	}
+	// The file's text with Windows' \r\n read as \n (the options are
+	// written in text mode).
 	static std::string Read(const char* path)
 	{
 		std::ifstream in(path, std::ios::binary);
-		return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		text.erase(std::remove(text.begin(), text.end(), '\r'), text.end());
+		return text;
 	}
 };
 } // namespace

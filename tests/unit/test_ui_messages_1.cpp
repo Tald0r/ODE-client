@@ -500,12 +500,19 @@ struct MessageUi
 		gC_ci = oldIme;
 		g_GameRect = oldRect;
 	}
-	// The message shown, "" for none.
+	// The message shown, its wrapped lines joined, "" for none. The dialog
+	// wraps by the platform font's widths, so where a line breaks (and
+	// whether a space goes there) differs: compare through Squeezed.
 	std::string Shown() const
 	{
 		if (g_msg_free_text == NULL) return "";
 		std::string text;
 		for (const std::string& line : DialogPeek::Lines(*g_msg_free_text)) text += (text.empty() ? "" : " ") + line;
+		return text;
+	}
+	static std::string Squeezed(std::string text)
+	{
+		text.erase(std::remove(text.begin(), text.end(), ' '), text.end());
 		return text;
 	}
 };
@@ -1285,7 +1292,7 @@ TEST(UIMessages1Registration, AnInvalidIDOrPasswordIsRefused)
 		calls.clear();
 		LOGIN login = {Malloced(k.id), Malloced(k.password)};
 		scene.Run(UI_RUN_NEWUSER_REGISTRATION, 0, 0, &login);
-		CHECK(ui.Shown() == k.why);
+		CHECK(MessageUi::Squeezed(ui.Shown()) == MessageUi::Squeezed(k.why));
 		CHECK(login.sz_id == NULL && login.sz_password == NULL);
 		CHECK(Same({}));
 	}
