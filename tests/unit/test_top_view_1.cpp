@@ -41,11 +41,13 @@
 #include "VS_UI_GameCommon.h"
 #include "SpriteIDDef.h"
 
+#include <algorithm>
 #include <climits>
 #include <cstdio>
 #include <fstream>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 #if defined(__SANITIZE_ADDRESS__)
