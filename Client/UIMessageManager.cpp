@@ -4960,8 +4960,10 @@ UIMessageManager::Execute_UI_BUY_ITEM(intptr_t left, intptr_t right, void* void_
 		return;
 	}
 
-	// Only when no other request is waiting for the server's answer
-	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
+	// Only when no other request is waiting for the server's answer, and
+	// with the NPC's talk box, which names the seller
+	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL
+		&& g_pPCTalkBox != NULL)
 	{
 		int index = static_cast<int>(left);					// the shelf slot of the item to buy
 		int number = static_cast<int>(right);					// how many to buy

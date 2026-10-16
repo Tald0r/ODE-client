@@ -1660,6 +1660,11 @@ TEST(UIMessages3Buy, NothingWithoutAShopShelfOrWareOrWhileARequestWaits)
 	scene.Busy();
 	scene.Run(UI_BUY_ITEM, 4, 1, scene.shop.get());
 	scene.temp.SetMode(TempInformation::MODE_NULL);
+	// Without the NPC's talk box, which names the seller.
+	g_pPCTalkBox = NULL;
+	scene.Run(UI_BUY_ITEM, 4, 1, scene.shop.get());
+	scene.Run(UI_BUY_ITEM, 4, 1, NULL);
+	g_pPCTalkBox = &scene.talkBox;
 	// Shelf 0 is empty.
 	scene.shop->SetCurrent(0);
 	CHECK(scene.shop->GetCurrentShelf() == NULL);
