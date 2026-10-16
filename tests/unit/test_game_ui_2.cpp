@@ -923,6 +923,22 @@ TEST(GameUI2, ASlotPastTheUsersThreeCharacterNamesIsRefused)
 		CHECK(said.empty());
 		CHECK(before == Combat(g_StatusManager));
 	}
+	// The first and the last of the three are taken, for each race.
+	for (int slot : {0, 2})
+	{
+		scene.Unlike();
+		Combat untouched(g_StatusManager);
+		UI_SetCharacter(slot, &slayer);
+		CHECK(!(untouched == Combat(g_StatusManager)));
+		scene.Unlike();
+		untouched = Combat(g_StatusManager);
+		UI_SetCharacter(slot, &vampire);
+		CHECK(!(untouched == Combat(g_StatusManager)));
+		scene.Unlike();
+		untouched = Combat(g_StatusManager);
+		Stderr([&]() { UI_SetCharacter(slot, &ousters); });
+		CHECK(!(untouched == Combat(g_StatusManager)));
+	}
 }
 
 //----------------------------------------------------------------------
