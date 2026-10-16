@@ -1594,7 +1594,7 @@ CGameUpdate::ProcessInput()
 void 
 CGameUpdate::UpdateDraw()
 {
-	static bool outputInfo = false;		
+	bool& outputInfo = m_bOutputInfo;
 	
 
 	POINT	point;
@@ -1650,7 +1650,7 @@ CGameUpdate::UpdateDraw()
 			const MEvent *event = g_pEventManager->GetEventByFlag(EVENTFLAG_SHAKE_SCREEN);
 			if(event != NULL && event->IsShowTime() == true)
 			{
-				static int count = 0;
+				int& count = m_ShakeStep;
 				const int maxStep = 13;
 
 				// 2004, 5, 21 sobeit modify start
@@ -1734,8 +1734,8 @@ CGameUpdate::UpdateDraw()
 	{
 		if (g_pPlayer->GetActionCount()==g_pPlayer->GetActionCountMax())		
 		{	
-			static BYTE a = 0;
-			static BYTE count = 0;
+			BYTE& a = m_DeadStep;
+			BYTE& count = m_DeadStepFrames;
 
 			int second = g_pPlayer->GetDeadDelayLast();
 
@@ -1797,7 +1797,8 @@ CGameUpdate::UpdateDraw()
 				}
 			}
 
-			static MonotonicClock::TimePoint lastTime = g_FrameNow;
+			if (!m_DeadStepTime) m_DeadStepTime = g_FrameNow;
+			MonotonicClock::TimePoint& lastTime = *m_DeadStepTime;
 			if (g_FrameNow - lastTime >= MonotonicClock::Millis(g_UpdateDelay))
 			{
 				if (++count==6) { count = 0; a++; }
@@ -1842,7 +1843,8 @@ CGameUpdate::Update(void)
 
 	__BEGIN_PROFILE("GameUpdate")
 
-	static MonotonicClock::TimePoint lastTime = g_FrameNow;
+	if (!m_LastTickTime) m_LastTickTime = g_FrameNow;
+	MonotonicClock::TimePoint& lastTime = *m_LastTickTime;
 
 	if (g_Mode!=MODE_GAME || g_pClientConfig==NULL)
 	{
@@ -1873,7 +1875,8 @@ CGameUpdate::Update(void)
 	g_SDLAudio.ReleaseTerminatedDuplicateBuffer();
 
 	
-	static MonotonicClock::TimePoint nextSoundCheckTime = g_FrameNow;
+	if (!m_NextSoundCheckTime) m_NextSoundCheckTime = g_FrameNow;
+	MonotonicClock::TimePoint& nextSoundCheckTime = *m_NextSoundCheckTime;
 
 	if (g_FrameNow > nextSoundCheckTime)
 	{
@@ -2082,7 +2085,8 @@ CGameUpdate::Update(void)
 #ifdef PLATFORM_WINDOWS
 		// Windows-specific anti-cheat time verification - Windows only
 		DWORD nextTimeValue = 60000;
-		static MonotonicClock::TimePoint nextTime = MonotonicClock::Now() + MonotonicClock::Millis(60000);
+		if (!m_NextVerifyTime) m_NextVerifyTime = MonotonicClock::Now() + MonotonicClock::Millis(60000);
+		MonotonicClock::TimePoint& nextTime = *m_NextVerifyTime;
 
 		// g_MyCheckTime measures how much time has passed since the 60-second
 		// reset below, and 97620 means the client believes it ran far ahead of
@@ -2098,7 +2102,8 @@ CGameUpdate::Update(void)
 		//
 		// Accumulate the real elapsed milliseconds instead, clamped so a
 		// debugger pause or a suspended window does not read as a time jump.
-		static MonotonicClock::TimePoint lastCheckTime = g_FrameNow;
+		if (!m_LastCheckTime) m_LastCheckTime = g_FrameNow;
+		MonotonicClock::TimePoint& lastCheckTime = *m_LastCheckTime;
 		DWORD checkTimeGap = (g_FrameNow > lastCheckTime)? (DWORD)(g_FrameNow - lastCheckTime).count() : 0;
 		lastCheckTime = g_FrameNow;
 		if (checkTimeGap > 1000) checkTimeGap = 1000;
@@ -2151,7 +2156,7 @@ CGameUpdate::Update(void)
 		}
 #endif // PLATFORM_WINDOWS
 		
-		static int OnetimeUpdateCount = 0;
+		int& OnetimeUpdateCount = m_OnetimeUpdateCount;
 		if (k==0)
 		{
 			OnetimeUpdateCount++;
@@ -2176,7 +2181,8 @@ CGameUpdate::Update(void)
 
 	if (g_pGameTime!=NULL)
 	{
-		static int lastHour = g_pGameTime->GetHour()+1;
+		if (!m_LastHour) m_LastHour = g_pGameTime->GetHour()+1;
+		int& lastHour = *m_LastHour;
 
 		int currentHour = g_pGameTime->GetHour();
 
@@ -2254,9 +2260,9 @@ CGameUpdate::Update(void)
 	//
 	//---------------------------------------------
 	{
-		static int oldX = -1;
-		static int oldY = -1;
-		static DWORD oldFrame = 0;
+		int& oldX = m_OldX;
+		int& oldY = m_OldY;
+		DWORD& oldFrame = m_OldFrame;
 
 		//------------------------------------------------------
 		// Update됐으면..
@@ -2276,10 +2282,10 @@ CGameUpdate::Update(void)
 				g_DrawAlphaNum = (sinceTick << 8) / (DWORD)g_UpdateDelay;
 		}
 
-		static MonotonicClock::TimePoint s_lastDrawTime;
-		if (g_bFrameChanged || g_FrameNow - s_lastDrawTime >= MonotonicClock::Millis(15))
+		MonotonicClock::TimePoint& lastDrawTime = m_LastDrawTime;
+		if (g_bFrameChanged || g_FrameNow - lastDrawTime >= MonotonicClock::Millis(15))
 		{
-			s_lastDrawTime = g_FrameNow;
+			lastDrawTime = g_FrameNow;
 
 			//------------------------------------------------------
 			// 화면 출력

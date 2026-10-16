@@ -11,6 +11,8 @@
 #include "WinLib/CWinUpdate.h"
 #include "InputService.h"
 #include "ClientMode.h"
+#include "MonotonicClock.h"
+#include <optional>
 
 class MObject;
 
@@ -43,6 +45,31 @@ class CGameUpdate : public CWinUpdate {
 		static void	DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT, DWORD);
 
 		const CGameUpdateHost*	m_pHost;
+
+		// What the frame loop remembers from one call to the next. The game
+		// makes one CGameUpdate, so these behave as the function statics
+		// they were; an empty optional is one the first call has not yet
+		// set, from the clock or the game time as the static was.
+		// UpdateDraw: the FPS text without the option (never set), the
+		// screen-shake step, and the dead player's fade steps.
+		bool									m_bOutputInfo = false;
+		int										m_ShakeStep = 0;
+		BYTE									m_DeadStep = 0;
+		BYTE									m_DeadStepFrames = 0;
+		std::optional<MonotonicClock::TimePoint>	m_DeadStepTime;
+		// Update: the time of the last tick, the next reset of the sound
+		// count, Windows' speed check, the catch-up bursts, the game hour,
+		// and what the last draw saw.
+		std::optional<MonotonicClock::TimePoint>	m_LastTickTime;
+		std::optional<MonotonicClock::TimePoint>	m_NextSoundCheckTime;
+		std::optional<MonotonicClock::TimePoint>	m_NextVerifyTime;
+		std::optional<MonotonicClock::TimePoint>	m_LastCheckTime;
+		int										m_OnetimeUpdateCount = 0;
+		std::optional<int>						m_LastHour;
+		int										m_OldX = -1;
+		int										m_OldY = -1;
+		DWORD									m_OldFrame = 0;
+		MonotonicClock::TimePoint				m_LastDrawTime{};
 };
 
 extern CGameUpdate*		g_pCGameUpdate;
