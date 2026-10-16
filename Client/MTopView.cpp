@@ -19388,7 +19388,7 @@ MTopView::ExcuteOustersFinEvent()
 		rect.top = 0;
 		rect.bottom = g_GameRect.bottom;
 
-		DrawAlphaBox(&rect, fadeColor[0], fadeColor[1], fadeColor[2], static_cast<BYTE>(min(31, OustersFinEvent->ElapsedMillis() /fadeSpeed)^fadeDirect));	
+		DrawAlphaBox(&rect, fadeColor[0], fadeColor[1], fadeColor[2], static_cast<BYTE>(min(DWORD(31), OustersFinEvent->ElapsedMillis() /fadeSpeed)^fadeDirect));
 
 		if(bFinEnd)
 		{
