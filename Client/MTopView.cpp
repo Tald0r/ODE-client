@@ -181,8 +181,8 @@ extern int	g_DrawCamGapY;
 
 bool g_bMouseInPortal  = false;
 
-// 임시 땜빵.. 우헤헤
-POINT g_MouseSector = { 0, 0 };		// mouse가 가리키는 sector좌표
+// Temporary hack.. hehe
+POINT g_MouseSector = { 0, 0 };		// Sector coordinate the mouse points at
 
 extern int	g_x;
 extern int	g_y;
@@ -191,7 +191,7 @@ extern int	g_UpdateDelay;
 
 int g_ShowImageObjectID = 0;
 
-// 넷마블용
+// For Netmarble
 //std::map<int, bool> g_mapPremiumZone;
 
 #ifdef OUTPUT_DEBUG
@@ -206,7 +206,7 @@ int g_ShowImageObjectID = 0;
 #endif
 
 //----------------------------------------------------------------------
-// 한 filter좌표의 화면비율 결정..
+// Determines the screen ratio of one filter coordinate..
 //----------------------------------------------------------------------
 float MTopView::s_LightWidth	= (float)g_GameRect.right / SCREENLIGHT_WIDTH;
 float MTopView::s_LightHeight	= (float)g_GameRect.bottom / SCREENLIGHT_HEIGHT;
@@ -218,7 +218,7 @@ float MTopView::s_LightHeight	= (float)g_GameRect.bottom / SCREENLIGHT_HEIGHT;
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
-// 전체 Creature의 그림 종류수
+// Number of picture types for all Creatures
 //----------------------------------------------------------------------
 #define	MAX_CREATURE_BODY		3
 #define	MAX_CREATURE_ADDON		4
@@ -227,17 +227,17 @@ float MTopView::s_LightHeight	= (float)g_GameRect.bottom / SCREENLIGHT_HEIGHT;
 #define	MAX_NORMALEFFECT		1
 
 //----------------------------------------------------------------------
-// Light 3D의 설정 값
+// Setting value for Light 3D
 //-----------------------------------------------------------------------
 #define	MAX_LIGHT_SETSIZE		12
 
 //-----------------------------------------------------------------------
-// 스나이핑에서 어둡게 출력할때의 shift값
+// Shift value for dark output while sniping
 //-----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
 //
-// FONT 관련
+// FONT related
 //
 //----------------------------------------------------------------------
 enum FONTID
@@ -262,21 +262,21 @@ PrintInfo*	g_ClientPrintInfo[MAX_FONTID];
 //		Text Comparison
 //
 //----------------------------------------------------------------------
-// 시간이 오래된걸 선택해야 한다.		
-// left < right 에 대한 return값
+// The older time must be selected.
+// Return value for left < right
 //
-// 현 순서를 유지할려면 false를
-// 순서를 바꿀려면 true를 return해야 한다.
+// return false to keep the current order
+// return true to swap the order.
 //
-// 앞에 것이 먼저 출력될 것이므로.. 시간이 빠른 것(적은 것)이 앞에 있어야 한다.
+// The front one is output first.. so the earlier (smaller) time must come first.
 // 
-// PQ는 작은걸 뒤로 보낸다..
-// 그러므로... 시간이 느린 것(큰것)이 뒤로 가야한다.
+// The PQ sends the smaller one to the back..
+// Therefore... the later (larger) time must go to the back.
 bool 
 TextComparison::operator () (DRAWTEXT_NODE * left, DRAWTEXT_NODE * right) const
 { 
-	// 먼저 설정된 글자인 경우.. OK
-	// 시간이 같으면 일단 뒤에 들어간다. 
+	// If it is a character that was set earlier.. OK
+	// If the times are equal, it goes behind for now.
 	return left->GetTextTime() >= right->GetTextTime();
 }
 
@@ -309,7 +309,7 @@ MTopView::MTopView()
 	m_SelectSector.x = SECTORPOSITION_NULL;
 	m_SelectSector.y = SECTORPOSITION_NULL;
 
-	// 선택된 것들
+	// The selected ones
 	m_SelectCreatureID			= OBJECTID_NULL;
 	m_SelectItemID				= OBJECTID_NULL;
 //	m_SelectInteractionObjectID	= OBJECTID_NULL;
@@ -331,7 +331,7 @@ MTopView::MTopView()
 	//m_SelectSector.x = 0;
 	//m_SelectSector.y = 0;
 
-	// 시야
+	// Sight
 	m_DarkBits = 0;
 
 
@@ -358,7 +358,7 @@ MTopView::MTopView()
 	m_bDrawRequest = false;
 
 	//-----------------------------------------------
-	// AlphBox를 g_pTopView->Init()전에 사용하기 위해서.
+	// So that AlphBox can be used before g_pTopView->Init().
 	//-----------------------------------------------
 //
 //		Set3DBoxColor( m_3DBoxCurrentPixel );
@@ -443,13 +443,13 @@ PrecalculateAdvancementClassCreatureFrames(MTopView& view)
 //----------------------------------------------------------------------
 // Init
 //----------------------------------------------------------------------
-// View에 필요한 각 부분들은 초기화 시킨다.
+// Initializes each part the View needs.
 //----------------------------------------------------------------------
 bool
 MTopView::Init()
 {
 	//------------------------------------------
-	// 이미 init됐다면 init하지 않는다.
+	// If already init'ed, do not init again.
 	//------------------------------------------
 	if (m_bInit)
 	{
@@ -466,14 +466,14 @@ MTopView::Init()
 
 	//num = 20;
 
-	// 재설정.. - -;
+	// Reset.. - -;
 	//g_pClientConfig->MAX_TEXTUREPART_EFFECT				= num*3/2;
 	//g_pClientConfig->MAX_TEXTUREPART_CREATURESHADOW		= num*3;
 	//g_pClientConfig->MAX_TEXTUREPART_IMAGEOBJECTSHADOW	= num;
 	//g_pClientConfig->MAX_TEXTUREPART_ADDON_SHADOW			= 240 + num*7;
 
 	//------------------------------------------------------------------------
-	// 캐릭터 그림자를 무조건 검게 출력한다고 했을 때의 계산
+	// Calculation for when character shadows are always drawn black
 	//------------------------------------------------------------------------
 	g_pClientConfig->MAX_TEXTUREPART_EFFECT				= num*2;	//num*10;
 	g_pClientConfig->MAX_TEXTUREPART_SCREENEFFECT		= num*5;		//num*10;
@@ -499,7 +499,7 @@ MTopView::Init()
 		InitFonts())
 	{
 		//------------------------------------------
-		// 적절한 Texture Memory 계산
+		// Calculates the appropriate Texture Memory
 		//------------------------------------------
 		#ifdef OUTPUT_DEBUG
 			DDSCAPS2 ddsCaps2;
@@ -525,13 +525,13 @@ MTopView::Init()
 //----------------------------------------------------------------------
 // Init Changes
 //----------------------------------------------------------------------
-// 2D <--> 3D 바뀔때 사용..
+// Used when switching 2D <--> 3D..
 //----------------------------------------------------------------------
 bool
 MTopView::InitChanges()
 {
 	//------------------------------------------
-	// 아직 init되지 않았다면 return
+	// If not init'ed yet, return
 	//------------------------------------------
 	if (!m_bInit)
 	{
@@ -546,8 +546,8 @@ MTopView::InitChanges()
 		InitFonts())
 	{
 		//---------------------------------------------------------
-		// 캐릭터 loading이 하나도 안됐다고 체크해둔다.
-		// 그림자 때문인데.. 냠냠.. - -; 2001.10.6
+		// Marks that no character has been loaded.
+		// It is because of the shadows.. yum yum.. - -; 2001.10.6
 		//---------------------------------------------------------
 		if (g_pCreatureSpriteTable!=NULL)
 		{
@@ -588,7 +588,7 @@ bool
 MTopView::InitFonts()
 {	
 	//------------------------------------------
-	// UI의 Font등록
+	// Register the UI Font
 	//------------------------------------------	
 	g_ClientPrintInfo[FONTID_INFO]			= &gpC_base->m_info_pi;			// info
 	g_ClientPrintInfo[FONTID_SLAYER_NAME]	= &gpC_base->m_char_name_pi;	// slayer
@@ -610,7 +610,7 @@ void
 MTopView::Release()
 {
 	//------------------------------------------------
-	// File 닫기
+	// Close the File
 	//------------------------------------------------
 //
 //
@@ -623,7 +623,7 @@ MTopView::Release()
 	DEBUG_ADD("MTV-Rel-File closed");
 
 	//----------------------------------------------------------------------
-	// Tile Surface제거
+	// Remove the Tile Surface
 	//----------------------------------------------------------------------
 	if (m_pTileSurface != NULL)
 	{
@@ -634,7 +634,7 @@ MTopView::Release()
 	}
 
 	//----------------------------------------------------------------------
-	// TileRenderer 제거 (Phase 4 integration)
+	// Remove the TileRenderer (Phase 4 integration)
 	//----------------------------------------------------------------------
 	if (m_pTileRenderer != NULL)
 	{
@@ -702,7 +702,7 @@ MTopView::Release()
 	DEBUG_ADD("MTV-Rel-ClearList");
 
 	//----------------------------------------------------------------------
-	// list , map 제거
+	// Remove list , map
 	//----------------------------------------------------------------------
 	ClearItemNameList();
 	ClearOutputCreature();	
@@ -715,19 +715,19 @@ MTopView::Release()
 	m_mapImageObject.clear();
 
 	//----------------------------------------------------------------------
-	// FPK 지우기
+	// Delete the FPKs
 	//----------------------------------------------------------------------
 	DEBUG_ADD("MTV-Rel-FPK");
 
 	m_CreatureFPK.Release();			// Creature frames
 	m_AddonFPK.Release();				// Player addon frames
 	m_OustersFPK.Release();				// Player addon frames
-	m_ItemTileFPK.Release();			// Tile에 있는 Item에 대한..
-	m_ItemDropFPK.Release();			// 바닥으로 떨어지는 Item에 대한..
-	m_ImageObjectFPK.Release();		// ImageObject에 대한 frames
+	m_ItemTileFPK.Release();			// For Items on the Tile..
+	m_ItemDropFPK.Release();			// For Items falling to the ground..
+	m_ImageObjectFPK.Release();		// Frames for ImageObject
 	m_ImageObjectShadowFPK.Release();
 
-	// 승진 관련 fpk 지우기
+	// Delete the promotion-related fpk
 	m_AdvancementSlayerManFPK.Release();
 	m_AdvancementSlayerWomanFPK.Release();
 	m_AdvancementVampireManFPK.Release();
@@ -738,14 +738,14 @@ MTopView::Release()
 	m_AdvancementVampireManShadowFPK.Release();
 	m_AdvancementVampireWomanShadowFPK.Release();
 	m_AdvancementOustersShadowFPK.Release();
-//	m_InteractionObjectFPK.Release();		// ImageObject에 대한 frames
+//	m_InteractionObjectFPK.Release();		// Frames for ImageObject
 
 	DEBUG_ADD("MTV-Rel-EffectFPK");
 
-	m_EffectAlphaFPK.Release();		// Effect에 대한 frames
+	m_EffectAlphaFPK.Release();		// Frames for Effect
 	m_EffectScreenFPK.Release();
-	m_EffectShadowFPK.Release();		// Effect에 대한 frames
-	m_EffectNormalFPK.Release();		// Effect에 대한 frames
+	m_EffectShadowFPK.Release();		// Frames for Effect
+	m_EffectNormalFPK.Release();		// Frames for Effect
 
 	DEBUG_ADD("MTV-Rel-CFPK");
 
@@ -754,42 +754,42 @@ MTopView::Release()
 	m_OustersShadowFPK.Release();			// Player addon frames	
 
 	//------------------------------------------------------
-	// SpritePack 제거
+	// Remove the SpritePacks
 	//------------------------------------------------------		
 	DEBUG_ADD("MTV-Rel-SPK");
 
 	m_TileSPK.Release();				// Tile
-	m_ImageObjectSPK.Release();		// ImageObject Sprite들
-//	m_InteractionObjectSPK.Release();		// ImageObject Sprite들
-	m_CreatureSPK.Release();			// Creature Sprite들
-	m_AddonSPK.Release();		// Sprite들		
+	m_ImageObjectSPK.Release();		// ImageObject Sprites
+//	m_InteractionObjectSPK.Release();		// ImageObject Sprites
+	m_CreatureSPK.Release();			// Creature Sprites
+	m_AddonSPK.Release();		// Sprites
 	m_OustersSPK.Release();
 
 	DEBUG_ADD("MTV-Rel-ItemSPK");
 
-	m_ItemTileISPK.Release();			// Sprite들		
+	m_ItemTileISPK.Release();			// Sprites
 	m_ItemDropISPK.Release();			//
 	m_ItemBrokenSPK.Release();			//
-	m_ItemRealSPK.Release();			// Sprite들				
+	m_ItemRealSPK.Release();			// Sprites
 
 	DEBUG_ADD("MTV-Rel-EffectSPk");
-	m_EffectAlphaSPK.Release();		// AlphaSprite들
-	m_EffectScreenSPK.Release();		// AlphaSprite들
-	m_EffectShadowSPK.Release();		// ShadowSprite들
-	m_EffectNormalSPK.Release();		// NormalSprite들
+	m_EffectAlphaSPK.Release();		// AlphaSprites
+	m_EffectScreenSPK.Release();		// AlphaSprites
+	m_EffectShadowSPK.Release();		// ShadowSprites
+	m_EffectNormalSPK.Release();		// NormalSprites
 	m_EffectScreenPPK.Release();
 	m_EffectAlphaPPK.Release();
 
 	DEBUG_ADD("MTV-Rel-Other");
 
-	m_WeatherSPK.Release();			// WeatherSprite들
+	m_WeatherSPK.Release();			// WeatherSprites
 	m_GuildSPK.Release();
 
-	m_EtcSPK.Release();				// 기타...
+	m_EtcSPK.Release();				// Etc...
 	m_OustersFinSPK.Release();
 	m_AdvacementQuestEnding.Release();
 
-	// 승직 관련 SPK 제거
+	// Remove the promotion-related SPK
 	m_AdvancementSlayerManSPK.Release();
 	m_AdvancementSlayerWomanSPK.Release();
 	m_AdvancementVampireManSPK.Release();
@@ -807,14 +807,14 @@ MTopView::Release()
 	//------------------------------------------------------
 	DEBUG_ADD("MTV-Rel-SSPK");
 
-	m_AddonSSPK.Release();			// Sprite들		
-	m_OustersSSPK.Release();			// Sprite들		
+	m_AddonSSPK.Release();			// Sprites
+	m_OustersSSPK.Release();			// Sprites
 	m_ImageObjectSSPK.Release();
 //	m_InteractionObjectSSPK.Release();
 	m_CreatureSSPK.Release();
 
 	//----------------------------------------------------------------------
-	// File Index Table 지우기
+	// Delete the File Index Table
 	//----------------------------------------------------------------------
 	DEBUG_ADD("MTV-Rel-SSPKI");
 
@@ -833,7 +833,7 @@ MTopView::Release()
 	m_LightBufferFilter.Release();;
 
 	//----------------------------------------------------------------------
-	// SFP Array제거
+	// Remove the SFP Array
 	//----------------------------------------------------------------------
 	if (m_pTileSFPArrayLargeZone != NULL)
 	{
@@ -869,7 +869,7 @@ MTopView::Release()
 }
 
 //----------------------------------------------------------------------
-// 출력 대상이 되는 Surface를 결정한다.
+// Decides the Surface that is the output target.
 //----------------------------------------------------------------------
 void	
 MTopView::SetSurface(CSpriteSurface*& pSurface)
@@ -909,13 +909,13 @@ MTopView::ClearShadowManager()
 //	if (true)
 //	{	
 //		//-----------------------------------------------
-//		// 검은색
+//		// Black
 //		//-----------------------------------------------
 //				WORD *lpSurface = (WORD*)m_p3DBoxBlackSurface->GetSurfacePointer();
 //				*lpSurface = m_ColorBlackHalf;
 //
 //		//-----------------------------------------------
-//		// HP색깔
+//		// HP color
 //		//-----------------------------------------------
 //				WORD *lpSurface = (WORD*)m_p3DBoxHPSurface->GetSurfacePointer();
 //				*lpSurface = m_ColorHPBar;
@@ -985,7 +985,7 @@ MTopView::RestoreSurface()
 		//
 		//------------------------------------------------------------		
 		//--------------------------------------------
-		// AlphaSPK을 이용해서 TexturePack을 생성한다.
+		// Creates the TexturePack from the AlphaSPK.
 		//--------------------------------------------
 		if (!m_EffectTPK.Init( m_EffectAlphaSPK ))
 		{
@@ -994,8 +994,8 @@ MTopView::RestoreSurface()
 		}
 
 		//------------------------------------------------------------	
-		// EffectAlphaSprite를 메모리에서 삭제한다.
-		// --> TextureSurface를 사용할 것이므로.. 필요가 없다.
+		// Deletes the EffectAlphaSprite from memory.
+		// --> Since the TextureSurface will be used.. it is not needed.
 		//------------------------------------------------------------		
 		m_EffectAlphaSPK.Release();	
 	}
@@ -1004,7 +1004,7 @@ MTopView::RestoreSurface()
 
 
 //----------------------------------------------------------------------
-// 사용할 Surface들을 초기화 시킨다.
+// Initializes the Surfaces to be used.
 //----------------------------------------------------------------------
 bool
 MTopView::InitSurfaces()
@@ -1027,10 +1027,10 @@ MTopView::InitSurfaces()
 
 
 	//
-	// 3D가속이 되면 VideoMemory에.. (가능하면. - -;)
+	// If 3D acceleration is available, in VideoMemory.. (if possible. - -;)
 	//
-	// 안되면.. system memory에... 
-	// (왜? 음.. 어딘가에 관련된 코드가 있지 싶은데 찾기 귀찮다. 음냐)
+	// If not.. in system memory...
+	// (Why? Hmm.. I suspect there is related code somewhere but I can't be bothered to look. Hmm)
 	//
 	//----------------------------------------------------------------
 	// 3D
@@ -1072,19 +1072,19 @@ MTopView::InitSurfaces()
 //----------------------------------------------------------------------
 // Init Colors
 //----------------------------------------------------------------------
-// 색깔들을 초기화 한다.
+// Initializes the colors.
 //----------------------------------------------------------------------
 bool
 MTopView::InitColors()
 {
 	//---------------------------------------------------
-	// 늘 같은 색
+	// Always the same color
 	//---------------------------------------------------
 	// item
 	m_ColorNameItem					= g_pClientConfig->COLOR_NAME_ITEM;
 	m_ColorNameItemOption			= g_pClientConfig->COLOR_NAME_ITEM_OPTION;
 
-	// 종족별
+	// Per race
 	m_ColorNameVampire				= g_pClientConfig->COLOR_NAME_VAMPIRE;
 	m_ColorNameSlayer				= g_pClientConfig->COLOR_NAME_SLAYER;
 	m_ColorNameNPC					= g_pClientConfig->COLOR_NAME_NPC;
@@ -1097,7 +1097,7 @@ MTopView::InitColors()
 
 
 	//---------------------------------------------------
-	// 5:6:5인 경우는 바로 값을 읽으면 된다.
+	// In the 5:6:5 case the value can be read directly.
 	//---------------------------------------------------
 	if (CSDLGraphics::Is565())
 	{
@@ -1106,13 +1106,13 @@ MTopView::InitColors()
 
 		m_ColorOutlineItem				= g_pClientConfig->COLOR_OUTLINE_ITEM;
 
-		// 공격 가능?
+		// Can attack?
 		m_ColorOutlineNPC				= g_pClientConfig->COLOR_OUTLINE_NPC;
 		m_ColorOutlineAttackPossible	= g_pClientConfig->COLOR_OUTLINE_ATTACK_POSSIBLE;
 		m_ColorOutlineAttackImpossible	= g_pClientConfig->COLOR_OUTLINE_ATTACK_IMPOSSIBLE;	
 	}
 	//---------------------------------------------------
-	// 5:5:5인 경우는 값을 변환
+	// In the 5:5:5 case the value is converted
 	//---------------------------------------------------
 	else
 	{
@@ -1122,7 +1122,7 @@ MTopView::InitColors()
 		// item
 		m_ColorOutlineItem				= CSDLGraphics::Convert565to555(g_pClientConfig->COLOR_OUTLINE_ITEM);
 
-		// 공격 가능?
+		// Can attack?
 		m_ColorOutlineNPC				= CSDLGraphics::Convert565to555(g_pClientConfig->COLOR_OUTLINE_NPC);
 		m_ColorOutlineAttackPossible	= CSDLGraphics::Convert565to555(g_pClientConfig->COLOR_OUTLINE_ATTACK_POSSIBLE);
 		m_ColorOutlineAttackImpossible	= CSDLGraphics::Convert565to555(g_pClientConfig->COLOR_OUTLINE_ATTACK_IMPOSSIBLE);
@@ -1130,7 +1130,7 @@ MTopView::InitColors()
 
 
 	//---------------------------------------------------
-	// 3D 가속과 관련이 있는 색깔...
+	// Colors related to 3D acceleration...
 	//---------------------------------------------------
 //
 	{
@@ -1142,8 +1142,8 @@ MTopView::InitColors()
 											 g_pClientConfig->COLOR_HP_BAR_BG_G,
 											 g_pClientConfig->COLOR_HP_BAR_BG_B);
 
-		// UI 박스 배경색: RGB565의 G는 6비트이므로 2배 필요
-		// 어두운 회색: R=12, G=24, B=12
+		// UI box background color: G of RGB565 has 6 bits, so it needs doubling
+		// Dark gray: R=12, G=24, B=12
 		m_ColorUIBoxBg = CSDLGraphics::Color(12, 24, 12);
 
 		m_ColorBlackHalf = 0;
@@ -1154,7 +1154,7 @@ MTopView::InitColors()
 
 
 //----------------------------------------------------------------------
-// SpritePack을 읽어서  memory에 Load한다.
+// Reads the SpritePack and Loads it into memory.
 //----------------------------------------------------------------------
 bool
 MTopView::InitSprites()
@@ -1252,8 +1252,8 @@ MTopView::InitSprites()
 	// Load  EffectPack
 	//
 	//------------------------------------------------------------
-	// 3d가속이 되면 m_pImageObjectShadowManager를 사용하고
-	// 아니면, m_ImageObjectSSPK를 사용한다.
+	// If 3D acceleration is available, use m_pImageObjectShadowManager,
+	// otherwise use m_ImageObjectSSPK.
 	/*
 	std::ifstream	ImageObjectShadowFile2;//(FILE_SSPRITE_IMAGEOBJECT, ios::binary);
 	if (!FileOpenBinary(FILE_SSPRITE_IMAGEOBJECT, ImageObjectShadowFile2))
@@ -1282,7 +1282,7 @@ MTopView::InitSprites()
 	//------------------------------------------------------------	
 	// Init  Creature SpritePack	
 	//------------------------------------------------------------
-	// 일단 전체 크기만큼 memory는 잡아둔다.
+	// For now, reserve memory for the whole size.
 	//------------------------------------------------------------
 	//  Init Creature SpriteSet
 	//------------------------------------------------------------	
@@ -1293,13 +1293,13 @@ MTopView::InitSprites()
 		std::ifstream CreaturePackIndexFile;//(FILE_ISPRITEINDEX_CREATURE, ios::binary);
 		if (!FileOpenBinary(FILE_ISPRITEINDEX_CREATURE, CreaturePackIndexFile))
 			return false;
-		CreaturePackIndexFile.read((char*)&size, 2);	// Sprite의 개수
+		CreaturePackIndexFile.read((char*)&size, 2);	// Number of Sprites
 		CreaturePackIndexFile.close();	
 
 		m_CreatureSPK.Init( size, CSDLGraphics::Is565() );
 		*/
 //		
-//		// 화일만 열어둔다.
+//		// Only open the file.
 //		//------------------------------------------------------------
 //		// sprite load
 //		//------------------------------------------------------------
@@ -1344,9 +1344,9 @@ MTopView::InitSprites()
 	*/
 
 	//------------------------------------------------------------
-	// 테스트 : 일반SpritePack --> ShadowSpritePack
+	// Test: normal SpritePack --> ShadowSpritePack
 	//------------------------------------------------------------
-	// 남
+	// Male
 	/*
 	CSpritePack CreatureShadowSPK;
 	std::ifstream	CreatureShadowFile2;//(FILE_ISPRITE_ADDON, ios::binary);
@@ -1363,7 +1363,7 @@ MTopView::InitSprites()
 	}
 
 	//------------------------------------------------------------	
-	// 남 - Save  ShadowSpritePack	
+	// Male - Save ShadowSpritePack
 	//------------------------------------------------------------
 	std::ofstream	CreatureShadowFile(FILE_SSPRITE_CREATURE, ios::binary);	
 	std::ofstream	CreatureShadowIndexFile(FILE_SSPRITEINDEX_CREATURE, ios::binary);	
@@ -1377,25 +1377,25 @@ MTopView::InitSprites()
 	//------------------------------------------------------------
 	// Load Creature Shadow SpritePack
 	//------------------------------------------------------------
-	// 3d가속이 되면 m_pCreatureShadowManager를 사용하고
-	// 아니면, m_CreatureSSPK를 사용한다.
+	// If 3D acceleration is available, use m_pCreatureShadowManager,
+	// otherwise use m_CreatureSSPK.
 	//------------------------------------------------------------
-	// 3d가속이 되면 m_pAlphaEffectTextureManager를 사용하고
-	// 아니면, m_EffectAlphaSPK를 사용한다.
+	// If 3D acceleration is available, use m_pAlphaEffectTextureManager,
+	// otherwise use m_EffectAlphaSPK.
 
-	// 전체 개수만 잡아둔다.
+	// Only reserve the total count.
 	/*
 	std::ifstream CreatureShadowPackIndexFile;//(FILE_ISPRITEINDEX_CREATURE, ios::binary);
 	if (!FileOpenBinary(FILE_SSPRITEINDEX_CREATURE, CreatureShadowPackIndexFile))
 		return false;
-	CreatureShadowPackIndexFile.read((char*)&size, 2);	// Sprite의 개수
+	CreatureShadowPackIndexFile.read((char*)&size, 2);	// Number of Sprites
 	CreatureShadowPackIndexFile.close();	
 
 	m_CreatureSSPK.Init( size );
 	*/
 	/*
-	// 임시로 Load
-	// 전체 loading해두는 부분
+	// Temporary Load
+	// Part that loads everything
 	std::ifstream	CreatureShadowFile2;//(FILE_SSPRITE_Creature, ios::binary);
 	if (!FileOpenBinary(FILE_SSPRITE_CREATURE, CreatureShadowFile2))
 		return false;
@@ -1424,7 +1424,7 @@ MTopView::InitSprites()
 		m_CreatureSSPK.Init( packSize );
 		*/
 		//------------------------------------------------------------
-		// 그림자 load
+		// Load shadow
 		//------------------------------------------------------------
 //		if (!FileOpenBinary(FILE_SSPRITE_CREATURE, m_CreatureSSPKFile))
 //			return false;
@@ -1551,7 +1551,7 @@ MTopView::InitSprites()
 		if (!FileOpenBinary(FILE_ISPRITE_ADDON, AddonFile2))
 			return false;
 
-		// 개수만 잡아둔다.
+		// Only reserve the count.
 		TYPE_SPRITEID addonSize;
 		AddonFile2.read((char*)&addonSize, SIZE_SPRITEID);
 		m_AddonSPK.Init( addonSize, CSDLGraphics::Is565() );
@@ -1560,7 +1560,7 @@ MTopView::InitSprites()
 */	
 //
 //
-//	// 화일만 열어둔다.
+//	// Only open the file.
 //	//------------------------------------------------------------
 //	// sprite load
 //	//------------------------------------------------------------
@@ -1582,7 +1582,7 @@ MTopView::InitSprites()
 //	if (!true)
 	{
 		//------------------------------------------------------------
-		// 그림자 load
+		// Load shadow
 		//------------------------------------------------------------
 //		if (!FileOpenBinary(FILE_SSPRITE_ADDON, m_AddonSSPKFile))
 //			return false;
@@ -1612,9 +1612,9 @@ MTopView::InitSprites()
 */
 
 	//------------------------------------------------------------	
-	// 그림자 - Load  Clothes SpritePack	
+	// Shadow - Load Clothes SpritePack
 	//------------------------------------------------------------
-	// 남
+	// Male
 	/*
 	std::ifstream	AddonMaleShadowFile2;//(FILE_ISPRITE_ADDON, ios::binary);
 	if (!FileOpenBinary(FILE_SSPRITE_ADDON_MALE, AddonMaleShadowFile2))
@@ -1624,10 +1624,10 @@ MTopView::InitSprites()
 	*/
 
 	//------------------------------------------------------------
-	// 테스트 : 일반SpritePack --> ShadowSpritePack
+	// Test: normal SpritePack --> ShadowSpritePack
 	//------------------------------------------------------------
 	/*
-	// 남
+	// Male
 	CSpritePack AddonMaleShadowSPK;
 	std::ifstream	AddonMaleShadowFile2;//(FILE_ISPRITE_ADDON, ios::binary);
 	if (!FileOpenBinary("Data\\Image\\addonMaleShadow.spk", AddonMaleShadowFile2))
@@ -1643,7 +1643,7 @@ MTopView::InitSprites()
 	}
 
 	//------------------------------------------------------------	
-	// 남 - Save  ShadowSpritePack	
+	// Male - Save ShadowSpritePack
 	//------------------------------------------------------------
 	std::ofstream	AddonMaleShadowFile(FILE_SSPRITE_ADDON_MALE, ios::binary);	
 	std::ofstream	AddonMaleShadowIndexFile(FILE_SSPRITEINDEX_ADDON_MALE, ios::binary);	
@@ -1835,14 +1835,14 @@ MTopView::InitSprites()
 	CSpriteFilePositionArray	TileSFPArray;
 	TileSFPArray.Init( 6 );
 
-	// TileSPK Index를 Load한다.
+	// Load the TileSPK Index.
 	CFileIndexTable		TileIndex;
 
 	std::ifstream TilePackIndexFile(FILE_SPRITEINDEX_TILE, ios::binary);
 	TileIndex.LoadFromFile( TilePackIndexFile );
 	TilePackIndexFile.close();	
 
-	// TileSPK에서 특정한 SpriteID의 Tile들만으로 Set을 생성한다.
+	// Creates a Set from only the Tiles with specific SpriteIDs in the TileSPK.
 	TYPE_SPRITEID	TileSpriteID[6] = { 9, 10, 11, 12, 13, 19 };
 	for (TYPE_SPRITEID t=0; t<6; t++)
 	{
@@ -1858,7 +1858,7 @@ MTopView::InitSprites()
 	///*
 //		
 //		//-----------------------------------------------------------
-//		// Index를 Load한다.
+//		// Load the Index.
 //		//-----------------------------------------------------------
 //		m_TileSPKI.LoadFromFile( TilePackIndexFile );
 //		TilePackIndexFile.close();	
@@ -1874,7 +1874,7 @@ MTopView::InitSprites()
 
 	//*/
 
-	/* TILE INDEX 만들기
+	/* Create the TILE INDEX
 	CSpritePack spk;
 	std::ifstream TilePackIndexFile(FILE_SPRITE_TILE, ios::binary);
 	spk.LoadFromFile(TilePackIndexFile);	
@@ -1952,7 +1952,7 @@ MTopView::InitSprites()
 	//
 	//------------------------------------------------------------
 	//
-	// Index없는 SPK에 Index생성하기
+	// Create an Index for an SPK without an Index
 	/*
 	CSpritePack tempSPK;
 	std::ifstream	ioFile2(FILE_SPRITE_IMAGEOBJECT, ios::binary);
@@ -1972,14 +1972,14 @@ MTopView::InitSprites()
 	CSpriteFilePositionArray	ImageObjectSFPArray;
 	ImageObjectSFPArray.Init( 21 );
 
-	// ImageObjectSPK Index를 Load한다.
+	// Load the ImageObjectSPK Index.
 	CFileIndexTable		ImageObjectIndex;
 
 	std::ifstream ImageObjectPackIndexFile(FILE_SPRITEINDEX_IMAGEOBJECT, ios::binary);
 	ImageObjectIndex.LoadFromFile( ImageObjectPackIndexFile );
 	ImageObjectPackIndexFile.close();	
 
-	// ImageObjectSPK에서 특정한 SpriteID의 ImageObject들만으로 Set을 생성한다.
+	// Creates a Set from only the ImageObjects with specific SpriteIDs in the ImageObjectSPK.
 	TYPE_SPRITEID	ImageObjectSpriteID[21] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 	for (TYPE_SPRITEID io=0; io<21; io++)
 	{
@@ -1997,7 +1997,7 @@ MTopView::InitSprites()
 
 //
 //		//-----------------------------------------------------------
-//		// Index를 Load한다.
+//		// Load the Index.
 //		//-----------------------------------------------------------
 //		m_ImageObjectSPKI.LoadFromFile( ImageObjectPackIndexFile );
 //		ImageObjectPackIndexFile.close();	
@@ -2026,7 +2026,7 @@ MTopView::InitSprites()
 	//------------------------------------------------------------
 	//
 	//
-	//                   EffectSPK 초기화
+	//                   EffectSPK initialization
 	//
 	//
 	//------------------------------------------------------------
@@ -2232,8 +2232,8 @@ MTopView::InitSprites()
 	// Load  EffectPack
 	//
 	//------------------------------------------------------------
-	// 3d가속이 되면 m_pAlphaEffectTextureManager를 사용하고
-	// 아니면, m_EffectAlphaSPK를 사용한다.
+	// If 3D acceleration is available, use m_pAlphaEffectTextureManager,
+	// otherwise use m_EffectAlphaSPK.
 /*
 	std::ifstream	effectFile2;//(FILE_ASPRITE_ALPHAEFFECT, ios::binary);
 	if (!FileOpenBinary(FILE_ASPRITE_ALPHAEFFECT, effectFile2))
@@ -2257,16 +2257,16 @@ MTopView::InitSprites()
 //	else
 	{
 //		
-//		// Index File만 loading하고 
+//		// Only load the Index File, and
 //		m_EffectAlphaSPKI.LoadFromFile( effectFileIndex );
 //
-//		// 개수만큼 초기화만 해둔다.
+//		// only initialize as many as the count.
 //		m_EffectAlphaSPK.Init( m_EffectAlphaSPKI.GetSize(), CSDLGraphics::Is565() );
 //
 //		effectFileIndex.close();	
 //
 //		//------------------------------------------------------------
-//		// Run-time loading을 위해서 file을 열어둔다.
+//		// Keep the file open for Run-time loading.
 //		//------------------------------------------------------------
 //		if (!FileOpenBinary(FILE_ASPRITE_ALPHAEFFECT, m_EffectAlphaSPKFile))
 //			return false;
@@ -2281,16 +2281,16 @@ MTopView::InitSprites()
 
 	{
 //		
-//		// Index File만 loading하고 
+//		// Only load the Index File, and
 //		m_EffectScreenSPKI.LoadFromFile( effectFileIndex );
 //
-//		// 개수만큼 초기화만 해둔다.
+//		// only initialize as many as the count.
 //		m_EffectScreenSPK.Init( m_EffectScreenSPKI.GetSize(), CSDLGraphics::Is565() );
 //
 //		effectFileIndex.close();	
 //
 //		//------------------------------------------------------------
-//		// Run-time loading을 위해서 file을 열어둔다.
+//		// Keep the file open for Run-time loading.
 //		//------------------------------------------------------------
 //		if (!FileOpenBinary(FILE_SPRITE_SCREENEFFECT, m_EffectScreenSPKFile))
 //			return false;
@@ -2335,7 +2335,7 @@ MTopView::InitSprites()
 	if (true)
 	{	
 		//--------------------------------------------
-		// AlphaSPK을 이용해서 TexturePack을 생성한다.
+		// Creates the TexturePack from the AlphaSPK.
 		//--------------------------------------------
 		if (!m_EffectTPK.Init( m_EffectAlphaSPK ))
 		{
@@ -2344,8 +2344,8 @@ MTopView::InitSprites()
 		}
 
 		//------------------------------------------------------------	
-		// EffectAlphaSprite를 메모리에서 삭제한다.
-		// --> TextureSurface를 사용할 것이므로.. 필요가 없다.
+		// Deletes the EffectAlphaSprite from memory.
+		// --> Since the TextureSurface will be used.. it is not needed.
 		//------------------------------------------------------------		
 		m_EffectAlphaSPK.Release();
 	}
@@ -2483,7 +2483,7 @@ MTopView::InitSprites()
 	//------------------------------------------------------------
 	//
 	//
-	//                   Weather SpritePack 초기화
+	//                   Weather SpritePack initialization
 	//
 	//
 	//------------------------------------------------------------
@@ -2505,7 +2505,7 @@ MTopView::InitSprites()
 	//------------------------------------------------------------
 	//
 	//
-	//                   Shadow Test 초기화
+	//                   Shadow Test initialization
 	//
 	//
 	//------------------------------------------------------------
@@ -2537,7 +2537,7 @@ MTopView::InitSprites()
 	CAlphaSprite::SetColorkey( 0 );
 
 	//--------------------------------------------
-	// AlphaSPK을 이용해서 TexturePack을 생성한다.
+	// Creates the TexturePack from the AlphaSPK.
 	//--------------------------------------------
 	if (!m_ShadowTPK.Init( ShadowASPK ))
 	{
@@ -2546,8 +2546,8 @@ MTopView::InitSprites()
 	}
 
 	//------------------------------------------------------------	
-	// EffectAlphaSprite를 메모리에서 삭제한다.
-	// --> TextureSurface를 사용할 것이므로.. 필요가 없다.
+	// Deletes the EffectAlphaSprite from memory.
+	// --> Since the TextureSurface will be used.. it is not needed.
 	//------------------------------------------------------------		
 	ShadowASPK.Release();
 	*/
@@ -2644,7 +2644,7 @@ MTopView::InitSprites()
 	//------------------------------------------------------------
 	//
 	//
-	//                   Guild SpritePack 초기화
+	//                   Guild SpritePack initialization
 	//
 	//
 	//------------------------------------------------------------
@@ -2669,7 +2669,7 @@ MTopView::InitSprites()
 }
 
 //----------------------------------------------------------------------
-// Filter 초기화
+// Filter initialization
 //----------------------------------------------------------------------
 bool
 MTopView::InitFilters()
@@ -2748,11 +2748,11 @@ MTopView::InitFilters()
 
 	//------------------------------------------------------------	
 	//
-	//  3D 시야처리를 위한 Light Filter
+	//  Light Filter for 3D sight processing
 	//
 	//------------------------------------------------------------	
 	//-----------------------------------------------
-	// LightBuffer Texture 초기화
+	// LightBuffer Texture initialization
 	//-----------------------------------------------	
 	if (m_pLightBufferTexture!=NULL)
 	{
@@ -2761,7 +2761,7 @@ MTopView::InitFilters()
 		m_pLightBufferTexture = NULL;
 	}
 	//------------------------------------------------------------	
-	// 2D light에서 한 점이 차지하는 화면의 pixel크기
+	// Screen pixel size one point occupies in 2D light
 	//------------------------------------------------------------	
 	if (m_p2DLightPixelWidth!=NULL)
 	{
@@ -2788,9 +2788,9 @@ MTopView::InitFilters()
 		m_p2DLightPixelHeight = new int [SCREENLIGHT_HEIGHT];
 
 		//----------------------------------------------------------------
-		// LightBuffer의 한 점이 의미하는 화면상의 pixel가로 길이
+		// Horizontal pixel length on screen that one point of the LightBuffer stands for
 		//----------------------------------------------------------------
-		// 가로의 합 = 100 * 8 = 800
+		// Sum of the widths = 100 * 8 = 800
 		BYTE x1,y1=0;
 		if(g_MyFull)
 		{
@@ -2828,11 +2828,11 @@ MTopView::InitFilters()
 */
 
 		//----------------------------------------------------------------
-		// LightBuffer의 한 점이 의미하는 화면상의 pixel세로 길이
+		// Vertical pixel length on screen that one point of the LightBuffer stands for
 		//----------------------------------------------------------------
-		// 개수는 SCREENLIGHT_HEIGHT	
-		// total값이 CLIPSURFACE_HEIGHT와 같으면 된다.
-		// 현재는 600.  10*24 + 9*40	
+		// The count is SCREENLIGHT_HEIGHT
+		// The total only has to equal CLIPSURFACE_HEIGHT.
+		// Currently 600.  10*24 + 9*40
 		//----------------------------------------------------------------
 		if(g_MyFull)
 		{
@@ -2856,7 +2856,7 @@ MTopView::InitFilters()
 			x1,y1,y1,x1, y1,y1,x1,y1,
 		};
 		/*
-		//修改为768
+		//Changed to 768
 		//----------------------------------------------------------------
 		const int pPixelHeight[SCREENLIGHT_HEIGHT] = 
 		{
@@ -2890,7 +2890,7 @@ MTopView::InitFilters()
 
 	//------------------------------------------------------------
 	//
-	// Player를 가리는 ImageObject들을 처리할 Filter
+	// Filter that handles the ImageObjects covering the Player
 	//
 	//------------------------------------------------------------
 	/*
@@ -2908,9 +2908,9 @@ MTopView::InitFilters()
 			//k = sqrt(abs(i-100)*abs(i-100) ,
 					//abs(j-200)/2*abs(j-200)/2);
 
-			//k -= 50;	// 빈 공간
+			//k -= 50;	// Empty space
 
-			k >>= 2;	// 부드러운(?) 공간
+			k >>= 2;	// Soft(?) space
 
 			k += 5;
 
@@ -2922,7 +2922,7 @@ MTopView::InitFilters()
 			//else if (k>15 && k<21)
 			//	k = (rand()%(102 - k*5))? 26:32;
 
-			// 0과 1값만...
+			// Only the values 0 and 1...
 			if (k > 26) 
 				k = 1;
 			else
@@ -2956,16 +2956,16 @@ MTopView::InitFilters()
 }
 
 //----------------------------------------------------------------------
-// Character의 정보를 생성한다.
+// Creates the Character information.
 //----------------------------------------------------------------------
-// m_CreatureFrame[종류][Action][Direction][Frame]
+// m_CreatureFrame[type][Action][Direction][Frame]
 //----------------------------------------------------------------------
 bool
 MTopView::InitCreatureFrames()
 {		
 	//------------------------------------------------------------
 	//
-	//  Creature Body의 Frame 정보를 생성한다.
+	//  Creates the Frame information of the Creature Body.
 	//
 	//------------------------------------------------------------
 
@@ -2973,26 +2973,26 @@ MTopView::InitCreatureFrames()
 	m_CreatureFPK.Init(MAX_CREATURE_BODY);	
 
 	//-----------------------
-	// 첫번째 Creature(Woman)
+	// First Creature (Woman)
 	//-----------------------
-	// 동작 개수 정의
+	// Define the number of actions
 	m_CreatureFPK[0].Init(ACTION_MAX);
 
-	// n번째 Sprite
+	// n-th Sprite
 	WORD n = 0;
 	int i,j,k;
 
-	// 각 동작에 8방향의 FrameArray가 있다.
+	// Each action has a FrameArray for 8 directions.
 	for (k=0; k<ACTION_MAX; k++)
 		m_CreatureFPK[0][k].Init(8);
 
-	// 0~8번째 방향에는 각각 8개의 Frame이 있다.
+	// Directions 0~8 each have 8 Frames.
 	for (i=0; i<8; i++)
 	{
 		for (k=0; k<ACTION_MAX; k++)
 			m_CreatureFPK[0][k][i].Init(8);		
 
-		// 8개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 8 Frames.
 		for (j=0; j<8; j++)
 		{
 			for (k=0; k<ACTION_MAX; k++)
@@ -3003,29 +3003,29 @@ MTopView::InitCreatureFrames()
 	}	
 
 	//-----------------------
-	// 두번째 Creature(Skeleton)
+	// Second Creature (Skeleton)
 	//-----------------------
-	// 동작 개수 정의
+	// Define the number of actions
 	m_CreatureFPK[1].Init(ACTION_MAX);
 
-	// 각 동작에 8방향의 FrameArray가 있다.
+	// Each action has a FrameArray for 8 directions.
 	for (k=0; k<ACTION_MAX; k++)
 		m_CreatureFPK[1][k].Init(8);	
 
-	// sprite 순서
+	// sprite order
 	int step[] = { 2,3,4,3,2,1,0,1 };
 
 
-	// n번째 Sprite
+	// n-th Sprite
 	n = 64;
 
-	// 0~8번째 방향에는 각각 8개의 Frame이 있다.
+	// Directions 0~8 each have 8 Frames.
 	for (i=0; i<8; i++)
 	{
 		for (k=0; k<ACTION_MAX; k++)
 			m_CreatureFPK[1][k][i].Init(8);		
 
-		// 8개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 8 Frames.
 		for (j=0; j<8; j++)
 		{			
 			for (k=0; k<ACTION_MAX; k++)			
@@ -3037,28 +3037,28 @@ MTopView::InitCreatureFrames()
 
 
 	//-----------------------
-	// 세번째 Creature(Vamp1)
+	// Third Creature (Vamp1)
 	//-----------------------
-	// 동작 개수 정의
+	// Define the number of actions
 	m_CreatureFPK[2].Init(ACTION_MAX_VAMPIRE);
 
-	// n번째 Sprite
+	// n-th Sprite
 	n = 104;
 
-	// 각 동작에 8방향의 FrameArray가 있다.
+	// Each action has a FrameArray for 8 directions.
 	for (k=0; k<ACTION_MAX_VAMPIRE; k++)
 		m_CreatureFPK[2][k].Init(8);
 
 	//------------------------------------------------
-	// ACTION_STAND - 8방향에 대해서
+	// ACTION_STAND - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_STAND][i].Init(16);
 
 		int index = 0;
-		// 4개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 4 Frames.
 		for (j=0; j<4; j++)
 		{			
 			m_CreatureFPK[2][ACTION_STAND][i][index++].Set(n, 15,-60);
@@ -3070,33 +3070,33 @@ MTopView::InitCreatureFrames()
 	}
 
 	//------------------------------------------------
-	// ACTION_MOVE - 8방향에 대해서
+	// ACTION_MOVE - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_MOVE][i].Init(8);
 
-		// 8개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 8 Frames.
 		for (j=0; j<7; j++)
 		{
 			// 0~7 frame
 			m_CreatureFPK[2][ACTION_MOVE][i][j].Set(n, 15,-60);
 			n ++;
 		}
-		// 8번째 frame
+		// 8th frame
 		m_CreatureFPK[2][ACTION_MOVE][i][7].Set(n-7, 15,-60);
 	}
 
 	//------------------------------------------------
-	// ACTION_ATTACK - 8방향에 대해서
+	// ACTION_ATTACK - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_ATTACK][i].Init(8);
 
-		// 8개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 8 Frames.
 		for (j=0; j<8; j++)
 		{
 			m_CreatureFPK[2][ACTION_ATTACK][i][j].Set(n, 15,-60);
@@ -3105,14 +3105,14 @@ MTopView::InitCreatureFrames()
 	}
 
 	//------------------------------------------------
-	// ACTION_MAGIC - 8방향에 대해서
+	// ACTION_MAGIC - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_MAGIC][i].Init(8);
 
-		// 8개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 8 Frames.
 		k=0;
 		int kk=6;
 		//int index = 0;
@@ -3129,14 +3129,14 @@ MTopView::InitCreatureFrames()
 	}
 
 	//------------------------------------------------
-	// ACTION_DAMAGED - 8방향에 대해서
+	// ACTION_DAMAGED - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_DAMAGED][i].Init(6);
 
-		// 6개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 6 Frames.
 		for (j=0; j<6; j++)
 		{
 			m_CreatureFPK[2][ACTION_DAMAGED][i][j].Set(n, 15,-60);
@@ -3145,14 +3145,14 @@ MTopView::InitCreatureFrames()
 	}
 
 	//------------------------------------------------
-	// ACTION_DRAINED - 8방향에 대해서
+	// ACTION_DRAINED - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_DRAINED][i].Init(7);
 
-		// 7개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 7 Frames.
 		for (j=0; j<5; j++)
 		{
 			m_CreatureFPK[2][ACTION_DRAINED][i][j].Set(n, 15,-60);
@@ -3164,14 +3164,14 @@ MTopView::InitCreatureFrames()
 	}
 
 	//------------------------------------------------
-	// ACTION_DIE - 8방향에 대해서
+	// ACTION_DIE - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_DIE][i].Init(4);
 
-		// 4개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 4 Frames.
 		for (j=0; j<4; j++)
 		{
 			m_CreatureFPK[2][ACTION_DIE][i][j].Set(n, 15,-60);
@@ -3180,14 +3180,14 @@ MTopView::InitCreatureFrames()
 	}
 
 	//------------------------------------------------
-	// ACTION_VAMPIRE_DRAIN - 8방향에 대해서
+	// ACTION_VAMPIRE_DRAIN - for the 8 directions
 	//------------------------------------------------
 	for (i=0; i<8; i++)
 	{
-		// 방향당 Frame수 
+		// Number of Frames per direction
 		m_CreatureFPK[2][ACTION_VAMPIRE_DRAIN][i].Init(7);
 
-		// 7개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 7 Frames.
 		for (j=0; j<5; j++)
 		{
 			m_CreatureFPK[2][ACTION_VAMPIRE_DRAIN][i][j].Set(n, 15,-60);
@@ -3217,7 +3217,7 @@ MTopView::InitCreatureFrames()
 	WorldEvents::DrawTitleLoading();
 	//m_CreatureFPK.InfoToFile("log\\CreatureFPK.txt");
 
-	// Frame2 (좀비)의 죽기 동작을 y좌표 ,40씩 해준다.
+	// Shift the death action of Frame2 (zombie) by 40 in the y coordinate.
 	/*
 	ACTION_FRAME_ARRAY &zombie = m_CreatureFPK[2];
 
@@ -3242,7 +3242,7 @@ MTopView::InitCreatureFrames()
 
 
 	/*
-	// Damaged 0,1을 1,0으로 바꾼다.
+	// Swap Damaged 0,1 to 1,0.
 	for (int ct=0; ct<m_CreatureFPK.GetSize(); ct++)
 	{
 		DIRECTION_FRAME_ARRAY& damaged = m_CreatureFPK[ct][ACTION_DAMAGED];
@@ -3251,7 +3251,7 @@ MTopView::InitCreatureFrames()
 		{
 			FRAME_ARRAY& dfr = damaged[d];
 
-			// 0과 1 framd을 바꿔준다.
+			// Swap frames 0 and 1.
 			CFrame frame0 = dfr[0];
 			CFrame frame1 = dfr[1];
 
@@ -3265,7 +3265,7 @@ MTopView::InitCreatureFrames()
 	//m_CreatureFPK.InfoToFile("creature.txt");
 
 
-	// 정지 4frame을 6frame으로 바꿔서 다시 18frame으로..
+	// Turn the 4 stand-still frames into 6 frames, then into 18 frames again..
 	/*
 	DIRECTION_FRAME_ARRAY& stand = m_CreatureFPK[1][ACTION_STAND];
 	DIRECTION_FRAME_ARRAY standTemp;
@@ -3274,7 +3274,7 @@ MTopView::InitCreatureFrames()
 	standTemp2.Init( 8 );
 	for (int d=0; d<8; d++)
 	{		
-		// 4frame을  6frame으로..		
+		// 4 frames into 6 frames..
 		standTemp2[d].Init( standTemp[d].GetSize(),2 );
 		for (int f=0; f<standTemp[d].GetSize(); f++)
 		{
@@ -3283,7 +3283,7 @@ MTopView::InitCreatureFrames()
 		standTemp2[d][4] = standTemp[d][2];	
 		standTemp2[d][5] = standTemp[d][1];	
 
-		// 6frame을 18frame으로..
+		// 6 frames into 18 frames..
 		stand[d].Init( standTemp2[d].GetSize()*3 );
 		int ff=0;
 		for (f=0; f<standTemp2[d].GetSize(); f++)
@@ -3294,7 +3294,7 @@ MTopView::InitCreatureFrames()
 		}
 	}	
 
-	// 걷기 동작 6frame을 12frame으로...
+	// Turn the 6 walking frames into 12 frames...
 	DIRECTION_FRAME_ARRAY& move = m_CreatureFPK[1][ACTION_MOVE];
 	DIRECTION_FRAME_ARRAY moveTemp;
 	moveTemp = move;
@@ -3333,7 +3333,7 @@ MTopView::InitCreatureFrames()
 
 	//------------------------------------------------------------
 	//
-	//  addon의 Frame 정보를 생성한다.
+	//  Creates the Frame information of the addon.
 	//
 	//------------------------------------------------------------
 	//
@@ -3342,25 +3342,25 @@ MTopView::InitCreatureFrames()
 
 
 	//--------------
-	// 첫번째 옷
+	// First clothes
 	//--------------
-	// 1가지 동작만 있다.
+	// There is only 1 action.
 	m_AddonFPK[0].Init(1);
 	m_AddonFPK[1].Init(1);
 	m_AddonFPK[2].Init(1);
 	m_AddonFPK[3].Init(1);
 
-	// 그 1가지 동작에 8방향의 FrameArray가 있다.
+	// That 1 action has a FrameArray for 8 directions.
 	m_AddonFPK[0][0].Init(8);
 	m_AddonFPK[1][0].Init(8);
 	m_AddonFPK[2][0].Init(8);
 	m_AddonFPK[3][0].Init(8);
 
-	// n번째 tile
+	// n-th tile
 	//n = n + 80;
 	n = 0;
 
-	// 0~8번째 방향에는 각각 8개의 Frame이 있다.
+	// Directions 0~8 each have 8 Frames.
 	for (i=0; i<8; i++)
 	{
 		m_AddonFPK[0][0][i].Init(8);
@@ -3368,13 +3368,13 @@ MTopView::InitCreatureFrames()
 		m_AddonFPK[2][0][i].Init(8);
 		m_AddonFPK[3][0][i].Init(8);
 
-		// 8개의 Frame에 대한 정보를 Set한다.
+		// Sets the information for the 8 Frames.
 		for (int j=0; j<8; j++)
 		{
-			// 83~122 : Shirt 그림이 있다고 했을 경우
+			// If there is a Shirt picture at 83~122
 			m_AddonFPK[0][0][i][j].Set(n,step[j], 0,-40);
 
-			// 123~162 Pants 그림이 있다고 했을 경우
+			// If there is a Pants picture at 123~162
 			m_AddonFPK[1][0][i][j].Set(n,40,step[j], 0,-40);
 
 			// Boots
@@ -3512,7 +3512,7 @@ MTopView::InitCreatureFrames()
 	WorldEvents::DrawTitleLoading();
 
 	//------------------------------------------------
-	// 그림자 - Load from File
+	// Shadow - Load from File
 	//------------------------------------------------
 	std::ifstream AddonShadowFile2;//(FILE_CFRAME_ADDON_MALE, ios::binary);
 	if (!FileOpenBinary(g_pFileDef->getProperty("FILE_CFRAME_ADDON_SHADOW").c_str(), AddonShadowFile2))
@@ -3529,8 +3529,8 @@ MTopView::InitCreatureFrames()
 
 	WorldEvents::DrawTitleLoading();
 
-	// 총동작에 머리카락 빠진것 추가
-	// 이래도 뭔가 안되네!!
+	// Add the hair-loss case to the total actions
+	// Even so something doesn't work!!
 	/*
 	int add;
 	for (add=0; add<MAX_ADDONID_MALE; add++)
@@ -3558,14 +3558,14 @@ MTopView::InitCreatureFrames()
 	}
 	*/
 
-	// 변경..
+	// Changed..
 	/*
 	int add, a, d, f;
 	for (add=0; add<MAX_ADDONID_MALE; add++)
 	{
 		ACTION_FRAME_ARRAY& AFA = m_AddonMaleFPK[add];
 
-		// motorcycle에는 action추가
+		// Add an action for the motorcycle
 		if (add==ADDONID_MOTORCYCLE_MALE)
 		{			
 			for (a=0; a<ACTION_MAX_SLAYER; a++)
@@ -3623,14 +3623,14 @@ MTopView::InitCreatureFrames()
 				{
 					FRAME_ARRAY& FA = DFA[d];
 
-					// motor동작을 3 --> 4 frame으로 바꾼다.
+					// Change the motor action from 3 --> 4 frames.
 					if (a==ACTION_SLAYER_MOTOR_MOVE)
 					{
 						if (FA.GetSize()!=0)
 						{
 							FRAME_ARRAY newFA;
 							newFA.Init( 4 );
-							// 3개짜리 FA를 4개로 만들어야 한다.
+							// The 3-entry FA must be made into 4.
 							for (f=0; f<FA.GetSize(); f++)
 							{
 								CFrame& frame = FA[f];
@@ -3656,7 +3656,7 @@ MTopView::InitCreatureFrames()
 	//m_AddonFemaleShadowFPK.InfoToFile("log\\addonFemaleShadow.txt");
 
 	/*
-	// [남자] 칼동작은 6 frame으로 바꾸기...
+	// [Male] Change the sword action to 6 frames...
 	for (int add=0; add<m_AddonMaleFPK.GetSize(); add++)
 	{	
 		ACTION_FRAME_ARRAY &addon = m_AddonMaleFPK[add];
@@ -3704,7 +3704,7 @@ MTopView::InitCreatureFrames()
 		}
 	}
 
-	// [여자] 칼동작은 6 frame으로 바꾸기...
+	// [Female] Change the sword action to 6 frames...
 	for (add=0; add<m_AddonFemaleFPK.GetSize(); add++)
 	{	
 		ACTION_FRAME_ARRAY &addon = m_AddonFemaleFPK[add];
@@ -3767,7 +3767,7 @@ MTopView::InitCreatureFrames()
 	*/
 
 
-	// 여자 총 동작 바꾸기
+	// Change the female gun action
 	/*
 	m_AddonFemaleFPK[ADDONID_GUN_TR_FEMALE][14] = m_AddonFemaleFPK[ADDONID_GUN_TR_FEMALE][7];
 	m_AddonFemaleFPK[ADDONID_GUN_TR_FEMALE][7].Release();
@@ -3794,15 +3794,15 @@ MTopView::InitCreatureFrames()
 //----------------------------------------------------------------------
 // Init Image Frames
 //----------------------------------------------------------------------
-// CImageFramePack			m_ItemTileFPK;			// Tile에 있는 Item에 대한..
-// m_ImageFrame[종류]
+// CImageFramePack			m_ItemTileFPK;			// For Items on the Tile..
+// m_ImageFrame[type]
 //----------------------------------------------------------------------
 bool
 MTopView::InitImageFrames()
 {
 	//------------------------------------------------------------
 	//
-	//  Item on Tile 정보를 생성한다.
+	//  Creates the Item on Tile information.
 	//
 	//------------------------------------------------------------
 	/*
@@ -3838,22 +3838,22 @@ MTopView::InitImageFrames()
 //----------------------------------------------------------------------
 // Init Animation Frames
 //----------------------------------------------------------------------
-// m_ImageObjectFPK[종류][Frame]
+// m_ImageObjectFPK[type][Frame]
 //----------------------------------------------------------------------
 bool
 MTopView::InitAnimationFrames()
 {		
 	//------------------------------------------------------------
 	//
-	//  Animation Frame 정보를 생성한다.
+	//  Creates the Animation Frame information.
 	//
 	//------------------------------------------------------------
 
 	//------------------------------------------------------------
 	//
-	//  이 정보는 FrameSet이다.
+	//  This information is a FrameSet.
 	//
-	//  SpriteSet에서의 SpriteID를 저장하고 있어야 한다.
+	//  It must hold the SpriteID within the SpriteSet.
 	//
 	//------------------------------------------------------------
 
@@ -3873,7 +3873,7 @@ MTopView::InitAnimationFrames()
 //	m_InteractionObjectFPK.Init( 1 );
 //	
 //	//------------------------------------------
-//	// 첫번째 Animation Object
+//	// First Animation Object
 //	//------------------------------------------
 //	m_InteractionObjectFPK[0].Init(10);	
 //	m_InteractionObjectFPK[0][0].Set(0, 0, -48);
@@ -3909,28 +3909,28 @@ MTopView::InitAnimationFrames()
 //
 
 	//------------------------------------------------------------	
-	// 다시 생성
+	// Create again
 	//------------------------------------------------------------	
 	/*
 	const int numItems	= 121;
 	const int numFrames	= 6;
 
-	// frame 변화 값 
-	// sprite는 item마다 4개씩인데 6 frame을 만들어야 한다.
+	// frame change value
+	// There are 4 sprites per item but 6 frames must be made.
 	int nFrame[numFrames] = { 3, 0, 1, 2, 3, 0 };
 
-	m_ItemDropFPK.Init( numItems );	// 전체 item 개수만큼의 ani frame
+	m_ItemDropFPK.Init( numItems );	// ani frames for the total number of items
 
 	int spriteID = 0;
 	for (int i=0; i<numItems; i++)
 	{
-		m_ItemDropFPK[i].Init( numFrames );		// 각각 6 frame씩
+		m_ItemDropFPK[i].Init( numFrames );		// 6 frames each
 
 		for (int f=0; f<numFrames; f++)
 		{
 			int sid = spriteID+nFrame[f];
 
-			// 중심에 오도록 좌표 보정..
+			// Correct the coordinates so it is centered..
 			int cx = 24 - (m_ItemDropSPK[sid].GetWidth()>>1);
 			int cy = 24 - (m_ItemDropSPK[sid].GetHeight()>>1);
 
@@ -3941,7 +3941,7 @@ MTopView::InitAnimationFrames()
 	}
 
 	//------------------------------------------------------------	
-	// 저장
+	// Save
 	//------------------------------------------------------------	
 	std::ofstream packFile(FILE_AFRAME_ITEMDROP, ios::binary);
 	std::ofstream indexFile(FILE_AFRAMEINDEX_ITEMDROP, ios::binary);
@@ -3952,7 +3952,7 @@ MTopView::InitAnimationFrames()
 
 		//------------------------------------------------------------
 	//
-	//  Item Broken 정보를 생성한다.
+	//  Creates the Item Broken information.
 	//
 	//------------------------------------------------------------
 	///*
@@ -3961,152 +3961,152 @@ MTopView::InitAnimationFrames()
 	const int maxVampireItemBroken = (MVampireGear::MAX_GEAR_VAMPIRE+2-12) * 3;
 	const int maxOustersItemBroken = (MOustersGear::MAX_GEAR_OUSTERS+1-12) * 3;
 
-	m_ItemBrokenFPK.Init( 5 );	// 슬레이어 남,여 + 뱀파이어 남,여
+	m_ItemBrokenFPK.Init( 5 );	// Slayer male, female + Vampire male, female
 
 
 	// { SpriteID, CX, CY }
 	//------------------------------------------------------------
-	// 슬레이어 남자
+	// Slayer male
 	//------------------------------------------------------------
 	int slayerMale[maxSlayerItemBroken][3] =
 	{
-		// 정상적인거
-		{ SPRITEID_NULL,	33, 1 },	// 모자,
-		{ SPRITEID_NULL,	 38, 18 },	// 목걸이
-		{ SPRITEID_NULL,	16, 19 },	// 상의
-		{ 1,	62, 19 },	// 방패	
-		{ 2,	19, 11 },	// 칼		
-		{ SPRITEID_NULL,	9, 49 },	// 장갑
-		{ SPRITEID_NULL,	27, 54 },	// 벨트
-		{ SPRITEID_NULL,	26, 59 },	// 하의
-		{ 5,	59, 51 },	// 팔찌2		
-		{ 5,	24, 51 },	// 팔찌1
-		{ 6,	20, 60 },	// 반지1
-		{ 6,	28, 60 },	// 반지2
-		{ 6,	55, 60 },	// 반지3
-		{ 6,	63, 60 },	// 반지4
-		{ SPRITEID_NULL,	20, 122 },	// 신발
-		{ 3,	18, 12 },	// 십자가
-		{ 4,	20, 12 },	// 총
+		// The normal ones
+		{ SPRITEID_NULL,	33, 1 },	// hat,
+		{ SPRITEID_NULL,	 38, 18 },	// necklace
+		{ SPRITEID_NULL,	16, 19 },	// top
+		{ 1,	62, 19 },	// shield
+		{ 2,	19, 11 },	// sword
+		{ SPRITEID_NULL,	9, 49 },	// gloves
+		{ SPRITEID_NULL,	27, 54 },	// belt
+		{ SPRITEID_NULL,	26, 59 },	// bottoms
+		{ 5,	59, 51 },	// bracelet2
+		{ 5,	24, 51 },	// bracelet1
+		{ 6,	20, 60 },	// ring1
+		{ 6,	28, 60 },	// ring2
+		{ 6,	55, 60 },	// ring3
+		{ 6,	63, 60 },	// ring4
+		{ SPRITEID_NULL,	20, 122 },	// shoes
+		{ 3,	18, 12 },	// cross
+		{ 4,	20, 12 },	// gun
 
-		// 약간 부서진거
-		{ 9,	40, 10 },	// 모자,
-		{ 10,	42, 19 },	// 목걸이
-		{ 7,	33, 18 },	// 상의
-		{ 14,	62, 19 },	// 방패	
-		{ 15,	19, 11 },	// 칼		
-		{ 11,	30, 35 },	// 장갑
-		{ 12,	37, 36 },	// 벨트
-		{ 8,	36, 35 },	// 하의
-		{ 18,	59, 51 },	// 팔찌2		
-		{ 18,	24, 51 },	// 팔찌1
-		{ 19,	20, 60 },	// 반지1
-		{ 19,	28, 60 },	// 반지2
-		{ 19,	55, 60 },	// 반지3
-		{ 19,	63, 60 },	// 반지4
-		{ 13,	36, 72 },	// 신발
-		{ 16,	18, 12 },	// 십자가
-		{ 17,	20, 12 },	// 총
+		// The slightly broken ones
+		{ 9,	40, 10 },	// hat,
+		{ 10,	42, 19 },	// necklace
+		{ 7,	33, 18 },	// top
+		{ 14,	62, 19 },	// shield
+		{ 15,	19, 11 },	// sword
+		{ 11,	30, 35 },	// gloves
+		{ 12,	37, 36 },	// belt
+		{ 8,	36, 35 },	// bottoms
+		{ 18,	59, 51 },	// bracelet2
+		{ 18,	24, 51 },	// bracelet1
+		{ 19,	20, 60 },	// ring1
+		{ 19,	28, 60 },	// ring2
+		{ 19,	55, 60 },	// ring3
+		{ 19,	63, 60 },	// ring4
+		{ 13,	36, 72 },	// shoes
+		{ 16,	18, 12 },	// cross
+		{ 17,	20, 12 },	// gun
 
-		// 다 부서져 가는거
-		{ 22,	40, 10 },	// 모자,
-		{ 23,	42, 19 },	// 목걸이
-		{ 20,	33, 18 },	// 상의
-		{ 27,	62, 19 },	// 방패	
-		{ 28,	19, 11 },	// 칼		
-		{ 24,	30, 35 },	// 장갑
-		{ 25,	37, 36 },	// 벨트
-		{ 21,	36, 35 },	// 하의
-		{ 31,	59, 51 },	// 팔찌2		
-		{ 31,	24, 51 },	// 팔찌1
-		{ 32,	20, 60 },	// 반지1
-		{ 32,	28, 60 },	// 반지2
-		{ 32,	55, 60 },	// 반지3
-		{ 32,	63, 60 },	// 반지4
-		{ 26,	36, 72 },	// 신발
-		{ 29,	18, 12 },	// 십자가
-		{ 30,	20, 12 },	// 총
+		// The almost completely broken ones
+		{ 22,	40, 10 },	// hat,
+		{ 23,	42, 19 },	// necklace
+		{ 20,	33, 18 },	// top
+		{ 27,	62, 19 },	// shield
+		{ 28,	19, 11 },	// sword
+		{ 24,	30, 35 },	// gloves
+		{ 25,	37, 36 },	// belt
+		{ 21,	36, 35 },	// bottoms
+		{ 31,	59, 51 },	// bracelet2
+		{ 31,	24, 51 },	// bracelet1
+		{ 32,	20, 60 },	// ring1
+		{ 32,	28, 60 },	// ring2
+		{ 32,	55, 60 },	// ring3
+		{ 32,	63, 60 },	// ring4
+		{ 26,	36, 72 },	// shoes
+		{ 29,	18, 12 },	// cross
+		{ 30,	20, 12 },	// gun
 	};
 
 	//------------------------------------------------------------
-	// 슬레이어 여자
+	// Slayer female
 	//------------------------------------------------------------
 	int slayerFemale[maxSlayerItemBroken][3] =
 	{
-		// 정상적인거
-		{ SPRITEID_NULL,	33, 1 },	// 모자,
-		{ SPRITEID_NULL,	 38, 18 },	// 목걸이
-		{ SPRITEID_NULL,	16, 19 },	// 상의
-		{ 1,	62, 19 },	// 방패	
-		{ 2,	19, 11 },	// 칼		
-		{ SPRITEID_NULL,	9, 49 },	// 장갑
-		{ SPRITEID_NULL,	27, 54 },	// 벨트
-		{ SPRITEID_NULL,	26, 59 },	// 하의
-		{ 5,	59, 51 },	// 팔찌2		
-		{ 5,	24, 51 },	// 팔찌1
-		{ 6,	20, 60 },	// 반지1
-		{ 6,	28, 60 },	// 반지2
-		{ 6,	55, 60 },	// 반지3
-		{ 6,	63, 60 },	// 반지4
-		{ SPRITEID_NULL,	20, 122 },	// 신발
-		{ 3,	18, 12 },	// 십자가
-		{ 4,	20, 12 },	// 총
+		// The normal ones
+		{ SPRITEID_NULL,	33, 1 },	// hat,
+		{ SPRITEID_NULL,	 38, 18 },	// necklace
+		{ SPRITEID_NULL,	16, 19 },	// top
+		{ 1,	62, 19 },	// shield
+		{ 2,	19, 11 },	// sword
+		{ SPRITEID_NULL,	9, 49 },	// gloves
+		{ SPRITEID_NULL,	27, 54 },	// belt
+		{ SPRITEID_NULL,	26, 59 },	// bottoms
+		{ 5,	59, 51 },	// bracelet2
+		{ 5,	24, 51 },	// bracelet1
+		{ 6,	20, 60 },	// ring1
+		{ 6,	28, 60 },	// ring2
+		{ 6,	55, 60 },	// ring3
+		{ 6,	63, 60 },	// ring4
+		{ SPRITEID_NULL,	20, 122 },	// shoes
+		{ 3,	18, 12 },	// cross
+		{ 4,	20, 12 },	// gun
 
-		// 약간 부서진거
-		{ 36,	40, 10 },	// 모자,
-		{ 37,	41, 20 },	// 목걸이
-		{ 34,	33, 20 },	// 상의
-		{ 14,	62, 19 },	// 방패	
-		{ 15,	19, 11 },	// 칼		
-		{ 38,	30, 37 },	// 장갑
-		{ 39,	40, 32 },	// 벨트
-		{ 35,	38, 35 },	// 하의
-		{ 18,	59, 51 },	// 팔찌2		
-		{ 18,	24, 51 },	// 팔찌1
-		{ 19,	20, 60 },	// 반지1
-		{ 19,	28, 60 },	// 반지2
-		{ 19,	55, 60 },	// 반지3
-		{ 19,	63, 60 },	// 반지4
-		{ 40,	39, 55 },	// 신발
-		{ 16,	18, 12 },	// 십자가
-		{ 17,	20, 12 },	// 총
+		// The slightly broken ones
+		{ 36,	40, 10 },	// hat,
+		{ 37,	41, 20 },	// necklace
+		{ 34,	33, 20 },	// top
+		{ 14,	62, 19 },	// shield
+		{ 15,	19, 11 },	// sword
+		{ 38,	30, 37 },	// gloves
+		{ 39,	40, 32 },	// belt
+		{ 35,	38, 35 },	// bottoms
+		{ 18,	59, 51 },	// bracelet2
+		{ 18,	24, 51 },	// bracelet1
+		{ 19,	20, 60 },	// ring1
+		{ 19,	28, 60 },	// ring2
+		{ 19,	55, 60 },	// ring3
+		{ 19,	63, 60 },	// ring4
+		{ 40,	39, 55 },	// shoes
+		{ 16,	18, 12 },	// cross
+		{ 17,	20, 12 },	// gun
 
-		// 다 부서져 가는거
-		{ 43,	40, 10 },	// 모자,
-		{ 44,	41, 20 },	// 목걸이
-		{ 41,	33, 20 },	// 상의
-		{ 14,	62, 19 },	// 방패	
-		{ 15,	19, 11 },	// 칼		
-		{ 45,	30, 37 },	// 장갑
-		{ 46,	40, 32 },	// 벨트
-		{ 42,	38, 35 },	// 하의
-		{ 18,	59, 51 },	// 팔찌2		
-		{ 18,	24, 51 },	// 팔찌1
-		{ 19,	20, 60 },	// 반지1
-		{ 19,	28, 60 },	// 반지2
-		{ 19,	55, 60 },	// 반지3
-		{ 19,	63, 60 },	// 반지4
-		{ 47,	39, 55 },	// 신발
-		{ 16,	18, 12 },	// 십자가
-		{ 17,	20, 12 },	// 총
+		// The almost completely broken ones
+		{ 43,	40, 10 },	// hat,
+		{ 44,	41, 20 },	// necklace
+		{ 41,	33, 20 },	// top
+		{ 14,	62, 19 },	// shield
+		{ 15,	19, 11 },	// sword
+		{ 45,	30, 37 },	// gloves
+		{ 46,	40, 32 },	// belt
+		{ 42,	38, 35 },	// bottoms
+		{ 18,	59, 51 },	// bracelet2
+		{ 18,	24, 51 },	// bracelet1
+		{ 19,	20, 60 },	// ring1
+		{ 19,	28, 60 },	// ring2
+		{ 19,	55, 60 },	// ring3
+		{ 19,	63, 60 },	// ring4
+		{ 47,	39, 55 },	// shoes
+		{ 16,	18, 12 },	// cross
+		{ 17,	20, 12 },	// gun
 	};
 
 	//------------------------------------------------------------
-	// 뱀파이어 남자
+	// Vampire male
 	//------------------------------------------------------------
 	int vampireMale[maxVampireItemBroken][3] =
 	{
-		// 정상적인거
-		{ SPRITEID_NULL,	40, 22 },	// 목걸이
-		{ SPRITEID_NULL,	19, 10 },	// 상의
-		{ 49,	22, 45 },	// 팔찌1
-		{ 49,	62, 45 },	// 팔찌2
-		{ 50,	18, 54 },	// 반지1
-		{ 50,	26, 54 },	// 반지2
-		{ 50,	58, 54 },	// 반지3
-		{ 50,	66, 54 },	// 반지4
-		{ 62,	22, 18 },	// 귀걸이1
-		{ 62,	62, 18 },	// 귀걸이2
+		// The normal ones
+		{ SPRITEID_NULL,	40, 22 },	// necklace
+		{ SPRITEID_NULL,	19, 10 },	// top
+		{ 49,	22, 45 },	// bracelet1
+		{ 49,	62, 45 },	// bracelet2
+		{ 50,	18, 54 },	// ring1
+		{ 50,	26, 54 },	// ring2
+		{ 50,	58, 54 },	// ring3
+		{ 50,	66, 54 },	// ring4
+		{ 62,	22, 18 },	// earring1
+		{ 62,	62, 18 },	// earring2
 		{ 65,	16, 22 },	// Weapon1
 		{ 65,	64, 22 },	// Weapon2
 		{ 68,	18, 63 },	// Amulet1
@@ -4114,17 +4114,17 @@ MTopView::InitAnimationFrames()
 		{ 68,	58, 63 },	// Amulet3
 		{ 68,	66, 63 },	// Amulet4
 
-		// 약간 부서진거
-		{ 52,	43, 18 },	// 목걸이
-		{ 51,	30, 14 },	// 상의
-		{ 53,	22, 45 },	// 팔찌1
-		{ 53,	62, 45 },	// 팔찌2
-		{ 54,	18, 54 },	// 반지1
-		{ 54,	26, 54 },	// 반지2
-		{ 54,	58, 54 },	// 반지3
-		{ 54,	66, 54 },	// 반지4
-		{ 63,	22, 18 },	// 귀걸이1
-		{ 63,	62, 18 },	// 귀걸이2
+		// The slightly broken ones
+		{ 52,	43, 18 },	// necklace
+		{ 51,	30, 14 },	// top
+		{ 53,	22, 45 },	// bracelet1
+		{ 53,	62, 45 },	// bracelet2
+		{ 54,	18, 54 },	// ring1
+		{ 54,	26, 54 },	// ring2
+		{ 54,	58, 54 },	// ring3
+		{ 54,	66, 54 },	// ring4
+		{ 63,	22, 18 },	// earring1
+		{ 63,	62, 18 },	// earring2
 		{ 66,	16, 22 },	// Weapon1
 		{ 66,	64, 22 },	// Weapon2
 		{ 69,	18, 63 },	// Amulet1
@@ -4132,17 +4132,17 @@ MTopView::InitAnimationFrames()
 		{ 69,	58, 63 },	// Amulet3
 		{ 69,	66, 63 },	// Amulet4
 
-		// 다 부서진거
-		{ 56,	43, 18 },	// 목걸이
-		{ 55,	30, 14 },	// 상의
-		{ 57,	22, 45 },	// 팔찌1
-		{ 57,	62, 45 },	// 팔찌2
-		{ 58,	18, 54 },	// 반지1
-		{ 58,	26, 54 },	// 반지2
-		{ 58,	58, 54 },	// 반지3
-		{ 58,	66, 54 },	// 반지4
-		{ 64,	22, 18 },	// 귀걸이1
-		{ 64,	62, 18 },	// 귀걸이2
+		// The completely broken ones
+		{ 56,	43, 18 },	// necklace
+		{ 55,	30, 14 },	// top
+		{ 57,	22, 45 },	// bracelet1
+		{ 57,	62, 45 },	// bracelet2
+		{ 58,	18, 54 },	// ring1
+		{ 58,	26, 54 },	// ring2
+		{ 58,	58, 54 },	// ring3
+		{ 58,	66, 54 },	// ring4
+		{ 64,	22, 18 },	// earring1
+		{ 64,	62, 18 },	// earring2
 		{ 67,	16, 22 },	// Weapon1
 		{ 67,	64, 22 },	// Weapon2
 		{ 70,	18, 63 },	// Amulet1
@@ -4152,21 +4152,21 @@ MTopView::InitAnimationFrames()
 	};
 
 	//------------------------------------------------------------
-	// 뱀파이어 여자
+	// Vampire female
 	//------------------------------------------------------------
 	int vampireFemale[maxVampireItemBroken][3] =
 	{
-		// 정상적인거
-		{ SPRITEID_NULL,	40, 22 },	// 목걸이
-		{ SPRITEID_NULL,	19, 10 },	// 상의
-		{ 49,	22, 45 },	// 팔찌1
-		{ 49,	62, 45 },	// 팔찌2
-		{ 50,	18, 54 },	// 반지1
-		{ 50,	58, 54 },	// 반지3
-		{ 50,	26, 54 },	// 반지2		
-		{ 50,	66, 54 },	// 반지4
-		{ 62,	22, 18 },	// 귀걸이1
-		{ 62,	62, 18 },	// 귀걸이2
+		// The normal ones
+		{ SPRITEID_NULL,	40, 22 },	// necklace
+		{ SPRITEID_NULL,	19, 10 },	// top
+		{ 49,	22, 45 },	// bracelet1
+		{ 49,	62, 45 },	// bracelet2
+		{ 50,	18, 54 },	// ring1
+		{ 50,	58, 54 },	// ring3
+		{ 50,	26, 54 },	// ring2
+		{ 50,	66, 54 },	// ring4
+		{ 62,	22, 18 },	// earring1
+		{ 62,	62, 18 },	// earring2
 		{ 65,	16, 22 },	// Weapon1
 		{ 65,	64, 22 },	// Weapon2
 		{ 68,	18, 63 },	// Amulet1
@@ -4174,17 +4174,17 @@ MTopView::InitAnimationFrames()
 		{ 68,	58, 63 },	// Amulet3
 		{ 68,	66, 63 },	// Amulet4
 
-		// 약간 부서진거
-		{ 52,	42, 18 },	// 목걸이
-		{ 60,	31, 19 },	// 상의
-		{ 53,	22, 45 },	// 팔찌1
-		{ 53,	62, 45 },	// 팔찌2
-		{ 54,	18, 54 },	// 반지1
-		{ 54,	58, 54 },	// 반지3
-		{ 54,	26, 54 },	// 반지2		
-		{ 54,	66, 54 },	// 반지4
-		{ 63,	22, 18 },	// 귀걸이1
-		{ 63,	62, 18 },	// 귀걸이2
+		// The slightly broken ones
+		{ 52,	42, 18 },	// necklace
+		{ 60,	31, 19 },	// top
+		{ 53,	22, 45 },	// bracelet1
+		{ 53,	62, 45 },	// bracelet2
+		{ 54,	18, 54 },	// ring1
+		{ 54,	58, 54 },	// ring3
+		{ 54,	26, 54 },	// ring2
+		{ 54,	66, 54 },	// ring4
+		{ 63,	22, 18 },	// earring1
+		{ 63,	62, 18 },	// earring2
 		{ 66,	16, 22 },	// Weapon1
 		{ 66,	64, 22 },	// Weapon2
 		{ 69,	18, 63 },	// Amulet1
@@ -4192,17 +4192,17 @@ MTopView::InitAnimationFrames()
 		{ 69,	58, 63 },	// Amulet3
 		{ 69,	66, 63 },	// Amulet4
 
-		// 다 부서진거
-		{ 56,	42, 18 },	// 목걸이
-		{ 61,	31, 19 },	// 상의
-		{ 57,	22, 45 },	// 팔찌1
-		{ 57,	62, 45 },	// 팔찌2
-		{ 58,	18, 54 },	// 반지1
-		{ 58,	58, 54 },	// 반지3
-		{ 58,	26, 54 },	// 반지2		
-		{ 58,	66, 54 },	// 반지4
-		{ 64,	22, 18 },	// 귀걸이1
-		{ 64,	62, 18 },	// 귀걸이2
+		// The completely broken ones
+		{ 56,	42, 18 },	// necklace
+		{ 61,	31, 19 },	// top
+		{ 57,	22, 45 },	// bracelet1
+		{ 57,	62, 45 },	// bracelet2
+		{ 58,	18, 54 },	// ring1
+		{ 58,	58, 54 },	// ring3
+		{ 58,	26, 54 },	// ring2
+		{ 58,	66, 54 },	// ring4
+		{ 64,	22, 18 },	// earring1
+		{ 64,	62, 18 },	// earring2
 		{ 67,	16, 22 },	// Weapon1
 		{ 67,	64, 22 },	// Weapon2
 		{ 70,	18, 63 },	// Amulet1
@@ -4212,68 +4212,68 @@ MTopView::InitAnimationFrames()
 	};		
 
 	//------------------------------------------------------------
-	// 아우스터즈
+	// Ousters
 	//------------------------------------------------------------
 	int Ousters[maxOustersItemBroken][3] =
 	{
-		// 정상적인거
-		{ 77,	39, 8 },				// 서클릿
-		{ SPRITEID_NULL ,	34, 18 },				// 옷
-		{ 89,	17, 33 },				// 왼손				// 리스틀릿은 92
-		{ 89,	61, 33 },				// 오른손
-		{ SPRITEID_NULL,	40, 69 },				// 신발
-		{ 74,	19, 18},				// 암스밴드1
-		{ 74,	57, 18},				// 암스밴드2
-		{ 83,	19, 63 },				// 링1
-		{ 83,	65, 63 },				// 링2
-		{ 86,	35, 22 },				// 목걸이1
-		{ 86,	42, 22 },				// 목걸이2
-		{ 86,	49, 22 },				// 목걸이3
-		{ 80,	26, 63 },				// 정령석1		
-		{ 80,	58, 63 },				// 정령석2
-		{ 80,	26, 71 },				// 정령석3
-		{ 80,	58, 71 },				// 정령석 4 
-		{ 92,	61, 33 },				// 리스틀릿 
+		// The normal ones
+		{ 77,	39, 8 },				// circlet
+		{ SPRITEID_NULL ,	34, 18 },				// clothes
+		{ 89,	17, 33 },				// left hand				// wristlet is 92
+		{ 89,	61, 33 },				// right hand
+		{ SPRITEID_NULL,	40, 69 },				// shoes
+		{ 74,	19, 18},				// armsband1
+		{ 74,	57, 18},				// armsband2
+		{ 83,	19, 63 },				// ring1
+		{ 83,	65, 63 },				// ring2
+		{ 86,	35, 22 },				// necklace1
+		{ 86,	42, 22 },				// necklace2
+		{ 86,	49, 22 },				// necklace3
+		{ 80,	26, 63 },				// elemental stone1
+		{ 80,	58, 63 },				// elemental stone2
+		{ 80,	26, 71 },				// elemental stone3
+		{ 80,	58, 71 },				// elemental stone 4
+		{ 92,	61, 33 },				// wristlet
 
-		// 중간
-		{ 78,	40, 22 },				// 서클릿
-		{ 72,	19, 10 },	// 옷
-		{ 90,	22, 45 },				// 왼손				// 리스틀릿은 92
-		{ 90,	62, 45 },				// 오른손
-		{ 95,	18, 54 },				// 신발
-		{ 75,	26, 54 },				// 암스밴드1
-		{ 75,	58, 54 },				// 암스밴드2
-		{ 84,	66, 54 },				// 링1
-		{ 84,	22, 18 },				// 링2
-		{ 87,	62, 18 },				// 목걸이1
-		{ 87,	16, 22 },				// 목걸이2
-		{ 87,	16, 22 },				// 목걸이3
+		// Medium
+		{ 78,	40, 22 },				// circlet
+		{ 72,	19, 10 },	// clothes
+		{ 90,	22, 45 },				// left hand				// wristlet is 92
+		{ 90,	62, 45 },				// right hand
+		{ 95,	18, 54 },				// shoes
+		{ 75,	26, 54 },				// armsband1
+		{ 75,	58, 54 },				// armsband2
+		{ 84,	66, 54 },				// ring1
+		{ 84,	22, 18 },				// ring2
+		{ 87,	62, 18 },				// necklace1
+		{ 87,	16, 22 },				// necklace2
+		{ 87,	16, 22 },				// necklace3
 
-		{ 81,	26, 63 },				// 정령석1		
-		{ 81,	58, 63 },				// 정령석2
-		{ 81,	26, 71 },				// 정령석3
-		{ 81,	58, 71 },				// 정령석 4 
+		{ 81,	26, 63 },				// elemental stone1
+		{ 81,	58, 63 },				// elemental stone2
+		{ 81,	26, 71 },				// elemental stone3
+		{ 81,	58, 71 },				// elemental stone 4
 
-		{ 93,	61, 33 },				// 리스틀릿  
+		{ 93,	61, 33 },				// wristlet
 
-		// 나쁜거
-		{ 79,	40, 22 },				// 서클릿
-		{ 73,	19, 10 },	// 옷
-		{ 91,	22, 45 },				// 왼손				// 리스틀릿은 92
-		{ 91,	62, 45 },				// 오른손
-		{ 96,	18, 54 },				// 신발
-		{ 76,	26, 54 },				// 암스밴드1
-		{ 76,	58, 54 },				// 암스밴드2
-		{ 85,	66, 54 },				// 링1
-		{ 85,	22, 18 },				// 링2
-		{ 88,	62, 18 },				// 목걸이1
-		{ 88,	16, 22 },				// 목걸이2
-		{ 88,	16, 22 },				// 목걸이3
-		{ 82,	26, 63 },				// 정령석1		
-		{ 82,	58, 63 },				// 정령석2
-		{ 82,	26, 71 },				// 정령석3
-		{ 82,	58, 71 },				// 정령석 4 
-		{ 94,	61, 33 },				// 리스틀릿
+		// The bad ones
+		{ 79,	40, 22 },				// circlet
+		{ 73,	19, 10 },	// clothes
+		{ 91,	22, 45 },				// left hand				// wristlet is 92
+		{ 91,	62, 45 },				// right hand
+		{ 96,	18, 54 },				// shoes
+		{ 76,	26, 54 },				// armsband1
+		{ 76,	58, 54 },				// armsband2
+		{ 85,	66, 54 },				// ring1
+		{ 85,	22, 18 },				// ring2
+		{ 88,	62, 18 },				// necklace1
+		{ 88,	16, 22 },				// necklace2
+		{ 88,	16, 22 },				// necklace3
+		{ 82,	26, 63 },				// elemental stone1
+		{ 82,	58, 63 },				// elemental stone2
+		{ 82,	26, 71 },				// elemental stone3
+		{ 82,	58, 71 },				// elemental stone 4
+		{ 94,	61, 33 },				// wristlet
 	};		
 
 
@@ -4336,7 +4336,7 @@ MTopView::InitAnimationFrames()
 //----------------------------------------------------------------------
 // Init Effect Frames
 //----------------------------------------------------------------------
-// m_EffectAlphaFPK[종류][Direction][Frame]
+// m_EffectAlphaFPK[type][Direction][Frame]
 //----------------------------------------------------------------------
 bool
 MTopView::InitEffectFrames()
@@ -4346,8 +4346,8 @@ MTopView::InitEffectFrames()
 	//   Effect NormalSPK
 	//
 	//------------------------------------------------	
-	// 0번 : HolyWater 날아가는 effect
-	// 1번 : Bomb 날아가는 effect
+	// No. 0: HolyWater flying effect
+	// No. 1: Bomb flying effect
 	/*
 	m_EffectNormalFPK.Init( 2 );
 
@@ -4357,7 +4357,7 @@ MTopView::InitEffectFrames()
 
 		for (int d=0; d<8; d++)
 		{
-			m_EffectNormalFPK[e][d].Init( 4 );	// 각 4 frame
+			m_EffectNormalFPK[e][d].Init( 4 );	// 4 frames each
 
 			for (int f=0; f<4; f++)
 			{
@@ -4380,9 +4380,9 @@ MTopView::InitEffectFrames()
 	m_EffectNormalFPK.Init(MAX_NORMALEFFECT);
 
 	//-------------------
-	// 첫번째 Effect
+	// First Effect
 	//-------------------
-	// 8방향이 있다.
+	// There are 8 directions.
 	m_EffectNormalFPK[0].Init(8);		// Bomb
 
 	for (int d=0; d<8; d++)
@@ -4404,9 +4404,9 @@ MTopView::InitEffectFrames()
 	*/
 
 	//--------------------------------------------------
-	// 하나의 FRR을 읽어서.. 
-	// EFRR로 변환시켜서..
-	// EFPK를 생성한다.
+	// Read a single FRR..
+	// and convert it to an EFRR..
+	// to create the EFPK.
 	//--------------------------------------------------
 	// [ TEST CODE ]
 	/*
@@ -4449,7 +4449,7 @@ MTopView::InitEffectFrames()
 	NormalFile2.close();
 	//*/
 
-	// 세부정보 출력하기
+	// Print the details
 	/*
 	std::ofstream infoFile("Log\\EffectNormal.txt");	
 
@@ -4478,9 +4478,9 @@ MTopView::InitEffectFrames()
 	m_EffectAlphaFPK.Init(MAX_ALPHAEFFECT);
 
 	//-------------------
-	// 첫번째 Effect
+	// First Effect
 	//-------------------
-	// 8방향이 있다.
+	// There are 8 directions.
 	m_EffectAlphaFPK[0].Init(8);		// Fire	
 	m_EffectAlphaFPK[1].Init(8);		// Lightning
 	m_EffectAlphaFPK[2].Init(8);		// Light
@@ -4494,7 +4494,7 @@ MTopView::InitEffectFrames()
 
 	for (d=0; d<8; d++)
 	{
-		// 그 8방향씩에  8 Frames
+		// 8 Frames for each of those 8 directions
 		m_EffectAlphaFPK[0][d].Init(8);
 		m_EffectAlphaFPK[1][d].Init(8);
 
@@ -4599,7 +4599,7 @@ MTopView::InitEffectFrames()
 	//*/
 
 	/*
-	// 세부 정보 출력하기
+	// Print the details
 	//m_EffectAlphaFPK.InfoToFile("Log\\Effect.txt");
 	std::ofstream infoFile("Log\\Effect.txt");	
 
@@ -4620,7 +4620,7 @@ MTopView::InitEffectFrames()
 	*/
 	/*
 	//---------------------------------------------------------------
-	// 각 effect의 frame수 출력하기
+	// Print the frame count of each effect
 	//---------------------------------------------------------------
 	std::ofstream file("log\\EffectList.txt");
 	for (int e=0; e<m_EffectAlphaFPK.GetSize(); e++)
@@ -4634,22 +4634,22 @@ MTopView::InitEffectFrames()
 
 
 	//---------------------------------------------------------------
-	// 빛 조절하기
+	// Adjust the light
 	//---------------------------------------------------------------
 	/*
 	int light;
 
-	// effect 종류
+	// effect type
 	for (int e=0; e<m_EffectAlphaFPK.GetSize(); e++)
 	{
 		DIRECTION_EFFECTFRAME_ARRAY& effect = m_EffectAlphaFPK[e];
 
-		// 방향별
+		// per direction
 		for (int d=0; d<8; d++)
 		{
 			EFFECTFRAME_ARRAY& EA = effect[d];
 
-			// frame별
+			// per frame
 			for (int f=0; f<EA.GetSize(); f++)
 			{
 				CEffectFrame &frame = EA[f];
@@ -4683,7 +4683,7 @@ MTopView::InitEffectFrames()
 
 	/*
 	//---------------------------------------------------------------
-	// 피 sprite 중복 frame넣기
+	// Insert duplicate frames of the blood sprite
 	//---------------------------------------------------------------
 	DIRECTION_EFFECTFRAME_ARRAY& effect = m_EffectAlphaFPK[EFFECTSPRITETYPE_SLAYER_DIE];
 
@@ -4697,13 +4697,13 @@ MTopView::InitEffectFrames()
 
 		newEA.Init( frameMax );
 
-		// 모두 끝 동작...
+		// All end actions...
 		for (int i=0; i<frameMax; i++)
 		{
 			newEA[i] = EA[EA.GetSize()-1];
 		}
 
-		// 두frame씩, 정지 frame 계속, 한 frame거꾸로
+		// Two frames each, keep the still frame, one frame reversed
 		for (i=0; i<EA.GetSize(); i++)
 		{
 			newEA[i*2] = EA[i];
@@ -4758,7 +4758,7 @@ void
 MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 {
 	(void)filename;
-	/* // 2001.7.14 주석처리
+	/* // Commented out 2001.7.14
 	//------------------------------------------------------------
 	//
 	//				Minimap	
@@ -4774,7 +4774,7 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 	*/
 
 	//------------------------------------------------------------	
-	// 표시해야할 ZoneInfo가 있는 경우
+	// If there is a ZoneInfo to display
 	//------------------------------------------------------------	
 	/*
 	if (pZoneInfo!=NULL)
@@ -4800,7 +4800,7 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 		WORD green = CSDLGraphics::Color(0, 20, 0);
 
 		//----------------------------------------------------------------
-		// Sprite자체를 바꿔버린다. - -;
+		// Changes the Sprite itself. - -;
 		//----------------------------------------------------------------
 		for (spY=0; spY<spHeight; spY++)
 		{
@@ -4809,10 +4809,10 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 			spX = 0;
 			pPixel = m_pMinimapSPR->GetPixelLine( spY );
 
-			count = *pPixel++;		// 반복 회수
+			count = *pPixel++;		// repeat count
 
 			//----------------------------------------------------------------
-			// 한 줄에 대한 체크..
+			// Check for one line..
 			//----------------------------------------------------------------
 			for (i=0; i<count; i++)
 			{
@@ -4826,15 +4826,15 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 					zoneX = spX * zoneWidth / spWidth;
 
 					//---------------------------------------------------------
-					// 안전지대이면 녹색으로 반투명..
+					// If it is a safe zone, translucent green..
 					//---------------------------------------------------------
 					if (pZoneInfo->IsSafeSector(zoneX, zoneY))
 					{
-						// 1점 녹색으로 alpha blending - -;
+						// alpha blending one point to green - -;
 						CSpriteSurface::memcpyAlpha(pPixel, &green, 1);
 					}
 
-					// 다음 점
+					// Next point
 					pPixel++;
 					spX++;
 				}
@@ -4843,17 +4843,17 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 	}
 	*/
 
-	/* // 2001.7.14 주석처리
+	/* // Commented out 2001.7.14
 	//------------------------------------------------------------
-	// 3D 가속이면...
+	// If 3D acceleration...
 	//------------------------------------------------------------
 	if (true)
 	{
 		InitMinimapTexture();
 	}
 
-	// m_SectorToMinimapWidth - 한 sector는 가로 몇 pixel인가?
-	// m_SectorToMinimapHeight - 한 sector는 세로 몇 pixel인가?
+	// m_SectorToMinimapWidth - how many pixels wide is one sector?
+	// m_SectorToMinimapHeight - how many pixels tall is one sector?
 	if (g_pZone->GetWidth()==0 || g_pZone->GetHeight()==0)
 	{
 		m_SectorToMinimapWidth	= 0;
@@ -4879,7 +4879,7 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 //			
 //
 //	//------------------------------------------------------------
-//	// 3D 가속이면...
+//	// If 3D acceleration...
 //	//------------------------------------------------------------
 //	if (!true)
 //		return;
@@ -4895,41 +4895,41 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 //
 //	//-----------------------------------------------------------
 //	//
-//	// 초 필살 더티 테스트 코드.. 음냐... - -;;
+//	// Super ultimate dirty test code.. hmm... - -;;
 //	//
 //	//-----------------------------------------------------------
 //	//
-//	// m_pMinimapTexture에 minimap을 출력한다.
+//	// Output the minimap to m_pMinimapTexture.
 //	//
 //	//-----------------------------------------------------------
 //	//-----------------------------------------------------------
-//	// 2의 승수만 지원하는 경우..
+//	// If only powers of 2 are supported..
 //	//-----------------------------------------------------------
 //
 //
 //		//-----------------------------------------------------------
-//		// Texture크기보다 Sprite 크기가 더 큰 경우..
+//		// If the Sprite size is larger than the Texture size..
 //		//-----------------------------------------------------------
 //
 //	//-----------------------------------------------------------
-//	// 아무런 size나 관계 없는 경우
+//	// If the size doesn't matter
 //	//-----------------------------------------------------------
 //			
 //
 //	//---------------------------------------------------
-//	// TextureSurface 생성
+//	// Create the TextureSurface
 //	//---------------------------------------------------		
 //
 ////	int i;
 //	
 //
 //	//---------------------------------------------------
-//	// 검게 칠하는 부분..
+//	// Part painted black..
 //	//---------------------------------------------------
 //	//if (bDifferentSize)
 //	{
 //		/*
-//		// Sprite가 차지하는 영역을 제외한 부분을 검게~~
+//		// Paint black everything except the area the Sprite occupies~~
 //		DWORD width2 = (width - spWidth) << 1;	// *2 
 //		pSurface += spWidth;
 //
@@ -4944,9 +4944,9 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 //		*/
 //		
 //		//---------------------------------------------------
-//		// Texture Surface 초기화
+//		// Initialize the Texture Surface
 //		//---------------------------------------------------
-//		/*// 2001.7.14 주석처리
+//		/*// Commented out 2001.7.14
 //		WORD *pSurface = (WORD*)m_pMinimapTexture->GetSurfacePointer();
 //				//,	*pSurfaceTemp;
 //		long pitch	= m_pMinimapTexture->GetSurfacePitch();
@@ -4960,14 +4960,14 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 //	}
 //	
 //	//---------------------------------------------------
-//	// Sprite출력
+//	// Sprite output
 //	//---------------------------------------------------
-//	// 크기를 고려해서..
+//	// Taking the size into account..
 //
 //
 //
 //	//---------------------------------------------------------------
-//	// 출력할때의 크기
+//	// Size when outputting
 //	//---------------------------------------------------------------
 //
 //
@@ -4986,11 +4986,11 @@ MTopView::LoadMinimap(const char* filename)//, MZoneInfo* pZoneInfo)
 void
 MTopView::UseHalfFrame(bool bUse)
 {
-	// Addon도 어케 해야되는데 - -;
-	// Effect도... - -;
+	// Something has to be done about Addon too - -;
+	// And Effect too... - -;
 
 	//----------------------------------------------------------
-	// 이미 Loading된 것들 제거
+	// Remove the ones already Loaded
 	//----------------------------------------------------------
 	m_CreatureSPK.Release();
 	m_CreatureSSPK.Release();
@@ -5005,7 +5005,7 @@ MTopView::UseHalfFrame(bool bUse)
 	}
 
 	//----------------------------------------------------------
-	// Loading 된게 없다고 표시
+	// Mark that nothing is Loaded
 	//----------------------------------------------------------
 	int num = g_pCreatureSpriteTable->GetSize();
 
@@ -5016,14 +5016,14 @@ MTopView::UseHalfFrame(bool bUse)
 
 	if (bUse)
 	{
-		// 이미 Loading된 것들 제거		
+		// Remove the ones already Loaded
 		std::ifstream file(FILE_CFRAME_CREATURE2, ios::binary);
 		m_CreatureFPK.LoadFromFile(file);
 		file.close();		
 	}
 	else
 	{
-		// 이미 Loading된 것들 제거
+		// Remove the ones already Loaded
 		std::ifstream file(FILE_CFRAME_CREATURE, ios::binary);
 		m_CreatureFPK.LoadFromFile(file);
 		file.close();
@@ -5034,7 +5034,7 @@ MTopView::UseHalfFrame(bool bUse)
 //----------------------------------------------------------------------
 // Load From File CreatureSPK
 //----------------------------------------------------------------------
-// 현재 Zone에서 출현할 Creature에 대한 Sprite들을 Load한다.
+// Loads the Sprites for the Creatures that will appear in the current Zone.
 //----------------------------------------------------------------------
 void
 MTopView::LoadFromFileCreatureSPK(int spriteType)
@@ -5049,24 +5049,24 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 	//int spriteType = (*g_pCreatureTable)[n].SpriteType;
 
 	//----------------------------------------------------------------------
-	// Load되었는지 체크해본다.
+	// Check whether it has been Loaded.
 	//----------------------------------------------------------------------
 	if ((*g_pCreatureSpriteTable)[spriteType].bLoad)
 	{
-		// 이미 Load된 경우
+		// If already Loaded
 	}
 	//----------------------------------------------------------------------
-	// Load해야되는 경우
+	// If it has to be Loaded
 	//----------------------------------------------------------------------
-	// CreatureAction에 따라서 g_pCreatureActionSpriteTable을 이용할 것이므로
-	// 실제로 loading하진 않는다.  2001.11.21
+	// Since g_pCreatureActionSpriteTable will be used according to CreatureAction,
+	// it does not actually load.  2001.11.21
 	//----------------------------------------------------------------------			
 	else
 	{
 		if(g_pUserOption->IsPreLoadMonster)
 		{
 
-			// 현재 Zone에서 필요한 Sprite들을 Load하면 된다.
+			// Just Load the Sprites needed in the current Zone.
 //			std::ifstream	creatureFile;//(FILE_ISPRITE_CREATURE, ios::binary);
 //			std::ifstream	creatureShadowFile;
 //
@@ -5078,7 +5078,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 
 
 			//------------------------------------------------------------
-			// Half Frame을 사용할때
+			// When using Half Frame
 			//------------------------------------------------------------
 			if (0)//g_pUserOption->UseHalfFrame)
 			{
@@ -5086,13 +5086,13 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 				int frameID = (*g_pCreatureSpriteTable)[spriteType].FrameID;
 
 				//------------------------------------------------------------	
-				// 필요한 EFPK를 생성하면서 사용된 SpriteID도 구한다.
+				// Creates the needed EFPK and also obtains the SpriteIDs that were used.
 				//------------------------------------------------------------
 				COrderedList<int> intList;
 				ACTION_FRAME_ARRAY& AFA = CreatureFPK[frameID];
 				int numAction = AFA.GetSize();
 
-				// orderedList의 효율을 높히기 위해서 거꾸로 ..
+				// Reversed to improve the efficiency of the orderedList..
 				for (int a=AFA.GetSize()-1; a>=0; a--)
 				{
 					DIRECTION_FRAME_ARRAY& DFA = AFA[a];
@@ -5139,7 +5139,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 				*/
 			}
 			//------------------------------------------------------------
-			// 전체 Frame 다 사용
+			// Use all Frames
 			//------------------------------------------------------------
 			else
 			{
@@ -5151,7 +5151,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 					LOG_ERROR("Rejected creature preload: type=%d", spriteType);
 					return;
 				}
-				// n번째 creature load	
+				// Load the n-th creature
 //				m_CreatureSPK.LoadFromFilePart(creatureFile, 
 //												fp,
 //												first, 
@@ -5163,7 +5163,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 // 			creatureFile.close();
 
 			//------------------------------------------------------------
-			// 그림자 load
+			// Load shadow
 			//------------------------------------------------------------
 //			if (!FileOpenBinary(FILE_SSPRITE_CREATURE, creatureShadowFile))
 //				return;	
@@ -5172,13 +5172,13 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //			if (!true)
 			{
 				//------------------------------------------------------------
-				// Half Frame 사용
+				// Use Half Frame
 				//------------------------------------------------------------
 				if (g_pUserOption->UseHalfFrame)
 				{
 				}
 				//------------------------------------------------------------
-				// 전체 Frame 다 사용
+				// Use all Frames
 				//------------------------------------------------------------
 				else
 				{
@@ -5198,13 +5198,13 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 			}
 		}	
 
-		// Load했다고 표시한다.
+		// Mark it as Loaded.
 		if (auto* entry = g_pCreatureSpriteTable->GetMutable(spriteType)) {
 			entry->bLoad = TRUE;
 		}
 
 		//--------------------------------------------------------
-		// Player그림일경우는 추가하지 않는다.
+		// Do not add it if it is the Player picture.
 		//--------------------------------------------------------
 		//if (spriteType!=(*g_pCreatureTable)[CREATURETYPE_SLAYER_MALE].SpriteType
 		//	&& spriteType!=(*g_pCreatureTable)[CREATURETYPE_SLAYER_FEMALE].SpriteType
@@ -5227,7 +5227,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 
 		/*
 		//------------------------------------------------------------
-		// 그림자 Pack생성
+		// Create the shadow Pack
 		//------------------------------------------------------------
 		m_CreatureSSPK.InitPart(m_CreatureSPK, 
 								(*g_pCreatureTable)[n].FirstSpriteID,
@@ -5235,13 +5235,13 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 
 		//------------------------------------------------------------
 		//
-		// Init 그림자 TextureSurface
+		// Init shadow TextureSurface
 		//
 		//------------------------------------------------------------
 		if (true)
 		{	
 			//--------------------------------------------
-			// AlphaSPK을 이용해서 TexturePack을 생성한다.
+			// Creates the TexturePack from the AlphaSPK.
 			//--------------------------------------------
 			if (!m_CreatureTPK.InitPart( m_CreatureSSPK,
 										(*g_pCreatureTable)[n].FirstSpriteID,
@@ -5252,8 +5252,8 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 			}
 
 			//------------------------------------------------------------	
-			// EffectAlphaSprite를 메모리에서 삭제한다.
-			// --> TextureSurface를 사용할 것이므로.. 필요가 없다.
+			// Deletes the EffectAlphaSprite from memory.
+			// --> Since the TextureSurface will be used.. it is not needed.
 			//------------------------------------------------------------		
 			m_CreatureSSPK.ReleasePart((*g_pCreatureTable)[n].FirstSpriteID,
 										(*g_pCreatureTable)[n].LastSpriteID);
@@ -5265,7 +5265,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //----------------------------------------------------------------------
 // Load From File AddonSPK
 //----------------------------------------------------------------------
-// 현재 보이는 Addon을 Load한다.
+// Loads the currently visible Addon.
 //----------------------------------------------------------------------
 //	int frameID = frame*ACTION_MAX_SLAYER + action;
 //
@@ -5279,11 +5279,11 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //	//int spriteType = (*g_pCreatureTable)[n].SpriteType;
 //
 //	//----------------------------------------------------------------------
-//	// Load되었는지 체크해본다.
+//	// Check whether it has been Loaded.
 //	//----------------------------------------------------------------------
 //	if ((*g_pAddonSpriteTable)[frameID].bLoad)
 //	//----------------------------------------------------------------------
-//	// Load해야되는 경우
+//	// If it has to be Loaded
 //	//----------------------------------------------------------------------
 //	else
 //	{		
@@ -5331,7 +5331,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //----------------------------------------------------------------------
 // Load From File CreatureActionSPK
 //----------------------------------------------------------------------
-// 현재 보이는 CreatureAction을 Load한다.
+// Loads the currently visible CreatureAction.
 //----------------------------------------------------------------------
 //	int frameID = frame*ACTION_MAX_VAMPIRE + action;
 //
@@ -5345,11 +5345,11 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //	//int spriteType = (*g_pCreatureTable)[n].SpriteType;
 //
 //	//----------------------------------------------------------------------
-//	// Load되었는지 체크해본다.
+//	// Check whether it has been Loaded.
 //	//----------------------------------------------------------------------
 //	if ((*g_pCreatureActionSpriteTable)[frameID].bLoad)
 //	//----------------------------------------------------------------------
-//	// Load해야되는 경우
+//	// If it has to be Loaded
 //	//----------------------------------------------------------------------
 //	else
 //	{		
@@ -5409,7 +5409,7 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //	//int spriteType = (*g_pCreatureTable)[n].SpriteType;
 //
 //	//----------------------------------------------------------------------
-//	// Load되었는지 체크해본다.
+//	// Check whether it has been Loaded.
 //	//----------------------------------------------------------------------
 //	if ((*g_pCreatureActionSpriteTable)[frameID].bLoad)
 //	{
@@ -5433,28 +5433,28 @@ MTopView::LoadFromFileCreatureSPK(int spriteType)
 //----------------------------------------------------------------------
 // Release From CreatureSPK
 //----------------------------------------------------------------------
-// 현재 Load된 Creature Sprite를 메모리 해제시킨다.
+// Frees from memory the Creature Sprites currently Loaded.
 //----------------------------------------------------------------------
 void
 MTopView::ReleaseCreatureSPK(int n)
 {
 //	//--------------------------------------------------------
-//	// Player그림일경우는 제거하지 않는다.
+//	// Do not remove it if it is the Player picture.
 //	//--------------------------------------------------------
 //
 //	int spriteType = (*g_pCreatureTable)[n].SpriteType;
 //
-//	// Player그림일경우는 제거하지 않는다.
+//	// Do not remove it if it is the Player picture.
 //	if ((*g_pCreatureSpriteTable)[spriteType].IsPlayerSprite())
 //
 //	//----------------------------------------------------------------------
-//	// Load되었는지 체크해본다.
+//	// Check whether it has been Loaded.
 //	//----------------------------------------------------------------------
 //	if ((*g_pCreatureSpriteTable)[spriteType].bLoad)
 //	{
 //		/*
-//		// 이미 Load된 경우
-//		// n번째 creature의 sprite를 메모리 해제
+//		// If already Loaded
+//		// Free the n-th creature's sprite from memory
 //		m_CreatureSPK.ReleasePart((*g_pCreatureSpriteTable)[spriteType].FirstSpriteID,
 //									(*g_pCreatureSpriteTable)[spriteType].LastSpriteID);
 //
@@ -5471,14 +5471,14 @@ MTopView::ReleaseCreatureSPK(int n)
 //			m_CreatureSPK.ReleasePart(first, last);
 //// 		}
 //
-//		// load하지 않았다고 표시한다.
+//		// Mark it as not loaded.
 //		(*g_pCreatureSpriteTable)[spriteType].bLoad = FALSE;
 //
 //		m_listLoadedCreatureSprite.Remove( spriteType );
 //
 //		if ((*g_pCreatureSpriteTable)[spriteType].IsMonsterSprite())
 	//--------------------------------------------------------
-	// Player그림일경우는 제거하지 않는다.
+	// Do not remove it if it is the Player picture.
 	//--------------------------------------------------------
 
 	//int spriteType = (*g_pCreatureTable)[n].SpriteTypes[0];
@@ -5488,20 +5488,20 @@ MTopView::ReleaseCreatureSPK(int n)
 	{
 
 		int spriteType = (*g_pCreatureTable)[n].SpriteTypes[FrameIndex];
-		// Player그림일경우는 제거하지 않는다.
+		// Do not remove it if it is the Player picture.
 		if ((*g_pCreatureSpriteTable)[spriteType].IsPlayerSprite())
 		{
 			return;
 		}
 
 		//----------------------------------------------------------------------
-		// Load되었는지 체크해본다.
+		// Check whether it has been Loaded.
 		//----------------------------------------------------------------------
 		if ((*g_pCreatureSpriteTable)[spriteType].bLoad)
 		{
 		/*
-		// 이미 Load된 경우
-		// n번째 creature의 sprite를 메모리 해제
+		// If already Loaded
+		// Free the n-th creature's sprite from memory
 		m_CreatureSPK.ReleasePart((*g_pCreatureSpriteTable)[spriteType].FirstSpriteID,
 		(*g_pCreatureSpriteTable)[spriteType].LastSpriteID);
 
@@ -5517,7 +5517,7 @@ MTopView::ReleaseCreatureSPK(int n)
 			m_CreatureSPK.ReleasePart(first, last);
 			// 		}
 
-			// load하지 않았다고 표시한다.
+			// Mark it as not loaded.
 			if (auto* entry = g_pCreatureSpriteTable->GetMutable(spriteType)) {
 				entry->bLoad = FALSE;
 			}
@@ -5531,7 +5531,7 @@ MTopView::ReleaseCreatureSPK(int n)
 		}
 		else
 		{
-			// Load되지 않은 경우
+			// If not Loaded
 		}
 
 
@@ -5543,7 +5543,7 @@ MTopView::ReleaseCreatureSPK(int n)
 //----------------------------------------------------------------------
 // Add MonsterSpriteTypes
 //----------------------------------------------------------------------
-// Hallu에서 참조하게 될 것이당...
+// It will be referenced from Hallu...
 //----------------------------------------------------------------------
 void		
 MTopView::AddMonsterSpriteTypes(const INT_ORDERED_LIST& listUse)
@@ -5566,21 +5566,21 @@ MTopView::AddMonsterSpriteTypes(const INT_ORDERED_LIST& listUse)
 //----------------------------------------------------------------------
 // Release Useless CreatureSPK Except
 //----------------------------------------------------------------------
-// list는 사용하는 creature들의 sprite type 이다.
+// The list holds the sprite types of the creatures in use.
 //----------------------------------------------------------------------
 void
 MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 {
-	// 지금은 몹+NPC 스프라이트가 얼마 없으므로 release하지 않는다.
+	// There are few mob+NPC sprites for now, so they are not released.
 	//return;
 
 	//--------------------------------------------------------
-	// load된 것들 중에서 사용중인거는 빼고..
+	// Of those that are loaded, leave out the ones in use..
 	//--------------------------------------------------------
 	m_listLoadedCreatureSprite -= listUse;
 
 	//--------------------------------------------------------
-	// 나머지는 제거한다.
+	// Remove the rest.
 	//--------------------------------------------------------
 	INT_ORDERED_LIST::DATA_LIST::const_iterator iSpriteType = m_listLoadedCreatureSprite.GetIterator();
 
@@ -5589,7 +5589,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 		int spriteType = *iSpriteType;
 
 		//--------------------------------------------------------
-		// Player그림일경우는 제거하지 않는다.
+		// Do not remove it if it is the Player picture.
 		//--------------------------------------------------------
 		//if (spriteType==(*g_pCreatureTable)[CREATURETYPE_SLAYER_MALE].SpriteType
 		//	|| spriteType==(*g_pCreatureTable)[CREATURETYPE_SLAYER_FEMALE].SpriteType
@@ -5614,11 +5614,11 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 		{
 			/*
 			int first, last;
-			// 이미 Load된 경우
-			// n번째 creature의 sprite를 메모리 해제
+			// If already Loaded
+			// Free the n-th creature's sprite from memory
 
 			//--------------------------------------------------------
-			// Creature SPK 제거
+			// Remove Creature SPK
 			//--------------------------------------------------------
 			first = (*g_pCreatureSpriteTable)[spriteType].FirstSpriteID;
 			last = (*g_pCreatureSpriteTable)[spriteType].LastSpriteID;
@@ -5629,7 +5629,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 			}
 
 			//--------------------------------------------------------
-			// Creature SSPK 제거
+			// Remove Creature SSPK
 			//--------------------------------------------------------
 			first = (*g_pCreatureSpriteTable)[spriteType].FirstSpriteID;
 			last = (*g_pCreatureSpriteTable)[spriteType].LastSpriteID;
@@ -5639,7 +5639,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 				m_CreatureSSPK.ReleasePart( first, last );
 			}
 			*/
-			// loading한 action만 제거
+			// Remove only the actions that were loaded
 			// 2001.11.21
 			int frameID = (*g_pCreatureSpriteTable)[spriteType].FrameID;
 
@@ -5648,7 +5648,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 				ReleaseCreatureSPK( frameID );
 			}
 
-			// load하지 않았다고 표시한다.
+			// Mark it as not loaded.
 			if (auto* entry = g_pCreatureSpriteTable->GetMutable(spriteType)) {
 				entry->bLoad = FALSE;
 			}
@@ -5658,7 +5658,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 	}
 
 	//--------------------------------------------------------
-	// load된 것 다시 설정
+	// Set the loaded ones again
 	//--------------------------------------------------------	
 	m_listLoadedCreatureSprite.Release();
 	m_listLoadedMonsterSprite.Release();
@@ -5684,7 +5684,7 @@ MTopView::ReleaseUselessCreatureSPKExcept(const INT_ORDERED_LIST& listUse)
 //----------------------------------------------------------------------
 // Load From File  Tile & ImageObject Set
 //----------------------------------------------------------------------
-// 일부의 Tile과 ImageObject를 Load한다.
+// Loads some of the Tiles and ImageObjects.
 //----------------------------------------------------------------------
 bool		
 MTopView::LoadFromFileTileAndImageObjectSet(const CSpriteSetManager &TileSSM, const CSpriteSetManager &ImageObjectSSM)
@@ -5692,7 +5692,7 @@ MTopView::LoadFromFileTileAndImageObjectSet(const CSpriteSetManager &TileSSM, co
 	(void)ImageObjectSSM;
 	//--------------------------------------------------------
 	//
-	// Tile 일부 Load
+	// Load some Tiles
 	//
 	//--------------------------------------------------------
 //
@@ -5703,7 +5703,7 @@ MTopView::LoadFromFileTileAndImageObjectSet(const CSpriteSetManager &TileSSM, co
 
 	//--------------------------------------------------------
 	//
-	// ImageObject 일부 Load
+	// Load some ImageObjects
 	//
 	//--------------------------------------------------------
 	return m_ImageObjectSPK.LoadFromFileRunning(g_pFileDef->getProperty("FILE_SPRITE_IMAGEOBJECT").c_str());
@@ -5712,13 +5712,13 @@ MTopView::LoadFromFileTileAndImageObjectSet(const CSpriteSetManager &TileSSM, co
 //----------------------------------------------------------------------
 // Load From File Tile LargeZone
 //----------------------------------------------------------------------
-// File에서 LargeZone에서만 사용할 TileSprite을 Load한다.
+// Loads from the File the TileSprites used only in the LargeZone.
 //----------------------------------------------------------------------
 bool
 MTopView::LoadFromFileTileSPKLargeZone(std::ifstream & file)
 {
 	//------------------------------------------------------------
-	// File에서 TileSprite에 대한 정보를 Load한다.
+	// Loads from the File the information about the TileSprites.
 	//------------------------------------------------------------
 	CSpriteFilePositionArray* pOldTileSFPA = m_pTileSFPArrayLargeZone;
 
@@ -5727,7 +5727,7 @@ MTopView::LoadFromFileTileSPKLargeZone(std::ifstream & file)
 	m_pTileSFPArrayLargeZone->LoadFromFile( file );
 
 	//------------------------------------------------------------
-	// 필요 없는거 제거
+	// Remove what is not needed
 	//------------------------------------------------------------
 	if (pOldTileSFPA!=NULL)
 	{
@@ -5756,12 +5756,12 @@ MTopView::LoadFromFileTileSPKLargeZone(std::ifstream & file)
 
 		DEBUG_ADD( "Subtract");
 
-		// oldTileID에서 newTileID 제거한다.
+		// Remove newTileID from oldTileID.
 		oldTileID -= newTileID;
 
 		DEBUG_ADD( "Release Part");
 
-		// 예전의 zone에만 존재하는 TileID들을 제거한다.
+		// Remove the TileIDs that exist only in the old zone.
 		m_TileSPK.ReleasePart( oldTileID );
 
 		DEBUG_ADD( "Delete pOldTilSFPA");
@@ -5793,13 +5793,13 @@ MTopView::LoadFromFileTileSPKLargeZone(std::ifstream & file)
 //----------------------------------------------------------------------
 // Load From File ImageObject LargeZone
 //----------------------------------------------------------------------
-// File에서 LargeZone에서만 사용할 ImageObjectSprite들을 Load한다.
+// Loads from the File the ImageObjectSprites used only in the LargeZone.
 //----------------------------------------------------------------------
 bool
 MTopView::LoadFromFileImageObjectSPKLargeZone(std::ifstream & file)
 {
 	//------------------------------------------------------------
-	// File에서 ImageObjectSprite에 대한 정보를 Load한다.
+	// Loads from the File the information about the ImageObjectSprites.
 	//------------------------------------------------------------
 	CSpriteFilePositionArray* pOldImageObjectSFPA = m_pImageObjectSFPArrayLargeZone;
 
@@ -5808,7 +5808,7 @@ MTopView::LoadFromFileImageObjectSPKLargeZone(std::ifstream & file)
 	m_pImageObjectSFPArrayLargeZone->LoadFromFile( file );
 
 	//------------------------------------------------------------
-	// 필요 없는거 제거
+	// Remove what is not needed
 	//------------------------------------------------------------
 	if (pOldImageObjectSFPA!=NULL)
 	{
@@ -5836,7 +5836,7 @@ MTopView::LoadFromFileImageObjectSPKLargeZone(std::ifstream & file)
 
 		}
 
-		// oldImageObjectID에서 newImageObjectID 제거한다.
+		// Remove newImageObjectID from oldImageObjectID.
 		oldImageObjectID -= newImageObjectID;
 
 		/*
@@ -5854,7 +5854,7 @@ MTopView::LoadFromFileImageObjectSPKLargeZone(std::ifstream & file)
 		#endif
 		*/
 
-		// 예전의 zone에만 존재하는 ImageObjectID들을 제거한다.
+		// Remove the ImageObjectIDs that exist only in the old zone.
 		m_ImageObjectSPK.ReleasePart( oldImageObjectID );
 
 		delete pOldImageObjectSFPA;
@@ -5884,13 +5884,13 @@ MTopView::LoadFromFileImageObjectSPKLargeZone(std::ifstream & file)
 //----------------------------------------------------------------------
 // Load From File Tile SmallZone
 //----------------------------------------------------------------------
-// File에서 SmallZone에서만 사용할 TileSprite을 Load한다.
+// Loads from the File the TileSprites used only in the SmallZone.
 //----------------------------------------------------------------------
 bool
 MTopView::LoadFromFileTileSPKSmallZone(std::ifstream & file)
 {
 	//------------------------------------------------------------
-	// File에서 TileSprite에 대한 정보를 Load한다.
+	// Loads from the File the information about the TileSprites.
 	//------------------------------------------------------------
 	CSpriteFilePositionArray* pOldTileSFPA = m_pTileSFPArraySmallZone;
 
@@ -5899,7 +5899,7 @@ MTopView::LoadFromFileTileSPKSmallZone(std::ifstream & file)
 	m_pTileSFPArraySmallZone->LoadFromFile( file );
 
 	//------------------------------------------------------------
-	// 필요 없는거 제거
+	// Remove what is not needed
 	//------------------------------------------------------------
 	if (pOldTileSFPA!=NULL)
 	{
@@ -5928,12 +5928,12 @@ MTopView::LoadFromFileTileSPKSmallZone(std::ifstream & file)
 
 		DEBUG_ADD( "Subtract");
 
-		// oldTileID에서 newTileID 제거한다.
+		// Remove newTileID from oldTileID.
 		oldTileID -= newTileID;
 
 		DEBUG_ADD( "Release");
 
-		// 예전의 zone에만 존재하는 TileID들을 제거한다.
+		// Remove the TileIDs that exist only in the old zone.
 		m_TileSPK.ReleasePart( oldTileID );
 
 		DEBUG_ADD( "Delete pOldTilSFPA");
@@ -5966,13 +5966,13 @@ MTopView::LoadFromFileTileSPKSmallZone(std::ifstream & file)
 //----------------------------------------------------------------------
 // Load From File ImageObject SmallZone
 //----------------------------------------------------------------------
-// File에서 SmallZone에서만 사용할 ImageObjectSprite들을 Load한다.
+// Loads from the File the ImageObjectSprites used only in the SmallZone.
 //----------------------------------------------------------------------
 bool
 MTopView::LoadFromFileImageObjectSPKSmallZone(std::ifstream & file)
 {
 	//------------------------------------------------------------
-	// File에서 ImageObjectSprite에 대한 정보를 Load한다.
+	// Loads from the File the information about the ImageObjectSprites.
 	//------------------------------------------------------------
 	CSpriteFilePositionArray* pOldImageObjectSFPA = m_pImageObjectSFPArraySmallZone;
 
@@ -5981,7 +5981,7 @@ MTopView::LoadFromFileImageObjectSPKSmallZone(std::ifstream & file)
 	m_pImageObjectSFPArraySmallZone->LoadFromFile( file );
 
 	//------------------------------------------------------------
-	// 필요 없는거 제거
+	// Remove what is not needed
 	//------------------------------------------------------------
 	if (pOldImageObjectSFPA!=NULL)
 	{
@@ -6004,10 +6004,10 @@ MTopView::LoadFromFileImageObjectSPKSmallZone(std::ifstream & file)
 			newImageObjectID.Add( (*m_pImageObjectSFPArraySmallZone)[i].SpriteID );
 		}
 
-		// oldImageObjectID에서 newImageObjectID 제거한다.
+		// Remove newImageObjectID from oldImageObjectID.
 		oldImageObjectID -= newImageObjectID;
 
-		// 예전의 zone에만 존재하는 ImageObjectID들을 제거한다.
+		// Remove the ImageObjectIDs that exist only in the old zone.
 		m_ImageObjectSPK.ReleasePart( oldImageObjectID );
 
 		delete pOldImageObjectSFPA;
@@ -6083,7 +6083,7 @@ MTopView::ReleaseImageObjectSPKLargeZone()
 //----------------------------------------------------------------------
 // Release TileSPK SmallZone
 //----------------------------------------------------------------------
-// SmallZone에만 존재하는 Tile들을 제거한다.
+// Removes the Tiles that exist only in the SmallZone.
 //----------------------------------------------------------------------
 void	
 MTopView::ReleaseTileSPKSmallZone()
@@ -6091,8 +6091,8 @@ MTopView::ReleaseTileSPKSmallZone()
 	/*
 	DEBUG_ADD( "ReleaseTileSPKSmallZone" );
 
-	// m_pTileSFPArraySmallZone와 m_pTileSFPArrayLargeZone를 sort하고
-	// SmallZone - LargeZone해서 남은 것을 제거한다.
+	// Sort m_pTileSFPArraySmallZone and m_pTileSFPArrayLargeZone, and
+	// do SmallZone - LargeZone and remove what is left over.
 	COrderedList<TYPE_SPRITEID>	SmallZoneTileID;
 	COrderedList<TYPE_SPRITEID>	LargeZoneTileID;
 
@@ -6110,10 +6110,10 @@ MTopView::ReleaseTileSPKSmallZone()
 		LargeZoneTileID.Add( m_pTileSFPArrayLargeZone[i].SpriteID );
 	}
 
-	// SmallZoneTileID에서 LargeZoneTileID를 제거한다.
+	// Remove LargeZoneTileID from SmallZoneTileID.
 	SmallZoneTileID -= LargeZoneTileID;
 
-	// SmallZone에만 존재하는 TileID들을 제거한다.
+	// Remove the TileIDs that exist only in the SmallZone.
 	m_TileSPK.ReleasePart( SmallZoneTileID );
 
 	m_pTileSFPArraySmallZone->Release();
@@ -6124,7 +6124,7 @@ MTopView::ReleaseTileSPKSmallZone()
 //----------------------------------------------------------------------
 // Release ImageObjectSPK SmallZone
 //----------------------------------------------------------------------
-// SmallZone에만 존재하는 ImageObject들을 제거한다.
+// Removes the ImageObjects that exist only in the SmallZone.
 //----------------------------------------------------------------------
 void	
 MTopView::ReleaseImageObjectSPKSmallZone()
@@ -6132,8 +6132,8 @@ MTopView::ReleaseImageObjectSPKSmallZone()
 	/*
 	DEBUG_ADD( "ReleaseImageObjectSPKSmallZone" );
 
-	// m_pImageObjectSFPArraySmallZone와 m_pImageObjectSFPArrayLargeZone를 sort하고
-	// SmallZone - LargeZone해서 남은 것을 제거한다.
+	// Sort m_pImageObjectSFPArraySmallZone and m_pImageObjectSFPArrayLargeZone, and
+	// do SmallZone - LargeZone and remove what is left over.
 	COrderedList<TYPE_SPRITEID>	SmallZoneImageObjectID;
 	COrderedList<TYPE_SPRITEID>	LargeZoneImageObjectID;
 
@@ -6151,10 +6151,10 @@ MTopView::ReleaseImageObjectSPKSmallZone()
 		LargeZoneImageObjectID.Add( m_pImageObjectSFPArrayLargeZone[i].SpriteID );
 	}
 
-	// SmallZoneImageObjectID에서 LargeZoneImageObjectID를 제거한다.
+	// Remove LargeZoneImageObjectID from SmallZoneImageObjectID.
 	SmallZoneImageObjectID -= LargeZoneImageObjectID;
 
-	// SmallZone에만 존재하는 ImageObjectID들을 제거한다.
+	// Remove the ImageObjectIDs that exist only in the SmallZone.
 	m_ImageObjectSPK.ReleasePart( SmallZoneImageObjectID );
 
 	m_pImageObjectSFPArraySmallZone->Release();
@@ -6163,23 +6163,23 @@ MTopView::ReleaseImageObjectSPKSmallZone()
 }
 
 //----------------------------------------------------------------------
-// 보여줄 Zone을 설정한다.
+// Sets the Zone to show.
 //----------------------------------------------------------------------
 void
 MTopView::SetZone(MZone* pZone)
 {
 	m_pZone		= pZone;
 
-	// 모두 다시 그려준다.
+	// Redraw everything.
 	m_bFirstTileDraw = true;
 
 	ClearOutputCreature();
 
 	ClearItemNameList();
 
-	// 좌표 설정
+	// Set the coordinates
 	//----------------------------------------
-	// 시야 관련..
+	// Sight related..
 	//----------------------------------------
 }
 
@@ -6197,17 +6197,17 @@ MTopView::SetZone(MZone* pZone)
 //----------------------------------------------------------------------
 // Get Screen Point
 //----------------------------------------------------------------------
-// 화면 상의 좌표 (x,y)는 Zone에서의 pixel좌표로는 어느 점인가?
+// Which point in Zone pixel coordinates is the screen coordinate (x,y)?
 //----------------------------------------------------------------------
 POINT	
 MTopView::ScreenToPixel(int x, int y)
 {
-	// 현재 화면의 (x,y)의 좌표를 구한다.
-	POINT zonePixel;	// 화면상의 처음 Sector가 나타내는 Zone의 pixel좌표
+	// Obtains the coordinate of the current screen's (x,y).
+	POINT zonePixel;	// Zone pixel coordinate that the first Sector on the screen stands for
 
-	// 화면의 첫 Sector가 나타내는 Map에서의 Pixel좌표를 구하고
-	// 화면좌표 (x,y)를 더해주면 
-	// 화면 상의 좌표가 나타내는 Map에서의 Pixel좌표를 구하는 것이다
+	// Obtain the Pixel coordinate on the Map that the first Sector of the screen stands for, and
+	// adding the screen coordinate (x,y) to it
+	// gives the Pixel coordinate on the Map that the on-screen coordinate stands for
 
 
 	// + g_DrawCamGap: back out the camera-interpolation bias, exact tick space
@@ -6220,15 +6220,15 @@ MTopView::ScreenToPixel(int x, int y)
 //----------------------------------------------------------------------
 // Pixel To Screen
 //----------------------------------------------------------------------
-// Zone의 pixel좌표를 화면의 좌표로 바꾼다.
+// Converts a Zone pixel coordinate to a screen coordinate.
 //----------------------------------------------------------------------
 POINT
 MTopView::PixelToScreen(int x, int y)
 {
 	POINT screenPixel;
 
-	// zone의 pixel좌표에서 
-	// 화면의 첫점이 가리키는 zone의 좌표를 빼면 된다.
+	// From the zone pixel coordinate,
+	// just subtract the zone coordinate the first point of the screen points at.
 	screenPixel.x = x - m_FirstZonePixel.x;
 	screenPixel.y = y - m_FirstZonePixel.y;
 
@@ -6238,17 +6238,17 @@ MTopView::PixelToScreen(int x, int y)
 //----------------------------------------------------------------------
 // Map To Screen
 //----------------------------------------------------------------------
-// Map의 sector좌표를 화면의 좌표로 바꾼다.
+// Converts a Map sector coordinate to a screen coordinate.
 //----------------------------------------------------------------------
 POINT
 MTopView::MapToScreen(int sX, int sY)
 {
 	POINT screenPixel;
 
-	// Map의 Sector좌표를 Pixel좌표로 바꾼다.
+	// Converts a Map Sector coordinate to a Pixel coordinate.
 	screenPixel = MapToPixel(sX, sY);
 
-	// Pixel좌표를 Screen좌표로 바꾼다.
+	// Converts a Pixel coordinate to a Screen coordinate.
 	screenPixel.x -= m_FirstZonePixel.x;
 	screenPixel.y -= m_FirstZonePixel.y;
 
@@ -6256,8 +6256,8 @@ MTopView::MapToScreen(int sX, int sY)
 }
 
 //----------------------------------------------------------------------
-// 화면 좌표 (x,y)가 가리키는 위치는 
-// Zone에서의 어떤(sX,sY) Sector일까?
+// The position that screen coordinate (x,y) points at
+// is which (sX,sY) Sector in the Zone?
 //----------------------------------------------------------------------
 POINT
 MTopView::GetSelectedSector(int x, int y)
@@ -6265,22 +6265,22 @@ MTopView::GetSelectedSector(int x, int y)
 	POINT point;
 
 	//-------------------------------------------------
-	// 준비된 값들
+	// Prepared values
 	//-------------------------------------------------
-	// 화면 상의 첫 Sector : m_FirstSector
-	// 좌표보정값          : m_PlusPoint
+	// First Sector on the screen : m_FirstSector
+	// Coordinate correction value : m_PlusPoint
 	//-------------------------------------------------
 
 	//-------------------------------------------------
-	// 방법
+	// Method
 	//-------------------------------------------------
-	// 1. 화면의 (0,0)이 Zone에서 나타내는 
-	//    pixel단위좌표를 알아낸다.(pX,pY) - MapToPixel
+	// 1. Find the pixel-unit coordinate that
+	//    screen (0,0) stands for in the Zone. (pX,pY) - MapToPixel
 	//
-	// 2. (pX,pY) + (x,y)를 구한다.
+	// 2. Compute (pX,pY) + (x,y).
 	//
-	// 3. (pX,x, pY,y)가 Zone에서 나타내는
-	//    Sector좌표를 알아낸다.           - PixelToMap
+	// 3. Find the Sector coordinate that
+	//    (pX,x, pY,y) stands for in the Zone.           - PixelToMap
 	//-------------------------------------------------
 
 	point = MapToPixel(m_FirstSector.x, m_FirstSector.y);
@@ -6307,7 +6307,7 @@ MTopView::GetSelectedSector(int x, int y)
 //----------------------------------------------------------------------
 // Set Direction To Creature
 //----------------------------------------------------------------------
-// 다른 Creature를 향해서 바라본다.
+// Look toward another Creature.
 //----------------------------------------------------------------------
 BYTE
 MTopView::GetDirectionToPosition(int originX, int originY, int destX, int destY)
@@ -6358,34 +6358,34 @@ MTopView::DrawFade()
 	m_Fade.Advance(g_CurrentFrame, g_bFrameChanged);
 }
 //----------------------------------------------------------------------
-// 화면 좌표 (x,y)가 가리키는 위치를 선택하면 
-// Zone의 어떤(sX,sY) Object가 선택될까?
+// If the position that screen coordinate (x,y) points at is selected,
+// which (sX,sY) Object of the Zone gets selected?
 //----------------------------------------------------------------------
 MObject*
 MTopView::GetSelectedObject(int x, int y)
 {
 	//--------------------------------------------------------------	
-	// 1. 화면좌표 (x,y)의 Zone에서의 Sector(sX,sY)좌표를 구한다.
+	// 1. Find the Sector (sX,sY) coordinate in the Zone of screen coordinate (x,y).
 	// 
-	// 2. (sX,sY) 근처에 Object가 있으면 
-	//    그 Object의 화면 상의 좌표를 구해서
-	//    (x,y)가 속하면 "선택한다"
-	//    아니면, 그 다음의 근처 Sector를 check해봐야 한다.
+	// 2. If there is an Object near (sX,sY),
+	//    find that Object's on-screen coordinate, and
+	//    if (x,y) falls within it, "select it"
+	//    otherwise, the next nearby Sector must be checked.
 	//
-	// (!) Player는 제외다. 없다고 생각하고 check한다.
+	// (!) The Player is excluded. Check as if it does not exist.
 	//--------------------------------------------------------------
 
 	//--------------------------------------------------------------
-	// 근처 Sector를 찾는 순서
+	// Order in which nearby Sectors are searched
 	//--------------------------------------------------------------	
-	// - 그림은 아래쪽 Sector에 있는 것일수록 늦게 출력되므로
-	//   선택될 우선순위가 높다.
+	// - The lower the Sector a picture is in, the later it is drawn,
+	//   so the higher its selection priority.
 	// 
 	//      .  .  .  
 	//      .  X  . 
 	//      .  .  .  
 	//      .  .  .  
-	//      .  .  .     X가 선택됐을 경우, Ground,Item 등... check범위
+	//      .  .  .     When X is selected, Ground, Item etc... check range
 	//
 	//
 	//               
@@ -6394,13 +6394,13 @@ MTopView::GetSelectedObject(int x, int y)
 	//      .  .  .  
 	//      .  .  .  
 	//      .  .  .  
-	//      .  .  .     Flying이 64 pixel(두 타일) 높이 뜰 경우..
-	//      .  .  .     X가 선택됐을 경우, Flying... check범위
+	//      .  .  .     When Flying floats 64 pixels (two tiles) high..
+	//      .  .  .     When X is selected, Flying... check range
 	//
 	//--------------------------------------------------------------
 
 	//--------------------------------------------------------------
-	// 각 Sector에 대해서 check해봐야 하는 것
+	// What has to be checked for each Sector
 	//--------------------------------------------------------------
 	/*
 
@@ -6426,9 +6426,9 @@ MTopView::GetSelectedObject(int x, int y)
 	//--------------------------------------------------------------
 
 	//--------------------------------------------------------------
-	// 아직 게임 화면이 안 그려진 경우이면..
-	// Player가 다크니스 속에 있다면..
-	// 그냥 return
+	// If the game screen has not been drawn yet..
+	// If the Player is in darkness..
+	// Just return
 	//--------------------------------------------------------------
 //	bool bSlayerPlayer = g_pPlayer->IsSlayer();
 
@@ -6444,7 +6444,7 @@ MTopView::GetSelectedObject(int x, int y)
 		return NULL;
 	}
 
-	POINT firstZonePixel;	// 화면상의 처음 Sector가 나타내는 Zone의 pixel좌표
+	POINT firstZonePixel;	// Zone pixel coordinate that the first Sector on the screen stands for
 	firstZonePixel = MapToPixel(m_FirstSector.x, m_FirstSector.y);
 	// + g_DrawCamGap: back out the camera-interpolation bias, exact tick space
 	firstZonePixel.x += m_PlusPoint.x + g_DrawCamGapX;
@@ -6455,24 +6455,24 @@ MTopView::GetSelectedObject(int x, int y)
 	POINT	sectorPoint;		// Sector Position In Zone
 
 	//--------------------------------------------------------------
-	// (x,y)의 Zone에서의 pixel좌표를 구한다.
+	// Obtain the Zone pixel coordinate of (x,y).
 	//--------------------------------------------------------------
 	pixelPoint = MapToPixel(m_FirstSector.x, m_FirstSector.y);
 	pixelPoint.x += m_PlusPoint.x + g_DrawCamGapX + x;
 	pixelPoint.y += m_PlusPoint.y + g_DrawCamGapY + y;
 
 	//--------------------------------------------------------------
-	// (x,y)의 Zone에서의 sector좌표를 구한다.
+	// Obtain the Zone sector coordinate of (x,y).
 	//--------------------------------------------------------------						
 	sectorPoint = PixelToMap(pixelPoint.x, pixelPoint.y);
 
 	g_MouseSector = sectorPoint;
 
 	//--------------------------------------------------------------
-	// 포탈 체크
+	// Portal check
 	//--------------------------------------------------------------
-	// 여기서 하는건 웃기지만.. -_-;;
-	// 처리의 편의를 위해서.. 임시로... 할할... ㅡ.ㅡ;;
+	// It's funny to do it here.. -_-;;
+	// For ease of processing.. temporarily... hehe... ㅡ.ㅡ;;
 	//--------------------------------------------------------------
 	g_bMouseInPortal = false;
 
@@ -6499,11 +6499,11 @@ MTopView::GetSelectedObject(int x, int y)
 			/*				
 			for (int i=0; i<numPortal; i++)
 			{
-				// 이동 가능한 zone의 ID
+				// ID of the zone that can be moved to
 				PORTAL_INFO portalInfo = *iPortal;			
 
 				//-------------------------------------------------------
-				// 임시 출력
+				// Temporary output
 				//-------------------------------------------------------
 				DEBUG_ADD_FORMAT( "[Portal] Type=%d, ZoneID=%d", portalInfo.Type, portalInfo.ZoneID );
 
@@ -6520,7 +6520,7 @@ MTopView::GetSelectedObject(int x, int y)
 				bool canMove = false;
 				bool bSiegePotal = false;
 				//-------------------------------------------------------
-				// portal의 종류에 따라 갈수 있는곳인지 체크
+				// Check whether the place can be reached depending on the portal type
 				//-------------------------------------------------------			
 				switch (portalInfo.Type)				
 				{
@@ -6560,7 +6560,7 @@ MTopView::GetSelectedObject(int x, int y)
 				}
 
 				//-------------------------------------------------------			
-				// 갈 수 있으면 포탈 커서 출력
+				// If it can be reached, show the portal cursor
 				//-------------------------------------------------------			
 				if (canMove)
 				{
@@ -6584,7 +6584,7 @@ MTopView::GetSelectedObject(int x, int y)
 							}
 							else
 							{
-								// 필살 하드코딩~~
+								// Ultimate hard-coding~~
 								zoneID = 60001;
 								//strcpy(pZoneName, "엘리베이터");
 							}
@@ -6628,7 +6628,7 @@ MTopView::GetSelectedObject(int x, int y)
 	CFrame			frame;
 //	TYPE_SPRITEID	sprite;
 
-	// Object의 영역
+	// Area of the Object
 //	POINT	objectPixelPoint;
 	//RECT	rect;
 
@@ -6638,7 +6638,7 @@ MTopView::GetSelectedObject(int x, int y)
 	//std::ofstream file("log.txt");
 
 
-	// 현재 check하는 좌표
+	// Coordinate currently being checked
 	int currentX;
 	int currentY;
 
@@ -6648,19 +6648,19 @@ MTopView::GetSelectedObject(int x, int y)
 	//
 	// Flying Creature Check 
 	//
-	// : 같은 높이에 있는 경우 
-	//   일반적인 Object보다 아래쪽 Sector에 존재할 수 있다.
+	// : when at the same height
+	//   can exist in a Sector lower than a normal Object.
 	//
 	//--------------------------------------------------------------
-	int	sX1 = sectorPoint.x - 3,		// 한 줄씩 더 증가시켰다. 음냐리~
+	int	sX1 = sectorPoint.x - 3,		// Increased it by one more row. Hmm~
 			sX2 = sectorPoint.x + 3;
 
-	// 박쥐 높이 때문에.. +를 더했다.
+	// Added + because of the bat height..
 	int	sY1 = sectorPoint.y + 4,
 			sY2 = sectorPoint.y + 8;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------
 	if (sX1 < 0) 
 	{			
@@ -6684,7 +6684,7 @@ MTopView::GetSelectedObject(int x, int y)
 
 
 	//------------------------------------------------------	
-	// 있을법한 Sector를 check한다.
+	// Check the Sectors where it is likely to be.
 	//------------------------------------------------------	
 	for (currentY=sY2; currentY>=sY1; currentY--)	
 	{	
@@ -6696,18 +6696,18 @@ MTopView::GetSelectedObject(int x, int y)
 
 			const MSector& sector = m_pZone->GetSector(currentX, currentY);
 
-			// 어떤 Object가 있을 경우
+			// If there is some Object
 			if (sector.IsExistObject() )			
 			{		
 
 				//file << "Exist Object!" << endl;
 
-				// Object의 종류에 따라서 달리 check한다.
-				// 선택할 수 있는 것은 Creature와 Item뿐이다.
+				// Check differently depending on the Object type.
+				// Only Creatures and Items can be selected.
 
 				//------------------------------------------------
 				//
-				// Flying Creature가 있는 경우
+				// If there is a Flying Creature
 				//
 				//------------------------------------------------
 				numCreature = sector.GetFlyingCreatureSize();
@@ -6728,43 +6728,43 @@ MTopView::GetSelectedObject(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
-							// FlyingCreature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// FlyingCreature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the FlyingCreature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The FlyingCreature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// FlyingCreature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the FlyingCreature.
 							/*
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.	
+							// Calculate the area where the Creature exists on screen.
 							frame = m_CreatureFPK[(*g_pCreatureTable)[pCreature->GetCreatureType()].FrameID][pCreature->GetAction()][pCreature->GetDirection()][pCreature->GetFrame()];
 
-							// 현재 Sprite가 화면에 출력되는 위치
+							// Position where the current Sprite is drawn on screen
 							objectPixelPoint.x += frame.GetCX();
 							objectPixelPoint.y += frame.GetCY() - FLYINGCREATURE_HEIGHT;
-												// FramePack에서 높이를 설정하므로,
-												// Flying인 경우도 똑같다.
+												// Since the height is set in the FramePack,
+												// the Flying case is the same.
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.
+							// Calculate the area where the Creature exists on screen.
 							rect.left	= objectPixelPoint.x;
 							rect.top	= objectPixelPoint.y;
 							rect.right	= rect.left + m_CreatureSPK[ frame.GetSpriteID() ].GetWidth();
 							rect.bottom	= rect.top + m_CreatureSPK[ frame.GetSpriteID() ].GetHeight();
 							*/
 
-							// 다크니스에 있으면 
-							// 선택한 위치가 Creature의 영역에 속하면
-							// 공격 mode인 경우는 공격가능한 캐릭터만 선택
-							// 아니면 아무나.
+							// If in darkness
+							// If the selected position falls within the Creature's area
+							// In attack mode, select only characters that can be attacked
+							// otherwise anyone.
 							if (
 								((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001) ||
 								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())) ||
@@ -6774,7 +6774,7 @@ MTopView::GetSelectedObject(int x, int y)
 								|| g_bLight
 #endif
 								)
-								&& !pCreature->IsCutHeight()	// 사라지는 상태면
+								&& !pCreature->IsCutHeight()	// If it is in the vanishing state
 								&& g_pObjectSelector->CanSelect(pCreature)
 								&& pCreature->IsPointInScreenRect(x,y)
 								&& !(pCreature->IsOusters() && pCreature->IsInGroundElemental() && !g_pPlayer->IsOusters()))
@@ -6800,10 +6800,10 @@ MTopView::GetSelectedObject(int x, int y)
 	//
 	//--------------------------------------------------------------
 	sY1 = sectorPoint.y - 3,
-	sY2 = sectorPoint.y + 4;		// 한 줄씩 더 증가시켰다.
+	sY2 = sectorPoint.y + 4;		// Increased it by one more row.
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------	
 	if (sY1 < 0)
 	{	
@@ -6820,15 +6820,15 @@ MTopView::GetSelectedObject(int x, int y)
 	#endif
 
 	//------------------------------------------------------
-	// Check대상이 되는 ImageObject Iterator
+	// ImageObject Iterator subject to Check
 	//------------------------------------------------------
 	IMAGEOBJECT_OUTPUT_MAP::reverse_iterator iImageObjectCheck
 		= m_mapImageObject.rbegin();
 
 	//------------------------------------------------------
-	// 출력 시점이 sY1보다 적은 경우의 
-	// ImageObject들을 Check한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// Check the ImageObjects whose output time
+	// is less than sY1.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{		
@@ -6851,7 +6851,7 @@ MTopView::GetSelectedObject(int x, int y)
 	#endif
 
 	//------------------------------------------------------	
-	// 있을법한 Sector를 check한다.
+	// Check the Sectors where it is likely to be.
 	//------------------------------------------------------	
 	for (currentY=sY2; currentY>=sY1; currentY--)	
 	{	
@@ -6863,18 +6863,18 @@ MTopView::GetSelectedObject(int x, int y)
 
 			const MSector& sector = m_pZone->GetSector(currentX, currentY);
 
-			// 어떤 Object가 있을 경우
+			// If there is some Object
 			if (sector.IsExistObject() )			
 			{		
 
 				//file << "Exist Object!" << endl;
 
-				// Object의 종류에 따라서 달리 check한다.
-				// 선택할 수 있는 것은 Creature와 Item뿐이다.
+				// Check differently depending on the Object type.
+				// Only Creatures and Items can be selected.
 
 				//------------------------------------------------
 				//
-				// Flying Creature가 있는 경우
+				// If there is a Flying Creature
 				//
 				//------------------------------------------------
 				#ifdef OUTPUT_DEBUG_DRAW_PROCESS_INPUT
@@ -6895,40 +6895,40 @@ MTopView::GetSelectedObject(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
 							/*
-							// FlyingCreature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// FlyingCreature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the FlyingCreature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The FlyingCreature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// FlyingCreature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the FlyingCreature.
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.	
+							// Calculate the area where the Creature exists on screen.
 							frame = m_CreatureFPK[(*g_pCreatureTable)[pCreature->GetCreatureType()].FrameID][pCreature->GetAction()][pCreature->GetDirection()][pCreature->GetFrame()];
 
-							// 현재 Sprite가 화면에 출력되는 위치
+							// Position where the current Sprite is drawn on screen
 							objectPixelPoint.x += frame.GetCX();
 							objectPixelPoint.y += frame.GetCY() - FLYINGCREATURE_HEIGHT;
-												// FramePack에서 높이를 설정하므로,
-												// Flying인 경우도 똑같다.
+												// Since the height is set in the FramePack,
+												// the Flying case is the same.
 
-							// 화면에 존재하는 영역을 계산해낸다.
+							// Calculate the area that exists on screen.
 							rect.left	= objectPixelPoint.x;
 							rect.top	= objectPixelPoint.y;
 							rect.right	= rect.left + m_CreatureSPK[ frame.GetSpriteID() ].GetWidth();
 							rect.bottom	= rect.top + m_CreatureSPK[ frame.GetSpriteID() ].GetHeight();
 							*/
 
-							// 선택한 위치가 Creature의 영역에 속하면
+							// If the selected position falls within the Creature's area
 							if ((
 								(g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001)|| 
 								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())) ||
@@ -6938,7 +6938,7 @@ MTopView::GetSelectedObject(int x, int y)
 								|| g_bLight
 #endif
 								)
-								&& !pCreature->IsCutHeight()	// 사라지는 상태면
+								&& !pCreature->IsCutHeight()	// If it is in the vanishing state
 								&& g_pObjectSelector->CanSelect(pCreature)
 								&& pCreature->IsPointInScreenRect(x,y)
 								&& !(pCreature->IsOusters() && pCreature->IsInGroundElemental() && !g_pPlayer->IsOusters()))
@@ -6957,7 +6957,7 @@ MTopView::GetSelectedObject(int x, int y)
 
 				//------------------------------------------------
 				//
-				// Creature가 있는 경우
+				// If there is a Creature
 				//
 				//------------------------------------------------
 				#ifdef OUTPUT_DEBUG_DRAW_PROCESS_INPUT
@@ -6978,37 +6978,37 @@ MTopView::GetSelectedObject(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
 							/*
-							// Creature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// Creature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the Creature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The Creature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// Creature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the Creature.
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.	
+							// Calculate the area where the Creature exists on screen.
 							frame = m_CreatureFPK[(*g_pCreatureTable)[pCreature->GetCreatureType()].FrameID][pCreature->GetAction()][pCreature->GetDirection()][pCreature->GetFrame()];
 
-							// 현재 Sprite가 화면에 출력되는 위치
+							// Position where the current Sprite is drawn on screen
 							objectPixelPoint.x += frame.GetCX();
 							objectPixelPoint.y += frame.GetCY();
 
-							// 화면에 존재하는 영역을 계산해낸다.
+							// Calculate the area that exists on screen.
 							rect.left	= objectPixelPoint.x;
 							rect.top	= objectPixelPoint.y;
 							rect.right	= rect.left + m_CreatureSPK[ frame.GetSpriteID() ].GetWidth();
 							rect.bottom	= rect.top + m_CreatureSPK[ frame.GetSpriteID() ].GetHeight();
 							*/			
-							// 선택한 위치가 Creature의 영역에 속하면
+							// If the selected position falls within the Creature's area
 							if (((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001) ||
 								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness())) ||
 								(!g_pPlayer->IsVampire()&& g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) 
@@ -7017,7 +7017,7 @@ MTopView::GetSelectedObject(int x, int y)
 								|| g_bLight
 #endif
 								)
-								&& !pCreature->IsCutHeight()	// 사라지는 상태면
+								&& !pCreature->IsCutHeight()	// If it is in the vanishing state
 								&& g_pObjectSelector->CanSelect(pCreature)
 								&& pCreature->IsPointInScreenRect(x,y)
 								&& !(pCreature->IsOusters() && pCreature->IsInGroundElemental() && !g_pPlayer->IsOusters()))
@@ -7036,7 +7036,7 @@ MTopView::GetSelectedObject(int x, int y)
 
 				//------------------------------------------------
 				//
-				// Effect가 있는 경우
+				// If there is an Effect
 				//
 				//------------------------------------------------				
 				#ifdef OUTPUT_DEBUG_DRAW_PROCESS_INPUT
@@ -7071,7 +7071,7 @@ MTopView::GetSelectedObject(int x, int y)
 
 				//------------------------------------------------
 				//
-				// UndergroundCreature가 있는 경우
+				// If there is an UndergroundCreature
 				//
 				//------------------------------------------------
 				#ifdef OUTPUT_DEBUG_DRAW_PROCESS_INPUT
@@ -7092,10 +7092,10 @@ MTopView::GetSelectedObject(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{							
-							// 선택한 위치가 Creature의 영역에 속하면
+							// If the selected position falls within the Creature's area
 							if (((g_pPlayer->IsVampire() &&g_pZone->GetID() != 3001)||
 								(!g_pPlayer->IsVampire()&& !(!pCreature->IsNPC() && pCreature->IsInDarkness()))
 								|| (!g_pPlayer->IsVampire() && g_pPlayer->HasEffectStatus( EFFECTSTATUS_LIGHTNESS )) 								 
@@ -7121,7 +7121,7 @@ MTopView::GetSelectedObject(int x, int y)
 
 				//------------------------------------------------
 				//
-				// Item이 있는 경우
+				// If there is an Item
 				//
 				//------------------------------------------------
 				#ifdef OUTPUT_DEBUG_DRAW_PROCESS_INPUT
@@ -7138,27 +7138,27 @@ MTopView::GetSelectedObject(int x, int y)
 
 					//file << "Exist Item!" << endl;
 
-					// Item가 차지하는 영역을 구한다.
-					// FRAME_PACK에서 정보를 읽어야 할 듯!!
-					// Item의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+					// Obtain the area the Item occupies.
+					// The information probably has to be read from the FRAME_PACK!!
+					// The Item's Sector coordinate must be converted to a Pixel coordinate.
 					/*
-					// Item의 Zone의 좌표를 계산한다.
+					// Calculate the Zone coordinate of the Item.
 					objectPixelPoint = MapToPixel(pItem->GetX(), pItem->GetY());
 					objectPixelPoint.x += m_PlusPoint.x;// + pItem->GetSX();
 					objectPixelPoint.y += m_PlusPoint.y;// + pItem->GetSY();
 
-					// Zone의 좌표를 화면의 좌표로 바꾼다.
+					// Convert the Zone coordinate to a screen coordinate.
 					objectPixelPoint.x -= firstZonePixel.x;
 					objectPixelPoint.y -= firstZonePixel.y;
 
-					// Item가 화면에 존재하는 영역을 계산해낸다.				
+					// Calculate the area where the Item exists on screen.
 					frame = m_ItemTileFPK[ pItem->GetTileFrameID() ];
 
-					// 현재 Sprite가 화면에 출력되는 위치
+					// Position where the current Sprite is drawn on screen
 					objectPixelPoint.x += frame.GetCX();
 					objectPixelPoint.y += frame.GetCY();
 
-					// 화면에 존재하는 영역을 계산해낸다.
+					// Calculate the area that exists on screen.
 					rect.left	= objectPixelPoint.x;
 					rect.top	= objectPixelPoint.y;
 					rect.right	= rect.left + m_ItemTileSPK[ frame.GetSpriteID() ].GetWidth();
@@ -7166,8 +7166,8 @@ MTopView::GetSelectedObject(int x, int y)
 					*/			
 
 					//------------------------------------------------
-					// 뱀파이어거나
-					// 슬레이어인 경우는 볼 수 있는 상황이라면.. 
+					// If it is a Vampire, or
+					// a Slayer who is in a situation where it can be seen..
 					//------------------------------------------------
 					if ((g_pPlayer->IsVampire()&&g_pZone->GetID() != 3001)
 						|| (!g_pPlayer->IsVampire() && g_pPlayer->ShowInDarkness(currentX, currentY)) 
@@ -7178,8 +7178,8 @@ MTopView::GetSelectedObject(int x, int y)
 						)
 					{
 						//------------------------------------------------
-						// 시체인 경우는 
-						// 시체 Creature의 영역을 봐야 한다.
+						// If it is a corpse
+						// the corpse Creature's area must be looked at.
 						//------------------------------------------------
 						if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 						{
@@ -7205,7 +7205,7 @@ MTopView::GetSelectedObject(int x, int y)
 						}
 						else
 						{
-							// 선택한 위치가 Item의 영역에 속하면
+							// If the selected position falls within the Item's area
 							if (pItem->IsPointInScreenRect(x,y))
 							//if (x > rect.left && x < rect.right
 								//&& y > rect.top && y < rect.bottom)
@@ -7228,9 +7228,9 @@ MTopView::GetSelectedObject(int x, int y)
 		#endif
 
 		//------------------------------------------------------
-		// 출력 시점이 currentY보다 적은 경우의 
-		// ImageObject들을 Check한다.
-		// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+		// Those whose output time is less than currentY
+		// is less than sY1.
+		// m_mapImageObject is sorted with the Viewpoint as the key.
 		//------------------------------------------------------
 //		while (iImageObjectCheck != m_mapImageObject.rend())
 //		{
@@ -7255,9 +7255,9 @@ MTopView::GetSelectedObject(int x, int y)
 	#endif
 
 	//------------------------------------------------------
-	// 출력 시점이 currentY보다 적은 경우의 
-	// ImageObject들을 Check한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// Those whose output time is less than currentY
+	// is less than sY1.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 //	while (iImageObjectCheck != m_mapImageObject.rend())
 //	{
@@ -7265,7 +7265,7 @@ MTopView::GetSelectedObject(int x, int y)
 //
 //			MInteractionObject* const pInteractionObject = (MInteractionObject* const)pImageObject;
 //		
-//			// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+//			// Fit the picture's coordinate to the current screen coordinate
 //			/*
 //			objectPixelPoint.x = pInteractionObject->GetPixelX() - m_FirstZonePixel.x;
 //			objectPixelPoint.y = pInteractionObject->GetPixelY() - m_FirstZonePixel.y;
@@ -7280,7 +7280,7 @@ MTopView::GetSelectedObject(int x, int y)
 //	}
 
 	//------------------------------------------------------
-	// 아무것도 없다면.. GroundEffect도 체크한다.
+	// If nothing is there.. also check GroundEffect.
 	//------------------------------------------------------
 	#ifdef OUTPUT_DEBUG_DRAW_PROCESS_INPUT
 		DEBUG_ADD("chkGE");
@@ -7315,7 +7315,7 @@ MTopView::GetSelectedObject(int x, int y)
 	if(IsRequestInfo())
 	{
 		//------------------------------------------------------
-		// 아무것도 없다면.. FakeCreature(Pet)도 체크한다.
+		// If nothing is there.. also check FakeCreature (Pet).
 		//------------------------------------------------------
 		int fakeCreatureNum = g_pZone->GetFakeCreatureNumber();
 		MZone::CREATURE_MAP::const_iterator iFakeCreature = g_pZone->GetFakeCreatureBegin();
@@ -7323,7 +7323,7 @@ MTopView::GetSelectedObject(int x, int y)
 		{
 			MFakeCreature *pFakeCreature = (MFakeCreature *)iFakeCreature->second;
 
-			// 펫인경우만 검색
+			// Search only if it is a pet
 			if(pFakeCreature->GetOwnerID() != OBJECTID_NULL && pFakeCreature->IsPointInScreenRect(x, y))
 			{
 				return pFakeCreature;
@@ -7338,37 +7338,37 @@ MTopView::GetSelectedObject(int x, int y)
 
 
 //----------------------------------------------------------------------
-// 화면 좌표 (x,y)가 가리키는 위치를 선택하면 
-// Zone의 어떤(sX,sY) Object가 선택될까?
+// If the position that screen coordinate (x,y) points at is selected,
+// which (sX,sY) Object of the Zone gets selected?
 //
-// Sprite에서 pixel정보를 읽어서 비교한다.
+// Read the pixel information from the Sprite and compare.
 //
 //----------------------------------------------------------------------
 MObject*
 MTopView::GetSelectedObjectSprite(int x, int y)
 {
 	//--------------------------------------------------------------	
-	// 1. 화면좌표 (x,y)의 Zone에서의 Sector(sX,sY)좌표를 구한다.
+	// 1. Find the Sector (sX,sY) coordinate in the Zone of screen coordinate (x,y).
 	// 
-	// 2. (sX,sY) 근처에 Object가 있으면 
-	//    그 Object의 화면 상의 좌표를 구해서
-	//    (x,y)가 속하면 "선택한다"
-	//    아니면, 그 다음의 근처 Sector를 check해봐야 한다.
+	// 2. If there is an Object near (sX,sY),
+	//    find that Object's on-screen coordinate, and
+	//    if (x,y) falls within it, "select it"
+	//    otherwise, the next nearby Sector must be checked.
 	//
-	// (!) Player는 제외다. 없다고 생각하고 check한다.
+	// (!) The Player is excluded. Check as if it does not exist.
 	//--------------------------------------------------------------
 
 	//--------------------------------------------------------------
-	// 근처 Sector를 찾는 순서
+	// Order in which nearby Sectors are searched
 	//--------------------------------------------------------------	
-	// - 그림은 아래쪽 Sector에 있는 것일수록 늦게 출력되므로
-	//   선택될 우선순위가 높다.
+	// - The lower the Sector a picture is in, the later it is drawn,
+	//   so the higher its selection priority.
 	// 
 	//      .  .  .  
 	//      .  X  . 
 	//      .  .  .  
 	//      .  .  .  
-	//      .  .  .     X가 선택됐을 경우, Ground,Item 등... check범위
+	//      .  .  .     When X is selected, Ground, Item etc... check range
 	//
 	//
 	//               
@@ -7377,13 +7377,13 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//      .  .  .  
 	//      .  .  .  
 	//      .  .  .  
-	//      .  .  .     Flying이 64 pixel(두 타일) 높이 뜰 경우..
-	//      .  .  .     X가 선택됐을 경우, Flying... check범위
+	//      .  .  .     When Flying floats 64 pixels (two tiles) high..
+	//      .  .  .     When X is selected, Flying... check range
 	//
 	//--------------------------------------------------------------
 
 	//--------------------------------------------------------------
-	// 각 Sector에 대해서 check해봐야 하는 것
+	// What has to be checked for each Sector
 	//--------------------------------------------------------------
 	/*
 
@@ -7408,7 +7408,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	*/
 	//--------------------------------------------------------------
 
-	POINT firstZonePixel;	// 화면상의 처음 Sector가 나타내는 Zone의 pixel좌표
+	POINT firstZonePixel;	// Zone pixel coordinate that the first Sector on the screen stands for
 	firstZonePixel = MapToPixel(m_FirstSector.x, m_FirstSector.y);
 	// + g_DrawCamGap: back out the camera-interpolation bias, exact tick space
 	firstZonePixel.x += m_PlusPoint.x + g_DrawCamGapX;
@@ -7419,14 +7419,14 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	POINT	sectorPoint;		// Sector Position In Zone
 
 	//--------------------------------------------------------------
-	// (x,y)의 Zone에서의 pixel좌표를 구한다.
+	// Obtain the Zone pixel coordinate of (x,y).
 	//--------------------------------------------------------------
 	pixelPoint = MapToPixel(m_FirstSector.x, m_FirstSector.y);
 	pixelPoint.x += m_PlusPoint.x + g_DrawCamGapX + x;
 	pixelPoint.y += m_PlusPoint.y + g_DrawCamGapY + y;
 
 	//--------------------------------------------------------------
-	// (x,y)의 Zone에서의 sector좌표를 구한다.
+	// Obtain the Zone sector coordinate of (x,y).
 	//--------------------------------------------------------------						
 	sectorPoint = PixelToMap(pixelPoint.x, pixelPoint.y);
 
@@ -7442,7 +7442,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	CFrame			frame;
 //	TYPE_SPRITEID	sprite;
 
-	// Object의 영역
+	// Area of the Object
 	POINT	objectPixelPoint;
 
 	// Player Creature's ID
@@ -7451,7 +7451,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//std::ofstream file("log.txt");
 
 
-	// 현재 check하는 좌표
+	// Coordinate currently being checked
 	int currentX;
 	int currentY;
 
@@ -7461,8 +7461,8 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	//
 	// Flying Creature Check 
 	//
-	// : 같은 높이에 있는 경우 
-	//   일반적인 Object보다 아래쪽 Sector에 존재할 수 있다.
+	// : when at the same height
+	//   can exist in a Sector lower than a normal Object.
 	//
 	//--------------------------------------------------------------
 	int	sX1 = sectorPoint.x - 1,
@@ -7471,7 +7471,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 			sY2 = sectorPoint.y + 5;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------
 	if (sX1 < 0) 
 	{			
@@ -7495,7 +7495,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 
 	//------------------------------------------------------	
-	// 있을법한 Sector를 check한다.
+	// Check the Sectors where it is likely to be.
 	//------------------------------------------------------	
 	for (currentY=sY2; currentY>=sY1; currentY--)	
 	{	
@@ -7503,18 +7503,18 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 		{				
 			const MSector& sector = m_pZone->GetSector(currentX, currentY);
 
-			// 어떤 Object가 있을 경우
+			// If there is some Object
 			if (sector.IsExistObject() )			
 			{		
 
 				//file << "Exist Object!" << endl;
 
-				// Object의 종류에 따라서 달리 check한다.
-				// 선택할 수 있는 것은 Creature와 Item뿐이다.
+				// Check differently depending on the Object type.
+				// Only Creatures and Items can be selected.
 
 				//------------------------------------------------
 				//
-				// Flying Creature가 있는 경우
+				// If there is a Flying Creature
 				//
 				//------------------------------------------------
 				numCreature = sector.GetFlyingCreatureSize();
@@ -7531,33 +7531,33 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
-							// FlyingCreature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// FlyingCreature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the FlyingCreature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The FlyingCreature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// FlyingCreature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the FlyingCreature.
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.	
+							// Calculate the area where the Creature exists on screen.
 							frame = m_CreatureFPK[pCreature->GetCreatureFrameID(0)][pCreature->GetAction()][pCreature->GetDirection()][pCreature->GetFrame()];
 
-							// 현재 Sprite가 화면에 출력되는 위치
+							// Position where the current Sprite is drawn on screen
 							objectPixelPoint.x += frame.GetCX();
 							objectPixelPoint.y += frame.GetCY() - pCreature->GetZ();//FLYINGCREATURE_HEIGHT;
-												// FramePack에서 높이를 설정하므로,
-												// Flying인 경우도 똑같다.
+												// Since the height is set in the FramePack,
+												// the Flying case is the same.
 
-							// mouse좌표가 Sprite에 속하는지 알아보기
-							// Sprite에서의 좌표가 색깔이 있는 경우일때
+							// Check whether the mouse coordinate belongs to the Sprite
+							// When the coordinate in the Sprite has a color
 							if (m_CreatureSPK[ frame.GetSpriteID() ].IsColorPixel( 
 									static_cast<short>(x - objectPixelPoint.x), 
 									static_cast<short>(y - objectPixelPoint.y) 
@@ -7582,7 +7582,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	sY2 = sectorPoint.y + 3;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------	
 	if (sY1 < 0)
 	{	
@@ -7595,15 +7595,15 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	}
 
 	//------------------------------------------------------
-	// Check대상이 되는 ImageObject Iterator
+	// ImageObject Iterator subject to Check
 	//------------------------------------------------------
 	IMAGEOBJECT_OUTPUT_MAP::reverse_iterator iImageObjectCheck
 		= m_mapImageObject.rbegin();
 
 	//------------------------------------------------------
-	// 출력 시점이 sY1보다 적은 경우의 
-	// ImageObject들을 Check한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// Check the ImageObjects whose output time
+	// is less than sY1.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{		
@@ -7618,7 +7618,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	}
 
 	//------------------------------------------------------	
-	// 있을법한 Sector를 check한다.
+	// Check the Sectors where it is likely to be.
 	//------------------------------------------------------	
 	for (currentY=sY2; currentY>=sY1; currentY--)	
 	{	
@@ -7626,18 +7626,18 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 		{				
 			const MSector& sector = m_pZone->GetSector(currentX, currentY);
 
-			// 어떤 Object가 있을 경우
+			// If there is some Object
 			if (sector.IsExistObject() )			
 			{		
 
 				//file << "Exist Object!" << endl;
 
-				// Object의 종류에 따라서 달리 check한다.
-				// 선택할 수 있는 것은 Creature와 Item뿐이다.
+				// Check differently depending on the Object type.
+				// Only Creatures and Items can be selected.
 
 				//------------------------------------------------
 				//
-				// Flying Creature가 있는 경우
+				// If there is a Flying Creature
 				//
 				//------------------------------------------------
 				numCreature = sector.GetFlyingCreatureSize();
@@ -7654,34 +7654,34 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
 
-							// FlyingCreature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// FlyingCreature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the FlyingCreature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The FlyingCreature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// FlyingCreature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the FlyingCreature.
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.	
+							// Calculate the area where the Creature exists on screen.
 							frame = m_CreatureFPK[pCreature->GetCreatureFrameID(0)][pCreature->GetAction()][pCreature->GetDirection()][pCreature->GetFrame()];
 
-							// 현재 Sprite가 화면에 출력되는 위치
+							// Position where the current Sprite is drawn on screen
 							objectPixelPoint.x += frame.GetCX();
 							objectPixelPoint.y += frame.GetCY() - pCreature->GetZ();//FLYINGCREATURE_HEIGHT;
-												// FramePack에서 높이를 설정하므로,
-												// Flying인 경우도 똑같다.
+												// Since the height is set in the FramePack,
+												// the Flying case is the same.
 
-							// mouse좌표가 Sprite에 속하는지 알아보기
-							// Sprite에서의 좌표가 색깔이 있는 경우일때
+							// Check whether the mouse coordinate belongs to the Sprite
+							// When the coordinate in the Sprite has a color
 							if (m_CreatureSPK[ frame.GetSpriteID() ].IsColorPixel( 
 									static_cast<short>(x - objectPixelPoint.x), 
 									static_cast<short>(y - objectPixelPoint.y) 
@@ -7695,7 +7695,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 				//------------------------------------------------
 				//
-				// Creature가 있는 경우
+				// If there is a Creature
 				//
 				//------------------------------------------------
 				numCreature = sector.GetGroundCreatureSize();
@@ -7712,32 +7712,32 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
 
-							// Creature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// Creature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the Creature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The Creature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// Creature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the Creature.
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
-							// Creature가 화면에 존재하는 영역을 계산해낸다.	
+							// Calculate the area where the Creature exists on screen.
 							frame = m_CreatureFPK[pCreature->GetCreatureFrameID(0)][pCreature->GetAction()][pCreature->GetDirection()][pCreature->GetFrame()];
 
-							// 현재 Sprite가 화면에 출력되는 위치
+							// Position where the current Sprite is drawn on screen
 							objectPixelPoint.x += frame.GetCX();
 							objectPixelPoint.y += frame.GetCY();
 
-							// mouse좌표가 Sprite에 속하는지 알아보기
-							// Sprite에서의 좌표가 색깔이 있는 경우일때
+							// Check whether the mouse coordinate belongs to the Sprite
+							// When the coordinate in the Sprite has a color
 							if (m_CreatureSPK[ frame.GetSpriteID() ].IsColorPixel( 
 									static_cast<short>(x - objectPixelPoint.x), 
 									static_cast<short>(y - objectPixelPoint.y) 
@@ -7751,7 +7751,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 				//------------------------------------------------
 				//
-				// Underground Creature가 있는 경우
+				// If there is an Underground Creature
 				//
 				//------------------------------------------------
 				numCreature = sector.GetUndergroundCreatureSize();
@@ -7768,27 +7768,27 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 						pCreature = (MCreature*)iCreature->second;
 
-						// Player이면 선택하지 않는다.
+						// Do not select it if it is the Player.
 						if (pCreature->GetID()!=pid)	
 						{
 
-							// Creature가 차지하는 영역을 구한다.
-							// FRAME_PACK에서 정보를 읽어야 할 듯!!
-							// Creature의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+							// Obtain the area the Creature occupies.
+							// The information probably has to be read from the FRAME_PACK!!
+							// The Creature's Sector coordinate must be converted to a Pixel coordinate.
 
-							// Creature의 Zone의 좌표를 계산한다.
+							// Calculate the Zone coordinate of the Creature.
 							objectPixelPoint = MapToPixel(pCreature->GetX(), pCreature->GetY());
 							objectPixelPoint.x += m_PlusPoint.x + pCreature->GetSX();
 							objectPixelPoint.y += m_PlusPoint.y + pCreature->GetSY();
 
-							// Zone의 좌표를 화면의 좌표로 바꾼다.
+							// Convert the Zone coordinate to a screen coordinate.
 							objectPixelPoint.x -= firstZonePixel.x;
 							objectPixelPoint.y -= firstZonePixel.y;
 
 
 
-							// mouse좌표가 Sprite에 속하는지 알아보기
-							// Sprite에서의 좌표가 색깔이 있는 경우일때
+							// Check whether the mouse coordinate belongs to the Sprite
+							// When the coordinate in the Sprite has a color
 							if (m_EtcSPK[ SPRITEID_CREATURE_BURROW ].IsColorPixel( 
 									static_cast<short>(x - objectPixelPoint.x), 
 									static_cast<short>(y - objectPixelPoint.y) 
@@ -7802,7 +7802,7 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 				//------------------------------------------------
 				//
-				// Item이 있는 경우
+				// If there is an Item
 				//
 				//------------------------------------------------				
 				pObject = (MObject*)sector.GetItem();
@@ -7813,28 +7813,28 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 
 					pItem = (MItem*)pObject;
 
-					// Item가 차지하는 영역을 구한다.
-					// FRAME_PACK에서 정보를 읽어야 할 듯!!
-					// Item의 Sector좌표를 Pixel좌표로 바꿔야 한다.
+					// Obtain the area the Item occupies.
+					// The information probably has to be read from the FRAME_PACK!!
+					// The Item's Sector coordinate must be converted to a Pixel coordinate.
 
-					// Item의 Zone의 좌표를 계산한다.
+					// Calculate the Zone coordinate of the Item.
 					objectPixelPoint = MapToPixel(pItem->GetX(), pItem->GetY());
 					objectPixelPoint.x += m_PlusPoint.x;// + pItem->GetSX();
 					objectPixelPoint.y += m_PlusPoint.y;// + pItem->GetSY();
 
-					// Zone의 좌표를 화면의 좌표로 바꾼다.
+					// Convert the Zone coordinate to a screen coordinate.
 					objectPixelPoint.x -= firstZonePixel.x;
 					objectPixelPoint.y -= firstZonePixel.y;
 
-					// Item가 화면에 존재하는 영역을 계산해낸다.				
+					// Calculate the area where the Item exists on screen.
 					frame = m_ItemTileFPK[ pItem->GetTileFrameID() ];
 
-					// 현재 Sprite가 화면에 출력되는 위치
+					// Position where the current Sprite is drawn on screen
 					objectPixelPoint.x += frame.GetCX();
 					objectPixelPoint.y += frame.GetCY();
 
-					// mouse좌표가 Sprite에 속하는지 알아보기
-					// Sprite에서의 좌표가 색깔이 있는 경우일때
+					// Check whether the mouse coordinate belongs to the Sprite
+					// When the coordinate in the Sprite has a color
 					if (m_ItemTileISPK[ frame.GetSpriteID() ].IsColorPixel( 
 							static_cast<short>(x - objectPixelPoint.x), 
 							static_cast<short>(y - objectPixelPoint.y) 
@@ -7849,9 +7849,9 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 		}
 
 		//------------------------------------------------------
-		// 출력 시점이 currentY보다 적은 경우의 
-		// ImageObject들을 Check한다.
-		// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+		// Those whose output time is less than currentY
+		// is less than sY1.
+		// m_mapImageObject is sorted with the Viewpoint as the key.
 		//------------------------------------------------------
 		while (iImageObjectCheck != m_mapImageObject.rend())
 		{
@@ -7867,9 +7867,9 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 	}	
 
 	//------------------------------------------------------
-	// 출력 시점이 currentY보다 적은 경우의 
-	// ImageObject들을 Check한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// Those whose output time is less than currentY
+	// is less than sY1.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (iImageObjectCheck != m_mapImageObject.rend())
 	{
@@ -7889,19 +7889,19 @@ MTopView::GetSelectedObjectSprite(int x, int y)
 //----------------------------------------------------------------------
 // Clear ItemNameList
 //----------------------------------------------------------------------
-// 다 지워줘야 한다.
+// Everything must be erased.
 //----------------------------------------------------------------------
 void			
 MTopView::ClearItemNameList()
 {
 	DRAWITEMNAME_LIST::iterator iItemName = m_listDrawItemName.begin();
 
-	// 모든 node를 지운다.
+	// Erase all nodes.
 	while (iItemName != m_listDrawItemName.end())
 	{
 		DRAWITEMNAME_NODE* pNode = *iItemName;
 
-		// 메모리에서 node제거
+		// Remove the node from memory
 		delete pNode;
 
 		iItemName ++;
@@ -7914,15 +7914,15 @@ MTopView::ClearItemNameList()
 //----------------------------------------------------------------------
 // Add ItemName
 //----------------------------------------------------------------------
-// 외부에서 new를 해줘야 한다.
+// new must be done from outside.
 //
-// pNode->GetDistance로 sort해서 추가해야 한다.
-// 오름차순..
+// Must be added sorted by pNode->GetDistance.
+// Ascending order..
 //----------------------------------------------------------------------
-// item이 많은 경우는 뒤에서부터 체크하는게 빠르다.
-// MAX값이 정해져 있기 때문에...
-// 그러나.. 고치기 귀찮군.. --;
-// 이거 치는 시간에 고쳤겠다.. 음냐..
+// When there are many items, checking from the back is faster.
+// Because the MAX value is fixed...
+// But.. can't be bothered to fix it.. --;
+// I could have fixed it in the time it took to type this.. hmm..
 //----------------------------------------------------------------------
 void		 	
 MTopView::AddItemName(DRAWITEMNAME_NODE* pNode)
@@ -7932,14 +7932,14 @@ MTopView::AddItemName(DRAWITEMNAME_NODE* pNode)
 	BOOL bInsertEnd = TRUE;
 
 	//-------------------------------------------------------
-	// 거리를 비교하면서 ItemName을 추가한다.
+	// Add the ItemName while comparing distances.
 	//-------------------------------------------------------
 	while (iItemName != m_listDrawItemName.end())
 	{
 		DRAWITEMNAME_NODE* pOldNode = *iItemName;
 
 		//------------------------------------------
-		// 비교 비교~
+		// Compare compare~
 		//------------------------------------------
 		if (pNode->GetDistance() < pOldNode->GetDistance())
 		{			
@@ -7955,16 +7955,16 @@ MTopView::AddItemName(DRAWITEMNAME_NODE* pNode)
 
 	if (bInsertEnd)
 	{
-		// 맨 끝에 추가
+		// Add at the very end
 		m_listDrawItemName.push_back( pNode );
 	}
 
 	//-------------------------------------------------------
-	// MAX를 넘어간 경우
+	// If it exceeded MAX
 	//-------------------------------------------------------
 	if (m_listDrawItemName.size() > static_cast<size_t>(g_pClientConfig->MAX_DRAWITEMNAME))
 	{
-		// 마지막 걸 제거한다.
+		// Remove the last one.
 		DRAWITEMNAME_NODE* pDeleteNode = m_listDrawItemName.back();
 
 		delete pDeleteNode;
@@ -7976,7 +7976,7 @@ MTopView::AddItemName(DRAWITEMNAME_NODE* pNode)
 //----------------------------------------------------------------------
 // DrawItemNameList
 //----------------------------------------------------------------------
-// 각각의 Item마다 AddText를 한다.
+// Do AddText for each Item.
 //----------------------------------------------------------------------
 void			
 MTopView::DrawItemNameList()
@@ -7991,14 +7991,14 @@ MTopView::DrawItemNameList()
 	int x, x2;
 	int y = 0, y2;
 
-	// minimap을 그리는 경우.. 
-	// 좌표 땜시...
-	// 아래쪽부터 그린다..
+	// When drawing the minimap..
+	// Because of the coordinates...
+	// Draw from the bottom..
 
-	// 2001.7.14 주석처리
+	// Commented out 2001.7.14
 	//if (g_pUserOption->DrawMinimap)// && g_pPlayer->IsSlayer())
 	{
-		// 우헤헤 하드 코딩~~
+		// hehe hard-coding~~
 		y = 160;
 	}
 
@@ -8011,7 +8011,7 @@ MTopView::DrawItemNameList()
 
 		const char* pItemName = pItem->GetName();
 
-		// option이 붙은거는 파란색..
+		// Ones with an option are blue..
 		COLORREF nameColor;
 		if (pItem->IsSpecialColorItem())
 		{
@@ -8029,12 +8029,12 @@ MTopView::DrawItemNameList()
 		{
 			nameColor = g_pClientConfig->COLOR_NAME_ITEM_RARE_OPTION;
 		}
-		// add by Sonic 2006.10.28 增加显示三属性装备为红色
+		// add by Sonic 2006.10.28 added display of three-attribute equipment in red
 		else if(pItem->GetItemOptionListCount() > 2)
 		{
 			nameColor = g_pClientConfig->COLOR_NAME_VAMPIRE; //Red
 		}
-		// end by Sonic 2006.10.28 增加显示三属性装备为红色
+		// end by Sonic 2006.10.28 added display of three-attribute equipment in red
 		else
 		{
 			nameColor = m_ColorNameItemOption;
@@ -8042,13 +8042,13 @@ MTopView::DrawItemNameList()
 
 		if (pItemName != NULL)
 		{
-			// 화면 안에 글자가 들어오도록..
+			// So that the text fits inside the screen..
 			x = g_GameRect.right - g_GetStringWidth( pItemName, g_ClientPrintInfo[FONTID_ITEM]->hfont );
 			x2 = g_GameRect.right;
 
 			y2 = y + g_pClientConfig->FONT_ITEM_HEIGHT;
 
-			// 검은색 박스 영역
+			// Black box area
 			RECT rect = {
 				x, 
 				y,
@@ -8056,7 +8056,7 @@ MTopView::DrawItemNameList()
 				y2
 			};
 
-			// mouse로 선택된 Item인 경우
+			// If it is the Item selected with the mouse
 			if (m_SelectItemID == pItem->GetID())		
 			{
 				DRAWTEXT_NODE* pTextNodeBK = new DRAWTEXT_NODE(
@@ -8094,11 +8094,11 @@ MTopView::DrawItemNameList()
 				AddText( pTextNode );
 			}	
 
-			// item Name의 선택 영역
+			// Selection area of the item Name
 			pNode->SetRect( rect );
 		}
 
-		// 다음..
+		// Next..
 		iItemName ++;
 		y += g_pClientConfig->FONT_ITEM_HEIGHT;
 	}
@@ -8112,8 +8112,8 @@ MTopView::DrawItemNameList()
 //----------------------------------------------------------------------
 // Select Item Name
 //----------------------------------------------------------------------
-// 화면 좌표(x,y)를 선택한 경우
-// 그 좌표에 ItemName이 있는가?
+// When screen coordinate (x,y) is selected
+// Is there an ItemName at that coordinate?
 //----------------------------------------------------------------------
 MItem*
 MTopView::SelectItemName(int x, int y)
@@ -8125,17 +8125,17 @@ MTopView::SelectItemName(int x, int y)
 		DRAWITEMNAME_NODE* pNode = *iItemName;
 
 		//--------------------------------------------
-		// ItemName의 선택영역에 속하면?
+		// If it falls within the ItemName's selection area?
 		//--------------------------------------------
 		if (pNode->IsPointInRect(x,y))
 		{			
-			// item pointer를 넘겨준다.
-			// zone에 없는 경우도 있을 수 있으므로...
-			// zone에서 읽어와야 한다.
+			// Hand over the item pointer.
+			// It may not be in the zone, so...
+			// it has to be read from the zone.
 			return m_pZone->GetItem( pNode->GetID() );		
 		}
 
-		// 다음 item name
+		// Next item name
 		iItemName ++;
 	}
 
@@ -8145,7 +8145,7 @@ MTopView::SelectItemName(int x, int y)
 //----------------------------------------------------------------------
 // Clear TextList
 //----------------------------------------------------------------------
-// 다 지워줘야 한다.
+// Everything must be erased.
 //----------------------------------------------------------------------
 void			
 MTopView::ClearTextList()
@@ -8154,7 +8154,7 @@ MTopView::ClearTextList()
 	{
 		DRAWTEXT_NODE* pNode = m_pqDrawText.top();
 
-		// 메모리에서 node제거
+		// Remove the node from memory
 		delete pNode;
 
 		m_pqDrawText.pop();
@@ -8164,8 +8164,8 @@ MTopView::ClearTextList()
 //----------------------------------------------------------------------
 // Add Text
 //----------------------------------------------------------------------
-// DrawTextList에 출력할 string의 정보를 추가한다.
-// 외부에서 new를 해줘야 한다.
+// Adds the information of the string to output to the DrawTextList.
+// new must be done from outside.
 //----------------------------------------------------------------------
 void			
 MTopView::AddText(DRAWTEXT_NODE* pNode)
@@ -8185,7 +8185,7 @@ MTopView::AddText(DRAWTEXT_NODE* pNode)
 	}
 	*/
 
-	// 나중에 찍히게 하기
+	// Have it drawn later
 	if (pNode->GetTextTime()==0)
 	{
 		QWORD time = ((QWORD)(g_CurrentFrame+160) << 41) 
@@ -8200,7 +8200,7 @@ MTopView::AddText(DRAWTEXT_NODE* pNode)
 //----------------------------------------------------------------------
 // DrawTextList
 //----------------------------------------------------------------------
-// Unlock상태에서 출력한다고 가정한다.
+// Assumes output happens in the Unlock state.
 //----------------------------------------------------------------------
 void			
 MTopView::DrawTextList()
@@ -8212,30 +8212,30 @@ MTopView::DrawTextList()
 	//DRAWTEXT_PQ::iterator iText = m_pqDrawText.begin();
 
 	//--------------------------------------------------------
-	// 3D 가속 사용이면...
-	// 일단 샥~~ 어둡게.. --;
-	// Lock/Unlock을 덜 쓰기 위해서..
+	// If using 3D acceleration...
+	// For now, darken it with a swoosh.. --;
+	// To use Lock/Unlock less..
 	//
-	// 그런데! 
-	// 글자 찍을 때, 바로 직전에 box를 그려줘야 한다. 켁...
+	// But!
+	// When drawing text, the box must be drawn just before. Ugh...
 	//--------------------------------------------------------
 	/*
 	if (true)
 	{
 		m_pSurface->Unlock();
 
-		// 모든 node를 지운다.
+		// Erase all nodes.
 		while (iText != m_pqDrawText.end())
 		{
 			DRAWTEXT_NODE* pNode = *iText;
 
 			//--------------------------------------------------------
-			// 글자출력되는 부분에 검은색 상자 출력
+			// Draw a black box where the text is output
 			//--------------------------------------------------------
 			RECT rect = { pNode->GetX(), pNode->GetY(), 
 						pNode->GetXPlusWidth(), pNode->GetY(),15 };
 
-			// 검은 박스 출력..
+			// Draw the black box..
 			DrawBox3D(&rect, 0x7000);			
 
 			iText++;
@@ -8243,14 +8243,14 @@ MTopView::DrawTextList()
 
 		m_pSurface->Lock();	
 
-		// 다시 처음으로..
+		// Back to the start..
 		iText = m_pqDrawText.begin();
 	}
 	*/
 
 	//m_pSurface->Unlock();
 	//--------------------------------------------------------
-	// 모든 node를 출력하고 지운다.
+	// Output and erase all nodes.
 	//--------------------------------------------------------
 	RECT rect2;
 
@@ -8259,26 +8259,26 @@ MTopView::DrawTextList()
 		DRAWTEXT_NODE* pNode = m_pqDrawText.top();
 
 		//--------------------------------------------------------
-		// Box를 출력할까?
+		// Should the Box be drawn?
 		//--------------------------------------------------------
 		if (pNode->IsExistBox())
 		{
 			//--------------------------------------------------------
-			// 글자출력되는 부분에 검은색 상자 출력
+			// Draw a black box where the text is output
 			//--------------------------------------------------------
 			RECT rect = pNode->GetBox();
 
 			//--------------------------------------------------------
-			// 투명한 박스인 경우
+			// If it is a transparent box
 			//--------------------------------------------------------
 			if (pNode->IsTransBox())
 			{
 				//--------------------------------------------------------
-				// 3D 가속의 경우
+				// In the case of 3D acceleration
 				//--------------------------------------------------------
 //
 //
-//					// 바닥 깔기
+//					// Lay the base
 //					WORD boxColor = pNode->GetBoxColor();
 //
 //					rect2 = rect;
@@ -8304,7 +8304,7 @@ MTopView::DrawTextList()
 					{
 						WORD color = pNode->GetBoxOutlineColor();
 
-						// 외곽 박스 그리기
+						// Draw the outer box
 						rect2 = rect;
 						DRAW_CHAT_BOX_OUTLINE( rect2, color )
 
@@ -8313,11 +8313,11 @@ MTopView::DrawTextList()
 
 						WORD boxColor = pNode->GetBoxColor();
 
-						// 바닥 그리기
+						// Draw the base
 						rect2 = rect;
 						DRAW_ALPHA_BOX_2D( rect2, boxColor );
 
-						// 검정색인 경우
+						// If it is black
 						if (boxColor==0)
 						{
 							// XXXXXX
@@ -8378,13 +8378,13 @@ MTopView::DrawTextList()
 
 
 						}
-						// 다른 색인 경우
+						// If it is another color
 						else
 						{
 							m_pSurface->BltColorAlpha(&rect, boxColor, 15);
 						}
 
-						// 선
+						// Line
 						DRAW_CHAT_BOX_TAIL_LOCKED( rect, color );
 
 						m_pSurface->Unlock();						
@@ -8400,7 +8400,7 @@ MTopView::DrawTextList()
 				}
 			}
 			//--------------------------------------------------------
-			// 투명한 박스가 아닌 경우에
+			// If it is not a transparent box
 			//--------------------------------------------------------
 			else
 			{
@@ -8409,56 +8409,56 @@ MTopView::DrawTextList()
 		}
 
 		//--------------------------------------------------------
-		// 출력할 글자가 있는 경우..
+		// If there is text to output..
 		//--------------------------------------------------------
 		const char* pString = pNode->GetString();
 
 		if (pString!=NULL && pString[0]!='\0')
 		{
 			//--------------------------------------------------------
-			// 출력 좌표
+			// Output coordinate
 			//--------------------------------------------------------
 			int x = pNode->GetX();
 			int y = pNode->GetY();
 
 			//--------------------------------------------------------
-			// font 설정
+			// font setting
 			//--------------------------------------------------------	
 			PrintInfo* pPrintInfo = g_ClientPrintInfo[pNode->GetFont()];				
 
 			//--------------------------------------------------------
-			// flag에 따른 처리도 해줘야 한다....				
+			// Processing according to the flag must also be done....
 			//--------------------------------------------------------
 			if (pNode->IsOutline())
 			{
-				// 역상 color설정
+				// Set inverse color
 				pPrintInfo->text_color = (~pNode->GetColor()) & 0x00FFFFFF;
 
-				// 출력
+				// Output
 				g_Print(x-1, y-1, pString, pPrintInfo);
 				g_Print(x+1, y+1, pString, pPrintInfo);
 			}
 
-			// text color설정
+			// Set text color
 			pPrintInfo->text_color = pNode->GetColor();
 
 			//--------------------------------------------------------
-			// string 출력
+			// Output string
 			//--------------------------------------------------------
 			g_Print(x, y, pString, pPrintInfo);
 		}
 
-		// 메모리에서 제거한다.
+		// Remove from memory.
 		delete pNode;
 
-		// 다음..
+		// Next..
 		m_pqDrawText.pop();
 	}
 
-	// 모든 node를 제거한다.
+	// Remove all nodes.
 	//m_pqDrawText.clear();
 
-	// Lock상태
+	// Lock state
 	//m_pSurface->Lock();
 
 	#ifdef OUTPUT_DEBUG_DRAW_PROCESS
@@ -8469,8 +8469,8 @@ MTopView::DrawTextList()
 //----------------------------------------------------------------------
 // Clear LightBufferFilter
 //----------------------------------------------------------------------
-// LightBuffer를 초기화한다.
-// 기본적으로 Player의 시야를 표현해줘도 된다.
+// Initializes the LightBuffer.
+// By default the Player's sight can be shown.
 //----------------------------------------------------------------------
 void
 MTopView::ClearLightBufferFilter3D()
@@ -8479,7 +8479,7 @@ MTopView::ClearLightBufferFilter3D()
 	//if	(m_DarkBits)
 	{
 		//--------------------------------------------------
-		// 빛의 값 설정
+		// Set the light value
 		//--------------------------------------------------
 		BYTE DarkColor;// = 0;
 		///*
@@ -8507,7 +8507,7 @@ MTopView::ClearLightBufferFilter3D()
 		DarkColor = max(0, darkBits - (g_pPlayer->GetLightSight() - g_pPlayer->GetTimeLightSight()));
 
 		//--------------------------------------------------
-		// 초기화 - 화면 전체를 채울 빛..
+		// Initialization - light that fills the whole screen..
 		//--------------------------------------------------
 		BYTE* pBuffer;
 
@@ -8524,8 +8524,8 @@ MTopView::ClearLightBufferFilter3D()
 //----------------------------------------------------------------------
 // Clear LightBufferFilter
 //----------------------------------------------------------------------
-// LightBuffer를 초기화한다.
-// 기본적으로 Player의 시야를 표현해줘도 된다.
+// Initializes the LightBuffer.
+// By default the Player's sight can be shown.
 //----------------------------------------------------------------------
 void
 MTopView::ClearLightBufferFilter2D()
@@ -8533,7 +8533,7 @@ MTopView::ClearLightBufferFilter2D()
 	//if (1)//true && m_b3DLight && m_DarkBits)
 	{
 		//--------------------------------------------------
-		// 빛의 값 설정
+		// Set the light value
 		//--------------------------------------------------
 		BYTE DarkColor;// = 0;
 		///*
@@ -8569,7 +8569,7 @@ MTopView::ClearLightBufferFilter2D()
 		}
 
 		//--------------------------------------------------
-		// 초기화 - 화면 전체를 채울 빛..
+		// Initialization - light that fills the whole screen..
 		//--------------------------------------------------
 		BYTE* pBuffer;
 
@@ -8586,11 +8586,11 @@ MTopView::ClearLightBufferFilter2D()
 //----------------------------------------------------------------------
 // Add LightFilter To Screen
 //----------------------------------------------------------------------
-// LightFilter를 추가한다.
-// Screen좌표를 LightBuffer에 맞도록 바꿔야한다.
+// Adds a LightFilter.
+// The Screen coordinate must be converted to fit the LightBuffer.
 //
 // (CLIPSURFACE_WIDTH, CLIPSURFACE_WIDTH) 
-//  --> (SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT)로..
+//  --> to (SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT)..
 //----------------------------------------------------------------------
 void			
 MTopView::AddLightFilter2D(int x, int y, BYTE range, bool bMapPixel, bool bForceLight)
@@ -8606,28 +8606,28 @@ MTopView::AddLightFilter2D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 		&& range!=0 
 		&& (m_DarkBits || g_pPlayer->IsInDarkness()) 
 		&& m_nLight < g_pClientConfig->MAX_LIGHT_DRAW)
-		|| bForceLight) // 무조건 출력해야하는 빛
+		|| bForceLight) // Light that must always be output
 	{
 
-		// Light Filter의 범위를 넘지 않도록 한다.
+		// Do not go beyond the range of the Light Filter.
 		if (range >= m_LightFTP.GetSize())
 		{
 			range = m_LightFTP.GetSize()-1;
 		}		
 
 		//-----------------------------------------------------
-		// range에 따라서 출력할 lightFilter를 결정해야한다.
+		// The lightFilter to output must be decided according to the range.
 		//-----------------------------------------------------		
 		int filterID = range;
 
 		//-----------------------------------------------------
-		// LightFilter 출력 시점 결정
-		/// 그리고, filter좌표 (fx,fy)로 바꿔야 하고..
-		// filter의 중심을 (x,y)에 오도록 맞춰야 한다.
+		// Decide the LightFilter output position
+		/// And, it must be converted to filter coordinate (fx,fy)..
+		// the filter's center must be fitted to come at (x,y).
 		//-----------------------------------------------------
 		int fx, fy;
 
-		// (x,y)가 어떤 좌표인지에 따라서 계산을 다르게 해준다.
+		// The calculation differs depending on which coordinate (x,y) is.
 		if (bMapPixel)
 		{
 			// mapPixel --> screen
@@ -8644,12 +8644,12 @@ MTopView::AddLightFilter2D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 			fy = static_cast<int>((float)y / s_LightHeight);
 		}
 
-		// filter 중심 맞추기
+		// Fit the filter center
 		fx = fx - (m_LightFTP[filterID].GetWidth() >> 1);
 		fy = fy - (m_LightFTP[filterID].GetHeight() >> 1);
 
 		//-----------------------------------------------------
-		// BufferFilter에 Light filter를 추가한다.
+		// Adds a Light filter to the BufferFilter.
 		//-----------------------------------------------------
 		m_LightBufferFilter.BltFilterAdd( fx, fy, m_LightFTP[filterID] );		
 
@@ -8660,11 +8660,11 @@ MTopView::AddLightFilter2D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 //----------------------------------------------------------------------
 // Add LightFilter To Screen
 //----------------------------------------------------------------------
-// LightFilter를 추가한다.
-// Screen좌표를 LightBuffer에 맞도록 바꿔야한다.
+// Adds a LightFilter.
+// The Screen coordinate must be converted to fit the LightBuffer.
 //
 // (CLIPSURFACE_WIDTH, CLIPSURFACE_WIDTH) 
-//  --> (SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT)로..
+//  --> to (SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT)..
 //----------------------------------------------------------------------
 void			
 MTopView::AddLightFilter3D(int x, int y, BYTE range, bool bMapPixel, bool bForceLight)
@@ -8680,28 +8680,28 @@ MTopView::AddLightFilter3D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 		&& range!=0
 		&&	(m_DarkBits	|| g_pPlayer->IsInDarkness()) 
 		&& m_nLight < g_pClientConfig->MAX_LIGHT_DRAW)
-		|| bForceLight)	// 무조건 출력해야하는 빛
+		|| bForceLight)	// Light that must always be output
 	{
 
-		// Light Filter의 범위를 넘지 않도록 한다.
+		// Do not go beyond the range of the Light Filter.
 		if (range >= m_LightFTP.GetSize())
 		{
 			range = m_LightFTP.GetSize()-1;
 		}		
 
 		//-----------------------------------------------------
-		// range에 따라서 출력할 lightFilter를 결정해야한다.
+		// The lightFilter to output must be decided according to the range.
 		//-----------------------------------------------------		
 		int filterID = range;
 
 		//-----------------------------------------------------
-		// LightFilter 출력 시점 결정
-		/// 그리고, filter좌표 (fx,fy)로 바꿔야 하고..
-		// filter의 중심을 (x,y)에 오도록 맞춰야 한다.
+		// Decide the LightFilter output position
+		/// And, it must be converted to filter coordinate (fx,fy)..
+		// the filter's center must be fitted to come at (x,y).
 		//-----------------------------------------------------
 		int fx, fy;
 
-		// (x,y)가 어떤 좌표인지에 따라서 계산을 다르게 해준다.
+		// The calculation differs depending on which coordinate (x,y) is.
 		if (bMapPixel)
 		{
 			// mapPixel --> screen
@@ -8718,12 +8718,12 @@ MTopView::AddLightFilter3D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 			fy = static_cast<int>((float)y / s_LightHeight);
 		}
 
-		// filter 중심 맞추기
+		// Fit the filter center
 		fx = fx - (m_LightFTP[filterID].GetWidth() >> 1);
 		fy = fy - (m_LightFTP[filterID].GetHeight() >> 1);
 
 		//-----------------------------------------------------
-		// BufferFilter에 Light filter를 추가한다.
+		// Adds a Light filter to the BufferFilter.
 		//-----------------------------------------------------
 		m_LightBufferFilter.BltFilterSub( fx, fy, m_LightFTP[filterID] );
 
@@ -8734,30 +8734,30 @@ MTopView::AddLightFilter3D(int x, int y, BYTE range, bool bMapPixel, bool bForce
 //----------------------------------------------------------------------
 // Add CreatureOutput All
 //----------------------------------------------------------------------
-// m_pZone의 Creature map을 통째로~ 추가
+// Add the whole Creature map of m_pZone in one go~
 //----------------------------------------------------------------------
-// OutputMap에서의 ID는 Creature의..
+// The ID in the OutputMap is the Creature's..
 //
-//    2 bytes + 2 bytes    = 4 bytes 로 구성되어 있다.
-// [pixel y좌표][object id]
+//    consists of 2 bytes + 2 bytes    = 4 bytes.
+// [pixel y coordinate][object id]
 //
-// 일반 creature는 추가할지 말지를 숫자로 결정하고..
-// FakeCreature는 tile에는 추가안되므로.. 무조건 여기서 추가해야한다.
+// For a normal creature, whether to add it is decided by a number..
+// A FakeCreature is not added to the tile.. so it must always be added here.
 //----------------------------------------------------------------------
 void	
 MTopView::AddOutputCreatureAll()
 {
-	// 초기화
+	// Initialization
 	m_mapCreature.clear();
 
-	// [새기술3] 관 속에 있을때는 자기만 출력하게 한다.
+	// [New skill 3] While in a coffin, only oneself is drawn.
 	if (g_pPlayer->IsInCasket())
 	{
 		m_bTileSearchForCreature = false;	
 
 		QWORD key = GetOutputCreatureID(g_pPlayer);
 
-		// (key값, pCreature)를 추가한다.
+		// Add (key value, pCreature).
 		m_mapCreature.insert(
 			CREATURE_OUTPUT_MAP::value_type( key, g_pPlayer )
 		);
@@ -8772,8 +8772,8 @@ MTopView::AddOutputCreatureAll()
 
 	int num = m_pZone->GetCreatureNumber();
 
-	// 20명 이상 있으면 ... 
-	// 그냥 검색하는게 낫다고 판단.. 정말일까? - -;
+	// If there are 20 or more...
+	// Judged it is better to just search.. really? - -;
 	if (num >= 20)
 	{
 //		m_bTileSearchForCreature = true;		
@@ -8785,8 +8785,8 @@ MTopView::AddOutputCreatureAll()
 	}
 
 	//---------------------------------------------------------
-	// Tile을 검색해서 출력하는 경우가 아니면..
-	// 모든 Creature를 OutputMap에 추가해야 한다.
+	// Unless the Tiles are searched for output..
+	// All Creatures must be added to the OutputMap.
 	//---------------------------------------------------------
 	if (!m_bTileSearchForCreature)
 	{
@@ -8796,15 +8796,15 @@ MTopView::AddOutputCreatureAll()
 		{
 			pCreature = iCreature->second;
 
-			// key 값 = [pixel Y좌표][object id]
+			// key value = [pixel Y coordinate][object id]
 			QWORD key = GetOutputCreatureID(pCreature);
 
-			// (key값, pCreature)를 추가한다.
+			// Add (key value, pCreature).
 			m_mapCreature.insert(
 				CREATURE_OUTPUT_MAP::value_type( key, pCreature )
 			);
 
-			// 다음 Creature
+			// Next Creature
 			iCreature++;
 		}
 	}
@@ -8816,21 +8816,21 @@ MTopView::AddOutputCreatureAll()
 	num = m_pZone->GetFakeCreatureNumber();
 
 	//---------------------------------------------------------
-	// 모든 Creature를 OutputMap에 추가해야 한다.
+	// All Creatures must be added to the OutputMap.
 	//---------------------------------------------------------
 	for (int i=0; i<num; i++)
 	{
 		pCreature = iCreature->second;
 
-		// key 값 = [pixel Y좌표][object id]
+		// key value = [pixel Y coordinate][object id]
 		QWORD key = GetOutputCreatureID(pCreature);
 
-		// (key값, pCreature)를 추가한다.
+		// Add (key value, pCreature).
 		m_mapCreature.insert(
 			CREATURE_OUTPUT_MAP::value_type( key, pCreature )
 		);
 
-		// 다음 Creature
+		// Next Creature
 		iCreature++;
 	}
 }
@@ -8838,18 +8838,18 @@ MTopView::AddOutputCreatureAll()
 //----------------------------------------------------------------------
 // Add OutputCreature
 //----------------------------------------------------------------------
-// pCreature를 추가한다.
+// Add pCreature.
 //----------------------------------------------------------------------
 bool	
 MTopView::AddOutputCreature(MCreature* pCreature)
 {	
-	// key값 생성
+	// Generate the key value
 	QWORD key = GetOutputCreatureID(pCreature);
 
-	// 이미 있는지 확인해보고 없으면 추가.
+	// Check whether it already exists, and add if not.
 	if (m_mapCreature.find( key ) == m_mapCreature.end())
 	{			
-		// (key값, pCreature)를 추가한다.
+		// Add (key value, pCreature).
 		m_mapCreature.insert(
 			CREATURE_OUTPUT_MAP::value_type( key, pCreature )
 		);
@@ -8863,12 +8863,12 @@ MTopView::AddOutputCreature(MCreature* pCreature)
 //----------------------------------------------------------------------
 // Remove OutputCreature
 //----------------------------------------------------------------------
-// id와 관련있는 creature를 제거한다.
+// Remove the creature related to id.
 //----------------------------------------------------------------------
 bool	
 MTopView::RemoveOutputCreature(MCreature* pCreature)
 {
-	// 이미 있는지 확인해보고 있으면 제거
+	// Check whether it already exists, and remove if so
 	CREATURE_OUTPUT_MAP::iterator iCreature 
 		= m_mapCreature.find( GetOutputCreatureID(pCreature) );
 
@@ -8883,15 +8883,15 @@ MTopView::RemoveOutputCreature(MCreature* pCreature)
 }
 
 //----------------------------------------------------------------------
-// ID가 id인 Creature의 좌표가 y0에서 y1으로 바뀐걸 update한다.
+// Updates that the coordinate of the Creature with ID id changed from y0 to y1.
 //----------------------------------------------------------------------
-// id와 관련있는 creature의 정보(출력좌표관련id)를 Update한다.
-// 있으면.. 제거하고.. 다시 추가해야 한다.
+// Updates the information of the creature related to id (id related to the output coordinate).
+// If it exists.. it must be removed.. and added again.
 //----------------------------------------------------------------------
 bool			
 MTopView::UpdateOutputCreature(TYPE_OBJECTID id, int y0, int y1)
 {
-	// 이미 있는지 확인해보고 있으면 update
+	// Check whether it already exists, and update if so
 	CREATURE_OUTPUT_MAP::iterator iCreature 
 		= m_mapCreature.find( GetOutputCreatureID(id, y0) );
 
@@ -8899,13 +8899,13 @@ MTopView::UpdateOutputCreature(TYPE_OBJECTID id, int y0, int y1)
 	{			
 		MCreature* pCreature = (*iCreature).second;
 
-		// 제거
+		// Remove
 		m_mapCreature.erase( iCreature );
 
-		// (key값, pCreature)를 다시 추가한다.
+		// Add (key value, pCreature) again.
 		m_mapCreature.insert(
 			CREATURE_OUTPUT_MAP::value_type( 
-					GetOutputCreatureID(id, y1),	// key값
+					GetOutputCreatureID(id, y1),	// key value
 					pCreature 
 			)
 		);
@@ -8919,7 +8919,7 @@ MTopView::UpdateOutputCreature(TYPE_OBJECTID id, int y0, int y1)
 //----------------------------------------------------------------------
 // DrawBox3D
 //----------------------------------------------------------------------
-// 검은색 반투명 박스를 그린다. 3D
+// Draws a black translucent box. 3D
 //----------------------------------------------------------------------
 //void
 //MTopView::DrawBox3D(RECT* pRect, WORD pixel)
@@ -8934,7 +8934,7 @@ MTopView::UpdateOutputCreature(TYPE_OBJECTID id, int y0, int y1)
 //	// Color HP Bar
 //	//-------------------------------------------------
 //	//-------------------------------------------------
-//	// 다른 색깔일 경우.. 다시 설정..
+//	// If it is a different color.. set again..
 //	//------------------------------------------------		
 //
 //
@@ -8944,11 +8944,11 @@ MTopView::UpdateOutputCreature(TYPE_OBJECTID id, int y0, int y1)
 //----------------------------------------------------------------------
 // Draw Alpha Box
 //----------------------------------------------------------------------
-// 2D/3D가속에 관계없이...
-// 현재의 Lock/Unlock 상태에 관계없이... 작동한다.
+// Regardless of 2D/3D acceleration...
+// Works regardless of the current Lock/Unlock state...
 //
-// m_pSurface에 
-// (r,g,b)와 alpha값(1~31)에 따라서 pRect영역에 투명한 box를 그린다.
+// On m_pSurface,
+// draws a transparent box in the pRect area according to (r,g,b) and the alpha value (1~31).
 //----------------------------------------------------------------------
 void
 MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
@@ -8956,15 +8956,15 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 	WORD color;
 
 	//--------------------------------------------------------
-	// Win2000인 경우.. 여기서 엄청난 속도저하가 생긴다.. 왜 그럴까?
-	// 일단은.. AlphaBox를 사용하지 않는다.
-	// 테스트 결과.. 이게 문제가 아니었다... 뭐가 문제일까. - -;
+	// On Win2000.. a huge slowdown happens here.. why?
+	// For now.. AlphaBox is not used.
+	// Test result.. this was not the problem... what is the problem. - -;
 	//--------------------------------------------------------
 	/*
 	if (g_WindowsNT)
 	{
 		//------------------------------------------------
-		// Unlock 상태로 만든다.
+		// Make it the Unlock state.
 		//------------------------------------------------
 		BOOL bLock = m_pSurface->IsLock();
 		if (bLock)
@@ -8977,7 +8977,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 		m_pSurface->FillRect(pRect, color);
 
 		//------------------------------------------------
-		// 원래 lock 된 상태면 다시 되돌린다.
+		// If it was originally locked, restore it.
 		//------------------------------------------------
 		if (bLock)
 		{
@@ -8986,17 +8986,17 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 	}
 	*/
 	//--------------------------------------------------------
-	// 98인 경우..
+	// In the 98 case..
 	//--------------------------------------------------------
 	//else
 	{
 		//--------------------------------------------------------
-		// 3D 가속의 경우
+		// In the case of 3D acceleration
 		//--------------------------------------------------------
 //		if (true)
 //		{
 //			//------------------------------------------------
-//			// Unlock 상태로 만든다.
+//			// Make it the Unlock state.
 //			//------------------------------------------------
 //
 //			//------------------------------------------------
@@ -9016,7 +9016,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 //			// Color HP Bar
 //			//-------------------------------------------------
 //			//-------------------------------------------------
-//			// 다른 색깔일 경우.. 다시 설정..
+//			// If it is a different color.. set again..
 //			//------------------------------------------------		
 //
 //
@@ -9024,7 +9024,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 //			DRAW_TEXTURE_SURFACE( pUsingSurface, pRect )			
 //
 //			//------------------------------------------------
-//			// 원래 lock 된 상태면 다시 되돌린다.
+//			// If it was originally locked, restore it.
 //			//------------------------------------------------
 //		//--------------------------------------------------------
 //		// 2D
@@ -9032,7 +9032,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 //		else
 		{
 			//------------------------------------------------
-			// Lock 상태로 만든다.
+			// Make it the Lock state.
 			//------------------------------------------------
 			BOOL bUnlock = !m_pSurface->IsLock();
 			if (bUnlock)
@@ -9043,7 +9043,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 			color = CSDLGraphics::Color(r,g,b);
 
 			//-------------------------------------------------
-			// 검정색이면.. 쉽게 된다~
+			// If it is black.. it is easy~
 			//-------------------------------------------------
 			if (color==0)
 			{
@@ -9059,7 +9059,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 				}
 			}
 			//-------------------------------------------------
-			// 아니면...
+			// Otherwise...
 			//-------------------------------------------------
 			else
 			{
@@ -9067,7 +9067,7 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 			}
 
 			//------------------------------------------------
-			// 원래의 Lock 상태로 되돌린다.
+			// Restore the original Lock state.
 			//------------------------------------------------
 			if (bUnlock)
 			{
@@ -9080,9 +9080,9 @@ MTopView::DrawAlphaBox(RECT* pRect, BYTE r, BYTE g, BYTE b, BYTE alpha)
 //----------------------------------------------------------------------
 // Draw Information
 //----------------------------------------------------------------------
-// Debug에 필요한 정보를 출력한다.
+// Outputs the information needed for Debug.
 //
-// 글자 출력할때는 Unlock상태..
+// When drawing text it is in the Unlock state..
 //----------------------------------------------------------------------
 void
 MTopView::DrawInformation()
@@ -9097,7 +9097,7 @@ MTopView::DrawInformation()
 	//-----------------------------------------------------------------	
 
 	//-----------------------------------------------------------------
-	// Font 선택
+	// Select Font
 	//-----------------------------------------------------------------
 	PrintInfo* pPrintInfo = g_ClientPrintInfo[FONTID_INFO];	
 
@@ -9116,9 +9116,9 @@ MTopView::DrawInformation()
 	//-----------------------------------------------------------------
 	// [ TEST CODE ]
 	//-----------------------------------------------------------------
-	// Zone이름 출력
+	// Draw the Zone name
 	//-----------------------------------------------------------------
-	/* // 2001.7.14 주석처리
+	/* // Commented out 2001.7.14
 	if (g_pUserOption->DrawZoneName)
 	{
 		if (g_bZonePlayerInLarge)
@@ -9148,7 +9148,7 @@ MTopView::DrawInformation()
 
 
 	//-----------------------------------------------------------------
-	// 게임 시간 출력
+	// Draw the game time
 	//-----------------------------------------------------------------
 	/*
 	static DWORD lastDisplayGameTime = g_CurrentTime;
@@ -9179,7 +9179,7 @@ MTopView::DrawInformation()
 	}
 	else
 	{
-		// 30초에 한번씩은 시간을 바꿔준다.
+		// The time is changed once every 30 seconds.
 		if (g_CurrentTime - lastDisplayGameTime > 30000)
 		{
 			g_pGameTime->SetCurrentTime( g_CurrentTime );
@@ -9191,28 +9191,28 @@ MTopView::DrawInformation()
 
 	//-----------------------------------------------------------------
 	//
-	// Item 부서진거 출력
+	// Draw broken Items
 	//
 	//-----------------------------------------------------------------
 	y += 10;
 	DrawItemBroken(5, y);
 
-	y += 70;	// ItemBroken의 크기.. 귀찮아서 기냥.. ㅋㅋ
+	y += 70;	// Size of ItemBroken.. too lazy so just.. lol
 
 	//-----------------------------------------------------------------
 	//
-	// Event Message 출력
+	// Draw Event Message
 	//
 	//-----------------------------------------------------------------
 	int strY = 30;
 	int strX = g_GameRect.right /2;
 
-	// Event String 출력
+	// Draw Event String
 	DrawEventString( strX, strY );
 
 	//-----------------------------------------------------------------
 	//
-	// System Message 출력
+	// Draw System Message
 	//
 	//-----------------------------------------------------------------
 
@@ -9251,22 +9251,22 @@ MTopView::DrawInformation()
 	{
 		if ((*g_pPlayerMessage)[c][0] != '\0')
 		{
-			// 取出信息
+			// Take out the information
 			SafeFormat::Copy(message,(*g_pPlayerMessage)[c]);
-			// 取出颜色类型
+			// Take out the color type
 			pColorType = &message[strlen(message)-1];
 			iColorType = atoi(pColorType);
 			pColorType[0]='\0';
 			COLORREF color = RGB(20<<3,31<<3,12<<3);
 			switch(iColorType)
 			{
-			case 0: // 绿色
+			case 0: // Green
 				color = RGB_GREEN;
 				break;
-			case 1: // 蓝色
+			case 1: // Blue
 				color = RGB(50,50,200);//RGB_BLUE;
 				break;
-			case 2: // 黄色
+			case 2: // Yellow
 				color = RGB_YELLOW;
 				break;
 			}
@@ -9323,7 +9323,7 @@ MTopView::DrawInformation()
 	}
 	//-----------------------------------------------------------------
 	//
-	// Game Message 출력
+	// Draw Game Message
 	//
 	//-----------------------------------------------------------------
 	switch(g_pPlayer->GetRace())
@@ -9333,7 +9333,7 @@ MTopView::DrawInformation()
 		strY = 410;
 		if (g_pPlayer->GetBonusPoint()!=0)
 		{
-			// bonus point 올릴려고 누르는 버튼이 있는 위치
+			// Position of the button pressed to raise bonus points
 			strX = 85;
 		}	
 		if (g_MyFull)
@@ -9347,7 +9347,7 @@ MTopView::DrawInformation()
 		strY = 440;
 		if (g_pPlayer->GetBonusPoint()!=0)
 		{
-			// bonus point 올릴려고 누르는 버튼이 있는 위치
+			// Position of the button pressed to raise bonus points
 			strX = 85;
 		}
 		if (g_MyFull)
@@ -9361,7 +9361,7 @@ MTopView::DrawInformation()
 		strY = 410;
 		if (g_pPlayer->GetBonusPoint()!=0)
 		{
-			// bonus point 올릴려고 누르는 버튼이 있는 위치
+			// Position of the button pressed to raise bonus points
 			strX = 85;
 		}
 		if (g_MyFull)
@@ -9399,7 +9399,7 @@ MTopView::DrawInformation()
 
 	//-----------------------------------------------------------------
 	//
-	// 총알 남은거 출력
+	// Draw remaining bullets
 	//
 	//-----------------------------------------------------------------
 	if (g_pCurrentMagazine!=NULL)
@@ -9425,7 +9425,7 @@ MTopView::DrawInformation()
 	}
 
 	//-----------------------------------------------------------------
-	// 캐릭터 상태 출력
+	// Draw character status
 	//-----------------------------------------------------------------
 	#ifdef OUTPUT_DEBUG
 		if (g_pSDLInput->KeyDown(DIK_P) && 
@@ -9546,14 +9546,14 @@ MTopView::DrawEventString(int& strX, int& strY)
 //----------------------------------------------------------------------
 // Draw Information
 //----------------------------------------------------------------------
-// Debug에 필요한 정보를 출력한다.
+// Outputs the information needed for Debug.
 //----------------------------------------------------------------------
 void MTopView::DrawDebugInfo(void* pSurface)
 {
 	(void)pSurface;
 	#ifdef	OUTPUT_DEBUG		
 		//----------------------------------------------------------------
-		// debug용 code
+		// code for debug
 		//----------------------------------------------------------------
 		///*
 		char str[128];
@@ -9664,7 +9664,7 @@ SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->Get
 		// pSurfaceCast->GDI_Text(150,580, str, 0xFFFFFF);		
 		TextSystem::TextService::RenderText(g_pLast, 150, 580, str);
 
-		// 남은 Texture메모리 test
+		// Test remaining Texture memory
 		DDSCAPS2 ddsCaps2;
 		DWORD dwTotal;
 		DWORD dwFree;
@@ -9684,7 +9684,7 @@ SafeFormat::Format(str, "ID = %d / %d명 [Weapon=%s] [align=%d]", g_pPlayer->Get
 //----------------------------------------------------------------------
 // Draw Test Help
 //----------------------------------------------------------------------
-// ClientTest용 Help
+// Help for ClientTest
 //----------------------------------------------------------------------
 void
 MTopView::DrawTestHelp()
@@ -9692,7 +9692,7 @@ MTopView::DrawTestHelp()
 	#ifdef OUTPUT_DEBUG
 		//--------------------------------------------------------------------
 		//
-		// F1을 누른 상태 --> 도움말 출력
+		// F1 is held --> draw help
 		//
 		//--------------------------------------------------------------------	
 		if (g_pSDLInput->KeyDown(DIK_F11)
@@ -9762,8 +9762,8 @@ MTopView::DrawTestHelp()
 //----------------------------------------------------------------------
 // Draw
 //----------------------------------------------------------------------
-// 전부 다시 그릴건지   
-// 이전의 Tile을 이용해서 일부만 그릴건지를 선택한다.
+// Whether to redraw everything
+// or to draw only part of it using the previous Tile is chosen.
 //----------------------------------------------------------------------
 void
 MTopView::Draw(int firstPointX,int firstPointY)
@@ -9800,7 +9800,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			else if (g_WipeValue>64) g_WipeValue=64;
 		}
 */
-		// 타일에 포탈 정보 출력하기
+		// Draw portal information on tiles
 		if (g_pSDLInput->KeyDown(DIK_T) && g_pSDLInput->KeyDown(DIK_LCONTROL))
 		{
 			SetFirstDraw();
@@ -9812,7 +9812,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 	#endif
 
 	//------------------------------------------------------------
-	// 비공식(-_-;) 영어 폰트 사용안함 - -;
+	// Unofficial (-_-;) English font not used - -;
 	//------------------------------------------------------------
 	//gC_font.NotUseNoPublicEng();		
 
@@ -9821,11 +9821,11 @@ MTopView::Draw(int firstPointX,int firstPointY)
 	//#endif	
 
 	//------------------------------------------------------------
-	// Clip영역 안에서만 출력한다.
+	// Output only inside the Clip area.
 	//------------------------------------------------------------
 
 	//------------------------------------------------------------
-	// Tile을 처음 그릴 때, 다~ 그린다.
+	// When the Tile is first drawn, draw it all~.
 	//------------------------------------------------------------
 	if (m_bFirstTileDraw)
 	{
@@ -9875,8 +9875,8 @@ MTopView::Draw(int firstPointX,int firstPointY)
 		light.dvDirection.x = 0.0f;	
 		light.dvDirection.y = 0.0f;
 		light.dvDirection.z = 1.0f;
-		light.dvTheta =       0.5f; //원뿔의 중앙 크기
-		light.dvPhi =         0.8f; //원뿔의 외곽 크기
+		light.dvTheta =       0.5f; //Size of the center of the cone
+		light.dvPhi =         0.8f; //Size of the outer edge of the cone
 		light.dvAttenuation0 = 1.0f;
 		light.dvFalloff		= 1.0f;
 
@@ -9886,7 +9886,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 		//*/
 	}
 	//------------------------------------------------------------
-	// 이전에 그린 Tile을 다시 이용한다.
+	// Reuse the previously drawn Tile.
 	//------------------------------------------------------------
 	//else
 	{			
@@ -9896,7 +9896,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 				DEBUG_ADD( "IsLost?" );
 			#endif
 
-			// 도움이 될까..
+			// Will it help..
 			if (false)
 			{
 				#ifdef OUTPUT_DEBUG_DRAW_PROCESS
@@ -9961,8 +9961,8 @@ MTopView::Draw(int firstPointX,int firstPointY)
 				// CDirect3D::GetDevice()->GetLight() removed (SDL2)
 
 
-				light.dvTheta -=       0.01f; //원뿔의 중앙 크기
-				light.dvPhi -=         0.01f; //원뿔의 외곽 크기
+				light.dvTheta -=       0.01f; //Size of the center of the cone
+				light.dvPhi -=         0.01f; //Size of the outer edge of the cone
 
 				// CDirect3D::GetDevice()->SetLight() removed (SDL2)
 
@@ -9974,8 +9974,8 @@ MTopView::Draw(int firstPointX,int firstPointY)
 				// CDirect3D::GetDevice()->GetLight() removed (SDL2)
 
 
-				light.dvTheta +=       0.01f; //원뿔의 중앙 크기
-				light.dvPhi +=         0.01f; //원뿔의 외곽 크기
+				light.dvTheta +=       0.01f; //Size of the center of the cone
+				light.dvPhi +=         0.01f; //Size of the outer edge of the cone
 
 				// CDirect3D::GetDevice()->SetLight() removed (SDL2)
 
@@ -9986,7 +9986,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			//test.Rotate( 0.1f, 0.1f, 0 );
 
 			//------------------------------------------------
-			// LightBuffer 초기화
+			// LightBuffer initialization
 			//------------------------------------------------
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD( "Clear LightBufferFilter3D" );
@@ -10012,7 +10012,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			__END_PROFILE("DrawZone")
 
 
-			// mouse좌표의 빛			
+			// Light at the mouse coordinate
 			//AddLightFilter( m_FirstZonePixel.x,g_x, m_FirstZonePixel.y,g_y, 4 );
 			//------------------------------------------------
 			// Fade
@@ -10030,7 +10030,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			//------------------------------------------------
 			// Minimap
 			//------------------------------------------------
-			/* // 2001.7.14 주석처리
+			/* // Commented out 2001.7.14
 			if (g_pUserOption->DrawMinimap)
 			{
 				DrawMinimap( CLIPSURFACE_WIDTH-m_pMinimapSPR->GetWidth(),
@@ -10040,7 +10040,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			*/
 
 			//------------------------------------------------
-			// test용 도움말
+			// help for testing
 			//------------------------------------------------
 			if (g_pSDLInput->KeyDown(DIK_F11))
 			{
@@ -10055,8 +10055,8 @@ MTopView::Draw(int firstPointX,int firstPointY)
 
 
 			//------------------------------------------------
-			// 제거된 Surface들을 지워줘야 한다.
-			// 반드시, EndScene()이 끝나고 지워야 한다.
+			// The removed Surfaces must be erased.
+			// It must be erased after EndScene() ends.
 			//------------------------------------------------
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD( "Remove RemovedTexture" );
@@ -10070,7 +10070,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 		else
 		{
 			//------------------------------------------------
-			// LightBuffer 초기화
+			// LightBuffer initialization
 			//------------------------------------------------
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD( "Clear LightBufferFilter2D");
@@ -10112,7 +10112,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			//------------------------------------------------
 			// Minimap
 			//------------------------------------------------
-			/* // 2001.7.14 주석처리
+			/* // Commented out 2001.7.14
 			if (g_pUserOption->DrawMinimap)
 			{
 				DrawMinimap( CLIPSURFACE_WIDTH-m_pMinimapSPR->GetWidth(),
@@ -10122,7 +10122,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 			*/
 
 			//------------------------------------------------
-			// test용 도움말
+			// help for testing
 			//------------------------------------------------
 		}	
 	}
@@ -10132,7 +10132,7 @@ MTopView::Draw(int firstPointX,int firstPointY)
 	#endif
 
 	//------------------------------------------------
-	// 정보 출력
+	// Draw information
 	//------------------------------------------------
 	DrawInformation();
 
@@ -10156,9 +10156,9 @@ MTopView::Draw(int firstPointX,int firstPointY)
 //----------------------------------------------------------------------
 // Draw LightBuffer
 //----------------------------------------------------------------------
-// m_LightBufferFilter를 m_pLightBufferTexture로 blt하고
-// m_pLightBufferTexture를 texture로 설정해서
-// 화면에 LightBufferFilter를 출력하게 된다.
+// Blt m_LightBufferFilter to m_pLightBufferTexture, and
+// set m_pLightBufferTexture as the texture, so that
+// the LightBufferFilter ends up drawn on the screen.
 //----------------------------------------------------------------------
 void
 MTopView::DrawLightBuffer3D()
@@ -10170,9 +10170,9 @@ MTopView::DrawLightBuffer3D()
 //----------------------------------------------------------------------
 // Draw LightBuffer
 //----------------------------------------------------------------------
-// m_LightBufferFilter를 m_pLightBufferTexture로 blt하고
-// m_pLightBufferTexture를 texture로 설정해서
-// 화면에 LightBufferFilter를 출력하게 된다.
+// Blt m_LightBufferFilter to m_pLightBufferTexture, and
+// set m_pLightBufferTexture as the texture, so that
+// the LightBufferFilter ends up drawn on the screen.
 //----------------------------------------------------------------------
 void
 MTopView::DrawLightBuffer2D()
@@ -10185,26 +10185,26 @@ MTopView::DrawLightBuffer2D()
 //----------------------------------------------------------------------
 // Determine ImageObject
 //----------------------------------------------------------------------
-// 화면에 있는 ImageObject들을 모두 검색한다.
+// Search all the ImageObjects on the screen.
 //----------------------------------------------------------------------
 void
 MTopView::DetermineImageObject()
 {	
 	//---------------------------------------------------------------	
-	// firstPoint에 출력될 Zone에서의 첫번째 Sector
+	// The first Sector in the Zone that will be drawn at firstPoint
 	//---------------------------------------------------------------	
-	// Player를 중심으로 해서 출력해야하기 때문에
-	// 왼쪽~~~~ 위~ 부터 출력한다.
+	// Because drawing must be centered on the Player,
+	// draw starting from the left~~~~ top~.
 	//---------------------------------------------------------------	
 	POINT	firstSector;
 	firstSector.x = g_pPlayer->GetX() + g_SECTOR_SKIP_PLAYER_LEFT;
 	firstSector.y = g_pPlayer->GetY() + g_SECTOR_SKIP_PLAYER_UP;
 
 	//---------------------------------------------------------------	
-	// Zone의 경계에 갔을 때,
-	// 검은 부분 안 보이게 하기..
+	// When at the edge of the Zone,
+	// keep the black part from showing..
 	//---------------------------------------------------------------	
-	// X 좌표 맞추기..
+	// Fit the X coordinate..
 	//---------------------------------------------------------------	
 	if (firstSector.x <= 0)
 	{	
@@ -10216,7 +10216,7 @@ MTopView::DetermineImageObject()
 	}
 
 	//---------------------------------------------------------------	
-	// Y 좌표 맞추기
+	// Fit the Y coordinate
 	//---------------------------------------------------------------	
 	if (firstSector.y <= 0)
 	{
@@ -10229,7 +10229,7 @@ MTopView::DetermineImageObject()
 
 	//----------------------------------------------------------------------
 	//
-	//                         ImageObject 검색
+	//                         ImageObject search
 	//
 	//----------------------------------------------------------------------	
 	//POINT firstSector = PixelToMap(m_FirstZonePixel.x, m_FirstZonePixel.y);
@@ -10239,7 +10239,7 @@ MTopView::DetermineImageObject()
 	int sY2 = firstSector.y + g_SECTOR_HEIGHT+1;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip if outside the Zone area...
 	//------------------------------------------------------
 	if (sX1 < 0) 
 	{					
@@ -10264,12 +10264,12 @@ MTopView::DetermineImageObject()
 	}
 
 	//------------------------------------------------------
-	// 이전에 있던 ImageObject를 모두 지운다.
+	// Erase all the previous ImageObjects.
 	//------------------------------------------------------
 	m_mapImageObject.clear();	
 
 	//------------------------------------------------------
-	// 각 Sector의 ImageObject검색
+	// Search the ImageObjects of each Sector
 	//------------------------------------------------------
 	int y,x,i;
 	for (y=sY1; y<=sY2; y++)
@@ -10278,40 +10278,40 @@ MTopView::DetermineImageObject()
 		{				
 			const MSector& sector = m_pZone->GetSector(x,y);
 
-			// ImageObject가 있다면.. 모두~ 기억해둔다.
-			// 단, 중복을 허용하지 않는다.
+			// If there is an ImageObject.. remember them all~.
+			// However, duplicates are not allowed.
 			if (sector.IsExistImageObject())
 			{
 				OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-				// Sector에 있는 모든 ImageObject들을 검색한다.
+				// Search all the ImageObjects in the Sector.
 				for (i=0; i<sector.GetImageObjectSize(); i++)
 				{
 					MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 					//----------------------------------------
-					// 출력 시점을 체크해야 되지만,
-					// 어떤 ImageObject들은
-					// 자신의 ViewSector가 아닌 viewpoint를
-					// 갖는 경우도 있다. -_-;
-					// 그래서.. 무조건 추가한다.
+					// The output time should be checked,
+					// but some ImageObjects
+					// have a viewpoint that is not
+					// their own ViewSector. -_-;
+					// So.. add unconditionally.
 					//----------------------------------------
 					{						
-						// 이미 있는지 확인해보고 없으면 추가.
+						// Check whether it already exists, and add if not.
 						QWORD key = GetOutputImageObjectID( pImageObject );
 
 						if (m_mapImageObject.find( key )
 							== m_mapImageObject.end())
 						{			
 							//----------------------------------------
-							// Key값 = (Viewpoint << 32) | ID
+							// Key value = (Viewpoint << 32) | ID
 							//----------------------------------------
-							// Viewpoint에 의해서 sort된다.
-							// Viewpoint와 ID에 의해서 제거할 수 있다.
+							// Sorted by Viewpoint.
+							// Can be removed by Viewpoint and ID.
 							//----------------------------------------
 							m_mapImageObject.insert(
 								IMAGEOBJECT_OUTPUT_MAP::value_type(
-									key,	// key값
+									key,	// key value
 									pImageObject
 								)
 							);
@@ -10328,11 +10328,11 @@ MTopView::DetermineImageObject()
 //----------------------------------------------------------------------
 // Update ImageObject
 //----------------------------------------------------------------------
-// m_FirstPoint는 바로 전의~ 화면 좌표이고..
-// parameter의 firstSector가 현재의 화면 좌표이다.
+// m_FirstPoint is the immediately previous~ screen coordinate..
+// and the parameter firstSector is the current screen coordinate.
 //
-// 화면에서 없어지는 ImageObject는 m_mapImageObject에서 없애고
-// 화면에 나타나는 ImageObject는 m_mapImageObject에 추가한다.
+// ImageObjects that leave the screen are removed from m_mapImageObject, and
+// ImageObjects that appear on the screen are added to m_mapImageObject.
 //----------------------------------------------------------------------
 void
 MTopView::UpdateImageObject(const POINT &newFirstSector)
@@ -10347,13 +10347,13 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 
 	//---------------------------------------------------------------
 	// 
-	//               ImageObject 갱신
+	//               ImageObject refresh
 	//
 	//---------------------------------------------------------------
-	// newFirstSector와 m_FirstSector(바로 이전의 좌표)를 비교해서
-	// 다른 경우... check~~해야한다.
+	// Compare newFirstSector with m_FirstSector (the immediately previous coordinate),
+	// and if they differ... check~~ is needed.
 	//---------------------------------------------------------------
-	// 상하로 좌표가 달라진 경우
+	// When the coordinate changed vertically
 	//---------------------------------------------------------------
 	if (newFirstSector.y != m_FirstSector.y)
 	{		
@@ -10361,17 +10361,17 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 				sX2=newFirstSector.x + g_SECTOR_WIDTH+1, 
 				sX01=m_FirstSector.x + SECTOR_SKIP_LEFT, 
 				sX02=m_FirstSector.x + g_SECTOR_WIDTH+1, 
-				eraseY1, eraseY2,		// 지워야될 것들이 있는 줄
-				lastY,					// 화면의 마지막 줄(지우면 안되는 것들)
-				newY1, newY2;			// 새로 나타나는 것들이 있는 줄
+				eraseY1, eraseY2,		// The row that has things to erase
+				lastY,					// The last row of the screen (things that must not be erased)
+				newY1, newY2;			// The row that has newly appearing things
 
-		// 체크할 필요가 있는가?
+		// Is there a need to check?
 		bool bCheckLast		= true;
 		bool bCheckErase	= true;
 		bool bCheckNew		= true;
 
 		//-----------------------------------
-		// Zone영역을 벗어나는 경우
+		// If it goes outside the Zone area
 		//-----------------------------------
 		if (sX2 >= m_pZone->GetWidth())
 		{
@@ -10394,36 +10394,36 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 		}
 
 		//-----------------------------------
-		// 위쪽으로 이동한 경우
+		// If it moved upward
 		//-----------------------------------
 		if (newFirstSector.y - m_FirstSector.y < 0)
 		{
 
-			// 다시 살릴 것
-			lastY	= newFirstSector.y + g_SECTOR_HEIGHT+1;	// 현재 화면의 마지막 줄
+			// To bring back
+			lastY	= newFirstSector.y + g_SECTOR_HEIGHT+1;	// The last row of the current screen
 
-			// 지워야 될 것 : lasyY+1 ~ eraseY
+			// To erase: lasyY+1 ~ eraseY
 			eraseY1	= lastY+1;							
-			eraseY2	= m_FirstSector.y + g_SECTOR_HEIGHT+1;	// 이전 화면의 마지막 줄			
+			eraseY2	= m_FirstSector.y + g_SECTOR_HEIGHT+1;	// The last row of the previous screen
 
-			// 새로 나타나는 것
+			// Newly appearing ones
 			newY1	= newFirstSector.y + SECTOR_SKIP_UP;
 			newY2	= m_FirstSector.y + SECTOR_SKIP_UP - 1;
 
 			//------------------------------------------------------
-			// Zone의 영역이 아닌 경우에 Skip...
+			// Skip if outside the Zone area...
 			//------------------------------------------------------
 			if (lastY >= m_pZone->GetHeight())
 			{
 				//lastY = m_pZone->GetHeight()-1;				
-				// 살릴 필요 없다.
+				// No need to bring back.
 				bCheckLast = false;
 			}
 
 			if (eraseY1 >= m_pZone->GetHeight())
 			{
 				//eraseY1 = m_pZone->GetHeight()-1;
-				// erase할 필요 없다. 
+				// No need to erase.
 				bCheckErase = false;
 			}
 			else if (eraseY2 >= m_pZone->GetHeight())
@@ -10434,7 +10434,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 			if (newY2 < 0) 
 			{				
 				//newY2 = 0;
-				// new할 필요 없다.
+				// No need to new.
 				bCheckNew = false;
 			}		
 			else if (newY1 < 0) 
@@ -10444,23 +10444,23 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 
 		}
 		//-----------------------------------
-		// 아래쪽으로 이동한 경우
+		// If it moved downward
 		//-----------------------------------
 		else
 		{	
-			// 다시 살릴 것
-			lastY	= newFirstSector.y + SECTOR_SKIP_UP;	// 현재 화면의 마지막 줄
+			// To bring back
+			lastY	= newFirstSector.y + SECTOR_SKIP_UP;	// The last row of the current screen
 
-			// 지워야될 것 : eraseY ~ lastY-1
-			eraseY1	= m_FirstSector.y + SECTOR_SKIP_UP;	// 이전 화면의 마지막 줄
+			// To erase: eraseY ~ lastY-1
+			eraseY1	= m_FirstSector.y + SECTOR_SKIP_UP;	// The last row of the previous screen
 			eraseY2	= lastY-1;		
 
-			// 새로 나타나는 것
+			// Newly appearing ones
 			newY1	= m_FirstSector.y + g_SECTOR_HEIGHT+1 + 1;
 			newY2	= newFirstSector.y + g_SECTOR_HEIGHT+1;
 
 			//------------------------------------------------------
-			// Zone의 영역이 아닌 경우에 Skip...
+			// Skip if outside the Zone area...
 			//------------------------------------------------------				
 			if (lastY < 0) 
 			{				
@@ -10492,9 +10492,9 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 
 
 		//----------------------------------------------
-		// erase1 ~ erase2까지는 지울만한(?) 것들.
+		// erase1 ~ erase2 are the ones worth(?) erasing.
 		//----------------------------------------------
-		// 일단 m_mapImageObject에서 지운다.
+		// First erase from m_mapImageObject.
 		//----------------------------------------------
 		if (bCheckErase)
 		{
@@ -10504,21 +10504,21 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 				{
 					const MSector& sector = m_pZone->GetSector(x,y);
 
-					// ImageObject가 있다면.. 모두~ 기억해둔다.
-					// 단, 중복을 허용하지 않는다.
+					// If there is an ImageObject.. remember them all~.
+					// However, duplicates are not allowed.
 					if (sector.IsExistImageObject())
 					{
 						OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-						// Sector에 있는 모든 ImageObject들을 검색한다.
+						// Search all the ImageObjects in the Sector.
 						for (int i=0; i<sector.GetImageObjectSize(); i++)
 						{
 							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							//----------------------------------------
-							// Key값 = (Viewpoint << 32) | ID
+							// Key value = (Viewpoint << 32) | ID
 							//----------------------------------------
-							// 이미 있는지 확인해보고 있으면 제거.
+							// Check whether it already exists, and remove if so.
 							IMAGEOBJECT_OUTPUT_MAP::iterator iDelete = m_mapImageObject.find( GetOutputImageObjectID( pImageObject ) );
 							if (iDelete	!= m_mapImageObject.end())
 							{			
@@ -10533,7 +10533,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 		}
 
 		//----------------------------------------------
-		// lastY는 다시 추가한다.
+		// lastY is added again.
 		//----------------------------------------------
 		if (bCheckLast)
 		{
@@ -10541,31 +10541,31 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 			{
 				const MSector& sector = m_pZone->GetSector(x, lastY);
 
-				// ImageObject가 있으면..
+				// If there is an ImageObject..
 				if (sector.IsExistImageObject())
 				{
 					OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-					// Sector에 있는 모든 ImageObject들을 검색한다.
+					// Search all the ImageObjects in the Sector.
 					for (i=0; i<sector.GetImageObjectSize(); i++)
 					{
 						MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 						{		
 							QWORD key = GetOutputImageObjectID(pImageObject);
-							// 이미 있는지 확인해보고 없으면 추가.
+							// Check whether it already exists, and add if not.
 							if (m_mapImageObject.find( key )
 								== m_mapImageObject.end())
 							{			
 								//----------------------------------------
-								// Key값 = (Viewpoint << 32) | ID
+								// Key value = (Viewpoint << 32) | ID
 								//----------------------------------------
-								// Viewpoint에 의해서 sort된다.
-								// Viewpoint와 ID에 의해서 제거할 수 있다.
+								// Sorted by Viewpoint.
+								// Can be removed by Viewpoint and ID.
 								//----------------------------------------
 								m_mapImageObject.insert(
 									IMAGEOBJECT_OUTPUT_MAP::value_type(
-										key,	// key값
+										key,	// key value
 										pImageObject
 									)
 								);
@@ -10579,7 +10579,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 		}
 
 		//----------------------------------------------
-		// 새로 나타는 것들 : newY1 ~ newY2
+		// Newly appearing ones: newY1 ~ newY2
 		//----------------------------------------------
 		if (bCheckNew)
 		{
@@ -10589,31 +10589,31 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 				{
 					const MSector& sector = m_pZone->GetSector(x, y);
 
-					// ImageObject가 있으면..
+					// If there is an ImageObject..
 					if (sector.IsExistImageObject())
 					{
 						OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-						// Sector에 있는 모든 ImageObject들을 검색한다.
+						// Search all the ImageObjects in the Sector.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
 							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							{						
-								// 이미 있는지 확인해보고 없으면 추가.
+								// Check whether it already exists, and add if not.
 								QWORD key = GetOutputImageObjectID( pImageObject );
 
 								if (m_mapImageObject.find( key ) == m_mapImageObject.end())
 								{			
 									//----------------------------------------
-									// Key값 = (Viewpoint << 32) | ID
+									// Key value = (Viewpoint << 32) | ID
 									//----------------------------------------
-									// Viewpoint에 의해서 sort된다.
-									// Viewpoint와 ID에 의해서 제거할 수 있다.
+									// Sorted by Viewpoint.
+									// Can be removed by Viewpoint and ID.
 									//----------------------------------------
 									m_mapImageObject.insert(
 										IMAGEOBJECT_OUTPUT_MAP::value_type(
-											key,	// key값
+											key,	// key value
 											pImageObject
 										)
 									);
@@ -10630,7 +10630,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 	}
 
 	//---------------------------------------------------------------
-	// 좌우로 좌표가 달라진 경우
+	// When the coordinate changed horizontally
 	//---------------------------------------------------------------
 	if (newFirstSector.x != m_FirstSector.x)
 	{
@@ -10638,17 +10638,17 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 				sY2=newFirstSector.y + g_SECTOR_HEIGHT+1, 
 				sY01=m_FirstSector.y + SECTOR_SKIP_UP, 
 				sY02=m_FirstSector.y + g_SECTOR_HEIGHT+1, 
-				eraseX1, eraseX2,		// 지워야될 것들이 있는 줄
-				lastX,					// 화면의 마지막 줄(지우면 안되는 것들)
-				newX1, newX2;			// 새로 나타나는 것들이 있는 줄
+				eraseX1, eraseX2,		// The row that has things to erase
+				lastX,					// The last row of the screen (things that must not be erased)
+				newX1, newX2;			// The row that has newly appearing things
 
-		// 체크할 필요가 있는가?
+		// Is there a need to check?
 		bool bCheckLast		= true;
 		bool bCheckErase	= true;
 		bool bCheckNew		= true;
 
 		//-----------------------------------
-		// Zone영역을 벗어나는 경우
+		// If it goes outside the Zone area
 		//-----------------------------------
 		if (sY2 >= m_pZone->GetHeight())
 		{
@@ -10671,24 +10671,24 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 		}
 
 		//-----------------------------------
-		// 왼쪽으로 이동한 경우
+		// If it moved left
 		//-----------------------------------
 		if (newFirstSector.x - m_FirstSector.x < 0)
 		{
 
-			// 다시 살릴 것
-			lastX	= newFirstSector.x + g_SECTOR_WIDTH+1;	// 현재 화면의 마지막 줄
+			// To bring back
+			lastX	= newFirstSector.x + g_SECTOR_WIDTH+1;	// The last row of the current screen
 
-			// 지워야 될 것 : lasyX+1 ~ eraseX
+			// To erase: lasyX+1 ~ eraseX
 			eraseX1	= lastX+1;							
-			eraseX2	= m_FirstSector.x + g_SECTOR_WIDTH+1;	// 이전 화면의 마지막 줄			
+			eraseX2	= m_FirstSector.x + g_SECTOR_WIDTH+1;	// The last row of the previous screen
 
-			// 새로 나타나는 것
+			// Newly appearing ones
 			newX1	= newFirstSector.x + SECTOR_SKIP_LEFT;
 			newX2	= m_FirstSector.x + SECTOR_SKIP_LEFT - 1;
 
 			//------------------------------------------------------
-			// Zone의 영역이 아닌 경우에 Skip...
+			// Skip if outside the Zone area...
 			//------------------------------------------------------
 			if (lastX >= m_pZone->GetWidth())
 			{
@@ -10718,25 +10718,25 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 
 		}
 		//-----------------------------------
-		// 오른쪽으로 이동한 경우
+		// If it moved right
 		//-----------------------------------
 		else
 		{	
-			// 제거             추가      추가
+			// remove             add      add
 			// eraseX1~eraseX2~lastX ~~~~ newX1~newX2
-			// 다시 살릴 것
-			lastX	= newFirstSector.x + SECTOR_SKIP_LEFT;	// 현재 화면의 마지막 줄
+			// To bring back
+			lastX	= newFirstSector.x + SECTOR_SKIP_LEFT;	// The last row of the current screen
 
-			// 지워야될 것 : eraseX ~ lastX-1
-			eraseX1	= m_FirstSector.x + SECTOR_SKIP_LEFT;	// 이전 화면의 마지막 줄
+			// To erase: eraseX ~ lastX-1
+			eraseX1	= m_FirstSector.x + SECTOR_SKIP_LEFT;	// The last row of the previous screen
 			eraseX2	= lastX-1;		
 
-			// 새로 나타나는 것
+			// Newly appearing ones
 			newX1	= m_FirstSector.x + g_SECTOR_WIDTH+1 + 1;
 			newX2	= newFirstSector.x + g_SECTOR_WIDTH+1;
 
 			//------------------------------------------------------
-			// Zone의 영역이 아닌 경우에 Skip...
+			// Skip if outside the Zone area...
 			//------------------------------------------------------				
 			if (lastX < 0) 
 			{				
@@ -10767,9 +10767,9 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 
 
 		//----------------------------------------------
-		// erase1 ~ erase2까지는 지울만한(?) 것들.
+		// erase1 ~ erase2 are the ones worth(?) erasing.
 		//----------------------------------------------
-		// 일단 m_mapImageObject에서 지운다.
+		// First erase from m_mapImageObject.
 		//----------------------------------------------
 		if (bCheckErase)
 		{
@@ -10779,21 +10779,21 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 				{
 					const MSector& sector = m_pZone->GetSector(x,y);
 
-					// ImageObject가 있다면.. 모두~ 기억해둔다.
-					// 단, 중복을 허용하지 않는다.
+					// If there is an ImageObject.. remember them all~.
+					// However, duplicates are not allowed.
 					if (sector.IsExistImageObject())
 					{
 						OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-						// Sector에 있는 모든 ImageObject들을 검색한다.
+						// Search all the ImageObjects in the Sector.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
 							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							//----------------------------------------
-							// Key값 = (Viewpoint << 32) | ID
+							// Key value = (Viewpoint << 32) | ID
 							//----------------------------------------
-							// 이미 있는지 확인해보고 있으면 제거.
+							// Check whether it already exists, and remove if so.
 							IMAGEOBJECT_OUTPUT_MAP::iterator iDelete = m_mapImageObject.find( GetOutputImageObjectID( pImageObject ) );
 							if (iDelete	!= m_mapImageObject.end())
 							{			
@@ -10808,7 +10808,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 		}
 
 		//----------------------------------------------
-		// lastX는 다시 추가한다.
+		// lastX is added again.
 		//----------------------------------------------
 		if (bCheckLast)
 		{
@@ -10816,32 +10816,32 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 			{
 				const MSector& sector = m_pZone->GetSector(lastX, y);
 
-				// ImageObject가 있으면..
+				// If there is an ImageObject..
 				if (sector.IsExistImageObject())
 				{
 					OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-					// Sector에 있는 모든 ImageObject들을 검색한다.
+					// Search all the ImageObjects in the Sector.
 					for (i=0; i<sector.GetImageObjectSize(); i++)
 					{
 						MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 						{						
-							// 이미 있는지 확인해보고 없으면 추가.
+							// Check whether it already exists, and add if not.
 							QWORD key = GetOutputImageObjectID( pImageObject );
 
 							if (m_mapImageObject.find( key )
 								== m_mapImageObject.end())
 							{			
 								//----------------------------------------
-								// Key값 = (Viewpoint << 32) | ID
+								// Key value = (Viewpoint << 32) | ID
 								//----------------------------------------
-								// Viewpoint에 의해서 sort된다.
-								// Viewpoint와 ID에 의해서 제거할 수 있다.
+								// Sorted by Viewpoint.
+								// Can be removed by Viewpoint and ID.
 								//----------------------------------------
 								m_mapImageObject.insert(
 									IMAGEOBJECT_OUTPUT_MAP::value_type(
-										key,	// key값
+										key,	// key value
 										pImageObject
 									)
 								);
@@ -10855,7 +10855,7 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 		}
 
 		//----------------------------------------------
-		// 새로 나타는 것들 : newX1 ~ newX2
+		// Newly appearing ones: newX1 ~ newX2
 		//----------------------------------------------
 		if (bCheckNew)
 		{
@@ -10865,32 +10865,32 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 				{
 					const MSector& sector = m_pZone->GetSector(x, y);
 
-					// ImageObject가 있으면..
+					// If there is an ImageObject..
 					if (sector.IsExistImageObject())
 					{
 						OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-						// Sector에 있는 모든 ImageObject들을 검색한다.
+						// Search all the ImageObjects in the Sector.
 						for (i=0; i<sector.GetImageObjectSize(); i++)
 						{
 							MImageObject* const pImageObject = (MImageObject*)((*iImageObject).second);
 
 							{								
-								// 이미 있는지 확인해보고 없으면 추가.
+								// Check whether it already exists, and add if not.
 								QWORD key = GetOutputImageObjectID( pImageObject );
 
 								if (m_mapImageObject.find( key )
 									== m_mapImageObject.end())
 								{			
 									//----------------------------------------
-									// Key값 = (Viewpoint << 32) | ID
+									// Key value = (Viewpoint << 32) | ID
 									//----------------------------------------
-									// Viewpoint에 의해서 sort된다.
-									// Viewpoint와 ID에 의해서 제거할 수 있다.
+									// Sorted by Viewpoint.
+									// Can be removed by Viewpoint and ID.
 									//----------------------------------------
 									m_mapImageObject.insert(
 										IMAGEOBJECT_OUTPUT_MAP::value_type(
-											key,	// key값
+											key,	// key value
 											pImageObject
 										)
 									);
