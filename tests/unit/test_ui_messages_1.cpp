@@ -76,7 +76,6 @@
 #include <fstream>
 #include <memory>
 #include <new>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -587,9 +586,10 @@ TEST(UIMessages1Table, InitFillsEverySlotButTen)
 		CHECK_EQ(bEmpty, manager.Slot(message) == NULL);
 		if (manager.Slot(message) != NULL) handlers.push_back(manager.Slot(message));
 	}
-	// Each slot its own handler.
+	// 221 handlers. Not counted by address: an optimising linker (MSVC's
+	// /OPT:ICF in Release) folds identical bodies, such as the empty ones,
+	// into one.
 	CHECK_EQ(221, int(handlers.size()));
-	CHECK_EQ(221, int(std::set<Probe::UI_MESSAGE_FUNCTION>(handlers.begin(), handlers.end()).size()));
 	// The title and character screens' handlers.
 	CHECK(manager.Slot(UI_NEW_CHARACTER) == &Probe::Execute_UI_NEW_CHARACTER);
 	CHECK(manager.Slot(UI_RUN_NEWUSER_REGISTRATION) == &Probe::Execute_UI_RUN_NEWUSER_REGISTRATION);
