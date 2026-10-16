@@ -7,6 +7,8 @@
 # headers under Client/ of classes VS_UI compiles.
 Client/CWaitUIUpdate.cpp
 Client/CWaitUIUpdate.h
+Client/DrawItemNameNode.h
+Client/DrawTextNode.h
 Client/GameInitInfo.cpp
 Client/GameInitInfo.h
 Client/GameInitInfoHost.h
@@ -15,6 +17,10 @@ Client/GameUIBuilders.h
 Client/GuildMarkTypes.h
 Client/MGuildMarkManager.h
 Client/MHelpManager.h
+Client/MTopView.cpp
+Client/MTopView.h
+Client/MTopViewDraw.cpp
+Client/MTopViewDraw.inl
 Client/PacketFunction.cpp
 Client/PacketFunction.h
 Client/ProfileManager.h

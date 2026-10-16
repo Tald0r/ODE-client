@@ -3,15 +3,15 @@
 //----------------------------------------------------------------------
 // MTopView.cpp
 //----------------------------------------------------------------------
-// [ Effect Layer ]  - 출력 순서에 따라서..
-// 
-//		-- Tile 출력
-//	* Tile에 바로 붙은 Effect
+// [ Effect Layer ]  - in drawing order:
 //
-// 
-//	* Sector의 Effect			
-//		-- 각각의 Character 출력
-//	* Character에 붙은 AttachEffect
+//		-- the tiles
+//	* effects attached to a tile
+//
+//
+//	* a sector's effects
+//		-- each character
+//	* the effects attached to a character
 // 
 //----------------------------------------------------------------------
 #include "Client_PCH.h"
@@ -44,8 +44,8 @@
 #include "MItemTable.h"
 #include "MCreatureTable.h"
 #include "MWeather.h"
-#include "CMessageArray.h"
-#include "DXLib.h"
+#include "../basic/CMessageArray.h"
+#include "DXLib/DXLib.h"
 #include "DebugLog.h"
 #include "SP.h"
 #include "Fl2.h"
@@ -63,7 +63,6 @@
 #include "UserOption.h"
 #include "UserInformation.h"
 #include "SpriteIDDef.h"
-#include "MWorkThread.h"
 #include "SpriteLib/MLoadingSPKWorkNode.h"
 #include "MGameStringTable.h"
 #include "SafeFormat.h"
@@ -82,16 +81,12 @@
 #include "MGuildMarkManager.h"
 #include "MEventManager.h"
 #include "MAttachOrbitEffect.h"
-#include "MTestDef.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
-#include "MTestDef.h"
 #include "MItemOptionTable.h"
 #include "MMonsterKillQuestInfo.h"
-#include "Client.h"
 #include "CSprite555.h"
 #include "CSprite565.h"
-#include "SoundSetting.h"
+#include "DXLib/COGGSTREAM.h"
+#include "FrameClock.h"
 #include "SystemAvailabilities.h"
 #include "SkillDef.h"
 #include "VS_UI_item.h"
@@ -193,8 +188,6 @@ extern int	g_x;
 extern int	g_y;
 
 extern int	g_UpdateDelay;
-
-extern MWorkThread*	g_pLoadingThread;
 
 int g_ShowImageObjectID = 0;
 
@@ -5794,26 +5787,6 @@ MTopView::LoadFromFileTileSPKLargeZone(std::ifstream & file)
 	return bLoad;
 	*/
 
-	/*
-	// 2001.8.20 주석처리
-	CSpriteFilePositionArray* pSFPA = new CSpriteFilePositionArray;
-	*pSFPA = *m_pTileSFPArrayLargeZone;
-
-	MLoadingSPKWorkNode2* pNode = new MLoadingSPKWorkNode2( pSFPA );
-	pNode->SetSPK( &m_TileSPK, FILE_SPRITE_TILE );
-	pNode->SetType( 1 );	// zone ID
-
-	DEBUG_ADD_FORMAT("[Thread]Before AddLast: size=%d, working=%d, finish=%d, stop=%d", 
-											g_pLoadingThread->GetSize(),
-											(int)g_pLoadingThread->IsWorking(),
-											(int)g_pLoadingThread->IsFinishCurrentWork(),
-											(int)g_pLoadingThread->IsStopWork());
-
-	g_pLoadingThread->AddLast( pNode );
-
-	DEBUG_ADD("[Thread] Add Last OK");
-	*/
-
 	return true;
 }
 
@@ -5905,26 +5878,6 @@ MTopView::LoadFromFileImageObjectSPKLargeZone(std::ifstream & file)
 	return bLoadOK;
 	*/
 
-	/*
-	// 2001.8.20 주석처리
-	// 새로운 SFPA 생성.
-	CSpriteFilePositionArray* pSFPA = new CSpriteFilePositionArray;
-	*pSFPA = *m_pImageObjectSFPArrayLargeZone;
-
-	MLoadingSPKWorkNode2* pNode = new MLoadingSPKWorkNode2( pSFPA );
-	pNode->SetSPK( &m_ImageObjectSPK, FILE_SPRITE_IMAGEOBJECT );
-	pNode->SetType( 1 );	// zone ID
-
-	DEBUG_ADD_FORMAT("[Thread]Before AddLast: size=%d, working=%d, finish=%d, stop=%d", 
-											g_pLoadingThread->GetSize(),
-											(int)g_pLoadingThread->IsWorking(),
-											(int)g_pLoadingThread->IsFinishCurrentWork(),
-											(int)g_pLoadingThread->IsStopWork());
-
-	g_pLoadingThread->AddLast( pNode );
-
-	DEBUG_ADD("[Thread] Add Last OK");
-	*/
 	return true;
 }
 
@@ -6007,26 +5960,6 @@ MTopView::LoadFromFileTileSPKSmallZone(std::ifstream & file)
 	return bLoad;
 	*/
 
-	/*
-	// 2001.8.20 주석처리
-	CSpriteFilePositionArray* pSFPA = new CSpriteFilePositionArray;
-	*pSFPA = *m_pTileSFPArraySmallZone;
-
-	MLoadingSPKWorkNode2* pNode = new MLoadingSPKWorkNode2( pSFPA );
-	pNode->SetSPK( &m_TileSPK, FILE_SPRITE_TILE );
-	pNode->SetType( 1 );	// zone ID
-
-	DEBUG_ADD_FORMAT("[Thread]Before AddLast: size=%d, working=%d, finish=%d, stop=%d", 
-											g_pLoadingThread->GetSize(),
-											(int)g_pLoadingThread->IsWorking(),
-											(int)g_pLoadingThread->IsFinishCurrentWork(),
-											(int)g_pLoadingThread->IsStopWork());
-
-	g_pLoadingThread->AddLast( pNode );
-
-	DEBUG_ADD("[Thread] Add Last OK");
-	*/
-
 	return true;
 }
 
@@ -6097,16 +6030,6 @@ MTopView::LoadFromFileImageObjectSPKSmallZone(std::ifstream & file)
 	ImageObjectPackFile.close();
 
 	return bLoadOK;
-	*/
-	/*
-	// 2001.8.20 주석처리
-	CSpriteFilePositionArray* pSFPA = new CSpriteFilePositionArray;
-	*pSFPA = *m_pImageObjectSFPArraySmallZone;
-
-	MLoadingSPKWorkNode2* pNode = new MLoadingSPKWorkNode2( pSFPA );
-	pNode->SetSPK( &m_ImageObjectSPK, FILE_SPRITE_IMAGEOBJECT );
-	pNode->SetType( 1 );	// zone ID
-	g_pLoadingThread->AddLast( pNode );
 	*/
 	return true;
 }
@@ -9888,22 +9811,6 @@ MTopView::Draw(int firstPointX,int firstPointY)
 		DEBUG_ADD("Draw");
 	#endif
 
-	/*
-	// Work Thread를 이용한 loading test
-	static int first = 1;
-	if (first)
-	{
-		//18336
-		MLoadingSPKWorkNode4* pNode = new MLoadingSPKWorkNode4(0, 10000, 2);
-		pNode->SetSPK( &m_AddonSPK, FILE_ISPRITE_ADDON );
-		pNode->SetType( 1 );
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_BELOW_NORMAL );
-		g_pLoadingThread->AddLast( pNode );
-
-		first = 0;
-	}
-	*/
-
 	//------------------------------------------------------------
 	// 비공식(-_-;) 영어 폰트 사용안함 - -;
 	//------------------------------------------------------------
@@ -11182,21 +11089,6 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	m_FirstZonePixel = MapToPixel(firstSector.x, firstSector.y);
 	m_FirstZonePixel.x += m_PlusPoint.x;
 	m_FirstZonePixel.y += m_PlusPoint.y;
-
-	#ifdef OUTPUT_DEBUG		
-		if (g_pPlayer->GetX() < 0 
-			|| g_pPlayer->GetY() < 0 
-			|| g_pPlayer->GetX() >= g_pZone->GetWidth()
-			|| g_pPlayer->GetY() >= g_pZone->GetHeight()
-			|| m_FirstZonePixel.x > 12000 || m_FirstZonePixel.y > 6144
-			|| m_FirstZonePixel.x < 0 || m_FirstZonePixel.y < 0)
-		{
-			if (g_pDebugMessage)
-			{
-				DEBUG_ADD_FORMAT_ERR("[Error]SX,SY-DrawZone:Player=(%d, %d), s(%d,%d)", g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY());
-			}
-		}
-	#endif
 
 
 	//---------------------------------------------------------------
@@ -13951,21 +13843,6 @@ MTopView::DrawTileSurface()
 									g_pPlayer->GetY()+g_SECTOR_SKIP_PLAYER_UP);
 	m_FirstZonePixel.x += g_pPlayer->GetSX();
 	m_FirstZonePixel.y += g_pPlayer->GetSY();
-
-	#ifdef OUTPUT_DEBUG
-		if (g_pPlayer->GetX() < 0 
-			|| g_pPlayer->GetY() < 0 
-			|| g_pPlayer->GetX() >= g_pZone->GetWidth()
-			|| g_pPlayer->GetY() >= g_pZone->GetHeight()
-			|| m_FirstZonePixel.x > 12000 || m_FirstZonePixel.y > 6144
-			|| m_FirstZonePixel.x < 0 || m_FirstZonePixel.y < 0)
-		{
-			if (g_pDebugMessage)
-			{
-				DEBUG_ADD_FORMAT_ERR("[Error]SX,SY-DrawTileSurface:Player=(%d, %d), s(%d,%d)", g_pPlayer->GetX(), g_pPlayer->GetY(), g_pPlayer->GetSX(), g_pPlayer->GetSY());
-			}		
-		}
-	#endif
 
 	//---------------------------------------------------------------	
 	// 화면의 (0,0)에 출력되는 Sector
@@ -17582,9 +17459,10 @@ MTopView::DrawCreatureHPModify(POINT *point, MCreature* pCreature)
 //----------------------------------------------------------------------
 // DrawGuildMark
 /*----------------------------------------------------------------------
-	- 공성전 시 캐릭터 위에 길드 마크를 보여준다.
-	- 선택 여부와 상관없이 항상 보인다.
-	- g_pPlayer가 공성전 참가중일 때만 공성전 참가중인 다른 크리쳐의 길드마크 표시
+	- Shows the guild mark above a character in a siege war.
+	- Always, whether the character is selected or not.
+	- Another siege-war creature's mark shows only while g_pPlayer is in
+	  the siege war too.
 //----------------------------------------------------------------------*/
 void		
 MTopView::DrawGuildMarkInSiegeWar(MCreature* pCreature, int YPos)
