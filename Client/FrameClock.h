@@ -15,3 +15,8 @@ extern MonotonicClock::TimePoint	g_FrameNow;
 // executable's until then).
 extern DWORD						g_CurrentFrame;
 extern DWORD						g_DrawAlphaNum;
+
+// Whether the frame count advanced since the last draw (the main loop sets
+// it and clears it once the frame is drawn); the view's fades and
+// animations step only then. The executable's until task 4.260.
+extern bool							g_bFrameChanged;

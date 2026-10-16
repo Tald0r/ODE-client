@@ -8,6 +8,8 @@
 COGGSTREAM*	g_pOGG = NULL;
 // The executable's until task 4.258 (CGameUpdate.cpp).
 FILE*		g_oggfile = NULL;
+// The executable's until task 4.260 (CGameUpdate.cpp).
+CDirectSoundBuffer*	g_pSoundBufferForOGG = NULL;
 
 COGGSTREAM::COGGSTREAM(void* pDirectSound, CDirectSoundBuffer* pBuffer,
                        unsigned long ulMin, unsigned long ulMax,

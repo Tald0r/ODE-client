@@ -87,9 +87,8 @@ bool g_bPreviousMove = false;
 	
 extern DWORD g_double_click_time;
 
-// g_pOGG and g_oggfile are COGGSTREAM.cpp's (dxlib) since tasks 4.256 and
-// 4.258.
-CDirectSoundBuffer*			g_pSoundBufferForOGG = NULL;
+// g_pOGG, g_oggfile and g_pSoundBufferForOGG are COGGSTREAM.cpp's (dxlib)
+// since tasks 4.256, 4.258 and 4.260.
 
 extern int g_SoundPerSecond;
 
@@ -160,7 +159,7 @@ extern char	g_CWD[_MAX_PATH];
 	extern int g_HISTORY_LINE;
 #endif
 
-bool	g_bFrameChanged	 = false;
+// g_bFrameChanged is FrameClock.cpp's (gamemodel) since task 4.260.
 
 //----------------------------------------------------------------------
 // Draw-phase interpolation (60 fps rendering between 62 ms logic ticks)

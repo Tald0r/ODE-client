@@ -96,6 +96,8 @@
 #include "SkillDef.h"
 #include "VS_UI_item.h"
 #include "NicknameInfo.h"
+#include "WorldEventsHost.h"
+#include "AdvancementAction.h"
 
 //----------------------------------------------------------------------
 // Light rendering path selector.
@@ -125,15 +127,9 @@ static const bool s_bUse3DLight = false;
 //	#define OUTPUT_DEBUG_DRAW_SHADOW
 #endif
 
-void	StartTitleLoading();
-void	DrawTitleLoading();
-void	EndTitleLoading(bool SendLogin = false);
-
 #ifdef __METROTECH_TEST__
 	extern bool g_bLight;
 #endif
-
-extern void PlaySoundForce(TYPE_SOUNDID soundID);
 
 extern HWND							g_hWnd;
 extern POINT						g_SelectSector;
@@ -395,6 +391,63 @@ MTopView::~MTopView()
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
+// Precalculate Advancement Class Creature Frames
+//----------------------------------------------------------------------
+// Each advanced action's frame count (AdvancementAction.h) from the view's
+// frame packs, once they are loaded. Client.cpp's until task 4.260.
+//----------------------------------------------------------------------
+static void
+PrecalculateAdvancementClassCreatureFrames(MTopView& view)
+{
+	memset( g_AdvanceVampireActionMaxCount, 0, sizeof( g_AdvanceVampireActionMaxCount ) );
+	memset( g_AdvanceSlayerActionMaxCount, 0, sizeof( g_AdvanceSlayerActionMaxCount ) );
+	memset( g_AdvanceOustersActionMaxCount, 0, sizeof( g_AdvanceOustersActionMaxCount ) );
+
+	int i;
+
+
+	for( i = ACTION_ADVANCEMENT_SLAYER_STOP_SWORD; i < ACTION_ADVANCEMENT_SLAYER_MAX; ++i )
+	{
+		int actionindex = i - ADVANCEMENT_ACTION_START;
+
+		char part = 0;
+
+		if( i == ACTION_ADVANCEMENT_SLAYER_BIKE_MOVE )
+		{
+			g_AdvanceSlayerActionMaxCount[ actionindex ] = 4;
+			continue;
+		}
+			// ||
+			//i == ACTION_ADVANCEMENT_SLAYER_BIKE_STOP )
+			//part = AC_BIKE_1;
+
+//		try{
+		g_AdvanceSlayerActionMaxCount[ actionindex ] =
+			static_cast<BYTE>(view.m_AdvancementSlayerManFPK[ part ][ actionindex ][2].GetSize());
+//		}catch(...){} //add by viva
+	}
+
+
+	for( i = ACTION_ADVANCEMENT_STOP; i < ACTION_ADVANCEMENT_MAX; ++i )
+	{
+		int actionindex = i - ADVANCEMENT_ACTION_START;
+//		try{
+		g_AdvanceVampireActionMaxCount[ actionindex ] =
+			static_cast<BYTE>(view.m_AdvancementVampireManFPK[0][ actionindex ][2].GetSize());
+//		}catch(...){} //add by viva
+	}
+
+	for( i = ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP; i < ACTION_ADVANCEMENT_OUSTERS_MAX; ++i )
+	{
+		int actionindex = i - ADVANCEMENT_ACTION_START;
+//		try{
+		g_AdvanceOustersActionMaxCount[ actionindex ] =
+			static_cast<BYTE>(view.m_AdvancementOustersFPK[1][ actionindex ][2].GetSize());
+//		}catch(...){} //add by viva
+	}
+}
+
+//----------------------------------------------------------------------
 // Init
 //----------------------------------------------------------------------
 // View에 필요한 각 부분들은 초기화 시킨다.
@@ -468,7 +521,7 @@ MTopView::Init()
 
 		m_bInit = true;
 
-		PrecalculateAdvancementClassCreatureFrames();
+		PrecalculateAdvancementClassCreatureFrames(*this);
 
 		return true;
 	}
@@ -1018,7 +1071,7 @@ MTopView::InitSurfaces()
 
 
 	UI_DrawProgress(1);
-	DrawTitleLoading();
+	WorldEvents::DrawTitleLoading();
 
 	return true;
 }
@@ -3168,7 +3221,7 @@ MTopView::InitCreatureFrames()
 	m_CreatureFPK.LoadFromFile(file);
 	file.close();
 	//*/	
-	DrawTitleLoading();
+	WorldEvents::DrawTitleLoading();
 	//m_CreatureFPK.InfoToFile("log\\CreatureFPK.txt");
 
 	// Frame2 (좀비)의 죽기 동작을 y좌표 ,40씩 해준다.
@@ -3282,7 +3335,7 @@ MTopView::InitCreatureFrames()
 		return false;
 	m_CreatureShadowFPK.LoadFromFile(fileShadow);
 	fileShadow.close();
-	DrawTitleLoading();
+	WorldEvents::DrawTitleLoading();
 	//m_CreatureShadowFPK.InfoToFile("log\\CreatureShadowFPK.txt");
 
 	//------------------------------------------------------------
@@ -3463,7 +3516,7 @@ MTopView::InitCreatureFrames()
 		return false;
 	m_OustersFPK.LoadFromFile(OustersFile2);
 	OustersFile2.close();
-	DrawTitleLoading();
+	WorldEvents::DrawTitleLoading();
 
 	//------------------------------------------------
 	// 그림자 - Load from File
@@ -3481,7 +3534,7 @@ MTopView::InitCreatureFrames()
 	OustersShadowFile2.close();
 
 
-	DrawTitleLoading();
+	WorldEvents::DrawTitleLoading();
 
 	// 총동작에 머리카락 빠진것 추가
 	// 이래도 뭔가 안되네!!
@@ -18816,7 +18869,7 @@ MTopView::ExcuteAdvancementQuestEnding(void *pVoid)
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;
 				g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 			}
-			PlaySoundForce(soundID);
+			WorldEvents::PlaySoundForce(soundID);
 			AdvancementQuestEndingEvent->eventStartTickCount = MonotonicClock::Now();
 
 
@@ -18991,7 +19044,7 @@ MTopView::ExcuteOustersFinEvent()
 				int volume = (g_pUserOption->VolumeMusic - 15) * 250;
 				g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 			}
-			PlaySoundForce(soundID);
+			WorldEvents::PlaySoundForce(soundID);
 			OustersFinEvent->eventStartTickCount = MonotonicClock::Now();
 		}
 
@@ -19009,7 +19062,7 @@ MTopView::ExcuteOustersFinEvent()
 						if(OustersFinEvent->parameter2 == 9)
 						{
 							g_pPlayer->SetDead();
-							PlaySoundForce(g_pPlayer->IsFemale()?SOUND_SLAYER_DIE_FEMALE:SOUND_SLAYER_DIE_MALE);
+							WorldEvents::PlaySoundForce(g_pPlayer->IsFemale()?SOUND_SLAYER_DIE_FEMALE:SOUND_SLAYER_DIE_MALE);
 							fadeSpeed = 32*4;
 							fadeColor[0] = 255;
 							fadeColor[1] = 0;
@@ -19034,7 +19087,7 @@ MTopView::ExcuteOustersFinEvent()
 					}
 					else
 					{
-						PlaySoundForce(soundID);
+						WorldEvents::PlaySoundForce(soundID);
 						g_pPlayer->SetChatString((*g_pGameStringTable)[STRING_MESSAGE_RIPATY_SCRIPT_1+OustersFinEvent->parameter2].GetString());
 					}
 
@@ -19164,7 +19217,7 @@ MTopView::ExcuteOustersFinEvent()
 						if(OustersFinEvent->parameter2 == 9)
 						{
 							g_pPlayer->SetDead();
-							PlaySoundForce(g_pPlayer->IsFemale()?SOUND_VAMPIRE_DIE_FEMALE:SOUND_VAMPIRE_DIE_MALE);
+							WorldEvents::PlaySoundForce(g_pPlayer->IsFemale()?SOUND_VAMPIRE_DIE_FEMALE:SOUND_VAMPIRE_DIE_MALE);
 							fadeSpeed = 32*4;
 							fadeColor[0] = 255;
 							fadeColor[1] = 0;
@@ -19189,7 +19242,7 @@ MTopView::ExcuteOustersFinEvent()
 					}
 					else
 					{
-						PlaySoundForce(soundID);
+						WorldEvents::PlaySoundForce(soundID);
 						g_pPlayer->SetChatString((*g_pGameStringTable)[STRING_MESSAGE_AMATA_SCRIPT_1+OustersFinEvent->parameter2].GetString());
 					}
 

@@ -34,7 +34,8 @@ int ConvNewSlayerActionFromSlayerAction( int CurAction, MCreatureWear* pCreature
 int ConvAdvancementSlayerActionFromSlayerAction( int CurAction, MCreatureWear* pCreatureWear );
 
 // Each advanced action's frame count, indexed from ADVANCEMENT_ACTION_START;
-// the executable fills them from the view's frame packs at start-up.
+// the view fills them from its frame packs when it initialises
+// (MTopView::Init).
 extern BYTE g_AdvanceVampireActionMaxCount[ ACTION_ADVANCEMENT_MAX - ACTION_ADVANCEMENT_STOP ];
 extern BYTE g_AdvanceSlayerActionMaxCount[ ACTION_ADVANCEMENT_SLAYER_MAX - ACTION_ADVANCEMENT_SLAYER_STOP_SWORD ];
 extern BYTE g_AdvanceOustersActionMaxCount[ ACTION_ADVANCEMENT_OUSTERS_MAX - ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP ];

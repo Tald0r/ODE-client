@@ -57,5 +57,8 @@ extern COGGSTREAM*	g_pOGG;
 // The music file g_pOGG streams; NULL when none is open (COGGSTREAM.cpp's,
 // the executable's until task 4.258).
 extern FILE*		g_oggfile;
+// The sound buffer g_pOGG was made with; NULL on the SDL backend, which
+// does not use it (COGGSTREAM.cpp's, the executable's until task 4.260).
+extern CDirectSoundBuffer*	g_pSoundBufferForOGG;
 
 #endif /* __COGGSTREAM_H__ */

@@ -271,16 +271,9 @@ void ClearDebugInfo()
 // maps back down (spritectl_window_to_game_coords). Chosen in InitApp as the
 // largest factor that fits the desktop work area.
 static int g_WindowScale = 1;
-// The g_SECTOR_* view sizes are ViewSectors.cpp's (gamemodel, task 4.245).
+// The g_SECTOR_* view sizes are ViewSectors.cpp's (gamemodel, task 4.245), and
+// so are the g_TILESURFACE_* tile-surface sizes (task 4.260).
 
-LONG	g_TILESURFACE_SECTOR_WIDTH         =22;
-LONG	g_TILESURFACE_SECTOR_HEIGHT        =31;
-LONG	g_TILESURFACE_SECTOR_OUTLINE_RIGHT =19;
-LONG	g_TILESURFACE_SECTOR_OUTLINE_DOWN  =28;
-LONG	g_TILESURFACE_WIDTH                =1056;
-LONG	g_TILESURFACE_HEIGHT               =744;
-LONG	g_TILESURFACE_OUTLINE_RIGHT        =912;
-LONG	g_TILESURFACE_OUTLINE_DOWN         =672;
 LONG	g_TILE_X_HALF = 24;
 LONG	g_TILE_Y_HALF = 12;
 // end
@@ -466,56 +459,6 @@ DARKEDEN_LANGUAGE CheckDarkEdenLanguage()
 
 exit:
 	return (DARKEDEN_LANGUAGE)(DARKEDEN_KOREAN + num );
-}
-
-void		PrecalculateAdvancementClassCreatureFrames()
-{
-	memset( g_AdvanceVampireActionMaxCount, 0, sizeof( g_AdvanceVampireActionMaxCount ) );
-	memset( g_AdvanceSlayerActionMaxCount, 0, sizeof( g_AdvanceSlayerActionMaxCount ) );
-	memset( g_AdvanceOustersActionMaxCount, 0, sizeof( g_AdvanceOustersActionMaxCount ) );
-
-	int i;
-
-	
-	for( i = ACTION_ADVANCEMENT_SLAYER_STOP_SWORD; i < ACTION_ADVANCEMENT_SLAYER_MAX; ++i )
-	{
-		int actionindex = i - ADVANCEMENT_ACTION_START;
-		
-		char part = 0;
-
-		if( i == ACTION_ADVANCEMENT_SLAYER_BIKE_MOVE )
-		{
-			g_AdvanceSlayerActionMaxCount[ actionindex ] = 4;
-			continue;
-		}
-			// ||
-			//i == ACTION_ADVANCEMENT_SLAYER_BIKE_STOP )
-			//part = AC_BIKE_1;
-
-//		try{
-		g_AdvanceSlayerActionMaxCount[ actionindex ] = 
-			static_cast<BYTE>(g_pTopView->m_AdvancementSlayerManFPK[ part ][ actionindex ][2].GetSize());
-//		}catch(...){} //add by viva
-	}
-	
-
-	for( i = ACTION_ADVANCEMENT_STOP; i < ACTION_ADVANCEMENT_MAX; ++i )
-	{
-		int actionindex = i - ADVANCEMENT_ACTION_START;
-//		try{
-		g_AdvanceVampireActionMaxCount[ actionindex ] = 
-			static_cast<BYTE>(g_pTopView->m_AdvancementVampireManFPK[0][ actionindex ][2].GetSize());
-//		}catch(...){} //add by viva
-	}
-
-	for( i = ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP; i < ACTION_ADVANCEMENT_OUSTERS_MAX; ++i )
-	{
-		int actionindex = i - ADVANCEMENT_ACTION_START;
-//		try{
-		g_AdvanceOustersActionMaxCount[ actionindex ] = 
-			static_cast<BYTE>(g_pTopView->m_AdvancementOustersFPK[1][ actionindex ][2].GetSize());
-//		}catch(...){} //add by viva
-	}
 }
 
 int			

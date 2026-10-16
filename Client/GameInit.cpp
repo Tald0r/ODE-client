@@ -4335,6 +4335,8 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaPPK)[head];
 		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaPPK)[ground];
 	},
+	.PlaySoundForce = PlaySoundForce,
+	.DrawTitleLoading = DrawTitleLoading,
 };
 
 extern void UI_RunPetInfo(struct PETINFO *pPetInfo);
