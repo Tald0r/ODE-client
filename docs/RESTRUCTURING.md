@@ -8017,7 +8017,9 @@ rounds settled* for the host rules). Test fixtures share
   > - Defects, for task 4.257. Pinned by the tests as they are:
   >   `UI_ClosePartyCancel` never ends the party wait; `UI_SetMP`'s help
   >   mails fire once a process; the quest list repeats the last offer's
-  >   line; the guild functions leak their records. Found by the test
+  >   line; the guild functions leak their records, and the friend
+  >   functions their names without the game UI and the entries they
+  >   erase. Found by the test
   >   agents' reading, on paths not run because they are undefined: the
   >   slayer `UI_SetCharacter` reads past its three- and four-entry look
   >   tables for the login packet's bit fields, and `Character[slotID]` is
@@ -8025,7 +8027,9 @@ rounds settled* for the host rules). Test fixtures share
   >   share an id; `UI_RunQuestList` reads an uninitialised string;
   >   `QUEST_INFO` leaves two fields unset; an unknown zone in the lair
   >   message, an unknown creature in the party ask and an unknown server
-  >   group crash; and the friend, connect and item-shop functions leak.
+  >   group crash; and, seen by reading only (no run checks for leaks),
+  >   a second connect leaks the login strings it replaces and the item
+  >   shop the items its list refuses.
   >   Pinned and left as they are: a negative effect status reads the
   >   table's default row; an effect's delay in frames times 1000 wraps as
   >   a DWORD; `BackupPrevId` writes through `g_pUserOption` unchecked;
