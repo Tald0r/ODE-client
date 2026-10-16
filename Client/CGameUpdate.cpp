@@ -6,6 +6,9 @@
 #include "Client_PCH.h"
 #include "CrtCompat.h"
 #include "FrameClock.h"
+#include "AmbientSoundState.h"
+#include "InputState.h"
+#include "WorldEventsHost.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
@@ -70,8 +73,6 @@ bool g_bPreviousMove = false;
 	
 // g_pOGG, g_oggfile and g_pSoundBufferForOGG are COGGSTREAM.cpp's (dxlib)
 // since tasks 4.256, 4.258 and 4.260.
-
-extern int g_SoundPerSecond;
 
 extern bool g_bMouseInPortal;
 		
@@ -287,7 +288,7 @@ CGameUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 // pObject와 관련..이 있을 수도 있고..
 //-----------------------------------------------------------------------------
 void
-ProcessInputRButtonDown(MObject* pObject, bool bForceAttack = false)
+CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 {
 	g_bRButtonDown = TRUE;
 	
@@ -302,7 +303,7 @@ ProcessInputRButtonDown(MObject* pObject, bool bForceAttack = false)
 		if(g_CheckErrorTime>=5)
 		{
 			g_CheckErrorTime=0;
-			SetMode(MODE_QUIT);
+			m_pHost->SetMode(MODE_QUIT);
 			return;
 		}
 #endif // PLATFORM_WINDOWS
@@ -650,9 +651,7 @@ CGameUpdate::ProcessInput()
 	// UI Input
 	//---------------------------------------------------	
 	POINT cursorPoint;
-	GetCursorPos(&cursorPoint);
-
-	ScreenToClient(g_hWnd, &cursorPoint);//by viva
+	m_pHost->GetCursorPoint(cursorPoint);
 	WindowToGamePoint(cursorPoint);
 
 	gC_vs_ui.MouseControl(M_MOVING, cursorPoint.x, cursorPoint.y);
@@ -1610,9 +1609,7 @@ CGameUpdate::UpdateDraw()
 	//-----------------------------------------------------------------		
 	// 마우스 좌표 다시 설정
 	//-----------------------------------------------------------------
-	GetCursorPos(&point);
-
-	ScreenToClient(g_hWnd, &point);//by viva
+	m_pHost->GetCursorPoint(point);
 	WindowToGamePoint(point);
 
 	// ui에 mouse좌표 설정
@@ -1903,7 +1900,7 @@ CGameUpdate::Update(void)
 	int k = g_pClientConfig->MAX_UPDATE_ONETIME;		// 12 frame * 1 Tile.. 
 
 
-	UpdateMouse();
+	m_pHost->UpdateMouse();
 
 	//------------------------------------------
 	// 무한루프 예방도 되고...
@@ -1953,7 +1950,7 @@ CGameUpdate::Update(void)
 			//
 			//------------------------------------------
 			__BEGIN_PROFILE("GameSocketInput")
-			if (!UpdateSocketInput())
+			if (!m_pHost->UpdateSocketInput())
 			{
 				DEBUG_ADD_WAR("[CGameUpdate] UpdateSocketInput Failed");
 
@@ -1979,7 +1976,7 @@ CGameUpdate::Update(void)
 			if (g_bActiveGame)
 			{
 				// Input값을 읽어온다.
-				UpdateInput();
+				m_pHost->UpdateInput();
 				
 				__BEGIN_PROFILE("ProcessInput")
 
@@ -2012,7 +2009,7 @@ CGameUpdate::Update(void)
 			__BEGIN_PROFILE("GameSocketOutput")
 
 
-			if (!UpdateSocketOutput() || g_Mode!=MODE_GAME)
+			if (!m_pHost->UpdateSocketOutput() || g_Mode!=MODE_GAME)
 			{			
 				DEBUG_ADD("[CGameUpdate] UpdateSocketOutput Failed or Not MODE_GAME");
 
@@ -2149,7 +2146,7 @@ CGameUpdate::Update(void)
 		if(g_CheckErrorTime>=5)
 		{
 			g_CheckErrorTime=0;
-			SetMode(MODE_QUIT);
+			m_pHost->SetMode(MODE_QUIT);
 			return;
 		}
 #endif // PLATFORM_WINDOWS
@@ -2201,7 +2198,7 @@ CGameUpdate::Update(void)
 			// 짝수 시간대에만 음악 연주..
 			if ((currentHour & 0x01)==0)
 			{
-				PlayMusicCurrentZone();
+				WorldEvents::PlayMusicCurrentZone();
 			}
 
 		}

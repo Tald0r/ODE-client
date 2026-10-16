@@ -52,3 +52,8 @@ private:
 // resets it on a zone load and when the sounds stop (gamemodel's since task
 // 4.246; it was GameMain.cpp's).
 extern AmbientSoundState g_ZoneAmbientSounds;
+
+// The sounds played in the current second: GameMain's PlaySound family
+// counts them against the configured limit and the game loop (CGameUpdate)
+// starts the count again each second (the executable's until task 4.261).
+extern int g_SoundPerSecond;

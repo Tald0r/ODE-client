@@ -163,7 +163,7 @@ DWORD				g_TimerNPMON = 0;
 // g_FrameCount is ClientMode.cpp's (gamemodel) since task 4.255.
 int					g_StartFrameCount	= 0;
 MonotonicClock::TimePoint	g_StartTime		= MonotonicClock::Now();
-int					g_FrameRate			= 0;
+// g_FrameRate is FrameClock.cpp's (gamemodel) since task 4.261.
 bool				g_bGoodFPS			= true;
 const int			g_FrameGood			= 15;
 
