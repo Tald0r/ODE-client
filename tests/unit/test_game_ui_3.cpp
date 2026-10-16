@@ -186,10 +186,17 @@ const MItemHost itemHost = []() {
 	host.RefreshAffect = [](MItem* pItem) { calls.push_back("affect|" + N(pItem->GetID())); };
 	host.ItemDestroyed = [](MItem* pItem) noexcept {
 		calls.push_back("destroyed|" + N(pItem->GetID()));
+		// An item's entry is cleared when it goes: an allocator that hands the
+		// freed address to the next item (glibc does at once) must not match
+		// the old entry too.
 		for (size_t i = 0; i < made.size(); ++i)
 			if (made[i] == pItem)
+			{
 				freed.push_back(N(i) + "|" + N(pItem->GetID()) + "|" + N(pItem->GetItemType()) + "|" + N(pItem->GetGrade())
 					+ "|" + Options(pItem) + "|" + N(pItem->GetNumber()) + "|" + N(pItem->IsQuestItem()));
+				made[i] = nullptr;
+				break;
+			}
 	};
 	return host;
 }();

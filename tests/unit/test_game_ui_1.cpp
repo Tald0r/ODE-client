@@ -69,7 +69,9 @@
 #define ASAN_COUNTS_BYTES 1
 #endif
 #ifdef ASAN_COUNTS_BYTES
-#include <sanitizer/allocator_interface.h>
+// The sanitizer runtime's own (sanitizer/allocator_interface.h, which GCC's
+// install does not ship).
+extern "C" size_t __sanitizer_get_current_allocated_bytes(void);
 #endif
 
 // Defined in GameUI.cpp, declared by no header (UIFunction.h names them
