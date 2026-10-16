@@ -46,8 +46,9 @@
 #include "MPalette.h"
 #include "DXLib/CDirectDraw.h"
 #include "Fl2.h"
+#include "DXLib/CDirectSound.h"
 
-#include <array>
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <memory>
@@ -55,7 +56,7 @@
 
 extern RECT g_GameRect;
 extern int g_FrameCount;
-extern PrintInfo* g_ClientPrintInfo[];
+extern PrintInfo* g_ClientPrintInfo[10];		// MAX_FONTID, MTopView.cpp's
 // MItemUse.cpp's item factory, which the executable installs as MItem's host.
 MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 
@@ -422,6 +423,16 @@ struct Scene
 	{
 		drawn.surface.FillSurface(kPaper);
 		expected.surface.FillSurface(kPaper);
+	}
+	// Darkness, a light filter of every range and a sighted player, so a
+	// lit frame adds one light (m_nLight) to the light buffer.
+	void Lit()
+	{
+		View().m_LightFTP.Init(4);
+		for (int n = 0; n < 4; ++n) View().m_LightFTP[TYPE_FILTERID(n)].Init(2, 2);
+		View().m_LightBufferFilter.Init(64, 64);
+		View().SetDarkBits(1);
+		player->SetSight(13);
 	}
 	void Event(EVENT_ID id, DWORD flag = 0)
 	{
@@ -800,7 +811,7 @@ namespace {
 // Fourteen frames, frame f at (f, 2f), sprites alternating; frame 7 has none.
 struct Bible : Scene
 {
-	static const int kID = EFFECTSPRITETYPE_BLOODY_BIBLE_IN_GEAR;
+	static constexpr int kID = EFFECTSPRITETYPE_BLOODY_BIBLE_IN_GEAR;
 	Bible()
 	{
 		CEffectFramePack& frames = View().m_EffectAlphaFPK;
@@ -854,9 +865,9 @@ namespace {
 
 template<class Gear> struct GearProbe : Gear
 {
-	using MSlotItemManager::m_ItemSlot;
-	using MPlayerGear::m_pItemStatus;
-	using MPlayerGear::m_nBrokenItem;
+	using Gear::m_ItemSlot;
+	using Gear::m_pItemStatus;
+	using Gear::m_nBrokenItem;
 };
 
 // Each race's picture is sprite 0, 33, 48, 59 or 71; frame k of every
@@ -1048,9 +1059,9 @@ namespace {
 
 template<class Item> struct ItemProbe : Item
 {
-	using MItem::m_bDropping;
-	using MItem::m_DropCount;
-	using MItem::m_CurrentFrame;
+	using Item::m_bDropping;
+	using Item::m_DropCount;
+	using Item::m_CurrentFrame;
 };
 
 // Ring type t lies on tile frame t and drops through drop frame t. Tile
@@ -1954,6 +1965,20 @@ TEST(TopView3ImageObject, AnAlphaAnimationStepsOnAChangedFrame)
 	CHECK_EQ(0, int(glow.GetFrame()));
 }
 
+TEST(TopView3ImageObject, AnAlphaOrScreenAnimationAddsItsFramesLight)
+{
+	Scenery scene;
+	scene.Lit();
+	scene.View().m_EffectAlphaFPK[2][0][0].Set(0, 7, 1, 2, false);
+	scene.View().m_EffectScreenFPK[2][0][0].Set(0, 6, 2, 2, false);
+	scene.Draw(scene.Animated(SPRITEID_NULL, BLT_NORMAL, 1, 2));
+	CHECK_EQ(0, scene.View().m_nLight);
+	scene.Draw(scene.Animated(SPRITEID_NULL, BLT_EFFECT, 2, 2));
+	CHECK_EQ(1, scene.View().m_nLight);
+	scene.Draw(scene.Animated(SPRITEID_NULL, BLT_SCREEN, 2, 2));
+	CHECK_EQ(2, scene.View().m_nLight);
+}
+
 TEST(TopView3ImageObject, AnAlphaAnimationOffThePackStillSteps)
 {
 	Scenery scene;
@@ -2015,10 +2040,10 @@ struct Sparks : Scene
 		Shade(View().m_EffectShadowSPK[0], 4, 2);
 		View().m_EffectAlphaPPK.Init(3);
 		View().m_EffectScreenPPK.Init(3);
-		for (WORD id : {1, 2})
+		for (int id : {1, 2})
 		{
-			Palette(View().m_EffectAlphaPPK[id], 0x07E0);
-			Palette(View().m_EffectScreenPPK[id], 0xF81F);
+			Palette(View().m_EffectAlphaPPK[WORD(id)], 0x07E0);
+			Palette(View().m_EffectScreenPPK[WORD(id)], 0xF81F);
 		}
 		MScreenEffect::SetScreenBasis(0, 0);
 	}
@@ -2103,10 +2128,10 @@ TEST(TopView3Effect, EachKindDrawsItsFrameAtItsOffset)
 
 TEST(TopView3Effect, AnUnselectableEffectKeepsItsRect)
 {
-	for (BYTE bltType : {BLT_NORMAL, BLT_EFFECT, BLT_SCREEN})
+	for (BLT_TYPE bltType : {BLT_NORMAL, BLT_EFFECT, BLT_SCREEN})
 	{
 		Sparks scene;
-		MEffect& effect = scene.Make(bltType, 1);
+		MEffect& effect = scene.Make(BYTE(bltType), 1);
 		Preset(effect);
 		scene.Draw(&effect, false);
 		CHECK(!scene.drawn.Blank());
@@ -2133,11 +2158,11 @@ TEST(TopView3Effect, AnAlphaOrScreenEffectWithoutAFrameKeepsAStaleRect)
 	// Recorded defect: unlike a normal effect, these leave the last
 	// frame's pick rect, so an effect that is not drawn can be picked.
 	const struct { int frameID, frame; } cases[] = { {5, 0}, {1, 1}, {2, 0}, {3, 0} };	// ... and no palette
-	for (BYTE bltType : {BLT_EFFECT, BLT_SCREEN})
+	for (BLT_TYPE bltType : {BLT_EFFECT, BLT_SCREEN})
 		for (const auto& c : cases)
 		{
 			Sparks scene;
-			MEffect& effect = scene.Make(bltType, c.frameID, c.frame);
+			MEffect& effect = scene.Make(BYTE(bltType), c.frameID, c.frame);
 			Preset(effect);
 			scene.Draw(&effect, true);
 			CHECK(scene.drawn.Blank());
@@ -2174,6 +2199,27 @@ TEST(TopView3Effect, NoEffectDrawsNothing)
 	Sparks scene;
 	scene.Draw(nullptr, true);
 	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3Effect, AnAlphaScreenOrShadowFrameAddsItsLight)
+{
+	Sparks scene;
+	scene.Lit();
+	scene.View().m_EffectNormalFPK[1][0][0].Set(0, 4, 5, 2, false);
+	scene.View().m_EffectAlphaFPK[1][0][0].Set(0, 3, 6, 2, false);
+	scene.View().m_EffectScreenFPK[1][0][0].Set(0, 5, 2, 2, false);
+	scene.View().m_EffectShadowFPK[1][0][0].Set(0, 2, 3, 2, false);
+	scene.Draw(&scene.Make(BLT_NORMAL, 1), true);
+	CHECK_EQ(0, scene.View().m_nLight);					// a normal effect gives none
+	scene.Draw(&scene.Make(BLT_EFFECT, 1), true);
+	CHECK_EQ(1, scene.View().m_nLight);
+	scene.Draw(&scene.Make(BLT_SCREEN, 1), true);
+	CHECK_EQ(2, scene.View().m_nLight);
+	scene.Draw(&scene.Make(BLT_SHADOW, 1), true);
+	CHECK_EQ(3, scene.View().m_nLight);
+	scene.View().m_EffectAlphaFPK[1][0][0].Set(0, 3, 6, 0, false);	// an unlit frame
+	scene.Draw(&scene.Make(BLT_EFFECT, 1), true);
+	CHECK_EQ(3, scene.View().m_nLight);
 }
 
 TEST(TopView3Effects, ZoneEffectsAreDrawnAtTheirPixelLessTheViewsOriginAndScreenEffectsWhereTheyAre)
@@ -2259,7 +2305,7 @@ namespace {
 // are 3 x 2.
 struct Aura : Scene
 {
-	static const int kTurretBullet = EFFECTSPRITETYPE_INSTALL_TURRET_BULLET - MAX_EFFECTSPRITETYPE_ALPHAEFFECT;
+	static constexpr int kTurretBullet = EFFECTSPRITETYPE_INSTALL_TURRET_BULLET - MAX_EFFECTSPRITETYPE_ALPHAEFFECT;
 	Creature wearer;
 	std::vector<std::unique_ptr<MAttachEffect>> effects;
 	ATTACHEFFECT_LIST list;
@@ -2650,6 +2696,37 @@ TEST(TopView3AttachEffect, AScreenEffectsActionFrameCountsOnlyWhenItIsAnother)
 	CHECK(scene.Same());
 }
 
+TEST(TopView3AttachEffect, EachDrawnAlphaOrScreenFrameAddsItsLight)
+{
+	Aura scene;
+	scene.Lit();
+	scene.View().m_EffectAlphaFPK[1][0][0].Set(1, 4, 5, 2, false);
+	scene.View().m_EffectAlphaFPK[2][0][0].Set(1, 9, 9, 2, true);
+	scene.View().m_EffectScreenFPK[1][0][0].Set(0, 4, 5, 2, false);
+	scene.View().m_EffectScreenFPK[2][0][0].Set(0, 9, 9, 2, false);
+	scene.View().m_EffectNormalFPK[1][0][0].Set(0, 4, 5, 2, false);
+	scene.Type(11).PairFrameIDList = {2};
+	scene.Type(17).PairFrameIDList = {2};
+	scene.Type(17).bPairFrameBack = true;
+	scene.Make(10, BLT_NORMAL, 1);
+	scene.Draw();
+	CHECK_EQ(0, scene.View().m_nLight);
+	const struct { int est; BYTE bltType; int type, lights; } cases[] = {
+		{ 11, BLT_EFFECT, 0, 2 },		// the frame and its pair after
+		{ 17, BLT_EFFECT, 0, 2 },		// the pair before
+		{ 11, BLT_EFFECT, 1, 1 },		// the pair (behind) not drawn
+		{ 11, BLT_SCREEN, 0, 2 },
+	};
+	for (const auto& c : cases)
+	{
+		scene.list.clear();
+		scene.View().m_nLight = 0;
+		scene.Make(c.est, c.bltType, 1);
+		scene.Draw(c.type);
+		CHECK_EQ(c.lights, scene.View().m_nLight);
+	}
+}
+
 namespace {
 
 // The orbit paths are built from the math tables; both are put back.
@@ -2727,4 +2804,354 @@ TEST(TopView3AttachEffect, AnOrbitingNormalEffectIgnoresItsOrbit)
 	scene.ExpectAttached(2, 2, 1, 1);
 	scene.ExpectNormal(30, 30);
 	CHECK(scene.Same());
+}
+
+//----------------------------------------------------------------------
+// The two endings and DrawEvent
+//----------------------------------------------------------------------
+namespace {
+
+const char* kMissingPack = "top_view_3_no_such_pack.spk";
+const char* kPackPath = "top_view_3_pack.spk";
+
+MonotonicClock::TimePoint s_EndingNow;
+MonotonicClock::TimePoint EndingNow() { return s_EndingNow; }
+
+std::vector<int>& Sounds() { static std::vector<int> sounds; return sounds; }
+
+// An 800 x 600 screen, a test clock, a sound-recording host, and the
+// endings' pack files named. A pack's sprite 0 is the 40 x 30 scroll, 1 a
+// 24 x 12 caption, and n > 1 a square of 4 + n.
+struct Ending : Scene
+{
+	MonotonicClock::ScopedTestSource clock{&EndingNow};
+	WorldEvents::Host host;
+	const WorldEvents::Host* oldHost = nullptr;
+	Properties files;
+	Properties* oldFiles = g_pFileDef;
+	Ending() : Scene(800, 600)
+	{
+		s_EndingNow = MonotonicClock::FromMillis(1000000);
+		Sounds().clear();
+		host.PlaySoundForce = +[](TYPE_SOUNDID sound) { Sounds().push_back(int(sound)); };
+		oldHost = WorldEvents::SetHost(&host);
+		files.setProperty("FILE_SPRITE_ADVANCEMENT_QUEST", kMissingPack);
+		files.setProperty("FILE_SPRITE_OUSTERS_FIN", kMissingPack);
+		g_pFileDef = &files;
+		// The endings' music needs the audio device, which a test has not got.
+		CHECK(!g_SDLAudio.IsInit());
+	}
+	~Ending()
+	{
+		g_pFileDef = oldFiles;
+		WorldEvents::SetHost(oldHost);
+		std::remove(kPackPath);
+	}
+	static std::vector<WORD> SpriteWords(int n)
+	{
+		return n == 0 ? SolidWords(40, 30, 0xF800) : n == 1 ? SolidWords(24, 12, 0x07E0) : SolidWords(4 + n, 4 + n, WORD(0x8000 | (n * 0x0421)));
+	}
+	static void Fill(CSpritePack& pack, int count)
+	{
+		pack.Init(WORD(count));
+		for (int n = 0; n < count; ++n) CHECK(LoadBytes(pack[WORD(n)], Bytes(SpriteWords(n))));
+	}
+	void WritePack(const char* key, int count)
+	{
+		std::vector<WORD> words{WORD(count)};
+		for (int n = 0; n < count; ++n)
+		{
+			const std::vector<WORD> sprite = SpriteWords(n);
+			words.insert(words.end(), sprite.begin(), sprite.end());
+		}
+		const std::vector<unsigned char> bytes = Bytes(words);
+		std::ofstream out(kPackPath, std::ios::binary | std::ios::trunc);
+		out.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+		files.setProperty(key, kPackPath);
+	}
+	MEvent* Live(EVENT_ID id) { return const_cast<MEvent*>(events.GetEvent(id)); }
+	MEvent* Start(EVENT_ID id, DWORD spritePair = 0)
+	{
+		Event(id);
+		MEvent* event = Live(id);
+		event->parameter4 = spritePair;
+		return event;
+	}
+	bool Advancement() { return Access::AdvancementEnding(View(), Live(EVENTID_ADVANCEMENT_QUEST_ENDING)); }
+	void Pack(int x, int y, CSpritePack& pack, int n) { expected.Sprite(x, y, pack[WORD(n)]); }
+	void Clip(int x, int y, CSpritePack& pack, int n, int top, int bottom)
+	{
+		POINT point = {x, y};
+		RECT rows = {0, top, pack[WORD(n)].GetWidth(), bottom};
+		expected.surface.BltSpriteClip(&point, &pack[WORD(n)], &rows);
+	}
+	// The scroll's progress p: -500 at the start, one step every 66 ms.
+	void Progress(MEvent* event, int p) { s_EndingNow = event->eventStartTickCount + MonotonicClock::Millis(DWORD(66 * (p + 500) + 33)); }
+};
+
+} // namespace
+
+TEST(TopView3AdvancementEnding, AnUnloadablePackCancelsTheEnding)
+{
+	for (int count : {-1, 0, 6})						// no file, an empty pack, one sprite short
+	{
+		Ending scene;
+		if (count >= 0) scene.WritePack("FILE_SPRITE_ADVANCEMENT_QUEST", count);
+		scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING);
+		CHECK(scene.Advancement());
+		CHECK(scene.Live(EVENTID_ADVANCEMENT_QUEST_ENDING) == nullptr);
+		CHECK_EQ(0, int(scene.View().m_AdvacementQuestEnding.GetSize()));
+		CHECK(Sounds().empty());
+		CHECK(scene.drawn.Blank());
+	}
+}
+
+TEST(TopView3AdvancementEnding, ALoadedPackStartsTheEnding)
+{
+	Ending scene;
+	scene.WritePack("FILE_SPRITE_ADVANCEMENT_QUEST", 7);
+	MEvent* event = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING, 1);
+	s_EndingNow += MonotonicClock::Millis(500);
+	CHECK(!scene.Advancement());
+	CHECK_EQ(7, int(scene.View().m_AdvacementQuestEnding.GetSize()));
+	CHECK_EQ(9998, int(event->parameter1));
+	CHECK_EQ(0, int(event->parameter2));
+	CHECK_EQ(1000, int(event->parameter3));
+	CHECK(event->eventStartTickCount == s_EndingNow);
+	CHECK_EQ(size_t(1), Sounds().size());
+	if (!Sounds().empty()) CHECK_EQ(int(SOUND_SLAYER_ENCHANT_B2), Sounds()[0]);
+	// Its first picture: the second of the pair.
+	scene.Pack(0, 0, scene.View().m_AdvacementQuestEnding, 2);
+	CHECK(scene.Same());
+	CHECK(!scene.Advancement());
+	CHECK_EQ(size_t(1), Sounds().size());				// started once
+}
+
+TEST(TopView3AdvancementEnding, ASpritePairPastThePackCancelsIt)
+{
+	for (DWORD pair : {DWORD(6), DWORD(0xFFFFFFFF), DWORD(5)})
+	{
+		Ending scene;
+		Ending::Fill(scene.View().m_AdvacementQuestEnding, 7);
+		scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING, pair);
+		const bool cancelled = scene.Advancement();
+		CHECK_EQ(pair != 5, cancelled);
+		CHECK_EQ(pair == 5, scene.Live(EVENTID_ADVANCEMENT_QUEST_ENDING) != nullptr);
+		CHECK_EQ(pair == 5 ? 7 : 0, int(scene.View().m_AdvacementQuestEnding.GetSize()));
+	}
+}
+
+TEST(TopView3AdvancementEnding, ThePairCrossfadesByItsCountdown)
+{
+	const struct { DWORD countdown; bool first, second; } cases[] = {
+		{ 33, false, true }, { 32, true, true }, { 1, true, true }, { 0, true, false },
+	};
+	for (const auto& c : cases)
+	{
+		Ending scene;
+		CSpritePack& pack = scene.View().m_AdvacementQuestEnding;
+		Ending::Fill(pack, 7);
+		MEvent* event = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING, 3);
+		event->parameter1 = 9998;
+		event->parameter3 = c.countdown;
+		CHECK(!scene.Advancement());						// the scroll has not risen yet
+		if (c.first) scene.Pack(0, 0, pack, 3);
+		if (c.second && c.first)
+		{
+			POINT origin = {0, 0};
+			scene.expected.surface.BltSpriteAlpha(&origin, &pack[4], BYTE(c.countdown));
+		}
+		else if (c.second) scene.Pack(0, 0, pack, 4);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3AdvancementEnding, TheCountdownStepsOnOddChangedFrames)
+{
+	const struct { bool changed; DWORD frame, from, to; } cases[] = {
+		{ true, 3, 10, 9 }, { false, 3, 10, 10 }, { true, 4, 10, 10 }, { true, 3, 0, 0 },
+	};
+	for (const auto& c : cases)
+	{
+		Ending scene;
+		Ending::Fill(scene.View().m_AdvacementQuestEnding, 7);
+		MEvent* event = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING);
+		event->parameter1 = 9998;
+		event->parameter3 = c.from;
+		g_bFrameChanged = c.changed;
+		g_CurrentFrame = c.frame;
+		scene.Advancement();
+		CHECK_EQ(int(c.to), int(event->parameter3));
+	}
+}
+
+TEST(TopView3AdvancementEnding, TheScrollRisesWithTheClock)
+{
+	const struct { int progress, y, top, bottom; } cases[] = {
+		{ -500, 0, 0, 0 },			// nothing yet
+		{ -490, 540, 0, 10 },		// its first ten rows
+		{ -100, 150, 0, 30 },		// whole
+		{ 10, 40, 10, 30 },			// its top ten rows gone
+		{ 30, 20, 0, 0 },			// gone, but not yet over
+	};
+	for (const auto& c : cases)
+	{
+		Ending scene;
+		CSpritePack& pack = scene.View().m_AdvacementQuestEnding;
+		Ending::Fill(pack, 7);
+		MEvent* event = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING);
+		event->parameter1 = 9998;
+		event->parameter3 = 0;
+		scene.Progress(event, c.progress);
+		CHECK(!scene.Advancement());
+		CHECK_EQ(9998, int(event->parameter1));
+		scene.Pack(0, 0, pack, 0);
+		if (c.bottom > c.top) scene.Clip(380, c.y, pack, 0, c.top, c.bottom);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3AdvancementEnding, ItEndsOnceTheScrollHasPassed)
+{
+	Ending scene;
+	Ending::Fill(scene.View().m_AdvacementQuestEnding, 7);
+	MEvent* event = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING);
+	event->parameter1 = 9998;
+	scene.Progress(event, 31);
+	CHECK(!scene.Advancement());
+	CHECK_EQ(9999, int(event->parameter1));
+	CHECK_EQ(7, int(scene.View().m_AdvacementQuestEnding.GetSize()));
+	CHECK(!scene.Advancement());
+	CHECK(scene.Live(EVENTID_ADVANCEMENT_QUEST_ENDING) == nullptr);
+	CHECK_EQ(0, int(scene.View().m_AdvacementQuestEnding.GetSize()));
+}
+
+TEST(TopView3OustersEnding, WithoutEventsTheBackgroundIsDrawn)
+{
+	Ending scene;
+	CHECK(Access::OustersEnding(scene.View()));
+	CHECK(scene.drawn.Blank());
+}
+
+TEST(TopView3OustersEnding, ABackgroundEventHidesTheBackground)
+{
+	const struct { DWORD flag; bool cleared; } cases[] = {
+		{ EVENTFLAG_NOT_DRAW_BACKGROUND, true },
+		{ EVENTFLAG_EVENT_BACKGROUND, false },
+		{ EVENTFLAG_ONLY_EVENT_BACKGROUND, false },	// both bits: not cleared
+	};
+	for (const auto& c : cases)
+	{
+		Ending scene;
+		scene.Event(EVENTID_BG_CLOUD, c.flag);
+		CHECK(!Access::OustersEnding(scene.View()));
+		if (c.cleared)
+		{
+			CHECK_EQ(0, int(scene.drawn.At(0, 0)));
+			CHECK_EQ(0, int(scene.drawn.At(799, 599)));
+		}
+		else CHECK(scene.drawn.Blank());
+	}
+}
+
+TEST(TopView3OustersEnding, AnUnloadablePackCancelsTheEnding)
+{
+	for (int count : {-1, 10})
+	{
+		Ending scene;
+		if (count >= 0) scene.WritePack("FILE_SPRITE_OUSTERS_FIN", count);
+		scene.Start(EVENTID_OUSTERS_FIN);
+		CHECK(Access::OustersEnding(scene.View()));
+		CHECK(scene.Live(EVENTID_OUSTERS_FIN) == nullptr);
+		CHECK_EQ(0, int(scene.View().m_OustersFinSPK.GetSize()));
+		CHECK(Sounds().empty());
+	}
+}
+
+TEST(TopView3OustersEnding, ACancelledEndingShowsTheBackgroundAnEventHid)
+{
+	// Recorded defect: the cancel returns true whatever the background
+	// event said, so the hidden background is drawn.
+	Ending scene;
+	scene.Event(EVENTID_BG_CLOUD, EVENTFLAG_EVENT_BACKGROUND);
+	scene.Start(EVENTID_OUSTERS_FIN);
+	CHECK(Access::OustersEnding(scene.View()));
+}
+
+TEST(TopView3OustersEnding, ALoadedPackStartsTheEndingOverTheBackground)
+{
+	Ending scene;
+	scene.WritePack("FILE_SPRITE_OUSTERS_FIN", 11);
+	MEvent* event = scene.Start(EVENTID_OUSTERS_FIN);
+	s_EndingNow += MonotonicClock::Millis(700);
+	CHECK(Access::OustersEnding(scene.View()));
+	CHECK_EQ(11, int(scene.View().m_OustersFinSPK.GetSize()));
+	CHECK_EQ(9998, int(event->parameter1));
+	CHECK_EQ(0, int(event->parameter2));
+	CHECK(event->eventStartTickCount == s_EndingNow);
+	CHECK_EQ(size_t(1), Sounds().size());
+	if (!Sounds().empty()) CHECK_EQ(int(SOUND_SLAYER_ENCHANT_B2), Sounds()[0]);
+	CHECK(scene.drawn.Blank());						// the scroll has not risen
+	CHECK(Access::OustersEnding(scene.View()));
+	CHECK_EQ(size_t(1), Sounds().size());
+	// A background event still hides the background under it.
+	scene.Event(EVENTID_BG_CLOUD, EVENTFLAG_EVENT_BACKGROUND);
+	CHECK(!Access::OustersEnding(scene.View()));
+}
+
+TEST(TopView3OustersEnding, TheScrollRisesAndTheCaptionFollows)
+{
+	const struct { int progress, y, top, bottom, captionY, captionRows; } cases[] = {
+		{ -490, 540, 0, 10, 250, 0 },		// the caption not yet
+		{ -440, 490, 0, 30, 250, 0 },		// 450 - 440 - 30: none still
+		{ -415, 465, 0, 30, 250, 5 },		// its first five rows
+		{ -100, 150, 0, 30, 250, 12 },		// whole
+		{ 10, 40, 10, 30, 250, 12 },
+	};
+	for (const auto& c : cases)
+	{
+		Ending scene;
+		CSpritePack& pack = scene.View().m_OustersFinSPK;
+		Ending::Fill(pack, 11);
+		MEvent* event = scene.Start(EVENTID_OUSTERS_FIN);
+		event->parameter1 = 9998;
+		scene.Progress(event, c.progress);
+		CHECK(Access::OustersEnding(scene.View()));
+		CHECK_EQ(9998, int(event->parameter1));
+		scene.Clip(380, c.y, pack, 0, c.top, c.bottom);
+		if (c.captionRows > 0) scene.Clip(388, c.captionY, pack, 1, 0, c.captionRows);
+		CHECK(scene.Same());
+	}
+}
+
+TEST(TopView3OustersEnding, ItEndsOnceTheScrollHasPassed)
+{
+	Ending scene;
+	Ending::Fill(scene.View().m_OustersFinSPK, 11);
+	MEvent* event = scene.Start(EVENTID_OUSTERS_FIN);
+	event->parameter1 = 9998;
+	scene.Progress(event, 31);
+	CHECK(Access::OustersEnding(scene.View()));
+	CHECK_EQ(9999, int(event->parameter1));
+	CHECK(Access::OustersEnding(scene.View()));
+	CHECK(scene.Live(EVENTID_OUSTERS_FIN) == nullptr);
+	CHECK_EQ(0, int(scene.View().m_OustersFinSPK.GetSize()));
+}
+
+TEST(TopView3DrawEvent, TheAdvancementEndingComesFirstAndHidesTheBackground)
+{
+	Ending scene;
+	CHECK(Access::DrawEvent(scene.View()));
+	Ending::Fill(scene.View().m_AdvacementQuestEnding, 7);
+	Ending::Fill(scene.View().m_OustersFinSPK, 11);
+	MEvent* ousters = scene.Start(EVENTID_OUSTERS_FIN);
+	MEvent* advancement = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING);
+	CHECK(!Access::DrawEvent(scene.View()));
+	CHECK_EQ(9998, int(advancement->parameter1));
+	CHECK_EQ(0, int(ousters->parameter1));				// not run alongside
+	scene.events.RemoveEvent(EVENTID_ADVANCEMENT_QUEST_ENDING);
+	CHECK(Access::DrawEvent(scene.View()));
+	CHECK_EQ(9998, int(ousters->parameter1));
+	scene.Event(EVENTID_BG_CLOUD, EVENTFLAG_EVENT_BACKGROUND);
+	CHECK(!Access::DrawEvent(scene.View()));
 }
