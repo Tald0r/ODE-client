@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 // CGameUpdate.cpp
 //-----------------------------------------------------------------------------
-// 실제 게임을 진행하는 부분
+// The part that runs the actual game
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 #include "CrtCompat.h"
@@ -148,10 +148,10 @@ CGameUpdate::Init()
 {
 	g_bPreviousMove = false;
 
-	// mouse event 처리
+	// handle mouse events
 	g_pSDLInput->SetMouseEventReceiver( DXMouseEvent );
 
-	// keyboard event 처리
+	// handle keyboard events
 	g_pSDLInput->SetKeyboardEventReceiver( DXKeyboardEvent );
 
 	// Text input (SDL2 only). The SDL backend delivers SDL_TEXTINPUT to
@@ -191,7 +191,7 @@ CGameUpdate::DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z)
 			break;
 
 			case CSDLInput::RIGHTUP :
-				// 지뢰 만드는 거 중지
+				// stop installing a mine
 				gC_vs_ui.EndInstallMineProgress();
 			break;
 
@@ -223,7 +223,7 @@ CGameUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 
 	if (event==CSDLInput::KEYDOWN)
 	{
-		if(key == 0xcc) return;		// 이건 머지-_-?;;
+		if(key == 0xcc) return;		// what is this? -_-;;
 
 		// Convert DIK scan codes to VK virtual key codes for control keys
 		// These keys need WM_KEYDOWN messages for text editing to work
@@ -299,14 +299,14 @@ CGameUpdate::DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT event, DWORD key)
 //-----------------------------------------------------------------------------
 // ProcessInput RButton Down
 //-----------------------------------------------------------------------------
-// pObject와 관련..이 있을 수도 있고..
+// may or may not have to do with pObject..
 //-----------------------------------------------------------------------------
 void
 CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 {
 	g_bRButtonDown = TRUE;
 	
-	// 선택된 sector가 없게 한다.
+	// clear the selected sector.
 	if (g_pTopView!=NULL)
 	{
 		g_pTopView->SetSelectedSectorNULL();
@@ -361,10 +361,10 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 	} else
 	//---------------------------------------------------------------
 	// 
-	// 오토바이를 타고 있는 경우 
+	// riding a motorcycle
 	//
 	//---------------------------------------------------------------
-	// 오토바이에서 내린다.
+	// get off the motorcycle.
 	//---------------------------------------------------------------
 	if (g_pPlayer->GetMoveDevice()==MCreature::MOVE_DEVICE_RIDE
 		&& g_pPlayer->IsStop()
@@ -391,7 +391,7 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 	}
 	//---------------------------------------------------------------
 	//
-	// Burrow 된 경우 땅으로 솟아나온다는 packet을 보낸다.
+	// when burrowed, send the packet that says the player comes up out of the ground.
 	//
 	//---------------------------------------------------------------
 	else if (g_pPlayer->IsUndergroundCreature())
@@ -410,7 +410,7 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 	}
 	//---------------------------------------------------------------
 	//
-	// object/tile에 기술을 사용하는 경우 
+	// using a skill on an object or a tile
 	//
 	//---------------------------------------------------------------
 	else
@@ -418,7 +418,7 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 
 	
 		//--------------------------------------------------
-		// 선택한 곳에 Object가 없으면 ..
+		// no object where the player clicked ..
 		//--------------------------------------------------
 		if (pObject == NULL)
 		{
@@ -431,25 +431,25 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 			g_pPlayer->UnSetRepeatAction();
 
 			//--------------------------------------------------
-			// 자신한테 특수 기술 사용
+			// use the special skill on oneself
 			//--------------------------------------------------
 			if (g_pPlayer->SelfSpecialAction())
 			{
 				g_pPlayer->SetRepeatAction();
 			}
 			//--------------------------------------------------
-			// 자신한테 사용하는 특수 기술이 아닌 경우
+			// not a special skill used on oneself
 			//--------------------------------------------------				
 			else if (!g_pPlayer->IsSpecialActionInfoTargetSelf())
 			{
 				g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
 
 				//--------------------------------------------------				
-				// Zone에 특수 기술을 사용한다.
+				// use the special skill on the zone.
 				//--------------------------------------------------				
 				if (g_pPlayer->TraceSectorToSpecialAction( static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x), static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y) ))
 				{
-					// 선택된 Sector로 표시한다.
+					// mark it as the selected sector.
 					g_pTopView->SetSelectedSector( g_SelectSector );
 				
 					g_pPlayer->SetRepeatAction();
@@ -459,13 +459,13 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 			}
 
 			//----------------------------------
-			// Tile이나 자신에게 하는 행동 반복 설정
+			// repeat the action on a tile or on oneself
 			//----------------------------------						
 			g_pTopView->SetSelectedSectorNULL();
 			
 		}		
 		//--------------------------------------------------
-		// 선택된 Object에 대해서 
+		// on the selected object
 		//--------------------------------------------------
 		else 
 		{				
@@ -477,11 +477,11 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 				//--------------------------------------------------
 				case MObject::TYPE_CREATURE :		
 				{
-					// 목표가 되는 Creature
+					// the target creature
 					MCreature* pCreature = ((MCreature*)pObject);
 					
 					//--------------------------------------------------
-					// 다른 애덜에게 사용하는건가?
+					// is it used on others?
 					//--------------------------------------------------
 					if (g_pPlayer->TraceCreatureToSpecialAction( pCreature->GetID(), bForceAttack ))
 					{
@@ -492,9 +492,9 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 					else if (!g_pPlayer->IsSpecialActionInfoTargetOther())
 					{
 						//--------------------------------------------------
-						// (!) 다른 Creature에 사용하는게 아닐 경우
+						// (!) when it is not used on another creature
 						//--------------------------------------------------
-						// 자신한테 특수 기술 사용
+						// use the special skill on oneself
 						if (g_pPlayer->SelfSpecialAction())
 						{
 							g_pPlayer->SetRepeatAction();
@@ -502,10 +502,10 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 						else
 						{	
 							//--------------------------------------------------
-							// 자신에게 사용하는게 아닌 경우
+							// when it is not used on oneself
 							//--------------------------------------------------
-							// 선택됐던 Creature의 좌표의 ..
-							// Zone에 특수 기술을 사용할까?
+							// at the coordinates of the selected creature ..
+							// use the special skill on the zone?
 							if (!g_pPlayer->IsSpecialActionInfoTargetSelf()
 								&& g_pPlayer->TraceSectorToSpecialAction( pCreature->GetX(), pCreature->GetY()))
 							{
@@ -517,7 +517,7 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 					}
 					
 					//----------------------------------
-					// 선택 sector표시 없애기
+					// clear the selected-sector mark
 					//----------------------------------
 					g_pTopView->SetSelectedSectorNULL();
 				}
@@ -526,11 +526,11 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 				//--------------------------------------------------
 				// Item
 				//--------------------------------------------------
-				// Item일 경우는.. 자신한테 사용하거나 Zone에 사용한다.
+				// an item: use it on oneself or on the zone.
 				case MObject::TYPE_ITEM :		
 				{
 					//--------------------------------------------------
-					// 자신한테 특수 기술 사용
+					// use the special skill on oneself
 					//--------------------------------------------------
 					if (g_pPlayer->SelfSpecialAction())
 					{
@@ -539,22 +539,22 @@ CGameUpdate::ProcessInputRButtonDown(MObject* pObject, bool bForceAttack)
 					else
 					{	
 						//--------------------------------------------------
-						// 자신한테 사용하는게 아닌 경우..
+						// when it is not used on oneself..
 						//--------------------------------------------------
-						// 목표가 되는 Creature
+						// the target creature
 						if (!g_pPlayer->IsSpecialActionInfoTargetSelf())
 						{
 							MItem* pItem = ((MItem*)pObject);
 
 							if (pItem!=NULL)
 							{
-								// 와일드 울프를 시체한테 썼을때 예외 처리
+								// the exception for Wild Wolf used on a corpse
 								if(g_pPlayer->GetSpecialActionInfo() == SKILL_WILD_WOLF)
 								{
 									g_pPlayer->UseWildWolf_Corpse(pItem);
 								}
-								// 선택됐던 Creature의 좌표의 ..
-								// Zone에 특수 기술을 사용한다.
+								// at the coordinates of the selected creature ..
+								// use the special skill on the zone.
 								else if (g_pPlayer->TraceSectorToSpecialAction( pItem->GetX(), pItem->GetY()))
 								{
 									g_pPlayer->SetRepeatAction();
@@ -586,33 +586,33 @@ CGameUpdate::ProcessInput()
 	// LButton Up
 	//---------------------------------------------------	
 	if (g_bLButtonDown
-		// L이 Up이거나.. R이 Down인 경우
+		// L went up.. or R went down
 		&& (g_pSDLInput->m_lb_up	|| g_pSDLInput->m_rb_down)
 		)
 	{
 
 		g_bLButtonDown = FALSE;
 
-		// 주위의 누군가를 계속 공격하는 mode를 해제한다.
+		// leave the mode that keeps attacking whoever is around.
 		g_pPlayer->UnSetLockMode();
 	
 		if (g_pPlayer->IsRepeatAction())
 		{
-			// 버튼을 떼었으므로 행동 반복을 취소한다.
+			// the button is released, so stop repeating the action.
 			g_pPlayer->UnSetRepeatAction();
 
 		}
 		else 
 		{		
 			//---------------------------------------------------	
-			// item을 들고 있지 않은 경우
+			// not holding an item
 			//---------------------------------------------------	
-			// 선택된 sector로 정한다.
+			// make it the selected sector.
 			POINT point;
 			g_pPlayer->GetNextDestination( point );		
 			if (point.x==SECTORPOSITION_NULL || point.y==SECTORPOSITION_NULL)
 			{
-				// 현재 가고 있는 곳이 없으면
+				// if the player is not heading anywhere now
 				g_pPlayer->GetDestination( point );
 				if (point.x==SECTORPOSITION_NULL || point.y==SECTORPOSITION_NULL)
 				{
@@ -634,7 +634,7 @@ CGameUpdate::ProcessInput()
 	// RButton Up
 	//---------------------------------------------------	
 	if (g_bRButtonDown
-		// R이 Up이거나. L이 Down인 경우
+		// R went up. or L went down
 		&& (g_pSDLInput->m_rb_up || g_pSDLInput->m_lb_down)
 		)
 	{
@@ -649,7 +649,7 @@ CGameUpdate::ProcessInput()
 		{
 			if (g_pPlayer->IsRepeatAction())
 			{
-				// 버튼을 떼었으므로 행동 반복을 취소한다.
+				// the button is released, so stop repeating the action.
 				g_pPlayer->UnSetRepeatAction();
 
 			}
@@ -733,7 +733,7 @@ CGameUpdate::ProcessInput()
 	
 
 	//---------------------------------------------------	
-	// ItemName List 출력?
+	// show the item name list?
 	//---------------------------------------------------	
 	if ((g_pSDLInput->KeyDown(DIK_LMENU) || g_pSDLInput->KeyDown(DIK_RMENU) || g_pSDLInput->KeyDown(DIK_RCONTROL)
 		)  
@@ -744,9 +744,9 @@ CGameUpdate::ProcessInput()
 		g_pTopView->SetDrawItemNameList();
 
 		if (!g_bWatchMode 
-			// 뭔가 반복행동을 하고 있지 않은 경우
+			// not repeating some action
 			&& !g_pPlayer->IsRepeatAction()
-			// 박쥐나 늑대가 아닌 경우
+			// not a bat or a wolf
 			&& g_pPlayer->GetCreatureType()!=CREATURETYPE_BAT
 			&& g_pPlayer->GetCreatureType()!=CREATURETYPE_WOLF
 			)
@@ -785,21 +785,21 @@ CGameUpdate::ProcessInput()
 
 	//---------------------------------------------------	
 	//
-	//		입력이 제한되는 경우..
+	//	when input is restricted..
 	//
 	//---------------------------------------------------	
-	// - 게임 못하게 하는 dialog가 떠 있는 경우
+	// - a dialog that blocks the game is open
 	//
-	// - Player가 server로부터 검증을 기다리는 상태
+	// - the player is waiting for the server's verification
 	//
-	// - 반복 action중에는 딴 입력은 필요없다.(무시)
+	// - during a repeated action no other input is needed (ignored)
 	//
-	// - UI에서 입력을 받고 있는 경우
+	// - the UI is taking the input
 	//
 	//---------------------------------------------------	
 	if (g_pPlayer->IsWaitVerify() 
-		|| gC_vs_ui.IsInstallMineProgress()	// 지뢰 만드는 중이면..
-		|| g_pPlayer->IsFastMove()	// 빨리 움직이는 경우
+		|| gC_vs_ui.IsInstallMineProgress()	// installing a mine..
+		|| g_pPlayer->IsFastMove()	// moving fast
 		|| UI_IsRunning_WebBrowser()
 		)	
 	{
@@ -807,7 +807,7 @@ CGameUpdate::ProcessInput()
 		return;
 	}
 
-	// 현재 셀렉트중인 캐릭터에 대한 동작이 있으면 리턴
+	// return if there is an action on the currently selected character
 	if (g_pPlayer->IsRepeatAction())
 	{
 		g_pTopView->SetSelectedSectorNULL();
@@ -818,15 +818,15 @@ CGameUpdate::ProcessInput()
 
 
 	//---------------------------------------------------	
-	// UI에서 mouse커서 입력을 잡고 있는 경우
-	// elevator 작동중..
+	// the UI holds the mouse cursor input
+	// the elevator is running..
 	//---------------------------------------------------	
 	if (((g_pUIDialog->IsLockInput() || g_bUIInput)
 		
-		// 파티 떠있을때는 파티창의 캐릭을 선택할 수도 있다.
+		// while the party window is open its characters can be selected.
 		&& !bRunningParty)
 
-		// 다른 동작 못하도록 ...
+		// so nothing else can be done ...
 		|| gC_vs_ui.IsRunningElevator()
 		|| gC_vs_ui.IsRunningXmasCardWindow()
 		|| UI_IsRunningSelectWayPoint())
@@ -841,7 +841,7 @@ CGameUpdate::ProcessInput()
 	
 	//---------------------------------------------------	
 	//
-	// Player가 죽은 경우... 
+	// the player is dead...
 	//
 	//---------------------------------------------------		
 	if (g_pPlayer->IsDead())
@@ -857,15 +857,15 @@ CGameUpdate::ProcessInput()
 
 	//---------------------------------------------------	
 	//
-	// 현재 mouse의 위치에 있는 object에 대해서 check
+	// check the object under the mouse now
 	//
 	//---------------------------------------------------	
-	// 강제공격이거나 SmallZone에 있거나
-	// Hallucination에 걸렸으면 다~ 선택
+	// a forced attack, or in a small zone, or
+	// under Hallucination: select everything
 	//---------------------------------------------------	
 	
 
-	// 강제 공격이 설정되는 경우
+	// when a forced attack is set
 	bool bForceAttack = (g_pSDLInput->KeyDown(DIK_LSHIFT) 
 						|| g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION));
 						
@@ -877,7 +877,7 @@ CGameUpdate::ProcessInput()
 		|| (g_pPlayer->IsSlayer() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_SLAYER)
 		|| (g_pPlayer->IsVampire() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_VAMPIRE)
 		|| (g_pPlayer->IsOusters() && g_pPlayer->GetSpecialActionInfo() != ACTIONINFO_NULL && (*g_pActionInfoTable)[g_pPlayer->GetSpecialActionInfo()].GetUser() == FLAG_ACTIONINFO_USER_OUSTERS)
-		// 2004, 11, 26, sobeit add start - 슬레 140 인챈 스킬 - 슬레에겐 축복, 나머진 저주..ㅋㅋ 
+		// 2004, 11, 26, sobeit add start - the slayers' level-140 enchant skill - a blessing for slayers, a curse for the rest.. heh
 		|| g_pPlayer->GetSpecialActionInfo() == SKILL_INTIMATE_GRAIL
 		// 2004, 11, 26, sobeit add end
 		)
@@ -885,7 +885,7 @@ CGameUpdate::ProcessInput()
 		g_pObjectSelector->SelectAll();				
 	}
 	//---------------------------------------------------	
-	// L-Control누르면 우리편만 선택
+	// with L-Control held, select only our side
 	//---------------------------------------------------	
 	else if (g_pSDLInput->KeyDown(DIK_LCONTROL)
 		|| g_pTopView->IsRequestMode())
@@ -893,38 +893,38 @@ CGameUpdate::ProcessInput()
 		g_pObjectSelector->SelectFriend();		
 	}
 	//---------------------------------------------------	
-	// 아니면.. 적만 선택
+	// otherwise.. select only enemies
 	//---------------------------------------------------	
 	else
 	{
-		// Notice Event 체크해서 ...
-		// 성을 차지하기 위한 전쟁중이라면!!
-		// 1. 기존에 수비하는 길드일 경우 자기 길드 아니면 다 적!
-		// 2. 공격 신청을 한 길드일경우 우리 길드 아니면 다 적!
-		// 3. 길드간 전쟁 신청 외에 다른사람일경우 그 두 길드원 빼고 다 같은 팀!
+		// check the notice event ...
+		// if a war for a castle is on!!
+		// 1. the defending guild: everyone outside one's own guild is an enemy!
+		// 2. a guild that applied to attack: everyone outside our guild is an enemy!
+		// 3. anyone else, outside the guild war: everyone but the two guilds' members is on one team!
 		
 		g_pObjectSelector->SelectEnemy();		
 	}
 
 	//---------------------------------------------------	
-	// 이것 외에도..
+	// besides this..
 	//
-	// g_pObjectSelector->SelectByRace()인지
-	// g_pObjectSelector->SelectByGuild()인지를 선택해야 한다.
+	// whether g_pObjectSelector->SelectByRace()
+	// or g_pObjectSelector->SelectByGuild() has to be chosen.
 	//
-	// 화면에 늘 Icon을 띄워놓는게 좋을 듯.. Race/Guild
+	// an icon always on screen would be good.. Race/Guild
 	//
-	// 또, 공격모드에 따라서 Peace/Attack/Normal Icon도
-	// 있어야 한다.
+	// also, depending on the attack mode, a Peace/Attack/Normal icon
+	// is needed too.
 	//---------------------------------------------------	
-	// Slayer인 경우는 종족에 따라서 선택
+	// a slayer selects by race
 	//---------------------------------------------------	
 	if (g_pPlayer->IsSlayer() || g_pPlayer->IsOusters() )
 	{
 		g_pObjectSelector->SelectByRace();
 	}
 	//---------------------------------------------------	
-	// Vampire인 경우는 Guild에 따라서 선택
+	// a vampire selects by guild
 	//---------------------------------------------------	
 	else
 	{
@@ -939,7 +939,7 @@ CGameUpdate::ProcessInput()
 	int partyMember = (bRunningParty? gC_vs_ui.GetPartyManagerFocused() : -1) - 1;
 
 	//---------------------------------------------------	
-	// 파티UI를 선택하는 경우..
+	// selecting in the party UI..
 	//---------------------------------------------------	
 	if (partyMember >= 0
 		&& partyMember < g_pParty->GetSize())
@@ -950,32 +950,32 @@ CGameUpdate::ProcessInput()
 		if (pInfo!=NULL)
 		{
 
-			// 우욱.. terrible.. - -;
-			// MZone에 Name으로 id검색할 수 있게 map을 추가해야한다.
-			// 그리고.. 바로 Name --> MCreature* 를 알 수 있게 해야한다.. 언제? - -;
+			// ugh.. terrible.. - -;
+			// MZone needs a map to look an id up by name.
+			// and.. it should give Name --> MCreature* directly.. when? - -;
 			pObject = g_pZone->GetCreature( g_pZone->GetCreatureID( pInfo->Name.GetString(), 1 ) );
 
 		}
 	}
 	//---------------------------------------------------	
-	// 존에서 선택..
+	// selecting in the zone..
 	//---------------------------------------------------	
 	else
 	{
 
 		//---------------------------------------------------
-		// 아예 딴 UI에 focus 가 있으면 걍 return해야 한다.
-		// inventory에서 아이템 사용했는데 기술 나갈 수가 있어서.
+		// if another UI has the focus altogether, just return,
+		// because using an item in the inventory could fire a skill.
 		//---------------------------------------------------
-		if (partyMember==-2		// party창에 focus 된게 아니고
-			&& g_bUIInput)		// UI에 입력이 있다면..
+		if (partyMember==-2		// the party window has no focus
+			&& g_bUIInput)		// and the UI has input..
 		{
 
 			return;
 		}
 
 		//---------------------------------------------------	
-		// ItemName을 선택하는 경우면..
+		// when picking an item name..
 		//---------------------------------------------------	
 		if (g_pTopView->IsDrawItemNameList())
 		{
@@ -993,7 +993,7 @@ CGameUpdate::ProcessInput()
 			}
 
 			//---------------------------------------------------	
-			// ItemName이 선택 안됐으면 Object선택
+			// no item name picked: pick an object
 			//---------------------------------------------------	
 			if (pObject==NULL)
 			{
@@ -1003,7 +1003,7 @@ CGameUpdate::ProcessInput()
 			}
 		}
 		//---------------------------------------------------	
-		// 그냥 Object 선택
+		// just pick an object
 		//---------------------------------------------------	
 		else
 		{
@@ -1046,7 +1046,7 @@ CGameUpdate::ProcessInput()
 
 
 	//---------------------------------------------------	
-	// Lock Mode 체크
+	// check the lock mode
 	//---------------------------------------------------	
 	if (g_pSDLInput->KeyDown(DIK_CAPITAL) 
 		&& !g_pPlayer->IsInCasket()
@@ -1054,7 +1054,7 @@ CGameUpdate::ProcessInput()
 	{
 		g_pPlayer->SetLockMode();
 
-		// 무조건 공격 커서로 바뀐다.
+		// always switch to the attack cursor.
 		gpC_mouse_pointer->SetCursorAttack();
 
 		if (g_pSDLInput->m_lb_down)
@@ -1070,13 +1070,13 @@ CGameUpdate::ProcessInput()
 			g_bCButtonDown = TRUE;
 		}
 
-		// Lock Mode에서는 선택된 sector를 없앤다.
+		// in lock mode clear the selected sector.
 		g_pTopView->SetSelectedSectorNULL();
 	}
 	else
 	{
-		// 아무것도 누르지 않은 상태에서 
-		// LockMode이면 LockMode 해제해야 한다.
+		// with nothing pressed,
+		// lock mode, if on, must be released.
 		if (!g_bLButtonDown && !g_bRButtonDown
 			)
 		{
@@ -1085,23 +1085,23 @@ CGameUpdate::ProcessInput()
 	}
 
 	//---------------------------------------------------	
-	// Lock Mode가 아닌 경우만 
-	// 일반적인 입력을 받아들여 행동을 취한다.
+	// only outside lock mode
+	// take the ordinary input and act on it.
 	//---------------------------------------------------	
 	if (!g_pPlayer->IsLockMode())
 	{	
 		
 		//---------------------------------------------------	
-		// Mouse 위치에 Object가 없으면..
+		// no object under the mouse..
 		//---------------------------------------------------	
 		if (pObject==NULL)
 		{
 			
-			// 선택된 것 없게 한다.
+			// select nothing.
 			g_pTopView->SetSelectedNULL();
 			
 			//---------------------------------------------------	
-			// mouse pointer 설정
+			// set the mouse pointer
 			//---------------------------------------------------	
 			{
 				if (g_pPlayer->OnAttacking() || g_pSDLInput->KeyDown(DIK_LSHIFT))
@@ -1119,25 +1119,25 @@ CGameUpdate::ProcessInput()
 						const MSector& sector = g_pZone->GetSector(static_cast<TYPE_SECTORPOSITION>(g_MouseSector.x), static_cast<TYPE_SECTORPOSITION>(g_MouseSector.y));
 						
 						//---------------------------------------------------
-						// 갈 수 없는 곳이면
+						// a place the player cannot go
 						//---------------------------------------------------
 						if ((g_pPlayer->IsGroundCreature() && sector.IsBlockGround())
 							|| (g_pPlayer->IsUndergroundCreature() && sector.IsBlockUnderground())
 							|| (g_pPlayer->IsFlyingCreature() && sector.IsBlockFlying()))
 						{	
-							// 포탈이 아니고
+							// not a portal
 							if (!g_bMouseInPortal
-								// UI에 입력이 없는 경우 --> 게임에 커서가 있는 경우
+								// the UI has no input --> the cursor is over the game
 								&& !g_bUIInput
-								// 선택된 캐릭터가 없는 경우
+								// no character selected
 								&& g_pTopView->GetSelectedCreature()==OBJECTID_NULL)
 							{
-								// 갈 수 없는 커서로 표시
+								// show the cannot-move cursor
 								gpC_mouse_pointer->SetCursorNotMove();					
 							}
 						}
 						//---------------------------------------------------
-						// 갈 수 있는 곳이면..
+						// a place the player can go..
 						//---------------------------------------------------
 						else
 						{
@@ -1160,7 +1160,7 @@ CGameUpdate::ProcessInput()
 		}
 		//---------------------------------------------------	
 		//
-		// Mouse 위치에 Object가 있는 경우
+		// an object under the mouse
 		//
 		//---------------------------------------------------	
 		else
@@ -1169,7 +1169,7 @@ CGameUpdate::ProcessInput()
 			
 			
 			//------------------------------------------------
-			// Creature 위에 mouse가 있는 경우
+			// the mouse over a creature
 			//------------------------------------------------
 			if (objectType==MObject::TYPE_CREATURE)
 			{
@@ -1179,10 +1179,10 @@ CGameUpdate::ProcessInput()
 					
 				if (!g_bMouseInPortal 
 						
-					// 종족에 따라서 공격할 수 있거나
-					// 강제 공격이거나..
+					// attackable by race
+					// or a forced attack..
 					&& g_pObjectSelector->CanAttack( pCreature ) )
-					// 뱀파이어인 경우에는 Guild에 따라서 공격할 수 있거나..	
+					// or, for a vampire, attackable by guild..
 						
 				{
 					if (pCreature->IsNPC())
@@ -1198,7 +1198,7 @@ CGameUpdate::ProcessInput()
 			}
 			
 			//------------------------------------------------
-			// Item 위에 mouse가 있는 경우
+			// the mouse over an item
 			//------------------------------------------------
 			else if (pObject->GetObjectType()==MObject::TYPE_ITEM)
 			{
@@ -1206,8 +1206,8 @@ CGameUpdate::ProcessInput()
 
 				if(g_pZone != NULL && pItem != NULL )
 				{
-					// 슬레이어면 안되게
-					// 뱀파이어면 creature 찾아서 성물인경우만
+					// not for a slayer
+					// for a vampire, find the creature, and only for a relic
 
 					if(!g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() ||
 						(g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() && g_pPlayer->IsVampire() && g_pZone->GetID() != 3001)||
@@ -1220,7 +1220,7 @@ CGameUpdate::ProcessInput()
 						
 						COLORREF color;
 						//------------------------------------------------
-						// option에 따른 색깔
+						// the colour by option
 						//------------------------------------------------
 						if (pItem->IsSpecialColorItem() )
 						{
@@ -1236,28 +1236,28 @@ CGameUpdate::ProcessInput()
 						{
 							color = g_pClientConfig->COLOR_NAME_ITEM_RARE_OPTION;
 						}
-						// add by Sonic 2006.10.28 增加显示三属性装备为红色
+						// add by Sonic 2006.10.28: show gear with three options in red
 						else if(pItem->GetItemOptionListCount() > 2)
 						{
 							color = g_pClientConfig->COLOR_NAME_VAMPIRE; //Red
 						}
-						// end by Sonic 2006.10.28 增加显示三属性装备为红色
+						// end by Sonic 2006.10.28: show gear with three options in red
 						else
 						{
 							color = g_pClientConfig->COLOR_NAME_ITEM_OPTION;
 						}
 						
 						//------------------------------------------------
-						// item집는 커서
+						// the pick-up cursor
 						//------------------------------------------------
 						if (!g_bMouseInPortal&&!g_pPlayer->IsInDarkness())
 						{						
-							// 시체인 경우는 '시체'라고 표시 안한다.
+							// a corpse is not labelled 'corpse'.
 							if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 							{
 								gpC_mouse_pointer->SetCursorPickUp( "", color );
 							}
-							// 보통 아이템은 이름 표시한다.
+							// an ordinary item shows its name.
 							else
 							{
 								char str[80];
@@ -1271,7 +1271,7 @@ CGameUpdate::ProcessInput()
 			}
 
 			//------------------------------------------------
-			// Effect 위에 mouse가 있는 경우
+			// the mouse over an effect
 			//------------------------------------------------
 			else if (pObject->GetObjectType()==MObject::TYPE_EFFECT)
 			{
@@ -1283,22 +1283,22 @@ CGameUpdate::ProcessInput()
 
 		//---------------------------------------------------	
 		//
-		// player의 기술 사용 delay 시간이 지나야 공격 가능하다.
+		// the player can attack only once the skill delay has passed.
 		//
 		//---------------------------------------------------	
 		if (g_pPlayer->IsNotDelay() && !g_pPlayer->HasEffectStatus( EFFECTSTATUS_ETERNITY_PAUSE ) )
 		{
 
 			//-----------------------------------------------
-			// Shift + L/R ButtonDown : 강제 Tile 공격
+			// Shift + L/R ButtonDown : forced tile attack
 			//-----------------------------------------------
 			if (g_pSDLInput->KeyDown(DIK_LSHIFT))
 			{
 				//-----------------------------------------------
-				// Shift + LButtonDown : 강제 공격
+				// Shift + LButtonDown : forced attack
 				//-----------------------------------------------
 				if (g_pSDLInput->m_lb_down
-					// 숨어 있는 경우가 아닐때
+					// when not hiding
 					&& !g_pPlayer->IsInCasket()
 					&& !g_pPlayer->IsUndergroundCreature()
 					&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
@@ -1306,35 +1306,35 @@ CGameUpdate::ProcessInput()
 					g_pPlayer->UnSetRequestMode();
 
 					//-----------------------------------------------
-					// 캐릭터를 강제 공격..
+					// force-attack the character..
 					//-----------------------------------------------
 					if (pObject!=NULL)
 					{
 						if (pObject->GetObjectType()==MObject::TYPE_CREATURE)
 						{
-							// Object가 뭔가 선택됐을 경우에는 
-							// LButton을 누르고 있는 것만으로 이동이 되지않게 한다.
+							// when some object is selected,
+							// holding LButton alone must not move the player.
 							MCreature *pCreature = dynamic_cast<MCreature*>(pObject);
 							g_bLButtonDown = TRUE;
 							
 							if (g_pPlayer->TraceCreatureToBasicAction( 
 										pCreature->GetID(), 
-										true))		// 강제 공격
+										true))		// forced attack
 							{
 								//----------------------------------
-								// 남에게 하는 기본 행동 반복 설정
+								// repeat the basic action on another
 								//----------------------------------
 								g_pPlayer->SetRepeatAction();
 								g_bPreviousMove = false;
 							}
-							// 목적지 표시를 없앤다.
+							// clear the destination mark.
 							g_pTopView->SetSelectedSectorNULL();
 						}
 					}
 
 				}		
 				//-----------------------------------------------
-				// Shift + RButtonDown : 강제 Tile 기술 공격
+				// Shift + RButtonDown : forced tile skill attack
 				//-----------------------------------------------
 				else if (g_pSDLInput->m_rb_down)
 				{
@@ -1360,7 +1360,7 @@ CGameUpdate::ProcessInput()
 				//
 				//---------------------------------------------------------------
 				if (g_pSDLInput->m_lb_down 
-					// burrow 상태가 아니어야 한다.
+					// must not be burrowed.
 					&& !g_pPlayer->IsInCasket()
 					&& !g_pPlayer->IsUndergroundCreature()
 					&& g_pPlayer->CurPernalShop() != 2
@@ -1373,13 +1373,13 @@ CGameUpdate::ProcessInput()
 
 					g_bLButtonDown = TRUE;
 					
-					// 선택된 sector가 없게 한다.
+					// clear the selected sector.
 					g_pTopView->SetSelectedSectorNULL();
 
-					// sector 선택하기
+					// pick the sector
 					g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
 
-					// 인스톨 터렛일때.. 잡다한 lbuttton 처리 않는다.. lbutton = 무조건 터렛 공격
+					// with Install Turret.. no other lbutton handling.. lbutton = always the turret's attack
 					if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 					{		
 						int TempDir = MTopView::GetDirectionToPosition(g_pPlayer->GetX(), g_pPlayer->GetY(),g_SelectSector.x, g_SelectSector.y);
@@ -1394,11 +1394,11 @@ CGameUpdate::ProcessInput()
 						}
 					}
 					//--------------------------------------------------
-					// 선택한 곳에 Object가 없으면 MOVE
+					// no object where the player clicked: MOVE
 					//--------------------------------------------------
 					else if (pObject == NULL)
 					{		
-						// l-shift나 l-control이 눌려있지 않은 상태에서만 이동.
+						// move only while neither l-shift nor l-control is held.
 						if (!g_pSDLInput->KeyDown(DIK_LCONTROL))
 						{		
 							if (g_pPlayer->IsNotDelay() && !g_pPlayer->HasEffectStatus(EFFECTSTATUS_ETERNITY_PAUSE ) 
@@ -1407,7 +1407,7 @@ CGameUpdate::ProcessInput()
 								if (g_pPlayer->SetMovePosition(static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x), static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y)))
 								{
 									{
-										// 다음 목표위치로 설정한다
+										// set it as the next destination
 										g_pPlayer->TraceNULL();							
 										
 										g_pPlayer->SetNextActionToMove();
@@ -1420,7 +1420,7 @@ CGameUpdate::ProcessInput()
 
 					}
 					//--------------------------------------------------
-					// 선택된 Object에 대해서 
+					// on the selected object
 					//--------------------------------------------------
 					else 
 					{	
@@ -1429,20 +1429,20 @@ CGameUpdate::ProcessInput()
 						{			
 							case MObject::TYPE_CREATURE :	
 								{
-									// 2004, 12, 3, 석민씨 추가
+									// 2004, 12, 3, added by Seokmin
 									MCreature* TempCreature = (MCreature*)pObject;
 									if(TempCreature->CurPernalShop() == 1 )
 									{
 										gpC_base->SendMessage(UI_REQUEST_STORE_INFO, pObject->GetID(),0);
 										gC_vs_ui.SetOtherObjectID(pObject->GetID());
 									}
-									// 2004, 12, 3, 석민씨 추가
+									// 2004, 12, 3, added by Seokmin
 
 									if (g_pPlayer->TraceCreatureToBasicAction( pObject->GetID(), 
 																				bForceAttack, true ))
 									{
 										//----------------------------------
-										// 남에게 하는 기본 행동 반복 설정
+										// repeat the basic action on another
 										//----------------------------------
 										g_pPlayer->SetRepeatAction();
 										g_bPreviousMove = false;
@@ -1496,9 +1496,9 @@ CGameUpdate::ProcessInput()
 				}
 
 				//---------------------------------------------------------------
-				// L/R Button을 누르지는 않았지만,
-				// 이전에 누른 LButton이 계속 눌려진 상태라면..
-				// But(!), L-Shift가 눌러지지 않아야 한다.
+				// no L/R button pressed,
+				// but the LButton pressed before is still held..
+				// But(!), L-Shift must not be held.
 				//---------------------------------------------------------------
 				else if (g_bLButtonDown 				
 						&& !g_pSDLInput->KeyDown(DIK_LSHIFT)
@@ -1506,8 +1506,8 @@ CGameUpdate::ProcessInput()
 				{
 
 					//--------------------------------------------------
-					// 선택한 곳에 Object가 없고
-					// 방금전에 이동하고 있던 중이면 MOVE
+					// no object where the player clicked,
+					// and the player was moving just now: MOVE
 					//--------------------------------------------------
 					if (pObject == NULL && g_bPreviousMove)
 					{	
@@ -1515,7 +1515,7 @@ CGameUpdate::ProcessInput()
 						{
 							g_SelectSector = g_pTopView->GetSelectedSector(g_x, g_y);
 
-							// 다음 목표위치로 설정한다
+							// set it as the next destination
 							g_pPlayer->TraceNULL();
 							
 							if (g_pPlayer->SetMovePosition(static_cast<TYPE_SECTORPOSITION>(g_SelectSector.x), static_cast<TYPE_SECTORPOSITION>(g_SelectSector.y)))
@@ -1541,21 +1541,21 @@ CGameUpdate::ProcessInput()
 	
 		if (g_pPlayer->IsRepeatAction())
 		{
-			// 버튼을 떼었으므로 행동 반복을 취소한다.
+			// the button is released, so stop repeating the action.
 			g_pPlayer->UnSetRepeatAction();
 
 			g_bPreviousMove = false;
 		}
 		else
 		{	
-			// 선택된 sector로 정한다.
+			// make it the selected sector.
 			POINT point;
 			
-			// 다음 갈 곳이 없으면
+			// if there is no next destination
 			g_pPlayer->GetNextDestination( point );		
 			if (point.x==SECTORPOSITION_NULL || point.y==SECTORPOSITION_NULL)
 			{
-				// 현재 가고 있는 곳이 없으면
+				// if the player is not heading anywhere now
 				g_pPlayer->GetDestination( point );
 				if (point.x==SECTORPOSITION_NULL || point.y==SECTORPOSITION_NULL)
 				{
@@ -1584,7 +1584,7 @@ CGameUpdate::ProcessInput()
 
 		if (g_pPlayer->IsRepeatAction())
 		{
-			// 버튼을 떼었으므로 행동 반복을 취소한다.
+			// the button is released, so stop repeating the action.
 			g_pPlayer->UnSetRepeatAction();
 		}
 	}
@@ -1594,7 +1594,7 @@ CGameUpdate::ProcessInput()
 		g_bCButtonDown = FALSE;
 	}
 
-	// 가만히 서 있는 상태이면 목표 위치를 없앤다.
+	// standing still: clear the destination.
 	if (g_pPlayer->GetAction()==ACTION_STAND)
 	{
 		g_pTopView->SetSelectedSectorNULL();
@@ -1616,26 +1616,26 @@ CGameUpdate::UpdateDraw()
 	
 		char	str[128];
 
-	// buffer : InitSurface에서 SYSTEMMEMORY로 해주고 써야된다.
+	// buffer : InitSurface must make it SYSTEMMEMORY before it is used.
 	//
 	
 
 	//-----------------------------------------------------------------		
-	// 마우스 좌표 다시 설정
+	// set the mouse coordinates again
 	//-----------------------------------------------------------------
 	m_pHost->GetCursorPoint(point);
 	WindowToGamePoint(point);
 
-	// ui에 mouse좌표 설정
+	// give the UI the mouse coordinates
 	gC_vs_ui.MouseControl(M_MOVING, point.x, point.y);
 
 	//-----------------------------------------------------------------
-	// 탑뷰 Zone 출력
+	// draw the zone in the top view
 	//-----------------------------------------------------------------
 
 	{
 		//-----------------------------------------------------------------
-		// Game 화면 출력
+		// draw the game screen
 		//-----------------------------------------------------------------
 		__BEGIN_PROFILE("GameDraw2D")
 
@@ -1688,7 +1688,7 @@ CGameUpdate::UpdateDraw()
 
 
 		//-----------------------------------------------------------------
-		// UI 출력
+		// draw the UI
 		//-----------------------------------------------------------------		
 		__BEGIN_PROFILE("UIDraw2D")
 
@@ -1708,7 +1708,7 @@ CGameUpdate::UpdateDraw()
 			if (outputInfo || g_pUserOption->DrawFPS)
 			{
 				//-----------------------------------------------------------------
-				// FPS 찍기	
+				// print the FPS
 				//-----------------------------------------------------------------				
 				SafeFormat::Format(str, "%d FPS", g_FrameRate);
 				
@@ -1725,7 +1725,7 @@ CGameUpdate::UpdateDraw()
 		__END_PROFILE("DrawFPS")
 
 		//-----------------------------------------------------------------
-		// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
+		// copy Last to Back - only without 3D HAL..
 		//-----------------------------------------------------------------
 		__BEGIN_PROFILE("LastToBack")
 
@@ -1742,7 +1742,7 @@ CGameUpdate::UpdateDraw()
 	
 
 	//-----------------------------------------------------------------
-	// 죽은 상태..
+	// dead..
 	//-----------------------------------------------------------------
 	if (g_pPlayer->IsDead())
 	{
@@ -1760,11 +1760,11 @@ CGameUpdate::UpdateDraw()
 				blackValue = min(31, second+20);
 			}
 
-			// 죽는 동작이 끝난 경우에 화면을 검게...
+			// once the dying action has finished, darken the screen...
 			g_pTopView->SetFadeStart(blackValue, 0, 0, 5,5,5);
 		
 
-			// 6 frame씩 보여준다.
+			// show it 6 frames at a time.
 			if ((a & 0x01)==0)
 			{
 				{
@@ -1772,7 +1772,7 @@ CGameUpdate::UpdateDraw()
 				{
 				}
 				
-				// 6초가 지나고나서 부활버튼을 띄운다.
+				// after 6 seconds, show the resurrect button.
 				if (second < 4
 					&& g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 				{
@@ -1785,7 +1785,7 @@ CGameUpdate::UpdateDraw()
 					g_pTempInformation->SetMode(TempInformation::MODE_WAIT_RESURRECT);
 					bool bResurrect = false, bElixir= false, bEternity= false, IsSiegeAttacker= false ;
 
-					// 2005, 1, 18, sobeit add start - 퀘스트 action으로 죽은 경우엔 아래를 체크 안한다.
+					// 2005, 1, 18, sobeit add start - a death by a quest action skips the checks below.
 					if(0 == g_pPlayer->GetResurrectZoneID())
 					// 2005, 1, 18, sobeit add end
 					{
@@ -1797,7 +1797,7 @@ CGameUpdate::UpdateDraw()
 
 						bEternity = g_pSkillAvailable->IsEnableSkill( SKILL_ETERNITY ) &&
 									(*g_pSkillInfoTable)[SKILL_ETERNITY].IsAvailableTime() 
-									// 2004, 11, 11, sobeit add start - 레벨 검사도 한다.. 요거..g_char_slot_ingame.DOMAIN_HEAL는 뭐지? -_-; 버그 수정..ㅡㅡ;
+									// 2004, 11, 11, sobeit add start - check the level too.. this one.. what is g_char_slot_ingame.DOMAIN_HEAL? -_-; bug fix.. -_-;
 									&& (*g_pSkillManager)[SKILLDOMAIN_HEAL].GetDomainLevel() >= (*g_pSkillInfoTable)[SKILL_ETERNITY].GetLearnLevel();
 									// 2004, 11, 11, sobeit add end
 						IsSiegeAttacker = g_pZone->GetPKType() == PK_TYPE_SIEGE &&
@@ -1822,7 +1822,7 @@ CGameUpdate::UpdateDraw()
 	}
 
 	//-----------------------------------------------------------------
-	// Mouse 그리기
+	// draw the mouse
 	//-----------------------------------------------------------------
 	if (!g_pTopView->IsDrawRequest())
 	{
@@ -1830,7 +1830,7 @@ CGameUpdate::UpdateDraw()
 	}
 
 	//-----------------------------------------------------------------
-	// Debug Information출력
+	// print the debug information
 	//-----------------------------------------------------------------
 	__BEGIN_PROFILE("DrawDebugInfo")
 
@@ -1849,7 +1849,7 @@ CGameUpdate::UpdateDraw()
 //-----------------------------------------------------------------------------
 // Update Game
 //-----------------------------------------------------------------------------
-// 게임 실행 중...
+// the game running...
 //-----------------------------------------------------------------------------
 void 
 CGameUpdate::Update(void)
@@ -1866,7 +1866,7 @@ CGameUpdate::Update(void)
 	}
 	
 	//------------------------------------------
-	// Logout 할 시간인치 체크한다.
+	// check whether it is time to log out.
 	//------------------------------------------
 	if (g_pUserInformation!=NULL
 		&& g_pUserInformation->IsLogoutDue(g_FrameNow)
@@ -1882,9 +1882,9 @@ CGameUpdate::Update(void)
 
 
 	//---------------------------------------------
-	// Sound관련
+	// sound
 	//---------------------------------------------
-	// 매 loop 마다 안해줘도 되지 않을까..
+	// does this really need doing every loop..
 
 	g_SDLAudio.ReleaseTerminatedDuplicateBuffer();
 
@@ -1903,15 +1903,15 @@ CGameUpdate::Update(void)
 
 	//---------------------------------------------------
 	//
-	// 일정 시간마다 한번씩 처리를 해준다.
+	// process once per fixed interval.
 	//
 	//---------------------------------------------------
-	// [예제]
+	// [example]
 	// g_UpdateDelay	: 100
 	// lastTime			: 1000 
 	// currentTime		: 1240 
 	//
-	// 1200, 1100의 두번을 처리하게 된다.
+	// processes two ticks: 1200 and 1100.
 	//---------------------------------------------------
 
 	int k = g_pClientConfig->MAX_UPDATE_ONETIME;		// 12 frame * 1 Tile.. 
@@ -1920,9 +1920,9 @@ CGameUpdate::Update(void)
 	m_pHost->UpdateMouse();
 
 	//------------------------------------------
-	// 무한루프 예방도 되고...
-	// k값마다 한번씩은 Draw를 해주기 때문에
-	// Frame Skipping을 적용시킨다.				
+	// this also prevents an endless loop...
+	// and since it draws at least once every k ticks,
+	// it applies frame skipping.
 	//------------------------------------------
 
 	if(g_UpdateDelay!=62)
@@ -1937,7 +1937,7 @@ CGameUpdate::Update(void)
 	if (g_CheckTimeNum>30)
 	{
 		g_CheckTimeNum=0;
-		// 2006.11.07  去除程序双开检测 Coffee 
+		// 2006.11.07  removed the check for a second running client (Coffee)
 	}else
 	{
 		g_CheckTimeNum++;
@@ -1951,19 +1951,19 @@ CGameUpdate::Update(void)
 	FindWindow("a","b");
 	if (g_FrameNow - lastTime >= MonotonicClock::Millis(tmp))
 	{
-		// 변화된것이 있다고 check
+		// mark that something changed
 		g_bFrameChanged = true;
 
 		do
 		{
 
-			// 게임의 frame수 증가
+			// advance the game's frame count
 			g_CurrentFrame++;
 		
 
 			//------------------------------------------
 			//
-			// Socket 입력 처리
+			// socket input
 			//
 			//------------------------------------------
 			__BEGIN_PROFILE("GameSocketInput")
@@ -1987,12 +1987,12 @@ CGameUpdate::Update(void)
 
 			//------------------------------------------
 			//
-			// Input 처리
+			// input
 			//
 			//------------------------------------------
 			if (g_bActiveGame)
 			{
-				// Input값을 읽어온다.
+				// read the input.
 				m_pHost->UpdateInput();
 				
 				__BEGIN_PROFILE("ProcessInput")
@@ -2020,7 +2020,7 @@ CGameUpdate::Update(void)
 
 			//------------------------------------------
 			//
-			// Socket 출력 처리
+			// socket output
 			//
 			//------------------------------------------
 			__BEGIN_PROFILE("GameSocketOutput")
@@ -2039,7 +2039,7 @@ CGameUpdate::Update(void)
 
 			//------------------------------------------
 			//
-			//	날씨 처리
+			//	weather
 			//
 			//------------------------------------------
 			if (g_pWeather!=NULL)
@@ -2073,7 +2073,7 @@ CGameUpdate::Update(void)
 
 			//------------------------------------------
 			//
-			// Zone의 object들을 update한다.
+			// update the zone's objects.
 			//
 			//------------------------------------------
 				
@@ -2092,9 +2092,9 @@ CGameUpdate::Update(void)
 					&& --k);
 
 /* add by sonic 2006.9.12 */
-//增加时间检测
+// added a time check
 		//------------------------------------------------------------------
-		// 1분 마다 한번씩 garbarge packet을 보낸다.
+		// send a garbage packet once a minute.
 		//------------------------------------------------------------------
 #ifdef PLATFORM_WINDOWS
 		// Windows-specific anti-cheat time verification - Windows only
@@ -2154,11 +2154,11 @@ CGameUpdate::Update(void)
 		}
 #endif // PLATFORM_WINDOWS
 /* add end by sonic */
-		// k번 만큼 update했는데도..
-		// 더 update해야할 것이 있으면.. 무시한다..
-		// 무시할까??
-		// 디아처럼.. 갑자기 달리기는 어떨까? -_-;
-		//检测外挂
+		// if after k updates..
+		// there is still more to update.. ignore it..
+		// ignore it??
+		// like Diablo.. how about suddenly running? -_-;
+		// detect cheat programs
 
 #ifdef PLATFORM_WINDOWS
 		// Windows-specific anti-cheat error check - Windows only
@@ -2177,7 +2177,7 @@ CGameUpdate::Update(void)
 	
 			if (OnetimeUpdateCount > g_pClientConfig->MAX_UPDATE_ONETIME_COUNT)
 			{
-				// 더 이상은 update못하게 한다.
+				// allow no more updates.
 				lastTime = g_FrameNow;
 				OnetimeUpdateCount = 0;
 			}
@@ -2203,7 +2203,7 @@ CGameUpdate::Update(void)
 		if (lastHour != currentHour)
 		{
 			//---------------------------------------------
-			// 시간이 바꼈으면 그림자도 바꿔야 한다.
+			// a new hour changes the shadows too.
 			//---------------------------------------------
 			if (g_pTopView!=NULL)
 			{
@@ -2213,9 +2213,9 @@ CGameUpdate::Update(void)
 			lastHour = g_pGameTime->GetHour();
 
 			//---------------------------------------------
-			// 음악도 바꾼다.
+			// change the music too.
 			//---------------------------------------------
-			// 짝수 시간대에만 음악 연주..
+			// play music only on even hours..
 			if ((currentHour & 0x01)==0)
 			{
 				WorldEvents::PlayMusicCurrentZone();
@@ -2225,7 +2225,7 @@ CGameUpdate::Update(void)
 
 		
 		//---------------------------------------------
-		// 시간
+		// the time
 		//---------------------------------------------
 		char str[80];
 
@@ -2243,7 +2243,7 @@ CGameUpdate::Update(void)
 		}
 
 		//---------------------------------------------
-		// 시간
+		// the time
 		//---------------------------------------------
 		SafeFormat::Format(str, GetGameString(STRING_DRAW_GAME_DATE),
 					g_pGameTime->GetYear(),
@@ -2256,7 +2256,7 @@ CGameUpdate::Update(void)
 	
 	
 	//---------------------------------------------
-	// Zone의 환경 사운드 출력
+	// play the zone's ambient sounds
 	//---------------------------------------------
 	if (g_pZoneSoundManager!=NULL)
 	{
@@ -2264,13 +2264,13 @@ CGameUpdate::Update(void)
 	}
 
 	//---------------------------------------------
-	// UI에 player 좌표 설정
+	// give the UI the player's coordinates
 	//---------------------------------------------
 	gC_vs_ui.SetXY( g_pPlayer->GetX(), g_pPlayer->GetY() );
 
 	//---------------------------------------------
 	//
-	// Draw - 변화된게 있으면 그려준다.
+	// Draw - draw when something changed.
 	//
 	//---------------------------------------------
 	{
@@ -2279,8 +2279,8 @@ CGameUpdate::Update(void)
 		DWORD& oldFrame = m_OldFrame;
 
 		//------------------------------------------------------
-		// Update됐으면..
-		// 새로운 게임 화면을 그려준다.
+		// if it updated..
+		// draw the new game screen.
 		//------------------------------------------------------
 		// Draw between ticks too - positions interpolate by g_DrawAlphaNum
 		// and vsync paces the presents (CDirectDraw.cpp). lastTime is the
@@ -2302,9 +2302,9 @@ CGameUpdate::Update(void)
 			lastDrawTime = g_FrameNow;
 
 			//------------------------------------------------------
-			// 화면 출력
+			// draw the screen
 			//------------------------------------------------------
-			// 마우스 좌표나 ... frame이 바뀐 경우에 출력..
+			// draw when the mouse coordinates ... or the frame changed..
 			if (g_CurrentFrame != oldFrame
 				|| g_x != oldX
 				|| g_y != oldY || 1)
