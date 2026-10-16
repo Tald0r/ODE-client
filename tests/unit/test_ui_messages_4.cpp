@@ -240,30 +240,11 @@ bool SameBytes(const Bytes& expected, const Bytes& sent)
 }
 
 // The game connection: what it is asked to send is written to its
-// output, as on the wire, and kept - but for three packets whose write()
-// reads what the handler never set, which are named in the calls instead:
-// the two guild requests' guild id and Eternity's effect id, which no
-// constructor initialises (writing them reads an indeterminate value).
+// output, as on the wire, and kept.
 struct Line : ClientPlayer
 {
 	Line() : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl()))) {}
 	~Line() { setPlayerStatus(CPS_END_SESSION); }
-	void sendPacket(Packet* pPacket) override
-	{
-		switch (pPacket->getPacketID())
-		{
-		case Packet::PACKET_CG_REQUEST_GUILD_MEMBER_LIST:
-			calls.push_back("guild member list");
-			return;
-		case Packet::PACKET_CG_SELECT_GUILD_MEMBER:
-			calls.push_back("select guild member|" + static_cast<CGSelectGuildMember*>(pPacket)->getName());
-			return;
-		case Packet::PACKET_CG_SKILL_TO_SELF:
-			calls.push_back("skill to self|" + N(static_cast<CGSkillToSelf*>(pPacket)->getSkillType()));
-			return;
-		}
-		ClientPlayer::sendPacket(pPacket);
-	}
 	Bytes Sent() const { return SocketOutputStreamTestAccess::Bytes(*m_pOutputStream); }
 };
 
@@ -605,12 +586,12 @@ TEST(UIMessages4Senders, EachSendsItsPacketWithEveryField)
 	};
 	const Row rows[] = {
 		{"guild info", UI_REQUEST_GUILD_INFO, 9, 9, NULL, One<CGSelectGuild>([](CGSelectGuild& p) { p.setGuildID(321); }), {}},
-		// Recorded defect: the guild id is never set (L8814, L8843), and no
-		// constructor sets it, so two indeterminate bytes go out with it.
-		{"guild members", UI_REQUEST_GUILD_MEMBER_LIST, 9, 9, NULL, {}, {"guild member list"}},
+		// Recorded defect: the guild id is never set (the server uses the
+		// creature's own), so it goes out as its constructor's 0.
+		{"guild members", UI_REQUEST_GUILD_MEMBER_LIST, 9, 9, NULL, One<CGRequestGuildMemberList>([](CGRequestGuildMemberList&) {}), {}},
 		{"modify member", UI_MODIFY_GUILD_MEMBER, 0x12345, 0x1FF, name, One<CGModifyGuildMember>([](CGModifyGuildMember& p) { p.setGuildID(0x2345); p.setGuildMemberRank(0xFF); p.setName("Kim"); }), {}},
 		{"modify member, none", UI_MODIFY_GUILD_MEMBER, 0x12345, 0x1FF, NULL, {}, {}},
-		{"select member", UI_SELECT_TEAM_MEMBER_LIST, 9, 9, name, {}, {"select guild member|Kim"}},
+		{"select member", UI_SELECT_TEAM_MEMBER_LIST, 9, 9, name, One<CGSelectGuildMember>([](CGSelectGuildMember& p) { p.setName("Kim"); }), {}},
 		{"select member, none", UI_SELECT_TEAM_MEMBER_LIST, 9, 9, NULL, {}, {}},
 		{"select ready team", UI_SELECT_READY_TEAM_LIST, 0x10007, 9, team, One<CGSelectGuild>([](CGSelectGuild& p) { p.setGuildID(7); }), {}},
 		{"select ready team, none", UI_SELECT_READY_TEAM_LIST, 7, 9, NULL, {}, {}},
@@ -1048,12 +1029,11 @@ TEST(UIMessages4Death, TheResurrectButtonsUseAScrollEternityOrTheRegenZone)
 	CHECK_EQ(int(MPlayer::ITEM_CHECK_BUFFER_USE_FROM_INVENTORY), int(scene.me->GetItemCheckBufferStatus()));
 	scene.me->ClearItemCheckBuffer();
 	scene.Fresh();
-	// Recorded defect: Eternity's effect id is never set (L9706), so an
-	// indeterminate one goes with it.
+	// Recorded defect: Eternity's effect id is never set, so it goes out
+	// as its constructor's 0.
 	calls.clear();
 	scene.Run(UI_FINISH_REQUEST_RESURRECT_BUTTON, 2);
-	CHECK(Same({"skill to self|" + N(SKILL_ETERNITY)}));
-	CHECK(scene.Nothing());
+	CHECK(SameBytes(One<CGSkillToSelf>([](CGSkillToSelf& p) { p.setSkillType(SKILL_ETERNITY); }), scene.Sent()));
 	scene.Fresh();
 	scene.Run(UI_FINISH_REQUEST_RESURRECT_BUTTON, 3);
 	CHECK(SameBytes(One<CGSelectRegenZone>([](CGSelectRegenZone& p) { p.setRegenZoneID(14); }), scene.Sent()));
