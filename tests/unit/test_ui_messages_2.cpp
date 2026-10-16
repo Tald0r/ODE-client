@@ -2263,13 +2263,8 @@ TEST(UIMessages2DropToGear, AnItemTheGearRefusesLeavesTheMouseAnyway)
 	CHECK(scene.mouse.GetPickUpItem() == NULL);
 	CHECK(scene.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_HELM) == NULL);
 	CHECK_EQ(0, scene.slayerGear.GetItemNum());
-	// A slot past the gear (still one the enum holds).
-	calls.clear();
-	scene.mouse.PickUpItem(pNecklace, 0, 0);
-	scene.Execute(UI_ITEM_DROP_TO_GEAR, MSlayerGear::MAX_GEAR_SLAYER);
-	CHECK(Same({"skills refreshed", "to gear|801|7"}));
-	CHECK(scene.mouse.GetPickUpItem() == NULL);
-	CHECK_EQ(0, scene.slayerGear.GetItemNum());
+	// (MAX_GEAR_SLAYER, the count, is refused before anything moves:
+	// ASlotPastTheRacesGearEnumIsRefused.)
 	// Another race's item.
 	calls.clear();
 	MItem* pVampires = scene.Item(ITEM_CLASS_VAMPIRE_NECKLACE, 802, 0, FLAG_RACE_VAMPIRE);
@@ -2286,7 +2281,7 @@ TEST(UIMessages2DropToGear, ASlotPastTheRacesGearEnumIsRefused)
 	// 256 past a slot would land in it through the gear's BYTE.
 	Scene scene;
 	MItem* pNecklace = scene.OnMouse(ITEM_CLASS_NECKLACE, 801);
-	for (intptr_t slot : {intptr_t(256 + MSlayerGear::GEAR_SLAYER_NECKLACE), intptr_t(MSlayerGear::MAX_GEAR_SLAYER + 1), intptr_t(-1)})
+	for (intptr_t slot : {intptr_t(256 + MSlayerGear::GEAR_SLAYER_NECKLACE), intptr_t(MSlayerGear::MAX_GEAR_SLAYER), intptr_t(MSlayerGear::MAX_GEAR_SLAYER + 1), intptr_t(-1)})
 		scene.Execute(UI_ITEM_DROP_TO_GEAR, slot);
 	CHECK(calls.empty());
 	CHECK(scene.mouse.GetPickUpItem() == pNecklace);
@@ -2298,6 +2293,7 @@ TEST(UIMessages2DropToGear, ASlotPastTheRacesGearEnumIsRefused)
 	scene.mouse.PickUpItem(pVampires, 0, 0);
 	calls.clear();
 	scene.Execute(UI_ITEM_DROP_TO_GEAR, 256 + MVampireGear::GEAR_VAMPIRE_NECKLACE);
+	scene.Execute(UI_ITEM_DROP_TO_GEAR, MVampireGear::MAX_GEAR_VAMPIRE);
 	scene.Execute(UI_ITEM_DROP_TO_GEAR, MVampireGear::MAX_GEAR_VAMPIRE + 1);
 	CHECK(calls.empty());
 	CHECK(scene.mouse.GetPickUpItem() == pVampires);
@@ -2308,6 +2304,7 @@ TEST(UIMessages2DropToGear, ASlotPastTheRacesGearEnumIsRefused)
 	scene.mouse.PickUpItem(pOusters, 0, 0);
 	calls.clear();
 	scene.Execute(UI_ITEM_DROP_TO_GEAR, 256 + MOustersGear::GEAR_OUSTERS_PENDENT2);
+	scene.Execute(UI_ITEM_DROP_TO_GEAR, MOustersGear::MAX_GEAR_OUSTERS);
 	scene.Execute(UI_ITEM_DROP_TO_GEAR, MOustersGear::MAX_GEAR_OUSTERS + 1);
 	CHECK(calls.empty());
 	CHECK(scene.mouse.GetPickUpItem() == pOusters);

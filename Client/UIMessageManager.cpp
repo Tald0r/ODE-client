@@ -3894,11 +3894,12 @@ UIMessageManager::Execute_UI_ITEM_DROP_TO_GEAR(intptr_t left, intptr_t right, vo
 		return;
 	}
 
-	// left is cast to the race's gear enum below: refuse a slot past it.
+	// left is cast to the race's gear enum below: refuse a slot past its
+	// last (MAX_GEAR_* is the count, no slot).
 	const intptr_t lastSlot = g_pPlayer->GetRace()==RACE_SLAYER ? intptr_t(MSlayerGear::MAX_GEAR_SLAYER)
 		: g_pPlayer->GetRace()==RACE_VAMPIRE ? intptr_t(MVampireGear::MAX_GEAR_VAMPIRE)
 		: intptr_t(MOustersGear::MAX_GEAR_OUSTERS);
-	if (left < 0 || left > lastSlot)
+	if (left < 0 || left >= lastSlot)
 	{
 		DEBUG_ADD_FORMAT_ERR("[Error] UI_ITEM_DROP_TO_GEAR slot=%d", static_cast<int>(left));
 		return;
