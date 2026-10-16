@@ -1722,12 +1722,20 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 
 	if (login->sz_id!=NULL && login->sz_password!=NULL)
 	{
-		//if (IsValidID(login->sz_id, NULL))
+		// CLLogin::write throws for an empty ID or one past 30 (2048 in
+		// Netmarble's layout) and, outside that layout, for an empty
+		// password or one past 20: refuse them before anything is sent.
+		const bool bNetmarble = g_pUserInformation->IsNetmarble;
+		const size_t idLength = strlen(login->sz_id);
+		const size_t passwordLength = strlen(login->sz_password);
+
+		if (idLength > 0 && idLength <= (bNetmarble ? 2048u : 30u))
 		{
 			// remember ID
 			//UI_BackupLoginID(((LOGIN *)void_ptr)->sz_id);
 			
-			if (IsValidPassword(login->sz_password))
+			if (IsValidPassword(login->sz_password)
+				&& (bNetmarble || (passwordLength > 0 && passwordLength <= 20)))
 			{
 				{
 					DEBUG_ADD("[Execute_UI_LOGIN]");
@@ -1849,10 +1857,10 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 		//---------------------------------------------
 		// if the ID is invalid
 		//---------------------------------------------
-		//else
-		//{
-			//g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_USER_REGISTER_INVALID_ID].GetString() );							
-		//}
+		else
+		{
+			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_USER_REGISTER_INVALID_ID].GetString() );
+		}
 	}
 	
 

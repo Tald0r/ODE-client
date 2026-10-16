@@ -1554,11 +1554,12 @@ TEST(UIMessages1Login, NoSocketNothingSent)
 	g_Mode = MODE_MAINMENU;
 	socketAnswer = FALSE;
 	const PlayerStatus status = scene.wire.getPlayerStatus();
-	// The ID is not checked (a refused socket shows it is past the checks).
-	for (const char* id : {"Alpha1", "", "1 $"})
+	// Only the lengths the packet carries are checked (a refused socket
+	// shows the ID and password are past the checks).
+	for (const std::string& id : {std::string("Alpha1"), std::string(30, 'a'), std::string("1 $")})
 	{
 		calls.clear();
-		LOGIN login = {NewArray(id), NewArray("")};
+		LOGIN login = {NewArray(id.c_str()), NewArray(std::string(20, 'p').c_str())};
 		scene.Run(UI_LOGIN, 0, 0, &login);
 		CHECK(Same({"addon|0", "init socket"}));
 		CHECK(login.sz_id == NULL && login.sz_password == NULL);
@@ -1649,43 +1650,35 @@ TEST(UIMessages1Login, ANetmarbleAutoLoginKeepsTheMode)
 	CHECK(longID == g_pUserInformation->UserID.GetString());
 }
 
-TEST(UIMessages1Login, AnEmptyIDThrowsOutOfTheLogin)
+TEST(UIMessages1Login, AnIDOrPasswordThePacketCannotCarryIsRefused)
 {
-	// Sleeps half a second. Recorded defect: the ID is never checked, and
-	// CLLogin::write throws for an empty one (or one over 30 characters):
-	// the throw leaves Execute, skipping the status, the mode and the
-	// deletes (the test frees the strings).
+	// Before anything is sent: CLLogin::write throws for an empty ID or
+	// one past 30 (2048 in Netmarble's layout) and, outside that layout,
+	// for an empty password or one past 20.
 	Login scene;
 	g_Mode = MODE_MAINMENU;
 	const PlayerStatus status = scene.wire.getPlayerStatus();
-	LOGIN login = {NewArray(""), NewArray("secret1")};
-	char* pID = login.sz_id;
-	char* pPassword = login.sz_password;
-	std::srand(5);
-	std::rand();
-	const int encryptKey = std::rand();
-	const int hashKey = std::rand();
-	std::srand(5);
-	bool bThrew = false;
-	try {
+	struct Case { bool netmarble; std::string id; std::string password; const char* why; };
+	const Case cases[] = {
+		{false, "", "secret1", kInvalidID},
+		{false, std::string(31, 'a'), "secret1", kInvalidID},
+		{false, "Alpha1", "", kPasswordSpecial},
+		{false, "Alpha1", std::string(21, 'p'), kPasswordSpecial},
+		{true, "", "secret1", kInvalidID},
+		{true, std::string(2049, 'n'), "secret1", kInvalidID},
+	};
+	for (const Case& k : cases)
+	{
+		g_pUserInformation->IsNetmarble = k.netmarble;
+		scene.Clear();
+		LOGIN login = {NewArray(k.id.c_str()), NewArray(k.password.c_str())};
 		scene.Run(UI_LOGIN, 0, 0, &login);
-	} catch (Throwable&) {
-		bThrew = true;
+		CHECK(Same({"addon|0", Popup(k.why)}));
+		CHECK(login.sz_id == NULL && login.sz_password == NULL);
 	}
-	CHECK(bThrew);
-	CLVersionCheck version;
-	version.setVersion(1234);
-	CGConnectSetKey key;
-	key.setEncryptKey(WORD(encryptKey));
-	key.setHashKey(WORD(hashKey));
-	CHECK(Same(Calls({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded(Sends({&version, &key}, &version)).size())),
-		"dispatch|" + N(KeyID()) + "|socket", Send(CLLogin())}, Send(version))));
-	CHECK(scene.Sent() == Encoded(Sends({&version, &key}, &version)));
+	CHECK(scene.Sent().empty());
 	CHECK(scene.wire.getPlayerStatus() == status);
 	CHECK(g_pUserInformation->UserID.GetString() == NULL);
-	CHECK(login.sz_id == pID && login.sz_password == pPassword);
-	delete[] pID;
-	delete[] pPassword;
 }
 
 //----------------------------------------------------------------------
