@@ -146,9 +146,8 @@ std::string Render(Packet& packet)
 	}
 	case Packet::PACKET_CG_RELIC_TO_OBJECT: {
 		CGRelicToObject& p = static_cast<CGRelicToObject&>(packet);
-		// X and Y are left out: neither the handler nor the constructor
-		// sets them (recorded in the drop tests).
-		return "relic|" + N(p.getItemObjectID()) + "|" + N(p.getObjectID());
+		// X and Y last: the handler leaves them as the constructor does.
+		return "relic|" + N(p.getItemObjectID()) + "|" + N(p.getObjectID()) + "|" + N(p.getX()) + "|" + N(p.getY());
 	}
 	case Packet::PACKET_CG_TAME_MONSTER: {
 		CGTameMonster& p = static_cast<CGTameMonster&>(packet);
@@ -1719,7 +1718,7 @@ TEST(UIMessages2DropToClient, ARelicGoesIntoTheSelectedShelfNearby)
 		calls.clear();
 		MItem* pItem = scene.OnMouse(c.itemClass, id, c.itemType);
 		scene.Execute(UI_ITEM_DROP_TO_CLIENT);
-		const bool same = Same(Then(kAsked, c.shelf ? std::vector<std::string>{"relic|" + N(id) + "|" + N(id + 100), "lock item"} : ToZone(id)));
+		const bool same = Same(Then(kAsked, c.shelf ? std::vector<std::string>{"relic|" + N(id) + "|" + N(id + 100) + "|0|0", "lock item"} : ToZone(id)));
 		if (!same) std::printf("      corpse type %d\n", c.corpseType);
 		CHECK(same);
 		CHECK(scene.me->GetItemCheckBuffer() == pItem);
@@ -1743,9 +1742,6 @@ TEST(UIMessages2DropToClient, ARelicGoesIntoTheSelectedShelfNearby)
 	calls.clear();
 	scene.Execute(UI_ITEM_DROP_TO_CLIENT);
 	CHECK(Same(Then(kAsked, ToZone(id - 1))));
-	// The relic packet's X and Y are never set (Recorded defect, L3273 and
-	// L3308): CGRelicToObject's constructor leaves them uninitialised and
-	// write() sends them, so the wire carries two indeterminate bytes.
 }
 
 TEST(UIMessages2DropToClient, AShelfThreeCellsAwayIsTooFar)
@@ -1762,7 +1758,7 @@ TEST(UIMessages2DropToClient, AShelfThreeCellsAwayIsTooFar)
 		calls.clear();
 		scene.OnMouse(ITEM_CLASS_RELIC, id);
 		scene.Execute(UI_ITEM_DROP_TO_CLIENT);
-		CHECK(Same(Then(kAsked, c.reached ? std::vector<std::string>{"relic|" + N(id) + "|" + N(id + 100), "lock item"} : std::vector<std::string>())));
+		CHECK(Same(Then(kAsked, c.reached ? std::vector<std::string>{"relic|" + N(id) + "|" + N(id + 100) + "|0|0", "lock item"} : std::vector<std::string>())));
 		CHECK(c.reached != scene.me->IsItemCheckBufferNULL());
 		scene.zone->SectorAt(c.x, c.y)->RemoveItem();
 		scene.zone->m_mapItem.erase(pShelf->GetID());
@@ -1823,7 +1819,7 @@ TEST(UIMessages2DropToClient, TheSpiralGoesToItsGuardianFromAnywhere)
 		calls.clear();
 		MItem* pSpiral = scene.OnMouse(ITEM_CLASS_EVENT_ITEM, id, 31);
 		scene.Execute(UI_ITEM_DROP_TO_CLIENT);
-		CHECK(Same({"selected creature?", "relic|" + N(id) + "|" + N(id + 100), "lock item"}));
+		CHECK(Same({"selected creature?", "relic|" + N(id) + "|" + N(id + 100) + "|0|0", "lock item"}));
 		CHECK(scene.me->GetItemCheckBuffer() == pSpiral);
 		CHECK_EQ(int(MPlayer::ITEM_CHECK_BUFFER_DROP_TO_RELICTABLE), int(scene.me->GetItemCheckBufferStatus()));
 		CHECK(!pGuardian->IsCauseCriticalWounds());

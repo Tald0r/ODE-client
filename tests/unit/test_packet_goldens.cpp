@@ -79,6 +79,7 @@
 #include "Cpackets/CGNPCAskAnswer.h"
 #include "Cpackets/CGPortCheck.h"
 #include "Cpackets/CGPickupMoney.h"
+#include "Cpackets/CGRelicToObject.h"
 #include "Cpackets/CGSkillToInventory.h"
 #include "Cpackets/CGSkillToNamed.h"
 #include "Cpackets/CGSkillToObject.h"
@@ -114,6 +115,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <new>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -158,6 +160,20 @@ std::vector<unsigned char>	WriteBody(const Packet& packet, uchar code)
 	f.m_Stream.setEncryptCode(code);
 	packet.write(f.m_Stream);
 	return SocketOutputStreamTestAccess::Bytes(f.m_Stream);
+}
+
+// The body of a packet constructed over 0xAB bytes and given only what
+// `set` gives it, so a field its constructor leaves alone shows.
+template <class T, class Set>
+std::vector<unsigned char>	WrittenOverGarbage(Set set)
+{
+	alignas(T) unsigned char memory[sizeof(T)];
+	std::memset(memory, 0xAB, sizeof(memory));
+	T* p = new (memory) T;
+	set(*p);
+	const std::vector<unsigned char> bytes = WriteBody(*p, 0);
+	p->~T();
+	return bytes;
 }
 
 // The packet as SocketOutputStream::write(const Packet*) frames it: id,
@@ -1323,6 +1339,21 @@ TEST(GCAddItemToItemVerify, FreshPacketHasZeroParameters)
 	GCAddItemToItemVerify packet;
 	CHECK_EQ(0, packet.getParameter());
 	CHECK_EQ(0, packet.getParameter2());
+}
+
+// UI_ITEM_DROP_TO_CLIENT sets only the two ids (the server's handler reads
+// no coordinates): X and Y go out as the constructor leaves them, zero.
+TEST(CGRelicToObject, AFreshPacketWritesZeroCoordinates)
+{
+	CGRelicToObject expected;
+	expected.setItemObjectID(0x8A1B2C3D);
+	expected.setObjectID(0x9C2D3E4F);
+	expected.setX(0);
+	expected.setY(0);
+	CHECK(WrittenOverGarbage<CGRelicToObject>([](CGRelicToObject& p) {
+		p.setItemObjectID(0x8A1B2C3D);
+		p.setObjectID(0x9C2D3E4F);
+	}) == WriteBody(expected, 0));
 }
 
 //----------------------------------------------------------------------
