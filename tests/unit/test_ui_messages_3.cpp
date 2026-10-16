@@ -1796,8 +1796,13 @@ TEST(UIMessages3BonusPoint, EachButtonAsksForItsStat)
 	}
 	// The points are the server's to take.
 	CHECK_EQ(2u, scene.me->GetBonusPoint());
-	// Recorded defect (L5635/L5644): left is not range-checked; a value
-	// outside 0..2 reads past the 3-entry table (not run here).
+	// A button outside 0..2 is refused: nothing goes out, nothing waits.
+	calls.clear();
+	scene.temp.SetMode(TempInformation::MODE_NULL);
+	scene.Run(UI_CLICK_BONUS_POINT, -1);
+	scene.Run(UI_CLICK_BONUS_POINT, 3);
+	CHECK(calls.empty());
+	CHECK(!scene.Waiting());
 }
 
 TEST(UIMessages3BonusPoint, NothingWithoutAPointOrWhileARequestWaits)

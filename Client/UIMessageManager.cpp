@@ -5679,6 +5679,10 @@ UIMessageManager::Execute_UI_CLICK_BONUS_POINT(intptr_t left, intptr_t right, vo
 		INC_INT
 	};
 
+	// left picks one of the three; anything else would read past the table
+	if (left < 0 || left >= static_cast<intptr_t>(std::size(bonusPart)))
+		return;
+
 	// to remember it...
 	if ((*g_pTempInformation).Mode==TempInformation::MODE_NULL)
 	{
