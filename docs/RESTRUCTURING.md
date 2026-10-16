@@ -8007,20 +8007,29 @@ rounds settled* for the host rules). Test fixtures share
   >   forward whose only effect is inside the UI is shown only to be
   >   harmless there (and its `IsRunning` questions to answer no). Every
   >   function that does something to the model or calls a host is
-  >   pinned. `UI_StartGame`, `UI_StartProgress`, `UI_DownSkill`,
-  >   `UI_ShowTargetArrow`, `UI_CloseAllDialog` and `UI_RunOtherInfo` with
-  >   a creature are not run: they build windows from the sprite packs,
-  >   draw through them, or keep the first string table in statics.
-  > - The tests found defects, pinned for task 4.257: the slayer
-  >   `UI_SetCharacter` reads past its three- and four-entry look tables
-  >   for the login packet's bit fields, and `Character[slotID]` is
+  >   pinned. Not run: `UI_StartGame`, `UI_StartProgress` and
+  >   `UI_ShowTargetArrow` build or draw windows from the sprite packs;
+  >   `UI_DownSkill` and `UI_CloseAllDialog` go through
+  >   `C_VS_UI::CloseAllDialog`, which keeps the first string table in
+  >   statics; `UI_RunOtherInfo` with a creature and
+  >   `UI_DeleteCharacterFailed` dereference UI objects that exist only
+  >   with the UI; and the paths below whose behaviour is undefined.
+  > - Defects, for task 4.257. Pinned by the tests as they are:
+  >   `UI_ClosePartyCancel` never ends the party wait; `UI_SetMP`'s help
+  >   mails fire once a process; the quest list repeats the last offer's
+  >   line; the guild functions leak their records. Found by the test
+  >   agents' reading, on paths not run because they are undefined: the
+  >   slayer `UI_SetCharacter` reads past its three- and four-entry look
+  >   tables for the login packet's bit fields, and `Character[slotID]` is
   >   unchecked; the mixing forge uses an item it deleted when both items
   >   share an id; `UI_RunQuestList` reads an uninitialised string;
   >   `QUEST_INFO` leaves two fields unset; an unknown zone in the lair
-  >   message and an unknown creature in the party ask crash;
-  >   `UI_ClosePartyCancel` never ends the party wait; `UI_SetMP`'s help
-  >   mails fire once a process; the quest list repeats the last line;
-  >   and the guild, friend, connect and item-shop functions leak.
+  >   message, an unknown creature in the party ask and an unknown server
+  >   group crash; and the friend, connect and item-shop functions leak.
+  >   Pinned and left as they are: a negative effect status reads the
+  >   table's default row; an effect's delay in frames times 1000 wraps as
+  >   a DWORD; `BackupPrevId` writes through `g_pUserOption` unchecked;
+  >   `GetMyLevelWarStair` puts level 0 and a negative sum on stair 2.
   > - The Korean comments are English (169 lines; two were Chinese read
   >   as Korean).
   >
@@ -8040,7 +8049,8 @@ rounds settled* for the host rules). Test fixtures share
     the war list, the quest list and status, the item shop, the mixing
     forge and option removal, pop-ups, SMS errors, the lair message,
     mini-game scores, connect, the cursor).
-  - Mutants: 968 over its 199 functions (deleted statements,
+  - Mutants: 968 over the 199 of its 228 functions the generator
+    recognised (deleted statements,
     negated conditions, flipped comparisons), run against a test binary
     of the three files: 339 caught, 8 did not build, 621 survived. 162
     change only a call into `C_VS_UI`, a dialog, the descriptor manager
