@@ -167,6 +167,31 @@ std::vector<unsigned char> Encoded(const std::vector<const Packet*>& packets)
 	return SocketOutputStreamTestAccess::Bytes(encoded);
 }
 
+// The login and the registration send the client's version first only
+// in builds without _DEBUG (UIMessageManager.cpp's
+// `#if !defined(_DEBUG) && !defined(OUTPUT_DEBUG)`); MSVC's Debug builds
+// define _DEBUG.
+#if !defined(_DEBUG) && !defined(OUTPUT_DEBUG)
+const bool kVersionCheck = true;
+#else
+const bool kVersionCheck = false;
+#endif
+
+// The packets, or the calls, without the version where it is not sent.
+std::vector<const Packet*> Sends(std::vector<const Packet*> packets, const Packet* version)
+{
+	if (!kVersionCheck)
+		packets.erase(std::remove(packets.begin(), packets.end(), version), packets.end());
+	return packets;
+}
+std::vector<std::string> Calls(std::vector<std::string> calls, const std::string& version)
+{
+	if (!kVersionCheck)
+		calls.erase(std::remove(calls.begin(), calls.end(), version), calls.end());
+	return calls;
+}
+
+
 BOOL socketAnswer = TRUE;
 const UIMessages::Host uiHost = []() {
 	UIMessages::Host host{};
@@ -1280,9 +1305,9 @@ TEST(UIMessages1Registration, AValidRegistrationIsSent)
 	registration.setPublic(false);
 	// The version and the key go first, flushed alone, and the key is
 	// handed to the client's own dispatcher.
-	CHECK(Same({"init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded({&version, &key}).size())),
-		"dispatch|" + N(KeyID()) + "|socket", Send(registration), Mode(MODE_WAIT_REGISTERPLAYEROK)}));
-	CHECK(scene.Sent() == Encoded({&version, &key, &registration}));
+	CHECK(Same(Calls({"init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded(Sends({&version, &key}, &version)).size())),
+		"dispatch|" + N(KeyID()) + "|socket", Send(registration), Mode(MODE_WAIT_REGISTERPLAYEROK)}, Send(version))));
+	CHECK(scene.Sent() == Encoded(Sends({&version, &key, &registration}, &version)));
 	CHECK(scene.wire.getPlayerStatus() == CPS_AFTER_SENDING_CL_REGISTER_PLAYER);
 	CHECK(std::string("Alpha1") == g_pUserInformation->UserID.GetString());
 	CHECK(login.sz_id == NULL && login.sz_password == NULL);
@@ -1527,9 +1552,9 @@ TEST(UIMessages1Login, ALoginIsSentAndWaitsForTheServer)
 	expected.setID("Alpha1");
 	expected.setPassword("secret1");
 	expected.setMacAddress(g_macAddress);
-	CHECK(Same({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded({&version, &key}).size())),
-		"dispatch|" + N(KeyID()) + "|socket", Send(expected), Mode(MODE_WAIT_LOGINOK)}));
-	CHECK(scene.Sent() == Encoded({&version, &key, &expected}));
+	CHECK(Same(Calls({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded(Sends({&version, &key}, &version)).size())),
+		"dispatch|" + N(KeyID()) + "|socket", Send(expected), Mode(MODE_WAIT_LOGINOK)}, Send(version))));
+	CHECK(scene.Sent() == Encoded(Sends({&version, &key, &expected}, &version)));
 	CHECK(scene.wire.getPlayerStatus() == CPS_AFTER_SENDING_CL_LOGIN);
 	CHECK(std::string("Alpha1") == g_pUserInformation->UserID.GetString());
 	CHECK(login.sz_id == NULL && login.sz_password == NULL);
@@ -1564,9 +1589,9 @@ TEST(UIMessages1Login, ANetmarbleAutoLoginKeepsTheMode)
 	expected.setID(longID);
 	expected.setPassword("secret1");
 	expected.setMacAddress(g_macAddress);
-	CHECK(Same({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded({&version, &key}).size())),
-		"dispatch|" + N(KeyID()) + "|socket", Send(expected)}));
-	CHECK(scene.Sent() == Encoded({&version, &key, &expected}));
+	CHECK(Same(Calls({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded(Sends({&version, &key}, &version)).size())),
+		"dispatch|" + N(KeyID()) + "|socket", Send(expected)}, Send(version))));
+	CHECK(scene.Sent() == Encoded(Sends({&version, &key, &expected}, &version)));
 	CHECK(scene.wire.getPlayerStatus() == CPS_AFTER_SENDING_CL_LOGIN);
 	CHECK(longID == g_pUserInformation->UserID.GetString());
 }
@@ -1600,9 +1625,9 @@ TEST(UIMessages1Login, AnEmptyIDThrowsOutOfTheLogin)
 	CGConnectSetKey key;
 	key.setEncryptKey(WORD(encryptKey));
 	key.setHashKey(WORD(hashKey));
-	CHECK(Same({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded({&version, &key}).size())),
-		"dispatch|" + N(KeyID()) + "|socket", Send(CLLogin())}));
-	CHECK(scene.Sent() == Encoded({&version, &key}));
+	CHECK(Same(Calls({"addon|0", "init socket", Send(version), Send(key), "flush|" + N(static_cast<long long>(Encoded(Sends({&version, &key}, &version)).size())),
+		"dispatch|" + N(KeyID()) + "|socket", Send(CLLogin())}, Send(version))));
+	CHECK(scene.Sent() == Encoded(Sends({&version, &key}, &version)));
 	CHECK(scene.wire.getPlayerStatus() == status);
 	CHECK(g_pUserInformation->UserID.GetString() == NULL);
 	CHECK(login.sz_id == pID && login.sz_password == pPassword);
