@@ -11410,7 +11410,9 @@ UIMessageManager::Execute_UI_MY_STORE_INFO(intptr_t left, intptr_t right, void* 
 //	 gC_vs_ui.SetPersnalShop( g_pStorage2 );
 //	 
 	 
-	 g_pSocket->sendPacket( &_GCMyStoreInfo );
+	 // write() and getPacketSize() read the StoreInfo, which nothing sets here
+	 if (_GCMyStoreInfo.getStoreInfo() != NULL)
+		 g_pSocket->sendPacket( &_GCMyStoreInfo );
 
  }
 
@@ -11425,7 +11427,9 @@ UIMessageManager::Execute_UI_OTHER_STORE_INFO(intptr_t left, intptr_t right, voi
 	 
 	  GCOtherStoreInfo _GCOtherStoreInfo;
 	 _GCOtherStoreInfo.setObjectID(UIMessages::GetSelectedCreature());
-	  g_pSocket->sendPacket( &_GCOtherStoreInfo );
+	  // write() and getPacketSize() read the StoreInfo, which nothing sets here
+	  if (_GCOtherStoreInfo.getStoreInfo() != NULL)
+		  g_pSocket->sendPacket( &_GCOtherStoreInfo );
 }
 
 void

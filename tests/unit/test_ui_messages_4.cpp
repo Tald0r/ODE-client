@@ -129,8 +129,6 @@
 #include "Gpackets/GCAddStoreItem.h"
 #include "Gpackets/GCFriendChatting.h"
 #include "Gpackets/GCMiniGameScores.h"
-#include "Gpackets/GCMyStoreInfo.h"
-#include "Gpackets/GCOtherStoreInfo.h"
 #include "Gpackets/GCRemoveStoreItem.h"
 
 #include <cstdint>
@@ -218,11 +216,10 @@ bool SameBytes(const Bytes& expected, const Bytes& sent)
 }
 
 // The game connection: what it is asked to send is written to its
-// output, as on the wire, and kept - but for five packets whose write()
+// output, as on the wire, and kept - but for three packets whose write()
 // reads what the handler never set, which are named in the calls instead:
 // the two guild requests' guild id and Eternity's effect id, which no
-// constructor initialises (writing them reads an indeterminate value),
-// and the two store infos' StoreInfo, NULL (writing it dereferences NULL).
+// constructor initialises (writing them reads an indeterminate value).
 struct Line : ClientPlayer
 {
 	Line() : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl()))) {}
@@ -239,12 +236,6 @@ struct Line : ClientPlayer
 			return;
 		case Packet::PACKET_CG_SKILL_TO_SELF:
 			calls.push_back("skill to self|" + N(static_cast<CGSkillToSelf*>(pPacket)->getSkillType()));
-			return;
-		case Packet::PACKET_GC_MY_STORE_INFO:
-			calls.push_back(std::string("my store info|") + (static_cast<GCMyStoreInfo*>(pPacket)->getStoreInfo() == NULL ? "no store" : "store"));
-			return;
-		case Packet::PACKET_GC_OTHER_STORE_INFO:
-			calls.push_back("other store info|" + N(static_cast<GCOtherStoreInfo*>(pPacket)->getObjectID()));
 			return;
 		}
 		ClientPlayer::sendPacket(pPacket);
@@ -2299,17 +2290,16 @@ TEST(UIMessages4Store, AStoreItemIsBoughtFromTheShopShown)
 	CHECK(SameBytes(One<CGBuyStoreItem>([owner](CGBuyStoreItem& p) { p.setIndex(4); p.setItemObjectID(697); p.setOwnerObjectID(owner); }), scene.Sent()));
 }
 
-TEST(UIMessages4Store, TheStoreInfoPacketsGoOutWithNoStore)
+TEST(UIMessages4Store, TheStoreInfoPacketsAreNotSentWithoutAStore)
 {
-	// Recorded defect (latent, nothing sends these messages): both are
-	// server-to-client packets built with no StoreInfo, whose write()
-	// reads it through NULL (L11288-11326); they are named, not written.
+	// Server-to-client packets (nothing sends these messages) built with
+	// no StoreInfo, which their write() would read through NULL.
 	Scene scene;
 	scene.Run(UI_MY_STORE_INFO, 1, 2);
 	scene.Run(UI_OTHER_STORE_INFO, 1, 2);
 	selected = 310;
 	scene.Run(UI_OTHER_STORE_INFO, 1, 2);
-	CHECK(Same({"my store info|no store", "other store info|" + N(OBJECTID_NULL), "other store info|310"}));
+	CHECK(calls.empty());
 	CHECK(scene.Nothing());
 }
 
