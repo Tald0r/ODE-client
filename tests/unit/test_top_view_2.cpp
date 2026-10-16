@@ -1637,6 +1637,7 @@ struct LightScene : Scene
 	LightScene()
 	{
 		MTopView& view = View();
+		view.m_nLight = 0;	// the constructor leaves it unset (bug 11)
 		view.m_LightBufferFilter.Init(SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT);
 		Fill(view.m_LightBufferFilter, 10);
 		view.m_LightFTP.Init(3);
