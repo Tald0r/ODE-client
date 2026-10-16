@@ -8071,7 +8071,64 @@ rounds settled* for the host rules). Test fixtures share
     `UI_ResultReceiver`, `UI_RunExchangeAsk`, `UI_AddEffectStatus` and
     the other `UI_` functions from `libgameclient.a(GameUI.cpp.o)`.
 
-### Remaining R1 work after tasks 4.80-4.256
+- [x] **4.257 The game's UI calls' defects:** what 4.256's tests found is
+  fixed, each test first, and the slots and the other player's record are
+  built where a test can read them.
+  > **Status:** done (2026-10-16).
+  > - Memory and undefined behaviour: a slayer slot's outlook past its
+  >   three- and four-entry tables takes the first entry (the login
+  >   packet's bit fields); a character-select slot past the user's three
+  >   names is refused, and a name left empty is an empty name, not NULL; the HP and MP bars' percentage is worked out
+  >   without overflow; a negative chat condition is dropped; the forge
+  >   refuses one item as both, which it deleted and then used; a quest
+  >   with nothing to say gets an empty text, not an uninitialised one,
+  >   and `QUEST_INFO` starts its event fields at 0 with only five event
+  >   titles; the lair message says nothing of a zone the table does not
+  >   know; the input-name window refuses a mode it does not have; a shop
+  >   gun with no magazine is listed empty; an empty world or server name
+  >   is listed as one and an unknown current group lists nothing; the
+  >   party invitation checks the zone and the inviter first; the other
+  >   player's face outside the sex's three hairs is the first, and
+  >   `C_VS_UI::SetOtherInfo` does nothing without the game window.
+  > - Logic and leaks: the party cancel ends the party wait; `UI_SetMP`
+  >   remembers its percent on every call, as `UI_SetHP` does; each quest
+  >   in an NPC's list has its own line; the guild windows' records, a
+  >   friend's name when no dialog will own it, a connect's login strings
+  >   it replaces and an item shop item the list does not take are freed.
+  >   An erased friend entry is still not freed (a chatting window may hold
+  >   it), and `CLD_MASTER`'s lines are dropped from the chat history on
+  >   purpose (the chat window has no filter for them).
+  > - `MakeCharacterSlot` (one per race) and `FillOtherInfo`
+  >   (`GameUIBuilders.h`) build what `UI_SetCharacter` and
+  >   `UI_RunOtherInfo` hand the title's character manager and the
+  >   other-info window, which need the sprite packs; the `UI_` functions
+  >   are guard, build, hand over, with the same order and side effects.
+  > - Recorded, not changed: the title's login mallocs the strings the
+  >   login handler frees with `delete[]`; `C_VS_UI_GAME::RunFriendWaitAsk`
+  >   drops the name when a wait dialog is open, and
+  >   `C_VS_UI_FRIEND_INFO`'s destructor never frees its lists;
+  >   `UI_RunOtherInfo` takes any slayer creature for an `MCreatureWear`;
+  >   `MQuestInfo`'s constructor leaves `m_TimeLimit` unset; the pet
+  >   record `UI_RunOtherInfo` builds is still inside the hand-over.
+  >
+  > R1 is unchanged: 10 Windows / 9 Ninja.
+  - Owner: the fixes' tests in `test_game_ui_1.cpp`, `test_game_ui_2.cpp`
+    and `test_game_ui_3.cpp` (each seen failing on the code before its
+    fix: an ASan or UBSan report or a failed check), and nine for the
+    builders: every field of each race's slot with values unlike the
+    defaults and each other, every outlook value with the ones past the
+    tables, the 19 weapons, the colours and their clamps, and the other
+    player's face and name.
+  - Mutants: over the builders, 290: 250 caught, 1 did not build, 39
+    survived, all equivalent (defaults written again, an alignment block
+    that does nothing to a `short`, clamps that only ever see 0). Over the
+    lines the fixes changed, 60 before the builders: 34 caught, 16 more
+    are the builders' and caught by their tests, 3 (the first slot in two
+    overloads and the first input-name mode) caught by checks added for
+    them; the other 7 change only calls into `C_VS_UI` or a chat condition
+    no test can run.
+
+### Remaining R1 work after tasks 4.80-4.257
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
