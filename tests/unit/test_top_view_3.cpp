@@ -311,6 +311,8 @@ struct Scene
 
 	explicit Scene(int w = 96, int h = 96) : drawn(w, h), expected(w, h)
 	{
+		// The colour sets are fixed tables; filled here so an index sprite is not black when run alone.
+		CIndexSprite::SetColorSet();
 		for (int set = 0; set < 4; ++set) savedSets[set] = CIndexSprite::GetUsingColorSet(BYTE(set));
 		// A creature's draw gap is 0 off the frame it snapped on (0).
 		g_CurrentFrame = 1;
@@ -490,7 +492,8 @@ TEST(TopView3PartyHP, MovesTheCallersPointTenRightAndDrawsBothBarsThere)
 	PartyBar scene;
 	scene.member.HP(10, 10);
 	const POINT point = scene.Draw(20, 30);
-	// Recorded defect: the caller's point is moved, not a copy of it.
+	// Note: the caller's point is moved, not a copy of it (its one caller
+	// sets it afresh).
 	CHECK_EQ(30, int(point.x));
 	CHECK_EQ(30, int(point.y));
 	scene.Background(30, 30);
@@ -1537,6 +1540,7 @@ TEST(TopView3ItemNames, ASpecialItemsNameTakesItsColourSet)
 	scene.View().AddItemName(new DRAWITEMNAME_NODE(1, &ring));
 	scene.View().DrawItemNameList();
 	const WORD shade = CIndexSprite::ColorSet[70][16];
+	CHECK(shade != 0);									// a colour, not the unfilled table's black
 	const COLORREF color = RGB(CSDLGraphics::Red(shade) << 3, CSDLGraphics::Green(shade) << 3, CSDLGraphics::Blue(shade) << 3);
 	const std::vector<const DRAWTEXT_NODE*> nodes = scene.Queued();
 	CHECK_EQ(size_t(1), nodes.size());
@@ -1879,7 +1883,8 @@ TEST(TopView3ImageObject, AnAnimatedObjectDrawsItsStillSpriteWhereItsFrameGoes)
 	CSprite::SetFilter(&scene.sentinel);
 	const POINT point = scene.Draw(torch);
 	CHECK(CSprite::GetFilter() == &scene.sentinel);		// drawn plain, without the filter
-	// Recorded defect: the caller's point is moved to the frame's offset.
+	// Note: the caller's point is moved to the frame's offset (every caller
+	// sets it afresh).
 	CHECK(At(point, 32, 34));
 	scene.Whole(20, 30, 0);
 	scene.Shadow(18, 35, 0);								// the shadow of the object's own frame, 0
@@ -2573,6 +2578,7 @@ TEST(TopView3AttachEffect, AnExtremeEffectNeedsAnActionFrameAndAPlainCreature)
 		Creature beast;
 		beast.SetCreatureType(TYPE_CREATURETYPE(type));
 		beast.m_Action = ACTION_STAND;
+		beast.SetCurrentDirection(0);					// the direction with the frame
 		scene.Clear();
 		scene.Draw(0, &beast);
 		CHECK(scene.drawn.Blank());
@@ -2622,14 +2628,11 @@ TEST(TopView3AttachEffect, AnInstalledTurretShowsOnlyItsFireAndShells)
 {
 	Aura scene;
 	scene.wearer.Set(EFFECTSTATUS_INSTALL_TURRET);
-	for (int id : {1, int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet})
-		scene.Alpha(id, 0, 0, 1, 2 + (id % 5) * 7, 3);
-	scene.Make(10, BLT_EFFECT, 1);
-	for (int id : {int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet})
-		scene.Make(10, BLT_EFFECT, id);
+	const int ids[] = {1, int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet};
+	for (int i = 0; i < 4; ++i) scene.Alpha(ids[i], 0, 0, 1, 2 + i * 7, 3);	// each at its own spot
+	for (int id : ids) scene.Make(10, BLT_EFFECT, id);
 	scene.Draw();
-	for (int id : {int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE1), int(EFFECTSPRITETYPE_INSTALL_TURRET_FIRE2), Aura::kTurretBullet})
-		scene.ExpectAttached(2 + (id % 5) * 7, 3, 1, id);
+	for (int i = 1; i < 4; ++i) scene.ExpectAttached(2 + i * 7, 3, 1, ids[i]);
 	CHECK(scene.Same());
 }
 

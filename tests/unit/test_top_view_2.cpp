@@ -770,6 +770,7 @@ TEST(TopView2Select, APortalUnderTheMouseIsFlaggedInsideTheZone)
 		// A sector beside it is no portal.
 		CHECK(scene.View().GetSelectedObject(kMouseX + TILE_X, kMouseY) == NULL);
 		CHECK(!g_bMouseInPortal);
+		scene.Sector(10, 10).ClearPortal();				// so the next type is the one read
 	}
 	// Off the zone nothing is read, and the flag is cleared.
 	g_bMouseInPortal = true;

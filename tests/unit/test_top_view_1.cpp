@@ -1597,17 +1597,19 @@ TEST(TopView1Sprites, ReleasingTheUselessTypesSkipsPlayersAndUnloadedTypes)
 	Book book;
 	MTopView& v = book.v;
 	book.FillSprites();
-	for (int type : {0, 3}) v.LoadFromFileCreatureSPK(type);
-	v.ReleaseUselessCreatureSPKExcept(IntList({0, 3}));
-	CHECK(Contents(v.m_listLoadedCreatureSprite) == std::vector<int>({0, 3}));
-	CHECK(Contents(v.m_listLoadedMonsterSprite) == std::vector<int>({3}));
+	for (int type : {0, 1, 3}) v.LoadFromFileCreatureSPK(type);
+	v.ReleaseUselessCreatureSPKExcept(IntList({0, 1, 3}));
+	CHECK(Contents(v.m_listLoadedCreatureSprite) == std::vector<int>({0, 1, 3}));
+	CHECK(Contents(v.m_listLoadedMonsterSprite) == std::vector<int>({1, 3}));
 	book.Row(3).bLoad = FALSE;
-	v.ReleaseUselessCreatureSPKExcept(IntList({}));
+	// Released, type 3 would release creature type 6 (its frame ID), whose sprite type 1 is in use.
+	v.ReleaseUselessCreatureSPKExcept(IntList({1}));
 	CHECK(book.Loaded(0));		// the player's is skipped
+	CHECK(book.Loaded(1));
 	CHECK(!book.Loaded(3));
 	CHECK_EQ(kAllSprites, book.LiveSprites());
-	CHECK_EQ(0, v.m_listLoadedCreatureSprite.GetSize());
-	CHECK_EQ(0, v.m_listLoadedMonsterSprite.GetSize());
+	CHECK(Contents(v.m_listLoadedCreatureSprite) == std::vector<int>({1}));
+	CHECK(Contents(v.m_listLoadedMonsterSprite) == std::vector<int>({1}));
 }
 
 //----------------------------------------------------------------------
@@ -2415,6 +2417,7 @@ TEST(TopView1Chat, TheSelectedCreaturesChatLeavesRoomForItsNameRows)
 	point = {30, 80};	// below them: as put
 	CHECK_EQ(40, Access::ChatString(v, &point, &c, 0));
 	q = Queue(v);
+	CHECK_EQ(2, int(q.size()));
 	if (!q.empty()) CHECK_EQ(38, int(q[0].rect.top));
 }
 
@@ -2437,10 +2440,12 @@ TEST(TopView1Chat, ChatIsTimedByTheSelectionTheShopOrTheChatAndCreature)
 	c.SetPersonalShopMsgTime(12);
 	Access::ChatString(v, &point, &c, 0);
 	q = Queue(v);
+	CHECK_EQ(1, int(q.size()));
 	if (q.size() == 1) CHECK_EQ(QWORD(42) << 41, q[0].time);
 	v.m_pSelectedCreature = &c;
 	Access::ChatString(v, &point, &c, 0);
 	q = Queue(v);
+	CHECK_EQ(1, int(q.size()));
 	if (q.size() == 1) CHECK_EQ(QWORD(190) << 41, q[0].time);
 	v.m_pSelectedCreature = nullptr;
 }
@@ -2475,6 +2480,7 @@ TEST(TopView1Chat, TheBoxOutlineIsShadedByTheChatColourOrPinkForAShop)
 	c.SetPersnalShop(1);
 	Access::ChatString(v, &point, &c, 0);
 	const std::vector<Queued> q = Queue(v);
+	CHECK_EQ(2, int(q.size()));
 	if (!q.empty()) CHECK_EQ(WORD((31 << 11) | 8), q[0].boxOutlineColor);
 }
 
@@ -3181,11 +3187,11 @@ TEST(TopView1Name, WhereChatIsMaskedByRaceAnotherRacesPlayerHasNoName)
 	scene.player->Set(EFFECTSTATUS_HALLUCINATION);
 	CHECK_EQ(0, names());
 	scene.player->Set(EFFECTSTATUS_HALLUCINATION, false);
-	// Recorded defect: an empty operator prefix matches every name, so
-	// nobody's name is masked.
-	scene.player->m_CreatureType = kSlayer;
-	*g_pGameStringTable->GetMutable(UI_STRING_MESSAGE_MASTER_NAME) = "";
-	CHECK_EQ(3, names());
+	// Recorded defect (not run: undefined behaviour): an empty operator
+	// prefix is a NULL MString, so DrawCreatureName calls
+	// strncmp(name, NULL, 0), which glibc declares nonnull. Were it to
+	// compare equal, the empty prefix would match every name and nobody's
+	// name would be masked.
 }
 
 //----------------------------------------------------------------------

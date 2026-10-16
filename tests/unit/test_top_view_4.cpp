@@ -3467,12 +3467,13 @@ TEST(TopView4AdvancedVampire, BloodyZenithCountsDownOnceForEachLayer)
 	vampire.m_BloodyZenithCount = 3;
 	vampire.m_MoveCount = 0;
 	vampire.m_MoveCountMax = 6;
+	vampire.m_cX = 4;									// copy n is 2n left, so each shows
 	Place(scene.view.m_AdvancementVampireManFPK, 0, kStop, 3, 0, 1, 5, 6);
 	Place(scene.view.m_AdvancementVampireManFPK, 1, kStop, 3, 0, 2, 45, 30);
 	DrawAdvancedVampire(scene, vampire, ACTION_STAND, 3, 0);
 	// Move count 0: no rise.
-	for (int n = 3; n >= 0; --n) scene.Blit(5, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
-	for (int n = 2; n >= 0; --n) scene.Blit(45, 30, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
+	for (int n = 3; n >= 0; --n) scene.Blit(5 - 2 * n, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
+	for (int n = 2; n >= 0; --n) scene.Blit(45 - 2 * n, 30, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
 	CHECK(scene.Same());
 	CHECK_EQ(1, vampire.GetBloodyZenithCount());
 }
