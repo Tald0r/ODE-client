@@ -23,7 +23,6 @@ class CGameUpdate : public CWinUpdate {
 
 	protected :
 		void		ProcessInput();
-		void		UpdateDrawHelp();
 
 		static void	DXMouseEvent(CSDLInput::E_MOUSE_EVENT event, int x, int y, int z);
 		static void	DXKeyboardEvent(CSDLInput::E_KEYBOARD_EVENT, DWORD);

@@ -68,54 +68,25 @@ CGameUpdate*		g_pCGameUpdate = NULL;
 
 bool g_bPreviousMove = false;
 	
-extern DWORD g_double_click_time;
-
 // g_pOGG, g_oggfile and g_pSoundBufferForOGG are COGGSTREAM.cpp's (dxlib)
 // since tasks 4.256, 4.258 and 4.260.
 
 extern int g_SoundPerSecond;
 
-extern int	g_previousSoundID;
 extern bool g_bMouseInPortal;
 		
 extern POINT g_MouseSector;	
-extern bool	g_bTestMode;
 
 extern bool g_bZoneSafe;
 
-// 할할...
-extern void	SetWatchMode( bool );
 extern bool g_bWatchMode;
 
 int g_MyCheckTime=0;
 int g_CheckErrorTime=0;
-extern BOOL g_MyFull;
 extern RECT g_GameRect;
-//add by sonic 2006.7.30
-//检测系统登陆的用户
-#ifdef PLATFORM_WINDOWS
-	#include <tlhelp32.h>
-	// ToolHelp32 functions (CreateToolhelp32Snapshot, etc.) live in kernel32.lib
-	// on modern Windows SDKs; "th32.lib" doesn't exist and this pragma would
-	// fail the link (LNK1104) on VS2019+.
-	extern int GetCurrentUserNumber();
-	int g_CheckTimeNum=0;
-#else
-	// Non-Windows platforms don't have tlhelp32.h
-	// Forward declaration only - implementation is below
-	extern int GetCurrentUserNumber();
-	int g_CheckTimeNum=0;
-#endif
-//end
-//extern bool CheckInvalidProcess();
-extern void	KeepConnection();
-extern BOOL	InitInfomation();
+int g_CheckTimeNum=0;
+
 extern void	ExecuteLogout();
-
-extern char	g_CWD[_MAX_PATH];
-
-#define	MOUSE_POINTER_SKIP_LEFT		-16
-#define	MOUSE_POINTER_SKIP_UP		-16
 
 // g_bFrameChanged is FrameClock.cpp's (gamemodel) since task 4.260.
 
@@ -151,13 +122,8 @@ static void WindowToGamePoint(POINT& pt)
 }
 
 
-extern MCreature* AddClientCreature();
-
-void	PacketTest();
 bool IsExistCorpseFromPlayer(MCreature* OriginCreature, int creature_type);
 bool			HasEffectStatusSummonSylph( MCreature* pCreature );
-
-extern void	SetFlagTo( bool bTae );
 
 //-----------------------------------------------------------------------------
 // Init
@@ -1868,115 +1834,6 @@ CGameUpdate::UpdateDraw()
 	CSDLGraphics::Flip();
 }
 
-//-----------------------------------------------------------------------------
-// Update Draw Help
-//-----------------------------------------------------------------------------
-void
-CGameUpdate::UpdateDrawHelp()
-{
-	int strX = 350;
-	int strY = (g_pPlayer->IsSlayer()? 430 : 460);
-
-	PrintInfo* pPrintInfo = &gpC_base->m_info_pi;
-
-	for (int c=g_pHelpMessage->GetSize()-1; c>=0; c--)
-	{
-		if ((*g_pHelpMessage)[c][0] != '\0')
-		{
-			const COLORREF color = RGB(28<<3, 28<<3, 8<<3);
-
-			pPrintInfo->text_color = 0;
-			g_Print(strX+1, strY+1, (*g_pHelpMessage)[c], pPrintInfo);
-
-			pPrintInfo->text_color = color;
-			g_Print(strX, strY, (*g_pHelpMessage)[c], pPrintInfo);
-
-			strY-=20;
-		}		
-	}
-
-	// scroll every 5 seconds
-	static MonotonicClock::TimePoint HelplastTime = g_FrameNow;
-	if (g_FrameNow - HelplastTime >= MonotonicClock::Millis(g_pClientConfig->DELAY_GAMEMESSAGE))
-	{
-		g_pHelpMessage->Add("\0");
-		HelplastTime = g_FrameNow;
-	}
-}
-
-//-----------------------------------------------------------------------------
-// PacketTest
-//-----------------------------------------------------------------------------
-void
-PacketTest()
-{
-	MZone::CREATURE_MAP::const_iterator iCreature = g_pZone->GetCreatureBegin();
-
-	for (int i=0; i<g_pZone->GetCreatureNumber(); i++)
-	{
-		MCreature* pCreature = (*iCreature).second;
-
-		if (pCreature->GetID()!=g_pPlayer->GetID()
-			&& !pCreature->IsNPC()
-			&& (rand()%8==0))
-		{	
-			int x = pCreature->GetX();
-			int y = pCreature->GetY();
-			int dir = rand()%8;
-			pCreature->PacketMove(x, y, dir);
-		}
-
-		iCreature++;
-	}
-}
-
-///以下是检测系统是否有登陆二个用户
-int GetCurrentUserNumber()
-{
-	HANDLE			hSnapShot;
-    PROCESSENTRY32	ProcessInfo;
-	char*			pstrExeName;
-    DWORD			ret = 0;
-	DWORD			dwwinlogon = 0;
-	DWORD			dwexplorer = 0;
-
-	ProcessInfo.dwSize = sizeof(ProcessInfo);
-    hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
-	if (hSnapShot == INVALID_HANDLE_VALUE) return 0;
-	if(!Process32First(hSnapShot,&ProcessInfo)) return 0;
-	do
-	{
-		pstrExeName = strrchr(ProcessInfo.szExeFile,'\\');
-        if(!pstrExeName)
-            pstrExeName = ProcessInfo.szExeFile;
-        else
-            pstrExeName++; 
-		if(!_stricmp(pstrExeName, "winlogon.exe"))
-		{
-			dwwinlogon++;
-		}
-		if(!_stricmp(pstrExeName, "explorer.exe"))
-		{
-			dwexplorer++;
-		}
-		/*
-		if(!stricmp(pstrExeName, "csrss.exe"))
-		{
-			dwcsrss++;
-		}
-		*/
-		if (dwwinlogon>1 && dwexplorer >1)
-		{
-			ret =2;
-		}
-	}while(Process32Next(hSnapShot,&ProcessInfo));
-	if(hSnapShot)
-	{
-		CloseHandle(hSnapShot);	
-	}
-	
-	return ret;
-}
 //-----------------------------------------------------------------------------
 // Update Game
 //-----------------------------------------------------------------------------
