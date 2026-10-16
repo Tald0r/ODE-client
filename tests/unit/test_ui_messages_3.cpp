@@ -2321,19 +2321,16 @@ TEST(UIMessages3Storage, TheRefusedKindsStayOnTheMouse)
 	}
 }
 
-TEST(UIMessages3Storage, ASlotPastTheRackDropsTheItemAndStillTellsTheServer)
+TEST(UIMessages3Storage, ASlotPastTheRackKeepsTheItemHeldAndTellsNoOne)
 {
 	Scene scene;
 	MPotion* pPotion = Make<MPotion>(178);
 	scene.Hold(pPotion);
-	// Recorded defect (L6433-6437): a slot past the rack reads as empty,
-	// so the mouse lets go, the storage refuses the item (it leaks) and
-	// the server is told anyway.
+	// It reads as empty, but the storage takes nothing there.
 	scene.Run(UI_SELECT_STORAGE_SLOT, 1, STORAGE_SLOT);
-	CHECK(Same({"mouse to stash|178|1|" + N(STORAGE_SLOT)}));
-	CHECK(scene.Held() == NULL);
+	CHECK(calls.empty());
+	CHECK(scene.Held() == pPotion);
 	CHECK(!scene.Owned(pPotion));
-	scene.loose.emplace_back(pPotion);
 }
 
 TEST(UIMessages3Storage, NothingWithoutAStorageOrOutOfTheGame)

@@ -6513,9 +6513,12 @@ UIMessageManager::Execute_UI_SELECT_STORAGE_SLOT(intptr_t left, intptr_t right, 
 			//---------------------------------------------------
 			if (pStorageItem==NULL)
 			{
-				UI_DropItem();	// take the item off the mouse
-
-				g_pStorage->SetItem( slot, pMouseItem );							
+				// A slot past the rack reads as empty but takes nothing: the item
+				// stays held and the server is not told.
+				if (g_pStorage->SetItem( slot, pMouseItem ))
+					UI_DropItem();	// take the item off the mouse
+				else
+					bSendPacket = FALSE;
 			}
 			//---------------------------------------------------
 			// if something is there...
