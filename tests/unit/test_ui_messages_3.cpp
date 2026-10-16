@@ -3164,11 +3164,14 @@ TEST(UIMessages3CloseOption, AtTheMainMenuTheAccelerationChoiceMayRestartTheGrap
 	CHECK(calls.empty());
 }
 
-TEST(UIMessages3CloseOption, WithoutTheFileNamesTheSaveThrowsAfterTheDisplaySettings)
+TEST(UIMessages3CloseOption, WithoutTheFileNamesOnlyTheDisplaySettingsAreSaved)
 {
 	CloseOptionScene scene;
 	Properties none;
 	g_pFileDef = &none;
+	g_Mode = MODE_MAINMENU;
+	g_bEnable3DHAL = TRUE;
+	scene.option.Use3DHAL = TRUE;
 	bool threw = false;
 	try
 	{
@@ -3179,10 +3182,14 @@ TEST(UIMessages3CloseOption, WithoutTheFileNamesTheSaveThrowsAfterTheDisplaySett
 		threw = true;
 	}
 	g_pFileDef = &scene.files;
-	CHECK(threw);
+	CHECK(!threw);
 	CHECK(!CloseOptionScene::Read("UserSet/Display.ini").empty());
 	CHECK(CloseOptionScene::Read("client.cfg").empty());
 	CHECK(CloseOptionScene::Read("user.set").empty());
+	// The close goes on to the main menu's acceleration choice.
+#ifndef PLATFORM_WINDOWS
+	CHECK_EQ(int(MODE_CHANGE_OPTION), int(g_Mode));
+#endif
 }
 
 //----------------------------------------------------------------------

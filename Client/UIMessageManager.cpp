@@ -7624,8 +7624,17 @@ UIMessageManager::Execute_UI_CLOSE_OPTION(intptr_t left, intptr_t right, void* v
 	//---------------------------------------------------------------
 	// Just save it. - -;
 	//---------------------------------------------------------------
-	g_pClientConfig->SaveToFile( g_pFileDef->getProperty("FILE_INFO_CLIENTCONFIG").c_str());
-	g_pUserOption->SaveToFile( g_pFileDef->getProperty("FILE_INFO_USEROPTION").c_str());
+	// A file definition without the names throws: those saves are skipped
+	// (from the first missing name on), not the close.
+	try
+	{
+		g_pClientConfig->SaveToFile( g_pFileDef->getProperty("FILE_INFO_CLIENTCONFIG").c_str());
+		g_pUserOption->SaveToFile( g_pFileDef->getProperty("FILE_INFO_USEROPTION").c_str());
+	}
+	catch (NoSuchElementException&)
+	{
+		DEBUG_ADD_ERR("[Error] No file name for the client configuration or the options");
+	}
 
 	if (g_Mode==MODE_MAINMENU)
 	{
