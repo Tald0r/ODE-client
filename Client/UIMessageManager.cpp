@@ -7837,11 +7837,12 @@ UIMessageManager::Execute_UI_SELECT_ELEVATOR(intptr_t left, intptr_t right, void
 	{
 		const MSector& sector = g_pZone->GetSector(g_pPlayer->GetX(), g_pPlayer->GetY());
 
-		if (sector.IsPortal())
+		// a portal cell without floors goes nowhere
+		if (sector.IsPortal() && sector.GetPortalSize() > 0)
 		{
 			int numPortal = sector.GetPortalSize();		
 			
-			selectPortal = min(selectPortal, numPortal);
+			selectPortal = min(selectPortal, numPortal - 1);	// the top floor, not the list's end
 
 			PORTAL_LIST::const_iterator	iPortal = sector.GetPortalBegin();
 

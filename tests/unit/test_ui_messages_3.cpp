@@ -3193,14 +3193,20 @@ TEST(UIMessages3Elevator, FewerFloorsCountFromTheBottom)
 	scene.Run(UI_SELECT_ELEVATOR, 3);
 	scene.Run(UI_SELECT_ELEVATOR, 4);
 	CHECK(Same({"portal|30", "portal|20", "portal|10"}));
-	// Recorded defect (L7776-7785): a button whose count reaches the
-	// number of floors (left 0 or 1 here) steps to the list's end and reads
-	// it; not run.
+	// A button whose count reaches the number of floors (left 0 or 1
+	// here) goes to the top one.
+	calls.clear();
+	scene.Run(UI_SELECT_ELEVATOR, 0);
+	scene.Run(UI_SELECT_ELEVATOR, 1);
+	CHECK(Same({"portal|30", "portal|30"}));
 }
 
 TEST(UIMessages3Elevator, NothingOffAPortal)
 {
 	Scene scene;
+	scene.Run(UI_SELECT_ELEVATOR, 2);
+	// A portal cell without floors.
+	scene.zone->m_ppSector[5][5].SetPortal();
 	scene.Run(UI_SELECT_ELEVATOR, 2);
 	// Floors in the next cell do not count.
 	for (int zoneID : {10, 20, 30}) CHECK(scene.zone->m_ppSector[5][6].AddPortal(0, zoneID));
