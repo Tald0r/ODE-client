@@ -2205,7 +2205,8 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 		&& chatString[0]!=SYMBOL_MASTER_COMMAND
 		&& (left==CLD_GUILD || left == CLD_UNION))
 	{
-		if(g_pUserInformation->GuildName.GetLength() > 0)
+		// CGGuildChat::write refuses an empty message.
+		if(g_pUserInformation->GuildName.GetLength() > 0 && chatString[0] != '\0')
 		{
 			CGGuildChat _CGGuildChat;
 			// 2004, 11, 11, sobeit add start
@@ -2290,6 +2291,11 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 						{
 							char TempBuffer[CHAT_MESSAGE_MAX_BYTES + 1];
 							SafeFormat::Copy(TempBuffer, str+(*g_pGameStringTable)[UI_STRING_MESSAGE_RANGER_SAY].GetLength());
+							// The prefix alone says nothing: CGRangerSay::write refuses an empty message.
+							if (TempBuffer[0] == '\0')
+							{
+								return;
+							}
 							CGRangerSay _CGRangerSay;
 							_CGRangerSay.setMessage(TempBuffer);
 

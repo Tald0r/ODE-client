@@ -719,24 +719,16 @@ TEST(UIMessages2Chat, TheGuildAndUnionTabsSendTheUntrimmedLineWithAGuild)
 	CHECK(scene.Said().empty());
 }
 
-TEST(UIMessages2Chat, AnEmptyGuildLineThrowsOutOfTheHandler)
+TEST(UIMessages2Chat, AnEmptyGuildLineSendsNothing)
 {
-	// Recorded defect (L2172-2178): the guild line is neither trimmed nor
-	// checked, and CGGuildChat::write refuses an empty message: the throw
-	// leaves Execute, before the help event.
+	// The guild line is not trimmed, but CGGuildChat::write refuses an
+	// empty message: none is sent, the help event still runs.
 	Scene scene;
 	g_pUserInformation->GuildName = "Order";
-	bool thrown = false;
-	try
-	{
-		scene.Say("", CLD_UNION);
-	}
-	catch (InvalidProtocolException&)
-	{
-		thrown = true;
-	}
-	CHECK(thrown);
-	CHECK(Same({"guild|1|" + N(kColor) + "|"}));
+	scene.Say("", CLD_UNION);
+	scene.Say("", CLD_GUILD);
+	CHECK(Same({kChatHelp, kChatHelp}));
+	CHECK(scene.wire.Sent().empty());
 }
 
 TEST(UIMessages2Chat, ALineIsCutTo128BytesOnACharacterBoundary)
@@ -890,25 +882,18 @@ TEST(UIMessages2Chat, UnderDragonEyesTheRangerPrefixSpeaksToTheRangers)
 	CHECK(Same({"ranger|to all", Say("ranger/lower"), kChatHelp, Say("hello"), kChatHelp}));
 }
 
-TEST(UIMessages2Chat, AnEmptyRangerLineThrowsOutOfTheHandler)
+TEST(UIMessages2Chat, AnEmptyRangerLineSaysNothing)
 {
-	// Recorded defect (L2246-2251): "Ranger/" alone makes an empty
-	// CGRangerSay, whose write() throws out of Execute, before the words
-	// go over the head.
+	// "Ranger/" alone (the trailing blanks trimmed) would be an empty
+	// CGRangerSay, whose write() refuses it: like a blank line it says
+	// nothing, and the branch returns before the help event.
 	Scene scene;
 	scene.me->m_bEffectStatus[EFFECTSTATUS_DRAGON_EYES] = true;
-	bool thrown = false;
-	try
-	{
-		scene.Say("Ranger/");
-	}
-	catch (InvalidProtocolException&)
-	{
-		thrown = true;
-	}
-	CHECK(thrown);
-	CHECK(Same({"ranger|"}));
+	scene.Say("Ranger/");
+	scene.Say("Ranger/   ", CLD_ZONECHAT);
+	CHECK(Same({}));
 	CHECK(scene.Said().empty());
+	CHECK(scene.wire.Sent().empty());
 }
 
 TEST(UIMessages2Chat, TheShoutItemPrefixUsesTheFirstShoutItem)
