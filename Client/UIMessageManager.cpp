@@ -1731,7 +1731,8 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 			{
 				{
 					DEBUG_ADD("[Execute_UI_LOGIN]");
-					if (!UIMessages::InitSocket())
+					// Everything below sends through g_pSocket.
+					if (!UIMessages::InitSocket() || g_pSocket == NULL)
 					{
 						//InitFail("[Error] Can't init Socket");
 						DEBUG_ADD_ERR("[Execute_UI_LOGIN] Can't init Socket");
@@ -1821,11 +1822,8 @@ UIMessageManager::Execute_UI_LOGIN(intptr_t left, intptr_t right, void* void_ptr
 					// 2004,03,16 sobeit add end - mac address
 					clLogin.SetLoginMode(g_pUserInformation->IsAutoLogIn);
 
-					if (g_pSocket)
-					{
-						g_pSocket->sendPacket( &clLogin );
-						g_pSocket->setPlayerStatus( CPS_AFTER_SENDING_CL_LOGIN );
-					}
+					g_pSocket->sendPacket( &clLogin );
+					g_pSocket->setPlayerStatus( CPS_AFTER_SENDING_CL_LOGIN );
 					DEBUG_ADD("[Execute_UI_LOGIN] SendPacket OK");
 
 					//----------------------------------------------------

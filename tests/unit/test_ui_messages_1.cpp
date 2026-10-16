@@ -107,8 +107,6 @@ void ExecuteLogout();
 // - A NULL void_ptr to NEW_CHARACTER, CHECK_EXIST_ID (IsValidID formats a
 //   NULL "%s"), DELETE_CHARACTER and LOGIN (read even in the wrong mode):
 //   recorded defect, each dereferences it unchecked.
-// - g_pSocket NULL during a login: it is used before LOGIN's
-//   "if (g_pSocket)".
 namespace {
 
 std::vector<std::string> calls;
@@ -1568,6 +1566,21 @@ TEST(UIMessages1Login, NoSocketNothingSent)
 	CHECK(scene.Sent().empty());
 	CHECK(scene.wire.getPlayerStatus() == status);
 	CHECK(g_pUserInformation->UserID.GetString() == NULL);
+}
+
+TEST(UIMessages1Login, NoSocketAfterTheConnectionNothingSent)
+{
+	// InitSocket answers TRUE but left no socket: as if it had failed.
+	Login scene;
+	g_Mode = MODE_MAINMENU;
+	g_pSocket = NULL;
+	LOGIN login = {NewArray("Alpha1"), NewArray("secret1")};
+	scene.Run(UI_LOGIN, 0, 0, &login);
+	CHECK(Same({"addon|0", "init socket"}));
+	CHECK(login.sz_id == NULL && login.sz_password == NULL);
+	CHECK(g_pUserInformation->UserID.GetString() == NULL);
+	g_pSocket = &scene.wire;
+	CHECK(scene.Sent().empty());
 }
 
 TEST(UIMessages1Login, ALoginIsSentAndWaitsForTheServer)
