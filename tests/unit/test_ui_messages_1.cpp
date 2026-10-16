@@ -107,8 +107,6 @@ void ExecuteLogout();
 // - A NULL void_ptr to NEW_CHARACTER, CHECK_EXIST_ID (IsValidID formats a
 //   NULL "%s"), DELETE_CHARACTER and LOGIN (read even in the wrong mode):
 //   recorded defect, each dereferences it unchecked.
-// - CONNECT with an empty master-name string: recorded defect, strncmp
-//   compares 0 characters (every character a master) of a NULL string.
 // - g_pSocket NULL during a login: it is used before LOGIN's
 //   "if (g_pSocket)".
 namespace {
@@ -1769,6 +1767,18 @@ TEST(UIMessages1Connect, TheSlotsCharacterIsChosen)
 		CHECK_EQ(10 + slot, g_pUserInformation->FaceStyle);
 		// A master: the name starts with the master-name string.
 		CHECK_EQ(slot == 1 ? TRUE : FALSE, g_pUserInformation->IsMaster);
+	}
+}
+
+TEST(UIMessages1Connect, AnEmptyMasterNameMakesNoMaster)
+{
+	// Its MString holds NULL; a prefix of nothing matches no name.
+	Connect scene;
+	g_pGameStringTable->Set(UI_STRING_MESSAGE_MASTER_NAME, "");
+	for (int slot = 0; slot < 3; ++slot)
+	{
+		scene.Run(UI_CONNECT, slot);
+		CHECK_EQ(FALSE, g_pUserInformation->IsMaster);
 	}
 }
 

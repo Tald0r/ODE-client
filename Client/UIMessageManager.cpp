@@ -2045,8 +2045,10 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 
 	g_pUserInformation->CharacterID = g_pUserInformation->Character[left];
 	g_pUserInformation->FaceStyle = g_pUserInformation->FaceStyleSlot[left];	
+	// An empty master name (a NULL string) is the prefix of no name.
+	const MString& masterName = (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME];
 	g_pUserInformation->IsMaster = 
-		strncmp( g_pUserInformation->CharacterID, (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetString(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetLength() ) == 0 
+		(masterName.GetLength() > 0 && strncmp( g_pUserInformation->CharacterID, masterName.GetString(), masterName.GetLength() ) == 0)
 //		(strstr(g_pUserInformation->CharacterID, "운영자")!=NULL)
 		|| g_pInventory->FindItem(ITEM_CLASS_ETC, 0);
 //		|| g_pPlayer->GetCreatureType()==CREATURETYPE_SLAYER_OPERATOR
