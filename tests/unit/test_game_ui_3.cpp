@@ -3,7 +3,9 @@
 #include "type_table_access.h"
 #include "packet_stream_access.h"
 #include "UIFunction.h"
+#include "GameUIBuilders.h"
 #include "MPlayer.h"
+#include "AddonDef.h"
 #include "MCreatureTable.h"
 #include "MCreatureSpriteTable.h"
 #include "MEffectStatusTable.h"
@@ -59,6 +61,18 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define ASAN_SEES_FREES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(ASAN_SEES_FREES)
+#define ASAN_SEES_FREES 1
+#endif
+#ifdef ASAN_SEES_FREES
+#include <sanitizer/asan_interface.h>
+#endif
+
 // Defined in GameUI.cpp and MItemUse.cpp, declared by no header.
 int GetMyLevelWarStair();
 void UI_RunPetInfo(struct PETINFO* pPetInfo);
@@ -82,11 +96,11 @@ namespace {
 std::vector<std::string> calls;
 std::string N(long long value) { return std::to_string(value); }
 
-bool Same(const std::vector<std::string>& expected)
+bool Same(const std::vector<std::string>& expected, const std::vector<std::string>& actual = calls)
 {
-	if (calls == expected) return true;
+	if (actual == expected) return true;
 	std::printf("      calls: ");
-	for (const std::string& call : calls) std::printf("[%s] ", call.c_str());
+	for (const std::string& call : actual) std::printf("[%s] ", call.c_str());
 	std::printf("\n      wanted:");
 	for (const std::string& call : expected) std::printf("[%s] ", call.c_str());
 	std::printf("\n");
@@ -147,10 +161,20 @@ const WorldEvents::Host worldHost = []() {
 	return host;
 }();
 
+std::string Options(const MItem* pItem)
+{
+	std::string text;
+	for (TYPE_ITEM_OPTION option : pItem->GetItemOptionList()) text += (text.empty() ? "" : ",") + N(option);
+	return text;
+}
+
 // The items the factory made, in order; the class it refuses (none
-// when -1).
+// when -1); and what each of them held when it was freed, in the order
+// they were: "index made|id|type|grade|options|number|quest", MItem's
+// own fields, which are all a destroyed item still has.
 std::vector<MItem*> made;
 int refusedClass = -1;
+std::vector<std::string> freed;
 const MItemHost itemHost = []() {
 	MItemHost host{};
 	host.NewItem = [](ITEM_CLASS itemClass) {
@@ -160,7 +184,20 @@ const MItemHost itemHost = []() {
 		return pItem;
 	};
 	host.RefreshAffect = [](MItem* pItem) { calls.push_back("affect|" + N(pItem->GetID())); };
-	host.ItemDestroyed = [](MItem* pItem) noexcept { calls.push_back("destroyed|" + N(pItem->GetID())); };
+	host.ItemDestroyed = [](MItem* pItem) noexcept {
+		calls.push_back("destroyed|" + N(pItem->GetID()));
+		// An item's entry is cleared when it goes: an allocator that hands the
+		// freed address to the next item (glibc does at once) must not match
+		// the old entry too.
+		for (size_t i = 0; i < made.size(); ++i)
+			if (made[i] == pItem)
+			{
+				freed.push_back(N(i) + "|" + N(pItem->GetID()) + "|" + N(pItem->GetItemType()) + "|" + N(pItem->GetGrade())
+					+ "|" + Options(pItem) + "|" + N(pItem->GetNumber()) + "|" + N(pItem->IsQuestItem()));
+				made[i] = nullptr;
+				break;
+			}
+	};
 	return host;
 }();
 
@@ -233,19 +270,20 @@ std::unique_ptr<GCSelectQuestID> QuestIDs(std::initializer_list<QuestID_t> ids)
 	return packet;
 }
 
+// Leaves the stack below the caller full of '#', so a buffer a callee
+// never writes reads as a run of them with no end.
+void DirtyStack()
+{
+	volatile char buffer[16384];
+	for (size_t i = 0; i < sizeof buffer; ++i) buffer[i] = '#';
+}
+
 std::vector<std::string> Lines(CMessageArray& log)
 {
 	std::vector<std::string> lines;
 	for (int i = 0; i < log.GetSize(); i++)
 		if (log[i] != nullptr && log[i][0] != '\0') lines.push_back(log[i]);
 	return lines;
-}
-
-std::string Options(const MItem* pItem)
-{
-	std::string text;
-	for (TYPE_ITEM_OPTION option : pItem->GetItemOptionList()) text += (text.empty() ? "" : ",") + N(option);
-	return text;
 }
 
 struct Scene
@@ -298,6 +336,7 @@ struct Scene
 	{
 		calls.clear();
 		made.clear();
+		freed.clear();
 		windowCount = 0;
 		refusedClass = -1;
 		MItem::SetHost(&itemHost);
@@ -579,6 +618,30 @@ TEST(GameUI3Talk, TheWindowsThatOpenOverTheTalkHideIt)
 	}
 }
 
+TEST(GameUI3Talk, AnInputNameModeOutsideTheThreeIsRefused)
+{
+	// The window's modes are 0 to 2 (INPUT_NAME_MAX is their count); any
+	// other leaves the talk as it is.
+	Scene scene;
+	for (int mode : {-1, 3, 4, 255})
+	{
+		scene.OpenTalk();
+		UI_RunInputNameWindow(mode);
+		CHECK(calls.empty());
+		CHECK_EQ(FLAG_UIDIALOG_LOCK_PCTALK, int(UIDialog::IsLockInput()));
+		scene.dialog.ClosePCTalkDlg();
+	}
+	// Each of the three it has opens it over the talk, which it hides.
+	for (int mode : {0, 1, 2})
+	{
+		scene.OpenTalk();
+		UI_RunInputNameWindow(mode);
+		CHECK(Same({"finish " + N(windowCount)}));
+		scene.dialog.ClosePCTalkDlg();
+		calls.clear();
+	}
+}
+
 TEST(GameUI3Talk, ClosingTheInputNameWindowEndsTheTalkAndTheWait)
 {
 	Scene scene;
@@ -677,6 +740,8 @@ TEST(GameUI3Quest, TheQuestNPCsTellEachQuestAndOfferIt)
 	AddQuest(scene.quests, 506, QUEST_INFO_MINI_GAME, 0, MINI_GAME_TYPE_NEMO, 0, 0, "Nemo");
 	AddQuest(scene.quests, 507, QUEST_INFO_MONSTER_KILL, 40 * 60, 0, 0, 2, "Bat");
 	AddQuest(scene.quests, 508, QUEST_INFO_MONSTER_KILL, 0, 0, 0, 4, "Imp");
+	AddQuest(scene.quests, 509, QUEST_INFO_GATHER_ITEM, 60, 0, 0, 2, "Herb");
+	AddQuest(scene.quests, 510, QUEST_INFO_TYPE_NULL, 0, 0, 0, 0, "Odd");
 	struct Case { int race; QuestID_t id; std::string content; std::string line; };
 	const std::string cancel = "|9999:Later";
 	const Case cases[] = {
@@ -695,6 +760,10 @@ TEST(GameUI3Quest, TheQuestNPCsTellEachQuestAndOfferIt)
 		{CREATURETYPE_SLAYER_MALE, 504, S(STRING_MESSAGE_SELECT_MINI_GAME), "|504:" + S(STRING_MESSAGE_SELECT_CRAZY_MINE)},
 		{CREATURETYPE_SLAYER_MALE, 505, S(STRING_MESSAGE_SELECT_MINI_GAME), "|505:" + S(STRING_MESSAGE_SELECT_ARROW_TILES)},
 		{CREATURETYPE_SLAYER_MALE, 506, S(STRING_MESSAGE_SELECT_MINI_GAME), ""},
+		// A quest with nothing to tell (a gathering, or a type the client
+		// does not know) is offered with no text.
+		{CREATURETYPE_SLAYER_MALE, 509, "", "|509:Yes"},
+		{CREATURETYPE_VAMPIRE_MALE1, 510, "", "|510:Yes"},
 	};
 	for (unsigned npc : { 17u, 255u, 653u })
 		for (const Case& c : cases)
@@ -708,7 +777,9 @@ TEST(GameUI3Quest, TheQuestNPCsTellEachQuestAndOfferIt)
 			scene.dialog.ClosePCTalkDlg();
 			calls.clear();
 			windowCount = 0;
-			UI_RunQuestList(QuestIDs({c.id}).get());
+			std::unique_ptr<GCSelectQuestID> packet = QuestIDs({c.id});
+			DirtyStack();
+			UI_RunQuestList(packet.get());
 			const bool same = Same({"close all", "talk 1|" + N(npc) + "|(null)", "menu 1" + c.line + cancel,
 				"text 1 fit|" + c.content, "start 1"});
 			if (!same) std::printf("      npc %u quest %u\n", npc, unsigned(c.id));
@@ -729,21 +800,19 @@ TEST(GameUI3Quest, TheQuestNPCsOfferEveryKnownQuestInOrder)
 	scene.talkBox.SetCreatureType(255);
 	// An id the table does not know is passed over.
 	UI_RunQuestList(QuestIDs({501, 600, 502, 503, 504}).get());
-	// The last quest told is the text. Recorded defect: the time limit
-	// is appended to the buffer that last held the previous offer, so the
-	// third quest's text carries the second's offer in front of its time.
+	// The last quest told is the text, with its own time limit.
 	CHECK(Same({"close all", "talk 1|255|(null)",
 		"menu 1|501:Yes|502:Yes|503:Yes|504:" + S(STRING_MESSAGE_SELECT_CRAZY_MINE) + "|9999:Later",
 		"text 1 fit|" + S(STRING_MESSAGE_SELECT_MINI_GAME), "start 1"}));
 	calls.clear();
 	UI_RunQuestList(QuestIDs({502, 503}).get());
 	CHECK(Same({"delete 1", "close all", "talk 2|255|(null)", "menu 2|502:Yes|503:Yes|9999:Later",
-		"text 2 fit|Bring Ghoul, 3 of them, within  502Yes2h 0m.", "start 2"}));
+		"text 2 fit|Bring Ghoul, 3 of them, within 2h 0m.", "start 2"}));
 	// Only unknown ids: just the way out.
 	calls.clear();
 	UI_RunQuestList(QuestIDs({600}).get());
 	CHECK(Same({"delete 2", "close all", "talk 3|255|(null)", "menu 3|9999:Later",
-		"text 3 fit|Bring Ghoul, 3 of them, within  502Yes2h 0m.", "start 3"}));
+		"text 3 fit|Bring Ghoul, 3 of them, within 2h 0m.", "start 3"}));
 }
 
 TEST(GameUI3Quest, OtherNPCsListTheHuntsForTheRace)
@@ -779,14 +848,22 @@ TEST(GameUI3Quest, OtherNPCsListTheHuntsForTheRace)
 			CHECK(scene.talkBox.GetType() == PCTalkBox::SELECT_QUEST);
 			CHECK(scene.me->GetWaitVerify() == MPlayer::WAIT_VERIFY_NULL);
 		}
-	// Recorded defect: a quest that is not a hunt adds the line of the
-	// hunt before it again.
+	// A quest that is not a hunt is not listed.
 	scene.dialog.ClosePCTalkDlg();
 	calls.clear();
 	windowCount = 0;
 	UI_RunQuestList(QuestIDs({501, 502}).get());
 	CHECK(Same({"close all", "talk 1|654|(null)",
-		"menu 1|501:Wolf 7 heads Limit:3h 5m|501:Wolf 7 heads Limit:3h 5m|9999:Later",
+		"menu 1|501:Wolf 7 heads Limit:3h 5m|9999:Later",
+		"text 1 fit|" + S(UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS), "start 1"}));
+	// Before any hunt, a quest that is not one lists nothing.
+	scene.dialog.ClosePCTalkDlg();
+	calls.clear();
+	windowCount = 0;
+	std::unique_ptr<GCSelectQuestID> packet = QuestIDs({502, 501});
+	DirtyStack();
+	UI_RunQuestList(packet.get());
+	CHECK(Same({"close all", "talk 1|654|(null)", "menu 1|501:Wolf 7 heads Limit:3h 5m|9999:Later",
 		"text 1 fit|" + S(UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS), "start 1"}));
 }
 
@@ -829,6 +906,34 @@ TEST(GameUI3Quest, TheHuntUnderWayIsAskedAboutItsMonster)
 	CHECK(!UI_IsMonsterKillQuest_Monster(9));
 }
 
+TEST(GameUI3Quest, AHuntTheServerAddsIsNoEventQuest)
+{
+	// GCMonsterKillQuestInfo adds a hunt the quest file lacks through
+	// SetInfo, which gives it no event flag or level: both are 0.
+	Scene scene;
+	scene.quests.SetInfo(601, 5, 60, "Wolf");
+	QUEST_INFO* pQuest = scene.quests.GetInfo(601);
+	CHECK(pQuest != NULL);
+	if (pQuest != NULL)
+	{
+		CHECK_EQ(0, int(pQuest->GetEventQuest()));
+		CHECK_EQ(0, int(pQuest->GetQuestLevel()));
+	}
+	// Its status, and that of an event quest of a level past the five
+	// event titles, take the quests' title (the window is not built here).
+	AddQuest(scene.quests, 602, QUEST_INFO_MONSTER_KILL, 60, 0, 0, 7, "Event", 1, 5);
+	AddQuest(scene.quests, 603, QUEST_INFO_MONSTER_KILL, 60, 0, 0, 7, "Event", 1, 255);
+	for (WORD id : { WORD(601), WORD(602), WORD(603) })
+	{
+		GCQuestStatus status;
+		status.setQuestID(id);
+		status.setCurrentNul(1);
+		status.setRemainTime(90);
+		UI_RunQuestStatus(&status);
+	}
+	CHECK(calls.empty());
+}
+
 //----------------------------------------------------------------------
 // The item shop
 //----------------------------------------------------------------------
@@ -847,17 +952,6 @@ GoodsInfo* Good(ObjectID_t id, int itemClass, int type, int grade, std::initiali
 	return pInfo;
 }
 
-// The items the shop made (the window would have kept them), freed; a
-// gun frees its magazine.
-void FreeMade()
-{
-	std::vector<MItem*> owners;
-	for (MItem* pItem : made)
-		if (pItem->GetItemClass() != ITEM_CLASS_MAGAZINE) owners.push_back(pItem);
-	for (MItem* pItem : owners) delete pItem;
-	made.clear();
-}
-
 } // namespace
 
 TEST(GameUI3ItemShop, EachGoodBecomesAnItem)
@@ -872,52 +966,22 @@ TEST(GameUI3ItemShop, EachGoodBecomesAnItem)
 	packet.addGoodsInfo(Good(13, ITEM_CLASS_SG, 0, 4, {2}, 30, 1));
 	packet.addGoodsInfo(Good(14, ITEM_CLASS_SR, 0, 0, {}, 12, 0));
 	UI_RunItemShop(&packet);
-	CHECK(Same({"finish 1", "new|" + N(ITEM_CLASS_SWORD), "new|" + N(ITEM_CLASS_POTION), "new|" + N(ITEM_CLASS_SG),
-		"new|" + N(ITEM_CLASS_MAGAZINE), "new|" + N(ITEM_CLASS_SR), "new|" + N(ITEM_CLASS_MAGAZINE)}));
+	// Without the item list window, which would own them, each item is
+	// freed as soon as it is made, a gun with its magazine.
+	CHECK(Same({"finish 1", "new|" + N(ITEM_CLASS_SWORD), "destroyed|11", "new|" + N(ITEM_CLASS_POTION), "destroyed|12",
+		"new|" + N(ITEM_CLASS_SG), "new|" + N(ITEM_CLASS_MAGAZINE), "destroyed|0", "destroyed|13",
+		"new|" + N(ITEM_CLASS_SR), "new|" + N(ITEM_CLASS_MAGAZINE), "destroyed|0", "destroyed|14"}));
 	CHECK(packet.isEmpty());
 	CHECK(scene.me->GetWaitVerify() == MPlayer::WAIT_VERIFY_NULL);
 	CHECK(scene.temp.GetMode() == TempInformation::MODE_NULL);
-	CHECK_EQ((size_t)6, made.size());
-	if (made.size() == 6)
-	{
-		MItem* pSword = made[0];
-		CHECK_EQ(11u, unsigned(pSword->GetID()));
-		CHECK_EQ(2, int(pSword->GetItemType()));
-		CHECK_EQ(3, pSword->GetGrade());
-		CHECK(Options(pSword) == "5,7");
-		CHECK_EQ(1, int(pSword->GetNumber()));
-		CHECK_EQ(0, pSword->IsQuestItem());
+	CHECK(Same({"0|11|2|3|5,7|1|0",
 		// A good with a time limit is a quest item.
-		MItem* pPotion = made[1];
-		CHECK_EQ(12u, unsigned(pPotion->GetID()));
-		CHECK_EQ(9, int(pPotion->GetNumber()));
-		CHECK_EQ(1, pPotion->IsQuestItem());
+		"1|12|0|0||9|1",
 		// A gun's count is its magazine's: the first magazine that fits,
-		// with no options and no id.
-		MGunItem* pShotgun = static_cast<MGunItem*>(made[2]);
-		CHECK_EQ(13u, unsigned(pShotgun->GetID()));
-		CHECK_EQ(4, pShotgun->GetGrade());
-		CHECK(Options(pShotgun) == "2");
-		CHECK_EQ(1, pShotgun->IsQuestItem());
-		CHECK(pShotgun->GetMagazine() == made[3]);
-		if (pShotgun->GetMagazine() != NULL)
-		{
-			CHECK_EQ(1, int(pShotgun->GetMagazine()->GetItemType()));
-			CHECK_EQ(30, int(pShotgun->GetMagazine()->GetNumber()));
-			CHECK_EQ(0u, unsigned(pShotgun->GetMagazine()->GetID()));
-			CHECK(pShotgun->GetMagazine()->IsEmptyItemOptionList());
-		}
-		CHECK_EQ(1, int(pShotgun->GetNumber()));
+		// with no options and no id, freed by the gun before it.
+		"3|0|1|-1||30|0", "2|13|0|4|2|1|1",
 		// No magazine fits the rifle: it is given the last one tried.
-		MGunItem* pRifle = static_cast<MGunItem*>(made[4]);
-		CHECK(pRifle->GetMagazine() == made[5]);
-		if (pRifle->GetMagazine() != NULL)
-		{
-			CHECK_EQ(2, int(pRifle->GetMagazine()->GetItemType()));
-			CHECK_EQ(12, int(pRifle->GetMagazine()->GetNumber()));
-		}
-	}
-	FreeMade();
+		"5|0|2|-1||12|0", "4|14|0|0||1|0"}, freed));
 }
 
 TEST(GameUI3ItemShop, AGoodWithNoItemIsSkippedAndAMissingOneEndsTheList)
@@ -932,14 +996,29 @@ TEST(GameUI3ItemShop, AGoodWithNoItemIsSkippedAndAMissingOneEndsTheList)
 	packet.addGoodsInfo(NULL);
 	packet.addGoodsInfo(Good(15, ITEM_CLASS_SWORD, 0, 0, {}, 1, 0));
 	UI_RunItemShop(&packet);
-	CHECK(Same({"new|" + N(ITEM_CLASS_POTION), "new|" + N(ITEM_CLASS_SWORD)}));
-	CHECK_EQ((size_t)1, made.size());
-	if (!made.empty()) CHECK_EQ(13u, unsigned(made[0]->GetID()));
+	CHECK(Same({"new|" + N(ITEM_CLASS_POTION), "new|" + N(ITEM_CLASS_SWORD), "destroyed|13"}));
+	CHECK(Same({"0|13|0|0||1|0"}, freed));
 	GoodsInfo* pLeft = packet.popGoodsInfo();
 	CHECK(pLeft != NULL && pLeft->objectID == 15);
 	delete pLeft;
 	CHECK(packet.isEmpty());
-	FreeMade();
+}
+
+TEST(GameUI3ItemShop, AGunTheFactoryMakesNoMagazineForIsListedEmpty)
+{
+	Scene scene;
+	GCGoodsList packet;
+	refusedClass = ITEM_CLASS_MAGAZINE;
+	packet.addGoodsInfo(Good(13, ITEM_CLASS_SG, 0, 4, {2}, 30, 1));
+	packet.addGoodsInfo(Good(14, ITEM_CLASS_SWORD, 0, 0, {}, 1, 0));
+	UI_RunItemShop(&packet);
+	// The gun is made and listed with no magazine (none freed with it),
+	// and the good after it is made too; without the item list window
+	// each is freed at once.
+	CHECK(Same({"new|" + N(ITEM_CLASS_SG), "new|" + N(ITEM_CLASS_MAGAZINE), "destroyed|13",
+		"new|" + N(ITEM_CLASS_SWORD), "destroyed|14"}));
+	CHECK(packet.isEmpty());
+	CHECK(Same({"0|13|0|4|2|1|1", "1|14|0|0||1|0"}, freed));
 }
 
 //----------------------------------------------------------------------
@@ -999,6 +1078,7 @@ TEST(GameUI3Forge, MixingRefusesItemsThatDoNotMatch)
 	MItem* pBare = scene.Sword(23, {}, 0, 2);
 	MItem* pDouble = scene.Sword(24, {5, 9}, 0, 3);
 	MItem* pOutside = scene.Sword(25, {5}, 0, -1);
+	MItem* pTwin = scene.Sword(21, {9}, 0, -1);	// the first's id
 	const std::vector<std::string> refused = scene.Popup(1, S(STRING_ERROR_ETC_ERROR));
 	struct Case { const char* what; DWORD parameter; MItem* pItem; MItem* pItem2; };
 	const Case cases[] = {
@@ -1014,6 +1094,9 @@ TEST(GameUI3Forge, MixingRefusesItemsThatDoNotMatch)
 		// The high word is the first option whole, not its low byte.
 		{"high word", (0x105u << 16) | 9u, pFirst, pSecond},
 		{"not held", (5u << 16) | 9u, pOutside, pSecond},
+		// One item twice: the second's removal would delete the first.
+		{"same item", (5u << 16) | 5u, pFirst, pFirst},
+		{"same id", (5u << 16) | 9u, pFirst, pTwin},
 	};
 	for (const Case& c : cases)
 	{
@@ -1026,7 +1109,9 @@ TEST(GameUI3Forge, MixingRefusesItemsThatDoNotMatch)
 		CHECK(Options(pFirst) == "5");
 		CHECK_EQ(2, pFirst->GetGrade());
 		CHECK(scene.inventory.GetItem(TYPE_OBJECTID(22)) == pSecond);
+		CHECK(scene.inventory.GetItem(TYPE_OBJECTID(21)) == pFirst);
 	}
+	delete pTwin;
 	delete pOutside;
 }
 
@@ -1117,11 +1202,14 @@ TEST(GameUI3Messages, TheMasterLairSaysWhetherItIsOpen)
 	UI_MasterLairMessage(2, -3, 1101);
 	CHECK(Lines(scene.systemMessages) == std::vector<std::string>({"Bathory's Lair has opened.", "Bathory's Lair has closed.",
 		"Bathory's Lair stays open for 15 minutes.", "Bathory's Lair stays open for -3 minutes."}));
-	// Another kind, the option off, or no log, zone table or strings:
-	// nothing.
+	// Another kind, a zone the table does not know, the option off, or no
+	// log, zone table or strings: nothing.
 	scene.systemMessages.Clear();
 	UI_MasterLairMessage(3, 0, 1101);
 	UI_MasterLairMessage(255, 0, 1101);
+	UI_MasterLairMessage(0, 0, 1102);
+	UI_MasterLairMessage(1, 0, 1102);
+	UI_MasterLairMessage(2, 15, 1102);
 	scene.option.DoNotShowLairMsg = TRUE;
 	UI_MasterLairMessage(0, 0, 1101);
 	scene.option.DoNotShowLairMsg = FALSE;
@@ -1185,15 +1273,31 @@ TEST(GameUI3MiniGame, TheScoresTakenAreTheOnesShown)
 //----------------------------------------------------------------------
 namespace {
 
+// The last login received. Unlike the game's UI_LOGIN handler, which
+// frees its two strings and clears them, this receiver leaves them.
+LOGIN* pTaken = NULL;
+
 void Received(DWORD message, intptr_t left, intptr_t right, void* pVoid)
 {
 	std::string line = "message|" + N(message) + "|" + N(left) + "|" + N(right);
 	if (message == UI_LOGIN && pVoid != NULL)
 	{
-		const LOGIN* pLogin = static_cast<const LOGIN*>(pVoid);
-		line += "|" + Text(pLogin->sz_id) + "|" + Text(pLogin->sz_password);
+		pTaken = static_cast<LOGIN*>(pVoid);
+		line += "|" + Text(pTaken->sz_id) + "|" + Text(pTaken->sz_password);
 	}
 	calls.push_back(line);
+}
+
+// Whether a string was freed: ASan's poison on a freed block; without
+// ASan this says yes, so the check is the sanitized trees' alone.
+bool Freed(const void* p)
+{
+#ifdef ASAN_SEES_FREES
+	return __asan_address_is_poisoned(p) != 0;
+#else
+	(void)p;
+	return true;
+#endif
 }
 
 void NoTimer() {}
@@ -1281,6 +1385,40 @@ TEST(GameUI3Login, TheWebLoginLogsInWithItsKey)
 	UI_RunConnect();
 	queue.Dispatch();
 	CHECK(Same({"message|" + N(UI_LOGIN) + "|0|0||"}));
+}
+
+TEST(GameUI3Login, AConnectFreesTheLoginItReplaces)
+{
+	// Each login (Netmarble's, the web's) is a static whose strings the
+	// UI_LOGIN handler frees and clears; a connect before the handler took
+	// them (here: strings this receiver left) frees the ones it replaces.
+	Queue queue;
+	g_CpCookie = "cookie-123";
+	g_pUserInformation->UserID = "kim";
+	g_pUserInformation->AutoLogInKeyValue = "key-42";
+	for (bool netmarble : {true, false})
+	{
+		g_pUserInformation->IsNetmarble = netmarble;
+		g_pUserInformation->IsAutoLogIn = true;
+		UI_RunConnect();
+		queue.Dispatch();
+		CHECK(pTaken != NULL);
+		if (pTaken == NULL) return;
+		const LOGIN first = *pTaken;
+		UI_RunConnect();
+		CHECK(Freed(first.sz_id));
+		CHECK(Freed(first.sz_password));
+		// Strings the handler freed and cleared are not freed again.
+		queue.Dispatch();
+		delete[] pTaken->sz_id;
+		pTaken->sz_id = NULL;
+		delete[] pTaken->sz_password;
+		pTaken->sz_password = NULL;
+		calls.clear();
+		UI_RunConnect();
+		queue.Dispatch();
+		CHECK(Same({"message|" + N(UI_LOGIN) + "|0|0|" + (netmarble ? "cookie-123|DarkEden" : "kim|key-42")}));
+	}
 }
 
 TEST(GameUI3Login, AManualLoginQueuesNothing)
@@ -1434,6 +1572,167 @@ TEST(GameUI3Notice, EachNoticeIsItsRacesFile)
 	CHECK(calls.empty());
 }
 #endif
+
+//----------------------------------------------------------------------
+// The other player's info
+//----------------------------------------------------------------------
+TEST(GameUI3OtherInfo, ASlayersInfoGoesOnlyToTheGameWindow)
+{
+	// The info, the slayer's face among it (its hair frame less its sex's
+	// first hair frame), goes to the game window, which is not built here:
+	// nothing changes.
+	Scene scene;
+	MCreatureWear slayer;
+	slayer.SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	slayer.SetName("Kim");
+	const std::pair<bool, TYPE_FRAMEID> faces[] = {
+		{true, ADDONID_HAIR1_MALE}, {true, ADDONID_HAIR2_MALE}, {true, ADDONID_HAIR3_MALE},
+		{false, ADDONID_HAIR1_FEMALE}, {false, ADDONID_HAIR2_FEMALE}, {false, ADDONID_HAIR3_FEMALE},
+	};
+	for (const auto& face : faces)
+	{
+		slayer.SetMale(face.first);
+		slayer.SetAddonHair(face.second, 0);
+		UI_RunOtherInfo(&slayer);
+	}
+	CHECK(slayer.IsSlayer());
+	CHECK(UI_GetOtherInfoName() == NULL);
+	CHECK(calls.empty());
+}
+
+TEST(GameUI3OtherInfo, ASlayersFaceOutsideItsSexsThreeHairsIsTheFirst)
+{
+	// The hair is set with the sex, but a corpse packet of the other sex
+	// changes an existing slayer's sex and not its hair (GCAddSlayerCorpse
+	// sets the creature type), and a slayer whose hair was never set has
+	// the first male one: a face outside its sex's three is the first.
+	Scene scene;
+	MCreatureWear slayer;
+	slayer.SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	slayer.SetName("Kim");
+	const TYPE_FRAMEID hairs[] = {ADDONID_HAIR1_FEMALE, ADDONID_HAIR3_FEMALE, ADDONID_HAIR1_MALE, ADDONID_HAIR3_MALE,
+		0, MAX_ADDONID_SLAYER, 0xFFFF};
+	for (bool male : {true, false})
+		for (TYPE_FRAMEID hair : hairs)
+		{
+			slayer.SetMale(male);
+			slayer.SetAddonHair(hair, 0);
+			UI_RunOtherInfo(&slayer);
+		}
+	CHECK(UI_GetOtherInfoName() == NULL);
+	CHECK(calls.empty());
+}
+
+//----------------------------------------------------------------------
+// What the other player's info holds (FillOtherInfo), read straight.
+//----------------------------------------------------------------------
+namespace {
+
+// A record whose every field is a mark the fill must replace.
+C_VS_UI_OTHER_INFO::PLAYER_INFO Marked(bool female)
+{
+	C_VS_UI_OTHER_INFO::PLAYER_INFO info;
+	info.PLAYER_NAME = "mark";
+	for (int& level : info.DOMAINLEVEL)
+		level = -1;
+	info.GRADE = info.LEVEL = info.FAME = info.ALIGNMENT = -1;
+	info.STR_CUR = info.DEX_CUR = info.INT_CUR = -1;
+	info.STR_PURE = info.DEX_PURE = info.INT_PURE = -1;
+	info.guild_id = info.face_type = -1;
+	info.bl_female = female;
+	return info;
+}
+
+// The stats the info shows, each its own.
+void SetStats(MCreature& creature)
+{
+	creature.SetGuildNumber(77);
+	creature.MStatus::SetStatus(MODIFY_BLADE_DOMAIN_LEVEL, 11);
+	creature.MStatus::SetStatus(MODIFY_SWORD_DOMAIN_LEVEL, 12);
+	creature.MStatus::SetStatus(MODIFY_GUN_DOMAIN_LEVEL, 13);
+	creature.MStatus::SetStatus(MODIFY_HEAL_DOMAIN_LEVEL, 14);
+	creature.MStatus::SetStatus(MODIFY_ENCHANT_DOMAIN_LEVEL, 15);
+	creature.MStatus::SetStatus(MODIFY_RANK, 21);
+	creature.MStatus::SetStatus(MODIFY_LEVEL, 22);
+	creature.MStatus::SetStatus(MODIFY_FAME, 23);
+	creature.MStatus::SetStatus(MODIFY_ALIGNMENT, DWORD(-500));
+	creature.MStatus::SetStatus(MODIFY_CURRENT_STR, 31);
+	creature.MStatus::SetStatus(MODIFY_CURRENT_DEX, 32);
+	creature.MStatus::SetStatus(MODIFY_CURRENT_INT, 33);
+	creature.MStatus::SetStatus(MODIFY_BASIC_STR, 41);
+	creature.MStatus::SetStatus(MODIFY_BASIC_DEX, 42);
+	creature.MStatus::SetStatus(MODIFY_BASIC_INT, 43);
+}
+
+void CheckStats(const C_VS_UI_OTHER_INFO::PLAYER_INFO& info)
+{
+	CHECK_EQ(11, info.DOMAINLEVEL[SKILLDOMAIN_BLADE]);
+	CHECK_EQ(12, info.DOMAINLEVEL[SKILLDOMAIN_SWORD]);
+	CHECK_EQ(13, info.DOMAINLEVEL[SKILLDOMAIN_GUN]);
+	CHECK_EQ(14, info.DOMAINLEVEL[SKILLDOMAIN_HEAL]);
+	CHECK_EQ(15, info.DOMAINLEVEL[SKILLDOMAIN_ENCHANT]);
+	CHECK_EQ(21, info.GRADE);
+	CHECK_EQ(22, info.LEVEL);
+	CHECK_EQ(23, info.FAME);
+	CHECK_EQ(-500, info.ALIGNMENT);
+	CHECK_EQ(31, info.STR_CUR);
+	CHECK_EQ(32, info.DEX_CUR);
+	CHECK_EQ(33, info.INT_CUR);
+	CHECK_EQ(41, info.STR_PURE);
+	CHECK_EQ(42, info.DEX_PURE);
+	CHECK_EQ(43, info.INT_PURE);
+	CHECK_EQ(77, info.guild_id);
+}
+
+} // namespace
+
+TEST(GameUI3OtherInfo, TheInfoHoldsASlayersNameStatsSexAndFace)
+{
+	// The face is the slayer's hair frame less its sex's first; one
+	// outside the sex's three is the first face.
+	Scene scene;
+	MCreatureWear slayer;
+	slayer.SetCreatureType(CREATURETYPE_SLAYER_MALE);
+	slayer.SetName("Kim");
+	SetStats(slayer);
+	struct Face { bool male; int hair; int face; };
+	const Face faces[] = {
+		{true, ADDONID_HAIR1_MALE, M_FACE1}, {true, ADDONID_HAIR2_MALE, M_FACE2}, {true, ADDONID_HAIR3_MALE, M_FACE3},
+		{true, ADDONID_HAIR1_MALE - 1, M_FACE1}, {true, ADDONID_HAIR3_MALE + 1, M_FACE1},
+		{false, ADDONID_HAIR1_FEMALE, W_FACE1}, {false, ADDONID_HAIR2_FEMALE, W_FACE2}, {false, ADDONID_HAIR3_FEMALE, W_FACE3},
+		{false, ADDONID_HAIR1_FEMALE - 1, W_FACE1}, {false, ADDONID_HAIR3_FEMALE + 1, W_FACE1},
+	};
+	for (const Face& face : faces)
+	{
+		slayer.SetMale(face.male);
+		slayer.SetAddonHair(TYPE_FRAMEID(face.hair), 0);
+		C_VS_UI_OTHER_INFO::PLAYER_INFO info = Marked(face.male);
+		FillOtherInfo(info, &slayer);
+		CHECK(std::string("Kim") == info.PLAYER_NAME);
+		CHECK_EQ(!face.male, info.bl_female);
+		CHECK_EQ(face.face, info.face_type);
+		CheckStats(info);
+	}
+}
+
+TEST(GameUI3OtherInfo, TheInfoLeavesANonSlayersFaceAndANamelessCreaturesName)
+{
+	// Only a slayer has a face here, and a creature without a name keeps
+	// the record's.
+	Scene scene;
+	MCreatureWear vampire;
+	vampire.SetCreatureType(CREATURETYPE_VAMPIRE_MALE1);
+	vampire.SetMale(false);
+	vampire.SetAddonHair(ADDONID_HAIR2_FEMALE, 0);
+	SetStats(vampire);
+	CHECK(vampire.GetName() == NULL);
+	C_VS_UI_OTHER_INFO::PLAYER_INFO info = Marked(false);
+	FillOtherInfo(info, &vampire);
+	CHECK(std::string("mark") == info.PLAYER_NAME);
+	CHECK_EQ(-1, info.face_type);
+	CHECK(info.bl_female);
+	CheckStats(info);
+}
 
 //----------------------------------------------------------------------
 // The calls only the game's windows see

@@ -18,6 +18,7 @@
 #include "GameMessages.h"
 #include "../basic/CMessageArray.h"
 #include "UIFunction.h"
+#include "GameUIBuilders.h"
 #include "VS_UI.h" 
 #include "VS_UI_mouse_pointer.h"
 #include "PacketDef.h"
@@ -161,6 +162,8 @@ void UI_FriendChatting_Message(GCFriendChatting* pPacket)
 //--------------------------------------------------------------------------------
 void UI_RunFriendRequest(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendRequestAsk(pName);
@@ -175,6 +178,8 @@ void UI_RunFriendRequest(GCFriendChatting* pPacket)
 //}
 void UI_RunFriendRefuse(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendOK();
@@ -182,6 +187,8 @@ void UI_RunFriendRefuse(GCFriendChatting* pPacket)
 }
 void UI_RunFriendWait(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendWaitAsk(pName);
@@ -194,12 +201,16 @@ void UI_RunFriendOK(GCFriendChatting* pPacket)
 }
 void UI_RunFriendExist(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendExistAsk(pName);
 }
 void UI_RunFriendBlack(GCFriendChatting* pPacket)
 {
+	if (!gC_vs_ui.IsGameMode())	// no dialog to take and free the name
+		return;
 	char* pName = new char[pPacket->getPlayerName().size()+1];
 	memcpy(pName, pPacket->getPlayerName().c_str(), pPacket->getPlayerName().size() + 1);
 	gC_vs_ui.RunFriendBlackAsk(pName);
@@ -478,7 +489,8 @@ UI_SetWorldList()
 		//-----------------------------------------------------
 		for (int i=0; i<numGroup; i++)
 		{			
-			const char* groupNameOrg = iGroup->second->GetGroupName();
+			// An empty name is kept as NULL (MString).
+			const char* groupNameOrg = iGroup->second->GetGroupName() != NULL ? iGroup->second->GetGroupName() : "";
 			int status = iGroup->second->GetGroupStatus();
 		
 			groupName[i] = new char[strlen(groupNameOrg) + 1];
@@ -525,7 +537,9 @@ UI_SetServerList()
 		return;
 	}
 
-	if (g_pServerInformation!=NULL)
+	// A current group the information no longer holds (a world list that
+	// left it out) has no servers to list: nothing, as with no information.
+	if (g_pServerInformation!=NULL && g_pServerInformation->GetData( g_pServerInformation->GetServerGroupID() )!=NULL)
 	{
 		// If false, a server is being selected.
 		gC_vs_ui.StartServerSelect( false );
@@ -550,7 +564,8 @@ UI_SetServerList()
 		{			
 			SERVER_INFO* pServerInfo = iServer->second;
 
-			const char* serverNameOrg = pServerInfo->ServerName.GetString();
+			// An empty name is kept as NULL (MString).
+			const char* serverNameOrg = pServerInfo->ServerName.GetString() != NULL ? pServerInfo->ServerName.GetString() : "";
 			int status = pServerInfo->ServerStatus;
 
 			serverName[i] = new char[strlen(serverNameOrg) + 1];
@@ -2136,15 +2151,15 @@ UI_SetNPCInfo( const char* pName, int npcID, int x, int y )
 }
 
 //-----------------------------------------------------------------------------
-// Set Character
+// Make Character Slot
 //-----------------------------------------------------------------------------
-void
-UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
+S_SLOT
+MakeCharacterSlot(const char* name, const PCSlayerInfo* pInfo)
 {
 	// set character
 	S_SLOT slot;
 
-	slot.sz_name = g_pUserInformation->Character[slotID];
+	slot.sz_name = name != NULL ? name : "";	// an empty MString is NULL
 	slot.sz_guild_name = "";
 	slot.Race = RACE_SLAYER;
 
@@ -2211,6 +2226,12 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 
 	//------------------------------------------------------------
 	// Set outfit info
+	//------------------------------------------------------------
+	// The outlook's fields are 2 and 3 bits wide, wider than the tables:
+	// a value past one is its first entry, as PacketFunction takes a hair
+	// past its table as the first and an item past its own as none worn.
+	auto outlook = [](const auto& table, unsigned index) { return index < std::size(table) ? table[index] : table[0]; };
+
 	//------------------------------------------------------------
 	// If female
 	//------------------------------------------------------------
@@ -2283,13 +2304,13 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 			W_DRAGON_SHIELD,			
 		};
 
-		slot.woman_info.helmet = uiHelmFemale[pInfo->getHelmetType()];
-		slot.woman_info.coat = uiCoatFemale[pInfo->getJacketType()];
-		slot.woman_info.trouser = uiTrouserFemale[pInfo->getPantsType()];
-		slot.woman_info.face = uiFaceFemale[pInfo->getHairStyle()];
-		slot.woman_info.hair = uiHairFemale[pInfo->getHairStyle()];
+		slot.woman_info.helmet = outlook(uiHelmFemale, pInfo->getHelmetType());
+		slot.woman_info.coat = outlook(uiCoatFemale, pInfo->getJacketType());
+		slot.woman_info.trouser = outlook(uiTrouserFemale, pInfo->getPantsType());
+		slot.woman_info.face = outlook(uiFaceFemale, pInfo->getHairStyle());
+		slot.woman_info.hair = outlook(uiHairFemale, pInfo->getHairStyle());
 		slot.woman_info.right = uiWeaponFemale[pInfo->getWeaponType()];
-		slot.woman_info.left = uiShieldFemale[pInfo->getShieldType()];
+		slot.woman_info.left = outlook(uiShieldFemale, pInfo->getShieldType());
 	}
 	//------------------------------------------------------------
 	// If male
@@ -2363,13 +2384,13 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 			M_DRAGON_SHIELD			
 		};
 
-		slot.man_info.helmet	= uiHelmMale[pInfo->getHelmetType()];
-		slot.man_info.coat		= uiCoatMale[pInfo->getJacketType()];
-		slot.man_info.trouser	= uiTrouserMale[pInfo->getPantsType()];
-		slot.man_info.face = uiFaceMale[pInfo->getHairStyle()];
-		slot.man_info.hair = uiHairMale[pInfo->getHairStyle()];
+		slot.man_info.helmet	= outlook(uiHelmMale, pInfo->getHelmetType());
+		slot.man_info.coat		= outlook(uiCoatMale, pInfo->getJacketType());
+		slot.man_info.trouser	= outlook(uiTrouserMale, pInfo->getPantsType());
+		slot.man_info.face = outlook(uiFaceMale, pInfo->getHairStyle());
+		slot.man_info.hair = outlook(uiHairMale, pInfo->getHairStyle());
 		slot.man_info.right = uiWeaponMale[pInfo->getWeaponType()];
-		slot.man_info.left = uiShieldMale[pInfo->getShieldType()];
+		slot.man_info.left = outlook(uiShieldMale, pInfo->getShieldType());
 	}
 
 	// Outfit info
@@ -2454,18 +2475,33 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	if(slot.right_color != UNIQUE_ITEM_COLOR && slot.right_color != QUEST_ITEM_COLOR)
 		slot.right_color = max(0, min(slot.right_color, MAX_COLORSET-1));	
 	
-	gC_vs_ui.SetCharacter(slotID, slot);
+	return slot;
 }
 
 //-----------------------------------------------------------------------------
 // Set Character
 //-----------------------------------------------------------------------------
 void
-UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
+UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
+{
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
+	S_SLOT slot = MakeCharacterSlot(g_pUserInformation->Character[slotID], pInfo);
+	gC_vs_ui.SetCharacter(slotID, slot);
+}
+
+//-----------------------------------------------------------------------------
+// Make Character Slot
+//-----------------------------------------------------------------------------
+S_SLOT
+MakeCharacterSlot(const char* name, const PCVampireInfo* pInfo)
 {
 	S_SLOT slot;
 
-	slot.sz_name = g_pUserInformation->Character[slotID];
+	slot.sz_name = name != NULL ? name : "";	// an empty MString is NULL
 	slot.sz_guild_name = "";
 //	slot.bl_vampire = true;
 	slot.Race = RACE_VAMPIRE;
@@ -2585,20 +2621,35 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	if(slot.right_color != UNIQUE_ITEM_COLOR && slot.right_color != QUEST_ITEM_COLOR)
 		slot.right_color = max(0, min(slot.right_color, MAX_COLORSET-1));
 
-	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d Before", slotID);
-	gC_vs_ui.SetCharacter(slotID, slot);
-	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d After", slotID);
+	return slot;
 }
 
 //-----------------------------------------------------------------------------
 // Set Character
 //-----------------------------------------------------------------------------
 void
-UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
+UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
+{
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
+	S_SLOT slot = MakeCharacterSlot(g_pUserInformation->Character[slotID], pInfo);
+	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d Before", slotID);
+	gC_vs_ui.SetCharacter(slotID, slot);
+	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d After", slotID);
+}
+
+//-----------------------------------------------------------------------------
+// Make Character Slot
+//-----------------------------------------------------------------------------
+S_SLOT
+MakeCharacterSlot(const char* name, const PCOustersInfo* pInfo)
 {
 	S_SLOT slot;
 
-	slot.sz_name = g_pUserInformation->Character[slotID];
+	slot.sz_name = name != NULL ? name : "";	// an empty MString is NULL
 	slot.sz_guild_name = "";
 	slot.Race = RACE_OUSTERS;
 
@@ -2738,6 +2789,21 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	if(slot.right_color != UNIQUE_ITEM_COLOR && slot.right_color != QUEST_ITEM_COLOR)
 		slot.right_color = max(0, min(slot.right_color, MAX_COLORSET-1));
 
+	return slot;
+}
+
+//-----------------------------------------------------------------------------
+// Set Character
+//-----------------------------------------------------------------------------
+void
+UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
+{
+	// The slot names one of the user's three characters; LCPCList hands
+	// 0 to SLOT_MAX - 1.
+	if (slotID < 0 || slotID >= int(std::size(g_pUserInformation->Character)))
+		return;
+
+	S_SLOT slot = MakeCharacterSlot(g_pUserInformation->Character[slotID], pInfo);
 	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d Before", slotID);
 	gC_vs_ui.SetCharacter(slotID, slot);
 	DEBUG_ADD_FORMAT("[UI_SETCHARACTER] %d After", slotID);
@@ -2959,7 +3025,7 @@ UI_SetHP(int current, int max)
 	//---------------------------------------------------------------
 	__BEGIN_HELP_EVENT
 		static int lastPercent = 100;
-		int percent = ((max==0)?0 : current*100 / max);
+		int percent = ((max==0)?0 : static_cast<int>(current*100LL / max));	// 0..100, in a wider type: current*100 passes INT_MAX
 
 		// It was 30% or more a moment ago.. and now it has dropped to or below that
 		if (percent <= 30 && lastPercent > 30)
@@ -3046,7 +3112,7 @@ UI_SetMP(int current, int max)
 	//---------------------------------------------------------------
 	__BEGIN_HELP_EVENT
 		static int lastPercent = 100;
-		int percent = ((max==0)?0 : current*100 / max);
+		int percent = ((max==0)?0 : static_cast<int>(current*100LL / max));	// 0..100, in a wider type: current*100 passes INT_MAX
 
 		// It was 30% or more a moment ago.. and now it has dropped to or below that
 		if (percent <= 30 && lastPercent > 30)
@@ -3054,9 +3120,8 @@ UI_SetMP(int current, int max)
 			// [Help] When MP is low
 			ExecuteHelpEvent( HELP_EVENT_USE_POTION );
 			ExecuteHelpEvent( HELP_EVENT_ABSORB_SOUL );
-
-			lastPercent = percent;
 		}
+		lastPercent = percent;
 	__END_HELP_EVENT
 
 	DEBUG_ADD_FORMAT("[UI] Set MP  (%d / %d)", current, max);
@@ -3073,7 +3138,8 @@ UI_AddChatToHistory(const char* str, const char* sz_id, int cond, DWORD color)
 	if(g_pUserOption->ChatWhite)
 		color = gpC_base->m_chatting_pi.text_color;
 
-	if (str==NULL || cond>=CLD_TOTAL)
+	// A condition outside the enum would make the cast below undefined.
+	if (str==NULL || cond<0 || cond>=CLD_TOTAL)
 	{
 		return;
 	}
@@ -3262,13 +3328,19 @@ UI_RunPartyRequest(TYPE_OBJECTID otherID)
 void		
 UI_RunPartyAsk(TYPE_OBJECTID otherID)
 {
+	if (g_pZone==NULL)
+	{
+		return;
+	}
+
 	// by csm 12/4
+	// The id is the server's: nobody of the zone goes on to the error below.
 	MCreature* TempCreature = g_pZone->GetCreature( otherID );
-	if(TempCreature->CurPernalShop() != 1)
+	if(TempCreature==NULL || TempCreature->CurPernalShop() != 1)
 	{
 		
 		
-		if (g_pZone==NULL || !g_pSystemAvailableManager->IsAvailablePartySystem())
+		if (!g_pSystemAvailableManager->IsAvailablePartySystem())
 		{
 			return;
 		}
@@ -3361,7 +3433,7 @@ UI_ClosePartyAsk()
 void		
 UI_ClosePartyCancel()
 {
-	if (g_pPlayer->IsWaitVerify()==MPlayer::WAIT_VERIFY_PARTY)
+	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY)
 	{
 		g_pPlayer->SetWaitVerifyNULL();		
 	}
@@ -3418,6 +3490,7 @@ UI_ShowWaitGuildList( GCWaitGuildList *pPacket)
 		ready_team_info.MEMBERS_MAX = 5;
 
 		gC_vs_ui.AddReadyTeamInfo(ready_team_info);
+		delete pInfo;	// the window keeps its own copy
 	}
 
 	DEBUG_ADD_FORMAT( "[GCWaitGuildList] Finish");
@@ -3447,6 +3520,7 @@ UI_ShowActiveGuildList( GCActiveGuildList *pPacket)
 		regist_team_info.MEMBERS = pInfo->getGuildMemberCount();
 
 		gC_vs_ui.AddRegistTeamInfo(regist_team_info);
+		delete pInfo;	// the window keeps its own copy
 	}
 
 	DEBUG_ADD_FORMAT( "[GCActiveGuildList] Finish");
@@ -3497,6 +3571,7 @@ UI_ShowGuildMemberList( GCGuildMemberList *pPacket)
 		}
 		// 2004, 10, 8, sobeit add end
 		gC_vs_ui.AddTeamMemberInfo(member_info, bAvailableRecall); 
+		delete pInfo;	// the window keeps its own copy
 	}
 
 	DEBUG_ADD_FORMAT( "[GCShowGuildMemberList] Finish");	
@@ -3607,6 +3682,7 @@ UI_ShowUnionGuildMemberInfo(GCShowUnionInfo *pPacket)
 		regist_team_info.MEMBERS = pInfo->getGuildMemberCount();
 	
 		gC_vs_ui.AddRegistTeamInfo(regist_team_info);
+		delete pInfo;	// the window keeps its own copy
 	}
 	DEBUG_ADD_FORMAT( "[GCActiveGuildList] Finish");
 }
@@ -3643,18 +3719,8 @@ void	UI_SetGuild(WORD guild_id, BYTE guild_rank, std::string guild_name)
 	gC_vs_ui.CloseTeamMemberList();
 }
 
-void	UI_RunOtherInfo(MCreature *pCreature)
+void	FillOtherInfo(C_VS_UI_OTHER_INFO::PLAYER_INFO& info, MCreature *pCreature)
 {
-	DEBUG_ADD("[UI_RunOtherInfo] START");
-
-	if(pCreature == NULL)
-	{
-		DEBUG_ADD_WAR("[UI_RunOtherInfo] pCreature == NULL");
-		return;
-	}
-
-
-	C_VS_UI_OTHER_INFO::PLAYER_INFO info;
 	if(pCreature->GetName() != NULL)
 		info.PLAYER_NAME = pCreature->GetName();
 	else
@@ -3690,14 +3756,18 @@ void	UI_RunOtherInfo(MCreature *pCreature)
 		};
 
 		int faceFrameID = pCreatureWear->GetHairFrameID();
+		// A hair outside the sex's three (a corpse packet can change the sex
+		// and not the hair) is the first face, as PacketFunction takes a hair
+		// past its table as the first.
+		auto face = [](const auto& table, int index) { return index >= 0 && index < int(std::size(table)) ? table[index] : table[0]; };
 		
 		if(info.bl_female)
 		{
-			info.face_type = uiFaceFemale[faceFrameID - ADDONID_HAIR1_FEMALE];
+			info.face_type = face(uiFaceFemale, faceFrameID - ADDONID_HAIR1_FEMALE);
 		}
 		else
 		{
-			info.face_type = uiFaceMale[faceFrameID - ADDONID_HAIR1_MALE];
+			info.face_type = face(uiFaceMale, faceFrameID - ADDONID_HAIR1_MALE);
 		}
 	}
 	info.GRADE = pCreature->GetGrade();
@@ -3711,6 +3781,21 @@ void	UI_RunOtherInfo(MCreature *pCreature)
 	info.DEX_PURE = pCreature->GetBASIC_DEX();
 	info.INT_PURE = pCreature->GetBASIC_INT();
 	info.guild_id = pCreature->GetGuildNumber();
+}
+
+void	UI_RunOtherInfo(MCreature *pCreature)
+{
+	DEBUG_ADD("[UI_RunOtherInfo] START");
+
+	if(pCreature == NULL)
+	{
+		DEBUG_ADD_WAR("[UI_RunOtherInfo] pCreature == NULL");
+		return;
+	}
+
+
+	C_VS_UI_OTHER_INFO::PLAYER_INFO info;
+	FillOtherInfo(info, pCreature);
 	DEBUG_ADD_FORMAT("[UI_RunOtherInfo] Name : %s, guild_id : %d, BLADE : %d, SWORD : %d, GUN : %d, HEAL : %d, ENCHANT : %d, GRADE : %d, LEVEL : %d, FAME : %d, ALIGNMENT : %d, STR_PURE : %d, STR_CUR : %d, DEX_PURE : %d, DEX_CUR : %d, INT_PURE : %d, INT_CUR : %d, face_type : %d, bl_female : %d", 
 		info.PLAYER_NAME.c_str(), info.guild_id, info.DOMAINLEVEL[0], info.DOMAINLEVEL[1], info.DOMAINLEVEL[2], info.DOMAINLEVEL[3], info.DOMAINLEVEL[4], info.GRADE, info.LEVEL, info.FAME, info.ALIGNMENT, info.STR_PURE, info.STR_CUR, info.DEX_PURE, info.DEX_CUR, info.INT_PURE, info.INT_CUR, info.face_type, info.bl_female);
 	
@@ -3775,6 +3860,8 @@ void	UI_RunConnect()
 		//		login.sz_password = new char [g_pUserInformation->NetmarblePassword.GetLength()+1];
 //		strcpy(login.sz_password, g_pUserInformation->NetmarblePassword.GetString());
 		
+		delete[] login.sz_id;	// the last login, if the UI_LOGIN handler has not freed it
+		delete[] login.sz_password;
 		login.sz_id = new char[ g_CpCookie.length() + 1 ];
 		login.sz_password = new char[ 10 ];
 		
@@ -3811,6 +3898,8 @@ void	UI_RunConnect()
 			}
 */
 			static LOGIN	login;
+			delete[] login.sz_id;	// the last login, if the UI_LOGIN handler has not freed it
+			delete[] login.sz_password;
 			login.sz_id = new char[  g_pUserInformation->UserID.GetLength() + 1 ];
 			login.sz_password = new char[g_pUserInformation->AutoLogInKeyValue.GetLength() + 1];
 			
@@ -3952,6 +4041,10 @@ void	UI_SetBloodBibleStatusTimer(DWORD sec)
 
 void	UI_RunInputNameWindow(int ID)
 {
+	// Only the window's modes; another would be cast to the enum below.
+	if(ID < 0 || ID >= C_VS_UI_INPUT_NAME::INPUT_NAME_MAX)
+		return;
+
 	if(gC_vs_ui.IsRunningInputNameWindow())
 		gC_vs_ui.CloseInputNameWindow();
 
@@ -3997,11 +4090,14 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 			
 		while( !pPacket->empty() )
 		{
-			char str[256];
+			// A quest type with nothing to tell (a gathering, or one this
+			// client does not know) tells an empty text.
+			char str[256] = "";
 			QuestID_t	ID = pPacket->popQuestID();		
 			QUEST_INFO* mkq = g_pQuestInfoManager->GetInfo( ID );		
 			if(NULL != mkq )
 			{
+				tempstr[0] = 0;	// the time is this quest's own, not after the last offer
 				DWORD time = mkq->GetTimeLimit();				
 				DWORD minute = (time / 60) % 60;
 				DWORD hour = (time / 60 / 60);
@@ -4103,7 +4199,8 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 		else
 			return;				// For Ousters lol
 		
-		char str[256];
+		// Only a hunt fills and lists a line; it starts empty all the same.
+		char str[256] = "";
 		
 		while ( ! pPacket->empty() )
 		{
@@ -4137,12 +4234,11 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 				{
 				case QUEST_INFO_MONSTER_KILL :
 					SafeFormat::Format(str,"%4d%s %d%s %s%s",ID,mkq->GetName(), mkq->GetGoal(), (*g_pGameStringTable)[UI_STRING_MESSAGE_NUMBER_OF_ANIMALS].GetString(),(*g_pGameStringTable)[UI_STRING_MESSAGE_TIME_LIMIT].GetString(),timestr);
+					g_pPCTalkBox->AddString( str );	// a hunt is the only quest listed
 					break;			
 				default :
 					break;
 				}		
-				
-				g_pPCTalkBox->AddString( str );
 			}
 		}
 		
@@ -4184,7 +4280,9 @@ void		UI_RunQuestStatus( GCQuestStatus * pPacket )
 	QUEST_INFO* Quest_Info = g_pQuestInfoManager->GetInfo( pPacket->getQuestID() );
 	if(NULL != Quest_Info)
 	{
-		if( Quest_Info->GetEventQuest() )
+		// Only the five event quests have titles of their own; any other
+		// level is titled like the rest.
+		if( Quest_Info->GetEventQuest() && Quest_Info->GetQuestLevel() <= UI_STRING_MESSAGE_EVENT_QUEST2_5 - UI_STRING_MESSAGE_EVENT_QUEST2_1 )
 		{
 			QuestStatus.Title = (*g_pGameStringTable)[UI_STRING_MESSAGE_EVENT_QUEST2_1+Quest_Info->GetQuestLevel()].GetString();
 		} else
@@ -4266,9 +4364,11 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 		pItem->SetGrade( pInfo->grade );
 		// 2004, 5, 18 sobeit add end
 		pItem->SetItemOptionList( pInfo->optionType );
-		if( pItem->IsGunItem() )
+		// A gun's count is its magazine's; a gun the factory makes no
+		// magazine for is listed empty.
+		MMagazine* pMagazine = pItem->IsGunItem() ? (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE ) : NULL;
+		if( pMagazine != NULL )
 		{
-			MMagazine* pMagazine = (MMagazine*)MItem::NewItem( (ITEM_CLASS)ITEM_CLASS_MAGAZINE );
 			pMagazine->SetID( 0 );
 			for (int j=0; j<(*g_pItemTable)[ITEM_CLASS_MAGAZINE].GetSize(); j++)			
 			{
@@ -4288,7 +4388,7 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 			//------------------------------------
 			MGunItem* pGunItem = (MGunItem*)pItem;
 			pGunItem->SetMagazine( pMagazine );
-		} else
+		} else if( !pItem->IsGunItem() )
 		{
 			pItem->SetNumber( pInfo->num );
 		}
@@ -4299,7 +4399,8 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 		C_VS_UI_ITEM_LIST::ItemList Item;
 		Item.pItem = pItem;
 		Item.TimeLimit = pInfo->timeLimit;		
-		gC_vs_ui.AddItemToItemList( Item );
+		if (!gC_vs_ui.AddItemToItemList( Item ))	// the list owns what it takes
+			delete pItem;
 		
 		delete pInfo;
 		pInfo = NULL;
@@ -4322,7 +4423,10 @@ void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 	WORD	FirstOption = (parameter & 0xffff0000) >> 16;		// Or paramter >> 16 -_- lol
 	WORD	SecondOption = parameter & 0xffff;
 	
+	// One item twice (by id) is refused: taking the second out of the
+	// inventory would delete the first, which is changed and used after.
 	if( pItem == NULL || pItem2 == NULL || 
+		pItem->GetID() == pItem2->GetID() ||
 		pItem->IsEmptyItemOptionList() || 
 		pItem2->IsEmptyItemOptionList()||
 		pItem->GetItemOptionListCount() > 1 ||
@@ -4424,7 +4528,8 @@ void	UI_RunHorn(int currentZoneID)
 
 void		UI_MasterLairMessage(BYTE type, short value, TYPE_ZONEID ZoneID)
 {
-	if( g_pUserOption->DoNotShowLairMsg || g_pSystemMessage == NULL || g_pZoneTable == NULL || g_pGameStringTable == NULL )
+	// The zone id is the server's: one the zone table does not know has no name to tell.
+	if( g_pUserOption->DoNotShowLairMsg || g_pSystemMessage == NULL || g_pZoneTable == NULL || g_pZoneTable->Get( ZoneID ) == NULL || g_pGameStringTable == NULL )
 		return;	
 
 	MString msg;

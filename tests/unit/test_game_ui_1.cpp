@@ -60,6 +60,20 @@
 #include <string>
 #include <vector>
 
+#if defined(__has_feature) && !defined(_MSC_VER)
+#if __has_feature(address_sanitizer)
+#define ASAN_COUNTS_BYTES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(_MSC_VER) && !defined(ASAN_COUNTS_BYTES)
+#define ASAN_COUNTS_BYTES 1
+#endif
+#ifdef ASAN_COUNTS_BYTES
+// The sanitizer runtime's own (sanitizer/allocator_interface.h, which GCC's
+// install does not ship).
+extern "C" size_t __sanitizer_get_current_allocated_bytes(void);
+#endif
+
 // Defined in GameUI.cpp, declared by no header (UIFunction.h names them
 // ..._PUR, which nothing defines).
 void UI_SetCharInfoSTR_PURE(int value);
@@ -91,6 +105,18 @@ bool Same(const std::vector<std::string>& expected)
 	for (const std::string& call : expected) std::printf("[%s] ", call.c_str());
 	std::printf("\n");
 	return false;
+}
+
+// The bytes the heap holds. Only ASan's allocator counts them (MSVC's is
+// not asked); without it this is 0, so a check on it is the sanitized
+// Clang and GCC trees' alone.
+size_t HeapBytes()
+{
+#ifdef ASAN_COUNTS_BYTES
+	return __sanitizer_get_current_allocated_bytes();
+#else
+	return 0;
+#endif
 }
 
 // The test's clock: Now() is wherever the test puts it.
@@ -699,8 +725,12 @@ TEST(GameUI1Friends, DeletingTakesTheFriendElseTheBlackListedOne)
 	scene.Add(black, "Ann");
 	scene.Add(black, "Eve");
 	// The first of the name in the friend list only.
-	// Recorded defect: the erased entry is never freed (GameUI.cpp:228,
-	// :240); the scene frees it.
+	// Recorded leak, left alone: the erased entry is never freed
+	// (GameUI.cpp's UI_RunFriendDelete; the scene frees it). It has no
+	// clear owner to free it: a friend's chatting window
+	// (C_VS_UI_FRIEND_CHATTING_INFO) keeps a pointer to the entry, and
+	// nothing can find that window to close it, so freeing the entry here
+	// would leave an open window reading freed memory.
 	GCFriendChatting ann = Chat("Ann");
 	UI_RunFriendDelete(&ann);
 	CHECK("Bob;Ann;" == scene.Names(friends));
@@ -783,10 +813,7 @@ TEST(GameUI1ServerList, NetmarbleNeverReadsTheServerInformation)
 TEST(GameUI1ServerList, OtherwiseTheListsGoToTheUIOnly)
 {
 	// The lists go to the title UI (none here); nothing is queued and the
-	// information is left as it was. Recorded defects, not run: an unknown
-	// current group is read through NULL (GameUI.cpp:536-538), and a group
-	// or server with an empty name (MString's NULL) reaches strlen
-	// (GameUI.cpp:484, 556).
+	// information is left as it was.
 	ServerScene scene;
 	g_pUserInformation->IsNetmarble = false;
 	UI_SetWorldList();
@@ -800,6 +827,26 @@ TEST(GameUI1ServerList, OtherwiseTheListsGoToTheUIOnly)
 	CHECK_EQ(5, int(scene.servers.GetServerGroupID()));
 	CHECK_EQ(3, int(scene.servers.GetServerID()));
 	CHECK(std::string("World") == scene.servers.GetServerGroupName());
+
+	// A group or server with an empty name (which MString keeps as NULL)
+	// is listed with an empty one; a current group the information no
+	// longer holds shows no list, as no information shows none.
+	ServerGroup* pNameless = new ServerGroup;
+	pNameless->SetGroupName("");
+	SERVER_INFO* pServer = new SERVER_INFO;
+	pServer->ServerName = "";
+	pNameless->AddData(4, pServer);
+	scene.servers.AddData(6, pNameless);
+	CHECK(scene.servers.SetServerGroupID(6));
+	CHECK(scene.servers.GetServerGroupName() == NULL);
+	UI_SetWorldList();
+	UI_SetServerList();
+	scene.servers.Release();	// no group left; the current one is 0
+	UI_SetWorldList();
+	UI_SetServerList();
+	scene.ui.Drain();
+	CHECK(calls.empty());
+	CHECK_EQ(0, int(scene.servers.GetServerGroupID()));
 }
 
 //----------------------------------------------------------------------
@@ -1505,16 +1552,18 @@ TEST(GameUI1WithoutUI, TheForwardsAreHarmlessAndAnswerNoUI)
 	CHECK_EQ(0, int(at.y));
 	UI_LockItemTrade();
 	UI_UnlockItemTrade();
-	// Recorded defect: each copies the name into a new[] buffer the
-	// dialog would own; without the game UI it leaks (GameUI.cpp:164,
-	// 178, 185, 197, 203).
+	// Each would copy the name into a new[] buffer for its dialog, which
+	// frees it when it closes; without the game UI there is no dialog, so
+	// nothing is left allocated.
 	GCFriendChatting packet;
 	packet.setPlayerName("Ann");
+	const size_t heap = HeapBytes();
 	UI_RunFriendRequest(&packet);
 	UI_RunFriendRefuse(&packet);
 	UI_RunFriendWait(&packet);
 	UI_RunFriendExist(&packet);
 	UI_RunFriendBlack(&packet);
+	CHECK_EQ(heap, HeapBytes());
 	// None of them touched the character sheet.
 	CHECK(g_char_slot_ingame.sz_name.empty());
 	CHECK(g_char_slot_ingame.STATUS.empty());

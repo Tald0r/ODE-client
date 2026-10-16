@@ -10,6 +10,8 @@ QUEST_INFO::QUEST_INFO()
 	m_SpriteType = 0;
 	m_Chief = 0;
 	m_Goal = 0;
+	m_EventQuest = 0;
+	m_QuestLevel = 0;
 	m_Name = "";
 }
 
