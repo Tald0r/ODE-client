@@ -594,6 +594,7 @@ TEST(UIMessages4Senders, EachSendsItsPacketWithEveryField)
 		// constructor sets it, so two indeterminate bytes go out with it.
 		{"guild members", UI_REQUEST_GUILD_MEMBER_LIST, 9, 9, NULL, {}, {"guild member list"}},
 		{"modify member", UI_MODIFY_GUILD_MEMBER, 0x12345, 0x1FF, name, One<CGModifyGuildMember>([](CGModifyGuildMember& p) { p.setGuildID(0x2345); p.setGuildMemberRank(0xFF); p.setName("Kim"); }), {}},
+		{"modify member, none", UI_MODIFY_GUILD_MEMBER, 0x12345, 0x1FF, NULL, {}, {}},
 		{"select member", UI_SELECT_TEAM_MEMBER_LIST, 9, 9, name, {}, {"select guild member|Kim"}},
 		{"select member, none", UI_SELECT_TEAM_MEMBER_LIST, 9, 9, NULL, {}, {}},
 		{"select ready team", UI_SELECT_READY_TEAM_LIST, 0x10007, 9, team, One<CGSelectGuild>([](CGSelectGuild& p) { p.setGuildID(7); }), {}},
@@ -642,14 +643,17 @@ TEST(UIMessages4Senders, EachSendsItsPacketWithEveryField)
 		{"union expel", UI_REQUEST_UNION_EXPERGUILD, 26, 9, NULL, One<CGExpelGuild>([](CGExpelGuild& p) { p.setGuildID(26); }), {}},
 		{"tax", UI_MODIFY_TAX, 7, 9, NULL, One<CGModifyTaxRatio>([](CGModifyTaxRatio& p) { p.setRatio(7); }), {}},
 		{"submaster", UI_APPOINT_SUBMASTER, 0x1001B, 9, name, One<CGAppointSubmaster>([](CGAppointSubmaster& p) { p.setGuildID(27); p.setName("Kim"); }), {}},
+		{"submaster, none", UI_APPOINT_SUBMASTER, 0x1001B, 9, NULL, {}, {}},
 		{"store open", UI_STORE_OPEN, 9, 9, NULL, One<CGStoreOpen>(), {}},
 		{"store close", UI_STORE_CLOSE, 9, 9, NULL, One<CGStoreClose>(), {}},
 		{"store sign", UI_STORE_SIGN, 9, 9, sign, One<CGStoreSign>([](CGStoreSign& p) { p.setSign("Cheap swords"); }), {}},
+		{"store sign, none", UI_STORE_SIGN, 9, 9, NULL, {}, {}},
 		{"store info", UI_REQUEST_STORE_INFO, 0x55, 0, NULL, One<CGRequestStoreInfo>([](CGRequestStoreInfo& p) { p.setOwnerObjectID(0x55); }), {}},
 		{"store info, my shop", UI_REQUEST_STORE_INFO, 0x56, 1, NULL, One<CGRequestStoreInfo>([](CGRequestStoreInfo& p) { p.setOwnerObjectID(0x56); }), {}},
 		{"remove store item", UI_REMOVE_STORE_ITEM, 9, 9, NULL, One<GCRemoveStoreItem>([](GCRemoveStoreItem& p) { p.setIndex(0); p.setOwnerObjectID(kMe); }), {}},
 		{"add store item", UI_ADD_STORE_ITEM, 9, 9, NULL, One<GCAddStoreItem>([](GCAddStoreItem& p) { p.setIndex(0); p.setOwnerObjectID(kMe); }), {}},
 		{"power point", UI_REQUEST_POWER_JJANG_POINT, 9, 9, cell, One<CGRequestPowerPoint>([](CGRequestPowerPoint& p) { p.setCellNum("0101234"); }), {}},
+		{"power point, none", UI_REQUEST_POWER_JJANG_POINT, 9, 9, NULL, {}, {}},
 		{"power gamble", UI_POWER_JJANG_GAMBLE, 9, 9, NULL, One<CGUsePowerPoint>(), {}},
 		{"advance skill", UI_LEARN_ADVANCE_SKILL, 0x10123, 0x105, NULL, One<CGLearnSkill>([](CGLearnSkill& p) { p.setSkillType(0x123); p.setSkillDomainType(5); }), {}},
 		{"event item", UI_REQUEST_EVENT_ITEM, 0x103, 9, NULL, One<CGGetEventItem>([](CGGetEventItem& p) { p.setEventType(3); }), {}},
@@ -1372,6 +1376,12 @@ struct FriendDialogs
 		std::memcpy(pName, name, std::strlen(name) + 1);
 		return new C_VS_UI_ASK_DIALOG(-1, -1, 1, 0, NULL, DIALOG_OK, type, 0, pName);
 	}
+	// A dialog with no name (a friend dialog cannot be made without one,
+	// so a storage offer's).
+	static C_VS_UI_ASK_DIALOG* Nameless()
+	{
+		return new C_VS_UI_ASK_DIALOG(-1, -1, 1, 0, NULL, DIALOG_OK, C_VS_UI_ASK_DIALOG::ASK_STORAGE_BUY, 0, NULL);
+	}
 };
 } // namespace
 
@@ -1400,6 +1410,19 @@ TEST(UIMessages4Friends, ARequestsAnswerIsSentAndItsDialogFreed)
 	// reaches the game UI, which is not here).
 	scene.Fresh();
 	scene.Run(UI_FRIEND_ASK_CLOSE, 9, 9, FriendDialogs::Ask(C_VS_UI_ASK_DIALOG::ASK_FRIEND_EXIST, "Pal"));
+	CHECK(scene.Nothing());
+	CHECK(calls.empty());
+}
+
+TEST(UIMessages4Friends, NothingWithoutAMessageOrAName)
+{
+	Scene scene;
+	FriendDialogs ui;
+	scene.Run(UI_FRIEND_CHATTING_SEND_MESSAGE, 9, 9, NULL);
+	scene.Run(UI_FRIEND_CHATTING_ADD_FRIEND, 9, 9, NULL);
+	// The answer's dialog is freed all the same.
+	scene.Run(UI_FRIEND_REQUEST_ACCEPT, 0, 9, FriendDialogs::Nameless());
+	scene.Run(UI_FRIEND_DELETE_ACCEPT, 9, 9, FriendDialogs::Nameless());
 	CHECK(scene.Nothing());
 	CHECK(calls.empty());
 }
@@ -1508,6 +1531,10 @@ TEST(UIMessages4Couple, TheNameGoesToTheNPCAndTheInputWaits)
 	Scene scene;
 	scene.dialog.Talk();
 	char name[] = "Love";
+	// No name: nothing, and nothing waits.
+	scene.Run(UI_SEND_NAME_FOR_COUPLE, 2, 9, NULL);
+	CHECK(scene.Nothing());
+	CHECK(scene.Quiet());
 	const MonotonicClock::TimePoint before = MonotonicClock::Now();
 	scene.Run(UI_SEND_NAME_FOR_COUPLE, 2, 9, name);
 	const MonotonicClock::TimePoint after = MonotonicClock::Now();
@@ -1974,6 +2001,10 @@ TEST(UIMessages4SMS, AMessageGoesToAtMostFiveNumbersCutToItsLength)
 	std::list<std::string> six = {"1", "2", "3", "4", "5", "6"};
 	scene.Run(UI_SEND_SMS_MESSAGE, reinterpret_cast<intptr_t>(caller), reinterpret_cast<intptr_t>(text), &six);
 	scene.Run(UI_SEND_SMS_MESSAGE, reinterpret_cast<intptr_t>(caller), reinterpret_cast<intptr_t>(text), NULL);
+	// No caller or no text.
+	std::list<std::string> one = {"1"};
+	scene.Run(UI_SEND_SMS_MESSAGE, 0, reinterpret_cast<intptr_t>(text), &one);
+	scene.Run(UI_SEND_SMS_MESSAGE, reinterpret_cast<intptr_t>(caller), 0, &one);
 	CHECK(scene.Nothing());
 	six.pop_back();
 	scene.Run(UI_SEND_SMS_MESSAGE, reinterpret_cast<intptr_t>(caller), reinterpret_cast<intptr_t>(text), &six);
@@ -1999,6 +2030,12 @@ TEST(UIMessages4SMS, AnAddressIsAddedOrDeletedAndItsAnswerWaitedFor)
 {
 	Scene scene;
 	std::string name = "Lee", custom = "Brother", number = "0102222";
+	// Any of the three missing: nothing, and nothing waits.
+	scene.Run(UI_SMS_RECORD, 0, reinterpret_cast<intptr_t>(&custom[0]), &number[0]);
+	scene.Run(UI_SMS_RECORD, reinterpret_cast<intptr_t>(&name[0]), 0, &number[0]);
+	scene.Run(UI_SMS_RECORD, reinterpret_cast<intptr_t>(&name[0]), reinterpret_cast<intptr_t>(&custom[0]), NULL);
+	CHECK(scene.Nothing());
+	CHECK(scene.Quiet());
 	scene.Run(UI_SMS_RECORD, reinterpret_cast<intptr_t>(&name[0]), reinterpret_cast<intptr_t>(&custom[0]), &number[0]);
 	CHECK(SameBytes(One<CGAddSMSAddress>([](CGAddSMSAddress& p) { p.setCharacterName("Lee"); p.setCustomName("Brother"); p.setNumber("0102222"); }), scene.Sent()));
 	CHECK_EQ(int(TempInformation::MODE_SMS_ADD_ADDRESS), int(scene.temp.GetMode()));

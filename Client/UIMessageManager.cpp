@@ -8902,6 +8902,8 @@ UIMessageManager::Execute_UI_REQUEST_GUILD_MEMBER_LIST(intptr_t left, intptr_t r
 void
 UIMessageManager::Execute_UI_MODIFY_GUILD_MEMBER(intptr_t left, intptr_t right, void* void_ptr)
 {
+		if (void_ptr == NULL)	// no name, nothing to send
+			return;
 		CGModifyGuildMember _CGModifyGuildMember;
 
 		_CGModifyGuildMember.setGuildID(static_cast<GuildID_t>(left));
@@ -8970,6 +8972,8 @@ void UIMessageManager::Execute_UI_FRIEND_CHATTING_SEND_MESSAGE(intptr_t left, in
 	(void)left;
 	(void)right;
 	C_VS_UI_FRIEND_CHATTING_INFO::FRIEND_SEND_MESSAGE* pMessage = (C_VS_UI_FRIEND_CHATTING_INFO::FRIEND_SEND_MESSAGE*)void_ptr;
+	if (pMessage == NULL)
+		return;
 	GCFriendChatting gcFriend;
 	gcFriend.setCommand(CG_MESSAGE);
 	gcFriend.setPlayerName(pMessage->Name);
@@ -8990,7 +8994,7 @@ void UIMessageManager::Execute_UI_FRIEND_CHATTING_ADD_FRIEND(intptr_t left, intp
 {
 	(void)left;
 	(void)right;
-	if(!gC_vs_ui.IsFriendWaitAskRuning())
+	if(void_ptr != NULL && !gC_vs_ui.IsFriendWaitAskRuning())
 	{
 		char* pName = (char*)void_ptr;
 		GCFriendChatting gcFriend;
@@ -9017,8 +9021,11 @@ void UIMessageManager::Execute_UI_FRIEND_REQUEST_ACCEPT(intptr_t left, intptr_t 
 	else if(left == 2)
 		gcFriend.setCommand(CG_ADD_FRIEND_BLACK);
 
-	gcFriend.setPlayerName(string(pName));
-	g_pSocket->sendPacket(&gcFriend);
+	if (pName != NULL)	// a dialog without a name answers no one
+	{
+		gcFriend.setPlayerName(string(pName));
+		g_pSocket->sendPacket(&gcFriend);
+	}
 	
 	DeleteNew(pDialog);
 	DeleteNewArray(pName);
@@ -9055,8 +9062,11 @@ void UIMessageManager::Execute_UI_FRIEND_DELETE_ACCEPT(intptr_t left, intptr_t r
 	char* pName = (char*)pDialog->GetpTemporayValue();
 	GCFriendChatting gcFriend;
 	gcFriend.setCommand(CG_FRIEND_DELETE);
-	gcFriend.setPlayerName(string(pName));
-	g_pSocket->sendPacket(&gcFriend);
+	if (pName != NULL)	// a dialog without a name deletes no one
+	{
+		gcFriend.setPlayerName(string(pName));
+		g_pSocket->sendPacket(&gcFriend);
+	}
 
 	DeleteNew(pDialog);
 	DeleteNewArray(pName);
@@ -9463,6 +9473,9 @@ void UIMessageManager::Execute_UI_SEND_NAME_FOR_COUPLE(intptr_t left, intptr_t r
 		g_pUIDialog->ClosePCTalkDlg();
 		return;
 	}
+
+	if (void_ptr == NULL)	// no name, nothing to send or wait for
+		return;
 
 	int npcID = (*g_pPCTalkBox).GetNPCID();
 	
@@ -10439,7 +10452,8 @@ UIMessageManager::Execute_UI_SEND_SMS_MESSAGE(intptr_t left, intptr_t right, voi
 
 	std::list<std::string> *TempStr = (std::list<std::string>*)(void_ptr);
 
-	if(NULL == TempStr || TempStr->size()>5)
+	if(NULL == TempStr || TempStr->size()>5
+		|| (char *)left == NULL || (char *)right == NULL)	// no caller or no text
 		return ;
 	
 	// CGSMSSend::read() asserts the message length below MAX_MESSAGE_LENGTH.
@@ -10503,6 +10517,9 @@ UIMessageManager::Execute_UI_SMS_RECORD(intptr_t left, intptr_t right, void* voi
 
 	if (g_pTempInformation->GetMode()==TempInformation::MODE_NULL)
 	{
+		if ((char *)left == NULL || (char *)right == NULL || void_ptr == NULL)	// a field missing
+			return;
+
 		CGAddSMSAddress	_CGAddSMSAddress;
 		_CGAddSMSAddress.setCharacterName(std::string((char *)left));
 		_CGAddSMSAddress.setCustomName((std::string((char *)right)));
@@ -11166,6 +11183,8 @@ UIMessageManager::Execute_UI_APPOINT_SUBMASTER(intptr_t left, intptr_t right, vo
 {
 	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_APPOINT_SUBMASTER");
+	if (void_ptr == NULL)	// no name, nothing to send
+		return;
 
 	CGAppointSubmaster _CGAppointSubmaster;
 	_CGAppointSubmaster.setGuildID(static_cast<GuildID_t>(left));
@@ -11285,6 +11304,8 @@ UIMessageManager::Execute_UI_STORE_SIGN(intptr_t left, intptr_t right, void* voi
 	(void)left;
 	(void)right;
 	 DEBUG_ADD("[UI] Execute_UI_STORE_SIGN");
+	if (void_ptr == NULL)	// no sign, nothing to send
+		return;
 
 	DEBUG_ADD_FORMAT("[Original] %s", (char*)void_ptr );
 
@@ -11492,6 +11513,8 @@ UIMessageManager::Execute_UI_REQUEST_POWER_JJANG_POINT(intptr_t left, intptr_t r
 	(void)left;
 	(void)right;
 	DEBUG_ADD("[UI] Execute_UI_REQUEST_POWER_JJANG_POINT");
+	if (void_ptr == NULL)	// no number, nothing to send
+		return;
 
 	CGRequestPowerPoint _CGRequestPowerPoint;
 	_CGRequestPowerPoint.setCellNum(std::string((char *)void_ptr));
