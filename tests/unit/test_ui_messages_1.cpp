@@ -107,12 +107,6 @@ void ExecuteLogout();
 // - A NULL void_ptr to NEW_CHARACTER, CHECK_EXIST_ID (IsValidID formats a
 //   NULL "%s"), DELETE_CHARACTER and LOGIN (read even in the wrong mode):
 //   recorded defect, each dereferences it unchecked.
-// - DELETE_CHARACTER and CONNECT with a slot past 2: recorded defect,
-//   neither is range-checked (Character[3] lands in UserInformation's
-//   next member, so ASan is silent).
-// - DELETE_CHARACTER or CONNECT on an empty slot: recorded defect, the
-//   slot's MString holds NULL (an empty MString always does), which the
-//   packet's setName turns into a std::string: a crash.
 // - CONNECT with an empty master-name string: recorded defect, strncmp
 //   compares 0 characters (every character a master) of a NULL string.
 // - g_pSocket NULL during a login: it is used before LOGIN's
@@ -1398,7 +1392,7 @@ TEST(UIMessages1CheckExistID, NoSocketNothingSent)
 
 //----------------------------------------------------------------------
 // UI_DELETE_CHARACTER (character screen): the slot's character, slot 0, 1
-// or anything else as SLOT1, SLOT2, SLOT3, with a placeholder SSN.
+// or 2 as SLOT1, SLOT2, SLOT3, with a placeholder SSN.
 //----------------------------------------------------------------------
 TEST(UIMessages1DeleteCharacter, TheSlotsCharacterIsDeleted)
 {
@@ -1435,6 +1429,25 @@ TEST(UIMessages1DeleteCharacter, OnlyOnTheCharacterScreen)
 	{
 		g_Mode = mode;
 		scene.manager.Execute_UI_DELETE_CHARACTER(0, 0, &request);
+	}
+	CHECK(Same({}));
+	CHECK(scene.Sent().empty());
+	CHECK_EQ(9, g_pUserInformation->Slot);
+}
+
+TEST(UIMessages1DeleteCharacter, AnEmptySlotOrOnePastTheThreeIsRefused)
+{
+	// The empty slot first: its name is NULL (an empty MString's always
+	// is), which the packet's setName would read.
+	Login scene;
+	g_Mode = MODE_WAIT_SELECTPC;
+	g_pUserInformation->Character[0] = "Alpha";
+	g_pUserInformation->Character[2] = "Charlie";
+	g_pUserInformation->Slot = 9;
+	for (int slot : {1, 3, -1})
+	{
+		DELETE_CHARACTER request = {slot};
+		scene.Run(UI_DELETE_CHARACTER, 0, 0, &request);
 	}
 	CHECK(Same({}));
 	CHECK(scene.Sent().empty());
@@ -1770,6 +1783,21 @@ TEST(UIMessages1Connect, AnEtcItemOfTypeZeroMakesAMaster)
 	scene.Etc(0);
 	scene.Run(UI_CONNECT, 0);
 	CHECK_EQ(TRUE, g_pUserInformation->IsMaster);
+}
+
+TEST(UIMessages1Connect, AnEmptySlotOrOnePastTheThreeIsRefused)
+{
+	// Before the music stops or the box shows; the empty slot first (its
+	// name is NULL, which the packet's setPCName would read).
+	Connect scene;
+	g_pUserInformation->Character[1].Release();
+	for (intptr_t slot : {intptr_t(1), intptr_t(3), intptr_t(-1)})
+		scene.Run(UI_CONNECT, slot);
+	CHECK(Same({}));
+	CHECK(scene.Sent().empty());
+	CHECK(std::string("Old") == g_pUserInformation->CharacterID.GetString());
+	CHECK_EQ(5, g_pUserInformation->FaceStyle);
+	CHECK_EQ(7, g_pUserInformation->IsMaster);
 }
 
 TEST(UIMessages1Connect, OnlyOnTheCharacterScreen)

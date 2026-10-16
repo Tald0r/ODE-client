@@ -1624,6 +1624,15 @@ UIMessageManager::Execute_UI_DELETE_CHARACTER(intptr_t left, intptr_t right, voi
 	
 	DELETE_CHARACTER *pChar = (DELETE_CHARACTER*)void_ptr;
 
+	// The slot indexes the three characters. An empty one has nothing to
+	// delete: its name is NULL, and the packet cannot carry an empty name.
+	if (pChar->slot < SLOT1 || pChar->slot >= SLOT_MAX
+		|| g_pUserInformation->Character[pChar->slot].GetString() == NULL)
+	{
+		DEBUG_ADD_FORMAT_ERR("[Error] UI_DELETE_CHARACTER slot=%d", pChar->slot);
+		return;
+	}
+
 	// The delete dialog already confirmed the request by making the user type
 	// the character's name. The SSN field the packet still carries is
 	// vestigial: the server's check has been retired, so send a placeholder.
@@ -1932,6 +1941,15 @@ UIMessageManager::Execute_UI_CONNECT(intptr_t left, intptr_t right, void* void_p
 	if (g_Mode!=MODE_WAIT_SELECTPC)
 	{
 		DEBUG_ADD("Not MODE_WAIT_SELECTPC");
+		return;
+	}
+
+	// left indexes the three characters. An empty slot has no one to
+	// choose: its name is NULL, and the packet cannot carry an empty name.
+	if (left < SLOT1 || left >= SLOT_MAX
+		|| g_pUserInformation->Character[left].GetString() == NULL)
+	{
+		DEBUG_ADD_FORMAT_ERR("[Error] UI_CONNECT slot=%d", static_cast<int>(left));
 		return;
 	}
 
