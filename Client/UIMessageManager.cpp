@@ -2938,7 +2938,9 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 #ifndef __METROTECH_TEST
 							if(g_pUserInformation->bCompetence == true && g_pUserInformation->bCompetenceShape != true)
 							{
-								if(g_pZoneTable->Get( g_pZone->GetID() )->CompetenceZone == true)
+								// A zone the table lacks is no competence zone.
+								const ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( g_pZone->GetID() );
+								if(pZoneInfo != NULL && pZoneInfo->CompetenceZone == true)
 								{
 								}
 								else

@@ -96,9 +96,7 @@ MItem* NewItemOfClass(ITEM_CLASS itemClass);
 // UI: they run here and do nothing.
 //
 // Not run: the immediate logout (ExecuteLogout starts the title screen);
-// a competence player in a zone the zone table lacks (a NULL dereference,
-// L2889); a gear slot outside its enum (the cast at L3873-3889 is
-// undefined).
+// a gear slot outside its enum (the cast at L3873-3889 is undefined).
 namespace {
 
 std::vector<std::string> calls;
@@ -1235,6 +1233,19 @@ TEST(UIMessages2Chat, AnOperatorOutOfShapeCannotTurnHisGhostOffOutsideACompetenc
 	g_pUserInformation->bCompetence = false;
 	run();
 	CHECK(Same({off, kChatHelp, off, kChatHelp, offNow, kChatHelp, on, kChatHelp}));
+}
+
+TEST(UIMessages2Chat, AZoneTheTableLacksIsNoCompetenceZone)
+{
+	// For an operator out of his shape: the ghost stays on there.
+	Scene scene;
+	scene.me->m_bEffectStatus[EFFECTSTATUS_GHOST] = true;
+	g_pUserInformation->bCompetence = true;
+	g_pUserInformation->bCompetenceShape = false;
+	scene.zone->SetCurrentZoneID(kZoneID + 1);
+	scene.Say("*command ghost off");
+	scene.Say("*command ghost on");
+	CHECK(Same({kChatHelp, Say("*command ghost on"), kChatHelp}));
 }
 
 TEST(UIMessages2Chat, AMasterCommandFileRunsItsLinesOnTheSameTab)
