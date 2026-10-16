@@ -51,4 +51,8 @@ private:
 	bool				m_bPlaying;
 };
 
+// The game's music stream, when the music plays from OGG files; NULL until
+// the music starts (COGGSTREAM.cpp's, the executable's until task 4.256).
+extern COGGSTREAM*	g_pOGG;
+
 #endif /* __COGGSTREAM_H__ */

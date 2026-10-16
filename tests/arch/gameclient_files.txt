@@ -10,9 +10,12 @@ Client/CWaitUIUpdate.h
 Client/GameInitInfo.cpp
 Client/GameInitInfo.h
 Client/GameInitInfoHost.h
+Client/GameUI.cpp
 Client/GuildMarkTypes.h
 Client/MGuildMarkManager.h
+Client/MHelpManager.h
 Client/PacketFunction.cpp
 Client/PacketFunction.h
 Client/ProfileManager.h
+Client/UIFunction.h
 Client/UserOption.h

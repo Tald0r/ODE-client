@@ -72,4 +72,10 @@ private:
 
 #endif // PLATFORM_WINDOWS
 
+// The browser object a web browser window is handed (Start's pWebOjbect);
+// NULL, as nothing creates one (Client.cpp's __WEB_BROWSER__ start-up is
+// off). Vs_ui.cpp's, the executable's until task 4.256. Off Windows,
+// IWebBrowser2 is Platform.h's stand-in.
+extern IWebBrowser2*	g_pWebBrowser;
+
 #endif

@@ -1,12 +1,14 @@
  //-----------------------------------------------------------------------------
 // UI Function.h
 //-----------------------------------------------------------------------------
-// packet부분에 include하면 warning이 좍~~난다.. 
-// 어쩔 수 없이... 
+// The game's calls into the UI (GameUI.cpp). What they need from the program
+// around them goes through GameUI::Host, which GameInit installs (task 4.256).
 //-----------------------------------------------------------------------------
 
 #include "RaceType.h"
 #include "MonotonicClock.h"
+#include "MTypeDef.h"
+#include <cstdint>
 
 #ifndef	__UIFUNCTION_H__
 #define	__UIFUNCTION_H__
@@ -18,6 +20,31 @@ class MItem;
 class MShop;
 class MStorage;
 class MCreature;
+
+//-----------------------------------------------------------------------------
+// What the UI calls need from the program around them, installed by GameInit
+// (task 4.256). A missing host or entry skips the call.
+//-----------------------------------------------------------------------------
+namespace GameUI {
+
+struct Host
+{
+	// Sets the zone's information again (its safety zones among it), as
+	// LoadZoneInfo does; UI_ChangeInterfaceRace asks for it in a zone.
+	void (*LoadZoneInfo)(int zoneID) = nullptr;
+	// Hands a result of the UI's (UI_ResultReceiver) to the UI message
+	// manager, which acts on it.
+	void (*ExecuteUIMessage)(DWORD message, intptr_t left, intptr_t right, void* void_ptr) = nullptr;
+};
+
+// Borrowed until replaced; answers the host it replaces.
+const Host* SetHost(const Host* host);
+
+}
+
+// The UI's result callback (gC_vs_ui.Init's): hands the result to the host.
+extern void		UI_ResultReceiver(DWORD message, intptr_t left, intptr_t right, void* void_ptr);
+
 ////////////////////////////////////////////////////////////////////////
 //  FirendChatting //by viva
 ///////////////////////////////////////////////////////////////////////

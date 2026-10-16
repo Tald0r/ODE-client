@@ -1,7 +1,7 @@
  //-----------------------------------------------------------------------------
 // GameUI.cpp`
 //-----------------------------------------------------------------------------
-// UI의 message를 처리하는 부분이다.
+// The game's calls into the UI (UIFunction.h), gameclient's since task 4.256.
 //-----------------------------------------------------------------------------
 #include "Client_PCH.h"
 
@@ -9,7 +9,14 @@
 #include <Winuser.h>
 #endif
 
-#include "Client.h"
+#include "MPlayer.h"
+#include "MZone.h"
+#include "ZoneFlags.h"
+#include "FrameClock.h"
+#include "InputState.h"
+#include "MHelpManager.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
 #include "UIFunction.h"
 #include "VS_UI.h" 
 #include "VS_UI_mouse_pointer.h"
@@ -33,7 +40,6 @@
 #include "MWeather.h"
 #include "MStatusManager.h"
 #include "MChatManager.h"
-#include "UIMessageManager.h"
 #include "CServerInformation.h"
 #include "UserInformation.h"
 #include "TempInformation.h"
@@ -41,8 +47,7 @@
 #include "MMusic.h"
 //#include "MFileDef.h"
 #include "Properties.h"
-#include "ServerInfo.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #include "GuildInfo.h"
 #include "MGuildInfoMapper.h"
 //#include "KeyAccelerator.h"
@@ -66,7 +71,7 @@
 #include "MZoneTable.h"
 #include <string>
 
-#include "SoundSetting.h"
+#include "DXLib/COGGSTREAM.h"
 #include "Packet/Gpackets/GCMiniGameScores.h"
 #include "SystemAvailabilities.h"
 #include "VS_UI_GameCommon2.h"
@@ -88,8 +93,16 @@ extern BOOL	g_bSetHotKey;
 
 BOOL g_bDrawProgress = FALSE;
 
+// The host GameInit installs (UIFunction.h); none until it does.
+static const GameUI::Host* s_GameUIHost = NULL;
 
-extern IWebBrowser2*			g_pWebBrowser; 
+const GameUI::Host*
+GameUI::SetHost(const Host* host)
+{
+	const Host* previous = s_GameUIHost;
+	s_GameUIHost = host;
+	return previous;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //UI friend system
@@ -268,7 +281,7 @@ UI_CloseSelectWayPoint()
 //-----------------------------------------------------------------------------
 // Save UserOption
 //-----------------------------------------------------------------------------
-// UI의 UserOption정보를 화일로 저장한다.
+// Saves the UI's UserOption info to a file.
 //-----------------------------------------------------------------------------
 void		
 UI_SaveUserOption()
@@ -340,25 +353,25 @@ UI_AddEffectStatus(int es, DWORD delayFrame)
 		TYPE_ACTIONINFO ai = (*g_pEffectStatusTable)[es].OriginalActionInfo;
 
 		//---------------------------------------------------------------
-		// EffectStatus와 관련된 ActionInfo가 있는 경우
+		// When there is an ActionInfo related to EffectStatus
 		//---------------------------------------------------------------
 		if (ai < g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			S_SLOT::UI_EFFECTSTATUS_TYPE& status = g_char_slot_ingame.STATUS;
 
 			//-----------------------------------------------------------------
-			// 이미 있는지 검사.. 음.. vector라.. - -;
+			// Check whether it already exists.. um.. it's a vector.. - -;
 			//-----------------------------------------------------------------
 			S_SLOT::UI_EFFECTSTATUS_TYPE::iterator itr = status.begin(); 
 
 			while (itr != status.end())
 			{
 				//-----------------------------------------------------------------
-				// 이미 있으면 return이당..
+				// If it already exists, just return..
 				//-----------------------------------------------------------------
 				if (itr->actionInfo == ai)
 				{
-					// 2004, 6, 11 sobeit add start - 옵저빙아이,블레스 등등, delay 버그때문에 delay만 갱신
+					// 2004, 6, 11 sobeit add start - only refresh the delay because of a delay bug with Observing Eye, Bless, etc.
 					if(delayFrame)
 						(itr->delayFrame = MonotonicClock::Now() + MonotonicClock::Millis(delayFrame*1000/16));
 					// 2004, 6, 11 sobeit add end
@@ -369,7 +382,7 @@ UI_AddEffectStatus(int es, DWORD delayFrame)
 			}
 
 			//-----------------------------------------------------------------
-			// 없으면 추가한다.
+			// If not, add it.
 			//-----------------------------------------------------------------
 			S_SLOT::UI_EFFECTSTATUS_STRUCT efs;
 			efs.actionInfo = ai;
@@ -379,7 +392,7 @@ UI_AddEffectStatus(int es, DWORD delayFrame)
 			if(ai == SKILL_BLOOD_DRAIN)
 			{
 				g_char_slot_ingame.bl_drained = true;
-				// 2004, 5, 7, sobeit add start - 흡혈 당했을 때 도움말을 보여준다.
+				// 2004, 5, 7, sobeit add start - show help when blood has been drained.
 			//	ExecuteHelpEvent( HELP_EVENT_DRAIN_BLOOD ); 
 				// 2004, 5, 6, sobeit add end
 			}
@@ -398,14 +411,14 @@ UI_RemoveEffectStatus(int es)
 		int ai = (*g_pEffectStatusTable)[es].OriginalActionInfo;
 
 		//---------------------------------------------------------------
-		// EffectStatus와 관련된 ActionInfo가 있는 경우
+		// When there is an ActionInfo related to EffectStatus
 		//---------------------------------------------------------------
 		if (static_cast<DWORD>(ai) < g_pActionInfoTable->GetMinResultActionInfo())
 		{
 			S_SLOT::UI_EFFECTSTATUS_TYPE& status = g_char_slot_ingame.STATUS;
 
 			//-----------------------------------------------------------------
-			// 이미 있는지 검사.. map으로 바꾸고 싶지만.. 걍.. - -;
+			// Check whether it already exists.. I'd like to switch to a map but.. whatever.. - -;
 			//-----------------------------------------------------------------
 			S_SLOT::UI_EFFECTSTATUS_TYPE::iterator itr = status.begin();
 			S_SLOT::UI_EFFECTSTATUS_TYPE::iterator endItr = status.end();
@@ -413,7 +426,7 @@ UI_RemoveEffectStatus(int es)
 			while (itr != endItr)
 			{
 				//-----------------------------------------------------------------
-				// 있는 거면..
+				// If it exists..
 				//-----------------------------------------------------------------
 				if (itr->actionInfo == ai)
 				{
@@ -422,7 +435,7 @@ UI_RemoveEffectStatus(int es)
 					if(ai == SKILL_BLOOD_DRAIN)
 						g_char_slot_ingame.bl_drained = false;
 
-					// 더 체크할 필요없다.
+					// No need to check further.
 					return;
 				}
 
@@ -438,7 +451,7 @@ UI_RemoveEffectStatus(int es)
 void
 UI_SetWorldList()
 {	
-	// 넷마블용
+	// For Netmarble
 	if(g_pUserInformation->IsNetmarble)
 	{
 		gpC_base->SendMessage(UI_CONNECT_SERVER, true, g_pUserInformation->WorldID);
@@ -447,7 +460,7 @@ UI_SetWorldList()
 
 	if (g_pServerInformation!=NULL)
 	{
-		// true면 group을 선택하는 거다.
+		// If true, a group is being selected.
 		gC_vs_ui.StartServerSelect( true );
 
 //		gC_vs_ui.CharManagerEnable();
@@ -461,7 +474,7 @@ UI_SetWorldList()
 		CServerInformation::const_iterator iGroup = g_pServerInformation->begin();
 
 		//-----------------------------------------------------
-		// UI에 넘겨줄 server정보 생성
+		// Create the server info to pass to the UI
 		//-----------------------------------------------------
 		for (int i=0; i<numGroup; i++)
 		{			
@@ -478,13 +491,13 @@ UI_SetWorldList()
 		}			
 
 		//-----------------------------------------------------
-		// UI에 server list를 보낸다.
+		// Send the server list to the UI.
 		//-----------------------------------------------------		
 		int defaultID = g_pServerInformation->GetServerGroupID();
 		gC_vs_ui.SetServerList(groupName, groupID, groupStatus, numGroup, defaultID);
 
 		//-----------------------------------------------------
-		// 메모리에서 제거
+		// Remove from memory
 		//-----------------------------------------------------
 		for (int i=0; i<numGroup; i++)
 		{
@@ -505,7 +518,7 @@ UI_SetWorldList()
 void
 UI_SetServerList()
 {
-	// 넷마블용
+	// For Netmarble
 	if(g_pUserInformation->IsNetmarble)
 	{
 		gpC_base->SendMessage(UI_CONNECT_SERVER, false, g_pUserInformation->ServerID);
@@ -514,7 +527,7 @@ UI_SetServerList()
 
 	if (g_pServerInformation!=NULL)
 	{
-		// false면 server를 선택하는 거다.
+		// If false, a server is being selected.
 		gC_vs_ui.StartServerSelect( false );
 
 //		gC_vs_ui.CharManagerEnable();
@@ -531,7 +544,7 @@ UI_SetServerList()
 		ServerGroup::const_iterator iServer = pServerGroup->begin();
 
 		//-----------------------------------------------------
-		// UI에 넘겨줄 server정보 생성
+		// Create the server info to pass to the UI
 		//-----------------------------------------------------		
 		for (int i=0; i<numServer; i++)
 		{			
@@ -550,13 +563,13 @@ UI_SetServerList()
 		}			
 
 		//-----------------------------------------------------
-		// UI에 server list를 보낸다.
+		// Send the server list to the UI.
 		//-----------------------------------------------------		
 		int defaultID = g_pServerInformation->GetServerID();
 		gC_vs_ui.SetServerList(serverName, serverID, serverStatus, numServer, defaultID);
 
 		//-----------------------------------------------------
-		// 메모리에서 제거
+		// Remove from memory
 		//-----------------------------------------------------
 		for (int i=0; i<numServer; i++)
 		{
@@ -763,7 +776,7 @@ UI_RunComputer()
 
 	DEBUG_ADD("g_pUserInformation keep");
 
-	// 접속 유지
+	// Keep connection alive
 	g_pUserInformation->KeepConnection = TRUE;
 
 	DEBUG_ADD("UI_RunComputer OK");
@@ -805,7 +818,7 @@ UI_CloseComputer()
 		g_pUIDialog->ShowPCTalkDlg();
 	}
 
-	// 접속 해제
+	// Disconnect
 	g_pUserInformation->KeepConnection = FALSE;
 }
 
@@ -835,13 +848,13 @@ UI_RunExchangeAsk(TYPE_OBJECTID otherID)
 	{
 		gC_vs_ui.RunExchangeAsk( pCreature->GetName() );
 		
-		// 교환중이라는 의미..
+		// Means a trade is in progress..
 		g_pPlayer->SetWaitVerify( MPlayer::WAIT_VERIFY_TRADE );
 		
 		g_pTempInformation->SetMode(TempInformation::MODE_TRADE_REQUEST);
 		g_pTempInformation->Value1 = otherID;
 		
-		// [도움말] 교환신청 받을 때
+		// [Help] When receiving a trade request
 		//		__BEGIN_HELP_EVENT
 		//			ExecuteHelpEvent( HE_TRADE_REQUESTED );	
 		//		__END_HELP_EVENT
@@ -860,7 +873,7 @@ UI_RunExchangeCancel(const char* pName)
 {
 	gC_vs_ui.RunExchangeCancel(pName);
 
-	// [도움말] 교환신청 하고 나서
+	// [Help] After sending a trade request
 //	__BEGIN_HELP_EVENT
 //		ExecuteHelpEvent( HE_TRADE_REQUEST );	
 //	__END_HELP_EVENT
@@ -875,7 +888,7 @@ UI_RunExchange(TYPE_OBJECTID otherID)
 	UI_CloseExchangeCancel();
 
 	//-----------------------------------------------------------
-	// 없는 사람이면 안된당..
+	// Not allowed if there is no such person..
 	//-----------------------------------------------------------
 	MCreature* pCreature = g_pZone->GetCreature( otherID );
 
@@ -894,7 +907,7 @@ UI_RunExchange(TYPE_OBJECTID otherID)
 		g_pTradeManager->SetOtherName( pCreature->GetName() );
 		
 		//-----------------------------------------------------------
-		// mouse item을 선택하지 않은 상태로..
+		// With no mouse item selected..
 		//-----------------------------------------------------------
 		MItem* pMouseItem = UI_GetMouseItem();
 
@@ -904,7 +917,7 @@ UI_RunExchange(TYPE_OBJECTID otherID)
 		}
 
 		//-----------------------------------------------------------
-		// inventory의 모든 아이템을 선택하지 않은 상태로 만든다.
+		// Deselect all items in the inventory.
 		//-----------------------------------------------------------
 		g_pInventory->SetBegin();
 
@@ -918,7 +931,7 @@ UI_RunExchange(TYPE_OBJECTID otherID)
 		}
 
 		//-----------------------------------------------------------
-		// gear의 모든 아이템을 선택하지 않은 상태로 만든다.
+		// Deselect all items in the gear.
 		//-----------------------------------------------------------
 		MPlayerGear* pGear = g_pPlayer->GetGear();
 
@@ -935,11 +948,11 @@ UI_RunExchange(TYPE_OBJECTID otherID)
 
 	
 		//-----------------------------------------------------------
-		// 교환창 띄운다
+		// Open the trade window
 		//-----------------------------------------------------------
 		gC_vs_ui.RunExchange();
 
-		// 교환중이라는 의미로 설정해둔다...
+		// Set it to mean a trade is in progress...
 		g_pPlayer->SetWaitVerify( MPlayer::WAIT_VERIFY_TRADE );
 	}
 	else
@@ -984,17 +997,17 @@ UI_CloseStorage()
 {
 	gC_vs_ui.CloseStorage();
 
-	// 보관함 중지
+	// Stop storage
 	if (g_pStorage!=NULL)
 	{
 		g_pStorage->UnSetActive();
 	}
 
-	// storage를 없앤다.
+	// Remove the storage.
 	gC_vs_ui.SetStorage( NULL );
 
-	// 보관함에도 skill icon과 관계된 아이템이 들어갈 수 있다.
-	// PacketFunction.cpp에 있다. compile 시간 관계상..
+	// Items related to skill icons can also go into the storage.
+	// It's in PacketFunction.cpp. Because of compile time..
 	if (g_pSkillAvailable!=NULL)
 	{
 		g_pSkillAvailable->SetAvailableSkills();
@@ -1015,7 +1028,7 @@ UI_CloseExchange()
 	{
 		gC_vs_ui.CloseExchange();
 
-		// 교환끝
+		// Trade finished
 		if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_TRADE)
 		{
 			g_pPlayer->SetWaitVerifyNULL();
@@ -1043,7 +1056,7 @@ UI_CloseExchangeAsk()
 {
 	gC_vs_ui.CloseExchangeAsk();
 
-	// 교환끝
+	// Trade finished
 	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_TRADE)
 	{
 		g_pPlayer->SetWaitVerifyNULL();
@@ -1103,12 +1116,12 @@ UI_CloseAllDialog()
 
 	gC_vs_ui.CloseAllDialog();
 
-	// dialog닫는 함수로 이용되고 있는 중..
+	// Being used as a function to close dialogs..
 	//gC_vs_ui.ServerDisconnectMessage();
 }
 
 //--------------------------------------------------------------------------------
-// 얻을 때
+// When obtained
 //--------------------------------------------------------------------------------
 void
 UI_SaveHotKeyToServer()
@@ -1117,7 +1130,7 @@ UI_SaveHotKeyToServer()
 //		if (g_pPlayer!=NULL)
 //		{
 //			//---------------------------------------------------------------
-//			// Slayer인 경우
+//			// In case of Slayer
 //			//---------------------------------------------------------------
 //			if (g_pPlayer->IsSlayer())
 //			{
@@ -1130,7 +1143,7 @@ UI_SaveHotKeyToServer()
 //					//if (id != NOT_SELECTED)
 //					//{
 //						// save(i, id)
-//						// 선택 안된 것이라도.. 그대로 저장시켰다가 받아오면 된다.
+//						// Even if not selected.. just save it as is and fetch it back.
 //						_CGSetSlayerHotKey.setHotKey( i, id );
 //					//}
 //				}
@@ -1138,7 +1151,7 @@ UI_SaveHotKeyToServer()
 //				g_pSocket->sendPacket( &_CGSetSlayerHotKey );
 //			}
 //			//---------------------------------------------------------------
-//			// Vampire인 경우
+//			// In case of Vampire
 //			//---------------------------------------------------------------
 //			else
 //			{
@@ -1151,7 +1164,7 @@ UI_SaveHotKeyToServer()
 //					//if (id != NOT_SELECTED)
 //					//{
 //						// save(i, id)
-//						// 선택 안된 것이라도.. 그대로 저장시켰다가 받아오면 된다.
+//						// Even if not selected.. just save it as is and fetch it back.
 //						_CGSetVampireHotKey.setHotKey( i, id );
 //					//}
 //				}
@@ -1164,7 +1177,7 @@ UI_SaveHotKeyToServer()
 }
 
 //--------------------------------------------------------------------------------
-// UI_SetHotkey - 스킬 단축키 지정할때,
+// UI_SetHotkey - when assigning a skill hotkey,
 //--------------------------------------------------------------------------------
 void
 UI_SetHotKey(int hotkey, int id)
@@ -1511,7 +1524,7 @@ UI_GetInterfaceRace()
 void
 UI_AlreadyExistIDMessage()
 {
-	gC_vs_ui.AleadyExistIdMessage(); // 사용불가		
+	gC_vs_ui.AleadyExistIdMessage(); // Unavailable
 }
 
 //-----------------------------------------------------------------------------
@@ -1520,7 +1533,7 @@ UI_AlreadyExistIDMessage()
 void
 UI_NoAlreadyExistIDMessage()
 {
-	gC_vs_ui.NoAleadyExistIdMessage(); // 사용가능
+	gC_vs_ui.NoAleadyExistIdMessage(); // Available
 }
 
 //-----------------------------------------------------------------------------
@@ -1629,7 +1642,7 @@ UI_ChangeInterfaceRace(Race race)
 	if(bLevelUp)
 		gC_vs_ui.LevelUp();
 
-	// UI에 정보 설정
+	// The zone the player is in, to the UI
 	int zoneID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
 
 	if (g_pZone!=NULL)
@@ -1638,8 +1651,11 @@ UI_ChangeInterfaceRace(Race race)
 		gC_vs_ui.SetZone( zoneID );
 		gC_vs_ui.SetSize( zoneSize );
 
-		// 안전지대 정보 등.. 다시 설정해준다.
-		LoadZoneInfo(zoneID);
+		// The zone's safety zones and the rest of its information again.
+		if (s_GameUIHost != NULL && s_GameUIHost->LoadZoneInfo != NULL)
+		{
+			s_GameUIHost->LoadZoneInfo(zoneID);
+		}
 	}
 
 	UI_AffectUserOption();
@@ -1655,7 +1671,7 @@ UI_ChangeInterfaceRace(Race race)
 //
 //	gC_vs_ui.ChangeToSlayerInterface();
 //
-//	// UI에 정보 설정
+//	// Set info in the UI
 //	int zoneID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
 //
 //	if (g_pZone!=NULL)
@@ -1664,7 +1680,7 @@ UI_ChangeInterfaceRace(Race race)
 //		gC_vs_ui.SetZone( zoneID );
 //		gC_vs_ui.SetSize( zoneSize );
 //
-//		// 안전지대 정보 등.. 다시 설정해준다.
+//		// Set the safe zone info etc. again.
 //		LoadZoneInfo(zoneID);		
 //	}
 //	
@@ -1737,40 +1753,40 @@ UI_RunSkillTree(int domain, int maxLevel)
 	(void)maxLevel;
 	/*
 	BOOL bExistSkillTree = FALSE;
-	// 적절한 SkillTree를 띄운다.
+	// Bring up the appropriate SkillTree.
 	SKILLDOMAIN sd = (enum SKILLDOMAIN)domain;
 
 	switch (sd)
 	{	
 		//-----------------------------------------------------
-		// 도
+		// Blade
 		//-----------------------------------------------------
 		case SKILLDOMAIN_BLADE : gC_vs_ui.RunBladeSkillTree(); bExistSkillTree=TRUE; break;
 
 		//-----------------------------------------------------
-		// 검
+		// Sword
 		//-----------------------------------------------------
 		case SKILLDOMAIN_SWORD : gC_vs_ui.RunSwordSkillTree(); bExistSkillTree=TRUE; break;
 
 		//-----------------------------------------------------
-		// 총
+		// Gun
 		//-----------------------------------------------------
 		case SKILLDOMAIN_GUN : 
 		//case SKILLDOMAIN_RIFLE : 
 			gC_vs_ui.RunGunSkillTree(); bExistSkillTree=TRUE; break;
 			
 		//-----------------------------------------------------
-		// 인챈트
+		// Enchant
 		//-----------------------------------------------------
 		case SKILLDOMAIN_ENCHANT : gC_vs_ui.RunEnchantSkillTree(); bExistSkillTree=TRUE; break;
 
 		//-----------------------------------------------------
-		// 힐
+		// Heal
 		//-----------------------------------------------------
 		case SKILLDOMAIN_HEAL : gC_vs_ui.RunHealSkillTree(); bExistSkillTree=TRUE; break;
 
 		//-----------------------------------------------------
-		// 뱀파이어
+		// Vampire
 		//-----------------------------------------------------
 		case SKILLDOMAIN_VAMPIRE : gC_vs_ui.RunVampireSkillTree(); bExistSkillTree=TRUE; break;
 
@@ -1781,7 +1797,7 @@ UI_RunSkillTree(int domain, int maxLevel)
 	//gC_vs_ui.RunSkillView();
 
 	//----------------------------------------------------
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	//----------------------------------------------------
 	//if (bExistSkillTree)
 	//{
@@ -1800,16 +1816,16 @@ UI_RunSkillTree(int domain, int maxLevel)
 		g_pPCTalkBox->SetType( PCTalkBox::SKILL_LEARN );
 
 		//---------------------------------------------------
-		// PC Talk Box의 정보 설정
+		// Set the PC Talk Box info
 		//---------------------------------------------------
 		char str[192];
 
 		//g_pPCTalkBox->SetNPCID( pPacket->getObjectID() );
-		//g_pPCTalkBox->SetCreatureType( pCreature->GetCreatureType() );	// 이미 설정되어 있다고 본다.
+		//g_pPCTalkBox->SetCreatureType( pCreature->GetCreatureType() );	// The creature type is assumed to be already set.
 		//g_pPCTalkBox->SetScriptID( pPacket->getScriptID() );
 
 		//---------------------------------------------------
-		// Domain에서 배울 수 있는 기술들 추가
+		// Add skills that can be learned in the Domain
 		//---------------------------------------------------
 		auto* pDomainInfo = g_pSkillManager->GetMutable(domain);
 		if (pDomainInfo == nullptr) return;
@@ -1839,8 +1855,8 @@ UI_RunSkillTree(int domain, int maxLevel)
 			int skillLevel = (*g_pSkillInfoTable)[skillID].GetLearnLevel();
 
 			//---------------------------------------------------
-			// 아직 안 배운 기술들 중에서..
-			// 배울 수 있는 레벨이 된 기술들..
+			// Among the skills not yet learned..
+			// Skills for which the required level has been reached..
 			//---------------------------------------------------
 			if ((status==MSkillDomain::SKILLSTATUS_NEXT || status==MSkillDomain::SKILLSTATUS_OTHER)
 				&& skillLevel>0 && skillLevel<150 && skillLevel <= domainLevel)
@@ -1858,14 +1874,14 @@ UI_RunSkillTree(int domain, int maxLevel)
 			domainInfo.Next();
 		}
 
-		// 끝내기 추가
+		// Add an end option
 		std::string szMsg;
 		szMsg += "999";
 		szMsg += (*g_pGameStringTable)[UI_STRING_MESSAGE_CANCEL_LEARN_SKILL].GetString();
 		g_pPCTalkBox->AddString( szMsg.c_str() );
 
 		//---------------------------------------------------
-		// 스킬 뭐 배울래?
+		// Which skill do you want to learn?
 		//---------------------------------------------------
 		if (availableSkills==0)
 		{
@@ -1890,7 +1906,7 @@ UI_RunSkillTree(int domain, int maxLevel)
 void
 UI_OpenInventoryToSell()
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.OpenInventoryToSell();
@@ -1902,7 +1918,7 @@ UI_OpenInventoryToSell()
 void
 UI_OpenInventoryToRepair()
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.OpenInventoryToRepair();
@@ -1914,7 +1930,7 @@ UI_OpenInventoryToRepair()
 void
 UI_OpenInventoryToSilvering()
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.OpenInventoryToSilvering();
@@ -1954,9 +1970,9 @@ UI_CloseSell()
 void
 UI_RunShop()
 {
-	// NPC대화하는 dialog를 숨긴다
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
-	// 2004, 8, 17, sobeit add start - 상점창 여는 동시에 esc키 눌러서 치료대화를 이용하는 버그 때문에 추가
+	// 2004, 8, 17, sobeit add start - added because of a bug where pressing esc as the shop window opens lets you use the healing dialog
 	g_pUIDialog->SetLockInputPCTalk();
 	// 2004, 8, 17, sobeit add end
 	gC_vs_ui.RunShop();
@@ -1974,12 +1990,12 @@ UI_SetShop(MShop* pShop)
 //-----------------------------------------------------------------------------
 // Run Storage Buy
 //-----------------------------------------------------------------------------
-// 보관함 살래말래? 가격은 price
+// Buy the storage or not? The price is price
 //-----------------------------------------------------------------------------
 void		
 UI_RunStorageBuy(int price)
 {
-	// NPC대화하는 dialog를 숨긴다
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.RunStorageBuy( price );
@@ -1991,12 +2007,12 @@ UI_RunStorageBuy(int price)
 void
 UI_RunStorage()
 {
-	// NPC대화하는 dialog를 숨긴다
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.RunStorage();
 
-	// 보관함 작동중이라고 설정한다.
+	// Set that the storage is in operation.
 	g_pStorage->SetActive();
 }
 //-----------------------------------------------------------------------------
@@ -2005,12 +2021,12 @@ UI_RunStorage()
 void
 UI_RunPetStorage()
 {
-//	// NPC대화하는 dialog를 숨긴다
+//	// Hide the NPC dialog window
 //	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.RunPetStorage();
 
-	// 보관함 작동중이라고 설정한다.
+	// Set that the storage is in operation.
 	g_pStorage->SetActive();
 }
 //-----------------------------------------------------------------------------
@@ -2042,7 +2058,7 @@ UI_StartCharacterManager()
 //-----------------------------------------------------------------------------
 // New Character Create OK
 //-----------------------------------------------------------------------------
-// 새 캐릭터 생성 성공
+// New character created successfully
 //-----------------------------------------------------------------------------
 void	
 UI_NewCharacterCreateOk()
@@ -2053,7 +2069,7 @@ UI_NewCharacterCreateOk()
 //-----------------------------------------------------------------------------
 // New Character Create Failed
 //-----------------------------------------------------------------------------
-// 새 캐릭터 생성이 실패한 경우
+// When creating a new character failed
 //-----------------------------------------------------------------------------
 void	
 UI_NewCharacterCreateFailed(int error)
@@ -2064,24 +2080,24 @@ UI_NewCharacterCreateFailed(int error)
 //-----------------------------------------------------------------------------
 // Delete Character OK
 //-----------------------------------------------------------------------------
-// 캐릭터 삭제 성공
+// Character deleted successfully
 //-----------------------------------------------------------------------------
 void	
 UI_DeleteCharacterOK()
 {	
-	// 캐릭터 삭제
+	// Delete character
 	gC_vs_ui.DeleteCharacter( g_pUserInformation->Slot );	
 }
 
 //-----------------------------------------------------------------------------
 // Delete Character Failed
 //-----------------------------------------------------------------------------
-// 캐릭터 삭제 실패 - 주민등록번호.. 문제. - -;
+// Character deletion failed - resident registration number.. problem. - -;
 //-----------------------------------------------------------------------------
 void	
 UI_DeleteCharacterFailed()
 {
-	// 주민등록번호가 틀렸을 때의 message
+	// Message for when the resident registration number is wrong
 	gC_vs_ui.Invalid_SSN_Message();	
 }
 
@@ -2101,7 +2117,7 @@ UI_StartGame()
 	UI_AffectUserOption();
 	DEBUG_ADD("AFFECT");
 
-	// minimap은 무조건 켜둔다.
+	// Always keep the minimap on.
 	gC_vs_ui.RunMinimap();	
 	DEBUG_ADD("MINIMAP");
 }
@@ -2110,7 +2126,7 @@ UI_StartGame()
 //-----------------------------------------------------------------------------
 // Set NPC Info
 //-----------------------------------------------------------------------------
-// Zone에 존재하는 NPC에 대한 정보를 설정한다.
+// Set info about the NPCs that exist in the Zone.
 //-----------------------------------------------------------------------------
 void
 UI_SetNPCInfo( const char* pName, int npcID, int x, int y )
@@ -2171,7 +2187,7 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	slot.GRADE	= pInfo->getRank();
 	//slot.NOTERITY = pInfo->getNotoriety();
 
-	// 가장 높은 domain level을 찾는다.
+	// Find the highest domain level.
 	int maxDomainLevel = 1;
 
 	/*
@@ -2184,7 +2200,7 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	slot.level = maxDomainLevel;
 
 	//------------------------------------------------------------
-	// domain level 설정
+	// Set the domain level
 	//------------------------------------------------------------
 	slot.DOMAIN_SWORD	= pInfo->getSkillDomainLevel( SKILL_DOMAIN_SWORD );
 	slot.DOMAIN_BLADE	= pInfo->getSkillDomainLevel( SKILL_DOMAIN_BLADE );
@@ -2194,9 +2210,9 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	
 
 	//------------------------------------------------------------
-	// 복장 정보 설정
+	// Set outfit info
 	//------------------------------------------------------------
-	// 여자인 경우
+	// If female
 	//------------------------------------------------------------
 	if (slot.bl_female)
 	{
@@ -2276,7 +2292,7 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 		slot.woman_info.left = uiShieldFemale[pInfo->getShieldType()];
 	}
 	//------------------------------------------------------------
-	// 남자인 경우
+	// If male
 	//------------------------------------------------------------
 	else
 	{
@@ -2356,7 +2372,7 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 		slot.man_info.left = uiShieldMale[pInfo->getShieldType()];
 	}
 
-	// 복장 정보
+	// Outfit info
 	/*
 	pInfo->getHairStyle();	//	HAIR_STYLE1 , 	HAIR_STYLE2 , 	HAIR_STYLE3 
 	pInfo->getHelmetType();	// HELMET_NONE , HELMET1 , HELMET2 ,
@@ -2365,7 +2381,7 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 	*/
 
 	//------------------------------------------------------------
-	// 색깔 정보
+	// Color info
 	//------------------------------------------------------------
 	slot.skin_color	= pInfo->getSkinColor();
 	slot.hair_color	= pInfo->getHairColor();
@@ -2424,7 +2440,7 @@ UI_SetCharacter(int slotID, PCSlayerInfo * pInfo)
 			slot.right_color = (*g_pItemOptionTable)[pInfo->getWeaponColor()].ColorSet;
 	}
 
-	// 색깔 확인
+	// Check colors
 	if(slot.skin_color != UNIQUE_ITEM_COLOR && slot.skin_color != QUEST_ITEM_COLOR)
 		slot.skin_color = max(0, min(slot.skin_color, MAX_COLORSET-1));
 	if(slot.helmet_color != UNIQUE_ITEM_COLOR && slot.helmet_color != QUEST_ITEM_COLOR)
@@ -2509,7 +2525,7 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	slot.helmet_color = 0;
 	slot.trouser_color = 0;
 
-	// 뱀파 옷추가
+	// Add vampire clothes
 	int creatureType = 0;
 	if(slot.bl_female)
 		creatureType = (*g_pItemTable)[ITEM_CLASS_VAMPIRE_COAT][coatType].AddonFemaleFrameID;
@@ -2520,7 +2536,7 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	int coat = (*g_pCreatureSpriteTable)[spriteType].FrameID;
 	
 	slot.woman_info.helmet = W_NO_WEAR;
-	slot.woman_info.coat = (CHAR_WOMAN)coat;		// coatType에 따라서 바꿔야 한다.. 나중에~
+	slot.woman_info.coat = (CHAR_WOMAN)coat;		// Needs to change depending on coatType.. later~
 	slot.woman_info.trouser = W_NO_WEAR;
 	slot.woman_info.face = W_FACE1;	// default
 	slot.woman_info.hair = W_NO_WEAR;
@@ -2528,7 +2544,7 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	slot.woman_info.left = W_NO_WEAR;
 
 	slot.man_info.helmet = M_NO_WEAR;
-	slot.man_info.coat = (CHAR_MAN)coat;		// coatType에 따라서 바꿔야 한다.. 나중에~
+	slot.man_info.coat = (CHAR_MAN)coat;		// Needs to change depending on coatType.. later~
 	slot.man_info.trouser = M_NO_WEAR;
 	slot.man_info.face = M_FACE1;	// default
 	slot.man_info.hair = M_NO_WEAR;
@@ -2536,17 +2552,17 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	slot.man_info.left = M_NO_WEAR;
 
 	//------------------------------------------------------------
-	// 여자
+	// Female
 	//------------------------------------------------------------
 	slot.coat_color = coatColor;//(*g_pItemOptionTable)[coatOption].ColorSet;
 	/*
 	if (slot.bl_female)
 	{
-		// default .. 나중에 바꿔야 한다.
+		// default .. needs to be changed later.
 		slot.coat_color = 38;
 	}
 	//------------------------------------------------------------
-	// 남자
+	// Male
 	//------------------------------------------------------------
 	else
 	{
@@ -2555,7 +2571,7 @@ UI_SetCharacter(int slotID, PCVampireInfo * pInfo)
 	}
 	*/
 
-	// 색깔 확인
+	// Check colors
 	if(slot.skin_color != UNIQUE_ITEM_COLOR && slot.skin_color != QUEST_ITEM_COLOR)
 		slot.skin_color = max(0, min(slot.skin_color, MAX_COLORSET-1));
 	if(slot.helmet_color != UNIQUE_ITEM_COLOR && slot.helmet_color != QUEST_ITEM_COLOR)
@@ -2644,7 +2660,7 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	slot.helmet_color = 0;
 	slot.trouser_color = 0;
 
-	// 뱀파 옷추가
+	// Add vampire clothes
 //	int creatureType = 0;
 //	if(slot.bl_female)
 //		creatureType = (*g_pItemTable)[ITEM_CLASS_VAMPIRE_COAT][coatType].AddonFemaleFrameID;
@@ -2667,7 +2683,7 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	}
 	
 	slot.woman_info.helmet = W_NO_WEAR;
-	slot.woman_info.coat = (CHAR_WOMAN)(spriteType);		// coatType에 따라서 바꿔야 한다.. 나중에~
+	slot.woman_info.coat = (CHAR_WOMAN)(spriteType);		// Needs to change depending on coatType.. later~
 	slot.woman_info.trouser = W_NO_WEAR;
 	slot.woman_info.face = W_FACE1;	// default
 	slot.woman_info.hair = W_NO_WEAR;
@@ -2675,7 +2691,7 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	slot.woman_info.left = (CHAR_WOMAN)weaponType;
 
 	slot.man_info.helmet = M_NO_WEAR;
-	slot.man_info.coat = (CHAR_MAN)(spriteType);		// coatType에 따라서 바꿔야 한다.. 나중에~
+	slot.man_info.coat = (CHAR_MAN)(spriteType);		// Needs to change depending on coatType.. later~
 	slot.man_info.trouser = M_NO_WEAR;
 	slot.man_info.face = M_FACE1;	// default
 	slot.man_info.hair = M_NO_WEAR;
@@ -2683,7 +2699,7 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	slot.man_info.left = (CHAR_MAN)weaponType;
 
 	//------------------------------------------------------------
-	// 여자
+	// Female
 	//------------------------------------------------------------
 	slot.coat_color = coatColor;//(*g_pItemOptionTable)[coatOption].ColorSet;
 	slot.left_color = weaponColor;
@@ -2693,11 +2709,11 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	/*
 	if (slot.bl_female)
 	{
-		// default .. 나중에 바꿔야 한다.
+		// default .. needs to be changed later.
 		slot.coat_color = 38;
 	}
 	//------------------------------------------------------------
-	// 남자
+	// Male
 	//------------------------------------------------------------
 	else
 	{
@@ -2706,7 +2722,7 @@ UI_SetCharacter(int slotID, PCOustersInfo * pInfo)
 	}
 	*/
 
-	// 색깔 확인
+	// Check colors
 	if(slot.skin_color != UNIQUE_ITEM_COLOR && slot.skin_color != QUEST_ITEM_COLOR)
 		slot.skin_color = max(0, min(slot.skin_color, MAX_COLORSET-1));
 	if(slot.helmet_color != UNIQUE_ITEM_COLOR && slot.helmet_color != QUEST_ITEM_COLOR)
@@ -2738,7 +2754,7 @@ UI_StartProgress(int zoneID)
 	DEBUG_ADD("[UI] Start Progress");
 	
 	//---------------------------------------
-	// 음악 멈춘다.
+	// Stop the music.
 	//---------------------------------------
 	if (g_pUserOption!=NULL)
 	{
@@ -2939,16 +2955,16 @@ UI_SetHP(int current, int max)
 	}
 
 	//---------------------------------------------------------------
-	// HP 낮은 경우 체크
+	// Check for low HP
 	//---------------------------------------------------------------
 	__BEGIN_HELP_EVENT
 		static int lastPercent = 100;
 		int percent = ((max==0)?0 : current*100 / max);
 
-		// 방금 전에는 30%이상이었는데.. 지금 이하가 된 경우
+		// It was 30% or more a moment ago.. and now it has dropped to or below that
 		if (percent <= 30 && lastPercent > 30)
 		{
-			// [도움말] HP 낮은 경우
+			// [Help] When HP is low
 			ExecuteHelpEvent( HELP_EVENT_USE_POTION );
 		}
 		lastPercent = percent;
@@ -2958,13 +2974,13 @@ UI_SetHP(int current, int max)
 	DEBUG_ADD_FORMAT("[UI] Set HP  (%d / %d)", current, max);
 	
 	//---------------------------------------------------------------
-	// 물렸을때 HP bar 변경
+	// Change the HP bar when bitten
 	//---------------------------------------------------------------
 //	if (g_pPlayer->IsSlayer())
 //	{
 //		if (g_pPlayer->GetConversionDelayTime() > g_CurrentTime)
 //		{
-//			// 물렸당..
+//			// Got bitten..
 //			gC_vs_ui.SetHP(current, max, TRUE);
 //		}
 //		else
@@ -2982,13 +2998,13 @@ UI_SetHP(int current, int max)
 	{
 		float ratio = (max==0)? 1 : (float)current/max;
 
-		// hp가 30%이하면..
+		// If hp is 30% or below..
 		if (ratio < 0.3f)
 		{
 			//g_SDLMusic.SetCurrentTempo( g_SDLMusic.GetOriginalTempo() * (float)(1.3f - ratio) );
 			g_SDLMusic.SetCurrentTempo( g_SDLMusic.GetOriginalTempo() * 1.3f );
 		}	
-		// 100이 아니면..
+		// If it's not 100..
 		else if (g_SDLMusic.GetCurrentTempo()!=g_SDLMusic.GetOriginalTempo())	
 		{
 			g_SDLMusic.SetOriginalTempo();
@@ -3026,16 +3042,16 @@ UI_SetMP(int current, int max)
 	}
 
 	//---------------------------------------------------------------
-	// MP 낮은 경우 체크
+	// Check for low MP
 	//---------------------------------------------------------------
 	__BEGIN_HELP_EVENT
 		static int lastPercent = 100;
 		int percent = ((max==0)?0 : current*100 / max);
 
-		// 방금 전에는 30%이상이었는데.. 지금 이하가 된 경우
+		// It was 30% or more a moment ago.. and now it has dropped to or below that
 		if (percent <= 30 && lastPercent > 30)
 		{
-			// [도움말] MP 낮은 경우
+			// [Help] When MP is low
 			ExecuteHelpEvent( HELP_EVENT_USE_POTION );
 			ExecuteHelpEvent( HELP_EVENT_ABSORB_SOUL );
 
@@ -3065,12 +3081,12 @@ UI_AddChatToHistory(const char* str, const char* sz_id, int cond, DWORD color)
 	CHAT_LINE_CONDITION condition = (CHAT_LINE_CONDITION)cond;
 
 	//-----------------------------------------------------------
-	// 이름이 있다면.. 출력해도 되는 사람껀지 확인한다.
+	// If there is a name.. check whether it's a person whose name may be displayed.
 	//-----------------------------------------------------------
 	/*
 	if (sz_id!=NULL)
 	{
-		// 허용이 안되는 ID이면 출력하지 않는다.
+		// Do not display it if the ID is not allowed.
 		if (!g_pChatManager->IsAcceptID( sz_id ))
 		{
 			return;
@@ -3123,7 +3139,7 @@ UI_DropItem()
 void
 UI_PickUpItem(MItem* pItem)
 {
-	// 소리 낸다..
+	// Make a sound..
 	PlaySound( pItem->GetInventorySoundID() );
 
 	gC_vs_ui.PickUpItem( pItem );
@@ -3174,18 +3190,14 @@ UI_UnlockGear()
 }
 
 //-----------------------------------------------------------------------------
-// UI 메세지 처리
+// The UI's results, handed to the UI message manager through the host
 //-----------------------------------------------------------------------------
 void UI_ResultReceiver(DWORD message, intptr_t left, intptr_t right, void *void_ptr)
 {
-//	DEBUG_ADD("[UI_ResultReceiver] Start");
-	if (g_pUIMessageManager==NULL)
+	if (s_GameUIHost != NULL && s_GameUIHost->ExecuteUIMessage != NULL)
 	{
-		g_pUIMessageManager = new UIMessageManager;
+		s_GameUIHost->ExecuteUIMessage(message, left, right, void_ptr);
 	}
-	
-	g_pUIMessageManager->Execute(message, left, right, void_ptr);	
-//	DEBUG_ADD("[UI_ResultReceiver] End");
 }
 
 //-----------------------------------------------------------------------------
@@ -3214,7 +3226,7 @@ UI_RunPartyRequest(TYPE_OBJECTID otherID)
 	}
 
 	//-------------------------------------------
-	// 파티 정보창 띄운다.
+	// Bring up the party info window.
 	//-------------------------------------------
 	MCreature* pCreature = g_pZone->GetCreature( otherID );
 
@@ -3222,8 +3234,8 @@ UI_RunPartyRequest(TYPE_OBJECTID otherID)
 	{
 		gC_vs_ui.RequestParty( pCreature->GetName(), 30000 );
 
-		// 파티 신청중이라는 의미..
-		// 검증 없이 처리한다.
+		// Means a party request is pending..
+		// Process without verification.
 		//g_pPlayer->SetWaitVerify( MPlayer::WAIT_VERIFY_PARTY );
 
 		//g_pTempInformation->Mode = TempInformation::MODE_PARTY_REQUEST;
@@ -3231,7 +3243,7 @@ UI_RunPartyRequest(TYPE_OBJECTID otherID)
 
 		g_pTempInformation->PartyInviter = otherID;
 
-		// [도움말] 교환신청 받을 때
+		// [Help] When receiving a trade request
 		//__BEGIN_HELP_EVENT
 		//	ExecuteHelpEvent( HE_TRADE_REQUESTED );	
 		//__END_HELP_EVENT
@@ -3262,7 +3274,7 @@ UI_RunPartyAsk(TYPE_OBJECTID otherID)
 		}
 		
 		//-------------------------------------------
-		// 파티 정보창 띄운다.
+		// Bring up the party info window.
 		//-------------------------------------------
 		MCreature* pCreature = g_pZone->GetCreature( otherID ); 
 		
@@ -3271,13 +3283,13 @@ UI_RunPartyAsk(TYPE_OBJECTID otherID)
 			// C_VS_UI_REQUEST_PARTY::REQUEST
 			gC_vs_ui.RunPartyAsk( pCreature->GetName(), C_VS_UI_REQUEST_PARTY::INVITE );
 			
-			// 파티 검증안한다.
+			// Do not verify the party.
 			//g_pPlayer->SetWaitVerify( MPlayer::WAIT_VERIFY_PARTY );
 			
 			//g_pTempInformation->Mode = TempInformation::MODE_PARTY_REQUEST;
 			g_pTempInformation->PartyInviter = otherID;
 			
-			// [도움말] 교환신청 받을 때
+			// [Help] When receiving a trade request
 			//__BEGIN_HELP_EVENT
 			//	ExecuteHelpEvent( HE_TRADE_REQUESTED );	
 			//__END_HELP_EVENT
@@ -3298,7 +3310,7 @@ UI_RunPartyCancel(const char* pName)
 {
 	gC_vs_ui.RunPartyCancel(pName);
 
-	// [도움말] 교환신청 하고 나서
+	// [Help] After sending a trade request
 	//__BEGIN_HELP_EVENT
 	//	ExecuteHelpEvent( HE_TRADE_REQUEST );	
 	//__END_HELP_EVENT
@@ -3331,7 +3343,7 @@ UI_ClosePartyAsk()
 {
 	gC_vs_ui.ClosePartyAsk();
 
-	// 교환끝
+	// Trade finished
 	if (g_pPlayer->GetWaitVerify()==MPlayer::WAIT_VERIFY_PARTY)
 	{
 		g_pPlayer->SetWaitVerifyNULL();
@@ -3386,7 +3398,7 @@ UI_SetWaitGuildList()
 void
 UI_ShowWaitGuildList( GCWaitGuildList *pPacket)
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	DEBUG_ADD_FORMAT( "[GCWaitGuildList] Start");
@@ -3415,7 +3427,7 @@ UI_ShowWaitGuildList( GCWaitGuildList *pPacket)
 void		
 UI_ShowActiveGuildList( GCActiveGuildList *pPacket)
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	DEBUG_ADD_FORMAT( "[GCActiveGuildList] Start");
@@ -3430,7 +3442,7 @@ UI_ShowActiveGuildList( GCActiveGuildList *pPacket)
 		regist_team_info.guild_id = pInfo->getGuildID();
 		regist_team_info.TEAM_NAME = pInfo->getGuildName();
 		regist_team_info.LEADER_NAME = pInfo->getGuildMaster();
-		// 랭킹 나중에 넣쟈ㅠ.ㅠ
+		// Let's add ranking later (T.T)
 		regist_team_info.RANKING = 0;
 		regist_team_info.MEMBERS = pInfo->getGuildMemberCount();
 
@@ -3481,7 +3493,7 @@ UI_ShowGuildMemberList( GCGuildMemberList *pPacket)
 		if(false == SetServerName)
 		{
 			member_info.SERVER_NAME = (*g_pGameStringTable)[UI_STRING_MESSAGE_NOT_LOGINED].GetString();
-			member_info.bLogOn = false; // 서버네임 찾을수 없는거는 그냥 비 로그인으로 하자..ㅋㅋ
+			member_info.bLogOn = false; // If the server name can't be found, just treat as not logged in.. lol
 		}
 		// 2004, 10, 8, sobeit add end
 		gC_vs_ui.AddTeamMemberInfo(member_info, bAvailableRecall); 
@@ -3494,7 +3506,7 @@ UI_ShowGuildMemberList( GCGuildMemberList *pPacket)
 void		
 UI_ShowGuildRegist(DWORD reg_fee)
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 	
 	gC_vs_ui.RunTeamRegist(false, reg_fee);
@@ -3544,7 +3556,7 @@ UI_ShowGuildInfo(GCShowGuildInfo *pPacket)
 	team_info.REGISTERED_DATE = "";
 	team_info.RANKING = 0;
 
-	// 2004, 10, 19, sobeit add start - 현재 떠 있는 길드 리스트가 연합리스트 인지 그냥 길드 리스트 인지..에휴..
+	// 2004, 10, 19, sobeit add start - whether the guild list currently shown is an alliance list or just a guild list.. geez..
 	bool IsUnionTeamInfo = gC_vs_ui.IsRunningTeamList(true); //  
 	// 2004, 10, 19, sobeit add end
 	gC_vs_ui.RunTeamInfo(false, (void *)&team_info, IsUnionTeamInfo);
@@ -3590,7 +3602,7 @@ UI_ShowUnionGuildMemberInfo(GCShowUnionInfo *pPacket)
 		regist_team_info.guild_id = pInfo->getGuildID();
 		regist_team_info.TEAM_NAME = pInfo->getGuildName();
 		regist_team_info.LEADER_NAME = pInfo->getGuildMaster();
-		// 랭킹 나중에 넣쟈ㅠ.ㅠ
+		// Let's add ranking later (T.T)
 		regist_team_info.RANKING = 0;
 		regist_team_info.MEMBERS = pInfo->getGuildMemberCount();
 	
@@ -3750,14 +3762,14 @@ const char *UI_GetOtherInfoName()
 
 extern std::string g_CpCookie;
 
-// 넷마블용
+// For Netmarble
 void	UI_RunConnect()
 {
 
 	if(g_pUserInformation->IsNetmarble)
 	{
 		static LOGIN	login;
-		// 방식 바뀜.   2003.12.12 by sonee
+		// Method changed.   2003.12.12 by sonee
 		//login.sz_id = new char [g_pUserInformation->NetmarbleID.GetLength()+1];
 		//strcpy(login.sz_id, g_pUserInformation->NetmarbleID.GetString());
 		//		login.sz_password = new char [g_pUserInformation->NetmarblePassword.GetLength()+1];
@@ -3774,11 +3786,11 @@ void	UI_RunConnect()
 	else
 	{
 		// 2004, 7, 15, sobeit modify start
-		if(false == g_pUserInformation->IsAutoLogIn) // 수동 로그인
+		if(false == g_pUserInformation->IsAutoLogIn) // Manual login
 			gC_vs_ui.RunConnect();
-		else // 웹 로그인
+		else // Web login
 		{
-			//edit by Coffee 2006.11.7  槨貢젬藤속菱땡되쩍쌈왯
+			//edit by Coffee 2006.11.7  add an auto-login interface (comment was GBK Chinese, mis-encoded)
 /*
 			if(NULL != g_pUserInformation->pLogInClientPlayer)
 			{
@@ -3822,7 +3834,7 @@ void	UI_OpenBringFee(UINT totalfee)
 
 void	UI_SetTotalFee(UINT fee)
 {
-	// 현재 창에 나와있는 총 금액과 서버로부터 남은 돈이 날라오는걸 비교해서 그 차이만큼 내돈에 더해준다.		
+	// Compare the total amount shown in the current window with the money returned from the server, and add the difference to my money.
 	gC_vs_ui.SetTotalFee(fee);
 	gC_vs_ui.SetBringFee(0);
 }
@@ -3861,7 +3873,7 @@ void	UI_RunWarList(GCWarScheduleList* pPacket)
 		wi.month	= info->month;
 		wi.day		= info->day;
 		wi.hour		= info->hour;
-		if(0 == info->warType) // 길드전일때 - 2004,10,2,sobeit modify
+		if(0 == info->warType) // For guild war - 2004,10,2,sobeit modify
 		{
 			for(int i = 0; i<5; i++)
 			{
@@ -3979,7 +3991,7 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 	g_pPCTalkBox->Release();	
 	g_pPCTalkBox->SetType( PCTalkBox::SELECT_QUEST );
 
-	if( g_pPCTalkBox->GetCreatureType() == 17 || g_pPCTalkBox->GetCreatureType() == 255 || g_pPCTalkBox->GetCreatureType() == 653)			// 카이저면, 레베카면
+	if( g_pPCTalkBox->GetCreatureType() == 17 || g_pPCTalkBox->GetCreatureType() == 255 || g_pPCTalkBox->GetCreatureType() == 653)			// If Kaiser, if Rebecca
 	{
 		char tempstr[128] = {0,};
 			
@@ -4089,7 +4101,7 @@ void		UI_RunQuestList(GCSelectQuestID *pPacket)
 			g_pPCTalkBox->SetContent( (*g_pGameStringTable)[UI_STRING_MESSAGE_SELECT_QUEST_OUSTERS].GetString() );
 		}
 		else
-			return;				// 아우스터즈용 ㅋㅋ
+			return;				// For Ousters lol
 		
 		char str[256];
 		
@@ -4267,12 +4279,12 @@ void		UI_RunItemShop( GCGoodsList *pPacket )
 					break;
 				}
 			}			
-			// 의미 없음
+			// Meaningless
 			pMagazine->ClearItemOption();			
-			// 탄창 개수
+			// Magazine count
 			pMagazine->SetNumber( pInfo->num );			
 			//------------------------------------
-			// 탄창 설정
+			// Set magazine
 			//------------------------------------
 			MGunItem* pGunItem = (MGunItem*)pItem;
 			pGunItem->SetMagazine( pMagazine );
@@ -4307,7 +4319,7 @@ void		UI_CloseTransItem()
 
 void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 {
-	WORD	FirstOption = (parameter & 0xffff0000) >> 16;		// paramter >> 16 하든지-_- ㅋㅋ 
+	WORD	FirstOption = (parameter & 0xffff0000) >> 16;		// Or paramter >> 16 -_- lol
 	WORD	SecondOption = parameter & 0xffff;
 	
 	if( pItem == NULL || pItem2 == NULL || 
@@ -4332,7 +4344,7 @@ void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 		return;		
 	}
 	
-	// 옵션 검증이 끝나면.
+	// Once option verification is finished.
 	
 	MItem* pModifyItem = g_pInventory->GetItem( pItem->GetID() );
 	if(pModifyItem != NULL)
@@ -4350,8 +4362,7 @@ void		UI_OkMixingForge(DWORD parameter, MItem* pItem, MItem* pItem2)
 	//2004,04,27 sobeit set grade add end
 
 	MItem* pRemoveItem = g_pInventory->RemoveItem( pItem2->GetID() );
-	SAFE_DELETE( pRemoveItem );
-	//delete pRemoveItem;	
+	delete pRemoveItem;
 		
 	PlaySound(SOUND_EVENT_FANFARE);
 	gC_vs_ui.CloseMixingForge();	
@@ -4480,8 +4491,8 @@ void		UI_MiniGameScores(GCMiniGameScores* pPacket)
 	BYTE Level = pPacket->getLevel();	
 	int Size = static_cast<int>(pPacket->getSize());
 
-	// Size 가 0이면 아무도 안한것.
-	// 1이면 top score 만 있는것	
+	// If Size is 0, nobody did it.
+	// If 1, there is only the top score
 	
 	switch(Type)
 	{
@@ -4600,7 +4611,7 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 	char szDate[128];
 	switch(sendID)
 	{
-	// 초보자 메세지
+	// Beginner message
 	case 1:
 		FileName = "BeginnerZone";
 //		bOpen = true;
@@ -4612,7 +4623,7 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 		bOpen = true;
 		break;
 
-	// 레벨 전쟁 예고
+	// Level war notice
 	case 3:
 		if(parameter/100000000 != static_cast<DWORD>(GetMyLevelWarStair()))
 			return;
@@ -4621,7 +4632,7 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 		FileName += '0'+GetMyLevelWarStair();
 		break;
 	
-	// 레벨 전쟁 시작
+	// Level war start
 	case 4:
 		if(parameter/100000000 != static_cast<DWORD>(GetMyLevelWarStair()))
 			return;
@@ -4631,18 +4642,18 @@ UI_RunNotice(DWORD sendID, DWORD parameter)
 		bOpen = true;
 		break;
 
-	// 종족 전쟁 예고
+	// Race war notice
 	case 5:
 		FileName = "RaceWar";
 		break;
 
-	// 종족 전쟁 시작
+	// Race war start
 	case 6:
 		FileName = "StartRaceWar";
 		bOpen = true;
 		break;
 
-	// 2차 펫 퀘스트
+	// 2nd pet quest
 	case 7:
 		SafeFormat::Format(szDate, "%02d%02d%02d",	(g_pGameTime->GetYear()+100)%100,
 									g_pGameTime->GetMonth(),
@@ -4760,7 +4771,7 @@ UI_SMS_ERROR(DWORD param)
 void 
 UI_RunModifyTax()
 {
-	// NPC대화하는 dialog를 숨긴다
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.RunModifyTax();
@@ -4803,11 +4814,11 @@ void UI_ShowTargetArrow(int x, int y)
 	gC_vs_ui.DrawTargetArrow(x,y);
 }
 
-// 2005, 1, 3, sobeit add start - 승직 아이템 교환
+// 2005, 1, 3, sobeit add start - promotion item exchange
 void
 UI_Show_Swap_Advancement_Item()
 {
-	// NPC대화하는 dialog를 숨긴다 
+	// Hide the NPC dialog window
 	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.OpenInventoryToSwapAdvanceItem();
@@ -4818,22 +4829,22 @@ bool		UI_IsRunningSwapAdvancementItem()
 }
 // 2005, 1, 3, sobeit add end
 
-// 2005, 1, 11, sobeit add start - 불우 이웃돕기 성금 창
+// 2005, 1, 11, sobeit add start - charity donation window
 void 
 UI_Run_Campaign_Help_Unfortunate_Neighbors(int value)
 {
-	// NPC대화하는 dialog를 숨긴다
+	// Hide the NPC dialog window
 //	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.Run_Campaign_Help_Unfortunate_Neighbors(value);
 }
 // 2005, 1, 11, sobeit add end
 
-// 2005, 1, 24, sobeit add start - 이벤트 아이템 받기
+// 2005, 1, 24, sobeit add start - receive event item
 void 
 UI_Run_Confirm_GetEventItem(int value)
 {
-	// NPC대화하는 dialog를 숨긴다
+	// Hide the NPC dialog window
 //	g_pUIDialog->HidePCTalkDlg();
 
 	gC_vs_ui.Run_Confirm_GetItemEvent(value);
@@ -4896,10 +4907,10 @@ UI_Close_WebBrowser()
 void 
 UI_ShowWindowCursor()
 {
-	// 정상적으로 처리 됐을 경우 TempCount 값이 0이 들어온다.
+	// When processed normally, TempCount comes in as 0.
 	int TempCount = ShowCursor( TRUE );
 		
-	// 혹시라도 있을지 모를 Cursor 관련 에러 방지. ShowCursor가 윈도 내부적으로 중복되기 땜시..
+	// Prevent any possible Cursor-related errors. Because ShowCursor is duplicated internally by Windows.
 	if(TempCount != 0)
 	{
 		int MaxChange = 10;
@@ -4923,10 +4934,10 @@ UI_ShowWindowCursor()
 void 
 UI_HiddenWindowCursor()
 {
-	// 정상적으로 처리 됐을 경우 TempCount 값이 -1이 들어온다.
+	// When processed normally, TempCount comes in as -1.
 	int TempCount = ShowCursor( FALSE );
 
-	// 혹시라도 있을지 모를 Cursor 관련 에러 방지. ShowCursor가 윈도 내부적으로 중복되기 땜시..
+	// Prevent any possible Cursor-related errors. Because ShowCursor is duplicated internally by Windows.
 	if(TempCount != -1)
 	{
 		int MaxChange = 10;
@@ -4948,7 +4959,7 @@ UI_HiddenWindowCursor()
 }
 
 
-#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 藤속관櫓관
+#ifdef __TEST_SUB_INVENTORY__   // add by Coffee 2007-8-9 add the bag in a bag (sub-inventory)
 
 	void UI_RunSubInventory(MItem* pItem)
 	{
