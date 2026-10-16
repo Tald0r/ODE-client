@@ -56,6 +56,7 @@
 #include <fstream>
 #include <iterator>
 #include <memory>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -830,10 +831,14 @@ struct OptionScene
 		g_pUserOption = oldOption;
 		g_pFileDef = oldFiles;
 	}
+	// The file's text, its lines ending in \n on every platform (Windows
+	// writes the options file with \r\n).
 	std::string Saved()
 	{
 		std::ifstream in(kOptionPath, std::ios::binary);
-		return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		text.erase(std::remove(text.begin(), text.end(), '\r'), text.end());
+		return text;
 	}
 };
 } // namespace
