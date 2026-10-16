@@ -56,8 +56,8 @@ public:
 
 private :
 
-	// Guild ID
-	GuildID_t m_GuildID;
+	// Guild ID (the UI's request never sets it)
+	GuildID_t m_GuildID = 0;
 
 	// name
 	std::string m_Name;

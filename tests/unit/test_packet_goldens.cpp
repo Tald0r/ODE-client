@@ -80,6 +80,8 @@
 #include "Cpackets/CGPortCheck.h"
 #include "Cpackets/CGPickupMoney.h"
 #include "Cpackets/CGRelicToObject.h"
+#include "Cpackets/CGRequestGuildMemberList.h"
+#include "Cpackets/CGSelectGuildMember.h"
 #include "Cpackets/CGSkillToInventory.h"
 #include "Cpackets/CGSkillToNamed.h"
 #include "Cpackets/CGSkillToObject.h"
@@ -1354,6 +1356,31 @@ TEST(CGRelicToObject, AFreshPacketWritesZeroCoordinates)
 		p.setItemObjectID(0x8A1B2C3D);
 		p.setObjectID(0x9C2D3E4F);
 	}) == WriteBody(expected, 0));
+}
+
+// The two guild requests' guild id and Eternity's effect id, which their
+// UI handlers never set (test_ui_messages_4.cpp): zero unless set.
+TEST(CGRequestGuildMemberList, AFreshPacketWritesAZeroGuildID)
+{
+	CGRequestGuildMemberList expected;
+	expected.setGuildID(0);
+	CHECK(WrittenOverGarbage<CGRequestGuildMemberList>([](CGRequestGuildMemberList&) {}) == WriteBody(expected, 0));
+}
+
+TEST(CGSelectGuildMember, AFreshPacketWritesAZeroGuildID)
+{
+	CGSelectGuildMember expected;
+	expected.setGuildID(0);
+	expected.setName("Nyxie");
+	CHECK(WrittenOverGarbage<CGSelectGuildMember>([](CGSelectGuildMember& p) { p.setName("Nyxie"); }) == WriteBody(expected, 0));
+}
+
+TEST(CGSkillToSelf, AFreshPacketWritesAZeroEffectID)
+{
+	CGSkillToSelf expected;
+	expected.setSkillType(0x8A1B);
+	expected.setCEffectID(0);
+	CHECK(WrittenOverGarbage<CGSkillToSelf>([](CGSkillToSelf& p) { p.setSkillType(0x8A1B); }) == WriteBody(expected, 0));
 }
 
 //----------------------------------------------------------------------
