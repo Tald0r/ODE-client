@@ -8190,7 +8190,55 @@ rounds settled* for the host rules). Test fixtures share
     `libgamemodel.a(ClientMode.cpp.o)` and `g_oggfile` from
     `libdxlib.a(COGGSTREAM.cpp.o)`.
 
-### Remaining R1 work after tasks 4.80-4.258
+- [x] **4.259 The UI's messages' defects:** what 4.258's tests found
+  unsafe is fixed, each test first.
+  > **Status:** done (2026-10-16).
+  > - Memory and undefined behaviour: `Execute` checks a message against
+  >   its table in every mode, not only in the game; a new character's
+  >   slot or face past the three, an empty slot or one past the three to
+  >   delete or connect, a bonus point button outside the three stats, a
+  >   gear slot at or past the race's gear count, a negative game string
+  >   id and an elevator button past the floor list are refused; an empty
+  >   master name makes no character a master; the login checks its
+  >   socket before it sends; a quick slot without a belt, the buy without
+  >   the NPC's talk box, the UI's item messages with no item, a NULL
+  >   string from the UI and a zone the zone table lacks are taken as
+  >   nothing; chat commands lower their bytes through `unsigned char`.
+  > - The wire: the relic packet's coordinates, the two guild requests'
+  >   guild id and the self skill's effect id start at 0 in their
+  >   constructors, so no indeterminate bytes go out (the server reads
+  >   none of them); the store-info packets are sent only with a store,
+  >   which none has today.
+  > - Exceptions out of `Execute`: a login ID or password the login
+  >   packet cannot carry, an empty guild or ranger line, and a missing
+  >   file name in the options' close are refused or skipped instead of
+  >   thrown.
+  > - Leaks: the registration and ID-check strings on their early
+  >   returns, an item taken off the stall, a friend's name with no game
+  >   UI; a held item dropped past the storage rack stays on the mouse,
+  >   since the server was never told it moved.
+  > - Recorded, not changed: the client-side rules the server checks
+  >   again (prices and star prices, buy counts, money piles, repair and
+  >   silvering checks, trade amounts, the couple, forge and rank-bonus
+  >   rules, popup ids, lottery steps, pet slots, the chat's routing of
+  >   `*` lines); the gear drop that empties the mouse when the gear
+  >   refuses; the handlers that never set the guild id or Eternity's
+  >   effect id; `g_pPCTalkBox` read unchecked in sell, sell all, the
+  >   couple and the swap; `GCRemoveStoreItemHandler`'s undeleted item.
+  >
+  > R1 is unchanged: 9 Windows / 8 Ninja.
+  - Owner: the fixes' tests in `test_ui_messages_1.cpp` to
+    `test_ui_messages_4.cpp` and `test_packet_goldens.cpp`, each seen
+    failing on the code before its fix (an ASan or UBSan report, an
+    exception or a failed check) but the `tolower` one, a regression
+    guard (macOS's libc returns a negative value unchanged).
+  - Mutants: the 100 mutants on the lines the fixes changed:
+    93 caught, 1 did not build, 6 survived. Two are in the friend
+    handlers' game-UI condition, which no test can raise; one moves the
+    message box's lower bound to 1, seen only as a message box for string
+    0; three remove the store-info sends, which no store reaches today.
+
+### Remaining R1 work after tasks 4.80-4.259
 
 The cumulative implementation at `3c72418a` passes all 24 CTest checks,
 including 3,334 unit tests, in local GCC Debug and Clang ASan/UBSan builds.
