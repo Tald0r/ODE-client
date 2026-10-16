@@ -2217,6 +2217,7 @@ struct Hud : Text
 		c.COLOR_HP_BAR_R = 1; c.COLOR_HP_BAR_G = 2; c.COLOR_HP_BAR_B = 3;
 		c.COLOR_HP_BAR_BG_R = 4; c.COLOR_HP_BAR_BG_G = 5; c.COLOR_HP_BAR_BG_B = 6;
 		Access::InitColors(*view);
+		(*this)->m_pSelectedCreature = nullptr;	// the constructor leaves it unset (bug 11)
 		(*this)->m_EtcSPK.Init(SPRITEID_INFO_REQUEST_LAST + 1);
 		for (int id = 0; id <= SPRITEID_INFO_REQUEST_LAST; ++id) LoadSprite((*this)->m_EtcSPK[WORD(id)], id);
 		player = new Me;
