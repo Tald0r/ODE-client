@@ -26,6 +26,7 @@ S_SLOT		MakeCharacterSlot(const char* name, const PCOustersInfo* pInfo);
 // The record's scalars have no initialiser, so it is filled, not made: what
 // the creature does not give (a nameless creature's name, a non-slayer's
 // face) stays as the caller left it.
+// pCreature must not be NULL (UI_RunOtherInfo checks it).
 void		FillOtherInfo(C_VS_UI_OTHER_INFO::PLAYER_INFO& info, MCreature* pCreature);
 
 #endif

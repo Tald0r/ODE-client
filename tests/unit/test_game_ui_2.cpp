@@ -923,6 +923,14 @@ TEST(GameUI2, ASlotPastTheUsersThreeCharacterNamesIsRefused)
 		CHECK(said.empty());
 		CHECK(before == Combat(g_StatusManager));
 	}
+	// A name the server left empty (an MString holds it as NULL) is an
+	// empty name, for each race.
+	g_pUserInformation->Character[1] = "";
+	CHECK(g_pUserInformation->Character[1].GetString() == NULL);
+	CHECK(MakeCharacterSlot(g_pUserInformation->Character[1], &slayer).sz_name.empty());
+	CHECK(MakeCharacterSlot(g_pUserInformation->Character[1], &vampire).sz_name.empty());
+	Stderr([&]() { CHECK(MakeCharacterSlot(g_pUserInformation->Character[1], &ousters).sz_name.empty()); });
+	UI_SetCharacter(1, &slayer);
 	// The first and the last of the three are taken, for each race.
 	for (int slot : {0, 2})
 	{
@@ -966,7 +974,8 @@ struct SentAlignment { Alignment_t sent; int number; ALIGNMENT step; };
 const SentAlignment alignments[] = {
 	{ 65536 - 5000, -5000, UI_EVIL },
 	{ 5000, 5000, UI_GOOD },
-	// Past 10000 and below 32768 is no negative one: past good+.
+	// Past 10000 and below 32768 is no negative one: past good+, where
+	// ConvertAlignment falls through to 0, which is UI_EVIL_PLUS.
 	{ 10001, 10001, UI_EVIL_PLUS },
 };
 

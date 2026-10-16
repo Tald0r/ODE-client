@@ -2159,7 +2159,7 @@ MakeCharacterSlot(const char* name, const PCSlayerInfo* pInfo)
 	// set character
 	S_SLOT slot;
 
-	slot.sz_name = name;
+	slot.sz_name = name != NULL ? name : "";	// an empty MString is NULL
 	slot.sz_guild_name = "";
 	slot.Race = RACE_SLAYER;
 
@@ -2501,7 +2501,7 @@ MakeCharacterSlot(const char* name, const PCVampireInfo* pInfo)
 {
 	S_SLOT slot;
 
-	slot.sz_name = name;
+	slot.sz_name = name != NULL ? name : "";	// an empty MString is NULL
 	slot.sz_guild_name = "";
 //	slot.bl_vampire = true;
 	slot.Race = RACE_VAMPIRE;
@@ -2649,7 +2649,7 @@ MakeCharacterSlot(const char* name, const PCOustersInfo* pInfo)
 {
 	S_SLOT slot;
 
-	slot.sz_name = name;
+	slot.sz_name = name != NULL ? name : "";	// an empty MString is NULL
 	slot.sz_guild_name = "";
 	slot.Race = RACE_OUSTERS;
 
