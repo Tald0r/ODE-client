@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------
 // DrawItemNameNode.h
 //----------------------------------------------------------------------
-// 화면에 String을 출력하기 위한 정보이다.
+// Information for drawing a String on the screen.
 //----------------------------------------------------------------------
 
 #ifndef	__DRAWITEMNAMENODE_H__
@@ -46,7 +46,7 @@ class DRAWITEMNAME_NODE {
 		}
 
 	protected :
-		DWORD			m_Distance;		// player와의 거리
+		DWORD			m_Distance;		// distance from the player
 		TYPE_OBJECTID	m_ID;			// Item ID
 		MItem*			m_pItem;		// item
 		RECT			m_Rect;

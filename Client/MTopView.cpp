@@ -10913,14 +10913,14 @@ MTopView::UpdateImageObject(const POINT &newFirstSector)
 //----------------------------------------------------------------------
 // Draw Zone
 //----------------------------------------------------------------------
-// Pixel 좌표인 (Xp, Yp)가 
-//       화면의 (0, 0)에 오도록 하여 나머지 부분을 출력한다.
+// The Pixel coordinate (Xp, Yp)
+//       is placed at the screen's (0, 0), and the remaining part is drawn.
 //
-// pSurface의 (X,Y)에 Zone의 (Xp,Yp)부분부터 출력한다.
+// Draw onto pSurface at (X,Y) starting from the Zone's (Xp,Yp).
 //----------------------------------------------------------------------
 //
-// 이전에 출력한 Tile을 이용해서 현재 Tile을 구성해준 뒤,
-// 다른 Object를 출력한다.
+// Build the current Tile from the previously drawn Tile,
+// then draw the other Objects.
 //
 //----------------------------------------------------------------------
 void	
@@ -10931,18 +10931,18 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	#endif
 
 	//-------------------------------------------------
-	// ItemName list를 지워준다.
+	// Clear the ItemName list.
 	//-------------------------------------------------
 	ClearItemNameList();	
 
 
-	// mouse로 선택된 캐릭터..
+	// Character selected with the mouse..
 	m_pSelectedCreature = NULL;
 
 
 	//-------------------------------------------------
 	//
-	// Object를 출력하기 위한 정보
+	// Information for drawing Objects
 	//
 	//-------------------------------------------------
 	// pointer variable
@@ -10958,13 +10958,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	int i;
 
 	//-------------------------------------------------
-	// Player를 가리는 ImageObject들에 대한 정보
+	// Information about the ImageObjects covering the Player
 	//-------------------------------------------------
 
 
 	//-------------------------------------------------
-	// 첫 Sector가 출력될 좌표 보정(smooth scroll을 위해서)
-	// Player의 좌표를 중심으로 해서 정한다.
+	// Correct the coordinates where the first Sector is drawn (for smooth scrolling)
+	// Determined with the Player's coordinates as the center.
 	//-------------------------------------------------
 	m_PlusPoint.x = g_pPlayer->GetSX() - firstPointX;
 	m_PlusPoint.y = g_pPlayer->GetSY() - firstPointY;
@@ -10973,20 +10973,20 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//---------------------------------------------------------------	
-	// firstPoint에 출력될 Zone에서의 첫번째 Sector
+	// First Sector in the Zone to be drawn at firstPoint
 	//---------------------------------------------------------------	
-	// Player를 중심으로 해서 출력해야하기 때문에
-	// 왼쪽~~~~ 위~ 부터 출력한다.
+	// Because drawing must be centered on the Player,
+	// draw from the left~~~~ top~.
 	//---------------------------------------------------------------	
 	POINT	firstSector;
 	firstSector.x = g_pPlayer->GetX() + g_SECTOR_SKIP_PLAYER_LEFT;
 	firstSector.y = g_pPlayer->GetY() + g_SECTOR_SKIP_PLAYER_UP;
 
 	//---------------------------------------------------------------	
-	// Zone의 경계에 갔을 때,
-	// 검은 부분 안 보이게 하기..
+	// When at the Zone's border,
+	// keep the black part from showing..
 	//---------------------------------------------------------------	
-	// X 좌표 맞추기..
+	// Adjust the X coordinate..
 	//---------------------------------------------------------------	
 	if (firstSector.x <= 0)
 	{
@@ -11026,7 +11026,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	}
 
 	//---------------------------------------------------------------	
-	// Y 좌표 맞추기
+	// Adjust the Y coordinate
 	//---------------------------------------------------------------	
 	if (firstSector.y <= 0)
 	{
@@ -11066,7 +11066,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	}
 
 	//---------------------------------------------------------------
-	// 새로 나타나거나 화면에서 없어지는 ImageObject검색
+	// Search for ImageObjects that newly appear or disappear from the screen
 	//---------------------------------------------------------------
 	// 2001.8.22
 
@@ -11078,13 +11078,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//---------------------------------------------------------------
-	// 외부에서 필요한 정보를 생성..
-	// 화면 상의 첫 위치에 출력되는 Sector의 좌표
+	// Create the information needed from outside..
+	// Coordinates of the Sector drawn at the first position on the screen
 	//---------------------------------------------------------------
 	m_FirstSector	= firstSector;	
 
 	//---------------------------------------------------------------
-	// 화면의 (0,0)이 나타내는 Zone의 Pixel좌표
+	// Zone Pixel coordinates that the screen's (0,0) represents
 	//---------------------------------------------------------------
 	m_FirstZonePixel = MapToPixel(firstSector.x, firstSector.y);
 	m_FirstZonePixel.x += m_PlusPoint.x;
@@ -11092,7 +11092,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//---------------------------------------------------------------
-	// Player를 가리는 ImageObject들을 처리할 Filter의 출력 좌표
+	// Output coordinates of the Filter that handles the ImageObjects covering the Player
 	//---------------------------------------------------------------
 	m_FilterPosition.x = g_pPlayer->GetPixelX() - m_FirstZonePixel.x - (m_ImageObjectFilter.GetWidth()>>1) + 24;
 	m_FilterPosition.y = g_pPlayer->GetPixelY() - m_FirstZonePixel.y - (m_ImageObjectFilter.GetHeight()>>1) 
@@ -11104,19 +11104,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//short	sX,
 	//		sY = (short)firstSector.y;
 
-	// 출력할 Surface상의 위치	
+	// Position on the Surface to draw to
 	tilePoint.y = firstPointY;
 
 
 	//--------------------------------------------------
-	// TileSurface의 영역 : m_TileSurfaceFirstPixelXY 
+	// TileSurface area : m_TileSurfaceFirstPixelXY
 	//                      + (TILESURFACE_WIDTH+ TILESURFACE_HEIGHT)
 	//
-	// 현재 화면의 영역   : m_FirstZonePixel + (800,600)
+	// Current screen area   : m_FirstZonePixel + (800,600)
 	//--------------------------------------------------
 	//
-	// 현재 화면 영역이 TileSurface에 속하면 
-	// TileSurface의 일부를 그대로 이용하면 된다.
+	// If the current screen area lies within the TileSurface,
+	// part of the TileSurface can be used as it is.
 	//
 	//
 	//--------------------------------------------------
@@ -11126,30 +11126,30 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	RECT rectScreen;
 	RECT	rectReuse;
 
-	// TileSurface의 Zone에서의 영역
+	// Area of the TileSurface in the Zone
 	rectTileSurface.left	= m_TileSurfaceFirstZonePixelX;
 	rectTileSurface.top		= m_TileSurfaceFirstZonePixelY;
 	rectTileSurface.right	= m_TileSurfaceFirstZonePixelX + g_TILESURFACE_WIDTH;
 	rectTileSurface.bottom	= m_TileSurfaceFirstZonePixelY + g_TILESURFACE_HEIGHT;
 
-	// 현재 화면의 영역
+	// Area of the current screen
 	rectScreen.left		= m_FirstZonePixel.x;
 	rectScreen.top		= m_FirstZonePixel.y;
 	rectScreen.right	= m_FirstZonePixel.x + g_GameRect.right;
 	rectScreen.bottom	= m_FirstZonePixel.y + g_GameRect.bottom;
 
-	// 현재 화면 출력에 이용할 TileSurface의 영역을 정한다.
-	// 화면의 (0,0)이 될 TileSurface에서의 첫 점
+	// Decide the area of the TileSurface to use for drawing the current screen.
+	// First point in the TileSurface that will be the screen's (0,0)
 	rectReuse.left		= rectScreen.left - rectTileSurface.left;
 	rectReuse.top		= rectScreen.top - rectTileSurface.top;
 	rectReuse.right		= rectReuse.left + g_GameRect.right;
 	rectReuse.bottom	= rectReuse.top + g_GameRect.bottom;
 
 	//----------------------------------------------------------------	
-	// rectReuse를 제외한 부분은 검은색으로 칠해줘야 한다.
+	// The part other than rectReuse must be painted black.
 	//----------------------------------------------------------------
 	/*
-	// 위쪽
+	// Top
 	if (rectReuse.top != 0)
 	{
 		rect.left = 0;
@@ -11160,7 +11160,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		m_pSurface->FillRect(&rect, 0);
 	}
 
-	// 아래쪽
+	// Bottom
 	if (rectReuse.bottom != SURFACE_HEIGHT)
 	{
 		rect.left = 0;
@@ -11171,7 +11171,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		m_pSurface->FillRect(&rect, 0);
 	}
 
-	// 왼쪽
+	// Left
 	if (rectReuse.left != 0)
 	{
 		rect.left = 0;
@@ -11182,7 +11182,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		m_pSurface->FillRect(&rect, 0);
 	}
 
-	// 오른쪽
+	// Right
 	if (rectReuse.right != SURFACE_WIDTH)
 	{
 		rect.left = rectReuse.right;
@@ -11197,9 +11197,9 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//--------------------------------------------------
-	// TileSurface를 그대로 쓸 수 있는지 체크한다.
+	// Check whether the TileSurface can be used as it is.
 	//--------------------------------------------------
-	// 부족한 부분 표시	
+	// Mark the insufficient part
 	BYTE bLack = 0;
 
 	int leftGap = rectScreen.left - rectTileSurface.left;
@@ -11215,14 +11215,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//---------------------------------------------------------------------
 	//
-	// 현재 화면이 TileSurface에 속하는 경우
+	// When the current screen lies within the TileSurface
 	//
 	//---------------------------------------------------------------------
 	if (bLack==0)
 	{
 		//....
 		//---------------------------------------------------------------
-		// 새로 나타나거나 화면에서 없어지는 ImageObject검색
+		// Search for ImageObjects that newly appear or disappear from the screen
 		//---------------------------------------------------------------
 		// 2001.8.22
 		//UpdateImageObject(firstSector);	
@@ -11231,7 +11231,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	/*
 	//---------------------------------------------------------------------
 	//
-	// 너무 많이 갱신해야하는 경우
+	// When too much must be updated
 	//
 	//---------------------------------------------------------------------
 	else if (abs(leftGap) >= (TILE_X<<2)
@@ -11245,7 +11245,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		m_mapImageObject.clear();
 		m_mapCreature.clear();
 
-		// Tile전체를 다시 그려준다.
+		// Redraw all the Tiles.
 		DrawTileSurface();
 
 		DetermineImageObject();		
@@ -11257,19 +11257,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	*/
 	//---------------------------------------------------------------------
 	//
-	// 현재 화면이 TileSurface에 속하지 않는 경우
+	// When the current screen does not lie within the TileSurface
 	//
 	//---------------------------------------------------------------------
 	else
 	{
 		//---------------------------------------------------------------
-		// 새로 나타나거나 화면에서 없어지는 ImageObject검색
+		// Search for ImageObjects that newly appear or disappear from the screen
 		//---------------------------------------------------------------
 		// 2001.8.22
 		//UpdateImageObject(firstSector);	
 
 		//----------------------------------------
-		// 부분적으로만 갱신하는데 필요한 정보
+		// Information needed to update only partially
 		//----------------------------------------
 		BYTE	changeCount = 0;	// 1 or 2
 		int		sX1[2], sX2[2], sY1[2], sY2[2];
@@ -11282,14 +11282,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		if (bLack & FLAG_TILESURFACE_LACK_LEFT)
 		{
 			//--------------------------
-			// LEFT + UP 부족
+			// LEFT + UP insufficient
 			//--------------------------
 			if (bLack & FLAG_TILESURFACE_LACK_UP)
 			{
 				//--------------------------------------------------
-				// 이전 Tile Surface에서
-				// 다시 구성할려는 Tile Surface에서 사용할 수 
-				// 있는 부분을 남겨둔다.			
+				// From the previous Tile Surface,
+				// keep the part that can be used
+				// in the Tile Surface being rebuilt.
 				//--------------------------------------------------
 				point.x = TILESURFACE_OUTLINE_LEFT;
 				point.y = TILESURFACE_OUTLINE_UP;
@@ -11301,16 +11301,16 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//--------------------------------------------------
 				//
-				// 부족한 부분을 그려준다.
+				// Draw the insufficient part.
 				//
 				//--------------------------------------------------				
 
 				changeCount = 2;
 
 				//--------------------------------------------------
-				// Left부분
+				// Left part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[0] = m_TileSurfaceFirstSectorX - TILESURFACE_SECTOR_EDGE;
 				sY1[0] = m_TileSurfaceFirstSectorY - TILESURFACE_SECTOR_EDGE;
@@ -11318,15 +11318,15 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[0] = sY1[0] + g_TILESURFACE_SECTOR_HEIGHT;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[0].x = 0;
 				firstTilePoint[0].y = 0;
 
 				//--------------------------------------------------
-				// Up부분
+				// Up part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[1] = m_TileSurfaceFirstSectorX - TILESURFACE_SECTOR_EDGE;
 				sY1[1] = m_TileSurfaceFirstSectorY - TILESURFACE_SECTOR_EDGE;
@@ -11334,14 +11334,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[1] = sY1[1] + TILESURFACE_SECTOR_EDGE;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[1].x = 0;
 				firstTilePoint[1].y = 0;
 
 
 				//--------------------------------------------------
-				// 출력에 사용할 TileSurface 영역 다시 설정
+				// Reset the TileSurface area to use for drawing
 				//--------------------------------------------------
 				rectReuse.left += TILESURFACE_OUTLINE_LEFT;
 				rectReuse.right += TILESURFACE_OUTLINE_LEFT;
@@ -11349,7 +11349,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				rectReuse.bottom += TILESURFACE_OUTLINE_UP;
 
 				//--------------------------------------------------
-				// 갱신된 TileSurface에 대한 좌표 설정
+				// Set the coordinates for the updated TileSurface
 				//--------------------------------------------------
 				m_TileSurfaceFirstSectorX -= TILESURFACE_SECTOR_EDGE;
 				m_TileSurfaceFirstZonePixelX -= TILESURFACE_OUTLINE_LEFT;
@@ -11357,14 +11357,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				m_TileSurfaceFirstZonePixelY -= TILESURFACE_OUTLINE_UP;
 			}			
 			//--------------------------
-			// LEFT + DOWN 부족
+			// LEFT + DOWN insufficient
 			//--------------------------
 			else if (bLack & FLAG_TILESURFACE_LACK_DOWN)
 			{
 				//--------------------------------------------------
-				// 이전 Tile Surface에서
-				// 다시 구성할려는 Tile Surface에서 사용할 수 
-				// 있는 부분을 남겨둔다.			
+				// From the previous Tile Surface,
+				// keep the part that can be used
+				// in the Tile Surface being rebuilt.
 				//--------------------------------------------------
 				point.x = TILESURFACE_OUTLINE_LEFT;
 				point.y = 0;
@@ -11376,16 +11376,16 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//--------------------------------------------------
 				//
-				// 부족한 부분을 그려준다.
+				// Draw the insufficient part.
 				//
 				//--------------------------------------------------
 
 				changeCount = 2;
 
 				//--------------------------------------------------
-				// Left부분
+				// Left part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[0] = m_TileSurfaceFirstSectorX - TILESURFACE_SECTOR_EDGE;
 				sY1[0] = m_TileSurfaceFirstSectorY + TILESURFACE_SECTOR_EDGE;
@@ -11393,15 +11393,15 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[0] = sY1[0] + g_TILESURFACE_SECTOR_HEIGHT;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[0].x = 0;
 				firstTilePoint[0].y = 0;
 
 				//--------------------------------------------------
-				// Down부분
+				// Down part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[1] = m_TileSurfaceFirstSectorX - TILESURFACE_SECTOR_EDGE;
 				sY1[1] = m_TileSurfaceFirstSectorY + g_TILESURFACE_SECTOR_HEIGHT;
@@ -11409,13 +11409,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[1] = sY1[1] + TILESURFACE_SECTOR_EDGE;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[1].x = 0;
 				firstTilePoint[1].y = g_TILESURFACE_OUTLINE_DOWN;
 
 				//--------------------------------------------------
-				// 출력에 사용할 TileSurface 영역 다시 설정
+				// Reset the TileSurface area to use for drawing
 				//--------------------------------------------------
 				rectReuse.left += TILESURFACE_OUTLINE_LEFT;
 				rectReuse.right += TILESURFACE_OUTLINE_LEFT;
@@ -11423,7 +11423,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				rectReuse.bottom -= TILESURFACE_OUTLINE_UP;
 
 				//--------------------------------------------------
-				// 갱신된 TileSurface에 대한 좌표 설정
+				// Set the coordinates for the updated TileSurface
 				//--------------------------------------------------
 				m_TileSurfaceFirstSectorX -= TILESURFACE_SECTOR_EDGE;
 				m_TileSurfaceFirstZonePixelX -= TILESURFACE_OUTLINE_LEFT;
@@ -11431,14 +11431,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				m_TileSurfaceFirstZonePixelY += TILESURFACE_OUTLINE_UP;
 			}
 			//--------------------------
-			// LEFT 부족
+			// LEFT insufficient
 			//--------------------------
 			else
 			{
 				//--------------------------------------------------
-				// 이전 Tile Surface에서
-				// 다시 구성할려는 Tile Surface에서 사용할 수 
-				// 있는 부분을 남겨둔다.			
+				// From the previous Tile Surface,
+				// keep the part that can be used
+				// in the Tile Surface being rebuilt.
 				//--------------------------------------------------
 				point.x = TILESURFACE_OUTLINE_LEFT;
 				point.y = 0;
@@ -11450,14 +11450,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//--------------------------------------------------
 				//
-				// 부족한 부분을 그려준다.
+				// Draw the insufficient part.
 				//
 				//--------------------------------------------------
 
 				changeCount = 1;
 
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[0] = m_TileSurfaceFirstSectorX - TILESURFACE_SECTOR_EDGE;
 				sY1[0] = m_TileSurfaceFirstSectorY;
@@ -11465,19 +11465,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[0] = sY1[0] + g_TILESURFACE_SECTOR_HEIGHT;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[0].x = 0;
 				firstTilePoint[0].y = 0;
 
 				//--------------------------------------------------
-				// 출력에 사용할 TileSurface 영역 다시 설정
+				// Reset the TileSurface area to use for drawing
 				//--------------------------------------------------
 				rectReuse.left += TILESURFACE_OUTLINE_LEFT;
 				rectReuse.right += TILESURFACE_OUTLINE_LEFT;
 
 				//--------------------------------------------------
-				// 갱신된 TileSurface에 대한 좌표 설정
+				// Set the coordinates for the updated TileSurface
 				//--------------------------------------------------
 				m_TileSurfaceFirstSectorX -= TILESURFACE_SECTOR_EDGE;
 				m_TileSurfaceFirstZonePixelX -= TILESURFACE_OUTLINE_LEFT;
@@ -11489,14 +11489,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		else if (bLack & FLAG_TILESURFACE_LACK_RIGHT)
 		{
 			//--------------------------
-			// RIGHT + UP 부족
+			// RIGHT + UP insufficient
 			//--------------------------
 			if (bLack & FLAG_TILESURFACE_LACK_UP)
 			{
 				//--------------------------------------------------
-				// 이전 Tile Surface에서
-				// 다시 구성할려는 Tile Surface에서 사용할 수 
-				// 있는 부분을 남겨둔다.			
+				// From the previous Tile Surface,
+				// keep the part that can be used
+				// in the Tile Surface being rebuilt.
 				//--------------------------------------------------
 				point.x = 0;
 				point.y = TILESURFACE_OUTLINE_UP;
@@ -11508,16 +11508,16 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//--------------------------------------------------
 				//
-				// 부족한 부분을 그려준다.
+				// Draw the insufficient part.
 				//
 				//--------------------------------------------------
 
 				changeCount = 2;
 
 				//--------------------------------------------------
-				// Right부분
+				// Right part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[0] = m_TileSurfaceFirstSectorX + g_TILESURFACE_SECTOR_WIDTH;
 				sY1[0] = m_TileSurfaceFirstSectorY - TILESURFACE_SECTOR_OUTLINE_UP;
@@ -11525,15 +11525,15 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[0] = sY1[0] + g_TILESURFACE_SECTOR_HEIGHT;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[0].x = g_TILESURFACE_OUTLINE_RIGHT;
 				firstTilePoint[0].y = 0;
 
 				//--------------------------------------------------
-				// UP부분
+				// UP part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[1] = m_TileSurfaceFirstSectorX + TILESURFACE_SECTOR_OUTLINE_LEFT;
 				sY1[1] = m_TileSurfaceFirstSectorY - TILESURFACE_SECTOR_EDGE;
@@ -11541,13 +11541,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[1] = sY1[1] + TILESURFACE_SECTOR_EDGE;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[1].x = 0;
 				firstTilePoint[1].y = 0;
 
 				//--------------------------------------------------
-				// 출력에 사용할 TileSurface 영역 다시 설정
+				// Reset the TileSurface area to use for drawing
 				//--------------------------------------------------
 				rectReuse.left -= TILESURFACE_OUTLINE_LEFT;
 				rectReuse.right -= TILESURFACE_OUTLINE_LEFT;
@@ -11555,7 +11555,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				rectReuse.bottom += TILESURFACE_OUTLINE_UP;
 
 				//--------------------------------------------------
-				// 갱신된 TileSurface에 대한 좌표 설정
+				// Set the coordinates for the updated TileSurface
 				//--------------------------------------------------
 				m_TileSurfaceFirstSectorX += TILESURFACE_SECTOR_EDGE;
 				m_TileSurfaceFirstZonePixelX += TILESURFACE_OUTLINE_LEFT;
@@ -11563,14 +11563,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				m_TileSurfaceFirstZonePixelY -= TILESURFACE_OUTLINE_UP;
 			}
 			//--------------------------
-			// RIGHT + DOWN 부족
+			// RIGHT + DOWN insufficient
 			//--------------------------
 			else if (bLack & FLAG_TILESURFACE_LACK_DOWN)
 			{
 				//--------------------------------------------------
-				// 이전 Tile Surface에서
-				// 다시 구성할려는 Tile Surface에서 사용할 수 
-				// 있는 부분을 남겨둔다.			
+				// From the previous Tile Surface,
+				// keep the part that can be used
+				// in the Tile Surface being rebuilt.
 				//--------------------------------------------------
 				point.x = 0;
 				point.y = 0;
@@ -11582,16 +11582,16 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//--------------------------------------------------
 				//
-				// 부족한 부분을 그려준다.
+				// Draw the insufficient part.
 				//
 				//--------------------------------------------------
 
 				changeCount = 2;
 
 				//--------------------------------------------------
-				// Right부분
+				// Right part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[0] = m_TileSurfaceFirstSectorX + g_TILESURFACE_SECTOR_WIDTH;
 				sY1[0] = m_TileSurfaceFirstSectorY + TILESURFACE_SECTOR_OUTLINE_UP;
@@ -11599,15 +11599,15 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[0] = sY1[0] + g_TILESURFACE_SECTOR_HEIGHT;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[0].x = g_TILESURFACE_OUTLINE_RIGHT;
 				firstTilePoint[0].y = 0;
 
 				//--------------------------------------------------
-				// Down부분
+				// Down part
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[1] = m_TileSurfaceFirstSectorX + TILESURFACE_SECTOR_OUTLINE_LEFT;
 				sY1[1] = m_TileSurfaceFirstSectorY + g_TILESURFACE_SECTOR_HEIGHT;
@@ -11615,13 +11615,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[1] = sY1[1] + TILESURFACE_SECTOR_EDGE;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[1].x = 0;
 				firstTilePoint[1].y = g_TILESURFACE_OUTLINE_DOWN;
 
 				//--------------------------------------------------
-				// 출력에 사용할 TileSurface 영역 다시 설정
+				// Reset the TileSurface area to use for drawing
 				//--------------------------------------------------
 				rectReuse.left -= TILESURFACE_OUTLINE_LEFT;
 				rectReuse.right -= TILESURFACE_OUTLINE_LEFT;
@@ -11629,7 +11629,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				rectReuse.bottom -= TILESURFACE_OUTLINE_UP;
 
 				//--------------------------------------------------
-				// 갱신된 TileSurface에 대한 좌표 설정
+				// Set the coordinates for the updated TileSurface
 				//--------------------------------------------------
 				m_TileSurfaceFirstSectorX += TILESURFACE_SECTOR_EDGE;
 				m_TileSurfaceFirstZonePixelX += TILESURFACE_OUTLINE_LEFT;
@@ -11637,14 +11637,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				m_TileSurfaceFirstZonePixelY += TILESURFACE_OUTLINE_UP;
 			}
 			//--------------------------
-			// RIGHT 부족
+			// RIGHT insufficient
 			//--------------------------
 			else
 			{
 				//--------------------------------------------------
-				// 이전 Tile Surface에서
-				// 다시 구성할려는 Tile Surface에서 사용할 수 
-				// 있는 부분을 남겨둔다.			
+				// From the previous Tile Surface,
+				// keep the part that can be used
+				// in the Tile Surface being rebuilt.
 				//--------------------------------------------------
 				point.x = 0;
 				point.y = 0;
@@ -11656,14 +11656,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//--------------------------------------------------
 				//
-				// 부족한 부분을 그려준다.
+				// Draw the insufficient part.
 				//
 				//--------------------------------------------------
 
 				changeCount = 1;
 
 				//--------------------------------------------------
-				// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+				// Draw sectors (sX1,sY) ~ (sX2, sY2)
 				//--------------------------------------------------			
 				sX1[0] = m_TileSurfaceFirstSectorX + g_TILESURFACE_SECTOR_WIDTH;
 				sY1[0] = m_TileSurfaceFirstSectorY;
@@ -11671,33 +11671,33 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[0] = sY1[0] + g_TILESURFACE_SECTOR_HEIGHT;
 
 				//--------------------------------------------------
-				// 첫번째 출력 좌표
+				// First output coordinates
 				//--------------------------------------------------
 				firstTilePoint[0].x = g_TILESURFACE_OUTLINE_RIGHT;
 				firstTilePoint[0].y = 0;
 
 				//--------------------------------------------------
-				// 출력에 사용할 TileSurface 영역 다시 설정
+				// Reset the TileSurface area to use for drawing
 				//--------------------------------------------------
 				rectReuse.left -= TILESURFACE_OUTLINE_LEFT;
 				rectReuse.right -= TILESURFACE_OUTLINE_LEFT;
 
 				//--------------------------------------------------
-				// 갱신된 TileSurface에 대한 좌표 설정
+				// Set the coordinates for the updated TileSurface
 				//--------------------------------------------------
 				m_TileSurfaceFirstSectorX += TILESURFACE_SECTOR_EDGE;
 				m_TileSurfaceFirstZonePixelX += TILESURFACE_OUTLINE_LEFT;
 			}
 		}
 		//--------------------------
-		// UP 부족
+		// UP insufficient
 		//--------------------------
 		else if (bLack & FLAG_TILESURFACE_LACK_UP)
 		{
 			//--------------------------------------------------
-			// 이전 Tile Surface에서
-			// 다시 구성할려는 Tile Surface에서 사용할 수 
-			// 있는 부분을 남겨둔다.			
+			// From the previous Tile Surface,
+			// keep the part that can be used
+			// in the Tile Surface being rebuilt.
 			//--------------------------------------------------
 			point.x = 0;
 			point.y = TILESURFACE_OUTLINE_UP;
@@ -11709,14 +11709,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 			//--------------------------------------------------
 			//
-			// 부족한 부분을 그려준다.
+			// Draw the insufficient part.
 			//
 			//--------------------------------------------------
 
 			changeCount = 1;
 
 			//--------------------------------------------------
-			// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+			// Draw sectors (sX1,sY) ~ (sX2, sY2)
 			//--------------------------------------------------			
 			sX1[0] = m_TileSurfaceFirstSectorX;
 			sY1[0] = m_TileSurfaceFirstSectorY - TILESURFACE_SECTOR_EDGE;
@@ -11724,32 +11724,32 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			sY2[0] = sY1[0] + TILESURFACE_SECTOR_EDGE;
 
 			//--------------------------------------------------
-			// 첫번째 출력 좌표
+			// First output coordinates
 			//--------------------------------------------------
 			firstTilePoint[0].x = 0;
 			firstTilePoint[0].y = 0;
 
 			//--------------------------------------------------
-			// 출력에 사용할 TileSurface 영역 다시 설정
+			// Reset the TileSurface area to use for drawing
 			//--------------------------------------------------
 			rectReuse.top += TILESURFACE_OUTLINE_UP;
 			rectReuse.bottom += TILESURFACE_OUTLINE_UP;
 
 			//--------------------------------------------------
-			// 갱신된 TileSurface에 대한 좌표 설정
+			// Set the coordinates for the updated TileSurface
 			//--------------------------------------------------
 			m_TileSurfaceFirstSectorY -= TILESURFACE_SECTOR_EDGE;
 			m_TileSurfaceFirstZonePixelY -= TILESURFACE_OUTLINE_UP;
 		}
 		//--------------------------
-		// DOWN 부족
+		// DOWN insufficient
 		//--------------------------
 		else if (bLack & FLAG_TILESURFACE_LACK_DOWN)
 		{
 			//--------------------------------------------------
-			// 이전 Tile Surface에서
-			// 다시 구성할려는 Tile Surface에서 사용할 수 
-			// 있는 부분을 남겨둔다.			
+			// From the previous Tile Surface,
+			// keep the part that can be used
+			// in the Tile Surface being rebuilt.
 			//--------------------------------------------------
 			point.x = 0;
 			point.y = 0;
@@ -11761,14 +11761,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 			//--------------------------------------------------
 			//
-			// 부족한 부분을 그려준다.
+			// Draw the insufficient part.
 			//
 			//--------------------------------------------------
 
 			changeCount = 1;
 
 			//--------------------------------------------------
-			// 출력할 sector (sX1,sY) ~ (sX2, sY2)까지 출력
+			// Draw sectors (sX1,sY) ~ (sX2, sY2)
 			//--------------------------------------------------			
 			sX1[0] = m_TileSurfaceFirstSectorX;
 			sY1[0] = m_TileSurfaceFirstSectorY + g_TILESURFACE_SECTOR_HEIGHT;
@@ -11776,19 +11776,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			sY2[0] = sY1[0] + TILESURFACE_SECTOR_EDGE;
 
 			//--------------------------------------------------
-			// 첫번째 출력 좌표
+			// First output coordinates
 			//--------------------------------------------------
 			firstTilePoint[0].x = 0;
 			firstTilePoint[0].y = g_TILESURFACE_OUTLINE_DOWN;
 
 			//--------------------------------------------------
-			// 출력에 사용할 TileSurface 영역 다시 설정
+			// Reset the TileSurface area to use for drawing
 			//--------------------------------------------------
 			rectReuse.top -= TILESURFACE_OUTLINE_UP;
 			rectReuse.bottom -= TILESURFACE_OUTLINE_UP;
 
 			//--------------------------------------------------
-			// 갱신된 TileSurface에 대한 좌표 설정
+			// Set the coordinates for the updated TileSurface
 			//--------------------------------------------------
 			m_TileSurfaceFirstSectorY += TILESURFACE_SECTOR_EDGE;
 			m_TileSurfaceFirstZonePixelY += TILESURFACE_OUTLINE_UP;
@@ -11797,7 +11797,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 		//------------------------------------------------------
 		//
-		//   부분적으로 Tile들을 갱신하기..
+		//   Update the Tiles partially..
 		//
 		//------------------------------------------------------
 		int n;
@@ -11805,11 +11805,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		{			
 
 			//------------------------------------------------------
-			// Zone의 영역이 아닌 경우에 Skip...
+			// Skip when outside the Zone area...
 			//------------------------------------------------------
 			if (sX1[n] < 0) 
 			{	
-				// Zone외곽 부분은 검은색으로 칠한다.
+				// Paint the part outside the Zone black.
 				rect.left = firstTilePoint[n].x;
 				rect.top = 0;	
 
@@ -11827,7 +11827,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			{
 				sX2[n] = m_pZone->GetWidth();//-1;				
 
-				// Zone외곽 부분은 검은색으로 칠한다.
+				// Paint the part outside the Zone black.
 				rect.left = firstTilePoint[n].x + (sX2[n]-sX1[n])*TILE_X;
 				rect.top = 0;					
 				rect.right = g_TILESURFACE_WIDTH;
@@ -11838,7 +11838,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 			if (sY1[n] < 0)
 			{
-				// Zone외곽 부분은 검은색으로 칠한다.
+				// Paint the part outside the Zone black.
 				rect.left = firstTilePoint[n].x;
 				rect.top = firstTilePoint[n].y;	
 
@@ -11853,7 +11853,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 			if (sY2[n] > m_pZone->GetHeight())
 			{
-				// Zone외곽 부분은 검은색으로 칠한다.
+				// Paint the part outside the Zone black.
 				rect.left = firstTilePoint[n].x;
 				rect.top = firstTilePoint[n].y;					
 				rect.right = firstTilePoint[n].x + (sX2[n]-sX1[n])*TILE_X;
@@ -11863,7 +11863,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				sY2[n] = m_pZone->GetHeight();//-1;
 			}
 
-			// 첫번째 줄			
+			// First row
 
 			//---------------------------------------
 			// LOCK
@@ -11943,19 +11943,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	int sX1, sX2, sY1, sY2;	
 
 	//------------------------------------------------------
-	// Object를 출력하기 위한 화면 좌표 설정
+	// Set the screen coordinates for drawing Objects
 	//------------------------------------------------------
 	sX1 = firstSector.x + SECTOR_SKIP_LEFT;
 	sY1 = firstSector.y + SECTOR_SKIP_UP;
 	sX2 = firstSector.x + g_SECTOR_WIDTH;
 	sY2 = firstSector.y + g_SECTOR_HEIGHT;
 
-	// 출력할 Surface상의 위치
+	// Position on the Surface to draw to
 	tilePoint.x = firstPointX + TILE_X*SECTOR_SKIP_LEFT;
 	tilePoint.y = firstPointY + TILE_Y*SECTOR_SKIP_UP;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip when outside the Zone area...
 	//------------------------------------------------------
 	if (sX1 < 0) 
 	{					
@@ -11983,7 +11983,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	//
-	//                  Object 출력
+	//                  Object output
 	//
 	//------------------------------------------------------
 
@@ -11996,7 +11996,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 // 2004, 03, 24, sobeit start
 	//------------------------------------------------------
-	// Creature OutputMap을 생성한다.
+	// Create the Creature OutputMap.
 	//------------------------------------------------------
 	__BEGIN_PROFILE("AddOutputCreature")
 
@@ -12022,12 +12022,12 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 		{
-			// 출력 시점이 sY1보다 적은 경우..는 출력
-			// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+			// Draw when the output viewpoint is less than sY1..
+			// Fit the picture's coordinates to the current screen's coordinates
 			point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 			point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
-			// 밝기를 결정한다.
+			// Decide the brightness.
 			//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 			DrawCreature(&point, pCreature);//, DarkBits);
@@ -12038,32 +12038,32 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 // 2004, 03, 24, sobeit end
 
 
-	// Surface의 정보를 저장해둔다.
+	// Save the Surface information.
 	//SetSurfaceInfo(&m_SurfaceInfo, m_pSurface->GetDDSD());
 
 	//------------------------------------------------------
 	//
-	//			바닥 오브젝트 출력
+	//			Floor object output
 	//
 	//------------------------------------------------------	
 	//------------------------------------------------------
-	// 출력대상이 되는 ImageObject Iterator
+	// ImageObject Iterator that is the output target
 	//------------------------------------------------------
 	IMAGEOBJECT_OUTPUT_MAP::const_iterator iImageObjectOutput0 = m_mapImageObject.begin();
 
 	//------------------------------------------------------
-	// 출력 시점이 0 즉 바닥 오브젝트인
-	// ImageObject들을 출력한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// For output viewpoint 0, i.e. floor objects,
+	// draw the ImageObjects.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput0 != m_mapImageObject.end())
 	{
 		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput0).second);
 
-		// 출력 시점이 0인경우 경우..는 출력
+		// Draw when the output viewpoint is 0..
 		if (pImageObject->GetViewpoint() == 0)
 		{
-			// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+			// Fit the picture's coordinates to the current screen's coordinates
 			point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
 			point.y = pImageObject->GetPixelY() - m_FirstZonePixel.y;
 
@@ -12076,17 +12076,17 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	//
-	//			Ground Effect 출력
+	//			Ground Effect output
 	//
 	//------------------------------------------------------	
-	// player가 관속에 있는 경우 [새기술3]
+	// When the player is inside a coffin [new skill 3]
 	//------------------------------------------------------
 	bool bPlayerInCasket = g_pPlayer->IsInCasket();
 
 	if (bPlayerInCasket)
 	{
-		// [새기술3]
-		// 화면 전체를 어둡게 표시한다. Tile만 - -;;
+		// [new skill 3]
+		// Darken the whole screen. Tiles only - -;;
 		rect.left = 0;
 		rect.right = g_GameRect.right;
 		rect.top = 0;
@@ -12106,10 +12106,10 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	//
-	// 선택된 Sector를 표시한다.
+	// Mark the selected Sector.
 	//
 	//------------------------------------------------------
-	// 선택된 위치가 있고.. 선택된 Object가 없을 때...
+	// When there is a selected position.. and no selected Object...
 	//if (g_pUserInformation->Invisible)
 	{
 	}
@@ -12136,7 +12136,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 			if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_DRAW_CREATURE) == NULL)
 			{
-				// 중심 좌표 보정
+				// center coordinate correction
 				CSprite* pSprite = &m_EtcSPK[ frameID[clickFrame] ];
 
 				selectedPoint.x += 24 - (pSprite->GetWidth()>>1);
@@ -12154,7 +12154,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 
 
-			// Player가 선택된 위치에 왔으면..
+			// If the Player has arrived at the selected position..
 			if (g_pPlayer->GetX()==m_SelectSector.x && g_pPlayer->GetY()==m_SelectSector.y)
 			{
 				m_SelectSector.x = SECTORPOSITION_NULL;
@@ -12167,11 +12167,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	// 
-	//       ImageObject의 그림자 출력
+	//       ImageObject shadow output
 	//
 	//------------------------------------------------------
 	//------------------------------------------------------
-	// 출력대상이 되는 ImageObject Iterator
+	// ImageObject Iterator that is the output target
 	//------------------------------------------------------
 	__BEGIN_PROFILE("DrawImageObjectShadow")
 
@@ -12181,7 +12181,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	{
 		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectShadowOutput).second);
 
-		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+		// Fit the picture's coordinates to the current screen's coordinates
 		point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
 		point.y = pImageObject->GetPixelY() - m_FirstZonePixel.y;
 
@@ -12209,36 +12209,36 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	//
-	// 출력 시점보다 위쪽에 있는 ImageObject들을 출력한다.
+	// Draw the ImageObjects that are above the output viewpoint.
 	//
 	//------------------------------------------------------
 	//------------------------------------------------------
-	// 출력대상이 되는 ImageObject Iterator
+	// ImageObject Iterator that is the output target
 	//------------------------------------------------------
 	IMAGEOBJECT_OUTPUT_MAP::const_iterator iImageObjectOutput = m_mapImageObject.begin();
 
 	//------------------------------------------------------
-	// 출력 시점이 sY1보다 적은 경우의 
-	// ImageObject들을 출력한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// For output viewpoints less than sY1,
+	// draw the ImageObjects.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 	{
 		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
-		// 출력 시점이 sY1보다 적은 경우..는 출력
+		// Draw when the output viewpoint is less than sY1..
 		if (pImageObject->GetViewpoint() < sY1)
 		{
 			if(pImageObject->GetViewpoint() != 0)
 			{
-				// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+				// Fit the picture's coordinates to the current screen's coordinates
 				point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
 				point.y = pImageObject->GetPixelY() - m_FirstZonePixel.y;
 
 				DrawImageObject(&point, pImageObject);
 			}
 		}
-		// 아니면.. Object 출력할때 출력되는 경우이다.
+		// Otherwise.. it is drawn when Objects are drawn.
 		else
 		{
 			break;
@@ -12247,16 +12247,16 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		iImageObjectOutput ++;
 	}
 
-	// 애니메이션 오브젝트에서 Loop가 되는 에니메이션 오브젝트의 Frame을 맞추기 위해서
+	// To match the Frame of looping animation objects among the animation objects
 	if(g_bFrameChanged)
 		MAnimationObject::NextLoopFrame();
 
-/*	- 2004, 4, 24 sobeit block - ghost 때문에 위에서 처리 함
+/*	- 2004, 4, 24 sobeit block - handled above because of ghost
 	//------------------------------------------------------
-	// player가 관 속에 있는 경우가 아니면.. [새기술3]
+	// Unless the player is inside a coffin.. [new skill 3]
 	//------------------------------------------------------
 	//------------------------------------------------------
-	// Creature OutputMap을 생성한다.
+	// Create the Creature OutputMap.
 	//------------------------------------------------------
 	__BEGIN_PROFILE("AddOutputCreature")
 
@@ -12266,15 +12266,15 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	//
-	//			모든 creature의 그림자를 출력한다.
+	//			Draw the shadows of all creatures.
 	//
 	//------------------------------------------------------
-	// 모든 creature의 shadow를 출력한다.
-	// (!) AddOutputCreatureAll()를 한 다음에 실행해야 한다.
+	// Draw the shadows of all creatures.
+	// (!) Must be executed after AddOutputCreatureAll().
 	//
-	// Lock된 상태에서 실행한다고 가정한다.
+	// Assumed to run in the Locked state.
 	//----------------------------------------------------
-	// 3D가속할때는 Unlock으로 만든다.
+	// With 3D acceleration it is made Unlock.
 	//----------------------------------------------------
 	BOOL bUnlockStatus = true && g_pUserOption->BlendingShadow;
 	if (bUnlockStatus)
@@ -12283,7 +12283,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	}
 */
 	//------------------------------------------------------
-	// 출력대상이 되는 Creature Iterator
+	// Creature Iterator that is the output target
 	//------------------------------------------------------
 	__BEGIN_PROFILE("DrawCreatureShadowAll")
 
@@ -12291,9 +12291,9 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	iCreatureOutput = m_mapCreature.begin();
 
 	//------------------------------------------------------
-	// 캐릭터 그림자를 모두 출력한다.
+	// Draw all character shadows.
 	//------------------------------------------------------
-	// 타일을 체크해서 출력하는 경우
+	// When drawing by checking the tiles
 	//------------------------------------------------------
 	if (m_bTileSearchForCreature)
 	{
@@ -12303,7 +12303,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			{	
 				int darknessCount = g_pPlayer->GetDarknessCount();
 
-				// darkness랑 관계없이 보이는 경우. effect는 +2
+				// When visible regardless of darkness. effect is +2
 				if (darknessCount < 0
 					|| max(abs(g_pPlayer->GetX()-x), abs(g_pPlayer->GetY()-y)) <= darknessCount+2)
 				//g_pPlayer->ShowInDarkness(x, y))
@@ -12322,11 +12322,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 						if (pCreature!=NULL)
 						{
-							// player이거나 darkness랑 관계없이 보이는 경우
+							// When it is the player or visible regardless of darkness
 							if (pCreature==g_pPlayer
 								|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 							{				
-								// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+								// Fit the picture's coordinates to the current screen's coordinates
 								point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 								point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
@@ -12351,19 +12351,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 									|| iCreature->first > MSector::POSITION_FLYINGCREATURE_MAX)
 									break;
 
-								// underground는 그림자가 없당.
+								// underground has no shadow.
 								if (iCreature->first >= MSector::POSITION_GROUNDCREATURE)
 								{
 									pCreature = (MCreature*)iCreature->second;
 
-									// player이거나 darkness랑 관계없이 보이는 경우
+									// When it is the player or visible regardless of darkness
 									if (
 										(pCreature==g_pPlayer
 										|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY())) &&
 										!pCreature->IsFakeCreature()										
 										)
 									{				
-										// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+										// Fit the picture's coordinates to the current screen's coordinates
 										point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 										point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
@@ -12397,14 +12397,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 		}
 
-		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+		// Fit the picture's coordinates to the current screen's coordinates
 		point.x = g_pPlayer->GetPixelX() - m_FirstZonePixel.x;
 		point.y = g_pPlayer->GetPixelY() - m_FirstZonePixel.y;
 
 		DrawCreatureShadow(&point, g_pPlayer);//, DarkBits);		
 	}
 	//------------------------------------------------------
-	// 캐릭터 OutputMap을 이용하는 경우
+	// When using the character OutputMap
 	//------------------------------------------------------
 	else
 	{
@@ -12415,12 +12415,12 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			if (pCreature==g_pPlayer
 				|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 			{
-				// 출력 시점이 sY1보다 적은 경우..는 출력
-				// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+				// Draw when the output viewpoint is less than sY1..
+				// Fit the picture's coordinates to the current screen's coordinates
 				point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 				point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
-				// 밝기를 결정한다.
+				// Decide the brightness.
 				//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 				DrawCreatureShadow(&point, pCreature);//, DarkBits);
@@ -12433,31 +12433,31 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	__END_PROFILE("DrawCreatureShadowAll")
 
 	//----------------------------------------------------
-	// 원래의 Lock된 상태를 유지시켜 준다.
+	// Keep the original Locked state.
 	//----------------------------------------------------
 	if (bUnlockStatus)
 	{	
 		m_pSurface->Lock();
 	}
 
-	// Item 그림자 출력용
+	// For Item shadow output
 	//------------------------------------------------------
-	// 화면의 Sector들을 모두 검색하면서
-	// Sector에 존재하는 Object들을 출력한다.
+	// While searching all the Sectors on the screen,
+	// draw the Objects present in each Sector.
 	//------------------------------------------------------
-	// 첫번째 줄	
+	// First row
 	tilePointTemp.y = tilePoint.y;
 
 	//----------------------------------------------------------------
 	//
-	// tile을 검색해서 캐릭터를 출력하는 경우
+	// When drawing characters by searching the tiles
 	//
 	//----------------------------------------------------------------
 	if (m_bTileSearchForCreature)
 	{
 		for (y=sY1; y<=sY2; y++)
 		{				
-			// 한 줄의 첫번째 Sector					
+			// First Sector of a row
 			tilePointTemp.x = tilePoint.x;			
 
 			for (x=sX1; x<=sX2; x++)
@@ -12466,7 +12466,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//------------------------------------------------
 				//
-				//              Object 출력
+				//              Object output
 				//
 				//------------------------------------------------
 
@@ -12474,19 +12474,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				{				
 
 					//----------------------------------------
-					// Item일 경우
+					// For an Item
 					//----------------------------------------					
 					pItem = sector.GetItem();
 					if (pItem != NULL
 						&& g_pPlayer->ShowInDarkness(x, y))
 					{		
 						//----------------------------------------
-						// 시체인 경우
-						// Effect를 출력하고 나서 출력한다.
+						// For a corpse
+						// Drawn after the Effect is drawn.
 						//
 						// 2002.1.23
-						// 언제 Effect출력코드가 빠진거지..
-						// 암튼 시체 관련 코드는 뺀다. 
+						// When did the Effect drawing code go missing..
+						// Anyway, the corpse-related code is removed.
 						//----------------------------------------
 						//if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 						{
@@ -12498,10 +12498,10 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 							point.y = tilePointTemp.y;
 
 
-							// 밝기를 결정한다.
+							// Decide the brightness.
 							//DarkBits = (sector.GetLight()==0)?m_DarkBits:0;
 
-							// 나중에 Frame정보에서 cx,cy를 교정해야 한다.									
+							// cx,cy must be corrected from the Frame information later.
 							DrawItemShadow(&point, pItem);//, DarkBits);
 						}
 					}
@@ -12509,31 +12509,31 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 				//------------------------------------			
-				// 출력하려는 좌표 이동
+				// Move the coordinates to draw at
 				//------------------------------------
 				tilePointTemp.x += TILE_X;
 			}
 
 
-			// 다음 줄
+			// Next row
 			tilePointTemp.y += TILE_Y;					
 		}		
 	}
 	//----------------------------------------------------------------
 	//
-	// tile을 검색하지 않고 OutputCreatureMap을 이용해서 캐릭터를 출력하는 경우
+	// When drawing characters using the OutputCreatureMap without searching the tiles
 	//
 	//----------------------------------------------------------------
 	else
 	{	
 		for (y=sY1; y<=sY2; y++)
 		{
-			// 관 속에 있을 때는 그냥 검색해서 출력하는 object는 없다.
-			// AddOutputCreatureAll()에서 m_bTileSearchForCreature가 false로
-			// 설정되므로... OutputCreatureMap을 이용하면 된다.
-			if (!bPlayerInCasket)	// [새기술3]
+			// Inside a coffin there are no objects drawn by plain searching.
+			// AddOutputCreatureAll() sets m_bTileSearchForCreature to false,
+			// so... the OutputCreatureMap can be used.
+			if (!bPlayerInCasket)	// [new skill 3]
 			{			
-				// 한 줄의 첫번째 Sector					
+				// First Sector of a row
 				tilePointTemp.x = tilePoint.x;			
 
 				for (x=sX1; x<=sX2; x++)
@@ -12542,7 +12542,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 					//------------------------------------------------
 					//
-					//              Object 출력
+					//              Object output
 					//
 					//------------------------------------------------
 					//MItem* pCorpseItem = NULL;
@@ -12550,19 +12550,19 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					if (sector.IsExistObject())
 					{				
 						//----------------------------------------
-						// Item일 경우
+						// For an Item
 						//----------------------------------------					
 						pItem = sector.GetItem();
 						if (pItem != NULL
 							&& g_pPlayer->ShowInDarkness(x, y))
 						{		
 							//----------------------------------------
-							// 시체인 경우
-							// Effect를 출력하고 나서 출력한다.
+							// For a corpse
+							// Drawn after the Effect is drawn.
 							//
 							// 2002.1.23
-							// 언제 Effect출력코드가 빠진거지..
-							// 암튼 시체 관련 코드는 뺀다. 
+							// When did the Effect drawing code go missing..
+							// Anyway, the corpse-related code is removed.
 							//----------------------------------------
 							//if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 							{
@@ -12573,7 +12573,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 								point.x = tilePointTemp.x;
 								point.y = tilePointTemp.y;
 
-								// 나중에 Frame정보에서 cx,cy를 교정해야 한다.									
+								// cx,cy must be corrected from the Frame information later.
 								DrawItemShadow(&point, pItem);//, DarkBits);
 							}
 						}
@@ -12581,13 +12581,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 					//------------------------------------			
-					// 출력하려는 좌표 이동
+					// Move the coordinates to draw at
 					//------------------------------------
 					tilePointTemp.x += TILE_X;
 				}
 			}	// bPlayerInCasket
 
-			// 다음 줄
+			// Next row
 			tilePointTemp.y += TILE_Y;
 		}
 	}
@@ -12595,49 +12595,49 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 	//------------------------------------------------------
 	//
-	//				실제 sprite 출력
+	//				Actual sprite output
 	//
 	//------------------------------------------------------
 	//------------------------------------------------------
-	// 출력대상이 되는 Creature Iterator
+	// Creature Iterator that is the output target
 	//------------------------------------------------------
 	iCreatureOutput = m_mapCreature.begin();
 
 	//------------------------------------------------------
-	// 출력 시점이 sY1보다 적은 경우의 
-	// Creature들을 출력한다.
-	// m_mapCreature에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// For output viewpoints less than sY1,
+	// draw the Creatures.
+	// m_mapCreature is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
 		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
-		// 2004, 04, 24 sobeit add start -ghost 일때 
+		// 2004, 04, 24 sobeit add start - when ghost
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 		{
 			iCreatureOutput ++;
 			continue;
 		}
-		// 2004, 04, 24 sobeit add end -ghost 일때 
+		// 2004, 04, 24 sobeit add end - when ghost
 
-		// 출력 시점이 sY1보다 적은 경우..는 출력
+		// Draw when the output viewpoint is less than sY1..
 		if (pCreature->GetY() < sY1)
 		{
-			// player이거나 darkness랑 관계없이 보이는 경우
+			// When it is the player or visible regardless of darkness
 			if (pCreature==g_pPlayer
 				|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 			{					
-				// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+				// Fit the picture's coordinates to the current screen's coordinates
 				point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 				point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
-				// 밝기를 결정한다.
+				// Decide the brightness.
 				//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 				DrawCreature(&point, pCreature);//, DarkBits);
 			}
 		}
-		// 아니면.. 한 줄 출력이 끝나고 출력할때 출력되는 경우이다.
+		// Otherwise.. it is drawn when drawing after a row's output ends.
 		else
 		{
 			break;
@@ -12647,22 +12647,22 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	}
 
 	//------------------------------------------------------
-	// 화면의 Sector들을 모두 검색하면서
-	// Sector에 존재하는 Object들을 출력한다.
+	// While searching all the Sectors on the screen,
+	// draw the Objects present in each Sector.
 	//------------------------------------------------------
-	// 첫번째 줄	
+	// First row
 	tilePointTemp.y = tilePoint.y;
 
 	//----------------------------------------------------------------
 	//
-	// tile을 검색해서 캐릭터를 출력하는 경우
+	// When drawing characters by searching the tiles
 	//
 	//----------------------------------------------------------------
 	if (m_bTileSearchForCreature)
 	{
 		for (y=sY1; y<=sY2; y++)
 		{				
-			// 한 줄의 첫번째 Sector					
+			// First Sector of a row
 			tilePointTemp.x = tilePoint.x;			
 
 			for (x=sX1; x<=sX2; x++)
@@ -12670,7 +12670,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				const MSector& sector = m_pZone->GetSector(x,y);			
 
 				//------------------------------------------------------
-				// 서버 block좌표에 사각형
+				// Rectangle at the server block coordinates
 				//------------------------------------------------------
 				#ifdef OUTPUT_DEBUG
 					if (g_pSDLInput->KeyDown(DIK_LCONTROL) && g_pSDLInput->KeyDown(DIK_V))
@@ -12694,7 +12694,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				#endif
 
 				//------------------------------------------------------
-				// 특정한 ImageObject의 ViewSector?에 "X"표하기
+				// Mark "X" on the ViewSector? of a specific ImageObject
 				//------------------------------------------------------
 				#if defined(OUTPUT_DEBUG) && defined(_DEBUG)
 					if (g_pSDLInput->KeyDown(DIK_A) && 
@@ -12704,7 +12704,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 						{
 							OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-							// Sector에 있는 모든 ImageObject들을 검색한다.
+							// Search all the ImageObjects in the Sector.
 							for (i=0; i<sector.GetImageObjectSize(); i++)
 							{
 								MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
@@ -12728,12 +12728,12 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				#endif				
 
 				//------------------------------------------------
-				// 빛의 강도를 출력한다.
+				// Draw the light intensity.
 				//------------------------------------------------
 
 				//------------------------------------------------
 				//
-				//              Object 출력
+				//              Object output
 				//
 				//------------------------------------------------
 				//MItem* pCorpseItem = NULL;
@@ -12741,25 +12741,25 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				if (sector.IsExistObject())
 				{				
 					//----------------------------------------
-					// test code : Object 위치 표시
+					// test code : mark Object position
 					//----------------------------------------
 					//
 					//----------------------------------------
 
 					//----------------------------------------
-					// Item일 경우
+					// For an Item
 					//----------------------------------------					
 					pItem = sector.GetItem();
 					if (pItem != NULL
 						&& g_pPlayer->ShowInDarkness(x, y))
 					{		
 						//----------------------------------------
-						// 시체인 경우
-						// Effect를 출력하고 나서 출력한다.
+						// For a corpse
+						// Drawn after the Effect is drawn.
 						//
 						// 2002.1.23
-						// 언제 Effect출력코드가 빠진거지..
-						// 암튼 시체 관련 코드는 뺀다. 
+						// When did the Effect drawing code go missing..
+						// Anyway, the corpse-related code is removed.
 						//----------------------------------------
 						//if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 						{
@@ -12771,7 +12771,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 							point.y = tilePointTemp.y;
 
 							/*
-							// 울렁울렁~~
+							// wobble wobble~~
 							int size = g_CurrentFrame & 0x00000007;
 
 							int x0 = point.x + 24;
@@ -12788,10 +12788,10 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 							m_pSurface->ChangeBrightnessBit( &rect, g_CurrentFrame );
 							*/
 
-							// 밝기를 결정한다.
+							// Decide the brightness.
 							//DarkBits = (sector.GetLight()==0)?m_DarkBits:0;
 
-							// 나중에 Frame정보에서 cx,cy를 교정해야 한다.									
+							// cx,cy must be corrected from the Frame information later.
 							DrawItem(&point, pItem);//, DarkBits);
 						}
 					}
@@ -12799,7 +12799,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 				//------------------------------------------------
 				//
-				//              Effect 출력
+				//              Effect output
 				//
 				//------------------------------------------------
 	//
@@ -12807,9 +12807,9 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//			}
 
 				//------------------------------------------------
-				// 시체
+				// Corpse
 				//------------------------------------------------
-				// 음!! 꾸지한 코드의 지름길.. 음냐.. 나도 몰라
+				// Hmm!! A shortcut of dirty code.. hmm.. I don't know either
 				//------------------------------------------------
 				/*
 				if (pCorpseItem)
@@ -12817,34 +12817,34 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					point.x = tilePointTemp.x;
 					point.y = tilePointTemp.y;
 
-					// 밝기를 결정한다.
+					// Decide the brightness.
 					//DarkBits = (sector.GetLight()==0)?m_DarkBits:0;
 
-					// 나중에 Frame정보에서 cx,cy를 교정해야 한다.									
+					// cx,cy must be corrected from the Frame information later.
 					DrawItem(&point, pItem);//, DarkBits);
 				}
 				*/
 
 				//------------------------------------			
-				// 출력하려는 좌표 이동
+				// Move the coordinates to draw at
 				//------------------------------------
 				tilePointTemp.x += TILE_X;
 			}
 
 			//-----------------------------------------------------
-			// 한 줄이 끝날때마다 
-			// 출력해야할 그 줄의 ImageObject들을 출력한다.
+			// Every time a row ends,
+			// draw the ImageObjects of that row that must be drawn.
 			//-----------------------------------------------------	
 			while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 			{
 				MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
-				// 출력 시점이 y와 같은 경우 출력
+				// Draw when the output viewpoint equals y
 				if (pImageObject->GetViewpoint() <= y)
 				{
 					if(pImageObject->GetViewpoint() != 0)
 					{
-						// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+						// Fit the picture's coordinates to the current screen's coordinates
 						point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
 						point.y = pImageObject->GetPixelY() - m_FirstZonePixel.y;				
 
@@ -12852,7 +12852,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 					}
 				}
-				// 아니면.. 다른 줄이다.
+				// Otherwise.. it is another row.
 				else
 				{				
 					break;
@@ -12862,39 +12862,39 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 
 			//------------------------------------------------------
-			// 한 줄이 끝날때마다 
-			// 출력해야할 그 줄의 Creature들을 출력한다.
+			// Every time a row ends,
+			// draw the Creatures of that row that must be drawn.
 			//------------------------------------------------------
 			while (iCreatureOutput != m_mapCreature.end())
 			{
 				MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
-				// 출력 시점이 sY1보다 적은 경우..는 출력
+				// Draw when the output viewpoint is less than sY1..
 				if (pCreature->GetY() <= y)
 				{
-					// 2004, 04, 24 sobeit add start -ghost 일때 
+					// 2004, 04, 24 sobeit add start - when ghost
 					if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 					{
 						iCreatureOutput ++;
 						continue;
 					}
-					// 2004, 04, 24 sobeit add end -ghost 일때 
+					// 2004, 04, 24 sobeit add end - when ghost
 
-					// player이거나 darkness랑 관계없이 보이는 경우
+					// When it is the player or visible regardless of darkness
 					if (pCreature==g_pPlayer
 						|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 					{				
-						// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+						// Fit the picture's coordinates to the current screen's coordinates
 						point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 						point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
-						// 밝기를 결정한다.
+						// Decide the brightness.
 						//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 						DrawCreature(&point, pCreature);//, DarkBits);
 					}
 				}
-				// 아니면.. 한 줄 출력이 끝나고 출력할때 출력되는 경우이다.
+				// Otherwise.. it is drawn when drawing after a row's output ends.
 				else
 				{
 					break;
@@ -12904,21 +12904,21 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 
 			//------------------------------------------------------
-			// 출력순서때문에.. 여기서 캐릭터를 체크한다.
-			// Sector의 Effect 출력
+			// Because of the output order.. the character is checked here.
+			// Sector Effect output
 			//------------------------------------------------------
-			// 캐릭터보다 늦게 출력되어야 하므로...
+			// because it must be drawn later than the character...
 			//------------------------------------------------------
 			//------------------------------------------------------
-			// Player는 Tile에 속하지 않기 때문에 따로 체크한다.
+			// The Player does not belong to a Tile, so it is checked separately.
 			//------------------------------------------------------
 			if (g_pPlayer->GetY() == y)
 			{
-				// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+				// Fit the picture's coordinates to the current screen's coordinates
 				point.x = g_pPlayer->GetPixelX() - m_FirstZonePixel.x;
 				point.y = g_pPlayer->GetPixelY() - m_FirstZonePixel.y;
 
-				// 밝기를 결정한다.
+				// Decide the brightness.
 				//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 				DrawCreature(&point, g_pPlayer);//, DarkBits);
@@ -12929,7 +12929,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			{	
 				int darknessCount = g_pPlayer->GetDarknessCount();
 
-				// darkness랑 관계없이 보이는 경우. effect는 +2
+				// When visible regardless of darkness. effect is +2
 				if (darknessCount < 0
 					|| max(abs(g_pPlayer->GetX()-x), abs(g_pPlayer->GetY()-y)) <= darknessCount+2)
 				//g_pPlayer->ShowInDarkness(x, y))
@@ -12957,16 +12957,16 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 								MCreature* pCreature = (MCreature*)iCreature->second;
 
-								// 2004, 04, 24 sobeit add start -ghost 일때 
+								// 2004, 04, 24 sobeit add start - when ghost
 								if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 									continue;
-								// 2004, 04, 24 sobeit add end -ghost 일때 
+								// 2004, 04, 24 sobeit add end - when ghost
 
-								// player이거나 darkness랑 관계없이 보이는 경우
+								// When it is the player or visible regardless of darkness
 								if (pCreature==g_pPlayer
 									|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 								{				
-									// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+									// Fit the picture's coordinates to the current screen's coordinates
 									point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 									point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
@@ -12978,7 +12978,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 					//------------------------------------------------
 					//
-					//              Effect 출력
+					//              Effect output
 					//
 					//------------------------------------------------
 					if (sector.IsExistEffect())
@@ -12990,30 +12990,30 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				}
 
 				//------------------------------------			
-				// 출력하려는 좌표 이동
+				// Move the coordinates to draw at
 				//------------------------------------
 				tilePointTemp.x += TILE_X;
 			}
 
-			// 다음 줄
+			// Next row
 			tilePointTemp.y += TILE_Y;					
 		}		
 	}
 	//----------------------------------------------------------------
 	//
-	// tile을 검색하지 않고 OutputCreatureMap을 이용해서 캐릭터를 출력하는 경우
+	// When drawing characters using the OutputCreatureMap without searching the tiles
 	//
 	//----------------------------------------------------------------
 	else
 	{	
 		for (y=sY1; y<=sY2; y++)
 		{
-			// 관 속에 있을 때는 그냥 검색해서 출력하는 object는 없다.
-			// AddOutputCreatureAll()에서 m_bTileSearchForCreature가 false로
-			// 설정되므로... OutputCreatureMap을 이용하면 된다.
-			if (!bPlayerInCasket)	// [새기술3]
+			// Inside a coffin there are no objects drawn by plain searching.
+			// AddOutputCreatureAll() sets m_bTileSearchForCreature to false,
+			// so... the OutputCreatureMap can be used.
+			if (!bPlayerInCasket)	// [new skill 3]
 			{			
-				// 한 줄의 첫번째 Sector					
+				// First Sector of a row
 				tilePointTemp.x = tilePoint.x;			
 
 				for (x=sX1; x<=sX2; x++)
@@ -13021,7 +13021,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					const MSector& sector = m_pZone->GetSector(x,y);
 
 					//------------------------------------------------------
-					// 서버 block좌표에 사각형
+					// Rectangle at the server block coordinates
 					//------------------------------------------------------
 					#ifdef OUTPUT_DEBUG
 						if (g_pSDLInput->KeyDown(DIK_LCONTROL) && g_pSDLInput->KeyDown(DIK_V))
@@ -13037,7 +13037,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					#endif
 
 					//------------------------------------------------------
-					// 특정한 ImageObject의 ViewSector?에 "X"표하기
+					// Mark "X" on the ViewSector? of a specific ImageObject
 					//------------------------------------------------------
 					#if defined(OUTPUT_DEBUG) && defined(_DEBUG)
 						if (g_pSDLInput->KeyDown(DIK_A) && 
@@ -13047,7 +13047,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 							{
 								OBJECT_MAP::const_iterator iImageObject = sector.GetImageObjectIterator();
 
-								// Sector에 있는 모든 ImageObject들을 검색한다.
+								// Search all the ImageObjects in the Sector.
 								for (i=0; i<sector.GetImageObjectSize(); i++)
 								{
 									MImageObject* const pImageObject = (MImageObject* const)((*iImageObject).second);
@@ -13071,12 +13071,12 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					#endif				
 
 					//------------------------------------------------
-					// 빛의 강도를 출력한다.
+					// Draw the light intensity.
 					//------------------------------------------------
 
 					//------------------------------------------------
 					//
-					//              Object 출력
+					//              Object output
 					//
 					//------------------------------------------------
 					//MItem* pCorpseItem = NULL;
@@ -13084,25 +13084,25 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					if (sector.IsExistObject())
 					{				
 						//----------------------------------------
-						// test code : Object 위치 표시
+						// test code : mark Object position
 						//----------------------------------------
 						//
 						//----------------------------------------
 
 						//----------------------------------------
-						// Item일 경우
+						// For an Item
 						//----------------------------------------					
 						pItem = sector.GetItem();
 						if (pItem != NULL
 							&& g_pPlayer->ShowInDarkness(x, y))
 						{		
 							//----------------------------------------
-							// 시체인 경우
-							// Effect를 출력하고 나서 출력한다.
+							// For a corpse
+							// Drawn after the Effect is drawn.
 							//
 							// 2002.1.23
-							// 언제 Effect출력코드가 빠진거지..
-							// 암튼 시체 관련 코드는 뺀다. 
+							// When did the Effect drawing code go missing..
+							// Anyway, the corpse-related code is removed.
 							//----------------------------------------
 							//if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 							{
@@ -13114,7 +13114,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 								point.y = tilePointTemp.y;
 
 								/*
-								// 울렁울렁~~
+								// wobble wobble~~
 								int size = g_CurrentFrame & 0x00000007;
 
 								int x0 = point.x + 24;
@@ -13131,10 +13131,10 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 								m_pSurface->ChangeBrightnessBit( &rect, g_CurrentFrame );
 								*/
 
-								// 밝기를 결정한다.
+								// Decide the brightness.
 								//DarkBits = (sector.GetLight()==0)?m_DarkBits:0;
 
-								// 나중에 Frame정보에서 cx,cy를 교정해야 한다.									
+								// cx,cy must be corrected from the Frame information later.
 								DrawItem(&point, pItem);//, DarkBits);
 							}
 						}
@@ -13142,7 +13142,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 					//------------------------------------------------
 					//
-					//              Effect 출력
+					//              Effect output
 					//
 					//------------------------------------------------
 		//
@@ -13150,9 +13150,9 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		//			}
 
 					//------------------------------------------------
-					// 시체
+					// Corpse
 					//------------------------------------------------
-					// 음!! 꾸지한 코드의 지름길.. 음냐.. 나도 몰라
+					// Hmm!! A shortcut of dirty code.. hmm.. I don't know either
 					//------------------------------------------------
 					/*
 					if (pCorpseItem)
@@ -13160,35 +13160,35 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 						point.x = tilePointTemp.x;
 						point.y = tilePointTemp.y;
 
-						// 밝기를 결정한다.
+						// Decide the brightness.
 						//DarkBits = (sector.GetLight()==0)?m_DarkBits:0;
 
-						// 나중에 Frame정보에서 cx,cy를 교정해야 한다.									
+						// cx,cy must be corrected from the Frame information later.
 						DrawItem(&point, pItem);//, DarkBits);
 					}
 					*/
 
 					//------------------------------------			
-					// 출력하려는 좌표 이동
+					// Move the coordinates to draw at
 					//------------------------------------
 					tilePointTemp.x += TILE_X;
 				}
 			}	// bPlayerInCasket
 
 			//-----------------------------------------------------
-			// 한 줄이 끝날때마다 
-			// 출력해야할 그 줄의 ImageObject들을 출력한다.
+			// Every time a row ends,
+			// draw the ImageObjects of that row that must be drawn.
 			//-----------------------------------------------------	
 			while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 			{
 				MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
-				// 출력 시점이 y와 같은 경우 출력
+				// Draw when the output viewpoint equals y
 				if (pImageObject->GetViewpoint() <= y)
 				{
 					if(pImageObject->GetViewpoint() != 0)
 					{
-						// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+						// Fit the picture's coordinates to the current screen's coordinates
 						point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
 						point.y = pImageObject->GetPixelY() - m_FirstZonePixel.y;				
 
@@ -13196,7 +13196,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 					}
 				}
-				// 아니면.. 다른 줄이다.
+				// Otherwise.. it is another row.
 				else
 				{				
 					break;
@@ -13206,39 +13206,39 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 
 			//------------------------------------------------------
-			// 한 줄이 끝날때마다 
-			// 출력해야할 그 줄의 Creature들을 출력한다.
+			// Every time a row ends,
+			// draw the Creatures of that row that must be drawn.
 			//------------------------------------------------------
 			while (iCreatureOutput != m_mapCreature.end())
 			{
 				MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
-				// 2004, 04, 24 sobeit add start -ghost 일때 
+				// 2004, 04, 24 sobeit add start - when ghost
 				if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 				{
 					iCreatureOutput ++;
 					continue;
 				}
-				// 2004, 04, 24 sobeit end start -ghost 일때 
+				// 2004, 04, 24 sobeit end start - when ghost
 
-				// 출력 시점이 sY1보다 적은 경우..는 출력
+				// Draw when the output viewpoint is less than sY1..
 				if (pCreature->GetY() <= y)
 				{
-					// player이거나 darkness랑 관계없이 보이는 경우
+					// When it is the player or visible regardless of darkness
 					if (pCreature==g_pPlayer
 						|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 					{				
-						// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+						// Fit the picture's coordinates to the current screen's coordinates
 						point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 						point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
-						// 밝기를 결정한다.
+						// Decide the brightness.
 						//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 						DrawCreature(&point, pCreature);//, DarkBits);
 					}
 				}
-				// 아니면.. 한 줄 출력이 끝나고 출력할때 출력되는 경우이다.
+				// Otherwise.. it is drawn when drawing after a row's output ends.
 				else
 				{
 					break;
@@ -13248,18 +13248,18 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			}
 
 			//------------------------------------------------------
-			// Sector의 Effect 출력
+			// Sector Effect output
 			//------------------------------------------------------
-			// 캐릭터보다 늦게 출력되어야 하므로...
+			// because it must be drawn later than the character...
 			//------------------------------------------------------
-			if (!bPlayerInCasket)	// [새기술3] 관 속에 있을때 Effect는 안 찍는다.
+			if (!bPlayerInCasket)	// [new skill 3] Effects are not drawn while inside a coffin.
 			{			
 				tilePointTemp.x = tilePoint.x;
 				for (x=sX1; x<=sX2; x++)
 				{	
 					int darknessCount = g_pPlayer->GetDarknessCount();
 
-					// darkness랑 관계없이 보이는 경우. effect는 +2
+					// When visible regardless of darkness. effect is +2
 					if (darknessCount < 0
 						|| max(abs(g_pPlayer->GetX()-x), abs(g_pPlayer->GetY()-y)) <= darknessCount+2)
 					//g_pPlayer->ShowInDarkness(x, y))
@@ -13268,7 +13268,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 						//------------------------------------------------
 						//
-						//              Effect 출력
+						//              Effect output
 						//
 						//------------------------------------------------
 						if (sector.IsExistEffect())
@@ -13280,44 +13280,44 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 					}
 
 					//------------------------------------			
-					// 출력하려는 좌표 이동
+					// Move the coordinates to draw at
 					//------------------------------------
 					tilePointTemp.x += TILE_X;
 				}
 			}
 
-			// 다음 줄
+			// Next row
 			tilePointTemp.y += TILE_Y;
 		}
 	}
 
 
 	//------------------------------------------------------
-	// 출력 시점이 sY2보다 큰 경우의 
-	// Creature들을 출력한다.
-	// m_mapCreature에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// For output viewpoints greater than sY2,
+	// draw the Creatures.
+	// m_mapCreature is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (iCreatureOutput != m_mapCreature.end())
 	{
 		MCreature* const pCreature = (MCreature*)((*iCreatureOutput).second);
 
-		// 2004, 04, 24 sobeit add start -ghost 일때 
+		// 2004, 04, 24 sobeit add start - when ghost
 		if(pCreature->GetCreatureType() == CREATURETYPE_GHOST)
 		{
 			iCreatureOutput ++;
 			continue;
 		}
-		// 2004, 04, 24 sobeit add end -ghost 일때 
+		// 2004, 04, 24 sobeit add end - when ghost
 
-		// player이거나 darkness랑 관계없이 보이는 경우
+		// When it is the player or visible regardless of darkness
 		if (pCreature==g_pPlayer
 			|| g_pPlayer->ShowInDarkness(pCreature->GetX(), pCreature->GetY()))
 		{
-			// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+			// Fit the picture's coordinates to the current screen's coordinates
 			point.x = pCreature->GetPixelX() - m_FirstZonePixel.x;
 			point.y = pCreature->GetPixelY() - m_FirstZonePixel.y;
 
-			// 밝기를 결정한다.
+			// Decide the brightness.
 			//int DarkBits = (m_pZone->GetSector(pCreature->GetX(),pCreature->GetY()).GetLight()==0)?m_DarkBits:0;
 
 			DrawCreature(&point, pCreature);//, DarkBits);		
@@ -13328,15 +13328,15 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//------------------------------------------------------
-	// 출력 시점이 sY2보다 큰 경우의 
-	// ImageObject들을 출력한다.
-	// m_mapImageObject에는 Viewpoint가 key값이 되어서 Sort되어 있다.
+	// For output viewpoints greater than sY2,
+	// draw the ImageObjects.
+	// m_mapImageObject is sorted with the Viewpoint as the key.
 	//------------------------------------------------------
 	while (bDrawBackGround && iImageObjectOutput != m_mapImageObject.end())
 	{
 		MImageObject* const pImageObject = (MImageObject*)((*iImageObjectOutput).second);
 
-		// 그림의 좌표를 현재 화면의 좌표에 맞추기								
+		// Fit the picture's coordinates to the current screen's coordinates
 		point.x = pImageObject->GetPixelX() - m_FirstZonePixel.x;
 		point.y = pImageObject->GetPixelY() - m_FirstZonePixel.y;
 
@@ -13346,7 +13346,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	}
 
 	//------------------------------------------------
-	// mouse선택한 것의 외곽선만 다시 한 번 출력해준다.
+	// Draw once more only the outline of what the mouse selected.
 	//------------------------------------------------
 	if (m_SOM.IsInit())
 	{
@@ -13355,18 +13355,18 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 		#endif
 		//m_pSurface->BltSpriteOutlineOnly( &m_SOM,  m_SOMOutlineColor );
 
-		// 제거
+		// Remove
 		m_SOM.Clear();
 	}
 
 	//----------------------------------------------------------------
-	// player가 관 속에 있는 경우가 아니면.. [새기술3]
+	// Unless the player is inside a coffin.. [new skill 3]
 	//----------------------------------------------------------------
 	if (!bPlayerInCasket && bDrawBackGround)
 	{			
 		//----------------------------------------------------------------
 		//
-		//          Weather - 날씨 효과 출력
+		//          Weather - weather effect output
 		//
 		//----------------------------------------------------------------
 
@@ -13378,8 +13378,8 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 		if (g_pWeather->IsActive())
 		{
-			// 가로 좌표 보정..
-			// 현재 Player의 좌표와 비교한다.
+			// Horizontal coordinate correction..
+			// Compare with the current Player's coordinates.
 			//int gapX = ((g_pPlayer->GetX() - g_pWeather->GetStartX()) * TILE_X + g_pPlayer->GetSX()) % SURFACE_WIDTH;
 			//int gapY = ((g_pPlayer->GetY() - g_pWeather->GetStartY()) * TILE_Y + g_pPlayer->GetSY()) % SURFACE_HEIGHT;
 			int gapX = (m_FirstZonePixel.x - g_pWeather->GetStartX()) % g_GameRect.right;
@@ -13389,7 +13389,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			{
 				const MAP_EFFECT& MapEffect = (*g_pWeather)[i];
 
-				// 멈추지 않은 것이면...
+				// If it has not stopped...
 				if (MapEffect.IsActive())
 				{
 					point.x = MapEffect.GetX() - gapX;
@@ -13444,11 +13444,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			__BEGIN_PROFILE("DrawLightFilter")
 
 				//----------------------------------------------------------------
-				// player의 light 좌표 설정
+				// Set the player's light coordinates
 				//----------------------------------------------------------------
 				int pX = g_pPlayer->GetPixelX() - m_FirstZonePixel.x + 24;
 			int pY = g_pPlayer->GetPixelY() - m_FirstZonePixel.y - TILE_Y;
-			// add by Sonic 2006.9.30 修正人物视野焦点
+			// add by Sonic 2006.9.30 fix the character sight focus
 			if(g_MyFull)
 			{
 				pX-=110;
@@ -13475,10 +13475,10 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				AddLightFilter3D( pX,
 					pY - (g_pPlayer->IsFlyingCreature()? 72:0 ),	//g_pPlayer->GetZ(), 
 					playerLight, 
-					false,	// screenPixel좌표			
-					true);	// 무조건 출력해야하는 빛		
+					false,	// screenPixel coordinates
+					true);	// light that must always be drawn
 
-				// 오토바이 불빛
+				// motorcycle light
 				ADD_MOTORCYCLE_LIGHT_XY_3D( g_pPlayer, pX, pY, true );		
 
 				//---------------------------------------
@@ -13487,7 +13487,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 				m_pSurface->Unlock();
 
 				//---------------------------------------
-				// 3D 시야처리 출력
+				// 3D sight handling output
 				//---------------------------------------
 				point.x = 0;
 				point.y = 0;
@@ -13505,7 +13505,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 //				DrawLightBuffer3D();
 
-				// Surface의 정보를 저장해둔다.
+				// Save the Surface information.
 				//SetSurfaceInfo(&m_SurfaceInfo, m_pSurface->GetDDSD());
 			}
 			//----------------------------------------------------------------
@@ -13513,14 +13513,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			//----------------------------------------------------------------
 			else
 			{
-				// 박쥐인 경우 시야 +3		
+				// For a bat, sight +3
 				AddLightFilter2D( pX, 
 					pY - g_pPlayer->GetZ(), 
 					playerLight,  
-					false,	// screenPixel좌표			
-					true);	// 무조건 출력해야하는 빛
+					false,	// screenPixel coordinates
+					true);	// light that must always be drawn
 
-				// 오토바이 불빛
+				// motorcycle light
 				ADD_MOTORCYCLE_LIGHT_XY_2D( g_pPlayer, pX, pY, true );	
 
 				DrawLightBuffer2D();
@@ -13540,11 +13540,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 		//----------------------------------------------------------------	
-		// Unlock 상태이다..
+		// It is in the Unlock state..
 		//----------------------------------------------------------------		
 
 		//----------------------------------------------------------------
-		// Mouse로 선택된 캐릭터이면.. 밝은 글자 출력
+		// If the character is selected with the Mouse.. draw bright text
 		//----------------------------------------------------------------			
 		if(IsRequestInfo())
 			DrawCreatureMyName();
@@ -13563,13 +13563,13 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 		//----------------------------------------------------------------
-		// Item이름들을 출력하게 한다.
+		// Have the Item names drawn.
 		//----------------------------------------------------------------
 		if (m_bDrawItemNameList && !g_pPlayer->IsInDarkness())
 		{
 			__BEGIN_PROFILE("DrawItemNameList")
 
-			// unlock상태에서 호출..
+			// called in the unlock state..
 			DrawItemNameList();		
 
 			__END_PROFILE("DrawItemNameList")
@@ -13577,7 +13577,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	} // bPlayerInCasket
 	else 
 	{
-		// [새기술3]
+		// [new skill 3]
 		m_pSurface->Unlock();
 	}
 
@@ -13587,7 +13587,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	//m_pSurface->Lock();
 
 	//----------------------------------------------------------------
-	// 화면에 나오는 글자를 출력한다.
+	// Draw the text that appears on the screen.
 	//----------------------------------------------------------------
 	__BEGIN_PROFILE("DrawTextList")
 
@@ -13596,36 +13596,36 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	__END_PROFILE("DrawTextList")
 
 	//-------------------------------------------------
-	// 출력할 string에 기억된걸 다 없애준다.
+	// Clear everything remembered in the string to output.
 	//-------------------------------------------------
 	ClearTextList();
 
 	//-------------------------------------------------
-	// guild mark 출력 테스트
+	// guild mark output test
 	//-------------------------------------------------
 //	#ifdef _DEBUG
 //
 //
 //			//-------------------------------------------------
-//			// load되어 있는지 본다.
+//			// Check whether it is loaded.
 //			//-------------------------------------------------
 //			CSprite* pSprite = g_pGuildMarkManager->GetGuildMark(guildID);
 //
 //			if (pSprite==NULL)
 //			{		
 //				//-------------------------------------------------
-//				// file에 있는지 본다.
+//				// Check whether it is in the file.
 //				//-------------------------------------------------
 //				g_pGuildMarkManager->LoadGuildMark(guildID);
 //
 //				//-------------------------------------------------
-//				// file에서 load되었는지 다시 체크
+//				// Check again whether it was loaded from the file
 //				//-------------------------------------------------
 //				pSprite = g_pGuildMarkManager->GetGuildMark(guildID);
 //
 //				//-------------------------------------------------
-//				// file에도 없는 경우..
-//				// guildMark관리서버?에서 받아온다.
+//				// When it is not in the file either..
+//				// Fetch from the guildMark management server?.
 //				//-------------------------------------------------
 //				CSprite* pSpriteSmall = g_pGuildMarkManager->GetGuildMarkSmall(guildID);
 //
@@ -13639,7 +13639,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//----------------------------------------------------------------
-	// Light 출력
+	// Light output
 	//----------------------------------------------------------------
 
 	/*
@@ -13654,12 +13654,12 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//----------------------------------------------------------------
-	// Object 출력	
+	// Object output
 	//----------------------------------------------------------------
-	// Y좌표로 sort를 해서 출력해야 한다.
+	// Must be sorted by Y coordinate and drawn.
 	//----------------------------------------------------------------
-	// list대신에 priority queue를 사용하는게 낫지 싶다! sort자동~~
-	// 그런데! list에 추가될때 순서가 있으니까... 관계가 없을 거 같다!
+	// Using a priority queue instead of a list seems better! Automatic sort~~
+	// But! The list has an order when things are added... so it seems not to matter!
 	//----------------------------------------------------------------
 
 
@@ -13717,7 +13717,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	*/
 
 	/*
-	// 그림자 Test		
+	// Shadow Test
 	if (g_pSDLInput->KeyDown(DIK_SPACE))
 	{
 		point.x = g_x;
@@ -13728,14 +13728,14 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			sprite = 0;//rand()%m_pImageObjectShadowManager->GetMaxIndex();
 
 			m_pSurface->Unlock();
-			// EffectTexture 설정
+			// Set EffectTexture
 			//// CDirect3D::GetDevice()->SetTexture() removed (SDL2)
 
 			CSpriteSurface* pSurface = m_pImageObjectShadowManager->GetTexture(sprite);		
 			// CDirect3D::GetDevice()->SetTexture() removed (SDL2)
 
 
-			// 좌표 설정
+			// Set coordinates
 			m_SpriteVertices[0].sx = point.x;	
 			m_SpriteVertices[0].sy = point.y;
 			//m_SpriteVertices[1].sx = point.x,m_EffectTPK[sprite].GetWidth();
@@ -13747,7 +13747,7 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 			m_SpriteVertices[3].sx = m_SpriteVertices[1].sx;
 			m_SpriteVertices[3].sy = m_SpriteVertices[2].sy;		
 
-			// 출력
+			// Output
 			// CDirect3D::GetDevice()->DrawPrimitive() removed (SDL2)
 
 
@@ -13763,8 +13763,8 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	*/	
 
 	//------------------------------------------------------
-	// (커서)
-	// 움직이는 방향이 계속 바뀌고 있는 경우 --> 커서 표현	
+	// (cursor)
+	// When the moving direction keeps changing --> show the cursor
 	//
 	//------------------------------------------------------
 	/*
@@ -13772,11 +13772,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 	{
 		POINT cursorPoint;
 		GetCursorPos(&cursorPoint);
-		// 그리고, 현재 Player있는 위치를 선택하지 않은 경우이다.
+		// And, this is the case where the Player's current position is not selected.
 		point = GetSelectedSector(cursorPoint.x, cursorPoint.y);
 		if (g_pPlayer->GetX()!=point.x || g_pPlayer->GetY()!=point.y)
 		{
-			// player가 움직이는 방향으로 커서 모양 표시
+			// Show the cursor shape in the direction the player is moving
 			int direction = g_pPlayer->GetDirection();
 
 			// [ TEST CODE ]
@@ -13796,11 +13796,11 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 
 
 	//---------------------------------------
-	// Filter영역 사각형
+	// Filter area rectangle
 	//---------------------------------------
 
 	/*
-	// Creature Sprite 보여주기
+	// Show Creature Sprite
 	static int s = 3;
 
 	if (++s == 43) s=3;
@@ -13818,17 +13818,17 @@ MTopView::DrawZone(int firstPointX,int firstPointY)
 //----------------------------------------------------------------------
 // Draw TileSurface
 //----------------------------------------------------------------------
-// - Player좌표를 중심으로 해서...
-//   단지 Tile을 m_pTileSurface에 그린다.
+// - Centered on the Player coordinates...
+//   Only draw the Tiles into m_pTileSurface.
 //
-// - 현재 화면의 Object들을 검색해서 출력에 이용할 수 있게 기억해둔다.
+// - Search the Objects on the current screen and remember them so they can be used for drawing.
 //----------------------------------------------------------------------
 void	
 MTopView::DrawTileSurface()
 {
 	//-------------------------------------------------
 	//
-	// Object를 출력하기 위한 정보
+	// Information for drawing Objects
 	//
 	//-------------------------------------------------
 	// sprite point
@@ -13836,8 +13836,8 @@ MTopView::DrawTileSurface()
 	RECT	rect;
 
 	//---------------------------------------------------------------
-	// Player를 중심에 두기 위한 첫번째 Sector좌표를 구한다.
-	// 화면의 (0,0)이 나타내는 Zone의 Pixel좌표
+	// Get the first Sector coordinates for keeping the Player at the center.
+	// Zone Pixel coordinates that the screen's (0,0) represents
 	//---------------------------------------------------------------
 	m_FirstZonePixel = MapToPixel(g_pPlayer->GetX()+g_SECTOR_SKIP_PLAYER_LEFT, 
 									g_pPlayer->GetY()+g_SECTOR_SKIP_PLAYER_UP);
@@ -13845,20 +13845,20 @@ MTopView::DrawTileSurface()
 	m_FirstZonePixel.y += g_pPlayer->GetSY();
 
 	//---------------------------------------------------------------	
-	// 화면의 (0,0)에 출력되는 Sector
+	// Sector drawn at the screen's (0,0)
 	//---------------------------------------------------------------		
 	POINT	firstSector;
 	firstSector = PixelToMap(m_FirstZonePixel.x, m_FirstZonePixel.y);
 	m_FirstSector = firstSector;
 
 	//---------------------------------------------------------------
-	// TileSurface (0,0)에 출력되는 Sector좌표
+	// Sector coordinates drawn at TileSurface (0,0)
 	//---------------------------------------------------------------
 	firstSector.x -= TILESURFACE_SECTOR_EDGE;
 	firstSector.y -= TILESURFACE_SECTOR_EDGE;
 
 	//---------------------------------------------------------------
-	// TileSurface (0,0)의 Zone에서의 pixel좌표를 기억해둔다.
+	// Remember the pixel coordinates in the Zone of TileSurface (0,0).
 	//---------------------------------------------------------------
 	m_TileSurfaceFirstSectorX		= firstSector.x;
 	m_TileSurfaceFirstSectorY		= firstSector.y;
@@ -13870,27 +13870,27 @@ MTopView::DrawTileSurface()
 
 	//----------------------------------------------------------------------
 	//
-	//                         Tile 출력
+	//                         Tile output
 	//
 	//----------------------------------------------------------------------
 	//----------------------------------------------------------------------
-	// 무조건 최초 Sector가 TileSurface의 (0,0)에 오도록 해야한다.
+	// The first Sector must always come at the TileSurface's (0,0).
 	//----------------------------------------------------------------------
 	int	sX1 = firstSector.x, 
 			sX2 = firstSector.x + g_TILESURFACE_SECTOR_WIDTH,		// sX1 ~ sX2
 			sY1 = firstSector.y, 
 			sY2 = firstSector.y + g_TILESURFACE_SECTOR_HEIGHT;	// sY1 ~ sY2
 
-	// 출력할 Surface상의 위치	
+	// Position on the Surface to draw to
 	tilePoint.x = 0;
 	tilePoint.y = 0;
 
 	//------------------------------------------------------
-	// Zone의 영역이 아닌 경우에 Skip...
+	// Skip when outside the Zone area...
 	//------------------------------------------------------					
 	if (sX1 < 0) 
 	{			
-		// Zone외곽 부분은 검은색으로 칠한다.
+		// Paint the part outside the Zone black.
 		rect.left = tilePoint.x;
 		rect.top = 0;	
 
@@ -13910,7 +13910,7 @@ MTopView::DrawTileSurface()
 	{
 		sX2 = m_pZone->GetWidth();//-1;
 
-		// Zone외곽 부분은 검은색으로 칠한다.
+		// Paint the part outside the Zone black.
 		rect.left = tilePoint.x + (sX2-sX1)*TILE_X;
 		rect.top = 0;					
 		rect.right = g_TILESURFACE_WIDTH;
@@ -13921,7 +13921,7 @@ MTopView::DrawTileSurface()
 
 	if (sY1 < 0)
 	{
-		// Zone외곽 부분은 검은색으로 칠한다.
+		// Paint the part outside the Zone black.
 		rect.left = tilePoint.x;
 		rect.top = tilePoint.y;	
 
@@ -13938,7 +13938,7 @@ MTopView::DrawTileSurface()
 
 	if (sY2 > m_pZone->GetHeight())
 	{
-		// Zone외곽 부분은 검은색으로 칠한다.
+		// Paint the part outside the Zone black.
 		rect.left = tilePoint.x;
 		rect.top = tilePoint.y;					
 		rect.right = tilePoint.x + (sX2-sX1)*TILE_X;
@@ -13949,7 +13949,7 @@ MTopView::DrawTileSurface()
 	}			
 
 	//------------------------------------------------------
-	// 일단 검은색으로 전체를 칠한다.
+	// First paint the whole thing black.
 	//------------------------------------------------------
 	/*
 	rect.left = 0;
@@ -13961,9 +13961,9 @@ MTopView::DrawTileSurface()
 	*/
 
 	//------------------------------------------------------
-	// 각 Sector출력
+	// Draw each Sector
 	//------------------------------------------------------	
-	// 첫번째 줄
+	// First row
 
 	DEBUG_ADD_FORMAT("[DrawTileSurface] (%d, %d) ~ (%d, %d)", sX1, sX2, sY1, sY2);
 
@@ -14016,13 +14016,13 @@ MTopView::DrawPartyHP(POINT* pPoint, MCreature* pCreature)
 	pPoint->x += 10;
 
 	//-----------------------------------------------------
-	// HP계산
+	// HP calculation
 	//-----------------------------------------------------
 	int currentHP		= pCreature->GetHP();
 	int maxHP			= pCreature->GetMAX_HP();
 
 	//-----------------------------------------------------
-	// 땅속에 있는 애는 HP가 꽉 찬것처럼 보여준다.
+	// Those underground are shown as if their HP were full.
 	//-----------------------------------------------------
 	if (pCreature->IsUndergroundCreature())
 	{
@@ -14036,7 +14036,7 @@ MTopView::DrawPartyHP(POINT* pPoint, MCreature* pCreature)
 	}
 
 	//-----------------------------------------------------
-	// 실제로 보여질 pixel계산
+	// Calculate the pixels actually shown
 	//-----------------------------------------------------
 	CSprite* pHPBackSprite	= &m_EtcSPK[SPRITEID_PARTY_HP_BACKGROUND];
 	CSprite* pHPSprite		= &m_EtcSPK[SPRITEID_PARTY_HP];
@@ -14045,7 +14045,7 @@ MTopView::DrawPartyHP(POINT* pPoint, MCreature* pCreature)
 	int currentPixels	= (maxHP==0)? 0 : maxPixels * currentHP / maxHP;
 
 	//-----------------------------------------------------
-	// 출력
+	// Output
 	//-----------------------------------------------------
 	POINT pointTemp;
 
@@ -14104,7 +14104,7 @@ int
 {
 
 	int y2 = pPoint->y;
-	// 약간 왼쪽에서 출력...
+	// Draw slightly to the left...
 	//pPoint->x -= 50;
 
 	// 2005, 1, 20, sobeit add start
@@ -14116,12 +14116,12 @@ int
 	// 2005, 1, 20, sobeit add end
 	//---------------------------------------------------------
 	//
-	//			Font설정
+	//			Font setup
 	//
 	//---------------------------------------------------------	
 	FONTID	font;
 	//---------------------------------------------------------
-	// Vampire와 Slayer에 따라서 Font를 다르게 해준다.
+	// Use a different Font for Vampire and Slayer.
 	//---------------------------------------------------------
 	if (pCreature->IsVampire())
 	{
@@ -14142,7 +14142,7 @@ int
 	const int ChatFontHeight = bLargeFont ? g_pClientConfig->FONT_HEIGHT + 5 : g_pClientConfig->FONT_HEIGHT ;
 	//---------------------------------------------------------
 	//
-	//		제일 긴 string의 길이를 얻는다.
+	//		Get the length of the longest string.
 	//
 	//---------------------------------------------------------
 	int numString = g_pClientConfig->MAX_CHATSTRING;
@@ -14152,7 +14152,7 @@ int
 		const char *str = pCreature->GetChatString(i);		
 
 		//---------------------------------------------------------
-		// 뭔가 있으면.. 출력해야한다.
+		// If there is something.. it must be drawn.
 		//---------------------------------------------------------
 		if (str[0] != '\0')
 		{
@@ -14168,7 +14168,7 @@ int
 			numString = g_pClientConfig->MAX_CHATSTRING_MINUS_1 - i;
 
 			//---------------------------------------------------------
-			// 출력할게 없는 경우	
+			// When there is nothing to draw
 			//---------------------------------------------------------
 			if (numString==0)
 			{
@@ -14181,7 +14181,7 @@ int
 
 	//---------------------------------------------------------
 	//
-	//			출력 정보 설정
+	//			Set the output information
 	//
 	//---------------------------------------------------------	
 	int firstY = y2 - numString * ChatFontHeight;
@@ -14192,7 +14192,7 @@ int
 
 
 	//---------------------------------------------------------
-	// 화면 안에 글자가 들어오도록..
+	// So that the text fits inside the screen..
 	//---------------------------------------------------------
 	if (x<0) x=0;
 
@@ -14255,14 +14255,14 @@ int
 	}
 
 	//---------------------------------------------------------
-	//  각 string 출력...
+	//  Draw each string...
 	//---------------------------------------------------------
 	int start = g_pClientConfig->MAX_CHATSTRING-numString;
 	for (int i=start; i<g_pClientConfig->MAX_CHATSTRING; i++)
 	{
 		const char *str = pCreature->GetChatString(i);
 
-		// 뭔가 있으면.. 출력해야한다.
+		// If there is something.. it must be drawn.
 		//if (str[0] != NULL)
 		{
 			//m_pSurface->GDI_Text(pointTemp.x, pointTemp.y, str, 0xFFFF);
@@ -14277,17 +14277,17 @@ int
 			);	
 
 			//---------------------------------------------------------
-			// 33으로 한거는.. DWORD time에서 첫 bit가 필요없을 듯 하고
-			// Creature Object ID로 캐릭터별로 순서에 맞춰서 출력하고 
-			// 출력순서 i를 추가해서 순서대로 출력되게 한 것이다.
+			// 33 was used because the first bit of the DWORD time seems unnecessary,
+			// and the Creature Object ID makes each character draw in order,
+			// and the output order i is added so that they are drawn in order.
 			//
-			// 오래된거 < 캐릭터별로 < 줄순서
+			// older < per character < line order
 			//---------------------------------------------------------
 			QWORD time = timeBase + m_pqDrawText.size();
 			pNode->SetTextTime( time );
 
 			//---------------------------------------------------------
-			// °ËÀº»ö ¹Ú½º (黑色背景框 - 聊天气泡)
+			// black box (garbled in the original; the Chinese gloss reads: black background box - chat bubble)
 			//---------------------------------------------------------
 			if (i==start)
 			{
@@ -14298,10 +14298,10 @@ int
 					y2 +2
 				};
 
-				pNode->SetBox( rect, m_ColorUIBoxBg );  // RGB565 格式的灰色
+				pNode->SetBox( rect, m_ColorUIBoxBg );  // gray in RGB565 format
 
 				//---------------------------------------------------------
-				// 채팅에 외곽 박스 그리기
+				// Draw an outline box around the chat
 				//---------------------------------------------------------
 				if (g_pUserOption->DrawChatBoxOutline)
 				{
@@ -14324,7 +14324,7 @@ int
 			AddText( pNode );
 		}
 
-		// 한줄씩 아래로..
+		// Move down one line at a time..
 		y += ChatFontHeight;
 	}
 
@@ -14332,9 +14332,9 @@ int
 }
 
 //----------------------------------------------------------------------
-// Draw Item : Item 출력하기	
+// Draw Item : draw the Item
 //----------------------------------------------------------------------
-// pSurface의 pPoint에 pItem을 출력한다. 
+// Draw pItem at pPoint of pSurface.
 //----------------------------------------------------------------------
 void	
 MTopView::DrawItem(POINT* pPoint, MItem* pItem)
@@ -14349,7 +14349,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 	__BEGIN_PROFILE("DrawItem")
 
 	//------------------------------------------------
-	// Slayer인 경우 Darkness 안을 볼 수 없다.
+	// A Slayer cannot see inside Darkness.
 	//------------------------------------------------
 	if (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() &&
 		IsAffectFromDarkness() &&
@@ -14375,7 +14375,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 	}
 
 	//---------------------------------------------------------
-	// 시체인 경우는 Creature를 출력한다.
+	// For a corpse, draw the Creature.
 	//---------------------------------------------------------
 	if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 	{
@@ -14388,9 +14388,9 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		if (pCreature!=NULL)
 		{
 			//---------------------------------------------------------
-			// PC Vampire인 경우는 '먼지'로 표현한다.
+			// A PC Vampire is shown as 'dust'.
 			// 
-			// 틴버전인경우는 모두 '먼지'로 표현한다.
+			// In the Teen version everything is shown as 'dust'.
 			//---------------------------------------------------------
 //			if (//pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_MALE 
 //				//|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_FEMALE)
@@ -14409,12 +14409,12 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 //					m_SOM.Generate();
 //
 			//---------------------------------------------------------
-			// 일반 캐릭터 죽은 모습..
+			// Dead appearance of a normal character..
 			//---------------------------------------------------------
 //			else
 			{
-				// 선택된 것인 경우
-				// Creature를 선택한 것처럼해서 출력.. 사기당. - -;
+				// If it is the selected one
+				// Draw it as if the Creature were selected.. it's a cheat. - -;
 				if (m_SelectItemID == pItem->GetID())
 				{
 					m_SelectCreatureID = pCreature->GetID();
@@ -14438,12 +14438,12 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 			}
 
 			//------------------------------------------------
-			// 죽은 캐릭터이면 선택 사각형을
-			// 한 Tile 크기로 제한한다.
+			// For a dead character the selection rectangle
+			// is limited to the size of one Tile.
 			//------------------------------------------------
 			if(!((pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376) || (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563) || (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549) || pCreature->GetCreatureType() == 672 || pCreature->GetCreatureType() == 673 ))
 			{
-				if(pCreature->GetCreatureType() == 482 || pCreature->GetCreatureType() == 650 )	// 트리는 select안되게
+				if(pCreature->GetCreatureType() == 482 || pCreature->GetCreatureType() == 650 )	// so the tree cannot be selected
 				{
 					RECT rect;
 					rect.left	= orPoint.x;
@@ -14475,9 +14475,9 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 	}
 
 	//---------------------------------------------------------
-	// 아직 떨어지고 있는 중이면..
+	// If it is still falling..
 	//---------------------------------------------------------
-	// m_ItemDropFPK와 m_ItemDropSPK를 이용..
+	// Uses m_ItemDropFPK and m_ItemDropSPK..
 	//---------------------------------------------------------
 	if (pItem->IsDropping())
 	{
@@ -14498,8 +14498,8 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		//#endif
 
 		//---------------------------------------------------------
-		// 이거 고치고나서.. MZone::AddItem( ...) 에서
-		// if (bDropping) 뒤의 주석부분을 살려야 한다..
+		// After fixing this.. in MZone::AddItem( ...)
+		// the commented-out part after if (bDropping) must be revived..
 		//---------------------------------------------------------
 		CFrame &Frame = m_ItemDropFPK[ dropFrameID ][ frame ];
 		//CFrame &Frame = m_ItemTileFPK[ pItem->GetTileFrameID() ];
@@ -14519,7 +14519,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		CIndexSprite* pSprite = &m_ItemDropISPK[ Frame.GetSpriteID() ];
 		//CSprite* pSprite = &m_ItemTileSPK[ Frame.GetSpriteID() ];
 
-		// 출력
+		// Output
 		int colorSet = pItem->GetItemOptionColorSet();
 
 
@@ -14531,9 +14531,9 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		m_pSurface->BltIndexSprite(&pointTemp, pSprite);							
 	}
 	//---------------------------------------------------------
-	// 바닥에 있는 item
+	// Item on the ground
 	//---------------------------------------------------------
-	// m_ItemTileFPK와 m_ItemTileSPK를 이용
+	// Uses m_ItemTileFPK and m_ItemTileSPK
 	//---------------------------------------------------------
 	else
 	{
@@ -14556,7 +14556,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 			Frame.GetSpriteID());
 		*/
 
-		// 좌표 보정
+		// Coordinate correction
 		POINT pointTemp;
 		pointTemp.x = pPoint->x + Frame.GetCX();
 		pointTemp.y = pPoint->y + Frame.GetCY();
@@ -14580,8 +14580,8 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		CIndexSprite::SetUsingColorSet( colorSet, colorSet );
 
 		//---------------------------------------- 		
-		// Item 선택 사각형 영역 설정
-		// 아이템의 선택 영역 크기를 제한한다.
+		// Set the Item selection rectangle area
+		// Limit the size of the item's selection area.
 		//---------------------------------------- 	
 		RECT rect;
 		rect.left	= max(pointTemp.x, pPoint->x);
@@ -14591,10 +14591,10 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 
 		pItem->SetScreenRect( &rect );
 
-		// m_SpritePack에서 적절한 sprite를 골라서 출력해준다.
+		// Pick the appropriate sprite from m_SpritePack and draw it.
 
 		//-------------------------------------------------------
-		// Mouse가 가리키고 있는 Item
+		// Item the Mouse is pointing at
 		//-------------------------------------------------------
 		if (m_SelectItemID == pItem->GetID())		
 		{		
@@ -14609,12 +14609,12 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 				m_pSurface->BltSpriteOutline( &m_SOM, m_SOMOutlineColor );
 
 			//-------------------------------------
-			// mouse가 가리키는 Item의 정보 표시
+			// Show the information of the Item the mouse is pointing at
 			//-------------------------------------
 			/*
 			const char* pItemName = pItem->GetName();
 
-			// option이 붙은거는 파란색..
+			// Items with an option are blue..
 			COLORREF nameColor;
 			if (pItem->GetItemOption()==0)
 			{
@@ -14632,12 +14632,12 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 				int x = pointTemp.x + (pSprite->GetWidth()>>1);
 				int y = pointTemp.y - g_pClientConfig->FONT_ITEM_HEIGHT;			
 
-				// 화면 안에 글자가 들어오도록..
+				// So that the text fits inside the screen..
 				if (x<0) x=0;
 				if (y<0) y=0;
 
 				//--------------------------------------------------
-				// GetStringWidth에서는 unlock해야한다.
+				// GetStringWidth requires unlock.
 				//--------------------------------------------------
 				m_pSurface->Unlock();
 				int x2 = x + g_GetStringWidth(pItemName, g_ClientPrintInfo[font]->hfont);
@@ -14660,7 +14660,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 				);
 
 
-				// 검은색 박스			
+				// Black box
 				RECT rect = {
 					x, 
 					y,
@@ -14678,7 +14678,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 		else
 		{	
 			//-------------------------------------------------------
-			// 추적 중인 Item표시
+			// Mark the Item being chased
 			//-------------------------------------------------------
 			//if (g_pPlayer->IsTraceItem() && g_pPlayer->GetTraceID()==pItem->GetID())
 			{	
@@ -14686,7 +14686,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 			//	m_pSurface->BltSpriteColor(&pointTemp, &m_ItemTileSPK[ Frame.GetSpriteID() ], 0);
 			}	
 			//-------------------------------------------------------
-			// 정상 출력
+			// Normal output
 			//-------------------------------------------------------
 			//else 
 			{
@@ -14694,16 +14694,16 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 				//{			
 
 				//-------------------------------------------------------
-				// 설치된 지뢰이면..
+				// If it is an installed mine..
 				//-------------------------------------------------------
 				if (pItem->GetItemClass()==ITEM_CLASS_MINE
 					&& ((MMine*)pItem)->IsInstalled())
 				{
-					// 빨간색으로 출력한다.
+					// Draw it in red.
 					m_pSurface->BltIndexSpriteColor(&pointTemp, pSprite, 0);
 				}
 				//-------------------------------------------------------	
-				// 일반적인 아이템
+				// Ordinary item
 				//-------------------------------------------------------
 				else
 				{					
@@ -14714,7 +14714,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 
 		// [ TEST CODE ]
 		//-------------------------------------
-		// mouse가 가리키는 Item의 정보 표시
+		// Show the information of the Item the mouse is pointing at
 		//-------------------------------------
 		/*
 		DRAWTEXT_NODE* pNode = new DRAWTEXT_NODE(
@@ -14729,7 +14729,7 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 	}
 
 	//--------------------------------------------------------------------
-	// ItemNameList에 추가
+	// Add to ItemNameList
 	//--------------------------------------------------------------------
 	if (m_bDrawItemNameList)
 	{
@@ -14754,9 +14754,9 @@ MTopView::DrawItem(POINT* pPoint, MItem* pItem)
 
 
 //----------------------------------------------------------------------
-// Draw ItemShadow : Item 그림자 출력하기	
+// Draw ItemShadow : draw the Item shadow
 //----------------------------------------------------------------------
-// pSurface의 pPoint에 pItem을 출력한다.
+// Draw pItem at pPoint of pSurface.
 //----------------------------------------------------------------------
 void	
 MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
@@ -14768,7 +14768,7 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 	__BEGIN_PROFILE("DrawItemShadow")
 
 	//------------------------------------------------
-	// Slayer인 경우 Darkness 안을 볼 수 없다.
+	// A Slayer cannot see inside Darkness.
 	//------------------------------------------------
 	if (g_pZone->GetSector(pItem->GetX(), pItem->GetY()).HasDarkness() 
 		&&IsAffectFromDarkness())
@@ -14781,7 +14781,7 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 	}
 
 	//---------------------------------------------------------
-	// 시체인 경우는 Creature를 출력한다.
+	// For a corpse, draw the Creature.
 	//---------------------------------------------------------
 	if (pItem->GetItemClass()==ITEM_CLASS_CORPSE)
 	{
@@ -14792,32 +14792,32 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 		if (pCreature!=NULL)
 		{
 			//---------------------------------------------------------
-			// 일반 캐릭터 죽은 모습..
+			// Dead appearance of a normal character..
 			//---------------------------------------------------------
 			{
-				// 선택된 것인 경우
-				// Creature를 선택한 것처럼해서 출력.. 사기당. - -;
+				// If it is the selected one
+				// Draw it as if the Creature were selected.. it's a cheat. - -;
 				if (m_SelectItemID == pItem->GetID())
 				{
 					m_SelectCreatureID = pCreature->GetID();
 
 					if (
 							(
-							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376)	// 성물
-							|| (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)	// 성물
-							|| (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549)	// 성단
-							|| pCreature->GetCreatureType() == 482	// 크리스마스 트리
-							|| pCreature->GetCreatureType() == 650	// 게시판
+							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376)	// relic
+							|| (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)	// relic
+							|| (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549)	// altar
+							|| pCreature->GetCreatureType() == 482	// Christmas tree
+							|| pCreature->GetCreatureType() == 650	// bulletin board
 							|| pCreature->GetCreatureType() == 672
 							|| pCreature->GetCreatureType() == 673
-							|| pCreature->GetCreatureType() == 730 // 웨이 포인트1
-							|| pCreature->GetCreatureType() == 731 // 웨이 포인트2
-							|| pCreature->GetCreatureType() == 732 // 웨이 포인트3
+							|| pCreature->GetCreatureType() == 730 // waypoint 1
+							|| pCreature->GetCreatureType() == 731 // waypoint 2
+							|| pCreature->GetCreatureType() == 732 // waypoint 3
 							)
 						||
 							(
 							pCreature->GetActionCount() < pCreature->GetActionCountMax()
-							// 틴버전일 경우에는 슬레이어시체 그림자 출력해줘야함
+							// In the Teen version the Slayer corpse shadow must be drawn
 							|| (g_pUserInformation->GoreLevel == false
 							&& pCreature->GetActionCount()>=pCreature->GetActionCountMax()/2
 							&& pCreature->IsDead())
@@ -14834,21 +14834,21 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 				{
 					if (
 							(
-							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376)	// 성물
-							|| (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)	// 성물
-							|| (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549)	// 성물
-							|| pCreature->GetCreatureType() == 482	// 크리스마스 트리
-							|| pCreature->GetCreatureType() == 650  // 게시판
+							(pCreature->GetCreatureType() >= 371 && pCreature->GetCreatureType() <= 376)	// relic
+							|| (pCreature->GetCreatureType() >= 560 && pCreature->GetCreatureType() <= 563)	// relic
+							|| (pCreature->GetCreatureType() >= 526 && pCreature->GetCreatureType() <= 549)	// relic
+							|| pCreature->GetCreatureType() == 482	// Christmas tree
+							|| pCreature->GetCreatureType() == 650  // bulletin board
 							|| pCreature->GetCreatureType() == 672
 							|| pCreature->GetCreatureType() == 673
-							|| pCreature->GetCreatureType() == 730 // 웨이 포인트1
-							|| pCreature->GetCreatureType() == 731 // 웨이 포인트2
-							|| pCreature->GetCreatureType() == 732 // 웨이 포인트3
+							|| pCreature->GetCreatureType() == 730 // waypoint 1
+							|| pCreature->GetCreatureType() == 731 // waypoint 2
+							|| pCreature->GetCreatureType() == 732 // waypoint 3
 							)
 						||
 							(
 							pCreature->GetActionCount() < pCreature->GetActionCountMax()
-							// 틴버전일 경우에는 슬레이어시체 그림자 출력해줘야함
+							// In the Teen version the Slayer corpse shadow must be drawn
 							|| (g_pUserInformation->GoreLevel == false
 							&& pCreature->GetActionCount()>=pCreature->GetActionCountMax()/2
 							&& pCreature->IsDead())
@@ -14883,9 +14883,9 @@ MTopView::DrawItemShadow(POINT* pPoint, MItem* pItem)
 }
 
 //----------------------------------------------------------------------
-// Draw ImageObject : 그림 출력하기	
+// Draw ImageObject : draw the picture
 //----------------------------------------------------------------------
-// pSurface의 pPoint에 pImageObject을 출력한다.
+// Draw pImageObject at pPoint of pSurface.
 //----------------------------------------------------------------
 void	
 MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
@@ -14904,35 +14904,35 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 	#endif
 
 
-	// m_SpritePack에서 적절한 sprite를 골라서 출력해준다.
-	// Player를 가리는 그림일 경우 반투명 처리
+	// Pick the appropriate sprite from m_SpritePack and draw it.
+	// Semi-transparent handling for a picture that covers the Player
 
 	//if (pImageObject->GetImageObjectID() == m_BehindImageObjectID)
 
 
 	//------------------------------------------------------
-	// 1. ImageObject가 투명이 되는 것인가?
-	// 2. Viewpoint가 Player위치보다 아래쪽에 있는가?
-	// 3. Sprite가 Player를 가리는가?
+	// 1. Is the ImageObject one that can become transparent?
+	// 2. Is the Viewpoint below the Player position?
+	// 3. Does the Sprite cover the Player?
 	//------------------------------------------------------
-	// 1,2,3이 모두 만족한 경우.. 반투명 처리한다.
+	// When 1, 2 and 3 are all satisfied.. handle as semi-transparent.
 	//------------------------------------------------------
 	bool bTrans;
 
 
 
 	//------------------------------------------------------
-	// 전체적으로 어두운 값을 지정한다.
-	// 단, ImageObject의 좌표(Zone에서의 Sector좌표)가 
-	// 밝은 Tile이면(Light가 0이 아닌 경우) DarkBits=0으로 한다.
+	// Specify an overall dark value.
+	// However, if the ImageObject's coordinates (Sector coordinates in the Zone)
+	// are on a bright Tile (Light is not 0), set DarkBits=0.
 	//------------------------------------------------------
 	//BYTE DarkBits;
 
 	//------------------------------------------------------
 	// [ TEST CODE ]
 	//------------------------------------------------------
-		// 이거는 필요없는 code이다.
-		// MapEditor에서 잘 만들어주면 된다.
+		// This is unnecessary code.
+		// It is enough to make it properly in the MapEditor.
 	/*
 	if (pImageObject->GetX()!=SECTORPOSITION_NULL && pImageObject->GetY()!=SECTORPOSITION_NULL
 		&&
@@ -14945,7 +14945,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 		DarkBits = m_DarkBits;
 	}
 
-	// 3D 가속이 되는 경우.. 무조건 원래 색깔을 그대로 출력한다.
+	// With 3D acceleration.. always draw the original colors as they are.
 	if (true)
 	{
 		DarkBits = 0;
@@ -14953,13 +14953,13 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 	*/
 
 	//----------------------------------------------------				
-	// 건물은 무조건 반투명
+	// Buildings are always semi-transparent
 	//----------------------------------------------------				
 	BOOL bBlendingShadow = 1;//g_pUserOption->BlendingShadow;
 
 	//------------------------------------------------------
 	//
-	//  ShadowObject 출력
+	//  ShadowObject output
 	//
 	//------------------------------------------------------
 	if (pImageObject->GetObjectType()==MObject::TYPE_SHADOWOBJECT)
@@ -15004,7 +15004,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 	}
 	//------------------------------------------------------
 	//
-	//          ShadowAnimationObject 출력
+	//          ShadowAnimationObject output
 	//
 	//------------------------------------------------------
 	else if (pImageObject->GetObjectType()==MObject::TYPE_SHADOWANIMATIONOBJECT)
@@ -15012,7 +15012,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 	}
 	//------------------------------------------------------
 	//
-	//          InteractionObject 출력
+	//          InteractionObject output
 	//
 	//------------------------------------------------------
 //	else if (pImageObject->GetObjectType()==MObject::TYPE_INTERACTIONOBJECT)
@@ -15034,15 +15034,15 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 //				CSprite* pSprite = &m_InteractionObjectSPK[ sprite ];		
 //				
 //				//---------------------------------------- 		
-//				// InteractionObject의 선택 사각형 영역 설정
+//				// Set the InteractionObject selection rectangle area
 //				//---------------------------------------- 	
 //
 //
-//				// 반투명 check				
+//				// semi-transparent check
 //				bTrans = pImageObject->IsTrans();
 //
 //				//--------------------------------
-//				// 선택된 InteractionObject일 경우...
+//				// For the selected InteractionObject...
 //				//--------------------------------
 //
 //						m_SOM.Add( pPoint->x, pPoint->y, pSprite );
@@ -15050,11 +15050,11 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 //						m_SOM.Generate();
 //
 //				//--------------------------------
-//				// 투명 처리
+//				// Transparent handling
 //				//--------------------------------
 //
 //				//--------------------------------
-//				// 그냥 출력
+//				// Plain output
 //				//--------------------------------
 //						///*
 //
@@ -15071,7 +15071,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 //			case BLT_EFFECT :	
 //				/*
 //				//--------------------------------
-//				// 선택된 InteractionObject일 경우...
+//				// For the selected InteractionObject...
 //				//--------------------------------
 //				*/
 //			break;
@@ -15081,14 +15081,14 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 	{
 		//------------------------------------------------------
 		//
-		//          ImageObject : Sprite 출력
+		//          ImageObject : Sprite output
 		//
 		//------------------------------------------------------
 		int spriteID = pImageObject->GetSpriteID();
 		if (spriteID != SPRITEID_NULL)	
 		{			
 			//---------------------------------------
-			// ID가 sprite인 ImageObject를 Load한다.
+			// Load the ImageObject whose sprite is ID.
 			//---------------------------------------
 //			#ifdef	OUTPUT_DEBUG
 //				char str[256];
@@ -15097,18 +15097,18 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 //
 //				m_ImageObjectSPKFile.seekg(m_ImageObjectSPKI[spriteID], ios::beg);				
 //				//--------------------------------------------------
-//				// Loading에 성공한 경우
+//				// When Loading succeeded
 //				//--------------------------------------------------
 //
 //				//--------------------------------------------------
-//				// 실패한 경우 --> 이미 Loading하고 있는 경우이다.				
+//				// When it failed --> it is already being Loaded.
 //				//--------------------------------------------------
 //				/*
 //	
 //						DEBUG_ADD( str );
 //					#endif
 //
-//					// file thread 순위를 높힌다.
+//					// Raise the file thread priority.
 //					//SetThreadPriority(g_hFileThread, THREAD_PRIORITY_HIGHEST);
 //					MLoadingSPKWorkNode3* pNode = new MLoadingSPKWorkNode3(spriteID, m_ImageObjectSPKI[spriteID]);
 //
@@ -15122,13 +15122,13 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 			bTrans = pImageObject->IsTrans()
 						&& pImageObject->GetViewpoint() >= g_pPlayer->GetY()
-						// 2001.9.5 추가
+						// 2001.9.5 added
 						&& pImageObject->IsWallTransPosition(g_pPlayer->GetX(), g_pPlayer->GetY());
 
 
 
 			//--------------------------------
-			// 투명 처리
+			// Transparent handling
 			//--------------------------------
 			if (bTrans)
 			{	
@@ -15136,7 +15136,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 				//m_pSurface->BltSpriteHalf(pPoint, &m_ImageObjectSPK[ spriteID ]);
 
 
-				// 그림에 맞춘 filter 좌표 보정
+				// Correct the filter coordinates to fit the picture
 				CSprite::SetFilter(static_cast<short>(m_FilterPosition.x - pPoint->x),
 									static_cast<short>(m_FilterPosition.y - pPoint->y),
 									&m_ImageObjectFilter);
@@ -15149,7 +15149,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 						if (g_pSDLInput->KeyDown(DIK_A) && 
 							(g_pSDLInput->KeyDown(DIK_LCONTROL) || g_pSDLInput->KeyDown(DIK_RCONTROL)))
 						{
-							// CTRL+A누르면 암거도 안 찍는다.
+							// Pressing CTRL+A draws nothing.
 						}
 						else
 					#endif
@@ -15174,7 +15174,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 				//m_pSurface->BltSprite(pPoint, &m_ImageObjectOutlineSPK[ 0 ]);
 			}
 			//--------------------------------
-			// 그냥 출력
+			// Plain output
 			//--------------------------------
 			else
 			{					
@@ -15194,7 +15194,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 					if (g_pSDLInput->KeyDown(DIK_A) && 
 						(g_pSDLInput->KeyDown(DIK_LCONTROL) || g_pSDLInput->KeyDown(DIK_RCONTROL)))
 					{
-						// CTRL+A누르면 암거도 안 찍는다.
+						// Pressing CTRL+A draws nothing.
 					}
 					else
 #endif
@@ -15305,7 +15305,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 		//------------------------------------------------------------
 		//
-		//     AnimationObject인 경우엔 Frame도 출력해줘야 한다.
+		//     For an AnimationObject the Frame must be drawn too.
 		//
 		//------------------------------------------------------------
 		if (pImageObject->IsAnimation())
@@ -15316,7 +15316,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 			POINT pointTemp = *pPoint;
 
-			/*******************그림자 출력 시작******************/ 
+			/*******************start of shadow output******************/
 			if (pAnimationObject->GetFrameID() < m_ImageObjectShadowFPK.GetSize()
 				&& pAnimationObject->GetFrame() < m_ImageObjectShadowFPK[pAnimationObject->GetFrameID()].GetSize())
 			{
@@ -15337,7 +15337,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 					}
 				}
 			}
-			/*******************그림자 출력 끝******************/ 
+			/*******************end of shadow output******************/
 
 			switch (pAnimationObject->GetBltType())
 			{
@@ -15353,20 +15353,20 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 					if(sprite >= m_ImageObjectSPK.GetSize())
 						break;
 					//---------------------------------------
-					// ID가 sprite인 ImageObject를 Load한다.
+					// Load the ImageObject whose sprite is ID.
 					//---------------------------------------
 //
 //						m_ImageObjectSPKFile.seekg(m_ImageObjectSPKI[sprite], ios::beg);						
 //						
 //						//--------------------------------------------------
-//						// Loading에 성공한 경우
+//						// When Loading succeeded
 //						//--------------------------------------------------
 //						//--------------------------------------------------
-//						// 실패한 경우 --> 이미 Loading하고 있는 경우이다.				
+//						// When it failed --> it is already being Loaded.
 //						//--------------------------------------------------
 //						
 ////
-////							// file thread 순위를 높힌다.
+////							// Raise the file thread priority.
 ////							//SetThreadPriority(g_hFileThread, THREAD_PRIORITY_HIGHEST);
 ////							MLoadingSPKWorkNode3* pNode = new MLoadingSPKWorkNode3(sprite, m_ImageObjectSPKI[sprite]);
 ////
@@ -15377,18 +15377,18 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 ////						}
 //						
 //					}
-					// 좌표 보정
+					// Coordinate correction
 					pPoint->x += Frame.GetCX();
 					pPoint->y += Frame.GetCY();
 
-					// spriteID가 없는 경우는 반투명 다시 check				
+					// When there is no spriteID, check semi-transparency again
 					if (spriteID==SPRITEID_NULL)
 					{
 						bTrans = true;
 					}				
 
 					//--------------------------------
-					// 투명 처리
+					// Transparent handling
 					//--------------------------------
 					if (bTrans)
 					{
@@ -15401,7 +15401,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 					}
 					//--------------------------------
-					// 그냥 출력
+					// Plain output
 					//--------------------------------
 					else
 					{
@@ -15433,14 +15433,14 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 						sprite = Frame.GetSpriteID();
 
-						// 좌표 보정
+						// Coordinate correction
 						pPoint->x += Frame.GetCX();
 						pPoint->y += Frame.GetCY();
 
 						DRAW_ALPHASPRITEPAL(pPoint, sprite, m_EffectAlphaSPK, m_EffectAlphaPPK[fid])//, m_EffectAlphaSPKI, m_EffectAlphaSPKFile)					
 
 						//-------------------------------------------------------
-						// H/W 가속이 되는 경우이면...
+						// If H/W acceleration is available...
 						//-------------------------------------------------------
 						if (s_bUse3DLight)
 						{
@@ -15451,16 +15451,16 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 
 							//------------------------------------------------
-							// LightFilter를 추가한다.
+							// Add a LightFilter.
 							//------------------------------------------------
 							AddLightFilter3D( pPoint->x + 24, 
 								pPoint->y + 24, 
-								Frame.GetLight(),			// 빛의 밝기
-								false);		// false = screen좌표
+								Frame.GetLight(),			// light brightness
+								false);		// false = screen coordinates
 
 						}
 						//-------------------------------------------------------
-						// 2D 출력
+						// 2D output
 						//-------------------------------------------------------
 						else
 						{
@@ -15468,8 +15468,8 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 								AddLightFilter2D( pPoint->x + 24, 
 								pPoint->y + 24, 
-								Frame.GetLight(),			// 빛의 밝기
-								false);		// false = screen좌표
+								Frame.GetLight(),			// light brightness
+								false);		// false = screen coordinates
 						}
 					}
 					if (g_bFrameChanged)
@@ -15493,7 +15493,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 						if (sprite!=SPRITEID_NULL)
 						{
-							// Frame 좌표 보정
+							// Frame coordinate correction
 							pPoint->x += Frame.GetCX();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCX();
 							pPoint->y += Frame.GetCY();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCY();
 
@@ -15505,7 +15505,7 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 								m_EffectScreenPPK[fid],
 								CSpriteSurface::EFFECT_SCREEN)
 							//-------------------------------------------------------
-							// H/W 가속이 되는 경우이면...
+							// If H/W acceleration is available...
 							//-------------------------------------------------------
 							if (s_bUse3DLight)
 							{
@@ -15516,16 +15516,16 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 //									
 
 								//------------------------------------------------
-								// LightFilter를 추가한다.
+								// Add a LightFilter.
 								//------------------------------------------------
 								AddLightFilter3D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);		// false = screen좌표
+									Frame.GetLight(),			// light brightness
+									false);		// false = screen coordinates
 
 							}
 							//-------------------------------------------------------
-							// H/W 가속이 안되는 경우이면...
+							// If H/W acceleration is not available...
 							//-------------------------------------------------------
 							else
 							{
@@ -15539,8 +15539,8 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 
 									AddLightFilter2D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);		// false = screen좌표
+									Frame.GetLight(),			// light brightness
+									false);		// false = screen coordinates
 							}
 						}
 						if (g_bFrameChanged)
@@ -15578,10 +15578,10 @@ MTopView::DrawImageObject(POINT* pPoint, MImageObject* pImageObject)
 //----------------------------------------------------------------
 // SurfaceLock For AlphaEffect
 //----------------------------------------------------------------
-// 3D이고 lock돼 있으면 Unlock으로...
-// 3D아니고 lock안 돼 있으면 lock으로..
+// If 3D and locked, make it Unlock...
+// If not 3D and not locked, make it lock..
 //
-// return값은 원래 Lock상태
+// The return value is the original Lock state
 //----------------------------------------------------------------
 /*
 BOOL
@@ -15593,7 +15593,7 @@ MTopView::SurfaceLockForAlphaEffect()
 	{
 		if (bLock)
 		{
-			// 3D이고 lock돼 있으면 Unlock으로...
+			// If 3D and locked, make it Unlock...
 			m_pSurface->Unlock();
 		}
 	}
@@ -15601,7 +15601,7 @@ MTopView::SurfaceLockForAlphaEffect()
 	{	
 		if (!bLock)
 		{
-			// 3D아니고 lock안 돼 있으면 lock으로..
+			// If not 3D and not locked, make it lock..
 			m_pSurface->Lock();
 		}
 	}
@@ -15613,7 +15613,7 @@ MTopView::SurfaceLockForAlphaEffect()
 //----------------------------------------------------------------
 // SurfaceLock
 //----------------------------------------------------------------
-// return값은 원래의 lock상태
+// The return value is the original lock state
 //----------------------------------------------------------------
 /*
 BOOL
@@ -15633,7 +15633,7 @@ MTopView::SurfaceLock()
 //----------------------------------------------------------------
 // SurfaceLock Restore
 //----------------------------------------------------------------
-// 원래의 Lock상태로 돌려준다.
+// Restore the original Lock state.
 //----------------------------------------------------------------
 /*
 void
@@ -15643,7 +15643,7 @@ MTopView::SurfaceLockRestore( BOOL bOldLock )
 	{
 		if (!m_pSurface->IsLock())
 		{
-			// 원래 Lock이었는데 Lock이 아니면
+			// If it was originally Locked but is not Locked
 			m_pSurface->Lock();
 		}
 	}
@@ -15651,7 +15651,7 @@ MTopView::SurfaceLockRestore( BOOL bOldLock )
 	{
 		if (m_pSurface->IsLock())
 		{
-			// 원래 Lock이 아니었는데 Lock이면..
+			// If it was not originally Locked but is Locked..
 			m_pSurface->Unlock();
 		}
 	}
@@ -15659,7 +15659,7 @@ MTopView::SurfaceLockRestore( BOOL bOldLock )
 */
 
 //----------------------------------------------------------------
-// Effect 출력
+// Effect output
 //----------------------------------------------------------------
 void	
 MTopView::DrawEffect(POINT* pPoint, EFFECT_LIST::const_iterator iEffect, BYTE size)
@@ -15685,41 +15685,41 @@ MTopView::DrawEffect(POINT* pPoint, EFFECT_LIST::const_iterator iEffect, BYTE si
 			continue;
 		}
 		//------------------------------------------------------------------
-		// Tile단위의 출력 좌표
+		// Output coordinates in Tile units
 		//------------------------------------------------------------------
 		//if (pEffect->GetEffectType()==MEffect::EFFECT_SECTOR)
 		//{			
 		//	point = *pPoint;
 		//}
 		//------------------------------------------------------------------
-		// Screen 출력 좌표
+		// Screen output coordinates
 		//------------------------------------------------------------------
 		//else 
 		if (pEffect->GetEffectType()==MEffect::EFFECT_SCREEN)
 		{			
 			MScreenEffect* pScreenEffect = (MScreenEffect*)pEffect;
-			//MScreenEffect::SetScreenBasis( pPoint->x, pPoint->y );	// 한번만 해주면 되는데.. 음냐.
+			//MScreenEffect::SetScreenBasis( pPoint->x, pPoint->y );	// It only needs to be done once.. hmm.
 			point.x = pScreenEffect->GetScreenX();
 			point.y = pScreenEffect->GetScreenY();
 		}
 		//------------------------------------------------------------------
-		// Pixel단위의 출력 좌표
+		// Output coordinates in Pixel units
 		//------------------------------------------------------------------
 		else
 		{
 			//MMovingEffect* pMovingEffect = (MMovingEffect* const)pEffect;
 
-			// Pixel 단위의 좌표를 화면의 좌표로 바꿔준다.
+			// Convert the Pixel-unit coordinates to screen coordinates.
 			point.x = pEffect->GetPixelX() - m_FirstZonePixel.x;
 			point.y = pEffect->GetPixelY() - pEffect->GetPixelZ() - m_FirstZonePixel.y;
 		}
 
 		//------------------------------------------------------------------
-		// 출력
+		// Output
 		//------------------------------------------------------------------
 		DrawEffect( &point, pEffect, pEffect->IsSelectable() );		
 
-		// 다음 Effect
+		// Next Effect
 		iEffect++;
 	}	
 
@@ -15734,7 +15734,7 @@ MTopView::DrawEffect(POINT* pPoint, EFFECT_LIST::const_iterator iEffect, BYTE si
 //----------------------------------------------------------------
 // Draw GroundEffect
 //----------------------------------------------------------------
-// Tile에 바로 붙어 있는 GroundEffect를 출력
+// Draw the GroundEffect attached directly to the Tile
 //----------------------------------------------------------------
 void	
 MTopView::DrawGroundEffect()
@@ -15758,20 +15758,20 @@ MTopView::DrawGroundEffect()
 			iEffect++;
 			continue;
 		}
-		// Pixel 단위의 좌표를 화면의 좌표로 바꿔준다.
-		// 중심점
+		// Convert the Pixel-unit coordinates to screen coordinates.
+		// center point
 		point.x = pEffect->GetPixelX() - m_FirstZonePixel.x;
 		point.y = pEffect->GetPixelY() - pEffect->GetPixelZ() - m_FirstZonePixel.y;			
 
 		pointTemp = point;
 
 		//------------------------------------------------------------------
-		// 출력
+		// Output
 		//------------------------------------------------------------------
 		DrawEffect( &pointTemp, pEffect, pEffect->IsSelectable());
 
 		//------------------------------------------------------------------
-		// 선택되는 Effect인 경우
+		// For a selectable Effect
 		//------------------------------------------------------------------
 		if (pEffect->IsSelectable()
 			&& m_SelectEffectID==pEffect->GetID())
@@ -15781,7 +15781,7 @@ MTopView::DrawGroundEffect()
 			if (pEffectTarget!=NULL)
 			{
 				//------------------------------------------------------------------
-				// Portal인 경우
+				// For a Portal
 				//------------------------------------------------------------------
 				if (pEffectTarget->GetEffectTargetType()==MEffectTarget::EFFECT_TARGET_PORTAL
 					&& g_pPlayer->IsVampire())
@@ -15803,7 +15803,7 @@ MTopView::DrawGroundEffect()
 				}
 			}
 		}
-		// 다음 Effect
+		// Next Effect
 		iEffect++;
 	}	
 
@@ -15817,16 +15817,16 @@ MTopView::DrawGroundEffect()
 //----------------------------------------------------------------
 // Draw AttachEffect
 //----------------------------------------------------------------
-// Effect 출력
-// [하드코딩의 진수] - -;;
-// type - 0 - 무조건 출력
-//        1 - fore ground만 출력
-//        2 - back ground만 출력
+// Effect output
+// [the essence of hardcoding] - -;;
+// type - 0 - always draw
+//        1 - draw only the fore ground
+//        2 - draw only the back ground
 //----------------------------------------------------------------
-// 일단..
-// PairFrame은 AttachEffect에서만 출력한다.. 
-// ActionFrame도 AttachEffect에서만 출력한다..
-// NormalEffect에는 ActionFrame을 무시했다. 아직은 찍을일도 없고 귀찮고 해서 --;; 
+// For now..
+// PairFrame is drawn only in AttachEffect..
+// ActionFrame is also drawn only in AttachEffect..
+// ActionFrame is ignored in NormalEffect. There is no need to draw it yet, and it is a hassle --;;
 //----------------------------------------------------------------
 void	
 MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEffect, BYTE size, MCreature* pCreature, int type)
@@ -15843,8 +15843,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 		MEffect* pEffect = *iEffect;
 
 		//----------------------------------------------------------------
-		// Sprite로 표현하는 Effect인 경우만 출력한다.
-		// Attach가 아니거나.. Attach이더라도 Sprite로 출력하는 경우
+		// Draw only Effects that are expressed as Sprites.
+		// Not Attach.. or, even if Attach, drawn as a Sprite
 		//----------------------------------------------------------------		
 		if (pEffect->GetEffectType()!=MEffect::EFFECT_ATTACH ||
 			(pEffect->GetEffectType()==MEffect::EFFECT_ATTACH && ((MAttachEffect*)pEffect)->IsEffectSprite())
@@ -15856,7 +15856,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 			int frameID = pEffect->GetFrameID();
 			int frame = pEffect->GetFrame();
 
-			// 2004, 9, 14, sobeit add start - 인스톨 터렛일때 이펙트 안보여줌
+			// 2004, 9, 14, sobeit add start - do not show the effect for an install turret
 			int TempSecreenEffect = GET_EFFECTSPRITETYPE_SCREEN( frameID );
 
 			if(pCreature->HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
@@ -15940,7 +15940,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 						}
 					}
 
-					// action에 맞는 effectFrameID를 골라주는 거당.
+					// Picks the effectFrameID that matches the action.
 					int aest = GET_ACTION_EFFECTSPRITETYPE(est);
 					const bool bBack = (*g_pEffectSpriteTypeTable)[est].bPairFrameBack;
 
@@ -15949,7 +15949,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 					if (aest!=FRAMEID_NULL)
 					{
-						// FRAMEID_NULL인걸 체크한다. min( , ) -_-;
+						// Check for FRAMEID_NULL. min( , ) -_-;
 						int action = pCreature->GetAction();
 						if(action == ACTION_ADVANCEMENT_SLAYER_MAGIC_ATTACK || 
 							action == ACTION_ADVANCEMENT_OUSTERS_MAGIC_ATTACK || 
@@ -15985,9 +15985,9 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 						}
 					}
 
-					// 지금은 하드코딩 되어 있지만, 따로 이펙트 스프라이트타입과 동작 프레임간의 프레임 동기화
-					// 관련 기능이 추가되면, 하드코딩을 막을 수 있을 것이다. 
-					// 동기화 기능이 추가된다면, 캐릭터에 해당 이펙트가 붙는 동작을 세팅할 수 있어야 겠지..
+					// It is hardcoded for now, but if a feature for frame synchronization
+					// between the effect sprite type and the motion frames is added later, the hardcoding can be avoided.
+					// If the synchronization feature is added, it should be possible to set the motions in which the effect attaches to the character..
 
 					bool		bLarSlash = est >= EFFECTSPRITETYPE_LAR_SLASH_MALE_FAST && est <= EFFECTSPRITETYPE_LAR_SLASH_FEMALE_SLOW;
 					bool		bRediance = est >= EFFECTSPRITETYPE_REDIANCE_MALE_FAST && est <= EFFECTSPRITETYPE_REDIANCE_FEMALE_NORMAL_ATTACK_SLOW;
@@ -16001,7 +16001,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 						}
 						else
 						{
-							// 다른 동작이면 잘 알아서 넘기자.
+							// For other motions, just skip them sensibly.
 							iEffect++;
 							continue;
 						}
@@ -16016,7 +16016,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 					bool bFrameBackground = Frame.IsBackground();
 					AFFECT_ORBIT_EFFECT_BACKGROUND(pEffect, bFrameBackground);
 
-					// 언제 출력되는건지 체크함 해준다.
+					// Check when it gets drawn.
 					if (HAS_PAIR_EFFECTSPRITETYPE(sest) && bBack == true )
 					{
 						const EFFECTSPRITETYPETABLE_INFO::FRAMEID_LIST& idList = (*g_pEffectSpriteTypeTable)[sest].PairFrameIDList;
@@ -16035,7 +16035,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 							bool bFrameBackground = Frame.IsBackground();
 							AFFECT_ORBIT_EFFECT_BACKGROUND(pEffect, bFrameBackground);
 
-							// 언제 출력되는건지 체크함 해준다.
+							// Check when it gets drawn.
 							if (type==0 
 								|| (type==1 && !bFrameBackground)
 								|| (type==2 && bFrameBackground))
@@ -16044,7 +16044,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 								if (sprite!=SPRITEID_NULL)
 								{
-									// Frame 좌표 보정
+									// Frame coordinate correction
 									pointTemp = *pPoint;
 									pointTemp.x += Frame.GetCX();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCX();
 									pointTemp.y += Frame.GetCY();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCY();
@@ -16058,7 +16058,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //															m_EffectAlphaSPKI, 
 //															m_EffectAlphaSPKFile)
 									//-------------------------------------------------------
-									// H/W 가속이 되는 경우이면...
+									// If H/W acceleration is available...
 									//-------------------------------------------------------
 									if (s_bUse3DLight)
 									{
@@ -16069,16 +16069,16 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 
 										//------------------------------------------------
-										// LightFilter를 추가한다.
+										// Add a LightFilter.
 										//------------------------------------------------
 										AddLightFilter3D( pPoint->x + 24, 
 														pPoint->y + 24, 
-														Frame.GetLight(),			// 빛의 밝기
-														false);		// false = screen좌표
+														Frame.GetLight(),			// light brightness
+														false);		// false = screen coordinates
 
 									}
 									//-------------------------------------------------------
-									// H/W 가속이 안되는 경우이면...
+									// If H/W acceleration is not available...
 									//-------------------------------------------------------
 									else
 									{
@@ -16091,8 +16091,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 										AddLightFilter2D( pPoint->x + 24, 
 													pPoint->y + 24, 
-													Frame.GetLight(),			// 빛의 밝기
-													false);		// false = screen좌표
+													Frame.GetLight(),			// light brightness
+													false);		// false = screen coordinates
 									}
 								}
 							}
@@ -16109,7 +16109,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 						if (sprite!=SPRITEID_NULL)
 						{
-							// Frame 좌표 보정
+							// Frame coordinate correction
 							pointTemp = *pPoint;
 							pointTemp.x += Frame.GetCX();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCX();
 							pointTemp.y += Frame.GetCY();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCY();
@@ -16124,7 +16124,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //													m_EffectAlphaSPKI, 
 //													m_EffectAlphaSPKFile)
 							//-------------------------------------------------------
-							// H/W 가속이 되는 경우이면...
+							// If H/W acceleration is available...
 							//-------------------------------------------------------
 							if (s_bUse3DLight)
 							{
@@ -16135,16 +16135,16 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 
 								//------------------------------------------------
-								// LightFilter를 추가한다.
+								// Add a LightFilter.
 								//------------------------------------------------
 								AddLightFilter3D( pPoint->x + 24, 
 												pPoint->y + 24, 
-												Frame.GetLight(),			// 빛의 밝기
-												false);		// false = screen좌표
+												Frame.GetLight(),			// light brightness
+												false);		// false = screen coordinates
 
 							}
 							//-------------------------------------------------------
-							// H/W 가속이 안되는 경우이면...
+							// If H/W acceleration is not available...
 							//-------------------------------------------------------
 							else
 							{
@@ -16157,14 +16157,14 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 								AddLightFilter2D( pPoint->x + 24, 
 											pPoint->y + 24, 
-											Frame.GetLight(),			// 빛의 밝기
-											false);		// false = screen좌표
+											Frame.GetLight(),			// light brightness
+											false);		// false = screen coordinates
 							}
 						}
 					}
 
 					//--------------------------------------------------------
-					// Pair Frame 출력
+					// Pair Frame output
 					//--------------------------------------------------------
 //					sest = GET_EFFECTSPRITETYPE_EFFECT( frameID );
 
@@ -16186,7 +16186,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 							bool bFrameBackground = Frame.IsBackground();
 							AFFECT_ORBIT_EFFECT_BACKGROUND(pEffect, bFrameBackground);
 
-							// 언제 출력되는건지 체크함 해준다.
+							// Check when it gets drawn.
 							if (type==0 
 								|| (type==1 && !bFrameBackground)
 								|| (type==2 && bFrameBackground))
@@ -16195,7 +16195,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 								if (sprite!=SPRITEID_NULL)
 								{
-									// Frame 좌표 보정
+									// Frame coordinate correction
 									pointTemp = *pPoint;
 									pointTemp.x += Frame.GetCX();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCX();
 									pointTemp.y += Frame.GetCY();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCY();
@@ -16209,7 +16209,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //															m_EffectAlphaSPKI, 
 //															m_EffectAlphaSPKFile)
 									//-------------------------------------------------------
-									// H/W 가속이 되는 경우이면...
+									// If H/W acceleration is available...
 									//-------------------------------------------------------
 									if (s_bUse3DLight)
 									{
@@ -16220,16 +16220,16 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 
 										//------------------------------------------------
-										// LightFilter를 추가한다.
+										// Add a LightFilter.
 										//------------------------------------------------
 										AddLightFilter3D( pPoint->x + 24, 
 														pPoint->y + 24, 
-														Frame.GetLight(),			// 빛의 밝기
-														false);		// false = screen좌표
+														Frame.GetLight(),			// light brightness
+														false);		// false = screen coordinates
 
 									}
 									//-------------------------------------------------------
-									// H/W 가속이 안되는 경우이면...
+									// If H/W acceleration is not available...
 									//-------------------------------------------------------
 									else
 									{
@@ -16242,8 +16242,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 										AddLightFilter2D( pPoint->x + 24, 
 													pPoint->y + 24, 
-													Frame.GetLight(),			// 빛의 밝기
-													false);		// false = screen좌표
+													Frame.GetLight(),			// light brightness
+													false);		// false = screen coordinates
 									}
 								}
 							}
@@ -16281,7 +16281,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 					}
 
 
-					// action에 맞는 effectFrameID를 골라주는 거당.
+					// Picks the effectFrameID that matches the action.
 					int aest = GET_ACTION_EFFECTSPRITETYPE(est);
 					if (aest!=FRAMEID_NULL)
 					{
@@ -16313,7 +16313,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 					bool bFrameBackground = Frame.IsBackground();
 					AFFECT_ORBIT_EFFECT_BACKGROUND(pEffect, bFrameBackground);
 
-					// 언제 출력되는건지 체크함 해준다.
+					// Check when it gets drawn.
 					if (type==0 
 						|| (type==1 && !bFrameBackground)
 						|| (type==2 && bFrameBackground))
@@ -16322,7 +16322,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 						if (sprite!=SPRITEID_NULL)
 						{
-							// Frame 좌표 보정
+							// Frame coordinate correction
 							pointTemp = *pPoint;
 							pointTemp.x += Frame.GetCX();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCX();
 							pointTemp.y += Frame.GetCY();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCY();
@@ -16337,7 +16337,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //													m_EffectScreenSPKFile,
 												CSpriteSurface::EFFECT_SCREEN)
 							//-------------------------------------------------------
-							// H/W 가속이 되는 경우이면...
+							// If H/W acceleration is available...
 							//-------------------------------------------------------
 							if (s_bUse3DLight)
 							{
@@ -16348,16 +16348,16 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //
 
 								//------------------------------------------------
-								// LightFilter를 추가한다.
+								// Add a LightFilter.
 								//------------------------------------------------
 								AddLightFilter3D( pPoint->x + 24, 
 												pPoint->y + 24, 
-												Frame.GetLight(),			// 빛의 밝기
-												false);		// false = screen좌표
+												Frame.GetLight(),			// light brightness
+												false);		// false = screen coordinates
 
 							}
 							//-------------------------------------------------------
-							// H/W 가속이 안되는 경우이면...
+							// If H/W acceleration is not available...
 							//-------------------------------------------------------
 							else
 							{
@@ -16369,14 +16369,14 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 								AddLightFilter2D( pPoint->x + 24, 
 											pPoint->y + 24, 
-											Frame.GetLight(),			// 빛의 밝기
-											false);		// false = screen좌표
+											Frame.GetLight(),			// light brightness
+											false);		// false = screen coordinates
 							}
 						}
 					}
 
 					//--------------------------------------------------------
-					// Pair Frame 출력
+					// Pair Frame output
 					//--------------------------------------------------------
 
 					if (HAS_PAIR_EFFECTSPRITETYPE(est))
@@ -16398,7 +16398,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 							bool bFrameBackground = Frame.IsBackground();
 							AFFECT_ORBIT_EFFECT_BACKGROUND(pEffect, bFrameBackground);
 
-							// 언제 출력되는건지 체크함 해준다.
+							// Check when it gets drawn.
 							if (type==0 
 								|| (type==1 && !bFrameBackground)
 								|| (type==2 && bFrameBackground))
@@ -16407,7 +16407,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 
 								if (sprite!=SPRITEID_NULL)
 								{
-									// Frame 좌표 보정
+									// Frame coordinate correction
 									pointTemp = *pPoint;
 									pointTemp.x += Frame.GetCX();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCX();
 									pointTemp.y += Frame.GetCY();	//m_EffectAlphaFPK[(*iEffect)->GetFrameID()][direction][(*iEffect)->GetFrame()].GetCY();
@@ -16422,7 +16422,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //															m_EffectScreenSPKFile,
 														CSpriteSurface::EFFECT_SCREEN)
 									//-------------------------------------------------------
-									// H/W 가속이 되는 경우이면...
+									// If H/W acceleration is available...
 									//-------------------------------------------------------
 									if (s_bUse3DLight)
 									{
@@ -16433,16 +16433,16 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 //
 
 										//------------------------------------------------
-										// LightFilter를 추가한다.
+										// Add a LightFilter.
 										//------------------------------------------------
 										AddLightFilter3D( pPoint->x + 24, 
 														pPoint->y + 24, 
-														Frame.GetLight(),			// 빛의 밝기
-														false);		// false = screen좌표
+														Frame.GetLight(),			// light brightness
+														false);		// false = screen coordinates
 
 									}
 									//-------------------------------------------------------
-									// H/W 가속이 안되는 경우이면...
+									// If H/W acceleration is not available...
 									//-------------------------------------------------------
 									else
 									{
@@ -16450,8 +16450,8 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 										// light filter belongs here.
 										AddLightFilter2D( pPoint->x + 24,
 													pPoint->y + 24, 
-													Frame.GetLight(),			// 빛의 밝기
-													false);		// false = screen좌표
+													Frame.GetLight(),			// light brightness
+													false);		// false = screen coordinates
 									}
 								}
 							}
@@ -16464,7 +16464,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 			}
 		}
 
-		// 다음 Effect
+		// Next Effect
 		iEffect++;
 	}	
 
@@ -16476,7 +16476,7 @@ MTopView::DrawAttachEffect(POINT* pPoint, ATTACHEFFECT_LIST::const_iterator iEff
 }
 
 //----------------------------------------------------------------
-// (x,y)에 m_pZone의 Minimap을 그린다.
+// Draw the Minimap of m_pZone at (x,y).
 //----------------------------------------------------------------
 // Test Function
 //----------------------------------------------------------------
@@ -16488,14 +16488,14 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 	(void)scale;
 
 	//------------------------------------------------
-	// vampire인 경우는 출력안한다.
+	// Not drawn for a vampire.
 	//------------------------------------------------
 
 	//------------------------------------------------
-	// 3D 가속
+	// 3D acceleration
 	//------------------------------------------------
 //	
-//			// Texture 설정
+//			// Set Texture
 //			// CDirect3D::GetDevice()->SetTexture() removed (SDL2)
 
 //
@@ -16510,7 +16510,7 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 //
 //
 //			//------------------------------------------------
-//			// Player위치에 점찍기
+//			// Plot a dot at the Player position
 //			//------------------------------------------------
 ////			if (!m_pSurface->Lock())
 ////				return;
@@ -16520,11 +16520,11 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 ////			WORD*	pSurface	= (WORD*)m_pSurface->GetSurfacePointer();
 ////			long	lPitch		= m_pSurface->GetSurfacePitch();
 ////
-////			// Player의 Minimap상의 좌표
+////			// Player's coordinates on the Minimap
 ////			point.x = x + g_pPlayer->GetX()*m_SectorToMinimapWidth;
 ////			point.y = y + g_pPlayer->GetY()*m_SectorToMinimapHeight;
 ////
-////			// 점 찍기
+////			// Plot a dot
 ////			WORD*	pSurfaceTemp;	
 ////			pSurfaceTemp = (WORD*)((BYTE*)pSurface + lPitch*point.y + (point.x<<1));
 ////			*pSurfaceTemp++ = 0xFFFF;
@@ -16541,16 +16541,16 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 //			m_pSurface->BltSpriteHalf(&point, m_pMinimapSPR);
 //
 //			//------------------------------------------------
-//			// Player위치에 점찍기
+//			// Plot a dot at the Player position
 //			//------------------------------------------------	
 ////			WORD*	pSurface	= (WORD*)m_pSurface->GetSurfacePointer();
 ////			long	lPitch		= m_pSurface->GetSurfacePitch();
 ////
-////			// Player의 Minimap상의 좌표
+////			// Player's coordinates on the Minimap
 ////			point.x = x + g_pPlayer->GetX()*m_SectorToMinimapWidth;
 ////			point.y = y + g_pPlayer->GetY()*m_SectorToMinimapHeight;
 ////
-////			// 점 찍기
+////			// Plot a dot
 ////			WORD*	pSurfaceTemp;	
 ////			pSurfaceTemp = (WORD*)((BYTE*)pSurface + lPitch*point.y + (point.x<<1));
 ////			*pSurfaceTemp++ = 0xFFFF;
@@ -16562,12 +16562,12 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 
 
 	/*
-	// 그림 출력
+	// Picture output
 	m_pSurface->Lock();
 
 	POINT point = { x, y };
 
-	// Minimap 출력
+	// Minimap output
 	m_pSurface->BltSprite( &point, m_pMinimapSPR );
 
 	int width = m_pMinimapSPR->GetWidth();
@@ -16576,11 +16576,11 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 	WORD*	pSurface	= (WORD*)m_pSurface->GetSurfacePointer();
 	long	lPitch		= m_pSurface->GetSurfacePitch();
 
-	// Player의 Minimap상의 좌표
+	// Player's coordinates on the Minimap
 	point.x = x + g_pPlayer->GetX()*m_SectorToMinimapWidth;
 	point.y = y + g_pPlayer->GetY()*m_SectorToMinimapHeight;
 
-	// 점 찍기
+	// Plot a dot
 	WORD*	pSurfaceTemp;	
 	pSurfaceTemp = (WORD*)((BYTE*)pSurface + lPitch*point.y + (point.x<<1));
 	*pSurfaceTemp++ = 0xFFFF;
@@ -16617,19 +16617,19 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 
 		for (j=0; j<m_pZone->GetWidth(); j++)
 		{			
-			// player위치
+			// player position
 			if (pX==j && pY==i)
 			{
 				color = 0xFFFF;
 			}			
 			else
 			{				
-				// tile색깔별로..
+				// by tile color..
 
 
 				 const MSector &sector = m_pZone->GetSector(j,i);
 
-				// 그림
+				// picture
 				if (sector.IsExistImageObject() && sector.IsBlockAny())
 				{
 					color = 0x07E0;	// G
@@ -16654,11 +16654,11 @@ MTopView::DrawMinimap(int x, int y, BYTE scale)
 
 			*lpSurfaceTemp = color;
 
-			// 다음 점
+			// next dot
 			lpSurfaceTemp = (WORD*)((BYTE*)lpSurfaceTemp + scale*4);
 		}
 
-		// 다음 줄
+		// Next row
 		lpSurface = (WORD*)((BYTE*)lpSurface + pitch*scale);
 	}
 
@@ -16674,9 +16674,9 @@ MTopView::DrawItemBroken(int x, int y)
 {	
 //	return;
 	/*
-		MAX_GEAR에 -10 한건 core zap+bloodbible 갯수 만큼 뺀거..^^;
+		The -10 on MAX_GEAR subtracts the number of core zaps + blood bibles..^^;
 	*/
-	// 부서질려는 item출력
+	// Draw the item about to break
 	MPlayerGear* pGear = NULL;
 	int spriteID;
 	int frameType;
@@ -16740,7 +16740,7 @@ MTopView::DrawItemBroken(int x, int y)
 	}
 
 	//----------------------------------------------------------------
-	// 부서질려는 item이 있다면 출력한다.
+	// If there is an item about to break, draw it.
 	//----------------------------------------------------------------
 	if (pGear->HasBrokenItem() )
 	{
@@ -16750,7 +16750,7 @@ MTopView::DrawItemBroken(int x, int y)
 		m_pSurface->Lock();
 
 		//---------------------------------------------
-		// 기본 껍데기(-_-;) 출력
+		// Draw the basic shell (-_-;)
 		//---------------------------------------------
 		POINT pointBasis = { x+15, y };
 		POINT point = { pointBasis.x, pointBasis.y };
@@ -16761,59 +16761,59 @@ MTopView::DrawItemBroken(int x, int y)
 		int size = pGear->GetSize();
 
 		//---------------------------------------------
-		// Gear의 모든 slot에 대해서 체크
+		// Check every slot of the Gear
 		//---------------------------------------------
 		for (int i=0; i<size-4-6; i++)
 		{			
 			const MItem* pItem = pGear->GetItem( (BYTE)i );	
 
 			//---------------------------------------------
-			// 뭔가 착용하고 있을때만 출력한다.
+			// Draw only when something is being worn.
 			//---------------------------------------------
 			if (pItem!=NULL)
 			{			
 				MPlayerGear::ITEM_STATUS itemStatus = pGear->GetItemStatus( i );
 
 				//---------------------------------------------
-				// 무기인 경우.. 종류에 따라서 그림이 다르다.
+				// For a weapon.. the picture differs by type.
 				//---------------------------------------------
 				int frameID;
 
 				if (g_pPlayer->IsSlayer())
 				{
 					//---------------------------------------------
-					// 왼손인데.
+					// It is the left hand, but.
 					//---------------------------------------------
 					if (i==MSlayerGear::GEAR_SLAYER_LEFTHAND)
 					{
-						// 방패이면 출력
+						// Draw if it is a shield
 						if (pItem->GetItemClass()==ITEM_CLASS_SHIELD)
 						{
 							frameID = i;
 						}
-						// 방패가 아니면.. 출력 안한다.
+						// If it is not a shield.. do not draw.
 						else
 						{
 							continue;
 						}
 					}
 					//---------------------------------------------
-					// 오른손은 무기에 따라서 출력
+					// The right hand is drawn depending on the weapon
 					//---------------------------------------------
 					else if (i==MSlayerGear::GEAR_SLAYER_RIGHTHAND)
 					{				
-						// 총?				
+						// gun?
 						if (pItem->IsGunItem())
 						{
 							frameID = MSlayerGear::MAX_GEAR_SLAYER + 1 - 12;
 						}
-						// 십자가?
+						// cross?
 						else if (pItem->GetItemClass()==ITEM_CLASS_CROSS
 								|| pItem->GetItemClass()==ITEM_CLASS_MACE)
 						{
 							frameID = MSlayerGear::MAX_GEAR_SLAYER -12;
 						}
-						// 아니믄.. 칼이나 도
+						// Otherwise.. a sword or a blade
 						else
 						{
 							frameID = i;
@@ -16842,7 +16842,7 @@ MTopView::DrawItemBroken(int x, int y)
 				}
 
 				//---------------------------------------------
-				// 정상적이면 정상적인거 출력..
+				// If normal, draw the normal one..
 				//---------------------------------------------
 				if (itemStatus==MPlayerGear::ITEM_STATUS_OK || pItem->GetItemClass() == ITEM_CLASS_COUPLE_RING ||
 					pItem->GetItemClass() == ITEM_CLASS_VAMPIRE_COUPLE_RING)
@@ -16860,7 +16860,7 @@ MTopView::DrawItemBroken(int x, int y)
 					}
 				}
 				//---------------------------------------------
-				// 부서져 가는 것이면.. 색깔~있게 출력..
+				// If it is breaking.. draw it with color~..
 				//---------------------------------------------
 				else
 				{
@@ -16995,7 +16995,7 @@ MTopView::GetEffectSpriteType(BLT_TYPE bltType, TYPE_FRAMEID frameID) const
 //----------------------------------------------------------------
 // DrawEffect ( point, MEffect* )
 //----------------------------------------------------------------
-// m_pSurface->IsLock() 상태에서 호출된다고 가정한다.
+// Assumed to be called in the m_pSurface->IsLock() state.
 //----------------------------------------------------------------
 void
 MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
@@ -17144,30 +17144,30 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 //
 
 					//---------------------------------------- 		
-					// 이펙트 선택 사각형 영역 설정
+					// Set the effect selection rectangle area
 					//---------------------------------------- 	
 //
 //						pEffect->SetScreenRect( &rect );							
 //					}
 
 					//------------------------------------------------
-					// LightFilter를 추가한다.
+					// Add a LightFilter.
 					//------------------------------------------------
 					AddLightFilter3D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);	// false = screen좌표					
+									Frame.GetLight(),			// light brightness
+									false);	// false = screen coordinates
 
 				}
 				//-------------------------------------------------------
-				// H/W 가속이 안되는 경우이면...
+				// If H/W acceleration is not available...
 				//-------------------------------------------------------
 				else
 				{
 //					DRAW_ALPHASPRITEPAL(&point, spriteID, m_EffectAlphaSPK, m_EffectAlphaPPK[pEffect->GetFrameID()])//, m_EffectAlphaSPKI, m_EffectAlphaSPKFile)
 
 //					//---------------------------------------- 		
-//					// 이펙트 선택 사각형 영역 설정
+//					// Set the effect selection rectangle area
 //					//---------------------------------------- 	
 //					if (bSelectable)
 //					{
@@ -17180,8 +17180,8 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 
 					AddLightFilter2D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);		// false = screen좌표
+									Frame.GetLight(),			// light brightness
+									false);		// false = screen coordinates
 				}
 			}
 		}
@@ -17263,29 +17263,29 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 //
 
 					//---------------------------------------- 		
-					// 이펙트 선택 사각형 영역 설정
+					// Set the effect selection rectangle area
 					//---------------------------------------- 	
 //
 //						pEffect->SetScreenRect( &rect );							
 //					}
 
 					//------------------------------------------------
-					// LightFilter를 추가한다.
+					// Add a LightFilter.
 					//------------------------------------------------
 					AddLightFilter3D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);	// false = screen좌표					
+									Frame.GetLight(),			// light brightness
+									false);	// false = screen coordinates
 
 				}
 				//-------------------------------------------------------
-				// H/W 가속이 안되는 경우이면...
+				// If H/W acceleration is not available...
 				//-------------------------------------------------------
 				else
 				{
 
 //					//---------------------------------------- 		
-//					// 이펙트 선택 사각형 영역 설정
+//					// Set the effect selection rectangle area
 //					//---------------------------------------- 	
 //					if (bSelectable)
 //					{
@@ -17298,8 +17298,8 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 
 					AddLightFilter2D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);		// false = screen좌표
+									Frame.GetLight(),			// light brightness
+									false);		// false = screen coordinates
 				}
 
 			}
@@ -17356,16 +17356,16 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 //					DRAW_TEXTURE_SPRITE_LOCKED(point.x, point.y, spriteID, m_pEffectShadowManager)		
 
 					//------------------------------------------------
-					// LightFilter를 추가한다.
+					// Add a LightFilter.
 					//------------------------------------------------
 					AddLightFilter3D( pPoint->x + 24, 
 									pPoint->y + 24, 
-									Frame.GetLight(),			// 빛의 밝기
-									false);	// false = screen좌표					
+									Frame.GetLight(),			// light brightness
+									false);	// false = screen coordinates
 
 				}
 				//-------------------------------------------------------
-				// H/W 가속이 안되는 경우이면...
+				// If H/W acceleration is not available...
 				//-------------------------------------------------------
 				else
 				{
@@ -17374,8 +17374,8 @@ MTopView::DrawEffect(POINT* pPoint, MEffect* pEffect, bool bSelectable)
 //						
 						AddLightFilter2D( pPoint->x + 24, 
 										pPoint->y + 24, 
-										Frame.GetLight(),			// 빛의 밝기
-										false);		// false = screen좌표
+										Frame.GetLight(),			// light brightness
+										false);		// false = screen coordinates
 //					}
 				}
 			}
@@ -17396,7 +17396,7 @@ MTopView::GetRandomMonsterTypeInZone() const
 
 	if (numSprites==0)
 	{
-		// 블러드 워록 그림.. 
+		// Blood Warlock picture..
 		spriteType = 27;
 	}
 	else
@@ -17413,7 +17413,7 @@ MTopView::GetRandomMonsterTypeInZone() const
 		spriteType = *iID;
 	}
 
-	// spriteID가 sprite인 몬스터들 중에서 하나를 선택한다.
+	// Pick one of the monsters whose spriteID is sprite.
 	return g_pCreatureSpriteTypeMapper->GetRandomCreatureType( spriteType );
 }
 
@@ -17467,12 +17467,12 @@ MTopView::DrawCreatureHPModify(POINT *point, MCreature* pCreature)
 void		
 MTopView::DrawGuildMarkInSiegeWar(MCreature* pCreature, int YPos)
 {	
-	// EFFECTSTATUS_GHOST 에 걸려있으면 남도 못보고 나도 못본다
+	// With EFFECTSTATUS_GHOST, others cannot see me and I cannot see others
 	if(pCreature == NULL) return;
 	if(pCreature->HasEffectStatus(EFFECTSTATUS_GHOST))return;
 
 	//-----------------------------------------------------
-	// Hallu에 걸리면 길드마크나 계급마크 안찍음
+	// Under Hallu the guild mark and rank mark are not drawn
 	//-----------------------------------------------------
 	if(!g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION)
 		&& pCreature->GetCreatureType() != CREATURETYPE_VAMPIRE_OPERATOR
@@ -17483,14 +17483,14 @@ MTopView::DrawGuildMarkInSiegeWar(MCreature* pCreature, int YPos)
 		)
 	{
 		//-----------------------------------------------------
-		// Guild가 있는 경우 - Guild Mark 출력
+		// If there is a Guild - draw the Guild Mark
 		//-----------------------------------------------------
 		int guildID = pCreature->GetGuildNumber();
 
 		if (guildID > 0)
 		{
 			//-------------------------------------------------
-			// load되어 있는지 본다.
+			// Check whether it is loaded.
 			//-------------------------------------------------
 			CSprite* pSprite = g_pGuildMarkManager->GetGuildMarkSmall(guildID);
 
@@ -17506,18 +17506,18 @@ MTopView::DrawGuildMarkInSiegeWar(MCreature* pCreature, int YPos)
 				if (!g_pGuildMarkManager->HasGuildMark(guildID))
 				{
 					//-------------------------------------------------
-					// file에 있는지 본다.
+					// Check whether it is in the file.
 					//-------------------------------------------------
 					g_pGuildMarkManager->LoadGuildMark(guildID);
 
 					//-------------------------------------------------
-					// file에서 load되었는지 다시 체크
+					// Check again whether it was loaded from the file
 					//-------------------------------------------------
 					pSprite = g_pGuildMarkManager->GetGuildMark(guildID);
 
 					//-------------------------------------------------
-					// file에도 없는 경우..
-					// guildMark관리서버?에서 받아온다.
+					// When it is not in the file either..
+					// Fetch from the guildMark management server?.
 					//-------------------------------------------------
 					//if (pSprite==NULL) {}
 				}				
@@ -17529,24 +17529,24 @@ MTopView::DrawGuildMarkInSiegeWar(MCreature* pCreature, int YPos)
 //----------------------------------------------------------------------
 // Draw CreatureName
 //----------------------------------------------------------------------
-// Unlock 상태에서 불려지는 함수이다.
+// A function called in the Unlock state.
 //
-// 선택된 캐릭터 이름을 출력한다.
-// 이름에는 HP, 성향, 길드.. 등등의 정보가 포함된다.
-// 서비스로(-_-;) RequestMode에 따른 icon도 출력한다.
+// Draw the selected character's name.
+// The name includes information such as HP, alignment, guild.. etc.
+// As a bonus (-_-;) it also draws an icon according to RequestMode.
 //----------------------------------------------------------------------
 void		
 MTopView::DrawCreatureName(MCreature* pCreature)
 {	
-	// EFFECTSTATUS_GHOST 에 걸려있으면 남도 못보고 나도 못본다
+	// With EFFECTSTATUS_GHOST, others cannot see me and I cannot see others
 	if(pCreature == NULL) return;
 	if(pCreature->HasEffectStatus(EFFECTSTATUS_GHOST))return;
 
-	// 2004, 08, 05 sobeit add start - 성문은 보여지면 이상하다?
+	// 2004, 08, 05 sobeit add start - it is odd if the castle gate is shown?
 	if( pCreature->GetCreatureType() >= 726 &&
 		pCreature->GetCreatureType() <= 729)
 		return;
-	// 2004, 08, 05 sobeit add end - 성문 
+	// 2004, 08, 05 sobeit add end - castle gate
 	if(
 		(g_pPlayer->HasEffectStatus(EFFECTSTATUS_YELLOW_POISON_TO_CREATURE) || 
 		g_pPlayer->HasEffectStatus(EFFECTSTATUS_FLARE )||
@@ -17554,7 +17554,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		&& pCreature != g_pPlayer 
 		)
 	{
-		// 거리에 따라서 출력 여부를 결정한다.
+		// Decide whether to draw according to distance.
 		int sx,sy,ex,ey;
 
 		sx = g_pPlayer->GetX() - 1;
@@ -17569,7 +17569,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 	}
 
 	//---------------------------------------------------------------
-	// 땅 속에 있는 애는 이름도 없당. - -;
+	// Those underground have no name either. - -;
 	//---------------------------------------------------------------
 	if (pCreature->IsUndergroundCreature())
 	{
@@ -17586,7 +17586,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 
 	m_bDrawRequest = false;
 	//------------------------------------------------
-	// item 교환한다는 표시 출력
+	// Draw the mark indicating an item exchange
 	//------------------------------------------------
 	if (IsRequestMode())	
 	{
@@ -17595,21 +17595,21 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		if(pCreature->GetClassType() == MCreature::CLASS_FAKE)
 		{
 			MFakeCreature *pFakeCreature = (MFakeCreature *)pCreature;
-			if(pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// 펫이다
+			if(pFakeCreature->GetOwnerID() != OBJECTID_NULL)	// it is a pet
 			{
 				bRequest = true;
 			}
 		}
 		//------------------------------------------------
-		// 아직은 출력하면 안된다.
+		// Must not be drawn yet.
 		//------------------------------------------------			
-		else if (// NPC가 아니고
+		else if (// not an NPC and
 			!pCreature->IsNPC()
-			// Player인 경우만
+			// only if it is a Player
 			//&& pCreature->GetCreatureType()<=CREATURETYPE_VAMPIRE_FEMALE
 			//&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteType].IsPlayerOnlySprite()
 			&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteTypes[0]].IsPlayerOnlySprite()
-			// 관 속에 있는 경우
+			// When inside a coffin
 			&& !pCreature->IsInCasket()
 			&& pCreature->IsAlive()
 			&& pCreature->GetCreatureType() != CREATURETYPE_SLAYER_OPERATOR
@@ -17626,7 +17626,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			TYPE_SPRITEID	RequestSpriteID = 0;
 
 			//---------------------------------------------------------------
-			// trade 신청하는 아이콘
+			// Icon for requesting a trade
 			//---------------------------------------------------------------
 			if (IsRequestTrade())
 			{
@@ -17644,7 +17644,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 				}					
 			}
 			//---------------------------------------------------------------
-			// party 신청하는 아이콘
+			// Icon for requesting a party
 			//---------------------------------------------------------------
 			else if(IsRequestParty())
 			{
@@ -17657,7 +17657,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 				}
 			}
 			//---------------------------------------------------------------
-			// Info 신청하는 아이콘
+			// Icon for requesting Info
 			//---------------------------------------------------------------
 			else if(IsRequestInfo())
 			{
@@ -17683,7 +17683,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 
 
 	//------------------------------------------------
-	// 캐릭터 이름 출력
+	// Character name output
 	//------------------------------------------------
 	//gC_font.PrintStringNoConvert(&m_SurfaceInfo, pCreature->GetName(), pointTemp.x, pointTemp.y, 0xFFFF);	
 	bool bMasterWords = pCreature->GetCreatureType()==CREATURETYPE_SLAYER_OPERATOR
@@ -17701,7 +17701,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		g_pZoneTable->Get( g_pZone->GetID() )->ChatMaskByRace &&
 		g_pPlayer->GetCreatureType() != CREATURETYPE_SLAYER_OPERATOR &&
 		g_pPlayer->GetCreatureType() != CREATURETYPE_VAMPIRE_OPERATOR &&
-		g_pPlayer->GetCreatureType() != CREATURETYPE_OUSTERS_OPERATOR;						// 챗 마스크를 씌울 경우에만 
+		g_pPlayer->GetCreatureType() != CREATURETYPE_OUSTERS_OPERATOR;						// only when the chat mask is applied
 	if(g_pPlayer->HasEffectStatus( EFFECTSTATUS_GHOST ))
 		bHalluName = false;
 #ifdef __METROTECH_TEST__
@@ -17732,11 +17732,11 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 	*/
 
 	//-----------------------------------------------------
-	// NPC인 경우
+	// For an NPC
 	//-----------------------------------------------------
 	if (pCreature->IsNPC())
 	{
-		// 바토리인 경우.. 하드코딩 - -;;
+		// For Bathory.. hardcoded - -;;
 		if (pCreature->GetCreatureType()==217)
 		{
 			color	= m_ColorNameAlignment[1];
@@ -17749,15 +17749,15 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		}
 	}
 	//-----------------------------------------------------
-	// 운영자인 경우
+	// For an operator
 	//-----------------------------------------------------
 	else if (pCreature->GetCompetence()==0)
 	{
-		color = CSDLGraphics::Color( 31, 23, 3 );	// 금색?
+		color = CSDLGraphics::Color( 31, 23, 3 );	// gold?
 		font	= FONTID_NPC_NAME;
 	}
 	//-----------------------------------------------------
-	// Hallu에 걸린 경우
+	// Under Hallu
 	//-----------------------------------------------------
 	else if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
 	{
@@ -17765,12 +17765,12 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		font	= FONTID_VAMPIRE_NAME;
 	}
 	//-----------------------------------------------------
-	// Slayer인 경우 
+	// For a Slayer
 	//-----------------------------------------------------
 	else if (g_pPlayer->IsSlayer())
 	{
 		//-----------------------------------------------------
-		// 종족에 따라서 
+		// By race
 		//-----------------------------------------------------
 		if (g_pPlayer->CanAttackTribe( pCreature )
 			|| g_pJusticeAttackManager->HasCreature( pCreature->GetName() ))
@@ -17780,7 +17780,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			font	= FONTID_VAMPIRE_NAME;
 		}
 		//-----------------------------------------------------
-		// 아니면.. 성향에 따른 표시
+		// Otherwise.. display according to alignment
 		//-----------------------------------------------------
 		else
 		{
@@ -17801,7 +17801,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			font	= FONTID_VAMPIRE_NAME;
 		}
 		//-----------------------------------------------------
-		// 아니면.. 성향에 따른 표시
+		// Otherwise.. display according to alignment
 		//-----------------------------------------------------
 		else
 		{
@@ -17812,12 +17812,12 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		}
 	}
 	//-----------------------------------------------------
-	// 뱀파이어인 경우
+	// For a vampire
 	//-----------------------------------------------------
 	else
 	{
 		//-----------------------------------------------------
-		// 길드에 따라서
+		// By guild
 		//-----------------------------------------------------
 		if (g_pPlayer->CanAttackGuild( pCreature )
 			|| g_pJusticeAttackManager->HasCreature( pCreature->GetName() ))
@@ -17827,7 +17827,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			font	= FONTID_VAMPIRE_NAME;
 		}
 		//-----------------------------------------------------
-		// 아니면.. 성향에 따른 표시
+		// Otherwise.. display according to alignment
 		//-----------------------------------------------------
 		else
 		{
@@ -17841,7 +17841,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 	if (pName!=NULL)
 	{
 		//-----------------------------------------------------
-		// Level Name이 있는 경우
+		// When there is a Level Name
 		//-----------------------------------------------------
 		if (pCreature->HasLevelName())
 		{
@@ -17870,7 +17870,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 
 		int guildID = 0;
 		//-----------------------------------------------------
-		// 이름 밑에 깔릴 전체(이름) 크기의 박스
+		// Box of the full (name) size laid under the name
 		//-----------------------------------------------------
 		int rectLeft	= m_pointChatString.x + POSITION_HP_BAR -14 ;
 		int rectRight	= rectLeft + MAX_HP_BAR;//m_pointChatString.x+5 + namePixel;
@@ -17878,7 +17878,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		int rectBottom	= yPoint_20 + g_pClientConfig->FONT_HEIGHT;
 
 		//-----------------------------------------------------
-		// Hallu에 걸리면 길드마크나 계급마크 안찍음
+		// Under Hallu the guild mark and rank mark are not drawn
 		//-----------------------------------------------------
 		if(!g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION)
 			&& pCreature->GetCreatureType() != CREATURETYPE_VAMPIRE_OPERATOR
@@ -17889,7 +17889,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			)
 		{
 			//-----------------------------------------------------
-			// Guild가 있는 경우 - Guild Mark 출력
+			// If there is a Guild - draw the Guild Mark
 			//-----------------------------------------------------
 			guildID = pCreature->GetGuildNumber();
 			if(	g_pPlayer->GetRace() != pCreature->GetRace() && pCreature->IsPlayer() &&
@@ -17897,16 +17897,16 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 				)
 				guildID = 0;
 
-			// grade출력
-			int gradeID = pCreature->GetGrade()-1;	// 1~50 으로 되있으므로 -1해서 0~49로 맞춘다
-			// 플레이어만 계급 출력, 박쥐나 늑대는 안함
+			// grade output
+			int gradeID = pCreature->GetGrade()-1;	// It runs 1~50, so subtract 1 to fit 0~49
+			// Only players show a rank; bats and wolves do not
 			if(!pCreature->IsPlayerOnly())
 				gradeID = -1;
 
 				/*
 				if (guildID>=0)
 				{
-				// run-time loading도 괜찮을 듯..
+				// Run-time loading seems fine too..
 				if (guildID < m_GuildSPK.GetSize())
 				{
 				m_pSurface->Lock();
@@ -17922,7 +17922,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			if (guildID > 0)
 			{
 				//-------------------------------------------------
-				// load되어 있는지 본다.
+				// Check whether it is loaded.
 				//-------------------------------------------------
 				CSprite* pSprite = g_pGuildMarkManager->GetGuildMarkSmall(guildID);
 
@@ -17941,25 +17941,25 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 					if (!g_pGuildMarkManager->HasGuildMark(guildID))
 					{
 						//-------------------------------------------------
-						// file에 있는지 본다.
+						// Check whether it is in the file.
 						//-------------------------------------------------
 						g_pGuildMarkManager->LoadGuildMark(guildID);
 
 						//-------------------------------------------------
-						// file에서 load되었는지 다시 체크
+						// Check again whether it was loaded from the file
 						//-------------------------------------------------
 						pSprite = g_pGuildMarkManager->GetGuildMark(guildID);
 
 						//-------------------------------------------------
-						// file에도 없는 경우..
-						// guildMark관리서버?에서 받아온다.
+						// When it is not in the file either..
+						// Fetch from the guildMark management server?.
 						//-------------------------------------------------
 						//if (pSprite==NULL) {}
 					}				
 				}
 			}
 
-			// 계급이 있는경우 계급마크 출력
+			// If there is a rank, draw the rank mark
 			if(gradeID > -1 && gradeID <= GRADE_MARK_MAX)
 			{
 				CSprite* pSprite = g_pGuildMarkManager->GetGradeMarkSmall(gradeID, pCreature->GetRace());
@@ -17977,7 +17977,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			}
 
 		}
-		// 펫인경우 레벨 마크 출력
+		// For a pet, draw the level mark
 		if(pCreature->GetClassType() == MCreature::CLASS_FAKE)
 		{
 			MFakeCreature *pFakeCreature = (MFakeCreature *)pCreature;
@@ -18009,7 +18009,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		}
 
 		//-----------------------------------------------------
-		// HP계산
+		// HP calculation
 		//-----------------------------------------------------
 		int currentHP		= max(0,int(pCreature->GetHP()));
 		int maxHP			= pCreature->GetMAX_HP();
@@ -18040,7 +18040,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		}
 
 		//-----------------------------------------------------
-		// 땅속에 있는 애는 HP가 꽉 찬것처럼 보여준다.
+		// Those underground are shown as if their HP were full.
 		//-----------------------------------------------------
 
 		if (currentHP > maxHP)
@@ -18049,7 +18049,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		}
 
 		//-----------------------------------------------------
-		// 실제로 보여질 pixel계산
+		// Calculate the pixels actually shown
 		//-----------------------------------------------------
 		int maxPixels		= rectRight - rectLeft;
 		int currentPixels	= max(0,int((maxHP==0)? 0 : maxPixels * currentHP / maxHP));
@@ -18059,11 +18059,11 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 
 
 		//-----------------------------------------------------
-		// HP가 꽉 차게 표시되는 경우
+		// When HP is shown completely full
 		//-----------------------------------------------------
 		if (currentPixels==maxPixels)
 		{
-			// 바탕색 깔 필요 없지만.. 이름 잘 보이게 할려고.. --
+			// No need to lay a background color.. but to make the name easy to see.. --
 			DRAWTEXT_NODE* pNodeBase = new DRAWTEXT_NODE (
 										nameX+1,
 										yPoint_20+4+1,
@@ -18074,13 +18074,13 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			AddText( pNodeBase );
 		}
 		//-----------------------------------------------------
-		// HP 닳은 부분 표시
+		// Show the depleted part of HP
 		//-----------------------------------------------------
 		else
 		{
 			//-----------------------------------------------------
 			//
-			//			Max HP 만큼의 Box만 표시
+			//			Show only a Box the size of Max HP
 			//
 			//-----------------------------------------------------
 			DRAWTEXT_NODE* pNodeBase = new DRAWTEXT_NODE (
@@ -18091,7 +18091,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 										font);
 
 			//-----------------------------------------------------
-			// HP 닳은 부분
+			// Depleted part of HP
 			//-----------------------------------------------------
 			RECT rect = {	rectLeft + currentPixels, 
 							rectTop,
@@ -18100,16 +18100,16 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 			};
 
 
-			pNodeBase->SetBox( rect, m_ColorHPBarBg, false );  // 不透明模式
+			pNodeBase->SetBox( rect, m_ColorHPBarBg, false );  // opaque mode
 			AddText( pNodeBase );
 		}
 
 		//-----------------------------------------------------
 		//
-		//		현재 HP만큼의 Box와 캐릭터 이름 출력
+		//		Draw a Box of the current HP and the character name
 		//
 		//-----------------------------------------------------
-		// 현재 HP만큼의 Box와 캐릭터 이름 출력(까맣게)
+		// Draw a Box of the current HP and the character name (in black)
 		//-----------------------------------------------------	
 		DRAWTEXT_NODE* pNode = new DRAWTEXT_NODE (
 									nameX + 1,
@@ -18119,12 +18119,12 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 									font);	//FLAG_DRAWTEXT_HANGUL_JOHAP);
 
 		//-----------------------------------------------------
-		// 0이 아니면 box출력
+		// Draw the box if it is not 0
 		//-----------------------------------------------------							
 		if (currentPixels!=0)				
 		{
 			//-----------------------------------------------------
-			// 현재 HP에 대한 박스
+			// Box for the current HP
 			//-----------------------------------------------------
 			RECT rectHP = {	rectLeft,
 							rectTop,
@@ -18140,14 +18140,14 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		}
 
 		//-----------------------------------------------------
-		// 출력하게 설정..
+		// Set it to be drawn..
 		//-----------------------------------------------------
 		AddText( pNode );			
 
-		// 2004, 10, 28, sobeit add start -몬스터 킬 퀘스트 해당 몬스터에 표시.
+		// 2004, 10, 28, sobeit add start - mark the target monster of a monster-kill quest.
 //		if(pCreature->IsAlive() && UI_IsMonsterKillQuest_Monster((*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteTypes[0]))
 		//-----------------------------------------------------
-		// 이름 다시 찍기
+		// Draw the name again
 		//-----------------------------------------------------
 		DRAWTEXT_NODE* pNode2 = new DRAWTEXT_NODE (
 									nameX,
@@ -18157,10 +18157,10 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 									font);	//FLAG_DRAWTEXT_HANGUL_JOHAP);
 
 		AddText( pNode2 );
-		// 2004, 6, 17, sobeit add start - about nick name - 같은 종족 일때만 닉네임 보이게..수정.
+		// 2004, 6, 17, sobeit add start - about nick name - modified so the nickname shows only for the same race.
 		if(pCreature->GetNickNameType() != NicknameInfo::NICK_NONE)// && (/*g_pPlayer->GetRace() == pCreature->GetRace()|| */pCreature->IsFakeCreature()))
 		{
-			if(yPoint-42<0) return; // 걍 찍지 말자..ㅎㅎ
+			if(yPoint-42<0) return; // just don't draw it..lol
 			BYTE bType = pCreature->GetNickNameType();
 			const char* szNickName = pCreature->GetNickName().c_str();
 			if(strlen(szNickName)>0)
@@ -18223,7 +18223,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 //----------------------------------------------------------------------
 // GetChangeValueToDirection
 //----------------------------------------------------------------------
-// 여기 있어야할 함수는 아니지만.. - -;
+// This function doesn't belong here, but.. - -;
 //----------------------------------------------------------------------
 POINT
 MTopView::GetChangeValueToDirection(int direction)
@@ -18236,7 +18236,7 @@ void
 MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 {
 	//----------------------------------------
-	// 고정된 burrow그림  -_-;; 
+	// fixed burrow picture  -_-;;
 	//----------------------------------------
 	POINT pointTemp;
 	RECT rect;
@@ -18244,7 +18244,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 	CSprite* pSprite = &m_EtcSPK[ SPRITEID_CREATURE_BURROW ];	
 
 	//----------------------------------------
-	// 좌표 보정
+	// Coordinate correction
 	//----------------------------------------
 	int cx = 4;
 	int cy = 4;
@@ -18252,7 +18252,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 	pointTemp.y = pPoint->y + cy;
 
 	//---------------------------------------- 		
-	// 캐릭터 선택 사각형 영역 설정
+	// Set the character selection rectangle area
 	//---------------------------------------- 	
 	rect.left	= pointTemp.x;
 	rect.top	= pointTemp.y;
@@ -18261,13 +18261,13 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 	pCreature->SetScreenRect( &rect );				
 
 	//---------------------------------------- 	
-	// 선택된 경우
+	// If selected
 	//---------------------------------------- 	
 	if (m_SelectCreatureID == pCreature->GetID() )
 	{
-		// SpriteOutlineManager에 추가
+		// Add to SpriteOutlineManager
 
-		// 땅속에 있는 애들은 무조건 vampire이다.
+		// Those underground are always vampires.
 		if (g_pObjectSelector->CanAttack(pCreature))
 		{
 			m_SOMOutlineColor = m_ColorOutlineAttackPossible;
@@ -18283,7 +18283,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 		m_pSurface->BltSpriteOutline( &m_SOM,  m_SOMOutlineColor );
 
 		//---------------------------------------- 	
-		// 이름 출력할 좌표 지정
+		// Set the coordinates for drawing the name
 		//---------------------------------------- 	
 		const int FontHeight = g_pClientConfig->FONT_HEIGHT;
 		const int FontHeight2 = FontHeight << 1;
@@ -18292,7 +18292,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 		if (pointTemp.x<0) pointTemp.x=0;
 
 		//---------------------------------------- 	
-		// Level Name 찍을 위치도 계산
+		// Also calculate where to draw the Level Name
 		//---------------------------------------- 	
 		if (pCreature->HasLevelName())
 		{
@@ -18304,7 +18304,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 			}
 		}
 		//---------------------------------------- 	
-		// 그냥 이름만 찍을 때
+		// When drawing just the name
 		//---------------------------------------- 	
 		else
 		{
@@ -18320,7 +18320,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 		m_pSelectedCreature = pCreature;
 	}
 	//----------------------------------------
-	// 그냥 출력
+	// Plain output
 	//----------------------------------------
 	else
 	{
@@ -18328,7 +18328,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 	}
 
 	//----------------------------------------
-	// 몸에 붙은 Effect 출력
+	// Draw the Effects attached to the body
 	//----------------------------------------
 	/*
 	if (pCreature->IsExistAttachEffect())
@@ -18345,7 +18345,7 @@ MTopView::DrawUndergroundCreature(POINT *pPoint, MCreature *pCreature)
 void		
 MTopView::DrawCreatureMyName()
 {	
-	// EFFECTSTATUS_GHOST 에 걸려있으면 남도 못보고 나도 못본다
+	// With EFFECTSTATUS_GHOST, others cannot see me and I cannot see others
 	if(g_pPlayer->HasEffectStatus(EFFECTSTATUS_GHOST))return;
 
 	const char* pCreatureName;
@@ -18374,7 +18374,7 @@ MTopView::DrawCreatureMyName()
 
 
 		//-----------------------------------------------------
-		// 이름 밑에 깔릴 전체(이름) 크기의 박스
+		// Box of the full (name) size laid under the name
 		//-----------------------------------------------------
 		{
 			rectLeft	= g_pPlayer->GetPixelX() - m_FirstZonePixel.x + POSITION_HP_BAR - 14;
@@ -18383,23 +18383,23 @@ MTopView::DrawCreatureMyName()
 			rectBottom	= yPoint_20+ g_pClientConfig->FONT_HEIGHT;
 		}
 		//-----------------------------------------------------
-		// Hallu에 걸리면 길드마크나 계급마크 안찍음
+		// Under Hallu the guild mark and rank mark are not drawn
 		//-----------------------------------------------------
 		if(!g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION))
 		{
 			//-----------------------------------------------------
-			// Guild가 있는 경우 - Guild Mark 출력
+			// If there is a Guild - draw the Guild Mark
 			//-----------------------------------------------------
 			guildID = g_pPlayer->GetGuildNumber();
 
-			gradeID = g_pPlayer->GetGrade()-1;	// 1~50 으로 되있으므로 -1해서 0~49로 맞춘다
+			gradeID = g_pPlayer->GetGrade()-1;	// It runs 1~50, so subtract 1 to fit 0~49
 			if(!g_pPlayer->IsPlayerOnly())
 				gradeID = -1;
 
 			if (guildID > 0)
 			{
 				//-------------------------------------------------
-				// load되어 있는지 본다.
+				// Check whether it is loaded.
 				//-------------------------------------------------
 				CSprite* pSprite = g_pGuildMarkManager->GetGuildMarkSmall(guildID);
 
@@ -18424,7 +18424,7 @@ MTopView::DrawCreatureMyName()
 				}
 			}
 
-			// 계급이 있는경우 계급마크 출력
+			// If there is a rank, draw the rank mark
 			if(gradeID > -1 && gradeID <= GRADE_MARK_MAX)
 			{
 				CSprite* pSprite = g_pGuildMarkManager->GetGradeMarkSmall(gradeID, g_pPlayer->GetRace());
@@ -18443,7 +18443,7 @@ MTopView::DrawCreatureMyName()
 
 		}
 		//-----------------------------------------------------
-		// HP계산
+		// HP calculation
 		//-----------------------------------------------------
 		int currentHP		= max(0,int(g_pPlayer->GetHP()));
 		int maxHP			= g_pPlayer->GetMAX_HP();
@@ -18465,7 +18465,7 @@ MTopView::DrawCreatureMyName()
 		}
 
 		//-----------------------------------------------------
-		// 실제로 보여질 pixel계산
+		// Calculate the pixels actually shown
 		//-----------------------------------------------------
 		int maxPixels		= rectRight - rectLeft;
 		int currentPixels	= max(0,int((maxHP==0)? 0 : maxPixels * currentHP / maxHP));
@@ -18475,11 +18475,11 @@ MTopView::DrawCreatureMyName()
 
 
 		//-----------------------------------------------------
-		// HP가 꽉 차게 표시되는 경우
+		// When HP is shown completely full
 		//-----------------------------------------------------
 		if (currentPixels==maxPixels)
 		{
-			// 바탕색 깔 필요 없지만.. 이름 잘 보이게 할려고.. --
+			// No need to lay a background color.. but to make the name easy to see.. --
 			DRAWTEXT_NODE* pNodeBase = new DRAWTEXT_NODE (
 										nameX+1,
 										yPoint_20+4+1,
@@ -18490,13 +18490,13 @@ MTopView::DrawCreatureMyName()
 			AddText( pNodeBase );
 		}
 		//-----------------------------------------------------
-		// HP 닳은 부분 표시
+		// Show the depleted part of HP
 		//-----------------------------------------------------
 		else
 		{
 			//-----------------------------------------------------
 			//
-			//			Max HP 만큼의 Box만 표시
+			//			Show only a Box the size of Max HP
 			//
 			//-----------------------------------------------------
 			DRAWTEXT_NODE* pNodeBase = new DRAWTEXT_NODE (
@@ -18507,7 +18507,7 @@ MTopView::DrawCreatureMyName()
 										font);
 
 			//-----------------------------------------------------
-			// HP 닳은 부분
+			// Depleted part of HP
 			//-----------------------------------------------------
 			RECT rect = {	rectLeft + currentPixels, 
 							rectTop,
@@ -18516,16 +18516,16 @@ MTopView::DrawCreatureMyName()
 			};
 
 
-			pNodeBase->SetBox( rect, m_ColorHPBarBg, false );  // 不透明模式
+			pNodeBase->SetBox( rect, m_ColorHPBarBg, false );  // opaque mode
 			AddText( pNodeBase );
 		}
 
 		//-----------------------------------------------------
 		//
-		//		현재 HP만큼의 Box와 캐릭터 이름 출력
+		//		Draw a Box of the current HP and the character name
 		//
 		//-----------------------------------------------------
-		// 현재 HP만큼의 Box와 캐릭터 이름 출력(까맣게)
+		// Draw a Box of the current HP and the character name (in black)
 		//-----------------------------------------------------			
 		DRAWTEXT_NODE* pNode = new DRAWTEXT_NODE (
 									nameX + 1,
@@ -18535,12 +18535,12 @@ MTopView::DrawCreatureMyName()
 									font);	//FLAG_DRAWTEXT_HANGUL_JOHAP);
 
 		//-----------------------------------------------------
-		// 0이 아니면 box출력
+		// Draw the box if it is not 0
 		//-----------------------------------------------------							
 		if (currentPixels!=0)				
 		{
 			//-----------------------------------------------------
-			// 현재 HP에 대한 박스
+			// Box for the current HP
 			//-----------------------------------------------------
 			RECT rectHP = {	rectLeft,
 							rectTop,
@@ -18556,13 +18556,13 @@ MTopView::DrawCreatureMyName()
 		}
 
 		//-----------------------------------------------------
-		// 출력하게 설정..
+		// Set it to be drawn..
 		//-----------------------------------------------------
 		AddText( pNode );			
 
 
 		//-----------------------------------------------------
-		// 이름 다시 찍기
+		// Draw the name again
 		//-----------------------------------------------------
 		DRAWTEXT_NODE* pNode2 = new DRAWTEXT_NODE (
 									nameX,
@@ -18644,19 +18644,19 @@ MTopView::DrawEvent()
 	else
 		bDrawBackGround = ExcuteOustersFinEvent();
 
-	// 2005, 2, 18, sobeit add start - WebBrowser가 떠있을 때 처리
+	// 2005, 2, 18, sobeit add start - handling while a WebBrowser is up
 	if(UI_IsRunning_WebBrowser())
 	{
-		//bDrawBackGround = false; // 배경을 찍지 않는다. UI는 찍는다..
+		//bDrawBackGround = false; // The background is not drawn. The UI is drawn..
 		int TempValue = UI_GetMouseCursorInfo_WebBrowser();
 
-		if(TempValue == 1) // 커서가 웹 화면 안으로 들어옴
+		if(TempValue == 1) // The cursor entered the web screen
 		{
-			UI_ShowWindowCursor(); // 커서 보여주장..
+			UI_ShowWindowCursor(); // show the cursor..
 		}
-		else if( TempValue == -1) // 커서가 웹 화면 밖으로 나갔다.
+		else if( TempValue == -1) // The cursor left the web screen.
 		{
-			UI_HiddenWindowCursor(); // 커서 안보여준다.
+			UI_HiddenWindowCursor(); // do not show the cursor.
 		}
 //		if(UI_IsMouseIn_WebBrowser())
 //		{
@@ -18842,7 +18842,7 @@ MTopView::ExcuteOustersFinEvent()
 	{
 		if((event->eventFlag & EVENTFLAG_ONLY_EVENT_BACKGROUND) == EVENTFLAG_NOT_DRAW_BACKGROUND)
 		{
-			m_pSurface->FillSurface(0);	//	화면지우기
+			m_pSurface->FillSurface(0);	//	clear the screen
 		}
 		// The event's background image (parameter4, an EVENTBACKGROUND_ID)
 		// was drawn here. As with Adam's cloud above, the SDL port never
@@ -19008,7 +19008,7 @@ MTopView::ExcuteOustersFinEvent()
 
 					MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 
-					// Creature의 Action에 맞는 add-on을 출력한다.
+					// Draw the add-ons matching the Creature's Action.
 					//action = pCreature->GetAction();
 
 					WORD clothes;
@@ -19016,11 +19016,11 @@ MTopView::ExcuteOustersFinEvent()
 
 					for (int i=0; i<ADDON_MAX; i++)
 					{
-						// Creature의 현재 방향에 따라서...
-						// 옷을 출력해주는 순서가 다를 수 있다.
+						// Depending on the Creature's current direction...
+						// the order in which clothes are drawn may differ.
 						clothesType = MCreatureWear::s_AddonOrder[direction][i];
 
-						// i번째 종류의 옷을 입고 있다면 출력해 준다.
+						// If it is wearing the i-th kind of clothes, draw it.
 						const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 
 						if (addonInfo.bAddon)
@@ -19029,7 +19029,7 @@ MTopView::ExcuteOustersFinEvent()
 
 							FRAME_ARRAY &FA = m_AddonFPK[clothes][action][direction];
 
-							// 있는 동작인 경우
+							// If the motion exists
 							if (FA.GetSize() > frame)
 							{
 								CFrame &Frame = FA[frame];					
@@ -19044,7 +19044,7 @@ MTopView::ExcuteOustersFinEvent()
 
 								POINT pointTemp;
 
-								// 좌표 보정
+								// Coordinate correction
 								pointTemp.x = 384+cx;
 								pointTemp.y = 312+cy;
 
@@ -19060,7 +19060,7 @@ MTopView::ExcuteOustersFinEvent()
 
 									CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 
-									// 어둡게 찍기
+									// Draw darkened
 									if (pCreature->IsFade())
 									{
 										m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -19191,7 +19191,7 @@ MTopView::ExcuteOustersFinEvent()
 
 						POINT pointTemp;
 
-						// 좌표 보정
+						// Coordinate correction
 						pointTemp.x = 384+cx;
 						pointTemp.y = 312+cy;
 
