@@ -1359,14 +1359,15 @@ const HostSlot kHostSlots[] = {
 	GI2_SLOT(MParty), GI2_SLOT(UiRuntime), GI2_SLOT(GameUI), GI2_SLOT(UIMessages),
 };
 
-// The names of GameInit.cpp's lines that install a host ("Owner::SetHost(&s_..."
-// or "({", and SetGameMainHost) or reset one ("Owner::SetHost(nullptr);"),
+// The names of GameInit.cpp's lines that install a host ("Owner::SetHost(" with
+// anything but nullptr, and SetGameMainHost) or reset one
+// ("Owner::SetHost(nullptr);"),
 // read from the tree this test was built from.
 std::set<std::string> SourceHosts(bool installs)
 {
 	std::ifstream in(std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "Client" / "GameInit.cpp");
 	CHECK(in.good());
-	const std::regex install("^\\s*([A-Za-z_][A-Za-z0-9_]*)::SetHost\\((&s_|\\{)");
+	const std::regex install("^\\s*([A-Za-z_][A-Za-z0-9_]*)::SetHost\\((?!nullptr\\))");
 	const std::regex mainHostInstall("^\\s*SetGameMainHost\\(&s_");
 	const std::regex reset("^\\s*([A-Za-z_][A-Za-z0-9_]*)::SetHost\\(nullptr\\);");
 	std::set<std::string> names;
@@ -1600,7 +1601,9 @@ TEST(GameInit2ReleaseAllObjects, EightyOfTheEightyFourHostsAreReset)
 	// Recorded defect: GameInit.cpp:386 (DXInput::SetHost in InitInput),
 	// 4041 (Wire), 4042 (MPriceManager) and 4123 (SetGameMainHost) are not
 	// undone by ReleaseAllObjects (1692-1771): the four keep pointing at
-	// GameInit's lambdas, which read the globals it has just freed. The
+	// GameInit's lambdas, whose globals it has just freed and set to NULL,
+	// so a call through one (the price host's PricePotionHalf and
+	// PriceGambleHalf, GameInit.cpp:2055-2063) dereferences NULL. The
 	// process exits after it today; a teardown followed by another start-up
 	// in one process (a test, a relaunch) would call through them.
 	CHECK_SAME(std::string("Wire,MPriceManager,DXInput,SetGameMainHost"), kept);

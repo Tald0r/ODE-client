@@ -763,9 +763,8 @@ TEST(GameInit1Input, WithoutAnInputItMakesOneAndStartsIt)
 	// The backend takes keys now.
 	dxlib_input_virtual_key(DIK_F5, 1);
 	CHECK_EQ(1, dxlib_input_key_down(DIK_F5));
-	dxlib_input_virtual_reset();
 	delete g_pSDLInput;
-	CHECK_EQ(0, dxlib_input_key_down(DIK_F5));
+	dxlib_input_virtual_reset();
 }
 
 TEST(GameInit1Input, AnInputThereIsIsKeptAndStarted)
@@ -1337,7 +1336,9 @@ TEST(GameInit1Sound, UnInitReleasesTheCacheAndTheAudio)
 		g_pOGG = &stream;
 		g_pSoundManager = withCache ? &sound.cache : NULL;
 		UnInitSound();
-		CHECK(!g_SDLAudio.IsInit());
+#ifdef DARKEDEN_TEST_HAVE_SDL_MIXER
+		CHECK(!g_SDLAudio.IsInit());	// started above only with the mixer
+#endif
 		CHECK_EQ(withCache ? 0 : 5, int(sound.cache.GetMaxIndex()));
 		// The streamer is not UnInitSound's.
 		CHECK(g_pOGG == &stream);

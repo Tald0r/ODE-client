@@ -224,7 +224,7 @@
 //   with g_pSkillManager NULL (GameInit.cpp:4232): null dereferences.
 // - InitGameObject without the tables the new player reads unchecked: a
 //   creature table holding CREATURETYPE_SLAYER_MALE, the effect sprite and
-//   status tables, the monster names (MCreature.cpp:826 binds a reference
+//   status tables, the monster names (MCreature.cpp:825 binds a reference
 //   through g_pMonsterNameTable) and the client configuration.
 // - The wait loop's ClearInputReceivers with g_pSDLInput NULL
 //   (GameInit.cpp:804), and the object selector's player entries with
@@ -1686,7 +1686,7 @@ TEST(GameInit3Start, AnUnknownResourceEncodingThrows)
 {
 	// Recorded defect: the Error (GameInit.cpp:907) escapes InitGame,
 	// InitApp and ClientMain, none of which catches (Client.cpp:1731, 4343):
-	// std::terminate, with no message.
+	// std::terminate, with no message box.
 	StartUp start;
 	start.FileDef({}, "RESOURCE_TEXT_ENCODING : KOI8-R\n");
 	start.Nicknames();
