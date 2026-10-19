@@ -98,10 +98,13 @@
 // same size and mode differ only in g_bHAL and g_bEnable3DHAL; InitSurface's
 // gamma (SetGammaRamp
 // is an empty inline), its SetTransparency(0) calls (0 is a new surface's
-// value already), its FL2 fallback source (a file static of
-// FL2Rendering.cpp that only text drawing reads) and its deletes of the
-// old frames (no hook in a surface's destructor); InitInput's
-// SetAcquire(true) (a no-op that only answers). On Windows the dummy video
+// value already), its LoadingAddonSPK (it does nothing) and its deletes
+// of the old frames (no hook in a surface's destructor, which is not
+// virtual); InitInput's
+// SetAcquire(true) (a no-op that only answers); DrawTitleLoading's Lock (a
+// lock count its Unlock clears; the blits do not need it) and which of
+// its two blits it picks (on a 5:6:5 surface BltSprite and BltSpriteAlpha
+// draw alike, the recorded defect below). On Windows the dummy video
 // driver cannot wrap a window (SDL_CreateWindowFrom), so the display's size
 // and mode are pinned off Windows only.
 //
@@ -1110,6 +1113,28 @@ TEST(GameInit1Surface, AViewThereIsIsKeptAndGivenTheNewLastFrame)
 	CHECK(g_pTopView == &view);
 	CHECK(view.*Get(ViewSurfaceOf()) == g_pLast);
 	CHECK(g_pLast != NULL);
+}
+
+TEST(GameInit1Surface, TextWithoutTheUIsSurfaceGoesOntoTheLastFrameOrTheBackBuffer)
+{
+	Surfaces scene;
+	g_SetFL2FallbackSurface(nullptr);
+	CHECK_EQ(TRUE, InitSurface());
+	CHECK(g_pBack != NULL && g_pLast != NULL);
+	if (g_pBack == NULL || g_pLast == NULL) return;
+	// The UI's own surface (the last frame) taken away, text is printed
+	// where InitSurface's fallback says: the last frame while there is one.
+	g_SetFL2Surface(nullptr);
+	PrintInfo info = {};
+	const std::vector<WORD> back = Picture(*g_pBack), last = Picture(*g_pLast);
+	g_PrintColorStr(0, 0, "WW", info, RGB(255, 255, 255));
+	CHECK(Picture(*g_pLast) != last);
+	CHECK(Picture(*g_pBack) == back);
+	CSpriteSurface* const lastFrame = g_pLast;
+	g_pLast = NULL;
+	g_PrintColorStr(0, 0, "WW", info, RGB(255, 255, 255));
+	g_pLast = lastFrame;
+	CHECK(Picture(*g_pBack) != back);
 }
 
 TEST(GameInit1Surface, TheFramesThereAreReplacedByNewOnesOfTheGameSize)
