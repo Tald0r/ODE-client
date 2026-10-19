@@ -27,6 +27,7 @@
 #include "SpriteLib/CIndexSprite.h"
 #include "SpriteLib/CSprite565.h"
 #include "MCreatureWear.h"
+#include "MFakeCreature.h"
 #include "MSlayerGear.h"
 #include "MVampireGear.h"
 #include "MOustersGear.h"
@@ -2084,6 +2085,7 @@ struct GuildMarks : MGuildMarkManager
 	GuildMarks() : MGuildMarkManager(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) {}
 	using MGuildMarkManager::m_GuildMarks;
 	using MGuildMarkManager::m_GradeMarks;
+	using MGuildMarkManager::m_LevelMarks;
 	CSprite* Small(WORD guild, int n)
 	{
 		CSprite* sprite = new CSprite565;
@@ -2097,6 +2099,13 @@ struct GuildMarks : MGuildMarkManager
 		if (pack.GetSize() == 0) pack.Init(WORD((GRADE_MARK_MAX + 1) * 2));
 		LoadSprite(pack[WORD(gradeID * 2 + 1)], n);
 		return &pack[WORD(gradeID * 2 + 1)];
+	}
+	// A pet's level mark; every level up to 50 has a slot.
+	CSprite* Level(int level, int n)
+	{
+		if (m_LevelMarks.GetSize() == 0) m_LevelMarks.Init(WORD(51 * 2));
+		LoadSprite(m_LevelMarks[WORD(level * 2 + 1)], n);
+		return &m_LevelMarks[WORD(level * 2 + 1)];
 	}
 };
 
@@ -2990,6 +2999,7 @@ TEST(TopView1Name, GuildAndGradeMarksFlankTheBar)
 		return same;
 	};
 	Access::Name(v, &c);
+	CHECK(!scene.canvas.surface.IsLock());		// each mark unlocks after its blit
 	CHECK(!scene.canvas.Blank());
 	CHECK(expect(guild, grade));
 	c.Status(MODIFY_RANK, GRADE_MARK_MAX + 1);
@@ -3084,6 +3094,7 @@ TEST(TopView1Name, ARequestIconAnimatesOverAPlayerUnderTheMouse)
 		g_CurrentFrame = test.frame;
 		v.m_bDrawRequest = false;
 		Access::Name(v, &c);
+		CHECK(!scene.canvas.surface.IsLock());
 		CHECK(v.m_bDrawRequest);
 		CHECK(!scene.canvas.Blank());
 		CSprite& icon = v.m_EtcSPK[WORD(test.sprite)];
@@ -3123,6 +3134,42 @@ TEST(TopView1Name, ARequestIconAnimatesOverAPlayerUnderTheMouse)
 	v.m_bDrawRequest = true;
 	Access::Name(v, &c);
 	CHECK(!v.m_bDrawRequest);
+	CHECK(scene.canvas.Blank());
+	Queue(v);
+}
+
+TEST(TopView1Name, AnOwnedPetShowsItsItemsLevelLeftOfTheBar)
+{
+	Hud scene;
+	MTopView& v = *scene;
+	v.m_pointChatString = {60, 100};
+	CSprite* level = scene.marks.Level(3, 12);
+	scene.marks.Level(4, 16);
+	Figure<MFakeCreature> pet;
+	pet.Become(kMonster, 9, 5, 5, "Pup");
+	pet.Hp(10, 10);
+	MPetItem item;
+	item.SetNumber(3);
+	pet.SetPetItem(&item);
+	pet.SetOwnerID(scene.player->GetID());
+	const NameBar bar(60, 100, "Pup", kNameSlayer);
+	Access::Name(v, &pet);
+	CHECK(!scene.canvas.surface.IsLock());
+	Canvas expected;
+	POINT at = {bar.left - 20, bar.top};
+	expected.surface.BltSprite(&at, level);
+	CHECK(Same(scene.canvas, expected));
+	CHECK(!scene.canvas.Blank());
+	Queue(v);
+	// A pet without an owner, or without its item, shows none.
+	scene.canvas.surface.FillSurface(kPaper);
+	pet.SetOwnerID(OBJECTID_NULL);
+	Access::Name(v, &pet);
+	CHECK(scene.canvas.Blank());
+	Queue(v);
+	pet.SetOwnerID(scene.player->GetID());
+	pet.SetPetItem(nullptr);
+	Access::Name(v, &pet);
 	CHECK(scene.canvas.Blank());
 	Queue(v);
 }
@@ -3302,12 +3349,47 @@ TEST(TopView1MyName, ThePlayersMarksUnlessHallucinating)
 	Access::MyName(v);
 	CHECK(scene.marks.HasGuildMark(8));
 	Queue(v);
+	me.SetGuildNumber(0);		// no guild: not looked up
+	Access::MyName(v);
+	CHECK(!scene.marks.HasGuildMark(0));
+	Queue(v);
 	scene.canvas.surface.FillSurface(kPaper);
 	me.Set(EFFECTSTATUS_HALLUCINATION);
 	me.SetGuildNumber(7);
 	Access::MyName(v);
 	CHECK(scene.canvas.Blank());
 	Queue(v);
+}
+
+TEST(TopView1MyName, ANicknameIsColouredAndBoxedByItsType)
+{
+	Hud scene;
+	MTopView& v = *scene;
+	Me& me = *scene.player;
+	v.m_FirstZonePixel = {180, 0};
+	g_pUserInformation->CharacterID = "Hero";
+	g_char_slot_ingame.alignment = UI_GOOD;		// a name colour no nickname takes
+	me.Hp(60, 60);
+	const struct { BYTE type; COLORREF color; WORD box; } nicks[] = {
+		{NicknameInfo::NICK_BUILT_IN, RGB(255, 255, 0), WORD(31 << 11)},
+		{NicknameInfo::NICK_QUEST, RGB(150, 150, 150), WORD(31)},
+		{NicknameInfo::NICK_FORCED, RGB(255, 0, 0), 0},
+		{NicknameInfo::NICK_CUSTOM_FORCED, RGB(255, 0, 0), 0},
+		{NicknameInfo::NICK_CUSTOM, RGB(50, 170, 230), 0},
+		{9, RGB(255, 255, 0), 0},
+	};
+	for (const auto& nick : nicks)
+	{
+		me.Nick(nick.type, "Champ");
+		Access::MyName(v);
+		const std::vector<Queued> q = Queue(v);
+		CHECK_EQ(4, int(q.size()));
+		if (q.size() != 4) continue;
+		CHECK(TextOf(q[3]) == "Champ");
+		CHECK_EQ(nick.color, q[3].color);
+		CHECK_EQ(nick.box != 0, q[3].box);
+		if (q[3].box) CHECK_EQ(nick.box, q[3].boxColor);
+	}
 }
 
 //----------------------------------------------------------------------
@@ -3628,6 +3710,7 @@ TEST(TopView1Information, TheMagazinesBulletsAreCounted)
 	magazine->SetNumber(37);
 	g_pCurrentMagazine = static_cast<MMagazine*>(magazine.get());
 	Access::Information(v);
+	CHECK(!sheet.surface.IsLock());		// unlocked after the bullet's blit
 	CSprite& bullet = v.m_EtcSPK[SPRITEID_BULLET];
 	Canvas expectedSheet(kBoard, 64), expected(kBoard, kBoard);
 	POINT at = {225, 9};
