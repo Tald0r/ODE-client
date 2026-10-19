@@ -2384,6 +2384,10 @@ std::vector<WORD> EffectTables()
 	return tables;
 }
 
+// Off Windows only: there the game's display wraps the window the client
+// made (g_hWnd), which a test has none of, as test_game_init_1.cpp's
+// display tests are guarded too.
+#ifndef PLATFORM_WINDOWS
 // The start-up as far as InitGameObject's version file: every table
 // InitInfomation reads (game_info_files.h's) under Data/Info, the regen
 // towers beside the data pack, options with the HAL on, the nicknames
@@ -2417,9 +2421,16 @@ struct Game : StartUp
 		Nicknames();
 		Strings({});
 
+		// SDL's dummy video, as test_game_init_1.cpp's Video sets it: CI
+		// runs without a display and sets no driver.
+		const std::string videoDriver = SDL_getenv("SDL_VIDEODRIVER") ? SDL_getenv("SDL_VIDEODRIVER") : "";
+		SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
 		CHECK_EQ(0, SDL_InitSubSystem(SDL_INIT_VIDEO));
 		CHECK_EQ(0, spritectl_init());
-		more.Then([]() { SDL_QuitSubSystem(SDL_INIT_VIDEO); });
+		more.Then([videoDriver]() {
+			SDL_QuitSubSystem(SDL_INIT_VIDEO);
+			SDL_setenv("SDL_VIDEODRIVER", videoDriver.c_str(), 1);
+		});
 		more.Keep(g_bHAL);
 		more.Keep(g_bEnable3DHAL);
 		more.Keep(*Get(HwndOf()));
@@ -2670,3 +2681,4 @@ TEST(GameInit3Steps, WithEverythingThereTheGameStartsAtTheMainMenu)
 	CHECK(g_pUpdate == g_pCWaitUIUpdate);
 	CHECK(gC_vs_ui.IsRunningTitle());
 }
+#endif // PLATFORM_WINDOWS
