@@ -118,8 +118,6 @@ extern	LONG g_TILESURFACE_WIDTH;
 extern	LONG g_TILESURFACE_HEIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_RIGHT;
 extern	LONG g_TILESURFACE_OUTLINE_DOWN;
-extern	LONG g_TILE_X_HALF;
-extern	LONG g_TILE_Y_HALF;
 
 /* Exception handling for Packet system */
 #include "Packet/Exception.h"

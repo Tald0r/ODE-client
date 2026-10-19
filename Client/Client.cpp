@@ -103,11 +103,7 @@ extern bool g_bRunning;			// cleared by the pump on SDL_QUIT (DXLibBackendSDL.cp
 // g_hWnd is gamemodel's (ClientMode.cpp) since task 4.253, and g_hInstance
 // since task 4.264.
 // g_x and g_y are InputState.cpp's (gamemodel, task 4.247).
-DWORD				g_dwVideoMemory = 0;
-
 char				g_CWD[_MAX_PATH];
-
-DWORD				g_TimerNPMON = 0;
 
 // FPS (g_FrameNow, the frame clock, is FrameClock.cpp's)
 // g_CurrentFrame, the frame count, is FrameClock.cpp's.
@@ -130,14 +126,8 @@ const int			g_FrameGood			= 15;
 
 // g_double_click_time is ClientMode.cpp's (gamemodel) since task 4.255.
 
-bool				g_bTestMode = false;
-bool				g_bForceExitBynProtect = false;
-bool				g_bForceExitBynProtect2 = false;
-DWORD				g_nProtectErrorMessage = 0;
-DWORD				g_nProtectErrorMessage2 = 0;
 // g_LeftPremiumDays and g_bFamily, the account's premium days and family
 // flag from the login, are ClientMode.cpp's too.
-bool				g_bSuperUser			= false;
 
 // g_dwSeqNumL and g_dwSeqNumG are ClientMode.cpp's (gamemodel) since task 4.258.
 
@@ -180,10 +170,6 @@ extern void CheckMacScreenMode();
 static int g_WindowScale = 1;
 // The g_SECTOR_* view sizes are ViewSectors.cpp's (gamemodel, task 4.245), and
 // so are the g_TILESURFACE_* tile-surface sizes (task 4.260).
-
-LONG	g_TILE_X_HALF = 24;
-LONG	g_TILE_Y_HALF = 12;
-// end
 //-----------------------------------------------------------------------------
 // define function
 //-----------------------------------------------------------------------------
@@ -294,8 +280,6 @@ HWND g_hWndProgress = NULL;
 const int progressBarWidth = 300;
 const int progressBarHeight = 40;
 const int g_numAppendFiles = 16;		// AppendPatch.inf의 file들 개수
-
-std::map<DWORD,std::string> g_nProtectMessage;
 
 void
 RemoveProgressBar()
@@ -432,92 +416,6 @@ UpdateProgressBar()
 	SendMessage(g_hWndProgress, PBM_STEPIT, 0, 0); 
 }
 
-
-//-----------------------------------------------------------------------------
-// Patch Log Window
-//-----------------------------------------------------------------------------
-HWND		g_hPatchLogWnd = NULL;
-HWND		g_hPatchLogEdit = NULL;
-char*		g_pPatchLogBuffer = NULL;	// global because its size is not known in advance
-
-LRESULT CALLBACK PatchLogWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-    {
-		case WM_DESTROY:
-            PostQuitMessage(0);
-        return 0L;
-	}
-	return DefWindowProc(hWnd, message, wParam, lParam);
-}
-
-bool
-ReadPatchLogFromFile()
-{
-	char strBuffer[256];
-
-	ifstream file("PatchLog.txt");	// text file이다.
-
-	if (!file.is_open())
-	{
-		return false;
-	}
-
-	file.seekg( 0, ios::end );
-	long fpEnd = static_cast<long>(file.tellg());
-
-	if (g_pPatchLogBuffer!=NULL)
-	{
-		delete [] g_pPatchLogBuffer;
-	}
-	g_pPatchLogBuffer = new char [fpEnd*2];
-
-	file.seekg( 0 );
-
-	char* pBuffer = g_pPatchLogBuffer;
-
-	while (!file.eof())
-	{
-		file.getline(strBuffer, 254);
-		int n = static_cast<int>(file.gcount());		
-		
-		if (n==0)
-		{
-			break;
-		}
-
-		if (strBuffer[n-1]=='\0')
-		{
-			n -= 1;
-		}
-
-		// \r\n을 붙여줘야 다음줄이 된다.		
-		strBuffer[n] = '\r';
-		strBuffer[n+1] = '\n';
-		
-		Basic::CopyBounded(pBuffer, strBuffer, n+2);
-		pBuffer += n+2;
-	}
-	*pBuffer = '\0';
-
-	file.close();
-
-	SetWindowText( g_hPatchLogEdit, g_pPatchLogBuffer );
-
-	delete [] g_pPatchLogBuffer;
-	g_pPatchLogBuffer = NULL;
-
-	return true;
-}
-
-void OutPutClassSize()
-{
-}
-
-void
-ShowPatchLogWindow()
-{
-}
 
 //-----------------------------------------------------------------------------
 // Name: WindowProc()
@@ -665,7 +563,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case WM_CHAR :
 		{
 			gC_vs_ui.KeyboardControl(message, static_cast<UINT>(wParam), static_cast<long>(lParam));
-			[[maybe_unused]] TCHAR ch = (TCHAR)wParam;    // character code 	
 
 		}
 		return 0L;	
@@ -821,8 +718,6 @@ InitApp(int nCmdShow)
 bool
 CheckTerriblePatch()
 {
-	bool bCrash = false;
-
 	//-----------------------------------------------------------------------------
 	// ImageObject Patch
 	//-----------------------------------------------------------------------------
@@ -853,25 +748,7 @@ CheckTerriblePatch()
 		}
 		
 	}
-	
-	//-----------------------------------------------------------------------
-	// 심각한 상황인가? - -; 
-	//-----------------------------------------------------------------------
-	if (bCrash)
-	{
-		return false;
-	}
 
-	return true;
-}
-//------------------------------------------------------------------------
-// ApplyPatch 
-//------------------------------------------------------------------------
-// 갑자기 압축을 하게 되는 바람에... - -;
-//------------------------------------------------------------------------
-bool
-ApplyPatch()
-{	
 	return true;
 }
 
@@ -928,7 +805,7 @@ static void FinishClient(HANDLE hMutex, const char* lpCmdLine)
 	}
 }
 
-static bool RunClientFrame(BOOL& bBadTimer)
+static bool RunClientFrame()
 {
 	MSG msg{};
 #ifndef PLATFORM_WINDOWS
@@ -962,13 +839,6 @@ static bool RunClientFrame(BOOL& bBadTimer)
 			}
 // REMOVED: nProtect anti-cheat code (SDL migration - no longer needed)
 
-			if( g_bForceExitBynProtect )
-			{
-				bBadTimer = TRUE;
-
-				return false;
-			}
-
 				DWORD timeGap = (DWORD)(g_FrameNow - g_StartTime).count();
 
 				if (timeGap > 1000)
@@ -995,11 +865,11 @@ static bool RunClientFrame(BOOL& bBadTimer)
 #ifdef __EMSCRIPTEN__
 namespace {
 bool browserLoopRunning = false;
-struct BrowserSession { HANDLE mutex; std::string command; BOOL badTimer; };
+struct BrowserSession { HANDLE mutex; std::string command; };
 void BrowserFrame(void* data)
 {
 	auto* session = static_cast<BrowserSession*>(data);
-	if (RunClientFrame(session->badTimer)) return;
+	if (RunClientFrame()) return;
 	emscripten_cancel_main_loop();
 	browserLoopRunning = false;
 	if (g_pUserOption && g_pFileDef)
@@ -1167,8 +1037,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		g_TILESURFACE_HEIGHT               =888;
 		g_TILESURFACE_OUTLINE_RIGHT        =1152;
 		g_TILESURFACE_OUTLINE_DOWN         =816;
-		g_TILE_X_HALF = 24;
-		g_TILE_Y_HALF = 12;
 	}
 	else if (lpCmdLine[strlen(lpCmdLine)-1] == '4')
 	{
@@ -1195,8 +1063,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		g_TILESURFACE_HEIGHT               =888;
 		g_TILESURFACE_OUTLINE_RIGHT        =1152;
 		g_TILESURFACE_OUTLINE_DOWN         =816;
-		g_TILE_X_HALF = 24;
-		g_TILE_Y_HALF = 12;
 	}
 	lpCmdLine[strlen(lpCmdLine)-1]=0x0;
 	//----------------------------------------------------------
@@ -1383,13 +1249,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	NetmarbleConfig.load(g_pFileDef->getProperty("FILE_INFO_NETMARBLE").c_str());
 	bNetmarble = NetmarbleConfig.getPropertyInt("Netmarble") != 0;
 
-	if(bNetmarble)
-	{
-		// Registry access removed - use configuration file instead
-		// Netmarble-specific registry key: HKEY_LOCAL_MACHINE\SOFTWARE\Netmarble\NetmarbleDarkEden
-		// This was used to set "RunFileName" for auto-updater
-		// TODO: Implement config file-based approach if needed
-	}
 	//------------------------------------------------------
 	// Server IP가 설정되어 있지 않은 경우 --> Launcher실행
 	//------------------------------------------------------
@@ -1421,8 +1280,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 			return FALSE;
 		}
 
-		bool bRunUpdater = false;
-
 		//add by sonic 2006.4.9  设置加密函数
 		DWORD GetCommand;
 		// EXECryptor_GetHardwareID() removed (SDL2) - Copy protection no longer needed
@@ -1451,49 +1308,15 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		if (memcmp(checkStr,T_checkStr,strlen(checkStr)))
 		{
 			return false;
-			bRunUpdater = true;
 		}
 		//////////////////////////////////////////////////////////////////////////
-		if(bRunUpdater == false && !bNetmarble && lpCmdLine[8] >= '0' && lpCmdLine[8] <= '9')
+		if(!bNetmarble && lpCmdLine[8] >= '0' && lpCmdLine[8] <= '9')
 		{
-			for( int i = 9; ; i++ )
-			{
-				if ( lpCmdLine[i] == '\0' )
-					break;
-				
-				if ( lpCmdLine[i] >= '0' && lpCmdLine[i] <= '9' )
-				{
-					continue;
-				}
-				else
-					break;
-			}
-			if (memcmp(checkStr,str,strlen(checkStr)))
-			{
-				char szDimen[10];
-				memset( szDimen, 0, 10 );
-				memcpy( szDimen, "8", 1 );
-				g_Dimension = atoi( szDimen );
-			}
-			else
-			{
-				char szDimen[10];
-				memset( szDimen, 0, 10 );
-				memcpy( szDimen, lpCmdLine+8, 1 );
-				g_Dimension = atoi( szDimen );
-			}
+			char szDimen[10];
+			memset( szDimen, 0, 10 );
+			memcpy( szDimen, lpCmdLine+8, 1 );
+			g_Dimension = atoi( szDimen );
 		}
-/////////////////////////////edit by sonic 2006.6.20///////////////////////
-		if (bRunUpdater)
-		{
-			ReleaseMutex( hMutex );
-			ReleaseAllObjects();
-			_chdir( g_CWD );
-
-			_spawnl(_P_OVERLAY, UPDATER_FILENAME, UPDATER_FILENAME, lpCmdLine, NULL);
-			return FALSE;
-		}
-///////////////////////////////////end edit by sonic 2006.6.20///////////////////////
 		g_bFullScreen	= true;
 		g_MaxNPC		= 0;
 
@@ -1635,7 +1458,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	}
 
 	RemoveProgressBar();
-	BOOL bBadTimer = FALSE;
 	REALSERVER_INFO RealServerInfo;
 	if(bNetmarble)
 	{
@@ -1675,11 +1497,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 #endif
 	if (InitApp(nCmdShow))
 	{
-		// SDL2 offers no video memory query as DirectX did: use a
-		// reasonable default on every platform.
-
-		g_dwVideoMemory = 256 * 1024 * 1024;  // 256 MB default
-
 		// For Netmarble: a Netmarble launch never gets this far with
 		// bNetmarble set. ParsingNetmarble refuses it or answers false,
 		// and on false ClientMain returns or clears bNetmarble above (task
@@ -1721,58 +1538,20 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		DEBUG_CMD(MIN_CLRSCR, "시작");
 		DEBUG_CMD(MIN_SHOWWND, "------------------------------");
 #ifdef __EMSCRIPTEN__
-		auto* browser = new BrowserSession{nullptr, std::string(lpCmdLine), FALSE};
+		auto* browser = new BrowserSession{nullptr, std::string(lpCmdLine)};
 		browser->mutex = hMutex;
 		browserLoopRunning = true;
 		emscripten_set_main_loop_arg(BrowserFrame, browser, 0, false);
 		return 0;
 #else
-		while (RunClientFrame(bBadTimer)) {}
+		while (RunClientFrame()) {}
 #endif
 
 		SystemParametersInfo(SPI_SETSCREENSAVERRUNNING, FALSE, NULL, 0); 
 	}
-	else
-	{		
-	}
 	//add by Soargon
 	// Borderless presentation leaves the desktop display mode unchanged.
 	//end
-	//-----------------------------------------------------------------------------
-	// 타이머 이상으로 종료하는 경우
-	//-----------------------------------------------------------------------------
-	if (bBadTimer)
-	{
-		if (g_pUIDialog!=NULL)
-		{
-
-			while (1)
-			{
-				UpdateInput();
-				UpdateMouse();
-
-				{	
-					gC_vs_ui.Show();
-
-					POINT point = { 0, 0 };
-					RECT rect = { 0, 0, g_GameRect.right, g_GameRect.bottom };
-					
-					g_pBack->BltNoColorkey( &point, g_pLast, &rect );	
-				}
-				
-				CSDLGraphics::Flip();
-
-				if (g_pSDLInput->KeyDown(DIK_ESCAPE)
-					|| g_pSDLInput->KeyDown(DIK_NUMPADENTER)
-					|| g_pSDLInput->KeyDown(DIK_RETURN)
-					|| g_pSDLInput->KeyDown(DIK_SPACE))
-				{
-					break;
-				}
-			}
-		}
-	}
-
 	//-----------------------------------------------------------------------------
 	// 모든 object들 제거
 	//-----------------------------------------------------------------------------	
@@ -1780,12 +1559,4 @@ release_objects:
 	FinishClient(hMutex, lpCmdLine);
 
 	return 0;
-}
-BOOL GetSystem()
-{
-	// It rejected the Windows 9x family (VER_PLATFORM_WIN32_WINDOWS) and a
-	// failed version query, and accepted the NT family. An x64 build only
-	// runs on the NT family, where GetVersionEx - deprecated - always
-	// succeeded, so this is the answer it always gave.
-	return TRUE;
 }

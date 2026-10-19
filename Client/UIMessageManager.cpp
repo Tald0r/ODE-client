@@ -226,7 +226,6 @@ UIMessageManager*	g_pUIMessageManager = NULL;
 
 extern BOOL g_bEnable3DHAL;
 extern BOOL g_bSetHotKey;
-extern bool	g_bTestMode;
 extern bool g_bHolyLand;
 extern bool g_bZoneSafe;
 
