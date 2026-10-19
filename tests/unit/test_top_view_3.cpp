@@ -953,10 +953,10 @@ TEST(TopView3ItemBroken, ASlayersGearShowsEachSlotByItsWear)
 	scene.Put(scene.slayer, MSlayerGear::GEAR_SLAYER_GLOVE, ITEM_CLASS_GLOVE, ALMOST);			// 5 + 34
 	scene.Put(scene.slayer, MSlayerGear::GEAR_SLAYER_BELT, ITEM_CLASS_COUPLE_RING, ALMOST);	// a couple ring shows whole: 6
 	scene.Draw();
+	CHECK(!scene.drawn.surface.IsLock());		// before the picture is read, which locks
 	scene.Body(SPRITEID_ITEM_BROKEN_SLAYER_MALE);
 	for (int k : {0, 19, 39, 6}) scene.Frame(0, k);
 	CHECK(scene.Same());
-	CHECK(!scene.drawn.surface.IsLock());
 }
 
 TEST(TopView3ItemBroken, ASlayersHandsShowTheShieldAndTheWeaponKind)
@@ -1701,6 +1701,54 @@ TEST(TopView3ItemShadow, ASelectedCorpseDecidesAlikeAndLeavesNoCreatureSelected)
 	}
 }
 
+TEST(TopView3ItemShadow, AnUnselectedCorpseLeavesTheCreatureSelectedAlone)
+{
+	Remains scene;
+	MCorpse& corpse = scene.Body(700, 3);
+	scene.View().SetSelectedCreature(77);
+	scene.Shadow(corpse);
+	scene.Expect(corpse);
+	CHECK(scene.Same());
+	CHECK_EQ(77, int(scene.View().GetSelectedCreature()));
+}
+
+TEST(TopView3Item, ASelectedCorpsesBodyIsDrawnAsTheSelectedCreature)
+{
+	// The body is drawn as if it were the selected creature, which names it.
+	// Type 702 is a monster's: its sprite type (2) is past a slayer's.
+	Remains scene;
+	scene.sprites.Init(3);
+	for (int type = 0; type < 3; ++type)
+	{
+		CREATURESPRITETABLE_INFO& sprite = testfw::MutableRow(scene.sprites, type);
+		sprite.FrameID = 1;
+		sprite.CreatureType = BYTE(FLAG_CREATURESPRITE_MONSTER);
+	}
+	*testfw::MutableRow(scene.creatureTypes, 702).SpriteTypes.GetMutable(0) = 2;
+	CCreatureFramePack& frames = scene.View().m_CreatureFPK;
+	frames.Init(2);
+	for (int id = 0; id < 2; ++id)
+	{
+		frames[WORD(id)].Init(BYTE(ACTION_MAX_SLAYER));
+		for (int action = 0; action < ACTION_MAX_SLAYER; ++action) frames[WORD(id)][BYTE(action)].Init(8);
+	}
+	for (int direction = 0; direction < 8; ++direction)
+	{
+		FRAME_ARRAY& bodies = frames[1][BYTE(ACTION_DIE)][BYTE(direction)];
+		bodies.Init(8);
+		for (int f = 0; f < 8; ++f) bodies[WORD(f)].Set(0, 1, 1);
+	}
+	scene.View().m_CreatureSPK.Init(1);
+	Mark(scene.View().m_CreatureSPK[0], 0x3333);
+	MCorpse& corpse = scene.Body(702, 3);
+	scene.Draw(corpse);
+	CHECK(scene.View().m_pSelectedCreature == nullptr);
+	scene.View().SetSelectedItem(corpse.GetID());
+	scene.Draw(corpse);
+	CHECK(scene.View().m_pSelectedCreature == corpse.GetCreature());
+	CHECK_EQ(int(OBJECTID_NULL), int(scene.View().GetSelectedCreature()));
+}
+
 TEST(TopView3ItemShadow, OnlyCorpsesInTheLightCastOne)
 {
 	Remains scene;
@@ -1932,11 +1980,15 @@ TEST(TopView3ImageObject, ATranslucentAnimationShowsItsFrame)
 
 TEST(TopView3ImageObject, AFrameSpriteOffThePackShowsOnlyTheStillSprite)
 {
-	Scenery scene;
-	MAnimationObject& torch = scene.Animated(0, BLT_NORMAL, 2, 1);
-	CHECK(At(scene.Draw(torch), 20, 30));
-	scene.Whole(20, 30, 0);								// shadow animation 2 is past its pack
-	CHECK(scene.Same());
+	for (int sprite : {7, 4})							// far past the pack, and just past it
+	{
+		Scenery scene;
+		scene.View().m_ImageObjectFPK[2][0].Set(TYPE_SPRITEID(sprite), 1, 1);
+		MAnimationObject& torch = scene.Animated(0, BLT_NORMAL, 2, 1);
+		CHECK(At(scene.Draw(torch), 20, 30));
+		scene.Whole(20, 30, 0);							// shadow animation 2 is past its pack
+		CHECK(scene.Same());
+	}
 }
 
 TEST(TopView3ImageObject, TheShadowFollowsTheObjectsOwnFrame)
@@ -2738,6 +2790,49 @@ TEST(TopView3AttachEffect, EachDrawnAlphaOrScreenFrameAddsItsLight)
 	}
 }
 
+TEST(TopView3AttachEffect, APairFramesLightIsAddedLikeItsFrames)
+{
+	// Lights of 1 a cell, on a buffer of 10: the frame's and its pair's
+	// both add to the same cells.
+	Aura scene;
+	scene.Lit();
+	MTopView& view = scene.View();
+	for (int n = 0; n < 4; ++n)
+		for (int u = 0; u < 2; ++u)
+			for (int v = 0; v < 2; ++v) view.m_LightFTP[TYPE_FILTERID(n)].SetFilter(WORD(u), WORD(v), 1);
+	for (int y = 0; y < 64; ++y)
+		for (int x = 0; x < 64; ++x) view.m_LightBufferFilter.SetFilter(WORD(x), WORD(y), 10);
+	view.m_EffectAlphaFPK[1][0][0].Set(1, 4, 5, 2, false);
+	view.m_EffectAlphaFPK[2][0][0].Set(1, 9, 9, 2, true);
+	scene.Type(11).PairFrameIDList = {2};
+	view.m_nLight = 0;
+	scene.Make(11, BLT_EFFECT, 1);
+	scene.Draw();
+	CHECK_EQ(2, view.m_nLight);
+	int twelve = 0, ten = 0;
+	for (int y = 0; y < 64; ++y)
+		for (int x = 0; x < 64; ++x)
+		{
+			const int cell = view.m_LightBufferFilter.GetFilter(WORD(y))[x];
+			twelve += cell == 12;
+			ten += cell == 10;
+		}
+	CHECK_EQ(4, twelve);
+	CHECK_EQ(64 * 64 - 4, ten);
+}
+
+TEST(TopView3AttachEffect, AScreenFramePastTheDirectionsLastShowsItsLast)
+{
+	Aura scene;
+	scene.View().m_EffectScreenFPK[1][0].Init(2);
+	Aura::Place(scene.View().m_EffectScreenFPK, 1, 0, 0, 0, 4, 5);
+	Aura::Place(scene.View().m_EffectScreenFPK, 1, 0, 1, 0, 6, 7);
+	scene.Make(15, BLT_SCREEN, 1, 8, 5);
+	scene.Draw();
+	scene.ExpectScreen(6, 7, 1);
+	CHECK(scene.Same());
+}
+
 namespace {
 
 // The orbit paths are built from the math tables; both are put back.
@@ -2794,6 +2889,21 @@ TEST(TopView3AttachEffect, AnOrbitingEffectIsDrawnAtItsOrbitBehindWhenAbove)
 		scene.Draw(above ? 2 : 1);
 		scene.ExpectAttached(30 + at.x, 30 + at.y, 1, 1);
 		CHECK(scene.Same());
+		scene.Clear();
+		scene.Draw(above ? 1 : 2);
+		CHECK(scene.drawn.Blank());
+	}
+}
+
+TEST(TopView3AttachEffect, AnOrbitingScreenEffectIsBehindWhenAbove)
+{
+	for (bool above : {false, true})
+	{
+		Orbits scene;
+		Aura::Place(scene.View().m_EffectScreenFPK, 1, 0, 0, 0, 30, 30);		// a frame in front
+		scene.Orbit(BLT_SCREEN, 1, scene.Step(above));
+		scene.Draw(above ? 2 : 1);
+		CHECK(!scene.drawn.Blank());
 		scene.Clear();
 		scene.Draw(above ? 1 : 2);
 		CHECK(scene.drawn.Blank());
