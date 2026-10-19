@@ -2814,8 +2814,8 @@ TEST(TopView3AttachEffect, APairFramesLightIsAddedLikeItsFrames)
 		for (int x = 0; x < 64; ++x)
 		{
 			const int cell = view.m_LightBufferFilter.GetFilter(WORD(y))[x];
-			twelve += cell == 12;
-			ten += cell == 10;
+			if (cell == 12) ++twelve;
+			else if (cell == 10) ++ten;
 		}
 	CHECK_EQ(4, twelve);
 	CHECK_EQ(64 * 64 - 4, ten);

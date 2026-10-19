@@ -2726,17 +2726,17 @@ TEST(TopView2World, ThePlayersLightIsLaidAndDarkensTheFrameInTheDark)
 	// The cells the light changed, as (left, top, right, bottom).
 	auto box = [](const std::vector<int>& cells)
 	{
-		int box[4] = { SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT, -1, -1 };
+		std::vector<int> edges{ SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT, -1, -1 };
 		for (int i = 0; i < int(cells.size()); ++i)
 			if (cells[size_t(i)] != 10)
 			{
 				const int x = i % SCREENLIGHT_WIDTH, y = i / SCREENLIGHT_WIDTH;
-				box[0] = (std::min)(box[0], x);
-				box[1] = (std::min)(box[1], y);
-				box[2] = (std::max)(box[2], x);
-				box[3] = (std::max)(box[3], y);
+				edges[0] = (std::min)(edges[0], x);
+				edges[1] = (std::min)(edges[1], y);
+				edges[2] = (std::max)(edges[2], x);
+				edges[3] = (std::max)(edges[3], y);
 			}
-		return std::vector<int>(box, box + 4);
+		return edges;
 	};
 	// In the light the screen is the frame as drawn.
 	scene.Frame();
