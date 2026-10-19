@@ -26,6 +26,7 @@
 #include "MPortal.h"
 #include "UserOption.h"
 #include "FrameClock.h"
+#include "MonotonicClock.h"
 #include "ViewSectors.h"
 #include "MViewDef.h"
 #include "SpriteIDDef.h"
@@ -51,6 +52,8 @@ extern int		g_DrawCamGapX;
 extern int		g_DrawCamGapY;
 extern POINT	g_MouseSector;
 extern bool		g_bMouseInPortal;
+extern BOOL		g_MyFull;			// ClientMode.cpp's
+extern int		g_UpdateDelay;		// ClientMode.cpp's
 bool IsEscapeDrawCreatureFunction(MCreature* pCreature);
 
 // The view's protected members this file drives (MTopView.h makes it a
@@ -173,6 +176,7 @@ struct PlayerProbe : MPlayer
 	using MPlayer::m_LightSight;
 	using MPlayer::m_TimeLightSight;
 	using MPlayer::m_Sight;
+	using MCreature::m_bInCasket;
 	void Set(EFFECTSTATUS status, bool on = true) { m_bEffectStatus[status] = on; }
 	void At(int x, int y) { MObject::SetPosition(TYPE_SECTORPOSITION(x), TYPE_SECTORPOSITION(y)); }
 };
@@ -2256,6 +2260,10 @@ TEST(TopView2Frame, AScrollToTheZonesEdgeBlacksTheNewCellsOffIt)
 		{ 48, 40, 1, 0 },		// 40 to 43: the strip to column 61
 		{ 30, 64, 0, 1 },		// 52 to 55: the strip rows 80 to 82
 		{ 13, 17, -1, -1 },
+		{ 48, 40, 1, 1 },		// the right edge going down, and up
+		{ 48, 40, 1, -1 },
+		{ 13, 40, -1, 1 },		// the left edge going down, and up
+		{ 13, 40, -1, -1 },
 	};
 	for (const auto& c : cases)
 	{
@@ -2281,4 +2289,517 @@ TEST(TopView2Frame, AScrollToTheZonesEdgeBlacksTheNewCellsOffIt)
 		}));
 		CHECK_EQ(0, scene.WrongScreenCorners());
 	}
+}
+
+TEST(TopView2Frame, AScrollBlitsOnlyTheGameAreaOfTheTiles)
+{
+	// A screen wider than the game area: after every kind of scroll the
+	// tiles stop at the area's right edge.
+	TileScene scene;
+	MTopView& view = scene.View();
+	const RECT oldRect = g_GameRect;
+	g_GameRect = { 0, 0, 800, 600 };
+	CSpriteSurface wide;
+	CHECK(wide.Init(1024, 600));
+	CSpriteSurface* p = &wide;
+	view.SetSurface(p);
+	const int dirs[][2] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
+	for (const auto& d : dirs)
+	{
+		scene.Tiles().FillSurface(TileScene::kWhite);
+		scene.Stand(30, 40);
+		Access::DrawTileSurface(view);
+		for (int step = 1; step <= 3; ++step)
+		{
+			wide.FillSurface(0);
+			scene.Stand(30 + d[0] * step, 40 + d[1] * step);
+			scene.Frame();
+			const std::vector<WORD> pixels = Picture(wide, 1024, 600);
+			int past = 0, within = 0;
+			for (int y = 0; y < 600; ++y)
+				for (int x = 0; x < 1024; ++x)
+					if (pixels[size_t(y) * 1024 + x] != 0) ++(x >= 800 ? past : within);
+			CHECK_EQ(0, past);
+			CHECK(within > 0);
+		}
+	}
+	p = &scene.screen;
+	view.SetSurface(p);
+	g_GameRect = oldRect;
+}
+
+TEST(TopView2Frame, AScrollDrawsTheNewSectorsOfTheViewsZone)
+{
+	// The zone the tiles came from is not asked again: the view's is.
+	TileScene scene;
+	MTopView& view = scene.View();
+	scene.Stand(30, 40);
+	Access::DrawTileSurface(view);
+	scene.Frame();
+	const POINT old = scene.Origin();
+	ZoneProbe other{ TYPE_SECTORPOSITION(TileScene::W), TYPE_SECTORPOSITION(TileScene::H) };
+	for (int y = 0; y < TileScene::H; ++y)
+		for (int x = 0; x < TileScene::W; ++x) other.SectorAt(x, y)->Set(TileScene::Colour(x, y, 1));
+	view.SetZone(&other);
+	for (int step = 1; step <= 3; ++step)
+	{
+		scene.Stand(30 + step, 40 + step);
+		scene.Frame();
+	}
+	CHECK_EQ(old.x + 3, scene.Origin().x);
+	CHECK_EQ(old.y + 3, scene.Origin().y);
+	CHECK_EQ(0, scene.WrongCells([old](int x, int y) {
+		return x >= old.x && x < old.x + 22 && y >= old.y && y < old.y + 31 ? 0 : 1;
+	}));
+	view.SetZone(scene.zone.get());
+}
+
+//======================================================================
+// One frame of a zone holding one of each thing (DrawZone)
+//======================================================================
+namespace {
+
+// A w x h sprite of one colour, in CSprite's file layout, and the same
+// as an index sprite of fixed colours.
+void SolidSprite(CSprite& sprite, int w, int h, WORD colour)
+{
+	std::vector<WORD> words{ WORD(w), WORD(h) };
+	for (int y = 0; y < h; ++y)
+	{
+		words.insert(words.end(), { WORD(3 + w), 1, 0, WORD(w) });
+		words.insert(words.end(), size_t(w), colour);
+	}
+	LoadWords(sprite, words);
+}
+void SolidIndexSprite(CIndexSprite& sprite, int w, int h, WORD colour)
+{
+	std::vector<WORD> words{ WORD(w), WORD(h) };
+	for (int y = 0; y < h; ++y)
+	{
+		words.insert(words.end(), { WORD(4 + w), 1, 0, 0, WORD(w) });
+		words.insert(words.end(), size_t(w), colour);
+	}
+	LoadWords(sprite, words);
+}
+
+struct WeatherProbe : MWeather
+{
+	using MWeather::Init;
+	using MWeather::m_StartX;
+	using MWeather::m_StartY;
+	using MWeather::m_WeatherType;
+	using MWeather::m_nActiveMapEffect;
+	using MWeather::m_pMapEffect;
+};
+
+const int kLow = 5;		// a monster whose frame stands 30 below its tile's corner
+const WORD kItemColour = 0x07E0, kStillColour = 0xF800, kFloorColour = 0x001F, kTallColour = 0xF81F,
+	kEffectColour = 0x7BEF, kWeatherColour = 0xFFE0;
+const WORD kMarkColour[3] = { 0x0841, 0x1082, 0x18C3 };		// click frames 4, 5 and 6
+
+// TileScene's zone seen from (30, 40), its first sector (22, 28), its
+// object rows 27 to 53: a ring (its tile frame at (3, 2)) and a second
+// (at (5, 30)), image objects of their own colours, creatures of the
+// pick sprite (a vampire's at (5, -20), kLow's at (5, 30)), a ghost, a
+// selectable effect on a sector and one on the ground, a click marker
+// of three frames, a weather drop and a light buffer of 10 per cell.
+struct World : TileScene
+{
+	WeatherProbe rain;
+	std::vector<std::unique_ptr<MItem>> items;
+	std::vector<std::unique_ptr<MImageObject>> objects;
+	std::vector<std::unique_ptr<Creature>> creatures;
+	std::vector<std::unique_ptr<MEffect>> effects;
+	BOOL oldFull = g_MyFull;
+	int oldUpdateDelay = g_UpdateDelay;
+	MonotonicClock::TimePoint oldFrameNow = g_FrameNow;
+
+	World()
+	{
+		MTopView& view = View();
+		creatureTypes.Init(800);		// a ghost is type 716
+		Type(kSlayer, CREATURETRIBE_SLAYER, 0);
+		Type(kVampire, CREATURETRIBE_VAMPIRE, 3);
+		Type(kOusters, CREATURETRIBE_OUSTERS, 2);
+		Type(kNPC, CREATURETRIBE_NPC, 3);
+		Type(kLow, CREATURETRIBE_VAMPIRE, 4);
+		Type(CREATURETYPE_GHOST, CREATURETRIBE_VAMPIRE, 3);
+		sprites.Init(5);
+		for (int type = 0; type < 5; ++type)
+		{
+			CREATURESPRITETABLE_INFO& row = testfw::MutableRow(sprites, type);
+			row.FrameID = TYPE_FRAMEID(type == 3 ? 1 : type == 4 ? 0 : FRAMEID_NULL);
+			row.CreatureType = BYTE(type == 0 ? FLAG_CREATURESPRITE_PLAYER_SLAYER
+				: type == 2 ? FLAG_CREATURESPRITE_PLAYER_OUSTERS : FLAG_CREATURESPRITE_MONSTER);
+		}
+		PlayerType(kVampire);
+		Place(view.m_CreatureFPK, 0, ACTION_STAND, 2, 0, 5, 30);
+		g_pItemTable->InitClass(ITEM_CLASS_RING, 3);
+		for (int type = 1; type < 3; ++type)
+		{
+			ITEMTABLE_INFO& row = testfw::MutableRow(*g_pItemTable, ITEM_CLASS_RING, type);
+			row.SetFrameID(TYPE_FRAMEID(type), 0, 0);
+			row.SetDropFrameID(TYPE_FRAMEID(type));
+		}
+		view.m_ItemTileFPK.Init(3);
+		view.m_ItemTileFPK[1].Set(0, 3, 2);
+		view.m_ItemTileFPK[2].Set(0, 5, 30);
+		view.m_ItemTileISPK.Init(1);
+		SolidIndexSprite(view.m_ItemTileISPK[0], 3, 2, kItemColour);
+		view.m_ImageObjectSPK.Init(3);
+		SolidSprite(view.m_ImageObjectSPK[0], 4, 3, kStillColour);
+		SolidSprite(view.m_ImageObjectSPK[1], 5, 2, kFloorColour);
+		SolidSprite(view.m_ImageObjectSPK[2], 3, 2, kTallColour);
+		view.m_EffectNormalFPK.Init(2);
+		view.m_EffectNormalFPK[1].Init(1);
+		view.m_EffectNormalFPK[1][0].Init(1);
+		view.m_EffectNormalFPK[1][0][0].Set(0, 4, 5, 0, false);
+		view.m_EffectNormalSPK.Init(1);
+		SolidSprite(view.m_EffectNormalSPK[0], 5, 4, kEffectColour);
+		view.m_EtcSPK.Init(7);
+		for (int f = 0; f < 3; ++f) SolidSprite(view.m_EtcSPK[WORD(4 + f)], 4 + 2 * f, 4 + 2 * f, kMarkColour[f]);
+		view.m_WeatherSPK.Init(1);
+		SolidSprite(view.m_WeatherSPK[0], 2, 2, kWeatherColour);
+		g_pWeather = &rain;				// the Scene puts it back
+		view.m_nLight = 0;				// the constructor leaves it unset (bug 11)
+		view.m_LightFTP.Init(3);
+		for (int i = 0; i < 3; ++i)
+		{
+			view.m_LightFTP[TYPE_FILTERID(i)].Init(WORD(2 * i + 1), WORD(2 * i + 1));
+			for (int u = 0; u <= 2 * i; ++u)
+				for (int v = 0; v <= 2 * i; ++v) view.m_LightFTP[TYPE_FILTERID(i)].SetFilter(WORD(u), WORD(v), BYTE(1 + u + v));
+		}
+		view.m_LightBufferFilter.Init(SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT);
+		Fill(view.m_LightBufferFilter, 10);
+		view.m_p2DLightPixelWidth = new int[SCREENLIGHT_WIDTH];
+		view.m_p2DLightPixelHeight = new int[SCREENLIGHT_HEIGHT];
+		for (int i = 0; i < SCREENLIGHT_WIDTH; ++i) view.m_p2DLightPixelWidth[i] = 13;
+		for (int i = 0; i < SCREENLIGHT_HEIGHT; ++i) view.m_p2DLightPixelHeight[i] = 10;
+		MTopView::s_LightWidth = 10.0f;		// the Scene puts them back
+		MTopView::s_LightHeight = 10.0f;
+		g_MyFull = FALSE;
+	}
+	~World()
+	{
+		MTopView& view = View();
+		view.m_mapImageObject.clear();
+		view.m_mapCreature.clear();
+		view.m_pSelectedCreature = NULL;
+		zone->m_mapCreature.clear();
+		zone->m_mapGroundEffect.clear();
+		g_FrameNow = oldFrameNow;
+		g_UpdateDelay = oldUpdateDelay;
+		g_MyFull = oldFull;
+	}
+	MItem& Ring(int type, int x, int y)
+	{
+		MItem* ring = MRing::NewItem();
+		items.emplace_back(ring);
+		ring->SetItemType(TYPE_ITEMTYPE(type));
+		ring->SetID(TYPE_OBJECTID(500 + items.size()));
+		ring->MObject::SetPosition(TYPE_SECTORPOSITION(x), TYPE_SECTORPOSITION(y));
+		CHECK(Sector(x, y).AddItem(ring));
+		return *ring;
+	}
+	// An image object lying on sector (x, y), drawn at zone pixel (px, py).
+	MImageObject& Object(int sprite, int viewpoint, int x, int y, int px, int py)
+	{
+		objects.emplace_back(new MImageObject(TYPE_OBJECTID(700 + objects.size()), 1, TYPE_SPRITEID(sprite), px, py,
+			TYPE_SECTORPOSITION(viewpoint), 0));
+		CHECK(Sector(x, y).AddImageObject(objects.back().get()));
+		return *objects.back();
+	}
+	// A creature of the zone's at (x, y), (sx, sy) on its way.
+	Creature& Monster(int type, int x, int y, int sx = 0, int sy = 0)
+	{
+		creatures.emplace_back(new Creature(TYPE_OBJECTID(800 + creatures.size()), type, x, y));
+		Creature& c = *creatures.back();
+		c.m_sX = sx;
+		c.m_sY = sy;
+		zone->m_mapCreature[c.GetID()] = &c;
+		return c;
+	}
+	MEffect& Spark(int px, int py)
+	{
+		MEffect* effect = new MSelectableEffect(BLT_NORMAL);
+		effect->SetFrameID(1, 2);
+		effect->SetPixelPosition(px, py, 0);
+		effects.emplace_back(effect);
+		return *effect;
+	}
+	void Rain(int x, int y)
+	{
+		rain.Init(1);
+		rain.m_pMapEffect[0].Set(MAP_EFFECT::MAP_EFFECT_FALL, 0, short(x), short(y), 0, 0, 5);
+		rain.m_nActiveMapEffect = 1;
+		rain.m_WeatherType = MWeather::WEATHER_RAIN;
+	}
+	// Where the screen shows zone pixel (px, py), and sector (x, y).
+	POINT Screen(int px, int py) { return { px - View().m_FirstZonePixel.x, py - View().m_FirstZonePixel.y }; }
+	POINT Tile(int x, int y) { return Screen(x * TILE_X, y * TILE_Y); }
+	// The whole tile surface and the image objects in sight, from (30, 40).
+	void Ready(int x = 30, int y = 40)
+	{
+		Stand(x, y);
+		Access::DrawTileSurface(View());
+		Access::Determine(View());
+	}
+	WORD At(POINT p, int dx = 0, int dy = 0) { return PixelAt(screen, p.x + dx, p.y + dy); }
+};
+
+bool RectAt(const MObject& object, POINT p, int w, int h)
+{
+	const RECT& r = object.GetScreenRect();
+	const bool same = r.left == p.x && r.top == p.y && r.right == p.x + w && r.bottom == p.y + h;
+	if (!same) std::printf("      the rect is (%d,%d)-(%d,%d), not (%d,%d)-(%d,%d)\n", int(r.left), int(r.top),
+		int(r.right), int(r.bottom), int(p.x), int(p.y), int(p.x + w), int(p.y + h));
+	return same;
+}
+POINT Plus(POINT p, int dx, int dy) { return { p.x + dx, p.y + dy }; }
+
+} // namespace
+
+TEST(TopView2World, AFrameDrawsEachThingWhereItIs)
+{
+	World scene;
+	MTopView& view = scene.View();
+	MItem& ring = scene.Ring(1, 25, 30);
+	Creature& walker = scene.Monster(kVampire, 26, 33, 4, 7);
+	Creature& ghost = scene.Monster(CREATURETYPE_GHOST, 34, 36);
+	scene.Object(1, 0, 24, 31, 24 * TILE_X + 10, 31 * TILE_Y + 5);		// on the floor
+	scene.Object(0, 20, 28, 29, 28 * TILE_X + 2, 29 * TILE_Y + 3);		// seen from above the screen
+	MEffect& spark = scene.Spark(27 * TILE_X, 38 * TILE_Y);
+	scene.Sector(27, 38).AddEffect(&spark);
+	MEffect& pool = scene.Spark(33 * TILE_X + 6, 31 * TILE_Y + 2);
+	scene.zone->m_mapGroundEffect[pool.GetID()] = &pool;
+	view.SetSelectedSector(35, 45);
+	scene.Ready();
+	scene.Rain(100, 200);
+	scene.rain.m_StartX = 22 * TILE_X;		// the screen's corner: no drift
+	scene.rain.m_StartY = 28 * TILE_Y;
+	scene.Frame();
+	CHECK_EQ(22 * TILE_X, view.m_FirstZonePixel.x);
+	CHECK_EQ(28 * TILE_Y, view.m_FirstZonePixel.y);
+	// Items at their tile's point.
+	CHECK(RectAt(ring, Plus(scene.Tile(25, 30), 3, 2), 3, 2));
+	CHECK_EQ(kItemColour, scene.At(scene.Tile(25, 30), 3, 2));
+	// Creatures at their pixel, a ghost before anything else.
+	CHECK(RectAt(walker, Plus(scene.Screen(26 * TILE_X + 4, 33 * TILE_Y + 7), 5, -20), 3, 2));
+	CHECK(RectAt(ghost, Plus(scene.Tile(34, 36), 5, -20), 3, 2));
+	// Image objects at their pixel.
+	CHECK_EQ(kFloorColour, scene.At(scene.Screen(24 * TILE_X + 10, 31 * TILE_Y + 5)));
+	CHECK_EQ(kFloorColour, scene.At(scene.Screen(24 * TILE_X + 10, 31 * TILE_Y + 5), 4, 1));
+	CHECK_EQ(kStillColour, scene.At(scene.Screen(28 * TILE_X + 2, 29 * TILE_Y + 3)));
+	CHECK_EQ(kStillColour, scene.At(scene.Screen(28 * TILE_X + 2, 29 * TILE_Y + 3), 3, 2));
+	// The sector's effect and the ground's, at their pixel.
+	CHECK(RectAt(spark, Plus(scene.Tile(27, 38), 4, 5), 5, 4));
+	CHECK(RectAt(pool, Plus(scene.Screen(33 * TILE_X + 6, 31 * TILE_Y + 2), 4, 5), 5, 4));
+	CHECK_EQ(kEffectColour, scene.At(scene.Tile(27, 38), 4, 5));
+	CHECK_EQ(kEffectColour, scene.At(scene.Screen(33 * TILE_X + 6, 31 * TILE_Y + 2), 8, 8));
+	// The click marker centred on its tile, in one of its three frames.
+	const POINT centre = Plus(scene.Tile(35, 45), 24, 24);
+	const WORD mark = scene.At(centre);
+	const int f = int(std::find(kMarkColour, kMarkColour + 3, mark) - kMarkColour);
+	CHECK(f < 3);
+	if (f < 3)
+	{
+		const int half = (4 + 2 * f) / 2;
+		CHECK_EQ(mark, scene.At(centre, -half, -half));
+		CHECK_EQ(mark, scene.At(centre, half - 1, half - 1));
+		CHECK(scene.At(centre, -half - 1, -half - 1) != mark);
+	}
+	// The weather's drop where it falls.
+	CHECK_EQ(kWeatherColour, scene.At({ 100, 200 }));
+	CHECK_EQ(kWeatherColour, scene.At({ 101, 201 }));
+}
+
+TEST(TopView2World, ARowsItemsComeFirstThenItsObjectsThenItsCreatures)
+{
+	World scene;
+	// A creature on the screen's first object row (27) over a ring of its
+	// sector, drawn at the same point.
+	MItem& ring = scene.Ring(2, 31, 27);
+	Creature& first = scene.Monster(kLow, 31, 27);
+	// A creature on row 30 under an image object seen from row 35.
+	Creature& under = scene.Monster(kLow, 36, 30);
+	scene.Object(2, 35, 36, 30, 36 * TILE_X + 5, 30 * TILE_Y + 30);
+	// A creature above the object rows, on its way (7 down).
+	Creature& above = scene.Monster(kLow, 29, 25, 0, 7);
+	scene.Ready();
+	scene.Frame();
+	const POINT p = Plus(scene.Tile(31, 27), 5, 30);
+	CHECK(RectAt(ring, p, 3, -6));		// its pick rect is cut at its tile's bottom, above it
+	CHECK(RectAt(first, p, 3, 2));
+	const POINT q = Plus(scene.Tile(36, 30), 5, 30);
+	CHECK(RectAt(under, q, 3, 2));
+	for (int dx = 0; dx < 3; ++dx)
+		for (int dy = 0; dy < 2; ++dy)
+		{
+			CHECK_EQ(PickPixel(dx, dy) ? WORD(0x1234) : kItemColour, scene.At(p, dx, dy));
+			CHECK_EQ(kTallColour, scene.At(q, dx, dy));
+		}
+	CHECK(RectAt(above, Plus(scene.Screen(29 * TILE_X, 25 * TILE_Y + 7), 5, 30), 3, 2));
+}
+
+TEST(TopView2World, AnItemIsDrawnOnItsTileWhereverTheScreenStops)
+{
+	// The cases of TheScreenStopsAtTheZonesEdges: the items' row point
+	// follows the first sector and the sub-sector offset as the screen does.
+	World scene;
+	MTopView& view = scene.View();
+	MItem& ring = scene.Ring(1, 30, 40);
+	struct Case { int px, sx, py, sy; };
+	const Case cases[] = {
+		{ 30, 7, 40, 3 }, { 30, -7, 40, -3 },
+		{ 8, -5, 40, 0 }, { 8, 5, 40, 0 }, { 3, 7, 40, 0 },
+		{ 51, 5, 40, 0 }, { 51, -5, 40, 0 }, { 55, -5, 40, 0 },
+		{ 30, 0, 12, -3 }, { 30, 0, 12, 3 }, { 30, 0, 5, 3 },
+		{ 30, 0, 67, 3 }, { 30, 0, 67, -3 }, { 30, 0, 70, -3 },
+	};
+	for (const Case& c : cases)
+	{
+		CHECK(scene.Sector(ring.GetX(), ring.GetY()).RemoveItem());
+		ring.MObject::SetPosition(TYPE_SECTORPOSITION(c.px), TYPE_SECTORPOSITION(c.py));
+		CHECK(scene.Sector(c.px, c.py).AddItem(&ring));
+		scene.Stand(c.px, c.py, c.sx, c.sy);
+		scene.Frame();
+		const bool same = RectAt(ring, Plus(scene.Tile(c.px, c.py), 3, 2), 3, 2);
+		if (!same) std::printf("      at (%d,%d) by (%d,%d), first pixel (%d,%d)\n", c.px, c.py, c.sx, c.sy,
+			int(view.m_FirstZonePixel.x), int(view.m_FirstZonePixel.y));
+		CHECK(same);
+	}
+}
+
+TEST(TopView2World, ThePlayersLightIsLaidAndDarkensTheFrameInTheDark)
+{
+	World scene;
+	MTopView& view = scene.View();
+	scene.Ready();
+	auto lit = [&]()
+	{
+		std::vector<int> cells;
+		for (int y = 0; y < SCREENLIGHT_HEIGHT; ++y)
+			for (int x = 0; x < SCREENLIGHT_WIDTH; ++x) cells.push_back(view.m_LightBufferFilter.GetFilter(WORD(y))[x]);
+		return cells;
+	};
+	// The cells the light changed, as (left, top, right, bottom).
+	auto box = [](const std::vector<int>& cells)
+	{
+		int box[4] = { SCREENLIGHT_WIDTH, SCREENLIGHT_HEIGHT, -1, -1 };
+		for (int i = 0; i < int(cells.size()); ++i)
+			if (cells[size_t(i)] != 10)
+			{
+				const int x = i % SCREENLIGHT_WIDTH, y = i / SCREENLIGHT_WIDTH;
+				box[0] = (std::min)(box[0], x);
+				box[1] = (std::min)(box[1], y);
+				box[2] = (std::max)(box[2], x);
+				box[3] = (std::max)(box[3], y);
+			}
+		return std::vector<int>(box, box + 4);
+	};
+	// In the light the screen is the frame as drawn.
+	scene.Frame();
+	const std::vector<int> laid = lit();
+	const std::vector<int> where = box(laid);
+	CHECK(where[2] >= where[0]);					// a light was laid
+	CSpriteSurface plain;
+	CHECK(plain.Init(800, 600));
+	POINT origin = { 0, 0 };
+	RECT all = { 0, 0, 800, 600 };
+	plain.BltNoColorkey(&origin, &scene.screen, &all);
+	// In the dark the same frame and light, and the buffer applied over it.
+	Fill(view.m_LightBufferFilter, 10);
+	view.m_DarkBits = 2;
+	scene.Frame();
+	CHECK(lit() == laid);
+	plain.ApplyLightGrid(view.m_LightBufferFilter, view.m_p2DLightPixelWidth, view.m_p2DLightPixelHeight);
+	CHECK(Picture(scene.screen, 800, 600) == Picture(plain, 800, 600));
+	view.m_DarkBits = 0;
+	scene.Frame();
+	CHECK(Picture(scene.screen, 800, 600) != Picture(plain, 800, 600));
+	// Full screen moves the light 110 left and 75 up: 11 cells and 8.
+	Fill(view.m_LightBufferFilter, 10);
+	g_MyFull = TRUE;
+	scene.Frame();
+	const std::vector<int> moved = box(lit());
+	CHECK_EQ(where[0] - 11, moved[0]);
+	CHECK_EQ(where[1] - 8, moved[1]);
+	CHECK_EQ(where[2] - 11, moved[2]);
+	CHECK_EQ(where[3] - 8, moved[3]);
+}
+
+TEST(TopView2World, AFrameEndsWithTheSurfaceUnlocked)
+{
+	World scene;
+	scene.Ready();
+	scene.Frame();
+	CHECK(!scene.screen.IsLock());
+	// A ghost lays no light (whose path unlocks too).
+	scene.player->Set(EFFECTSTATUS_GHOST);
+	scene.Frame();
+	CHECK(!scene.screen.IsLock());
+	scene.player->Set(EFFECTSTATUS_GHOST, false);
+	// Nor does a player in a casket, who sees only itself.
+	scene.player->m_bInCasket = true;
+	scene.Frame();
+	CHECK(!scene.screen.IsLock());
+	scene.player->m_bInCasket = false;
+}
+
+TEST(TopView2World, AFrameForgetsTheItemNamesOfTheFrameBefore)
+{
+	World scene;
+	MTopView& view = scene.View();
+	MItem& ring = scene.Ring(1, 25, 30);
+	scene.Ready();
+	view.AddItemName(new DRAWITEMNAME_NODE(5, &ring));
+	CHECK_EQ(1, int(view.m_listDrawItemName.size()));
+	scene.Frame();				// names are not shown: none are taken
+	CHECK(view.m_listDrawItemName.empty());
+}
+
+TEST(TopView2World, TheClickMarkerTurnsThroughItsFramesTwoUpdatesEach)
+{
+	World scene;
+	MTopView& view = scene.View();
+	view.SetSelectedSector(35, 45);
+	scene.Ready();
+	// Later than any other test's clock, so the marker's own clock (a
+	// static) is behind it; one update delay per frame from then on.
+	static MonotonicClock::TimePoint now(MonotonicClock::Duration(1LL << 52));
+	g_UpdateDelay = 1000;
+	const POINT centre = Plus(scene.Tile(35, 45), 24, 24);
+	auto shownFrame = [&]() { return int(std::find(kMarkColour, kMarkColour + 3, scene.At(centre)) - kMarkColour); };
+	std::vector<int> shown;
+	int held = -1;
+	for (int frame = 0; frame < 14; ++frame)
+	{
+		now += MonotonicClock::Duration(1000);
+		g_FrameNow = now;
+		scene.Frame();
+		shown.push_back(shownFrame());
+		if (frame == 6)
+		{
+			// A frame within the delay shows the next frame and holds it.
+			scene.Frame();
+			held = shownFrame();
+		}
+	}
+	CHECK_EQ(shown[7], held);
+	// From the second frame on, sprites 4, 4, 5, 5, 6, 6 in turn.
+	const int order[6] = { 0, 0, 1, 1, 2, 2 };
+	int match = -1;
+	for (int phase = 0; phase < 6 && match < 0; ++phase)
+	{
+		bool all = true;
+		for (int i = 1; i < int(shown.size()); ++i) all = all && shown[size_t(i)] == order[(phase + i) % 6];
+		if (all) match = phase;
+	}
+	if (match < 0)
+	{
+		std::printf("      frames:");
+		for (int f : shown) std::printf(" %d", f);
+		std::printf("\n");
+	}
+	CHECK(match >= 0);
 }
