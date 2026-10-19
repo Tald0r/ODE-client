@@ -1396,99 +1396,14 @@ InitDraw()
 	return TRUE;
 }
 
-// The loading thread, which InitThread would start; InitGame does not call it
-// (2001.8.20), so it stays NULL. GameMain's until task 4.262.
-MWorkThread*		g_pLoadingThread = NULL;
-
-//-----------------------------------------------------------------------------
-// LoadingThreadProc
-//-----------------------------------------------------------------------------
-LONG
-LoadingThreadProc(LPVOID lpParameter)
-{
-	(void)lpParameter;
-	if (g_pLoadingThread!=NULL)
-	{
-		g_pLoadingThread->Execute();
-	}
-
-	return 0L;
-}
-
-//-----------------------------------------------------------------------------
-// Init Thread
-//-----------------------------------------------------------------------------
-BOOL
-InitThread()
-{
-	// Debug Message
-	DEBUG_ADD("[ InitGame ]  Thread");
-
-	/*
-	DWORD	dwChildThreadID;
-
-	// init event for nonsignaled
-	g_hFileEvent = CreateEvent(NULL, TRUE, FALSE, NULL);	
-
-	g_hFileThread = CreateThread(NULL, 
-								0,	// default stack size
-								(LPTHREAD_START_ROUTINE)FileThreadProc,
-								NULL,
-								NULL,
-								&dwChildThreadID);
-
-	SetThreadPriority(g_hFileThread, 
-						//THREAD_PRIORITY_NORMAL
-						THREAD_PRIORITY_BELOW_NORMAL
-						);
-	*/
-
-	if (g_pLoadingThread!=NULL)
-	{
-		delete g_pLoadingThread;
-	}
-	g_pLoadingThread = new MWorkThread;
-	g_pLoadingThread->Init( (LPTHREAD_START_ROUTINE)LoadingThreadProc );
-
-	g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-
-	return TRUE;
-}
-
 //---------------------------------------------------------------------------
 // Stop LoadingThread
 //---------------------------------------------------------------------------
+// The loading thread it stopped was never started (InitThread, its only
+// creator, was uncalled since 2001.8.20) and is retired (task 4.263).
 void
 StopLoadingThread()
 {
-	//-------------------------------------------------------------
-	// Loading 중이던것 모두 제거
-	//-------------------------------------------------------------
-	if (g_pLoadingThread!=NULL)
-	{
-		DEBUG_ADD_FORMAT("Thread-ReleaseWork: size=%d, working=%d, finish=%d, stop=%d", 
-									g_pLoadingThread->GetSize(),
-									(int)g_pLoadingThread->IsWorking(),
-									(int)g_pLoadingThread->IsFinishCurrentWork(),
-									(int)g_pLoadingThread->IsStopWork());
-		
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_HIGHEST );
-		g_pLoadingThread->ReleaseWork();
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-
-		//-------------------------------------------------------------
-		// 작업 중지가 끝날때까지 기다림
-		//-------------------------------------------------------------
-		DEBUG_ADD_FORMAT("Thread-WaitingForStop: size=%d, working=%d, finish=%d, stop=%d", 
-									g_pLoadingThread->GetSize(),
-									(int)g_pLoadingThread->IsWorking(),
-									(int)g_pLoadingThread->IsFinishCurrentWork(),
-									(int)g_pLoadingThread->IsStopWork());
-		
-		while (g_pLoadingThread->IsStopWork());
-
-		DEBUG_ADD("Thread-End Waiting");
-	}
 }
 
 // The packet wait's services (task 4.209); g_pCWaitPacketUpdate is
@@ -1543,9 +1458,7 @@ static const GameMainHost s_GameMainHost = {
 	.InitSound = InitSound,
 	.ReleaseSocket = ReleaseSocket,
 	.StopLoadingThread = StopLoadingThread,
-	.SetLoadingThreadPriority = [](int priority) {
-		if (g_pLoadingThread!=NULL) g_pLoadingThread->SetPriority(priority);
-	},
+	.SetLoadingThreadPriority = [](int) {},	// no loading thread (task 4.263)
 };
 
 //---------------------------------------------------------------------------
@@ -1840,8 +1753,6 @@ InitGame()
 	if (!InitInput()) return false;
 	// if (!InitSound()) return false;
 	if (!InitDraw()) return false;
-
-	// InitThread() // 2001.8.20 주석처리 - 로딩 Thread사용 안함
 
 	// GameObject must be initialized before Surface
 	// because gC_vs_ui.Init() in InitSurface() depends on g_pMoneyManager
@@ -2326,28 +2237,6 @@ void ReleaseAllObjects()
 		g_pSoundBufferForOGG = NULL;
 	}
 
-	//----------------------------------------------------------------
-	//
-	//				 thread
-	//
-	//----------------------------------------------------------------
-	/*
-	if (g_hFileThread != 0)
-	{
-		StopFileThread();
-		TerminateThread(g_hFileThread, 0);
-		CloseHandle(g_hFileEvent);
-	}
-	*/
-	DEBUG_ADD("[Release] Work Thread");
-
-	if (g_pLoadingThread!=NULL)
-	{
-		delete g_pLoadingThread;
-		g_pLoadingThread = NULL;
-	}
-
-	
 	//----------------------------------------------------------------
 	// 
 	//		Global 정보 제거

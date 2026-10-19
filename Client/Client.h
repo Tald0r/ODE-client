@@ -50,7 +50,6 @@
 
 #include "MScreenEffectManager.h"
 
-#include "MWorkThread.h"
 #include "SpriteLib/MLoadingSPKWorkNode.h"
 #include "MItem.h"
 #include "SpriteLib/CStorageSurface.h"
@@ -187,20 +186,6 @@ extern CMessageArray*		g_pGameMessage;
 extern CMessageArray*		g_pHelpMessage;
 extern CMessageArray*		g_pNoticeMessage;
 
-// Thread
-extern MWorkThread*			g_pLoadingThread;
-//extern HANDLE				g_hFileThread;
-//extern HANDLE				g_hFileEvent;
-
-//enum THREADJOB
-//{			
-//	THREADJOB_NONE,
-//	THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE,
-//	THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE,
-//	THREADJOB_LOAD_CREATURE	
-//};
-	
-
 // Server IP
 //extern char				g_ServerIP[80];
 extern bool				g_bFullScreen;
@@ -251,7 +236,6 @@ BOOL		InitUserOption();
 BOOL		InitVolume();
 BOOL		InitSurface();
 BOOL		InitTimer();
-BOOL		InitThread();
 BOOL		InitInfomation();
 BOOL		InitGameObject();
 BOOL		InitGameUpdate();
@@ -285,10 +269,6 @@ void		SelectLastSelectedCharacter();
 void		SaveLastSelectedCharacter( int slot );
 
 // GetMakeItemFitPosition: ClientFunction.h
-
-// thread
-//LONG		FileThreadProc(LPVOID lpParameter);
-//void		StopFileThread();
 
 // Etc
 void		MakeScreenShot();

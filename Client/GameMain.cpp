@@ -198,8 +198,6 @@ int						g_ScreenShotNumber = 0;
 
 // socket: GameSocket.cpp (gamemodel)
 
-// g_pLoadingThread is GameInit.cpp's since task 4.262.
-
 // g_bFullScreen is gamemodel's (ClientMode.cpp) since task 4.253.
 int					g_MaxNPC		= MAX_NPC;
 bool				g_bHAL			= true;
