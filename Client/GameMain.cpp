@@ -88,6 +88,8 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 
 #include "SXml.h"
 #include "ZoneFlags.h"
+#include "ZoneLoadingHost.h"
+#include "GameMain.h"
 
 //add by zdj 2005.5.17
 extern BOOL g_MyFull;
@@ -123,15 +125,20 @@ std::string g_strBadProcessList[MAX_INVALID_PROCESS] =
 extern BOOL g_bSetHotKey;
 extern CSoundPartManager*	g_pSoundManager;
 
-
-extern bool g_bGoodFPS;
-
-
-
 //-----------------------------------------------------------------------------
 // Global
 //-----------------------------------------------------------------------------
 
+// The executable's services (GameInit installs them; see GameMain.h).
+static const GameMainHost*	s_pGameMainHost = NULL;
+
+const GameMainHost*
+SetGameMainHost(const GameMainHost* pHost)
+{
+	const GameMainHost* pPrevious = s_pGameMainHost;
+	s_pGameMainHost = pHost;
+	return pPrevious;
+}
 
 int g_previousSoundID = SOUNDID_NULL;
 
@@ -165,9 +172,7 @@ int						g_ScreenShotNumber = 0;
 
 // socket: GameSocket.cpp (gamemodel)
 
-// Thread
-MWorkThread*		g_pLoadingThread = NULL;
-	
+// g_pLoadingThread is GameInit.cpp's since task 4.262.
 
 // g_bFullScreen is gamemodel's (ClientMode.cpp) since task 4.253.
 int					g_MaxNPC		= MAX_NPC;
@@ -416,8 +421,8 @@ SetMode(enum CLIENT_MODE mode)
 			CSDLGraphics::RestoreGammaRamp();
 			CSDLGraphics::ReleaseAll();
 
-			InitDraw();
-			InitSurface();
+			s_pGameMainHost->InitDraw();
+			s_pGameMainHost->InitSurface();
 
 			//-----------------------------------------------------------------
 			// 잠시 기다려 달라고 출력..
@@ -472,14 +477,14 @@ SetMode(enum CLIENT_MODE mode)
 			//------------------------------------------------------
 			if(NULL == g_pUserInformation->pLogInClientPlayer &&
 				true == g_pUserInformation->IsAutoLogIn)// 웹 로긴이고 한번도 로그인 하지 않았을경우
-				ReleaseSocket();
+				s_pGameMainHost->ReleaseSocket();
 
 
 			//------------------------------------------------------
 			// [ TEST CODE ]
 			// 여기서 sound를 초기화해도 되남??
 			//------------------------------------------------------
-			InitSound();			
+			s_pGameMainHost->InitSound();
 
 			g_CurrentFrame		= 0;
 
@@ -672,7 +677,7 @@ SetMode(enum CLIENT_MODE mode)
 			//-----------------------
 			// Socket 해제..
 			//-----------------------
-			ReleaseSocket();
+			s_pGameMainHost->ReleaseSocket();
 
 			//----------------------------------------------
 			// update 함수 설정
@@ -859,7 +864,7 @@ SetMode(enum CLIENT_MODE mode)
 			// Skill Tree 초기화 - 임시로.. - -;;
 			//
 			//--------------------------------------------------
-			InitSkillTree();
+			ZoneLoading::InitSkillTree();
 
 			//------------------------------
 			// 게임 UI 를 시작한다.
@@ -913,7 +918,7 @@ SetMode(enum CLIENT_MODE mode)
 			g_bCButtonDown = FALSE;
 
 			// [ TEST CODE ]
-			InitSound();
+			s_pGameMainHost->InitSound();
 
 			static int first = 1;
 			if (first)
@@ -1053,7 +1058,7 @@ g_pUpdate = g_pCGameUpdate;
 			//--------------------------------------------------
 			// Thread Loading 종료..
 			//--------------------------------------------------
-			StopLoadingThread();
+			s_pGameMainHost->StopLoadingThread();
 
 			// Update함수 설정
 			g_pUpdate = NULL;
@@ -1435,16 +1440,13 @@ LoadZone(int n)
 	//-------------------------------------------------------------
 	// Loading 중이던것 모두 제거
 	//-------------------------------------------------------------
-	StopLoadingThread();
+	s_pGameMainHost->StopLoadingThread();
 
 	// priority를 최대한 낮춘다.
-	if (g_pLoadingThread!=NULL)
-	{
-		// Thread priority is platform-specific - currently implemented for Windows only
+	// Thread priority is platform-specific - currently implemented for Windows only
 #ifdef PLATFORM_WINDOWS
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_IDLE );
+	s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_IDLE );
 #endif // PLATFORM_WINDOWS
-	}
 
 	//----------------------------------------------------------------------
 	// 현재 Zone의 object들 제거
@@ -1529,10 +1531,7 @@ LoadZone(int n)
 			if (!FileOpenBinary(filename, file))
 			{
 				// priority를 정상으로
-				if (g_pLoadingThread!=NULL)
-				{
-					g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-				}
+				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE; 
 			}
@@ -1547,10 +1546,7 @@ LoadZone(int n)
 				SetMode( MODE_QUIT );
 
 				// priority를 정상으로
-				if (g_pLoadingThread!=NULL)
-				{
-					g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-				}
+				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 				return FALSE;
 			}
 
@@ -1573,7 +1569,7 @@ LoadZone(int n)
 			if (!g_pTopView->LoadFromFileTileAndImageObjectSet(TileSSM, ImageObjectSSM)) {
 				LOG_ERROR("Rejected zone sprite preload: zone=%d", n);
 				SetMode(MODE_QUIT);
-				if (g_pLoadingThread) g_pLoadingThread->SetPriority(THREAD_PRIORITY_LOWEST);
+				s_pGameMainHost->SetLoadingThreadPriority(THREAD_PRIORITY_LOWEST);
 				return FALSE;
 			}
 
@@ -1685,10 +1681,7 @@ LoadZone(int n)
 			if (!FileOpenBinary(filename, file))
 			{
 				// priority를 정상으로
-				if (g_pLoadingThread!=NULL)
-				{
-					g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-				}
+				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE; 
 			}
@@ -1703,10 +1696,7 @@ LoadZone(int n)
 				SetMode( MODE_QUIT );
 
 				// priority를 정상으로
-				if (g_pLoadingThread!=NULL)
-				{
-					g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-				}
+				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE;
 			}
@@ -1726,7 +1716,7 @@ LoadZone(int n)
 			if (!g_pTopView->LoadFromFileTileAndImageObjectSet(TileSSM, ImageObjectSSM)) {
 				LOG_ERROR("Rejected zone sprite preload: zone=%d", n);
 				SetMode(MODE_QUIT);
-				if (g_pLoadingThread) g_pLoadingThread->SetPriority(THREAD_PRIORITY_LOWEST);
+				s_pGameMainHost->SetLoadingThreadPriority(THREAD_PRIORITY_LOWEST);
 				return FALSE;
 			}
 			
@@ -1819,10 +1809,7 @@ LoadZone(int n)
 		
 
 	// priority를 정상으로
-	if (g_pLoadingThread!=NULL)
-	{
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-	}
+	s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 	if (pZoneInfo->CreatureColorSet < MAX_COLORSET)
 	{
@@ -2940,7 +2927,7 @@ UpdateDisconnected()
 	//--------------------------------------------------
 	// socket제거
 	//--------------------------------------------------
-	ReleaseSocket();
+	s_pGameMainHost->ReleaseSocket();
 
 	//--------------------------------------------------
 	// 소리 중지
@@ -2968,7 +2955,7 @@ UpdateDisconnected()
 	//--------------------------------------------------
 	// Thread Loading 종료..
 	//--------------------------------------------------
-	StopLoadingThread();
+	s_pGameMainHost->StopLoadingThread();
 
 	DEBUG_ADD("UpdateDisconnected : Stop Thread OK");
 	

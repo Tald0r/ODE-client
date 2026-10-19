@@ -8,3 +8,5 @@ DWORD						g_DrawAlphaNum = 256;
 bool						g_bFrameChanged = false;
 // The executable's until task 4.261 (Client.cpp).
 int							g_FrameRate = 0;
+// The executable's until task 4.262 (Client.cpp).
+bool						g_bGoodFPS = true;

@@ -44,6 +44,8 @@ class CWaitPacketUpdate : public CWinUpdate {
 };
 
 
-// The instance is the executable's (GameInit.cpp; extern in Client.h).
+// The one instance, which GameInit creates with its host (the executable's
+// until task 4.262).
+extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;
 
 #endif

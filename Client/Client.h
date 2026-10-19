@@ -210,7 +210,7 @@ extern bool				g_bMusicSW;
 
 extern CWinUpdate*				g_pUpdate;
 class CWaitPacketUpdate;
-extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;	// GameInit.cpp's
+extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;	// CWaitPacketUpdate.cpp's
 
 
 

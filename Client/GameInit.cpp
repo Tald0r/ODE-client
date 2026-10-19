@@ -36,6 +36,7 @@
 #include "VS_UI.h"
 #include "VS_UI_filepath.h"
 #include "CGameUpdate.h"
+#include "GameMain.h"
 #include "CWaitPacketUpdate.h"
 #include "UserInformation.h"
 #include "TempInformation.h"
@@ -1395,6 +1396,10 @@ InitDraw()
 	return TRUE;
 }
 
+// The loading thread, which InitThread would start; InitGame does not call it
+// (2001.8.20), so it stays NULL. GameMain's until task 4.262.
+MWorkThread*		g_pLoadingThread = NULL;
+
 //-----------------------------------------------------------------------------
 // LoadingThreadProc
 //-----------------------------------------------------------------------------
@@ -1486,9 +1491,8 @@ StopLoadingThread()
 	}
 }
 
-// The packet wait's services (task 4.209).
-CWaitPacketUpdate*		g_pCWaitPacketUpdate = NULL;
-
+// The packet wait's services (task 4.209); g_pCWaitPacketUpdate is
+// CWaitPacketUpdate.cpp's (gamemodel) since task 4.262.
 static const CWaitPacketHost s_WaitPacketHost = {
 	.ClearInputReceivers = []() {
 		g_pSDLInput->SetMouseEventReceiver( NULL );
@@ -1529,6 +1533,19 @@ static const CGameUpdateHost s_GameUpdateHost = {
 	.UpdateSocketOutput = UpdateSocketOutput,
 	.SetMode = SetMode,
 	.GetCursorPoint = GetGameCursorPoint,
+};
+
+// GameMain's (task 4.262): what its mode changes, zone loads and disconnect
+// need from the executable. InitGameObject installs it.
+static const GameMainHost s_GameMainHost = {
+	.InitDraw = InitDraw,
+	.InitSurface = InitSurface,
+	.InitSound = InitSound,
+	.ReleaseSocket = ReleaseSocket,
+	.StopLoadingThread = StopLoadingThread,
+	.SetLoadingThreadPriority = [](int priority) {
+		if (g_pLoadingThread!=NULL) g_pLoadingThread->SetPriority(priority);
+	},
 };
 
 //---------------------------------------------------------------------------
@@ -5096,6 +5113,8 @@ InitGameObject()
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 	GameUI::SetHost(&s_GameUIHost);
 	UIMessages::SetHost(&s_UIMessagesHost);
+	// Before InitGame's first call into GameMain (CheckInvalidProcess).
+	SetGameMainHost(&s_GameMainHost);
 
 	if (g_pPCTalkBox==NULL)
 	{

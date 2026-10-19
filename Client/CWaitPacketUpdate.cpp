@@ -9,7 +9,8 @@
 #include "FrameClock.h"
 #include "DebugLog.h"
 
-// The instance is GameInit.cpp's, which creates it with its host.
+// GameInit creates it with its host (the executable's until task 4.262).
+CWaitPacketUpdate*		g_pCWaitPacketUpdate = NULL;
 
 //-----------------------------------------------------------------------------
 // Init
