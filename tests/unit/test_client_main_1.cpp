@@ -73,7 +73,7 @@ extern RECT	g_GameRect;
 //   or to check: the game runs on, the rest of the patches not applied.
 //
 // Not run (undefined behaviour or no end):
-// - ParsingRealServer with fewer than four fields: 223-237 read arg2[]
+// - ParsingRealServer with fewer than four fields: 230-233 read arg2[]
 //   entries the loop never wrote.
 // - GetFutecAddress's clean form "Futec(ip:port)", or an empty port: atoi
 //   reads str[] past what was copied (the tests end the port with a
