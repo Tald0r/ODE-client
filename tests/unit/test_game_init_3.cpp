@@ -26,6 +26,26 @@
 #include "CWaitUIUpdate.h"
 #include "CDirectInput.h"
 #include "DXLib/DXInputHost.h"
+#include "DXLib/CDirectDraw.h"
+#include "DXLib/CDirectDrawSurface.h"
+#include "DXLibBackend.h"
+#include "CSpriteSurface.h"
+#include "SpriteLibBackend.h"
+#include "game_info_files.h"
+#include "DXLib/CDirectSound.h"
+#include "DXLib/COGGSTREAM.h"
+#include "WinLib/CWinUpdate.h"
+#include "MMusic.h"
+#include "CIndexSprite.h"
+#include "VS_UI.h"
+#include "VS_UI_mouse_pointer.h"
+#include "VS_UI_item.h"
+#include "SkinManager.h"
+#include "Ci.h"
+#include "Fl2.h"
+#include "timer2.h"
+#include "BasicException.h"
+#include "InputState.h"
 // What InitGame and InitGameObject make.
 #include "UIDialog.h"
 #include "MChatManager.h"
@@ -196,6 +216,9 @@
 #include <type_traits>
 #include <vector>
 
+extern BOOL g_bSetHotKey;				// PacketFunction.cpp's
+extern timer_id_t g_interface_blink_tid;	// Vs_ui.cpp's
+
 // The game's start-up (task 4.264 moved Client/GameInit.cpp into
 // gameclient), group 3: InitGame, InitGameObject (the objects it makes and
 // the hosts it installs), InitSkillTree, the system availabilities' file,
@@ -212,26 +235,40 @@
 //   stopping at the first that fails.
 // - InitGameObject loads the system availabilities once, makes each game
 //   object it lacks, needs the version file, installs its 83 hosts, and
-//   always makes a new weather, inventory effect manager and player.
+//   always makes a new weather, inventory effect manager and player. The
+//   entries that hold logic of their own are called in
+//   GameInit3HostEntries.
 // - InitSkillTree builds the skill tree and reads the server's domain
 //   experience.
 // - InitGameUpdate replaces the three update loops with ones on GameInit's
 //   hosts; ReleaseGameUpdate deletes them.
 //
-// Not run here: InitGame past InitInfomation (the tests stop it there, at
-// the missing regen tower file). Going on needs InitInfomation's 35 table
-// files (test_game_init_info.cpp's fixture), then InitInput's SDL input
-// backend and InitDraw's SDL window (CSDLGraphics::Init, which also sets
-// the process-wide SDL_HINT_RENDER_DRIVER and on Windows wraps g_hWnd),
-// InitGameObject's files (as below), and for InitSurface the UI:
-// ClientMain's gC_ci (C_VS_UI::Init calls it unchecked), the skin file
-// (Interface.inf; its absence asserts) and the UI's sprite packs and fonts.
-// So InitGame's steps from InitUserOption on, and its tail
-// (CheckInvalidProcess, UI_AffectUserOption, the profiles,
-// SetMode(MODE_MAINMENU) and the two printf lines), are pinned one step at
-// a time where they are this group's (InitVolume, InitGameObject,
-// InitSkillTree, InitGameUpdate) and not end to end; InitClientConfig,
-// InitInfomation and InitUserOption are test_game_init_info.cpp's.
+// InitGame past InitInfomation runs on InitInfomation's 35 table files
+// (game_info_files.h), InitInput's SDL input backend, InitDraw's SDL
+// window on the dummy driver (CSDLGraphics::Init also sets the
+// process-wide SDL_HINT_RENDER_DRIVER, which is not put back),
+// InitGameObject's files (as below) and, for InitSurface, the UI: gC_ci
+// (C_VS_UI::Init calls it unchecked), a skin file of every interface and
+// the UI's sprite packs absent; the main menu's title reports its absent
+// data files to the test's reporter. Three runs pin the steps' order:
+// stopped by InitGameObject (no version file), by InitSurface (an option
+// change whose view will not start) and through to the main menu. The
+// steps before them cannot fail headless (InitUserOption, InitVolume and
+// InitDraw answer TRUE always; InitInput's failure needs SDL_Init(0) to
+// fail), so their short-circuits are pinned by the next step having run.
+// Not observable off Windows: the tail's CheckInvalidProcess (a no-op);
+// nor anywhere: UI_AffectUserOption (its body is commented out) and the
+// two printf lines. InitClientConfig, InitInfomation and InitUserOption
+// are test_game_init_info.cpp's.
+//
+// Not observable: the files' closes in InitGame, InitGameObject and
+// InitSkillTree, and the data pack's Release in the availabilities' load
+// (each object's destructor does it again); what InitGameObject does with
+// the version file's bytes (nothing reads them: the recorded defect
+// below); the availabilities' load's answer (InitGameObject does not read
+// it); the old weather's delete (MWeather's destructor is not virtual, so
+// no counting subclass; a missing delete only leaks); the grade mark's
+// upper race bound (MGuildMarkManager::GetGradeMark checks it again).
 // GetGameCursorPoint (the game loop's GetCursorPoint) reads the OS cursor:
 // the desktop's on Windows, SDL's mouse state elsewhere; only its slot is
 // pinned.
@@ -2316,4 +2353,320 @@ TEST(GameInit3Start, TheTablesAndLogsThereAreKept)
 	CHECK(g_pGameStringTable == strings && g_pNickNameStringTable == nicknames);
 	CHECK(g_pSystemMessage == system && g_pPlayerMessage == player && g_pGameMessage == game);
 	CHECK(g_pHelpMessage == help && g_pNoticeMessage == notice);
+}
+
+//======================================================================
+// InitGame's steps past InitInfomation
+//======================================================================
+
+namespace {
+
+// The display's statics InitDraw sets.
+struct WindowOf { using type = SDL_Window**; friend type Get(WindowOf); };
+template struct Expose<WindowOf, &CSDLGraphics::m_pSDLWindow>;
+struct HwndOf { using type = HWND*; friend type Get(HwndOf); };
+template struct Expose<HwndOf, &CSDLGraphics::m_hWnd>;
+struct FullscreenOf { using type = bool*; friend type Get(FullscreenOf); };
+template struct Expose<FullscreenOf, &CSDLGraphics::m_bFullscreen>;
+struct ScreenWidthOf { using type = WORD*; friend type Get(ScreenWidthOf); };
+template struct Expose<ScreenWidthOf, &CSDLGraphics::m_ScreenWidth>;
+struct ScreenHeightOf { using type = WORD*; friend type Get(ScreenHeightOf); };
+template struct Expose<ScreenHeightOf, &CSDLGraphics::m_ScreenHeight>;
+using GammaFunction = void (*)(void*, int, int);
+struct GammaOf { using type = GammaFunction*; friend type Get(GammaOf); };
+template struct Expose<GammaOf, &CDirectDrawSurface::s_GammaFunction>;
+
+std::vector<WORD> EffectTables()
+{
+	std::vector<WORD> tables(&CSpriteSurface::s_EffectScreenTableR[0][0], &CSpriteSurface::s_EffectScreenTableR[0][0] + 32 * 32);
+	tables.insert(tables.end(), &CSpriteSurface::s_EffectScreenTableG[0][0], &CSpriteSurface::s_EffectScreenTableG[0][0] + 64 * 64);
+	tables.insert(tables.end(), &CSpriteSurface::s_EffectScreenTableB[0][0], &CSpriteSurface::s_EffectScreenTableB[0][0] + 32 * 32);
+	return tables;
+}
+
+// The start-up as far as InitGameObject's version file: every table
+// InitInfomation reads (game_info_files.h's) under Data/Info, the regen
+// towers beside the data pack, options with the HAL on, the nicknames
+// and an empty string table, and FileDef naming them all, the system
+// filter and the version file (absent). SDL's video is up for InitInput's
+// input and InitDraw's display. What those two and InitGameObject change
+// is given back after: the input (deleted), the display (closed) and its
+// statics, the HAL flags, the screen tables, the gamma function, the
+// sprite smoothing, and the game objects (none at the start).
+struct Game : StartUp
+{
+	Globals more;
+	explicit Game(const std::string& extra = "")
+	{
+		std::string lines = extra + "FILE_INFO_ITEMOPTION : Data/Info/FILE_INFO_ITEMOPTION\n"
+			"FILE_FILTER_INFO : filter.txt\nFILE_INFO_VERSION : Data/Info/Version.inf\n";
+		for (const std::string& key : GameInfoFiles::kTables) lines += key + " : Data/Info/" + key + "\n";
+		FileDef({}, lines);
+		GameInfoFiles::Writer{ dir / "Data/Info" }.SaveTables();
+		WriteBytes(dir / "Data/Info/RegenTower.inf", "*1\n0 72 18 21\n");
+		{
+			// The options file carries the key bindings InitInfomation makes.
+			KeyAccelerator keys;
+			keys.Init(MAX_ACCELERATOR);
+			Globals saving;
+			saving.Lend(g_pKeyAccelerator, &keys);
+			UserOption option;
+			option.Use3DHAL = TRUE;
+			option.SaveToFile((dir / "Data/Info/UserOption.inf").c_str());
+		}
+		Nicknames();
+		Strings({});
+
+		CHECK_EQ(0, SDL_InitSubSystem(SDL_INIT_VIDEO));
+		CHECK_EQ(0, spritectl_init());
+		more.Then([]() { SDL_QuitSubSystem(SDL_INIT_VIDEO); });
+		more.Keep(g_bHAL);
+		more.Keep(g_bEnable3DHAL);
+		more.Keep(*Get(HwndOf()));
+		more.Keep(*Get(FullscreenOf()));
+		more.Keep(*Get(ScreenWidthOf()));
+		more.Keep(*Get(ScreenHeightOf()));
+		more.Keep(*Get(GammaOf()));
+		const std::vector<WORD> effects = EffectTables();
+		more.Then([effects]() {
+			std::copy_n(effects.begin(), 32 * 32, &CSpriteSurface::s_EffectScreenTableR[0][0]);
+			std::copy_n(effects.begin() + 32 * 32, 64 * 64, &CSpriteSurface::s_EffectScreenTableG[0][0]);
+			std::copy_n(effects.begin() + 32 * 32 + 64 * 64, 32 * 32, &CSpriteSurface::s_EffectScreenTableB[0][0]);
+		});
+		const int xbrz = spritectl_get_xbrz_enabled();
+		more.Then([xbrz]() { spritectl_set_xbrz_enabled(xbrz); });
+		more.Then([]() {
+			CSDLGraphics::ReleaseAll();
+			// The window's events are this test's: the next input pump must not see them.
+			SDL_PumpEvents();
+			SDL_FlushEvents(SDL_WINDOWEVENT, SDL_KEYDOWN - 1);
+		});
+		more.Then([]() {
+			delete g_pSDLInput;
+			g_pSDLInput = NULL;
+			dxlib_input_virtual_reset();
+		});
+		more.Own(g_pSystemAvailableManager);
+		more.Own(g_pServerInformation);
+		more.Own(g_pTempInformation);
+		more.Own(g_pCGameUpdate);
+		more.Own(g_pCWaitPacketUpdate);
+		more.Own(g_pCWaitUIUpdate);
+		more.Own(g_pUserInformation, new UserInformation);
+		g_bHAL = false;
+	}
+};
+
+} // namespace
+
+TEST(GameInit3Steps, TheStepsRunInTurnUntilOneFails)
+{
+	// Each step from InitUserOption on runs after the one before succeeded:
+	// the options, the volume, the input, the display, then the game
+	// objects, which fail at the version file; InitSurface and the rest do
+	// not run.
+	Game game;
+	std::string thrown;
+	BOOL result = TRUE;
+	thrown = Thrown([&result]() { result = InitGame(); });
+	CHECK(thrown.empty());
+	CHECK_EQ(FALSE, result);
+	CHECK(messages == std::vector<std::string>({ FailOpen("Data/Info/Version.inf") }));
+	// The options (and the shop's update time asked of the host).
+	CHECK(g_pUserOption != NULL && g_pUserOption->Use3DHAL);
+	CHECK(std::find(calls.begin(), calls.end(), "shop time") != calls.end());
+	// The input, started, with its host.
+	CHECK(g_pSDLInput != NULL);
+	CHECK(DXInput::GetHost().mousePosition != NULL);
+	// The display, with the options' HAL.
+	CHECK(g_bHAL);
+	CHECK_EQ(TRUE, g_bEnable3DHAL);
+	// The game objects up to the version file.
+	CHECK(g_pSystemAvailableManager != NULL && g_pServerInformation != NULL);
+	CHECK(g_pTempInformation == NULL);
+	// Nothing after: no frames, no update loops.
+	CHECK(g_pCGameUpdate == NULL);
+}
+
+namespace {
+
+void NoTimer() {}
+
+struct ViewInitOf { using type = bool MTopView::*; friend type Get(ViewInitOf); };
+template struct Expose<ViewInitOf, &MTopView::m_bInit>;
+
+// The start-up with everything it needs to the end: a status and an
+// effect sprite of every kind, the version file, the domain experience
+// (no records), the UI's skin file (the UI's sprite
+// packs are named and absent), the profiles' directory named, the IME,
+// SDL's dummy audio and a 320x240 game. InitGameObject's objects and
+// hosts, InitSurface's frames, view, title picture, UI, colour sets and
+// timers, and the main menu's mode, loop, music, sound and messages are
+// given back or freed after.
+struct Playable : Game
+{
+	CI_KOREAN ime;
+	std::string audioDriver = SDL_getenv("SDL_AUDIODRIVER") ? SDL_getenv("SDL_AUDIODRIVER") : "";
+	LONG volumeLimit = g_SDLAudio.GetVolumeLimit();
+	bool mute = g_SDLAudio.IsMute();
+	timer_id_t blinker = INVALID_TID;
+	Globals ui;
+	Playable() : Game("FILE_INFO_SKILL_DOMAIN_EXP : Data/Info/Domain.inf\n"
+		"FILE_SPRITEINDEX_UI : Data/Info/ui.spki\nFILE_SPRITE_UI : Data/Info/ui.spk\nDIR_PROFILE : Profile\n")
+	{
+		WriteBytes(dir / "Data/Info/Version.inf", Bytes().Int(7).data);
+		WriteBytes(dir / "Data/Info/Domain.inf", Bytes().Int(0).data);
+		// The player reads a status and an effect sprite of every kind.
+		const GameInfoFiles::Writer files{ dir / "Data/Info" };
+		files.SaveSized<EFFECTSTATUS_TABLE>("FILE_INFO_EFFECTSTATUS", EFFECTSTATUS_MAX);
+		files.SaveSized<EFFECTSPRITETYPE_TABLE>("FILE_INFO_EFFECTSPRITETYPE", MAX_EFFECTSPRITETYPE);
+		// Every interface's 64 points and rectangles (the title reads them).
+		std::string skin;
+		for (const char* name : { "INFO", "GAME_MENU", "OPTION", "TITLE", "NEW_CHAR" })
+		{
+			skin += std::string("*") + name + " POINT_LIST\n";
+			for (int n = 0; n < 64; ++n) skin += "0 0\n";
+			skin += std::string("*END\n*") + name + " RECT_LIST\n";
+			for (int n = 0; n < 64; ++n) skin += "0 0 1 1\n";
+			skin += "*END\n";
+		}
+		WriteBytes(dir / "Data/Info/Interface.inf", skin);
+
+		// InitGameObject's.
+		for (const HostSlot& slot : kHostSlots)
+		{
+			const void* old = slot.install(nullptr);
+			ui.Then([&slot, old]() { slot.install(old); });
+		}
+		ui.Keep(g_Mode);
+		ui.Own(g_pSkillManager);
+		ui.Own(g_pSkillAvailable);
+		ui.Own(g_pSlayerGear);
+		ui.Own(g_pVampireGear);
+		ui.Own(g_pOustersGear);
+		ui.Own(g_pInventory);
+		ui.Own(g_pParty);
+		ui.Own(g_pGameTime);
+		ui.Own(g_pPriceManager);
+		ui.Own(g_pMoneyManager);
+		ui.Own(g_pPCTalkBox);
+		ui.Own(g_pNPCTalkBox);
+		ui.Own(g_pUIMessageManager);
+		ui.Own(g_pObjectSelector);
+		ui.Own(g_pWeather);
+		ui.Own(g_pInventoryEffectManager);
+		ui.Own(g_pPlayer);
+		ui.Lend(g_pZone, static_cast<MZone*>(NULL));
+		ui.Then([]() { SetHelpHost(NULL); });
+
+		// InitSurface's.
+		ui.Lend(gC_ci, static_cast<CI*>(&ime));
+		ui.Keep(g_GameRect);
+		g_GameRect = { 0, 0, 320, 240 };
+		ui.Keep(g_TitleSpriteAlpha);
+		g_TitleSpriteAlpha = 32;
+		ui.Keep(g_bTitleLoading);
+		ui.Own(g_pTitleLoadingSprite);
+		ui.Own(g_pBack);
+		ui.Own(g_pLast);
+		ui.Own(g_pTopView);
+		ui.Then([]() { if (g_pTopView != NULL) g_pTopView->*Get(ViewInitOf()) = false; });
+		const std::vector<WORD> colorSets(&CIndexSprite::ColorSet[0][0], &CIndexSprite::ColorSet[0][0] + MAX_COLORSET * MAX_COLORGRADATION);
+		ui.Then([colorSets]() { std::copy(colorSets.begin(), colorSets.end(), &CIndexSprite::ColorSet[0][0]); });
+		ui.Lend(gpC_base, static_cast<Base*>(NULL));
+		ui.Lend(gpC_process_runner, static_cast<PI_ProcessRunner*>(NULL));
+		ui.Lend(gpC_window_manager, static_cast<WindowManager*>(NULL));
+		ui.Lend(gpC_vs_ui_window_manager, static_cast<C_VS_UI_WINDOW_MANAGER*>(NULL));
+		ui.Lend(gpC_global_resource, static_cast<C_GLOBAL_RESOURCE*>(NULL));
+		ui.Lend(gpC_mouse_pointer, static_cast<C_VS_UI_MOUSE_POINTER*>(NULL));
+		ui.Lend(gpC_item, static_cast<C_VS_UI_ITEM*>(NULL));
+		ui.Lend(g_pSkinManager, static_cast<SkinManager*>(NULL));
+		ui.Keep(g_interface_blink_tid);
+		// The UI starts the IME's cursor blinker and then its own: the two
+		// timers after this one.
+		timer_id_t probe = gC_timer2.Add(1000, NoTimer);
+		blinker = probe + 1;
+		gC_timer2.Delete(probe);
+
+		// The main menu's. The title's data files are absent: its reports of
+		// them are taken (and the exit they would end in skipped).
+		const BasicExceptionReporter reporter = g_SetBasicExceptionReporter([](EXCEPTION_CODE, const char*, const ExceptionSite&) {});
+		ui.Then([reporter]() { g_SetBasicExceptionReporter(reporter); });
+		ui.Keep(g_pUpdate);
+		ui.Keep(g_UpdateDelay);
+		ui.Keep(g_CurrentFrame);
+		ui.Keep(g_bSetHotKey);
+		ui.Keep(g_bUIInput);
+		ui.Keep(g_Music);
+		ui.Own(g_pOGG);
+		g_SDLAudio.Release();
+		dxlib_music_release();
+		SDL_setenv("SDL_AUDIODRIVER", "dummy", 1);
+		ui.Then([this]() {
+			dxlib_music_release();
+			g_SDLAudio.Release();
+			SDL_setenv("SDL_AUDIODRIVER", audioDriver.c_str(), 1);
+			g_SDLAudio.SetVolumeLimit(volumeLimit);
+			if (mute) g_SDLAudio.SetMute(); else g_SDLAudio.UnSetMute();
+		});
+
+		// The game's strings InitGame made are kept for the process: the UI
+		// keeps pointers into the first table it starts with in function
+		// statics (g_InitMessage).
+		ui.Then([]() {
+			static std::vector<std::unique_ptr<MStringArray>> kept;
+			kept.emplace_back(g_pGameStringTable);
+			g_pGameStringTable = NULL;
+		});
+
+		// First of all: the UI, which holds the frames.
+		ui.Then([this]() {
+			if (gpC_base != NULL)
+			{
+				CHECK(gC_timer2.Delete(blinker));
+				CHECK(gC_timer2.Delete(g_interface_blink_tid));
+			}
+			gC_vs_ui.Release();
+			g_SetFL2Surface(nullptr);
+			g_SetFL2FallbackSurface(nullptr);
+		});
+	}
+};
+
+} // namespace
+
+TEST(GameInit3Steps, AnOptionChangeWhoseViewWillNotStartStopsAtTheSurfaces)
+{
+	// InitSurface fails (a view whose Init answers false when the options
+	// change): everything before it ran, the update loops were not made.
+	Playable game;
+	g_Mode = MODE_CHANGE_OPTION;
+	g_pTopView = new MTopView;
+	g_pTopView->*Get(ViewInitOf()) = true;
+	BOOL result = TRUE;
+	CHECK(Thrown([&result]() { result = InitGame(); }).empty());
+	CHECK_EQ(FALSE, result);
+	CHECK(messages.empty());
+	CHECK(g_pPlayer != NULL && g_pTempInformation != NULL && g_pSkillManager != NULL);
+	CHECK(g_pBack != NULL && g_pLast != NULL && gpC_base != NULL);
+	CHECK(g_pCGameUpdate == NULL && g_pCWaitPacketUpdate == NULL && g_pCWaitUIUpdate == NULL);
+	CHECK_EQ(int(MODE_CHANGE_OPTION), int(g_Mode));
+}
+
+TEST(GameInit3Steps, WithEverythingThereTheGameStartsAtTheMainMenu)
+{
+	// Every step succeeds; then the profiles' directory is made and the
+	// game waits on the title UI in the main menu.
+	Playable game;
+	g_Mode = MODE_NULL;
+	BOOL result = FALSE;
+	CHECK(Thrown([&result]() { result = InitGame(); }).empty());
+	CHECK_EQ(TRUE, result);
+	CHECK(messages.empty());
+	CHECK(g_pPlayer != NULL && g_pTopView != NULL && g_pBack != NULL && g_pLast != NULL);
+	CHECK(g_pCGameUpdate != NULL && g_pCWaitPacketUpdate != NULL && g_pCWaitUIUpdate != NULL);
+	CHECK(std::filesystem::is_directory(game.dir.path / "Profile"));
+	CHECK_EQ(int(MODE_MAINMENU), int(g_Mode));
+	CHECK(g_pUpdate == g_pCWaitUIUpdate);
+	CHECK(gC_vs_ui.IsRunningTitle());
 }
