@@ -433,7 +433,7 @@ struct Saved
 	MZoneSoundManager* zoneSoundManager = g_pZoneSoundManager;
 	CZoneTable* zoneTable = g_pZoneTable;
 	MZone* zone = g_pZone;
-	MZone* small = g_pZoneSmall;
+	MZone* savedSmall = g_pZoneSmall;
 	MZone* large = g_pZoneLarge;
 	int smallID = g_nZoneSmall, largeID = g_nZoneLarge;
 	bool inLarge = g_bZonePlayerInLarge;
@@ -515,7 +515,7 @@ struct Saved
 		g_nZoneLarge = largeID;
 		g_nZoneSmall = smallID;
 		g_pZoneLarge = large;
-		g_pZoneSmall = small;
+		g_pZoneSmall = savedSmall;
 		g_pZone = zone;
 		g_pZoneTable = zoneTable;
 		g_pZoneSoundManager = zoneSoundManager;
@@ -707,11 +707,11 @@ struct Scene
 	}
 	// Zone id's table row: small or large, its map and info files in the
 	// temporary directory (map<id>.map, info<id>.inf).
-	ZONETABLE_INFO* Zone(int id, bool small)
+	ZONETABLE_INFO* Zone(int id, bool isSmall)
 	{
 		ZONETABLE_INFO* pInfo = new ZONETABLE_INFO;
 		pInfo->ID = TYPE_ZONEID(id);
-		pInfo->Property = small ? FLAG_ZONESIZE_SMALL : 0;
+		pInfo->Property = isSmall ? FLAG_ZONESIZE_SMALL : 0;
 		pInfo->Filename = MapPath(id).c_str();
 		pInfo->InfoFilename = InfoPath(id).c_str();
 		pInfo->CreatureColorSet = WORD(id);
@@ -750,15 +750,15 @@ using Pairs = std::vector<std::pair<int, int>>;
 struct Kind
 {
 	int id;
-	bool small;
-	MZone*& Zone() const { return small ? g_pZoneSmall : g_pZoneLarge; }
-	MZone*& Other() const { return small ? g_pZoneLarge : g_pZoneSmall; }
-	int& Loaded() const { return small ? g_nZoneSmall : g_nZoneLarge; }
-	int& OtherLoaded() const { return small ? g_nZoneLarge : g_nZoneSmall; }
-	CSpriteFilePositionArray* Tiles(const MTopView& v) const { return small ? v.m_pTileSFPArraySmallZone : v.m_pTileSFPArrayLargeZone; }
-	CSpriteFilePositionArray* Objects(const MTopView& v) const { return small ? v.m_pImageObjectSFPArraySmallZone : v.m_pImageObjectSFPArrayLargeZone; }
-	CSpriteFilePositionArray* OtherTiles(const MTopView& v) const { return small ? v.m_pTileSFPArrayLargeZone : v.m_pTileSFPArraySmallZone; }
-	CSpriteFilePositionArray* OtherObjects(const MTopView& v) const { return small ? v.m_pImageObjectSFPArrayLargeZone : v.m_pImageObjectSFPArraySmallZone; }
+	bool isSmall;
+	MZone*& Zone() const { return isSmall ? g_pZoneSmall : g_pZoneLarge; }
+	MZone*& Other() const { return isSmall ? g_pZoneLarge : g_pZoneSmall; }
+	int& Loaded() const { return isSmall ? g_nZoneSmall : g_nZoneLarge; }
+	int& OtherLoaded() const { return isSmall ? g_nZoneLarge : g_nZoneSmall; }
+	CSpriteFilePositionArray* Tiles(const MTopView& v) const { return isSmall ? v.m_pTileSFPArraySmallZone : v.m_pTileSFPArrayLargeZone; }
+	CSpriteFilePositionArray* Objects(const MTopView& v) const { return isSmall ? v.m_pImageObjectSFPArraySmallZone : v.m_pImageObjectSFPArrayLargeZone; }
+	CSpriteFilePositionArray* OtherTiles(const MTopView& v) const { return isSmall ? v.m_pTileSFPArrayLargeZone : v.m_pTileSFPArraySmallZone; }
+	CSpriteFilePositionArray* OtherObjects(const MTopView& v) const { return isSmall ? v.m_pImageObjectSFPArrayLargeZone : v.m_pImageObjectSFPArraySmallZone; }
 };
 const Kind kKinds[] = { { kSmall, true }, { kLarge, false } };
 
@@ -836,7 +836,7 @@ TEST(GameMain3LoadZone, AZoneIsReadFromItsMapIntoTheZoneOfItsSize)
 		(*g_pTimeItemManager)[1];
 		scene.view.m_mapCreature[decltype(scene.view.m_mapCreature)::key_type()] = scene.me;
 		scene.view.m_bFirstTileDraw = false;
-		g_bZonePlayerInLarge = kind.small;
+		g_bZonePlayerInLarge = kind.isSmall;
 		srand(5);
 		const unsigned random = unsigned(rand());
 		srand(5);
@@ -848,7 +848,7 @@ TEST(GameMain3LoadZone, AZoneIsReadFromItsMapIntoTheZoneOfItsSize)
 		CHECK(kind.Other() == NULL);
 		CHECK_EQ(kind.id, kind.Loaded());
 		CHECK_EQ(-1, kind.OtherLoaded());
-		CHECK_EQ(!kind.small, g_bZonePlayerInLarge);
+		CHECK_EQ(!kind.isSmall, g_bZonePlayerInLarge);
 		if (pZone == NULL) continue;
 		CHECK_EQ(6, int(pZone->GetWidth()));
 		CHECK_EQ(5, int(pZone->GetHeight()));
@@ -979,7 +979,7 @@ TEST(GameMain3LoadZone, AMissingMapFailsButLeavesAnEmptyZoneThatTheNextLoadReuse
 		AddWalker(*kind.Zone(), 501);
 		g_pZone = NULL;
 		const int missing = kind.id + 1;
-		scene.Zone(missing, kind.small);
+		scene.Zone(missing, kind.isSmall);
 		scene.Log();
 		CHECK_EQ(FALSE, LoadZone(missing));
 		CHECK_SAME("fail [Error] File Open Error : [" + scene.MapPath(missing) + "];", scene.Log());
@@ -1051,7 +1051,7 @@ TEST(GameMain3LoadZone, ARejectedSpritePreloadQuitsTheGameWithTheZoneRead)
 		CHECK_EQ(6, int(g_pZone->GetWidth()));
 		// The small zone takes the table's ID as soon as it is read; the
 		// large one keeps the file's until the end of a load.
-		CHECK_EQ(kind.small ? kind.id : 99, int(g_pZone->GetID()));
+		CHECK_EQ(kind.isSmall ? kind.id : 99, int(g_pZone->GetID()));
 		CHECK(kind.Tiles(scene.view) == NULL);
 		CHECK(scene.view.m_pZone == NULL);
 	}
@@ -1194,7 +1194,7 @@ TEST(GameMain3LoadZone, TheLargeZoneMeetsItsHornsUnderTheMapsZoneID)
 		// Recorded defect: the large zone takes the table's ID only after
 		// LoadZoneInfo (GameMain.cpp:1793-1794; the small one at 1580), so its
 		// horns, and zone 1311's weather, follow the map file's zone ID.
-		CHECK_EQ(kind.small ? 3 : 2, int(pHorn->GetX()));
+		CHECK_EQ(kind.isSmall ? 3 : 2, int(pHorn->GetX()));
 		CHECK_EQ(kind.id, int(g_pZone->GetID()));
 	}
 }

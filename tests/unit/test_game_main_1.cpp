@@ -168,7 +168,7 @@ struct Saved
 	CLIENT_MODE mode = g_Mode;
 	MZone* zone = g_pZone;
 	bool inLarge = g_bZonePlayerInLarge;
-	int large = g_nZoneLarge, small = g_nZoneSmall;
+	int large = g_nZoneLarge, savedSmall = g_nZoneSmall;
 	COGGSTREAM* ogg = g_pOGG;
 	FILE* oggFile = g_oggfile;
 	bool midiInit = g_Music.m_bInit, midiLoad = g_Music.m_bLoad, midiPlay = g_Music.m_bPlay, midiPause = g_Music.m_bPause;
@@ -225,7 +225,7 @@ struct Saved
 		if (g_oggfile != oggFile && g_oggfile != NULL) std::fclose(g_oggfile);
 		g_oggfile = oggFile;
 		g_pOGG = ogg;
-		g_nZoneSmall = small;
+		g_nZoneSmall = savedSmall;
 		g_nZoneLarge = large;
 		g_bZonePlayerInLarge = inLarge;
 		g_pZone = zone;
