@@ -173,9 +173,12 @@ the world view, `MTopView` (its packs, picking and every draw), and the
 in-game frame loop, `CGameUpdate`, behind `CGameUpdateHost`, and the game's
 main functions, `GameMain` (modes, sounds, music, zones), behind
 `GameMainHost`, and the start-up and teardown, `GameInit` (`InitGame`,
-`InitGameObject` and the hosts it installs, `ReleaseAllObjects`); membership
-in `tests/arch/gameclient_files.txt`, tasks 4.252, 4.253, 4.255 to 4.258 and
-4.260 to 4.264),
+`InitGameObject` and the hosts it installs, `ReleaseAllObjects`), and the
+client's entry, `ClientMain` (the launch command, the DLL whitelist, the frame
+loop), behind `ClientHost`; membership in `tests/arch/gameclient_files.txt`,
+tasks 4.252, 4.253, 4.255 to 4.258 and 4.260 to 4.265). The executable's own
+source is `SDLMain.cpp` alone: `main` and `WinMain` install `ClientHost`'s
+`SystemHost()` and call `ClientMain`,
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
@@ -472,7 +475,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
   (root-caused and removed 2026-08-30, see
   `docs/memory-leak-investigation-2026-08-30.md`). Judge every `_DEBUG` guard by the
   build configuration, not by the old doctrine that it never fires.
-- **An unlisted DLL kills the client before `main` does anything.** `Client.cpp` walks
+- **An unlisted DLL kills the client before `main` does anything.** `ClientMain.cpp` walks
   `*.dll` in the working directory against a hardcoded whitelist and does a bare
   `return -1` on the first name it does not recognise — no message, no log line, and
   well before `InitGame()` sets up logging. Adding any library that deploys a new DLL
