@@ -33,7 +33,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 
 #include "Client.h"
 #include "UIFunction.h"
-//#include "MFileDef.h"
 #include "Properties.h"
 #include "GameObject.h"
 #include "ServerInfo.h"
@@ -75,7 +74,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "MEventManager.h"
 #include "MNPC.h"
 
-// 2002.6.28 [UDP수정]
 
 #include "MWarManager.h"
 #include "MTimeItemManager.h"
@@ -123,13 +121,6 @@ std::string g_strBadProcessList[MAX_INVALID_PROCESS] =
 	"flyodbg",
 };
 
-
-
-
-#if defined(OUTPUT_DEBUG) && defined(__METROTECH_TEST__)
-//	#define OUTPUT_DEBUG_UPDATE_LOOP
-#endif
-
 extern BOOL g_bSetHotKey;
 extern CSoundPartManager*	g_pSoundManager;
 
@@ -137,20 +128,10 @@ extern CSoundPartManager*	g_pSoundManager;
 extern bool g_bGoodFPS;
 
 
-#ifdef OUTPUT_DEBUG
-	extern bool g_bSlideScreenShot;
-	extern bool g_bSaveSlideScreenShot;
-	extern RECT g_rectScreenShot;
-#endif
-
-//#define	new			DEBUG_NEW
-//#define	delete		DEBUG_DELETE
 
 //-----------------------------------------------------------------------------
 // Global
 //-----------------------------------------------------------------------------
-// mp3
-//CMySound*			g_pMP3 = NULL;
 
 
 int g_previousSoundID = SOUNDID_NULL;
@@ -163,8 +144,6 @@ int g_previousSoundID = SOUNDID_NULL;
 // g_SelectSector, g_bLButtonDown, g_bRButtonDown and g_bNetStatusGood are
 // InputState.cpp's (gamemodel, task 4.247), g_bCButtonDown since task 4.261.
 // g_bUIInput is InputState.cpp's (gamemodel) since task 4.258.
-//Edit by sonic 2006.7.27  修改加速地址
-//g_UpdateDelay		= DELAY_UPDATE_GAME
 
 // g_UpdateDelay is ClientMode.cpp's (gamemodel) since task 4.255.
 
@@ -188,9 +167,6 @@ CSDLStream*		g_pSDLStream = NULL;
 // g_SoundPerSecond is AmbientSoundState.cpp's (gamemodel) since task 4.261.
 
 // Chat string
-#ifdef	OUTPUT_DEBUG
-	CMessageArray*		g_pDebugMessage = NULL;
-#endif
 
 bool				g_bPutMessage = false;		// 화면에 debug메세지를 출력할까?
 
@@ -198,13 +174,8 @@ bool				g_bPutMessage = false;		// 화면에 debug메세지를 출력할까?
 
 // Thread
 MWorkThread*		g_pLoadingThread = NULL;
-//HANDLE				g_hFileThread = 0;
-//HANDLE				g_hFileEvent;
-//THREADJOB			g_ThreadJob;
 	
 
-// Server IP
-//char				g_ServerIP[80];
 // g_bFullScreen is gamemodel's (ClientMode.cpp) since task 4.253.
 int					g_MaxNPC		= MAX_NPC;
 bool				g_bHAL			= true;
@@ -226,7 +197,6 @@ bool
 UpdateSocketInput()
 {
 
-	//DEBUG_ADD("-PS-");
 	
 	try {
 		
@@ -234,7 +204,6 @@ UpdateSocketInput()
 		{
 			g_pSocket->processInput();
 			g_pSocket->processCommand();
-//			g_pSocket->processOutput();
 		}
 
 	} catch (Throwable &t) 	{
@@ -251,7 +220,6 @@ UpdateSocketInput()
 		LOG_ERROR("[Error] UpdateSocketInput");			
 		LOG_ERROR("%s", t.toString().c_str());
 		
-		//InitFail("Server와의 접속이 끊어졌습니다.");
 		SetMode( MODE_MAINMENU );
 		UpdateDisconnected();
 
@@ -267,35 +235,19 @@ UpdateSocketInput()
 
 	if (nextTime <= g_FrameNow)
 	{	
-		#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-			DEBUG_ADD( "RequestUpdate" );
-		#endif
 
 		if (g_pRequestServerPlayerManager!=NULL)
 		{
-			//int numRequest = g_pRequestServerPlayerManager->GetSize();
-			#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-				DEBUG_ADD( "RSPM" );
-			#endif
 
 			g_pRequestServerPlayerManager->Update();
 
-			#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-				DEBUG_ADD( "RSPM ok" );
-			#endif
 		}
 
 		if (g_pClientCommunicationManager!=NULL)
 		{
-			#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-				DEBUG_ADD( "CCMu" );
-			#endif
 
 			g_pClientCommunicationManager->Update();
 
-			#ifdef OUTPUT_DEBUG_UPDATE_LOOP
-				DEBUG_ADD( "CCMu ok" );
-			#endif
 		}
 
 
@@ -303,7 +255,6 @@ UpdateSocketInput()
 		nextTime = g_FrameNow + MonotonicClock::Millis(330);
 	}
 
-	//DEBUG_ADD("-OK-");
 	
 
 	return true;
@@ -316,14 +267,11 @@ bool
 UpdateSocketOutput()
 {
 
-	//DEBUG_ADD("-PS-");
 	
 	try {
 		
 		if (g_pSocket != NULL)
 		{
-			//g_pSocket->processInput();
-			//g_pSocket->processCommand();
 			g_pSocket->processOutput();
 		}
 
@@ -340,7 +288,6 @@ UpdateSocketOutput()
 		DEBUG_ADD_ERR("[Error] UpdateSocketInput");
 		DEBUG_ADD_ERR(t.toString().c_str());
 		
-		//InitFail("Server와의 접속이 끊어졌습니다.");
 		SetMode( MODE_MAINMENU );
 		UpdateDisconnected();
 
@@ -348,7 +295,6 @@ UpdateSocketOutput()
 		return false;
 	}
 
-	// DEBUG_ADD("-OK-");
 	
  
 	return true;
@@ -394,7 +340,6 @@ bool CheckInvalidProcess()
 						szText[j] = (char)tolower((unsigned char)szText[j]);
 				}
 
-// 				std::string strTemp = szText;
 
 				for (int i=0;i<MAX_INVALID_PROCESS;i++)
 				{
@@ -461,10 +406,7 @@ SetMode(enum CLIENT_MODE mode)
 		// 뭔가 option을 바꾼다. - -;
 		//------------------------------------------------------
 		case MODE_CHANGE_OPTION :
-			//if (g_pTopView!=NULL)
 			{
-			//	delete g_pTopView;//->Release();
-			//	g_pTopView = NULL;
 			}
 			//--------------------------------------------------
 			// 음악 멈춘다.
@@ -564,7 +506,6 @@ SetMode(enum CLIENT_MODE mode)
 			g_pChatManager->SetAcceptMode();
 
 			// Title화면 UI시작
-			//gC_vs_ui.EndTitle();
 			gC_vs_ui.StartTitle();	
 		
 			gC_vs_ui.DropItem();
@@ -588,7 +529,6 @@ SetMode(enum CLIENT_MODE mode)
 			g_pGameMessage->Clear();
 			g_pNoticeMessage->Clear();
 
-			//UpdateDisconnected();
 
 			//------------------------------------------------------
 			// 음악 시작
@@ -607,14 +547,6 @@ SetMode(enum CLIENT_MODE mode)
 				}
 			}
 
-			//g_pSDLStream->Load( "music.wav" );//(*g_pMusicTable)[ g_pClientConfig->MUSIC_THEME ].Filename );
-			//g_pSDLStream->Play(TRUE);
-
-			//g_SDLMusic.SetOriginalTempo();
-			//g_SDLMusic.Stop();			
-
-			//g_SDLMusic.Play( (*g_pMusicTable)[ g_pClientConfig->MUSIC_THEME ].Filename );
-		
 			//----------------------------------------------
 			// update 함수 설정
 			//----------------------------------------------
@@ -630,11 +562,6 @@ SetMode(enum CLIENT_MODE mode)
 		{
 			// Debug Message
 			DEBUG_ADD("[ SetMode ]  MODE_NEWUSER");
-			
-			//----------------------------------------------
-			// Player의 정보 초기화
-			//----------------------------------------------
-			//g_pPlayer->SetCreatureType( 0 );			
 			
 			//----------------------------------------------
 			// update 함수 설정
@@ -656,11 +583,6 @@ SetMode(enum CLIENT_MODE mode)
 			// Debug Message
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_LOGINOK");
 			
-			//------------------------------------------------------
-			// Loading 중지
-			//------------------------------------------------------
-			//StopFileThread();
-
 			//----------------------------------------------
 			// update 함수 설정
 			//----------------------------------------------
@@ -751,35 +673,6 @@ SetMode(enum CLIENT_MODE mode)
 		//------------------------------------------------------
 		case MODE_LOGIN_WRONG :
 		{
-			//gC_vs_ui.InvalidIdPasswordMessage();
-
-			/*
-			//InitFail("Server가 응답하지 않습니다.");
-			//InitFail("Server와의 접속이 끊어졌습니다.");
-			// g_pBack->GDI_Text(101,201, "ID나 Password가 틀렸습니다.", RGB(0,0,0));
-			TextSystem::TextService::RenderText(g_pLast, 101, 201, "ID나 Password가 틀렸습니다.");
-			// g_pBack->GDI_Text(100,200, "ID나 Password가 틀렸습니다.", RGB(220,220,220));
-			TextSystem::TextService::RenderText(g_pLast, 100, 200, "ID나 Password가 틀렸습니다.");
-
-			// g_pBack->GDI_Text(101,221, "[ESC]를 누르세요.", RGB(0,0,0));
-			TextSystem::TextService::RenderText(g_pLast, 101, 221, "[ESC]를 누르세요.");
-			// g_pBack->GDI_Text(100,220, "[ESC]를 누르세요.", RGB(220,220,220));
-			TextSystem::TextService::RenderText(g_pLast, 100, 220, "[ESC]를 누르세요.");
-
-			CSDLGraphics::Flip();
-
-			// return을 누를 때까지...
-			while (1)
-			{
-				UpdateInput();
-				
-				if (g_pSDLInput->KeyDown(DIK_ESCAPE))
-				{
-					break;
-				}
-			}
-			*/
-			
 			// 다시 mainmenu로..
 
 			g_Mode = MODE_MAINMENU;
@@ -828,31 +721,8 @@ SetMode(enum CLIENT_MODE mode)
 			// Characer 선택 창을 띄워야 한다.
 			//------------------------------------------------------------
 			// LCPCListHandler에서 하게 했다.
-			//UI_StartCharacterManager();				
 
 			g_ZoneAmbientSounds.SetNextSoundTime(g_FrameNow);
-
-			//------------------------------------------------------------
-			// server name 설정
-			//------------------------------------------------------------
-			/*
-			int serverID = g_pServerInformation->GetServerGroupID();
-			int status = g_pServerInformation->GetServerGroupStatus();
-
-			char str[80];
-
-			if (g_pServerInformation->GetServerGroupName()!=NULL)
-			{
-				snprintf(str, sizeof(str), "%s", g_pServerInformation->GetServerGroupName());
-
-				//gC_vs_ui.SetServerName( str );
-				DEBUG_ADD_FORMAT("[ SetMode ]  MODE_WAIT_PCLIST - ServerName[%d]=%s", serverID, str);
-			}
-			
-//			gC_vs_ui.SetServerDefault( str, serverID, (C_VS_UI_CHAR_MANAGER::SERVER_STATUS)status );
-
-//			gC_vs_ui.CharManagerDisable();
-			*/
 
 			//----------------------------------------------
 			// update 함수 설정
@@ -875,10 +745,8 @@ SetMode(enum CLIENT_MODE mode)
 			//----------------------------------------------
 			// Player의 정보 초기화
 			//----------------------------------------------
-			//g_pPlayer->SetCreatureType( 0 );	
 			g_pUserInformation->KeepConnection = FALSE;
 			
-//			gC_vs_ui.CharManagerEnable();
 
 			SelectLastSelectedCharacter();
 
@@ -985,7 +853,7 @@ SetMode(enum CLIENT_MODE mode)
 					g_pZone->RemoveCreature( g_pPlayer->GetID() );
 				}
 				
-				delete g_pPlayer;//->SetSpecialActionInfoNULL();
+				delete g_pPlayer;
 				g_pPlayer = NULL;
 			}
 
@@ -1072,19 +940,6 @@ SetMode(enum CLIENT_MODE mode)
 				// 바로 보낸다.
 				UpdateSocketOutput();
 
-				// 2002.6.28 [UDP수정]
-				// 서버에 UDP port를 알려주기 위해서
-//				CGPortCheck cgPortCheck;
-//				cgPortCheck.setPCName( g_pUserInformation->CharacterID.GetString() );
-//				
-//				string ServerAddress = g_pConfig->getProperty("LoginServerAddress");
-//				uint ServerPort = g_pConfig->getPropertyInt("LoginServerCheckPort");
-//
-//				g_pClientCommunicationManager->sendPacket( ServerAddress,
-//															ServerPort,
-//															&cgPortCheck );
-
-			//
 			g_SelectSector.x = 0;
 			g_SelectSector.y = 0;
 
@@ -1156,23 +1011,7 @@ SetMode(enum CLIENT_MODE mode)
 			gC_vs_ui.CloseRequestShrineMinimap();
 
 
-//			//-----------------------------------------
-//			// 자크 도움말..
-//			//-----------------------------------------
-//			if (g_pPlayer!=NULL
-//				&& g_pPlayer->IsSlayer()
-//				&& g_pInventory!=NULL
-//				&& g_pSlayerGear!=NULL
-//				&& g_pPlayer->GetSTR()+g_pPlayer->GetDEX()+g_pPlayer->GetINT()==30
-//				&& g_pInventory->GetItemNum()==0
-//				&& g_pSlayerGear->GetItemNum()==0)
-//			{
-//				gC_vs_ui.AddChatToHistory((*g_pGameStringTable)[STRING_MESSAGE_HOW_TO_GET_BASIC_WEAPON].GetString(), 
-//											(*g_pGameStringTable)[UI_STRING_MESSAGE_HELP_MESSAGE].GetString(), 
-//											CLD_INFO, RGB(130, 230, 230));
-//			}
 //Edit by sonic 2006.7.27  修改加速地址
-			//g_UpdateDelay = DELAY_UPDATE_GAME;
 			g_UpdateDelay = 100 ^ 90;
 			
 			DEBUG_ADD("SetUpdate");
@@ -1183,11 +1022,6 @@ g_pUpdate = g_pCGameUpdate;
 		CheckActivate(TRUE);
 
 		ExecuteHelpEvent( HELP_EVENT_INTERFACE );
-//			if(!g_pUserInformation->IsNetmarble)
-//			{
-//				ExecuteHelpEvent( HELP_EVENT_CAMPAIGN );
-//				ExecuteHelpEvent( HELP_EVENT_EVENT );
-//			}
 
 		break;
 
@@ -1210,7 +1044,6 @@ g_pUpdate = g_pCGameUpdate;
 							CLLogout clLogout;
 						
 							g_pSocket->sendPacket( &clLogout );
-							//g_pSocket->setPlayerStatus( CPS_END_SESSION );
 
 					}
 					//--------------------------------------------------
@@ -1222,9 +1055,6 @@ g_pUpdate = g_pCGameUpdate;
 					
 						g_pSocket->sendPacket( &cgLogout );
 
-						#ifdef __DEBUG_OUTPUT__
-							DEBUG_ADD(cgLogout.toString().c_str());					
-						#endif
 					}
 				}
 
@@ -1266,35 +1096,6 @@ g_pUpdate = g_pCGameUpdate;
 void
 CheckActivate(BOOL bActiveGame)
 {
-	//static BOOL musicPause = FALSE; //g_Music.IsPause();
-
-	#ifdef OUTPUT_DEBUG
-		if (g_pDebugMessage != NULL)
-		{
-			if (bActiveGame)
-			{
-				if (g_bActiveApp)
-				{
-					DEBUG_ADD("[CheckActivate] ActiveGame, ActiveApp");
-				}
-				else
-				{
-					DEBUG_ADD("[CheckActivate] ActiveGame, DeactiveApp");
-				}
-			}
-			else
-			{
-				if (g_bActiveApp)
-				{
-					DEBUG_ADD("[CheckActivate] DeactiveGame, ActiveApp");
-				}
-				else
-				{
-					DEBUG_ADD("[CheckActivate] DeactiveGame, DeactiveApp");
-				}
-			}
-		}
-	#endif
 
 	if (g_pSDLInput!=NULL)
 	{
@@ -1312,9 +1113,6 @@ CheckActivate(BOOL bActiveGame)
 
 	[[maybe_unused]] extern bool	g_bTestMode;
 	if (g_bActiveApp
-#ifdef OUTPUT_DEBUG
-		|| g_bTestMode
-#endif
 		)
 	{
 		CSDLGraphics::RestoreGammaRamp();
@@ -1454,12 +1252,6 @@ CheckActivate(BOOL bActiveGame)
 				CSDLGraphics::RestoreDisplayMode();
 			}
 
-			#ifdef OUTPUT_DEBUG
-				if (g_pDebugMessage != NULL)
-					DEBUG_ADD("WM_ACTIVATEAPP : Stop Music");
-			#endif
-			//g_SDLMusic.Pause();
-			//musicPause = g_Music.IsPause();
 
 			// Music playback - use SDL_mixer (cross-platform)
 			g_Music.Stop();
@@ -1478,221 +1270,6 @@ CheckActivate(BOOL bActiveGame)
 	}
 
 }
-
-//-----------------------------------------------------------------------------
-// File Thread Proc
-//-----------------------------------------------------------------------------
-/*
-LONG
-FileThreadProc(LPVOID lpParameter)
-{
-	std::ifstream file;
-
-	while ( 1 )
-	{		
-		WaitForSingleObject(g_hFileEvent, INFINITE);
-
-		#ifdef OUTPUT_DEBUG
-			//		DEBUG_ADD("[Thread Job] Start");
-		#endif
-	
-		bool bLoad = true;
-			
-		switch (g_ThreadJob)
-		{
-			//--------------------------------------------------------
-			// Large Zone의 ImageObject를 Loading한다.
-			//--------------------------------------------------------
-			case THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE :	
-				g_bZoneLargeLoadImage = false;
-				file.open((*g_pZoneTable).Get(g_nZoneLarge)->Filename, ios::binary);
-
-				// Tile Loading
-				if (g_ThreadJob==THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE)
-				{
-					#ifdef OUTPUT_DEBUG
-						//DEBUG_ADD("[Thread Job] Load Tile LargeZone");
-					#endif
-					file.seekg(g_pZone->GetTileFilePosition(), ios::beg);
-					if (!g_pTopView->LoadFromFileTileSPKLargeZone( file ))	// tile만 load
-					{
-						#ifdef OUTPUT_DEBUG
-						//		DEBUG_ADD("[Thread Job] Stop Loading Tile");
-						#endif
-						file.close();
-						break;
-					}
-				}
-			
-				// ImageObject Loading
-				if (bLoad && g_ThreadJob==THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE)
-				{
-					#ifdef OUTPUT_DEBUG
-						//	DEBUG_ADD("[Thread Job] Load Imageobject LargeZone");
-					#endif
-					file.seekg(g_pZone->GetImageObjectFilePosition(), ios::beg);				
-					// 모두 load한 경우이면..
-					if (g_pTopView->LoadFromFileImageObjectSPKLargeZone( file ))
-					{
-						#ifdef OUTPUT_DEBUG
-							//	DEBUG_ADD("[Thread Job] Stop Loading ImageObject");
-						#endif
-						file.close();
-						break;
-					}
-				}
-
-				if (bLoad && g_ThreadJob==THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE)
-				{
-					#ifdef OUTPUT_DEBUG
-						//	DEBUG_ADD("[Thread Job] Complete Load");
-					#endif
-					g_bZoneLargeLoadImage = true;
-				}
-
-				file.close();
-			break;
-
-			//--------------------------------------------------------
-			// Small Zone의 ImageObject를 Loading한다.
-			//--------------------------------------------------------
-			case THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE :
-				g_bZoneSmallLoadImage = false;
-				file.open((*g_pZoneTable).Get(g_nZoneSmall)->Filename, ios::binary);
-
-				// Tile Loading
-				if (g_ThreadJob==THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE)
-				{
-					#ifdef OUTPUT_DEBUG
-					//		DEBUG_ADD("[Thread Job] Load Tile SmallZone");
-					#endif
-
-					file.seekg(g_pZone->GetTileFilePosition(), ios::beg);
-					if (!g_pTopView->LoadFromFileTileSPKLargeZone( file ))	// tile만 load
-					{
-						#ifdef OUTPUT_DEBUG
-								//DEBUG_ADD("[Thread Job] Stop Loading Tile");
-						#endif
-						file.close();
-						break;
-					}
-				}
-			
-
-				// ImageObject Loading
-				if (bLoad && g_ThreadJob==THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE)
-				{
-					#ifdef OUTPUT_DEBUG
-						//	DEBUG_ADD("[Thread Job] Load ImageObject SmallZone");
-					#endif
-					file.seekg(g_pZone->GetImageObjectFilePosition(), ios::beg);
-					if (!g_pTopView->LoadFromFileImageObjectSPKSmallZone( file ))
-					{
-						#ifdef OUTPUT_DEBUG
-							//	DEBUG_ADD("[Thread Job] Stop Loading ImageObject");
-						#endif
-						file.close();
-						break;
-					}
-				}
-
-				if (bLoad && g_ThreadJob==THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE)
-				{
-					g_bZoneSmallLoadImage = true;
-				}
-
-				file.close();
-			break;
-
-			//--------------------------------------------------------
-			// Creature를 Loading한다.
-			//--------------------------------------------------------
-			case THREADJOB_LOAD_CREATURE :
-				g_pTopView->LoadFromFileCreatureSPK( 0 );
-				g_pTopView->LoadFromFileCreatureSPK( 1 );
-			break;
-		}
-
-		#ifdef OUTPUT_DEBUG
-			//	DEBUG_ADD("[Thread Job] End");
-		#endif
-
-		ResetEvent(g_hFileEvent);
-	}
-
-	return 0L;
-}
-*/
-
-//-----------------------------------------------------------------------------
-// Stop File Thread
-//-----------------------------------------------------------------------------
-/*
-void
-StopFileThread()
-{	
-	#ifdef OUTPUT_DEBUG
-	//		DEBUG_ADD("[Thread Job] StopFileThread");
-	#endif
-
-	switch (g_ThreadJob)
-	{
-		case THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE :
-			//g_nZoneLarge = ZONEID_NULL;
-
-			// ImageObject Loading을 중단한다.
-			g_pTopView->StopLoadTileSPK();
-			g_pTopView->StopLoadImageObjectSPK();
-			g_bZoneLargeLoadImage = false;
-			
-			// 우선 순위를 높게 잡고...
-			SetThreadPriority(g_hFileThread, 
-								THREAD_PRIORITY_HIGHEST);
-		break;
-		
-		case THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE :
-			//g_nZoneSmall = ZONEID_NULL;
-
-			// ImageObject Loading을 중단한다.
-			g_pTopView->StopLoadTileSPK();
-			g_pTopView->StopLoadImageObjectSPK();	
-			g_bZoneSmallLoadImage = false;
-
-			// 우선 순위를 높게 잡고...
-			SetThreadPriority(g_hFileThread, 
-								THREAD_PRIORITY_HIGHEST);
-		break;
-		
-		case THREADJOB_LOAD_CREATURE :
-
-			//g_pTopView->StopLoadCreature();
-
-			// 캐릭터 그림 Load중인가?
-			// 우선 순위를 높게 잡고...
-			SetThreadPriority(g_hFileThread, 
-								THREAD_PRIORITY_HIGHEST);
-		break;
-	}
-
-	g_ThreadJob = THREADJOB_NONE;
-
-	#ifdef OUTPUT_DEBUG
-	//		DEBUG_ADD("[Thread Job] Wait for Stopping thread");
-	#endif
-
-	while (WaitForSingleObject(g_hFileEvent, 0) == WAIT_OBJECT_0);
-
-		// Thread가 하는 Loading이 끝날때까지 기다린다.
-	#ifdef OUTPUT_DEBUG
-	//		DEBUG_ADD("[Thread Job] Stop File Thread");
-	#endif
-	
-
-	// 순위를 좀 낮춘다.
-	SetThreadPriority(g_hFileThread, 
-						THREAD_PRIORITY_BELOW_NORMAL);
-}
-*/
 
 //-----------------------------------------------------------------------------
 // Load Creature
@@ -1794,34 +1371,6 @@ ReleaseGameObject()
 	}
 
 	//------------------------------------------------------
-	// Small Zone 제거
-	//------------------------------------------------------
-	/*
-	if (g_pZoneSmall != NULL)
-	{
-		DEBUG_ADD("[ delete SmallZone ]");
-		delete g_pZoneSmall;	
-		g_pZoneSmall = NULL;
-		g_nZoneSmall = ZONEID_NULL;	
-		g_bZoneSmallLoadImage = false;
-	}			
-	*/
-
-	//------------------------------------------------------
-	// Large Zone 제거
-	//------------------------------------------------------
-	/*
-	if (g_pZoneLarge != NULL)
-	{
-		DEBUG_ADD("[ delete LargeZone ]");
-		delete g_pZoneLarge;	
-		g_pZoneLarge = NULL;
-		g_nZoneLarge = ZONEID_NULL;	
-		g_bZoneLargeLoadImage = false;
-	}
-	*/
-
-	//------------------------------------------------------
 	// player제거
 	//------------------------------------------------------
 	if (g_pPlayer!=NULL)
@@ -1910,11 +1459,6 @@ LoadZone(int n)
 	//------------------------------------------------
 	// Music 정지...
 	//------------------------------------------------
-	//BOOL bMusicPause = g_SDLMusic.IsPause();
-	//g_SDLMusic.Stop();
-
-	//BOOL bMusicPause = g_Music.IsPause();
-
 	if (g_pUserOption->PlayWaveMusic)
 	{
 		if( g_pOGG != NULL )
@@ -1922,52 +1466,11 @@ LoadZone(int n)
 			if( g_SDLAudio.IsInit() )
 				g_pOGG->streamClose();
 		}
-//		if (g_pSDLStream!=NULL)
-//		{
-//			g_pSDLStream->Stop();
-//		}
-//		g_pSDLStream->Update();
 	}
 	else
 	{
 		g_Music.Stop();
 	}
-
-	//------------------------------------------------
-	// Fade Out 적용
-	//------------------------------------------------
-		/*
-	if (g_pZone!=NULL && g_Mode==MODE_GAME )
-	{
-		g_pTopView->SetFadeOut(6);
-
-		while(g_pTopView->IsFade())
-		{
-			g_CurrentTime = timeGetTime();
-			g_pUpdate->Update();
-		}
-
-		// 음악 중지
-		//g_Music.Stop();
-	}
-	*/
-
-	//------------------------------------------------
-	// Fade In 설정
-	//------------------------------------------------
-	//g_pTopView->SetFadeIn(10);
-
-
-	//------------------------------------------------
-	// 아직 다른 Zone을 Loading중이라면
-	//------------------------------------------------
-	/*
-	if  (WaitForSingleObject(g_hFileEvent, 0) == WAIT_OBJECT_0)
-	{
-		StopFileThread();		
-	}
-	*/
-	//g_pLoadingThread->Remove( 1 );
 
 	//-------------------------------------------------------------
 	// Loading 중이던것 모두 제거
@@ -1998,8 +1501,6 @@ LoadZone(int n)
 	//----------------------------------------------------------------------
 	if (pZoneInfo->Property & FLAG_ZONESIZE_SMALL)
 	{	
-		//ZONETABLE_INFO* pOldZoneInfo = (*g_pZoneTable).Get( g_nZoneSmall );
-
 		//-------------------------------------------
 		// 이전에 LargeZone에 있었다면.. 
 		// 그림자 다시 생성
@@ -2021,15 +1522,6 @@ LoadZone(int n)
 
 			DEBUG_ADD("OK");
 			
-			// 그림이 Load되지 않은 상태면..
-			/*
-			if (!g_bZoneSmallLoadImage)
-			{
-				// Thread가 할일을 지정				
-				g_ThreadJob = THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE;				
-				SetEvent(g_hFileEvent);
-			}
-			*/
 
 			// SmallZone의 pointer를 대입
 			g_pZone	= g_pZoneSmall;
@@ -2104,8 +1596,6 @@ LoadZone(int n)
 
 			g_pZone->SetCurrentZoneID( n );
 		
-			//g_pTopView->LoadFromFileTileSPKLargeZone( file );	// tile만 load
-			//g_pTopView->LoadFromFileImageObjectSPKLargeZone( file );
 			file.close();			
 			
 			
@@ -2132,11 +1622,6 @@ LoadZone(int n)
 			UI_DrawProgress( 95 );
 		}
 		
-		//-------------------------------------------------------
-		// LoadingThread가 할일을 지정			
-		//-------------------------------------------------------
-		//g_ThreadJob = THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE;				
-		//SetEvent(g_hFileEvent);
 		// 틴버전인경우 틴버전용 맵파일 로딩
 		MString filename = (*g_pZoneTable).Get(g_nZoneSmall)->Filename;
 		if(g_pUserInformation->GoreLevel == false)
@@ -2162,56 +1647,6 @@ LoadZone(int n)
 		
 		DEBUG_ADD("[Load Zone] Before Music Play");
 		
-		//------------------------------------------
-		// 음악 연주해야 되는 경우이면
-		//------------------------------------------
-		/*
-		if (g_pUserOption->PlayMusic)
-		{
-			//------------------------------------------
-			// 종족에 따라서 음악이 달라진다.
-			//------------------------------------------
-			TYPE_MUSICID	newMusicID = 0;
-
-			if (g_pPlayer!=NULL && g_pPlayer->IsSlayer())
-			{		
-				newMusicID = pZoneInfo->MusicIDSlayer;
-			}
-			else
-			{
-				newMusicID = pZoneInfo->MusicIDVampire;
-			}
-
-			//g_SDLMusic.SetOriginalTempo();
-			//g_SDLMusic.Play( (*g_pMusicTable)[ newMusicID ].Filename );			
-			int musicID = newMusicID;
-
-			if (musicID!=MUSICID_NULL)
-			{
-				if (g_pUserOption->PlayWaveMusic)
-				{
-					g_pSDLStream->Load( (*g_pMusicTable)[ musicID ].FilenameWav );
-					g_pSDLStream->Play( TRUE );
-				}
-				else
-				{
-					g_Music.Play( (*g_pMusicTable)[ musicID ].Filename );
-				}
-			}
-		}
-		*/
-	
-		/*
-		if (g_pMP3 != NULL)
-		{
-			g_pMP3->Pause();
-			delete g_pMP3;
-		}
-
-		g_pMP3 = new CMySound( (*g_pMusicTable)[ (*g_pZoneTable)[g_nZoneSmall].MusicID ].Filename );
-		g_pMP3->Play();
-		*/
-					
 		g_bZonePlayerInLarge = false;
 	}
 
@@ -2222,8 +1657,6 @@ LoadZone(int n)
 	//----------------------------------------------------------------------
 	else
 	{
-		//ZONETABLE_INFO* pOldZoneInfo = (*g_pZoneTable).Get( g_nZoneLarge );
-
 		//-------------------------------------------
 		// 이전에 SmallZone에 있었다면.. 
 		// 그림자 다시 생성
@@ -2245,15 +1678,6 @@ LoadZone(int n)
 			
 			DEBUG_ADD("OK");
 			
-			// 그림이 Load되지 않은 상태면..
-			/*
-			if (!g_bZoneLargeLoadImage)
-			{
-				// Thread가 할일을 지정				
-				g_ThreadJob = THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE;				
-				SetEvent(g_hFileEvent);
-			}
-			*/
 
 			// LargeZone의 pointer를 대입
 			g_pZone	= g_pZoneLarge;
@@ -2327,8 +1751,6 @@ LoadZone(int n)
 				return FALSE;
 			}
 
-			//g_pTopView->LoadFromFileTileSPKLargeZone( file );	// Tile만 load
-			//g_pTopView->LoadFromFileImageObjectSPKLargeZone( file );
 			file.close();
 
 			UI_DrawProgress( 90 );
@@ -2353,11 +1775,6 @@ LoadZone(int n)
 			UI_DrawProgress( 95 );
 		}
 
-		//-------------------------------------------------------
-		// LoadingThread가 할일을 지정			
-		//-------------------------------------------------------
-		//g_ThreadJob = THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE;				
-		//SetEvent(g_hFileEvent);
 		MString filename = (*g_pZoneTable).Get(g_nZoneLarge)->Filename;
 		if(g_pUserInformation->GoreLevel == false)
 		{
@@ -2382,66 +1799,11 @@ LoadZone(int n)
 		
 		DEBUG_ADD("[Load Zone] Before Music Play");
 		
-		//------------------------------------------
-		// 음악 연주해야 되는 경우이면
-		//------------------------------------------
-		/*
-		if (g_pUserOption->PlayMusic)
-		{
-			//------------------------------------------
-			// 종족에 따라서 음악이 달라진다.
-			//------------------------------------------
-			//TYPE_MUSICID	oldMusicID = 0;
-			TYPE_MUSICID	newMusicID = 0;
-
-			DEBUG_ADD("[Load Zone] Before Music Check");
-			
-			if (g_pPlayer!=NULL && g_pPlayer->IsSlayer())
-			{		
-				newMusicID = pZoneInfo->MusicIDSlayer;
-			}
-			else
-			{
-				newMusicID = pZoneInfo->MusicIDVampire;
-			}
-
-			//g_SDLMusic.SetOriginalTempo();
-			//g_SDLMusic.Play( (*g_pMusicTable)[ newMusicID ].Filename );			
-
-			int musicID = newMusicID;
-
-			if (musicID!=MUSICID_NULL)
-			{
-				if (g_pUserOption->PlayWaveMusic)
-				{
-					g_pSDLStream->Load( (*g_pMusicTable)[ musicID ].FilenameWav );
-					g_pSDLStream->Play( TRUE );
-				}
-				else
-				{
-					g_Music.Play( (*g_pMusicTable)[ musicID ].Filename );
-				}
-			}
-		}
-		*/
-	
-		/*
-		if (g_pMP3 != NULL)
-		{
-			g_pMP3->Pause();
-			delete g_pMP3;
-		}
-
-		g_pMP3 = new CMySound;// (*g_pMusicTable)[ (*g_pZoneTable)[g_nZoneLarge].MusicID ].Filename );
-		//g_pMP3->Play();
-		g_pMP3->Load( (*g_pMusicTable)[ (*g_pZoneTable)[g_nZoneLarge].MusicID ].Filename );
-		*/
-
 		g_bZonePlayerInLarge = true;
 	}
 
 	DEBUG_ADD("[Load Zone] Before Minimap Loading");
-	
+
 	//------------------------------------------------
 	// UI에 zone설정..
 	//------------------------------------------------
@@ -2449,19 +1811,8 @@ LoadZone(int n)
 
 	gC_vs_ui.SetSize( zoneSize );
 	gC_vs_ui.SetZone( n );
-	
-#ifdef OUTPUT_DEBUG
-//	if(C_VS_UI_MINIMAP::GetZoneName(n))
-//	{
-//		extern int CLogFile;
-//		
-//		_write( CLogFile, "<<<", 3 );
-//		_write( CLogFile, C_VS_UI_MINIMAP::GetZoneName(n), strlen(C_VS_UI_MINIMAP::GetZoneName(n)));
-//		_write( CLogFile, ">>>", 3 );
-//		_write( CLogFile, "\n", 1 );
-//	}
-#endif
-	
+
+
 	LoadZoneInfo( n );
 	g_pZone->SetCurrentZoneID( n );
 
@@ -2491,76 +1842,12 @@ LoadZone(int n)
 			g_pPlayer->SetShowAdamCloud(false);
 	}
 	// 2004, 9, 21, sobeit add end
-//	BYTE PkType = g_pZone->GetPKType();
-//	if(PkType != PK_TYPE_NULL)	// 그냥 일반 맵
-//	{
-//		if(PkType == PK_TYPE_DISABLE)		// 다 우리편..-_-; pk 금지
-//			g_pPlayer->SetAttackModePeace();
-//		else if(PkType == PK_TYPE_ALL)		// 나 빼고 다 적
-//			g_pPlayer->SetAttackModeAggress();
-//		else if(PkType == PK_TYPE_GUILD)	// 우리 길드 빼고 다 적..
-//		{
-//			int myGuildID = g_pPlayer->GetGuildNumber();	
-//			int OtherGuildID = pCreature->GetGuildNumber();	
-//			if( myGuildID		== GUILDID_VAMPIRE_DEFAULT ||
-//				myGuildID		== GUILDID_SLAYER_DEFAULT ||
-//				myGuildID		== GUILDID_OUSTERS_DEFAULT ||
-//				OtherGuildID	== GUILDID_VAMPIRE_DEFAULT ||
-//				OtherGuildID	== GUILDID_SLAYER_DEFAULT ||
-//				OtherGuildID	== GUILDID_OUSTERS_DEFAULT ) // 길드가 없는 녀석 들은..
-//				return TRUE; // 혼자 싸워라..-_-;
-//
-//			if(myGuildID == OtherGuildID)
-//				return FALSE; // 우리 길드...
-//			else
-//				return TRUE;
-//		}
-//	}
-//	else
-//		g_pPlayer->SetAttackModeNormal();
-
 	// 2004, 6, 22 sobeit add end
-	//------------------------------------------------
-	// minimap 그림 설정
-	//------------------------------------------------
-	//g_pTopView->LoadMinimap( pZoneInfo->MinimapFilename );	
-	
 	//------------------------------------------------
 	// Random SoundID 시간 설정
 	//------------------------------------------------
 	g_ZoneAmbientSounds.DelayAfterZoneLoad(g_FrameNow, static_cast<unsigned>(rand()));
 	
-	
-
-
-	//---------------------------------------------------------------
-	// 하나의 소리에 대한 정보
-	//---------------------------------------------------------------
-	/*
-	ZONESOUND_INFO* pSoundInfo	= new ZONESOUND_INFO;
-	pSoundInfo->ID				= 1;
-	pSoundInfo->SoundID			= SOUND_WORLD_WATER_DROP;
-	pSoundInfo->Loop			= true;
-	pSoundInfo->MinDelay		= 0;
-	pSoundInfo->MaxDelay		= 24;
-	pSoundInfo->StartHour		= 0;
-	pSoundInfo->EndHour			= 24;
-	
-	g_pZoneSoundTable->AddData( pSoundInfo->ID, pSoundInfo );
-	*/
-
-	//*/
-	
-	
-
-	//------------------------------------------------
-	// 이 Zone에서 등장하는 Creature에 대한 Sprite들
-	//------------------------------------------------
-	//g_pTopView->LoadFromFileCreatureSPK( 0 );
-	//g_pTopView->LoadFromFileCreatureSPK( 1 );
-
-	
-
 	//------------------------------------------------
 	// View에게 출력해야할 Zone을 지정한다.
 	//------------------------------------------------
@@ -2589,36 +1876,17 @@ LoadZone(int n)
 	g_bZoneSafe = pZoneInfo->Safety;
 	g_bHolyLand = pZoneInfo->HolyLand;
 
-//	if( g_pWarManager->IsExist( pZoneInfo->ID ) )
-//	{
-//		g_bZoneSafe = false;
-//	}
-
 	g_pWarManager->ClearWar();
 	g_pTimeItemManager->clear();
 
 	g_pUserInformation->WorldName = g_pServerInformation->GetServerGroupName();
-#ifdef __DEBUG_OUTPUT__
-	for(int w=0;w<g_pZone->GetWidth();w++)
-	{
-		for(int h=0;h<g_pZone->GetHeight();h++)
-		{
-			if( g_pZone->GetSector(w,h).IsBlockAny() && g_pZone->GetID() == 3001 )
-			{
-				gC_vs_ui.SetBlock( w,h );
-			}
-		}
-	}
-#endif
 
-#ifndef __METROTECH_TEST__
 	if(gpC_base != NULL && g_pUserInformation->bCompetence == true && g_pUserInformation->bCompetenceShape != true &&
 		g_pZoneTable->Get( g_pZone->GetID() )->CompetenceZone == false
 		)
 	{
 		gpC_base->SendTextMessage(UI_CHAT_RETURN, CLD_NORMAL, 0, "*command ghost on");
 	}
-#endif
 	
 	return TRUE;
 }
@@ -2638,8 +1906,6 @@ MoveZone(int n)
 	{
 		g_pPlayer->SetStop();
 		g_pPlayer->SetAction( ACTION_STAND );
-//		g_pPlayer->UnSetTimeLightSight();
-//		g_pPlayer->UnSetLightSightAttachEffect();
 		g_pZone->RemovePlayer();
 	}
 	
@@ -2647,9 +1913,8 @@ MoveZone(int n)
 	LoadZone( n );
 
 	g_pPlayer->SetZone(g_pZone);
-	g_pZone->SetPlayer();//&g_pPlayer->;	
+	g_pZone->SetPlayer();
 	g_pPlayer->SetTimeLightSight(g_pPlayer->GetTimeLightSight());
-//	g_pPlayer->SetLightSightAttachEffect();
 }
 
 //-----------------------------------------------------------------------------
@@ -2680,7 +1945,6 @@ LoadZoneInfo(int n)
 	//------------------------------------------------
 	// ZoneInfo
 	//------------------------------------------------
-//	MZoneInfo zoneInfo;
 	std::ifstream zoneInfoFile(Basic::NormalizeDataPath(pZoneInfo->InfoFilename.GetString()), ios::binary);
 
 	//------------------------------------------------
@@ -2690,14 +1954,6 @@ LoadZoneInfo(int n)
 	{
 		DEBUG_ADD("[Load Zone] Load MinimapInfo");
 		
-		/*
-		zoneInfo.LoadFromFile( zoneInfoFile );		
-
-		//------------------------------------------------
-		// minimap에 안전지대를 표시한다.
-		//------------------------------------------------
-		g_pTopView->LoadMinimap( pZoneInfo->MinimapFilename, &zoneInfo );	
-		*/
 		ZoneInfoData zoneInfo;
 
 		//------------------------------------------------
@@ -2761,7 +2017,6 @@ LoadZoneInfo(int n)
 			DEBUG_ADD_FORMAT("numSafe = %d", numSafe);
 
 			DEBUG_ADD_FORMAT("[g_pPlayer] %p", static_cast<const void*>(g_pPlayer));
-			//BYTE bSlayer = (g_pPlayer==NULL || g_pPlayer->IsSlayer());
 			Race MyRace = g_pPlayer->GetRace();
 			DEBUG_ADD("bSlayer OK");
 
@@ -2852,11 +2107,9 @@ LoadZoneInfo(int n)
 						
 						pNPC->SetGuildNumber( GUILDID_OUSTERS );
 						
-						//pNPC->SetCreatureType( 0 );
 						pNPC->SetCreatureType( npcID );
 						pNPC->SetGroundCreature();
 						pNPC->SetID(MFakeCreature::GetFakeID());
-						//pNPC->SetAction(ACTION_MOVE);
 						// Edit By Sonic 2006.10.1  修正魔灵配柱子位置
 						//原位置 62  x=39 y=30  修正位置 x=7 y=11
 						if(itr->zone_id==62)
@@ -2877,7 +2130,6 @@ LoadZoneInfo(int n)
 						// NPC ID
 						pNPC->SetNPCID( npcID );
 						
-						//
 						pNPC->SetStatus( MODIFY_MAX_HP, 100 );
 						pNPC->SetStatus( MODIFY_CURRENT_HP, 100 );
 						
@@ -2905,68 +2157,6 @@ LoadZoneInfo(int n)
 			{
 				SetWeather(WEATHER_SPOT, 2);
 			}
-/*
-			//---------------------------------------------------------------
-			//
-			//  Zone의 환경 사운드 설정
-			//
-			//---------------------------------------------------------------
-			long fpCurrent = zoneInfoFile.tellg();
-			zoneInfoFile.seekg( 0, ios::end );
-			long fpEof = zoneInfoFile.tellg();
-				
-			if (!zoneInfoFile.eof()	// 왜 이게 제대로 안되지- -;
-				&& fpCurrent!=fpEof)
-			{
-				zoneInfoFile.seekg( fpCurrent, ios::beg );
-			
-				if (g_pZoneSoundTable)
-				{
-					DEBUG_ADD("Delete ZoneSoundTable");
-					
-					delete g_pZoneSoundTable;
-				}
-
-				if (g_pZoneSoundManager)
-				{		
-					DEBUG_ADD("Delete ZoneSoundManager");
-					
-					delete g_pZoneSoundManager;
-				}
-
-				DEBUG_ADD("New ZoneSoundTable");
-				
-				// Zone의 사운드를 어떻게 낼까?에 대한 정보
-				g_pZoneSoundTable = new MZoneSoundTable;
-
-				DEBUG_ADD("Delete ZoneSoundManager");
-				
-				// Zone에 있는 사운드 자체에 대한 정보
-				g_pZoneSoundManager = new MZoneSoundManager;
-
-				
-				DEBUG_ADD("Load SectorSound");
-				
-				//---------------------------------------------------------------
-				// Sector에 사운드 정보를 Loading한다.
-				//---------------------------------------------------------------
-				g_pZone->LoadFromFileSectorSound( zoneInfoFile );
-				
-				//---------------------------------------------------------------
-				// ZoneSoundTable에 
-				// 현재 Map에 대한 사운드 정보를 Loading한다.
-				//---------------------------------------------------------------
-				DEBUG_ADD("Load ZoneSoundTable");	
-				
-				g_pZoneSoundTable->LoadFromFile( zoneInfoFile );
-
-				DEBUG_ADD("Load ZoneSoundTable OK");
-			}
-			else
-			{
-				DEBUG_ADD("No ZoneSound Info");
-			}			
-*/
 		}
 		else
 		{			
@@ -2997,14 +2187,6 @@ InitPlayer(int x, int y, int dir)
 	// Debug Message
 	DEBUG_ADD_FORMAT("InitPlayer : (%d,%d) Dir=%d", x, y, dir);			
 	
-	//------------------------------------------------
-	// Creature의 종류
-	//------------------------------------------------
-	//g_pPlayer->SetCreatureType( 0 );
-
-	//g_pPlayer->SetCreatureType( id%2 );
-	//g_pPlayer->SetCreatureType( 1 );
-
 	g_pPlayer->ClearChatString();
 
 	//------------------------------------------------
@@ -3015,71 +2197,18 @@ InitPlayer(int x, int y, int dir)
 	//------------------------------------------------
 	// 위치 설정
 	//------------------------------------------------
-	//g_pPlayer->SetPosition(x, y);	
 	g_pPlayer->SetStop();
 	g_pPlayer->SetX( x );
 	g_pPlayer->SetY( y );
 	g_pPlayer->SetServerPosition(x, y);
 	g_pPlayer->SetDirection(dir);
 	g_pPlayer->SetCurrentDirection(dir);
-	//g_pPlayer->SetAction( ACTION_MOVE );	// Default
 
 	//------------------------------------------------
 	//  Zone <--> Player
 	//------------------------------------------------
-	g_pZone->SetPlayer();//&g_pPlayer->;	
+	g_pZone->SetPlayer();
 	g_pPlayer->SetZone(g_pZone);
-
-	//------------------------------------------------
-	// 시야 확인..
-	//------------------------------------------------
-	//#ifdef CONNECT_SERVER
-	//	g_pZone->KeepObjectInSight(x, y, g_pPlayer->GetSight());
-	//#endif
-
-	//------------------------------------------------
-	// 상태값
-	//------------------------------------------------
-	//g_pPlayer->SetStatus(MODIFY_HP, 100);
-	//g_pPlayer->SetStatus(MODIFY_MP, 100);
-	
-	//------------------------------------------------
-	// 옷 입히기	
-	//------------------------------------------------
-	///*
-	//g_pPlayer->SetAddonEnable(ADDON_HAIR);		// 머리
-	//g_pPlayer->SetAddonEnable(ADDON_COAT);		// 상의
-	//g_pPlayer->SetAddonEnable(ADDON_TROUSER);	// 하의
-	//g_pPlayer->SetAddonEnable(ADDON_HELM);		// 모자
-	//g_pPlayer->SetAddonEnable(ADDON_LEFTHAND);	// 왼손 
-	//g_pPlayer->SetAddonEnable(ADDON_RIGHTHAND);	// 오른손	
-	//g_pPlayer->SetAddonEnable(ADDON_MOTOR);		// 오토바이
-	
-	//g_pPlayer->SetAddon(ADDON_COAT, ADDONID_COAT1_MALE);	
-	//g_pPlayer->SetAddon(ADDON_TROUSER, ADDONID_TROUSER1_MALE);
-	////g_pPlayer->SetAddon(ADDON_HELM, 9);
-	////g_pPlayer->SetAddon(ADDON_RIGHTHAND, 7);
-	//g_pPlayer->SetAddon(ADDON_HAIR, ADDONID_HAIR1_MALE);
-	//g_pPlayer->RemoveAddon(ADDON_MOTOR);//, ADDONID_MOTORCYCLE_MALE);
-	//*/
-
-	//------------------------------------------------
-	// 시야 설정
-	//------------------------------------------------
-	//g_pPlayer->SetLightSight( 12 );	// 빛의 크기
-	//g_pPlayer->SetSight( 12 );		// 캐릭터의 시야
-
-	//------------------------------------------------
-	// 공격, 기술 관련
-	//------------------------------------------------
-	// 공격
-	//g_pPlayer->SetBasicActionInfo( SKILL_ATTACK_MELEE );
-	
-	// 공격 가능거리 설정
-	//g_pPlayer->SetBasicAttackDistance( 1 );
-
-	// 특수 공격
-	//g_pPlayer->SetSpecialActionInfo( MAGIC_BLESS );
 
 	// 정지 동작
 	if (g_pPlayer->IsAlive())
@@ -3091,93 +2220,11 @@ InitPlayer(int x, int y, int dir)
 		g_pPlayer->SetAction( ACTION_DIE );
 	}
 
-	// 움직이는 방법
-	//g_pPlayer->SetMoveDevice( MCreature::MOVE_DEVICE_WALK );
-
-	//-------------------------------------------------------
-	// UI에 상태 적용
-	//-------------------------------------------------------
-	//gC_vs_ui.SetHP(g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP());
-	//gC_vs_ui.SetMP(g_pPlayer->GetMP(), g_pPlayer->GetMAX_MP());
-
 	//-------------------------------------------------------
 	// Server로 보낸 move packet 개수를 지우고
 	// 처음부터~~ 다시 move하게 한다.
 	//-------------------------------------------------------
 	g_pPlayer->ResetSendMove();
-
-	//-------------------------------------------------------
-	// Attack Mode
-	//-------------------------------------------------------
-	//g_pPlayer->SetAttackModeNormal();
-
-
-	//-------------------------------------------------------
-	//
-	//				사용할 수 있는 기술
-	//
-	//-------------------------------------------------------
-	/*
-	(*g_pSkillManager).Init( MAX_SKILLDOMAIN );
-
-	//---------------------------------------------------------------------
-	// 기본 기술로부터 skill tree를 초기화한다.
-	//---------------------------------------------------------------------
-	(*g_pSkillManager)[SKILLDOMAIN_BLADE].SetRootSkill( SKILL_SINGLE_BLOW );
-	(*g_pSkillManager)[SKILLDOMAIN_SWORD].SetRootSkill( SKILL_DOUBLE_IMPACT );
-	(*g_pSkillManager)[SKILLDOMAIN_GUN].SetRootSkill( SKILL_SNIPPING );
-	(*g_pSkillManager)[SKILLDOMAIN_GUN].SetRootSkill( SKILL_SHARP_SHOOTING );
-	(*g_pSkillManager)[SKILLDOMAIN_ENCHANT].SetRootSkill( MAGIC_CREATE_HOLY_WATER );
-	(*g_pSkillManager)[SKILLDOMAIN_HEAL].SetRootSkill( MAGIC_CURE_POISON );
-	(*g_pSkillManager)[SKILLDOMAIN_VAMPIRE].SetRootSkill( MAGIC_HIDE );	
-
-	MSkillDomain& bladeDomain = (*g_pSkillManager)[SKILLDOMAIN_BLADE];
-	MSkillDomain& swordDomain = (*g_pSkillManager)[SKILLDOMAIN_SWORD];
-	MSkillDomain& gunDomain = (*g_pSkillManager)[SKILLDOMAIN_GUN];
-	MSkillDomain& enchantDomain = (*g_pSkillManager)[SKILLDOMAIN_ENCHANT];
-	MSkillDomain& healDomain = (*g_pSkillManager)[SKILLDOMAIN_HEAL];
-	*/
-
-	//---------------------------------------------------------------------
-	// 몇가지 skill을 배웠다고 표시한다.
-	//---------------------------------------------------------------------
-	/*
-	swordDomain.LearnSkill( SKILL_DOUBLE_IMPACT );
-	swordDomain.LearnSkill( SKILL_TRIPLE_SLASHER );
-	swordDomain.LearnSkill( SKILL_SCREW_SLASHER );
-	swordDomain.LearnSkill( SKILL_RAINBOW_SLASHER );
-	swordDomain.LearnSkill( SKILL_CRUSH_COMBO );
-	swordDomain.LearnSkill( SKILL_CROSS_COUNTER );
-	
-	bladeDomain.LearnSkill( SKILL_SINGLE_BLOW );
-	bladeDomain.LearnSkill( SKILL_TWIN_BREAK );
-	bladeDomain.LearnSkill( SKILL_TRIPLE_BREAK );
-	bladeDomain.LearnSkill( SKILL_SPIRAL_SLAY );
-	bladeDomain.LearnSkill( SKILL_WILD_SMASH );
-	bladeDomain.LearnSkill( SKILL_ARMOR_CRASH );
-
-	gunDomain.LearnSkill( SKILL_SNIPPING );
-	gunDomain.LearnSkill( SKILL_SHARP_SHOOTING );
-	gunDomain.LearnSkill( SKILL_FAST_RELOAD );
-	gunDomain.LearnSkill( SKILL_KNOCKS_TARGET_BACK );
-
-	enchantDomain.LearnSkill( MAGIC_LIGHT );
-	enchantDomain.LearnSkill( MAGIC_DETECT_HIDDEN );
-	enchantDomain.LearnSkill( MAGIC_CONTINUAL_LIGHT );
-	enchantDomain.LearnSkill( MAGIC_DETECT_INVISIBILITY );
-	enchantDomain.LearnSkill( MAGIC_VISIBLE );
-
-	healDomain.LearnSkill( MAGIC_CURE_POISON );
-	healDomain.LearnSkill( MAGIC_PROTECTION_FROM_CURSE );
-	healDomain.LearnSkill( MAGIC_CURE_LIGHT_WOUNDS );
-	healDomain.LearnSkill( MAGIC_CURE_POISON );
-	healDomain.LearnSkill( MAGIC_PROTECTION_FROM_POISON );
-	healDomain.LearnSkill( MAGIC_CURE_PARALYSIS );
-
-	*/
-	//g_SkillAvailable.AddSkill( MAGIC_CURE_POISON );
-	//g_SkillAvailable.AddSkill( MAGIC_PROTECTION_FROM_POISON );
-	//g_SkillAvailable.AddSkill( MAGIC_CURE_PARALYSIS );
 
 	//-------------------------------------------------------
 	// 기술 검증 상태..
@@ -3194,25 +2241,6 @@ InitPlayer(int x, int y, int dir)
 	//------------------------------------------------
 	g_pPlayer->ClearItemCheckBuffer();
 	
-	//------------------------------------------------
-	// Gear 초기화
-	//------------------------------------------------
-	/*
-	if (g_pPlayer->IsSlayer())
-	{
-		g_SlayerGear.Init();
-	}
-	else
-	{
-		g_VampireGear.Init();
-	}
-
-	//------------------------------------------------
-	//  Inventory 초기화
-	//------------------------------------------------
-	g_Inventory.Init(10,6);
-	*/
-
 	//------------------------------------------------
 	// 정보창에 보여주는 정보..
 	//------------------------------------------------
@@ -3234,9 +2262,6 @@ MakeScreenShot()
 
 	int maxScreenShot = g_pClientConfig->MAX_SCREENSHOT;
 
-	#ifdef OUTPUT_DEBUG
-		maxScreenShot = 1000;
-	#endif
 
 #ifdef PLATFORM_WINDOWS
 	_mkdir("ScreenShot");
@@ -3259,35 +2284,7 @@ MakeScreenShot()
 		if( fd == -1 )
 		{
 			// Save
-			#ifdef OUTPUT_DEBUG
-				if (g_bSaveSlideScreenShot
-					&& g_rectScreenShot.left!=g_rectScreenShot.right
-					&& g_rectScreenShot.top!=g_rectScreenShot.bottom)
-				{
-					if (g_rectScreenShot.left > g_rectScreenShot.right) { int temp=g_rectScreenShot.left; g_rectScreenShot.left=g_rectScreenShot.right; g_rectScreenShot.right=temp; }
-					if (g_rectScreenShot.top > g_rectScreenShot.bottom) { int temp=g_rectScreenShot.top; g_rectScreenShot.top=g_rectScreenShot.bottom; g_rectScreenShot.bottom=temp; }
 
-					int width = g_rectScreenShot.right - g_rectScreenShot.left + 8;
-					int height = g_rectScreenShot.bottom - g_rectScreenShot.top + 8;
-
-					width &= ~0x07;
-					height &= ~0x07;
-
-					CSpriteSurface surface;
-					surface.InitOffsurface( width, height, DDSCAPS_SYSTEMMEMORY );
-
-					POINT point0 = { 0, 0 };
-					RECT rect = g_rectScreenShot;
-					rect.left += 1;
-					rect.top += 1;
-					surface.BltNoColorkey(&point0, g_pBack, &rect);
-
-					surface.SaveToBMP(str);
-				}
-				else
-			#endif
-
-//			g_pBack->SaveToBMP(str);
 			// SaveSurfaceToImage() (UtilityFunction.cpp, retired in task
 			// 4.231) took a CDirectDrawSurface&, but with
 			// SPRITELIB_BACKEND_SDL (the only backend this project builds
@@ -3315,9 +2312,6 @@ MakeScreenShot()
 	}
 
 
-	#ifdef OUTPUT_DEBUG
-		g_bSaveSlideScreenShot = false;
-	#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -3335,8 +2329,6 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 	
 	__BEGIN_PROFILE("PlaySound1")
 
-	//static int reload	= 0;
-	//static int reuse	= 0;
 
 	//-----------------------------------------------------------
 	// 정의되지 않는 sound ID일 경우..
@@ -3387,7 +2379,6 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 			strFilename[sizeof(strFilename)-1] = '\0';
 
 			LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
-			//LPDIRECTSOUNDBUFFER	pBuffer = g_pWavePackFileManager->LoadFromFileData(soundID);
 
 			//-----------------------------------------------------------
 			// Loading 실패
@@ -3435,7 +2426,6 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 
 				
 				int sub = (dist << 2) * g_pUserOption->VolumeSound;
-				//int sub = dist * g_pUserOption->VolumeSound;
 
 				g_SDLAudio.SubVolumeFromMax(pBuffer, sub);			
 
@@ -3445,12 +2435,8 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 
 				// Force Feel
 				//-------------------------------------------------
-				//if (gpC_Imm!=NULL && gpC_Imm->IsDevice())
 				{
-				//	gpC_Imm->ForceSound( strFilename );
 				}
-
-				//reload++;
 			}
 		}
 		//-----------------------------------------------------------
@@ -3483,40 +2469,18 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 				}
 
 				int sub = (dist << 2) * g_pUserOption->VolumeSound;
-				//int sub = dist * g_pUserOption->VolumeSound;
 				
 				g_SDLAudio.SubVolumeFromMax(pBuffer, sub);
 
 				g_SDLAudio.Play( pBuffer, repeat, g_bGoodFPS );
 				g_SoundPerSecond++;
 
-				// Force Feel
-				//-------------------------------------------------				
-				/*
-				if (gpC_Imm!=NULL && gpC_Imm->IsDevice())
-				{
-					const char* pFilename = (*g_pSoundTable)[soundID].Filename;
-				
-					if (pFilename!=NULL)
-					{					
-						char strFilename[256];
-						snprintf(strFilename, sizeof(strFilename), "%s", pFilename);
-
-						gpC_Imm->ForceSound( strFilename );
-					}
-				}
-				*/
 			}
-			
-			//reuse ++;
 		}
 	}
 
 	__END_PROFILE("PlaySound1")
 
-	//#ifdef OUTPUT_DEBUG
-	//	DEBUG_ADD_FORMAT("miss(%d) : match(%d)  / %d", reload, reuse, reload+reuse);		
-	//#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -3547,11 +2511,6 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 	// 초당 소리낼 수 있는 개수 제한
 	//-----------------------------------------------------------
 	// player의 소리는 제한할 필요가 없다.
-	//if (g_SoundPerSecond > g_pClientConfig->MAX_SOUND_PER_SECOND)
-	//{
-	//	__END_PROFILE("PlaySound2")
-		//return;
-	//}
 
 	//-----------------------------------------------------------
 	// 없으면 --> Load & Play
@@ -3572,7 +2531,6 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 		Basic::CopyBounded(strFilename, pFilename, sizeof(strFilename)-1);
 		strFilename[sizeof(strFilename)-1] = '\0';
  		LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
-		//LPDIRECTSOUNDBUFFER	pBuffer = g_pWavePackFileManager->LoadFromFileData(soundID);
 
 		//-----------------------------------------------------------
 		// Loading 실패
@@ -3605,12 +2563,8 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 			//-------------------------------------------------
 			// Force Feel
 			//-------------------------------------------------
-			//if (gpC_Imm!=NULL && gpC_Imm->IsDevice())
 			{
-			//	gpC_Imm->ForceSound( pFilename );
 			}
-
-			//reload++;
 		}
 	}
 	//-----------------------------------------------------------
@@ -3629,24 +2583,6 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 			g_SoundPerSecond++;
 		}
 
-
-		// Force Feel
-		//-------------------------------------------------
-		/*
-		const char* pFilename = (*g_pSoundTable)[soundID].Filename;
-
-		if (pFilename!=NULL)
-		{
-			char strFilename[256];
-			snprintf(strFilename, sizeof(strFilename), "%s", pFilename);
-			if (gpC_Imm!=NULL && gpC_Imm->IsDevice())
-			{
-				gpC_Imm->ForceSound( strFilename );
-			}
-		}
-		*/
-		
-		//reuse ++;
 	}	
 
 	__END_PROFILE("PlaySound2")
@@ -3670,11 +2606,6 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 	// 초당 소리낼 수 있는 개수 제한
 	//-----------------------------------------------------------
 	// player의 소리는 제한할 필요가 없다.
-	//if (g_SoundPerSecond > g_pClientConfig->MAX_SOUND_PER_SECOND)
-	//{
-	//	__END_PROFILE("PlaySound2")
-		//return;
-	//}
 
 	//-----------------------------------------------------------
 	// 없으면 --> Load & Play
@@ -3695,7 +2626,6 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 		Basic::CopyBounded(strFilename, pFilename, sizeof(strFilename)-1);
 		strFilename[sizeof(strFilename)-1] = '\0';
  		LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
-		//LPDIRECTSOUNDBUFFER	pBuffer = g_pWavePackFileManager->LoadFromFileData(soundID);
 
 		//-----------------------------------------------------------
 		// Loading 실패
@@ -3728,12 +2658,8 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 			//-------------------------------------------------
 			// Force Feel
 			//-------------------------------------------------
-			//if (gpC_Imm!=NULL && gpC_Imm->IsDevice())
 			{
-			//	gpC_Imm->ForceSound( pFilename );
 			}
-
-			//reload++;
 		}
 	}
 	//-----------------------------------------------------------
@@ -3752,24 +2678,6 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 			g_SoundPerSecond++;
 		}
 
-
-		// Force Feel
-		//-------------------------------------------------
-		/*
-		const char* pFilename = (*g_pSoundTable)[soundID].Filename;
-
-		if (pFilename!=NULL)
-		{
-			char strFilename[256];
-			snprintf(strFilename, sizeof(strFilename), "%s", pFilename);
-			if (gpC_Imm!=NULL && gpC_Imm->IsDevice())
-			{
-				gpC_Imm->ForceSound( strFilename );
-			}
-		}
-		*/
-		
-		//reuse ++;
 	}	
 
 	__END_PROFILE("PlaySound2")
@@ -3839,24 +2747,10 @@ PlayMusicCurrentZone()
 
 	if (g_Mode==MODE_GAME && g_pZone!=NULL && g_pUserOption->PlayMusic)
 	{
-		//int zondID = (g_bZonePlayerInLarge? g_nZoneLarge : g_nZoneSmall);
-
-		//ZONETABLE_INFO* pZoneInfo = (*g_pZoneTable).Get( zondID );
-
-		//if (pZoneInfo!=NULL)
 		{
-			//------------------------------------------
-			// 종족에 따라서 음악이 달라진다.
-			//------------------------------------------
-			//TYPE_MUSICID	newMusicID = 0;
-
-			//if (g_pPlayer!=NULL && g_pPlayer->IsSlayer())
 			{		
-			//	newMusicID = pZoneInfo->MusicIDSlayer;
 			}
-			//else
 			{
-			//	newMusicID = pZoneInfo->MusicIDVampire;
 			}
 
 			int musicID = newMusicID;
@@ -4032,118 +2926,11 @@ void
 UpdateInput()
 {
 	// Input Event
-	//g_pSDLInput->PollJoy();
-	//g_pSDLInput->PollKey();
-	//g_pSDLInput->PollMouse();    
 	if (g_pSDLInput!=NULL)
 	{
 		g_pSDLInput->UpdateInput();
 	}
-
-	//---------------------------------------------------
-	//
-	// mouse
-	//
-	//---------------------------------------------------		
-	/*
-	static int xSign = 0;
-	static int ySign = 0;
-	static int mouseStep = 1;
-	
-	// 부호 결정
-	int xSignNew = 0;
-	int ySignNew = 0;
-
-	if (g_pSDLInput->m_mouse_x)
-	{
-		xSignNew = (g_pSDLInput->m_mouse_xdata > 0)? 1: -1;
-	}
-
-	if (g_pSDLInput->m_mouse_y)
-	{
-		ySignNew = (g_pSDLInput->m_mouse_ydata > 0)? 1: -1;
-	}
-
-	//------------------------------------------------------
-	// 정지된 상태
-	//------------------------------------------------------
-	if (xSignNew==0 && ySignNew==0)
-	{		
-		mouseStep = 6;
-	}
-	//------------------------------------------------------
-	// 움직인 경우
-	//------------------------------------------------------
-	else
-	{
-		//------------------------------------------------------
-		// 같은 방향으로 이동하면..
-		//------------------------------------------------------
-		if (xSignNew==xSign && ySignNew==ySign)
-		{
-			// 최대 mouse 이동 pixel설정
-			if (abs(mouseStep) < 20)
-			{
-				mouseStep ++;
-			}
-		}
-		//------------------------------------------------------
-		// 다른 방향으로 이동하는 경우
-		//------------------------------------------------------
-		else
-		{
-			mouseStep = 6;			
-		}
-
-		xSign = xSignNew;
-		ySign = ySignNew;
-
-		// 커서를 움직여 준다.
-		int step = mouseStep >> 1;
-		if (g_pSDLInput->m_mouse_x) g_x += g_pSDLInput->m_mouse_xdata * (step? step : 1);
-		if (g_pSDLInput->m_mouse_y) g_y += g_pSDLInput->m_mouse_ydata * (step? step : 1);
-	}
-	*/
-
-	
-
-	//sprintf(g_pDebugMessage->GetCurrent(), "(%d, %d)", g_pSDLInput->m_mouse_xdata, g_pSDLInput->m_mouse_ydata);
-	//g_pDebugMessage->Next();
-	
-	
-	//if (g_pSDLInput->m_mouse_x) g_x += g_pSDLInput->m_mouse_xdata*3;
-	//if (g_pSDLInput->m_mouse_y) g_y += g_pSDLInput->m_mouse_ydata*3;	
-
-	// Cursor의 position을 얻어낸다.
-	/*
-	POINT point;
-	GetCursorPos(&point);
-	g_x = point.x;
-	g_y = point.y;
-
-
-	//-----------------------------------------------
-	// Mouse Cursor가 밖으로 나가지 않도록 한다.
-	//-----------------------------------------------
-	if (g_x<0) g_x=0;
-	else if (g_x>=SURFACE_WIDTH) g_x=SURFACE_WIDTH-1;
-	if (g_y<0) g_y=0;
-	else if (g_y>=SURFACE_HEIGHT) g_y=SURFACE_HEIGHT-1;
-	*/
-	// - -;;
-	//g_pSDLInput->SetMousePosition( g_x, g_y );
-
-	//-----------------------------------------------
-	// 새로 입력된 것을 CInputManager에 저장
-	//-----------------------------------------------
-	/*
-	g_InputManager.SetPosition( g_x, g_y );
-
-	if (g_pSDLInput->m_lbutton_down)	g_InputManager.SetLButtonDown();
-	if (g_pSDLInput->m_lbutton_up)	g_InputManager.SetLButtonUp();
-	if (g_pSDLInput->m_rbutton_down)	g_InputManager.SetRButtonDown();
-	if (g_pSDLInput->m_rbutton_up)	g_InputManager.SetRButtonUp();
-	*/}
+}
 
 //---------------------------------------------------------------------------
 // Update Mouse
@@ -4157,8 +2944,6 @@ UpdateMouse()
 	// add by svi
 	ScreenToClient(g_hWnd, &point);
 	// end
-//	RECT rc;
-//	GetWindowRect(g_hWnd, &rc);
 
 	// The game frame is letterbox-scaled into the window, so window-client
 	// coordinates must map back to game coordinates (SpriteLib backend).
@@ -4245,7 +3030,6 @@ UpdateDisconnected()
 	//--------------------------------------------------
 	if (g_pUserOption->PlayWaveMusic)
 	{
-//		g_pSDLStream->Stop();
 		DEBUG_ADD("MP3 STOP5");
 		if( g_SDLAudio.IsInit() )
 			g_pOGG->streamClose();
@@ -4276,18 +3060,6 @@ UpdateDisconnected()
 	// dialog들 다 닫기.
 	//------------------------------------------------------
 	gC_vs_ui.CloseOption();
-//	gC_vs_ui.CloseInfo();
-//	gC_vs_ui.CloseShop();
-	//UI_SetShop( NULL );
-	//gC_vs_ui.CloseSkillTree();
-	//gC_vs_ui.CloseGameMenu();
-	//gC_vs_ui.CloseUserRegistrationWindow();
-	
-//	DEBUG_ADD("UpdateDisconnected : ServerDisc");
-//	gC_vs_ui.ServerDisconnectMessage();
-//	DEBUG_ADD("UpdateDisconnected : ServerDisc OK");
-
-//	g_pUIDialog->CloseHelpDlg();
 	g_pUIDialog->CloseMessageDlg();
 	g_pUIDialog->ClosePCTalkDlg();
 
@@ -4340,43 +3112,7 @@ UpdateDisconnected()
 	//--------------------------------------------------
 	// 접속 끊겼다는 걸 먼저 한번 띄워준다.
 	//--------------------------------------------------
-//	if (true)
-//	{
-//		POINT point;
-//		if (false)  // CDirect3D::GetDevice()->BeginScene() removed (SDL2)
-//		{
-//			return;
-//		}
-//
-//		//gC_vs_ui.Show();
-//
-//		//-----------------------------------------------------------------
-//		// Disconnected dialog
-//		//-----------------------------------------------------------------
-//		g_pBack->Lock();
-//		
-//		point.x = 400 - (pSpriteDisconected->GetWidth()>>1);
-//		point.y = 300 - (pSpriteDisconected->GetHeight()>>1);
-//
-//		g_pBack->BltSprite( &point, pSpriteDisconected );
-//
-////		const int maskX = 116;
-////		const int maskY = 109;
-////		point.x = 400 - (pSpriteDisconected->GetWidth()>>1) + maskX;
-////		point.y = 300 - (pSpriteDisconected->GetHeight()>>1) + maskY;
-////		g_pBack->BltSprite( &point, pSpriteDisconectedMask );
-//
-//		g_pBack->Unlock();
-//
-//		//gC_vs_ui.MouseControl(M_MOVING, g_x, g_y);
-//		//gC_vs_ui.DrawMousePointer();
-//	
-//		// CDirect3D::GetDevice()->EndScene() removed (SDL2)
-
-//	}
-//	else
 	{
-		//gC_vs_ui.Show();
 		POINT point;
 
 		//-----------------------------------------------------------------
@@ -4389,16 +3125,7 @@ UpdateDisconnected()
 
 		g_pLast->BltSprite( &point, pSpriteDisconected );
 
-//		const int maskX = 116;
-//		const int maskY = 109;
-//		point.x = 400 - (pSpriteDisconected->GetWidth()>>1) + maskX;
-//		point.y = 300 - (pSpriteDisconected->GetHeight()>>1) + maskY;
-//		g_pBack->BltSprite( &point, pSpriteDisconectedMask );
-
 		g_pLast->Unlock();
-
-		//gC_vs_ui.MouseControl(M_MOVING, g_x, g_y);
-		//gC_vs_ui.DrawMousePointer();
 
 		//-----------------------------------------------------------------
 		// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
@@ -4415,11 +3142,6 @@ UpdateDisconnected()
 	DEBUG_ADD("UpdateDisconnected : Draw Disconnected Dialog Once OK");
 	
 	
-	//------------------------------------------------------
-	// Main 화면..
-	//------------------------------------------------------
-//	gC_vs_ui.StartTitle();
-	
 	DEBUG_ADD("UpdateDisconnected : UI Start Title OK");
 	
 	//------------------------------------------------------
@@ -4427,9 +3149,6 @@ UpdateDisconnected()
 	//------------------------------------------------------
 	[[maybe_unused]] extern bool	g_bTestMode;
 	if (g_bActiveGame
-#ifdef OUTPUT_DEBUG
-		|| g_bTestMode
-#endif
 		)
 	{
 		DEBUG_ADD("UpdateDisconnected : Wait For Press Key");
@@ -4450,7 +3169,6 @@ UpdateDisconnected()
 			{	
 				if (!GetMessage(&msg, NULL, 0, 0))
 					break;
-					//return msg.wParam;
 
 				if (msg.message!=WM_KEYDOWN 
 					&& msg.message!=WM_CHAR 
@@ -4517,58 +3235,6 @@ UpdateDisconnected()
 			}
 		
 
-//			if (true)
-//			{
-//				if (false)  // CDirect3D::GetDevice()->BeginScene() removed (SDL2)
-//				{
-//					return;
-//				}
-//
-//				gC_vs_ui.Show();
-//
-//				//-----------------------------------------------------------------
-//				// Disconnected dialog
-//				//-----------------------------------------------------------------
-//				g_pBack->Lock();
-//				
-//				point.x = 400 - (pSpriteDisconected->GetWidth()>>1);
-//				point.y = 300 - (pSpriteDisconected->GetHeight()>>1);
-//
-//				g_pBack->BltSprite( &point, pSpriteDisconected );
-//
-//				if (bClickFocused)
-//				{
-//					if (g_x > rectClose.left && g_x < rectClose.right
-//						&& g_y > rectClose.top && g_y < rectClose.bottom)
-//					{
-//						point.x = 400 - (pSpriteDisconected->GetWidth()>>1) + closeX;
-//						point.y = 300 - (pSpriteDisconected->GetHeight()>>1) + closeY;
-//
-//						g_pBack->BltSprite( &point, pSpriteDisconectedCloseFocused );
-//					}
-//				}
-//
-//				if (bClickClose)
-//				{
-//					if (g_x > rectClose.left && g_x < rectClose.right
-//						&& g_y > rectClose.top && g_y < rectClose.bottom)
-//					{
-//						point.x = 400 - (pSpriteDisconected->GetWidth()>>1) + closeX;
-//						point.y = 300 - (pSpriteDisconected->GetHeight()>>1) + closeY;
-//
-//						g_pBack->BltSprite( &point, pSpriteDisconectedClosePushed );
-//					}
-//				}
-//
-//				g_pBack->Unlock();
-//
-//				gC_vs_ui.MouseControl(M_MOVING, g_x, g_y);
-//				gC_vs_ui.DrawMousePointer();
-//			
-//				// CDirect3D::GetDevice()->EndScene() removed (SDL2)
-
-//			}
-//			else
 			{
 				gC_vs_ui.Show();
 
@@ -4643,22 +3309,6 @@ UpdateDisconnected()
 	{
 		DEBUG_ADD("UpdateDisconnected : Now ALT+TAB Mode");
 		
-//		if (true)
-//		{
-//			if (false)  // CDirect3D::GetDevice()->BeginScene() removed (SDL2)
-//			{
-//				return;
-//			}
-//
-//			gC_vs_ui.Show();	
-//
-//			gC_vs_ui.MouseControl(M_MOVING, g_x, g_y);
-//			gC_vs_ui.DrawMousePointer();
-//		
-//			// CDirect3D::GetDevice()->EndScene() removed (SDL2)
-
-//		}
-//		else
 		{
 			POINT point;
 			
@@ -4685,39 +3335,6 @@ UpdateDisconnected()
 	}
 
 	DEBUG_ADD("UpdateDisconnected : OK");
-	
-	/*
-	//InitFail("Server가 응답하지 않습니다.");
-	//InitFail("Server와의 접속이 끊어졌습니다.");
-	// g_pBack->GDI_Text(101,201, "Server가 응답하지 않습니다.", RGB(0,0,0));
-	TextSystem::TextService::RenderText(g_pLast, 101, 201, "Server가 응답하지 않습니다.");
-	// g_pBack->GDI_Text(100,200, "Server가 응답하지 않습니다.", RGB(220,220,220));
-	TextSystem::TextService::RenderText(g_pLast, 100, 200, "Server가 응답하지 않습니다.");
-
-	// g_pBack->GDI_Text(101,221, "[ESC]를 누르세요.", RGB(0,0,0));
-	TextSystem::TextService::RenderText(g_pLast, 101, 221, "[ESC]를 누르세요.");
-	// g_pBack->GDI_Text(100,220, "[ESC]를 누르세요.", RGB(220,220,220));
-	TextSystem::TextService::RenderText(g_pLast, 100, 220, "[ESC]를 누르세요.");
-
-	CSDLGraphics::Flip();
-
-	// return을 누를 때까지...
-	while (1)
-	{
-		UpdateInput();
-		
-		if (g_pSDLInput->KeyDown(DIK_ESCAPE))
-		{
-			break;
-		}
-	}
-
-	// Title화면 UI시작
-	//gC_vs_ui.StartTitle();
-
-	//g_pBack->GDI_Text(101,201, "잠시 기다려 주세요.", RGB(0,0,0));
-	//g_pBack->GDI_Text(100,200, "잠시 기다려 주세요.", RGB(220,220,220));
-	*/
 }
 
 // ok를 누른 뒤 실행되는 것.
@@ -4814,7 +3431,6 @@ SaveLastSelectedCharacter(int slot)
 		}		
 
 		// 항상 저장하게 하자..
-		//if (oldSlot != slot || bNewPlayer)
 		{
 			pConfig->SetLastSlot( slot );		
 
