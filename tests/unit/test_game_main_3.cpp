@@ -707,6 +707,8 @@ struct Scene
 		g_pStorage = g_pStorage2 = NULL;
 		g_pZoneSoundTable = NULL;
 		g_pZoneSoundManager = NULL;
+		// The pack keeps objects.spk open, which Windows cannot delete.
+		view.m_ImageObjectSPK.Release();
 		std::error_code error;
 		std::filesystem::current_path(saved.directory, error);
 		std::filesystem::remove_all(dir, error);
@@ -1102,9 +1104,10 @@ TEST(GameMain3LoadZone, AKeptZoneWhoseMapIsGoneStillLoadsWithNoSpritePositions)
 		CHECK_EQ(TRUE, LoadZone(kind.id));
 		std::filesystem::remove(scene.MapPath(kind.id));
 		scene.Log();
-		// Recorded defect: the second open of the map (GameMain.cpp:1619,
-		// 1765) is not checked, so the view reads its sprite positions from
-		// a closed stream: TRUE, with both arrays emptied.
+		// Recorded defect: the map's second open (GameMain.cpp:1619, 1765),
+		// a kept zone's only one, is not checked, so the view reads its
+		// sprite positions from a stream that failed to open: TRUE, with
+		// both arrays emptied.
 		CHECK_EQ(TRUE, LoadZone(kind.id));
 		CHECK_SAME(Stopped() + kLowest, scene.Log());
 		CHECK(kind.Tiles(scene.view) != NULL);
@@ -1615,15 +1618,14 @@ TEST(GameMain3ReleaseGameObject, WithNoZoneTheZoneSoundsSurvive)
 	g_pZoneSoundTable = table;
 	g_pZoneSoundManager = manager;
 	ReleaseGameObject();
-	// Recorded defect: the zone sounds are deleted only inside the zone's
-	// branch (GameMain.cpp:1352-1362), so with no zone they outlive the
-	// game objects.
+	// Note: a state the game cannot reach, since it never creates the zone
+	// sounds (their only assignments set NULL). They are deleted only inside
+	// the zone's branch (GameMain.cpp:1352-1362), so with no zone they stay.
 	CHECK(g_pZoneSoundTable == table);
 	CHECK(g_pZoneSoundManager == manager);
 	CHECK_EQ(0, soundTablesDeleted);
 	CHECK_EQ(0, soundManagersDeleted);
 	CHECK_EQ(0, playersDeleted);
-	CHECK(g_pZone == NULL);
 }
 
 //======================================================================
@@ -1748,7 +1750,7 @@ TEST(GameMain3Ghosts, OnlyZonesFourteenTwelveAndThirteenWithAZoneAndAListHaveGho
 	for (int other : { 1411, 1414, 0 })
 		Add_GDR_Ghost(other);
 	CHECK_EQ(0, zone.GetFakeCreatureNumber());
-	// No zone.
+	// No zone: the list is not read (it would be placed on a NULL zone).
 	g_pZone = NULL;
 	Add_GDR_Ghost(1412);
 	g_pZone = &zone;

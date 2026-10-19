@@ -816,6 +816,8 @@ struct Scene : GameModelWorld
 		g_pClientConfig->MAX_WAIT_PACKET = int(kMaxWait);
 		g_Music = MMusic();
 		g_Music.Init(NULL);
+		// Down: StopSound returns at once, the NULL g_pOGG is never touched.
+		CHECK(!g_SDLAudio.IsInit());
 		g_SDLAudio.UnSetMute();
 		temp.SetMode(TempInformation::MODE_SKILL_LEARN);
 		g_pTempInformation = &temp;
@@ -1079,12 +1081,12 @@ TEST(GameMain2SetMode, TheWaitsOnTheUIRunTheUILoopEvery20Ms)
 		Scene scene;
 		CHECK_SAME(kUiWait, scene.Enter(c.mode));
 		CHECK_EQ(int(c.mode), int(g_Mode));
-		CHECK_EQ(DELAY_UPDATE_LOGIN, g_UpdateDelay);
+		CHECK_EQ(20, g_UpdateDelay);
 		CHECK(g_pUpdate == &scene.waitUI);
 		CHECK(scene.Settled());
 		CHECK_EQ(c.dropsConnection ? FALSE : TRUE, g_pUserInformation->KeepConnection);
-		// The character window: the last character is looked up (the table
-		// made for it) and the morph is forgotten.
+		// The character window: the last character's table is made (with no
+		// server information nothing is looked up) and the morph is forgotten.
 		CHECK_EQ(c.choosesCharacter, g_pWorldPlayerConfigTable != NULL);
 		CHECK_EQ(c.choosesCharacter ? 0 : 5, g_MorphCreatureType);
 		delete g_pWorldPlayerConfigTable;
@@ -1103,7 +1105,7 @@ TEST(GameMain2SetMode, AWrongLoginIsTheMainMenuWithoutTheTitleOrTheConnection)
 	Scene scene;
 	CHECK_SAME("release socket;" + kUiWait, scene.Enter(MODE_LOGIN_WRONG));
 	CHECK_EQ(int(MODE_MAINMENU), int(g_Mode));
-	CHECK_EQ(DELAY_UPDATE_LOGIN, g_UpdateDelay);
+	CHECK_EQ(20, g_UpdateDelay);
 	CHECK(g_pUpdate == &scene.waitUI);
 	CHECK(scene.Settled());
 	// Not the main menu's work: no title, the logs and the music kept.
@@ -1122,7 +1124,7 @@ TEST(GameMain2SetMode, TheWaitsOnTheServerRunThePacketLoopEvery50MsAndGiveUpAfte
 		// The limit is set from the stamp, then the loop starts.
 		CHECK_SAME(kPacketWait, scene.Enter(mode));
 		CHECK_EQ(int(mode), int(g_Mode));
-		CHECK_EQ(DELAY_UPDATE_WAITING, g_UpdateDelay);
+		CHECK_EQ(50, g_UpdateDelay);
 		CHECK(g_pUpdate == &scene.waitPacket);
 		CHECK(scene.waitPacket.m_DelayLimit == kStamp + MonotonicClock::Millis(kMaxWait));
 		CHECK(scene.Settled());
@@ -1265,7 +1267,7 @@ TEST(GameMain2SetPosition, ThePlayerStopsTheOptionsAreSavedAndTheServerIsToldWeA
 	CHECK(scene.connection.Sent() == Encoded({&ready}));
 	CHECK_EQ(int(CPS_WAITING_FOR_GC_SET_POSITION), int(scene.connection.getPlayerStatus()));
 	CHECK_EQ(int(MODE_WAIT_SETPOSITION), int(g_Mode));
-	CHECK_EQ(DELAY_UPDATE_WAITING, g_UpdateDelay);
+	CHECK_EQ(50, g_UpdateDelay);
 	CHECK(g_pUpdate == &scene.waitPacket);
 	CHECK(scene.waitPacket.m_DelayLimit == kStamp + MonotonicClock::Millis(kMaxWait));
 	CHECK(scene.Settled());
@@ -1275,7 +1277,8 @@ TEST(GameMain2SetPosition, ThePlayerStopsTheOptionsAreSavedAndTheServerIsToldWeA
 	{
 		std::ifstream saved(kOptionFile, std::ios::binary);
 		const std::string text((std::istreambuf_iterator<char>(saved)), std::istreambuf_iterator<char>());
-		CHECK(text.find("\n13\tVolumeMusic\n") != std::string::npos);
+		// Written in text mode: the line ends "\r\n" on Windows.
+		CHECK(text.find("\n13\tVolumeMusic") != std::string::npos);
 	}
 	// The help key's message, the first time only.
 	CHECK_SAME("system;" + std::string(kHelpKey) + ";player;game;notice;", scene.Logs());
@@ -1370,7 +1373,7 @@ TEST(GameMain2MainMenu, TheMainMenuStartsTheTitleAndForgetsTheGame)
 	scene.dialog.OpenTalk();
 	CHECK_SAME("sound;hide talk;" + kTitle + kUiWait, scene.Enter(MODE_MAINMENU));
 	CHECK_EQ(int(MODE_MAINMENU), int(g_Mode));
-	CHECK_EQ(DELAY_UPDATE_LOGIN, g_UpdateDelay);
+	CHECK_EQ(20, g_UpdateDelay);
 	CHECK(g_pUpdate == &scene.waitUI);
 	CHECK(scene.Settled());
 	CHECK(gC_vs_ui.IsRunningTitle());

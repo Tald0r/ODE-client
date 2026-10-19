@@ -666,6 +666,9 @@ TEST(GameMain1PlaySound, NothingWithoutAudio)
 	Sounds world(false);
 	CHECK(!g_SDLAudio.IsInit());
 	world.Wav(1);
+	// No table: LoadWav fails without audio anyway, so only the audio check
+	// keeps the table from being read.
+	g_pSoundTable = NULL;
 	PlayAt(1, 0, 0, true);
 	CHECK(world.cache.Held(1) == nullptr);
 	CHECK_EQ(0, g_SoundPerSecond);
@@ -841,6 +844,7 @@ TEST(GameMain1PlayAtPlayer, NeitherPlaysWithoutAudioPastTheTableOrWithoutAFile)
 		{
 			Sounds world(false);
 			world.Wav(1);
+			g_pSoundTable = NULL;	// as in NothingWithoutAudio
 			each.play(1);
 			CHECK(world.cache.Held(1) == nullptr);
 			CHECK_EQ(0, g_SoundPerSecond);
@@ -968,9 +972,9 @@ const int kPlainZone = 60, kHolyZone = 1500, kOctavusZone = 1201;
 // written; no war, no event, no audio, no OGG stream.
 struct Music
 {
+	TempDir dir;	// first: removed after Saved closes g_oggfile (Windows keeps an open file)
 	Saved saved;
 	Audio quiet{false};	// down: the wave music then only closes its file
-	TempDir dir;
 	MEventQueue events;
 	CZoneTable zones;
 	MUSIC_TABLE music;
@@ -1111,6 +1115,10 @@ struct WaveMusic : Music
 	// streaming.
 	bool Plays(int id)
 	{
+		// The last track's file closed (its stream holds a copy), or Windows
+		// could not delete it and a replay of it would pass.
+		if (g_oggfile != NULL) std::fclose(g_oggfile);
+		g_oggfile = NULL;
 		Only(id);
 		PlayMusicCurrentZone();
 		return g_oggfile != NULL && dxlib_music_is_playing() != 0 && MidiIdle();
