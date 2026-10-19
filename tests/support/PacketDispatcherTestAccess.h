@@ -34,6 +34,16 @@ struct PacketDispatcherTestAccess
 		s_Kept = s_Kept || !empty;
 	}
 
+	// Whether a fill has been kept: the registry has run in the process.
+	static bool Kept() { return s_Kept; }
+
+	static bool Empty()
+	{
+		for (PacketID_t id = 0; id < Packet::PACKET_MAX; ++id)
+			if (PacketDispatcher::s_Handlers[id] != 0) return false;
+		return true;
+	}
+
 private:
 	static inline bool s_Kept = false;
 	static inline PacketDispatcher::HandlerFn s_Registry[Packet::PACKET_MAX] = {};

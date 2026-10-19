@@ -85,6 +85,7 @@
 #include "ModifyStatusManager.h"
 #include "MPriceManager.h"
 #include "MItem.h"
+#include "PacketFunction.h"
 // The hosts InitGameObject installs.
 #include "MEffectTarget.h"
 #include "MEffect.h"
@@ -208,6 +209,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <regex>
@@ -271,14 +273,18 @@ extern int g_Dimension;			// ClientMode.cpp's, declared in Client_PCH.h
 //   INADDR_NONE for a name starting with a digit, which each platform
 //   refuses differently): it would end the attempt without moving the
 //   count.
-// - Whether InitSocket binds the packet handlers: the registry fills the
-//   table only the first time it runs in the process, which may have been
-//   another test's (PacketDispatcherTestAccess::KeepRegistry).
+// - Whether InitSocket binds the packet handlers when the registry has
+//   run before: it fills the table only the first time it runs in the
+//   process, which may have been another test's
+//   (PacketDispatcherTestAccess::KeepRegistry). The first InitSocket of the
+//   process is checked (Scene::Init).
 // - The frees of objects whose class has no virtual destructor (most
 //   tables, the managers, the surfaces, the zones, the view): deleting a
 //   counting subclass through them would be undefined, so only their
 //   reset is pinned; CSDLGraphics::ReleaseAll, which has no window to
-//   destroy here; the audio's release with the audio down.
+//   destroy here; the audio's release with the audio down. The OGG
+//   streamer's streamClose and the view's Release before each is deleted
+//   (their destructors call them again).
 // - A name that resolves (GameInit.cpp:1213-1221): the second defect below.
 //
 // Recorded defects:
@@ -864,12 +870,16 @@ struct Scene : GameModelWorld
 		return text;
 	}
 
-	// InitSocket on a clear dispatch table, cleared again after.
+	// InitSocket on a clear dispatch table, cleared again after. The
+	// first to connect in the process (no fill kept yet) binds the packet
+	// handlers.
 	BOOL Init()
 	{
 		calls.clear();
+		const bool first = !PacketDispatcherTestAccess::Kept();
 		PacketDispatcherTestAccess::Clear();
 		const BOOL result = InitSocket();
+		if (first && result) CHECK(!PacketDispatcherTestAccess::Empty());
 		PacketDispatcherTestAccess::KeepRegistry();
 		PacketDispatcherTestAccess::Clear();
 		return result;
@@ -1467,6 +1477,20 @@ struct PlayerProbe : MPlayer
 	~PlayerProbe() override { Call(std::string("~player") + (g_pZone != NULL && g_pZone->GetCreature(kPlayerID) != NULL ? "(in the zone)" : "")); }
 };
 
+// The sound cache, which says when its parts are released.
+struct SoundParts : Counted<CSoundPartManager>
+{
+	using Counted<CSoundPartManager>::Counted;
+	void OnReleaseData(LPDIRECTSOUNDBUFFER& buffer) override { Call(std::string(name) + ".parts"); CSoundPartManager::OnReleaseData(buffer); }
+};
+
+// One of the packets' items.
+struct PacketItem : MItem
+{
+	ITEM_CLASS GetItemClass() const override { return ITEM_CLASS_OUSTERS_COAT; }
+	~PacketItem() override { Call("~packet item"); }
+};
+
 // The event queue's removal of an event resets the gamma.
 const MEventHost eventHost = []() {
 	MEventHost host{};
@@ -1545,7 +1569,11 @@ TEST(GameInit2ReleaseAllObjects, EverythingIsFreedInItsOrderAndReset)
 	g_pVampireGear = new Counted<MVampireGear>("vampire gear");
 	g_pOustersGear = new Counted<MOustersGear>("ousters gear");
 	g_pInventory = new Counted<MInventory>("inventory");
-	g_pSoundManager = new Counted<CSoundPartManager>("sounds");
+	SoundParts* pSounds = new SoundParts("sounds");
+	pSounds->Init(1, 1);
+	g_pSoundManager = pSounds;
+	MItem* const packetItem = g_pPacketItemOustersCoat[0];
+	g_pPacketItemOustersCoat[0] = new PacketItem;
 	g_pNPCScriptTable = new Released<MNPCScriptTable>("npc scripts");
 	g_pServerInformation = new Released<CServerInformation>("servers");
 	g_pQuestInfoManager = new Released<MQuestInfoManager>("quests");
@@ -1561,9 +1589,11 @@ TEST(GameInit2ReleaseAllObjects, EverythingIsFreedInItsOrderAndReset)
 
 	ReleaseAllObjects();
 	CHECK_SAME(std::string(
-		// The title, the loops, the inventory's effects, the player (out of
-		// the zone first) and the zone's sounds.
-		"~title;~game loop;~packet wait;~ui wait;~inventory effects;~player;~zone sounds;~zone sound nodes;"
+		// The title, the loops, the packets' items, the inventory's
+		// effects, the player (out of the zone first), the zone's sounds
+		// and the sound cache's parts.
+		"~title;~game loop;~packet wait;~ui wait;~packet item;~inventory effects;~player;~zone sounds;~zone sound nodes;"
+		"sounds.parts;"
 		// The connection.
 		"disconnect(undisconnected);~connection;~socket;~factory;~peer;"
 		// The tables released (the zone sounds' Release is never reached:
@@ -1574,6 +1604,8 @@ TEST(GameInit2ReleaseAllObjects, EverythingIsFreedInItsOrderAndReset)
 		"~slayer gear;~vampire gear;~ousters gear;~inventory;~accelerators;~status reactions;~pc talk;~npc talk;"),
 		calls);
 	CHECK_SAME(std::string(""), StillHeld());
+	CHECK(g_pPacketItemOustersCoat[0] == NULL);
+	g_pPacketItemOustersCoat[0] = packetItem;
 	CHECK_EQ(FALSE, g_bActiveGame);
 	CHECK(!MoveTables::Ready());
 }
@@ -1608,6 +1640,25 @@ TEST(GameInit2ReleaseAllObjects, EightyOfTheEightyFourHostsAreReset)
 	// in one process (a test, a relaunch) would call through them.
 	CHECK_SAME(std::string("Wire,MPriceManager,DXInput,SetGameMainHost"), kept);
 	CHECK_SAME(std::string(""), calls);
+}
+
+TEST(GameInit2ReleaseAllObjects, AWaveStreamsFileIsClosedWithIt)
+{
+	// What was written to it and not flushed is on disk once it is closed.
+	Teardown teardown;
+	TempDir dir;
+	const std::string path = dir.Write("music.ogg", "");
+	std::FILE* pFile = Basic::OpenFile(path.c_str(), "wb");
+	CHECK(pFile != NULL);
+	if (pFile == NULL) return;
+	CHECK(std::fputs("ogg", pFile) >= 0);
+	g_pOGG = new COGGSTREAM(NULL, NULL, 0, 0, 0, 0);
+	g_oggfile = pFile;
+	ReleaseAllObjects();
+	CHECK(g_pOGG == NULL && g_oggfile == NULL);
+	std::ifstream in(path, std::ios::binary);
+	const std::string written((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+	CHECK_SAME(std::string("ogg"), written);
 }
 
 TEST(GameInit2ReleaseAllObjects, AWaveFileIsClosedOnlyWithItsStream)
