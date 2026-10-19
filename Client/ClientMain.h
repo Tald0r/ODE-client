@@ -132,8 +132,8 @@ bool	GetFutecAddress(const char* pStr);
 struct REALSERVER_INFO
 {
 	REALSERVER_INFO() { bMode = false;WorldID = 0;}
-	bool bMode;		// 0: 수동접속, 1:정상접속
-	int WorldID;	// 0: 브란, 1: 펠레스
+	bool bMode;		// 0: manual connection, 1: normal connection
+	int WorldID;	// 0: Bran, 1: Peles
 	MString ID;		// id
 	MString Key;	// Key
 };

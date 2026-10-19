@@ -161,7 +161,7 @@ int g_WindowScale = 1;
 // define function
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------
-// Get Futec Address [Futec수정]
+// Get Futec Address [Futec change]
 //-----------------------------------------------------------------------
 // DarkEden.exe Futec(IP:Port)
 //              01234567890123
@@ -240,7 +240,7 @@ ParsingRealServer(const char* pCommandLine, int Dimention, REALSERVER_INFO &info
 //-----------------------------------------------------------------------------
 HRESULT InitFailMessage(const char* message)
 {
-	// 프로그램 중단..
+	// Stop the program..
 	g_bActiveApp = FALSE;
 
 	ShowCursor( TRUE );
@@ -263,7 +263,7 @@ bool g_bUseProgressBar = true;
 HWND g_hWndProgress = NULL;
 const int progressBarWidth = 300;
 const int progressBarHeight = 40;
-const int g_numAppendFiles = 16;		// AppendPatch.inf의 file들 개수
+const int g_numAppendFiles = 16;		// the number of files in AppendPatch.inf
 
 void
 RemoveProgressBar()
@@ -606,7 +606,7 @@ InitApp(int nCmdShow)
 	DWORD style = 0;
 	DWORD exStyle = 0;
 
-// 2004, 8, 27, sobeit add start - mac address 체크 및, mac screen mode 체크
+// 2004, 8, 27, sobeit add start - the mac address check, and the mac screen mode check
 	memset( g_macAddress, 0, 6*sizeof(BYTE) );
 	if(GetMacAddressFromNetBIOS(g_macAddress))
 	{
@@ -615,7 +615,7 @@ InitApp(int nCmdShow)
 #endif
 	}
 
-// 2004, 8, 27, sobeit add end - mac address 체크 및, mac screen mode 체크
+// 2004, 8, 27, sobeit add end - the mac address check, and the mac screen mode check
 	if (g_bFullScreen)
 	{
 		// Borderless fullscreen, deliberately NOT topmost: a WS_EX_TOPMOST
@@ -666,11 +666,11 @@ InitApp(int nCmdShow)
 
 // REMOVED: nProtect anti-cheat code (SDL migration - no longer needed)
 
-	// cursor를 없애준다.
+	// Hide the cursor.
 	SetCursor(NULL);
 	ShowCursor( FALSE );
 
-	// window를 보여준다.
+	// Show the window.
 	ShowWindow(g_hWnd, nCmdShow);
     UpdateWindow(g_hWnd);
     SetFocus(g_hWnd);	
@@ -704,7 +704,7 @@ CheckTerriblePatch()
 	fileAppendInfo.close();
 
 	//-----------------------------------------------------------------------------
-	// Append 패치를 한다.
+	// Apply the append patches.
 	//-----------------------------------------------------------------------------
 	for (int i=0; i<apt.GetSize(); i++)
 	{
@@ -1079,7 +1079,7 @@ void FinishClient(HANDLE hMutex, const char* lpCmdLine)
 	ReleaseMutex( hMutex );
 
 	//----------------------------------------------------------------
-	// Updater를 실행시킨다.
+	// Run the updater.
 	//----------------------------------------------------------------
 	if (g_bNeedUpdate)
 	{
@@ -1118,7 +1118,7 @@ bool RunClientFrame()
 			{
 				if (g_pUpdate!=NULL)
 				{
-					// 노파심.. 으흠.. --;;
+					// Just in case.. ahem.. --;;
 					CWinUpdate*	pCurrentUpdate = g_pUpdate;
 
 					pCurrentUpdate->Update();
@@ -1132,7 +1132,7 @@ bool RunClientFrame()
 				{
 					g_FrameRate = (g_FrameCount - g_StartFrameCount) * 1000 / timeGap;
 
-					// 15 fps 이상
+					// 15 fps or more
 					g_bGoodFPS = (g_FrameRate >= g_FrameGood);
 
 					g_StartTime = g_FrameNow;
@@ -1354,7 +1354,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 #endif
 	
 	//-----------------------------------------------------------------------
-	// Client 시작..
+	// The client starts..
 	//-----------------------------------------------------------------------
 	g_bNeedUpdate = FALSE;
 	// Upstream configured the CRT debug heap here (#ifdef _DEBUG):
@@ -1380,7 +1380,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	g_pFileDef = new Properties;
 	g_pFileDef->load(FILE_INFO_FILEDEF);
 
-	// 넷마블용
+	// For Netmarble
 	bool bNetmarble = false;
 	Properties NetmarbleConfig;
 
@@ -1423,9 +1423,9 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	g_bHAL			= true;
 	g_bMusicSW		= true;
 
-	// [Futec수정]
+	// [Futec change]
 	GetFutecAddress(lpCmdLine);
-//add by sonic 2006.4.10 判断程序启动模式
+//add by sonic 2006.4.10 decide the start-up mode
 	if ( cmpFullScreen )
 		{
 			g_bFullScreen = true;
@@ -1445,15 +1445,15 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	}
 
 	//----------------------------------------------------------------
-	// Updater.exe를 update 시킨다.
+	// Update Updater.exe.
 	//----------------------------------------------------------------
-	// 새로운 updater실행화일이 존재하면..
+	// If a new updater executable exists..
 	if (!_access(UPDATER_NEW_FILENAME, 0))//updaterNewFile)
 	{	
-		// 예전 updater를 지우고..
+		// delete the old updater..
 		if (remove( UPDATER_FILENAME )==0)
 		{
-			// 새것을 예전걸로 rename
+			// and rename the new one to the old name
 			if (rename( UPDATER_NEW_FILENAME, UPDATER_FILENAME )==0)
 			{
 				DEBUG_ADD("Update Updater.exe OK"); 
@@ -1462,13 +1462,13 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	}	
 
 	//---------------------------------------------------
-	// Update 디렉토리를 지워준다.
+	// Remove the Update directory.
 	//---------------------------------------------------
-	// updater에서 지워야 하는데..빼먹는 바람에.. T_T;;
+	// The updater should remove it.. but it forgot to.. T_T;;
 	//---------------------------------------------------
 	char CWD[_MAX_PATH];
 
-	// 현재 path읽기
+	// Read the current path
 	if (_getcwd( CWD, _MAX_PATH )!=NULL)
 	{	
 		// Empty unless built below. The directory is the Windows updater's
@@ -1494,7 +1494,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		
 		if (_rmdir( UpdateDir )!=0)
 		{			
-			// PATH가 잘못된 경우
+			// The path is wrong
 			if (errno==ENOENT)
 			{				
 			}
@@ -1549,7 +1549,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 
 					if (_rmdir( UpdateDir )==0)
 					{
-						// 잘 지워졌다.
+						// Removed.
 					}
 				}				
 			}
@@ -1625,7 +1625,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 			g_pUserInformation->SetJapanese();
 
 		//------------------------------
-		// 초기화 되지 않았으면 초기화한다.
+		// Initialise it if it is not initialised.
 		//------------------------------
 		if (!g_pTopView->IsInit() && !g_pTopView->Init())
 		{
@@ -1650,7 +1650,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	// Borderless presentation leaves the desktop display mode unchanged.
 	//end
 	//-----------------------------------------------------------------------------
-	// 모든 object들 제거
+	// Remove every object
 	//-----------------------------------------------------------------------------	
 release_objects:
 	FinishClient(hMutex, lpCmdLine);
