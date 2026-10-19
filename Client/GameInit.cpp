@@ -168,7 +168,6 @@
 #include "RequestUserManager.h"
 #include "MJusticeAttackManager.h"
 #include "Profiler.h"
-//#include "MFileDef.h"
 #include "MGuildInfoMapper.h"
 #include "PCConfigTable.h"
 #include "MAttachOrbitEffect.h"
@@ -203,8 +202,6 @@ extern DWORD g_dwSeqNumL;
 extern DWORD g_dwSeqNumG;
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
-//#include "CJpeg.h"
-//#define	new			DEBUG_NEW
 
 // ToT SafeDelete 도 없고..ToT 2003.5.11 by sonee
 
@@ -214,23 +211,15 @@ extern int					g_Dimension ;
 //----------------------------------------------------------------------
 // Title Loading - 2001.8.20 우헤헤 자꾸 늘어나는 global - -;;
 //----------------------------------------------------------------------
-//CSpritePack		g_TitleSPK;
-//CSpritePack		g_TitleAniSPK;
-//int				g_TitleSpriteID = 0;
-//int				g_TitleSpriteDarkness = 4;
 bool			g_bTitleLoading = false;
 CSprite*		g_pTitleLoadingSprite = NULL;
 // g_TitleSpriteAlpha is ClientMode.cpp's (gamemodel) since task 4.255.
-//CDirectDrawSurface	g_TitleSurface;
 
 
 // [Futec수정]
 extern char g_FutecIP[20];
 extern unsigned int g_FutecPort;
 
-#ifdef OUTPUT_DEBUG
-	extern CRITICAL_SECTION		g_Lock;
-#endif
 
 //----------------------------------------------------------------------
 // AddonSPK 분할 로딩 - 2001.8.20
@@ -256,7 +245,6 @@ extern bool CheckInvalidProcess();
 extern void ClearDebugInfo();
 
 extern int  g_nGameVersion;
-//#define	CLIENT_VERSION		"[TestVersion] : 2000.12.05.09"
 //---------------------------------------------------------------------------
 // Start TitleLoading
 //---------------------------------------------------------------------------
@@ -265,96 +253,8 @@ extern int  g_nGameVersion;
 void
 StartTitleLoading()
 {
-//	std::ifstream	titleFile;//(FILE_SSPRITE_IMAGEOBJECT, ios::binary);
-//	if (!FileOpenBinary("data\\ui\\spk\\Title.spk", titleFile))
-//		return;
-//
-//	g_TitleSPK.LoadFromFile(titleFile);
-//	titleFile.close();
-//
-//	std::ifstream	titleAniFile;//(FILE_SSPRITE_IMAGEOBJECT, ios::binary);
-//	if (!FileOpenBinary("data\\ui\\spk\\TitleAni.spk", titleAniFile))
-//		return;
-//
-//	g_TitleAniSPK.LoadFromFile(titleAniFile);
-//	titleAniFile.close();
-//	
-//
-//	g_TitleSpriteID = 0;
-//	g_TitleSpriteDarkness = 4;
 	g_bTitleLoading = true;
 
-//	CJpeg jpg;
-//	bool bOpen = jpg.Open(g_pFileDef->getProperty("FILE_JPG_SOFTON_CI").c_str());
-//	if(bOpen == true && jpg.GetWidth() > 0 && jpg.GetHeight() > 0 && jpg.GetHeight() > 0)
-//	{
-//		g_bTitleLoading = true;
-//		CDirectDrawSurface &surface = g_TitleSurface;
-//		const int bpp = jpg.GetBpp(), width = jpg.GetWidth(), height = jpg.GetHeight(), pitch = width*bpp;
-//
-//		if (surface.InitOffsurface(width, height, DDSCAPS_SYSTEMMEMORY))
-//		{
-//			if (surface.Lock())
-//			{
-//				WORD *pSurface = (WORD *)surface.GetSurfacePointer();
-//				unsigned char *pData = jpg.GetImage(), *pDataTemp;
-//				WORD *pSurfaceTemp;
-//				
-//				int surfacePitch = surface.GetSurfacePitch();
-//				
-//				if (pSurface)
-//				{
-//					if (bpp == 1)
-//					{
-//						for (register int y = 0; y < height; y++)
-//						{
-//							pDataTemp = pData;
-//							pSurfaceTemp = pSurface;								
-//							
-//							for (register int x = 0; x < width; x++)
-//							{
-//								BYTE temp_data = *pDataTemp++;	//p_data[y*(pitch)+x];
-//								BYTE r = temp_data>>3;
-//								BYTE g = r;
-//								BYTE b = r;
-//								
-//								*pSurfaceTemp++ = CSDLGraphics::Color(r, g, b);
-//							}
-//							
-//							pData = pData + pitch;
-//							pSurface = (WORD*)((BYTE*)pSurface + surfacePitch);
-//						}
-//					}
-//					else if (bpp == 3)
-//					{
-//						for (register int y = 0; y < height; y++)
-//						{
-//							pDataTemp = pData;
-//							pSurfaceTemp = pSurface;	
-//							
-//							for (register int x = 0; x < width; x++)
-//							{
-//								//char *temp_data = &p_data[y*pitch+x*bpp];
-//								BYTE r = *(pDataTemp+2) >> 3;		//temp_data[2]>>3;
-//								BYTE g = *(pDataTemp+1) >> 3;	//temp_data[1]>>3;
-//								BYTE b = *pDataTemp >> 3;	//temp_data[0]>>3;
-//								
-//								pDataTemp += bpp;
-//								
-//								*pSurfaceTemp++ = CSDLGraphics::Color(r, g, b);
-//							}
-//							
-//							pData = pData + pitch;
-//							pSurface = (WORD*)((BYTE*)pSurface + surfacePitch);
-//						}
-//					}
-//					
-//				}
-//				
-//				surface.Unlock();
-//			}
-//		}
-//	}
 	
 	if (g_pTitleLoadingSprite==NULL)
 	{
@@ -393,70 +293,12 @@ DrawTitleLoading()
 		// 2001.8.20
 		//--------------------------------------------------------
 		POINT pointZero = { 0, 0 };
-		// add by Sonic 2006.9.26
-//		if(g_MyFull)
-//		{
-//			RECT rect = {0, 0, 1024, 768};
-//		}
-//		else
-//		{
-//		}
-		// end
 
-//		g_pBack->FillSurface( CSDLGraphics::Color(0,0,0) );
-		
-//		g_pBack->Lock();
 
-//		g_pBack->Blt(&pointZero, &g_TitleSurface, &rect);
-//		g_pBack->BltSprite( &pointZero, &g_TitleSPK[ 0 ] );
-
-//		if (g_TitleSpriteDarkness==0)
-//		{
-//			g_pBack->BltSprite( &point, &g_TitleAniSPK[g_TitleSpriteID] );
-//		}
-//		else
-//		{
-//			g_pBack->BltSpriteDarkness( &point, &g_TitleAniSPK[g_TitleSpriteID], g_TitleSpriteDarkness );
-//		}
-
-//		g_pBack->Unlock();
-
-		// Loading 출력
-		/*
-		if (gpC_base!=NULL)
-		{
-			if (!true)
-			{
-				g_SetFL2Surface( g_pBack );
-			}
-
-			PrintInfo* pPrintInfo = &gpC_base->m_info_pi;
-			const COLORREF txColor = RGB(100,250,100);				
-			const COLORREF txColor2 = RGB(20,50,20);
-
-			pPrintInfo->text_color	= txColor2;
-			g_Print(331, 451, "잠시 기다려주세요.", pPrintInfo);
-			pPrintInfo->text_color	= txColor;
-			g_Print(330, 450, "잠시 기다려주세요.", pPrintInfo);
-			
-			//char str[80];
-			//sprintf(str, "[%d]", g_TitleSpriteID);
-			//g_Print(330, 480, str, pPrintInfo);	
-			
-			if (!true)
-			{
-				g_SetFL2Surface( g_pLast );
-			}
-		}
-		*/
 		
 		if (g_pTitleLoadingSprite!=NULL)
 		{
-//			point.x = 400 - (g_pTitleLoadingSprite->GetWidth()>>1);
-//			point.y = 460 - (g_pTitleLoadingSprite->GetHeight()>>1);
-//			
 			CSpriteSurface *pSurface = NULL;
-//			if (!true)
 			if(g_TitleSpriteAlpha != 32)
 			{
 				pSurface = g_pLast;
@@ -482,20 +324,6 @@ DrawTitleLoading()
 			CSDLGraphics::Flip();
 
 		
-		// frame 바꿈
-//		if (++g_TitleSpriteID>=g_TitleAniSPK.GetSize())
-//		{
-//			g_TitleSpriteID = 0;			
-//		}
-//			
-//		// 밝기 조절
-//		if (g_TitleSpriteID%3==2)
-//		{
-//			if (--g_TitleSpriteDarkness < 0)
-//			{
-//				g_TitleSpriteDarkness = 0;
-//			}
-//		}			
 	}
 }
 
@@ -505,10 +333,6 @@ DrawTitleLoading()
 void
 EndTitleLoading(bool SendLogin)
 {
-//	g_TitleAniSPK.Release();
-//	g_TitleSPK.Release();
-//	g_TitleSpriteID = 0;
-//	g_TitleSpriteDarkness = 4;
 	g_bTitleLoading = false;
 
 	if (g_pTitleLoadingSprite!=NULL)
@@ -543,23 +367,11 @@ PrepareLoadingAddonSPK()
 {
 	return true;
 
-	#ifdef OUTPUT_DEBUG
-		if (g_pDebugMessage)
-		{
-			DEBUG_ADD("Prepare LoadingAddonSPK");
-		}
-	#endif
 
 	g_AddonSPKAllLoaded = false;
 
 	if (g_pTopView==NULL)
 	{
-		#ifdef OUTPUT_DEBUG
-			if (g_pDebugMessage)
-			{
-				DEBUG_ADD("[Error] g_pTopView is NULL");
-			}
-		#endif
 
 		return false;
 	}
@@ -620,28 +432,9 @@ LoadingAddonSPK(bool bLoadingAll)
 {
 	return true;
 
-	#ifdef OUTPUT_DEBUG
-		if (g_pDebugMessage)
-		{
-			if (bLoadingAll)
-			{
-				DEBUG_ADD("LoadingAddonSPK - LoadingAll");
-			}
-			else
-			{
-				DEBUG_ADD("LoadingAddonSPK - LoadingPart");
-			}
-		}
-	#endif
 
 	if (g_pTopView==NULL)
 	{
-		#ifdef OUTPUT_DEBUG
-			if (g_pDebugMessage)
-			{
-				DEBUG_ADD("[Error] g_pTopView is NULL");
-			}
-		#endif
 
 		return false;
 	}
@@ -660,12 +453,6 @@ LoadingAddonSPK(bool bLoadingAll)
 			TYPE_SPRITEID last	= g_AddonSPKIndexLast[i];
 			[[maybe_unused]] long	fp	= g_AddonSPKIndexFP[i];
 
-			#ifdef OUTPUT_DEBUG
-				if (g_pDebugMessage)
-				{
-					DEBUG_ADD_FORMAT("LoadingAddonSPK: [%d ~ %d](fp=%d). num=%d", first, last, fp, g_AddonSPKNum);
-				}
-			#endif
 
 			if (!g_pTopView->m_AddonSPK.LoadFromFilePart(first, last)) {
 				LOG_ERROR("Rejected addon preload: first=%u last=%u",
@@ -678,12 +465,6 @@ LoadingAddonSPK(bool bLoadingAll)
 			// 전부 loading해야하는 경우가 아니면 한부분만 loading한다.
 			if (!bLoadingAll)
 			{
-				#ifdef OUTPUT_DEBUG
-					if (g_pDebugMessage)
-					{
-						DEBUG_ADD("LoadingAddonSPK Part OK");
-					}
-				#endif
 
 				return true;
 			}
@@ -692,12 +473,6 @@ LoadingAddonSPK(bool bLoadingAll)
 
 	g_AddonSPKAllLoaded = true;
 
-	#ifdef OUTPUT_DEBUG
-		if (g_pDebugMessage)
-		{
-			DEBUG_ADD("All AddonSPK is Loaded");
-		}
-	#endif
 
 	return true;
 }
@@ -745,10 +520,6 @@ InitInput()
 	//----------------------------
 	// DirectInput
 	//----------------------------
-	//g_pSDLInput->Init(g_hInstance);
-	//g_pSDLInput->InitKeyDevice(g_hWnd);
-//	g_pSDLInput->InitJoyDevice(g_hWnd);
-	//g_pSDLInput->InitMouseDevice(g_hWnd);
 
 	if (!g_pSDLInput->Init( g_hWnd, g_hInstance, CSDLInput::NONEXCLUSIVE ))
 	{
@@ -756,7 +527,6 @@ InitInput()
 		return false;
 	}
 
-	//g_pSDLInput->SetMouseMoveLimit(SURFACE_WIDTH, SURFACE_HEIGHT);
 
 	g_pSDLInput->SetAcquire(true);
 
@@ -819,13 +589,6 @@ InitSurface()
 	}
 
 
-	// H/W가속 되는 경우
-//	if (true)
-//	{
-//		g_pTopView->SetSurface( g_pBack );
-//	}
-//	// H/W가속 안 되는 경우
-//	else
 	{		
 		if (g_pLast!=NULL) 
 		{
@@ -867,11 +630,6 @@ InitSurface()
 	gC_vs_ui.Release();
 
 	DEBUG_ADD("[ InitGame ]  Surface - InitD3D");
-//	if (true)
-//	{
-//		gC_vs_ui.Init(g_pBack, UI_ResultReceiver);		
-//	} 
-//	else
 	{
 		gC_vs_ui.Init(g_pLast, UI_ResultReceiver);
 	}
@@ -881,12 +639,10 @@ InitSurface()
 	//--------------------------------------------------------	
 	DrawTitleLoading();	
 
-//	gC_vs_ui.SetVersion(CLIENT_VERSION);
 
 
 
 
-	///*
 	//--------------------------------------------------------
 	// 새로운 IndexSprite 생성 방법 TEST
 	//--------------------------------------------------------
@@ -894,98 +650,11 @@ InitSurface()
 	// 잘~~골라서 해야한다. = =;
 	CIndexSprite::SetColorSet();
 
-	//#ifdef OUTPUT_DEBUG
-	//	std::ofstream indexTable(FILE_INDEXTABLE, ios::binary);
-	//	CIndexSprite::SaveIndexTableToFile( indexTable );
-	///	indexTable.close();
-	//#endif
-	
-	//std::ifstream indexTable2;//(FILE_INFO_USINGCOLORSET, ios::binary);
-	//if (!FileOpenBinary(FILE_INDEXTABLE, indexTable2))
-	//	return FALSE;
-	//CIndexSprite::LoadIndexTableFromFile( indexTable2 );
-	//indexTable2.close();
 
-	/*
-	CSpriteSurface imageSurface;
-	CSpriteSurface indexSurface1;
-	//CSpriteSurface indexSurface2;
-	
-	WORD *lpImage, imagePitch;
-	WORD *lpIndex1, indexPitch1;
-	//WORD *lpIndex2, indexPitch2;
-
-	imageSurface.InitFromBMP("test\\0.bmp", DDSCAPS_SYSTEMMEMORY);	
-	indexSurface1.InitFromBMP("test\\0i.bmp", DDSCAPS_SYSTEMMEMORY);	
-	//indexSurface2.InitFromBMP("Gauntlet2.bmp", DDSCAPS_SYSTEMMEMORY);	
-
-	imageSurface.LockW(lpImage, imagePitch);
-	indexSurface1.LockW(lpIndex1, indexPitch1);
-	//indexSurface2.LockW(lpIndex2, indexPitch2);
-
-	CIndexSprite565 is;
-
-	RECT rect;
-
-	CSprite::GetTightColorRect(lpImage, imagePitch, 
-								imageSurface.GetWidth(), imageSurface.GetHeight(),
-								0x001F, 
-								rect);
-
-
-	lpImage = (WORD*)((BYTE*)lpImage + imagePitch*rect.top + (rect.left << 1));
-	lpIndex1 = (WORD*)((BYTE*)lpIndex1 + indexPitch1*rect.top + (rect.left << 1));
-	//lpIndex2 = (WORD*)((BYTE*)lpIndex2 + indexPitch2*rect.top + (rect.left << 1));
-
-	CIndexSprite::SetColorkey( 0x001F );
-	//CIndexSprite::SetColorkey( ((32>>3) << 11) | ((32>>3) << 6) | (32>>3) );
-	is.SetPixel(lpImage, imagePitch,
-				lpIndex1, indexPitch1,
-				NULL, 0, //lpIndex2, indexPitch2,
-				rect.right-rect.left, rect.bottom-rect.top);
-	
-	imageSurface.Unlock();
-	indexSurface1.Unlock();
-	//indexSurface2.Unlock();
-
-	std::ofstream file("test.ispr", ios::binary);
-	is.SaveToFile( file );
-	file.close();
-
-	POINT point;
-	point.x = 100;
-	point.y = 100;
-	WORD a=40, b=150;
-	while (1)
-	{
-		UpdateInput();
-
-		if (g_pSDLInput->KeyDown(DIK_ESCAPE))
-			break;
-
-		if (g_pSDLInput->KeyDown(DIK_SPACE))
-		{
-			a = rand()%MAX_COLORSET;
-			b = rand()%MAX_COLORSET;
-		}
-
-		g_pBack->FillSurface( 0 );	
-
-		g_pBack->Lock();
-		CIndexSprite::SetUsingColorSet( a, b );
-		g_pBack->BltIndexSprite( &point, &is );
-		g_pBack->Unlock();
-
-		CSDLGraphics::Flip();
-	}
-
-	return FALSE;
-	*/	
 
 	//--------------------------------------------------------
 	// View의 정보를 초기화 시킨다.
 	//--------------------------------------------------------
-	//g_pTopView->SetSurface(g_pLast);	
 	if (g_Mode==MODE_CHANGE_OPTION	// 옵션 바꿀때는 g_pTopView->Init()는 안 한다.
 		&& !g_pTopView->Init())
 	{
@@ -993,9 +662,7 @@ InitSurface()
 	}			
 
 	DrawTitleLoading();	
-//	EndTitleLoading();
 	
-	//g_pTopView->SetDarkBits(5);
 		
 
 	// ColorSet을 초기화시킨다.
@@ -1025,11 +692,6 @@ InitSound()
 	{
 		if (g_SDLAudio.Init(g_hWnd))
 		{	
-			// filename에 따라서.. Wav file을 Load한다.
-			//for (int i=0; i<(*g_pSoundTable).GetSize(); i++)
-			//{			
-			//	(*g_pSoundTable)[i].pDSBuffer = g_Sound.LoadWav( (*g_pSoundTable)[i].Filename );
-			//}
 			int value = g_pUserOption->VolumeSound;	
 
 			LONG volume = value*SOUND_DEGREE + SOUND_MIN;
@@ -1067,44 +729,6 @@ InitSound()
 		// ( 전체 개수, 메모리 허용 개수 )
 		g_pSoundManager->Init( g_pSoundTable->GetSize(), g_pClientConfig->MAX_SOUNDPART );
 
-		/*
-		for (int i=0; i<2; i++)
-		for (int soundID=0; soundID<(*g_pClientConfig).MAX_SOUNDPART; soundID++)
-		{
-			//-----------------------------------------------------------
-			// 없으면 --> Load & Play
-			//-----------------------------------------------------------
-			if (g_pSoundManager.IsDataNULL(soundID))
-			{
-				// 다시 load						
- 				LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( (*g_pSoundTable)[soundID].Filename );
-
-				// Load에 성공 했으면...
-				if (pBuffer!=NULL)
-				{
-					// Replace됐으면 원래것을 메모리에서 지운다.
-					LPDIRECTSOUNDBUFFER pOld;
-					if (g_pSoundManager.SetData( soundID, pBuffer, pOld ))
-					{
-						g_SDLAudio.Release(pOld);
-					}
-				}
-			}
-			//-----------------------------------------------------------
-			// 있는 경우 --> Play
-			//-----------------------------------------------------------
-			else
-			{
-				LPDIRECTSOUNDBUFFER pBuffer;
-				if (g_pSoundManager.GetData(soundID, pBuffer))
-				{
-				
-				}		
-			}
-		}
-
-		return FALSE;
-		*/
 
 		return TRUE;
 	}
@@ -1198,9 +822,7 @@ InitDraw()
 	//--------------------------------------------------------
 	g_bHAL = (g_pUserOption->Use3DHAL)? true : false;
 
-//	bool g_bUseIMEWindow = (g_pUserOption->Chinese) ? true : false;
 
-	//bool g_bUseIMEWindow = gC_ci->IsChinese() == true;
 	bool g_bUseIMEWindow = true;
 
 	//--------------------------------------------------------
@@ -1213,7 +835,6 @@ InitDraw()
 // itself. The three PLATFORM_WINDOWS guards that used to fence this step
 // (with an "SDL backend - no DirectX initialization" message in the gap)
 // dated from when SDLMain.cpp made its own window; nothing here is Win32.
-	//if (g_bHAL)
 	if( g_bHAL )
 	{
 		if (g_bFullScreen)
@@ -1278,21 +899,6 @@ InitDraw()
 			g_bEnable3DHAL = TRUE;
 			g_bHALAvailable = true;
 
-			/*
-			D3DDEVICEDESC7 devDesc;
-			CDirect3D::GetDevice()->GetCaps( &devDesc );
-
-			#ifdef	OUTPUT_DEBUG
-				if (devDesc.dwDevCaps & D3DDEVCAPS_TEXTURENONLOCALVIDMEM)
-				{
-					DEBUG_ADD_FORMAT("D3DDEVCAPS_TEXTURENONLOCALVIDMEM Enable");
-				}
-				else
-				{
-					DEBUG_ADD_FORMAT("D3DDEVCAPS_TEXTURENONLOCALVIDMEM Disable");
-				}
-			#endif
-			*/
 		}
 		
 		//--------------------------------------------------------
@@ -1489,19 +1095,6 @@ InitGame()
 	if (!TextEncoding::SetResourceEncoding(resourceEncoding))
 		throw Error("Unsupported RESOURCE_TEXT_ENCODING in Data/Info/FileDef.inf");
 
-	//---------------------------------------------------------------------
-	// Profiler
-	//---------------------------------------------------------------------
-	#ifdef OUTPUT_DEBUG
-		if (g_pProfiler!=NULL)
-		{
-			g_pProfiler->Release();
-		}
-		else
-		{
-			g_pProfiler = new Profiler;
-		}
-	#endif
 
 	//---------------------------------------------------------------------
 	// MathTable
@@ -1606,7 +1199,7 @@ InitGame()
 	//---------------------------------------------------------------------
 	// nick name string table Loading
 	//---------------------------------------------------------------------
-	std::ifstream gameStringTableTable;//(FILE_INFO_gameStringTable, ios::binary);
+	std::ifstream gameStringTableTable;
 	if (!FileOpenBinary(g_pFileDef->getProperty("FILE_INFO_NICKNAME_STRING").c_str(), gameStringTableTable))
 		return FALSE;
 	(*g_pNickNameStringTable).LoadFromFile_NickNameString(gameStringTableTable);
@@ -1622,7 +1215,7 @@ InitGame()
 	// of it, so the English UI does not depend on an English String.inf.
 	const bool bUseEnglishStrings = UseEnglishText(g_pFileDef);
 
-	std::ifstream gameStringTableTable2;//(FILE_INFO_gameStringTable, ios::binary);
+	std::ifstream gameStringTableTable2;
 	if (FileOpenBinary(g_pFileDef->getProperty("FILE_INFO_STRING").c_str(), gameStringTableTable2))
 	{
 		(*g_pGameStringTable).LoadFromFile(gameStringTableTable2);
@@ -1700,17 +1293,6 @@ InitGame()
 	// SocketAPI::socket_ex(), which every socket this client creates goes
 	// through. Winsock does require WSAStartup even when building with mingw.
 
-//	#ifdef _DEBUG
-//		bool bMerge = false;
-//
-//		if (bMerge)
-//		{
-//			MGuildMarkManager::MergeGuildMark( FILE_SPRITE_GUILD_MARK, 
-//												FILE_INFO_GUILD_INFO_MAPPER,
-//												"data\\GuildMark.spk",
-//												"data\\GuildMark.inf");
-//		}
-//	#endif
 
 	//--------------------------------------------------------
 	//
@@ -1723,7 +1305,6 @@ InitGame()
 
 	if (!InitVolume()) return false;
 	if (!InitInput()) return false;
-	// if (!InitSound()) return false;
 	if (!InitDraw()) return false;
 
 	// GameObject must be initialized before Surface
@@ -1738,20 +1319,6 @@ InitGame()
 		//yckou
 		CheckInvalidProcess();
 		UI_AffectUserOption();
-		//----------------------------------------
-		// guild 마크 생성부분
-		//----------------------------------------
-		/*
-		#ifdef _DEBUG
-			g_pGuildMarkManager->CreateGuildMark( 1, "Data\\Guild\\Guild1.bmp" );
-			g_pGuildMarkManager->CreateGuildMark( 2, "Data\\Guild\\Guild2.bmp" );
-			g_pGuildMarkManager->CreateGuildMark( 3, "Data\\Guild\\Guild3.bmp" );
-			g_pGuildMarkManager->CreateGuildMark( 4, "Data\\Guild\\Guild4.bmp" );
-			g_pGuildMarkManager->CreateGuildMark( 5, "Data\\Guild\\Guild5.bmp" );
-			g_pGuildMarkManager->CreateGuildMark( 6, "Data\\Guild\\Guild6.bmp" );
-			g_pGuildMarkManager->CreateGuildMark( 7, "Data\\Guild\\Guild7.bmp" );
-		#endif
-		*/
 
 
 		//----------------------------------------
@@ -1761,68 +1328,14 @@ InitGame()
 		ProfileManager::InitProfiles();			// profile 생성
 
 
-			//----------------------------------------
-			// Player 캐릭터 그림 Load
-			//----------------------------------------
-			//UI_DrawProgress(70);
-
-			//LoadCreature( 0 );
-			//UI_DrawProgress(80);
-
-			//LoadCreature( 1 );
-			//UI_DrawProgress(90);
-
-			//LoadCreature( 2 );
-			//UI_DrawProgress(95);
-
-			//LoadCreature( 3 );
-			//UI_DrawProgress(100);
-		
-			//gC_vs_ui.EndProgress();
-
 			// Login Mode로 시작한다.
-			//SetMode( MODE_OPENING );
 
 			// Debug: Check g_Mode before and after SetMode
 			extern enum CLIENT_MODE g_Mode;
 			printf("DEBUG: Before SetMode, g_Mode = %d\n", g_Mode);
 			SetMode( MODE_MAINMENU );
 			printf("DEBUG: After SetMode, g_Mode = %d\n", g_Mode);
-			//SetMode( MODE_WAIT_POSITION );
-		///*
-		// Server에 접속이 안될 때 사용하는 code
-		//*/
 
-		// Debug Message
-		#ifdef	OUTPUT_DEBUG			
-			// Fullscreen?
-			if (CSDLGraphics::IsFullscreen())	
-			{
-				DEBUG_ADD("# Fullscreen.");
-			}
-			else
-			{
-				DEBUG_ADD("# Windowed Mode.");
-			}
-
-			// 565?
-			if (CSDLGraphics::Is565())	
-			{
-				DEBUG_ADD("# 5:6:5 mode");
-			}
-			else
-			{
-				DEBUG_ADD("# 5:5:5 mode or ???.");
-			}
-
-			// 3D HAL?
-			if (true)	
-			{
-				DEBUG_ADD("# 3D Hardware Accel.");
-			}
-			
-			DEBUG_ADD("---------------[  InitGame OK  ]---------------");
-		#endif
 	
 		return TRUE;
 	}
@@ -1863,9 +1376,6 @@ InitSocket()
 		{
 			switch(g_Dimension)
 			{
-				//		case 0:
-				//			configFilename = FILE_INFO_GAMECLIENT;
-				//			break;
 				
 			case 1:
 				configFilename = g_pFileDef->getProperty("FILE_INFO_GAMECLIENT2").c_str();
@@ -1882,7 +1392,6 @@ InitSocket()
 
 	} catch ( Throwable& t ) 	
 	{
-		//InitFail(t.toString().c_str());				
 
 		DEBUG_ADD_ERR(t.toString().c_str());
 
@@ -1956,54 +1465,6 @@ InitSocket()
 					ServerAddress = pIP;
 				}
 				
-				//yckou: prohibit user connecting to local machine
-				//--------------------------------------------------------------------
-/*				struct hostent * phost;
-				char szhostname[128];
-				struct in_addr MyInAddr;
-				gethostname(szhostname, 128); 
-				phost = gethostbyname(szhostname);
-				
-				hostent& he = *phost;
-				//in_addr* addr = (in_addr*) *(phost->h_addr_list)
-				//add by sonic 2006.4.10 쇱꿎踏狗젯쌈륩蛟포뒈囹
-				//ServerAddress = cmpServerAddress;//퓻契립令륩蛟포뒈囹,렝岺놔댄
-				//ServerAddress = "59.34.148.238";
-				if ( ServerAddress[0] == 0x31 
-					&& ServerAddress[1] == 0x32
-					&& ServerAddress[2] == 0x37)
-				{
-					ServerAddress = "0.0.0.0";
-				}
-				if(ServerAddress == "127.0.0.1")
-				{
-//					abort();
-					g_bNeedUpdate = TRUE;
-					SetMode(MODE_QUIT);
-					g_ModeNext = MODE_QUIT;
-					return FALSE;
-					//ServerAddress = "211.155.231.173";
-				}
-				else
-				{
-					for(int nAdapter=0; he.h_addr_list[nAdapter]; nAdapter++)
-					{
-						//MyInAddr.s_addr=*((unsigned long *)phost->h_addr_list[nAdapter]);
-						memcpy ( &MyInAddr.s_addr, he.h_addr_list[nAdapter],he.h_length);
-						if(ServerAddress == inet_ntoa(MyInAddr))
-						{
-//							ServerAddress = "211.155.231.173";
-//							break;
-//							abort();
-							g_bNeedUpdate = TRUE;
-							SetMode(MODE_QUIT);
-							g_ModeNext = MODE_QUIT;
-							return FALSE;
-						}	
-//					}
-				}
-*/
-				//--------------------------------------------------------------------
 				DEBUG_ADD_FORMAT("Conneting( %s : %d )", ServerAddress.c_str() , port);				
 
 				pSocket = new Socket( ServerAddress , port );
@@ -2012,21 +1473,7 @@ InitSocket()
 
 				// try to connect to server
 				pSocket->connect();
-/*				if ( ServerAddress[0] == 0x31 
-					&& ServerAddress[1] == 0x32
-					&& ServerAddress[2] == 0x37)
-				{
-					return FALSE;
-				}
-*/
-//				SOCKADDR_IN sa;
-//				int lenSA = sizeof(sa);
-//				getsockname( pSocket->getSOCKET(), (sockaddr*)&sa, &lenSA );
-//				char str[128];
-//				sprintf(str, inet_ntoa(sa.sin_addr));	// str : 내IP
 
-				// connect가 된 경우..
-				//break;
 
 			} catch ( ConnectException& ) {
 
@@ -2058,8 +1505,6 @@ InitSocket()
 		pSocket = NULL;
 	 
 	} catch ( Throwable & t ) {	
-		//MessageBox( g_hWnd, t.toString().c_str(), NULL, MB_OK );
-		//InitFail(t.toString().c_str());
 		DEBUG_ADD_ERR(t.toString().c_str());
 
 		if (pSocket!=NULL)
@@ -2107,9 +1552,6 @@ InitSocket()
 	DEBUG_ADD("[ InitGame ] new ClientCommunicationManager");
 	g_pClientCommunicationManager = new ClientCommunicationManager;
 
-	#ifdef __METROTECH_TEST__
-		g_UDPTest.Init();
-	#endif
 
 	// RequestServer functionality is for server mode only - Windows only
 #ifdef PLATFORM_WINDOWS
@@ -2187,13 +1629,6 @@ void ReleaseAllObjects()
 	//----------------------------------------------------------------
 	ReleaseGameUpdate();
 
-	/*
-	if (g_pMP3 != NULL)
-	{
-		g_pMP3->Pause();
-		delete g_pMP3;
-	}
-	*/
 
 
 	if(g_pOGG != NULL )
@@ -2298,17 +1733,10 @@ void ReleaseAllObjects()
 	DEBUG_ADD("[Release] Music");
 	g_Music.Stop();
 	g_Music.UnInit();
-	//g_SDLMusic.Stop();
 
 	//----------------------------------------------------------------
 	// Sound
 	//----------------------------------------------------------------
-//	DEBUG_ADD("[Release] SoundStream");
-//	if (g_pSDLStream!=NULL)
-//	{
-//		delete g_pSDLStream;
-//		g_pSDLStream = NULL;
-//	}
 	DEBUG_ADD("[Release] ZoneSound");
 
 
@@ -2321,13 +1749,6 @@ void ReleaseAllObjects()
 
 	
 
-	//----------------------------------------------------------------
-	// UnInit DirectInput
-	//----------------------------------------------------------------
-	//	this->g_di.UnInitJoyDevice();
-	//g_pSDLInput->UnInitMouseDevice();
-	//g_pSDLInput->UnInitKeyDevice();
-	//g_pSDLInput->UnInit();
 
 	//----------------------------------------------------------------
 	// View
@@ -2336,10 +1757,6 @@ void ReleaseAllObjects()
 	
 	if (g_pTopView!=NULL)
 	{
-		// updater를 실행할때만 지워준다. - -;
-		// release 안 해주는게 더 빨리 제거돼서(-_-;) 안했었는데
-		// updater할때는 확실히 제거해주는게 낫지 싶어서리..
-		//if (g_bNeedUpdate)
 		{
 			g_pTopView->Release();
 			delete g_pTopView;
@@ -2380,12 +1797,9 @@ void ReleaseAllObjects()
 	//----------------------------------------------------------------
 	// global 제거...
 	//----------------------------------------------------------------
-	//if (g_bNeedUpdate)
 	{
 		if (g_pActionInfoTable) g_pActionInfoTable->Release();	
 		if (g_pCreatureSpriteTable!=NULL) g_pCreatureSpriteTable->Release();
-//		if (g_pAddonSpriteTable!=NULL) g_pAddonSpriteTable->Release();
-//		if (g_pCreatureActionSpriteTable!=NULL) g_pCreatureActionSpriteTable->Release();
 		if (g_pCreatureTable) g_pCreatureTable->Release();
 		if (g_pCreatureSpriteTypeMapper) g_pCreatureSpriteTypeMapper->Release();
 		// FIXED: Delete immediately after Release to prevent use-after-free
@@ -2448,8 +1862,6 @@ void ReleaseAllObjects()
 	SAFE_DELETE( g_pCreatureSpriteTypeMapper );
 	SAFE_DELETE( g_pItemTable );
 	SAFE_DELETE( g_pCreatureSpriteTable );
-//	SAFE_DELETE( g_pAddonSpriteTable );
-//	SAFE_DELETE( g_pCreatureActionSpriteTable );
 	SAFE_DELETE( g_pEffectStatusTable );
 	SAFE_DELETE( g_pInteractionObjectTable );
 	SAFE_DELETE( g_pItemOptionTable );
@@ -2602,9 +2014,6 @@ void ReleaseAllObjects()
 	GameUI::SetHost(nullptr);
 	UIMessages::SetHost(nullptr);
 
-#ifdef DEBUG_INFO
-	ClearDebugInfo();
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -2622,11 +2031,9 @@ ReleaseSocket()
 		
 		if (g_pSocket!=NULL) 
 		{			
-			//g_pSocket->setPlayerStatus( CPS_END_SESSION );
 
 			g_pSocket->disconnect(UNDISCONNECTED);
 
-			//g_pSocket->getSocket()->close();			
 			DEBUG_ADD("delete g_pSocket");
 			
 			delete g_pSocket;
@@ -4792,7 +4199,7 @@ InitGameObject()
 	}
 	int nStartV = 73*25;
 	int version;
-	std::ifstream versionFile;//(g_pFileDef->getProperty("FILE_INFO_ACTION").c_str(), ios::binary);
+	std::ifstream versionFile;
 	if (!FileOpenBinary(g_pFileDef->getProperty("FILE_INFO_VERSION").c_str(), versionFile))
 	{
 		return FALSE;
@@ -4802,18 +4209,11 @@ InitGameObject()
 
 	int i = 96;
 	nStartV = nStartV*i;
-//	g_pUserInformation->GameVersion = (406+nStartV)/2+88; //version=87891;
-	//g_pUserInformation->GameVersion = 745389;2006-6-20
 	
 	//modify by viva for GameVersion
 	g_pUserInformation->GameVersion = 7457757;
 	//end
 
-//	g_pUserInformation->GameVersion = 520909;//745389
-#ifdef DEBUG_INFO
-	if(g_nGameVersion > 0)
-		g_pUserInformation->GameVersion = g_nGameVersion;
-#endif
 
 	
 	if (g_pTempInformation==NULL)
@@ -4861,10 +4261,6 @@ InitGameObject()
 	}
 
 
-	//if (g_pTradeManager==NULL)
-	//{
-	//	g_pTradeManager = new MTradeManager;
-	//}	
 
 	if (g_pGameTime==NULL)
 	{
