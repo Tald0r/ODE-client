@@ -14,6 +14,8 @@ Client/DrawTextNode.h
 Client/GameInitInfo.cpp
 Client/GameInitInfo.h
 Client/GameInitInfoHost.h
+Client/GameMain.cpp
+Client/GameMain.h
 Client/GameUI.cpp
 Client/GameUIBuilders.h
 Client/GuildMarkTypes.h

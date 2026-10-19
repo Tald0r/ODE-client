@@ -74,7 +74,7 @@ class Player;
 #define	UPDATER_FILENAME			"Updater.exe"
 #define	UPDATER_NEW_FILENAME		"Updater2.exe"
 
-#define	MAX_NPC						100
+// MAX_NPC is GameMain.h's (gameclient) since task 4.262.
 #define	MAX_IMAGEOBJECT				0
 #define	MAX_ANIMATIONOBJECT			0
 #define	MAX_INTERACTIONOBJECT		0
@@ -101,8 +101,8 @@ class Player;
 // 100 --> 10 Frame
 // 111 --> 9 Frame
 #define	LIMIT_FPS_FOR_CURSOR	24		// 부드러운(?) 커서 출력을 위한 최소FPS
-#define	DELAY_UPDATE_LOGIN		20
-#define	DELAY_UPDATE_WAITING	50
+// DELAY_UPDATE_LOGIN and DELAY_UPDATE_WAITING are ClientMode.h's (gamemodel)
+// since task 4.262.
 #define	DELAY_UPDATE_GAME		62//62  렝岺속醵홍애긴좆
 
 #define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }

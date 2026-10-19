@@ -2,10 +2,10 @@
 
 #include "../basic/Platform.h"
 
-// The stage the client is in, from the opening to the game. SetMode (the
-// executable's) enters a mode with its side effects; g_ModeNext is the
-// mode the main loop switches to next. The state is gamemodel's so that
-// the replies that read it can be tested.
+// The stage the client is in, from the opening to the game. SetMode
+// (GameMain.h, gameclient's) enters a mode with its side effects;
+// g_ModeNext is the mode the main loop switches to next. The state is
+// gamemodel's so that the replies that read it can be tested.
 enum CLIENT_MODE
 {
 	MODE_NULL = 0,
@@ -40,6 +40,12 @@ extern enum CLIENT_MODE		g_ModeNext;
 // Whether the client is quitting to be updated (it is set with MODE_QUIT);
 // login replies then show nothing. A BOOL.
 extern int					g_bNeedUpdate;
+
+// The main loop's delay between ticks, g_UpdateDelay, in milliseconds, that
+// SetMode gives the login screens and the waits for the server (Client.h's
+// until task 4.262).
+#define	DELAY_UPDATE_LOGIN		20
+#define	DELAY_UPDATE_WAITING	50
 
 // The account's premium days left, as the login server sends them; 0xFFFE
 // is an account that is not a premium one, which the title screen says.
