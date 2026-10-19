@@ -46,6 +46,10 @@
 #include "MPalette.h"
 #include "DXLib/CDirectDraw.h"
 #include "Fl2.h"
+#include "FontHandleUtil.h"
+#include "MGameStringTable.h"
+#include "ModifyStatusManager.h"
+#include "MParty.h"
 #include "DXLib/CDirectSound.h"
 
 #include <algorithm>
@@ -96,6 +100,7 @@ struct MTopViewTestAccess3
 	static bool DrawEvent(MTopView& v) { return v.DrawEvent(); }
 	static bool AdvancementEnding(MTopView& v, MEvent* e) { return v.ExcuteAdvancementQuestEnding(e); }
 	static bool OustersEnding(MTopView& v) { return v.ExcuteOustersFinEvent(); }
+	static int DrawChatString(MTopView& v, POINT* p, MCreature* c, COLORREF color) { return v.DrawChatString(p, c, color); }
 	static CreatureDrawPacks Packs(MTopView& v) { return v.GetCreatureDrawPacks(); }
 	static MScreenFade& Fade(MTopView& v) { return v.m_Fade; }
 	static WORD FadeColor(MTopView& v) { return v.m_FadeColor; }
@@ -259,6 +264,9 @@ struct ZoneProbe : MZone
 struct PlayerProbe : MPlayer
 {
 	using MCreature::m_bEffectStatus;
+	using MCreature::m_Action;
+	using MCreature::m_ActionCount;
+	using MCreatureWear::m_Addon;
 	void Set(EFFECTSTATUS status, bool on = true) { m_bEffectStatus[status] = on; }
 };
 
@@ -3157,4 +3165,283 @@ TEST(TopView3DrawEvent, TheAdvancementEndingComesFirstAndHidesTheBackground)
 	CHECK_EQ(9998, int(ousters->parameter1));
 	scene.Event(EVENTID_BG_CLOUD, EVENTFLAG_EVENT_BACKGROUND);
 	CHECK(!Access::DrawEvent(scene.View()));
+}
+
+//----------------------------------------------------------------------
+// The ousters ending's two scenes
+//----------------------------------------------------------------------
+namespace {
+
+// The queued text's text and place, oldest first; the queue emptied.
+struct Line { std::string text; int x, y; };
+std::vector<Line> Lines(MTopView& view)
+{
+	std::vector<Line> lines;
+	while (!view.m_pqDrawText.empty())
+	{
+		DRAWTEXT_NODE* node = view.m_pqDrawText.top();
+		view.m_pqDrawText.pop();
+		lines.push_back({node->GetString() != nullptr ? node->GetString() : "", node->GetX(), node->GetY()});
+		delete node;
+	}
+	return lines;
+}
+bool SameLines(const std::vector<Line>& a, const std::vector<Line>& b)
+{
+	bool same = a.size() == b.size();
+	for (size_t i = 0; same && i < a.size(); ++i) same = a[i].text == b[i].text && a[i].x == b[i].x && a[i].y == b[i].y;
+	if (!same) std::printf("      %d lines, not %d\n", int(a.size()), int(b.size()));
+	return same;
+}
+
+// Status changes that run no reactions.
+struct QuietStatus : ModifyStatusManager
+{
+	bool Execute(int, void*) const override { return false; }
+};
+
+// The slayer's (parameter1 1000) and the vampire's (2000) scenes, which
+// only an event started there runs (an event from 0 goes straight to
+// the scroll, 9998). Their nine script lines are strings of their own;
+// the fonts measure; the pack's sprites are Ending's. The slayer wears
+// one part (frame ID 1, its index sprite at (3, 4)); the vampire's body
+// is frame ID 1 too (at (5, 6)); both stand on frame 0.
+struct Fin : Ending
+{
+	PrintInfo fonts[10] = {};
+	PrintInfo* oldFonts[10];
+	QuietStatus status;
+	MParty party;
+	ModifyStatusManager* oldStatus = g_pModifyStatusManager;
+	MParty* oldParty = g_pParty;
+	Fin()
+	{
+		g_pModifyStatusManager = &status;		// the player's death sets its HP
+		g_pParty = &party;						// and tells its party, of none
+		for (int i = 0; i < 10; ++i)
+		{
+			oldFonts[i] = g_ClientPrintInfo[i];
+			fonts[i].hfont = TextSystem::EncodeFontSizeHandle(10 + i);
+			g_ClientPrintInfo[i] = &fonts[i];
+		}
+		g_pGameStringTable->Init(MAX_GAME_STRING);
+		for (int i = 0; i < 10; ++i)
+		{
+			*g_pGameStringTable->GetMutable(STRING_MESSAGE_RIPATY_SCRIPT_1 + i) = Script('R', i).c_str();
+			*g_pGameStringTable->GetMutable(STRING_MESSAGE_AMATA_SCRIPT_1 + i) = Script('A', i).c_str();
+		}
+		Ending::Fill(View().m_OustersFinSPK, 11);
+		CREATURESPRITETABLE_INFO& body = testfw::MutableRow(sprites, 0);
+		body.FrameID = 1;
+		body.CreatureType = BYTE(FLAG_CREATURESPRITE_MONSTER);
+		for (int type : {kSlayer, kVampire})
+		{
+			CREATURETABLE_INFO& row = testfw::MutableRow(creatureTypes, type);
+			row.SpriteTypes.Init(1);
+			*row.SpriteTypes.GetMutable(0) = 0;
+			row.DeadActionInfo = ACTIONINFO_NULL;		// dying takes no action, so no action table
+		}
+		for (CCreatureFramePack* pack : {&View().m_AddonFPK, &View().m_CreatureFPK})
+		{
+			pack->Init(2);
+			for (int id = 0; id < 2; ++id)
+			{
+				(*pack)[WORD(id)].Init(BYTE(ACTION_MAX_SLAYER));
+				for (int action = 0; action < ACTION_MAX_SLAYER; ++action) (*pack)[WORD(id)][BYTE(action)].Init(8);
+			}
+		}
+		View().m_AddonFPK[1][ACTION_STAND][6].Init(1);
+		View().m_AddonFPK[1][ACTION_STAND][6][0].Set(0, 3, 4);
+		View().m_CreatureFPK[1][ACTION_STAND][6].Init(1);
+		View().m_CreatureFPK[1][ACTION_STAND][6][0].Set(0, 5, 6);
+		View().m_AddonSPK.Init(1);
+		Mark(View().m_AddonSPK[0], 0x1111);
+		View().m_CreatureSPK.Init(1);
+		Mark(View().m_CreatureSPK[0], 0x2222);
+		for (auto& addon : player->m_Addon) addon.bAddon = FALSE;
+		player->m_Action = ACTION_STAND;
+		player->m_ActionCount = 0;
+		player->SetBodyColor1(30);
+		player->SetBodyColor2(60);
+	}
+	~Fin()
+	{
+		Lines(View());
+		for (int i = 0; i < 10; ++i) g_ClientPrintInfo[i] = oldFonts[i];
+		g_pParty = oldParty;
+		g_pModifyStatusManager = oldStatus;
+	}
+	static std::string Script(char who, int n) { return std::string(1, who) + char('0' + n); }
+	// A scene at its step, its clock started now.
+	MEvent* Scene(DWORD scene, DWORD step)
+	{
+		MEvent* event = Start(EVENTID_OUSTERS_FIN);
+		event->parameter1 = scene;
+		event->parameter2 = step;
+		return event;
+	}
+	void After(MEvent* event, int millis) { s_EndingNow = event->eventStartTickCount + MonotonicClock::Millis(DWORD(millis)); }
+	bool Run() { return Access::OustersEnding(View()); }
+	// The scene's picture: its figure (sprite 3 or 2) and, past step 0,
+	// sprites 4 to 10 round it.
+	void Ring(int figure, bool round)
+	{
+		static const int centres[8][2] = { {400, 160}, {300, 210}, {240, 300}, {300, 390}, {400, 440}, {500, 390}, {560, 300}, {500, 210} };
+		CSpritePack& pack = View().m_OustersFinSPK;
+		for (int i = 0; i < (round ? 8 : 1); ++i)
+		{
+			const int n = i == 0 ? figure : 3 + i;
+			Pack(centres[i][0] - pack[WORD(n)].GetWidth() / 2 + 10, centres[i][1] - pack[WORD(n)].GetHeight() + 24, pack, n);
+		}
+	}
+	POINT Figure(int figure)
+	{
+		CSprite& sprite = View().m_OustersFinSPK[WORD(figure)];
+		return { 400 - sprite.GetWidth() / 2 + 10, 160 - sprite.GetHeight() + 24 };
+	}
+	// The chat DrawChatString queues for the player at the point.
+	std::vector<Line> Chat(POINT at)
+	{
+		Lines(View());
+		Access::DrawChatString(View(), &at, player, RGB(255, 255, 255));
+		return Lines(View());
+	}
+};
+
+} // namespace
+
+TEST(TopView3OustersEnding, TheSlayersSceneSpeaksALineEveryFourSecondsThenDiesAndRolls)
+{
+	Fin scene;
+	MTopView& view = scene.View();
+	MEvent* event = scene.Scene(1000, 0);
+	PlayerProbe& me = *scene.player;
+	const POINT talk = { scene.Figure(3).x - 15, scene.Figure(3).y - 15 };
+	// Within four seconds: step 0, its figure alone and no line.
+	scene.After(event, 3999);
+	CHECK(scene.Run());
+	CHECK_EQ(0, int(event->parameter2));
+	CHECK(Sounds().empty());
+	CHECK(Lines(view).empty());
+	scene.Ring(3, false);
+	CHECK(scene.Same());
+	// Each four seconds a step, a sound and a line: the round shows.
+	for (int step = 1; step <= 8; ++step)
+	{
+		scene.Clear();
+		scene.After(event, 4000);
+		const MonotonicClock::TimePoint now = s_EndingNow;
+		CHECK(scene.Run());
+		CHECK_EQ(1000, int(event->parameter1));
+		CHECK_EQ(step, int(event->parameter2));
+		CHECK(event->eventStartTickCount == now);
+		CHECK_EQ(size_t(step), Sounds().size());
+		CHECK(std::string(me.GetChatString(BYTE(g_pClientConfig->MAX_CHATSTRING_MINUS_1))) == Fin::Script('R', step));
+		const std::vector<Line> said = Lines(view);
+		CHECK(!said.empty());
+		CHECK(SameLines(said, scene.Chat(talk)));
+		scene.Ring(3, true);
+		CHECK(scene.Same());
+		CHECK(me.IsAlive());
+	}
+	for (int sound : Sounds()) CHECK_EQ(int(SOUND_SLAYER_ENCHANT_B2), sound);
+	// Step 9: the line goes, the slayer dies.
+	scene.After(event, 4000);
+	CHECK(scene.Run());
+	CHECK_EQ(9, int(event->parameter2));
+	CHECK(!me.IsAlive());
+	CHECK_EQ(size_t(9), Sounds().size());
+	if (Sounds().size() == 9) CHECK_EQ(int(SOUND_SLAYER_DIE_MALE), Sounds()[8]);
+	CHECK(std::string(me.GetChatString(BYTE(g_pClientConfig->MAX_CHATSTRING_MINUS_1))).empty());
+	// Step 10 waits; step 11 rolls the scroll on the slayer's background.
+	scene.After(event, 4000);
+	CHECK(scene.Run());
+	CHECK_EQ(10, int(event->parameter2));
+	CHECK_EQ(1000, int(event->parameter1));
+	scene.After(event, 4000);
+	const MonotonicClock::TimePoint rolled = s_EndingNow;
+	CHECK(scene.Run());
+	CHECK_EQ(11, int(event->parameter2));
+	CHECK_EQ(9998, int(event->parameter1));
+	CHECK_EQ(int(EVENTBACKGROUNDID_OUSTERS_SLAYER), int(event->parameter4));
+	CHECK(event->eventStartTickCount == rolled);
+	CHECK_EQ(size_t(9), Sounds().size());
+}
+
+TEST(TopView3OustersEnding, TheSlayersSceneDressesItsFigureInWhatThePlayerWears)
+{
+	Fin scene;
+	MEvent* event = scene.Scene(1000, 0);
+	MCreatureWear::ADDON_INFO& coat = scene.player->m_Addon[ADDON_COAT];
+	coat.bAddon = TRUE;
+	coat.FrameID = 1;
+	coat.ItemClass = ITEM_CLASS_COAT;
+	coat.ColorSet1 = 30;
+	coat.ColorSet2 = 60;
+	coat.bEffectColor = FALSE;
+	scene.After(event, 100);
+	CHECK(scene.Run());
+	scene.Ring(3, false);
+	CIndexSprite::SetUsingColorSet(30, 60);
+	scene.expected.Index(384 + 3, 312 + 4, scene.View().m_AddonSPK[0]);
+	CHECK(scene.Same());
+	// A part without the action's frame is not drawn.
+	scene.Clear();
+	scene.player->m_Action = ACTION_MOVE;
+	CHECK(scene.Run());
+	scene.Ring(3, false);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3OustersEnding, TheVampiresSceneShowsItsBodyInItsColoursAndDiesAtStepNine)
+{
+	Fin scene;
+	MTopView& view = scene.View();
+	PlayerProbe& me = *scene.player;
+	me.SetCreatureType(kVampire);
+	me.m_Action = ACTION_STAND;
+	me.m_ActionCount = 0;
+	MEvent* event = scene.Scene(2000, 0);
+	const POINT talk = { scene.Figure(2).x - 15, scene.Figure(2).y - 15 };
+	auto body = [&]()
+	{
+		CIndexSprite::SetUsingColorSet(30, 60);
+		scene.expected.Index(384 + 5, 312 + 6, view.m_CreatureSPK[0]);
+	};
+	scene.After(event, 3999);
+	CHECK(scene.Run());
+	CHECK_EQ(0, int(event->parameter2));
+	CHECK(Sounds().empty());
+	scene.Ring(2, false);
+	body();
+	CHECK(scene.Same());
+	for (int step = 1; step <= 8; ++step)
+	{
+		scene.Clear();
+		scene.After(event, 4000);
+		CHECK(scene.Run());
+		CHECK_EQ(step, int(event->parameter2));
+		CHECK(std::string(me.GetChatString(BYTE(g_pClientConfig->MAX_CHATSTRING_MINUS_1))) == Fin::Script('A', step));
+		const std::vector<Line> said = Lines(view);
+		CHECK(!said.empty());
+		CHECK(SameLines(said, scene.Chat(talk)));
+		scene.Ring(2, true);
+		body();
+		CHECK(scene.Same());
+		CHECK(me.IsAlive());
+	}
+	scene.After(event, 4000);
+	CHECK(scene.Run());
+	CHECK(!me.IsAlive());
+	CHECK_EQ(size_t(9), Sounds().size());
+	if (Sounds().size() == 9) CHECK_EQ(int(SOUND_VAMPIRE_DIE_MALE), Sounds()[8]);
+	scene.After(event, 4000);
+	CHECK(scene.Run());
+	CHECK_EQ(10, int(event->parameter2));
+	CHECK_EQ(2000, int(event->parameter1));
+	scene.After(event, 4000);
+	CHECK(scene.Run());
+	CHECK_EQ(9998, int(event->parameter1));
+	CHECK_EQ(int(EVENTBACKGROUNDID_OUSTERS_VAMPIRE), int(event->parameter4));
+	CHECK_EQ(size_t(9), Sounds().size());
 }
