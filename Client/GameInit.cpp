@@ -23,10 +23,35 @@
 #include "DebugLog.h"
 #include <memory>
 #include "TextEncoding.h"
-#include "Client.h"
-#include "GameObject.h"
-#include "AddonDef.h"
-#include "ServerInfo.h"
+#include "GameInit.h"
+#include "FrameClock.h"
+#include "InputState.h"
+#include "GameMessages.h"
+#include "../basic/CMessageArray.h"
+#include "GameSocket.h"
+#include "ClientConfig.h"
+#include "UserOption.h"
+#include "GameInitInfo.h"
+#include "DXLib/COGGSTREAM.h"
+#include "MSoundTable.h"
+#include "DXLib/CSoundPartManager.h"
+#include "MGameTime.h"
+#include "MItemTable.h"
+#include "MItemOptionTable.h"
+#include "MCreatureTable.h"
+#include "MInteractionObjectTable.h"
+#include "MActionInfoTable.h"
+#include "MEffectStatusTable.h"
+#include "MZoneTable.h"
+#include "MMusicTable.h"
+#include "CUsingColorSetTable.h"
+#include "MShopTemplateTable.h"
+#include "MNPCTable.h"
+#include "MSlayerGear.h"
+#include "MVampireGear.h"
+#include "MOustersGear.h"
+#include "TalkBox.h"
+#include "ZoneFlags.h"
 #include "Packet/WireHost.h"
 #include "DXLib/DXInputHost.h"
 #include "GameInitInfoHost.h"
@@ -60,7 +85,6 @@
 #include "MonsterNameTable.h"
 #include "ExperienceTable.h"
 #include "CServerInformation.h"
-#include "GameObject.h"
 #include "MZoneSoundManager.h"
 #include "MNPCScriptTable.h"
 #include "MParty.h"
@@ -133,9 +157,6 @@
 #include "PlayerPresentationHost.h"
 #include "PetWindowInfo.h"
 #include "VS_UI_mouse_pointer.h"
-#ifdef PLATFORM_WINDOWS
-#include "CImm.h"
-#endif
 #include "VS_UI_ExtraDialog.h"
 #include "LoginPresentationHost.h"
 #include "PlayerStateHost.h"
@@ -171,8 +192,6 @@
 #include "MGuildInfoMapper.h"
 #include "PCConfigTable.h"
 #include "MAttachOrbitEffect.h"
-#include "DebugInfo.h"
-#include "MTestDef.h"
 #include "RankBonusTable.h"
 #include "MMonsterKillQuestInfo.h"
 #include "MTimeItemManager.h"
@@ -186,7 +205,6 @@
 #include "CSprite565.h"
 #include "Properties.h"
 #include "UIFunction.h"
-#include "SoundSetting.h"
 #include "SystemAvailabilities.h"
 #include "RarFile.h"
 #include <sstream>
@@ -194,17 +212,15 @@
 #include "ServerInfoFileParser.h"
 #include "LoginEndpoint.h"
 
-//yckou
-#include "DebugKit.h"
-
-extern BYTE g_macAddress[6];
-extern BOOL g_MyFull;
-extern RECT g_GameRect;
+// Client.h's, the executable's header.
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
+#endif
 
 // ToT SafeDelete 도 없고..ToT 2003.5.11 by sonee
 
-extern int					g_Dimension ;
-// g_bEnable3DHAL is gamemodel's (ClientMode.cpp) since task 4.252.
+// g_macAddress, g_MyFull, g_GameRect, g_Dimension and g_bEnable3DHAL are
+// gamemodel's (ClientMode.cpp), declared in Client_PCH.h.
 
 //----------------------------------------------------------------------
 // Title Loading - 2001.8.20 우헤헤 자꾸 늘어나는 global - -;;
@@ -214,12 +230,6 @@ CSprite*		g_pTitleLoadingSprite = NULL;
 // g_TitleSpriteAlpha is ClientMode.cpp's (gamemodel) since task 4.255.
 // g_FutecIP and g_FutecPort are ClientMode.cpp's (gamemodel) since task 4.264.
 
-void	StartTitleLoading();
-void	DrawTitleLoading();
-void	EndTitleLoading(bool SendLogin = false);
-bool	PrepareLoadingAddonSPK();
-bool	LoadingAddonSPK(bool bLoadingAll);
-extern bool CheckInvalidProcess();
 //---------------------------------------------------------------------------
 // Start TitleLoading
 //---------------------------------------------------------------------------
