@@ -11,6 +11,8 @@ Client/CWaitUIUpdate.cpp
 Client/CWaitUIUpdate.h
 Client/DrawItemNameNode.h
 Client/DrawTextNode.h
+Client/GameInit.cpp
+Client/GameInit.h
 Client/GameInitInfo.cpp
 Client/GameInitInfo.h
 Client/GameInitInfoHost.h
