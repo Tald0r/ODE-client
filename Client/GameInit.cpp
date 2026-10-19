@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 // GameInit.cpp
 //---------------------------------------------------------------------------
-// 게임 관련 부분(주로 시스템 쪽)의 초기화 / Release
+// Initialisation / Release of the game's parts (mostly the system side)
 //---------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -217,13 +217,13 @@
 #define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
 #endif
 
-// ToT SafeDelete 도 없고..ToT 2003.5.11 by sonee
+// ToT there's no SafeDelete either..ToT 2003.5.11 by sonee
 
 // g_macAddress, g_MyFull, g_GameRect, g_Dimension and g_bEnable3DHAL are
 // gamemodel's (ClientMode.cpp), declared in Client_PCH.h.
 
 //----------------------------------------------------------------------
-// Title Loading - 2001.8.20 우헤헤 자꾸 늘어나는 global - -;;
+// Title Loading - 2001.8.20 heh, the globals keep multiplying - -;;
 //----------------------------------------------------------------------
 bool			g_bTitleLoading = false;
 CSprite*		g_pTitleLoadingSprite = NULL;
@@ -326,9 +326,9 @@ EndTitleLoading(bool SendLogin)
 		g_pTitleLoadingSprite = NULL;
 	}
 	// 2004, 7, 15, sobeit modify start
-	// 2006.11.07  Coffee Edit 혼뇜踏狗폘땡빈菱땡되쩍
+	// 2006.11.07  Coffee Edit: remove the automatic login once the game has started
 	
-	if(SendLogin && true == g_pUserInformation->IsAutoLogIn) // 자동 로그인
+	if(SendLogin && true == g_pUserInformation->IsAutoLogIn) // automatic login
 	{
 		static LOGIN	login;
 		login.sz_id = new char[  g_pUserInformation->UserID.GetLength() + 1 ];
@@ -420,7 +420,7 @@ InitInput()
 
 
 //---------------------------------------------------------------------------
-// Surface의 정보를 생성한다.
+// Creates the Surface's information.
 //---------------------------------------------------------------------------
 BOOL
 InitSurface()
@@ -445,7 +445,7 @@ InitSurface()
 	g_pBack->Init(g_GameRect.right, g_GameRect.bottom);
 
 	//--------------------------------------------------------
-	// 임시로 로딩화면 구성..
+	// Put together a temporary loading screen..
 	// 2001.8.20
 	//--------------------------------------------------------
 
@@ -457,7 +457,7 @@ InitSurface()
 	g_pBack->FillSurface( CSDLGraphics::Color(0,0,0) );
 
 	//--------------------------------------------------------
-	// Buffer로 사용할 Surface
+	// The Surface used as the buffer
 	//--------------------------------------------------------
 	DEBUG_ADD("[ InitGame ]  Surface - new g_pTopView");
 
@@ -466,7 +466,7 @@ InitSurface()
 	{		
 		g_pTopView = new MTopView;
 
-		// addonSPK 분할 로딩 준비 - 2001.8.20
+		// Prepare the addonSPK's loading in parts - 2001.8.20
 		if (!PrepareLoadingAddonSPK())
 		{
 			return FALSE;
@@ -492,7 +492,7 @@ InitSurface()
 	}
 
 	//--------------------------------------------------------
-	// 감마값 설정
+	// Set the gamma value
 	//--------------------------------------------------------
 	if (g_pUserOption->UseGammaControl
 		&& g_pUserOption->GammaValue!=100)
@@ -506,12 +506,12 @@ InitSurface()
 	DEBUG_ADD("[ InitGame ]  Surface - Initialize Font");
 	DEBUG_ADD("[ InitGame ]  Surface - UI");
 
-	// 슬레이어 그림 약간 loading
+	// Load a few of the slayer pictures
 	LoadingAddonSPK( false );
 	DrawTitleLoading();
 
 
-	// 일단 제거.. - -;
+	// Remove it for now.. - -;
 	gC_vs_ui.Release();
 
 	DEBUG_ADD("[ InitGame ]  Surface - InitD3D");
@@ -529,18 +529,18 @@ InitSurface()
 
 
 	//--------------------------------------------------------
-	// 새로운 IndexSprite 생성 방법 TEST
+	// TEST of the new way of making IndexSprites
 	//--------------------------------------------------------
-	// indexTable은 555와 565가 다르기 때문에...
-	// 잘~~골라서 해야한다. = =;
+	// The indexTable differs between 555 and 565, so...
+	// it has to be picked with care~~. = =;
 	CIndexSprite::SetColorSet();
 
 
 
 	//--------------------------------------------------------
-	// View의 정보를 초기화 시킨다.
+	// Initialise the View's information.
 	//--------------------------------------------------------
-	if (g_Mode==MODE_CHANGE_OPTION	// 옵션 바꿀때는 g_pTopView->Init()는 안 한다.
+	if (g_Mode==MODE_CHANGE_OPTION	// g_pTopView->Init() is not done when changing the options.
 		&& !g_pTopView->Init())
 	{
 		return FALSE;
@@ -550,7 +550,7 @@ InitSurface()
 	
 		
 
-	// ColorSet을 초기화시킨다.
+	// Initialise the ColorSet.
 	CIndexSprite::SetColorSet();
 	
 	DrawTitleLoading();	
@@ -605,13 +605,13 @@ InitSound()
 		}
 
 		//-----------------------------------------------------------
-		// RAM 체크해서.. 적당하게 잡아준다.
+		// Check the RAM.. and set a suitable amount.
 		//-----------------------------------------------------------
 		// SDL2: Unified - use default sound part count for all platforms
 		// DirectDraw memory status not available in SDL2
 		g_pClientConfig->MAX_SOUNDPART = 100;
 
-		// ( 전체 개수, 메모리 허용 개수 )
+		// ( the total count, the count allowed in memory )
 		g_pSoundManager->Init( g_pSoundTable->GetSize(), g_pClientConfig->MAX_SOUNDPART );
 
 
@@ -630,7 +630,7 @@ InitDraw()
 	DEBUG_ADD("[ InitGame ]  Draw");
 
 	//--------------------------------------------------------
-	// 3D가속 여부를 ClientConfig에서 읽어온다.
+	// Read from ClientConfig whether to use 3D acceleration.
 	//--------------------------------------------------------
 	g_bHAL = (g_pUserOption->Use3DHAL)? true : false;
 
@@ -675,12 +675,12 @@ InitDraw()
 	}
 
 		//--------------------------------------------------------
-		// Video Memory 얼마인가?
+		// How much Video Memory is there?
 		//--------------------------------------------------------
-		// CSDLGraphics::GetDD()는 항상 nullptr을 반환하는 스텁이고
-		// IDirectDraw는 정의가 없는 불완전 타입이라 실제 DirectDraw VidMem
-		// 조회는 더 이상 불가능함(SDL2 마이그레이션으로 죽은 코드).
-		// 최신 GPU 기준 아래 8M 문턱값은 항상 넘기므로 충분하다고 간주한다.
+		// CSDLGraphics::GetDD() is a stub that always returns nullptr, and
+		// IDirectDraw is an incomplete type with no definition, so the real DirectDraw
+		// VidMem query is no longer possible (dead code since the SDL2 migration).
+		// A modern GPU always clears the 8M threshold below, so it counts as enough.
 		DWORD dwTotal = 256 * 1024 * 1024;
 		DWORD dwFree = 256 * 1024 * 1024;
 
@@ -691,7 +691,7 @@ InitDraw()
 		BOOL enoughMemory = TRUE;
 
 		//--------------------------------------------------------
-		// 8M 이상 남아있는 경우만 3D 가속한다.. 흠.. - -;;
+		// 3D acceleration only when 8M or more is left.. hmm.. - -;;
 		//--------------------------------------------------------
 		if (dwFree < 8388608)
 		{
@@ -699,7 +699,7 @@ InitDraw()
 		}
 
 		//--------------------------------------------------------
-		// 하드웨어 가속 사용 가능
+		// Hardware acceleration available
 		//--------------------------------------------------------
 		bool bUse3D = ( enoughMemory && g_bHAL && ( true ));
 
@@ -713,7 +713,7 @@ InitDraw()
 		}
 		
 		//--------------------------------------------------------
-		// 하드웨어 가속 사용 불가능
+		// Hardware acceleration not available
 		//--------------------------------------------------------
 		// Only after the HAL path above created the display: without g_bHAL
 		// the block below this one does the single 2D init, and this must not
@@ -879,7 +879,7 @@ InitGameUpdate()
 }
 
 //---------------------------------------------------------------------------
-// Surface의 정보를 생성한다.
+// Creates the Surface's information.
 //---------------------------------------------------------------------------
 BOOL
 InitGame()
@@ -1073,7 +1073,7 @@ InitGame()
 
 	if (!InitGameUpdate()) return false;
 
-	// --- 모든 초기화 성공 후 로직 계속 ---
+	// --- every initialisation succeeded: the logic goes on ---
 	{	
 		//yckou
 		CheckInvalidProcess();
@@ -1081,13 +1081,13 @@ InitGame()
 
 
 		//----------------------------------------
-		// 내 profile 초기화
+		// Initialise my profile
 		//----------------------------------------
-		ProfileManager::DeleteProfiles();		// 기존에거 모두 제거
-		ProfileManager::InitProfiles();			// profile 생성
+		ProfileManager::DeleteProfiles();		// remove all the existing ones
+		ProfileManager::InitProfiles();			// create the profiles
 
 
-			// Login Mode로 시작한다.
+			// Start in Login Mode.
 
 			// Debug: Check g_Mode before and after SetMode
 			extern enum CLIENT_MODE g_Mode;
@@ -1106,7 +1106,7 @@ InitGame()
 BOOL
 InitSocket()
 {
-	// 일단 release
+	// release first
 	ReleaseSocket();
 
 	// Debug Message
@@ -1114,8 +1114,8 @@ InitSocket()
 
 
 	//----------------------------------------------------------------------
-	// 환경 파일을 읽어들인다.
-	// 실행 파일은 $VSHOME/bin에, 환경 파일은 $VSHOME/conf 에 존재해야 한다.?	// command line 에서 환경 파일을 지정할 수 있도록 한다.
+	// Read the configuration file.
+	// The executable must be in $VSHOME/bin, the configuration file in $VSHOME/conf.?	// Let the command line name the configuration file.
 	//----------------------------------------------------------------------
 
 	try {
@@ -1165,7 +1165,7 @@ InitSocket()
 	try {		
 		DEBUG_ADD("[ InitGame ]  Socket - Before new PacketFactoryManager");
 
-		// 패킷 팩토리 매니저를 생성, 초기화한다.
+		// Create and initialise the packet factory manager.
 		g_pPacketFactoryManager = new PacketFactoryManager();
 
 		// Composition root for migrated packet handlers (RESTRUCTURING.md
@@ -1185,9 +1185,9 @@ InitSocket()
 		DEBUG_ADD("[ InitGame ]  Socket - Before new Socket...");
 
 		//---------------------------------------------------------
-		// Address 골라서 접속하기
+		// Pick an Address and connect
 		//---------------------------------------------------------
-		// 최근에 접속시도를 했던 서버 주소 번호..
+		// The number of the server address last tried..
 		static std::uint64_t previousTryServer = 0;
 
 		{
@@ -1239,7 +1239,7 @@ InitSocket()
 					pSocket = NULL;
 				}
 
-				// 실패했으니까 다음 주소로..
+				// It failed, so on to the next address..
 				previousTryServer ++;
 
 				throw;
@@ -1379,9 +1379,9 @@ void ReleaseAllObjects()
 	EndTitleLoading();
 	
 	//----------------------------------------------------------------
-	// GameUpdate 제거
+	// Remove the GameUpdate
 	//
-	// update loop 안에서 이걸 실행하면 안된다.
+	// This must not run inside the update loop.
 	//----------------------------------------------------------------
 	ReleaseGameUpdate();
 
@@ -1402,14 +1402,14 @@ void ReleaseAllObjects()
 
 	//----------------------------------------------------------------
 	// 
-	//		Global 정보 제거
+	//		Remove the Global information
 	//
 	//----------------------------------------------------------------
 	ReleasePacketItemTable();
 
 	
 	//----------------------------------------------------------------
-	// UI 제거
+	// Remove the UI
 	//----------------------------------------------------------------
 	if (g_pUIDialog!=NULL)
 	{
@@ -1423,7 +1423,7 @@ void ReleaseAllObjects()
 
 	//----------------------------------------------------------------
 	//
-	//					Game관련 정보
+	//					The Game's information
 	//
 	//----------------------------------------------------------------
 	
@@ -1448,7 +1448,7 @@ void ReleaseAllObjects()
 	}
 	
 	//----------------------------------------------------------------
-	// Player 삭제
+	// Delete the Player
 	//----------------------------------------------------------------
 	DEBUG_ADD("[Release] g_pPlayer");
 	if (g_pPlayer!=NULL)
@@ -1551,7 +1551,7 @@ void ReleaseAllObjects()
 	// Volume control is now handled by SDL_mixer
 
 	//----------------------------------------------------------------
-	// global 제거...
+	// Remove the globals...
 	//----------------------------------------------------------------
 	{
 		if (g_pActionInfoTable) g_pActionInfoTable->Release();	
@@ -4190,7 +4190,7 @@ InitGameObject()
 	g_pInventoryEffectManager = new MScreenEffectManager;
 
 	//----------------------------------------
-	// Player 생성
+	// Create the Player
 	//----------------------------------------
 	if (g_pPlayer!=NULL)
 	{	
@@ -4202,7 +4202,7 @@ InitGameObject()
 		delete g_pPlayer;
 	}
 
-	// Player 기본값 초기화
+	// Initialise the Player's defaults
 	g_pPlayer = new MPlayer;
 	DEBUG_ADD_FORMAT("[g_pPlayer] %p", static_cast<const void*>(g_pPlayer));
 
