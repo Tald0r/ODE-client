@@ -64,6 +64,7 @@ struct MTopViewTestAccess2
 	static void Update(MTopView& view, POINT first) { view.UpdateImageObject(first); }
 	static void DrawTileSurface(MTopView& view) { view.DrawTileSurface(); }
 	static void DrawZone(MTopView& view, int x, int y) { view.DrawZone(x, y); }
+	static MScreenFade& Fade(MTopView& view) { return view.m_Fade; }
 };
 using Access = MTopViewTestAccess2;
 
@@ -1081,6 +1082,21 @@ TEST(TopView2Select, AnEffectAloneOnItsSectorIsNeverPicked)
 	CHECK(scene.Sector(10, 10).RemoveEffect(effect.GetID()));
 }
 
+TEST(TopView2Select, ImageObjectsInSightArePassedOver)
+{
+	Scene scene;
+	MTopView& view = scene.View();
+	MImageObject wall(5, 5, 0, 0, 0, 10, 0), pillar(6, 6, 0, 0, 0, 12, 0);
+	view.m_mapImageObject[(QWORD(10) << 32) | 5] = &wall;
+	view.m_mapImageObject[(QWORD(12) << 32) | 6] = &pillar;
+	Creature vampire(1, kVampire, 10, 10);
+	vampire.Rect(kOver[0], kOver[1], kOver[2], kOver[3]);
+	Stand(scene, vampire, GROUND, 10, 10);
+	CHECK(Pick(scene) == &vampire);
+	Leave(scene, vampire);
+	view.m_mapImageObject.clear();
+}
+
 TEST(TopView2Select, OnlyASelectableEffectIsPicked)
 {
 	Scene scene;
@@ -2008,6 +2024,26 @@ TEST(TopView2Frame, NoZoneNoDraw)
 	const std::vector<WORD> screen = Picture(scene.screen, 800, 600);
 	CHECK(std::all_of(screen.begin(), screen.end(), [](WORD pixel) { return pixel == 0; }));
 	view.m_mapCreature.clear();
+}
+
+TEST(TopView2Frame, TheFirstDrawLaysEveryTileAndEachDrawStepsTheFade)
+{
+	TileScene scene;
+	MTopView& view = scene.View();
+	scene.Event(EVENTID_METEOR, EVENTFLAG_NOT_DRAW_INFORMATION);		// the HUD's own tests draw it
+	scene.Stand(30, 40);
+	view.SetFadeStart(20, 2, 5, 255, 255, 255);
+	g_bFrameChanged = true;
+	view.Draw(0, 0);
+	CHECK(!view.m_bFirstTileDraw);
+	CHECK_EQ(0, scene.WrongCells([](int, int) { return 0; }));
+	CHECK_EQ(0, scene.WrongScreenCorners());
+	CHECK_EQ(15, int(Access::Fade(view).Value()));
+	// Later draws keep the tiles and step the fade on.
+	scene.Gen(1);
+	view.Draw(0, 0);
+	CHECK_EQ(0, scene.WrongCells([](int, int) { return 0; }));
+	CHECK_EQ(10, int(Access::Fade(view).Value()));
 }
 
 TEST(TopView2Frame, TheFullTileDrawCentresThePlayerAndFillsTheSurfaceAroundIt)
