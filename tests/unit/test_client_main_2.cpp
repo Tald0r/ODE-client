@@ -1098,6 +1098,11 @@ TEST(ClientMain2Finish, OnWindowsTheSingleInstanceMutexIsReleased)
 //======================================================================
 // InitApp and InitFailMessage
 //======================================================================
+// Off Windows the cursor checks below read the shim's ShowCursor count,
+// which is ClientMain.cpp's own (one per source file, the recorded defect
+// above), and assume it starts at 0: they rely on this file registering
+// before test_client_main_3.cpp (the sorted glob's link order), whose
+// launches leave that count raised.
 #ifndef PLATFORM_WINDOWS
 TEST(ClientMain2App, OffWindowsTheStartUpHidesTheCursorThenStartsTheGame)
 {

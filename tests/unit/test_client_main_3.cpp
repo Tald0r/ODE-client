@@ -134,6 +134,12 @@ const ClientHost::Host kRecorder = {
 //----------------------------------------------------------------------
 // Everything ClientMain changes, restored afterwards
 //----------------------------------------------------------------------
+// ReleaseAllObjects, which ClientMain reaches through FinishClient, the
+// updater and the patch failure, also resets ~80 hosts and frees the move
+// tables, the UI, the music and the item table, which this does not save:
+// they are at their defaults when this file runs (test_client_main_2.cpp's
+// Shutdown saves and restores all of them), so a test that runs after one
+// which sets them must save them too.
 struct Saved
 {
 	std::filesystem::path	directory = std::filesystem::current_path();
@@ -590,7 +596,10 @@ TEST(ClientMain3Command, TheFutecAddressNeedsTheModeDigitAfterIt)
 	{
 		Launch launch;
 		Poison();
-		CHECK_EQ(0, Run("000000003Futec(1.2.3.4:9999)1"));
+		// The port ends in a space: GetFutecAddress copies it with no
+		// terminator (test_client_main_1.cpp's recorded defect), so a port
+		// ending at ')' would have atoi read the unset bytes after it.
+		CHECK_EQ(0, Run("000000003Futec(1.2.3.4:9999 )1"));
 		CHECK(std::string(g_FutecIP) == "1.2.3.4");
 		CHECK_EQ(9999, g_FutecPort);
 		CHECK_EQ(3, g_Dimension);
