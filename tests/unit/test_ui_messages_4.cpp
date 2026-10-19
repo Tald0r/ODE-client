@@ -1,4 +1,5 @@
 #include "test_framework.h"
+#include "CrtCompat.h"
 #include "gamemodel_world.h"
 #include "type_table_access.h"
 #include "packet_stream_access.h"
@@ -1162,7 +1163,7 @@ const char* const kCurses = "ui_messages_4_curses.txt";
 // The curse list, as a text file of words.
 void Curses(MChatManager& chat, const char* words)
 {
-	FILE* pFile = std::fopen(kCurses, "wb");
+	FILE* pFile = Basic::OpenFile(kCurses, "wb");
 	CHECK(pFile != NULL);
 	if (pFile == NULL) return;
 	std::fputs(words, pFile);
@@ -1179,7 +1180,7 @@ struct BadNames
 	BadNames()
 	{
 		const std::string bytes = std::string("\1\0\0\0", 4) + "\1" + std::string("\4\0\0\0", 4) + "evil";
-		FILE* pFile = std::fopen(kBadNames, "wb");
+		FILE* pFile = Basic::OpenFile(kBadNames, "wb");
 		CHECK(pFile != NULL);
 		if (pFile != NULL) { std::fwrite(bytes.data(), 1, bytes.size(), pFile); std::fclose(pFile); }
 		files.setProperty("FILE_INFO_CHAT_2", kBadNames);
