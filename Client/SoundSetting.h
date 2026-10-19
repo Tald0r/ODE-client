@@ -6,8 +6,7 @@
 
 
 #include "COGGSTREAM.h"
-// g_pOGG: COGGSTREAM.h (dxlib's since task 4.256).
+// g_pOGG and g_oggfile: COGGSTREAM.h (dxlib's since tasks 4.256 and 4.258).
 extern CDirectSoundBuffer*	g_pSoundBufferForOGG;
-extern FILE	*				g_oggfile;
 
 #endif	// __SOUND_SETTING

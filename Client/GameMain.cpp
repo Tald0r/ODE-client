@@ -166,7 +166,7 @@ CStorageSurface*	g_pCursorSurface = NULL;
 // g_SelectSector, g_bLButtonDown, g_bRButtonDown and g_bNetStatusGood are
 // InputState.cpp's (gamemodel, task 4.247).
 BOOL				g_bCButtonDown = FALSE;
-BOOL				g_bUIInput		= FALSE;
+// g_bUIInput is InputState.cpp's (gamemodel) since task 4.258.
 //Edit by sonic 2006.7.27  修改加速地址
 //g_UpdateDelay		= DELAY_UPDATE_GAME
 
@@ -179,7 +179,7 @@ WORD				g_MyBatColorSet = 0xFFFF;
 // ZoneFlags.cpp's, and so are the large and small zones and whether their
 // images are loaded (task 4.253).
 // g_ZoneAmbientSounds is AmbientSoundState.cpp's (gamemodel, task 4.246).
-bool				g_bWatchMode = false;
+// g_bWatchMode is ClientMode.cpp's (gamemodel) since task 4.258.
 
 
 // g_pInventoryEffectManager is MScreenEffectManager.cpp's (task 4.253).

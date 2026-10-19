@@ -6,6 +6,8 @@
 
 // The executable's until task 4.256 (CGameUpdate.cpp).
 COGGSTREAM*	g_pOGG = NULL;
+// The executable's until task 4.258 (CGameUpdate.cpp).
+FILE*		g_oggfile = NULL;
 
 COGGSTREAM::COGGSTREAM(void* pDirectSound, CDirectSoundBuffer* pBuffer,
                        unsigned long ulMin, unsigned long ulMax,

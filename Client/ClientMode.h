@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../basic/Platform.h"
+
 // The stage the client is in, from the opening to the game. SetMode (the
 // executable's) enters a mode with its side effects; g_ModeNext is the
 // mode the main loop switches to next. The state is gamemodel's so that
@@ -49,3 +51,11 @@ extern bool					g_bFamily;
 // Whether the game's window is the active one (the executable's window
 // procedure sets it); the NPC talk box opens only then. A BOOL.
 extern int					g_bActiveGame;
+
+// Whether the game is in watch mode (the executable's key toggles it); no
+// item is dropped or moved then. The executable's until task 4.258.
+extern bool					g_bWatchMode;
+// The login's sequence numbers, set when the player logs in (the
+// executable's until task 4.258).
+extern DWORD				g_dwSeqNumL;
+extern DWORD				g_dwSeqNumG;

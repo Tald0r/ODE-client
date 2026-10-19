@@ -41,6 +41,12 @@
 #define AUDIO_VOLUME_MIN          DSBVOLUME_MIN
 #define AUDIO_VOLUME_MAX          DSBVOLUME_MAX
 
+/* The game's volume slider, 0..15: a position is value*SOUND_DEGREE +
+   SOUND_MIN (Client.h's until task 4.258). */
+const LONG SOUND_MIN	= DSBVOLUME_MIN / 4;
+const LONG SOUND_RANGE	= DSBVOLUME_MAX - SOUND_MIN;
+const LONG SOUND_DEGREE = SOUND_RANGE / 15;
+
 /*-----------------------------------------------------------------------------
 	Buffer Capabilities
 
@@ -134,7 +140,7 @@ typedef struct _DSBPOSITIONNOTIFY {
 
 	Game code still speaks DirectSound units: a volume is an attenuation in
 	hundredths of a decibel (DSBVOLUME_MIN..DSBVOLUME_MAX, see SOUND_MIN and
-	SOUND_DEGREE in Client.h) and a pan runs DSBPAN_LEFT..DSBPAN_RIGHT. The
+	SOUND_DEGREE above) and a pan runs DSBPAN_LEFT..DSBPAN_RIGHT. The
 	SDL backend wants linear percentages. These two functions are the only
 	place that mapping lives, so the adapters and the unit tests agree.
 -----------------------------------------------------------------------------*/

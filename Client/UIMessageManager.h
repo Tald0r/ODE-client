@@ -11,6 +11,41 @@
 #include "../basic/Platform.h"
 #endif
 #include "VS_UI_UIMessage.h"
+#include "ClientMode.h"
+#include "MTypeDef.h"
+
+//-----------------------------------------------------------------------------
+// What the UI's messages need from the program around them, installed by
+// GameInit (task 4.258). A missing host or entry skips the call: InitSocket
+// answers FALSE and the view selects nothing (OBJECTID_NULL). The weather,
+// the zone's music and sending what is queued go through WorldEvents' and
+// LoginPresentation's hosts.
+//-----------------------------------------------------------------------------
+namespace UIMessages {
+
+struct Host
+{
+	// Makes the connection to the login server anew; FALSE when it fails.
+	BOOL (*InitSocket)() = nullptr;
+	// Loads the add-on sprites, part of them or (bLoading) all.
+	bool (*LoadingAddonSPK)(bool bLoading) = nullptr;
+	// Releases the game's objects (the zone, the weather, the party...) on
+	// a logout, and stops the loading thread before it.
+	void (*ReleaseGameObject)() = nullptr;
+	void (*StopLoadingThread)() = nullptr;
+	// Remembers the character slot chosen, for the next character screen.
+	void (*SaveLastSelectedCharacter)(int slot) = nullptr;
+	// Enters the mode now, with its side effects.
+	void (*SetMode)(CLIENT_MODE mode) = nullptr;
+	// The creature and the item the view has selected.
+	TYPE_OBJECTID (*GetSelectedCreature)() = nullptr;
+	TYPE_OBJECTID (*GetSelectedItemID)() = nullptr;
+};
+
+// Borrowed until replaced; answers the host it replaces.
+const Host* SetHost(const Host* host);
+
+}
 
 class UIMessageManager {
 	public :

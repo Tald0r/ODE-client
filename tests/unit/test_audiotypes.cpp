@@ -17,15 +17,6 @@
 
 #include "AudioTypes.h"
 
-namespace {
-
-// Mirrors SOUND_MIN / SOUND_DEGREE in Client/Client.h, which cannot be
-// included here without dragging the executable in.
-const long kSoundMin    = DSBVOLUME_MIN / 4;
-const long kSoundDegree = (DSBVOLUME_MAX - kSoundMin) / 15;
-
-} // namespace
-
 //----------------------------------------------------------------------
 // Volume
 //----------------------------------------------------------------------
@@ -57,7 +48,7 @@ TEST(AudioTypes, VolumeIsMonotonicAcrossTheGameSlider)
 	int previous = -1;
 	for (int value = 0; value < 16; ++value)
 	{
-		int percent = AudioVolumeToPercent(value * kSoundDegree + kSoundMin);
+		int percent = AudioVolumeToPercent(value * SOUND_DEGREE + SOUND_MIN);
 		CHECK(percent > previous);
 		previous = percent;
 	}
@@ -69,7 +60,7 @@ TEST(AudioTypes, VolumeIsNeverSilentAboveTheSliderMinimum)
 {
 	// Distance attenuation subtracts (dist << 2) * VolumeSound from the
 	// limit; a nearby sound at a mid slider setting must still be heard.
-	CHECK(AudioVolumeToPercent(-2500 + 8 * kSoundDegree - (3 << 2) * 8) > 0);
+	CHECK(AudioVolumeToPercent(-2500 + 8 * SOUND_DEGREE - (3 << 2) * 8) > 0);
 }
 
 //----------------------------------------------------------------------

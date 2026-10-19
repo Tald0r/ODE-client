@@ -38,3 +38,10 @@ DWORD				g_double_click_time = 0;
 int					g_TitleSpriteAlpha = 32;
 CSpriteSurface*		g_pBack = NULL;
 CSpriteSurface*		g_pLast = NULL;
+
+// What the UI's messages (UIMessageManager.cpp) read and write, the
+// executable's until task 4.258: whether the game is in watch mode, and
+// the login's sequence numbers.
+bool				g_bWatchMode = false;
+DWORD				g_dwSeqNumL = 0;
+DWORD				g_dwSeqNumG = 0;

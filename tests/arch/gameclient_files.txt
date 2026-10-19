@@ -19,4 +19,6 @@ Client/PacketFunction.cpp
 Client/PacketFunction.h
 Client/ProfileManager.h
 Client/UIFunction.h
+Client/UIMessageManager.cpp
+Client/UIMessageManager.h
 Client/UserOption.h

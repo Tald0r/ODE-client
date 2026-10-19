@@ -69,8 +69,8 @@ private :
 	// SkillType
 	SkillType_t m_SkillType;
 
-	// CEffectID
-	CEffectID_t m_CEffectID;
+	// CEffectID (Eternity's request never sets it)
+	CEffectID_t m_CEffectID = 0;
 
 };
 
