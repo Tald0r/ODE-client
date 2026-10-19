@@ -252,7 +252,7 @@ UpdateSocketInput()
 
 
 	//----------------------------------------------------------------
-	// RequestServerPlayerManager도 처리한다.
+	// Process the RequestServerPlayerManager too.
 	//----------------------------------------------------------------
 	if (!s_NextManagerUpdate) s_NextManagerUpdate = g_FrameNow;
 	MonotonicClock::TimePoint& nextTime = *s_NextManagerUpdate;
@@ -394,19 +394,19 @@ bool CheckInvalidProcess()
 }
 
 //-----------------------------------------------------------------------------
-// Client의 실행 Mode를 설정한다.
+// Sets the client's run mode.
 //-----------------------------------------------------------------------------
-// game 상태 변경과 
-// UI의 mode변경을 처리한다.
+// Handles the game state's change and
+// the UI's mode change.
 //
-// (!)다른 곳~에서는 game상태변경이나 UI mode변경을 처리하지 않도록 해야한다.
+// (!) Nowhere~ else may change the game state or the UI mode.
 //-----------------------------------------------------------------------------
 void		
 SetMode(enum CLIENT_MODE mode)
 {
 	g_Mode = mode;
 
-	// 입력을 초기화한다.
+	// Reset the input.
 	if (g_pSDLInput!=NULL)
 	{
 		g_pSDLInput->UpdateInput();
@@ -415,7 +415,7 @@ SetMode(enum CLIENT_MODE mode)
 		// acquire
 		g_pSDLInput->SetAcquire(true);			
 		
-		// 입력을 초기화한다.
+		// Reset the input.
 		g_pSDLInput->Clear();
 	}
 
@@ -427,13 +427,13 @@ SetMode(enum CLIENT_MODE mode)
 	switch (g_Mode)
 	{
 		//------------------------------------------------------
-		// 뭔가 option을 바꾼다. - -;
+		// Some option changes. - -;
 		//------------------------------------------------------
 		case MODE_CHANGE_OPTION :
 			{
 			}
 			//--------------------------------------------------
-			// 음악 멈춘다.
+			// Stop the music.
 			//--------------------------------------------------
 			if (g_pUserOption->PlayWaveMusic)
 			{
@@ -452,7 +452,7 @@ SetMode(enum CLIENT_MODE mode)
 			s_pGameMainHost->InitSurface();
 
 			//-----------------------------------------------------------------
-			// 잠시 기다려 달라고 출력..
+			// Show "please wait"..
 			//-----------------------------------------------------------------
 			g_pUIDialog->PopupFreeMessageDlg( (*g_pGameStringTable)[STRING_MESSAGE_WAIT].GetString(), -1, -1, 0 );
 
@@ -460,7 +460,7 @@ SetMode(enum CLIENT_MODE mode)
 			gC_vs_ui.Show();
 
 			//-----------------------------------------------------------------
-			// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
+			// Copy Last to Back - only without 3D HAL..
 			//-----------------------------------------------------------------
 			{
 				POINT point = { 0, 0 };
@@ -472,7 +472,7 @@ SetMode(enum CLIENT_MODE mode)
 			CSDLGraphics::Flip();
 
 			//-----------------------------------------------------------------
-			// g_pTopView : 2D <--> 3D 바뀔때..
+			// g_pTopView : when switching 2D <--> 3D..
 			//-----------------------------------------------------------------
 			if (g_pTopView!=NULL && !g_pTopView->InitChanges())
 			{
@@ -484,12 +484,12 @@ SetMode(enum CLIENT_MODE mode)
 
 			g_pUIDialog->CloseMessageDlg();
 
-			// 바로 다음에 MAINMENU로.. - -;
+			// Straight on to MAINMENU.. - -;
 			SetMode( MODE_MAINMENU );
 		break;
 
 		//------------------------------------------------------
-		// Login 상태 설정..
+		// Set up the login state..
 		//------------------------------------------------------
 		case MODE_MAINMENU :
 			// Debug Message
@@ -500,16 +500,16 @@ SetMode(enum CLIENT_MODE mode)
 
 
 			//------------------------------------------------------
-			// Socket 해제..
+			// Release the socket..
 			//------------------------------------------------------
 			if(NULL == g_pUserInformation->pLogInClientPlayer &&
-				true == g_pUserInformation->IsAutoLogIn)// 웹 로긴이고 한번도 로그인 하지 않았을경우
+				true == g_pUserInformation->IsAutoLogIn)// a web login that has never logged in
 				s_pGameMainHost->ReleaseSocket();
 
 
 			//------------------------------------------------------
 			// [ TEST CODE ]
-			// 여기서 sound를 초기화해도 되남??
+			// is it all right to init the sound here??
 			//------------------------------------------------------
 			s_pGameMainHost->InitSound();
 
@@ -524,29 +524,29 @@ SetMode(enum CLIENT_MODE mode)
 
 
 			//------------------------------------------------------
-			// 모두 대화 허용
+			// Accept chat from everyone
 			//------------------------------------------------------
 			g_pChatManager->ClearID();
 			g_pChatManager->SetAcceptMode();
 
-			// Title화면 UI시작
+			// Start the title screen UI
 			gC_vs_ui.StartTitle();	
 		
 			gC_vs_ui.DropItem();
 
 			g_bUIInput = FALSE;			
 
-			// 귓속말 안 받을려고... 냠 -- ;
+			// So as not to get whispers... nyam -- ;
 			if (g_pUserInformation!=NULL)
 			{
-				// 귓속말 대상을 지워준다.
+				// Clear the whisper target.
 				g_pUserInformation->WhisperID.Release();
 
 				g_pUserInformation->CharacterID.Release();
 			}
 
 			//----------------------------------------------
-			// message 제거
+			// Clear the messages
 			//----------------------------------------------
 			g_pSystemMessage->Clear();
 			g_pPlayerMessage->Clear();
@@ -555,7 +555,7 @@ SetMode(enum CLIENT_MODE mode)
 
 
 			//------------------------------------------------------
-			// 음악 시작
+			// Start the music
 			//------------------------------------------------------
 			if (g_pUserOption->PlayWaveMusic)
 			// Music playback - use SDL_mixer (cross-platform)
@@ -572,7 +572,7 @@ SetMode(enum CLIENT_MODE mode)
 			}
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_LOGIN;	
 			g_pUpdate = g_pCWaitUIUpdate;
@@ -580,7 +580,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// PC를 선택하기 위한 정보를 기다린다.
+		// Wait for the information to select a PC.
 		//------------------------------------------------------
 		case MODE_NEWUSER :
 		{
@@ -588,7 +588,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_NEWUSER");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_LOGIN;	
 			g_pUpdate = g_pCWaitUIUpdate;
@@ -597,10 +597,10 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// Login이 성공되기를 기다린다.
+		// Wait for the login to succeed.
 		//------------------------------------------------------
-		// (ID, Password)를 보내고
-		// Login이 성공 되기를 기다린다.
+		// Send (ID, Password)
+		// and wait for the login to succeed.
 		//------------------------------------------------------
 		case MODE_WAIT_LOGINOK :
 		{
@@ -608,7 +608,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_LOGINOK");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;			
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -626,7 +626,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_WORLD_LIST");
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;			
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -646,7 +646,7 @@ SetMode(enum CLIENT_MODE mode)
 			g_pUserInformation->KeepConnection = FALSE;			
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_LOGIN;	
 			g_pUpdate = g_pCWaitUIUpdate;
@@ -663,7 +663,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_SERVER_LIST");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;			
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -683,7 +683,7 @@ SetMode(enum CLIENT_MODE mode)
 			g_pUserInformation->KeepConnection = FALSE;			
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_LOGIN;	
 			g_pUpdate = g_pCWaitUIUpdate;
@@ -693,21 +693,21 @@ SetMode(enum CLIENT_MODE mode)
 
 		
 		//------------------------------------------------------
-		// 잘못 입력한 경우이다.
+		// A wrong input.
 		//------------------------------------------------------
 		case MODE_LOGIN_WRONG :
 		{
-			// 다시 mainmenu로..
+			// Back to the main menu..
 
 			g_Mode = MODE_MAINMENU;
 
 			//-----------------------
-			// Socket 해제..
+			// Release the socket..
 			//-----------------------
 			s_pGameMainHost->ReleaseSocket();
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_LOGIN;	
 			g_pUpdate = g_pCWaitUIUpdate;
@@ -716,7 +716,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// Register되기를 기다린다.
+		// Wait for the registration.
 		//------------------------------------------------------		
 		case MODE_WAIT_REGISTERPLAYEROK :
 		{
@@ -724,7 +724,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_REGISTERPLAYEROK");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;			
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -734,7 +734,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// PC를 선택하기 위한 정보를 기다린다.
+		// Wait for the information to select a PC.
 		//------------------------------------------------------
 		case MODE_WAIT_PCLIST :
 		{			
@@ -742,14 +742,14 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_PCLIST");				
 			
 			//------------------------------------------------------------
-			// Characer 선택 창을 띄워야 한다.
+			// The character selection window has to be shown.
 			//------------------------------------------------------------
-			// LCPCListHandler에서 하게 했다.
+			// LCPCListHandler does that now.
 
 			g_ZoneAmbientSounds.SetNextSoundTime(g_FrameNow);
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;		
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -759,7 +759,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// PC를 선택하기 위한 정보를 기다린다.
+		// Wait for the information to select a PC.
 		//------------------------------------------------------
 		case MODE_WAIT_SELECTPC :
 		{
@@ -767,7 +767,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_SELECTPC");
 			
 			//----------------------------------------------
-			// Player의 정보 초기화
+			// Reset the player's information
 			//----------------------------------------------
 			g_pUserInformation->KeepConnection = FALSE;
 			
@@ -775,7 +775,7 @@ SetMode(enum CLIENT_MODE mode)
 			SelectLastSelectedCharacter();
 
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_MorphCreatureType = 0;
 			g_UpdateDelay = DELAY_UPDATE_LOGIN;	
@@ -785,7 +785,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// PC가 제대로 생성되었나?
+		// Was the PC created properly?
 		//------------------------------------------------------
 		case MODE_WAIT_CREATEPCOK :
 		{
@@ -793,7 +793,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_CREATEPCOK");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;		
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -803,7 +803,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// PC가 제대로 생성되었나?
+		// Was the PC created properly?
 		//------------------------------------------------------
 		case MODE_WAIT_DELETEPCOK :
 		{
@@ -811,7 +811,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_DELETEPCOK");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;		
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -821,7 +821,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// GameServer로 접속하기 위해서...
+		// To connect to the game server...
 		//------------------------------------------------------
 		case MODE_WAIT_RECONNECT :
 		{				
@@ -829,7 +829,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_RECONNECT");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;		
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -839,21 +839,21 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// GameServer에서 LoginServer로 재접속하기 위해서...
+		// To reconnect from the game server to the login server...
 		//------------------------------------------------------
 		case MODE_WAIT_RECONNECT_LOGIN :
 		{				
 			// Debug Message
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_RECONNECT_LOGIN");
 
-			// 귓속말 안 받을려고... 냠 -- ;
+			// So as not to get whispers... nyam -- ;
 			if (g_pUserInformation!=NULL)
 			{
 				g_pUserInformation->CharacterID.Release();
 			}
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;		
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -863,12 +863,12 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// UpdateInfo를 받는다.
+		// Receive UpdateInfo.
 		//------------------------------------------------------
 		case MODE_WAIT_UPDATEINFO :
 		{	
 			//--------------------------------------------------
-			// Player 초기화
+			// Reset the player
 			//--------------------------------------------------
 			if (g_pPlayer!=NULL)
 			{
@@ -882,19 +882,19 @@ SetMode(enum CLIENT_MODE mode)
 			}
 
 			//--------------------------------------------------
-			// 정당방위 초기화
+			// Reset self-defense
 			//--------------------------------------------------
 			g_pJusticeAttackManager->Release();
 
 			//--------------------------------------------------
 			//
-			// Skill Tree 초기화 - 임시로.. - -;;
+			// Init the skill tree - for now.. - -;;
 			//
 			//--------------------------------------------------
 			ZoneLoading::InitSkillTree();
 
 			//------------------------------
-			// 게임 UI 를 시작한다.
+			// Start the game UI.
 			//------------------------------
 			UI_SetCharInfoName(g_pUserInformation->CharacterID);
 			DEBUG_ADD("[ SetMode ] SET CHARINFO");
@@ -908,7 +908,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_UPDATEINFO");
 			
 			//----------------------------------------------
-			// update 함수 설정
+			// Set the update function
 			//----------------------------------------------
 			g_UpdateDelay = DELAY_UPDATE_WAITING;		
 			g_pUpdate = g_pCWaitPacketUpdate;
@@ -918,7 +918,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// Player의 좌표를 받기 위해서 기다린다.
+		// Wait to receive the player's position.
 		//------------------------------------------------------
 		case MODE_WAIT_SETPOSITION :
 		{
@@ -926,18 +926,18 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("[ SetMode ]  MODE_WAIT_SETPOSITION");
 			
 			//--------------------------------------------------
-			// Option 저장
+			// Save the options
 			//--------------------------------------------------
 			if (g_pUserOption!=NULL)
 			{
 				g_pUserOption->SaveToFile( g_pFileDef->getProperty("FILE_INFO_USEROPTION").c_str());
 			}
 			
-			// 정지..
+			// Stop..
 			g_pPlayer->SetStop();
 			g_pPlayer->SetAction( ACTION_STAND );
 
-			// 키 입력 제거
+			// Drop the key input
 			g_pSDLInput->Clear();
 
 			g_bLButtonDown = FALSE;
@@ -955,13 +955,13 @@ SetMode(enum CLIENT_MODE mode)
 			}
 
 			//--------------------------------------------------
-			// 게임 서버로 CGReady 패킷을 보낸다.
+			// Send the CGReady packet to the game server.
 			//--------------------------------------------------
 				CGReady cgReady;
 				g_pSocket->sendPacket( &cgReady );
 				g_pSocket->setPlayerStatus( CPS_WAITING_FOR_GC_SET_POSITION );
 
-				// 바로 보낸다.
+				// Send it right away.
 				UpdateSocketOutput();
 
 			g_SelectSector.x = 0;
@@ -975,7 +975,7 @@ SetMode(enum CLIENT_MODE mode)
 				g_pTopView->SetSelectedNULL();
 			}
 		
-			// update 함수
+			// The update function
 			g_UpdateDelay = DELAY_UPDATE_WAITING;			
 			g_pUpdate = g_pCWaitPacketUpdate;
 			g_pCWaitPacketUpdate->SetDelay( g_pClientConfig->MAX_WAIT_PACKET );
@@ -984,7 +984,7 @@ SetMode(enum CLIENT_MODE mode)
 		break;
 
 		//------------------------------------------------------
-		// 게임을 시작한다.
+		// Start the game.
 		//------------------------------------------------------
 		case MODE_GAME :
 			DEBUG_ADD("---------- Start Game ---------- ");
@@ -997,7 +997,7 @@ SetMode(enum CLIENT_MODE mode)
 			DEBUG_ADD("TempInformation");
 
 			//-----------------------------------------------------------
-			// temp information제거
+			// Clear the temp information
 			//-----------------------------------------------------------
 			g_pTempInformation->SetMode(TempInformation::MODE_NULL);
 
@@ -1008,34 +1008,34 @@ SetMode(enum CLIENT_MODE mode)
 			g_pUserInformation->CancelLogout();
 		
 			//-----------------------------------------------------------
-			// hot key를 저장한다.
+			// Save the hot keys.
 			//-----------------------------------------------------------
 			DEBUG_ADD("SaveHotKey");
 			UI_SaveHotKeyToServer();			
 
 			//-----------------------------------------
-			// Button 초기화
+			// Reset the buttons
 			//-----------------------------------------
 			g_bLButtonDown = FALSE;
 			g_bRButtonDown = FALSE;
 			g_bCButtonDown = FALSE;
 
 			//-----------------------------------------
-			// UI Dialog에서 입력 막은거 풀어줌..
+			// Unlock the input the UI dialogs locked..
 			//-----------------------------------------
 			DEBUG_ADD("UIDialog");
 			UIDialog::UnSetLockInputPCTalk();
 			UIDialog::UnSetLockInputMessage();
 
-			// 부활 버튼 없애기
-			// 이거는 GCUpdateInfoHandler에서 해야하는데.. 일단. - -;
+			// Remove the resurrect button
+			// This belongs in GCUpdateInfoHandler.. for now. - -;
 			DEBUG_ADD("FinishRequestDie");
 			gC_vs_ui.FinishRequestDie();
 			gC_vs_ui.FinishRequestResurrect();
 			gC_vs_ui.CloseRequestShrineMinimap();
 
 
-//Edit by sonic 2006.7.27  修改加速地址
+//Edit by sonic 2006.7.27  changed the speed-up address
 			g_UpdateDelay = 100 ^ 90;
 			
 			DEBUG_ADD("SetUpdate");
@@ -1051,19 +1051,19 @@ g_pUpdate = g_pCGameUpdate;
 
 		
 		//------------------------------------------------------
-		// Program을 끝낸다.
+		// End the program.
 		//------------------------------------------------------
 		case MODE_QUIT :
-			// Logout을 보낸다.
+			// Send the logout.
 				if (g_pSocket!=NULL)
 				{
 					//--------------------------------------------------
-					// update할려고 종료하는 경우는 CLLogout을 보낸다.
+					// Quitting to update sends CLLogout.
 					//--------------------------------------------------
 					if (g_bNeedUpdate)
 					{
 						//--------------------------------------------------
-						// Login 서버로 CLLogout 패킷을 보낸다.
+						// Send the CLLogout packet to the login server.
 						//--------------------------------------------------
 							CLLogout clLogout;
 						
@@ -1071,7 +1071,7 @@ g_pUpdate = g_pCGameUpdate;
 
 					}
 					//--------------------------------------------------
-					// game중에 종료하는 경우.. CG Logout
+					// Quitting during the game.. CG Logout
 					//--------------------------------------------------
 					else
 					{
@@ -1083,16 +1083,16 @@ g_pUpdate = g_pCGameUpdate;
 				}
 
 			//--------------------------------------------------
-			// Thread Loading 종료..
+			// Stop the thread loading..
 			//--------------------------------------------------
 			s_pGameMainHost->StopLoadingThread();
 
-			// Update함수 설정
+			// Set the update function
 			g_pUpdate = NULL;
 
 			g_bUIInput = FALSE;
 
-			// window 닫기
+			// Close the window
 			g_bActiveApp = FALSE;
 #ifdef PLATFORM_WINDOWS
 			PostMessage(g_hWnd, WM_CLOSE, 0, 0);
@@ -1107,15 +1107,15 @@ g_pUpdate = g_pCGameUpdate;
 			break;
 	}
 
-	// 입력을 초기화한다.
+	// Reset the input.
 	g_pSDLInput->Clear();
 }
 
 //-----------------------------------------------------------------------------
 // Check Activate
 //-----------------------------------------------------------------------------
-// 프로그램이 실행중인지 아닌지에 따라서 처리..
-// ALT + TAB 과 관련이 깊다. - -;
+// Handles whether the program is active or not..
+// Much to do with ALT + TAB. - -;
 //-----------------------------------------------------------------------------
 void
 CheckActivate(BOOL bActiveGame)
@@ -1126,12 +1126,12 @@ CheckActivate(BOOL bActiveGame)
 		// acquire
 		g_pSDLInput->SetAcquire(bActiveGame==TRUE);			
 		
-		// 입력을 초기화한다.
+		// Reset the input.
 		g_pSDLInput->Clear();
 	}
 	
 	//----------------------------------------------------
-	// 프로그램 진행..
+	// The program runs..
 	//----------------------------------------------------
 	g_bActiveGame = FALSE;
 
@@ -1193,7 +1193,7 @@ CheckActivate(BOOL bActiveGame)
 			}
 
 			//--------------------------------------------------------
-			// 감마값 재 설정
+			// Set the gamma again
 			//--------------------------------------------------------
 			if (g_pUserOption!=NULL
 				&& g_pClientConfig!=NULL)				
@@ -1205,7 +1205,7 @@ CheckActivate(BOOL bActiveGame)
 				}
 				
 				//------------------------------------
-				// 연주중이면.. 중단..
+				// If playing.. stop..
 				//------------------------------------
 				// Music playback - use SDL_mixer (cross-platform)
 				if (g_pUserOption->PlayMusic)
@@ -1230,7 +1230,7 @@ CheckActivate(BOOL bActiveGame)
 					}
 				}
 				//------------------------------------
-				// 연주중이 아닌 경우
+				// When not playing
 				//------------------------------------
 				else
 				{
@@ -1244,7 +1244,7 @@ CheckActivate(BOOL bActiveGame)
 			}
 
 			//--------------------------------
-			// mouse 버튼 눌린 상태 제거
+			// Clear the mouse buttons' pressed state
 			//--------------------------------
 			g_bLButtonDown = FALSE;
 			g_bRButtonDown = FALSE;
@@ -1256,7 +1256,7 @@ CheckActivate(BOOL bActiveGame)
 			}
 
 			
-			// UI에서 alt+tab처리
+			// alt+tab in the UI
 			DEBUG_ADD("UI_RestoreWhenActivateGame");
 
 			gC_vs_ui.RestoreWhenActivateGame();
@@ -1264,7 +1264,7 @@ CheckActivate(BOOL bActiveGame)
 			DEBUG_ADD("UI_Restore_ok");
 		}
 		//----------------------------------------------------
-		// 멈춤..
+		// Stopped..
 		//----------------------------------------------------
 		else
 		{
@@ -1283,7 +1283,7 @@ CheckActivate(BOOL bActiveGame)
 				g_SDLAudio.SetMute();			
 			}
 			
-			// 반복 동작 중지
+			// Stop the repeated action
 			if (g_pPlayer!=NULL)
 			{
 				g_pPlayer->UnSetRepeatAction();
@@ -1296,7 +1296,7 @@ CheckActivate(BOOL bActiveGame)
 //-----------------------------------------------------------------------------
 // Load Creature
 //-----------------------------------------------------------------------------
-// n번째 Creature Type ID의 Sprite를 load한다.
+// Loads the sprites of the n-th creature type ID.
 //-----------------------------------------------------------------------------
 BOOL
 LoadCreature(int spriteType)
@@ -1323,13 +1323,13 @@ ReleaseUselessCreatureSPKExcept(const COrderedList<int>& listUse)
 //-----------------------------------------------------------------------------
 // Release GameObject
 //-----------------------------------------------------------------------------
-// game에 관련된 object들을 제거시킨다.
+// Removes the game's objects.
 //-----------------------------------------------------------------------------
 void
 ReleaseGameObject()
 {
 	//------------------------------------------------------
-	// 날씨 제거
+	// Remove the weather
 	//------------------------------------------------------
 	g_pWeather->Release();
 
@@ -1340,7 +1340,7 @@ ReleaseGameObject()
 	g_pTimeItemManager->clear();
 
 	//------------------------------------------------------
-	// Zone에서 Player제거 / Zone 제거
+	// Remove the player from the zone / remove the zone
 	//------------------------------------------------------
 	if (g_pZone!=NULL)
 	{
@@ -1363,7 +1363,7 @@ ReleaseGameObject()
 	}
 
 	//------------------------------------------------------
-	// player제거
+	// Remove the player
 	//------------------------------------------------------
 	if (g_pPlayer!=NULL)
 	{
@@ -1413,16 +1413,16 @@ GetNearSpriteSets(CSpriteSetManager& TileSSM, CSpriteSetManager& ImageObjectSSM)
 //-----------------------------------------------------------------------------
 // Load Zone
 //-----------------------------------------------------------------------------
-// n번째 zone을 load한다.
+// Loads zone n.
 //-----------------------------------------------------------------------------
 BOOL
 LoadZone(int n)
 {	
 	//------------------------------------------------
-	// Zone의 종류(size)에 따른 처	리
+	// Handling by the zone's kind (size)
 	//------------------------------------------------
 	// 
-	// 같은 종류(size)에 따른 Zone에 Load를 해야한다.
+	// It has to load into the zone of the same kind (size).
 	//
 	//------------------------------------------------
 	ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( n );
@@ -1435,7 +1435,7 @@ LoadZone(int n)
 	}
 
 	//------------------------------------------------
-	// 모든 사운드를 정지해버린다.
+	// Stop every sound.
 	//------------------------------------------------
 	if (g_pSoundManager!=NULL)
 	{
@@ -1449,7 +1449,7 @@ LoadZone(int n)
 	DEBUG_ADD_FORMAT("LoadZone : ID=%d, Filename=%s", pZoneInfo->ID, pZoneInfo->Filename.GetString());		
 	
 	//------------------------------------------------
-	// Music 정지...
+	// Stop the music...
 	//------------------------------------------------
 	if (g_pUserOption->PlayWaveMusic)
 	{
@@ -1465,18 +1465,18 @@ LoadZone(int n)
 	}
 
 	//-------------------------------------------------------------
-	// Loading 중이던것 모두 제거
+	// Drop everything being loaded
 	//-------------------------------------------------------------
 	s_pGameMainHost->StopLoadingThread();
 
-	// priority를 최대한 낮춘다.
+	// Lower the priority as far as it goes.
 	// Thread priority is platform-specific - currently implemented for Windows only
 #ifdef PLATFORM_WINDOWS
 	s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_IDLE );
 #endif // PLATFORM_WINDOWS
 
 	//----------------------------------------------------------------------
-	// 현재 Zone의 object들 제거
+	// Remove the current zone's objects
 	//----------------------------------------------------------------------
 	if (g_pZone!=NULL)
 	{
@@ -1491,8 +1491,8 @@ LoadZone(int n)
 	if (pZoneInfo->Property & FLAG_ZONESIZE_SMALL)
 	{	
 		//-------------------------------------------
-		// 이전에 LargeZone에 있었다면.. 
-		// 그림자 다시 생성
+		// If we were in a large zone before..
+		// make the shadows again
 		//-------------------------------------------
 		if (g_bZonePlayerInLarge)
 		{
@@ -1500,38 +1500,38 @@ LoadZone(int n)
 		}
 		
 		//-------------------------------------------
-		// 다시 load할 필요가 없는 경우
+		// No need to load it again
 		//-------------------------------------------
 		if (g_nZoneSmall==n && g_pZoneSmall!=NULL)
 		{
 			DEBUG_ADD("ReleaseObject in SmallZone");
 			
-			// object들 제거
+			// Remove the objects
 			g_pZoneSmall->ReleaseObject();
 
 			DEBUG_ADD("OK");
 			
 
-			// SmallZone의 pointer를 대입
+			// Take the small zone's pointer
 			g_pZone	= g_pZoneSmall;
 
 			UI_DrawProgress( 95 );
 		}
 		//-------------------------------------------
-		// 다시 Load해야될 경우
+		// It has to be loaded again
 		//-------------------------------------------
 		else
 		{
-			// Load할 Zone의 종류(size)를 기억
+			// Remember the kind (size) of zone to load
 			g_nZoneSmall = n;	
 
 			DEBUG_ADD("[Load Zone] Release Old Tile&ImageObject SPK");
 			
-			// 이전 Zone에 있던 Sprite들을 지워준다.
+			// Delete the previous zone's sprites.
 			g_pTopView->ReleaseTileSPKSmallZone();		
 			g_pTopView->ReleaseImageObjectSPKSmallZone();	
 			
-			// SmallZone을 초기화한다.
+			// Reset the small zone.
 			if (g_pZoneSmall != NULL)
 			{
 				DEBUG_ADD( "Delete old ZoneSmall");
@@ -1543,10 +1543,10 @@ LoadZone(int n)
 			
 			g_pZoneSmall = new MZone;
 
-			// SmallZone의 pointer를 대입
+			// Take the small zone's pointer
 			g_pZone	= g_pZoneSmall;
 
-			// 틴버전인경우 틴버전용 맵파일 로딩
+			// For the teen version, load the teen map file
 			MString filename = pZoneInfo->Filename;
 			if(g_pUserInformation->GoreLevel == false)
 			{
@@ -1557,7 +1557,7 @@ LoadZone(int n)
 			std::ifstream file;
 			if (!FileOpenBinary(filename, file))
 			{
-				// priority를 정상으로
+				// Priority back to normal
 				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE; 
@@ -1567,12 +1567,12 @@ LoadZone(int n)
 			
 			UI_DrawProgress( 80 );
 
-			// Zone loading 실패?
+			// Zone loading failed?
 			if (!g_pZone->LoadFromFile( file ))
 			{
 				SetMode( MODE_QUIT );
 
-				// priority를 정상으로
+				// Priority back to normal
 				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 				return FALSE;
 			}
@@ -1586,7 +1586,7 @@ LoadZone(int n)
 			UI_DrawProgress( 90 );
 
 			//-------------------------------------------------------
-			// Player의 좌표 근처의 Sprite들을 Load한다.
+			// Load the sprites near the player's position.
 			//-------------------------------------------------------
 			DEBUG_ADD("[Load Zone] Find Tile&ImageObject ID");
 			
@@ -1605,7 +1605,7 @@ LoadZone(int n)
 			UI_DrawProgress( 95 );
 		}
 		
-		// 틴버전인경우 틴버전용 맵파일 로딩
+		// For the teen version, load the teen map file
 		MString filename = (*g_pZoneTable).Get(g_nZoneSmall)->Filename;
 		if(g_pUserInformation->GoreLevel == false)
 		{
@@ -1641,8 +1641,8 @@ LoadZone(int n)
 	else
 	{
 		//-------------------------------------------
-		// 이전에 SmallZone에 있었다면.. 
-		// 그림자 다시 생성
+		// If we were in a small zone before..
+		// make the shadows again
 		//-------------------------------------------
 		if (!g_bZonePlayerInLarge)
 		{
@@ -1650,38 +1650,38 @@ LoadZone(int n)
 		}
 
 		//-----------------------------------------------
-		// 다시 Load해야할 필요가 없는 경우
+		// No need to load it again
 		//-----------------------------------------------
 		if (g_nZoneLarge==n && g_pZoneLarge!=NULL)
 		{
 			DEBUG_ADD("ReleaseObject in LargeZone");
 			
-			// object들 제거
+			// Remove the objects
 			g_pZoneLarge->ReleaseObject();
 			
 			DEBUG_ADD("OK");
 			
 
-			// LargeZone의 pointer를 대입
+			// Take the large zone's pointer
 			g_pZone	= g_pZoneLarge;
 
 			UI_DrawProgress( 95 );
 		}
 		//-----------------------------------------------
-		// 다시 Load해야될 경우
+		// It has to be loaded again
 		//-----------------------------------------------
 		else
 		{
-			// Load할 Zone의 종류(size)를 기억
+			// Remember the kind (size) of zone to load
 			g_nZoneLarge = n;	
 
 			DEBUG_ADD("[Load Zone] Release Old Tile&ImageObject SPK");
 			
-			// 이전 Zone에 있던 Sprite들을 지워준다.
+			// Delete the previous zone's sprites.
 			g_pTopView->ReleaseTileSPKLargeZone();		
 			g_pTopView->ReleaseImageObjectSPKLargeZone();	
 			
-			// LargeZone을 초기화한다.
+			// Reset the large zone.
 			if (g_pZoneLarge != NULL)
 			{
 				DEBUG_ADD( "Delete old ZoneLarge");
@@ -1693,10 +1693,10 @@ LoadZone(int n)
 			
 			g_pZoneLarge = new MZone;
 
-			// LargeZone의 pointer를 대입
+			// Take the large zone's pointer
 			g_pZone	= g_pZoneLarge;			
 			
-			// 틴버전인경우 틴버전용 맵파일 로딩
+			// For the teen version, load the teen map file
 			MString filename = pZoneInfo->Filename;
 			if(g_pUserInformation->GoreLevel == false)
 			{
@@ -1707,7 +1707,7 @@ LoadZone(int n)
 			std::ifstream file;
 			if (!FileOpenBinary(filename, file))
 			{
-				// priority를 정상으로
+				// Priority back to normal
 				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE; 
@@ -1717,12 +1717,12 @@ LoadZone(int n)
 			
 			UI_DrawProgress( 80 );
 
-			// Zone loading 실패?
+			// Zone loading failed?
 			if (!g_pZone->LoadFromFile( file ))
 			{
 				SetMode( MODE_QUIT );
 
-				// priority를 정상으로
+				// Priority back to normal
 				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE;
@@ -1733,7 +1733,7 @@ LoadZone(int n)
 			UI_DrawProgress( 90 );
 			
 			//-------------------------------------------------------
-			// Player의 좌표 근처의 Sprite들을 Load한다.
+			// Load the sprites near the player's position.
 			//-------------------------------------------------------
 			DEBUG_ADD("[Load Zone] Find Tile&ImageObject ID");
 			
@@ -1782,7 +1782,7 @@ LoadZone(int n)
 	DEBUG_ADD("[Load Zone] Before Minimap Loading");
 
 	//------------------------------------------------
-	// UI에 zone설정..
+	// Set the zone in the UI..
 	//------------------------------------------------
 	SIZE zoneSize = { g_pZone->GetWidth(), g_pZone->GetHeight() };
 
@@ -1793,12 +1793,12 @@ LoadZone(int n)
 	LoadZoneInfo( n );
 	g_pZone->SetCurrentZoneID( n );
 
-	// 2004, 6, 22 sobeit add start - 질드레 코어 관련
+	// 2004, 6, 22 sobeit add start - for the Gilles de Rais core
 	Add_GDR_Ghost(n);
 	Add_GDR_Effect(1,false);
 	Add_GDR_Effect(2,false);
 	Add_GDR_Potal_Effect(n);
-	// 2005, 1, 18, sobeit add start-퀘스트 땜에 - bDisableTileImage==false가 대부분이므로..
+	// 2005, 1, 18, sobeit add start - for the quest - since bDisableTileImage==false almost everywhere..
 	if(n == 4001)
 	{
 		for (int i=0; i<g_pZone->GetHeight(); i++)
@@ -1810,7 +1810,7 @@ LoadZone(int n)
 		}
 	}
 	// 2005, 1, 18, sobeit add end
-	// 2004, 9, 21, sobeit add start - 아담 북 구름
+	// 2004, 9, 21, sobeit add start - the north Adam cloud
 	else if(n == 74)
 	{
 		if(g_pPlayer->GetY()<60)
@@ -1821,21 +1821,21 @@ LoadZone(int n)
 	// 2004, 9, 21, sobeit add end
 	// 2004, 6, 22 sobeit add end
 	//------------------------------------------------
-	// Random SoundID 시간 설정
+	// Set the random sound ID's time
 	//------------------------------------------------
 	g_ZoneAmbientSounds.DelayAfterZoneLoad(g_FrameNow, static_cast<unsigned>(rand()));
 	
 	//------------------------------------------------
-	// View에게 출력해야할 Zone을 지정한다.
+	// Tell the view which zone to draw.
 	//------------------------------------------------
-	// 이전에 출력된 creature들을 없앤다.
+	// This drops the creatures drawn before.
 	g_pTopView->SetZone(g_pZone);	
 
 	// Debug Message
 	DEBUG_ADD_FORMAT("LoadZone OK : size=(%d, %d)", g_pZone->GetWidth(), g_pZone->GetHeight());			
 		
 
-	// priority를 정상으로
+	// Priority back to normal
 	s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 	if (pZoneInfo->CreatureColorSet < MAX_COLORSET)
@@ -1868,13 +1868,13 @@ LoadZone(int n)
 //-----------------------------------------------------------------------------
 // Move Zone 
 //-----------------------------------------------------------------------------
-// Zone을 이동한다.
+// Moves to another zone.
 //-----------------------------------------------------------------------------
 void
 MoveZone(int n)
 {
 	//------------------------------------------------
-	// Zone에서 Player를 빼낸다.
+	// Take the player out of the zone.
 	//------------------------------------------------
 	if (g_pZone != NULL)
 	{
@@ -1883,7 +1883,7 @@ MoveZone(int n)
 		g_pZone->RemovePlayer();
 	}
 	
-	// n Zone을 load한다.
+	// Load zone n.
 	LoadZone( n );
 
 	g_pPlayer->SetZone(g_pZone);
@@ -1922,7 +1922,7 @@ LoadZoneInfo(int n)
 	std::ifstream zoneInfoFile(Basic::NormalizeDataPath(pZoneInfo->InfoFilename.GetString()), ios::binary);
 
 	//------------------------------------------------
-	// File이 있는 경우만 loading한다.
+	// Load only when the file exists.
 	//------------------------------------------------
 	if (zoneInfoFile.is_open())
 	{
@@ -1938,8 +1938,8 @@ LoadZoneInfo(int n)
 			DEBUG_ADD("[Load Zone] Load PortalInfo");
 			
 			//------------------------------------------------
-			// 포탈 정보를 loading한다.
-			// 내부에서 해주는게 좋지만... 일단..
+			// Load the portal information.
+			// Better done inside... but for now..
 			//------------------------------------------------
 			const int numPortal = static_cast<int>(zoneInfo.portals.size());
 
@@ -1964,7 +1964,7 @@ LoadZoneInfo(int n)
 				}
 
 				//------------------------------------------------
-				// UI에 설정한다.
+				// Set it in the UI.
 				//------------------------------------------------
 				if (numZoneID==1)
 				{					
@@ -1976,7 +1976,7 @@ LoadZoneInfo(int n)
 				{
 					DEBUG_ADD("UI SetPortal - 60001");
 
-					// 멀티 포탈인 경우.. ㅋㅋ.. _-_;
+					// A multi-portal.. heh.. _-_;
 					gC_vs_ui.SetPortal( rect, 60001 );
 				}
 			}
@@ -1984,7 +1984,7 @@ LoadZoneInfo(int n)
 			DEBUG_ADD("PortalInfo OK");
 
 			//------------------------------------------------
-			// 안전지대 정보
+			// The safe zones
 			//------------------------------------------------
 			const int numSafe = static_cast<int>(zoneInfo.safetyZones.size());
 
@@ -2033,7 +2033,7 @@ LoadZoneInfo(int n)
 					
 					g_pZone->SetSafeSector( safeRect, fSafe );
 
-					// 내가 안전한 위치인가?
+					// Am I safe here?
 
 					if((MyRace == RACE_OUSTERS && ( rect2.flag & FLAG_MIP_SAFE_OUSTERS )) ||
 						(MyRace == RACE_VAMPIRE && ( rect2.flag & FLAG_MIP_SAFE_VAMPIRE)) ||
@@ -2042,7 +2042,7 @@ LoadZoneInfo(int n)
 					{
 						gC_vs_ui.SetSafetyZone( safeRect, true );						
 					}
-					// 다른 종족이 안전한 위치인가?
+					// Is another race safe here?
 					else
 					{
 						gC_vs_ui.SetSafetyZone( safeRect, false );
@@ -2056,7 +2056,7 @@ LoadZoneInfo(int n)
 			DEBUG_ADD("zoneinfoclose OK");
 			
 			DEBUG_ADD("Horn Setting Start");
-			// ousters horn을 맵에 심는다
+			// Plant the ousters' horns on the map
 			UI_PORTAL_LIST portalList;
 
 			for(int i = 0; static_cast<size_t>(i) < g_pZone->GetHorn().size(); i++)
@@ -2084,8 +2084,8 @@ LoadZoneInfo(int n)
 						pNPC->SetCreatureType( npcID );
 						pNPC->SetGroundCreature();
 						pNPC->SetID(MFakeCreature::GetFakeID());
-						// Edit By Sonic 2006.10.1  修正魔灵配柱子位置
-						//原位置 62  x=39 y=30  修正位置 x=7 y=11
+						// Edit By Sonic 2006.10.1  fix the position of the magic spirit pillar
+						//old position in 62  x=39 y=30, fixed position x=7 y=11
 						if(itr->zone_id==62)
 						{
 							pNPC->SetPosition( 7, 11 );
@@ -2164,12 +2164,12 @@ InitPlayer(int x, int y, int dir)
 	g_pPlayer->ClearChatString();
 
 	//------------------------------------------------
-	// 살아있게 한다. 확인용...
+	// Keep it alive. To check...
 	//------------------------------------------------
 	g_pTopView->SetFadeEnd();
 
 	//------------------------------------------------
-	// 위치 설정
+	// Set the position
 	//------------------------------------------------
 	g_pPlayer->SetStop();
 	g_pPlayer->SetX( x );
@@ -2184,7 +2184,7 @@ InitPlayer(int x, int y, int dir)
 	g_pZone->SetPlayer();
 	g_pPlayer->SetZone(g_pZone);
 
-	// 정지 동작
+	// The standing action
 	if (g_pPlayer->IsAlive())
 	{
 		g_pPlayer->SetAction( ACTION_STAND );
@@ -2195,28 +2195,28 @@ InitPlayer(int x, int y, int dir)
 	}
 
 	//-------------------------------------------------------
-	// Server로 보낸 move packet 개수를 지우고
-	// 처음부터~~ 다시 move하게 한다.
+	// Clear the count of move packets sent to the server
+	// and move again from the start~~.
 	//-------------------------------------------------------
 	g_pPlayer->ResetSendMove();
 
 	//-------------------------------------------------------
-	// 기술 검증 상태..
+	// The skill verification state..
 	//-------------------------------------------------------
 	g_pPlayer->SetWaitVerifyNULL();
 
 	//-------------------------------------------------------
 	//
-	//						Item 관련
+	//						Items
 	//
 	//-------------------------------------------------------
 	//------------------------------------------------
-	// ItemCheckBuffer상태
+	// The ItemCheckBuffer state
 	//------------------------------------------------
 	g_pPlayer->ClearItemCheckBuffer();
 	
 	//------------------------------------------------
-	// 정보창에 보여주는 정보..
+	// What the info window shows..
 	//------------------------------------------------
 	g_char_slot_ingame.Race = g_pPlayer->GetRace();
 	g_char_slot_ingame.bl_female = !g_pPlayer->IsMale();
@@ -2227,7 +2227,7 @@ InitPlayer(int x, int y, int dir)
 //-----------------------------------------------------------------------------
 // Make ScreenShot
 //-----------------------------------------------------------------------------
-// 현재 화면의 ScreenShot을 저장한다.
+// Saves a screenshot of the current screen.
 //-----------------------------------------------------------------------------
 void	
 MakeScreenShot()
@@ -2242,7 +2242,7 @@ MakeScreenShot()
 #else
 	mkdir("ScreenShot", 0755);
 #endif // PLATFORM_WINDOWS
-	// MAX_SCREENSHOT개의 ScreenCapture만 가능하다.
+	// Only MAX_SCREENSHOT screen captures are possible.
 	for (; g_ScreenShotNumber<maxScreenShot; g_ScreenShotNumber++)
 	{
 		snprintf(str, sizeof(str), "%s%03d.jpg", g_pFileDef->getProperty("PATH_SCREENSHOT").c_str(), g_ScreenShotNumber);
@@ -2254,7 +2254,7 @@ MakeScreenShot()
 		int fd = open( str, O_RDONLY );
 #endif // PLATFORM_WINDOWS
 
-		// file이 없는 경우에 save하기 위해서..
+		// To save where there is no file yet..
 		if( fd == -1 )
 		{
 			// Save
@@ -2291,9 +2291,9 @@ MakeScreenShot()
 //-----------------------------------------------------------------------------
 // PlaySound
 //-----------------------------------------------------------------------------
-// (*g_pSoundTable)에서의 soundID와 관련되는 Filename을 Play하면 된다.
-// (*g_pSoundManager)에 있으면 바로 play하면 되고.. 
-// 없으면 Wav를 Load해서 play하면 된다.
+// Play the filename (*g_pSoundTable) has for soundID.
+// If (*g_pSoundManager) has it, just play it..
+// if not, load the WAV and play it.
 //-----------------------------------------------------------------------------
 void	
 PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
@@ -2305,7 +2305,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 
 
 	//-----------------------------------------------------------
-	// 정의되지 않는 sound ID일 경우..
+	// An undefined sound ID..
 	//-----------------------------------------------------------
 	if (!g_SDLAudio.IsInit() || soundID >= (*g_pSoundTable).GetSize()
 		|| !g_pUserOption->PlaySound)
@@ -2315,7 +2315,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 	}
 
 	//-----------------------------------------------------------
-	// 초당 소리낼 수 있는 개수 제한
+	// Limit on the sounds per second
 	//-----------------------------------------------------------
 	if (!repeat 
 		&& g_SoundPerSecond > g_pClientConfig->MAX_SOUND_PER_SECOND)
@@ -2330,11 +2330,11 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 	int dist = max(abs(gapX), abs(gapY));				
 
 
-	// 거리가 어느 정도 이상이면 소리를 출력하지 않아야 한다.
+	// Beyond some distance there should be no sound.
 	if (dist < 25)
 	{			
 		//-----------------------------------------------------------
-		// 없으면 --> Load & Play
+		// Not there --> Load & Play
 		//-----------------------------------------------------------
 		if ((*g_pSoundManager).IsDataNULL(soundID))
 		{
@@ -2355,7 +2355,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 			LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
 
 			//-----------------------------------------------------------
-			// Loading 실패
+			// Loading failed
 			//-----------------------------------------------------------
 			if (pBuffer==NULL)
 			{
@@ -2363,7 +2363,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 			}
 			else
 			//-----------------------------------------------------------
-			// Load에 성공 했으면...
+			// If the load succeeded...
 			//-----------------------------------------------------------
 			{
 				LPDIRECTSOUNDBUFFER pOld;
@@ -2391,7 +2391,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 				}			
 
 				
-				// 오토바이 소리 좀 줄이기 하드코딩. - -;
+				// Hard-coded: the motorcycle a bit quieter. - -;
 				if (soundID==SOUND_WORLD_BIKE_GO
 					|| soundID==SOUND_WORLD_BIKE_STOP)
 				{
@@ -2414,7 +2414,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 			}
 		}
 		//-----------------------------------------------------------
-		// 있는 경우 --> Play
+		// There --> Play
 		//-----------------------------------------------------------
 		else
 		{
@@ -2435,7 +2435,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 					g_SDLAudio.CenterPan( pBuffer );
 				}
 
-				// 오토바이 소리 좀 줄이기 하드코딩. - -;
+				// Hard-coded: the motorcycle a bit quieter. - -;
 				if (soundID==SOUND_WORLD_BIKE_GO
 					|| soundID==SOUND_WORLD_BIKE_STOP)
 				{
@@ -2460,7 +2460,7 @@ PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y)
 //-----------------------------------------------------------------------------
 // PlaySound
 //-----------------------------------------------------------------------------
-// 소리나는 위치가 늘 player의 위치..
+// The sound is always at the player's position..
 // CenterPan & MaxVolume
 //-----------------------------------------------------------------------------
 void	
@@ -2472,7 +2472,7 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 	__BEGIN_PROFILE("PlaySound2")
 
 	//-----------------------------------------------------------
-	// 정의되지 않는 sound ID일 경우..
+	// An undefined sound ID..
 	//-----------------------------------------------------------
 	if (!g_SDLAudio.IsInit() || soundID >= (*g_pSoundTable).GetSize()
 		|| !g_pUserOption->PlaySound)
@@ -2482,12 +2482,12 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 	}
 
 	//-----------------------------------------------------------
-	// 초당 소리낼 수 있는 개수 제한
+	// Limit on the sounds per second
 	//-----------------------------------------------------------
-	// player의 소리는 제한할 필요가 없다.
+	// The player's sounds need no limit.
 
 	//-----------------------------------------------------------
-	// 없으면 --> Load & Play
+	// Not there --> Load & Play
 	//-----------------------------------------------------------
 	if ((*g_pSoundManager).IsDataNULL(soundID))
 	{
@@ -2507,18 +2507,18 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
  		LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
 
 		//-----------------------------------------------------------
-		// Loading 실패
+		// Loading failed
 		//-----------------------------------------------------------
 		if (pBuffer==NULL)
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
 		}
 		//-----------------------------------------------------------
-		// Load에 성공 했으면...
+		// If the load succeeded...
 		//-----------------------------------------------------------
 		else
 		{
-			// Replace됐으면 원래것을 메모리에서 지운다.
+			// If it replaced one, free the old one.
 			LPDIRECTSOUNDBUFFER pOld;
 			if ((*g_pSoundManager).SetData( soundID, pBuffer, pOld )!=0xFFFF)
 			{
@@ -2542,7 +2542,7 @@ PlaySoundAtPlayer(TYPE_SOUNDID soundID)
 		}
 	}
 	//-----------------------------------------------------------
-	// 있는 경우 --> Play
+	// There --> Play
 	//-----------------------------------------------------------
 	else
 	{
@@ -2567,7 +2567,7 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 	__BEGIN_PROFILE("PlaySound2")
 
 	//-----------------------------------------------------------
-	// 정의되지 않는 sound ID일 경우..
+	// An undefined sound ID..
 	//-----------------------------------------------------------
 	if (!g_SDLAudio.IsInit() || soundID >= (*g_pSoundTable).GetSize()
 		)
@@ -2577,12 +2577,12 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 	}
 
 	//-----------------------------------------------------------
-	// 초당 소리낼 수 있는 개수 제한
+	// Limit on the sounds per second
 	//-----------------------------------------------------------
-	// player의 소리는 제한할 필요가 없다.
+	// The player's sounds need no limit.
 
 	//-----------------------------------------------------------
-	// 없으면 --> Load & Play
+	// Not there --> Load & Play
 	//-----------------------------------------------------------
 	if ((*g_pSoundManager).IsDataNULL(soundID))
 	{
@@ -2602,18 +2602,18 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
  		LPDIRECTSOUNDBUFFER pBuffer = g_SDLAudio.LoadWav( strFilename );
 
 		//-----------------------------------------------------------
-		// Loading 실패
+		// Loading failed
 		//-----------------------------------------------------------
 		if (pBuffer==NULL)
 		{
 			DEBUG_ADD_FORMAT_ERR("[Error] Failed to Load WAV. id=%d, fn=%s", soundID, strFilename );
 		}
 		//-----------------------------------------------------------
-		// Load에 성공 했으면...
+		// If the load succeeded...
 		//-----------------------------------------------------------
 		else
 		{
-			// Replace됐으면 원래것을 메모리에서 지운다.
+			// If it replaced one, free the old one.
 			LPDIRECTSOUNDBUFFER pOld;
 			if ((*g_pSoundManager).SetData( soundID, pBuffer, pOld )!=0xFFFF)
 			{
@@ -2637,7 +2637,7 @@ void PlaySoundForce(TYPE_SOUNDID soundID)
 		}
 	}
 	//-----------------------------------------------------------
-	// 있는 경우 --> Play
+	// There --> Play
 	//-----------------------------------------------------------
 	else
 	{
@@ -2664,19 +2664,19 @@ void
 StopSound(TYPE_SOUNDID soundID)
 {
 	//-----------------------------------------------------------
-	// 정의되지 않는 sound ID일 경우..
+	// An undefined sound ID..
 	//-----------------------------------------------------------
 	if (!g_SDLAudio.IsInit() || soundID == SOUNDID_NULL)
 		return;
 
 	//-----------------------------------------------------------
-	// 정의되지 않는 sound ID일 경우..
+	// An undefined sound ID..
 	//-----------------------------------------------------------
 	if (soundID == SOUNDID_NULL)
 		return;
 
 	//-----------------------------------------------------------
-	// 없으면 --> 그냥 return
+	// Not there --> just return
 	//-----------------------------------------------------------
 	if (soundID < g_pSoundManager->GetMaxIndex())
 	{
@@ -2685,7 +2685,7 @@ StopSound(TYPE_SOUNDID soundID)
 			return;
 		}
 		//-----------------------------------------------------------
-		// 있는 경우 --> Stop
+		// There --> Stop
 		//-----------------------------------------------------------
 		else
 		{
@@ -2701,12 +2701,12 @@ StopSound(TYPE_SOUNDID soundID)
 //---------------------------------------------------------------------------
 // Play Music Current Zone
 //---------------------------------------------------------------------------
-// 날씨를 바꾼다.
+// Changes the weather.
 //---------------------------------------------------------------------------
 void		
 PlayMusicCurrentZone()
 {
-	// 시간에 따라 play
+	// Play by the time
 	if(g_pEventManager->GetEventByFlag(EVENTFLAG_NOT_PLAY_SOUND))
 		return;
 	
@@ -2744,7 +2744,7 @@ PlayMusicCurrentZone()
 						g_oggfile = Basic::OpenFile( Basic::NormalizeDataPath( (*g_pMusicTable)[ musicID ].FilenameWav.GetString() ).c_str(), "rb");
 						if( g_oggfile != NULL )
 						{
-							// 2004, 11, 8, sobeit add start - 그냥 에러 체크
+							// 2004, 11, 8, sobeit add start - just an error check
 							if(SOUND_ERR_OK == g_pOGG->streamLoad( g_oggfile, NULL ))
 							{
 								if(SOUND_ERR_OK == g_pOGG->streamPlay( SOUND_PLAY_REPEAT ))
@@ -2753,7 +2753,7 @@ PlayMusicCurrentZone()
 									g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
 								}
 							}
-							// 2004, 11, 8, sobeit add end - 그냥 에러 체크
+							// 2004, 11, 8, sobeit add end - just an error check
 						}
 					}
 				}
@@ -2769,7 +2769,7 @@ PlayMusicCurrentZone()
 //---------------------------------------------------------------------------
 // Set Weather
 //---------------------------------------------------------------------------
-// 날씨를 바꾼다.
+// Changes the weather.
 //---------------------------------------------------------------------------
 void		
 SetWeather(int weather, int level)
@@ -2778,7 +2778,7 @@ SetWeather(int weather, int level)
 	int& previousWeather = *s_PreviousWeather;
 
 	//---------------------------------------------
-	// 이전의 날씨와 관련된 Sound를 없앤다.
+	// Drop the previous weather's sound.
 	//---------------------------------------------
 	StopSound( g_previousSoundID );
 	
@@ -2786,7 +2786,7 @@ SetWeather(int weather, int level)
 	DEBUG_ADD_FORMAT("[Set Weather] %d, %d", weather, level);
 	
 	//---------------------------------------------
-	// 날씨 종류에 따라서...
+	// By the kind of weather...
 	//---------------------------------------------
 	if(previousWeather == WEATHER_SPOT)
 		g_pWeather->Release();
@@ -2794,10 +2794,10 @@ SetWeather(int weather, int level)
 	switch (weather)
 	{
 		//------------------------------
-		// 맑은 날씨
+		// Clear weather
 		//------------------------------
 		case WEATHER_CLEAR :	
-			// 이전에 비가 오던 날씨였으면...
+			// If it was raining before...
 			if (previousWeather==WEATHER_RAINY)
 			{
 				if (g_pTopView!=NULL && g_pTopView->IsInit())
@@ -2811,10 +2811,10 @@ SetWeather(int weather, int level)
 		break;
 
 		//------------------------------
-		// 비
+		// Rain
 		//------------------------------
 		case WEATHER_RAINY :
-			// 이전에 맑은 날씨였다면...
+			// If it was clear before...
 			if (previousWeather!=WEATHER_RAINY)
 			{
 				if (g_pTopView!=NULL && g_pTopView->IsInit())
@@ -2825,20 +2825,20 @@ SetWeather(int weather, int level)
 
 			g_pWeather->SetRain( level<<3 );
 
-			// 2는 비가 더 많이 올때의 소리
+			// 2 is the sound of heavier rain
 			g_previousSoundID = (level>=15)? SOUND_WORLD_WEATHER_RAIN_2 : SOUND_WORLD_WEATHER_RAIN_1; 
 			
-			// 반복해서 비 소리 내기...
+			// Play the rain sound repeatedly...
 			PlaySound( g_previousSoundID , 
 						true, 
 						g_pPlayer->GetX(), g_pPlayer->GetY() );
 		break;
 
 		//------------------------------
-		// 눈
+		// Snow
 		//------------------------------
 		case WEATHER_SNOWY  :
-			// 이전에 비가 오던 날씨였으면...
+			// If it was raining before...
 			if (previousWeather==WEATHER_RAINY)
 			{
 				if (g_pTopView!=NULL && g_pTopView->IsInit())
@@ -2855,7 +2855,7 @@ SetWeather(int weather, int level)
 		// Spot
 		//------------------------------
 		case WEATHER_SPOT  :
-			// 이전에 비가 오던 날씨였으면...
+			// If it was raining before...
 			if (previousWeather==WEATHER_RAINY)
 			{
 				if (g_pTopView!=NULL && g_pTopView->IsInit())
@@ -2883,7 +2883,7 @@ SetLightning(DWORD delay)
 	DEBUG_ADD("[Set Lightning]");
 	
 	//---------------------------------------------
-	// 번개 표현..
+	// Show the lightning..
 	//---------------------------------------------
 	if (g_pTopView!=NULL && g_pTopView->IsInit())
 	{
@@ -2913,7 +2913,7 @@ UpdateInput()
 void
 UpdateMouse()
 {
-	// Cursor의 position을 얻어낸다.
+	// Get the cursor's position.
 	POINT point;
 	GetCursorPos(&point);
 	// add by svi
@@ -2935,7 +2935,7 @@ UpdateMouse()
 
 
 	//-----------------------------------------------
-	// Mouse Cursor가 밖으로 나가지 않도록 한다.
+	// Keep the mouse cursor inside.
 	//-----------------------------------------------
 	if (g_x<0) g_x=0;
 	else if (g_x>=g_GameRect.right) g_x=g_GameRect.right-1;
@@ -2953,18 +2953,18 @@ UpdateDisconnected()
 	DEBUG_ADD("UpdateDisconnected : Start Process");
 	
 	//--------------------------------------------------
-	// socket제거
+	// Remove the socket
 	//--------------------------------------------------
 	s_pGameMainHost->ReleaseSocket();
 
 	//--------------------------------------------------
-	// 소리 중지
+	// Stop the sounds
 	//--------------------------------------------------
 	StopSound( g_previousSoundID );
 	StopSound( SOUND_WORLD_PROPELLER );
 
 	//--------------------------------------------------
-	// 음악 멈춘다.
+	// Stop the music.
 	//--------------------------------------------------
 	if (g_pUserOption->PlayWaveMusic)
 	{
@@ -2981,21 +2981,21 @@ UpdateDisconnected()
 	DEBUG_ADD("UpdateDisconnected : Stop Music OK");
 	
 	//--------------------------------------------------
-	// Thread Loading 종료..
+	// Stop the thread loading..
 	//--------------------------------------------------
 	s_pGameMainHost->StopLoadingThread();
 
 	DEBUG_ADD("UpdateDisconnected : Stop Thread OK");
 	
 	//--------------------------------------------------
-	// game object들 제거
+	// Remove the game objects
 	//--------------------------------------------------
 	ReleaseGameObject();
 
 	DEBUG_ADD("UpdateDisconnected : Release GameObject OK");
 	
 	//------------------------------------------------------
-	// dialog들 다 닫기.
+	// Close all the dialogs.
 	//------------------------------------------------------
 	gC_vs_ui.CloseOption();
 	g_pUIDialog->CloseMessageDlg();
@@ -3014,9 +3014,9 @@ UpdateDisconnected()
 	
 
 	//--------------------------------------------------
-	// 접속 끊겼다는 dialog
+	// The "disconnected" dialog
 	//--------------------------------------------------
-	// 필살~ 임시 코드..
+	// Desperate~ temporary code..
 	CSpritePack		SPK;
 	CFileIndexTable	FIT;
 	SPK.Init(3);
@@ -3048,7 +3048,7 @@ UpdateDisconnected()
 	DEBUG_ADD("UpdateDisconnected : Load Disconnected Dialog OK");
 	
 	//--------------------------------------------------
-	// 접속 끊겼다는 걸 먼저 한번 띄워준다.
+	// Show the disconnection once first.
 	//--------------------------------------------------
 	{
 		POINT point;
@@ -3066,7 +3066,7 @@ UpdateDisconnected()
 		g_pLast->Unlock();
 
 		//-----------------------------------------------------------------
-		// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
+		// Copy Last to Back - only without 3D HAL..
 		//-----------------------------------------------------------------
 		point.x = 0;
 		point.y = 0;
@@ -3083,7 +3083,7 @@ UpdateDisconnected()
 	DEBUG_ADD("UpdateDisconnected : UI Start Title OK");
 	
 	//------------------------------------------------------
-	// ALT + TAB 상태가 아닐 때
+	// When not in ALT + TAB
 	//------------------------------------------------------
 	if (g_bActiveGame)
 	{
@@ -3100,7 +3100,7 @@ UpdateDisconnected()
 
 		while (1)
 		{
-			// UI로의 입력을 막아야 되는데...
+			// The input to the UI should be blocked...
 			if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
 			{	
 				if (!GetMessage(&msg, NULL, 0, 0))
@@ -3214,7 +3214,7 @@ UpdateDisconnected()
 				gC_vs_ui.DrawMousePointer();
 
 				//-----------------------------------------------------------------
-				// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
+				// Copy Last to Back - only without 3D HAL..
 				//-----------------------------------------------------------------
 				point.x = 0;
 				point.y = 0;
@@ -3235,8 +3235,8 @@ UpdateDisconnected()
 		pSpriteDisconectedCloseFocused->Release();
 		pSpriteDisconectedClosePushed->Release();
 
-		// 2004, 07, 19 sobeit add start - 서버와 연결할수 없습니다. 확인 누르면 게임 종료하게 수정
-		if(true == g_pUserInformation->IsAutoLogIn) // 웹 자동 로긴모드 일 때만
+		// 2004, 07, 19 sobeit add start - "cannot connect to the server": quit the game when OK is pressed
+		if(true == g_pUserInformation->IsAutoLogIn) // only in web auto-login mode
 			SetMode(MODE_QUIT);
 		// 2004, 07, 19 sobeit add end
 
@@ -3254,7 +3254,7 @@ UpdateDisconnected()
 			gC_vs_ui.DrawMousePointer();
 
 			//-----------------------------------------------------------------
-			// Last를 Back으로 copy - 3D HAL이 아닌 경우만..
+			// Copy Last to Back - only without 3D HAL..
 			//-----------------------------------------------------------------
 			point.x = 0;
 			point.y = 0;
@@ -3276,7 +3276,7 @@ UpdateDisconnected()
 //-----------------------------------------------------------------------------
 // Select LastSelected Character
 //-----------------------------------------------------------------------------
-// 이전에 선택한 캐릭터를 선택하기
+// Select the character selected last time
 //-----------------------------------------------------------------------------
 void
 SelectLastSelectedCharacter()
@@ -3319,7 +3319,7 @@ SelectLastSelectedCharacter()
 //-----------------------------------------------------------------------------
 // Select LastSelected Character
 //-----------------------------------------------------------------------------
-// 현재 선택한 캐릭터를 저장하기
+// Save the character selected now
 //-----------------------------------------------------------------------------
 void
 SaveLastSelectedCharacter(int slot)
@@ -3340,7 +3340,7 @@ SaveLastSelectedCharacter(int slot)
 
 		if (pPCTable==NULL)
 		{
-			// worldID가 없으면 생성해서 추가
+			// No worldID: create and add it
 			pPCTable = new PlayerConfigTable;
 
 			g_pWorldPlayerConfigTable->AddPlayerConfigTable( worldID, pPCTable );
@@ -3350,7 +3350,7 @@ SaveLastSelectedCharacter(int slot)
 
 		if (pConfig==NULL)
 		{
-			// playerID가 없으면 생성해서 추가
+			// No playerID: create and add it
 			pConfig = new PlayerConfig;
 			if( playerID != NULL && strlen( playerID ) < 15 )
 				pConfig->SetPlayerID( playerID );
@@ -3360,7 +3360,7 @@ SaveLastSelectedCharacter(int slot)
 			pPCTable->AddPlayerConfig( pConfig );
 		}		
 
-		// 항상 저장하게 하자..
+		// Always save..
 		{
 			pConfig->SetLastSlot( slot );		
 
@@ -3372,7 +3372,7 @@ SaveLastSelectedCharacter(int slot)
 
 // GetMakeItemFitPosition: ClientFunction.cpp (gamemodel, task 4.237).
 
-// 2004, 03, 29 sobeit add start - 질드레 맵 고스트 추가
+// 2004, 03, 29 sobeit add start - add the ghosts on the Gilles de Rais map
 void
 Add_GDR_Ghost(int ZoneID)
 {
