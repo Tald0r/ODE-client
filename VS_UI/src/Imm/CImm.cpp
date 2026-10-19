@@ -35,7 +35,8 @@ CImm *gpC_Imm = NULL;
 // NULL, so IsDevice() is always false, and every other method below is a
 // no-op via its own IsDevice() guard - matching the already-established
 // pattern for other Windows features that lost their backing
-// implementation (CSDLGraphics::GetDD(), WavePackFileInfo::LoadFromFileData()).
+// implementation (CSDLGraphics::GetDD(); WavePackFileInfo::LoadFromFileData()
+// was another until task 4.263 retired the wave-pack manager).
 
 CImm::CImm()
 {

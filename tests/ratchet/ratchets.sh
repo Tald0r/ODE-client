@@ -446,7 +446,9 @@ check () {
 # 5: the mode changes, sounds, zone loads and disconnect, GameMain, join
 # gameclient (4.262).
 # 4: the loading thread nothing starts, MWorkThread, retired (4.263).
-R1_BASELINE=4
+# 3: the wave-pack manager nothing creates, WavePackFileManager (compiled
+# on Windows only), retired (4.263); the MSVC and Ninja counts now agree.
+R1_BASELINE=3
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -475,11 +477,12 @@ if [ -n "$R1_VCXPROJ" ]; then
 elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# The Ninja generator (the Linux and macOS presets): the same count,
 	# read from build.ninja's object rules for the DarkEden target. Its
-	# own baseline, because the non-Windows source list is one file
+	# own baseline, because the non-Windows source list was one file
 	# shorter: of CMakeLists.txt's NOT WIN32 filters only
-	# WavePackFileManager matches anything the glob yields (GetWinVer has
+	# WavePackFileManager matched anything the glob yields (GetWinVer has
 	# been gamemodel's since task 4.251; the Immersion, D3D, EXECryptor
-	# and VolumeOut patterns match no file at all). Before
+	# and VolumeOut patterns match no file at all). Task 4.263 retired it,
+	# so the two lists are the same files now. Before
 	# this branch existed the ratchet SKIPPED on every non-MSVC tree,
 	# which the port assessment listed as fail-open (area A). build.ninja
 	# is rewritten on every configure, so its mtime is the configure time.

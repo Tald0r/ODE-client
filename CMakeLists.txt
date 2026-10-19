@@ -1068,7 +1068,6 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		# ProfileManager needed on all platforms
 		# list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*ProfileManager\\.cpp")
 		list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*VolumeOut.*\\.cpp")
-		list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*WavePackFileManager\\.cpp")
 		# Exclude Windows-specific WinMain files. Client/Client.cpp is not
 		# filtered any more: its WinMain is behind PLATFORM_WINDOWS and the
 		# rest of the file is ClientMain, the game's startup on every
@@ -1138,7 +1137,10 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 
 	# Standard Windows import libraries for APIs this project calls
 	# directly (Winsock: SocketAPI.cpp/DatagramSocket.cpp/...; Winmm:
-	# WavePackFileManager.cpp's mmio* calls; Comctl32: InitCommonControls). None of
+	# WavePackFileManager.cpp's mmio* calls, until task 4.263 retired that
+	# file - nothing else calls winmm now (timeGetTime is Platform.h's
+	# platform_get_ticks), but the line stays until a Windows link shows it can
+	# go; Comctl32: InitCommonControls). None of
 	# these were previously in the link line, so every symbol from them
 	# was an unresolved external (LNK2001/LNK2019) once the code that
 	# calls them started compiling.

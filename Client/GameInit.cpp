@@ -168,7 +168,6 @@
 #include "RequestUserManager.h"
 #include "MJusticeAttackManager.h"
 #include "Profiler.h"
-#include "WavePackFileManager.h"
 //#include "MFileDef.h"
 #include "MGuildInfoMapper.h"
 #include "PCConfigTable.h"
@@ -1015,21 +1014,6 @@ InitSound()
 {
 	// Debug Message
 	DEBUG_ADD("[ InitGame ]  InitSound");
-
-	//--------------------------------------------------------
-	//
-	//                 DirectSound
-	//
-	//--------------------------------------------------------
-	/*
-	if (g_pWavePackFileManager==NULL)
-	{
-		g_pWavePackFileManager = new WavePackFileManager;
-
-		g_pWavePackFileManager->LoadFromFileInfo(FILE_WAVE_PACK_SOUND_INDEX);
-		g_pWavePackFileManager->SetDataFilename(FILE_WAVE_PACK_SOUND);
-	}
-	*/
 
 	if (g_SDLAudio.IsInit())
 	{
@@ -2330,12 +2314,6 @@ void ReleaseAllObjects()
 
 	SAFE_DELETE( g_pZoneSoundTable );
 	SAFE_DELETE( g_pZoneSoundManager );
-#ifdef PLATFORM_WINDOWS
-	// WavePackFileManager.cpp is Windows-only (mmio); off Windows the class's
-	// vtable is never emitted, the pointer is never set, and UBSan's vptr
-	// check on this virtual delete would need the typeinfo to link.
-	SAFE_DELETE( g_pWavePackFileManager );
-#endif
 	
 	DEBUG_ADD("[Release] Sound");
 
