@@ -243,7 +243,6 @@ const UIMessages::Host uiMessagesHost = []() {
 	host.InitSocket = []() { calls.push_back("host InitSocket"); return BOOL(TRUE); };
 	host.LoadingAddonSPK = [](bool loading) { calls.push_back("host LoadingAddonSPK|" + N(loading)); return true; };
 	host.ReleaseGameObject = []() { calls.push_back("host ReleaseGameObject"); };
-	host.StopLoadingThread = []() { calls.push_back("host StopLoadingThread"); };
 	host.SaveLastSelectedCharacter = [](int slot) { calls.push_back("host SaveLastSelectedCharacter|" + N(slot)); };
 	host.SetMode = [](CLIENT_MODE mode) { calls.push_back("host SetMode|" + N(mode)); };
 	host.GetSelectedCreature = []() { calls.push_back("host GetSelectedCreature"); return TYPE_OBJECTID(OBJECTID_NULL); };

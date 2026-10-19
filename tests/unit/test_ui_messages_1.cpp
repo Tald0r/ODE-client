@@ -194,7 +194,6 @@ const UIMessages::Host uiHost = []() {
 	host.InitSocket = []() { calls.push_back("init socket"); return socketAnswer; };
 	host.LoadingAddonSPK = [](bool bLoading) { calls.push_back("addon|" + N(bLoading)); return true; };
 	host.ReleaseGameObject = []() { calls.push_back("release"); };
-	host.StopLoadingThread = []() { calls.push_back("stop loading"); };
 	host.SaveLastSelectedCharacter = [](int slot) { calls.push_back("last|" + N(slot)); };
 	host.SetMode = [](CLIENT_MODE mode) { calls.push_back(Mode(mode)); };
 	return host;

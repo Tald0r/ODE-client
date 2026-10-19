@@ -217,7 +217,6 @@ void		ReleaseSocket();
 void		ReleaseGameUpdate();
 void		ReleaseGameObject();
 void		UnInitSound();
-void		StopLoadingThread();
 
 BOOL		InitGame();
 

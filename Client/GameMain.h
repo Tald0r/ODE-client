@@ -21,8 +21,6 @@ struct GameMainHost
 	BOOL (*InitSurface)();			// the surfaces again (MODE_CHANGE_OPTION)
 	BOOL (*InitSound)();			// MODE_MAINMENU and MODE_WAIT_SETPOSITION
 	void (*ReleaseSocket)();		// the main menu, a wrong log-in, a disconnect
-	void (*StopLoadingThread)();	// quitting, a zone load, a disconnect
-	void (*SetLoadingThreadPriority)(int priority);	// the loading thread's, around a zone load
 };
 
 // Every entry is required. GameInit installs it in InitGameObject, before

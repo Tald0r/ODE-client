@@ -260,11 +260,6 @@ static void ReleaseGameObject()
 	if (s_Host != NULL && s_Host->ReleaseGameObject != NULL) s_Host->ReleaseGameObject();
 }
 
-static void StopLoadingThread()
-{
-	if (s_Host != NULL && s_Host->StopLoadingThread != NULL) s_Host->StopLoadingThread();
-}
-
 static void SaveLastSelectedCharacter(int slot)
 {
 	if (s_Host != NULL && s_Host->SaveLastSelectedCharacter != NULL) s_Host->SaveLastSelectedCharacter(slot);
@@ -335,11 +330,6 @@ ExecuteLogout()
 			{
 				g_Music.Stop();
 			}
-
-			//--------------------------------------------------
-			// End the loading thread..
-			//--------------------------------------------------
-			UIMessages::StopLoadingThread();
 
 			//
 			// Send logout packet to Client and Server.

@@ -1396,16 +1396,6 @@ InitDraw()
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-// Stop LoadingThread
-//---------------------------------------------------------------------------
-// The loading thread it stopped was never started (InitThread, its only
-// creator, was uncalled since 2001.8.20) and is retired (task 4.263).
-void
-StopLoadingThread()
-{
-}
-
 // The packet wait's services (task 4.209); g_pCWaitPacketUpdate is
 // CWaitPacketUpdate.cpp's (gamemodel) since task 4.262.
 static const CWaitPacketHost s_WaitPacketHost = {
@@ -1457,8 +1447,6 @@ static const GameMainHost s_GameMainHost = {
 	.InitSurface = InitSurface,
 	.InitSound = InitSound,
 	.ReleaseSocket = ReleaseSocket,
-	.StopLoadingThread = StopLoadingThread,
-	.SetLoadingThreadPriority = [](int) {},	// no loading thread (task 4.263)
 };
 
 //---------------------------------------------------------------------------
@@ -4710,7 +4698,6 @@ static const UIMessages::Host s_UIMessagesHost = {
 	.InitSocket = InitSocket,
 	.LoadingAddonSPK = LoadingAddonSPK,
 	.ReleaseGameObject = ReleaseGameObject,
-	.StopLoadingThread = StopLoadingThread,
 	.SaveLastSelectedCharacter = SaveLastSelectedCharacter,
 	.SetMode = SetMode,
 	.GetSelectedCreature = []() { return g_pTopView->GetSelectedCreature(); },

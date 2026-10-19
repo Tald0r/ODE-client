@@ -141,8 +141,6 @@ const GameMainHost recordingHost{
 	.InitSurface = []() -> BOOL { hostCalls += "InitSurface;"; return TRUE; },
 	.InitSound = []() -> BOOL { hostCalls += "InitSound;"; return TRUE; },
 	.ReleaseSocket = []() { hostCalls += "ReleaseSocket;"; },
-	.StopLoadingThread = []() { hostCalls += "StopLoadingThread;"; },
-	.SetLoadingThreadPriority = [](int priority) { hostCalls += "Priority" + std::to_string(priority) + ";"; },
 };
 
 // Every global a test here changes, given back after; GameMain's

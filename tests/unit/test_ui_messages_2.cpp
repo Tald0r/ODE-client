@@ -216,7 +216,6 @@ const UIMessages::Host messagesHost = []() {
 	host.GetSelectedCreature = []() { calls.push_back("selected creature?"); return selectedCreature; };
 	host.GetSelectedItemID = []() { calls.push_back("selected item?"); return selectedItem; };
 	host.SetMode = [](CLIENT_MODE mode) { calls.push_back("mode|" + N(mode)); };
-	host.StopLoadingThread = []() { calls.push_back("stop loading"); };
 	host.ReleaseGameObject = []() { calls.push_back("release game"); };
 	return host;
 }();

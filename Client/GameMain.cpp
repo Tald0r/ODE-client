@@ -1080,11 +1080,6 @@ g_pUpdate = g_pCGameUpdate;
 					}
 				}
 
-			//--------------------------------------------------
-			// Stop the thread loading..
-			//--------------------------------------------------
-			s_pGameMainHost->StopLoadingThread();
-
 			// Set the update function
 			g_pUpdate = NULL;
 
@@ -1462,17 +1457,6 @@ LoadZone(int n)
 		g_Music.Stop();
 	}
 
-	//-------------------------------------------------------------
-	// Drop everything being loaded
-	//-------------------------------------------------------------
-	s_pGameMainHost->StopLoadingThread();
-
-	// Lower the priority as far as it goes.
-	// Thread priority is platform-specific - currently implemented for Windows only
-#ifdef PLATFORM_WINDOWS
-	s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_IDLE );
-#endif // PLATFORM_WINDOWS
-
 	//----------------------------------------------------------------------
 	// Remove the current zone's objects
 	//----------------------------------------------------------------------
@@ -1555,9 +1539,6 @@ LoadZone(int n)
 			std::ifstream file;
 			if (!FileOpenBinary(filename, file))
 			{
-				// Priority back to normal
-				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
-
 				return FALSE; 
 			}
 
@@ -1570,8 +1551,6 @@ LoadZone(int n)
 			{
 				SetMode( MODE_QUIT );
 
-				// Priority back to normal
-				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 				return FALSE;
 			}
 
@@ -1594,7 +1573,6 @@ LoadZone(int n)
 			if (!g_pTopView->LoadFromFileTileAndImageObjectSet(TileSSM, ImageObjectSSM)) {
 				LOG_ERROR("Rejected zone sprite preload: zone=%d", n);
 				SetMode(MODE_QUIT);
-				s_pGameMainHost->SetLoadingThreadPriority(THREAD_PRIORITY_LOWEST);
 				return FALSE;
 			}
 
@@ -1705,9 +1683,6 @@ LoadZone(int n)
 			std::ifstream file;
 			if (!FileOpenBinary(filename, file))
 			{
-				// Priority back to normal
-				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
-
 				return FALSE; 
 			}
 
@@ -1719,9 +1694,6 @@ LoadZone(int n)
 			if (!g_pZone->LoadFromFile( file ))
 			{
 				SetMode( MODE_QUIT );
-
-				// Priority back to normal
-				s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 				return FALSE;
 			}
@@ -1741,7 +1713,6 @@ LoadZone(int n)
 			if (!g_pTopView->LoadFromFileTileAndImageObjectSet(TileSSM, ImageObjectSSM)) {
 				LOG_ERROR("Rejected zone sprite preload: zone=%d", n);
 				SetMode(MODE_QUIT);
-				s_pGameMainHost->SetLoadingThreadPriority(THREAD_PRIORITY_LOWEST);
 				return FALSE;
 			}
 			
@@ -1832,9 +1803,6 @@ LoadZone(int n)
 	// Debug Message
 	DEBUG_ADD_FORMAT("LoadZone OK : size=(%d, %d)", g_pZone->GetWidth(), g_pZone->GetHeight());			
 		
-
-	// Priority back to normal
-	s_pGameMainHost->SetLoadingThreadPriority( THREAD_PRIORITY_LOWEST );
 
 	if (pZoneInfo->CreatureColorSet < MAX_COLORSET)
 	{
@@ -2977,14 +2945,7 @@ UpdateDisconnected()
 	}
 
 	DEBUG_ADD("UpdateDisconnected : Stop Music OK");
-	
-	//--------------------------------------------------
-	// Stop the thread loading..
-	//--------------------------------------------------
-	s_pGameMainHost->StopLoadingThread();
 
-	DEBUG_ADD("UpdateDisconnected : Stop Thread OK");
-	
 	//--------------------------------------------------
 	// Remove the game objects
 	//--------------------------------------------------

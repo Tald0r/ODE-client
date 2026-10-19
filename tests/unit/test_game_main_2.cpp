@@ -200,8 +200,6 @@ const GameMainHost mainHost{
 	.InitSurface = []() -> BOOL { Call("surface"); return TRUE; },
 	.InitSound = []() -> BOOL { Call("sound"); return TRUE; },
 	.ReleaseSocket = []() { Call("release socket"); },
-	.StopLoadingThread = []() { Call("stop loading"); Dirty(); },
-	.SetLoadingThreadPriority = [](int priority) { Call("priority" + N(priority)); },
 };
 
 // The three updates over hosts that record any call; their Init is
@@ -1168,7 +1166,7 @@ TEST(GameMain2Quit, QuittingToUpdateSaysGoodbyeToTheLoginServer)
 	Scene scene;
 	g_bNeedUpdate = TRUE;
 	CLLogout logout;
-	CHECK_SAME(Send(logout) + "stop loading;", scene.Enter(MODE_QUIT));
+	CHECK_SAME(Send(logout), scene.Enter(MODE_QUIT));
 	CHECK(scene.connection.Sent() == Encoded({&logout}));
 	CHECK_EQ(int(MODE_QUIT), int(g_Mode));
 	CHECK(g_pUpdate == NULL);
@@ -1189,7 +1187,7 @@ TEST(GameMain2Quit, QuittingTheGameSaysGoodbyeToTheGameServer)
 {
 	Scene scene;
 	CGLogout logout;
-	CHECK_SAME(Send(logout) + "stop loading;", scene.Enter(MODE_QUIT));
+	CHECK_SAME(Send(logout), scene.Enter(MODE_QUIT));
 	CHECK(scene.connection.Sent() == Encoded({&logout}));
 	CHECK(g_pUpdate == NULL);
 	CHECK_EQ(FALSE, g_bActiveApp);
@@ -1200,7 +1198,7 @@ TEST(GameMain2Quit, WithoutAConnectionNothingIsSent)
 {
 	Scene scene;
 	g_pSocket = NULL;
-	CHECK_SAME(std::string("stop loading;"), scene.Enter(MODE_QUIT));
+	CHECK_SAME(std::string(""), scene.Enter(MODE_QUIT));
 	CHECK(scene.connection.Sent().empty());
 	CHECK(g_pUpdate == NULL);
 	CHECK_EQ(FALSE, g_bUIInput);
@@ -1320,7 +1318,7 @@ TEST(GameMain2ChangeOption, AViewThatCannotBeRebuiltQuits)
 	CGLogout logout;
 	// The display and its surfaces again, "please wait" shown, the UI run
 	// and drawn, the last frame copied and flipped; the box closed, quit.
-	CHECK_SAME("draw;surface;popup|-1|-1|0|0|" + std::string(kWait) + ";process;show;flip;close message;" + Send(logout) + "stop loading;",
+	CHECK_SAME("draw;surface;popup|-1|-1|0|0|" + std::string(kWait) + ";process;show;flip;close message;" + Send(logout),
 		scene.Enter(MODE_CHANGE_OPTION));
 	CHECK_EQ(int(MODE_QUIT), int(g_Mode));
 	CHECK(g_pUpdate == NULL);
@@ -1526,9 +1524,9 @@ TEST(GameMain2SocketInput, AFreshStateUpdatesAtTheFirstCall)
 namespace {
 // What the client does when the connection fails: back to the main menu
 // (the title's sound, the UI loop), then disconnected (the connection,
-// the loading thread, the game's objects with the queued event; the box
-// drawn once, the game not active: the UI drawn over it).
-const std::string kMenuAndDisconnected = "sound;" + kTitle + kUiWait + "release socket;stop loading;gamma;flip;show;move@7,9;pointer;flip;";
+// the game's objects with the queued event; the box drawn once, the game
+// not active: the UI drawn over it).
+const std::string kMenuAndDisconnected = "sound;" + kTitle + kUiWait + "release socket;gamma;flip;show;move@7,9;pointer;flip;";
 // The bug report the client sends for a protocol error.
 std::vector<unsigned char> Report(const Throwable& t)
 {
@@ -1660,10 +1658,9 @@ TEST(GameMain2Disconnected, InactiveTheBoxIsDrawnOnceUnderTheUI)
 	scene.dialog.OpenTalk();
 	scene.dialog.OpenMessage();
 	UpdateDisconnected();
-	// The connection, the loading thread, the game's objects (the event
-	// removed), the dialogs; the box drawn and flipped, then the UI and
-	// the cursor over it, flipped.
-	CHECK_SAME(std::string("release socket;stop loading;gamma;close message;close talk;flip;show;move@7,9;pointer;flip;"), calls);
+	// The connection, the game's objects (the event removed), the dialogs;
+	// the box drawn and flipped, then the UI and the cursor over it, flipped.
+	CHECK_SAME(std::string("release socket;gamma;close message;close talk;flip;show;move@7,9;pointer;flip;"), calls);
 	CHECK_SAME(std::string("empty"), Scene::Music());
 	CHECK(g_pPlayer == NULL);
 	CHECK(!scene.dialog.TalkOpen());
@@ -1689,7 +1686,7 @@ TEST(GameMain2Disconnected, WithoutTheBoxSpritesNothingIsDrawnButTheRestIsDone)
 	Scene scene;
 	std::remove(kIndexFile);
 	UpdateDisconnected();
-	CHECK_SAME(std::string("release socket;stop loading;gamma;flip;show;move@7,9;pointer;flip;"), calls);
+	CHECK_SAME(std::string("release socket;gamma;flip;show;move@7,9;pointer;flip;"), calls);
 	CHECK_EQ(Patterned(kGameWidth / 2, kGameHeight / 2), Pixel(scene.last, kGameWidth / 2, kGameHeight / 2));
 	CHECK_EQ(Patterned(kGameWidth / 2, kGameHeight / 2), Pixel(scene.back, kGameWidth / 2, kGameHeight / 2));
 }
@@ -1714,7 +1711,7 @@ TEST(GameMain2Disconnected, ActiveTheBoxWaitsForOneOfSevenKeys)
 		UpdateDisconnected();
 		// The key is read before the first frame is drawn: the box is shown
 		// once, on the back buffer.
-		CHECK_SAME(std::string("release socket;stop loading;gamma;flip;"), calls);
+		CHECK_SAME(std::string("release socket;gamma;flip;"), calls);
 		CHECK_EQ(kBoxColour, Pixel(scene.back, kGameWidth / 2 - kBoxWidth / 2, kGameHeight / 2 - kBoxHeight / 2));
 		CHECK_EQ(int(MODE_NULL), int(g_Mode));
 		CHECK(scene.connection.Sent().empty());
@@ -1729,7 +1726,7 @@ TEST(GameMain2Disconnected, AWebLoginQuitsWhenTheBoxIsClosed)
 	Hold(DIK_RETURN);
 	CGLogout logout;
 	UpdateDisconnected();
-	CHECK_SAME("release socket;stop loading;gamma;flip;" + Send(logout) + "stop loading;", calls);
+	CHECK_SAME("release socket;gamma;flip;" + Send(logout), calls);
 	CHECK_EQ(int(MODE_QUIT), int(g_Mode));
 	CHECK(g_pUpdate == NULL);
 	CHECK(scene.connection.Sent() == Encoded({&logout}));
@@ -1763,7 +1760,7 @@ TEST(GameMain2Disconnected, AnyOtherKeyIsNotEnough)
 	onShow = [](int frame) { if (frame == 2) Hold(DIK_ESCAPE); };
 	UpdateDisconnected();
 	const std::string frame = "show;move@0,0;pointer;flip;";
-	CHECK_SAME("release socket;stop loading;gamma;flip;" + frame + frame, calls);
+	CHECK_SAME("release socket;gamma;flip;" + frame + frame, calls);
 }
 
 TEST(GameMain2Disconnected, AClickOnTheCloseButtonClosesTheBox)
@@ -1775,7 +1772,7 @@ TEST(GameMain2Disconnected, AClickOnTheCloseButtonClosesTheBox)
 	// The first frame draws the button pushed; the release comes after.
 	onShow = [](int frame) { if (frame == 1) LeftButton(false); };
 	UpdateDisconnected();
-	CHECK_SAME("release socket;stop loading;gamma;flip;show;move@" + N(kCloseX + 40) + "," + N(kCloseY + 10) + ";pointer;flip;", calls);
+	CHECK_SAME("release socket;gamma;flip;show;move@" + N(kCloseX + 40) + "," + N(kCloseY + 10) + ";pointer;flip;", calls);
 	// The pushed button on the last frame, and so on the back buffer.
 	CHECK_EQ(kPushedColour, Pixel(scene.last, kCloseX, kCloseY));
 	CHECK_EQ(kPushedColour, Pixel(scene.last, kCloseX + kButtonWidth - 1, kCloseY));
@@ -1791,7 +1788,7 @@ TEST(GameMain2Disconnected, TheFocusedCloseButtonNeverShows)
 	CursorAt(kCloseX + 1, kCloseY + 1);
 	onShow = [](int frame) { if (frame == 1) Hold(DIK_ESCAPE); };
 	UpdateDisconnected();
-	CHECK_SAME("release socket;stop loading;gamma;flip;show;move@" + N(kCloseX + 1) + "," + N(kCloseY + 1) + ";pointer;flip;", calls);
+	CHECK_SAME("release socket;gamma;flip;show;move@" + N(kCloseX + 1) + "," + N(kCloseY + 1) + ";pointer;flip;", calls);
 	// Recorded defect (GameMain.cpp:3195 and 3223): the focused button is
 	// drawn on the back buffer, then the last frame is copied over the back
 	// buffer, so the highlight is never seen.
@@ -1814,7 +1811,7 @@ TEST(GameMain2Disconnected, TheButtonsEdgesAreOutside)
 		onShow = [](int frame) { if (frame == 1) LeftButton(false); if (frame == 2) Hold(DIK_ESCAPE); };
 		UpdateDisconnected();
 		const std::string frame = "show;move@" + N(c.x) + "," + N(c.y) + ";pointer;flip;";
-		CHECK_SAME("release socket;stop loading;gamma;flip;" + frame + frame, calls);
+		CHECK_SAME("release socket;gamma;flip;" + frame + frame, calls);
 		CHECK_EQ(Patterned(kCloseX, kCloseY), Pixel(scene.last, kCloseX, kCloseY));
 	}
 }
@@ -1831,7 +1828,7 @@ TEST(GameMain2Disconnected, AReleaseOffTheButtonDoesNotClose)
 		if (frame == 2) Hold(DIK_ESCAPE);
 	};
 	UpdateDisconnected();
-	CHECK_SAME("release socket;stop loading;gamma;flip;show;move@" + N(kCloseX + 40) + "," + N(kCloseY + 10) + ";pointer;flip;show;move@"
+	CHECK_SAME("release socket;gamma;flip;show;move@" + N(kCloseX + 40) + "," + N(kCloseY + 10) + ";pointer;flip;show;move@"
 		+ N(kCloseX - 10) + "," + N(kCloseY + 10) + ";pointer;flip;", calls);
 }
 TEST(GameMain2Disconnected, APressOffTheButtonReleasedOnItDoesNotClose)
@@ -1846,7 +1843,7 @@ TEST(GameMain2Disconnected, APressOffTheButtonReleasedOnItDoesNotClose)
 		if (frame == 2) Hold(DIK_ESCAPE);
 	};
 	UpdateDisconnected();
-	CHECK_SAME("release socket;stop loading;gamma;flip;show;move@" + N(kCloseX) + "," + N(kCloseY + 10) + ";pointer;flip;show;move@"
+	CHECK_SAME("release socket;gamma;flip;show;move@" + N(kCloseX) + "," + N(kCloseY + 10) + ";pointer;flip;show;move@"
 		+ N(kCloseX + 40) + "," + N(kCloseY + 10) + ";pointer;flip;", calls);
 	// Never drawn pushed.
 	CHECK_EQ(Patterned(kCloseX, kCloseY), Pixel(scene.last, kCloseX, kCloseY));
@@ -1869,7 +1866,7 @@ TEST(GameMain2Disconnected, AReleaseOffTheButtonForgetsThePress)
 	UpdateDisconnected();
 	const std::string on = "show;move@" + N(kCloseX + 40) + "," + N(kCloseY + 10) + ";pointer;flip;";
 	const std::string off = "show;move@" + N(kCloseX - 10) + "," + N(kCloseY + 10) + ";pointer;flip;";
-	CHECK_SAME("release socket;stop loading;gamma;flip;" + on + off + off + on, calls);
+	CHECK_SAME("release socket;gamma;flip;" + on + off + off + on, calls);
 }
 #endif
 

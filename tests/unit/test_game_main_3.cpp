@@ -70,7 +70,7 @@
 // GameMain's zones, player and game objects (task 4.262 moved
 // Client/GameMain.cpp into gameclient):
 // - LoadZone(n) looks n up in the zone table (unknown: FALSE, nothing
-//   touched); stops the zone's sounds, the music and the loading thread;
+//   touched); stops the zone's sounds and the music;
 //   releases the current zone's objects; then in the zone of n's size
 //   (small or large) either reuses the zone already loaded for n or
 //   replaces it with a new one read from the map file (the teen file for a
@@ -154,21 +154,7 @@ const GameMainHost gameMainHost{
 	.InitSurface = []() -> BOOL { Call("surface"); return TRUE; },
 	.InitSound = []() -> BOOL { Call("sound"); return TRUE; },
 	.ReleaseSocket = []() { Call("socket"); },
-	.StopLoadingThread = []() { Call("stop"); },
-	.SetLoadingThreadPriority = [](int priority) { Call("priority" + N(priority)); },
 };
-
-// What LoadZone asks the host first: stop the loading thread and, on
-// Windows only, drop its priority to idle.
-std::string Stopped()
-{
-#ifdef PLATFORM_WINDOWS
-	return "stop;priority" + N(THREAD_PRIORITY_IDLE) + ";";
-#else
-	return "stop;";
-#endif
-}
-const std::string kLowest = "priority" + N(THREAD_PRIORITY_LOWEST) + ";";
 
 const GameInitInfoHost::Host initInfoHost = []() {
 	GameInitInfoHost::Host h{};
@@ -558,8 +544,8 @@ struct Saved
 // table holds the small zone 21 and the large zone 31 (their map files
 // not yet written), every new zone reads an empty horn file, the image
 // object pack holds one sprite, the view is a bare MTopView, the server
-// group is "Bathory", the mode is the game's and the loading thread's
-// host records.
+// group is "Bathory", the mode is the game's and GameMain's host
+// records.
 struct Scene
 {
 	Saved saved;
@@ -855,7 +841,7 @@ TEST(GameMain3LoadZone, AZoneIsReadFromItsMapIntoTheZoneOfItsSize)
 		const unsigned random = unsigned(rand());
 		srand(5);
 		CHECK_EQ(TRUE, LoadZone(kind.id));
-		CHECK_SAME(Stopped() + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		MZone* pZone = kind.Zone();
 		CHECK(pZone != NULL);
 		CHECK(g_pZone == pZone);
@@ -939,7 +925,7 @@ TEST(GameMain3LoadZone, TheZoneLoadedForTheSameIDIsKeptAndOnlyItsSpritePositions
 		scene.Map(kind.id, 6, 5, {{{4, 40}, {9, 90}}}, {{{5, 50}}}, -1, 2);
 		scene.Log();
 		CHECK_EQ(TRUE, LoadZone(kind.id));
-		CHECK_SAME(Stopped() + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK(kind.Zone() == pZone);
 		CHECK(g_pZone == pZone);
 		CHECK_EQ(int(SPRITEID_NULL), int(pZone->GetSector(0, 0).GetSpriteID()));
@@ -996,7 +982,7 @@ TEST(GameMain3LoadZone, AMissingMapFailsButLeavesAnEmptyZoneThatTheNextLoadReuse
 		scene.Zone(missing, kind.small);
 		scene.Log();
 		CHECK_EQ(FALSE, LoadZone(missing));
-		CHECK_SAME(Stopped() + "fail [Error] File Open Error : [" + scene.MapPath(missing) + "];" + kLowest, scene.Log());
+		CHECK_SAME("fail [Error] File Open Error : [" + scene.MapPath(missing) + "];", scene.Log());
 		CHECK_EQ(int(MODE_GAME), int(g_Mode));
 		// The zone before is deleted with its creature.
 		CHECK_EQ(1, creaturesDeleted);
@@ -1014,7 +1000,7 @@ TEST(GameMain3LoadZone, AMissingMapFailsButLeavesAnEmptyZoneThatTheNextLoadReuse
 		// the zone, so no failure message either).
 		MZone* pEmpty = kind.Zone();
 		CHECK_EQ(TRUE, LoadZone(missing));
-		CHECK_SAME(Stopped() + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK(kind.Zone() == pEmpty);
 		CHECK(g_pZone == pEmpty);
 		CHECK(scene.view.m_pZone == pEmpty);
@@ -1031,8 +1017,7 @@ TEST(GameMain3LoadZone, AnUnreadableMapQuitsTheGame)
 		g_bUIInput = TRUE;
 		CSDLInput* input = g_pSDLInput;
 		CHECK_EQ(FALSE, LoadZone(kind.id));
-		// SetMode(MODE_QUIT) stops the loading thread a second time.
-		CHECK_SAME(Stopped() + "stop;" + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK_EQ(int(MODE_QUIT), int(g_Mode));
 		CHECK(g_pUpdate == NULL);
 		CHECK_EQ(FALSE, g_bUIInput);
@@ -1058,7 +1043,7 @@ TEST(GameMain3LoadZone, ARejectedSpritePreloadQuitsTheGameWithTheZoneRead)
 		scene.Map(kind.id, 6, 5, {{{1, 10}}}, {{{3, 30}}}, 99, 1);
 		tileSprites = 4;
 		CHECK_EQ(FALSE, LoadZone(kind.id));
-		CHECK_SAME(Stopped() + "stop;" + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK_EQ(int(MODE_QUIT), int(g_Mode));
 		CHECK_EQ(kind.id, kind.Loaded());
 		CHECK(g_pZone == kind.Zone());
@@ -1079,7 +1064,7 @@ TEST(GameMain3LoadZone, ARejectedSpritePreloadQuitsTheGameWithTheZoneRead)
 		scene.view.m_TileSPK.Init(4);
 		scene.files.setProperty("FILE_SPRITE_IMAGEOBJECT", (scene.dir / "none.spk").string());
 		CHECK_EQ(FALSE, LoadZone(kind.id));
-		CHECK_SAME(Stopped() + "stop;" + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK_EQ(int(MODE_QUIT), int(g_Mode));
 	}
 	for (const Kind& kind : kKinds)
@@ -1090,7 +1075,7 @@ TEST(GameMain3LoadZone, ARejectedSpritePreloadQuitsTheGameWithTheZoneRead)
 		tileSprites = 4;
 		scene.view.m_TileSPK.Init(4);
 		CHECK_EQ(TRUE, LoadZone(kind.id));
-		CHECK_SAME(Stopped() + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK_EQ(int(MODE_GAME), int(g_Mode));
 	}
 }
@@ -1109,7 +1094,7 @@ TEST(GameMain3LoadZone, AKeptZoneWhoseMapIsGoneStillLoadsWithNoSpritePositions)
 		// sprite positions from a stream that failed to open: TRUE, with
 		// both arrays emptied.
 		CHECK_EQ(TRUE, LoadZone(kind.id));
-		CHECK_SAME(Stopped() + kLowest, scene.Log());
+		CHECK_SAME(std::string(""), scene.Log());
 		CHECK(kind.Tiles(scene.view) != NULL);
 		CHECK(kind.Objects(scene.view) != NULL);
 		CHECK(Entries(kind.Tiles(scene.view)).empty());
@@ -1231,7 +1216,7 @@ TEST(GameMain3MoveZone, ThePlayerLeavesItsZoneAndStandsInTheZoneLoaded)
 	scene.me->m_LightSight = 0;
 	MoveZone(kSmall);
 	// (The stand unlocks the gear window.)
-	CHECK_SAME("unlock gear;" + Stopped() + kLowest + "party position;party status;", scene.Log());
+	CHECK_SAME(std::string("unlock gear;party position;party status;"), scene.Log());
 	// Stopped and standing, out of the zone before (which is not deleted).
 	CHECK(scene.me->m_listDirection.empty());
 	CHECK_EQ(int(ACTION_STAND), int(scene.me->GetAction()));
@@ -1250,7 +1235,7 @@ TEST(GameMain3MoveZone, WithNoZoneThePlayerIsOnlyPutIntoTheOneLoaded)
 	scene.Map(kLarge, 6, 5);
 	scene.me->m_listDirection.push_back(2);
 	MoveZone(kLarge);
-	CHECK_SAME(Stopped() + kLowest + "party position;party status;", scene.Log());
+	CHECK_SAME(std::string("party position;party status;"), scene.Log());
 	// Not stopped.
 	CHECK_EQ(1, int(scene.me->m_listDirection.size()));
 	CHECK(g_pZone == g_pZoneLarge);
