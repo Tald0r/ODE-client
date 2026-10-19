@@ -61,17 +61,10 @@ class Player;
 //-----------------------------------------------------------------------------
 // Definitions
 //-----------------------------------------------------------------------------
-#ifdef __YHDK2__
-#define PROGRAM_NAME                "YHDK2"
-#define PROGRAM_TITLE               "YHDK2"
-#else
-#define PROGRAM_NAME                "TTDK2"
-#define PROGRAM_TITLE               "TTDK2"
-#endif
+// PROGRAM_NAME, PROGRAM_TITLE, UPDATER_FILENAME and UPDATER_NEW_FILENAME
+// are ClientMain.cpp's (gameclient) since task 4.265.
 
 #define	PROGRAM_FILENAME			"fengshen.exe"
-#define	UPDATER_FILENAME			"Updater.exe"
-#define	UPDATER_NEW_FILENAME		"Updater2.exe"
 
 // MAX_NPC is GameMain.h's (gameclient) since task 4.262.
 #define	MAX_IMAGEOBJECT				0

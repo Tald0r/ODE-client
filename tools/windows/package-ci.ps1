@@ -5,7 +5,7 @@
 # and a license notice for each bundled library. Only the DLLs in the
 # executable's dependency closure are copied - bin/Release also holds the
 # runtime libraries of the tests and tools - and each one is checked
-# against the whitelist in Client.cpp, which makes the client exit with -1
+# against the whitelist in ClientMain.cpp, which makes the client exit with -1
 # before logging starts if it finds an unlisted DLL beside it.
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -52,11 +52,11 @@ while ($queue.Count -gt 0) {
 }
 if ($bundled.Count -eq 0) { throw 'DarkEden.exe loads no DLL from bin/Release; the deployment is missing' }
 
-$allowed = Select-String -Path 'Client/Client.cpp' -Pattern 'InvalidDll != "([^"]+\.dll)"' -AllMatches |
+$allowed = Select-String -Path 'Client/ClientMain.cpp' -Pattern 'InvalidDll != "([^"]+\.dll)"' -AllMatches |
 	ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() }
 foreach ($dll in $bundled) {
 	if (-not ($allowed -contains $dll.ToLowerInvariant())) {
-		throw "$dll is not in the DLL whitelist in Client/Client.cpp; the client would exit at startup"
+		throw "$dll is not in the DLL whitelist in Client/ClientMain.cpp; the client would exit at startup"
 	}
 }
 

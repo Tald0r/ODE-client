@@ -7,7 +7,7 @@
 
 
 //-----------------------------------------------------------------------------
-// Client.cpp
+// ClientMain.cpp
 //-----------------------------------------------------------------------------
 
 #ifdef _MSC_VER
@@ -19,10 +19,9 @@
 #endif /* !_WIN32_WINNT */
 
 
-#include "DebugInfo.h"
+#include "DebugLog.h"
 #ifndef _DEBUG
 #include "CrashReport.h"
-#include "PacketDispatcher.h"
 #endif
 
 //
@@ -65,34 +64,42 @@ extern bool g_bRunning;			// cleared by the pump on SDL_QUIT (DXLibBackendSDL.cp
 // _findnext walk CheckLogFile() used to run
 // (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
 #include "DirectoryListing.h"
-#include "Client.h"
+#include "FrameClock.h"
+#include "InputState.h"
+#include "ClientConfig.h"
+#include "DXLib/COGGSTREAM.h"
+#include "WinLib/CWinUpdate.h"
+#include "GameInit.h"
+#include "GameInitInfo.h"
 #include "GameInitInfoHost.h"
+#include "GameMain.h"
+#include "HelpEvent.h"
+#include "MTopView.h"
+#include "SpriteLib/MLoadingSPKWorkNode.h"
 #include "PacketFunction.h"
-#include "GameObject.h"
 #include "VS_UI.h"
-#include "MMusic.h"
-#include "UIDialog.h"
-#include "Updater/UpdateManager.h"
 #ifdef PLATFORM_WINDOWS
 #include <Commctrl.h>
 #endif
 #include "AppendPatchInfo.h"
 #include "Netmarble.h"
-#include "EffectSpriteTypeDef.h"
 #include "Packet/Properties.h"
-#include "ServerInfo.h"
-#include "MTestDef.h"
 #include "resource.h"
 #include "UserInformation.h"
 #include "MFileDef.h"
-#include "SoundSetting.h"
 
 
 // REMOVED: nProtect anti-cheat code (SDL migration - no longer needed)
 
-//yckou
-#include "DebugKit.h"
-
+#ifdef __YHDK2__
+#define PROGRAM_NAME                "YHDK2"
+#define PROGRAM_TITLE               "YHDK2"
+#else
+#define PROGRAM_NAME                "TTDK2"
+#define PROGRAM_TITLE               "TTDK2"
+#endif
+#define	UPDATER_FILENAME			"Updater.exe"
+#define	UPDATER_NEW_FILENAME		"Updater2.exe"
 #define DIRECTORY_UPDATE		"Update"
 
 //-----------------------------------------------------------------------------
@@ -1062,7 +1069,6 @@ void FinishClient(HANDLE hMutex, const char* lpCmdLine)
 	ReleaseAllObjects();
 	delete gC_ci;
 
-	DEBUG_CMD(MIN_HIDEWND, "------------------------------");
 	if (g_pClientConfig!=NULL)
 	{
 		delete g_pClientConfig;
@@ -1628,8 +1634,6 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		}
 
 		g_bActiveApp = TRUE;
-		DEBUG_CMD(MIN_CLRSCR, "시작");
-		DEBUG_CMD(MIN_SHOWWND, "------------------------------");
 #ifdef __EMSCRIPTEN__
 		auto* browser = new BrowserSession{nullptr, std::string(lpCmdLine)};
 		browser->mutex = hMutex;

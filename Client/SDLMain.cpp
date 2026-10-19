@@ -3,8 +3,9 @@
 	SDLMain.cpp
 
 	The executable's entry points: WinMain() on Windows, main() on Linux,
-	macOS and the browser. Each hands the launch argument to ClientMain
-	(Client.cpp), which runs on every platform - the command line, the
+	macOS and the browser. Each installs the real ClientHost and hands the
+	launch argument to ClientMain (ClientMain.cpp, in the gameclient
+	library), which runs on every platform - the command line, the
 	working directory, the file definitions, the language, InitApp, the
 	frame loop and the shutdown.
 

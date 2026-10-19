@@ -948,9 +948,10 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	)
 
 	target_link_libraries(gameclient PUBLIC gameview VS_UI gamemodel dxlib SpriteLib framelib)
-	# PacketFunction's Windows MAC address lookup calls Netbios.
+	# PacketFunction's Windows MAC address lookup calls Netbios, and
+	# ClientMain's patch progress bar InitCommonControls.
 	if(WIN32)
-		target_link_libraries(gameclient PUBLIC netapi32)
+		target_link_libraries(gameclient PUBLIC netapi32 comctl32)
 	endif()
 
 	message(STATUS "gameclient library: ${_gameclient_count} sources from tests/arch/gameclient_files.txt")
@@ -1070,9 +1071,9 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*VolumeOut.*\\.cpp")
 		# Exclude Windows-specific WinMain files. Client/SDLMain.cpp is not
 		# one: its WinMain is behind PLATFORM_WINDOWS and its main() is the
-		# entry point off Windows; both call ClientMain (Client/Client.cpp),
-		# the game's startup on every platform (the port assessment's area
-		# D).
+		# entry point off Windows; both call ClientMain (gameclient's
+		# Client/ClientMain.cpp), the game's startup on every platform (the
+		# port assessment's area D).
 		list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX "WinLib/CWinMain\\.cpp")
 	endif()
 
@@ -1178,7 +1179,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	# produce and what tools/ci/verify-linux.sh runs. With the option on,
 	# bin/DarkEden.app is built instead and the game looks for its data
 	# in the bundle's Resources directory and then beside the bundle
-	# (Client/Client.cpp, the data-root search off Windows). The plist
+	# (Client/ClientMain.cpp, the data-root search off Windows). The plist
 	# keys: NSHighResolutionCapable so a Retina display gives the SDL
 	# window a backing store at native scale rather than a magnified
 	# one, and the identifier the OS keys its preferences and its
