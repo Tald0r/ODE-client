@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------
 // ClientMain.h
 //
-// The game's entry point, shared by the two platform entry points:
-// WinMain in Client.cpp on Windows and main in SDLMain.cpp elsewhere.
+// The game's entry point, shared by the two platform entry points in
+// SDLMain.cpp: WinMain on Windows and main elsewhere.
 // It is WinMain's old body - the command line, the working directory,
 // the file definitions, the language and character input, InitApp,
 // the frame loop and the shutdown - with the Win32-only steps (the

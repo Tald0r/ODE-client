@@ -724,8 +724,8 @@ int dxlib_sound_init(void* window_handle) {
 
 	if (g_sound_initialized) return 0;
 
-	/* The Windows entry point (Client.cpp WinMain) never passes
-	 * SDL_INIT_AUDIO to SDL_Init - only the non-Windows SDLMain.cpp does.
+	/* The Windows entry point (SDLMain.cpp's WinMain) never passes
+	 * SDL_INIT_AUDIO to SDL_Init - only main() beside it does.
 	 * Mix_OpenAudio happens to initialize the subsystem itself, but be
 	 * explicit rather than lean on that. */
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {

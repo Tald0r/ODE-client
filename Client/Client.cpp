@@ -753,24 +753,6 @@ CheckTerriblePatch()
 }
 
 //-----------------------------------------------------------------------------
-// Name: WinMain()
-// Desc: The Windows entry point. Records the instance handle and hands
-//       the rest to ClientMain, which is this function's old body.
-//-----------------------------------------------------------------------------
-#ifdef PLATFORM_WINDOWS
-int PASCAL
-WinMain(HINSTANCE hInstance,
-        HINSTANCE hPrevInstance,
-        LPSTR lpCmdLine,
-        int nCmdShow)
-{
-	(void)hPrevInstance;
-	g_hInstance = hInstance;
-	return ClientMain(lpCmdLine, nCmdShow);
-}
-#endif
-
-//-----------------------------------------------------------------------------
 // Name: ClientMain()
 // Desc: Initialization, frame loop, shutdown - on every platform. This
 //       was WinMain's body (ClientMain.h says how it is shared); the
