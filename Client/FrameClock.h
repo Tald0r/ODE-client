@@ -9,6 +9,10 @@
 // reading the clock itself, so code between two stamps sees one time.
 extern MonotonicClock::TimePoint	g_FrameNow;
 
+// Stamps g_FrameNow with MonotonicClock::Now() (Client.cpp's until task
+// 4.264).
+void								StampFrameClock();
+
 // The frame count, which the main loop advances each frame, and how far
 // the drawing is between the last frame and the next (0 to 256), which
 // moving creatures' drawn positions interpolate by (task 4.240: the

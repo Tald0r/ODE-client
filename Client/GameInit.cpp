@@ -23,13 +23,13 @@
 #include "DebugLog.h"
 #include <memory>
 #include "TextEncoding.h"
-#include "DirectoryListing.h"
 #include "Client.h"
 #include "GameObject.h"
 #include "AddonDef.h"
 #include "ServerInfo.h"
 #include "Packet/WireHost.h"
 #include "DXLib/DXInputHost.h"
+#include "GameInitInfoHost.h"
 #include "../VS_UI/src/InputFocusManager.h"
 #include "PacketDef.h"
 #include "PacketHandlerRegistry.h"
@@ -212,14 +212,7 @@ extern int					g_Dimension ;
 bool			g_bTitleLoading = false;
 CSprite*		g_pTitleLoadingSprite = NULL;
 // g_TitleSpriteAlpha is ClientMode.cpp's (gamemodel) since task 4.255.
-
-
-// [Futec수정]
-extern char g_FutecIP[20];
-extern unsigned int g_FutecPort;
-
-
-extern WORD g_wAuthKeyMap;
+// g_FutecIP and g_FutecPort are ClientMode.cpp's (gamemodel) since task 4.264.
 
 void	StartTitleLoading();
 void	DrawTitleLoading();
@@ -405,7 +398,7 @@ InitInput()
 
 	if (!g_pSDLInput->Init( g_hWnd, g_hInstance, CSDLInput::NONEXCLUSIVE ))
 	{
-		InitFail("DirectInput Error!");
+		GameInitInfoHost::InitFailMessage("DirectInput Error!");
 		return false;
 	}
 
@@ -952,58 +945,6 @@ InitGame()
 	{
 		g_pNickNameStringTable = new MStringArray;
 	}
-	//yckou begin: check invalid *.dll
-	// An older, shorter copy of the DLL whitelist in Client.cpp; here an
-	// unlisted name only breaks out of the walk, and g_wAuthKeyMap is set
-	// only when every entry of a non-empty listing is whitelisted.
-	std::string InvalidDll;
-	std::vector<Basic::SDirectoryEntry> vDllEntries;
-
-	if (Basic::ListDirectory(".", "*.dll", vDllEntries, Basic::LIST_FILES_AND_DIRECTORIES))
-	{
-		for (size_t iDll=0; iDll<vDllEntries.size(); iDll++)
-		{
-			InvalidDll = vDllEntries[iDll].sName;
-
-			size_t iLen = InvalidDll.size();
-			for (size_t j=0;j<iLen;j++)
-			{
-				if(isupper((unsigned char)InvalidDll[j]) != 0)
-					InvalidDll[j] = (char)tolower((unsigned char)InvalidDll[j]);
-			}
-
-			if(InvalidDll != "timer.dll" &&
-				InvalidDll != "msvcrtd.dll" &&
-				InvalidDll != "msvcrt.dll" &&
-				InvalidDll != "msvcp60.dll" &&
-				InvalidDll != "msvcirt.dll" &&
-				InvalidDll != "ifc22.dll" &&
-				InvalidDll != "gl.dll" &&
-				InvalidDll != "dsetup32.dll" &&
-				InvalidDll != "dsetup.dll" &&
-				InvalidDll != "deutil.dll" &&
-				InvalidDll != "basics.dll" &&
-				InvalidDll != "npx.dll" &&
-				InvalidDll != "npupdate0.dll" &&
-				InvalidDll != "nppsk.dll" &&
-				InvalidDll != "npgmup.dll" &&
-				InvalidDll != "npfgm9x.dll" &&
-				InvalidDll != "npcipher.dll" &&
-				InvalidDll != "mother.dll" &&
-				InvalidDll != "fl.dll" &&
-				InvalidDll != "dbghelp.dll" &&
-				InvalidDll != "darkedenweb.dll" &&
-				InvalidDll != "npchk.dll" &&
-				InvalidDll != "xerces-c_2_4_0.dll")
-				break;
-
-			if (iDll + 1 == vDllEntries.size())
-			{
-				g_wAuthKeyMap = 0x5154;
-			}
-		}
-	}
-	//yckou end
 	//---------------------------------------------------------------------
 	// nick name string table Loading
 	//---------------------------------------------------------------------

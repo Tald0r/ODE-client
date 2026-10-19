@@ -2,6 +2,13 @@
 #include "FrameClock.h"
 
 MonotonicClock::TimePoint	g_FrameNow;
+
+// Client.cpp's until task 4.264.
+void StampFrameClock()
+{
+	g_FrameNow = MonotonicClock::Now();
+}
+
 DWORD						g_CurrentFrame = 0;
 DWORD						g_DrawAlphaNum = 256;
 // The executable's until task 4.260 (CGameUpdate.cpp).
