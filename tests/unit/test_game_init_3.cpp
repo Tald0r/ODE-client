@@ -84,6 +84,22 @@
 #include "MScreenEffectManager.h"
 #include "MPlayer.h"
 #include "MZone.h"
+#include "MTopView.h"
+#include "MFakeCreature.h"
+#include "MStatusManager.h"
+#include "RankBonusDef.h"
+#include "GameSocket.h"
+#include "ClientPlayer.h"
+#include "Socket.h"
+#include "SocketImpl.h"
+#include "packet_stream_access.h"
+#include "Cpackets/CGReady.h"
+#include "CSprite565.h"
+#include "VS_UI_Base.h"
+#include "VS_UI_Dialog.h"
+#include "VS_UI_GlobalResource.h"
+#include "pi_core.h"
+#include "u_window.h"
 // The hosts InitGameObject installs.
 #include "MItem.h"
 #include "Packet/WireHost.h"
@@ -163,6 +179,7 @@
 #include "MathTable.h"
 #include "EffectOrbit.h"
 #include "MViewDef.h"
+#include <SDL.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -373,6 +390,8 @@ struct CreaturePeek : MCreature
 {
 	static bool*& EffectStatus(MCreature& creature) { return creature.*(&CreaturePeek::m_bEffectStatus); }
 	static BYTE& ObjectType(MCreature& creature) { return creature.*(&CreaturePeek::m_ObjectType); }
+	static TYPE_CREATURETYPE& Type(MCreature& creature) { return creature.*(&CreaturePeek::m_CreatureType); }
+	static short& Z(MCreature& creature) { return creature.*(&CreaturePeek::m_Z); }
 };
 
 // The deleted objects' count, by kind.
@@ -484,6 +503,25 @@ TEST(GameInit3Loops, ThePacketWaitTakesTheInputReceiversAway)
 	packet->ClearInputReceivers();
 	CHECK(input.*Get(MouseReceiverOf()) == NULL);
 	CHECK(input.*Get(KeyboardReceiverOf()) == NULL);
+}
+
+TEST(GameInit3Loops, TheGameLoopsCursorIsWhereTheMouseIs)
+{
+	Loops loops;
+	CHECK_EQ(TRUE, InitGameUpdate());
+	const CGameUpdateHost* game = g_pCGameUpdate != NULL ? GameLoopPeek::Host(*g_pCGameUpdate) : NULL;
+	CHECK(game != NULL && game->GetCursorPoint != NULL);
+	if (game == NULL || game->GetCursorPoint == NULL) return;
+#ifndef PLATFORM_WINDOWS
+	// Off Windows the cursor is SDL's mouse state, in the window already
+	// (ScreenToClient does nothing there). Windows reads the desktop's.
+	int x = 0, y = 0;
+	SDL_GetMouseState(&x, &y);
+	POINT point = { -77, -77 };
+	game->GetCursorPoint(point);
+	CHECK_EQ(x, int(point.x));
+	CHECK_EQ(y, int(point.y));
+#endif
 }
 
 TEST(GameInit3Loops, TheLoopsThereAreDeletedAndReplaced)
@@ -820,9 +858,9 @@ std::map<std::string, const void*> InstalledHosts()
 	return hosts;
 }
 
-// Creature types: the player's slayer (0), an NPC (1, its sprite an NPC's)
-// and a vampire (2, its sprite one only players wear).
-enum { kSlayer = 0, kNPC = 1, kVampire = 2, kCreatureTypes = 3 };
+// Creature types: the player's slayer (0), an NPC (1, its sprite an NPC's),
+// a vampire (2, its sprite one only players wear) and an ousters (3).
+enum { kSlayer = 0, kNPC = 1, kVampire = 2, kOusters = 3, kCreatureTypes = 4 };
 
 // The game objects' world: the tables a creature reads, a zone (not the
 // current one) of the zone table's zone 61, the managers the object
@@ -864,6 +902,7 @@ struct World
 		testfw::MutableRow(creatureTypes, kSlayer).ColorSet = 321;
 		testfw::MutableRow(creatureTypes, kNPC).SetCreatureTribe(CREATURETRIBE_NPC, ACTION_MAX_SLAYER);
 		testfw::MutableRow(creatureTypes, kVampire).SetCreatureTribe(CREATURETRIBE_VAMPIRE, ACTION_MAX_VAMPIRE);
+		testfw::MutableRow(creatureTypes, kOusters).SetCreatureTribe(CREATURETRIBE_OUSTERS, ACTION_MAX_OUSTERS);
 		for (int type : { kNPC, kVampire })
 		{
 			testfw::MutableRow(creatureTypes, type).SpriteTypes.Init(1);
@@ -1413,6 +1452,478 @@ TEST(GameInit3GameObject, TheObjectSelectorAsksThePlayerTheCreatureAndTheWorld)
 	CHECK_EQ(2, host->GetZonePKType());
 	CHECK(host->JusticeAttackManager() == &world.justice);
 	CHECK(host->WarManager() == &world.wars);
+}
+
+//======================================================================
+// The hosts' entries
+//======================================================================
+
+namespace {
+
+// What the test's own hosts and fakes were asked, in order.
+std::vector<std::string> asked;
+
+const WorldEvents::Host soundHost = []() {
+	WorldEvents::Host host{};
+	host.PlaySound = [](TYPE_SOUNDID id) { asked.push_back("sound " + std::to_string(id)); };
+	return host;
+}();
+
+// The status parts the player's SetStatus hands on.
+struct StatusParts : ModifyStatusManager
+{
+	bool Execute(int id, void*) const override { asked.push_back("status " + std::to_string(id)); return true; }
+};
+
+// The game's connection: what it is asked to send.
+struct Outbox : ClientPlayer
+{
+	Outbox() : ClientPlayer(new Socket((EnsureSocketsInitialised(), new SocketImpl()))) {}
+	~Outbox() override { setPlayerStatus(CPS_END_SESSION); }
+	void sendPacket(Packet* pPacket) override { asked.push_back("send " + std::to_string(pPacket->getPacketID())); }
+};
+
+// Guild and grade marks planted by hand.
+struct Marks : MGuildMarkManager
+{
+	Marks() : MGuildMarkManager(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) {}
+	using MGuildMarkManager::m_GuildMarks;
+	using MGuildMarkManager::m_GradeMarks;
+};
+
+// The VS_UI a dialog needs: the window manager and process runner, the
+// shared sprites and the base's fonts.
+struct VsUi
+{
+	PI_ProcessRunner runner;
+	WindowManager windows;
+	C_GLOBAL_RESOURCE resource;
+	Base base;
+	Globals globals;
+	VsUi()
+	{
+		globals.Lend(gpC_process_runner, &runner);
+		globals.Lend(gpC_window_manager, &windows);
+		globals.Lend(gpC_global_resource, &resource);
+		globals.Lend(gpC_base, &base);
+	}
+};
+
+// What a dialog keeps of its menu ("line=id;" each) and its message
+// ("line;" each).
+struct DialogPeek : C_VS_UI_DIALOG
+{
+	static std::string Menu(C_VS_UI_DIALOG& dialog)
+	{
+		std::string text;
+		const DIALOG_MENU_INNER* menu = dialog.*(&DialogPeek::m_p_menu);
+		for (UINT i = 0; i < dialog.*(&DialogPeek::m_menu_count); ++i)
+		{
+			for (const std::string& line : menu[i].sz_menu_str) text += line;
+			text += "=" + std::to_string(menu[i].exec_id) + ";";
+		}
+		return text;
+	}
+	static std::string Message(C_VS_UI_DIALOG& dialog)
+	{
+		std::string text;
+		for (const std::string& line : dialog.*(&DialogPeek::m_vs_msg)) text += line + ";";
+		return text;
+	}
+	static SETMESSAGE_MODE_OPTION Mode(C_VS_UI_DIALOG& dialog) { return dialog.*(&DialogPeek::m_message_mode); }
+};
+
+std::string Portals(const UiRuntime::HornPortals& portals)
+{
+	std::string text;
+	for (const UI_PORTAL_FLAG& portal : portals)
+		text += std::to_string(portal.zone_id) + ":" + std::to_string(portal.x) + "," + std::to_string(portal.y) + ","
+			+ std::to_string(portal.portal_x) + "," + std::to_string(portal.portal_y) + ";";
+	return text;
+}
+
+// The world after InitGameObject, its hosts installed and its slayer the
+// player, over an item table: a magazine for the AR, the SR and the SG,
+// in that order, and an SR only vampires wear (type 0) and one only
+// slayers wear (type 1).
+struct Hosts
+{
+	ITEMCLASS_TABLE items;
+	World world;
+	std::map<std::string, const void*> installed;
+	bool ready = false;
+	Hosts()
+	{
+		asked.clear();
+		items.Init(MAX_ITEM_CLASS);
+		items.InitClass(ITEM_CLASS_MAGAZINE, 3);
+		const ITEM_CLASS guns[] = { ITEM_CLASS_AR, ITEM_CLASS_SR, ITEM_CLASS_SG };
+		for (int type = 0; type < 3; ++type) testfw::MutableRow(items, ITEM_CLASS_MAGAZINE, type).Value1 = guns[type];
+		items.InitClass(ITEM_CLASS_SR, 2);
+		testfw::MutableRow(items, ITEM_CLASS_SR, 0).Race = FLAG_RACE_VAMPIRE;
+		testfw::MutableRow(items, ITEM_CLASS_SR, 1).Race = FLAG_RACE_SLAYER;
+		world.globals.Lend(g_pItemTable, &items);
+		ready = InitGameObject() == TRUE && g_pPlayer != NULL;
+		CHECK(ready);
+		installed = InstalledHosts();
+	}
+	template <class Host> const Host& Of(const char* slot) { return *static_cast<const Host*>(installed[slot]); }
+	const MItemHost& Item() const { return *MItem::GetHost(); }
+};
+
+} // namespace
+
+TEST(GameInit3HostEntries, AnItemsDropFramesAreTheViewsOrNone)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	std::unique_ptr<MTopView> view(new MTopView);
+	view->m_ItemDropFPK.Init(2);
+	view->m_ItemDropFPK[1].Init(3);
+	Globals globals;
+	globals.Lend(g_pTopView, static_cast<MTopView*>(NULL));
+	CHECK_EQ(0, hosts.Item().DropFrameCount(1));
+	g_pTopView = view.get();
+	CHECK_EQ(3, hosts.Item().DropFrameCount(1));
+	CHECK_EQ(0, hosts.Item().DropFrameCount(0));
+}
+
+TEST(GameInit3HostEntries, AnItemsUseIsCheckedForThePlayerIfThereIsOne)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	std::unique_ptr<MItem> vampires(MItem::NewItem(ITEM_CLASS_SR)), slayers(MItem::NewItem(ITEM_CLASS_SR));
+	CHECK(vampires != nullptr && slayers != nullptr);
+	if (vampires == nullptr || slayers == nullptr) return;
+	slayers->SetItemType(1);
+	slayers->UnSetAffectStatus();
+	{
+		Globals globals;
+		globals.Lend(g_pPlayer, static_cast<MPlayer*>(NULL));
+		hosts.Item().RefreshAffect(vampires.get());
+		hosts.Item().RefreshAffect(slayers.get());
+	}
+	CHECK(vampires->IsAffectStatus());
+	CHECK(!slayers->IsAffectStatus());
+	// The slayer may not use the vampires' gun, and may use the slayers'.
+	hosts.Item().RefreshAffect(vampires.get());
+	hosts.Item().RefreshAffect(slayers.get());
+	CHECK(!vampires->IsAffectStatus());
+	CHECK(slayers->IsAffectStatus());
+}
+
+TEST(GameInit3HostEntries, AnItemsSoundIsTheWorldsSound)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	WorldEvents::SetHost(&soundHost);
+	hosts.Item().PlayItemSound(42);
+	CHECK(asked == std::vector<std::string>({ "sound 42" }));
+}
+
+TEST(GameInit3HostEntries, TheStatusIsRecalculatedForThePlayerIfThereIsOne)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	StatusParts parts;
+	Globals globals;
+	globals.Lend(g_pModifyStatusManager, static_cast<ModifyStatusManager*>(&parts));
+	globals.Keep(g_StatusManager);
+	hosts.world.rankBonuses.Init(RANK_BONUS_MAX);
+	StatusPresentation::SetHost(nullptr);
+	PlayerPresentation::SetHost(nullptr);
+	{
+		Globals none;
+		none.Lend(g_pPlayer, static_cast<MPlayer*>(NULL));
+		hosts.Item().RecalculateStatus();
+	}
+	CHECK(asked.empty());
+	// MPlayer::CalculateStatus sets the four elements and the attack speed.
+	hosts.Item().RecalculateStatus();
+	const auto Status = [](int part) { return "status " + std::to_string(part); };
+	CHECK(asked == std::vector<std::string>({ Status(MODIFY_ELEMENTAL_FIRE), Status(MODIFY_ELEMENTAL_WATER),
+		Status(MODIFY_ELEMENTAL_EARTH), Status(MODIFY_ELEMENTAL_WIND), Status(MODIFY_ATTACK_SPEED) }));
+}
+
+TEST(GameInit3HostEntries, TheRepairHintIsTheRepairHelp)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	mails.clear();
+	SetHelpHost(&helpHost);
+	g_Mode = MODE_GAME;
+	hosts.Item().RepairHint();
+	CHECK(mails == std::vector<int>({ HELP_EVENT_ITEM_REPAIR }));
+}
+
+TEST(GameInit3HostEntries, AGunsEmptyMagazineIsTheFirstTypeThatFitsIt)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	struct Case { ITEM_CLASS gun; int type; };
+	for (const Case& c : { Case{ ITEM_CLASS_AR, 0 }, Case{ ITEM_CLASS_SR, 1 }, Case{ ITEM_CLASS_SG, 2 } })
+	{
+		std::unique_ptr<MItem> gun(MItem::NewItem(c.gun));
+		std::unique_ptr<MMagazine> magazine(hosts.Item().EmptyMagazineFor(gun.get()));
+		CHECK(magazine != nullptr);
+		if (magazine == nullptr) continue;
+		CHECK_EQ(c.type, int(magazine->GetItemType()));
+		// A new item's ID, rounds and options would be OBJECTID_NULL, 1 and none.
+		CHECK_EQ(0, int(magazine->GetID()));
+		CHECK_EQ(0, int(magazine->GetNumber()));
+		CHECK_EQ(0, magazine->GetItemOptionListCount());
+	}
+}
+
+TEST(GameInit3HostEntries, AGunIsLoadedWithAnEmptyMagazineOfItsTypeHoldingTheRounds)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	std::unique_ptr<MItem> gun(MItem::NewItem(ITEM_CLASS_SR));
+	CHECK(hosts.Item().LoadGun(gun.get(), 30));
+	const MMagazine* magazine = static_cast<MGunItem*>(gun.get())->GetMagazine();
+	CHECK(magazine != NULL);
+	if (magazine == NULL) return;
+	CHECK_EQ(1, int(magazine->GetItemType()));
+	CHECK_EQ(30, int(magazine->GetNumber()));
+	CHECK_EQ(0, int(magazine->GetID()));
+}
+
+TEST(GameInit3HostEntries, ThePriceRaceIsThePlayersOrNone)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const MPriceHost& price = *PricePeek::Host();
+	struct Case { int type; int race; };
+	for (const Case& c : { Case{ kSlayer, RACE_SLAYER }, Case{ kVampire, RACE_VAMPIRE }, Case{ kOusters, RACE_OUSTERS },
+		Case{ kNPC, -1 } })
+	{
+		CreaturePeek::Type(*g_pPlayer) = TYPE_CREATURETYPE(c.type);
+		CHECK_EQ(c.race, price.Race());
+	}
+	CreaturePeek::Type(*g_pPlayer) = TYPE_CREATURETYPE(kSlayer);
+	Globals globals;
+	globals.Lend(g_pPlayer, static_cast<MPlayer*>(NULL));
+	CHECK_EQ(-1, price.Race());
+}
+
+TEST(GameInit3HostEntries, PotionsAreHalfPriceWithNemasBloodBible)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	MEventQueue events;
+	Globals globals;
+	globals.Lend(g_pEventManager, &events);
+	const MPriceHost& price = *PricePeek::Host();
+	CHECK(!price.IsPotionHalfPrice());
+	CHECK(g_pSkillAvailable->AddSkill(SKILL_HOLYLAND_BLOOD_BIBLE_NEMA));
+	CHECK(price.IsPotionHalfPrice());
+}
+
+TEST(GameInit3HostEntries, TheWeathersOriginIsThePlayersTileInPixels)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const MWeatherHost& sky = hosts.Of<MWeatherHost>("MWeather::SetHost");
+	g_pPlayer->MObject::SetPosition(3, 4);
+	int x = -1, y = -1;
+	CHECK(sky.ReadOrigin(x, y));
+	CHECK_EQ(3 * TILE_X, x);
+	CHECK_EQ(4 * TILE_Y, y);
+	Globals globals;
+	globals.Lend(g_pPlayer, static_cast<MPlayer*>(NULL));
+	x = y = -1;
+	CHECK(!sky.ReadOrigin(x, y));
+	CHECK(x == -1 && y == -1);
+}
+
+TEST(GameInit3HostEntries, AnAttachedEffectReadsItsCreaturesIdPixelsAndHeight)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const MAttachEffectHost& attach = hosts.Of<MAttachEffectHost>("MAttachEffect::SetHost");
+	MCreature creature;
+	creature.SetID(500);
+	creature.MObject::SetPosition(3, 2);
+	CreaturePeek::Z(creature) = 7;
+	MAttachCreaturePosition position;
+	position.id = 9;
+	position.x = position.y = position.z = -1;
+	CHECK(!attach.CreaturePosition(nullptr, position));
+	CHECK(position.id == 9 && position.x == -1 && position.y == -1 && position.z == -1);
+	CHECK(attach.CreaturePosition(&creature, position));
+	CHECK_EQ(500, int(position.id));
+	CHECK_EQ(creature.GetPixelX(), position.x);
+	CHECK_EQ(creature.GetPixelY(), position.y);
+	CHECK(position.x != -1 && position.y != -1);
+	CHECK_EQ(7, position.z);
+}
+
+TEST(GameInit3HostEntries, ADialogsMenuAndMessageGoToItsVsUiDialog)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const DialogWindow::Host& dialogs = hosts.Of<DialogWindow::Host>("DialogWindow::SetHost");
+	VsUi ui;
+	DialogWindow::Window* window = dialogs.NewMessage(-1, -1, 300, DIALOG_OK);
+	CHECK(window != nullptr);
+	if (window == nullptr) return;
+	C_VS_UI_DIALOG& dialog = *reinterpret_cast<C_VS_UI_DIALOG*>(window);
+	const DialogWindow::MenuItem items[] = { { "Buy", 11 }, { "Sell", 12 } };
+	dialogs.SetMenu(window, items, 2);
+	CHECK(DialogPeek::Menu(dialog) == "Buy=11;Sell=12;");
+	const char* const lines[] = { "Hello", "World" };
+	dialogs.SetMessage(window, lines, 2, false);
+	CHECK(DialogPeek::Message(dialog) == "Hello;World;");
+	CHECK(DialogPeek::Mode(dialog) == SMO_FIT);
+	dialogs.SetMessage(window, lines + 1, 1, true);
+	CHECK(DialogPeek::Message(dialog) == "World;");
+	CHECK(DialogPeek::Mode(dialog) == SMO_NOFIT);
+	dialogs.Delete(window);
+}
+
+TEST(GameInit3HostEntries, ThePartyJoinsAndLeavesTheZonesCreatures)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const MPartyHost& party = hosts.Of<MPartyHost>("MParty::SetHost");
+	MCreature* ally = new MCreature;
+	ally->SetID(500);
+	ally->SetName("Ally");
+	ally->SetZone(hosts.world.zone.get());
+	ally->MObject::SetPosition(2, 2);
+	if (!hosts.world.zone->AddCreature(ally)) { CHECK(false); delete ally; return; }
+	// No zone: nobody joins or leaves.
+	MString name("none");
+	CHECK(!party.JoinByID(500, name));
+	CHECK(OBJECTID_NULL == party.JoinByName("Ally"));
+	CHECK(!ally->IsPlayerParty());
+	ally->SetPlayerParty();
+	party.LeaveByID(500);
+	CHECK(ally->IsPlayerParty());
+	ally->UnSetPlayerParty();
+	g_pZone = hosts.world.zone.get();
+	// By ID: the creature joins and its name is answered.
+	CHECK(!party.JoinByID(501, name));
+	CHECK(std::string(name.GetString()) == "none");
+	CHECK(party.JoinByID(500, name));
+	CHECK(std::string(name.GetString()) == "Ally");
+	CHECK(ally->IsPlayerParty());
+	party.LeaveByID(500);
+	CHECK(!ally->IsPlayerParty());
+	// By name, with a player; without one, nobody.
+	{
+		Globals globals;
+		globals.Lend(g_pPlayer, static_cast<MPlayer*>(NULL));
+		CHECK(OBJECTID_NULL == party.JoinByName("Ally"));
+		CHECK(!ally->IsPlayerParty());
+	}
+	CHECK(500 == party.JoinByName("Ally"));
+	CHECK(ally->IsPlayerParty());
+	CHECK(hosts.world.zone->RemoveCreature(500));
+}
+
+TEST(GameInit3HostEntries, TheUIsGuildAndGradeMarksAreTheManagersOrNone)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const UiRuntime::Host& ui = hosts.Of<UiRuntime::Host>("UiRuntime::SetHost");
+	using UiRuntime::MarkSize;
+	Marks marks;
+	CSprite* const big = new CSprite565;
+	CSprite* const tiny = new CSprite565;
+	marks.m_GuildMarks[41] = MGuildMarkManager::GUILD_SPRITES(big, tiny);
+	marks.m_GradeMarks[RACE_SLAYER].Init(4);
+	Globals globals;
+	globals.Lend(g_pGuildMarkManager, static_cast<MGuildMarkManager*>(NULL));
+	CHECK(ui.FindGuildMark(41, MarkSize::Large) == nullptr);
+	CHECK(ui.GradeMark(1, RACE_SLAYER, MarkSize::Small) == nullptr);
+	g_pGuildMarkManager = &marks;
+	CHECK(ui.FindGuildMark(41, MarkSize::Large) == big);
+	CHECK(ui.FindGuildMark(41, MarkSize::Small) == tiny);
+	CHECK(ui.FindGuildMark(42, MarkSize::Large) == nullptr);
+	CHECK(ui.GradeMark(1, RACE_SLAYER, MarkSize::Large) == &marks.m_GradeMarks[RACE_SLAYER][2]);
+	CHECK(ui.GradeMark(1, RACE_SLAYER, MarkSize::Small) == &marks.m_GradeMarks[RACE_SLAYER][3]);
+	// Outside the races, none.
+	CHECK(ui.GradeMark(1, -1, MarkSize::Large) == nullptr);
+	CHECK(ui.GradeMark(1, RACE_MAX, MarkSize::Small) == nullptr);
+}
+
+TEST(GameInit3HostEntries, TheHornsPortalsAreTheZonesMapByMap)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const UiRuntime::Host& ui = hosts.Of<UiRuntime::Host>("UiRuntime::SetHost");
+	UiRuntime::HornPortals portals = { UI_PORTAL_FLAG{ 9, 9, 9, 9, 9 } };
+	CHECK(!ui.ReadHornPortals(0, portals));
+	CHECK_EQ(0, int(ui.HornMapCount()));
+	hosts.world.zone->GetHorn().push_back({ UI_PORTAL_FLAG{ 61, 1, 2, 3, 4 }, UI_PORTAL_FLAG{ 62, 5, 6, 7, 8 } });
+	CHECK(!ui.ReadHornPortals(0, portals));
+	CHECK(Portals(portals) == "9:9,9,9,9;");
+	g_pZone = hosts.world.zone.get();
+	CHECK_EQ(1, int(ui.HornMapCount()));
+	CHECK(ui.ReadHornPortals(0, portals));
+	CHECK(Portals(portals) == "61:1,2,3,4;62:5,6,7,8;");
+	portals.clear();
+	CHECK(!ui.ReadHornPortals(1, portals));
+	CHECK(portals.empty());
+}
+
+TEST(GameInit3HostEntries, APetsProgressIsItsItemsWhenTheIdsMatch)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const UiRuntime::Host& ui = hosts.Of<UiRuntime::Host>("UiRuntime::SetHost");
+	MPetItem petItem;
+	petItem.SetID(321);
+	petItem.SetPetExpRemain(1500);
+	petItem.SetNumber(4);
+	MFakeCreature* pet = new MFakeCreature;
+	const TYPE_OBJECTID petID = pet->GetID();
+	if (!hosts.world.zone->AddFakeCreature(pet)) { CHECK(false); delete pet; return; }
+	g_pPlayer->SetPetID(petID);
+	UiRuntime::PetProgress progress;
+	progress.experienceRemaining = -1;
+	progress.level = -1;
+	const auto Untouched = [&progress]() { return progress.experienceRemaining == -1 && progress.level == -1; };
+	// No zone; then a pet without its item.
+	CHECK(!ui.ReadPetProgress(321, progress));
+	g_pZone = hosts.world.zone.get();
+	CHECK(!ui.ReadPetProgress(321, progress));
+	CHECK(Untouched());
+	pet->SetPetItem(&petItem);
+	// Another item's ID; a player whose pet is not there; no player.
+	CHECK(!ui.ReadPetProgress(322, progress));
+	g_pPlayer->SetPetID(petID + 1);
+	CHECK(!ui.ReadPetProgress(321, progress));
+	g_pPlayer->SetPetID(petID);
+	{
+		Globals globals;
+		globals.Lend(g_pPlayer, static_cast<MPlayer*>(NULL));
+		CHECK(!ui.ReadPetProgress(321, progress));
+	}
+	CHECK(Untouched());
+	CHECK(ui.ReadPetProgress(321, progress));
+	CHECK_EQ(1500, progress.experienceRemaining);
+	CHECK_EQ(4, progress.level);
+	pet->SetPetItem(NULL);
+	CHECK(hosts.world.zone->RemoveFakeCreature(petID));
+}
+
+TEST(GameInit3HostEntries, TheUIsPacketsGoToTheConnectionIfThereIsOne)
+{
+	Hosts hosts;
+	if (!hosts.ready) return;
+	const UiRuntime::Host& ui = hosts.Of<UiRuntime::Host>("UiRuntime::SetHost");
+	Outbox outbox;
+	Globals globals;
+	globals.Lend(g_pSocket, static_cast<ClientPlayer*>(NULL));
+	CGReady ready;
+	CHECK(!ui.SendPacket(ready));
+	CHECK(asked.empty());
+	g_pSocket = &outbox;
+	CHECK(ui.SendPacket(ready));
+	CHECK(asked == std::vector<std::string>({ "send " + std::to_string(Packet::PACKET_CG_READY) }));
 }
 
 //======================================================================
