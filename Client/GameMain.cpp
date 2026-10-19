@@ -91,6 +91,8 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "ZoneLoadingHost.h"
 #include "GameMain.h"
 
+#include <optional>
+
 //add by zdj 2005.5.17
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
@@ -138,6 +140,23 @@ SetGameMainHost(const GameMainHost* pHost)
 	const GameMainHost* pPrevious = s_pGameMainHost;
 	s_pGameMainHost = pHost;
 	return pPrevious;
+}
+
+// What GameMain remembers from one call to the next. Each was a function-local
+// static; an empty optional is one the first call has not set yet, from the
+// frame clock or its argument as the static was. UpdateSocketInput: when the
+// peer managers update next. SetMode(MODE_WAIT_SETPOSITION): whether the help
+// key message is still to be shown. SetWeather: the weather before this one.
+static std::optional<MonotonicClock::TimePoint>	s_NextManagerUpdate;
+static int										s_FirstSetPosition = 1;
+static std::optional<int>						s_PreviousWeather;
+
+void
+ResetGameMainState()
+{
+	s_NextManagerUpdate.reset();
+	s_FirstSetPosition = 1;
+	s_PreviousWeather.reset();
 }
 
 int g_previousSoundID = SOUNDID_NULL;
@@ -228,7 +247,8 @@ UpdateSocketInput()
 	//----------------------------------------------------------------
 	// RequestServerPlayerManager도 처리한다.
 	//----------------------------------------------------------------
-	static MonotonicClock::TimePoint nextTime = g_FrameNow;
+	if (!s_NextManagerUpdate) s_NextManagerUpdate = g_FrameNow;
+	MonotonicClock::TimePoint& nextTime = *s_NextManagerUpdate;
 
 	if (nextTime <= g_FrameNow)
 	{	
@@ -920,7 +940,7 @@ SetMode(enum CLIENT_MODE mode)
 			// [ TEST CODE ]
 			s_pGameMainHost->InitSound();
 
-			static int first = 1;
+			int& first = s_FirstSetPosition;
 			if (first)
 			{
 				g_pSystemMessage->Add((*g_pGameStringTable)[STRING_MESSAGE_HELP_KEY].GetString());
@@ -2747,7 +2767,8 @@ PlayMusicCurrentZone()
 void		
 SetWeather(int weather, int level)
 {
-	static int previousWeather = weather;
+	if (!s_PreviousWeather) s_PreviousWeather = weather;
+	int& previousWeather = *s_PreviousWeather;
 
 	//---------------------------------------------
 	// 이전의 날씨와 관련된 Sound를 없앤다.

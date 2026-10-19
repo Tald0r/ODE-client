@@ -26,4 +26,9 @@ struct GameMainHost
 // anything can reach GameMain; returns the host it replaces.
 const GameMainHost*	SetGameMainHost(const GameMainHost* pHost);
 
+// For tests: forgets what GameMain remembers between calls (the peer managers'
+// next update, the one-time help message, the previous weather), as at
+// start-up.
+void					ResetGameMainState();
+
 #endif
