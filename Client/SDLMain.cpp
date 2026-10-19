@@ -44,6 +44,7 @@ WinMain(HINSTANCE hInstance,
 {
 	(void)hPrevInstance;
 	g_hInstance = hInstance;
+	ClientHost::SetHost(ClientHost::SystemHost());
 	return ClientMain(lpCmdLine, nCmdShow);
 }
 
@@ -86,6 +87,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	ClientHost::SetHost(ClientHost::SystemHost());
 	const int result = ClientMain(&commandLine[0], 1);
 
 #ifdef __EMSCRIPTEN__

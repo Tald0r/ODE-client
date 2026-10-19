@@ -136,27 +136,7 @@ const int			g_FrameGood			= 15;
 // (gamemodel) since task 4.264.
 // The advanced actions' frame counts are AdvancementAction.cpp's (gamemodel).
 
-enum DARKEDEN_LANGUAGE
-{
-	DARKEDEN_KOREAN = 0,
-	DARKEDEN_CHINESE,
-	DARKEDEN_JAPANESE,
-	DARKEDEN_ENGLISH,
-	DARKEDEN_TAIWAN,
-	
-	DARKEDEN_LANGUAGE_MAX
-};
-
-// 2004, 7, 14, sobeit add start
-struct REALSERVER_INFO
-{
-	REALSERVER_INFO() { bMode = false;WorldID = 0;}
-	bool bMode;		// 0: 수동접속, 1:정상접속
-	int WorldID;	// 0: 브란, 1: 펠레스
-	MString ID;		// id
-	MString Key;	// Key
-};
-// 2004, 7, 14, sobeit add end
+// DARKEDEN_LANGUAGE and REALSERVER_INFO are ClientMain.h's.
 
 // g_macAddress is gamemodel's (ClientMode.cpp) since task 4.253.
 extern void CheckMacScreenMode();
@@ -167,7 +147,7 @@ extern void CheckMacScreenMode();
 // letterbox-scales the frame up (spritectl_present_surface) and mouse input
 // maps back down (spritectl_window_to_game_coords). Chosen in InitApp as the
 // largest factor that fits the desktop work area.
-static int g_WindowScale = 1;
+int g_WindowScale = 1;
 // The g_SECTOR_* view sizes are ViewSectors.cpp's (gamemodel, task 4.245), and
 // so are the g_TILESURFACE_* tile-surface sizes (task 4.260).
 //-----------------------------------------------------------------------------
@@ -204,8 +184,6 @@ GetFutecAddress(const char* pStr)
 
 	return true;
 }
-
-//bool ParsingRealServer(const char* pCommandLine,  int Dimention, REALSERVER_INFO &info);
 
 bool
 ParsingRealServer(const char* pCommandLine, int Dimention, REALSERVER_INFO &info)
@@ -261,11 +239,10 @@ HRESULT InitFailMessage(const char* message)
 	ShowCursor( TRUE );
 	ShowWindow(g_hWnd, SW_HIDE);
 
-    //ReleaseAllObjects();
 	DEBUG_ADD( message );
 //add by sonic 2006.4.11
 #ifdef PLATFORM_WINDOWS
-    DestroyWindow(g_hWnd);
+    ClientHost::DestroyGameWindow(g_hWnd);
 #endif
 //end 
 
@@ -593,6 +570,22 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 
 //-----------------------------------------------------------------------------
+// The windowed mode's scale (InitApp)
+//-----------------------------------------------------------------------------
+int
+ChooseWindowScale(int gameWidth, int gameHeight, int frameWidth, int frameHeight,
+	int workWidth, int workHeight)
+{
+	int scale = 1;
+	while ((scale + 1) * gameWidth + frameWidth <= workWidth
+		&& (scale + 1) * gameHeight + frameHeight <= workHeight)
+	{
+		scale++;
+	}
+	return scale;
+}
+
+//-----------------------------------------------------------------------------
 // Name: InitApp()
 // Desc: Do work required for every instance of the application:
 //          Create the window, initialize data
@@ -601,20 +594,6 @@ BOOL
 InitApp(int nCmdShow)
 {
 #ifdef PLATFORM_WINDOWS
-	WNDCLASS                    wc;
-    // Set up and register window class
-    wc.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-    wc.lpfnWndProc = WindowProc;
-    wc.cbClsExtra = 0;
-    wc.cbWndExtra = 0;
-    wc.hInstance = g_hInstance;
-    wc.hIcon = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_DARKEDEN));
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH )GetStockObject(BLACK_BRUSH);
-    wc.lpszMenuName = NULL;//NAME;
-	wc.lpszClassName = PROGRAM_NAME;
-    RegisterClass(&wc);
-	
 	// Calculate the proper size for the window given a client of 640x480
     int cx,cy;	
 	DWORD style = 0;
@@ -658,29 +637,14 @@ InitApp(int nCmdShow)
 				int workW = workArea.right - workArea.left;
 				int workH = workArea.bottom - workArea.top;
 
-				g_WindowScale = 1;
-				while ((g_WindowScale + 1) * g_GameRect.right + frameW <= workW
-					&& (g_WindowScale + 1) * g_GameRect.bottom + frameH <= workH)
-				{
-					g_WindowScale++;
-				}
+				g_WindowScale = ChooseWindowScale(g_GameRect.right, g_GameRect.bottom,
+					frameW, frameH, workW, workH);
 			}
 
 			cx = g_GameRect.right * g_WindowScale + GetSystemMetrics(SM_CXSIZEFRAME)*2;
 			cy = g_GameRect.bottom * g_WindowScale + GetSystemMetrics(SM_CYSIZEFRAME)*2+GetSystemMetrics(SM_CYMENU);
 	}
-    g_hWnd = CreateWindowEx(exStyle,//0,
-                          PROGRAM_NAME,
-                          PROGRAM_TITLE,
-						  style,
-                          0,
-                          0,
-						  cx,
-						  cy,
-                          NULL,
-                          NULL,
-                          g_hInstance,
-                          NULL);
+    g_hWnd = ClientHost::CreateGameWindow(exStyle, style, cx, cy);
 
     if (!g_hWnd)
 	{
@@ -753,13 +717,346 @@ CheckTerriblePatch()
 }
 
 //-----------------------------------------------------------------------------
+// ClientHost (ClientMain.h)
+//-----------------------------------------------------------------------------
+namespace ClientHost {
+
+namespace {
+
+const Host* s_pHost = NULL;
+
+#ifdef PLATFORM_WINDOWS
+HWND CreateSystemGameWindow(DWORD exStyle, DWORD style, int width, int height)
+{
+	WNDCLASS                    wc;
+    // Set up and register window class
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+    wc.lpfnWndProc = WindowProc;
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = g_hInstance;
+    wc.hIcon = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_DARKEDEN));
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH )GetStockObject(BLACK_BRUSH);
+    wc.lpszMenuName = NULL;//NAME;
+	wc.lpszClassName = PROGRAM_NAME;
+    RegisterClass(&wc);
+
+    return CreateWindowEx(exStyle,//0,
+                          PROGRAM_NAME,
+                          PROGRAM_TITLE,
+						  style,
+                          0,
+                          0,
+						  width,
+						  height,
+                          NULL,
+                          NULL,
+                          g_hInstance,
+                          NULL);
+}
+#endif
+
+const Host s_SystemHost = {
+	.Exit = [](int code) { exit(code); },
+	.RunUpdater = [](const char* arguments) {
+		_spawnl(_P_OVERLAY, UPDATER_FILENAME, UPDATER_FILENAME, arguments, NULL);
+	},
+	.ShowMessageBox = [](const char* text, const char* caption) {
+		MessageBox(NULL, text, caption, MB_OK);
+	},
+#ifdef PLATFORM_WINDOWS
+	.CreateGameWindow = CreateSystemGameWindow,
+	.DestroyGameWindow = [](HWND hWnd) { DestroyWindow(hWnd); },
+#endif
+	.PumpMessage = []() -> Pumped {
+		MSG msg{};
+		if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+			return Pumped::NoMessage;
+		if (!GetMessage(&msg, NULL, 0, 0))
+			return Pumped::Quit;
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+		return Pumped::Dispatched;
+	},
+	.WaitForMessage = [] { WaitMessage(); },
+	.ListDllNames = [](std::vector<std::string>& names) -> bool {
+		// Directories are listed too, because the whitelist judges the
+		// name alone.
+		std::vector<Basic::SDirectoryEntry> vDllEntries;
+		if (!Basic::ListDirectory(".", "*.dll", vDllEntries, Basic::LIST_FILES_AND_DIRECTORIES))
+			return false;
+		for (size_t iDll=0; iDll<vDllEntries.size(); iDll++)
+			names.push_back(vDllEntries[iDll].sName);
+		return true;
+	},
+};
+
+}
+
+const Host* SetHost(const Host* host)
+{
+	const Host* previous = s_pHost;
+	s_pHost = host;
+	return previous;
+}
+
+const Host* SystemHost()
+{
+	return &s_SystemHost;
+}
+
+void Exit(int code)
+{
+	if (s_pHost != NULL && s_pHost->Exit != NULL)
+		s_pHost->Exit(code);
+}
+
+void RunUpdater(const char* arguments)
+{
+	if (s_pHost != NULL && s_pHost->RunUpdater != NULL)
+		s_pHost->RunUpdater(arguments);
+}
+
+void ShowMessageBox(const char* text, const char* caption)
+{
+	if (s_pHost != NULL && s_pHost->ShowMessageBox != NULL)
+		s_pHost->ShowMessageBox(text, caption);
+}
+
+HWND CreateGameWindow(DWORD exStyle, DWORD style, int width, int height)
+{
+	if (s_pHost == NULL || s_pHost->CreateGameWindow == NULL)
+		return NULL;
+	return s_pHost->CreateGameWindow(exStyle, style, width, height);
+}
+
+void DestroyGameWindow(HWND hWnd)
+{
+	if (s_pHost != NULL && s_pHost->DestroyGameWindow != NULL)
+		s_pHost->DestroyGameWindow(hWnd);
+}
+
+Pumped PumpMessage()
+{
+	if (s_pHost == NULL || s_pHost->PumpMessage == NULL)
+		return Pumped::NoMessage;
+	return s_pHost->PumpMessage();
+}
+
+void WaitForMessage()
+{
+	if (s_pHost != NULL && s_pHost->WaitForMessage != NULL)
+		s_pHost->WaitForMessage();
+}
+
+bool ListDllNames(std::vector<std::string>& names)
+{
+	if (s_pHost == NULL || s_pHost->ListDllNames == NULL)
+		return false;
+	return s_pHost->ListDllNames(names);
+}
+
+}
+
+//-----------------------------------------------------------------------------
+// The display mode the launch command names (ClientMain)
+//-----------------------------------------------------------------------------
+bool
+ApplyDisplayMode(char mode, bool fullscreen)
+{
+	if (mode == '1')
+	{
+		g_MyFull=false;
+		fullscreen = false;
+	}
+	else if (mode == '2')
+	{
+		g_MyFull=false;
+		fullscreen=true;
+	}
+	// add by Sonic 2006.9.26
+	else if (mode == '3')
+	{
+		g_MyFull=true;
+		fullscreen=false;
+		g_GameRect.left=1023;
+		g_GameRect.top=767;
+		g_GameRect.right=1024;
+		g_GameRect.bottom=768;
+		g_x=512;
+		g_y=384;
+		g_SECTOR_WIDTH           = 21;
+		g_SECTOR_HEIGHT          = 32;
+		g_SECTOR_WIDTH_HALF      = 11;
+		g_SECTOR_HEIGHT_HALF     = 17;
+		g_SECTOR_SKIP_PLAYER_LEFT= -10;
+		g_SECTOR_SKIP_PLAYER_UP  = -16;
+
+		g_TILESURFACE_SECTOR_WIDTH         =27;
+		g_TILESURFACE_SECTOR_HEIGHT        =37;
+		g_TILESURFACE_SECTOR_OUTLINE_RIGHT =24;
+		g_TILESURFACE_SECTOR_OUTLINE_DOWN  =34;
+		g_TILESURFACE_WIDTH                =1296;
+		g_TILESURFACE_HEIGHT               =888;
+		g_TILESURFACE_OUTLINE_RIGHT        =1152;
+		g_TILESURFACE_OUTLINE_DOWN         =816;
+	}
+	else if (mode == '4')
+	{
+		g_MyFull=true;
+		fullscreen=true;
+		g_GameRect.left=1023;
+		g_GameRect.top=767;
+		g_GameRect.right=1024;
+		g_GameRect.bottom=768;
+		g_x=512;
+		g_y=384;
+		g_SECTOR_WIDTH           = 21;
+		g_SECTOR_HEIGHT          = 32;
+		g_SECTOR_WIDTH_HALF      = 11;
+		g_SECTOR_HEIGHT_HALF     = 17;
+		g_SECTOR_SKIP_PLAYER_LEFT= -10;
+		g_SECTOR_SKIP_PLAYER_UP  = -16;
+
+		g_TILESURFACE_SECTOR_WIDTH         =27;
+		g_TILESURFACE_SECTOR_HEIGHT        =37;
+		g_TILESURFACE_SECTOR_OUTLINE_RIGHT =24;
+		g_TILESURFACE_SECTOR_OUTLINE_DOWN  =34;
+		g_TILESURFACE_WIDTH                =1296;
+		g_TILESURFACE_HEIGHT               =888;
+		g_TILESURFACE_OUTLINE_RIGHT        =1152;
+		g_TILESURFACE_OUTLINE_DOWN         =816;
+	}
+	return fullscreen;
+}
+
+//-----------------------------------------------------------------------------
+// The launch command (ClientMain)
+//-----------------------------------------------------------------------------
+LAUNCH_COMMAND
+CheckLaunchCommand(const char* lpCmdLine)
+{
+	if (strlen(lpCmdLine) < 8)
+		return LAUNCH_UPDATER;
+
+	if (memcmp(lpCmdLine, "00000000", 8) != 0)
+		return LAUNCH_REFUSED;
+
+	return LAUNCH_GAME;
+}
+
+int
+LaunchDimension(const char* lpCmdLine)
+{
+	if (strlen(lpCmdLine) < 9 || lpCmdLine[8] < '0' || lpCmdLine[8] > '9')
+		return -1;
+
+	return lpCmdLine[8] - '0';
+}
+
+//-----------------------------------------------------------------------------
+// The startup DLL whitelist (ClientMain, Windows)
+//-----------------------------------------------------------------------------
+// The names are judged alone: directories named *.dll count too.
+//-----------------------------------------------------------------------------
+const std::string*
+FindUnlistedDll(const std::vector<std::string>& names)
+{
+	for (size_t iDll=0; iDll<names.size(); iDll++)
+	{
+		std::string InvalidDll = names[iDll];
+
+		size_t iLen = InvalidDll.size();
+		for (size_t j=0;j<iLen;j++)
+		{
+			if(isupper((unsigned char)InvalidDll[j]) != 0)
+				InvalidDll[j] = (char)tolower((unsigned char)InvalidDll[j]);
+		}
+
+		if(InvalidDll != "timer.dll" &&
+			InvalidDll != "msvcrtd.dll" &&
+			InvalidDll != "msvcrt.dll" &&
+			InvalidDll != "msvcp60.dll" &&
+			InvalidDll != "msvcirt.dll" &&
+			InvalidDll != "ifc22.dll" &&
+			InvalidDll != "gl.dll" &&
+			InvalidDll != "dsetup32.dll" &&
+			InvalidDll != "dsetup.dll" &&
+			InvalidDll != "deutil.dll" &&
+			InvalidDll != "basics.dll" &&
+			InvalidDll != "npx.dll" &&
+			InvalidDll != "npupdate0.dll" &&
+			InvalidDll != "nppsk.dll" &&
+			InvalidDll != "npgmup.dll" &&
+			InvalidDll != "npfgm9x.dll" &&
+			InvalidDll != "npcipher.dll" &&
+			InvalidDll != "mother.dll" &&
+			InvalidDll != "fl.dll" &&
+			InvalidDll != "dbghelp.dll" &&
+			InvalidDll != "darkedenweb.dll" &&
+			InvalidDll != "npchk.dll" &&
+			InvalidDll != "xerces-c_2_4_0.dll" &&
+			// SDL2/vcpkg runtime DLLs (SDL migration replaced the DirectX/
+			// Immersion/GL_import libraries this whitelist used to name -
+			// ifc22.dll/gl.dll above are their now-dead entries). Debug and
+			// Release configs use differently-suffixed DLL names, so both
+			// are listed.
+			InvalidDll != "sdl2d.dll" &&
+			InvalidDll != "libssl-3-x64.dll" &&
+			InvalidDll != "libcrypto-3-x64.dll" &&
+			InvalidDll != "sdl2.dll" &&
+			InvalidDll != "sdl2_ttfd.dll" &&
+			InvalidDll != "sdl2_ttf.dll" &&
+			InvalidDll != "sdl2_imaged.dll" &&
+			InvalidDll != "sdl2_image.dll" &&
+			InvalidDll != "freetyped.dll" &&
+			InvalidDll != "freetype.dll" &&
+			InvalidDll != "libpng16d.dll" &&
+			InvalidDll != "libpng16.dll" &&
+			InvalidDll != "zlibd1.dll" &&
+			InvalidDll != "zlib1.dll" &&
+			// vcpkg ships zlib as z.dll/zd.dll rather than the zlib1.dll
+			// names above, and it arrives here as a transitive dependency
+			// of freetype and libpng.
+			InvalidDll != "zd.dll" &&
+			InvalidDll != "z.dll" &&
+			InvalidDll != "jpeg62.dll" &&
+			InvalidDll != "brotlicommon.dll" &&
+			InvalidDll != "brotlidec.dll" &&
+			InvalidDll != "bz2d.dll" &&
+			InvalidDll != "bz2.dll" &&
+			// vcpkg's libiconv, deployed beside the executable because
+			// DarkEden links Iconv::Iconv. TextService::NormalizeText needs
+			// a real iconv to transcode the shipped CP949 data, since SDL's
+			// built-in converter supports no legacy CJK code page. The name
+			// carries no debug suffix, so one entry covers both configs.
+			InvalidDll != "iconv-2.dll" &&
+			// vcpkg's SDL2_mixer and the codec libraries it was built
+			// against (ogg/vorbis for .ogg music, wavpack). They are only
+			// deployed once DXLibBackendSDL.cpp actually references the
+			// mixer, so they were absent from the output directory until
+			// sound was wired up. The codec names carry no debug suffix.
+			InvalidDll != "sdl2_mixerd.dll" &&
+			InvalidDll != "sdl2_mixer.dll" &&
+			InvalidDll != "ogg.dll" &&
+			InvalidDll != "vorbis.dll" &&
+			InvalidDll != "vorbisenc.dll" &&
+			InvalidDll != "vorbisfile.dll" &&
+			InvalidDll != "wavpackdll.dll")
+			return &names[iDll];
+	}
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
 // Name: ClientMain()
 // Desc: Initialization, frame loop, shutdown - on every platform. This
 //       was WinMain's body (ClientMain.h says how it is shared); the
 //       Win32-only steps are behind PLATFORM_WINDOWS, with the SDL
 //       equivalent in the other branch where one is needed.
 //-----------------------------------------------------------------------------
-static void FinishClient(HANDLE hMutex, const char* lpCmdLine)
+void FinishClient(HANDLE hMutex, const char* lpCmdLine)
 {
 	(void)hMutex;
 	ReleaseAllObjects();
@@ -783,27 +1080,29 @@ static void FinishClient(HANDLE hMutex, const char* lpCmdLine)
 		char szTemp[512];
 		snprintf(szTemp, sizeof(szTemp), "UPDATE %s", lpCmdLine);
 		_chdir(g_CWD);
-		_spawnl(_P_OVERLAY, UPDATER_FILENAME, UPDATER_FILENAME, szTemp, NULL);
+		ClientHost::RunUpdater(szTemp);
 	}
 }
 
-static bool RunClientFrame()
+bool RunClientFrame()
 {
-	MSG msg{};
 #ifndef PLATFORM_WINDOWS
 	// The SDL event pump: dxlib_input_update() drains the queue into the
-	// input state and clears g_bRunning on SDL_QUIT. PeekMessage below
-	// is the shim's stub and always says no, so the frame runs.
+	// input state and clears g_bRunning on SDL_QUIT. The OS message pump
+	// below is the shim's off Windows and always says no, so the frame
+	// runs.
 	dxlib_input_update();
 	if (!g_bRunning)
 		return false;
 #endif
-	if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+	const ClientHost::Pumped pumped = ClientHost::PumpMessage();
+	if (pumped == ClientHost::Pumped::Quit)
 	{
-		if (!GetMessage(&msg, NULL, 0, 0))
-			return false;
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		return false;
+	}
+	else if (pumped == ClientHost::Pumped::Dispatched)
+	{
+		// The message went to its window (WindowProc).
 	}
 	else if (g_bActiveApp)
 	{
@@ -838,7 +1137,7 @@ static bool RunClientFrame()
 	else
 	{
 		// Make sure we go to sleep if we have nothing else to do
-		WaitMessage();
+		ClientHost::WaitForMessage();
 	}
 
 	return true;
@@ -876,8 +1175,8 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	// A refused Netmarble launch (task 4.220).
 	static const NetmarbleHost netmarbleHost = {
 		.RefuseLaunch = [] {
-			MessageBox( NULL, "넷마블 홈페이지를 통해서 다시 실행해주세요.","NetmarbleDarkEden",MB_OK);
-			exit(0);
+			ClientHost::ShowMessageBox("넷마블 홈페이지를 통해서 다시 실행해주세요.", "NetmarbleDarkEden");
+			ClientHost::Exit(0);
 		},
 	};
 	SetNetmarbleHost(&netmarbleHost);
@@ -901,7 +1200,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		.InitPacketItemTable = ::InitPacketItemTable,
 		.PersonalShopUpdateTime = GetPersnalShopUpdateTime,
 		.InitFailMessage = [](const char* message) { InitFailMessage(message); },
-		.ShowError = [](const char* message) { MessageBox(NULL, message, "Error", MB_OK); },
+		.ShowError = [](const char* message) { ClientHost::ShowMessageBox(message, "Error"); },
 	};
 	GameInitInfoHost::SetHost(&gameInitInfoHost);
 
@@ -982,70 +1281,7 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	lpCmdLine = launchCommand.data();
 
 	//add by zdj
-	bool cmpFullScreen = displaySettings.fullscreen;
-	if (lpCmdLine[strlen(lpCmdLine)-1] == '1')
-	{
-		g_MyFull=false;
-		cmpFullScreen = false;
-	}
-	else if (lpCmdLine[strlen(lpCmdLine)-1] == '2')
-	{
-		g_MyFull=false;
-		cmpFullScreen=true;
-	}
-	// add by Sonic 2006.9.26
-	else if (lpCmdLine[strlen(lpCmdLine)-1] == '3')
-	{
-		g_MyFull=true;
-		cmpFullScreen=false;
-		g_GameRect.left=1023;
-		g_GameRect.top=767;
-		g_GameRect.right=1024;
-		g_GameRect.bottom=768;
-		g_x=512;
-		g_y=384;
-		g_SECTOR_WIDTH           = 21;
-		g_SECTOR_HEIGHT          = 32;
-		g_SECTOR_WIDTH_HALF      = 11;
-		g_SECTOR_HEIGHT_HALF     = 17;
-		g_SECTOR_SKIP_PLAYER_LEFT= -10;
-		g_SECTOR_SKIP_PLAYER_UP  = -16;
-
-		g_TILESURFACE_SECTOR_WIDTH         =27;
-		g_TILESURFACE_SECTOR_HEIGHT        =37;
-		g_TILESURFACE_SECTOR_OUTLINE_RIGHT =24;
-		g_TILESURFACE_SECTOR_OUTLINE_DOWN  =34;
-		g_TILESURFACE_WIDTH                =1296;
-		g_TILESURFACE_HEIGHT               =888;
-		g_TILESURFACE_OUTLINE_RIGHT        =1152;
-		g_TILESURFACE_OUTLINE_DOWN         =816;
-	}
-	else if (lpCmdLine[strlen(lpCmdLine)-1] == '4')
-	{
-		g_MyFull=true;
-		cmpFullScreen=true;
-		g_GameRect.left=1023;
-		g_GameRect.top=767;
-		g_GameRect.right=1024;
-		g_GameRect.bottom=768;
-		g_x=512;
-		g_y=384;
-		g_SECTOR_WIDTH           = 21;
-		g_SECTOR_HEIGHT          = 32;
-		g_SECTOR_WIDTH_HALF      = 11;
-		g_SECTOR_HEIGHT_HALF     = 17;
-		g_SECTOR_SKIP_PLAYER_LEFT= -10;
-		g_SECTOR_SKIP_PLAYER_UP  = -16;
-
-		g_TILESURFACE_SECTOR_WIDTH         =27;
-		g_TILESURFACE_SECTOR_HEIGHT        =37;
-		g_TILESURFACE_SECTOR_OUTLINE_RIGHT =24;
-		g_TILESURFACE_SECTOR_OUTLINE_DOWN  =34;
-		g_TILESURFACE_WIDTH                =1296;
-		g_TILESURFACE_HEIGHT               =888;
-		g_TILESURFACE_OUTLINE_RIGHT        =1152;
-		g_TILESURFACE_OUTLINE_DOWN         =816;
-	}
+	bool cmpFullScreen = ApplyDisplayMode(lpCmdLine[strlen(lpCmdLine)-1], displaySettings.fullscreen);
 	lpCmdLine[strlen(lpCmdLine)-1]=0x0;
 	//----------------------------------------------------------
 	// Run a single instance of the application (Windows only: the
@@ -1099,99 +1335,13 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 //yckou end
 //add by sonic Check *.dll have Bug. 2006.4.13
 //yckou begin: check invalid *.dll
-	// The startup DLL whitelist: a *.dll beside the executable whose name is
-	// not below makes WinMain() return -1 here, silently, before logging is
-	// up. Directories are listed too, because the body judges the name alone.
-	std::string InvalidDll;
-	std::vector<Basic::SDirectoryEntry> vDllEntries;
-
-	// A directory that cannot be enumerated skips the check.
-	if (Basic::ListDirectory(".", "*.dll", vDllEntries, Basic::LIST_FILES_AND_DIRECTORIES))
-	{
-		for (size_t iDll=0; iDll<vDllEntries.size(); iDll++)
-		{
-			InvalidDll = vDllEntries[iDll].sName;
-
-			size_t iLen = InvalidDll.size();
-			for (size_t j=0;j<iLen;j++)
-			{
-				if(isupper((unsigned char)InvalidDll[j]) != 0)
-					InvalidDll[j] = (char)tolower((unsigned char)InvalidDll[j]);
-			}
-
-			if(InvalidDll != "timer.dll" &&
-				InvalidDll != "msvcrtd.dll" &&
-				InvalidDll != "msvcrt.dll" &&
-				InvalidDll != "msvcp60.dll" &&
-				InvalidDll != "msvcirt.dll" &&
-				InvalidDll != "ifc22.dll" &&
-				InvalidDll != "gl.dll" &&
-				InvalidDll != "dsetup32.dll" &&
-				InvalidDll != "dsetup.dll" &&
-				InvalidDll != "deutil.dll" &&
-				InvalidDll != "basics.dll" &&
-				InvalidDll != "npx.dll" &&
-				InvalidDll != "npupdate0.dll" &&
-				InvalidDll != "nppsk.dll" &&
-				InvalidDll != "npgmup.dll" &&
-				InvalidDll != "npfgm9x.dll" &&
-				InvalidDll != "npcipher.dll" &&
-				InvalidDll != "mother.dll" &&
-				InvalidDll != "fl.dll" &&
-				InvalidDll != "dbghelp.dll" &&
-				InvalidDll != "darkedenweb.dll" &&
-				InvalidDll != "npchk.dll" &&
-				InvalidDll != "xerces-c_2_4_0.dll" &&
-				// SDL2/vcpkg runtime DLLs (SDL migration replaced the DirectX/
-				// Immersion/GL_import libraries this whitelist used to name -
-				// ifc22.dll/gl.dll above are their now-dead entries). Debug and
-				// Release configs use differently-suffixed DLL names, so both
-				// are listed.
-				InvalidDll != "sdl2d.dll" &&
-				InvalidDll != "libssl-3-x64.dll" &&
-				InvalidDll != "libcrypto-3-x64.dll" &&
-				InvalidDll != "sdl2.dll" &&
-				InvalidDll != "sdl2_ttfd.dll" &&
-				InvalidDll != "sdl2_ttf.dll" &&
-				InvalidDll != "sdl2_imaged.dll" &&
-				InvalidDll != "sdl2_image.dll" &&
-				InvalidDll != "freetyped.dll" &&
-				InvalidDll != "freetype.dll" &&
-				InvalidDll != "libpng16d.dll" &&
-				InvalidDll != "libpng16.dll" &&
-				InvalidDll != "zlibd1.dll" &&
-				InvalidDll != "zlib1.dll" &&
-				// vcpkg ships zlib as z.dll/zd.dll rather than the zlib1.dll
-				// names above, and it arrives here as a transitive dependency
-				// of freetype and libpng.
-				InvalidDll != "zd.dll" &&
-				InvalidDll != "z.dll" &&
-				InvalidDll != "jpeg62.dll" &&
-				InvalidDll != "brotlicommon.dll" &&
-				InvalidDll != "brotlidec.dll" &&
-				InvalidDll != "bz2d.dll" &&
-				InvalidDll != "bz2.dll" &&
-				// vcpkg's libiconv, deployed beside the executable because
-				// DarkEden links Iconv::Iconv. TextService::NormalizeText needs
-				// a real iconv to transcode the shipped CP949 data, since SDL's
-				// built-in converter supports no legacy CJK code page. The name
-				// carries no debug suffix, so one entry covers both configs.
-				InvalidDll != "iconv-2.dll" &&
-				// vcpkg's SDL2_mixer and the codec libraries it was built
-				// against (ogg/vorbis for .ogg music, wavpack). They are only
-				// deployed once DXLibBackendSDL.cpp actually references the
-				// mixer, so they were absent from the output directory until
-				// sound was wired up. The codec names carry no debug suffix.
-				InvalidDll != "sdl2_mixerd.dll" &&
-				InvalidDll != "sdl2_mixer.dll" &&
-				InvalidDll != "ogg.dll" &&
-				InvalidDll != "vorbis.dll" &&
-				InvalidDll != "vorbisenc.dll" &&
-				InvalidDll != "vorbisfile.dll" &&
-				InvalidDll != "wavpackdll.dll")
-				return -1;
-		}
-	}
+	// The startup DLL whitelist (FindUnlistedDll): a *.dll beside the
+	// executable whose name is not listed makes ClientMain (so WinMain)
+	// return -1 here, silently, before logging is up. A directory that
+	// cannot be enumerated skips the check.
+	std::vector<std::string> vDllNames;
+	if (ClientHost::ListDllNames(vDllNames) && FindUnlistedDll(vDllNames) != NULL)
+		return -1;
 //yckou end
 //end sonic
 
@@ -1232,80 +1382,41 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 	bNetmarble = NetmarbleConfig.getPropertyInt("Netmarble") != 0;
 
 	//------------------------------------------------------
-	// Server IP가 설정되어 있지 않은 경우 --> Launcher실행
+	// The launch command: none, or one too short, hands over to the
+	// updater (the launcher); one that does not start with "00000000" is
+	// refused. A game launch may name the world (not Netmarble's).
 	//------------------------------------------------------
-	if (strlen(lpCmdLine)==0)
+	switch (CheckLaunchCommand(lpCmdLine))
 	{
-			if (!ReleaseMutex( hMutex ))
-			{
-				DEBUG_ADD_FORMAT_ERR("Failed to release mutex : %d", GetLastError());
-			}
+	case LAUNCH_UPDATER:
+		// A failed release is logged for the empty command only.
+		if (!ReleaseMutex( hMutex ) && lpCmdLine[0] == '\0')
+		{
+			DEBUG_ADD_FORMAT_ERR("Failed to release mutex : %d", GetLastError());
+		}
 
-			ReleaseAllObjects();			
-			_chdir( g_CWD );
-			_spawnl(_P_OVERLAY, UPDATER_FILENAME, UPDATER_FILENAME, lpCmdLine, NULL);
-			return FALSE;
+		ReleaseAllObjects();
+		_chdir( g_CWD );
+		ClientHost::RunUpdater(lpCmdLine);
+		return FALSE;
+
+	case LAUNCH_REFUSED:
+		return false;
+
+	case LAUNCH_GAME:
+		break;
 	}
-	//------------------------------------------------------
-	// Server IP가 설정되어 있는 경우
-	//------------------------------------------------------
-	else
+
+	if (!bNetmarble && LaunchDimension(lpCmdLine) >= 0)
 	{
-		char* str = lpCmdLine;
-		if (strlen(str) < 8)
-		{
-			ReleaseMutex( hMutex );
-			ReleaseAllObjects();
-			_chdir( g_CWD );
-			_spawnl(_P_OVERLAY, UPDATER_FILENAME, UPDATER_FILENAME, lpCmdLine, NULL);
-
-			return FALSE;
-		}
-
-		//add by sonic 2006.4.9  设置加密函数
-		DWORD GetCommand;
-		// EXECryptor_GetHardwareID() removed (SDL2) - Copy protection no longer needed
-		GetCommand = 0x00000000;  //用于调试
-		char checkStr[9];
-		memset(checkStr,0,9);
-		snprintf(checkStr, sizeof(checkStr), "%X", GetCommand);
-		char T_checkStr[9];
-		memset(T_checkStr,0,9);
-		if (8 -strlen(checkStr) !=0)
-		{
-			memcpy(T_checkStr,checkStr,strlen(checkStr));
-			int n = static_cast<int>(8-strlen(checkStr));
-			char* p=checkStr;
-			for (int i =0;i<n;i++)
-			{
-				memcpy(p,"0",1);
-				p++;
-			}
-			memcpy(p,T_checkStr,strlen(T_checkStr));
-		}
-		memcpy(checkStr,"00000000",8);
-		memcpy(T_checkStr,str,8);
-
-		////////////////////Add by Sonic 2006-6-21////////////////////////////////
-		if (memcmp(checkStr,T_checkStr,strlen(checkStr)))
-		{
-			return false;
-		}
-		//////////////////////////////////////////////////////////////////////////
-		if(!bNetmarble && lpCmdLine[8] >= '0' && lpCmdLine[8] <= '9')
-		{
-			char szDimen[10];
-			memset( szDimen, 0, 10 );
-			memcpy( szDimen, lpCmdLine+8, 1 );
-			g_Dimension = atoi( szDimen );
-		}
-		g_bFullScreen	= true;
-		g_MaxNPC		= 0;
-
-		g_bHAL			= true;
-		g_bMusicSW		= true;
-
+		g_Dimension = LaunchDimension(lpCmdLine);
 	}
+	g_bFullScreen	= true;
+	g_MaxNPC		= 0;
+
+	g_bHAL			= true;
+	g_bMusicSW		= true;
+
 	// [Futec수정]
 	GetFutecAddress(lpCmdLine);
 //add by sonic 2006.4.10 判断程序启动模式
