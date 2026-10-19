@@ -37,6 +37,10 @@
 #include "CSpriteSurface.h"
 #include "CIndexSprite.h"
 #include "CSprite.h"
+#include "Fl2.h"
+#include "FontHandleUtil.h"
+#include "MGameStringTable.h"
+#include "MJusticeAttackManager.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -54,6 +58,7 @@ extern POINT	g_MouseSector;
 extern bool		g_bMouseInPortal;
 extern BOOL		g_MyFull;			// ClientMode.cpp's
 extern int		g_UpdateDelay;		// ClientMode.cpp's
+extern PrintInfo* g_ClientPrintInfo[10];	// MAX_FONTID, MTopView.cpp's
 bool IsEscapeDrawCreatureFunction(MCreature* pCreature);
 
 // The view's protected members this file drives (MTopView.h makes it a
@@ -2838,4 +2843,52 @@ TEST(TopView2World, TheClickMarkerTurnsThroughItsFramesTwoUpdatesEach)
 		std::printf("\n");
 	}
 	CHECK(match >= 0);
+}
+
+TEST(TopView2World, TheCreatureSelectedThisFrameIsNamed)
+{
+	// What a name reads: fonts that measure (the text itself is drawn
+	// nowhere: tests leave no text surface set), the operator's name
+	// prefix and the self-defence roster; and a selector that may attack
+	// anyone, for the outline's colour.
+	static const MObjectSelectorHost attacker = []() {
+		MObjectSelectorHost host{};
+		host.ForceAttack = []() { return true; };
+		host.IsNonPK = []() { return false; };
+		return host;
+	}();
+	World scene;
+	MTopView& view = scene.View();
+	MObjectSelector selector{ &attacker };
+	g_pObjectSelector = &selector;		// the Scene puts it back
+	PrintInfo fonts[10] = {};
+	PrintInfo* oldFonts[10];
+	for (int i = 0; i < 10; ++i)
+	{
+		oldFonts[i] = g_ClientPrintInfo[i];
+		fonts[i].hfont = TextSystem::EncodeFontSizeHandle(10 + i);
+		g_ClientPrintInfo[i] = &fonts[i];
+	}
+	g_pGameStringTable->Init(MAX_GAME_STRING);
+	*g_pGameStringTable->GetMutable(UI_STRING_MESSAGE_MASTER_NAME) = "GM";
+	MJusticeAttackManager justice;
+	MJusticeAttackManager* oldJustice = g_pJusticeAttackManager;
+	g_pJusticeAttackManager = &justice;
+	Creature& walker = scene.Monster(kVampire, 26, 33);
+	walker.SetName("Kim");
+	scene.Ready();
+	// Unselected, the frame clears the request icon's flag itself.
+	view.m_bDrawRequest = true;
+	scene.Frame();
+	CHECK(view.m_pSelectedCreature == NULL);
+	CHECK(!view.m_bDrawRequest);
+	// Selected, it is named, and the name (no request mode) clears it.
+	view.SetSelectedCreature(walker.GetID());
+	view.m_bDrawRequest = true;
+	scene.Frame();
+	CHECK(view.m_pSelectedCreature == &walker);
+	CHECK(!view.m_bDrawRequest);
+	CHECK(view.m_pqDrawText.empty());			// what it queued is drawn and freed
+	g_pJusticeAttackManager = oldJustice;
+	for (int i = 0; i < 10; ++i) g_ClientPrintInfo[i] = oldFonts[i];
 }
