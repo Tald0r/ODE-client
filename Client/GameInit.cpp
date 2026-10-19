@@ -3588,8 +3588,6 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 extern bool g_bEventQuestEnding;
 extern void SetFlagTo( bool bTae );
 
-extern WORD g_MyBatColorSet;	// GameMain.cpp's
-
 static const ZoneLoading::Host s_ZoneLoadingHost = {
 	.RemoveZoneEvents = []() { g_pEventManager->RemoveAllEventByType(EVENTTYPE_ZONE); },
 	.LoadAllAddonSprites = []() { LoadingAddonSPK( true ); },
@@ -3642,7 +3640,6 @@ static const ZoneLoading::Host s_ZoneLoadingHost = {
 	.StampFrameClock = StampFrameClock,
 	.MillisecondsToFrames = [](std::uint32_t ms) -> std::uint32_t { return ConvertMillisecondToFrame( ms ); },
 	.AdvanceFrame = [](int frames) { g_CurrentFrame += frames; },
-	.SetMyBatColorSet = [](std::uint16_t colorSet) { g_MyBatColorSet = colorSet; },
 	.ShowPlayerHP = []() { UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() ); },
 	.EnterWaitSetPositionMode = []() { SetMode( MODE_WAIT_SETPOSITION ); },
 };

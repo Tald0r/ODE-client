@@ -90,7 +90,6 @@ extern "C" void spritectl_window_to_game_coords(int* x, int* y);
 #include "ZoneFlags.h"
 
 //add by zdj 2005.5.17
-extern void	ExecuteLogout();
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
 
@@ -149,7 +148,6 @@ int g_previousSoundID = SOUNDID_NULL;
 
 // Zone
 // g_ZoneCreatureColorSet is ZoneFlags.cpp's.
-WORD				g_MyBatColorSet = 0xFFFF;
 // g_bZoneSafe, g_nZoneLarge, g_nZoneSmall and g_bZonePlayerInLarge are
 // ZoneFlags.cpp's, and so are the large and small zones and whether their
 // images are loaded (task 4.253).
@@ -163,12 +161,7 @@ WORD				g_MyBatColorSet = 0xFFFF;
 // g_pBack and g_pLast are ClientMode.cpp's (gamemodel) since task 4.255.
 int						g_ScreenShotNumber = 0;
 
-CSDLStream*		g_pSDLStream = NULL;
 // g_SoundPerSecond is AmbientSoundState.cpp's (gamemodel) since task 4.261.
-
-// Chat string
-
-bool				g_bPutMessage = false;		// 화면에 debug메세지를 출력할까?
 
 // socket: GameSocket.cpp (gamemodel)
 
@@ -187,7 +180,6 @@ extern int			g_MorphCreatureType;
 
 // g_pUpdate is CWinUpdate.cpp's (gamemodel) since task 4.255.
 
-extern MCreature*		AddClientCreature();
 extern void Add_GDR_Effect(int nEffect, bool bAppearBossMonster);
 extern void Add_GDR_Potal_Effect(int nMapID);
 //---------------------------------------------------------------------------
@@ -1111,9 +1103,7 @@ CheckActivate(BOOL bActiveGame)
 	//----------------------------------------------------
 	g_bActiveGame = FALSE;
 
-	[[maybe_unused]] extern bool	g_bTestMode;
-	if (g_bActiveApp
-		)
+	if (g_bActiveApp)
 	{
 		CSDLGraphics::RestoreGammaRamp();
 
@@ -1285,36 +1275,6 @@ LoadCreature(int spriteType)
 	g_pTopView->LoadFromFileCreatureSPK( spriteType );
 
 	return TRUE;
-}
-
-//-----------------------------------------------------------------------------
-// Load CreatureType
-//-----------------------------------------------------------------------------
-// creature type을 보고 sprite를 load한다.
-//-----------------------------------------------------------------------------
-BOOL
-LoadCreatureType(int creatureType)
-{
-	// Debug Message
-	DEBUG_ADD_FORMAT("LoadCreatureType : %d", creatureType);
-	
-	int spriteType = (*g_pCreatureTable)[creatureType].SpriteTypes[0];
-
-	if (!(*g_pCreatureSpriteTable)[spriteType].bLoad)
-	{
-		//if (spriteType==9)
-		//{
-		//	int a = 9;
-		//}
-
-		LoadCreature( spriteType );
-
-		return TRUE;
-	}
-
-	DEBUG_ADD_FORMAT("Don't need to LoadCreatureType : %d", creatureType);
-	
-	return FALSE;
 }
 
 //-----------------------------------------------------------------------------
@@ -2970,43 +2930,6 @@ UpdateMouse()
 }
 
 //---------------------------------------------------------------------------
-// keep Connection
-//---------------------------------------------------------------------------
-void
-KeepConnection()
-{
-	/*
-	// CGVerifyTime이 있으므로 이제 필요없다.
-	#ifdef CONNECT_SERVER	
-		if (
-			#ifndef _DEBUG		// debug버전에서는 무조건 KeepConnection이다.
-				(g_pUserInformation->KeepConnection || g_pUserInformation->IsMaster)
-				&&				
-			#endif
-			g_pSocket!=NULL)
-	
-		{
-			static MonotonicClock::TimePoint lastTime = g_FrameNow;
-
-			//------------------------------------------------------------------
-			// a keep-alive packet every three minutes
-			//------------------------------------------------------------------
-			if (g_FrameNow - lastTime > MonotonicClock::Millis(180000))		// 3 * 60 * 1000
-			{
-				#ifdef	CONNECT_SERVER			
-					CGSay _CGSay;
-					_CGSay.setMessage( "*" );
-					g_pSocket->sendPacket( &_CGSay );			
-				#endif
-
-				lastTime = g_FrameNow;
-			}
-		}
-	#endif
-	*/
-}
-
-//---------------------------------------------------------------------------
 // Update Disconnected
 //---------------------------------------------------------------------------
 void
@@ -3147,9 +3070,7 @@ UpdateDisconnected()
 	//------------------------------------------------------
 	// ALT + TAB 상태가 아닐 때
 	//------------------------------------------------------
-	[[maybe_unused]] extern bool	g_bTestMode;
-	if (g_bActiveGame
-		)
+	if (g_bActiveGame)
 	{
 		DEBUG_ADD("UpdateDisconnected : Wait For Press Key");
 		
@@ -3337,12 +3258,6 @@ UpdateDisconnected()
 	DEBUG_ADD("UpdateDisconnected : OK");
 }
 
-// ok를 누른 뒤 실행되는 것.
-void RunAfterServerDisconnect()
-{
-
-}
-
 //-----------------------------------------------------------------------------
 // Select LastSelected Character
 //-----------------------------------------------------------------------------
@@ -3438,493 +3353,6 @@ SaveLastSelectedCharacter(int slot)
 		}
 	}
 }
-
-//-----------------------------------------------------------------------------
-// Set WatchMode ( true || false )
-//-----------------------------------------------------------------------------
-// 구경하는 mode..
-//-----------------------------------------------------------------------------
-void	
-SetWatchMode(bool active)
-{
-	//-------------------------------------------------------------------
-	// Player를 Zone에서 제거
-	// UI 작동 못하게 설정?
-	// 이동 방식 변경
-	//-------------------------------------------------------------------
-	if (active)
-	{
-		g_pPlayer->SetStop();
-		g_pPlayer->SetAction( ACTION_STAND );
-		g_pZone->RemovePlayer();
-
-		g_bWatchMode = true;
-	}
-	//-------------------------------------------------------------------
-	//
-	//-------------------------------------------------------------------
-	else
-	{
-		g_pPlayer->SetZone(g_pZone);
-		g_pZone->SetPlayer();
-		g_pPlayer->SetTimeLightSight(g_pPlayer->GetTimeLightSight());
-
-		g_bWatchMode = false;
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Add ClientCreature
-//-----------------------------------------------------------------------------
-MCreature*
-AddClientCreature()
-{
-	//------------------------------------------------
-	// NPC 
-	//------------------------------------------------	
-	const int hairMaleID[] = 
-	{
-		ADDONID_HAIR1_MALE,
-		ADDONID_HAIR2_MALE,
-		ADDONID_HAIR3_MALE
-	};
-
-	const int hairFemaleID[] = 
-	{
-		ADDONID_HAIR1_FEMALE,
-		ADDONID_HAIR2_FEMALE,
-		ADDONID_HAIR3_FEMALE
-	};		
-
-	static MCoat coat1;	coat1.SetItemType( 0 ); coat1.ClearItemOption();
-	static MCoat coat2;	coat2.SetItemType( 1 );	coat2.ClearItemOption();
-	static MItem* jacket[3] =
-	{
-		&coat1,		//JACKET_BASIC, 
-		&coat1,		//JACKET1 , 
-		&coat2		//JACKET2
-	};
-
-	static MTrouser	trouser1;	trouser1.SetItemType( 0 ); trouser1.ClearItemOption();
-	static MTrouser	trouser2;	trouser2.SetItemType( 1 ); trouser2.ClearItemOption();
-	static MItem* pants[3] =
-	{
-		&trouser1,	//PANTS_BASIC , 
-		&trouser1,	//PANTS1 , 
-		&trouser2	//PANTS2 ,
-	};
-
-	static MHelm helm1; helm1.SetItemType( 0 ); helm1.ClearItemOption(); 
-	static MHelm helm2; helm2.SetItemType( 1 ); helm2.ClearItemOption();
-	static MItem* helm[3] = 
-	{
-		NULL,		// NONE
-		&helm1,		// HELMET1 ,
-		&helm2,		// HELMET2
-	};
-
-	static MSword	sword;	sword.SetItemType( 0 );	sword.ClearItemOption();
-	static MBlade	blade;	blade.SetItemType( 0 ); blade.ClearItemOption();
-	static MGunAR	gunAR;	gunAR.SetItemType( 0 ); gunAR.ClearItemOption();
-	static MGunTR	gunSR;	gunSR.SetItemType( 0 ); gunSR.ClearItemOption();
-	static MGunSG	gunSG;	gunSG.SetItemType( 0 );	gunSG.ClearItemOption();
-	static MGunSMG	gunSMG;	gunSMG.SetItemType( 0 );gunSMG.ClearItemOption();
-	static MCross	cross;	cross.SetItemType( 0 );	cross.ClearItemOption();
-	static MMace	mace;	mace.SetItemType( 0 ); mace.ClearItemOption();
-	static MItem* weapon[11] =
-	{
-		NULL,		//WEAPON_NONE ,
-		&sword,		//WEAPON_SWORD ,
-		&blade,		//WEAPON_BLADE ,
-		NULL,		//WEAPON_SHIELD ,
-		&sword,		//WEAPON_SWORD_SHIELD ,
-		&gunAR,		//WEAPON_AR ,
-		&gunSR,		//WEAPON_SR ,
-		&gunSG,		//WEAPON_SG ,
-		&gunSMG,	//WEAPON_SMG ,
-		&cross,		//WEAPON_CROSS ,			
-		&mace
-	};
-
-	static MShield shield; shield.SetItemType( 0 ); shield.ClearItemOption();
-
-
-		
-
-	int creatureID;
-	
-	while (1)
-	{
-		creatureID = 1001 + rand()%50000;
-
-		MCreature* pCreature = g_pZone->GetCreature( creatureID );
-
-		if (pCreature==NULL)
-		{
-			break;
-		}
-	}
-
-	int x, y;
-
-	//-----------------------------------
-	// 옷 입는 Creature
-	//-----------------------------------
-	if (0)//rand()%2)
-	{
-		MCreatureWear* pCreature = new MCreatureWear;
-
-		pCreature->SetZone(g_pZone);
-
-		// (*g_pCreatureTable)의 정보들 중의 하나..
-		pCreature->SetCreatureType( rand()%2 );
-
-		// Move 종류를 다르게 한다.
-		switch (0)//rand()%2)//rand()%3)
-		{
-			case 0 :
-				pCreature->SetGroundCreature();
-			break;
-		
-			case 1 :
-				pCreature->SetFlyingCreature();					
-			break;
-			
-			case 2 :
-				pCreature->SetUndergroundCreature();
-			break;
-		}						
-		
-		while (1)
-		{
-			x = rand()%(g_pZone->GetWidth()-1)+1;
-			y = rand()%(g_pZone->GetHeight()-1)+1;
-			//x = rand()%(20-1)+10;
-			//y = rand()%(20-1)+20;	// 20~40
-			/*
-			int p = rand()%100;
-
-			y = createPositionY[p];
-			x = 12 - ((40-y)>>1) + (rand()%(41-y));
-
-			if (rand()%2)
-			{
-				x += rand()%4;
-			}
-			else
-			{
-				x -= rand()%4;
-			}
-			*/
-
-			if (x>=0 && x<g_pZone->GetWidth() 
-				&& y>=0 && y<g_pZone->GetHeight())
-			{					
-				if (g_pZone->GetSector(x,y).IsEmpty())
-				{
-					pCreature->SetPosition( x, y );
-					pCreature->SetServerPosition( x, y );
-					break;
-				}
-			}
-		}
-		//pCreature->SetID(1000 + y*256 + x);
-		
-		pCreature->SetID( creatureID );
-
-		// 이름 설정 - 일단은 ID로
-		//char str[80];
-		//sprintf(str, "ID=%d", pCreature->GetID());
-		//pCreature->SetName( str );
-		
-		pCreature->SetDirection(DIRECTION_DOWN);
-		pCreature->SetNextAction( ACTION_STAND );
-
-		if (pCreature->IsMale())
-		{
-			pCreature->SetAddonHair( hairMaleID[rand()%3], 0);		// type, color				
-		}
-		else
-		{
-			pCreature->SetAddonHair( hairFemaleID[rand()%3], 0);		// type, color				
-		}
-
-		pCreature->SetAddonItem( jacket[rand()%3] );	
-		pCreature->SetAddonItem( pants[rand()%3] );	
-		pCreature->SetAddonItem( helm[rand()%3] );
-		int w = rand()%10;
-		pCreature->SetAddonItem( weapon[w] );
-		if (w==3 || w==4)
-		{
-			pCreature->SetAddonItem( &shield );
-		}
-
-		
-
-		if (!g_pZone->AddCreature(pCreature))
-		{
-			delete pCreature;
-			return NULL;
-		}
-
-		return pCreature;
-	}
-	//-----------------------------------
-	// 옷 없는 Creature
-	//-----------------------------------
-	else
-	{				
-		static int cType = 371;//199//11;
-		
-		LoadCreatureType( cType );
-
-		MCreature* pCreature;
-
-		if ((*g_pCreatureTable)[cType].pItemWearInfo!=NULL)
-		{
-			pCreature = new MCreatureWear;
-
-			pCreature->SetCreatureType( cType );//11+rand()%(23-11+1) );
-
-			SetAddonToSlayer( (MCreatureWear*)pCreature, cType );
-		}
-		else
-		{
-			pCreature = new MCreature;
-
-			pCreature->SetCreatureType( cType );//11+rand()%(23-11+1) );
-		}
-
-		// 존재하는 Zone을 설정한다.
-		pCreature->SetZone(g_pZone);
-
-		// (*g_pCreatureTable)의 정보들 중의 하나..
-		//pCreature->SetCreatureType( (rand()%((*g_pCreatureTable).GetSize()-4))+4 );				
-		
-		//------------------------------------------------------------
-		// 바토리인 경우.. 하드코딩(-_-);
-		//------------------------------------------------------------
-		pCreature->SetStatus( MODIFY_MAX_HP, 100 );
-		if (cType==217)
-		{
-			pCreature->SetStatus( MODIFY_CURRENT_HP, 10 );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, -10000 );
-		}
-		else
-		{
-			pCreature->SetStatus( MODIFY_CURRENT_HP, rand()%101 );
-			pCreature->SetStatus( MODIFY_ALIGNMENT, -5000 + rand()%10000 );
-		}
-		
-		cType++;
-
-		if (cType==g_pCreatureTable->GetSize())
-		{
-			cType = 296;//104;//11;
-		}
-		else if (cType==111)
-		{
-			cType = 197;
-		}
-		else if (cType==200)
-		{
-			cType = 208;
-		}
-		else if (cType==210)
-		{
-			cType = 217;
-		}
-		else if (cType==220)
-		{
-			cType = 229;
-		}
-		else if (cType==231)
-		{
-			cType = 239;
-		}
-		else if (cType==241)
-		{
-			cType = 250;
-		}
-		else if (cType==251)
-		{
-			cType = 256;
-		}
-		else if (cType==257)
-		{
-			cType = 266;
-		}
-		else if (cType==267)
-		{
-			cType = 276;
-		}
-		else if (cType==277)
-		{
-			cType = 286;
-		}
-		else if (cType==288)
-		{
-			cType = 318;
-		}
-		else if (cType==320)
-		{
-			cType = 328;
-		}
-		else if (cType==330)
-		{
-			cType = 338;
-		}
-		else if (cType==340)
-		{
-			cType = 348;
-		}
-		
-
-		pCreature->SetLevelName( rand()%100 );
-
-		//int numGuildMark = g_pTopView->m_GuildSPK();
-		//int guildMark = ((numGuildMark==0)? -1 : rand()%numGuildMark);
-		//pCreature->SetGuildNumber( guildMark );
-		
-		if (pCreature->IsVampire())
-		{
-			pCreature->SetGuildNumber( 1 );
-		}
-		
-
-		// Move 종류를 다르게 한다.
-		switch (0)//rand()%2)//rand()%3)
-		{
-			case 0 :
-				pCreature->SetGroundCreature();
-			break;
-		
-			case 1 :
-				pCreature->SetFlyingCreature();
-			break;
-			
-			case 2 :
-				pCreature->SetUndergroundCreature();
-			break;
-		}		
-
-		while (1)
-		{
-			x = rand()%40 + 10;
-			y = rand()%40 + 10;
-
-			//x = rand()%(g_pZone->GetWidth()-1)+1;
-			//y = rand()%(g_pZone->GetHeight()-1)+1;
-			//x = rand()%(20-1)+10;
-			//y = rand()%(20-1)+20;	// 20~40
-			/*
-			int p = rand()%100;
-
-			y = 140 - createPositionY[p];
-			x = 12 - ((40-createPositionY[p])>>1) + (rand()%(41-createPositionY[p]));
-			
-			if (rand()%2)
-			{
-				x += rand()%4;
-			}
-			else
-			{
-				x -= rand()%4;
-			}
-			*/
-
-			if (x>=0 && x<g_pZone->GetWidth() 
-				&& y>=0 && y<g_pZone->GetHeight())
-			{					
-				if (g_pZone->GetSector(x,y).IsEmpty())
-				{
-					pCreature->SetPosition( x, y );
-					pCreature->SetServerPosition( x, y );
-					break;
-				}
-			}
-		}
-		//pCreature->SetID(1000 + y*256 + x);
-		pCreature->SetID( creatureID );
-
-				
-		// 이름 설정 - 일단은 ID로
-		//if (pCreature->IsVampire())
-		{
-			//char str[80];
-			//sprintf(str, "ID=%d, Type=%d", pCreature->GetID(), pCreature->GetCreatureType());
-			pCreature->SetName( (*g_pCreatureTable)[pCreature->GetCreatureType()].Name.GetString() );
-
-			// 함수자체가 클라이언트 전용-.-;;; 랜덤-_-;
-			if ((pCreature->GetID() & 0x00000007)==7)
-			{
-				pCreature->SetPlayerParty();
-			}
-		}
-		
-		int direction = DIRECTION_LEFTDOWN;
-
-		int creatureType = pCreature->GetCreatureType();
-		int spriteType = (*g_pCreatureTable)[creatureType].SpriteTypes[0];
-		int frameID = (*g_pCreatureSpriteTable)[spriteType].FrameID;
-
-		if (frameID < g_pTopView->m_CreatureFPK.GetSize())
-		{
-			if (g_pTopView->m_CreatureFPK[frameID][0][1].GetSize()==0)
-			{
-				if (g_pTopView->m_CreatureFPK[frameID][0][3].GetSize()!=0)
-				{
-					direction = DIRECTION_RIGHTDOWN;
-				}
-				else if (g_pTopView->m_CreatureFPK[frameID][0][2].GetSize()!=0)
-				{
-					direction = DIRECTION_DOWN;
-				}
-			}
-			else if (g_pTopView->m_CreatureFPK[frameID][0][3].GetSize()==0)
-			{
-				if (g_pTopView->m_CreatureFPK[frameID][0][3].GetSize()!=0)
-				{
-					direction = DIRECTION_RIGHTDOWN;
-				}
-				else if (g_pTopView->m_CreatureFPK[frameID][0][2].GetSize()!=0)
-				{
-					direction = DIRECTION_DOWN;
-				}
-			}
-			else
-			{
-				// default
-				direction = DIRECTION_LEFTDOWN;
-			}
-		}				
-
-		pCreature->SetDirection(direction);//DIRECTION_UP);
-		pCreature->SetCurrentDirection(direction);
-		pCreature->SetNextAction( ACTION_STAND );
-
-		if (!g_pZone->AddCreature(pCreature))
-		{
-			delete pCreature;
-			return NULL;
-		}
-
-		// [ TEST CODE ]
-		//pCreature->SetChatString( "1234567890abcdefgijklmnopqrstuvwxyz");
-		
-		// 임의의 frame으로 시작한다.
-		//int end = rand()%20;
-		//for (int a=0; a<end; a++)
-		//{
-		//	pCreature->Action();
-		//}
-
-		return pCreature;
-	}
-
-	return NULL;
-}
-
 
 
 // GetMakeItemFitPosition: ClientFunction.cpp (gamemodel, task 4.237).

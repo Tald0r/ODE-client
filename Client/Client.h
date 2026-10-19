@@ -177,8 +177,6 @@ extern bool				g_bGoodFPS;
 	extern CMessageArray*		g_pDebugMessage;
 #endif
 
-extern bool					g_bPutMessage;		// 화면에 debug메세지를 출력할까?
-	
 extern bool					g_bNetStatusGood;	// 네트웍 상태가 좋은가?
 
 extern CMessageArray*		g_pSystemMessage;
@@ -188,8 +186,6 @@ extern CMessageArray*		g_pPlayerMessage;  //鯤소斤口잚
 extern CMessageArray*		g_pGameMessage;
 extern CMessageArray*		g_pHelpMessage;
 extern CMessageArray*		g_pNoticeMessage;
-
-extern CSDLStream*	g_pSDLStream;
 
 // Thread
 extern MWorkThread*			g_pLoadingThread;
@@ -268,7 +264,6 @@ BOOL		LoadZone(int n);
 BOOL		LoadZoneInfo(int n);
 void		MoveZone(int n);
 BOOL		LoadCreature(int spriteType);
-BOOL		LoadCreatureType(int creatureType);
 void		PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 void		PlaySound(TYPE_SOUNDID soundID);
 // PlaySound's body, the host's (WorldEventsHost.h).

@@ -1254,10 +1254,9 @@ color
 						return 0L;
 
 					//-----------------------------------------------
-					// Debug messages
+					// F12 once toggled a debug-message flag nothing read; it stays swallowed.
 					//-----------------------------------------------
 					case VK_F12 : 
-						g_bPutMessage = !g_bPutMessage;
 						return 0L;				
 					
 					//-----------------------------------------------
