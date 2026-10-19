@@ -281,6 +281,16 @@ void SetFlagSprites(bool bTae)
 	if (s_Host && s_Host->SetFlagSprites) s_Host->SetFlagSprites(bTae);
 }
 
+void PlaySoundForce(TYPE_SOUNDID soundID)
+{
+	if (s_Host && s_Host->PlaySoundForce) s_Host->PlaySoundForce(soundID);
+}
+
+void DrawTitleLoading()
+{
+	if (s_Host && s_Host->DrawTitleLoading) s_Host->DrawTitleLoading();
+}
+
 }
 
 void PlaySound(TYPE_SOUNDID soundID)

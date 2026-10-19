@@ -15,3 +15,13 @@ extern MonotonicClock::TimePoint	g_FrameNow;
 // executable's until then).
 extern DWORD						g_CurrentFrame;
 extern DWORD						g_DrawAlphaNum;
+
+// Whether the frame count advanced since the last draw (the main loop sets
+// it and clears it once the frame is drawn); the view's fades and
+// animations step only then. The executable's until task 4.260.
+extern bool							g_bFrameChanged;
+
+// The frames drawn in the last second, which the main loop measures
+// (Client.cpp) and the game loop prints when the FPS option is on. The
+// executable's until task 4.261.
+extern int							g_FrameRate;

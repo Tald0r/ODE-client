@@ -7,6 +7,7 @@
 #include <limits>
 
 AmbientSoundState g_ZoneAmbientSounds;
+int g_SoundPerSecond = 0;
 
 namespace {
 int OffsetCoordinate(int position, int offset)

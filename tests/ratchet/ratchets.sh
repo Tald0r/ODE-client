@@ -441,7 +441,9 @@ check () {
 # 11: the waiting screens' update joins gameclient (4.255).
 # 10: the game's UI calls join gameclient (4.256).
 # 9: the UI's messages join gameclient (4.258).
-R1_BASELINE=9
+# 7: the view, MTopView and its drawing, joins gameclient (4.260).
+# 6: the game's frame loop, CGameUpdate, joins gameclient (4.261).
+R1_BASELINE=6
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -715,7 +717,9 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 10: the waiting screens' update joins gameclient (4.255).
 	# 9: the game's UI calls join gameclient (4.256).
 	# 8: the UI's messages join gameclient (4.258).
-	R1_NINJA_BASELINE=8
+	# 6: the view, MTopView and its drawing, joins gameclient (4.260).
+	# 5: the game's frame loop, CGameUpdate, joins gameclient (4.261).
+	R1_NINJA_BASELINE=5
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameclient_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

@@ -1001,21 +1001,6 @@ InitSurface()
 	// ColorSet을 초기화시킨다.
 	CIndexSprite::SetColorSet();
 	
-	//--------------------------------------------------------
-	// Cursor Surface 초기화
-	//--------------------------------------------------------
-	// 2개의 Flip Surface, (32*32)
-	if (CSDLGraphics::IsFullscreen())
-	{
-		if (g_pCursorSurface!=NULL)
-		{
-			delete g_pCursorSurface;
-			g_pCursorSurface = NULL;
-		}
-
-		//g_pCursorSurface = new CStorageSurface;
-	}
-	//g_pCursorSurface.Init(2, CURSOR_SURFACE_WIDTH, CURSOR_SURFACE_HEIGHT);
 	DrawTitleLoading();	
 
 	return TRUE;
@@ -1528,6 +1513,24 @@ static const CWaitUIHost s_WaitUIHost = {
 	.EndTitleLoading = EndTitleLoading,
 };
 
+// The game loop's services (task 4.261). The cursor point is where the
+// loop read it before: the screen position, in the game window's client
+// coordinates.
+static void GetGameCursorPoint(POINT& pt)
+{
+	GetCursorPos(&pt);
+	ScreenToClient(g_hWnd, &pt);
+}
+
+static const CGameUpdateHost s_GameUpdateHost = {
+	.UpdateMouse = UpdateMouse,
+	.UpdateInput = UpdateInput,
+	.UpdateSocketInput = UpdateSocketInput,
+	.UpdateSocketOutput = UpdateSocketOutput,
+	.SetMode = SetMode,
+	.GetCursorPoint = GetGameCursorPoint,
+};
+
 //---------------------------------------------------------------------------
 // Set up the update loops.
 //---------------------------------------------------------------------------
@@ -1549,7 +1552,7 @@ InitGameUpdate()
 		delete	g_pCWaitUIUpdate;
 	}
 
-	g_pCGameUpdate			= new CGameUpdate;
+	g_pCGameUpdate			= new CGameUpdate( &s_GameUpdateHost );
 	g_pCWaitPacketUpdate	= new CWaitPacketUpdate( &s_WaitPacketHost );
 	g_pCWaitUIUpdate		= new CWaitUIUpdate( &s_WaitUIHost );
 
@@ -2475,12 +2478,6 @@ void ReleaseAllObjects()
 
 	
 
-	//----------------------------------------------------------------
-	// Cursor Surface
-	//----------------------------------------------------------------
-	DEBUG_ADD("[Release] g_pCursorSurface");
-	SAFE_DELETE(g_pCursorSurface );
-	
 	//----------------------------------------------------------------
 	// delete Surfaces
 	//----------------------------------------------------------------
@@ -4335,6 +4332,8 @@ static const WorldEvents::Host s_WorldEventsHost = {
 		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_HEAD] = (g_pTopView->m_EffectAlphaPPK)[head];
 		(g_pTopView->m_EffectAlphaPPK)[EFFECTSPRITETYPE_FLAG_GROUND] = (g_pTopView->m_EffectAlphaPPK)[ground];
 	},
+	.PlaySoundForce = PlaySoundForce,
+	.DrawTitleLoading = DrawTitleLoading,
 };
 
 extern void UI_RunPetInfo(struct PETINFO *pPetInfo);

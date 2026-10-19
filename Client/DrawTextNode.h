@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------
 // DrawTextNode.h
 //----------------------------------------------------------------------
-// 화면에 String을 출력하기 위한 정보이다.
+// Information for drawing a String on the screen.
 //----------------------------------------------------------------------
 
 #ifndef	__DRAWTEXTNODE_H__
@@ -13,7 +13,7 @@
 #include "../basic/Platform.h"
 #endif
 
-#define	FLAG_DRAWTEXT_OUTLINE			0x01	// 외곽선
+#define	FLAG_DRAWTEXT_OUTLINE			0x01	// outline
 
 class DRAWTEXT_NODE {
 	public :
@@ -71,18 +71,18 @@ class DRAWTEXT_NODE {
 		QWORD			GetTextTime() const		{ return TextTime; }
 		
 	protected :
-		int				X, Y;		// 화면 상의 출력 좌표
-		const char*		String;		// 출력할려는 string
-		COLORREF		Color;		// 글자 색
-		BYTE			Font;		// font 종류
-		BYTE			Flag;		// 글자 효과
-		bool			bBox;		// box있나?
-		RECT			Box;		// 글자 밑에 깔릴 Box영역
-		WORD			BoxColor;	// box 색깔	
-		bool			bBoxOutline;	// 박스에 테두리 있나?
-		WORD			BoxOutlineColor;	// box선 색깔	
-		bool			bTransBox;	// 투명한 박스인가?
-		QWORD			TextTime;	// 출력 시간
+		int				X, Y;		// on-screen output coordinates
+		const char*		String;		// string to output
+		COLORREF		Color;		// text color
+		BYTE			Font;		// font type
+		BYTE			Flag;		// text effect
+		bool			bBox;		// is there a box?
+		RECT			Box;		// Box area laid under the text
+		WORD			BoxColor;	// box color
+		bool			bBoxOutline;	// does the box have a border?
+		WORD			BoxOutlineColor;	// box line color
+		bool			bTransBox;	// is it a transparent box?
+		QWORD			TextTime;	// output time
 };
 
 #endif

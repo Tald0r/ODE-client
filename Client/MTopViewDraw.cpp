@@ -3,8 +3,8 @@
 // MTopViewDraw.cpp
 //----------------------------------------------------------------------
 //
-// 복잡한 Draw 함수 부분만 따로 빼놓는다.
-// 작업하기가 영 불편해서 
+// Only the complicated Draw functions are split out separately.
+// Because working on them was very inconvenient.
 //----------------------------------------------------------------------
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
@@ -23,7 +23,7 @@
 #include "MImageObject.h"
 #include "MAnimationObject.h"
 #include "MShadowAnimationObject.h"
-#include "assert.h"
+#include <assert.h>
 
 #include "MMovingEffect.h"
 #include "MScreenEffect.h"
@@ -31,8 +31,8 @@
 #include "MItemTable.h"
 #include "MCreatureTable.h"
 #include "MWeather.h"
-#include "CMessageArray.h"
-#include "DXLib.h"
+#include "../basic/CMessageArray.h"
+#include "DXLib/DXLib.h"
 #include "SP.h"
 #include "Fl2.h"
 //#include "2D.h"
@@ -57,9 +57,9 @@
 //#include "MFileDef.h"
 #include "Properties.h"
 #include "MEventManager.h"
-#include "DebugInfo.h"
+#include "DebugLog.h"
+#include "FrameClock.h"
 #include "MItemOptionTable.h"
-#include "Client.h"
 #include "SkillDef.h"
 #include "VS_UI_item.h"
 #include "MTopViewDraw.inl"
@@ -174,7 +174,7 @@ bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
 		|| (pCreature->IsGhost(1) && pCreature->IsGhost(2) && pCreature->IsGhost(4));
 
 		
-	// 2004, 6, 7 sobeit add start - 펫일 경우 주인인 다크니스 안에 있으면 안보이게..
+	// 2004, 6, 7 sobeit add start - for a pet, hide it when its owner is inside Darkness..
 	bool bPet1 = false;
 	if(pCreature->IsFakeCreature())
 	{
@@ -194,7 +194,7 @@ bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
 		&& pCreature != g_pPlayer 
 		)
 	{
-		// 거리에 따라서 출력 여부를 결정한다.
+		// Decide whether to draw according to distance.
 		int sx,sy,ex,ey;
 
 		sx = g_pPlayer->GetX() - 1;
@@ -213,14 +213,14 @@ bool IsEscapeDrawCreatureFunction( MCreature* pCreature )
 }
 
 //----------------------------------------------------------------------
-// Draw Creature : character 출력하기	
+// Draw Creature : draw the character
 //----------------------------------------------------------------------
-// pSurface의 pPoint에 pCreature를 출력한다.
+// Draw pCreature at pPoint of pSurface.
 //----------------------------------------------------------------
 void	
 MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 {	
-	// EFFECTSTATUS_GHOST 에 걸려있으면 남도 못보고 나도 못본다
+	// With EFFECTSTATUS_GHOST, others cannot see me and I cannot see others
 	//DEBUG_ADD_FORMAT("[DrawCreature] Start %s %s %s", pCreature->IsGhost(1)?"true":"false", pCreature->IsGhost(2)?"true":"false", pCreature->IsGhost(4)?"true":"false");
 	if( IsEscapeDrawCreatureFunction( pCreature ) )
 		return;
@@ -243,13 +243,13 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 	//	if(action>ACTION_OUSTERS_MAGIC_ATTACK)
 	//		int i = 0;
 		//----------------------------------------------------------
-		// Charm에 걸려 있는 캐릭터..
-		// 흡혈당하는 동작으로 표현..
+		// Character under Charm..
+		// Expressed with the being-drained motion..
 		//----------------------------------------------------------
 		if (pCreature->HasEffectStatus(EFFECTSTATUS_CHARM))
 		{
 			action = ACTION_DRAINED;
-			frame = 6 + (frame & 0x07);		// 흡혈 동작에서 반복 frame의 시작이 6이다.		
+			frame = 6 + (frame & 0x07);		// In the drain motion the repeating frames start at 6.
 		}
 		if(pCreature->HasEffectStatus(EFFECTSTATUS_BIKE_CRASH))
 			frame = 0;
@@ -261,8 +261,8 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 								&&	creature_type != 717 && creature_type != 721 && creature_type != 723);
 							
 		
-		// 할루가 걸렸으면 액션 프레임등을 바꾸는데... 단 늑대 상태나 박쥐 상태에서는 
-		// 바꾸지 않도록 한다. 일단 기획팀에 의해서 주석처리해놓았다.
+		// If hallucination is applied, the action frames etc. are changed... but not in wolf or bat form.
+		// Do not change them. For now it has been commented out at the design team's request.
 		if (pCreature->IsHallu()
 	//		&& !pCreature->HasEffectStatus( EFFECTSTATUS_TRANSFORM_TO_BAT )
 	//		&& !pCreature->HasEffectStatus( EFFECTSTATUS_TRANSFORM_TO_WOLF )
@@ -308,7 +308,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			if( action == ACTION_STAND || action == ACTION_MOVE )
 				bSlayerPet_ShowTurret = true;
 			break;
-		case 726: // 성문 4종
+		case 726: // 4 kinds of castle gate
 		case 727:
 		case 728:
 		case 729:
@@ -339,7 +339,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			}
 			break;
 
-		case 767:// 로켓 런쳐
+		case 767:// rocket launcher
 			{
 				if(direction == 0 || direction == 4)
 				{
@@ -364,7 +364,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		}
 		// 2004, 7, 23 sobeit modify end
 		
-		// 2004, 11, 22, sobeit add start - set afire 관련
+		// 2004, 11, 22, sobeit add start - set afire related
 		if(pCreature->GetID() != g_pPlayer->GetID())
 		{
 			if(pCreature->GetSpecialActionInfo() == SKILL_SET_AFIRE)
@@ -387,8 +387,8 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				}
 			}
 		}
-		// 2004, 11, 22, sobeit add end - set afire 관련
-		// 성물은 무조건 아래, 크리스마스트리
+		// 2004, 11, 22, sobeit add end - set afire related
+		// Relics always go below, Christmas tree
 
 
 		if(pCreature->IsFakeDie())
@@ -414,13 +414,13 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 					creature_type == 670 || 
 					creature_type == 672 ||
 					creature_type == 673 ||
-					creature_type == 730 || // 웨이 포인트1
-					creature_type == 731 || // 웨이 포인트2
-					creature_type == 732 || // 웨이 포인트3
-					creature_type == 636 // 생선 가게 아저씨
+					creature_type == 730 || // waypoint 1
+					creature_type == 731 || // waypoint 2
+					creature_type == 732 || // waypoint 3
+					creature_type == 636 // fish shop man
 
-					))	// 성물 // 크리스 마스 트리
-					|| (creature_type >= 377 && creature_type <= 386)	// 다크 가디언은 먼지로 표시
+					))	// relic // Christmas tree
+					|| (creature_type >= 377 && creature_type <= 386)	// Dark Guardians are shown as dust
 					|| creature_type == 480 
 				)
 				&&
@@ -430,15 +430,15 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				)
 				&&
 				(
-					creature_type < 431		// 바토리
-					|| creature_type > 436	// 테페즈
+					creature_type < 431		// Bathory
+					|| creature_type > 436	// Tepes
 				);
 
 		//---------------------------------------------------------
-		// PC Vampire인 경우 죽으면 '먼지'로 표현한다.
+		// A PC Vampire is shown as 'dust' when dead.
 		//
-		// player는 죽어도 아이템으로 변하지 않기 때문에..
-		// 틴버전에선 모든 시체를 '먼지'로 표현한다.
+		// because a player does not turn into an item when dead..
+		// In the Teen version every corpse is shown as 'dust'.
 		//---------------------------------------------------------	
 		if (bPlayerVampire || bTeenVersion || bGildreDead )
 		{
@@ -448,7 +448,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				if(pCreature->IsSlayer())
 				{
 					pSprite = &m_EtcSPK[ SPRITEID_SLAYER_CROSS ];
-					// 좌표 보정
+					// coordinate correction
 					pointTemp.x = pPoint->x - 5+20;
 					pointTemp.y = pPoint->y - 30;				
 				}
@@ -456,20 +456,20 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				else if((*g_pCreatureSpriteTable)[(*g_pCreatureTable)[creature_type].SpriteTypes[0]].IsPlayerVampireOnlySprite())
 				{
 					pSprite = &m_EtcSPK[ SPRITEID_VAMPIRE_DUST ];
-					// 좌표 보정
+					// coordinate correction
 					pointTemp.x = pPoint->x - 5;
 					pointTemp.y = pPoint->y;				
 				}
 				else
 				{
 					pSprite = &m_EtcSPK[ SPRITEID_MONSTER_DUST ];
-					// 좌표 보정
+					// coordinate correction
 					pointTemp.x = pPoint->x - 5;
 					pointTemp.y = pPoint->y;				
 				}
 
 
-				// 선택된 것인 경우
+				// If it is the selected one
 				if (m_SelectItemID == static_cast<TYPE_OBJECTID>(creatureID)
 					|| m_SelectCreatureID == static_cast<TYPE_OBJECTID>(creatureID))
 				{
@@ -482,7 +482,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 					m_pSurface->BltSpriteOutline( &m_SOM, m_SOMOutlineColor );
 					
 					//---------------------------------------- 	
-					// 이름 출력할 좌표 지정
+					// Set the coordinates for drawing the name
 					//---------------------------------------- 	
 					const int FontHeight = g_pClientConfig->FONT_HEIGHT;
 					const int FontHeight2 = FontHeight << 1;
@@ -491,7 +491,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 					if (pointTemp.x<0) pointTemp.x=0;
 					
 					//---------------------------------------- 	
-					// Level Name 찍을 위치도 계산
+					// Also calculate where to draw the Level Name
 					//---------------------------------------- 	
 					if (pCreature->HasLevelName())
 					{
@@ -503,7 +503,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 						}
 					}
 					//---------------------------------------- 	
-					// 그냥 이름만 찍을 때
+					// When drawing just the name
 					//---------------------------------------- 	
 					else
 					{
@@ -524,8 +524,8 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				}			
 
 				//------------------------------------------------
-				// 죽은 캐릭터이면 선택 사각형을
-				// 한 Tile 크기로 제한한다.
+				// For a dead character the selection rectangle
+				// is limited to the size of one Tile.
 				//------------------------------------------------
 				RECT rect;
 				rect.left	= pPoint->x;
@@ -556,7 +556,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 							pCreature->GetAttachEffectIterator(), 
 							pCreature->GetAttachEffectSize(),
 							pCreature,
-							1);	// foreground출력
+							1);	// foreground output
 						
 	#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 						DEBUG_ADD("DAE ok");
@@ -573,7 +573,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		}
 
 		//------------------------------------------------
-		// Slayer인 경우 Darkness 안을 볼 수 없다.
+		// A Slayer cannot see inside Darkness.
 		//------------------------------------------------
 		if (
 			!( (creature_type >= 526 && creature_type <= 549) || 
@@ -601,10 +601,10 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 		//------------------------------------------------
 		//
-		// 땅 속에 파묻힌 애들은 고정된 그림..
+		// Those buried underground use a fixed picture..
 		//
 		//------------------------------------------------
-		// 2004, 04, 24 sobeit modify - 질드레 레어 ghost는 땅속 크리쳐지만 고정된 그림이 아님..^^;
+		// 2004, 04, 24 sobeit modify - the Gilles Lair ghost is an underground creature but does not use a fixed picture..^^;
 		if (pCreature->IsUndergroundCreature() && pCreature->GetCreatureType() != CREATURETYPE_GHOST)
 		{
 			DrawUndergroundCreature(pPoint, pCreature );
@@ -616,7 +616,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		}
 
 		//----------------------------------------------------------
-		// 머리가 없는 경우
+		// When there is no head
 		//----------------------------------------------------------
 		if (!pCreature->HasHead()
 			&& pCreature->GetActionCount()==pCreature->GetActionCountMax()
@@ -624,25 +624,25 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		{
 			if (action==ACTION_DIE)
 			{
-				// 실제로는..마지막 frame + 1이다.
+				// Actually.. it is the last frame + 1.
 				//frame	= (*g_pCreatureTable)[creature_type].GetActionCount( action );
 				frame	= GetCreatureActionCountMax( pCreature, action);
 			}
 		}
 
-		// Teen버전인 경우 죽는 동작 애니메이션 안함
-		// 처음엔 마지막프레임전까지의 동작만 0으로 세팅했는데 저 위쪽에서 재로 찍을 경우 return해버려서 의미없음
+		// In the Teen version the death animation is not played
+		// At first only the motion up to before the last frame was set to 0, but when drawn as ash up there it returns early, so that was pointless
 		if(g_pUserInformation->GoreLevel == false && action == ACTION_DIE
 			&&	(
-					creature_type < 431		// 바토리
-					|| creature_type > 436	// 테페즈
+					creature_type < 431		// Bathory
+					|| creature_type > 436	// Tepes
 				)
 			)
 		{
 			frame = 0;
 		}
 		
-		// Creature가 존재하는 높이만큼 빼준다.
+		// Subtract the height at which the Creature exists.
 		pPoint->y -= pCreature->GetZ();
 
 		if(!pCreature->IsNPC() &&  pCreature->HasEffectStatus(EFFECTSTATUS_DIVINE_GUIDANCE))
@@ -651,7 +651,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		}
 
 		//----------------------------------------
-		// 바닥에 붙은 Effect 출력
+		// Draw Effects attached to the ground
 		//----------------------------------------
 		if (pCreature->IsExistGroundAttachEffect())
 		{				
@@ -664,7 +664,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 		//---------------------------------------------------------------
 		//
-		//                  Background AttachEffectNode 출력
+		//                  Draw Background AttachEffectNode
 		//
 		//---------------------------------------------------------------
 		if (pCreature->IsExistAttachEffect())
@@ -679,19 +679,19 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 								pCreature->GetAttachEffectIterator(), 
 								pCreature->GetAttachEffectSize(),
 								pCreature,
-								2);	// background출력
+								2);	// background output
 
 	//		DEBUG_ADD("BAE ok");
 		}
 
 		//---------------------------------------------------------------
 		//
-		//                  Mouse로 선택 --> 외곽선
+		//                  Selected with the Mouse --> outline
 		//
 		//---------------------------------------------------------------
 
 		//------------------------------------------------
-		// Mouse가 가리키고 있는 Creature
+		// Creature the Mouse is pointing at
 		//------------------------------------------------
 		
 		if (m_SelectCreatureID == static_cast<TYPE_OBJECTID>(creatureID) || OutLineOption)
@@ -700,16 +700,16 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				DEBUG_ADD("Sel Creature");
 			#endif
 
-			// SpriteOutlineManager에 추가
-			if ((pCreature->IsNPC()							// NPC인 경우
-				// 바토리인 경우는 안된다. 하드코딩 - -;;
+			// Add to SpriteOutlineManager
+			if ((pCreature->IsNPC()							// if it is an NPC
+				// Not allowed for Bathory. Hardcoded - -;;
 				&& !(creature_type==217))
-				|| (IsRequestMode()								// trade mode인 경우
-					// player만 된다.
+				|| (IsRequestMode()								// if in trade mode
+					// Only players are allowed.
 					//pCreature->GetCreatureType()<=CREATURETYPE_VAMPIRE_FEMALE
 				//	&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[creature_type].SpriteType].IsPlayerOnlySprite()
 				&& (*g_pCreatureSpriteTable)[(*g_pCreatureTable)[creature_type].SpriteTypes[0]].IsPlayerOnlySprite())
-				|| (!IsRequestMode()							// trade할려고 추적중인 creature인 경우
+				|| (!IsRequestMode()							// if it is a creature being chased in order to trade
 					&& g_pPlayer->IsRequestMode()
 					&& g_pPlayer->IsTraceCreature()
 					&& g_pPlayer->GetTraceID()==static_cast<TYPE_OBJECTID>(creatureID)))
@@ -717,7 +717,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				m_SOMOutlineColor = m_ColorOutlineNPC;
 			}
 			else if (g_pObjectSelector->CanAttack( pCreature )
-				|| creature_type==217)		// 바토리인 경우. 하드코딩 - -;;
+				|| creature_type==217)		// if it is Bathory. Hardcoded - -;;
 			{
 				m_SOMOutlineColor = m_ColorOutlineAttackPossible;
 			}
@@ -732,12 +732,12 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 			//----------------------------------------
 			//
-			//         몸이 있는 경우에 출력
+			//         Drawn when there is a body
 			//
 			//----------------------------------------
 			if (body!=FRAMEID_NULL)
 			{
-				// body 수정 필요
+				// body needs fixing
 				if( pCreature->IsAdvancementClass()
 					)		//by viva Selected Vampire
 					DrawSelectedAdvancementVampireCreature( pPoint, pCreature, action, direction, frame, 0, FrameIndex );
@@ -747,7 +747,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			else
 			{
 				//----------------------------------------------------
-				// 캐릭터의 선택 사각형 영역을 지워준다.
+				// Clear the character's selection rectangle area.
 				//----------------------------------------------------
 				pCreature->ClearScreenRect();
 			}
@@ -758,11 +758,11 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 			//----------------------------------------
 			//
-			//            복장 출력
+			//            Draw the outfit
 			//
 			//----------------------------------------
-			// 모든 입을 수 있는 종류의 옷 중에서 
-			// 입고 있는 옷을 확인해서 출력해줘야 한다.		
+			// Among all kinds of wearable clothes
+			// check which are being worn and draw them.
 			if (isSlayerCharacter)
 			{		
 				// 2004, 9, 15, sobeit add start  - install turret
@@ -784,7 +784,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 					DrawSelectedOustersCreature( pPoint, pCreature, action, direction, frame );
 			}
 			
-			// 슬레 펫인 경우는 터렛 찍어줘야 된다-ㅅ-;;;; 하드하드..아아-_-/~
+			// A Slayer pet needs its turret drawn -ㅅ-;;;; hard hard.. aah -_-/~
 			if( bSlayerPet_ShowTurret )
 			{
 				DrawCentauroTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame , body);
@@ -806,13 +806,13 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 			m_SOM.Generate(OutLineOption);
 			
-	//			// 2004, 8, 18 sobeit add start - 공성전 성문 타겟팅때문에 여차여차 추가..
+	//			// 2004, 8, 18 sobeit add start - added somehow because of siege-war gate targeting..
 	//		enum GENERATE_OPTION{
 	//			GENERATE_ALL = 0,
-	//			GENERATE_EXCEPT_LEFT,	// 왼쪽 아웃라인은 제외
-	//			GENERATE_EXCEPT_RIGHT,  // 오른쪽 아웃라인은 제외
-	//			GENERATE_EXCEPT_SIDE,	// 양 사이드 아웃라인은 제외
-	//			// -_- 위,아래도 만들어 놔야 하나..-_-;
+	//			GENERATE_EXCEPT_LEFT,	// exclude the left outline
+	//			GENERATE_EXCEPT_RIGHT,  // exclude the right outline
+	//			GENERATE_EXCEPT_SIDE,	// exclude the outlines on both sides
+	//			// -_- do I need to make top and bottom too..-_-;
 	//		};
 	//		// 2004, 8, 18 sobeit add start
 			//if (true || 
@@ -826,7 +826,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 	//				#endif
 					)
 				{
-					// slayer의 invisible인 snipping
+					// snipping, the Slayer's invisible
 					if (pCreature->HasEffectStatus(EFFECTSTATUS_SNIPPING_MODE))
 					{
 						m_pSurface->BltSpriteOutlineDarkness( &m_SOM,  m_SOMOutlineColor, SHIFT_SNIPPING );
@@ -835,7 +835,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				}
 				else
 				{
-					// 어둡게 찍기
+					// Draw darkened
 					if (pCreature->IsFade())
 					{
 						m_pSurface->BltSpriteOutlineDarkness( &m_SOM,  m_SOMOutlineColor, 1 );
@@ -858,7 +858,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		}
 		//------------------------------------------------
 		//
-		//       일반적인 Creature 출력
+		//       Normal Creature output
 		//
 		//------------------------------------------------
 		else
@@ -866,7 +866,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			
 			//------------------------------------------------
 			//
-			//         Body출력
+			//         Body output
 			//
 			//------------------------------------------------
 			if (body!=FRAMEID_NULL)
@@ -885,18 +885,18 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			else
 			{
 				//----------------------------------------------------
-				// 캐릭터의 선택 사각형 영역을 지워준다.
+				// Clear the character's selection rectangle area.
 				//----------------------------------------------------
 				pCreature->ClearScreenRect();		
 			}
 			
 			//----------------------------------------
 			//
-			//            복장 출력
+			//            Draw the outfit
 			//
 			//----------------------------------------
-			// 모든 입을 수 있는 종류의 옷 중에서 
-			// 입고 있는 옷을 확인해서 출력해줘야 한다.
+			// Among all kinds of wearable clothes
+			// check which are being worn and draw them.
 			//WORD colorSet = pCreature->GetAttachEffectColor();
 							
 			//if (pCreature->IsWear())
@@ -915,7 +915,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 					DrawOustersCharacter( pPoint, pCreature, action, direction, frame );
 			}
 
-			// 슬레 펫인 경우는 터렛 찍어줘야 된다-ㅅ-;;;; 하드하드..아아-_-/~
+			// A Slayer pet needs its turret drawn -ㅅ-;;;; hard hard.. aah -_-/~
 			if( bSlayerPet_ShowTurret )
 			{
 				DrawCentauroTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame , body);
@@ -925,7 +925,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 		//---------------------------------------------------------------
 		//
-		//                  AttachEffectNode 출력
+		//                  AttachEffectNode output
 		//
 		//---------------------------------------------------------------
 		if (pCreature->IsExistAttachEffect())
@@ -942,7 +942,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 								pCreature->GetAttachEffectIterator(), 
 								pCreature->GetAttachEffectSize(),
 								pCreature,
-								1);	// foreground출력
+								1);	// foreground output
 
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD("DAE ok");
@@ -955,13 +955,13 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 		//pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 		bool bPlayerParty = (pCreature->IsPlayerParty() 
 								&& pCreature!=g_pPlayer
-								// 할루 걸리면 파티원을 못 알아본다.
+								// Under hallucination you cannot recognize party members.
 								&& !g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION));	
 
 		//------------------------------------------------
-		// Chat String 출력
+		// Chat String output
 		//------------------------------------------------
-		// Mouse로 선택된 캐릭터이면..
+		// If the character is selected with the Mouse..
 		if (m_SelectCreatureID == static_cast<TYPE_OBJECTID>(creatureID))
 		{
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
@@ -969,7 +969,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			#endif
 
 			//----------------------------------------
-			// 이름 출력할 좌표 지정
+			// Set the coordinates for drawing the name
 			//----------------------------------------
 			const int FontHeight = g_pClientConfig->FONT_HEIGHT;
 			const int FontHeight2 = FontHeight << 1;
@@ -980,7 +980,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			pointTemp.y = pPoint->y - pCreature->GetHeight();
 
 			//----------------------------------------
-			// Level Name 찍을 위치도 계산
+			// Also calculate where to draw the Level Name
 			//----------------------------------------
 			if (pCreature->HasLevelName())
 			{
@@ -990,7 +990,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				}
 			}
 			//----------------------------------------
-			// 그냥 이름만 찍을 때
+			// When drawing just the name
 			//----------------------------------------
 			else
 			{
@@ -1014,7 +1014,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			pointTemp.y = pPoint->y - pCreature->GetHeight();
 				
 			//------------------------------------------------
-			// 파티원인 경우 HP 출력해준다.
+			// For a party member, draw the HP.
 			//------------------------------------------------
 			if (bPlayerParty)
 			{			
@@ -1030,7 +1030,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			pointTemp.x = pPoint->x;			
 
 			//
-			// 이거 부하가 꽤 걸린다... 쩝~~
+			// This puts quite a load... tsk~~
 			//
 			#ifdef OUTPUT_DEBUG_DRAW_PROCESS
 				DEBUG_ADD("DrawChat");
@@ -1042,13 +1042,13 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 			DrawCreatureHPModify(&pointTemp, pCreature);
 			m_pSurface->Lock();	
 
-			// 2004, 8, 18, sobeit add start - 공성전 길드마크 표시
+			// 2004, 8, 18, sobeit add start - siege-war guild mark display
 			DrawGuildMarkInSiegeWar(pCreature,pointTemp.y);
 			// 2004, 8, 18, sobeit add end
 		}	
 
 		//------------------------------------------------
-		// 파티원의 시야를 보여준다.
+		// Show the party member's sight.
 		//------------------------------------------------
 		if (bPlayerParty)
 		{
@@ -1061,21 +1061,21 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 
 			//int addLight = (pCreature->GetCreatureType()==CREATURETYPE_BAT ? 3 : 0);
 	//		int addLight = (pCreature->IsFlyingCreature() ? 3 : 0);
-			// player만큼의 시야라고 생각한다. - -;
+			// Assume the same sight as the player. - -;
 			int creatureLight = g_pPlayer->GetLightSight();// + addLight);
 
 			// SDL2: Unified 2D lighting path for all platforms
 			AddLightFilter2D( pX,
 								pY - pCreature->GetZ(),
 								creatureLight,
-								false,	// screenPixel좌표
-								true);	// 무조건 출력해야하는 빛
+								false,	// screenPixel coordinates
+								true);	// light that must always be drawn
 
-			// 오토바이 불빛
+			// motorcycle light
 			ADD_MOTORCYCLE_LIGHT_XY_2D( pCreature, pX, pY, true );
 		}
 		//------------------------------------------------
-		// 파티원 아닌 경우에...
+		// For non-party members...
 		//------------------------------------------------
 		else
 		{
@@ -1083,7 +1083,7 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 				DEBUG_ADD("noPParty?");
 			#endif
 
-			// 오토바이 불빛
+			// motorcycle light
 			ADD_MOTORCYCLE_LIGHT_2D( pCreature, false );
 		}
 
@@ -1109,18 +1109,18 @@ MTopView::DrawCreature(POINT* pPoint, MCreature* pCreature)
 void	MTopView::DrawSelectedSlayerCreature( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame )
 {
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
-	// Creature의 Action에 맞는 add-on을 출력한다.
+	// Draw the add-ons matching the Creature's Action.
 	//action = pCreature->GetAction();	
 	WORD clothes;
 	BYTE clothesType;
 	
 	for (int i=0; i<ADDON_MAX; i++)
 	{
-		// Creature의 현재 방향에 따라서...
-		// 옷을 출력해주는 순서가 다를 수 있다.
+		// Depending on the Creature's current direction...
+		// the order in which clothes are drawn may differ.
 		clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 		
-		// i번째 종류의 옷을 입고 있다면 출력해 준다.
+		// If it is wearing the i-th kind of clothes, draw it.
 		const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 		
 		if (addonInfo.bAddon)
@@ -1129,7 +1129,7 @@ void	MTopView::DrawSelectedSlayerCreature( POINT* pPoint, MCreature* pCreature, 
 			
 			FRAME_ARRAY &FA = m_AddonFPK[clothes][action][direction];
 			
-			// 있는 동작인 경우
+			// If the motion exists
 			if (FA.GetSize() > frame)
 			{
 				CFrame &Frame = FA[frame];					
@@ -1142,7 +1142,7 @@ void	MTopView::DrawSelectedSlayerCreature( POINT* pPoint, MCreature* pCreature, 
 				
 				CIndexSprite* pSprite = &m_AddonSPK[ sprite ];
 				
-				// 복장Sprite가 초기화 되지 않은 경우
+				// If the outfit Sprite has not been initialized
 				//						if (pSprite->IsNotInit())
 				//						{
 				//							LoadFromFileAddonSPK( clothes, action );
@@ -1150,7 +1150,7 @@ void	MTopView::DrawSelectedSlayerCreature( POINT* pPoint, MCreature* pCreature, 
 				//						}
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -1158,18 +1158,18 @@ void	MTopView::DrawSelectedSlayerCreature( POINT* pPoint, MCreature* pCreature, 
 				rect.bottom = rect.top + pSprite->GetHeight();
 				pCreature->AddScreenRect( &rect );
 				
-				// SpriteOutlineManager에 추가
+				// Add to SpriteOutlineManager
 				//CIndexSprite::SetUsingColorSet((pCreature->GetID()+3*(clothesType,1),7)%MAX_COLORSET, ((pCreature->GetID()*pCreature->GetID(),7*(clothesType+2)))%MAX_COLORSET);
 				//CIndexSprite::SetUsingColorSet((c1+3*(clothesType+1)+7)%MAX_COLORSET, ((c2*c2+7*(clothesType+2)))%MAX_COLORSET);
 				//---------------------------------------- 
-				// 캐릭터 부분 색깔이 바뀌는 경우
+				// When a part of the character changes color
 				//---------------------------------------- 
 				if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 				{
 					m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 				}
 				//---------------------------------------- 
-				// 원래색대로..
+				// In the original colors..
 				//---------------------------------------- 
 				else
 				{
@@ -1195,7 +1195,7 @@ void	MTopView::DrawSelectedSlayerCreature( POINT* pPoint, MCreature* pCreature, 
 
 void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame )
 {
-	//  챠크람이 있다
+	//  There is a chakram
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
 	
 	const MCreatureWear::ADDON_INFO& addonInfoChakram = pCreatureWear->GetAddonInfo(ADDON_RIGHTHAND);
@@ -1216,7 +1216,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 		}
 	}
 	
-	// 몸을 찍고 챠크람을 찍는다
+	// Draw the body, then draw the chakram
 	const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(ADDON_COAT);
 	const MCreatureWear::ADDON_INFO& bootsAddonInfo = pCreatureWear->GetAddonInfo(ADDON_TROUSER);
 	
@@ -1227,7 +1227,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 		
 		FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			CFrame &Frame = FA[frame];					
@@ -1241,7 +1241,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -1250,31 +1250,31 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 			pCreature->AddScreenRect( &rect );
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
-				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// 머리색
+				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// hair color
 				
 				int coatColor = addonInfo.ColorSet2, Colorset;
 				if( coatColor == QUEST_ITEM_COLOR || coatColor == UNIQUE_ITEM_COLOR )
 					coatColor = MItem::GetSpecialColorItemColorset( coatColor );						
-				CIndexSprite::SetUsingColorSetOnly( 1, coatColor );	// 옷색
-				if(bChakram == false)	// 리스틀릿을 차고 있으면
+				CIndexSprite::SetUsingColorSetOnly( 1, coatColor );	// clothes color
+				if(bChakram == false)	// if wearing a wristlet
 				{
 					if(addonInfoChakram.bAddon)
 					{
 						Colorset = addonInfoChakram.ColorSet2;
 						if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔								
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 					else
 					{
@@ -1282,7 +1282,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 						if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 				}
 				else
@@ -1292,7 +1292,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 						Colorset = addonInfoChakram.ColorSet2;
 					if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 				}
 				
 				if(bootsAddonInfo.bAddon)
@@ -1300,7 +1300,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 					Colorset = bootsAddonInfo.ColorSet2;
 					if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 부츠색
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// boots color
 				}
 				else
 				{
@@ -1308,7 +1308,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 					
 					if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// arm
 				}
 				
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite );
@@ -1323,7 +1323,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 		
 		FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			CFrame &Frame = FA[frame];					
@@ -1337,14 +1337,14 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfoChakram.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
@@ -1369,7 +1369,7 @@ void	MTopView::DrawSelectedOustersCreature( POINT* pPoint, MCreature* pCreature,
 void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame, int body, int frameindex )
 {
 	//------------------------------------------------
-	// 관 출력정보
+	// Coffin output information
 	//------------------------------------------------
 	int casketValue = pCreature->GetCasketCount();
 	int creature_type = pCreature->GetCreatureType();  //add by viva
@@ -1378,7 +1378,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 	bool bCasketOnly = (bInCasket && casketValue==0);
 	
 	//----------------------------------------------------
-	// 완전히 관만 출력하는 경우는 몸 출력을 안한다.
+	// When only the coffin is drawn completely, the body is not drawn.
 	//----------------------------------------------------
 	if (!bCasketOnly)
 	{
@@ -1391,14 +1391,14 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 				cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
 				cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
 			
-			// 좌표 보정
+			// coordinate correction
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			CIndexSprite* pSprite = &m_CreatureSPK[ sprite ];
 			
 			//---------------------------------------- 
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -1407,7 +1407,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			if(frameindex==0 )
 				pCreature->SetScreenRect( &rect );
 			
-			// Player가 추적중인 Character 표시
+			// Mark the Character the Player is chasing
 			//if (g_pPlayer->GetTraceCreatureID()==pCreature->GetID())			
 			
 			//CIndexSprite::SetUsingColorSet(c1%MAX_COLORSET, c2%MAX_COLORSET);
@@ -1426,7 +1426,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			}
 			
 			//-----------------------------------------------------------
-			// 투명 상태 출력 			
+			// Draw the transparent state
 			//-----------------------------------------------------------
 			// vampire
 			if (pCreature->IsFakeDie())
@@ -1437,12 +1437,12 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					colorSet = pCreature->GetBatColor();
 				
 				//---------------------------------------- 
-				// 캐릭터 전체 색깔이 바뀌는 경우					
+				// When the whole character changes color
 				//---------------------------------------- 
 				if (colorSet < MAX_COLORSET)
 				{
-					// IndexSprite에도 EFFECT...넣고...
-					// 스르륵~ 단계적으로 나타나게/없어지게 해야됨.. - -;
+					// Put EFFECT into IndexSprite too...
+					// It should appear/disappear gradually, smoothly~ - -;
 					m_pSurface->BltIndexSpriteColorSet(&pointTemp, pSprite, colorSet);
 				}
 				else
@@ -1476,7 +1476,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			else
 			{	
 				//-----------------------------------------------------------
-				// 빠르게 움직이는 중
+				// Moving fast
 				//-----------------------------------------------------------
 				if (pCreature->IsFastMove() || pCreature->IsBloodyZenith())
 				{
@@ -1533,14 +1533,14 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					colorSet = pCreature->GetBatColor();
 				
 				//---------------------------------------- 
-				// 캐릭터 전체 색깔이 바뀌는 경우					
+				// When the whole character changes color
 				//---------------------------------------- 
 				if (colorSet < MAX_COLORSET)
 				{
 					m_pSurface->BltIndexSpriteColorSet(&pointTemp, pSprite, colorSet);
 				}
 				//---------------------------------------- 
-				// 정상적인 색깔 출력
+				// Normal color output
 				//---------------------------------------- 					
 				else
 				{				
@@ -1558,7 +1558,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					int shadowCount = pCreature->GetShadowCount();
 					
 					//----------------------------------------
-					// Shadow출력
+					// Shadow output
 					//----------------------------------------
 					if (shadowCount)
 					{
@@ -1583,7 +1583,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 						
 						POINT pointTemp2;
 						
-						// 이동이면 좌표도 바뀐다
+						// If moving, the coordinates change too
 						int cxStep = 0, cyStep = 0, cxInc =0 , cyInc = 0;
 						if (action==ACTION_MOVE)
 						{
@@ -1598,7 +1598,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 							int frame_f = frame-f;
 							
 							//---------------------------------------- 
-							// f frame 전
+							// f frames before
 							//---------------------------------------- 
 							if (frame_f < 0)
 							{
@@ -1639,11 +1639,11 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 						}
 					}
 					//----------------------------------------
-					// 몸만 찍기
+					// Draw the body only
 					//----------------------------------------
 					else
 					{
-						// 어둡게 찍기
+						// Draw darkened
 						if (pCreature->IsFade())
 						{
 							m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -1663,7 +1663,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 				// m_pSurface->SetClipBottom( previousClipBottom );
 			}
 
-			// 2004, 10, 28, sobeit add start  - 몬스터 킬 퀘스트 해당 몬스터에 표시.
+			// 2004, 10, 28, sobeit add start  - mark the target monster of a monster-kill quest.
 			if(pCreature->IsAlive() && (g_CurrentFrame&0x04)&&UI_IsMonsterKillQuest_Monster((*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteTypes[0]))
 			//if(pCreature->IsAlive() && (g_CurrentFrame&0x04))
 			{
@@ -1677,11 +1677,11 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 	}
 		
 	//----------------------------------------------------
-	// 관 출력
+	// Coffin output
 	//----------------------------------------------------
 	if (bInCasket)
 	{
-		// 그림자 때문에 *2해야한다.
+		// Must be *2 because of the shadow.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
 		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
@@ -1690,12 +1690,12 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			
 			if (pSprite!=NULL)
 			{
-				// tile의 중심에서 세운다.
+				// Set it up at the center of the tile.
 				pointTemp.x = pPoint->x + 24 - (pSprite->GetWidth()>>1);
 				pointTemp.y = pPoint->y + TILE_Y - pSprite->GetHeight();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -1729,7 +1729,7 @@ void	MTopView::DrawVampireCharacter( POINT* pPoint, MCreature* pCreature, int ac
 
 void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame )
 {
-	//  챠크람이 있다
+	//  There is a chakram
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
 	
 	const MCreatureWear::ADDON_INFO& addonInfoChakram = pCreatureWear->GetAddonInfo(ADDON_RIGHTHAND);
@@ -1750,7 +1750,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 		}
 	}
 	
-	// 몸을 찍고 챠크람을 찍는다
+	// Draw the body, then draw the chakram
 	const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(ADDON_COAT);
 	const MCreatureWear::ADDON_INFO& bootsAddonInfo = pCreatureWear->GetAddonInfo(ADDON_TROUSER);
 	
@@ -1762,7 +1762,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 		
 		FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			CFrame &Frame = FA[frame];					
@@ -1776,7 +1776,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -1785,7 +1785,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			pCreature->AddScreenRect( &rect );
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
@@ -1793,11 +1793,11 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					addonInfo.EffectColorSet);
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
-				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// 머리색
+				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// hair color
 				
 				int Colorset;
 				
@@ -1805,9 +1805,9 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 				
 				if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 					Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// 옷색
+				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// clothes color
 				
-				if(bChakram == false)	// 리스틀릿을 차고 있으면
+				if(bChakram == false)	// if wearing a wristlet
 				{
 					if(addonInfoChakram.bAddon)
 					{
@@ -1815,7 +1815,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 					else
 					{
@@ -1823,7 +1823,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 				}
 				else
@@ -1834,7 +1834,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					
 				}
 				
@@ -1844,7 +1844,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 부츠색
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// boots color
 				}
 				else
 				{
@@ -1852,10 +1852,10 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// arm
 				}
 				
-				// 어둡게 찍기
+				// Draw darkened
 				if (pCreature->IsFade())
 				{
 					m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -1875,7 +1875,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 		
 		FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			//					DEBUG_ADD_FORMAT("[DrawCreature] FA.GetSize() > frame %d %d", FA.GetSize(), frame);
@@ -1890,7 +1890,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfoChakram.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
@@ -1898,7 +1898,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 					addonInfoChakram.EffectColorSet);
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
@@ -1911,7 +1911,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 				if( colorset2 == QUEST_ITEM_COLOR || colorset2 == UNIQUE_ITEM_COLOR )
 					colorset2 = MItem::GetSpecialColorItemColorset( colorset2 );
 				CIndexSprite::SetUsingColorSet( colorset1, colorset2 );
-				// 어둡게 찍기
+				// Draw darkened
 				if (pCreature->IsFade())
 				{
 					m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -1938,7 +1938,7 @@ void	MTopView::DrawOustersCharacter( POINT* pPoint, MCreature* pCreature, int ac
 void	MTopView::DrawAdvancementClassOustersCharacter( 
 				POINT* pPoint, MCreature* pCreature, int action, int direction, int frame )
 {
-	//  챠크람이 있다
+	//  There is a chakram
 	MCreatureWear *pCreatureWear = (MCreatureWear *)pCreature;
 	
 	const MCreatureWear::ADDON_INFO& addonInfoChakram = pCreatureWear->GetAddonInfo(ADDON_RIGHTHAND);
@@ -1951,7 +1951,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 	else
 		tempAction -= ADVANCEMENT_ACTION_START;
 	
-	// 몸을 찍고 챠크람을 찍는다
+	// Draw the body, then draw the chakram
 	const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(ADDON_COAT);
 	const MCreatureWear::ADDON_INFO& bootsAddonInfo = pCreatureWear->GetAddonInfo(ADDON_TROUSER);
 	
@@ -1963,7 +1963,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 		//FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		FRAME_ARRAY &FA = m_AdvancementOustersFPK[ 1 ][ tempAction ][ direction ];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			CFrame &Frame = FA[frame];					
@@ -1978,7 +1978,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -1987,7 +1987,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 			pCreature->AddScreenRect( &rect );
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
@@ -1995,11 +1995,11 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 					addonInfo.EffectColorSet);
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
-				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// 머리색
+				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// hair color
 				
 				int Colorset;
 				
@@ -2007,9 +2007,9 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 				
 				if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 					Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// 옷색
+				CIndexSprite::SetUsingColorSetOnly( 1, Colorset );	// clothes color
 				
-				if(bChakram == false)	// 리스틀릿을 차고 있으면
+				if(bChakram == false)	// if wearing a wristlet
 				{
 					if(addonInfoChakram.bAddon)
 					{
@@ -2017,7 +2017,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 					else
 					{
@@ -2025,7 +2025,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 						if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 				}
 				else
@@ -2036,7 +2036,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					
 				}
 				
@@ -2046,7 +2046,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 부츠색
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// boots color
 				}
 				else
 				{
@@ -2054,10 +2054,10 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 					if (Colorset == QUEST_ITEM_COLOR||Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 					
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// arm
 				}
 				
-				// 어둡게 찍기
+				// Draw darkened
 				if (pCreature->IsFade())
 				{
 					m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -2077,7 +2077,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 		//FRAME_ARRAY &FA = m_OustersFPK[clothes][tempAction][direction];
 		FRAME_ARRAY &FA = m_AdvancementOustersFPK[ 0 ][ tempAction ][ direction ];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			//					DEBUG_ADD_FORMAT("[DrawCreature] FA.GetSize() > frame %d %d", FA.GetSize(), frame);
@@ -2093,7 +2093,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfoChakram.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
@@ -2101,7 +2101,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 					addonInfoChakram.EffectColorSet);
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
@@ -2114,7 +2114,7 @@ void	MTopView::DrawAdvancementClassOustersCharacter(
 				if( colorset2 == QUEST_ITEM_COLOR || colorset2 == UNIQUE_ITEM_COLOR )
 					colorset2 = MItem::GetSpecialColorItemColorset( colorset2 );
 				CIndexSprite::SetUsingColorSet( colorset1, colorset2 );
-				// 어둡게 찍기
+				// Draw darkened
 				if (pCreature->IsFade())
 				{
 					m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -2147,14 +2147,14 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 	{
 		MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 		
-		// Creature의 Action에 맞는 add-on을 출력한다.
+		// Draw the add-ons matching the Creature's Action.
 		//action = pCreature->GetAction();
 		
 		WORD clothes;
 		BYTE clothesType;
 		
 		//------------------------------------------------------------
-		// Fade Out 출력
+		// Fade Out output
 		//------------------------------------------------------------
 		if (pCreature->HasEffectStatus( EFFECTSTATUS_FADE_OUT ))
 		{
@@ -2162,21 +2162,21 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 		}
 		
 		//------------------------------------------------------------
-		// Fast Move 출력
+		// Fast Move output
 		//------------------------------------------------------------
 		if (pCreature->IsFastMove())
 		{
 			DrawFastMove( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame );
 		}
 		//------------------------------------------------------------
-		// Invisible  - Slayer는 snipping mode에서 투명이다.
+		// Invisible  - a Slayer is transparent in snipping mode.
 		//------------------------------------------------------------
 		else if (pCreature->IsInvisible())
 		{
 			DrawInvisible( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame );
 		}
 		//------------------------------------------------------------
-		// 무기 잔상 기술
+		// Weapon afterimage skill
 		//------------------------------------------------------------
 		else if (
 			(pCreature->HasEffectStatus( EFFECTSTATUS_DANCING_SWORD )
@@ -2188,17 +2188,17 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 			DrawWeaponFadeOut( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame );
 		}
 		//------------------------------------------------------------
-		// 일반적인 출력
+		// General output
 		//------------------------------------------------------------
 		else
 		{
 			for (int i=0; i<ADDON_MAX; i++)
 			{
-				// Creature의 현재 방향에 따라서...
-				// 옷을 출력해주는 순서가 다를 수 있다.
+				// Depending on the Creature's current direction...
+				// the order in which clothes are drawn may differ.
 				clothesType = MCreatureWear::s_AddonOrder[pCreature->GetDirection()][i];
 				
-				// i번째 종류의 옷을 입고 있다면 출력해 준다.
+				// If it is wearing the i-th kind of clothes, draw it.
 				const MCreatureWear::ADDON_INFO& addonInfo = pCreatureWear->GetAddonInfo(clothesType);
 				//by viva NewSlayer
 				if (addonInfo.bAddon)
@@ -2207,7 +2207,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 
 					FRAME_ARRAY &FA = m_AddonFPK[clothes][action][direction];
 					
-					// 있는 동작인 경우
+					// If the motion exists
 					if (FA.GetSize() > frame)
 					{
 						CFrame &Frame = FA[frame];					
@@ -2221,7 +2221,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 						pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 						
 						//---------------------------------------- 
-						// 캐릭터 선택 사각형 영역 설정
+						// Set the character selection rectangle area
 						//---------------------------------------- 	
 						rect.left	= pointTemp.x;
 						rect.top	= pointTemp.y;
@@ -2230,7 +2230,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 						pCreature->AddScreenRect( &rect );
 						
 						//---------------------------------------- 
-						// 캐릭터 부분 색깔이 바뀌는 경우
+						// When a part of the character changes color
 						//---------------------------------------- 
 						if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 						{
@@ -2238,14 +2238,14 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 								addonInfo.EffectColorSet);
 						}
 						//---------------------------------------- 
-						// 정상적인 캐릭터 출력
+						// Normal character output
 						//---------------------------------------- 
 						else
 						{
 							int colorSet1 = addonInfo.ColorSet1, colorSet2 = addonInfo.ColorSet2;
 							if(colorSet2 == UNIQUE_ITEM_COLOR || colorSet2 == QUEST_ITEM_COLOR)
 							{
-								// 유니크 아이템이면
+								// if it is a unique item
 								//									if(colorSet2 == QUEST_ITEM_COLOR)
 								//										colorSet2 = MItem::GetQuestItemColorset();
 								//									else
@@ -2258,7 +2258,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 							
 							CIndexSprite::SetUsingColorSet( colorSet1, colorSet2 );
 							
-							// 어둡게 찍기
+							// Draw darkened
 							if (pCreature->IsFade())
 							{
 								m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -2269,7 +2269,7 @@ void	MTopView::DrawSlayerCharacter( POINT *pPoint, MCreature* pCreature, int act
 							}
 						}						
 						
-						// 정상적인 출력
+						// Normal output
 						//CIndexSprite::SetUsingColorSet( addonInfo.ColorSet1, addonInfo.ColorSet2 );
 						//m_pSurface->BltIndexSprite(&pointTemp, pSprite);
 						
@@ -2291,7 +2291,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 		DrawInstallTurret( GetCreatureDrawPacks(), pPoint, pCreature, action, direction, frame, FrameIndex );
 	else
 	{
-		// ToT 시간없다.. 하드 코딩.. by sonee
+		// ToT no time.. hard coding.. by sonee
 		action = ConvAdvancementSlayerActionFromSlayerAction( action, dynamic_cast< MCreatureWear* >(pCreature) );
 		
 		if( action == -1 )
@@ -2302,14 +2302,14 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 		
 		MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
 		
-		// Creature의 Action에 맞는 add-on을 출력한다.
+		// Draw the add-ons matching the Creature's Action.
 		//action = pCreature->GetAction();
 		
 		int clothes;
 		BYTE clothesType;
 		
 		//------------------------------------------------------------
-		// Fade Out 출력
+		// Fade Out output
 		//------------------------------------------------------------
 		if (pCreature->HasEffectStatus( EFFECTSTATUS_FADE_OUT ))
 		{
@@ -2317,21 +2317,21 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 		}
 		
 		//------------------------------------------------------------
-		// Fast Move 출력
+		// Fast Move output
 		//------------------------------------------------------------
 		if (pCreature->IsFastMove())
 		{
 			DrawFastMoveForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame );	//by viva	modifyed try
 		}
 		//------------------------------------------------------------
-		// Invisible  - Slayer는 snipping mode에서 투명이다.
+		// Invisible  - a Slayer is transparent in snipping mode.
 		//------------------------------------------------------------
 		else if (pCreature->IsInvisible())
 		{
 			DrawInvisibleForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame );		//by viva	modifyed try
 		}
 		//------------------------------------------------------------
-		// 무기 잔상 기술
+		// Weapon afterimage skill
 		//------------------------------------------------------------
 		else if (
 			(pCreature->HasEffectStatus( EFFECTSTATUS_DANCING_SWORD )
@@ -2343,7 +2343,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 			DrawWeaponFadeOutForACSlayer( GetCreatureDrawPacks(), pPoint, pCreature, action_viva, direction, frame );	//by viva	modifyed try
 		}
 		//------------------------------------------------------------
-		// 일반적인 출력
+		// General output
 		//------------------------------------------------------------
 		else
 		{
@@ -2401,7 +2401,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 								pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 								
 								//---------------------------------------- 
-								// 캐릭터 선택 사각형 영역 설정
+								// Set the character selection rectangle area
 								//---------------------------------------- 	
 								rect.left	= pointTemp.x;
 								rect.top	= pointTemp.y;
@@ -2410,7 +2410,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 								pCreature->AddScreenRect( &rect );
 								
 								//---------------------------------------- 
-								// 캐릭터 부분 색깔이 바뀌는 경우
+								// When a part of the character changes color
 								//---------------------------------------- 
 								if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 								{
@@ -2418,7 +2418,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 										addonInfo.EffectColorSet);
 								}
 								//---------------------------------------- 
-								// 정상적인 캐릭터 출력
+								// Normal character output
 								//---------------------------------------- 
 								else
 								{
@@ -2436,7 +2436,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 									else
 										CIndexSprite::SetUsingColorSet( 375, 375 );
 									
-									// 어둡게 찍기
+									// Draw darkened
 									if (pCreature->IsFade())
 									{
 										m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -2453,8 +2453,8 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 					else
 					{
 						
-						// 지금은 파트 그대로를 사용한다. 추후에 옷이 추가 되었을때 다음 변수를 세팅 해서 쓴다.
-						// addonInfo.FrameID 에 옷 정보를 넣고 세팅하여 쓰면된다.
+						// For now the part is used as it is. When clothes are added later, set and use the following variables.
+						// Put the clothes information into addonInfo.FrameID and use it.
 						
 						clothes = GetAdvancementPartFromItemClass( addonInfo.ItemClass, addonInfo.FrameID );
 						
@@ -2476,7 +2476,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 							pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 							
 							//---------------------------------------- 
-							// 캐릭터 선택 사각형 영역 설정
+							// Set the character selection rectangle area
 							//---------------------------------------- 	
 							rect.left	= pointTemp.x;
 							rect.top	= pointTemp.y;
@@ -2485,7 +2485,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 							pCreature->AddScreenRect( &rect );
 							
 							//---------------------------------------- 
-							// 캐릭터 부분 색깔이 바뀌는 경우
+							// When a part of the character changes color
 							//---------------------------------------- 
 							if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 							{
@@ -2493,7 +2493,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 									addonInfo.EffectColorSet);
 							}
 							//---------------------------------------- 
-							// 정상적인 캐릭터 출력
+							// Normal character output
 							//---------------------------------------- 
 							else
 							{
@@ -2511,7 +2511,7 @@ void	MTopView::DrawAdvancementClassSlayerCharacter( POINT *pPoint, MCreature* pC
 								else
 									CIndexSprite::SetUsingColorSet( 375, 375 );
 								
-								// 어둡게 찍기
+								// Draw darkened
 								if (pCreature->IsFade())
 								{
 									m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -2534,7 +2534,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 {
 	(void)body;
 	//------------------------------------------------
-	// 관 출력정보
+	// Coffin output information
 	//------------------------------------------------
 	int casketValue = pCreature->GetCasketCount();
 	int creature_type = pCreature->GetCreatureType();
@@ -2559,7 +2559,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 	if(creature_type>=807&&creature_type<=812)
 		action = GetNewVampireActionFromVampireAction(action);
 	//----------------------------------------------------
-	// 완전히 관만 출력하는 경우는 몸 출력을 안한다.
+	// When only the coffin is drawn completely, the body is not drawn.
 	//----------------------------------------------------
 	if (!bCasketOnly)
 	{
@@ -2592,14 +2592,14 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 				cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
 				cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
 			
-			// 좌표 보정
+			// coordinate correction
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			CIndexSprite* pSprite = &advanceVampireSPK[ sprite ];
 			
 			//---------------------------------------- 
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -2619,7 +2619,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 			}
 			
 			//-----------------------------------------------------------
-			// 투명 상태 출력 			
+			// Draw the transparent state
 			//-----------------------------------------------------------
 			// vampire
 			if (pCreature->IsFakeDie())
@@ -2630,7 +2630,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					colorSet = pCreature->GetBatColor();
 				
 				//---------------------------------------- 
-				// 캐릭터 전체 색깔이 바뀌는 경우					
+				// When the whole character changes color
 				//---------------------------------------- 
 				if (colorSet < MAX_COLORSET)
 				{
@@ -2667,7 +2667,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 			else
 			{	
 				//-----------------------------------------------------------
-				// 빠르게 움직이는 중
+				// Moving fast
 				//-----------------------------------------------------------
 				if (pCreature->IsFastMove() || pCreature->IsBloodyZenith())
 				{
@@ -2716,14 +2716,14 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					colorSet = pCreature->GetBatColor();
 				
 				//---------------------------------------- 
-				// 캐릭터 전체 색깔이 바뀌는 경우					
+				// When the whole character changes color
 				//---------------------------------------- 
 				if (colorSet < MAX_COLORSET)
 				{
 					m_pSurface->BltIndexSpriteColorSet(&pointTemp, pSprite, colorSet);
 				}
 				//---------------------------------------- 
-				// 정상적인 색깔 출력
+				// Normal color output
 				//---------------------------------------- 					
 				else
 				{				
@@ -2741,7 +2741,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					int shadowCount = pCreature->GetShadowCount();
 					
 					//----------------------------------------
-					// Shadow출력
+					// Shadow output
 					//----------------------------------------
 					if (shadowCount)
 					{
@@ -2766,7 +2766,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 						
 						POINT pointTemp2;
 						
-						// 이동이면 좌표도 바뀐다
+						// If moving, the coordinates change too
 						int cxStep = 0, cyStep = 0, cxInc =0 , cyInc = 0;
 						if (action==ACTION_MOVE)
 						{
@@ -2781,7 +2781,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 							int frame_f = frame-f;
 							
 							//---------------------------------------- 
-							// f frame 전
+							// f frames before
 							//---------------------------------------- 
 							if (frame_f < 0)
 							{
@@ -2817,11 +2817,11 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 						}
 					}
 					//----------------------------------------
-					// 몸만 찍기
+					// Draw the body only
 					//----------------------------------------
 					else
 					{
-						// 어둡게 찍기
+						// Draw darkened
 						if (pCreature->IsFade())
 						{
 							m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -2840,7 +2840,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 				// SDL2: Clipping is automatic - no restore needed
 			}
 
-			// 2004, 10, 28, sobeit add start  - 몬스터 킬 퀘스트 해당 몬스터에 표시.
+			// 2004, 10, 28, sobeit add start  - mark the target monster of a monster-kill quest.
 			if(pCreature->IsAlive() && (g_CurrentFrame&0x04)&&UI_IsMonsterKillQuest_Monster((*g_pCreatureTable)[pCreature->GetCreatureType()].SpriteTypes[0]))
 			//if(pCreature->IsAlive() && (g_CurrentFrame&0x04))
 			{
@@ -2866,14 +2866,14 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					cx		= Frame.GetCX(),	//m_CreatureFPK[body][action][direction][frame].GetCX(),
 					cy		= Frame.GetCY();	//m_CreatureFPK[body][action][direction][frame].GetCY();
 				
-				// 좌표 보정
+				// coordinate correction
 				pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 				pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 				
 				CIndexSprite* pSprite = &advanceVampireSPK[ sprite ];
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -2895,7 +2895,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 			}
 				
 				//-----------------------------------------------------------
-				// 투명 상태 출력 			
+				// Draw the transparent state
 				//-----------------------------------------------------------
 				// vampire
 				if (pCreature->IsFakeDie())
@@ -2903,7 +2903,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					WORD colorSet = pCreature->GetAttachEffectColor();
 					
 					//---------------------------------------- 
-					// 캐릭터 전체 색깔이 바뀌는 경우					
+					// When the whole character changes color
 					//---------------------------------------- 
 					if (colorSet < MAX_COLORSET)
 					{
@@ -2929,7 +2929,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 				else
 				{	
 					//-----------------------------------------------------------
-					// 빠르게 움직이는 중
+					// Moving fast
 					//-----------------------------------------------------------
 					if (pCreature->IsFastMove() || pCreature->IsBloodyZenith())
 					{
@@ -2963,21 +2963,21 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 					WORD colorSet = pCreature->GetAttachEffectColor();
 					
 					//---------------------------------------- 
-					// 캐릭터 전체 색깔이 바뀌는 경우					
+					// When the whole character changes color
 					//---------------------------------------- 
 					if (colorSet < MAX_COLORSET)
 					{
 						m_pSurface->BltIndexSpriteColorSet(&pointTemp, pSprite, colorSet);
 					}
 					//---------------------------------------- 
-					// 정상적인 색깔 출력
+					// Normal color output
 					//---------------------------------------- 					
 					else
 					{				
 						int shadowCount = pCreature->GetShadowCount();
 						
 						//----------------------------------------
-						// Shadow출력
+						// Shadow output
 						//----------------------------------------
 						if (shadowCount)
 						{
@@ -3002,7 +3002,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 							
 							POINT pointTemp2;
 							
-							// 이동이면 좌표도 바뀐다
+							// If moving, the coordinates change too
 							int cxStep = 0, cyStep = 0, cxInc =0 , cyInc = 0;
 							if (action==ACTION_MOVE)
 							{
@@ -3017,7 +3017,7 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 								int frame_f = frame-f;
 								
 								//---------------------------------------- 
-								// f frame 전
+								// f frames before
 								//---------------------------------------- 
 								if (frame_f < 0)
 								{
@@ -3053,11 +3053,11 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 							}
 						}
 						//----------------------------------------
-						// 몸만 찍기
+						// Draw the body only
 						//----------------------------------------
 						else
 						{
-							// 어둡게 찍기
+							// Draw darkened
 							if (pCreature->IsFade())
 							{
 								m_pSurface->BltIndexSpriteDarkness(&pointTemp, pSprite, 1);
@@ -3075,11 +3075,11 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 	}
 		
 	//----------------------------------------------------
-	// 관 출력
+	// Coffin output
 	//----------------------------------------------------
 	if (bInCasket)
 	{
-		// 그림자 때문에 *2해야한다.
+		// Must be *2 because of the shadow.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
 		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
@@ -3088,12 +3088,12 @@ void	MTopView::DrawAdvancementClassVampireCharacter( POINT* pPoint, MCreature* p
 			
 			if (pSprite!=NULL)
 			{
-				// tile의 중심에서 세운다.
+				// Set it up at the center of the tile.
 				pointTemp.x = pPoint->x + 24 - (pSprite->GetWidth()>>1);
 				pointTemp.y = pPoint->y + TILE_Y - pSprite->GetHeight();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -3129,7 +3129,7 @@ void
 MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame, int body, int frameindex )
 {
 	//------------------------------------------------
-	// 관 출력정보
+	// Coffin output information
 	//------------------------------------------------
 	int casketValue = pCreature->GetCasketCount();
 	bool bInCasket = pCreature->IsInCasket();
@@ -3154,12 +3154,12 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 			//						LoadFromFileCreatureActionSPK( body, action );
 			//					}
 			
-			// 좌표 보정
+			// coordinate correction
 			pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();			
 			
 			//---------------------------------------- 		
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -3174,14 +3174,14 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 				colorSet = pCreature->GetBatColor();
 			
 			//---------------------------------------- 
-			// 캐릭터 전체 색깔이 바뀌는 경우
+			// When the whole character changes color
 			//---------------------------------------- 
 			if (colorSet < MAX_COLORSET)
 			{
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, colorSet );
 			}					
 			//---------------------------------------- 
-			// 정상적인 출력
+			// Normal output
 			//---------------------------------------- 										
 			else
 			{					
@@ -3202,7 +3202,7 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 			int shadowCount = pCreature->GetShadowCount();
 			
 			//----------------------------------------
-			// Shadow출력
+			// Shadow output
 			//----------------------------------------
 			if (shadowCount)
 			{
@@ -3214,7 +3214,7 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 				
 				POINT pointTemp2;
 				
-				// 이동이면 좌표도 바뀐다
+				// If moving, the coordinates change too
 				int cxStep = 0, cyStep = 0, cxInc =0 , cyInc = 0;
 				if (action==ACTION_MOVE)
 				{
@@ -3229,7 +3229,7 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 					int frame_f = frame-f;
 					
 					//---------------------------------------- 
-					// f frame 전
+					// f frames before
 					//---------------------------------------- 
 					if (frame_f < 0)
 					{
@@ -3261,11 +3261,11 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 	}
 
 	//----------------------------------------------------
-	// 관 출력
+	// Coffin output
 	//----------------------------------------------------
 	if (bInCasket)
 	{
-		// 그림자 때문에 *2한다.
+		// *2 because of the shadow.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
 		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
@@ -3274,12 +3274,12 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 			
 			if (pSprite!=NULL)
 			{
-				// tile의 중심에서 세운다.
+				// Set it up at the center of the tile.
 				pointTemp.x = pPoint->x + 24 - (pSprite->GetWidth()>>1);
 				pointTemp.y = pPoint->y + TILE_Y - pSprite->GetHeight();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -3289,7 +3289,7 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 					pCreature->SetScreenRect( &rect );
 				
 				//---------------------------------------- 	
-				// 무조건 다 출력
+				// Draw everything unconditionally
 				//---------------------------------------- 	
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite );						
 			}
@@ -3300,7 +3300,7 @@ MTopView::DrawSelectedVampireCreature( POINT* pPoint, MCreature* pCreature, int 
 void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature* pCreature, int action, int direction, int frame, int body, int frameindex )
 {
 		//------------------------------------------------
-	// 관 출력정보
+	// Coffin output information
 	//------------------------------------------------
 	int casketValue = pCreature->GetCasketCount();
 	bool bInCasket = pCreature->IsInCasket();
@@ -3322,14 +3322,14 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 //end
 
 	//----------------------------------------------------
-	// 완전히 관만 출력하는 경우는 몸 출력을 안한다.
+	// When only the coffin is drawn completely, the body is not drawn.
 	//----------------------------------------------------
 
 	if (!bCasketOnly)
 	{	
 		for( int i = body; i <= body+1; ++i )
 		{
-			// 0:body 1: 무기 착탈에 따라 나중에 수정 
+			// 0:body 1: to be modified later depending on weapon attach/detach
 
 			//add by viva	select vampire
 			int viva_body=i;
@@ -3366,12 +3366,12 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 				//						LoadFromFileCreatureActionSPK( body, action );
 				//					}
 				
-				// 좌표 보정
+				// coordinate correction
 				pointTemp.x = pPoint->x + cx;// + pCreature->GetSX();
 				pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();			
 				
 				//---------------------------------------- 		
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -3386,14 +3386,14 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 					colorSet = pCreature->GetBatColor();
 				
 				//---------------------------------------- 
-				// 캐릭터 전체 색깔이 바뀌는 경우
+				// When the whole character changes color
 				//---------------------------------------- 
 				if (colorSet < MAX_COLORSET)
 				{
 					m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, colorSet );
 				}					
 				//---------------------------------------- 
-				// 정상적인 출력
+				// Normal output
 				//---------------------------------------- 										
 				else
 				{					
@@ -3414,7 +3414,7 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 				int shadowCount = pCreature->GetShadowCount();
 				
 				//----------------------------------------
-				// Shadow출력
+				// Shadow output
 				//----------------------------------------
 				if (shadowCount)
 				{
@@ -3426,7 +3426,7 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 					
 					POINT pointTemp2;
 					
-					// 이동이면 좌표도 바뀐다
+					// If moving, the coordinates change too
 					int cxStep = 0, cyStep = 0, cxInc =0 , cyInc = 0;
 					if (action==ACTION_MOVE)
 					{
@@ -3441,7 +3441,7 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 						int frame_f = frame-f;
 						
 						//---------------------------------------- 
-						// f frame 전
+						// f frames before
 						//---------------------------------------- 
 						if (frame_f < 0)
 						{
@@ -3474,11 +3474,11 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 	}
 
 	//----------------------------------------------------
-	// 관 출력
+	// Coffin output
 	//----------------------------------------------------
 	if (bInCasket)
 	{
-		// 그림자 때문에 *2한다.
+		// *2 because of the shadow.
 		int casketID = SPRITEID_CASKET_1 + pCreature->GetCasketType()*2;
 		
 		if (static_cast<DWORD>(casketID) < m_EtcSPK.GetSize())
@@ -3487,12 +3487,12 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 			
 			if (pSprite!=NULL)
 			{
-				// tile의 중심에서 세운다.
+				// Set it up at the center of the tile.
 				pointTemp.x = pPoint->x + 24 - (pSprite->GetWidth()>>1);
 				pointTemp.y = pPoint->y + TILE_Y - pSprite->GetHeight();
 				
 				//---------------------------------------- 
-				// 캐릭터 선택 사각형 영역 설정
+				// Set the character selection rectangle area
 				//---------------------------------------- 	
 				rect.left	= pointTemp.x;
 				rect.top	= pointTemp.y;
@@ -3502,7 +3502,7 @@ void	MTopView::DrawSelectedAdvancementVampireCreature( POINT* pPoint, MCreature*
 					pCreature->SetScreenRect( &rect );
 				
 				//---------------------------------------- 	
-				// 무조건 다 출력
+				// Draw everything unconditionally
 				//---------------------------------------- 	
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite );						
 			}
@@ -3521,7 +3521,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 		action -= ADVANCEMENT_ACTION_START;
 	
 	MCreatureWear*	pCreatureWear = (MCreatureWear*)pCreature;
-	// Creature의 Action에 맞는 add-on을 출력한다.
+	// Draw the add-ons matching the Creature's Action.
 	//action = pCreature->GetAction();	
 	int clothes;
 	BYTE clothesType;
@@ -3562,7 +3562,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 					if(action_viva > slayerFPK[clothes].GetSize() -1) continue;
 					
 					FRAME_ARRAY& FA = slayerFPK[ clothes ][ action_viva ][ direction ];
-					// 있는 동작인 경우
+					// If the motion exists
 					if (FA.GetSize() > frame)
 					{
 						CFrame &Frame = FA[frame];					
@@ -3575,7 +3575,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 						
 						CIndexSprite* pSprite = &addonISPK[ sprite ];
 						
-						// 복장Sprite가 초기화 되지 않은 경우
+						// If the outfit Sprite has not been initialized
 						//						if (pSprite->IsNotInit())
 						//						{
 						//							LoadFromFileAddonSPK( clothes, action );
@@ -3583,7 +3583,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 						//						}
 						
 						//---------------------------------------- 
-						// 캐릭터 선택 사각형 영역 설정
+						// Set the character selection rectangle area
 						//---------------------------------------- 	
 						rect.left	= pointTemp.x;
 						rect.top	= pointTemp.y;
@@ -3591,18 +3591,18 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 						rect.bottom = rect.top + pSprite->GetHeight();
 						pCreature->AddScreenRect( &rect );
 						
-						// SpriteOutlineManager에 추가
+						// Add to SpriteOutlineManager
 						//CIndexSprite::SetUsingColorSet((pCreature->GetID()+3*(clothesType,1),7)%MAX_COLORSET, ((pCreature->GetID()*pCreature->GetID(),7*(clothesType+2)))%MAX_COLORSET);
 						//CIndexSprite::SetUsingColorSet((c1+3*(clothesType+1)+7)%MAX_COLORSET, ((c2*c2+7*(clothesType+2)))%MAX_COLORSET);
 						//---------------------------------------- 
-						// 캐릭터 부분 색깔이 바뀌는 경우
+						// When a part of the character changes color
 						//---------------------------------------- 
 						if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 						{
 							m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 						}
 						//---------------------------------------- 
-						// 원래색대로..
+						// In the original colors..
 						//---------------------------------------- 
 						else
 						{
@@ -3625,8 +3625,8 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 			}
 			else
 			{		
-				// 지금은 파트 그대로를 사용한다. 추후에 옷이 추가 되었을때 다음 변수를 세팅 해서 쓴다.
-				// addonInfo.FrameID 에 옷 정보를 넣고 세팅하여 쓰면된다.
+				// For now the part is used as it is. When clothes are added later, set and use the following variables.
+				// Put the clothes information into addonInfo.FrameID and use it.
 				
 				clothes = GetAdvancementPartFromItemClass( addonInfo.ItemClass , addonInfo.FrameID);
 				
@@ -3635,7 +3635,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 				
 				FRAME_ARRAY &FA = slayerFPK[clothes][action][direction];
 				
-				// 있는 동작인 경우
+				// If the motion exists
 				if (FA.GetSize() > frame)
 				{
 					CFrame &Frame = FA[frame];					
@@ -3648,7 +3648,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 					
 					CIndexSprite* pSprite = &addonISPK[ sprite ];
 					
-					// 복장Sprite가 초기화 되지 않은 경우
+					// If the outfit Sprite has not been initialized
 					//						if (pSprite->IsNotInit())
 					//						{
 					//							LoadFromFileAddonSPK( clothes, action );
@@ -3656,7 +3656,7 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 					//						}
 					
 					//---------------------------------------- 
-					// 캐릭터 선택 사각형 영역 설정
+					// Set the character selection rectangle area
 					//---------------------------------------- 	
 					rect.left	= pointTemp.x;
 					rect.top	= pointTemp.y;
@@ -3664,18 +3664,18 @@ void	MTopView::DrawSelectedAdvancementSlayerCreature( POINT* pPoint, MCreature* 
 					rect.bottom = rect.top + pSprite->GetHeight();
 					pCreature->AddScreenRect( &rect );
 					
-					// SpriteOutlineManager에 추가
+					// Add to SpriteOutlineManager
 					//CIndexSprite::SetUsingColorSet((pCreature->GetID()+3*(clothesType,1),7)%MAX_COLORSET, ((pCreature->GetID()*pCreature->GetID(),7*(clothesType+2)))%MAX_COLORSET);
 					//CIndexSprite::SetUsingColorSet((c1+3*(clothesType+1)+7)%MAX_COLORSET, ((c2*c2+7*(clothesType+2)))%MAX_COLORSET);
 					//---------------------------------------- 
-					// 캐릭터 부분 색깔이 바뀌는 경우
+					// When a part of the character changes color
 					//---------------------------------------- 
 					if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 					{
 						m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 					}
 					//---------------------------------------- 
-					// 원래색대로..
+					// In the original colors..
 					//---------------------------------------- 
 					else
 					{
@@ -3721,7 +3721,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 		
 		FRAME_ARRAY &FA = m_AdvancementOustersFPK[clothes][tempAction][direction];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			CFrame &Frame = FA[frame];					
@@ -3735,7 +3735,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 선택 사각형 영역 설정
+			// Set the character selection rectangle area
 			//---------------------------------------- 	
 			rect.left	= pointTemp.x;
 			rect.top	= pointTemp.y;
@@ -3744,31 +3744,31 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 			pCreature->AddScreenRect( &rect );
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfo.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{
-				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// 머리색
+				CIndexSprite::SetUsingColorSetOnly( 0, pCreature->GetBodyColor1() );	// hair color
 				
 				int coatColor = addonInfo.ColorSet2, Colorset;
 				if( coatColor == QUEST_ITEM_COLOR || coatColor == UNIQUE_ITEM_COLOR )
 					coatColor = MItem::GetSpecialColorItemColorset( coatColor );						
-				CIndexSprite::SetUsingColorSetOnly( 1, coatColor );	// 옷색
-				if(bChakram == false)	// 리스틀릿을 차고 있으면
+				CIndexSprite::SetUsingColorSetOnly( 1, coatColor );	// clothes color
+				if(bChakram == false)	// if wearing a wristlet
 				{
 					if(addonInfoChakram.bAddon)
 					{
 						Colorset = addonInfoChakram.ColorSet2;
 						if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔								
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 					else
 					{
@@ -3776,7 +3776,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 						if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 							Colorset = MItem::GetSpecialColorItemColorset( Colorset );
 						
-						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+						CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 					}
 				}
 				else
@@ -3786,7 +3786,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 						Colorset = addonInfoChakram.ColorSet2;
 					if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 2, Colorset );	// arm
 				}
 				
 				if(bootsAddonInfo.bAddon)
@@ -3794,7 +3794,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 					Colorset = bootsAddonInfo.ColorSet2;
 					if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 부츠색
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// boots color
 				}
 				else
 				{
@@ -3802,7 +3802,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 					
 					if( Colorset == QUEST_ITEM_COLOR || Colorset == UNIQUE_ITEM_COLOR )
 						Colorset = MItem::GetSpecialColorItemColorset( Colorset );
-					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// 팔
+					CIndexSprite::SetUsingColorSetOnly( 3, Colorset );	// arm
 				}
 				
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite );
@@ -3817,7 +3817,7 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 		
 		FRAME_ARRAY &FA = m_AdvancementOustersFPK[clothes][tempAction][direction];
 		
-		// 있는 동작인 경우
+		// If the motion exists
 		if (FA.GetSize() > frame)
 		{
 			CFrame &Frame = FA[frame];					
@@ -3831,14 +3831,14 @@ void	MTopView::DrawSelectedAdvancementOustersCreature( POINT* pPoint, MCreature*
 			pointTemp.y = pPoint->y + cy;// + pCreature->GetSY();
 			
 			//---------------------------------------- 
-			// 캐릭터 부분 색깔이 바뀌는 경우
+			// When a part of the character changes color
 			//---------------------------------------- 
 			if (addonInfoChakram.bEffectColor)	//colorSet < MAX_COLORSET)
 			{
 				m_SOM.Add( pointTemp.x, pointTemp.y, pSprite, addonInfo.EffectColorSet );
 			}
 			//---------------------------------------- 
-			// 정상적인 캐릭터 출력
+			// Normal character output
 			//---------------------------------------- 
 			else
 			{

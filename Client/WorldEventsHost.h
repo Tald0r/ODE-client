@@ -149,6 +149,11 @@ struct Host
 	int (*CreatureSpriteHeight)(int body, int action, int direction) = nullptr;
 	// The flag's head and ground sprites: the team's (TAE) or the original.
 	void (*SetFlagSprites)(bool bTae) = nullptr;
+	// The view's (task 4.260): a sound played centred at full volume
+	// whatever the per-second limit (the endings' sounds), and the title
+	// picture drawn again while the view loads. Without a host: nothing.
+	void (*PlaySoundForce)(TYPE_SOUNDID soundID) = nullptr;
+	void (*DrawTitleLoading)() = nullptr;
 };
 
 // Borrowed until replaced. Every call reads the current host again.
@@ -206,6 +211,8 @@ void ExecuteActionInfoFromMainNode(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITI
 // -1 without an entry.
 int CreatureSpriteHeight(int body, int action, int direction);
 void SetFlagSprites(bool bTae);
+void PlaySoundForce(TYPE_SOUNDID soundID);
+void DrawTitleLoading();
 // Takes pResult; without an entry it is freed unrun.
 void SkillToSector(TYPE_ACTIONINFO actionInfo, TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, int direction, std::uint32_t delayFrame, MActionResult* pResult);
 

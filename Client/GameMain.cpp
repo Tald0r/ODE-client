@@ -159,13 +159,9 @@ int g_previousSoundID = SOUNDID_NULL;
 // Sound PartManager
 // g_pSoundManager is GameInitInfo.cpp's (gameclient's) since task 4.252.
 
-// Cursor Surface
-CStorageSurface*	g_pCursorSurface = NULL;
-
 // mouse cursor
 // g_SelectSector, g_bLButtonDown, g_bRButtonDown and g_bNetStatusGood are
-// InputState.cpp's (gamemodel, task 4.247).
-BOOL				g_bCButtonDown = FALSE;
+// InputState.cpp's (gamemodel, task 4.247), g_bCButtonDown since task 4.261.
 // g_bUIInput is InputState.cpp's (gamemodel) since task 4.258.
 //Edit by sonic 2006.7.27  修改加速地址
 //g_UpdateDelay		= DELAY_UPDATE_GAME
@@ -189,7 +185,7 @@ WORD				g_MyBatColorSet = 0xFFFF;
 int						g_ScreenShotNumber = 0;
 
 CSDLStream*		g_pSDLStream = NULL;
-int						g_SoundPerSecond = 0;
+// g_SoundPerSecond is AmbientSoundState.cpp's (gamemodel) since task 4.261.
 
 // Chat string
 #ifdef	OUTPUT_DEBUG
@@ -197,9 +193,6 @@ int						g_SoundPerSecond = 0;
 #endif
 
 bool				g_bPutMessage = false;		// 화면에 debug메세지를 출력할까?
-
-bool				g_bNewDraw = false;			// 화면을 다시 그렸는가? (커서 제외)
-bool				g_bSmoothCursor = false;	// 부드러운(?) cursor를 출력할 수 있나?
 
 // socket: GameSocket.cpp (gamemodel)
 
