@@ -226,7 +226,6 @@ void		CheckActivate(BOOL bActiveGame);
 // Init DX..
 BOOL		InitInput();
 BOOL		InitSound();
-BOOL		InitMusic();
 BOOL		InitDraw();
 
 // Init Other

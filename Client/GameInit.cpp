@@ -198,8 +198,6 @@
 #include "DebugKit.h"
 
 extern BYTE g_macAddress[6];
-extern DWORD g_dwSeqNumL;
-extern DWORD g_dwSeqNumG;
 extern BOOL g_MyFull;
 extern RECT g_GameRect;
 
@@ -221,19 +219,6 @@ extern char g_FutecIP[20];
 extern unsigned int g_FutecPort;
 
 
-//----------------------------------------------------------------------
-// AddonSPK 분할 로딩 - 2001.8.20
-//----------------------------------------------------------------------
-TYPE_SPRITEID		g_AddonSPKNum = 0;
-const int			g_AddonSPKLoadingTimes = 20;	// 20등분으로 나눠서 loading한다.
-bool				g_AddonSPKLoaded[g_AddonSPKLoadingTimes] = { false, };
-int					g_AddonSPKIndexFirst[g_AddonSPKLoadingTimes] = { 0, };
-int					g_AddonSPKIndexLast[g_AddonSPKLoadingTimes] = { 0, };
-long				g_AddonSPKIndexFP[g_AddonSPKLoadingTimes] = { 0, };
-bool				g_AddonSPKAllLoaded = false;
-
-bool				g_bHALAvailable = false;
-extern bool				g_bHALAvailable;
 extern WORD g_wAuthKeyMap;
 
 void	StartTitleLoading();
@@ -242,9 +227,6 @@ void	EndTitleLoading(bool SendLogin = false);
 bool	PrepareLoadingAddonSPK();
 bool	LoadingAddonSPK(bool bLoadingAll);
 extern bool CheckInvalidProcess();
-extern void ClearDebugInfo();
-
-extern int  g_nGameVersion;
 //---------------------------------------------------------------------------
 // Start TitleLoading
 //---------------------------------------------------------------------------
@@ -366,114 +348,14 @@ bool
 PrepareLoadingAddonSPK()
 {
 	return true;
-
-
-	g_AddonSPKAllLoaded = false;
-
-	if (g_pTopView==NULL)
-	{
-
-		return false;
-	}
-
-	//------------------------------------------------------------
-	// 나눠서 로딩하기 위한 준비.. 2001.8.20 추가
-	//------------------------------------------------------------
-	if (g_AddonSPKNum==0)
-	{
-		std::ifstream	AddonFileIndex2;//(FILE_ISPRITE_ADDON, ios::binary);
-		if (!FileOpenBinary(g_pFileDef->getProperty("FILE_ISPRITEINDEX_ADDON").c_str(), AddonFileIndex2))
-			return false;
-
-		AddonFileIndex2.read((char*)&g_AddonSPKNum, SIZE_SPRITEID);
-
-		// 개수를 잡아둔다.
-		g_pTopView->m_AddonSPK.Init( g_AddonSPKNum);		
-
-		// loading하는 회수에 맞게 file index를 구한다.
-		int first = 0;
-		for (int i=0; i<g_AddonSPKLoadingTimes; i++)
-		{
-			// 1/3
-			int last = (int)g_AddonSPKNum * (i+1) / g_AddonSPKLoadingTimes;
-			
-			// 더 클 일은 없겠지만.. 혹시.. - -;;
-			if (last >= g_AddonSPKNum)
-			{
-				last = g_AddonSPKNum - 1;
-			}
-
-			long fp;
-			// 개수(2 bytes) + ID * (4 bytes)
-			AddonFileIndex2.seekg( 2 + first*4 , ios::beg );
-			AddonFileIndex2.read((char*)&fp, 4);
-
-			// file index설정			
-			g_AddonSPKIndexFirst[i] = first;
-			g_AddonSPKIndexLast[i] = last;
-			g_AddonSPKIndexFP[i] = fp;
-			
-
-			// 다음 꺼.
-			first = last+1;
-		}
-
-		AddonFileIndex2.close();
-	}
-
-	return true;
 }
 
 //---------------------------------------------------------------------------
 // LoadingAddonSPK
 //---------------------------------------------------------------------------
 bool
-LoadingAddonSPK(bool bLoadingAll)
+LoadingAddonSPK(bool)
 {
-	return true;
-
-
-	if (g_pTopView==NULL)
-	{
-
-		return false;
-	}
-
-	for (int i=0; i<g_AddonSPKLoadingTimes; i++)
-	{
-		// loading 안 된 부분이 있으면 loading한다.
-		if (!g_AddonSPKLoaded[i])
-		{
-//			std::ifstream	addonFile;
-//
-//			if (!FileOpenBinary(FILE_ISPRITE_ADDON, addonFile))
-//				return false;	
-
-			TYPE_SPRITEID first = g_AddonSPKIndexFirst[i];
-			TYPE_SPRITEID last	= g_AddonSPKIndexLast[i];
-			[[maybe_unused]] long	fp	= g_AddonSPKIndexFP[i];
-
-
-			if (!g_pTopView->m_AddonSPK.LoadFromFilePart(first, last)) {
-				LOG_ERROR("Rejected addon preload: first=%u last=%u",
-					static_cast<unsigned>(first), static_cast<unsigned>(last));
-				return false;
-			}
-		
-			g_AddonSPKLoaded[i] = true;
-
-			// 전부 loading해야하는 경우가 아니면 한부분만 loading한다.
-			if (!bLoadingAll)
-			{
-
-				return true;
-			}
-		}
-	}
-
-	g_AddonSPKAllLoaded = true;
-
-
 	return true;
 }
 
@@ -699,10 +581,10 @@ InitSound()
 			g_SDLAudio.SetVolumeLimit( volume );	
 
 			//-----------------------------------------------------------
-			// The OGG music streamer. InitMusic() below would create it,
-			// but nothing calls InitMusic(); and once IsInit() is true the
-			// music call sites (PlayMusicCurrentZone and friends) call
-			// g_pOGG->streamClose() without a null check.
+			// The OGG music streamer, made here: InitMusic, which made it
+			// too, was never called (deleted in task 4.264); and once
+			// IsInit() is true the music call sites (PlayMusicCurrentZone
+			// and friends) call g_pOGG->streamClose() without a null check.
 			//-----------------------------------------------------------
 			if (g_pOGG == NULL)
 			{
@@ -733,79 +615,6 @@ InitSound()
 		return TRUE;
 	}
 	
-}
-
-//---------------------------------------------------------------------------
-// Init Music
-//---------------------------------------------------------------------------
-BOOL
-InitMusic()
-{
-	// Debug Message
-	DEBUG_ADD("[ InitGame ]  Music");
-	
-	//--------------------------------------------------------
-	//
-	//                 Music
-	//
-	//--------------------------------------------------------
-	//g_Music.Init(g_hWnd);	
-		/*
-	if (g_bMusicSW)
-	{
-		g_SDLMusic.Init(g_hWnd, DIRECTMUSIC_TYPE_SW);
-	}
-	else
-	{
-		g_SDLMusic.Init(g_hWnd, DIRECTMUSIC_TYPE_HW);
-	}
-	*/
-	g_Music.Init( g_hWnd );
-
-	//int volume = g_Music.GetVolume();
-	//			DEBUG_ADD_FORMAT("[MIDI] Volume in Init = %x", volume);
-
-	int value = g_pUserOption->VolumeMusic;
-				
-	WORD volume = value*0x1000 + 0x0FFF;
-
-	g_Music.SetVolume( volume );
-
-	
-//	if (g_pSDLStream==NULL)
-//	{
-//		g_pSDLStream = new CDirectSoundStream;
-//
-//		int value = g_pUserOption->VolumeMusic;	
-//
-//		LONG volume = value*SOUND_DEGREE + SOUND_MIN;
-//
-//		g_pSDLStream->SetVolumeLimit( volume );	
-//	}
-
-	DEBUG_ADD("MP3 new");
-	if( g_SDLAudio.IsInit() )
-	{
-		// SDL backend stub - OGG streaming not implemented
-		if( g_pSoundBufferForOGG == NULL )
-		{
-			// g_pSoundBufferForOGG = new CDirectSoundBuffer(g_hWnd, SOUND_STEREO, SOUND_44K, SOUND_16BIT);
-			g_pSoundBufferForOGG = NULL; // Stub: not implemented on SDL
-		}
-		if( g_pOGG == NULL )
-		{
-#ifdef _MT
-			g_pOGG = new COGGSTREAM(NULL, g_pSoundBufferForOGG, 44100, 11025, 8800, 1);
-#else
-			g_pOGG = new COGGSTREAM(NULL, g_pSoundBufferForOGG, 44100, 11025, 8800,1);
-#endif
-			int volume = (g_pUserOption->VolumeMusic - 15) * 250;
-
-			g_pOGG->streamVolume( max( -10000, min( -1, volume ) ) );
-		}
-	}
-
-	return TRUE;
 }
 
 //---------------------------------------------------------------------------
@@ -897,7 +706,6 @@ InitDraw()
 
 			// CDirect3D::Init() removed (SDL2) - SDL2 always uses hardware acceleration
 			g_bEnable3DHAL = TRUE;
-			g_bHALAvailable = true;
 
 		}
 		
@@ -1339,9 +1147,6 @@ InitGame()
 	
 		return TRUE;
 	}
-
-	// Init가 실패한 경우
-	return FALSE;	
 }
 
 //-----------------------------------------------------------------------------
