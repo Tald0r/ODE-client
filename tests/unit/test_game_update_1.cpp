@@ -615,6 +615,9 @@ struct WorldSaved
 	}
 };
 
+// The cell under the World's cursor.
+const POINT kCursorCell = { 6, 5 };
+
 // A slayer standing at (20, 15) in a 40x30 zone, no skill chosen, the
 // cursor at (300, 130) over cell (6, 5) of a view whose screen starts at
 // the zone's corner, the right button up, the last walk remembered
@@ -803,8 +806,6 @@ struct World
 		update.ProcessInputRButtonDown(pObject, force);
 		return calls;
 	}
-	// The cell under the cursor, as the view picks it.
-	POINT Cursor() { return view.GetSelectedSector(g_x, g_y); }
 	// The zone's castle at war between guilds.
 	void War()
 	{
@@ -895,20 +896,19 @@ TEST(GameUpdate1Init, ItForgetsTheWalkHandsTheInputToTheLoopAndStartsTextInput)
 TEST(GameUpdate1Mouse, TheWheelGoesToTheUIAtTheCursorNotTheEventsPoint)
 {
 	InputScene scene;
+	gbl_mine_progress = true;
 	CHECK_SAME("wheeldown" + At(7, 9) + ";", scene.Mouse(CSDLInput::WHEELDOWN, 30, 20));
 	CHECK_SAME("wheelup" + At(7, 9) + ";", scene.Mouse(CSDLInput::WHEELUP, 30, 20));
 	g_x = 1;
 	g_y = 2;
 	CHECK_SAME("wheelup" + At(1, 2) + ";", scene.Mouse(CSDLInput::WHEELUP, 30, 20));
-	CHECK(!gbl_mine_progress);
+	CHECK(gbl_mine_progress);		// the mine installing goes on
 }
 
 TEST(GameUpdate1Mouse, ARightReleaseEndsTheMineInstallingAndReachesNothing)
 {
 	InputScene scene;
 	gbl_mine_progress = true;
-	CHECK_SAME(std::string(""), scene.Mouse(CSDLInput::RIGHTUP, 30, 20));
-	CHECK(!gbl_mine_progress);
 	CHECK_SAME(std::string(""), scene.Mouse(CSDLInput::RIGHTUP, 30, 20));
 	CHECK(!gbl_mine_progress);
 }
@@ -1138,13 +1138,12 @@ TEST(GameUpdate1RButton, ItHoldsTheRightButtonAndClearsThePickedCellFirst)
 	CHECK_SAME(std::string("war?;"), scene.Press(pEnemy));
 	CHECK_EQ(TRUE, g_bRButtonDown);
 	CHECK(me.IsTraceNULL());
-	// Without a view it only holds the button.
+	// Without a view it only holds the button (it reads no view: without
+	// its guard it would dereference NULL).
 	g_pTopView = NULL;
 	g_bRButtonDown = FALSE;
-	scene.view.m_SelectSector.x = 3;
 	CHECK_SAME(std::string(""), scene.Press(NULL));
 	CHECK_EQ(TRUE, g_bRButtonDown);
-	CHECK_EQ(3, int(scene.view.m_SelectSector.x));
 }
 
 TEST(GameUpdate1RButton, OnWindowsTheSpeedCheckQuitsTheGameAfterFiveErrors)
@@ -1218,7 +1217,7 @@ TEST(GameUpdate1RButton, ATurretsFirstShotSoundsThenTheSkillGoesOn)
 	// Its fire, chosen: the shot's sound, then the skill as without a turret
 	// (no cell the turret reaches is under the cursor).
 	me.SetSpecialActionInfo(SKILL_TURRET_FIRE);
-	const POINT cell = scene.Cursor();
+	const POINT cell = kCursorCell;
 	CHECK_SAME("sound" + N(SOUND_SLAYER_TURRET_FIRE_START) + ";", scene.Press(NULL));
 	CHECK(!me.IsRepeatAction());
 	CHECK_EQ(int(cell.x), int(g_SelectSector.x));
@@ -1333,7 +1332,8 @@ TEST(GameUpdate1RButton, OffAMotorcycleUnlessAFlagCorpseIsNear)
 	CHECK(me.IsTraceNULL());
 	CHECK_EQ(1, int(g_SelectSector.x));
 	CHECK_SAME(std::string(""), scene.System());
-	// The flag's corpse beside it: a message instead (none with no string).
+	// The flag's corpse beside it: a message instead (a blank one with no
+	// string, which System() skips).
 	g_pGameStringTable->Init(MAX_GAME_STRING + 1);
 	g_pGameStringTable->Set(UI_STRING_MESSAGE_CANNOT_ACTION_MOTORCYCLE_FLAG, "near the flag");
 	scene.Corpse(702, 670, 19, 14);
@@ -1347,7 +1347,7 @@ TEST(GameUpdate1RButton, OffAMotorcycleUnlessAFlagCorpseIsNear)
 	CHECK_SAME(std::string("near the flag;"), scene.System());
 }
 
-TEST(GameUpdate1RButton, ARiderHeldOrNotStandingStillUsesItsSkillInstead)
+TEST(GameUpdate1RButton, ARiderHeldOrNotStandingStillNeitherGetsOffNorUsesItsSkill)
 {
 	const EFFECTSTATUS holds[] = { EFFECTSTATUS_CURSE_PARALYSIS, EFFECTSTATUS_CAUSE_CRITICAL_WOUNDS, EFFECTSTATUS_EXPLOSION_WATER };
 	for (int i = 0; i <= 3; ++i)
@@ -1364,7 +1364,7 @@ TEST(GameUpdate1RButton, ARiderHeldOrNotStandingStillUsesItsSkillInstead)
 			CHECK(!me.IsStop());
 		}
 		me.SetRepeatAction();
-		const POINT cell = scene.Cursor();
+		const POINT cell = kCursorCell;
 		// A rider uses no skill: the repeat is dropped, the cell taken.
 		CHECK_SAME(std::string(""), scene.Press(NULL));
 		CHECK(scene.wire.Sent().empty());
@@ -1430,7 +1430,7 @@ TEST(GameUpdate1RButton, NowhereASkillOnTheZoneGoesToTheCellUnderTheCursor)
 	World scene;
 	PlayerProbe& me = *scene.me;
 	scene.Skill(SKILL_SNAKE_COMBO, FLAG_ACTIONINFO_TARGET_ZONE, 2);
-	const POINT cell = scene.Cursor();
+	const POINT cell = kCursorCell;
 	// (The cursor's x and y, not swapped.)
 	CHECK_EQ(WorldTileGeometry::PixelToTileX(300), int(cell.x));
 	CHECK_EQ(WorldTileGeometry::PixelToTileY(130), int(cell.y));
@@ -1457,7 +1457,7 @@ TEST(GameUpdate1RButton, NowhereASkillThatCannotGoThereDropsTheRepeat)
 	// A skill on others only.
 	scene.Skill(SKILL_DOUBLE_IMPACT, FLAG_ACTIONINFO_TARGET_OTHER, 3);
 	me.SetRepeatAction();
-	const POINT cell = scene.Cursor();
+	const POINT cell = kCursorCell;
 	CHECK_SAME(std::string(""), scene.Press(NULL));
 	CHECK(!me.IsRepeatAction());
 	CHECK(me.IsTraceNULL());
@@ -1591,6 +1591,7 @@ TEST(GameUpdate1RButton, AnNPCIsWalkedUpToAndTheSkillKept)
 	CHECK(me.IsTraceCreature());
 	CHECK_EQ(int(FLAG_TRACE_CREATURE_BASIC), int(me.m_fTrace & FLAG_TRACE_CREATURE_BASIC));
 	CHECK_EQ(20002, int(me.GetTraceID()));
+	CHECK_EQ(int(SKILL_DOUBLE_IMPACT), int(me.GetSpecialActionInfo()));
 	CHECK(!me.IsRepeatAction());
 	CHECK(g_bPreviousMove);
 	CHECK(Unpicked(scene.view));

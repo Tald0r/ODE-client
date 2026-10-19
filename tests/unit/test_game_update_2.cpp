@@ -88,8 +88,10 @@ extern bool		g_bMouseInPortal;
 extern int		g_DrawCamGapX;
 extern int		g_DrawCamGapY;
 extern bool		gbl_mine_progress;
-// CGameUpdate.cpp's: the last left press walked.
+// CGameUpdate.cpp's: the last left press walked; Windows' speed check's
+// error count.
 extern bool		g_bPreviousMove;
+extern int		g_CheckErrorTime;
 
 // The game loop's input (task 4.261 moved Client/CGameUpdate.cpp into
 // gameclient), its ProcessInput: what the mouse and the keys do in the game
@@ -414,6 +416,18 @@ struct ZoneProbe : MZone
 	using MZone::m_mapGroundEffect;
 };
 
+// The input lock as it was, put back after the scene's dialog is
+// destroyed: ~UIDialog's Release() clears the lock.
+struct InputLockSaved
+{
+	DWORD old = UIDialog::IsLockInput();
+	~InputLockSaved()
+	{
+		if (old & FLAG_UIDIALOG_LOCK_PCTALK) UIDialog::SetLockInputPCTalk(); else UIDialog::UnSetLockInputPCTalk();
+		if (old & FLAG_UIDIALOG_LOCK_MESSAGE) UIDialog::SetLockInputMessage(); else UIDialog::UnSetLockInputMessage();
+	}
+};
+
 // Which bit of the flags is the party system.
 struct Systems : SystemAvailabilitiesManager
 {
@@ -473,6 +487,7 @@ struct Scene : GameModelWorld
 	SystemAvailabilitiesManager systems;
 	MJusticeAttackManager justice;
 	CZoneTable zoneTable;
+	InputLockSaved oldLock;		// before dialog, so it is restored after ~UIDialog
 	UIDialog dialog;
 	Wire wire;
 	PI_ProcessRunner runner;
@@ -509,7 +524,6 @@ struct Scene : GameModelWorld
 	MMagazine* oldMagazine = g_pCurrentMagazine;
 	CZoneTable* oldZoneTable = g_pZoneTable;
 	UIDialog* oldDialog = g_pUIDialog;
-	DWORD oldLock = UIDialog::IsLockInput();
 	ClientPlayer* oldSocket = g_pSocket;
 	MZone* oldZone = g_pZone;
 	MPlayer* oldPlayer = g_pPlayer;
@@ -525,6 +539,7 @@ struct Scene : GameModelWorld
 	BOOL oldLeft = g_bLButtonDown, oldRight = g_bRButtonDown, oldCentre = g_bCButtonDown;
 	BOOL oldUIInput = g_bUIInput;
 	bool oldPreviousMove = g_bPreviousMove;
+	int oldCheckErrorTime = g_CheckErrorTime;
 	bool oldWatch = g_bWatchMode;
 	bool oldZoneSafe = g_bZoneSafe;
 	bool oldMine = gbl_mine_progress;
@@ -621,6 +636,7 @@ struct Scene : GameModelWorld
 		gbl_mine_progress = false;
 		g_bLButtonDown = g_bRButtonDown = g_bCButtonDown = FALSE;
 		g_bPreviousMove = false;
+		g_CheckErrorTime = 0;
 		g_SelectSector = kMarked;
 		g_DrawCamGapX = g_DrawCamGapY = 0;
 		g_MouseSector.x = g_MouseSector.y = -9;
@@ -701,6 +717,7 @@ struct Scene : GameModelWorld
 		gbl_mine_progress = oldMine;
 		g_bZoneSafe = oldZoneSafe;
 		g_bWatchMode = oldWatch;
+		g_CheckErrorTime = oldCheckErrorTime;
 		g_bPreviousMove = oldPreviousMove;
 		g_bUIInput = oldUIInput;
 		g_bCButtonDown = oldCentre;
@@ -716,8 +733,6 @@ struct Scene : GameModelWorld
 		ZoneState::SetHost(oldZoneHost);
 		MItem::SetHost(NULL);
 		g_pSocket = oldSocket;
-		if (oldLock & FLAG_UIDIALOG_LOCK_PCTALK) UIDialog::SetLockInputPCTalk(); else UIDialog::UnSetLockInputPCTalk();
-		if (oldLock & FLAG_UIDIALOG_LOCK_MESSAGE) UIDialog::SetLockInputMessage(); else UIDialog::UnSetLockInputMessage();
 		g_pUIDialog = oldDialog;
 		g_pZoneTable = oldZoneTable;
 		g_pCurrentMagazine = oldMagazine;
@@ -882,6 +897,20 @@ struct Scene : GameModelWorld
 		events.AddEvent(event);
 	}
 };
+
+// A skill the player has, ready, aimed as the flag says, for the users
+// the flag says.
+void Skill(Scene& scene, int id, BYTE target, BYTE user)
+{
+	scene.actions.GetMutable(id)->Set("", ACTION_MAGIC, EFFECTSPRITETYPE_NULL, 3, target);
+	scene.actions.GetMutable(id)->SetUser(user);
+	scene.actions.GetMutable(id)->SetPacketType(target == FLAG_ACTIONINFO_TARGET_SELF ? ACTIONINFO_PACKET_SELF : ACTIONINFO_PACKET_OTHER);
+	scene.skills.AddSkill(ACTIONINFO(id));
+	scene.skillInfo.GetMutable(id)->SetEnable(true);
+	scene.skillInfo.GetMutable(id)->minRange = 3;
+	scene.skillInfo.GetMutable(id)->maxRange = 3;
+	scene.me->SetSpecialActionInfo(TYPE_ACTIONINFO(id));
+}
 
 } // namespace
 
@@ -1500,6 +1529,7 @@ TEST(GameUpdate2Lock, CapsLockLocksOnWithTheAttackCursorAndTheTicksPressHoldsIts
 	{
 		Scene scene;
 		scene.me->m_Action = ACTION_MOVE;		// so standing still unmarks nothing
+		Skill(scene, MAGIC_LIGHT, FLAG_ACTIONINFO_TARGET_SELF, FLAG_ACTIONINFO_USER_ALL);	// a right press would use it
 		g_bPreviousMove = false;
 		const int nextX = scene.me->m_NextDestX;
 		scene.Keys({ DIK_CAPITAL });
@@ -1515,7 +1545,7 @@ TEST(GameUpdate2Lock, CapsLockLocksOnWithTheAttackCursorAndTheTicksPressHoldsIts
 		CHECK(scene.Selected(kSelected, kSelected, kSelected));
 		CHECK_EQ(nextX, int(scene.me->m_NextDestX));
 		CHECK(!g_bPreviousMove);
-		CHECK(Count("send|" + N(CGUnburrow().getPacketID())) == 0);
+		CHECK(!scene.me->IsRepeatAction());
 	}
 }
 
@@ -1606,7 +1636,9 @@ TEST(GameUpdate2Cursor, OverASectorThePlayerCannotEnterTheCursorSaysSoUnlessOver
 			CHECK(scene.Selected(kNone, kNone, kNone));
 			CHECK_EQ(portal ? Pointer::CURSOR_COIN : c.notMove ? Pointer::CURSOR_NOT_MOVE : Pointer::CURSOR_SLAYER_NORMAL, scene.Cursor());
 		}
-	// Off the zone no sector is read: the default.
+	// Off the zone no sector is read: the default. (A missing bounds check
+	// would read past the zone's rows, which are separate allocations no
+	// in-zone sector aliases: only ASan sees that, so only its tree does.)
 	const struct { int sx, sy; bool in; } edges[] = { { 39, 10, true }, { 40, 10, false }, { 10, 29, true }, { 10, 30, false } };
 	for (const auto& e : edges)
 	{
@@ -1838,20 +1870,6 @@ std::vector<unsigned char> Unburrow(const MPlayer& me)
 	return Encoded({ &expected });
 }
 const std::string kSendUnburrow = "send|" + N(CGUnburrow().getPacketID());
-
-// A skill the player has, ready, aimed as the flag says, for the users
-// the flag says.
-void Skill(Scene& scene, int id, BYTE target, BYTE user)
-{
-	scene.actions.GetMutable(id)->Set("", ACTION_MAGIC, EFFECTSPRITETYPE_NULL, 3, target);
-	scene.actions.GetMutable(id)->SetUser(user);
-	scene.actions.GetMutable(id)->SetPacketType(target == FLAG_ACTIONINFO_TARGET_SELF ? ACTIONINFO_PACKET_SELF : ACTIONINFO_PACKET_OTHER);
-	scene.skills.AddSkill(ACTIONINFO(id));
-	scene.skillInfo.GetMutable(id)->SetEnable(true);
-	scene.skillInfo.GetMutable(id)->minRange = 3;
-	scene.skillInfo.GetMutable(id)->maxRange = 3;
-	scene.me->SetSpecialActionInfo(TYPE_ACTIONINFO(id));
-}
 } // namespace
 
 TEST(GameUpdate2Act, NothingIsDoneInTheDelayOrThePauseBeyondTheSelection)
@@ -1971,7 +1989,7 @@ TEST(GameUpdate2Act, ARightPressUsesTheSkillAndShiftForcesIt)
 		CHECK(scene.Selected(300, kNone, kNone));
 		CHECK(g_bRButtonDown);
 		CHECK_EQ(shift == 1, scene.me->m_fTrace == FLAG_TRACE_CREATURE_SPECIAL);
-		CHECK_EQ(shift == 1 ? 300 : int(OBJECTID_NULL), shift == 1 ? int(scene.me->GetTraceID()) : int(OBJECTID_NULL));
+		CHECK_EQ(shift == 1 ? 300 : int(OBJECTID_NULL), int(scene.me->GetTraceID()));
 		CHECK_EQ(shift == 1, bool(scene.me->IsRepeatAction()));
 	}
 }
@@ -2063,7 +2081,9 @@ TEST(GameUpdate2Act, ALeftPressBehindATurretTurnsThePlayerTowardTheMouseAndNothi
 	for (const auto& c : cases)
 	{
 		Scene scene;
-		scene.Creature(300, kVampire, 10, 15);		// even an enemy there
+		// Even an enemy there, under the mouse.
+		RECT over = { PX(10) - 2, PY(15) - 2, PX(10) + 3, PY(15) + 3 };
+		scene.Creature(300, kVampire, 10, 15)->SetScreenRect(&over);
 		scene.me->Set(EFFECTSTATUS_INSTALL_TURRET);
 		scene.me->m_CurrentDirection = BYTE(c.direction);
 		if (!c.stopped)
@@ -2077,6 +2097,7 @@ TEST(GameUpdate2Act, ALeftPressBehindATurretTurnsThePlayerTowardTheMouseAndNothi
 		g_y = PY(15);
 		scene.Buttons(true, false, false, false, false, false);
 		scene.Run();
+		CHECK(scene.Selected(300, kNone, kNone));
 		CHECK_EQ(c.expected, int(scene.me->GetDirection()));
 		CHECK(g_bLButtonDown);
 		CHECK_EQ(10, int(g_SelectSector.x));

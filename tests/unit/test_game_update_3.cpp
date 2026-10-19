@@ -560,7 +560,7 @@ struct Scene
 		screen.FillSurface(0);
 		g_pBack = &back;
 		g_pLast = &last;
-		base.m_p_DDSurface_back = &back;
+		base.m_p_DDSurface_back = &last;		// the UI draws onto the last frame, as gC_vs_ui.Init(g_pLast, ...) has it
 		g_GameRect = {0, 0, 800, 600};
 		CSDLGraphics::SetBackBufferSource(Flipped);
 		window = std::make_unique<UiWindow>();
@@ -761,7 +761,7 @@ TEST(GameUpdate3Gate, TheTickClockStartsAtTheFirstCallInAnyMode)
 // the frame calls ExecuteLogout, which in the game always starts the
 // title screen (gC_vs_ui.StartTitle builds every title window from the
 // skins and sprite packs), then cancels the logout and ends the frame.
-TEST(GameUpdate3Logout, ALogoutIsDueOnlyAfterItsTime)
+TEST(GameUpdate3Logout, ALogoutIsNotDueAtItsTime)
 {
 	Scene scene;
 	scene.player->SetWaitVerify(MPlayer::WAIT_VERIFY_LOGOUT);
@@ -1240,9 +1240,10 @@ TEST(GameUpdate3DrawGate, AFrameDrawsOnATickOr15MsAfterTheLastDraw)
 TEST(GameUpdate3Draw, AFrameFollowsTheCursorShowsTheUiAsksForThePointerTwiceAndFlips)
 {
 	// Recorded defect: the pointer is drawn twice a frame
-	// (CGameUpdate.cpp:1701-1704 and 1827-1830), once onto the last frame
-	// before it is copied to the back buffer and again onto the back
-	// buffer: wasted work, and a translucent pointer twice blended.
+	// (CGameUpdate.cpp:1701-1704 and 1827-1830). The UI draws onto the last
+	// frame (GameInit.cpp's gC_vs_ui.Init(g_pLast, ...)), so the second
+	// draw lands there after the copy to the back buffer, and the next
+	// frame redraws the last frame: wasted work, never shown.
 	Scene scene;
 	CHECK_SAME("mouse;cursor;move@3,4;show;pointer;pointer/back;flip;", scene.Frame(0));
 	scene.Zoneless();
@@ -1256,8 +1257,10 @@ TEST(GameUpdate3Draw, TheCursorIsMappedIntoTheLetterboxedFrame)
 	spritectl_set_present_geometry(1600, 1000, 1600, 1000, 133, 0, 1333, 999, 800, 600);
 	windowPoint = {133 + 666, 500};
 	CHECK_SAME("mouse;cursor;move@399,300;show;pointer;pointer/back;flip;", scene.Frame(0));
-	windowPoint = {0, 0};		// on the bar: the frame's corner
-	CHECK_SAME("mouse;cursor;move@0,0;show;pointer;pointer/back;flip;", scene.Frame(20));
+	// On the bar: clamped to the frame's edge ((50 - 133) * 800 / 1333 = -49
+	// to 0, 500 * 600 / 999 = 300).
+	windowPoint = {50, 500};
+	CHECK_SAME("mouse;cursor;move@0,300;show;pointer;pointer/back;flip;", scene.Frame(20));
 }
 
 TEST(GameUpdate3Draw, AViewDrawingItsOwnRequestHidesThePointer)
@@ -1275,6 +1278,8 @@ TEST(GameUpdate3Draw, TheLastFrameIsCopiedToTheBackBufferFromTheCornerToTheGameR
 	Scene scene;
 	scene.Zoneless();
 	scene.Frame(0);
+	const size_t pixels = 800 * 600;		// Picture() is empty if the lock fails
+	CHECK_EQ(pixels, Picture(scene.last).size());
 	CHECK(Picture(scene.back) == Picture(scene.last));
 	int ms = 0;
 	for (RECT rect : {RECT{0, 0, 100, 50}, RECT{7, 9, 100, 50}})
@@ -1282,6 +1287,8 @@ TEST(GameUpdate3Draw, TheLastFrameIsCopiedToTheBackBufferFromTheCornerToTheGameR
 		g_GameRect = rect;
 		CHECK(scene.Frame(ms += 20).find("flip") != std::string::npos);
 		const std::vector<WORD> back = Picture(scene.back), last = Picture(scene.last);
+		CHECK(back.size() == pixels && last.size() == pixels);
+		if (back.size() != pixels || last.size() != pixels) continue;
 		int wrong = 0;
 		for (int y = 0; y < 600; ++y)
 			for (int x = 0; x < 800; ++x)
