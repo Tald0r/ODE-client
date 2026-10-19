@@ -166,10 +166,11 @@ void platform_sleep(DWORD ms) {
  * Thread/Mutex/Event/Dynamic-Library Functions
  * ============================================================================ */
 /* platform_thread_t/platform_mutex_t/platform_event_t/platform_lib_t are
-   real Win32 HANDLE/HMODULE on PLATFORM_WINDOWS (see Platform.h) - callers
-   like MWorkThread.cpp rely on that (e.g. casting platform_thread_create()'s
-   result straight to HANDLE, and creating its event members with the real
-   CreateEvent() while closing them via platform_event_close()). The SDL
+   real Win32 HANDLE/HMODULE on PLATFORM_WINDOWS (see Platform.h) - the
+   loading thread, MWorkThread.cpp (retired, task 4.263), relied on that
+   (e.g. casting platform_thread_create()'s result straight to HANDLE,
+   and creating its event members with the real CreateEvent() while
+   closing them via platform_event_close()). The SDL
    versions below return SDL_Thread pointers, SDL_mutex pointers, and
    platform_event_s pointers, which are not interchangeable with those -
    so on Windows this needs a genuine
@@ -221,7 +222,7 @@ void platform_event_close(platform_event_t event) {
    them (code needing real synchronization primitives/event
    creation/dynamic loading on Windows uses the native
    CreateMutex/CreateEvent/SetEvent/LoadLibrary APIs directly instead of
-   this abstraction layer, as MWorkThread.cpp does). */
+   this abstraction layer, as MWorkThread.cpp did). */
 
 #else /* !PLATFORM_WINDOWS */
 

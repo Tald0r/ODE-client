@@ -443,7 +443,12 @@ check () {
 # 9: the UI's messages join gameclient (4.258).
 # 7: the view, MTopView and its drawing, joins gameclient (4.260).
 # 6: the game's frame loop, CGameUpdate, joins gameclient (4.261).
-R1_BASELINE=6
+# 5: the mode changes, sounds, zone loads and disconnect, GameMain, join
+# gameclient (4.262).
+# 4: the loading thread nothing starts, MWorkThread, retired (4.263).
+# 3: the wave-pack manager nothing creates, WavePackFileManager (compiled
+# on Windows only), retired (4.263); the MSVC and Ninja counts now agree.
+R1_BASELINE=3
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -472,11 +477,12 @@ if [ -n "$R1_VCXPROJ" ]; then
 elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# The Ninja generator (the Linux and macOS presets): the same count,
 	# read from build.ninja's object rules for the DarkEden target. Its
-	# own baseline, because the non-Windows source list is one file
+	# own baseline, because the non-Windows source list was one file
 	# shorter: of CMakeLists.txt's NOT WIN32 filters only
-	# WavePackFileManager matches anything the glob yields (GetWinVer has
+	# WavePackFileManager matched anything the glob yields (GetWinVer has
 	# been gamemodel's since task 4.251; the Immersion, D3D, EXECryptor
-	# and VolumeOut patterns match no file at all). Before
+	# and VolumeOut patterns match no file at all). Task 4.263 retired it,
+	# so the two lists are the same files now. Before
 	# this branch existed the ratchet SKIPPED on every non-MSVC tree,
 	# which the port assessment listed as fail-open (area A). build.ninja
 	# is rewritten on every configure, so its mtime is the configure time.
@@ -719,7 +725,10 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 8: the UI's messages join gameclient (4.258).
 	# 6: the view, MTopView and its drawing, joins gameclient (4.260).
 	# 5: the game's frame loop, CGameUpdate, joins gameclient (4.261).
-	R1_NINJA_BASELINE=5
+	# 4: the mode changes, sounds, zone loads and disconnect, GameMain, join
+	# gameclient (4.262).
+	# 3: the loading thread nothing starts, MWorkThread, retired (4.263).
+	R1_NINJA_BASELINE=3
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameclient_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

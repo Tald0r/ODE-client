@@ -36,6 +36,7 @@
 #include "VS_UI.h"
 #include "VS_UI_filepath.h"
 #include "CGameUpdate.h"
+#include "GameMain.h"
 #include "CWaitPacketUpdate.h"
 #include "UserInformation.h"
 #include "TempInformation.h"
@@ -167,7 +168,6 @@
 #include "RequestUserManager.h"
 #include "MJusticeAttackManager.h"
 #include "Profiler.h"
-#include "WavePackFileManager.h"
 //#include "MFileDef.h"
 #include "MGuildInfoMapper.h"
 #include "PCConfigTable.h"
@@ -1015,21 +1015,6 @@ InitSound()
 	// Debug Message
 	DEBUG_ADD("[ InitGame ]  InitSound");
 
-	//--------------------------------------------------------
-	//
-	//                 DirectSound
-	//
-	//--------------------------------------------------------
-	/*
-	if (g_pWavePackFileManager==NULL)
-	{
-		g_pWavePackFileManager = new WavePackFileManager;
-
-		g_pWavePackFileManager->LoadFromFileInfo(FILE_WAVE_PACK_SOUND_INDEX);
-		g_pWavePackFileManager->SetDataFilename(FILE_WAVE_PACK_SOUND);
-	}
-	*/
-
 	if (g_SDLAudio.IsInit())
 	{
 		DEBUG_ADD("[ InitGame ]  Already Init");
@@ -1395,100 +1380,8 @@ InitDraw()
 	return TRUE;
 }
 
-//-----------------------------------------------------------------------------
-// LoadingThreadProc
-//-----------------------------------------------------------------------------
-LONG
-LoadingThreadProc(LPVOID lpParameter)
-{
-	(void)lpParameter;
-	if (g_pLoadingThread!=NULL)
-	{
-		g_pLoadingThread->Execute();
-	}
-
-	return 0L;
-}
-
-//-----------------------------------------------------------------------------
-// Init Thread
-//-----------------------------------------------------------------------------
-BOOL
-InitThread()
-{
-	// Debug Message
-	DEBUG_ADD("[ InitGame ]  Thread");
-
-	/*
-	DWORD	dwChildThreadID;
-
-	// init event for nonsignaled
-	g_hFileEvent = CreateEvent(NULL, TRUE, FALSE, NULL);	
-
-	g_hFileThread = CreateThread(NULL, 
-								0,	// default stack size
-								(LPTHREAD_START_ROUTINE)FileThreadProc,
-								NULL,
-								NULL,
-								&dwChildThreadID);
-
-	SetThreadPriority(g_hFileThread, 
-						//THREAD_PRIORITY_NORMAL
-						THREAD_PRIORITY_BELOW_NORMAL
-						);
-	*/
-
-	if (g_pLoadingThread!=NULL)
-	{
-		delete g_pLoadingThread;
-	}
-	g_pLoadingThread = new MWorkThread;
-	g_pLoadingThread->Init( (LPTHREAD_START_ROUTINE)LoadingThreadProc );
-
-	g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-
-	return TRUE;
-}
-
-//---------------------------------------------------------------------------
-// Stop LoadingThread
-//---------------------------------------------------------------------------
-void
-StopLoadingThread()
-{
-	//-------------------------------------------------------------
-	// Loading 중이던것 모두 제거
-	//-------------------------------------------------------------
-	if (g_pLoadingThread!=NULL)
-	{
-		DEBUG_ADD_FORMAT("Thread-ReleaseWork: size=%d, working=%d, finish=%d, stop=%d", 
-									g_pLoadingThread->GetSize(),
-									(int)g_pLoadingThread->IsWorking(),
-									(int)g_pLoadingThread->IsFinishCurrentWork(),
-									(int)g_pLoadingThread->IsStopWork());
-		
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_HIGHEST );
-		g_pLoadingThread->ReleaseWork();
-		g_pLoadingThread->SetPriority( THREAD_PRIORITY_LOWEST );
-
-		//-------------------------------------------------------------
-		// 작업 중지가 끝날때까지 기다림
-		//-------------------------------------------------------------
-		DEBUG_ADD_FORMAT("Thread-WaitingForStop: size=%d, working=%d, finish=%d, stop=%d", 
-									g_pLoadingThread->GetSize(),
-									(int)g_pLoadingThread->IsWorking(),
-									(int)g_pLoadingThread->IsFinishCurrentWork(),
-									(int)g_pLoadingThread->IsStopWork());
-		
-		while (g_pLoadingThread->IsStopWork());
-
-		DEBUG_ADD("Thread-End Waiting");
-	}
-}
-
-// The packet wait's services (task 4.209).
-CWaitPacketUpdate*		g_pCWaitPacketUpdate = NULL;
-
+// The packet wait's services (task 4.209); g_pCWaitPacketUpdate is
+// CWaitPacketUpdate.cpp's (gamemodel) since task 4.262.
 static const CWaitPacketHost s_WaitPacketHost = {
 	.ClearInputReceivers = []() {
 		g_pSDLInput->SetMouseEventReceiver( NULL );
@@ -1529,6 +1422,15 @@ static const CGameUpdateHost s_GameUpdateHost = {
 	.UpdateSocketOutput = UpdateSocketOutput,
 	.SetMode = SetMode,
 	.GetCursorPoint = GetGameCursorPoint,
+};
+
+// GameMain's (task 4.262): what its mode changes, zone loads and disconnect
+// need from the executable. InitGameObject installs it.
+static const GameMainHost s_GameMainHost = {
+	.InitDraw = InitDraw,
+	.InitSurface = InitSurface,
+	.InitSound = InitSound,
+	.ReleaseSocket = ReleaseSocket,
 };
 
 //---------------------------------------------------------------------------
@@ -1823,8 +1725,6 @@ InitGame()
 	if (!InitInput()) return false;
 	// if (!InitSound()) return false;
 	if (!InitDraw()) return false;
-
-	// InitThread() // 2001.8.20 주석처리 - 로딩 Thread사용 안함
 
 	// GameObject must be initialized before Surface
 	// because gC_vs_ui.Init() in InitSurface() depends on g_pMoneyManager
@@ -2310,28 +2210,6 @@ void ReleaseAllObjects()
 	}
 
 	//----------------------------------------------------------------
-	//
-	//				 thread
-	//
-	//----------------------------------------------------------------
-	/*
-	if (g_hFileThread != 0)
-	{
-		StopFileThread();
-		TerminateThread(g_hFileThread, 0);
-		CloseHandle(g_hFileEvent);
-	}
-	*/
-	DEBUG_ADD("[Release] Work Thread");
-
-	if (g_pLoadingThread!=NULL)
-	{
-		delete g_pLoadingThread;
-		g_pLoadingThread = NULL;
-	}
-
-	
-	//----------------------------------------------------------------
 	// 
 	//		Global 정보 제거
 	//
@@ -2436,12 +2314,6 @@ void ReleaseAllObjects()
 
 	SAFE_DELETE( g_pZoneSoundTable );
 	SAFE_DELETE( g_pZoneSoundManager );
-#ifdef PLATFORM_WINDOWS
-	// WavePackFileManager.cpp is Windows-only (mmio); off Windows the class's
-	// vtable is never emitted, the pointer is never set, and UBSan's vptr
-	// check on this virtual delete would need the typeinfo to link.
-	SAFE_DELETE( g_pWavePackFileManager );
-#endif
 	
 	DEBUG_ADD("[Release] Sound");
 
@@ -3588,8 +3460,6 @@ static const CommunicationPresentation::Host s_CommunicationPresentationHost = {
 extern bool g_bEventQuestEnding;
 extern void SetFlagTo( bool bTae );
 
-extern WORD g_MyBatColorSet;	// GameMain.cpp's
-
 static const ZoneLoading::Host s_ZoneLoadingHost = {
 	.RemoveZoneEvents = []() { g_pEventManager->RemoveAllEventByType(EVENTTYPE_ZONE); },
 	.LoadAllAddonSprites = []() { LoadingAddonSPK( true ); },
@@ -3642,7 +3512,6 @@ static const ZoneLoading::Host s_ZoneLoadingHost = {
 	.StampFrameClock = StampFrameClock,
 	.MillisecondsToFrames = [](std::uint32_t ms) -> std::uint32_t { return ConvertMillisecondToFrame( ms ); },
 	.AdvanceFrame = [](int frames) { g_CurrentFrame += frames; },
-	.SetMyBatColorSet = [](std::uint16_t colorSet) { g_MyBatColorSet = colorSet; },
 	.ShowPlayerHP = []() { UI_SetHP( g_pPlayer->GetHP(), g_pPlayer->GetMAX_HP() ); },
 	.EnterWaitSetPositionMode = []() { SetMode( MODE_WAIT_SETPOSITION ); },
 };
@@ -4807,7 +4676,6 @@ static const UIMessages::Host s_UIMessagesHost = {
 	.InitSocket = InitSocket,
 	.LoadingAddonSPK = LoadingAddonSPK,
 	.ReleaseGameObject = ReleaseGameObject,
-	.StopLoadingThread = StopLoadingThread,
 	.SaveLastSelectedCharacter = SaveLastSelectedCharacter,
 	.SetMode = SetMode,
 	.GetSelectedCreature = []() { return g_pTopView->GetSelectedCreature(); },
@@ -5099,6 +4967,8 @@ InitGameObject()
 	UiRuntime::SetHost(&s_UiRuntimeHost);
 	GameUI::SetHost(&s_GameUIHost);
 	UIMessages::SetHost(&s_UIMessagesHost);
+	// Before InitGame's first call into GameMain (CheckInvalidProcess).
+	SetGameMainHost(&s_GameMainHost);
 
 	if (g_pPCTalkBox==NULL)
 	{

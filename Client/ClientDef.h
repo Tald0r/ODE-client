@@ -106,7 +106,6 @@ extern BOOL		LoadZone(int n);
 extern BOOL		LoadZoneInfo(int n);
 extern void		MoveZone(int n);
 extern BOOL		LoadCreature(int spriteType);
-extern BOOL		LoadCreatureType(int creatureType);
 extern void		ReleaseUselessCreatureSPKExcept(const COrderedList<int>& listUse);
 
 //-----------------------------------------------------------------------------

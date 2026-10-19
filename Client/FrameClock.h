@@ -25,3 +25,8 @@ extern bool							g_bFrameChanged;
 // (Client.cpp) and the game loop prints when the FPS option is on. The
 // executable's until task 4.261.
 extern int							g_FrameRate;
+
+// Whether that rate is at least the good rate (15): the main loop sets it
+// once a second, and GameMain's sounds play with it. The executable's until
+// task 4.262.
+extern bool							g_bGoodFPS;

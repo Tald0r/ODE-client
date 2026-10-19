@@ -170,9 +170,10 @@ skills' shows, the login and waiting screens' update loop,
 UI, `GameUI` (the `UI_` functions), behind `GameUI::Host`, and the UI's
 results turned into packets, `UIMessageManager`, behind `UIMessages::Host`,
 the world view, `MTopView` (its packs, picking and every draw), and the
-in-game frame loop, `CGameUpdate`, behind `CGameUpdateHost`; membership in
-`tests/arch/gameclient_files.txt`, tasks 4.252, 4.253, 4.255 to 4.258,
-4.260 and 4.261),
+in-game frame loop, `CGameUpdate`, behind `CGameUpdateHost`, and the game's
+main functions, `GameMain` (modes, sounds, music, zones), behind
+`GameMainHost`; membership in `tests/arch/gameclient_files.txt`, tasks 4.252,
+4.253, 4.255 to 4.258 and 4.260 to 4.262),
 `framelib`, `TextSystem`, `VS_UI`, and `packetwire` — the whole wire layer: the
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the

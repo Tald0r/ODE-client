@@ -86,10 +86,11 @@ const LONG SOUND_DEGREE = SOUND_RANGE / 15;
 
 /* FOURCC/HMMIO: skip our compat typedefs if the real <mmsystem.h>/
    <mmiscapi.h> was already included earlier in this translation unit
-   (WavePackFileManager.cpp includes <MMSystem.h> before CDirectSound.h on
-   Windows; CMP3.cpp and MMusic.cpp's MCI branches did until tasks 4.214
-   and 4.215 retired them) - defining both is an
-   incompatible redefinition (error C2371/C2011). _INC_MMSYSTEM and
+   (WavePackFileManager.cpp, CMP3.cpp and MMusic.cpp's MCI branches
+   included <MMSystem.h> before CDirectSound.h on Windows until tasks
+   4.263, 4.215 and 4.214 retired them; none includes it directly now, but
+   a <windows.h> without WIN32_LEAN_AND_MEAN still can) - defining both is
+   an incompatible redefinition (error C2371/C2011). _INC_MMSYSTEM and
    _MMISCAPI_H_ are those headers' own include guards. */
 #if !defined(_INC_MMSYSTEM) && !defined(_MMISCAPI_H_)
 /* Forward declarations */
@@ -101,9 +102,9 @@ typedef void* HMMIO;
    Deliberately NOT named MMCKINFO: the real <mmsystem.h> struct has five
    members in a different order (ckid, cksize, fccType, dwDataOffset,
    dwFlags), so a translation unit mixing the two names across a call
-   boundary would read every field at the wrong offset. Code that parses
-   RIFF chunks with the real mmio API (WavePackFileManager.cpp) uses the
-   real MMCKINFO from <mmsystem.h> instead. */
+   boundary would read every field at the wrong offset. The one file that
+   parsed RIFF chunks with the real mmio API, WavePackFileManager.cpp
+   (retired, task 4.263), used the real MMCKINFO from <mmsystem.h>. */
 typedef struct _DXLIB_CKINFO {
     FOURCC  ckid;
     FOURCC  fccType;

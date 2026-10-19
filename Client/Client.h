@@ -50,7 +50,6 @@
 
 #include "MScreenEffectManager.h"
 
-#include "MWorkThread.h"
 #include "SpriteLib/MLoadingSPKWorkNode.h"
 #include "MItem.h"
 #include "SpriteLib/CStorageSurface.h"
@@ -74,7 +73,7 @@ class Player;
 #define	UPDATER_FILENAME			"Updater.exe"
 #define	UPDATER_NEW_FILENAME		"Updater2.exe"
 
-#define	MAX_NPC						100
+// MAX_NPC is GameMain.h's (gameclient) since task 4.262.
 #define	MAX_IMAGEOBJECT				0
 #define	MAX_ANIMATIONOBJECT			0
 #define	MAX_INTERACTIONOBJECT		0
@@ -101,8 +100,8 @@ class Player;
 // 100 --> 10 Frame
 // 111 --> 9 Frame
 #define	LIMIT_FPS_FOR_CURSOR	24		// 부드러운(?) 커서 출력을 위한 최소FPS
-#define	DELAY_UPDATE_LOGIN		20
-#define	DELAY_UPDATE_WAITING	50
+// DELAY_UPDATE_LOGIN and DELAY_UPDATE_WAITING are ClientMode.h's (gamemodel)
+// since task 4.262.
 #define	DELAY_UPDATE_GAME		62//62  렝岺속醵홍애긴좆
 
 #define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
@@ -177,8 +176,6 @@ extern bool				g_bGoodFPS;
 	extern CMessageArray*		g_pDebugMessage;
 #endif
 
-extern bool					g_bPutMessage;		// 화면에 debug메세지를 출력할까?
-	
 extern bool					g_bNetStatusGood;	// 네트웍 상태가 좋은가?
 
 extern CMessageArray*		g_pSystemMessage;
@@ -189,22 +186,6 @@ extern CMessageArray*		g_pGameMessage;
 extern CMessageArray*		g_pHelpMessage;
 extern CMessageArray*		g_pNoticeMessage;
 
-extern CSDLStream*	g_pSDLStream;
-
-// Thread
-extern MWorkThread*			g_pLoadingThread;
-//extern HANDLE				g_hFileThread;
-//extern HANDLE				g_hFileEvent;
-
-//enum THREADJOB
-//{			
-//	THREADJOB_NONE,
-//	THREADJOB_LOAD_IMAGEOBJECT_LARGEZONE,
-//	THREADJOB_LOAD_IMAGEOBJECT_SMALLZONE,
-//	THREADJOB_LOAD_CREATURE	
-//};
-	
-
 // Server IP
 //extern char				g_ServerIP[80];
 extern bool				g_bFullScreen;
@@ -214,7 +195,7 @@ extern bool				g_bMusicSW;
 
 extern CWinUpdate*				g_pUpdate;
 class CWaitPacketUpdate;
-extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;	// GameInit.cpp's
+extern CWaitPacketUpdate*		g_pCWaitPacketUpdate;	// CWaitPacketUpdate.cpp's
 
 
 
@@ -236,7 +217,6 @@ void		ReleaseSocket();
 void		ReleaseGameUpdate();
 void		ReleaseGameObject();
 void		UnInitSound();
-void		StopLoadingThread();
 
 BOOL		InitGame();
 
@@ -255,7 +235,6 @@ BOOL		InitUserOption();
 BOOL		InitVolume();
 BOOL		InitSurface();
 BOOL		InitTimer();
-BOOL		InitThread();
 BOOL		InitInfomation();
 BOOL		InitGameObject();
 BOOL		InitGameUpdate();
@@ -268,7 +247,6 @@ BOOL		LoadZone(int n);
 BOOL		LoadZoneInfo(int n);
 void		MoveZone(int n);
 BOOL		LoadCreature(int spriteType);
-BOOL		LoadCreatureType(int creatureType);
 void		PlaySound(TYPE_SOUNDID soundID, bool repeat, int x, int y);
 void		PlaySound(TYPE_SOUNDID soundID);
 // PlaySound's body, the host's (WorldEventsHost.h).
@@ -290,10 +268,6 @@ void		SelectLastSelectedCharacter();
 void		SaveLastSelectedCharacter( int slot );
 
 // GetMakeItemFitPosition: ClientFunction.h
-
-// thread
-//LONG		FileThreadProc(LPVOID lpParameter);
-//void		StopFileThread();
 
 // Etc
 void		MakeScreenShot();

@@ -30,9 +30,8 @@ struct Host
 	// Loads the add-on sprites, part of them or (bLoading) all.
 	bool (*LoadingAddonSPK)(bool bLoading) = nullptr;
 	// Releases the game's objects (the zone, the weather, the party...) on
-	// a logout, and stops the loading thread before it.
+	// a logout.
 	void (*ReleaseGameObject)() = nullptr;
-	void (*StopLoadingThread)() = nullptr;
 	// Remembers the character slot chosen, for the next character screen.
 	void (*SaveLastSelectedCharacter)(int slot) = nullptr;
 	// Enters the mode now, with its side effects.
