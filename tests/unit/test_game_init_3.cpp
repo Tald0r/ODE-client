@@ -2355,6 +2355,10 @@ TEST(GameInit3Start, TheTablesAndLogsThereAreKept)
 	CHECK(g_pHelpMessage == help && g_pNoticeMessage == notice);
 }
 
+// Off Windows only: there the game's display wraps the window the client
+// made (g_hWnd), which a test has none of, as test_game_init_1.cpp's
+// display tests are guarded too.
+#ifndef PLATFORM_WINDOWS
 //======================================================================
 // InitGame's steps past InitInfomation
 //======================================================================
@@ -2384,10 +2388,6 @@ std::vector<WORD> EffectTables()
 	return tables;
 }
 
-// Off Windows only: there the game's display wraps the window the client
-// made (g_hWnd), which a test has none of, as test_game_init_1.cpp's
-// display tests are guarded too.
-#ifndef PLATFORM_WINDOWS
 // The start-up as far as InitGameObject's version file: every table
 // InitInfomation reads (game_info_files.h's) under Data/Info, the regen
 // towers beside the data pack, options with the HAL on, the nicknames

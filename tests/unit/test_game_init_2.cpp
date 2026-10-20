@@ -1,3 +1,5 @@
+// <regex> first: a project macro included before it breaks MSVC's std::_Parser.
+#include <regex>
 #include "test_framework.h"
 #include "gamemodel_world.h"
 #include "type_table_access.h"
@@ -212,7 +214,6 @@
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <regex>
 #include <set>
 #include <sstream>
 #include <string>
