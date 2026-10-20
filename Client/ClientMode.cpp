@@ -25,6 +25,15 @@ HWND				g_hWnd = NULL;
 bool				g_bFullScreen = false;
 BYTE				g_macAddress[6] = { 0, };
 
+// The process's instance handle, which WinMain sets (NULL off Windows), and
+// the login server's address a Futec launcher passes on the command line
+// ("Futec(ip:port)", which GetFutecAddress reads), the executable's until
+// task 4.264. InitInput hands the handle to the input; InitSocket offers
+// the address to the login endpoint choice.
+HINSTANCE			g_hInstance;
+char				g_FutecIP[20] = { 0, };
+unsigned int		g_FutecPort = 0;
+
 // The loop's and the screen's state the waiting screens' update
 // (CWaitUIUpdate.cpp) reads and writes, the executable's until task 4.255:
 // the frames drawn, how many milliseconds a logic tick waits, whether the

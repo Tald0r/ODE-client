@@ -65,3 +65,10 @@ extern bool					g_bWatchMode;
 // executable's until task 4.258).
 extern DWORD				g_dwSeqNumL;
 extern DWORD				g_dwSeqNumG;
+
+// The process's instance handle, which WinMain sets (NULL off Windows), and
+// the login server's address a Futec launcher passed ("" and 0 without
+// one). The executable's until task 4.264.
+extern HINSTANCE			g_hInstance;
+extern char					g_FutecIP[20];
+extern unsigned int			g_FutecPort;

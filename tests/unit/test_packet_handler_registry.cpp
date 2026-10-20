@@ -51,9 +51,10 @@ bool ClientWrites(const std::string& name)
 }
 
 // Clears the dispatcher's table around a test that fills it. The registry
-// runs once per process (its own flag, which a clear does not reset), so
-// EveryReceivedPacketHasAHandler must be the first call in the process;
-// the framework runs a file's tests in order, and no other test calls it.
+// runs once per process (its own flag, which a clear does not reset);
+// InitSocket runs it too (test_game_init_2.cpp), so whichever reaches it
+// first keeps the fill (PacketDispatcherTestAccess::KeepRegistry) and
+// EveryReceivedPacketHasAHandler reads the registry's table either way.
 struct CleanTable
 {
 	CleanTable() { PacketDispatcherTestAccess::Clear(); }
@@ -66,6 +67,7 @@ TEST(PacketHandlerRegistry, EveryReceivedPacketHasAHandler)
 {
 	CleanTable clean;
 	registerClientPacketHandlers();
+	PacketDispatcherTestAccess::KeepRegistry();
 	AllFactories all;
 	CHECK(all.factories.size() > 400u);
 	const std::set<std::string> deliberatelyUnbound = {"RCConnectVerify", "RCRequestVerify", "RCRequestedFile"};

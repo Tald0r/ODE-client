@@ -147,8 +147,8 @@ CMessageStringTable g_MessageStringTable;
 //-----------------------------------------------------------------------------
 
 // REMOVED: nProtect anti-cheat code (SDL migration - no longer needed)
-// g_hWnd is gamemodel's (ClientMode.cpp) since task 4.253.
-HINSTANCE			g_hInstance;
+// g_hWnd is gamemodel's (ClientMode.cpp) since task 4.253, and g_hInstance
+// since task 4.264.
 // g_x and g_y are InputState.cpp's (gamemodel, task 4.247).
 //bool				g_bHALAvailable = false;
 DWORD				g_dwVideoMemory = 0;
@@ -167,10 +167,7 @@ MonotonicClock::TimePoint	g_StartTime		= MonotonicClock::Now();
 // 4.261 and 4.262.
 const int			g_FrameGood			= 15;
 
-void StampFrameClock()
-{
-	g_FrameNow = MonotonicClock::Now();
-}
+// StampFrameClock is FrameClock.cpp's (gamemodel) since task 4.264.
 
 // Execute Program --> bActiveApp
 // minimize | anotherWnd click--> !ActiveGame
@@ -192,18 +189,11 @@ DWORD				g_nProtectErrorMessage2 = 0;
 bool				g_bSuperUser			= false;
 
 // g_dwSeqNumL and g_dwSeqNumG are ClientMode.cpp's (gamemodel) since task 4.258.
-//WORD g_wAuthKeyMap = 0x28AA;
-//WORD g_wAuthKeyMap = 0x1455;
-//edit by sonic 2006.4.12
-//WORD g_wAuthKeyMap = 0xFFFFFFFF;
-//end
-WORD g_wAuthKeyMap = 0x5154;
 
 //#define				__WEB_BROWSER__
 // g_pWebBrowser is Vs_ui.cpp's (VS_UI) since task 4.256.
-// [Futec수정]
-char g_FutecIP[20] = { 0, };
-unsigned int g_FutecPort = 0;
+// g_FutecIP and g_FutecPort, the launcher's login server, are ClientMode.cpp's
+// (gamemodel) since task 4.264.
 // The advanced actions' frame counts are AdvancementAction.cpp's (gamemodel).
 
 enum DARKEDEN_LANGUAGE
@@ -3403,16 +3393,8 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 #endif
 	
 #ifdef DEBUG_INFO
-	switch(g_nKeyMapSelect)
-	{
-	case 0:
-		g_wAuthKeyMap = 0x5154;
-		break;
-	case 1:
-		break;
-	default:
-		break;
-	}
+	// (g_nKeyMapSelect chose g_wAuthKeyMap, which nothing read; both the
+	// switch and the global were deleted in task 4.264.)
 #elif defined(PLATFORM_WINDOWS)
 	// Windows only, all of it: closing a running launcher window,
 	// replacing Updater.exe, and the startup DLL whitelist. The

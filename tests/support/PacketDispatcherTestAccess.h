@@ -12,4 +12,39 @@ struct PacketDispatcherTestAccess
 		for (PacketID_t id = 0; id < Packet::PACKET_MAX; ++id)
 			PacketDispatcher::s_Handlers[id] = 0;
 	}
+
+	// registerClientPacketHandlers fills the table only the first time it
+	// runs in the process (its own flag, which Clear does not reset), and
+	// InitSocket runs it as well as the registry's own tests. Whoever ran
+	// it calls this next, on a table it cleared first: the first fill is
+	// kept, and a later run, which fills nothing, gets it back - so the
+	// table is the registry's whichever test reached it first.
+	static void KeepRegistry()
+	{
+		bool empty = true;
+		for (PacketID_t id = 0; id < Packet::PACKET_MAX && empty; ++id)
+			empty = PacketDispatcher::s_Handlers[id] == 0;
+		for (PacketID_t id = 0; id < Packet::PACKET_MAX; ++id)
+		{
+			if (empty && s_Kept)
+				PacketDispatcher::s_Handlers[id] = s_Registry[id];
+			else if (!empty && !s_Kept)
+				s_Registry[id] = PacketDispatcher::s_Handlers[id];
+		}
+		s_Kept = s_Kept || !empty;
+	}
+
+	// Whether a fill has been kept: the registry has run in the process.
+	static bool Kept() { return s_Kept; }
+
+	static bool Empty()
+	{
+		for (PacketID_t id = 0; id < Packet::PACKET_MAX; ++id)
+			if (PacketDispatcher::s_Handlers[id] != 0) return false;
+		return true;
+	}
+
+private:
+	static inline bool s_Kept = false;
+	static inline PacketDispatcher::HandlerFn s_Registry[Packet::PACKET_MAX] = {};
 };

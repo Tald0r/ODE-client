@@ -448,7 +448,8 @@ check () {
 # 4: the loading thread nothing starts, MWorkThread, retired (4.263).
 # 3: the wave-pack manager nothing creates, WavePackFileManager (compiled
 # on Windows only), retired (4.263); the MSVC and Ninja counts now agree.
-R1_BASELINE=3
+# 2: the start-up and the teardown, GameInit, join gameclient (4.264).
+R1_BASELINE=2
 
 R1_VCXPROJ=""
 for candidate in "$BUILD_DIR/DarkEden.vcxproj" "build/vs2022/DarkEden.vcxproj"; do
@@ -728,7 +729,8 @@ elif [ -n "$BUILD_DIR" ] && [ -f "$BUILD_DIR/build.ninja" ]; then
 	# 4: the mode changes, sounds, zone loads and disconnect, GameMain, join
 	# gameclient (4.262).
 	# 3: the loading thread nothing starts, MWorkThread, retired (4.263).
-	R1_NINJA_BASELINE=3
+	# 2: the start-up and the teardown, GameInit, join gameclient (4.264).
+	R1_NINJA_BASELINE=2
 	R1_NINJA="$BUILD_DIR/build.ninja"
 	if [ CMakeLists.txt -nt "$R1_NINJA" ] || [ tests/arch/packetwire_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gamemodel_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameview_files.txt -nt "$R1_NINJA" ] || [ tests/arch/gameclient_files.txt -nt "$R1_NINJA" ]; then
 		echo "FAIL R1: $BUILD_DIR was configured before CMakeLists.txt or a library membership file last changed - reconfigure that tree first"

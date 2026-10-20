@@ -82,10 +82,8 @@ class Player;
 
 // DebugMessage
 #define	MAX_DEBUGMESSAGE	25
-#define	MAX_SYSTEMMESSAGE	5
-#define MAX_PLAYERMESSAGE	5
-#define	MAX_GAMEMESSAGE		5
-#define	MAX_HELPMESSAGE		5
+// MAX_SYSTEMMESSAGE, MAX_PLAYERMESSAGE, MAX_GAMEMESSAGE and MAX_HELPMESSAGE
+// are GameInit.h's (gameclient) since task 4.264.
 
 
 //------------------------------------------------------------
@@ -226,7 +224,6 @@ void		CheckActivate(BOOL bActiveGame);
 // Init DX..
 BOOL		InitInput();
 BOOL		InitSound();
-BOOL		InitMusic();
 BOOL		InitDraw();
 
 // Init Other
