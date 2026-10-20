@@ -44,7 +44,7 @@ For in-game logout, inspect the caller into `ExecuteLogout` in
 handlers before attributing a failure to transport or cleanup order. This map
 records inspection points, not a successful logout regression run.[^logout-flow][^mode-flow]
 
-Browser process exit has another path: `BrowserFrame` in `Client/Client.cpp`
+Browser process exit has another path: `BrowserFrame` in `Client/ClientMain.cpp`
 ends the Emscripten loop and finishes client cleanup; the launcher's `onExit`
 flushes settings and displays its reload message. Settings persistence and a
 WebSocket close are not evidence of server account cleanup.[^browser-loop][^launcher]

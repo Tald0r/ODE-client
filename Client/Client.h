@@ -61,17 +61,10 @@ class Player;
 //-----------------------------------------------------------------------------
 // Definitions
 //-----------------------------------------------------------------------------
-#ifdef __YHDK2__
-#define PROGRAM_NAME                "YHDK2"
-#define PROGRAM_TITLE               "YHDK2"
-#else
-#define PROGRAM_NAME                "TTDK2"
-#define PROGRAM_TITLE               "TTDK2"
-#endif
+// PROGRAM_NAME, PROGRAM_TITLE, UPDATER_FILENAME and UPDATER_NEW_FILENAME
+// are ClientMain.cpp's (gameclient) since task 4.265.
 
 #define	PROGRAM_FILENAME			"fengshen.exe"
-#define	UPDATER_FILENAME			"Updater.exe"
-#define	UPDATER_NEW_FILENAME		"Updater2.exe"
 
 // MAX_NPC is GameMain.h's (gameclient) since task 4.262.
 #define	MAX_IMAGEOBJECT				0
@@ -289,6 +282,4 @@ extern BYTE g_AdvanceVampireActionMaxCount[ ACTION_ADVANCEMENT_MAX - ACTION_ADVA
 extern BYTE g_AdvanceSlayerActionMaxCount[ ACTION_ADVANCEMENT_SLAYER_MAX - ACTION_ADVANCEMENT_SLAYER_STOP_SWORD ];
 extern BYTE g_AdvanceOustersActionMaxCount[ ACTION_ADVANCEMENT_OUSTERS_MAX - ACTION_ADVANCEMENT_OUSTERS_CHAKRAM_STOP ];
 
-//Add by sonic 2006.7.29
-BOOL		GetSystem();
 #endif

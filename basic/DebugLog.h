@@ -145,7 +145,7 @@ void log_write(LogLevel level, const char* file, int line, const char* format, A
 // A test can observe direct calls without initialising
 // the logging system, moving the level or redirecting the output. The
 // observer is NULL in every shipped build and nothing else about logging
-// changes; tests/unit/test_source_location_diagnostics.cpp is the only user.
+// changes; only tests set one.
 //-----------------------------------------------------------------------------
 typedef void (*LogSiteObserver)(const LogSite &site, LogLevel level);
 

@@ -9,6 +9,8 @@ Client/CGameUpdate.cpp
 Client/CGameUpdate.h
 Client/CWaitUIUpdate.cpp
 Client/CWaitUIUpdate.h
+Client/ClientMain.cpp
+Client/ClientMain.h
 Client/DrawItemNameNode.h
 Client/DrawTextNode.h
 Client/GameInit.cpp
@@ -21,6 +23,7 @@ Client/GameMain.h
 Client/GameUI.cpp
 Client/GameUIBuilders.h
 Client/GuildMarkTypes.h
+Client/MFileDef.h
 Client/MGuildMarkManager.h
 Client/MHelpManager.h
 Client/MTopView.cpp
@@ -34,3 +37,4 @@ Client/UIFunction.h
 Client/UIMessageManager.cpp
 Client/UIMessageManager.h
 Client/UserOption.h
+Client/resource.h

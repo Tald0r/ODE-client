@@ -692,7 +692,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	)
 
 	# No SDL2main here on any platform. On Windows it would collide with
-	# Client/Client.cpp's own WinAPI WinMain (the deleted VS_UI/WinMain.cpp
+	# Client/SDLMain.cpp's own WinAPI WinMain (the deleted VS_UI/WinMain.cpp
 	# used to duplicate this reasoning); on Linux and macOS <SDL_main.h>
 	# leaves main() alone, so the
 	# library is empty there and the target is one a package may not
@@ -948,9 +948,10 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	)
 
 	target_link_libraries(gameclient PUBLIC gameview VS_UI gamemodel dxlib SpriteLib framelib)
-	# PacketFunction's Windows MAC address lookup calls Netbios.
+	# PacketFunction's Windows MAC address lookup calls Netbios, and
+	# ClientMain's patch progress bar InitCommonControls.
 	if(WIN32)
-		target_link_libraries(gameclient PUBLIC netapi32)
+		target_link_libraries(gameclient PUBLIC netapi32 comctl32)
 	endif()
 
 	message(STATUS "gameclient library: ${_gameclient_count} sources from tests/arch/gameclient_files.txt")
@@ -1068,16 +1069,16 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		# ProfileManager needed on all platforms
 		# list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*ProfileManager\\.cpp")
 		list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX ".*VolumeOut.*\\.cpp")
-		# Exclude Windows-specific WinMain files. Client/Client.cpp is not
-		# filtered any more: its WinMain is behind PLATFORM_WINDOWS and the
-		# rest of the file is ClientMain, the game's startup on every
-		# platform (the port assessment's area D); SDLMain.cpp supplies
-		# main() off Windows and calls it.
+		# Exclude Windows-specific WinMain files. Client/SDLMain.cpp is not
+		# one: its WinMain is behind PLATFORM_WINDOWS and its main() is the
+		# entry point off Windows; both call ClientMain (gameclient's
+		# Client/ClientMain.cpp), the game's startup on every platform (the
+		# port assessment's area D).
 		list(FILTER CLIENT_MAIN_SOURCES EXCLUDE REGEX "WinLib/CWinMain\\.cpp")
 	endif()
 
 	# Add DarkEden executable
-	# WIN32 keyword required on Windows: Client/Client.cpp (compiled into the
+	# WIN32 keyword required on Windows: Client/SDLMain.cpp (compiled into the
 	# executable) defines a real WinAPI WinMain, so the exe must link as a GUI
 	# subsystem app (not console/main).
 	if(WIN32)
@@ -1154,7 +1155,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	endif()
 
 	# SDL2main is not linked on any platform. On Windows it provides a
-	# WinMain that forwards to SDL_main(), and Client/Client.cpp defines
+	# WinMain that forwards to SDL_main(), and Client/SDLMain.cpp defines
 	# WinMain directly (not via the SDL_main macro convention), so the two
 	# would collide (LNK2005). On Linux and macOS <SDL_main.h> does not
 	# rename main() - SDL_MAIN_NEEDED and SDL_MAIN_AVAILABLE are defined
@@ -1178,7 +1179,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	# produce and what tools/ci/verify-linux.sh runs. With the option on,
 	# bin/DarkEden.app is built instead and the game looks for its data
 	# in the bundle's Resources directory and then beside the bundle
-	# (Client/Client.cpp, the data-root search off Windows). The plist
+	# (Client/ClientMain.cpp, the data-root search off Windows). The plist
 	# keys: NSHighResolutionCapable so a Retina display gives the SDL
 	# window a backing store at native scale rather than a magnified
 	# one, and the identifier the OS keys its preferences and its

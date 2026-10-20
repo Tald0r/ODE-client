@@ -2,10 +2,12 @@
 
 	SDLMain.cpp
 
-	The entry point on Linux and macOS: main() hands the launch argument
-	to ClientMain (Client.cpp), which is WinMain's body and runs on every
-	platform - the command line, the working directory, the file
-	definitions, the language, InitApp, the frame loop and the shutdown.
+	The executable's entry points: WinMain() on Windows, main() on Linux,
+	macOS and the browser. Each installs the real ClientHost and hands the
+	launch argument to ClientMain (ClientMain.cpp, in the gameclient
+	library), which runs on every platform - the command line, the
+	working directory, the file definitions, the language, InitApp, the
+	frame loop and the shutdown.
 
 	This file used to be a hand-copied partial of that body, 572 lines
 	with about twenty globals re-declared at the wrong types (bool for a
@@ -18,14 +20,36 @@
 
 	2025.01.18 - rewritten from Client.cpp WinMain
 	2026-09-08 - reduced to the bootstrap
+	2026-10-19 - WinMain moved here from Client.cpp
 
 -----------------------------------------------------------------------------*/
 
 #include "Client_PCH.h"
 
-#ifndef PLATFORM_WINDOWS
-
 #include "ClientMain.h"
+
+#ifdef PLATFORM_WINDOWS
+
+#include "ClientMode.h"		// g_hInstance
+
+//-----------------------------------------------------------------------------
+// Name: WinMain()
+// Desc: The Windows entry point. Records the instance handle and hands
+//       the rest to ClientMain, which is this function's old body.
+//-----------------------------------------------------------------------------
+int PASCAL
+WinMain(HINSTANCE hInstance,
+        HINSTANCE hPrevInstance,
+        LPSTR lpCmdLine,
+        int nCmdShow)
+{
+	(void)hPrevInstance;
+	g_hInstance = hInstance;
+	ClientHost::SetHost(ClientHost::SystemHost());
+	return ClientMain(lpCmdLine, nCmdShow);
+}
+
+#else
 
 #include <SDL.h>
 #include <SDL_main.h>
@@ -64,6 +88,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	ClientHost::SetHost(ClientHost::SystemHost());
 	const int result = ClientMain(&commandLine[0], 1);
 
 #ifdef __EMSCRIPTEN__
