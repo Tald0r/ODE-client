@@ -891,6 +891,9 @@ struct DisplayScene
 };
 }
 
+// Off Windows only: there InitDraw's display wraps the client's own
+// window (g_hWnd), which a test has none of, and the run stops in it.
+#ifndef PLATFORM_WINDOWS
 TEST(GameInit1Draw, EachArmOpensOneDisplayOfItsSizeAndMode)
 {
 	struct Case { BOOL hal; bool fullScreen; BOOL large; WORD width, height; };
@@ -928,7 +931,6 @@ TEST(GameInit1Draw, EachArmOpensOneDisplayOfItsSizeAndMode)
 	}
 }
 
-#ifndef PLATFORM_WINDOWS
 TEST(GameInit1Draw, TheDisplayIsMadeOnce)
 {
 	// A window made and closed just before: the display's is the next one.
@@ -948,7 +950,6 @@ TEST(GameInit1Draw, TheDisplayIsMadeOnce)
 		if (*Get(WindowOf()) != NULL) CHECK_EQ(id + 1, SDL_GetWindowID(*Get(WindowOf())));
 	}
 }
-#endif
 
 TEST(GameInit1Draw, ItFillsTheScreenBlendTablesAndPicksThe565Gamma)
 {
@@ -967,6 +968,7 @@ TEST(GameInit1Draw, ItFillsTheScreenBlendTablesAndPicksThe565Gamma)
 		CHECK(*Get(GammaOf()) == &CDirectDrawSurface::Gamma4Pixel565);
 	}
 }
+#endif // PLATFORM_WINDOWS
 
 //----------------------------------------------------------------------
 // The surfaces

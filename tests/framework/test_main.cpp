@@ -12,6 +12,8 @@
 #if defined(_MSC_VER)
 #include <crtdbg.h>
 #include <stdlib.h>
+#else
+#include <stdlib.h>
 #endif
 
 namespace {
@@ -39,11 +41,30 @@ void	MakeFailuresNonInteractive()
 #endif
 }
 
+//----------------------------------------------------------------------
+// One video driver for the whole run.
+//
+// SDL's video, once started, stays up for the rest of the run, and the
+// first test to start it picks the driver. Unset, that is the desktop's
+// (cocoa on a macOS runner), whose windows open under the real cursor
+// and move SDL's mouse state, so a later test asking for the dummy
+// driver silently gets the desktop's instead. Off Windows the run takes
+// the dummy driver unless one is set; on Windows the dummy driver cannot
+// wrap the client's window, so the tests there keep the desktop's.
+//----------------------------------------------------------------------
+void	UseOneVideoDriver()
+{
+#if !defined(_WIN32)
+	setenv("SDL_VIDEODRIVER", "dummy", 0);
+#endif
+}
+
 } // namespace
 
 int	main()
 {
 	MakeFailuresNonInteractive();
+	UseOneVideoDriver();
 
 	return ::testfw::RunAll();
 }

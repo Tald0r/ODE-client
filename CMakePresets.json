@@ -154,7 +154,8 @@
     {
       "name": "windows-asan",
       "inherits": "windows-debug",
-      "configurePreset": "windows-asan"
+      "configurePreset": "windows-asan",
+      "execution": { "noTestsAction": "error", "timeout": 900 }
     },
     {
       "name": "linux",
