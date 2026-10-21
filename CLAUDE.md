@@ -536,7 +536,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
 | `VS_UI/` | UI framework — widgets, dialogs, skinning, Korean IME |
 | `basic/` | memory, exceptions, typedefs, platform abstraction |
 | `tests/` | framework and unit tests |
-| `docs/` | code health review; `RESTRUCTURING.md`, the extraction plan, complete as of 2026-09-09 - its *What the review rounds settled* section is the standing rulebook for library work |
+| `docs/` | the knowledge bundle ([index](docs/index.md)): one concept per rule, design, report or review, in folders by area; `docs/reviews/RESTRUCTURING.md` is the extraction plan, complete as of 2026-09-09, and its *What the review rounds settled* section is the standing rulebook for library work |
 
 ## Current focus
 
