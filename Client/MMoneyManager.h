@@ -52,7 +52,7 @@ class MMoneyManager {
 		static bool	DonationGold(std::int64_t units, int balance, std::uint32_t& outGold);
 
 		//-------------------------------------------------------
-		// Storage hint (docs/RESTRUCTURING.md task 4.2)
+		// Storage hint (docs/reviews/RESTRUCTURING.md task 4.2)
 		//
 		// The help system wants to know the first time a wallet
 		// passes 100,000, to suggest buying a storage box. The

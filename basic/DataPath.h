@@ -23,7 +23,7 @@
 	identity on Windows, where the live platform's opens stay
 	byte-identical, and ResolveDataPath elsewhere.
 
-	docs/linux-macos-port-assessment-2026-09-07.md, area F.
+	docs/build/linux-macos-port-assessment-2026-09-07.md, area F.
 
 -----------------------------------------------------------------------------*/
 
@@ -56,7 +56,7 @@ std::string	NormalizeDataPath(std::string_view sPath);
 // three directories below anything a user would put the data beside.
 // Client.cpp offers the working directory, the executable's directory
 // and the directory beside the bundle, in that order, and changes to the
-// first that has the data (docs/linux-macos-port-assessment-2026-09-07.md,
+// first that has the data (docs/build/linux-macos-port-assessment-2026-09-07.md,
 // areas F and G).
 std::string	FindDataRoot(const std::vector<std::string>& vCandidates, std::string_view sMarker);
 

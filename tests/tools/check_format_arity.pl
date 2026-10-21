@@ -11,7 +11,7 @@
 # puts a literal "%s" in the user interface, which is a visible bug where
 # the old code merely printed rubbish.
 #
-# So every conversion done for docs/RESTRUCTURING.md task 5.4 is checked
+# So every conversion done for docs/reviews/RESTRUCTURING.md task 5.4 is checked
 # here, against the built-in English table in Client/MGameStringTable.cpp.
 # That table is not a sample: InitGameStringTable() installs it over the
 # file data on the English path, so it is exactly what the default build

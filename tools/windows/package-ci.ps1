@@ -104,7 +104,7 @@ book and tutorial text); it merges with the assets, which stay Korean inside
 their archives, and the client prefers these loose files.
 SDL/codec runtime DLLs and dependency license notices are included.
 The OpenSSL DLLs (libssl-3-x64.dll, libcrypto-3-x64.dll) are for the optional
-native WebSocket transport (DARKEDEN_WEBSOCKET_URL, see docs/webgl-client.md).
+native WebSocket transport (DARKEDEN_WEBSOCKET_URL, see docs/browser/browser-client.md).
 Game assets and account settings are not included.
 
 BUILD-INFO.txt records the exact source revision and build environment.

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #----------------------------------------------------------------------
-# ratchets.sh - shrink-only ratchets (docs/RESTRUCTURING.md, task 0.2)
+# ratchets.sh - shrink-only ratchets (docs/reviews/RESTRUCTURING.md, task 0.2)
 #----------------------------------------------------------------------
 #
 # Each ratchet measures one axis of legacy debt. The baselines below are
 # the committed truth: a measurement ABOVE its baseline fails (debt may
 # not grow), and a measurement BELOW it also fails (progress must be
-# recorded - tighten the baseline here AND in docs/RESTRUCTURING.md's
+# recorded - tighten the baseline here AND in docs/reviews/RESTRUCTURING.md's
 # ratchet table in the same commit as the change that earned it).
 #
 # Run from anywhere; the script cd's to the repo root. Optional first
@@ -40,7 +40,7 @@ check () {
 		echo "FAIL $name: measured $measured > baseline $baseline - this change grows debt the ratchet exists to shrink"
 		FAIL=1
 	elif [ "$measured" -lt "$baseline" ]; then
-		echo "FAIL $name: measured $measured < baseline $baseline - progress! Record it: tighten the baseline in tests/ratchet/ratchets.sh AND docs/RESTRUCTURING.md in this same commit"
+		echo "FAIL $name: measured $measured < baseline $baseline - progress! Record it: tighten the baseline in tests/ratchet/ratchets.sh AND docs/reviews/RESTRUCTURING.md in this same commit"
 		FAIL=1
 	else
 		echo "OK   $name = $measured"
@@ -1008,7 +1008,7 @@ check "R5 (direct packet execute callers outside Client/Packet)" "$R5" "$R5_BASE
 # R7 - call sites that hand a game string table entry to printf as its
 # format argument.
 #
-# Finding C19 (docs/code-health-review-2026-08-29.md) as a number. Every
+# Finding C19 (docs/reviews/code-health-review-2026-08-29.md) as a number. Every
 # UI string in this client is read from Data/Info/String.inf, and at
 # each of these sites it is the *format* rather than an argument: an
 # entry carrying one %s more than the call site passes makes the CRT
@@ -1314,7 +1314,7 @@ R8_PATTERN="$R8_PATTERN|\\bAddFormat(VL)?[[:space:]]*\\([[:space:]]*[^\"L[:space
 R8_PATTERN="$R8_PATTERN|\\.Format[[:space:]]*\\([[:space:]]*[^\"L[:space:])]"
 
 # basic and the headers are in scope, unlike R7's. The row for this in
-# docs/RESTRUCTURING.md said "across Client, VS_UI and basic" while this
+# docs/reviews/RESTRUCTURING.md said "across Client, VS_UI and basic" while this
 # line said `find Client VS_UI -name '*.cpp'`, so the checked formatter
 # this task installs was itself never scanned, and neither was any
 # header - Client/MinTr.h alone holds 11 matches. A formatter defined
@@ -1333,7 +1333,7 @@ check "R8 (printf-family calls whose format is not a literal)" "$R8" "$R8_BASELI
 # The non-empty form was REMOVED in C++17 and the empty form deprecated;
 # MSVC accepts both and IGNORES the type list, which is why a permissive
 # MSVC C++20 build succeeds here where clang stops at the first one
-# (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, finding 3).
+# (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, finding 3).
 # A ratchet is the only instrument there is, because the BUILD says
 # nothing: the Debug log of this tree at /std:c++20 contains C4290 - the
 # warning CLAUDE.md names for the packet tree - exactly zero times, so

@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The effect and creature sprite tables through their real loaders and
-// writers, now that they are gamemodel members (docs/RESTRUCTURING.md
+// writers, now that they are gamemodel members (docs/reviews/RESTRUCTURING.md
 // task 4.1):
 //
 //   EffectSpriteType.inf        EFFECTSPRITETYPE_TABLE

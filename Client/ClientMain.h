@@ -8,7 +8,7 @@
 // the frame loop and the shutdown - with the Win32-only steps (the
 // single-instance mutex, the patcher hand-off, the DLL whitelist, the
 // message pump) behind PLATFORM_WINDOWS and their SDL equivalents in
-// the other branch (docs/linux-macos-port-assessment-2026-09-07.md,
+// the other branch (docs/build/linux-macos-port-assessment-2026-09-07.md,
 // area D). SDLMain.cpp used to carry a hand-copied partial of that
 // body instead, with about twenty globals re-declared at the wrong
 // types.

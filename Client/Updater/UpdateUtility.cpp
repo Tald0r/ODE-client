@@ -9,7 +9,7 @@
 #include "CFileIndexTable.h"
 // std::filesystem directory enumeration, in place of the _findfirst /
 // _findnext walks UUFDeleteDirectory() and UUFDeleteFiles() used to run
-// (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
+// (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
 // Included before the NULL redefinition below so that the standard
 // headers it pulls in see the compiler's own NULL.
 #include "DirectoryListing.h"

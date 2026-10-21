@@ -4,7 +4,7 @@
 //
 // MString::FormatChecked (Client/MString.h) - the checked sibling of
 // MString::Format, added by task 5.4's fifth slice
-// (docs/code-health-review-2026-08-29.md finding C19).
+// (docs/reviews/code-health-review-2026-08-29.md finding C19).
 //
 // Both Format entry points now preserve argument types. FormatChecked also
 // guarantees readable storage when the formatted result is empty.

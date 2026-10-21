@@ -19,7 +19,7 @@
 // port this client would dial it on, and a second map of names whose IP
 // had been asked of the game server and what for. All of that served
 // the outbound peer side - this client dialling peers - which upstream
-// had compiled out and docs/RESTRUCTURING.md task 5.2's eighth slice
+// had compiled out and docs/reviews/RESTRUCTURING.md task 5.2's eighth slice
 // deleted, together with RemoveRequestUser, RemoveRequestUserLater and
 // Update.
 //----------------------------------------------------------------------

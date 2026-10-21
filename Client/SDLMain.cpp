@@ -15,7 +15,7 @@
 	loop that presented the back buffer beside the one CSDLGraphics::Flip
 	already does. It had never had a green build to diverge from. The SDL
 	window is CSDLGraphics::Init's off Windows now, and the SDL event pump
-	is inside ClientMain's loop (docs/linux-macos-port-assessment-2026-09-07.md,
+	is inside ClientMain's loop (docs/build/linux-macos-port-assessment-2026-09-07.md,
 	area D).
 
 	2025.01.18 - rewritten from Client.cpp WinMain

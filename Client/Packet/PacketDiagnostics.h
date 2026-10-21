@@ -13,7 +13,7 @@
 //               composition root.
 //
 //               SendBugReport moved into this library with the rest of
-//               the wire layer's seams (docs/RESTRUCTURING.md task 5.1,
+//               the wire layer's seams (docs/reviews/RESTRUCTURING.md task 5.1,
 //               second slice), so the hook is no longer how a report
 //               gets out: with none installed, reportBug calls it
 //               directly, and it drops the report when the wire host

@@ -2,7 +2,7 @@
 // MObjectScreen.cpp - MObject's screen rectangles
 //----------------------------------------------------------------------
 // Split from MObject.cpp when the object base moved into gamemodel
-// (docs/RESTRUCTURING.md task 4.4), because these two members read the
+// (docs/reviews/RESTRUCTURING.md task 4.4), because these two members read the
 // draw interpolation state the game update kept. Since task 4.204 that
 // state (g_bInterpolateDraw, the camera gaps) is defined here, in
 // gamemodel, and the game update (CGameUpdate.cpp) sets it.

@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // What the wire layer needs from the program around it
-// (docs/RESTRUCTURING.md task 5.1).
+// (docs/reviews/RESTRUCTURING.md task 5.1).
 //
 // The receive loops and the connection managers under Client/Packet are
 // otherwise self-contained, but they read three tuning values out of
@@ -77,7 +77,7 @@ struct WireHost {
 	bool		(*EncryptUsesEnglishSeed)();
 
 	//------------------------------------------------------------------
-	// The request-service family (docs/RESTRUCTURING.md task 5.1's
+	// The request-service family (docs/reviews/RESTRUCTURING.md task 5.1's
 	// fourth slice) - the peer-to-peer side, where another client dials
 	// this one to fetch a profile file or deliver a whisper. Inbound
 	// only: the outbound half, this client dialling peers, was compiled

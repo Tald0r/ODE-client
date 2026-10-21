@@ -1,4 +1,4 @@
-# packetwire membership (docs/RESTRUCTURING.md tasks 1.1 and 2.4) - the
+# packetwire membership (docs/reviews/RESTRUCTURING.md tasks 1.1 and 2.4) - the
 # wire layer: streams, sockets, encrypter, info classes, every packet
 # class in every direction, and the factory/validator tables.
 #

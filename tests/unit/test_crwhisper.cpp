@@ -4,7 +4,7 @@
 //
 // CRWhisper, the whisper one client sends another over a direct
 // connection. This client no longer sends one - the outbound peer side
-// was compiled out upstream and is deleted (docs/RESTRUCTURING.md task
+// was compiled out upstream and is deleted (docs/reviews/RESTRUCTURING.md task
 // 5.2, seventh and eighth slices) - but it still receives them, the
 // class is pinned by tests/wire-layout.txt, and two defects found in it
 // on the way are kept from returning here.

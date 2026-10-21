@@ -2,7 +2,7 @@
 // test_inventory_storage_shop.cpp
 //----------------------------------------------------------------------
 //
-// The containers proper (docs/RESTRUCTURING.md task 4.3, second slice):
+// The containers proper (docs/reviews/RESTRUCTURING.md task 4.3, second slice):
 // MInventory, the player's grid, which merges piles and plays an
 // item's landing sound; MStorage, the numbered storage boxes with
 // their own wallet; MShopShelf, a shop's twenty slots and the factory

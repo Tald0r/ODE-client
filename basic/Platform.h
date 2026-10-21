@@ -87,7 +87,7 @@
    exports nothing above it, so <SDL2/SDL.h> resolves there only through
    a compiler default path - /usr/local/include on Intel, nothing on
    Apple Silicon. The tree used both spellings until the macOS step of
-   the port (docs/linux-macos-port-assessment-2026-09-07.md, area G). */
+   the port (docs/build/linux-macos-port-assessment-2026-09-07.md, area G). */
 #ifdef PLATFORM_USE_SDL
 	#include <SDL.h>
 #endif
@@ -1279,7 +1279,7 @@ void platform_event_close(platform_event_t event);
 	   caller left, RequestServerPlayerManager, calls TerminateThread
 	   only inside its PLATFORM_WINDOWS branch; the outbound manager
 	   that discarded the result and looped on GetExitCodeThread is
-	   deleted (docs/RESTRUCTURING.md task 5.2, eighth slice). The
+	   deleted (docs/reviews/RESTRUCTURING.md task 5.2, eighth slice). The
 	   request service is created on Windows only (GameInit.cpp), and
 	   the manager exists off Windows because it is a packetwire
 	   member. A real cancel needs a stop flag the thread function

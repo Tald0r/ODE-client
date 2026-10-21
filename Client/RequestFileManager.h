@@ -10,7 +10,7 @@
 //
 // The receive half - REQUEST_RECEIVE_MAP, the files this client had
 // asked a peer for, fed by the request client player's command loop -
-// went with the outbound peer side (docs/RESTRUCTURING.md task 5.2,
+// went with the outbound peer side (docs/reviews/RESTRUCTURING.md task 5.2,
 // eighth slice).
 //---------------------------------------------------------------------------
 
@@ -130,7 +130,7 @@ class RequestFileManager {
 
 		//--------------------------------------------------------------
 		// The receive half - files this client asked a peer for - went
-		// with the outbound peer side (docs/RESTRUCTURING.md task 5.2,
+		// with the outbound peer side (docs/reviews/RESTRUCTURING.md task 5.2,
 		// eighth slice), and the empty Update() with it.
 		//--------------------------------------------------------------
 		//--------------------------------------------------------------

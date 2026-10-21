@@ -1,5 +1,5 @@
 ﻿//----------------------------------------------------------------------
-// MItem.cpp - the item model (gamemodel; docs/RESTRUCTURING.md task 4.4)
+// MItem.cpp - the item model (gamemodel; docs/reviews/RESTRUCTURING.md task 4.4)
 //----------------------------------------------------------------------
 // The classes whose behaviour is pure game model: MItem itself and the
 // gear/armour/weapon families, whose members read the item and option

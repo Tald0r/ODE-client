@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #----------------------------------------------------------------------
 # check_includes.pl - include-graph architecture rules
-# (docs/RESTRUCTURING.md, tasks 0.3 and 2.4)
+# (docs/reviews/RESTRUCTURING.md, tasks 0.3 and 2.4)
 #----------------------------------------------------------------------
 #
 # Walks the quote-include closure of every packetwire member and fails
@@ -135,7 +135,7 @@ die "$members_file lists only " . scalar(@members) . " files - truncated?" unles
 }
 
 #----------------------------------------------------------------------
-# gamemodel (docs/RESTRUCTURING.md task 4.1) - the same discipline for
+# gamemodel (docs/reviews/RESTRUCTURING.md task 4.1) - the same discipline for
 # the second library. Its membership file lists .cpp members (what
 # CMake compiles) AND the .h files the closure may include, because
 # Client/ is not a library-only directory the way Client/Packet is.
@@ -166,7 +166,7 @@ my @gm_members;
 }
 
 #----------------------------------------------------------------------
-# gameview (docs/RESTRUCTURING.md task 4.248) - the view's drawing that
+# gameview (docs/reviews/RESTRUCTURING.md task 4.248) - the view's drawing that
 # reads the model and draws with SpriteLib, which gamemodel may not.
 #
 #   V0  As M0, for tests/arch/gameview_files.txt (no length floor yet).
@@ -189,7 +189,7 @@ my @gv_members;
 }
 
 #----------------------------------------------------------------------
-# gameclient (docs/RESTRUCTURING.md task 4.252) - the client that puts
+# gameclient (docs/reviews/RESTRUCTURING.md task 4.252) - the client that puts
 # the game together, which may use the UI and the view.
 #
 #   C0  As M0, for tests/arch/gameclient_files.txt, and not listed for

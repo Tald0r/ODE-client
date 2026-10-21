@@ -1896,7 +1896,7 @@ LoadSystemAvailabilities(SystemAvailabilitiesManager* pManager, const char* szFi
 
 //----------------------------------------------------------------------
 // The item model lives in gamemodel and cannot reach the animation
-// clock, the top view or the player (docs/RESTRUCTURING.md task 4.4);
+// clock, the top view or the player (docs/reviews/RESTRUCTURING.md task 4.4);
 // MItem asks through this host, installed in InitGameObject before any
 // item exists.
 //----------------------------------------------------------------------
@@ -2032,7 +2032,7 @@ static const MItemHost	s_ItemHost = {
 };
 
 //-----------------------------------------------------------------------------
-// The price manager's host (docs/RESTRUCTURING.md task 4.2): the player's
+// The price manager's host (docs/reviews/RESTRUCTURING.md task 4.2): the player's
 // race, level and stat sums, the two half-price sources and the shop tax,
 // read the way MPriceManager read them before it moved into gamemodel.
 //-----------------------------------------------------------------------------
@@ -2082,7 +2082,7 @@ static const MPriceHost	s_PriceHost = {
 };
 
 //-----------------------------------------------------------------------------
-// The chat filter's host (docs/RESTRUCTURING.md task 4.13): the player's
+// The chat filter's host (docs/reviews/RESTRUCTURING.md task 4.13): the player's
 // "filter bad words" option. Without options (before InitUserOption and
 // after they are released) the answer is the option's default, on.
 //-----------------------------------------------------------------------------
@@ -3846,7 +3846,7 @@ static const UIMessages::Host s_UIMessagesHost = {
 };
 
 //-----------------------------------------------------------------------------
-// The wire layer's host (docs/RESTRUCTURING.md task 5.1): three tuning
+// The wire layer's host (docs/reviews/RESTRUCTURING.md task 5.1): three tuning
 // values out of the config, and the connection a bug report goes to.
 //-----------------------------------------------------------------------------
 // The config is built in GameInitInfo and deleted at shutdown, so each
@@ -4224,7 +4224,7 @@ InitGameObject()
 //-----------------------------------------------------------------------------
 // The skill manager builds the tree itself; the per-domain experience
 // the server ships comes from a file, which the executable opens for it
-// (docs/RESTRUCTURING.md task 4.4).
+// (docs/reviews/RESTRUCTURING.md task 4.4).
 //-----------------------------------------------------------------------------
 void
 InitSkillTree()

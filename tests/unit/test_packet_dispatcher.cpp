@@ -2,7 +2,7 @@
 // test_packet_dispatcher.cpp
 //----------------------------------------------------------------------
 //
-// PacketDispatcher (docs/RESTRUCTURING.md task 2.1): the id -> handler
+// PacketDispatcher (docs/reviews/RESTRUCTURING.md task 2.1): the id -> handler
 // table that replaced the per-packet virtual execute(). These tests pin
 // its contract:
 //

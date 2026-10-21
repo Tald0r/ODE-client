@@ -3,8 +3,8 @@
 //----------------------------------------------------------------------
 //
 // SafeFormat (basic/SafeFormat.h) - the checked formatter that stands
-// between Data/Info/String.inf and sprintf (docs/RESTRUCTURING.md task
-// 5.4, docs/code-health-review-2026-08-29.md finding C19).
+// between Data/Info/String.inf and sprintf (docs/reviews/RESTRUCTURING.md task
+// 5.4, docs/reviews/code-health-review-2026-08-29.md finding C19).
 //
 // Two things are under test and they pull in opposite directions. The
 // first is that the ordinary vocabulary of the string table - "%s",

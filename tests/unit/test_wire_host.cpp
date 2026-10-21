@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // What the wire layer asks of the program around it
-// (docs/RESTRUCTURING.md task 5.1): three tuning values the receive
+// (docs/reviews/RESTRUCTURING.md task 5.1): three tuning values the receive
 // loops and the connection managers used to read straight out of the
 // executable's ClientConfig, and the connection a report about a
 // malformed packet is sent to.

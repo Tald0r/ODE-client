@@ -1,7 +1,7 @@
 # The reference Linux build environment for the client: what
 # tools/ci/verify-linux.sh and .github/workflows/linux.yml assume, in one
 # image, so a Windows machine or a Mac with Docker can run the Linux build
-# and tests without a Linux install (docs/linux-macos-port-assessment-2026-09-07.md).
+# and tests without a Linux install (docs/build/linux-macos-port-assessment-2026-09-07.md).
 # On an arm64 host the image is aarch64, which has no warning baseline;
 # pass --platform linux/amd64 (and a separate build volume) to build and run
 # it as the x86_64 profile; README.md records the run that passed.

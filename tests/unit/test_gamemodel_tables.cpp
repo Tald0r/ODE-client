@@ -2,7 +2,7 @@
 // test_gamemodel_tables.cpp
 //----------------------------------------------------------------------
 //
-// The first tests against the gamemodel library (docs/RESTRUCTURING.md
+// The first tests against the gamemodel library (docs/reviews/RESTRUCTURING.md
 // task 4.1): the pure data tables - experience, item options, sounds,
 // fame, system availability - and the string table's language switch.
 // Each table loads from a file the game data ships; the tests write the

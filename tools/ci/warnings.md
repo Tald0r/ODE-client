@@ -83,7 +83,7 @@ Windows adds 25 upstream C4244 sites and six C4267 sites. Four new project
 an owned configuration reader using `_dupenv_s` on Windows; the C4996 budget
 therefore stays unchanged.
 
-The 2026-09-27 cleanup (`docs/compiler-warnings-2026-09-27.md`) cleared every
+The 2026-09-27 cleanup (`docs/build/compiler-warnings-2026-09-27.md`) cleared every
 warning GCC and Clang report in the project's own code, so the Unix budgets
 now count only vendored code and the linker. All ten profiles were re-recorded
 from the complete clean CI builds of that branch: macOS 4,048 -> 243 (arm64)

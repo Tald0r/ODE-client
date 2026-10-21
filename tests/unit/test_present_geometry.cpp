@@ -7,7 +7,7 @@
 // renderer output pixels; a mouse event is in window points; on a Retina
 // Mac with SDL_WINDOW_ALLOW_HIGHDPI the output is twice the window, and
 // a mapping that read the point as a pixel landed every click at half
-// its distance from the top-left corner (docs/linux-macos-port-
+// its distance from the top-left corner (docs/build/linux-macos-port-
 // assessment-2026-09-07.md, area G). No machine that runs these tests
 // has such a display and SDL's dummy driver cannot fake one, so the
 // geometry is set by hand through spritectl_set_present_geometry, with

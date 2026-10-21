@@ -74,7 +74,7 @@ class MItem;
 class MMagazine;
 
 //----------------------------------------------------------------------
-// MItemHost - what MItem needs from the executable (docs/RESTRUCTURING.md
+// MItemHost - what MItem needs from the executable (docs/reviews/RESTRUCTURING.md
 // task 4.4). The item model compiles into gamemodel, which cannot see
 // the two clocks, the top view's item-drop frame pack, the player, the
 // UI or the item factory, so the executable installs these once at

@@ -5,7 +5,7 @@
 // Basic::ResolveDataPath and Basic::NormalizeDataPath
 // (basic/DataPath.cpp). The game's data paths are written the Windows
 // way - backslashes, and a letter case that need not match the disk
-// (docs/linux-macos-port-assessment-2026-09-07.md, area F: of the 206
+// (docs/build/linux-macos-port-assessment-2026-09-07.md, area F: of the 206
 // entries in FileDef.inf, 38 exist only under a different case). On a
 // case-sensitive filesystem those opens fail, so the resolver folds the
 // separators and, when the path does not exist as spelled, finds each

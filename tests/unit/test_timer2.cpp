@@ -6,7 +6,7 @@
 // blink, its interface blink and its title-screen character update on.
 // Its insides moved from two DWORD tick counts to a
 // MonotonicClock::TimePoint and a MonotonicClock::Duration
-// (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
+// (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
 // modernization backlog priority 5); its API did not move at all.
 //
 // These tests exist because that kind of change is exactly the kind that

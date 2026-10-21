@@ -1,6 +1,6 @@
 # opendarkeden-client
 
-[Client knowledge map](docs/knowledge/index.md): architecture, verification, protocol, and browser flow entry points.
+The rules and the incidents behind them live in the knowledge bundle under `docs/`: start at [docs/index.md](docs/index.md).
 
 ## Build on Windows (from scratch)
 
@@ -92,7 +92,7 @@ Existing classic-mode installs need SDL_image's JPEG feature for help artwork:
 | `sdl2-mixer` | sound and music |
 | `openssl` | verified TLS for optional native WebSocket connections |
 
-The [browser and WebSocket guide](docs/webgl-client.md) covers the WebAssembly /
+The [browser and WebSocket guide](docs/browser/browser-client.md) covers the WebAssembly /
 WebGL 2 build, asset packaging, gateway configuration and browser tests. Existing
 classic vcpkg trees also need `vcpkg install openssl:x64-windows --classic`.
 | `libiconv` | shared resource and legacy text conversion in `basic/TextEncoding.cpp` |
@@ -427,7 +427,7 @@ also use the GPU surface API. xBRZ runs in two shader passes when OpenGL support
 
 The startup log names the rendering device; shutdown reports texture draws,
 uploads and readbacks. GPU tests and a repeatable synthetic benchmark are
-documented in [the native renderer notes](docs/native-gpu-renderer.md).
+documented in [the native renderer notes](docs/rendering/native-gpu-renderer.md).
 
 ### Toggle xBRZ rendering
 
@@ -591,7 +591,7 @@ runs on `ubuntu-24.04` directly, not in this image.
 
 ### Status of the Linux client
 
-The port's plan and its sizing are `docs/linux-macos-port-assessment-2026-09-07.md`.
+The port's plan and its sizing are `docs/build/linux-macos-port-assessment-2026-09-07.md`.
 What is verified today, in the order its acceptance criteria list them:
 
 - **Builds:** every library, `unit_tests` and `DarkEden`, with GCC and Clang,

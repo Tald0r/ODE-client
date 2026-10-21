@@ -5,7 +5,7 @@
 // MStatus is the array every ModifyInfo packet writes through
 // SetStatus. MCreature and MPlayer override SetStatus and bound the
 // index first; the base class does not, and nothing here calls it with
-// an index past MAX_MODIFY (docs/RESTRUCTURING.md task 4.14 has the
+// an index past MAX_MODIFY (docs/reviews/RESTRUCTURING.md task 4.14 has the
 // trace of which callers can reach it). The overrides live in the
 // executable and cannot be linked into this binary.
 //----------------------------------------------------------------------

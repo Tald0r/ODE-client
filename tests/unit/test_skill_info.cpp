@@ -2,7 +2,7 @@
 // test_skill_info.cpp
 //----------------------------------------------------------------------
 //
-// ApplySkillInfo (docs/RESTRUCTURING.md task 4.16) is the skill-model
+// ApplySkillInfo (docs/reviews/RESTRUCTURING.md task 4.16) is the skill-model
 // rebuild GCSkillInfoHandler runs: it resets the user's skill flags,
 // rebuilds every domain's tree with nothing learned, and learns and
 // sets up each skill the packet lists, per race. Each test here reads

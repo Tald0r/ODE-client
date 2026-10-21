@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The eight packet handlers that reach only model state compile in
-// gamemodel (docs/RESTRUCTURING.md task 4.15), so each test here reads
+// gamemodel (docs/reviews/RESTRUCTURING.md task 4.15), so each test here reads
 // a packet from wire bytes into the packet its real factory creates,
 // runs the real handler's execute() on it and checks the model state it
 // changes: the phone slots in g_pUserInformation, the trade box and the

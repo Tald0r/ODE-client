@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The action table (Action.inf) through its real loader and writer,
-// now that MActionInfoTable is a gamemodel member (docs/RESTRUCTURING.md
+// now that MActionInfoTable is a gamemodel member (docs/reviews/RESTRUCTURING.md
 // task 4.1). Every skill and action the client shows is a row: its
 // casting frames, its target and packet kind, its effect status and the
 // chain of effect nodes the effect generator walks.

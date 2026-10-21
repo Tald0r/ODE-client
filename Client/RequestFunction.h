@@ -10,7 +10,7 @@
 //--------------------------------------------------------------------------------
 // Drop the connection the character called Name has to this client.
 // (RequestConnect, which dialled a peer, went with the outbound peer
-// side - docs/RESTRUCTURING.md task 5.2, eighth slice.)
+// side - docs/reviews/RESTRUCTURING.md task 5.2, eighth slice.)
 //--------------------------------------------------------------------------------
 void	RequestDisconnect(const char* pName);
 

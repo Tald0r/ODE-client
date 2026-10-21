@@ -204,7 +204,7 @@ const ClientRule	kClientRules[] = {
 	// The server builds the couple rings outside ConcreteItem, so its
 	// table has no grade and no durability for them; the client keeps
 	// the ring's rule, and quotes no repair from it
-	// (TheCoupleRingsQuoteNoRepair; docs/compiler-warnings-2026-09-27.md,
+	// (TheCoupleRingsQuoteNoRepair; docs/build/compiler-warnings-2026-09-27.md,
 	// "Shop prices").
 	{ ITEM_CLASS_COUPLE_RING,			decore::GradePolicy::Accessory,	true },
 	{ ITEM_CLASS_VAMPIRE_COUPLE_RING,	decore::GradePolicy::Accessory,	true },

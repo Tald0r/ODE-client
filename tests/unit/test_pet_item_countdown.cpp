@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // MPetItem's life countdown (the third clocks slice of
-// docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 5).
+// docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 5).
 // A pet's durability is the number of minutes it has left, counted
 // down from the moment the durability was set on MonotonicClock's
 // clock; the affect check (MCreature::CheckAffectStatus) and the

@@ -3521,7 +3521,7 @@ MPlayer::TraceCreatureToSpecialAction(TYPE_OBJECTID id, bool bForceAttack)
 		// [SKILLREPEAT DIAG] kept as a permanent regression signal (the
 		// 2026-08-31 stutter was root-caused with it: a learn-time server
 		// seed reaching the client as a 2 s cooldown - see
-		// docs/skill-repeat-diagnostics-2026-08-31.md). INFO level, so
+		// docs/reports/skill-repeat-diagnostics-2026-08-31.md). INFO level, so
 		// Release builds filter it in log_write. Records the state every
 		// re-issue of a held-button skill sees, so the abort reason is
 		// unambiguous.

@@ -117,7 +117,7 @@ MMoneyManager::CanAddMoney(int money)
 	// The question is whether the BALANCE stays within the limit, not
 	// whether the amount alone does; this used to compare the amount,
 	// so a wallet near the limit said yes and the AddMoney that
-	// followed said no (docs/RESTRUCTURING.md task 4.2). Written as a
+	// followed said no (docs/reviews/RESTRUCTURING.md task 4.2). Written as a
 	// subtraction so a large amount cannot overflow the sum.
 	if (money < 0)
 	{

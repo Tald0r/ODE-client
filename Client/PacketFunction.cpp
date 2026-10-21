@@ -4810,7 +4810,7 @@ SkillBlazeWalk(MCreature* pUserCreature, MCreature* pTargetCreature, int skillID
 }
 
 // SendBugReport moved into the wire layer (Client/Packet/WireHost.cpp,
-// docs/RESTRUCTURING.md task 5.1). It only ever needed a CGSay and
+// docs/reviews/RESTRUCTURING.md task 5.1). It only ever needed a CGSay and
 // somewhere to send it, and the library files that call it could not
 // resolve a definition that lived here.
 

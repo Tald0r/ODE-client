@@ -379,7 +379,7 @@ ITEMCLASS_TABLE::ITEMCLASS_TABLE()
 {
 	// The 23,000-line in-code item table that used to sit here was the
 	// server's (__INIT_ITEM__, never defined for the client, which loads
-	// Item.inf); deleted with docs/RESTRUCTURING.md task 5.2, in git
+	// Item.inf); deleted with docs/reviews/RESTRUCTURING.md task 5.2, in git
 	// history if a data-authoring path ever wants it back.
 }
 
