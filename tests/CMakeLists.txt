@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.21)
 # binary. Today that means basic/, framelib/ (header-only templates),
 # SpriteLib/, DXLib/, TextSystem/, VS_UI, packetwire (the whole wire
 # layer: streams, info classes, every packet class and the factory
-# tables - docs/RESTRUCTURING.md task 2.4) and gamemodel. Game logic that
+# tables - docs/reviews/RESTRUCTURING.md task 2.4) and gamemodel. Game logic that
 # is compiled straight into the DarkEden executable, including the packet
 # handlers under Client/PacketHandler, is not reachable from here; the
 # handlers listed in gamemodel membership are the exception.
@@ -30,7 +30,7 @@ target_include_directories(test_framework PUBLIC
 file(GLOB UNIT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unit/*.cpp)
 
 #----------------------------------------------------------------------
-# There is no stubs/ directory any more (docs/RESTRUCTURING.md task
+# There is no stubs/ directory any more (docs/reviews/RESTRUCTURING.md task
 # 5.3). It held the globals and functions a linked library referenced
 # but the DarkEden executable defined, and every one of them turned out
 # to be a seam worth cutting rather than filling. Of the libraries this
@@ -296,6 +296,19 @@ if(PERL_EXECUTABLE)
 	)
 else()
 	message(STATUS "perl not found: the source_encoding test is not registered")
+endif()
+
+# docs/ is the Open Knowledge Format bundle (docs/knowledge-bundle.md): every
+# concept carries a type, every folder's index.md lists what it holds and
+# every local link in the bundle, CLAUDE.md, README.md and AGENTS.md
+# resolves. Skipped without perl, not passed.
+if(PERL_EXECUTABLE)
+	add_test(
+		NAME knowledge_bundle
+		COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_knowledge_bundle.pl ${CMAKE_SOURCE_DIR}
+	)
+else()
+	message(STATUS "perl not found: the knowledge_bundle test is not registered")
 endif()
 
 #----------------------------------------------------------------------

@@ -24,7 +24,7 @@ void GCRequestedIPHandler::execute ( GCRequestedIP * pPacket , Player * pPlayer 
 	// whisper or a profile - served the outbound peer side, which
 	// upstream had already compiled out (this handler began with
 	// `if (bKorean == false || 1) return;`) and which
-	// docs/RESTRUCTURING.md task 5.2's eighth slice deleted. The handler
+	// docs/reviews/RESTRUCTURING.md task 5.2's eighth slice deleted. The handler
 	// stays registered so that a server which still sends the packet
 	// gets it consumed rather than the game connection dropped for a
 	// packet with no handler.

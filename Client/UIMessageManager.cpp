@@ -2489,7 +2489,7 @@ UIMessageManager::Execute_UI_CHAT_RETURN(intptr_t left, intptr_t right, void* vo
 											// peer-to-peer whisper (WhisperManager, a queue
 											// and a direct connection to the other client)
 											// was compiled out upstream and is deleted
-											// (docs/RESTRUCTURING.md task 5.2, seventh slice).
+											// (docs/reviews/RESTRUCTURING.md task 5.2, seventh slice).
 											CGWhisper _CGWhisper;
 											_CGWhisper.setName( pName );
 											_CGWhisper.setMessage( pMessage );

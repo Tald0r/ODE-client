@@ -2,7 +2,7 @@
 // test_money_manager.cpp
 //----------------------------------------------------------------------
 //
-// MMoneyManager (gamemodel, docs/RESTRUCTURING.md task 4.2): a wallet
+// MMoneyManager (gamemodel, docs/reviews/RESTRUCTURING.md task 4.2): a wallet
 // with a limit. The contract under test is the limit - no balance
 // below zero, none above the limit, and CanAddMoney/CanUseMoney
 // answering for the BALANCE the operation would leave, which is what

@@ -8,7 +8,7 @@
 # rather than by regex: a file-wide s{/\*.*?\*/}{} reads the blitters'
 # "//*pDest = ..." line comments as block openers and swallows the code
 # up to the next "*/", which is how the clocks work's first counts
-# undercounted (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
+# undercounted (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
 # priority 5). Reads the files in binary, so the NUL bytes in
 # VS_UI_GameCommon.cpp do not stop it.
 #

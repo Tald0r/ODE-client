@@ -12,7 +12,7 @@
 // Drop the connection the character called Name has to this client - a
 // peer that sent CRDisconnect. This used to close the connection in the
 // other direction too; that manager went with the outbound peer side
-// (docs/RESTRUCTURING.md task 5.2, eighth slice). The format used to
+// (docs/reviews/RESTRUCTURING.md task 5.2, eighth slice). The format used to
 // print the name with %d.
 //--------------------------------------------------------------------------------
 void	

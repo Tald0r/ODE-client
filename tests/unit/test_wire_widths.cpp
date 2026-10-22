@@ -7,7 +7,7 @@
 // `long`/`ulong` field on the wire is four bytes. This pins that on
 // every platform, at every place a long reaches bytes - the socket
 // streams, the encrypting streams and the datagram - and pins the
-// 64-bit types at eight (docs/linux-macos-port-assessment-2026-09-07.md,
+// 64-bit types at eight (docs/build/linux-macos-port-assessment-2026-09-07.md,
 // area C). A build where any of these moves has changed the protocol,
 // which the goldens would also catch, but only for the packets they
 // cover; this covers the primitives.

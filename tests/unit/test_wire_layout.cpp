@@ -21,7 +21,7 @@
 // Constructing every factory and its packet here is also the link-level
 // proof that every packet class in every direction - the written CG/CL
 // ones included - lives in the packetwire library with no reach into
-// the executable (docs/RESTRUCTURING.md task 2.5; task 2.4's
+// the executable (docs/reviews/RESTRUCTURING.md task 2.5; task 2.4's
 // test_packet_factories.cpp proves the received directions through
 // PacketFactoryManager).
 //

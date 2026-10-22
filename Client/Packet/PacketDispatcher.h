@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Filename    : PacketDispatcher.h
 // Description : packet-id -> handler dispatch table, filled in at the
-//               executable's composition root (docs/RESTRUCTURING.md task
+//               executable's composition root (docs/reviews/RESTRUCTURING.md task
 //               2.1). Replaces the per-packet virtual execute(): the
 //               packetwire library keeps the wire classes, the executable
 //               owns which handler runs. Ported from the server

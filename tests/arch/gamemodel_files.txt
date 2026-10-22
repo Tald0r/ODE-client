@@ -1,4 +1,4 @@
-# gamemodel membership (docs/RESTRUCTURING.md task 4.1) - game-model
+# gamemodel membership (docs/reviews/RESTRUCTURING.md task 4.1) - game-model
 # code that has no SDL, UI or dxlib reach: today the pure data tables
 # (experience, item options, game strings, sounds, system availability,
 # fame) and the string/logging support they are built on.
@@ -266,7 +266,7 @@ Client/MSkillManager.h
 Client/MSkillInfoTable.cpp
 Client/SkillDef.cpp
 
-# The client's own combat-stat derivation (docs/RESTRUCTURING.md task
+# The client's own combat-stat derivation (docs/reviews/RESTRUCTURING.md task
 # 4.12, slice 3): the character-select preview, with the inputs it takes
 # from the character list, and the attack speed MPlayer::CalculateStatus
 # takes from it. To-hit, defense, protection and damage are the server's
@@ -370,7 +370,7 @@ Client/EffectSpriteTypeDef.h
 # creature sprite header spells its sprite ids through the model's
 # DrawTypeDef.h. The loaders were fixed test-first after the move, and
 # the action table's writer now zero-extends the casting action info (see
-# docs/RESTRUCTURING.md task 4.1).
+# docs/reviews/RESTRUCTURING.md task 4.1).
 Client/MActionInfoTable.cpp
 Client/MActionInfoTable.h
 Client/MActionResultDef.h

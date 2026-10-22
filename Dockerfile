@@ -1,7 +1,7 @@
 # The browser client as a container: the WebAssembly build served by nginx,
 # which also proxies /game to the WebSocket gateway so the page and its
 # socket share one origin. The proprietary asset pack is not in the image;
-# mount it at /usr/share/nginx/html/assets (docs/webgl-client.md).
+# mount it at /usr/share/nginx/html/assets (docs/browser/browser-client.md).
 #
 #   docker build -t darkeden-web .
 #   docker run -p 127.0.0.1:18739:80 -e GATEWAY_UPSTREAM=host:8080 \

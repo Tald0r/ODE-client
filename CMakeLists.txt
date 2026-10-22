@@ -62,7 +62,7 @@ option(DARKEDEN_MACOS_BUNDLE "macOS: build DarkEden as an application bundle (bi
 # used to add PLATFORM_MACOS to every non-Windows target, in six
 # places, which told a Linux build it was macOS and left the Linux
 # spelling the socket layer tested for (__LINUX__) defined by nothing
-# (docs/linux-macos-port-assessment-2026-09-07.md, area A).
+# (docs/build/linux-macos-port-assessment-2026-09-07.md, area A).
 #
 # On Windows the wire layer still wants __WIN32__ and __WINDOWS__ - the
 # original VC6 project passed both via /D, and Client/Packet branches
@@ -353,7 +353,7 @@ add_subdirectory(Client/framelib)
 # slice (2026-09-09): sockets, streams, the encrypter,
 # StringStream/Exception, the wire info classes, the two player classes
 # and the inbound peer connection manager, every packet class in every direction, and
-# the factory/validator tables (docs/RESTRUCTURING.md tasks 1.1, 2.4 and
+# the factory/validator tables (docs/reviews/RESTRUCTURING.md tasks 1.1, 2.4 and
 # 5.1). The packet handlers
 # live in Client/PacketHandler and compile into the executable, except
 # the few that reach only model state, which gamemodel lists (task 4.15);
@@ -432,7 +432,7 @@ message(STATUS "packetwire library: ${_packetwire_count} sources from tests/arch
 
 # ============================================================
 # gamemodel - game-model code with no SDL/UI/dxlib reach
-# (docs/RESTRUCTURING.md task 4.1): the pure data tables and the
+# (docs/reviews/RESTRUCTURING.md task 4.1): the pure data tables and the
 # string/logging support they are built on. Same membership-file
 # discipline as packetwire: tests/arch/gamemodel_files.txt is read by
 # this block (.cpp lines), the include checker (rules M0-M2) and the
@@ -489,7 +489,7 @@ message(STATUS "gamemodel library: ${_gamemodel_count} sources from tests/arch/g
 
 # ============================================================
 # gameview - the view's drawing that reads the model and draws with
-# SpriteLib (docs/RESTRUCTURING.md task 4.248), which gamemodel may not
+# SpriteLib (docs/reviews/RESTRUCTURING.md task 4.248), which gamemodel may not
 # include. Same membership-file discipline: tests/arch/gameview_files.txt
 # is read by this block (.cpp lines), the include checker (rules V0-V2)
 # and the ratchet script.
@@ -605,7 +605,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 
 	# VS_UI/WinMain.cpp - a second, never-linked WinMain that drove the
 	# widget system without ever calling InitGame() - was excluded here on
-	# both platforms until docs/RESTRUCTURING.md task 5.2's sixth slice
+	# both platforms until docs/reviews/RESTRUCTURING.md task 5.2's sixth slice
 	# deleted it (2026-09-09), together with Client/OtherClass/, two
 	# request-side packet factory managers no target compiled and no file
 	# referenced. History keeps both.
@@ -614,7 +614,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	# Client/*.cpp files (VS_UI_CLIENT_SOURCES) that the executable's glob
 	# compiled as well, and the executable's objects were the ones that
 	# linked; the list is gone and those files compile once, into the
-	# executable (docs/RESTRUCTURING.md task 4.0). The last holdout was
+	# executable (docs/reviews/RESTRUCTURING.md task 4.0). The last holdout was
 	# Client/Client.cpp, which the non-Windows build filtered out of the
 	# executable and appended here instead; it now compiles into the
 	# executable on every platform like the rest of Client/ (the port
@@ -707,7 +707,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	# translation unit that includes them - the executable's above all -
 	# must see the same definition as the library's own objects, or the two
 	# sides of a call disagree about where the members are (the code-health
-	# review's _LIB ODR finding; docs/RESTRUCTURING.md task 4.0).
+	# review's _LIB ODR finding; docs/reviews/RESTRUCTURING.md task 4.0).
 	target_compile_definitions(VS_UI PUBLIC _LIB)
 
 	list(LENGTH VS_UI_SRC_SOURCES _vsui_count)
@@ -913,7 +913,7 @@ endif()
 
 # ============================================================
 # gameclient - the client that puts the game together: what starts it,
-# runs it and wires the model, the view and the UI (docs/RESTRUCTURING.md
+# runs it and wires the model, the view and the UI (docs/reviews/RESTRUCTURING.md
 # task 4.252), which may use VS_UI and the view. Same membership-file
 # discipline: tests/arch/gameclient_files.txt is read by this block
 # (.cpp lines), the include checker (rules C0-C2) and the ratchet script.
@@ -977,7 +977,7 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 	# exclusion graveyard (GlobalVariables, MissingGlobals, GameHelpers,
 	# GameFunctions, GamePacketFunctions, ActionFunctions and a stale
 	# copy of the GCNotifyWin packet class and its handler) - are deleted
-	# (docs/RESTRUCTURING.md task 5.2, fourth slice). Every function they
+	# (docs/reviews/RESTRUCTURING.md task 5.2, fourth slice). Every function they
 	# defined was defined by a file the build does compile, so there was
 	# nothing in them to keep.
 

@@ -11231,7 +11231,7 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 
 				// A "no profile" entry used to be cached here too, when a
 				// peer had answered that it had none; that came over the
-				// outbound peer side, which is deleted (docs/RESTRUCTURING.md
+				// outbound peer side, which is deleted (docs/reviews/RESTRUCTURING.md
 				// task 5.2, eighth slice). A name with no profile file is
 				// looked up again on the next draw, as it was whenever the
 				// peer had not answered yet.
@@ -24228,7 +24228,7 @@ C_VS_UI_TEAM_MEMBER_LIST::C_VS_UI_TEAM_MEMBER_LIST()
 	case RACE_OUSTERS:
 		// Ousters keep the slayer pack: TeamMemberOusters.spk
 		// (SPK_OUSTERS_TEAM_MEMBER) does not ship, as
-		// docs/sprite-asset-inventory-2026-09-23.tsv lists only the slayer
+		// docs/reviews/references/sprite-asset-inventory-2026-09-23.tsv lists only the slayer
 		// and vampire packs, and a pack that fails to open leaves the
 		// close button 0x0.
 		m_guild_member_list_spk.Open(SPK_SLAYER_TEAM_MEMBER);

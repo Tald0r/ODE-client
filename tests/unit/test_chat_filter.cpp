@@ -2,11 +2,11 @@
 // test_chat_filter.cpp
 //----------------------------------------------------------------------
 //
-// The chat filter (gamemodel, docs/RESTRUCTURING.md task 4.13):
+// The chat filter (gamemodel, docs/reviews/RESTRUCTURING.md task 4.13):
 // MStringMap, the MString-to-MString map the curse lists and the ignored
 // IDs are kept in, and MChatManager::RemoveCurse, which rewrites every
 // server chat line in place and checks the names and the store sign a
-// player types (docs/RESTRUCTURING.md task 4.13 lists the callers).
+// player types (docs/reviews/RESTRUCTURING.md task 4.13 lists the callers).
 //
 // RemoveCurse runs two passes over the line. The English pass keeps the
 // letters (lower-cased, everything else skipped, so "d.a.r.n" is still

@@ -1,7 +1,7 @@
 ﻿//----------------------------------------------------------------------
 // MItemUse.cpp - using items
 //----------------------------------------------------------------------
-// Split from MItem.cpp (docs/RESTRUCTURING.md task 4.4): the factory
+// Split from MItem.cpp (docs/reviews/RESTRUCTURING.md task 4.4): the factory
 // table MItem::NewItem dispatches through and every item class with a
 // UseInventory/UseQuickItem/UseGear body (MCorpse too: it owns a
 // creature). A class lives here whole, so its vtable is emitted with its

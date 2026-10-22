@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #----------------------------------------------------------------------
 # sync.pl - the vendored copy of the server's de-core subset
-# (third_party/decore, docs/RESTRUCTURING.md task 4.12)
+# (third_party/decore, docs/reviews/RESTRUCTURING.md task 4.12)
 #----------------------------------------------------------------------
 #
 #   perl tools/decore/sync.pl <server-root>          resync the copy

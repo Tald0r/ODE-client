@@ -62,7 +62,7 @@ extern bool g_bRunning;			// cleared by the pump on SDL_QUIT (DXLibBackendSDL.cp
 #include <system_error>
 // std::filesystem directory enumeration, in place of the _findfirst /
 // _findnext walk CheckLogFile() used to run
-// (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
+// (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
 #include "DirectoryListing.h"
 #include "FrameClock.h"
 #include "InputState.h"

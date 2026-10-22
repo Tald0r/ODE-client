@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The half of MSkillSet that asks the executable what the player can
-// use right now (docs/RESTRUCTURING.md task 4.4): the weapon in hand,
+// use right now (docs/reviews/RESTRUCTURING.md task 4.4): the weapon in hand,
 // the inventory, the zone, the gear and the war bonuses all decide
 // which skills are enabled. The player, the zone and the UI are reached
 // through PlayerState, CreatureState, ZoneState, DialogPresentation and

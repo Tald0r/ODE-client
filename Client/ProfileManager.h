@@ -87,7 +87,7 @@ class ProfileManager {
 		// name, Update dialled the peer for its profile file, and the file
 		// manager added the result, or a "no profile" marker when the peer
 		// had none. That outbound peer side was compiled out upstream and
-		// is deleted (docs/RESTRUCTURING.md task 5.2, eighth slice), the
+		// is deleted (docs/reviews/RESTRUCTURING.md task 5.2, eighth slice), the
 		// marker with it; the map now holds what InitProfiles found in the
 		// profile directory.
 

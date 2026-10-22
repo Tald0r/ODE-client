@@ -8,7 +8,7 @@
 # Client/Packet/{Gpackets,Cpackets,Lpackets,Upackets,Rpackets}, for
 # tests/unit/test_wire_layout.cpp to construct the REAL factories with.
 #
-# Until docs/RESTRUCTURING.md task 2.5 this script lifted the bodies of
+# Until docs/reviews/RESTRUCTURING.md task 2.5 this script lifted the bodies of
 # each factory's getPacketID()/getPacketMaxSize() into plain structs,
 # because the packet .cpp files compiled only into the game executable
 # and no test binary could link a factory. Since task 2.4 they compile

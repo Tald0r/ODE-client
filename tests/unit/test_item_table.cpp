@@ -2,7 +2,7 @@
 // test_item_table.cpp
 //----------------------------------------------------------------------
 //
-// The item table (gamemodel, docs/RESTRUCTURING.md task 4.4, first
+// The item table (gamemodel, docs/reviews/RESTRUCTURING.md task 4.4, first
 // slice): ITEMTABLE_INFO, one item definition, and ITEMTYPE_TABLE, the
 // per-class table of them with the average price MPriceManager uses.
 // The client loads the table from Item.inf and SaveToFile writes the

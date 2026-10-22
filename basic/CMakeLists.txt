@@ -33,25 +33,25 @@ endif()
 # Basic library sources
 set(BASIC_SOURCES
 	# Directory enumeration on std::filesystem
-	# (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority
+	# (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority
 	# 6). Here for the same reason DebugLog and SafeFormat are: the
 	# callers being migrated off _findfirst are in the executable, and
 	# basic is the one library every target already links.
 	DirectoryListing.cpp
 	# The game's Windows-spelled data paths resolved to the disk - separators
 	# folded, components matched case-insensitively - for the port (area F of
-	# docs/linux-macos-port-assessment-2026-09-07.md). Here because the open
+	# docs/build/linux-macos-port-assessment-2026-09-07.md). Here because the open
 	# sites are in the executable, VS_UI and packetwire alike.
 	DataPath.cpp
 	DisplaySettings.cpp
-	# The file dialog's list building (docs/RESTRUCTURING.md task 3.1,
+	# The file dialog's list building (docs/reviews/RESTRUCTURING.md task 3.1,
 	# "moved, then fixed"). Its caller is
 	# C_VS_UI_FILE_DIALOG::RefreshFileList in VS_UI, which no test binary
 	# links, so the two functions live here for the reason DebugLog and
 	# SafeFormat do: basic is the one library every target already links.
 	FileDialogListing.cpp
 	# The chunked file read behind SendFileInfo, which sends a peer the
-	# profile file it asked for (docs/RESTRUCTURING.md task 3.1, "moved,
+	# profile file it asked for (docs/reviews/RESTRUCTURING.md task 3.1, "moved,
 	# then fixed"). RequestFileManager is in the executable, which no test
 	# binary links.
 	FileChunkReader.cpp
@@ -59,7 +59,7 @@ set(BASIC_SOURCES
 	Timer2.cpp
 	BasicException.cpp
 	ColorDraw.cpp
-	# The logging facility (docs/RESTRUCTURING.md task 5.1). It lived in
+	# The logging facility (docs/reviews/RESTRUCTURING.md task 5.1). It lived in
 	# Client/ and was a gamemodel member, which put it above packetwire
 	# in the link order and out of reach of the wire layer's include
 	# rules. It needs nothing but the C library and Platform.h, so the
@@ -67,7 +67,7 @@ set(BASIC_SOURCES
 	# this directory is a PUBLIC include directory, so #include
 	# "DebugLog.h" resolves everywhere it did before.
 	DebugLog.cpp
-	# The checked formatter (docs/RESTRUCTURING.md task 5.4). It is here
+	# The checked formatter (docs/reviews/RESTRUCTURING.md task 5.4). It is here
 	# for the same reason DebugLog is: the call sites that need it are in
 	# the executable, in VS_UI and in the packet handlers, and basic is
 	# the one library all of them already link. It needs nothing but the
@@ -87,7 +87,7 @@ set(BASIC_SOURCES
 	MWorkNode.cpp
 	CMessageArray.cpp
 	ConfigFile.cpp
-	# The monotonic clock adapter (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
+	# The monotonic clock adapter (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
 	# modernization backlog priority 5). Timer2.cpp is its first caller
 	# and lives here already; the UI timers that follow are in VS_UI and
 	# in the executable, both of which link basic.

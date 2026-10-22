@@ -265,7 +265,7 @@ void GCAddItemToItemVerifyHandler::execute ( GCAddItemToItemVerify * pPacket , P
 		// grade as the one parameter (CGAddItemToItemHandler sets it from
 		// pItem->getGrade()) and nothing else for this code; the second
 		// parameter this case used to read as a new item type was never
-		// on the wire (task 2.5 triage, docs/RESTRUCTURING.md).
+		// on the wire (task 2.5 triage, docs/reviews/RESTRUCTURING.md).
 		case ADD_ITEM_TO_ITEM_VERIFY_UP_GRADE_OK:
 			// The item may be gone (no request remembered, or its cell empty).
 			if( pInventoryItem == NULL )

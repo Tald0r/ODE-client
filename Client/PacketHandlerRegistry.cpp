@@ -323,7 +323,7 @@
 // SendBugReport was defined in this executable and the wire library
 // could not call it, so the library formatted a report and handed it
 // back through PacketDiagnostics' hook. SendBugReport moved into the
-// library (Client/Packet/WireHost.cpp, docs/RESTRUCTURING.md task 5.1),
+// library (Client/Packet/WireHost.cpp, docs/reviews/RESTRUCTURING.md task 5.1),
 // which turned that into the library calling out to the executable
 // only to call straight back in; reportBug goes to it directly now.
 

@@ -2,7 +2,7 @@
 // test_item_core.cpp
 //----------------------------------------------------------------------
 //
-// The item model (MItem, docs/RESTRUCTURING.md task 4.4) after its
+// The item model (MItem, docs/reviews/RESTRUCTURING.md task 4.4) after its
 // split from the executable's use handlers. These pin the behaviour
 // the split had to preserve: the option list, the requirement math
 // over the item and option tables, quest detection through the flag

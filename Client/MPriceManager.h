@@ -15,7 +15,7 @@ struct STAR_ITEM_PRICE {
 
 //-----------------------------------------------------------------------------
 // MPriceHost - what the price manager needs from the executable
-// (docs/RESTRUCTURING.md task 4.2). The prices compile into gamemodel,
+// (docs/reviews/RESTRUCTURING.md task 4.2). The prices compile into gamemodel,
 // which cannot see the player, the event manager or the skill set, so
 // the executable installs these once at start-up (GameInit.cpp); a test
 // binary installs its own, or none - and without one a price carries

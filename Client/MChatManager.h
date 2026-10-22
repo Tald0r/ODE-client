@@ -18,7 +18,7 @@
 
 //----------------------------------------------------------------------
 // MChatHost - what the chat filter needs from the executable
-// (docs/RESTRUCTURING.md task 4.13). The filter compiles into gamemodel,
+// (docs/reviews/RESTRUCTURING.md task 4.13). The filter compiles into gamemodel,
 // which cannot see the player's options (UserOption lives in VS_UI), so
 // the executable installs this once at start-up (GameInit.cpp); a test
 // binary installs its own, or none.

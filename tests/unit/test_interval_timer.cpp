@@ -4,7 +4,7 @@
 //
 // MonotonicClock::IntervalTimer, the periodic gate the VS_UI widgets'
 // animation, scroll and cursor timers run on (the fourth clocks slice
-// of docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority
+// of docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority
 // 5). The gate it replaces was "prev + interval <= GetTickCount()"
 // over DWORDs, so beside the firing rule these pin the two things that
 // shape lost: the 32-bit wrap, across which it fired early or stalled,

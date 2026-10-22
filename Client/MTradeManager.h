@@ -42,7 +42,7 @@ class MTradeManager {
 		// Trade OK ?
 		//-------------------------------------------------------
 		// The accept delay runs on the item host's frame stamp
-		// (docs/RESTRUCTURING.md task 4.2); without one there is no delay.
+		// (docs/reviews/RESTRUCTURING.md task 4.2); without one there is no delay.
 		bool				IsAcceptTime() const;
 		void				SetNextAcceptTime();		// when accepting is allowed again
 

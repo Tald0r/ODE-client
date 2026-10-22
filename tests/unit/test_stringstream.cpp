@@ -4,7 +4,7 @@
 //
 // StringStream formats packet fields for toString() logging through a
 // family of sprintf-into-stack-buffer operators. Task 1.3 of
-// docs/RESTRUCTURING.md: the float overload printed "%f" into
+// docs/reviews/RESTRUCTURING.md: the float overload printed "%f" into
 // char[12], which any value >= 10,000 overruns ("10000.000000" is 12
 // characters plus the terminator), and the double overload printed
 // into char[22], overrun from about 1e15. The server repository found

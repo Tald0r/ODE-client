@@ -2,7 +2,7 @@
 // test_player_gear.cpp
 //----------------------------------------------------------------------
 //
-// The gear (docs/RESTRUCTURING.md task 4.4, third slice): MPlayerGear,
+// The gear (docs/reviews/RESTRUCTURING.md task 4.4, third slice): MPlayerGear,
 // the slot container a player wears its items in, which grades each
 // piece by its remaining durability; the three races' slot rules over
 // it (the slayer's in depth, the others where they differ); and MShop,

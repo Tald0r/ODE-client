@@ -4,7 +4,7 @@
 //
 // MonotonicClock (basic/MonotonicClock.h) - the one clock the timing
 // code is being moved onto, and the seam that makes timing testable at
-// all (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
+// all (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
 // modernization backlog priority 5).
 //
 // Three contracts are pinned here.

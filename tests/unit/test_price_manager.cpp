@@ -2,7 +2,7 @@
 // test_price_manager.cpp
 //----------------------------------------------------------------------
 //
-// The price manager (docs/RESTRUCTURING.md task 4.2, third slice): what
+// The price manager (docs/reviews/RESTRUCTURING.md task 4.2, third slice): what
 // a shop charges or pays for an item. It reads the item and option
 // tables, the timed-item register and the user's head-price rate, all
 // library-defined; the player's race, level and stats, and the

@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The C++20 source_location entry points in basic/BasicException.h and
-// basic/DebugLog.h (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
+// basic/DebugLog.h (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md,
 // modernization backlog priority 1).
 //
 // The whole value of the change is that a call site stops forwarding

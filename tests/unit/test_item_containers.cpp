@@ -2,7 +2,7 @@
 // test_item_containers.cpp
 //----------------------------------------------------------------------
 //
-// The item managers (docs/RESTRUCTURING.md task 4.3, first slice):
+// The item managers (docs/reviews/RESTRUCTURING.md task 4.3, first slice):
 // MItemManager, the id map every container is built on; MGridItemManager,
 // the inventory-style grid where an item covers width x height cells;
 // MSlotItemManager, the numbered slots a belt or an arms band offers;

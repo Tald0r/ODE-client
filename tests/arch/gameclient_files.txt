@@ -1,5 +1,5 @@
 # gameclient - the client that puts the game together: what starts it,
-# runs it and wires the model, the view and the UI (docs/RESTRUCTURING.md
+# runs it and wires the model, the view and the UI (docs/reviews/RESTRUCTURING.md
 # task 4.252). Same membership-file discipline as gamemodel and gameview:
 # CMakeLists.txt compiles the .cpp lines, and tests/arch/check_includes.pl
 # (rules C0-C2) and tests/ratchet/ratchets.sh read the file too. Header

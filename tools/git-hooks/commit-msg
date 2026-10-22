@@ -1,6 +1,6 @@
 #!/bin/sh
 # commit-msg hook: every fix commit names its test path
-# (docs/RESTRUCTURING.md task 3.1). Install once per clone:
+# (docs/reviews/RESTRUCTURING.md task 3.1). Install once per clone:
 #
 #     git config core.hooksPath tools/git-hooks
 #
@@ -23,6 +23,6 @@ esac
 if grep -qE '^Test path:[[:space:]]*(lib \+ test|moved, then fixed|exempt)([[:space:].,;:)-]|$)' "$msg"; then
 	exit 0
 fi
-echo "commit-msg: a fix commit must name its test path (docs/RESTRUCTURING.md task 3.1):" >&2
+echo "commit-msg: a fix commit must name its test path (docs/reviews/RESTRUCTURING.md task 3.1):" >&2
 echo "    Test path: lib + test | moved, then fixed | exempt" >&2
 exit 1

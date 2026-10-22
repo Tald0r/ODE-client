@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The library sites converted to the C++20 container and string helpers
-// (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, the
+// (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, the
 // post-migration backlog's priority 2): map/set membership written as
 // contains() instead of find() != end(), and the two line-trimming
 // tests written as starts_with()/ends_with() instead of an index into

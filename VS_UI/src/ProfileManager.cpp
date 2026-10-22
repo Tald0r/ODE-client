@@ -19,7 +19,7 @@
 
 // std::filesystem directory enumeration, in place of the _findfirst /
 // _findnext walks these two functions used to run
-// (docs/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
+// (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, priority 6).
 #include "DirectoryListing.h"
 #include "DataPath.h"
 

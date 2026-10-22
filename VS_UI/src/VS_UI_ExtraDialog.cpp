@@ -628,7 +628,7 @@ C_VS_UI_MONEY_DIALOG::~C_VS_UI_MONEY_DIALOG()
 // checked formatter.
 //
 // Every row is formatted with a String.inf entry as the *format*
-// argument (docs/code-health-review-2026-08-29.md finding C19) into a
+// argument (docs/reviews/code-health-review-2026-08-29.md finding C19) into a
 // block sized from that same entry, and twelve of the call sites below
 // pass no arguments at all - so a %s an operator left in an entry made
 // the CRT read a stack word as a char* and copy it, unbounded, into a

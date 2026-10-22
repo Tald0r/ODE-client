@@ -2,7 +2,7 @@
 // test_packetwire_parsers.cpp
 //----------------------------------------------------------------------
 //
-// First tests against the packetwire library (docs/RESTRUCTURING.md,
+// First tests against the packetwire library (docs/reviews/RESTRUCTURING.md,
 // task 1.2). The wire info classes parse server-supplied counts in a
 // loop, and their only defense against a hostile or corrupt count is
 // the stream's own underflow check: SocketInputStream::read throws
@@ -721,7 +721,7 @@ TEST(InventoryInfo, OversizedCountHitsTheUnderflowGuard)
 // and until the R3 pass they were not. GCNPCSayDynamic accepts 2048
 // where its handler copied into char[256], which is a 1792-byte stack
 // overflow a server could send at will; the copy is bounded now
-// (docs/code-health-review-2026-08-29.md, the packet-tree copy pass).
+// (docs/reviews/code-health-review-2026-08-29.md, the packet-tree copy pass).
 //
 // Pinned here because the packets are library code and the handlers are
 // not: if someone widens one of these limits, this is the only place

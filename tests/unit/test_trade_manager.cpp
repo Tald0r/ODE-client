@@ -2,7 +2,7 @@
 // test_trade_manager.cpp
 //----------------------------------------------------------------------
 //
-// The trade manager (docs/RESTRUCTURING.md task 4.2, second slice):
+// The trade manager (docs/reviews/RESTRUCTURING.md task 4.2, second slice):
 // the exchange between the player's inventory and wallet and the
 // other side's offer. What it needs from the executable is one
 // millisecond clock, carried by the item host installed here by hand;

@@ -1,5 +1,5 @@
 # gameview - the view's drawing that reads the model and draws with
-# SpriteLib (docs/RESTRUCTURING.md task 4.248). Same membership-file
+# SpriteLib (docs/reviews/RESTRUCTURING.md task 4.248). Same membership-file
 # discipline as gamemodel: CMakeLists.txt compiles the .cpp lines, and
 # tests/arch/check_includes.pl (rules V0-V2) and tests/ratchet/ratchets.sh
 # read the file too. Header lines are the include checker's allowed set.

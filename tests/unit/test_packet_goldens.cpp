@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // Golden-byte pins and round-trips for representative packets through
-// the real stream classes (docs/RESTRUCTURING.md task 2.4; the recipe
+// the real stream classes (docs/reviews/RESTRUCTURING.md task 2.4; the recipe
 // is the server repo's task 1.2).
 //
 // The .hex files under tests/golden/ ARE the wire contract. Many of

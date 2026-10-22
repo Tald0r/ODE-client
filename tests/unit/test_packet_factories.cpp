@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 //
 // The packet classes, the factory manager and the validator compile
-// into packetwire since docs/RESTRUCTURING.md task 2.4, and this test
+// into packetwire since docs/reviews/RESTRUCTURING.md task 2.4, and this test
 // is the link-level proof for the directions the client RECEIVES:
 // PacketFactoryManager::init() news every factory the client registers
 // (GC, LC, RC, UC - not CG/CL, which the client only writes and never

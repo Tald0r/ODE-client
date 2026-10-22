@@ -2,7 +2,7 @@
 // MItemLimits.h - pile sizes the item classes apply
 //----------------------------------------------------------------------
 // Moved out of MItem.cpp when it was split into the gamemodel core and
-// the executable's MItemUse.cpp (docs/RESTRUCTURING.md task 4.4), so
+// the executable's MItemUse.cpp (docs/reviews/RESTRUCTURING.md task 4.4), so
 // both halves read one set of numbers. The requirement caps it held are
 // the server's, in decore::requiredStats (third_party/decore).
 //----------------------------------------------------------------------

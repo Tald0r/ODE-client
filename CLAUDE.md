@@ -7,9 +7,10 @@ roughly 2000-2010, ported from Win32 + DirectX to SDL2. C++20, CMake, MSVC.
 running the game, troubleshooting. **Link to it rather than restating it.** This file
 is the working brief for an agent in this repo.
 
-The [client knowledge map](docs/knowledge/index.md) links source-backed entry points
-for architecture, verification, protocol and browser flows; this brief remains the
-working instructions.
+The rules, and the incidents behind them, live in the knowledge bundle under `docs/`
+(Google's Open Knowledge Format): start at [docs/index.md](docs/index.md);
+[docs/knowledge-bundle.md](docs/knowledge-bundle.md) says how it is kept. Open the linked
+concept before you work in its area; this brief remains the working instructions.
 
 ## Build
 
@@ -54,7 +55,7 @@ A clean Debug build is **57 distinct warnings (about 900 lines) and 0 errors**
 on the CI runner (measured 2026-09-28), none of them in project code:
 IXWebSocket's C4244/C4267, `third_party/`'s C4996 and the Windows SDK's
 C4668. The project's own code builds without warnings under MSVC, Apple
-Clang, GCC and Clang (`docs/compiler-warnings-2026-09-27.md`), so a warning
+Clang, GCC and Clang (`docs/build/compiler-warnings-2026-09-27.md`), so a warning
 in `Client/`, `VS_UI/`, `basic/`, `tests/` or `tools/` is new: the budget
 (`tools/ci/warnings.md`) fails on it. Clear a C4996 through
 `basic/CrtCompat.h`'s portable spelling, never `_CRT_SECURE_NO_WARNINGS`.
@@ -151,7 +152,7 @@ frame by `MEffect` and the attached-effect constructor);
 with the
 user, config and timed-item loaders gamemodel reads, and their string support; membership in
 `tests/arch/gamemodel_files.txt` —
-`docs/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
+`docs/reviews/RESTRUCTURING.md` tasks 4.1, 4.2, 4.3, 4.4, 4.12, 4.13, 4.14, 4.15,
 4.16, 4.17, 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24, 4.25, 4.26, 4.27,
 4.28, 4.29, 4.30, 4.31, 4.32, 4.33, 4.34, 4.35, 4.36, 4.37, 4.38, 4.39,
 4.40, 4.41, 4.42, 4.43 and the follow-up extractions through 4.87),
@@ -183,7 +184,7 @@ source is `SDLMain.cpp` alone: `main` and `WinMain` install `ClientHost`'s
 sockets (TCP and datagram), the socket streams, the `Player` base under both
 player classes, the game-server player and the inbound peer player with its manager, the
 encrypter, the info classes, every packet class in every direction and
-the factory/validator tables (`docs/RESTRUCTURING.md` tasks 1.1, 2.4 and 5.1;
+the factory/validator tables (`docs/reviews/RESTRUCTURING.md` tasks 1.1, 2.4 and 5.1;
 membership is `tests/arch/packetwire_files.txt`, read by CMake, the include checker
 and the ratchet script). **Every `.cpp` under `Client/Packet` is a member**
 since 2026-09-09; `tests/arch/packetwire_holdouts.txt` is empty and is where
@@ -193,7 +194,7 @@ around it goes through `Client/Packet/WireHost.h`, 11 entries the executable
 installs in `GameInit.cpp`. The logging facility (`DebugLog.h`) is in
 `basic`, so every library may log; `Client/DebugInfo.h` is the executable's
 front end to it and pulls in `MinTr.h`, which is why the libraries may not
-include it. The checked formatter (`SafeFormat.h`, `docs/RESTRUCTURING.md`
+include it. The checked formatter (`SafeFormat.h`, `docs/reviews/RESTRUCTURING.md`
 task 5.4) is in `basic` for the same reason — the call sites that need it are
 in the executable, in `VS_UI` and in the packet handlers, and `basic` is the
 one library all three link. Game logic compiled straight into the `DarkEden` executable —
@@ -209,7 +210,7 @@ how work gets verified here.
 and maximum durability, the grade policy, the per-race stat rules, the
 equip requirements, the castle tax, the per-skill output formulas
 (`SkillOutputFormulas`, of which the client calls Will of Life's) and a
-slayer skill's range (`docs/RESTRUCTURING.md` task 4.12). Two ctests keep it honest: `decore_tests`
+slayer skill's range (`docs/reviews/RESTRUCTURING.md` task 4.12). Two ctests keep it honest: `decore_tests`
 asserts the shared parity vectors on this toolchain, and `decore_vendored`
 checks the copy against its manifest.
 
@@ -265,7 +266,7 @@ the failure count, so the exit code is 0 only when the suite is clean.
 ### How we work
 
 - **Library fixes are written test-first.** Every fix in the remediation table of
-  `docs/code-health-review-2026-08-29.md` was.
+  `docs/reviews/code-health-review-2026-08-29.md` was.
 - **Assert the observable contract, not the crash.** An out-of-bounds read in C++
   usually returns garbage rather than failing an assertion, so a memory-safety test
   asserts the rejected input or the preserved value.
@@ -298,7 +299,7 @@ Add `-DUSE_ASAN=ON` in a separate tree for the sanitized run. `BUILD_TESTS` defa
 to `OFF`, so a tree configured without it generates no test target at all. Baseline
 measured on 2026-09-30 on the skill-info branch merged with master at
 `71159e1c`, so the tree holds both. From the branch
-(`docs/RESTRUCTURING.md` task 4.16): `ApplySkillInfo`, the rebuild
+(`docs/reviews/RESTRUCTURING.md` task 4.16): `ApplySkillInfo`, the rebuild
 `GCSkillInfoHandler` runs, on real packets of every race in
 `test_skill_info.cpp`, with the two fixes that followed (a skill type past
 the info table, a duration's milliseconds past the int range). From
@@ -473,7 +474,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
   `Client.cpp` — long believed dead — ran on every Debug launch and made the CRT
   retain every freed block, which presented as a ~200 MB/min in-game "memory leak"
   (root-caused and removed 2026-08-30, see
-  `docs/memory-leak-investigation-2026-08-30.md`). Judge every `_DEBUG` guard by the
+  `docs/reports/memory-leak-investigation-2026-08-30.md`). Judge every `_DEBUG` guard by the
   build configuration, not by the old doctrine that it never fires.
 - **An unlisted DLL kills the client before `main` does anything.** `ClientMain.cpp` walks
   `*.dll` in the working directory against a hardcoded whitelist and does a bare
@@ -516,7 +517,7 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
 - Commit messages: `type: lowercase imperative summary`, then prose covering why the
   change is right, what was verified, and what is deliberately out of scope. `a41eec9`
   is the model. A `fix:` commit also carries a `Test path:` line (`lib + test`,
-  `moved, then fixed` or `exempt` - `docs/RESTRUCTURING.md` task 3.1); the
+  `moved, then fixed` or `exempt` - `docs/reviews/RESTRUCTURING.md` task 3.1); the
   `tools/git-hooks/commit-msg` hook refuses one without, after
   `git config core.hooksPath tools/git-hooks` once per clone. Trailer: `Co-Authored-By: <the authoring model> <noreply@anthropic.com>`, e.g. `Claude Fable 5.1`.
 
@@ -535,11 +536,11 @@ reaches. The findings so far are under *Found by fuzzing* in the review.
 | `VS_UI/` | UI framework — widgets, dialogs, skinning, Korean IME |
 | `basic/` | memory, exceptions, typedefs, platform abstraction |
 | `tests/` | framework and unit tests |
-| `docs/` | code health review; `RESTRUCTURING.md`, the extraction plan, complete as of 2026-09-09 - its *What the review rounds settled* section is the standing rulebook for library work |
+| `docs/` | the knowledge bundle ([index](docs/index.md)): one concept per rule, design, report or review, in folders by area; `docs/reviews/RESTRUCTURING.md` is the extraction plan, complete as of 2026-09-09, and its *What the review rounds settled* section is the standing rulebook for library work |
 
 ## Current focus
 
-`docs/code-health-review-2026-08-29.md` holds 197 findings, 88 fixed — every
+`docs/reviews/code-health-review-2026-08-29.md` holds 197 findings, 88 fixed — every
 Critical among them. In priority order:
 
 1. **Unvalidated network input is the top open risk**, and the two halves of it

@@ -30,7 +30,7 @@ MSkillInfoTable::MSkillInfoTable()
 
 	// The server's in-code skill definitions (2,300 lines under
 	// #ifndef __GAME_CLIENT__, never compiled into the client) were
-	// deleted in 2026-09 (docs/RESTRUCTURING.md task 5.2); git history
+	// deleted in 2026-09 (docs/reviews/RESTRUCTURING.md task 5.2); git history
 	// keeps them. The client fills the table from SkillInfo.inf via
 	// LoadFromFileServerSkillInfo.
 

@@ -2,7 +2,7 @@
 // test_packet_diagnostics.cpp
 //----------------------------------------------------------------------
 //
-// PacketDiagnostics (docs/RESTRUCTURING.md task 2.4): the wire library's
+// PacketDiagnostics (docs/reviews/RESTRUCTURING.md task 2.4): the wire library's
 // bug-report seam. It existed because SendBugReport was defined in the
 // executable, which installed it here at its composition root so the
 // library could report without linking against it.

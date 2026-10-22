@@ -20,7 +20,7 @@ void GCRequestFailedHandler::execute ( GCRequestFailed * pPacket , Player * pPla
 	// satisfy by forgetting the pending request (and, once, dropping a
 	// queued whisper and printing a chat line); every request of that
 	// kind was made by the outbound peer side, which upstream had
-	// compiled out and docs/RESTRUCTURING.md task 5.2's eighth slice
+	// compiled out and docs/reviews/RESTRUCTURING.md task 5.2's eighth slice
 	// deleted. Registered so the packet is consumed, not fatal.
 
 	__END_CATCH

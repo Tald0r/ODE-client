@@ -26,7 +26,7 @@
 // in the server's seed sells at 100 (the MarketConditionSell of its
 // PrepareShop triggers), so the purchase quote is exact there; a shop
 // set to another rate is quoted at 100 until the wire carries the rate
-// and the ratio apart (docs/RESTRUCTURING.md task 4.12).
+// and the ratio apart (docs/reviews/RESTRUCTURING.md task 4.12).
 static const int	PURCHASE_MARKET_CONDITION = 100;
 
 //-----------------------------------------------------------------------------

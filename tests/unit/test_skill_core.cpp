@@ -2,7 +2,7 @@
 // test_skill_core.cpp
 //----------------------------------------------------------------------
 //
-// The skill core (docs/RESTRUCTURING.md task 4.4, fourth slice): the
+// The skill core (docs/reviews/RESTRUCTURING.md task 4.4, fourth slice): the
 // info table one entry per skill, the set of skills a character may use
 // now, and the domains that hold a skill tree and hand out what the
 // character learns. The half that decides what the player can use at

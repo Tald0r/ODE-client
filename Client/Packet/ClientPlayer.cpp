@@ -29,7 +29,7 @@
 // took with it the last unbounded sprintf under Client/Packet and the
 // last executable symbols this library source named. DebugKit.h is one
 // of the three headers the wire layer may not reach anyway
-// (docs/RESTRUCTURING.md task 5.1).
+// (docs/reviews/RESTRUCTURING.md task 5.1).
 
 //--------------------------------------------------------------------------------
 //
@@ -453,7 +453,7 @@ void ClientPlayer::setEncryptCode()
 	// The zone and the account's server number come from the host now,
 	// which is what took this file's last two game-code includes away
 	// (MZone.h and UserInformation.h) and made it a packetwire member -
-	// docs/RESTRUCTURING.md task 5.1. The Assert(g_pZone!=NULL) that
+	// docs/reviews/RESTRUCTURING.md task 5.1. The Assert(g_pZone!=NULL) that
 	// stood here went with them: the host answers whether or not there
 	// is a zone.
 	ZoneID_t zoneID = Wire::EncryptZoneID();

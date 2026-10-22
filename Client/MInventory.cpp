@@ -6,7 +6,7 @@
 #include "MInventory.h"
 
 // The player's affect check and the landing sound reach the executable
-// through MItem's host (docs/RESTRUCTURING.md task 4.3).
+// through MItem's host (docs/reviews/RESTRUCTURING.md task 4.3).
 
 //----------------------------------------------------------------------
 // Global
