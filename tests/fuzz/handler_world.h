@@ -31,9 +31,12 @@
 //     class kItemTypes rows, the creature table kCreatureTypes rows with
 //     the player races' tribes. An id past a table reads its default
 //     row in the game too (CTypeTable), so a crash on one is a crash a
-//     server can cause. The ones no run changes are made once per
-//     process (MakeStaticTables); the skill-info and rank-bonus tables,
-//     which handlers write, and the managers are made for every run;
+//     server can cause. The game strings are the English build's
+//     (InitGameStringTable), so the operator name prefix the chat
+//     replies test is "GM", and the zone's row masks another race's
+//     chat. The ones no run changes are made once per process
+//     (MakeStaticTables); the skill-info and rank-bonus tables, which
+//     handlers write, and the managers are made for every run;
 //   - the message logs and string tables InitGame makes, and the peer
 //     roster InitSocket makes (not its UDP manager nor its peer file
 //     manager, which bind a socket and write files);
@@ -63,7 +66,9 @@
 //
 // Two handlers are not dispatched: GCReconnectLogin and LCReconnect
 // reconnect the socket to the address the packet names, which a
-// harness must not do; they are read and dropped.
+// harness must not do; they are read and dropped. The player's socket
+// aborts the run if anything disconnects it, which only they do, so a
+// lost drop fails their regression inputs before a connection opens.
 //
 // Outcomes are client_stream_reader.h's: a Throwable is a rejected
 // input (UpdateSocketInput catches it and the client disconnects);
@@ -75,12 +80,15 @@
 // one was told apart.
 //
 // Reset between runs: every object a run makes is deleted and its
-// global set back to NULL, the hosts are removed, g_Mode is put back
-// and rand() reseeded, so a run starts from the same state whatever
-// ran before it. State outside those objects (a function's static, a
-// frame counter) is not reset; the replay ctest reads its inputs in one
-// fixed order, so it is deterministic either way, and a crash libFuzzer
-// reports is confirmed by replaying its input alone.
+// global set back to NULL, the storages and the trade a reply makes
+// included; the flags, counters and gear pointers the replies and the
+// model write are put back (KeepScalars, from a sweep of the handlers'
+// and gamemodel's assignments to globals); the hosts are removed,
+// g_Mode is put back and rand() reseeded. State the sweep did not name
+// (a function's static, a frame clock) is not reset; the replay ctest
+// reads its inputs in one fixed order, so it is deterministic either
+// way, and a crash libFuzzer reports is confirmed by replaying its
+// input alone.
 //
 //----------------------------------------------------------------------
 
@@ -142,6 +150,11 @@
 #include "MSlayerGear.h"
 #include "MSoundTable.h"
 #include "MStringArray.h"
+#include "MStorage.h"
+#include "MTradeManager.h"
+#include "MQuickSlot.h"
+#include "MorphState.h"
+#include "InputState.h"
 #include "MTimeItemManager.h"
 #include "MVampireGear.h"
 #include "MWarManager.h"
@@ -164,6 +177,7 @@
 #include "ZoneStateHost.h"
 #include "CServerInformation.h"
 #include "../basic/CMessageArray.h"
+#include "VS_UI_title.h"
 
 #include "Gpackets/GCReconnectLogin.h"
 #include "Lpackets/LCReconnect.h"
@@ -177,6 +191,11 @@
 // The two packet-function steps of entering a zone (PacketFunction.cpp).
 void	SetInventoryInfo(InventoryInfo* pInventoryInfo);
 void	SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo);
+
+// Globals the replies write that no header declares (GCUpdateInfoHandler.cpp
+// and VS_UI's), as PacketFunction.cpp declares them.
+extern DWORD	g_PreviousCreatureType;
+extern S_SLOT	g_char_slot_ingame;
 
 namespace HandlerFuzz {
 
@@ -213,6 +232,17 @@ public:
 	{
 		return *static_cast<SocketEncryptInputStream*>(m_pInputStream);
 	}
+
+	// Only GCReconnectLogin's and LCReconnect's handlers disconnect the
+	// client's socket, before they reconnect it, and the harness drops
+	// both; reaching this means one was dispatched, so the run stops here,
+	// before a connection is opened. Their inputs under tests/fuzz/
+	// regressions pin the drop.
+	void	disconnect(bool) override
+	{
+		std::fprintf(stderr, "handler_world: a handler disconnected the socket to reconnect it\n");
+		std::abort();
+	}
 };
 
 //----------------------------------------------------------------------
@@ -228,12 +258,18 @@ public:
 	{
 		std::srand(1);
 		g_Mode = bInZone ? MODE_GAME : MODE_WAIT_LOGINOK;
+		KeepScalars();
 		MakeTables();
 		MakeLogs();
 		MakeGameObjects();
 		InstallHosts();
 		if (bInZone)
 			EnterZone(race);
+		// Taken last, so they go first, while what their items read is
+		// still there.
+		Own(g_pStorage);
+		Own(g_pStorage2);
+		Own(g_pTradeManager);
 	}
 
 	~World()
@@ -268,6 +304,45 @@ private:
 		Own(global);
 	}
 
+	// Puts the global back to the value it holds now when the run ends.
+	template <class T>
+	void	Keep(T& global)
+	{
+		T* slot = &global;
+		m_Undo.push_back([slot, value = global]() { *slot = value; });
+	}
+
+	//------------------------------------------------------------------
+	// What the replies, and the model code they reach, write outside the
+	// objects the world makes: flags and counters, the client's character
+	// slot, and pointers into the gear the world deletes (the quick slot,
+	// the arms bands, the current magazine). Each goes back to its
+	// start-up value; the storages and the trade a reply makes are
+	// deleted at the end of the constructor's list.
+	//------------------------------------------------------------------
+	void	KeepScalars()
+	{
+		Keep(g_ModeNext);
+		Keep(g_bNeedUpdate);
+		Keep(g_LeftPremiumDays);
+		Keep(g_bFamily);
+		Keep(g_MorphCreatureType);
+		Keep(g_PreviousCreatureType);
+		Keep(g_bZoneSafe);
+		Keep(g_bHolyLand);
+		Keep(g_ZoneCreatureColorSet);
+		Keep(g_nZoneSmall);
+		Keep(g_nZoneLarge);
+		Keep(g_bZonePlayerInLarge);
+		Keep(g_SelectSector);
+		Keep(g_bNetStatusGood);
+		Keep(g_char_slot_ingame);
+		Keep(g_pQuickSlot);
+		Keep(g_pArmsBand1);
+		Keep(g_pArmsBand2);
+		Keep(g_pCurrentMagazine);
+	}
+
 	//------------------------------------------------------------------
 	// The tables a run reads and may change, and the managers.
 	//------------------------------------------------------------------
@@ -275,7 +350,6 @@ private:
 	{
 		Make(g_pClientConfig, new ClientConfig);
 		Make(g_pUserOption, new UserOption);
-		Make(g_pGameStringTable, new MStringArray);
 		Make(g_pNickNameStringTable, new MStringArray);
 		Make(g_pSkillInfoTable, new MSkillInfoTable);
 		Make(g_pRankBonusTable, new RankBonusTable);
@@ -463,7 +537,17 @@ inline void	MakeStaticTables()
 	g_pZoneTable = new CZoneTable;
 	ZONETABLE_INFO* pZoneInfo = new ZONETABLE_INFO;
 	pZoneInfo->ID = kZoneID;
+	// Some zones mask another race's chat, and the replies that check
+	// read the race the packet names.
+	pZoneInfo->ChatMaskByRace = true;
 	g_pZoneTable->Add(pZoneInfo);
+
+	// The English build's strings, as InitGame fills them: an empty table
+	// would leave UI_STRING_MESSAGE_MASTER_NAME empty, which every chat
+	// reply takes for an operator's name prefix, so no line would be a
+	// player's.
+	g_pGameStringTable = new MStringArray;
+	InitGameStringTable();
 }
 
 //----------------------------------------------------------------------

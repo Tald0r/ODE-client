@@ -41,8 +41,9 @@ handlers branch on the race; the login target runs it from each of the seven log
 
 The world they dispatch into is `tests/fuzz/handler_world.h` (its header is the full
 description): empty data tables sized where code assumes a row exists (an id past a table reads
-its default row in the game too, so a crash there is one a server can cause), `InitGameObject`
-itself, and for the game target a 32 by 32 zone with the player in its middle (the size of three
+its default row in the game too, so a crash there is one a server can cause), the English build's
+game strings (an empty table left the operator name prefix empty, which made every chat line an
+operator's and hid the replies' player branch), `InitGameObject` itself, and for the game target a 32 by 32 zone with the player in its middle (the size of three
 of the game's zones; the server's map files hold zones from 17 by 25 to 256 by 256, and a wire
 coordinate is a byte). `InitGameObject` installs the executable's host adapters; the run removes
 them all (`ReleaseGameObjectHosts`) and puts back the model's, `ZoneState`, `CreatureState`,
@@ -52,11 +53,15 @@ with a handler's value (`GameMain`'s `SetWeather`, a dialog's text) is not reach
 Nor does the world hold a request the player made: a reply that checks the request mode
 `TempInformation` records (a storage move, a trade) finds none and does nothing, as it would if a
 server sent it unasked. `GCReconnectLogin` and `LCReconnect` are read and not dispatched: they
-reconnect the socket to the address the packet names.
+reconnect the socket to the address the packet names. The player's socket aborts the run if
+anything disconnects it, which only those two do, so the regression input of each fails if the
+drop is lost.
 
 **State is reset per run.** libFuzzer runs every input in one process, so each run builds its
-world afresh and deletes it after: every object it makes, its global set back to `NULL`, the
-hosts removed, `g_Mode` and `rand()` put back. The tables no run changes are made once per
+world afresh and deletes it after: every object it makes, its global set back to `NULL` (with the
+storages and the trade a reply makes), the flags, counters and gear pointers that the handlers and
+the model they reach write put back (a sweep of their assignments to globals), the hosts removed,
+`g_Mode` and `rand()` put back. The tables no run changes are made once per
 process (the code that writes them after loading runs only from a presentation host). State
 outside the world, a function's static or a frame counter, is not reset; the replay reads its
 inputs in one sorted order, so it is deterministic regardless, and a crash libFuzzer reports is
@@ -71,7 +76,8 @@ value. `g_pTradeManager` and `g_pStorage` are `NULL` in the game until a trade o
 window opens, and a server can send a trade packet at any time, so the world leaves them `NULL`
 and a handler that dereferences one would be a finding. The UDP manager and the peer file manager
 are left `NULL` too, because they bind a socket and write files; every use of either tests for
-`NULL` already, so no finding can come from that choice.
+`NULL` but `LCReconnect`'s, which the harness does not dispatch, so no finding can come from that
+choice.
 
 # Replays in every tree
 
@@ -93,7 +99,8 @@ the plain `macos` tree and stops at an invalid `Slot` load under Clang's UBSan. 
 carries a test in `tests/unit/test_packet_fuzz_findings.cpp` or the handler's own test file, which
 catches it in every tree (the datagram type confusion, found by reading, is pinned in
 `tests/unit/test_datagram_frame.cpp`). The handler replays also hold one input each that
-`GCReconnectLogin` or `LCReconnect` reads: dispatched, it would reconnect the socket.
+`GCReconnectLogin` or `LCReconnect` reads: dispatched, it would disconnect the socket, which
+aborts the replay.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to an enum before its
 range check passed the Linux job and aborted the first macOS sanitizer run, so a Clang sanitizer
 build (the `macos-asan` preset, or the Linux container with `clang++` and the `libclang-rt`
@@ -106,7 +113,8 @@ refused on other compilers):
 
 ```bash
 cmake --preset macos-fuzz        # or linux-fuzz
-cmake --build --preset macos-fuzz --target fuzz_client_stream fuzz_client_login_stream fuzz_client_datagram
+cmake --build --preset macos-fuzz --target fuzz_client_stream fuzz_client_login_stream fuzz_client_datagram \
+  fuzz_client_stream_handlers fuzz_client_login_stream_handlers
 perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'
 cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
