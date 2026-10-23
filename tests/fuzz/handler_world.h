@@ -83,13 +83,13 @@
 // Reset between runs: every object a run makes is deleted and its
 // global set back to NULL, the storages and the trade a reply makes
 // included; the flags, counters and gear pointers the replies and the
-// model write are put back (KeepScalars, from a sweep of the handlers'
-// and gamemodel's assignments to globals); the hosts are removed,
-// g_Mode is put back and rand() reseeded. State the sweep did not name
-// (a function's static, a frame clock) is not reset; the replay ctest
-// reads its inputs in one fixed order, so it is deterministic either
-// way, and a crash libFuzzer reports is confirmed by replaying its
-// input alone.
+// model write are put back (KeepScalars, from a sweep of the handlers',
+// gamemodel's and PacketFunction's writes to globals, arrays included);
+// the hosts are removed, g_Mode is put back and rand() reseeded. State
+// the sweep did not name (a function's static, a frame clock) is not
+// reset; the replay ctest reads its inputs in one fixed order, so it is
+// deterministic either way, and a crash libFuzzer reports is confirmed
+// by replaying its input alone.
 //
 //----------------------------------------------------------------------
 
@@ -183,6 +183,8 @@
 #include "Gpackets/GCReconnectLogin.h"
 #include "Lpackets/LCReconnect.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -198,6 +200,7 @@ void	SetGearInfo(GearInfo* pGearInfo, BloodBibleSignInfo* pBloodBibleInfo);
 // and VS_UI's), as PacketFunction.cpp declares them.
 extern DWORD	g_PreviousCreatureType;
 extern S_SLOT	g_char_slot_ingame;
+extern BOOL		g_bSetHotKey;
 
 namespace HandlerFuzz {
 
@@ -316,6 +319,17 @@ private:
 		m_Undo.push_back([slot, value = global]() { *slot = value; });
 	}
 
+	// The same for an array global, element by element (a capture of the
+	// array itself would keep only a pointer to it).
+	template <class T, std::size_t N>
+	void	Keep(T (&global)[N])
+	{
+		T* slot = global;
+		std::array<T, N> value;
+		std::copy_n(global, N, value.begin());
+		m_Undo.push_back([slot, value]() { std::copy(value.begin(), value.end(), slot); });
+	}
+
 	//------------------------------------------------------------------
 	// What the replies, and the model code they reach, write outside the
 	// objects the world makes: flags and counters, the client's character
@@ -345,6 +359,9 @@ private:
 		Keep(g_pArmsBand1);
 		Keep(g_pArmsBand2);
 		Keep(g_pCurrentMagazine);
+		Keep(g_bSetHotKey);
+		Keep(g_abHolyLandBonusSkills);
+		Keep(g_abSweeperBonusSkills);
 	}
 
 	//------------------------------------------------------------------

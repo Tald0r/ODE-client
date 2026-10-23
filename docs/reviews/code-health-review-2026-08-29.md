@@ -489,8 +489,10 @@ The seed corpus reaches 124 handlers and the game corpus the runs left
 `fuzz_replay_client_stream_handlers` ctest replays on every platform. The
 inputs of the undefined-behaviour rows replay green in a tree without
 Clang's UBSan, and the effect status's write is seen only where ASan
-runs, so the unit tests are the guard in every tree; the effect status's
-test fails in the plain tree too.
+runs. Their unit tests likewise fail only under Clang's UBSan (the
+`macos-asan` tree; GCC's UBSan in `linux-asan` does not stop on an enum load), so
+that tree is their guard; the effect status's test fails in the plain tree
+as well.
 
 What the targets do not reach: what a presentation host's adapter does
 with a handler's value (the handler targets install no UI, view or sound

@@ -61,7 +61,8 @@ drop is lost.
 **State is reset per run.** libFuzzer runs every input in one process, so each run builds its
 world afresh and deletes it after: every object it makes, its global set back to `NULL` (with the
 storages and the trade a reply makes), the flags, counters and gear pointers that the handlers and
-the model they reach write put back (a sweep of their assignments to globals), the hosts removed,
+the model they reach write put back (a sweep of their writes to globals, arrays and
+PacketFunction's included), the hosts removed,
 `g_Mode` and `rand()` put back. The tables no run changes are made once per
 process (the code that writes them after loading runs only from a presentation host). State
 outside the world, a function's static or a frame counter, is not reset; the replay reads its
@@ -197,7 +198,7 @@ finding, and `unit_tests` and the fuzz ctests passed under that preset's Clang A
 The findings so far are under *Found by fuzzing* in the
 [code-health review](../reviews/code-health-review-2026-08-29.md). The handler targets' first
 runs, and the review that followed, found seven wire values read into an enum with no fixed type,
-fixed in six commits: a gear slot, a weather, a kick type, a system message type, an effect
+fixed in five commits: a gear slot, a weather, a kick type, a system message type, an effect
 status, a chat race and a character's sex. The effect status reached a heap write; the rest are
 undefined behaviour that only Clang's UBSan stops on. Two harness gaps hid findings and are
 fixed in the harness: an empty game string table made every chat sender an operator (found in
