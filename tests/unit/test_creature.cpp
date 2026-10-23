@@ -529,6 +529,30 @@ TEST(Creature, StatusesStartTheirSkillOnTheCreature)
 	CHECK(FirstIs(Skill(SKILL_CLIENT_HIT_REPUTO_FACTUM, 8)));
 }
 
+// An effect status arrives as a wire value (GCModifyInformation's
+// EFFECT_STAT, a 32-bit field, and GCAddEffect's and GCRemoveEffect's
+// ids), and one the status table has no row for is refused: added or
+// removed, nothing changes. The packet-handler fuzz target sent
+// 0xffffffff, which the test against the table's size let through as a
+// negative index into the creature's status flags.
+TEST(Creature, AStatusTheTableHasNoRowForIsRefused)
+{
+	Scene scene;
+	scene.Tribe(5, CREATURETRIBE_SLAYER);
+	MCreature creature;
+	Place(creature);
+	const unsigned int wire[] = { 0xffffffffu, 0x80000000u, 0x50000000u, (unsigned int)EFFECTSTATUS_MAX };
+	for (unsigned int value : wire)
+	{
+		const EFFECTSTATUS status = static_cast<EFFECTSTATUS>(value);
+		CHECK(!creature.AddEffectStatus(status, 40));
+		CHECK(!creature.RemoveEffectStatus(status));
+	}
+	CHECK(calls.empty());
+	for (int status = 0; status < EFFECTSTATUS_MAX; status++)
+		CHECK(!creature.HasEffectStatus(static_cast<EFFECTSTATUS>(status)));
+}
+
 TEST(Creature, AGlacierFreezesEachRaceItsOwnWay)
 {
 	Scene scene;

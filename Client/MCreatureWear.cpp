@@ -1032,7 +1032,8 @@ MCreatureWear::RemoveEffectStatus(EFFECTSTATUS status)
 {
 	DEBUG_ADD_FORMAT("[RemoveEffectStatus] id=%d, status=%d", m_ID, (int)status);
 	
-	if (status>=g_pEffectStatusTable->GetSize())
+	// A wire value: below the table as well as past it.
+	if (status<0 || status>=g_pEffectStatusTable->GetSize())
 	{
 		DEBUG_ADD_FORMAT_ERR("[Error]EffectStatus exceed Max : %d", (int)status);
 		

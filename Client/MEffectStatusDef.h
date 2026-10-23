@@ -5,7 +5,9 @@
 #ifndef __MEFFECTSTATUSDEF_H__
 #define	__MEFFECTSTATUSDEF_H__
 
-enum EFFECTSTATUS {
+// A fixed type: replies cast a wire value to it, and any int is then a
+// value of it; the creature refuses one its status table has no row for.
+enum EFFECTSTATUS : int {
 		
 	////////////////////////////////////////////////////////////
 	// 새로 추가되는 기술은 제일 밑에 넣어주세요!!!!!!!!!!!
