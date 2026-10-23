@@ -22,6 +22,10 @@ class CSprite;
 BOOL		InitGame();
 void		ReleaseAllObjects();
 
+// The hosts InitGameObject installs, but the wire, price and GameMain hosts,
+// set to none: the last step of ReleaseAllObjects.
+void		ReleaseGameObjectHosts();
+
 // The steps of InitGame, in the order it takes them after the string
 // tables (InitClientConfig, InitInfomation and InitUserOption are
 // GameInitInfo.h's).
