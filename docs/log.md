@@ -2,6 +2,15 @@
 
 ## 2026-10-23
 
+* **Update**: `CLAUDE.md` is rewritten as the bundle's index, one line per rule and a link to
+  its concept, keeping the user's instructions as lines. References to its removed sections are
+  repointed: the LNK4217 note (`CMakeLists.txt`) to
+  [reading build output](build/reading-build-output.md), the golden counts
+  (`tests/unit/test_packet_goldens.cpp`) to [wire layout](protocol/wire-layout.md), the baseline
+  (`tools/ci/verify-linux.sh`) to [testing overview](testing/overview.md), and *Testability*,
+  *Fuzzing the packet readers* and the `_DEBUG` trap, in five documents here, to
+  [library boundaries](architecture/library-boundaries.md), [fuzzing](protocol/fuzzing.md) and
+  [client traps](architecture/client-traps.md).
 * **Creation**: [Linux and macOS](build/linux-and-macos.md) and
   [resource text encoding](operations/resource-text-encoding.md), from the README's platform
   sections and its *Resource text encoding* section, which the README now links instead of

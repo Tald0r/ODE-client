@@ -374,7 +374,7 @@ add_subdirectory(Client/framelib)
 # CLIENT_MAIN_SOURCES below matches - file(GLOB) returns absolute paths,
 # and a relative entry is silently not removed (that mismatch is exactly
 # how sources end up compiled into both a library and the executable,
-# see the LNK4217 note in CLAUDE.md).
+# see the LNK4217 note in docs/build/reading-build-output.md).
 set(PACKETWIRE_MEMBERSHIP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/arch/packetwire_files.txt)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${PACKETWIRE_MEMBERSHIP_FILE})
 # Every line is stripped before it is matched, so an indented path is

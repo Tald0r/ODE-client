@@ -344,8 +344,8 @@ Defects of the same weight as the ten above, kept out of that table because they
 
 This review was static, and so were the passes after it, until a libFuzzer
 target over the client's receive path landed on 2026-09-29
-(`tests/fuzz/fuzz_client_stream.cpp`; CLAUDE.md, *Fuzzing the packet
-readers*, says how to run it). It feeds an encrypt code and a raw TCP stream
+(`tests/fuzz/fuzz_client_stream.cpp`; [fuzzing the packet
+readers](../protocol/fuzzing.md) says how to run it). It feeds an encrypt code and a raw TCP stream
 through the gates of `ClientPlayer::processCommand` into the `read()` of every
 packet the client's factory registers, frame-bounded as in production, under
 ASan and UBSan. A survey
@@ -2090,7 +2090,7 @@ Client/CTypeTable.h:41-65 wraps the range test in all three accessors (`const op
 
 > ✅ **Fixed** on branch `harden/high-severity-batch1` — but **this finding's premise is false and its filing is wrong**, which matters because it is filed as a *build* finding against `CMakeLists.txt:16`.
 >
-> It claims the build system "deliberately never defines `_DEBUG`", so "every table lookup is unchecked in all configurations". Not so: MSVC defines `_DEBUG` automatically under `/MDd`, and CMake only declines to *add* it — see the Traps section of `CLAUDE.md`. The check has been running in both Debug trees all along and is dead only in Release. The real defect is narrower than described, the correct location is `Client/CTypeTable.h`, the category is memory-safety rather than build, and **no CMake change was needed or made**. The duplicate write-up in Text & Strings states it correctly.
+> It claims the build system "deliberately never defines `_DEBUG`", so "every table lookup is unchecked in all configurations". Not so: MSVC defines `_DEBUG` automatically under `/MDd`, and CMake only declines to *add* it — see [client traps](../architecture/client-traps.md). The check has been running in both Debug trees all along and is dead only in Release. The real defect is narrower than described, the correct location is `Client/CTypeTable.h`, the category is memory-safety rather than build, and **no CMake change was needed or made**. The duplicate write-up in Text & Strings states it correctly.
 >
 > The second half of the finding — that `LoadFromFile` reads `numSize` as a raw `int` from a data file and hands it to `Init` unvalidated — was untouched by any of that and was entirely real. All three accessors now check unconditionally and also reject a NULL table; `Init` rejects `size <= 0` (a negative made `new Type[]` undefined) and publishes `m_Size` only after the allocation succeeds; both `LoadFromFile` variants validate the file-supplied count against the bytes actually left in the file. `LoadFromFile_NickNameString`'s `int numSize;` was *also* uninitialized, which neither write-up mentions.
 >
