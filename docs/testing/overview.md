@@ -22,6 +22,7 @@ everything else is verified by builds and the automated checks, never by a runti
 | `sprite_gpu_tests` | the GPU sprite composition ([native GPU renderer](../rendering/native-gpu-renderer.md)) |
 | `screen_fade_<signed\|unsigned>_tests`, `weather_<signed\|unsigned>_tests` | the same model built with both `char` signednesses |
 | `fuzz_replay_client_stream`, `fuzz_replay_client_login_stream`, `fuzz_replay_client_datagram` | the seed corpus and every fixed crash through the packet readers ([fuzzing](../protocol/fuzzing.md)) |
+| `fuzz_replay_client_stream_handlers`, `fuzz_replay_client_login_stream_handlers` | the same seeds and every fixed crash through the client's receive loop into the packet handlers, in a world `tests/fuzz/handler_world.h` builds ([fuzzing](../protocol/fuzzing.md#the-handler-targets)) |
 | `ratchets` (bash) | the shrink-only counts ([ratchets](ratchets.md)) |
 | `arch_includes`, `decore_vendored`, `source_encoding`, `format_arity`, `packet_indices`, `wire_inventory_fresh`, `warning_budget_parser`, `knowledge_bundle` (perl) | the include graph, the vendored copy, UTF-8 sources, [format strings](../protocol/format-strings.md), [packet indices](../protocol/packet-input-safety.md), the [wire inventory](../protocol/wire-layout.md), the warning budget's parser, the [knowledge bundle](../knowledge-bundle.md) |
 | `warning_policy` (cmake) | the warning options every target compiles with ([reading build output](../build/reading-build-output.md)) |
@@ -70,7 +71,8 @@ The Windows trees were not re-measured for this figure, and no CI run produced i
 job has not produced these totals either. The same Mac ran the `macos` preset's ctest tests green
 that day ([Linux and macOS](../build/linux-and-macos.md#status-on-macos)), of which
 `verify-linux.sh` and `verify-windows.ps1` then required 16 by name
-(`fuzz_replay_client_datagram` the latest; the list is 21 names on 2026-10-23). A
+(`fuzz_replay_client_datagram` the latest then; the list is 23 names on 2026-10-23, the two
+handler replays the latest). A
 platform-conditional test can make the check totals differ by one between platforms; that is not a
 failure. Keep a new measurement with the change that produced it; this concept records the last
 one, not a live count. `tools/ci/verify-linux.sh` prints the suite's own totals line, the line a

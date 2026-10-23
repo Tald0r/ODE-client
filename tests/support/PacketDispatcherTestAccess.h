@@ -34,6 +34,13 @@ struct PacketDispatcherTestAccess
 		s_Kept = s_Kept || !empty;
 	}
 
+	// Binds an id whatever it holds: the handler fuzz targets drop the
+	// two handlers that reconnect the socket.
+	static void Set(PacketID_t id, PacketDispatcher::HandlerFn fn)
+	{
+		PacketDispatcher::s_Handlers[id] = fn;
+	}
+
 	// Whether a fill has been kept: the registry has run in the process.
 	static bool Kept() { return s_Kept; }
 

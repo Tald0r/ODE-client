@@ -59,7 +59,7 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 - Wire layout is pinned in `tests/wire-layout.txt` and `tests/golden/*.hex`: a layout change is a protocol change the server ships identically, the inventory is regenerated with `tests/tools/gen_wire_inventory.pl`, and a golden is never re-recorded to make a test pass - [wire layout](docs/protocol/wire-layout.md).
 - Unvalidated network input is the top open risk: ratchet R3 holds lengths into copies at 0, and `packet_indices` reads every packet-indexed subscript by value and fails closed - [packet input safety](docs/protocol/packet-input-safety.md).
 - A format string from a data file goes through `SafeFormat::Format`; to find a new site, sweep the *format argument*, never a spelling of the lookup - [format strings](docs/protocol/format-strings.md).
-- Three libFuzzer targets drive the packet readers; a fixed crash gets a regression input *and* a unit test, and only a Clang sanitizer sees a bad enum load - [fuzzing](docs/protocol/fuzzing.md).
+- Five libFuzzer targets: three drive the packet readers, two run the receive loop into the handlers in a harness world whose gaps are fixed in the harness; a fixed crash gets a regression input *and* a unit test, and only a Clang sanitizer sees a bad enum load - [fuzzing](docs/protocol/fuzzing.md).
 - Parsing, model mutation and UI effects are separate layers, and every handler is bound to its id in `Client/PacketHandlerRegistry.cpp` - [protocol overview](docs/protocol/overview.md).
 - `third_party/decore` is the server's: change a shared formula there, resync with `tools/decore/sync.pl`, never edit the copy - [de-core](docs/architecture/decore.md).
 
@@ -98,7 +98,7 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 ## Current focus
 
 - [Packet input safety](docs/protocol/packet-input-safety.md) - unvalidated network input is the top open risk; fixed-size buffers fed by server strings are next.
-- [Fuzzing the packet readers](docs/protocol/fuzzing.md) - the one check that models no route; it stops at `read()`.
+- [Fuzzing the packet readers and handlers](docs/protocol/fuzzing.md) - the one check that models no route; the handler targets reach the model, not the UI or the view behind the presentation hosts.
 - [Format strings](docs/protocol/format-strings.md) - C19 is closed; read its review entry before trusting a ratchet at zero.
 - [Code-health reconciliation](docs/reviews/code-health-reconciliation-2026-09-23.md) - the current disposition of the [review](docs/reviews/code-health-review-2026-08-29.md)'s 197 findings.
 - [The restructuring plan](docs/reviews/RESTRUCTURING.md) - original plan complete as of 2026-09-09 (task 4.12 is still open); its *What the review rounds settled* section is the standing rulebook for library work.

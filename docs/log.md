@@ -2,6 +2,11 @@
 
 ## 2026-10-23
 
+* **Update**: [fuzzing](protocol/fuzzing.md) is now *Fuzzing the packet readers and handlers*:
+  two libFuzzer targets run the client's receive loop into the packet handlers, in the world
+  `tests/fuzz/handler_world.h` builds, with how a run is reset, what counts as a finding and how a
+  harness gap is told apart from a handler bug; [testing overview](testing/overview.md) lists
+  their replay ctests, and `CLAUDE.md`'s fuzzing lines follow.
 * **Update**: the review of the `CLAUDE.md` rewrite. The path-mismatch comment in
   `CMakeLists.txt` now points at the [restructuring plan](reviews/RESTRUCTURING.md)'s task 4.0,
   not the LNK4217 note; the three code comments that cited `CLAUDE.md`'s *Traps* point at

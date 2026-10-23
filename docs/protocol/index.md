@@ -4,7 +4,7 @@
 
 # Guides
 
-* [Fuzzing the packet readers](fuzzing.md) - Three libFuzzer targets drive the game stream, the login stream and the peer datagram readers with hostile bytes under ASan and UBSan; every native tree replays their seed corpus and the fixed crashes under tests/fuzz/regressions, and each fix also carries a unit test.
+* [Fuzzing the packet readers and handlers](fuzzing.md) - Five libFuzzer targets under ASan and UBSan: three drive the game stream, the login stream and the peer datagram readers with hostile bytes, two run the client's receive loop into the packet handlers; every native tree replays their seed corpus and the fixed crashes under tests/fuzz/regressions, and each fix also carries a unit test.
 
 # Rules
 
