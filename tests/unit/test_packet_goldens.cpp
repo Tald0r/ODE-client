@@ -11,12 +11,12 @@
 // those are byte-identical copies of the server's file: this client and
 // that server carry hand-maintained copies of every packet class, and a
 // byte that moves in one repo breaks live sessions with no compile
-// error anywhere. CLAUDE.md gives the measured counts and names the
-// shared goldens whose fixture values differ between the two repos. A
-// golden copied from the server (the two LCPCList goldens, for one)
-// must stay byte-identical. A failing golden is a protocol change to be
-// reviewed, not a test to be silenced; diffing the two golden
-// directories is the cross-repo check.
+// error anywhere. docs/protocol/wire-layout.md gives the measured counts
+// and names the shared goldens whose fixture values differ between the
+// two repos. A golden copied from the server (the two LCPCList goldens,
+// for one) must stay byte-identical. A failing golden is a protocol
+// change to be reviewed, not a test to be silenced; diffing the two
+// golden directories is the cross-repo check.
 //
 // Encrypt codes: 0 is the plain branch, 1..5 the __USE_ENCRYPTER__
 // branch through every `code % N` case of SHUFFLE_STATEMENT_2.._5
@@ -38,9 +38,9 @@
 // point of those pins is byte identity with the server's files. Some
 // of them (GCMoveOK, CGMove, CGSay, CGWhisper) still hold the values
 // the server used before it re-recorded them with stronger fixtures;
-// CLAUDE.md lists them. Bringing one back in line means re-recording it
-// here from the server's fixture, and changing an identical one means
-// re-recording both repositories in lockstep.
+// docs/protocol/wire-layout.md lists them. Bringing one back in line
+// means re-recording it here from the server's fixture, and changing an
+// identical one means re-recording both repositories in lockstep.
 //
 // Set UPDATE_GOLDENS=1 to (re)record instead of compare. Any other
 // value compares - UPDATE_GOLDENS=0 must not silently rewrite every

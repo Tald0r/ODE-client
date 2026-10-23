@@ -121,7 +121,7 @@ simply drawn into every frame.
 
 ## Verification
 
-No test binary can reach this code (see CLAUDE.md, *Testability*). Verified by
+No test binary could reach this code ([library boundaries](../architecture/library-boundaries.md)). Verified by
 the repo owner running the client in-game: ~60 fps on the FPS counter, smooth
 panning while walking, creatures gliding, movement speed and animation timing
 unchanged.

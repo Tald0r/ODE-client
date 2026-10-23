@@ -1336,7 +1336,7 @@ check "R8 (printf-family calls whose format is not a literal)" "$R8" "$R8_BASELI
 # (docs/history/cpp17-cpp20-compatibility-assessment-2026-09-04.md, finding 3).
 # A ratchet is the only instrument there is, because the BUILD says
 # nothing: the Debug log of this tree at /std:c++20 contains C4290 - the
-# warning CLAUDE.md names for the packet tree - exactly zero times, so
+# warning CLAUDE.md once named for the packet tree - exactly zero times, so
 # none of the 11,463 sites below is visible as a diagnostic. What the
 # build does emit is 539 distinct C4297, "function assumed not to throw
 # an exception but does", across 257 Client/Packet files: those are
@@ -1984,7 +1984,7 @@ fi
 # call is snprintf(dst, sizeof(dst), ...) or an exact-length memcpy,
 # checked by hand, never by sizeof() on a pointer. Read with -a,
 # because VS_UI_GameCommon.cpp carries NUL bytes and a plain grep
-# stops at the first one (CLAUDE.md, Traps).
+# stops at the first one (docs/architecture/client-traps.md).
 #
 # What it cannot see: vsprintf, lstrcpy/lstrcat, strncpy, or a copy
 # spelled any other way; snprintf never matched. The old MinTr/DebugInfo

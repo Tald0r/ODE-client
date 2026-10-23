@@ -25,6 +25,8 @@ out/
 # that generated them, so they are never portable between clones - regenerate
 # locally instead (see README.md).
 [Bb]uild/
+# The knowledge bundle's build folder is documentation, not a build tree.
+!docs/build/
 
 # MSVC Compiled Artifacts
 *.obj

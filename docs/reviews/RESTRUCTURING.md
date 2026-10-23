@@ -71,17 +71,18 @@ adversarial reviews recorded the traps.
 ### Working agreements for refactoring agents
 
 - **New library targets use explicit source lists, never `file(GLOB)`.** The
-  existing globs don't use `CONFIGURE_DEPENDS`, so a moved file silently stays
-  in the old target until someone reconfigures; explicit lists make membership
-  reviewable and are what the ratchet script parses. After moving files,
-  reconfigure both trees.
+  source globs that remain use `CONFIGURE_DEPENDS`, but a direct MSBuild
+  target can still need a retry after a source-list change; explicit lists make
+  membership reviewable and are what the ratchet script parses. After moving
+  files, reconfigure both trees.
 - **Moving a file between targets must not change its bytes** in the same
   commit when it has no seam to cut. Move first, prove the build, then fix —
   separate commits, so the diff that changes behavior is readable. A file
   that only links once its reaches go through a host moves and cuts in one
   commit (the Phase 4 pattern), and that commit names every change that is
   not the move.
-- Sources are CRLF; use the Edit tool, not `sed -i`/`awk`, to modify them.
+- Line endings vary by file (LF, CRLF, a few mixed) and each file keeps its
+  own; use the Edit tool, not `sed -i`/`awk`, to modify them.
 - Wire layout is pinned: any change under `Client/Packet` that touches
   `read()`/`write()`/`getPacketMaxSize()` must keep
   `tests/wire-layout.txt` in sync (regenerate via

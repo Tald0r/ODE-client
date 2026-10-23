@@ -105,6 +105,29 @@ setting changes, renderer replacement and reset invalidate the cache. The saved
 xBRZ preference, aspect ratio, letterbox, mouse mapping and fractional scaling
 are preserved. Turning the setting off releases the intermediate textures.
 
+## The xBRZ setting
+
+The player turns the filter on and off under **Options > Graphics > xBRZ smoothing**, immediately
+below the FPS option. It is enabled by default, including with older settings files that predate
+it (`VS_UI/src/UserOption.cpp`). A change applies at once and is saved with the other options when
+the menu closes; unchecking it restores the original presentation, with no restart or environment
+variable. Fullscreen and resolution, in the same tab, take effect after a restart.
+
+The filter runs on the completed frame, world, effects and UI together, at an integer scale of 2x
+to 4x, and SDL then fits the result to the window. It uses the existing assets and preserves game
+coordinates, mouse mapping, aspect ratio and letterboxing; it adds no widescreen world visibility
+and replaces no artwork. Because it filters after composition, character edges can differ from
+the individual transparent sprites in the offline comparison gallery. Moving scenes filter every
+new frame, so compare frame time with the toggle on and off on the machine in question. Without the
+shader path, or when a GPU allocation fails, the CPU filter runs on up to four worker threads
+(`Client/SpriteLib/FrameUpscaler.cpp`); if both paths fail, the original presentation is
+restored. The CPU fallback is compiled with `/O2` in every configuration, Debug included
+(`third_party/xbrz/CMakeLists.txt`), and the pinned xBRZ source and its upstream license are under
+`third_party/xbrz/`.
+
+The startup log names the rendering device, and shutdown logs the texture draws, uploads and
+readbacks (`Sprite composition: ... draws, ... sprite uploads, ... surface uploads, ... readbacks`).
+
 ## Compatibility and remaining CPU work
 
 Unsupported devices, texture allocation failures and explicit software mode

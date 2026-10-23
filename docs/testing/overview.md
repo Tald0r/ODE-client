@@ -3,7 +3,7 @@ type: Guide
 title: "Testing overview"
 description: "What the test binaries and script ctests cover, how to configure and run them in a plain and an ASan tree, and the measured baseline the suite last read."
 tags: [testing]
-generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-10-23T12:03:53Z }
 ---
 
 # Testing overview
@@ -47,16 +47,34 @@ container also needs the common git directory mounted, at its host path or with 
 
 # Baseline
 
-Measured on 2026-09-30 on the skill-info branch merged with master at `71159e1c`: master alone
-read 1463 tests and 1,458,200 checks; the merged tree reads **1483 tests, 1,458,777 checks, 0
-failed**, identical in the four Linux and macOS builds (GCC 13.3 and Clang 18.1 in the Docker
-image, Apple Clang 21 plain and with ASan and UBSan; `decore_tests`: 13 tests, 2009 checks). The
-Windows trees were not re-measured for this figure, and no CI run produced it. A
+Measured on 2026-09-30 on the skill-info branch merged with master at `71159e1c`, so the tree held
+both. From the branch ([restructuring plan](../reviews/RESTRUCTURING.md) task 4.16):
+`ApplySkillInfo`, the rebuild `GCSkillInfoHandler` runs, on real packets of every race in
+`test_skill_info.cpp`, with the two fixes that followed (a skill type past the info table, a
+duration's milliseconds past the int range). From master: PR #298, the datagram type-confusion,
+bug-report and empty-datagram fixes, the test that a refused datagram id creates no packet, and the
+datagram fuzz target's goldens, with their 14 tests and 586 checks. Master alone read 1463 tests
+and 1,458,200 checks; the merged tree reads **1483 tests, 1,458,777 checks, 0 failed**,
+identical in all four builds (`decore_tests`: 13 tests, 2009 checks on the same four):
+
+- **Linux**: `unit_tests` built by `tools/ci/verify-linux.sh linux` (GCC 13.3) and `linux-clang`
+  (Clang 18.1) in the Docker image, its native arm64 on an Apple Silicon Mac, with the totals read
+  by running `build/presets/<preset>/bin/unit_tests` in it (the scripts stop at the warning step,
+  which has no `aarch64` baseline, after ctest passed).
+- **macOS**: Apple Clang 21, the `macos` preset's `unit_tests`, run through a local helper
+  (`build/defects/run-tests.sh`, never committed), and the `macos-asan` preset's `unit_tests`
+  under `ASAN_OPTIONS=detect_leaks=0` and `UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan
+  report.
+
+The Windows trees were not re-measured for this figure, and no CI run produced it; the macOS CI
+job has not produced these totals either. The same Mac ran the `macos` preset's ctest tests green
+that day ([Linux and macOS](../build/linux-and-macos.md#status-on-macos)), of which
+`verify-linux.sh` and `verify-windows.ps1` then required 16 by name
+(`fuzz_replay_client_datagram` the latest; the list is 21 names on 2026-10-23). A
 platform-conditional test can make the check totals differ by one between platforms; that is not a
 failure. Keep a new measurement with the change that produced it; this concept records the last
-one, not a live count.
+one, not a live count. `tools/ci/verify-linux.sh` prints the suite's own totals line, the line a
+measurement like this one reads, once ctest and the warning check have passed.
 
-`DarkEden` builds and links on Linux and macOS, and on Linux run headless
-(`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and exits cleanly on
-`SDL_QUIT`; login and beyond are unverified off Windows. A `<SDL2/...>` include spelling breaks
-the Homebrew build: it is `<SDL.h>` everywhere (`basic/Platform.h` says why).
+What the Linux and macOS client runs have verified, and the `<SDL.h>` include rule, are in
+[Linux and macOS](../build/linux-and-macos.md).

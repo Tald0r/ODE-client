@@ -128,7 +128,7 @@ in the per-frame update/draw path.
 The leak only reproduces **logged in, standing still in a city**. The main menu
 is flat. Neither the investigating agent nor any test binary can reach this code
 path -- game logic compiles straight into `DarkEden.exe` and cannot be linked
-into `unit_tests` (see `CLAUDE.md`, *Testability*). **Every measurement below
+into `unit_tests` (see [library boundaries](../architecture/library-boundaries.md)). **Every measurement below
 came from the repo owner running the client from the Visual Studio debugger and
 pasting the Output window.** Any next step that needs numbers needs them too.
 

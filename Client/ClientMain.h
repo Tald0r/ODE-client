@@ -150,7 +150,8 @@ bool	ParsingRealServer(const char* pCommandLine, int Dimention, REALSERVER_INFO 
 
 // The first name in the list that is not a DLL the game ships with or
 // tolerates (compared without regard to case), or NULL when every one
-// is. ClientMain returns -1 on one, silently (CLAUDE.md, Traps).
+// is. ClientMain returns -1 on one, silently
+// (docs/architecture/client-traps.md).
 const std::string*	FindUnlistedDll(const std::vector<std::string>& names);
 
 // The working directory ClientMain settled on (the executable's on

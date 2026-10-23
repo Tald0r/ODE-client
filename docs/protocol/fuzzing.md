@@ -117,8 +117,9 @@ exist" until you pass `-DDARKEDEN_LIBFUZZER_ARCHIVE=<path to libclang_rt.fuzzer_
 hybrid, `-fork` reports an ASan container-overflow inside libFuzzer's own merge code, not in ours,
 so fuzz single-process on a Mac. `linux-fuzz` uses the distribution Clang and
 `-fsanitize=fuzzer`; the `darkeden-linux` image includes the required `libclang-rt-18-dev`
-package (rebuild the image if an older copy reports missing sanitizer or libFuzzer archives;
-verified 2026-09-29).
+package (rebuild the image if an older copy reports missing sanitizer or libFuzzer archives).
+Installing it was verified on 2026-09-29: the target built, fuzzed for two minutes without a
+finding, and `unit_tests` and the fuzz ctests passed under that preset's Clang ASan and UBSan.
 
 The findings so far are under *Found by fuzzing* in the
 [code-health review](../reviews/code-health-review-2026-08-29.md).

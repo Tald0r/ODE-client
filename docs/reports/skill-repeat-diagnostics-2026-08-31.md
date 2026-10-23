@@ -77,7 +77,7 @@ cmake --build build/vs2022 --config Debug -- -m
 ```
 
 `DEBUG_ADD_FORMAT` is live in Debug builds (see the `_DEBUG` trap in
-`CLAUDE.md`), so no extra define is needed. Run the client from the Visual
+[client traps](../architecture/client-traps.md)), so no extra define is needed. Run the client from the Visual
 Studio debugger as usual.
 
 **The log is truncated on every launch.** `log_set_file_output` opens

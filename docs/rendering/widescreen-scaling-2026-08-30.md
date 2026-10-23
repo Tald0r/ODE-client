@@ -88,7 +88,7 @@ Found the hard way (a wedged fullscreen debug session forced a PC reboot):
   together with topmost that removed every escape hatch.
 - **The fullscreen flag now works in Debug builds.** Upstream forced
   `g_bFullScreen = false` under `#ifdef _DEBUG`, which is live in every Debug
-  build (see the `_DEBUG` trap in CLAUDE.md).
+  build (see the `_DEBUG` trap in [client traps](../architecture/client-traps.md)).
 
 ## Picking back in exact tick space (60 fps regression fix)
 

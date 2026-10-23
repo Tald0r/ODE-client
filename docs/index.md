@@ -10,9 +10,9 @@ okf_version: "0.2"
 
 * [Architecture](architecture/) - Which code lives in a static library and can be tested, the host interfaces the libraries reach the executable through, the vendored de-core, and the traps that cost time to rediscover.
 * [Browser](browser/) - The WebAssembly client, the WebSocket gateway transport and the browser's login and logout flows.
-* [Build](build/) - The two Debug trees, how to read a build, CI on master only, the compiler-warning cleanup and the Linux and macOS port assessment.
+* [Build](build/) - The two Debug trees, how to read a build, CI on master only, the Linux image and what is verified on Linux and macOS, the compiler-warning cleanup and the port assessment.
 * [History](history/) - Records of finished migrations.
-* [Operations](operations/) - Running the client from the debugger, the DLL whitelist and the packed resources.
+* [Operations](operations/) - Running the client from the debugger, the DLL whitelist, the packed resources and the resource text encoding.
 * [Process](process/) - Commit messages, source style, move-then-fix, the restructuring status lines and the lessons the review rounds settled.
 * [Protocol](protocol/) - The wire layer: the pinned layout and goldens, server-supplied lengths and indices, format strings, and the packet-read fuzzers.
 * [Rendering](rendering/) - The native GPU renderer, 60 fps interpolation over the logic tick and widescreen scaling.

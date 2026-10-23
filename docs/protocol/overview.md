@@ -1,9 +1,9 @@
 ---
 type: Design
 title: "Protocol overview"
-description: "Packet classes and factories live under Client/Packet and compile as packetwire; handler bodies live under Client/PacketHandler, bound to ids in PacketHandlerRegistry.cpp, and are executable-side except the seventeen gamemodel compiles."
+description: "Packet classes and factories live under Client/Packet and compile as packetwire; handler bodies live under Client/PacketHandler, bound to ids in PacketHandlerRegistry.cpp, and all compile into gamemodel."
 tags: [protocol, architecture]
-generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-10-23T12:03:53Z }
 ---
 
 # Protocol overview
@@ -15,9 +15,9 @@ generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
   validator tables, the sockets, streams and the encrypter. A packet's `read()`, `write()` and
   `getPacketMaxSize()` are its [wire layout](wire-layout.md).
 - `Client/PacketHandler/` holds the handler bodies, all bound to their ids in
-  `Client/PacketHandlerRegistry.cpp`. They are executable-side, so a test binary cannot reach
-  them, except the seventeen whose bodies reach only model state and named host services, which
-  [gamemodel](../architecture/gamemodel.md) compiles.
+  `Client/PacketHandlerRegistry.cpp` and all compiled into
+  [gamemodel](../architecture/gamemodel.md), so a test binary links them; each reaches the UI and
+  the live game through a named host.
 - The executable installs the wire host services (`Client/Packet/WireHost.h`, in
   `Client/GameInit.cpp`) and dispatches the handlers.
 

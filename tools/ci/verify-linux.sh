@@ -92,7 +92,7 @@ run warnings perl tools/ci/check-warnings.pl --log "$logdir/build.log" \
 	--report "$logdir/warnings.json"
 
 # The suite's own totals, which ctest prints only on failure: the line
-# CLAUDE.md's baseline is measured from.
+# the baseline in docs/testing/overview.md is measured from.
 "build/presets/$preset/bin/unit_tests" 2>/dev/null | tail -n 1
 
 echo "== $preset: configure, build and test passed"

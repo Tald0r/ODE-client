@@ -20,12 +20,12 @@ each, and `CLAUDE.md` links them. `README.md` stays the human setup guide.
 |---|---|
 | `architecture/` | the library boundaries, the host interfaces, the vendored de-core and the traps |
 | `browser/` | the WebAssembly client, its gateway transport and its login and logout flows |
-| `build/` | the two Debug trees, reading build output, CI, the warning cleanup and the port assessment |
+| `build/` | the two Debug trees, reading build output, CI, Linux and macOS, the warning cleanup and the port assessment |
 | `protocol/` | the wire layer: layout pins, input safety, format strings and the packet-read fuzzers |
 | `rendering/` | the GPU renderer, frame interpolation and widescreen scaling designs |
 | `testing/` | what can be tested, the framework, the fix policy and the ratchets |
 | `process/` | commits, source style, moves, status lines and the lessons the review rounds settled |
-| `operations/` | running the client |
+| `operations/` | running the client and the resource text encoding |
 | `reviews/` | the restructuring plan, the code-health review and reconciliation, and the audits |
 | `reports/` | investigations and stabilization write-ups |
 | `history/` | records of finished migrations |
@@ -70,9 +70,9 @@ enforced_by: [wire_inventory_fresh, unit_tests]   # the ctest or gate that fails
 
 4. Link to other documents with relative paths. When you move a document, grep the whole repo
    for its old path (comments in `Client/`, `basic/`, `tests/` and the scripts name docs by
-   path), fix every reference, and add a `log.md` entry with the old-to-new map. Sources are
-   CRLF: rewrite a path with `perl -pi -e 's{old}{new}g'` on the exact files grep found, never
-   with a tool that normalises line endings.
+   path), fix every reference, and add a `log.md` entry with the old-to-new map. Line endings
+   vary by file: rewrite a path with `perl -pi -e 's{old}{new}g'` on the exact files grep found,
+   never with a tool that normalises line endings.
 
 `tests/tools/check_knowledge_bundle.pl` (ctest `knowledge_bundle`, required by
 `tools/ci/verify-linux.sh` and `verify-windows.ps1`) fails the suite on a concept without a
