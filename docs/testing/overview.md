@@ -68,7 +68,7 @@ identical in all four builds (`decore_tests`: 13 tests, 2009 checks on the same 
 The Windows trees were not re-measured for this figure, and no CI run produced it; the macOS CI
 job has not produced these totals either. The same Mac ran the `macos` preset's 20 ctest tests
 green that day, of which `verify-linux.sh` and `verify-windows.ps1` then required 16 by name
-(`fuzz_replay_client_datagram` the latest; the list is 22 names on 2026-10-23). A
+(`fuzz_replay_client_datagram` the latest; the list is 21 names on 2026-10-23). A
 platform-conditional test can make the check totals differ by one between platforms; that is not a
 failure. Keep a new measurement with the change that produced it; this concept records the last
 one, not a live count. `tools/ci/verify-linux.sh` prints the suite's own totals line, the line a measurement like
