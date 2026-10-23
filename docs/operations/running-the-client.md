@@ -31,6 +31,8 @@ beside its `.rpk`, then falls back to the password-protected archive, into bound
 never to disk. Keep the UnRAR notices beside distributed binaries (`third_party/unrar/README.md`).
 
 **Off Windows**, the client has reached the main menu headless on Linux and nothing past it is
-verified; [Linux and macOS](../build/linux-and-macos.md#status-on-linux) has what is verified
-there, the app bundle's data lookup and Retina scaling. The browser build has its own loop and
+verified; [Linux and macOS](../build/linux-and-macos.md) has what is verified on
+[Linux](../build/linux-and-macos.md#status-on-linux) and on
+[macOS](../build/linux-and-macos.md#status-on-macos), with the app bundle's data lookup and Retina
+scaling. The browser build has its own loop and
 exit path ([browser client](../browser/browser-client.md), [login and logout](../browser/login-and-logout.md)).

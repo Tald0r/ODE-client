@@ -11,7 +11,7 @@ under `docs/` (Google's Open Knowledge Format): start at [docs/index.md](docs/in
 [docs/knowledge-bundle.md](docs/knowledge-bundle.md) says how it is kept. This file is the index:
 one line per rule and a link to the concept that explains it. **Open the linked concept before you
 work in its area** - the line here is a reminder, not the rule. Every line binds; one marked
-*(user instruction)* is in the user's own words.
+*(user instruction)* is the user's own.
 
 ## Build & test
 
@@ -85,7 +85,7 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 
 ## Conventions and process
 
-- Tabs, English only, Hungarian notation and banner comments as the file has them; line endings vary by file (`git ls-files --eol`) and each keeps its own, so edit with the Edit tool or `perl -pi -e` on the exact files, never `sed -i` or `awk` - [source style](docs/process/source-style.md).
+- Tabs, English only, Hungarian notation and banner comments as the file has them; line endings vary by file (`git ls-files --eol`) and each keeps its own, so edit with the Edit tool or `perl -pi -e` on the exact files (on Windows, Git for Windows' Perl: a native Perl rewrites LF as CRLF), never `sed -i` or `awk` - [source style](docs/process/source-style.md).
 - Commit messages are `type: lowercase imperative summary`, then prose on why the change is right, what was verified and what is deliberately out of scope; `a41eec9` is the model - [commit messages](docs/process/commit-messages.md).
 - A `fix:` commit carries a `Test path:` line (`lib + test`, `moved, then fixed` or `exempt`); `tools/git-hooks/commit-msg` refuses one without, after `git config core.hooksPath tools/git-hooks` once per clone - [commit messages](docs/process/commit-messages.md).
 - Trailer: `Co-Authored-By: <the authoring model> <noreply@anthropic.com>`, e.g. `Claude Fable 5.1` - [commit messages](docs/process/commit-messages.md).
