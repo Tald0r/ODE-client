@@ -51,7 +51,9 @@ const uint szZoneCoord = sizeof(ZoneCoord_t);
 
 const uint szWeather = szBYTE;
 
-enum Weather 
+// A fixed type: a reader stores the wire byte in it, and any byte is then
+// a value of it; WEATHER_MAX and past it name no weather.
+enum Weather : BYTE
 {
 	WEATHER_CLEAR, 
 	WEATHER_RAINY, 

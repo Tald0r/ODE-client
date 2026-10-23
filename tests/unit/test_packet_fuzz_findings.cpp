@@ -26,9 +26,12 @@
 #include "SocketEncryptInputStream.h"
 #include "SocketImpl.h"
 #include "StoreInfo.h"
+#include "Gpackets/GCChangeWeather.h"
+#include "Gpackets/GCKickMessage.h"
 #include "Gpackets/GCModifyNickname.h"
 #include "Gpackets/GCMyStoreInfo.h"
 #include "Gpackets/GCOtherStoreInfo.h"
+#include "Gpackets/GCSystemMessage.h"
 #include "Lpackets/LCPCList.h"
 
 #include <algorithm>
@@ -461,4 +464,66 @@ TEST(PacketFuzzFindings, PCListSlotNamedTwiceKeepsTheLaterInfo)
 		bEmpty = true;
 	}
 	CHECK(bEmpty);
+}
+
+//----------------------------------------------------------------------
+// Found by the packet-handler targets (tests/fuzz/
+// fuzz_client_stream_handlers.cpp), which run the handler after the
+// read: GCChangeWeather, GCKickMessage and GCSystemMessage stored a wire
+// byte in an enum with no fixed type, whose values end at the bit width
+// of its last enumerator, and the handler's getter loaded a byte past
+// that, which is undefined (Clang's UBSan halts on the load; GCC's does
+// not check enums). Each byte now reads back as sent, and the handlers'
+// switches and the weather host's skip what they do not name.
+//----------------------------------------------------------------------
+namespace {
+
+// A frame of the packet id with this body, at sequence 0.
+std::vector<unsigned char>	Frame(PacketID_t id, const std::vector<unsigned char>& body)
+{
+	std::vector<unsigned char> frame = {
+		(unsigned char)(id & 0xff), (unsigned char)(id >> 8),
+		(unsigned char)body.size(), 0x00, 0x00, 0x00,
+		0x00,
+	};
+	frame.insert(frame.end(), body.begin(), body.end());
+	return frame;
+}
+
+} // namespace
+
+TEST(PacketFuzzFindings, WeatherPastTheEnumReadsBackAsSent)
+{
+	for (unsigned char weather : { (unsigned char)WEATHER_MAX, (unsigned char)33, (unsigned char)0xff })
+	{
+		GCChangeWeather packet;
+		std::string why;
+		CHECK(!FramedReadIsRefused(packet, Frame(Packet::PACKET_GC_CHANGE_WEATHER, { weather, 2 }), why));
+		CHECK_EQ((int)weather, (int)packet.getWeather());
+		CHECK_EQ(2, (int)packet.getWeatherLevel());
+	}
+}
+
+TEST(PacketFuzzFindings, KickMessageTypePastTheEnumReadsBackAsSent)
+{
+	for (unsigned char type : { (unsigned char)KICK_MESSAGE_MAX, (unsigned char)0xfe })
+	{
+		GCKickMessage packet;
+		std::string why;
+		CHECK(!FramedReadIsRefused(packet, Frame(Packet::PACKET_GC_KICK_MESSAGE, { type, 30, 0, 0, 0 }), why));
+		CHECK_EQ((int)type, (int)packet.getType());
+		CHECK_EQ(30u, packet.getSeconds());
+	}
+}
+
+TEST(PacketFuzzFindings, SystemMessageTypePastTheEnumReadsBackAsSent)
+{
+	for (unsigned char type : { (unsigned char)SYSTEM_MESSAGE_MAX, (unsigned char)101, (unsigned char)0xff })
+	{
+		GCSystemMessage packet;
+		std::string why;
+		CHECK(!FramedReadIsRefused(packet, Frame(Packet::PACKET_GC_SYSTEM_MESSAGE, { 1, 'x', 0, 0, 0, 0, type }), why));
+		CHECK_EQ((int)type, (int)packet.getType());
+		CHECK(packet.getMessage() == "x");
+	}
 }
