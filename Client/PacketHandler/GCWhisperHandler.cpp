@@ -68,7 +68,8 @@ void GCWhisperHandler::execute ( GCWhisper * pPacket , Player * pPlayer )
 				// Another race's words are partly masked; the more INT
 				// the player has, the more can be read.
 				//--------------------------------------------------
-				Race race = (Race)pPacket->getRace();
+				// The wire byte, compared as a number: it need not name a Race.
+				const int race = pPacket->getRace();
 				if (PlayerState::GetRace() != race)
 				{
 					// INT goes up to 150, and any INT from 300 reads at the cap,
