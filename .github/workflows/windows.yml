@@ -16,7 +16,12 @@ jobs:
   verify:
     name: ${{ matrix.preset }}
     runs-on: windows-2022
-    timeout-minutes: 60
+    # The windows job takes about 55 minutes with a warm dependency cache. The
+    # cache key carries the runner image version, so a new image misses it and
+    # vcpkg rebuilds the dependencies at configure, about 15 minutes more. A
+    # job that times out never saves the cache, so the limit must cover a miss
+    # or the miss repeats on every run.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
