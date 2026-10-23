@@ -1,6 +1,14 @@
 # opendarkeden-client
 
-The rules and the incidents behind them live in the knowledge bundle under `docs/`: start at [docs/index.md](docs/index.md).
+The OpenDarkEden client: the isometric horror MMORPG of slayers, vampires and ousters, a Korean
+original from roughly 2000-2010, ported from Win32 + DirectX to SDL2. C++20 and CMake. Windows
+with Visual Studio 2022 is the main platform; Linux, macOS and a WebAssembly build build and test
+too.
+
+This repository holds the source code only; the game data is a separate download (see [Run](#run)).
+This guide takes you from a clone to a running client. The rules behind the code, the test
+strategy and the design notes live in the knowledge bundle under `docs/`: start at
+[docs/index.md](docs/index.md).
 
 ## Build on Windows (from scratch)
 
@@ -79,26 +87,27 @@ C:\vcpkg\bootstrap-vcpkg.bat
 ```
 
 CMake installs these dependencies automatically when configuring a fresh build.
-The first install can compile libraries from source and take a while. Existing
-classic-mode build trees keep their old dependency setup; use the presets below
-to validate the pinned manifest without changing those trees.
-
-Existing classic-mode installs need SDL_image's JPEG feature for help artwork:
-`vcpkg install sdl2-image[libjpeg-turbo]:x64-windows --classic --recurse`.
+The first install can compile libraries from source and take a while.
 
 | Package | Used for |
 | --- | --- |
 | `sdl2`, `sdl2-image[libjpeg-turbo]`, `sdl2-ttf` | rendering, sprites, help JPEGs, text (required) |
 | `sdl2-mixer` | sound and music |
 | `openssl` | verified TLS for optional native WebSocket connections |
-
-The [browser and WebSocket guide](docs/browser/browser-client.md) covers the WebAssembly /
-WebGL 2 build, asset packaging, gateway configuration and browser tests. Existing
-classic vcpkg trees also need `vcpkg install openssl:x64-windows --classic`.
 | `libiconv` | shared resource and legacy text conversion in `basic/TextEncoding.cpp` |
+
+Existing classic-mode build trees keep their old dependency setup; use the
+presets below to validate the pinned manifest without changing those trees.
+Existing classic-mode installs need SDL_image's JPEG feature for help artwork,
+`vcpkg install sdl2-image[libjpeg-turbo]:x64-windows --classic --recurse`, and
+OpenSSL, `vcpkg install openssl:x64-windows --classic`.
 
 vcpkg can live anywhere — just point `-DCMAKE_TOOLCHAIN_FILE` at wherever you
 put it in the next step. `vcpkg integrate install` is optional.
+
+The [browser and WebSocket guide](docs/browser/browser-client.md) covers the
+WebAssembly / WebGL 2 build, asset packaging, gateway configuration and browser
+tests.
 
 ### 3. Generate the solution
 
@@ -120,24 +129,24 @@ the startup project, and build from there.
 
 The executable lands in `build/vs2022/bin/Debug/DarkEden.exe`.
 
-The optional GNU Make wrapper requires a POSIX shell (Git Bash on Windows).
-Its build and test targets select Debug/Release explicitly, including with the
-Visual Studio generator. Pass initial configure options through `CMAKE_ARGS`,
-for example `make debug CMAKE_ARGS=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake`.
-`NPROCS` overrides the detected parallel job count. The direct CMake commands
-above remain the Windows setup path.
+Other ways to build:
 
-Ninja and Makefile generators write `compile_commands.json` into the selected
-build directory. Point clangd or another editor at that directory; a local copy
-or symlink at the repository root is ignored. Visual Studio generators do not
-produce this database.
+- The optional GNU Make wrapper requires a POSIX shell (Git Bash on Windows).
+  Its build and test targets select Debug/Release explicitly, including with the
+  Visual Studio generator. Pass initial configure options through `CMAKE_ARGS`,
+  for example `make debug CMAKE_ARGS=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake`.
+  `NPROCS` overrides the detected parallel job count. The direct CMake commands
+  above remain the Windows setup path.
+- Ninja and Makefile generators write `compile_commands.json` into the selected
+  build directory. Point clangd or another editor at that directory; a local copy
+  or symlink at the repository root is ignored. Visual Studio generators do not
+  produce this database.
+- `BUILD_ENGINE=OFF` omits the map viewer, whose loader requires the optional
+  sprite engine. The effect viewer uses the client libraries and remains available.
+  Its Bash build/run helper accepts `DARKEDEN_DIR` (the directory containing
+  `Data/`, default `DarkEden/` beside this README), `BUILD_DIR` and `NPROCS`.
 
-`BUILD_ENGINE=OFF` omits the map viewer, whose loader requires the optional
-sprite engine. The effect viewer uses the client libraries and remains available.
-Its Bash build/run helper accepts `DARKEDEN_DIR` (the directory containing
-`Data/`, default `DarkEden/` beside this README), `BUILD_DIR` and `NPROCS`.
-
-### Reproducible builds and the complete test suite
+### Presets and the complete test suite
 
 The checked-in presets use separate trees under `build/presets/`, enable all
 tests, and require Bash and Perl from Git for Windows. Add Git's `usr/bin`
@@ -151,64 +160,27 @@ cmake --build --preset windows-debug
 ctest --preset windows-debug
 ```
 
-The same configured tree supports `windows-release` build and test presets.
-For ASan, configure `windows-asan`, then use the `windows-asan` build and test
-presets (the component described in step 5 is required). Configure the two
-trees sequentially: they share a manifest dependency installation under
-`build/presets/vcpkg_installed`.
-
-A second compiler checks that the sources are ISO C++20 rather than MSVC's
-dialect of it. The `windows-clang` preset builds every target with the
-clang-cl that ships with Visual Studio's "C++ Clang tools for Windows"
-component, through NMake, so it has to run from a **VS developer prompt**
-(`vcvars64.bat`, or the "x64 Native Tools Command Prompt"), where `clang-cl`
-and `nmake` are on the path:
-
-```powershell
-$env:VCPKG_ROOT = 'C:/vcpkg'
-cmake --preset windows-clang
-cmake --build --preset windows-clang
-ctest --test-dir build/presets/windows-clang --output-on-failure
-```
-
-NMake compiles one file at a time, so expect this tree to take several times
-longer than the Visual Studio one. The ratchet that counts translation units
-in the executable (R1) is skipped here, because it reads a `.vcxproj` that
-this generator does not produce.
-
 To run the same complete verification as CI, including checking that every
-required CTest entry is registered:
+required test is registered:
 
 ```powershell
 ./tools/ci/verify-windows.ps1 -ConfigurePreset windows -BuildPresets windows-debug,windows-release
 ./tools/ci/verify-windows.ps1 -ConfigurePreset windows-asan -BuildPresets windows-asan
 ```
 
-If Windows PowerShell reports that scripts are disabled, run the script in a
-child process with a policy override limited to that process:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ./tools/ci/verify-windows.ps1 -ConfigurePreset windows -BuildPresets windows-debug,windows-release"
-```
-
-This builds every configured target, then runs the unit suite, ratchets,
-include-graph rules, format-arity audit, packet-index audit, and wire-inventory
-freshness check. Logs go under `build/verification/`. The Windows Actions
-workflow runs these commands on pushes to `master` (including merged PRs) or
-manual dispatch, caches dependency binaries, and retains diagnostic artifacts
-for seven days. PR updates do not trigger CI. It does not require
-game assets or launch the game; live-server smoke testing remains separate.
-
-Use `CMakeUserPresets.json` for local overrides; it is ignored by git. When
-updating dependencies, change the manifest baseline deliberately and check
-the deployed DLL names against the client's startup whitelist.
+It builds every configured target, runs the whole suite and checks the warning
+budget; logs go under `build/verification/`. It needs no game data and does not
+launch the game. [Build commands](docs/build/build-commands.md) has the other
+presets (`windows-release`, `windows-asan`, the `windows-clang` ISO C++ check),
+what to do when PowerShell refuses to run scripts, and local preset overrides.
+CI runs these scripts on pushes to `master` and on manual dispatch, never on a
+pull request ([CI](docs/build/ci.md)).
 
 ### 5. AddressSanitizer (optional)
 
 MSVC has its own AddressSanitizer, wired up behind `USE_ASAN`. It reports heap
 and stack overflows, use-after-free and double frees at the instruction that
-causes them, which is the only realistic way to reach the memory-safety defects
-in code no unit test can link against.
+causes them.
 
 It needs the **C++ AddressSanitizer** individual component, which the *Desktop
 development with C++* workload does not install. Same procedure as ATL in step 1
@@ -233,56 +205,21 @@ cmake -S . -B build/vs2022-asan -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCH
 cmake --build build/vs2022-asan --config Debug
 ```
 
-Configure stops immediately with instructions if the component is missing,
-rather than letting the build run and fail at link time.
-
-Three things the build does on your behalf, because the sanitizer will not work
-otherwise:
-
-- **Drops `/RTC1`.** MSVC rejects the runtime checks outright next to
-  `/fsanitize=address`. That is a real loss, since `/RTC1` is what catches
-  uninitialised locals, so keep the ordinary Debug tree for day-to-day work and
-  switch to this one when chasing a memory error.
-- **Turns off incremental linking**, which the sanitizer does not support.
-- **Copies `clang_rt.asan_dynamic-x86_64.dll` beside the executables.** Visual
-  Studio puts the compiler directory on `PATH` when it launches the debugger, so
-  F5 would find it regardless; running the `.exe` from a shell or from Explorer
-  would not.
-
-Expect roughly 2x the run time and appreciably more memory. A report goes to
-stderr and the debugger breaks at the faulting instruction. Note that leak
-detection is a Linux-only part of AddressSanitizer — this catches invalid
-accesses, not leaks. The CRT leak dump at exit already covers those.
+Configure stops immediately with instructions if the component is missing. The
+build drops `/RTC1`, turns off incremental linking and copies the sanitizer's
+runtime DLL beside the executables; expect roughly 2x the run time. It catches
+invalid accesses, not leaks.
 
 ### Which Debug build to use
 
-There are two, and neither subsumes the other. `/RTC1` and `/fsanitize=address`
-are mutually exclusive, so the checks are split across them:
-
-| | `build/vs2022` | `build/vs2022-asan` |
-|---|---|---|
-| Uninitialised local read | **`/RTC1`** | |
-| Stack frame damage around a call | **`/RTC1`** | |
-| Heap overflow, use-after-free, double free | | **ASan** |
-| Stack buffer overflow | | **ASan** |
-| Invalidated iterator, bad comparator | debug iterators | debug iterators |
-| Speed | normal | ~2x slower |
-
-Use the ordinary tree day to day. Switch to the sanitized one when you have a
-memory error to chase — a wild pointer, a crash inside the allocator, damage
-that shows up far from its cause.
-
-`/RTC1` is requested explicitly by `CMakeLists.txt` rather than inherited from
-CMake's built-in Debug flags, so overriding `CMAKE_CXX_FLAGS_DEBUG` cannot drop
-it silently. Configure prints which checks are on:
-
-```
--- Debug runtime checks: /RTC1 (uninitialised locals, stack frames)
--- AddressSanitizer enabled (/fsanitize=address)
-```
-
-Exactly one of those two lines should appear on a Debug configure. If neither
-does, something has gone wrong with the flags.
+There are two, and neither subsumes the other: `build/vs2022` has `/RTC1`
+(uninitialised locals, stack frame damage), `build/vs2022-asan` has ASan (heap
+and stack overflows, use-after-free, double free). Use the ordinary tree day to
+day, and switch to the sanitized one when you have a memory error to chase — a
+wild pointer, a crash inside the allocator, damage that shows up far from its
+cause. Configure prints which checks are on; exactly one of the two lines should
+appear. [Build commands](docs/build/build-commands.md#the-two-windows-debug-trees)
+has the full table and the lines to look for.
 
 ### Never commit `build/`
 
@@ -353,6 +290,11 @@ The C++ AddressSanitizer component is missing — see step 5. `cl.exe` accepts
 configure step: the copy happens at configure time, so a build tree generated
 before the component was installed will not have it.
 
+**The client exits at once, with no message and no log**
+
+A DLL beside the executable that the client does not recognise stops it before
+it starts logging; a DLL left behind by an earlier build counts too.
+[Running the client](docs/operations/running-the-client.md) explains the check.
 
 ## Run
 
@@ -376,84 +318,6 @@ same client built from this source against SDL2, and it links those libraries
 statically from `basic/`, `Client/DXLib`, `Client/SpriteLib` and
 `Client/framelib`. You do not need to copy any of them — only `Data/` and
 `UserSet/`.
-
-### Resource text encoding
-
-`MString` resource records decode to UTF-8 when loaded and encode back to the
-same configured code page when saved. The shipped Korean pack defaults to CP949.
-For a converted or regional pack, set its actual encoding in
-`Data/Info/FileDef.inf`, for example:
-
-```text
-RESOURCE_TEXT_ENCODING : UTF-8
-```
-
-Accepted values are `UTF-8`, `CP949`, `EUC-KR`, `GBK`, `GB2312`, and `BIG5`
-(case insensitive). The setting applies to the whole pack and is read before
-resource tables load; it does not change network text. Unknown names fail
-initialization. Damaged resource bytes display as replacement characters while
-later text remains readable. Saving fails if text cannot be represented in the
-selected encoding or its encoded record exceeds 65,536 bytes.
-
-XML resources honor their `encoding` declaration or UTF-8 BOM before the pack
-default. Their trees store UTF-8, and XML saves declare UTF-8 and escape markup.
-The parser rejects truncated documents, unsupported DTDs, files over 16 MiB,
-nesting beyond 64 levels, or more than 100,000 elements and attributes per
-document. A rejected document leaves the existing tree intact.
-
-Chat tips, popup files and help-message resources use the same resource encoding
-policy, with a UTF-8 BOM overriding the pack default. Help-message reloads keep
-the previous collection if a document is incomplete or invalid; saves use UTF-8
-with a BOM so they can be read under any configured pack encoding.
-
-### Native GPU sprite rendering
-
-The native client now uses SDL's accelerated texture renderer for ordinary
-sprites, tiles, glyphs, fills, scaling, and surface copies when the device
-supports render targets. Sprite images are uploaded on first use and reused;
-draw order remains the game's original order. No new graphics SDK is required.
-Set `DARKEDEN_SPRITE_RENDERER=software` before launching to compare against the
-original CPU renderer. A device without acceleration keeps the software path.
-
-The client prefers SDL's OpenGL renderer for shader-based gamma, sprite color
-effects, palette screen blending, and palette alpha. Explicit `SDL_RENDER_DRIVER`
-overrides are honored; other devices retain ordinary GPU composition with CPU
-effect fallbacks. No additional runtime DLL is required.
-
-Clipped UI sprites, world lighting, minimap overlays and scratch-card drawing
-also use the GPU surface API. xBRZ runs in two shader passes when OpenGL supports
-`GL_ARB_gpu_shader_fp64`; older devices retain the CPU filter. The saved
-**Options > Graphics > xBRZ smoothing** preference is honored.
-
-The startup log names the rendering device; shutdown reports texture draws,
-uploads and readbacks. GPU tests and a repeatable synthetic benchmark are
-documented in [the native renderer notes](docs/rendering/native-gpu-renderer.md).
-
-### Toggle xBRZ rendering
-
-Open **Options > Graphics** and use **xBRZ smoothing**, immediately below the FPS
-option. It is enabled by default, including with older settings files. Changes
-apply immediately and are saved with the other options when you close the menu.
-Uncheck it to restore original presentation. No restart or environment variable
-is needed. Fullscreen and resolution are also available in Graphics; those two
-settings take effect after restarting the client.
-
-This filters the completed frame, including the world, effects, and UI. It uses
-the existing assets and preserves game coordinates, mouse mapping, aspect ratio
-and letterboxing. It does not add widescreen world visibility or replace artwork.
-Because filtering happens after composition, character edges may differ from
-the individual transparent sprites in the offline comparison gallery.
-
-xBRZ filters at an integer scale of 2x to 4x, then SDL fits the result to the
-window. The GPU path keeps the composed frame and filter intermediates on the
-device, with a combined 64 MiB intermediate texture budget. Unchanged frames
-reuse the filtered texture. Unsupported devices or GPU allocation failures use
-the existing CPU filter (up to four workers); failure of both paths restores
-original presentation. Moving scenes filter each new frame, so compare frame
-time with the toggle on your machine. The CPU fallback is compiled with `/O2`
-in every configuration, Debug included.
-
-The pinned xBRZ source and upstream license are under `third_party/xbrz/`.
 
 ### Point the build at the data
 
@@ -501,7 +365,7 @@ scaled to your desktop and xBRZ smoothing enabled. In **Options > Graphics**:
 - **Borderless fullscreen (restart)**: uncheck for a window.
 - **1024x768 resolution (restart)**: check for the larger game view and UI layout;
   uncheck for the original 800x600 view.
-- **xBRZ smoothing**: switches instantly.
+- **xBRZ smoothing**: switches instantly; uncheck it for the original presentation.
 
 Close Options to save. Display preferences live in `UserSet/Display.ini` and are
 read before creating the window. On Windows, paths resolve from the EXE folder
@@ -522,10 +386,38 @@ Existing launcher arguments remain optional overrides for compatibility:
 Set the login server IP and port in `Data/Info/GameClient.inf`. With a server in
 Docker on the same machine, use `127.0.0.1`.
 
+### Resource text encoding
+
+The shipped Korean pack is CP949, the default. For a converted or regional
+pack, set its actual encoding in `Data/Info/FileDef.inf`, for example:
+
+```text
+RESOURCE_TEXT_ENCODING : UTF-8
+```
+
+Accepted values are `UTF-8`, `CP949`, `EUC-KR`, `GBK`, `GB2312`, and `BIG5`
+(case insensitive). The setting applies to the whole pack and does not change
+network text; an unknown name fails initialization.
+[Resource text encoding](docs/operations/resource-text-encoding.md) has how XML
+files, BOMs, damaged bytes and saves behave.
+
+### Rendering
+
+The client draws sprites, tiles, glyphs, fills and scaled copies with SDL's
+accelerated renderer when the device supports render targets, preferring SDL's
+OpenGL renderer for the shader effects; no graphics SDK or extra DLL is needed.
+Set `DARKEDEN_SPRITE_RENDERER=software` before launching to compare against the
+original CPU renderer. An explicit `SDL_RENDER_DRIVER` is honoured, and a device
+without acceleration keeps the software path.
+[Native GPU sprite composition](docs/rendering/native-gpu-renderer.md) covers
+the GPU path, the xBRZ filter and its fallbacks, the GPU tests and a repeatable
+benchmark.
+
 ## Build on Linux
 
 Windows is the live platform; Linux builds every target, runs the same test
-suite, and the client starts (see the status at the end of this section).
+suite, and the client starts and reaches the main menu
+([what is verified](docs/build/linux-and-macos.md#status-on-linux)).
 Ubuntu 24.04 is the reference, with GCC 13 or Clang 18 and the system SDL2:
 
 ```bash
@@ -547,7 +439,7 @@ the packet-read fuzzers; each writes under
 | `linux` | GCC | Debug |
 | `linux-clang` | Clang | Debug |
 | `linux-asan` | GCC | `-fsanitize=address,undefined` |
-| `linux-fuzz` | Clang | `linux-clang` with ASan, UBSan and the libFuzzer targets; needs the `libclang-rt` package (CLAUDE.md, *Fuzzing the packet readers*) |
+| `linux-fuzz` | Clang | `linux-clang` with ASan, UBSan and the libFuzzer targets; needs the `libclang-rt` package ([fuzzing](docs/protocol/fuzzing.md)) |
 
 ```bash
 cmake --preset linux
@@ -555,94 +447,37 @@ cmake --build --preset linux
 ctest --test-dir build/presets/linux --output-on-failure
 ```
 
-`tools/ci/verify-linux.sh <preset>` (any preset but `linux-fuzz`) runs
-those three steps the way the
-Linux workflow (`.github/workflows/linux.yml`) does, with UBSan reports made
-fatal under `linux-asan`. On a Windows machine or a Mac with Docker
-(OrbStack, which this was verified with, or Docker Desktop),
-`tools/linux/Dockerfile` is the same environment as an image (on an x86_64
-host; see below for Apple Silicon):
+`tools/ci/verify-linux.sh <preset>` (any preset but `linux-fuzz`) runs those
+three steps the way the Linux workflow does. On a Windows machine or a Mac with
+Docker, `tools/linux/Dockerfile` is the same environment as an image;
+[the Linux image](docs/build/linux-and-macos.md#the-linux-image) has the
+commands, and the x86_64 run an Apple Silicon Mac needs for the warning check.
 
-```bash
-docker build -t darkeden-linux tools/linux
-docker run --rm -v "$PWD:/src" -v darkeden-build:/src/build darkeden-linux \
-    tools/ci/verify-linux.sh linux
-```
-
-On Apple Silicon the image is arm64, so it is not the CI environment: plain
-`char` is unsigned there, and the warning profile differs. The configure, the
-build and every test pass, but the script's last step fails with `missing
-warning baseline for linux-aarch64`: `tools/ci/warning-baselines.json`
-records the x86_64 runner's warnings only. To get the
-x86_64 profile and its warning baseline, build and run the image as x86_64,
-with its own build volume so it does not reuse the arm64 CMake tree:
-
-```bash
-docker build --platform linux/amd64 -t darkeden-linux-amd64 tools/linux
-docker run --rm --platform linux/amd64 -v "$PWD:/src" -v darkeden-build-amd64:/src/build \
-    darkeden-linux-amd64 tools/ci/verify-linux.sh linux
-```
-
-This was run once on an Apple Silicon Mac (2026-09-29, Docker under OrbStack):
-the `linux` preset configured, built with `--clean-first`, passed its tests
-(1243 tests, 0 failed) and the x86_64 warning check, in under 30 minutes
-emulated. It is the x86_64 profile, not the CI runner itself: `linux.yml`
-runs on `ubuntu-24.04` directly, not in this image.
-
-### Status of the Linux client
-
-The port's plan and its sizing are `docs/build/linux-macos-port-assessment-2026-09-07.md`.
-What is verified today, in the order its acceptance criteria list them:
-
-- **Builds:** every library, `unit_tests` and `DarkEden`, with GCC and Clang,
-  and the GCC tree under ASan and UBSan with nothing reported. The suite is the
-  Windows suite.
-- **Runs, partly:** launched from `build/presets/linux/bin` with the `Data/`
-  tree beside the executable (see *Point the build at the data*; the resolver
-  in `basic/DataPath.h` takes care of the tables' backslashes and letter case),
-  the client loads every data table, reaches the main menu and exits cleanly
-  on `SDL_QUIT`. That has been exercised headless (`SDL_VIDEODRIVER=dummy`,
-  where the quit came from SIGTERM), not on a display. Login, character select, a zone
-  and chat against the docker server are **not verified** off Windows.
-- **macOS:** see the next section.
-
-The Korean IME is SDL text input on every platform, sound is SDL_mixer, and the
-launcher arguments and `UserSet/Display.ini` go through the same code as on
-Windows; none of that has been watched on a Linux display yet.
+The executable is `build/presets/linux/bin/DarkEden`, run with the `Data/`
+tree beside it as in [Point the build at the data](#point-the-build-at-the-data).
 
 ## Build on macOS
 
-The same tree, the same tests, Apple Clang. CI builds and tests it on
-GitHub's arm64 and Intel runners (`.github/workflows/macos.yml`, macOS 15),
-and it has been built and tested on an Apple Silicon Mac (macOS 27.0, Apple
-Clang 21, CMake 4.4: every target, all 20 ctest tests passing on 2026-09-30,
-among them the three packet-read fuzz replay tests, `fuzz_replay_client_stream`,
-`fuzz_replay_client_login_stream` and `fuzz_replay_client_datagram`, and their
-corpus steps). Nothing has
-been watched on a Mac's display yet. Dependencies come from Homebrew, on
-Apple Silicon or Intel:
+The same tree, the same tests, Apple Clang, on Apple Silicon or Intel. CI
+builds and tests it on GitHub's arm64 and Intel runners
+([what is verified](docs/build/linux-and-macos.md#status-on-macos)).
+Dependencies come from Homebrew:
 
 ```bash
 xcode-select --install
 brew install cmake ninja sdl2 sdl2_image sdl2_ttf sdl2_mixer jpeg-turbo
 ```
 
-Homebrew's `sdl2` is now an alias of `sdl2-compat`, the SDL2 API over SDL3;
-that is what the build above linked. The linker warns that Homebrew's
-libraries were built for a newer macOS than the preset's 13.0 deployment
-target, which is harmless for a build run on the machine that made it.
-
-No font package: `Client/TextSystem/TextBackendSDL.cpp` uses the system's own
-(Apple SD Gothic Neo, Arial Unicode, Hiragino Sans GB, Helvetica). Two presets,
-and a third for the packet-read fuzzers,
-each under `build/presets/<preset>/`; CMake finds Homebrew through the
-preset's prefix path, or through `HOMEBREW_PREFIX` when configuring by hand:
+No font package is needed: the client uses the system's own fonts. Two presets,
+and a third for the packet-read fuzzers, each under `build/presets/<preset>/`;
+CMake finds Homebrew through the preset's prefix path, or through
+`HOMEBREW_PREFIX` when configuring by hand:
 
 | Preset | Compiler | Flags |
 |---|---|---|
 | `macos` | Apple Clang | Debug |
 | `macos-asan` | Apple Clang | `-fsanitize=address,undefined` |
-| `macos-fuzz` | Apple Clang | `macos-asan` plus the libFuzzer targets, linking Homebrew `llvm@21`'s libFuzzer (CLAUDE.md, *Fuzzing the packet readers*) |
+| `macos-fuzz` | Apple Clang | `macos-asan` plus the libFuzzer targets, linking Homebrew `llvm@21`'s libFuzzer ([fuzzing](docs/protocol/fuzzing.md)) |
 
 ```bash
 cmake --preset macos
@@ -651,21 +486,19 @@ ctest --test-dir build/presets/macos --output-on-failure
 ```
 
 `tools/ci/verify-linux.sh macos` runs those steps the way the workflow does,
-then checks the warning budget in `tools/ci/warning-baselines.json`. The
-project's own code builds without warnings; what the budget counts is the
-vendored code under `third_party/` and `build/_deps/` and the linker. It is
-recorded from the CI runners' compilers, so a different compiler version
-can count differently: under Apple Clang 21 the build and the tests pass,
-but the budget step reports the linker's deployment-target warnings above
-and a few more vendored-code diagnostics than the runner's Apple Clang.
+then checks the warning budget in `tools/ci/warning-baselines.json`, which is
+recorded from the CI runners' compilers, so another compiler version can count
+differently: under Apple Clang 21 the build and the tests pass while the budget
+step reports more warnings than CI's ([the macOS notes](docs/build/linux-and-macos.md#status-on-macos)).
+
 The executable is `build/presets/macos/bin/DarkEden`, run with the `Data/`
-tree beside it as on Linux. The macOS equivalent of the junctions and the
-copy in *Point the build at the data* is two symbolic links and a one-time
-copy. These commands were written from the code, not run against the game
-data. `src` must be an absolute path: a relative one is resolved against
-`$dest`, and the link then points at nothing. `-sfn` replaces a link from an
-earlier run; plain `ln -s` on an existing link to a directory follows it and
-creates a link back to itself inside the game data.
+tree beside it as on Linux. The macOS equivalent of the junctions and the copy
+in *Point the build at the data* is two symbolic links and a one-time copy
+(written from the code, not yet run against the game data). `src` must be an
+absolute path: a relative one is resolved against `$dest`, and the link then
+points at nothing. `-sfn` replaces a link from an earlier run; plain `ln -s` on
+an existing link to a directory follows it and creates a link back to itself
+inside the game data.
 
 ```bash
 dest=build/presets/macos/bin
@@ -681,24 +514,7 @@ Then launch it (the launcher arguments in *Launch* work the same way):
 ./build/presets/macos/bin/DarkEden
 ```
 
-Launched from Finder or as a bundle
-(`-DDARKEDEN_MACOS_BUNDLE=ON` builds `bin/DarkEden.app`), the client looks
-for `Data/Info/FileDef.inf` under its working directory, its executable's
-directory and the directory the bundle sits in, runs from the first that
-has it, and says on stderr which directories it tried when none has it.
-The bundle does not copy the data, and the game writes beside its data
-(`UserSet/`, `Log/`), so the data does not go inside the bundle: put
-`Data/` beside `DarkEden.app`. A bundle downloaded with a quarantine flag
-is run by macOS from a random read-only copy (App Translocation), where
-"beside the bundle" is nowhere; build it locally or clear the flag with
-`xattr -d com.apple.quarantine`.
-
-The window asks for `SDL_WINDOW_ALLOW_HIGHDPI`, so on a Retina display the
-game frame is scaled to the native pixel grid and mouse points are mapped
-through the point-to-pixel ratio (`tests/unit/test_present_geometry.cpp`
-pins the mapping; no test machine has such a display). Whether macOS
-honours the flag for a bare executable, which has no `Info.plist` to say
-`NSHighResolutionCapable`, or magnifies it as it does an app without the
-key, has not been seen; the bundle declares the key. The xBRZ filter's
-factor is chosen from the pixel size, so the same display costs more CPU
-per frame than a non-Retina one of the same point size.
+To launch from Finder, configure with `-DDARKEDEN_MACOS_BUNDLE=ON`, which builds
+`bin/DarkEden.app`, and put `Data/` beside `DarkEden.app`, not inside it.
+[The macOS notes](docs/build/linux-and-macos.md#status-on-macos) cover how the
+bundle finds its data, quarantined downloads and Retina displays.

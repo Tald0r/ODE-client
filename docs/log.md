@@ -2,6 +2,13 @@
 
 ## 2026-10-23
 
+* **Update**: `README.md` is trimmed to the path from a clone to a running client. Its Windows
+  presets and `windows-clang` detail, the sanitized tree's build steps and the full Debug-tree
+  table now live in [build commands](build/build-commands.md); the Docker recipes and the Linux and
+  macOS status in [Linux and macOS](build/linux-and-macos.md); the encoding detail in
+  [resource text encoding](operations/resource-text-encoding.md); the xBRZ setting in
+  [native GPU renderer](rendering/native-gpu-renderer.md#the-xbrz-setting). The README links
+  each; `tools/linux/Dockerfile` now names the concept that records the x86_64 run.
 * **Update**: `CLAUDE.md` is rewritten as the bundle's index, one line per rule and a link to
   its concept, keeping the user's instructions as lines. References to its removed sections are
   repointed: the LNK4217 note (`CMakeLists.txt`) to

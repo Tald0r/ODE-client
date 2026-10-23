@@ -59,10 +59,14 @@ looks missing, fix it there, never in a generated `.vcxproj`, which the next con
 ## The sanitized tree
 
 `USE_ASAN=ON` changes the compile and link flags of every target, so it never shares a tree with
-the ordinary build. It needs Visual Studio's *C++ AddressSanitizer* component (the README has the
-install command); configure stops with instructions when the component is missing, because
-`cl.exe` accepts `/fsanitize=address` without it and fails only at link time. The build does three
-things on your behalf, because the sanitizer will not work otherwise:
+the ordinary build. It reports heap and stack overflows, use-after-free and double frees at the
+instruction that causes them; before the extractions moved the game into libraries, it was the only
+realistic way to reach the memory-safety defects in code no unit test could link.
+
+It needs Visual Studio's *C++ AddressSanitizer* component (the README has the install command);
+configure stops with instructions when the component is missing, because `cl.exe` accepts
+`/fsanitize=address` without it and fails only at link time. The build does three things on your
+behalf, because the sanitizer will not work otherwise:
 
 - **Drops `/RTC1`**, which MSVC rejects next to `/fsanitize=address`. That is the real loss the
   table above records.

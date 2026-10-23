@@ -4,7 +4,8 @@
 # and tests without a Linux install (docs/build/linux-macos-port-assessment-2026-09-07.md).
 # On an arm64 host the image is aarch64, which has no warning baseline;
 # pass --platform linux/amd64 (and a separate build volume) to build and run
-# it as the x86_64 profile; README.md records the run that passed.
+# it as the x86_64 profile; docs/build/linux-and-macos.md records the
+# run that passed.
 #
 #   docker build -t darkeden-linux tools/linux
 #   docker run --rm -v "$PWD:/src" darkeden-linux tools/ci/verify-linux.sh linux
