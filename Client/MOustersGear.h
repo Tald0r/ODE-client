@@ -16,7 +16,9 @@ class MOustersGear : public MPlayerGear	{
 		//----------------------------------------------------
 		// (!) ID를 바꾸면 s_GearSlotCheckTable의 순서도 바꿔줘야 한다.
 		//----------------------------------------------------
-		enum GEAR_OUSTERS
+		// A fixed type: replies cast a wire slot byte to it, and any byte is
+		// then a value of it; the gear tests the range.
+		enum GEAR_OUSTERS : int
 		{
 			GEAR_OUSTERS_CIRCLET,			// 서클릿
 			GEAR_OUSTERS_COAT,				// 옷

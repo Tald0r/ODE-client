@@ -13,7 +13,9 @@
 #include "PacketFactory.h"
 
 
-enum KickMessageType
+// A fixed type: the reader stores the wire byte in it, and any byte is then
+// a value of it; the handler names the two it shows.
+enum KickMessageType : BYTE
 {
 	KICK_MESSAGE_PAY_TIMEOUT = 0,
 	KICK_MESSAGE_EXPIRE_FREEPLAY,

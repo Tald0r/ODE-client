@@ -114,7 +114,8 @@ void GCGlobalChatHandler::execute ( GCGlobalChat * pPacket , Player * pPlayer )
 							//--------------------------------------------------
 							// Another race.
 							//--------------------------------------------------
-							Race race = (Race)pPacket->getRace();
+							// The wire byte, compared as a number: it need not name a Race.
+							const int race = pPacket->getRace();
 							if (PlayerState::GetRace() != race)
 							{
 								// INT goes up to 150, so...  

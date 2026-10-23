@@ -1689,6 +1689,19 @@ void ReleaseAllObjects()
 
 	// All game-owned items are gone. Do not call into UI globals from any
 	// subsequent static teardown; a later initialization installs the host again.
+	ReleaseGameObjectHosts();
+}
+
+//-----------------------------------------------------------------------------
+// Release the hosts InitGameObject installs
+//-----------------------------------------------------------------------------
+// Every host InitGameObject installs but the wire, price and GameMain hosts,
+// which ReleaseAllObjects keeps; the packet-handler fuzz targets call it after
+// InitGameObject to start from no host and put back the ones they keep.
+//-----------------------------------------------------------------------------
+void
+ReleaseGameObjectHosts()
+{
 	MItem::SetHost(nullptr);
 	MChatManager::SetHost(nullptr);
 	MWeather::SetHost(nullptr);
@@ -1769,7 +1782,6 @@ void ReleaseAllObjects()
 	UiRuntime::SetHost(nullptr);
 	GameUI::SetHost(nullptr);
 	UIMessages::SetHost(nullptr);
-
 }
 
 //-----------------------------------------------------------------------------

@@ -2,13 +2,14 @@
 // client_stream_reader.h
 //----------------------------------------------------------------------
 //
-// The receive path the client's stream fuzz targets share: the bytes a
-// server sends one ClientPlayer over TCP, read the way
+// The receive path the client's read-only stream fuzz targets share:
+// the bytes a server sends one ClientPlayer over TCP, read the way
 // ClientPlayer::processCommand (Client/Packet/ClientPlayer.cpp) reads
-// them, minus the handler dispatch, which is executable-side. The
-// client talks to the login server and to a game server through the
-// same ClientPlayer, so both targets read through this one loop and
-// differ only in the player status the validator is asked about:
+// them, minus the handler dispatch (the handler targets run
+// processCommand itself, in handler_world.h). The client talks to the
+// login server and to a game server through the same ClientPlayer, so
+// both targets read through this one loop and differ only in the
+// player status the validator is asked about:
 //
 //   fuzz_client_stream.cpp        the game connection, CPS_NORMAL
 //   fuzz_client_login_stream.cpp  the login connection, each of the

@@ -208,6 +208,18 @@ void ReceiveShout(const std::string& message, Race race = RACE_SLAYER)
 	GCGlobalChatHandler::execute(&packet, nullptr);
 }
 
+// The shout's race as the wire byte, which need not name a race.
+void ReceiveShoutRace(const std::string& message, Race_t race)
+{
+	GCGlobalChat original;
+	original.setColor(kColor);
+	original.setMessage(message);
+	original.setRace(race);
+	GCGlobalChat packet;
+	Decode(packet, original);
+	GCGlobalChatHandler::execute(&packet, nullptr);
+}
+
 std::string Says(const char* who, const std::string& words) { return std::string(who) + ".says|" + words + "|" + N(kColor); }
 std::string History(const char* who, const std::string& words, int type = 0)
 {
@@ -444,6 +456,18 @@ TEST(ChatReplies, AnotherRacesShoutArrivesUnmaskedSinceTheMaskLandsOnTheName)
 	srand(3);
 	ReceiveShout("Vlad " + kLong, RACE_VAMPIRE);
 	CHECK(calls == std::vector<std::string>{History("Vlad", kLong, 1)});
+}
+
+// A race byte that names no race (0x50, as the packet-handler fuzz target
+// sent GCWhisper) is another race's shout; the handler used to cast it
+// to Race first, which Clang's UBSan halts on.
+TEST(ChatReplies, AShoutWhoseRaceByteNamesNoRaceIsAnotherRaces)
+{
+	World world;
+	srand(3);
+	ReceiveShoutRace("Vlad " + kLong, 0x50);
+	ReceiveShoutRace("Vlad " + kLong, 0xff);
+	CHECK(calls == std::vector<std::string>(2, History("Vlad", kLong, 1)));
 }
 
 TEST(ChatReplies, TheShoutGuards)

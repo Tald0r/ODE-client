@@ -13,7 +13,9 @@
 #include "PacketFactory.h"
 
 
-enum SystemMessageType
+// A fixed type: the reader stores the wire byte in it, and any byte is then
+// a value of it; the handler names the ones it treats apart.
+enum SystemMessageType : BYTE
 {
 	SYSTEM_MESSAGE_NORMAL = 0,
 	SYSTEM_MESSAGE_OPERATOR,	// 운영자 말씀

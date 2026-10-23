@@ -435,6 +435,33 @@ TEST(PlayerStateHandlers, GearTakenOffGoesFromTheRacesGearToTheNamedInventoryCel
 	CHECK(calls.empty());
 }
 
+// A slot byte past every race's gear (the packet-handler fuzz target sent
+// 75 to the sibling GCAddGearToZone) moves nothing; it used to be cast to
+// the gear's enum first, a value outside it that Clang's UBSan halts on.
+TEST(PlayerStateHandlers, GearTakenOffFromASlotPastTheRacesGearMovesNothing)
+{
+	World world;
+	Helm* helm = new Helm(11);
+	VampireCoat* coat = new VampireCoat(12);
+	Circlet* circlet = new Circlet(13);
+	CHECK(world.slayerGear.AddItem(helm, MSlayerGear::GEAR_SLAYER_HELM));
+	CHECK(world.vampireGear.AddItem(coat, MVampireGear::GEAR_VAMPIRE_COAT));
+	CHECK(world.oustersGear.AddItem(circlet, MOustersGear::GEAR_OUSTERS_CIRCLET));
+	const struct { Race race; int past; } races[] = {{RACE_SLAYER, MSlayerGear::MAX_GEAR_SLAYER},
+		{RACE_VAMPIRE, MVampireGear::MAX_GEAR_VAMPIRE}, {RACE_OUSTERS, MOustersGear::MAX_GEAR_OUSTERS}};
+	for (const auto& r : races)
+	{
+		race = r.race;
+		for (int slot : { r.past, 75, 255 })
+			ReceiveGearToInventory(static_cast<SlotID_t>(slot), 0, 0);
+	}
+	CHECK(world.inventory.GetItem(0, 0) == nullptr);
+	CHECK(world.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_HELM) == helm);
+	CHECK(world.vampireGear.GetItem(MVampireGear::GEAR_VAMPIRE_COAT) == coat);
+	CHECK(world.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) == circlet);
+	CHECK(calls.empty());
+}
+
 TEST(PlayerStateHandlers, TimeLimitsAreRecordedAndWornItemsReappliedAsAddons)
 {
 	World world;

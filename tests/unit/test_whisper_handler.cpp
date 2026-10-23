@@ -129,6 +129,19 @@ void Receive(const std::string& name, const std::string& message, Race race = RA
 	GCWhisperHandler::execute(&packet, nullptr);
 }
 
+// The race as the wire byte, which need not name a race.
+void ReceiveRace(const std::string& name, const std::string& message, Race_t race)
+{
+	GCWhisper original;
+	original.setName(name);
+	original.setMessage(message);
+	original.setRace(race);
+	original.setColor(7);
+	GCWhisper packet;
+	Decode(packet, original);
+	GCWhisperHandler::execute(&packet, nullptr);
+}
+
 const std::string kCursing = "you darn fool";
 
 // A 128-character line of letters (no 'x', the curse mask) and spaces.
@@ -257,6 +270,28 @@ TEST(WhisperHandler, AnotherRacesWhisperIsMaskedLessTheMoreINTThePlayerHas)
 	const int sharp = Masked(Shown(calls[2]), line);
 	CHECK(dull > 70);
 	CHECK(sharp > 15 && sharp < 50);
+#endif
+}
+
+// A race byte that names no race (the packet-handler fuzz target sent
+// 0x50) is another race's: the whisper is masked as a vampire's is. The
+// handler used to cast the byte to Race, outside the enum's values, which
+// Clang's UBSan halts on.
+TEST(WhisperHandler, ARaceByteThatNamesNoRaceIsAnotherRaces)
+{
+	World world;
+	const std::string line = LongLine();
+	ReceiveRace("Vanda", line, 0x50);
+	ReceiveRace("Vanda", line, 0xff);
+	CHECK_EQ(2u, calls.size());
+	if (calls.size() != 2) return;
+#ifdef _DEBUG
+	// A debug build does not mask.
+	CHECK(Shown(calls[0]) == line);
+	CHECK(Shown(calls[1]) == line);
+#else
+	CHECK(Masked(Shown(calls[0]), line) > 70);
+	CHECK(Masked(Shown(calls[1]), line) > 70);
 #endif
 }
 

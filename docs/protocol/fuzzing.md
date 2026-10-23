@@ -1,12 +1,12 @@
 ---
 type: Guide
-title: "Fuzzing the packet readers"
-description: "Three libFuzzer targets drive the game stream, the login stream and the peer datagram readers with hostile bytes under ASan and UBSan; every native tree replays their seed corpus and the fixed crashes under tests/fuzz/regressions, and each fix also carries a unit test."
+title: "Fuzzing the packet readers and handlers"
+description: "Five libFuzzer targets under ASan and UBSan: three drive the game stream, the login stream and the peer datagram readers with hostile bytes, two run the client's receive loop into the packet handlers; every native tree replays their seed corpus and the fixed crashes under tests/fuzz/regressions, and each fix also carries a unit test."
 tags: [protocol, testing, security]
 generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
 ---
 
-# Fuzzing the packet readers
+# Fuzzing the packet readers and handlers
 
 # The targets
 
@@ -28,6 +28,59 @@ raw datagram (header, body, pad; no code byte), through `Datagram::read` and the
 `CPS_CLIENT_COMMUNICATION_NORMAL` validator check, as `ClientCommunicationManager::Update` does,
 stopping before dispatch.
 
+# The handler targets
+
+Two more targets go past `read()`: `tests/fuzz/fuzz_client_stream_handlers.cpp`, the game
+connection, and `tests/fuzz/fuzz_client_login_stream_handlers.cpp`, the login connection. They
+take the read-only targets' input, `[encrypt code byte][stream]`, so the same seeds serve them,
+and run `ClientPlayer::processCommand` itself on a player whose socket never connected: the
+production gates, `PacketDispatcher::dispatch` into the handler `Client/PacketHandlerRegistry.cpp`
+binds, and the player status a handler sets carrying over to the next frame. The game target runs
+every input three times in `CPS_NORMAL`, the player a slayer, a vampire and an ousters, since many
+handlers branch on the race; the login target runs it from each of the seven login statuses.
+
+The world they dispatch into is `tests/fuzz/handler_world.h` (its header is the full
+description): empty data tables sized where code assumes a row exists (an id past a table reads
+its default row in the game too, so a crash there is one a server can cause), the English build's
+game strings (an empty table left the operator name prefix empty, which made every chat line an
+operator's and hid the replies' player branch) and a nickname table with a row of text per index
+(the game will not start without its nickname file), `InitGameObject` itself, and for the game target a 32 by 32 zone with the player in its middle (the size of three
+of the game's zones; the server's map files hold zones from 17 by 25 to 256 by 256, and a wire
+coordinate is a byte). `InitGameObject` installs the executable's host adapters; the run removes
+them all (`ReleaseGameObjectHosts`) and puts back the model's, `ZoneState`, `CreatureState`,
+`PlayerState` and `MItem`'s, without the entries that reach the UI, a sound or a party member
+over UDP. Every presentation call is then skipped, as in the unit tests, so what an adapter does
+with a handler's value (`GameMain`'s `SetWeather`, a dialog's text) is not reached.
+Nor does the world hold a request the player made: a reply that checks the request mode
+`TempInformation` records (a storage move, a trade) finds none and does nothing, as it would if a
+server sent it unasked. `GCReconnectLogin` and `LCReconnect` are read and not dispatched: they
+reconnect the socket to the address the packet names. The player's socket aborts the run if
+anything disconnects it, which only those two do, so the regression input of each fails if the
+drop is lost.
+
+**State is reset per run.** libFuzzer runs every input in one process, so each run builds its
+world afresh and deletes it after: every object it makes, its global set back to `NULL` (with the
+storages and the trade a reply makes), the flags, counters and gear pointers that the handlers and
+the model they reach write put back (a sweep of their writes to globals, arrays and
+PacketFunction's included), the hosts removed,
+`g_Mode` and `rand()` put back. The tables no run changes are made once per
+process (the code that writes them after loading runs only from a presentation host). State
+outside the world, a function's static or a frame counter, is not reset; the replay reads its
+inputs in one sorted order, so it is deterministic regardless, and a crash libFuzzer reports is
+confirmed by replaying its input alone.
+
+**What counts as a finding** is the read-only targets' rule: a sanitizer report, an abort, or
+any exception but a `Throwable`, which `UpdateSocketInput` catches and answers with a disconnect.
+**A crash can be the harness's** instead: a global the game always sets in that state and the
+world does not. Such a crash is fixed in the harness, never in the handler, unless production can
+reach the state; the test is whether the game, in the status the target models, can hold the
+value. `g_pTradeManager` and `g_pStorage` are `NULL` in the game until a trade or a storage
+window opens, and a server can send a trade packet at any time, so the world leaves them `NULL`
+and a handler that dereferences one would be a finding. The UDP manager and the peer file manager
+are left `NULL` too, because they bind a socket and write files; every use of either tests for
+`NULL` but `LCReconnect`'s, which the harness does not dispatch, so no finding can come from that
+choice.
+
 # Replays in every tree
 
 Every native test tree builds each target with `tests/fuzz/replay_main.cpp` as
@@ -35,8 +88,9 @@ Every native test tree builds each target with `tests/fuzz/replay_main.cpp` as
 corpus, which the `fuzz_corpus_<target>` setup step writes into the build tree with
 `tools/fuzz/golden2corpus.pl` (one seed per golden of the connection's packets, plus an empty and
 a zero-filled frame per id: 536 `GC` seeds for `client_stream`, 32 `LC` seeds for
-`client_login_stream` today; its `--datagram` mode writes the 12 `RC` seeds of `client_datagram`
-from the four `RC` `.datagram.` goldens, with the pad byte those leave out), and
+`client_login_stream` today, which `client_stream_handlers` and `client_login_stream_handlers`
+take too; its `--datagram` mode writes the 12 `RC` seeds of `client_datagram` from the four `RC`
+`.datagram.` goldens, with the pad byte those leave out), and
 `tests/fuzz/regressions/<target>/*.hex`, one file per fixed crash in the goldens' hex style
 (`xxd -p crash-... | tr -d '\n'`), named after the packet and the value.
 
@@ -44,8 +98,11 @@ A crash there is a finding that came back, but only a finding that aborted (a li
 escaping `std::exception`) crashes in every tree. One that corrupted memory replays green in a tree
 without a sanitizer that sees it: on the unfixed code the `LCPCList` slot input replays green in
 the plain `macos` tree and stops at an invalid `Slot` load under Clang's UBSan. So each fix also
-carries a test in `tests/unit/test_packet_fuzz_findings.cpp`, which catches it in every tree (the
-datagram type confusion, found by reading, is pinned in `tests/unit/test_datagram_frame.cpp`).
+carries a test in `tests/unit/test_packet_fuzz_findings.cpp` or the handler's own test file, which
+catches it in every tree (the datagram type confusion, found by reading, is pinned in
+`tests/unit/test_datagram_frame.cpp`). The handler replays also hold one input each that
+`GCReconnectLogin` or `LCReconnect` reads: dispatched, it would disconnect the socket, which
+aborts the replay.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to an enum before its
 range check passed the Linux job and aborted the first macOS sanitizer run, so a Clang sanitizer
 build (the `macos-asan` preset, or the Linux container with `clang++` and the `libclang-rt`
@@ -58,7 +115,8 @@ refused on other compilers):
 
 ```bash
 cmake --preset macos-fuzz        # or linux-fuzz
-cmake --build --preset macos-fuzz --target fuzz_client_stream fuzz_client_login_stream fuzz_client_datagram
+cmake --build --preset macos-fuzz --target fuzz_client_stream fuzz_client_login_stream fuzz_client_datagram \
+  fuzz_client_stream_handlers fuzz_client_login_stream_handlers
 perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz/corpus '^GC'
 cd /tmp/fz && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
@@ -75,6 +133,21 @@ cd /tmp/fz-login && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
   <repo>/build/presets/macos-fuzz/bin/fuzz_client_login_stream -max_total_time=600 \
   -timeout=10 -rss_limit_mb=2048 -max_len=32768 -close_fd_mask=3 corpus
 ```
+
+The handler targets take the same seeds, each in a scratch directory of its own (the run writes
+`fuzz_handlers_version.inf` there, the file `InitGameObject` opens first):
+
+```bash
+perl tools/fuzz/golden2corpus.pl tests/golden tests/wire-layout.txt /tmp/fz-h/corpus '^GC'
+cd /tmp/fz-h && ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+  UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+  <repo>/build/presets/macos-fuzz/bin/fuzz_client_stream_handlers -max_total_time=900 \
+  -timeout=10 -rss_limit_mb=2048 -max_len=32768 -close_fd_mask=3 corpus
+```
+
+and `fuzz_client_login_stream_handlers` over the `'^LC'` seeds. A run builds a world, three for
+every game input and seven for every login input, so they make about 250 inputs a second on an
+Apple Silicon Mac, where the read-only targets make thousands.
 
 `-max_len=32768` is the longest input the harness reads: the code byte and a stream of at most
 32767 bytes, one less than the 32768-byte input ring; a longer input returns without being read.
@@ -107,7 +180,8 @@ login target failed none in 25 minutes. The datagram target failed none in 16 mi
 input) into a crash, to see which ones hostile input reaches. `-close_fd_mask=3` hides the
 crash's own message, so triage by replaying the file through the replay binary of an ASan tree:
 `build/presets/macos-asan/bin/fuzz_replay_client_stream crash-...` (or
-`fuzz_replay_client_login_stream`, `fuzz_replay_client_datagram`).
+`fuzz_replay_client_login_stream`, `fuzz_replay_client_datagram`,
+`fuzz_replay_client_stream_handlers`, `fuzz_replay_client_login_stream_handlers`).
 
 Apple Clang ships no libFuzzer, so `macos-fuzz` compiles with Apple Clang and links Homebrew
 `llvm@21`'s `libclang_rt.fuzzer_osx.a` (`DARKEDEN_LIBFUZZER_ARCHIVE`); llvm@21's own ASan hangs at
@@ -122,4 +196,11 @@ Installing it was verified on 2026-09-29: the target built, fuzzed for two minut
 finding, and `unit_tests` and the fuzz ctests passed under that preset's Clang ASan and UBSan.
 
 The findings so far are under *Found by fuzzing* in the
-[code-health review](../reviews/code-health-review-2026-08-29.md).
+[code-health review](../reviews/code-health-review-2026-08-29.md). The handler targets' first
+runs, and the review that followed, found seven wire values read into an enum with no fixed type,
+fixed in five commits: a gear slot, a weather, a kick type, a system message type, an effect
+status, a chat race and a character's sex. The effect status reached a heap write; the rest are
+undefined behaviour that only Clang's UBSan stops on. Two harness gaps hid findings and are
+fixed in the harness: an empty game string table made every chat sender an operator (found in
+review; it hid the race), and an empty nickname table, which the game always loads, crashed the
+add-creature replies once the sex load stopped halting first.

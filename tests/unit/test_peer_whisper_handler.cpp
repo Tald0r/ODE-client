@@ -201,6 +201,39 @@ void Receive(const std::string& name, const std::string& text, Race race = RACE_
 	CHECK(peer.Sent().empty());
 }
 
+// A whisper whose race byte is `race`, which need not name a race: the
+// writer refuses such a race, so the byte is set in the encoded packet,
+// just before the world ID that ends it.
+void ReceiveRace(const std::string& name, const std::string& text, Race_t race)
+{
+	CRWhisper original;
+	original.setName(name);
+	original.setTargetName("Lantern");
+	WHISPER_MESSAGE message;
+	message.msg = text;
+	message.color = 7;
+	original.addMessage(message);
+	original.setRace(RACE_SLAYER);
+	original.setWorldID(3);
+	Socket out((EnsureSocketsInitialised(), new SocketImpl()));
+	SocketOutputStream encoded(&out);
+	original.write(encoded);
+	std::vector<unsigned char> bytes = SocketOutputStreamTestAccess::Bytes(encoded);
+	bytes[bytes.size() - 1 - sizeof(WorldID_t)] = race;
+	Socket in((EnsureSocketsInitialised(), new SocketImpl()));
+	SocketInputStream stream(&in, 1024);
+	SocketInputStreamTestAccess::Preload(stream, bytes.data(), static_cast<unsigned int>(bytes.size()));
+	CRWhisper packet;
+	packet.read(stream);
+	CHECK(stream.isEmpty());
+	CHECK_EQ((int)race, (int)packet.getRace());
+	Peer peer;
+	bool closed = false;
+	try { CRWhisperHandler::execute(&packet, &peer); }
+	catch (DisconnectException&) { closed = true; }
+	CHECK(closed);
+}
+
 const std::string kCursing = "you darn fool";
 
 // A 128-character line of letters (no 'x', the curse mask) and spaces.
@@ -367,6 +400,26 @@ TEST(PeerWhisperHandler, AnotherRacesWhisperIsMaskedLessTheMoreINTThePlayerHas)
 	const int sharp = Masked(Shown(calls[2]), line);
 	CHECK(dull > 70);
 	CHECK(sharp > 15 && sharp < 50);
+#endif
+}
+
+// A race byte that names no race is another race's: the whisper is
+// masked as a vampire's is. CRWhisper::read takes any byte, and the
+// handler used to cast it to Race, which Clang's UBSan halts on.
+TEST(PeerWhisperHandler, ARaceByteThatNamesNoRaceIsAnotherRaces)
+{
+	World world;
+	const std::string line = LongLine();
+	ReceiveRace("Nyx", line, 0x50);
+	ReceiveRace("Nyx", line, 0xff);
+	CHECK_EQ(2u, calls.size());
+	if (calls.size() != 2) return;
+#ifdef _DEBUG
+	CHECK(Shown(calls[0]) == line);
+	CHECK(Shown(calls[1]) == line);
+#else
+	CHECK(Masked(Shown(calls[0]), line) > 70);
+	CHECK(Masked(Shown(calls[1]), line) > 70);
 #endif
 }
 

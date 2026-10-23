@@ -2,16 +2,20 @@
 # Packet-read fuzz targets
 #----------------------------------------------------------------------
 #
-# Three libFuzzer targets over bytes the client receives. Two read what
+# Five libFuzzer targets over bytes the client receives. Two read what
 # a server sends, one per connection of the client's ClientPlayer, both
 # through client_stream_reader.h, which says what they mirror; the third
 # reads one UDP datagram from anyone who can reach the client's
-# peer-to-peer port, as ClientCommunicationManager::Update does:
+# peer-to-peer port, as ClientCommunicationManager::Update does. The
+# last two run the client's own receive loop on the two connections and
+# dispatch into the packet handlers, in the world handler_world.h builds:
 #
 #   client_stream        fuzz_client_stream.cpp, the game connection
 #   client_login_stream  fuzz_client_login_stream.cpp, the login
 #                        connection
 #   client_datagram      fuzz_client_datagram.cpp, the UDP socket
+#   client_stream_handlers        fuzz_client_stream_handlers.cpp
+#   client_login_stream_handlers  fuzz_client_login_stream_handlers.cpp
 #
 # Each is built two ways:
 #
@@ -49,24 +53,39 @@ set(FUZZ_SUPPORT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../support)
 # (found in tests/CMakeLists.txt); without it the check is skipped, not
 # passed.
 #
-#   darkeden_fuzz_target(<target> <source> <golden name regex> [DATAGRAM])
+#   darkeden_fuzz_target(<target> <source> <golden name regex>
+#                        [DATAGRAM|HANDLERS])
 #
 # DATAGRAM seeds the target from the .datagram. goldens, one raw
 # datagram per seed (golden2corpus.pl's --datagram mode); without it the
 # seeds are stream inputs built from the other goldens and the layout.
+# HANDLERS links the game's libraries, as unit_tests does, for a target
+# that dispatches into the handlers.
 #----------------------------------------------------------------------
 function(darkeden_fuzz_target target source name_regex)
+	set(libs packetwire)
+	set(dirs ${FUZZ_SUPPORT_DIR})
+	if(ARGV3 STREQUAL "HANDLERS")
+		# The handlers and the world they run in: unit_tests' libraries.
+		set(libs basic SpriteLib TextSystem packetwire gamemodel gameview gameclient dxlib)
+		list(APPEND dirs
+			${CMAKE_SOURCE_DIR}
+			${CMAKE_SOURCE_DIR}/basic
+			${CMAKE_SOURCE_DIR}/Client/framelib
+			${CMAKE_SOURCE_DIR}/Client/TextSystem)
+	endif()
+
 	add_executable(fuzz_replay_${target}
 		replay_main.cpp
 		${source}
 	)
-	target_include_directories(fuzz_replay_${target} PRIVATE ${FUZZ_SUPPORT_DIR})
-	target_link_libraries(fuzz_replay_${target} PRIVATE packetwire)
+	target_include_directories(fuzz_replay_${target} PRIVATE ${dirs})
+	target_link_libraries(fuzz_replay_${target} PRIVATE ${libs})
 
 	if(BUILD_FUZZERS)
 		add_executable(fuzz_${target} ${source})
-		target_include_directories(fuzz_${target} PRIVATE ${FUZZ_SUPPORT_DIR})
-		target_link_libraries(fuzz_${target} PRIVATE packetwire)
+		target_include_directories(fuzz_${target} PRIVATE ${dirs})
+		target_link_libraries(fuzz_${target} PRIVATE ${libs})
 		if(DARKEDEN_LIBFUZZER_ARCHIVE)
 			# A libFuzzer runtime from another LLVM than the compiler's
 			# own (Apple Clang ships none; see CMakePresets.json's
@@ -120,3 +139,8 @@ endfunction()
 darkeden_fuzz_target(client_stream fuzz_client_stream.cpp ^GC)
 darkeden_fuzz_target(client_login_stream fuzz_client_login_stream.cpp ^LC)
 darkeden_fuzz_target(client_datagram fuzz_client_datagram.cpp ^RC DATAGRAM)
+
+# The same two connections read by the client's own receive loop and
+# dispatched to the handlers, in the world handler_world.h builds.
+darkeden_fuzz_target(client_stream_handlers fuzz_client_stream_handlers.cpp ^GC HANDLERS)
+darkeden_fuzz_target(client_login_stream_handlers fuzz_client_login_stream_handlers.cpp ^LC HANDLERS)

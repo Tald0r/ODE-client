@@ -14,7 +14,7 @@ okf_version: "0.2"
 * [History](history/) - Records of finished migrations.
 * [Operations](operations/) - Running the client from the debugger, the DLL whitelist, the packed resources and the resource text encoding.
 * [Process](process/) - Commit messages, source style, move-then-fix, the restructuring status lines and the lessons the review rounds settled.
-* [Protocol](protocol/) - The wire layer: the pinned layout and goldens, server-supplied lengths and indices, format strings, and the packet-read fuzzers.
+* [Protocol](protocol/) - The wire layer: the pinned layout and goldens, server-supplied lengths and indices, format strings, and the packet-read and packet-handler fuzzers.
 * [Rendering](rendering/) - The native GPU renderer, 60 fps interpolation over the logic tick and widescreen scaling.
 * [Reports](reports/) - Investigations and stabilization write-ups.
 * [Reviews](reviews/) - The restructuring plan, the code-health review and its reconciliation, and the sprite and text audits.
