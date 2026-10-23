@@ -93,7 +93,9 @@ class MSlayerGear : public MPlayerGear	{
 		//----------------------------------------------------
 		// (!) ID를 바꾸면 s_GearSlotCheckTable의 순서도 바꿔줘야 한다.
 		//----------------------------------------------------
-		enum GEAR_SLAYER 
+		// A fixed type: replies cast a wire slot byte to it, and any byte is
+		// then a value of it; the gear tests the range.
+		enum GEAR_SLAYER : int
 		{
 			GEAR_SLAYER_HELM = 0,			// 모자
 			GEAR_SLAYER_NECKLACE,			// 목걸이

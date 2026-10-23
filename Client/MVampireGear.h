@@ -16,7 +16,9 @@ class MVampireGear : public MPlayerGear	{
 		//----------------------------------------------------
 		// (!) ID를 바꾸면 s_GearSlotCheckTable의 순서도 바꿔줘야 한다.
 		//----------------------------------------------------
-		enum GEAR_VAMPIRE 
+		// A fixed type: replies cast a wire slot byte to it, and any byte is
+		// then a value of it; the gear tests the range.
+		enum GEAR_VAMPIRE : int
 		{
 			GEAR_VAMPIRE_NECKLACE,			// 목걸이
 			GEAR_VAMPIRE_COAT,				// 상의

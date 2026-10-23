@@ -345,6 +345,32 @@ TEST(RideGearReplies, EachRacesEmptySlotDropsNothingAndWithoutAZoneEachPieceIsFr
 	CHECK(world.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) == nullptr);
 }
 
+// The slot is a wire byte, and a byte past every race's gear (the
+// packet-handler fuzz target sent 75) names no piece: nothing falls and
+// nothing is freed. The byte used to be cast to the gear's enum before
+// the gear tested it, a value outside the enum, which Clang's UBSan
+// halts on.
+TEST(RideGearReplies, ASlotPastTheRacesGearDropsNothing)
+{
+	World world;
+	CHECK(world.slayerGear.AddItem(new Helm(21), MSlayerGear::GEAR_SLAYER_HELM));
+	CHECK(world.vampireGear.AddItem(new VampireCoat(22), MVampireGear::GEAR_VAMPIRE_COAT));
+	CHECK(world.oustersGear.AddItem(new Circlet(23), MOustersGear::GEAR_OUSTERS_CIRCLET));
+	const struct { Race race; int past; } races[] = {{RACE_SLAYER, MSlayerGear::MAX_GEAR_SLAYER},
+		{RACE_VAMPIRE, MVampireGear::MAX_GEAR_VAMPIRE}, {RACE_OUSTERS, MOustersGear::MAX_GEAR_OUSTERS}};
+	for (const auto& r : races)
+	{
+		race = r.race;
+		for (int slot : { r.past, 75, 255 })
+			ReceiveDropped(slot);
+	}
+	CHECK(calls.empty());
+	CHECK_EQ(0, freed);
+	CHECK(world.slayerGear.GetItem(MSlayerGear::GEAR_SLAYER_HELM) != nullptr);
+	CHECK(world.vampireGear.GetItem(MVampireGear::GEAR_VAMPIRE_COAT) != nullptr);
+	CHECK(world.oustersGear.GetItem(MOustersGear::GEAR_OUSTERS_CIRCLET) != nullptr);
+}
+
 TEST(RideGearReplies, WithoutAZoneAPieceIsFreedAndAnEmptySlotDropsNothing)
 {
 	World world;
